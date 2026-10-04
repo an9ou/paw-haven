@@ -1,123 +1,97 @@
-// v1.6: trick training + the bigger town (desktop 1280x720 + iPhone 13), harness.js merged. node test_v16.js
-const { chromium, devices } = require('playwright'); const path = require('path'); const fs = require('fs');
-const URL = 'file://' + path.join(__dirname, 'test_merged.html');
-const DIR = path.join(__dirname, 'shots_v16'); fs.mkdirSync(DIR, { recursive: true });
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const fails = []; const ok = (c, l) => { console.log(c ? '  ok  ' : '  FAIL', l); if (!c) fails.push(l); };
-
-async function run(b, phone) {
-  const tag = phone ? 'phone' : 'desk'; console.log(`\n# ${phone ? 'iPhone 13' : 'desktop 1280x720'}`);
-  const ctx = await b.newContext(phone ? { ...devices['iPhone 13'], defaultBrowserType: undefined } : { viewport: { width: 1280, height: 720 } });
-  const p = await ctx.newPage(); const errors = [];
-  p.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); }); p.on('pageerror', (e) => errors.push(e.message));
-  const SH = (n) => p.screenshot({ path: path.join(DIR, `${tag}_${n}.png`) });
-  const S = () => p.evaluate(() => JSON.parse(JSON.stringify(window.__paw.S)));
-  const ev = (f, a) => p.evaluate(f, a);
-  const act = async (sel, o = {}) => { const l = p.locator(sel).first(); if (phone) await l.tap(o); else await l.click(o); await sleep(o.wait ?? 300); };
-  const lu = async () => { for (let i = 0; i < 6 && await p.locator('#luOk').count(); i++) await act('#luOk'); };
-  const calm = () => ev(() => window.__paw.S.dogs.forEach((d) => { d.potty.poopDue = null; d.potty.peeDue = null; d.potty.nextPee = window.__paw.S.gameMin + 9999; }));
-  const rnd = (v) => ev((v) => { if (!window.__rnd0) window.__rnd0 = Math.random; Math.random = v == null ? window.__rnd0 : () => v; }, v);
-  const travel = async (k) => {
-    await act('[data-act=map]', { wait: 700 }); await ev((k) => window.__paw.mapTo(k), k); await sleep(120);
-    await p.locator(`[data-area=${k}]`).first()[phone ? 'tap' : 'click']({ force: true }); await sleep(300);
-    if (phone) await act('#mapGoBtn', { wait: 100 });
-    await sleep(1800); await lu(); await calm();
-  };
-  const trick = (n) => ev((n) => { const t = window.__paw.S.dog.tricks[n]; return t && typeof t === 'object' ? t.p : 0; }, n);
+// v1.6: trick training + the bigger town (desktop 1280x720 only: the phone half is paused), harness.js merged.
+// node game/test_v16.js  (or: node game/run_tests.js v16)
+// De-flaked: the "mark" step does not race a wall-clock window. It waits for the dog to actually perform (TRN.att exists), then pins the attempt age
+// (a.t0) before it presses Good!, so "perfect" / "a bit late" are decided by the test, not by CPU luck. The timing rule itself is covered by both cases.
+require('./test_lib').run('v16', async (t) => {
+  const { ok, sec, ev, S, rnd, SH } = t;
+  const p = await t.boot(); await t.adopt({ sex: 'girl' });
+  await t.patch({ bond: { level: 7, pts: 1600 }, coins: 1000, stats: { energy: 90, happy: 90 } }); await ev(() => window.__paw.go('yard')); await t.calm();
+  const trick = (n) => ev((n) => { const x = window.__paw.S.dog.tricks[n]; return x && typeof x === 'object' ? x.p : 0; }, n);
   const line = () => p.textContent('#trLine');
+  const attNull = () => t.until(() => !(window.__paw.train && window.__paw.train.att), null, 8000);        // previous attempt is over: Cue works again
+  const attLive = () => t.until(() => !!(window.__paw.train && window.__paw.train.att), null, 10000);      // the dog is "doing" something now
+  // press Cue, wait until the dog acts, then press Good! with the attempt aged `age` ms (default 0 = instant)
+  const cueAndMark = async (age) => {
+    await attNull(); await p.click('#trCue'); const live = await attLive();
+    await ev((age) => { const a = window.__paw.train && window.__paw.train.att; if (a) a.t0 = performance.now() - (age || 0); document.getElementById('trGood').click(); }, age || 0);
+    return live;
+  };
 
-  await p.goto(URL); await sleep(700);
-  await act('#tNew', { wait: 400 }); await act('#aGirl'); await act('#aAdopt', { wait: 400 }); await act('#nOk', { wait: 400 });
-  for (let i = 0; i < 3; i++) { if (await p.locator('#iNext').count()) await act('#iNext', { wait: 350 }); }
-  await sleep(600); await calm(); await ev(() => { const S = window.__paw.S; S.bond.level = 7; S.bond.pts = 1400; S.coins = 1000; S.stats.energy = 90; S.stats.happy = 90; });
-  await ev(() => window.__paw.go('yard')); await sleep(500);
-
-  // ---- training session ----
-  await act('[data-act=play]', { wait: 400 }); await act('[data-play=tricks]', { wait: 600 });
-  const geo = await ev(() => { const tp = document.getElementById('trainPanel').getBoundingClientRect(), dg = document.getElementById('dogHit').getBoundingClientRect(), vw = innerWidth, vh = innerHeight; return { tp: [tp.left, tp.top, tp.width, tp.height], dg: [dg.left, dg.top, dg.right, dg.bottom], vw, vh, dim: getComputedStyle(document.getElementById('dock')).display }; });
+  sec('training session');
+  await p.click('[data-act=play]'); await t.waitPop(true); await p.click('[data-play=tricks]'); await p.waitForSelector('#trainPanel');
+  const geo = await ev(() => { const tp = document.getElementById('trainPanel').getBoundingClientRect(), dg = document.getElementById('dogHit').getBoundingClientRect(); return { tp: [tp.left, tp.top, tp.width, tp.height], dg: [dg.left, dg.top, dg.right, dg.bottom], dim: getComputedStyle(document.getElementById('dock')).display }; });
   ok(geo.dim === 'none', 'training: no dimmed popup over the scene');
-  if (phone) ok(geo.tp[3] <= geo.vh * 0.345 && geo.dg[3] <= geo.tp[1] + 2, `phone: bottom strip ${Math.round(geo.tp[3])}px <= 34%, dog above it`);
-  else ok(geo.tp[2] <= 300 && geo.tp[0] >= geo.dg[2], `desktop: right panel ${Math.round(geo.tp[2])}px wide, not covering the dog`);
-  await SH('01_training');
-  await act('[data-tr="Sit"]');
-  // correct + fast mark
-  await rnd(0.01); const p0 = await trick('Sit'); await act('#trCue', { wait: 0 });
-  for (let i = 0; i < 30 && !(await ev(() => !!(window.__paw.train && window.__paw.train.att))); i++) await sleep(50);
-  await SH('02_attempt'); await act('#trGood', { force: true, wait: 300 }); const p1 = await trick('Sit');
-  ok(p1 > p0 + (phone ? 0.11 : 0.19), `correct pose marked: progress ${Math.round(p0 * 100)}% -> ${Math.round(p1 * 100)}% (${p1 - p0 > 0.19 ? 'perfect timing' : 'a bit late'})`); await SH('03_marked');
-  await sleep(1500);
+  ok(geo.tp[2] <= 300 && geo.tp[0] >= geo.dg[2], `desktop: right panel ${Math.round(geo.tp[2])}px wide, not covering the dog`); await SH('01_training');
+  await p.click('[data-tr="Sit"]');
+  // correct + fast mark (Mochi is stubborn: perfect = +25%)
+  await rnd(0.01); const p0 = await trick('Sit'); ok(await cueAndMark(0), 'the dog performs after Cue'); await t.until((p0) => window.__paw.S.dog.tricks.Sit && window.__paw.S.dog.tricks.Sit.p > p0, p0, 4000); const p1 = await trick('Sit');
+  ok(p1 > p0 + 0.19, `correct pose marked: progress ${Math.round(p0 * 100)}% -> ${Math.round(p1 * 100)}% (perfect timing)`); await SH('03_marked');
+  // correct but late (> 700 ms after the pose): smaller gain
+  await attNull(); const pl0 = await trick('Sit'); await cueAndMark(900); await t.until((v) => window.__paw.S.dog.tricks.Sit.p > v, pl0, 4000); const pl1 = await trick('Sit');
+  ok(pl1 > pl0 + 0.1 && pl1 - pl0 < 0.2, `late mark gives the smaller gain (+${Math.round((pl1 - pl0) * 100)}%)`);
   // wrong behaviour marked = confused
-  await rnd(0.99); await act('#trCue', { wait: 0 }); for (let i = 0; i < 30 && !(await ev(() => !!(window.__paw.train && window.__paw.train.att))); i++) await sleep(50);
-  await act('#trGood', { force: true, wait: 300 }); const p2 = await trick('Sit');
-  ok(Math.abs(p2 - (p1 - 0.05)) < 0.001 && /now thinks/.test(await line()), `marking a wrong behaviour: -5% (${Math.round(p2 * 100)}%), "${(await line()).trim()}"`);
-  await sleep(1500);
+  await rnd(0.99); const p1b = await trick('Sit'); await cueAndMark(0); await t.until((v) => Math.abs(window.__paw.S.dog.tricks.Sit.p - v) > 0.001, p1b, 4000); const p2 = await trick('Sit');
+  ok(Math.abs(p2 - (p1b - 0.05)) < 0.001 && /now thinks/.test(await line()), `marking a wrong behaviour: -5% (${Math.round(p2 * 100)}%), "${(await line()).trim()}"`);
   // wrong behaviour ignored = no cost
-  await act('#trCue', { wait: 0 }); await sleep(2900); const p3 = await trick('Sit');
-  ok(p3 === p2 && /Ignoring it was right/.test(await line()), 'ignoring the wrong behaviour costs nothing');
+  await attNull(); await p.click('#trCue'); await attLive();
+  ok(await t.until(() => /Ignoring it was right/.test(document.getElementById('trLine').textContent), null, 8000), 'ignoring the wrong behaviour: "Ignoring it was right"'); const p3 = await trick('Sit');
+  ok(p3 === p2, 'ignoring the wrong behaviour costs nothing');
   // lure: easier, half progress
-  await act('#trLure'); ok((await p.getAttribute('#trLure', 'aria-pressed')) === 'true', 'lure on');
-  await rnd(0.01); await act('#trCue', { wait: 0 }); for (let i = 0; i < 30 && !(await ev(() => !!(window.__paw.train && window.__paw.train.att))); i++) await sleep(50);
-  await act('#trGood', { force: true, wait: 300 }); const p4 = await trick('Sit');
+  await attNull(); await p.click('#trLure'); ok((await p.getAttribute('#trLure', 'aria-pressed')) === 'true', 'lure on');
+  await rnd(0.01); await cueAndMark(0); await t.until((v) => window.__paw.S.dog.tricks.Sit.p > v, p3, 4000); const p4 = await trick('Sit');
   ok(Math.abs((p4 - p3) - 0.125) < 0.02, `lured success gives half progress (+${Math.round((p4 - p3) * 100)}%; Mochi is stubborn: 25% / 2)`);
-  await sleep(1500);
   // focus runs out
-  await ev(() => { const d = window.__paw.S.dog; d.focus = { v: 15, at: window.__paw.S.gameMin }; });
-  await act('#trCue', { wait: 0 }); await sleep(2900); await act('#trCue', { wait: 400 });
-  ok(/brain is full/.test(await line()), 'focus runs out: "' + (await line()).trim() + '"'); await SH('04_focus_out');
+  await attNull(); await ev(() => { const d = window.__paw.S.dog; d.focus = { v: 15, at: window.__paw.S.gameMin }; });
+  await p.click('#trCue'); await attLive(); await attNull(); await p.click('#trCue');
+  ok(await t.until(() => /brain is full/.test(document.getElementById('trLine').textContent), null, 6000), 'focus runs out: "' + (await line()).trim() + '"'); await SH('04_focus_out');
   await rnd(null);
 
-  // ---- show-off combo with an audience in Town Square ----
-  await act('#trX'); await travel('square'); ok((await S()).place === 'square', 'travelled to Town Square');
+  sec('show-off combo with an audience in Town Square');
+  await p.click('#trX'); await t.travel('square'); ok((await S()).place === 'square', 'travelled to Town Square');
   await ev(() => { const d = window.__paw.S.dog; ['Sit', 'Paw', 'Lie Down'].forEach((n) => { d.tricks[n] = { p: 1, shows: 0 }; }); });
-  await act('[data-act=play]', { wait: 400 }); await act('[data-play=tricks]', { wait: 500 }); await act('[data-trtab=show]', { wait: 300 });
+  await p.click('[data-act=play]'); await t.waitPop(true); await p.click('[data-play=tricks]'); await p.waitForSelector('[data-trtab=show]'); await p.click('[data-trtab=show]'); await p.waitForSelector('[data-show]');
   ok(await p.locator('#audience').count() === 1, 'NPC audience appears in a public place');
   await rnd(0.01); const c0 = (await S()).coins;
-  for (const n of ['Sit', 'Paw', 'Lie Down']) { await act(`[data-show="${n}"]`, { wait: 2200 }); }
+  let k = 0; for (const n of ['Sit', 'Paw', 'Lie Down']) { k++; await p.click(`[data-show="${n}"]`); await t.until((k) => window.__paw.train && window.__paw.train.chain === k, k, 10000); }
+  await t.until(() => /COMBO x3/.test(document.getElementById('trLine').textContent), null, 6000);
   const c1 = (await S()).coins; await rnd(null);
   ok(/COMBO x3/.test(await line()) && c1 - c0 >= 18, `show-off combo x3: +${c1 - c0} coins (3 x 3 x audience 2, + the Town notice goal)`); await SH('05_combo');
   ok((await S()).daily.squareGoal === true, 'Town notice goal: 3 tricks shown in the Square');
-  await act('#trX');
+  await p.click('#trX');
 
-  // ---- map pan + zoom ----
-  await act('[data-act=map]', { wait: 800 });
+  sec('map pan + zoom');
+  await p.click('[data-act=map]'); await p.waitForSelector('#mapPan');
   const tf = () => ev(() => document.getElementById('mapInner').style.transform); const t0 = await tf();
   const pb = await p.locator('#mapPan').boundingBox();
-  if (phone) { const cdp = await ctx.newCDPSession(p); const tp = (x, y) => [{ x, y, radiusX: 4, radiusY: 4, force: 1, id: 1 }]; await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: tp(pb.x + 250, pb.y + 300) }); for (let i = 1; i <= 8; i++) { await sleep(25); await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: tp(pb.x + 250 - i * 20, pb.y + 300 - i * 10) }); } await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); }
-  else { await p.mouse.move(pb.x + 600, pb.y + 300); await p.mouse.down(); await p.mouse.move(pb.x + 400, pb.y + 200, { steps: 8 }); await p.mouse.up(); }
-  await sleep(300); const t1 = await tf(); ok(t1 !== t0, 'map pans by drag');
-  const z0 = await p.textContent('#mapZoomLbl');
-  if (phone) await act('#mapZin'); else { await p.mouse.move(pb.x + 500, pb.y + 300); await p.mouse.wheel(0, -500); await sleep(300); }
-  const z1 = await p.textContent('#mapZoomLbl'); ok(z1 !== z0, `map zoom ${z0} -> ${z1}`); await SH('06_map');
-  await act('#mapX', { wait: 500 });
-  for (const k of ['cafe', 'dogpark', 'vet', 'salon', 'hilltop', 'pier', 'square']) { await travel(k); ok((await S()).place === k, 'travelled to ' + k); await SH('07_place_' + k); }
+  await p.mouse.move(pb.x + 600, pb.y + 300); await p.mouse.down(); await p.mouse.move(pb.x + 400, pb.y + 200, { steps: 8 }); await p.mouse.up();
+  ok(await t.until((t0) => document.getElementById('mapInner').style.transform !== t0, t0, 4000), 'map pans by drag');
+  const z0 = await p.textContent('#mapZoomLbl'); await p.mouse.move(pb.x + 500, pb.y + 300); await p.mouse.wheel(0, -500);
+  ok(await t.until((z0) => document.getElementById('mapZoomLbl').textContent !== z0, z0, 4000), `map zoom ${z0} -> ${await p.textContent('#mapZoomLbl')}`); await SH('06_map');
+  await p.click('#mapX'); await t.untilMode('yard');
+  for (const k of ['cafe', 'dogpark', 'vet', 'salon', 'hilltop', 'pier', 'square']) { await t.travel(k); ok((await S()).place === k, 'travelled to ' + k); await SH('07_place_' + k); }
 
-  // ---- café, vet, salon ----
-  await travel('cafe'); let s0 = await S(); await act('#placeBtns [data-pb=cafe]', { wait: 400 }); await SH('08_cafe_menu');
-  await act('[data-cafe="Pupuccino"]', { wait: 1800 }); let s1 = await S();
+  sec('cafe, vet, salon');
+  await t.travel('cafe'); let s0 = await S(); await p.click('#placeBtns [data-pb=cafe]'); await p.waitForSelector('[data-cafe="Pupuccino"]'); await SH('08_cafe_menu');
+  await p.click('[data-cafe="Pupuccino"]'); await t.until(() => !!window.__paw.S.dog.cafeDay, null, 8000); let s1 = await S();
   ok(s1.coins === s0.coins - 12 && !!s1.dog.cafeDay, 'café: Pupuccino served (-12 coins)');
-  await act('#placeBtns [data-pb=cafe]', { wait: 400 }); await act('[data-cafe="Doggy Donut"]', { force: true, wait: 300 }); ok((await S()).coins === s1.coins, 'café: one treat per dog per day'); await act('.panel .x');
-  await travel('vet'); s0 = await S(); await act('#placeBtns [data-pb=vet]', { wait: 400 }); await act('#vetGo', { wait: 500 });
-  s1 = await S(); ok(s1.coins === s0.coins - 30 && /Health card/.test(await p.textContent('.panel h2')), 'vet: check-up, health card (-30 coins)'); await SH('09_vet_card'); await act('#vetOk');
-  await travel('salon'); await ev(() => { window.__paw.S.stats.clean = 40; }); s0 = await S(); await act('#placeBtns [data-pb=groom]', { wait: 400 }); await act('#slGo', { wait: 1200 });
-  s1 = await S(); ok(s1.coins === s0.coins - 40 && s1.stats.clean >= 99 && s1.dog.fluffyUntil > s1.gameMin, 'salon: full groom, Fresh & Fluffy'); await SH('10_salon');
+  await t.modalGone(); await p.click('#placeBtns [data-pb=cafe]'); await p.waitForSelector('[data-cafe="Doggy Donut"]');
+  await t.toasts(); await p.click('[data-cafe="Doggy Donut"]', { force: true }); ok(await t.waitToast(/One café treat per dog per day/), 'café: one treat per dog per day'); ok((await S()).coins === s1.coins, 'café: no second charge'); await t.closeX();
+  await t.travel('vet'); s0 = await S(); await p.click('#placeBtns [data-pb=vet]'); await p.waitForSelector('#vetGo'); await p.click('#vetGo');
+  ok(await t.waitH2(/Health card/), 'vet: health card shows'); s1 = await S(); ok(s1.coins === s0.coins - 30, 'vet: check-up (-30 coins)'); await SH('09_vet_card'); await p.click('#vetOk'); await t.modalGone();
+  await t.travel('salon'); await ev(() => { window.__paw.S.stats.clean = 40; }); s0 = await S(); await p.click('#placeBtns [data-pb=groom]'); await p.waitForSelector('#slGo'); await p.click('#slGo');
+  ok(await t.until(() => window.__paw.S.stats.clean >= 99 && window.__paw.S.dog.fluffyUntil > window.__paw.S.gameMin, null, 10000), 'salon: full groom, Fresh & Fluffy'); s1 = await S(); ok(s1.coins === s0.coins - 40, 'salon: -40 coins'); await SH('10_salon');
 
-  // ---- Town Loop walk ----
-  await travel('yard'); await act('[data-act=walk]', { wait: 800 });
-  for (let i = 0; i < 8; i++) { if (/Town Loop/.test(await p.textContent('.rt-card.cur'))) break; await act('#rtNext', { wait: 500 }).catch(async () => { await p.keyboard.press('ArrowRight'); await sleep(500); }); }
+  sec('Town Loop walk');
+  await t.travel('yard'); await p.click('[data-act=walk]'); await p.waitForSelector('.rt-card.cur');
+  for (let i = 0; i < 8; i++) {
+    const cur = await p.textContent('.rt-card.cur'); if (/Town Loop/.test(cur)) break;
+    await p.click('#rtNext').catch(async () => { await p.keyboard.press('ArrowRight'); }); await t.until((c) => document.querySelector('.rt-card.cur').textContent !== c, cur, 3000);
+  }
   ok(/Town Loop/.test(await p.textContent('.rt-card.cur')), 'walk carousel has the Town Loop'); await SH('11_routes_town');
-  await act('#rtStart', { wait: 1300 });
-  for (let i = 0; i < 10; i++) { const g = p.locator('button:has-text("Let\'s go")'); if (await g.count()) { await g.first()[phone ? 'tap' : 'click'](); break; } await sleep(300); }
-  await sleep(2500); ok((await ev(() => window.__paw.mode)) === 'walk', 'Town Loop walk running'); await SH('12_town_walk');
-  await p.keyboard.press('Escape'); await sleep(600); if (await p.locator('[data-home]').count()) await act('[data-home]');
-  for (let i = 0; i < 20 && !(await p.locator('#resOk').count()); i++) await sleep(300);
-  ok(await p.locator('#resOk').count() === 1, 'Town Loop results'); if (await p.locator('#resOk').count()) await act('#resOk', { wait: 900 });
+  await p.click('#rtStart'); await t.until(() => window.__paw.mode === 'walk' && !!(document.querySelector('.pw-ov [data-go]') || document.querySelector('.pw-cd')), null, 15000);
+  if (await p.locator('.pw-ov [data-go]').count()) await p.locator('.pw-ov [data-go]').first().click();
+  await t.until(() => { const o = document.querySelector('.pw-ov'); return window.__paw.mode === 'walk' && !!o && o.hidden; }, null, 12000);
+  ok((await t.mode()) === 'walk', 'Town Loop walk running'); await SH('12_town_walk');
+  ok(await t.quitWalk(true), 'Town Loop results'); await t.untilMode('yard');
   const [sw, iw] = await ev(() => [document.documentElement.scrollWidth, innerWidth]); ok(sw === iw, `no horizontal scroll (${sw} = ${iw})`);
-  ok(errors.length === 0, `no console errors${errors.length ? ' -> ' + errors.slice(0, 3).join(' | ') : ''}`);
-  await ctx.close();
-}
-(async () => {
-  const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
-  await run(b, false); // phone paused by the client (v1.6b): run(b, true) is kept for later
-  console.log(fails.length ? `\nFAILED ${fails.length}: ${fails.join(' | ')}` : '\nALL OK');
-  await b.close();
-})().catch((e) => { console.error('CRASH', e); process.exit(1); });
+});

@@ -39,11 +39,28 @@ Module owners stay as before: dogs/ (dog artist), world/a (scenes), world/b (pro
 `proto/` is a git repo. Before a round the coordinator commits a baseline. Each agent's report lists the files it changed, and the coordinator reviews with `git diff` and can revert any single file. Agents must not run destructive git commands (reset, checkout of others' files, force); `git diff` and `git status` are fine.
 
 ## Testing (fast loop)
-- **During work:** run `node game/build.js`, then `node game/harness.js merged`, then the quick smoke test (`node game/run_tests.js smoke`, about 1–2 min), plus your own feature test.
-- **Before reporting:** run the suites that touch your lane.
-- **Before publishing (coordinator only):** `node game/run_tests.js all`, which runs every suite in parallel shards.
-- Tests never depend on the real clock or weather: they pin time and weather through the dev overrides unless a test is about the clock itself.
-- No fixed sleeps where a wait-for-condition works.
+One runner does everything: `node game/run_tests.js <smoke | all | suite names...> [--jobs N] [--retries N] [--strict] [--no-build] [--shots] [--list]`.
+It runs `node game/build.js`, then `node game/harness.js merged`, then the suites in PARALLEL (one Chromium process per suite, longest first). It prints one
+summary line per suite (PASS / FLAKY / FAIL, time, first failure lines), saves logs in `game/test_logs/<suite>.log` (+ `.retryN.log`, `last_run.txt`, `timings.json`),
+and exits non-zero on a real failure. A suite that fails is retried once automatically; if the retry passes it is reported FLAKY (exit 0, or exit 1 with `--strict`).
+Default parallelism = CPU cores - 1 (at least 1); override with `--jobs N`. **On a 2-core machine use `node game/run_tests.js all --jobs 2`** (measured stable over repeated runs; 3 jobs is slower than 2). Screenshots are off by default (`--shots` or `PAW_SHOTS=1` writes `game/shots_<suite>/`).
+
+| Command | What | Time (2 cores) |
+|---|---|---|
+| `node game/run_tests.js smoke` | load, adopt, every popup, feed + pet, travel x3, shop + purchase window, walk + Head home early, toy, no console errors | about 25-30 s |
+| `node game/run_tests.js all` | every desktop suite: `all_a..all_e` (the old test_all.js in 5 shards), `v15`, `v16`, `v16b`, `v17` | about 195 s with `--jobs 2`; about 315 s with 1 job (the old sequential run was 500 s) |
+| `node game/run_tests.js all_c v16b` | named suites only | |
+| `node game/run_tests.js game/test_myfeature.js` | your own suite file (written with `test_lib.js`), run like any other (retry, log, summary) | |
+| `NODE_PATH=$(npm root -g) node game/test_all_c.js` | one suite directly (same file the runner starts) | |
+
+- **During work:** build + harness merged (the runner does both), then `smoke`, plus the suite(s) of your lane. **Before reporting:** the suites that touch your lane. **Before publishing (coordinator only):** `all`.
+- The phone version is paused: `test_phone.js` is not part of any default run. The superseded originals of test_all / v15 / v16 / v16b / v17 are archived in `game/legacy_tests/` (not run).
+- **Writing or editing a test** (use `game/test_lib.js`, see `game/test_smoke.js` for a small example):
+  - `require('./test_lib').run('name', async (t) => { ... })`. The library exits non-zero on a failed `t.ok`, a crash or a console error.
+  - **Time and weather are pinned** for every page: dev overrides `ovrTime='day'`, `ovrWeather='cloudy'` (neutral: sunny + day makes the dog "hot", which blocks idle behaviours, rain/snow change poses) and the page clock is frozen to "today 10:00" (it ticks, but the hour/date cannot roll over). A test that is about the clock or weather sets it itself (Dev panel selects) and then goes back to the pin, never to `auto`.
+  - **No fixed sleeps.** Wait for the real condition: `t.until(fn, arg, ms)`, `t.untilMode('yard')`, `t.waitPop(true)`, `t.waitToast(/re/)`, `p.waitForSelector`. Actions the game ignores while the dog is "busy" (eat, dig, potty) use `t.retryUntil(action, cond)` or `t.travel(k)` / `t.pet(pred)` (they repeat). "Nothing should happen" checks use one short settle (`t.sleep(300)`), or wait for the bark log to go quiet.
+  - **Prepared state instead of replaying the game:** `t.newGame({}, { bond: {level: 7, pts: 1600}, coins: 1000, inv: {...} })` adopts through the UI (about 3 s) and merges a patch into the live save (`t.patch(obj)`); `t.home('market')` puts you at a place. Old-save tests inject JSON with `t.mk({ storage: { pawhaven_proto_v1: json } })`.
+  - **Timing-sensitive game checks must not race the wall clock:** the purchase-window arrow keys wait until the quantity box has focus and read the quantity from the "Total" line; the trick-training mark waits for `__paw.train.att` and pins the attempt age before pressing Good!; layout checks switch Motion off (the pack dogs' CSS sway) before measuring.
 
 ## Speed rules for every agent
 - Desktop only (1280×720) unless told otherwise. The phone version is paused.

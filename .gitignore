@@ -5,3 +5,4 @@ game/test_*.html
 game/game_script.check.js
 chk.js
 node_modules/
+game/test_logs/
