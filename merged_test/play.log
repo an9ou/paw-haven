@@ -1,0 +1,18 @@
+[step] name field Sir Barksalo
+[step] adopted corgi Sir Barksalo happy 69.9
+[step] pet happy 69.9 -> 93.4 bond 9
+[step] feed hunger 69.6 -> 99.1 kibble left 4
+[step] bought [ 'Red Bandana' ] outfit {"head":null,"eyes":null,"neck":"Red Bandana","body":null} coins 140
+[step] unequipped neck null
+[step] equipped neck Red Bandana
+[step] bond 2 coins 640
+[step] house Classic Wooden Doghouse owned [ 'Cardboard Box', 'Classic Wooden Doghouse' ]
+[step] fetch {"score":6,"throws":6}
+[step] after walk coins 534 bond 181 collection {"bone":5,"leaf":2,"flower":3}
+[step] bath clean 99.8 mode yard
+[step] sleeping true energy 37.5
+[step] tricks {"Sit":3,"Paw":1}
+[step] continue button 1
+[step] restored Sir Barksalo Classic Wooden Doghouse Red Bandana coins 534 -> 534 bond 2
+[step] phone scroll width {"sw":400,"cw":400}
+ERRORS: none

@@ -1,0 +1,36 @@
+<title>Paw Haven</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Gloria+Hallelujah&family=Patrick+Hand&display=swap">
+<style>
+/*@@CSS@@*/
+</style>
+
+<div id="stage" aria-label="Paw Haven game">
+  <header id="hud" hidden>
+    <div class="who"><span class="portrait" id="hudHead"></span><i id="hudMood" class="mood green"></i><span class="namewrap"><span id="hudName">Dog</span><span id="hudClock" hidden></span><span id="hudTitle" hidden></span></span><span id="hudPack"></span></div>
+    <div class="meters" id="meters"></div>
+    <div class="bond" title="Bond level"><span class="ic" id="bondIc"></span><span class="lbl">Bond <b id="bondLvl">1</b></span><span class="track" role="meter" aria-label="Bond progress" aria-valuemin="0" aria-valuemax="100" id="bondTrack"><span class="fill" id="bondFill"></span></span></div>
+    <div class="coins" id="coins" title="Paw Coins"><span class="ic" id="coinIc"></span><b id="coinNum">0</b></div>
+    <div class="buffchip" id="buffChip" hidden></div>
+    <button id="muteBtn" class="iconbtn" aria-label="Sound on. Tap to mute."></button>
+    <button id="gearBtn" class="iconbtn" aria-label="Settings"></button>
+    <button id="moreBtn" class="iconbtn" aria-label="Menu: settings and sound">&#8943;</button>
+  </header>
+  <main id="view"></main>
+  <aside id="trainPanel" hidden aria-label="Trick training"></aside>
+  <section id="dock" aria-live="polite"></section>
+  <nav id="bar" hidden aria-label="Actions"></nav>
+  <div id="toasts" aria-live="polite"></div>
+  <div id="bubble" hidden></div>
+  <div id="title"></div>
+  <div id="modal" hidden></div>
+  <div id="devPanel" hidden></div>
+  <div id="modHost" hidden></div>
+</div>
+
+<script id="pawart">/*@@PAWART@@*/</script>
+<script id="pawmods">/*@@PAWMODS@@*/</script>
+<script>
+/*@@GAME@@*/
+</script>

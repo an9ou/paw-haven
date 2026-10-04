@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PawWalk test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Gloria+Hallelujah&family=Patrick+Hand&display=swap">
+<style>
+html,body{margin:0;height:100%;background:#E6D7BF;font-family:'Patrick Hand',sans-serif;color:#5B3D32}
+#host{position:absolute;left:20px;top:80px;width:1240px;height:660px;overflow:hidden;border:2px solid #5B3D32;border-radius:10px;background:#FFFBF3}
+#log{position:absolute;left:20px;top:6px;right:20px;height:68px;overflow:auto;font-size:13px;white-space:pre-wrap}
+</style></head><body>
+<div id="log"></div>
+<div id="host"></div>
+<script src="../../dogs/pawart_dogs.js"></script>
+<script src="../../world/pawart_world_a.js"></script>
+<script src="../../world/pawart_world_b.js"></script>
+<script src="../../world/pawart_world_c.js"></script>
+<script src="../walkrun.js"></script>
+<script>
+const Q = new URLSearchParams(location.search);
+const logEl = document.getElementById('log');
+const log = (...a) => { logEl.textContent = a.join(' ') + '\n' + logEl.textContent; };
+window.__ends = []; window.__sfx = {}; window.__says = [];
+function startWalk() {
+  const abil = {}; (Q.get('ab') || '').split(',').filter(Boolean).forEach((k) => abil[k] = true);
+  let bag = [{ name: 'Wild Berries', count: 2 }];
+  const o = {
+    area: Q.get('area') || 'park', time: Q.get('time') || 'day', weather: Q.get('weather') || 'sunny',
+    dog: { key: Q.get('dog') || 'shiba', name: 'Mochi', outfit: { head: null, eyes: abil.goggles ? 'Explorer Goggles' : null, neck: null, body: abil.poncho ? 'Mossy Poncho' : null } },
+    abilities: abil, skipTutorial: Q.get('tut') !== '1', setSkipTutorial: (b) => { window.__skip = b; log('setSkipTutorial', b); }, durationSec: +(Q.get('dur') || 75), firstWalk: Q.get('first') === '1', _forceBonus: Q.get('bonus') === '1',
+    rollTreasure: (area) => { const r = Math.random() < 0.85 ? { name: 'Acorn Cap', rarity: 'Uncommon', kind: 'wearable', desc: 'Squirrel Diplomacy: +1 dig per walk while worn.' } : { coins: 40, text: 'A pouch of 40 coins.' }; log('rollTreasure', area, JSON.stringify(r)); return r; },
+    junk: () => ({ text: 'An old sock. Pepper is very proud.', coins: 7 }),
+    bag, useBagItem: (n) => { const b = bag.find((x) => x.name === n); if (!b || b.count <= 0) return false; b.count--; log('useBagItem', n); return true; },
+    sfx: (n) => { window.__sfx[n] = (window.__sfx[n] || 0) + 1; },
+    say: (t, ms) => { window.__says.push(t); log('say:', t); },
+    onEnd: (r) => { window.__ends.push(r); log('onEnd', JSON.stringify(r)); }
+  };
+  window.__ctl = PawWalk.start(document.getElementById('host'), o);
+}
+if (Q.get('phone') === '1') { const h = document.getElementById('host'); h.style.cssText = 'position:absolute;left:0;right:0;top:96px;bottom:0;width:auto;height:auto;border:0;border-radius:0'; logEl.style.cssText = 'position:absolute;left:4px;top:2px;right:4px;height:90px;overflow:hidden;font-size:11px'; document.body.style.overflow = 'hidden'; }
+startWalk();
+</script>
+</body></html>

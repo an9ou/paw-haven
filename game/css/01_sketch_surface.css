@@ -1,0 +1,22 @@
+/* ---------- shared sketch surface ---------- */
+.tray,.card,.sitem,.btn,.act,.iconbtn,.xbtn,.opt,.toast,#status,.res,.confirm,.chip,.arrow,.heads button,.namebox,#devPanel,.panel,#bubble,.portrait,#devBtn,.cover{
+  border:0;background:var(--fr) 0 0/100% 100% no-repeat,var(--hatch) var(--ins),linear-gradient(var(--wash),var(--wash)) var(--ins)}
+.btn,.act,.opt,.chip,.toast,.arrow,#devBtn{--fr:var(--fr-btn)}
+.tray,.card,.sitem,.panel,.res,.confirm,.namebox,#devPanel,#status,.cover{--fr:var(--fr-card)}
+.iconbtn,.xbtn,.portrait,.heads button{--fr:var(--fr-round)}
+.tray,.card,.sitem,.btn,.act,.opt,.toast,#status,.res,.confirm,.chip,.namebox,#devPanel,.panel,#bubble,#devBtn,.cover{border-radius:13px 9px 15px 8px}
+.iconbtn,.xbtn,.portrait,.heads button,.arrow{border-radius:50%}
+.tray{--fr:var(--fr-tray)}
+.holdbtn{--fr:var(--fr-wide)}
+@keyframes wig{0%{transform:rotate(-1.4deg)}50%{transform:rotate(1.6deg) translateY(-1px)}100%{transform:rotate(-1.4deg)}}
+.btn:not([disabled]):hover,.act:hover,.card:hover,.opt:hover,.iconbtn:hover,.xbtn:hover,.arrow:hover,.heads button:hover{animation:wig .45s ease-in-out 2}
+.btn:active,.act:active,.opt:active,.card:active{transform:translate(1px,2px) rotate(0)}
+/* washi tape */
+.taped{position:relative}
+.taped::before,.panel::before,.toast::before,#status::before,.sitem::before,.cover::before,.cover::after{content:"";position:absolute;width:78px;height:21px;top:-10px;left:calc(50% - 39px);
+  background:var(--tape) center/100% 100% no-repeat;transform:rotate(-4deg);pointer-events:none;z-index:2}
+.sitem:nth-child(3n+1)::before{transform:rotate(5deg);filter:hue-rotate(160deg) saturate(1.2)}
+.sitem:nth-child(3n+2)::before{left:16px;transform:rotate(-9deg);filter:hue-rotate(250deg)}
+.toast::before{width:54px;height:16px;top:-8px;left:12px}
+#status::before{width:40px;height:14px;top:-7px;left:-8px;transform:rotate(-30deg)}
+

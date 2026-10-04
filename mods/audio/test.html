@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PawAudio Test Bench</title>
+<style>
+  :root { --bg: #fbf5ea; --card: #fffdf8; --ink: #3b2f2a; --muted: #8a7a6d; --accent: #d9825b; --line: #e7dccb; --on: #f3c9a9; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #221c19; --card: #2c2421; --ink: #f1e6da; --muted: #b3a294; --accent: #e59a74; --line: #45392f; --on: #6b4532; } }
+  :root[data-theme="dark"] { --bg: #221c19; --card: #2c2421; --ink: #f1e6da; --muted: #b3a294; --accent: #e59a74; --line: #45392f; --on: #6b4532; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 system-ui, sans-serif; }
+  main { max-width: 1240px; margin: 0 auto; padding: 16px; display: grid; grid-template-columns: 1fr 420px; gap: 16px; }
+  h1 { font-size: 20px; margin: 0 0 4px; } h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 14px 0 6px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .row { display: flex; flex-wrap: wrap; gap: 6px; }
+  button { font: inherit; padding: 5px 10px; border-radius: 7px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
+  button.sel { background: var(--on); border-color: var(--accent); }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; padding: 8px 18px; }
+  label.vol { display: grid; grid-template-columns: 80px 1fr 40px; align-items: center; gap: 8px; margin: 4px 0; }
+  pre { margin: 0; white-space: pre-wrap; word-break: break-word; font: 12px/1.45 ui-monospace, monospace; }
+  .meter { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; } .meter i { display: block; height: 100%; background: var(--accent); width: 0; }
+  .lay { display: grid; grid-template-columns: 70px 1fr 36px; gap: 6px; align-items: center; font-size: 12px; margin: 2px 0; }
+  #variant { font-weight: 600; margin: 6px 0; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <section class="card">
+    <h1>PawAudio test bench</h1>
+    <div class="row"><button id="start" class="primary">Start audio</button><button id="cycle">Auto-cycle every combination</button><button id="stopCycle">Stop cycle</button></div>
+    <h2>Place</h2><div class="row" id="places"></div>
+    <h2>Time</h2><div class="row" id="times"></div>
+    <h2>Weather</h2><div class="row" id="weathers"></div>
+    <h2>Walk area</h2><div class="row" id="areas"></div>
+    <h2>Volumes</h2>
+    <div id="vols"></div>
+    <div class="row" style="margin-top:6px"><label><input type="checkbox" id="mute"> Mute</label></div>
+    <h2>Cues</h2>
+    <div class="row"><button id="duck">Duck 0.5 / 1500 ms</button><button data-st="treasure">Stinger: treasure</button><button data-st="levelup">Stinger: levelup</button><button data-st="adopt">Stinger: adopt</button><button data-st="harvest">Stinger: harvest</button><button data-st="cooked">Stinger: cooked</button><button data-st="discover">Stinger: discover</button><button id="sfx">Test SFX via bus.sfx</button></div>
+    <h2>Dog voices</h2>
+    <div class="row" style="align-items:center">
+      <select id="bkBreed"><option>Shiba Inu</option><option>Corgi</option><option>Golden Retriever</option><option>Dachshund</option><option>Husky</option><option>Shelter Mutt</option><option>Chihuahua</option><option>Pug</option><option>Greyhound</option><option>Beagle</option><option value="Mystery">Unknown breed</option></select>
+      <select id="bkSize"><option>small</option><option selected>medium</option><option>large</option></select>
+      <label>pitch <input type="range" id="bkPitch" min="85" max="115" value="100"></label>
+      <label>distance <input type="range" id="bkDist" min="0" max="100" value="0"></label>
+      <label>volume <input type="range" id="bkVol" min="0" max="100" value="100"></label>
+    </div>
+    <div class="row" id="bkKinds" style="margin-top:6px"></div>
+    <h2>Offline render</h2>
+    <div class="row"><button id="render">Render 20 s of the current context</button></div>
+    <pre id="renderOut"></pre>
+  </section>
+  <aside class="card">
+    <h2 style="margin-top:0">Now playing</h2>
+    <div id="variant">(not started)</div>
+    <pre id="meta"></pre>
+    <h2>Music layers (target)</h2><div id="layers"></div>
+    <h2>Ambience (target)</h2><div id="ambs"></div>
+    <h2>Raw state</h2><pre id="raw" style="max-height:220px;overflow:auto"></pre>
+  </aside>
+</main>
+<script src="../pawaudio.js"></script>
+<script>
+(function () {
+  var A = window.PawAudio, sel = { place: 'title', time: 'day', weather: 'sunny', area: 'park' };
+  function $(id) { return document.getElementById(id); }
+  function group(id, key, list) {
+    var el = $(id);
+    list.forEach(function (n) {
+      var b = document.createElement('button'); b.textContent = n; b.dataset.k = key; b.dataset.v = n; b.id = key + '-' + n;
+      b.onclick = function () { sel[key] = n; if (key === 'area') sel.place = 'walk'; push(); };
+      el.appendChild(b);
+    });
+  }
+  function push() {
+    A.setContext({ place: sel.place, area: sel.place === 'walk' ? sel.area : null, time: sel.time, weather: sel.weather });
+    document.querySelectorAll('button[data-k]').forEach(function (b) { b.classList.toggle('sel', sel[b.dataset.k] === b.dataset.v); });
+  }
+  group('places', 'place', A.PLACES); group('times', 'time', A.TIMES); group('weathers', 'weather', A.WEATHERS); group('areas', 'area', A.AREAS);
+  var vd = $('vols'), V = A.getVolumes();
+  ['master', 'music', 'sfx', 'ambience'].forEach(function (k) {
+    var l = document.createElement('label'); l.className = 'vol';
+    l.innerHTML = '<span>' + k + '</span><input type="range" min="0" max="100" id="vol-' + k + '" value="' + Math.round(V[k] * 100) + '"><span id="vv-' + k + '">' + Math.round(V[k] * 100) + '</span>';
+    vd.appendChild(l);
+    l.querySelector('input').oninput = function (e) { var o = {}; o[k] = e.target.value / 100; A.setVolumes(o); $('vv-' + k).textContent = e.target.value; };
+  });
+  $('mute').onchange = function (e) { A.setMuted(e.target.checked); };
+  $('start').onclick = function () { A.init(); push(); };
+  $('duck').onclick = function () { A.duck(0.5, 1500); };
+  document.querySelectorAll('[data-st]').forEach(function (b) { b.onclick = function () { A.duck(0.4, 1800); A.stinger(b.dataset.st); }; });
+  $('sfx').onclick = function () {
+    if (!A.ctx) return; var c = A.ctx, o = c.createOscillator(), g = c.createGain(), t = c.currentTime;
+    o.frequency.setValueAtTime(660, t); o.frequency.exponentialRampToValueAtTime(990, t + 0.1);
+    g.gain.setValueAtTime(0.2, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+    o.connect(g); g.connect(A.bus.sfx); o.start(t); o.stop(t + 0.3);
+  };
+  A.BARK_KINDS.forEach(function (k) {
+    var b = document.createElement('button'); b.textContent = k; b.id = 'bark-' + k;
+    b.onclick = function () { A.bark({ breed: $('bkBreed').value, size: $('bkSize').value, pitch: $('bkPitch').value / 100 }, k, { distance: $('bkDist').value / 100, volume: $('bkVol').value / 100 }); };
+    $('bkKinds').appendChild(b);
+  });
+  var cyc = null;
+  $('cycle').onclick = function () {
+    var combos = [];
+    A.PLACES.forEach(function (p) { A.TIMES.forEach(function (t) { A.WEATHERS.forEach(function (w) { combos.push([p, t, w]); }); }); });
+    var i = 0; clearInterval(cyc);
+    cyc = setInterval(function () { var c = combos[i++ % combos.length]; sel.place = c[0]; sel.time = c[1]; sel.weather = c[2]; push(); }, 6000);
+  };
+  $('stopCycle').onclick = function () { clearInterval(cyc); };
+  $('render').onclick = function () {
+    $('renderOut').textContent = 'rendering...';
+    A._render({ seconds: 20, segments: [{ at: 0, ctx: { place: sel.place, area: sel.area, time: sel.time, weather: sel.weather } }] })
+      .then(function (r) { $('renderOut').textContent = JSON.stringify(r, null, 1); }, function (e) { $('renderOut').textContent = String(e); });
+  };
+  function bars(el, obj) {
+    el.innerHTML = Object.keys(obj).map(function (k) { var v = obj[k]; return '<div class="lay"><span>' + k + '</span><div class="meter"><i style="width:' + Math.min(100, v * 100) + '%"></i></div><span>' + v.toFixed(2) + '</span></div>'; }).join('');
+  }
+  setInterval(function () {
+    var s = A.state();
+    if (!s.inited) return;
+    $('variant').textContent = s.variant + (s.pending ? '  (next bar: ' + s.pending + ')' : '');
+    $('meta').textContent = 'ctx ' + s.ctxState + ' · ' + s.bpm + ' bpm (target ' + s.bpmTarget + ') · swing ' + s.swing + '\nprog ' + s.prog + ' · chord ' + s.chord + ' · bar ' + s.bar + ' · topline ' + s.top +
+      '\npatterns ' + JSON.stringify(s.patterns) + (s.brush ? ' · brushes' : '') + '\nbark voices ' + s.barkVoices + ' (total ' + s.barks + ')' + '\nvoices ' + s.voices + ' · late steps ' + s.late + ' · theme quotes ' + s.themes;
+    bars($('layers'), s.layers); bars($('ambs'), s.ambience);
+    $('raw').textContent = JSON.stringify(s, null, 1);
+  }, 250);
+  push();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+/* phone layout from v1 (not extended, not tested in v2) */
+@media (max-aspect-ratio: 4/5){
+  html:not([data-layout="phone"]) #stage{width:100%;height:100%;aspect-ratio:auto;max-height:none}
+  html:not([data-layout="phone"]) #hud{flex-wrap:wrap;row-gap:4px;padding:6px 10px 12px}
+  html:not([data-layout="phone"]) #hudName{display:none}
+  html:not([data-layout="phone"]) .bond{order:2;flex:1;min-width:0} html:not([data-layout="phone"]) .bond .track{flex:1;width:auto}
+  html:not([data-layout="phone"]) .coins{order:3} html:not([data-layout="phone"]) #muteBtn{order:4} html:not([data-layout="phone"]) #gearBtn{order:5}
+  html:not([data-layout="phone"]) .meters{order:6;flex-basis:100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+  html:not([data-layout="phone"]) .meter .num{display:none}
+  html:not([data-layout="phone"]) #view{flex:none;aspect-ratio:4/3;margin:0}
+  html:not([data-layout="phone"]) #dock{flex:1 1 auto;max-height:none;padding:8px}
+  html:not([data-layout="phone"]) #dock:has(> .dock-idle:only-child){display:flex}
+  html:not([data-layout="phone"]) .dock-idle{display:flex}
+  html:not([data-layout="phone"]) .row{flex-wrap:wrap;overflow:visible}
+  html:not([data-layout="phone"]) .card{width:100px}
+  html:not([data-layout="phone"]) #bar{grid-template-columns:repeat(4,1fr);gap:6px;padding:8px}
+  html:not([data-layout="phone"]) .act{flex-direction:column;font-size:18px;gap:0}
+  html:not([data-layout="phone"]) .cover{width:92%;padding:24px 20px 24px 56px}
+}
+

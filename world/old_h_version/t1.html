@@ -1,0 +1,16 @@
+<!doctype html><meta charset=utf-8><body style="background:#FFF8E7;margin:10px;font:12px monospace"><script src="pawart_world.js"></script><div id=o></div>
+<script>
+const I=['hunger','happy','energy','clean','bond','coin','feed','play','walk','shop','wardrobe','house','map','home','back','close','bath','sleep','pet','sound-on','sound-off','lock','star','heart','check','speed'];
+const T=['Basic Kibble','Chicken & Rice Bowl','Salmon Pâté','Bone-shaped Biscuit','Pupcake','Fresh Water','Tennis Ball','Rope Tug','Squeaky Duck','Frisbee','Plush Bone','Puzzle Feeder','Red Bandana','Yellow Raincoat','Knit Winter Sweater','Party Hat','Heart Sunglasses','Superhero Cape','Flower Crown','Bow Tie'];
+let s='';
+for(const n of I)s+=`<span style="display:inline-block;margin:4px;text-align:center"><span style="display:block;width:128px;height:128px">${PawArt.icon(n)}</span><span style="display:inline-block;width:36px;height:36px">${PawArt.icon(n)}</span><span style="display:inline-block;width:28px;height:28px">${PawArt.icon(n)}</span><br>${n}</span>`;
+s+='<hr>';
+for(const n of T)s+=`<span style="display:inline-block;margin:4px;text-align:center"><span style="display:block;width:128px;height:128px">${PawArt.item(n)}</span><span style="display:inline-block;width:56px;height:56px">${PawArt.item(n)}</span><br>${n}</span>`;
+
+s+='<hr>';
+for(const n of ['coin','shell','leaf','bone','flower','acorn','sniff','puddle','dig'])s+=`<span style="display:inline-block;margin:4px;text-align:center"><span style="display:block;width:120px;height:120px">${PawArt.collectible(n)}</span><span style="display:inline-block;width:40px;height:40px">${PawArt.collectible(n)}</span><br>${n}</span>`;
+s+='<hr>';
+for(const n of ['bowl-empty','bowl-full','water-bowl','tub','bubbles','zzz','hearts','poop-joke','ball','frisbee'])s+=`<span style="display:inline-block;margin:4px;text-align:center"><span style="display:block;width:150px;height:150px">${PawArt.prop(n)}</span>${n}</span>`;
+s+=`<span style="display:inline-block;width:300px;height:140px;vertical-align:top">${PawArt.prop('speech')}</span>`;
+o.innerHTML=s;
+</script>

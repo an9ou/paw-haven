@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Toy Test Bench</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Gloria+Hallelujah&family=Patrick+Hand&display=swap">
+<style>
+body{margin:0;background:#E6D7BF;font-family:'Patrick Hand',sans-serif;color:#5B3D32}
+#bar{display:flex;flex-wrap:wrap;gap:6px;padding:8px 20px;align-items:center;height:84px;box-sizing:border-box}
+#bar button{font:20px 'Caveat',cursive;font-weight:700;border:2px solid #5B3D32;border-radius:10px;background:#FFFBF3;padding:0 10px;cursor:pointer}
+#bar select{font:16px 'Patrick Hand'}
+#host{position:relative;width:1240px;height:620px;margin:0 20px;background:#FFFBF3;border:2px solid #5B3D32;box-sizing:content-box}
+@media (max-width:820px){#bar{display:none}#host{position:fixed;left:0;right:0;top:96px;bottom:0;width:auto;height:auto;margin:0;border:0;border-top:2px solid #5B3D32}}
+#log{display:none;position:fixed;right:6px;bottom:4px;font:12px monospace;max-width:420px;white-space:pre-wrap;color:#5B3D32;opacity:.6;pointer-events:none}
+</style></head><body>
+<div id="bar"></div>
+<div id="host"></div>
+<div id="log"></div>
+<script src="../../dogs/pawart_dogs.js"></script>
+<script src="../../world/pawart_world_a.js"></script>
+<script src="../../world/pawart_world_b.js"></script>
+<script src="../toys.js"></script>
+<script>
+const TOYS=['Tennis Ball','Rope Tug','Squeaky Duck','Frisbee','Plush Bone','Puzzle Feeder','Driftwood Stick','Rubber Chicken','Glow Ball'];
+const bar=document.getElementById('bar'), host=document.getElementById('host'), logEl=document.getElementById('log');
+window.__log={rewards:[],sfx:[],closes:0,says:[]};
+let ctl=null;
+const sel=(id,opts)=>{const s=document.createElement('select');s.id=id;opts.forEach(o=>{const e=document.createElement('option');e.textContent=o;s.appendChild(e)});bar.appendChild(s);return s};
+const dogSel=sel('dogSel',['shiba','corgi','golden','dachs','husky','mutt']);
+const timeSel=sel('timeSel',['day','dawn','dusk','night']);
+const wxSel=sel('wxSel',['sunny','cloudy','rain','snow']);
+function log(t){logEl.textContent=(t+'\n'+logEl.textContent).slice(0,700)}
+window.openToy=function(name,o){
+  o=o||{}; if(ctl){ctl.close();ctl=null}
+  const key=o.dog||dogSel.value, D=(PawArt.DOGS||[]).find(d=>d.key===key)||{name:'Pup'};
+  ctl=PawToys.open(host,name,{dog:{key,name:D.name,outfit:o.outfit||{head:null,eyes:null,neck:'Red Bandana',body:null}},time:o.time||timeSel.value,weather:o.weather||wxSel.value,
+    sfx:(n)=>{__log.sfx.push(n)}, say:(t)=>{__log.says.push(t)},
+    reward:(r)=>{__log.rewards.push(Object.assign({toy:name},r));log('reward '+JSON.stringify(r))},
+    onClose:()=>{__log.closes++;log('onClose '+name);ctl=null}});
+  window.__ctl=ctl; return ctl;
+};
+TOYS.forEach(n=>{const b=document.createElement('button');b.textContent=n;b.onclick=()=>openToy(n);bar.appendChild(b)});
+</script>
+</body></html>

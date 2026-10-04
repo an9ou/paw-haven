@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Paw Haven dog art gallery</title>
+<link href="https://fonts.googleapis.com/css2?family=Gloria+Hallelujah&family=Patrick+Hand&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#FFF8EC;color:#2a2420;font:16px/1.4 'Patrick Hand',system-ui,sans-serif;padding:16px}
+h1,h2,h3{font-family:'Gloria Hallelujah',cursive;font-weight:400;margin:18px 0 8px}
+h1{font-size:30px}h2{font-size:24px;border-top:3px dashed #e3cfae;padding-top:14px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button{font:inherit;font-size:17px;padding:6px 14px;border:3px solid #2a2420;border-radius:14px 10px 16px 9px;background:#FFD60A;cursor:pointer}
+.grid{display:grid;gap:8px}
+.g10{grid-template-columns:repeat(9,minmax(0,1fr))}
+.g5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.g6{grid-template-columns:repeat(6,minmax(0,1fr))}
+.cell{background:#fff;border:2px solid #e8d6b8;border-radius:12px;padding:4px;min-width:0}
+.cell svg{display:block;width:100%;height:auto}
+.cell code{display:block;font:11px/1.25 ui-monospace,Menlo,monospace;color:#7a6250;word-break:break-word;margin-top:2px}
+.row{margin-bottom:6px}
+.sizes{display:flex;gap:16px;align-items:end;flex-wrap:wrap}
+.sizes .cell{display:inline-block}
+.dark{background:#2a1e18;padding:10px;border-radius:12px}
+@media (max-width:900px){.g10{grid-template-columns:repeat(5,minmax(0,1fr))}.g6{grid-template-columns:repeat(3,minmax(0,1fr))}}
+</style></head>
+<body>
+<h1>Paw Haven: dog art module (style H)</h1>
+<div class="bar"><button id="mot" type="button">Pause motion</button><button id="still" type="button">Toggle .pa-still on page</button><span id="perf"></span></div>
+<div id="out"></div>
+<script src="pawart_dogs.js"></script>
+<script src="../mods/genes.js"></script>
+<script>
+(function(){
+const P=window.PawArt,K=P.DOGS.map(d=>d.key);
+const POSES=['idle','happy','pet','eat','sleep','walk','jump','sit','sad','dirty','crouch','shake','cold','hot','dig','beg','squat','leglift','paw','down','rollover','playdead','speak','dance','bow','scratch','sniff','yawn','howl'];
+const OUTS=[['head','Party Hat'],['head','Flower Crown'],['head','Acorn Cap'],['eyes','Heart Sunglasses'],['eyes','Explorer Goggles'],['neck','Red Bandana'],['neck','Bow Tie'],['neck','Seashell Necklace'],['neck','Clover Collar'],['body','Yellow Raincoat'],['body','Knit Winter Sweater'],['body','Superhero Cape'],['body','Mossy Poncho'],['head','Rain Hat'],['head','Pom-pom Beanie'],['body','Frog Raincoat'],['body','Polka-dot Raincoat'],['body','Bubble Raincoat']];
+const COMBOS=[{head:'Party Hat',eyes:'Heart Sunglasses',neck:'Red Bandana',body:'Superhero Cape'},{head:'Flower Crown',eyes:null,neck:'Bow Tie',body:'Knit Winter Sweater'},{head:'Acorn Cap',eyes:'Explorer Goggles',neck:'Clover Collar',body:'Mossy Poncho'},{head:'Rain Hat',body:'Frog Raincoat',neck:'Red Bandana'},{head:'Pom-pom Beanie',body:'Bubble Raincoat',eyes:'Heart Sunglasses'}];
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const cell=(svg,sig)=>`<div class="cell">${svg}<code>${esc(sig)}</code></div>`;
+let h='';
+h+='<h2>DOGS</h2><div class="grid g6">'+P.DOGS.map(d=>`<div class="cell">${P.dogHead(d.key)}<code>${d.key} / ${d.name} / ${d.breed}<br>${d.personality}<br>joke: "${esc(d.joke)}"</code></div>`).join('')+'</div>';
+h+='<h2>Poses (10 dogs x 29 poses)</h2>';
+K.forEach(k=>{h+=`<h3>${k}</h3><div class="grid g10 row">`+POSES.map(p=>cell(P.dog(k,{pose:p}),`dog('${k}',{pose:'${p}'})`)).join('')+'</div>'});
+h+='<h2>Outfits: each item on every dog, plus 2 full combos</h2>';
+K.forEach(k=>{h+=`<h3>${k}</h3><div class="grid g10 row">`+OUTS.map(([sl,n])=>cell(P.dog(k,{outfit:{[sl]:n}}),`{outfit:{${sl}:'${n}'}}`)).join('')+COMBOS.map((c,i)=>cell(P.dog(k,{outfit:c,pose:['idle','happy','walk','cold','beg'][i]}),`combo ${i+1}`)).join('')+'</div>'});
+h+='<h2>Outfit combos in tricky poses (sleep, jump, sit, eat)</h2>';
+K.forEach(k=>{h+=`<div class="grid g10 row">`+['sleep','jump','sit','eat','walk'].map((p,i)=>cell(P.dog(k,{pose:p,outfit:COMBOS[i%2]}),`${k} ${p} combo ${i%2+1}`)).join('')+['sleep','jump','sit','eat','sad'].map((p,i)=>cell(P.dog(k,{pose:p,outfit:COMBOS[(i+1)%2]}),`${k} ${p} combo ${(i+1)%2+1}`)).join('')+'</div>'});
+h+='<h2>Coat variants (v1.5A): PawArt.dog(key,{coat,seed})</h2>';
+{const G=window.PawGenes;const base={B:['B','B'],D:['D','D'],E:['E','E'],S:['S','S'],M:['m','m'],Bl:['bl','bl']};
+ const V=[['default',null],['black',{}],['liver',{B:['b','b']}],['blue',{D:['d','d']}],['lilac',{B:['b','b'],D:['d','d']}],['piebald',{S:['sp','sp']}],['merle',{M:['M','m']}],['blue eyes',{Bl:['Bl','Bl']}],['odd eyes',{Bl:['Bl','bl']},'odd'],['small white',{S:['S','sp'],E:['e','e']}]];
+ const coatOf=(k,g,fe,seed)=>{if(!g)return [null,'default art'];if(G&&G.SHADES&&G.SHADES[k]){const ph=G.phenotype(Object.assign({},base,g),k,seed);const c=Object.assign({},ph.coat);if(fe)c.eyes=fe;return [c,ph.coatName]}const HP={black:['#2B2430','#C98A4E','#1D1A22'],liver:['#7A4A2E','#E8B47E','#4E2A16'],blue:['#6E7F96','#D9C4A8','#46556A'],lilac:['#A8949A','#F0DCCB','#7E6D75'],red:['#D9822E','#F7D2A0','#2B2430'],cream:['#F3DDB4','#FFF4E2','#2B2430']};const pg=g.B&&g.D?'lilac':g.B?'liver':g.D?'blue':g.E?'red':'black';const c=HP[pg];return [{base:c[0],light:c[1],dark:c[2],white:g.S?(g.S[0]==='sp'?.6:.25):0,merle:!!g.M,eyes:fe||(g.Bl?'blue':g.B?'amber':'brown')},'hand palette: '+pg]};
+ K.forEach((k,ki)=>{h+=`<h3>${k}${G&&G.SHADES&&G.SHADES[k]?' (PawGenes phenotypes)':' (hand palettes)'}</h3><div class="grid g10 row">`+V.map(([n,g,fe],i)=>{const seed='dog'+ki+'-'+i;const [c,name]=coatOf(k,g,fe,seed);return `<div class="cell">${P.dog(k,{coat:c,seed,pose:i===5?'walk':i===4?'sit':'idle'})}<div style="width:44%;margin:auto">${P.dogHead(k,{coat:c,seed})}</div><code>${esc(name)}${fe?' (eyes:'+fe+')':''}</code></div>`}).join('')+'</div>'});
+ if(G&&G.randomGenotype){h+='<h3>Random rescue genotypes (PawGenes.randomGenotype)</h3><div class="grid g10 row">';let r=1;const rr=()=>{r=(r*16807)%2147483647;return r/2147483647};for(let i=0;i<18;i++){const k=K[i%6],g=G.randomGenotype(k,rr),ph=G.phenotype(g,k,'rescue'+i);h+=cell(P.dog(k,{coat:ph.coat,seed:'rescue'+i,pose:POSES[i%POSES.length],outfit:i%4===0?COMBOS[i%COMBOS.length]:null,facing:i%3?'right':'left'}),ph.coatName+' / '+ph.eyes)}h+='</div>'}
+}
+h+='<h2>Facing left</h2><div class="grid g6">'+K.map(k=>cell(P.dog(k,{facing:'left'}),`dog('${k}',{facing:'left'})`)).join('')+'</div><div class="grid g6" style="margin-top:8px">'+K.map((k,i)=>cell(P.dog(k,{facing:'left',pose:['sleep','walk','eat','jump','happy','sit'][i],outfit:COMBOS[i%2]}),`${k} left ${['sleep','walk','eat','jump','happy','sit'][i]} combo`)).join('')+'</div>';
+h+='<h2>dogHead portraits (100x100)</h2><div class="sizes">'+K.map(k=>`<div class="cell" style="width:100px">${P.dogHead(k)}<code>dogHead('${k}')</code></div><div class="cell" style="width:48px">${P.dogHead(k)}</div>`).join('')+'</div>';
+h+='<h2>Game sizes: 320px, 160px (phone), 120px and 64px</h2><div class="sizes">'+cell(`<div style="width:320px">${P.dog('golden',{pose:'happy'})}</div>`,'320px')+cell(`<div style="width:160px">${P.dog('corgi',{pose:'walk'})}</div>`,'160px')+'</div><div class="sizes" style="margin-top:8px">'+K.map(k=>cell(`<div style="width:120px">${P.dog(k)}</div>`,'120px')).join('')+'</div><div class="sizes" style="margin-top:8px">'+K.map(k=>cell(`<div style="width:64px">${P.dog(k,{anim:false})}</div>`,'64px')).join('')+'</div>';
+h+='<h2>On a dark panel, anim:false</h2><div class="dark grid g6">'+K.map(k=>`<div>${P.dog(k,{anim:false,pose:'sit'})}</div>`).join('')+'</div>';
+document.getElementById('out').innerHTML=h;
+// automated anatomy check: exactly 4 .pa-d-leg groups in every frame of every dog x pose x outfit x facing
+{let bad=[],tot=0;const tmp=document.createElement('div');K.forEach(k=>POSES.forEach(p=>[null,...COMBOS,{head:'Nope',body:'Banana Suit'}].forEach((o,oi)=>['right','left'].forEach(f=>{const cc=[null,{base:'#2B2430',light:'#FFE7B3',dark:'#1D1A22',white:.6,merle:true,eyes:'odd'},{base:'#7A4A2E',light:'#FFFFFF',dark:'#5A3420',white:.25,merle:false,eyes:'amber'}][oi%3];tmp.innerHTML=P.dog(k,{pose:p,outfit:o,facing:f,coat:cc,seed:'chk'+oi});tmp.querySelectorAll('[class^="pa-d-f"]').forEach(fr=>{tot++;const n=fr.querySelectorAll('.pa-d-leg').length;if(n!==4)bad.push(`${k}/${p}/${f}:${n}`)})}))));
+ const el=document.createElement('p');el.id='legcheck';el.textContent=`Leg check: ${tot} frames, ${bad.length?'FAIL '+bad.slice(0,10).join(', '):'all have exactly 4 legs'}`;el.style.cssText='font-size:20px;background:'+(bad.length?'#ffd0d0':'#d8f5d0')+';padding:6px 10px;border-radius:8px';document.getElementById('out').prepend(el)}
+const t0=performance.now();for(let i=0;i<100;i++)P.dog(K[i%6],{pose:POSES[i%10],outfit:i%3?null:COMBOS[i%2]});
+document.getElementById('perf').textContent=`100 dog() calls: ${((performance.now()-t0)/100).toFixed(2)} ms each`;
+const r=document.documentElement;r.dataset.motion='on';
+document.getElementById('mot').onclick=e=>{r.dataset.motion=r.dataset.motion==='off'?'on':'off';e.target.textContent=r.dataset.motion==='off'?'Play motion':'Pause motion'};
+document.getElementById('still').onclick=()=>document.body.classList.toggle('pa-still');
+})();
+</script>
+</body></html>

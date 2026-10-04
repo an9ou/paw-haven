@@ -1,0 +1,21 @@
+
+/* G: boiling pencil line. Three redraws flip at 8 fps; eyes blink for one frame; tail wags in held steps. */
+.sdG .g2b1,.sdG .g2b2,.sdG .g2ec{opacity:0}
+.sdG.g2live .g2b0{animation:g2b0 .375s steps(1,end) infinite}
+.sdG.g2live .g2b1{animation:g2b1 .375s steps(1,end) infinite}
+.sdG.g2live .g2b2{animation:g2b2 .375s steps(1,end) infinite}
+@keyframes g2b0{0%{opacity:1}33.333%{opacity:0}100%{opacity:0}}
+@keyframes g2b1{0%{opacity:0}33.333%{opacity:1}66.666%{opacity:0}100%{opacity:0}}
+@keyframes g2b2{0%{opacity:0}66.666%{opacity:1}100%{opacity:1}}
+.sdG.g2live .g2eo{animation:g2eo 4.5s steps(1,end) infinite}
+.sdG.g2live .g2ec{animation:g2ec 4.5s steps(1,end) infinite}
+@keyframes g2eo{0%{opacity:1}94.4%{opacity:0}97.2%{opacity:1}100%{opacity:1}}
+@keyframes g2ec{0%{opacity:0}94.4%{opacity:1}97.2%{opacity:0}100%{opacity:0}}
+.sdG.g2live .g2tail{animation:g2wag 1s steps(1,end) infinite}
+@keyframes g2wag{0%{transform:rotate(-3deg)}12.5%{transform:rotate(1deg)}25%{transform:rotate(5deg)}37.5%{transform:rotate(7deg)}50%{transform:rotate(5deg)}62.5%{transform:rotate(1deg)}75%{transform:rotate(-3deg)}87.5%{transform:rotate(-5deg)}}
+.stage.bgG,.px.bgG{background:#FFFBF3}
+/* H: jerky 3 fps wobble, three crude redraws */
+.sdH .h3f1,.sdH .h3f2{opacity:0}
+.sdH.h3live .h3f0{animation:g2b0 1s steps(1,end) infinite}
+.sdH.h3live .h3f1{animation:g2b1 1s steps(1,end) infinite}
+.sdH.h3live .h3f2{animation:g2b2 1s steps(1,end) infinite}

@@ -1,0 +1,22 @@
+/* ---------- v1.5A purchase window ---------- */
+.buyveil{position:absolute;inset:0;z-index:6;background:rgba(91,61,50,.28);display:flex;align-items:center;justify-content:center;border-radius:inherit}
+.buybox{position:relative;width:min(480px,92%);padding:18px 22px 16px;background:var(--paper);border:2.5px solid var(--ink);border-radius:16px 10px 18px 11px;box-shadow:3px 5px 0 rgba(91,61,50,.22);transform:rotate(-.4deg)}
+.buybox::before{content:"";position:absolute;width:70px;height:18px;top:-9px;left:24px;transform:rotate(-6deg);background:rgba(242,143,165,.55);border-radius:2px}
+.bb-top{display:flex;gap:16px;align-items:center}
+.bb-art{width:104px;height:104px;flex:none}
+.bb-art svg{width:100%;height:100%}
+.bb-top h3{margin:0;font-family:var(--font-hand);font-size:34px;line-height:1}
+.bb-top p{margin:4px 0}
+.bb-qty{display:flex;align-items:center;gap:8px;margin:12px 0 4px;flex-wrap:wrap}
+.bb-qty .btn{min-height:40px;padding:4px 12px}
+.bb-m,.bb-p{font-size:26px;width:44px}
+.bb-in{width:64px;height:40px;font:inherit;font-size:22px;text-align:center;border:2px solid var(--ink);border-radius:10px 7px 11px 8px;background:#fff}
+.bb-quick{display:flex;gap:6px;margin-left:auto}
+.bb-in::-webkit-outer-spin-button,.bb-in::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.bb-in{-moz-appearance:textfield;appearance:textfield}
+.bb-quick .btn[aria-pressed="true"]{--wash:var(--w-yellow)}
+.bb-one{margin:12px 0 4px}
+.bb-sum{margin-top:8px;padding:10px 14px;border:2px dashed #CDBBA6;border-radius:12px;font-size:18px;line-height:1.45}
+.bb-sum .bb-after{font-size:21px}
+.bb-sum.bad .bb-after,.bb-sum.bad .bb-warn{color:#C9475E;font-weight:700}
+.bb-yes[disabled]{opacity:.45;cursor:not-allowed;filter:grayscale(.6)}

@@ -1,0 +1,52 @@
+/* ---------- v1.6 training panel + town map ---------- */
+#trainPanel{position:absolute;right:18px;width:min(300px,30%);bottom:calc(var(--barH) + 12px);z-index:6;display:flex;flex-direction:column;padding:12px 12px 10px;background:var(--paper);border:2.5px solid var(--ink);border-radius:14px 10px 16px 9px;box-shadow:3px 4px 0 rgba(91,61,50,.22)}
+#trainPanel[hidden]{display:none}
+.trhead{display:flex;align-items:center;gap:8px}.trhead .tabs{flex:1;margin:0}.trhead .xbtn{width:42px;height:42px}
+.trbody{overflow-y:auto;min-height:0;display:flex;flex-direction:column;gap:8px;padding-top:6px}
+.trchips{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 6px;flex:none}
+.trchip{flex:none;width:76px;min-height:74px;display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 2px;font-size:13px;line-height:1.05;background:var(--paper);border:2px solid var(--ink);border-radius:10px 7px 11px 6px}
+.trchip .ic{width:30px;height:30px}.trchip b{font-family:var(--font-hand);font-size:17px}.trchip small{color:var(--muted)}
+.trchip.on{background:#FFE3A1;box-shadow:inset 0 -4px 0 rgba(242,143,165,.55)}
+.trchip[aria-disabled="true"]{opacity:.45}
+.trrow{display:flex;align-items:center;gap:6px;font-size:16px}.trrow .prog{flex:1}
+.trprog{flex:1;display:flex;flex-direction:column;gap:3px}
+.trfocus .ic{width:22px;height:22px}
+.trbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.trbtns .btn{min-height:64px;font-size:24px;padding:4px 6px;flex-direction:column;gap:0}
+.trbtns .btn .ic{width:30px;height:30px}
+.trgood.ready{animation:trPulse .5s ease-in-out infinite alternate;--wash:#FFD56B}
+@keyframes trPulse{to{transform:scale(1.06) rotate(-1deg)}}
+.trline{margin:0;min-height:44px;font-size:16px;line-height:1.25}
+.trline.good{color:#3E7A47}.trline.bad{color:#C9475E}.trline.ok{color:#8A6A2A}
+.trshow{display:flex;flex-wrap:wrap;gap:6px}.trshow .btn{flex-direction:column;gap:0;min-width:84px}.trshow .btn .ic{width:28px;height:28px}.trshow small{font-size:12px;color:var(--muted)}
+#view > svg.world.trainzoom{transform:scale(1.12) translateX(-4%);transform-origin:43% 85%;transition:transform .6s ease-out}
+#view > svg.world{transition:transform .5s ease-out}
+.tk-scratch{animation:tkScratch .25s ease-in-out 5}
+@keyframes tkScratch{50%{transform:translate(4px,-3px) rotate(2deg)}}
+.treatfly{transition:transform .55s cubic-bezier(.3,.6,.4,1)}
+.fluffspark{animation:fluffTw 1.4s ease-in-out infinite alternate}
+@keyframes fluffTw{from{opacity:.35}to{opacity:1}}
+.mappan{position:absolute;inset:0;overflow:hidden;touch-action:none;cursor:grab;background:radial-gradient(#E3D2BA 1.1px,transparent 1.6px) 0 0/22px 22px,#FFFBF3}
+.mappan.dragging{cursor:grabbing}
+#mapInner{position:absolute;left:0;top:0;transform-origin:0 0}
+#mapInner > svg{display:block}
+#mapInner #mapHi{border-width:calc(4px * var(--inv,1))}
+#mapInner #mapPin{transform:translate(-50%,-100%) scale(var(--inv,1));transform-origin:50% 100%}
+#mapZoom{position:absolute;right:14px;bottom:14px;z-index:6;display:flex;flex-direction:column;align-items:center;gap:6px}
+#mapZoom .btn{width:48px;height:48px;min-height:48px;padding:0;font-size:28px}
+#mapZoom span{font-size:14px;background:var(--paper);padding:0 6px;border-radius:6px}
+.fbpin{cursor:pointer}.fbpin.locked>circle{fill:#F3ECE1}
+.vetcard p{margin:6px 0}
+html[data-layout="phone"] #trainPanel{position:relative;right:auto;bottom:auto;top:auto!important;width:auto;flex:none;max-height:34%;border-radius:16px 16px 0 0;border-width:2.5px 0 0;box-shadow:none;padding:8px 10px 6px;z-index:5}
+html[data-layout="phone"] .trbtns .btn{min-height:52px;font-size:21px}
+html[data-layout="phone"] .trbody{gap:5px;padding-top:4px}
+html[data-layout="phone"] .trbody > .trchips{order:1}
+html[data-layout="phone"] .trbody > .trbtns{order:2}
+html[data-layout="phone"] .trbody > .trline{order:3;min-height:0}
+html[data-layout="phone"] .trbody > *{order:4}
+html[data-layout="phone"] .trchip{min-height:54px;width:64px}
+html[data-layout="phone"] .trchip small{display:none}
+html[data-layout="phone"] .trhead .tabs .btn{min-height:44px;font-size:17px}
+html[data-layout="phone"] .trchip{width:70px;min-height:64px}
+html[data-layout="phone"] #mapZoom{bottom:auto;top:64px;right:10px}
+html[data-layout="phone"] #stage.training #placeBtns{display:none}

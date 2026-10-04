@@ -1,0 +1,13 @@
+<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;background:#fff">
+<script src="../../../dogs/pawart_dogs.js"></script>
+<div id="g" style="display:grid;grid-template-columns:repeat(7,200px)"></div>
+<script>
+const MOUTH={ idle: [70, -66], walk: [70, -66], sit: [42, -76], jump: [84, -108], eat: [14, -8], crouch: [58, -16], sleep: [60, -16] };
+const BDX=window.BDX||{};
+const poses=Object.keys(MOUTH), keys=(new URLSearchParams(location.search).get('k')||'corgi,golden,mutt,chihuahua,pug,greyhound,beagle').split(',');
+let h='';
+for(const k of keys)for(const p of poses){const m=MOUTH[p],B=BDX[k]||{},a=B[p]||B.d||[0,0];const mx=120+m[0]+a[0],my=186+m[1]+a[1];
+h+=`<div style="position:relative;width:200px;height:167px;border:1px solid #ddd">${PawArt.dog(k,{pose:p,anim:false})}<div style="position:absolute;left:2px;top:2px;font:11px sans-serif">${k} ${p}</div>
+<svg viewBox="0 0 240 200" style="position:absolute;inset:0;width:200px;height:167px">${[40,80,120,160,200].map(x=>`<line x1="${x}" y1="0" x2="${x}" y2="200" stroke="red" stroke-width=".4"/>`).join('')}${[40,80,120,160].map(y=>`<line x1="0" y1="${y}" x2="240" y2="${y}" stroke="blue" stroke-width=".4"/>`).join('')}<circle cx="${mx}" cy="${my}" r="5" fill="none" stroke="#0a0" stroke-width="2.5"/></svg></div>`}
+document.getElementById('g').innerHTML=h;
+</script></body></html>

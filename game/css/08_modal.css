@@ -1,0 +1,53 @@
+/* ---------- modal ---------- */
+#modal{position:absolute;inset:0;z-index:20;background:rgba(91,61,50,.32);display:flex;align-items:center;justify-content:center;padding:22px}
+.panel{position:relative;width:min(720px,100%);max-height:100%;display:flex;flex-direction:column;padding:20px 24px 18px;transform:rotate(-.5deg);--wash:var(--paper);
+  filter:drop-shadow(0 8px 14px rgba(60,40,25,.25))}
+.panel.shop{width:min(900px,100%)}
+html.pa-panel .panel.celebrate{background:var(--panelart) 0 0/100% 100% no-repeat;--fr:none}
+html.pa-panel .panel.celebrate::before{display:none}
+.panel.pop{animation:panelPop .3s ease-out}
+@keyframes panelPop{from{transform:scale(.85) rotate(-3deg);opacity:.3}}
+.panel h2{margin:0 52px 8px 0;font-family:var(--font-hand);font-weight:700;font-size:40px;line-height:1.05;text-wrap:balance}
+.panel h2 .hl{background:linear-gradient(transparent 55%,rgba(242,143,165,.45) 55% 88%,transparent 88%)}
+.panel .x{position:absolute;right:14px;top:14px}
+.panel-body{overflow:auto;min-height:0;padding:2px}
+.panel p{margin:6px 0;line-height:1.35}
+.foot{display:flex;gap:12px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px}
+.confirm{position:absolute;left:16px;right:16px;bottom:14px;padding:14px 16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end;z-index:3;--wash:var(--w-yellow)}
+.confirm p{flex:1 1 220px;margin:0;font-size:18px}
+.shopgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:18px 16px;padding:12px 4px 84px}
+.sitem{position:relative;padding:14px 10px 12px;display:flex;flex-direction:column;gap:4px;align-items:center;text-align:center;--wash:var(--paper)}
+.sitem .art{width:70px;height:70px}
+.sitem .art svg{width:100%;height:100%}
+.sitem .art.house{width:130px;height:108px}
+.sitem b{font-family:var(--font-hand);font-weight:700;font-size:24px;line-height:1}
+.sitem .desc{font-size:16px;line-height:1.2;flex:1}
+.price{display:flex;align-items:center;gap:4px;font-size:19px;font-variant-numeric:tabular-nums}
+.price .ic{width:24px;height:24px}
+.sitem.lockd{--wash:#F3ECE1}
+.sitem.lockd .art{filter:grayscale(.85) opacity(.55)}
+.tabs{display:flex;gap:10px;margin:2px 0 4px}
+.tabs .btn{font-family:var(--font-hand);font-weight:700;font-size:24px;padding:4px 20px 6px}
+.tabs .btn[aria-selected="true"]{--wash:var(--w-yellow);transform:translateY(-2px) rotate(-1deg)}
+.ward{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:18px;align-items:start}
+.ward .preview{position:relative;padding:10px;background:var(--fr-card) 0 0/100% 100% no-repeat,var(--hatch) var(--ins),linear-gradient(var(--w-blue),var(--w-blue)) var(--ins)}
+.ward .preview svg{width:100%;display:block}
+.slot{margin-bottom:10px}
+.slot h4{margin:0 0 4px;font-family:var(--font-hand);font-weight:700;font-size:25px}
+.opt{min-height:46px;padding:4px 12px;font-size:17px;display:inline-flex;align-items:center;gap:5px;margin:0 8px 8px 0;--wash:var(--paper)}
+.opt[aria-pressed="true"]{--wash:var(--w-yellow)}
+.opt .ic{width:28px;height:28px}
+.results{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin:10px 0}
+.res{padding:8px 10px 10px;text-align:center;--wash:var(--w-cream)}
+.res:nth-child(1){--wash:var(--w-yellow)} .res:nth-child(2){--wash:var(--w-pink)} .res:nth-child(3){--wash:var(--w-lilac)} .res:nth-child(4){--wash:var(--w-blue)} .res:nth-child(5){--wash:var(--w-mint)}
+.res .v{font-size:30px;font-variant-numeric:tabular-nums;font-family:var(--font-read);line-height:1.1}
+.res .k{font-size:16px;color:var(--muted)}
+.haul{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.haul span{display:inline-flex;align-items:center;gap:3px;font-size:17px}
+.haul svg{width:34px;height:34px}
+.unlocks{margin:6px 0;padding-left:0;list-style:none;line-height:1.55;font-size:18px}
+.unlocks li::before{content:"\2726  ";color:var(--pink)}
+.namebox{width:100%;font-size:34px;font-family:var(--font-hand);font-weight:700;padding:6px 16px;color:var(--ink);--wash:var(--paper)}
+.namebox:focus{outline:none;--wash:var(--w-yellow)}
+.lu-doodle{display:block;width:100%;height:44px;margin:-4px 0 2px}
+

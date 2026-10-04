@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Paw Haven: world art B gallery</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Patrick+Hand&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#FFFBF3;--ink:#5B3D32;--dot:#E3D2BA;--card:#FFFFFF;--btn:#FCE6CC}
+  body{margin:0;background:var(--paper) radial-gradient(circle,var(--dot) .9px,transparent 1.2px) 0 0/15px 15px;color:var(--ink);font-family:'Patrick Hand',system-ui,sans-serif}
+  main{max-width:1240px;margin:0 auto;padding:20px 24px 60px}
+  h1{font-family:'Caveat',cursive;font-size:44px;margin:0 0 4px}
+  h2{font-family:'Caveat',cursive;font-size:32px;margin:28px 0 8px;border-bottom:2px dashed #E3D2BA}
+  p.note{margin:0 0 10px;opacity:.8}
+  .grid{display:flex;flex-wrap:wrap;gap:10px}
+  .cell{background:rgba(255,255,255,.75);border:1px solid #EADDCB;border-radius:10px;padding:8px;display:flex;flex-direction:column;align-items:center;gap:4px}
+  .cell code{font-size:11px;font-family:ui-monospace,Menlo,monospace;opacity:.85;text-align:center;max-width:150px;word-break:break-word}
+  .row{display:flex;align-items:flex-end;gap:8px}
+  .i64{width:64px;height:64px}.i32{width:32px;height:32px}.i56{width:56px;height:56px}
+  .btn{background:var(--btn);border-radius:10px;padding:4px}
+  .i96{width:96px;height:96px}.tm{width:240px;height:160px}.tmL{width:480px;height:320px}.c60{width:60px;height:60px}.p120{width:120px;height:120px}
+  .h{width:240px;height:200px}
+  .house{position:relative}
+  .chrome{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
+  .stretch{position:relative}
+  .stretch svg{position:absolute;inset:0;width:100%;height:100%}
+  .stretch span{position:relative;display:block;padding:18px 26px;font-size:20px}
+  .t{font-size:12px;opacity:.7}
+  svg[data-front-only] > :not(defs):not(.pa-bed-front){display:none}
+  #timing{font-family:ui-monospace,monospace;font-size:13px;white-space:pre;background:#fff;padding:10px;border-radius:8px;border:1px solid #EADDCB}
+</style>
+</head>
+<body>
+<main>
+<h1>Paw Haven: world art B</h1>
+<p class="note">Style G "Doodle sketch". Icons at 64px and 32px (and 32px on a button tint), items at 56px, houses at full size.</p>
+<h2>Icons: <code>PawArt.icon(name)</code></h2><div class="grid" id="icons"></div>
+<h2>Shop items: <code>PawArt.item(name)</code></h2><div class="grid" id="items"></div>
+<h2>Treasures (walk finds): <code>PawArt.item(name)</code></h2><p class="note">56px and 96px; the last row is the Journal "not found" pencil silhouette (CSS filter on the same art).</p><div class="grid" id="treasure"></div>
+<h2>Torn map: <code>PawArt.prop('torn-map', {pieces})</code></h2><div class="grid" id="tornmap"></div>
+<h2>v1.6 tricks: <code>icon('sig-*')</code> and <code>prop('hand-signal', {trick})</code></h2><div class="grid" id="tricks"></div>
+<h2>v1.6 café + places</h2><div class="grid" id="cafe"></div>
+<h2>v1.3.1 beds: <code>PawArt.bed(name)</code> + shop icons <code>PawArt.item(name)</code></h2><p class="note">Left: the bed at 260x160 (red line = floor y=152, dot = sleep centre). Right: bed + sleeping dog + the <code>.pa-bed-front</code> group layered on top. Then the 64px icon at 56px.</p><div class="grid" id="beds"></div>
+<h2>Potty props</h2><div class="grid" id="potty"></div>
+<h2>v1.3 garden + kitchen items: <code>PawArt.item(name)</code></h2><p class="note">56px and 96px. People food is drawn normally (the game greys it and adds the badge).</p><div class="grid" id="v13items"></div>
+<h2>Crops: <code>PawArt.prop('crop', {crop, stage, dry})</code> over <code>prop('plot', {water})</code></h2><p class="note">Stages 0-3, then stage 2 and 3 dry. 160x120, soil line y=110 (red).</p><div id="crops"></div>
+<h2>Plots: <code>PawArt.prop('plot', {water})</code></h2><div class="grid" id="plots"></div>
+<h2>Kitchen + garden props</h2><div class="grid" id="kprops"></div>
+<h2>Food bowls: <code>PawArt.prop('bowl', {food})</code></h2><div class="grid" id="bowls"></div>
+<h2>Runner obstacles: <code>PawArt.obstacle(name)</code></h2><p class="note">Shown at 1.5x. The red line marks the viewBox bottom (the ground for low obstacles, the lowest point for high ones).</p><div class="grid" id="obs"></div>
+<h2>v1.2 wide props</h2><div class="grid" id="wide"></div>
+<h2>Dog houses: <code>PawArt.house(name)</code></h2><div class="grid" id="houses"></div>
+<h2>Collectibles: <code>PawArt.collectible(name)</code></h2><div class="grid" id="cols"></div>
+<h2>Props: <code>PawArt.prop(name)</code></h2><div class="grid" id="props"></div>
+<h2>UI chrome: speech, panel, tape (stretched)</h2><div class="chrome" id="chrome"></div>
+<h2>Timings</h2><div id="timing">running...</div>
+</main>
+<script src="../../dogs/pawart_dogs.js"></script>
+<script src="../pawart_world_b.js"></script>
+<script>
+const A=PawArt.WORLD_B,$=s=>document.querySelector(s);
+const API_ICONS=['hunger','happy','energy','clean','bond','coin','feed','play','walk','shop','wardrobe','house','map','home','back','close','bath','sleep','pet','sound-on','sound-off','lock','star','heart','check','speed','settings','journal','bag','nose','charm','chest','w-sunny','w-cloudy','w-rain','w-snow','w-night','w-dawn','w-dusk','music','sfx','ambience','volume','garden','kitchen','seeds','water-can','basket','recipe','drop','paw-stop','season-spring','season-summer','season-autumn','season-winter','fridge','poop-bag','water-spray','sig-sit','sig-paw','sig-down','sig-rollover','sig-spin','sig-playdead','sig-speak','sig-dance','sig-bow','sig-signature','clicker','focus','lure','vet','salon','cafe','square','dogpark','hilltop','pier','notice','stethoscope','scissors'];
+const API_ITEMS=['Basic Kibble','Chicken & Rice Bowl','Salmon Pâté','Bone-shaped Biscuit','Pupcake','Fresh Water','Tennis Ball','Rope Tug','Squeaky Duck','Frisbee','Plush Bone','Puzzle Feeder','Red Bandana','Yellow Raincoat','Knit Winter Sweater','Party Hat','Heart Sunglasses','Superhero Cape','Flower Crown','Bow Tie','Frog Raincoat','Polka-dot Raincoat','Bubble Raincoat','Rain Hat','Pom-pom Beanie'];
+const API_TREASURE=['Acorn Cap','Explorer Goggles','Seashell Necklace','Mossy Poncho','Clover Collar','Wild Berries',"Duck's Picnic Sandwich",'Golden Bone','Driftwood Stick','Rubber Chicken','Glow Ball','Lucky Penny','Sparkle Stone','Old Map Piece (Park)','Old Map Piece (River)','Old Map Piece (Woods)','Old Map Piece (Beach)'];
+API_ITEMS.push(...API_TREASURE);
+const API_V13=['Carrot Seeds','Pea Seeds','Spinach Seeds','Blueberry Seeds','Sweet Potato Seeds','Pumpkin Seeds','Carrot','Peas','Spinach','Blueberries','Sweet Potato','Pumpkin','Oats','Rice','Egg','Chicken','Carrot Crunchies','Chicken & Veggie Rice','Blueberry Pupsicle','Pumpkin Pupcake','Golden Harvest Stew','Spinach Scramble','Mystery Mush','Watering Can','Onion','Garlic','Grapes','Chocolate','Raisins','Coffee','Sugar-free Gum','Macadamia Nuts','Avocado'];
+API_ITEMS.push(...API_V13);
+const API_BEDS=['Old Blanket','Plaid Pillow','Fluffy Donut Bed','Banana Bed','Hammock Cot','Cloud Bed','Royal Canopy Bed'];API_ITEMS.push(...API_BEDS);API_ITEMS.push('Pupuccino','Doggy Donut');
+const API_HOUSES=['Cardboard Box','Classic Wooden Doghouse','Cozy Cottage','Snow Igloo','Treehouse Den','Royal Castle Kennel'];
+const API_COLS=['coin','shell','leaf','bone','flower','acorn','sniff','puddle','dig','chest','map-piece','sparkle-spot','junk-sock','junk-rock'];
+const API_PROPS=['bowl-empty','bowl-full','water-bowl','tub','bubbles','zzz','hearts','ball','frisbee','poop-joke','speech','panel','tape','torn-map','bowl','umbrella','snowman','puzzle-board','puzzle-lid','tug-rope-long','crop','plot','pot','board','oven','dial','recipe-card','squirrel','iou','pip','poop','pee','flies','treat-bit','hand-signal','bulletin'];
+const API_OBS=['log','rock','puddle','mud','sprinkler','snowdrift','crab','sandcastle','branch','bird','sign','kite','bunting','cat','trashcan','hydrant','bicycle','awning','molehill','crate','ropecoil','seagull','fishingline'];
+const OBS_WH={log:[120,50],rock:[80,50],puddle:[220,24],mud:[180,24],sprinkler:[70,70],snowdrift:[140,60],crab:[70,44],sandcastle:[90,70],branch:[240,80],bird:[80,50],sign:[140,80],kite:[160,90],bunting:[260,60],cat:[70,50],trashcan:[60,70],hydrant:[50,60],bicycle:[200,80],awning:[240,80],molehill:[80,36],crate:[80,70],ropecoil:[80,40],seagull:[90,50],fishingline:[220,70]};
+const TM={};const fns={icon:API_ICONS,item:API_ITEMS,house:API_HOUSES,collectible:API_COLS,prop:API_PROPS,obstacle:API_OBS};
+let worst=[0,''],tot=0,cnt=0,lines=[];
+{const t0=performance.now();for(const f in fns)fns[f].forEach(n=>PawArt[f](n));lines.push(`cold pass (JIT warm-up included), all assets: ${(performance.now()-t0).toFixed(1)} ms`);PawArt._wbFlush();}
+for(const f in fns){let mx=0,sum=0,mxn='';fns[f].forEach(n=>{const t0=performance.now();const s=PawArt[f](n);const dt=performance.now()-t0;sum+=dt;if(dt>mx){mx=dt;mxn=n}if(dt>worst[0])worst=[dt,f+':'+n];TM[f+':'+n]=[dt,s.length]});
+  lines.push(`${f.padEnd(12)} n=${String(fns[f].length).padStart(2)}  warm first-build avg ${(sum/fns[f].length).toFixed(2)} ms  max ${mx.toFixed(2)} ms (${mxn})`);tot+=sum;cnt+=fns[f].length}
+let t0=performance.now();for(let k=0;k<20;k++)for(const f in fns)fns[f].forEach(n=>PawArt[f](n));const cached=(performance.now()-t0)/(20*cnt);
+lines.push(`all ${cnt} assets first build total ${tot.toFixed(1)} ms; worst ${worst[0].toFixed(2)} ms (${worst[1]}); cached call avg ${(cached*1000).toFixed(1)} us`);
+window.__TM=TM;window.__timing=lines.join('\n');
+const sized=(svg,cls)=>svg.replace('<svg ','<svg class-x="1" ').replace(/class="([^"]*)"/,`class="$1 ${cls}"`);
+$('#icons').innerHTML=API_ICONS.map(n=>`<div class="cell"><div class="row">${sized(PawArt.icon(n),'i64')}${sized(PawArt.icon(n),'i32')}<div class="btn">${sized(PawArt.icon(n),'i32')}</div></div><code>${n}</code></div>`).join('');
+$('#items').innerHTML=API_ITEMS.filter(n=>!API_TREASURE.includes(n)&&!API_V13.includes(n)&&!API_BEDS.includes(n)&&!['Pupuccino','Doggy Donut'].includes(n)).map(n=>`<div class="cell">${sized(PawArt.item(n),'i56')}<code>${n}</code></div>`).join('');
+$('#treasure').innerHTML=API_TREASURE.map(n=>`<div class="cell"><div class="row">${sized(PawArt.item(n),'i56')}${sized(PawArt.item(n),'i96')}<span style="filter:grayscale(1) brightness(1.15) contrast(.6);opacity:.55">${sized(PawArt.item(n),'i56')}</span></div><code>${n}</code></div>`).join('');
+$('#tornmap').innerHTML=[[],['park'],['river','woods'],['park','river','beach'],['park','river','woods','beach']].map(pc=>`<div class="cell">${sized(PawArt.prop('torn-map',{pieces:pc}),'tm')}<code>{pieces:[${pc.join(', ')}]}</code></div>`).join('')+`<div class="cell">${sized(PawArt.prop('torn-map',{pieces:['park','river','woods','beach']}),'tmL')}<code>complete, 480x320</code></div>`;
+$('#tricks').innerHTML=['sit','paw','down','rollover','spin','playdead','speak','dance','bow','signature'].map(t=>`<div class="cell"><div class="row">${sized(PawArt.prop('hand-signal',{trick:t}),'p120')}${sized(PawArt.icon('sig-'+t),'i64')}${sized(PawArt.icon('sig-'+t),'i32')}</div><code>${t}</code></div>`).join('')+
+ ['clicker','focus','lure'].map(n=>`<div class="cell"><div class="row">${sized(PawArt.icon(n),'i64')}${sized(PawArt.icon(n),'i32')}</div><code>${n}</code></div>`).join('')+`<div class="cell"><div class="row">${PawArt.prop('treat-bit').replace('<svg ','<svg style="width:60px;height:60px" ')}${PawArt.prop('treat-bit').replace('<svg ','<svg style="width:20px;height:20px" ')}</div><code>treat-bit 20x20</code></div>`;
+$('#cafe').innerHTML=['Pupuccino','Doggy Donut'].map(n=>`<div class="cell"><div class="row">${sized(PawArt.item(n),'i56')}${sized(PawArt.item(n),'i96')}${sized(PawArt.prop('bowl',{food:n}),'p120')}</div><code>${n} + bowl</code></div>`).join('')+
+ ['vet','salon','cafe','square','dogpark','hilltop','pier','notice','stethoscope','scissors'].map(n=>`<div class="cell"><div class="row">${sized(PawArt.icon(n),'i64')}${sized(PawArt.icon(n),'i32')}</div><code>${n}</code></div>`).join('')+
+ `<div class="cell">${PawArt.prop('bulletin').replace('<svg ','<svg style="width:160px;height:140px" ')}<code>bulletin 160x140</code></div>`;
+const frontOnly=svg=>svg.replace('<svg ','<svg data-front-only="1" ');
+$('#beds').innerHTML=API_BEDS.map(n=>`<div class="cell"><div class="row"><div style="position:relative;width:260px;height:160px;background:linear-gradient(transparent 151px,#E46F6B 151px,#E46F6B 152px,transparent 152px)">${PawArt.bed(n).replace('<svg ','<svg style="position:absolute;inset:0;width:260px;height:160px" ')}<span style="position:absolute;left:127px;top:92px;width:6px;height:6px;border-radius:3px;background:#E46F6B"></span></div>
+ <div style="position:relative;width:260px;height:160px">${PawArt.bed(n).replace('<svg ','<svg style="position:absolute;inset:0;width:260px;height:160px" ')}${window.PawArt.dog?PawArt.dog('corgi',{pose:'sleep',anim:false}).replace('<svg ','<svg style="position:absolute;left:10px;top:-75px;width:240px;height:200px" '):''}${frontOnly(PawArt.bed(n)).replace('<svg ','<svg style="position:absolute;inset:0;width:260px;height:160px" ')}</div>
+ ${sized(PawArt.item(n),'i56')}</div><code>${n}</code></div>`).join('');
+$('#potty').innerHTML=[['poop',{fresh:true},60,50],['poop',{fresh:false},60,50],['pee',{},100,30],['flies',{},60,40]].map(([n,o,w,h])=>`<div class="cell"><div class="row">${PawArt.prop(n,o).replace('<svg ',`<svg style="width:${w*2}px;height:${h*2}px" `)}${PawArt.prop(n,o).replace('<svg ',`<svg style="width:${w}px;height:${h}px" `)}</div><code>${n} ${JSON.stringify(o)}</code></div>`).join('');
+$('#v13items').innerHTML=API_V13.map(n=>`<div class="cell"><div class="row">${sized(PawArt.item(n),'i56')}${sized(PawArt.item(n),'i96')}</div><code>${n}</code></div>`).join('');
+const CR=['carrot','peas','spinach','blueberries','sweet-potato','pumpkin'];
+$('#crops').innerHTML=CR.map(c=>`<div class="grid" style="margin-bottom:8px">${[[0,0],[1,0],[2,0],[3,0],[2,1],[3,1]].map(([st,d])=>`<div class="cell"><div style="position:relative;width:160px;height:120px;background:linear-gradient(transparent 109px,#E46F6B 109px,#E46F6B 110px,transparent 110px)">${PawArt.prop('crop',{crop:c,stage:st,dry:!!d}).replace('<svg ','<svg style="position:absolute;inset:0;width:160px;height:120px" ')}</div><code>${c} ${st}${d?' dry':''}</code></div>`).join('')}</div>`).join('');
+$('#plots').innerHTML=[0,1,2,3].map(w=>`<div class="cell">${PawArt.prop('plot',{water:w}).replace('<svg ','<svg style="width:160px;height:120px" ')}<code>water ${w}</code></div>`).join('')+
+  `<div class="cell"><div style="position:relative;width:160px;height:120px">${PawArt.prop('plot',{water:2}).replace('<svg ','<svg style="position:absolute;inset:0;width:160px;height:120px" ')}${PawArt.prop('crop',{crop:'pumpkin',stage:3}).replace('<svg ','<svg style="position:absolute;left:0;top:-22px;width:160px;height:120px" ')}</div><code>plot + crop (module offsets)</code></div>`;
+$('#kprops').innerHTML=[['pot',120,120],['board',200,120],['oven',160,160],['dial',160,160],['recipe-card',200,260],['recipe-card',300,200],['squirrel',120,120],['iou',120,80],['pip',160,200]].map(([n,w,h])=>`<div class="cell"><div style="width:${w}px;height:${h}px">${PawArt.prop(n).replace('<svg ',`<svg style="width:${w}px;height:${h}px" `)}</div><code>${n} ${w}x${h}</code></div>`).join('');
+$('#bowls').innerHTML=[undefined,...PawArt.WORLD_B.bowlFoods,'Mystery Soup'].map(f=>`<div class="cell">${sized(PawArt.prop('bowl',{food:f}),'p120')}<code>${f===undefined?'(no food)':f}</code></div>`).join('');
+$('#obs').innerHTML=API_OBS.map(n=>{const [w,h]=OBS_WH[n];return `<div class="cell"><div style="width:${w*1.5}px;height:${h*1.5}px;border-bottom:1.5px solid #E46F6B;outline:1px dashed #EADDCB">${PawArt.obstacle(n).replace('<svg ',`<svg style="width:${w*1.5}px;height:${h*1.5}px" `)}</div><code>${n} ${w}x${h}</code></div>`}).join('');
+$('#wide').innerHTML=[['puzzle-board',240,160],['puzzle-lid',60,60],['tug-rope-long',300,60]].map(([n,w,h])=>`<div class="cell">${PawArt.prop(n).replace('<svg ',`<svg style="width:${w}px;height:${h}px" `)}<code>${n} ${w}x${h}</code></div>`).join('')+
+ `<div class="cell"><div style="position:relative;width:240px;height:160px">${PawArt.prop('puzzle-board').replace('<svg ','<svg style="position:absolute;inset:0;width:240px;height:160px" ')}${[60,180].map(x=>PawArt.prop('puzzle-lid').replace('<svg ',`<svg style="position:absolute;left:${x-30}px;top:50px;width:60px;height:60px" `)).join('')}</div><code>board + 2 lids at hole centres</code></div>`;
+$('#houses').innerHTML=API_HOUSES.map(n=>`<div class="cell">${sized(PawArt.house(n),'h')}<code>${n}</code></div>`).join('');
+$('#cols').innerHTML=API_COLS.map(n=>`<div class="cell">${sized(PawArt.collectible(n),'c60')}<code>${n}</code></div>`).join('');
+$('#props').innerHTML=API_PROPS.filter(n=>!['speech','panel','tape','torn-map','bowl','puzzle-board','puzzle-lid','tug-rope-long','crop','plot','pot','board','oven','dial','recipe-card','squirrel','iou','pip','poop','pee','flies','treat-bit','hand-signal','bulletin'].includes(n)).map(n=>`<div class="cell">${sized(PawArt.prop(n),'p120')}<code>${n}</code></div>`).join('');
+const st=(n,w,h,txt)=>`<div class="cell"><div class="stretch" style="width:${w}px;height:${h}px">${PawArt.prop(n)}<span>${txt||''}</span></div><code>prop('${n}') ${w}x${h}</code></div>`;
+$('#chrome').innerHTML=st('speech',200,120,'Woof?')+st('speech',420,110,'Mochi is judging your outfit choices.')+st('speech',170,220,'heh.')+
+  st('panel',300,200,'Panel')+st('panel',560,170,'Wide panel: Bow-Wow Boutique')+st('panel',220,360,'Tall panel')+
+  `<div class="cell">${sized(PawArt.prop('tape'),'')}<code>prop('tape') 120x30</code></div><div class="cell"><div style="width:240px;height:30px">${PawArt.prop('tape').replace('<svg ','<svg style="width:240px;height:30px" ')}</div><code>tape at 240x30</code></div>`;
+// missing-name check + timings (first build vs cached call)
+const miss=[];[['icon',API_ICONS],['item',API_ITEMS],['house',API_HOUSES],['collectible',API_COLS],['prop',API_PROPS],['obstacle',API_OBS]].forEach(([f,l])=>l.forEach(n=>{if(!A[{icon:'icons',item:'items',house:'houses',collectible:'collectibles',prop:'props',obstacle:'obstacles'}[f]].includes(n))miss.push(f+':'+n)}));
+window.__missing=miss;$('#timing').textContent=window.__timing+(miss.length?'\nMISSING: '+miss.join(', '):'\nall API names present');
+</script>
+</body>
+</html>

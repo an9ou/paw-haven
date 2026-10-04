@@ -1,0 +1,6 @@
+/* ---------- toasts: sticky notes ---------- */
+#toasts{position:absolute;left:50%;top:76px;transform:translateX(-50%);z-index:15;display:flex;flex-direction:column;gap:10px;align-items:center;pointer-events:none;width:min(80%,520px)}
+.toast{position:relative;padding:8px 18px 9px;font-size:18px;text-align:center;animation:toastIn .25s ease-out;--wash:var(--paper);filter:drop-shadow(0 3px 4px rgba(60,40,25,.18))}
+.toast.good{--wash:var(--w-mint)}.toast.bad{--wash:var(--w-pink)}.toast.gold{--wash:var(--w-yellow)}
+@keyframes toastIn{from{transform:translateY(-10px) rotate(-3deg);opacity:0}}
+

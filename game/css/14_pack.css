@@ -1,0 +1,19 @@
+/* ---------- v1.5 pack ---------- */
+#hudMood{position:relative;left:-14px;top:16px;margin-right:-10px}
+.mood{display:inline-block;width:12px;height:12px;border-radius:50%;border:2px solid var(--ink);background:#7CC47F;flex:none}
+.mood.amber{background:#F5B942} .mood.red{background:#E2574C}
+#hudPack{display:flex;gap:6px;margin-left:4px}
+.dchip{position:relative;width:42px;height:42px;padding:3px;border:2px solid var(--ink);border-radius:50% 46% 52% 48%;background:var(--paper);cursor:pointer}
+.dchip svg{width:100%;height:100%;display:block}
+.dchip .mood{position:absolute;right:-3px;bottom:-2px;width:11px;height:11px}
+.dchip .dsx{position:absolute;left:-4px;top:-6px;font-size:13px;font-weight:700;color:var(--ink)}
+.dchip:hover{transform:translateY(-2px) rotate(-3deg)}
+.pd-wander{animation:pdWander 7s ease-in-out infinite alternate}
+@keyframes pdWander{0%{transform:translateX(-4px)}100%{transform:translateX(4px)}}
+.tk-bounce{animation:tkBounce .5s ease-out}
+@keyframes tkBounce{40%{transform:translateY(-22px)}}
+.onway-dog{display:flex;gap:6px}
+.shcard .shdog{width:150px;height:125px}
+.shcard .shdog svg{width:100%;height:100%}
+.shh{font-family:var(--font-hand);font-size:28px;margin:10px 0 0}
+.pdogs .btn .ic{width:28px;height:28px}

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kitchen Test Bench</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Gloria+Hallelujah&family=Patrick+Hand&display=swap">
+<style>
+body{margin:0;background:#E6D7BF;font-family:'Patrick Hand',sans-serif;color:#5B3D32}
+#bar{display:flex;flex-wrap:wrap;gap:6px;padding:0 20px;align-items:center;height:72px;box-sizing:border-box}
+#bar button{font:20px 'Caveat',cursive;font-weight:700;border:2px solid #5B3D32;border-radius:10px;background:#FFFBF3;padding:0 10px;cursor:pointer}
+#bar select{font:16px 'Patrick Hand'}
+#host{position:relative;width:1240px;height:620px;margin:0 20px;background:#FFFBF3;border:2px solid #5B3D32;box-sizing:content-box}
+#log{position:fixed;right:6px;bottom:4px;font:11px monospace;max-width:520px;white-space:pre-wrap;color:#5B3D32;opacity:.7;pointer-events:none}
+</style></head><body>
+<div id="bar"></div>
+<div id="host"></div>
+<div id="log"></div>
+<script src="../../dogs/pawart_dogs.js"></script>
+<script src="../../world/pawart_world_a.js"></script>
+<script src="../../world/pawart_world_b.js"></script>
+<script src="../kitchen.js"></script>
+<script>
+const bar = document.getElementById('bar'), host = document.getElementById('host'), logEl = document.getElementById('log');
+window.__log = { cooks: [], safety: [], sfx: [], says: [], closes: 0 };
+let ctl = null;
+const sel = (id, opts) => { const s = document.createElement('select'); s.id = id; opts.forEach(o => { const e = document.createElement('option'); e.textContent = o; s.appendChild(e); }); bar.appendChild(s); return s; };
+const dogSel = sel('dogSel', ['shiba', 'corgi', 'golden', 'dachs', 'husky', 'mutt']);
+const timeSel = sel('timeSel', ['day', 'dawn', 'dusk', 'night']);
+const wxSel = sel('wxSel', ['sunny', 'cloudy', 'rain', 'snow']);
+function log(t) { logEl.textContent = (t + '\n' + logEl.textContent).slice(0, 900); }
+// fake game inventory, updated through onCook exactly like the game would
+window.INV = null;
+function freshInv() {
+  return { known: ['carrot-crunchies', 'chicken-veggie-rice', 'blueberry-pupsicle'], best: { 'carrot-crunchies': 3 },
+    pantry: { oats: 4, rice: 2, egg: 2, chicken: 2 }, crops: { carrot: [1, 2, 0], peas: [3, 0, 0], spinach: [1, 0, 0], blueberries: [0, 2, 1], 'sweet-potato': [0, 0, 0], pumpkin: [1, 0, 0] },
+    fridge: { count: 2, max: 8 } };
+}
+window.openKitchen = function (o) {
+  o = o || {}; if (ctl) { ctl.close(); ctl = null; }
+  if (!INV || o.reset) INV = freshInv();
+  if (o.fridgeCount != null) INV.fridge.count = o.fridgeCount;
+  const key = o.dog || dogSel.value, D = (PawArt.DOGS || []).find(d => d.key === key) || { name: 'Pup' };
+  ctl = PawKitchen.open(host, {
+    dog: { key, name: D.name, outfit: { head: null, eyes: null, neck: 'Red Bandana', body: null } },
+    time: o.time || timeSel.value, weather: o.weather || wxSel.value,
+    known: INV.known, best: INV.best, pantry: INV.pantry, crops: INV.crops, fridge: INV.fridge,
+    rng: o.rng,
+    sfx: (n) => { __log.sfx.push(n); },
+    say: (t, ms) => { __log.says.push(t); log('say ' + t); },
+    onCook: (r) => {
+      __log.cooks.push(r); log('onCook ' + JSON.stringify(r));
+      r.used.forEach(u => { if (u.id === 'water') return; if (u.stars) INV.crops[u.id][u.stars - 1]--; else INV.pantry[u.id]--; });
+      INV.fridge.count++;
+      if (r.recipe !== 'mystery-mush') { if (!INV.known.includes(r.recipe)) INV.known.push(r.recipe); INV.best[r.recipe] = Math.max(INV.best[r.recipe] || 0, r.stars); }
+      setTimeout(() => ctl && ctl.update({ pantry: INV.pantry, crops: INV.crops, fridge: INV.fridge, known: INV.known, best: INV.best }), 50);
+    },
+    onSafety: (id) => { __log.safety.push(id); log('onSafety ' + id); },
+    onClose: () => { __log.closes++; log('onClose'); ctl = null; }
+  });
+  window.__ctl = ctl; return ctl;
+};
+[['Open kitchen', () => openKitchen()], ['Reset + open', () => openKitchen({ reset: true })], ['Full fridge', () => openKitchen({ fridgeCount: 8 })], ['Close', () => ctl && ctl.close()]]
+  .forEach(([t, f]) => { const b = document.createElement('button'); b.textContent = t; b.onclick = f; bar.appendChild(b); });
+openKitchen({ reset: true, dog: 'corgi' });
+</script>
+</body></html>

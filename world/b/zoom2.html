@@ -1,0 +1,8 @@
+<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#FFFBF3;display:flex;flex-wrap:wrap;gap:6px;padding:6px;align-items:flex-end}svg{background:#fff;border:1px solid #eee}</style>
+<script src="../pawart_world_b.js"></script>
+<script>
+const s=(h,w)=>h.replace('<svg ',`<svg style="width:${w}px;height:${w}px" `);
+document.write([s(PawArt.icon('feed'),128),s(PawArt.icon('feed'),32),s(PawArt.icon('pet'),128),s(PawArt.icon('pet'),32),s(PawArt.item('Rope Tug'),128),s(PawArt.item('Rope Tug'),56),s(PawArt.item('Flower Crown'),128),s(PawArt.item('Flower Crown'),56),s(PawArt.prop('bowl-full'),180),s(PawArt.item('Basic Kibble'),128)].join('')
+ +PawArt.house('Snow Igloo').replace('<svg ','<svg style="width:480px;height:400px" ')+PawArt.house('Royal Castle Kennel').replace('<svg ','<svg style="width:480px;height:400px" '));
+</script>

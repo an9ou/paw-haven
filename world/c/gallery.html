@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>World Art C Gallery</title>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Patrick+Hand&family=Gloria+Hallelujah&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F3EBDD;--ink:#5B3D32;--line:#E3D2BA;--card:#FFFBF3}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.4 'Patrick Hand',system-ui,sans-serif;padding:20px}
+h1,h2{font-family:'Caveat',cursive;font-weight:700;margin:22px 0 8px}h1{font-size:40px}h2{font-size:30px}
+code{font:13px ui-monospace,Menlo,monospace;background:#fff;padding:2px 6px;border-radius:6px}
+.scene{width:1280px;height:720px;border:2px solid var(--line);border-radius:10px;overflow:hidden;background:var(--card);position:relative}
+.scene svg,.cell svg{display:block;width:100%;height:100%}
+.grid{display:grid;grid-template-columns:70px repeat(4,300px);gap:6px;align-items:center;width:max-content}
+.grid .hd{font:18px 'Caveat',cursive;font-weight:700;text-align:center}
+.cell{width:300px;height:180px;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--card)}
+.strip{display:flex;width:1200px;height:200px;border:2px solid var(--line);border-radius:10px;overflow:hidden;position:relative;margin-bottom:6px}
+.strip svg{display:block;width:600px;height:200px;flex:none}
+.strip::after{content:"seam";position:absolute;left:600px;top:0;bottom:0;border-left:2px dashed rgba(242,143,165,.8);color:#F28FA5;font:14px 'Patrick Hand';padding-left:4px}
+.strip .gl{position:absolute;left:0;right:0;top:165px;border-top:2px dashed rgba(224,69,123,.7)}
+.lab{font-size:15px;margin:4px 0 2px}
+#perf{background:#fff;border-radius:10px;padding:8px 12px;display:inline-block;max-width:1240px}
+section{margin-bottom:10px}
+.showhot .pa-wc-hl{opacity:1!important}
+.row{display:flex;gap:8px;flex-wrap:wrap;width:1250px}.row .cell{width:410px;height:246px}
+</style></head><body>
+<h1>Paw Haven world art, module C: the bigger town</h1>
+<p id="perf"></p>
+<div id="out"></div>
+<script src="../pawart_world_a.js"></script>
+<script src="../pawart_world_b.js"></script>
+<script src="../pawart_world_c.js"></script>
+<script>
+const P=window.PawArt,T=['dawn','day','dusk','night'],W=['sunny','cloudy','rain','snow'];let h='';const times=[];
+const S=['square','cafe','dogpark','vet','salon','hilltop','pier'],R=['town','hilltop','pier'];
+const t=f=>{const a=performance.now();const s=f();times.push(performance.now()-a);return s};
+// overlay zones: dog area, bowl spot, right decor zone (dashed)
+const zones=s=>s.replace(/<\/svg>$/,'<g fill="none" stroke="#E0457B" stroke-width="3" stroke-dasharray="10 6" pointer-events="none"><rect x="300" y="330" width="260" height="170"/><path d="M290 500h280" stroke-dasharray="none"/><circle cx="250" cy="520" r="26"/><rect x="620" y="330" width="240" height="190"/></g></svg>');
+const grid=name=>{let g=`<section class="sec-${name}"><h2>${name}: 4 times × 4 weathers <code>PawArt.scene('${name}', {time, weather})</code> (day+sunny: zones dashed, hotspot outline on)</h2><div class="grid"><div></div>${W.map(w=>`<div class="hd">${w}</div>`).join('')}`;
+  T.forEach(tm=>{g+=`<div class="hd">${tm}</div>`;W.forEach(w=>{const s=t(()=>P.scene(name,{time:tm,weather:w}));g+=`<div class="cell${tm==='day'&&w==='sunny'?' showhot':''}">${tm==='day'&&w==='sunny'?zones(s):s}</div>`})});return g+'</div></section>'};
+S.forEach(n=>h+=grid(n));
+h+='<section class="sec-close"><h2>full size at 1280×720 (zones dashed, hotspot outlines forced on)</h2>';
+S.forEach(n=>{h+=`<div class="lab"><code>PawArt.scene('${n}')</code></div><div class="scene showhot">${zones(P.scene(n))}</div>`});
+h+='</section><section class="sec-close2"><h2>full size: night + rain / dusk + snow</h2>';
+[['cafe',{time:'night',weather:'rain'}],['square',{time:'night',weather:'rain'}],['pier',{time:'night',weather:'sunny'}],['salon',{time:'dusk',weather:'snow'}],['hilltop',{time:'dawn',weather:'snow'}],['vet',{time:'night',weather:'snow'}],['dogpark',{time:'dusk',weather:'cloudy'}]].forEach(([n,o])=>{h+=`<div class="lab"><code>PawArt.scene('${n}', ${JSON.stringify(o)})</code></div><div class="scene">${P.scene(n,o)}</div>`});
+h+='</section><section class="sec-strips"><h2>walk strips, each tiled twice (seam dashed, ground y=330 dashed)</h2>';
+R.forEach(a=>[{},{time:'night',weather:'rain'},{time:'day',weather:'snow'}].forEach(o=>{const s=t(()=>P.walkStrip(a,o));h+=`<div class="lab"><code>PawArt.walkStrip('${a}', ${JSON.stringify(o)})</code></div><div class="strip">${s}${P.walkStrip(a,o)}<div class="gl"></div></div>`}));
+h+='</section><section class="sec-stripgrid"><h2>strips: dawn/dusk/cloudy check</h2>';
+R.forEach(a=>[{time:'dawn',weather:'sunny'},{time:'dusk',weather:'cloudy'}].forEach(o=>{h+=`<div class="lab"><code>PawArt.walkStrip('${a}', ${JSON.stringify(o)})</code></div><div class="strip">${P.walkStrip(a,o)}${P.walkStrip(a,o)}<div class="gl"></div></div>`}));
+h+='</section><section class="sec-deleg"><h2>delegation check: world A still draws these through the wrapped functions</h2><div class="row">';
+[["scene('yard')",()=>P.scene('yard')],["scene('park', {time:'night', weather:'rain'})",()=>P.scene('park',{time:'night',weather:'rain'})],["scene('market')",()=>P.scene('market')]].forEach(([l,f])=>{h+=`<div><div class="lab"><code>${l}</code></div><div class="cell">${f()}</div></div>`});
+h+=`</div><div class="lab"><code>walkStrip('park')</code></div><div class="strip">${P.walkStrip('park')}${P.walkStrip('park')}</div><div class="lab">icon('cafe') from world B: <span style="display:inline-block;width:48px;height:48px;vertical-align:middle">${P.icon('cafe')}</span> &nbsp; delegation ok: <b id="dok"></b></div></section>`;
+document.getElementById('out').innerHTML=h;
+const ok=/pa-wa-yard/.test(P.scene('yard'))&&/pa-wa-park/.test(P.scene('park'))&&/pa-wa-strip-park/.test(P.walkStrip('park'))&&/pa-wc-square/.test(P.scene('square'))&&/pa-wc-strip-town/.test(P.walkStrip('town'));
+document.getElementById('dok').textContent=ok?'yes':'NO';
+const avg=times.reduce((a,b)=>a+b,0)/times.length;
+document.getElementById('perf').textContent=`${times.length} fresh renders in the browser: avg ${avg.toFixed(1)} ms, max ${Math.max(...times).toFixed(1)} ms. Hotspots: ${[...document.querySelectorAll('.sec-close [data-hot]')].map(e=>e.getAttribute('data-hot')).join(', ')}. css: ${!!document.getElementById('pawart-world-c-css')}`;
+document.addEventListener('click',e=>{const g=e.target.closest('[data-hot]');if(g)document.getElementById('perf').textContent+=' | clicked '+g.getAttribute('data-hot')});
+</script>
+</body></html>

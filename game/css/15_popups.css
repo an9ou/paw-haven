@@ -1,0 +1,33 @@
+/* ---------- v1.3.1 popups ---------- */
+#stage:not(.flowdock) #dock{position:absolute;left:0;right:0;top:0;bottom:var(--barH);max-height:none;padding:22px 22px 18px;background:rgba(91,61,50,.32);align-items:center;justify-content:center;z-index:15}
+#stage.nobar:not(.flowdock) #dock{bottom:0}
+#stage:not(.flowdock) #dock > .tray{width:min(760px,100%);max-height:min(460px,100%);padding:18px 22px 16px;transform:rotate(-.4deg);filter:drop-shadow(0 8px 14px rgba(60,40,25,.25));animation:panelPop .15s ease-out;position:relative}
+#stage:not(.flowdock) #dock > .tray::before{content:"";position:absolute;width:70px;height:18px;top:-8px;left:-14px;transform:rotate(-28deg);background:var(--tape,rgba(242,143,165,.55));opacity:.85;border-radius:2px}
+#stage:not(.flowdock) #dock > .tray .row{flex-wrap:wrap;overflow:visible}
+#stage:not(.flowdock) #dock > .tray .tray-h h3{font-size:34px}
+#stage:not(.flowdock) #dock:has(> .tray.mini){background:none;pointer-events:none;align-items:flex-start;justify-content:flex-end;padding:0 0 16px 18px}
+#stage:not(.flowdock) #dock > .tray.mini{pointer-events:auto;width:auto;max-width:min(560px,60%);max-height:70%;animation:none;transform:rotate(-.6deg)}
+#stage:not(.flowdock) #dock > .tray.mini .tray-h h3{font-size:26px}
+#stage:not(.nobar) #modal{bottom:var(--barH)}
+.panel.journal{width:min(980px,100%)}
+.card.off{opacity:.45;filter:grayscale(.7)}
+.awaynote{display:flex;align-items:center;gap:12px;margin:4px 0 0;flex-wrap:wrap}
+.awaynote p{margin:0;flex:1}
+.soon-card{padding:18px;text-align:center;max-width:520px;margin:20px auto}
+.soon-card .stamp{font-size:20px}
+.btn.soon{opacity:.75;--wash:var(--w-lilac)}
+.tk-dip{animation:tkDip 1.4s ease-in-out}
+@keyframes tkDip{30%,80%{transform:translateY(10px) scaleY(.94)}}
+.mess .flies{animation:fliesBob 1.2s ease-in-out infinite alternate}
+@keyframes fliesBob{to{transform:translate(3px,-4px)}}
+.bedfront svg *{visibility:hidden}
+.bedfront svg .pa-bed-front,.bedfront svg .pa-bed-front *{visibility:visible}
+#mapX{position:absolute;right:14px;top:12px;z-index:6}
+#mapTip{position:absolute;z-index:6;padding:6px 14px 7px;font-family:var(--font-hand);font-weight:700;font-size:23px;white-space:nowrap;pointer-events:none;background:var(--paper);border:2px solid var(--ink);border-radius:12px 8px 14px 9px;box-shadow:2px 3px 0 rgba(91,61,50,.25)}
+#mapHi{position:absolute;z-index:5;pointer-events:none;border:3px dashed #F28FA5;border-radius:18px 12px 20px 14px}
+#mapPin{position:absolute;z-index:5;pointer-events:none;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center}
+#mapPin svg{width:34px;height:48px;animation:pinBob 1.6s ease-in-out infinite alternate}
+#mapPin span{font-family:var(--font-hand);font-weight:700;font-size:20px;background:var(--paper);padding:0 8px;border-radius:8px;border:1.5px solid var(--ink);margin-top:-4px;transform:rotate(-3deg)}
+@keyframes pinBob{to{transform:translateY(-5px)}}
+html[data-motion="off"] *, html[data-motion="off"] *::before, html[data-motion="off"] *::after{animation:none!important;transition:none!important}
+@media (prefers-reduced-motion: reduce){ html:not([data-motion="on"]) *, html:not([data-motion="on"]) *::before{animation:none!important;transition:none!important} }

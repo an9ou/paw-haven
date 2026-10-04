@@ -1,0 +1,36 @@
+/* Layout: a 16:9 sketchbook page lying on a kraft desk (laptop first). Pencil frames are
+   stretchable SVG data URIs generated at boot (--fr-*); colour is a coloured-pencil wash with
+   light hatching, drifting a few px off the line. The crude crayon dogs are the joke. */
+:root{
+  --desk:#E6D7BF;          /* page chrome around the sketchbook */
+  --desk-fg:#5B3D32;
+  --paper:#FFFBF3;         /* sketchbook paper (fixed in both themes) */
+  --dot:#E3D2BA;
+  --ink:#5B3D32;           /* warm brown pencil */
+  --graph:#A8968A;         /* graphite construction lines */
+  --pink:#F28FA5;
+  --w-yellow:#FFE3A1; --w-mint:#C8E9CF; --w-blue:#CBE0F4; --w-pink:#F9D0D9; --w-peach:#FCD8BC; --w-lilac:#E0D5F0; --w-cream:#FFF4DF;
+  --m-hunger:#F4A262; --m-happy:#F2C744; --m-energy:#86B3EA; --m-clean:#86CFD6; --m-bond:#F28FA5;
+  --muted:#8A7468;
+  --font-hand:'Caveat','Patrick Hand','Comic Sans MS',cursive;
+  --font-read:'Patrick Hand','Trebuchet MS',sans-serif;
+  --font-scrawl:var(--font-hand);
+  --hatch:repeating-linear-gradient(-58deg,rgba(255,255,255,.34) 0 1.6px,transparent 1.6px 5px);
+  --ins:4px 3px/calc(100% - 7px) calc(100% - 7px) no-repeat;
+  --wash:var(--paper);
+  --fr:none;
+  --barH:74px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --desk:#2b231e; --desk-fg:#E6D7BF; color-scheme:dark } }
+:root[data-theme="dark"]{ --desk:#2b231e; --desk-fg:#E6D7BF; color-scheme:dark }
+
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;color:var(--desk-fg);font-family:var(--font-read);font-size:17px;display:flex;align-items:center;justify-content:center;
+  padding-block:10px;padding-inline:16px;box-sizing:border-box;overflow:hidden;
+  background:radial-gradient(rgba(0,0,0,.035) 1px,transparent 1.5px) 0 0/7px 7px,var(--desk)}
+*{box-sizing:border-box}
+button,input{font-family:var(--font-read);font-size:17px;color:var(--ink)}
+button{cursor:pointer}
+:focus-visible{outline:2.5px dashed var(--pink);outline-offset:3px}
+

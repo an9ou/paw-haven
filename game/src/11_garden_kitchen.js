@@ -1,0 +1,244 @@
+/* ======================= v1.3: Garden & Kitchen (integrator side) ======================= */
+const PG = () => (window.PawGarden && typeof window.PawGarden === 'object' ? window.PawGarden : null);
+const PK = () => (window.PawKitchen && typeof window.PawKitchen === 'object' ? window.PawKitchen : null);
+const CROPS_FB = [
+  { id: 'peas', name: 'Peas', seasons: ['spring'], days: 2, regrow: null, yield: 3, seed: 6, sell: 5, hardy: false, seedItem: 'Pea Seeds', item: 'Peas' },
+  { id: 'spinach', name: 'Spinach', seasons: ['winter', 'spring'], days: 2, regrow: null, yield: 2, seed: 6, sell: 6, hardy: true, seedItem: 'Spinach Seeds', item: 'Spinach' },
+  { id: 'carrot', name: 'Carrot', seasons: ['spring', 'autumn'], days: 3, regrow: null, yield: 2, seed: 8, sell: 9, hardy: false, seedItem: 'Carrot Seeds', item: 'Carrot' },
+  { id: 'blueberries', name: 'Blueberries', seasons: ['summer'], days: 5, regrow: 3, yield: 4, seed: 40, sell: 3, hardy: false, seedItem: 'Blueberry Seeds', item: 'Blueberries' },
+  { id: 'sweet-potato', name: 'Sweet Potato', seasons: ['summer', 'autumn'], days: 5, regrow: null, yield: 2, seed: 12, sell: 16, hardy: false, seedItem: 'Sweet Potato Seeds', item: 'Sweet Potato' },
+  { id: 'pumpkin', name: 'Pumpkin', seasons: ['autumn'], days: 6, regrow: null, yield: 1, seed: 20, sell: 40, hardy: false, seedItem: 'Pumpkin Seeds', item: 'Pumpkin' }
+];
+const RECIPES_FB = [
+  { id: 'carrot-crunchies', name: 'Carrot Crunchies', ingredients: ['carrot', 'oats'], steps: ['chop', 'bake'], effect: { hunger: 20, happy: 10, buff: { id: 'walk15', walks: 1 } }, unlock: 'start', hint: 'Something orange and something oaty.' },
+  { id: 'chicken-veggie-rice', name: 'Chicken & Veggie Rice', ingredients: ['chicken', 'rice', 'carrot', 'peas'], steps: ['chop', 'stir'], effect: { hunger: 60, happy: 15, bond: 10 }, unlock: 'start', hint: 'A proper dinner with four things.' },
+  { id: 'blueberry-pupsicle', name: 'Blueberry Pupsicle', ingredients: ['blueberries', 'water'], steps: ['chill'], effect: { energy: 10, buff: { id: 'cool', hours: 24 } }, unlock: 'start', hint: 'Berries and something cold.' },
+  { id: 'pumpkin-pupcake', name: 'Pumpkin Pupcake', ingredients: ['pumpkin', 'oats', 'egg'], steps: ['stir', 'bake'], effect: { hunger: 20, happy: 30, bond: 25 }, unlock: 'experiment', hint: 'Autumn in a cupcake. Three things.' },
+  { id: 'golden-harvest-stew', name: 'Golden Harvest Stew', ingredients: ['sweet-potato', 'pumpkin', 'chicken', 'rice'], steps: ['chop', 'stir', 'simmer'], effect: { hunger: 50, buff: { id: 'warm', hours: 24 } }, unlock: 'experiment', hint: 'Two orange veggies, chicken and rice.' },
+  { id: 'spinach-scramble', name: 'Spinach Scramble', ingredients: ['egg', 'spinach'], steps: ['stir'], effect: { hunger: 25, buff: { id: 'dig1', walks: 1 } }, unlock: 'experiment', hint: 'Something green and something you crack.' },
+  { id: 'mystery-mush', name: 'Mystery Mush', ingredients: [], steps: [], effect: { hunger: 15 }, unlock: 'result' }
+];
+const PANTRY_FB = [{ id: 'oats', name: 'Oats', price: 2 }, { id: 'rice', name: 'Rice', price: 3 }, { id: 'egg', name: 'Egg', price: 3 }, { id: 'chicken', name: 'Chicken', price: 8 }];
+const PEOPLE_FB = [
+  { id: 'onion', name: 'Onion', where: ['rack', 'junk'], why: "Onions (and garlic, leeks and chives) damage a dog's red blood cells, cooked or raw.", swap: 'Carrots are a crunchy swap.' },
+  { id: 'garlic', name: 'Garlic', where: ['rack'], why: 'Garlic is in the onion family and can cause anaemia in dogs, even as powder.', swap: 'Try peas instead.' },
+  { id: 'grapes', name: 'Grapes', where: ['rack', 'junk'], why: 'Grapes and raisins can cause sudden kidney failure in dogs, and there is no known safe amount.', swap: 'Blueberries are a great swap.' },
+  { id: 'chocolate', name: 'Chocolate', where: ['pantry'], why: "Chocolate has theobromine and caffeine, which can make a dog's heart race; dark chocolate is worst.", swap: 'Carrot Crunchies are a safe treat.' },
+  { id: 'raisins', name: 'Raisins', where: ['pantry'], why: 'Raisins are dried grapes and can cause kidney failure in dogs.', swap: 'Blueberries instead.' },
+  { id: 'coffee', name: 'Coffee', where: ['pantry'], why: "Caffeine makes a dog's heart race and can cause tremors.", swap: 'Fresh water.' },
+  { id: 'gum', name: 'Sugar-free Gum', where: ['pantry'], why: "It often contains xylitol, which drops a dog's blood sugar fast and can harm the liver.", swap: 'A Pumpkin Pupcake instead.' },
+  { id: 'macadamia', name: 'Macadamia Nuts', where: ['pantry'], why: 'Macadamia nuts cause weakness, wobbly legs, vomiting and fever in dogs.', swap: 'Oats are fine.' },
+  { id: 'avocado', name: 'Avocado', where: ['pantry'], why: "Avocado contains persin, which can upset a dog's stomach, and the pit can block the gut.", swap: 'Spinach Scramble instead.' }
+];
+const DISH_FAV = { shiba: 'golden-harvest-stew', corgi: 'chicken-veggie-rice', golden: 'carrot-crunchies', dachs: 'spinach-scramble', husky: 'blueberry-pupsicle', mutt: 'golden-harvest-stew', chihuahua: 'chicken-veggie-rice', pug: 'pumpkin-pupcake', greyhound: 'carrot-crunchies', beagle: 'golden-harvest-stew' };
+const BUDDY_FB = { shiba: 'inspect', corgi: 'guard', golden: 'fetch', dachs: 'dig', husky: 'snow', mutt: 'tend', chihuahua: 'guard', pug: 'tend', greyhound: 'fetch', beagle: 'inspect' };
+const START_RECIPES = ['carrot-crunchies', 'chicken-veggie-rice', 'blueberry-pupsicle'];
+const CROP_PLURAL = { carrot: 'carrots', peas: 'peas', spinach: 'spinach', blueberries: 'blueberries', 'sweet-potato': 'sweet potatoes', pumpkin: 'pumpkin' };
+const CROP_ONE = { carrot: 'carrot', peas: 'pea pod', spinach: 'spinach leaf', blueberries: 'blueberry', 'sweet-potato': 'sweet potato', pumpkin: 'pumpkin' };
+function modData(fn, key, fb) { try { const m = fn(); const v = m && m[key]; return v && (Array.isArray(v) ? v.length : Object.keys(v).length) ? v : fb; } catch (e) { return fb; } }
+const cropsList = () => modData(PG, 'CROPS', CROPS_FB);
+const recipesList = () => modData(PK, 'RECIPES', RECIPES_FB);
+const peopleFood = () => modData(PK, 'PEOPLE_FOOD', PEOPLE_FB);
+const pantryList = () => modData(PK, 'PANTRY', PANTRY_FB).filter((x) => x.id !== 'water');
+const cropInfo = (id) => cropsList().find((c) => c.id === id) || CROPS_FB.find((c) => c.id === id);
+const recipeInfo = (id) => recipesList().find((r) => r.id === id) || RECIPES_FB.find((r) => r.id === id);
+const buddyNow = () => modData(PG, 'BUDDY', BUDDY_FB)[S.dog.key] || null;
+const monthNow = () => new Date().getMonth() + 1;
+const seasonOf = (m) => ([12, 1, 2].includes(m) ? 'winter' : m <= 5 ? 'spring' : m <= 8 ? 'summer' : 'autumn');
+function gardenNew() {
+  try { if (PG() && PG().newState) return PG().newState(); } catch (e) { /* module failed */ }
+  return { v: 1, plots: Array.from({ length: 6 }, () => ({ crop: null, g: 0, water: 0, dry: 0, inSeason: true, inspected: false, ready: null, took: 0, planted: null, harvested: 0 })), last: weatherPeriodKey(), harvests: {} };
+}
+function gkFields(s, existing) {
+  s.inv.seeds = s.inv.seeds || (existing ? { carrot: 3, peas: 3 } : { carrot: 3, peas: 3 }); s.inv.crops = s.inv.crops || {};
+  s.inv.pantry = s.inv.pantry || { oats: 0, rice: 0, egg: 0, chicken: 0 }; s.inv.dishes = s.inv.dishes || [];
+  s.recipes = s.recipes || { known: START_RECIPES.slice(), best: {} }; if (s.buff === undefined) s.buff = null;
+  s.dishLog = s.dishLog || { date: '', count: 0, bond: false }; s.safetySeen = s.safetySeen || []; s.cropBest = s.cropBest || {};
+}
+const patchState = () => { const pl = (S.garden && S.garden.plots) || []; return pl.some((p) => p.crop && p.g >= 1) ? 'ready' : pl.some((p) => p.crop) ? 'growing' : 'empty'; };
+const gardenUnlocked = () => !!(S.gkEarly || topBond() >= 2);
+const kitchenUnlocked = () => !!(S.gkEarly || topBond() >= 3);
+const seedCounts = () => Object.assign({}, S.inv.seeds);
+function mergeHarvests(st) { const a = (S.garden && S.garden.harvests) || {}, b = st.harvests || {}; const out = {}; new Set(Object.keys(a).concat(Object.keys(b))).forEach((k) => { out[k] = Math.max(a[k] || 0, b[k] || 0); }); st.harvests = out; return st; }
+let gardenCtl = null, kitchenCtl = null, lastGardenTick = 0;
+function gardenAdvance(extra) {
+  const m = PG(); if (!S || !S.garden || !m || typeof m.advance !== 'function') return;
+  try {
+    const r = m.advance(S.garden, Object.assign({ now: Date.now(), weatherAt: weatherForKey, buddy: buddyNow(), maxPeriods: 90 }, extra || {}));
+    if (r && r.state) { S.garden = mergeHarvests(r.state); markDirty(); (r.events || []).slice(0, 4).forEach(gardenEvent); }
+  } catch (e) { console.warn('PawGarden.advance failed', e); }
+  if (gardenCtl && gardenCtl.update) { try { gardenCtl.update({ state: S.garden, time: timePhase(), weather: weatherNow(), seeds: seedCounts() }); } catch (e) { /* ignore */ } }
+}
+function gardenEvent(ev) {
+  const c = ev.crop || (S.garden.plots[ev.plot] || {}).crop; const pl = CROP_PLURAL[c] || 'veggies';
+  if (ev.type === 'ready') toast(`The ${pl} ${['spinach', 'pumpkin'].includes(c) ? 'is' : 'are'} ready!`, 'good');
+  if (ev.type === 'squirrel') { sfx('squirrel'); barkDog(D(), D().key === 'shiba' && Math.random() < 1 / 3 ? 'scream' : 'alert', {}); toast(`Captain Fluff took one ${CROP_ONE[c] || 'veggie'} and left an IOU.`, 'bad'); }
+  if (ev.type === 'tend') toast(`${NAME()} brought water for the ${pl}. ${PR().He} is very proud.`, 'good');
+}
+function weatherForKey(key) {
+  if (key === weatherPeriodKey() && ENV.weather !== 'auto') return ENV.weather;
+  const [y, m, d, per] = String(key).split('-').map(Number);
+  const r = seeded((y * 400 + m * 32 + d) * 7 + per * 131 + 17)();
+  return r < 0.45 ? 'sunny' : r < 0.70 ? 'cloudy' : r < 0.95 ? 'rain' : [12, 1, 2].includes(m) ? 'snow' : 'rain';
+}
+function openGarden() {
+  if (!gkOn()) { comingSoon('garden'); return; }
+  if (S.place !== 'yard') { goHomeFor('garden'); return; }
+  if (!gardenUnlocked()) { nope('The garden opens at Bond 2.'); return; }
+  if (!PG() || typeof PG().open !== 'function') { toast('The garden is having a nap. Try again later.'); return; }
+  go('garden');
+}
+function openKitchen() {
+  if (!kOn()) { comingSoon('kitchen'); return; }
+  if (S.place !== 'house') { goHomeFor('kitchen'); return; }
+  if (!kitchenUnlocked()) { nope('The kitchen opens at Bond 3.'); return; }
+  if (!PK() || typeof PK().open !== 'function') { toast('The kitchen is having a nap. Try again later.'); return; }
+  go('kitchen');
+}
+function goHomeFor(what) {
+  const where = what === 'garden' ? 'yard' : 'house';
+  const p = openModal(what === 'garden' ? 'The garden is at home' : 'The kitchen is in the house', `<p>${what === 'garden' ? 'The veggie patch is in the Home Yard.' : 'The kitchen is in the Cozy House.'} ${esc(NAME())} can take you there.</p>`, { foot: `<button class="btn" id="ghNo">Not now</button><button class="btn yes" id="ghGo">Go home</button>` });
+  $('#ghNo', p).onclick = () => closeModal();
+  $('#ghGo', p).onclick = () => { modalClose = null; closeModal(); travelTo(where); setTimeout(() => { if (S.place === where) (what === 'garden' ? openGarden : openKitchen)(); }, 1500); };
+}
+function enterGarden() {
+  setChrome(true, false); dock.innerHTML = ''; view.innerHTML = '';
+  gardenAdvance(); const e = envNow(); let closed = false;
+  const o = {
+    state: S.garden, time: e.time, weather: e.weather, month: monthNow(), dog: dogForMod(), buddy: buddyNow(), seeds: seedCounts(), sfx,
+    say: (t) => toast(t),
+    onPlant: (plot, cropId) => { if (!(S.inv.seeds[cropId] > 0)) return false; S.inv.seeds[cropId]--; markDirty(); return true; },
+    onHarvest: (plot, items, took) => {
+      (items || []).forEach((it) => { const a = S.inv.crops[it.crop] = S.inv.crops[it.crop] || [0, 0, 0]; a[clamp((it.stars || 1) - 1, 0, 2)]++; S.cropBest[it.crop] = Math.max(S.cropBest[it.crop] || 0, it.stars || 1); });
+      const c = items && items[0] && items[0].crop; if (c) { S.garden.harvests = S.garden.harvests || {}; S.garden.harvests[c] = (S.garden.harvests[c] || 0) + 1; }
+      audioCue('harvest'); markDirty(); if (items && items.length) toast(`Harvested ${items.length} ${CROP_PLURAL[c] || c}${took ? ` (Captain Fluff's IOU: -${took})` : ''}. ${NAME()} sniffs ${PR().his} share hopefully.`, 'good');
+    },
+    onBonusSeed: (cropId) => { S.inv.seeds[cropId] = (S.inv.seeds[cropId] || 0) + 1; markDirty(); toast(`${NAME()} dug up a bonus ${cropInfo(cropId) ? cropInfo(cropId).seedItem : 'seed'}! ${PR().He} is unbearable about it.`, 'gold'); },
+    onChange: (st) => { if (st) { S.garden = mergeHarvests(st); markDirty(); saveNow(); } },
+    onClose: () => { if (closed) return; closed = true; if (cur.mode === 'garden') go('yard'); }
+  };
+  try { gardenCtl = PG().open(showHost(), o); }
+  catch (err) { console.warn('PawGarden.open failed', err); hideHost(); toast('The garden is having a nap. Try again later.'); setTimeout(() => go('yard'), 0); return; }
+  const iv = setInterval(() => gardenAdvance(), 60000);
+  onCleanup(() => { clearInterval(iv); closed = true; const c = gardenCtl; gardenCtl = null; try { if (c && c.close) c.close(); } catch (er) { /* ignore */ } hideHost(); });
+}
+function consumeIngredient(u) {
+  const id = u && (u.id || u); if (!id || id === 'water') return;
+  if (id in S.inv.pantry) { S.inv.pantry[id] = Math.max(0, (S.inv.pantry[id] || 0) - 1); return; }
+  const a = S.inv.crops[id]; if (!a) return;
+  let i = u.stars ? u.stars - 1 : -1; if (i < 0 || !a[i]) i = a[2] ? 2 : a[1] ? 1 : 0; a[i] = Math.max(0, a[i] - 1);
+}
+function walkJunk(forceSafety) {
+  if (forceSafety || Math.random() < 0.1) { const f = PICK(peopleFood().filter((x) => x.where.includes('junk'))); safetyNote(f.id, 'It went to the town compost. (+5 coins)'); return { text: `${f.name}? ${f.why} It went to the town compost.`, coins: 5, safety: f.id }; }
+  const j = PICK(JUNK); return { text: j[1], coins: RINT(5, 15) };
+}
+function safetyNote(id, extra) {
+  const f = peopleFood().find((x) => x.id === id); if (!f) return;
+  if (!S.safetySeen.includes(id)) { S.safetySeen.push(id); markDirty(); }
+  toast(`${f.name}: ${f.why} ${f.swap}${extra ? ' ' + extra : ''}`, 'bad');
+}
+function enterKitchen() {
+  setChrome(true, false); dock.innerHTML = ''; view.innerHTML = ''; let closed = false; const e = envNow();
+  if (!S.safetySeen.includes('salt')) S.safetySeen.push('salt'); // the module shows the salt note itself
+  const o = {
+    dog: dogForMod(), time: e.time, weather: e.weather, known: S.recipes.known.slice(), best: Object.assign({}, S.recipes.best),
+    pantry: Object.assign({}, S.inv.pantry), crops: JSON.parse(JSON.stringify(S.inv.crops)), fridge: { count: S.inv.dishes.length, max: 8 }, sfx, say: (t) => toast(t),
+    onCook: (r) => {
+      if (!r || !r.recipe) return;
+      (r.used || []).forEach(consumeIngredient);
+      if (S.inv.dishes.length < 8) S.inv.dishes.push({ id: r.recipe, stars: clamp(r.stars || 1, 1, 3) });
+      if (r.recipe !== 'mystery-mush') {
+        if (!S.recipes.known.includes(r.recipe)) S.recipes.known.push(r.recipe);
+        S.recipes.best[r.recipe] = Math.max(S.recipes.best[r.recipe] || 0, r.stars || 1);
+      }
+      audioCue(r.discovered ? 'discover' : 'cooked');
+      const prep = { pumpkin: 'Always cooked and plain.', 'sweet-potato': 'Always cooked and plain.', spinach: 'Small amounts only, so recipes use one.', chicken: 'Boneless, because cooked bones splinter.' };
+      (r.used || []).forEach((u) => { const id = u && (u.id || u); if (prep[id] && !S.safetySeen.includes('prep-' + id)) S.safetySeen.push('prep-' + id); }); // the reveal card shows the note
+      markDirty(); saveNow();
+      const ri = recipeInfo(r.recipe); toast(`${ri ? ri.name : 'A dish'} ${'★'.repeat(r.stars || 1)} is in the fridge (${S.inv.dishes.length}/8).${r.discovered ? ' NEW recipe!' : ''} ${NAME()} is drooling. ${PR().He} saw everything.`, 'gold');
+      if (kitchenCtl && kitchenCtl.update) { try { kitchenCtl.update({ pantry: Object.assign({}, S.inv.pantry), crops: JSON.parse(JSON.stringify(S.inv.crops)), fridge: { count: S.inv.dishes.length, max: 8 }, known: S.recipes.known.slice(), best: Object.assign({}, S.recipes.best) }); } catch (er) { /* ignore */ } }
+    },
+    onSafety: (id) => { if (!S.safetySeen.includes(id)) { S.safetySeen.push(id); markDirty(); } }, // the module shows the note
+    onClose: () => { if (closed) return; closed = true; if (cur.mode === 'kitchen') go('yard'); }
+  };
+  try { kitchenCtl = PK().open(showHost(), o); }
+  catch (err) { console.warn('PawKitchen.open failed', err); hideHost(); toast('The kitchen is having a nap. Try again later.'); setTimeout(() => go('yard'), 0); return; }
+  onCleanup(() => { closed = true; const c = kitchenCtl; kitchenCtl = null; try { if (c && c.close) c.close(); } catch (er) { /* ignore */ } hideHost(); });
+}
+/* ---- Pip's Sprout Cart ---- */
+let pipTab = 'seeds';
+const STAR_MULT = [1, 1.5, 2];
+function openPip(tab) {
+  if (!gkOn()) { SFX.boop(620); const pip = artReal('prop', 'pip'); openModal("Pip's Sprout Cart", `<div class="pip-top">${pip ? `<span class="pip-art">${pip}</span>` : ''}<p>"Setting up! Back soon with seeds." <span class="small">Pip is untangling a very long hose.</span></p></div>${soonCard('garden')}`, { cls: 'shop' }); return; }
+  if (tab) pipTab = tab; audioPlace('shop'); SFX.boop(620);
+  const sz = seasonOf(monthNow()), pip = artReal('prop', 'pip');
+  const tabs = [['seeds', 'Seeds'], ['sell', 'Sell crops'], ['people', 'People gardens only']];
+  let body = '';
+  if (pipTab === 'seeds') body = `<div class="shopgrid">${cropsList().slice().sort((a, b) => (b.seasons.includes(sz) ? 1 : 0) - (a.seasons.includes(sz) ? 1 : 0)).map((c) => `<div class="sitem"><span class="art">${art('item', c.seedItem)}</span><b>${esc(c.seedItem)}</b>${c.seasons.includes(sz) ? '<span class="stamp r1">In season</span>' : ''}<span class="desc">${esc(c.seasons.join(', '))} · ${c.days} days · ${c.yield} per harvest${c.regrow ? ' · regrows' : ''}${c.hardy ? ' · hardy' : ''}</span>${priceHTML(c.seed + ' each')}<span class="small">You have ${S.inv.seeds[c.id] || 0}</span><button class="btn yes" data-seed="${c.id}">Buy…</button></div>`).join('')}</div>`;
+  else if (pipTab === 'sell') {
+    const rows = []; cropsList().forEach((c) => { const a = S.inv.crops[c.id] || [0, 0, 0]; a.forEach((n, i) => { if (n > 0) rows.push(`<div class="sitem"><span class="art">${art('item', c.item)}</span><b>${esc(c.name)} ${'★'.repeat(i + 1)}</b><span class="desc">x${n} · ${c.sell} × ${STAR_MULT[i]} = ${Math.round(c.sell * STAR_MULT[i])} each</span><button class="btn yes" data-sell="${c.id}|${i}">Sell…</button></div>`); }); });
+    body = rows.length ? `<div class="shopgrid">${rows.join('')}</div>` : '<p>No crops to sell yet. Grow some in the garden at home!</p>';
+  } else body = `<p class="small">Pip grows these for people only. They are never sold to dog owners. Tap one to see why.</p><div class="shopgrid">${peopleFood().filter((f) => f.where.includes('rack')).map((f) => `<button class="sitem lockd people" data-people="${f.id}"><span class="art">${art('item', f.name)}</span><span class="pawstop">${iconOr('paw-stop', '<circle r="12" fill="#F28FA5" stroke="#5B3D32" stroke-width="2"/><path d="M-6 0h12" stroke="#fff" stroke-width="3"/>')}</span><b>${esc(f.name)}</b><span class="desc">Not for dogs</span></button>`).join('')}</div>`;
+  const p = openModal("Pip's Sprout Cart", `<div class="pip-top">${pip ? `<span class="pip-art">${pip}</span>` : ''}<p>"Howdy! Seeds for the patch, and I buy what you grow. Season now: <b>${sz}</b>." <span class="small">You have ${S.coins} Paw Coins.</span></p></div><div class="tabs" role="tablist">${tabs.map(([k, l]) => `<button class="btn" role="tab" data-ptab="${k}" aria-selected="${pipTab === k}">${l}</button>`).join('')}</div>${body}`, { cls: 'shop' });
+  p.querySelectorAll('[data-ptab]').forEach((b) => { b.onclick = () => openPip(b.dataset.ptab); });
+  p.querySelectorAll('[data-seed]').forEach((b) => { b.onclick = async () => { const c = cropInfo(b.dataset.seed); SFX.click(); const q = await buyWindow(p, { art: art('item', c.seedItem), name: c.seedItem, desc: `${c.seasons.join(', ')} · ${c.days} days · ${c.yield} per harvest`, price: c.seed, stack: true, have: S.inv.seeds[c.id] || 0, haveLabel: 'In pouch' }); if (!q) return; const cost = c.seed * q; if (S.coins < cost) { nope('Not enough coins. Have you tried being rich?'); return; } S.coins -= cost; S.inv.seeds[c.id] = (S.inv.seeds[c.id] || 0) + q; SFX.kaching(); markDirty(); updateHUD(); toast(`Bought ${q} × ${c.seedItem}. Pip tips that enormous hat.`, 'gold'); openPip(); }; });
+  p.querySelectorAll('[data-sell]').forEach((b) => { b.onclick = async () => { const [id, i] = b.dataset.sell.split('|'), c = cropInfo(id), a = S.inv.crops[id]; if (!a || !a[+i]) return; SFX.click(); const each = Math.round(c.sell * STAR_MULT[+i]); const q0 = await buyWindow(p, { art: art('item', c.item), name: `${c.name} ${'★'.repeat(+i + 1)}`, desc: `Pip pays ${c.sell} × ${STAR_MULT[+i]} for ${+i + 1}-star ${c.name.toLowerCase()}.`, price: each, sell: true, max: a[+i], have: a[+i], haveLabel: 'In basket' }); const q = Math.min(q0, a[+i]); if (!q) return; a[+i] -= q; const got = addCoins(Math.round(c.sell * STAR_MULT[+i]) * q, { raw: true }); SFX.kaching(); markDirty(); toast(`Sold ${q} ${c.name} for ${got} coins. Pip says ${NAME()} is a fine farm dog.`, 'gold'); openPip(); }; });
+  p.querySelectorAll('[data-people]').forEach((b) => { b.onclick = () => safetyNote(b.dataset.people); });
+}
+/* ---- dishes: feeding, limits, buffs ---- */
+const todayKey = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
+function buffOn(id) { const b = S && S.buff; if (!b || b.id !== id) return false; if (b.until) return Date.now() < b.until; return (b.walks || 0) > 0; }
+function buffTick() { if (S && S.buff && S.buff.until && Date.now() >= S.buff.until) { const n = S.buff.dish; S.buff = null; markDirty(); toast(`The ${n || 'dish'} buff wore off.`); } }
+function buffLabel() { const b = S.buff; if (!b) return ''; if (b.until) { const h = Math.max(0, (b.until - Date.now()) / 36e5); return h >= 1 ? `${Math.ceil(h)}h` : `${Math.ceil(h * 60)}m`; } return 'next walk'; }
+const BUFF_TXT = { walk15: 'next walk +15 s', cool: 'cool for 24 h: no heat, walks tire less', warm: 'warm for 24 h: no shivers, slower Happiness drop', dig1: 'next walk: +1 dig' };
+function eatDish(id, stars) {
+  if (busy) return; const r = recipeInfo(id); if (!r) return;
+  if (!atHome()) { nope('Meals are served at home. Dishes count as meals, so they wait in the fridge.'); return; }
+  if (S.sleeping) { nope(`${NAME()} is asleep. Wake ${PR().him} first (Care menu).`); return; }
+  if (S.dishLog.date !== todayKey()) S.dishLog = { date: todayKey(), count: 0, bond: false };
+  if (S.dishLog.count >= 2) { nope('Treats are extras. Real vets say about a tenth of a dog\'s food. Kibble for the rest of today!'); return; }
+  const i = S.inv.dishes.findIndex((d) => d.id === id && d.stars === stars); if (i < 0) return;
+  S.inv.dishes.splice(i, 1); S.dishLog.count++; busy = true; hideBubble(); markDirty(); popDown(); pottyAfter('meal');
+  S.bowl = r.name; setBowl(r.name); dogTo(-125, 0, 1, 0.8); renderDog('walk', 'left');
+  setTimeout(() => { renderDog('eat', 'left'); SFX.crunch(); }, 850);
+  setTimeout(() => {
+    S.bowl = null; setBowl(null);
+    const m = [1, 1.25, 1.5][stars - 1] || 1, fx = r.effect || {}, fav = DISH_FAV[S.dog.key] === id;
+    addStat('hunger', (fx.hunger || 0) * m); addStat('energy', (fx.energy || 0) * m);
+    const hp = Math.round((fx.happy || 0) * m * (fav ? 1.5 : 1)); addStat('happy', hp);
+    let bp = 0; if (!S.dishLog.bond && ((fx.bond || 0) > 0 || fav)) { bp = addBond(Math.min(37, Math.floor((fx.bond || 0) * m + (fav ? 10 : 0))), { raw: true }); S.dishLog.bond = true; }
+    let buffMsg = '';
+    if (fx.buff && fx.buff.id) { S.buff = { id: fx.buff.id, until: fx.buff.hours ? Date.now() + fx.buff.hours * 36e5 : null, walks: fx.buff.walks || (fx.buff.hours ? 0 : 1), dish: r.name }; buffMsg = ` Buff: ${BUFF_TXT[fx.buff.id] || fx.buff.id}.`; }
+    const P0 = PR();
+    toast(`${NAME()} licked the ${r.name} bowl clean.${hp ? ` +${hp} Happiness.` : ''}${bp ? ` +${bp} Bond.` : ''}${fav ? ` ${P0.His} favourite dish! ${P0.He} does a happy wiggle.` : ''}${buffMsg} (Dishes today: ${S.dishLog.count}/2)`, 'good');
+    setTemp('happy', 1600); dogTo(0, 0, 1, 0.8); updateHUD(); markDirty();
+    setTimeout(() => { busy = false; renderDog(dogPoseNow()); }, 900);
+    if (dock.querySelector('[data-food],[data-dish]')) openFeedTray();
+  }, 2300);
+}
+function dishRowHTML(off) {
+  if (!S.inv.dishes.length) return '';
+  const g = {}; S.inv.dishes.forEach((d) => { const k = d.id + '|' + d.stars; g[k] = (g[k] || 0) + 1; });
+  return `${Object.keys(g).map((k) => { const [id, st] = k.split('|'), r = recipeInfo(id); return `<button class="card ${off ? 'off meal' : ''}" data-dish="${k}" ${off ? 'aria-disabled="true"' : ''} aria-label="Feed ${esc(r ? r.name : id)}${off ? ' (meals are served at home)' : ''}"><span class="cnt">${g[k]}</span><span class="art">${art('item', r ? r.name : id)}</span><b>${esc(r ? r.name : id)}</b><span class="small stars">${'★'.repeat(+st)}${DISH_FAV[S.dog.key] === id ? ' fav!' : ''} · dish</span></button>`; }).join('')}`;
+}
+/* ---- journal tabs: garden, recipes, profile ---- */
+function journalGarden() {
+  const sz = seasonOf(monthNow());
+  return `<div class="jtop"><div class="jprog"><b>${(S.garden.plots || []).filter((p) => p.crop).length} / 6</b><span class="small">plots planted · season now: ${sz} · buddy perk: ${esc(buddyNow() || 'none')}</span></div><div><button class="btn yes big" data-jopen="garden">Open garden</button></div></div>
+    <div class="jgrid">${cropsList().map((c) => `<div class="jent"><span class="art">${art('item', c.item)}</span><b>${esc(c.name)}</b>${c.seasons.includes(sz) ? '<span class="stamp r1">In season</span>' : ''}<span class="ab">Seasons: ${esc(c.seasons.join(', '))}. ${c.days} days to grow${c.regrow ? `, regrows in ${c.regrow}` : ''}. Sells for ${c.sell} (1★).</span><span class="small">Harvested ${(S.garden.harvests || {})[c.id] || 0} times · best ${S.cropBest[c.id] ? '★'.repeat(S.cropBest[c.id]) : 'none yet'} · seeds: ${S.inv.seeds[c.id] || 0}</span></div>`).join('')}</div>`;
+}
+function journalRecipes() {
+  return `<div class="jtop"><div class="jprog"><b>${S.recipes.known.length} / 6</b><span class="small">recipes known · fridge ${S.inv.dishes.length}/8 · ${S.buff ? 'buff: ' + esc(BUFF_TXT[S.buff.id] || S.buff.id) : 'no buff active'}</span></div><div><button class="btn yes big" data-jopen="kitchen">Open kitchen</button></div></div>
+    <div class="jgrid">${recipesList().filter((r) => r.id !== 'mystery-mush').map((r) => { const k = S.recipes.known.includes(r.id), fx = r.effect || {}; return k ? `<div class="jent"><span class="art">${art('item', r.name)}</span><b>${esc(r.name)}</b>${DISH_FAV[S.dog.key] === r.id ? `<span class="stamp r3">${esc(NAME())}'s favourite</span>` : ''}<span class="ab">${r.ingredients.map((i) => esc((cropInfo(i) || pantryList().find((x) => x.id === i) || { name: i === 'water' ? 'Fresh Water' : i }).name)).join(' + ')}. ${['hunger', 'happy', 'energy', 'bond'].filter((x) => fx[x]).map((x) => `${{ hunger: 'Hunger', happy: 'Happiness', energy: 'Energy', bond: 'Bond' }[x]} +${fx[x]}`).join(', ')}${fx.buff ? '. ' + (BUFF_TXT[fx.buff.id] || '') : ''}</span><span class="small">Best: ${S.recipes.best[r.id] ? '★'.repeat(S.recipes.best[r.id]) : 'not cooked yet'}</span></div>` : `<div class="jent unk"><span class="art">${art('item', r.name)}</span><b>???</b><span class="small">${esc(r.hint || 'Experiment in the kitchen.')} (${r.ingredients.length} ingredients)</span></div>`; }).join('')}</div>`;
+}
+function journalProfile() {
+  const d = S.dog, m = ageMonths(), st = lifeStage(m), ss = seasonStatus(), info = dogInfo(d.key);
+  const bday = (() => { const b = new Date(d.born + 'T00:00:00'), next = 12 - (m % 12); return `Born ${d.born} · next birthday in ${next} day${next > 1 ? 's' : ''}`; })();
+  return `<div class="profile"><div class="pf-head"><span class="portrait big">${headSVG(d)}</span><div><h3>${esc(d.name)} ${sexSym(d.sex)}</h3><p>${d.sex === 'female' ? 'Girl' : d.sex === 'male' ? 'Boy' : 'Paperwork pending'} · ${esc(info.breed)} · ${esc(info.personality)}</p><p class="coatline">${esc(coatNameOf(d))} coat, ${esc(eyesOf(d))} eyes${d.rescue ? ` · <b>Rescued on ${esc(d.rescue.date)}</b>` : ''}</p><p><b>${ageText(m)}</b> old (${st})${st === 'senior' ? ` · ${PR().He} has a distinguished grey muzzle now.` : ''}</p><p class="small">${bday}. One real day is one dog month.</p></div></div>
+    <p class="small potty">Potty stats: Scooped: ${(S.potty || {}).scooped || 0}. Accidents indoors: ${(S.potty || {}).accidents || 0}. ${((S.potty || {}).accidents || 0) === 0 ? `A spotless record. ${PR().He} would like that framed.` : 'Nobody is perfect. Especially not the rug.'}</p>
+    <div class="pf-grid"><div class="jent"><b>Family tree</b><svg viewBox="0 0 160 70" class="pf-tree"><path d="M80 60 V38 M40 38 H120 M40 38 V18 M120 38 V18" fill="none" stroke="#A8968A" stroke-width="2" stroke-dasharray="4 4"/><circle cx="40" cy="14" r="9" fill="none" stroke="#A8968A" stroke-width="2"/><circle cx="120" cy="14" r="9" fill="none" stroke="#A8968A" stroke-width="2"/><text x="40" y="18" text-anchor="middle" font-size="11" fill="#A8968A">?</text><text x="120" y="18" text-anchor="middle" font-size="11" fill="#A8968A">?</text></svg><span class="small">Parents: unknown (${d.rescue ? 'rescued' : 'shelter starter'})</span></div>
+      <div class="jent"><b>${d.sex === 'female' ? 'Season' : 'Playdates'}</b><span class="ab season ${ss.inSeason ? 'on' : ''}">${esc(ss.txt)}</span><span class="small">${d.sex === 'female' ? `Litters: ${d.litters || 0} of ${BREEDING.RULES.female.maxLitters}` : 'Boys have no season.'} · fixed: ${d.fixed ? 'yes' : 'no'}</span></div>
+      <div class="jent"><b>Genes</b><span class="genes">${['B', 'D', 'E', 'S', 'M', 'Bl'].map((g) => `<span class="gslot">${g}<i>?</i></span>`).join('')}</span><span class="small">Hidden: a Gene test will be available at the vet in v2.</span></div>
+      <div class="jent teaser"><b>Puppy Playdates</b><span class="ab">Coming in v2: a boy and a girl, both adults, can have puppies, following real dog rules. Same-sex pairs can still be best friends.</span></div></div></div>`;
+}
+

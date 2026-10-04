@@ -1,0 +1,282 @@
+/* ======================= v1.5A: more dogs ======================= */
+const PER_DOG = ['stats', 'bond', 'outfit', 'potty', 'sleeping', 'dishLog', 'buff', 'glowUntil', 'pupUntil', 'tricks'];
+const HOUSE_CAP = { 'Cardboard Box': 1, 'Classic Wooden Doghouse': 1, 'Cozy Cottage': 2, 'Snow Igloo': 2, 'Treehouse Den': 3, 'Royal Castle Kennel': 4 };
+const PGN = () => (window.PawGenes && typeof window.PawGenes.phenotype === 'function' ? window.PawGenes : null);
+const D = () => S.dog; // the active dog
+const capacity = () => HOUSE_CAP[S.house] || 1;
+const topBond = () => (S && S.dogs ? Math.max(...S.dogs.map((d) => (d.bond && d.bond.level) || 1)) : 1);
+const dogById = (id) => S.dogs.find((d) => d.id === id) || null;
+const others = () => S.dogs.filter((d) => d.id !== S.activeId);
+function hashId(s) { let h = 2166136261; s = String(s); for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+function activeOf(s) { return s.dogs.find((d) => d.id === s.activeId) || s.dogs[0]; }
+function dogDefaults(d, s) {
+  d.id = d.id || 'd_' + Math.random().toString(36).slice(2, 9);
+  d.stats = d.stats || { hunger: 70, happy: 70, energy: 80, clean: 80 };
+  d.bond = d.bond || { level: 1, pts: 0 };
+  d.outfit = d.outfit || { head: null, eyes: null, neck: null, body: null, charm: null }; if (!('charm' in d.outfit)) d.outfit.charm = null;
+  const gm = s.gameMin || 0;
+  d.potty = d.potty || { poopDue: null, peeDue: null, nextPee: gm + RINT(240, 360), lastOut: gm, scooped: 0, accidents: 0 };
+  if (d.sleeping == null) d.sleeping = false;
+  d.dishLog = d.dishLog || { date: '', count: 0, bond: false }; if (d.buff === undefined) d.buff = null;
+  if (d.glowUntil == null) d.glowUntil = -1; if (d.pupUntil == null) d.pupUntil = -1; d.tricks = d.tricks || {};
+  if (d.rescue === undefined) d.rescue = null; d.adoptedAt = d.adoptedAt || localISO();
+}
+/* S.dogs is the truth; S.dog / S.stats / S.bond / ... are live aliases of the active dog, so v1.0-v1.3 code keeps working. */
+function linkDogs(s) {
+  if (!s) return s;
+  if (!Array.isArray(s.dogs) || !s.dogs.length) {
+    if (!s.dog) return s;
+    const d = Object.assign({}, s.dog);
+    PER_DOG.forEach((k) => { if (s[k] !== undefined) d[k] = s[k]; });
+    s.dogs = [d]; s.activeId = d.id || null;
+  }
+  ['dog'].concat(PER_DOG).forEach((k) => { delete s[k]; });
+  s.dogs.forEach((d) => dogDefaults(d, s));
+  if (!s.dogs.some((d) => d.id === s.activeId)) s.activeId = s.dogs[0].id;
+  Object.defineProperty(s, 'dog', { get() { return activeOf(s); }, set(v) { if (v && typeof v === 'object') Object.assign(activeOf(s), v); }, enumerable: true, configurable: true });
+  PER_DOG.forEach((k) => Object.defineProperty(s, k, { get() { return activeOf(s)[k]; }, set(v) { activeOf(s)[k] = v; }, enumerable: true, configurable: true }));
+  return s;
+}
+function withDog(d, fn) { const was = S.activeId; S.activeId = d.id; try { return fn(); } finally { S.activeId = was; } }
+const PRd = (d) => withDog(d, () => PR());
+
+/* ---- genes -> coat (cached) ---- */
+const coatCache = new Map();
+function coatInfo(d) {
+  if (!d) return null; const G = PGN(); if (!G || !d.genes) return null;
+  const k = d.id + '|' + d.key + '|' + JSON.stringify(d.genes); if (coatCache.has(k)) return coatCache.get(k);
+  let v = null; try { const p = G.phenotype(d.genes, d.key, d.id); if (p && p.coat) v = p; } catch (e) { v = null; }
+  coatCache.set(k, v); return v;
+}
+function dogOpts(d, o) { const c = coatInfo(d); return c ? Object.assign({}, o || {}, { coat: c.coat, seed: hashId(d.id) }) : Object.assign({}, o || {}); }
+const outfitOf = (d) => ({ head: d.outfit.head, eyes: d.outfit.eyes, neck: d.outfit.neck, body: d.outfit.body });
+const ROACH = { greyhound: true }; // v1.7: greyhounds sleep upside down ("roaching")
+function dogSVG(d, o) { if (o && o.pose === 'sleep' && ROACH[d.key] && poseReal(d.key, 'rollover')) o = Object.assign({}, o, { pose: 'rollover', roach: true }); return dogArtSafe(d.key, dogOpts(d, o)); }
+function headSVG(d) { const c = coatInfo(d); return c ? art('dogHead', d.key, { coat: c.coat, seed: hashId(d.id) }) : art('dogHead', d.key); }
+const coatNameOf = (d) => { const c = coatInfo(d); return c ? c.coatName : d.coat || ''; };
+const eyesOf = (d) => { const c = coatInfo(d); return c ? c.eyes : d.eyes || 'brown'; };
+function moodOf(d) { const lo = Math.min(...Object.values(d.stats)); return lo < 25 ? 'red' : lo < 50 ? 'amber' : 'green'; }
+
+/* ---- switching ---- */
+function switchDog(id, opts = {}) {
+  const d = dogById(id); if (!d || id === S.activeId) return;
+  if (busy) { nope(`Hold on, ${NAME()} is busy.`); return; }
+  S.activeId = id; markDirty(); hudDogKey = ''; dogKey = ''; SFX.boop(760);
+  if (cur.mode === 'yard') { go('yard'); setTimeout(() => { const fx = $('#dogFx'); if (fx) { fx.classList.remove('tk-bounce'); void fx.getBBox(); fx.classList.add('tk-bounce'); } const h = dogHeadWorld(); say(PICK([`${d.name} reporting for duty.`, `${d.name}'s turn! ${PRd(d).He} has been waiting politely. Ish.`, `${d.name} steps up.`]), h.x, h.y, 1800); }, 60); }
+  else { setHudDog(); updateHUD(); }
+}
+
+/* ---- the pack in hub scenes ---- */
+/* v1.7 fix: secondary dogs stand on the floor beside or in front of the furniture, never on it, and never in the dog-house or bed zone.
+   [feet x, feet y, facing, scale]; scale shrinks with depth. Spots were solved against each scene's furniture, the active dog, the bowl and the place buttons. */
+const PACK_SPOTS = {yard: [[250, 402, 'right', 0.52], [930, 438, 'left', 0.57], [120, 402, 'right', 0.52]], house: [[250, 414, 'right', 0.53], [930, 424, 'left', 0.53], [115, 586, 'right', 0.76]], square: [[115, 562, 'right', 0.73], [640, 590, 'left', 0.77], [910, 414, 'left', 0.53]], cafe: [[115, 562, 'right', 0.73], [640, 590, 'left', 0.77], [930, 466, 'left', 0.6]], vet: [[115, 562, 'right', 0.73], [640, 590, 'left', 0.77], [930, 470, 'left', 0.6]], salon: [[240, 480, 'right', 0.62], [615, 412, 'left', 0.53], [640, 592, 'left', 0.77]], market: [[240, 484, 'right', 0.58], [615, 456, 'left', 0.53], [85, 572, 'right', 0.73]], dogpark: [[615, 416, 'left', 0.54], [640, 592, 'left', 0.77], [745, 408, 'left', 0.53]], hilltop: [[240, 478, 'right', 0.62], [615, 406, 'left', 0.53], [640, 590, 'left', 0.77]], pier: [[250, 410, 'right', 0.53], [640, 590, 'left', 0.77], [120, 434, 'right', 0.56]], park: [[240, 476, 'right', 0.62], [640, 592, 'left', 0.77], [670, 408, 'left', 0.53]], river: [[250, 456, 'right', 0.53], [640, 592, 'left', 0.77], [100, 584, 'right', 0.75]], woods: [[240, 476, 'right', 0.62], [615, 424, 'left', 0.55], [640, 592, 'left', 0.77]], beach: [[120, 510, 'right', 0.66], [640, 590, 'left', 0.77], [930, 450, 'left', 0.58]], default: [[240, 482, 'right', 0.62], [615, 430, 'left', 0.55], [640, 590, 'left', 0.77]]};
+const NAP_ZONE = { yard: [740, 515, 0.75], house: [740, 505, 0.75] }; // the dog-house doorway / the bed, where the active dog naps
+const packPose = {};
+function packSpots() { return PACK_SPOTS[S.place] || PACK_SPOTS.default; }
+function packDogSVG(d, i) {
+  let [fx, fy, face, sc] = packSpots()[i] || packSpots()[0]; sc = sc || 0.6;
+  const nz = d.sleeping && NAP_ZONE[S.place]; if (nz) { fx = nz[0] + [-36, 36, 0][i % 3]; fy = nz[1]; sc = nz[2]; face = 'right'; } // napping: in the doorway / on the bed, like the active nap
+  const w = DW * sc, h = DH * sc, x = fx - w / 2, y = fy - h * (205 / 220);
+  const pose = d.sleeping ? 'sleep' : packPose[d.id] || (Math.min(...Object.values(d.stats)) < 25 ? 'sad' : 'idle');
+  return `<g class="packdog hot" data-dog="${d.id}" tabindex="0" role="button" aria-label="${esc(d.name)}: click to make ${PRd(d).him} the active dog"><g class="pd-wander" style="animation-delay:-${i * 2.3}s"><rect x="${x + 30}" y="${y + 30}" width="${w - 60}" height="${h - 30}" fill="transparent"/>${place(dogSVG(d, { pose, outfit: outfitOf(d), facing: face }), x, y, w, h)}</g></g>`;
+}
+function packSVG() { return S.dogs.length > 1 ? others().slice(0, 3).map(packDogSVG).join('') : ''; }
+function bindPack() {
+  const g = $('#pack'); if (!g) return;
+  g.querySelectorAll('[data-dog]').forEach((el) => { el.onclick = () => switchDog(el.dataset.dog); el.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); switchDog(el.dataset.dog); } }; });
+}
+function redrawPackDog(d) { const g = $(`#pack [data-dog="${d.id}"]`); if (!g) return; const i = others().indexOf(d); g.outerHTML = packDogSVG(d, i); bindPack(); }
+function packAmbient() {
+  if (S.dogs.length < 2 || cur.mode !== 'yard' || busy || !modal.hidden) return;
+  const os = others(); if (!os.length) return;
+  if (Math.random() < 0.55) { const d = PICK(os); if (!d.sleeping) { packPose[d.id] = PICK(['sit', 'happy', 'idle', 'sleep']); redrawPackDog(d); } return; }
+  const a = PICK(S.dogs), b = PICK(S.dogs.filter((x) => x !== a)); const pa = PRd(a), pb = PRd(b);
+  const lines = [`${a.name} and ${b.name} are having a staring contest.`, `${a.name} is sniffing ${b.name}. ${b.name} allows it. For now.`, `${a.name} stole ${b.name}'s favourite spot. ${pb.He} is drafting a complaint.`, `${a.name} and ${b.name} zoom in circles. Nobody knows why. Not even them.`, `${a.name} brought ${b.name} a leaf. ${pb.He} pretends not to care. ${pb.He} cares.`, `${a.name} barks at nothing. ${b.name} barks at ${pa.him} for barking.`];
+  S.dogs.forEach((d) => { d.stats.happy = clamp(d.stats.happy + 2, 0, 100); }); updateHUD();
+  toast(PICK(lines) + ' (+2 Happiness each)', 'good');
+}
+let greetFor = null;
+function greetWalker() {
+  if (!greetFor || S.dogs.length < 2) { greetFor = null; return; }
+  const w = dogById(greetFor); greetFor = null; if (!w || w.id !== S.activeId) return;
+  const o = PICK(others()); if (!o) return; const pw = PRd(w);
+  setTimeout(() => toast(PICK([`${o.name} sniffs ${w.name} thoroughly. Report filed.`, `${o.name} greets ${w.name} like ${pw.he} was gone for a year. It was a walk.`, `${o.name} checks ${w.name} for treats. None found. Suspicious.`]) + ' (+3 Happiness)', 'good'), 900);
+  [w, o].forEach((d) => { d.stats.happy = clamp(d.stats.happy + 3, 0, 100); });
+}
+
+/* ---- HUD switcher ---- */
+function renderDogChips() {
+  const wrap = $('#hudPack'); if (!wrap) return;
+  wrap.innerHTML = S.dogs.length > 1 ? others().map((d) => `<button class="dchip" data-dog="${d.id}" aria-label="Switch to ${esc(d.name)}" title="${esc(d.name)}">${headSVG(d)}<i class="mood ${moodOf(d)}"></i><span class="dsx">${d.sex === 'female' ? '♀' : '♂'}</span></button>`).join('') : '';
+  wrap.querySelectorAll('[data-dog]').forEach((b) => { b.onclick = () => switchDog(b.dataset.dog); });
+  const md = $('#hudMood'); if (md) md.className = 'mood ' + moodOf(D());
+}
+function chipsKey() { return S.dogs.map((d) => d.id + d.name + d.sex + moodOf(d) + (d.id === S.activeId ? '*' : '')).join('|') + '|' + (S.title || ''); }
+
+/* ---- Feed all ---- */
+function feedAllFood() { const meals = FOOD.filter((f) => f.n !== 'Fresh Water' && !SNACKS.includes(f.n) && (S.inv.food[f.n] || 0) > 0); meals.sort((a, b) => S.inv.food[b.n] - S.inv.food[a.n]); return meals[0] || null; }
+function feedAll() {
+  const f = feedAllFood(); if (!f) { nope('No meals in the pantry. Kibble Corner sells some.'); return; }
+  if (busy) return; const fed = [];
+  const order = [D()].concat(others());
+  order.forEach((d) => {
+    if ((S.inv.food[f.n] || 0) <= 0 || d.stats.hunger > 90 || d.sleeping) return;
+    S.inv.food[f.n]--; withDog(d, () => { addStat('hunger', f.hunger || 0); addStat('happy', (f.happy || 0) + (isFavFood(f.n) ? 5 : 0)); addStat('energy', f.energy || 0); addBond(2 + (f.bond || 0)); pottyAfter('meal'); });
+    fed.push(d);
+  });
+  if (S.inv.food[f.n] <= 0) delete S.inv.food[f.n];
+  if (!fed.length) { nope('Everyone is full or asleep. Nobody has ever said that before.'); return; }
+  dailyCare('feed'); markDirty(); popDown(); SFX.crunch(); setTimeout(SFX.crunch, 300); setTimeout(SFX.crunch, 600);
+  if (fed.includes(D())) setTemp('eat', 1400); others().forEach((d) => { if (fed.includes(d)) { packPose[d.id] = 'eat'; redrawPackDog(d); setTimeout(() => { packPose[d.id] = 'happy'; redrawPackDog(d); }, 1500); } });
+  const skipped = S.dogs.length - fed.length;
+  toast(`Feed all: ${fed.length} bowl${fed.length > 1 ? 's' : ''} of ${f.n} for ${fed.map((d) => d.name).join(', ')}. A symphony of crunching.${skipped ? ` (${skipped} skipped: full, asleep or not enough food.)` : ''}`, 'good');
+  updateHUD();
+}
+
+/* ---- shelter: rescues + starters ---- */
+const RESCUE_NAMES = ['Sir Wigglesworth', 'Potato', 'Captain Socks', 'Noodle Jr.', 'Biscotti', 'Mayor Fluff', 'Pickles', 'Waffles', 'Tater Tot', 'Professor Paws', 'Beans', 'Lady Snorts', 'Meatball', 'Dumpling', 'Turbo', 'Nugget'];
+function rescuesToday(dk = localISO()) {
+  const r = seeded(hashId('rescue|' + dk)), keys = BREED_KEYS, G = PGN();
+  return [0, 1].map((i) => {
+    const key = keys[Math.floor(r() * keys.length)], sex = r() < 0.5 ? 'female' : 'male', months = 8 + Math.floor(r() * 29), name = RESCUE_NAMES[Math.floor(r() * RESCUE_NAMES.length)];
+    let genes = null; if (G && typeof G.randomGenotype === 'function') { try { genes = G.randomGenotype(key, r); } catch (e) { genes = null; } }
+    if (!genes) { const g = STARTER_GENES[key] || STARTER_GENES.mutt; genes = { B: g.B.slice(), D: g.D.slice(), E: g.E.slice(), S: g.S.slice(), M: g.M.slice(), Bl: g.Bl.slice() }; }
+    return { id: 'r_' + dk + '_' + i, key, sex, months, name, genes, rescue: { date: dk } };
+  });
+}
+const adoptBlock = () => (topBond() < 5 ? `Adopting a second dog opens when any of your dogs reaches Bond 5. (Best so far: Bond ${topBond()}.)` : S.dogs.length >= capacity() ? 'Your home is full. A bigger dog house would fit another friend.' : '');
+function addDog(spec, name) {
+  const fav = FAV[spec.key] || FAV.mutt;
+  const d = Object.assign({ key: spec.key, name, favFood: fav.food.slice(), favToy: fav.toy }, newDogFields(spec.key, spec.sex, spec.born || bornDaysAgo(spec.months || 10)));
+  if (spec.genes) d.genes = spec.genes;
+  if (spec.id) d.id = spec.id;
+  if (spec.key === 'mutt') { d.favFood = [PICK(FOOD.slice(1)).n]; d.favToy = PICK(TOYS).n; }
+  d.rescue = spec.rescue || null; dogDefaults(d, S);
+  const c = coatInfo(d); if (c) { d.coat = c.coatName; d.eyes = c.eyes; }
+  S.dogs.push(d); markDirty(); hudDogKey = ''; return d;
+}
+let shelterSex = {};
+function shelterCard(spec, kind) {
+  const tmp = { id: spec.id || 'tmp_' + spec.key, key: spec.key, genes: spec.genes || (STARTER_GENES[spec.key] || STARTER_GENES.mutt) };
+  const c = coatInfo(tmp), info = dogInfo(spec.key), home = spec.id && dogById(spec.id);
+  const coatName = c ? c.coatName : (STARTER_GENES[spec.key] || {}).coat || '', eyes = c ? c.eyes : (STARTER_GENES[spec.key] || {}).eyes || 'brown';
+  const sx = kind === 'rescue' ? spec.sex : shelterSex[spec.key] || null;
+  const blocked = adoptBlock();
+  return `<div class="sitem shcard ${kind}">${kind === 'rescue' ? '<span class="stamp r2">Rescue</span>' : '<span class="stamp r0">Starter</span>'}<span class="art shdog">${dogArtSafe(spec.key, Object.assign({ pose: 'sit' }, c ? { coat: c.coat, seed: hashId(tmp.id) } : {}))}</span>
+    <b>${esc(kind === 'rescue' ? spec.name : info.name)} ${kind === 'rescue' ? sexSym(spec.sex) : ''}</b>
+    <span class="desc">${esc(info.breed)}${kind === 'rescue' ? ` · ${spec.sex === 'female' ? 'Girl' : 'Boy'} · ${ageText(spec.months)}` : ''}<br>${esc(coatName)}, ${esc(eyes)} eyes<br><i>${esc(info.personality)}</i></span>
+    ${kind === 'starter' ? `<div class="wrap" style="justify-content:center"><button class="btn ${sx === 'male' ? 'yes' : ''}" data-shsex="${spec.key}|male" aria-pressed="${sx === 'male'}">Boy ♂</button><button class="btn ${sx === 'female' ? 'yes' : ''}" data-shsex="${spec.key}|female" aria-pressed="${sx === 'female'}">Girl ♀</button></div>` : ''}
+    ${home ? '<span class="chip own">Already home</span>' : `<button class="btn ${blocked ? '' : 'go'}" data-shadopt="${kind}|${spec.id || spec.key}" ${blocked ? 'aria-disabled="true"' : ''}>${kind === 'rescue' ? 'Rescue' : 'Adopt a starter'}</button>`}</div>`;
+}
+function openShelterList() {
+  const rescues = rescuesToday(), starterKeys = dogsList().map((x) => x.key).filter((k) => !S.dogs.some((d) => d.key === k && !d.rescue));
+  const blocked = adoptBlock();
+  const p = openModal('Paw Haven Shelter', `<p class="small">${S.dogs.length} of ${capacity()} dog${capacity() > 1 ? 's' : ''} at home (${esc(S.house)}). ${blocked ? `<b>${esc(blocked)}</b>` : 'You have room for another friend!'}</p>
+    <h3 class="shh">Today's rescues <span class="small">(new ones arrive every day)</span></h3><div class="shopgrid">${rescues.map((r) => shelterCard(r, 'rescue')).join('')}</div>
+    ${starterKeys.length ? `<h3 class="shh">Starter dogs</h3><div class="shopgrid">${starterKeys.map((k) => shelterCard({ key: k }, 'starter')).join('')}</div>` : ''}`, { cls: 'shop shelter' });
+  p.querySelectorAll('[data-shsex]').forEach((b) => { b.onclick = () => { const [k, sx] = b.dataset.shsex.split('|'); shelterSex[k] = sx; SFX.click(); openShelterList(); }; });
+  p.querySelectorAll('[data-shadopt]').forEach((b) => {
+    b.onclick = () => {
+      const bl = adoptBlock(); if (bl) { nope(bl); return; }
+      const [kind, id] = b.dataset.shadopt.split('|');
+      let spec;
+      if (kind === 'rescue') spec = rescues.find((r) => r.id === id);
+      else { if (!shelterSex[id]) { nope('Pick Boy or Girl first. The siblings are waiting politely.'); return; } spec = { key: id, sex: shelterSex[id], months: 10 }; }
+      if (!spec) return;
+      const def = kind === 'rescue' ? spec.name : dogInfo(spec.key).name;
+      const pp = openModal(`Name your new ${spec.sex === 'female' ? 'girl' : 'boy'} ${sexSym(spec.sex)}`, `<p>${kind === 'rescue' ? 'The shelter calls this one' : 'The tag says'} <b>${esc(def)}</b>. Keep it, or pick something just as silly.</p><input id="shName" class="namebox" maxlength="16" value="${esc(def)}" autofocus>`, { foot: '<button class="btn no" id="shNo">Back</button><button class="btn yes big" id="shOk">Bring home!</button>' });
+      const done = () => {
+        const nm = ($('#shName', pp).value || def).trim().slice(0, 16) || def; const d = addDog(spec, nm);
+        closeModal(); audioCue('adopt'); SFX.fanfare();
+        const pd = PRd(d); toast(`${nm} is home! ${pd.He} sniffs everything twice. ${S.dogs.length} dogs now.`, 'gold');
+        S.place = 'yard'; go('yard');
+      };
+      $('#shOk', pp).onclick = done; $('#shNo', pp).onclick = () => openShelterList();
+      $('#shName', pp).addEventListener('keydown', (e) => { if (e.key === 'Enter') done(); });
+    };
+  });
+}
+
+/* ======================= v1.5B: phone layout (portrait, touch) =======================
+   html[data-layout="phone"] switches every phone rule on. Nothing here runs or shows at >= 1024 px wide. */
+const phoneMQ = window.matchMedia ? matchMedia('(max-width: 820px)') : { matches: false };
+const portMQ = window.matchMedia ? matchMedia('(orientation: portrait)') : { matches: false };
+const isPhone = () => document.documentElement.dataset.layout === 'phone';
+function applyLayout(rerender) {
+  const ph = phoneMQ.matches || (portMQ.matches && window.innerWidth < 1024), was = isPhone();
+  if (ph) document.documentElement.dataset.layout = 'phone'; else delete document.documentElement.dataset.layout;
+  if (rerender && was !== ph && S && ['yard', 'map', 'shelter'].includes(cur.mode)) go(cur.mode);
+  else camApply(camCx);
+}
+/* camera: crop the 1000x600 hub scene around the dog (x ~ 430) so the full height stays visible */
+let camCx = 430, camRaf = 0;
+function camApply(cx) {
+  if (!isPhone() || !['yard', 'bath'].includes(cur.mode)) return;
+  const svg = $('#view > svg.world'); if (!svg) return;
+  const vw = view.clientWidth, vh = view.clientHeight; if (!vw || !vh) return;
+  const vbW = 600 * vw / vh;
+  if (vbW >= 1000) { svg.setAttribute('viewBox', '0 0 1000 600'); return; }
+  const x = clamp(cx - vbW / 2, 0, 1000 - vbW);
+  svg.setAttribute('viewBox', `${x.toFixed(1)} 0 ${vbW.toFixed(1)} 600`);
+}
+function camTo(cx, secs = 0.6) {
+  if (!isPhone()) return; cancelAnimationFrame(camRaf);
+  const from = camCx, t0 = performance.now(), dur = Math.max(1, secs * 1000);
+  const stepF = (t) => { const k = Math.min(1, (t - t0) / dur), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; camCx = from + (cx - from) * e; camApply(camCx); if (k < 1) camRaf = requestAnimationFrame(stepF); };
+  camRaf = requestAnimationFrame(stepF);
+}
+applyLayout(false);
+window.addEventListener('resize', () => applyLayout(true));
+window.addEventListener('orientationchange', () => setTimeout(() => applyLayout(true), 200));
+
+/* bottom sheets: drag handle + swipe down to close */
+function sheetSwipe(sheet, onClose) {
+  if (!sheet || sheet.dataset.swipe) return; sheet.dataset.swipe = '1';
+  let y0 = null, dy = 0, id = null;
+  sheet.addEventListener('pointerdown', (e) => {
+    if (!isPhone()) return; const r = sheet.getBoundingClientRect();
+    if (e.clientY - r.top > 56 || e.target.closest('button,input,select,a,[role=tab]')) return;
+    y0 = e.clientY; dy = 0; id = e.pointerId; try { sheet.setPointerCapture(id); } catch (er) { /* none */ }
+  });
+  sheet.addEventListener('pointermove', (e) => { if (y0 == null || e.pointerId !== id) return; dy = Math.max(0, e.clientY - y0); sheet.style.transform = `translateY(${dy}px)`; });
+  const end = () => { if (y0 == null) return; y0 = null; sheet.style.transform = ''; if (dy > 70) onClose(); dy = 0; };
+  sheet.addEventListener('pointerup', end); sheet.addEventListener('pointercancel', end);
+}
+
+/* the "..." menu (settings + sound) */
+function openMore() {
+  const p = openModal('Menu', `<div class="moremenu"><button class="btn big" id="mmSet"><span class="ic">${ICON('settings')}</span>Settings</button><button class="btn big" id="mmMute">${prefs.mute ? 'Sound on' : 'Mute sound'}</button></div>`);
+  $('#mmSet', p).onclick = () => { closeModal(); openSettings(); };
+  $('#mmMute', p).onclick = () => { closeModal(); $('#muteBtn').click(); };
+}
+
+/* map on phones: drag-pan (native scroll) + tap a place -> confirm chip */
+function mapPick(k) {
+  const chip = $('#mapGo'); if (!chip) return pickArea(k);
+  const g = $(`#mapPan [data-area="${k}"]`); if (g) mapHighlight(g);
+  const lockB = PLACES[k] && topBond() < PLACES[k].bond, here = (S.place === 'house' ? 'yard' : S.place) === k;
+  const name = k === 'shelter' ? 'the shelter' : PLACES[k] ? PLACES[k].n : k;
+  chip.hidden = false; chip.dataset.k = k;
+  chip.innerHTML = lockB ? `<span>${esc(PLACES[k].n)}: opens at Bond ${PLACES[k].bond}</span>` : here ? `<span>You are here: ${esc(name)}</span><button class="btn" id="mapStay">Stay</button>` : `<button class="btn go big" id="mapGoBtn">${k === 'shelter' ? 'Visit the shelter' : 'Go to ' + esc(name)}</button><button class="btn" id="mapNo" aria-label="Cancel">x</button>`;
+  const gb = $('#mapGoBtn'); if (gb) gb.onclick = () => { chip.hidden = true; pickArea(k); };
+  const st = $('#mapStay'); if (st) st.onclick = () => go('yard');
+  const no = $('#mapNo'); if (no) no.onclick = () => { chip.hidden = true; const hi = $('#mapHi'); if (hi) hi.hidden = true; };
+  SFX.click();
+}
+let mapHighlight = () => {};
+
+/* long-press shows a tooltip (title / aria-label) on touch */
+(function () {
+  let t = 0, tip = null, x0 = 0, y0 = 0;
+  const hide = () => { clearTimeout(t); if (tip) { tip.remove(); tip = null; } };
+  stage.addEventListener('pointerdown', (e) => {
+    if (!isPhone() || e.pointerType === 'mouse') return; hide();
+    const el = e.target.closest('[title],[data-tip]'); if (!el) return;
+    const txt = el.getAttribute('data-tip') || el.getAttribute('title'); if (!txt) return;
+    x0 = e.clientX; y0 = e.clientY;
+    t = setTimeout(() => { const r = stage.getBoundingClientRect(); tip = document.createElement('div'); tip.className = 'lptip'; tip.textContent = txt; stage.appendChild(tip); tip.style.left = clamp(x0 - r.left - tip.offsetWidth / 2, 8, r.width - tip.offsetWidth - 8) + 'px'; tip.style.top = Math.max(8, y0 - r.top - 56) + 'px'; }, 550);
+  });
+  stage.addEventListener('pointermove', (e) => { if (Math.hypot(e.clientX - x0, e.clientY - y0) > 12) clearTimeout(t); });
+  ['pointerup', 'pointercancel'].forEach((ev) => stage.addEventListener(ev, () => { clearTimeout(t); setTimeout(hide, 1200); }));
+})();
+

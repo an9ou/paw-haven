@@ -1,0 +1,12 @@
+/* ---------- v1.6b idle behaviours ---------- */
+.tk-look{animation:tkLook 2.4s ease-in-out infinite alternate}
+@keyframes tkLook{30%{transform:rotate(-1.5deg)}70%{transform:rotate(1.5deg) translateY(-2px)}}
+.tk-circle{animation:tkCircle 1s ease-in-out;transform-box:fill-box;transform-origin:center}
+@keyframes tkCircle{50%{transform:scaleX(-1) translateY(-6px)}}
+.tk-chase{animation:tkChase .5s linear 4;transform-box:fill-box;transform-origin:center}
+@keyframes tkChase{25%{transform:scaleX(-1) rotate(-6deg)}50%{transform:scaleX(1) rotate(6deg)}75%{transform:scaleX(-1) rotate(-6deg)}}
+.tk-sniff{animation:tkSniff .6s ease-in-out infinite alternate}
+@keyframes tkSniff{to{transform:translateY(5px) rotate(2deg)}}
+.tk-yawn{animation:tkYawn 1.2s ease-in-out}
+@keyframes tkYawn{40%{transform:scaleY(1.05) translateY(-4px)}}
+.barkset{display:flex;align-items:center;gap:8px;margin:8px 0}.barkset .btn{min-height:40px;padding:4px 14px}

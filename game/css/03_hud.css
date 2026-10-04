@@ -1,0 +1,34 @@
+/* ---------- HUD ---------- */
+#hud{flex:none;display:flex;align-items:center;gap:14px;padding:8px 18px 12px;z-index:5;min-height:62px;
+  background:var(--line) left bottom/100% 9px no-repeat,radial-gradient(var(--dot) 1.1px,transparent 1.6px) 0 0/22px 22px,var(--paper)}
+#hud .who{display:flex;align-items:center;gap:8px;min-width:0}
+.portrait{width:48px;height:48px;flex:none;display:block;--wash:var(--w-cream);padding:5px;transform:rotate(-4deg)}
+.portrait svg{width:100%;height:100%;display:block}
+#hudName{font-family:var(--font-hand);font-weight:700;font-size:27px;line-height:1.1;padding-right:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
+.meters{display:flex;gap:14px;flex:1;min-width:0;justify-content:center}
+.meter{display:flex;align-items:center;gap:5px;min-width:0;flex:1;max-width:170px}
+.ic{width:28px;height:28px;flex:none;display:inline-block}
+.ic svg{width:100%;height:100%;display:block}
+.track{position:relative;flex:1;min-width:34px;height:18px}
+.track::after{content:"";position:absolute;inset:0;background:var(--fr-tube) 0 0/100% 100% no-repeat;pointer-events:none}
+.fill{position:absolute;left:4px;top:4px;bottom:4px;width:50%;max-width:calc(100% - 7px);border-radius:7px 3px 8px 4px;transition:width .4s;
+  --m:var(--m-happy);background:repeating-linear-gradient(-62deg,var(--m) 0 2.2px,color-mix(in srgb,var(--m) 55%,#fff) 2.2px 4.4px)}
+.meter[data-k="hunger"] .fill{--m:var(--m-hunger)}
+.meter[data-k="happy"] .fill{--m:var(--m-happy)}
+.meter[data-k="energy"] .fill{--m:var(--m-energy)}
+.meter[data-k="clean"] .fill{--m:var(--m-clean)}
+.bond .fill{--m:var(--m-bond)}
+.num{font-variant-numeric:tabular-nums;font-size:17px;min-width:26px;text-align:right;color:var(--ink)}
+.meter.low .track{animation:lowpulse 1s steps(2) infinite}
+.meter.low .num{color:#C9475E;font-weight:bold}
+@keyframes lowpulse{50%{transform:rotate(-2deg) scale(1.05)}}
+.bond{display:flex;align-items:center;gap:6px;min-width:150px}
+.bond .lbl{font-family:var(--font-hand);font-size:23px;font-weight:700;white-space:nowrap;line-height:1}
+.bond .lbl b{font-family:var(--font-read);font-size:19px}
+.bond .track{width:74px;flex:none}
+.coins{display:flex;align-items:center;gap:4px;font-size:21px;font-variant-numeric:tabular-nums;min-width:74px}
+.coins.bump{animation:bump .4s}
+@keyframes bump{40%{transform:scale(1.25) rotate(-6deg)}}
+.iconbtn{width:48px;height:48px;flex:none;padding:7px;display:grid;place-items:center;--wash:var(--w-cream)}
+.iconbtn svg{width:32px;height:32px}
+
