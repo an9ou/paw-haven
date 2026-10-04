@@ -42,7 +42,7 @@ Module owners stay as before: dogs/ (dog artist), world/a (scenes), world/b (pro
 - When finished, the agent commits on its own branch: `git add -A && git commit -m "<lane>: <summary>"`. It must not merge, rebase, push, or touch `main` or other worktrees.
 - The coordinator merges with `tools/wt.sh merge <name>`, which does a `--no-ff` merge into `main`, then the build and the smoke test. It resolves any conflicts, runs `node game/run_tests.js all --jobs 2` once all lanes are merged, publishes with `node game/build.js publish`, and drops the worktrees with `tools/wt.sh drop <name>`.
 - Lanes keep conflicts rare. If two lanes must touch the same file, the coordinator merges them one after the other and re-tests.
-- Generated files (`game/paw_haven_proto.html`, `game/game_script.check.js`, `proto/paw_haven_prototype.html`) may conflict on merge. Resolve them by simply rebuilding.
+- Generated files (`game/paw_haven_proto.html`, `proto/paw_haven_prototype.html`) are not tracked: always run `node game/build.js` after checkout or merge.
 
 ## Testing (fast loop)
 One runner does everything: `node game/run_tests.js <smoke | all | suite names...> [--jobs N] [--retries N] [--strict] [--no-build] [--shots] [--list]`.
