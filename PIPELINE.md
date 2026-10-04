@@ -35,8 +35,14 @@ Parallel game agents each get ONE lane. Editing outside your lane needs the coor
 
 Module owners stay as before: dogs/ (dog artist), world/a (scenes), world/b (props/icons), world/c (new scenes), mods/* (one owner each).
 
-## Version control
-`proto/` is a git repo. Before a round the coordinator commits a baseline. Each agent's report lists the files it changed, and the coordinator reviews with `git diff` and can revert any single file. Agents must not run destructive git commands (reset, checkout of others' files, force); `git diff` and `git status` are fine.
+## Version control: one worktree per agent
+`proto/` is a git repo on branch `main`. **Every agent works in its own git worktree**, never in `/home/claude/proto` directly.
+- The coordinator creates each agent's worktree with `tools/wt.sh new <name>`. That makes `/home/claude/wt/<name>` on branch `lane/<name>`, branched from `main`. The agent's brief names its worktree path.
+- The agent edits, builds (`node game/build.js`) and tests (`node game/run_tests.js smoke`, plus its own suites) INSIDE its worktree. Every path in the brief is relative to that worktree.
+- When finished, the agent commits on its own branch: `git add -A && git commit -m "<lane>: <summary>"`. It must not merge, rebase, push, or touch `main` or other worktrees.
+- The coordinator merges with `tools/wt.sh merge <name>`, which does a `--no-ff` merge into `main`, then the build and the smoke test. It resolves any conflicts, runs `node game/run_tests.js all --jobs 2` once all lanes are merged, publishes with `node game/build.js publish`, and drops the worktrees with `tools/wt.sh drop <name>`.
+- Lanes keep conflicts rare. If two lanes must touch the same file, the coordinator merges them one after the other and re-tests.
+- Generated files (`game/paw_haven_proto.html`, `game/game_script.check.js`, `proto/paw_haven_prototype.html`) may conflict on merge. Resolve them by simply rebuilding.
 
 ## Testing (fast loop)
 One runner does everything: `node game/run_tests.js <smoke | all | suite names...> [--jobs N] [--retries N] [--strict] [--no-build] [--shots] [--list]`.
