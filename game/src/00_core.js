@@ -698,3 +698,8 @@ function go(mode, arg) {
   updateHUD(); updateWxOverlay(); audioPlace(); setTimeout(maybeLevelUp, 300); markDirty();
 }
 
+
+/* ---------- lane event bus (PIPELINE.md): lanes react to each other without editing each other's files ---------- */
+const BUS = Object.create(null);
+function on(evt, fn) { (BUS[evt] = BUS[evt] || []).push(fn); }
+function emit(evt, data) { const l = BUS[evt]; if (!l) return; for (const fn of l.slice()) { try { fn(data); } catch (e) { console.warn('bus ' + evt, e); } } }
