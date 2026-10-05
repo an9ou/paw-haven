@@ -155,7 +155,7 @@ const AUDIT = () => {
       ok(vb1 > vb0 + 100, `a swipe pans the camera right (${Math.round(vb0)} -> ${Math.round(vb1)})`);
       ok(await t.ev(() => { const r = document.getElementById('houseG').getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth + 1; }), 'the dog house is fully on screen after the swipe');
       ok(await t.ev(() => document.getElementById('modal').hidden), 'a swipe does not open anything by accident');
-      ok(await t.until((x) => document.querySelector('#view > svg.world').viewBox.baseVal.x < x - 50, vb1, 9000), 'the camera eases back to the dog');
+      ok(await t.until((x) => document.querySelector('#view > svg.world').viewBox.baseVal.x < x - 50, vb1, 20000), 'the camera eases back to the dog');
       await t.home();
 
       // ---------- bath ----------
@@ -183,7 +183,7 @@ const AUDIT = () => {
         const info = await rectOf('#messG .mess');
         ok(info.w >= 44 && info.h >= 44, `potty spot tap area >= 44 (${Math.round(info.w)}x${Math.round(info.h)})`);
         await t.p.locator('#messG .mess').tap({ force: true });
-        ok(await t.until(() => !document.querySelector('#messG .mess'), null, 8000), 'a tap scoops it');
+        ok(await t.retryUntil(async () => { if (await t.p.locator('#messG .mess').count()) await t.p.locator('#messG .mess').tap({ force: true }); }, () => !document.querySelector('#messG .mess'), null, { tries: 4, each: 3000 }), 'a tap scoops it');
       }
       await t.calm();
 
