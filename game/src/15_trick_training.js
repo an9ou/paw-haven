@@ -55,17 +55,18 @@ function renderTraining() {
   const body = TRN.tab === 'train' ? `<div class="trchips">${chips}</div>
     <div class="trrow"><div class="trprog"><span>${esc(tName(n))} · <b>${tStage(st)}</b> · <i class="trmode">${modeLbl}</i></span><div class="prog trfade"><i style="width:${Math.round(st.p * 100)}%"></i><s style="left:${TG_FADE * 100}%" title="the treat fades into a hand signal here"></s></div></div></div>
     <div class="trrow trfocus"><span class="ic">${iconOr('focus', doodle('spark', 0, 0, 0.9))}</span><span>Focus</span><div class="prog"><i style="width:${f}%"></i></div><b>${f}</b></div>
-    <div class="trbtns one">${ctl}</div>
+    <div class="trbtns one">${ctl}${pkLeadBtn(G)}</div>
     <p class="trline" id="trLine">${esc(tgHint(n, d, hand))}</p>
-    <p class="small">Each try costs ${trainCost()} Focus${isPup(D()) ? ' (short puppy attention span: 4 tries a session, but pups learn x1.2 faster)' : ''}. Treat bits: +${TRN.treats} Hunger this session (max 15). Keys: arrows move the treat, Space taps.</p>`
+    <p class="small">Each try costs ${trainCost()} Focus${isPup(D()) ? ' (short puppy attention span: 4 tries a session, but pups learn x1.2 faster)' : ''}. Treat bits: +${TRN.treats} Hunger this session (max 15). ${isPhone() ? "Can't drag? Hold the Lead button." : "Keys: arrows move the treat, Space taps."}</p>`
     : `<p class="small">Learned tricks on cue. Chain 3 in a row for a combo: coins (Learned 3, Mastered 5 each${PUBLIC_AUDIENCE.includes(S.place) ? ', <b>audience x2 here</b>' : ''}). Shows for coins today: ${(S.daily.showCoins || 0)}/10.</p>
-    <div class="trshow">${learned.length ? learned.map((t) => `<button class="btn" data-show="${t.n}"><span class="ic">${sigIcon(t.n)}</span>${esc(tName(t.n))}<small>${tStage(trickSt(t.n))}</small></button>`).join('') : '<p>No learned tricks yet. Train one to 100% first!</p>'}</div>
+    <div class="trshow">${learned.length ? learned.map((t) => `<button class="btn" data-show="${t.n}"><span class="ic">${sigIcon(t.n)}</span>${esc(tName(t.n))}<small>${tStage(trickSt(t.n))}</small></button>`).join('') : '<p>No learned tricks yet. Train one to 100% first!</p>'}</div>${pkLeadBtn(G)}
     <p class="trline" id="trLine">${TRN.chain ? `Chain: ${TRN.chain}` : 'Tap a trick, then trace its hand signal (short version, no treat).'}</p>`;
   tp.innerHTML = `<div class="trhead"><div class="tabs" role="tablist"><button class="btn" role="tab" data-trtab="train" aria-selected="${TRN.tab === 'train'}">Train</button><button class="btn" role="tab" data-trtab="show" aria-selected="${TRN.tab === 'show'}">Show off</button></div><button class="xbtn" id="trX" aria-label="Close training">x</button></div><div class="trbody">${body}</div>`;
   tp.querySelector('#trX').onclick = () => { SFX.click(); closeTraining(); };
   tp.querySelectorAll('[data-trtab]').forEach((b) => { b.onclick = () => { if (TRN.game) return; SFX.click(); TRN.tab = b.dataset.trtab; TRN.msg = null; renderTraining(); }; });
   tp.querySelectorAll('[data-tr]').forEach((b) => { b.onclick = () => { if (TRN.game) return; const t = TRICKS.find((x) => x.n === b.dataset.tr); if (S.bond.level < t.bond) { nope(`${t.n} unlocks at Bond ${t.bond}.`); return; } SFX.click(); TRN.trick = t.n; if (t.n === 'Speak' && PERS[S.dog.key] === 'chatty' && trickSt('Speak').p < 0.6) { trickSt('Speak').p = 0.6; toast(`${NAME()} already loves to talk: Speak starts at 60%!`, 'good'); } renderTraining(); }; });
   const go1 = tp.querySelector('#trStart'); if (go1) go1.onclick = () => tgBegin(TRN.trick);
+  const pkl = tp.querySelector('#pkLead'); if (pkl) pkLeadBind(pkl);
   const stop = tp.querySelector('#trStop'); if (stop) stop.onclick = () => { SFX.click(); tgStop(); };
   const spk = tp.querySelector('#trSpeak'); if (spk) spk.onclick = () => tgSpeakTap();
   tp.querySelectorAll('[data-show]').forEach((b) => { b.onclick = () => showOff(b.dataset.show); });

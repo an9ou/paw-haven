@@ -238,6 +238,24 @@ function tgKey(e) {
   if (sg.type === 'hold' && !G.grabbed) { G.grabbed = true; G.pos = sg.at.slice(); G.holdAt = performance.now(); tgCursor(G); }
 }
 function tgKeyUp(e) { const G = tgG(); if (G && (e.key === ' ' || e.key === 'Enter' || e.key.startsWith('Arrow'))) { e.preventDefault(); e.stopImmediatePropagation(); } }
+/* ---------- v2.2 phone: tap and hold fallback for the track (pk) ---------- */
+let pkLeadIv = null;
+function pkLeadBtn(G) { return isPhone() && G && !G.rhythm ? '<button class="btn big pklead" id="pkLead" type="button" aria-label="Hold to lead the treat along the track. Tap for paw taps.">Hold to lead</button>' : ''; }
+function pkLeadStop() { clearInterval(pkLeadIv); pkLeadIv = null; }
+function pkLeadStep() {
+  const G = tgG(); if (!G || G.busy || G.rhythm) { pkLeadStop(); return; }
+  const sg = G.segs[G.si]; if (!sg) return;
+  if (sg.type === 'path') { G.grabbed = true; tgMoveTo(G, tgPointAt(sg, G.s + 7), performance.now(), true); return; }
+  if (sg.type === 'hold' && !G.grabbed) { G.grabbed = true; G.pos = sg.at.slice(); G.holdAt = performance.now(); tgCursor(G); }
+}
+function pkLeadBind(b) {
+  b.addEventListener('pointerdown', (e) => {
+    e.preventDefault(); const G = tgG(); if (!G || G.busy || G.rhythm) return; const sg = G.segs[G.si]; if (!sg) return;
+    if (sg.type === 'tap') { tgTap(G, sg, sg.at); return; }
+    pkLeadStop(); pkLeadStep(); pkLeadIv = setInterval(pkLeadStep, 40);
+  });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach((n) => b.addEventListener(n, pkLeadStop));
+}
 
 /* ---------- Speak: rhythm mini-game ---------- */
 function tgSpeakStart(G) {
@@ -294,7 +312,7 @@ function tgGrade(grade) {
   t.textContent = grade === 'Missed' ? 'Oops' : grade + '!'; fx.appendChild(t); setTimeout(() => t.remove(), 1500);
 }
 function tgStop() { const G = tgG(); if (!G) return; if (G.mode === 'show') { tgAbort(); renderTraining(); return; } tgEnd(G, 'stop'); }
-function tgAbort() { const G = tgG(); if (!G) return; clearInterval(G.ticker); tgBind(false); tgLean(null); const t = $('#trTrack'); if (t) t.remove(); TRN.game = null; }
+function tgAbort() { const G = tgG(); if (!G) return; pkLeadStop(); clearInterval(G.ticker); tgBind(false); tgLean(null); const t = $('#trTrack'); if (t) t.remove(); TRN.game = null; }
 
 /* ---------- test helper: the live track in client (screen) coordinates ---------- */
 window.__pawTG = {
