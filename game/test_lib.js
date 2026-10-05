@@ -8,8 +8,9 @@
 //     and the page clock is frozen to "today 10:00" (it keeps ticking, but the hour and the date can never roll over mid-run);
 //   * waits are conditions (waitForFunction / waitForSelector), never fixed sleeps. t.sleep() exists but suites should avoid it;
 //   * exit code 1 on any failed check, a crash or a console error (so run_tests.js can trust the exit code).
+// Phone suites (v2.2): run('name', fn, { device: 'iPhone 13' }) or t.mk({ device: 'Pixel 7' }) open the page with that Playwright device profile (touch, DPR, UA).
 // Screenshots are OFF by default (they cost time); set PAW_SHOTS=1 (run_tests.js --shots) to write them to game/shots_<suite>/.
-const { chromium } = require('playwright'); const path = require('path'); const fs = require('fs');
+const { chromium, devices } = require('playwright'); const path = require('path'); const fs = require('fs');
 const URL = 'file://' + path.join(__dirname, 'test_merged.html');
 const CHROME = process.env.PAW_CHROME || ['/opt/pw-browsers/chromium', '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'].find((f) => fs.existsSync(f));
 const LOGS = path.join(__dirname, 'test_logs');
@@ -36,7 +37,8 @@ class T {
   // new context + page. o: { time, weather, clock, prefs:{}, storage:{key:value} (written once, before the game boots) }
   async mk(o) {
     o = Object.assign({}, this.opts, o || {});
-    const ctx = await this.b.newContext({ viewport: { width: 1280, height: 720 } }); this.ctx = ctx;
+    // o.device: a Playwright device profile name ('iPhone 13', 'Pixel 7') for the v2.2 phone suites; default is the desktop 1280x720
+    const ctx = await this.b.newContext(o.device ? Object.assign({}, devices[o.device], { defaultBrowserType: undefined }) : { viewport: { width: 1280, height: 720 } }); this.ctx = ctx;
     ctx.setDefaultTimeout(20000);
     await ctx.addInitScript((cfg) => {
       try {
