@@ -96,6 +96,9 @@ Each lane makes its screens pass the phone minimums on iPhone 13 (390×844) and 
 2. Authentication → URL Configuration: Site URL `https://an9ou.github.io/paw-haven/`.
 3. SQL Editor: run `supabase/schema.sql`.
 4. Paste the Project URL and the anon (publishable) key into `game/src/22b_cloud_config.js`. The anon key is public by design. Row-level security protects the data.
+   - Project URL: `https://oxdupprqfdihklgwwvol.supabase.co`
+   - Publishable key: `sb_publishable_pQ0O3jdn7SRMyxmG3UJYeQ_AxBuJRxe`
+   - Never put the secret / service_role key in the repo.
 
 **Data (`supabase/schema.sql`):**
 
