@@ -9,7 +9,7 @@ const NPC_BOYS = ['Duke', 'Rufus', 'Bentley', 'Ziggy', 'Moose', 'Captain Waffles
 const NPC_GIRLS = ['Daisy', 'Luna', 'Clementine', 'Penny', 'Maple', 'Bijou', 'Rosie', 'Miso', 'Hazel', 'Lady Fluffington'];
 const NPC_LINES = ['Loves belly rubs and stealing socks.', 'Has strong opinions about squirrels.', 'Very polite. Sits for everything, even nothing.', 'Snores like a tiny tractor.', 'Will trade any toy for one cheese cube.', 'Fastest sniff in the park.', 'Brings a stick to every playdate. The same stick.', 'Shy for five minutes, then a total goofball.', 'Has never met a puddle he or she did not like.', 'Thinks the mailman is a long-lost friend.'];
 const motionOff = () => document.documentElement.dataset.motion === 'off';
-const isNursing = (d) => (Array.isArray(S.litters) ? S.litters : []).some((l) => l && l.mum === d.id);
+const isNursing = (d) => !!d && Array.isArray(S.litters) && S.litters.some((l) => l && l.mum === d.id); // shared by TOWN + PLAY
 const famName = (f) => (typeof f === 'string' ? f : f && (f.name || f.n || f.family)) || 'a kind family';
 function genesOf(d) {
   if (d && d.genes) return d.genes;

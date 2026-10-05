@@ -2,7 +2,7 @@
 /* Dogs bought at 10 months are 'young': every rule below only touches puppies (< 6 months), expecting mums and nursing mums. */
 const dogMonths = (d) => ageMonths(d || S.dog);
 const isPup = (d) => lifeStage(dogMonths(d)) === 'puppy';
-const isNursing = (d) => !!d && Array.isArray(S.litters) && S.litters.some((l) => l && l.mum === d.id);
+// isNursing(d) is defined in 14b_vet_playboard.js (same scope)
 const isExpecting = (d) => !!d && !!d.preg;
 /* walks: null when fine, else the friendly "no" line (pronouns from the dog, not from the active dog) */
 function walkBlock(d, area) {

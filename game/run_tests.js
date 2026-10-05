@@ -29,9 +29,14 @@ const SUITES = {
   v17: { file: 'test_v17.js', group: 'all', est: 30 },
   v171_garden: { file: 'test_v171_garden.js', group: 'all', est: 35 },
   v171_tricks: { file: 'test_v171_tricks.js', group: 'all', est: 60 },
+  v2_slots: { file: 'test_v2_slots.js', group: 'all', est: 70 },
+  v2_breed: { file: 'test_v2_breed.js', group: 'all', est: 90 },
+  v2_journal: { file: 'test_v2_journal.js', group: 'all', est: 80 },
+  v2_town: { file: 'test_v2_town.js', group: 'all', est: 80 },
+  v2_play: { file: 'test_v2_play.js', group: 'all', est: 70 },
 };
 // extra aliases: `all_*` is the same as `all`; `test_all` = the four+ shards of the old test_all.js
-const ALIAS = { test_all: ['all_a', 'all_b', 'all_c', 'all_d', 'all_e'], 'test_v15': ['v15'], 'test_v16': ['v16'], 'test_v16b': ['v16b'], 'test_v17': ['v17'], 'test_v171_garden': ['v171_garden'], 'test_v171_tricks': ['v171_tricks'] };
+const ALIAS = { test_all: ['all_a', 'all_b', 'all_c', 'all_d', 'all_e'], 'test_v15': ['v15'], 'test_v16': ['v16'], 'test_v16b': ['v16b'], 'test_v17': ['v17'], 'test_v171_garden': ['v171_garden'], 'test_v171_tricks': ['v171_tricks'], 'test_v2_slots': ['v2_slots'], 'test_v2_breed': ['v2_breed'], 'test_v2_journal': ['v2_journal'], 'test_v2_town': ['v2_town'], 'test_v2_play': ['v2_play'] };
 
 const argv = process.argv.slice(2); const opt = { jobs: Math.max(1, os.cpus().length - 1), retries: 1, strict: false, build: true, shots: false, timeout: 420 }; const names = [];
 for (let i = 0; i < argv.length; i++) {
