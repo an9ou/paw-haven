@@ -1,0 +1,121 @@
+// v2 TOWN: vet gene test (60 coins, once, reveal), spay/neuter confirm (fixed), expecting check-up ultrasound (pup count, preg.scanned),
+// Dog Park Playdate Board (4 NPC dogs seeded per day, 2 boys + 2 girls, adults, openPlaydates guard), rehomed visitors (show, no overlap, pet once a day),
+// purchase window arrow keys update the quantity box + Total, Puppy Kibble sold at Kibble Corner with real (non "?") art.
+require('./test_lib').run('v2_town', async (t) => {
+  const { ok, sec, ev, S } = t;
+  await t.newGame({ sex: 'girl' }, { coins: 1000 }); const p = t.p;
+  const vetOpen = async () => { await t.home('vet'); await p.click('#placeBtns [data-pb=vet]'); await p.waitForSelector('#vetGene'); };
+
+  sec('vet: gene test');
+  await vetOpen();
+  ok(await p.locator('text=coming with Puppy Playdates').count() === 0, 'the greyed "coming with Puppy Playdates" hooks are gone');
+  let s = await S(); const c0 = s.coins;
+  ok(/Gene test \(60\)/.test(await p.textContent('#vetGene')), 'Gene test (60) button');
+  await p.click('#vetGene'); await p.waitForSelector('.dnacard');
+  ok(await t.until(() => !!document.querySelector('.dnacard.done'), null, 5000), 'DNA card animation finishes');
+  await t.sleep(900); await t.SH('01_gene_test');
+  s = await S(); ok(s.coins === c0 - 60 && s.dog.geneTested === true, `gene test charges 60 (${c0} -> ${s.coins}) and sets geneTested`);
+  const lines = await p.$$eval('.dna-lines li', (els) => els.map((e) => e.textContent));
+  ok(lines.length >= 4 && lines.every((l) => l.length > 4), 'gene card shows the plain-words lines: ' + lines.slice(0, 3).join(' | '));
+  ok(/carries|no hidden coat surprises/.test(await p.textContent('.dna-sum')), 'summary line: ' + (await p.textContent('.dna-sum')).trim());
+  await p.click('#dnaBack'); await p.waitForSelector('#vetGene');
+  ok(/See gene card/.test(await p.textContent('#vetGene')), 'button now reads "See gene card"');
+  await p.click('#vetGene'); await p.waitForSelector('.dnacard.done'); s = await S();
+  ok(s.coins === c0 - 60, 'the second look is free (once per dog)');
+  await p.click('#dnaBack'); await p.waitForSelector('#vetGene');
+
+  sec('vet: spay / neuter');
+  await t.freezeMotion(true);
+  ok(/Spay \(free\)/.test(await p.textContent('#vetFix')), 'girl: "Spay (free)"');
+  await p.click('#vetFix'); await p.waitForSelector('.confirm');
+  ok(/This is permanent\..*never have puppies.*loving choice too/.test(await p.textContent('.confirm')), 'kind confirm text');
+  await p.click('.confirm .no', { force: true }); await t.sleep(200); s = await S(); ok(!s.dog.fixed, '"Not now" keeps her as she is');
+  await p.click('#vetFix'); await p.waitForSelector('.confirm'); await p.click('.confirm .yes', { force: true });
+  ok(await t.until(() => window.__paw.S.dog.fixed === true), 'confirm sets fixed: true');
+  ok(await t.until(() => { const b = document.querySelector('#vetFix'); return !!b && b.getAttribute('aria-disabled') === 'true' && /Already spayed/.test(b.textContent); }), 'button: "Already spayed" (disabled)');
+  ok(await t.waitToast(/Cone of Dignity/), 'cone joke toast');
+  await t.closeX();
+
+  sec('vet: expecting check-up ultrasound');
+  await ev(() => { const S = window.__paw.S, d = S.dog; d.fixed = false; const t2 = new Date(); t2.setDate(t2.getDate() + 1); const due = `${t2.getFullYear()}-${String(t2.getMonth() + 1).padStart(2, '0')}-${String(t2.getDate()).padStart(2, '0')}`;
+    d.preg = { sire: 'npc_x', sireKey: 'corgi', sireName: 'Duke', since: due, due, pups: [{ id: 'p1' }, { id: 'p2' }, { id: 'p3' }], scanned: false }; d.vetDay = ''; });
+  await vetOpen();
+  ok(await p.locator('#vetScan').count() === 1 && /Expecting check-up/.test(await p.textContent('#vetGo')), 'expecting: Ultrasound option + "Expecting check-up (30)"');
+  ok(await p.getAttribute('#vetFix', 'aria-disabled') === 'true', 'no spay while expecting');
+  s = await S(); const c1 = s.coins;
+  await p.click('#vetGo'); await p.waitForSelector('.ultra');
+  ok(await p.locator('.ultra .ublob').count() === 3, 'ultrasound shows 3 pup blobs');
+  ok(/Expecting 3 puppies!/.test(await p.textContent('.ultra-txt')), '"Expecting 3 puppies!"');
+  await t.SH('02_ultrasound');
+  s = await S(); ok(s.dog.preg.scanned === true && s.coins === c1 - 30, 'preg.scanned = true; the check-up still costs 30');
+  await p.click('#vetOk'); await t.modalGone();
+  await ev(() => { window.__paw.S.dog.preg.pups.push({ id: 'p4' }); });
+  await vetOpen(); await p.click('#vetScan'); await p.waitForSelector('.ultra');
+  ok(await p.locator('.ultra .ublob').count() === 4 && /Expecting 4 puppies!/.test(await p.textContent('.ultra-txt')), 'free Ultrasound button: 4 blobs');
+  await t.closeX(); await ev(() => { window.__paw.S.dog.preg = null; });
+
+  sec('dog park playdate board');
+  const b1 = await ev(() => window.__paw.town.boardDogs('2026-03-01')), b1b = await ev(() => window.__paw.town.boardDogs('2026-03-01')), b2 = await ev(() => window.__paw.town.boardDogs('2026-03-02'));
+  ok(b1.length === 4 && JSON.stringify(b1) === JSON.stringify(b1b), '4 NPC dogs, same list for the same day');
+  ok(JSON.stringify(b1.map((n) => n.name + n.key)) !== JSON.stringify(b2.map((n) => n.name + n.key)), 'a different day gives a different board');
+  ok(b1.filter((n) => n.sex === 'male').length === 2 && b1.filter((n) => n.sex === 'female').length === 2, '2 boys and 2 girls');
+  const ages = await ev((b) => b.map((n) => { const t2 = new Date(); t2.setHours(0, 0, 0, 0); return Math.round((t2 - new Date(n.born + 'T00:00:00')) / 864e5); }), b1);
+  ok(ages.every((m) => m >= 14 && m <= 60), 'all adults, 14-60 months: ' + ages.join(','));
+  ok(b1.every((n) => n.npc === true && /^npc_2026-03-01_\d$/.test(n.id) && n.genes && n.owner && n.line && n.key && 'coat' in n && 'eyes' in n), 'npc shape { npc, id, name, key, sex, born, genes, owner, line, coat, eyes }');
+  await t.home('dogpark');
+  ok(await p.locator('#playboardG').count() === 1 && await p.locator('#placeBtns [data-pb2=playboard]').count() === 1, 'board in the dog park scene + a "Playdate board" button');
+  await t.SH('03a_dogpark_board'); await p.click('#playboardG'); await p.waitForSelector('.pbcard');
+  ok(await p.locator('.pbcard').count() === 4, 'the board popup lists 4 dogs');
+  ok(await p.locator('.pbcard').first().locator('.pbready li').count() >= 1, 'each card shows readiness for your dogs');
+  const girlCard = await p.$$eval('.pbcard', (els) => els.map((e) => e.querySelector('.pbready').textContent));
+  ok(/None of your dogs is a boy/.test(girlCard[1]) || /Mochi|✓|✗/.test(girlCard[0]), 'same-sex NPC card explains a boy and a girl are needed');
+  await t.SH('03_playboard');
+  await p.click('[data-pd="0"]');
+  ok(await t.until(() => window.__toasts.some((x) => /Playdates open soon/.test(x)) || !document.querySelector('.pbgrid')), 'Ask for a playdate: openPlaydates({ npc }) or the guarded "Playdates open soon!"');
+  await t.closeX(); await t.modalGone();
+
+  sec('rehomed visitors');
+  await ev(() => { const S = window.__paw.S; const d = S.dog; S.rehomed = [{ id: 'rh_1', name: 'Pip-Squeak', key: d.key, mix: null, sex: 'male', coat: '', eyes: 'brown', sparkle: false, born: (() => { const t2 = new Date(); t2.setDate(t2.getDate() - 7); return `${t2.getFullYear()}-${String(t2.getMonth() + 1).padStart(2, '0')}-${String(t2.getDate()).padStart(2, '0')}`; })(), genes: d.genes, parents: null, family: 'the Tanakas by the bakery', since: '2026-01-01', lastVisit: null }]; });
+  // 3 more dogs so every pack spot is taken: the visitor must use its own free spot
+  await ev(() => { const S = window.__paw.S, a = S.dogs[0]; ['corgi', 'husky', 'pug'].forEach((k, i) => { S.dogs.push(Object.assign(JSON.parse(JSON.stringify(a)), { id: 'xd' + i, key: k, name: 'Pal' + i })); }); S.house = 'Royal Castle Kennel'; });
+  await t.rnd(0.9); await t.home('pier'); await t.sleep(300);
+  ok(await p.locator('#visitorG').count() === 0, 'roll above 30%: no visitor at the pier');
+  await t.rnd(0.1); await t.home('yard'); await t.home('square'); await t.rnd(null);
+  ok(await t.until(() => !!document.querySelector('#visitorG')), 'roll under 30%: Pip-Squeak visits Town Square');
+  ok(await t.until(() => /Look who it is! Pip-Squeak grew up!/.test(window.__paw.town.line)), 'bubble line "Look who it is! Pip-Squeak grew up!"');
+  await t.sleep(150);
+  const rects = await ev(() => { const r = (el) => { const b = el.getBoundingClientRect(); return [b.left, b.top, b.right, b.bottom]; }; const vis = document.querySelector('#visitorG > rect'); return { v: r(vis), pack: [...document.querySelectorAll('#pack .packdog > .pd-wander > rect')].map(r), me: r(document.getElementById('dogHit')), btns: [...document.querySelectorAll('#placeBtns .btn')].map(r) }; });
+  ok(rects.pack.length === 3 && !rects.pack.some((r) => t.hitR(rects.v, r)) && !t.hitR(rects.v, rects.me) && !rects.btns.some((r) => t.hitR(rects.v, r)), 'visitor overlaps no dog of yours and no place button');
+  await t.SH('04_visitor');
+  s = await S(); ok(s.rehomed[0].lastVisit === (await ev(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })), 'lastVisit updated');
+  await ev(() => { window.__paw.S.dog.stats.happy = 50; });
+  await p.click('#visitorG', { force: true }); await p.waitForSelector('#vzPet');
+  ok(/Pip-Squeak/.test(await p.textContent('.visitcard')) && /Tanakas/.test(await p.textContent('.visitcard')) && /Age:/.test(await p.textContent('.visitcard')), 'visitor card: name, age, family');
+  await t.SH('05_visitor_card');
+  await p.click('#vzPet'); ok(await t.waitToast(/sniff hello/), 'Pet: toast');
+  s = await S(); ok(s.dog.stats.happy >= 54.5 && s.dog.stats.happy <= 55, `Pet gives +5 Happiness to the active dog (50 -> ${s.dog.stats.happy})`);
+  await p.click('#visitorG', { force: true }); await p.waitForSelector('#vzPet');
+  ok(await p.getAttribute('#vzPet', 'aria-disabled') === 'true', 'second visit today: "Petted today"');
+  const h1 = s.dog.stats.happy; await p.$eval('#vzPet', (b) => b.click()); ok(await t.waitToast(/already got pets today/), 'a second Pet is refused'); s = await S(); ok(s.dog.stats.happy <= h1, 'pets once a day per visitor');
+  await t.closeX(); await t.freezeMotion(false);
+  await ev(() => { const S = window.__paw.S; S.dogs.splice(1); S.activeId = S.dogs[0].id; });
+
+  sec('purchase window: arrow keys update the box; Puppy Kibble');
+  await t.home('market'); await p.click('#placeBtns [data-sh=kibble]', { force: true }); await p.waitForSelector('[data-buy="Basic Kibble"]');
+  ok(await p.locator('[data-buy="Puppy Kibble"]').count() === 1, 'Kibble Corner sells Puppy Kibble');
+  ok(await p.$eval('[data-buy="Puppy Kibble"]', (b) => !/<text[^>]*>\s*\?\s*<\/text>/.test(b.closest('.sitem').querySelector('.art').innerHTML)), 'Puppy Kibble art is not the "?" placeholder');
+  await p.mouse.move(5, 300); await p.click('[data-buy="Basic Kibble"]', { force: true }); await p.waitForSelector('.buyveil'); await t.until(() => document.activeElement === document.querySelector('.bb-in'));
+  const unit = await p.evaluate(() => +document.querySelector('.bb-unit').textContent.replace(/[^\d]/g, ''));
+  await p.keyboard.press('ArrowRight'); await p.keyboard.press('ArrowRight');
+  ok(await t.until(([n, u]) => { const m = /Total: ([\d,]+) coins/.exec(document.querySelector('.bb-sum').textContent); return document.querySelector('.bb-in').value === String(n) && !!m && +m[1].replace(/,/g, '') === n * u; }, [3, unit]), 'ArrowRight x2: the focused box shows 3 and Total = 3 x unit');
+  await p.keyboard.press('ArrowUp');
+  ok(await t.until(([n, u]) => { const m = /Total: ([\d,]+) coins/.exec(document.querySelector('.bb-sum').textContent); return document.querySelector('.bb-in').value === String(n) && !!m && +m[1].replace(/,/g, '') === n * u; }, [4, unit]), 'ArrowUp: 4');
+  await p.keyboard.press('ArrowDown'); await p.keyboard.press('ArrowLeft');
+  ok(await t.until(([n, u]) => { const m = /Total: ([\d,]+) coins/.exec(document.querySelector('.bb-sum').textContent); return document.querySelector('.bb-in').value === String(n) && !!m && +m[1].replace(/,/g, '') === n * u; }, [2, unit]), 'ArrowDown + ArrowLeft: 2');
+  ok(await ev(() => document.activeElement === document.querySelector('.bb-in')), 'the box kept its focus');
+  await p.keyboard.press('Escape'); await t.until(() => !document.querySelector('.buyveil'));
+  s = await S(); const pk0 = s.inv.food['Puppy Kibble'] || 0;
+  await p.click('[data-buy="Puppy Kibble"]', { force: true }); await p.waitForSelector('.buyveil .bb-in'); await p.fill('.bb-in', '2'); await t.until(() => document.querySelector('.bb-in').value === '2'); await p.click('.bb-yes', { force: true }); await t.until(() => !document.querySelector('.buyveil')); s = await S();
+  ok((s.inv.food['Puppy Kibble'] || 0) === pk0 + 2, 'bought 2 Puppy Kibble');
+  await t.closeX();
+});

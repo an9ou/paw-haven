@@ -28,7 +28,7 @@ require('./test_lib').run('all_b', async (t) => {
   await p.click('[data-buy="Basic Kibble"]'); await p.waitForSelector('.buyveil'); await t.until(() => document.activeElement === document.querySelector('.bb-in'));
   const unitPrice = await p.evaluate(() => +document.querySelector('.bb-unit').textContent.replace(/[^\d]/g, ''));
   await p.keyboard.press('ArrowRight'); await p.keyboard.press('ArrowRight');
-  ok(await t.until((u) => { const m = /Total: ([\d,]+) coins/.exec(document.querySelector('.bb-sum').textContent); return !!m && +m[1].replace(/,/g, '') === 3 * u; }, unitPrice), 'arrow keys change the quantity (1 -> 3: Total = 3 x ' + unitPrice + ')');
+  ok(await t.until((u) => { const m = /Total: ([\d,]+) coins/.exec(document.querySelector('.bb-sum').textContent); return !!m && +m[1].replace(/,/g, '') === 3 * u && document.querySelector('.bb-in').value === '3'; }, unitPrice), 'arrow keys change the quantity (1 -> 3: box shows 3, Total = 3 x ' + unitPrice + ')');
   await p.keyboard.press('ArrowLeft'); ok(await t.until((u) => { const m = /Total: ([\d,]+) coins/.exec(document.querySelector('.bb-sum').textContent); return !!m && +m[1].replace(/,/g, '') === 2 * u; }, unitPrice), 'ArrowLeft lowers it again (2)');
   const vb = await p.locator('.buyveil').boundingBox(); await p.mouse.click(vb.x + 12, vb.y + vb.height / 2);
   ok(await t.until(() => !document.querySelector('.buyveil')), 'window backdrop click cancels'); ok(await p.locator('#modal .panel').count() === 1, 'the shop stays open after the backdrop click');

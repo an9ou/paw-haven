@@ -45,7 +45,8 @@ function buyWindow(panel, o) {
       yes.disabled = bad; yes.setAttribute('aria-disabled', bad ? 'true' : 'false');
       v.querySelectorAll('[data-qq]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.qq === String(q) || (b.dataset.qq === 'max' && q === mx))));
     };
-    const step = (d) => { q = (+q || 1) + d; SFX.click(); draw(); };
+    // a step from the keys or the -/+ buttons always rewrites the box, even while it has focus (typing still isn't overwritten)
+    const step = (d) => { q = (+q || 1) + d; SFX.click(); draw(); if (inp) inp.value = q; };
     const done = (val) => { window.removeEventListener('keydown', onKey, true); v.remove(); buyOpen = false; res(val); };
     const doBuy = () => { if (yes.disabled) { SFX.nope(); return; } done(q); };
     const onKey = (e) => {
@@ -53,8 +54,8 @@ function buyWindow(panel, o) {
       const k = e.key; let used = true;
       if (k === 'Escape') { SFX.click(); done(0); }
       else if (k === 'Enter') doBuy();
-      else if ((k === 'ArrowLeft' || k === '-' || k === '_') && (o.stack || sell)) step(-1);
-      else if ((k === 'ArrowRight' || k === '+' || k === '=') && (o.stack || sell)) step(1);
+      else if ((k === 'ArrowLeft' || k === 'ArrowDown' || k === '-' || k === '_') && (o.stack || sell)) step(-1);
+      else if ((k === 'ArrowRight' || k === 'ArrowUp' || k === '+' || k === '=') && (o.stack || sell)) step(1);
       else used = false;
       if (used) { e.preventDefault(); e.stopImmediatePropagation(); }
     };
@@ -63,10 +64,15 @@ function buyWindow(panel, o) {
     v.querySelector('.bb-no').onclick = () => { SFX.click(); done(0); };
     yes.onclick = doBuy;
     if (inp) { v.querySelector('.bb-m').onclick = () => step(-1); v.querySelector('.bb-p').onclick = () => step(1); inp.addEventListener('input', () => { q = inp.value; draw(); }); inp.addEventListener('change', () => { q = inp.value; draw(); inp.value = q; }); }
-    v.querySelectorAll('[data-qq]').forEach((b) => { b.onclick = () => { SFX.click(); q = b.dataset.qq === 'max' ? Math.max(1, maxQ()) : +b.dataset.qq; draw(); }; });
+    v.querySelectorAll('[data-qq]').forEach((b) => { b.onclick = () => { SFX.click(); q = b.dataset.qq === 'max' ? Math.max(1, maxQ()) : +b.dataset.qq; draw(); if (inp) inp.value = q; }; });
     draw(); setTimeout(() => { try { (inp || yes).focus({ preventScroll: true }); if (inp) inp.select(); } catch (e) { /* none */ } }, 30);
   });
 }
+/* item art with a graceful fallback: a new item the art module doesn't draw yet gets a doodle instead of the "?" */
+const ITEM_FB = {
+  'Puppy Kibble': () => `<svg viewBox="0 0 100 100"><path d="M26 30 Q24 22 30 20 H70 Q76 22 74 30 L80 84 Q80 90 74 90 H26 Q20 90 20 84 Z" fill="#CDEBDD" stroke="#5B3D32" stroke-width="3.5" stroke-linejoin="round"/><path d="M30 20 Q40 28 50 20 Q60 28 70 20" fill="none" stroke="#5B3D32" stroke-width="2.5"/><rect x="31" y="44" width="38" height="32" rx="8" fill="#FBE0E6" stroke="#5B3D32" stroke-width="2.5"/><g fill="#F28FA5" stroke="#5B3D32" stroke-width="1.6"><ellipse cx="50" cy="64" rx="7" ry="6"/><circle cx="41" cy="54" r="3.2"/><circle cx="47" cy="50" r="3.2"/><circle cx="53" cy="50" r="3.2"/><circle cx="59" cy="54" r="3.2"/></g><g fill="#E8B07A" stroke="#5B3D32" stroke-width="1.5"><circle cx="78" cy="88" r="4"/><circle cx="86" cy="84" r="3.4"/></g></svg>`
+};
+function itemArt(n) { return artReal('item', n) || (ITEM_FB[n] ? ITEM_FB[n]() : art('item', n)); }
 function priceHTML(p) { return `<span class="price"><span class="ic">${ICON('coin')}</span>${p}</span>`; }
 let shopTab = { kibble: 'food' };
 function openShop(k) {
@@ -87,7 +93,7 @@ function openShop(k) {
   }
   const cards = items.map((it) => {
     const lock = topBond() < it.bond, owned = it.cat === 'beds' ? S.beds.includes(it.n) : it.cat !== 'food' && it.cat !== 'pantry' && owns(it.cat, it.n), have = it.cat === 'food' ? (S.inv.food[it.n] || 0) : it.cat === 'pantry' ? (S.inv.pantry[it.id] || 0) : 0;
-    const artH = it.cat === 'houses' ? `<span class="art house">${art('house', it.n)}</span>` : `<span class="art">${art('item', it.n)}</span>`;
+    const artH = it.cat === 'houses' ? `<span class="art house">${art('house', it.n)}</span>` : `<span class="art">${itemArt(it.n)}</span>`;
     let act;
     if (lock) act = `<span class="chip lock">Bond ${it.bond}</span>`;
     else if (owned && it.cat === 'beds') act = S.bed === it.n ? '<span class="chip own">Owned · in use</span>' : `<button class="btn" data-usebed="${esc(it.n)}">Owned · Use this bed</button>`;
@@ -107,7 +113,7 @@ function openShop(k) {
       const it = items.find((x) => x.n === b.dataset.buy); SFX.click();
       const stack = it.cat === 'food' || it.cat === 'pantry', owned = it.cat === 'beds' ? S.beds.includes(it.n) : !stack && owns(it.cat, it.n);
       const have = it.cat === 'food' ? (S.inv.food[it.n] || 0) : it.cat === 'pantry' ? (S.inv.pantry[it.id] || 0) : owned ? 1 : 0;
-      const q = await buyWindow(p, { art: it.cat === 'houses' ? art('house', it.n) : art('item', it.n), name: it.n, desc: it.desc, price: it.price, stack, owned, have, haveLabel: stack ? 'In bag' : 'Owned' }); if (!q) return;
+      const q = await buyWindow(p, { art: it.cat === 'houses' ? art('house', it.n) : itemArt(it.n), name: it.n, desc: it.desc, price: it.price, stack, owned, have, haveLabel: stack ? 'In bag' : 'Owned' }); if (!q) return;
       const cost = it.price * q; if (S.coins < cost) { nope('Not enough coins. Have you tried being rich?'); return; }
       S.coins -= cost; SFX.kaching();
       if (it.cat === 'beds') S.beds.push(it.n); else if (it.cat === 'food') S.inv.food[it.n] = (S.inv.food[it.n] || 0) + q; else if (it.cat === 'pantry') S.inv.pantry[it.id] = (S.inv.pantry[it.id] || 0) + q; else S.inv[it.cat].push(it.n);
