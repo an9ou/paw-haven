@@ -57,7 +57,7 @@ function enterWalkClassic(area) {
       <span class="digs" id="digsLeft"></span><div class="prog" style="max-width:220px" aria-label="Walk progress"><i id="walkBar"></i></div><span id="walkTime" class="small" style="min-width:56px;text-align:right"></span></div>
     <div class="walkctl"><button class="btn holdbtn" id="holdBtn">Hold to walk</button><button class="btn" id="hopBtn">Hop</button><button class="btn yes" id="digBtn" disabled>Dig!</button><button class="btn" id="bagBtn"><span class="ic">${iconOr('bag', '<path d="M-12 -4 Q0 -16 12 -4 L14 14 L-14 14 Z" fill="#FCD8BC" stroke="#5B3D32" stroke-width="2"/>')}</span>Bag</button><label class="tog"><input type="checkbox" id="autoWalk"> Auto-walk</label></div>
     <div class="walkbag" id="walkBag" hidden></div>
-    <p class="small" style="margin:0">${isPhone() ? 'Hold the button, or press the scene, to walk.' : 'Hold to walk (button, scene, Space or right arrow).'} Sniff spots give clues; the Nose-o-meter gets hotter near the treasure. You have only ${W.digsLeft} digs, so choose your X wisely.</p></div>`;
+    <p class="small" style="margin:0">${isPhone() ? 'Hold the button, or press the scene, to walk.' : 'Hold to walk (button, scene, Space or right arrow).'} Sniff spots give clues. The Nose-o-meter gets hotter near the treasure. You have only ${W.digsLeft} digs, so choose your X wisely.</p></div>`;
   const hb = $('#holdBtn');
   const down = (e) => { e.preventDefault(); SFX.init(); W.hold = true; W.holdAt = performance.now(); hb.classList.add('down'); };
   const up = () => { W.hold = false; hb.classList.remove('down'); };

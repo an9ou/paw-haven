@@ -28,6 +28,7 @@ function psLockCheck() {
   if (on) html.setAttribute('data-pslock', ''); else html.removeAttribute('data-pslock');
   if (card) card.hidden = !on;
   emit('phone:lock', { on });
+  if (on) window.dispatchEvent(new Event('blur')); // review fix: the walk runner (mods/walkrun.js) pauses on blur, so it doesn't play on behind the card
 }
 
 /* ---------- sheets ---------- */

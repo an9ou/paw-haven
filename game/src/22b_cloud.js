@@ -141,6 +141,7 @@ async function clBackup(data, reason) {
 }
 async function clPush(force) {
   if (!CL.on) return;
+  if (CL.loggingIn && !force) return; // review fix: never push the guest game onto the account mid-login
   if (CL.busy) { CL.again = true; return; }
   let m = clMeta(); const data = clLocal();
   if (!data || (!force && m.rev && m.changedAt <= m.pushedAt)) { clStat(); return; }
@@ -256,17 +257,20 @@ async function clRegister(email, pw) {
 }
 async function clLogin(email, pw) {
   if (!(await clStart())) return { ok: false, msg: 'Cloud save is offline. Your game is saved on this device.' };
-  const local = clLocal();
-  const r = await CL.sb.auth.signInWithPassword({ email, password: pw });
-  if (r.error || !r.data || !r.data.user) return { ok: false, msg: clErrText(r.error || 'invalid login') };
-  clSetUser(r.data.user);
-  const q = await CL.sb.from('saves').select('*').eq('user_id', CL.uid).maybeSingle();
-  if (q.data && q.data.data) {
-    if (local && !clSame(local, q.data.data)) await clBackup(local, 'guest save before sign-in');
-    clApply(q.data.data, q.data, null); return { ok: true, loaded: true };
-  }
-  if (local) { clMetaSet({ changedAt: Date.now(), rev: 0, pushedAt: 0 }); await clPush(true); }
-  return { ok: true, loaded: false };
+  clearTimeout(CL.timer); CL.timer = null; CL.loggingIn = true; // the scheduled guest push must not run after the switch
+  try {
+    const local = clLocal();
+    const r = await CL.sb.auth.signInWithPassword({ email, password: pw });
+    if (r.error || !r.data || !r.data.user) return { ok: false, msg: clErrText(r.error || 'invalid login') };
+    clSetUser(r.data.user);
+    const q = await CL.sb.from('saves').select('*').eq('user_id', CL.uid).maybeSingle();
+    if (q.data && q.data.data) {
+      if (local && !clSame(local, q.data.data)) await clBackup(local, 'guest save before sign-in');
+      clApply(q.data.data, q.data, null); return { ok: true, loaded: true };
+    }
+    if (local) { clMetaSet({ changedAt: Date.now(), rev: 0, pushedAt: 0 }); await clPush(true); }
+    return { ok: true, loaded: false };
+  } finally { CL.loggingIn = false; CL.again = false; }
 }
 async function clLogout() {
   if (CL.sb) { if (CL.ch) { try { CL.sb.removeChannel(CL.ch); } catch (e) { /* gone */ } CL.ch = null; } try { await CL.sb.auth.signOut(); } catch (e) { /* offline: the local copy is still logged out below */ } }
@@ -319,7 +323,7 @@ async function clImport(code) {
   const cur0 = clLocal();
   if (cur0) { lsSet(CL_CFG.backupKey, JSON.stringify(cur0)); if (CL.on && CL.uid) await clBackup(cur0, 'before an import'); }
   clApply(data, null, null);
-  if (CL.on) { clMetaSet({ changedAt: Date.now() }); clPush(true); }
+  if (CL.on) { clMetaSet({ changedAt: Date.now(), dogId: clDogId(data) }); clPush(true); } // dogId: the push must not back the old game up a second time
   return data;
 }
 

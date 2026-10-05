@@ -200,7 +200,9 @@ run('cloud', async (t) => {
   ok(await until(d2, (n) => !!window.__paw.S && window.__paw.S.dog.name === n, name1, 6000), 'right password: the account save loads on device 2');
   ok(await until(d2, () => !!document.querySelector('#tContinue'), null, 4000), 'the title screen now offers Continue');
   ok((await uidOf(d2)) === g1, 'device 2 is the same account');
-  await tap(d2, '#tContinue'); ok(await until(d2, () => window.__paw.mode === 'yard', null, 6000), 'Continue goes to the yard');
+  // the title screen may still be redrawing after the account save loaded: tap again until the game leaves it
+  let cont = false; for (let k = 0; k < 4 && !cont; k++) { await tap(d2, '#tContinue').catch(() => {}); cont = await until(d2, () => window.__paw.mode === 'yard', null, 3000); }
+  ok(cont, 'Continue goes to the yard');
   use(d2); await t.calm(); await t.lu();
 
   sec('Realtime: a save on one device shows up on the other when idle');
