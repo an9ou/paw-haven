@@ -10,8 +10,8 @@ const dogById = (id) => S.dogs.find((d) => d.id === id) || null;
 /* v2.0.1: puppies under 3 months (not vaccinated yet) and nursing mums stay home: away from the yard/house they are not with the pack */
 const HOME_PLACES = ['yard', 'house'];
 function staysHome(d) { return !!d && (ageMonths(d) < 3 || (Array.isArray(S.litters) && S.litters.some((l) => l && l.mum === d.id))); }
-function awayFromHome(place) { return !!S && !HOME_PLACES.includes(place === undefined ? S.place : place); }
-function stayHomeLine(d) { return d && Array.isArray(S.litters) && S.litters.some((l) => l && l.mum === d.id) ? `${d.name} is nursing the pups and stays home for now. Home and yard only.` : `${d.name} hasn't had all puppy shots yet. Home and yard only until 3 months.`; }
+function awayFromHome(place) { const p = place === undefined ? S.place : place; return !!S && !HOME_PLACES.includes(p) && p !== 'vet'; } // the vet is fine: that's where puppy shots happen
+function stayHomeLine(d) { return d && Array.isArray(S.litters) && S.litters.some((l) => l && l.mum === d.id) ? `${d.name} is nursing the pups and stays home for now. Home, yard and the vet only.` : `${d.name} hasn't had all puppy shots yet. Home, yard and the vet only until 3 months.`; }
 const others = () => S.dogs.filter((d) => d.id !== S.activeId && !(awayFromHome() && staysHome(d))); // the pack dogs that are here with you
 function hashId(s) { let h = 2166136261; s = String(s); for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
 function activeOf(s) { return s.dogs.find((d) => d.id === s.activeId) || s.dogs[0]; }

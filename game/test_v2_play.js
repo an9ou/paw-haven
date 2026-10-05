@@ -78,7 +78,7 @@ require('./test_lib').run('v2_play', async (t) => {
   ok(await t.waitToast(/Pip-Squeak is at home/, 4000) && (await ev((id) => window.__paw.S.activeId !== id, pipId)), 'cannot switch to the pup who stayed home');
   await t.home('yard'); ok(await t.until(() => document.querySelectorAll('#pack .packdog').length === 1, null, 4000), 'back home: the pup is in the yard again');
   await setAge(1); await t.home(); await clearToasts(); await mapClick('river');
-  ok(await t.waitToast(/Mochi hasn't had all puppy shots yet\. Home and yard only until 3 months\./, 4000), 'active 1-month pup: "hasn\'t had all puppy shots yet. Home and yard only until 3 months."');
+  ok(await t.waitToast(/Mochi hasn't had all puppy shots yet\. Home, yard and the vet only until 3 months\./, 4000), 'active 1-month pup: "hasn\'t had all puppy shots yet. Home and yard only until 3 months."');
   ok((await ev(() => window.__paw.S.place)) === 'yard' && !(await ev(() => !!document.querySelector('.onway'))), 'and the trip does not start');
   await t.home(); await setAge(24); await ev(() => { const S = window.__paw.S; S.litters = [{ id: 'Ltr', mum: S.dog.id, sire: 'x', born: '2026-01-01', until: '2099-01-01', pups: [], named: true }]; });
   await clearToasts(); await mapClick('park');
