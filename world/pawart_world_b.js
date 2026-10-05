@@ -999,6 +999,19 @@ const TREASURE={
   b.ex('glint',27,21,4);
   b.ex('spark',53,13,5,'#F3EDFF');b.ex('spark',10,48,4,'#FFE07A');b.ex('spark',56,52,3,'#F9C7D6');b.ex('plus',11,14,2.2);b.ex('dots',50,40,4);
  },
+ 'Coat Collector Ribbon'(b){ // neck-charm rosette: scalloped pastel rosette, stitched edge, two tails, paw swatch
+  const scal=(cx,cy,R,r,n)=>{const p=[];for(let i=0;i<n*4;i++){const a=i/(n*4)*Math.PI*2-Math.PI/2,q=Math.abs(Math.sin(i/(n*4)*Math.PI*n)),rr=r+(R-r)*Math.pow(q,.6);p.push([cx+Math.cos(a)*rr,cy+Math.sin(a)*rr])}return p};
+  b.raw('<circle cx="32" cy="29" r="30" fill="#FDE3EC" opacity=".5"/><circle cx="32" cy="29" r="24" fill="#F9D3E3" opacity=".45"/>','under');
+  b.sh([[24,36],[14,60],[21,56.5],[26,62],[33,40]],'#C6B2EE',{k:.06,sh:'#8E78D0',hatch:1,det:[[[25,41],[20,54]]],dw:.7});
+  b.sh([[40,36],[50,60],[43,56.5],[38,62],[31,40]],'#F7A1B5',{k:.06,sh:'#D9708E',det:[[[39,41],[44,54]]],dw:.7});
+  b.sh(scal(32,28,22,19,12),'#F9B8CF',{k:.05,sh:'#E58AA8'});
+  b.sh(E(32,28,15.5,15.5,22),'#FFE3EA',{hatch:0,hl:0,lw:.8,base:'#FFF3F6',marks:[{pts:E(26.5,22.5,7,5,10,-.6),fill:'#FFFFFF',op:.6}]});
+  b.raw('<circle cx="32" cy="28" r="13" fill="none" stroke="#C9627F" stroke-width="1" stroke-dasharray="2 2.6" stroke-linecap="round" opacity=".8"/>','top');
+  b.raw('<circle cx="32" cy="28" r="20.2" fill="none" stroke="#B94E6F" stroke-width=".9" stroke-dasharray="1.6 2.8" stroke-linecap="round" opacity=".6"/>','top');
+  b.sh(E(32,28,9,9,18),'#FFF6E6',{hatch:0,hl:0,lw:.9,base:'#FFFDF6'});
+  paw(b,32,29.5,3.1,'#C98A6B',{lw:.5,noline:0});
+  b.ex('glint',24.5,19,4);golden(b,[[56,12,4.2],[8,50,3.4]]);b.ex('spark',55,36,3,'#F9C7D6');
+ },
  'Old Map Piece (Park)'(b){mapItem(b,'park')},
  'Old Map Piece (River)'(b){mapItem(b,'river')},
  'Old Map Piece (Woods)'(b){mapItem(b,'woods')},
