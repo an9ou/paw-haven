@@ -1,1 +1,84 @@
-/* ---------- v2.2 phone: PUPPY lane. Every rule sits under html[data-layout="phone"] ---------- */
+/* v2.2 phone (PUPPY lane): Puppy Playdates, playdate scene, birth, nursery, Who stays, pick of the litter, Doggy Ramp.
+   Every rule sits under html[data-layout="phone"]. Content only: the sheet, handle, .btn base sizes and toasts belong to the SHELL lane. */
+html[data-layout="phone"] .panel.playdates,html[data-layout="phone"] .panel.litter{width:100%}
+html[data-layout="phone"] .panel.playdates .small,html[data-layout="phone"] .panel.litter .small{font-size:13px}
+html[data-layout="phone"] .panel.playdates p,html[data-layout="phone"] .panel.litter p{font-size:15px}
+
+/* pair picker: one column, big tap rows */
+html[data-layout="phone"] .pd-pick{grid-template-columns:1fr;gap:6px}
+html[data-layout="phone"] .pd-col h3{font-size:22px;margin:2px 0 4px}
+html[data-layout="phone"] .pd-dog{min-height:64px;padding:6px 10px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+html[data-layout="phone"] .pd-head{flex:0 0 48px;width:48px;height:48px}
+html[data-layout="phone"] .pd-txt b{font-size:17px}
+html[data-layout="phone"] .pd-st{font-size:13px}
+html[data-layout="phone"] .pd-verdict{font-size:15px;padding:8px 10px}
+html[data-layout="phone"] .pd-predict li{font-size:15px;min-height:24px}
+html[data-layout="phone"] .pd-sparkle{flex-wrap:wrap;gap:6px 10px;font-size:15px}
+html[data-layout="phone"] .pd-meter{margin-left:0;font-size:15px;white-space:normal}
+html[data-layout="phone"] .pd-rules summary{display:flex;align-items:center;min-height:44px;font-size:15px;touch-action:manipulation}
+html[data-layout="phone"] .pd-rules li{font-size:13px}
+html[data-layout="phone"] .pd-empty{flex-direction:column;text-align:center}
+
+/* playdate scene: two pals fit a phone-wide stage */
+html[data-layout="phone"] .pd-scene{height:170px}
+html[data-layout="phone"] .pd-pal{width:150px;height:126px}
+html[data-layout="phone"] .pd-pal.a{left:6%}
+html[data-layout="phone"] .pd-pal.b{left:50%}
+html[data-layout="phone"] .ph-rest .pd-pal.a{left:16%}
+html[data-layout="phone"] .ph-rest .pd-pal.b{left:46%}
+html[data-layout="phone"] .pd-result p{font-size:17px}
+@keyframes ppChaseA{from{left:0%}to{left:30%}}
+@keyframes ppChaseB{from{left:22%}to{left:52%}}
+html[data-layout="phone"] .ph-chase .pd-pal.a{animation-name:ppChaseA}
+html[data-layout="phone"] .ph-chase .pd-pal.b{animation-name:ppChaseB}
+
+/* birth: pup cards in one swipeable row, Back / Next as the fallback */
+html[data-layout="phone"] .lt-top{flex-direction:column;text-align:center;gap:4px}
+html[data-layout="phone"] .lt-mum{flex:0 0 auto;width:120px;height:66px}
+html[data-layout="phone"] .lt-mum > svg{height:100px;margin-top:-14px}
+html[data-layout="phone"] .lt-mumname{font-size:24px}
+html[data-layout="phone"] .birth .lt-pups{flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;overflow-y:hidden;gap:12px;padding:14px 12px 6px;margin:6px -4px 0;width:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;touch-action:pan-x}
+html[data-layout="phone"] .birth .lt-pups::-webkit-scrollbar{display:none}
+html[data-layout="phone"] .birth .lt-card{flex:0 0 72%;width:72%;scroll-snap-align:center;touch-action:pan-x}
+html[data-layout="phone"] .birth .lt-card:first-child:last-child{flex-basis:84%;width:84%;margin:0 auto}
+html[data-layout="phone"] .birth .lt-art{width:150px;height:90px}
+html[data-layout="phone"] .lt-sx{font-size:15px}
+html[data-layout="phone"] .lt-name .namebox{min-height:44px;font-size:20px}
+html[data-layout="phone"] .lt-card .small{font-size:13px}
+html[data-layout="phone"] .lt-spark{font-size:18px}
+html[data-layout="phone"] .lt-new{font-size:18px}
+html[data-layout="phone"] .pp-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px}
+html[data-layout="phone"] .pp-nav .btn{min-width:96px;min-height:44px;touch-action:manipulation}
+html[data-layout="phone"] .pp-count{font-family:var(--font-hand);font-size:20px;font-weight:700}
+
+/* nursery */
+html[data-layout="phone"] .ns-bed{flex-wrap:wrap;gap:0}
+html[data-layout="phone"] .ns-bed > svg{width:180px;height:135px}
+html[data-layout="phone"] .ns-pups{flex-wrap:wrap;justify-content:center}
+html[data-layout="phone"] .ns-pup{width:96px}
+html[data-layout="phone"] .ns-pup svg{width:96px;height:72px}
+html[data-layout="phone"] .ns-pup b{font-size:15px}
+html[data-layout="phone"] .ns-count{font-size:24px}
+html[data-layout="phone"] .panel.nursery .foot .btn,html[data-layout="phone"] .panel.litter .foot .btn{min-height:44px;touch-action:manipulation}
+
+/* Who stays + pick of the litter: two cards a row */
+html[data-layout="phone"] .whostays .lt-pups,html[data-layout="phone"] .panel.litter:not(.birth):not(.whostays) .lt-pups{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:8px 0 0}
+html[data-layout="phone"] .panel.litter:not(.birth) .lt-card{width:auto;min-width:0;padding:6px 6px 8px}
+html[data-layout="phone"] .panel.litter:not(.birth) .lt-art{width:100%;max-width:140px;height:80px}
+html[data-layout="phone"] .lt-card.pick{min-height:44px;touch-action:manipulation}
+html[data-layout="phone"] .ws-free{font-size:15px}
+html[data-layout="phone"] .ws-tog{width:100%;gap:6px}
+html[data-layout="phone"] .ws-tog .btn{flex:1;min-width:0;min-height:44px;padding:4px 6px;font-size:15px;touch-action:manipulation}
+html[data-layout="phone"] .ws-bye li{font-size:15px}
+html[data-layout="phone"] .ws-spark{flex-direction:column;text-align:center}
+html[data-layout="phone"] .ws-spark p{font-size:16px}
+
+/* Doggy Ramp tip */
+html[data-layout="phone"] .br-tip{flex-direction:column;text-align:center}
+html[data-layout="phone"] .br-tip p{font-size:15px}
+
+/* the sex symbol follows its line, so it never drops under the text minimum */
+html[data-layout="phone"] .panel.playdates .sex,html[data-layout="phone"] .panel.litter .sex{font-size:1em}
+
+/* the pup row must be able to pan sideways inside the sheet (the v1.5B panel is touch-action:none for its swipe-down handle) */
+html[data-layout="phone"] .panel.birth{touch-action:pan-x pan-y}

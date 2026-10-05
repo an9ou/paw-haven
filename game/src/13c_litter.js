@@ -85,8 +85,20 @@ function openBirth(litterId) {
   const ok = () => { brNameDone(L, p); modalClose = null; closeModal(); toast(`Welcome, ${L.pups.map((x) => x.name).join(', ')}! The nursery basket is ready.`, 'gold'); if (cur.mode === 'yard') brDrawNursery(); };
   $('#ltOk', p).onclick = ok;
   p.querySelectorAll('[data-pupname]').forEach((inp) => inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); ok(); } }));
-  const first = p.querySelector('[data-pupname]'); if (first) setTimeout(() => { first.focus({ preventScroll: true }); first.select(); }, 60);
+  if (isPhone()) ppPager(p); // v2.2: swipeable row of pup cards with Back / Next buttons
+  const first = p.querySelector('[data-pupname]'); if (first && !isPhone()) setTimeout(() => { first.focus({ preventScroll: true }); first.select(); }, 60);
   brSting('birth'); if (sp) setTimeout(() => brSting('sparkle'), 300 + 180 * n + 600);
+}
+// v2.2 phone (PUPPY lane): the birth cards sit in one swipeable row. Back and Next buttons are the tap fallback, and a count says which pup is showing.
+function ppPager(p) {
+  const row = p.querySelector('.lt-pups'), cards = row ? [...row.querySelectorAll('.lt-card')] : []; if (cards.length < 2) return;
+  const nav = document.createElement('div'); nav.className = 'pp-nav';
+  nav.innerHTML = '<button class="btn pp-prev" type="button" aria-label="Previous pup">&lsaquo; Back</button><span class="pp-count" id="ppCount" aria-live="polite"></span><button class="btn pp-next" type="button" aria-label="Next pup">Next &rsaquo;</button>';
+  row.after(nav); const prev = nav.querySelector('.pp-prev'), next = nav.querySelector('.pp-next'), count = nav.querySelector('.pp-count');
+  const at = () => { const w = cards[0].offsetWidth + 12; return clamp(Math.round(row.scrollLeft / Math.max(1, w)), 0, cards.length - 1); };
+  const sync = () => { const i = at(); count.textContent = "Pup " + (i + 1) + " of " + cards.length; prev.disabled = i === 0; next.disabled = i === cards.length - 1; };
+  const go = (d) => { const i = clamp(at() + d, 0, cards.length - 1); cards[i].scrollIntoView({ behavior: document.documentElement.dataset.motion === 'off' ? 'auto' : 'smooth', inline: 'center', block: 'nearest' }); SFX.click(); };
+  prev.onclick = () => go(-1); next.onclick = () => go(1); row.addEventListener('scroll', sync, { passive: true }); sync();
 }
 function brNameDone(L, p) {
   if (p) p.querySelectorAll('[data-pupname]').forEach((inp) => { const pp = L.pups.find((x) => x.id === inp.dataset.pupname); const v = (inp.value || '').trim().slice(0, 16); if (pp && v) pp.name = v; });
