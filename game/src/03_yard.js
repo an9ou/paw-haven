@@ -34,7 +34,7 @@ function renderDog(pose, facing = 'right', force) {
 }
 function setTemp(pose, ms) { tempPose = pose; tempUntil = performance.now() + ms; renderDog(pose); }
 function dogTo(tx, ty = 0, scale = 1, secs = 0.9) {
-  const p = $('#dogPos'); if (!p) return; camTo(430 * scale + tx, secs); p.style.transitionDuration = secs + 's';
+  const p = $('#dogPos'); if (!p) return; phCamHome = 430 * scale + tx; camTo(430 * scale + tx, secs); p.style.transitionDuration = secs + 's';
   p.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
 }
 function bowlArt(food) {
@@ -54,11 +54,13 @@ function enterYard() {
   setChrome(true, true);
   view.innerHTML = yardWorldSVG(); dogKey = ''; busy = false;
   renderDog(dogPoseNow()); setBowl(S.bowl || null);
+  phCamHome = 430; clearTimeout(phPanT);
   camCx = 430; camApply(camCx);
   if (S.sleeping) { dogTo(417.5, S.place === 'house' ? 130 : 140, 0.75, 0); showZzz(true); }
   updateHUD(); bindDev(); bindMess(); bindPack(); greetWalker(); drawFluff(); setTimeout(() => yardReaction(false), 700);
   const bedG = $('#bedG'); if (bedG) { bedG.onclick = () => { popAct = 'care'; openCareTray(); }; bedG.onkeydown = (e) => { if (e.key === 'Enter') { popAct = 'care'; openCareTray(); } }; }
   const svg = $('svg.world', view), hit = $('#dogHit');
+  if (isPhone()) phCamPan(svg);
   // petting: rub (mouse hover-rub or touch drag) or tap
   let last = null, down = false, moved = 0;
   const tickFrom = (e) => { const w = toWorld(svg, e.clientX, e.clientY); petTick(w.x, w.y); };
@@ -88,6 +90,26 @@ function enterYard() {
   onCleanup(() => clearInterval(iv));
   if (S.sleeping) sleepTray(); else dockIdle();
   emit('yard:enter', { place: S.place });
+}
+// v2.2 phone: swipe the yard or house sideways to look around (the camera crop is about half the scene). It eases back to the dog after a few seconds.
+let phCamHome = 430, phPanT = 0;
+function phCamPan(svg) {
+  let x0 = null, c0 = 0, id = null, on = false, swallowUntil = 0;
+  svg.addEventListener('click', (ev) => { if (performance.now() < swallowUntil) { ev.stopPropagation(); ev.preventDefault(); } }, true);
+  const mine = (e) => e.pointerType !== 'mouse' && !e.target.closest('#dogHit');
+  svg.addEventListener('pointerdown', (e) => { if (!mine(e)) return; x0 = e.clientX; c0 = camCx; id = e.pointerId; on = false; });
+  svg.addEventListener('pointermove', (e) => {
+    if (x0 == null || e.pointerId !== id) return; const dx = e.clientX - x0;
+    if (!on) { if (Math.abs(dx) < 12) return; on = true; clearTimeout(phPanT); cancelAnimationFrame(camRaf); try { svg.setPointerCapture(id); } catch (er) { /* none */ } }
+    const vw = view.clientWidth, vh = view.clientHeight; if (!vw || !vh) return;
+    const vbW = 600 * vw / vh; camCx = clamp(c0 - dx * vbW / vw, vbW / 2, 1000 - vbW / 2); camApply(camCx);
+  });
+  const end = (e) => {
+    if (x0 == null || e.pointerId !== id) return; x0 = null;
+    if (on) { on = false; swallowUntil = performance.now() + 80; clearTimeout(phPanT); phPanT = setTimeout(() => { if (cur.mode === 'yard') camTo(phCamHome, 0.8); }, 4000); }
+  };
+  svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end);
+  onCleanup(() => clearTimeout(phPanT));
 }
 // v2.0.1: the dog's rectangular hit box overlaps the yard mailbox (drawn behind the dog). A tap inside the mailbox where the dog itself
 // is not painted goes to the mailbox; a tap on the painted dog still pets. Returns the mailbox element, or null.
@@ -507,9 +529,14 @@ function hmDecorArt(name) {
   if (D.prop === 'photoframe') sv += `<g data-photo-heads>${hmPhotoHeads()}</g>`;
   return `<svg viewBox="0 0 ${D.vb[0]} ${D.vb[1]}" xmlns="http://www.w3.org/2000/svg">${sv}</svg>`;
 }
+// the tap rect; on phones it grows to at least 48 screen px each way (the scene is scaled to the screen height)
+function hmDecorHit(x, y, w, h) {
+  if (isPhone()) { const s = (view.clientHeight || 500) / 600, m = 48 / s; if (w < m) { x -= (m - w) / 2; w = m; } if (h < m) { y -= (m - h) / 2; h = m; } }
+  return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="transparent" pointer-events="all"/>`;
+}
 function hmDecorSVG() {
   hmDecorFields();
-  return `<g id="decorG">${Object.keys(HM_DECOR).filter(hmDecorOut).map((n) => { const [x, y, w, h] = HM_DECOR[n].at; return `<g class="hot hm-decor" data-decor="${esc(n)}" tabindex="0" role="button" aria-label="${esc(n)}">${place(hmDecorArt(n), x, y, w, h)}<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="transparent" pointer-events="all"/></g>`; }).join('')}</g>`;
+  return `<g id="decorG">${Object.keys(HM_DECOR).filter(hmDecorOut).map((n) => { const [x, y, w, h] = HM_DECOR[n].at; return `<g class="hot hm-decor" data-decor="${esc(n)}" tabindex="0" role="button" aria-label="${esc(n)}">${place(hmDecorArt(n), x, y, w, h)}${hmDecorHit(x, y, w, h)}</g>`; }).join('')}</g>`;
 }
 function hmDecorBind() {
   const g = $('#decorG'); if (!g) return;

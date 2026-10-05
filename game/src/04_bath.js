@@ -4,6 +4,7 @@ function enterBath() {
   setChrome(true, false);
   view.innerHTML = yardWorldSVG(`<g id="tubG">${place(art('prop', 'tub'), 300, 372, 260, 260)}</g><g id="suds"></g>`);
   $('#houseG').remove(); $('#bowlG').remove(); dogKey = ''; busy = true;
+  if (isPhone()) { const dg = $('#decorG'); if (dg) dg.remove(); } // phone: nothing small to mis-tap while scrubbing
   camCx = 430; camApply(camCx); dogTo(0, 18, 1, 0); renderDog(S.stats.clean < 25 ? 'dirty' : 'idle');
   // keep dog drawn under the tub: move tub after dog
   const svg = $('svg.world', view); svg.insertBefore($('#tubG'), $('#fx')); svg.insertBefore($('#suds'), $('#fx'));
