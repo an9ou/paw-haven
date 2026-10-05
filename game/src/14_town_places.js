@@ -37,19 +37,23 @@ function cafeMenu() {
     setTimeout(() => { addStat('happy', it.happy); addStat('hunger', it.hunger); busy = false; setTemp('happy', 1400); updateHUD(); toast(`${NAME()} enjoyed a ${it.n}. ${it.n === 'Pupuccino' ? `${PR().He} has a foam moustache now.` : `${PR().He} ate it in one bite. Of course.`} +${it.happy} Happiness.`, 'good'); }, 1300);
   }; });
 }
-function vetCheck() {
-  const d = D(), done = d.vetDay === todayKey();
-  const p = openModal('Vet Clinic', `<div class="vetcard"><p>Dr. Paws peers over tiny glasses. "Check-up is 30 coins, once a day per pup."</p>
-    <div class="wrap"><button class="btn yes big" id="vetGo" ${done ? 'aria-disabled="true"' : ''}>${done ? 'Checked today' : 'Check-up (30)'}</button></div>
-    <div class="wrap" style="margin-top:10px"><button class="btn" aria-disabled="true">Gene test: coming with Puppy Playdates</button><button class="btn" aria-disabled="true">Spay/neuter: coming with Puppy Playdates</button></div></div>`);
-  $('#vetGo', p).onclick = () => {
+function vetCheck(id) {
+  const d = (id && dogById(id)) || D(), done = d.vetDay === todayKey();
+  const preg = !!(d.preg && d.preg.due);
+  const pick = S.dogs.length > 1 ? `<div class="vdogs" role="group" aria-label="Which dog?">${S.dogs.map((x) => `<button class="dchip vdog" data-vdog="${x.id}" aria-pressed="${x.id === d.id}" title="${esc(x.name)}">${headSVG(x)}<span>${esc(x.name)}</span></button>`).join('')}</div>` : '';
+  const p = openModal('Vet Clinic', `<div class="vetcard vet2">${pick}<p>Dr. Paws peers over tiny glasses. "Check-up is 30 coins, once a day per pup."</p>
+    <div class="wrap"><button class="btn yes big" id="vetGo" ${done ? 'aria-disabled="true"' : ''}>${done ? 'Checked today' : preg ? 'Expecting check-up (30)' : 'Check-up (30)'}</button></div>
+    ${vetV2Options(d)}</div>`);
+  p.querySelectorAll('[data-vdog]').forEach((b) => { b.onclick = () => { SFX.click(); vetCheck(b.dataset.vdog); }; });
+  vetV2Bind(p, d);
+  $('#vetGo', p).onclick = () => withDog(d, () => {
     if (D().vetDay === todayKey()) { nope('Already checked today. The vet says go have fun.'); return; }
     if (S.coins < 30) { nope('Not enough coins for a check-up.'); return; }
-    S.coins -= 30; D().vetDay = todayKey(); SFX.kaching(); barkDog(D(), 'huff', { player: true }); const b = addBond(5, { raw: true }); tempPose = null; markDirty(); updateHUD();
+    S.coins -= 30; D().vetDay = todayKey(); SFX.kaching(); barkDog(D(), 'huff', { player: true }); const b = addBond(5, { raw: true }); if (d.id === S.activeId) tempPose = null; markDirty(); updateHUD();
     const kg = (dogInfo(d.key).breed.length / 2 + 6).toFixed(1);
-    openModal(`Health card: ${esc(d.name)}`, `<div class="vetcard"><p><b>Weight:</b> ${kg} kg of pure opinion.</p><p><b>Coat:</b> ${esc(coatNameOf(d) || 'Shiny')}. Shiny enough to see your future in it.</p><p><b>Teeth:</b> All present. Several are suspicious of carrots.</p><p><b>Nose:</b> Cold and wet. As it should be.</p><p class="small">No sniffles. +${b} Bond (brave ${d.sex === 'female' ? 'girl' : 'boy'}).</p></div>`, { foot: '<button class="btn yes" id="vetOk">Good dog!</button>' });
+    openModal(`Health card: ${esc(d.name)}`, `<div class="vetcard"><p><b>Weight:</b> ${kg} kg of pure opinion.</p><p><b>Coat:</b> ${esc(coatNameOf(d) || 'Shiny')}. Shiny enough to see your future in it.</p><p><b>Teeth:</b> All present. Several are suspicious of carrots.</p><p><b>Nose:</b> Cold and wet. As it should be.</p>${preg ? vetScanHTML(d) : ''}<p class="small">No sniffles. +${b} Bond (brave ${d.sex === 'female' ? 'girl' : 'boy'}).</p></div>`, { foot: '<button class="btn yes" id="vetOk">Good dog!</button>' });
     $('#vetOk').onclick = () => closeModal(); toast(`${NAME()} survived the vet. Barely. Dramatically. +${b} Bond.`, 'good');
-  };
+  });
 }
 const fluffyOn = (d = D()) => !!(d && d.fluffyUntil && S.gameMin < d.fluffyUntil);
 function salonGroom() {

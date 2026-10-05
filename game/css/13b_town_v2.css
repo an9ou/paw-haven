@@ -1,1 +1,71 @@
-/* v2: 13b_town_v2.css (TOWN lane) */
+/* v2: 13b_town_v2.css (TOWN lane): vet v2, gene card, ultrasound, playdate board, visitors */
+.vet2 .vdogs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:0 0 8px}
+.vet2 .vdog{display:flex;align-items:center;gap:6px;width:auto;height:auto;padding:3px 10px 3px 4px;border-radius:999px;font:inherit;font-size:17px}
+.vet2 .vdog svg{width:34px;height:34px}
+.vet2 .vdog[aria-pressed="true"]{background:var(--w-yellow,#FFF0C2);box-shadow:inset 0 0 0 2px var(--ink,#5B3D32)}
+.vet2-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-top:12px}
+.vopt{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:10px 10px 12px;border:2px dashed #CDBBA6;border-radius:14px 10px 15px 9px;background:rgba(255,255,255,.55)}
+.vopt b{font-family:var(--font-hand);font-size:24px;line-height:1}
+.vopt .small{min-height:2.6em}
+.vopt .vic{width:40px;height:40px}
+.vopt .vic svg{width:100%;height:100%}
+.vopt .btn[aria-disabled="true"]{opacity:.55;filter:grayscale(.5)}
+
+/* gene test card */
+.dnacard{position:relative;padding:4px 6px}
+.dna-top{display:flex;align-items:center;gap:12px;justify-content:center}
+.dna-head{width:70px;height:70px;flex:none}
+.dna-head svg{width:100%;height:100%}
+.dna-helix{width:260px;height:76px;overflow:hidden;border:2px solid var(--ink,#5B3D32);border-radius:12px 8px 13px 9px;background:#FFFBF3}
+.dnacard.run .dna-run{animation:dnaRun .5s linear infinite}
+@keyframes dnaRun{from{transform:translateX(0)}to{transform:translateX(-20px)}}
+.dna-wait{text-align:center;font-style:italic;margin:8px 0}
+.dnacard.done .dna-wait{display:none}
+.dna-lines{list-style:none;margin:8px 0 6px;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:4px 14px}
+.dna-lines li{padding:3px 8px;border-left:4px solid #F28FA5;background:rgba(255,255,255,.6);border-radius:4px;font-size:17px}
+.dnacard.run .dna-lines li,.dnacard.run .dna-sum,.dnacard.run .dna-note{opacity:0}
+.dnacard.done .dna-lines li{animation:dnaIn .35s ease-out both;animation-delay:calc(var(--i) * .09s)}
+@keyframes dnaIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.dna-sum{margin:8px 0 2px;font-size:19px}
+[data-motion="off"] .dnacard .dna-lines li{animation:none}
+
+/* ultrasound */
+.ultra{display:flex;gap:14px;align-items:center;margin:8px 0;padding:8px;border:2px dashed #CDBBA6;border-radius:14px}
+.ultra-art{width:240px;height:160px;flex:none}
+.ultra-art svg{width:100%;height:100%}
+.ultra-txt{margin:0;font-size:18px}
+.ublob{animation:uBob 2.2s ease-in-out infinite}
+.ubeat{animation:uBeat .8s ease-in-out infinite}
+@keyframes uBob{0%,100%{translate:0 0}50%{translate:0 -3px}}
+@keyframes uBeat{0%,100%{opacity:1}50%{opacity:.25}}
+[data-motion="off"] .ublob,[data-motion="off"] .ubeat{animation:none}
+
+/* playdate board */
+.panel.playboard{width:min(1080px,96%)}
+.pbgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:8px}
+.pbcard{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:3px;padding:12px 10px 10px;background:#FFFBF3;border:2.5px solid var(--ink,#5B3D32);border-radius:10px 14px 9px 13px;box-shadow:2px 4px 0 rgba(91,61,50,.18)}
+.pbcard:nth-child(odd){transform:rotate(-.8deg)}
+.pbcard:nth-child(even){transform:rotate(.7deg)}
+.pbcard .pin{position:absolute;top:-8px;left:50%;width:16px;height:16px;margin-left:-8px;border-radius:50%;background:#F28FA5;border:2px solid var(--ink,#5B3D32)}
+.pbcard:nth-child(2) .pin{background:#8FC1E3}
+.pbcard:nth-child(3) .pin{background:#F2C14E}
+.pbcard:nth-child(4) .pin{background:#9CCB8A}
+.pbdog{width:150px;height:118px}
+.pbdog svg{width:100%;height:100%}
+.pbcard b{font-family:var(--font-hand);font-size:26px;line-height:1}
+.pbcard .desc{font-size:15px;line-height:1.3}
+.pbready{list-style:none;margin:4px 0;padding:0;font-size:14px;text-align:left;width:100%}
+.pbready li{padding:2px 6px;border-radius:6px;margin:2px 0}
+.pbready li.yes{background:#E3F1D8}
+.pbready li.no{background:#FBE0E6}
+.pbready li.maybe{background:#FFF0C2}
+.pbcard .btn{margin-top:auto}
+#playboardG:hover>rect,#playboardG:focus>rect{fill:rgba(242,143,165,.12)}
+
+/* visitors */
+#visitorG{cursor:pointer}
+#visitorG:hover .vtag rect,#visitorG:focus .vtag rect{fill:#FBE0E6}
+.visitcard{display:flex;gap:16px;align-items:center}
+.vzdog{width:200px;height:166px;flex:none}
+.vzdog svg{width:100%;height:100%}
+.visitcard p{margin:4px 0}
