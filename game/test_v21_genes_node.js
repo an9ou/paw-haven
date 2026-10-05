@@ -178,4 +178,5 @@ try {
 } catch (e) { ok(false, 'test_v2_genes_node.js still passes: ' + String(e.stdout || '').split('\n').filter((l) => /FAIL/.test(l)).slice(0, 3).join(' / ')); }
 
 console.log(`\n${pass} passed, ${fail} failed`);
+if (!fail) console.log("ALL OK");
 process.exit(fail ? 1 : 0);

@@ -85,11 +85,11 @@ require('./test_lib').run('v21_breed', async (t) => {
   ok(await t.until(() => !!document.querySelector('.pd-verdict.ok')), 'NPC playdate popup is open and the pair is fine');
   ok(!(await p.locator('.pd-predict').count()), 'no Puppy Predictor before the NPC is sniffed');
   await t.closeX(); await t.modalGone();
-  await ev(() => { window.npcTested = (n) => n && n.id === 'npc_bruno'; });
+  await ev(() => { const S = window.__paw.S; S.sniffed = Object.assign({}, S.sniffed, { npc_bruno: new Date().toISOString().slice(0, 10) }); window.npcTested = (n) => n && n.id === 'npc_bruno'; }); // v2.1 merge: TOWN's real npcTested reads S.sniffed; the window stub stays for lane-only runs
   await ev((n) => window.__paw.breed.openPlaydates({ npc: n }), npc);
   ok(await t.until(() => !!document.querySelector('.pd-predict li')), 'npcTested(npc) true: the Puppy Predictor shows');
   await t.closeX(); await t.modalGone();
-  await ev((i) => { delete window.npcTested; window.__paw.S.dogs.find((d) => d.id === i.f).geneTested = false; }, ids);
+  await ev((i) => { delete window.npcTested; delete window.__paw.S.sniffed.npc_bruno; window.__paw.S.dogs.find((d) => d.id === i.f).geneTested = false; }, ids);
 
   sec('a Sled Noodle litter (Horgi x Dachshund), anc stored');
   let r = await ev((i) => window.__paw.breed.playdate(i.f, i.m, { force: true, size: 4, sparkle: true }), ids);
