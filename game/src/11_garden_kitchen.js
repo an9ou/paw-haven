@@ -264,13 +264,48 @@ function journalRecipes() {
     <div class="jgrid">${recipesList().filter((r) => r.id !== 'mystery-mush').map((r) => { const k = S.recipes.known.includes(r.id), fx = r.effect || {}; return k ? `<div class="jent"><span class="art">${art('item', r.name)}</span><b>${esc(r.name)}</b>${DISH_FAV[S.dog.key] === r.id ? `<span class="stamp r3">${esc(NAME())}'s favourite</span>` : ''}<span class="ab">${r.ingredients.map((i) => esc((cropInfo(i) || pantryList().find((x) => x.id === i) || { name: i === 'water' ? 'Fresh Water' : i }).name)).join(' + ')}. ${['hunger', 'happy', 'energy', 'bond'].filter((x) => fx[x]).map((x) => `${{ hunger: 'Hunger', happy: 'Happiness', energy: 'Energy', bond: 'Bond' }[x]} +${fx[x]}`).join(', ')}${fx.buff ? '. ' + (BUFF_TXT[fx.buff.id] || '') : ''}</span><span class="small">Best: ${S.recipes.best[r.id] ? '★'.repeat(S.recipes.best[r.id]) : 'not cooked yet'}</span></div>` : `<div class="jent unk"><span class="art">${art('item', r.name)}</span><b>???</b><span class="small">${esc(r.hint || 'Experiment in the kitchen.')} (${r.ingredients.length} ingredients)</span></div>`; }).join('')}</div>`;
 }
 function journalProfile() {
-  const d = S.dog, m = ageMonths(), st = lifeStage(m), ss = seasonStatus(), info = dogInfo(d.key);
-  const bday = (() => { const b = new Date(d.born + 'T00:00:00'), next = 12 - (m % 12); return `Born ${d.born} · next birthday in ${next} day${next > 1 ? 's' : ''}`; })();
-  return `<div class="profile"><div class="pf-head"><span class="portrait big">${headSVG(d)}</span><div><h3>${esc(d.name)} ${sexSym(d.sex)}</h3><p>${d.sex === 'female' ? 'Girl' : d.sex === 'male' ? 'Boy' : 'Paperwork pending'} · ${esc(info.breed)} · ${esc(info.personality)}</p><p class="coatline">${esc(coatNameOf(d))} coat, ${esc(eyesOf(d))} eyes${d.rescue ? ` · <b>Rescued on ${esc(d.rescue.date)}</b>` : ''}</p><p><b>${ageText(m)}</b> old (${st})${st === 'senior' ? ` · ${PR().He} has a distinguished grey muzzle now.` : ''}</p><p class="small">${bday}. One real day is one dog month.</p></div></div>
-    <p class="small potty">Potty stats: Scooped: ${(S.potty || {}).scooped || 0}. Accidents indoors: ${(S.potty || {}).accidents || 0}. ${((S.potty || {}).accidents || 0) === 0 ? `A spotless record. ${PR().He} would like that framed.` : 'Nobody is perfect. Especially not the rug.'}</p>
-    <div class="pf-grid"><div class="jent"><b>Family tree</b><svg viewBox="0 0 160 70" class="pf-tree"><path d="M80 60 V38 M40 38 H120 M40 38 V18 M120 38 V18" fill="none" stroke="#A8968A" stroke-width="2" stroke-dasharray="4 4"/><circle cx="40" cy="14" r="9" fill="none" stroke="#A8968A" stroke-width="2"/><circle cx="120" cy="14" r="9" fill="none" stroke="#A8968A" stroke-width="2"/><text x="40" y="18" text-anchor="middle" font-size="11" fill="#A8968A">?</text><text x="120" y="18" text-anchor="middle" font-size="11" fill="#A8968A">?</text></svg><span class="small">Parents: unknown (${d.rescue ? 'rescued' : 'shelter starter'})</span></div>
-      <div class="jent"><b>${d.sex === 'female' ? 'Season' : 'Playdates'}</b><span class="ab season ${ss.inSeason ? 'on' : ''}">${esc(ss.txt)}</span><span class="small">${d.sex === 'female' ? `Litters: ${d.litters || 0} of ${BREEDING.RULES.female.maxLitters}` : 'Boys have no season.'} · fixed: ${d.fixed ? 'yes' : 'no'}</span></div>
-      <div class="jent"><b>Genes</b><span class="genes">${['B', 'D', 'E', 'S', 'M', 'Bl'].map((g) => `<span class="gslot">${g}<i>?</i></span>`).join('')}</span><span class="small">Hidden: a Gene test will be available at the vet in v2.</span></div>
-      <div class="jent teaser"><b>Puppy Playdates</b><span class="ab">Coming in v2: a boy and a girl, both adults, can have puppies, following real dog rules. Same-sex pairs can still be best friends.</span></div></div></div>`;
+  const d = S.dog, m = ageMonths(), st = lifeStage(m), ss = seasonStatus(), info = dogInfo(d.key), P = PR(), today = localISO();
+  const bday = (() => { const next = 12 - (m % 12); return `Born ${d.born} · next birthday in ${next} day${next > 1 ? 's' : ''}`; })();
+  const R = BREEDING.RULES, maxL = (R.female && R.female.maxLitters) || 4;
+  const me = famRec(d.id) || { id: d.id, parents: d.parents }, [dam, sire] = famParents(me), kids = famChildren(d.id), gen = d.gen || (dam || sire ? 1 : 0);
+  const master = !!(S.coatRewards && S.coatRewards[50]);
+  const breedTxt = d.mix && d.mix.name ? mixLine(d) : info.breed;
+  // family card: parents and children as little heads (click -> Family tab)
+  const fh = (id, lbl) => { const r = famRec(id); return r ? `<button class="pf-fh" data-fam="${esc(r.id)}" title="${esc(lbl)}: ${esc(r.name || '?')}"><span class="fhead">${famHead(r)}</span><span class="small">${esc(r.name || '?')}</span></button>` : `<span class="pf-fh unk"><span class="fhead"><b>?</b></span><span class="small">${lbl}</span></span>`; };
+  const famCard = `<div class="jent pf-fam"><b>Family</b><div class="pf-par">${fh(dam, 'Mum')}${fh(sire, 'Dad')}</div><span class="small">${dam || sire ? `Generation ${gen}` : `Generation 0 · ${d.rescue ? 'rescued' : 'shelter starter'}`} · ${kids.length ? `${kids.length} pupp${kids.length > 1 ? 'ies' : 'y'}` : 'no puppies yet'}</span>
+    ${kids.length ? `<div class="pf-kids">${kids.slice(0, 6).map((k) => `<button class="pf-kid" data-fam="${esc(k.id)}" title="${esc(k.name)}">${famHead(k)}</button>`).join('')}${kids.length > 6 ? `<span class="small">+${kids.length - 6}</span>` : ''}</div>` : ''}
+    <button class="btn" data-fam="${esc(d.id)}">Family tree</button></div>`;
+  // status card: season / expecting / nursing / resting, litters, fixed
+  const nursing = (S.litters || []).find((l) => l && l.mum === d.id);
+  let stat = `<span class="ab season ${ss.inSeason ? 'on' : ''}">${esc(d.sex === 'female' ? ss.txt : (d.fixed ? 'Neutered: no playdates' : 'Boys have no season.'))}</span>`;
+  if (d.preg && d.preg.due) { const n = Math.max(0, isoDays(today, d.preg.due)); stat = `<span class="ab season on">Expecting! ${n ? `Due in ${n} day${n > 1 ? 's' : ''}` : 'Due any moment now'}${d.preg.scanned && d.preg.pups ? ` · ${d.preg.pups.length} pupp${d.preg.pups.length > 1 ? 'ies' : 'y'} on the scan` : ''}</span>`; }
+  else if (nursing) { const n = Math.max(0, isoDays(today, nursing.until || today)), c = (nursing.pups || []).length; stat = `<span class="ab season on">Nursing ${c} pupp${c === 1 ? 'y' : 'ies'}. ${n ? `New homes in ${n} day${n > 1 ? 's' : ''}` : 'Choosing day!'}</span>`; }
+  else if (d.sex === 'male' && d.restUntil && d.restUntil > today) stat = `<span class="ab season">Resting after a playdate (back ${esc(isoDay(d.restUntil))})</span>`;
+  const statCard = `<div class="jent pf-stat"><b>${d.sex === 'female' ? 'Season' : 'Playdates'}</b>${stat}<span class="small">${d.sex === 'female' ? `Litters: ${d.litters || 0} of ${maxL}` : `Litters fathered: ${kids.length ? new Set(kids.map((k) => k.born)).size : 0}`} · ${d.fixed ? (d.sex === 'female' ? 'Spayed' : 'Neutered') : 'Not fixed'}</span></div>`;
+  // genes card
+  let genesCard;
+  if (d.geneTested) {
+    let desc = null; try { const G = window.PawGenes; if (G && typeof G.describe === 'function') desc = G.describe(d.genes); } catch (e) { desc = null; }
+    if (!desc || !Array.isArray(desc.lines)) desc = genesDescribeFB(d.genes);
+    genesCard = `<div class="jent pf-genes tested"><b>Genes</b><ul class="glines">${desc.lines.map((l) => `<li>${esc(l)}</li>`).join('')}</ul><span class="small">${desc.carriers && desc.carriers.length ? `Carries: ${desc.carriers.map((c) => `<span class="gcar">${esc(c)}</span>`).join(' ')}` : 'Carries nothing hidden. What you see is what you get.'}</span></div>`;
+  } else genesCard = `<div class="jent pf-genes"><b>Genes</b><span class="genes">${['B', 'D', 'E', 'S', 'M', 'Bl'].map((g) => `<span class="gslot">${g}<i>?</i></span>`).join('')}</span><span class="small">Hidden. Gene test at the Vet Clinic.</span></div>`;
+  // dog spots card
+  let spots = null; try { if (typeof dogSlots === 'function') spots = dogSlots(); } catch (e) { spots = null; }
+  const used = S.dogs.length, cap = spots ? spots.cap : null;
+  const spotCard = `<div class="jent pf-spots"><b>Dog spots</b><span class="spotrow">${[1, 2, 3, 4].map((n) => `<i class="${n <= used ? 'full' : cap != null && n <= cap ? 'open' : 'lock'}"></i>`).join('')}</span><span class="small">${cap != null ? `${used} of ${cap} open spot${cap > 1 ? 's' : ''} used` : `${used} dog${used > 1 ? 's' : ''} at home`}. Bond opens more.</span><button class="btn" data-spots="1">Dog spots</button></div>`;
+  return `<div class="profile"><div class="pf-head"><span class="portrait big ${d.sparkle ? 'spk' : ''}">${headSVG(d)}</span><div><h3>${esc(d.name)} ${sexSym(d.sex)}${d.sparkle ? ' <span class="spkbadge" title="A Sparkle puppy: one in hundreds">&#10022; Sparkle</span>' : ''}${master ? ' <span class="titlebadge">Master Breeder</span>' : ''}</h3><p>${d.sex === 'female' ? 'Girl' : d.sex === 'male' ? 'Boy' : 'Paperwork pending'} · ${esc(breedTxt)} · ${esc(info.personality)}${gen ? ` · <b>Gen ${gen}</b>` : ''}</p><p class="coatline">${esc(coatNameOf(d))} coat, ${esc(eyesOf(d))} eyes${d.rescue ? ` · <b>Rescued on ${esc(d.rescue.date)}</b>` : ''}</p><p><b>${ageText(m)}</b> old (${st})${st === 'senior' ? ` · ${P.He} has a distinguished grey muzzle now.` : ''}</p><p class="small">${bday}. One real day is one dog month.</p></div></div>
+    <p class="small potty">Potty stats: Scooped: ${(S.potty || {}).scooped || 0}. Accidents indoors: ${(S.potty || {}).accidents || 0}. ${((S.potty || {}).accidents || 0) === 0 ? `A spotless record. ${P.He} would like that framed.` : 'Nobody is perfect. Especially not the rug.'}</p>
+    <div class="pf-grid">${famCard}${statCard}${genesCard}${spotCard}</div></div>`;
 }
-
+// plain-words gene card when the genes module has no describe() yet
+function genesDescribeFB(g) {
+  const has = (p, a) => Array.isArray(p) && p.includes(a), both = (p, a) => Array.isArray(p) && p[0] === a && p[1] === a, j = (p) => (Array.isArray(p) ? p.join('/') : '?');
+  g = g || {}; const lines = [], car = [];
+  lines.push(`${j(g.B)}: ${both(g.B, 'b') ? 'liver (chocolate) pigment' : 'black pigment'}${has(g.B, 'b') && !both(g.B, 'b') ? ', carries liver' : ''}`); if (has(g.B, 'b') && !both(g.B, 'b')) car.push('liver');
+  lines.push(`${j(g.D)}: ${both(g.D, 'd') ? 'diluted colour (blue or lilac)' : 'full-strength colour'}${has(g.D, 'd') && !both(g.D, 'd') ? ', carries dilute' : ''}`); if (has(g.D, 'd') && !both(g.D, 'd')) car.push('dilute');
+  lines.push(`${j(g.E)}: ${both(g.E, 'e') ? 'red or cream coat' : 'dark pigment shows'}${has(g.E, 'e') && !both(g.E, 'e') ? ', carries red' : ''}`); if (has(g.E, 'e') && !both(g.E, 'e')) car.push('red');
+  lines.push(`${j(g.S)}: ${both(g.S, 'sp') ? 'piebald patches' : has(g.S, 'sp') ? 'a little white, carries piebald' : 'solid, little white'}`); if (has(g.S, 'sp') && !both(g.S, 'sp')) car.push('piebald');
+  lines.push(`${j(g.M)}: ${has(g.M, 'M') ? 'merle (never pair with another merle)' : 'no merle'}`);
+  lines.push(`${j(g.Bl)}: ${both(g.Bl, 'Bl') ? 'blue eyes' : has(g.Bl, 'Bl') ? 'blue or odd eyes' : 'brown eyes'}`);
+  return { lines, carriers: car };
+}
