@@ -34,7 +34,7 @@ function layoutRoutes() {
   tr.style.transform = `translateX(${vp.clientWidth / 2 - cw / 2 - routeIdx * cw + 18}px)`;
   cards.forEach((c, i) => c.classList.toggle('cur', i === routeIdx));
   const k = ROUTE_KEYS[routeIdx], lock = topBond() < ROUTES[k].bond;
-  $('#rtCount').textContent = `${routeIdx + 1} / ${ROUTE_KEYS.length} · drag, or use the arrow keys`;
+  $('#rtCount').textContent = `${routeIdx + 1} / ${ROUTE_KEYS.length} · ${isPhone() ? 'swipe, or tap the arrows' : 'drag, or use the arrow keys'}`;
   const blk = !lock && walkBlock(D(), k), st = $('#rtStart'); st.textContent = lock ? `Locked (Bond ${ROUTES[k].bond})` : blk ? `Not for ${D().name} yet` : `Start walk: ${ROUTES[k].n}`; st.setAttribute('aria-disabled', lock || blk ? 'true' : 'false');
 }
 function startRoute(k) {

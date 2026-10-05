@@ -1,1 +1,22 @@
-/* ---------- v2.2 phone: WALK lane. Every rule sits under html[data-layout="phone"] ---------- */
+/* v2.2 WALK (phone, portrait): classic treasure walk, fetch. Every rule sits under html[data-layout="phone"]. The runner and toys style themselves inside their modules. */
+html[data-layout="phone"] #dock .walkctl:has(#holdBtn) { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; align-items: stretch; }
+html[data-layout="phone"] #dock .walkctl:has(#holdBtn) #holdBtn { grid-column: span 4; min-height: 76px; touch-action: none; -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
+html[data-layout="phone"] #dock .walkctl:has(#holdBtn) #hopBtn { grid-column: span 2; min-height: 76px; touch-action: manipulation; font-size: 24px; }
+html[data-layout="phone"] #dock .walkctl:has(#holdBtn) #digBtn { grid-column: span 3; min-height: 64px; touch-action: manipulation; font-size: 26px; }
+html[data-layout="phone"] #dock .walkctl:has(#holdBtn) #bagBtn { grid-column: span 3; min-height: 64px; touch-action: manipulation; justify-content: center; }
+html[data-layout="phone"] #dock .walkctl:has(#holdBtn) > label { grid-column: span 6; min-height: 44px; display: flex; align-items: center; gap: 12px; touch-action: manipulation; }
+html[data-layout="phone"] #dock .walkctl:has(#holdBtn) > label input { width: 28px; height: 28px; flex: none; }
+html[data-layout="phone"] #dock .walkctl:has(#nose) { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; align-items: center; }
+html[data-layout="phone"] #dock .walkctl:has(#nose) .nose { grid-column: 1 / -1; }
+html[data-layout="phone"] #dock .walkctl:has(#walkBar) { display: grid; grid-template-columns: auto 1fr auto; gap: 6px 10px; align-items: center; }
+html[data-layout="phone"] #dock .walkctl:has(#walkBar) .prog { max-width: none !important; }
+html[data-layout="phone"] #dock .walkctl:has(#walkBar) #walkTime { font-size: 15px; }
+html[data-layout="phone"] #dock .walkbag .btn { min-height: 48px; }
+/* fetch */
+html[data-layout="phone"] #dock .walkctl:has(#fScore) { display: grid; grid-template-columns: auto auto 1fr; gap: 6px 14px; align-items: center; font-size: 17px; }
+html[data-layout="phone"] #dock .tray:has(#fQuit) .tray-h h3 { font-size: 24px; }
+html[data-layout="phone"] #fQuit, html[data-layout="phone"] #walkQuit { min-width: 44px; min-height: 44px; touch-action: manipulation; }
+html[data-layout="phone"] #view svg.world { touch-action: none; -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
+html[data-layout="phone"] #rtView { touch-action: pan-y; }
+html[data-layout="phone"] .rt-nav .arrow { min-width: 56px; min-height: 56px; touch-action: manipulation; }
+html[data-layout="phone"] .rt-foot .btn { min-height: 52px; touch-action: manipulation; }

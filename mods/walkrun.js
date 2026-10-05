@@ -261,6 +261,7 @@ const CSS = `
 .pw-pt .pw-ctrls{bottom:0;display:grid;grid-template-columns:1fr 1.25fr;grid-template-rows:auto 1fr;gap:10px;padding:0 10px calc(10px + env(safe-area-inset-bottom,0px))}
 .pw-pt .pw-big{height:auto;min-height:88px;max-height:190px;min-width:0;font-size:38px}
 .pw-pt .pw-big .pw-k,.pw-cp .pw-big .pw-k{font-size:15px}
+.pw-touchui .pw-tfoot .pw-k{font-size:15px}
 .pw-pt .pw-dig{grid-column:1/3;grid-row:1;margin:0;min-height:72px;max-height:80px}
 .pw-pt .pw-duck{grid-column:1;grid-row:2}.pw-pt .pw-jump{grid-column:2;grid-row:2}
 .pw-cp .pw-ctrls{bottom:8px;padding:0 10px}
@@ -459,7 +460,7 @@ function start(el, o) {
       <button class="pw-btn pw-big pw-dig" tabindex="-1" hidden aria-label="Dig">Dig!<span class="pw-k" data-desk="press D" data-touch="tap here!">press D</span><span class="pw-ring"></span></button>
       <button class="pw-btn pw-big pw-jump" tabindex="-1" aria-label="Jump">Jump<span class="pw-k" data-desk="tap = hop &middot; hold = long" data-touch="tap = hop &middot; hold = long">tap = hop &middot; hold = long</span></button>
     </div>
-    <div class="pw-legend"><span class="pw-lg-desk"><b>Space/&uarr;</b> jump (hold = long jump) &middot; <b>&darr;/S</b> duck &middot; <b>D</b> dig &middot; <b>B</b> bag &middot; <b>Esc</b> pause</span><span class="pw-lg-touch"><b>Tap right side</b> jump &middot; <b>hold</b> = long jump &middot; <b>swipe down</b> duck</span></div>
+    <div class="pw-legend"><span class="pw-lg-desk"><b>Space/&uarr;</b> jump (hold = long jump) &middot; <b>&darr;/S</b> duck &middot; <b>D</b> dig &middot; <b>B</b> bag &middot; <b>Esc</b> pause</span><span class="pw-lg-touch"><b>Tap the scene</b> jump &middot; <b>hold</b> = long jump &middot; <b>swipe down</b> duck</span></div>
     <div class="pw-ov"></div>`;
   el.appendChild(root);
   const $ = (s) => root.querySelector(s);
@@ -1003,9 +1004,9 @@ function start(el, o) {
     const highs = A.high.map((n) => OBS_LABEL[n].toLowerCase()).join(', ');
     if (i === 0) return `<h3>1. Your moves</h3>
       <div class="pw-trow"><div class="pw-mini jump"><div class="pw-mp" style="left:92px;${fitBox(mLow, 44, 24)}">${stickerImg(mLow)}</div><div class="pw-md">${poseStr.jump}</div></div>
-        <div><b>Jump</b> &nbsp;${T ? 'tap the <b>right side</b> (or Jump)' : 'tap <b>Space</b> / <b>&uarr;</b> (or the Jump button)'}.<br>Hop over low things: ${esc(lows)}.</div></div>
+        <div><b>Jump</b> &nbsp;${T ? 'tap the <b>scene</b> (or Jump)' : 'tap <b>Space</b> / <b>&uarr;</b> (or the Jump button)'}.<br>Hop over low things: ${esc(lows)}.</div></div>
       <div class="pw-trow"><div class="pw-mini long"><div class="pw-mp" style="left:40px;${fitBox(mWide, 76, 14)}">${stickerImg(mWide)}</div><div class="pw-md">${poseStr.jump}</div></div>
-        <div><b>Long jump</b> &nbsp;<b>hold</b> ${T ? 'the right side (or Jump)' : 'Space'}.<br>${A.wide.includes('bicycle') ? 'Clears parked bicycles, and floats over puddles to keep you clean.' : 'Floats over puddles and mud, and keeps you clean.'}</div></div>
+        <div><b>Long jump</b> &nbsp;<b>hold</b> ${T ? 'the scene (or Jump)' : 'Space'}.<br>${A.wide.includes('bicycle') ? 'Clears parked bicycles, and floats over puddles to keep you clean.' : 'Floats over puddles and mud, and keeps you clean.'}</div></div>
       <div class="pw-trow"><div class="pw-mini duck"><div class="pw-mp" style="left:22px;top:2px;bottom:auto;${fitBox(mHigh, 110, 38)}">${stickerImg(mHigh)}</div><div class="pw-md" style="left:34px">${poseStr.crouch}</div></div>
         <div><b>Duck</b> &nbsp;${T ? '<b>swipe down</b>, or hold Duck' : 'hold <b>&darr;</b> / <b>S</b> (or the Duck button)'}.<br>Slide under high things: ${esc(highs)}.</div></div>`;
     if (i === 1) {
@@ -1234,7 +1235,7 @@ function start(el, o) {
     const touchy = e.pointerType === 'touch' || mode !== 'desk';
     if (!touchy) { if (e.button !== 0 || !E.stage.contains(e.target)) return; e.preventDefault(); gest.id = e.pointerId; gest.mouse = true; gest.jump = true; jumpPress(); return; }
     e.preventDefault(); gest.id = e.pointerId; gest.y0 = e.clientY; gest.mouse = false; gest.duck = false;
-    const r = root.getBoundingClientRect(); gest.jump = e.clientX > r.left + r.width / 2; if (gest.jump) jumpPress();
+    const r = root.getBoundingClientRect(); gest.jump = mode === 'pt' || e.clientX > r.left + r.width / 2; if (gest.jump) jumpPress();
   });
   root.addEventListener('pointermove', (e) => {
     if (e.pointerId !== gest.id || gest.mouse || gest.duck) return;
