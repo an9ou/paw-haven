@@ -4,7 +4,9 @@
         randomGenotype(breedKey, rng), inherit(mumGenes, dadGenes, rng),
         isDoubleMerle(a, b), related(dogA, dogB, allDogs).
    v2 (additive): BREED_NAMES, MIXES, mixKey(a, b), mixOf(damKey, sireKey, rng), predict(genesA, genesB, keyA, keyB, opts?),
-        coatCatalog(breedKey), describe(genes). See the doc comments below. */
+        coatCatalog(breedKey), describe(genes).
+   v2.1 (additive): ancestry(rec, lookup, depth = 6), grandMix(anc), sparkleOdds(o), coatCatalog(breedKey, { all: true }),
+        fracText(x), GRAND_RECIPES. See the doc comments below. */
 (function (root) {
   'use strict';
 
@@ -557,8 +559,225 @@
     return { lines, carriers, summary };
   }
 
+  /* =====================================================================
+     v2.1 additions (GENES lane, V21.md section 3). Additive and pure: nothing above changed.
+     ancestry, grandMix, sparkleOdds, coatCatalog(k, { all: true }), fracText.
+     ===================================================================== */
+
+  /* ---------- coat catalog over ANY genotype (mix puppies) ---------- */
+  // Alleles a breed's FREQ never produces (0 locks the dominant allele, 1 locks the recessive one).
+  // Bl is left out: it never changes the coat name.
+  function foreignAlleles(breed) {
+    const f = FREQ[breed], out = {};
+    if (f.b <= 0) out.b = 1; if (f.b >= 1) out.B = 1;
+    if (f.d <= 0) out.d = 1; if (f.d >= 1) out.D = 1;
+    if (f.e <= 0) out.e = 1; if (f.e >= 1) out.E = 1;
+    if (f.sp <= 0) out.sp = 1; if (f.sp >= 1) out.S = 1;
+    if (f.M <= 0) out.M = 1;
+    return out;
+  }
+  const FOREIGN_WORDS = { b: 'chocolate', B: 'black', d: 'dilute', D: 'full-colour', e: 'red', E: 'dark-coat', sp: 'spotting', S: 'solid-coat', M: 'merle' };
+  const FOREIGN_ORDER = ['E', 'e', 'B', 'b', 'D', 'd', 'S', 'sp', 'M'];
+  const ALL_PAIRS = { B: [['B', 'B'], ['B', 'b'], ['b', 'b']], D: [['D', 'D'], ['D', 'd'], ['d', 'd']], E: [['E', 'E'], ['E', 'e'], ['e', 'e']], S: [['S', 'S'], ['S', 'sp'], ['sp', 'sp']], M: [['m', 'm'], ['M', 'm']] };
+  const allCatalogCache = {};
+  /** The coat names phenotype() can give a body breed from any viable genotype (M/M excluded), that the breed's own
+      genotypes cannot: [{ coat, rare: true, how, extra: true }], fewest foreign genes first. */
+  function extraCoats(breed) {
+    if (allCatalogCache[breed]) return allCatalogCache[breed];
+    const own = {}; coatCatalog(breed).forEach((c) => { own[c.coat] = 1; });
+    const foreign = foreignAlleles(breed), best = {};
+    const loci = ['B', 'D', 'E', 'S', 'M'];
+    (function rec(i, g) {
+      if (i === loci.length) {
+        const name = phenotype(Object.assign({ Bl: ['bl', 'bl'] }, g), breed).coatName;
+        if (own[name]) return;
+        const need = {};
+        loci.forEach((k) => { g[k].forEach((a) => { if (foreign[a]) need[a] = 1; }); });
+        const list = FOREIGN_ORDER.filter((a) => need[a]);
+        if (!best[name] || list.length < best[name].length) best[name] = list;
+        return;
+      }
+      ALL_PAIRS[loci[i]].forEach((p) => { g[loci[i]] = p; rec(i + 1, g); });
+    })(0, {});
+    const words = (l) => { const w = l.map((a) => FOREIGN_WORDS[a]); return w.length <= 1 ? w.join('') : w.slice(0, -1).join(', ') + ' and ' + w[w.length - 1]; };
+    allCatalogCache[breed] = Object.keys(best)
+      .sort((x, y) => best[x].length - best[y].length || (x < y ? -1 : 1))
+      .map((name) => {
+        const l = best[name];
+        let how = 'Only from a mix parent' + (l.length ? ' with ' + words(l) + ' genes.' : '.');
+        if (l.indexOf('M') >= 0) how += ' Never pair two merles.';
+        return { coat: name, rare: true, how, extra: true };
+      });
+    return allCatalogCache[breed];
+  }
+  /**
+   * coatCatalog(breedKey, { all: true }) -> the default catalog (unchanged, same order), followed by every other coat
+   * phenotype() can give this body breed from ANY genotype (a mix puppy), flagged extra: true with a how hint
+   * like 'Only from a mix parent with merle genes.'. Without { all: true } it is exactly the v2 coatCatalog.
+   */
+  function coatCatalogV21(breedKey, opts) {
+    const base = coatCatalog(breedKey);
+    if (!opts || !opts.all) return base;
+    return base.concat(extraCoats(breedOf(breedKey)).map((e) => ({ coat: e.coat, rare: e.rare, how: e.how, extra: true })));
+  }
+
+  /* ---------- ancestry ---------- */
+  const ANC_UNITS = 64;
+  function parentIds(rec) {
+    const p = rec && rec.parents;
+    if (!p) return null;
+    if (Array.isArray(p)) return p.length >= 2 && p[0] != null && p[1] != null ? [p[0], p[1]] : null;
+    if (typeof p === 'object' && p.dam != null && p.sire != null) return [p.dam, p.sire];
+    return null;
+  }
+  function validAnc(a) {
+    if (!a || typeof a !== 'object' || Array.isArray(a)) return false;
+    return Object.keys(a).some((k) => typeof a[k] === 'number' && a[k] > 0);
+  }
+  // { key: share } with unknown keys folded into 'mutt' and non-positive shares dropped (unrounded)
+  function foldAnc(a) {
+    const out = {};
+    Object.keys(a).forEach((k) => { const v = a[k]; if (typeof v === 'number' && v > 0 && isFinite(v)) { const b = breedOf(k); out[b] = (out[b] || 0) + v; } });
+    return out;
+  }
+  function baseAnc(rec) {
+    const m = rec && rec.mix, out = {};
+    if (m && m.a != null && m.b != null) { out[breedOf(m.a)] = (out[breedOf(m.a)] || 0) + 0.5; out[breedOf(m.b)] = (out[breedOf(m.b)] || 0) + 0.5; return out; }
+    out[breedOf(rec && rec.key)] = 1;
+    return out;
+  }
+  // Round to multiples of 1/64 that still sum to exactly 1 (largest remainder, ties in BREEDS order).
+  function roundAnc(a) {
+    const keys = Object.keys(a).sort((x, y) => BREEDS.indexOf(x) - BREEDS.indexOf(y));
+    const tot = keys.reduce((s, k) => s + a[k], 0) || 1;
+    const units = keys.map((k) => { const u = a[k] / tot * ANC_UNITS; return { k, n: Math.floor(u + 1e-9), r: u - Math.floor(u + 1e-9) }; });
+    let left = ANC_UNITS - units.reduce((s, u) => s + u.n, 0);
+    units.slice().sort((x, y) => y.r - x.r || BREEDS.indexOf(x.k) - BREEDS.indexOf(y.k)).forEach((u) => { if (left > 0) { u.n++; left--; } });
+    const out = {};
+    units.forEach((u) => { if (u.n > 0) out[u.k] = u.n / ANC_UNITS; });
+    return out;
+  }
+  /**
+   * ancestry(rec, lookup, depth = 6) -> { breedKey: fraction } (multiples of 1/64, summing to 1), or null without a rec.
+   * - rec / lookup(id) records: { id, key, mix, parents, anc? }. parents is [idA, idB] or { dam, sire }.
+   * - rec.anc (a non-empty object) is returned unchanged. A parent's anc is used as that parent's share.
+   * - Both parents resolve: the average of their ancestries (recursive, memoised by id for this call).
+   *   Otherwise, or past `depth` generations: mix { a, b } -> { a: 1/2, b: 1/2 }, else { key: 1 }.
+   * - Unknown breed keys count as 'mutt'. Pure: lookup is only read.
+   */
+  function ancestry(rec, lookup, depth) {
+    if (!rec || typeof rec !== 'object') return null;
+    if (validAnc(rec.anc)) return rec.anc;
+    const D = depth == null ? 6 : Math.max(0, Math.floor(Number(depth) || 0));
+    const look = typeof lookup === 'function' ? lookup : () => null;
+    const memo = new Map(), busy = new Set();
+    function raw(r, left) {
+      if (validAnc(r.anc)) return foldAnc(r.anc);
+      const id = r.id;
+      const mk = id != null ? id + '\u0000' + left : null;
+      if (mk != null && memo.has(mk)) return memo.get(mk);
+      let out;
+      const pids = left > 0 ? parentIds(r) : null;
+      let pa = null, pb = null;
+      if (pids && !(id != null && busy.has(id))) {
+        try { pa = look(pids[0]); pb = look(pids[1]); } catch (e) { pa = pb = null; }
+      }
+      if (pa && pb && typeof pa === 'object' && typeof pb === 'object') {
+        if (id != null) busy.add(id);
+        const a = raw(pa, left - 1), b = raw(pb, left - 1);
+        if (id != null) busy.delete(id);
+        out = {};
+        [a, b].forEach((x) => Object.keys(x).forEach((k) => { out[k] = (out[k] || 0) + x[k] / 2; }));
+      } else out = baseAnc(r);
+      if (mk != null) memo.set(mk, out);
+      return out;
+    }
+    return roundAnc(raw(rec, D));
+  }
+
+  /* ---------- grand-mixes ---------- */
+  function gcd(a, b) { while (b) { const t = a % b; a = b; b = t; } return a; }
+  /** fracText(0.25) -> '1/4', fracText(0.375) -> '3/8', fracText(1) -> '1' (rounded to 1/64 first). */
+  function fracText(x) {
+    const n = Math.round(Number(x) * ANC_UNITS);
+    if (n <= 0) return '0';
+    if (n >= ANC_UNITS) return '1';
+    const g = gcd(n, ANC_UNITS);
+    return (n / g) + '/' + (ANC_UNITS / g);
+  }
+  const GRAND_RECIPES = [
+    { name: 'Sled Noodle', breeds: ['corgi', 'husky', 'dachs'] },
+    { name: 'Sunrise Loaf', breeds: ['shiba', 'corgi', 'golden'] },
+    { name: 'Snowdrift', breeds: ['golden', 'husky', 'mutt'] }
+  ];
+  const AT = (x, t) => x >= t - 1e-9;
+  /**
+   * grandMix(anc) -> { kind, name, label, breeds: [[key, frac], ...] } (breeds sorted by share, ties in BREEDS order).
+   * First matching rule wins:
+   *  1. 4+ breeds at 1/8 or more: kind 'everything', 'The Everything Dog', label 'The Everything Dog: yes.'
+   *  2. 3+ breeds at 1/4 or more: kind 'grand' for the 3 named recipes (label 'Sled Noodle: Corgi + Husky + Dachshund'),
+   *     otherwise kind 'family', '<Top breed> family mix'.
+   *  3. top breed 3/4 or more: kind 'breed', name = breed name, label 'Corgi, 1/4 Husky' (just 'Corgi' when pure).
+   *  4. top two at 1/4 or more: kind 'mix', name = MIXES name, label 'Horgi: Corgi × Husky'.
+   *  5. otherwise kind 'family', '<Top breed> family mix'.
+   * Unknown keys count as 'mutt'. An empty or missing anc counts as { mutt: 1 }.
+   */
+  function grandMix(anc) {
+    let a = validAnc(anc) ? foldAnc(anc) : { mutt: 1 };
+    const breeds = Object.keys(a).map((k) => [k, a[k]]).sort((x, y) => y[1] - x[1] || BREEDS.indexOf(x[0]) - BREEDS.indexOf(y[0]));
+    const nm = (k) => BREED_NAMES[k];
+    const top = breeds[0], family = nm(top[0]) + ' family mix';
+    const res = (kind, name, label) => ({ kind, name, label, breeds: breeds.map((b) => [b[0], b[1]]) });
+    if (breeds.filter((b) => AT(b[1], 0.125)).length >= 4) return res('everything', 'The Everything Dog', 'The Everything Dog: yes.');
+    const big = breeds.filter((b) => AT(b[1], 0.25));
+    if (big.length >= 3) {
+      const three = big.slice(0, 3).map((b) => b[0]);
+      const r = GRAND_RECIPES.find((g) => g.breeds.every((k) => three.indexOf(k) >= 0));
+      if (r) return res('grand', r.name, r.name + ': ' + r.breeds.map(nm).join(' + '));
+      return res('family', family, family);
+    }
+    if (AT(top[1], 0.75)) {
+      const rest = breeds.slice(1).filter((b) => fracText(b[1]) !== '0').map((b) => fracText(b[1]) + ' ' + nm(b[0]));
+      return res('breed', nm(top[0]), [nm(top[0])].concat(rest).join(', '));
+    }
+    if (big.length >= 2) {
+      const m = MIXES[mixKey(big[0][0], big[1][0])];
+      return res('mix', m.name, m.name + ': ' + nm(big[0][0]) + ' × ' + nm(big[1][0]));
+    }
+    return res('family', family, family);
+  }
+
+  /* ---------- Sparkle odds ---------- */
+  const multText = (x) => String(Math.round(x * 100) / 100);
+  const bondLv = (b) => { const v = b && typeof b === 'object' ? b.level : b; return Number(v) || 0; };
+  /**
+   * sparkleOdds({ stone, sparkleParents: 0|1|2, bondA, bondB, base = 1/512 }) -> { p, mult, parts: [{ label, x }], text }
+   * Boosts multiply: Sparkle Stone ×4; each Sparkle parent ×1.5 (one part, 'Sparkle parent' ×1.5 or
+   * '2 Sparkle parents' ×2.25); both parents Bond 10 ×2, otherwise both Bond 8+ ×1.5.
+   * bondA / bondB are levels (or { level }). text: '1 in 64 today: Sparkle Stone ×4, Bond 10 ×2', or '1 in 512'
+   * with no boosts. Cosmetic only: these odds never change anything but the Sparkle roll.
+   */
+  function sparkleOdds(o) {
+    o = o || {};
+    const base = typeof o.base === 'number' && o.base > 0 ? o.base : 1 / 512;
+    const parts = [];
+    if (o.stone) parts.push({ label: 'Sparkle Stone', x: 4 });
+    const sp = Math.max(0, Math.min(2, Math.floor(Number(o.sparkleParents) || 0)));
+    if (sp === 1) parts.push({ label: 'Sparkle parent', x: 1.5 });
+    else if (sp === 2) parts.push({ label: '2 Sparkle parents', x: 2.25 });
+    const ba = bondLv(o.bondA), bb = bondLv(o.bondB);
+    if (ba >= 10 && bb >= 10) parts.push({ label: 'Bond 10', x: 2 });
+    else if (ba >= 8 && bb >= 8) parts.push({ label: 'Bond 8+', x: 1.5 });
+    const mult = parts.reduce((m, q) => m * q.x, 1);
+    const p = Math.min(1, base * mult);
+    const odds = p >= 1 ? 'Every puppy' : '1 in ' + Math.max(1, Math.round(1 / p));
+    const text = parts.length ? odds + ' today: ' + parts.map((q) => q.label + ' ×' + multText(q.x)).join(', ') : odds;
+    return { p, mult, parts, text };
+  }
+
   const api = { LOCI, LOCUS_KEYS, BREEDS, SIZE, STARTER_GENES, SHADES, FREQ, phenotype, pigment, randomGenotype, inherit, isDoubleMerle, related,
-    BREED_NAMES, MIXES, mixKey, mixOf, predict, coatCatalog, describe };
+    BREED_NAMES, MIXES, mixKey, mixOf, predict, coatCatalog: coatCatalogV21, describe,
+    ancestry, grandMix, sparkleOdds, fracText, GRAND_RECIPES };
   root.PawGenes = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
