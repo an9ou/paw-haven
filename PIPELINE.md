@@ -31,7 +31,7 @@ Parallel game agents each get ONE lane. Editing outside your lane needs the coor
 | **TOWN** | 05_market_shops, 06_wardrobe, 08_map, 14_town_places | 13_purchase_window, 17_training_map (map part) |
 | **PLAY** | 09_walk_classic, 15_trick_training, 16_voices_idle, 17_walk_route_carousel, 18_mod_walk_toys, 19_fetch | 16_idle_behaviours, 17_training_map (training part) |
 | **SYSTEMS** | 07_treasure_journal, 11_garden_kitchen | 09_journal |
-| **PHONE** (paused) | — | 05_dock, 06_action_bar, 12_phone_v1, 19_phone_v15b |
+| **PHONE** (v2.2, see PHONE.md) | 22c_phone_shell (+ phone parts of the screen files) | 05_dock, 06_action_bar, 12_phone_v1, 19_phone_v15b, 20–26_phone_* |
 
 Module owners stay as before: dogs/ (dog artist), world/a (scenes), world/b (props/icons), world/c (new scenes), mods/* (one owner each).
 
@@ -60,7 +60,7 @@ Default parallelism = CPU cores - 1 (at least 1); override with `--jobs N`. **On
 | `NODE_PATH=$(npm root -g) node game/test_all_c.js` | one suite directly (same file the runner starts) | |
 
 - **During work:** build + harness merged (the runner does both), then `smoke`, plus the suite(s) of your lane. **Before reporting:** the suites that touch your lane. **Before publishing (coordinator only):** `all`.
-- The phone version is paused: `test_phone.js` is not part of any default run. The superseded originals of test_all / v15 / v16 / v16b / v17 are archived in `game/legacy_tests/` (not run).
+- Phone suites (v2.2): `node game/run_tests.js phone` runs `test_phone.js`, `test_phone_<lane>.js` and `test_cloud.js` (iPhone 13 / Pixel 7 profiles via test_lib's `device` option). They are not part of `all`, which stays the desktop regression set. The superseded originals of test_all / v15 / v16 / v16b / v17 are archived in `game/legacy_tests/` (not run).
 - **Writing or editing a test** (use `game/test_lib.js`, see `game/test_smoke.js` for a small example):
   - `require('./test_lib').run('name', async (t) => { ... })`. The library exits non-zero on a failed `t.ok`, a crash or a console error.
   - **Time and weather are pinned** for every page: dev overrides `ovrTime='day'`, `ovrWeather='cloudy'` (neutral: sunny + day makes the dog "hot", which blocks idle behaviours, rain/snow change poses) and the page clock is frozen to "today 10:00" (it ticks, but the hour/date cannot roll over). A test that is about the clock or weather sets it itself (Dev panel selects) and then goes back to the pin, never to `auto`.
@@ -69,6 +69,6 @@ Default parallelism = CPU cores - 1 (at least 1); override with `--jobs N`. **On
   - **Timing-sensitive game checks must not race the wall clock:** the purchase-window arrow keys wait until the quantity box has focus and read the quantity from the "Total" line; the trick-training mark waits for `__paw.train.att` and pins the attempt age before pressing Good!; layout checks switch Motion off (the pack dogs' CSS sway) before measuring.
 
 ## Speed rules for every agent
-- Desktop only (1280×720) unless told otherwise. The phone version is paused.
+- Desktop (1280×720) and phone (portrait, see PHONE.md). Phone rules always sit under `html[data-layout="phone"]` / `isPhone()`.
 - Do 1 look-and-fix round for small changes and 2 for big ones. Don't repeat runs that already passed.
 - Keep reports short: what changed (files), the test results, and the open issues.

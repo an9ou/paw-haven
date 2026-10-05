@@ -1,6 +1,6 @@
 # Paw Haven
 
-A cozy browser game: adopt crayon-drawn dogs, care for them, walk a sketchbook town, grow a garden, and have puppy playdates with real coat genetics. Current version: **v2.1 "Sparkle & Family"** (also on claude.ai). History: `CHANGELOG.md`. Open issues: `TODO.md`.
+A cozy browser game: adopt crayon-drawn dogs, care for them, walk a sketchbook town, grow a garden, and have puppy playdates with real coat genetics. Current version: **v2.2 "Phones & Cloud Save"** (also on claude.ai, where cloud save is off by design). History: `CHANGELOG.md`. Open issues: `TODO.md`.
 
 **Read `PIPELINE.md` and `README.md` first.** They describe the layout, the shared-scope rules, the lanes and the test runner. Two things there don't apply on this Mac: the `/home/claude/...` paths (they mean this repo root), and the multi-agent worktree workflow (`tools/wt.sh`), unless you're running parallel agents.
 
@@ -18,11 +18,13 @@ A cozy browser game: adopt crayon-drawn dogs, care for them, walk a sketchbook t
 - `mods/{genes,pawaudio,walkrun,toys,garden,kitchen}.js`: gameplay modules (`window.PawGenes`, `PawAudio`, `PawWalk`, `PawToys`, `PawGarden`, `PawKitchen`). Modules never touch localStorage or game state; the game passes callbacks.
 - The `*_v1…v9.js`, `world/a|b|c/`, galleries and `*_reference.*` files are earlier art versions and review pages. They are not part of the build.
 - `V12.md` … `V2.md`, `V2_GENES.md`, `API*.md`, `TREASURE.md`: the build contract for each version. Check the relevant one before changing a system.
+- Phone layout: `game/src/22c_phone_shell.js` + `game/css/20_phone_shell.css` (shell), phone rules per lane in `game/css/21–26_phone_*.css`, always under `html[data-layout="phone"]` / `isPhone()`. Contract: `PHONE.md`.
+- Cloud save: `game/src/22b_cloud_config.js` (public Supabase URL and publishable key only, never a secret key), `game/src/22b_cloud.js`, tables in `supabase/schema.sql`. Off on the claude.ai artifact and under the test harness.
 - `docs/design/`: the game design docs (proposal, v2 Playdates & Sparkle, Garden & Kitchen, v1.3 build plan), exported from the claude.ai doc. Charts are placeholders.
 
 ## Save data
 
-`localStorage['pawhaven_proto_v1']` holds `S` (schema `v: 1`). Migrate **additively** in `migrate()` (`game/src/00_core.js`): give new fields defaults, never bump `v`, never drop fields. Old saves must always load. Prototype speed-ups: `BOOST = { coins: 2, bond: 3, nap: 6 }`, 1 game hour = 1 real minute, 1 real day = 1 dog month.
+`localStorage['pawhaven_proto_v1']` holds `S` (schema `v: 1`). The cloud stores exactly that JSON (`saves` table); sync bookkeeping lives in `pawhaven_cloud_v1`. Migrate **additively** in `migrate()` (`game/src/00_core.js`): give new fields defaults, never bump `v`, never drop fields. Old saves must always load. Prototype speed-ups: `BOOST = { coins: 2, bond: 3, nap: 6 }`, 1 game hour = 1 real minute, 1 real day = 1 dog month.
 
 ## Design rules (from the proposal; don't break them)
 

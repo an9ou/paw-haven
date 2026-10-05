@@ -4,13 +4,13 @@ A cozy comedy dog-raising game that runs in your browser. The world is a detaile
 
 Adopt a dog, feed it, bathe it, pet it, take it for walks, teach it tricks, and (eventually) raise a litter of puppies.
 
-Made for desktop and laptop screens, designed at **1280×720**. No install, no account, no ads, no network calls except the Google Fonts stylesheet.
+Plays on laptops (designed at **1280×720**) and on phones held upright: the same page switches to a touch layout on a phone. No install and no ads. An account is optional.
 
 ## Play it
 
 Play in your browser: **https://an9ou.github.io/paw-haven/** (live once GitHub Pages is switched on: repo Settings → Pages → Source: GitHub Actions).
 
-Your save lives in your browser's local storage, so it stays on your device.
+Your save lives in your browser's local storage. On the web version it is also saved to the cloud in real time: you start as a guest, and an email plus your own password lets you play the same game on any device (no email is ever sent). Settings has Export / Import save codes on every copy, including the claude.ai one, where cloud save is off.
 
 ## What's in the game
 
@@ -47,7 +47,8 @@ The tests drive the real game in headless Chromium with Playwright.
 ```
 npm install -g playwright && npx playwright install chromium
 NODE_PATH=$(npm root -g) node game/run_tests.js smoke    # about 30 seconds
-NODE_PATH=$(npm root -g) node game/run_tests.js all --jobs 2
+NODE_PATH=$(npm root -g) node game/run_tests.js all --jobs 2     # desktop suites
+NODE_PATH=$(npm root -g) node game/run_tests.js phone --jobs 2   # phone suites (iPhone 13, Pixel 7) and the mocked cloud-save suite
 ```
 
 ## Project layout
@@ -77,13 +78,14 @@ Some folders (`dogs/`, `world/`, `mods/`) also hold earlier art versions and rev
 - **v1.2.1 "Places"**: the dog can stay in more places, and the town map gets its own look.
 - **v1.3 "Garden & Kitchen"**: grow food, cook treats, male and female dogs, breeding preparation.
 - **v1.3.1**: clearer popups, runner tutorial, pet beds.
-- **v1.5 "More Dogs"**: a bigger roster, plus a phone version (now paused).
+- **v1.5 "More Dogs"**: a bigger roster, plus a first phone layout.
 - **v1.6**: trick training, the bigger town, realistic barking and natural idle behaviour.
 - **v1.7**: four new breeds, ten in total.
 - **v1.7.1**: faster garden and trick mini-games.
 - **v2 "Puppy Playdates & Sparkle"**: realistic genetics, breeding, puppies, mixes, Sparkle pups, the mailbox and town visits.
 - **v2.0.1**: puppies stay home on trips, spot 4 at 60 care days, mailbox tap fix, Coat Collector Ribbon art.
 - **v2.1 "Sparkle & Family"**: Sparkle boosts and the Sparkle Meter, ancestry and grand-mixes, collection rewards and titles, yard decorations, pen-pal postcards and album, the Gene Sniffer and the town painter.
+- **v2.2 "Phones & Cloud Save"**: the full game on phones (portrait, touch, bottom sheets), real-time cloud save with optional accounts and no emails, and Export / Import save codes.
 
 Full details: [CHANGELOG.md](CHANGELOG.md). Open issues: [TODO.md](TODO.md).
 
