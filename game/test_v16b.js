@@ -51,8 +51,8 @@ require('./test_lib').run('v16b', async (t) => {
   sec('speak (show-off)');
   await ev(() => { const d = window.__paw.S.dog; d.tricks.Speak = { p: 1, shows: 0 }; window.__paw.go('yard'); }); await t.untilMode('yard'); n = await mark(); await reset();
   await p.click('[data-act=play]'); await t.waitPop(true); await p.click('[data-play=tricks]'); await p.waitForSelector('[data-trtab=show]'); await p.click('[data-trtab=show]');
-  await rnd(0.01); await p.click('[data-show="Speak"]'); ok(await hasWait(n, 'woof', 8000), 'Speak trick: woof'); await rnd(null);
-  await t.until(() => window.__paw.train && !window.__paw.train.att, null, 5000); await p.click('#trX'); await t.until(() => !window.__paw.train, null, 4000);
+  await p.click('[data-show="Speak"]'); await require('./tricks_drive').speak(t, [0]); ok(await hasWait(n, 'woof', 8000), 'Speak trick (rhythm tap on the beat): woof');
+  await t.until(() => window.__paw.train && !window.__paw.train.game && !window.__paw.train.held, null, 5000); await p.click('#trX'); await t.until(() => !window.__paw.train, null, 4000);
 
   sec('clicked while asleep / sleeping');
   await ev(() => { window.__paw.S.sleeping = true; window.__paw.go('yard'); }); await t.untilMode('yard'); await t.until(() => !!document.getElementById('dogHit')); n = await mark();

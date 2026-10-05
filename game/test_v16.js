@@ -1,60 +1,41 @@
 // v1.6: trick training + the bigger town (desktop 1280x720 only: the phone half is paused), harness.js merged.
 // node game/test_v16.js  (or: node game/run_tests.js v16)
-// De-flaked: the "mark" step does not race a wall-clock window. It waits for the dog to actually perform (TRN.att exists), then pins the attempt age
-// (a.t0) before it presses Good!, so "perfect" / "a bit late" are decided by the test, not by CPU luck. The timing rule itself is covered by both cases.
+// v1.7.1: training is the Treat Lure mini-game now; game/tricks_drive.js drives the mouse along the live track (full coverage in test_v171_tricks.js).
 require('./test_lib').run('v16', async (t) => {
   const { ok, sec, ev, S, rnd, SH } = t;
+  const { trace, settle, ready } = require('./tricks_drive');
   const p = await t.boot(); await t.adopt({ sex: 'girl' });
   await t.patch({ bond: { level: 7, pts: 1600 }, coins: 1000, stats: { energy: 90, happy: 90 } }); await ev(() => window.__paw.go('yard')); await t.calm();
   const trick = (n) => ev((n) => { const x = window.__paw.S.dog.tricks[n]; return x && typeof x === 'object' ? x.p : 0; }, n);
   const line = () => p.textContent('#trLine');
-  const attNull = () => t.until(() => !(window.__paw.train && window.__paw.train.att), null, 8000);        // previous attempt is over: Cue works again
-  const attLive = () => t.until(() => !!(window.__paw.train && window.__paw.train.att), null, 10000);      // the dog is "doing" something now
-  // press Cue, wait until the dog acts, then press Good! with the attempt aged `age` ms (default 0 = instant)
-  const cueAndMark = async (age) => {
-    await attNull(); await p.click('#trCue'); const live = await attLive();
-    await ev((age) => { const a = window.__paw.train && window.__paw.train.att; if (a) a.t0 = performance.now() - (age || 0); document.getElementById('trGood').click(); }, age || 0);
-    return live;
-  };
 
-  sec('training session');
-  await p.click('[data-act=play]'); await t.waitPop(true); await p.click('[data-play=tricks]'); await p.waitForSelector('#trainPanel');
+  sec('training session (v1.7.1: Treat Lure mini-game)');
+  await p.click('[data-act=play]'); await t.waitPop(true); await p.click('[data-play=tricks]'); await settle(t);
   const geo = await ev(() => { const tp = document.getElementById('trainPanel').getBoundingClientRect(), dg = document.getElementById('dogHit').getBoundingClientRect(); return { tp: [tp.left, tp.top, tp.width, tp.height], dg: [dg.left, dg.top, dg.right, dg.bottom], dim: getComputedStyle(document.getElementById('dock')).display }; });
   ok(geo.dim === 'none', 'training: no dimmed popup over the scene');
   ok(geo.tp[2] <= 300 && geo.tp[0] >= geo.dg[2], `desktop: right panel ${Math.round(geo.tp[2])}px wide, not covering the dog`); await SH('01_training');
   await p.click('[data-tr="Sit"]');
-  // correct + fast mark (Mochi is stubborn: perfect = +25%)
-  await rnd(0.01); const p0 = await trick('Sit'); ok(await cueAndMark(0), 'the dog performs after Cue'); await t.until((p0) => window.__paw.S.dog.tricks.Sit && window.__paw.S.dog.tricks.Sit.p > p0, p0, 4000); const p1 = await trick('Sit');
-  ok(p1 > p0 + 0.19, `correct pose marked: progress ${Math.round(p0 * 100)}% -> ${Math.round(p1 * 100)}% (perfect timing)`); await SH('03_marked');
-  // correct but late (> 700 ms after the pose): smaller gain
-  await attNull(); const pl0 = await trick('Sit'); await cueAndMark(900); await t.until((v) => window.__paw.S.dog.tricks.Sit.p > v, pl0, 4000); const pl1 = await trick('Sit');
-  ok(pl1 > pl0 + 0.1 && pl1 - pl0 < 0.2, `late mark gives the smaller gain (+${Math.round((pl1 - pl0) * 100)}%)`);
-  // wrong behaviour marked = confused
-  await rnd(0.99); const p1b = await trick('Sit'); await cueAndMark(0); await t.until((v) => Math.abs(window.__paw.S.dog.tricks.Sit.p - v) > 0.001, p1b, 4000); const p2 = await trick('Sit');
-  ok(Math.abs(p2 - (p1b - 0.05)) < 0.001 && /now thinks/.test(await line()), `marking a wrong behaviour: -5% (${Math.round(p2 * 100)}%), "${(await line()).trim()}"`);
-  // wrong behaviour ignored = no cost
-  await attNull(); await p.click('#trCue'); await attLive();
-  ok(await t.until(() => /Ignoring it was right/.test(document.getElementById('trLine').textContent), null, 8000), 'ignoring the wrong behaviour: "Ignoring it was right"'); const p3 = await trick('Sit');
-  ok(p3 === p2, 'ignoring the wrong behaviour costs nothing');
-  // lure: easier, half progress
-  await attNull(); await p.click('#trLure'); ok((await p.getAttribute('#trLure', 'aria-pressed')) === 'true', 'lure on');
-  await rnd(0.01); await cueAndMark(0); await t.until((v) => window.__paw.S.dog.tricks.Sit.p > v, p3, 4000); const p4 = await trick('Sit');
-  ok(Math.abs((p4 - p3) - 0.125) < 0.02, `lured success gives half progress (+${Math.round((p4 - p3) * 100)}%; Mochi is stubborn: 25% / 2)`);
+  // a clean trace along the track = Great (Mochi is stubborn: +35% x1.25)
+  const p0 = await trick('Sit'); await p.click('#trStart'); ok(await t.until(() => !!document.querySelector('#trTrack .tg-dots'), null, 4000), 'Start draws the pencil track from the nose');
+  await trace(t, 'great'); const p1 = await trick('Sit');
+  ok(Math.abs(p1 - p0 - 0.4375) < 0.001, `Great trace: progress ${Math.round(p0 * 100)}% -> ${Math.round(p1 * 100)}%`); await SH('03_traced');
+  // wandering off the track = Missed, no penalty
+  await ready(t); await p.click('#trStart'); await trace(t, 'miss'); const p2 = await trick('Sit');
+  ok(p2 === p1 && /Oops!/.test(await line()), `Missed trace: no change (${Math.round(p2 * 100)}%), "${(await line()).trim()}"`);
   // focus runs out
-  await attNull(); await ev(() => { const d = window.__paw.S.dog; d.focus = { v: 15, at: window.__paw.S.gameMin }; });
-  await p.click('#trCue'); await attLive(); await attNull(); await p.click('#trCue');
+  await ready(t); await ev(() => { const d = window.__paw.S.dog; d.focus = { v: 20, at: window.__paw.S.gameMin }; });
+  await p.click('#trStart'); await trace(t, 'great'); await ready(t); await p.click('#trStart');
   ok(await t.until(() => /brain is full/.test(document.getElementById('trLine').textContent), null, 6000), 'focus runs out: "' + (await line()).trim() + '"'); await SH('04_focus_out');
-  await rnd(null);
 
   sec('show-off combo with an audience in Town Square');
   await p.click('#trX'); await t.travel('square'); ok((await S()).place === 'square', 'travelled to Town Square');
   await ev(() => { const d = window.__paw.S.dog; ['Sit', 'Paw', 'Lie Down'].forEach((n) => { d.tricks[n] = { p: 1, shows: 0 }; }); });
   await p.click('[data-act=play]'); await t.waitPop(true); await p.click('[data-play=tricks]'); await p.waitForSelector('[data-trtab=show]'); await p.click('[data-trtab=show]'); await p.waitForSelector('[data-show]');
   ok(await p.locator('#audience').count() === 1, 'NPC audience appears in a public place');
-  await rnd(0.01); const c0 = (await S()).coins;
-  let k = 0; for (const n of ['Sit', 'Paw', 'Lie Down']) { k++; await p.click(`[data-show="${n}"]`); await t.until((k) => window.__paw.train && window.__paw.train.chain === k, k, 10000); }
+  const c0 = (await S()).coins;
+  let k = 0; for (const n of ['Sit', 'Paw', 'Lie Down']) { k++; await t.until(() => !window.__paw.train.held && !window.__paw.train.game, null, 8000); await p.click(`[data-show="${n}"]`); await trace(t, 'great'); await t.until((k) => window.__paw.train && window.__paw.train.chain === k, k, 10000); }
   await t.until(() => /COMBO x3/.test(document.getElementById('trLine').textContent), null, 6000);
-  const c1 = (await S()).coins; await rnd(null);
+  const c1 = (await S()).coins;
   ok(/COMBO x3/.test(await line()) && c1 - c0 >= 18, `show-off combo x3: +${c1 - c0} coins (3 x 3 x audience 2, + the Town notice goal)`); await SH('05_combo');
   ok((await S()).daily.squareGoal === true, 'Town notice goal: 3 tricks shown in the Square');
   await p.click('#trX');

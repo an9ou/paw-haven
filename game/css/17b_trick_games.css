@@ -1,0 +1,27 @@
+/* ---------- v1.7.1 trick mini-games: lure track, hand signal, Speak rhythm ---------- */
+#trTrack .tg-band{fill:none;stroke:rgba(255,227,161,.5);stroke-linecap:round;stroke-linejoin:round}
+#trTrack .tg-dots{fill:none;stroke:#5B3D32;stroke-width:5;stroke-dasharray:1 11;stroke-linecap:round;stroke-linejoin:round;opacity:.85}
+#trTrack .tg-done{fill:none;stroke:#F28FA5;stroke-width:6;stroke-linecap:round;stroke-linejoin:round;opacity:.9}
+#trTrack .tg-start{fill:#FFFBF3;stroke:#5B3D32;stroke-width:3}
+#trTrack .tg-star{font-size:40px;fill:#F2C744;stroke:#5B3D32;stroke-width:1.6;paint-order:stroke}
+#trTrack.hand .tg-dots{opacity:.4}
+#trTrack.hand .tg-band{stroke:rgba(134,179,234,.22)}
+#trTrack.show .tg-band{stroke:rgba(158,217,166,.28)}
+#trTrack .tg-tap circle,#trTrack .tg-hold circle:not(.tg-ring){fill:rgba(255,251,243,.55);stroke:#5B3D32;stroke-width:3;stroke-dasharray:6 6}
+#trTrack .tg-ring{fill:none;stroke:#F28FA5;stroke-width:7;stroke-linecap:round}
+#trTrack text{font-family:Caveat,cursive;font-weight:700;font-size:24px;fill:#5B3D32}
+#trTrack #tgHit{cursor:grab}
+#trTrack #tgHit:active{cursor:grabbing}
+.tg-grade{font-family:Caveat,cursive;font-weight:700;font-size:80px;fill:#F2C744;stroke:#5B3D32;stroke-width:2.5;paint-order:stroke;transform-box:fill-box;transform-origin:center;animation:tgPop 1.5s ease-out forwards}
+.tg-grade.good{fill:#9ED9A6}
+.tg-grade.missed{fill:#86B3EA}
+@keyframes tgPop{0%{opacity:0;transform:translateY(20px) scale(.6)}15%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0;transform:translateY(-20px)}}
+.tk-perk{animation:tkPerk .3s ease-out}
+@keyframes tkPerk{40%{transform:translateY(-8px)}}
+.trbtns.one{grid-template-columns:1fr}
+.trspeak{animation:trPulse .4s ease-in-out infinite alternate;--wash:#FFD56B}
+.trfade{position:relative}
+.trfade s{position:absolute;top:-3px;bottom:-3px;width:3px;margin-left:-1px;background:#5B3D32;border-radius:2px;opacity:.55}
+.trmode{color:var(--muted);font-style:normal}
+html[data-motion="off"] .tg-grade{animation-duration:.01s}
+.trprog .prog{flex:none;height:20px}
