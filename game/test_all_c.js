@@ -1,6 +1,6 @@
 // all_c (shard 3 of 5 of the old test_all.js): walk + treasure + garden + selling at Pip. Starts from a prepared save (bond 7, 1000 coins, 2 spinach seeds).
 // Coverage: walk carousel, first-walk tutorial, runner, pause -> Head home early, results, back home; dev treasure;
-// garden (yard patch opens it, plant 4 plots, water, harvest via dev "ready"), sell window at Pip + coins up.
+// garden (yard patch opens it, plant 4 plots, water, dev +1 hour growth, harvest via dev "ready"), sell window at Pip (daily cart) + coins up.
 require('./test_lib').run('all_c', async (t) => {
   const { ok, sec, ev, S } = t;
   sec('prepared save: bond 7, 1000 coins, seeds');
@@ -30,7 +30,11 @@ require('./test_lib').run('all_c', async (t) => {
   for (const i of [0, 1, 2]) { await p.click(`.pg-plot[data-i="${i}"]`); await t.until((i) => window.__paw.S.garden.plots[i].water === 3, i, 4000); }
   let s = await S(); ok(s.garden.plots.slice(0, 4).every((x) => x.crop && x.water === 3), 'planted + watered 4 plots'); await t.SH('14_garden');
   await p.keyboard.press('Escape'); await p.keyboard.press('Escape'); ok(await t.untilMode('yard'), 'Esc leaves the garden');
-  await t.dev(async () => { await p.selectOption('#dvGW', 'sunny'); for (let i = 0; i < 3; i++) await p.click('#dvGStep'); await p.click('#dvGReady'); });
+  // v1.7.1: crops grow in real hours. 2 sunny dev hours grow the watered crops (carrots: 3 h, x1.5 in the sun); "all ready" does the rest.
+  const g0 = (await S()).garden;
+  await t.dev(async () => { await p.selectOption('#dvGW', 'sunny'); for (let i = 0; i < 2; i++) await p.click('#dvGHour'); });
+  s = await S(); ok(s.garden.v === 2 && s.garden.plots[0].g > g0.plots[0].g && s.garden.plots[0].water < 3 && s.garden.plots.slice(0, 4).every((x) => x.g > 0), `dev +1 hour x2 (sunny): the watered crops grew (carrot g ${s.garden.plots[0].g.toFixed(2)}) and drank water (${s.garden.plots[0].water}/3)`);
+  await t.dev(async () => { await p.click('#dvGReady'); });
   await p.click('#sceneG [data-hot=garden]'); ok(await t.untilMode('garden'), 'garden reopens'); await p.waitForSelector('.pg-plot[data-i="0"]');
   for (const i of [0, 1, 2, 3]) {
     await p.click(`.pg-plot[data-i="${i}"]`);
@@ -44,6 +48,6 @@ require('./test_lib').run('all_c', async (t) => {
   sec('sell crops at Pip');
   await t.travel('market'); await p.click('#placeBtns [data-sh=sprout]'); await p.waitForSelector('[data-ptab=sell]'); await p.click('[data-ptab=sell]');
   const c1 = (await S()).coins; await p.locator('[data-sell^="peas"]').first().click(); await p.waitForSelector('.buyveil');
-  ok(/Coins after: /.test(await p.textContent('.bb-sum')), 'sell window: Coins after'); await t.SH('10a_sell_window');
+  ok(/Coins after: /.test(await p.textContent('.bb-sum')), 'sell window: Coins after'); ok(/Pip's cart today: 0 \/ 60/.test(await p.textContent('.buybox')), "sell window shows Pip's daily cart (0 / 60)"); await t.SH('10a_sell_window');
   await p.click('.bb-yes'); ok(await t.until((c) => window.__paw.S.coins > c, c1), 'sold peas at Pip'); await t.closeX();
 });

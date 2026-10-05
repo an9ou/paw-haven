@@ -1,13 +1,14 @@
 /* ======================= v1.3: Garden & Kitchen (integrator side) ======================= */
 const PG = () => (window.PawGarden && typeof window.PawGarden === 'object' ? window.PawGarden : null);
 const PK = () => (window.PawKitchen && typeof window.PawKitchen === 'object' ? window.PawKitchen : null);
+// v1.7.1: keep in sync with mods/garden.js CROPS (hours = real grow time, regrow = hours, picks = harvests per bush)
 const CROPS_FB = [
-  { id: 'peas', name: 'Peas', seasons: ['spring'], days: 2, regrow: null, yield: 3, seed: 6, sell: 5, hardy: false, seedItem: 'Pea Seeds', item: 'Peas' },
-  { id: 'spinach', name: 'Spinach', seasons: ['winter', 'spring'], days: 2, regrow: null, yield: 2, seed: 6, sell: 6, hardy: true, seedItem: 'Spinach Seeds', item: 'Spinach' },
-  { id: 'carrot', name: 'Carrot', seasons: ['spring', 'autumn'], days: 3, regrow: null, yield: 2, seed: 8, sell: 9, hardy: false, seedItem: 'Carrot Seeds', item: 'Carrot' },
-  { id: 'blueberries', name: 'Blueberries', seasons: ['summer'], days: 5, regrow: 3, yield: 4, seed: 40, sell: 3, hardy: false, seedItem: 'Blueberry Seeds', item: 'Blueberries' },
-  { id: 'sweet-potato', name: 'Sweet Potato', seasons: ['summer', 'autumn'], days: 5, regrow: null, yield: 2, seed: 12, sell: 16, hardy: false, seedItem: 'Sweet Potato Seeds', item: 'Sweet Potato' },
-  { id: 'pumpkin', name: 'Pumpkin', seasons: ['autumn'], days: 6, regrow: null, yield: 1, seed: 20, sell: 40, hardy: false, seedItem: 'Pumpkin Seeds', item: 'Pumpkin' }
+  { id: 'peas', name: 'Peas', seasons: ['spring'], hours: 2, regrow: null, picks: null, yield: 3, seed: 2, sell: 1, hardy: false, seedItem: 'Pea Seeds', item: 'Peas' },
+  { id: 'spinach', name: 'Spinach', seasons: ['winter', 'spring'], hours: 2, regrow: null, picks: null, yield: 2, seed: 2, sell: 2, hardy: true, seedItem: 'Spinach Seeds', item: 'Spinach' },
+  { id: 'carrot', name: 'Carrot', seasons: ['spring', 'autumn'], hours: 3, regrow: null, picks: null, yield: 2, seed: 2, sell: 2, hardy: false, seedItem: 'Carrot Seeds', item: 'Carrot' },
+  { id: 'blueberries', name: 'Blueberries', seasons: ['summer'], hours: 4, regrow: 2, picks: 4, yield: 4, seed: 8, sell: 1, hardy: false, seedItem: 'Blueberry Seeds', item: 'Blueberries' },
+  { id: 'sweet-potato', name: 'Sweet Potato', seasons: ['summer', 'autumn'], hours: 4, regrow: null, picks: null, yield: 2, seed: 3, sell: 3, hardy: false, seedItem: 'Sweet Potato Seeds', item: 'Sweet Potato' },
+  { id: 'pumpkin', name: 'Pumpkin', seasons: ['autumn'], hours: 6, regrow: null, picks: null, yield: 1, seed: 4, sell: 7, hardy: false, seedItem: 'Pumpkin Seeds', item: 'Pumpkin' }
 ];
 const RECIPES_FB = [
   { id: 'carrot-crunchies', name: 'Carrot Crunchies', ingredients: ['carrot', 'oats'], steps: ['chop', 'bake'], effect: { hunger: 20, happy: 10, buff: { id: 'walk15', walks: 1 } }, unlock: 'start', hint: 'Something orange and something oaty.' },
@@ -47,8 +48,20 @@ const monthNow = () => new Date().getMonth() + 1;
 const seasonOf = (m) => ([12, 1, 2].includes(m) ? 'winter' : m <= 5 ? 'spring' : m <= 8 ? 'summer' : 'autumn');
 function gardenNew() {
   try { if (PG() && PG().newState) return PG().newState(); } catch (e) { /* module failed */ }
-  return { v: 1, plots: Array.from({ length: 6 }, () => ({ crop: null, g: 0, water: 0, dry: 0, inSeason: true, inspected: false, ready: null, took: 0, planted: null, harvested: 0 })), last: weatherPeriodKey(), harvests: {} };
+  return { v: 2, plots: Array.from({ length: 6 }, () => ({ crop: null, g: 0, water: 0, wd: 0, dry: 0, inSeason: true, inspected: false, ready: null, took: 0, planted: null, harvested: 0 })), last: gardenHourKey(), harvests: {} };
 }
+// v1.7.1: the garden runs on an hourly clock ('YYYY-M-D-hH'); weather still comes per 8-hour period
+function gardenHourKey(d) { try { if (PG() && PG().hourKey) return PG().hourKey(d || Date.now()); } catch (e) { /* module failed */ } const t = d ? new Date(d) : new Date(); return `${t.getFullYear()}-${t.getMonth() + 1}-${t.getDate()}-h${t.getHours()}`; }
+const hrs = (h) => { const n = Math.max(1, Math.round(h)); return `${n} hour${n === 1 ? '' : 's'}`; };
+const cropTimeTxt = (c) => `ready in about ${hrs(c.hours)}${c.regrow ? `, then regrows every ${hrs(c.regrow)}${c.picks ? ` (${c.picks} picks per bush)` : ''}` : ''}`;
+// Dev: +N garden hours with a chosen weather (+1 hour, +1 period = 8 hours). A pinned dev Time decides day/night.
+function gardenDevStep(hours, w) { gardenAdvance({ steps: hours, stepWeather: w, stepTime: ENV.time !== 'auto' ? timePhase() : undefined }); }
+function gardenDevReady() { const g = JSON.parse(JSON.stringify(S.garden)); g.plots.forEach((pl) => { if (pl.crop) { pl.g = 1; pl.ready = pl.ready || g.last || gardenHourKey(); } }); S.garden = g; markDirty(); if (gardenCtl && gardenCtl.update) gardenCtl.update({ state: S.garden }); }
+/* Pip buys at most 60 coins of crops per real day */
+const PIP_CAP = 60;
+function pipToday() { if (!S.pipSold || S.pipSold.date !== todayKey()) S.pipSold = { date: todayKey(), coins: 0 }; return S.pipSold; }
+const pipLeft = () => Math.max(0, PIP_CAP - pipToday().coins);
+const PIP_FULL = "Pip's cart is full! Back tomorrow.";
 function gkFields(s, existing) {
   s.inv.seeds = s.inv.seeds || (existing ? { carrot: 3, peas: 3 } : { carrot: 3, peas: 3 }); s.inv.crops = s.inv.crops || {};
   s.inv.pantry = s.inv.pantry || { oats: 0, rice: 0, egg: 0, chicken: 0 }; s.inv.dishes = s.inv.dishes || [];
@@ -64,7 +77,7 @@ let gardenCtl = null, kitchenCtl = null, lastGardenTick = 0;
 function gardenAdvance(extra) {
   const m = PG(); if (!S || !S.garden || !m || typeof m.advance !== 'function') return;
   try {
-    const r = m.advance(S.garden, Object.assign({ now: Date.now(), weatherAt: weatherForKey, buddy: buddyNow(), maxPeriods: 90 }, extra || {}));
+    const r = m.advance(S.garden, Object.assign({ now: Date.now(), weatherAt: weatherForKey, buddy: buddyNow(), maxHours: 720 }, extra || {}));
     if (r && r.state) { S.garden = mergeHarvests(r.state); markDirty(); (r.events || []).slice(0, 4).forEach(gardenEvent); }
   } catch (e) { console.warn('PawGarden.advance failed', e); }
   if (gardenCtl && gardenCtl.update) { try { gardenCtl.update({ state: S.garden, time: timePhase(), weather: weatherNow(), seeds: seedCounts() }); } catch (e) { /* ignore */ } }
@@ -174,15 +187,26 @@ function openPip(tab) {
   const sz = seasonOf(monthNow()), pip = artReal('prop', 'pip');
   const tabs = [['seeds', 'Seeds'], ['sell', 'Sell crops'], ['people', 'People gardens only']];
   let body = '';
-  if (pipTab === 'seeds') body = `<div class="shopgrid">${cropsList().slice().sort((a, b) => (b.seasons.includes(sz) ? 1 : 0) - (a.seasons.includes(sz) ? 1 : 0)).map((c) => `<div class="sitem"><span class="art">${art('item', c.seedItem)}</span><b>${esc(c.seedItem)}</b>${c.seasons.includes(sz) ? '<span class="stamp r1">In season</span>' : ''}<span class="desc">${esc(c.seasons.join(', '))} · ${c.days} days · ${c.yield} per harvest${c.regrow ? ' · regrows' : ''}${c.hardy ? ' · hardy' : ''}</span>${priceHTML(c.seed + ' each')}<span class="small">You have ${S.inv.seeds[c.id] || 0}</span><button class="btn yes" data-seed="${c.id}">Buy…</button></div>`).join('')}</div>`;
+  if (pipTab === 'seeds') body = `<div class="shopgrid">${cropsList().slice().sort((a, b) => (b.seasons.includes(sz) ? 1 : 0) - (a.seasons.includes(sz) ? 1 : 0)).map((c) => `<div class="sitem"><span class="art">${art('item', c.seedItem)}</span><b>${esc(c.seedItem)}</b>${c.seasons.includes(sz) ? '<span class="stamp r1">In season</span>' : ''}<span class="desc">${esc(c.seasons.join(', '))} · ${esc(cropTimeTxt(c))} · ${c.yield} per harvest${c.hardy ? ' · hardy' : ''}</span>${priceHTML(c.seed + ' each')}<span class="small">You have ${S.inv.seeds[c.id] || 0}</span><button class="btn yes" data-seed="${c.id}">Buy…</button></div>`).join('')}</div>`;
   else if (pipTab === 'sell') {
-    const rows = []; cropsList().forEach((c) => { const a = S.inv.crops[c.id] || [0, 0, 0]; a.forEach((n, i) => { if (n > 0) rows.push(`<div class="sitem"><span class="art">${art('item', c.item)}</span><b>${esc(c.name)} ${'★'.repeat(i + 1)}</b><span class="desc">x${n} · ${c.sell} × ${STAR_MULT[i]} = ${Math.round(c.sell * STAR_MULT[i])} each</span><button class="btn yes" data-sell="${c.id}|${i}">Sell…</button></div>`); }); });
-    body = rows.length ? `<div class="shopgrid">${rows.join('')}</div>` : '<p>No crops to sell yet. Grow some in the garden at home!</p>';
+    const left = pipLeft(), rows = []; cropsList().forEach((c) => { const a = S.inv.crops[c.id] || [0, 0, 0]; a.forEach((n, i) => { const each = Math.round(c.sell * STAR_MULT[i]), fits = each <= left; if (n > 0) rows.push(`<div class="sitem"><span class="art">${art('item', c.item)}</span><b>${esc(c.name)} ${'★'.repeat(i + 1)}</b><span class="desc">x${n} · ${c.sell} × ${STAR_MULT[i]} = ${each} each</span><button class="btn ${fits ? 'yes' : ''}" data-sell="${c.id}|${i}" ${fits ? '' : 'aria-disabled="true"'}>${fits ? 'Sell…' : left ? 'No room today' : 'Cart full'}</button></div>`); }); });
+    const cap = `<p class="pipcap small"${left ? '' : ' data-full="1"'}>${left ? `Pip's cart today: <b>${PIP_CAP - left} / ${PIP_CAP}</b> coins of crops. He can buy <b>${left}</b> more coins' worth today. Extra veggies are great for cooking!` : `<b>${PIP_FULL}</b> (${PIP_CAP} coins of crops a day.) Extra veggies are great for cooking!`}</p>`;
+    body = cap + (rows.length ? `<div class="shopgrid">${rows.join('')}</div>` : '<p>No crops to sell yet. Grow some in the garden at home!</p>');
   } else body = `<p class="small">Pip grows these for people only. They are never sold to dog owners. Tap one to see why.</p><div class="shopgrid">${peopleFood().filter((f) => f.where.includes('rack')).map((f) => `<button class="sitem lockd people" data-people="${f.id}"><span class="art">${art('item', f.name)}</span><span class="pawstop">${iconOr('paw-stop', '<circle r="12" fill="#F28FA5" stroke="#5B3D32" stroke-width="2"/><path d="M-6 0h12" stroke="#fff" stroke-width="3"/>')}</span><b>${esc(f.name)}</b><span class="desc">Not for dogs</span></button>`).join('')}</div>`;
   const p = openModal("Pip's Sprout Cart", `<div class="pip-top">${pip ? `<span class="pip-art">${pip}</span>` : ''}<p>"Howdy! Seeds for the patch, and I buy what you grow. Season now: <b>${sz}</b>." <span class="small">You have ${S.coins} Paw Coins.</span></p></div><div class="tabs" role="tablist">${tabs.map(([k, l]) => `<button class="btn" role="tab" data-ptab="${k}" aria-selected="${pipTab === k}">${l}</button>`).join('')}</div>${body}`, { cls: 'shop' });
   p.querySelectorAll('[data-ptab]').forEach((b) => { b.onclick = () => openPip(b.dataset.ptab); });
-  p.querySelectorAll('[data-seed]').forEach((b) => { b.onclick = async () => { const c = cropInfo(b.dataset.seed); SFX.click(); const q = await buyWindow(p, { art: art('item', c.seedItem), name: c.seedItem, desc: `${c.seasons.join(', ')} · ${c.days} days · ${c.yield} per harvest`, price: c.seed, stack: true, have: S.inv.seeds[c.id] || 0, haveLabel: 'In pouch' }); if (!q) return; const cost = c.seed * q; if (S.coins < cost) { nope('Not enough coins. Have you tried being rich?'); return; } S.coins -= cost; S.inv.seeds[c.id] = (S.inv.seeds[c.id] || 0) + q; SFX.kaching(); markDirty(); updateHUD(); toast(`Bought ${q} × ${c.seedItem}. Pip tips that enormous hat.`, 'gold'); openPip(); }; });
-  p.querySelectorAll('[data-sell]').forEach((b) => { b.onclick = async () => { const [id, i] = b.dataset.sell.split('|'), c = cropInfo(id), a = S.inv.crops[id]; if (!a || !a[+i]) return; SFX.click(); const each = Math.round(c.sell * STAR_MULT[+i]); const q0 = await buyWindow(p, { art: art('item', c.item), name: `${c.name} ${'★'.repeat(+i + 1)}`, desc: `Pip pays ${c.sell} × ${STAR_MULT[+i]} for ${+i + 1}-star ${c.name.toLowerCase()}.`, price: each, sell: true, max: a[+i], have: a[+i], haveLabel: 'In basket' }); const q = Math.min(q0, a[+i]); if (!q) return; a[+i] -= q; const got = addCoins(Math.round(c.sell * STAR_MULT[+i]) * q, { raw: true }); SFX.kaching(); markDirty(); toast(`Sold ${q} ${c.name} for ${got} coins. Pip says ${NAME()} is a fine farm dog.`, 'gold'); openPip(); }; });
+  p.querySelectorAll('[data-seed]').forEach((b) => { b.onclick = async () => { const c = cropInfo(b.dataset.seed); SFX.click(); const q = await buyWindow(p, { art: art('item', c.seedItem), name: c.seedItem, desc: `${c.seasons.join(', ')} · ${cropTimeTxt(c)} · ${c.yield} per harvest`, price: c.seed, stack: true, have: S.inv.seeds[c.id] || 0, haveLabel: 'In pouch' }); if (!q) return; const cost = c.seed * q; if (S.coins < cost) { nope('Not enough coins. Have you tried being rich?'); return; } S.coins -= cost; S.inv.seeds[c.id] = (S.inv.seeds[c.id] || 0) + q; SFX.kaching(); markDirty(); updateHUD(); toast(`Bought ${q} × ${c.seedItem}. Pip tips that enormous hat.`, 'gold'); openPip(); }; });
+  p.querySelectorAll('[data-sell]').forEach((b) => { b.onclick = async () => {
+    const [id, i] = b.dataset.sell.split('|'), c = cropInfo(id), a = S.inv.crops[id]; if (!a || !a[+i]) return;
+    const each = Math.round(c.sell * STAR_MULT[+i]), left = pipLeft();
+    if (!left) { nope(PIP_FULL); return; }
+    if (each > left) { nope(`Pip only has room for ${left} more coins of crops today. Back tomorrow!`); return; }
+    SFX.click(); const room = Math.floor(left / each);
+    const q0 = await buyWindow(p, { art: art('item', c.item), name: `${c.name} ${'★'.repeat(+i + 1)}`, desc: `Pip pays ${c.sell} × ${STAR_MULT[+i]} for ${+i + 1}-star ${c.name.toLowerCase()}. Pip's cart today: ${PIP_CAP - left} / ${PIP_CAP} coins, room for ${room} more.`, price: each, sell: true, max: Math.min(a[+i], room), have: a[+i], haveLabel: 'In basket' });
+    const q = Math.min(q0, a[+i], Math.floor(pipLeft() / each)); if (!q) return;
+    a[+i] -= q; const got = addCoins(each * q, { raw: true }); pipToday().coins += each * q; SFX.kaching(); markDirty();
+    toast(`Sold ${q} ${c.name} for ${got} coins. Pip says ${NAME()} is a fine farm dog.${pipLeft() ? '' : ' ' + PIP_FULL}`, 'gold'); openPip();
+  }; });
   p.querySelectorAll('[data-people]').forEach((b) => { b.onclick = () => safetyNote(b.dataset.people); });
 }
 /* ---- dishes: feeding, limits, buffs ---- */
@@ -224,8 +248,16 @@ function dishRowHTML(off) {
 /* ---- journal tabs: garden, recipes, profile ---- */
 function journalGarden() {
   const sz = seasonOf(monthNow());
-  return `<div class="jtop"><div class="jprog"><b>${(S.garden.plots || []).filter((p) => p.crop).length} / 6</b><span class="small">plots planted · season now: ${sz} · buddy perk: ${esc(buddyNow() || 'none')}</span></div><div><button class="btn yes big" data-jopen="garden">Open garden</button></div></div>
-    <div class="jgrid">${cropsList().map((c) => `<div class="jent"><span class="art">${art('item', c.item)}</span><b>${esc(c.name)}</b>${c.seasons.includes(sz) ? '<span class="stamp r1">In season</span>' : ''}<span class="ab">Seasons: ${esc(c.seasons.join(', '))}. ${c.days} days to grow${c.regrow ? `, regrows in ${c.regrow}` : ''}. Sells for ${c.sell} (1★).</span><span class="small">Harvested ${(S.garden.harvests || {})[c.id] || 0} times · best ${S.cropBest[c.id] ? '★'.repeat(S.cropBest[c.id]) : 'none yet'} · seeds: ${S.inv.seeds[c.id] || 0}</span></div>`).join('')}</div>`;
+  return `<div class="jtop"><div class="jprog"><b>${(S.garden.plots || []).filter((p) => p.crop).length} / 6</b><span class="small">plots planted · season now: ${sz} · buddy perk: ${esc(buddyNow() || 'none')}</span><span class="small">${gardenStatusTxt()}</span><span class="small">Crops grow in real hours, even while you're away. Each plot holds 3 drops: about 3 hours on a sunny day, 6 when cloudy, 9 at night. Rain refills them. Pip buys up to ${PIP_CAP} coins of crops a day (${pipLeft()} left today).</span></div><div><button class="btn yes big" data-jopen="garden">Open garden</button></div></div>
+    <div class="jgrid">${cropsList().map((c) => `<div class="jent"><span class="art">${art('item', c.item)}</span><b>${esc(c.name)}</b>${c.seasons.includes(sz) ? '<span class="stamp r1">In season</span>' : ''}<span class="ab">Seasons: ${esc(c.seasons.join(', '))}. Ready in about ${hrs(c.hours)}${c.regrow ? `, regrows in ${hrs(c.regrow)} (${c.picks || 'many'} picks per bush)` : ''}; half speed out of season. Seed ${c.seed}, sells for ${c.sell} (1★).</span><span class="small">Harvested ${(S.garden.harvests || {})[c.id] || 0} times · best ${S.cropBest[c.id] ? '★'.repeat(S.cropBest[c.id]) : 'none yet'} · seeds: ${S.inv.seeds[c.id] || 0}</span></div>`).join('')}</div>`;
+}
+function gardenStatusTxt() {
+  const pl = (S.garden && S.garden.plots) || [], m = monthNow(), G = PG();
+  const ready = pl.filter((p) => p.crop && p.g >= 1).length, grow = pl.filter((p) => p.crop && p.g < 1);
+  if (!grow.length) return ready ? `${ready} plot${ready > 1 ? 's are' : ' is'} ready to pick!` : 'Nothing growing right now.';
+  const left = grow.map((p) => { const c = cropInfo(p.crop); if (!c) return 99; if (G && G.hoursLeft) { try { return G.hoursLeft(p, m); } catch (e) { /* fall through */ } } return (1 - p.g) * c.hours / (c.seasons.includes(seasonOf(m)) ? 1 : 0.5); });
+  const next = Math.min.apply(null, left), dry = grow.filter((p) => !p.water).length;
+  return `${ready ? `${ready} ready to pick · ` : ''}next crop ${next < 0.75 ? 'ready in under an hour' : `ready in about ${hrs(next)}`}${dry ? ` · ${dry} thirsty plot${dry > 1 ? 's' : ''} (not growing until watered)` : ''}`;
 }
 function journalRecipes() {
   return `<div class="jtop"><div class="jprog"><b>${S.recipes.known.length} / 6</b><span class="small">recipes known · fridge ${S.inv.dishes.length}/8 · ${S.buff ? 'buff: ' + esc(BUFF_TXT[S.buff.id] || S.buff.id) : 'no buff active'}</span></div><div><button class="btn yes big" data-jopen="kitchen">Open kitchen</button></div></div>

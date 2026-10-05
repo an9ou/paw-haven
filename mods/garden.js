@@ -1,4 +1,4 @@
-/* Paw Haven v1.3: GARDEN module -> window.PawGarden
+/* Paw Haven v1.3: GARDEN module -> window.PawGarden (v1.7.1: crops grow in real hours, hourly watering)
    Pure growth model (advance / plant / water / harvest) + the garden screen UI.
    Plain IIFE, no imports. CSS injected once (#pawgarden-css), classes prefixed pg-.
    Never touches browser storage or game state: everything goes through the callbacks in V13.md. */
@@ -6,15 +6,17 @@
   'use strict';
 
   /* ======================================================================
-     DATA (V13.md "Shared data": Crops)
+     DATA (V13.md "Shared data": Crops; v1.7.1: real hours instead of days)
+     hours  = grow time in real hours (in season, cloudy, watered)
+     regrow = hours to regrow after a harvest (blueberries), picks = harvests per bush before it is spent
      ====================================================================== */
   var CROPS = [
-    { id: 'peas', name: 'Peas', seasons: ['spring'], days: 2, regrow: null, yield: 3, seed: 6, sell: 5, hardy: false, seedItem: 'Pea Seeds', item: 'Peas' },
-    { id: 'spinach', name: 'Spinach', seasons: ['winter', 'spring'], days: 2, regrow: null, yield: 2, seed: 6, sell: 6, hardy: true, seedItem: 'Spinach Seeds', item: 'Spinach' },
-    { id: 'carrot', name: 'Carrot', seasons: ['spring', 'autumn'], days: 3, regrow: null, yield: 2, seed: 8, sell: 9, hardy: false, seedItem: 'Carrot Seeds', item: 'Carrot' },
-    { id: 'blueberries', name: 'Blueberries', seasons: ['summer'], days: 5, regrow: 3, yield: 4, seed: 40, sell: 3, hardy: false, seedItem: 'Blueberry Seeds', item: 'Blueberries' },
-    { id: 'sweet-potato', name: 'Sweet Potato', seasons: ['summer', 'autumn'], days: 5, regrow: null, yield: 2, seed: 12, sell: 16, hardy: false, seedItem: 'Sweet Potato Seeds', item: 'Sweet Potato' },
-    { id: 'pumpkin', name: 'Pumpkin', seasons: ['autumn'], days: 6, regrow: null, yield: 1, seed: 20, sell: 40, hardy: false, seedItem: 'Pumpkin Seeds', item: 'Pumpkin' }
+    { id: 'peas', name: 'Peas', seasons: ['spring'], hours: 2, regrow: null, picks: null, yield: 3, seed: 2, sell: 1, hardy: false, seedItem: 'Pea Seeds', item: 'Peas' },
+    { id: 'spinach', name: 'Spinach', seasons: ['winter', 'spring'], hours: 2, regrow: null, picks: null, yield: 2, seed: 2, sell: 2, hardy: true, seedItem: 'Spinach Seeds', item: 'Spinach' },
+    { id: 'carrot', name: 'Carrot', seasons: ['spring', 'autumn'], hours: 3, regrow: null, picks: null, yield: 2, seed: 2, sell: 2, hardy: false, seedItem: 'Carrot Seeds', item: 'Carrot' },
+    { id: 'blueberries', name: 'Blueberries', seasons: ['summer'], hours: 4, regrow: 2, picks: 4, yield: 4, seed: 8, sell: 1, hardy: false, seedItem: 'Blueberry Seeds', item: 'Blueberries' },
+    { id: 'sweet-potato', name: 'Sweet Potato', seasons: ['summer', 'autumn'], hours: 4, regrow: null, picks: null, yield: 2, seed: 3, sell: 3, hardy: false, seedItem: 'Sweet Potato Seeds', item: 'Sweet Potato' },
+    { id: 'pumpkin', name: 'Pumpkin', seasons: ['autumn'], hours: 6, regrow: null, picks: null, yield: 1, seed: 4, sell: 7, hardy: false, seedItem: 'Pumpkin Seeds', item: 'Pumpkin' }
   ];
   var BY_ID = {};
   CROPS.forEach(function (c) { BY_ID[c.id] = c; });
@@ -29,6 +31,10 @@
   var ONE = { carrot: 'carrot', peas: 'pea pod', spinach: 'spinach leaf', blueberries: 'blueberry', 'sweet-potato': 'sweet potato', pumpkin: 'pumpkin' };
   var IS_ONE = { spinach: 1, pumpkin: 1 };
   var EPS = 1e-9;
+  // v1.7.1 hourly clock (V171.md Part A)
+  var SQUIRREL_HOURS = 3;                       // a ready crop left this long loses 1 item
+  var DRAIN = { sunny: 1, cloudy: 0.5, night: 1 / 3 }; // drops per hour (snow 0, rain refills)
+  var MAX_HOURS = 720;                          // never process more than 30 days in one advance
 
   /* ======================================================================
      PURE HELPERS
@@ -39,104 +45,155 @@
   function seasonOf(month) { month = +month; return (month === 12 || month === 1 || month === 2) ? 'winter' : month <= 5 ? 'spring' : month <= 8 ? 'summer' : 'autumn'; }
   function inSeason(cropId, month) { var c = BY_ID[cropId]; return !!c && c.seasons.indexOf(seasonOf(month)) >= 0; }
   function sellPrice(cropId, stars) { var c = BY_ID[cropId]; if (!c) return 0; var s = Math.max(1, Math.min(3, stars | 0 || 1)); return Math.round(c.sell * SELL_MULT[s - 1]); }
+  // the game's night (timePhase): 19:00-05:00
+  function isNightHour(h) { return h >= 19 || h < 5; }
 
-  function periodKey(date) {
-    var d = date instanceof Date ? date : new Date(date == null ? Date.now() : date);
-    if (isNaN(d.getTime())) d = new Date();
-    return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate() + '-' + Math.floor(d.getHours() / 8);
-  }
+  function toDate(date) { var d = date instanceof Date ? date : new Date(date == null ? Date.now() : date); return isNaN(d.getTime()) ? new Date() : d; }
+  // weather period key (8 h, the game's weatherPeriodKey format)
+  function periodKey(date) { var d = toDate(date); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate() + '-' + Math.floor(d.getHours() / 8); }
+  // v1.7.1 hour key 'YYYY-M-D-hH' (the 'h' keeps it apart from old period keys)
+  function hourKey(date) { var d = toDate(date); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate() + '-h' + d.getHours(); }
   function parseKey(k) {
     if (typeof k !== 'string') return null;
     var m = /^(\d{4})-(\d{1,2})-(\d{1,2})-([0-2])$/.exec(k);
     if (!m) return null;
     return { y: +m[1], m: +m[2], d: +m[3], p: +m[4] };
   }
+  function parseHour(k) {
+    if (typeof k !== 'string') return null;
+    var m = /^(\d{4})-(\d{1,2})-(\d{1,2})-h(\d{1,2})$/.exec(k);
+    if (!m || +m[4] > 23) return null;
+    return { y: +m[1], m: +m[2], d: +m[3], h: +m[4] };
+  }
   function keyIdx(k) { var q = parseKey(k); if (!q) return null; return Math.round(Date.UTC(q.y, q.m - 1, q.d) / 864e5) * 3 + q.p; }
-  function idxKey(i) { var day = Math.floor(i / 3), p = i - day * 3, d = new Date(day * 864e5); return d.getUTCFullYear() + '-' + (d.getUTCMonth() + 1) + '-' + d.getUTCDate() + '-' + p; }
+  function hourIdx(k) { var q = parseHour(k); if (!q) return null; return Math.round(Date.UTC(q.y, q.m - 1, q.d) / 864e5) * 24 + q.h; }
+  function idxHour(i) { var day = Math.floor(i / 24), h = i - day * 24, d = new Date(day * 864e5); return d.getUTCFullYear() + '-' + (d.getUTCMonth() + 1) + '-' + d.getUTCDate() + '-h' + h; }
+  function hourToPeriod(k) { var q = parseHour(k); return q ? q.y + '-' + q.m + '-' + q.d + '-' + Math.floor(q.h / 8) : null; }
+  // an old (v1) period key -> the hour index of the LAST hour of that period (the old model already counted the whole period)
+  function periodEndHourIdx(k) { var i = keyIdx(k); return i == null ? null : Math.floor(i / 3) * 24 + (i % 3) * 8 + 7; }
+  function anyIdx(k) { var h = hourIdx(k); return h != null ? h : null; }
 
-  function emptyPlot() { return { crop: null, g: 0, water: 0, dry: 0, inSeason: true, inspected: false, ready: null, took: 0, planted: null, harvested: 0 }; }
-  function newState(now) { return { v: 1, plots: [0, 1, 2, 3, 4, 5].map(emptyPlot), last: periodKey(now == null ? Date.now() : now), harvests: {} }; }
+  function emptyPlot() { return { crop: null, g: 0, water: 0, wd: 0, dry: 0, inSeason: true, inspected: false, ready: null, took: 0, planted: null, harvested: 0 }; }
+  function newState(now) { return { v: 2, plots: [0, 1, 2, 3, 4, 5].map(emptyPlot), last: hourKey(now == null ? Date.now() : now), harvests: {} }; }
+
+  // v1 (8-hour periods, days) -> v2 (hours). g is already the grown FRACTION, so a crop keeps its
+  // progress and the rest of it takes (1 - g) x the new grow time: the proportional conversion.
+  // The squirrel timer converts the same way (1 old period of its 3-period wait = 1 hour of the new 3-hour wait).
+  function migrate(s) {
+    if (!s || typeof s !== 'object' || s.v === 2) return s;
+    var lastP = keyIdx(s.last), lastH = lastP != null ? periodEndHourIdx(s.last) : null;
+    var nowH = hourIdx(hourKey(Date.now()));
+    if (lastH == null) lastH = nowH;
+    if (Array.isArray(s.plots)) s.plots.forEach(function (p) {
+      if (!p || typeof p !== 'object') return;
+      if (p.ready) {
+        var ri = keyIdx(p.ready);
+        if (ri != null && lastP != null) p.ready = idxHour(lastH - Math.max(0, Math.min(SQUIRREL_HOURS, lastP - ri)));
+        else if (hourIdx(p.ready) == null) p.ready = idxHour(lastH);
+      }
+      var c = BY_ID[p.crop];
+      if (c && c.regrow && c.picks && (p.harvested | 0) >= c.picks) p.harvested = c.picks - 1; // an old bush gets one more pick
+      p.wd = 0;
+    });
+    s.last = idxHour(lastH);
+    s.v = 2;
+    s.migratedFrom = 1;
+    return s;
+  }
+
   // normalise a (cloned) state in place: always 6 complete plots, never drops unknown fields
   function norm(s) {
     if (!s || typeof s !== 'object') s = newState();
+    if (s.v !== 2) migrate(s);
     if (!Array.isArray(s.plots)) s.plots = [];
     for (var i = 0; i < 6; i++) {
       var p = s.plots[i]; if (!p || typeof p !== 'object') p = s.plots[i] = emptyPlot();
       var e = emptyPlot();
       for (var k in e) if (p[k] === undefined) p[k] = e[k];
-      p.g = Math.max(0, Math.min(1, +p.g || 0)); p.water = Math.max(0, Math.min(3, +p.water || 0)); p.dry = Math.max(0, p.dry | 0); p.took = Math.max(0, p.took | 0);
+      p.g = Math.max(0, Math.min(1, +p.g || 0)); p.water = Math.max(0, Math.min(3, Math.floor(+p.water || 0))); p.wd = Math.max(0, Math.min(1, +p.wd || 0)); p.dry = Math.max(0, p.dry | 0); p.took = Math.max(0, p.took | 0);
     }
-    if (typeof s.last !== 'string' || !parseKey(s.last)) s.last = periodKey(Date.now());
+    if (typeof s.last !== 'string' || !parseHour(s.last)) s.last = hourKey(Date.now());
     if (!s.harvests || typeof s.harvests !== 'object') s.harvests = {};
-    if (s.v == null) s.v = 1;
+    s.v = 2;
     return s;
   }
   function growing(p) { return !!(p && p.crop && BY_ID[p.crop] && p.g < 1); }
   function isReady(p) { return !!(p && p.crop && BY_ID[p.crop] && p.g >= 1); }
   function stage(p) { if (!p || !p.crop) return 0; var g = +p.g || 0; return g >= 1 ? 3 : g >= 0.4 ? 2 : g > 0 ? 1 : 0; }
   function safeWeather(fn, key) { var w; try { w = typeof fn === 'function' ? fn(key) : 'cloudy'; } catch (e) { w = 'cloudy'; } return WEATHERS[w] ? w : 'cloudy'; }
-  function growFactor(c, w, p, buddy) {
+  // growth multiplier for one hour: sunny (in daylight) x1.5, snow pauses (hardy crops and the snow pup: half)
+  function growFactor(c, w, night, buddy) {
     if (w === 'snow') return (c.hardy || buddy === 'snow') ? 0.5 : 0;
-    if (w === 'sunny' && p > 0) return 1.5;
+    if (w === 'sunny' && !night) return 1.5;
     return 1;
   }
-  function waterUse(w, p) { return w === 'sunny' ? (p > 0 ? 2 : 1) : w === 'cloudy' ? 1 : 0; }
+  // drops a growing crop drinks in one hour: sunny 1 (1 drop / h), cloudy 0.5 (1 drop / 2 h), night 1/3 (1 drop / 3 h)
+  function drainRate(w, night) { if (w === 'rain' || w === 'snow') return 0; if (night) return DRAIN.night; return w === 'sunny' ? DRAIN.sunny : DRAIN.cloudy; }
+  function seasonMult(c, month) { return c.seasons.indexOf(seasonOf(month)) >= 0 ? 1 : 0.5; }
+  // hours of growing left (watered, cloudy, at the given month), and hours the water lasts
+  function hoursLeft(p, month) { var c = p && BY_ID[p.crop]; if (!c || p.g >= 1) return 0; return Math.max(0, 1 - p.g) * c.hours / seasonMult(c, month); }
+  function waterHours(p, w, night) { var r = drainRate(w, night); if (!p || r <= 0) return Infinity; return Math.max(0, p.water - (p.wd || 0)) / r; }
 
-  // one 8-hour period (V13.md "Growth model" steps 1-4)
-  function stepPeriod(s, key, w, buddy, events) {
-    var q = parseKey(key), ki = keyIdx(key), month = q.m, per = q.p;
+  // one real hour (V171.md Part A)
+  function stepHour(s, key, w, night, buddy, events) {
+    var q = parseHour(key), ki = hourIdx(key);
     // 1. rain fills every plot
-    if (w === 'rain') s.plots.forEach(function (p) { p.water = 3; });
-    // 2. growing plots
+    if (w === 'rain') s.plots.forEach(function (p) { p.water = 3; p.wd = 0; });
+    // 2. growing plots: a plot with at least 1 drop grows this hour, then drinks; a dry plot pauses (nothing dies)
     s.plots.forEach(function (p, i) {
       if (!growing(p)) return;
       var c = BY_ID[p.crop];
       if (p.water >= 1) {
-        var season = c.seasons.indexOf(seasonOf(month)) >= 0 ? 1 : 0.5;
-        p.g += season * growFactor(c, w, per, buddy) / (c.days * 3);
-        p.water = Math.max(0, p.water - waterUse(w, per));
+        p.g += seasonMult(c, q.m) * growFactor(c, w, night, buddy) / c.hours;
+        p.wd += drainRate(w, night);
+        while (p.wd >= 1 - EPS && p.water > 0) { p.water -= 1; p.wd = Math.max(0, p.wd - 1); }
+        if (p.water <= 0) { p.water = 0; p.wd = 0; }
       } else {
         p.dry += 1;
       }
       if (buddy === 'inspect') p.inspected = true;
       if (p.g >= 1 - EPS) { p.g = 1; p.ready = key; events.push({ type: 'ready', plot: i, crop: p.crop }); }
     });
-    // 3. ready plots: Captain Fluff visits after 3 periods
+    // 3. ready plots: Captain Fluff visits a crop left 3 hours or more, and takes 1
     s.plots.forEach(function (p, i) {
       if (!isReady(p)) return;
-      var ri = keyIdx(p.ready); if (ri == null) { p.ready = key; ri = ki; }
-      if (ki - ri >= 3 && buddy !== 'guard' && !p.took) { p.took = 1; events.push({ type: 'squirrel', plot: i, crop: p.crop }); }
+      var ri = hourIdx(p.ready); if (ri == null) { p.ready = key; ri = ki; }
+      if (ki - ri >= SQUIRREL_HOURS && buddy !== 'guard' && !p.took) { p.took = 1; events.push({ type: 'squirrel', plot: i, crop: p.crop }); }
     });
-    // 4. Pepper: the first plot that hits water 0 each calendar day gets a drink
+    // 4. Pepper ("never fully dries"): the first plot that hits water 0 each calendar day gets a drink
     if (buddy === 'tend') {
       var day = q.y + '-' + q.m + '-' + q.d;
       if (s.tend !== day) {
-        for (var i = 0; i < 6; i++) {
-          var p = s.plots[i];
-          if (growing(p) && p.water === 0) { p.water = 1; s.tend = day; events.push({ type: 'tend', plot: i, crop: p.crop }); break; }
+        for (var j = 0; j < 6; j++) {
+          var pp = s.plots[j];
+          if (growing(pp) && pp.water === 0) { pp.water = 1; pp.wd = 0; s.tend = day; events.push({ type: 'tend', plot: j, crop: pp.crop }); break; }
         }
       }
     }
   }
 
+  // ctx: { now, weatherAt(periodKey), buddy, maxHours (or legacy maxPeriods x 8), steps (DEV: hours), stepWeather, stepTime }
   function advance(state, ctx) {
     ctx = ctx || {};
     var s = norm(clone(state)), events = [], buddy = ctx.buddy || null;
-    var max = ctx.maxPeriods > 0 ? Math.floor(ctx.maxPeriods) : 90;
-    var keys = [], wfn;
+    var max = ctx.maxHours > 0 ? Math.floor(ctx.maxHours) : ctx.maxPeriods > 0 ? Math.floor(ctx.maxPeriods) * 8 : MAX_HOURS;
+    var keys = [];
     var steps = ctx.steps > 0 ? Math.floor(ctx.steps) : 0;
     if (steps > 0) {
-      var li0 = keyIdx(s.last);
-      for (var j = 1; j <= Math.min(steps, max); j++) keys.push(idxKey(li0 + j));
-      var sw = WEATHERS[ctx.stepWeather] ? ctx.stepWeather : 'cloudy';
-      wfn = function () { return sw; };
+      var li0 = hourIdx(s.last);
+      for (var j = 1; j <= Math.min(steps, max); j++) keys.push(idxHour(li0 + j));
     } else {
-      var cur = periodKey(ctx.now == null ? Date.now() : ctx.now), ci = keyIdx(cur), li = keyIdx(s.last);
+      var cur = hourKey(ctx.now == null ? Date.now() : ctx.now), ci = hourIdx(cur), li = hourIdx(s.last);
       if (ci == null || li == null || ci <= li) return { state: s, events: events }; // clock went back: do nothing
-      for (var i = Math.max(li + 1, ci - max + 1); i <= ci; i++) keys.push(idxKey(i));
-      wfn = ctx.weatherAt;
+      for (var i = Math.max(li + 1, ci - max + 1); i <= ci; i++) keys.push(idxHour(i));
     }
-    keys.forEach(function (k) { stepPeriod(s, k, steps > 0 ? wfn() : safeWeather(wfn, k), buddy, events); });
+    var sw = WEATHERS[ctx.stepWeather] ? ctx.stepWeather : 'cloudy';
+    keys.forEach(function (k) {
+      var h = parseHour(k).h, night = isNightHour(h), w;
+      if (steps > 0) { w = sw; if (ctx.stepTime) night = ctx.stepTime === 'night'; }
+      else w = safeWeather(ctx.weatherAt, hourToPeriod(k));
+      stepHour(s, k, w, night, buddy, events);
+    });
     if (keys.length) s.last = keys[keys.length - 1];
     return { state: s, events: events };
   }
@@ -146,10 +203,10 @@
     var s = norm(clone(state)), i = plotIndex | 0, c = BY_ID[cropId], p = s.plots[i];
     if (!c || plotIndex !== i || i < 0 || i > 5 || !p || p.crop) return { state: s, ok: false, bonusSeed: false };
     var month = ctx.month >= 1 && ctx.month <= 12 ? ctx.month | 0 : (new Date(ctx.now == null ? Date.now() : ctx.now).getMonth() + 1);
-    var key = ctx.now != null ? periodKey(ctx.now) : s.last;
-    var water = p.water; // soil keeps whatever water it already had
+    var key = ctx.now != null ? hourKey(ctx.now) : s.last;
     var np = emptyPlot();
-    np.crop = c.id; np.water = water; np.inSeason = c.seasons.indexOf(seasonOf(month)) >= 0; np.planted = key;
+    np.crop = c.id; np.water = p.water; np.wd = p.wd || 0; // soil keeps whatever water it already had
+    np.inSeason = c.seasons.indexOf(seasonOf(month)) >= 0; np.planted = key;
     np.inspected = ctx.buddy === 'inspect';
     s.plots[i] = np;
     var bonus = false;
@@ -159,7 +216,7 @@
 
   function water(state, plotIndex) {
     var s = norm(clone(state)), p = s.plots[plotIndex | 0];
-    if (p && plotIndex >= 0 && plotIndex <= 5) p.water = 3;
+    if (p && plotIndex >= 0 && plotIndex <= 5) { p.water = 3; p.wd = 0; }
     return s;
   }
 
@@ -169,18 +226,20 @@
   function harvest(state, plotIndex, ctx) {
     ctx = ctx || {};
     var s = norm(clone(state)), i = plotIndex | 0, p = s.plots[i];
-    if (!p || plotIndex < 0 || plotIndex > 5 || !isReady(p)) return { state: s, items: [], took: 0 };
+    if (!p || plotIndex < 0 || plotIndex > 5 || !isReady(p)) return { state: s, items: [], took: 0, spent: false };
     var c = BY_ID[p.crop], took = p.took | 0, n = Math.max(1, c.yield - took), qp = qualityPoints(p);
     var r = typeof ctx.rng === 'function' ? ctx.rng : mulberry(hash('stars|' + i + '|' + p.planted + '|' + (p.harvested | 0)));
-    var items = [];
+    var items = [], spent = false;
     for (var k = 0; k < n; k++) items.push({ crop: c.id, stars: rollStars(qp, r) });
     s.harvests[c.id] = (s.harvests[c.id] | 0) + 1;
-    if (c.regrow) {
-      p.g = 1 - c.regrow / c.days; p.ready = null; p.took = 0; p.dry = 0; p.harvested = (p.harvested | 0) + 1;
+    var picked = (p.harvested | 0) + 1;
+    if (c.regrow && !(c.picks && picked >= c.picks)) {
+      p.g = 1 - c.regrow / c.hours; p.ready = null; p.took = 0; p.dry = 0; p.harvested = picked;
     } else {
-      var w = p.water; s.plots[i] = emptyPlot(); s.plots[i].water = w;
+      spent = !!c.regrow;
+      var w = p.water, wd = p.wd; s.plots[i] = emptyPlot(); s.plots[i].water = w; s.plots[i].wd = wd || 0;
     }
-    return { state: s, items: items, took: took };
+    return { state: s, items: items, took: took, spent: spent };
   }
 
   /* ======================================================================
@@ -695,10 +754,15 @@
       else t = 'Pick a plot (1-6), then Seeds (P), Watering Can (W) or Basket (H).';
       hint(t);
     }
+    function hoursText(h) { h = Math.max(1, Math.round(h)); return h + ' hour' + (h === 1 ? '' : 's'); }
     function etaText(p, c) {
-      var sz = c.seasons.indexOf(seasonOf(env.month)) >= 0 ? 1 : 0.5;
-      var periods = Math.max(0, 1 - p.g) * c.days * 3 / sz, d = periods / 3;
-      return d < 0.34 ? 'Ready in a few hours' : d < 1 ? 'Ready in under a day' : 'Ready in about ' + (Math.round(d * 2) / 2) + ' day' + (d >= 1.25 ? 's' : '');
+      var h = hoursLeft(p, env.month);
+      return h < 0.75 ? 'Ready in under an hour' : 'Ready in about ' + hoursText(h);
+    }
+    function waterText(p) {
+      var night = env.time === 'night', h = waterHours(p, env.weather, night);
+      if (!p.water || h === Infinity) return '';
+      return ' (about ' + hoursText(h) + ' left)';
     }
     function renderInfo() {
       var box = q('.pg-info'), p = st.plots[sel], c = p && BY_ID[p.crop];
@@ -713,7 +777,7 @@
         h += '<div class="pg-sub">' + cap(STAGE_TXT[sg]) + (p.inSeason ? '' : ' · off-season, half speed') + '</div>';
         h += '<div class="pg-bar"><i style="width:' + Math.round(p.g * 100) + '%"></i></div>';
         h += '<div>' + (sg === 3 ? (p.took ? 'Ready. Captain Fluff left an IOU.' : 'Ready to pick!') : p.water === 0 ? 'Thirsty: not growing until watered.' : snowStop ? 'Snow: resting until it melts.' : etaText(p, c) + '.') + '</div>';
-        h += '<div>Water ' + p.water + ' / 3' + (c.regrow ? ' · regrows' : '') + '</div>';
+        h += '<div>Water ' + p.water + ' / 3' + (sg < 3 ? waterText(p) : '') + (c.regrow ? ' · regrows in ' + hoursText(c.regrow) + (c.picks ? ', ' + Math.max(1, c.picks - (p.harvested | 0)) + ' pick' + (c.picks - (p.harvested | 0) === 1 ? '' : 's') + ' left' : '') : '') + '</div>';
         h += '<div class="pg-q"><span class="' + (p.dry === 0 ? 'pg-ok' : '') + '">' + (p.dry === 0 ? '&#10003;' : '&#10007;') + ' never dry</span><span class="' + (p.inSeason ? 'pg-ok' : '') + '">' + (p.inSeason ? '&#10003;' : '&#10007;') + ' in season</span><span class="' + (p.inspected ? 'pg-ok' : '') + '">' + (p.inspected ? '&#10003;' : '&#10007;') + ' inspected</span></div>';
         h += '<div class="pg-acts">' + (sg === 3 ? '<button type="button" class="pg-btn pg-sm" data-a="harvest">Harvest (H)</button>' : '') + (sg < 3 && p.water < 3 ? '<button type="button" class="pg-btn pg-blue pg-sm" data-a="water">Water (W)</button>' : '') + '</div>';
       }
@@ -776,8 +840,8 @@
         h += '<div class="pg-pks">';
         owned.forEach(function (c) {
           var ins = c.seasons.indexOf(sz) >= 0;
-          h += '<button type="button" class="pg-pk' + (ins ? '' : ' pg-off') + '" data-c="' + c.id + '" title="' + c.seedItem + ': ' + c.days + ' days, seasons: ' + c.seasons.join(', ') + '">' +
-            (ins ? '<span class="pg-stamp">In season</span>' : '') + '<i>' + art('item', c.seedItem, null, function () { return fbItem(c.seedItem); }) + '</i><b>' + c.name + '</b>' + c.days + ' days' + (ins ? '' : '<br>half speed') + '<em>' + (seeds[c.id] | 0) + '</em></button>';
+          h += '<button type="button" class="pg-pk' + (ins ? '' : ' pg-off') + '" data-c="' + c.id + '" title="' + c.seedItem + ': ready in about ' + hoursText(c.hours) + ', seasons: ' + c.seasons.join(', ') + '">' +
+            (ins ? '<span class="pg-stamp">In season</span>' : '') + '<i>' + art('item', c.seedItem, null, function () { return fbItem(c.seedItem); }) + '</i><b>' + c.name + '</b>' + c.hours + ' hours' + (ins ? '' : '<br>half speed') + '<em>' + (seeds[c.id] | 0) + '</em></button>';
         });
         h += '</div>';
       }
@@ -905,7 +969,7 @@
           later(function () { f.remove(); if (k === 0) sfx('pop'); }, 760);
         }, 180 + k * 130);
       });
-      if (!quiet) say(fill(pick(HARVEST_LINES), cid) + (r.took ? ' (Minus one for Captain Fluff.)' : ''), 2600);
+      if (!quiet) say(fill(pick(HARVEST_LINES), cid) + (r.took ? ' (Minus one for Captain Fluff.)' : '') + (r.spent ? ' That bush is all picked out. Plant a new one.' : ''), 2600);
       call('onHarvest', i, r.items, r.took);
       changed();
       renderAll({ noGrow: true });
@@ -1042,7 +1106,10 @@
     newState: newState, periodKey: periodKey, stage: stage,
     advance: advance, harvest: harvest, plant: plant, water: water, open: open,
     // small extras (additive, optional): seasons, prices, odds
-    seasonOf: seasonOf, inSeason: inSeason, sellPrice: sellPrice, STAR_ODDS: STAR_ODDS, qualityPoints: qualityPoints
+    seasonOf: seasonOf, inSeason: inSeason, sellPrice: sellPrice, STAR_ODDS: STAR_ODDS, qualityPoints: qualityPoints,
+    // v1.7.1 hourly clock
+    hourKey: hourKey, migrate: function (st) { return norm(clone(st)); }, hoursLeft: hoursLeft, waterHours: waterHours, drainRate: drainRate,
+    SQUIRREL_HOURS: SQUIRREL_HOURS, DRAIN: DRAIN, VERSION: 2
   };
   if (typeof window !== 'undefined') window.PawGarden = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;

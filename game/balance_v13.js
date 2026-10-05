@@ -1,3 +1,4 @@
+// SUPERSEDED by balance_v171.js (v1.7.1 hourly growth model). Kept for history: it no longer matches mods/garden.js (crops have hours, not days).
 // v1.3 balance check (V13.md "Balance targets"): node balance_v13.js
 // Garden: 6 plots of one crop, the real PawGarden pure functions + the game's seeded weather,
 // a player who checks in every period (8 h): waters an empty plot, harvests when ready, sells everything, replants (buys the seed).
