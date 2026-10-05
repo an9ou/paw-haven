@@ -51,6 +51,7 @@ function openJournal(tab) {
   p.querySelectorAll('[data-cbreed]').forEach((b) => { b.onclick = () => { SFX.click(); jCoatKey = b.dataset.cbreed; openJournal('coats'); }; });
   p.querySelectorAll('[data-spots]').forEach((b) => { b.onclick = () => { SFX.click(); if (typeof openSpots === 'function') openSpots(); else toast(`Dog spots: ${S.dogs.length} dog${S.dogs.length > 1 ? 's' : ''} at home. More spots open with Bond.`); }; });
   if (jTab === 'family') pinFamNodes(p);
+  if (isPhone()) pjJournalInit(p);
   p.querySelectorAll('[data-jtitle]').forEach((b) => { b.onclick = () => { jrToggleTitle(b.dataset.jtitle); openJournal(); }; });
   p.querySelectorAll('[data-fpartner]').forEach((b) => { b.onclick = () => { SFX.click(); closeModal(); if (typeof openPlaydates === 'function') openPlaydates({ with: b.dataset.fpartner }); else toast('The Playdate board is still being pinned up. Try again soon.'); }; });
   p.querySelectorAll('[data-jeq]').forEach((b) => { b.onclick = () => { equip(b.dataset.jeq); openJournal(); }; });
@@ -156,8 +157,23 @@ function journalFamily() {
     <p>${esc(mixLine(me))}</p><p class="small">${m != null ? `${ageText(m)} old · ` : ''}Generation ${me.gen || (dam || sire ? 1 : 0)}</p><p>${famChip(me)}</p>${jrPartnerBtn(me)}</div></div>`;
   const kidsHTML = kids.length ? `<div class="fkids">${kids.map((k) => `<button class="fkid ${k.sparkle ? 'spk' : ''}" data-fam="${esc(k.id)}"><span class="fhead">${famHead(k)}</span><span class="fname">${esc(k.name || '?')} ${sexSym(k.sex)}</span>${famChip(k)}</button>`).join('')}</div>`
     : `<p class="small fnone">No puppies yet. ${me.status === 'home' ? `When ${P.he} is grown up, a Puppy Playdate could change that.` : 'This branch is still growing.'}</p>`;
-  return `${pdogTabs(homeSel)}<div class="famwrap"><div class="ft ${art0 ? 'ft-real' : ''}"><div class="ft-art">${art0 || famTreeDoodle()}</div>${nodes}</div>
+  const tree = `<div class="ft ${art0 ? 'ft-real' : ''}"><div class="ft-art">${art0 || famTreeDoodle()}</div>${nodes}</div>`;
+  return `${pdogTabs(homeSel)}<div class="famwrap">${isPhone() ? pjTreeFrame(tree) : tree}
     <div class="fside">${about}${homeSel ? '' : `<button class="btn fback" data-fam="${esc((dogById(jProfDog) || D()).id)}">Back to ${esc((dogById(jProfDog) || D()).name)}</button>`}<h4>Puppies (${kids.length})</h4>${kidsHTML}<p class="small">Tap anyone on the tree to put them at the bottom.</p></div></div>`;
+}
+// v2.2 phone: the tree is wider than the screen, so it sits in a pannable frame (touch drag scrolls it, the Left and Right buttons are the fallback)
+function pjTreeFrame(tree) {
+  return `<div class="ft-wrap"><div class="ft-pan" tabindex="0" aria-label="Family tree: drag or use the buttons to look around">${tree}</div><div class="ft-btns"><button class="btn ftb-l" data-ftpan="-1" aria-label="Pan the tree left">Left</button><span class="small">Drag the tree to look around</span><button class="btn ftb-r" data-ftpan="1" aria-label="Pan the tree right">Right</button></div></div>`;
+}
+function pjJournalInit(p) {
+  try {
+    const on = p.querySelector('.jtabs [aria-selected="true"]'); if (on) { const bar = on.parentElement; bar.scrollLeft = Math.max(0, on.offsetLeft - (bar.clientWidth - on.offsetWidth) / 2); }
+    const pan = p.querySelector('.ft-pan'); if (!pan) return;
+    const me = pan.querySelector('.fnode.me');
+    if (me) pan.scrollLeft = Math.max(0, me.offsetLeft - pan.clientWidth / 2);
+    const step = () => Math.max(120, Math.round(pan.clientWidth * 0.6));
+    p.querySelectorAll('[data-ftpan]').forEach((b) => { b.onclick = () => { SFX.click(); pan.scrollBy({ left: +b.dataset.ftpan * step(), behavior: document.documentElement.dataset.motion === 'off' ? 'auto' : 'smooth' }); }; });
+  } catch (e) { /* keep the default view */ }
 }
 // When the real familytree prop marks its leaf spots with data-node, move our nodes onto them (sorted by height: 4 grandparents, 2 parents, the dog).
 function pinFamNodes(p) {

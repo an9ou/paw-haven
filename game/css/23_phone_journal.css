@@ -1,1 +1,89 @@
 /* ---------- v2.2 phone: JOURNAL lane. Every rule sits under html[data-layout="phone"] ---------- */
+/* Journal and Mailbox content works in the v1.5B popup and in the full-width bottom sheet (the sheet scrolls itself) */
+html[data-layout="phone"] .panel.journal,html[data-layout="phone"] .panel.mailbox{width:100%;max-width:none}
+html[data-layout="phone"] .journal button,html[data-layout="phone"] .mailbox button{touch-action:manipulation}
+/* tab strip: one scrolling row, big targets */
+html[data-layout="phone"] .panel.journal .jtabs,html[data-layout="phone"] .panel.mailbox .mbtabs{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;gap:6px;padding:2px 2px 6px;margin-left:-2px;margin-right:-2px;scrollbar-width:none;touch-action:pan-x}
+html[data-layout="phone"] .panel.journal .jtabs::-webkit-scrollbar,html[data-layout="phone"] .panel.mailbox .mbtabs::-webkit-scrollbar{display:none}
+html[data-layout="phone"] .panel.journal .jtabs .btn,html[data-layout="phone"] .panel.mailbox .mbtabs .btn,html[data-layout="phone"] .panel.journal .tabs.pdogs .btn{flex:none;min-height:44px;min-width:44px;font-size:20px;padding:3px 14px 5px}
+html[data-layout="phone"] .panel.journal .tabs.pdogs{flex-wrap:nowrap;overflow-x:auto}
+html[data-layout="phone"] .pdogs .ic{width:30px;height:30px}
+/* treasure, food, toys, clothes cards */
+html[data-layout="phone"] .jent .btn,html[data-layout="phone"] .profile .pf-grid .jent .btn{min-height:44px;min-width:44px;font-size:17px;padding:4px 14px 5px}
+html[data-layout="phone"] .jent .ab{font-size:15px}
+html[data-layout="phone"] .jent > b{font-size:21px}
+html[data-layout="phone"] .jprog b{font-size:30px}
+html[data-layout="phone"] .jtop .btn{min-height:48px}
+html[data-layout="phone"] .jgrid{padding-bottom:24px}
+/* profile: one card per row */
+html[data-layout="phone"] .profile .pf-grid{grid-template-columns:minmax(0,1fr);gap:12px}
+html[data-layout="phone"] .profile .portrait.big{width:84px;height:84px}
+html[data-layout="phone"] .profile .pf-head{flex-direction:row;align-items:center;gap:12px}
+html[data-layout="phone"] .profile .pf-head h3{font-size:30px}
+html[data-layout="phone"] .profile .pf-head p{font-size:15px}
+html[data-layout="phone"] .profile .glines{font-size:15px}
+html[data-layout="phone"] .gslot{font-size:15px}
+html[data-layout="phone"] .pf-par{gap:18px}
+html[data-layout="phone"] .pf-fh{min-width:56px;min-height:64px;justify-content:center}
+html[data-layout="phone"] .pf-kids{gap:6px}
+html[data-layout="phone"] .pf-kid{width:48px;height:48px}
+html[data-layout="phone"] .spotrow i{width:32px;height:32px}
+html[data-layout="phone"] .ptrow{gap:8px}
+html[data-layout="phone"] .ptitle{min-height:44px;font-size:20px;padding:2px 14px 3px 6px}
+/* family tree: pannable frame (JS wraps the tree on phones), nodes stay 44 px or larger */
+html[data-layout="phone"] .famwrap{display:flex;flex-direction:column;gap:10px;width:100%;min-width:0;max-width:100%}
+html[data-layout="phone"] .ft-wrap{display:flex;flex-direction:column;gap:6px;min-width:0;width:100%;max-width:100%}
+html[data-layout="phone"] .ft-pan{position:relative;overflow-x:auto;overflow-y:hidden;max-width:100%;border-radius:14px;touch-action:pan-x;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+html[data-layout="phone"] .ft-pan .ft{width:660px;flex:none}
+html[data-layout="phone"] .ft-pan .fnode{width:120px;min-height:64px}
+html[data-layout="phone"] .ft-pan .fnode .fhead{width:56px;height:56px}
+html[data-layout="phone"] .ft-pan .fnode.me .fhead{width:76px;height:76px}
+html[data-layout="phone"] .ft-pan .fname{font-size:19px}
+html[data-layout="phone"] .ft-btns{display:flex;align-items:center;justify-content:space-between;gap:8px}
+html[data-layout="phone"] .ft-btns .btn{min-width:84px;min-height:48px;font-size:20px}
+html[data-layout="phone"] .ft-btns .small{text-align:center;flex:1;min-width:0}
+html[data-layout="phone"] .fback,html[data-layout="phone"] .fpartner,html[data-layout="phone"] .fside .btn{min-height:44px;font-size:18px}
+html[data-layout="phone"] .fam-me .portrait.big{width:76px;height:76px}
+html[data-layout="phone"] .fam-me h3{font-size:30px}
+html[data-layout="phone"] .fkids{grid-template-columns:repeat(auto-fill,minmax(88px,1fr));max-height:none;overflow:visible}
+html[data-layout="phone"] .fkid{min-height:76px;justify-content:center}
+html[data-layout="phone"] .fkid .fname{font-size:19px}
+/* coats */
+html[data-layout="phone"] .ctop{grid-template-columns:minmax(0,1fr);gap:10px}
+html[data-layout="phone"] .csparkle{align-items:flex-start;max-width:100%}
+html[data-layout="phone"] .cstars{flex-wrap:wrap;max-width:100%;font-size:22px}
+html[data-layout="phone"] .cmiles{gap:6px}
+html[data-layout="phone"] .cbreeds{flex-wrap:nowrap;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:none;touch-action:pan-x}
+html[data-layout="phone"] .cbreeds::-webkit-scrollbar{display:none}
+html[data-layout="phone"] .cbreed{flex:none;min-height:44px;min-width:44px;font-size:19px}
+html[data-layout="phone"] .cgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 10px}
+html[data-layout="phone"] .coat > b{font-size:20px}
+html[data-layout="phone"] .cjar b{font-size:24px}
+html[data-layout="phone"] .cmixes h4{font-size:22px}
+html[data-layout="phone"] .mrow{max-height:176px;overflow-y:auto;padding:2px;touch-action:pan-y;scrollbar-width:thin}
+html[data-layout="phone"] .mchip{font-size:17px;line-height:1.4}
+/* mailbox: the letter list becomes a short scrolling list above the reader */
+html[data-layout="phone"] .mbox{grid-template-columns:minmax(0,1fr);gap:12px;min-height:0}
+html[data-layout="phone"] .mb-list{max-height:210px;padding:2px;touch-action:pan-y;overscroll-behavior:contain}
+html[data-layout="phone"] .mb-item{min-height:56px;transform:none}
+html[data-layout="phone"] .mb-item.on{transform:none}
+html[data-layout="phone"] .mb-t b{font-size:16px}
+html[data-layout="phone"] .letter{padding:12px 12px 14px;transform:none}
+html[data-layout="phone"] .letter header b{font-size:28px}
+html[data-layout="phone"] .mb-text{font-size:17px}
+html[data-layout="phone"] .mb-acts .btn{min-height:48px}
+html[data-layout="phone"] .mb-pup{width:48px;height:48px}
+html[data-layout="phone"] .pc-addr{font-size:15px}
+html[data-layout="phone"] .pc{width:100%}
+/* album: two stamps per row */
+html[data-layout="phone"] .al-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+html[data-layout="phone"] .al-slot{min-height:96px}
+html[data-layout="phone"] .al-head b{font-size:28px}
+/* Dog spots card (Profile) and its popup */
+html[data-layout="phone"] .panel.spotspop{width:100%}
+html[data-layout="phone"] .spotspop .spots{grid-template-columns:repeat(2,minmax(0,1fr))}
+html[data-layout="phone"] .spotspop .spot{transform:none}
+html[data-layout="phone"] .spotreqs{font-size:15px}
+html[data-layout="phone"] .spotreqs .ck{font-size:15px;width:20px}
+html[data-layout="phone"] .spotspop .btn{min-height:44px}
+html[data-layout="phone"] .pf-spots .btn,html[data-layout="phone"] .pf-spots [data-spots]{min-height:44px}
