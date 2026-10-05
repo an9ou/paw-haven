@@ -84,6 +84,7 @@ require('./test_lib').run('v21_journal', async (t) => {
   await closeAll();
 
   sec('Profile: ancestry line and Proud Mum');
+  await t.patch({ dog: { anc: null } }); // v2.1 merge: BREED backfills anc on load, and patch() merges objects
   await t.patch({ dog: { anc: { corgi: 0.75, husky: 0.25 }, proud: '2026-02-02' } });
   await openJ('profile'); await p.waitForSelector('.profile');
   ok(/Corgi, 1\/4 Husky/.test(await p.textContent('.ancline')), 'ancestry line: Corgi, 1/4 Husky');

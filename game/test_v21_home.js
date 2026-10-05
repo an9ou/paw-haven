@@ -23,7 +23,7 @@ require('./test_lib').run('v21_home', async (t) => {
   const dogHit = await wr('#dogHit'), mail = await wr('#mailboxG') || await wr('#sceneG [data-hot=mailbox]'), houseG = await wr('#houseG');
   const HOME_DOOR = [135, 250, 205, 392], NURSERY = [575, 483, 795, 600], BOWL = [205, 462, 295, 552];
   for (const n of NAMES) {
-    const r = await wr(`#decorG [data-decor="${n}"] rect`), sp = await ev((n) => window.__paw.home.specs[n].at, n);
+    const r = await wr(`#decorG [data-decor="${n}"] > rect`), sp = await ev((n) => window.__paw.home.specs[n].at, n);
     ok(r && Math.abs(r[0] - sp[0]) <= 1 && Math.abs(r[1] - sp[1]) <= 1 && Math.abs(r[2] - r[0] - sp[2]) <= 2, `${n}: drawn at ${JSON.stringify(r)}`);
     ok(r && !hitR(r, dogHit), `${n}: clear of the dog tap area ${JSON.stringify(dogHit)}`);
     ok(r && mail && !hitR(r, mail), `${n}: clear of the mailbox ${JSON.stringify(mail)}`);
@@ -41,7 +41,7 @@ require('./test_lib').run('v21_home', async (t) => {
 
   sec('click a decoration: story popup, Put away, persists');
   await t.freezeMotion(false);
-  await t.p.click('#decorG [data-decor="Rocking Chair"] rect', { force: true }); await t.waitPop(false).catch(() => {});
+  await t.p.click('#decorG [data-decor="Rocking Chair"] > rect', { force: true }); await t.waitPop(false).catch(() => {});
   ok(await t.until(() => !!document.querySelector('#modal:not([hidden]) .panel.hm-decor-pop'), null, 4000), 'popup opens');
   const story = await ev(() => document.querySelector('#modal .hm-pop p').textContent);
   ok(story.length > 20 && (story.match(/[.!?]/g) || []).length <= 2 && !story.includes(';'), 'story is 1-2 sentences, no semicolons: ' + story);
@@ -80,8 +80,8 @@ require('./test_lib').run('v21_home', async (t) => {
   await ev(() => { const S = window.__paw.S; S.portrait.ids = [S.dogs[0].id, 'gone1', 'gone2', 'gone1']; window.__paw.go('yard'); });
   await t.until(() => !!document.querySelector('#decorG [data-decor]'), null, 6000);
   ok(await heads() === 4, '4 ids: 4 heads');
-  const fr = await wr('#decorG [data-decor="Family Photo Frame"] rect'), hr = await ev(() => [...document.querySelectorAll('#decorG .hm-head')].map((g) => { const b = g.getBoundingClientRect(); return [b.left, b.right, b.top, b.bottom]; }));
-  const fb = await ev(() => { const b = document.querySelector('#decorG [data-decor="Family Photo Frame"] rect').getBoundingClientRect(); return [b.left, b.right, b.top, b.bottom]; });
+  const fr = await wr('#decorG [data-decor="Family Photo Frame"] > rect'), hr = await ev(() => [...document.querySelectorAll('#decorG .hm-head')].map((g) => { const b = g.getBoundingClientRect(); return [b.left, b.right, b.top, b.bottom]; }));
+  const fb = await ev(() => { const b = document.querySelector('#decorG [data-decor="Family Photo Frame"] > rect').getBoundingClientRect(); return [b.left, b.right, b.top, b.bottom]; });
   ok(hr.every((h) => h[0] >= fb[0] - 1 && h[1] <= fb[1] + 1 && h[2] >= fb[2] - 1 && h[3] <= fb[3] + 1), 'heads sit inside the frame box ' + JSON.stringify(fr));
   await ev(() => { delete window.__paw.S.portrait; window.__paw.go('yard'); });
   await t.until(() => !!document.querySelector('#decorG [data-decor]'), null, 6000);
@@ -99,7 +99,7 @@ require('./test_lib').run('v21_home', async (t) => {
   await t.until(() => document.querySelectorAll('#pack .packdog').length === 1, null, 6000);
   await t.rnd(0.1); await ev(() => window.__paw.home.ambient()); await t.rnd(null);
   ok(await t.until(() => /pa-pose-down\b/.test((document.querySelector('#pack svg.pa-dog') || { getAttribute: () => '' }).getAttribute('class') || ''), null, 4000), 'proud mum picks "down" when the chair is out');
-  const chair = await wr('#decorG [data-decor="Rocking Chair"] rect'), mum = await wr('#pack .packdog');
+  const chair = await wr('#decorG [data-decor="Rocking Chair"] > rect'), mum = await wr('#pack .packdog');
   ok(chair && mum && Math.abs((mum[2] + mum[0]) / 2 - (chair[0] + chair[2]) / 2) < 140, `she lies next to the chair: mum ${JSON.stringify(mum)}, chair ${JSON.stringify(chair)}`);
   await SH('04_proud_mum');
   await t.rnd(0.3); await ev(() => { const S = window.__paw.S; window.__paw.home.ambient(); }); await t.rnd(null);
@@ -108,10 +108,11 @@ require('./test_lib').run('v21_home', async (t) => {
   await t.until(() => document.querySelectorAll('#pack .packdog').length === 1, null, 6000);
   await t.rnd(0.1); await ev(() => window.__paw.home.ambient()); await t.rnd(null);
   ok(!(await t.until(() => /pa-pose-down\b/.test((document.querySelector('#pack svg.pa-dog') || { getAttribute: () => '' }).getAttribute('class') || ''), null, 1500)), 'chair put away: she does not lie down');
-  await ev(() => { window.mumInBasket = () => true; window.__paw.go('yard'); });
-  ok(await t.until(() => document.querySelectorAll('#pack .packdog').length === 0, null, 4000), 'mumInBasket stubbed true: the pack skips her');
-  await ev(() => { delete window.mumInBasket; window.__paw.go('yard'); });
-  ok(await t.until(() => document.querySelectorAll('#pack .packdog').length === 1, null, 4000), 'no mumInBasket function: she is drawn again');
+  // v2.1 merge: BREED's real mumInBasket is in scope now, so make her a real nursing mum instead of stubbing the function
+  await ev(() => { const S = window.__paw.S, m = S.dogs.find((d) => d.id !== S.dog.id), t0 = new Date().toISOString().slice(0, 10); S.litters = [{ id: 'hmL', mum: m.id, sire: 'npc', born: t0, until: '2999-01-01', named: true, pups: [{ id: 'hmP', name: 'Pip', key: m.key, sex: 'female', genes: m.genes, born: t0, coat: '', eyes: 'brown', parents: { dam: m.id, sire: 'npc' } }] }]; window.__paw.go('yard'); });
+  ok(await t.until(() => document.querySelectorAll('#pack .packdog').length === 0, null, 4000), 'nursing mum (mumInBasket true): the pack skips her');
+  await ev(() => { window.__paw.S.litters = []; window.__paw.go('yard'); });
+  ok(await t.until(() => document.querySelectorAll('#pack .packdog').length === 1, null, 4000), 'litter gone (mumInBasket false): she is drawn again');
 
   sec('old save without S.decor loads clean');
   await ev(() => { const S = window.__paw.S; delete S.decor; delete S.portrait; window.__paw.saveNow(); });
