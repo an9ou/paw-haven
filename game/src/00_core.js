@@ -313,6 +313,7 @@ function checkEnv(force) {
   if (k === envKey && !force) return; const first = !envKey; envKey = k;
   const g = $('#sceneG'); if (g && !g.dataset.noenv) { let extra = {}; try { extra = JSON.parse(g.dataset.extra || '{}'); } catch (er) { /* none */ } g.innerHTML = sceneArt(g.dataset.scene, e, extra); }
   const sm = $('#snowmanG'); if (sm) sm.innerHTML = snowmanSVG();
+  if (g && !g.dataset.noenv) emit('scene:redraw', { mode: cur.mode });
   updateWxOverlay(); audioPlace(); updateHUD();
   if (!first && cur.mode === 'yard') { dogKey = ''; setTimeout(() => yardReaction(true), 400); }
 }

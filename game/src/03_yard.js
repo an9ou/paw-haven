@@ -78,8 +78,7 @@ function enterYard() {
   const sx = $('#secretX'); if (sx) { sx.onclick = secretDig; sx.onkeydown = (e) => { if (e.key === 'Enter') secretDig(); }; }
   const house = $('#houseG'); if (house) { house.onclick = () => { popAct = 'care'; openCareTray(); }; house.onkeydown = (e) => { if (e.key === 'Enter') { popAct = 'care'; openCareTray(); } }; }
   placeButtons();
-  if (S.place === 'market') hotify($('svg.world', view), '#sceneG [data-shop]', 'data-shop', (k) => openShop(k), (k) => 'Enter ' + (SHOP_NAME[k] || k));
-  hotify($('svg.world', view), '#sceneG [data-hot]', 'data-hot', (k) => ({ garden: openGarden, kitchen: openKitchen, notice: squareNotice, 'cafe-menu': cafeMenu, 'vet-desk': vetCheck, 'salon-chair': salonGroom }[k] || (() => {}))(), (k) => 'Open the ' + k);
+  bindSceneHots();
   // ambient jokes
   let next = performance.now() + 6000;
   const iv = setInterval(() => {
@@ -377,7 +376,7 @@ function playPick(p) {
 }
 const TNEED = () => (owns('toys', 'Rubber Chicken') ? 2 : 3);
 const learnedCount = () => TRICKS.filter((t) => trickSt(t.n).p >= 1).length;
-function openTricks() {
+function openTricks() { return openTraining(); // legacy tray retired in v1.7.1; the lure mini-games replace it
   const btns = TRICKS.map((t) => {
     const lock = S.bond.level < t.bond, prog = S.tricks[t.n] || 0, name = t.n === 'Signature' ? sigOf(S.dog.key).n : t.n;
     return `<button class="btn" data-trick="${t.n}" ${lock ? 'aria-disabled="true"' : ''}>${esc(name)}<small>${lock ? 'Bond ' + t.bond : prog >= TNEED() ? 'learned' : `teach ${prog}/${TNEED()}`}</small></button>`;
@@ -461,3 +460,10 @@ function switchHouse(n) {
   if (cur.mode === 'yard') { const g = $('#houseG'); if (g) { g.innerHTML = place(art('house', n), 620, 330, 240, 200); g.setAttribute('aria-label', 'Dog house: ' + n); } if (S.sleeping) sleepTray(); }
 }
 
+
+/* scene hotspots (shops, garden, kitchen, notice...). Re-bound after the core redraws the scene for time/weather changes. */
+function bindSceneHots() {
+  if (S.place === 'market') hotify($('svg.world', view), '#sceneG [data-shop]', 'data-shop', (k) => openShop(k), (k) => 'Enter ' + (SHOP_NAME[k] || k));
+  hotify($('svg.world', view), '#sceneG [data-hot]', 'data-hot', (k) => ({ garden: openGarden, kitchen: openKitchen, notice: squareNotice, 'cafe-menu': cafeMenu, 'vet-desk': vetCheck, 'salon-chair': salonGroom }[k] || (() => {}))(), (k) => 'Open the ' + k);
+}
+on('scene:redraw', () => { if (cur.mode === 'yard' && $('svg.world', view)) bindSceneHots(); });
