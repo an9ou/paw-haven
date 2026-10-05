@@ -82,3 +82,6 @@ html[data-layout="phone"] .panel.playdates .sex,html[data-layout="phone"] .panel
 
 /* the pup row must be able to pan sideways inside the sheet (the v1.5B panel is touch-action:none for its swipe-down handle) */
 html[data-layout="phone"] .panel.birth{touch-action:pan-x pan-y}
+/* merge fix: the nowrap pup row must never widen the sheet (on Pixel 7 it grew to 570 px and the sheet scrolled sideways) */
+html[data-layout="phone"] .birth .lt-pups{min-width:0;max-width:100%;box-sizing:border-box}
+html[data-layout="phone"] .panel.birth .panel-body{overflow-x:hidden}

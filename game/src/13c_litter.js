@@ -95,7 +95,7 @@ function ppPager(p) {
   const nav = document.createElement('div'); nav.className = 'pp-nav';
   nav.innerHTML = '<button class="btn pp-prev" type="button" aria-label="Previous pup">&lsaquo; Back</button><span class="pp-count" id="ppCount" aria-live="polite"></span><button class="btn pp-next" type="button" aria-label="Next pup">Next &rsaquo;</button>';
   row.after(nav); const prev = nav.querySelector('.pp-prev'), next = nav.querySelector('.pp-next'), count = nav.querySelector('.pp-count');
-  const at = () => { const w = cards[0].offsetWidth + 12; return clamp(Math.round(row.scrollLeft / Math.max(1, w)), 0, cards.length - 1); };
+  const at = () => { const rb = row.getBoundingClientRect(), mid = rb.left + rb.width / 2; let best = 0, bd = 1e9; cards.forEach((c, i) => { const b = c.getBoundingClientRect(), dd = Math.abs(b.left + b.width / 2 - mid); if (dd < bd) { bd = dd; best = i; } }); return best; }; // the card nearest the row's centre (snap is centred)
   const sync = () => { const i = at(); count.textContent = "Pup " + (i + 1) + " of " + cards.length; prev.disabled = i === 0; next.disabled = i === cards.length - 1; };
   const go = (d) => { const i = clamp(at() + d, 0, cards.length - 1); cards[i].scrollIntoView({ behavior: document.documentElement.dataset.motion === 'off' ? 'auto' : 'smooth', inline: 'center', block: 'nearest' }); SFX.click(); };
   prev.onclick = () => go(-1); next.onclick = () => go(1); row.addEventListener('scroll', sync, { passive: true }); sync();

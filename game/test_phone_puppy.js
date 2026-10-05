@@ -77,7 +77,8 @@ require('./test_lib').run('phone_puppy', async (t) => {
     await p.locator('#pdOk').tap(); await t.modalGone();
 
     sec(`${device}: birth reveal`);
-    const pregs = await ev((i) => { const f = window.__paw.S.dogs.find((d) => d.id === i.f); return !!f.preg; }, ids);
+    // the UI playdate is a seeded 85% roll (dog ids + date), so a "lovely day, no puppies" result is legitimate: then take the forced test path
+    const pregs = await ev((i) => { const S = window.__paw.S, f = S.dogs.find((d) => d.id === i.f); if (!f.preg) { f.lastPlaydate = null; S.dogs.find((d) => d.id === i.m).restUntil = null; window.__paw.breed.playdate(i.f, i.m, { force: true, size: 3 }); } return !!f.preg; }, ids);
     ok(pregs, `${device}: she is expecting`);
     await ev(() => { const f = window.__paw.S.dogs.find((d) => d.preg); if (f && f.preg.pups.length < 2) f.preg.pups.push(Object.assign({}, f.preg.pups[0], { id: f.preg.pups[0].id + "b", sex: f.preg.pups[0].sex === "female" ? "male" : "female", sparkle: false })); window.__paw.breed.birthNow(); }); // a one-pup litter has no row to swipe
     ok(await t.until(() => document.querySelectorAll('.lt-birth .lt-card').length > 0), `${device}: the birth popup opens`);
@@ -94,8 +95,11 @@ require('./test_lib').run('phone_puppy', async (t) => {
     // swipe left on the row (touch drag), then use the button
     await swipe(cdp, row.x + row.width * 0.85, row.x + row.width * 0.1, row.y + 40);
     ok(await t.until(() => /^Pup 2 of/.test(document.getElementById('ppCount').textContent), null, 4000), `${device}: a swipe moves to pup 2`);
-    if (nPups > 2) { await p.locator('.pp-next').tap(); ok(await t.until(() => /^Pup 3 of/.test(document.getElementById('ppCount').textContent), null, 4000), `${device}: Next moves to pup 3`); }
-    await p.locator('.pp-prev').tap(); ok(await t.until((n) => document.getElementById('ppCount').textContent === `Pup ${n > 2 ? 2 : 1} of ${n}`, nPups, 4000), `${device}: Back moves one pup back`);
+    // let the swipe's snap finish (scrollLeft steady), then step with the buttons from wherever it settled
+    const settle = async () => { let a = -1; for (let k = 0; k < 20; k++) { const b = await ev(() => document.querySelector('.birth .lt-pups').scrollLeft); if (Math.abs(b - a) < 1) break; a = b; await t.sleep(150); } return ev(() => +document.getElementById('ppCount').textContent.match(/Pup (\d+)/)[1]); };
+    let at = await settle();
+    if (nPups > 2 && at < nPups) { await p.locator('.pp-next').tap(); ok(await t.until((w) => document.getElementById('ppCount').textContent.startsWith(`Pup ${w} of`), at + 1, 4000), `${device}: Next moves to pup ${at + 1}`); at = await settle(); }
+    await p.locator('.pp-prev').tap(); ok(await t.until((w) => document.getElementById('ppCount').textContent.startsWith(`Pup ${w} of`), Math.max(1, at - 1), 4000), `${device}: Back moves one pup back`);
     // name a pup by tapping its box
     const inp = p.locator('.birth .lt-card [data-pupname]').first(); await inp.scrollIntoViewIfNeeded(); await inp.tap(); await inp.fill('Biscuit');
     await p.locator('#ltOk').tap(); await t.modalGone();
