@@ -463,8 +463,10 @@ let S = null;
 let dirty = false;
 function markDirty() { dirty = true; }
 const ALIAS_KEYS = new Set(['dog', 'stats', 'bond', 'outfit', 'potty', 'sleeping', 'dishLog', 'buff', 'glowUntil', 'pupUntil', 'tricks']);
-function saveNow() { if (!S) return; S.lastReal = Date.now(); const root = S; lsSet(SAVE_KEY, JSON.stringify(S, function (k, v) { return this === root && ALIAS_KEYS.has(k) ? undefined : v; })); dirty = false; }
-function loadSave() { try { const s = JSON.parse(lsGet(SAVE_KEY) || 'null'); return s && (s.dog || (s.dogs && s.dogs.length)) && s.v === 1 ? migrate(s) : null; } catch (e) { return null; } }
+function saveNow() { if (!S) return; S.lastReal = Date.now(); const root = S; lsSet(SAVE_KEY, JSON.stringify(S, function (k, v) { return this === root && ALIAS_KEYS.has(k) ? undefined : v; })); dirty = false;
+  if (typeof clOnSaved === 'function') clOnSaved(); }
+function loadSave() { try { const s = JSON.parse(lsGet(SAVE_KEY) || 'null'); return s && (s.dog || (s.dogs && s.dogs.length)) && s.v === 1 ? migrate(s) : null; } catch (e) { return null; }
+  finally { if (typeof clOnLoaded === 'function') clOnLoaded(); } }
 // v1 -> v1.1: add treasure fields; old collect-10 items are sold to a squirrel for 5 coins each
 function migrate(s) {
   if (!s || !s.inv) return s;

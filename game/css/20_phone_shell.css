@@ -50,3 +50,28 @@ html[data-layout="phone"] #modal .results{grid-template-columns:repeat(2,minmax(
 html[data-layout="phone"] #toasts{z-index:30}
 html[data-layout="phone"] #stage.modhud:not(.nobar) #toasts{bottom:calc(var(--barH) + 12px)!important}
 html[data-layout="phone"] .lptip{z-index:40;font-size:15px}
+
+/* ======================= CLOUD lane (v2.2): Settings -> Cloud save and Save code. Its own block, the coordinator merges ======================= */
+.clset{margin:14px 0 6px;padding-top:10px;border-top:2px dashed rgba(91,61,50,.25)}
+.clset .clh{margin:6px 0 2px;font-family:var(--font-hand);font-size:26px}
+.clset .clstat{margin:2px 0 8px;font-weight:600}
+.clset .clrow{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.clset .clform p{margin:6px 0}
+.clset .clfield{display:flex;flex-direction:column;gap:4px;margin:8px 0;max-width:420px}
+.clset .clfield span{font-size:16px}
+.clset .clfield input,.clset .clfield textarea{font:inherit;font-size:17px;padding:8px 10px;min-height:44px;border:2px solid var(--ink);border-radius:10px;background:#fffdf7;color:var(--ink);box-sizing:border-box;width:100%}
+.clset .clfield textarea{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;line-height:1.35;resize:vertical;word-break:break-all}
+.clset .clmsg{color:#a2453a;font-weight:600}
+.clset .cllink{background:none;border:0;box-shadow:none;text-decoration:underline;padding:4px 6px;min-height:44px}
+.clset .clbk{list-style:none;margin:6px 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.clset .clbk li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border:2px solid rgba(91,61,50,.3);border-radius:12px}
+.clset .clbk-t{display:flex;flex-direction:column;min-width:0}
+html[data-layout="phone"] .clset .clrow .btn{flex:1 1 140px;min-height:48px}
+html[data-layout="phone"] .clset .clfield{max-width:none}
+html[data-layout="phone"] .clset .clfield input{font-size:17px;min-height:48px;touch-action:manipulation}
+html[data-layout="phone"] .clset .clfield textarea{font-size:15px}
+html[data-layout="phone"] .clset .clbk li{flex-wrap:wrap}
+html[data-layout="phone"] .clset .clbk li .btn{flex:1 1 100%}
+html[data-layout="phone"] .clset .clbk-t span,html[data-layout="phone"] .clset .clform .small,html[data-layout="phone"] .clset > .small{font-size:15px}
+html[data-layout="phone"] .clset .btn{touch-action:manipulation}
+/* ======================= end CLOUD lane ======================= */

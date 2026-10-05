@@ -9,10 +9,12 @@ function openSettings() {
     <div class="barkset"><span>Barking:</span>${[['normal', 'Normal'], ['fewer', 'Fewer'], ['off', 'Off']].map(([k, l]) => `<button class="btn ${barkMode() === k ? 'yes' : ''}" data-barkm="${k}" aria-pressed="${barkMode() === k}">${l}</button>`).join('')}</div>
     <p class="small">Time: 1 game hour = 1 real minute. Prototype economy: coins x${BOOST.coins}, Bond x${BOOST.bond}, naps x${BOOST.nap}.</p>
     <p class="small">Clock and weather follow your real local time (3 weather periods a day). Keys: 1-9 bottom buttons, Space pets / throws / walks, Esc closes things.</p>
+    ${typeof clSection === 'function' ? clSection() : ''}
     <div class="foot" style="justify-content:space-between"><button class="btn red" id="setReset">Reset save</button><button class="btn" id="setTitle">Title screen</button></div>`);
   ['master', 'music', 'sfx', 'ambience'].forEach((k) => { const r = $('#vol-' + k, p); r.oninput = () => { prefs.vol[k] = +r.value; if (k === 'ambience') prefs.ambTouched = true; $('#out-' + k, p).textContent = r.value; applyAudioPrefs(); }; r.onchange = () => { savePrefs(); if (k === 'sfx' || k === 'master') SFX.boop(660); }; });
   $('#setMute', p).onchange = (e) => { prefs.mute = e.target.checked; savePrefs(); applyAudioPrefs(); updateMute(); };
   $('#setMotion', p).onchange = (e) => setMotion(e.target.checked);
+  if (typeof clBind === 'function') clBind(p);
   p.querySelectorAll('[data-barkm]').forEach((b) => { b.onclick = () => { prefs.bark = b.dataset.barkm; savePrefs(); SFX.click(); p.querySelectorAll('[data-barkm]').forEach((x) => { x.classList.toggle('yes', x === b); x.setAttribute('aria-pressed', String(x === b)); }); }; });
   $('#setTitle', p).onclick = () => { saveNow(); closeModal(); go('title'); };
   $('#setReset', p).onclick = async () => {
