@@ -35,6 +35,28 @@ function bike(k,x,gy,s=1,col=C.red){const r=15*s,ax=x-25*s,bx=x+25*s,wy=gy-r;
   k.shape([[hx+3*s,hy-8*s],[hx+19*s,hy-8*s],[hx+17*s,hy+4*s],[hx+5*s,hy+4*s]],'#E7C79E',{w:1.4,one:1});k.line([[hx+5*s,hy-3*s],[hx+17*s,hy-3*s]],1,'#B5875C')}
 function planterTree(k,x,gy,s=1){k.shape([[x-20*s,gy],[x+20*s,gy],[x+24*s,gy-26*s],[x-24*s,gy-26*s]],'#E9B9A0',{w:1.8,hatch:{side:.6,gap:4,col:'#CF9479',op:.5}});k.shape(RC(x-27*s,gy-32*s,54*s,7*s),'#D9A086',{w:1.5,one:1});
   k.line([[x,gy-30*s],[x+k.J(1),gy-70*s]],3.4,C.trunkD);O.leafy(k,x,gy-92*s,30*s,28*s,C.leaf,C.leafD)}
+
+// v2 town dressing: window planter, chalkboard sign, passers-by silhouettes
+function planterBox(k,x,gy,w=40,cols=[C.red,C.yellow,C.lav,'#FFB3C7']){
+  k.shape([[x-w/2,gy-17],[x+w/2,gy-17],[x+w/2-4,gy],[x-w/2+4,gy]],'#E9B9A0',{w:1.6,hatch:{side:.6,gap:4,col:'#CF9479',op:.5}});
+  k.shape(RC(x-w/2-2,gy-22,w+4,6),'#D9A086',{w:1.4,one:1});
+  k.shape(blobP(x,gy-28,w*.46,9,k.r,8,.2),C.leaf2,{w:1.3,one:1});
+  for(let i=0;i<3;i++)O.flower(k,x-w*.26+i*w*.26,gy-31-(i%2)*5,3.4,cols[i%cols.length])}
+function aBoard(k,x,gy,txt,s=1){k.line([[x-9*s,gy-34*s],[x-15*s,gy]],2,C.ink);k.line([[x+9*s,gy-34*s],[x+15*s,gy]],2,C.ink);
+  k.shape([[x-12*s,gy-6*s],[x-10*s,gy-36*s],[x+10*s,gy-36*s],[x+12*s,gy-6*s]],'#7FA38E',{w:1.6,one:1,hatch:{side:.6,gap:4,col:'#5F8670',op:.4}});
+  k.text(txt,x,gy-18*s,Math.round(11*s),{col:'#FFFFFF',rot:-2});k.line([[x-8*s,gy-11*s],[x+8*s,gy-11*s]],1,'#FFFFFF',{op:.8})}
+// a passer-by: soft pastel silhouette (coat, head, legs). o: {hair,hat,bag,balloon,skirt}
+function walker(k,x,gy,s,coat,o={}){const skin='#F3CFB0',hair=o.hair||'#7A5A48',leg=o.leg||'#8E7F9E',sk=o.dir||1;
+  k.line([[x-3.4*s,gy-30*s],[x-5*s*sk,gy-2*s]],3.4*s,leg,{amp:.3});k.line([[x+3.4*s,gy-30*s],[x+6*s*sk,gy-2*s]],3.4*s,leg,{amp:.3});
+  k.add(`<ellipse cx="${R1(x-5*s*sk)}" cy="${R1(gy-1*s)}" rx="${R1(4.4*s)}" ry="${R1(2*s)}" fill="${C.ink}"/><ellipse cx="${R1(x+6*s*sk)}" cy="${R1(gy-1*s)}" rx="${R1(4.4*s)}" ry="${R1(2*s)}" fill="${C.ink}"/>`);
+  const hem=o.skirt?gy-24*s:gy-30*s;
+  k.shape([[x-9*s,hem],[x-7*s,gy-62*s],[x+7*s,gy-62*s],[x+9*s,hem]],coat,{w:1.5,one:1,hatch:{side:.55,gap:4,col:C.ink,op:.22}});
+  k.line([[x-7*s,gy-60*s],[x-11*s*sk,gy-44*s],[x-10*s*sk,gy-38*s]],2.6*s,coat,{amp:.3});k.line([[x+7*s,gy-60*s],[x+11*s*sk,gy-46*s],[x+10*s*sk,gy-40*s]],2.6*s,coat,{amp:.3});
+  k.shape(E(x,gy-69*s,6.6*s,7*s,9),skin,{w:1.3,one:1});
+  k.shape([[x-7*s,gy-70*s],[x-5*s,gy-77*s],[x+5*s,gy-77*s],[x+7*s,gy-70*s],[x+3*s,gy-72*s],[x-4*s,gy-71*s]],hair,{w:1.1,one:1});
+  if(o.hat)k.shape([[x-9*s,gy-73*s],[x+9*s,gy-73*s],[x+4*s,gy-83*s],[x-4*s,gy-83*s]],o.hat,{w:1.3,one:1});
+  if(o.bag){const bx=x+11*s*sk,by=gy-38*s;k.shape(RC(bx-5*s,by,10*s,12*s),o.bag,{w:1.3,one:1});k.line([[bx-3*s,by],[bx,by-5*s],[bx+3*s,by]],1.2)}
+  if(o.balloon){const bx=x-14*s*sk,by=gy-96*s;k.line([[x-11*s*sk,gy-44*s],[bx,by+8*s]],1,C.graph);k.shape(E(bx,by,7*s,9*s,10),o.balloon,{w:1.3,one:1});k.add(`<path d="M${R1(bx-1.5*s)} ${R1(by-5*s)}q${R1(-2*s)} ${R1(2*s)} 0 ${R1(4*s)}" stroke="#fff" stroke-width="1.4" fill="none" stroke-linecap="round"/>`)}}
 function kite(k,x,y,s,c1,c2,ang=0,strTo){k.add(`<g transform="rotate(${ang} ${x} ${y})">`);const p=[[x,y-30*s],[x+20*s,y-4*s],[x,y+34*s],[x-20*s,y-4*s]];
   k.fill([[x,y-30*s],[x+20*s,y-4*s],[x,y-4*s]],c2,{dx:.5,dy:.5});k.fill([[x,y-4*s],[x-20*s,y-4*s],[x,y+34*s]],c2,{dx:.5,dy:.5});k.fill([[x,y-30*s],[x-20*s,y-4*s],[x,y-4*s]],c1,{dx:.5,dy:.5});k.fill([[x,y-4*s],[x+20*s,y-4*s],[x,y+34*s]],c1,{dx:.5,dy:.5});
   k.pen(p,true,{w:1.9});k.line([[x,y-28*s],[x,y+32*s]],1.1);k.line([[x-18*s,y-4*s],[x+18*s,y-4*s]],1.1);
@@ -499,6 +521,19 @@ const STRIPS_C={
   k.wrap(400,40,()=>{O.bush(k,400,324,.5,C.leaf2,C.leafD,'#F49090')});
   [[480,C.mint],[1100,C.red]].forEach(([x,c])=>k.wrap(x,50,()=>bike(k,x,320,.85,c)));
   k.fx(()=>stripFx(k,{y0:338,y1:370,kind:'path',ns:5,np:2,rx:26}));
+  // v2: more street life. Appended after the original drawing so the base layout is untouched.
+  // bunting along three cornices
+  [[14,186,174],[418,586,160],[814,990,168]].forEach(([x0,x1,y],i)=>k.wrap((x0+x1)/2,(x1-x0)/2+6,()=>buntingL(k,x0,x1,y,5,[[C.red,C.yellow,C.mint,C.lav],[C.blue,C.red,C.yellow,'#FFB3C7'],[C.mint,C.lav,C.red,C.yellow]][i])));
+  // two more lamp posts
+  [[422,.88],[1040,.84]].forEach(([x,s])=>k.wrap(x,24,()=>O.lamp(k,x,326,s)));
+  // benches, planters, a chalkboard, bikes
+  k.wrap(330,30,()=>O.bench(k,330,332,.5));k.wrap(930,30,()=>O.bench(k,930,332,.5));
+  [[140,40],[700,40],[1000,36]].forEach(([x,w])=>k.wrap(x,w/2+6,()=>planterBox(k,x,330,w)));
+  k.wrap(1176,24,()=>planterBox(k,1176,330,36,[C.lav,'#FFB3C7',C.yellow,C.red]));
+  k.wrap(372,20,()=>aBoard(k,372,332,'fresh!',1));k.wrap(788,20,()=>aBoard(k,788,330,'sale',.9));
+  k.wrap(690,50,()=>bike(k,640,322,.8,C.yellow));
+  // passers-by
+  [[88,.8,'#D9CBEA',{hair:'#8A5A44',bag:C.yellow}],[560,.74,'#BFD9EE',{hair:'#3E3A4A',hat:'#F4A3A3',dir:-1}],[868,.5,'#FCE59A',{hair:'#5B3D32',balloon:C.red}],[880,.8,'#C9E4D1',{hair:'#7A5A48',dir:-1}],[1130,.76,'#F8C08A',{hair:'#4A3A34',bag:C.mint}]].forEach(([x,s,c,o])=>k.wrap(x,26,()=>walker(k,x,340+((x*7)%9),s,c,o)));
   k.wrap(560,10,()=>O.sparkle(k,560,96,7));k.wrap(160,10,()=>O.heart(k,160,80,6));
  },
  hilltop(k){

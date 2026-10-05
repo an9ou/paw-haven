@@ -52,6 +52,7 @@
 <h2>v1.2 wide props</h2><div class="grid" id="wide"></div>
 <h2>Dog houses: <code>PawArt.house(name)</code></h2><div class="grid" id="houses"></div>
 <h2>Collectibles: <code>PawArt.collectible(name)</code></h2><div class="grid" id="cols"></div>
+<h2>v2 props: family, mailbox, nursery, town</h2><p class="note">Real viewBox sizes. Red outlines/dots are the invisible overlay hooks the game reads: <code>data-node</code>, <code>data-leaf</code>, <code>data-photo</code>, <code>data-card</code>, <code>data-window</code>, <code>data-screen</code>, <code>data-spot</code>.</p><div class="grid" id="v2props"></div>
 <h2>Props: <code>PawArt.prop(name)</code></h2><div class="grid" id="props"></div>
 <h2>UI chrome: speech, panel, tape (stretched)</h2><div class="chrome" id="chrome"></div>
 <h2>Timings</h2><div id="timing">running...</div>
@@ -60,16 +61,18 @@
 <script src="../pawart_world_b.js"></script>
 <script>
 const A=PawArt.WORLD_B,$=s=>document.querySelector(s);
-const API_ICONS=['hunger','happy','energy','clean','bond','coin','feed','play','walk','shop','wardrobe','house','map','home','back','close','bath','sleep','pet','sound-on','sound-off','lock','star','heart','check','speed','settings','journal','bag','nose','charm','chest','w-sunny','w-cloudy','w-rain','w-snow','w-night','w-dawn','w-dusk','music','sfx','ambience','volume','garden','kitchen','seeds','water-can','basket','recipe','drop','paw-stop','season-spring','season-summer','season-autumn','season-winter','fridge','poop-bag','water-spray','sig-sit','sig-paw','sig-down','sig-rollover','sig-spin','sig-playdead','sig-speak','sig-dance','sig-bow','sig-signature','clicker','focus','lure','vet','salon','cafe','square','dogpark','hilltop','pier','notice','stethoscope','scissors'];
+const API_ICONS=['hunger','happy','energy','clean','bond','coin','feed','play','walk','shop','wardrobe','house','map','home','back','close','bath','sleep','pet','sound-on','sound-off','lock','star','heart','check','speed','settings','journal','bag','nose','charm','chest','w-sunny','w-cloudy','w-rain','w-snow','w-night','w-dawn','w-dusk','music','sfx','ambience','volume','garden','kitchen','seeds','water-can','basket','recipe','drop','paw-stop','season-spring','season-summer','season-autumn','season-winter','fridge','poop-bag','water-spray','sig-sit','sig-paw','sig-down','sig-rollover','sig-spin','sig-playdead','sig-speak','sig-dance','sig-bow','sig-signature','clicker','focus','lure','vet','salon','cafe','square','dogpark','hilltop','pier','notice','stethoscope','scissors','family','coats','mail','dna','playdate','nursery','spots'];
 const API_ITEMS=['Basic Kibble','Chicken & Rice Bowl','Salmon Pâté','Bone-shaped Biscuit','Pupcake','Fresh Water','Tennis Ball','Rope Tug','Squeaky Duck','Frisbee','Plush Bone','Puzzle Feeder','Red Bandana','Yellow Raincoat','Knit Winter Sweater','Party Hat','Heart Sunglasses','Superhero Cape','Flower Crown','Bow Tie','Frog Raincoat','Polka-dot Raincoat','Bubble Raincoat','Rain Hat','Pom-pom Beanie'];
 const API_TREASURE=['Acorn Cap','Explorer Goggles','Seashell Necklace','Mossy Poncho','Clover Collar','Wild Berries',"Duck's Picnic Sandwich",'Golden Bone','Driftwood Stick','Rubber Chicken','Glow Ball','Lucky Penny','Sparkle Stone','Old Map Piece (Park)','Old Map Piece (River)','Old Map Piece (Woods)','Old Map Piece (Beach)'];
 API_ITEMS.push(...API_TREASURE);
 const API_V13=['Carrot Seeds','Pea Seeds','Spinach Seeds','Blueberry Seeds','Sweet Potato Seeds','Pumpkin Seeds','Carrot','Peas','Spinach','Blueberries','Sweet Potato','Pumpkin','Oats','Rice','Egg','Chicken','Carrot Crunchies','Chicken & Veggie Rice','Blueberry Pupsicle','Pumpkin Pupcake','Golden Harvest Stew','Spinach Scramble','Mystery Mush','Watering Can','Onion','Garlic','Grapes','Chocolate','Raisins','Coffee','Sugar-free Gum','Macadamia Nuts','Avocado'];
 API_ITEMS.push(...API_V13);
-const API_BEDS=['Old Blanket','Plaid Pillow','Fluffy Donut Bed','Banana Bed','Hammock Cot','Cloud Bed','Royal Canopy Bed'];API_ITEMS.push(...API_BEDS);API_ITEMS.push('Pupuccino','Doggy Donut');
+const API_BEDS=['Old Blanket','Plaid Pillow','Fluffy Donut Bed','Banana Bed','Hammock Cot','Cloud Bed','Royal Canopy Bed'];API_ITEMS.push(...API_BEDS);API_ITEMS.push('Pupuccino','Doggy Donut');API_ITEMS.push('Puppy Kibble');
 const API_HOUSES=['Cardboard Box','Classic Wooden Doghouse','Cozy Cottage','Snow Igloo','Treehouse Den','Royal Castle Kennel'];
 const API_COLS=['coin','shell','leaf','bone','flower','acorn','sniff','puddle','dig','chest','map-piece','sparkle-spot','junk-sock','junk-rock'];
 const API_PROPS=['bowl-empty','bowl-full','water-bowl','tub','bubbles','zzz','hearts','ball','frisbee','poop-joke','speech','panel','tape','torn-map','bowl','umbrella','snowman','puzzle-board','puzzle-lid','tug-rope-long','crop','plot','pot','board','oven','dial','recipe-card','squirrel','iou','pip','poop','pee','flies','treat-bit','hand-signal','bulletin'];
+const V2_PROPS=['nursery','mailbox','postcard','playboard','familytree','coatframe','ultrasound'];
+API_PROPS.push(...V2_PROPS);
 const API_OBS=['log','rock','puddle','mud','sprinkler','snowdrift','crab','sandcastle','branch','bird','sign','kite','bunting','cat','trashcan','hydrant','bicycle','awning','molehill','crate','ropecoil','seagull','fishingline'];
 const OBS_WH={log:[120,50],rock:[80,50],puddle:[220,24],mud:[180,24],sprinkler:[70,70],snowdrift:[140,60],crab:[70,44],sandcastle:[90,70],branch:[240,80],bird:[80,50],sign:[140,80],kite:[160,90],bunting:[260,60],cat:[70,50],trashcan:[60,70],hydrant:[50,60],bicycle:[200,80],awning:[240,80],molehill:[80,36],crate:[80,70],ropecoil:[80,40],seagull:[90,50],fishingline:[220,70]};
 const TM={};const fns={icon:API_ICONS,item:API_ITEMS,house:API_HOUSES,collectible:API_COLS,prop:API_PROPS,obstacle:API_OBS};
@@ -107,7 +110,24 @@ $('#wide').innerHTML=[['puzzle-board',240,160],['puzzle-lid',60,60],['tug-rope-l
  `<div class="cell"><div style="position:relative;width:240px;height:160px">${PawArt.prop('puzzle-board').replace('<svg ','<svg style="position:absolute;inset:0;width:240px;height:160px" ')}${[60,180].map(x=>PawArt.prop('puzzle-lid').replace('<svg ',`<svg style="position:absolute;left:${x-30}px;top:50px;width:60px;height:60px" `)).join('')}</div><code>board + 2 lids at hole centres</code></div>`;
 $('#houses').innerHTML=API_HOUSES.map(n=>`<div class="cell">${sized(PawArt.house(n),'h')}<code>${n}</code></div>`).join('');
 $('#cols').innerHTML=API_COLS.map(n=>`<div class="cell">${sized(PawArt.collectible(n),'c60')}<code>${n}</code></div>`).join('');
-$('#props').innerHTML=API_PROPS.filter(n=>!['speech','panel','tape','torn-map','bowl','puzzle-board','puzzle-lid','tug-rope-long','crop','plot','pot','board','oven','dial','recipe-card','squirrel','iou','pip','poop','pee','flies','treat-bit','hand-signal','bulletin'].includes(n)).map(n=>`<div class="cell">${sized(PawArt.prop(n),'p120')}<code>${n}</code></div>`).join('');
+$('#props').innerHTML=API_PROPS.filter(n=>!['speech','panel','tape','torn-map','bowl','puzzle-board','puzzle-lid','tug-rope-long','crop','plot','pot','board','oven','dial','recipe-card','squirrel','iou','pip','poop','pee','flies','treat-bit','hand-signal','bulletin',...V2_PROPS].includes(n)).map(n=>`<div class="cell">${sized(PawArt.prop(n),'p120')}<code>${n}</code></div>`).join('');
+
+const hooks=svg=>{const d=document.createElement('div');d.innerHTML=svg;const el=d.firstChild;
+  el.querySelectorAll('[data-node],[data-leaf],[data-photo],[data-card],[data-window],[data-screen],[data-spot],[data-mail-slot]').forEach(n=>{const t=n.tagName;let m;
+    if(t==='circle'){m=document.createElementNS('http://www.w3.org/2000/svg','circle');['cx','cy','r'].forEach(a=>m.setAttribute(a,n.getAttribute(a)))}
+    else if(t==='ellipse'){m=document.createElementNS('http://www.w3.org/2000/svg','ellipse');['cx','cy','rx','ry'].forEach(a=>m.setAttribute(a,n.getAttribute(a)))}
+    else{m=document.createElementNS('http://www.w3.org/2000/svg','rect');['x','y','width','height','transform'].forEach(a=>n.getAttribute(a)!=null&&m.setAttribute(a,n.getAttribute(a)))}
+    m.setAttribute('fill','none');m.setAttribute('stroke','#E23');m.setAttribute('stroke-width','1.2');m.setAttribute('stroke-dasharray','3 2');m.setAttribute('class','hook');n.parentNode.appendChild(m)});
+  return d.innerHTML};
+const V2=[['nursery',undefined,320,170],['mailbox',{},120,160],['mailbox',{flag:true},120,160],['mailbox',{flag:true,count:3},120,160],['mailbox',{count:12},120,160],['postcard',undefined,300,200],['playboard',undefined,300,220],['familytree',undefined,600,380],['coatframe',{},120,140],['coatframe',{found:false},120,140],['ultrasound',undefined,240,160]];
+$('#v2props').innerHTML=V2.map(([n,o,w,h])=>`<div class="cell"><div style="width:${w}px;height:${h}px;background:linear-gradient(#fff0 ${h-1}px,#fff0 ${h-1}px)">${PawArt.prop(n,o).replace('<svg ',`<svg style="width:${w}px;height:${h}px" `)}</div><code>${n} ${o?JSON.stringify(o):''} ${w}x${h}</code></div>`).join('')+
+ `<div class="cell"><div style="position:relative;width:320px;height:170px">${PawArt.prop('nursery').replace('<svg ','<svg style="position:absolute;inset:0;width:320px;height:170px" ')}${PawArt.dogHead?'':''}</div><code>nursery (dogs go on top)</code></div>`+
+ `<div class="cell"><div style="width:600px;height:380px;outline:1px dashed #EADDCB">${hooks(PawArt.prop('familytree')).replace('<svg ','<svg style="width:600px;height:380px" ')}</div><code>familytree with hook outlines (red)</code></div>`+
+ `<div class="cell"><div style="width:300px;height:220px">${hooks(PawArt.prop('playboard')).replace('<svg ','<svg style="width:300px;height:220px" ')}</div><code>playboard hooks</code></div>`+
+ `<div class="cell"><div style="width:320px;height:170px">${hooks(PawArt.prop('nursery')).replace('<svg ','<svg style="width:320px;height:170px" ')}</div><code>nursery hooks</code></div>`+
+ `<div class="cell"><div style="width:300px;height:200px">${hooks(PawArt.prop('postcard')).replace('<svg ','<svg style="width:300px;height:200px" ')}</div><code>postcard hooks</code></div>`+
+ `<div class="cell"><div style="width:240px;height:160px">${hooks(PawArt.prop('ultrasound')).replace('<svg ','<svg style="width:240px;height:160px" ')}</div><code>ultrasound hooks</code></div>`+
+ `<div class="cell"><div style="width:120px;height:140px">${hooks(PawArt.prop('coatframe')).replace('<svg ','<svg style="width:120px;height:140px" ')}</div><code>coatframe hooks</code></div>`;
 const st=(n,w,h,txt)=>`<div class="cell"><div class="stretch" style="width:${w}px;height:${h}px">${PawArt.prop(n)}<span>${txt||''}</span></div><code>prop('${n}') ${w}x${h}</code></div>`;
 $('#chrome').innerHTML=st('speech',200,120,'Woof?')+st('speech',420,110,'Mochi is judging your outfit choices.')+st('speech',170,220,'heh.')+
   st('panel',300,200,'Panel')+st('panel',560,170,'Wide panel: Bow-Wow Boutique')+st('panel',220,360,'Tall panel')+
