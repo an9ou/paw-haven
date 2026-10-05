@@ -1,1 +1,7 @@
 /* ---------- v2.2 phone: TOWN lane. Every rule sits under html[data-layout="phone"] ---------- */
+/* map: zoom label, confirm chip stays above the action bar */
+html[data-layout="phone"] #mapZoom span{font-size:15px;min-height:24px;line-height:24px}
+/* Playdate Board cards and the visitor card: text at 15 px */
+html[data-layout="phone"] .pbready,html[data-layout="phone"] .pbsniff{font-size:15px}
+html[data-layout="phone"] .pbready li{padding:4px 8px}
+html[data-layout="phone"] .visitcard .sex,html[data-layout="phone"] .pbcard .sex,html[data-layout="phone"] .vetcard .sex{font-size:15px}
