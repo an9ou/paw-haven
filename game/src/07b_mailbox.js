@@ -107,14 +107,58 @@ function postcardFor(r) {
   const p = prOf(r), fam = mailFamName(r.family), c = S.mailCards[r.id], i = (hashId(r.id) + c.n * 7) % CARD_LINES.length;
   const pose = CARD_POSES[(hashId(r.id) + c.n * 3) % CARD_POSES.length];
   const dog = { id: r.id, key: r.key, genes: r.genes, born: r.born, mix: r.mix || null, sparkle: !!r.sparkle, sex: r.sex, name: r.name, coat: r.coat, eyes: r.eyes };
-  return { kind: 'postcard', from: `${r.name} & ${shortFam(fam)}`, title: c.n === 0 ? `${r.name} has settled in!` : `A postcard from ${r.name}`, text: (c.n === 0 ? `${r.name} made it home with ${fam}. ${p.He} has already claimed the best spot on the sofa. ` : '') + CARD_LINES[i](r.name, p), ps: CARD_PS[(hashId(r.id) + c.n) % CARD_PS.length], dog, pose, pup: r.id };
+  return { kind: 'postcard', from: `${r.name} & ${shortFam(fam)}`, title: c.n === 0 ? `${r.name} has settled in!` : `A postcard from ${r.name}`, text: (c.n === 0 ? `${r.name} made it home with ${fam}. ${p.He} has already claimed the best spot on the sofa. ` : '') + CARD_LINES[i](r.name, p), ps: CARD_PS[(hashId(r.id) + c.n) % CARD_PS.length], dog, pose, pup: r.id, sparkle: !!r.sparkle };
 }
 function postcardTick() {
   if (!S) return 0; mailFields(); const t = localISO(); let n = 0;
   S.rehomed.forEach((r) => {
     if (!r || !r.id) return; const c = cardSched(r);
-    if (c.next <= t) { mailPush(postcardFor(r)); c.n++; c.next = isoAdd(t, 2 + (hashId(r.id + '|' + c.n) % 3)); n++; }
+    if (c.next <= t) { mailPush(postcardFor(r)); jrPenpal(r); c.n++; c.next = isoAdd(t, 2 + (hashId(r.id + '|' + c.n) % 3)); n++; }
+    n += jrPenpalCards(r, c, t);
   });
+  if (n) markDirty(); return n;
+}
+/* ---------- v2.1: pen-pal schedule (day 14 and day 30 gifts, dog birthdays) and S.penpals ---------- */
+function jrFamIdOf(f) {
+  if (f && typeof f === 'object') return f.id || null;
+  const s = String(f || ''), hit = FAMILIES.find((x) => s === x.name || s.startsWith(x.name + ' '));
+  return hit ? hit.id : null;
+}
+function jrPenpal(r) {
+  const id = jrFamIdOf(r && r.family); if (!id) return false; jrFields();
+  if (S.penpals[id]) return false;
+  S.penpals[id] = localISO(); markDirty(); jrFamCheck(); return true;
+}
+function jrPenpalBackfill() { // postcards already in the mailbox count as a first postcard
+  if (!S) return; mailFields(); jrFields();
+  S.mail.forEach((m) => { if (m && m.kind === 'postcard' && m.pup) { const r = S.rehomed.find((x) => x && x.id === m.pup); if (r) { const id = jrFamIdOf(r.family); if (id && !S.penpals[id]) { S.penpals[id] = m.date || localISO(); markDirty(); } } } });
+}
+const jrPupDog = (r) => ({ id: r.id, key: r.key, genes: r.genes, born: r.born, mix: r.mix || null, sparkle: !!r.sparkle, sex: r.sex, name: r.name, coat: r.coat, eyes: r.eyes });
+function jrGiftCard(r, day, coins) {
+  const p = prOf(r), fam = mailFamName(r.family), nm = r.name, month = day >= 30;
+  const msg = { kind: 'postcard', id: `pp_${r.id}_d${day}`, from: `${nm} & ${shortFam(fam)}`, title: month ? `${nm}: one month in town!` : `A photo from ${nm}`, sparkle: !!r.sparkle,
+    text: month ? `${nm} has lived with ${fam} for a whole month. ${p.He} knows the way to every bakery. We sent a little something to say thank you.` : `Here is a photo of ${nm}! ${p.He} sat still for almost a second. We sent a little something to say thank you.`,
+    ps: month ? 'P.S. Please accept this for treats and tennis balls.' : 'P.S. The photographer got licked. Twice.', dog: jrPupDog(r), pose: month ? 'happy' : 'sit', pup: r.id };
+  const n = addCoins(coins, { raw: true }); msg.gift = { coins: n || coins, claimed: true }; try { SFX.coin(); } catch (e) { /* audio off */ }
+  return mailPush(msg);
+}
+// day 14 = 40 coins, day 30 = 80 coins (each paid once per pup, kept on the schedule record), then a birthday card every 12 real days from born (no gift)
+function jrPenpalCards(r, c, t) {
+  let n = 0; const since = r.since || t, days = isoDays(since, t); c.paid = c.paid && typeof c.paid === 'object' ? c.paid : {};
+  if (days >= 14 && !c.paid.d14) { c.paid.d14 = t; jrGiftCard(r, 14, 40); jrPenpal(r); n++; }
+  if (days >= 30 && !c.paid.d30) { c.paid.d30 = t; jrGiftCard(r, 30, 80); jrPenpal(r); n++; }
+  if (/^\d{4}-\d{2}-\d{2}/.test(String(r.born || ''))) {
+    const k = Math.floor(isoDays(r.born, t) / 12), last = c.bday || 0;
+    if (k > last) {
+      c.bday = k;
+      if (k >= 1 && isoAdd(r.born, k * 12) >= isoDay(since)) { // a birthday from before the move is skipped
+        const p = prOf(r), fam = mailFamName(r.family);
+        mailPush({ kind: 'postcard', id: `pp_${r.id}_b${k}`, from: `${r.name} & ${shortFam(fam)}`, title: `Happy birthday, ${r.name}!`, sparkle: !!r.sparkle,
+          text: `${r.name} is ${k} today. ${p.He} had a pupcake and wore the paper hat for nearly four seconds. Thank you for the best friend.`, ps: 'P.S. No gift this time. Just love.', dog: jrPupDog(r), pose: 'happy', pup: r.id });
+        n++;
+      }
+    }
+  }
   if (n) markDirty(); return n;
 }
 function mailTick() { if (!S) return; try { postcardTick(); } catch (e) { console.warn('mail tick', e); } }
@@ -150,6 +194,18 @@ function mailboxRefresh() {
   g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openMailbox(); } });
 }
 
+/* ---------- v2.1: the postcard album (12 pen-pal family slots) ---------- */
+function jrAlbumFound() { jrFields(); return FAMILIES.map((f) => !!S.penpals[f.id]); }
+function jrMailTabs(album) {
+  const n = jrAlbumFound().filter(Boolean).length;
+  return `<div class="tabs mbtabs" role="tablist"><button class="btn" role="tab" data-mbt="letters" aria-selected="${!album}">Letters</button><button class="btn" role="tab" data-mbt="album" aria-selected="${album}"><span class="mbt-ic">${iconOr('album', '<rect x="-14" y="-12" width="28" height="24" rx="3" fill="#FFF3D6" stroke="#5B3D32" stroke-width="2.2"/><path d="M-8 -6 h16 v10 h-16z" fill="#BFE3F5" stroke="#5B3D32" stroke-width="1.8"/>')}</span>Album ${n}/12</button></div>`;
+}
+function jrAlbum() {
+  const found = jrAlbumFound(), n = found.filter(Boolean).length, real = artReal('prop', 'album', { found });
+  const slots = FAMILIES.map((f, i) => found[i] ? `<div class="al-slot found" data-slot="${i}"><span class="al-stamp" aria-hidden="true"><i></i></span><b>${esc(f.name)}</b><span class="small">${esc(f.where)}</span><span class="small">First postcard ${esc(S.penpals[f.id])}</span></div>` : `<div class="al-slot unk" data-slot="${i}"><b class="q">?</b><span class="small">Waiting for a postcard</span></div>`).join('');
+  return `<div class="album" data-found="${n}">${real ? `<div class="al-art" aria-hidden="true">${real}</div>` : ''}<p class="al-head"><b>${n} / 12</b> pen-pal families<span class="small"> Each puppy you adopt out writes home. Every new family adds a stamp.</span></p><div class="al-grid">${slots}</div></div>`;
+}
+
 /* ---------- the mailbox popup ---------- */
 let mailSel = null;
 function letterPhoto(m) {
@@ -158,14 +214,14 @@ function letterPhoto(m) {
 }
 function postcardHTML(m) {
   const real = artReal('prop', 'postcard');
-  return `<div class="pc ${real ? 'pc-real' : 'pc-doodle'}">${real ? `<div class="pc-bg">${real}</div>` : '<span class="pc-stamp" aria-hidden="true"><i></i></span><span class="pc-mark" aria-hidden="true">PAW HAVEN</span><span class="pc-tape" aria-hidden="true"></span>'}
+  return `<div class="pc ${real ? 'pc-real' : 'pc-doodle'}${m.sparkle || (m.dog && m.dog.sparkle) ? ' pc-spk' : ''}">${real ? `<div class="pc-bg">${real}</div>` : '<span class="pc-stamp" aria-hidden="true"><i></i></span><span class="pc-mark" aria-hidden="true">PAW HAVEN</span><span class="pc-tape" aria-hidden="true"></span>'}
     <div class="pc-photo">${letterPhoto(m)}</div><div class="pc-addr"><span>To: you</span><span>Home Yard</span><span>Paw Haven</span></div></div>`;
 }
 function letterBody(m) {
   if (!m) return '<div class="mb-empty"><p>No letters yet.</p><p class="small">The neighbours leave something every day, and puppies who move to town families write home.</p></div>';
   const date = (() => { try { return new Date(m.date + 'T00:00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'short' }); } catch (e) { return m.date; } })();
   let act = '';
-  if (m.kind === 'gift' && m.gift) act = `<p class="mb-gift ${m.gift.claimed ? 'got' : ''}">${m.gift.coins ? `${m.gift.coins} coins` : `${m.gift.n || 1} × ${esc(m.gift.item || 'a surprise')}`}${m.gift.claimed ? ' · added to your things' : ''}</p>`;
+  if (m.gift) act = `<p class="mb-gift ${m.gift.claimed ? 'got' : ''}">${m.gift.coins ? `${m.gift.coins} coins` : `${m.gift.n || 1} × ${esc(m.gift.item || 'a surprise')}`}${m.gift.claimed ? ' · added to your things' : ''}</p>`;
   if (m.kind === 'litter') {
     const taken = m.adopted || m.picked;
     act = taken ? '<p class="mb-gift got">You picked a puppy from this litter.</p>' : `<div class="mb-acts"><button class="btn yes" data-adoptpick="${esc(m.id)}">Adopt this pup</button><span class="small">${typeof slotsFree === 'function' ? `Free dog spots: ${slotsFree()}` : ''}</span></div>`;
@@ -174,18 +230,20 @@ function letterBody(m) {
   const card = m.kind === 'postcard' || (m.dog && m.kind !== 'gift') ? postcardHTML(m) : '';
   return `<article class="letter k-${esc(m.kind)}"><header><b>${esc(m.title)}</b><span class="small">From ${esc(m.from)} · ${esc(date)}</span></header>${card}${pups}<p class="mb-text">${esc(m.text)}</p>${m.ps ? `<p class="small mb-ps">${esc(m.ps)}</p>` : ''}${act}</article>`;
 }
-function openMailbox(selId) {
-  if (!S) return; mailFields(); audioPlace('journal');
+function openMailbox(selId, tab) {
+  if (!S) return; mailFields(); audioPlace('journal'); jrFields();
+  const album = tab === 'album';
   if (selId) mailSel = selId;
-  else { const u = S.mail.find((m) => !m.read); if (u) mailSel = u.id; }
+  else if (!album) { const u = S.mail.find((m) => !m.read); if (u) mailSel = u.id; }
   if (!S.mail.some((m) => m.id === mailSel)) mailSel = (S.mail[0] || {}).id || null;
   const sel = S.mail.find((m) => m.id === mailSel) || null;
-  if (sel && !sel.read) { sel.read = true; markDirty(); }
-  if (sel && sel.kind === 'gift') claimGift(sel);
+  if (!album && sel && !sel.read) { sel.read = true; markDirty(); }
+  if (!album && sel && sel.gift) claimGift(sel);
   const kindIc = { postcard: 'P', gift: 'G', litter: 'L', news: 'N' };
   const list = S.mail.length ? S.mail.map((m) => `<button class="mb-item ${m.read ? '' : 'unread'} ${m.id === mailSel ? 'on' : ''} k-${esc(m.kind)}" data-mail="${esc(m.id)}" aria-pressed="${m.id === mailSel}"><span class="mb-k" aria-hidden="true">${m.dog ? headSVG(m.dog) : kindIc[m.kind] || 'N'}</span><span class="mb-t"><b>${esc(m.title)}</b><span class="small">${esc(m.from)}</span></span>${m.read ? '' : '<i class="mb-dot" aria-label="unread"></i>'}</button>`).join('') : '<p class="small">Empty. Just one very determined spider.</p>';
   const n = mailUnread();
-  const p = openModal(`<span class="mb-h-ic">${mailIcon()}</span>Mailbox`, `<div class="mbox"><div class="mb-list" role="list">${list}</div><div class="mb-read">${letterBody(sel)}</div></div><p class="small mb-foot">${n ? `${n} unread.` : 'All caught up.'} A neighbour drops something off every day.</p>`, { cls: 'mailbox' });
+  const p = openModal(`<span class="mb-h-ic">${mailIcon()}</span>Mailbox`, `${jrMailTabs(album)}${album ? jrAlbum() : `<div class="mbox"><div class="mb-list" role="list">${list}</div><div class="mb-read">${letterBody(sel)}</div></div><p class="small mb-foot">${n ? `${n} unread.` : 'All caught up.'} A neighbour drops something off every day.</p>`}`, { cls: 'mailbox' });
+  p.querySelectorAll('[data-mbt]').forEach((b) => { b.onclick = () => { SFX.click(); openMailbox(undefined, b.dataset.mbt); }; });
   p.querySelectorAll('[data-mail]').forEach((b) => { b.onclick = () => { SFX.click(); openMailbox(b.dataset.mail); }; });
   p.querySelectorAll('[data-adoptpick]').forEach((b) => {
     b.onclick = () => {
@@ -206,7 +264,7 @@ function mailYardEnter() {
 }
 on('yard:enter', mailYardEnter);
 on('scene:redraw', () => { if (S && cur.mode === 'yard' && S.place === 'yard') mailboxRefresh(); });
-on('game:ready', () => { mailFields(); mailTick(); });
+on('game:ready', () => { mailFields(); jrPenpalBackfill(); mailTick(); });
 on('day:new', () => mailTick());
 on('clock:minute', () => mailTick());
 function mailNow() { // dev: deliver every due thing now (the daily gift even if already given, plus one postcard from each rehomed pup)
@@ -229,6 +287,6 @@ function mailNow() { // dev: deliver every due thing now (the daily gift even if
 })();
 function pawMailHelpers() {
   if (!window.__paw) return;
-  Object.assign(window.__paw, { mailNow, mailPush: (m) => mailPush(m), openMailbox: (id) => openMailbox(id), mailTick: () => mailTick(), dailyGift: () => dailyGift(), coatCheck: () => coatRewardsCheck(), journal: (tab) => openJournal(tab) });
+  Object.assign(window.__paw, { mailNow, mailPush: (m) => mailPush(m), openMailbox: (id, tab) => openMailbox(id, tab), mailTick: () => mailTick(), dailyGift: () => dailyGift(), coatCheck: () => coatRewardsCheck(), jrFamCheck: () => jrFamCheck(), jrLine: () => jrBestLine(), titleGive: (n) => titleGive(n), jrAlbum: () => jrAlbumFound(), jrDecor: (n) => jrDecor(n), journal: (tab) => openJournal(tab) });
 }
 on('game:ready', pawMailHelpers); setTimeout(pawMailHelpers, 0);
