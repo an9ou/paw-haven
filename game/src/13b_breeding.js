@@ -25,7 +25,9 @@ function nursingMum(d) { return brIsNursing(d); }
 
 /* ---- family register + coat log ---- */
 function brRec(d, status, extra) {
-  return Object.assign({ id: d.id, name: d.name, key: d.key, mix: d.mix || null, sex: d.sex, coat: coatNameOf(d) || d.coat || '', eyes: eyesOf(d) || d.eyes || 'brown', sparkle: !!d.sparkle, born: d.born || null, parents: brPar(d.parents), gen: d.gen || 0, status: status || 'home' }, extra || {});
+  const r = { id: d.id, name: d.name, key: d.key, mix: d.mix || null, sex: d.sex, coat: coatNameOf(d) || d.coat || '', eyes: eyesOf(d) || d.eyes || 'brown', sparkle: !!d.sparkle, born: d.born || null, parents: brPar(d.parents), gen: d.gen || 0, status: status || 'home' };
+  if (d.anc) r.anc = d.anc; // v2.1: never overwrite a stored anc with undefined
+  return Object.assign(r, extra || {});
 }
 function treePut(rec) {
   if (!S || !rec || !rec.id) return null; brFields();
@@ -41,8 +43,53 @@ function coatLog(rec) {
 function brBackfill() {
   if (!S || !S.dogs) return; brFields();
   S.dogs.forEach((d) => { if (d.gen == null) d.gen = 0; if (d.sparkle == null) d.sparkle = false; const r = S.tree[d.id]; treePut(brRec(d, 'home', r && r.family ? { family: r.family } : {})); coatLog(brRec(d)); });
+  brAncBackfill();
 }
-on('game:ready', () => { brBackfill(); setTimeout(breedTick, 1200); });
+on('game:ready', () => { brBackfill(); brStoneLetter(); setTimeout(breedTick, 1200); });
+
+/* ---- v2.1 ancestry: { breedKey: fraction } (PawGenes.ancestry when present, else the same rules here) ---- */
+const BR_KEYS = ['shiba', 'corgi', 'golden', 'dachs', 'husky', 'mutt', 'chihuahua', 'pug', 'greyhound', 'beagle'];
+const brKeyOf = (k) => (BR_KEYS.includes(k) ? k : 'mutt');
+function brAncRound(a) { const o = {}; let t = 0; Object.keys(a).forEach((k) => { t += a[k]; }); Object.keys(a).forEach((k) => { const v = Math.round((a[k] / (t || 1)) * 64) / 64; if (v > 0) o[k] = v; }); return o; }
+function brAncLocal(rec, depth, memo) {
+  if (!rec) return { mutt: 1 }; if (rec.anc) return rec.anc;
+  memo = memo || {}; if (rec.id && memo[rec.id]) return memo[rec.id];
+  const p = brPar(rec.parents), A = p && depth > 0 ? brLookup(p.dam) : null, B = p && depth > 0 ? brLookup(p.sire) : null;
+  let out;
+  if (A && B) { const a = brAncLocal(A, depth - 1, memo), b = brAncLocal(B, depth - 1, memo), m = {}; Object.keys(a).forEach((k) => { m[k] = (m[k] || 0) + a[k] / 2; }); Object.keys(b).forEach((k) => { m[k] = (m[k] || 0) + b[k] / 2; }); out = brAncRound(m); }
+  else if (rec.mix && rec.mix.a && rec.mix.b) { const a = brKeyOf(rec.mix.a), b = brKeyOf(rec.mix.b); out = a === b ? { [a]: 1 } : { [a]: 0.5, [b]: 0.5 }; }
+  else out = { [brKeyOf(rec.key)]: 1 };
+  if (rec.id) memo[rec.id] = out; return out;
+}
+// ancOf(recOrDog): the stored anc, else PawGenes.ancestry over the family register, else one breed
+function ancOf(x) {
+  if (!x) return { mutt: 1 }; if (x.anc) return x.anc;
+  const G = brG(); if (G && typeof G.ancestry === 'function') { try { const a = G.ancestry(x, (id) => brLookup(id)); if (a && Object.keys(a).length) return a; } catch (e) { /* fall through */ } }
+  try { return brAncLocal(x, 6); } catch (e) { return { [brKeyOf(x.key)]: 1 }; }
+}
+function brAncMix(a, b) { const m = {}; Object.keys(a).forEach((k) => { m[k] = (m[k] || 0) + a[k] / 2; }); Object.keys(b).forEach((k) => { m[k] = (m[k] || 0) + b[k] / 2; }); return brAncRound(m); }
+function brGrand(anc) { const G = brG(); if (!G || typeof G.grandMix !== 'function') return null; try { return G.grandMix(anc) || null; } catch (e) { return null; } }
+const BR_GRAND = ['grand', 'everything', 'family'];
+function brAncBackfill() {
+  if (!S || !S.dogs) return; let ch = false;
+  S.dogs.forEach((d) => { if (!d.anc) { d.anc = ancOf(d); ch = true; } });
+  Object.values(S.tree || {}).forEach((r) => { if (!r.anc) { const d = dogById(r.id); r.anc = d && d.anc ? d.anc : ancOf(r); ch = true; } });
+  if (ch) markDirty();
+}
+
+/* ---- v2.1 Sparkle odds: Stone, Sparkle parents and Bond (PawGenes.sparkleOdds when present) ---- */
+const brStone = (d) => !!(d && d.outfit && d.outfit.charm === 'Sparkle Stone');
+const brBondOf = (d) => (d && !d.npc && d.bond && d.bond.level) || 0;
+function brOddsText(p, parts) { const n = 1 / p, v = Math.abs(n - Math.round(n)) < 0.05 ? String(Math.round(n)) : n.toFixed(1); return parts.length ? `1 in ${v} today: ${parts.map((x) => `${x.label} ×${x.x}`).join(', ')}` : `1 in ${v}`; }
+// sparkleNow(dam, sire): today's Sparkle odds for this pair
+function sparkleNow(dam, sire) {
+  dam = brAsDog(dam); sire = brAsDog(sire);
+  const o = { stone: brStone(dam) || brStone(sire), sparkleParents: (dam && dam.sparkle ? 1 : 0) + (sire && sire.sparkle ? 1 : 0), bondA: brBondOf(dam), bondB: brBondOf(sire), base: BREEDING.RULES.sparkleOdds || 1 / 512 };
+  const G = brG(); if (G && typeof G.sparkleOdds === 'function') { try { const r = G.sparkleOdds(o); if (r && r.p > 0) return r; } catch (e) { /* fallback */ } }
+  const parts = o.stone ? [{ label: 'Sparkle Stone', x: 4 }] : [], p = o.base * (o.stone ? 4 : 1); // the v2 rule: Stone x4
+  return { p, mult: o.stone ? 4 : 1, parts, text: brOddsText(p, parts) };
+}
+const brMeter = () => Math.min(BREEDING.RULES.sparklePity, (S && S.pupsSinceSparkle) || 0);
 on('dog:added', (e) => { if (!e || !e.dog) return; brFields(); treePut(brRec(e.dog, 'home')); coatLog(brRec(e.dog)); });
 
 /* ---- relatives: shared ancestor within 2 generations (parent, sibling, grandparent, aunt/uncle, first cousin) ---- */
@@ -112,6 +159,14 @@ function brMix(dam, sire, r) {
   const body = r() < 0.5 ? dam.key : sire.key, head = body === dam.key ? sire.key : dam.key;
   return { key: body, mix: { a: dam.key, b: sire.key, body, head, name: `${brBreed(dam.key)} × ${brBreed(sire.key)} mix` } };
 }
+// a grand-mix pup: body and head art from mixOf on the parents' body keys, the name from grandMix
+function brGrandPup(pup, dam, sire, gm) {
+  const G = brG(), r = seeded(hashId('grand|' + pup.id)); let m = null;
+  if (G && typeof G.mixOf === 'function') { try { m = G.mixOf(dam.key, sire.key, r); } catch (e) { m = null; } }
+  const top = (gm.breeds || []).map((x) => x[0]);
+  const body = m && m.body ? m.body : dam.key, head = m && m.head ? m.head : top.find((k) => k !== body) || body;
+  pup.key = body; pup.mix = { a: dam.key, b: sire.key, body, head, name: gm.name, grand: gm.name };
+}
 function brPendingPups() { let n = 0; (S.dogs || []).forEach((d) => { if (d.preg && d.preg.pups) n += d.preg.pups.length; }); return n; }
 function brGenes(dam, sire, r) {
   const G = brG(); let g = null;
@@ -123,15 +178,15 @@ function brGenes(dam, sire, r) {
 function rollLitter(dam, sire, o) {
   o = o || {}; const r = seeded(hashId('litter|' + dam.id + '|' + sire.id + '|' + brToday()));
   const n = o.size || brLitterSize(dam.key, r);
-  const charm = (d) => d.outfit && d.outfit.charm === 'Sparkle Stone';
-  const odds = BREEDING.RULES.sparkleOdds * (charm(dam) || charm(sire) ? 4 : 1);
+  const odds = sparkleNow(dam, sire).p, anc = brAncMix(ancOf(dam), ancOf(sire)), gm = brGrand(anc);
   let pity = o.npc ? -1e9 : (S.pupsSinceSparkle || 0) + brPendingPups();
   const pups = [];
   for (let i = 0; i < n; i++) {
     const sex = r() < BREEDING.RULES.puppySex ? 'female' : 'male', genes = brGenes(dam, sire, r), bm = brMix(dam, sire, r);
     const sparkle = r() < odds || pity >= BREEDING.RULES.sparklePity - 1 || (o.sparkle && i === 0); pity = sparkle ? 0 : pity + 1;
     const id = 'p_' + hashId(dam.id + '|' + sire.id + '|' + brToday() + '|' + i).toString(36) + i;
-    const pup = { id, name: '', key: bm.key, sex, genes, mix: bm.mix, sparkle: !!sparkle, born: null, parents: { dam: dam.id, sire: sire.id }, gen: Math.max(dam.gen || 0, sire.gen || 0) + 1 };
+    const pup = { id, name: '', key: bm.key, sex, genes, mix: bm.mix, sparkle: !!sparkle, born: null, parents: { dam: dam.id, sire: sire.id }, gen: Math.max(dam.gen || 0, sire.gen || 0) + 1, anc };
+    if (gm && BR_GRAND.includes(gm.kind) && gm.name) brGrandPup(pup, dam, sire, gm);
     const c = coatInfo(pup); pup.coat = c ? c.coatName : (STARTER_GENES[pup.key] || STARTER_GENES.mutt).coat; pup.eyes = c ? c.eyes : 'brown';
     pups.push(pup);
   }
@@ -183,7 +238,8 @@ function brDogCard(d, picked, slot) {
     <span class="pd-st small">${is.length ? '✗ ' + esc(is[0].txt) : '✓ Ready for a playdate'}</span></span></button>`;
 }
 function brPredict(dam, sire) {
-  const G = brG(); if (!G || typeof G.predict !== 'function' || !dam.geneTested || !sire.geneTested) return '';
+  const tested = (d) => !!d.geneTested || (!!d.npc && typeof npcTested === 'function' && !!npcTested(d)); // v2.1: a sniffed NPC counts
+  const G = brG(); if (!G || typeof G.predict !== 'function' || !dam.genes || !sire.genes || !tested(dam) || !tested(sire)) return '';
   let rows = []; try { rows = G.predict(dam.genes, sire.genes, dam.key, sire.key) || []; } catch (e) { return ''; }
   if (!rows.length) return '';
   return `<div class="pd-predict"><b>Puppy Predictor</b> <span class="small">(from the gene tests)</span><ul>${rows.slice(0, 6).map((x) => `<li><span class="pd-bar" style="width:${Math.max(4, Math.round(x.pct))}%"></span>${esc(x.coat)}${x.eyes ? ', ' + esc(x.eyes) + ' eyes' : ''} <b>${Math.round(x.pct * 10) / 10}%</b></li>`).join('')}</ul></div>`;
@@ -195,6 +251,7 @@ function openPlaydates(opts) {
   if (!brNpc && S.dogs.length < 2) { openModal('Puppy Playdates', `<div class="pd-empty"><span class="pd-ic">${iconOr('playdate', '<path d="M-8 -2a6 6 0 0 1 8 -6a6 6 0 0 1 8 6c0 8 -8 12 -8 12s-8 -4 -8 -12z" fill="#F28FA5" stroke="#5B3D32" stroke-width="2"/>')}</span><p>Playdates need two dogs. Bring home another friend, or visit the playdate board at the Dog Park.</p></div>`, { cls: 'playdates' }); return; }
   if (brNpc && !mine.length) { openModal('Puppy Playdates', `<p>${esc(brNpc.name)} would love a friend, but none of your dogs ${brNpc.sex === 'female' ? 'is a boy' : 'is a girl'}. Puppies need a boy and a girl.</p>`, { cls: 'playdates' }); return; }
   const valid = (id) => mine.some((d) => d.id === id);
+  if (opts.with && valid(opts.with)) { brSel.a = opts.with; if (!brNpc) brSel.b = null; } // v2.1: preselect (Family tab "Find a partner")
   if (brNpc) { brSel.b = brNpc.id; if (!valid(brSel.a)) brSel.a = (mine.find((d) => !brIssues(d).length) || mine[0]).id; }
   else {
     if (!valid(brSel.a)) brSel.a = (mine.find((d) => d.sex === 'female' && !brIssues(d).length) || mine.find((d) => d.sex === 'female') || mine[0]).id;
@@ -203,9 +260,11 @@ function openPlaydates(opts) {
   const A = dogById(brSel.a), B = brNpc || dogById(brSel.b), chk = canPair(A, B);
   const col = (slot, list, sel) => `<div class="pd-col"><h3>${slot === 'a' ? (brNpc ? 'Your dog' : 'First friend') : brNpc ? 'Visiting friend' : 'Second friend'}</h3>${list.map((d) => brDogCard(d, d.id === sel, slot)).join('')}</div>`;
   const pre = chk.ok ? brPredict(chk.dam, chk.sire) : '';
+  const spk = chk.dam && chk.sire ? sparkleNow(chk.dam, chk.sire) : null;
+  const spark = spk ? `<div class="pd-sparkle" id="pdSparkle"><span class="pd-mic">${iconOr('meter', '<path d="M-9 -12h18v4h-2v18a4 4 0 0 1 -4 4h-6a4 4 0 0 1 -4 -4v-18h-2z" fill="#FFF6D6" stroke="#5B3D32" stroke-width="2"/><path d="M-2 0l2 -5l2 5l5 2l-5 2l-2 5l-2 -5l-5 -2z" fill="#FFD75A"/>')}</span><span><b>Sparkle:</b> <span id="pdOdds">${esc(spk.text)}</span>. <span class="small">Cosmetic only.</span></span><span class="pd-meter" id="pdMeter">Sparkle Meter: ${brMeter()} / ${BREEDING.RULES.sparklePity}</span></div>` : '';
   const verdict = `<div class="pd-verdict ${chk.ok ? 'ok' : 'no'}"><b>${chk.ok ? '✓' : chk.friends ? '♥' : '✗'}</b> ${esc(chk.why)}${chk.ok ? ' <span class="small">(85% chance of puppies)</span>' : ''}</div>`;
   const rules = `<details class="pd-rules"><summary>Playdate rules (real dog logic)</summary><ul class="small"><li>A boy and a girl, both adults (12 months+), not spayed or neutered.</li><li>Both at Bond ${BREEDING.RULES.welfare.minBond}+ with every care meter at 50+.</li><li>She must be in season, under 6 years, with fewer than 4 litters, and rest one season after a litter.</li><li>He rests 2 days after puppies are on the way. No relatives, and never merle with merle.</li></ul></details>`;
-  const p = openModal('Puppy Playdates', `<div class="pd-pick">${col('a', mine, brSel.a)}${col('b', brNpc ? [brNpc] : mine.filter((d) => d.id !== brSel.a), brSel.b)}</div>${verdict}${pre}${rules}<div class="pd-scene" id="pdScene" hidden></div>`,
+  const p = openModal('Puppy Playdates', `<div class="pd-pick">${col('a', mine, brSel.a)}${col('b', brNpc ? [brNpc] : mine.filter((d) => d.id !== brSel.a), brSel.b)}</div>${verdict}${spark}${pre}${rules}<div class="pd-scene" id="pdScene" hidden></div>`,
     { cls: 'playdates', foot: `<button class="btn no" id="pdNo">Not today</button>${chk.ok ? '<button class="btn yes big" id="pdGo">Playdate!</button>' : chk.friends && !brNpc ? '<button class="btn go big" id="pdFun">Just play</button>' : ''}` });
   p.querySelectorAll('[data-pd]').forEach((el) => { el.onclick = () => { const [slot, id] = el.dataset.pd.split('|'); brSel[slot] = id; if (slot === 'a' && brSel.b === id) brSel.b = null; SFX.click(); openPlaydates({ keep: true }); }; });
   $('#pdNo', p).onclick = () => { SFX.click(); closeModal(); };
@@ -277,7 +336,7 @@ function adoptPick(letterId, pupId) {
   const take = (pp) => {
     const d = brKeepPup(pp, pp.name); nl.picked = pp.id; nl.pickedName = d.name; treePut(brRec(d, 'home')); markDirty(); saveNow();
     closeModal(); SFX.fanfare && SFX.fanfare(); toast(`${d.name} is home! ${brPR(d).He} brought ${brPR(d).his} favourite sock from ${nl.owner}'s house.`, 'gold');
-    if (cur.mode === 'yard') go('yard'); return d;
+    if (cur.mode === 'yard') go('yard'); brRampPopup(); return d;
   };
   if (pupId) { const pp = nl.pups.find((x) => x.id === pupId); return pp ? take(pp) : false; }
   const p = openModal('Pick of the litter', `<p>${esc(nl.npcName)}'s family lets you choose one pup to bring home, free.</p><div class="lt-pups">${nl.pups.map((pp) => `<button class="lt-card pick" data-pick="${pp.id}">${pp.sparkle ? '<span class="lt-spark">Sparkle!</span>' : ''}<span class="lt-art">${dogSVG(Object.assign({}, pp, { born: brAddDays(brToday(), -2) }), { pose: 'sit' })}</span><b>${esc(pp.name)} ${sexSym(pp.sex)}</b><span class="small">${esc(pp.mix ? pp.mix.name : brBreed(pp.key))}<br>${esc(pp.coat)}, ${esc(pp.eyes)} eyes</span></button>`).join('')}</div>`, { cls: 'litter' });
