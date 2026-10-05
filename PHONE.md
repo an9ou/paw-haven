@@ -8,7 +8,8 @@ Read `PIPELINE.md`, `V21.md` (standing rules) and `V15B.md` (the paused v1.5B ph
 - **Portrait only on phones.** A phone held sideways shows a "Turn your phone upright" card over the paused game. Tablets and laptops are unaffected.
 - **Full game on phone.** Every screen from v1.0 to v2.1 gets a phone layout and touch controls.
 - **Cloud save with Supabase.**
-  - Guests start automatically. An email address with a 6-digit code links the save across devices.
+  - Guests start automatically. A player can register in the game with an email and their own password, then log in on any device.
+  - **No emails are ever sent.** There is no verification email, magic link or code.
   - **Saving is real time.** Every change reaches the cloud within about 2 seconds.
   - **The player is never asked which save to keep.** The newer save wins automatically, and the older one is kept as a backup.
 - **Export / Import save code** in Settings, on every copy.
@@ -88,11 +89,13 @@ Each lane makes its screens pass the phone minimums on iPhone 13 (390×844) and 
 
 **Supabase setup (the owner does this once):**
 
-1. Authentication → Sign In / Providers: turn on **Allow anonymous sign-ins** and **Email**.
-2. Authentication → Email Templates → Magic Link: include `{{ .Token }}`, so the email carries a 6-digit code.
-3. Authentication → URL Configuration: Site URL `https://an9ou.github.io/paw-haven/`.
-4. SQL Editor: run `supabase/schema.sql` (written by the CLOUD lane).
-5. Paste the Project URL and the anon (publishable) key into `game/src/22b_cloud_config.js`. The anon key is public by design. Row-level security protects the data.
+1. Authentication → Sign In / Providers:
+   - turn on **Allow anonymous sign-ins**;
+   - turn on **Email**, and turn **Confirm email OFF**, so registration logs in straight away and Supabase sends no email;
+   - set the minimum password length to 8.
+2. Authentication → URL Configuration: Site URL `https://an9ou.github.io/paw-haven/`.
+3. SQL Editor: run `supabase/schema.sql`.
+4. Paste the Project URL and the anon (publishable) key into `game/src/22b_cloud_config.js`. The anon key is public by design. Row-level security protects the data.
 
 **Data (`supabase/schema.sql`):**
 
@@ -121,15 +124,21 @@ Each lane makes its screens pass the phone minimums on iPhone 13 (390×844) and 
 - **Who wins.** The save with the newer `changed_at` wins, every time, automatically.
   - The losing version is written to `save_backups` with a reason ("older than your other device", "guest save before sign-in"). Nothing is ever deleted unasked.
   - Settings → Cloud save → "Backups" lists them (date, dogs, coins) with "Restore". Restoring makes the backup the newest save.
-- **Guest to email.** Adding an email to a guest (`updateUser({ email })`, then verifying the code) keeps the same user, so nothing moves.
-- **Signing in on a device that has a guest save.** The account's cloud save loads, and the guest save goes to that account's backups ("guest save before sign-in"). There is no prompt.
+- **Register (guest to account).** The player types an email and a password (8 or more characters, typed twice).
+  - The game calls `updateUser({ email, password })` on the guest user, so the user id and save stay the same.
+  - If the project still asks to confirm the email change, fall back: `signUp({ email, password })` makes the account, the guest's local save is pushed as its save, and the guest row is left behind.
+  - Either way the player sees no prompt and no email. The CLOUD lane checks which path the real project takes.
+- **Log in on another device.** `signInWithPassword({ email, password })`.
+- **Logging in on a device that has a guest save.** The account's cloud save loads, and the guest save goes to that account's backups ("guest save before sign-in"). There is no prompt.
 - **Library.** `@supabase/supabase-js` v2 is lazy-loaded from `cdn.jsdelivr.net` only when the cloud is on. If it fails to load (offline, blocked), the game shows "Cloud save is offline. Your game is saved on this device." and keeps playing.
 - **Settings → Cloud save:**
-  - status (Guest, Signed in as a…@…, Offline, Syncing, Synced 12 s ago);
-  - "Keep my save on every device: add your email" (email, then a 6-digit code);
-  - Sign out (the local save stays);
+  - status (Guest, Logged in as a…@…, Offline, Syncing, Synced 12 s ago);
+  - "Keep my save on every device: make an account" (email, password, password again), and "I have an account: log in";
+  - Change password (while logged in);
+  - **Forgotten password:** there is no reset email, so the game says: "Passwords can't be reset by email. If you're logged in on another device, change it there." The local save on this device is never lost.
+  - Log out (the local save stays);
   - Backups.
-- **A gentle nudge** once, after 3 care days: "Add your email to keep Mochi safe on every device." It never blocks play.
+- **A gentle nudge** once, after 3 care days: "Make an account to keep Mochi safe on every device." It never blocks play.
 - **Export / Import:**
   - Export makes a compact save code (base64 of the JSON, with a checksum) and a Copy button.
   - Import validates it, saves the current game to backups (cloud) or to `pawhaven_proto_v1_backup` (local), then loads it.
@@ -148,7 +157,7 @@ Each lane makes its screens pass the phone minimums on iPhone 13 (390×844) and 
   - push debounce;
   - newer-wins on pull;
   - backup of the loser;
-  - guest to email keeping the user id;
+  - register (guest to account) keeping the save, the signUp fallback, log in on a second device, wrong password message;
   - Export / Import round trip;
   - the artifact copy (cloud off) keeping the local save.
 - **Desktop regression:** `node game/run_tests.js all --jobs 2` must pass unchanged after every merge.
