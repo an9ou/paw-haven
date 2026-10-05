@@ -84,7 +84,9 @@ run('phone_walk', async (t) => {
     // ===================== runner =====================
     t.sec(`${device}: runner tutorial (first walk)`);
     await ev(() => { window.__paw.S.walks = 0; window.__paw.prefs && (window.__paw.prefs.skipTut = false); });
-    await p.locator('[data-act=walk]').first().tap(); await p.waitForSelector('#rtStart'); await p.locator('#rtStart').tap();
+    // the bar button can still be settling after the carousel closes (Playwright's "stable" check): wait for it, then tap
+    await p.waitForSelector('[data-act=walk]:visible'); await t.retryUntil(() => p.locator('[data-act=walk]').first().tap({ force: true, timeout: 3000 }).catch(() => {}), () => !!document.querySelector('#rtStart'));
+    await p.locator('#rtStart').tap();
     const tut = await t.until(() => !!document.querySelector('.pw-tut'), null, 15000);
     ok(tut, `${device}: tutorial card shows on the first walk`);
     if (tut) {
