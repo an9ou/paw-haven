@@ -32,11 +32,11 @@ const spiral=(cx,cy,r0,r1,turns,n,a0)=>{const p=[];for(let i=0;i<=n;i++){const t
 
 /* ---------- the crude drawing kit: every point it draws is tracked for fitting ---------- */
 function kit(r){
-  const J=a=>(r()-.5)*2*a,acc=[],bb=[1e9,1e9,-1e9,-1e9],texts=[],LW=3.7;
+  let jm=1;const J=a=>(r()-.5)*2*a*jm,acc=[],bb=[1e9,1e9,-1e9,-1e9],texts=[],LW=3.7;
   const tr=(x,y)=>{if(x<bb[0])bb[0]=x;if(y<bb[1])bb[1]=y;if(x>bb[2])bb[2]=x;if(y>bb[3])bb[3]=y};
   const pl=(P,amp)=>{let d='';for(let i=0;i<P.length;i++){const x=P[i][0]+J(amp),y=Math.min(P[i][1]+J(amp),h.cy||1e9);tr(x,y);d+=(i?'L':'M')+R1(x)+' '+R1(y)}return d};
   const st=(d,w,c,x='')=>`<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"${x}/>`;
-  const h={J,r,acc,bb,texts,LW,tr,
+  const h={J,r,acc,bb,texts,LW,tr,setJ(v){jm=v},
     // bucket fill that misses the outline, plus a jaggy outline that may not close
     shape(pts,fill,o={}){
       if(!pts.length||isNaN(pts[0][0]))return;
@@ -125,12 +125,12 @@ function layout(s,pose,k){
      L.bT.y=GY-b.ry*(s.fluff?1.02:.86);L.tailS=.75;L.bT.x=b.x-(b.long?4:8);L.hT.x=L.bT.x+b.rx*.92+hd.rx*.3;L.hT.y=GY-hd.ry*.8;L.hT.a=6;break;
    case 'walk':swing=[1,0,-1][k];L.lift=k===1;L.bT.y+=[0,-3,0][k];L.hT.y+=[0,-4,1][k];L.tailA=[14,26,-4][k];L.face.eyes=s.face.eyes==='smug'?'smug':'open';L.face.mouth=s.face.mouth==='o'?'smile':s.face.mouth;break;
    case 'jump':legMode='splay';{const lift=s.fluff?26:b.long?36:34;L.bT.y-=lift;L.hT.y-=lift+10;L.bT.x+=b.long?8:0;L.hT.x+=b.long?6:5}L.bT.a=b.long?-9:-12;L.hT.a=-14;L.speed=1;L.ears='fly';L.tailA=30;L.face.eyes='open';L.face.mouth='open';break;
-   case 'sit':{legMode='sit';const a=b.long?-30:-34;L.bT.a=a;if(b.long){L.bT.sx=.58;L.scrunch=1}const rear=[-b.rx*.72,b.ry*.62],rq=rot(rear,a);const R=[b.x-b.rx*(b.long?.2:.45),GY-3];L.bT.x=R[0]-rq[0];L.bT.y=R[1]-rq[1];
+   case 'sit':{legMode='sit';const a=b.long?-30:b.deep?-52:-34;if(b.deep)L.gfold=1;L.bT.a=a;if(b.long){L.bT.sx=.58;L.scrunch=1}const rear=[-b.rx*.72,b.ry*.62],rq=rot(rear,a);const R=[b.x-b.rx*(b.long?.2:.45),GY-3];L.bT.x=R[0]-rq[0];L.bT.y=R[1]-rq[1];
      {const BT=T(L.bT);let my=-1e9;bodyPts(s).forEach(p=>{const q=BT(p);if(q[1]>my)my=q[1]});if(my>GY-1)L.bT.y-=my-(GY-1)}
-     const hq=rot([rel[0]*(L.bT.sx||1),rel[1]],a*.55);L.hT.x=L.bT.x+hq[0]+4-(b.long?14:0);L.hT.y=L.bT.y+hq[1]-2-(b.long?8:0);L.tailA=-70;L.face.mouth=s.face.mouth==='o'?'smile':s.face.mouth;break}
-   case 'beg':{legMode='beg';L.face.eyes='hope';L.face.mouth=s.face.mouth==='o'||s.face.mouth==='smirk'?'smile':s.face.mouth==='grin'?'grin':'smile';L.ears='perk';L.hope=1;const a=b.long?-48:-58;L.bT.a=a;if(b.long){L.bT.sx=.58;L.scrunch=1}const rear=[-b.rx*.72,b.ry*.62],rq=rot(rear,a);const R=[b.x-b.rx*(b.long?.2:.45),GY-3];L.bT.x=R[0]-rq[0];L.bT.y=R[1]-rq[1];
+     const hq=rot([rel[0]*(L.bT.sx||1),rel[1]],a*.55);L.hT.x=L.bT.x+hq[0]+4-(b.long?14:0);L.hT.y=L.bT.y+hq[1]-2-(b.long?8:0);L.tailA=-70;L.face.mouth=s.face.mouth==='o'?'smile':s.face.mouth;if(L.gfold)gfoldHead(s,L,rel,a);break}
+   case 'beg':{legMode='beg';L.face.eyes='hope';L.face.mouth=s.face.mouth==='o'||s.face.mouth==='smirk'?'smile':s.face.mouth==='grin'?'grin':'smile';L.ears='perk';L.hope=1;const a=b.long?-48:b.deep?-66:-58;if(b.deep)L.gfold=1;L.bT.a=a;if(b.long){L.bT.sx=.58;L.scrunch=1}const rear=[-b.rx*.72,b.ry*.62],rq=rot(rear,a);const R=[b.x-b.rx*(b.long?.2:.45),GY-3];L.bT.x=R[0]-rq[0];L.bT.y=R[1]-rq[1];
      {const BT=T(L.bT);let my=-1e9;bodyPts(s).forEach(p=>{const q=BT(p);if(q[1]>my)my=q[1]});if(my>GY-1)L.bT.y-=my-(GY-1)}
-     const hq=rot([rel[0]*(L.bT.sx||1),rel[1]],a*.55);L.hT.x=L.bT.x+hq[0]+4-(b.long?14:0);L.hT.y=L.bT.y+hq[1]-2-(b.long?8:0);L.tailA=-70;L.face.mouth=s.face.mouth==='o'?'smile':s.face.mouth;break}
+     const hq=rot([rel[0]*(L.bT.sx||1),rel[1]],a*.55);L.hT.x=L.bT.x+hq[0]+4-(b.long?14:0);L.hT.y=L.bT.y+hq[1]-2-(b.long?8:0);L.tailA=-70;L.face.mouth=s.face.mouth==='o'?'smile':s.face.mouth;if(L.gfold)gfoldHead(s,L,rel,a);break}
    case 'sad':L.face.eyes='sad';L.face.mouth='frown';L.ears='droop';L.tear=1;L.tailA=-80;L.tailS=.85;L.hT.y+=11;L.hT.x-=2;L.hT.a=10;break;
    case 'dirty':L.mud=1;L.stink=1;break;
    case 'sniff':{legMode='sniff';L.face.eyes='down';L.face.mouth='smile';L.ears='perk';L.tailA=-8;L.tailS=1.05;L.bT.a=6;
@@ -162,7 +162,8 @@ function layout(s,pose,k){
    case 'cold':L.face.eyes='sad';L.face.mouth='frown';L.ears='droop';L.tailA=-90;L.tailS=.7;{const j=[-2,2,-1][k];L.bT.x+=j;L.hT.x+=j*1.5;L.bT.y+=3;L.hT.y+=8;L.hT.a=6}L.snow=1;L.blueNose=1;L.shiver=1;break;
    case 'hot':L.face.eyes='sad';L.face.mouth='pant';L.ears='droop';L.tailA=-60;L.tailS=.85;L.hT.y+=8;L.hT.a=8;L.heat=1;L.bT.y+=2;break;
    case 'dig':{legMode='dig';L.face.eyes='down';L.face.mouth='open';L.ears='perk';L.tailA=34;L.bT.a=12;
-     const N=noseLocal(s),q=rot(N,28);L.hT.a=28;L.hT.x=hd.x+4;L.hT.y=Math.min(hd.y+30,GY-6-hd.ry);L.dirt=1;break}
+     const N=noseLocal(s),q=rot(N,28);L.hT.a=28;L.hT.x=hd.x+4;L.hT.y=Math.min(hd.y+30,GY-6-hd.ry);L.dirt=1;
+     if(b.deep){L.gdig=1;L.bT.a=20;L.bT.y+=b.ry*1.1;L.bT.x-=4;L.hT.a=34;L.hT.x=hd.x-2;L.hT.y=GY-8-hd.ry*1.1}break}
   }
   // legs: exactly four. Far legs sit a little forward, higher, darker; front pair under the chest, hind pair under the hips
   const B=T(L.bT),lg=s.legs;L.legs=[];
@@ -188,7 +189,9 @@ function layout(s,pose,k){
     else if(legMode==='dance'){if(!front){foot=[hip[0]+(near?6:-2),GY-up];}else{const wv=[0,-5,4][L.k||0],sh=B([b.rx*(near?.62:.5),-b.ry*.15]);L.legs.push({hip:sh,mid:[sh[0]+(near?14:10),sh[1]+10+wv*.3],foot:[sh[0]+(near?18:13),sh[1]-6+wv],col,sock,w,i,id,near,raised:1});L.paw=1;return}}
     else if(legMode==='bow'){foot=front?[hip[0]+22+(near?0:5),GY-1-up]:[hip[0]-2,GY-up];if(front){L.legs.push({hip,mid:[hip[0]+4,GY-6-up],foot,col,sock,w,i,id,near});return}}
     else if(legMode==='crouch'){foot=front?[hip[0]+12,GY-up*.5]:[hip[0]-10,GY-up*.5];}
-    else if(legMode==='dig'){if(front){const pw=[[18,-14],[6,-2],[22,-6]][L.k]||[18,-14];foot=near?[hip[0]+pw[0],GY+pw[1]]:[hip[0]+10-pw[0]*.3,GY-up]}else foot=[hip[0]-4,GY-up];}
+    else if(legMode==='dig'){if(front){const pw=[[18,-14],[6,-2],[22,-6]][L.k]||[18,-14];foot=near?[hip[0]+pw[0],GY+pw[1]]:[hip[0]+10-pw[0]*.3,GY-up];
+      if(L.gdig){foot=near?[hip[0]+pw[0]+6,GY+pw[1]*.7]:[hip[0]+14,GY-up];L.legs.push({hip,mid:[hip[0]-7+(near?0:2),hip[1]+(foot[1]-hip[1])*.55],foot,col,sock,w,i,id,near});return}}
+      else foot=L.gdig?[hip[0]-10,GY-up]:[hip[0]-4,GY-up];}
     else if(legMode==='splay'){foot=front?[hip[0]+26+(near?0:4),hip[1]+12-(near?0:5)]:[hip[0]-28+(near?0:4),hip[1]+10-(near?0:5)];}
     else if(legMode==='beg'){if(!front){L.legs.push({haunch:near?1:0,sitfoot:near?0:1,hip,col,w,i,id,near});return}
       const wv=[0,-3,1][L.k||0],sh=B([b.rx*(near?.62:.5),-b.ry*.15]);L.legs.push({hip:sh,foot:[sh[0]+(near?20:15),sh[1]+(near?4:-1)+wv],mid:[sh[0]+(near?10:7),sh[1]+(near?16:11)],col,sock,w,i,id,near,raised:1});L.paw=1;return}
@@ -197,6 +200,8 @@ function layout(s,pose,k){
   });
   return L;
 }
+function gfoldHead(s,L,rel,a){// greyhound sit/beg: head carried up on the long neck, above the chest
+  const b=s.body,hd=s.head,sh=T(L.bT)([b.rx*.78,-b.ry*.55]);L.hT.x=sh[0]+hd.rx*.55;L.hT.y=sh[1]-hd.ry*1.5;L.hT.a=L.pose==='beg'?-8:-4;L.bT.x-=2}
 function noseLocal(s){const f=s.face,hx=s.head.rx,hy=s.head.ry;return f.nose?[hx*f.nose[0],hy*f.nose[1]]:[hx*.66,hy*.26]}
 
 /* ---------- parts ---------- */
@@ -254,10 +259,12 @@ function drawTail(h,s,L,B){
 function drawLegs(h,s,L){
   const one=l=>{
     const a=h.acc.length;
-    if(l.sitfoot){const hp=T(L.bT)([-s.body.rx*.45,s.body.ry*.25]);h.shape(circ(hp[0]+s.body.ry*.9+9,GY-6,s.body.ry*.5+3,4,8),l.col,{w:3.4})}
+    if(l.sitfoot&&L.gfold){const hp=T(L.bT)([-s.body.rx*.45,s.body.ry*.25]),y=GY-3.5;h.tube([[hp[0]-s.body.ry*.2+8,y-7],[hp[0]+s.body.ry*1.9+8,y]],l.w*.95,l.col);h.shape(circ(hp[0]+s.body.ry*1.9+11,y,l.w*.8,l.w*.55,7),l.col,{w:2.6,ox:0,oy:0,sc:1,closed:1})}
+    else if(l.sitfoot){const hp=T(L.bT)([-s.body.rx*.45,s.body.ry*.25]);h.shape(circ(hp[0]+s.body.ry*.9+9,GY-6,s.body.ry*.5+3,4,8),l.col,{w:3.4})}
     else{h.tube([l.hip,l.mid||[(l.hip[0]+l.foot[0])/2+1,(l.hip[1]+l.foot[1])/2],l.foot],l.w,l.col);
       if(L.paw&&l.foot&&(l.id==='NF'||l.id==='FF'))h.shape(circ(l.foot[0]+2,l.foot[1],l.w*.75,l.w*.6,7),l.sock||l.col,{w:2.8,ox:0,oy:0,sc:1,closed:1});
-      if(l.sock&&!l.raised){const t=.62,sx=l.hip[0]+(l.foot[0]-l.hip[0])*t,sy=l.hip[1]+(l.foot[1]-l.hip[1])*t;h.acc.push(`<path d="M${R1(sx+1)} ${R1(sy)}L${R1(l.foot[0]+1)} ${R1(l.foot[1]-1)}" stroke="${l.sock}" stroke-width="${R1(l.w)}" stroke-linecap="round"/>`)}}
+      if(l.sock&&!l.raised){const t=.62,sx=l.hip[0]+(l.foot[0]-l.hip[0])*t,sy=l.hip[1]+(l.foot[1]-l.hip[1])*t;h.acc.push(`<path d="M${R1(sx+1)} ${R1(sy)}L${R1(l.foot[0]+1)} ${R1(l.foot[1]-1)}" stroke="${l.sock}" stroke-width="${R1(l.w)}" stroke-linecap="round"/>`)}
+      if(s.pup&&!(L.paw&&(l.id==='NF'||l.id==='FF')))h.shape(circ(l.foot[0]+2.5,l.foot[1]-l.w*.42,l.w*1.0,l.w*.66,8),l.sock||l.col,{w:3,ox:0,oy:0,sc:1,closed:1});}
     h.acc.splice(a,0,`<g class="pa-d-leg pa-d-leg-${l.id}">`);h.acc.push('</g>');
   };
   const only=h._legPass||'ground';const ok=l=>only==='raised'?l.raised:!l.raised;
@@ -265,13 +272,18 @@ function drawLegs(h,s,L){
 }
 function drawHaunch(h,s,L,B){
   const b=s.body;L.legs.filter(l=>l.haunch).forEach(l=>{
-    const a=h.acc.length,c=B([-b.rx*.45,b.ry*.25]);if(!s.fluff)h.shape(circ(c[0],c[1]+2,b.ry*.95,b.ry*.85,10),s.col);
-    h.shape(circ(c[0]+b.ry*.9,GY-4,b.ry*.6+3,4.5,8),l.col,{w:3.6});
+    const a=h.acc.length,c=B([-b.rx*.45,b.ry*.25]);
+    if(L.gfold){// long folded thigh, then the hock and long foot flat along the ground
+      const th=rotAbout(circ(c[0]+3,c[1]-2,b.ry*1.45,b.ry*.95,11),-28,[c[0]+3,c[1]-2]);const y=GY-4,hl=[c[0]-b.ry*.9,Math.min(c[1]+b.ry*.7,y-4)];
+      h.tube([hl,[hl[0]+4,y],[c[0]+b.ry*2.1,y]],l.w*1.05,l.col);h.shape(circ(c[0]+b.ry*2.1+3,y,l.w*.85,l.w*.6,7),l.col,{w:2.8,ox:0,oy:0,sc:1,closed:1});h.shape(th,s.col);
+    }else{
+    if(!s.fluff)h.shape(circ(c[0],c[1]+2,b.ry*.95,b.ry*.85,10),s.col);
+    h.shape(circ(c[0]+b.ry*.9,GY-4,b.ry*.6+3,4.5,8),l.col,{w:3.6});}
     h.acc.splice(a,0,`<g class="pa-d-leg pa-d-leg-NH">`);h.acc.push('</g>');
   });
 }
 function bodyPts(s){const b=s.body;if(b.deep){const x=b.rx,y=b.ry;return [[x*1.02,-y*.45],[x*.95,y*.35],[x*.75,y*1.25],[x*.35,y*1.35],[0,y*.7],[-x*.4,y*.25],[-x*.78,y*.45],[-x*1.0,y*.1],[-x*.98,-y*.55],[-x*.55,-y*.95],[x*.1,-y*.92],[x*.7,-y*1.0]]}return s.fluff?scallop(0,0,b.rx,b.ry,13,.13):circ(0,0,b.rx,b.ry,b.long?18:15,b.lop||0)}
-function headPts(s){const hd=s.head;return s.fluff?scallop(0,0,hd.rx,hd.ry,10,.12):circ(0,0,hd.rx,hd.ry,13,.04)}
+function headPts(s){const hd=s.head;return (s.hfluff===undefined?s.fluff:s.hfluff)?scallop(0,0,hd.rx,hd.ry,10,.12):circ(0,0,hd.rx,hd.ry,13,.04)}
 function drawFace(h,s,L,HT){
   const f=L.face,hx=s.head.rx,hy=s.head.ry,sf=hx/33;
   const e0=f.e0||[-.1,-.04],e1=f.e1||[.42,-.1],er=s.eyes;
@@ -448,9 +460,36 @@ function drawMud(h,s,L,B,HT){
   L.legs.filter(l=>l.near&&l.foot).forEach(l=>h.dot(l.foot[0],l.foot[1]-5,6,4,M));
 }
 
+/* ---------- v2 extras: newborn layout, expecting belly, sparkle ---------- */
+function newbornL(s,L){// eyes shut, ears folded, everything soft and curled
+  L.face.eyes='closed';L.ears='sleep';L.face.mouth=L.pose==='sleep'?'sleep':'smile';L.blush=0;L.hearts=0;L.tear=0;L.tailS*=.8;
+  if(L.pose==='sleep'){L.hT.x-=s.head.rx*.42;L.hT.y+=s.head.ry*.08;L.hT.a=16;L.tailA=-140}else{L.hT.y+=s.head.ry*.18;L.hT.a=8;L.tailA=-120}}
+const BELLY=/^(idle|happy|pet|eat|sleep|walk|sit|sad|dirty|crouch|shake|cold|hot|dig|beg|squat|leglift|paw|down|speak|bow|scratch|sniff|yawn|howl)$/;
+function drawBelly(h,s,L,B){// a rounder, lower belly: fill over the body's underline, then a new lower curve
+  const b=s.body,lie=/^(sleep|down|crouch)$/.test(L.pose),cy=b.ry*(lie?.36:.5),rx=b.rx*(b.long?.36:.5),ry=b.ry*(lie?.6:.68),cl=q=>[q[0],Math.min(q[1],GY-1)],E=[],A=[];
+  for(let i=0;i<16;i++){const t=i/16*Math.PI*2;E.push([-b.rx*.04+Math.cos(t)*rx,cy+Math.sin(t)*ry])}
+  for(let i=0;i<=8;i++){const t=(.17+i/8*.66)*Math.PI;A.push([-b.rx*.04+Math.cos(t)*rx,cy+Math.sin(t)*ry])}
+  h.shape(E.map(B).map(cl),s.col,{noline:1,ox:0,oy:0,sc:1});h.line(A.map(B).map(cl),h.LW,INK,.9)}
+function glitter(h,s,M,k,head){// glitter flecks on the coat: own rng, so nothing else moves
+  const r=rng(hashS('glit'+(s.name||'')+head)+k*31),rx=head?s.head.rx:s.body.rx,ry=head?s.head.ry:s.body.ry,n=head?2:5;let d='',g='';
+  for(let i=0;i<n;i++){const a=r()*Math.PI*2,rr=.25+r()*.5,p=M([Math.cos(a)*rx*rr,Math.sin(a)*ry*rr*(head?.6:1)-(head?ry*.35:0)]),z=2.2+r()*1.6;if(isNaN(p[0]))return;
+    if(i%2)g+=`M${R1(p[0])} ${R1(p[1]-z)}L${R1(p[0]+z*.3)} ${R1(p[1]-z*.3)}L${R1(p[0]+z)} ${R1(p[1])}L${R1(p[0]+z*.3)} ${R1(p[1]+z*.3)}L${R1(p[0])} ${R1(p[1]+z)}L${R1(p[0]-z*.3)} ${R1(p[1]+z*.3)}L${R1(p[0]-z)} ${R1(p[1])}L${R1(p[0]-z*.3)} ${R1(p[1]-z*.3)}Z`;
+    else d+=`M${R1(p[0]-z)} ${R1(p[1])}L${R1(p[0]+z)} ${R1(p[1])}M${R1(p[0])} ${R1(p[1]-z)}L${R1(p[0])} ${R1(p[1]+z)}`}
+  h.acc.push(`<path class="pa-d-glit" d="${g}" fill="#FFE14D" stroke="#fff" stroke-width=".8"/><path class="pa-d-glit" d="${d}" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".9"/>`)}
+// 3-5 crayon stars around the dog (canvas coords), twinkling by CSS
+function stars(seed,bx,n0,sz){
+  const r=rng(seed),w=bx[2]-bx[0],ht=bx[3]-bx[1],cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const spots=[[bx[0]-2,bx[1]+ht*.22],[bx[2]+2,bx[1]+ht*.12],[bx[0]+w*.42,bx[1]-6],[bx[2]+4,bx[1]+ht*.62],[bx[0]-4,bx[1]+ht*.7]];
+  const n=n0||3+Math.floor(r()*3),cols=['#FFE14D','#FFF3A0','#FF9EC8','#FFE14D','#9EE6FF'];let o='';
+  for(let i=0;i<n;i++){const sp=spots[i],x=cl(sp[0]+(r()-.5)*10,10,230),y=cl(sp[1]+(r()-.5)*8,10,176),z=(sz||8)+r()*4,P=[];
+    for(let j=0;j<8;j++){const a=j/8*Math.PI*2-Math.PI/2,rr=(j%2?z*.36:z)*(1+(r()-.5)*.25);P.push([x+Math.cos(a)*rr+(r()-.5)*1.2,y+Math.sin(a)*rr+(r()-.5)*1.2])}
+    const d='M'+P.map(p=>R1(p[0])+' '+R1(p[1])).join('L')+'Z';
+    o+=`<g class="pa-d-tw" style="animation-delay:-${(r()*1.6).toFixed(2)}s"><path d="${d}" fill="${cols[i]}" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/><path d="M${R1(x-z*.25)} ${R1(y-z*.2)}l${R1(z*.12)} ${R1(-z*.25)}" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></g>`}
+  return `<g class="pa-d-spk">${o}</g>`}
+
 /* ---------- one complete redraw ---------- */
 function frame(key,s,pose,outfit,k,seed){
-  const h=kit(rng(seed+k*7717)),L=layout(s,pose,k);if(pose==='rollover'||pose==='playdead')h.cy=GY+3;const _u=0,B=T(L.bT),HT=T(L.hT),hp=headPts(s),bp=bodyPts(s);
+  const h=kit(rng(seed+k*7717)),L=layout(s,pose,k);if(s.pup){h.setJ(s.pup===2?1.5:1.3);if(s.pup===2)newbornL(s,L)}if(pose==='rollover'||pose==='playdead')h.cy=GY+3;const _u=0,B=T(L.bT),HT=T(L.hT),hp=headPts(s),bp=bodyPts(s);
   const has=(slot)=>outfit&&outfit[slot]&&OUT[slot].includes(outfit[slot])?outfit[slot]:null;
   const body=has('body'),neck=has('neck'),hat=has('head'),eyes=has('eyes');
   if(body==='Superhero Cape')drawCape(h,s,L,B);
@@ -459,8 +498,10 @@ function frame(key,s,pose,outfit,k,seed){
   // neck: a short tube from the chest to the head, behind the body
   {const nb=B([s.body.rx*.62,-s.body.ry*.3]),nh=HT([-s.head.rx*.2,s.head.ry*.35]);if(L.pose==='eat'||L.pose==='jump'||L.pose==='sit'||L.pose==='sad'||s.neck)h.tube([nb,nh],s.head.rx*.7,s.col)}
   h.shape(bp.map(B),s.col,{step:s.body.long?14:11});h.crayon(s.body.rx,s.body.ry,B,s.col,s.body.long?16:12);
+  if(s.expecting&&BELLY.test(pose))drawBelly(h,s,L,B);
   if(s.marks)s.marks(h,B,HT,s);
   if(s.pat)s.pat.body(h,B,L);
+  if(s.spk)glitter(h,s,B,k,0);
   if(L.scrunch)[-.45,-.1,.25].forEach(x=>h.line([[s.body.rx*x,-s.body.ry*.85],[s.body.rx*(x+.06),0],[s.body.rx*x,s.body.ry*.85]].map(B),2.6));
   if(L.mud)drawMud(h,s,L,B,HT);
   if(body&&body!=='Superhero Cape')drawCoat(h,s,L,B,body);
@@ -468,9 +509,10 @@ function frame(key,s,pose,outfit,k,seed){
   drawHaunch(h,s,L,B);
   if(L.paw){h._legPass='raised';drawLegs(h,s,L);h._legPass='ground'}
   drawEars(h,s,L,HT,false);
-  h.shape(hp.map(HT),s.hcol,{step:s.fluff?30:11,amp:s.fluff?.8:1.2});h.crayon(s.head.rx,s.head.ry*.6,p=>HT([p[0],p[1]-s.head.ry*.3]),s.hcol,6);
+  {const hf=s.hfluff===undefined?s.fluff:s.hfluff;h.shape(hp.map(HT),s.hcol,{step:hf?30:11,amp:hf?.8:1.2})};h.crayon(s.head.rx,s.head.ry*.6,p=>HT([p[0],p[1]-s.head.ry*.3]),s.hcol,6);
   if(s.headMarks)s.headMarks(h,HT,s);
   if(s.pat)s.pat.head(h,HT,L);
+  if(s.spk)glitter(h,s,HT,k,1);
   if(L.mud){const hx=s.head.rx,hy=s.head.ry;h.shape(circ(-hx*.45,-hy*.45,hx*.18,hy*.15,7,.2).map(HT),'#7A4A22',{noline:1,ox:0,oy:0})}
   drawFace(h,s,L,HT);
   if(eyes&&pose!=='sleep')(eyes==='Explorer Goggles'?drawGoggles:drawGlasses)(h,s,L,HT);
@@ -486,8 +528,8 @@ Object.keys(SP).forEach(k=>{const s=SP[k],m=s.marks;if(!m)return;s.marks=(h,B,HT
 
 /* ---------- coat variants (v1.5A): recolour a breed spec; no coat = the original spec object ---------- */
 const HEX=/^#[0-9a-fA-F]{6}$/,EYE={blue:'#3FA9F5',amber:'#E2A23A',brown:null};
-function coated(key,coat,seed){
-  const S0=SP[key];if(!coat||typeof coat!=='object')return S0;
+function coated(key,coat,seed,S0){
+  S0=S0||SP[key];if(!coat||typeof coat!=='object')return S0;
   const c=k=>HEX.test(coat[k]||'')?coat[k]:null,base=c('base'),light=c('light'),dark=c('dark'),white=+coat.white||0,merle=!!coat.merle;
   const s=Object.assign({},S0);s.legs=Object.assign({},S0.legs);
   if(key==='mutt'){// Pepper: white dog with base-coloured patches when piebald; otherwise a solid base dog
@@ -524,17 +566,61 @@ function coated(key,coat,seed){
   }
   return s;
 }
+/* ---------- v2 looks: mixes, puppies, newborns (each returns a NEW spec; SP is never touched) ---------- */
+function lookOf(o){const c=o&&o.coat&&typeof o.coat==='object'&&o.coat.look&&typeof o.coat.look==='object'?o.coat.look:{},m=o&&o.mix,cm=c.mix;
+  const age=(o&&o.age)||c.age,head=(m&&typeof m==='object'?m.head:typeof m==='string'?m:null)||c.mixHead||(cm&&typeof cm==='object'?cm.head:null);
+  return{age:age==='puppy'||age==='newborn'?age:null,head:head&&SP[head]?head:null,sparkle:!!((o&&o.sparkle)||c.sparkle),expecting:!!((o&&o.expecting)||c.expecting)}}
+// head breed's skull, ears, muzzle and eyes on the body breed's body, legs and tail (coloured by the body palette)
+function mixSpec(bk,hk){
+  const B0=SP[bk],H0=SP[hk],s=Object.assign({},B0),hr=(B0.head.rx+H0.head.rx)/2/H0.head.rx,f=H0.face;
+  s.head={x:B0.head.x-(f.snoutL?(f.snoutL-1)*H0.head.rx*hr*.35:f.snout?6:0)+(B0.face.snoutL?8:B0.face.snout?6:0),y:B0.head.y+(H0.ears==='giant'||H0.ears==='bat'?4:0),rx:H0.head.rx*hr,ry:H0.head.ry*hr};
+  s.ears=H0.ears;s.eyes=H0.eyes.map(e=>e*Math.min(1.12,Math.max(.88,hr)));s.face=Object.assign({},f);
+  if(f.snout&&!B0.face.snout){const sl=f.snoutL||1.5;s.face.snoutL=1+(sl-1)*.72;if(f.nose)s.face.nose=[1+(f.nose[0]-1)*.72,f.nose[1]]}// a mix blends the long muzzle a littles.iris=H0.iris;s.hfluff=!!H0.fluff;
+  s.light=B0.light||H0.light;s.dark=B0.dark||H0.dark;s.hcol=B0.hcol;
+  s.ear=H0.ear?(H0.ear===H0.dark?s.dark:mix(B0.col===W?'#E8D2B8':B0.col,PEN,.3)):undefined;
+  s.marks=B0.marks;s.headMarks=H0.headMarks;s.mixHead=hk;
+  return s;
+}
+// puppy (62%) and newborn (42%): drawn at adult scale with puppy proportions, then scaled down by pupScale in dog()
+function pupSpec(S0,age){
+  const nb=age==='newborn',s=Object.assign({},S0),b=S0.body,hd=S0.head,lg=S0.legs,f=S0.face;
+  const BK=b.long?(nb?.62:.72):(nb?.84:.9),HK=(nb?1.2:1.3)*(b.deep?1.18:1),legK=nb?.32:(b.deep?.56:.5),leg=GY-(b.y+b.ry*.42);
+  s.body=Object.assign({},b,{rx:b.rx*BK,ry:b.ry*(b.deep?1.12:nb?1.08:1.04)});
+  s.body.y=GY-s.body.ry*.42-leg*legK;s.body.x=b.x+(b.long?6:2);
+  const rel=[hd.x-b.x,hd.y-b.y];
+  s.head={rx:hd.rx*HK,ry:hd.ry*HK*(f.snoutL?1.12:1.04),x:s.body.x+rel[0]*(b.long?.62:.86)-(f.snout?hd.rx*.3:0),y:s.body.y+rel[1]*(b.deep?.62:.92)-hd.ry*(HK-1)*.55};
+  s.legs=Object.assign({},lg,{h:lg.h*BK,f:lg.f*BK,w:lg.w*1.12});
+  s.eyes=S0.eyes.map(e=>Math.min(e*HK*1.18,hd.rx*HK*.3));
+  s.face=Object.assign({},f,{pupil:Math.min(.72,(f.pupil||.57)*1.12)});
+  if(f.snout){const sl=f.snoutL||1.5;s.face.snoutL=1+(sl-1)*.45;if(f.nose)s.face.nose=[1+(f.nose[0]-1)*.45,f.nose[1]]}
+  else if(f.nose)s.face.nose=[f.nose[0]*.92,f.nose[1]];
+  s.tsc=(S0.tsc||1)*(nb?.5:.78);s.pup=nb?2:1;s.pupScale=nb?.5:.7;
+  if(s.neck&&nb)s.neck=0;
+  // centre the puppy on x=120 by its standing extents (tail root to nose)
+  const l=s.body.x-s.body.rx-12,r=s.head.x+s.head.rx*(s.face.snoutL||1.05);s.pupDx=120-(l+r)/2;
+  return s;
+}
 /* ---------- public API ---------- */
 const POSES=['idle','happy','pet','eat','sleep','walk','jump','sit','sad','dirty','crouch','shake','cold','hot','dig','beg','squat','leglift','paw','down','rollover','playdead','speak','dance','bow','scratch','sniff','yawn','howl'];
+const NBSLEEP=/^(sleep|sad|cold|hot|playdead|rollover|yawn|crouch|scratch|dirty|shake)$/;
+function specFor(key,o){// the breed spec plus any v2 look; with no look this is exactly coated(key,coat,seed)
+  const lk=lookOf(o),hk=lk.head&&lk.head!==key?lk.head:null,nu=!!(lk.age||hk||lk.sparkle||lk.expecting);
+  if(!nu)return{s:coated(key,o&&o.coat,o&&o.seed),lk,nu};
+  let S0=SP[key];if(hk)S0=mixSpec(key,hk);if(lk.age)S0=pupSpec(S0,lk.age);
+  const s=Object.assign({},coated(key,o&&o.coat,o&&o.seed,S0));s.spk=lk.sparkle;s.expecting=lk.expecting&&lk.age!=='newborn';
+  return{s,lk,nu};
+}
 function dog(key,o={}){
-  key=SP[key]?key:'shiba';const s=coated(key,o&&o.coat,o&&o.seed);
-  const pose=POSES.includes(o.pose)?o.pose:'idle',anim=o.anim!==false,nF=anim?3:1,left=o.facing==='left';
+  key=SP[key]?key:'shiba';const SF=specFor(key,o),s=SF.s,lk=SF.lk;
+  let pose=POSES.includes(o.pose)?o.pose:'idle';const anim=o.anim!==false,nF=anim?3:1,left=o.facing==='left';
+  if(lk.age==='newborn')pose=NBSLEEP.test(pose)?'sleep':'down';
   const seed=hashS('pa'+key+pose)*5+3;
   const fr=[];const bb=[1e9,1e9,-1e9,-1e9];
   for(let k=0;k<nF;k++){const f=frame(key,s,pose,o.outfit,k,seed);fr.push(f);const b=f.h.bb;bb[0]=Math.min(bb[0],b[0]);bb[1]=Math.min(bb[1],b[1]);bb[2]=Math.max(bb[2],b[2]);bb[3]=Math.max(bb[3],b[3])}
-  // keep everything inside the canvas: shrink around the feet anchor if anything pokes out
-  const m=3,sc=Math.min(1,(GY-m)/(GY-bb[1]),(120-m)/(120-bb[0]),(240-m-120)/(bb[2]-120),bb[3]>GY?(199.5-GY)/(bb[3]-GY):1);
-  const fit=sc<.999?` transform="translate(120 ${GY}) scale(${sc.toFixed(3)}) translate(-120 -${GY})"`:'';
+  // keep everything inside the canvas: shrink around the feet anchor if anything pokes out (puppies: scale to size first)
+  const ps=s.pupScale||1,pdr=ps===1?0:(s.pupDx||0)*ps,pdx=left?-pdr:pdr,bx=ps===1?bb:[120+(bb[0]-120)*ps+pdr,GY+(bb[1]-GY)*ps,120+(bb[2]-120)*ps+pdr,GY+(bb[3]-GY)*ps];
+  const m=3,sc=Math.min(1,(GY-m)/(GY-bx[1]),(120-m)/(120-bx[0]),(240-m-120)/(bx[2]-120),bx[3]>GY?(199.5-GY)/(bx[3]-GY):1),tot=sc*ps;
+  const fit=tot<.999?` transform="translate(${pdx?R1(120+pdx*sc):120} ${GY}) scale(${tot.toFixed(3)}) translate(-120 -${GY})"`:'';
   const L0=fr[0].L,shx=pose==='sleep'?L0.bT.x+12:L0.bT.x+8,shw=(s.body.rx*(pose==='jump'?.7:1.15)+(pose==='sleep'?20:0));
   const shy=pose==='jump'?3.5:6;let hd='';for(let x=-shw+3;x<shw-2;x+=5.5){const t=x/shw,half=shy*Math.sqrt(Math.max(0,1-t*t));if(half<1)continue;hd+=`M${R1(shx+x)} ${R1(GY+1.5+half*.9)}l4 ${R1(-half*1.8)}`}
   const shadow=`<ellipse cx="${R1(shx)}" cy="${GY+1.5}" rx="${R1(shw)}" ry="${shy}" fill="${PEN}" opacity="${pose==='jump'?.06:.1}"/><path d="${hd}" stroke="${PEN}" stroke-width="1.3" stroke-linecap="round" opacity="${pose==='jump'?.25:.4}" fill="none"/>`;
@@ -543,16 +629,23 @@ function dog(key,o={}){
     const tx=f.h.texts.map(t=>{const x=left?240-t.x-t.size*.6*t.s.length:t.x;return `<text x="${R1(x)}" y="${R1(t.y)}" transform="rotate(${R1(left?-t.rt:t.rt)} ${R1(x)} ${R1(t.y)})" font-family="'Gloria Hallelujah',cursive" font-size="${t.size}" fill="${t.col}">${t.s}</text>`}).join('');
     frames+=`<g class="pa-d-f${k}">${left?`<g transform="translate(240 0) scale(-1 1)">${f.h.acc.join('')}</g>`:f.h.acc.join('')}${tx}</g>`;
   });
+  if(s.pup){const SW=s.pup===2?1.5:1.3;frames=frames.replace(/stroke-width="([\d.]+)"/g,(q,v)=>`stroke-width="${R1(v*SW)}"`).replace(/font-size="([\d.]+)"/g,(q,v)=>`font-size="${R1(v*1.35)}"`)}
+  let spk='';if(s.spk){const f=[120+(bx[0]-120)*sc,GY+(bx[1]-GY)*sc,120+(bx[2]-120)*sc,GY+(bx[3]-GY)*sc],fb=left?[240-f[2],f[1],240-f[0],f[3]]:f;spk=stars(hashS('spk'+key+pose+String(o.seed==null?'':o.seed)),fb,0,s.pup===2?6:s.pup?7:8)}
   const lab=`${s.name} the ${s.breed}, ${pose}`;
-  return `<svg class="pa-dog pa-pose-${pose}${anim?' pa-d-anim':''}" viewBox="0 0 240 200" role="img" aria-label="${lab}"><g${fit}>${left?`<g transform="translate(240 0) scale(-1 1)">${shadow}</g>`:shadow}${frames}</g></svg>`;
+  if(!SF.nu)return `<svg class="pa-dog pa-pose-${pose}${anim?' pa-d-anim':''}" viewBox="0 0 240 200" role="img" aria-label="${lab}"><g${fit}>${left?`<g transform="translate(240 0) scale(-1 1)">${shadow}</g>`:shadow}${frames}</g></svg>`;
+  const cls=(lk.age?' pa-d-'+lk.age:'')+(s.mixHead?' pa-d-mix':'')+(s.spk?' pa-d-sparkle':'')+(s.expecting?' pa-d-expecting':'');
+  return `<svg class="pa-dog pa-pose-${pose}${anim?' pa-d-anim':''}${cls}" viewBox="0 0 240 200" role="img" aria-label="${lab}${lk.age?', '+lk.age:''}${s.mixHead?' mix':''}"><g${fit}>${left?`<g transform="translate(240 0) scale(-1 1)">${shadow}</g>`:shadow}${frames}</g>${spk}</svg>`;
 }
 function dogHead(key,o={}){
-  key=SP[key]?key:'shiba';const s=coated(key,o&&o.coat,o&&o.seed),h=kit(rng(hashS('pahead'+key))),L=layout(s,'idle',0),HT=T(L.hT);
-  if(s.ears!=='giant')L.face.eyes=s.face.eyes;
-  drawEars(h,s,L,HT,false);h.shape(headPts(s).map(HT),s.hcol,{step:s.fluff?30:11});if(s.headMarks)s.headMarks(h,HT,s);if(s.pat)s.pat.head(h,HT,L);drawFace(h,s,L,HT);drawEars(h,s,L,HT,true);
+  key=SP[key]?key:'shiba';const SF=specFor(key,o),s=SF.s,h=kit(rng(hashS('pahead'+key))),L=layout(s,'idle',0),HT=T(L.hT);
+  if(s.ears!=='giant')L.face.eyes=s.face.eyes;if(s.pup===2){L.face.eyes='closed';L.ears='sleep';L.face.mouth='smile'}
+  if(s.pup)h.setJ(s.pup===2?1.25:1.15);
+  drawEars(h,s,L,HT,false);h.shape(headPts(s).map(HT),s.hcol,{step:(s.hfluff===undefined?s.fluff:s.hfluff)?30:11});if(s.headMarks)s.headMarks(h,HT,s);if(s.pat)s.pat.head(h,HT,L);drawFace(h,s,L,HT);drawEars(h,s,L,HT,true);
   let b=h.bb;if(/^(giant|bat)$/.test(s.ears)){const hd=s.head,c=HT([0,0]);b=[c[0]-hd.rx*1.25,c[1]-hd.ry*2.1,c[0]+hd.rx*1.25,c[1]+hd.ry*1.05]}else if(s.face.snoutL){const hd=s.head,c=HT([0,0]);b=[c[0]-hd.rx*1.25,c[1]-hd.ry*1.7,c[0]+hd.rx*1.75,c[1]+hd.ry*1.25]}
   const w=b[2]-b[0],ht=b[3]-b[1],sc=Math.min(86/w,86/ht),cx=(b[0]+b[2])/2,cy=(b[1]+b[3])/2;
-  return `<svg class="pa-dog-head" viewBox="0 0 100 100" overflow="hidden" role="img" aria-label="${s.name} the ${s.breed}"><g transform="translate(50 ${R1(50+ (ht*sc<80?4:0))}) scale(${sc.toFixed(3)}) translate(${R1(-cx)} ${R1(-cy)})">${h.acc.join('')}</g></svg>`;
+  if(!SF.nu)return `<svg class="pa-dog-head" viewBox="0 0 100 100" overflow="hidden" role="img" aria-label="${s.name} the ${s.breed}"><g transform="translate(50 ${R1(50+ (ht*sc<80?4:0))}) scale(${sc.toFixed(3)}) translate(${R1(-cx)} ${R1(-cy)})">${h.acc.join('')}</g></svg>`;
+  const spk=s.spk?stars(hashS('spkh'+key+String(o.seed==null?'':o.seed)),[12,10,88,64],3,5):'';
+  return `<svg class="pa-dog-head${SF.lk.age?' pa-d-'+SF.lk.age:''}${s.mixHead?' pa-d-mix':''}${s.spk?' pa-d-sparkle':''}" viewBox="0 0 100 100" overflow="hidden" role="img" aria-label="${s.name} the ${s.breed}"><g transform="translate(50 ${R1(50+ (ht*sc<80?4:0))}) scale(${sc.toFixed(3)}) translate(${R1(-cx)} ${R1(-cy)})">${h.acc.join('')}</g>${spk}</svg>`;
 }
 const css=`.pa-dog .pa-d-f1,.pa-dog .pa-d-f2{opacity:0}
 .pa-dog.pa-d-anim .pa-d-f0{animation:pa-d-b0 1s steps(1,end) infinite}
@@ -562,7 +655,11 @@ const css=`.pa-dog .pa-d-f1,.pa-dog .pa-d-f2{opacity:0}
 @keyframes pa-d-b1{0%{opacity:0}33.333%{opacity:1}66.666%{opacity:0}100%{opacity:0}}
 @keyframes pa-d-b2{0%{opacity:0}66.666%{opacity:1}100%{opacity:1}}
 html[data-motion="off"] .pa-dog *,.pa-still .pa-dog *{animation-play-state:paused!important}
-@media (prefers-reduced-motion: reduce){.pa-dog *{animation-play-state:paused!important}}`;
+@media (prefers-reduced-motion: reduce){.pa-dog *{animation-play-state:paused!important}}
+.pa-dog.pa-d-anim .pa-d-tw,.pa-dog-head .pa-d-tw{transform-box:fill-box;transform-origin:50% 50%;animation:pa-d-tw 1.6s ease-in-out infinite}
+@keyframes pa-d-tw{0%,100%{transform:scale(.5) rotate(-10deg);opacity:.35}50%{transform:scale(1.1) rotate(12deg);opacity:1}}
+[data-motion="off"] .pa-d-tw,.pa-still .pa-d-tw{animation:none!important;opacity:1}
+@media (prefers-reduced-motion: reduce){.pa-d-tw{animation:none!important}}`;
 if(typeof document!=='undefined'&&!document.getElementById('pawart-dogs-css')){const st=document.createElement('style');st.id='pawart-dogs-css';st.textContent=css;document.head.appendChild(st)}
 PA.dog=dog;PA.dogHead=dogHead;
 PA.DOGS=KEYS.map(k=>({key:k,name:SP[k].name,breed:SP[k].breed,personality:SP[k].personality,joke:SP[k].joke}));
