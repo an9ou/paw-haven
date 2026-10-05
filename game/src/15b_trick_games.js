@@ -95,8 +95,8 @@ function tgBegin(n, mode) {
   if (!TRN || TRN.game || busy) return; const d = D();
   if (S.sleeping) { nope(`${d.name} is asleep.`); return; }
   if (mode !== 'show') {
-    const f = focusNow(); if (f < TG_FOCUS) { trainLine(`${d.name}'s brain is full. Session over. Try again after a break or a nap.`, 'bad'); SFX.nope(); return; }
-    focusSet(f - TG_FOCUS); mode = trickSt(n).p >= TG_FADE ? 'hand' : 'lure';
+    const f = focusNow(); if (f < trainCost(d)) { trainLine(`${d.name}'s brain is full. Session over. Try again after a break or a nap.`, 'bad'); SFX.nope(); return; }
+    focusSet(f - trainCost(d)); mode = trickSt(n).p >= TG_FADE ? 'hand' : 'lure';
   }
   hideBubble(); idleStop(); SFX.click();
   const parts = n === 'Signature' ? (SIG_COMBO[d.key] || ['Sit', 'Spin', 'Bow']).slice() : [n];
@@ -271,7 +271,7 @@ function tgEnd(G, why) {
 }
 function tgApply(G, grade, acc, why) {
   const d = D(), n = G.n, st = trickSt(n), pers = PERS[d.key];
-  let gain = TG_GAIN[grade] * (pers === 'stubborn' ? 1.25 : 1) * (G.mode === 'hand' ? 1.3 : 1) * (owns('toys', 'Rubber Chicken') ? 1.25 : 1);
+  let gain = TG_GAIN[grade] * (pers === 'stubborn' ? 1.25 : 1) * (G.mode === 'hand' ? 1.3 : 1) * (owns('toys', 'Rubber Chicken') ? 1.25 : 1) * trainBoost(d); // v2: puppies learn x1.2
   const was = st.p; st.p = Math.min(1, st.p + gain); gain = st.p - was; markDirty();
   tgGrade(grade); TRN.held = true;
   if (grade !== 'Missed') {
@@ -285,7 +285,7 @@ function tgApply(G, grade, acc, why) {
     const line = why === 'fast' ? `Too fast! ${d.name} lost the scent.` : why === 'drop' ? `The treat fell twice. ${d.name} ate it anyway. No harm done.` : why === 'stop' ? 'Stopped. No harm done.' : PICK(TG_MISS).replace('{n}', d.name) + ` (${G.result.acc}% on the ${G.rhythm ? 'beat' : 'track'})`;
     trainLine(`Oops! ${line}`, 'bad');
   }
-  TRN.timers.push(setTimeout(() => { busy = false; if (!TRN) return; TRN.held = false; endPose(); if (focusNow() < TG_FOCUS) trainLine(`${d.name}'s brain is full after that one. Session over.`, 'bad'); renderTraining(); }, grade === 'Missed' ? 1300 : 1600));
+  TRN.timers.push(setTimeout(() => { busy = false; if (!TRN) return; TRN.held = false; endPose(); if (focusNow() < trainCost(d)) trainLine(`${d.name}'s brain is full after that one. Session over.`, 'bad'); renderTraining(); }, grade === 'Missed' ? 1300 : 1600));
   updateHUD(); renderTraining();
 }
 function tgGrade(grade) {

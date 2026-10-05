@@ -1,6 +1,7 @@
 /* ======================= FETCH ======================= */
 let F = null;
 function enterFetch(toy) {
+  const fb = fetchBlock(D()); if (fb) { nope(fb); go('yard'); return; } // v2: nursing mums
   setChrome(true, false);
   const fris = toy === 'Frisbee', proj = toy === 'Frisbee' ? art('prop', 'frisbee') : toy === 'Tennis Ball' ? art('prop', 'ball') : art('item', toy);
   F = { toy, fris, glow: toy === 'Glow Ball', stick: toy === 'Driftwood Stick', t: 35, score: 0, great: 0, throws: 0, coins: 0, fly: null, ended: false, raf: 0, last: performance.now(), dogX: 430, dogY: 500 };

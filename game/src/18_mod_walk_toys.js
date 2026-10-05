@@ -11,7 +11,7 @@ function enterWalkMod(area) {
   if (walk15 || dig1) { if (dig1 && S.outfit.head === 'Acorn Cap') { addStat('happy', 10); toast('Spinach power + Acorn Cap: digs are maxed, so +10 Happiness instead.', 'good'); } else toast(walk15 ? 'Carrot Crunchies power: +15 seconds on this walk!' : 'Spinach Scramble power: +1 dig on this walk!', 'good'); S.buff = null; markDirty(); }
   W = { mod: true, area, env: e, ended: false };
   const o = {
-    area, time: e.time, weather: e.weather, dog: dogForMod(), durationSec: R.secs + (walk15 ? 15 : 0), firstWalk,
+    area, time: e.time, weather: e.weather, dog: dogForMod(), durationSec: Math.round(R.secs * walkScale()) + (walk15 ? 15 : 0), firstWalk, // v2: 3 to 6 months x0.7
     skipTutorial: !!prefs.skipTut, setSkipTutorial: (v) => { prefs.skipTut = !!v; savePrefs(); },
     abilities: { extraDig: S.outfit.head === 'Acorn Cap' || dig1, goggles: S.outfit.eyes === 'Explorer Goggles', necklace: S.outfit.neck === 'Seashell Necklace', poncho: S.outfit.body === 'Mossy Poncho', clover: S.outfit.neck === 'Clover Collar', luckyPenny: S.outfit.charm === 'Lucky Penny', noseMul: noseMul(), raincoat: hasRaincoat(), rainHat: hasRainHat(), warm: isWarm() },
     rollTreasure: (ar) => {

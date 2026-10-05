@@ -20,6 +20,7 @@ let TRN = null; // training session
 function openTraining(tab) {
   if (cur.mode !== 'yard') go('yard');
   if (S.sleeping) { nope(`${NAME()} is asleep. Training can wait.`); return; }
+  const tb = trainBlock(D()); if (tb) { nope(tb); return; } // v2: under 2 months
   popDown(); clearCurl(); hideBubble();
   const avail = TRICKS.filter((t) => S.bond.level >= t.bond);
   TRN = TRN && TRN.dog === D().id ? TRN : { dog: D().id, trick: (avail.find((t) => trickSt(t.n).p < 1) || avail[0] || TRICKS[0]).n, tab: 'train', game: null, treats: 0, chain: 0, chainList: [], hinted: {}, timers: [] };
@@ -56,7 +57,7 @@ function renderTraining() {
     <div class="trrow trfocus"><span class="ic">${iconOr('focus', doodle('spark', 0, 0, 0.9))}</span><span>Focus</span><div class="prog"><i style="width:${f}%"></i></div><b>${f}</b></div>
     <div class="trbtns one">${ctl}</div>
     <p class="trline" id="trLine">${esc(tgHint(n, d, hand))}</p>
-    <p class="small">Each try costs ${TG_FOCUS} Focus. Treat bits: +${TRN.treats} Hunger this session (max 15). Keys: arrows move the treat, Space taps.</p>`
+    <p class="small">Each try costs ${trainCost()} Focus${isPup(D()) ? ' (short puppy attention span: 4 tries a session, but pups learn x1.2 faster)' : ''}. Treat bits: +${TRN.treats} Hunger this session (max 15). Keys: arrows move the treat, Space taps.</p>`
     : `<p class="small">Learned tricks on cue. Chain 3 in a row for a combo: coins (Learned 3, Mastered 5 each${PUBLIC_AUDIENCE.includes(S.place) ? ', <b>audience x2 here</b>' : ''}). Shows for coins today: ${(S.daily.showCoins || 0)}/10.</p>
     <div class="trshow">${learned.length ? learned.map((t) => `<button class="btn" data-show="${t.n}"><span class="ic">${sigIcon(t.n)}</span>${esc(tName(t.n))}<small>${tStage(trickSt(t.n))}</small></button>`).join('') : '<p>No learned tricks yet. Train one to 100% first!</p>'}</div>
     <p class="trline" id="trLine">${TRN.chain ? `Chain: ${TRN.chain}` : 'Tap a trick, then trace its hand signal (short version, no treat).'}</p>`;
