@@ -25,6 +25,10 @@ function clModeOf() { if (clArtifact()) return 'artifact'; if (navigator.webdriv
 function clLocal() { try { const s = JSON.parse(lsGet(SAVE_KEY) || 'null'); return s && s.v === 1 && (s.dog || (s.dogs && s.dogs.length)) ? s : null; } catch (e) { return null; } }
 function clDogId(d) { return d && d.dogs && d.dogs[0] ? d.dogs[0].id || null : null; }
 function clStrip(d) { return JSON.stringify(d, (k, v) => (k === 'lastReal' ? undefined : v)); }
+// what counts as a real change: the save without the fields the clock moves on its own (live check fix: a device where the
+// player only tapped through menus must not out-date another device's real progress)
+const CL_TICK_KEYS = new Set(['lastReal', 'gameMin', 'stats', 'lastOut', 'drainAt']); // drainAt: a per-page timer on yard messes
+function clFp(d) { try { return JSON.stringify(d, (k, v) => (CL_TICK_KEYS.has(k) ? undefined : v)); } catch (e) { return ''; } }
 function clSame(a, b) { try { return clStrip(a) === clStrip(b); } catch (e) { return false; } }
 function clDevice() {
   const u = navigator.userAgent || '';
@@ -38,7 +42,7 @@ function clMask(e) { const m = String(e || '').match(/^(.)[^@]*@(.+)$/); return 
 /* ---------- start-up ---------- */
 // hook from 00_core.js, after the local save is read (it runs often: only the first call does anything)
 function clOnLoaded() {
-  if (CL.inited) return; CL.inited = true;
+  if (CL.inited) return; CL.inited = true; CL.fp = clFp(clLocal());
   const mode = clModeOf(); CL.why = mode === 'on' ? '' : mode; CL.on = mode === 'on';
   const mark = () => { CL.inputAt = Date.now(); };
   window.addEventListener('pointerdown', mark, { capture: true, passive: true }); window.addEventListener('keydown', mark, { capture: true });
@@ -125,8 +129,8 @@ function clSub() {
 // hook from 00_core.js saveNow(), right after localStorage was written
 function clOnSaved() {
   if (!CL.on) return;
-  const changed = CL.inputAt > CL.savedAt; CL.savedAt = Date.now();
-  if (changed) { clMetaSet({ changedAt: Date.now() }); clSchedule(); }
+  const fp = clFp(clLocal()), changed = CL.inputAt > CL.savedAt && fp !== CL.fp; CL.savedAt = Date.now(); CL.fp = fp;
+  if (changed) { clMetaSet({ changedAt: Math.max(CL.inputAt, clMeta().changedAt || 0) }); clSchedule(); } // the time the player acted, not the autosave time: a device that only loaded or rolled over a day is never "newer"
   clNudge();
 }
 function clSchedule() { if (!CL.on || CL.timer) return; CL.timer = setTimeout(() => { CL.timer = null; clPush(); }, CL_CFG.pushMs); clStat(); }
@@ -215,7 +219,7 @@ function clApplySoon() {
 function clApply(data, row, msg) {
   CL.pending = null;
   if (!data || data.v !== 1 || !(data.dog || (data.dogs && data.dogs.length))) return false;
-  lsSet(SAVE_KEY, JSON.stringify(data));
+  lsSet(SAVE_KEY, JSON.stringify(data)); CL.fp = clFp(data);
   if (row) { const t = Date.parse(row.changed_at) || Date.now(); clMetaSet({ rev: row.rev, changedAt: t, pushedAt: t, dogId: clDogId(data) }); CL.lastSync = Date.now(); }
   CL.savedAt = Date.now();
   const onTitle = cur.mode === 'title' || cur.mode === 'adopt' || !cur.mode;

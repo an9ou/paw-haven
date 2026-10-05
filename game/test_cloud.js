@@ -217,6 +217,19 @@ run('cloud', async (t) => {
   use(d1); await t.closeX();
   ok(await until(d1, () => window.__paw.S.coins === 778, null, 5000), 'it applies once the game is idle');
 
+  sec('only real changes count (live-check fix): taps plus clock-only saves never out-date the other device');
+  const upA = srv.count(d1, 'saves.upsert');
+  await ev(d1, () => { window.dispatchEvent(new PointerEvent('pointerdown')); const S = window.__paw.S; S.gameMin = (S.gameMin || 0) + 7; S.dog.stats.happy = Math.max(0, S.dog.stats.happy - 3); window.__paw.saveNow(); });
+  await t.sleep(2600);
+  ok(srv.count(d1, 'saves.upsert') === upA, 'a tap followed by a clock-only save (gameMin, stats) is not pushed');
+  // device 1 last acted before device 2's change: a later autosave on device 1 (a day roll-over, say) must not win
+  await ev(d1, () => window.dispatchEvent(new PointerEvent('pointerdown'))); await t.sleep(300);
+  await change(d2, { coins: 779 }); ok(await until(d2, () => window.__pawCloud.status().state === 'synced', null, 6000), 'device 2 pushes 779 coins');
+  await ev(d1, () => { const S = window.__paw.S; S.mailGiftDay = 'roll-over-test'; window.__paw.saveNow(); });
+  await t.sleep(3500);
+  ok(srv.saves[g1].data.coins === 779, `the cloud keeps device 2's newer change (${srv.saves[g1].data.coins})`);
+  ok(await until(d1, () => window.__paw.S.coins === 779, null, 6000), 'device 1 ends up with device 2\'s change');
+
   sec('newer wins on pull, and the loser is backed up');
   srv.offline.add(d1);
   await change(d1, { coins: 111 }); await t.sleep(2600); // device 1 changes while offline: its push fails
