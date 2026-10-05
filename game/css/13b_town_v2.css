@@ -69,3 +69,17 @@
 .vzdog{width:200px;height:166px;flex:none}
 .vzdog svg{width:100%;height:100%}
 .visitcard p{margin:4px 0}
+
+/* v2.1: Gene Sniffer, painter */
+.sniffcard{display:flex;gap:16px;align-items:center}
+.sniff-art{width:200px;height:140px;flex:none}
+.sniffwave{animation:twwave 1s ease-in-out infinite}
+@keyframes twwave{50%{opacity:.25}}
+[data-motion="off"] .sniffwave{animation:none}
+.pbsniff{font-size:14px;margin:4px 0;padding:4px 8px;background:#E3F1D8;border-radius:6px;text-align:left}
+.painter{display:flex;gap:16px;align-items:center}
+.tw-easel{width:120px;height:150px;flex:none}
+.tw-easel svg{width:100%;height:100%}
+#easelG:hover>rect,#easelG:focus>rect{fill:rgba(242,143,165,.12)}
+.painter .vdogs{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 26px}
+.pbsniff .pbsl{font-weight:700}

@@ -70,6 +70,21 @@ function vetGeneTest(d) {
   toast(`${d.name} tolerated a cheek swab. ${PRd(d).He} would like it noted that ${PRd(d).he} was very brave.`, 'good');
 }
 
+/* ---------- vet: free sniff with the Gene Sniffer (v2.1) ---------- */
+function twSnifferArt() {
+  const raw = artReal('prop', 'sniffer');
+  return raw ? place(raw, 0, 0, 200, 140) : `<g fill="none" stroke="#5B3D32" stroke-width="4" stroke-linecap="round"><rect x="50" y="40" width="80" height="60" rx="12" fill="#CFE6F2"/><path d="M130 58 L176 48 L176 92 L130 82 Z" fill="#F2C14E" stroke-linejoin="round"/><circle cx="82" cy="70" r="14" fill="#FFFBF3"/><path d="M82 70 L90 60"/><path d="M184 56 q8 6 0 12 M184 74 q8 6 0 12" class="sniffwave"/></g>`;
+}
+function twVetSniff(d) {
+  if (d.geneTested) { vetGeneCard(d, false); return; }
+  if (!S.sniffer) { nope('You need the Gene Sniffer from Kibble Corner first.'); return; }
+  SFX.boop(700);
+  const p = openModal(`Sniffing: ${esc(d.name)}`, `<div class="sniffcard"><svg class="sniff-art" viewBox="0 0 200 140" aria-hidden="true">${twSnifferArt()}</svg><p>The Gene Sniffer hums over ${esc(d.name)}'s ears. ${esc(PRd(d).He)} holds very still. Mostly.</p></div>`, { cls: 'vetgene' });
+  d.geneTested = true; markDirty(); updateHUD();
+  setTimeout(() => { if ($('.sniffcard', modal) && !modal.hidden) { vetGeneCard(d, true); toast(`${d.name} was sniffed for free. ${PRd(d).He} thinks sniffing should be ${PRd(d).his} job.`, 'good'); } }, motionOff() ? 300 : 2000);
+  return p;
+}
+
 /* ---------- vet: spay / neuter ---------- */
 function fixBlock(d) {
   if (d.fixed) return d.sex === 'female' ? 'Already spayed' : 'Already neutered';
@@ -121,13 +136,14 @@ function vetScan(d) {
 function vetV2Options(d) {
   const blk = fixBlock(d), word = d.sex === 'female' ? 'Spay' : 'Neuter', preg = !!(d.preg && d.preg.due);
   return `<div class="vet2-grid">
-    <div class="vopt"><span class="vic">${iconOr('dna', '<path d="M-8 -14 C8 -6 -8 6 8 14 M8 -14 C-8 -6 8 6 -8 14" fill="none" stroke="#5B3D32" stroke-width="3"/>')}</span><b>Gene test</b><span class="small">${d.geneTested ? `Done. ${esc(d.name)}'s gene card is on file.` : `60 coins, once per dog. A cheek swab shows what ${esc(d.name)} carries in secret.`}</span><button class="btn ${d.geneTested ? '' : 'yes'}" id="vetGene">${d.geneTested ? 'See gene card' : 'Gene test (60)'}</button></div>
+    <div class="vopt"><span class="vic">${iconOr('dna', '<path d="M-8 -14 C8 -6 -8 6 8 14 M8 -14 C-8 -6 8 6 -8 14" fill="none" stroke="#5B3D32" stroke-width="3"/>')}</span><b>Gene test</b><span class="small">${d.geneTested ? `Done. ${esc(d.name)}'s gene card is on file.` : `60 coins, once per dog. A cheek swab shows what ${esc(d.name)} carries in secret.`}</span><button class="btn ${d.geneTested ? '' : 'yes'}" id="vetGene">${d.geneTested ? 'See gene card' : 'Gene test (60)'}</button>${S.sniffer && !d.geneTested ? '<button class="btn yes" id="vetSniff">Use your Gene Sniffer (free)</button>' : ''}</div>
     <div class="vopt"><span class="vic">${iconOr('heart', '<path d="M0 12 C-16 0 -12 -14 0 -6 C12 -14 16 0 0 12 Z" fill="#F28FA5" stroke="#5B3D32" stroke-width="2.5"/>')}</span><b>${word}</b><span class="small">${d.fixed ? `${esc(d.name)} is ${d.sex === 'female' ? 'spayed' : 'neutered'}. No seasons, no puppies, all the cuddles.` : 'Free. Permanent. Dr. Paws will explain everything gently.'}</span><button class="btn" id="vetFix" ${blk ? 'aria-disabled="true"' : ''}>${blk || `${word} (free)`}</button></div>
     ${preg ? `<div class="vopt"><span class="vic">${iconOr('nursery', '<circle r="12" fill="#CFE6F2" stroke="#5B3D32" stroke-width="2.5"/>')}</span><b>Expecting check-up</b><span class="small">Free for mums-to-be: a peek at the puppies on the ultrasound.</span><button class="btn yes" id="vetScan">Ultrasound</button></div>` : ''}
   </div>`;
 }
 function vetV2Bind(p, d) {
   const g = $('#vetGene', p); if (g) g.onclick = () => { SFX.click(); vetGeneTest(d); };
+  const sn = $('#vetSniff', p); if (sn) sn.onclick = () => { SFX.click(); twVetSniff(d); };
   const f = $('#vetFix', p); if (f) f.onclick = () => { SFX.click(); vetFix(d, p); };
   const s = $('#vetScan', p); if (s) s.onclick = () => vetScan(d);
 }
@@ -152,14 +168,27 @@ function npcReady(npc) {
   if (typeof canPair !== 'function') return mine.map((x) => `<li class="maybe">${esc(x.name)}: the vet will check on the day.</li>`).join('');
   return mine.map((x) => { let r = null; try { r = canPair(x, npc); } catch (e) { r = null; } const ok = !!(r && r.ok); return `<li class="${ok ? 'yes' : 'no'}">${ok ? '&#10003;' : '&#10007;'} ${esc(x.name)}${ok ? ' is ready' : r && r.why ? ': ' + esc(r.why) : ': not today'}</li>`; }).join('');
 }
+function npcTested(npc) { return !!(S && S.sniffed && npc && S.sniffed[npc.id]); }
+function twNpcSummary(n) {
+  const G = window.PawGenes; let r = null;
+  if (G && typeof G.describe === 'function' && n.genes) { try { r = G.describe(n.genes); } catch (e) { r = null; } }
+  if (r && r.summary) return String(r.summary);
+  return geneReport(n).summary;
+}
+function twSniffBlock(n) { return npcTested(n) ? `<p class="pbsniff"><span class="pbsl">Sniffed:</span> ${esc(twNpcSummary(n))}</p>` : ''; }
 function openPlayboard() {
   SFX.boop(640);
   const list = playboardDogs();
   const cards = list.map((n, i) => `<div class="pbcard" data-npc="${i}"><span class="pin" aria-hidden="true"></span><span class="pbdog">${dogSVG(n, { pose: i % 2 ? 'happy' : 'sit' })}</span>
     <b>${esc(n.name)} ${sexSym(n.sex)}</b><span class="desc">${esc(dogInfo(n.key).breed)} · ${n.sex === 'female' ? 'Girl' : 'Boy'} · ${esc(ageText(ageMonths(n)))}<br>${esc(n.coat)}${n.eyes ? `, ${esc(n.eyes)} eyes` : ''}<br><i>"${esc(n.line)}"</i><br><span class="small">Lives with ${esc(n.owner)}</span></span>
-    <ul class="pbready">${npcReady(n)}</ul><button class="btn yes" data-pd="${i}">Ask for a playdate</button></div>`).join('');
+    <ul class="pbready">${npcReady(n)}</ul><div class="pbsniffbox">${twSniffBlock(n)}</div>${S.sniffer && !npcTested(n) ? `<button class="btn" data-sniff="${i}">Sniff</button>` : ''}<button class="btn yes" data-pd="${i}">Ask for a playdate</button></div>`).join('');
   const p = openModal('Playdate Board', `<p class="small">New friends pinned up every day. Pick a partner, and Puppy Playdates does the rest. Nobody here is related to your dogs.</p><div class="pbgrid">${cards}</div>`, { cls: 'shop playboard' });
   p.querySelectorAll('[data-pd]').forEach((b) => { b.onclick = () => { SFX.click(); const npc = list[+b.dataset.pd]; if (typeof openPlaydates === 'function') openPlaydates({ npc }); else nope('Playdates open soon!'); }; });
+  p.querySelectorAll('[data-sniff]').forEach((b) => { b.onclick = () => {
+    const n = list[+b.dataset.sniff]; if (!S.sniffer || npcTested(n)) return;
+    SFX.boop(760); S.sniffed = S.sniffed || {}; S.sniffed[n.id] = localISO(); markDirty();
+    const card = b.closest('.pbcard'); card.querySelector('.pbsniffbox').innerHTML = twSniffBlock(n); b.remove();
+  }; });
   return p;
 }
 function playboardFB() {
@@ -178,10 +207,49 @@ function playboardSVG() {
   return `<g id="playboardG" class="hot" tabindex="0" role="button" aria-label="Playdate Board: meet today's dogs" transform="translate(${B.x} ${B.y}) scale(${(B.w / 300).toFixed(4)})"><rect width="300" height="220" fill="transparent"/>${inner}</g>`;
 }
 
+/* ---------- Town Square painter: Family Portrait (v2.1) ---------- */
+const twPortraitCost = 500;
+const twEaselAt = { x: 222, y: 250, w: 76, h: 95 }; // Town Square: between the fountain and the active dog, clear of the notice board and every pack spot
+function twEaselFB() {
+  return `<svg viewBox="0 0 160 200"><path d="M40 190 L70 40 M120 190 L90 40 M80 120 V196" stroke="#8A6248" stroke-width="8" stroke-linecap="round" fill="none"/><rect x="34" y="30" width="92" height="110" rx="4" fill="#FFFBF3" stroke="#5B3D32" stroke-width="5"/><circle cx="80" cy="80" r="22" fill="#E8C397" stroke="#5B3D32" stroke-width="3"/><circle cx="72" cy="76" r="3" fill="#5B3D32"/><circle cx="88" cy="76" r="3" fill="#5B3D32"/><path d="M70 90 q10 8 20 0" fill="none" stroke="#5B3D32" stroke-width="3"/></svg>`;
+}
+function twEaselSVG() {
+  const real = artReal('prop', 'easel'), E = twEaselAt;
+  return `<g id="easelG" class="hot" tabindex="0" role="button" aria-label="The town painter: Family Portrait" transform="translate(${E.x} ${E.y}) scale(${(E.w / 160).toFixed(4)})"><rect width="160" height="200" fill="transparent"/>${real ? place(real, 0, 0, 160, 200) : place(twEaselFB(), 0, 0, 160, 200)}</g>`;
+}
+function twOpenPainter() {
+  SFX.boop(600);
+  const old = S.portrait && Array.isArray(S.portrait.ids) ? S.portrait.ids : [], sel = new Set(old.filter((id) => dogById(id)).slice(0, 4));
+  if (!sel.size) S.dogs.slice(0, 4).forEach((x) => sel.add(x.id));
+  const chips = S.dogs.map((x) => `<button class="dchip tw-pick" data-tpick="${x.id}" aria-pressed="${sel.has(x.id)}" title="${esc(x.name)}">${headSVG(x)}<span>${esc(x.name)}</span></button>`).join('');
+  const p = openModal('Town painter', `<div class="painter"><span class="tw-easel">${twEaselSVGStandalone()}</span><div><p>"Family Portrait: ${twPortraitCost} coins. Hold still. Everyone. Even you, the one licking the easel."</p>
+    <p class="small">Pick up to 4 dogs. ${S.portrait ? 'A new portrait replaces the old one.' : 'It hangs in the yard as a Family Photo Frame.'} You have ${fmtC(S.coins)} coins.</p><div class="vdogs" role="group" aria-label="Who is in the portrait?">${chips}</div><p class="small" id="twPickNote"></p></div></div>`,
+    { cls: 'painterpop', foot: `<button class="btn no" id="twPaintNo">Not today</button><button class="btn yes big" id="twPaintGo">Paint (${twPortraitCost})</button>` });
+  const note = () => { $('#twPickNote', p).textContent = `${sel.size} of 4 picked.`; $('#twPaintGo', p).setAttribute('aria-disabled', sel.size ? 'false' : 'true'); };
+  p.querySelectorAll('[data-tpick]').forEach((b) => { b.onclick = () => {
+    const id = b.dataset.tpick; SFX.click();
+    if (sel.has(id)) sel.delete(id); else if (sel.size >= 4) { nope('The canvas only fits 4 dogs. The rest will be jealous.'); return; } else sel.add(id);
+    b.setAttribute('aria-pressed', String(sel.has(id))); note();
+  }; });
+  note();
+  $('#twPaintNo', p).onclick = () => { SFX.click(); closeModal(); };
+  $('#twPaintGo', p).onclick = () => {
+    if (!sel.size) { nope('Pick at least one dog first.'); return; }
+    if (S.coins < twPortraitCost) { nope('Not enough coins. The painter accepts coins, not exposure.'); return; }
+    S.coins -= twPortraitCost; SFX.kaching();
+    S.portrait = { date: localISO(), ids: S.dogs.filter((x) => sel.has(x.id)).map((x) => x.id) };
+    const name = 'Family Photo Frame';
+    S.decor = S.decor || {}; if (!S.decor[name]) { S.decor[name] = { got: localISO(), out: true }; markDirty(); emit('decor:new', { name }); }
+    markDirty(); updateHUD(); closeModal();
+    toast('The portrait is done. Nobody blinked. Well, one dog blinked.', 'gold');
+  };
+}
+function twEaselSVGStandalone() { const real = artReal('prop', 'easel'); return `<svg viewBox="0 0 160 200" aria-hidden="true">${real ? place(real, 0, 0, 160, 200) : place(twEaselFB(), 0, 0, 160, 200)}</svg>`; }
+
 /* ---------- rehomed visitors (Dog Park, Town Square, Pier, Café) ---------- */
 const VISIT_PLACES = ['dogpark', 'square', 'pier', 'cafe'];
 // used only when every pack spot of the place is taken (3 other dogs): solved against the furniture, the active dog and the place buttons
-const VISIT_EXTRA = { dogpark: [905, 432, 'left', 0.5], square: [572, 455, 'left', 0.46], pier: [578, 455, 'left', 0.46], cafe: [568, 455, 'left', 0.46] };
+const VISIT_EXTRA = { dogpark: [905, 432, 'left', 0.5], square: [572, 426, 'left', 0.46], pier: [578, 426, 'left', 0.46], cafe: [568, 426, 'left', 0.46] };
 const V2T = { rollPlace: null, visitor: null, line: '' };
 function visitorSpot() {
   const sp = typeof packSpots === 'function' ? packSpots() : [], used = Math.min(3, Math.max(0, S.dogs.length - 1));
@@ -205,7 +273,7 @@ function drawVisitor(v, greet) {
   const old = $('#visitorG', view); if (old) old.remove();
   host.insertAdjacentHTML('beforeend', visitorSVG(v));
   const g = $('#visitorG', view); g.onclick = () => openVisitor(v.id); g.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openVisitor(v.id); } };
-  V2T.line = `Look who it is! ${v.name} grew up!`;
+  V2T.line = `Look who it is! ${v.name} grew up!${v.sparkle ? ' ...and still sparkly!' : ''}`;
   if (greet) setTimeout(() => { if (cur.mode === 'yard' && $('#visitorG', view) && modal.hidden) { const [fx, fy, , sc] = visitorSpot(); say(V2T.line, fx, fy - 200 * sc, 3200); SFX.bark(BARK[v.key] || 1); } }, 900);
 }
 function openVisitor(id) {
@@ -229,8 +297,11 @@ function townV2Enter() {
   const svg = $('svg.world', view); if (!svg) return;
   if (S.place !== V2T.rollPlace) { V2T.rollPlace = S.place; V2T.visitor = null; if (VISIT_PLACES.includes(S.place)) { const v = rollVisitor(); if (v) { V2T.visitor = v.id; v.lastVisit = localISO(); markDirty(); V2T.greet = true; } } }
   if (S.place !== 'dogpark' && !VISIT_PLACES.includes(S.place)) return;
+  const squareTown = S.place === 'square';
   const pack = $('#pack', svg); if (!pack) return;
-  pack.insertAdjacentHTML('beforebegin', `<g id="townV2">${S.place === 'dogpark' ? playboardSVG() : ''}</g>`);
+  pack.insertAdjacentHTML('beforebegin', `<g id="townV2">${S.place === 'dogpark' ? playboardSVG() : ''}${squareTown ? twEaselSVG() : ''}</g>`);
+  const ez = $('#easelG', svg); if (ez) { ez.onclick = () => twOpenPainter(); ez.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); twOpenPainter(); } }; }
+  if (squareTown) { const pb = $('#placeBtns'); if (pb && !pb.querySelector('[data-pb3]')) { const home = pb.querySelector('[data-pb="yard"]'); const html = '<button class="btn yes" data-pb3="painter">Family Portrait</button>'; if (home) home.insertAdjacentHTML('beforebegin', html); else pb.insertAdjacentHTML('beforeend', html); pb.querySelector('[data-pb3]').onclick = () => twOpenPainter(); } }
   const b = $('#playboardG', svg); if (b) { b.onclick = () => openPlayboard(); b.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPlayboard(); } }; }
   if (S.place === 'dogpark') { const pb = $('#placeBtns'); if (pb && !pb.querySelector('[data-pb2]')) { const home = pb.querySelector('[data-pb="yard"]'); const html = '<button class="btn yes" data-pb2="playboard">Playdate board</button>'; if (home) home.insertAdjacentHTML('beforebegin', html); else pb.insertAdjacentHTML('beforeend', html); pb.querySelector('[data-pb2]').onclick = () => openPlayboard(); } }
   const v = V2T.visitor && (S.rehomed || []).find((x) => x.id === V2T.visitor);
@@ -243,8 +314,10 @@ function townV2Hooks() {
   if (!window.__paw) return;
   window.__paw.town = {
     boardDogs: (dk) => playboardDogs(dk || localISO()), openBoard: openPlayboard, geneReport: (id) => geneReport(dogById(id) || D()),
+    twOpenPainter, npcTested,
     visit: (id) => { const v = (S.rehomed || []).find((x) => x.id === id) || (S.rehomed || [])[0]; if (!v) return null; V2T.rollPlace = S.place; V2T.visitor = v.id; v.lastVisit = localISO(); markDirty(); if (cur.mode === 'yard') drawVisitor(v, true); return v.id; },
     get visitor() { return V2T.visitor; }, get line() { return V2T.line; }, spot: () => visitorSpot(), reroll: () => { V2T.rollPlace = null; }
   };
 }
+on('game:ready', () => { if (S && (!S.sniffed || typeof S.sniffed !== 'object')) S.sniffed = {}; });
 on('game:ready', townV2Hooks); setTimeout(townV2Hooks, 0);
