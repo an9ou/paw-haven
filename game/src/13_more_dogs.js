@@ -7,7 +7,12 @@ const capacity = () => HOUSE_CAP[S.house] || 1; // how many dogs the current hou
 const MAX_DOGS = 4; // v2 hard cap
 const topBond = () => (S && S.dogs ? Math.max(...S.dogs.map((d) => (d.bond && d.bond.level) || 1)) : 1);
 const dogById = (id) => S.dogs.find((d) => d.id === id) || null;
-const others = () => S.dogs.filter((d) => d.id !== S.activeId);
+/* v2.0.1: puppies under 3 months (not vaccinated yet) and nursing mums stay home: away from the yard/house they are not with the pack */
+const HOME_PLACES = ['yard', 'house'];
+function staysHome(d) { return !!d && (ageMonths(d) < 3 || (Array.isArray(S.litters) && S.litters.some((l) => l && l.mum === d.id))); }
+function awayFromHome(place) { return !!S && !HOME_PLACES.includes(place === undefined ? S.place : place); }
+function stayHomeLine(d) { return d && Array.isArray(S.litters) && S.litters.some((l) => l && l.mum === d.id) ? `${d.name} is nursing the pups and stays home for now. Home and yard only.` : `${d.name} hasn't had all puppy shots yet. Home and yard only until 3 months.`; }
+const others = () => S.dogs.filter((d) => d.id !== S.activeId && !(awayFromHome() && staysHome(d))); // the pack dogs that are here with you
 function hashId(s) { let h = 2166136261; s = String(s); for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
 function activeOf(s) { return s.dogs.find((d) => d.id === s.activeId) || s.dogs[0]; }
 function dogDefaults(d, s) {
@@ -70,6 +75,7 @@ function moodOf(d) { const lo = Math.min(...Object.values(d.stats)); return lo <
 function switchDog(id, opts = {}) {
   const d = dogById(id); if (!d || id === S.activeId) return;
   if (busy) { nope(`Hold on, ${NAME()} is busy.`); return; }
+  if (awayFromHome() && staysHome(d)) { nope(`${d.name} is at home. ${stayHomeLine(d)}`); return; }
   S.activeId = id; markDirty(); hudDogKey = ''; dogKey = ''; SFX.boop(760);
   if (cur.mode === 'yard') { go('yard'); setTimeout(() => { const fx = $('#dogFx'); if (fx) { fx.classList.remove('tk-bounce'); void fx.getBBox(); fx.classList.add('tk-bounce'); } const h = dogHeadWorld(); say(PICK([`${d.name} reporting for duty.`, `${d.name}'s turn! ${PRd(d).He} has been waiting politely. Ish.`, `${d.name} steps up.`]), h.x, h.y, 1800); }, 60); }
   else { setHudDog(); updateHUD(); }
@@ -120,7 +126,7 @@ function renderDogChips() {
   wrap.querySelectorAll('[data-dog]').forEach((b) => { b.onclick = () => switchDog(b.dataset.dog); });
   const md = $('#hudMood'); if (md) md.className = 'mood ' + moodOf(D());
 }
-function chipsKey() { return S.dogs.map((d) => d.id + d.name + d.sex + moodOf(d) + (d.id === S.activeId ? '*' : '')).join('|') + '|' + (S.title || ''); }
+function chipsKey() { return S.dogs.map((d) => d.id + d.name + d.sex + moodOf(d) + (d.id === S.activeId ? '*' : '') + (awayFromHome() && staysHome(d) ? 'h' : '')).join('|') + '|' + (S.title || ''); }
 
 /* ---- Feed all ---- */
 function feedAllFood() { const meals = FOOD.filter((f) => f.n !== 'Fresh Water' && !SNACKS.includes(f.n) && (S.inv.food[f.n] || 0) > 0); meals.sort((a, b) => S.inv.food[b.n] - S.inv.food[a.n]); return meals[0] || null; }
@@ -148,7 +154,7 @@ function feedAll() {
 const SPOT_RULES = [null, null,
   { bond: 3, dogs: 1, days: 0, fits: 2, house: null },
   { bond: 8, dogs: 2, days: 21, fits: 3, house: 'Treehouse Den' },
-  { bond: 10, dogs: 3, days: 45, fits: 4, house: 'Royal Castle Kennel' }];
+  { bond: 10, dogs: 3, days: 60, fits: 4, house: 'Royal Castle Kennel' }];
 const SPOT_ORD = ['', '1st', '2nd', '3rd', '4th'];
 const SPOT_TOAST = { 2: 'A 2nd dog spot is open! Visit the Shelter on the Map to bring home a friend.', 3: 'A 3rd dog spot is open! The Treehouse Den has room for one more.', 4: 'A 4th dog spot is open! The Royal Castle Kennel has room for the whole pack.' };
 function spotsInit() {

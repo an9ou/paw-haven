@@ -60,6 +60,30 @@ require('./test_lib').run('v2_journal', async (t) => {
   await t.closeX(); await t.modalGone();
   ok(await ev(() => window.__paw.S.mail.every((m) => m.read || m.kind !== 'litter')), 'opened letters are marked read');
 
+  sec('v2.0.1: the mailbox centre is clickable through the dog box, petting still works on the dog');
+  await ev(() => window.__paw.idle.speed(50)); // no idle walk-offs while we measure
+  const mbOverlap = () => t.until(() => {
+    const mb = document.querySelector('#mailboxG'), hit = document.getElementById('dogHit'); if (!mb || !hit) return false;
+    const r = mb.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    if (document.elementFromPoint(cx, cy) !== hit) return false;
+    hit.style.pointerEvents = 'none'; const under = document.elementFromPoint(cx, cy); hit.style.pointerEvents = '';
+    return !!under && mb.contains(under);
+  }, null, 6000);
+  ok(await mbOverlap(), "the dog's hit box covers the mailbox centre (the overlap that used to swallow clicks)");
+  const mbB = await p.locator('#mailboxG').boundingBox(); await p.mouse.click(mbB.x + mbB.width / 2, mbB.y + mbB.height / 2);
+  ok(await p.waitForSelector('.panel.mailbox', { timeout: 4000 }).then(() => true, () => false), 'clicking the mailbox centre opens the Mailbox');
+  await t.closeX(); await t.modalGone();
+  await t.patch({ stats: { happy: 50 } });
+  const dogPt = await ev(() => { // a point where the dog itself is painted
+    const hit = document.getElementById('dogHit'), r = hit.getBoundingClientRect(); hit.style.pointerEvents = 'none'; let pt = null;
+    for (let fy = 0.5; fy < 0.95 && !pt; fy += 0.1) for (let fx = 0.3; fx < 0.75 && !pt; fx += 0.1) { const x = r.left + r.width * fx, y = r.top + r.height * fy, el = document.elementFromPoint(x, y); if (el && el.closest('#dogArt')) pt = [x, y]; }
+    hit.style.pointerEvents = ''; return pt;
+  });
+  ok(!!dogPt, 'found a painted point on the dog');
+  if (dogPt) { await p.mouse.click(dogPt[0], dogPt[1]); ok(await t.until(() => window.__paw.S.stats.happy > 50, null, 3000), 'a tap on the dog still pets (+Happiness)'); }
+  ok(await ev(() => document.getElementById('modal').hidden), 'petting the dog does not open the Mailbox');
+  await ev(() => window.__paw.idle.speed(1));
+
   sec('dev: Mail deliver now');
   await t.dev(async () => { ok(await p.locator('#dvMail').count() === 1, 'dev panel has "Mail: deliver now"'); await p.click('#dvMail'); ok(await t.waitToast(/Delivered/), 'deliver now works'); });
 
