@@ -5,7 +5,8 @@ const MAIL_MAX = 40;
 const isoDay = (iso) => (/^\d{4}-\d{2}-\d{2}/.test(String(iso || '')) ? String(iso).slice(0, 10) : localISO());
 const isoAdd = (iso, n) => { const d = new Date(isoDay(iso) + 'T00:00:00'); d.setDate(d.getDate() + n); return localISO(d); };
 const isoDays = (a, b) => Math.round((new Date(isoDay(b) + 'T00:00:00') - new Date(isoDay(a) + 'T00:00:00')) / 864e5); // b - a in days
-const shortFam = (f) => String(f || 'a town family').split(/ (?:by|at|near|on|from|in) /)[0];
+const mailFamName = (f) => (f && typeof f === 'object' ? (f.where ? f.name + ' ' + f.where : f.name) : f) || 'a town family'; // BREED stores {id,name,where}
+const shortFam = (f) => String(f && typeof f === 'object' ? f.name || 'a town family' : f || 'a town family').split(/ (?:by|at|near|on|from|in) /)[0];
 const capFirst = (s) => String(s).charAt(0).toUpperCase() + String(s).slice(1);
 // pronouns for any dog record: home dogs go through PRd, other records use their sex
 function prOf(d) {
@@ -103,7 +104,7 @@ function cardSched(r) {
   return c;
 }
 function postcardFor(r) {
-  const p = prOf(r), fam = r.family || 'a town family', c = S.mailCards[r.id], i = (hashId(r.id) + c.n * 7) % CARD_LINES.length;
+  const p = prOf(r), fam = mailFamName(r.family), c = S.mailCards[r.id], i = (hashId(r.id) + c.n * 7) % CARD_LINES.length;
   const pose = CARD_POSES[(hashId(r.id) + c.n * 3) % CARD_POSES.length];
   const dog = { id: r.id, key: r.key, genes: r.genes, born: r.born, mix: r.mix || null, sparkle: !!r.sparkle, sex: r.sex, name: r.name, coat: r.coat, eyes: r.eyes };
   return { kind: 'postcard', from: `${r.name} & ${shortFam(fam)}`, title: c.n === 0 ? `${r.name} has settled in!` : `A postcard from ${r.name}`, text: (c.n === 0 ? `${r.name} made it home with ${fam}. ${p.He} has already claimed the best spot on the sofa. ` : '') + CARD_LINES[i](r.name, p), ps: CARD_PS[(hashId(r.id) + c.n) % CARD_PS.length], dog, pose, pup: r.id };
@@ -190,7 +191,7 @@ function openMailbox(selId) {
     b.onclick = () => {
       if (typeof adoptPick !== 'function') { nope('The puppy paperwork is still at the printer. Try again soon.'); return; }
       const id = b.dataset.adoptpick; let r; try { r = adoptPick(id); } catch (e) { console.warn('adoptPick', e); }
-      const m = S.mail.find((x) => x.id === id); if (m && r === true) m.adopted = true;
+      const m = S.mail.find((x) => x.id === id); if (m && r) m.adopted = true;
       markDirty(); if (!modal.hidden && $('.panel.mailbox', modal)) openMailbox(id);
     };
   });

@@ -1,0 +1,178 @@
+<title>Paw Haven Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: sketchbook control desk — summary strip, release tabs, agent cards on the left, request queue pinned on the right */
+:root {
+  --paper: #FFFBF3; --card: #FFFFFF; --ink: #3E2A22; --pencil: #5B3D32; --muted: #8A766B; --line: #E6D7C3;
+  --pink: #E07A93; --pink-soft: #FBE3E9; --mint: #DDF1E4; --mint-ink: #2F6B45; --honey: #FBEBC7; --honey-ink: #7A5410;
+  --sky: #DDEBF8; --sky-ink: #2D5683; --rose: #F9DADA; --rose-ink: #8E2F2F;
+  --f-display: 'Caveat', 'Comic Sans MS', cursive; --f-body: 'Atkinson Hyperlegible', system-ui, sans-serif; --f-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: #1F1916; --card: #2A221E; --ink: #F3E9DF; --pencil: #E2CBBB; --muted: #A8968A; --line: #44372F;
+  --pink: #F28FA5; --pink-soft: #4A2A33; --mint: #20392A; --mint-ink: #9ED9B2; --honey: #43361A; --honey-ink: #F0CF86;
+  --sky: #1E3047; --sky-ink: #A9CBF0; --rose: #4A2525; --rose-ink: #F1AAAA; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --paper: #1F1916; --card: #2A221E; --ink: #F3E9DF; --pencil: #E2CBBB; --muted: #A8968A; --line: #44372F;
+  --pink: #F28FA5; --pink-soft: #4A2A33; --mint: #20392A; --mint-ink: #9ED9B2; --honey: #43361A; --honey-ink: #F0CF86;
+  --sky: #1E3047; --sky-ink: #A9CBF0; --rose: #4A2525; --rose-ink: #F1AAAA; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--paper); color: var(--ink); font: 15px/1.5 var(--f-body);
+  background-image: radial-gradient(var(--line) 1px, transparent 1.2px); background-size: 22px 22px; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-inline: 20px; padding-block: 22px 48px; display: grid; gap: 20px }
+header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px }
+h1 { font: 700 2.6rem/1 var(--f-display); margin: 0; color: var(--pencil); text-wrap: balance }
+h1 small { display: block; font: 400 .9rem/1.4 var(--f-body); color: var(--muted); margin-top: 6px }
+h2 { font: 700 1.7rem/1.1 var(--f-display); margin: 0; color: var(--pencil) }
+.strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px }
+.stat { background: var(--card); border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 14px; display: grid; gap: 2px }
+.stat b { font: 600 1.5rem/1.1 var(--f-mono); font-variant-numeric: tabular-nums }
+.stat span { font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted) }
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start }
+@media (max-width: 900px) { .main { grid-template-columns: minmax(0, 1fr) } }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px }
+.tab { font: 600 .9rem var(--f-body); border: 1.5px solid var(--line); background: var(--card); color: var(--ink); border-radius: 999px; padding: 5px 14px; cursor: pointer }
+.tab[aria-selected="true"] { background: var(--pencil); color: var(--paper); border-color: var(--pencil) }
+.tab:focus-visible, button:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2.5px solid var(--pink); outline-offset: 2px }
+.rel { display: grid; gap: 14px }
+.relhead { display: grid; gap: 4px }
+.relhead p { margin: 0; max-width: 70ch; color: var(--ink) }
+.meta { color: var(--muted); font-size: .85rem }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px }
+.agent { background: var(--card); border: 1.5px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 8px; align-content: start; min-width: 0 }
+.agent .row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px }
+.agent h3 { font: 700 1.45rem/1 var(--f-display); margin: 0 auto 0 0; color: var(--pencil) }
+.agent p { margin: 0; font-size: .92rem }
+.nums { display: flex; flex-wrap: wrap; gap: 14px; font: .8rem var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums }
+.pill { font: 600 .72rem/1 var(--f-body); letter-spacing: .04em; text-transform: uppercase; border-radius: 999px; padding: 4px 9px; white-space: nowrap }
+.p-done { background: var(--mint); color: var(--mint-ink) } .p-run { background: var(--sky); color: var(--sky-ink) }
+.p-queued { background: var(--honey); color: var(--honey-ink) } .p-fail { background: var(--rose); color: var(--rose-ink) }
+.p-opus { background: var(--pink-soft); color: var(--pink) } .p-sonnet { background: var(--sky); color: var(--sky-ink) }
+.tests { font-size: .85rem; background: var(--paper); border-radius: 8px; padding: 6px 10px; border: 1px dashed var(--line) }
+details { font-size: .86rem } summary { cursor: pointer; color: var(--pencil); font-weight: 700 }
+details ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 3px }
+code, .mono { font-family: var(--f-mono); font-size: .8rem; overflow-wrap: anywhere }
+aside.queue { background: var(--card); border: 1.5px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 12px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px) }
+.qform { display: grid; gap: 8px }
+textarea { width: 100%; min-height: 72px; resize: vertical; font: inherit; color: var(--ink); background: var(--paper); border: 1.5px solid var(--line); border-radius: 8px; padding: 8px 10px }
+.btn { font: 700 .9rem var(--f-body); background: var(--pink); color: #fff; border: 0; border-radius: 8px; padding: 8px 14px; cursor: pointer; justify-self: start }
+.btn[disabled] { opacity: .5; cursor: not-allowed }
+.qlist { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px }
+.qitem { border-left: 4px solid var(--line); padding: 6px 0 6px 10px; display: grid; gap: 3px }
+.qitem.queued { border-color: var(--honey-ink) } .qitem.in-progress { border-color: var(--sky-ink) } .qitem.done { border-color: var(--mint-ink); opacity: .75 }
+.qitem p { margin: 0; font-size: .9rem; overflow-wrap: anywhere }
+.qitem .meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center }
+.note { font-size: .82rem; color: var(--muted) }
+.empty { color: var(--muted); font-size: .9rem; border: 1.5px dashed var(--line); border-radius: 10px; padding: 14px }
+.issues { background: var(--card); border: 1.5px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 8px }
+.issues ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: .9rem }
+.issues li b { color: var(--pencil) }
+@media (prefers-reduced-motion: no-preference) { .agent { transition: transform .15s } .agent:hover { transform: rotate(-.3deg) } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1>Paw Haven Studio<small>What every build agent did, version by version, plus your request queue.</small></h1>
+    <span class="meta" id="sync">Connecting to the studio log…</span>
+  </header>
+
+  <section class="strip" id="strip" aria-label="Summary">
+    <div class="stat"><b id="sRel">–</b><span>Latest version</span></div>
+    <div class="stat"><b id="sAgents">–</b><span>Agents this version</span></div>
+    <div class="stat"><b id="sMins">–</b><span>Agent minutes (parallel)</span></div>
+    <div class="stat"><b id="sQueue">–</b><span>Requests waiting</span></div>
+  </section>
+
+  <div class="main">
+    <div class="rel">
+      <div class="tabs" role="tablist" id="tabs" aria-label="Versions"></div>
+      <div class="relhead" id="relhead"><div class="empty">Versions appear here once Claude logs a build.</div></div>
+      <div class="grid" id="agents"></div>
+      <section class="issues" id="issues" hidden><h2>Open issues from this version</h2><ul id="issueList"></ul></section>
+    </div>
+
+    <aside class="queue" aria-labelledby="qh">
+      <h2 id="qh">Request queue</h2>
+      <p class="note">Ask in the chat any time, even while Claude is building; it gets added here. You can also add a request below. Claude checks this list each time it finishes a step.</p>
+      <form class="qform" id="qform">
+        <label for="qtext" class="note">New request</label>
+        <textarea id="qtext" maxlength="1200" placeholder="e.g. Make the greyhound puppy's ears floppier"></textarea>
+        <button class="btn" id="qadd" type="submit">Add to queue</button>
+        <span class="note" id="qmsg" role="status"></span>
+      </form>
+      <ul class="qlist" id="qlist"><li class="empty">No requests yet.</li></ul>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function () {
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  let releases = [], agents = [], queue = [], sel = null, db = null;
+  try { sel = localStorage.getItem('pawstudio.sel'); } catch (e) {}
+  const pillFor = (s) => ({ done: 'p-done', running: 'p-run', queued: 'p-queued', failed: 'p-fail', 'in-progress': 'p-run' }[s] || 'p-queued');
+  const label = (s) => ({ done: 'Done', running: 'Running', queued: 'Queued', failed: 'Failed', 'in-progress': 'In progress' }[s] || s);
+  const fmtK = (n) => n >= 1000 ? Math.round(n / 1000) + 'k' : String(n || 0);
+
+  function render() {
+    releases.sort((a, b) => (b.order || 0) - (a.order || 0));
+    if (!sel || !releases.some((r) => r.id === sel)) sel = releases[0] ? releases[0].id : null;
+    const latest = releases[0];
+    $('#sRel').textContent = latest ? latest.v : '–';
+    const rAgents = agents.filter((a) => a.release === sel).sort((a, b) => (a.order || 0) - (b.order || 0));
+    $('#sAgents').textContent = sel ? rAgents.length : '–';
+    const mins = rAgents.reduce((m, a) => Math.max(m, a.minutes || 0), 0);
+    $('#sMins').textContent = rAgents.length ? Math.round(mins) + ' min' : '–';
+    const waiting = queue.filter((q) => q.status !== 'done').length;
+    $('#sQueue').textContent = String(waiting);
+
+    $('#tabs').innerHTML = releases.map((r) => `<button class="tab" role="tab" data-r="${esc(r.id)}" aria-selected="${r.id === sel}">${esc(r.v)}</button>`).join('');
+    document.querySelectorAll('[data-r]').forEach((b) => b.onclick = () => { sel = b.dataset.r; try { localStorage.setItem('pawstudio.sel', sel); } catch (e) {} render(); });
+
+    const r = releases.find((x) => x.id === sel);
+    $('#relhead').innerHTML = r ? `<h2>${esc(r.title)}</h2><p>${esc(r.summary)}</p><span class="meta">${esc(r.date || '')} · <span class="pill ${pillFor(r.status)}">${label(r.status)}</span>${r.tests ? ' · ' + esc(r.tests) : ''}</span>` : '<div class="empty">Versions appear here once Claude logs a build.</div>';
+
+    $('#agents').innerHTML = rAgents.map((a) => `<article class="agent">
+      <div class="row"><h3>${esc(a.lane)}</h3><span class="pill ${a.model === 'Opus' ? 'p-opus' : 'p-sonnet'}">${esc(a.model)}</span><span class="pill ${pillFor(a.status)}">${label(a.status)}</span></div>
+      <div class="nums"><span>${a.minutes ? Math.round(a.minutes) + ' min' : '–'}</span><span>${fmtK(a.tokens)} tokens</span><span>${a.tools || 0} tool calls</span></div>
+      <p>${esc(a.summary)}</p>
+      ${a.tests ? `<div class="tests"><b>Tests:</b> ${esc(a.tests)}</div>` : ''}
+      ${a.files && a.files.length ? `<details><summary>Files (${a.files.length})</summary><ul>${a.files.map((f) => `<li><code>${esc(f)}</code></li>`).join('')}</ul></details>` : ''}
+      ${a.issues && a.issues.length ? `<details><summary>Open issues (${a.issues.length})</summary><ul>${a.issues.map((f) => `<li>${esc(f)}</li>`).join('')}</ul></details>` : ''}
+    </article>`).join('') || (sel ? '<div class="empty">No agents logged for this version.</div>' : '');
+
+    const iss = rAgents.flatMap((a) => (a.issues || []).map((t) => ({ lane: a.lane, t })));
+    $('#issues').hidden = !iss.length;
+    $('#issueList').innerHTML = iss.map((i) => `<li><b>${esc(i.lane)}:</b> ${esc(i.t)}</li>`).join('');
+
+    const qs = queue.slice().sort((a, b) => ({ 'in-progress': 0, queued: 1, done: 2 }[a.status] ?? 1) - ({ 'in-progress': 0, queued: 1, done: 2 }[b.status] ?? 1) || String(a.created).localeCompare(String(b.created)));
+    $('#qlist').innerHTML = qs.length ? qs.map((q) => `<li class="qitem ${esc(q.status)}"><p>${esc(q.text)}</p><span class="meta"><span class="pill ${pillFor(q.status)}">${label(q.status)}</span><span>${esc((q.created || '').slice(0, 16).replace('T', ' '))}</span><span>${q.from === 'page' ? 'added here' : 'from chat'}</span></span>${q.note ? `<span class="note">${esc(q.note)}</span>` : ''}</li>`).join('') : '<li class="empty">No requests yet.</li>';
+  }
+
+  render();
+
+  (async () => {
+    db = await (window.claude && window.claude.use ? window.claude.use('db') : null);
+    if (!db) { $('#sync').textContent = 'Studio log unavailable in this view.'; $('#qadd').disabled = true; return; }
+    $('#sync').textContent = 'Live';
+    const err = () => { $('#sync').textContent = 'Live updates paused. Reload to reconnect.'; };
+    db.collection('releases').onSnapshot((s) => { releases = s.docs.map((d) => Object.assign({ id: d.id }, d.data())); render(); }, err);
+    db.collection('agents').onSnapshot((s) => { agents = s.docs.map((d) => Object.assign({ id: d.id }, d.data())); render(); }, err);
+    db.collection('queue').onSnapshot((s) => { queue = s.docs.map((d) => Object.assign({ id: d.id }, d.data())); render(); }, err);
+  })();
+
+  $('#qform').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const text = $('#qtext').value.trim(); if (!text || !db) return;
+    $('#qadd').disabled = true; $('#qmsg').textContent = 'Adding…';
+    try {
+      await db.collection('queue').add({ text, status: 'queued', from: 'page', created: new Date().toISOString() });
+      $('#qtext').value = ''; $('#qmsg').textContent = 'Added. Claude picks it up at the next check.';
+    } catch (er) {
+      $('#qmsg').textContent = er && er.code === 'invalid_argument' ? 'You can view this queue but not add to it.' : 'Could not add it right now. Try again in a moment.';
+    } finally { $('#qadd').disabled = false; }
+  });
+})();
+</script>

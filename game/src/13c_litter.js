@@ -42,7 +42,7 @@ function brBirth(dam) {
 }
 function brPupCard(pp, i, named) {
   const P = brPR(pp);
-  return `<div class="lt-card ${pp.sparkle ? 'sparkly' : ''}" style="--i:${i}">${pp.sparkle ? '<span class="lt-spark">Sparkle!</span>' : ''}<span class="lt-art">${dogSVG(pp, { pose: 'sleep' })}</span>
+  return `<div class="lt-card ${pp.sparkle ? 'sparkly' : ''}" style="--i:${i}">${pp.sparkle ? '<span class="lt-spark">Sparkle!</span>' : ''}<span class="lt-art">${pupArt(pp, { pose: 'sleep' })}</span>
     <span class="lt-sx">${sexSym(pp.sex)} ${pp.sex === 'female' ? 'Girl' : 'Boy'}</span><span class="small">${esc(pp.mix ? pp.mix.name : brBreed(pp.key))}<br>${esc(pp.coat)}, ${esc(pp.eyes)} eyes</span>
     ${named ? `<b>${esc(pp.name)}</b>` : `<label class="lt-name"><span class="sr">Name for pup ${i + 1}</span><input class="namebox" maxlength="16" data-pupname="${pp.id}" value="${esc(pp.name)}" aria-label="Name for the ${P.boy} pup"></label>`}</div>`;
 }
@@ -75,9 +75,15 @@ function brBasketArt() {
     <path d="M22 140q14 6 28 0M62 148q14 6 28 0M104 152q14 6 28 0M146 154q14 6 28 0M188 152q14 6 28 0M230 148q14 6 28 0M270 140q14 6 28 0" fill="none" stroke-width="2"/>
     <rect x="232" y="84" width="62" height="30" rx="14" fill="#CFE6F7" transform="rotate(-8 263 99)"/></g></svg>`;
 }
+// Crop the 240x200 dog canvas around small puppies so they fill their card or basket slot
+function pupArt(pp, o) {
+  const sv = dogSVG(pp, o), L = typeof dogLook === 'function' ? dogLook(pp) : null, age = L && L.age;
+  const vb = age === 'newborn' ? '55 112 130 82' : age === 'puppy' ? '38 58 164 136' : null;
+  return vb ? sv.replace('viewBox="0 0 240 200"', `viewBox="${vb}"`) : sv;
+}
 function brNurserySVG(L) {
   const pups = L.pups.slice(0, 3), n = pups.length, xs = n === 1 ? [125] : n === 2 ? [92, 160] : [66, 124, 182];
-  const pupG = pups.map((pp, i) => place(dogSVG(pp, { pose: 'sleep', facing: i % 2 ? 'left' : 'right' }), xs[i], 62 + (i % 2) * 6, 82, 68)).join('');
+  const pupG = pups.map((pp, i) => place(pupArt(pp, { pose: 'sleep', facing: i % 2 ? 'left' : 'right' }), xs[i] - 8, 70 + (i % 2) * 6, 92, 58)).join('');
   return `<svg viewBox="0 0 320 170" xmlns="http://www.w3.org/2000/svg">${place(brBasketArt(), 0, 0, 320, 170)}${pupG}<path class="ns-heart" d="M160 24c-6 -9 -18 -4 -14 6c3 7 14 12 14 12s11 -5 14 -12c4 -10 -8 -15 -14 -6z" fill="#F28FA5" stroke="#5B3D32" stroke-width="2"/></svg>`;
 }
 function brDrawNursery() {
@@ -102,7 +108,7 @@ function openNursery(litterId) {
   brFields(); const list = S.litters; const L = list.find((x) => x.id === litterId) || list[0]; if (!L) { nope('The nursery is empty. Very tidy.'); return; }
   const mum = dogById(L.mum) || { name: 'Mum', key: 'mutt', id: L.mum, stats: null }, left = Math.max(0, brDaysUntil(L.until));
   const today = brToday(); const pets = L.pets && L.pets.date === today ? L.pets.n : 0, idx = list.indexOf(L);
-  const p = openModal(`${esc(mum.name)}'s nursery`, `<div class="ns-wrap"><div class="ns-bed">${dogSVG(mum, { pose: 'down', facing: 'right' })}<div class="ns-pups">${L.pups.map((pp) => `<span class="ns-pup" title="${esc(pp.name)}">${dogSVG(pp, { pose: 'sleep' })}<b>${esc(pp.name)} ${sexSym(pp.sex)}</b></span>`).join('')}</div><div class="ns-hearts" id="nsHearts" aria-hidden="true"></div></div>
+  const p = openModal(`${esc(mum.name)}'s nursery`, `<div class="ns-wrap"><div class="ns-bed">${dogSVG(mum, { pose: 'down', facing: 'right' })}<div class="ns-pups">${L.pups.map((pp) => `<span class="ns-pup" title="${esc(pp.name)}">${pupArt(pp, { pose: 'sleep' })}<b>${esc(pp.name)} ${sexSym(pp.sex)}</b></span>`).join('')}</div><div class="ns-hearts" id="nsHearts" aria-hidden="true"></div></div>
     <p class="ns-count" id="nsCount">${left > 0 ? `Ready for new homes in ${left} day${left > 1 ? 's' : ''}.` : 'Ready for new homes today!'}</p>
     <p class="small">Newborns just nurse and sleep: no feeding needed. ${esc(mum.name)} eats for ${L.pups.length + 1} and stays home from walks.</p></div>`,
     { cls: 'litter nursery', foot: `${list.length > 1 ? `<button class="btn" id="nsNext">Next litter (${idx + 1}/${list.length})</button>` : ''}<button class="btn go big" id="nsPet" ${pets >= 3 ? 'aria-disabled="true"' : ''}>Pet softly (${3 - pets} left today)</button>${left <= 0 ? '<button class="btn yes big" id="nsChoose">Choose homes</button>' : ''}` });
@@ -126,7 +132,7 @@ function openWhoStays(litterId) {
   L.pups.forEach((pp) => { if (!(pp.id in brStay)) brStay[pp.id] = false; });
   let kept = L.pups.filter((pp) => brStay[pp.id]).length;
   if (kept > free) { L.pups.forEach((pp) => { brStay[pp.id] = false; }); kept = 0; }
-  const card = (pp, i) => `<div class="lt-card ws ${brStay[pp.id] ? 'stay' : 'home'} ${pp.sparkle ? 'sparkly' : ''}" style="--i:${i}">${pp.sparkle ? '<span class="lt-spark">Sparkle!</span>' : ''}<span class="lt-art">${dogSVG(Object.assign({}, pp), { pose: 'sit' })}</span>
+  const card = (pp, i) => `<div class="lt-card ws ${brStay[pp.id] ? 'stay' : 'home'} ${pp.sparkle ? 'sparkly' : ''}" style="--i:${i}">${pp.sparkle ? '<span class="lt-spark">Sparkle!</span>' : ''}<span class="lt-art">${pupArt(Object.assign({}, pp), { pose: 'sit' })}</span>
     <b>${esc(pp.name)} ${sexSym(pp.sex)}</b><span class="small">${esc(pp.mix ? pp.mix.name : brBreed(pp.key))}<br>${esc(pp.coat)}</span>
     <div class="ws-tog" role="group" aria-label="${esc(pp.name)}"><button class="btn ${brStay[pp.id] ? 'yes' : ''}" data-ws="${pp.id}|stay" aria-pressed="${!!brStay[pp.id]}">Stay</button><button class="btn ${brStay[pp.id] ? '' : 'go'}" data-ws="${pp.id}|home" aria-pressed="${!brStay[pp.id]}">Loving home</button></div></div>`;
   const p = openModal('Who stays?', `<p>${esc(mum.name)}'s pups are 2 months old: big enough for new homes. Keep some, and the rest move in with kind families in town. They'll send postcards and visit.</p>
