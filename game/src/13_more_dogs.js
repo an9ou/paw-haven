@@ -312,15 +312,9 @@ function openShelterList() {
 
 /* ======================= v1.5B: phone layout (portrait, touch) =======================
    html[data-layout="phone"] switches every phone rule on. Nothing here runs or shows at >= 1024 px wide. */
-const phoneMQ = window.matchMedia ? matchMedia('(max-width: 820px)') : { matches: false };
-const portMQ = window.matchMedia ? matchMedia('(orientation: portrait)') : { matches: false };
 const isPhone = () => document.documentElement.dataset.layout === 'phone';
-function applyLayout(rerender) {
-  const ph = phoneMQ.matches || (portMQ.matches && window.innerWidth < 1024), was = isPhone();
-  if (ph) document.documentElement.dataset.layout = 'phone'; else delete document.documentElement.dataset.layout;
-  if (rerender && was !== ph && S && ['yard', 'map', 'shelter'].includes(cur.mode)) go(cur.mode);
-  else camApply(camCx);
-}
+/* v2.2: the mode switch lives in 22c_phone_shell.js (psApplyLayout). This wrapper and the calls below stay so nothing else breaks. */
+function applyLayout(rerender) { psApplyLayout(rerender); }
 /* camera: crop the 1000x600 hub scene around the dog (x ~ 430) so the full height stays visible */
 let camCx = 430, camRaf = 0;
 function camApply(cx) {
@@ -356,13 +350,6 @@ function sheetSwipe(sheet, onClose) {
   sheet.addEventListener('pointerup', end); sheet.addEventListener('pointercancel', end);
 }
 
-/* the "..." menu (settings + sound) */
-function openMore() {
-  const p = openModal('Menu', `<div class="moremenu"><button class="btn big" id="mmSet"><span class="ic">${ICON('settings')}</span>Settings</button><button class="btn big" id="mmMute">${prefs.mute ? 'Sound on' : 'Mute sound'}</button></div>`);
-  $('#mmSet', p).onclick = () => { closeModal(); openSettings(); };
-  $('#mmMute', p).onclick = () => { closeModal(); $('#muteBtn').click(); };
-}
-
 /* map on phones: drag-pan (native scroll) + tap a place -> confirm chip */
 function mapPick(k) {
   const chip = $('#mapGo'); if (!chip) return pickArea(k);
@@ -377,19 +364,4 @@ function mapPick(k) {
   SFX.click();
 }
 let mapHighlight = () => {};
-
-/* long-press shows a tooltip (title / aria-label) on touch */
-(function () {
-  let t = 0, tip = null, x0 = 0, y0 = 0;
-  const hide = () => { clearTimeout(t); if (tip) { tip.remove(); tip = null; } };
-  stage.addEventListener('pointerdown', (e) => {
-    if (!isPhone() || e.pointerType === 'mouse') return; hide();
-    const el = e.target.closest('[title],[data-tip]'); if (!el) return;
-    const txt = el.getAttribute('data-tip') || el.getAttribute('title'); if (!txt) return;
-    x0 = e.clientX; y0 = e.clientY;
-    t = setTimeout(() => { const r = stage.getBoundingClientRect(); tip = document.createElement('div'); tip.className = 'lptip'; tip.textContent = txt; stage.appendChild(tip); tip.style.left = clamp(x0 - r.left - tip.offsetWidth / 2, 8, r.width - tip.offsetWidth - 8) + 'px'; tip.style.top = Math.max(8, y0 - r.top - 56) + 'px'; }, 550);
-  });
-  stage.addEventListener('pointermove', (e) => { if (Math.hypot(e.clientX - x0, e.clientY - y0) > 12) clearTimeout(t); });
-  ['pointerup', 'pointercancel'].forEach((ev) => stage.addEventListener(ev, () => { clearTimeout(t); setTimeout(hide, 1200); }));
-})();
-
+/* v2.2: the "..." menu (openMore) and the long-press tooltip (psLongPress) moved to 22c_phone_shell.js */

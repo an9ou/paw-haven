@@ -1,6 +1,9 @@
 // v1.5B phone version: full playthrough with touch on iPhone 13 + a smoke run on Pixel 7 (harness.js merged). node test_phone.js
 const { chromium, devices } = require('playwright'); const path = require('path'); const fs = require('fs');
 const URL = 'file://' + path.join(__dirname, 'test_merged.html');
+// same browser + flags as test_lib.js: the shared Chromium path (PAW_CHROME overrides) and PAW_ARGS (e.g. --ignore-certificate-errors behind a proxy)
+const CHROME = process.env.PAW_CHROME || ['/opt/pw-browsers/chromium', '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'].find((f) => fs.existsSync(f));
+const EXTRA = (process.env.PAW_ARGS || '').split(/\s+/).filter(Boolean);
 const DIR = path.join(__dirname, 'shots_phone'); fs.mkdirSync(DIR, { recursive: true });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const fails = []; const ok = (c, l) => { console.log(c ? '  ok  ' : '  FAIL', l); if (!c) fails.push(l); };
@@ -167,8 +170,15 @@ async function run(b, devName, full) {
     // potty clean by tap
     await travel('park'); await calm(); await dev(['#dvPoop']); await sleep(3700);
     ok(((await S()).messes.park || []).length === 1, 'poop happened'); await SH('24_poop');
-    await sleep(900);
-    await p.locator('#messG [data-mi="0"]').tap({ force: true }); await sleep(500); ok(((await S()).messes.park || []).length === 0, 'tapped to scoop');
+    // wait for the real condition: the mess is drawn on screen and nothing (the dog, a bubble, a toast) covers its centre, then tap it until it is gone
+    const scoopable = () => ev(() => { const m = document.querySelector('#messG [data-mi="0"]'); if (!m || window.__paw.mode !== 'yard') return null; const r = m.getBoundingClientRect(); if (!r.width) return null; const x = r.left + r.width / 2, y = r.top + r.height * 0.6; if (x < 0 || x > innerWidth || y < 0 || y > innerHeight) return null; const hit = document.elementFromPoint(x, y); return hit && hit.closest('#messG [data-mi]') ? [x, y] : null; });
+    let scooped = false;
+    for (let i = 0; i < 40 && !scooped; i++) {
+      const pt = await scoopable(); if (pt) { await p.touchscreen.tap(pt[0], pt[1]); await sleep(250); }
+      else { await ev(() => { const m = document.querySelector('#messG [data-mi="0"]'); if (m) m.scrollIntoView({ block: 'nearest', inline: 'center' }); }); await sleep(250); }
+      scooped = ((await S()).messes.park || []).length === 0;
+    }
+    ok(scooped, 'tapped to scoop');
   } else {
     await tap('[data-act=map]', { wait: 800 }); await SH('05_map'); await noHScroll('map'); await targets('map'); await tap('#mapX', { wait: 500 });
     await tap('[data-act=journal]', { wait: 400 }); await SH('06_journal'); await targets('journal'); await tap('.panel .x');
@@ -179,7 +189,7 @@ async function run(b, devName, full) {
 }
 
 (async () => {
-  const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+  const b = await chromium.launch({ executablePath: CHROME, args: ['--mute-audio'].concat(EXTRA) });
   await run(b, 'iPhone 13', true);
   await run(b, 'Pixel 7', false);
   console.log(fails.length ? `\nFAILED ${fails.length}: ${fails.join(' | ')}` : '\nALL OK');

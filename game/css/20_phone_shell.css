@@ -1,1 +1,52 @@
-/* ---------- v2.2 phone: SHELL lane. Every rule sits under html[data-layout="phone"] ---------- */
+/* ---------- v2.2 phone: SHELL lane. Every rule sits under html[data-layout="phone"] (or html[data-pslock], which only a touch-only device gets) ---------- */
+/* portrait lock card: a phone held sideways. Clock-driven CSS animations pause behind it */
+#psTurn{display:none}
+html[data-pslock] #psTurn{display:flex;position:fixed;inset:0;z-index:100;align-items:center;justify-content:center;padding:calc(12px + env(safe-area-inset-top,0px)) calc(16px + env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) calc(16px + env(safe-area-inset-left,0px));background:rgba(91,61,50,.55);touch-action:none}
+html[data-pslock] #psTurn[hidden]{display:none}
+.ps-turn-card{max-width:420px;padding:18px 26px 20px;text-align:center;background:var(--paper);border:2.5px solid var(--ink);border-radius:20px 14px 22px 13px;box-shadow:3px 4px 0 rgba(91,61,50,.25)}
+.ps-turn-card h2{margin:4px 0 6px;font-family:var(--font-hand);font-weight:700;font-size:30px;line-height:1.1}
+.ps-turn-card p{margin:0;font-size:17px;line-height:1.35}
+.ps-turn-art{width:84px;height:84px;animation:psTilt 2.4s ease-in-out infinite}
+@keyframes psTilt{0%,30%{transform:rotate(-90deg)}60%,100%{transform:rotate(0)}}
+html[data-pslock] #stage,html[data-pslock] #stage *,html[data-pslock] #stage *::before,html[data-pslock] #stage *::after{animation-play-state:paused!important}
+html[data-motion="off"] .ps-turn-art{animation:none}
+
+/* game controls: no double-tap zoom (zero specificity, so a module's own touch-action, e.g. touch-action:none on a drag source, still wins), no text selection or callout on a long press */
+:where(html[data-layout="phone"]) :where(button,.btn,.act,.opt,[role=button],[role=tab],.card,#meters){touch-action:manipulation;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+
+/* base sizes: buttons, options and tab buttons are at least 44 px tall */
+html[data-layout="phone"] .btn,html[data-layout="phone"] .opt,html[data-layout="phone"] [role=tab],html[data-layout="phone"] .tabs .btn,html[data-layout="phone"] .panel.journal .jtabs .btn{min-height:44px}
+html[data-layout="phone"] .tabs .btn{font-size:21px;padding:3px 14px 5px}
+
+/* HUD: row 1 = dog chip, mood dot, name + sex symbol (title under it), coins, ... menu. Row 2 = the 4 ring meters + Bond */
+html[data-layout="phone"] #hud{row-gap:2px}
+html[data-layout="phone"] #hudTitle{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html[data-layout="phone"] #hud .meters{touch-action:manipulation}
+html[data-layout="phone"] #hud.hexp .meters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 14px;align-items:center}
+html[data-layout="phone"] #hud.hexp .meter{min-height:36px;width:auto;gap:6px}
+html[data-layout="phone"] #hud.hexp .meter .num{font-size:15px;min-width:24px;text-align:right}
+html[data-layout="phone"] .ps-cloud{margin:2px 4px 0;font-size:15px;color:var(--muted);text-align:center}
+html[data-layout="phone"] .moremenu .btn .ic{width:26px;height:26px}
+
+/* action bar: fixed at the bottom with the safe-area inset, 7 labelled buttons >= 48 px */
+html[data-layout="phone"] .act{min-height:56px}
+html[data-layout="phone"] .act span:last-child{font-size:14px}
+
+/* every openModal popup is a bottom sheet: full width, up to 88% of the screen, its own scroll */
+html[data-layout="phone"] #modal .panel{max-height:min(100%,88vh);max-height:min(100%,88dvh)}
+html[data-layout="phone"] #stage.nobar #modal .panel{padding-bottom:calc(14px + env(safe-area-inset-bottom,0px))}
+html[data-layout="phone"] #modal .panel-body{overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;flex:1 1 auto}
+html[data-layout="phone"] #modal .foot{flex:none}
+html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray{max-height:88%}
+html[data-layout="phone"] .sheet-grab{width:60px;height:6px;margin-left:-30px}
+/* tab rows scroll sideways inside the sheet */
+html[data-layout="phone"] #modal .tabs,html[data-layout="phone"] .panel.journal .jtabs{display:flex;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:none;flex:none;padding:4px 2px 6px;margin-left:-2px;margin-right:-2px;touch-action:pan-x}
+html[data-layout="phone"] #modal .tabs::-webkit-scrollbar{display:none}
+html[data-layout="phone"] #modal .tabs .btn{flex:none;white-space:nowrap}
+/* sheet grids reflow to 2 columns */
+html[data-layout="phone"] #modal .results{grid-template-columns:repeat(2,minmax(0,1fr))}
+
+/* toasts sit above the action bar and above sheets, never under them */
+html[data-layout="phone"] #toasts{z-index:30}
+html[data-layout="phone"] #stage.modhud:not(.nobar) #toasts{bottom:calc(var(--barH) + 12px)!important}
+html[data-layout="phone"] .lptip{z-index:40;font-size:15px}
