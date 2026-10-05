@@ -376,7 +376,7 @@
     '.pg-portrait .pg-title{font-size:28px}',
     '.pg-portrait .pg-hint{font-size:15px}',
     '.pg-portrait .pg-tool{height:52px;font-size:18px;padding:0 5px 2px 3px;gap:1px;box-shadow:1px 2px 0 rgba(91,61,50,.25)}',
-    '.pg-portrait .pg-tool small{font-size:14px;margin-left:0}',
+    '.pg-portrait .pg-tool small{font-size:15px;margin-left:0}',
     '.pg-portrait .pg-done{font-size:19px;padding:0 7px 3px;min-height:52px}',
     '.pg-portrait .pg-tool i{width:24px;height:24px}',
     '.pg-portrait .pg-btn{min-height:50px}',

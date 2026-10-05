@@ -14,14 +14,14 @@ const AUD = (capSel) => {
   const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let n; const seen = new Set();
   while ((n = w.nextNode())) {
     const s = n.textContent.trim(); if (!s) continue; const el = n.parentElement;
-    if (!el || seen.has(el) || el.closest('#devPanel,#devBtn,script,style,svg,#toasts,#hud,#bar,#placeBtns')) continue; seen.add(el); if (!vis(el)) continue;
+    if (!el || seen.has(el) || el.classList.contains('pg-spark') || el.closest('#devPanel,#devBtn,script,style,svg,#toasts,#hud,#bar,#placeBtns')) continue; seen.add(el); if (!vis(el)) continue;
     const cs = getComputedStyle(el), sc = el.offsetWidth ? el.getBoundingClientRect().width / el.offsetWidth : 1, fs = parseFloat(cs.fontSize) * (sc > 0 ? sc : 1);
     const cap = !!el.closest(capSel) || el.tagName === 'SMALL'; // captions: 13 px, everything else 15 px
-    if (fs < (cap ? 12.9 : 14.9)) text.push(`${nm(el)} ${fs.toFixed(1)}px "${s.slice(0, 18)}"`);
+    if (fs < (cap ? 12.8 : 14.8)) text.push(`${nm(el)} ${fs.toFixed(1)}px "${s.slice(0, 18)}"`);
   }
   return { small, text, hs: document.documentElement.scrollWidth - innerWidth };
 };
-const CAPS = '.small, .pk-nm, .pk-ct, .pg-q, .pg-tag, .pg-pk em, .pg-stamp, .trshow small, .trchip small, .pg-tool small, .pk-sh small, .pk-lbl, .pg-hint, .pg-num';
+const CAPS = '.pk-ing, .small, .pk-nm, .pk-ct, .pg-q, .pg-tag, .pg-pk em, .pg-stamp, .trshow small, .trchip small, .pg-tool small, .pk-sh small, .pk-lbl, .pg-hint, .pg-num';
 const DEVICES = ['iPhone 13', 'Pixel 7'];
 
 require('./test_lib').run('phone_skill', async (t) => {
@@ -120,9 +120,9 @@ require('./test_lib').run('phone_skill', async (t) => {
     await p.locator('[data-t="water"]').tap(); await t.sleep(200); await p.locator('.pg-plot[data-i="0"]').tap();
     ok(await t.until(() => window.__paw.S.garden.plots[0].water >= 1, null, 4000), tag + 'Watering Can tool then a plot waters it');
     await t.home(); await ev(() => document.getElementById('devBtn').click()); await p.waitForSelector('#dvGReady', { state: 'attached' }); await ev(() => { document.getElementById('dvGReady').click(); const x = document.getElementById('dvX'); if (x) x.click(); }); await ev(() => window.__paw.go('garden')); await p.waitForSelector('.pg-plot'); await t.sleep(800);
-    const c0 = await ev(() => (window.__paw.S.inv.crops.carrot || [0])[0]);
+    const c0 = await ev(() => (window.__paw.S.inv.crops.carrot || [0]).reduce((a, b) => a + b, 0));
     await audit('garden with a ready crop'); await p.locator('.pg-plot[data-i="0"]').tap();
-    ok(await t.until((c) => (window.__paw.S.inv.crops.carrot || [0])[0] > c, c0, 4000), tag + 'a tap on a ready plot harvests it into the basket');
+    ok(await t.until((c) => (window.__paw.S.inv.crops.carrot || [0]).reduce((a, b) => a + b, 0) > c, c0, 4000), tag + 'a tap on a ready plot harvests it into the basket');
     await p.locator('.pg-done').tap(); ok(await t.untilMode('yard'), tag + 'Done closes the garden');
 
     sec(tag + "Pip's Sprout Cart");

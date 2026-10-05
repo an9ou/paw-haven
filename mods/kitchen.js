@@ -504,7 +504,7 @@
     '.pk-portrait .pk-judge{left:77px;top:140px}',
     '.pk-portrait .pk-doo{left:87px;top:330px}',
     '.pk-portrait .pk-tap{left:50%;transform:translateX(-50%);top:486px;min-height:56px}',
-    '.pk-portrait .pk-taph{left:87px;top:550px}',
+    '.pk-portrait .pk-taph{left:87px;top:550px}.pk-portrait .pk-gs{font-size:19px}.pk-portrait .pk-taph{font-size:17px}.pk-portrait .pk-ing{font-size:15px;width:52px}.pk-portrait .pk-entry{font-size:17px}',
     '.pk-portrait .pk-reveal{width:404px;height:740px;margin-top:10px}',
     '.pk-portrait .pk-note{width:404px;margin:40px 0 0 0}'
   ].join('\n');
