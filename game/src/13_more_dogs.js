@@ -1,9 +1,10 @@
 /* ======================= v1.5A: more dogs ======================= */
 const PER_DOG = ['stats', 'bond', 'outfit', 'potty', 'sleeping', 'dishLog', 'buff', 'glowUntil', 'pupUntil', 'tricks'];
-const HOUSE_CAP = { 'Cardboard Box': 1, 'Classic Wooden Doghouse': 1, 'Cozy Cottage': 2, 'Snow Igloo': 2, 'Treehouse Den': 3, 'Royal Castle Kennel': 4 };
+const HOUSE_CAP = { 'Cardboard Box': 1, 'Classic Wooden Doghouse': 2, 'Cozy Cottage': 2, 'Snow Igloo': 2, 'Treehouse Den': 3, 'Royal Castle Kennel': 4 };
 const PGN = () => (window.PawGenes && typeof window.PawGenes.phenotype === 'function' ? window.PawGenes : null);
 const D = () => S.dog; // the active dog
-const capacity = () => HOUSE_CAP[S.house] || 1;
+const capacity = () => HOUSE_CAP[S.house] || 1; // how many dogs the current house fits (v2: dog spots also need Bond, see dogSlots)
+const MAX_DOGS = 4; // v2 hard cap
 const topBond = () => (S && S.dogs ? Math.max(...S.dogs.map((d) => (d.bond && d.bond.level) || 1)) : 1);
 const dogById = (id) => S.dogs.find((d) => d.id === id) || null;
 const others = () => S.dogs.filter((d) => d.id !== S.activeId);
@@ -129,17 +130,106 @@ function feedAll() {
   const order = [D()].concat(others());
   order.forEach((d) => {
     if ((S.inv.food[f.n] || 0) <= 0 || d.stats.hunger > 90 || d.sleeping) return;
-    S.inv.food[f.n]--; withDog(d, () => { addStat('hunger', f.hunger || 0); addStat('happy', (f.happy || 0) + (isFavFood(f.n) ? 5 : 0)); addStat('energy', f.energy || 0); addBond(2 + (f.bond || 0)); pottyAfter('meal'); });
+    S.inv.food[f.n]--; withDog(d, () => { addStat('hunger', f.hunger || 0); addStat('happy', (f.happy || 0) + (isFavFood(f.n) ? 5 : 0) + pupBonus(d, f)); addStat('energy', f.energy || 0); addBond(2 + (f.bond || 0)); pottyAfter('meal'); });
     fed.push(d);
   });
   if (S.inv.food[f.n] <= 0) delete S.inv.food[f.n];
   if (!fed.length) { nope('Everyone is full or asleep. Nobody has ever said that before.'); return; }
-  dailyCare('feed'); markDirty(); popDown(); SFX.crunch(); setTimeout(SFX.crunch, 300); setTimeout(SFX.crunch, 600);
+  dailyCare('feed'); markCareDay(); markDirty(); popDown(); SFX.crunch(); setTimeout(SFX.crunch, 300); setTimeout(SFX.crunch, 600);
   if (fed.includes(D())) setTemp('eat', 1400); others().forEach((d) => { if (fed.includes(d)) { packPose[d.id] = 'eat'; redrawPackDog(d); setTimeout(() => { packPose[d.id] = 'happy'; redrawPackDog(d); }, 1500); } });
   const skipped = S.dogs.length - fed.length;
-  toast(`Feed all: ${fed.length} bowl${fed.length > 1 ? 's' : ''} of ${f.n} for ${fed.map((d) => d.name).join(', ')}. A symphony of crunching.${skipped ? ` (${skipped} skipped: full, asleep or not enough food.)` : ''}`, 'good');
+  const pups = fed.filter((d) => pupBonus(d, f)).map((d) => d.name), eats = fed.map(eatForLine).join('');
+  toast(`Feed all: ${fed.length} bowl${fed.length > 1 ? 's' : ''} of ${f.n} for ${fed.map((d) => d.name).join(', ')}. A symphony of crunching.${pups.length ? ` Puppy-sized bites: +${f.pupHappy} Happiness for ${pups.join(', ')}.` : ''}${eats}${skipped ? ` (${skipped} skipped: full, asleep or not enough food.)` : ''}`, 'good');
   updateHUD();
 }
+
+/* ======================= v2: dog spots (max 4), unlocked by Bond ======================= */
+// Spot n opens when ALL its rules hold (and spot n-1 is open). Bond is per dog. Care days = distinct real days with a feed, pet or play.
+const SPOT_RULES = [null, null,
+  { bond: 3, dogs: 1, days: 0, fits: 2, house: null },
+  { bond: 8, dogs: 2, days: 21, fits: 3, house: 'Treehouse Den' },
+  { bond: 10, dogs: 3, days: 45, fits: 4, house: 'Royal Castle Kennel' }];
+const SPOT_ORD = ['', '1st', '2nd', '3rd', '4th'];
+const SPOT_TOAST = { 2: 'A 2nd dog spot is open! Visit the Shelter on the Map to bring home a friend.', 3: 'A 3rd dog spot is open! The Treehouse Den has room for one more.', 4: 'A 4th dog spot is open! The Royal Castle Kennel has room for the whole pack.' };
+function spotsInit() {
+  if (!S || !Array.isArray(S.dogs) || !S.dogs.length) return;
+  if (!Array.isArray(S.litters)) S.litters = [];
+  if (typeof S.careDays !== 'number') { S.careDays = Math.min(60, Math.max(0, ageMonths(S.dogs[0]) - 10)); markDirty(); } // old saves: one-time backfill
+  if (typeof S.spotsSeen !== 'number') { S.spotsSeen = spotCap(); markDirty(); } // silent for old saves: only NEW unlocks get the toast
+}
+function spotCap() { return dogSlots(true).cap; }
+function dogSlots(noInit) {
+  if (!noInit) spotsInit();
+  const bonds = S.dogs.map((d) => (d.bond && d.bond.level) || 1), fits = capacity(), cd = S.careDays || 0;
+  const spots = [{ n: 1, open: true, reqs: [] }]; let cap = 1;
+  for (let n = 2; n <= MAX_DOGS; n++) {
+    const R = SPOT_RULES[n], have = bonds.filter((b) => b >= R.bond).length, reqs = [];
+    reqs.push({ label: R.dogs === 1 ? `A dog at Bond ${R.bond}` : `Bond ${R.bond} dogs`, done: have >= R.dogs, have, need: R.dogs });
+    if (R.days) reqs.push({ label: 'Care days', done: cd >= R.days, have: cd, need: R.days });
+    reqs.push({ label: R.house ? R.house + (n < MAX_DOGS ? ' (or bigger)' : '') : `A house that fits ${R.fits}`, done: fits >= R.fits, have: fits >= R.fits ? 1 : 0, need: 1, house: true });
+    const open = spots[n - 2].open && reqs.every((r) => r.done);
+    spots.push({ n, open, reqs }); if (open) cap = n;
+  }
+  const used = S.dogs.length;
+  return { cap, used, free: Math.max(0, cap - used), spots };
+}
+function slotsFree() { return dogSlots().free; }
+function reqText(r) { return r.house || /^A dog/.test(r.label) ? r.label.replace(/^A /, 'a ') : `${r.label} (${Math.min(r.have, r.need)}/${r.need})`; }
+/* care days: marked by the feed / pet / play paths of this lane, and by watching the daily-care flags (walks, fetch, tricks in other lanes) */
+function markCareDay() {
+  if (!S || !S.dogs) return; spotsInit(); const t = localISO();
+  if (S.careDayLast === t) return; S.careDayLast = t; S.careDays = (S.careDays || 0) + 1; markDirty(); setTimeout(spotsCheck, 700);
+}
+let careSnap = null;
+function careWatch() {
+  if (!S || !S.daily) return; const n = ['feed', 'pet', 'play'].filter((k) => S.daily[k]).length, dy = S.daily.day;
+  if (!careSnap || careSnap.s !== S) { careSnap = { s: S, dy, n }; return; }
+  const did = dy === careSnap.dy ? n > careSnap.n : n > 0; careSnap.dy = dy; careSnap.n = n; if (did) markCareDay();
+}
+function spotsCheck() {
+  if (!S || !S.adopted || !S.dogs || !S.dogs.length || ['title', 'adopt'].includes(cur.mode)) return;
+  spotsInit(); const c = dogSlots().cap;
+  if (c > (S.spotsSeen || 1)) { S.spotsSeen = c; markDirty(); SFX.fanfare(); toast(SPOT_TOAST[c] || `A new dog spot is open!`, 'gold'); }
+}
+const PAW_PATH = '<ellipse class="pw" cx="0" cy="7" rx="10" ry="8.5"/><circle class="pw" cx="-11" cy="-5" r="4.3"/><circle class="pw" cx="-4" cy="-11.5" r="4.3"/><circle class="pw" cx="4" cy="-11.5" r="4.3"/><circle class="pw" cx="11" cy="-5" r="4.3"/>';
+const LOCK_DOODLE = '<rect x="-8" y="-2" width="16" height="13" rx="3" fill="#FFE3A1" stroke="#5B3D32" stroke-width="2.2"/><path d="M-4.5 -2v-4a4.5 4.5 0 0 1 9 0v4" fill="none" stroke="#5B3D32" stroke-width="2.2" stroke-linecap="round"/><circle cx="0" cy="4.5" r="1.8" fill="#5B3D32"/>';
+function spotsHTML(s) {
+  s = s || dogSlots(); const n = Math.max(MAX_DOGS, s.used);
+  const cells = [];
+  for (let i = 1; i <= n; i++) {
+    const sp = s.spots[i - 1] || { n: i, open: false, reqs: [] }, d = S.dogs[i - 1], locked = !sp.open;
+    const kind = d ? 'filled' : locked ? 'locked' : 'open';
+    const label = d ? esc(d.name) : locked ? 'Locked' : 'Free!';
+    const list = locked && sp.reqs.length ? `<ul class="spotreqs">${sp.reqs.map((r) => `<li class="${r.done ? 'ok' : ''}"><span class="ck" aria-hidden="true">${r.done ? '&#10003;' : '&#9675;'}</span>${esc(r.house ? `${r.label}: ${r.done ? 'yes' : 'no'}` : r.need === 1 && /^A dog/.test(r.label) ? `${r.label}: ${r.done ? 'yes' : 'not yet'}` : `${r.label}: ${Math.min(r.have, r.need)}/${r.need}`)}</li>`).join('')}</ul>` : '';
+    cells.push(`<div class="spot ${kind}${d && locked ? ' extra' : ''}" data-spot="${i}" data-kind="${kind}" aria-label="Dog spot ${i}: ${d ? esc(d.name) : locked ? 'locked' : 'free'}"><span class="spaw"><svg viewBox="-24 -24 48 48" aria-hidden="true">${PAW_PATH}</svg>${d ? `<span class="shead">${headSVG(d)}</span>` : ''}${locked ? `<span class="slock">${iconOr('lock', LOCK_DOODLE)}</span>` : ''}</span><b>${label}</b><span class="small">Spot ${i}</span>${list}</div>`);
+  }
+  return `<div class="spots" role="group" aria-label="Dog spots">${cells.join('')}</div>`;
+}
+function spotsLine(s) {
+  s = s || dogSlots(); const bl = adoptBlock();
+  return `<p class="small spotsum">Dog spots: <b>${s.used} of ${s.cap}</b> used (${esc(S.house)}, max ${MAX_DOGS}). ${bl ? `<b>${esc(bl)}</b>` : 'You have room for another friend!'}</p>`;
+}
+function openSpots(opts = {}) {
+  const s = dogSlots();
+  const p = openModal('Dog spots', `${spotsLine(s)}${spotsHTML(s)}<p class="small spothow">Spot 2 opens early. Spots 3 and 4 take real devotion: well-bonded dogs, many days of care and a bigger dog house. Nursery puppies don't need a spot until they stay.</p>`,
+    { cls: 'spotspop', foot: `${opts.back ? '<button class="btn no" id="spBack">Back</button>' : ''}<button class="btn yes" id="spOk">OK</button>` });
+  $('#spOk', p).onclick = () => { SFX.click(); closeModal(); };
+  const bk = $('#spBack', p); if (bk) bk.onclick = () => { SFX.click(); opts.back(); };
+  return p;
+}
+// "Eating for N!": expecting mums (d.preg) and nursing mums (a litter in S.litters with mum === d.id)
+function eatingFor(d) {
+  if (!d) return 0; if (d.preg) return 1 + (Array.isArray(d.preg.pups) && d.preg.pups.length ? d.preg.pups.length : 1);
+  const L = Array.isArray(S.litters) ? S.litters.find((l) => l && l.mum === d.id) : null; return L ? 1 + ((L.pups && L.pups.length) || 1) : 0;
+}
+function eatForLine(d) { const n = eatingFor(d); return n ? ' ' + PICK([`${d.name} is eating for ${n}!`, `Eating for ${n}! ${d.name} licks the bowl twice.`, `${d.name} is eating for ${n}! Seconds are encouraged.`]) : ''; }
+const pupBonus = (d, f) => (f && f.pupHappy && ageMonths(d) < 6 ? f.pupHappy : 0);
+function spotsExpose() { if (window.__paw) window.__paw.spots = { slots: () => dogSlots(), free: () => slotsFree(), check: spotsCheck, markCare: markCareDay, watch: careWatch, open: openSpots, eatingFor: (id) => eatingFor(dogById(id)) }; }
+on('game:ready', () => { spotsInit(); careWatch(); setTimeout(spotsExpose, 0); });
+on('yard:enter', () => { spotsInit(); careWatch(); spotsCheck(); spotsExpose(); });
+on('clock:minute', () => { careWatch(); spotsCheck(); });
+on('day:new', () => { careWatch(); });
+setTimeout(spotsExpose, 0);
 
 /* ---- shelter: rescues + starters ---- */
 const RESCUE_NAMES = ['Sir Wigglesworth', 'Potato', 'Captain Socks', 'Noodle Jr.', 'Biscotti', 'Mayor Fluff', 'Pickles', 'Waffles', 'Tater Tot', 'Professor Paws', 'Beans', 'Lady Snorts', 'Meatball', 'Dumpling', 'Turbo', 'Nugget'];
@@ -152,7 +242,12 @@ function rescuesToday(dk = localISO()) {
     return { id: 'r_' + dk + '_' + i, key, sex, months, name, genes, rescue: { date: dk } };
   });
 }
-const adoptBlock = () => (topBond() < 5 ? `Adopting a second dog opens when any of your dogs reaches Bond 5. (Best so far: Bond ${topBond()}.)` : S.dogs.length >= capacity() ? 'Your home is full. A bigger dog house would fit another friend.' : '');
+const adoptBlock = () => {
+  const s = dogSlots(); if (s.free > 0) return '';
+  if (s.used > s.cap) return 'Everyone stays. New friends need a free spot.';
+  if (s.used >= MAX_DOGS) return 'Four dogs is a full pack. Everyone stays, and there is no room for more.';
+  const nx = s.spots[s.cap]; return `All your dog spots are taken. The ${SPOT_ORD[nx.n]} spot opens with: ${nx.reqs.filter((r) => !r.done).map(reqText).join(', ')}.`;
+};
 function addDog(spec, name) {
   const fav = FAV[spec.key] || FAV.mutt;
   const d = Object.assign({ key: spec.key, name, favFood: fav.food.slice(), favToy: fav.toy }, newDogFields(spec.key, spec.sex, spec.born || bornDaysAgo(spec.months || 10)));
@@ -178,8 +273,8 @@ function shelterCard(spec, kind) {
 }
 function openShelterList() {
   const rescues = rescuesToday(), starterKeys = dogsList().map((x) => x.key).filter((k) => !S.dogs.some((d) => d.key === k && !d.rescue));
-  const blocked = adoptBlock();
-  const p = openModal('Paw Haven Shelter', `<p class="small">${S.dogs.length} of ${capacity()} dog${capacity() > 1 ? 's' : ''} at home (${esc(S.house)}). ${blocked ? `<b>${esc(blocked)}</b>` : 'You have room for another friend!'}</p>
+  const sl = dogSlots();
+  const p = openModal('Paw Haven Shelter', `<div class="shspots">${spotsLine(sl)}${spotsHTML(sl)}</div>
     <h3 class="shh">Today's rescues <span class="small">(new ones arrive every day)</span></h3><div class="shopgrid">${rescues.map((r) => shelterCard(r, 'rescue')).join('')}</div>
     ${starterKeys.length ? `<h3 class="shh">Starter dogs</h3><div class="shopgrid">${starterKeys.map((k) => shelterCard({ key: k }, 'starter')).join('')}</div>` : ''}`, { cls: 'shop shelter' });
   p.querySelectorAll('[data-shsex]').forEach((b) => { b.onclick = () => { const [k, sx] = b.dataset.shsex.split('|'); shelterSex[k] = sx; SFX.click(); openShelterList(); }; });
