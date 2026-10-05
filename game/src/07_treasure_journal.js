@@ -10,7 +10,7 @@ function tornMap() {
 }
 function openJournal(tab) {
   if (tab) jTab = tab; audioPlace('journal');
-  if (jTab === 'coats') { coatSync(); coatRewardsCheck(); }
+  if (jTab === 'coats' || jTab === 'family' || jTab === 'profile') jrCheckAll();
   const foundN = TREASURES.filter((t) => S.found[t.n]).length;
   const tabs = [['profile', 'Profile'], ['family', 'Family'], ['coats', 'Coats'], ['treasures', `Treasures ${foundN}/${TREASURES.length}`], ['food', 'Food'], ['toys', 'Toys'], ['clothes', 'Clothes'], ['garden', gkOn() ? 'Garden' : 'Garden (soon)'], ['recipes', kOn() ? 'Recipes' : 'Recipes (soon)']];
   let body = '';
@@ -51,6 +51,8 @@ function openJournal(tab) {
   p.querySelectorAll('[data-cbreed]').forEach((b) => { b.onclick = () => { SFX.click(); jCoatKey = b.dataset.cbreed; openJournal('coats'); }; });
   p.querySelectorAll('[data-spots]').forEach((b) => { b.onclick = () => { SFX.click(); if (typeof openSpots === 'function') openSpots(); else toast(`Dog spots: ${S.dogs.length} dog${S.dogs.length > 1 ? 's' : ''} at home. More spots open with Bond.`); }; });
   if (jTab === 'family') pinFamNodes(p);
+  p.querySelectorAll('[data-jtitle]').forEach((b) => { b.onclick = () => { jrToggleTitle(b.dataset.jtitle); openJournal(); }; });
+  p.querySelectorAll('[data-fpartner]').forEach((b) => { b.onclick = () => { SFX.click(); closeModal(); if (typeof openPlaydates === 'function') openPlaydates({ with: b.dataset.fpartner }); else toast('The Playdate board is still being pinned up. Try again soon.'); }; });
   p.querySelectorAll('[data-jeq]').forEach((b) => { b.onclick = () => { equip(b.dataset.jeq); openJournal(); }; });
   const toYard = (fn) => { closeModal(); if (cur.mode !== 'yard') go('yard'); setTimeout(fn, 350); };
   p.querySelectorAll('[data-jfeed]').forEach((b) => { b.onclick = () => toYard(() => feed(b.dataset.jfeed)); });
@@ -151,7 +153,7 @@ function journalFamily() {
   const homeSel = dogById(me.id) ? me.id : null;
   const P = prOf(me), m = me.born ? ageMonths(me) : null;
   const about = `<div class="fam-me"><span class="portrait big">${famHead(me)}</span><div><h3>${esc(me.name)} ${sexSym(me.sex)}${me.sparkle ? ' <span class="spkbadge">Sparkle</span>' : ''}</h3>
-    <p>${esc(mixLine(me))}</p><p class="small">${m != null ? `${ageText(m)} old · ` : ''}Generation ${me.gen || (dam || sire ? 1 : 0)}</p><p>${famChip(me)}</p></div></div>`;
+    <p>${esc(mixLine(me))}</p><p class="small">${m != null ? `${ageText(m)} old · ` : ''}Generation ${me.gen || (dam || sire ? 1 : 0)}</p><p>${famChip(me)}</p>${jrPartnerBtn(me)}</div></div>`;
   const kidsHTML = kids.length ? `<div class="fkids">${kids.map((k) => `<button class="fkid ${k.sparkle ? 'spk' : ''}" data-fam="${esc(k.id)}"><span class="fhead">${famHead(k)}</span><span class="fname">${esc(k.name || '?')} ${sexSym(k.sex)}</span>${famChip(k)}</button>`).join('')}</div>`
     : `<p class="small fnone">No puppies yet. ${me.status === 'home' ? `When ${P.he} is grown up, a Puppy Playdate could change that.` : 'This branch is still growing.'}</p>`;
   return `${pdogTabs(homeSel)}<div class="famwrap"><div class="ft ${art0 ? 'ft-real' : ''}"><div class="ft-art">${art0 || famTreeDoodle()}</div>${nodes}</div>
@@ -169,9 +171,84 @@ function pinFamNodes(p) {
 }
 
 /* ---------- Coats tab: the Coat Collection ---------- */
-const COAT_MILESTONES = [[5, 100], [15, 300], [30, 800], [50, 0]];
+const COAT_MILESTONES = [[5, 100], [10, 0], [15, 300], [25, 0], [30, 800], [40, 0], [50, 0]];
+const JR_MILE_TXT = { 10: 'Gene Detective', 15: '300 + Ribbon', 25: 'Rainbow Collar', 40: 'Crayon Box', 50: 'Master Breeder' };
 const RIBBON = 'Coat Collector Ribbon';
 if (!CHARMS.some((c) => c.n === RIBBON)) CHARMS.push({ n: RIBBON, slot: 'charm', perk: 'Coat Collector: 15 coats found. Pure bragging rights. Other dogs can tell.' });
+const JR_RAINBOW = 'Rainbow Collar';
+// a reward wearable: in ALL_WEAR (wardrobe, Journal) but never in CLOTHES, so no shop lists it
+if (!ALL_WEAR.some((c) => c.n === JR_RAINBOW)) ALL_WEAR.push({ n: JR_RAINBOW, slot: 'neck', price: 0, bond: 1, perk: 'Rainbow Collar: 25 coats found. Every colour, all at once.', reward: true });
+
+/* ---------- v2.1: decorations, titles, defaults ---------- */
+function jrDecor(name) {
+  S.decor = S.decor || {}; if (!S.decor[name]) { S.decor[name] = { got: localISO(), out: true }; markDirty(); emit('decor:new', { name }); }
+}
+function jrFields() {
+  if (!S) return;
+  if (!S.titles || typeof S.titles !== 'object' || Array.isArray(S.titles)) S.titles = {};
+  if (!S.famRewards || typeof S.famRewards !== 'object') S.famRewards = {};
+  if (!S.penpals || typeof S.penpals !== 'object') S.penpals = {};
+  if (!S.coatRewards || typeof S.coatRewards !== 'object') S.coatRewards = {};
+  if (S.title && !S.titles[S.title]) S.titles[S.title] = localISO(); // 'Treasure Legend' and any other old name tag
+  if (S.coatRewards[50] && !S.titles['Master Breeder']) S.titles['Master Breeder'] = String(S.coatRewards[50]).slice(0, 10) || localISO();
+}
+function jrShowTitle() { try { hudDogKey = ''; if (typeof setHudDog === 'function') setHudDog(); } catch (e) { /* hud not ready */ } }
+function titleGive(name) {
+  if (!S || !name) return false; jrFields();
+  if (S.titles[name]) return false;
+  S.titles[name] = localISO();
+  if (!S.title) { S.title = name; jrShowTitle(); }
+  markDirty(); toast(`New title: ${name}! Find it on the Profile.`, 'gold'); try { SFX.fanfare(); } catch (e) { /* audio off */ }
+  return true;
+}
+function jrTitleList() { jrFields(); return Object.keys(S.titles).sort((a, b) => String(S.titles[a]).localeCompare(String(S.titles[b])) || a.localeCompare(b)); }
+function jrTitlesRow() {
+  const ts = jrTitleList();
+  return `<div class="pf-titles"><b>Titles</b>${ts.length ? `<span class="small">Tap one to wear it on the name tag. Tap again to hide it.</span><div class="ptrow">${ts.map((t) => `<button class="ptitle ${S.title === t ? 'on' : ''}" data-jtitle="${esc(t)}" aria-pressed="${S.title === t}"><span class="ptic">${iconOr('title', '<circle r="12" fill="#FFE3A1" stroke="#5B3D32" stroke-width="2.2"/><path d="M-6 10 L-9 20 L0 15 L9 20 L6 10" fill="#E86F6F" stroke="#5B3D32" stroke-width="2"/>')}</span>${esc(t)}</button>`).join('')}</div>` : '<span class="small">None yet. Coats, family trees and postcards earn them.</span>'}</div>`;
+}
+function jrToggleTitle(name) {
+  if (!S || !S.titles || !S.titles[name]) return;
+  S.title = S.title === name ? '' : name; markDirty(); jrShowTitle(); try { SFX.click(); } catch (e) { /* audio off */ }
+}
+function jrAncLabel(d) {
+  try {
+    const G = window.PawGenes, anc = typeof ancOf === 'function' ? ancOf(d) : d.anc || null; if (!anc) return '';
+    if (G && typeof G.grandMix === 'function') { const g = G.grandMix(anc); if (g && g.label) return g.label; }
+    const es = Object.keys(anc).map((k) => [k, anc[k]]).filter((e) => e[1] > 0).sort((a, b) => b[1] - a[1]); if (!es.length) return '';
+    const fr = (x) => { let n = Math.round(x * 64), dn = 64; while (n % 2 === 0 && dn > 1) { n /= 2; dn /= 2; } return `${n}/${dn}`; };
+    return es.map((e, i) => (i === 0 ? '' : fr(e[1]) + ' ') + breedName(e[0])).join(', ');
+  } catch (e) { return ''; }
+}
+function jrAncLine(d) { const l = d ? jrAncLabel(d) : ''; return l ? `<p class="small ancline">Ancestry: ${esc(l)}</p>` : ''; }
+
+/* ---------- family rewards ---------- */
+// the longest line of known records ending at `id` (the dog itself, then parents, grandparents...): returns the ids, youngest first
+function jrLine(id, memo, seen) {
+  if (memo[id]) return memo[id]; if (seen[id]) return [id]; seen[id] = 1;
+  const [a, b] = famParents(famRec(id)); let best = [];
+  [a, b].forEach((p) => { if (p && famRec(p)) { const l = jrLine(p, memo, seen); if (l.length > best.length) best = l; } });
+  delete seen[id]; return (memo[id] = [id].concat(best));
+}
+function jrBestLine() {
+  if (!S) return [];
+  const memo = {}; let best = [];
+  famAllIds().forEach((id) => { if (famRec(id)) { const l = jrLine(id, memo, {}); if (l.length > best.length) best = l; } });
+  return best;
+}
+function jrFamCheck() {
+  if (!S) return []; jrFields(); const got = [], F = S.famRewards, line = jrBestLine();
+  if (line.length >= 3 && !F.gen3) {
+    F.gen3 = localISO(); got.push('gen3'); jrDecor('Family Photo Frame');
+    if (!S.portrait || !Array.isArray(S.portrait.ids) || !S.portrait.ids.length) S.portrait = { date: localISO(), ids: line.slice(0, 4) };
+    toast('Three generations in one line! The Family Photo Frame is yours.', 'gold'); markDirty();
+  }
+  if (line.length >= 5 && !F.gen5) { F.gen5 = localISO(); got.push('gen5'); titleGive('Great-Great-Granddog'); markDirty(); }
+  const sp = S.sparkleBook && typeof S.sparkleBook === 'object' ? S.sparkleBook : {};
+  if (!F.glitter && coatBreeds().length && coatBreeds().every((k) => sp[k])) { F.glitter = localISO(); got.push('glitter'); titleGive('Glitter Legend'); markDirty(); }
+  if (!F.penpals && FAMILIES.every((f) => S.penpals[f.id])) { F.penpals = localISO(); got.push('penpals'); titleGive('Friend of Paw Haven'); markDirty(); }
+  return got;
+}
+function jrCheckAll() { try { coatSync(); coatRewardsCheck(); jrFamCheck(); } catch (e) { console.warn('journal check', e); } }
 const coatBreeds = () => { const G = window.PawGenes; const b = G && Array.isArray(G.BREEDS) && G.BREEDS.length ? G.BREEDS : dogsList().map((d) => d.key); return b.slice(0, 12); };
 function coatCatalogOf(key) {
   try { const G = window.PawGenes; if (G && typeof G.coatCatalog === 'function') { const c = G.coatCatalog(key); if (Array.isArray(c) && c.length) return c; } } catch (e) { /* older genes module */ }
@@ -179,7 +256,18 @@ function coatCatalogOf(key) {
 }
 const coatBookOf = () => (S.coatBook && typeof S.coatBook === 'object' ? S.coatBook : (S.coatBook = {}));
 const coatsFound = (key) => Object.keys(coatBookOf()).filter((k) => k.split('|')[0] === key).map((k) => k.slice(key.length + 1));
-const coatCount = () => Object.keys(coatBookOf()).length;
+// bonus coats: a mix pup can show a coat outside its body breed's catalogue (coatCatalog {all:true}, flagged extra). They get a frame but are not counted.
+const jrExtraMemo = {};
+function coatExtras(key) {
+  if (jrExtraMemo[key]) return jrExtraMemo[key]; let set = [];
+  try { const G = window.PawGenes; if (G && typeof G.coatCatalog === 'function') { const c = G.coatCatalog(key, { all: true }); if (Array.isArray(c)) { set = c.filter((x) => x && x.extra).map((x) => x.coat); jrExtraMemo[key] = set; } } } catch (e) { /* older genes module */ }
+  return set;
+}
+function coatIsBonus(key, coat) {
+  const cat = coatCatalogOf(key); if (!cat || cat.some((c) => c.coat === coat)) return false;
+  return coatExtras(key).includes(coat);
+}
+const coatCount = () => Object.keys(coatBookOf()).filter((k) => { const i = k.indexOf('|'); return !coatIsBonus(k.slice(0, i), k.slice(i + 1)); }).length;
 // Log the coats of everyone at home and every rehomed pup (BREED logs births; this keeps starters, rescues and old saves in the book)
 function coatSync() {
   if (!S || !S.dogs) return 0; const book = coatBookOf(); let n = 0;
@@ -188,14 +276,18 @@ function coatSync() {
   if (n) markDirty(); return n;
 }
 function coatRewardsCheck() {
-  if (!S) return []; if (!S.coatRewards || typeof S.coatRewards !== 'object') S.coatRewards = {};
+  if (!S) return []; jrFields();
   const have = coatCount(), got = [];
   COAT_MILESTONES.forEach(([n, coins]) => {
     if (have < n || S.coatRewards[n]) return; S.coatRewards[n] = localISO(); got.push(n);
     if (coins) addCoins(coins, { raw: true });
     if (n === 15 && !S.inv.charms.includes(RIBBON)) S.inv.charms.push(RIBBON);
-    const msg = n === 5 ? `Coat Collection: 5 coats! +${coins} coins. A very fashionable family.` : n === 15 ? `Coat Collection: 15 coats! +${coins} coins and the ${RIBBON} charm.` : n === 30 ? `Coat Collection: 30 coats! +${coins} coins. Scientists are taking notes.` : 'Coat Collection: 50 coats! You are now a Master Breeder. It says so on the Profile.';
+    if (n === 25 && !S.inv.clothes.includes(JR_RAINBOW)) S.inv.clothes.push(JR_RAINBOW);
+    if (n === 40) jrDecor('Giant Crayon Box');
+    const msg = n === 5 ? `Coat Collection: 5 coats! +${coins} coins. A very fashionable family.` : n === 10 ? 'Coat Collection: 10 coats! You are a Gene Detective now.' : n === 15 ? `Coat Collection: 15 coats! +${coins} coins and the ${RIBBON} charm.` : n === 25 ? 'Coat Collection: 25 coats! The Rainbow Collar is in your wardrobe. Every colour, all at once.' : n === 30 ? `Coat Collection: 30 coats! +${coins} coins. Scientists are taking notes.` : n === 40 ? 'Coat Collection: 40 coats! A Giant Crayon Box for the yard.' : 'Coat Collection: 50 coats! You are now a Master Breeder. It says so on the Profile.';
     toast(msg, 'gold'); try { SFX.fanfare(); } catch (e) { /* audio off */ }
+    if (n === 10) titleGive('Gene Detective');
+    if (n === 50) titleGive('Master Breeder');
   });
   if (got.length) markDirty(); return got;
 }
@@ -209,21 +301,56 @@ function journalCoats() {
   const haveCats = breeds.every((k) => cats[k]);
   const total = haveCats ? breeds.reduce((a, k) => a + cats[k].length, 0) : 0, found = coatCount();
   const book = coatBookOf(), key = jCoatKey, mine = coatsFound(key), cat = cats[key];
-  const list = cat ? cat.map((c) => ({ coat: c.coat, rare: !!c.rare, how: c.how || '', found: mine.includes(c.coat) })).concat(mine.filter((n) => !cat.some((c) => c.coat === n)).map((n) => ({ coat: n, found: true }))) : mine.map((n) => ({ coat: n, found: true }));
+  const list = cat ? cat.map((c) => ({ coat: c.coat, rare: !!c.rare, how: c.how || '', found: mine.includes(c.coat) })).concat(mine.filter((n) => !cat.some((c) => c.coat === n)).map((n) => ({ coat: n, found: true, bonus: coatIsBonus(key, n) }))) : mine.map((n) => ({ coat: n, found: true }));
   const cell = (c) => {
-    if (c.found) { const g = coatGeneMap(key)[c.coat]; const d = { id: 'coat|' + key + '|' + c.coat, key, genes: g }; return `<div class="coat found ${c.rare ? 'rare' : ''}" data-coat="${esc(c.coat)}">${coatFrame(true, (() => { try { return headSVG(d); } catch (e) { return art('dogHead', key); } })())}<b>${esc(c.coat)}</b><span class="small">${c.rare ? '<span class="rarechip">Rare</span> ' : ''}Found ${esc(book[key + '|' + c.coat] || '')}</span></div>`; }
+    if (c.found) { const g = coatGeneMap(key)[c.coat]; const d = { id: 'coat|' + key + '|' + c.coat, key, genes: g }; return `<div class="coat found ${c.rare ? 'rare' : ''} ${c.bonus ? 'bonus' : ''}" data-coat="${esc(c.coat)}">${coatFrame(true, (() => { try { return headSVG(d); } catch (e) { return art('dogHead', key); } })())}<b>${esc(c.coat)}</b><span class="small">${c.rare ? '<span class="rarechip">Rare</span> ' : ''}${c.bonus ? '<span class="bonuschip">Bonus</span> ' : ''}Found ${esc(book[key + '|' + c.coat] || '')}</span></div>`; }
     return `<div class="coat unk ${c.rare ? 'rare' : ''}">${coatFrame(false, '<b class="q">?</b>')}<b>???</b><span class="small">${mine.length ? esc(c.how || 'Keep breeding to discover it.') : 'Find any coat of this breed for a hint.'}</span></div>`;
   };
-  const tabs = `<div class="cbreeds" role="tablist">${breeds.map((k) => { const n = coatsFound(k).length, t = cats[k] ? cats[k].length : null; return `<button class="cbreed ${k === key ? 'on' : ''}" role="tab" aria-selected="${k === key}" data-cbreed="${k}" title="${esc(breedName(k))}"><span class="ic">${art('dogHead', k)}</span><span>${n}${t ? '/' + t : ''}</span>${S.sparkleBook && S.sparkleBook[k] ? '<i class="cspk" aria-label="sparkle found">&#10022;</i>' : ''}</button>`; }).join('')}</div>`;
+  const tabs = `<div class="cbreeds" role="tablist">${breeds.map((k) => { const n = coatsFound(k).filter((c) => !coatIsBonus(k, c)).length, t = cats[k] ? cats[k].length : null; return `<button class="cbreed ${k === key ? 'on' : ''}" role="tab" aria-selected="${k === key}" data-cbreed="${k}" title="${esc(breedName(k))}"><span class="ic">${art('dogHead', k)}</span><span>${n}${t ? '/' + t : ''}</span>${S.sparkleBook && S.sparkleBook[k] ? '<i class="cspk" aria-label="sparkle found">&#10022;</i>' : ''}</button>`; }).join('')}</div>`;
   const sp = S.sparkleBook && typeof S.sparkleBook === 'object' ? S.sparkleBook : {};
   const spN = breeds.filter((k) => sp[k]).length;
-  const miles = COAT_MILESTONES.map(([n, c]) => `<span class="cmile ${S.coatRewards && S.coatRewards[n] ? 'done' : ''}" title="${n} coats"><b>${n}</b>${n === 50 ? 'Master Breeder' : n === 15 ? `${c} + Ribbon` : `${c} coins`}${S.coatRewards && S.coatRewards[n] ? ' &#10003;' : ''}</span>`).join('');
+  const miles = COAT_MILESTONES.map(([n, c]) => `<span class="cmile ${S.coatRewards && S.coatRewards[n] ? 'done' : ''}" title="${n} coats"><b>${n}</b>${JR_MILE_TXT[n] || `${c} coins`}${S.coatRewards && S.coatRewards[n] ? ' &#10003;' : ''}</span>`).join('');
   return `<div class="ctop"><div class="ccount"><b>${found}${haveCats ? ' / ' + total : ''}</b><span class="small">coats${haveCats ? '' : ' found'}</span><div class="prog"><i style="width:${haveCats && total ? Math.min(100, found / total * 100) : Math.min(100, found * 2)}%"></i></div></div>
     <div class="cmiles">${miles}</div>
     <div class="csparkle" aria-label="Sparkle puppies: ${spN} of ${breeds.length}"><span class="small">Sparkle pups ${spN}/${breeds.length}</span><span class="cstars">${breeds.map((k) => `<i class="${sp[k] ? 'on' : ''}" title="${esc(breedName(k))}${sp[k] ? ': sparkle found' : ''}">&#10022;</i>`).join('')}</span></div></div>
-    ${tabs}<h4 class="cbh">${esc(breedName(key))} <span class="small">${mine.length}${cat ? ' of ' + cat.length : ''} found</span></h4>
+    ${jrJarCard()}${jrMixesStrip()}
+    ${tabs}<h4 class="cbh">${esc(breedName(key))} <span class="small">${mine.filter((c) => !coatIsBonus(key, c)).length}${cat ? ' of ' + cat.length : ''} found${mine.some((c) => coatIsBonus(key, c)) ? ' + bonus' : ''}</span></h4>
     ${list.length ? `<div class="cgrid">${list.map(cell).join('')}</div>` : `<p class="small cnone">No ${esc(breedName(key))} coats yet. Every dog you raise, every puppy born and every rescue adds their coat here.</p>`}`;
 }
-on('game:ready', () => { coatSync(); coatRewardsCheck(); });
-on('dog:added', () => setTimeout(() => { coatSync(); coatRewardsCheck(); }, 0));
-on('yard:enter', () => { coatSync(); coatRewardsCheck(); });
+on('game:ready', () => { jrFields(); jrCheckAll(); });
+on('dog:added', () => setTimeout(jrCheckAll, 0));
+on('yard:enter', jrCheckAll);
+
+/* ---------- v2.1: Sparkle Meter jar, Breeds & Mixes strip, Find a partner ---------- */
+function jrJarSVG(fill) {
+  const dots = []; for (let i = 0; i < fill; i++) dots.push(`<circle cx="${34 + (i % 4) * 17}" cy="${138 - Math.floor(i / 4) * 17}" r="4" fill="${i % 2 ? '#F28FA5' : '#FFD66E'}" stroke="#5B3D32" stroke-width="1"/>`);
+  return `<svg viewBox="0 0 120 160"><rect x="26" y="26" width="68" height="120" rx="12" fill="#FFFBF3" stroke="#5B3D32" stroke-width="3"/><rect x="22" y="12" width="76" height="16" rx="5" fill="#C9A27A" stroke="#5B3D32" stroke-width="3"/>${dots.join('')}</svg>`;
+}
+function jrJarCard() {
+  const fill = Math.max(0, Math.min(24, S.pupsSinceSparkle | 0));
+  const real = artReal('prop', 'sparklejar', { fill });
+  return `<div class="cjar" data-fill="${fill}"><span class="cjar-art">${real || jrJarSVG(fill)}</span><div><b>Sparkle Meter: ${fill} / 24</b><p class="small">${fill} / 24: a Sparkle is guaranteed by puppy 24.</p></div></div>`;
+}
+const JR_GRAND = ['Sled Noodle', 'Sunrise Loaf', 'Snowdrift', 'The Everything Dog'];
+function jrMixesStrip() {
+  const G = window.PawGenes, breeds = coatBreeds(), have = { breed: new Set(), mix: new Set(), grand: new Set() };
+  const note = (n) => { if (n) have.mix.add(n); };
+  famAllIds().forEach((id) => {
+    const r = famRec(id); if (!r) return;
+    if (r.key) have.breed.add(r.key);
+    if (r.mix) { if (r.mix.a) have.breed.add(r.mix.a); if (r.mix.b) have.breed.add(r.mix.b); note(r.mix.name); if (r.mix.grand) have.grand.add(r.mix.grand); }
+    try { const anc = typeof ancOf === 'function' ? ancOf(r) : r.anc || null; if (anc) { Object.keys(anc).forEach((k) => { if (anc[k] > 0) have.breed.add(k); }); if (G && typeof G.grandMix === 'function') { const g = G.grandMix(anc); if (g && g.name && g.kind !== 'breed') (g.kind === 'mix' ? have.mix : have.grand).add(g.name); } } } catch (e) { /* ancestry not ready */ }
+  });
+  const mixNames = []; try { Object.keys((G && G.MIXES) || {}).forEach((k) => { const n = G.MIXES[k].name; if (n && n !== 'Mutt mix' && !mixNames.includes(n)) mixNames.push(n); }); } catch (e) { /* no table */ }
+  const chip = (txt, on, cls) => `<span class="mchip ${cls} ${on ? 'found' : 'unk'}" ${on ? '' : 'title="Not found yet"'}>${on ? esc(txt) : '?'}</span>`;
+  const bN = breeds.filter((k) => have.breed.has(k)).length, mN = mixNames.filter((n) => have.mix.has(n)).length, gN = JR_GRAND.filter((n) => have.grand.has(n) || have.mix.has(n)).length;
+  return `<div class="cmixes" aria-label="Breeds and mixes"><h4>Breeds &amp; Mixes <span class="small">${bN} of ${breeds.length} breeds, ${mN} mixes, ${gN} grand-mixes</span></h4>
+    <div class="mrow">${breeds.map((k) => chip(breedName(k), have.breed.has(k), 'breed')).join('')}${mixNames.map((n) => chip(n, have.mix.has(n), 'mix')).join('')}${JR_GRAND.map((n) => chip(n, have.grand.has(n) || have.mix.has(n), 'grand')).join('')}</div></div>`;
+}
+function jrPartnerBtn(r) {
+  try {
+    if (!r || r.status !== 'home' || !r.live) return ''; const d = r.live;
+    if (d.fixed || lifeStage(ageMonths(d)) === 'puppy') return '';
+    return `<button class="btn fpartner" data-fpartner="${esc(d.id)}">Find a partner</button>`;
+  } catch (e) { return ''; }
+}

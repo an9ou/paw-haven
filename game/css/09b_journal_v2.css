@@ -153,3 +153,51 @@ html[data-motion="off"] #mailboxG.mb-new > svg{animation:none}
 .profile .pf-grid .jent > b{font-size:22px}
 .profile .pf-grid .jent .btn{min-height:34px;font-size:16px;padding:2px 12px 3px}
 .profile .glines{font-size:13.5px}
+
+/* ---------- v2.1: Sparkle Meter jar, Breeds & Mixes, titles, postcard album, glitter postcards ---------- */
+.cjar{display:flex;align-items:center;gap:12px;margin:6px 0 4px}
+.cjar-art{width:62px;height:82px;flex:none}
+.cjar-art svg{width:100%;height:100%;display:block}
+.cjar b{font-family:var(--font-hand);font-size:26px;line-height:1}
+.cjar p{margin:2px 0 0}
+.cmixes{margin:4px 0 8px}
+.cmixes h4{margin:2px 0 4px;font-family:var(--font-hand);font-size:24px}
+.mrow{display:flex;flex-wrap:wrap;gap:5px}
+.mchip{display:inline-block;font-family:var(--font-hand);font-weight:700;font-size:17px;line-height:1.3;padding:0 9px;border:2px solid #5B3D32;border-radius:9px 5px 10px 6px;background:var(--w-cream)}
+.mchip.found.breed{background:var(--w-mint)}
+.mchip.found.mix{background:var(--w-pink)}
+.mchip.found.grand{background:#FFE3A1}
+.mchip.unk{border-style:dashed;border-color:var(--graph);color:var(--graph);background:transparent}
+.coat.bonus .cframe{box-shadow:0 0 0 3px #C9B6F0}
+.bonuschip{display:inline-block;font-size:12px;font-weight:700;background:#C9B6F0;border-radius:6px;padding:0 5px}
+.ancline{margin:1px 0}
+.titlebadge.proud{background:#D0607A}
+.pf-titles{margin:6px 0 8px}
+.pf-titles > b{font-family:var(--font-hand);font-size:24px;margin-right:8px}
+.ptrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.ptitle{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-hand);font-weight:700;font-size:19px;line-height:1.2;padding:1px 10px 2px 4px;cursor:pointer;color:var(--ink);background:var(--w-cream);border:2px solid #5B3D32;border-radius:12px 6px 13px 7px}
+.ptitle .ptic{width:26px;height:26px;display:inline-block}
+.ptitle .ptic svg{width:100%;height:100%}
+.ptitle.on{background:#FFE3A1;box-shadow:0 0 0 2px #C08A12}
+.fpartner{align-self:flex-start;min-height:38px;font-size:17px;margin-top:4px}
+.mbtabs{margin:0 0 8px}
+.mbtabs .btn{min-height:38px;font-size:19px}
+.mbt-ic{display:inline-block;width:24px;height:24px;vertical-align:middle;margin-right:4px}
+.mbt-ic svg{width:100%;height:100%}
+.album{position:relative;min-height:300px}
+.al-art{position:absolute;inset:0;opacity:.18;pointer-events:none}
+.al-art svg{width:100%;height:100%}
+.al-head{position:relative;margin:2px 0 8px}
+.al-head b{font-family:var(--font-hand);font-size:30px;margin-right:6px}
+.al-grid{position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.al-slot{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center;min-height:92px;padding:6px;border:2px solid #5B3D32;border-radius:10px 6px 11px 7px;background:#FFFBF3}
+.al-slot b{font-family:var(--font-hand);font-size:21px;line-height:1.05}
+.al-slot.unk{border-style:dashed;border-color:var(--graph);background:rgba(255,251,243,.6)}
+.al-slot.unk b.q{font-size:34px;color:var(--graph)}
+.al-stamp{width:30px;height:36px;background:#E86F6F;border:2px dashed #FFFBF3;outline:2px solid #E86F6F;border-radius:2px;display:grid;place-items:center}
+.al-stamp i{width:12px;height:12px;border-radius:50%;background:#FFFBF3;opacity:.85}
+/* glitter border for Sparkle pups' postcards */
+.pc.pc-spk{border:4px solid transparent;border-radius:10px;background:linear-gradient(#FFFBF3,#FFFBF3) padding-box,linear-gradient(110deg,#FFD66E,#F28FA5,#BFE3F5,#FFD66E,#F28FA5,#BFE3F5) border-box;background-size:100% 100%,300% 100%;animation:pcglit 4s linear infinite;box-shadow:0 0 12px 2px rgba(255,214,110,.6)}
+@keyframes pcglit{to{background-position:0 0,300% 0}}
+[data-motion="off"] .pc.pc-spk{animation:none}
+@media (prefers-reduced-motion:reduce){.pc.pc-spk{animation:none}}
