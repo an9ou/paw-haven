@@ -370,24 +370,24 @@
     '.pg-portrait .pg-scene>svg{width:420px;height:1000px}',
     '.pg-portrait .pg-plots::before{content:"";position:absolute;left:8px;top:214px;width:404px;height:478px;background:rgba(150,108,76,.93);border:3px solid ' + INK + ';border-radius:18px 12px 20px 14px}',
     '.pg-portrait .pg-art,.pg-portrait .pg-soil,.pg-portrait .pg-crop{height:132px}',
-    '.pg-portrait .pg-hud{left:6px;right:6px;top:8px;height:auto;flex-wrap:wrap;gap:6px 4px;padding:6px 6px 8px}',
+    '.pg-portrait .pg-hud{left:6px;right:6px;top:calc(8px + var(--pg-sy,0px));z-index:7;height:auto;flex-wrap:wrap;gap:6px 4px;padding:6px 6px 8px}',
     '.pg-portrait .pg-ico{width:40px;height:40px}',
     '.pg-portrait .pg-titles{flex:1 1 300px}',
     '.pg-portrait .pg-title{font-size:28px}',
     '.pg-portrait .pg-hint{font-size:15px}',
     '.pg-portrait .pg-tool{height:52px;font-size:18px;padding:0 5px 2px 3px;gap:1px;box-shadow:1px 2px 0 rgba(91,61,50,.25)}',
-    '.pg-portrait .pg-tool small{font-size:14px;margin-left:0}',
+    '.pg-portrait .pg-tool small{font-size:15px;margin-left:0}',
     '.pg-portrait .pg-done{font-size:19px;padding:0 7px 3px;min-height:52px}',
     '.pg-portrait .pg-tool i{width:24px;height:24px}',
     '.pg-portrait .pg-btn{min-height:50px}',
     '.pg-portrait .pg-chips{left:8px;right:8px;top:704px;flex-direction:row;flex-wrap:wrap;gap:5px}',
-    '.pg-portrait .pg-chip{font-size:15px;max-width:404px}',
+    '.pg-portrait .pg-chip{font-size:17px;max-width:404px}',
     '.pg-portrait .pg-info{left:174px;right:8px;top:830px;width:auto}',
     '.pg-portrait .pg-dogw{left:4px;top:846px;width:166px;height:138px}',
     '.pg-portrait .pg-bubble{left:6px;bottom:146px;max-width:300px}',
-    '.pg-portrait .pg-pouch{left:8px;right:8px;top:140px;width:auto}',
-    '.pg-portrait .pg-pk{width:118px}',
-    '.pg-portrait .pg-card{min-width:0;width:380px}'
+    '.pg-portrait .pg-pouch{left:8px;right:8px;top:calc(184px + var(--pg-sy,0px));width:auto;max-height:calc(var(--pg-vh,700px) - 196px);overflow-y:auto}',
+    '.pg-portrait .pg-pk{width:118px;font-size:17px}',
+    '.pg-portrait .pg-card{min-width:0;width:380px;top:calc(var(--pg-vh,700px) / 2 + var(--pg-sy,0px))}'
   ].join('\n');
   function injectCSS() {
     if (typeof document === 'undefined' || document.getElementById('pawgarden-css')) return;
@@ -612,10 +612,13 @@
 
       // scale to the host
       var fit = function () {
-        if (closed) return;
+        if (closed) return; if (typeof pin === 'function') pin();
         var w = el.clientWidth || SW, h = el.clientHeight || SH, s = (PORT ? w / SW : Math.min(w / SW, h / SH)) || 1;
         stageEl.style.transform = 'translate(' + Math.max(0, (w - SW * s) / 2).toFixed(1) + 'px,' + (PORT ? 0 : Math.max(0, (h - SH * s) / 2)).toFixed(1) + 'px) scale(' + s.toFixed(4) + ')';
       };
+      // v2.2 phone: the 420 x 1000 stage scrolls, so the toolbar, seed pouch and cards follow the scroll position (--pg-sy, --pg-vh in stage pixels)
+      var pin = function () { if (closed || !PORT) return; var s2 = (el.clientWidth || SW) / SW; root.style.setProperty('--pg-sy', (root.scrollTop / s2).toFixed(1) + 'px'); root.style.setProperty('--pg-vh', ((el.clientHeight || 700) / s2).toFixed(1) + 'px'); };
+      if (PORT) { root.addEventListener('scroll', pin, { passive: true }); pin(); }
       fit();
       if (typeof ResizeObserver === 'function') { var ro = new ResizeObserver(fit); ro.observe(el); cleanups.push(function () { ro.disconnect(); }); }
       else { window.addEventListener('resize', fit); cleanups.push(function () { window.removeEventListener('resize', fit); }); }
