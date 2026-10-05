@@ -1,1 +1,13 @@
 /* ---------- v2.2 phone: HOME lane. Every rule sits under html[data-layout="phone"] ---------- */
+/* scene: the strip of place buttons must not swallow taps meant for the poop, the nursery or the dog */
+html[data-layout="phone"] #placeBtns{pointer-events:none}
+html[data-layout="phone"] #placeBtns .btn{pointer-events:auto}
+/* the yard and house scenes are swiped sideways by hand (03_yard.js phCamPan), so the browser must not take the gesture */
+html[data-layout="phone"] #view > svg.world{touch-action:none}
+/* adoption: the Adopt button stays in reach while the card scrolls */
+html[data-layout="phone"] #stage.flowdock .adopt-card ~ .foot{position:sticky;bottom:0;z-index:2;margin:4px -4px 0;padding:8px 4px calc(6px + env(safe-area-inset-bottom,0px));background:linear-gradient(to bottom,rgba(255,248,235,0),var(--paper) 30%)}
+html[data-layout="phone"] #stage.flowdock .heads{gap:8px}
+/* decor card: a smaller picture so the sheet is not mostly empty */
+html[data-layout="phone"] .hm-pop{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+html[data-layout="phone"] .hm-pop .hm-art{display:block;width:min(60%,220px);margin:0 auto}
+html[data-layout="phone"] .hm-pop .hm-art svg{display:block;width:100%;height:auto;max-height:200px}
