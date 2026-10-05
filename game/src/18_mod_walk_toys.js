@@ -1,7 +1,7 @@
 /* ======================= MODULES: PawWalk + PawToys ======================= */
 function showHost() { const h = $('#modHost'); h.style.top = hud.offsetHeight + 'px'; h.innerHTML = ''; h.hidden = false; return h; }
 function hideHost() { const h = $('#modHost'); h.hidden = true; h.innerHTML = ''; }
-function dogForMod() { const c = coatInfo(D()); return Object.assign({ key: artKey(S.dog.key), name: S.dog.name, outfit: dogOutfit(), sex: S.dog.sex || 'male', pronouns: PR() }, c ? { coat: c.coat, seed: hashId(D().id) } : {}); }
+function dogForMod() { const c = coatInfo(D()); return Object.assign({ key: artKey(S.dog.key), name: S.dog.name, outfit: dogOutfit(), sex: S.dog.sex || 'male', pronouns: PR() }, lookOpts(D(), c)); }
 let modCtl = null;
 function enterWalkMod(area) {
   setChrome(true, false); dock.innerHTML = ''; view.innerHTML = '';

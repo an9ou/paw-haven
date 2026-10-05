@@ -87,6 +87,7 @@ function enterYard() {
   }, 1000);
   onCleanup(() => clearInterval(iv));
   if (S.sleeping) sleepTray(); else dockIdle();
+  emit('yard:enter', { place: S.place });
 }
 const WX_LINES = {
   shiba: { rain: 'Rain? On ME? I would like to speak to the manager of the sky.', coat: 'Behold. A dog who does not get wet. Bow.', snow: 'Cold. Unacceptable. A sweater, please. Now.', warm: 'Snow is beneath me. I will zoom across it anyway.', hot: 'Too hot to be this dramatic. I will try.', night: '*yawn* Even legends sleep.', dawn: 'Morning. You may bring breakfast.' },

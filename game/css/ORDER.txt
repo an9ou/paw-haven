@@ -8,13 +8,17 @@
 07_buttons_cards.css
 08_modal.css
 09_journal.css
+09b_journal_v2.css
 10_toasts.css
 11_title.css
 12_phone_v1.css
 13_purchase_window.css
+13b_town_v2.css
 14_pack.css
+14b_breeding.css
 15_popups.css
 16_idle_behaviours.css
+16b_puppy.css
 17_training_map.css
 17b_trick_games.css
 18_popup_style.css

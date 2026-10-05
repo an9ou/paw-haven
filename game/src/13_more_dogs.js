@@ -48,11 +48,19 @@ function coatInfo(d) {
   let v = null; try { const p = G.phenotype(d.genes, d.key, d.id); if (p && p.coat) v = p; } catch (e) { v = null; }
   coatCache.set(k, v); return v;
 }
-function dogOpts(d, o) { const c = coatInfo(d); return c ? Object.assign({}, o || {}, { coat: c.coat, seed: hashId(d.id) }) : Object.assign({}, o || {}); }
+// v2: look extras for the art (puppy age, mix head, sparkle, expecting). Sent both as top-level opts and inside coat.look,
+// so modules that only forward {coat, seed} still draw puppies, mixes and sparkles.
+function dogLook(d) {
+  if (!d) return null; const m = d.born ? ageMonths(d) : 10;
+  const L = { age: m < 1 ? 'newborn' : m < 6 ? 'puppy' : null, mixHead: d.mix && d.mix.head && d.mix.head !== d.key ? d.mix.head : null, sparkle: !!d.sparkle, expecting: !!(d.preg && d.preg.due) };
+  return L.age || L.mixHead || L.sparkle || L.expecting ? L : null;
+}
+function lookOpts(d, c) { const L = dogLook(d), o = {}; if (c) { o.coat = L ? Object.assign({}, c.coat, { look: L }) : c.coat; o.seed = hashId(d.id); } if (L) { if (L.age) o.age = L.age; if (L.mixHead) o.mix = { head: L.mixHead }; if (L.sparkle) o.sparkle = true; if (L.expecting) o.expecting = true; } return o; }
+function dogOpts(d, o) { return Object.assign({}, o || {}, lookOpts(d, coatInfo(d))); }
 const outfitOf = (d) => ({ head: d.outfit.head, eyes: d.outfit.eyes, neck: d.outfit.neck, body: d.outfit.body });
 const ROACH = { greyhound: true }; // v1.7: greyhounds sleep upside down ("roaching")
 function dogSVG(d, o) { if (o && o.pose === 'sleep' && ROACH[d.key] && poseReal(d.key, 'rollover')) o = Object.assign({}, o, { pose: 'rollover', roach: true }); return dogArtSafe(d.key, dogOpts(d, o)); }
-function headSVG(d) { const c = coatInfo(d); return c ? art('dogHead', d.key, { coat: c.coat, seed: hashId(d.id) }) : art('dogHead', d.key); }
+function headSVG(d) { const o = lookOpts(d, coatInfo(d)); return Object.keys(o).length ? art('dogHead', d.key, o) : art('dogHead', d.key); }
 const coatNameOf = (d) => { const c = coatInfo(d); return c ? c.coatName : d.coat || ''; };
 const eyesOf = (d) => { const c = coatInfo(d); return c ? c.eyes : d.eyes || 'brown'; };
 function moodOf(d) { const lo = Math.min(...Object.values(d.stats)); return lo < 25 ? 'red' : lo < 50 ? 'amber' : 'green'; }
@@ -153,7 +161,7 @@ function addDog(spec, name) {
   if (spec.key === 'mutt') { d.favFood = [PICK(FOOD.slice(1)).n]; d.favToy = PICK(TOYS).n; }
   d.rescue = spec.rescue || null; dogDefaults(d, S);
   const c = coatInfo(d); if (c) { d.coat = c.coatName; d.eyes = c.eyes; }
-  S.dogs.push(d); markDirty(); hudDogKey = ''; return d;
+  S.dogs.push(d); markDirty(); hudDogKey = ''; emit('dog:added', { dog: d }); return d;
 }
 let shelterSex = {};
 function shelterCard(spec, kind) {

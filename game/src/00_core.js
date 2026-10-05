@@ -12,6 +12,7 @@ const BOND_TH = [0, 100, 250, 450, 700, 1000, 1400, 1900, 2500, 3200];
 const FOOD = [
   { n: 'Fresh Water', price: 0, hunger: 0, happy: 5, energy: 10, note: 'Free. Refills every 2 game hours.' },
   { n: 'Basic Kibble', price: 5, hunger: 30, note: '+30 Hunger. Crunchy brown circles. A classic.' },
+  { n: 'Puppy Kibble', price: 6, hunger: 30, pupHappy: 5, note: '+30 Hunger. Small soft bites. Puppies under 6 months get +5 Happiness.' },
   { n: 'Bone-shaped Biscuit', price: 8, hunger: 10, happy: 10, bond: 2, note: '+10 Hunger, +10 Happiness. Shaped like a bone, which is very meta.' },
   { n: 'Chicken & Rice Bowl', price: 15, hunger: 50, happy: 5, note: '+50 Hunger, +5 Happiness. Tastes like Sunday.' },
   { n: 'Salmon Pâté', price: 30, hunger: 60, happy: 10, clean: 10, note: '+60 Hunger, +10 Happiness, +10 Cleanliness (shiny coat).' },
