@@ -14,6 +14,7 @@
 13_more_dogs.js
 14_town_places.js
 15_trick_training.js
+15b_trick_games.js
 16_voices_idle.js
 17_walk_route_carousel.js
 18_mod_walk_toys.js

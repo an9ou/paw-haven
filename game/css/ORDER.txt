@@ -16,5 +16,6 @@
 15_popups.css
 16_idle_behaviours.css
 17_training_map.css
+17b_trick_games.css
 18_popup_style.css
 19_phone_v15b.css
