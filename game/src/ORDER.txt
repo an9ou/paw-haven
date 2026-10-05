@@ -27,4 +27,7 @@
 20_settings_dev.js
 21_time_loop.js
 22_input.js
+22b_cloud_config.js
+22b_cloud.js
+22c_phone_shell.js
 23_boot.js

@@ -23,3 +23,10 @@
 17b_trick_games.css
 18_popup_style.css
 19_phone_v15b.css
+20_phone_shell.css
+21_phone_home.css
+22_phone_town.css
+23_phone_journal.css
+24_phone_puppy.css
+25_phone_walk.css
+26_phone_skill.css
