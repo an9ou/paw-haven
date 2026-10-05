@@ -91,11 +91,15 @@ function packSpots() { return PACK_SPOTS[S.place] || PACK_SPOTS.default; }
 function packDogSVG(d, i) {
   let [fx, fy, face, sc] = packSpots()[i] || packSpots()[0]; sc = sc || 0.6;
   const nz = d.sleeping && NAP_ZONE[S.place]; if (nz) { fx = nz[0] + [-36, 36, 0][i % 3]; fy = nz[1]; sc = nz[2]; face = 'right'; } // napping: in the doorway / on the bed, like the active nap
+  if (hmChairDown(d)) { fx = 890; fy = 492; face = 'right'; sc = 0.5; } // Proud Mum lies down next to the Rocking Chair
   const w = DW * sc, h = DH * sc, x = fx - w / 2, y = fy - h * (205 / 220);
   const pose = d.sleeping ? 'sleep' : packPose[d.id] || (Math.min(...Object.values(d.stats)) < 25 ? 'sad' : 'idle');
   return `<g class="packdog hot" data-dog="${d.id}" tabindex="0" role="button" aria-label="${esc(d.name)}: click to make ${PRd(d).him} the active dog"><g class="pd-wander" style="animation-delay:-${i * 2.3}s"><rect x="${x + 30}" y="${y + 30}" width="${w - 60}" height="${h - 30}" fill="transparent"/>${place(dogSVG(d, { pose, outfit: outfitOf(d), facing: face }), x, y, w, h)}</g></g>`;
 }
-function packSVG() { return S.dogs.length > 1 ? others().slice(0, 3).map(packDogSVG).join('') : ''; }
+function hmMumIn(d) { return typeof mumInBasket === 'function' && mumInBasket(d); } // a nursing mum is drawn in the nursery basket, not with the pack
+function hmChairOut4(d) { return !!(d.proud && S.place === 'yard' && hmDecorOut('Rocking Chair') && Math.random() < 0.25); } // about 1 in 4 idle picks
+function hmChairDown(d) { return !!(d.proud && S.place === 'yard' && !d.sleeping && packPose[d.id] === 'down' && typeof hmDecorOut === 'function' && hmDecorOut('Rocking Chair')); }
+function packSVG() { return S.dogs.length > 1 ? others().slice(0, 3).map((d, i) => hmMumIn(d) ? '' : packDogSVG(d, i)).join('') : ''; }
 function bindPack() {
   const g = $('#pack'); if (!g) return;
   g.querySelectorAll('[data-dog]').forEach((el) => { el.onclick = () => switchDog(el.dataset.dog); el.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); switchDog(el.dataset.dog); } }; });
@@ -104,7 +108,7 @@ function redrawPackDog(d) { const g = $(`#pack [data-dog="${d.id}"]`); if (!g) r
 function packAmbient() {
   if (S.dogs.length < 2 || cur.mode !== 'yard' || busy || !modal.hidden) return;
   const os = others(); if (!os.length) return;
-  if (Math.random() < 0.55) { const d = PICK(os); if (!d.sleeping) { packPose[d.id] = PICK(['sit', 'happy', 'idle', 'sleep']); redrawPackDog(d); } return; }
+  if (Math.random() < 0.55) { const d = PICK(os); if (!d.sleeping) { packPose[d.id] = hmChairOut4(d) ? 'down' : PICK(['sit', 'happy', 'idle', 'sleep']); redrawPackDog(d); } return; }
   const a = PICK(S.dogs), b = PICK(S.dogs.filter((x) => x !== a)); const pa = PRd(a), pb = PRd(b);
   const lines = [`${a.name} and ${b.name} are having a staring contest.`, `${a.name} is sniffing ${b.name}. ${b.name} allows it. For now.`, `${a.name} stole ${b.name}'s favourite spot. ${pb.He} is drafting a complaint.`, `${a.name} and ${b.name} zoom in circles. Nobody knows why. Not even them.`, `${a.name} brought ${b.name} a leaf. ${pb.He} pretends not to care. ${pb.He} cares.`, `${a.name} barks at nothing. ${b.name} barks at ${pa.him} for barking.`];
   S.dogs.forEach((d) => { d.stats.happy = clamp(d.stats.happy + 2, 0, 100); }); updateHUD();
