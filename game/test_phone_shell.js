@@ -88,18 +88,18 @@ require('./test_lib').run('phone_shell', async (t) => {
 
     sec(dev + ': ... menu');
     await p.locator('#moreBtn').tap(); await p.waitForSelector('#mmSet');
-    ok(await p.locator('#mmSet').count() === 1 && await p.locator('#mmMute').count() === 1 && await p.locator('#mmCloud').count() === 0, `${dev}: ... menu has Settings and Mute (no cloud item while the cloud lane is absent)`);
+    ok(await p.locator('#mmSet').count() === 1 && await p.locator('#mmMute').count() === 1 && await p.locator('#mmCloud').count() === 1, `${dev}: ... menu has Settings, Mute and Cloud save`);
     await targets('... menu', '#modal'); await textSizes('... menu', '#modal');
     const m0 = await ev(() => JSON.parse(localStorage.getItem('pawhaven_prefs_v1') || '{}').mute || false);
     await p.locator('#mmMute').tap(); ok(await t.until((m0) => (JSON.parse(localStorage.getItem('pawhaven_prefs_v1') || '{}').mute || false) !== m0, m0), `${dev}: Mute in the menu toggles the sound`);
     await p.locator('#moreBtn').tap(); await p.waitForSelector('#mmMute'); await p.locator('#mmMute').tap(); await t.until(() => document.getElementById('modal').hidden);
-    // with a cloud lane present (stubbed here as globals: the game looks them up with typeof), the menu shows its status and a Cloud save item
-    await ev(() => { window.cloudStatus = () => ({ state: 'synced', text: 'Synced 12 s ago' }); window.cloudOpen = () => { window.__cloudOpened = (window.__cloudOpened || 0) + 1; }; });
+    // the real CLOUD lane: off under the test harness, so the status line says so; "Cloud save" opens Settings at the Cloud save section
     await p.locator('#moreBtn').tap(); await p.waitForSelector('#mmCloud');
-    ok((await p.textContent('#mmCloudTxt')) === 'Synced 12 s ago', `${dev}: ... menu shows the cloud status line`);
+    const cst = await ev(() => window.__pawCloud.status().text);
+    ok((await p.textContent('#mmCloudTxt')) === cst && /Cloud save/.test(cst), `${dev}: ... menu shows the cloud status line (${cst})`);
     await t.SH(dev + '_menu'); await targets('... menu with cloud', '#modal');
-    await p.locator('#mmCloud').tap(); ok(await t.until(() => window.__cloudOpened === 1 && document.getElementById('modal').hidden), `${dev}: "Cloud save" calls cloudOpen()`);
-    await ev(() => { delete window.cloudStatus; delete window.cloudOpen; });
+    await p.locator('#mmCloud').tap(); ok(await t.until(() => !!document.querySelector('#modal .panel #clBox') && /Settings/.test(document.querySelector('#modal .panel h2').textContent)), `${dev}: "Cloud save" opens Settings at the Cloud save section`);
+    await p.locator('#modal .panel .x').first().tap(); await t.until(() => document.getElementById('modal').hidden);
     await p.locator('#moreBtn').tap(); await p.locator('#mmSet').tap(); ok(await t.until(() => !!document.querySelector('#modal .panel') && /Settings/.test(document.querySelector('#modal .panel h2').textContent)), `${dev}: Settings opens from the menu`);
 
     sec(dev + ': popups are bottom sheets');
