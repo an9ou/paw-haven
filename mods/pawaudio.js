@@ -10,17 +10,19 @@
 
   /* ---------------- shared names (V12 contract) ---------------- */
   var PLACES = ['title', 'yard', 'house', 'garden', 'kitchen', 'park', 'river', 'woods', 'beach', 'shelter', 'market', 'shop', 'map', 'walk', 'fetch', 'toy', 'bath', 'sleep', 'journal', 'wardrobe',
-    'square', 'cafe', 'dogpark', 'vet', 'salon', 'hilltop', 'pier'];   // v1.6 town places
+    'square', 'cafe', 'dogpark', 'vet', 'salon', 'hilltop', 'pier',   // v1.6 town places
+    'nursery'];   // v2 puppy nursery: soft lullaby variant of the home music
   var HANGOUTS = { park: 1, river: 1, woods: 1, beach: 1, hilltop: 1, pier: 1 };   // v1.2.1 hub places: yard-style music + that area's ambience
   var TIMES = ['dawn', 'day', 'dusk', 'night'];
   var WEATHERS = ['sunny', 'cloudy', 'rain', 'snow'];
   var AREAS = ['park', 'river', 'woods', 'beach', 'town', 'hilltop', 'pier'];
   var STINGERS = ['treasure', 'levelup', 'adopt', 'harvest', 'cooked', 'discover'];
-  var INDOOR = { house: 1, kitchen: 1, cafe: 1, vet: 1, salon: 1, shelter: 1, shop: 1, bath: 1, sleep: 1, journal: 1, wardrobe: 1 };
+  var STINGS = ['birth', 'sparkle', 'playdate'];   // v2 sfx-bus stings (PawAudio.sting)
+  var INDOOR = { nursery: 1, house: 1, kitchen: 1, cafe: 1, vet: 1, salon: 1, shelter: 1, shop: 1, bath: 1, sleep: 1, journal: 1, wardrobe: 1 };
   var LAYERS = ['keys', 'pad', 'bass', 'kick', 'snare', 'hats', 'top', 'crackle'];
-  var AMBS = ['rain', 'wind', 'birds', 'crickets', 'river', 'waves', 'market', 'window', 'bees', 'leaves', 'simmer', 'clock', 'gulls', 'cafe', 'salon'];
-  var INSIDE_AMB = { window: 1, simmer: 1, clock: 1, cafe: 1, salon: 1 };   // sounds inside the room: they skip the indoor muffle
-  var AMB_CONT = { rain: 1, wind: 1, river: 1, waves: 1, market: 1, simmer: 1 };   // ambiences with a continuous noise bed
+  var AMBS = ['rain', 'wind', 'birds', 'crickets', 'river', 'waves', 'market', 'window', 'bees', 'leaves', 'simmer', 'clock', 'gulls', 'cafe', 'salon', 'vet'];
+  var INSIDE_AMB = { window: 1, simmer: 1, clock: 1, cafe: 1, salon: 1, vet: 1 };   // sounds inside the room: they skip the indoor muffle
+  var AMB_CONT = { rain: 1, wind: 1, river: 1, waves: 1, market: 1, simmer: 1, salon: 1, vet: 1 };   // ambiences with a continuous noise bed
 
   /* ---------------- helpers ---------------- */
   function mtof(m) { return 440 * Math.pow(2, (m - 69) / 12); }
@@ -146,6 +148,8 @@
     vet: V({ bpm: 70, swing: 0.56, prog: 'gentle', keys: 'sustain', bass: 'sparse', kick: 'min', hats: 'light', top: 'box', dens: 0.3, themeChance: 0.2, cut: 3800, brush: true,
       L: { keys: 0.8, pad: 0.4, bass: 0.55, kick: 0.25, snare: 0.25, hats: 0.15, top: 0.65 } }),
     salon: V({ bpm: 80, keys: 'bouncy', bass: 'bouncy', kick: 'lazy', hats: 'light', top: 'bubble', dens: 0.75, themeChance: 0.2, cut: 6500, L: { kick: 0.5, snare: 0.4, hats: 0.45, top: 0.85 } }),
+    nursery: V({ bpm: 70, swing: 0.55, prog: 'gentle', keys: 'arp', bass: 'lullaby', kick: 'min', hats: 'light', top: 'box', dens: 0.45, themeChance: 0.4, themeGap: 12, cut: 3300, brush: true, mix: 0.8,
+      L: { keys: 0.8, pad: 0.5, bass: 0.5, kick: 0.12, snare: 0, hats: 0.1, top: 0.8, crackle: 0.8 } }),
     hill: V({ bpm: 76, swing: 0.58, prog: 'gentle', keys: 'sustain', kick: 'lazy', hats: 'light', top: 'flute', dens: 0.45, cut: 6500, L: { pad: 0.35, kick: 0.55, snare: 0.45, hats: 0.4 } }),
     pier: V({ bpm: 74, swing: 0.58, prog: 'warm', keys: 'sustain', bass: 'sparse', kick: 'lazy', hats: 'light', dens: 0.4, cut: 5500, L: { pad: 0.3, kick: 0.5, snare: 0.4, hats: 0.35 } }),
     home: V({ bpm: 76, prog: 'gentle', kick: 'lazy', hats: 'light', dens: 0.4, cut: 5500, L: { kick: 0.6, snare: 0.5, hats: 0.45, pad: 0.2 } }),
@@ -160,8 +164,8 @@
   };
   var PLACE_BASE = { title: 'theme', yard: 'yard', house: 'house', garden: 'garden', kitchen: 'kitchen', park: 'yard', river: 'yard', woods: 'yard', beach: 'yard',
     square: 'square', cafe: 'cafe', dogpark: 'dogpark', vet: 'vet', salon: 'salon', hilltop: 'hill', pier: 'pier', map: 'yard', shelter: 'home', market: 'market', shop: 'market', walk: 'walk',
-    fetch: 'play', toy: 'play', bath: 'bath', sleep: 'sleep', journal: 'calm', wardrobe: 'calm' };
-  var KEEP_PROG = { theme: 1, market: 1, play: 1, bath: 1, sleep: 1, cafe: 1, dogpark: 1, salon: 1 };
+    fetch: 'play', nursery: 'nursery', toy: 'play', bath: 'bath', sleep: 'sleep', journal: 'calm', wardrobe: 'calm' };
+  var KEEP_PROG = { nursery: 1, theme: 1, market: 1, play: 1, bath: 1, sleep: 1, cafe: 1, dogpark: 1, salon: 1 };
   var STRONG = { market: 1, play: 1, bath: 1, cafe: 1, dogpark: 1, salon: 1, square: 1 };   // places whose character survives time-of-day changes
 
   function norm(c) {
@@ -210,7 +214,7 @@
       if (!KEEP_PROG[bn]) v.prog = 'warm';
       tags.push('dusk: warm, lazy');
     } else if (time === 'night') {
-      if (bn === 'sleep') { v.bpm -= 2; v.cut *= 0.85; tags.push('night'); }
+      if (bn === 'sleep' || bn === 'nursery') { v.bpm -= 2; v.cut *= 0.85; tags.push('night'); }
       else if (STRONG[bn]) {
         v.bpm -= 5; v.cut *= 0.6; v.brush = true; v.dens *= 0.8; L.pad = Math.max(L.pad, 0.35);
         scaleL(L, { kick: 0.4, snare: 0.5, hats: 0.35 });
@@ -244,7 +248,7 @@
     v.swing = clamp(v.swing, 0.5, 0.7);
 
     // ambience
-    var a = { rain: 0, wind: 0, birds: 0, crickets: 0, river: 0, waves: 0, market: 0, window: 0, bees: 0, leaves: 0, simmer: 0, clock: 0, gulls: 0, cafe: 0, salon: 0 }, birdRate = 0.35;
+    var a = { rain: 0, wind: 0, birds: 0, crickets: 0, river: 0, waves: 0, market: 0, window: 0, bees: 0, leaves: 0, simmer: 0, clock: 0, gulls: 0, cafe: 0, salon: 0, vet: 0 }, birdRate = 0.35;
     if (weather === 'rain') a.rain = 1;
     if (weather === 'snow') a.wind = 0.55;
     if (weather === 'cloudy') a.wind = 0.2;
@@ -277,7 +281,7 @@
     if (place === 'square') { a.market = 0.4; a.river = 0.35; }   // gentle crowd + the fountain
     if (place === 'dogpark') a.birds *= 1.1;
     if (place === 'cafe') { a.cafe = 0.7; if (weather === 'rain') a.window = 0.4; }   // cups and chatter inside, outside muffled
-    if (place === 'vet') { a.clock = 0.3; if (weather === 'rain') a.window = 0.35; }   // clinic hush
+    if (place === 'vet') { a.clock = 0.3; a.vet = 0.7; if (weather === 'rain') a.window = 0.35; }   // clinic hush + gentle clinic bed
     if (place === 'salon') a.salon = 0.7;
     if (place === 'title') { for (var k2 in a) a[k2] *= 0.6; }
     for (var k3 in a) a[k3] = Math.round(clamp(a[k3], 0, 1) * 100) / 100;
@@ -605,6 +609,19 @@
       var l7 = G(0.05); osc(0.31).connect(l7); l7.connect(sgn.gain);
     } else if (name === 'market') {
       chain(noise(E.pink), F('bandpass', 520, 0.9), G(0.4), out);
+    } else if (name === 'vet') {   // soft clinic hum: mains-ish drone + a breath of air handling
+      var vg1 = G(0.01), vg2 = G(0.0042), vg3 = G(0.0025);
+      osc(118).connect(vg1); osc(236.5).connect(vg2); osc(354).connect(vg3); vg1.connect(out); vg2.connect(out); vg3.connect(out);
+      var vbp = F('bandpass', 360, 0.8), vag = G(0.06);
+      chain(noise(E.pink), vbp, vag, out);
+      var vl = G(0.02); osc(0.09).connect(vl); vl.connect(vag.gain);
+    } else if (name === 'salon') {   // hair dryer: a wide whoosh that swells in and out, with a warm motor under it
+      var dbp = F('bandpass', 1700, 0.45), dg = G(0.023);
+      chain(noise(E.white), dbp, dg, out);
+      var dl = G(0.018); osc(0.06).connect(dl); dl.connect(dg.gain);
+      var dl2 = G(500); osc(0.06).connect(dl2); dl2.connect(dbp.frequency);
+      var dm = F('lowpass', 260, 0.7), dmg = G(0.026);
+      chain(noise(E.pink), dm, dmg, out);
     }
     E.ambNodes[name] = srcs;
   };
@@ -719,6 +736,42 @@
     g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(rnd(0.012, 0.025), t + d * 0.3); g.gain.linearRampToValueAtTime(0, t + d);
     s.connect(hp); hp.connect(g); g.connect(this.evDest('salon')); s.start(t, Math.random()); s.stop(t + d + 0.02);
   };
+  EP.bell = function (t) {   // distant reception bell: a soft double 'ding' through a bit of distance
+    var dest = this.evDest('vet'), n = chance(0.4) ? 2 : 1, f = rnd(1750, 2000);
+    for (var i = 0; i < n; i++) {
+      var tt = t + i * 0.34;
+      if (!this.alloc(tt, 1.4, 2, -1)) return;
+      var o = this.O('sine', f), o2 = this.O('sine', f * 2.4), g = this.ac.createGain(), g2 = this.ac.createGain(), lp = this.F('lowpass', 3200, 0.5);
+      g.gain.setValueAtTime(0, tt); g.gain.linearRampToValueAtTime(0.03, tt + 0.003); g.gain.setTargetAtTime(0, tt + 0.004, 0.28);
+      g2.gain.setValueAtTime(0, tt); g2.gain.linearRampToValueAtTime(0.008, tt + 0.002); g2.gain.setTargetAtTime(0, tt + 0.003, 0.07);
+      o.connect(g); o2.connect(g2); g.connect(lp); g2.connect(lp); lp.connect(dest);
+      o.start(tt); o2.start(tt); o.stop(tt + 1.6); o2.stop(tt + 0.5);
+    }
+  };
+  EP.rustle = function (t) {   // paper rustle: a few tiny bandpassed noise crinkles
+    var n = 3 + ((Math.random() * 5) | 0), dest = this.evDest('vet');
+    for (var i = 0; i < n; i++) {
+      var tt = t + i * rnd(0.04, 0.11), d = rnd(0.02, 0.06);
+      if (!this.alloc(tt, d + 0.05, 1, -1)) return;
+      var s = this.ac.createBufferSource(), bp = this.F('bandpass', rnd(2600, 6200), rnd(0.7, 1.4)), g = this.ac.createGain();
+      s.buffer = this.white;
+      g.gain.setValueAtTime(0, tt); g.gain.linearRampToValueAtTime(rnd(0.012, 0.028), tt + 0.004); g.gain.setTargetAtTime(0, tt + 0.006, d * 0.4);
+      s.connect(bp); bp.connect(g); g.connect(dest); s.start(tt, Math.random() * 1.5); s.stop(tt + d + 0.05);
+    }
+  };
+  EP.snip = function (t) {   // scissor snips: 2-5 quick metallic clicks
+    var n = 2 + ((Math.random() * 4) | 0), dest = this.evDest('salon'), gap = rnd(0.11, 0.17);
+    for (var i = 0; i < n; i++) {
+      var tt = t + i * gap;
+      if (!this.alloc(tt, 0.1, 2, -1)) return;
+      var s = this.ac.createBufferSource(), hp = this.F('highpass', 4200, 0.8), g = this.ac.createGain(), o = this.O('triangle', rnd(4300, 5200)), og = this.ac.createGain();
+      s.buffer = this.white;
+      g.gain.setValueAtTime(0, tt); g.gain.linearRampToValueAtTime(0.03, tt + 0.001); g.gain.setTargetAtTime(0, tt + 0.002, 0.007);
+      og.gain.setValueAtTime(0, tt); og.gain.linearRampToValueAtTime(0.012, tt + 0.001); og.gain.setTargetAtTime(0, tt + 0.002, 0.012);
+      s.connect(hp); hp.connect(g); g.connect(dest); o.connect(og); og.connect(dest);
+      s.start(tt, Math.random() * 1.5); s.stop(tt + 0.06); o.start(tt); o.stop(tt + 0.1);
+    }
+  };
   EP.ambEvents = function (t, dt) {
     var a = this.ambT, self = this;
     function times(rate, fn) { var x = rate * dt, n = Math.floor(x) + (chance(x - Math.floor(x)) ? 1 : 0); for (var i = 0; i < n; i++) fn.call(self, t + Math.random() * dt); }
@@ -736,7 +789,11 @@
     }
     if (a.gulls > 0) times(0.12, this.gull);
     if (a.cafe > 0) { times(2.5, function (tt) { this.murmur(tt, 'cafe', 0.6); }); times(0.6, this.clink); }
-    if (a.salon > 0) { times(0.35, this.spray); times(2, function (tt) { this.simmerPop(tt, 'salon'); }); }
+    if (a.salon > 0) {
+      times(0.35, this.spray); times(2, function (tt) { this.simmerPop(tt, 'salon'); });
+      times(0.3, this.snip); times(1.4, function (tt) { this.murmur(tt, 'salon', 0.8); });   // scissors + soft chatter
+    }
+    if (a.vet > 0) { times(0.05, this.bell); times(0.22, this.rustle); }
     if (a.market > 0) {
       times(5.5, this.murmur);
       times(0.035, function (tt) { this.glock(this.evDest('market'), tt, pick([77, 81, 84]), 0.5, 0.35, true); });
@@ -917,6 +974,47 @@
     }
   };
 
+  /* ---------------- v2 stings: own chain -> sfx bus (so they follow the sfx volume + mute), a short private reverb ---------------- */
+  EP.stingBus = function () {
+    if (this.sgIn) return this.sgIn;
+    var E = this, ac = E.ac;
+    E.sgIn = E.G(1); E.sgLP = E.F('lowpass', 7200, 0.5); E.sgIn.connect(E.sgLP);
+    E.sgOut = E.G(0.62); E.sgLP.connect(E.sgOut); E.sgOut.connect(E.sfx);
+    E.sgVerb = ac.createConvolver(); E.sgVerb.buffer = reverbBuf(ac, 1.6);
+    var vs = E.G(0.3); E.sgLP.connect(vs); vs.connect(E.sgVerb); E.sgVerb.connect(E.sgOut);
+    return E.sgIn;
+  };
+  // bell-like voices; prio 1 so a busy music bed never drops a sting note
+  EP.sbell = function (dest, t, m, vel, kind) {
+    var ac = this.ac, f = mtof(m), parts, dec, i, first = null;
+    if (kind === 'box') { parts = [[1, 1, 1], [2.0, 0.22, 0.5], [4.02, 0.1, 0.2]]; dec = 0.55; }   // music-box tine
+    else if (kind === 'glit') { parts = [[1, 1, 0.6], [2.756, 0.3, 0.2], [5.404, 0.12, 0.08]]; dec = 0.5; }   // glittery bell
+    else { parts = [[1, 1, 1], [3.0, 0.2, 0.25], [5.43, 0.08, 0.06]]; dec = 0.35; }   // happy pluck
+    if (!this.alloc(t, dec * 6, 2, 1)) return;
+    var pk = 0.1 * vel * clamp(1.3 - (m - 72) / 40, 0.6, 1.3);
+    for (i = 0; i < parts.length; i++) {
+      if (f * parts[i][0] > ac.sampleRate * 0.45) break;   // never above Nyquist
+      var o = this.O('sine', f * parts[i][0] * (i ? 1 : Math.pow(2, rnd(-3, 3) / 1200))), g = ac.createGain(), tau = dec * parts[i][2];
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(pk * parts[i][1], t + 0.003); g.gain.setTargetAtTime(0, t + 0.004, tau);
+      o.connect(g); g.connect(dest); o.start(t); o.stop(t + tau * 7 + 0.1);
+      if (!first) { first = o; (function (gg) { o.onended = function () { gg.disconnect(); }; })(g); }
+    }
+  };
+  EP.sting = function (name, t) {
+    var E = this, out = E.stingBus(), u = 0.3;   // u = one lullaby eighth
+    if (name === 'birth') {   // music-box lullaby phrase in F: C A C D | C - A G | F, about 2.5 s with the tail
+      [[0, 84, 0.8], [1, 81, 0.65], [2, 84, 0.8], [3, 86, 0.85], [4, 84, 0.75], [6, 81, 0.6], [7, 79, 0.65], [8, 77, 0.8]].forEach(function (n) { E.sbell(out, t + n[0] * u, n[1], n[2], 'box'); });
+      [53, 57, 60].forEach(function (m, j) { E.padNote(out, t + 8 * u + j * 0.03, m, 1.2, 0.9); });
+      E.sbell(out, t + 8 * u + 0.02, 65, 0.5, 'box');
+    } else if (name === 'sparkle') {   // glittery arpeggio up the F major 9, a few stray twinkles
+      [72, 76, 79, 83, 84, 88, 91, 95, 96].forEach(function (m, j) { E.sbell(out, t + j * 0.075, m, 0.45 + j * 0.05, 'glit'); });
+      for (var i = 0; i < 4; i++) E.sbell(out, t + 0.55 + i * rnd(0.06, 0.12), pick([100, 103, 105, 108]), rnd(0.18, 0.3), 'glit');
+    } else if (name === 'playdate') {   // two happy notes, up
+      E.sbell(out, t, 77, 0.85, 'pluck'); E.sbell(out, t + 0.17, 84, 1, 'pluck');
+      E.sbell(out, t + 0.17, 88, 0.3, 'glit');
+    }
+  };
+
   /* ---------------- dog voices (v1.6): formant-filtered noise + pitched glide ---------------- */
   // f0 = speaking pitch, F = formants (Hz), mouth = open-mouth lowpass, noise = breathiness, K = loudness trim
   var BREEDS = {
@@ -931,11 +1029,11 @@
     greyhound: { f0: 200, F: [480, 1000, 2200], mouth: 1900, noise: 0.25, K: 1 },  // quiet, low 'roo'
     beagle: { f0: 300, F: [650, 1300, 2600], mouth: 2800, noise: 0.2, K: 1 }       // loud musical bay
   };
-  var BARK_KINDS = ['woof', 'yip', 'alert', 'demand', 'play', 'howl', 'talk', 'scream', 'whine', 'growl-play', 'sneeze', 'yawn', 'snore', 'pant', 'huff'];
+  var BARK_KINDS = ['woof', 'yip', 'alert', 'demand', 'play', 'howl', 'talk', 'scream', 'whine', 'growl-play', 'sneeze', 'yawn', 'snore', 'pant', 'huff', 'whimper'];
   // loudness trims in dB per breed, in BARK_KINDS order: measured offline so every voice sits at its target level
   // (barks ~ -22 dB short-term RMS at default volumes, corgi/dachshund a touch louder, mutt softer; whines, sneezes, snores, pants softer)
   var KIND_LVL = { woof: 1, yip: 0.85, alert: 1, demand: 1, play: 0.95, howl: 0.8, talk: 0.85, scream: 0.85, whine: 0.6, 'growl-play': 0.55,
-    sneeze: 0.5, yawn: 0.5, snore: 0.3, pant: 0.3, huff: 0.5 };   // base level per kind; TRIM below was measured on top of it
+    sneeze: 0.5, yawn: 0.5, snore: 0.3, pant: 0.3, huff: 0.5, whimper: 0.7 };   // base level per kind; TRIM below was measured on top of it
   var TRIM = {
     shiba: [-0.3, -3.7, 0.6, 1.6, -0.8, -0.3, 0.1, -1.1, 4.2, 5.6, 0.1, 4.6, 8.1, 3, 1.9],
     corgi: [1.3, -1.3, 0.7, 1.8, 3.3, 0.8, 1.7, -1.4, -4.4, 5.5, 1.4, -1.4, 8.4, 4.5, 2.6],
@@ -969,7 +1067,7 @@
   }
   // syllable: d = dur, f = pitch contour [[frac, xf0]], m = mouth contour [[frac, xmouth]], a = attack, n = noise, g = gain, p = pitch mul,
   //           fm = formant mul, vib = [Hz, depth], am = [Hz, depth] (rrr), r = release fraction
-  function barkPlan(voice, kind) {
+  function adultPlan(voice, kind) {
     var B = breedOf(voice), S = [], lk = Math.sqrt(clamp(300 / B.f0, 0.75, 1.7));
     var hm = clamp(450 / B.f0, 0.9, 2.2);   // head-voice range for howls and talk
     function add(at, o) { o.at = at; if (o.n == null) o.n = B.noise; S.push(o); }
@@ -1061,6 +1159,10 @@
       case 'pant':
         for (var j = 0; j < 4; j++) add(j * 0.17, { d: 0.11, p: 1, g: 0.6, a: 0.02, r: 0.6, n: 0.95, fm: 1.1, f: [[0, 1], [1, 1]], m: j % 2 ? [[0, 0.4], [1, 0.3]] : [[0, 0.55], [1, 0.4]] });
         break;
+      case 'whimper':   // soft, short, falling sighs of worry (all ages; puppies get the pitch lift on top)
+        add(0, { d: 0.42, p: clamp(560 / B.f0, 1.1, 3), g: 0.6, a: 0.09, r: 0.4, n: 0.18, fm: 1.15, vib: [6.5, 0.03], f: [[0, 0.95], [0.3, 1.1], [1, 0.72]], m: [[0, 0.35], [0.3, 0.55], [1, 0.3]] });
+        add(0.52, { d: 0.34, p: clamp(520 / B.f0, 1.05, 2.8), g: 0.45, a: 0.07, r: 0.45, n: 0.2, fm: 1.12, vib: [6.5, 0.03], f: [[0, 0.9], [0.3, 1.05], [1, 0.66]], m: [[0, 0.3], [0.3, 0.5], [1, 0.25]] });
+        break;
       case 'huff':
         add(0, { d: 0.38, p: 0.55, g: 0.8, a: 0.015, r: 0.6, n: 0.75, f: [[0, 1.1], [1, 0.8]], m: [[0, 0.5], [0.15, 0.7], [1, 0.2]] });
         add(0.3, { d: 0.12, p: 0.6, g: 0.35, a: 0.02, n: 0.2, f: [[0, 1], [1, 0.9]], m: [[0, 0.3], [1, 0.25]] });
@@ -1072,6 +1174,59 @@
     var dur = 0;
     S.forEach(function (o) { dur = Math.max(dur, o.at + o.d); });
     return { B: B, S: S, dur: dur, kind: kind };
+  }
+  /* ---- v2 puppy voices: voice.age = 'newborn' | 'puppy' (anything else = adult, byte-identical to v1.7) ---- */
+  function planDur(S) { var d = 0; S.forEach(function (o) { d = Math.max(d, o.at + o.d); }); return d; }
+  // newborn: tiny squeaks and mews. Only whine (mew), whimper and yip (squeak pair) are distinct; every other kind is one squeak.
+  function newbornPlan(voice, kind) {
+    var B = breedOf(voice), S = [], f1 = 1250 * Math.pow(B.f0 / 300, 0.25);   // a hint of breed: bigger-voiced breeds are a little lower
+    B.F = [B.F[0] * 1.9, B.F[1] * 1.55, B.F[2] * 1.2]; B.mouth = Math.min(6500, B.mouth * 1.8); B.noise = 0.12;
+    B.f0 = f1;
+    function add(at, o) { o.at = at; if (o.n == null) o.n = 0.1; S.push(o); }
+    function squeak(at, d, p, g) { add(at, { d: d, p: p, g: g, a: 0.008, f: [[0, 0.88], [0.25, 1.18], [1, 0.9]], m: [[0, 0.6], [0.25, 1.1], [1, 0.6]], vib: [9, 0.012] }); }
+    var k;
+    if (kind === 'whine') {   // mew: a thin rising-falling "miaow"
+      k = 'whine';
+      add(0, { d: 0.5, p: 1, g: 0.8, a: 0.07, r: 0.4, n: 0.1, vib: [7.5, 0.025], f: [[0, 0.8], [0.35, 1.2], [0.7, 1.05], [1, 0.72]], m: [[0, 0.5], [0.35, 1.0], [1, 0.45]] });
+    } else if (kind === 'whimper') {
+      k = 'whimper';
+      add(0, { d: 0.3, p: 0.9, g: 0.6, a: 0.06, r: 0.4, n: 0.12, vib: [8, 0.03], f: [[0, 1], [0.3, 1.1], [1, 0.7]], m: [[0, 0.5], [0.3, 0.8], [1, 0.4]] });
+      add(0.38, { d: 0.26, p: 0.85, g: 0.45, a: 0.05, r: 0.45, n: 0.12, vib: [8, 0.03], f: [[0, 0.95], [0.3, 1.05], [1, 0.66]], m: [[0, 0.45], [0.3, 0.7], [1, 0.35]] });
+    } else if (kind === 'yip') {
+      k = 'yip';
+      squeak(0, 0.08, 1.05, 0.85); squeak(0.13, 0.07, 1.2, 0.75);
+    } else {
+      k = 'yip';   // anything else: one squeak
+      squeak(0, 0.1, 1.1, 0.85);
+    }
+    return { B: B, S: S, dur: planDur(S), kind: k, noTrim: true, gk: 0.9, age: 'newborn' };
+  }
+  // puppy: the breed's own plan, lifted +5..7 semitones, shorter and squeakier, plus a clumsy bark-hiccup
+  function puppyPlan(voice, kind) {
+    var plan = adultPlan(voice, kind), B = plan.B, semi = rnd(5, 7), r = Math.pow(2, semi / 12), S = plan.S, last = null, loud = false;
+    B.f0 *= r; B.F = B.F.map(function (f) { return f * Math.pow(r, 0.55); }); B.mouth = Math.min(7000, B.mouth * Math.pow(r, 0.6));
+    var k = plan.kind, shrink = (k === 'howl' || k === 'talk' || k === 'scream') ? 0.55 : (k === 'woof' || k === 'alert' || k === 'demand' || k === 'play' || k === 'yip' || k === 'growl-play') ? 0.72 : 0.85;
+    S.forEach(function (o) {
+      o.at *= shrink; o.d = Math.max(0.045, o.d * shrink);
+      if (o.n < 0.5) o.n *= 0.7;   // squeakier: cleaner pitched tone
+      if (!o.vib && o.d < 0.3) o.vib = [10, 0.015];   // a little wobble
+      if (o.f && o.d < 0.3) o.f = o.f.map(function (q) { return [q[0], q[0] === 0 ? q[1] : q[1] * 1.08]; });
+      if (!last || o.at + o.d > last.at + last.d) last = o;
+    });
+    loud = k === 'woof' || k === 'alert' || k === 'demand' || k === 'play';
+    if (loud && last && (k === 'woof' ? chance(0.7) : chance(0.55))) {   // hiccup: an inhaled little "hic" that cracks upward, then a tiny squeak
+      var at = last.at + last.d + 0.07;
+      S.push({ at: at, d: 0.05, p: 1.15, g: 0.55, a: 0.006, n: 0.35, f: [[0, 0.7], [1, 1.35]], m: [[0, 0.5], [1, 1.1]] });
+      S.push({ at: at + 0.08, d: 0.07, p: 1.5, g: 0.5, a: 0.006, n: 0.1, vib: [12, 0.02], f: [[0, 1.3], [0.4, 0.95], [1, 1.15]], m: [[0, 0.8], [1, 0.8]] });
+    }
+    plan.dur = planDur(S); plan.noTrim = true; plan.gk = 0.8; plan.age = 'puppy';
+    return plan;
+  }
+  function barkPlan(voice, kind) {
+    var age = voice && voice.age;
+    if (age === 'newborn') return newbornPlan(voice, kind);
+    if (age === 'puppy') return puppyPlan(voice, kind);
+    return adultPlan(voice, kind);
   }
   EP.vsyl = function (out, t, B, o) {
     var ac = this.ac, d = o.d, f0 = B.f0 * (o.p || 1), end = t + d, fm = o.fm || 1, i;
@@ -1106,8 +1261,8 @@
     var ac = this.ac, E = this, o = opts || {}, dist = clamp(Number(o.distance) || 0, 0, 1);
     var vol = clamp(o.volume == null ? 1 : Number(o.volume) || 0, 0, 1);
     var g = ac.createGain(), lp = this.F('lowpass', 600 + 8400 * Math.pow(1 - dist, 2), 0.6);
-    var tr = (TRIM[plan.B.key] || TRIM.mutt)[BARK_KINDS.indexOf(plan.kind)] || 0;
-    g.gain.value = 0.16 * vol * (1 - 0.8 * dist) * (KIND_LVL[plan.kind] || 1) * Math.pow(10, tr / 20);
+    var tr = plan.noTrim ? 0 : (TRIM[plan.B.key] || TRIM.mutt)[BARK_KINDS.indexOf(plan.kind)] || 0;
+    g.gain.value = (plan.gk || 1) * 0.16 * vol * (1 - 0.8 * dist) * (KIND_LVL[plan.kind] || 1) * Math.pow(10, tr / 20);
     g.connect(lp); lp.connect(this.sfx);
     plan.S.forEach(function (s) { E.vsyl(g, t + s.at, plan.B, s); });
     setTimeoutSafe(function () { try { lp.disconnect(); } catch (e) { /* ignore */ } }, (plan.dur + 1) * 1000, E.offline);
@@ -1121,7 +1276,7 @@
     var breeds = opts.breeds || Object.keys(BREEDS), kinds = opts.kinds || BARK_KINDS, gap = opts.gap || 0.45, sr = opts.sampleRate || 24000;
     var items = [], t = 0.2;
     breeds.forEach(function (b) {
-      kinds.forEach(function (k) { var pl = barkPlan({ breed: b, pitch: 1 }, k); items.push({ breed: b, kind: k, at: t, dur: pl.dur, plan: pl }); t += pl.dur + gap; });
+      kinds.forEach(function (k) { var pl = barkPlan({ breed: b, pitch: 1, age: opts.age }, k); items.push({ breed: b, kind: k, at: t, dur: pl.dur, plan: pl }); t += pl.dur + gap; });
       t += 0.6;
     });
     var off = new OAC(1, Math.ceil((t + 0.5) * sr), sr), e = new Engine(off, true);
@@ -1183,7 +1338,8 @@
       while (si < segs.length && segs[si].at <= t) { e.queue(resolve(segs[si].ctx)); si++; }
       while (gi < stings.length && stings[gi].at <= t) {
         var dt = stings[gi].at; e.duckG.gain.setTargetAtTime(0.6, dt, 0.06); e.duckG.gain.setTargetAtTime(1, dt + 1.8, 0.35);
-        e.stinger(stings[gi].name, dt + 0.03); gi++;
+        if (STINGS.indexOf(stings[gi].name) >= 0) e.sting(stings[gi].name, dt + 0.03); else e.stinger(stings[gi].name, dt + 0.03);
+        gi++;
       }
       var before = e.applied;
       e.tick(t + 0.12);
@@ -1200,7 +1356,7 @@
   /* ================================================================
      Public API: window.PawAudio
      ================================================================ */
-  var PA = { ctx: null, bus: null, contexts: [], stingers: [], PLACES: PLACES, TIMES: TIMES, WEATHERS: WEATHERS, AREAS: AREAS };
+  var PA = { ctx: null, bus: null, contexts: [], stingers: [], stingLog: [], STINGS: STINGS, PLACES: PLACES, TIMES: TIMES, WEATHERS: WEATHERS, AREAS: AREAS };
   var eng = null, vols = { master: 0.8, music: 0.5, sfx: 0.8, ambience: 0.25 }, muted = false;
   var cur = norm({ place: 'title', time: 'day', weather: 'sunny' }), deb = null, timer = null, hidden = false, suspendT = null;
 
@@ -1311,6 +1467,23 @@
       }
     } catch (e) { /* never throws */ }
   };
+  // v2: sfx-bus stings 'birth' | 'sparkle' | 'playdate'; never throws; ducks the music a little like a bark
+  PA.sting = function (name) {
+    try {
+      name = String(name);
+      if (STINGS.indexOf(name) < 0) return;
+      PA.stingLog.push(name); if (PA.stingLog.length > 40) PA.stingLog.shift();
+      if (!eng || hidden) return;
+      resume();
+      var now = PA.ctx.currentTime;
+      eng.sting(name, now + 0.03);
+      if (now >= duckUntil && !muted) {
+        var len = name === 'birth' ? 2.6 : name === 'sparkle' ? 1.1 : 0.7;
+        ramp(eng.duckG.gain, 0.75, now, 0.04);
+        eng.duckG.gain.setTargetAtTime(1, now + len, 0.3);
+      }
+    } catch (e) { /* never throws */ }
+  };
   PA.stinger = function (name) {
     if (STINGERS.indexOf(name) < 0) return;
     PA.stingers.push(name); if (PA.stingers.length > 40) PA.stingers.shift();
@@ -1337,6 +1510,7 @@
   PA.describe = function (c) { var v = resolve(c); return { label: v.label, bpm: v.bpm, prog: v.prog, top: v.top, layers: v.L, ambience: v.amb, sig: v.sig }; };
   PA._render = render;
   PA._renderBarks = renderBarks;
+  PA._barkPlan = function (voice, kind) { return barkPlan(voice || {}, BARK_KINDS.indexOf(kind) >= 0 ? kind : 'woof'); };   // test hook: the plan only, no audio
   PA.BARK_KINDS = BARK_KINDS;
 
   window.PawAudio = PA;
