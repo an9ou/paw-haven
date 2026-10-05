@@ -1,0 +1,44 @@
+# Paw Haven changelog
+
+Newest first. History up to v1.7 comes from the "v1.3 build plan" tab of the game proposal doc; v1.7.1 and v2 come from the Paw Haven Studio build log; v2.0.1 from the git history.
+
+| Date | Version | Change |
+| --- | --- | --- |
+| 2026-10-06 | Repo | Moved to Claude Code on a Mac. Design docs exported to `docs/design/`; `tools/build.pl` builds without Node |
+| 2026-10-05 | v2.0.1 (not yet on claude.ai) | Puppies under 3 months and nursing mums stay home on trips (home, yard and vet only); spot 4 needs 60 care days instead of 45; a tap on the yard mailbox no longer pets the dog; the nursery lullaby plays while the nursery is open |
+| 2026-10-05 | v2.0.1 (not yet on claude.ai) | Coat Collector Ribbon art; a clearer expecting belly on the fluffy golden; the dev panel's mail button no longer shifts Close; README and GitHub Pages workflow |
+| 2026-10-05 | v2 Puppy Playdates & Sparkle | Dog spots by Bond, max 4: 2nd at Bond 3; 3rd at two Bond 8 dogs + 21 care days + Treehouse; 4th at three Bond 10 dogs + 45 care days + Castle. Shelter checklist, Playdates button, puppy feeding |
+| 2026-10-05 | v2 Puppy Playdates & Sparkle | Playdates with real welfare rules, 2-day pregnancy, birth popup and naming, nursery basket, "Who stays", rehoming to 12 town families, NPC playdates, Sparkle guaranteed by the 24th pup |
+| 2026-10-05 | v2 Puppy Playdates & Sparkle | Genes: 45 named mixes (Puggle, Horgi, Chiweenie…), exact puppy-odds predictor, coat catalogue (186 coats across 10 breeds), plain-words gene descriptions for the vet |
+| 2026-10-05 | v2 Puppy Playdates & Sparkle | Journal: Family Tree and Coat Collection tabs, new Profile (genes, family, status, dog spots); mailbox with a daily gift; postcards from rehomed pups |
+| 2026-10-05 | v2 Puppy Playdates & Sparkle | Town: vet gene test, spay/neuter and ultrasound; Dog Park playdate board with 4 dogs a day; rehomed pups visit around town; purchase-window arrow-key fix |
+| 2026-10-05 | v2 Puppy Playdates & Sparkle | Puppy rules: no walks under 3 months, Park only until 6 months, shorter training; nursing mums stay home; 6 puppy idle behaviours; puppy voices |
+| 2026-10-05 | v2 Puppy Playdates & Sparkle | Art: puppy and newborn looks for all 10 breeds in all 29 poses, mixes (any head on any body), Sparkle twinkles, pregnant belly, fixed greyhound sit/beg/dig poses. Nursery basket, mailbox, postcard, playdate board, family-tree frame, coat frames, ultrasound screen, 7 icons, Puppy Kibble bag, busier Town Loop walk |
+| 2026-10-05 | v2 Puppy Playdates & Sparkle | Audio: puppy and newborn voices, a whimper, birth/sparkle/playdate jingles, a nursery lullaby, fuller vet and salon ambience |
+| 2026-10-05 | v1.7.1 Garden in hours + trick mini-games | Crops grow in 2–6 real hours with hourly watering, new prices, Pip's 60-coin daily buy-back cap, old-save conversion (garden tops out at about 37 coins a day) |
+| 2026-10-05 | v1.7.1 Garden in hours + trick mini-games | Tricks are taught with lure-track mini-games (drag a treat along a dotted track), a Speak rhythm game, a hand-signal fade at 60%, and "Show off" by quick traces |
+| 2026-10-05 | v1.7 Ten breeds | 4 new breeds join the shelter and rescue pool: Peanut the Chihuahua, Dumpling the Pug, Rocket the Greyhound and Bagel the Beagle, each with coat genetics, bark voice, idle habits and a signature trick |
+| 2026-10-05 | v1.6 Town and tricks | Trick training: tricks are taught through a training activity instead of just unlocking |
+| 2026-10-05 | v1.6 Town and tricks | A bigger town with 7 places to visit (Square, Café, Dog Park, Vet, Salon, Hilltop, Pier) and 3 new walk routes |
+| 2026-10-05 | v1.6 Town and tricks | Dogs bark with a voice per breed and show idle habits between actions |
+| 2026-10-05 | v1.6 Town and tricks | Every popup shares one look and one set of controls |
+| 2026-10-04 | v1.5B Phone | Phone (portrait, touch) layout |
+| 2026-10-04 | v1.5A More Dogs | Multi-dog home: up to 4 dogs by house tier, a second adoption at Bond 5, HUD dog switcher, Feed all, every dog visible at each place |
+| 2026-10-04 | v1.5A More Dogs | 2 shelter rescues a day with real coat genetics (merle, dilute, piebald, blue and odd eyes) from the new genes module, drawn by gene-driven coats |
+| 2026-10-04 | v1.3.1 Popups and pet beds | Every menu opens as a centred popup over the dimmed scene |
+| 2026-10-04 | v1.3.1 Popups and pet beds | 7 pet beds at Barkitecture, from the free Old Blanket to the 2,000-coin Royal Canopy Bed; house naps use the bed bonus |
+| 2026-10-04 | v1.3.1 Popups and pet beds | Realistic potty: poop after meals, pee after water, leg lift for boys and squat for girls; scoop or flush for Bond and coins |
+| 2026-10-04 | v1.3.1 Popups and pet beds | Runner obstacles get sticker outlines and action badges; a "How to walk" tutorial plays before each walk |
+| 2026-10-04 | v1.3.1 Popups and pet beds | The town map is just the map: click places directly, with hover tips and a "you are here" pin; meals are served only at home |
+| 2026-10-04 | v1.3 Garden & Kitchen | 6 plots, Pip's Sprout Cart, the pantry, 6 recipes, the cooking mini-game, dishes in Feed, Garden and Recipes Journal tabs, dog-safety rules. Crop prices rebalanced below walk income (carrot 9, spinach 6, pumpkin 40) |
+| 2026-10-04 | v1.3 Garden & Kitchen | Every dog is a boy or a girl (asked once for old saves), with an age on a 1 day = 1 dog month clock and a Dog Profile page |
+| 2026-10-04 | v1.3 Garden & Kitchen | Breeding data prep for v2: hidden genes, parents, season cycle, litter counts and a fixed flag on every dog; breeding rules stored but switched off |
+| 2026-10-04 | v1.2.1 Places | 5 hangout places (Cozy House, Sunny Park, Riverside, Maple Woods, Seashell Beach); the map is for travel (−2 Energy, +5 Happiness on the first visit each day) |
+| 2026-10-04 | v1.2.1 Places | 7-button action bar: Feed, Play, Care, Walk, Wardrobe, Journal, Map; shops open from Market Street; walks open a route carousel and the runner plays full-view |
+| 2026-10-04 | v1.2.1 Places | Runner about 30% slower with earlier hints; an obstacle costs 3 seconds; quieter ambience; map shows no weather |
+| 2026-10-04 | v1.2 Weather, runner, toys and music | Real device clock; weather seeded by date in 3 periods a day; every scene drawn per time and weather |
+| 2026-10-04 | v1.2 Weather, runner, toys and music | Weather reactions and poses (shake, cold, hot, crouch, dig); 3 raincoats, a rain hat and a beanie; the bowl shows the exact food |
+| 2026-10-04 | v1.2 Weather, runner, toys and music | All 9 toys playable directly; walks became a runner (jump, long jump, crouch) that keeps the treasure hunt; cozy generative music and full sound settings |
+| 2026-10-04 | v1.1 Treasure hunt and Journal | Every walk is a treasure hunt: Nose-o-meter, sniff clues, 3–4 dig spots with 2 digs; 17 treasures with abilities, a 5th charm slot, 4 map pieces for a secret dig |
+| 2026-10-04 | v1.1 Treasure hunt and Journal | Treasure Journal with Treasures, Food, Toys and Clothes tabs; old collect-10 pickups converted to coins at 5 each |
+| 2026-10-03 | v1.0 Prototype | Adopt 1 of 6 crayon dogs; 4 care meters, Bond 1–10 and Paw Coins; Kibble Corner, Bow-Wow Boutique with wardrobe, Barkitecture (6 houses); petting, fetch, tricks, bath, nap; 4 walk routes; pencil-sketchbook world; browser save |

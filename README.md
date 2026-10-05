@@ -36,6 +36,8 @@ node game/build.js publish    # everything merged -> paw_haven_prototype.html (s
 node tools/pages.js           # wraps the publish build as _site/index.html (what GitHub Pages serves)
 ```
 
+No Node? `perl tools/build.pl` makes the same `paw_haven_prototype.html`.
+
 The generated HTML files are not tracked. Run the build after cloning.
 
 ## Test
@@ -63,6 +65,7 @@ mods/             gameplay modules: genes, audio, walk runner, toys, garden, kit
 tools/            build helpers (GitHub Pages wrapper, worktree script)
 dashboard/        a small tooling dashboard
 *.md              design and build contracts for each version (see PIPELINE.md)
+docs/design/      game design documents (proposal, v2, garden and kitchen, v1.3 plan)
 ```
 
 Some folders (`dogs/`, `world/`, `mods/`) also hold earlier art versions and review galleries from development.
@@ -79,6 +82,9 @@ Some folders (`dogs/`, `world/`, `mods/`) also hold earlier art versions and rev
 - **v1.7**: four new breeds, ten in total.
 - **v1.7.1**: faster garden and trick mini-games.
 - **v2 "Puppy Playdates & Sparkle"**: realistic genetics, breeding, puppies, mixes, Sparkle pups, the mailbox and town visits.
+- **v2.0.1**: puppies stay home on trips, spot 4 at 60 care days, mailbox tap fix, Coat Collector Ribbon art.
+
+Full details: [CHANGELOG.md](CHANGELOG.md). Open issues: [TODO.md](TODO.md).
 
 ## Made with Claude
 
