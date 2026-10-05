@@ -75,3 +75,9 @@ html[data-layout="phone"] .clset .clbk li .btn{flex:1 1 100%}
 html[data-layout="phone"] .clset .clbk-t span,html[data-layout="phone"] .clset .clform .small,html[data-layout="phone"] .clset > .small{font-size:15px}
 html[data-layout="phone"] .clset .btn{touch-action:manipulation}
 /* ======================= end CLOUD lane ======================= */
+/* coordinator fix (v2.2 QA): toasts sit just above the action bar on phones; while a sheet is open they move to the strip above
+   the sheet (it is at most 88% tall), so they never cover a sheet's title or its buttons */
+html[data-layout="phone"] #toasts{top:auto;bottom:calc(var(--barH) + 12px + env(safe-area-inset-bottom,0px))}
+html[data-layout="phone"] #stage.nobar #toasts{bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+html[data-layout="phone"] #stage:has(#modal:not([hidden])) #toasts{top:calc(env(safe-area-inset-top,0px) + 6px)!important;bottom:auto!important}
+html[data-layout="phone"] #stage:has(#modal:not([hidden])) #toasts .toast:nth-last-child(n+3){display:none}
