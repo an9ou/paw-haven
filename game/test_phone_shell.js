@@ -44,7 +44,7 @@ require('./test_lib').run('phone_shell', async (t) => {
           if (![...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())) return;
           const r = el.getBoundingClientRect(); if (!r.width || !r.height || r.top > innerHeight || r.bottom < 0) return;
           const cs = getComputedStyle(el); if (cs.visibility === 'hidden' || cs.display === 'none') return;
-          const fs = parseFloat(cs.fontSize), cap = !!el.closest('.small, .act, .lptip, .sex');
+          const fs = parseFloat(cs.fontSize), cap = !!el.closest('.small, .lptip, .sex');
           if (fs < (cap ? 13 : 15) - 0.01) out.push(`${el.tagName.toLowerCase()}.${String(el.className).split(' ')[0]} ${fs}px "${el.textContent.trim().slice(0, 16)}"`);
         });
         return out;
@@ -80,6 +80,8 @@ require('./test_lib').run('phone_shell', async (t) => {
     ok(Math.abs(bar.b - bar.ih) < 1.5 && bar.acts.every((a) => a.l >= 0 && a.r <= innerWidthOf(dev)), `${dev}: action bar fixed at the bottom of the screen`);
     ok(await ev(() => /env\(safe-area-inset-bottom|px/.test(getComputedStyle(document.getElementById('bar')).paddingBottom)), `${dev}: action bar keeps the safe-area padding`);
     await targets('action bar', '#bar'); await textSizes('action bar', '#bar');
+    const clip = await ev(() => [...document.querySelectorAll('#bar .act span:last-child')].filter((sp) => sp.scrollWidth > sp.parentElement.clientWidth + 1).map((sp) => sp.textContent));
+    ok(clip.length === 0, `${dev}: action-bar labels fit their buttons at 15 px${clip.length ? ' -> ' + clip.join(', ') : ''}`);
     await p.locator('[data-act=feed]').tap(); ok(await t.waitPop(true), `${dev}: a tap on Feed opens the feed sheet`);
     ok(await ev(() => window.__pawShell.sheetOpen()), `${dev}: psSheetOpen() is true while the feed sheet is open`);
     await p.locator('[data-act=feed]').tap(); ok(await t.waitPop(false), `${dev}: a second tap closes it`);
@@ -129,6 +131,9 @@ require('./test_lib').run('phone_shell', async (t) => {
       const tb = await box('#modal .jtabs'); await touch(line([tb.x + tb.w - 30, tb.y + tb.h / 2], [tb.x + 40, tb.y + tb.h / 2], 10));
       ok(await t.until(() => document.querySelector('#modal .jtabs').scrollLeft > 20, null, 3000), `${dev}: the tab row scrolls sideways by touch`);
     } else ok(true, `${dev}: the tab row fits without scrolling`);
+    // a downward drag that starts inside something that pans sideways (the tab row here; the family tree and pup rows work the same) never closes the sheet
+    const tb2 = await box('#modal .jtabs'); await touch(line([tb2.x + 60, tb2.y + 8], [tb2.x + 70, tb2.y + 220], 8));
+    await sleep(300); ok(await ev(() => !document.getElementById('modal').hidden), `${dev}: a swipe that starts on the sideways tab row does not close the sheet`);
     await p.locator('[data-jt=profile]').tap(); ok(await t.until(() => !!document.querySelector('.panel.journal.j-profile')), `${dev}: a tap on a tab switches it`);
     await noHScroll('Journal profile');
     await p.touchscreen.tap(20, 20); ok(await t.until(() => document.getElementById('modal').hidden), `${dev}: a backdrop tap closes the sheet`);
@@ -173,6 +178,17 @@ require('./test_lib').run('phone_shell', async (t) => {
     await sleep(300); ok((await t.mode()) === 'yard', `${dev}: the long-pressed button was not pressed`);
     await p.locator('[data-act=map]').tap(); ok(await t.untilMode('map'), `${dev}: a normal tap on the same button still works`);
     await ev(() => window.__paw.go('yard')); await t.untilMode('yard'); await t.until(() => !document.querySelector('.lptip'), null, 4000);
+
+    sec(dev + ': walk and fetch results sheets');
+    await t.calm(); await p.locator('[data-act=walk]').tap(); await p.waitForSelector('#rtStart'); await p.locator('#rtStart').tap();
+    await t.until(() => window.__paw.mode === 'walk' && !!(document.querySelector('.pw-ov [data-go]') || document.querySelector('.pw-cd')), null, 15000);
+    if (await p.locator('.pw-ov [data-go]').count()) await p.locator('.pw-ov [data-go]').first().tap();
+    ok(await t.quitWalk(false), `${dev}: walk results popup opens`);
+    await sheetCheck('Walk results sheet'); await textSizes('Walk results', '#modal .panel-body'); await t.SH(dev + '_walk_results');
+    await p.locator('#resOk').tap(); await t.until(() => window.__paw.mode === 'yard' && !document.getElementById('resOk'), null, 8000); await t.lu(); await t.calm();
+    await ev(() => window.__paw.go('fetch', 'Tennis Ball')); await p.waitForSelector('#fQuit'); await p.locator('#fQuit').tap({ force: true });
+    await p.waitForSelector('#fOk'); await sheetCheck('Fetch results sheet'); await t.SH(dev + '_fetch_results');
+    await p.locator('#fOk').tap(); await t.modalGone(); await ev(() => window.__paw.go('yard')); await t.untilMode('yard'); await t.lu();
 
     sec(dev + ': portrait lock');
     await p.setViewportSize({ width: dev === 'Pixel 7' ? 915 : 844, height: dev === 'Pixel 7' ? 412 : 390 });

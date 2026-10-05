@@ -31,6 +31,14 @@ function psLockCheck() {
 }
 
 /* ---------- sheets ---------- */
+// true when the press starts inside something that scrolls or pans sideways (a tab row, the family tree, a pup row): the sheet's swipe-down leaves it alone
+function psPansX(el, stop) {
+  for (let n = el; n && n !== stop && n.nodeType === 1; n = n.parentElement) {
+    const cs = getComputedStyle(n);
+    if ((/auto|scroll/.test(cs.overflowX) && n.scrollWidth > n.clientWidth + 1) || /^pan-x$/.test(cs.touchAction.trim())) return true;
+  }
+  return false;
+}
 function psSheetOpen() { return isPhone() && (!modal.hidden || (typeof popOpen === 'function' && !!popOpen())); }
 
 /* ---------- the "..." menu: Settings, sound, cloud status ---------- */

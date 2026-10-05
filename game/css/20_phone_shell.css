@@ -30,7 +30,7 @@ html[data-layout="phone"] .moremenu .btn .ic{width:26px;height:26px}
 
 /* action bar: fixed at the bottom with the safe-area inset, 7 labelled buttons >= 48 px */
 html[data-layout="phone"] .act{min-height:56px}
-html[data-layout="phone"] .act span:last-child{font-size:14px}
+html[data-layout="phone"] .act span:last-child{font-size:15px;letter-spacing:-.6px;max-width:100%}
 
 /* every openModal popup is a bottom sheet: full width, up to 88% of the screen, its own scroll */
 html[data-layout="phone"] #modal .panel{max-height:min(100%,88vh);max-height:min(100%,88dvh)}

@@ -342,7 +342,7 @@ function sheetSwipe(sheet, onClose) {
   let y0 = null, dy = 0, id = null;
   sheet.addEventListener('pointerdown', (e) => {
     if (!isPhone()) return; const r = sheet.getBoundingClientRect();
-    if (e.clientY - r.top > 56 || e.target.closest('button,input,select,a,[role=tab]')) return;
+    if (e.clientY - r.top > 56 || e.target.closest('button,input,select,a,[role=tab],.ft-pan,[data-noswipe]') || psPansX(e.target, sheet)) return;
     y0 = e.clientY; dy = 0; id = e.pointerId; try { sheet.setPointerCapture(id); } catch (er) { /* none */ }
   });
   sheet.addEventListener('pointermove', (e) => { if (y0 == null || e.pointerId !== id) return; dy = Math.max(0, e.clientY - y0); sheet.style.transform = `translateY(${dy}px)`; });
