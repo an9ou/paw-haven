@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>World B v2.1 gallery</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{margin:0;padding:16px;background:#FFFBF3;font:14px/1.3 system-ui,sans-serif;color:#5B3D32}
+h2{margin:22px 0 8px;font-size:16px}.row{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end}
+figure{margin:0;text-align:center}figcaption{font-size:12px;opacity:.7;margin-top:4px}
+.c{background:#fff;border:1px dashed #D8CBB8;padding:6px}svg{display:block}</style></head>
+<body>
+<h1>Paw Haven world art B: v2.1 additions</h1>
+<h2>Items (64)</h2><div class="row" id="items"></div>
+<h2>Icons (64)</h2><div class="row" id="icons"></div>
+<h2>Props</h2><div class="row" id="props"></div>
+<h2>Sparkle jar fill 0 / 8 / 16 / 24</h2><div class="row" id="jars"></div>
+<h2>Album (nothing found / some found) and family tree</h2><div class="row" id="big"></div>
+<script src="pawart_world_b.js"></script>
+<script>
+const PA=window.PawArt;
+function add(id,svg,cap,w){const f=document.createElement('figure');f.innerHTML='<div class="c" style="width:'+w+'px">'+svg+'</div><figcaption>'+cap+'</figcaption>';document.getElementById(id).appendChild(f)}
+['Rainbow Collar','Gene Sniffer','Giant Crayon Box','Family Photo Frame','Doggy Ramp','Rocking Chair'].forEach(n=>add('items',PA.item(n),n,128));
+['title','album','decor','sniff','meter'].forEach(n=>add('icons',PA.icon(n),n,96));
+[['crayonbox',300],['photoframe',240],['doggyramp',300],['rockingchair',240],['easel',200],['sniffer',300]].forEach(([n,w])=>add('props',PA.prop(n),n,w));
+[0,8,16,24].forEach(f=>add('jars',PA.prop('sparklejar',{fill:f}),'fill '+f,150));
+add('big',PA.prop('album',{found:[1,0,1,1,0,0,1,1,0,1,0,0].map(Boolean)}),'album',600);
+add('big',PA.prop('familytree'),'familytree',600);
+add('big',PA.prop('album'),'album, none found',600);
+</script></body></html>
