@@ -8,3 +8,10 @@ node_modules/
 game/test_logs/
 game/paw_haven_proto.html
 paw_haven_prototype.html
+_site/
+game/test_merged.html
+game/shots*/
+shots*/
+*.log
+test_logs/
+**/test_logs/
