@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Paw Haven: world v2 contact sheet</title>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Patrick+Hand&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#FFFBF3;--ink:#5B3D32}
+body{margin:0;background:#FFFBF3 radial-gradient(circle,#E3D2BA .9px,transparent 1.2px) 0 0/15px 15px;color:var(--ink);font-family:'Patrick Hand',sans-serif}
+main{width:1500px;padding:14px 18px}
+h2{font-family:'Caveat',cursive;font-size:26px;margin:10px 0 4px;border-bottom:2px dashed #E3D2BA}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start}
+.cell{display:flex;flex-direction:column;align-items:center;gap:2px;background:rgba(255,255,255,.7);border:1px solid #EADDCB;border-radius:8px;padding:6px}
+code{font-size:11px;opacity:.75}
+.hook{pointer-events:none}
+</style></head><body><main id="m"></main>
+<script src="../../dogs/pawart_dogs.js"></script><script src="../pawart_world_a.js"></script><script src="../pawart_world_b.js"></script><script src="../pawart_world_c.js"></script>
+<script>
+const $=h=>{document.getElementById('m').insertAdjacentHTML('beforeend',h)};
+const sz=(svg,w,h)=>svg.replace('<svg ',`<svg style="width:${w}px;height:${h}px" `);
+const cell=(svg,w,h,l)=>`<div class="cell">${sz(svg,w,h)}<code>${l}</code></div>`;
+$('<h2>Icons (64 + 32) and Puppy Kibble</h2>');
+$('<div class="row">'+['family','coats','mail','dna','playdate','nursery','spots','lock'].map(n=>`<div class="cell"><div style="display:flex;gap:6px;align-items:flex-end">${sz(PawArt.icon(n),64,64)}${sz(PawArt.icon(n),32,32)}</div><code>${n}</code></div>`).join('')+
+ ['Basic Kibble','Puppy Kibble'].map(n=>`<div class="cell"><div style="display:flex;gap:6px;align-items:flex-end">${sz(PawArt.item(n),64,64)}${sz(PawArt.item(n),110,110)}</div><code>${n}</code></div>`).join('')+
+ cell(PawArt.prop('bowl',{food:'Puppy Kibble'}),110,110,'bowl: Puppy Kibble')+'</div>');
+$('<h2>Props (real size)</h2>');
+$('<div class="row">'+cell(PawArt.prop('nursery'),320,170,'nursery 320x170')+cell(PawArt.prop('mailbox'),120,160,'mailbox')+cell(PawArt.prop('mailbox',{flag:true,count:3}),120,160,'flag, count 3')+cell(PawArt.prop('mailbox',{count:12}),120,160,'count 12')+
+ cell(PawArt.prop('postcard'),300,200,'postcard 300x200')+cell(PawArt.prop('coatframe'),120,140,'coatframe')+cell(PawArt.prop('coatframe',{found:false}),120,140,'found:false')+cell(PawArt.prop('ultrasound'),240,160,'ultrasound')+
+ cell(PawArt.prop('playboard'),300,220,'playboard 300x220')+cell(PawArt.prop('familytree'),600,380,'familytree 600x380')+'</div>');
+$('<h2>Town Loop strip (day, dusk rain, night)</h2>');
+$('<div class="row">'+[{},{time:'dusk',weather:'rain'},{time:'night'}].map(o=>`<div class="cell"><div style="width:1440px;height:480px;overflow:hidden;position:relative">${sz(PawArt.walkStrip('town',o),1440,480)}</div></div>`).join('')+'</div>');
+</script></body></html>
