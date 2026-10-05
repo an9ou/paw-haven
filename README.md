@@ -83,6 +83,7 @@ Some folders (`dogs/`, `world/`, `mods/`) also hold earlier art versions and rev
 - **v1.7.1**: faster garden and trick mini-games.
 - **v2 "Puppy Playdates & Sparkle"**: realistic genetics, breeding, puppies, mixes, Sparkle pups, the mailbox and town visits.
 - **v2.0.1**: puppies stay home on trips, spot 4 at 60 care days, mailbox tap fix, Coat Collector Ribbon art.
+- **v2.1 "Sparkle & Family"**: Sparkle boosts and the Sparkle Meter, ancestry and grand-mixes, collection rewards and titles, yard decorations, pen-pal postcards and album, the Gene Sniffer and the town painter.
 
 Full details: [CHANGELOG.md](CHANGELOG.md). Open issues: [TODO.md](TODO.md).
 
