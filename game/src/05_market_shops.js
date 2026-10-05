@@ -83,8 +83,8 @@ function openShop(k) {
   if (k === 'kibble') {
     if (!kOn() && shopTab.kibble === 'pantry') shopTab.kibble = 'food';
     const t = shopTab.kibble;
-    tabs = `<div class="tabs" role="tablist"><button class="btn" role="tab" aria-selected="${t === 'food'}" data-tab="food">Food</button><button class="btn" role="tab" aria-selected="${t === 'toys'}" data-tab="toys">Toys</button>${kOn() ? `<button class="btn" role="tab" aria-selected="${t === 'pantry'}" data-tab="pantry">Pantry</button>` : ''}</div>`;
-    items = t === 'pantry' ? pantryList().map((x) => ({ cat: 'pantry', id: x.id, n: x.name, price: x.price, bond: 1, desc: x.id === 'chicken' ? 'Boneless. For the kitchen.' : 'For the kitchen. Cooks into dog dishes.' })) : t === 'food' ? FOOD.filter((f) => f.price > 0).map((f) => ({ cat: 'food', n: f.n, price: f.price, bond: 1, desc: f.note })) : TOYS.map((x) => ({ cat: 'toys', n: x.n, price: x.price, bond: x.bond, desc: x.note }));
+    tabs = `<div class="tabs" role="tablist"><button class="btn" role="tab" aria-selected="${t === 'food'}" data-tab="food">Food</button><button class="btn" role="tab" aria-selected="${t === 'toys'}" data-tab="toys">Toys</button><button class="btn" role="tab" aria-selected="${t === 'tools'}" data-tab="tools">Tools</button>${kOn() ? `<button class="btn" role="tab" aria-selected="${t === 'pantry'}" data-tab="pantry">Pantry</button>` : ''}</div>`;
+    items = t === 'pantry' ? pantryList().map((x) => ({ cat: 'pantry', id: x.id, n: x.name, price: x.price, bond: 1, desc: x.id === 'chicken' ? 'Boneless. For the kitchen.' : 'For the kitchen. Cooks into dog dishes.' })) : t === 'tools' ? twTools() : t === 'food' ? FOOD.filter((f) => f.price > 0).map((f) => ({ cat: 'food', n: f.n, price: f.price, bond: 1, desc: f.note })) : TOYS.map((x) => ({ cat: 'toys', n: x.n, price: x.price, bond: x.bond, desc: x.note }));
   } else if (k === 'boutique') items = CLOTHES.map((c) => ({ cat: 'clothes', n: c.n, price: c.price, bond: c.bond, desc: `${SLOT_NAME[c.slot]}. ${c.perk}` }));
   else {
     const t = shopTab.builder || 'houses';
@@ -92,10 +92,10 @@ function openShop(k) {
     items = t === 'beds' ? BEDS.map((b) => ({ cat: 'beds', n: b.n, price: b.price, bond: b.bond, desc: `House nap +${Math.round(b.bonus * 100)}%. ${b.note}` })) : HOUSES.map((h) => ({ cat: 'houses', n: h.n, price: h.price, bond: h.bond, desc: `Nap Energy +${Math.round(h.comfort * 100)}%. ${h.note}` }));
   }
   const cards = items.map((it) => {
-    const lock = topBond() < it.bond, owned = it.cat === 'beds' ? S.beds.includes(it.n) : it.cat !== 'food' && it.cat !== 'pantry' && owns(it.cat, it.n), have = it.cat === 'food' ? (S.inv.food[it.n] || 0) : it.cat === 'pantry' ? (S.inv.pantry[it.id] || 0) : 0;
+    const lock = topBond() < it.bond, owned = it.cat === 'beds' ? S.beds.includes(it.n) : it.cat === 'tools' ? twOwns(it.n) : it.cat !== 'food' && it.cat !== 'pantry' && owns(it.cat, it.n), have = it.cat === 'food' ? (S.inv.food[it.n] || 0) : it.cat === 'pantry' ? (S.inv.pantry[it.id] || 0) : 0;
     const artH = it.cat === 'houses' ? `<span class="art house">${art('house', it.n)}</span>` : `<span class="art">${itemArt(it.n)}</span>`;
     let act;
-    if (lock) act = `<span class="chip lock">Bond ${it.bond}</span>`;
+    if (lock) act = `<span class="chip lock">Bond ${it.bond}</span>${it.cat === 'tools' ? `<span class="small">${esc(twToolLock(it))}</span>` : ''}`;
     else if (owned && it.cat === 'beds') act = S.bed === it.n ? '<span class="chip own">Owned · in use</span>' : `<button class="btn" data-usebed="${esc(it.n)}">Owned · Use this bed</button>`;
     else if (owned) act = it.cat === 'houses' ? (S.house === it.n ? '<span class="chip own">Owned · living here</span>' : `<button class="btn" data-use="${esc(it.n)}">Owned · Move in</button>`) : '<span class="chip own">Owned</span>';
     else if (it.price === 0) act = '<span class="chip own">Free</span>';
@@ -111,12 +111,12 @@ function openShop(k) {
   p.querySelectorAll('[data-buy]').forEach((b) => {
     b.onclick = async () => {
       const it = items.find((x) => x.n === b.dataset.buy); SFX.click();
-      const stack = it.cat === 'food' || it.cat === 'pantry', owned = it.cat === 'beds' ? S.beds.includes(it.n) : !stack && owns(it.cat, it.n);
+      const stack = it.cat === 'food' || it.cat === 'pantry', owned = it.cat === 'beds' ? S.beds.includes(it.n) : it.cat === 'tools' ? twOwns(it.n) : !stack && owns(it.cat, it.n);
       const have = it.cat === 'food' ? (S.inv.food[it.n] || 0) : it.cat === 'pantry' ? (S.inv.pantry[it.id] || 0) : owned ? 1 : 0;
       const q = await buyWindow(p, { art: it.cat === 'houses' ? art('house', it.n) : itemArt(it.n), name: it.n, desc: it.desc, price: it.price, stack, owned, have, haveLabel: stack ? 'In bag' : 'Owned' }); if (!q) return;
       const cost = it.price * q; if (S.coins < cost) { nope('Not enough coins. Have you tried being rich?'); return; }
       S.coins -= cost; SFX.kaching();
-      if (it.cat === 'beds') S.beds.push(it.n); else if (it.cat === 'food') S.inv.food[it.n] = (S.inv.food[it.n] || 0) + q; else if (it.cat === 'pantry') S.inv.pantry[it.id] = (S.inv.pantry[it.id] || 0) + q; else S.inv[it.cat].push(it.n);
+      if (it.cat === 'beds') S.beds.push(it.n); else if (it.cat === 'food') S.inv.food[it.n] = (S.inv.food[it.n] || 0) + q; else if (it.cat === 'pantry') S.inv.pantry[it.id] = (S.inv.pantry[it.id] || 0) + q; else if (it.cat === 'tools') twGiveTool(it.n); else S.inv[it.cat].push(it.n);
       markDirty(); updateHUD();
       toast(`Bought ${q} × ${it.n}. ${PICK(['The shopkeeper did a little dance.', 'Receipt drawn in crayon.', 'No refunds. Ever.', 'Wise purchase. Probably.'])}`, 'gold');
       if (it.cat === 'beds') { openShop(k); const pp = $('.panel', modal); const ub = await confirmIn(pp, `Put the ${esc(it.n)} in the house for ${esc(NAME())} now?`, 'Use it', 'Later'); if (ub) useBed(it.n); openShop(k); return; }
@@ -127,3 +127,10 @@ function openShop(k) {
   });
 }
 
+
+/* ---- v2.1 TOWN: Kibble Corner tools (the Gene Sniffer) ---- */
+function twTools() { return [{ cat: 'tools', n: 'Gene Sniffer', price: 1200, bond: 6, desc: 'A pocket gadget that reads coat genes. Free sniffs at the Vet and on the Playdate Board.' }]; }
+function twOwns(n) { return n === 'Gene Sniffer' && !!(S && S.sniffer); }
+function twGiveTool(n) { if (n === 'Gene Sniffer') S.sniffer = true; }
+function twToolLock(it) { return `Locked. It unlocks when any dog reaches Bond ${it.bond}.`; }
+on('game:ready', () => { if (S) { S.sniffer = !!S.sniffer; if (!S.sniffed || typeof S.sniffed !== 'object') S.sniffed = {}; } });
