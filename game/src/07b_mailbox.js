@@ -16,6 +16,14 @@ function prOf(d) {
 function mailFields() {
   if (!S) return; if (!Array.isArray(S.mail)) S.mail = []; if (!S.mailCards || typeof S.mailCards !== 'object') S.mailCards = {};
   if (!Array.isArray(S.rehomed)) S.rehomed = [];
+  if (!S.penpalV21) { // once, on the first v2.1 load: pups rehomed before v2.1 skip the gift and birthday milestones already past (no burst of coins and letters)
+    S.penpalV21 = localISO(); const t = S.penpalV21;
+    S.rehomed.forEach((r) => {
+      if (!r || !r.id) return; const c = cardSched(r), days = isoDays(r.since || t, t);
+      if (!c.paid || typeof c.paid !== 'object') c.paid = { d14: days >= 14 ? 'pre' : null, d30: days >= 30 ? 'pre' : null };
+      if (c.bday == null && /^\d{4}-\d{2}-\d{2}/.test(String(r.born || ''))) c.bday = Math.floor(isoDays(r.born, t) / 12);
+    });
+  }
 }
 const mailUnread = () => (S && Array.isArray(S.mail) ? S.mail.filter((m) => !m.read).length : 0);
 const mailIcon = () => iconOr('mail', '<rect x="-14" y="-10" width="28" height="20" rx="3" fill="#FFF3D6" stroke="#5B3D32" stroke-width="2.2"/><path d="M-13 -8 L0 3 L13 -8" fill="none" stroke="#5B3D32" stroke-width="2.2" stroke-linejoin="round"/><path d="M6 -16 l2 3 3 1 -3 1 -2 3 -1 -3 -3 -1 3 -1z" fill="#F28FA5"/>');
@@ -30,7 +38,7 @@ function mailPush(msg) {
   S.mail.unshift(m);
   if (S.mail.length > MAIL_MAX) { // drop the oldest read letters first
     for (let i = S.mail.length - 1; i >= 0 && S.mail.length > MAIL_MAX; i--) if (S.mail[i].read) S.mail.splice(i, 1);
-    if (S.mail.length > MAIL_MAX) S.mail.length = MAIL_MAX;
+    for (let i = S.mail.length - 1; i >= 0 && S.mail.length > MAIL_MAX; i--) if (S.mail[i].kind !== 'litter') S.mail.splice(i, 1); // unread litter letters are kept
   }
   markDirty(); mailSfx();
   toast(`New mail: ${m.title}`, 'gold');

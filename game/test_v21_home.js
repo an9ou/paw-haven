@@ -114,6 +114,16 @@ require('./test_lib').run('v21_home', async (t) => {
   await ev(() => { window.__paw.S.litters = []; window.__paw.go('yard'); });
   ok(await t.until(() => document.querySelectorAll('#pack .packdog').length === 1, null, 4000), 'litter gone (mumInBasket false): she is drawn again');
 
+  sec('4 dogs: decorations stay clear of the pack dogs (integration review)');
+  await ev(() => { const P = window.__paw, S = P.S; S.litters = []; while (S.dogs.length < 4) P.addDog({ key: ['corgi', 'golden', 'husky'][S.dogs.length - 1] || 'beagle', sex: S.dogs.length % 2 ? 'male' : 'female' }, 'Pal' + S.dogs.length); const t0 = new Date().toISOString().slice(0, 10); ['Giant Crayon Box', 'Family Photo Frame', 'Doggy Ramp', 'Rocking Chair'].forEach((n) => { S.decor[n] = { got: t0, out: true }; }); S.dogs.forEach((d) => { d.proud = null; }); P.go('yard'); });
+  await t.until(() => document.querySelectorAll('#pack .packdog').length === 3, null, 6000);
+  const packR = await ev(() => { const svg = document.querySelector('#view svg.world'), M = svg.getScreenCTM().inverse(); return [...document.querySelectorAll('#pack .packdog')].map((g) => { const b = g.querySelector('rect').getBoundingClientRect(), a = new DOMPoint(b.left, b.top).matrixTransform(M), c = new DOMPoint(b.right, b.bottom).matrixTransform(M); return [a.x, a.y, c.x, c.y]; }); });
+  for (const n of NAMES) {
+    const r = await wr(`#decorG [data-decor="${n}"] > rect`), area = (r[2] - r[0]) * (r[3] - r[1]);
+    const worst = Math.max(0, ...packR.map((q) => Math.max(0, Math.min(r[2], q[2]) - Math.max(r[0], q[0])) * Math.max(0, Math.min(r[3], q[3]) - Math.max(r[1], q[1])) / area));
+    ok(worst <= 0.15, `${n}: at most 15% under a pack dog's tap area (${Math.round(worst * 100)}%)`);
+  }
+
   sec('old save without S.decor loads clean');
   await ev(() => { const S = window.__paw.S; delete S.decor; delete S.portrait; window.__paw.saveNow(); });
   const old = JSON.stringify(await S()); ok(!('decor' in JSON.parse(old)), 'crafted save has no decor field');

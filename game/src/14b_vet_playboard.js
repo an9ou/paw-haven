@@ -319,5 +319,5 @@ function townV2Hooks() {
     get visitor() { return V2T.visitor; }, get line() { return V2T.line; }, spot: () => visitorSpot(), reroll: () => { V2T.rollPlace = null; }
   };
 }
-on('game:ready', () => { if (S && (!S.sniffed || typeof S.sniffed !== 'object')) S.sniffed = {}; });
+on('game:ready', () => { if (S && (!S.sniffed || typeof S.sniffed !== 'object')) S.sniffed = {}; if (S) { const t = localISO(); Object.keys(S.sniffed).forEach((k) => { if (S.sniffed[k] !== t) delete S.sniffed[k]; }); } }); // board dogs change daily: keep only today's sniffs
 on('game:ready', townV2Hooks); setTimeout(townV2Hooks, 0);

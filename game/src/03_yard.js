@@ -490,15 +490,15 @@ on('scene:redraw', () => { if (cur.mode === 'yard' && $('svg.world', view)) bind
 const HM_DECOR = {
   'Giant Crayon Box': { prop: 'crayonbox', at: [536, 296, 112, 90], vb: [200, 160], story: 'Every crayon is taller than a dog. Nobody has ever finished colouring.' },
   'Family Photo Frame': { prop: 'photoframe', at: [404, 236, 112, 98], vb: [160, 140], story: 'Everyone who ever shared this yard is on the fence. The ugly ones are the best.' },
-  'Doggy Ramp': { prop: 'doggyramp', at: [24, 322, 110, 66], vb: [200, 120], story: 'Paw prints lead all the way up. Nobody has needed the ramp yet, but everyone is proud of it.' },
-  'Rocking Chair': { prop: 'rockingchair', at: [910, 424, 84, 84], vb: [160, 160], story: 'A dog-sized chair with a knitted blanket. Mum likes a rock here after a long day of puppies.' }
+  'Doggy Ramp': { prop: 'doggyramp', at: [536, 432, 82, 50], vb: [200, 120], story: 'Paw prints lead all the way up. Nobody has needed the ramp yet, but everyone is proud of it.' },
+  'Rocking Chair': { prop: 'rockingchair', at: [910, 452, 84, 84], vb: [160, 160], story: 'A dog-sized chair with a knitted blanket. Mum likes a rock here after a long day of puppies.' }
 };
-const HM_PHOTO = [20, 14, 120, 84]; // the documented data-photo box inside the 160x140 frame
+const HM_PHOTO = [20, 15, 120, 84]; // the documented data-photo box inside the 160x140 frame
 function hmDecorFields() { if (S && (!S.decor || typeof S.decor !== 'object')) S.decor = {}; }
 function hmDecorOut(name) { return !!(S && S.decor && S.decor[name] && S.decor[name].out); }
 function hmPhotoHeads() {
   const ids = (S.portrait && Array.isArray(S.portrait.ids) ? S.portrait.ids : []).slice(0, 4);
-  const recs = ids.map((id) => dogById(id) || (S.tree && S.tree[id])).filter(Boolean), n = recs.length; if (!n) return '';
+  const recs = ids.map((id) => dogById(id) || (typeof famRec === 'function' ? famRec(id) : null) || (S.tree && S.tree[id])).filter(Boolean), n = recs.length; if (!n) return ''; // famRec merges rehomed/litter records with their genes
   const [bx, by, bw, bh] = HM_PHOTO, hs = Math.min(60, bw / n), x0 = bx + (bw - n * hs) / 2, y0 = by + (bh - hs) / 2;
   return recs.map((r, i) => { let h; try { h = headSVG(r); } catch (e) { h = art('dogHead', r.key || 'mutt'); } return `<g class="hm-head" data-head="${esc(r.id)}">${place(h, x0 + i * hs, y0, hs, hs)}</g>`; }).join('');
 }

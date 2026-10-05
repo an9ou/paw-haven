@@ -110,7 +110,7 @@ function pupArt(pp, o) {
   return vb ? sv.replace('viewBox="0 0 240 200"', `viewBox="${vb}"`) : sv;
 }
 // mumInBasket(d): a nursing mum who is not the active dog, at home: she lies down in the nursery basket (the pack skips her)
-function mumInBasket(d) { return !!(d && S && brIsNursing(d) && S.dog !== d && (!S.dog || S.dog.id !== d.id) && (S.place === 'yard' || S.place === 'house')); }
+function mumInBasket(d) { const L = d && S ? (S.litters || []).find((x) => dogById(x.mum)) : null; return !!(d && S && L && L.mum === d.id && brIsNursing(d) && S.dog !== d && (!S.dog || S.dog.id !== d.id) && (S.place === 'yard' || S.place === 'house')); } // only the litter the nursery draws (a second nursing mum stays in the pack)
 function brNurserySVG(L) {
   const pups = L.pups.slice(0, 3), n = pups.length, xs = n === 1 ? [125] : n === 2 ? [92, 160] : [66, 124, 182];
   const mum = dogById(L.mum), withMum = mumInBasket(mum);
