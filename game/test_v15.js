@@ -78,7 +78,7 @@ require('./test_lib').run('v15', async (t) => {
 
   sec('v1.7: 10 breeds at the shelter, adopt the new breeds as starters');
   await t.packPin(true); // pack dogs re-pick poses every tick from here on; pinned to one pose before the layout checks
-  await ev(() => { const S = window.__paw.S; ['Royal Castle Kennel'].forEach((h) => { if (!S.inv.houses.includes(h)) S.inv.houses.push(h); }); S.house = 'Royal Castle Kennel'; S.coins = 9999; S.careDays = 45; S.dogs.forEach((d) => { d.bond = { level: 10, pts: 3200 }; }); }); // v2: spots 3 + 4 need Bond 10 dogs, 45 care days, the Castle
+  await ev(() => { const S = window.__paw.S; ['Royal Castle Kennel'].forEach((h) => { if (!S.inv.houses.includes(h)) S.inv.houses.push(h); }); S.house = 'Royal Castle Kennel'; S.coins = 9999; S.careDays = 60; S.dogs.forEach((d) => { d.bond = { level: 10, pts: 3200 }; }); }); // v2: spots 3 + 4 need Bond 10 dogs, 60 care days, the Castle
   await t.home('yard'); ok(await t.toShelter(), 'shelter opens (10 breeds)');
   const stK = await ev(() => [...document.querySelectorAll('.shcard.starter [data-shadopt]')].map((b) => b.dataset.shadopt.split('|')[1]));
   ok(stK.length === 9 && ['chihuahua', 'pug', 'greyhound', 'beagle'].every((k) => stK.includes(k)), 'shelter: 9 starter cards left (10 breeds, Mochi home): ' + stK.join(','));

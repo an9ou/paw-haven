@@ -64,6 +64,31 @@ require('./test_lib').run('v2_play', async (t) => {
   ok(await t.waitToast(/Pip-Squeak stays home with a chew toy/, 6000), 'pack walk: "Pip-Squeak stays home with a chew toy."');
   await t.quitWalk(true);
 
+  sec('v2.0.1 travel: under 3 months and nursing mums stay home; 3 to 6 months travel freely');
+  const pipId = await ev(() => window.__paw.S.dogs.find((d) => d.name === 'Pip-Squeak').id);
+  const mapClick = async (k) => { await p.click('[data-act=map]'); await p.waitForSelector(`[data-area=${k}]`); await ev((k) => window.__paw.mapTo(k), k); await p.click(`[data-area=${k}]`, { force: true }); };
+  const packHere = () => ev(() => document.querySelectorAll('#pack .packdog').length);
+  await t.home(); await t.calm(); await clearToasts();
+  ok((await packHere()) === 1, 'at home the 1-month pup is with the pack');
+  await t.travel('park');
+  ok((await ev(() => window.__paw.S.place)) === 'park', 'a 4-month active pup may travel to Sunny Park');
+  ok(await t.waitToast(/Pip-Squeak stays home with a chew toy/, 4000), 'toast: "Pip-Squeak stays home with a chew toy"');
+  ok((await packHere()) === 0, 'the 1-month pack pup is not drawn at the park');
+  await clearToasts(); await ev((id) => window.__paw.switchDog(id), pipId);
+  ok(await t.waitToast(/Pip-Squeak is at home/, 4000) && (await ev((id) => window.__paw.S.activeId !== id, pipId)), 'cannot switch to the pup who stayed home');
+  await t.home('yard'); ok(await t.until(() => document.querySelectorAll('#pack .packdog').length === 1, null, 4000), 'back home: the pup is in the yard again');
+  await setAge(1); await t.home(); await clearToasts(); await mapClick('river');
+  ok(await t.waitToast(/Mochi hasn't had all puppy shots yet\. Home and yard only until 3 months\./, 4000), 'active 1-month pup: "hasn\'t had all puppy shots yet. Home and yard only until 3 months."');
+  ok((await ev(() => window.__paw.S.place)) === 'yard' && !(await ev(() => !!document.querySelector('.onway'))), 'and the trip does not start');
+  await t.home(); await setAge(24); await ev(() => { const S = window.__paw.S; S.litters = [{ id: 'Ltr', mum: S.dog.id, sire: 'x', born: '2026-01-01', until: '2099-01-01', pups: [], named: true }]; });
+  await clearToasts(); await mapClick('park');
+  ok(await t.waitToast(/Mochi is nursing the pups and stays home for now/, 4000) && (await ev(() => window.__paw.S.place)) === 'yard', 'an active nursing mum stays home too');
+  await ev((id) => { const S = window.__paw.S, z = (v) => String(v).padStart(2, '0'), d = new Date(); d.setDate(d.getDate() - 24); S.dogs.find((x) => x.id === id).born = `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`; S.litters = [{ id: 'Ltr', mum: id, sire: 'x', born: '2026-01-01', until: '2099-01-01', pups: [], named: true }]; }, pipId);
+  await t.home(); await clearToasts(); await t.travel('park');
+  ok(await t.waitToast(/Pip-Squeak stays home with the pups/, 4000) && (await packHere()) === 0, 'a nursing pack mum stays home with the pups, the pack travels');
+  await ev((id) => { const S = window.__paw.S, z = (v) => String(v).padStart(2, '0'), d = new Date(); d.setDate(d.getDate() - 1); S.dogs.find((x) => x.id === id).born = `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`; S.litters = []; }, pipId);
+  await t.home('yard');
+
   sec('training: 2 to 6 months = 4 attempts a session, progress x1.2');
   await setAge(3); await t.home(); await refill(); await toTricks(); await settle(t); await ready(t);
   ok(/Each try costs 25 Focus/.test(await p.textContent('.trbody')), 'the panel says each try costs 25 Focus (puppy attention span)');

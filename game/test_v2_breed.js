@@ -132,7 +132,7 @@ require('./test_lib').run('v2_breed', async (t) => {
   s = await S(); ok(s.dogs.length === 3 && s.rehomed.length === 4, 'with no free spot every pup gets a loving home');
 
   sec('NPC female playdate -> litter letter -> pick of the litter');
-  await t.patch({ house: 'Royal Castle Kennel', careDays: 45 });
+  await t.patch({ house: 'Royal Castle Kennel', careDays: 60 });
   await ev(() => window.__paw.S.dogs.forEach((d) => { d.bond = { level: 10, pts: 3300 }; }));
   ok(await ev(() => window.__paw.breed.free()) === 1, 'free spots: 1 (Castle, 3 dogs)');
   r = await ev((i) => { const S = window.__paw.S; S.dogs.find((d) => d.id === i.m).restUntil = null; return window.__paw.breed.npcPlaydate(i.m, { id: 'npc_daisy', name: 'Daisy', key: 'beagle', sex: 'female', born: (() => { const d = new Date(); d.setDate(d.getDate() - 26); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })(), genes: { B: ['B', 'b'], D: ['D', 'D'], E: ['E', 'e'], S: ['S', 'sp'], M: ['m', 'm'], Bl: ['bl', 'bl'] }, owner: 'the Morenos' }, { force: true, size: 3 }); }, ids);

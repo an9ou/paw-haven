@@ -18,7 +18,7 @@ function tick() {
   addStat('hunger', -6 * h * (S.dog.key === 'corgi' ? 1.2 : 1));
   const pack = S.dogs.length > 1 ? 0.75 : 1;
   addStat('happy', -houseInfo().hd * h * (buffOn('warm') ? 0.5 : 1) * pack * (fluffyOn() ? 0.5 : 1));
-  others().forEach((d) => { const st = d.stats, c = (k, v) => { st[k] = clamp(st[k] + v, 0, 100); }; c('hunger', -6 * h * (d.key === 'corgi' ? 1.2 : 1)); c('happy', -houseInfo().hd * h * pack * (fluffyOn(d) ? 0.5 : 1)); c('clean', -3 * h); if (d.sleeping) { c('energy', napRate() * h); if (st.energy >= 100) { d.sleeping = false; if (cur.mode === 'yard') redrawPackDog(d); } } else c('energy', -2 * h); });
+  S.dogs.filter((d) => d.id !== S.activeId).forEach((d) => { const st = d.stats, c = (k, v) => { st[k] = clamp(st[k] + v, 0, 100); }; c('hunger', -6 * h * (d.key === 'corgi' ? 1.2 : 1)); c('happy', -houseInfo().hd * h * pack * (fluffyOn(d) ? 0.5 : 1)); c('clean', -3 * h); if (d.sleeping) { c('energy', napRate() * h); if (st.energy >= 100) { d.sleeping = false; if (cur.mode === 'yard') redrawPackDog(d); } } else c('energy', -2 * h); });
   buffTick();
   pottyTick();
   if (Date.now() - lastGardenTick > 60000) { lastGardenTick = Date.now(); gardenAdvance(); birthdayCheck(); emit('clock:minute', {}); }

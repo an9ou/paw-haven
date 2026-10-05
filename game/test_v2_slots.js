@@ -42,12 +42,14 @@ require('./test_lib').run('v2_slots', async (t) => {
   await setDogs([8, 9]); sl = await slots(); ok(sl.cap === 3 && sl.free === 1, 'Bond 8 + Bond 9, 21 care days, Treehouse Den: 3 spots');
   await ev(() => window.__paw.spots.check()); ok(await t.waitToast(/A 3rd dog spot is open! The Treehouse Den has room for one more\./), '3rd spot toast');
 
-  sec('spot 4: 3 dogs at Bond 10 + 45 care days + Royal Castle Kennel');
-  await add('pug', 'Dumpling'); await setDogs([10, 10, 10]); await ev(() => { window.__paw.S.careDays = 45; });
+  sec('spot 4: 3 dogs at Bond 10 + 60 care days + Royal Castle Kennel');
+  await add('pug', 'Dumpling'); await setDogs([10, 10, 10]); await ev(() => { window.__paw.S.careDays = 60; });
   sl = await slots(); ok(sl.cap === 3 && sl.free === 0, 'Treehouse Den: 3 spots even at 3x Bond 10');
-  await house('Royal Castle Kennel'); await ev(() => { window.__paw.S.careDays = 44; }); sl = await slots(); ok(sl.cap === 3, '44 care days: still 3');
-  await ev(() => { window.__paw.S.careDays = 45; }); await setDogs([10, 10, 9]); sl = await slots(); ok(sl.cap === 3, 'two Bond 10 dogs: still 3');
-  await setDogs([10, 10, 10]); sl = await slots(); ok(sl.cap === 4 && sl.free === 1, '3x Bond 10 + 45 care days + Castle: 4 spots');
+  await house('Royal Castle Kennel'); await ev(() => { window.__paw.S.careDays = 45; }); sl = await slots(); ok(sl.cap === 3, '45 care days (the old rule): still 3');
+  await ev(() => { window.__paw.S.careDays = 59; }); sl = await slots(); ok(sl.cap === 3, '59 care days: still 3');
+  const cd4 = sl.spots[3].reqs.find((r) => r.label === 'Care days'); ok(cd4 && cd4.need === 60 && cd4.have === 59 && !cd4.done, 'spot 4 checklist: Care days 59/60');
+  await ev(() => { window.__paw.S.careDays = 60; }); await setDogs([10, 10, 9]); sl = await slots(); ok(sl.cap === 3, 'two Bond 10 dogs: still 3');
+  await setDogs([10, 10, 10]); sl = await slots(); ok(sl.cap === 4 && sl.free === 1, '3x Bond 10 + 60 care days + Castle: 4 spots');
   await add('chihuahua', 'Peanut'); sl = await slots(); ok(sl.cap === 4 && sl.used === 4 && sl.free === 0, 'hard cap: 4 dogs, no free spot');
 
   sec('shelter checklist UI');

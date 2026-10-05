@@ -69,7 +69,7 @@ function enterYard() {
     const d = Math.hypot(e.clientX - last.x, e.clientY - last.y); last = { x: e.clientX, y: e.clientY }; moved += d; pet.dist += d;
     if (pet.dist > 70) { pet.dist = 0; tickFrom(e); }
   });
-  hit.addEventListener('pointerup', (e) => { if (down && moved < 8) { tickFrom(e); tickFrom(e); } down = false; });
+  hit.addEventListener('pointerup', (e) => { if (down && moved < 8) { const mb = mailboxBehindDog(e.clientX, e.clientY); if (mb) { down = false; mb.dispatchEvent(new MouseEvent('click', { bubbles: true })); return; } tickFrom(e); tickFrom(e); } down = false; });
   hit.addEventListener('pointerleave', () => { if (!down) last = null; });
   hit.addEventListener('pointercancel', () => { down = false; last = null; });
   hit.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); petTick(560, 380); } });
@@ -88,6 +88,15 @@ function enterYard() {
   onCleanup(() => clearInterval(iv));
   if (S.sleeping) sleepTray(); else dockIdle();
   emit('yard:enter', { place: S.place });
+}
+// v2.0.1: the dog's rectangular hit box overlaps the yard mailbox (drawn behind the dog). A tap inside the mailbox where the dog itself
+// is not painted goes to the mailbox; a tap on the painted dog still pets. Returns the mailbox element, or null.
+function mailboxBehindDog(cx, cy) {
+  const hit = $('#dogHit'), mb = $('#mailboxG') || $('#sceneG [data-hot="mailbox"]'); if (!hit || !mb) return null;
+  const r = mb.getBoundingClientRect(); if (!r.width || cx < r.left || cx > r.right || cy < r.top || cy > r.bottom) return null;
+  const prev = hit.style.pointerEvents; let el = null;
+  hit.style.pointerEvents = 'none'; try { el = document.elementFromPoint(cx, cy); } finally { hit.style.pointerEvents = prev; }
+  return el && mb.contains(el) ? mb : null;
 }
 const WX_LINES = {
   shiba: { rain: 'Rain? On ME? I would like to speak to the manager of the sky.', coat: 'Behold. A dog who does not get wet. Bow.', snow: 'Cold. Unacceptable. A sweater, please. Now.', warm: 'Snow is beneath me. I will zoom across it anyway.', hot: 'Too hot to be this dramatic. I will try.', night: '*yawn* Even legends sleep.', dawn: 'Morning. You may bring breakfast.' },
@@ -185,13 +194,16 @@ function travelTo(id) {
   if (S.sleeping) { nope(`${NAME()} is asleep. Wake up first (Care menu).`); return; }
   if (id === S.place && cur.mode === 'yard') return;
   if (id === S.place) { go('yard'); return; }
+  if (awayFromHome(id) && staysHome(D())) { nope(stayHomeLine(D())); return; } // v2.0.1: under 3 months / nursing mum: home and yard only
+  const going = S.dogs.filter((d) => d === D() || !(awayFromHome(id) && staysHome(d))), stay = S.dogs.filter((d) => !going.includes(d));
   busy = true; hideBubble(); SFX.whoosh();
+  if (stay.length && !awayFromHome()) toast(`${stay.map((d) => d.name).join(' and ')} ${stay.length > 1 ? 'stay' : 'stays'} home ${stay.some((d) => ageMonths(d) >= 3) ? 'with the pups' : 'with a chew toy (too little for trips)'}.`, '');
   const card = document.createElement('div'); card.className = 'onway';
-  card.innerHTML = `<div class="onway-card"><span class="onway-dog">${S.dogs.map((d) => dogSVG(d, { pose: 'walk', outfit: outfitOf(d) })).join('')}</span><b>On the way to ${esc(P.n)}...</b><span class="small">${S.dogs.length > 1 ? 'The whole pack trots along. -2 Energy each.' : esc(NAME()) + ' trots happily. -2 Energy.'}</span></div>`;
+  card.innerHTML = `<div class="onway-card"><span class="onway-dog">${going.map((d) => dogSVG(d, { pose: 'walk', outfit: outfitOf(d) })).join('')}</span><b>On the way to ${esc(P.n)}...</b><span class="small">${going.length > 1 ? (stay.length ? 'The pack trots along. -2 Energy each.' : 'The whole pack trots along. -2 Energy each.') : esc(NAME()) + ' trots happily. -2 Energy.'}</span></div>`;
   stage.appendChild(card);
   setTimeout(() => {
     card.remove(); busy = false;
-    S.place = id; S.dogs.forEach((d) => { d.stats.energy = clamp(d.stats.energy - 2, 0, 100); }); dailyCheck(); S.daily.visited = S.daily.visited || [];
+    S.place = id; going.forEach((d) => { d.stats.energy = clamp(d.stats.energy - 2, 0, 100); }); dailyCheck(); S.daily.visited = S.daily.visited || [];
     const first = !S.daily.visited.includes(id); if (first) { S.daily.visited.push(id); addStat('happy', 5); }
     markDirty(); go(id === 'market' ? 'market' : 'yard');
     let msg = `${NAME()} arrived at ${P.n}.${first ? ' First visit today: +5 Happiness.' : ''}`;

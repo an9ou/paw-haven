@@ -112,6 +112,7 @@ function openNursery(litterId) {
     <p class="ns-count" id="nsCount">${left > 0 ? `Ready for new homes in ${left} day${left > 1 ? 's' : ''}.` : 'Ready for new homes today!'}</p>
     <p class="small">Newborns just nurse and sleep: no feeding needed. ${esc(mum.name)} eats for ${L.pups.length + 1} and stays home from walks.</p></div>`,
     { cls: 'litter nursery', foot: `${list.length > 1 ? `<button class="btn" id="nsNext">Next litter (${idx + 1}/${list.length})</button>` : ''}<button class="btn go big" id="nsPet" ${pets >= 3 ? 'aria-disabled="true"' : ''}>Pet softly (${3 - pets} left today)</button>${left <= 0 ? '<button class="btn yes big" id="nsChoose">Choose homes</button>' : ''}` });
+  if (typeof audioPlace === 'function') audioPlace('nursery'); // v2.0.1: the nursery lullaby while the popup is open (closeModal restores the place music)
   const nx = $('#nsNext', p); if (nx) nx.onclick = () => openNursery(list[(idx + 1) % list.length].id);
   const ch = $('#nsChoose', p); if (ch) ch.onclick = () => openWhoStays(L.id);
   $('#nsPet', p).onclick = () => {
