@@ -2,7 +2,9 @@
    Plain IIFE, no DOM. Matches the v2 doc (Genetics section) and V2_GENES.md.
    API: LOCI, STARTER_GENES, SHADES, phenotype(genes, breedKey, seed?), pigment(genes),
         randomGenotype(breedKey, rng), inherit(mumGenes, dadGenes, rng),
-        isDoubleMerle(a, b), related(dogA, dogB, allDogs). */
+        isDoubleMerle(a, b), related(dogA, dogB, allDogs).
+   v2 (additive): BREED_NAMES, MIXES, mixKey(a, b), mixOf(damKey, sireKey, rng), predict(genesA, genesB, keyA, keyB, opts?),
+        coatCatalog(breedKey), describe(genes). See the doc comments below. */
 (function (root) {
   'use strict';
 
@@ -292,7 +294,271 @@
     return false;
   }
 
-  const api = { LOCI, LOCUS_KEYS, BREEDS, SIZE, STARTER_GENES, SHADES, FREQ, phenotype, pigment, randomGenotype, inherit, isDoubleMerle, related };
+  /* =====================================================================
+     v2 additions (GENES lane). Additive: nothing above changed, phenotype() is untouched.
+     MIXES, BREED_NAMES, mixKey, mixOf, predict, coatCatalog, describe.
+     ===================================================================== */
+  const BREED_NAMES = { shiba: 'Shiba', corgi: 'Corgi', golden: 'Golden', dachs: 'Dachshund', husky: 'Husky', mutt: 'Mutt', chihuahua: 'Chihuahua', pug: 'Pug', greyhound: 'Greyhound', beagle: 'Beagle' };
+
+  /** Canonical table key for a pair: the two breed keys in BREEDS order joined by '|', e.g. 'corgi|husky'. */
+  function mixKey(a, b) {
+    const x = breedOf(a), y = breedOf(b);
+    return BREEDS.indexOf(x) <= BREEDS.indexOf(y) ? x + '|' + y : y + '|' + x;
+  }
+  /* All 45 pairs of the 10 breeds -> { name, head }. head = the breed with the more striking head.
+     Real portmanteaus where they exist; invented cute ones otherwise. Mutt pairs: "Mutt mix", head = the other breed
+     (mixOf() applies the 50% mutt-head rule on top). */
+  const MIX_LIST = [
+    ['shiba', 'corgi', 'Shorgi', 'shiba'],         ['shiba', 'golden', 'Goldiba', 'shiba'],
+    ['shiba', 'dachs', 'Shibadox', 'shiba'],       ['shiba', 'husky', 'Shusky', 'husky'],
+    ['shiba', 'chihuahua', 'Chiba', 'chihuahua'],  ['shiba', 'pug', 'Pugiba', 'pug'],
+    ['shiba', 'greyhound', 'Shibahound', 'shiba'], ['shiba', 'beagle', 'Shibeagle', 'shiba'],
+    ['corgi', 'golden', 'Gorgi', 'corgi'],         ['corgi', 'dachs', 'Dorgi', 'corgi'],
+    ['corgi', 'husky', 'Horgi', 'husky'],          ['corgi', 'chihuahua', 'Chigi', 'corgi'],
+    ['corgi', 'pug', 'Porgi', 'pug'],              ['corgi', 'greyhound', 'Greygi', 'corgi'],
+    ['corgi', 'beagle', 'Beagi', 'corgi'],         ['golden', 'dachs', 'Goldendox', 'dachs'],
+    ['golden', 'husky', 'Goberian', 'husky'],      ['golden', 'chihuahua', 'Goldenchi', 'chihuahua'],
+    ['golden', 'pug', 'Pugolden', 'pug'],          ['golden', 'greyhound', 'Goldhound', 'golden'],
+    ['golden', 'beagle', 'Beago', 'golden'],       ['dachs', 'husky', 'Dusky', 'husky'],
+    ['dachs', 'chihuahua', 'Chiweenie', 'chihuahua'], ['dachs', 'pug', 'Daug', 'pug'],
+    ['dachs', 'greyhound', 'Greydox', 'dachs'],    ['dachs', 'beagle', 'Doxle', 'beagle'],
+    ['husky', 'chihuahua', 'Chusky', 'husky'],     ['husky', 'pug', 'Hug', 'husky'],
+    ['husky', 'greyhound', 'Greysky', 'husky'],    ['husky', 'beagle', 'Beaski', 'husky'],
+    ['chihuahua', 'pug', 'Chug', 'pug'],           ['chihuahua', 'greyhound', 'Greyhuahua', 'chihuahua'],
+    ['chihuahua', 'beagle', 'Cheagle', 'chihuahua'], ['pug', 'greyhound', 'Greypug', 'pug'],
+    ['pug', 'beagle', 'Puggle', 'pug'],            ['greyhound', 'beagle', 'Greagle', 'beagle']
+  ];
+  const MIXES = {};
+  MIX_LIST.forEach((m) => { MIXES[mixKey(m[0], m[1])] = { name: m[2], head: m[3] }; });
+  BREEDS.forEach((k) => { if (k !== 'mutt') MIXES[mixKey('mutt', k)] = { name: 'Mutt mix', head: k }; });
+
+  /**
+   * mixOf(damKey, sireKey, rng) -> { a: damKey, b: sireKey, body, head, name } | null
+   * - Same breed (incl. mutt x mutt): returns null = purebred, no mix (puppy key = that breed).
+   * - Mutt x anything: body 'mutt', name 'Mutt mix', head = the other breed when rng() < 0.5, else 'mutt'.
+   * - Otherwise: body = dam's breed when rng() < 0.5, else sire's; head = MIXES head, or the other parent's
+   *   breed when the body already is the head breed (so a mix always shows both parents).
+   * rng is called exactly once (body or mutt head). Unknown keys count as 'mutt'.
+   */
+  function mixOf(damKey, sireKey, rng) {
+    const R = rngOf(rng), a = breedOf(damKey), b = breedOf(sireKey);
+    if (a === b) return null;
+    const t = MIXES[mixKey(a, b)];
+    if (a === 'mutt' || b === 'mutt') {
+      const other = a === 'mutt' ? b : a;
+      return { a, b, body: 'mutt', head: R() < 0.5 ? other : 'mutt', name: t.name };
+    }
+    const body = R() < 0.5 ? a : b;
+    const head = body === t.head ? (body === a ? b : a) : t.head;
+    return { a, b, body, head, name: t.name };
+  }
+
+  /* ---------- exact odds ---------- */
+  // Eye outcome probabilities, mirroring phenotype(): Bl/Bl blue; Bl/bl blue 3/4, odd 1/4;
+  // visible merle: odd 0.15, blue 0.10, else amber (b/b) or brown; b/b amber; else brown.
+  function eyeDist(g) {
+    if (has(g.Bl, 'Bl')) return both(g.Bl, 'Bl') ? { blue: 1 } : { blue: 0.75, odd: 0.25 };
+    const pig = pigment(g), visMerle = has(g.M, 'M') && pig !== 'red' && pig !== 'cream';
+    const base = both(g.B, 'b') ? 'amber' : 'brown';
+    if (visMerle) { const o = { odd: 0.15, blue: 0.10 }; o[base] = 0.75; return o; }
+    return { [base]: 1 };
+  }
+  function oddsText(p) {
+    if (p >= 0.995) return 'every puppy';
+    const n = 1 / p, r = Math.round(n);
+    return (Math.abs(n - r) < 0.02 * n ? '1 in ' : 'about 1 in ') + Math.max(1, r);
+  }
+  // all unordered genotype classes of the 6 loci with their probability for a pair of parents
+  function offspringDist(ga, gb) {
+    const per = LOCUS_KEYS.map((k) => {
+      const m = {};
+      for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) {
+        const pr = [ga[k][i], gb[k][j]], key = pr.join('/');
+        m[key] = (m[key] || 0) + 0.25;
+      }
+      return Object.keys(m).map((key) => ({ pair: key.split('/'), p: m[key] }));
+    });
+    const out = [];
+    (function rec(i, g, p) {
+      if (i === LOCUS_KEYS.length) { out.push({ g: Object.assign({}, g), p }); return; }
+      per[i].forEach((o) => { g[LOCUS_KEYS[i]] = o.pair; rec(i + 1, g, p * o.p); });
+    })(0, {}, 1);
+    return out; // covers the 4096 allele combinations exactly (merged by ordered pair)
+  }
+
+  /**
+   * predict(genesA, genesB, keyA, keyB, opts?) -> [{ coat, eyes, pct, odds }] sorted by pct (desc), then coat, eyes.
+   * - genesA = dam, genesB = sire (genes objects or dogs with .genes). Exact enumeration of all 4^6 = 4096
+   *   allele combinations. M/M (double merle) outcomes are non-viable: removed, the rest renormalised.
+   * - coat = phenotype().coatName for the BODY breed: keyA (the dam's breed), except 'mutt' when either parent
+   *   is a mutt (mixOf always gives a mutt body then). opts.body overrides it.
+   * - Rows are per (coat, eyes): eyes is a fixed label ('brown' | 'amber' | 'blue' | 'odd') and a coat with a
+   *   chance of odd/blue eyes is split into separate rows (e.g. Bl/bl: 75% blue row, 25% odd row).
+   *   opts.byCoat = true merges rows by coat only; eyes is then the most likely label for that coat.
+   * - pct is an unrounded number (rows sum to 100 within float error); odds is plain text ('1 in 32').
+   * - Returns [] when every outcome would be M/M.
+   */
+  function predict(genesA, genesB, keyA, keyB, opts) {
+    opts = opts || {};
+    const ga = normGenes(genesOf(genesA)), gb = normGenes(genesOf(genesB));
+    const body = opts.body ? breedOf(opts.body) : (breedOf(keyA) === 'mutt' || (keyB != null && breedOf(keyB) === 'mutt')) ? 'mutt' : breedOf(keyA);
+    const rows = {}, coatEyes = {};
+    let viable = 0;
+    offspringDist(ga, gb).forEach(({ g, p }) => {
+      if (both(g.M, 'M')) return;
+      viable += p;
+      const coat = phenotype(g, body).coatName, ed = eyeDist(g);
+      Object.keys(ed).forEach((e) => {
+        const key = opts.byCoat ? coat : coat + '\u0000' + e;
+        if (!rows[key]) rows[key] = { coat, eyes: e, p: 0 };
+        rows[key].p += p * ed[e];
+        const ce = coatEyes[coat] || (coatEyes[coat] = {});
+        ce[e] = (ce[e] || 0) + p * ed[e];
+      });
+    });
+    if (viable <= 0) return [];
+    return Object.keys(rows).map((k) => {
+      const r = rows[k];
+      if (opts.byCoat) { const ce = coatEyes[r.coat]; r.eyes = Object.keys(ce).sort((x, y) => ce[y] - ce[x])[0]; }
+      const q = r.p / viable;
+      return { coat: r.coat, eyes: r.eyes, pct: q * 100, odds: oddsText(q) };
+    }).sort((x, y) => y.pct - x.pct || (x.coat < y.coat ? -1 : x.coat > y.coat ? 1 : 0) || (x.eyes < y.eyes ? -1 : 1));
+  }
+
+  /* ---------- coat catalog ---------- */
+  // unordered genotype classes allowed by a breed's FREQ (0 -> dominant only, 1 -> recessive only)
+  function locusClasses(rec, dom, p) {
+    const out = [];
+    if (p < 1) out.push({ pair: [dom, dom], p: (1 - p) * (1 - p) });
+    if (p > 0 && p < 1) out.push({ pair: [dom, rec], p: 2 * p * (1 - p) });
+    if (p > 0) out.push({ pair: [rec, rec], p: p * p });
+    return out;
+  }
+  function breedSpace(breed) {
+    const f = FREQ[breed];
+    const per = [
+      ['B', locusClasses('b', 'B', f.b)], ['D', locusClasses('d', 'D', f.d)], ['E', locusClasses('e', 'E', f.e)],
+      ['S', locusClasses('sp', 'S', f.sp)],
+      ['M', f.M > 0 ? [{ pair: ['m', 'm'], p: 1 - f.M }, { pair: ['M', 'm'], p: f.M }] : [{ pair: ['m', 'm'], p: 1 }]],
+      ['Bl', locusClasses('bl', 'Bl', 1 - f.Bl)]
+    ];
+    const out = [];
+    (function rec(i, g, p) {
+      if (i === per.length) { out.push({ g: Object.assign({}, g), p }); return; }
+      per[i][1].forEach((o) => { g[per[i][0]] = o.pair; rec(i + 1, g, p * o.p); });
+    })(0, {}, 1);
+    return out;
+  }
+  const PIG_NEED = {
+    red: 'red genes from both parents',
+    cream: 'red and dilute genes from both parents',
+    black: 'a dark (non-red) gene from at least one parent',
+    liver: 'chocolate genes from both parents',
+    blue: 'dilute genes from both parents',
+    lilac: 'chocolate and dilute genes from both parents',
+    apricot: 'red and chocolate genes from both parents',
+    redliver: 'red and chocolate genes from both parents'
+  };
+  function hintFor(breed, sk, merle, whiteLvl, p, defaultSk) {
+    const f = FREQ[breed], parts = [];
+    // a pigment that every dog of this breed has (golden: always e/e) needs no hint
+    const fixedRed = f.e >= 1 && (sk === 'red');
+    if (sk !== defaultSk && !fixedRed) parts.push(f.e >= 1 && sk === 'cream' ? PIG_NEED.blue : PIG_NEED[sk]);
+    if (merle) parts.push('one ' + (breed === 'dachs' ? 'dapple' : 'merle') + ' parent (never two)');
+    if (whiteLvl === 2) parts.push('spotting genes from both parents');
+    else if (whiteLvl === 1 && !WHITE_MARKED[breed]) parts.push('a spotting gene from one parent');
+    let s;
+    if (!parts.length) s = 'The classic ' + BREED_NAMES[breed] + ' look.';
+    else if (parts.length === 1 && sk === 'blue' && !merle) s = 'Two parents who carry dilute can make this soft blue.';
+    else {
+      const last = parts.pop();
+      s = 'Needs ' + (parts.length ? parts.join(', ') + ' and ' : '') + last + '.';
+    }
+    if (p < 0.005) s += ' Very rare!';
+    return s;
+  }
+  const catalogCache = {};
+  /**
+   * coatCatalog(breedKey) -> [{ coat, rare, how }] sorted from most to least common.
+   * Every coatName phenotype() can produce for the breed from the genotypes randomGenotype() can produce
+   * (FREQ: a 0 frequency locks the dominant allele, 1 locks the recessive one; pug: no merle or piebald, ...).
+   * rare = lilac, cream, apricot, greyhound red or any visible merle, or under 1% of random dogs of the breed.
+   * Returns fresh copies (safe to mutate).
+   */
+  function coatCatalog(breedKey) {
+    const breed = breedOf(breedKey);
+    if (!catalogCache[breed]) {
+      const byName = {}, pigP = {};
+      breedSpace(breed).forEach(({ g, p }) => {
+        const ph = phenotype(g, breed);
+        let sk = ph.pigment;
+        if (sk === 'red' && both(g.B, 'b') && (breed === 'pug' || breed === 'greyhound')) sk = breed === 'pug' ? 'apricot' : 'redliver';
+        pigP[sk] = (pigP[sk] || 0) + p;
+        const e = byName[ph.coatName] || (byName[ph.coatName] = { coat: ph.coatName, p: 0, sk, merle: ph.coat.merle, white: both(g.S, 'sp') ? 2 : has(g.S, 'sp') ? 1 : 0 });
+        e.p += p;
+      });
+      const defaultSk = Object.keys(pigP).sort((x, y) => pigP[y] - pigP[x])[0];
+      catalogCache[breed] = Object.keys(byName).map((n) => byName[n])
+        .sort((x, y) => y.p - x.p || (x.coat < y.coat ? -1 : 1))
+        .map((e) => ({
+          coat: e.coat,
+          rare: e.merle || e.sk === 'lilac' || e.sk === 'cream' || e.sk === 'apricot' || e.sk === 'redliver' || e.p < 0.01,
+          how: hintFor(breed, e.sk, e.merle, e.white, e.p, defaultSk),
+          p: e.p
+        }));
+    }
+    return catalogCache[breed].map((e) => ({ coat: e.coat, rare: e.rare, how: e.how }));
+  }
+
+  /* ---------- gene test text ---------- */
+  /**
+   * describe(genes) -> { lines: [string x6], carriers: [string], summary: string }
+   * lines: one per locus in B, D, E, S, M, Bl order, dominant allele first, e.g. 'B/b: black coat, carries liver'.
+   * carriers: hidden genes this dog can pass on, from ['liver', 'dilute', 'red', 'piebald', 'merle'] in that order
+   *   ('merle' only when it is hidden by a red coat). summary: one plain sentence for the vet card.
+   */
+  function describe(genes) {
+    const g = normGenes(genesOf(genes)), red = both(g.E, 'e');
+    const fmt = (k, dom) => { const p = g[k]; return (p[0] === dom || p[1] !== dom ? p[0] + '/' + p[1] : p[1] + '/' + p[0]); };
+    const lines = [], carriers = [];
+    const hidden = red ? ' (hidden under the red coat)' : '';
+    // B
+    if (both(g.B, 'b')) lines.push(fmt('B', 'B') + ': liver (chocolate) pigment' + hidden + ', amber eyes');
+    else if (has(g.B, 'b')) { lines.push(fmt('B', 'B') + ': black ' + (red ? 'pigment (nose and eye rims)' : 'coat') + ', carries liver'); carriers.push('liver'); }
+    else lines.push(fmt('B', 'B') + ': black ' + (red ? 'pigment (nose and eye rims)' : 'coat'));
+    // D
+    if (both(g.D, 'd')) lines.push(fmt('D', 'D') + ': dilute, soft colour (' + (red ? 'red becomes cream' : both(g.B, 'b') ? 'liver becomes lilac' : 'black becomes blue') + ')');
+    else if (has(g.D, 'd')) { lines.push(fmt('D', 'D') + ': full colour, carries dilute'); carriers.push('dilute'); }
+    else lines.push(fmt('D', 'D') + ': full colour');
+    // E
+    if (red) lines.push(fmt('E', 'E') + ': red coat (red, gold or fawn by breed)');
+    else if (has(g.E, 'e')) { lines.push(fmt('E', 'E') + ': dark coat, carries red'); carriers.push('red'); }
+    else lines.push(fmt('E', 'E') + ': dark coat, no red gene');
+    // S
+    if (both(g.S, 'sp')) lines.push(fmt('S', 'S') + ': piebald, big white patches');
+    else if (has(g.S, 'sp')) { lines.push(fmt('S', 'S') + ': small white markings, carries piebald'); carriers.push('piebald'); }
+    else lines.push(fmt('S', 'S') + ': no extra white');
+    // M (M/M is never bred, but describe it honestly if handed one)
+    if (both(g.M, 'M')) lines.push('M/M: double merle');
+    else if (has(g.M, 'M')) {
+      if (red) { lines.push(fmt('M', 'M') + ': hidden merle (the red coat hides the marbling)'); carriers.push('merle'); }
+      else lines.push(fmt('M', 'M') + ': merle marbling (never pair with another merle)');
+    } else lines.push(fmt('M', 'M') + ': no merle');
+    // Bl
+    if (both(g.Bl, 'Bl')) lines.push(fmt('Bl', 'Bl') + ': blue eyes');
+    else if (has(g.Bl, 'Bl')) lines.push(fmt('Bl', 'Bl') + ': blue eyes (sometimes one blue, one brown)');
+    else lines.push(fmt('Bl', 'Bl') + ': no blue-eye gene');
+
+    const PUP = { liver: 'chocolate', dilute: 'blue', red: 'red', piebald: 'piebald', merle: 'merle' };
+    const list = (a) => (a.length <= 1 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1]);
+    const summary = carriers.length
+      ? 'Carries ' + list(carriers) + '. With the right partner, ' + list(carriers.map((c) => PUP[c])).replace(/ and ([^ ]+)$/, ' or $1') + ' puppies are possible.'
+      : 'No hidden surprises: this dog passes on what you see.';
+    return { lines, carriers, summary };
+  }
+
+  const api = { LOCI, LOCUS_KEYS, BREEDS, SIZE, STARTER_GENES, SHADES, FREQ, phenotype, pigment, randomGenotype, inherit, isDoubleMerle, related,
+    BREED_NAMES, MIXES, mixKey, mixOf, predict, coatCatalog, describe };
   root.PawGenes = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
