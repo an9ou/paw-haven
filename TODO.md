@@ -44,4 +44,5 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [ ] Mailbox Letters / Album buttons measure 38–41 px on phones; nursery sex symbols are about 13.6 px. `game/css/23_phone_journal.css`, `game/css/24_phone_puppy.css`
 - [ ] The camera crop can hide the Dog Park board and the Square easel (their place buttons work). `game/src/03_yard.js`
 - [ ] The Playwright iPhone 13 profile is 390×664, not 390×844, so sheet heights were tested at the smaller size. Check once on a real iPhone.
+- [ ] The register fallback (`signUp`, only used if a project still asks to confirm email changes) has no push guard like the login one. The live project takes the `updateUser` path. `game/src/22b_cloud.js` clRegister
 - [ ] The QA audit (Haiku) covered title, yard, market and map by hand. Every other screen is covered by its lane's phone suite, not by a separate audit.
