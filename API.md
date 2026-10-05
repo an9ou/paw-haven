@@ -25,7 +25,7 @@ Fonts (the game page loads these from Google Fonts): **Gloria Hallelujah** for s
 - A plain script with no imports or exports. Start with `window.PawArt = window.PawArt || {};` and add your functions to it. Wrap everything in an IIFE so helpers don't leak, and prefix any global CSS classes with `pa-`. Dogs use `pa-d-…` and world uses `pa-w-…` for internal classes, so the two never collide.
 - On load, inject your CSS once with `document.head.appendChild(style)`, guarded by an id (`pawart-dogs-css` / `pawart-world-css`).
 - Every function returns an SVG **string**. SVG ids must be unique per call, so use your own counter.
-- No external resources. No `alert`, `confirm` or `prompt`. No words "Nintendo", "Nintendogs", "Pokémon" or "Animal Crossing".
+- No external resources. No `alert`, `confirm` or `prompt`. No third-party franchise or brand names anywhere in the output.
 - Originality: every dog is an ordinary real breed and our own character. No franchise look-alikes.
 - Also deliver `gallery.html` in your folder. It loads your module with a `<script src>` and shows every asset with its call signature, so you (and the coordinator) can screenshot and check everything.
 - Verify: run `node --check` on the module, then take Playwright screenshots of the gallery (Chromium `executablePath: '/opt/pw-browsers/chromium'`). Look at them with Read and do up to 3 rounds of fixes.
