@@ -39,6 +39,16 @@ const SUITES = {
   v21_journal: { file: 'test_v21_journal.js', group: 'all', est: 30 },
   v21_town: { file: 'test_v21_town.js', group: 'all', est: 20 },
   v21_home: { file: 'test_v21_home.js', group: 'all', est: 15 },
+  // v2.2 phone suites: `node game/run_tests.js phone` (not part of `all`, which stays the desktop regression set)
+  phone_legacy: { file: 'test_phone.js', group: 'phone', est: 90 },
+  phone_shell: { file: 'test_phone_shell.js', group: 'phone', est: 40 },
+  cloud: { file: 'test_cloud.js', group: 'phone', est: 60 },
+  phone_home: { file: 'test_phone_home.js', group: 'phone', est: 60 },
+  phone_town: { file: 'test_phone_town.js', group: 'phone', est: 70 },
+  phone_journal: { file: 'test_phone_journal.js', group: 'phone', est: 35 },
+  phone_puppy: { file: 'test_phone_puppy.js', group: 'phone', est: 35 },
+  phone_walk: { file: 'test_phone_walk.js', group: 'phone', est: 110 },
+  phone_skill: { file: 'test_phone_skill.js', group: 'phone', est: 150 },
 };
 // extra aliases: `all_*` is the same as `all`; `test_all` = the four+ shards of the old test_all.js
 const ALIAS = { test_all: ['all_a', 'all_b', 'all_c', 'all_d', 'all_e'], 'test_v15': ['v15'], 'test_v16': ['v16'], 'test_v16b': ['v16b'], 'test_v17': ['v17'], 'test_v171_garden': ['v171_garden'], 'test_v171_tricks': ['v171_tricks'], 'test_v2_slots': ['v2_slots'], 'test_v2_breed': ['v2_breed'], 'test_v2_journal': ['v2_journal'], 'test_v2_town': ['v2_town'], 'test_v2_play': ['v2_play'], 'test_v21_genes_node': ['v21_genes'], 'test_v21_breed': ['v21_breed'], 'test_v21_journal': ['v21_journal'], 'test_v21_town': ['v21_town'], 'test_v21_home': ['v21_home'] };
@@ -61,6 +71,7 @@ if (!names.length) { console.error('usage: node game/run_tests.js smoke | all | 
 let list = [];
 for (const n of names) {
   if (n === 'all') list.push(...Object.keys(SUITES).filter((k) => SUITES[k].group === 'all'));
+  else if (n === 'phone') list.push(...Object.keys(SUITES).filter((k) => SUITES[k].group === 'phone'));
   else if (n === 'smoke') list.push('smoke');
   else if (ALIAS[n]) list.push(...ALIAS[n]);
   else if (SUITES[n]) list.push(n);
