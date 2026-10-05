@@ -229,7 +229,7 @@ function petTick(wx, wy) {
   if (outdoorsNow() && weatherNow() === 'rain' && !hasRaincoat() && !pet.wet) { pet.wet = true; toast('Wet dog smell intensifies.'); }
   setTemp('pet', 900); fxText('♥', wx + RAND(-20, 20), wy - 10);
   Math.random() < 0.7 ? SFX.squeak() : SFX.boop(RAND(500, 800));
-  if (!pet.bonded && pet.gain >= 10) { pet.bonded = true; const n = addBond(3); const st = S.outfit.charm === 'Sparkle Stone'; if (st) addStat('happy', 5); toast(`+${n} Bond.${st ? ' The Sparkle Stone hums: +5 Happiness.' : ''} ${NAME()} pretends ${PR().he} did not enjoy that.`, 'good'); dailyCare('pet'); }
+  if (!pet.bonded && pet.gain >= 10) { pet.bonded = true; const n = addBond(3); const st = S.outfit.charm === 'Sparkle Stone'; if (st) addStat('happy', 5); toast(`+${n} Bond.${st ? ' The Sparkle Stone hums: +5 Happiness.' : ''} ${NAME()} pretends ${PR().he} did not enjoy that.`, 'good'); dailyCare('pet'); markCareDay(); }
   updateHUD();
 }
 function showZzz(on) { const z = $('#zzz'); if (z) z.innerHTML = on ? place(art('prop', 'zzz'), 760, 280, 90, 90) : ''; }
@@ -322,6 +322,8 @@ function feed(name) {
     if (feeder) happy += 10;
     if (S.place === 'river' && name !== 'Fresh Water') happy += 5;
     let extraMsg = '';
+    const pb = pupBonus(D(), f); if (pb) { happy += pb; extraMsg += ` Puppy-sized bites: +${pb} Happiness.`; }
+    if (name !== 'Fresh Water') extraMsg += eatForLine(D());
     if (name === 'Fresh Water' && isHot()) { happy += 5; addStat('energy', 10); extraMsg += ' So refreshing on a hot day! Extra Energy.'; }
     if (name !== 'Fresh Water' && timePhase() === 'dawn') { dailyCheck(); if (!S.daily.breakfast) { S.daily.breakfast = true; happy += 5; addBond(3); extraMsg += ' Breakfast bonus!'; } }
     addStat('hunger', f.hunger || 0); addStat('happy', happy); addStat('energy', f.energy || 0); addStat('clean', f.clean || 0);
@@ -333,7 +335,7 @@ function feed(name) {
     const eatL = breedLine(EAT_LINES, D());
     const msg = name === 'Fresh Water' ? `${n} drank it. Most of it went on the floor.` : eatL && Math.random() < 0.5 ? eatL : PICK([`${n} ate it in ${secs} seconds. ${PR().His} tail approves.`, `${n} inhaled that. ${PR().He} thinks chewing is for quitters.`, `Gone. ${n} is now looking at the bowl for more.`]);
     toast(`${msg}${isFavFood(name) ? ' Favourite food!' : ''}${got ? ` +${got} Bond.` : ''}${name === 'Pupcake' ? ' Double Bond for 1 game hour!' : ''}${f.golden ? ' GLOWING for a whole game day!' : ''}${S.place === 'river' && name !== 'Fresh Water' ? ' Riverside picnic: +5 Happiness.' : ''}${extraMsg}`, 'good');
-    if (name !== 'Fresh Water') dailyCare('feed');
+    if (name !== 'Fresh Water') { dailyCare('feed'); markCareDay(); }
     setTemp('happy', 1600); dogTo(0, 0, 1, 0.8); updateHUD();
     setTimeout(() => { busy = false; renderDog(dogPoseNow()); }, 900);
   }, 2300);
@@ -348,12 +350,14 @@ function openPlayTray() {
   b.push(`<button class="card" data-play="tricks"><span class="art">${ICON('star')}</span><b>Tricks</b><span class="small">${learnedCount()} learned</span></button>`);
   if (owns('toys', 'Squeaky Duck')) b.push(`<button class="card" data-play="duck"><span class="art">${art('item', 'Squeaky Duck')}</span><b>Squeak</b><span class="small">+10 Happiness</span></button>`);
   if (owns('toys', 'Rope Tug')) b.push(`<button class="card" data-play="tug"><span class="art">${art('item', 'Rope Tug')}</span><b>Tug</b><span class="small">+15 Happy, -10 Energy</span></button>`);
+  b.push(`<button class="card pdcard" data-play="playdates"><span class="art">${iconOr('playdate', doodle('heart', -6, 2, 0.8) + doodle('heart', 7, -3, 0.65))}</span><b>Playdates</b><span class="small">Puppy Playdates</span></button>`);
   if (!fts.length) b.push('<p class="small">No fetch toy. Kibble Corner sells balls.</p>');
   setTray('Play', `<div class="row">${b.join('')}</div>`);
   dock.querySelectorAll('[data-play]').forEach((el) => { el.onclick = () => playPick(el.dataset.play); });
 }
 function playPick(p) {
   SFX.click();
+  if (p === 'playdates') { if (typeof openPlaydates === 'function') openPlaydates(); else nope('Puppy Playdates are almost ready.'); return; }
   if (S.sleeping) { nope(`${NAME()} is asleep. Even fun has to wait.`); return; }
   if (p.startsWith('toy:')) { if (S.stats.energy < 5) { nope(`${NAME()} is too tired to play. A nap would help.`); return; } go('toy', p.slice(4)); return; }
   if (p.startsWith('fetch:')) { if (S.stats.energy < 10) { nope(`${NAME()} is too tired to fetch. A nap would help.`); return; } go('fetch', p.slice(6)); return; }
@@ -372,7 +376,7 @@ function playPick(p) {
     let msg = p === 'duck' ? `SQUEAK. ${NAME()} is delighted. Your ears are not.` : `${NAME()} won the tug-of-war. As always.`;
     if (p === 'tug') { addStat('energy', -10 * k); msg += ` +${addBond(5 * k)} Bond.`; }
     if (S.dog.favToy === toy) msg += ' Favourite toy!'; if (!full) msg += ' (Less exciting the second time. Wait 10 game minutes.)';
-    toast(msg, 'good'); dailyCare('play'); busy = false; renderDog(dogPoseNow(), 'right', true); updateHUD();
+    toast(msg, 'good'); dailyCare('play'); markCareDay(); busy = false; renderDog(dogPoseNow(), 'right', true); updateHUD();
   }, 1300);
 }
 const TNEED = () => (owns('toys', 'Rubber Chicken') ? 2 : 3);

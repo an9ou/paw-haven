@@ -41,7 +41,7 @@ function adoptName(d) {
   const done = () => {
     let nm = inp.value.replace(/\s+/g, ' ').trim().slice(0, 12); if (!nm) nm = d.name;
     if (/\b(poo+p?|butt|fart)\b/i.test(nm)) $('#nameHint', p).textContent = 'Bold choice. We respect it.';
-    S = freshState(d.key, nm, adoptSex); levelQueue = []; dailyCheck(); saveNow(); closeModal(); audioCue('adopt'); intro();
+    S = freshState(d.key, nm, adoptSex); S.careDays = 0; S.careDayLast = ''; S.spotsSeen = 1; if (!Array.isArray(S.litters)) S.litters = []; levelQueue = []; dailyCheck(); saveNow(); closeModal(); audioCue('adopt'); intro();
   };
   $('#nOk', p).onclick = done; inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') done(); });
   $('#nBack', p).onclick = () => { SFX.click(); closeModal(); };

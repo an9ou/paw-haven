@@ -12,16 +12,16 @@ require('./test_lib').run('v15', async (t) => {
   ok(saved.dogs && !('stats' in saved) && !('dog' in saved), 'save stores S.dogs only (no duplicated aliases)');
   ok(await ev(() => !!window.PawGenes), 'PawGenes loaded (genes.js first in the merge)');
 
-  sec('full capacity: Bond 5 but a Cardboard Box');
-  await t.patch({ bond: { level: 5, pts: 1000 }, coins: 1500 });
+  sec('v2 dog spots: Bond 3 but a Cardboard Box (1 spot)');
+  await t.patch({ bond: { level: 3, pts: 300 }, coins: 1500 });
   ok(await t.toShelter(), 'shelter opens');
-  ok(/Your home is full\. A bigger dog house would fit another friend\./.test(await p.textContent('#modal')), 'full-capacity message in the shelter');
-  await t.toasts(); await p.locator('[data-shadopt]').first().click({ force: true }); ok(await t.waitToast(/Your home is full/), 'adopt blocked when full'); await SH('01_shelter_full');
+  ok(/All your dog spots are taken\. The 2nd spot opens with: a house that fits 2\./.test(await p.textContent('#modal')), 'spots-taken message in the shelter (needs a 2-dog house)');
+  await t.toasts(); await p.locator('[data-shadopt]').first().click({ force: true }); ok(await t.waitToast(/All your dog spots are taken/), 'adopt blocked when no spot is free'); await SH('01_shelter_full');
   await t.leaveShelter();
 
-  sec('Bond 5 + cottage: rescue a dog');
+  sec('Bond 3 + Classic Wooden Doghouse (dev Pack): rescue a dog');
   await t.dev(async () => { await p.click('#dvPack'); });
-  ok(await t.toShelter(), 'shelter opens again'); ok(/room for another friend/.test(await p.textContent('#modal')), 'shelter has room with a Cozy Cottage');
+  ok(await t.toShelter(), 'shelter opens again'); ok(/room for another friend/.test(await p.textContent('#modal')), 'shelter has room with a Classic Wooden Doghouse (2nd spot)');
   ok(await p.locator('.shcard.rescue').count() === 2, '2 rescues today'); await SH('02_shelter_rescues');
   await p.locator('[data-shadopt^="rescue"]').first().click(); await p.fill('#shName', 'Pepper'); await p.click('#shOk');
   ok(await t.until(() => window.__paw.S.dogs.length === 2 && window.__paw.mode === 'yard', null, 12000), 'second dog adopted'); await t.lu(); await t.calm();
@@ -78,7 +78,7 @@ require('./test_lib').run('v15', async (t) => {
 
   sec('v1.7: 10 breeds at the shelter, adopt the new breeds as starters');
   await t.packPin(true); // pack dogs re-pick poses every tick from here on; pinned to one pose before the layout checks
-  await ev(() => { const S = window.__paw.S; ['Royal Castle Kennel'].forEach((h) => { if (!S.inv.houses.includes(h)) S.inv.houses.push(h); }); S.house = 'Royal Castle Kennel'; S.coins = 9999; });
+  await ev(() => { const S = window.__paw.S; ['Royal Castle Kennel'].forEach((h) => { if (!S.inv.houses.includes(h)) S.inv.houses.push(h); }); S.house = 'Royal Castle Kennel'; S.coins = 9999; S.careDays = 45; S.dogs.forEach((d) => { d.bond = { level: 10, pts: 3200 }; }); }); // v2: spots 3 + 4 need Bond 10 dogs, 45 care days, the Castle
   await t.home('yard'); ok(await t.toShelter(), 'shelter opens (10 breeds)');
   const stK = await ev(() => [...document.querySelectorAll('.shcard.starter [data-shadopt]')].map((b) => b.dataset.shadopt.split('|')[1]));
   ok(stK.length === 9 && ['chihuahua', 'pug', 'greyhound', 'beagle'].every((k) => stK.includes(k)), 'shelter: 9 starter cards left (10 breeds, Mochi home): ' + stK.join(','));
@@ -90,6 +90,7 @@ require('./test_lib').run('v15', async (t) => {
     const k = newKeys[i]; ok(await t.toShelter(), 'shelter opens for ' + k);
     await p.click(`[data-shsex="${k}|female"]`); await p.click(`[data-shadopt="starter|${k}"]`); await p.click('#shOk');
     ok(await t.until((n) => window.__paw.S.dogs.length === n && window.__paw.mode === 'yard', 3 + i, 12000), 'adopted ' + k); await t.lu(); await t.calm();
+    await ev(() => window.__paw.S.dogs.forEach((d) => { d.bond = { level: 10, pts: 3200 }; })); // the 3rd Bond 10 dog opens spot 4
   }
   s = await S(); ok(s.dogs.length === 4 && newKeys.every((k) => s.dogs.some((d) => d.key === k && !d.rescue)), 'adopted a Chihuahua and a Pug as starters (4 dogs)');
   const packLabs = await ev(() => [...document.querySelectorAll('#pack svg.pa-dog')].map((x) => x.getAttribute('aria-label')).join(' | '));
