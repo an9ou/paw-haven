@@ -13,7 +13,7 @@ const CHI_ALERT = ['INTRUDER! (A leaf.)', 'I heard a noise. It was me. Still sus
 const BODY_SOUNDS = ['snore', 'pant', 'yawn', 'sneeze', 'huff'];
 const barkCD = {}; window.__barkLog = window.__barkLog || [];
 const barkMode = () => prefs.bark || 'normal';
-function voiceOf(d) { return { breed: d.key, pitch: +(0.85 + (hashId(d.id) % 1000) / 1000 * 0.3).toFixed(3), size: DOG_SIZE[d.key] || 'medium' }; }
+function voiceOf(d) { const v = { breed: d.key, pitch: +(0.85 + (hashId(d.id) % 1000) / 1000 * 0.3).toFixed(3), size: DOG_SIZE[d.key] || 'medium' }; if (lifeStage(ageMonths(d)) === 'puppy') v.age = 'puppy'; /* v2: AUDIO adds puppy voices */ return v; }
 function playBark(voice, kind, opts) {
   const A = window.PawAudio;
   if (A && typeof A.bark === 'function') { try { A.bark(voice, kind, opts || {}); } catch (e) { /* never throws */ } return; }
@@ -65,14 +65,15 @@ function voiceTick() { // called once a second from tick()
 /* ---- idle behaviour scheduler ---- */
 const IDLE = { act: null, steps: [], nextAt: 0, speed: 1, last: '', lastEnd: 0, mouse: null, force: null, napDone: 0 };
 window.__idleLog = window.__idleLog || [];
-const IDLE_NAMES = ['look', 'sit', 'down', 'nap', 'stretch', 'yawn', 'scratch', 'sniff', 'shake', 'roll', 'tailchase', 'zoomies', 'drink', 'watch', 'social', 'bringtoy'];
+const IDLE_NAMES = ['look', 'sit', 'down', 'nap', 'stretch', 'yawn', 'scratch', 'sniff', 'shake', 'roll', 'tailchase', 'zoomies', 'drink', 'watch', 'social', 'bringtoy', 'pounce', 'tumble', 'chewtoy', 'follow', 'pupzoomies', 'tailbark'];
 const GRASSY = ['yard', 'park', 'beach', 'hilltop', 'dogpark', 'woods'];
-let lastActiveAt = 0, bathZoomies = false;
+let lastActiveAt = 0, bathZoomies = false, idlePin = null; // idlePin: test helper (__paw.idle.pin), holds the pack/idle pose
+const IDLE_FXS = ['tk-look', 'tk-circle', 'tk-lie', 'tk-bow', 'tk-yawn', 'tk-scratch', 'tk-sniff', 'tk-roll', 'tk-chase', 'tk-pounce', 'tk-tumble', 'tk-chew', 'tk-pwig', 'tk-pzoom', 'tk-tbark'];
 /* v1.7: chihuahuas feel the cold even indoors */
 const chiCold = () => !isWarm() && (weatherNow() === 'snow' || [12, 1, 2].includes(monthNow()) || (weatherNow() === 'rain' && outdoorsNow()));
 function idleWeights() {
   const d = D(), st = d.stats, t = timePhase(), hot = isHot(), indoor = !outdoorsNow(), stage = lifeStage(ageMonths()), now = performance.now();
-  const w = { look: 3, sit: 3, down: 2, nap: 0.6, stretch: 0.6, yawn: 0.6, scratch: 0.8, sniff: indoor ? 0 : 1.5, shake: 0.4, roll: 0, tailchase: 0, zoomies: 0, drink: 0.4, watch: 0, social: 0, bringtoy: 0 };
+  const w = { look: 3, sit: 3, down: 2, nap: 0.6, stretch: 0.6, yawn: 0.6, scratch: 0.8, sniff: indoor ? 0 : 1.5, shake: 0.4, roll: 0, tailchase: 0, zoomies: 0, drink: 0.4, watch: 0, social: 0, bringtoy: 0, pounce: 0, tumble: 0, chewtoy: 0, follow: 0, pupzoomies: 0, tailbark: 0 };
   if (st.energy < 60) w.down += 3; if (st.energy < 35) w.nap += 5; if (t === 'night') { w.nap += 4; w.yawn += 2; } if (t === 'dusk') w.yawn += 2;
   if (hot) { w.down += 3; w.drink += 3; } if (indoor) w.down += 2;
   if (['park', 'woods', 'beach', 'hilltop', 'dogpark'].includes(S.place)) w.sniff += 3;
@@ -89,12 +90,14 @@ function idleWeights() {
   if (pk === 'pug') { w.sit += 3; w.nap += 1; w.down += 1; w.zoomies *= 0.3; }
   if (pk === 'greyhound') { w.down += 5; w.nap += 1.5; w.sit = Math.max(0.5, w.sit - 2); w.zoomies += 1.2; }
   if (pk === 'beagle') w.sniff += indoor ? 3 : 5;
+  if (typeof pupIdleWeights === 'function') pupIdleWeights(w, d, stage); // v2: puppies and nursing mums (16b)
   if (S.sleeping) return null;
   return w;
 }
 function pickIdle() { const w = idleWeights(); if (!w) return null; const tot = Object.values(w).reduce((a, b) => a + b, 0); let r = Math.random() * tot; for (const k in w) { r -= w[k]; if (r <= 0) return k; } return 'look'; }
 const R2 = (a, b) => RINT(a, b) * IDLE.speed;
 function idleSteps(name) {
+  if (typeof PUP_IDLE !== 'undefined' && PUP_IDLE.includes(name)) return pupIdleSteps(name);
   const d = D(), indoor = !outdoorsNow(), aloof = d.key === 'shiba' ? 'left' : 'right';
   const bowl = { move: [-125, 0, 1, 0.8 * IDLE.speed], pose: 'walk', facing: 'left', ms: 850 * IDLE.speed };
   const home = { move: [0, 0, 1, 0.6 * IDLE.speed], pose: 'walk', facing: 'right', ms: 650 * IDLE.speed };
@@ -129,7 +132,7 @@ function idleSteps(name) {
 function idleRunStep() {
   const s = IDLE.steps.shift(); if (!s) { idleEnd(); return; }
   const d = D(), real = poseReal(d.key, s.pose), pose = real || !s.fb ? s.pose : s.fb;
-  const fx = $('#dogFx'); if (fx) { fx.classList.remove('tk-look', 'tk-circle', 'tk-lie', 'tk-bow', 'tk-yawn', 'tk-scratch', 'tk-sniff', 'tk-roll', 'tk-chase'); if (s.fx && (!real || ['tk-circle', 'tk-chase', 'tk-look', 'tk-roll'].includes(s.fx))) { void fx.getBBox(); fx.classList.add(s.fx); } }
+  const fx = $('#dogFx'); if (fx) { fx.classList.remove(...IDLE_FXS); if (s.fx && (!real || ['tk-circle', 'tk-chase', 'tk-look', 'tk-roll', 'tk-pounce', 'tk-tumble', 'tk-chew', 'tk-pwig', 'tk-pzoom', 'tk-tbark'].includes(s.fx))) { void fx.getBBox(); fx.classList.add(s.fx); } }
   if (s.move) dogTo(...s.move);
   let facing = s.facing || 'right';
   if (s.watch && IDLE.mouse) facing = IDLE.mouse.x < 430 ? 'left' : 'right';
@@ -142,16 +145,19 @@ function idleRunStep() {
   if (s.dirt) addStat('clean', -2);
   if (s.toy) toast(`${d.name} drops a ball at your feet and stares. Hard.`, '');
   if (s.other) { packPose[s.other[0].id] = s.other[1]; redrawPackDog(s.other[0]); }
+  if (s.say) { const h = dogHeadWorld(); say(s.say, h.x, h.y, 2200); }
+  if (s.propOff && typeof pupPropClear === 'function') pupPropClear(); if (s.prop && typeof pupProp === 'function') pupProp(s.prop);
 }
 function idleEnd() {
   const a = IDLE.act; IDLE.act = null; IDLE.steps = [];
-  const fx = $('#dogFx'); if (fx) fx.classList.remove('tk-look', 'tk-circle', 'tk-lie', 'tk-bow', 'tk-yawn', 'tk-scratch', 'tk-sniff', 'tk-roll', 'tk-chase');
+  const fx = $('#dogFx'); if (fx) fx.classList.remove(...IDLE_FXS);
+  if (typeof pupPropClear === 'function') pupPropClear();
   if (a) { IDLE.last = a.name; if (a.name === 'nap') showZzz(false); if (a.watered) setBowl(S.bowl || null); }
   IDLE.lastEnd = performance.now(); IDLE.nextAt = performance.now() + RINT(4000, 9000) * IDLE.speed;
   if (cur.mode === 'yard' && !busy && !S.sleeping) renderDog(dogPoseNow(), 'right', true);
 }
 function idleStop() { // any player action
-  if (!IDLE.act) return; const wasMoved = IDLE.act.step && (IDLE.act.step.move || IDLE.act.name === 'nap' || IDLE.act.name === 'sniff' || IDLE.act.name === 'zoomies' || IDLE.act.name === 'drink' || IDLE.act.name === 'social');
+  if (!IDLE.act) return; const wasMoved = IDLE.act.step && (IDLE.act.step.move || IDLE.act.name === 'nap' || IDLE.act.name === 'sniff' || IDLE.act.name === 'zoomies' || IDLE.act.name === 'drink' || IDLE.act.name === 'social' || PUP_MOVERS.includes(IDLE.act.name));
   if (wasMoved && !busy && !S.sleeping) dogTo(0, 0, 1, 0.25); IDLE.steps = []; idleEnd(); lastActiveAt = performance.now();
 }
 function idleStart(name) {
@@ -163,6 +169,7 @@ function idleTick() {
   const now = performance.now();
   if (IDLE.force) { const n = IDLE.force; IDLE.force = null; if (IDLE.act) { IDLE.steps = []; idleEnd(); } idleStart(n); return; }
   if (IDLE.act) { if (now >= IDLE.act.until) idleRunStep(); else if (IDLE.act.step && IDLE.act.step.watch && IDLE.mouse) { const f = IDLE.mouse.x < 430 ? 'left' : 'right'; if (f !== IDLE.act.facing) { IDLE.act.facing = f; renderDog(IDLE.act.pose, f, true); } } return; }
+  if (idlePin) return; // test helper: pinned
   if (bathZoomies) { bathZoomies = false; idleStart('zoomies'); return; }
   if (now < IDLE.nextAt || dogPoseNow() !== 'idle' && dogPoseNow() !== 'happy') return;
   const n = pickIdle(); if (n) idleStart(n);
@@ -173,8 +180,10 @@ function packIdleTick() {
   if (!S || cur.mode !== 'yard' || S.dogs.length < 2 || !modal.hidden) return; const now = performance.now();
   others().forEach((d) => {
     if (d.sleeping || (IDLE.act && IDLE.act.step && IDLE.act.step.other && IDLE.act.step.other[0] === d)) return;
+    if (idlePin) { if (packPose[d.id] !== idlePin) { packPose[d.id] = idlePin; redrawPackDog(d); } return; } // test helper: hold the pose
     if (now < (packNext[d.id] || 0)) return; packNext[d.id] = now + RINT(5000, 10000) * IDLE.speed;
-    const pool = ['idle', 'idle', 'sit', 'sit', 'down', 'scratch', 'yawn', 'sniff', d.stats.energy < 40 ? 'sleep' : 'idle'].concat(outdoorsNow() && d.stats.happy > 60 ? ['rollover'] : []);
+    const pup = typeof pupPackPool === 'function' ? pupPackPool(d) : null;
+    const pool = pup || ['idle', 'idle', 'sit', 'sit', 'down', 'scratch', 'yawn', 'sniff', d.stats.energy < 40 ? 'sleep' : 'idle'].concat(outdoorsNow() && d.stats.happy > 60 ? ['rollover'] : []);
     let p = PICK(pool); if (!poseReal(d.key, p)) p = { down: 'sit', scratch: 'sit', yawn: 'sit', sniff: 'eat', rollover: 'happy' }[p] || p;
     packPose[d.id] = p; redrawPackDog(d); if (p === 'yawn' || (p === 'sit' && Math.random() < 0.1)) barkDog(d, 'yawn', { ambient: true, volume: 0.6 });
   });

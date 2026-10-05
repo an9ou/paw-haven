@@ -22,10 +22,13 @@ function rollTreasure(area, o = {}) {
   }
   return { coins: RAR_COINS[ri], r: ri };
 }
-function enterWalk(area) { if (window.PawWalk && typeof window.PawWalk.start === 'function') { enterWalkMod(area); return; } enterWalkClassic(area); }
+function enterWalk(area) {
+  const wb = walkBlock(D(), area); if (wb) { nope(wb); go('yard'); return; } // v2: puppies, expecting and nursing mums (16b)
+  walkPackNote(area);
+  if (window.PawWalk && typeof window.PawWalk.start === 'function') { enterWalkMod(area); return; } enterWalkClassic(area); }
 function enterWalkClassic(area) {
   setChrome(true, false);
-  const R = ROUTES[area], wx = weatherNow();
+  const sc = walkScale(), R = sc < 1 ? Object.assign({}, ROUTES[area], { secs: Math.round(ROUTES[area].secs * sc) }) : ROUTES[area], wx = weatherNow(); // 3 to 6 months: shorter walks
   const len = R.secs * SPEED, firstWalk = !S.walks;
   W = { env: envNow(), area, R, len, dist: 0, hold: false, auto: false, objs: [], coins: 0, happy: 0, bond: 0, clean: 0, e0: S.stats.energy, pauseUntil: 0, hopUntil: 0, digWait: null, ended: false, pose: '', npcs: 0, wx, raf: 0, t: performance.now(), skipAt: 0,
     digsLeft: 2 + (S.outfit.head === 'Acorn Cap' ? 1 : 0) + (buffOn('dig1') ? 1 : 0), loot: rollTreasure(area, { common: firstWalk }), found: null, extra: [], junk: [], nudge: 0, noseT: 0, firstWalk, outOfDigsSaid: false };
