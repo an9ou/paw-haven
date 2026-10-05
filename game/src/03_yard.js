@@ -3,7 +3,7 @@ const DX = 298, DY = 295, DW = 264, DH = 220; // dog box: feet at y=500, centre 
 let dogKey = '', tempPose = null, tempUntil = 0, busy = false, pet = { start: 0, gain: 0, bonded: false, capped: false, dist: 0 };
 function yardWorldSVG(extra = '') {
   return `<svg class="world" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMax slice">
-    ${sceneG(S.place || 'yard', S.place === 'yard' ? { patch: gkOn() ? patchState() : 'empty' } : S.place === 'house' && hasBedArt() ? { bed: false } : {})}${S.place === 'yard' && !gkOn() ? '<g class="soon-tag" pointer-events="none" transform="translate(112 432) rotate(-6)"><rect x="-58" y="-17" width="116" height="30" rx="6" fill="#FFF3B8" stroke="#5B3D32" stroke-width="2"/><text y="6" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="22" fill="#5B3D32">coming soon</text></g>' : ''}${bedLayers().back}<g id="messG"></g><g id="snowmanG">${S.place === 'yard' ? snowmanSVG() : ''}</g>
+    ${sceneG(S.place || 'yard', S.place === 'yard' ? { patch: gkOn() ? patchState() : 'empty' } : S.place === 'house' && hasBedArt() ? { bed: false } : {})}${S.place === 'yard' && !gkOn() ? '<g class="soon-tag" pointer-events="none" transform="translate(112 432) rotate(-6)"><rect x="-58" y="-17" width="116" height="30" rx="6" fill="#FFF3B8" stroke="#5B3D32" stroke-width="2"/><text y="6" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="22" fill="#5B3D32">coming soon</text></g>' : ''}${bedLayers().back}<g id="messG"></g><g id="snowmanG">${S.place === 'yard' ? snowmanSVG() : ''}</g>${S.place === 'yard' ? hmDecorSVG() : ''}
     ${S.place === 'yard' ? `<g id="houseG" class="hot" tabindex="0" role="button" aria-label="Dog house: ${esc(S.house)}">${place(art('house', S.house), 620, 330, 240, 200)}</g>` : ''}
     <g id="bowlG" class="hot" tabindex="0" role="button" aria-label="Food bowl">${place(art('prop', 'bowl-empty'), 205, 462, 90, 90)}</g>
     <g id="pack">${packSVG()}</g><g id="dogPos"><g id="dogFx"><g id="dogArt"></g><rect id="dogHit" x="${DX + 30}" y="${DY + 40}" width="${DW - 60}" height="${DH - 40}" fill="transparent" pointer-events="all" class="hot" tabindex="0" role="button" aria-label="Pet the dog"/></g><g id="fluffFx" pointer-events="none"></g></g>${bedLayers().front}
@@ -442,9 +442,9 @@ function openCareTray() {
     <button class="card ${home ? '' : 'off'}" data-care="bath" ${home ? '' : 'aria-disabled="true"'}><span class="art">${ICON('bath')}</span><b>Bath</b><span class="small">Clean ${Math.round(S.stats.clean)}</span></button>
     <button class="card ${home ? '' : 'off'}" data-care="sleep" ${home ? '' : 'aria-disabled="true"'}><span class="art">${ICON('sleep')}</span><b>Nap</b><span class="small">${S.place === 'house' ? 'on the ' + esc(S.bed) : 'Energy ' + Math.round(S.stats.energy)}</span></button>
     <button class="card" data-care="bed"><span class="art">${bedArt || ICON('sleep')}</span><b>Bed</b><span class="small">${esc(S.bed)}</span></button>
-    <button class="card" data-care="house"><span class="art">${ICON('house')}</span><b>Houses</b><span class="small">${S.inv.houses.length} owned</span></button>
+    <button class="card" data-care="house"><span class="art">${ICON('house')}</span><b>Houses</b><span class="small">${S.inv.houses.length} owned</span></button>${hmDecorCard()}
     ${home ? '' : `<button class="card" data-care="home"><span class="art">${ICON('house')}</span><b>Go home</b><span class="small">to the yard</span></button>`}</div>`);
-  dock.querySelectorAll('[data-care]').forEach((b) => { b.onclick = () => { SFX.click(); const c = b.dataset.care; if (!home && (c === 'bath' || c === 'sleep')) { nope(`Bath and naps happen at home. ${NAME()} insists.`); return; } if (c === 'bath') go('bath'); if (c === 'sleep') startSleep(); if (c === 'house') openHouses(); if (c === 'bed') openBeds(); if (c === 'home') { closeTray(); travelTo('yard'); } }; });
+  dock.querySelectorAll('[data-care]').forEach((b) => { b.onclick = () => { SFX.click(); const c = b.dataset.care; if (!home && (c === 'bath' || c === 'sleep')) { nope(`Bath and naps happen at home. ${NAME()} insists.`); return; } if (c === 'bath') go('bath'); if (c === 'sleep') startSleep(); if (c === 'house') openHouses(); if (c === 'decor') hmOpenDecor(); if (c === 'bed') openBeds(); if (c === 'home') { closeTray(); travelTo('yard'); } }; });
 }
 function napRate() { const h = houseInfo(); const c = S.place === 'house' ? 0.25 + bedInfo().bonus : h.comfort * (S.dog.key === 'husky' && h.n === 'Snow Igloo' ? 2 : 1); return 20 * BOOST.nap * (1 + c) * (owns('toys', 'Plush Bone') ? 1.1 : 1) * (isNight() ? 1.4 : 1) * (weatherNow() === 'rain' ? 1.2 : 1); }
 function startSleep() {
@@ -484,3 +484,58 @@ function bindSceneHots() {
   hotify($('svg.world', view), '#sceneG [data-hot]', 'data-hot', (k) => ({ garden: openGarden, kitchen: openKitchen, notice: squareNotice, 'cafe-menu': cafeMenu, 'vet-desk': vetCheck, 'salon-chair': salonGroom }[k] || (() => {}))(), (k) => 'Open the ' + k);
 }
 on('scene:redraw', () => { if (cur.mode === 'yard' && $('svg.world', view)) bindSceneHots(); });
+
+/* ======================= v2.1 HOME: yard decorations (S.decor) ======================= */
+// at = world x, y, w, h (1000x600 scene). Spots avoid the dog tap box, the mailbox, both doors and the nursery basket.
+const HM_DECOR = {
+  'Giant Crayon Box': { prop: 'crayonbox', at: [536, 296, 112, 90], vb: [200, 160], story: 'Every crayon is taller than a dog. Nobody has ever finished colouring.' },
+  'Family Photo Frame': { prop: 'photoframe', at: [404, 236, 112, 98], vb: [160, 140], story: 'Everyone who ever shared this yard is on the fence. The ugly ones are the best.' },
+  'Doggy Ramp': { prop: 'doggyramp', at: [24, 322, 110, 66], vb: [200, 120], story: 'Paw prints lead all the way up. Nobody has needed the ramp yet, but everyone is proud of it.' },
+  'Rocking Chair': { prop: 'rockingchair', at: [910, 424, 84, 84], vb: [160, 160], story: 'A dog-sized chair with a knitted blanket. Mum likes a rock here after a long day of puppies.' }
+};
+const HM_PHOTO = [20, 14, 120, 84]; // the documented data-photo box inside the 160x140 frame
+function hmDecorFields() { if (S && (!S.decor || typeof S.decor !== 'object')) S.decor = {}; }
+function hmDecorOut(name) { return !!(S && S.decor && S.decor[name] && S.decor[name].out); }
+function hmPhotoHeads() {
+  const ids = (S.portrait && Array.isArray(S.portrait.ids) ? S.portrait.ids : []).slice(0, 4);
+  const recs = ids.map((id) => dogById(id) || (S.tree && S.tree[id])).filter(Boolean), n = recs.length; if (!n) return '';
+  const [bx, by, bw, bh] = HM_PHOTO, hs = Math.min(60, bw / n), x0 = bx + (bw - n * hs) / 2, y0 = by + (bh - hs) / 2;
+  return recs.map((r, i) => { let h; try { h = headSVG(r); } catch (e) { h = art('dogHead', r.key || 'mutt'); } return `<g class="hm-head" data-head="${esc(r.id)}">${place(h, x0 + i * hs, y0, hs, hs)}</g>`; }).join('');
+}
+function hmDecorArt(name) {
+  const D = HM_DECOR[name]; let sv = place(art('prop', D.prop), 0, 0, D.vb[0], D.vb[1]);
+  if (D.prop === 'photoframe') sv += `<g data-photo-heads>${hmPhotoHeads()}</g>`;
+  return `<svg viewBox="0 0 ${D.vb[0]} ${D.vb[1]}" xmlns="http://www.w3.org/2000/svg">${sv}</svg>`;
+}
+function hmDecorSVG() {
+  hmDecorFields();
+  return `<g id="decorG">${Object.keys(HM_DECOR).filter(hmDecorOut).map((n) => { const [x, y, w, h] = HM_DECOR[n].at; return `<g class="hot hm-decor" data-decor="${esc(n)}" tabindex="0" role="button" aria-label="${esc(n)}">${place(hmDecorArt(n), x, y, w, h)}<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="transparent" pointer-events="all"/></g>`; }).join('')}</g>`;
+}
+function hmDecorBind() {
+  const g = $('#decorG'); if (!g) return;
+  g.querySelectorAll('[data-decor]').forEach((el) => { const go = () => { SFX.click(); hmDecorPop(el.dataset.decor); }; el.onclick = go; el.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } }; });
+}
+function hmDecorRedraw() {
+  const old = $('#decorG'); if (!old || cur.mode !== 'yard' || S.place !== 'yard') return;
+  old.outerHTML = hmDecorSVG(); hmDecorBind();
+}
+function hmDecorPop(name) {
+  const D = HM_DECOR[name]; if (!D) return;
+  const p = openModal(esc(name), `<div class="hm-pop"><span class="art hm-art">${art('item', name)}</span><p>${esc(D.story)}</p></div>`, { cls: 'hm-decor-pop', foot: '<button class="btn yes" id="hmAway">Put away</button>' });
+  $('#hmAway', p).onclick = () => { SFX.click(); if (S.decor[name]) S.decor[name].out = false; markDirty(); closeModal(); hmDecorRedraw(); toast(`${name} is tucked away. It will keep.`); };
+}
+function hmDecorCard() {
+  hmDecorFields(); const got = Object.keys(S.decor).filter((n) => HM_DECOR[n]); if (!got.length) return '';
+  const away = got.filter((n) => !hmDecorOut(n)).length;
+  return `<button class="card" data-care="decor"><span class="art">${iconOr('decor', '<rect x="-14" y="-10" width="28" height="22" rx="3" fill="#F9D56E" stroke="#5B3D32" stroke-width="2.5"/>')}</span><b>Decor</b><span class="small">${away ? away + ' put away' : 'all out'}</span></button>`;
+}
+function hmOpenDecor() {
+  hmDecorFields(); const got = Object.keys(S.decor).filter((n) => HM_DECOR[n]), away = got.filter((n) => !hmDecorOut(n));
+  const list = away.map((n) => `<div class="sitem"><span class="art">${art('item', n)}</span><b>${esc(n)}</b><button class="btn yes" data-back="${esc(n)}">Put back</button></div>`).join('');
+  const p = openModal('Yard decor', away.length ? `<p class="small">These are tucked away. Put them back out any time.</p><div class="shopgrid">${list}</div>` : `<p>Everything you own is out in the yard. Nothing is hiding in the shed.</p>`);
+  p.querySelectorAll('[data-back]').forEach((b) => { b.onclick = () => { SFX.click(); S.decor[b.dataset.back].out = true; markDirty(); toast(`${b.dataset.back} is back in the yard.`, 'good'); if (cur.mode === 'yard') { closeModal(); hmDecorRedraw(); hmOpenDecor(); } }; });
+}
+function hmExpose() { if (window.__paw) window.__paw.home = { decorOut: hmDecorOut, redraw: hmDecorRedraw, ambient: () => packAmbient(), emit: (e, d) => emit(e, d), specs: HM_DECOR }; }
+on('game:ready', () => { hmDecorFields(); setTimeout(hmExpose, 0); });
+on('yard:enter', () => { hmDecorFields(); hmDecorBind(); hmExpose(); });
+on('decor:new', (o) => { hmDecorFields(); if (cur.mode === 'yard' && S.place === 'yard') hmDecorRedraw(); toast(`New for the yard: ${o && o.name}!`, 'gold'); });
