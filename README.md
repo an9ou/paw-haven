@@ -8,7 +8,7 @@ Made for desktop and laptop screens, designed at **1280×720**. No install, no a
 
 ## Play it
 
-Play in your browser: https://<user>.github.io/paw-haven/
+Play in your browser: **https://YOUR-GITHUB-NAME.github.io/paw-haven/** (live once GitHub Pages is switched on: repo Settings → Pages → Source: GitHub Actions).
 
 Your save lives in your browser's local storage, so it stays on your device.
 

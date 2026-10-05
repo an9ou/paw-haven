@@ -222,7 +222,7 @@ function mailNow() { // dev: deliver every due thing now (the daily gift even if
       if (typeof devPanel === 'undefined' || !devPanel || devPanel.hidden || devPanel.querySelector('#dvMail')) return;
       const b = document.createElement('button'); b.className = 'btn'; b.id = 'dvMail'; b.textContent = 'Mail: deliver now';
       b.onclick = () => { const n = mailNow(); toast(n ? `Delivered ${n} letter${n > 1 ? 's' : ''}. The mail carrier is exhausted.` : 'Nothing to deliver.'); };
-      const x = devPanel.querySelector('#dvX'); if (x) devPanel.insertBefore(b, x); else devPanel.appendChild(b);
+      devPanel.appendChild(b); // after Close, so re-adding it never shifts the Close button
     } catch (e) { /* no dev panel */ }
   };
   try { if (typeof devPanel !== 'undefined' && devPanel) new MutationObserver(add).observe(devPanel, { childList: true, attributes: true, attributeFilter: ['hidden'] }); } catch (e) { /* no observer */ }
