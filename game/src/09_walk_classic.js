@@ -12,6 +12,9 @@ function grantTreasure(t, area) {
   markDirty(); return { first };
 }
 function rollTreasure(area, o = {}) {
+  if (area === 'river' && S.stoneHint && !hasTreasure(tInfo('Sparkle Stone')) && o.not !== 'Sparkle Stone' && !(o.maxR != null && o.maxR < 2)) { // v2.1 BREED: the Stone hint
+    const st = tInfo('Sparkle Stone'); if (st) return { item: st, r: st.r };
+  }
   const p = RAR_P.slice(); if (S.outfit.neck === 'Clover Collar') { p[2] *= 2; p[3] *= 2; p[0] = 100 - p[1] - p[2] - p[3]; }
   let ri = 0;
   if (!o.common) { let x = Math.random() * 100; while (ri < 3 && x >= p[ri]) { x -= p[ri]; ri++; } }
