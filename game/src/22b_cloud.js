@@ -250,7 +250,7 @@ function clErrText(e) {
   if (/password/i.test(s) && /(short|weak|least|characters)/i.test(s)) return `Pick a password with at least ${CL_PW_MIN} characters.`;
   if (/email/i.test(s) && /invalid|format/i.test(s)) return 'That email looks wrong. Check it and try again.';
   if (/fetch|network|offline|timeout|blocked|load/i.test(s)) return 'Cloud save is offline. Your game is saved on this device.';
-  return 'That did not work. Try again in a moment.';
+  return "That didn't work. Try again in a moment.";
 }
 // v2.3 review fix: before the signed-in user changes, its last changes reach its own cloud. Waits out a push in flight (a busy push
 // only marks CL.again), then pushes what is left. Callers set CL.loggingIn first, so no other push starts meanwhile.
@@ -279,7 +279,7 @@ async function clRegister(email, pw, fresh) {
     if (CL.uid && !CL.anon) await clFlushNow(); // an account's last changes go to its own cloud first (a guest's game comes along anyway)
     const r2 = await CL.sb.auth.signUp({ email, password: pw });
     if (r2.error) return { ok: false, msg: clErrText(r2.error) };
-    if (!r2.data || !r2.data.session || !r2.data.user) return { ok: false, msg: 'That did not work. Try again in a moment.' };
+    if (!r2.data || !r2.data.session || !r2.data.user) return { ok: false, msg: "That didn't work. Try again in a moment." };
     CL.regPath = 'signUp'; clSetUser(r2.data.user);
     if (!clMine()) clDropLocal(); // another account's game stays with that account
     if (clLocal()) { clMetaSet({ changedAt: Math.max(clMeta().changedAt, 1), rev: 0, pushedAt: 0 }); await clPush(true); }
@@ -402,10 +402,10 @@ function clBodyHTML() {
   if (!CL.on) return CL.why === 'artifact' ? '<p class="small">This copy keeps your game on this device. Use a save code below to move it.</p>' : '';
   const msg = CL.msg ? `<p class="clmsg" role="alert">${esc(CL.msg)}</p>` : '';
   const acct = CL.uid && !CL.anon;
-  if (CL.ui === 'reg') return `<div class="clform"><p>Keep my save on every device: make an account.</p>${clIn('clEmail', 'email', 'Email', 'username')}${clIn('clPw', 'password', `Password (${CL_PW_MIN} or more letters)`, 'new-password')}${clIn('clPw2', 'password', 'Password again', 'new-password')}${msg}<div class="clrow"><button class="btn" data-cl="back">Back</button><button class="btn yes" data-cl="doReg">Make account</button></div></div>`;
+  if (CL.ui === 'reg') return `<div class="clform"><p>Keep my save on every device: make an account.</p>${clIn('clEmail', 'email', 'Email', 'username')}${clIn('clPw', 'password', `Password (${CL_PW_MIN} or more characters)`, 'new-password')}${clIn('clPw2', 'password', 'Password again', 'new-password')}${msg}<div class="clrow"><button class="btn" data-cl="back">Back</button><button class="btn yes" data-cl="doReg">Make account</button></div></div>`;
   if (CL.ui === 'login') return `<div class="clform"><p>I have an account: log in.</p>${clIn('clEmail', 'email', 'Email', 'username')}${clIn('clPw', 'password', 'Password', 'current-password')}${msg}<div class="clrow"><button class="btn" data-cl="back">Back</button><button class="btn yes" data-cl="doLogin">Log in</button></div><button class="btn cllink" data-cl="forgot">Forgot your password?</button></div>`;
   if (CL.ui === 'forgot') return `<div class="clform"><p>Passwords can't be reset by email. If you're logged in on another device, change it there.</p><p class="small">The save on this device is never lost.</p><div class="clrow"><button class="btn" data-cl="login">Back</button></div></div>`;
-  if (CL.ui === 'pw') return `<div class="clform">${clIn('clPw', 'password', `New password (${CL_PW_MIN} or more letters)`, 'new-password')}${clIn('clPw2', 'password', 'New password again', 'new-password')}${msg}<div class="clrow"><button class="btn" data-cl="back">Back</button><button class="btn yes" data-cl="doPw">Change password</button></div></div>`;
+  if (CL.ui === 'pw') return `<div class="clform">${clIn('clPw', 'password', `New password (${CL_PW_MIN} or more characters)`, 'new-password')}${clIn('clPw2', 'password', 'New password again', 'new-password')}${msg}<div class="clrow"><button class="btn" data-cl="back">Back</button><button class="btn yes" data-cl="doPw">Change password</button></div></div>`;
   if (CL.ui === 'backups') {
     const list = CL.bk === null ? '<p class="small">Loading backups...</p>' : !CL.bk.length ? '<p class="small">No backups yet. When two devices disagree, the older save lands here.</p>' : `<ul class="clbk">${CL.bk.map((b, i) => { const d = b.data || {}, dogs = (d.dogs || (d.dog ? [d.dog] : [])).map((x) => x.name).filter(Boolean); return `<li><div class="clbk-t"><b>${esc(new Date(b.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }))}</b><span>${esc(dogs.join(', ') || 'A dog')} · ${d.coins | 0} coins</span><span class="small">${esc(b.reason || '')}</span></div><button class="btn" data-clrestore="${i}">Restore</button></li>`; }).join('')}</ul>`;
     return `<div class="clform">${list}${msg}<div class="clrow"><button class="btn" data-cl="back">Back</button></div></div>`;
