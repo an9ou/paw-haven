@@ -96,7 +96,7 @@ sec('missions card content');
 {
   const PA = load([SRC_B]);
   const svg = PA.prop('missioncard', MC);
-  ok(svg.includes('Feed Biscuit a') && svg.includes('Walk at Sunny Park') && svg.includes('Pet Biscuit 3 times'), 'the three mission lines are on the card');
+  ok(svg.includes('Feed Biscuit a') && svg.includes('Walk at Sunny') && svg.includes('Pet Biscuit 3'), 'the three mission lines are on the card');
   ok(svg.includes('Tuesday 6 October'), 'the day is on the card');
   ok(svg.includes('>1/3<'), 'the badge says 1/3 with one mission done');
   ok(svg.includes('>1/3</text>') && /stroke="#7FB86A" stroke-width="4.4"/.test(svg), 'a done mission gets a crayon tick');
@@ -104,6 +104,11 @@ sec('missions card content');
   ok(all.includes('>3/3<') && (all.match(/stroke="#7FB86A" stroke-width="4.4"/g) || []).length === 3, 'all three done: three ticks and 3/3');
   const esc = PA.prop('missioncard', { items: [{ text: 'Tom &amp; Jerry', done: false, p: 0, n: 1 }], day: '<b>' });
   ok(esc.includes('Tom &amp; Jerry') && !esc.includes('<b>'), 'item text is used as given (escaped by the caller), the day is escaped');
+  // long texts wrap inside the paper: every row line starts at x 60 and stays left of the p/n column (about 5.7 units a character at 16 px)
+  const longs = PA.prop('missioncard', { items: [{ text: 'Try a new snack from Kibble Corner', done: true, p: 1, n: 2 }, { text: 'Clean up after Mochi', p: 1, n: 2 }, { text: 'Visit the Seashell Beach and find a treasure there', p: 0, n: 3 }] });
+  const rows = [...longs.matchAll(/<text x="60" y="[^"]+" text-anchor="start"[^>]*font-size="([\d.]+)"[^>]*>([^<]*)<\/text>/g)];
+  ok(rows.length >= 6 && rows.every((m) => 60 + m[2].length * 5.7 * (+m[1]) / 16 <= 148), 'long mission texts wrap inside the paper (' + rows.map((m) => m[2]).join(' | ') + ')');
+  ok(/<text x="172"[^>]*text-anchor="end"[^>]*>1\/2</.test(longs), 'the p/n progress sits right-aligned at the end of its row');
   // the clipboard itself is the same drawing whatever the text
   const head = (s) => s.replace(/pwb[0-9a-z]+/g, 'ID').split('stroke="#BFE6FA"')[0];
   ok(head(PA.prop('missioncard', MC)) === head(PA.prop('missioncard', { items: [{ text: 'Something else', done: true, p: 2, n: 2 }], stamps: 6, day: 'Fri' })), 'the clipboard drawing does not change with the text');
