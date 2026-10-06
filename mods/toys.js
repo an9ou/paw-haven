@@ -10,7 +10,8 @@
 
   var INK = '#5B3D32', PAPER = '#FFFBF3', PINK = '#F28FA5', MUTED = '#8A7468';
   var W = 1240, H = 620, GY = 540, DS = 1.15, G = 2300;
-  var TOYS = ['Tennis Ball', 'Rope Tug', 'Squeaky Duck', 'Frisbee', 'Plush Bone', 'Puzzle Feeder', 'Driftwood Stick', 'Rubber Chicken', 'Glow Ball'];
+  var TOYS = ['Tennis Ball', 'Rope Tug', 'Squeaky Duck', 'Frisbee', 'Plush Bone', 'Puzzle Feeder', 'Driftwood Stick', 'Rubber Chicken', 'Glow Ball',
+    'Snuffle Mat', 'Treat Cone', 'Squeaky Hedgehog', 'Bubble Machine', 'Paddling Pool', 'Agility Tunnel'];
   var CAP = { happiness: 25, bond: 2, coins: 6 };
 
   /* ---------------- helpers ---------------- */
@@ -137,6 +138,32 @@
       case 'Plush Bone': s = pencil(R, [[16, 26], [10, 20], [14, 12], [22, 16], [42, 16], [50, 12], [54, 20], [48, 26], [54, 34], [50, 42], [42, 38], [22, 38], [14, 42], [10, 34]], 2.4, INK, 1, true, '#FFF2DA') + '<path d="M22 27h20" stroke="#F28FA5" stroke-width="2" stroke-dasharray="3 3"/>'; break;
       case 'Driftwood Stick': s = pencil(R, [[6, 40], [30, 30], [58, 22], [60, 27], [32, 36], [8, 46]], 2.4, INK, 1, true, '#C9A27A') + pencil(R, [[30, 31], [36, 18]], 2, INK, 1); break;
       case 'Rope Tug': s = pencil(R, [[8, 34], [20, 28], [32, 34], [44, 28], [56, 34]], 7, '#E8504A', 1) + pencil(R, [[8, 34], [20, 28], [32, 34], [44, 28], [56, 34]], 2, INK, 1); break;
+      case 'Snuffle Mat':
+        s = pencil(R, [[10, 26], [54, 26], [61, 54], [3, 54]], 2.4, INK, 1, true, '#C8E9CF') + '<path d="M13 29H51L57 51H7z" fill="none" stroke="#F28FA5" stroke-width="1.4" stroke-dasharray="3 3"/>';
+        [[18, 33, '#FFE07A'], [32, 33, '#F9D0D9'], [46, 33, '#BBD8EF'], [16, 45, '#F9D0D9'], [32, 45, '#FFE3A1'], [48, 45, '#E0D5F0']].forEach(function (f) { s += pencil(R, ell(f[0], f[1], 7.5, 3.6, 10), 1.4, INK, 1, true, f[2]); });
+        s += '<circle cx="39" cy="30" r="2.6" fill="#C98B4E" stroke="#5B3D32" stroke-width="1.1"/>' + pencil(R, [[40, 18], [44, 14], [48, 18]], 1.4, INK, 0.7) + pencil(R, [[45, 11], [49, 7], [53, 11]], 1.4, INK, 0.5); break;
+      case 'Treat Cone':
+        s = pencil(R, [[18, 58], [46, 58], [43, 49], [45, 43], [40, 34], [42, 28], [37, 18], [27, 18], [22, 28], [24, 34], [19, 43], [21, 49]], 2.4, INK, 1, true, '#E8504A') +
+          pencil(R, [[24, 52], [22, 45], [26, 36], [29, 26]], 2.4, '#F28FA5', 0.9) + pencil(R, [[21, 49], [43, 49]], 1.2, INK, 0.5) + pencil(R, [[24, 34], [40, 34]], 1.2, INK, 0.5) +
+          pencil(R, [[24, 18], [27, 10], [32, 7], [38, 10], [41, 18], [37, 22], [32, 19], [27, 22]], 1.8, INK, 1, true, '#F4A262') + '<circle cx="35" cy="12" r="1.6" fill="#FFE3A1"/>'; break;
+      case 'Squeaky Hedgehog':
+        (function () { var sp = [[6, 50]]; for (var i = 0; i <= 12; i++) { var a = Math.PI * (1 + i / 12 * 0.8), rr = i % 2 ? 19 : 25; sp.push([28 + Math.cos(a) * rr * 1.05, 50 + Math.sin(a) * rr]); } sp.push([44, 49]); s = pencil(R, sp, 2.2, INK, 1, true, '#A0764E'); })();
+        s += pencil(R, [[38, 28], [48, 32], [60, 40], [56, 46], [44, 50], [36, 46]], 2, INK, 1, true, '#FCD8BC') + '<circle cx="60" cy="40" r="2.6" fill="#5B3D32"/><circle cx="48" cy="36" r="2" fill="#5B3D32"/>' +
+          pencil(R, ell(41, 30, 3.4, 3, 8), 1.4, INK, 1, true, '#F9C4D0') + '<path d="M10 8l3 5M16 5v6M22 8l-3 5" stroke="#5B3D32" stroke-width="1.6" stroke-linecap="round"/>'; break;
+      case 'Bubble Machine':
+        s = pencil(R, rect(10, 34, 36, 24), 2.4, INK, 1, true, '#C8E9CF') + pencil(R, rect(8, 30, 40, 6), 2, INK, 1, true, '#FFE3A1') +
+          pencil(R, [[16, 30], [15, 16], [20, 12], [20, 7], [26, 7], [26, 12], [31, 16], [30, 30]], 1.8, INK, 1, true, '#CBE0F4') + pencil(R, rect(16, 18, 14, 8), 1.2, INK, 1, true, '#FFFBF3') +
+          pencil(R, [[46, 46], [53, 46], [53, 53]], 2, INK, 1) + '<circle cx="53" cy="54" r="2.6" fill="#F28FA5" stroke="#5B3D32" stroke-width="1.2"/>' + pencil(R, [[42, 30], [44, 22]], 2, INK, 1) + pencil(R, ell(46, 18, 5, 5, 10), 1.8, '#86B3EA', 1) +
+          pencil(R, ell(52, 9, 5, 5, 10), 1.4, INK, 0.8, true, 'rgba(203,224,244,.5)') + pencil(R, ell(59, 20, 3.4, 3.4, 8), 1.2, INK, 0.8, true, 'rgba(203,224,244,.5)') + pencil(R, ell(38, 6, 3, 3, 8), 1.2, INK, 0.7); break;
+      case 'Paddling Pool':
+        s = pencil(R, ell(32, 42, 28, 13, 20), 2.2, INK, 1, true, '#6F93BE') + '<rect x="4" y="34" width="56" height="8" fill="#6F93BE"/>' + pencil(R, ell(32, 34, 28, 13, 20), 2.4, INK, 1, true, '#86B3EA') +
+          pencil(R, ell(32, 35, 20, 7.5, 16), 1.8, INK, 1, true, '#BBD8EF') + pencil(R, [[22, 35], [27, 33], [32, 35], [37, 33], [42, 35]], 1.4, '#5E86B4', 0.9);
+        [[8, 31], [14, 26], [50, 26], [56, 31], [12, 42], [32, 47], [52, 42]].forEach(function (d) { s += '<circle cx="' + d[0] + '" cy="' + d[1] + '" r="1.8" fill="#FFFBF3"/>'; });
+        s += pencil(R, [[30, 22], [33, 14]], 1.6, '#9CC8EA', 1) + pencil(R, [[38, 23], [43, 16]], 1.6, '#9CC8EA', 1) + '<circle cx="35" cy="11" r="2" fill="#9CC8EA" stroke="#5B3D32" stroke-width=".9"/>'; break;
+      case 'Agility Tunnel':
+        for (var ti = 0; ti < 6; ti++) s += pencil(R, [[10 + ti * 7.5, 22], [17.5 + ti * 7.5, 20], [17.5 + ti * 7.5, 52], [10 + ti * 7.5, 51]], 1.4, INK, 0.9, true, ti % 2 ? '#FFE07A' : '#86B3EA');
+        s += pencil(R, [[10, 22], [55, 20]], 2.2, INK, 1) + pencil(R, [[10, 51], [55, 52]], 2.2, INK, 1) + pencil(R, ell(10, 36.5, 6, 15, 12), 2.2, INK, 1, true, '#86B3EA') + pencil(R, ell(10, 37, 3.4, 11, 10), 1.4, INK, 1, true, '#4A3A33') +
+          pencil(R, ell(55, 36, 5, 16, 12), 2.2, INK, 1, true, '#FFE07A') + '<path d="M2 58H62" stroke="#5B3D32" stroke-width="1.4" opacity=".4"/>'; break;
       default: s = pencil(R, rect(14, 14, 36, 36), 2.4, INK, 1, true, '#E0D5F0');
     }
     return '<svg viewBox="0 0 64 64">' + s + '</svg>';
@@ -209,6 +236,22 @@
       for (var w = 0; w < 12; w++) { var wx = 700 + R() * 500, wy = 480 + R() * 120; s += pencil(R, [[wx, wy], [wx + 14, wy - 4], [wx + 28, wy], [wx + 42, wy - 4]], 1.6, '#6F93BE', 0.8); }
       [[640, 470], [672, 455], [596, 520]].forEach(function (p) { s += pencil(R, [[p[0], p[1] + 40], [p[0] - 4, p[1] - 30]], 2.2, '#6E8F5A') + pencil(R, ell(p[0] - 4, p[1] - 38, 5, 12, 10), 1.6, INK, 1, true, '#A0764E'); });
       s += '<text x="905" y="600" font-family="Caveat,cursive" font-weight="700" font-size="26" fill="#5B3D32" opacity=".6">the pond (very wet)</text>';
+    } else if (variant === 'yard') {
+      R = rng(611);
+      s += '<rect width="1240" height="400" fill="url(#' + gid + ')"/>' + skyBits(R, 0, 70, 1240, 240, time, weather);
+      s += pencil(R, [[0, 292], [160, 266], [330, 284], [500, 262], [680, 282], [860, 260], [1040, 280], [1240, 264], [1240, 340], [0, 340]], 2.2, INK, 0.75, true, '#D9ECCB');
+      for (var yt = 0; yt < 6; yt++) { var ytx = 90 + yt * 215 + R() * 50, yty = 296 + R() * 14; s += pencil(R, [[ytx, yty], [ytx, yty - 36]], 3, INK, 0.7) + pencil(R, ell(ytx, yty - 54, 28, 30, 14), 2, INK, 0.7, true, yt % 2 ? '#BFE0B4' : '#CDE7C1'); }
+      for (var pk = 0; pk < 28; pk++) { var pkx = 6 + pk * 45; s += pencil(R, [[pkx, 404], [pkx, 322], [pkx + 15, 306], [pkx + 30, 322], [pkx + 30, 404]], 2, INK, 0.85, true, '#FFF4DF'); }
+      s += pencil(R, rect(-4, 338, 1248, 12), 2, INK, 0.8, true, '#F3E3CC') + pencil(R, rect(-4, 378, 1248, 12), 2, INK, 0.8, true, '#F3E3CC');
+      s += '<rect y="398" width="1240" height="222" fill="#E8F3D8"/>' + pencil(R, [[0, 400], [620, 397], [1240, 399]], 2.2, INK, 0.7);
+      for (var yg = 0; yg < 70; yg++) { var ygx = R() * 1240, ygy = 420 + R() * 190; s += '<path d="M' + f1(ygx) + ' ' + f1(ygy) + 'l3 -9M' + f1(ygx + 5) + ' ' + f1(ygy) + 'l-1 -11" stroke="#86B57A" stroke-width="1.5" stroke-linecap="round" opacity=".8"/>'; }
+      for (var yf = 0; yf < 16; yf++) {
+        var yfx = 30 + yf * 78 + R() * 30, yfy = 404 + R() * 10, yfc = ['#F9D0D9', '#FFE07A', '#E0D5F0', '#F28FA5'][yf % 4];
+        s += pencil(R, [[yfx, yfy], [yfx + 2, yfy - 26]], 1.8, '#6E8F5A', 0.9);
+        for (var pe = 0; pe < 5; pe++) { var pa = pe / 5 * Math.PI * 2; s += '<circle cx="' + f1(yfx + 2 + Math.cos(pa) * 5) + '" cy="' + f1(yfy - 30 + Math.sin(pa) * 5) + '" r="4" fill="' + yfc + '" stroke="#5B3D32" stroke-width="1.1"/>'; }
+        s += '<circle cx="' + f1(yfx + 2) + '" cy="' + f1(yfy - 30) + '" r="2.6" fill="#F2C744" stroke="#5B3D32" stroke-width="1"/>';
+      }
+      s += '<text x="1040" y="606" font-family="Caveat,cursive" font-weight="700" font-size="26" fill="#5B3D32" opacity=".6">the back garden</text>';
     } else {
       s += '<rect width="1240" height="420" fill="#FFF7EA"/><rect width="1240" height="420" fill="url(#' + uidp + 'dots)"/>';
       for (var v = 0; v < 13; v++) s += pencil(R, [[60 + v * 96, 92], [60 + v * 96, 410]], 1, '#E9D7BF', 0.7);
@@ -245,17 +288,17 @@
   }
 
   /* ---------------- dog geometry (viewBox units, facing right, from feet 120,186) ---------------- */
-  var MOUTH = { idle: [70, -66], walk: [70, -66], happy: [70, -70], pet: [70, -70], sit: [42, -76], jump: [84, -108], eat: [14, -8], crouch: [58, -16], dig: [42, -10], shake: [70, -62], sad: [56, -50], sleep: [60, -16], dirty: [70, -66], cold: [62, -60], hot: [70, -66], __own: [88, -76] };
+  var MOUTH = { idle: [70, -66], walk: [70, -66], happy: [70, -70], pet: [70, -70], sit: [42, -76], jump: [84, -108], eat: [14, -8], crouch: [58, -16], dig: [42, -10], shake: [70, -62], sad: [56, -50], sleep: [60, -16], dirty: [70, -66], cold: [62, -60], hot: [70, -66], sniff: [80, -22], __own: [88, -76] };
   /* per-breed mouth adjustments in viewBox units: d = default for every pose, plus per-pose overrides (calibrated by eye) */
   var BREED_M = {
-    shiba: { d: [0, 0] }, husky: { d: [-8, 0] }, dachs: { d: [30, 0] },
-    corgi: { d: [-2, 4], eat: [10, 0], crouch: [0, 0], sit: [0, 0] },
-    golden: { d: [-24, -6], sit: [-24, 0], jump: [-38, 2], eat: [40, -15], crouch: [0, 0], sleep: [-12, 0] },
-    mutt: { d: [-10, 4], sit: [0, 0], jump: [-8, 0], eat: [24, 0], crouch: [0, 0] },
-    chihuahua: { d: [-12, 14], sit: [0, 8], jump: [-30, 10], eat: [16, -6], crouch: [0, 0], sleep: [-12, 0] },
-    pug: { d: [-22, 10], sit: [-6, 3], jump: [-30, 5], eat: [28, -11], crouch: [0, 0], sleep: [-10, 0] },
-    greyhound: { d: [32, -42], sit: [48, 2], jump: [18, -53], eat: [28, -4], crouch: [50, 8], sleep: [12, 4] },
-    beagle: { d: [-4, 0], jump: [-6, -5], eat: [28, -3], sit: [0, 0], crouch: [0, 0], sleep: [0, 0] }
+    shiba: { d: [0, 0], sniff: [4, -4] }, husky: { d: [-8, 0], sniff: [-2, -8] }, dachs: { d: [30, 0], sniff: [14, 0] },
+    corgi: { d: [-2, 4], eat: [10, 0], crouch: [0, 0], sit: [0, 0], sniff: [6, -5] },
+    golden: { d: [-24, -6], sit: [-24, 0], jump: [-38, 2], eat: [40, -15], crouch: [0, 0], sleep: [-12, 0], sniff: [-6, -2] },
+    mutt: { d: [-10, 4], sit: [0, 0], jump: [-8, 0], eat: [24, 0], crouch: [0, 0], sniff: [0, -4] },
+    chihuahua: { d: [-12, 14], sit: [0, 8], jump: [-30, 10], eat: [16, -6], crouch: [0, 0], sleep: [-12, 0], sniff: [0, -4] },
+    pug: { d: [-22, 10], sit: [-6, 3], jump: [-30, 5], eat: [28, -11], crouch: [0, 0], sleep: [-10, 0], sniff: [-6, 0] },
+    greyhound: { d: [32, -42], sit: [48, 2], jump: [18, -53], eat: [28, -4], crouch: [50, 8], sleep: [12, 4], sniff: [12, 4] },
+    beagle: { d: [-4, 0], jump: [-6, -5], eat: [28, -3], sit: [0, 0], crouch: [0, 0], sleep: [0, 0], sniff: [8, 0] }
   };
   var POSE_BASE = { walk: 'idle', happy: 'idle', pet: 'idle', shake: 'idle', dirty: 'idle', cold: 'idle', hot: 'idle', sad: 'idle', dig: 'eat' };
   function breedAdj(key, pose) {
@@ -276,23 +319,33 @@
       tugStart: ['GRRRR. I AM A WOLF.', 'you face the security system'], tugGrowl: ['GRRRRRR!!', 'I will NEVER let go', 'tiny but MIGHTY', 'yip! YIP! grrr!'],
       tugDogWin: ['FEAR ME.', 'the rope is mine. forever.'], tugYouWin: ['...I let you win. obviously.', 'ok fine. hug. but quickly.'],
       duckOk: ['YAP YAP correct!', 'I yap, you squeak. a team.'], puzzleWrong: ['that lid lied to me', 'I am FURIOUS at that lid'],
-      frisbee: ['I caught it with my FACE', 'the disc is bigger than me. I won.'], plushYawn: ['*tiny yawn*'], howl: ['YIP-YIP-AWOO!', 'yap yap yap!']
+      frisbee: ['I caught it with my FACE', 'the disc is bigger than me. I won.'], plushYawn: ['*tiny yawn*'], howl: ['YIP-YIP-AWOO!', 'yap yap yap!'],
+      snuffleStart: ['I am not looking. I am GUARDING.'], snuffleFind: ['MINE. all mine.', 'found it. fear my nose.'], coneLick: ['this cone is MY cone', 'lick lick LICK'],
+      hogAnswer: ['YAP! YAP YAP!', 'who squeaks at ME?'], hogRoll: ['it is a ball now. I am not scared. (a bit scared)'], bubblePop: ['I will pop EVERY bubble', 'POP. next.'],
+      poolIn: ['the water is TOO wet', '...ok it is nice'], tunnelGo: ['ZOOM (tiny legs)'], tunnelDone: ['I am a rocket', 'tiny but FAST'], tap: ['yes? I am busy being fierce']
     },
     pug: {
       fetchStart: ['*snort* ...throw it gently', 'ok but not too far'], fetchDeliver: ['*snort snort* got it', 'I need a little lie down'],
       tugGrowl: ['*snort* grrf', 'rrf rrf *wheeze*', 'grrrrf *snort*'], tugDogWin: ['*victory snort*'],
       duckListen: ['*snort*', '*snerk*', '*huff*'], duckOk: ['*happy snort*', 'snort-squeak duet!'],
-      puzzleFound: ['FOOD. *snort* FOOD.', 'my favourite flavour: kibble'], plushYawn: ['*snoooore*'], howl: ['rrf! *snort* rrf!', 'arf-*snort*-roo']
+      puzzleFound: ['FOOD. *snort* FOOD.', 'my favourite flavour: kibble'], plushYawn: ['*snoooore*'], howl: ['rrf! *snort* rrf!', 'arf-*snort*-roo'],
+      snuffleFind: ['*snort* FOOD', '*snort snort* found it'], coneLick: ['*snort* pumpkin', 'lick *snort* lick'], hogAnswer: ['*snort*!', 'rrf! *snort*'],
+      bubblePop: ['*snort* it went up my nose', 'pop *wheeze*'], poolIn: ['*happy snort*', 'I float. sort of.'], tunnelDone: ['*wheeze* I did it', 'that tunnel was long. nap?'], tap: ['*snort*?']
     },
     greyhound: {
       fetchStart: ['I go fast. then I lie down.', 'ready. set. ZOOM.'], fetchDeliver: ['*flop*', 'that was 45 mph. nap now.', 'zoom complete. horizontal mode.'],
       tugGrowl: ['roo.', 'mrrr (politely)'], frisbee: ['ZOOOM. got it. *flop*', 'leg power!'], howl: ['rooo...', 'roo-roo (softly)'],
-      stickShake: ['brrr. my legs are wet.', 'long legs, long shake']
+      stickShake: ['brrr. my legs are wet.', 'long legs, long shake'],
+      snuffleFind: ['found it. elegantly.'], coneLick: ['lick. lick. a dignified lick.'], hogAnswer: ['roo?', 'roo (politely)'], bubblePop: ['leg power!', 'I jumped to the ceiling'],
+      poolIn: ['my legs are long. the pool is short.'], tunnelGo: ['ZOOOM'], tunnelDone: ['45 mph. in a tube.', 'zoom complete. horizontal mode.'], tap: ['roo (fondly)']
     },
     beagle: {
       fetchStart: ['I can smell the ball from here', 'throw it! I\u2019ll sniff it out'], fetchDeliver: ['found it by SMELL', 'my nose did the work'],
       puzzleStart: ['sniff. sniff. it\u2019s THAT one.', 'my nose already knows'], puzzleFound: ['smelled that from three streets away', 'nose: 1, lids: 0'],
-      duckOk: ['AROOOO! (that means yes)'], howl: ['AROOOOOO!', 'ah-ROOOO-ooo!'], tugGrowl: ['arooo-grrr!', 'grrr (musically)']
+      duckOk: ['AROOOO! (that means yes)'], howl: ['AROOOOOO!', 'ah-ROOOO-ooo!'], tugGrowl: ['arooo-grrr!', 'grrr (musically)'],
+      snuffleStart: ['I can smell where you hid it. go on.'], snuffleFind: ['nose: 1, mat: 0', 'smelled that from the hall'], coneLick: ['pumpkin! I smelled it from the garden'],
+      hogAnswer: ['AROOO!', 'ah-ROO-squeak!'], hogRoll: ['it smells like a hedgehog. suspicious.'], bubblePop: ['they smell of... nothing?! suspicious'],
+      poolIn: ['AROOO (wet version)'], tunnelDone: ['AROOOO! again!'], tap: ['sniff sniff. it is you!']
     }
   };
   var FALLBACK = { crouch: ['sit'], dig: ['eat'], shake: ['happy'], sleep: ['sit'], pet: ['happy'], sad: ['sit'], jump: ['happy'], eat: ['sit'], walk: ['idle'] };
@@ -329,6 +382,7 @@
     d.dir = function () { return d.facing === 'right' ? 1 : -1; };
     d.mouthOff = function (p) { var rp = resolve(p || 'walk'), m = MOUTH[rp] || MOUTH.idle, a = breedAdj(bkey, rp); return (m[0] + a[0]) * DS; };
     d.mouth = function () { var rp = resolve(d.pose), m = MOUTH[rp] || MOUTH.idle, a = breedAdj(bkey, rp); return { x: d.x + d.dir() * (m[0] + a[0]) * DS, y: d.y + d.offY + (m[1] + a[1]) * DS }; };
+    d.mouthDy = function (p) { var rp = resolve(p || 'idle'), m = MOUTH[rp] || MOUTH.idle, a = breedAdj(bkey, rp); return (m[1] + a[1]) * DS; };
     d.head = function () { var m = d.mouth(); return { x: m.x - d.dir() * 26, y: m.y - 34 }; };
     d.runTo = function (tx, speed, dt) {
       if (d.air) return false;
@@ -456,7 +510,7 @@
     var uidp = 'pt' + Math.random().toString(36).slice(2, 7);
     var impl = IMPL[name] || IMPL['Tennis Ball'];
     var alive = true, finished = false, raf = 0, timers = [], last = performance.now(), T = 0;
-    var totals = { happiness: 0, bond: 0, coins: 0, energy: 0 };
+    var totals = { happiness: 0, bond: 0, coins: 0, energy: 0, clean: 0 };
 
     if (el && getComputedStyle(el).position === 'static') el.style.position = 'relative';
     var root = div('pt-root', el); root.tabIndex = -1;
@@ -464,8 +518,8 @@
     var cfg = impl.cfg || {};
     var L = {};
     L.scene = div('pt-layer', stage, backdrop(cfg.scene || 'room', time, weather, uidp));
-    var wx = cfg.scene === 'pond' ? { x: 0, y: 0, w: 1240, h: 620 } : { x: 850, y: 110, w: 250, h: 220 };
-    if (weather === 'rain' || weather === 'snow') { var rn = div(weather === 'rain' ? 'pt-rain' : 'pt-snow', L.scene); rn.style.cssText += ';left:' + wx.x + 'px;top:' + wx.y + 'px;width:' + wx.w + 'px;height:' + wx.h + 'px;opacity:' + (cfg.scene === 'pond' ? 0.6 : 0.9); }
+    var outdoor = cfg.scene === 'pond' || cfg.scene === 'yard', wx = outdoor ? { x: 0, y: 0, w: 1240, h: 620 } : { x: 850, y: 110, w: 250, h: 220 };
+    if (weather === 'rain' || weather === 'snow') { var rn = div(weather === 'rain' ? 'pt-rain' : 'pt-snow', L.scene); rn.style.cssText += ';left:' + wx.x + 'px;top:' + wx.y + 'px;width:' + wx.w + 'px;height:' + wx.h + 'px;opacity:' + (outdoor ? 0.6 : 0.9); }
     L.actors = div('pt-layer', stage);
     L.front = div('pt-layer', stage);
     L.tint = div('pt-layer', stage);
@@ -518,6 +572,8 @@
         var out = {}, any = false;
         ['happiness', 'bond', 'coins'].forEach(function (k) { var v = Math.max(0, Math.min(+r[k] || 0, CAP[k] - totals[k])); if (v > 0) { out[k] = v; totals[k] += v; any = true; } });
         if (r.energy) { out.energy = r.energy; totals.energy += r.energy; any = true; }
+        if (r.clean > 0) { out.clean = r.clean; totals.clean += r.clean; any = true; }
+        if (r.cool) { out.cool = true; any = true; }
         if (!any) return;
         tallyN.textContent = '+' + Math.round(totals.happiness);
         try { if (ctx.reward) ctx.reward(out); } catch (e) { /* ignore */ }
@@ -546,8 +602,9 @@
         b.addEventListener('click', function (e) { e.stopPropagation(); if (!finished) fn(); }); L.ui.appendChild(b); A.dockable(b); return b;
       },
       dockable: function (e) { dockables.push(e); if (phone) dock.appendChild(e); return e; },
+      isTouch: function () { return coarse || touch; },
       hitR: function (r) { return touch ? Math.max(r, 32 / Math.max(0.2, scale)) : r; },
-      tip: function (text, x, y) { if (coarse) text = text.replace('click me!', 'tap me!').replace('drag me & let go!', 'flick me!'); var t = div('pt-tip', L.ui, esc(text)); t.style.left = x + 'px'; t.style.top = y + 'px'; return { el: t, hide: function () { if (t.parentNode) t.parentNode.removeChild(t); } }; }
+      tip: function (text, x, y) { if (coarse) text = text.replace(/click/g, 'tap').replace('drag me & let go!', 'flick me!'); var t = div('pt-tip', L.ui, esc(text)); t.style.left = x + 'px'; t.style.top = y + 'px'; return { el: t, hide: function () { if (t.parentNode) t.parentNode.removeChild(t); } }; }
     };
 
     A.dog = makeDog(A, info, L.actors);
@@ -631,6 +688,9 @@
         else if (p.type === 'spark') { g.strokeStyle = '#E2A800'; g.lineWidth = 2.2; g.beginPath(); g.moveTo(p.x - p.size, p.y); g.lineTo(p.x + p.size, p.y); g.moveTo(p.x, p.y - p.size); g.lineTo(p.x, p.y + p.size); g.stroke(); }
         else if (p.type === 'z') { g.fillStyle = INK; g.font = '700 ' + Math.round(p.size * 4) + 'px Caveat, cursive'; g.fillText('z', p.x, p.y); }
         else if (p.type === 'glow') { g.fillStyle = p.color; g.beginPath(); g.arc(p.x, p.y, p.size * a, 0, Math.PI * 2); g.fill(); }
+        else if (p.type === 'ring') { g.strokeStyle = INK; g.lineWidth = 1.8; g.beginPath(); g.arc(p.x, p.y, p.size * (1 + p.t / p.life * 0.9), 0, Math.PI * 2); g.stroke(); g.strokeStyle = '#9CC8EA'; g.lineWidth = 1.2; g.beginPath(); g.arc(p.x + 1, p.y - 1, p.size * (0.8 + p.t / p.life), 0, Math.PI * 2); g.stroke(); }
+        else if (p.type === 'bub') drawBubble(g, p.x, p.y, p.size, a);
+        else if (p.type === 'crumb') { g.fillStyle = p.color; g.beginPath(); g.ellipse(p.x, p.y, p.size, p.size * 0.7, p.t * 6, 0, Math.PI * 2); g.fill(); g.lineWidth = 1; g.strokeStyle = INK; g.stroke(); }
       }
       g.globalAlpha = 1;
     }
@@ -670,9 +730,10 @@
       if (totals.bond) bits.push('+' + totals.bond + ' Bond');
       if (totals.coins) bits.push('+' + totals.coins + ' coins');
       if (totals.energy > 0) bits.push('+' + totals.energy + ' Energy');
+      if (totals.clean > 0) bits.push('+' + totals.clean + ' Cleanliness');
       var card = cardEl = div('pt-card', phone ? root : L.ui,
         '<div class="pt-card-t">' + esc(title || pick(['What a play session!', 'Best. Game. Ever.', 'Tail status: wagging'])) + '</div>' +
-        '<div class="pt-card-s">' + esc(sub || (DN + ' had a wonderful time with the ' + name + '.')) + '</div>' +
+        '<div class="pt-card-s">' + esc(sub || (toy.cardSub && toy.cardSub()) || (DN + ' had a wonderful time with the ' + name + '.')) + '</div>' +
         '<div class="pt-card-r">' + esc(bits.join('  ·  ') || 'Pure fun, no stats needed') + '</div>');
       var b2 = document.createElement('button'); b2.type = 'button'; b2.className = 'pt-btn'; b2.textContent = 'Done'; card.appendChild(b2);
       b2.addEventListener('click', function (e) { e.stopPropagation(); close(); });
@@ -1297,6 +1358,807 @@
       dbg: function () { return { meter: meterV, concerts: concerts, duets: duets, harmony: harmony }; }
     };
   };
+
+  /* ==================== v2.4 Shop Day toys ==================== */
+  /* shared: a tap on the dog gets a reaction (a squash, hearts, a line). Returns true when the tap was on the dog. */
+  function dogTap(A, x, y, generic) {
+    var d = A.dog, h = d.head(), now = performance.now();
+    if (Math.abs(x - d.x) > A.hitR(115) || y < Math.min(h.y - 60, d.y - 190) || y > d.y + 24) return false;
+    if (now - (A.tapAt || 0) < 650) return true;
+    A.tapAt = now; d.squash(0.86); A.burst('heart', h.x, h.y, 3, { g: -60, sp: 90, life: 1.1, size: 7 });
+    if (Math.random() < 0.4) A.sfx('bark');
+    A.say(pick(A.line('tap', generic || ['hi! yes! hello!', 'boop received', 'one pat. ok two.'])), 1100);
+    return true;
+  }
+  /* happy tail-end wiggle: the art wags the tail, this sways the whole dog a little */
+  function wiggle(d, T, k) { d.tilt = Math.sin(T * 13) * (k == null ? 2.2 : k); }
+  /* a soap bubble in pencil: soft fill, two-stroke outline, a white shine and a little rainbow */
+  function drawBubble(g, x, y, r, a) {
+    g.save(); g.globalAlpha = a == null ? 1 : a;
+    g.fillStyle = 'rgba(203,224,244,.28)'; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = 'rgba(91,61,50,.8)'; g.lineWidth = 1.9; g.stroke();
+    g.strokeStyle = 'rgba(91,61,50,.35)'; g.lineWidth = 1; g.beginPath(); g.arc(x + 1.3, y - 0.9, r * 0.97, 0.4, 5.6); g.stroke();
+    g.lineCap = 'round';
+    g.strokeStyle = 'rgba(242,143,165,.6)'; g.lineWidth = Math.max(1.4, r * 0.09); g.beginPath(); g.arc(x, y, r * 0.8, 0.25, 1.15); g.stroke();
+    g.strokeStyle = 'rgba(242,199,68,.55)'; g.beginPath(); g.arc(x, y, r * 0.8, 1.2, 1.9); g.stroke();
+    g.strokeStyle = 'rgba(255,255,255,.95)'; g.lineWidth = Math.max(1.6, r * 0.12); g.beginPath(); g.arc(x, y, r * 0.66, -2.6, -1.75); g.stroke();
+    g.restore();
+  }
+  /* a crayon hand holding something; side 1 = the hand comes from the left, fingers point right */
+  function drawHand(g, x, y, side) {
+    g.save(); g.translate(x, y); g.scale(side, 1); g.lineJoin = 'round'; g.lineCap = 'round'; g.strokeStyle = INK; g.lineWidth = 2.4;
+    g.fillStyle = '#F9D0D9'; g.beginPath(); g.moveTo(-62, -20); g.lineTo(-34, -22); g.lineTo(-32, 22); g.lineTo(-62, 24); g.closePath(); g.fill(); g.stroke();
+    g.fillStyle = '#FCD8BC'; g.beginPath(); g.moveTo(-34, -18); g.quadraticCurveTo(-14, -24, 0, -18); g.lineTo(2, 18); g.quadraticCurveTo(-16, 24, -34, 18); g.closePath(); g.fill(); g.stroke();
+    for (var i = 0; i < 3; i++) { var fy = -14 + i * 11; g.beginPath(); g.moveTo(-4, fy); g.lineTo(14, fy - 1); g.quadraticCurveTo(21, fy + 4, 14, fy + 9); g.lineTo(-4, fy + 9); g.fill(); g.stroke(); }
+    g.beginPath(); g.ellipse(-12, -22, 6, 11, -1.1, 0, Math.PI * 2); g.fill(); g.stroke();
+    g.strokeStyle = 'rgba(91,61,50,.35)'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(-58, -12); g.lineTo(-38, -13); g.moveTo(-58, 6); g.lineTo(-38, 5); g.stroke();
+    g.restore();
+  }
+  function arcPts(cx, cy, rx, ry, a0, a1, n) { var p = []; for (var i = 0; i <= n; i++) { var a = a0 + (a1 - a0) * i / n; p.push([cx + Math.cos(a) * rx, cy + Math.sin(a) * ry]); } return p; }
+
+  /* ---------- v2.4 art (pencil, same hand as the module's own doodles) ---------- */
+  var FLAPC = ['#FFE07A', '#F9D0D9', '#BBD8EF', '#FFE3A1', '#E0D5F0', '#FCD8BC'];
+  function v24Mat() {
+    var R = rng(2401), s = '<ellipse cx="280" cy="150" rx="276" ry="9" fill="#5B3D32" opacity=".1"/>';
+    s += pencil(R, [[70, 10], [490, 10], [550, 140], [10, 140]], 2.6, INK, 1, true, '#C8E9CF');
+    for (var i = 0; i < 60; i++) { var v = R(), y = 18 + v * 114, l = lerp(70, 10, (y - 10) / 130) + 10, r = lerp(490, 550, (y - 10) / 130) - 24, x = l + R() * (r - l); s += '<path d="M' + f1(x) + ' ' + f1(y) + 'l' + f1(6 + R() * 8) + ' ' + f1(-3 - R() * 4) + '" stroke="#86B57A" stroke-width="1.4" stroke-linecap="round" opacity=".7"/>'; }
+    s += '<path d="' + wob(R, [[82, 18], [478, 18], [532, 132], [28, 132]], 1.2, true) + '" fill="none" stroke="#F28FA5" stroke-width="2" stroke-dasharray="6 5"/>';
+    for (var k = 0; k < 27; k++) { var fx = 16 + k * 20.5; s += '<path d="M' + f1(fx) + ' 140q' + f1(2 + R() * 3) + ' 6 ' + f1(-1 + R() * 3) + ' 11" fill="none" stroke="#5B3D32" stroke-width="3.4" stroke-linecap="round"/><path d="M' + f1(fx) + ' 140q' + f1(2 + R() * 3) + ' 6 ' + f1(-1 + R() * 3) + ' 10" fill="none" stroke="#A9D6A0" stroke-width="2" stroke-linecap="round"/>'; }
+    return '<svg viewBox="0 0 560 160">' + s + '</svg>';
+  }
+  function v24Flap(i) {
+    var R = rng(2410 + i), s = '', pts = [];
+    for (var k = 0; k < 18; k++) { var a = k / 18 * Math.PI * 2, rr = k % 2 ? 0.88 : 1; pts.push([60 + Math.cos(a) * 52 * rr, 24 + Math.sin(a) * 16 * rr]); }
+    s += pencil(R, pts, 2, INK, 1, true, FLAPC[i % FLAPC.length]) + pencil(R, [[26, 24], [94, 23]], 1.2, INK, 0.35);
+    return '<svg viewBox="0 0 120 48">' + s + '</svg>';
+  }
+  function v24Kibble(i) { var R = rng(2420 + i); return '<svg viewBox="0 0 40 30">' + pencil(R, ell(15, 17, 9, 7, 10), 1.6, INK, 1, true, '#C98B4E') + pencil(R, ell(25, 13, 8, 6.5, 10), 1.6, INK, 1, true, '#D9A066') + '</svg>'; }
+  function v24Cone() {
+    var R = rng(2430), s = '';
+    s += pencil(R, [[16, 116], [84, 116], [78, 96], [82, 84], [72, 64], [76, 54], [64, 36], [66, 26], [58, 14], [42, 14], [34, 26], [36, 36], [24, 54], [28, 64], [18, 84], [22, 96]], 2.8, INK, 1, true, '#E8504A');
+    s += pencil(R, [[30, 104], [26, 90], [34, 72], [32, 60], [42, 42], [42, 30]], 4.5, '#F28FA5', 0.85);
+    s += pencil(R, [[22, 96], [78, 96]], 1.6, INK, 0.45) + pencil(R, [[28, 64], [72, 64]], 1.6, INK, 0.45) + pencil(R, [[36, 36], [64, 36]], 1.6, INK, 0.45);
+    for (var i = 0; i < 5; i++) s += '<path d="M' + (50 + i * 6) + ' ' + (100 + (i % 2) * 6) + 'l6 8" stroke="#B83A35" stroke-width="1.6" opacity=".6"/>';
+    s += pencil(R, ell(50, 15, 9, 4, 10), 1.8, INK, 1, true, '#7A2E2A');
+    return '<svg viewBox="0 0 100 120">' + s + '</svg>';
+  }
+  function v24Hog() {
+    var R = rng(2440), s = '<ellipse cx="74" cy="106" rx="58" ry="5" fill="#5B3D32" opacity=".12"/>', sp = [[18, 100]];
+    for (var i = 0; i <= 14; i++) { var a = Math.PI * (1 + i / 14 * 0.78), rr = i % 2 ? 46 : 60; sp.push([68 + Math.cos(a) * rr * 1.1, 98 + Math.sin(a) * rr]); }
+    sp.push([104, 96]);
+    s += pencil(R, sp, 2.6, INK, 1, true, '#A0764E');
+    for (var j = 0; j < 9; j++) { var b = Math.PI * (1.08 + j / 9 * 0.6); s += pencil(R, [[68 + Math.cos(b) * 22, 98 + Math.sin(b) * 20], [68 + Math.cos(b) * 44, 98 + Math.sin(b) * 40]], 1.6, '#6E544A', 0.8); }
+    s += pencil(R, [[92, 56], [112, 62], [136, 78], [140, 86], [128, 96], [100, 100], [88, 90]], 2.4, INK, 1, true, '#FCD8BC');
+    s += '<circle cx="140" cy="84" r="5" fill="#5B3D32"/><circle cx="114" cy="74" r="3.8" fill="#5B3D32"/><circle cx="115.3" cy="72.7" r="1.2" fill="#fff"/><ellipse cx="122" cy="88" rx="5" ry="3" fill="#F28FA5" opacity=".6"/>';
+    s += pencil(R, ell(100, 62, 7, 6, 10), 1.8, INK, 1, true, '#F9C4D0');
+    s += pencil(R, ell(54, 102, 9, 5, 10), 1.8, INK, 1, true, '#FCD8BC') + pencil(R, ell(96, 102, 9, 5, 10), 1.8, INK, 1, true, '#FCD8BC');
+    return '<svg viewBox="0 0 150 112">' + s + '</svg>';
+  }
+  function v24HogBall() {
+    var R = rng(2441), s = '', sp = [];
+    for (var i = 0; i < 28; i++) { var a = i / 28 * Math.PI * 2, rr = i % 2 ? 40 : 52; sp.push([55 + Math.cos(a) * rr, 55 + Math.sin(a) * rr]); }
+    s += pencil(R, sp, 2.6, INK, 1, true, '#A0764E') + pencil(R, ell(55, 55, 30, 30, 16), 1.6, '#6E544A', 0.7);
+    s += pencil(R, ell(64, 62, 12, 10, 10), 2, INK, 1, true, '#FCD8BC') + '<circle cx="71" cy="62" r="3.8" fill="#5B3D32"/><path d="M52 58q4-3 8 0" fill="none" stroke="#5B3D32" stroke-width="2" stroke-linecap="round"/>';
+    return '<svg viewBox="0 0 110 110">' + s + '</svg>';
+  }
+  function v24Machine() {
+    var R = rng(2450), s = '<ellipse cx="96" cy="186" rx="80" ry="6" fill="#5B3D32" opacity=".12"/>';
+    s += pencil(R, rect(30, 92, 130, 88), 2.8, INK, 1, true, '#C8E9CF');
+    for (var i = 0; i < 6; i++) s += '<path d="M' + (38 + i * 21) + ' 104l12 66" stroke="#86B57A" stroke-width="1.4" opacity=".55"/>';
+    s += pencil(R, rect(24, 82, 142, 16), 2.4, INK, 1, true, '#FFE3A1');
+    s += pencil(R, ell(84, 138, 27, 27, 16), 2.2, INK, 1, true, '#FFFBF3');
+    for (var k = 0; k < 4; k++) { var a = k / 4 * Math.PI * 2 + 0.4; s += pencil(R, [[84, 138], [84 + Math.cos(a) * 21, 138 + Math.sin(a) * 21]], 1.6, INK, 0.8); }
+    s += pencil(R, ell(84, 138, 5, 5, 8), 1.6, INK, 1, true, '#F28FA5');
+    s += pencil(R, rect(36, 178, 22, 8), 2, INK, 1, true, '#86B3EA') + pencil(R, rect(132, 178, 22, 8), 2, INK, 1, true, '#86B3EA');
+    s += pencil(R, [[42, 82], [40, 40], [52, 30], [52, 18], [70, 18], [70, 30], [82, 40], [80, 82]], 2.4, INK, 1, true, '#CBE0F4');
+    s += '<path d="M44 62H78V80H44z" fill="#9CC8EA" opacity=".55"/>';
+    s += pencil(R, rect(42, 42, 38, 30), 1.8, INK, 1, true, '#FFFBF3');
+    s += '<text x="61" y="55" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="12" fill="#5B3D32">dog-safe</text><text x="61" y="67" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="12" fill="#5B3D32">bubbles</text>';
+    s += pencil(R, rect(50, 9, 22, 10), 2, INK, 1, true, '#F28FA5');
+    s += pencil(R, [[138, 82], [140, 54], [150, 42]], 4, INK, 1) + '<circle cx="160" cy="30" r="13" fill="#CBE0F4" opacity=".45"/>' + pencil(R, ell(160, 30, 15, 15, 14), 3, INK, 1) + pencil(R, ell(160, 30, 15, 15, 14), 1.4, '#86B3EA', 1);
+    s += pencil(R, ell(158, 130, 9, 9, 10), 2.2, INK, 1, true, '#FFE07A');
+    return '<svg viewBox="0 0 200 190">' + s + '</svg>';
+  }
+  function v24Crank() { var R = rng(2451); return '<svg viewBox="0 0 80 80">' + pencil(R, [[40, 40], [68, 40]], 7, INK, 1) + pencil(R, [[40, 40], [68, 40]], 3.4, '#FFE07A', 1) + pencil(R, ell(70, 40, 8, 8, 10), 2.2, INK, 1, true, '#F28FA5') + pencil(R, ell(40, 40, 5, 5, 8), 2, INK, 1, true, '#FFE07A') + '</svg>'; }
+  /* the pool: viewBox 540x190, rim ellipse centre (270,70). 'back' sits behind the dog, 'front' (the near rim and side) in front of it */
+  function v24Pool(part) {
+    var R = rng(part === 'front' ? 2461 : 2460), s = '', cx = 270, cy = 70, rx = 250, ry = 62, irx = 214, iry = 46, dep = 30;
+    var band = arcPts(cx, cy + dep, rx, ry, 0, Math.PI, 22).concat(arcPts(cx, cy, rx, ry, Math.PI, 0, 22));
+    if (part === 'back') {
+      s += '<ellipse cx="' + cx + '" cy="' + (cy + dep + 10) + '" rx="' + (rx + 12) + '" ry="' + (ry + 4) + '" fill="#5B3D32" opacity=".1"/>';
+      s += pencil(R, band, 2.6, INK, 1, true, '#6F93BE') + pencil(R, ell(cx, cy, rx, ry, 30), 2.8, INK, 1, true, '#86B3EA') + pencil(R, ell(cx, cy + 3, irx, iry, 28), 2.2, INK, 1, true, '#E6F1FA');
+      for (var i = 0; i < 18; i++) { var hx = cx - 180 + i * 20 + R() * 6; s += '<path d="M' + f1(hx) + ' ' + f1(cy - 22 + R() * 10) + 'l10 30" stroke="#BBD8EF" stroke-width="2" opacity=".8"/>'; }
+      for (var k = 0; k < 14; k++) { var a = Math.PI + (k + 0.5) / 14 * Math.PI; s += '<circle cx="' + f1(cx + Math.cos(a) * (rx + irx) / 2) + '" cy="' + f1(cy + 1 + Math.sin(a) * (ry + iry) / 2) + '" r="3.6" fill="#FFFBF3" opacity=".9"/>'; }
+    } else {
+      s += pencil(R, band, 2.6, INK, 1, true, '#6F93BE');
+      for (var j = 0; j < 15; j++) { var b = (j + 0.5) / 15 * Math.PI; s += '<circle cx="' + f1(cx + Math.cos(b) * rx * 0.97) + '" cy="' + f1(cy + dep * 0.55 + Math.sin(b) * ry) + '" r="3.8" fill="#FFFBF3" opacity=".85"/>'; }
+      s += pencil(R, arcPts(cx, cy, rx, ry, 0, Math.PI, 24).concat(arcPts(cx, cy + 3, irx, iry, Math.PI, 0, 24)), 2.6, INK, 1, true, '#86B3EA');
+      for (var m = 0; m < 14; m++) { var c = (m + 0.5) / 14 * Math.PI; s += '<circle cx="' + f1(cx + Math.cos(c) * (rx + irx) / 2) + '" cy="' + f1(cy + 2 + Math.sin(c) * (ry + iry) / 2) + '" r="3.6" fill="#FFFBF3" opacity=".9"/>'; }
+      s += pencil(R, arcPts(cx, cy + 1, rx - 9, ry - 5, 0.35, Math.PI - 0.35, 16), 2.2, '#FFFBF3', 0.75);
+    }
+    return '<svg viewBox="0 0 540 190">' + s + '</svg>';
+  }
+  /* water in the pool: the full surface (behind the dog) and the near half (in front of its legs) */
+  function v24Water(front) {
+    var R = rng(front ? 2463 : 2462), cx = 270, cy = 73, irx = 212, iry = 44, s = '';
+    if (!front) {
+      s += '<ellipse cx="' + cx + '" cy="' + cy + '" rx="' + irx + '" ry="' + iry + '" fill="#9CC8EA" opacity=".9"/>';
+      for (var i = 0; i < 7; i++) { var wx = cx - 150 + R() * 300, wy = cy - 26 + R() * 30; s += pencil(R, [[wx, wy], [wx + 14, wy - 3], [wx + 28, wy], [wx + 42, wy - 3]], 1.6, '#5E86B4', 0.75); }
+      return '<svg viewBox="0 0 540 190">' + s + '</svg>';
+    }
+    var al = Math.asin(16 / iry), pts = arcPts(cx, cy, irx, iry, -al, Math.PI + al, 26);
+    s += '<path d="M' + pts.map(function (p) { return f1(p[0]) + ' ' + f1(p[1]); }).join('L') + 'Z" fill="#9CC8EA" opacity=".82"/>';
+    s += pencil(R, [[cx - irx * 0.93, cy - 16], [cx - 100, cy - 19], [cx, cy - 16], [cx + 100, cy - 19], [cx + irx * 0.93, cy - 16]], 1.8, '#5E86B4', 0.8);
+    return '<svg viewBox="0 0 540 190">' + s + '</svg>';
+  }
+  function v24TapPost() {
+    var R = rng(2470), s = '<ellipse cx="64" cy="178" rx="54" ry="6" fill="#5B3D32" opacity=".12"/>';
+    s += pencil(R, rect(48, 22, 22, 156), 2.6, INK, 1, true, '#C9A27A') + pencil(R, [[48, 22], [59, 9], [70, 22]], 2.4, INK, 1, true, '#C9A27A');
+    for (var g = 0; g < 4; g++) s += pencil(R, [[52, 40 + g * 34], [56, 62 + g * 34]], 1.2, '#8C6E60', 0.7);
+    s += pencil(R, [[70, 54], [94, 54], [94, 68], [88, 74]], 7, INK, 1) + pencil(R, [[70, 54], [94, 54], [94, 68]], 3.6, '#E2A800', 1);
+    s += pencil(R, [[80, 54], [80, 44]], 2.6, INK, 1) + pencil(R, ell(80, 42, 10, 4, 10), 2, INK, 1, true, '#E8504A');
+    s += pencil(R, ell(64, 140, 42, 32, 18), 3, INK, 1, true, '#FFF4DF');
+    for (var i = 0; i < 4; i++) { var pts = ell(64, 140, 35 - i * 7, 26 - i * 5.5, 16); s += pencil(R, pts, 7.5, INK, 1, true) + pencil(R, pts, 4.5, '#86B57A', 1, true); }
+    s += pencil(R, ell(64, 140, 6, 6, 8), 2, INK, 1, true, '#E8504A');
+    return '<svg viewBox="0 0 130 190">' + s + '</svg>';
+  }
+  function v24Seg(i) {
+    var R = rng(2480 + i), c = i % 2 ? '#FFE07A' : '#86B3EA', d = i % 2 ? '#E2A800' : '#6F93BE', s = '';
+    s += pencil(R, [[2, 24], [16, 13], [30, 10], [44, 13], [58, 24], [58, 170], [44, 177], [30, 179], [16, 177], [2, 170]], 2.2, INK, 1, true, c);
+    for (var k = 0; k < 4; k++) s += '<path d="M' + (11 + k * 12) + ' 30q5 70 0 136" fill="none" stroke="' + d + '" stroke-width="1.6" opacity=".5"/>';
+    s += pencil(R, [[2, 24], [2, 170]], 3.2, INK, 0.9);
+    return '<svg viewBox="0 0 60 190">' + s + '</svg>';
+  }
+  function v24TunnelEnd(left) {
+    var R = rng(left ? 2490 : 2491), s = '';
+    s += pencil(R, ell(30, 96, 24, 92, 20), 2.8, INK, 1, true, left ? '#86B3EA' : '#FFE07A');
+    s += pencil(R, ell(left ? 27 : 33, 98, 13, 78, 18), 2.2, INK, 1, true, '#4A3A33');
+    s += '<path d="M' + (left ? 22 : 30) + ' 40q-6 58 0 118" fill="none" stroke="#6E544A" stroke-width="2" opacity=".7"/>';
+    return '<svg viewBox="0 0 60 196">' + s + '</svg>';
+  }
+  function v24TunnelBase() {
+    var R = rng(2492), s = '<ellipse cx="200" cy="34" rx="196" ry="13" fill="#5B3D32" opacity=".13"/>';
+    [[20, 26], [380, 26]].forEach(function (p) { s += pencil(R, [[p[0], p[1]], [p[0] + 6, p[1] + 18]], 3, INK, 1) + pencil(R, [[p[0] - 7, p[1] - 2], [p[0] + 7, p[1] + 2]], 2.6, '#E8504A', 1); });
+    return '<svg viewBox="0 0 400 50">' + s + '</svg>';
+  }
+
+  /* ---------- Snuffle Mat ---------- */
+  IMPL['Snuffle Mat'] = function (A) {
+    var dog = A.dog, DN = A.DN, MX = 590, MT = 428, MS = 1.18, HOME = 945;
+    var mat = A.sprite(v24Mat(), 560 * MS, 160 * MS, A.L.scene, 0.5, 0); mat.set(MX, MT);
+    function mp(u, v) { var y = MT + (10 + v * 130) * MS, l = MX + (lerp(70, 10, v) - 280) * MS, r = MX + (lerp(490, 550, v) - 280) * MS; return { x: lerp(l, r, u), y: y }; }
+    var flaps = [];
+    for (var r = 0; r < 3; r++) for (var c = 0; c < 3; c++) {
+      var v = 0.18 + r * 0.32, p = mp(0.19 + c * 0.31, v), k = lerp(0.92, 1.22, v);
+      var kb = A.sprite(v24Kibble(r * 3 + c), 40 * k, 30 * k, A.L.scene); kb.set(p.x, p.y - 2); kb.show(false);
+      flaps.push({ i: flaps.length, x: p.x, y: p.y, k: k, has: false, open: 0, want: 0, wig: 0, kb: kb, spr: A.sprite(v24Flap(r * 3 + c + r), 120 * k, 48 * k, A.L.scene, 0.5, 0.25) });
+    }
+    var state = 'hide', stT = 0, hidden = 0, found = 0, rounds = 0, sniffs = 0, finds = 0, plan = [], tgt = null, hintF = null, puffT = 0, peek = 0;
+    var tip = A.tip('click a flap!', MX - 70, MT - 60);
+    dog.x = HOME; dog.face('right'); dog.setPose('sit');
+    A.say(pick(A.line('snuffleStart', ['hide the kibble. I will not look.', 'eyes closed. (one eye open)'])), 2200);
+    function hideHint() { A.hint('Click a flap to hide a kibble (' + (3 - hidden) + ' to go). ' + DN + ' is not looking. Probably.'); }
+    hideHint();
+    function flapAt(x, y) { var best = null, bd = 1e9; flaps.forEach(function (f) { var d = Math.hypot(x - f.x, (y - f.y) * 1.9); if (d < A.hitR(62 * f.k) && d < bd) { bd = d; best = f; } }); return best; }
+    function planSearch() {
+      plan = []; var full = flaps.filter(function (f) { return f.has; }), empty = flaps.filter(function (f) { return !f.has; });
+      full.sort(function () { return Math.random() - 0.5; });
+      full.forEach(function (f) {
+        var wrong = A.tr.sniff ? (Math.random() < 0.25 ? 1 : 0) : 1 + Math.floor(Math.random() * 2);
+        for (var i = 0; i < wrong; i++) { var e = pick(empty); if (plan[plan.length - 1] !== e) plan.push(e); }
+        plan.push(f);
+      });
+    }
+    function choose() {
+      if (hintF) { tgt = hintF; hintF = null; plan = plan.filter(function (q) { return q !== tgt; }); }
+      else { tgt = plan.shift() || null; if (!tgt) { var left = flaps.filter(function (f) { return f.has; }); tgt = left[0] || null; } }
+      if (!tgt) { state = 'yay'; stT = 0; return; }
+      state = 'walk'; stT = 0; dog.ground = tgt.y - dog.mouthDy('sniff');
+    }
+    function spot() { var side = dog.x >= tgt.x ? 1 : -1; return { x: tgt.x + side * dog.mouthOff('sniff'), side: side }; }
+    return {
+      poses: ['sit', 'idle', 'walk', 'sniff', 'happy', 'jump', 'eat'],
+      dur: 55,
+      hint: '',
+      down: function (x, y) {
+        var f = flapAt(x, y);
+        if (!f) { dogTap(A, x, y, ['I am WORKING. (pat accepted)', 'sniff break. ok.']); return; }
+        if (tip) { tip.hide(); tip = null; }
+        if (state === 'hide') {
+          if (f.has) { f.wig = 1; A.say(pick(['that one is taken!', 'already a kibble in there']), 1100); return; }
+          f.has = true; f.want = 1; hidden++; A.sfx('click'); A.later(function () { f.want = 0; A.sfx('pop'); }, 420);
+          A.burst('dust', f.x, f.y, 3, { g: -30, sp: 60, life: 0.5, size: 4 });
+          if (Math.random() < 0.6) A.say(pick(['I heard nothing.', 'was that a flap? no.', '*not looking intensifies*']), 1000);
+          if (hidden >= 3) { state = 'ready'; stT = 0; A.hint(DN + ' is sniffing it out. Click a flap to give a hint.'); } else hideHint();
+        } else if (state === 'walk' || state === 'sniff' || state === 'ready') {
+          if (f.has || f.open < 0.1) { hintF = f; f.wig = 1; A.sfx('click'); A.say(pick(['that one? ok!', 'a tip! thank you.', 'sniffing there next']), 900); }
+        }
+      },
+      move: function (x, y) { A.cursor(state === 'hide' && flapAt(x, y) ? 'pointer' : 'default'); },
+      update: function (dt, T) {
+        stT += dt; puffT -= dt;
+        if (state === 'hide') {
+          dog.setPose('sit'); peek = Math.sin(T * 0.9); dog.face(peek > 0.9 ? 'left' : 'right');
+          dog.tilt = Math.sin(T * 13) * 1.2;
+        } else if (state === 'ready') {
+          dog.setPose('happy'); wiggle(dog, T, 3);
+          dog.face('left');
+          if (stT > 0.9) { dog.tilt = 0; A.say(pick(['ready or not!', 'here I come, kibble!', 'nose: ON']), 1300); A.sfx('bark'); planSearch(); choose(); }
+        } else if (state === 'walk') {
+          var sp = spot(); dog.tilt = 0;
+          if (dog.runTo(sp.x, (A.tr.sniff ? 340 : 250) * A.tr.run, dt)) { dog.face(sp.side > 0 ? 'left' : 'right'); state = 'sniff'; stT = 0; sniffs++; A.sfx('sniff'); }
+        } else if (state === 'sniff') {
+          dog.setPose('sniff'); dog.tilt = dog.dir() * Math.sin(T * 34) * 1.8;
+          if (puffT <= 0) { puffT = 0.22; var m = dog.mouth(); A.burst('dust', m.x, m.y + 4, 2, { a0: -Math.PI * 0.9, spread: Math.PI * 0.8, g: -20, sp: 70, life: 0.45, size: 3.5 }); }
+          var need = tgt.has ? (A.tr.sniff ? 0.5 : 0.75) : (A.tr.sniff ? 0.55 : 0.9);
+          if (stT > need) {
+            dog.tilt = 0;
+            if (tgt.has) {
+              state = 'eat'; stT = 0; tgt.want = 1; found++; finds++; A.sfx('pop');
+              A.float(found >= 3 ? 'all found!' : 'found one!', tgt.x, tgt.y - 120, found >= 3 ? 'pt-gold' : 'pt-small');
+              A.reward({ happiness: 1 });
+              if (Math.random() < 0.7) A.say(pick(A.line('snuffleFind', ['FOUND IT!', 'kibble located', 'my nose is a genius'])), 1200);
+            } else {
+              tgt.wig = 1; if (Math.random() < 0.45) A.say(pick(['hmm. not here.', 'just fleece.', 'smells like... mat.']), 900);
+              choose();
+            }
+          }
+        } else if (state === 'eat') {
+          dog.setPose('sniff'); dog.tilt = dog.dir() * Math.sin(T * 22) * 1.2;
+          if (Math.floor(stT * 3) !== Math.floor((stT - dt) * 3) && stT < 1) { A.sfx('crunch'); var mm = dog.mouth(); A.burst('crumb', mm.x, mm.y, 3, { sp: 120, g: 900, life: 0.5, size: 2.6, color: '#C98B4E' }); }
+          if (stT > 1.1) { tgt.has = false; tgt.kb.show(false); tgt.want = 0; dog.tilt = 0; if (found >= 3) { state = 'yay'; stT = 0; } else choose(); }
+        } else if (state === 'yay') {
+          dog.tilt = 0;
+          if (stT < 0.05 && !dog.air) {
+            rounds++; dog.jump(-720, 0); A.burst('heart', dog.head().x, dog.head().y, 7, { g: -50, sp: 120, life: 1.4, size: 9 });
+            A.reward({ happiness: 3, bond: rounds === 1 ? 1 : 0, coins: rounds === 2 ? 1 : 0 });
+            A.say(pick(['three for three! hide them again!', 'nose of the year', 'again! hide them HARDER']), 1800);
+          }
+          if (!dog.air) { dog.setPose('happy'); wiggle(dog, T, 3); }
+          if (stT > 2) { dog.tilt = 0; state = 'home'; stT = 0; dog.ground = GY; }
+        } else if (state === 'home') {
+          if (dog.runTo(HOME, 300, dt)) { dog.face('right'); state = 'hide'; stT = 0; hidden = 0; found = 0; tgt = null; hintF = null; hideHint(); }
+        }
+        flaps.forEach(function (f) {
+          f.open += (f.want - f.open) * Math.min(1, dt * 12); f.wig = Math.max(0, f.wig - dt * 2.5);
+          var sy = 1 - 1.7 * f.open, w = Math.sin(T * 40) * f.wig * 8;
+          f.spr.set(f.x, f.y - 12 * f.k - f.open * 10, w, 1, Math.abs(sy) < 0.08 ? 0.08 : sy);
+          f.kb.show(f.has && f.open > 0.25);
+        });
+      },
+      drawFx: function (g, T) {
+        if (state === 'sniff' || state === 'eat') {
+          var m = dog.mouth(), a = state === 'sniff' ? 1 : 0.5;
+          g.fillStyle = INK; g.globalAlpha = a; g.font = '700 24px Caveat, cursive'; if (state === 'eat') g.fillText('crunch!', m.x - 30 + dog.dir() * 20, m.y - 30 - Math.sin(T * 8) * 3);
+          g.strokeStyle = 'rgba(91,61,50,.6)'; g.lineWidth = 2; g.lineCap = 'round';
+          for (var i = 0; i < 3; i++) { var ox = m.x + dog.dir() * (8 + i * 8), oy = m.y - 14 - i * 6; g.beginPath(); g.arc(ox, oy, 5 + i * 3, -2.2 + Math.sin(T * 20 + i) * 0.2, -0.9); g.stroke(); }
+          g.globalAlpha = 1;
+        }
+        if (state === 'hide' && peek > 0.9) { var h = dog.head(); g.fillStyle = INK; g.font = '700 24px Caveat, cursive'; g.fillText('*peek*', h.x - 30, h.y - 46); }
+      },
+      focus: function () { return state === 'hide' ? 630 : (dog.x + MX) / 2; },
+      finish: function () { return { happiness: 2, energy: -1 }; },
+      dbg: function () { return { state: state, hidden: hidden, found: found, rounds: rounds, sniffs: sniffs, finds: finds, flaps: flaps.map(function (f) { return { x: f.x, y: f.y, has: f.has, open: f.open }; }) }; }
+    };
+  };
+  IMPL['Snuffle Mat'].cfg = {};
+  IMPL['Snuffle Mat'].phone = { vw: 760, vwMin: 720, fx: 640 };
+
+  /* ---------- Treat Cone ---------- */
+  IMPL['Treat Cone'] = function (A) {
+    var dog = A.dog, DN = A.DN, PIV = 120 * 0.62 - 15;
+    var cone = { x: 520, rot: 0, vx: 0, held: false, unheld: 0, tipTo: 0, standT: 0 };
+    var spr = A.sprite(v24Cone(), 100, 120, A.L.actors, 0.5, 0.62);
+    var meter = A.meter('lick meter', 470, 92, 300, null);
+    var state = 'intro', stT = 0, lick = 0, smear = 1, cones = 0, tips = 0, licks = 0, lickPh = 0, half = false, rollT = 0, pawT = 0;
+    var tip = A.tip('press & hold me!', 430, 380);
+    dog.x = 880; dog.face('left'); dog.setPose('sit');
+    A.say(pick(A.line('coneLick', ['is that... PUMPKIN?', 'a cone! with pumpkin! for ME?'])), 1800);
+    function up() { return Math.abs(cone.rot) < 25; }
+    function pivY() { return GY - lerp(120 * 0.38 - 4, 31, Math.min(1, Math.abs(cone.rot) / 90)); }
+    function hole() { var a = cone.rot * Math.PI / 180; return { x: cone.x + Math.sin(a) * PIV, y: pivY() - Math.cos(a) * PIV }; }
+    function lickPose() { return up() ? 'sit' : 'crouch'; }
+    function spot() { var h = hole(), side = up() ? (dog.x >= cone.x ? 1 : -1) : (h.x >= cone.x ? 1 : -1); return { x: h.x + side * (dog.mouthOff(lickPose()) + (up() ? 34 : 22)), side: side }; }
+    function tipOver() { state = 'tip'; stT = 0; tips++; cone.tipTo = dog.x > cone.x ? -90 : 90; cone.vx = (dog.x > cone.x ? -1 : 1) * (200 + Math.random() * 80); A.sfx('bonk'); A.say(pick(['it ran away!', 'come BACK, cone', 'the cone has legs?!']), 1300); }
+    return {
+      poses: ['sit', 'idle', 'walk', 'crouch', 'happy', 'bow'],
+      dur: 50,
+      hint: 'Hold the cone steady while ' + DN + ' licks. Let go and it might roll away!',
+      down: function (x, y) {
+        var c = { x: cone.x, y: pivY() - (up() ? 10 : 0) };
+        if (dist(x, y, c.x, c.y) < A.hitR(up() ? 72 : 66)) {
+          if (tip) { tip.hide(); tip = null; }
+          cone.held = true; A.cursor('grabbing'); A.sfx('click');
+          if (!up()) { state = 'stand'; stT = 0; cone.standFrom = cone.rot; cone.vx = 0; A.say(pick(['upsy-daisy', 'stand up, cone']), 900); }
+          return;
+        }
+        dogTap(A, x, y, ['mid-lick! hello!', 'pumpkin face. yes.']);
+      },
+      move: function (x, y) { if (!cone.held) A.cursor(dist(x, y, cone.x, pivY()) < 70 ? 'grab' : 'default'); },
+      up: function () { if (cone.held) { cone.held = false; A.cursor('default'); cone.unheld = 0; } },
+      update: function (dt, T) {
+        stT += dt; lickPh += dt;
+        if (state === 'intro') { dog.setPose('sit'); wiggle(dog, T, 2); if (stT > 0.9) { dog.tilt = 0; state = 'go'; stT = 0; } }
+        else if (state === 'go') {
+          var sp = spot();
+          if (dog.runTo(sp.x, 300 * A.tr.run, dt)) { dog.face(sp.side > 0 ? 'left' : 'right'); state = 'lick'; stT = 0; }
+        } else if (state === 'lick') {
+          var sp2 = spot(); if (Math.abs(dog.x - sp2.x) > 30) { state = 'go'; stT = 0; }
+          else {
+            dog.setPose(lickPose()); dog.face(sp2.side > 0 ? 'left' : 'right'); dog.tilt = Math.sin(T * 9) * 1.4;
+            var rate = cone.held && up() ? 0.12 : up() ? 0.07 : 0.045;
+            lick = Math.min(1, lick + rate * dt); smear = 1 - lick; meter.set(lick);
+            if (lickPh > 0.45) {
+              lickPh = 0; licks++; if (licks % 2) A.sfx('slurp');
+              if (A.tr.snort && Math.random() < 0.3) { A.sfx('sniff'); var m = dog.mouth(); A.burst('dust', m.x, m.y - 6, 4, { g: -30, sp: 90, life: 0.5, size: 4 }); if (Math.random() < 0.6) A.say(pick(A.line('coneSnort', ['*snort*', '*snort snort*', '*snerk*'])), 700); }
+              else if (Math.random() < 0.08) A.say(pick(A.line('coneLick', ['mmm. pumpkin.', 'lick lick lick', 'this is my calm place'])), 1100);
+            }
+            if (!half && lick >= 0.5) { half = true; A.reward({ happiness: 1 }); A.float('halfway!', cone.x, GY - 190, 'pt-small'); }
+            if (up() && !cone.held) {
+              cone.unheld += dt; cone.rot = Math.sin(T * 9) * Math.min(14, cone.unheld * 9);
+              if (cone.unheld > 1.6) tipOver();
+            } else if (up()) cone.rot *= 0.8;
+            if (!up()) { pawT += dt; if (pawT > 2.4) { pawT = 0; dog.setPose('bow'); cone.vx = (dog.x > cone.x ? -1 : 1) * 130; state = 'rollon'; stT = 0; A.say(pick(['*paw paw*', 'boop. it rolled.']), 900); } }
+            if (lick >= 1) {
+              state = 'clean'; stT = 0; cones++; half = false; var hh = hole();
+              A.float('licked clean!', hh.x, hh.y - 90, 'pt-gold'); A.burst('spark', hh.x, hh.y, 10, { g: 0, sp: 160, life: 0.7, size: 7 }); A.sfx('levelup');
+              A.reward({ happiness: 4, coins: cones === 2 ? 1 : 0 });
+              A.say(pick(['spotless. I am a professional.', 'more? MORE?', 'that was the best five minutes']), 1700);
+            }
+          }
+        } else if (state === 'tip') {
+          var u = Math.min(1, stT / 0.35); cone.rot = lerp(cone.rot, cone.tipTo, u);
+          if (u >= 1) { cone.rot = cone.tipTo; state = 'roll'; stT = 0; A.sfx('bounce'); A.burst('dust', cone.x, GY, 5, { sp: 120, g: -20, life: 0.6, size: 6 }); }
+        } else if (state === 'roll' || state === 'rollon') {
+          if (state === 'rollon' && stT < 0.3) dog.setPose('bow');
+          if (stT > 0.4) { state = 'go'; stT = 0; }
+        } else if (state === 'stand') {
+          var k = Math.min(1, stT / 0.3); cone.rot = lerp(cone.standFrom, 0, k);
+          if (k >= 1) { cone.rot = 0; state = 'go'; stT = 0; A.sfx('pop'); }
+        } else if (state === 'clean') {
+          dog.setPose('happy'); wiggle(dog, T, 3);
+          if (stT > 1.6) { state = 'refill'; stT = 0; dog.tilt = 0; A.say(pick(['refill! plain pumpkin. the best kind.', 'here comes more pumpkin']), 1500); }
+        } else if (state === 'refill') {
+          dog.setPose('sit'); wiggle(dog, T, 1.5); smear = Math.min(1, stT / 0.6);
+          if (stT > 0.15 && stT < 0.2) { var h2 = hole(); A.burst('drop', h2.x, h2.y, 6, { sp: 120, g: 600, life: 0.5, size: 3, color: '#F4A262' }); A.sfx('pop'); }
+          if (stT > 0.8) { lick = 0; meter.set(0); smear = 1; dog.tilt = 0; state = 'go'; stT = 0; }
+        }
+        if (cone.vx) {
+          cone.x += cone.vx * dt; cone.vx *= Math.pow(0.25, dt);
+          if (cone.x < 260) { cone.x = 260; cone.vx = Math.abs(cone.vx) * 0.6; }
+          if (cone.x > 900) { cone.x = 900; cone.vx = -Math.abs(cone.vx) * 0.6; }
+          if (!up()) cone.rot = cone.tipTo + Math.sin(cone.x * 0.08) * 7;
+          if (Math.abs(cone.vx) < 12) cone.vx = 0;
+        }
+        spr.set(cone.x, pivY(), cone.rot);
+      },
+      drawFx: function (g, T) {
+        var h = hole(), a = cone.rot * Math.PI / 180;
+        if (smear > 0.02) {
+          g.save(); g.translate(h.x, h.y); g.rotate(a);
+          var r = 6 + 10 * smear; g.fillStyle = '#F4A262'; g.strokeStyle = INK; g.lineWidth = 1.6;
+          g.beginPath(); g.ellipse(0, -2, r * 1.15, r * 0.6, 0, 0, Math.PI * 2); g.fill(); g.stroke();
+          if (smear > 0.4) { g.beginPath(); g.ellipse(-r * 0.7, 6, 3, 6 * smear, 0.2, 0, Math.PI * 2); g.fill(); g.stroke(); }
+          g.fillStyle = '#FFE3A1'; g.beginPath(); g.arc(r * 0.3, -4, 2.2, 0, Math.PI * 2); g.fill();
+          g.restore();
+        }
+        if (state === 'lick') {
+          var e = Math.max(0, Math.sin(lickPh / 0.45 * Math.PI)), m = dog.mouth(), ex = lerp(m.x, h.x, e), ey = lerp(m.y + 4, h.y - 2, e);
+          if (e > 0.05) { g.lineCap = 'round'; g.strokeStyle = INK; g.lineWidth = 13; g.beginPath(); g.moveTo(m.x, m.y + 4); g.quadraticCurveTo((m.x + ex) / 2, Math.max(m.y, ey) + 10, ex, ey); g.stroke(); g.strokeStyle = '#F28FA5'; g.lineWidth = 9; g.stroke(); g.strokeStyle = '#C2577A'; g.lineWidth = 1.4; g.beginPath(); g.moveTo(m.x, m.y + 4); g.quadraticCurveTo((m.x + ex) / 2, Math.max(m.y, ey) + 10, ex, ey); g.stroke(); }
+        }
+        if (cone.held && up()) {
+          drawHand(g, cone.x + (dog.x > cone.x ? -30 : 30), pivY() + 4, dog.x > cone.x ? 1 : -1);
+          g.fillStyle = INK; g.font = '700 22px Caveat, cursive'; g.fillText('steady...', cone.x - 40, GY - 150);
+        } else if (state === 'lick' && up() && cone.unheld > 0.4) {
+          g.strokeStyle = 'rgba(91,61,50,.6)'; g.lineWidth = 2; g.lineCap = 'round';
+          for (var i = -1; i <= 1; i += 2) { g.beginPath(); g.arc(cone.x + i * 62, pivY() - 30, 14, i > 0 ? -0.8 : Math.PI - 0.6, i > 0 ? 0.6 : Math.PI + 0.8); g.stroke(); }
+        }
+        if (!up() && (state === 'roll' || state === 'tip' || cone.vx)) { g.strokeStyle = 'rgba(91,61,50,.4)'; g.lineWidth = 2; for (var j = 0; j < 3; j++) { var dx = -Math.sign(cone.vx || 1) * (50 + j * 12); g.beginPath(); g.moveTo(cone.x + dx, GY - 20 - j * 12); g.lineTo(cone.x + dx * 1.6, GY - 20 - j * 12); g.stroke(); } }
+      },
+      focus: function () { return (cone.x + dog.x) / 2; },
+      finish: function () { return { happiness: 2, energy: 2 }; },
+      dbg: function () { return { state: state, held: cone.held, lick: lick, cones: cones, tips: tips, licks: licks, cone: { x: cone.x, rot: cone.rot, y: pivY() } }; }
+    };
+  };
+  IMPL['Treat Cone'].cfg = {};
+  IMPL['Treat Cone'].phone = { vw: 720, vwMin: 640 };
+
+  /* ---------- Squeaky Hedgehog ---------- */
+  IMPL['Squeaky Hedgehog'] = function (A) {
+    var dog = A.dog, DN = A.DN;
+    var hog = { x: 420, h: 0, vh: 0, vx: 0, air: false, sq: 0, ball: false, rot: 0, ballT: 0, face: 1 };
+    var hs = A.sprite(v24Hog(), 150, 112, A.L.actors, 0.5, 0.95), bs = A.sprite(v24HogBall(), 104, 104, A.L.actors, 0.5, 0.5); bs.show(false);
+    var state = 'ready', stT = 0, taps = [], squeaks = 0, pounces = 0, rolls = 0, boops = 0, boopT = 0, tip = A.tip('click me!', 360, 380);
+    dog.x = 780; dog.face('left'); dog.setPose('sit');
+    A.say(pick(['a hedgehog?! a SQUEAKY hedgehog?!', 'it is looking at me']), 1800);
+    function hogY() { return hog.ball ? GY - 50 - hog.h : GY + 4 - hog.h; }
+    function onHog(x, y) { return hog.ball ? dist(x, y, hog.x, hogY()) < A.hitR(68) : dist(x, y, hog.x, GY - 46 - hog.h) < A.hitR(82); }
+    function curl() {
+      hog.ball = true; hog.ballT = 0; hs.show(false); bs.show(true); rolls++;
+      hog.vx = (hog.x < dog.x ? -1 : 1) * (380 + Math.random() * 80); hog.h = 0; hog.vh = 0; hog.air = false;
+      A.float('it rolled up!', hog.x, GY - 170, 'pt-gold'); A.sfx('whoosh');
+      A.say(pick(A.line('hogRoll', ['it is a BALL now', 'where did its face go?!', 'roll! I will catch you!'])), 1500);
+      state = 'chase'; stT = 0; dog.tilt = 0;
+    }
+    function squeak() {
+      A.sfx('squeak'); hog.sq = 1; squeaks++;
+      var now = performance.now() / 1000; taps.push(now); while (taps.length && now - taps[0] > 1.6) taps.shift();
+      A.burst('note', hog.x + 30, GY - 90 - hog.h, 1, { a0: -Math.PI * 0.7, spread: 0.4, g: -30, sp: 90, life: 0.9, size: 8 });
+      if (hog.ball) { hog.vx += (hog.x < dog.x ? -1 : 1) * 150; A.float('squeak?', hog.x, GY - 130, 'pt-small'); return; }
+      if (taps.length >= 3) { taps = []; curl(); return; }
+      if (!hog.air) { hog.air = true; hog.vh = 520; var dx = (40 + Math.random() * 60) * (Math.random() < 0.5 ? -1 : 1); var tx = clamp(hog.x + dx, 250, 640); hog.vx = (tx - hog.x) / 0.52; A.burst('dust', hog.x, GY, 3, { g: -20, sp: 60, life: 0.5, size: 4 }); }
+      if (state === 'ready' || state === 'back' || state === 'proud') { state = 'answer'; stT = 0; }
+    }
+    return {
+      poses: ['sit', 'idle', 'walk', 'happy', 'speak', 'bow', 'jump', 'sniff', 'crouch'],
+      dur: 50,
+      hint: 'Click the hedgehog to squeak it. ' + DN + ' answers and pounces. Three quick squeaks and it rolls up!',
+      down: function (x, y) {
+        if (onHog(x, y)) { if (tip) { tip.hide(); tip = null; } squeak(); return; }
+        dogTap(A, x, y, ['did you hear that squeak?', 'hi! the hedgehog is THERE']);
+      },
+      move: function (x, y) { A.cursor(onHog(x, y) ? 'pointer' : 'default'); },
+      update: function (dt, T) {
+        stT += dt; hog.sq = Math.max(0, hog.sq - dt * 5);
+        if (hog.air) { hog.h += hog.vh * dt; hog.vh -= 2000 * dt; hog.x += hog.vx * dt; if (hog.h <= 0) { hog.h = 0; hog.air = false; hog.vx = 0; hog.sq = 0.6; A.sfx('land'); } }
+        if (hog.ball) {
+          hog.ballT += dt; hog.x += hog.vx * dt; hog.vx *= Math.pow(0.4, dt); hog.rot += hog.vx * dt / 50 * 57.3;
+          if (hog.x < 200) { hog.x = 200; hog.vx = Math.abs(hog.vx) * 0.7; A.sfx('bounce'); }
+          if (hog.x > 1040) { hog.x = 1040; hog.vx = -Math.abs(hog.vx) * 0.7; A.sfx('bounce'); }
+          if (Math.abs(hog.vx) > 80 && Math.random() < dt * 10) A.burst('dust', hog.x, GY, 1, { g: -20, sp: 50, life: 0.5, size: 4 });
+        }
+        var side = dog.x >= hog.x ? 1 : -1;
+        if (!hog.ball) hog.face = side;
+        if (state === 'ready') {
+          var far = Math.abs(dog.x - hog.x);
+          if (far < 230 || far > 440) { state = 'back'; stT = 0; }
+          else { dog.setPose('sit'); dog.face(side > 0 ? 'left' : 'right'); dog.tilt = Math.sin(T * 2.4) * 5; }
+        } else if (state === 'back') {
+          dog.tilt = 0; var bx = clamp(hog.x + side * 330, 150, 1090); if (Math.abs(bx - hog.x) < 250) bx = clamp(hog.x - side * 330, 150, 1090);
+          if (dog.runTo(bx, 300 * A.tr.run, dt)) { dog.face(dog.x > hog.x ? 'left' : 'right'); state = 'ready'; stT = 0; }
+        } else if (state === 'answer') {
+          dog.face(side > 0 ? 'left' : 'right'); dog.setPose('speak'); dog.tilt = 0;
+          if (stT < 0.05) { A.sfx('bark'); A.say(pick(A.line('hogAnswer', ['WOOF! (squeak to you too)', 'squeak? SQUEAK!', 'arf! arf!'])), 1000); A.addPart({ type: 'note', x: dog.head().x, y: dog.head().y - 20, vx: -side * 40, vy: -100, life: 0.9, size: 9 }); }
+          if (stT > 0.5) { state = 'wind'; stT = 0; }
+        } else if (state === 'wind') {
+          dog.setPose('bow'); dog.tilt = Math.sin(T * 26) * 4;
+          if (stT > 0.45 && !hog.air) {
+            dog.tilt = 0; var land = hog.x + side * (dog.mouthOff('idle') + 24), vy = -660, ft = 2 * 660 / G;
+            dog.jump(vy, clamp((land - dog.x) / ft, -720, 720)); state = 'pounce'; stT = 0;
+          }
+        } else if (state === 'pounce') {
+          if (!dog.air && stT > 0.1) {
+            pounces++; state = 'proud'; stT = 0; dog.squash(0.8);
+            if (Math.random() < 0.45 && !hog.air) { hog.air = true; hog.vh = 480; hog.vx = -side * 160; A.float('missed! (on purpose)', dog.x, GY - 230, 'pt-small'); A.sfx('squeak'); }
+            else { A.float(pick(['got it!', 'POUNCE!', 'gotcha!']), dog.x, GY - 230, 'pt-gold'); hog.sq = 1; A.burst('heart', dog.head().x, dog.head().y, 4, { g: -50, sp: 100, life: 1.2, size: 8 }); }
+            if (pounces <= 4 || pounces % 3 === 0) A.reward({ happiness: 1, energy: -1 });
+          }
+        } else if (state === 'proud') {
+          dog.setPose('happy'); wiggle(dog, T, 3);
+          if (stT > 1.1) { dog.tilt = 0; state = 'ready'; stT = 0; }
+        } else if (state === 'chase') {
+          var sx = hog.x + side * (dog.mouthOff('sniff') + 26);
+          if (dog.runTo(sx, 430 * A.tr.run, dt)) {
+            dog.face(side > 0 ? 'left' : 'right'); dog.setPose('sniff'); dog.tilt = dog.dir() * Math.sin(T * 30) * 1.6; boopT += dt;
+            if (boopT > 0.9 && Math.abs(hog.vx) < 60 && hog.ballT < 3.4) { boopT = 0; boops++; hog.vx = -side * 190; A.sfx('pop'); A.float('boop', hog.x, GY - 130, 'pt-small'); }
+          }
+          if (hog.ballT > 3.6 && Math.abs(hog.vx) < 60 && Math.abs(dog.x - sx) < 40) {
+            hog.ball = false; hog.rot = 0; bs.show(false); hs.show(true); hog.sq = 1; dog.tilt = 0;
+            A.float('peekaboo!', hog.x, GY - 170, 'pt-gold'); A.sfx('squeak');
+            A.reward({ happiness: 3, coins: rolls <= 2 ? 1 : 0 }); A.say(pick(['it came BACK!', 'peekaboo, spiky friend', 'best roll ever']), 1500);
+            state = 'proud'; stT = 0;
+          }
+        }
+        if (hog.ball) bs.set(hog.x, hogY(), hog.rot, 1 + hog.sq * 0.1, 1 - hog.sq * 0.1);
+        else hs.set(hog.x, hogY(), hog.air ? -hog.face * 8 : Math.sin(T * 3) * 2, hog.face * (1 + hog.sq * 0.14), 1 - hog.sq * 0.22);
+      },
+      drawFx: function (g) { if (hog.air || hog.ball) A.shadow(g, hog.x, GY + 6, hog.h, 42); },
+      focus: function () { return (hog.x + dog.x) / 2; },
+      finish: function () { return { happiness: 2, energy: -2 }; },
+      dbg: function () { return { state: state, squeaks: squeaks, pounces: pounces, rolls: rolls, boops: boops, hog: { x: hog.x, y: GY - 46 - hog.h, ball: hog.ball } }; }
+    };
+  };
+  IMPL['Squeaky Hedgehog'].cfg = {};
+  IMPL['Squeaky Hedgehog'].phone = { vw: 720, vwMin: 640 };
+
+  /* ---------- Bubble Machine ---------- */
+  IMPL['Bubble Machine'] = function (A) {
+    var dog = A.dog, DN = A.DN, MX = 280, MY = GY + 4, MS = 1.3;
+    var mach = A.sprite(v24Machine(), 200 * MS, 190 * MS, A.L.actors, 0.5, 184 / 190);
+    var HUB = { x: MX + 58 * MS, y: MY - 54 * MS }, RING = { x: MX + 60 * MS, y: MY - 154 * MS };
+    var crank = A.sprite(v24Crank(), 80 * MS, 80 * MS, A.L.actors, 0.5, 0.5);
+    var bubs = [], made = 0, pops = 0, selfPops = 0, cranking = false, crankA = 0, emitT = 0, clickT = 0, shake = 0, state = 'watch', stT = 0, tgt = null, cool = 0, idleT = 0;
+    var tip = A.tip('hold the crank!', HUB.x - 40, HUB.y - 110);
+    dog.x = 820; dog.face('left'); dog.setPose('sit');
+    A.say(pick(['what does THAT do?', 'a machine. for me?']), 1800);
+    function emit() { if (bubs.length >= 18) return; made++; bubs.push({ x: RING.x + 8, y: RING.y - 4, r: 15 + Math.random() * 19, vx: 110 + Math.random() * 120, vy: -60 - Math.random() * 90, ph: Math.random() * 6, t: 0, life: 6.5 + Math.random() * 3 }); }
+    function pop(b, byDog) {
+      var i = bubs.indexOf(b); if (i < 0) return; bubs.splice(i, 1);
+      A.addPart({ type: 'ring', x: b.x, y: b.y, size: b.r * 0.9, life: 0.3 });
+      A.burst('drop', b.x, b.y, byDog ? 7 : 4, { sp: 200, g: 500, life: 0.55, size: 2.6, color: '#CBE0F4' });
+      A.sfx('pop');
+      if (byDog) {
+        pops++; if (pops % 5 === 0) A.float(pops + ' pops!', b.x, b.y - 40, 'pt-gold'); else if (pops % 2) A.float('pop!', b.x, b.y - 40, 'pt-blue pt-small');
+        if (pops % 4 === 0) A.reward({ happiness: 1, energy: pops % 8 === 0 ? -1 : 0 });
+        if (pops === 5 || pops === 14) A.reward({ happiness: 1, coins: 1 });
+        if (pops % 4 === 1) A.say(pick(A.line('bubblePop', ['POP!', 'got one!', 'they taste like nothing. amazing.', 'bubble defeated'])), 1000);
+      } else selfPops++;
+    }
+    function onCrank(x, y) { return dist(x, y, HUB.x + 20, HUB.y) < A.hitR(64) || (x > MX - 90 * MS && x < MX + 70 * MS && y > MY - 110 * MS && y < MY); }
+    function pickTarget() {
+      var best = null, bd = 1e9;
+      bubs.forEach(function (b) { if (b.x < 470 || b.x > 1000 || b.y < GY - 430 || b.t < 0.4) return; var d = Math.abs(b.x - dog.x) + Math.abs(b.y - (GY - 200)) * 0.5; if (d < bd) { bd = d; best = b; } });
+      return best;
+    }
+    return {
+      poses: ['sit', 'idle', 'walk', 'jump', 'happy', 'speak'],
+      dur: 50,
+      hint: 'Click or hold the crank to blow bubbles. ' + DN + ' jumps to pop them. Pops earn coins!',
+      down: function (x, y) {
+        if (onCrank(x, y)) { if (tip) { tip.hide(); tip = null; } cranking = true; emit(); emit(); emitT = 0.2; A.sfx('click'); A.cursor('grabbing'); return; }
+        for (var i = bubs.length - 1; i >= 0; i--) { var b = bubs[i]; if (dist(x, y, b.x, b.y) < A.hitR(b.r + 10)) { pop(b, false); if (Math.random() < 0.5) A.say(pick(['HEY. that was MY bubble.', 'you popped it?! rude.']), 1000); return; } }
+        dogTap(A, x, y, ['bubbles please!', 'hi! more bubbles?']);
+      },
+      move: function (x, y) { if (!cranking) A.cursor(onCrank(x, y) ? 'pointer' : 'default'); },
+      up: function () { cranking = false; A.cursor('default'); },
+      update: function (dt, T) {
+        stT += dt; cool -= dt; shake = Math.max(0, shake - dt * 4);
+        if (cranking) { crankA += dt * 560; emitT -= dt; clickT -= dt; shake = 1; if (emitT <= 0) { emit(); emitT = 0.2; } if (clickT <= 0) { A.sfx('click'); clickT = 0.24; } }
+        mach.set(MX, MY, shake ? Math.sin(T * 50) * 1.2 : 0); crank.set(HUB.x, HUB.y, crankA);
+        for (var i = bubs.length - 1; i >= 0; i--) {
+          var b = bubs[i]; b.t += dt;
+          b.vx += (-b.vx * 0.6 + 42) * dt; b.vy += (-b.vy * 0.9 + Math.sin(b.t * 1.8 + b.ph) * 40 + 9) * dt;
+          b.x += b.vx * dt; b.y += b.vy * dt;
+          if (b.y > GY - 24) { b.y = GY - 24; b.vy = -Math.abs(b.vy) * 0.5 - 20; }
+          if (b.x > 1060 || b.y < 100 || b.t > b.life) pop(b, false);
+        }
+        if (state === 'watch') {
+          if (!dog.air) { dog.setPose('sit'); var look = bubs.length ? bubs[bubs.length - 1].x : MX; dog.faceX(look); dog.tilt = bubs.length ? Math.sin(T * 13) * 2 : 0; }
+          idleT += dt; if (!bubs.length && idleT > 6) { idleT = 0; A.say(pick(['crank it! crank the thing!', 'more bubbles please', 'I am ready. so ready.']), 1300); }
+          if (cool <= 0) { tgt = pickTarget(); if (tgt) { state = 'chase'; stT = 0; idleT = 0; dog.tilt = 0; } }
+        } else if (state === 'chase') {
+          if (bubs.indexOf(tgt) < 0) { state = 'watch'; cool = 0.15; }
+          else if (!dog.air) {
+            var side = dog.x >= tgt.x ? 1 : -1, tx = clamp(tgt.x + tgt.vx * 0.35 + side * dog.mouthOff('jump'), 520, 960);
+            dog.runTo(tx, 470 * A.tr.run, dt);
+            var m = dog.mouth();
+            if (tgt.y > GY - 150 && dist(m.x, m.y, tgt.x, tgt.y) < tgt.r + 40) { pop(tgt, true); dog.setPose('happy'); state = 'watch'; cool = 0.3; }
+            else if (Math.abs(dog.x - tx) < 70 && tgt.y < GY - 120) {
+              dog.face(tgt.x > dog.x ? 'right' : 'left');
+              var rise = clamp((dog.y - 108 * DS) - tgt.y + 20, 40, A.key === 'chihuahua' ? 230 : 420), vy = -Math.sqrt(2 * G * rise), tUp = -vy / G;
+              dog.jump(vy, clamp((tgt.x + tgt.vx * tUp - dog.x - dog.dir() * dog.mouthOff('jump')) / Math.max(0.2, tUp), -520, 520)); state = 'air'; stT = 0;
+            }
+            if (stT > 3.5) { state = 'watch'; cool = 0.4; }
+          }
+        } else if (state === 'air') {
+          var mj = dog.mouth();
+          for (var j = bubs.length - 1; j >= 0; j--) if (dist(mj.x, mj.y, bubs[j].x, bubs[j].y) < bubs[j].r + 46) { pop(bubs[j], true); break; }
+          if (!dog.air) { state = 'watch'; cool = 0.5 + Math.random() * 0.5; dog.setPose('happy'); dog.x = clamp(dog.x, 520, 980); }
+        }
+        if (dog.x < 520 && !dog.air) dog.x = 520;
+      },
+      drawFx: function (g, T) {
+        for (var i = 0; i < bubs.length; i++) { var b = bubs[i], gr = Math.min(1, b.t / 0.25), w = 1 + Math.sin(b.t * 6 + b.ph) * 0.04; drawBubble(g, b.x, b.y, b.r * gr * w, 1); }
+        if (cranking) { g.strokeStyle = 'rgba(91,61,50,.55)'; g.lineWidth = 2; g.lineCap = 'round'; for (var k = 0; k < 3; k++) { var a = crankA * Math.PI / 180 + k * 2.1; g.beginPath(); g.arc(HUB.x, HUB.y, 58 + k * 3, a, a + 0.5); g.stroke(); } }
+      },
+      focus: function () { return clamp((MX + 40 + dog.x) / 2, 520, 600); },
+      finish: function () { return { happiness: 2, energy: -2 }; },
+      dbg: function () { return { state: state, made: made, pops: pops, selfPops: selfPops, alive: bubs.length, cranking: cranking, hub: HUB }; }
+    };
+  };
+  IMPL['Bubble Machine'].cfg = {};
+  IMPL['Bubble Machine'].phone = { vw: 780, vwMin: 700, fx: 620 };
+
+  /* ---------- Paddling Pool ---------- */
+  IMPL['Paddling Pool'] = function (A) {
+    var dog = A.dog, DN = A.DN, PX = 730, PY = 528, IRX = 214, IRY = 46, TPX = 300, OX = PX - 270, OY = PY - 70;
+    var post = A.sprite(v24TapPost(), 130, 190, A.L.scene, 0.5, 178 / 190); post.set(TPX, GY + 12);
+    var back = A.sprite(v24Pool('back'), 540, 190, A.L.scene, 0, 0); back.set(OX, OY);
+    var water = A.sprite(v24Water(false), 540, 190, A.L.scene, 0.5, 73 / 190);
+    var fwater = A.sprite(v24Water(true), 540, 190, A.L.front, 0, 0); fwater.set(OX, OY);
+    var front = A.sprite(v24Pool('front'), 540, 190, A.L.front, 0, 0); front.set(OX, OY);
+    var REEL = { x: TPX - 65 + 100, y: GY + 12 - 178 + 140 }, REST = { x: TPX + 120, y: GY + 34 };
+    var noz = { x: REST.x, y: REST.y, held: false, ang: 0.5 }, fill = 0, state = 'wait', stT = 0, splashes = 0, hosed = 0, hoseCD = 0, spray = false, landX = 0, landY = 0, inPool = false, padT = 0, padTo = PX, padPose = 'walk', lowSaid = false, hot = A.weather === 'sunny' && (A.time === 'day' || A.time === 'dusk');
+    var tip = A.tip('drag the hose!', REST.x - 60, REST.y - 110);
+    dog.x = 1040; dog.face('left'); dog.setPose('sit');
+    A.say(hot ? 'it is SO hot. is that a pool?' : 'is that... a tiny lake?', 2000);
+    function tipPt() { var d = noz.x > PX + 60 ? -1 : 1; return { x: noz.x + d * Math.cos(noz.ang) * 30, y: noz.y + Math.sin(noz.ang) * 30, d: d }; }
+    function waterY() { return PY + 3 + (1 - fill) * 18; }
+    function inside(x) { return Math.abs(x - PX) < IRX - 30; }
+    function bigSplash(x, n) { A.burst('drop', x, waterY() - 6, n, { sp: 380, g: 1150, life: 0.9, size: 4.5, color: '#9CC8EA' }); A.sfx('splash'); }
+    return {
+      poses: ['sit', 'idle', 'walk', 'jump', 'happy', 'shake', 'down'],
+      dur: 50,
+      hint: 'Drag the hose over the pool to fill it. Then click ' + DN + ' for a big splash!',
+      down: function (x, y) {
+        if (dist(x, y, noz.x, noz.y - 10) < A.hitR(60)) { noz.held = true; A.cursor('grabbing'); if (tip) { tip.hide(); tip = null; } A.sfx('click'); return; }
+        if (inPool && dogTap(A, x, y, ['SPLASH TIME', 'again!'])) {
+          if (!dog.air) { dog.jump(-640, 0); state = 'splash'; stT = 0; }
+          return;
+        }
+        dogTap(A, x, y, ['is it pool time yet?', 'fill it! fill it!']);
+      },
+      move: function (x, y) { if (noz.held) { noz.x = clamp(x, 60, W - 60); noz.y = clamp(y, 150, GY + 6); } else A.cursor(dist(x, y, noz.x, noz.y - 10) < 60 ? 'grab' : 'default'); },
+      up: function () { if (noz.held) { noz.held = false; A.cursor('default'); } },
+      update: function (dt, T) {
+        stT += dt; hoseCD -= dt;
+        if (!noz.held) { noz.x += (REST.x - noz.x) * Math.min(1, dt * 5); noz.y += (REST.y - noz.y) * Math.min(1, dt * 5); }
+        noz.ang = noz.held ? 1.0 : 0.2;
+        spray = noz.held && noz.y < GY - 20;
+        if (spray) {
+          var tp = tipPt(); landX = tp.x + tp.d * 46; landY = inside(landX) ? waterY() : GY;
+          if (Math.random() < dt * 30) A.addPart({ type: 'drop', x: tp.x, y: tp.y, vx: tp.d * (80 + Math.random() * 40), vy: 40 + Math.random() * 60, g: 1100, life: Math.min(0.9, Math.sqrt(Math.max(4, landY - tp.y) / 550)), size: 3, color: '#9CC8EA' });
+          if (inside(landX) && landY > tp.y) {
+            var was = fill; fill = Math.min(1, fill + dt * 0.3);
+            if (was < 0.5 && fill >= 0.5 && state === 'wait') A.say('almost a lake!', 1100);
+            if (fill >= 1 && was < 1 && state === 'wait') { state = 'hopin'; stT = 0; A.float('pool ready!', PX, PY - 150, 'pt-gold'); A.sfx('levelup'); }
+            if (Math.random() < dt * 8) A.addPart({ type: 'ring', x: landX, y: landY, size: 8, life: 0.5 });
+          } else if (Math.random() < dt * 10) A.burst('drop', landX, GY, 2, { sp: 120, g: 900, life: 0.4, size: 2.6, color: '#BBD8EF' });
+          if (Math.abs(landX - dog.x) < 90 && hoseCD <= 0 && !dog.air) {
+            hoseCD = 2.2; hosed++; dog.jump(-560, 0); A.sfx('bark');
+            A.say(pick(['the hose! my nemesis! I love it.', 'RAIN. from a SNAKE.', 'brrr! again!']), 1300);
+            if (hosed <= 2) A.reward({ happiness: 1 });
+          }
+        }
+        if (state === 'wait') {
+          if (!dog.air) { dog.setPose(fill > 0.5 ? 'happy' : 'sit'); dog.face('left'); dog.tilt = fill > 0.5 ? Math.sin(T * 13) * 2.5 : 0; if (dog.x !== 1040) dog.runTo(1040, 260, dt); }
+        } else if (state === 'hopin') {
+          dog.tilt = 0;
+          if (!dog.air && dog.runTo(PX + IRX + 90, 320, dt)) { dog.face('left'); dog.ground = PY + 16; var ft = 2 * 760 / G; dog.jump(-760, (PX + 40 - dog.x) / ft); state = 'flying'; stT = 0; }
+        } else if (state === 'flying') {
+          if (!dog.air && stT > 0.1) {
+            inPool = true; state = 'paddle'; stT = 0; padT = 0; bigSplash(dog.x, 26); A.float('SPLASH!', dog.x, PY - 200, 'pt-blue');
+            A.reward({ happiness: 3 }); A.say(pick(A.line('poolIn', ['ahhh. so cool.', 'I am a duck now', 'best day of my LIFE'])), 1700);
+            A.hint('Click ' + DN + ' for a big splash. Top up the pool with the hose.');
+          }
+        } else if (state === 'paddle') {
+          padT -= dt;
+          if (padT <= 0) {
+            var r = Math.random();
+            if (A.key === 'husky' && r < 0.3) { padPose = 'down'; padT = 2.6; }
+            else if (r < 0.55) { padPose = 'walk'; padTo = PX + (Math.random() - 0.5) * 220; padT = 2.2; }
+            else if (r < 0.8) { padPose = 'happy'; padT = 1.4; }
+            else { padPose = 'shake'; padT = 1; A.sfx('shake'); }
+          }
+          if (padPose === 'walk') { if (dog.runTo(padTo, 110, dt)) dog.setPose('idle'); if (Math.random() < dt * 6) A.addPart({ type: 'drop', x: dog.x + (Math.random() - 0.5) * 120, y: waterY() - 6, vx: (Math.random() - 0.5) * 80, vy: -140, g: 700, life: 0.5, size: 2.6, color: '#BBD8EF' }); }
+          else { dog.setPose(padPose); if (padPose === 'shake' && Math.random() < dt * 24) A.burst('drop', dog.x + (Math.random() - 0.5) * 100, dog.y - 90 - Math.random() * 50, 1, { sp: 300, g: 1000, life: 0.6, size: 3, color: '#9CC8EA' }); }
+          dog.tilt = padPose === 'happy' ? Math.sin(T * 13) * 2.5 : 0;
+          if (fill < 0.7 && !lowSaid) { lowSaid = true; A.say('the lake is leaking! hose please!', 1500); } if (fill > 0.9) lowSaid = false;
+        } else if (state === 'splash') {
+          if (!dog.air && stT > 0.1) {
+            splashes++; bigSplash(dog.x, 32); A.float(splashes % 3 === 0 ? 'MEGA SPLOOSH!' : 'SPLOOSH!', dog.x, PY - 210, splashes % 3 === 0 ? 'pt-gold' : 'pt-blue');
+            fill = Math.max(0.55, fill - 0.07); if (splashes <= 2 || splashes % 2 === 0) A.reward({ happiness: splashes <= 2 ? 2 : 1 });
+            if (Math.random() < 0.5) A.say(pick(['you are wet now. sorry. (not sorry)', 'SPLASH!', 'the pool is now the lawn']), 1200);
+            state = 'paddle'; stT = 0; padT = 0;
+          }
+        }
+        if (dog.x < PX - IRX + 50 && inPool) dog.x = PX - IRX + 50;
+        if (dog.x > PX + IRX - 50 && inPool) dog.x = PX + IRX - 50;
+        var wv = fill > 0.02;
+        water.show(wv); fwater.show(wv);
+        if (wv) { var k = 0.82 + 0.18 * fill; water.set(PX, waterY(), 0, k, k); fwater.el.style.opacity = Math.min(1, fill * 2).toFixed(2); fwater.set(OX, OY + (1 - fill) * 18); }
+      },
+      drawFx: function (g, T) {
+        var tp = tipPt(), sx = REEL.x, sy = REEL.y, ex = noz.x - tp.d * 22, ey = noz.y + 4, cx = (sx + ex) / 2, cy = Math.max(sy, ey) + 40;
+        g.lineCap = 'round'; g.lineJoin = 'round';
+        g.strokeStyle = INK; g.lineWidth = 15; g.beginPath(); g.moveTo(sx, sy); g.quadraticCurveTo(cx, cy, ex, ey); g.stroke();
+        g.strokeStyle = '#86B57A'; g.lineWidth = 10; g.stroke(); g.strokeStyle = '#C8E9CF'; g.lineWidth = 2.6; g.setLineDash([10, 12]); g.stroke(); g.setLineDash([]);
+        if (spray) {
+          g.strokeStyle = 'rgba(156,200,234,.95)'; g.lineWidth = 7; g.beginPath(); g.moveTo(tp.x, tp.y); g.quadraticCurveTo(tp.x + tp.d * 40, tp.y + 10, landX, landY); g.stroke();
+          g.strokeStyle = '#fff'; g.lineWidth = 2.2; g.setLineDash([8, 10]); g.lineDashOffset = -T * 220; g.stroke(); g.setLineDash([]);
+        }
+        g.save(); g.translate(noz.x, noz.y); g.scale(tp.d, 1); g.rotate(noz.ang);
+        g.fillStyle = '#FFE07A'; g.strokeStyle = INK; g.lineWidth = 2.6;
+        g.beginPath(); g.moveTo(-26, -9); g.lineTo(22, -8); g.lineTo(34, -12); g.lineTo(34, 12); g.lineTo(22, 8); g.lineTo(-26, 9); g.closePath(); g.fill(); g.stroke();
+        g.fillStyle = '#E8504A'; g.beginPath(); g.moveTo(-12, 8); g.lineTo(-4, 26); g.lineTo(6, 26); g.lineTo(2, 8); g.closePath(); g.fill(); g.stroke();
+        g.restore();
+        if (inPool && !dog.air) { g.strokeStyle = 'rgba(94,134,180,.75)'; g.lineWidth = 2; for (var i = 0; i < 2; i++) { var r = ((T * 34 + i * 26) % 52) + 30; g.globalAlpha = Math.max(0, 1 - r / 82); g.beginPath(); g.ellipse(dog.x, waterY() - 8, r * 1.5, r * 0.3, 0, 0, Math.PI * 2); g.stroke(); } g.globalAlpha = 1; }
+      },
+      focus: function () { return noz.held ? clamp((noz.x + PX) / 2, 560, 700) : inPool || state !== 'wait' ? 680 : 700; },
+      cardSub: function () {
+        if (!inPool) return '';
+        return A.key === 'husky' ? DN + ' refuses to leave the pool. Five more minutes, then.' : DN + ' hopped out and shook off. You are a bit wet too.';
+      },
+      finish: function () { return { happiness: 2, energy: -1, clean: inPool ? 5 : 0, cool: inPool }; },
+      dbg: function () { return { state: state, fill: fill, splashes: splashes, hosed: hosed, inPool: inPool, spray: spray, nozzle: { x: noz.x, y: noz.y }, pool: { x: PX, y: PY } }; }
+    };
+  };
+  IMPL['Paddling Pool'].cfg = { scene: 'yard' };
+  IMPL['Paddling Pool'].phone = { vw: 760, vwMin: 700, fx: 640 };
+
+  /* ---------- Agility Tunnel ---------- */
+  IMPL['Agility Tunnel'] = function (A) {
+    var dog = A.dog, DN = A.DN, TL = 480, TR = 770, TY = GY - 62, NS = 8, SW = (TR - TL) / NS, SL = 330, SR = 920;
+    var base = A.sprite(v24TunnelBase(), 400, 50, A.L.scene, 0.5, 0.6); base.set((TL + TR) / 2, GY + 30);
+    var segs = [];
+    for (var i = 0; i < NS; i++) segs.push({ x: TL + (i + 0.5) * SW, b: 0, spr: A.sprite(v24Seg(i), SW + 10, 196, A.L.front, 0.5, 0.5) });
+    var endL = A.sprite(v24TunnelEnd(true), 54, 204, A.L.front, 0.5, 0.5), endR = A.sprite(v24TunnelEnd(false), 54, 204, A.L.front, 0.5, 0.5);
+    endL.set(TL, TY + 2); endR.set(TR, TY + 2);
+    var panel = A.div('pt-panel', A.L.ui); panel.style.cssText += ';left:470px;top:92px;width:300px'; A.dockable(panel);
+    var plab = A.div('pt-lab', panel, ''), pline = A.div('', panel, '');
+    var state = 'wait', side = 'R', stT = 0, runs = 0, streak = 0, best = 0, last = 0, runT = 0, lastLand = -99, cleans = 0, spd = 0, dirn = -1, jig = 0, T0 = 0;
+    dog.x = SR; dog.face('left'); dog.setPose('sit');
+    A.say(pick(A.line('tunnelGo', ['a tunnel! I KNOW tunnels.', 'call me through it!'])), 1800);
+    function showPanel() { plab.textContent = runs ? 'last run: ' + last.toFixed(2) + ' s' : 'run the tunnel!'; pline.textContent = 'best: ' + (best ? best.toFixed(2) + ' s' : 'none yet') + '  \u00b7  streak: ' + streak + ' of 3'; }
+    showPanel();
+    return {
+      poses: ['sit', 'idle', 'walk', 'crouch', 'jump', 'happy', 'sleep'],
+      dur: 50,
+      hint: 'Click the far side of the tunnel to call ' + DN + ' through. Call again quickly for a clean run!',
+      down: function (x, y) {
+        if (dogTap(A, x, y, ['coach! hi coach!', 'pat now, zoom later'])) return;
+        if (state !== 'wait') { if (state === 'run') A.float('zoom!', dog.x, GY - 220, 'pt-small'); return; }
+        var to = x < (TL + TR) / 2 ? 'L' : 'R';
+        if (to === side) { if (!dog.air) dog.jump(-480, 0); A.say(pick(['I am already here!', 'the tunnel is THAT way, coach']), 1100); return; }
+        streak = runs && T0 - lastLand < 3.5 ? streak + 1 : 1; dirn = to === 'L' ? -1 : 1;
+        spd = 520 * A.tr.run * (1 + 0.12 * Math.min(streak - 1, 3)); state = 'run'; stT = 0; runT = 0; dog.face(dirn < 0 ? 'left' : 'right');
+        A.sfx('whoosh'); A.float(streak > 1 ? 'again, faster!' : 'GO!', dog.x, GY - 230, 'pt-small');
+        if (Math.random() < 0.5) A.say(pick(A.line('tunnelGo', ['ZOOM!', 'here I go!', 'tunnel time!'])), 900);
+        showPanel();
+      },
+      move: function (x, y) { A.cursor(state === 'wait' ? 'pointer' : 'default'); },
+      update: function (dt, T) {
+        stT += dt; T0 = T; jig = Math.max(0, jig - dt * 1.5);
+        if (state === 'wait') {
+          if (!dog.air) { dog.setPose(T - lastLand < 3.5 && runs ? 'happy' : 'sit'); dog.face(side === 'R' ? 'left' : 'right'); dog.tilt = T - lastLand < 3.5 && runs ? Math.sin(T * 13) * 2.5 : 0; }
+        } else if (state === 'run') {
+          runT += dt; dog.tilt = 0;
+          dog.x += dirn * spd * dt; dog.bob += dt * spd / 26; dog.face(dirn < 0 ? 'left' : 'right');
+          var head = dog.x + dirn * 80, inT = head > TL - 10 && head < TR + 10 || (dog.x > TL && dog.x < TR);
+          dog.setPose(inT ? 'crouch' : 'walk', true);
+          if (inT && Math.random() < dt * 10) A.burst('dust', dog.x - dirn * 60, GY, 1, { g: -20, sp: 50, life: 0.4, size: 4 });
+          if ((dirn < 0 && dog.x < TL - 70) || (dirn > 0 && dog.x > TR + 70)) { dog.jump(-560, ((dirn < 0 ? SL : SR) - dog.x) / (2 * 560 / G)); state = 'leap'; jig = 1; A.burst('dust', dirn < 0 ? TL : TR, GY - 10, 6, { sp: 160, g: -10, life: 0.6, size: 6 }); }
+        } else if (state === 'leap') {
+          runT += dt;
+          if (!dog.air) {
+            runs++; last = runT; if (!best || runT < best) best = runT; side = dirn < 0 ? 'L' : 'R'; lastLand = T; state = 'wait'; stT = 0;
+            dog.x = clamp(dog.x, 150, 1090);
+            A.float(runT.toFixed(2) + ' s' + (runT <= best && runs > 1 ? ' best!' : ''), dog.x, GY - 240, runT <= best && runs > 1 ? 'pt-gold' : '');
+            A.reward({ happiness: runs <= 6 ? 2 : 1, energy: -1 });
+            if (streak >= 3) {
+              cleans++; streak = 0; A.float('CLEAN RUN!', 620, 250, 'pt-gold'); A.sfx('levelup'); A.burst('spark', dog.x, GY - 120, 12, { g: 0, sp: 180, life: 0.8, size: 7 });
+              A.reward({ happiness: 4, bond: cleans === 1 ? 1 : 0 }); A.say(pick(A.line('tunnelDone', ['three in a row! I am a legend.', 'clean run! where is my medal?'])), 1800);
+              if (A.tr.flop) { state = 'flop'; stT = 0; }
+            } else if (Math.random() < 0.5) A.say(pick(A.line('tunnelDone', ['again! again!', 'did you see me in there?', 'tunnel: conquered'])), 1200);
+            if (A.tr.flop && state === 'wait' && Math.random() < 0.3) { state = 'flop'; stT = 0; }
+            showPanel();
+          }
+        } else if (state === 'flop') {
+          dog.setPose('sleep'); dog.tilt = 0;
+          if (stT < 0.05) A.say('*flop*', 1200);
+          if (Math.random() < dt * 1.5) A.addPart({ type: 'z', x: dog.head().x, y: dog.head().y - 10, vx: 15, vy: -35, life: 1.6, size: 6 });
+          if (stT > 1.8) { state = 'wait'; stT = 0; lastLand = T; }
+        }
+        for (var i = 0; i < NS; i++) {
+          var s = segs[i], near = (state === 'run') ? Math.max(0, 1 - Math.abs(s.x - dog.x) / 80) : 0;
+          s.b += (near - s.b) * Math.min(1, dt * 14);
+          var w = jig * Math.sin(T * 24 + i * 0.9) * 0.03;
+          s.spr.set(s.x, TY - s.b * 6, w * 40, 1 + s.b * 0.04, 1 + s.b * 0.09 + w);
+        }
+      },
+      drawFx: function (g, T) {
+        if (state === 'run' || state === 'leap') {
+          var x = (TL + TR) / 2, y = TY - 128;
+          g.fillStyle = '#FFFBF3'; g.strokeStyle = INK; g.lineWidth = 2.4; g.beginPath(); g.arc(x - 52, y - 8, 15, 0, Math.PI * 2); g.fill(); g.stroke();
+          g.beginPath(); g.moveTo(x - 52, y - 8); g.lineTo(x - 52 + Math.cos(runT * 6 - 1.57) * 10, y - 8 + Math.sin(runT * 6 - 1.57) * 10); g.stroke();
+          g.fillStyle = INK; g.font = '700 34px Caveat, cursive'; g.fillText(runT.toFixed(1) + ' s', x - 28, y + 2);
+        } else if (state === 'wait' && !dog.air) {
+          var fx = side === 'R' ? SL : SR, fy = GY - 70, p = 1 + Math.sin(T * 4) * 0.06;
+          g.save(); g.translate(fx, fy); g.scale(p, p); g.strokeStyle = 'rgba(91,61,50,.55)'; g.lineWidth = 2.4; g.setLineDash([8, 7]);
+          g.beginPath(); g.arc(0, 0, 46, 0, Math.PI * 2); g.stroke(); g.setLineDash([]);
+          g.fillStyle = 'rgba(242,143,165,.8)'; g.beginPath(); g.ellipse(0, 8, 12, 10, 0, 0, Math.PI * 2); g.fill();
+          [[-14, -8], [-5, -16], [5, -16], [14, -8]].forEach(function (q) { g.beginPath(); g.arc(q[0], q[1], 5, 0, Math.PI * 2); g.fill(); });
+          g.fillStyle = INK; g.font = '700 26px Caveat, cursive'; g.fillText(A.isTouch() ? 'tap here' : 'click here', -42, 76);
+          g.restore();
+        }
+      },
+      focus: function () { return 625; },
+      finish: function () { return { happiness: 2, energy: -3 }; },
+      dbg: function () { return { state: state, side: side, runs: runs, streak: streak, cleans: cleans, best: best, last: last, runT: runT, sides: { L: SL, R: SR } }; }
+    };
+  };
+  IMPL['Agility Tunnel'].cfg = { scene: 'yard' };
+  IMPL['Agility Tunnel'].phone = { vw: 860, vwMin: 820, fx: 625 };
 
   IMPL['Rope Tug'].phone = { vw: 980, fx: 640 };
   IMPL['Squeaky Duck'].phone = { vw: 700, vwMin: 660, fx: 620 };
