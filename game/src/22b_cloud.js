@@ -10,7 +10,8 @@ const CL = {
   uid: null, email: '', anon: true, ch: null,
   timer: null, retryT: null, applyT: null, busy: false, again: false, flush: false,
   err: '', lastSync: 0, lastPull: 0, inputAt: 0, savedAt: 0,
-  pending: null, ready: false, offShown: false, regPath: '', ui: '', msg: '', bk: null, code: ''
+  pending: null, ready: false, offShown: false, regPath: '', ui: '', msg: '', bk: null, code: '',
+  started: false, out: false // v2.3 title: the first start finished / logged out on this page
 };
 function clMeta() { let m = null; try { m = JSON.parse(lsGet(CL_CFG.metaKey) || 'null'); } catch (e) { m = null; } return Object.assign({ rev: 0, changedAt: 0, pushedAt: 0, uid: null, dogId: null, nudged: false }, m || {}); }
 function clMetaSet(patch) { const m = Object.assign(clMeta(), patch); lsSet(CL_CFG.metaKey, JSON.stringify(m)); return m; }
@@ -87,7 +88,7 @@ function clStart() {
         CL.err = ''; clRender(); return true;
       } catch (e) {
         CL.sb = null; clOffline(); return false;
-      } finally { CL.startP = null; }
+      } finally { CL.startP = null; CL.started = true; titleAcctRender(); }
     })();
   }
   return CL.startP;
@@ -111,7 +112,7 @@ async function clEnsureUser() {
   return CL.signP;
 }
 function clSetUser(u) {
-  CL.uid = u.id; CL.email = u.email || ''; CL.anon = u.is_anonymous === true || !u.email;
+  CL.uid = u.id; CL.email = u.email || ''; CL.anon = u.is_anonymous === true || !u.email; CL.out = false;
   const m = clMeta(); if (m.uid !== u.id) clMetaSet({ uid: u.id, rev: 0, pushedAt: 0 });
   clSub(); clRender();
 }
@@ -243,34 +244,49 @@ function clErrText(e) {
   if (/fetch|network|offline|timeout|blocked|load/i.test(s)) return 'Cloud save is offline. Your game is saved on this device.';
   return 'That did not work. Try again in a moment.';
 }
-async function clRegister(email, pw) {
+// fresh (v2.3 title "Switch" while logged in to an account): skip updateUser, which would rename the current account
+async function clRegister(email, pw, fresh) {
   if (!(await clEnsureUser())) return { ok: false, msg: 'Cloud save is offline. Your game is saved on this device.' };
-  const r = await CL.sb.auth.updateUser({ email, password: pw });
-  if (r.error) return { ok: false, msg: clErrText(r.error) };
-  const u = r.data && r.data.user;
-  if (u && u.email && u.email.toLowerCase() === email.toLowerCase()) { // the guest became the account: same user id, same save
-    CL.regPath = 'updateUser'; clSetUser(u); clRender(); return { ok: true };
+  if (!fresh) {
+    const r = await CL.sb.auth.updateUser({ email, password: pw });
+    if (r.error) return { ok: false, msg: clErrText(r.error) };
+    const u = r.data && r.data.user;
+    if (u && u.email && u.email.toLowerCase() === email.toLowerCase()) { // the guest became the account: same user id, same save
+      CL.regPath = 'updateUser'; clSetUser(u); clRender(); return { ok: true };
+    }
   }
   // the project still wants the email change confirmed: make a fresh account instead and give it this device's save
-  const r2 = await CL.sb.auth.signUp({ email, password: pw });
-  if (r2.error) return { ok: false, msg: clErrText(r2.error) };
-  if (!r2.data || !r2.data.session || !r2.data.user) return { ok: false, msg: 'That did not work. Try again in a moment.' };
-  CL.regPath = 'signUp'; clSetUser(r2.data.user);
-  clMetaSet({ changedAt: Math.max(clMeta().changedAt, 1), rev: 0, pushedAt: 0 }); await clPush(true);
-  return { ok: true };
+  clearTimeout(CL.timer); CL.timer = null; CL.loggingIn = true; // v2.3 fix (TODO "register fallback"): no guest push mid-switch, like clLogin
+  try {
+    const r2 = await CL.sb.auth.signUp({ email, password: pw });
+    if (r2.error) return { ok: false, msg: clErrText(r2.error) };
+    if (!r2.data || !r2.data.session || !r2.data.user) return { ok: false, msg: 'That did not work. Try again in a moment.' };
+    CL.regPath = 'signUp'; clSetUser(r2.data.user);
+    if (clLocal()) { clMetaSet({ changedAt: Math.max(clMeta().changedAt, 1), rev: 0, pushedAt: 0 }); await clPush(true); }
+    return { ok: true };
+  } finally { CL.loggingIn = false; CL.again = false; }
 }
 async function clLogin(email, pw) {
   if (!(await clStart())) return { ok: false, msg: 'Cloud save is offline. Your game is saved on this device.' };
   clearTimeout(CL.timer); CL.timer = null; CL.loggingIn = true; // the scheduled guest push must not run after the switch
   try {
-    const local = clLocal();
+    const local = clLocal(), prev = CL.uid && !CL.anon ? CL.uid : null; // prev: an account is signed in (v2.3 title "Switch")
+    if (prev && local) { // that account's last changes reach its own cloud first
+      for (let i = 0; i < 50 && CL.busy; i++) await new Promise((res) => setTimeout(res, 100));
+      const m = clMeta(); if (m.changedAt > (m.pushedAt || 0)) await clPush(true);
+    }
     const r = await CL.sb.auth.signInWithPassword({ email, password: pw });
     if (r.error || !r.data || !r.data.user) return { ok: false, msg: clErrText(r.error || 'invalid login') };
+    const other = !!prev && r.data.user.id !== prev; // another account's game (maybe another person's) never goes into this one, backups included
     clSetUser(r.data.user);
     const q = await CL.sb.from('saves').select('*').eq('user_id', CL.uid).maybeSingle();
     if (q.data && q.data.data) {
-      if (local && !clSame(local, q.data.data)) await clBackup(local, 'guest save before sign-in');
+      if (local && !other && !clSame(local, q.data.data)) await clBackup(local, 'guest save before sign-in');
       clApply(q.data.data, q.data, null); return { ok: true, loaded: true };
+    }
+    if (other) { // no save on this account: the other account's dogs leave this device (they are safe in its cloud)
+      lsDel(SAVE_KEY); S = null; CL.fp = clFp(null); CL.pending = null; clMetaSet({ rev: 0, changedAt: 0, pushedAt: 0, dogId: null });
+      return { ok: true, loaded: false };
     }
     if (local) { clMetaSet({ changedAt: Date.now(), rev: 0, pushedAt: 0 }); await clPush(true); }
     return { ok: true, loaded: false };
@@ -280,6 +296,7 @@ async function clLogout() {
   if (CL.sb) { if (CL.ch) { try { CL.sb.removeChannel(CL.ch); } catch (e) { /* gone */ } CL.ch = null; } try { await CL.sb.auth.signOut(); } catch (e) { /* offline: the local copy is still logged out below */ } }
   CL.uid = null; CL.email = ''; CL.anon = true; CL.lastSync = 0; CL.pending = null;
   clMetaSet({ uid: null, rev: 0, pushedAt: 0 }); // the next change makes a fresh guest that carries this device's save
+  CL.out = true; titleAcctRender();
 }
 async function clChangePw(pw) {
   if (!CL.sb || !CL.uid) return { ok: false, msg: 'Log in first.' };
@@ -386,6 +403,7 @@ function clCodeHTML() {
   return `<div class="clrow"><button class="btn" data-cl="export">Export save code</button><button class="btn" data-cl="import">Import save code</button></div>`;
 }
 function clRender() {
+  titleAcctRender(); // v2.3: the title's account line follows the cloud state
   const box = document.getElementById('clBox'); if (!box) return;
   const b = document.getElementById('clBody'), c = document.getElementById('clCode');
   if (b) b.innerHTML = clBodyHTML(); if (c) c.innerHTML = clCodeHTML(); clStat();
