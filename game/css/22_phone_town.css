@@ -13,3 +13,19 @@ html[data-layout="phone"] #view:has(#placeBtns [data-sh]) #placeBtns { position:
   -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 34px), transparent 100%); mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 34px), transparent 100%); }
 html[data-layout="phone"] #view:has(#placeBtns [data-sh]) #placeBtns::-webkit-scrollbar { display: none; }
 html[data-layout="phone"] #view:has(#placeBtns [data-sh]) #placeBtns .btn { flex: none; scroll-snap-align: start; white-space: nowrap; }
+
+/* v2.3 TOWN-2 (phone map): the close X never covers the location chip (the chip stops short of it and wraps), and the zoom stack moves to the bottom-left edge, above the "go there" chip, clear of the places and the "go there" chip, with 44 px targets and breathing room; the "100%" pill gets the same hand-drawn frame as the buttons. */
+html[data-layout="phone"] #view:has(#mapPan) #status { max-width: calc(100% - 80px); white-space: normal; line-height: 1.15; text-wrap: balance; }
+html[data-layout="phone"] #mapZoom { top: auto; bottom: 104px; left: 10px; right: auto; gap: 8px; }
+html[data-layout="phone"] #mapZoom .btn { width: 44px; height: 44px; min-height: 44px; font-size: 26px; }
+html[data-layout="phone"] #mapZoom span { --fr: var(--fr-btn); --wash: var(--paper); min-width: 44px; min-height: 30px; line-height: 30px; text-align: center; border: 0; border-radius: 13px 9px 15px 8px; padding: 0 4px;
+  background: var(--fr) 0 0/100% 100% no-repeat, var(--hatch) var(--ins), linear-gradient(var(--wash), var(--wash)) var(--ins); }
+
+/* v2.3 TOWN-1 (desktop): the Market Street buttons used to sit on the baked-in "Market Street" sign and Pip's cart. They now sit bottom-left in two short rows on the empty cobbles
+   (clear of the dog's feet, the sign and the cart), and toasts drop to the awning band so they never cover a shop sign. */
+html:not([data-layout="phone"]) #placeBtns:has([data-sh]) { left: 16px; right: auto; bottom: 4px; max-width: 500px; justify-content: flex-start; gap: 6px 8px; }
+html:not([data-layout="phone"]) #placeBtns:has([data-sh]) .btn { min-height: 34px; padding: 2px 11px 4px; font-size: 15px; }
+html:not([data-layout="phone"]) #stage:has(#placeBtns [data-sh]) #toasts { top: 23.6% !important; }
+
+/* v2.3 TOWN-3: a pier bubble sits under the dog (on the deck) instead of above its head, where it covered the boats; its tail points up at the dog */
+#bubble.below::after { bottom: auto; top: -15px; transform: scaleY(-1); }
