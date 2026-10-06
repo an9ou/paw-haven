@@ -33,3 +33,5 @@ html[data-layout="phone"] .ms-stampwrap{width:100%;max-width:340px;justify-self:
 html[data-layout="phone"] .ms-prize{grid-template-columns:minmax(0,1fr);justify-items:center;text-align:center;gap:6px}
 html[data-layout="phone"] .ms-prize-art{width:120px;height:120px}
 html[data-layout="phone"] .ms-prize p{font-size:15px}
+/* v2.4 SHOP: the food safety tip line in shop cards, in ink for contrast (about 9:1 on cream) */
+.sitem .sh-tip{color:var(--ink,#5B3D32)}
