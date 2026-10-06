@@ -108,7 +108,9 @@ function phHomeRefit() {
   const native = 600 * vw / vh, fit = Math.max(fitMin, Math.min(1, native / (R - L)));
   view.style.setProperty('--vfit', fit.toFixed(3));
   if (S.place === 'market') { // the street's own layout (22_phone_town.css) ignores --vfit, so it zooms through the viewBox; the extra sky above the scene takes the sky's colour
-    phZoom = fit; const sky = $('#view > svg.world #sceneG rect[width="1000"]'); const f = sky && sky.getAttribute('fill'); view.style.background = f && f.charAt(0) === '#' ? f : '';
+    phZoom = fit; view.style.background = '';
+    const sky = $('#view > svg.world #sceneG rect[width="1000"][height="452"]'), m = sky && /url\(#([^)]+)\)/.exec(sky.getAttribute('fill') || ''), gr = m && $('#view > svg.world #' + m[1]), st = gr && gr.querySelector('stop');
+    if (st) view.style.background = st.getAttribute('stop-color') || getComputedStyle(st).stopColor || '';
   }
   phHomeCx = (L + R) / 2; if (!S.sleeping) { phCamHome = phHomeCx; camCx = phCamHome; }
   camApply(camCx);
