@@ -66,7 +66,7 @@ function gdLayer() {
   if (gd.layer && gd.layer.isConnected) return gd.layer;
   document.documentElement.style.setProperty('--gd-paper', svgURI(gdPaper()));
   const L = document.createElement('div'); L.id = 'gdLayer';
-  L.innerHTML = '<div class="gd-ring" hidden></div><div class="gd-card" role="region" aria-label="Gerald the duck" aria-live="polite" hidden><div class="gd-duck"></div><div class="gd-main"><div class="gd-say"><p class="gd-txt"></p></div><div class="gd-row"><span class="gd-dots"></span><span class="gd-btns"><button class="btn gd-skip" type="button">Skip the guide</button><button class="btn yes gd-next" type="button">Next</button></span></div></div></div>';
+  L.innerHTML = '<div class="gd-ring" hidden></div><div class="gd-card" role="region" aria-label="Gerald the duck" aria-live="polite" hidden><div class="gd-duck"></div><div class="gd-main"><div class="gd-say"><p class="gd-txt"></p></div><div class="gd-row"><span class="gd-dots"></span><span class="gd-btns"><button class="btn gd-skip" type="button" aria-label="Skip the guide"><span class="gd-skl">Skip the guide</span><span class="gd-sks">Skip</span></button><button class="btn yes gd-next" type="button">Next</button></span></div></div></div>';
   stage.appendChild(L); gd.layer = L;
   $('.gd-next', L).onclick = (e) => { e.stopPropagation(); SFX.boop(640); gdNext(); };
   $('.gd-skip', L).onclick = (e) => { e.stopPropagation(); SFX.click(); gdSkip(); };
@@ -131,9 +131,9 @@ function gdTick() {
   if (i === 4 && (cur.mode === 'map' || cur.mode === 'routes' || cur.mode === 'walk')) return gdGo(5, true); // entering the map (or going straight to a walk) counts
   if (i === 5 && cur.mode === 'walk') return gdGo(6, true); // a walk started: the card waits for the yard
   const L = gdLayer(), c = $('.gd-card', L), ring = $('.gd-ring', L);
-  if (gdPaused()) { c.hidden = true; ring.hidden = true; return; }
+  if (gdPaused()) { c.hidden = true; ring.hidden = true; gdToasts(false); return; }
   const was = c.hidden; if (gd.shown !== i) gdRender();
-  c.hidden = false; gdPlace(was || gd.force); gd.force = false; gdRing();
+  c.hidden = false; gdPlace(was || gd.force); gd.force = false; gdRing(); gdToasts(c.dataset.at === 'top');
 }
 function gdGo(i, quiet) {
   if (!gdLive()) return; S.guide.step = i; markDirty();
@@ -143,13 +143,18 @@ function gdNext() { if (!S || !S.guide) return; const i = S.guide.step; if (i >=
 function gdBye() {
   if (S && S.guide) { S.guide.done = localISO(); markDirty(); }
   const L = gd.layer; if (L) { $('.gd-duck', L).innerHTML = gdDuck('wave'); $('.gd-ring', L).hidden = true; $('.gd-card', L).classList.add('gd-out'); }
-  gd.on = false; clearInterval(gd.timer); gd.timer = 0; setTimeout(gdStop, 600);
+  gd.on = false; clearInterval(gd.timer); gd.timer = 0; gdToasts(false); setTimeout(gdStop, 600);
 }
 function gdSkip() {
   if (!S || !S.guide) return; S.guide.skipped = localISO(); markDirty(); gdStop();
   toast('Gerald waddles back to the river. The guide is in your Journal, under How to play.');
 }
-function gdStop() { gd.on = false; clearInterval(gd.timer); gd.timer = 0; gd.shown = -1; if (gd.layer) { $('.gd-card', gd.layer).hidden = true; $('.gd-card', gd.layer).classList.remove('gd-out'); $('.gd-ring', gd.layer).hidden = true; } }
+// phones: while the strip sits under the HUD, the toasts drop below it (28_guide.css reads --gdToastTop)
+function gdToasts(top) {
+  const on = !!top && isPhone(); stage.classList.toggle('gd-top', on);
+  if (on) { const c = $('.gd-card', gd.layer); stage.style.setProperty('--gdToastTop', Math.round(c.offsetTop + c.offsetHeight + 10) + 'px'); }
+}
+function gdStop() { gdToasts(false); gd.on = false; clearInterval(gd.timer); gd.timer = 0; gd.shown = -1; if (gd.layer) { $('.gd-card', gd.layer).hidden = true; $('.gd-card', gd.layer).classList.remove('gd-out'); $('.gd-ring', gd.layer).hidden = true; } }
 function gdStart() {
   if (!S) return; gdFields(); if (!gdLive() || !gdAllowed()) return;
   gdLayer(); gd.on = true; gd.shown = -1; gd.force = true;

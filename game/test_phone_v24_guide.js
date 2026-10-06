@@ -16,6 +16,7 @@ const { run } = require('./test_lib');
         const c = document.querySelector('#gdLayer .gd-card'), ring = document.querySelector('#gdLayer .gd-ring');
         const btns = [...c.querySelectorAll('.btn')].filter((b) => !b.hidden).map((b) => { const r = b.getBoundingClientRect(); return { w: r.width, h: r.height, fs: parseFloat(getComputedStyle(b).fontSize), top: (() => { const e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!e && b.contains(e); })() }; });
         return { card: R(c), dog: R(document.getElementById('dogHit')), tgt: ring && !ring.hidden && ring.dataset.for !== '#dogHit' ? R(document.querySelector(ring.dataset.for)) : null, ringFor: ring && !ring.hidden ? ring.dataset.for : null,
+          toasts: [...document.querySelectorAll('#toasts .toast')].map((e) => R(e)), at: c.dataset.at, skip: (() => { const b = c.querySelector('.gd-skip'); return b && !b.hidden ? [b.innerText.trim(), b.getAttribute('aria-label'), Math.round(b.getBoundingClientRect().height)] : null; })(),
           btns, txt: parseFloat(getComputedStyle(c.querySelector('.gd-txt')).fontSize), sw: document.documentElement.scrollWidth, iw: innerWidth, vw: document.getElementById('view').getBoundingClientRect() };
       });
       const check = async (i, label) => {
@@ -27,6 +28,8 @@ const { run } = require('./test_lib');
         ok(m.btns.length >= 1 && m.btns.every((b) => b.h >= 44 && b.w >= 44), `${tag} step ${i}: buttons 44 px or more ${JSON.stringify(m.btns.map((b) => [Math.round(b.w), Math.round(b.h)]))}`);
         ok(m.btns.every((b) => b.fs >= 15) && m.txt >= 15, `${tag} step ${i}: 15 px text (text ${m.txt}, buttons ${m.btns.map((b) => b.fs)})`);
         ok(m.btns.every((b) => b.top), `${tag} step ${i}: the buttons are tappable (nothing on top)`);
+        ok(!m.toasts.some((r) => t.hitR(r, m.card)), `${tag} step ${i}: no toast sits on the strip (${m.at}, ${m.toasts.length} toasts)`);
+        if (m.skip) ok(m.skip[0] === 'Skip' && m.skip[1] === 'Skip the guide' && m.skip[2] >= 44, `${tag} step ${i}: Skip reads "Skip" on one line (${JSON.stringify(m.skip)})`);
         ok(m.sw <= m.iw, `${tag} step ${i}: no sideways scroll (${m.sw} <= ${m.iw})`);
         ok(m.card[0] >= 0 && m.card[2] <= m.iw + 1 && m.card[1] >= m.vw.top - 2 && m.card[3] <= m.vw.bottom + 2, `${tag} step ${i}: the strip stays inside the scene`);
         await t.SH(`${tag}_step${i}_${label}`);
@@ -34,6 +37,9 @@ const { run } = require('./test_lib');
       const next = () => p.tap('#gdLayer .gd-next');
       const labels = ['hello', 'feed', 'pet', 'nap', 'map', 'walk', 'shops', 'garden', 'missions', 'done'];
       await check(0, 'hello'); await next();
+      ok(await atStep(1), `${tag} step 1 shows`);
+      const tm = await measure(); ok(tm.toasts.length > 0 && !tm.toasts.some((r) => t.hitR(r, tm.card)), `${tag} step 1 with a toast showing: the toast sits below the strip (${tm.at}) ${JSON.stringify(tm.toasts.map((r) => r.map(Math.round)))} vs ${JSON.stringify(tm.card.map(Math.round))}`);
+      await t.SH(`${tag}_step1_toast`);
       await check(1, 'feed');
       await p.tap('#bar [data-act=feed]'); await t.waitPop(true);
       ok(await t.until(() => document.querySelector('#gdLayer .gd-card').hidden), `${tag}: the strip hides while the Feed sheet is open`);
