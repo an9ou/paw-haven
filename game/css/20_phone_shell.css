@@ -127,3 +127,4 @@ html[data-layout="phone"] #stage:has(#modal:not([hidden])) #toasts{top:calc(env(
 html[data-layout="phone"] #stage:has(#modal:not([hidden])) #toasts .toast:nth-last-child(n+3){display:none}
 /* v2.3: the +N chip replaces the sideways scroll and its fade (phChipsFit in 13_more_dogs.js) */
 html[data-layout="phone"] #hudPack{gap:0;-webkit-mask-image:none;mask-image:none;animation:none}
+html[data-layout="phone"] .panel.packsheet::before{left:22px;transform:rotate(-7deg)} /* the tape moves off the drag handle */
