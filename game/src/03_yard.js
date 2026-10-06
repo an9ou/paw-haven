@@ -60,7 +60,7 @@ function enterYard() {
   updateHUD(); bindDev(); bindMess(); bindPack(); greetWalker(); drawFluff(); setTimeout(() => yardReaction(false), 700);
   const bedG = $('#bedG'); if (bedG) { bedG.onclick = () => { popAct = 'care'; openCareTray(); }; bedG.onkeydown = (e) => { if (e.key === 'Enter') { popAct = 'care'; openCareTray(); } }; }
   const svg = $('svg.world', view), hit = $('#dogHit');
-  if (isPhone()) phCamPan(svg);
+  if (isPhone()) { phCamPan(svg); phPeek(); }
   // petting: rub (mouse hover-rub or touch drag) or tap
   let last = null, down = false, moved = 0;
   const tickFrom = (e) => { const w = toWorld(svg, e.clientX, e.clientY); petTick(w.x, w.y); };
@@ -116,6 +116,23 @@ function phCamPan(svg) {
   };
   svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end);
   onCleanup(() => clearTimeout(phPanT));
+}
+// v2.3 phone: a small button on the right edge looks at the right half of the scene (the house, notice board, café counter, vet desk, salon table) and back
+function phPeekCx() { // the world x at the middle of the right-half prop (house, notice board, counter, desk, table)
+  const svg = $('svg.world', view), el = $('#houseG') || $('#sceneG [data-hot]'); if (!svg || !el) return 750;
+  const r = el.getBoundingClientRect(), a = toWorld(svg, r.left, r.top), c = toWorld(svg, r.right, r.bottom), m = (a.x + c.x) / 2;
+  return m > phCamHome + 80 ? m : 750;
+}
+function phPeek() {
+  const vw = view.clientWidth, vh = view.clientHeight; if (!vw || !vh || 600 * vw / vh >= 1000) return;
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'btn ph-peek'; b.id = 'phPeek'; view.appendChild(b);
+  const right = () => camCx > phCamHome + 80;
+  const sync = () => { const r = right(); b.innerHTML = r ? '&lsaquo;' : '&rsaquo;'; b.setAttribute('aria-label', r ? 'Look back at the dog' : 'Look right'); };
+  b.onclick = () => {
+    SFX.click(); clearTimeout(phPanT);
+    if (right()) camTo(phCamHome, 0.6); else { camTo(phPeekCx(), 0.7); phPanT = setTimeout(() => { if (cur.mode === 'yard') camTo(phCamHome, 0.8); }, 8000); }
+  };
+  sync(); const iv = setInterval(sync, 250); onCleanup(() => clearInterval(iv));
 }
 // v2.0.1: the dog's rectangular hit box overlaps the yard mailbox (drawn behind the dog). A tap inside the mailbox where the dog itself
 // is not painted goes to the mailbox; a tap on the painted dog still pets. Returns the mailbox element, or null.
@@ -485,11 +502,13 @@ function sleepTray() {
   const h = houseInfo(), b = bedInfo(), indoor = S.place === 'house';
   const info = `Energy refills at <b>${Math.round(napRate())}</b> per game hour${indoor ? ` (${esc(b.n)}: +25% indoors${b.bonus ? `, +${Math.round(b.bonus * 100)}% bed` : ''})` : h.comfort ? ` (${esc(h.n)}: +${Math.round(h.comfort * 100)}% comfort)` : ' (Cardboard Box: no comfort bonus, lots of character)'}${owns('toys', 'Plush Bone') ? ', +10% Plush Bone' : ''}${isNight() ? ', +40% night' : ''}${weatherNow() === 'rain' ? ', +20% rain on the roof' : ''}.`;
   if (isPhone()) {
+    const wasOpen = !!$('#napDet') && !$('#napDet').hidden;
     // v2.3 phone: a one-line strip (energy bar, info, Wake up) so the sleeping dog and the house stay in view; the details open on a tap
     setTray(`${esc(NAME())} is napping`, `<p class="napdet" id="napDet" hidden style="margin:0">${info}</p>
     <div class="walkctl napstrip"><button class="btn napinfo" id="napInfo" aria-label="Nap details" aria-expanded="false">?</button><div class="prog" aria-label="Energy"><i id="napBar" style="width:${S.stats.energy}%"></i></div><button class="btn yes" id="wakeBtn">Wake up</button></div>`, { mini: true });
     $('#trayX').remove(); const t = $('#dock > .tray'); if (t) t.classList.add('nap');
-    $('#napInfo').onclick = () => { const d = $('#napDet'), on = d.hidden; d.hidden = !on; $('#napInfo').setAttribute('aria-expanded', on ? 'true' : 'false'); };
+    $('#napInfo').onclick = () => { const d = $('#napDet'), on = d.hidden; d.hidden = !on; $('#napInfo').setAttribute('aria-expanded', on ? 'true' : 'false'); dogTo(417.5, (S.place === 'house' ? 130 : 140) - (on ? 70 : 0), 0.75, 0.4); }; // the details card is taller: the sleeping dog lifts so it stays in view
+    if (wasOpen) { $('#napDet').hidden = false; $('#napInfo').setAttribute('aria-expanded', 'true'); }
     $('#wakeBtn').onclick = () => wake();
     return;
   }

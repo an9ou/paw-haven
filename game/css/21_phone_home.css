@@ -21,3 +21,7 @@ html[data-layout="phone"] .tray.nap .napstrip{flex-wrap:nowrap;gap:10px;margin:0
 html[data-layout="phone"] .tray.nap .napstrip .prog{flex:1 1 auto;min-width:60px}
 html[data-layout="phone"] .tray.nap .napinfo{flex:none;width:44px;min-height:44px;padding:0;font-family:var(--font-hand);font-weight:700;font-size:30px;line-height:1;--wash:var(--w-blue)}
 html[data-layout="phone"] .tray.nap #wakeBtn{flex:none;min-height:44px}
+/* v2.3 look-right button: a small paper button on the right edge of the scene, above the dog's head */
+html[data-layout="phone"] #phPeek{position:absolute;right:6px;top:30%;z-index:5;width:44px;height:48px;min-height:44px;padding:0 0 4px;font-family:var(--font-hand);font-weight:700;font-size:36px;line-height:1;--wash:var(--paper);animation:phNudge 1.2s ease-in-out 3}
+@keyframes phNudge{50%{transform:translateX(5px)}}
+html[data-motion="off"] #phPeek{animation:none}

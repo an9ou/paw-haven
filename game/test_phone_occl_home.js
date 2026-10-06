@@ -78,6 +78,10 @@ const SCAN = (sels) => {
       t.sec(tag + ': nap strip');
       await t.p.tap('#bar [data-act=care]'); await t.until(() => !!document.querySelector('[data-care=sleep]'));
       await t.p.tap('[data-care=sleep]'); await t.until(() => !!document.getElementById('wakeBtn'));
+      ok(await t.until(() => !!document.querySelector('#toasts .toast'), null, 3000), `${tag} nap: a toast shows`);
+      await t.sleep(450); // the toast pops in
+      const tc = await t.ev(() => { const a = document.querySelector('#toasts .toast').getBoundingClientRect(), c = document.getElementById('status').getBoundingClientRect(), d = document.getElementById('dogHit').getBoundingClientRect(); const hit = (x, y) => !(x.right < y.left || x.left > y.right || x.bottom < y.top || x.top > y.bottom); return { chip: hit(a, c), dog: hit(a, d), box: [a.top | 0, a.bottom | 0] }; });
+      ok(!tc.chip && !tc.dog, `${tag} nap: the toast covers neither the location chip nor the dog ${JSON.stringify(tc)}`);
       await t.sleep(1400);
       const strip = await t.ev(() => { const tr = document.querySelector('#dock > .tray'), r = tr.getBoundingClientRect(), w = document.getElementById('wakeBtn').getBoundingClientRect(), i = document.getElementById('napInfo').getBoundingClientRect(); return { h: r.height, one: w.top >= r.top && w.bottom <= r.bottom, wh: w.height, ih: i.height, iw: i.width, det: document.getElementById('napDet').hidden }; });
       ok(strip.h <= 80, `${tag} nap: the strip is one line (${strip.h | 0}px tall)`);
@@ -86,7 +90,9 @@ const SCAN = (sels) => {
       await check('nap', ['#dogHit', '#houseG']);
       await t.p.tap('#napInfo'); await t.sleep(150);
       ok(await t.ev(() => !document.getElementById('napDet').hidden), `${tag} nap: a tap on ? opens the details`);
-      await t.p.tap('#napInfo');
+      await t.sleep(700); // the dog lifts while the details are open
+      await check('nap details', ['#dogHit']);
+      await t.p.tap('#napInfo'); await t.sleep(600);
       await t.p.tap('#wakeBtn'); await t.until(() => !document.getElementById('wakeBtn'));
 
       // ---------- house ----------
@@ -100,6 +106,20 @@ const SCAN = (sels) => {
       await check('house nap', ['#dogHit']);
       await t.p.tap('#wakeBtn'); await t.until(() => !document.getElementById('wakeBtn'));
 
+      // the right half of the scene (notice board, café counter, vet desk, salon table, the dog house) is reachable with the look-right button
+      const steady = () => t.until(() => { const x = document.querySelector('#view > svg.world').viewBox.baseVal.x, ok2 = window.__cx !== undefined && Math.abs(window.__cx - x) < 0.05; window.__cx = x; return ok2; }, null, 6000);
+      const peekCheck = async (label) => {
+        const has = await t.ev(() => ({ btn: !!document.getElementById('phPeek'), prop: !!document.querySelector('#sceneG [data-hot]') || !!document.getElementById('houseG') }));
+        if (!has.prop) return;
+        ok(has.btn, `${tag} ${label}: the look-right button is there`); if (!has.btn) return;
+        const bb = await t.ev(() => { const r = document.getElementById('phPeek').getBoundingClientRect(); return [r.width, r.height]; });
+        ok(bb[0] >= 43.5 && bb[1] >= 43.5, `${tag} ${label}: the look-right button is >= 44 px (${bb.map(Math.round)})`);
+        await t.p.tap('#phPeek'); await t.until(() => document.getElementById('phPeek').getAttribute('aria-label') === 'Look back at the dog', null, 5000); await t.sleep(900); await steady();
+        const r = await t.ev((sels) => { for (const s of sels) { const e = document.querySelector(s); if (!e) continue; const b = e.getBoundingClientRect(), vr = document.getElementById('view').getBoundingClientRect(); const top = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2); return { sel: s, on: b.left >= -1 && b.right <= innerWidth + 1 && b.top >= vr.top && b.bottom <= vr.bottom + 1, cov: !!(top && top.closest('#dock > .tray, #modal .panel, #hud, #bar, #toasts .toast, #placeBtns .btn, #devBtn, #phPeek')) }; } return null; }, [label === 'yard' ? '#houseG' : '#sceneG [data-hot]']);
+        ok(!!r && r.on && !r.cov, `${tag} ${label}: the look-right button brings ${r && r.sel} fully on screen and uncovered ${JSON.stringify(r)}`);
+        await t.p.tap('#phPeek'); await t.until(() => document.getElementById('phPeek').getAttribute('aria-label') === 'Look right', null, 5000); await t.sleep(900); await steady();
+        ok(await t.ev(() => document.getElementById('phPeek').getAttribute('aria-label') === 'Look right'), `${tag} ${label}: the button looks back again`);
+      };
       // a speech bubble never sits on the location chip (the dog talks when petted)
       const bubbleVsChip = async (label) => {
         // a bubble anchored near the top-left of the scene (where it would land on the chip)
@@ -109,7 +129,7 @@ const SCAN = (sels) => {
         ok(!!r, `${tag} ${label}: a speech bubble shows`); if (r) ok(!r.over, `${tag} ${label}: the speech bubble does not cover the location chip`);
         await t.ev(() => { document.getElementById('bubble').hidden = true; });
       };
-      await t.home('yard'); await t.sleep(700); await bubbleVsChip('yard');
+      await t.home('yard'); await t.sleep(700); await bubbleVsChip('yard'); await peekCheck('yard');
 
       // ---------- every town place ----------
       for (const pl of ['market', 'square', 'cafe', 'pier', 'hilltop', 'dogpark', 'vet', 'salon']) {
@@ -121,6 +141,7 @@ const SCAN = (sels) => {
         await toastsGone();
         await check(pl + ' quiet', must);
         await bubbleVsChip(pl);
+        await peekCheck(pl);
       }
 
       // ---------- garden ----------

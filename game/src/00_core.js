@@ -536,8 +536,10 @@ const isFavFood = (n) => S.dog.favFood.includes(n);
 const favAct = (a) => (FAV[S.dog.key] || {}).act === a;
 
 /* ---------------- toasts, bubbles ---------------- */
+// v2.3 phone: toasts start just under the location chip (top-left of the scene), never on it
+function phChipClear() { if (!isPhone()) return 0; const st = $('#status'); return st && !st.hidden && st.offsetParent === view ? st.offsetTop + st.offsetHeight + 4 - 8 : 0; }
 function toast(text, kind = '') {
-  const modScr = stage.classList.contains('modhud'); toasts.style.top = modScr ? 'auto' : (hud.hidden ? 10 : view.offsetTop + 8) + 'px'; toasts.style.bottom = modScr ? '18px' : ''; toasts.style.flexDirection = modScr ? 'column-reverse' : '';
+  const modScr = stage.classList.contains('modhud'); toasts.style.top = modScr ? 'auto' : (hud.hidden ? 10 : view.offsetTop + 8 + phChipClear()) + 'px'; toasts.style.bottom = modScr ? '18px' : ''; toasts.style.flexDirection = modScr ? 'column-reverse' : '';
   const t = document.createElement('div'); t.className = 'toast ' + kind; t.textContent = text; toasts.appendChild(t);
   while (toasts.children.length > 3) toasts.firstChild.remove();
   setTimeout(() => t.remove(), 2900);
