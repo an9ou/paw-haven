@@ -48,7 +48,7 @@ The tests drive the real game in headless Chromium with Playwright.
 npm install -g playwright && npx playwright install chromium
 NODE_PATH=$(npm root -g) node game/run_tests.js smoke    # about 30 seconds
 NODE_PATH=$(npm root -g) node game/run_tests.js all --jobs 2     # desktop suites
-NODE_PATH=$(npm root -g) node game/run_tests.js phone --jobs 2   # phone suites (iPhone 13, Pixel 7) and the mocked cloud-save suite
+NODE_PATH=$(npm root -g) node game/run_tests.js phone --jobs 2   # phone suites (iPhone 13, Pixel 7), the mocked cloud-save suite, the title account choice (`account`) and the occlusion suites (`phone_occl_home`, `phone_occl_play`)
 ```
 
 ## Project layout
@@ -86,6 +86,7 @@ Some folders (`dogs/`, `world/`, `mods/`) also hold earlier art versions and rev
 - **v2.0.1**: puppies stay home on trips, spot 4 at 60 care days, mailbox tap fix, Coat Collector Ribbon art.
 - **v2.1 "Sparkle & Family"**: Sparkle boosts and the Sparkle Meter, ancestry and grand-mixes, collection rewards and titles, yard decorations, pen-pal postcards and album, the Gene Sniffer and the town painter.
 - **v2.2 "Phones & Cloud Save"**: the full game on phones (portrait, touch, bottom sheets), real-time cloud save with optional accounts and no emails, and Export / Import save codes.
+- **v2.3 "Cozy Phones"**: a Log in / Make an account / Play as guest choice on the title screen (saves stay with their account), a napping-dog strip on phones, and a phone polish pass so nothing blocks the view.
 
 Full details: [CHANGELOG.md](CHANGELOG.md). Open issues: [TODO.md](TODO.md).
 

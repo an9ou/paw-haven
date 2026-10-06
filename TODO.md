@@ -1,6 +1,6 @@
 # Open issues
 
-Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version fixed them (v2.0.1, v2.1 or v2.2).
+Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version fixed them (v2.0.1, v2.1, v2.2 or v2.3).
 
 ## Gameplay
 - [x] Puppies could travel to Park / River / Woods / Beach as a place. Fixed: under 3 months and nursing mums stay home.
@@ -44,5 +44,12 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [x] Mailbox Letters / Album buttons measure 38–41 px on phones; nursery sex symbols are about 13.6 px. `game/css/23_phone_journal.css`, `game/css/24_phone_puppy.css` (v2.3 phone-home lane)
 - [x] The camera crop can hide the Dog Park board and the Square easel (their place buttons work). `game/src/03_yard.js` (v2.3 phone-home lane)
 - [ ] The Playwright iPhone 13 profile is 390×664, not 390×844, so sheet heights were tested at the smaller size. Check once on a real iPhone.
-- [ ] The register fallback (`signUp`, only used if a project still asks to confirm email changes) has no push guard like the login one. The live project takes the `updateUser` path. `game/src/22b_cloud.js` clRegister
+- [x] The register fallback (`signUp`, only used if a project still asks to confirm email changes) had no push guard like the login one. `game/src/22b_cloud.js` clRegister (v2.3 account lane)
 - [ ] The QA audit (Haiku) covered title, yard, market and map by hand. Every other screen is covered by its lane's phone suite, not by a separate audit.
+
+## Phone (v2.3)
+- [ ] Realtime sync still needs a real two-phone check. The mocked suite covers it. `game/src/22b_cloud.js`
+- [ ] Playdate pals' noses nearly touch in the bow pose at 390 px wide.
+- [ ] The map zoom buttons were checked clear of the labels only in the default (unpanned) view. `game/src/08_map.js`
+- [ ] Owner: confirm the Supabase project auto-confirms email changes (Confirm email off), so "No email is ever sent" stays true.
+- [ ] The "look right" peek button and the nap details card are new. Check both once on a real phone.
