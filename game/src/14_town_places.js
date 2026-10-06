@@ -159,11 +159,3 @@ function mapOverlay() {
   if (c && pin) { pin.hidden = false; pin.style.left = c[0] + 'px'; pin.style.top = (c[1] - 30) + 'px'; }
 }
 
-
-/* v2.3 phone: the place buttons sit where the baked-in "Market Street" sign is, and the HUD chip already names the street, so the sign is hidden on phones. */
-function marketSignHide() {
-  if (!isPhone() || S.place !== 'market') return;
-  const t = [...view.querySelectorAll('svg.world text')].find((x) => x.textContent === 'Market Street'); if (!t) return;
-  [t, t.previousElementSibling, t.previousElementSibling && t.previousElementSibling.previousElementSibling].forEach((e) => { if (e && /^(path|text)$/.test(e.tagName)) e.style.display = 'none'; });
-}
-on('yard:enter', marketSignHide); on('scene:redraw', marketSignHide); on('phone:layout', marketSignHide);

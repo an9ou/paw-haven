@@ -33,6 +33,16 @@ const overlaps = (aSel, bSels, shrink) => {
   return out;
 };
 
+// the baked-in Market Street sign (svg text + its outline): visible, on screen, and not under anything from COVER
+const signOverlaps = (cover) => {
+  const tx = [...document.querySelectorAll('svg.world text')].find((x) => x.textContent === 'Market Street'); if (!tx) return ['sign text is missing'];
+  if (getComputedStyle(tx).display === 'none') return ['sign is hidden'];
+  const r = tx.getBoundingClientRect(), out = [];
+  if (r.width < 20 || r.left < 0 || r.right > innerWidth || r.top < 0 || r.bottom > innerHeight) out.push('sign is off screen ' + [r.left, r.top, r.right, r.bottom].map(Math.round));
+  document.querySelectorAll(cover).forEach((c) => { const q = c.getBoundingClientRect(), cs = getComputedStyle(c); if (q.width < 2 || cs.visibility === 'hidden' || cs.display === 'none') return; if (q.left < r.right && q.right > r.left && q.top < r.bottom && q.bottom > r.top) out.push(`sign under ${c.id ? '#' + c.id : c.tagName.toLowerCase()}.${String(c.className).split(' ')[0]}`); });
+  return out;
+};
+
 run('phone_occl_play', async (t) => {
   const { ok, ev } = t; const sleepMs = sleep;
   const p = new Proxy({}, { get: (_, k) => { const v = t.p[k]; return typeof v === 'function' ? v.bind(t.p) : v; } });
@@ -58,8 +68,10 @@ run('phone_occl_play', async (t) => {
     await check(`${tag} market`, '#dogHit', COVER);
     await check(`${tag} market`, '#placeBtns [data-sh]', '#bar,#hud,#toasts .toast,#modal:not([hidden]) .panel', [[0.5, 0.5]]);
     await clear(`${tag} market`, '#dogHit', ['#placeBtns .btn'], 0.15);
-    const signHidden = await ev(() => { const x = [...document.querySelectorAll('svg.world text')].find((e) => e.textContent === 'Market Street'); return !x || getComputedStyle(x).display === 'none'; });
-    ok(signHidden, `${tag} market: the street sign (under the place buttons) is not drawn on phones`);
+    // the street sign is a protected prop: it stays drawn, and nothing (place buttons, bar, HUD, toasts, status chip) sits on it
+    const signBad = await ev(`(${signOverlaps})(${JSON.stringify(COVER)})`);
+    ok(signBad.length === 0, `${tag} market: the "Market Street" sign is drawn and nothing covers it${signBad.length ? ' -> ' + signBad.slice(0, 3).join(' | ') : ''}`);
+    await toast(); const signBadT = await ev(`(${signOverlaps})(${JSON.stringify(COVER)})`); ok(signBadT.length === 0, `${tag} market + toast: the sign is still uncovered${signBadT.length ? ' -> ' + signBadT.slice(0, 2).join(' | ') : ''}`); await unToast();
     await toast(); await check(`${tag} market + toast`, '#dogHit', COVER); await check(`${tag} market + toast`, '#placeBtns [data-sh]', '#toasts .toast,#bar', [[0.5, 0.5]]); await unToast();
 
     // ===================== each shop =====================
