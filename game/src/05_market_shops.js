@@ -156,6 +156,6 @@ on('game:ready', () => { if (S && (!S.foodTips || typeof S.foodTips !== 'object'
 // tests: window.__paw.shop
 function shExpose() {
   if (!window.__paw) return;
-  window.__paw.shop = { tip: (n, q) => shFoodTip(n, q), outfit: (pose) => shSleepOutfit(D(), pose), napRate: () => napRate(), roll: (area, o) => { const r = rollTreasure(area, o || {}); return r && r.item ? r.item.n : null; }, careDay: () => markCareDay(), careGift: () => shCareGift(), giftRoll: () => giftRoll(), dailyGift: () => { S.mailGiftDay = ''; return dailyGift(); }, mail: () => openMailbox(), wardrobe: () => openWardrobe(), equip: (n) => equip(n, true), sleep: () => startSleep(), wake: () => wake(), hot: () => isHot(), shop: (k) => openShop(k), waterWait: () => shWaterWait() };
+  window.__paw.shop = { tip: (n, q) => shFoodTip(n, q), outfit: (pose) => shSleepOutfit(D(), pose), napRate: () => napRate(), roll: (area, o) => { const r = rollTreasure(area, o || {}); return r && r.item ? r.item.n : null; }, careDay: () => markCareDay(), careGift: () => shCareGift(), giftRoll: () => giftRoll(), dailyGift: () => { S.mailGiftDay = ''; return dailyGift(); }, mail: () => openMailbox(), wardrobe: () => openWardrobe(), equip: (n) => equip(n, true), sleep: () => startSleep(), wake: () => wake(), hot: () => isHot(), shop: (k) => openShop(k), waterWait: () => shWaterWait(), get busy() { return busy; } };
 }
 on('game:ready', () => setTimeout(shExpose, 0)); on('yard:enter', () => { if (!window.__paw || !window.__paw.shop) shExpose(); });

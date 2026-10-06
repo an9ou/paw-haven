@@ -166,7 +166,7 @@ function feedAll() {
   });
   if (S.inv.food[f.n] <= 0) delete S.inv.food[f.n];
   if (!fed.length) { nope('Everyone is full or asleep. Nobody has ever said that before.'); return; }
-  dailyCare('feed'); markCareDay(); markDirty(); popDown(); SFX.crunch(); setTimeout(SFX.crunch, 300); setTimeout(SFX.crunch, 600);
+  dailyCare('feed'); markCareDay(); trackAct('feed', { name: f.n }); if (typeof shFoodTip === 'function') setTimeout(() => shFoodTip(f.n), 900); markDirty(); popDown(); SFX.crunch(); setTimeout(SFX.crunch, 300); setTimeout(SFX.crunch, 600);
   if (fed.includes(D())) setTemp('eat', 1400); others().forEach((d) => { if (fed.includes(d)) { packPose[d.id] = 'eat'; redrawPackDog(d); setTimeout(() => { packPose[d.id] = 'happy'; redrawPackDog(d); }, 1500); } });
   const skipped = S.dogs.length - fed.length;
   const pups = fed.filter((d) => pupBonus(d, f)).map((d) => d.name), eats = fed.map(eatForLine).join('');

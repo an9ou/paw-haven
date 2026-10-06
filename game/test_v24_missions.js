@@ -33,7 +33,7 @@ require('./test_lib').run('v24_missions', async (t) => {
   const feedOnce = async () => { await t.retryUntil(async () => { await ev(() => { window.__paw.S.stats.hunger = 30; window.__paw.feed('Basic Kibble'); }); }, (n) => (window.__paw.S.inv.food['Basic Kibble'] || 0) < n, await ev(() => window.__paw.S.inv.food['Basic Kibble']), { tries: 4, each: 4000 }); await t.until(() => window.__paw.S.missions.list[0].p >= 1 || false, null, 4000); };
   await feedOnce(); await t.until(() => window.__paw.S.missions.list[0].p === 1, null, 5000);
   s = await S(); ok(s.missions.list[0].p === 1 && !s.missions.list[0].done, 'one feed: 1/2');
-  await t.sleep(1500); await t.toasts();
+  await t.until(() => !window.__paw.shop.busy && !document.querySelector('#toasts .toast'), null, 8000); await t.toasts(); // the feed finished and its toasts are gone
   const c0 = (await S()).coins;
   await feedOnce(); await t.until(() => !!window.__paw.S.missions.list[0].done, null, 6000);
   s = await S(); ok(!!s.missions.list[0].done && s.missions.list[0].p === 2, 'two feeds: feed2 done');
@@ -42,7 +42,7 @@ require('./test_lib').run('v24_missions', async (t) => {
   ok(await t.until(() => document.querySelector('#msCardG') && document.querySelector('#msCardG').dataset.done === '1', null, 3000), 'yard clipboard: 1/3');
 
   sec('all three done: a stamp');
-  await t.sleep(1200);
+  await t.until(() => !window.__paw.shop.busy && !document.querySelector('#toasts .toast'), null, 8000);
   await ev(() => { window.__paw.ms.act('pet', {}); }); s = await S(); ok(s.missions.stamps === 0, 'two of three: no stamp yet');
   await ev(() => { window.__paw.ms.act('bath', {}); });
   s = await S(); ok(s.missions.stamps === 1 && s.missions.list.every((x) => x.done), 'all three: 1 stamp');
@@ -50,7 +50,7 @@ require('./test_lib').run('v24_missions', async (t) => {
   await ev(() => { window.__paw.ms.act('bath', {}); }); ok((await S()).missions.stamps === 1, 'more actions: still 1 stamp');
 
   sec('the Missions popup and the yard clipboard');
-  await t.sleep(600);
+  await t.until(() => !!document.querySelector('#msCardG > rect') && document.getElementById('modal').hidden, null, 4000);
   await p().click('#msCardG > rect', { force: true });
   ok(await t.until(() => !!document.querySelector('#modal:not([hidden]) .panel.ms-pop'), null, 4000), 'tapping the clipboard opens the popup');
   const pop = await ev(() => ({ li: [...document.querySelectorAll('.ms-pop .ms-list li')].map((l) => [l.className, l.textContent]), coins: document.querySelector('.ms-pop .ms-coins').textContent, stamp: document.querySelector('.ms-pop .ms-sline').textContent, card: !!document.querySelector('.ms-pop .ms-card svg'), sc: !!document.querySelector('.ms-pop .ms-stampcard svg') }));
@@ -85,7 +85,11 @@ require('./test_lib').run('v24_missions', async (t) => {
   await t.toasts();
   const nl = await ev(() => window.__paw.ms.today());
   s = await S(); ok(s.missions.date === today && nl.length === 3 && nl.every((x) => x.p === 0 && !x.done), 'today: 3 fresh missions');
-  await t.sleep(1500); ok(!(await t.toasts()).some((x) => /mission/i.test(x)), 'no message about the old ones');
+  await t.sleep(300); ok(!(await t.toasts()).some((x) => /mission/i.test(x)), 'no message about the old ones');
+
+  sec('the clipboard is drawn in the yard only, not in the bath scene');
+  await ev(() => window.__paw.go('bath')); ok(await t.untilMode('bath') && await ev(() => !document.querySelector('#msCardG')), 'bath: no clipboard');
+  await t.home('yard'); ok(await t.until(() => !!document.querySelector('#msCardG'), null, 5000), 'back in the yard: the clipboard');
 
   sec('Journal Missions tab');
   await p().click('[data-act=journal]'); await p().waitForSelector('[data-jtab=missions], [data-tab=missions], .tabs button');
