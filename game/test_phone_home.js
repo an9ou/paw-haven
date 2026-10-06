@@ -143,6 +143,7 @@ const AUDIT = () => {
       // ---------- mailbox hotspot and camera swipe ----------
       t.sec(dev + ': mailbox, swipe camera');
       await t.until(() => !!document.getElementById('mailboxG'));
+      await t.sleep(900); // the camera may still be easing back to the dog
       const mb = await rectOf('#mailboxG');
       ok(!!mb && mb.w >= 44 && mb.h >= 44, `mailbox tap area >= 44 (${mb && Math.round(mb.w)}x${mb && Math.round(mb.h)})`);
       await t.p.touchscreen.tap(mb.x, mb.y);

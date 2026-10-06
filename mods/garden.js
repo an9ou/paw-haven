@@ -368,8 +368,8 @@
     '.pg-portrait{overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch}',
     '.pg-portrait .pg-stage,.pg-portrait .pg-scene,.pg-portrait .pg-fx,.pg-portrait .pg-anim,.pg-portrait .pg-ui{width:420px;height:1000px}',
     '.pg-portrait .pg-scene>svg{width:420px;height:1000px}',
-    '.pg-portrait .pg-plots::before{content:"";position:absolute;left:8px;top:214px;width:404px;height:478px;background:rgba(150,108,76,.93);border:3px solid ' + INK + ';border-radius:18px 12px 20px 14px}',
-    '.pg-portrait .pg-art,.pg-portrait .pg-soil,.pg-portrait .pg-crop{height:132px}',
+    '.pg-portrait .pg-plots::before{content:"";position:absolute;left:8px;top:168px;width:404px;height:380px;background:rgba(150,108,76,.93);border:3px solid ' + INK + ';border-radius:18px 12px 20px 14px}',
+    '.pg-portrait .pg-art,.pg-portrait .pg-soil,.pg-portrait .pg-crop{height:112px}',
     '.pg-portrait .pg-hud{left:6px;right:6px;top:calc(8px + var(--pg-sy,0px));z-index:7;height:auto;flex-wrap:wrap;gap:6px 4px;padding:6px 6px 8px}',
     '.pg-portrait .pg-ico{width:40px;height:40px}',
     '.pg-portrait .pg-titles{flex:1 1 300px}',
@@ -380,10 +380,10 @@
     '.pg-portrait .pg-done{font-size:19px;padding:0 7px 3px;min-height:52px}',
     '.pg-portrait .pg-tool i{width:24px;height:24px}',
     '.pg-portrait .pg-btn{min-height:50px}',
-    '.pg-portrait .pg-chips{left:8px;right:8px;top:704px;flex-direction:row;flex-wrap:wrap;gap:5px}',
+    '.pg-portrait .pg-chips{left:8px;right:8px;top:702px;flex-direction:row;flex-wrap:wrap;gap:5px}',
     '.pg-portrait .pg-chip{font-size:17px;max-width:404px}',
-    '.pg-portrait .pg-info{left:174px;right:8px;top:830px;width:auto}',
-    '.pg-portrait .pg-dogw{left:4px;top:846px;width:166px;height:138px}',
+    '.pg-portrait .pg-info{left:8px;right:8px;top:558px;width:auto}',
+    '.pg-portrait .pg-dogw{left:4px;top:834px;width:166px;height:138px}',
     '.pg-portrait .pg-bubble{left:6px;bottom:146px;max-width:300px}',
     '.pg-portrait .pg-pouch{left:8px;right:8px;top:calc(184px + var(--pg-sy,0px));width:auto;max-height:calc(var(--pg-vh,700px) - 196px);overflow-y:auto}',
     '.pg-portrait .pg-pk{width:118px;font-size:17px}',
@@ -551,7 +551,7 @@
   var SC = 1.24, OY = -62;
   var ZONES_L = [[220, 250], [420, 250], [620, 250], [220, 390], [420, 390], [620, 390]].map(function (z) { return { x: z[0] * SC, y: z[1] * SC + OY, w: 160 * SC, h: 110 * SC }; });
   /* v1.5B portrait (phones): a 420-wide stage, plots in a 2x3 grid, scaled to the screen width and scrolled vertically */
-  var ZONES_P = [[22, 252], [218, 252], [22, 402], [218, 402], [22, 552], [218, 552]].map(function (z) { return { x: z[0], y: z[1], w: 180, h: 120 }; });
+  var ZONES_P = [[22, 186], [218, 186], [22, 300], [218, 300], [22, 414], [218, 414]].map(function (z) { return { x: z[0], y: z[1], w: 180, h: 108 }; });
   var ZONES = ZONES_L, SW = 1240, SH = 620, PORT = false;
 
   /* ======================================================================
@@ -907,7 +907,7 @@
       if (p.crop) { say('Plot ' + (i + 1) + ' is busy growing. One veggie per bed.', 2200); return; }
       if ((seeds[cropId] | 0) <= 0) { armed = null; tool = null; renderTools(); renderHint(); call('say', NO_SEEDS, 3000); say(NO_SEEDS + '.', 3000); sfx('nope'); return; }
       if (!inSeason(cropId, env.month) && !SESSION.offOK) { confirmOffSeason(c, function () { tryPlant(i, cropId); }); return; }
-      if (buddy !== 'dig' && !dug[i]) {
+      if (buddy !== 'dig' && !dug[i] && !PORT) { // v2.3 phone: no separate dig tap, the dog digs while it plants
         dug[i] = true; renderPlot(i); dirt(i); sfx('dig'); pose('dig', 900);
         hint('Hole dug in plot ' + (i + 1) + '. Tap it again (or P) to drop the ' + c.seedItem + '.');
         return;
@@ -917,7 +917,7 @@
       var ok = call('onPlant', i, cropId);
       if (ok === false) { seeds[cropId] = 0; armed = null; tool = null; renderAll(); call('say', NO_SEEDS, 3000); say(NO_SEEDS + '.', 3000); sfx('nope'); return; }
       st = pre.state; seeds[cropId] = Math.max(0, (seeds[cropId] | 0) - 1); dug[i] = false;
-      if (buddy === 'dig') dirt(i);
+      if (buddy === 'dig' || PORT) dirt(i);
       sfx('plant'); pose('dig', 1100);
       if (pre.bonusSeed) { call('onBonusSeed', cropId); seeds[cropId] = (seeds[cropId] | 0) + 1; later(function () { say(dogName + ' dug up a bonus ' + c.seedItem.replace(/s$/, '') + '!', 2800); float(zc(i).x, zc(i).y - 40, '+1 seed', 'pg-pinkt'); }, 500); }
       else say(fill(pick(PLANT_LINES), cropId), 2200);

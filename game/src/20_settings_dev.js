@@ -10,7 +10,7 @@ function openSettings() {
     <p class="small">Time: 1 game hour = 1 real minute. Prototype economy: coins x${BOOST.coins}, Bond x${BOOST.bond}, naps x${BOOST.nap}.</p>
     <p class="small">Clock and weather follow your real local time (3 weather periods a day). Keys: 1-9 bottom buttons, Space pets / throws / walks, Esc closes things.</p>
     ${typeof clSection === 'function' ? clSection() : ''}
-    <div class="foot" style="justify-content:space-between"><button class="btn red" id="setReset">Reset save</button><button class="btn" id="setTitle">Title screen</button></div>`);
+    <div class="foot" style="justify-content:space-between${isPhone() ? '' : ';position:sticky;bottom:-2px;z-index:2;margin-top:8px;padding:8px 0 2px;background:var(--paper);border-top:2px dashed rgba(91,61,50,.25)'}"><button class="btn red" id="setReset">Reset save</button><button class="btn" id="setTitle">Title screen</button></div>`);
   ['master', 'music', 'sfx', 'ambience'].forEach((k) => { const r = $('#vol-' + k, p); r.oninput = () => { prefs.vol[k] = +r.value; if (k === 'ambience') prefs.ambTouched = true; $('#out-' + k, p).textContent = r.value; applyAudioPrefs(); }; r.onchange = () => { savePrefs(); if (k === 'sfx' || k === 'master') SFX.boop(660); }; });
   $('#setMute', p).onchange = (e) => { prefs.mute = e.target.checked; savePrefs(); applyAudioPrefs(); updateMute(); };
   $('#setMotion', p).onchange = (e) => setMotion(e.target.checked);

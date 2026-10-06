@@ -34,7 +34,7 @@ function renderDog(pose, facing = 'right', force) {
 }
 function setTemp(pose, ms) { tempPose = pose; tempUntil = performance.now() + ms; renderDog(pose); }
 function dogTo(tx, ty = 0, scale = 1, secs = 0.9) {
-  const p = $('#dogPos'); if (!p) return; phCamHome = 430 * scale + tx; camTo(430 * scale + tx, secs); p.style.transitionDuration = secs + 's';
+  const p = $('#dogPos'); if (!p) return; phCamHome = phLandCx(430 * scale + tx); camTo(phCamHome, secs); p.style.transitionDuration = secs + 's';
   p.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
 }
 function bowlArt(food) {
@@ -54,8 +54,8 @@ function enterYard() {
   setChrome(true, true);
   view.innerHTML = yardWorldSVG(); dogKey = ''; busy = false;
   renderDog(dogPoseNow()); setBowl(S.bowl || null);
-  phCamHome = 430; clearTimeout(phPanT);
-  camCx = 430; camApply(camCx);
+  phCamHome = phLandCx(430); clearTimeout(phPanT);
+  camCx = phCamHome; camApply(camCx);
   if (S.sleeping) { dogTo(417.5, S.place === 'house' ? 130 : 140, 0.75, 0); showZzz(true); }
   updateHUD(); bindDev(); bindMess(); bindPack(); greetWalker(); drawFluff(); setTimeout(() => yardReaction(false), 700);
   const bedG = $('#bedG'); if (bedG) { bedG.onclick = () => { popAct = 'care'; openCareTray(); }; bedG.onkeydown = (e) => { if (e.key === 'Enter') { popAct = 'care'; openCareTray(); } }; }
@@ -93,6 +93,12 @@ function enterYard() {
 }
 // v2.2 phone: swipe the yard or house sideways to look around (the camera crop is about half the scene). It eases back to the dog after a few seconds.
 let phCamHome = 430, phPanT = 0;
+// v2.3 phone: the Town Square easel and the Dog Park board sit left of the dog (world x 214+); keep them inside the crop
+function phLandCx(cx) {
+  if (!isPhone() || (S.place !== 'square' && S.place !== 'dogpark')) return cx;
+  const vw = view.clientWidth, vh = view.clientHeight; if (!vw || !vh) return cx;
+  return Math.min(cx, 208 + 300 * vw / vh);
+}
 function phCamPan(svg) {
   let x0 = null, c0 = 0, id = null, on = false, swallowUntil = 0;
   svg.addEventListener('click', (ev) => { if (performance.now() < swallowUntil) { ev.stopPropagation(); ev.preventDefault(); } }, true);
@@ -477,7 +483,17 @@ function startSleep() {
 }
 function sleepTray() {
   const h = houseInfo(), b = bedInfo(), indoor = S.place === 'house';
-  setTray(`${esc(NAME())} is napping`, `<p style="margin:0">Energy refills at <b>${Math.round(napRate())}</b> per game hour${indoor ? ` (${esc(b.n)}: +25% indoors${b.bonus ? `, +${Math.round(b.bonus * 100)}% bed` : ''})` : h.comfort ? ` (${esc(h.n)}: +${Math.round(h.comfort * 100)}% comfort)` : ' (Cardboard Box: no comfort bonus, lots of character)'}${owns('toys', 'Plush Bone') ? ', +10% Plush Bone' : ''}${isNight() ? ', +40% night' : ''}${weatherNow() === 'rain' ? ', +20% rain on the roof' : ''}.</p>
+  const info = `Energy refills at <b>${Math.round(napRate())}</b> per game hour${indoor ? ` (${esc(b.n)}: +25% indoors${b.bonus ? `, +${Math.round(b.bonus * 100)}% bed` : ''})` : h.comfort ? ` (${esc(h.n)}: +${Math.round(h.comfort * 100)}% comfort)` : ' (Cardboard Box: no comfort bonus, lots of character)'}${owns('toys', 'Plush Bone') ? ', +10% Plush Bone' : ''}${isNight() ? ', +40% night' : ''}${weatherNow() === 'rain' ? ', +20% rain on the roof' : ''}.`;
+  if (isPhone()) {
+    // v2.3 phone: a one-line strip (energy bar, info, Wake up) so the sleeping dog and the house stay in view; the details open on a tap
+    setTray(`${esc(NAME())} is napping`, `<p class="napdet" id="napDet" hidden style="margin:0">${info}</p>
+    <div class="walkctl napstrip"><button class="btn napinfo" id="napInfo" aria-label="Nap details" aria-expanded="false">i</button><div class="prog" aria-label="Energy"><i id="napBar" style="width:${S.stats.energy}%"></i></div><button class="btn yes" id="wakeBtn">Wake up</button></div>`, { mini: true });
+    $('#trayX').remove(); const t = $('#dock > .tray'); if (t) t.classList.add('nap');
+    $('#napInfo').onclick = () => { const d = $('#napDet'), on = d.hidden; d.hidden = !on; $('#napInfo').setAttribute('aria-expanded', on ? 'true' : 'false'); };
+    $('#wakeBtn').onclick = () => wake();
+    return;
+  }
+  setTray(`${esc(NAME())} is napping`, `<p style="margin:0">${info}</p>
     <div class="walkctl" style="margin-top:6px"><div class="prog" aria-label="Energy"><i id="napBar" style="width:${S.stats.energy}%"></i></div><button class="btn yes" id="wakeBtn">Wake up</button></div>`, { mini: true });
   $('#trayX').remove();
   $('#wakeBtn').onclick = () => wake();
