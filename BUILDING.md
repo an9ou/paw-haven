@@ -25,7 +25,7 @@ The platform's usage meters, at list price:
 | **Project manager** | Opus | Long-running, the owner's chat | Talks to the owner: plans, decisions, reports. Reads the Build Board for progress. Never builds or merges. |
 | **Coordinator** | Opus | **One release** | Writes lane briefs, starts the lanes, merges, fixes merge fallout, releases. |
 | **Lanes** | Sonnet by default | **One release** | Build one area in their own branch. |
-| **Integration review** | Opus | One review | Read-only cross-lane check after the last merge. Worth it: it found 7 real bugs in each release. |
+| **Integration review** | Opus, three in parallel | One review | Read-only checks: code and cross-lane, phone layout and occlusion, art and style. Each re-checks every fix batch as it merges. Worth it: it found 7 real bugs in each release. |
 
 There is no separate QA session. `game/test_copy_node.js` (the `copy` suite) and the phone suites check the standing rules for free.
 
@@ -90,6 +90,7 @@ You manage Paw Haven for the owner. You don't build. Start a fresh Coordinator s
 **The owner's preferences:**
 - **Times in JST** (the owner is in Japan).
 - **Quality first:** quality and the game's style come before saving tokens.
+- **Speed and quality over token cost:** lanes may use parallel subagents. Take screenshots before and after for every changed screen.
 - **Decisions:** ask with the AskUserQuestion choice window (2–4 options, recommendation first), not plain text. If the owner says "if I don't answer in N minutes, pick the recommendation", schedule a `send_later` for that time and follow through.
 - **Stop means stop.** If the owner says "stop", stop at once: cancel scheduled check-ins, commit nothing, and ask what they meant.
 - **Reports:** only a final report, unless the owner asks for progress. The final report is a claude.ai artifact in the game's own style, with real crayon dogs. To draw the dogs:
@@ -101,11 +102,11 @@ You manage Paw Haven for the owner. You don't build. Start a fresh Coordinator s
 - **Progress page:** the Build Board, https://claude.ai/artifact/Mk2ihLjRMZn1BA4AJ4KVzZ (collections `lanes`, `stages`, `log`).
 - **Releases:** log them in Studio, https://claude.ai/artifact/Raf3Fyx1pS2Gz9U55Wf5BS (collection `releases`).
 
-**State after v2.2 (6 Oct 2026):**
-- v2.2 "Phones & Cloud Save" is live on GitHub Pages and on the claude.ai artifact (v18).
+**State after v2.3 (6 Oct 2026):**
+- v2.3 "Cozy Phones" is live on GitHub Pages and on the claude.ai artifact.
 - All build sessions are archived.
 - Supabase: the public URL and key are in `PHONE.md` and `game/src/22b_cloud_config.js`, and the tables are in `supabase/schema.sql`.
   - Anonymous sign-ins and email are on, with Confirm email off, so no emails are ever sent.
   - 5 test users (`pawhaven-test-1…5@example.com`) may still exist.
 - The owner still has to check live sync (Realtime) once on two real phones.
-- Next work comes from `TODO.md` (Phone v2.2 and older sections) or whatever the owner asks for.
+- Next work comes from `TODO.md` (Phone v2.3 and older sections) or whatever the owner asks for.
