@@ -41,8 +41,9 @@ function npcBark(kind, distance) { if (barkMode() !== 'normal') return; const k 
 const SPEAK_KIND = { husky: 'talk', greyhound: 'talk', beagle: 'howl', chihuahua: 'alert' };
 const speakKind = (d) => SPEAK_KIND[d.key] || 'woof';
 const GREET_KIND = { greyhound: 'talk', beagle: 'howl', pug: 'huff' };
-function greetBark(d = D()) {
-  if (!d) return; barkDog(d, GREET_KIND[d.key] || 'play', {}); setTimeout(() => barkDog(d, 'whine', { player: true }), 700);
+function greetBark(d) {
+  if (!S) return; d = d || D(); // a timer can fire after Continue then New game / an account switch: S is null by then
+  if (!d) return; barkDog(d, GREET_KIND[d.key] || 'play', {}); setTimeout(() => { if (S) barkDog(d, 'whine', { player: true }); }, 700);
   if (cur.mode === 'yard' && d.id === S.activeId && !busy) { setTemp('happy', 1500); const gl = breedLine(GREET_LINES, d); if (gl) setTimeout(() => { if (cur.mode === 'yard' && !busy) { const h = dogHeadWorld(); say(gl, h.x, h.y, 2600); } }, 300); }
 }
 let lastDemand = 0, lastNightHowl = {}, lastDistant = -1e9; const demandAt = {};

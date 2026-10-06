@@ -120,7 +120,9 @@ function tgLoadPart(G) {
 }
 function tgDraw(G) {
   const svg = tgSvg(); if (!svg) return; let g = svg.querySelector('#trTrack'); if (g) g.remove();
-  const hand = G.mode !== 'lure', pp = (pts) => pts.map((q) => q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(' ');
+  // phone: the on-track labels are sized in screen px (the scene is scaled) and sit clear of the dog
+  const lblFs = isPhone() ? 14 / ((svg.getScreenCTM() || { a: 1 }).a || 1) : 0, lblSt = lblFs ? ` style="font-size:${lblFs.toFixed(1)}px"` : '';
+  const hand = G.mode !== 'lure', pp =(pts) => pts.map((q) => q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(' ');
   let h = '<rect id="tgHit" x="-200" y="0" width="1400" height="600" fill="transparent" pointer-events="all"/>';
   G.segs.forEach((sg, i) => {
     const cur = i === G.si, past = i < G.si, op = past ? 0.25 : 1;
@@ -130,10 +132,10 @@ function tgDraw(G) {
       h += `<circle class="tg-start" cx="${a[0]}" cy="${a[1]}" r="9"/><text class="tg-star" x="${b[0]}" y="${b[1] + 12}" text-anchor="middle">★</text></g>`;
       if (cur) h += `<polyline id="tgDone" class="tg-done" points="${pp(sg.pts.slice(0, 1))}"/>`;
     } else if (sg.type === 'tap') {
-      h += `<g class="tgseg tg-tap" opacity="${op}"><circle cx="${sg.at[0]}" cy="${sg.at[1]}" r="${(G.tol + 6).toFixed(1)}"/>${doodle('paw', sg.at[0], sg.at[1], 0.9)}<text x="${sg.at[0]}" y="${sg.at[1] - G.tol - 12}" text-anchor="middle">tap x${sg.n}${cur && G.taps ? ' (' + G.taps + ')' : ''}</text></g>`;
+      h += `<g class="tgseg tg-tap" opacity="${op}"><circle cx="${sg.at[0]}" cy="${sg.at[1]}" r="${(G.tol + 6).toFixed(1)}"/>${doodle('paw', sg.at[0], sg.at[1], 0.9)}<text x="${sg.at[0]}" y="${lblFs ? (sg.at[1] + G.tol + 6 + lblFs).toFixed(1) : sg.at[1] - G.tol - 12}" text-anchor="middle"${lblSt}>tap x${sg.n}${cur && G.taps ? ' (' + G.taps + ')' : ''}</text></g>`;
     } else if (sg.type === 'hold') {
       const r = Math.max(18, G.tol);
-      h += `<g class="tgseg tg-hold" opacity="${op}"><circle cx="${sg.at[0]}" cy="${sg.at[1]}" r="${r.toFixed(1)}"/><circle id="${cur ? 'tgRing' : ''}" class="tg-ring" cx="${sg.at[0]}" cy="${sg.at[1]}" r="${r.toFixed(1)}" pathLength="100" stroke-dasharray="0 100" transform="rotate(-90 ${sg.at[0]} ${sg.at[1]})"/><text x="${sg.at[0]}" y="${sg.at[1] - r - 10}" text-anchor="middle">hold</text></g>`;
+      h += `<g class="tgseg tg-hold" opacity="${op}"><circle cx="${sg.at[0]}" cy="${sg.at[1]}" r="${r.toFixed(1)}"/><circle id="${cur ? 'tgRing' : ''}" class="tg-ring" cx="${sg.at[0]}" cy="${sg.at[1]}" r="${r.toFixed(1)}" pathLength="100" stroke-dasharray="0 100" transform="rotate(-90 ${sg.at[0]} ${sg.at[1]})"/><text x="${lblFs ? (sg.at[0] + r + 6).toFixed(1) : sg.at[0]}" y="${lblFs ? (sg.at[1] + lblFs * 0.3).toFixed(1) : sg.at[1] - r - 10}" text-anchor="${lblFs ? 'start' : 'middle'}"${lblSt}>hold</text></g>`;
     }
   });
   h += `<g id="tgCur" class="tg-cur" pointer-events="none">${hand ? `<g class="tg-hand">${place(artReal('prop', 'hand-signal', { trick: TSIG[G.parts[G.pi]] }) || SIGN_FB(G.parts[G.pi]), -30, -36, 60, 60)}</g>` : '<g class="tg-treat"><ellipse cx="0" cy="0" rx="13" ry="10" fill="#C98A54" stroke="#5B3D32" stroke-width="3"/><path d="M-6 -2 l3 2 M2 -4 l2 3 M-1 3 l3 1" stroke="#5B3D32" stroke-width="2" stroke-linecap="round"/></g>'}</g>`;
