@@ -19,6 +19,7 @@ const BOATS = [[0.37, 0.52, 0.47, 0.61], [0.56, 0.40, 0.635, 0.54]];
 // ask for a pier bubble (placeAmbient is random: ask until one shows) and return its rect, the boats' rects and the dog's
 const pierBubble = (boats) => {
   const bub = document.getElementById('bubble'); let tries = 0;
+  bub.hidden = true; bub.textContent = ''; // a bubble left over from another scene (a bark, the adoption tip) is not a pier bubble
   while ((bub.hidden || !bub.textContent) && tries++ < 80) window.__paw.voice.ambient();
   if (bub.hidden) return { err: 'no bubble after ' + tries + ' asks' };
   const sv = document.querySelector('#view svg.world svg.pa-wc-scene') || document.querySelector('#view svg.world'), s = sv.getBoundingClientRect(), b = bub.getBoundingClientRect(), d = document.getElementById('dogHit').getBoundingClientRect();

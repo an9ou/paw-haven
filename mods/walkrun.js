@@ -249,7 +249,7 @@ const CSS = `
 .pw-pt .pw-xm,.pw-cp .pw-xm{font-size:22px}
 .pw-touchui .pw-hud .pw-btn{min-height:44px;min-width:44px;padding:2px 8px;justify-content:center}
 .pw-pt .pw-coins{margin-right:auto}
-@media (max-width:400px){.pw-pt .pw-hud{gap:4px 6px;padding:4px 8px}.pw-pt .pw-nose .pw-bar{width:36px}.pw-pt .pw-nose .pw-nl{min-width:0}.pw-pt .pw-digs{font-size:13px;gap:3px}.pw-pt .pw-coins{gap:3px}.pw-touchui .pw-hud .pw-btn{padding:2px 5px}}
+@media (max-width:400px){.pw-pt .pw-hud{gap:4px 6px;padding:4px 8px}.pw-pt .pw-nose .pw-bar{width:36px}.pw-pt .pw-nose .pw-nl{min-width:0}.pw-pt .pw-digs{font-size:15px;gap:3px}.pw-pt .pw-coins{gap:3px}.pw-touchui .pw-hud .pw-btn{padding:2px 5px}}
 .pw-pt .pw-legend{font-size:15px;padding:2px 10px;white-space:normal;text-align:center;width:max-content;max-width:94%}
 .pw-cp .pw-legend,.pw-coarse:not(.pw-pt) .pw-legend{display:none}
 .pw-coarse .pw-lg-desk{display:none}.pw-coarse .pw-lg-touch{display:inline}
