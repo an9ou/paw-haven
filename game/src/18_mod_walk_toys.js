@@ -65,7 +65,7 @@ function enterToy(name) {
   let td = S.toyDay[name]; if (!td || td.day !== day()) td = S.toyDay[name] = { day: day(), n: 0 };
   const k = td.n === 0 ? 1 : td.n === 1 ? 0.5 : 0.25; td.n++; markDirty();
   const fav = (S.dog.favToy === name ? 1.5 : 1) * (S.place === 'park' ? 1.2 : 1), e = envNow();
-  let closed = false;
+  let closed = false, acted = false; // v2.4: one 'toy' act per play session
   const ctx = {
     dog: dogForMod(), time: e.time, weather: e.weather, sfx, say: (t) => toast(t),
     reward: (r) => {
@@ -73,7 +73,7 @@ function enterToy(name) {
       const b = (+r.bond || 0) > 0 ? addBond(r.bond * k) : 0; const c = (+r.coins || 0) > 0 ? addCoins(r.coins * k) : 0;
       if (r.energy) addStat('energy', +r.energy);
       if (r.clean) addStat('clean', +r.clean); if (r.cool) S.coolUntil = S.gameMin + 60; // v2.4 Paddling Pool: +Cleanliness and a cool hour
-      dailyCare('play'); updateHUD(); markDirty(); trackAct('toy', { name });
+      dailyCare('play'); updateHUD(); markDirty(); if (!acted) { acted = true; trackAct('toy', { name }); }
       toast(`+${Math.round(hp)} Happiness${b ? `, +${b} Bond` : ''}${c ? `, +${c} coins` : ''}${fav > 1 ? ' (favourite toy!)' : ''}${k < 1 ? ` (x${k}: played already today)` : ''}`, 'good');
     },
     onClose: () => { if (closed) return; closed = true; if (cur.mode === 'toy') go('yard'); }
