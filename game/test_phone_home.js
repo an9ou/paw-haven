@@ -164,8 +164,9 @@ const AUDIT = () => {
       ok(await t.ev(() => document.getElementById('modal').hidden), 'a swipe does not open anything by accident');
       ok(await t.until((x) => document.querySelector('#view > svg.world').viewBox.baseVal.x < x - 50, vb1, 20000), 'the camera eases back to the dog');
       await peekBack(); await camSteady();
-      await peekOnce();
-      ok(await t.ev(() => { const r = document.getElementById('houseG').getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth + 1; }), 'the dog house is fully on screen after the look-right button');
+      const houseOn = () => t.ev(() => { const r = document.getElementById('houseG').getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth + 1; });
+      let hOn = false; for (let i = 0; i < 4 && !hOn; i++) { await peekOnce(); hOn = await houseOn(); if (!hOn) await peekBack(); } // (the dog may wander and send the camera back: try again)
+      ok(hOn, 'the dog house is fully on screen after the look-right button');
       await peekBack();
       await t.home();
 
@@ -209,7 +210,8 @@ const AUDIT = () => {
       const nbOn = await t.until(() => !!document.getElementById('nurseryG'), null, 5000);
       ok(nbOn, 'nursery basket is drawn');
       if (nbOn) {
-        await peekBack(); await peekOnce();
+        const basketOn = () => t.ev(() => { const r = document.querySelector('#nurseryG > rect').getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth + 1; });
+        await peekBack(); let bOn = false; for (let i = 0; i < 4 && !bOn; i++) { await peekOnce(); bOn = await basketOn(); if (!bOn) await peekBack(); }
         const nbx = await t.ev(() => { const r = document.querySelector('#nurseryG > rect').getBoundingClientRect(); return { w: r.width, h: r.height, x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
         ok(nbx.w >= 44 && nbx.h >= 44, `nursery basket tap area >= 44 (${Math.round(nbx.w)}x${Math.round(nbx.h)})`);
         await t.p.locator('#nurseryG > rect').tap({ force: true });
