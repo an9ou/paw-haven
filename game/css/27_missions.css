@@ -35,3 +35,5 @@ html[data-layout="phone"] .ms-prize-art{width:120px;height:120px}
 html[data-layout="phone"] .ms-prize p{font-size:15px}
 /* v2.4 coordinator: on phones a feed / play / care tray shrinks the scene into the strip above it, which would leave the clipboard's tap target under 44 px, so it hides while a tray is open (the mailbox is bigger and stays) */
 html[data-layout="phone"] #stage:has(#dock > .tray:not(.dock-idle):not(.mini)) #msCardG{visibility:hidden}
+/* v2.4 SHOP: the food safety tip line in shop cards, in ink for contrast (about 9:1 on cream) */
+.sitem .sh-tip{color:var(--ink,#5B3D32)}
