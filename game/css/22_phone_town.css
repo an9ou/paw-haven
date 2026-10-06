@@ -31,3 +31,7 @@ html:not([data-layout="phone"]) #stage:has(#placeBtns [data-sh]) #toasts { top: 
 #bubble.below::after { bottom: auto; top: -15px; transform: scaleY(-1); }
 /* v2.3: a pier bubble sits under the dog; if a long line still touches a place button, the button stays on top (and tappable) */
 #bubble.below { z-index: 2; }
+/* v2.3: Go home (the one yellow button) leads the scrolling row, so it shows without scrolling like every other place */
+html[data-layout="phone"] #view:has(#placeBtns [data-sh]) #placeBtns [data-pb="yard"] { order: -1; }
+/* v2.3 desktop Market Street: the location chip tucks under the HUD edge (a little smaller) so it no longer sits on the "K" of Kibble Corner */
+html:not([data-layout="phone"]) #stage:has(#placeBtns [data-sh]) #status { top: 0; padding: 1px 12px 2px; font-size: 15px; }

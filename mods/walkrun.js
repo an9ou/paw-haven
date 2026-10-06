@@ -294,6 +294,10 @@ const CSS = `
 .pw-pt .pw-tic{width:42px;height:42px}
 .pw-touchui .pw-tfoot{position:sticky;bottom:-12px;background:${PAPER};padding:8px 0 10px;margin-bottom:-10px;border-top:2px dashed #E3D2BA}
 .pw-pt .pw-trow b{font-size:23px}
+.pw-trow b{padding-right:.14em}
+.pw-pt .pw-tic.pw-neg{font-size:26px!important;line-height:42px!important}
+.pw-pt .pw-card.pw-tut{height:min(88%,660px);display:flex;flex-direction:column;overflow-y:auto}
+.pw-pt .pw-card.pw-tut .pw-tfoot{margin-top:auto}
 .pw-pt .pw-obsgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .pw-pt .pw-obsc{flex-wrap:wrap;justify-content:center;text-align:center;font-size:15px;padding:6px 4px}
 .pw-pt .pw-tfoot,.pw-cp .pw-tfoot{flex-wrap:wrap;justify-content:center}
@@ -468,7 +472,7 @@ function start(el, o) {
       <button class="pw-btn pw-big pw-dig" tabindex="-1" hidden aria-label="Dig">Dig!<span class="pw-k" data-desk="press D" data-touch="tap here!">press D</span><span class="pw-ring"></span></button>
       <button class="pw-btn pw-big pw-jump" tabindex="-1" aria-label="Jump">Jump<span class="pw-k" data-desk="tap = hop &middot; hold = long" data-touch="tap = hop &middot; hold = long">tap = hop &middot; hold = long</span></button>
     </div>
-    <div class="pw-legend"><span class="pw-lg-desk"><b>Space/&uarr;</b> jump (hold = long jump) &middot; <b>&darr;/S</b> duck &middot; <b>D</b> dig &middot; <b>B</b> bag &middot; <b>Esc</b> pause</span><span class="pw-lg-touch"><b>Tap the scene</b> to jump &middot; <b>hold</b> = long jump &middot; <b>swipe down</b> to duck</span></div>
+    <div class="pw-legend"><span class="pw-lg-desk"><b>Space/&uarr;</b> jump (hold = long jump) &middot; <b>&darr;/S</b> duck &middot; <b>D</b> dig &middot; <b>B</b> bag &middot; <b>Esc</b> pause</span><span class="pw-lg-touch"><b>Tap the scene</b> to jump &middot; <span style="white-space:nowrap"><b>hold</b> = long jump</span> &middot; <b>swipe down</b> to duck</span></div>
     <div class="pw-ov"></div>`;
   el.appendChild(root);
   const $ = (s) => root.querySelector(s);
@@ -562,13 +566,14 @@ function start(el, o) {
   let s = 1.5, LW = 800, elW = 1240, elH = 620, mode = '', coarse = false;
   let sayY = 0;
   try { coarse = !!(window.matchMedia && (window.matchMedia('(pointer: coarse)').matches || (window.matchMedia('(hover: none)').matches && navigator.maxTouchPoints > 0))); } catch (e) { coarse = false; }
+  const COARSE0 = coarse; // the touch-tablet layout is chosen from the pointer the device starts with, never from a first touch mid-run (that made the strip jump on touch laptops)
   const PT_LW = 620; // world units across in portrait: >= 1.8 s of warning at top speed
   const px = (u) => (u * s).toFixed(2) + 'px';
   function layout() {
     const r = root.getBoundingClientRect(); elW = Math.max(280, r.width || el.clientWidth || 1240); elH = Math.max(240, r.height || el.clientHeight || 620);
     // layout mode: 'desk' (unchanged laptop view), 'cp' (compact landscape phone), 'pt' (portrait: letterboxed landscape strip)
     const prevMode = mode;
-    if (elW >= 820) mode = coarse && elH >= 440 ? 'tab' : elH < 500 ? 'cp' : 'desk';
+    if (elW >= 820) mode = COARSE0 && elH >= 440 ? 'tab' : elH < 500 ? 'cp' : 'desk';
     else mode = (elH / elW > 0.75 || elW / (elH / VIEW_H) < PT_LW) ? 'pt' : 'cp';
     root.classList.toggle('pw-coarse', coarse); root.classList.toggle('pw-pt', mode === 'pt'); root.classList.toggle('pw-cp', mode === 'cp'); root.classList.toggle('pw-touchui', mode !== 'desk'); root.classList.toggle('pw-tab', mode === 'tab');
     DOG.x = mode === 'pt' ? 120 : mode === 'cp' ? 170 : 200;
@@ -955,11 +960,16 @@ function start(el, o) {
     if (S.ended || S.mode === 'paused' || S.mode === 'bag') return;
     prevMode = S.mode; S.mode = 'paused'; sfx('click'); releaseAll();
     E.ov.className = 'pw-ov dim'; E.ov.hidden = false;
-    E.ov.innerHTML = `<div class="pw-card pw-panel"><h2>Paused</h2><ul>
+    const TP = mode !== 'desk' || coarse, highs = esc(A.high.map((n) => OBS_LABEL[n].toLowerCase()).join(', '));
+    E.ov.innerHTML = `<div class="pw-card pw-panel"><h2>Paused</h2><ul>${TP ? `
+      <li><b>Jump</b>: tap the scene or Jump to hop, <b>hold</b> for a long jump (clears puddles).</li>
+      <li><b>Duck</b>: swipe down, or hold Duck, to crouch under ${highs}.</li>
+      <li><b>Dig!</b>: tap it when the dog stands on an X. The Nose-o-meter says HOT near the treasure.</li>
+      <li><b>Bag</b>: opens the bag. <b>II</b>: pauses.</li>` : `
       <li><b>Space / &uarr; / Jump</b>: tap to hop, <b>hold</b> for a long jump (clears puddles).</li>
-      <li><b>&darr; / S / Duck</b>: hold to crouch under ${esc(A.high.map((n) => OBS_LABEL[n].toLowerCase()).join(', '))}.</li>
+      <li><b>&darr; / S / Duck</b>: hold to crouch under ${highs}.</li>
       <li><b>D</b>: dig when the dog stands on an X. The Nose-o-meter says HOT near the treasure.</li>
-      <li><b>B</b>: bag. <b>Esc</b>: pause.</li></ul>
+      <li><b>B</b>: bag. <b>Esc</b>: pause.</li>`}</ul>
       <div class="pw-row"><button class="pw-btn yes" data-res tabindex="-1">Keep walking</button><button class="pw-btn" data-home tabindex="-1">Head home early</button></div></div>`;
     E.ov.querySelector('[data-res]').addEventListener('click', resume);
     E.ov.querySelector('[data-home]').addEventListener('click', () => { resume(); finish(true); });
@@ -999,7 +1009,7 @@ function start(el, o) {
   }
   function finish(early) {
     if (S.ended) return; S.ended = true; S.mode = 'end'; detach();
-    const r = results();
+    const r = results(); r.early = !!early; // the game words the sheet "Walk cut short" for Head home early
     try { (o.onEnd || noop)(r); } catch (e) { setTimeout(() => { throw e; }); }
   }
   function startEnding() {
@@ -1038,10 +1048,10 @@ function start(el, o) {
     if (i === 2) return `<h3>3. The hidden treasure</h3>
       <div class="pw-trow"><span class="pw-tic">${$('.pw-noseic').innerHTML}</span><div><b>Nose-o-meter</b> (top bar) <span class="pw-nm"><i style="color:#5c86b8">Cold</i><i style="color:#d27a35">Warm</i><i style="color:#d2483b">HOT</i></span>It gets hotter near the treasure${ab.necklace ? ', and your Seashell Necklace smells it from twice as far' : ''}.</div></div>
       <div class="pw-trow"><span class="pw-tic"><img alt="" src="${colUri('sniff')}"></span><div><b>Sniff spots</b> &mdash; run through them for a clue.</div></div>
-      <div class="pw-trow"><span class="pw-tic"><img alt="" src="${colUri('dig')}"></span><div><b>X marks a dig spot</b> &mdash; press <b>D</b> or tap <b>Dig!</b> while standing on it.<br>Only ONE X hides the treasure.${ab.goggles ? ' Your Explorer Goggles make the right X sparkle.' : ''}${o.firstWalk ? ' Psst: on your first walk, try the first X.' : ''}</div></div>
+      <div class="pw-trow"><span class="pw-tic"><img alt="" src="${colUri('dig')}"></span><div><b>X marks a dig spot</b> &mdash; ${T ? 'tap <b>Dig!</b>' : 'press <b>D</b> or tap <b>Dig!</b>'} while standing on it.<br>Only ONE X hides the treasure.${ab.goggles ? ' Your Explorer Goggles make the right X sparkle.' : ''}${o.firstWalk ? ' Psst: on your first walk, try the first X.' : ''}</div></div>
       <div class="pw-trow"><span class="pw-tic" style="display:flex;align-items:center;justify-content:center"><span class="pw-xm" style="font-size:36px">X${S.digsMax > 2 ? 'XX' : 'X'}</span></span><div><b>Digs left: ${S.digsMax}</b> (${ab.extraDig ? 'the Acorn Cap gives you an extra dig' : '3 with the Acorn Cap'}). Choose wisely!</div></div>`;
     return `<h3>4. Bumps and coins</h3>
-      <div class="pw-trow"><span class="pw-tic" style="font-family:Caveat,cursive;font-weight:700;font-size:44px;color:#d2483b;line-height:52px;text-align:center">&minus;3s</span><div><b>Each bump costs 3 seconds</b> off the walk clock, then a short blink where nothing can bump you.</div></div>
+      <div class="pw-trow"><span class="pw-tic pw-neg" style="font-family:Caveat,cursive;font-weight:700;font-size:44px;color:#d2483b;line-height:52px;text-align:center">&minus;3s</span><div><b>Each bump costs 3 seconds</b> off the walk clock, then a short blink where nothing can bump you.</div></div>
       <div class="pw-trow"><div class="pw-mini" style="width:150px"><img alt="" src="${colUri('coin')}" style="position:absolute;left:14px;bottom:8px;width:26px"><img alt="" src="${colUri('coin')}" style="position:absolute;left:62px;bottom:34px;width:26px"><img alt="" src="${colUri('coin')}" style="position:absolute;left:110px;bottom:62px;width:26px"></div>
         <div><b>Coins sit at 3 heights</b><br>low: just walk &middot; middle: walk or hop &middot; high: jump.</div></div>
       <div class="pw-trow"><span class="pw-tic">${$('.pw-bagic').innerHTML}</span><div>${T ? 'The <b>bag</b> button' : '<b>B</b>'} opens the bag (Wild Berries add 15 s). ${T ? 'The <b>II</b> button' : '<b>Esc</b>'} pauses.</div></div>`;
@@ -1069,7 +1079,7 @@ function start(el, o) {
       S.cd -= dt; const n = Math.ceil(S.cd);
       if (n !== S.cdShown) {
         S.cdShown = n; const w = n >= 3 ? 'Ready' : n === 2 ? 'sniff' : n === 1 ? 'GO!' : '';
-        if (w) { E.ov.className = 'pw-ov'; E.ov.hidden = false; E.ov.innerHTML = `<div class="pw-cd">${w}</div>` + (S.remind ? '<div class="pw-remind pw-panel" style="padding:4px 14px"><b>Space/&uarr;</b> jump &middot; <b>hold</b> = long jump &middot; <b>&darr;/S</b> duck &middot; <b>D</b> dig at an X</div>' : ''); sfx(n === 1 ? 'bark' : 'click'); }
+        if (w) { E.ov.className = 'pw-ov'; E.ov.hidden = false; E.ov.innerHTML = `<div class="pw-cd">${w}</div>` + (S.remind ? (mode !== 'desk' || coarse ? '<div class="pw-remind pw-panel" style="padding:4px 14px"><b>Tap</b> jump &middot; <span style="white-space:nowrap"><b>hold</b> = long jump</span> &middot; <b>swipe down</b> duck &middot; <b>Dig!</b> at an X</div>' : '<div class="pw-remind pw-panel" style="padding:4px 14px"><b>Space/&uarr;</b> jump &middot; <b>hold</b> = long jump &middot; <b>&darr;/S</b> duck &middot; <b>D</b> dig at an X</div>') : ''); sfx(n === 1 ? 'bark' : 'click'); }
       }
       if (S.cd <= 0.15) { S.mode = 'run'; E.ov.hidden = true; E.ov.innerHTML = ''; if (o.firstWalk) say('Psst: the FIRST X smells amazing. Follow your nose!', 2600); else if (rain) say(dryCoat ? 'Rain! Good thing about the coat.' : `Rain means ${(A.rainWide || ['puddle']).includes('puddle') ? 'puddles' : 'mud'}. Hold jump to leap ${(A.rainWide || ['puddle']).includes('puddle') ? 'them' : 'it'}!`, 2400); }
       return;

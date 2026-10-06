@@ -551,6 +551,7 @@ function worldToStage(svg, x, y) {
 function toWorld(svg, cx, cy) { const pt = svg.createSVGPoint(); pt.x = cx; pt.y = cy; return pt.matrixTransform(svg.getScreenCTM().inverse()); }
 function say(text, wx, wy, ms = 3600) {
   const svg = $('svg.world', view); if (!svg) return;
+  bubble.classList.remove('below'); clearTimeout(bubbleBelowT); // a new line starts from the normal tail (the pier flips it, 03_yard.js)
   bubble.textContent = text; bubble.hidden = false; bubble.classList.remove('pop'); void bubble.offsetWidth; bubble.classList.add('pop');
   const p = worldToStage(svg, wx, wy); const sw = stage.clientWidth, bw = bubble.offsetWidth, bh = bubble.offsetHeight;
   const vtop = view.offsetTop;

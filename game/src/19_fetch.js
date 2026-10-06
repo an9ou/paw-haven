@@ -81,6 +81,7 @@ function endFetch() {
   markDirty();
   const p = openModal('Fetch results', `<p>${F.score >= 6 ? `${esc(NAME())} is a fetch legend. Statues are being considered.` : F.score >= 3 ? `Solid fetching. ${esc(NAME())} would rate you 7/10.` : `${esc(NAME())} has questions about your throwing arm.`}</p>
     ${wfTiles([[F.score, `Catches (${F.great} great)`, F.score], [`+${coins}`, `Paw Coins${golden > 1 ? ' (Golden +25%)' : ''}`, coins], [`+${happy}`, 'Happiness', happy], [`+${bond}`, 'Bond points', bond]], 'results')}${full ? '' : '<p class="small">Fetch again so soon is less exciting. Wait 10 game minutes for full rewards.</p>'}`, { cls: 'celebrate', foot: '<button class="btn yes big" id="fOk">Back home</button>', onClose: () => go('yard') });
+  if (isPhone()) dock.innerHTML = ''; // the results sheet is the only thing on screen: no fetch tray (and its second X) behind it
   $('#fOk', p).onclick = () => { SFX.boop(700); closeModal(); };
 }
 

@@ -28,6 +28,7 @@ function rollTreasure(area, o = {}) {
 function enterWalk(area) {
   const wb = walkBlock(D(), area); if (wb) { nope(wb); go('yard'); return; } // v2: puppies, expecting and nursing mums (16b)
   walkPackNote(area);
+  if (isPhone()) toasts.innerHTML = ''; // a toast from the yard must not ride into the walk (it sat on the tutorial title)
   if (window.PawWalk && typeof window.PawWalk.start === 'function') { enterWalkMod(area); return; } enterWalkClassic(area); }
 function enterWalkClassic(area) {
   setChrome(true, false);
@@ -278,6 +279,7 @@ function endWalk(complete) {
   const p = openModal(L ? `<span class="hl">Treasure found: ${esc(R.n)}</span>` : (complete ? `Walk complete: ${esc(R.n)}` : `Walk cut short: ${esc(R.n)}`), `${tre}${extra}${junk}
     ${wfTiles([[`+${coins}`, `Paw Coins${penny > 1 ? ' (Penny +10%)' : ''}`, coins], [`+${happy}`, 'Happiness', happy], [`+${bond}`, 'Bond points', bond], [`-${energy}`, 'Energy', energy], [cleanLoss + W.clean ? '-' + (cleanLoss + W.clean) : '0', 'Cleanliness', cleanLoss + W.clean]], 'results compact')}`,
     { cls: 'celebrate', foot: `${L && L.item && !L.dup ? '<button class="btn" id="resJournal">Open Journal</button>' : ''}<button class="btn yes big" id="resOk">${L && L.item && !L.dup ? 'Add to Journal' : 'Back to ' + esc((PLACES[S.place] || PLACES.yard).n)}</button>`, onClose: () => go('yard') });
+  if (isPhone()) dock.innerHTML = ''; // no walk tray (its hint line) peeking out under the results sheet
   $('#resOk', p).onclick = () => { SFX.boop(700); closeModal(); };
   const rj = $('#resJournal', p); if (rj) rj.onclick = () => { modalClose = null; closeModal(); go('yard'); setTimeout(() => openJournal('treasures'), 300); };
   SFX.fanfare();
