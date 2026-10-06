@@ -16,7 +16,16 @@ const FOOD = [
   { n: 'Bone-shaped Biscuit', price: 8, hunger: 10, happy: 10, bond: 2, note: '+10 Hunger, +10 Happiness. Shaped like a bone, which is very meta.' },
   { n: 'Chicken & Rice Bowl', price: 15, hunger: 50, happy: 5, note: '+50 Hunger, +5 Happiness. Tastes like Sunday.' },
   { n: 'Salmon Pâté', price: 30, hunger: 60, happy: 10, clean: 10, note: '+60 Hunger, +10 Happiness, +10 Cleanliness (shiny coat).' },
-  { n: 'Pupcake', price: 60, hunger: 20, happy: 30, note: '+30 Happiness and double Bond for 1 game hour. 1 per day.' }
+  { n: 'Pupcake', price: 60, hunger: 20, happy: 30, note: '+30 Happiness and double Bond for 1 game hour. 1 per day.' },
+  /* v2.4 Shop Day: eight dog-safe foods. `tip` is the two-sentence safety lesson (shown once on the first feed and in the shop card). */
+  { n: 'Carrot Sticks', price: 4, hunger: 10, happy: 5, clean: 5, snack: true, v24: true, tip: 'Crunchy and safe raw or cooked. Cut them small for little dogs.', note: '+10 Hunger, +5 Happiness, clean teeth.' },
+  { n: 'Apple Slices', price: 6, hunger: 10, happy: 10, snack: true, v24: true, tip: 'Core and seeds out, every time. Apple seeds hold a little cyanide.', note: '+10 Hunger, +10 Happiness. No seeds, ever.' },
+  { n: 'Blueberry Bites', price: 8, hunger: 10, happy: 10, bond: 1, snack: true, v24: true, tip: 'Blueberries are a safe berry for dogs. Grapes and raisins never are.', note: '+10 Hunger, +10 Happiness, a little Bond.' },
+  { n: 'Seedless Watermelon Cubes', price: 9, hunger: 10, happy: 10, energy: 10, snack: true, v24: true, tip: 'Seedless and rind-free only. The rind can block a tummy.', note: '+10 Hunger, +10 Happiness, +10 Energy.' },
+  { n: 'Sweet Potato Chews', price: 10, hunger: 20, happy: 5, snack: true, v24: true, tip: 'Always cooked and plain, never raw. Raw sweet potato is hard to digest.', note: '+20 Hunger, +5 Happiness. A long chew.' },
+  { n: 'Pumpkin Purée', price: 12, hunger: 25, happy: 5, clean: 5, v24: true, tip: 'Plain cooked pumpkin only, never pie filling. It is gentle on tummies.', note: '+25 Hunger, +5 Happiness. Gentle on tummies.' },
+  { n: 'Turkey Meatballs', price: 18, hunger: 45, happy: 10, v24: true, tip: 'Plain cooked turkey, no onion or garlic. Those are poison for dogs.', note: '+45 Hunger, +10 Happiness. Sunday dinner, dog edition.' },
+  { n: 'Frozen Pupsicle', price: 22, hunger: 15, happy: 20, energy: 10, cool: 60, snack: true, v24: true, tip: 'Frozen plain yoghurt and fruit, no xylitol ever. Let it soften a little for small dogs.', note: '+15 Hunger, +20 Happiness, +10 Energy. Cools a hot dog for 1 game hour.' }
 ];
 const TOYS = [
   { n: 'Tennis Ball', price: 40, bond: 1, note: 'Fetch: 2 coins per catch.' },
@@ -24,7 +33,13 @@ const TOYS = [
   { n: 'Rope Tug', price: 60, bond: 1, note: 'Tug-of-war: +15 Happiness, -10 Energy, +5 Bond.' },
   { n: 'Plush Bone', price: 80, bond: 1, note: 'Nap buddy: +10% nap Energy. Works automatically.' },
   { n: 'Frisbee', price: 120, bond: 3, note: 'Long fetch: 3 coins per catch, +20 Happiness.' },
-  { n: 'Puzzle Feeder', price: 150, bond: 4, note: 'Every meal: +10 Happiness and double Bond. Automatic.' }
+  { n: 'Puzzle Feeder', price: 150, bond: 4, note: 'Every meal: +10 Happiness and double Bond. Automatic.' },
+  /* v2.4 Shop Day: five shop toys, each with its own yard play game in mods/toys.js (the Squeaky Hedgehog is a walk treasure) */
+  { n: 'Snuffle Mat', price: 70, bond: 2, v24: true, note: 'Snuffle: hide kibble in the mat, the nose finds it. +Happiness, a little Bond.' },
+  { n: 'Treat Cone', price: 90, bond: 2, v24: true, note: 'Lick: a treat cone to lick clean, slowly. Calm +Happiness.' },
+  { n: 'Bubble Machine', price: 110, bond: 3, v24: true, note: 'Bubbles: dog-safe bubbles to chase and pop. +Happiness, +coins per pop.' },
+  { n: 'Paddling Pool', price: 130, bond: 4, v24: true, note: 'Splash: a cool paddle on hot days. +Happiness, +Cleanliness, cools the dog.' },
+  { n: 'Agility Tunnel', price: 150, bond: 5, v24: true, note: 'Zoom: run the tunnel, then do it again faster. +Happiness, -Energy, +Bond.' }
 ];
 const CLOTHES = [
   { n: 'Red Bandana', slot: 'neck', price: 50, bond: 1, perk: '+1 dog friend on every walk.' },
@@ -39,7 +54,19 @@ const CLOTHES = [
   { n: 'Rain Hat', slot: 'head', price: 80, bond: 2, perk: 'No soggy shake needed after rain.' },
   { n: 'Pom-pom Beanie', slot: 'head', price: 90, bond: 3, perk: 'Warm: no shivering in the snow.' },
   { n: 'Knit Winter Sweater', slot: 'body', price: 150, bond: 4, perk: 'Warm: no shivering in the snow, and snowy walks tire 10% less.' },
-  { n: 'Superhero Cape', slot: 'body', price: 250, bond: 6, perk: 'Walk speed +15%. Whoosh.' }
+  { n: 'Superhero Cape', slot: 'body', price: 250, bond: 6, perk: 'Walk speed +15%. Whoosh.' },
+  /* v2.4 Shop Day: eleven outfits (the Sun Hat is a walk treasure). `reward: true` ones are never sold: the Boutique skips them. */
+  { n: 'Sailor Collar', slot: 'neck', price: 45, bond: 1, v24: true, perk: 'Ship-shape: the water bowl refills in 1 game hour instead of 2.' },
+  { n: 'Chef Hat', slot: 'head', price: 60, bond: 2, v24: true, perk: "Chef's kiss: meals give +5 Happiness." },
+  { n: 'Tutu', slot: 'body', price: 65, bond: 2, v24: true, perk: 'Twirl: the daily fashion bonus gives +10 Happiness instead of +5.' },
+  { n: 'Cowboy Hat', slot: 'head', price: 70, bond: 2, v24: true, perk: 'Yeehaw: naps outdoors restore 10% more.' },
+  { n: 'Pyjamas', slot: 'body', price: 80, bond: 2, v24: true, perk: 'Bedtime: naps restore 15% more. The Nightcap appears at nap time.' },
+  { n: 'Bumblebee Suit', slot: 'body', price: 85, bond: 3, v24: true, perk: 'Bzzz: snacks give +5 Happiness.' },
+  { n: 'Wizard Hat', slot: 'head', price: 90, bond: 4, v24: true, perk: 'Magic hands: petting gives +1 extra Bond.' },
+  { n: 'Happi Coat', slot: 'body', price: 95, bond: 3, v24: true, perk: 'Festival power: Pupcake power lasts 2 game hours instead of 1.' },
+  { n: 'Cozy Hoodie', slot: 'body', price: 0, bond: 1, v24: true, reward: true, perk: 'Warm: no shivering in the snow. Hood up, ears out.' },
+  { n: 'Knit Scarf', slot: 'neck', price: 0, bond: 1, v24: true, reward: true, perk: 'Warm: no shivering in the snow. Mrs. Plum knitted too much again.' },
+  { n: 'Astronaut Helmet', slot: 'head', price: 0, bond: 1, v24: true, reward: true, perk: 'Space-proof: no soggy shake after rain, no shivering in the snow.' }
 ];
 const HOUSES = [
   { n: 'Cardboard Box', price: 0, bond: 1, comfort: 0, hd: 4, note: 'Free. Has a flap. Smells like delivery.' },
@@ -47,7 +74,14 @@ const HOUSES = [
   { n: 'Cozy Cottage', price: 800, bond: 4, comfort: 0.30, hd: 3, note: 'Chimney, flower box, mortgage.' },
   { n: 'Snow Igloo', price: 1500, bond: 6, comfort: 0.40, hd: 3, note: 'Cool and cozy. Frost gets double the bonus.' },
   { n: 'Treehouse Den', price: 2500, bond: 7, comfort: 0.55, hd: 2.5, note: 'Has a ladder. Dogs cannot climb ladders. Details.' },
-  { n: 'Royal Castle Kennel', price: 5000, bond: 9, comfort: 0.75, hd: 2, note: 'Cardboard turrets. Fit for royalty, or a very good boy.' }
+  { n: 'Royal Castle Kennel', price: 5000, bond: 9, comfort: 0.75, hd: 2, note: 'Cardboard turrets. Fit for royalty, or a very good boy.' },
+  /* v2.4 Shop Day: six houses. The Rocket Ship (`reward: true`) is the second mission-stamp reward and is never sold. */
+  { n: 'Little Tea House', price: 450, bond: 3, comfort: 0.20, hd: 3, v24: true, note: 'A teapot on the roof. The dog does not drink tea. The teapot is for guests.' },
+  { n: 'Beach Hut', price: 650, bond: 4, comfort: 0.25, hd: 3, v24: true, note: 'Striped door, surfboard, sand in everything.' },
+  { n: 'Camper Van', price: 1200, bond: 5, comfort: 0.35, hd: 2.5, v24: true, note: 'The wheels are painted on. It has never moved. It has been everywhere.' },
+  { n: 'Pumpkin Cottage', price: 1800, bond: 6, comfort: 0.45, hd: 2.5, v24: true, note: 'Round orange walls and a leaf for a roof. Smells faintly of pie.' },
+  { n: 'Lighthouse Kennel', price: 3000, bond: 8, comfort: 0.60, hd: 2, v24: true, note: 'The lamp turns at night. Ships are confused.' },
+  { n: 'Rocket Ship', price: 0, bond: 1, comfort: 0.55, hd: 2, v24: true, reward: true, note: 'Countdown painted on the side. Launch is cancelled, forever, for naps.' }
 ];
 const SLOTS = ['head', 'eyes', 'neck', 'body'];
 const SLOT_NAME = { head: 'Head', eyes: 'Eyes', neck: 'Neck', body: 'Body' };
@@ -108,7 +142,10 @@ const TREASURES = [
   TR('Old Map Piece (Park)', 'quest', null, 'Uncommon', ['park'], 'Map Piece', '1 of 4 pieces of the Paw Haven Treasure Map.', { piece: 'park' }),
   TR('Old Map Piece (River)', 'quest', null, 'Uncommon', ['river'], 'Map Piece', '1 of 4 pieces of the Paw Haven Treasure Map.', { piece: 'river' }),
   TR('Old Map Piece (Woods)', 'quest', null, 'Rare', ['woods'], 'Map Piece', '1 of 4 pieces of the Paw Haven Treasure Map.', { piece: 'woods' }),
-  TR('Old Map Piece (Beach)', 'quest', null, 'Rare', ['beach'], 'Map Piece', '1 of 4 pieces of the Paw Haven Treasure Map.', { piece: 'beach' })
+  TR('Old Map Piece (Beach)', 'quest', null, 'Rare', ['beach'], 'Map Piece', '1 of 4 pieces of the Paw Haven Treasure Map.', { piece: 'beach' }),
+  /* v2.4 Shop Day: two treasures (never sold) */
+  TR('Sun Hat', 'wearable', 'head', 'Uncommon', ['beach', 'park'], 'Shady Business', 'Hot days do not bother the dog while worn.', { v24: true }),
+  TR('Squeaky Hedgehog', 'toy', null, 'Uncommon', ['woods', 'park'], 'Squeak of Honour', 'Squeeze it and the dog answers. It hops. Three squeaks and it rolls up.', { v24: true })
 ];
 const TFOOD = [
   { n: 'Wild Berries', hunger: 15, energy: 10, note: 'Treasure. +15 Hunger, +10 Energy. On a walk: +15 seconds.' },
@@ -457,6 +494,7 @@ function freshState(key, name, sex) {
   st.garden = gardenNew(); gkFields(st, false); v131Fields(st);
   if (key === 'mutt') { st.dog.favFood = [PICK(FOOD.slice(1)).n]; st.dog.favToy = PICK(TOYS).n; }
   st.dog.adoptedAt = localISO();
+  st.guide = { step: 0 }; // v2.4: a new save meets Gerald (25_guide.js)
   return linkDogs(st);
 }
 let S = null;
@@ -483,6 +521,7 @@ function migrate(s) {
   gkFields(s, true);
   if (s.seedGiftPending && gkOn()) { delete s.seedGiftPending; s.inv.seeds.carrot = (s.inv.seeds.carrot || 0) + 3; s.inv.seeds.peas = (s.inv.seeds.peas || 0) + 3; s.gkEarly = true; s.gkNote = true; }
   v131Fields(s);
+  if (!s.guide || typeof s.guide !== 'object') { s.guide = { step: -1, done: localISO() }; s.guideSeen = true; } // v2.4: saves from before the guide never see the walkthrough, they get a letter
   return s;
 }
 function migNote() { if (S && S.gkNote) { delete S.gkNote; markDirty(); setTimeout(() => toast('Pip left a packet of seeds on your doorstep. The veggie patch is yours now!', 'gold'), 2200); }
@@ -511,15 +550,16 @@ function weatherNow() {
 const weather = weatherNow;
 const envNow = () => ({ time: timePhase(), weather: weatherNow() });
 const isNight = () => timePhase() === 'night';
-function isHot() { if (S && S.buff && typeof buffOn === 'function' && buffOn('cool')) return false; if (weatherNow() !== 'sunny' || timePhase() !== 'day') return false; if (ENV.time !== 'auto') return true; const h = new Date().getHours(); return h >= 11 && h < 15; }
+function isHot() { if (S && S.buff && typeof buffOn === 'function' && buffOn('cool')) return false; if (S && (S.outfit.head === 'Sun Hat' || (S.coolUntil || -1) > S.gameMin)) return false; if (weatherNow() !== 'sunny' || timePhase() !== 'day') return false; if (ENV.time !== 'auto') return true; const h = new Date().getHours(); return h >= 11 && h < 15; }
 function clockText() { if (ENV.time !== 'auto') return { dawn: '06:00', day: '13:00', dusk: '18:00', night: '23:00' }[ENV.time] + '*'; const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
 const WEATHER_TXT = { sunny: 'Sunny', cloudy: 'Cloudy', rain: 'Rain', snow: 'Snow' };
 const wxLabel = () => (weatherNow() === 'sunny' && isNight() ? 'Clear night' : WEATHER_TXT[weatherNow()]);
 function wxIconName() { const w = weatherNow(), t = timePhase(); if (w === 'rain' || w === 'snow' || w === 'cloudy') return 'w-' + w; return t === 'night' ? 'w-night' : t === 'dawn' ? 'w-dawn' : t === 'dusk' ? 'w-dusk' : 'w-sunny'; }
 const RAINCOATS = ['Yellow Raincoat', 'Polka-dot Raincoat', 'Frog Raincoat', 'Bubble Raincoat'];
 const hasRaincoat = () => RAINCOATS.includes(S.outfit.body);
-const hasRainHat = () => S.outfit.head === 'Rain Hat';
-const isWarm = () => S.outfit.head === 'Pom-pom Beanie' || S.outfit.body === 'Knit Winter Sweater' || (typeof buffOn === 'function' && buffOn('warm'));
+const hasRainHat = () => S.outfit.head === 'Rain Hat' || S.outfit.head === 'Astronaut Helmet';
+const WARM_WEAR = ['Pom-pom Beanie', 'Knit Winter Sweater', 'Cozy Hoodie', 'Knit Scarf', 'Astronaut Helmet']; // v2.4: three new warm things
+const isWarm = () => SLOTS.some((k) => WARM_WEAR.includes(S.outfit[k])) || (typeof buffOn === 'function' && buffOn('warm'));
 const houseInfo = (n) => HOUSES.find((h) => h.n === (n || S.house)) || HOUSES[0];
 const owns = (cat, n) => S.inv[cat].includes(n);
 const glowing = () => (S.gameMin < (S.glowUntil || -1)) || (S.stats.hunger > 80 && S.stats.happy > 80 && S.stats.energy > 80 && S.stats.clean > 80);
@@ -716,3 +756,5 @@ function go(mode, arg) {
 const BUS = Object.create(null);
 function on(evt, fn) { (BUS[evt] = BUS[evt] || []).push(fn); }
 function emit(evt, data) { const l = BUS[evt]; if (!l) return; for (const fn of l.slice()) { try { fn(data); } catch (e) { console.warn('bus ' + evt, e); } } }
+/* v2.4: player actions, for the daily missions and the guide (V24.md section 1). Listeners: on('act', ({ kind, ... }) => ...) or on('act:feed', ...). */
+function trackAct(kind, data) { const d = data || {}; emit('act', Object.assign({ kind }, d)); emit('act:' + kind, d); }

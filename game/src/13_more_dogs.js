@@ -1,6 +1,7 @@
 /* ======================= v1.5A: more dogs ======================= */
 const PER_DOG = ['stats', 'bond', 'outfit', 'potty', 'sleeping', 'dishLog', 'buff', 'glowUntil', 'pupUntil', 'tricks'];
-const HOUSE_CAP = { 'Cardboard Box': 1, 'Classic Wooden Doghouse': 2, 'Cozy Cottage': 2, 'Snow Igloo': 2, 'Treehouse Den': 3, 'Royal Castle Kennel': 4 };
+const HOUSE_CAP = { 'Cardboard Box': 1, 'Classic Wooden Doghouse': 2, 'Cozy Cottage': 2, 'Snow Igloo': 2, 'Treehouse Den': 3, 'Royal Castle Kennel': 4,
+  'Little Tea House': 2, 'Beach Hut': 2, 'Camper Van': 3, 'Pumpkin Cottage': 3, 'Lighthouse Kennel': 3, 'Rocket Ship': 3 }; // v2.4
 const PGN = () => (window.PawGenes && typeof window.PawGenes.phenotype === 'function' ? window.PawGenes : null);
 const D = () => S.dog; // the active dog
 const capacity = () => HOUSE_CAP[S.house] || 1; // how many dogs the current house fits (v2: dog spots also need Bond, see dogSlots)

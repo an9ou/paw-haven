@@ -30,4 +30,6 @@
 22b_cloud_config.js
 22b_cloud.js
 22c_phone_shell.js
+24_missions.js
+25_guide.js
 23_boot.js

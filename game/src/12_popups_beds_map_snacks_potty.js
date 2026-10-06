@@ -12,7 +12,7 @@ new MutationObserver(refreshActs).observe(modal, { childList: true, attributes: 
 dock.addEventListener('click', (e) => { if (e.target === dock && popOpen()) closeTray(); });
 
 /* ---- snacks only away from home ---- */
-const SNACKS = ['Bone-shaped Biscuit', 'Pupcake', 'Wild Berries', 'Golden Bone'];
+const SNACKS = ['Bone-shaped Biscuit', 'Pupcake', 'Wild Berries', 'Golden Bone'].concat(FOOD.filter((f) => f.snack).map((f) => f.n)); // v2.4: the light foods are snacks too
 const atHome = () => S.place === 'yard' || S.place === 'house';
 const isMeal = (n) => n !== 'Fresh Water' && !SNACKS.includes(n);
 
@@ -103,7 +103,7 @@ function cleanMess(i = 0) {
   const pub = !atHome(), tool = m.type === 'poop' ? iconOr('poop-bag', BAG_FB) : iconOr('water-spray', SPRAY_FB);
   const fx = $('#fx'); if (fx) { fx.insertAdjacentHTML('beforeend', `<g class="popfx">${place(tool, m.x - 32, 450, 64, 64)}</g>`); if (m.type === 'pee') fx.insertAdjacentHTML('beforeend', `<g class="popfx">${place(art('prop', 'bubbles'), m.x - 40, 505, 80, 60)}</g><g class="popfx"><svg x="${m.x + 20}" y="470" width="40" height="40" viewBox="-20 -20 40 40" overflow="visible">${doodle('spark', 0, 0, 0.9)}</svg></g>`); setTimeout(() => { [...fx.querySelectorAll('.popfx')].forEach((n) => n.remove()); }, 1100); }
   m.type === 'poop' ? SFX.boop(560) : SFX.splash(); setTimeout(() => SFX.boop(820), 220);
-  ms.splice(i, 1); const owner = (m.dog && dogById(m.dog)) || D(); owner.potty.scooped++;
+  ms.splice(i, 1); const owner = (m.dog && dogById(m.dog)) || D(); owner.potty.scooped++; trackAct('scoop', { type: m.type });
   let msg;
   if (pub) { const b = addBond(2), c = addCoins(3); msg = `Good citizen! ${m.type === 'poop' ? 'Scooped with a poop bag and binned.' : 'Flushed away with the water bottle.'} +${b} Bond, +${c} coins.`; }
   else { const b = addBond(1); msg = m.type === 'poop' ? `Scooped. ${NAME()} watches you with deep respect. +${b} Bond.` : `Flushed with the water bottle. Sparkly floor! +${b} Bond.`; }

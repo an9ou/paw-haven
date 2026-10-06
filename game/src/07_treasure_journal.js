@@ -12,10 +12,12 @@ function openJournal(tab) {
   if (tab) jTab = tab; audioPlace('journal');
   if (jTab === 'coats' || jTab === 'family' || jTab === 'profile') jrCheckAll();
   const foundN = TREASURES.filter((t) => S.found[t.n]).length;
-  const tabs = [['profile', 'Profile'], ['family', 'Family'], ['coats', 'Coats'], ['treasures', `Treasures ${foundN}/${TREASURES.length}`], ['food', 'Food'], ['toys', 'Toys'], ['clothes', 'Clothes'], ['garden', gkOn() ? 'Garden' : 'Garden (soon)'], ['recipes', kOn() ? 'Recipes' : 'Recipes (soon)']];
+  const tabs = [['profile', 'Profile'], ['family', 'Family'], ['coats', 'Coats'], ['treasures', `Treasures ${foundN}/${TREASURES.length}`], ['food', 'Food'], ['toys', 'Toys'], ['clothes', 'Clothes'], ['missions', 'Missions'], ['garden', gkOn() ? 'Garden' : 'Garden (soon)'], ['recipes', kOn() ? 'Recipes' : 'Recipes (soon)'], ['howto', 'How to play']];
   let body = '';
   if (jTab === 'family') body = journalFamily();
   else if (jTab === 'coats') body = journalCoats();
+  else if (jTab === 'missions') body = typeof msTabHTML === 'function' ? msTabHTML() : '<p class="small">Missions are on their way.</p>'; // v2.4 (24_missions.js)
+  else if (jTab === 'howto') body = typeof gdTabHTML === 'function' ? gdTabHTML() : '<p class="small">Gerald is still writing the guide.</p>'; // v2.4 (25_guide.js)
   else if (jTab === 'garden') body = gkOn() ? journalGarden() : soonCard('garden');
   else if (jTab === 'recipes') body = kOn() ? journalRecipes() : soonCard('kitchen');
   else if (jTab === 'profile') { const pd = dogById(jProfDog) || D(); body = pdogTabs(pd.id) + withDog(pd, () => journalProfile()); }

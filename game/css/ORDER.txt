@@ -30,3 +30,5 @@
 24_phone_puppy.css
 25_phone_walk.css
 26_phone_skill.css
+27_missions.css
+28_guide.css
