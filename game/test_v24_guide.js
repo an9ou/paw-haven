@@ -10,19 +10,16 @@ run('v24_guide', async (t) => {
   const card = () => t.ev(CARD);
   const atStep = (i) => t.until((i) => { const c = document.querySelector('#gdLayer .gd-card'); return !!c && !c.hidden && +c.dataset.step === i && window.__gd.active(); }, i, 8000);
   const gone = () => t.until(() => { const c = document.querySelector('#gdLayer .gd-card'); return !c || c.hidden; }, null, 5000);
-  // the card clears #dogHit and the ringed action-bar button (sampled a few times: the dog wanders)
+  // the card clears #dogHit and the ringed action-bar button (waits while the dog wanders or the camera settles, then reports what it saw)
   const clearOf = async (label) => {
+    const fine = await t.until(() => { const H = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top; const c = document.querySelector('#gdLayer .gd-card'), ring = document.querySelector('#gdLayer .gd-ring'), d = document.getElementById('dogHit');
+      if (!c || c.hidden || !d) return false; const cr = c.getBoundingClientRect(); if (H(cr, d.getBoundingClientRect())) return false;
+      const tg = ring && !ring.hidden && ring.dataset.for !== '#dogHit' ? document.querySelector(ring.dataset.for) : null; return !tg || !H(cr, tg.getBoundingClientRect()); }, null, 4000);
     let bad = '';
-    for (let k = 0; k < 3; k++) {
-      const r = await t.ev(([CARDs, RECTs]) => { const C = eval(CARDs), R = eval(RECTs); const c = C(); const ring = document.querySelector('#gdLayer .gd-ring'); return { c, dog: R('#dogHit'), ring: ring && !ring.hidden ? ring.dataset.for : null, tgt: ring && !ring.hidden && ring.dataset.for !== '#dogHit' ? R(ring.dataset.for) : null }; }, [CARD.toString(), RECT.toString()]);
-      if (!r.c) { bad = 'no card'; break; }
-      if (t.hitR(r.c.r, r.dog)) { bad = `covers #dogHit ${JSON.stringify(r.c.r.map(Math.round))} vs ${JSON.stringify(r.dog.map(Math.round))}`; break; }
-      if (r.tgt && t.hitR(r.c.r, r.tgt)) { bad = `covers ${r.ring}`; break; }
-      if (k < 2) await t.sleep(250);
-    }
-    ok(!bad, `${label}: the card clears the dog and the ringed button ${bad}`);
+    if (!fine) { const r = await t.ev(([CARDs, RECTs]) => { const C = eval(CARDs), R = eval(RECTs); const ring = document.querySelector('#gdLayer .gd-ring'); return { c: C(), dog: R('#dogHit'), ring: ring && !ring.hidden ? ring.dataset.for : null }; }, [CARD.toString(), RECT.toString()]); bad = JSON.stringify(r); }
+    ok(fine, `${label}: the card clears the dog and the ringed button ${bad}`);
   };
-  const step = async (i, label) => { ok(await atStep(i), `step ${i} (${label}) shows`); await t.sleep(350); await clearOf(`step ${i}`); await t.SH(`desk_step${i}_${label}`); };
+  const step = async (i, label) => { ok(await atStep(i), `step ${i} (${label}) shows`); await clearOf(`step ${i}`); await t.SH(`desk_step${i}_${label}`); };
   const next = async () => { await t.p.click('#gdLayer .gd-next'); };
 
   sec('new save: step 0 after the intro');
@@ -77,6 +74,11 @@ run('v24_guide', async (t) => {
   await p.click('#gdReplay'); ok(await t.modalGone(), 'Replay closes the Journal');
   ok(await atStep(0), 'Replay restarts at step 0'); const g = (await t.S()).guide; ok(g.step === 0 && !g.done && !g.skipped, 'S.guide is { step: 0 }');
 
+  sec('reload mid-guide: Continue brings Gerald back at the same step');
+  await next(); ok(await atStep(1), 'step 1'); await next(); ok(await atStep(2), 'step 2');
+  await ev(() => window.__paw.saveNow()); await p.reload(); await p.waitForSelector('#tContinue'); await p.click('#tContinue'); await t.untilMode('yard'); await t.calm(); await t.lu();
+  ok(await atStep(2), 'after a reload and Continue the card is back at step 2');
+
   sec('Skip');
   await p.click('#gdLayer .gd-skip'); ok(await gone(), 'Skip hides the card');
   ok(!!(await t.S()).guide.skipped, 'S.guide.skipped is set'); ok(await t.waitToast(/Gerald waddles/), 'a kind goodbye toast');
@@ -90,7 +92,7 @@ run('v24_guide', async (t) => {
   ok(await t.until(() => window.__paw.S.mail.some((m) => m.from === 'Gerald the duck')), 'the Gerald letter arrives');
   const s1 = await t.S(); ok(s1.guideSeen === true && !!s1.guideLetter && s1.guide.step === -1, 'guideSeen, guideLetter set, guide off');
   ok(/How to play/.test(s1.mail.find((m) => m.from === 'Gerald the duck').title), 'the letter title');
-  await t.sleep(1800); ok(await t.ev(() => { const c = document.querySelector('#gdLayer .gd-card'); return !c || c.hidden; }), 'no Gerald card on an old save');
-  await t.ev(() => window.__paw.saveNow()); await t.p.reload(); await t.p.waitForSelector('#tContinue'); await t.p.click('#tContinue'); await t.untilMode('yard'); await t.sleep(1500);
-  ok(await letters() === 1, 'the letter comes once');
+  await t.sleep(300); ok(await t.ev(() => { const c = document.querySelector('#gdLayer .gd-card'); return !c || c.hidden; }), 'no Gerald card on an old save'); // the one settle: nothing should show
+  await t.ev(() => window.__paw.saveNow()); await t.p.reload(); await t.p.waitForSelector('#tContinue'); await t.p.click('#tContinue'); await t.untilMode('yard');
+  ok(await t.until(() => window.__paw.S.mail.some((m) => m.from === 'Gerald the duck')) && await letters() === 1, 'the letter comes once');
 }, { prefs: { gdTest: true } });

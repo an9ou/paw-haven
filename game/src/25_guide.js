@@ -173,6 +173,7 @@ function gdLetter() {
   mailPush({ kind: 'news', from: 'Gerald the duck', title: 'New: How to play guide in your Journal.', text: 'I wrote down how everything works. It is in your Journal, under How to play. I still want my sandwich back.' });
   S.guideLetter = localISO(); markDirty();
 }
+on('yard:enter', () => { if (gdLive() && gdAllowed() && !gd.on) gdStart(); }); // a reloaded save mid-guide: Continue on the title screen lands here
 on('game:ready', () => { gdFields(); gdLetter(); if (gdLive()) setTimeout(() => { if (cur.mode === 'yard' || cur.mode === 'map') gdStart(); }, 1200); });
 
 /* ---------- the Journal "How to play" page ---------- */
