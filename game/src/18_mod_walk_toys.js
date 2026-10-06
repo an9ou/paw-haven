@@ -72,6 +72,7 @@ function enterToy(name) {
       if (!r) return; const hp = (+r.happiness || 0) * k * fav * (S.place === 'dogpark' ? 1.3 : 1); if (hp) addStat('happy', hp);
       const b = (+r.bond || 0) > 0 ? addBond(r.bond * k) : 0; const c = (+r.coins || 0) > 0 ? addCoins(r.coins * k) : 0;
       if (r.energy) addStat('energy', +r.energy);
+      if (r.clean) addStat('clean', +r.clean); if (r.cool) S.coolUntil = S.gameMin + 60; // v2.4 Paddling Pool: +Cleanliness and a cool hour
       dailyCare('play'); updateHUD(); markDirty(); trackAct('toy', { name });
       toast(`+${Math.round(hp)} Happiness${b ? `, +${b} Bond` : ''}${c ? `, +${c} coins` : ''}${fav > 1 ? ' (favourite toy!)' : ''}${k < 1 ? ` (x${k}: played already today)` : ''}`, 'good');
     },
