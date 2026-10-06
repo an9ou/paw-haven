@@ -108,6 +108,7 @@
     '.pt-phone .pt-hud{position:absolute;left:6px;right:6px;top:6px;height:46px;gap:6px;padding:0 6px;z-index:5;border-width:2px;box-shadow:2px 2px 0 rgba(91,61,50,.16)}',
     '.pt-phone .pt-hud::before{left:30px;width:56px;height:14px;top:-7px}',
     '.pt-phone .pt-ico{width:34px;height:34px}.pt-phone .pt-title{font-size:25px}.pt-phone .pt-hint{display:none}',
+    '.pt-phone .pt-title.pt-long{font-size:19px;white-space:normal;line-height:.92;overflow-wrap:anywhere}',
     '.pt-phone .pt-tally{font-size:19px;padding:0 6px;gap:3px}.pt-phone .pt-tally svg{width:15px;height:15px}',
     '.pt-phone .pt-timer{width:48px}.pt-phone .pt-timer span{display:none}',
     '.pt-phone .pt-btn{min-height:44px;min-width:44px;font-size:24px;padding:0 14px 2px;touch-action:manipulation}',
@@ -535,7 +536,7 @@
     /* HUD */
     var hud = div('pt-hud', L.ui);
     div('pt-ico', hud, itemSVG(name));
-    var titles = div('pt-titles', hud); div('pt-title', titles, esc(name));
+    var titles = div('pt-titles', hud); div('pt-title' + (name.length > 12 ? ' pt-long' : ''), titles, esc(name));
     var hintEl = div('pt-hint', titles, '');
     var tally = div('pt-tally', hud, HEART + '<span>+0</span>'), tallyN = tally.querySelector('span');
     var timer = div('pt-timer', hud, '<span>playtime</span><b><i></i></b>'), timerBar = timer.querySelector('i');
@@ -607,6 +608,9 @@
       tip: function (text, x, y) { if (coarse) text = text.replace(/click/g, 'tap').replace('drag me & let go!', 'flick me!'); var t = div('pt-tip', L.ui, esc(text)); t.style.left = x + 'px'; t.style.top = y + 'px'; return { el: t, hide: function () { if (t.parentNode) t.parentNode.removeChild(t); } }; }
     };
 
+    /* compact = the phone strip (same test as fit() below): games with fixed props pull them closer together */
+    var w0 = (el && el.clientWidth) || W, h0 = (el && el.clientHeight) || H;
+    A.compact = w0 < 760 || (h0 > w0 * 1.1 && w0 < 1024);
     A.dog = makeDog(A, info, L.actors);
     var toy = impl(A);
     A.dog.prerender(toy.poses || ['idle', 'sit', 'walk', 'happy']);
@@ -1524,12 +1528,12 @@
 
   /* ---------- Snuffle Mat ---------- */
   IMPL['Snuffle Mat'] = function (A) {
-    var dog = A.dog, DN = A.DN, MX = 590, MT = 428, MS = 1.18, HOME = 945;
+    var dog = A.dog, DN = A.DN, CP = A.compact, MX = CP ? 545 : 590, MT = CP ? 440 : 428, MS = CP ? 0.95 : 1.18, HOME = CP ? 868 : 945;
     var mat = A.sprite(v24Mat(), 560 * MS, 160 * MS, A.L.scene, 0.5, 0); mat.set(MX, MT);
     function mp(u, v) { var y = MT + (10 + v * 130) * MS, l = MX + (lerp(70, 10, v) - 280) * MS, r = MX + (lerp(490, 550, v) - 280) * MS; return { x: lerp(l, r, u), y: y }; }
     var flaps = [];
     for (var r = 0; r < 3; r++) for (var c = 0; c < 3; c++) {
-      var v = 0.18 + r * 0.32, p = mp(0.19 + c * 0.31, v), k = lerp(0.92, 1.22, v);
+      var v = 0.18 + r * 0.32, p = mp(0.19 + c * 0.31, v), k = lerp(0.92, 1.22, v) * MS / 1.18;
       var kb = A.sprite(v24Kibble(r * 3 + c), 40 * k, 30 * k, A.L.scene); kb.set(p.x, p.y - 2); kb.show(false);
       flaps.push({ i: flaps.length, x: p.x, y: p.y, k: k, has: false, open: 0, want: 0, wig: 0, kb: kb, spr: A.sprite(v24Flap(r * 3 + c + r), 120 * k, 48 * k, A.L.scene, 0.5, 0.25) });
     }
@@ -1636,13 +1640,13 @@
         }
         if (state === 'hide' && peek > 0.9) { var h = dog.head(); g.fillStyle = INK; g.font = '700 24px Caveat, cursive'; g.fillText('*peek*', h.x - 30, h.y - 46); }
       },
-      focus: function () { return state === 'hide' ? 630 : (dog.x + MX) / 2; },
+      focus: function () { return CP ? 630 : state === 'hide' ? 630 : (dog.x + MX) / 2; },
       finish: function () { return { happiness: 2, energy: -1 }; },
       dbg: function () { return { state: state, hidden: hidden, found: found, rounds: rounds, sniffs: sniffs, finds: finds, flaps: flaps.map(function (f) { return { x: f.x, y: f.y, has: f.has, open: f.open }; }) }; }
     };
   };
   IMPL['Snuffle Mat'].cfg = {};
-  IMPL['Snuffle Mat'].phone = { vw: 760, vwMin: 720, fx: 640 };
+  IMPL['Snuffle Mat'].phone = { vw: 740, vwMin: 730, fx: 630 };
 
   /* ---------- Treat Cone ---------- */
   IMPL['Treat Cone'] = function (A) {
@@ -1725,8 +1729,8 @@
         }
         if (cone.vx) {
           cone.x += cone.vx * dt; cone.vx *= Math.pow(0.25, dt);
-          if (cone.x < 260) { cone.x = 260; cone.vx = Math.abs(cone.vx) * 0.6; }
-          if (cone.x > 900) { cone.x = 900; cone.vx = -Math.abs(cone.vx) * 0.6; }
+          if (cone.x < (A.compact ? 400 : 260)) { cone.x = A.compact ? 400 : 260; cone.vx = Math.abs(cone.vx) * 0.6; }
+          if (cone.x > (A.compact ? 800 : 900)) { cone.x = A.compact ? 800 : 900; cone.vx = -Math.abs(cone.vx) * 0.6; }
           if (!up()) cone.rot = cone.tipTo + Math.sin(cone.x * 0.08) * 7;
           if (Math.abs(cone.vx) < 12) cone.vx = 0;
         }
@@ -1761,7 +1765,7 @@
     };
   };
   IMPL['Treat Cone'].cfg = {};
-  IMPL['Treat Cone'].phone = { vw: 720, vwMin: 640 };
+  IMPL['Treat Cone'].phone = { vw: 720, vwMin: 700 };
 
   /* ---------- Squeaky Hedgehog ---------- */
   IMPL['Squeaky Hedgehog'] = function (A) {
@@ -1811,10 +1815,10 @@
         if (!hog.ball) hog.face = side;
         if (state === 'ready') {
           var far = Math.abs(dog.x - hog.x);
-          if (far < 230 || far > 440) { state = 'back'; stT = 0; }
+          if (far < 230 || far > (A.compact ? 360 : 440)) { state = 'back'; stT = 0; }
           else { dog.setPose('sit'); dog.face(side > 0 ? 'left' : 'right'); dog.tilt = Math.sin(T * 2.4) * 5; }
         } else if (state === 'back') {
-          dog.tilt = 0; var bx = clamp(hog.x + side * 330, 150, 1090); if (Math.abs(bx - hog.x) < 250) bx = clamp(hog.x - side * 330, 150, 1090);
+          dog.tilt = 0; var bd = A.compact ? 290 : 330, bx = clamp(hog.x + side * bd, 150, 1090); if (Math.abs(bx - hog.x) < 250) bx = clamp(hog.x - side * bd, 150, 1090);
           if (dog.runTo(bx, 300 * A.tr.run, dt)) { dog.face(dog.x > hog.x ? 'left' : 'right'); state = 'ready'; stT = 0; }
         } else if (state === 'answer') {
           dog.face(side > 0 ? 'left' : 'right'); dog.setPose('speak'); dog.tilt = 0;
@@ -1859,17 +1863,17 @@
     };
   };
   IMPL['Squeaky Hedgehog'].cfg = {};
-  IMPL['Squeaky Hedgehog'].phone = { vw: 720, vwMin: 640 };
+  IMPL['Squeaky Hedgehog'].phone = { vw: 720, vwMin: 700 };
 
   /* ---------- Bubble Machine ---------- */
   IMPL['Bubble Machine'] = function (A) {
-    var dog = A.dog, DN = A.DN, MX = 280, MY = GY + 4, MS = 1.3;
+    var dog = A.dog, DN = A.DN, CP = A.compact, MX = CP ? 300 : 280, MY = GY + 4, MS = CP ? 1.12 : 1.3, DX0 = CP ? 480 : 520, DX1 = CP ? 760 : 980;
     var mach = A.sprite(v24Machine(), 200 * MS, 190 * MS, A.L.actors, 0.5, 184 / 190);
     var HUB = { x: MX + 58 * MS, y: MY - 54 * MS }, RING = { x: MX + 60 * MS, y: MY - 154 * MS };
     var crank = A.sprite(v24Crank(), 80 * MS, 80 * MS, A.L.actors, 0.5, 0.5);
     var bubs = [], made = 0, pops = 0, selfPops = 0, cranking = false, crankA = 0, emitT = 0, clickT = 0, shake = 0, state = 'watch', stT = 0, tgt = null, cool = 0, idleT = 0;
     var tip = A.tip('hold the crank!', HUB.x - 40, HUB.y - 110);
-    dog.x = 820; dog.face('left'); dog.setPose('sit');
+    dog.x = CP ? 720 : 820; dog.face('left'); dog.setPose('sit');
     A.say(pick(['what does THAT do?', 'a machine. for me?']), 1800);
     function emit() { if (bubs.length >= 18) return; made++; bubs.push({ x: RING.x + 8, y: RING.y - 4, r: 15 + Math.random() * 19, vx: 110 + Math.random() * 120, vy: -60 - Math.random() * 90, ph: Math.random() * 6, t: 0, life: 6.5 + Math.random() * 3 }); }
     function pop(b, byDog) {
@@ -1887,7 +1891,7 @@
     function onCrank(x, y) { return dist(x, y, HUB.x + 20, HUB.y) < A.hitR(64) || (x > MX - 90 * MS && x < MX + 70 * MS && y > MY - 110 * MS && y < MY); }
     function pickTarget() {
       var best = null, bd = 1e9;
-      bubs.forEach(function (b) { if (b.x < 470 || b.x > 1000 || b.y < GY - 430 || b.t < 0.4) return; var d = Math.abs(b.x - dog.x) + Math.abs(b.y - (GY - 200)) * 0.5; if (d < bd) { bd = d; best = b; } });
+      bubs.forEach(function (b) { if (b.x < DX0 - 50 || b.x > DX1 + 20 || b.y < GY - 430 || b.t < 0.4) return; var d = Math.abs(b.x - dog.x) + Math.abs(b.y - (GY - 200)) * 0.5; if (d < bd) { bd = d; best = b; } });
       return best;
     }
     return {
@@ -1910,7 +1914,7 @@
           b.vx += (-b.vx * 0.6 + 42) * dt; b.vy += (-b.vy * 0.9 + Math.sin(b.t * 1.8 + b.ph) * 40 + 9) * dt;
           b.x += b.vx * dt; b.y += b.vy * dt;
           if (b.y > GY - 24) { b.y = GY - 24; b.vy = -Math.abs(b.vy) * 0.5 - 20; }
-          if (b.x > 1060 || b.y < 100 || b.t > b.life) pop(b, false);
+          if (b.x > DX1 + 90 || b.y < 100 || b.t > b.life) pop(b, false);
         }
         if (state === 'watch') {
           if (!dog.air) { dog.setPose('sit'); var look = bubs.length ? bubs[bubs.length - 1].x : MX; dog.faceX(look); dog.tilt = bubs.length ? Math.sin(T * 13) * 2 : 0; }
@@ -1919,7 +1923,7 @@
         } else if (state === 'chase') {
           if (bubs.indexOf(tgt) < 0) { state = 'watch'; cool = 0.15; }
           else if (!dog.air) {
-            var side = dog.x >= tgt.x ? 1 : -1, tx = clamp(tgt.x + tgt.vx * 0.35 + side * dog.mouthOff('jump'), 520, 960);
+            var side = dog.x >= tgt.x ? 1 : -1, tx = clamp(tgt.x + tgt.vx * 0.35 + side * dog.mouthOff('jump'), DX0, DX1);
             dog.runTo(tx, 470 * A.tr.run, dt);
             var m = dog.mouth();
             if (tgt.y > GY - 150 && dist(m.x, m.y, tgt.x, tgt.y) < tgt.r + 40) { pop(tgt, true); dog.setPose('happy'); state = 'watch'; cool = 0.3; }
@@ -1933,37 +1937,38 @@
         } else if (state === 'air') {
           var mj = dog.mouth();
           for (var j = bubs.length - 1; j >= 0; j--) if (dist(mj.x, mj.y, bubs[j].x, bubs[j].y) < bubs[j].r + 46) { pop(bubs[j], true); break; }
-          if (!dog.air) { state = 'watch'; cool = 0.5 + Math.random() * 0.5; dog.setPose('happy'); dog.x = clamp(dog.x, 520, 980); }
+          if (!dog.air) { state = 'watch'; cool = 0.5 + Math.random() * 0.5; dog.setPose('happy'); dog.x = clamp(dog.x, DX0, DX1); }
         }
-        if (dog.x < 520 && !dog.air) dog.x = 520;
+        if (dog.x < DX0 && !dog.air) dog.x = DX0;
+        if (dog.x > DX1 + 40 && !dog.air) dog.x = DX1 + 40;
       },
       drawFx: function (g, T) {
         for (var i = 0; i < bubs.length; i++) { var b = bubs[i], gr = Math.min(1, b.t / 0.25), w = 1 + Math.sin(b.t * 6 + b.ph) * 0.04; drawBubble(g, b.x, b.y, b.r * gr * w, 1); }
         if (cranking) { g.strokeStyle = 'rgba(91,61,50,.55)'; g.lineWidth = 2; g.lineCap = 'round'; for (var k = 0; k < 3; k++) { var a = crankA * Math.PI / 180 + k * 2.1; g.beginPath(); g.arc(HUB.x, HUB.y, 58 + k * 3, a, a + 0.5); g.stroke(); } }
       },
-      focus: function () { return clamp((MX + 40 + dog.x) / 2, 520, 600); },
+      focus: function () { return CP ? 545 : clamp((MX + 40 + dog.x) / 2, 520, 600); },
       finish: function () { return { happiness: 2, energy: -2 }; },
       dbg: function () { return { state: state, made: made, pops: pops, selfPops: selfPops, alive: bubs.length, cranking: cranking, hub: HUB }; }
     };
   };
   IMPL['Bubble Machine'].cfg = {};
-  IMPL['Bubble Machine'].phone = { vw: 780, vwMin: 700, fx: 620 };
+  IMPL['Bubble Machine'].phone = { vw: 720, vwMin: 700, fx: 545 };
 
   /* ---------- Paddling Pool ---------- */
   IMPL['Paddling Pool'] = function (A) {
-    var dog = A.dog, DN = A.DN, PX = 730, PY = 528, IRX = 214, IRY = 46, TPX = 300, OX = PX - 270, OY = PY - 70;
+    var dog = A.dog, DN = A.DN, CP = A.compact, PS = CP ? 0.8 : 1, PX = CP ? 665 : 730, PY = 528, IRX = 214 * PS, TPX = CP ? 360 : 300, OX = PX - 270 * PS, OY = PY - 70 * PS, WAIT = CP ? 915 : 1040;
     var post = A.sprite(v24TapPost(), 130, 190, A.L.scene, 0.5, 178 / 190); post.set(TPX, GY + 12);
-    var back = A.sprite(v24Pool('back'), 540, 190, A.L.scene, 0, 0); back.set(OX, OY);
-    var water = A.sprite(v24Water(false), 540, 190, A.L.scene, 0.5, 73 / 190);
-    var fwater = A.sprite(v24Water(true), 540, 190, A.L.front, 0, 0); fwater.set(OX, OY);
-    var front = A.sprite(v24Pool('front'), 540, 190, A.L.front, 0, 0); front.set(OX, OY);
-    var REEL = { x: TPX - 65 + 100, y: GY + 12 - 178 + 140 }, REST = { x: TPX + 120, y: GY + 34 };
+    var back = A.sprite(v24Pool('back'), 540 * PS, 190 * PS, A.L.scene, 0, 0); back.set(OX, OY);
+    var water = A.sprite(v24Water(false), 540 * PS, 190 * PS, A.L.scene, 0.5, 73 / 190);
+    var fwater = A.sprite(v24Water(true), 540 * PS, 190 * PS, A.L.front, 0, 0); fwater.set(OX, OY);
+    var front = A.sprite(v24Pool('front'), 540 * PS, 190 * PS, A.L.front, 0, 0); front.set(OX, OY);
+    var REEL = { x: TPX - 65 + 100, y: GY + 12 - 178 + 140 }, REST = { x: TPX + (CP ? 92 : 120), y: GY + 34 };
     var noz = { x: REST.x, y: REST.y, held: false, ang: 0.5 }, fill = 0, state = 'wait', stT = 0, splashes = 0, hosed = 0, hoseCD = 0, spray = false, landX = 0, landY = 0, inPool = false, padT = 0, padTo = PX, padPose = 'walk', lowSaid = false, hot = A.weather === 'sunny' && (A.time === 'day' || A.time === 'dusk');
     var tip = A.tip('drag the hose!', REST.x - 60, REST.y - 110);
-    dog.x = 1040; dog.face('left'); dog.setPose('sit');
+    dog.x = WAIT; dog.face('left'); dog.setPose('sit');
     A.say(hot ? 'it is SO hot. is that a pool?' : 'is that... a tiny lake?', 2000);
     function tipPt() { var d = noz.x > PX + 60 ? -1 : 1; return { x: noz.x + d * Math.cos(noz.ang) * 30, y: noz.y + Math.sin(noz.ang) * 30, d: d }; }
-    function waterY() { return PY + 3 + (1 - fill) * 18; }
+    function waterY() { return PY + 3 * PS + (1 - fill) * 18 * PS; }
     function inside(x) { return Math.abs(x - PX) < IRX - 30; }
     function bigSplash(x, n) { A.burst('drop', x, waterY() - 6, n, { sp: 380, g: 1150, life: 0.9, size: 4.5, color: '#9CC8EA' }); A.sfx('splash'); }
     return {
@@ -2001,10 +2006,10 @@
           }
         }
         if (state === 'wait') {
-          if (!dog.air) { dog.setPose(fill > 0.5 ? 'happy' : 'sit'); dog.face('left'); dog.tilt = fill > 0.5 ? Math.sin(T * 13) * 2.5 : 0; if (dog.x !== 1040) dog.runTo(1040, 260, dt); }
+          if (!dog.air) { dog.setPose(fill > 0.5 ? 'happy' : 'sit'); dog.face('left'); dog.tilt = fill > 0.5 ? Math.sin(T * 13) * 2.5 : 0; if (dog.x !== WAIT) dog.runTo(WAIT, 260, dt); }
         } else if (state === 'hopin') {
           dog.tilt = 0;
-          if (!dog.air && dog.runTo(PX + IRX + 90, 320, dt)) { dog.face('left'); dog.ground = PY + 16; var ft = 2 * 760 / G; dog.jump(-760, (PX + 40 - dog.x) / ft); state = 'flying'; stT = 0; }
+          if (!dog.air && dog.runTo(PX + IRX + 90, 320, dt)) { dog.face('left'); dog.ground = PY + 16 * PS; var ft = 2 * 760 / G; dog.jump(-760, (PX + 40 - dog.x) / ft); state = 'flying'; stT = 0; }
         } else if (state === 'flying') {
           if (!dog.air && stT > 0.1) {
             inPool = true; state = 'paddle'; stT = 0; padT = 0; bigSplash(dog.x, 26); A.float('SPLASH!', dog.x, PY - 200, 'pt-blue');
@@ -2036,7 +2041,7 @@
         if (dog.x > PX + IRX - 50 && inPool) dog.x = PX + IRX - 50;
         var wv = fill > 0.02;
         water.show(wv); fwater.show(wv);
-        if (wv) { var k = 0.82 + 0.18 * fill; water.set(PX, waterY(), 0, k, k); fwater.el.style.opacity = Math.min(1, fill * 2).toFixed(2); fwater.set(OX, OY + (1 - fill) * 18); }
+        if (wv) { var k = 0.82 + 0.18 * fill; water.set(PX, waterY(), 0, k, k); fwater.el.style.opacity = Math.min(1, fill * 2).toFixed(2); fwater.set(OX, OY + (1 - fill) * 18 * PS); }
       },
       drawFx: function (g, T) {
         var tp = tipPt(), sx = REEL.x, sy = REEL.y, ex = noz.x - tp.d * 22, ey = noz.y + 4, cx = (sx + ex) / 2, cy = Math.max(sy, ey) + 40;
@@ -2054,7 +2059,7 @@
         g.restore();
         if (inPool && !dog.air) { g.strokeStyle = 'rgba(94,134,180,.75)'; g.lineWidth = 2; for (var i = 0; i < 2; i++) { var r = ((T * 34 + i * 26) % 52) + 30; g.globalAlpha = Math.max(0, 1 - r / 82); g.beginPath(); g.ellipse(dog.x, waterY() - 8, r * 1.5, r * 0.3, 0, 0, Math.PI * 2); g.stroke(); } g.globalAlpha = 1; }
       },
-      focus: function () { return noz.held ? clamp((noz.x + PX) / 2, 560, 700) : inPool || state !== 'wait' ? 680 : 700; },
+      focus: function () { return CP ? 660 : noz.held ? clamp((noz.x + PX) / 2, 560, 700) : inPool || state !== 'wait' ? 680 : 700; },
       cardSub: function () {
         if (!inPool) return '';
         return A.key === 'husky' ? DN + ' refuses to leave the pool. Five more minutes, then.' : DN + ' hopped out and shook off. You are a bit wet too.';
@@ -2064,12 +2069,12 @@
     };
   };
   IMPL['Paddling Pool'].cfg = { scene: 'yard' };
-  IMPL['Paddling Pool'].phone = { vw: 760, vwMin: 700, fx: 640 };
+  IMPL['Paddling Pool'].phone = { vw: 740, vwMin: 730, fx: 660 };
 
   /* ---------- Agility Tunnel ---------- */
   IMPL['Agility Tunnel'] = function (A) {
-    var dog = A.dog, DN = A.DN, TL = 480, TR = 770, TY = GY - 62, NS = 8, SW = (TR - TL) / NS, SL = 330, SR = 920;
-    var base = A.sprite(v24TunnelBase(), 400, 50, A.L.scene, 0.5, 0.6); base.set((TL + TR) / 2, GY + 30);
+    var dog = A.dog, DN = A.DN, CP = A.compact, TL = CP ? 500 : 480, TR = CP ? 745 : 770, TY = GY - 62, NS = 8, SW = (TR - TL) / NS, SL = CP ? 385 : 330, SR = CP ? 860 : 920;
+    var base = A.sprite(v24TunnelBase(), (TR - TL) + 110, 50, A.L.scene, 0.5, 0.6); base.set((TL + TR) / 2, GY + 30);
     var segs = [];
     for (var i = 0; i < NS; i++) segs.push({ x: TL + (i + 0.5) * SW, b: 0, spr: A.sprite(v24Seg(i), SW + 10, 196, A.L.front, 0.5, 0.5) });
     var endL = A.sprite(v24TunnelEnd(true), 54, 204, A.L.front, 0.5, 0.5), endR = A.sprite(v24TunnelEnd(false), 54, 204, A.L.front, 0.5, 0.5);
@@ -2152,13 +2157,13 @@
           g.restore();
         }
       },
-      focus: function () { return 625; },
+      focus: function () { return (TL + TR) / 2; },
       finish: function () { return { happiness: 2, energy: -3 }; },
       dbg: function () { return { state: state, side: side, runs: runs, streak: streak, cleans: cleans, best: best, last: last, runT: runT, sides: { L: SL, R: SR } }; }
     };
   };
   IMPL['Agility Tunnel'].cfg = { scene: 'yard' };
-  IMPL['Agility Tunnel'].phone = { vw: 860, vwMin: 820, fx: 625 };
+  IMPL['Agility Tunnel'].phone = { vw: 740, vwMin: 730, fx: 622 };
 
   IMPL['Rope Tug'].phone = { vw: 980, fx: 640 };
   IMPL['Squeaky Duck'].phone = { vw: 700, vwMin: 660, fx: 620 };
