@@ -36,14 +36,19 @@ const { run } = require('./test_lib');
         ok(m.card[0] >= 0 && m.card[2] <= m.iw + 1 && m.card[1] >= m.vw.top - 2 && m.card[3] <= m.vw.bottom + 2, `${tag} step ${i}: the strip stays inside the scene`);
         await t.SH(`${tag}_step${i}_${label}`);
       };
+      // a toast up at steps 0 and 1: measured in viewport coordinates against the strip (a plain .toast is added if the start-of-game ones timed out)
+      const toastCheck = async (i) => {
+        ok(await atStep(i), `${tag} step ${i} shows`);
+        await t.ev(() => { const box = document.getElementById('toasts'); if (box.querySelector('.toast')) return; const d = document.createElement('div'); d.className = 'toast'; d.textContent = 'Rub the dog to pet.'; box.appendChild(d); setTimeout(() => d.remove(), 2900); });
+        await t.until(() => !!document.querySelector('#toasts .toast'), null, 2000);
+        const r = await t.ev(() => { const R = (e) => { const q = e.getBoundingClientRect(); return [q.left, q.top, q.right, q.bottom]; }; return { card: R(document.querySelector('#gdLayer .gd-card')), at: document.querySelector('#gdLayer .gd-card').dataset.at, toasts: [...document.querySelectorAll('#toasts .toast')].map(R) }; });
+        ok(r.toasts.length > 0 && !r.toasts.some((q) => t.hitR(q, r.card)), `${tag} step ${i} with a toast showing: no toast on the strip (${r.at}) toasts ${JSON.stringify(r.toasts.map((q) => [Math.round(q[1]), Math.round(q[3])]))} vs strip ${Math.round(r.card[1])}-${Math.round(r.card[3])}`);
+      };
       const next = () => p.tap('#gdLayer .gd-next');
       const labels = ['hello', 'feed', 'pet', 'nap', 'map', 'walk', 'shops', 'garden', 'missions', 'done'];
+      await toastCheck(0); await t.SH(`${tag}_step0_toast`);
       await check(0, 'hello'); await next();
-      ok(await atStep(1), `${tag} step 1 shows`);
-      // make sure a toast is up (the start-of-game toasts may have timed out): a plain .toast in #toasts, positioned by the container like any other
-      await t.ev(() => { const box = document.getElementById('toasts'); if (box.querySelector('.toast')) return; const d = document.createElement('div'); d.className = 'toast'; d.id = 'gdTestToast'; d.textContent = 'Rub the dog to pet.'; box.appendChild(d); setTimeout(() => d.remove(), 2900); });
-      await t.until(() => !!document.querySelector('#toasts .toast'), null, 2000);
-      const tm = await measure(); ok(tm.toasts.length > 0 && !tm.toasts.some((r) => t.hitR(r, tm.card)), `${tag} step 1 with a toast showing: the toast sits below the strip (${tm.at}) ${JSON.stringify(tm.toasts.map((r) => r.map(Math.round)))} vs ${JSON.stringify(tm.card.map(Math.round))}`);
+      await toastCheck(1);
       await t.SH(`${tag}_step1_toast`);
       await check(1, 'feed');
       await p.tap('#bar [data-act=feed]'); await t.waitPop(true);
