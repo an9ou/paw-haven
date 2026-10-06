@@ -102,7 +102,8 @@ function phHomeRefit() {
   if (!isPhone() || (cur.mode !== 'yard' && cur.mode !== 'market') || !$('#view > svg.world')) return;
   let L = 186, R = 530, fitMin = 0.62;
   const vz = $('#visitorG', view);
-  if (vz) { const sp = visitorSpot(), w = 264 * sp[3]; L = 306; R = Math.max(R, sp[0] + w / 2 + 6); }
+  if (S.place === 'market') { L = 226; R = 574; } // the dog and the "Market Street" sign (the bowl may sit half off the left edge here)
+  else if (vz) { const sp = visitorSpot(), w = 264 * sp[3]; L = 306; R = Math.max(R, sp[0] + w / 2 + 6); }
   const vw = view.clientWidth, vh = view.clientHeight - (parseFloat(view.style.getPropertyValue('--trayH')) || 0); if (!vw || vh <= 0) return;
   const native = 600 * vw / vh, fit = Math.max(fitMin, Math.min(1, native / (R - L)));
   view.style.setProperty('--vfit', fit.toFixed(3));
