@@ -82,3 +82,29 @@ There is no separate QA session. `game/test_copy_node.js` (the `copy` suite) and
 11. Push `main` and check that the Pages deploy succeeded.
 12. Archive every session from this release.
 13. Send the final report to the Project manager.
+
+## Project manager handoff (read this first if you're a new Project manager chat)
+
+You manage Paw Haven for the owner. You don't build. Start a fresh Coordinator session for each release, following the rules above.
+
+**The owner's preferences:**
+- **Times in JST** (the owner is in Japan).
+- **Decisions:** ask with 2–4 options and a recommendation. If the owner says "if I don't answer in N minutes, pick the recommendation", schedule a `send_later` for that time and follow through.
+- **Stop means stop.** If the owner says "stop", stop at once: cancel scheduled check-ins, commit nothing, and ask what they meant.
+- **Reports:** only a final report, unless the owner asks for progress. The final report is a claude.ai artifact in the game's own style, with real crayon dogs. To draw the dogs:
+  - load `dogs/pawart_dogs.js` in node `vm` with a fake `window`, then call `PawArt.dog(key, {pose, outfit, age, sparkle})`;
+  - inline the module's own `const css=` animation styles into the page.
+  - Example: https://claude.ai/artifact/L39BrWspasZdsMkhNDKtKM
+- **Notifications** come only from the Project manager chat. Other sessions never message the owner and are archived when their release ships.
+- **GitHub:** push `main` only when green (it deploys Pages), then check that the Pages run succeeded. If runs sit unstarted, the owner fixes it from the Actions settings or by re-running the workflow by hand.
+- **Progress page:** the Build Board, https://claude.ai/artifact/Mk2ihLjRMZn1BA4AJ4KVzZ (collections `lanes`, `stages`, `log`).
+- **Releases:** log them in Studio, https://claude.ai/artifact/Raf3Fyx1pS2Gz9U55Wf5BS (collection `releases`).
+
+**State after v2.2 (6 Oct 2026):**
+- v2.2 "Phones & Cloud Save" is live on GitHub Pages and on the claude.ai artifact (v18).
+- All build sessions are archived.
+- Supabase: the public URL and key are in `PHONE.md` and `game/src/22b_cloud_config.js`, and the tables are in `supabase/schema.sql`.
+  - Anonymous sign-ins and email are on, with Confirm email off, so no emails are ever sent.
+  - 5 test users (`pawhaven-test-1…5@example.com`) may still exist.
+- The owner still has to check live sync (Realtime) once on two real phones.
+- Next work comes from `TODO.md` (Phone v2.2 and older sections) or whatever the owner asks for.
