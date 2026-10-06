@@ -27,6 +27,7 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [ ] The rocking chair's backrest leans a little. `world/pawart_world_b.js`
 
 ## Project
+- [ ] The claude.ai artifact publish is blocked by the full-read requirement on a 1.8 MB page, so the artifact still shows v2.2. v2.4 to solve it, e.g. publish as a multi-file artifact with a small index.html and the game JS/CSS as supporting files.
 - [x] Publish to the claude.ai artifact. Done with v2.1.
 - [x] Saves were per copy with no export. Fixed in v2.2: cloud save on the web version and Export / Import save codes on every copy.
 - [ ] Under parallel load (`--jobs 2`) a few desktop checks time out once and pass on retry: v16b (night bark, the click that interrupts an idle, the dev panel Close button), v21_home (Proud Mum picks "down": the test pins `Math.random` around one call and an idle tick can take it). Same timings as before v2.2. `game/test_v16b.js`, `game/test_v21_home.js`

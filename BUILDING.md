@@ -103,7 +103,7 @@ You manage Paw Haven for the owner. You don't build. Start a fresh Coordinator s
 - **Releases:** log them in Studio, https://claude.ai/artifact/Raf3Fyx1pS2Gz9U55Wf5BS (collection `releases`).
 
 **State after v2.3 (6 Oct 2026):**
-- v2.3 "Cozy Phones" is live on GitHub Pages and on the claude.ai artifact.
+- v2.3 "Cozy Phones" is live on GitHub Pages. The claude.ai artifact still shows v2.2 (its publish is blocked, see TODO.md "Project").
 - All build sessions are archived.
 - Supabase: the public URL and key are in `PHONE.md` and `game/src/22b_cloud_config.js`, and the tables are in `supabase/schema.sql`.
   - Anonymous sign-ins and email are on, with Confirm email off, so no emails are ever sent.
