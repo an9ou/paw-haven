@@ -14,6 +14,8 @@
 .logo span{display:inline-block}
 .logo::after{content:"";position:absolute;left:4%;right:2%;bottom:6%;height:26%;background:var(--pink);opacity:.4;z-index:-1;border-radius:40% 60% 50% 45%/60% 40% 55% 45%;transform:rotate(-1.5deg)}
 .tagline{position:relative;font-family:var(--font-hand);font-size:30px;font-weight:600;color:var(--ink)}
+/* the dashed pencil rule sits under the tagline (it was drawn in the doodles, where phones put it through the text) */
+.tagline::after{content:"";position:absolute;left:-8%;right:-8%;bottom:-4px;height:1px;background:repeating-linear-gradient(90deg,#A8968A 0 3px,transparent 3px 8px);opacity:.7;transform:rotate(-.6deg);pointer-events:none}
 .tbtns{position:relative;display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-top:6px}
 .crayon-note{position:relative;font-family:var(--font-read);font-size:17px;color:var(--muted);transform:rotate(-1.5deg)}
 #title .tdog{position:absolute;bottom:2%;right:4%;width:min(24%,280px);z-index:3}
@@ -86,6 +88,8 @@ html[data-layout="phone"] .tchoose .tch .tch-dog{width:76px;height:62px;flex:non
 html[data-layout="phone"] .tchoose .tch .tch-t{align-items:flex-start;min-width:0;gap:1px}
 html[data-layout="phone"] .tchoose .tch b{font-size:25px}
 html[data-layout="phone"] .tchoose .tch .tch-s{font-size:15px}
+html[data-layout="phone"] .logo{font-size:clamp(48px,17vw,70px);white-space:nowrap} /* one line on every phone, so the swash sits under both words */
+html[data-layout="phone"] .tagline::after{left:0;right:6%}
 html[data-layout="phone"] .tbtns{flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:12px;width:min(100%,260px)}
 html[data-layout="phone"] .tbtns .btn{width:100%}
 html[data-layout="phone"] .tacct{font-size:15px;margin-top:-8px}

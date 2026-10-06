@@ -3,7 +3,7 @@ function enterTitle() {
   setChrome(false, false); view.innerHTML = ''; titleEl.hidden = false;
   const has = !!loadSave() || !!(S && S.dog);
   const rings = `<svg viewBox="0 0 44 600" preserveAspectRatio="none">${Array.from({ length: 13 }, (_, i) => `<ellipse cx="25" cy="${24 + i * 46}" rx="6" ry="6" fill="#E6D7BF" stroke="${INKG}" stroke-width="1.6"/><path d="M27 ${24 + i * 46} C 10 ${10 + i * 46}, 2 ${22 + i * 46}, 8 ${34 + i * 46}" fill="none" stroke="#A8968A" stroke-width="3" stroke-linecap="round"/><path d="M27 ${24 + i * 46} C 10 ${10 + i * 46}, 2 ${22 + i * 46}, 8 ${34 + i * 46}" fill="none" stroke="${INKG}" stroke-width="1.3"/>`).join('')}</svg>`;
-  const doodles = `<svg viewBox="0 0 800 500" preserveAspectRatio="xMidYMid meet">${doodle('spark', 120, 70, 1.3)}${doodle('spark', 690, 120, 0.9)}${doodle('spark', 150, 330, 0.7)}${doodle('heart', 660, 62, 1.2, 12)}${doodle('heart', 718, 330, 0.8, -10)}${doodle('note', 96, 190, 1.1, -8)}${doodle('note', 700, 230, 0.9, 10)}<g class="dd-low">${doodle('flower', 640, 420, 1.2)}${doodle('flower', 100, 430, 0.9, 20)}${doodle('paw', 250, 450, 0.8, -20)}${doodle('paw', 300, 470, 0.8, -10)}${doodle('paw', 350, 455, 0.8, -25)}${doodle('bone', 560, 455, 1.1, -8)}</g><path d="M200 190 Q400 178 610 192" fill="none" stroke="#A8968A" stroke-width="1" stroke-dasharray="3 5" opacity=".7"/></svg>`;
+  const doodles = `<svg viewBox="0 0 800 500" preserveAspectRatio="xMidYMid meet">${doodle('spark', 120, 70, 1.3)}${doodle('spark', 690, 120, 0.9)}${doodle('spark', 150, 330, 0.7)}${doodle('heart', 660, 62, 1.2, 12)}${doodle('heart', 718, 330, 0.8, -10)}${doodle('note', 96, 190, 1.1, -8)}${doodle('note', 700, 230, 0.9, 10)}<g class="dd-low">${doodle('flower', 640, 420, 1.2)}${doodle('flower', 100, 430, 0.9, 20)}${doodle('paw', 250, 450, 0.8, -20)}${doodle('paw', 300, 470, 0.8, -10)}${doodle('paw', 350, 455, 0.8, -25)}${doodle('bone', 560, 455, 1.1, -8)}</g></svg>`;
   titleEl.innerHTML = `<div class="bg">${art('scene', 'yard', envNow())}</div>
     <div class="cover"><div class="rings" aria-hidden="true">${rings}</div><div class="doodles" aria-hidden="true">${doodles}</div>
       <h1 class="logo" aria-label="Paw Haven"><span style="transform:rotate(-3deg)">Paw</span> <span style="transform:rotate(2deg) translateY(4px)">Haven</span></h1>
@@ -38,9 +38,10 @@ const AC_CH = {
 function acChoicesHTML(pre, m) {
   const txt = { login: {}, reg: {}, guest: {} };
   if (m === 'acct') { txt.login.s = 'Use a different account.'; txt.reg.s = 'A second account, with a brand new dog.'; txt.guest.s = 'Log out. Your game stays on this device.'; }
-  if (m === 'guest') { txt.guest.t = 'Keep playing as guest'; txt.guest.s = 'Nothing changes. Carry on.'; }
+  if (m === 'guest') { txt.guest.t = 'Stay a guest'; txt.guest.s = 'Nothing changes. Carry on.'; }
   return Object.keys(AC_CH).map((k) => {
     const c = Object.assign({}, AC_CH[k], txt[k]), id = pre + k[0].toUpperCase() + k.slice(1);
+    if (pre === 'ac' && k === 'reg') c.t = 'New account'; // in the sheet the cards are narrower: short titles keep all three on one line
     return `<button class="card tch tch-${k}" id="${id}" data-ac="${k}"><span class="tch-dog" aria-hidden="true">${art('dog', c.dog, { pose: c.pose })}</span><span class="tch-t"><b>${c.t}</b><span class="tch-s">${c.s}</span></span></button>`;
   }).join('');
 }
@@ -100,9 +101,9 @@ function acDogName(d) { return (d && ((d.dogs && d.dogs[0] && d.dogs[0].name) ||
 function acOpenForm(kind, inSheet) {
   const reg = kind === 'reg', c = acCl(), local = clLocal(), acct = c && c.uid && !c.anon;
   const carry = local && !acct && clMine(); // a guest game comes along; an account's game stays with that account
-  const lead = reg ? (carry ? `${esc(acDogName(local))} comes along to the new account. No email is ever sent.` : local ? `A fresh start with a new crayon dog. ${esc(acDogName(local))} stays safe in the other account.` : 'Then pick your first crayon dog. No email is ever sent.')
+  const lead = reg ? (carry ? `${esc(acDogName(local))} comes along to the new account. No email is ever sent.` : local ? `A fresh start with a new crayon dog. ${esc(acDogName(local))} stays safe in the other account.` : 'Make one, then pick your first crayon dog. No email is ever sent.')
     : 'Welcome back. Type the email and password you signed up with.';
-  const fields = clIn('acEmail', 'email', 'Email', 'username') + (reg ? clIn('acPw', 'password', `Password (${CL_PW_MIN} or more letters)`, 'new-password') + clIn('acPw2', 'password', 'Password again', 'new-password') : clIn('acPw', 'password', 'Password', 'current-password'));
+  const fields = clIn('acEmail', 'email', 'Email', 'username') + (reg ? clIn('acPw', 'password', `Password (${CL_PW_MIN} or more characters)`, 'new-password') + clIn('acPw2', 'password', 'Password again', 'new-password') : clIn('acPw', 'password', 'Password', 'current-password'));
   const body = `<div class="clset acform"><div class="aclead"><span class="acdog" aria-hidden="true">${art('dog', reg ? 'golden' : 'pug', { pose: reg ? 'happy' : 'paw' })}</span><p>${lead}</p></div>${fields}<p class="clmsg" id="acMsg" role="alert" hidden></p>${reg ? '' : '<button class="tlink" id="acForgot">Forgot your password?</button><p class="small" id="acForgotTxt" hidden>Passwords can\'t be reset by email. If you\'re logged in on another device, change it there. The game on this device is never lost.</p>'}</div>`;
   const p = openModal(reg ? 'Make an account' : 'Log in', body, { cls: 'acct acformp', foot: `<button class="btn" id="acBack">Back</button><button class="btn yes" id="acGo">${reg ? 'Make account' : 'Log in'}</button>` });
   const val = (id) => { const e = document.getElementById(id); return e ? e.value : ''; };
@@ -126,7 +127,7 @@ function acOpenForm(kind, inSheet) {
     say(''); btn.disabled = true; btn.textContent = reg ? 'Making it...' : 'Logging in...';
     let r;
     try { r = reg ? await clRegister(em, pw, acct) : await clLogin(em, pw); } catch (e) { r = { ok: false, msg: clErrText(e) }; }
-    if (!r || !r.ok) { btn.disabled = false; btn.textContent = reg ? 'Make account' : 'Log in'; say((r && r.msg) || 'That did not work. Try again in a moment.'); return; }
+    if (!r || !r.ok) { btn.disabled = false; btn.textContent = reg ? 'Make account' : 'Log in'; say((r && r.msg) || "That didn't work. Try again in a moment."); return; }
     acGuest = false; if (!modal.hidden) closeModal();
     if (reg) clPull(); // the save on this device becomes the account's save
     const now = clLocal();

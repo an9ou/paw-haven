@@ -187,7 +187,7 @@ run('account', async (t) => {
   sec('desktop: make an account, kind errors');
   srv.users.push({ id: 'uTaken', email: 'taken@example.com', password: 'taken1234' });
   await tap('#tReg'); ok(await sheetOpen(), 'Make an account opens a popup');
-  ok(/pick your first crayon dog/.test(await ev(() => document.querySelector('.aclead').textContent)), 'with no game yet: "Then pick your first crayon dog."');
+  ok(/pick your first crayon dog/.test(await ev(() => document.querySelector('.aclead').textContent)), 'with no game yet: "Make one, then pick your first crayon dog."');
   await form('reg', 'pip@example.com', 'short'); ok(/at least 8/.test(await msg()), 'a password under 8: "Pick a password with at least 8 characters."');
   await form('reg', 'pip@example.com', 'pupper123', 'pupper124'); ok(/don't match/.test(await msg()), 'two different passwords are refused');
   await form('reg', 'taken@example.com', 'pupper123'); ok(/already has an account/.test(await msg()), 'email taken: "That email already has an account. Log in instead."');
@@ -208,9 +208,9 @@ run('account', async (t) => {
 
   sec('desktop: Log in link opens the same three choices; register upgrades the guest save');
   await tap('#tSwitch'); ok(await sheetOpen(), 'the link opens the choices');
-  ok(await ev(() => ['acLogin', 'acReg', 'acGuest'].every((i) => !!document.getElementById(i))) && /Keep playing as guest/.test(await ev(() => document.getElementById('acGuest').textContent)), 'Log in, Make an account, Keep playing as guest');
+  ok(await ev(() => ['acLogin', 'acReg', 'acGuest'].every((i) => !!document.getElementById(i))) && /Stay a guest/.test(await ev(() => document.getElementById('acGuest').textContent)), 'Log in, New account, Stay a guest');
   await t.SH('desk_05_switch_guest');
-  await tap('#acGuest'); ok(await closed() && (await uid()) === g1, 'Keep playing as guest changes nothing');
+  await tap('#acGuest'); ok(await closed() && (await uid()) === g1, 'Stay a guest changes nothing');
   await tap('#tSwitch'); await sheetOpen(); await tap('#acReg'); await d1.waitForSelector('#acPw2');
   ok(new RegExp(name1 + ' comes along').test(await ev(() => document.querySelector('.aclead').textContent)), `the form says ${name1} comes along`);
   await tap('#acBack'); ok(await t.until(() => !!document.getElementById('acLogin'), null, 3000), 'Back from the form returns to the choices');
