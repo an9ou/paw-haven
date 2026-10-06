@@ -90,3 +90,7 @@ html[data-layout="phone"] .pf-spots .btn,html[data-layout="phone"] .pf-spots [da
 
 /* v2.3: the mailbox Letters / Album tabs are at least 44 px in both directions (they measured 38-41 px) */
 html[data-layout="phone"] #modal .mbtabs .btn,html[data-layout="phone"] .panel.mailbox .mbtabs .btn{min-height:44px;min-width:44px;box-sizing:border-box}
+
+/* v2.3 mailbox rows: the hand font for the title, like the rest of the game */
+html[data-layout="phone"] .mb-t b{font-family:var(--font-hand);font-weight:700;font-size:21px}
+html[data-layout="phone"] .mb-k svg{width:88%;height:88%}

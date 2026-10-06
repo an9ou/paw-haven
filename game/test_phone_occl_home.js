@@ -30,7 +30,11 @@ const SCAN = (sels) => {
       const tag = `${W}x${H}`;
       // must: at least one sample of the box is on screen, and none of those is covered by chrome.  soft: only the "not covered" part (the prop may be panned out of the crop)
       const check = async (label, must, soft) => {
-        const r = await t.ev(SCAN, [...must, ...(soft || [])]);
+        let r = null;
+        for (let i = 0; i < 4; i++) { // the dog may be mid-wander (the ambient jokes): look again a moment later
+          r = await t.ev(SCAN, [...must, ...(soft || [])]);
+          if (must.every((m) => r[m] && r[m].vis > 0 && r[m].cov === 0)) break; await t.sleep(1200);
+        }
         for (const s of must) {
           const v = r[s];
           if (!v) { ok(false, `${tag} ${label}: ${s} exists`); continue; }
@@ -58,6 +62,23 @@ const SCAN = (sels) => {
         if (r) { ok(r.bad.length === 0, `${tag} ${label}: sheet buttons are on screen and not covered ${r.bad.slice(0, 4).join(' | ')}`); ok(r.barTop == null || r.panel[1] <= r.barTop + 1, `${tag} ${label}: the sheet ends above the action bar (${r.panel[1]} <= ${r.barTop})`); }
         await t.SH(`${tag}_${label.replace(/\W+/g, '_')}`);
       };
+      const steady = () => t.until(() => { const x = document.querySelector('#view > svg.world').viewBox.baseVal.x, ok2 = window.__cx !== undefined && Math.abs(window.__cx - x) < 0.05; window.__cx = x; return ok2; }, null, 6000);
+      // fully on screen: inside the view and the screen width
+      const fullyOn = async (label, sels) => {
+        let r = [];
+        for (let i = 0; i < 4; i++) { // the dog may be mid-wander (the camera follows it): wait until it is home again, then look
+          await t.until(() => { const p = document.getElementById('dogPos'), tf = p ? p.style.transform : ''; return !p || tf === '' || /translate\(0px, 0px\) scale\(1\)/.test(tf); }, null, 12000); await steady();
+          r = await t.ev((ss) => { const vr = document.getElementById('view').getBoundingClientRect(); return ss.map((s) => { const e = document.querySelector(s); if (!e) return [s, null]; const b = e.getBoundingClientRect(); return [s, b.left >= -1 && b.right <= innerWidth + (s === '#dogHit' ? 10 : 1) && b.top >= vr.top - 1 && b.bottom <= vr.bottom + 1, [b.left | 0, b.top | 0, b.right | 0, b.bottom | 0]]; }); }, sels);
+          if (r.every((x) => x[1] === true)) break; await t.sleep(900);
+        }
+        for (const [s, on, box] of r) ok(on === true, `${tag} ${label}: ${s} is fully on screen ${JSON.stringify(box)}`);
+      };
+      // a feed / care / play tray never covers the dog or the bowl: the scene shrinks into the part above it
+      const trayCheck = async (act, label) => {
+        await t.p.tap(`#bar [data-act=${act}]`); await t.until(() => !!document.querySelector('#dock > .tray'), null, 4000); await t.sleep(700);
+        await check(label, ['#dogHit', '#bowlG']); await fullyOn(label, ['#dogHit', '#bowlG']);
+        await t.p.tap('#trayX'); await t.until(() => !document.querySelector('#dock > .tray'), null, 4000); await t.sleep(500);
+      };
       const dismiss = () => t.ev(() => { const x = document.querySelector('#modal .panel .x'); if (x) x.click(); });
       const toastsGone = () => t.until(() => !document.querySelector('#toasts .toast'), null, 9000);
 
@@ -73,6 +94,8 @@ const SCAN = (sels) => {
       await check('yard', ['#dogHit'], ['#houseG', '#bowlG']);
       await toastsGone();
       await check('yard quiet', ['#dogHit']);
+      await steady(); await fullyOn('yard', ['#dogHit', '#bowlG']);
+      for (const [a, l] of [['feed', 'yard feed tray'], ['play', 'yard play tray'], ['care', 'yard care tray']]) await trayCheck(a, l);
 
       // ---------- yard with the nap strip ----------
       t.sec(tag + ': nap strip');
@@ -102,6 +125,8 @@ const SCAN = (sels) => {
       t.sec(tag + ': house');
       await t.home('house'); await t.sleep(900);
       await check('house', ['#dogHit']);
+      await fullyOn('house', ['#dogHit', '#bowlG']);
+      await trayCheck('care', 'house care tray');
       await toastsGone();
       // asleep in the house
       await t.p.tap('#bar [data-act=care]'); await t.until(() => !!document.querySelector('[data-care=sleep]'));
@@ -110,7 +135,6 @@ const SCAN = (sels) => {
       await t.p.tap('#wakeBtn'); await t.until(() => !document.getElementById('wakeBtn'));
 
       // the right half of the scene (notice board, café counter, vet desk, salon table, the dog house) is reachable with the look-right button
-      const steady = () => t.until(() => { const x = document.querySelector('#view > svg.world').viewBox.baseVal.x, ok2 = window.__cx !== undefined && Math.abs(window.__cx - x) < 0.05; window.__cx = x; return ok2; }, null, 6000);
       const peekCheck = async (label) => {
         const has = await t.ev(() => ({ btn: !!document.getElementById('phPeek'), prop: !!document.querySelector('#sceneG [data-hot]') || !!document.getElementById('houseG') }));
         if (!has.prop) return;
@@ -118,9 +142,21 @@ const SCAN = (sels) => {
         const bb = await t.ev(() => { const r = document.getElementById('phPeek').getBoundingClientRect(); return [r.width, r.height]; });
         ok(bb[0] >= 43.5 && bb[1] >= 43.5, `${tag} ${label}: the look-right button is >= 44 px (${bb.map(Math.round)})`);
         await t.p.tap('#phPeek'); await t.until(() => document.getElementById('phPeek').getAttribute('aria-label') === 'Look back at the dog', null, 5000); await t.sleep(900); await steady();
-        const r = await t.ev((sels) => { for (const s of sels) { const e = document.querySelector(s); if (!e) continue; const b = e.getBoundingClientRect(), vr = document.getElementById('view').getBoundingClientRect(); const top = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2); return { sel: s, on: b.left >= -1 && b.right <= innerWidth + 1 && b.top >= vr.top && b.bottom <= vr.bottom + 1, cov: !!(top && top.closest('#dock > .tray, #modal .panel, #hud, #bar, #toasts .toast, #placeBtns .btn, #devBtn, #phPeek')) }; } return null; }, [label === 'yard' ? '#houseG' : '#sceneG [data-hot]']);
+        // (the dog may wander off on its own and send the camera back, so try a few times)
+        let r = null;
+        for (let i = 0; i < 4; i++) {
+          if (await t.ev(() => document.getElementById('phPeek').getAttribute('aria-label') === 'Look right')) await t.p.tap('#phPeek');
+          await t.until(() => document.getElementById('phPeek').getAttribute('aria-label') === 'Look back at the dog', null, 5000); await t.sleep(900); await steady();
+          r = await t.ev((sels) => { for (const s of sels) { const e = document.querySelector(s); if (!e) continue; const b = e.getBoundingClientRect(), vr = document.getElementById('view').getBoundingClientRect(); const top = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2); return { sel: s, box: [b.left | 0, b.top | 0, b.right | 0, b.bottom | 0], vb: document.querySelector('#view > svg.world').getAttribute('viewBox'), on: (s === '#houseG' ? (Math.min(b.right, innerWidth) - Math.max(b.left, 0)) / b.width >= 0.7 : (b.left >= -1 && b.right <= innerWidth + 1)) && b.top >= vr.top && b.bottom <= vr.bottom + 1, cov: !!(top && top.closest('#dock > .tray, #modal .panel, #hud, #bar, #toasts .toast, #placeBtns .btn, #devBtn, #phPeek')) }; } return null; }, [label === 'yard' ? '#houseG' : '#sceneG [data-hot]']);
+          if (r && r.on && !r.cov) break;
+        }
         ok(!!r && r.on && !r.cov, `${tag} ${label}: the look-right button brings ${r && r.sel} fully on screen and uncovered ${JSON.stringify(r)}`);
-        await t.p.tap('#phPeek'); await t.until(() => document.getElementById('phPeek').getAttribute('aria-label') === 'Look right', null, 5000); await t.sleep(900); await steady();
+        // the view goes back on the player's next tap on the empty scene
+        if (await t.ev(() => document.getElementById('phPeek').getAttribute('aria-label') === 'Look back at the dog')) {
+          const pt = await t.ev(() => { const vr = document.getElementById('view').getBoundingClientRect(); for (let y = vr.top + 70; y < vr.bottom - 80; y += 30) for (let x = 20; x < innerWidth - 60; x += 30) { const e = document.elementFromPoint(x, y); if (e && e.closest('#view') && !e.closest('.hot, [data-hot], [data-shop], button, #status, #hud')) return [x, y]; } return null; });
+          if (pt) await t.p.touchscreen.tap(pt[0], pt[1]);
+          ok(await t.until(() => document.getElementById('phPeek').getAttribute('aria-label') === 'Look right', null, 5000), `${tag} ${label}: a tap on the empty scene brings the view back to the dog`);
+        }
         ok(await t.ev(() => document.getElementById('phPeek').getAttribute('aria-label') === 'Look right'), `${tag} ${label}: the button looks back again`);
       };
       // a speech bubble never sits on the location chip (the dog talks when petted)
@@ -133,6 +169,14 @@ const SCAN = (sels) => {
         await t.ev(() => { document.getElementById('bubble').hidden = true; });
       };
       await t.home('yard'); await t.sleep(700); await bubbleVsChip('yard'); await peekCheck('yard');
+
+      // ---------- a visiting dog at the Dog Park shares the crop with the dog ----------
+      t.sec(tag + ': visitor');
+      await t.ev(() => { const S = window.__paw.S; S.rehomed = [{ id: 'pup1', name: 'Button', key: S.dog.key, sex: 'female', born: '2026-03-01', genes: JSON.parse(JSON.stringify(S.dog.genes)), parents: [S.dog.id, 'dad'], gen: 3, family: { id: 'tanaka', name: 'the Tanakas', where: 'by the bakery' }, since: '2026-04-01' }]; window.__paw.saveNow(); });
+      await t.rnd(0.1); await t.home('dogpark'); await t.rnd(null); await t.sleep(1400);
+      ok(await t.until(() => !!document.getElementById('visitorG'), null, 4000), `${tag} dogpark: a visitor shows up`);
+      await fullyOn('dogpark visitor', ['#dogHit', '#visitorG']);
+      await t.ev(() => { window.__paw.S.rehomed = []; window.__paw.saveNow(); });
 
       // ---------- every town place ----------
       for (const pl of ['market', 'square', 'cafe', 'pier', 'hilltop', 'dogpark', 'vet', 'salon']) {
@@ -162,6 +206,9 @@ const SCAN = (sels) => {
       ok(g.plots.every((p) => p[1] >= 0 && p[2] <= g.vh), `${tag} garden: plots 1-6 fit without scrolling ${JSON.stringify(g.plots.slice(3))} in ${g.vh}`);
       ok(g.info && g.info[1] <= g.vh, `${tag} garden: the plot card fits without scrolling ${JSON.stringify(g.info)} in ${g.vh}`);
       ok(g.cov.length === 0, `${tag} garden: no plot is covered ${g.cov.join(' | ')}`);
+      const gd = await t.ev(() => { const r = (s) => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); return [Math.round(b.left), Math.round(b.top), Math.round(b.right), Math.round(b.bottom)]; }; return { dog: r('.pg-dogw'), done: r('.pg-done'), vh: innerHeight }; });
+      ok(gd.dog && gd.dog[3] <= gd.vh && gd.dog[1] >= 0, `${tag} garden: the dog is on screen without scrolling ${JSON.stringify(gd.dog)} in ${gd.vh}`);
+      ok(gd.done && gd.done[2] - gd.done[0] >= 43.5 && gd.done[3] - gd.done[1] >= 43.5, `${tag} garden: Done is >= 44 px ${JSON.stringify(gd.done)}`);
       const gl = await t.ev(() => { const r = (s) => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); return [Math.round(b.top), Math.round(b.bottom)]; }; return { plots: r('.pg-plot:nth-child(6)'), info: r('.pg-info'), chips: r('.pg-chips'), hint: document.querySelector('.pg-hint').textContent, btns: [...document.querySelectorAll('.pg-info .pg-btn')].map((b) => b.textContent) }; });
       ok(gl.info && gl.chips && gl.chips[0] >= gl.info[1], `${tag} garden: the weather chips sit below the plot card, not under it ${JSON.stringify(gl)}`);
       ok(!/\([A-Z]\)/.test(gl.hint + gl.btns.join(' ')), `${tag} garden: no keyboard hints on phones "${gl.hint}" ${gl.btns.join(',')}`);
@@ -205,6 +252,15 @@ const SCAN = (sels) => {
         const mk = (k) => ({ id: 'op' + k, name: ['Nib', 'Moss', 'Pip'][k], key: f.key, sex: k % 2 ? 'male' : 'female', coat: 'Red', eyes: 'brown', born: iso, genes: JSON.parse(JSON.stringify(f.genes)), sparkle: false, fate: null });
         S.litters = [{ id: 'lt_occl', mum: f.id, sire: f.id, born: iso, ready: iso, pups: [0, 1, 2].map(mk), stage: 'nursery', named: true }]; P.saveNow();
       });
+      await t.home('yard'); await t.sleep(900);
+      for (let i = 0; i < 4; i++) { // (the dog may wander and send the camera back: try again)
+        if (await t.ev(() => document.getElementById('phPeek').getAttribute('aria-label') === 'Look right')) await t.p.tap('#phPeek');
+        await t.until(() => document.getElementById('phPeek').getAttribute('aria-label') === 'Look back at the dog', null, 5000); await t.sleep(900); await steady();
+        if (await t.ev(() => { const b = document.querySelector('#nurseryG > rect').getBoundingClientRect(); return b.left >= 0 && b.right <= innerWidth; })) break;
+      }
+      await fullyOn('nursery basket (look right)', ['#nurseryG > rect']);
+      await check('nursery basket (look right)', ['#nurseryG > rect']);
+      await t.p.tap('#phPeek'); await t.until(() => document.getElementById('phPeek').getAttribute('aria-label') === 'Look right', null, 5000);
       const opened = await t.ev(() => { try { window.__paw.breed.openNursery('lt_occl'); return true; } catch (e) { return String(e); } });
       if (opened === true && await t.until(() => !!document.getElementById('nsCount'), null, 5000)) {
         await t.sleep(500); // the sheet slides up

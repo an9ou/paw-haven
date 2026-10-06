@@ -368,8 +368,8 @@
     '.pg-portrait{overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch}',
     '.pg-portrait .pg-stage,.pg-portrait .pg-scene,.pg-portrait .pg-fx,.pg-portrait .pg-anim,.pg-portrait .pg-ui{width:420px;height:1000px}',
     '.pg-portrait .pg-scene>svg{width:420px;height:1000px}',
-    '.pg-portrait .pg-plots::before{content:"";position:absolute;left:8px;top:168px;width:404px;height:398px;background:rgba(150,108,76,.93);border:3px solid ' + INK + ';border-radius:18px 12px 20px 14px}',
-    '.pg-portrait .pg-art,.pg-portrait .pg-soil,.pg-portrait .pg-crop{height:112px}',
+    '.pg-portrait .pg-plots::before{content:"";position:absolute;left:8px;top:140px;width:404px;height:312px;background:rgba(150,108,76,.93);border:3px solid ' + INK + ';border-radius:18px 12px 20px 14px}',
+    '.pg-portrait .pg-art,.pg-portrait .pg-soil,.pg-portrait .pg-crop{height:100px}',
     '.pg-portrait .pg-hud{left:6px;right:6px;top:calc(8px + var(--pg-sy,0px));z-index:7;height:auto;flex-wrap:wrap;gap:6px 4px;padding:6px 6px 8px}',
     '.pg-portrait .pg-ico{width:40px;height:40px}',
     '.pg-portrait .pg-titles{flex:1 1 300px}',
@@ -377,16 +377,17 @@
     '.pg-portrait .pg-hint{font-size:15px}',
     '.pg-portrait .pg-tool{height:52px;font-size:18px;padding:0 5px 2px 3px;gap:1px;box-shadow:1px 2px 0 rgba(91,61,50,.25)}',
     '.pg-portrait .pg-tool small{font-size:15px;margin-left:5px}',
-    '.pg-portrait .pg-done{font-size:19px;padding:0 7px 3px;min-height:52px}',
+    '.pg-portrait .pg-done{font-size:19px;padding:0 10px 3px;min-height:56px;min-width:56px}',
+    '.pg-portrait .pg-pouch .pg-btn{min-width:56px}',
     '.pg-portrait .pg-tool i{width:24px;height:24px}',
-    '.pg-portrait .pg-btn{min-height:50px}',
-    '.pg-portrait .pg-chips{left:8px;right:8px;top:702px;flex-direction:row;flex-wrap:wrap;gap:5px}',
-    '.pg-portrait .pg-chip{font-size:17px;max-width:404px}',
-    '.pg-portrait .pg-info{left:8px;right:8px;top:576px;width:auto}',
-    '.pg-portrait .pg-dogw{left:4px;top:834px;width:166px;height:138px}',
-    '.pg-portrait .pg-bubble{left:6px;bottom:auto;top:calc(var(--pg-sy,0px) + 142px - var(--pg-dogtop,880px));max-width:300px}',
-    '.pg-portrait .pg-drops{bottom:-14px}',
-    '.pg-portrait .pg-tag{top:3px;left:36px;transform:rotate(-2deg)}',
+    '.pg-portrait .pg-btn{min-height:54px}',
+    '.pg-portrait .pg-chips{left:128px;right:8px;top:700px;flex-direction:column;flex-wrap:nowrap;gap:5px}',
+    '.pg-portrait .pg-chip{font-size:17px;max-width:280px}',
+    '.pg-portrait .pg-info{left:8px;right:8px;top:464px;width:auto}',
+    '.pg-portrait .pg-dogw{left:4px;top:700px;width:118px;height:98px}',
+    '.pg-portrait .pg-bubble{left:124px;bottom:auto;top:0;max-width:270px}',
+    '.pg-portrait .pg-drops{left:36px;right:auto;top:2px;bottom:auto;transform:none}',
+    '.pg-portrait .pg-tag{top:56px;left:50%;transform:translateX(-50%) rotate(-2deg)}',
     '.pg-portrait .pg-pouch{left:8px;right:8px;top:calc(184px + var(--pg-sy,0px));width:auto;max-height:calc(var(--pg-vh,700px) - 196px);overflow-y:auto}',
     '.pg-portrait .pg-pk{width:118px;font-size:17px}',
     '.pg-portrait .pg-card{min-width:0;width:380px;top:calc(var(--pg-vh,700px) / 2 + var(--pg-sy,0px))}'
@@ -553,7 +554,7 @@
   var SC = 1.24, OY = -62;
   var ZONES_L = [[220, 250], [420, 250], [620, 250], [220, 390], [420, 390], [620, 390]].map(function (z) { return { x: z[0] * SC, y: z[1] * SC + OY, w: 160 * SC, h: 110 * SC }; });
   /* v1.5B portrait (phones): a 420-wide stage, plots in a 2x3 grid, scaled to the screen width and scrolled vertically */
-  var ZONES_P = [[22, 186], [218, 186], [22, 308], [218, 308], [22, 430], [218, 430]].map(function (z) { return { x: z[0], y: z[1], w: 180, h: 108 }; });
+  var ZONES_P = [[22, 152], [218, 152], [22, 250], [218, 250], [22, 348], [218, 348]].map(function (z) { return { x: z[0], y: z[1], w: 180, h: 92 }; });
   var ZONES = ZONES_L, SW = 1240, SH = 620, PORT = false;
 
   /* ======================================================================
@@ -773,7 +774,7 @@
     function kb(k) { return PORT ? '' : ' (' + k + ')'; } // keyboard hints only off phones
     function pLayout() { // v2.3 phone: the plot card, the weather chips and the dog stack in one column, whatever height the card has
       if (!PORT) return; var inf = q('.pg-info'), ch = q('.pg-chips'), dw = q('.pg-dogw'); if (!inf || !ch) return;
-      var t = inf.offsetTop + inf.offsetHeight + 12; ch.style.top = t + 'px'; var d = t + ch.offsetHeight + 8; if (dw) dw.style.top = d + 'px'; root.style.setProperty('--pg-dogtop', d + 'px');
+      var t = inf.offsetTop + inf.offsetHeight + 16; ch.style.top = t + 'px'; if (dw) dw.style.top = t + 'px'; root.style.setProperty('--pg-dogtop', t + 'px');
     }
     function renderInfo() {
       var box = q('.pg-info'), p = st.plots[sel], c = p && BY_ID[p.crop];
@@ -814,7 +815,7 @@
       if (tool === 'seeds' && armed) { if (!p.crop) return tryPlant(i, armed); }
       if (isReady(p)) return doHarvest(i);
       if (!p.crop) return openPouch(i);
-      if (p.water === 0) say('Plot ' + (i + 1) + ' looks thirsty. The Watering Can helps (W).', 2600);
+      if (p.water === 0) say('Plot ' + (i + 1) + ' looks thirsty. The Watering Can helps' + (PORT ? '.' : ' (W).'), 2600);
     }
     function toolClick(t) {
       if (closed || modal) return;

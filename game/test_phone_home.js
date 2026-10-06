@@ -14,7 +14,7 @@ const AUDIT = () => {
   };
   const nm = (el) => (el.id ? '#' + el.id : '') + (el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\s+/).slice(0, 2).join('.') : '') + ' "' + (el.textContent || el.getAttribute('aria-label') || '').trim().slice(0, 20) + '"';
   document.querySelectorAll('button, [role=button], a[href], input:not([type=hidden]):not([type=range]), select, .card, .hot').forEach((el) => {
-    if (el.closest(SKIP)) return; const r = vis(el); if (!r) return;
+    if (el.closest(SKIP)) return; if (el.matches('.hot') && el.closest('svg') && document.querySelector('#dock > .tray')) return; /* v2.3: the scene shrinks above an open tray, so its props are small until it closes (checked with the tray shut) */ const r = vis(el); if (!r) return;
     if (r.width < 43.5 || r.height < 43.5) out.small.push(nm(el) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
   });
   const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
@@ -123,6 +123,9 @@ const AUDIT = () => {
       await t.modalGone(); await t.home();
       // tap yard decorations (no hover needed)
       await t.until(() => !!document.querySelector('[data-decor="Giant Crayon Box"]'));
+      // the Crayon Box and the Ramp sit right of the camera home: the look-right button brings them into view
+      await t.p.locator('#phPeek').tap(); await t.until(() => document.getElementById('phPeek').getAttribute('aria-label') === 'Look back at the dog', null, 5000);
+      await t.until(() => { const x = document.querySelector('#view > svg.world').viewBox.baseVal.x, st = window.__camY !== undefined && Math.abs(window.__camY - x) < 0.05; window.__camY = x; return st; }, null, 6000);
       const dm = await rectOf('[data-decor="Giant Crayon Box"]');
       ok(dm.w >= 44 && dm.h >= 44, `decoration tap area >= 44 (${Math.round(dm.w)}x${Math.round(dm.h)})`);
       const dr = await rectOf('[data-decor="Doggy Ramp"]');
@@ -150,14 +153,21 @@ const AUDIT = () => {
       await t.p.touchscreen.tap(mb.x - mb.w * 0.3, mb.y); // left of centre: the dog's tap box may be parked over the middle of the mailbox
       ok(await modalOpen(), 'tapping the mailbox opens it');
       await t.closeX(); await t.home();
-      // the house door is mostly outside the crop: one swipe brings it (and the nursery, chair) into view
+      // the house door is right of the camera home: a swipe pans, and the look-right button brings it into view
+      const camSteady = () => t.until(() => { const x = document.querySelector('#view > svg.world').viewBox.baseVal.x, st = window.__camZ !== undefined && Math.abs(window.__camZ - x) < 0.05; window.__camZ = x; return st; }, null, 6000);
+      const peekOnce = async () => { await t.p.locator('#phPeek').tap(); await t.until(() => /back/.test(document.getElementById('phPeek').getAttribute('aria-label')), null, 5000); await camSteady(); };
+      const peekBack = async () => { if (await t.ev(() => /back/.test(document.getElementById('phPeek').getAttribute('aria-label')))) await t.p.locator('#phPeek').tap(); await t.until(() => /Look right/.test(document.getElementById('phPeek').getAttribute('aria-label')), null, 5000); await camSteady(); };
       const vb0 = await camX(); const sw = await t.p.locator('#view').boundingBox(), y = sw.y + sw.height * 0.15;
       await touch([[sw.x + sw.width * 0.85, y], [sw.x + sw.width * 0.6, y], [sw.x + sw.width * 0.3, y], [sw.x + sw.width * 0.1, y]]);
       const vb1 = await camX();
       ok(vb1 > vb0 + 100, `a swipe pans the camera right (${Math.round(vb0)} -> ${Math.round(vb1)})`);
-      ok(await t.ev(() => { const r = document.getElementById('houseG').getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth + 1; }), 'the dog house is fully on screen after the swipe');
       ok(await t.ev(() => document.getElementById('modal').hidden), 'a swipe does not open anything by accident');
       ok(await t.until((x) => document.querySelector('#view > svg.world').viewBox.baseVal.x < x - 50, vb1, 20000), 'the camera eases back to the dog');
+      await peekBack(); await camSteady();
+      const houseOn = () => t.ev(() => { const r = document.getElementById('houseG').getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth + 1; });
+      let hOn = false; for (let i = 0; i < 4 && !hOn; i++) { await peekOnce(); hOn = await houseOn(); if (!hOn) await peekBack(); } // (the dog may wander and send the camera back: try again)
+      ok(hOn, 'the dog house is fully on screen after the look-right button');
+      await peekBack();
       await t.home();
 
       // ---------- bath ----------
@@ -200,9 +210,9 @@ const AUDIT = () => {
       const nbOn = await t.until(() => !!document.getElementById('nurseryG'), null, 5000);
       ok(nbOn, 'nursery basket is drawn');
       if (nbOn) {
-        const sw2 = await t.p.locator('#view').boundingBox(), y2 = sw2.y + sw2.height * 0.15;
-        await touch([[sw2.x + sw2.width * 0.85, y2], [sw2.x + sw2.width * 0.5, y2], [sw2.x + sw2.width * 0.1, y2]]);
-        await t.sleep(150); const nbx = await t.ev(() => { const r = document.querySelector('#nurseryG > rect').getBoundingClientRect(); return { w: r.width, h: r.height, x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
+        const basketOn = () => t.ev(() => { const r = document.querySelector('#nurseryG > rect').getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth + 1; });
+        await peekBack(); let bOn = false; for (let i = 0; i < 4 && !bOn; i++) { await peekOnce(); bOn = await basketOn(); if (!bOn) await peekBack(); }
+        const nbx = await t.ev(() => { const r = document.querySelector('#nurseryG > rect').getBoundingClientRect(); return { w: r.width, h: r.height, x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
         ok(nbx.w >= 44 && nbx.h >= 44, `nursery basket tap area >= 44 (${Math.round(nbx.w)}x${Math.round(nbx.h)})`);
         await t.p.locator('#nurseryG > rect').tap({ force: true });
         ok(await modalOpen(), 'tapping the basket opens the nursery');

@@ -318,13 +318,14 @@ function applyLayout(rerender) { psApplyLayout(rerender); }
 /* camera: crop the 1000x600 hub scene around the dog (x ~ 430) so the full height stays visible */
 let camCx = 430, camRaf = 0;
 function camApply(cx) {
-  if (!isPhone() || !['yard', 'bath'].includes(cur.mode)) return;
+  if (!isPhone() || !['yard', 'bath', 'market'].includes(cur.mode)) return;
   const svg = $('#view > svg.world'); if (!svg) return;
-  const vw = view.clientWidth, vh = view.clientHeight; if (!vw || !vh) return;
+  const vw = svg.clientWidth || view.clientWidth, vh = svg.clientHeight || view.clientHeight; if (!vw || !vh) return; // the svg can be shorter than the view (a tray is open, or Market Street zooms out)
   const vbW = 600 * vw / vh;
   if (vbW >= 1000) { svg.setAttribute('viewBox', '0 0 1000 600'); return; }
-  const x = clamp(cx - vbW / 2, 0, 1000 - vbW);
-  svg.setAttribute('viewBox', `${x.toFixed(1)} 0 ${vbW.toFixed(1)} 600`);
+  const zf = typeof phZoom === 'number' && phZoom > 0 && phZoom < 1 ? phZoom : 1, w = vbW / zf, h = 600 / zf; // phZoom (03_yard.js): Market Street zooms out, the extra sky sits above the scene
+  const x = w >= 1000 ? (1000 - w) / 2 : clamp(cx - w / 2, 0, 1000 - w);
+  svg.setAttribute('viewBox', `${x.toFixed(1)} ${(600 - h).toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}`);
 }
 function camTo(cx, secs = 0.6) {
   if (!isPhone()) return; cancelAnimationFrame(camRaf);
