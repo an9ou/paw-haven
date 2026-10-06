@@ -107,10 +107,13 @@ require('./test_lib').run('phone_skill', async (t) => {
     ok(rects.length === 6 && new Set(rects.map((r) => r[0])).size === 2 && new Set(rects.map((r) => r[1])).size === 3, `${tag}six plots in a 2 x 3 grid`);
     ok(rects.every((r) => r[2] >= 44 && r[3] >= 44 && r[0] >= 0 && r[0] + r[2] <= vw), `${tag}every plot is >= 44 px and inside the screen width`);
     await audit('garden'); await shot('05_garden');
-    await p.locator('.pg-plot[data-i="0"]').tap(); await t.sleep(250);     await tapScroll('[data-a=plant]'); await p.waitForSelector('.pg-pouch [data-c]'); await t.sleep(250);
+    await p.locator('.pg-plot[data-i="0"]').tap(); await p.waitForSelector('.pg-pouch [data-c]'); await t.sleep(250); // v2.3: tapping an empty plot opens the pouch
     await audit('seed pouch'); await shot('06_pouch');
-    await p.locator('.pg-pouch [data-c="carrot"]').tap(); await t.sleep(300); await p.locator('.pg-plot[data-i="0"]').tap();
-    ok(await t.until(() => window.__paw.S.garden.plots[0].crop === 'carrot', null, 4000), tag + 'tap a plot, tap Plant, tap a seed: planted (no drag needed)');
+    await p.locator('.pg-pouch [data-c="carrot"]').tap();
+    ok(await t.until(() => window.__paw.S.garden.plots[0].crop === 'carrot', null, 4000), tag + 'tap an empty plot, tap a seed: planted in one go (no dig step, no drag)');
+    const gr = await ev(() => { const r = (s) => { const b = document.querySelector(s).getBoundingClientRect(); return [Math.round(b.top), Math.round(b.bottom)]; }; return { p6: r('.pg-plot[data-i="5"]'), info: r('.pg-info'), vh: innerHeight }; });
+    ok(gr.p6[1] <= gr.vh && (gr.vh < 730 || gr.info[1] <= gr.vh), // the iPhone 13 profile is only 664 px tall: the card is checked on the 844 and 915 screens
+       tag + `plots 5-6 and the plot card are on screen without scrolling (${JSON.stringify(gr)})`);
     // drag a seed with a finger onto plot 4
     await ev(() => window.__paw.S.garden.plots[3].crop); await p.locator('[data-t="seeds"]').tap(); await p.waitForSelector('.pg-pouch [data-c="carrot"]'); await t.sleep(250);
     const from = await centre('.pg-pouch [data-c="carrot"]'), to = await centre('.pg-plot[data-i="3"]');
