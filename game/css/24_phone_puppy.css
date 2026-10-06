@@ -87,4 +87,4 @@ html[data-layout="phone"] .birth .lt-pups{min-width:0;max-width:100%;box-sizing:
 html[data-layout="phone"] .panel.birth .panel-body{overflow-x:hidden}
 
 /* v2.3: every sex symbol inside a sheet (nursery pups, litter and birth cards) is at least 15 px */
-html[data-layout="phone"] #modal .sex{font-size:max(1em,15px)}
+html[data-layout="phone"] #modal .sex{font-size:max(1em,17px);font-weight:900;-webkit-text-stroke:.6px currentColor}
