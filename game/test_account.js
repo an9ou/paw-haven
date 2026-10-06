@@ -411,5 +411,144 @@ run('account', async (t) => {
   const p8 = await device('Phone 360x740', false); t.p = p8;
   ok((await line()) === 'Cloud save works on the web version.', 'the note shows on phones too'); await layout('phone cloud off'); await audit('360_740_07_cloud_off');
 
+  // ---- kitchen (v2.3 occlusion) ----
+  // the food-safety lesson, the header hint, the dog's bubble and the kitchen taps on the two phone sizes
+  for (const dev of ['Phone 390x844', 'Phone 360x740']) {
+    const tag = 'kitchen_' + dev.replace(/\D+/g, '_').replace(/^_|_$/g, '');
+    sec(`${dev}: kitchen lesson, header, bubble and taps`);
+    await t.newGame({ device: dev }, { inv: { crops: { carrot: [3, 1, 0] }, pantry: { oats: 3, rice: 3, egg: 2, chicken: 2 } } }); touch = true;
+    await ev(() => { window.__paw.S.place = 'house'; window.__paw.go('kitchen'); });
+    ok(await t.untilMode('kitchen'), 'the kitchen opens'); await t.p.waitForSelector('.pk-portrait [data-ing="carrot"]'); await t.sleep(300);
+    const kmsg = () => ev(() => { const m = document.querySelector('.pk-msg'), r = m.getBoundingClientRect(), s = document.querySelector('.pk-slots').getBoundingClientRect(); return { fits: m.scrollHeight <= m.clientHeight + 1, below: s.top >= r.bottom - 1, txt: m.textContent }; });
+    let km = await kmsg();
+    ok(km.fits && km.below, `the lesson is fully visible and the slots sit under it ("${km.txt}")`);
+    const hd = await ev(() => { const e = document.querySelector('.pk-sub'); return { w: e.scrollWidth <= e.clientWidth, h: e.scrollHeight <= e.clientHeight + 2, txt: e.textContent }; });
+    ok(hd.w && hd.h, 'the header hint is not truncated');
+    ok(/^Tap or drag ingredients into the pot\./.test(hd.txt), 'the header uses touch wording: ' + hd.txt);
+    const big = await ev(() => [...document.querySelectorAll('.pk-top .pk-gold, .pk-top .pk-x, .pk-slots .pk-btn')].map((b) => { const r = b.getBoundingClientRect(); return [b.textContent.trim() || 'close', Math.round(r.width * 10) / 10, Math.round(r.height * 10) / 10]; }));
+    ok(big.length === 4 && big.every((b) => b[1] >= 44 && b[2] >= 44), 'Recipe book, close, Empty and Cook! are >= 44 px ' + JSON.stringify(big));
+    await audit(`${tag}_01`);
+    // fill the pot past 4: the longer kind message and the dog's bubble
+    for (const id of ['oats', 'rice', 'egg', 'chicken', 'carrot']) await tap(`[data-ing="${id}"]`);
+    ok(await t.until(() => /4 things at most/.test(document.querySelector('.pk-msg').textContent), null, 3000), 'a fifth thing: the pot-is-full message');
+    km = await kmsg(); ok(km.fits && km.below, 'the longer message is fully visible and the slots sit under it');
+    ok(await t.until(() => document.querySelector('.pk-bub').classList.contains('pk-show'), null, 3000), 'the dog says something');
+    const bb = await ev(() => { const b = document.querySelector('.pk-bub'), r = b.getBoundingClientRect(), tr = document.querySelector('.pk-tray').getBoundingClientRect(); return { on: r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight, clear: r.top >= tr.bottom - 1, txt: b.textContent }; });
+    ok(bb.on && bb.clear, `the bubble is fully on screen, under the tray ("${bb.txt}")`);
+    await audit(`${tag}_02`);
+    await ev(() => window.__paw.go('yard'));
+  }
+  // ---- end kitchen ----
+  // ---- bath/settings/playdate (v2.3 occlusion) ----
+  // phones: no keyboard words (Settings keys hint, bath "Mouse ... Space"), the bath scene fills the screen above its tray, playdate pals' heads stay apart.
+  // desktop 1280x720: the keys hint and the bath wording are unchanged. PAW_SHOTS=1 writes game/shots_account/small_*.jpg.
+  const jpg = async (n) => { if (process.env.PAW_SHOTS) require('fs').mkdirSync(require('path').join(__dirname, 'shots_account'), { recursive: true }); if (process.env.PAW_SHOTS) await t.p.screenshot({ path: require('path').join(__dirname, 'shots_account', 'small_' + n + '.jpg'), type: 'jpeg', quality: 80 }); };
+  const occlGame = async (dev) => {
+    const p = await device(dev, false); t.p = p; await t.adopt({ sex: 'girl' });
+    await t.patch({ bond: { level: 10, pts: 3300 }, coins: 1000, house: 'Royal Castle Kennel', careDays: 60, stats: { hunger: 90, happy: 90, energy: 90, clean: 20 } }); await t.calm(); await t.lu();
+    return p;
+  };
+  const openSet = async (dev) => { if (dev) { await tap('#moreBtn'); await t.p.waitForSelector('#mmSet'); await tap('#mmSet'); } else await tap('#gearBtn'); await t.p.waitForSelector('#setReset'); };
+  const setText = () => ev(() => document.querySelector('#modal .panel').textContent);
+  const bathText = () => ev(() => document.getElementById('dock').textContent);
+  for (const dev of [null, 'Phone 390x844', 'Phone 360x740']) {
+    const tag = dev ? dev.replace(/\D+/g, '_').replace(/^_|_$/g, '') : 'desktop';
+    sec(`${dev || 'desktop 1280x720'}: Settings keys hint, bath wording and layout, playdate spacing`);
+    await occlGame(dev);
+    await openSet(dev);
+    if (dev) { ok(!/Keys:/.test(await setText()), `${dev}: Settings has no "Keys:" hint (no keyboard on a phone)`);
+      // the two checkboxes are tapped through their whole label row, so the row is the target that has to be >= 44 px
+      const a = await ev(AUDIT), rows = await ev(() => [...document.querySelectorAll('#modal label.tog')].map((l) => Math.round(l.getBoundingClientRect().height)));
+      ok(a.scroll <= 0 && !a.text.length, `${dev} Settings: no sideways scroll, text >= 15 px ${a.text.slice(0, 4).join(' | ')}`);
+      ok(!a.small.filter((s) => !/^#set(Mute|Motion) /.test(s)).length && rows.every((h) => h >= 43.5), `${dev} Settings: tap targets >= 44 px (checkbox rows ${rows.join(', ')}) ${a.small.join(' | ')}`); }
+    else ok(/Keys: 1-9 bottom buttons, Space pets \/ throws \/ walks, Esc closes things\./.test(await setText()), 'desktop: Settings keeps the keys hint');
+    await jpg(tag + '_settings'); await t.closeX(); await t.calm();
+    await ev(() => window.__paw.go('bath')); ok(await t.untilMode('bath'), `${tag}: the bath opens`); await t.sleep(300);
+    const bt = await bathText();
+    if (dev) {
+      ok(!/Mouse|Space/.test(bt) && /Scrub with a finger\./.test(bt), `${dev}: bath wording is for fingers, no "Mouse" or "Space": ${bt}`);
+      const m = await ev(() => { const s = document.querySelector('#view > svg.world').getBoundingClientRect(), tr = document.querySelector('#dock .tray').getBoundingClientRect(), q = document.getElementById('bathQuit').getBoundingClientRect(); const hit = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2); return { sb: s.bottom, sh: s.height, tt: tr.top, tb: tr.bottom, H: innerHeight, quit: !!hit && (hit.id === 'bathQuit' || !!hit.closest('#bathQuit')) && q.bottom <= innerHeight }; });
+      ok(m.tt - m.sb < 0.05 * m.H && m.H - m.tb < 0.05 * m.H && m.tt - m.sb + m.H - m.tb < 0.15 * m.H, `${dev}: the bath scene reaches the tray and nothing blank is left under it (gap ${Math.round(m.tt - m.sb)} + ${Math.round(m.H - m.tb)} of ${m.H})`);
+      ok(m.sh > 0.5 * m.H, `${dev}: the bath scene uses over half the screen (${Math.round(m.sh)} of ${m.H})`);
+      ok(m.quit, `${dev}: "Done for now" is on screen and not covered`);
+      await audit(`${tag}_09_bath`);
+    } else {
+      ok(/Mouse, finger, or mash Space\. .+ is legally obliged to look betrayed\./.test(bt), 'desktop: bath wording unchanged: ' + bt);
+      ok(await ev(() => !document.getElementById('view').style.flex && !document.getElementById('dock').style.flex), 'desktop: the bath layout is untouched');
+    }
+    await jpg(tag + '_bath');
+    await ev(() => window.__paw.go('yard')); await t.untilMode('yard'); await t.calm();
+    ok(await ev(() => !document.getElementById('view').style.flex && !document.getElementById('dock').style.flex), `${tag}: leaving the bath restores the yard layout`);
+    const ids = await ev(() => {
+      const P = window.__paw, S = P.S, f = S.dog; const d = new Date(); d.setDate(d.getDate() - 30);
+      const iso = (x) => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+      S.stats = Object.assign(S.stats, { hunger: 90, happy: 90, energy: 90, clean: 90 });
+      f.born = iso(d); f.litters = 0; f.lastLitter = null; f.key = 'corgi'; f.genes.M = ['m', 'm']; f.geneTested = true;
+      const m = P.addDog({ key: 'dachs', sex: 'male', months: 30 }, 'Otto'); m.bond = { level: 10, pts: 3300 }; m.stats = { hunger: 90, happy: 90, energy: 90, clean: 90 }; m.genes.M = ['m', 'm']; m.geneTested = true;
+      P.breed.setSeason(f.id, true); P.saveNow(); return { f: f.id, m: m.id };
+    });
+    await ev(() => window.__paw.breed.openPlaydates()); await t.p.waitForSelector('#pdGo');
+    await tap(`.pd-dog[data-pd="a|${ids.f}"]`); await t.until(() => !!document.querySelector('.pd-verdict.ok'), null, 3000);
+    await tap('#pdGo'); ok(await t.until(() => { const s = document.getElementById('pdScene'); return !!s && !s.hidden; }), `${tag}: the playdate scene shows`);
+    // head box: the facing 45% of each pal's drawn dog (a faces right, b faces left), top 70%. Sampled through bow, chase and rest.
+    const heads = () => ev(() => {
+      const box = (e, right) => { const s = e.querySelector('svg'), b = s.getBBox(), m = s.getScreenCTM(); const x0 = m.a * b.x + m.e, x1 = m.a * (b.x + b.width) + m.e, y0 = m.d * b.y + m.f, y1 = m.d * (b.y + b.height) + m.f; const w = (x1 - x0) * 0.45; return right ? { l: x1 - w, r: x1, t: y0, b: y0 + (y1 - y0) * 0.7 } : { l: x0, r: x0 + w, t: y0, b: y0 + (y1 - y0) * 0.7 }; };
+      const a = document.querySelector('#pdScene .pd-pal.a'), b = document.querySelector('#pdScene .pd-pal.b'); if (!a || !b) return null;
+      const A = box(a, true), B = box(b, false); return { ph: document.getElementById('pdScene').className, over: Math.round(Math.min(A.r, B.r) - Math.max(A.l, B.l)), hit: A.l < B.r && B.l < A.r && A.t < B.b && B.t < A.b };
+    });
+    const seen = new Set(), bad = []; let n = 0;
+    while (n++ < 80 && !(await ev(() => !!document.getElementById('pdResult')))) { const h = await heads(); if (h) { seen.add(h.ph.replace('pd-scene ', '')); if (dev && h.hit) bad.push(h.ph + ' ' + h.over + 'px'); } if (n === 3) await jpg(tag + '_playdate'); await t.sleep(60); }
+    ok(seen.size >= 2, `${tag}: sampled the playdate phases (${[...seen].join(', ')})`);
+    if (dev) ok(!bad.length, `${dev}: the pals' heads never overlap ${bad.slice(0, 4).join(' | ')}`);
+    ok(await t.until(() => !!document.getElementById('pdResult'), null, 12000), `${tag}: the playdate result shows`);
+  }
+  // ---- end bath/settings/playdate ----
+  // ---- hud (v2.3 occlusion) ----
+  // The phone HUD is a fixed 2-row grid of about 100 px (it was 132 px / 3 rows at 360, and with 4 dogs at every width).
+  // Row 1 = dog chip(s), name, coins, the ... menu (the other dogs' chips scroll, they never push coins or the menu down). Row 2 = the 4 rings + Bond.
+  const HUD = () => {
+    const R = (s) => { const e = document.querySelector(s); if (!e || e.hidden || getComputedStyle(e).display === 'none') return null; const b = e.getBoundingClientRect(); return b.width ? { t: b.top, b: b.bottom, l: b.left, r: b.right, h: b.height, w: b.width, c: (b.top + b.bottom) / 2 } : null; };
+    const hud = R('#hud'), who = R('#hud .who'), coins = R('#coins'), more = R('#moreBtn'), meters = R('#meters'), bond = R('#hud .bond');
+    const inRow = (x, row) => !!x && !!row && x.c >= row.t - 1 && x.c <= row.b + 1;
+    const chips = [...document.querySelectorAll('#hudPack .dchip')].map((e) => e.getBoundingClientRect());
+    const rings = [...document.querySelectorAll('#meters .meter')].map((e) => e.getBoundingClientRect());
+    const labels = [...document.querySelectorAll('#bar .act')].map((a) => { const s = a.querySelector(':scope > span:not(.ic)'), rg = document.createRange(); rg.selectNodeContents(s); return { t: s.textContent, fs: parseFloat(getComputedStyle(s).fontSize), w: rg.getBoundingClientRect().width, bw: a.clientWidth }; });
+    const bar = document.getElementById('bar');
+    return {
+      h: hud && Math.round(hud.h), hudTop: hud && hud.t, viewTop: document.getElementById('view').getBoundingClientRect().top,
+      row1: inRow(coins, who) && inRow(more, who) && chips.every((c) => inRow({ c: (c.top + c.bottom) / 2 }, who)),
+      row2: !!meters && meters.t >= who.b - 1 && inRow(bond, meters) && rings.every((r) => inRow({ c: (r.top + r.bottom) / 2 }, meters)),
+      inside: [who, coins, more, meters, bond].every((x) => x && x.b <= hud.b + 1 && x.r <= innerWidth + 1) && coins.r <= more.l && more.r <= innerWidth,
+      taps: [more, ...rings.map((r) => ({ w: r.width, h: r.height })), ...chips.map((c) => ({ w: c.width, h: c.height }))].every((x) => x.w >= 43.5 && x.h >= 43.5),
+      nChips: chips.length, labels, barFits: bar.scrollWidth <= bar.clientWidth + 1 && labels.every((l) => l.w <= l.bw),
+      scroll: document.documentElement.scrollWidth - innerWidth
+    };
+  };
+  for (const dev of ['Phone 360x740', 'Phone 390x844']) {
+    const tag = dev.replace(/\D+/g, '_').replace(/^_|_$/g, '');
+    sec(`${dev}: the phone HUD is 2 rows (1 dog, then 4 dogs), action-bar labels >= 15 px`);
+    const p = await device(dev, false); t.p = p;
+    await t.adopt({ sex: 'girl' }); await t.lu();
+    ok((await ev(() => document.documentElement.dataset.layout)) === 'phone', `${dev}: phone layout is on`);
+    for (const n of [1, 4]) {
+      if (n === 4) await ev(() => { const P = window.__paw, S = P.S; while (S.dogs.length < 4) P.addDog({ key: ['corgi', 'golden', 'husky'][S.dogs.length - 1], sex: S.dogs.length % 2 ? 'male' : 'female' }, ['Biscuit', 'Pal', 'Mo'][S.dogs.length - 1]); });
+      for (const pl of ['yard', 'market']) {
+        await t.home(pl);
+        ok(await t.until((k) => document.querySelectorAll('#hudPack .dchip').length === k && !!document.querySelector('#bar .act'), n - 1, 4000), `${dev} ${n} dog(s) ${pl}: ${n - 1} other dog chip(s) in the HUD`);
+        const h = await ev(HUD), lb = `${dev} ${n} dog(s) ${pl}`;
+        ok(h.h <= 102 && h.viewTop >= h.hudTop + h.h - 1, `${lb}: the HUD is about 100 px (${h.h})`);
+        ok(h.row1, `${lb}: row 1 = dog chip(s), name, coins and the ... menu on one line`);
+        ok(h.row2, `${lb}: row 2 = the 4 rings with Bond beside them (no 3rd row)`);
+        ok(h.inside, `${lb}: everything stays inside the HUD and on screen, coins before the menu`);
+        ok(h.taps, `${lb}: menu, rings and dog chips are >= 44 px`);
+        ok(h.labels.every((l) => l.fs >= 14.95), `${lb}: action-bar labels >= 15 px ${h.labels.map((l) => l.t + ' ' + l.fs).join(', ')}`);
+        ok(h.barFits, `${lb}: every label fits its button, the bar never overflows ${h.labels.map((l) => l.t + ' ' + l.w.toFixed(1) + '/' + l.bw).join(', ')}`);
+        ok(h.scroll <= 0, `${lb}: no sideways scroll (${h.scroll})`);
+        await audit(`${tag}_hud_${n}dog_${pl}`);
+      }
+    }
+  }
+  // ---- end hud ----
+
   ok(!dialogs.length, 'no browser dialogs ' + dialogs.join(' | '));
 }, { timeout: 300000 });

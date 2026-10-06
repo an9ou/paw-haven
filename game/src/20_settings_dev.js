@@ -1,6 +1,7 @@
 /* ======================= SETTINGS + DEV ======================= */
 function openSettings() {
   const motionOff = document.documentElement.dataset.motion === 'off';
+  const touchOnly = isPhone() || !!(window.matchMedia && matchMedia('(hover: none) and (pointer: coarse)').matches); // phones and tablets: no keyboard, so no keys hint
   const p = openModal('Settings', `
     <h4 style="margin:0;font-family:var(--font-hand);font-size:26px">Sound</h4>
     ${[['master', 'Master', 'volume'], ['music', 'Music', 'music'], ['sfx', 'Sound effects', 'sfx'], ['ambience', 'Ambience', 'ambience']].map(([k, l, ic]) => `<div class="vol"><span class="ic">${iconOr(ic, '<circle r="9" fill="#FCD8BC" stroke="#5B3D32" stroke-width="2"/>')}</span><label for="vol-${k}">${l}</label><input type="range" id="vol-${k}" min="0" max="100" step="5" value="${prefs.vol[k]}"><output id="out-${k}">${prefs.vol[k]}</output></div>`).join('')}
@@ -8,7 +9,7 @@ function openSettings() {
     <label class="tog"><input type="checkbox" id="setMotion" ${motionOff ? '' : 'checked'}> Motion and wobble</label>
     <div class="barkset"><span>Barking:</span>${[['normal', 'Normal'], ['fewer', 'Fewer'], ['off', 'Off']].map(([k, l]) => `<button class="btn ${barkMode() === k ? 'yes' : ''}" data-barkm="${k}" aria-pressed="${barkMode() === k}">${l}</button>`).join('')}</div>
     <p class="small">Time: 1 game hour = 1 real minute. Prototype economy: coins x${BOOST.coins}, Bond x${BOOST.bond}, naps x${BOOST.nap}.</p>
-    <p class="small">Clock and weather follow your real local time (3 weather periods a day). Keys: 1-9 bottom buttons, Space pets / throws / walks, Esc closes things.</p>
+    <p class="small">Clock and weather follow your real local time (3 weather periods a day).${touchOnly ? '' : ' Keys: 1-9 bottom buttons, Space pets / throws / walks, Esc closes things.'}</p>
     ${typeof clSection === 'function' ? clSection() : ''}`, { foot: `<div style="display:flex;justify-content:space-between;gap:12px;width:100%;flex-wrap:wrap"><button class="btn red" id="setReset">Reset save</button><button class="btn" id="setTitle">Title screen</button></div>` });
   { const bd = p.querySelector('.panel-body'); if (bd) { const fade = 'linear-gradient(to bottom, #000 calc(100% - 26px), transparent)'; bd.style.webkitMaskImage = fade; bd.style.maskImage = fade; } } // a heading never sits half-cut at the foot of the scroll area
   ['master', 'music', 'sfx', 'ambience'].forEach((k) => { const r = $('#vol-' + k, p); r.oninput = () => { prefs.vol[k] = +r.value; if (k === 'ambience') prefs.ambTouched = true; $('#out-' + k, p).textContent = r.value; applyAudioPrefs(); }; r.onchange = () => { savePrefs(); if (k === 'sfx' || k === 'master') SFX.boop(660); }; });
