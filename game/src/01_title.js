@@ -37,7 +37,7 @@ const AC_CH = {
 };
 function acChoicesHTML(pre, m) {
   const txt = { login: {}, reg: {}, guest: {} };
-  if (m === 'acct') { txt.login.s = 'Use a different account.'; txt.reg.s = 'A new account, with the game on this device.'; txt.guest.s = 'Log out. Your game stays on this device.'; }
+  if (m === 'acct') { txt.login.s = 'Use a different account.'; txt.reg.s = 'A second account, with a brand new dog.'; txt.guest.s = 'Log out. Your game stays on this device.'; }
   if (m === 'guest') { txt.guest.t = 'Keep playing as guest'; txt.guest.s = 'Nothing changes. Carry on.'; }
   return Object.keys(AC_CH).map((k) => {
     const c = Object.assign({}, AC_CH[k], txt[k]), id = pre + k[0].toUpperCase() + k.slice(1);
@@ -99,7 +99,8 @@ async function acPlayGuest(panel) {
 function acDogName(d) { return (d && ((d.dogs && d.dogs[0] && d.dogs[0].name) || (d.dog && d.dog.name))) || 'Your dog'; }
 function acOpenForm(kind, inSheet) {
   const reg = kind === 'reg', c = acCl(), local = clLocal(), acct = c && c.uid && !c.anon;
-  const lead = reg ? (local ? `${esc(acDogName(local))} comes along to the new account. No email is ever sent.` : 'Then pick your first crayon dog. No email is ever sent.')
+  const carry = local && !acct && clMine(); // a guest game comes along; an account's game stays with that account
+  const lead = reg ? (carry ? `${esc(acDogName(local))} comes along to the new account. No email is ever sent.` : local ? `A fresh start with a new crayon dog. ${esc(acDogName(local))} stays safe in the other account.` : 'Then pick your first crayon dog. No email is ever sent.')
     : 'Welcome back. Type the email and password you signed up with.';
   const fields = clIn('acEmail', 'email', 'Email', 'username') + (reg ? clIn('acPw', 'password', `Password (${CL_PW_MIN} or more letters)`, 'new-password') + clIn('acPw2', 'password', 'Password again', 'new-password') : clIn('acPw', 'password', 'Password', 'current-password'));
   const body = `<div class="clset acform"><div class="aclead"><span class="acdog" aria-hidden="true">${art('dog', reg ? 'golden' : 'pug', { pose: reg ? 'happy' : 'paw' })}</span><p>${lead}</p></div>${fields}<p class="clmsg" id="acMsg" role="alert" hidden></p>${reg ? '' : '<button class="tlink" id="acForgot">Forgot your password?</button><p class="small" id="acForgotTxt" hidden>Passwords can\'t be reset by email. If you\'re logged in on another device, change it there. The game on this device is never lost.</p>'}</div>`;
