@@ -1417,15 +1417,19 @@
     return '<svg viewBox="0 0 120 48">' + s + '</svg>';
   }
   function v24Kibble(i) { var R = rng(2420 + i); return '<svg viewBox="0 0 40 30">' + pencil(R, ell(15, 17, 9, 7, 10), 1.6, INK, 1, true, '#C98B4E') + pencil(R, ell(25, 13, 8, 6.5, 10), 1.6, INK, 1, true, '#D9A066') + '</svg>'; }
+  /* the ribbed salmon chew cone of the shop icon: wide mouth on top (pumpkin goes in there), narrow foot, a paw mark */
   function v24Cone() {
-    var R = rng(2430), s = '';
-    s += pencil(R, [[16, 116], [84, 116], [78, 96], [82, 84], [72, 64], [76, 54], [64, 36], [66, 26], [58, 14], [42, 14], [34, 26], [36, 36], [24, 54], [28, 64], [18, 84], [22, 96]], 2.8, INK, 1, true, '#E8504A');
-    s += pencil(R, [[30, 104], [26, 90], [34, 72], [32, 60], [42, 42], [42, 30]], 4.5, '#F28FA5', 0.85);
-    s += pencil(R, [[22, 96], [78, 96]], 1.6, INK, 0.45) + pencil(R, [[28, 64], [72, 64]], 1.6, INK, 0.45) + pencil(R, [[36, 36], [64, 36]], 1.6, INK, 0.45);
-    for (var i = 0; i < 5; i++) s += '<path d="M' + (50 + i * 6) + ' ' + (100 + (i % 2) * 6) + 'l6 8" stroke="#B83A35" stroke-width="1.6" opacity=".6"/>';
-    s += pencil(R, ell(50, 15, 9, 4, 10), 1.8, INK, 1, true, '#7A2E2A');
-    return '<svg viewBox="0 0 100 120">' + s + '</svg>';
+    var R = rng(2430), s = '', pts = [[13, 17], [87, 17], [83, 36], [90, 45], [78, 63], [83, 77], [69, 93], [71, 104], [58, 118], [42, 118], [29, 104], [31, 93], [17, 77], [22, 63], [10, 45], [17, 36]];
+    s += '<ellipse cx="50" cy="118" rx="22" ry="3" fill="#5B3D32" opacity=".12"/>';
+    s += pencil(R, pts, 2.8, INK, 1, true, '#F08A86');
+    for (var i = 0; i < 9; i++) s += pencil(R, [[24 + i * 6, 24 + (i % 2) * 4], [36 + i * 4, 112]], 1.2, '#E46F6B', 0.55);
+    s += pencil(R, [[18, 42], [82, 42]], 1.8, '#C25A57', 0.8) + pencil(R, [[23, 72], [77, 72]], 1.8, '#C25A57', 0.8) + pencil(R, [[33, 100], [67, 100]], 1.8, '#C25A57', 0.8);
+    s += pencil(R, [[24, 30], [20, 46], [28, 66], [26, 80], [36, 98]], 5, '#F7B2C4', 0.75);
+    s += '<g fill="#FFD0C8"><ellipse cx="50" cy="62" rx="8" ry="6.5"/><circle cx="39.5" cy="52" r="3.3"/><circle cx="46" cy="47.5" r="3.3"/><circle cx="54" cy="47.5" r="3.3"/><circle cx="60.5" cy="52" r="3.3"/></g>';
+    s += pencil(R, ell(50, 17, 37, 11, 20), 2.2, INK, 1, true, '#A9524F');
+    return '<svg viewBox="0 0 100 122">' + s + '</svg>';
   }
+
   function v24Hog() {
     var R = rng(2440), s = '<ellipse cx="74" cy="106" rx="58" ry="5" fill="#5B3D32" opacity=".12"/>', sp = [[18, 100]];
     for (var i = 0; i <= 14; i++) { var a = Math.PI * (1 + i / 14 * 0.78), rr = i % 2 ? 46 : 60; sp.push([68 + Math.cos(a) * rr * 1.1, 98 + Math.sin(a) * rr]); }
@@ -1445,25 +1449,29 @@
     s += pencil(R, ell(64, 62, 12, 10, 10), 2, INK, 1, true, '#FCD8BC') + '<circle cx="71" cy="62" r="3.8" fill="#5B3D32"/><path d="M52 58q4-3 8 0" fill="none" stroke="#5B3D32" stroke-width="2" stroke-linecap="round"/>';
     return '<svg viewBox="0 0 110 110">' + s + '</svg>';
   }
+  /* the shop icon's lavender BUBBLES box, mirrored so the crank sits on the right: pink neck and ring on top, the bottle on the left */
   function v24Machine() {
-    var R = rng(2450), s = '<ellipse cx="96" cy="186" rx="80" ry="6" fill="#5B3D32" opacity=".12"/>';
-    s += pencil(R, rect(30, 92, 130, 88), 2.8, INK, 1, true, '#C8E9CF');
-    for (var i = 0; i < 6; i++) s += '<path d="M' + (38 + i * 21) + ' 104l12 66" stroke="#86B57A" stroke-width="1.4" opacity=".55"/>';
-    s += pencil(R, rect(24, 82, 142, 16), 2.4, INK, 1, true, '#FFE3A1');
-    s += pencil(R, ell(84, 138, 27, 27, 16), 2.2, INK, 1, true, '#FFFBF3');
-    for (var k = 0; k < 4; k++) { var a = k / 4 * Math.PI * 2 + 0.4; s += pencil(R, [[84, 138], [84 + Math.cos(a) * 21, 138 + Math.sin(a) * 21]], 1.6, INK, 0.8); }
-    s += pencil(R, ell(84, 138, 5, 5, 8), 1.6, INK, 1, true, '#F28FA5');
-    s += pencil(R, rect(36, 178, 22, 8), 2, INK, 1, true, '#86B3EA') + pencil(R, rect(132, 178, 22, 8), 2, INK, 1, true, '#86B3EA');
-    s += pencil(R, [[42, 82], [40, 40], [52, 30], [52, 18], [70, 18], [70, 30], [82, 40], [80, 82]], 2.4, INK, 1, true, '#CBE0F4');
-    s += '<path d="M44 62H78V80H44z" fill="#9CC8EA" opacity=".55"/>';
-    s += pencil(R, rect(42, 42, 38, 30), 1.8, INK, 1, true, '#FFFBF3');
-    s += '<text x="61" y="55" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="12" fill="#5B3D32">dog-safe</text><text x="61" y="67" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="12" fill="#5B3D32">bubbles</text>';
-    s += pencil(R, rect(50, 9, 22, 10), 2, INK, 1, true, '#F28FA5');
-    s += pencil(R, [[138, 82], [140, 54], [150, 42]], 4, INK, 1) + '<circle cx="160" cy="30" r="13" fill="#CBE0F4" opacity=".45"/>' + pencil(R, ell(160, 30, 15, 15, 14), 3, INK, 1) + pencil(R, ell(160, 30, 15, 15, 14), 1.4, '#86B3EA', 1);
-    s += pencil(R, ell(158, 130, 9, 9, 10), 2.2, INK, 1, true, '#FFE07A');
+    var R = rng(2450), s = '<ellipse cx="104" cy="186" rx="88" ry="6" fill="#5B3D32" opacity=".12"/>';
+    s += pencil(R, [[60, 88], [160, 88], [172, 100], [172, 164], [160, 176], [60, 176], [48, 164], [48, 100]], 2.8, INK, 1, true, '#D3C6F1');
+    s += '<path d="' + wob(R, [[50, 154], [170, 154], [170, 166], [158, 175], [62, 175], [50, 166]], 1.2, true) + '" fill="#B9A6E8"/>';
+    for (var i = 0; i < 7; i++) s += pencil(R, [[60 + i * 16, 96], [70 + i * 16, 150]], 1.1, '#B9A6E8', 0.6);
+    s += pencil(R, rect(58, 106, 90, 34), 2, INK, 1, true, '#FFFBF3');
+    s += '<text x="103" y="131" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="22" fill="#B8536F">BUBBLES</text>';
+    s += pencil(R, rect(88, 60, 28, 30), 2.4, INK, 1, true, '#F28FA5');
+    s += pencil(R, ell(102, 50, 22, 18, 16), 2.6, INK, 1, true, '#FFFFFF') + pencil(R, ell(102, 50, 13, 10, 14), 1.8, INK, 0.7);
+    s += pencil(R, ell(80, 180, 11, 8, 10), 2, INK, 1, true, '#5E463D') + pencil(R, ell(142, 180, 11, 8, 10), 2, INK, 1, true, '#5E463D');
+    s += pencil(R, rect(8, 104, 36, 74), 2.4, INK, 1, true, '#DCEFFC');
+    s += '<path d="' + wob(R, [[10, 128], [42, 128], [42, 156], [10, 156]], 1, true) + '" fill="#F7B2C4"/>';
+    s += '<text x="26" y="140" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="11" fill="#5B3D32">dog-safe</text><text x="26" y="151" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="11" fill="#5B3D32">bubbles</text>';
+    s += pencil(R, rect(14, 92, 24, 13), 2, INK, 1, true, '#BDE7D2');
+    s += pencil(R, [[18, 112], [16, 124]], 2.6, '#FFFFFF', 0.8);
+    var hub = '';
+    for (var k = 0; k < 6; k++) { var a = k / 6 * Math.PI * 2 + 0.3; hub += pencil(R, [[176, 124], [176 + Math.cos(a) * 15, 124 + Math.sin(a) * 15]], 1.8, INK, 0.85); }
+    s += pencil(R, ell(176, 124, 18, 18, 14), 2.6, INK, 1, true, '#FFE07A') + hub + pencil(R, ell(176, 124, 13, 13, 12), 1.4, '#E2A800', 0.8);
     return '<svg viewBox="0 0 200 190">' + s + '</svg>';
   }
-  function v24Crank() { var R = rng(2451); return '<svg viewBox="0 0 80 80">' + pencil(R, [[40, 40], [68, 40]], 7, INK, 1) + pencil(R, [[40, 40], [68, 40]], 3.4, '#FFE07A', 1) + pencil(R, ell(70, 40, 8, 8, 10), 2.2, INK, 1, true, '#F28FA5') + pencil(R, ell(40, 40, 5, 5, 8), 2, INK, 1, true, '#FFE07A') + '</svg>'; }
+
+  function v24Crank() { var R = rng(2451); return '<svg viewBox="0 0 80 80">' + pencil(R, [[40, 40], [56, 38], [68, 40]], 7, INK, 1) + pencil(R, [[40, 40], [56, 38], [68, 40]], 3.4, '#C99A72', 1) + pencil(R, ell(70, 40, 7, 9, 10), 2.2, INK, 1, true, '#E46F6B') + pencil(R, ell(40, 40, 5, 5, 8), 2, INK, 1, true, '#FFE07A') + '</svg>'; }
   /* the pool: viewBox 540x190, rim ellipse centre (270,70). 'back' sits behind the dog, 'front' (the near rim and side) in front of it */
   function v24Pool(part) {
     var R = rng(part === 'front' ? 2461 : 2460), s = '', cx = 270, cy = 70, rx = 250, ry = 62, irx = 214, iry = 46, dep = 30;
@@ -1506,17 +1514,20 @@
     s += pencil(R, ell(64, 140, 6, 6, 8), 2, INK, 1, true, '#E8504A');
     return '<svg viewBox="0 0 130 190">' + s + '</svg>';
   }
-  function v24Seg(i) {
-    var R = rng(2480 + i), c = i % 2 ? '#FFE07A' : '#86B3EA', d = i % 2 ? '#E2A800' : '#6F93BE', s = '';
+  /* one fabric hoop section of the tunnel (the shop icon's yellow and salmon-red stripes), all pencil */
+  function v24Seg(i, w) {
+    var R = rng(2480 + i), c = i % 2 ? '#E46F6B' : '#FFE07A', d = i % 2 ? '#C25A57' : '#E2A800', s = '';
     s += pencil(R, [[2, 24], [16, 13], [30, 10], [44, 13], [58, 24], [58, 170], [44, 177], [30, 179], [16, 177], [2, 170]], 2.2, INK, 1, true, c);
-    for (var k = 0; k < 4; k++) s += '<path d="M' + (11 + k * 12) + ' 30q5 70 0 136" fill="none" stroke="' + d + '" stroke-width="1.6" opacity=".5"/>';
-    s += pencil(R, [[2, 24], [2, 170]], 3.2, INK, 0.9);
-    return '<svg viewBox="0 0 60 190">' + s + '</svg>';
+    var n = 2 + (i % 3); for (var k = 0; k < n; k++) { var x = 10 + k * (44 / n) + R() * 4; s += pencil(R, [[x, 28 + R() * 6], [x + 3, 96], [x, 164 - R() * 6]], 1.3, d, 0.6); }
+    s += pencil(R, [[8, 30], [12, 60], [10, 90]], 3.2, '#FFFBF3', 0.35);
+    s += pencil(R, [[2, 24], [4, 96], [2, 170]], 3.2, INK, 0.9);
+    return '<svg viewBox="0 0 60 190" preserveAspectRatio="none">' + s + '</svg>';
   }
+
   function v24TunnelEnd(left) {
     var R = rng(left ? 2490 : 2491), s = '';
-    s += pencil(R, ell(30, 96, 24, 92, 20), 2.8, INK, 1, true, left ? '#86B3EA' : '#FFE07A');
-    s += pencil(R, ell(left ? 27 : 33, 98, 13, 78, 18), 2.2, INK, 1, true, '#4A3A33');
+    s += pencil(R, ell(30, 96, 24, 92, 20), 2.8, INK, 1, true, left ? '#FFE07A' : '#E46F6B');
+    s += pencil(R, ell(left ? 27 : 33, 98, 13, 78, 18), 2.2, INK, 1, true, '#5E463D');
     s += '<path d="M' + (left ? 22 : 30) + ' 40q-6 58 0 118" fill="none" stroke="#6E544A" stroke-width="2" opacity=".7"/>';
     return '<svg viewBox="0 0 60 196">' + s + '</svg>';
   }
@@ -1650,16 +1661,16 @@
 
   /* ---------- Treat Cone ---------- */
   IMPL['Treat Cone'] = function (A) {
-    var dog = A.dog, DN = A.DN, PIV = 120 * 0.62 - 15;
+    var dog = A.dog, DN = A.DN, PIV = 122 * 0.62 - 17;
     var cone = { x: 520, rot: 0, vx: 0, held: false, unheld: 0, tipTo: 0, standT: 0 };
-    var spr = A.sprite(v24Cone(), 100, 120, A.L.actors, 0.5, 0.62);
+    var spr = A.sprite(v24Cone(), 100, 122, A.L.actors, 0.5, 0.62);
     var meter = A.meter('lick meter', 470, 92, 300, null);
     var state = 'intro', stT = 0, lick = 0, smear = 1, cones = 0, tips = 0, licks = 0, lickPh = 0, half = false, rollT = 0, pawT = 0;
     var tip = A.tip('press & hold me!', 430, 380);
     dog.x = 880; dog.face('left'); dog.setPose('sit');
     A.say(pick(A.line('coneLick', ['is that... PUMPKIN?', 'a cone! with pumpkin! for ME?'])), 1800);
     function up() { return Math.abs(cone.rot) < 25; }
-    function pivY() { return GY - lerp(120 * 0.38 - 4, 31, Math.min(1, Math.abs(cone.rot) / 90)); }
+    function pivY() { return GY - lerp(122 * 0.38 - 2, 32, Math.min(1, Math.abs(cone.rot) / 90)); }
     function hole() { var a = cone.rot * Math.PI / 180; return { x: cone.x + Math.sin(a) * PIV, y: pivY() - Math.cos(a) * PIV }; }
     function lickPose() { return up() ? 'sit' : 'crouch'; }
     function spot() { var h = hole(), side = up() ? (dog.x >= cone.x ? 1 : -1) : (h.x >= cone.x ? 1 : -1); return { x: h.x + side * (dog.mouthOff(lickPose()) + (up() ? 34 : 22)), side: side }; }
@@ -1740,10 +1751,14 @@
         var h = hole(), a = cone.rot * Math.PI / 180;
         if (smear > 0.02) {
           g.save(); g.translate(h.x, h.y); g.rotate(a);
-          var r = 6 + 10 * smear; g.fillStyle = '#F4A262'; g.strokeStyle = INK; g.lineWidth = 1.6;
-          g.beginPath(); g.ellipse(0, -2, r * 1.15, r * 0.6, 0, 0, Math.PI * 2); g.fill(); g.stroke();
-          if (smear > 0.4) { g.beginPath(); g.ellipse(-r * 0.7, 6, 3, 6 * smear, 0.2, 0, Math.PI * 2); g.fill(); g.stroke(); }
-          g.fillStyle = '#FFE3A1'; g.beginPath(); g.arc(r * 0.3, -4, 2.2, 0, Math.PI * 2); g.fill();
+          /* the pumpkin heaped in the mouth (lumpy, like the icon's), shrinking as it is licked; a kibble pokes out */
+          var rx = 31 * (0.3 + 0.7 * smear), ry = 8 * (0.5 + 0.5 * smear);
+          g.fillStyle = '#F9A35E'; g.strokeStyle = INK; g.lineWidth = 1.8; g.beginPath();
+          for (var i = 0; i <= 14; i++) { var t = i / 14 * Math.PI * 2, bump = 1 + (i % 2 ? 0.16 : 0) * smear, px = Math.cos(t) * rx * bump, py = Math.sin(t) * ry * bump - (Math.sin(t) < 0 ? 5 * smear : 0); if (i) g.lineTo(px, py); else g.moveTo(px, py); }
+          g.closePath(); g.fill(); g.stroke();
+          g.fillStyle = '#FFC48A'; g.beginPath(); g.ellipse(-rx * 0.35, -3 * smear, rx * 0.28, ry * 0.35, 0, 0, Math.PI * 2); g.fill();
+          if (smear > 0.3) { g.fillStyle = '#D59A5E'; g.lineWidth = 1.4; g.beginPath(); g.ellipse(rx * 0.3, -5 * smear - 2, 6, 4.5, 0.3, 0, Math.PI * 2); g.fill(); g.stroke(); }
+          if (smear > 0.5) { g.fillStyle = '#F9A35E'; g.lineWidth = 1.4; g.beginPath(); g.ellipse(-rx * 0.8, 7, 3.4, 7 * smear, 0.15, 0, Math.PI * 2); g.fill(); g.stroke(); }
           g.restore();
         }
         if (state === 'lick') {
@@ -1869,13 +1884,13 @@
   IMPL['Bubble Machine'] = function (A) {
     var dog = A.dog, DN = A.DN, CP = A.compact, MX = CP ? 300 : 280, MY = GY + 4, MS = CP ? 1.12 : 1.3, DX0 = CP ? 480 : 520, DX1 = CP ? 760 : 980;
     var mach = A.sprite(v24Machine(), 200 * MS, 190 * MS, A.L.actors, 0.5, 184 / 190);
-    var HUB = { x: MX + 58 * MS, y: MY - 54 * MS }, RING = { x: MX + 60 * MS, y: MY - 154 * MS };
+    var HUB = { x: MX + 76 * MS, y: MY - 60 * MS }, RING = { x: MX + 2 * MS, y: MY - 134 * MS };
     var crank = A.sprite(v24Crank(), 80 * MS, 80 * MS, A.L.actors, 0.5, 0.5);
     var bubs = [], made = 0, pops = 0, selfPops = 0, cranking = false, crankA = 0, emitT = 0, clickT = 0, shake = 0, state = 'watch', stT = 0, tgt = null, cool = 0, idleT = 0;
-    var tip = A.tip('hold the crank!', HUB.x - 40, HUB.y - 110);
+    var tip = A.tip('hold the crank!', HUB.x - 30, HUB.y + 34);
     dog.x = CP ? 720 : 820; dog.face('left'); dog.setPose('sit');
     A.say(pick(['what does THAT do?', 'a machine. for me?']), 1800);
-    function emit() { if (bubs.length >= 18) return; made++; bubs.push({ x: RING.x + 8, y: RING.y - 4, r: 15 + Math.random() * 19, vx: 110 + Math.random() * 120, vy: -60 - Math.random() * 90, ph: Math.random() * 6, t: 0, life: 6.5 + Math.random() * 3 }); }
+    function emit() { if (bubs.length >= 18) return; made++; bubs.push({ x: RING.x + 10, y: RING.y - 6, r: 15 + Math.random() * 19, vx: 110 + Math.random() * 120, vy: -60 - Math.random() * 90, ph: Math.random() * 6, t: 0, life: 6.5 + Math.random() * 3 }); }
     function pop(b, byDog) {
       var i = bubs.indexOf(b); if (i < 0) return; bubs.splice(i, 1);
       A.addPart({ type: 'ring', x: b.x, y: b.y, size: b.r * 0.9, life: 0.3 });
@@ -1888,7 +1903,7 @@
         if (pops % 4 === 1) A.say(pick(A.line('bubblePop', ['POP!', 'got one!', 'they taste like nothing. amazing.', 'bubble defeated'])), 1000);
       } else selfPops++;
     }
-    function onCrank(x, y) { return dist(x, y, HUB.x + 20, HUB.y) < A.hitR(64) || (x > MX - 90 * MS && x < MX + 70 * MS && y > MY - 110 * MS && y < MY); }
+    function onCrank(x, y) { return dist(x, y, HUB.x + 14, HUB.y) < A.hitR(64) || (x > MX - 92 * MS && x < MX + 72 * MS && y > MY - 110 * MS && y < MY); }
     function pickTarget() {
       var best = null, bd = 1e9;
       bubs.forEach(function (b) { if (b.x < DX0 - 50 || b.x > DX1 + 20 || b.y < GY - 430 || b.t < 0.4) return; var d = Math.abs(b.x - dog.x) + Math.abs(b.y - (GY - 200)) * 0.5; if (d < bd) { bd = d; best = b; } });
@@ -2076,7 +2091,8 @@
     var dog = A.dog, DN = A.DN, CP = A.compact, TL = CP ? 500 : 480, TR = CP ? 745 : 770, TY = GY - 62, NS = 8, SW = (TR - TL) / NS, SL = CP ? 385 : 330, SR = CP ? 860 : 920;
     var base = A.sprite(v24TunnelBase(), (TR - TL) + 110, 50, A.L.scene, 0.5, 0.6); base.set((TL + TR) / 2, GY + 30);
     var segs = [];
-    for (var i = 0; i < NS; i++) segs.push({ x: TL + (i + 0.5) * SW, b: 0, spr: A.sprite(v24Seg(i), SW + 10, 196, A.L.front, 0.5, 0.5) });
+    var WK = [1.25, 0.8, 1.1, 0.7, 1.3, 0.85, 1.15, 0.85], wsum = WK.reduce(function (a, b) { return a + b; }, 0), cx0 = TL;
+    for (var i = 0; i < NS; i++) { var sw = (TR - TL) * WK[i] / wsum; segs.push({ x: cx0 + sw / 2, b: 0, spr: A.sprite(v24Seg(i), sw + 10, 196, A.L.front, 0.5, 0.5) }); cx0 += sw; }
     var endL = A.sprite(v24TunnelEnd(true), 54, 204, A.L.front, 0.5, 0.5), endR = A.sprite(v24TunnelEnd(false), 54, 204, A.L.front, 0.5, 0.5);
     endL.set(TL, TY + 2); endR.set(TR, TY + 2);
     var panel = A.div('pt-panel', A.L.ui); panel.style.cssText += ';left:470px;top:92px;width:300px'; A.dockable(panel);
