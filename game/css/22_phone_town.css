@@ -5,8 +5,11 @@ html[data-layout="phone"] #mapZoom span{font-size:15px;min-height:24px;line-heig
 html[data-layout="phone"] .pbready,html[data-layout="phone"] .pbsniff{font-size:15px}
 html[data-layout="phone"] .pbready li{padding:4px 8px}
 html[data-layout="phone"] .visitcard .sex,html[data-layout="phone"] .pbcard .sex,html[data-layout="phone"] .vetcard .sex{font-size:15px}
-/* v2.3: on Market Street the place buttons sit in their own row under the scene instead of over it, so they never cover the street sign or the dog's feet.
-   The scene is anchored at the bottom, so the room comes out of the empty sky at the top. */
+/* v2.3: on Market Street the place buttons sit in one row under the scene instead of over it, so they never cover the street sign or the dog's feet.
+   The row scrolls sideways when the shops don't fit; the faded edges and the peeking next button show that it does. The scene is bottom-anchored, so the room comes out of the empty sky at the top. */
 html[data-layout="phone"] #view:has(#placeBtns [data-sh]) { display: flex; flex-direction: column; }
 html[data-layout="phone"] #view:has(#placeBtns [data-sh]) > svg.world { position: relative; inset: auto; flex: 1 1 0; min-height: 0; width: 100%; height: auto; }
-html[data-layout="phone"] #view:has(#placeBtns [data-sh]) #placeBtns { position: static; flex: none; max-width: none; justify-content: center; gap: 4px 8px; padding: 6px 8px 8px; }
+html[data-layout="phone"] #view:has(#placeBtns [data-sh]) #placeBtns { position: static; flex: none; max-width: none; flex-wrap: nowrap; justify-content: flex-start; gap: 8px; padding: 6px 20px 8px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x proximity; scroll-padding: 0 20px; touch-action: pan-x; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 34px), transparent 100%); mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 34px), transparent 100%); }
+html[data-layout="phone"] #view:has(#placeBtns [data-sh]) #placeBtns::-webkit-scrollbar { display: none; }
+html[data-layout="phone"] #view:has(#placeBtns [data-sh]) #placeBtns .btn { flex: none; scroll-snap-align: start; white-space: nowrap; }

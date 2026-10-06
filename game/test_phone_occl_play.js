@@ -66,13 +66,21 @@ run('phone_occl_play', async (t) => {
     t.sec(`${tag}: Market Street`);
     await at('market'); await t.SH(tag + '_market');
     await check(`${tag} market`, '#dogHit', COVER);
-    await check(`${tag} market`, '#placeBtns [data-sh]', '#bar,#hud,#toasts .toast,#modal:not([hidden]) .panel', [[0.5, 0.5]]);
+    await check(`${tag} market`, '#placeBtns [data-sh]:nth-child(-n+2)', '#bar,#hud,#toasts .toast,#modal:not([hidden]) .panel', [[0.5, 0.5]]);
     await clear(`${tag} market`, '#dogHit', ['#placeBtns .btn'], 0.15);
     // the street sign is a protected prop: it stays drawn, and nothing (place buttons, bar, HUD, toasts, status chip) sits on it
     const signBad = await ev(`(${signOverlaps})(${JSON.stringify(COVER)})`);
     ok(signBad.length === 0, `${tag} market: the "Market Street" sign is drawn and nothing covers it${signBad.length ? ' -> ' + signBad.slice(0, 3).join(' | ') : ''}`);
     await toast(); const signBadT = await ev(`(${signOverlaps})(${JSON.stringify(COVER)})`); ok(signBadT.length === 0, `${tag} market + toast: the sign is still uncovered${signBadT.length ? ' -> ' + signBadT.slice(0, 2).join(' | ') : ''}`); await unToast();
-    await toast(); await check(`${tag} market + toast`, '#dogHit', COVER); await check(`${tag} market + toast`, '#placeBtns [data-sh]', '#toasts .toast,#bar', [[0.5, 0.5]]); await unToast();
+    // the place buttons are one row under the scene: scrollable with a visible peek, every shop reachable, clear of the sign, the dog and the bar
+    const rowInfo = await ev(() => { const r = document.getElementById('placeBtns'), b = [...r.querySelectorAll('.btn')], rr = r.getBoundingClientRect(), sv = document.querySelector('#view svg.world').getBoundingClientRect(); return { scrolls: r.scrollWidth > r.clientWidth + 4, oneRow: new Set(b.map((x) => Math.round(x.getBoundingClientRect().top))).size === 1, mask: (getComputedStyle(r).webkitMaskImage || getComputedStyle(r).maskImage) !== 'none', h: Math.min(...b.map((x) => x.getBoundingClientRect().height)), under: rr.top >= sv.bottom - 1, peek: b.some((x) => { const q = x.getBoundingClientRect(); return q.left < rr.right && q.right > rr.right - 1; }) || r.scrollWidth <= r.clientWidth }; });
+    ok(rowInfo.oneRow && rowInfo.under, `${tag} market: the place buttons are one row under the scene`);
+    ok(rowInfo.h >= 44, `${tag} market: place buttons are >= 44 px tall (${Math.round(rowInfo.h)})`);
+    ok(!rowInfo.scrolls || (rowInfo.mask && rowInfo.peek), `${tag} market: a row that scrolls has faded edges and a peeking next button`);
+    await ev(() => { const r = document.getElementById('placeBtns'); r.scrollLeft = r.scrollWidth; }); await sleepMs(250);
+    await check(`${tag} market (scrolled to the end)`, '#placeBtns [data-pb="yard"]', '#bar,#hud,#toasts .toast', [[0.5, 0.5]]);
+    await ev(() => { document.getElementById('placeBtns').scrollLeft = 0; });
+    await toast(); await check(`${tag} market + toast`, '#dogHit', COVER); await check(`${tag} market + toast`, '#placeBtns [data-sh]:nth-child(-n+2)', '#toasts .toast,#bar', [[0.5, 0.5]]); await unToast();
 
     // ===================== each shop =====================
     for (const k of ['kibble', 'boutique', 'builder', 'sprout']) {
@@ -92,6 +100,12 @@ run('phone_occl_play', async (t) => {
     await at('market'); await p.locator('[data-act=map]').first().tap(); ok(await t.until(() => window.__paw.mode === 'map', null, 6000), `${tag} map: opens`); await sleepMs(900); await t.SH(tag + '_map');
     await check(`${tag} map`, '#mapPin span', '#mapZoom,#mapX,#mapGo:not([hidden]),#status,#hud,#bar,#toasts .toast', [[0.5, 0.5], [0.2, 0.5], [0.8, 0.5]]);
     await clear(`${tag} map`, '#mapPin', ['#bubble', '#mapTip', '#mapGo', '#mapZoom', '#mapX', '#status:not(:empty)'], 0);
+    // the pin and its label stand beside the place: they never sit on the place's own art or on any place name
+    const pinBad = await ev(() => { const pin = document.querySelector('#mapPin'), r = pin.getBoundingClientRect(), out = []; const hit = (q) => q.width > 1 && q.left < r.right && q.right > r.left && q.top < r.bottom && q.bottom > r.top;
+      document.querySelectorAll('#mapPan svg.world text').forEach((x) => { const q = x.getBoundingClientRect(); if (q.right > 0 && q.left < innerWidth && q.bottom > 0 && q.top < innerHeight && hit(q)) out.push('pin over the name "' + x.textContent.trim().slice(0, 24) + '"'); });
+      document.querySelectorAll('#mapPan [data-area]').forEach((g) => { if (g.getAttribute('data-area') === 'market') return; const q = g.getBoundingClientRect(); if (q.width > 1 && q.right > 0 && q.left < innerWidth && q.left < r.right && q.right > r.left && q.top < r.bottom && q.bottom > r.top + 4) out.push('pin over ' + g.getAttribute('data-area')); });
+      const m = document.querySelector('#mapPan [data-area=market]'); if (m) { const q = m.getBoundingClientRect(), core = { left: q.left + q.width * 0.12, right: q.right - q.width * 0.12, top: q.top, bottom: q.top + q.height * 0.55, width: q.width }; if (core.left < r.right && core.right > r.left && core.top < r.bottom && core.bottom > r.top) out.push('pin over the Market Street art'); } return out; });
+    ok(pinBad.length === 0, `${tag} map: the "you are here" pin covers no place name or art${pinBad.length ? ' -> ' + pinBad.slice(0, 3).join(' | ') : ''}`);
     await check(`${tag} map`, '[data-area=market]', '#mapZoom,#mapX,#hud,#bar', [[0.5, 0.5]]);
     await p.locator('[data-area=market]').first().tap({ force: true }); await sleepMs(300);
     await check(`${tag} map chip`, '#mapGo:not([hidden]) button', '#bar,#hud,#toasts .toast', [[0.5, 0.5]]);
