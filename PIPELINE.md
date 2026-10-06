@@ -31,6 +31,7 @@ Parallel game agents each get ONE lane. Editing outside your lane needs the coor
 | **TOWN** | 05_market_shops, 06_wardrobe, 08_map, 14_town_places | 13_purchase_window, 17_training_map (map part) |
 | **PLAY** | 09_walk_classic, 15_trick_training, 16_voices_idle, 17_walk_route_carousel, 18_mod_walk_toys, 19_fetch | 16_idle_behaviours, 17_training_map (training part) |
 | **SYSTEMS** | 07_treasure_journal, 11_garden_kitchen | 09_journal |
+| **MISSIONS / GUIDE** (v2.4, see V24.md) | 24_missions, 25_guide | 27_missions, 28_guide |
 | **PHONE** (v2.2, see PHONE.md) | 22c_phone_shell (+ phone parts of the screen files) | 05_dock, 06_action_bar, 12_phone_v1, 19_phone_v15b, 20–26_phone_* |
 
 Module owners stay as before: dogs/ (dog artist), world/a (scenes), world/b (props/icons), world/c (new scenes), mods/* (one owner each).

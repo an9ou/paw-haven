@@ -27,7 +27,7 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [ ] The rocking chair's backrest leans a little. `world/pawart_world_b.js`
 
 ## Project
-- [ ] The claude.ai artifact publish is blocked by the full-read requirement on a 1.8 MB page, so the artifact still shows v2.2. v2.4 to solve it, e.g. publish as a multi-file artifact with a small index.html and the game JS/CSS as supporting files.
+- [x] The claude.ai artifact publish was blocked by the full-read requirement on a 1.8 MB page. Fixed in v2.4: `tools/artifact.js` builds a multi-file artifact (152 KB index.html + 6 script files); a subagent does the one-time read.
 - [x] Publish to the claude.ai artifact. Done with v2.1.
 - [x] Saves were per copy with no export. Fixed in v2.2: cloud save on the web version and Export / Import save codes on every copy.
 - [ ] Under parallel load (`--jobs 2`) a few desktop checks time out once and pass on retry: v16b (night bark, the click that interrupts an idle, the dev panel Close button), v21_home (Proud Mum picks "down": the test pins `Math.random` around one call and an idle tick can take it). Same timings as before v2.2. `game/test_v16b.js`, `game/test_v21_home.js`
@@ -55,3 +55,12 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [ ] The map zoom buttons were checked clear of the labels only in the default (unpanned) view. `game/src/08_map.js`
 - [ ] Owner: confirm the Supabase project auto-confirms email changes (Confirm email off), so "No email is ever sent" stays true.
 - [ ] The "look right" peek button and the nap details card are new. Check both once on a real phone.
+
+## Shop Day (v2.4)
+- [ ] On phones Gerald's steps 6 to 8 run to 4 lines in the strip (the spec said two). Shorter phone wording would fix it. `game/src/25_guide.js`
+- [ ] Toasts can sit over a sheet's title for 3 s on phones (the Missions sheet, the Wardrobe heading). Core toast placement. `game/src/00_core.js` toast()
+- [ ] The yard missions clipboard hides while a feed / play / care tray is open on phones (its tap target would shrink under 44 px). A tray-aware tap rect would let it stay. `game/css/27_missions.css`
+- [ ] Under the test harness missions and the walkthrough only run when a suite sets `prefs.msTest` / `prefs.gdTest`, so the older suites never exercise them alongside the old flows. One combined smoke pass would catch interactions. `game/src/24_missions.js`, `25_guide.js`
+- [ ] The six house-card item icons draw the house at about 50 px, so detail is soft at the 40 px shop scale. `world/pawart_world_b.js`
+- [ ] The garden module has no watering callback, so no mission can ask for watering. `mods/garden.js`
+- [ ] Owner: open the claude.ai artifact once on a phone and a laptop to confirm the multi-file version boots there (it was checked in headless Chromium over http, not on claude.ai itself).

@@ -87,6 +87,7 @@ Some folders (`dogs/`, `world/`, `mods/`) also hold earlier art versions and rev
 - **v2.1 "Sparkle & Family"**: Sparkle boosts and the Sparkle Meter, ancestry and grand-mixes, collection rewards and titles, yard decorations, pen-pal postcards and album, the Gene Sniffer and the town painter.
 - **v2.2 "Phones & Cloud Save"**: the full game on phones (portrait, touch, bottom sheets), real-time cloud save with optional accounts and no emails, and Export / Import save codes.
 - **v2.3 "Cozy Phones"**: a Log in / Make an account / Play as guest choice on the title screen (saves stay with their account), a napping-dog strip on phones, and a phone polish pass so nothing blocks the view.
+- **v2.4 "Shop Day"**: 32 new crayon-drawn items (6 houses, 12 outfits, 6 toys with play games, 8 dog-safe foods with safety tips), daily missions with a stamp card, Gerald the duck's how-to-play guide, and the claude.ai artifact published as a multi-file artifact.
 
 Full details: [CHANGELOG.md](CHANGELOG.md). Open issues: [TODO.md](TODO.md).
 

@@ -1,6 +1,6 @@
 # Paw Haven
 
-A cozy browser game: adopt crayon-drawn dogs, care for them, walk a sketchbook town, grow a garden, and have puppy playdates with real coat genetics. Current version: **v2.3 "Cozy Phones"** (also on claude.ai, where cloud save is off by design). History: `CHANGELOG.md`. Open issues: `TODO.md`.
+A cozy browser game: adopt crayon-drawn dogs, care for them, walk a sketchbook town, grow a garden, and have puppy playdates with real coat genetics. Current version: **v2.4 "Shop Day"** (also on claude.ai, where cloud save is off by design). History: `CHANGELOG.md`. Open issues: `TODO.md`.
 
 **Read `PIPELINE.md` and `README.md` first.** Running parallel agents? Read `BUILDING.md` (roles, models and the cost rules). They describe the layout, the shared-scope rules, the lanes and the test runner. Two things there don't apply on this Mac: the `/home/claude/...` paths (they mean this repo root), and the multi-agent worktree workflow (`tools/wt.sh`), unless you're running parallel agents.
 
@@ -19,6 +19,7 @@ A cozy browser game: adopt crayon-drawn dogs, care for them, walk a sketchbook t
 - The `*_v1…v9.js`, `world/a|b|c/`, galleries and `*_reference.*` files are earlier art versions and review pages. They are not part of the build.
 - `V12.md` … `V2.md`, `V2_GENES.md`, `API*.md`, `TREASURE.md`: the build contract for each version. Check the relevant one before changing a system.
 - Phone layout: `game/src/22c_phone_shell.js` + `game/css/20_phone_shell.css` (shell), phone rules per lane in `game/css/21–26_phone_*.css`, always under `html[data-layout="phone"]` / `isPhone()`. Contract: `PHONE.md`. Phone suites: `node game/run_tests.js phone` (includes `account` and the occlusion suites `phone_occl_home`, `phone_occl_play`).
+- Daily missions: `game/src/24_missions.js` + `game/css/27_missions.css` (tag `ms`). Gerald's guide: `game/src/25_guide.js` + `game/css/28_guide.css` (tag `gd`). Player actions reach them through `trackAct(kind, data)` in `00_core.js` (bus `act`). Contract: `V24.md` (section 13 has the as-built notes).
 - Cloud save: `game/src/22b_cloud_config.js` (public Supabase URL and publishable key only, never a secret key), `game/src/22b_cloud.js`, tables in `supabase/schema.sql`. Off on the claude.ai artifact and under the test harness. With cloud on, the title screen offers Log in / Make an account / Play as guest, and a save is owned by its account.
 - `docs/design/`: the game design docs (proposal, v2 Playdates & Sparkle, Garden & Kitchen, v1.3 build plan), exported from the claude.ai doc. Charts are placeholders.
 
@@ -38,4 +39,4 @@ A cozy browser game: adopt crayon-drawn dogs, care for them, walk a sketchbook t
 ## Publishing
 
 - **GitHub:** pushing `main` triggers `.github/workflows/pages.yml`, which deploys to GitHub Pages (https://an9ou.github.io/paw-haven/ once Pages is set to "GitHub Actions").
-- **claude.ai artifact "Paw Haven":** https://claude.ai/artifact/ELi5aBLzRxqJxMuc4YG5zD. Build, then publish `paw_haven_prototype.html` to that URL with the Artifact tool (read it first). Log releases in **Paw Haven Studio**, https://claude.ai/artifact/Raf3Fyx1pS2Gz9U55Wf5BS (database collections `releases`, `agents`, `queue`).
+- **claude.ai artifact "Paw Haven":** https://claude.ai/artifact/ELi5aBLzRxqJxMuc4YG5zD. It is a multi-file artifact since v2.4: `node tools/artifact.js` writes `_artifact/index.html` plus `dogs.js`, `world_a.js`, `world_b.js`, `world_c.js`, `mods.js`, `game.js`; publish `index.html` to that URL with the Artifact tool, passing the six files as `files`. The tool needs the live page read first: have a subagent do that read (it is small now), never paste the page into the coordinator's context. Log releases in **Paw Haven Studio**, https://claude.ai/artifact/Raf3Fyx1pS2Gz9U55Wf5BS (database collections `releases`, `agents`, `queue`).
