@@ -5,3 +5,5 @@ html[data-layout="phone"] #mapZoom span{font-size:15px;min-height:24px;line-heig
 html[data-layout="phone"] .pbready,html[data-layout="phone"] .pbsniff{font-size:15px}
 html[data-layout="phone"] .pbready li{padding:4px 8px}
 html[data-layout="phone"] .visitcard .sex,html[data-layout="phone"] .pbcard .sex,html[data-layout="phone"] .vetcard .sex{font-size:15px}
+/* v2.3: place buttons hug the bottom so two rows stay below the dog's feet on short screens (360x740) */
+html[data-layout="phone"] #placeBtns { bottom: 6px; row-gap: 4px; }

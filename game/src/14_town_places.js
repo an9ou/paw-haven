@@ -113,7 +113,7 @@ function mapApply() {
 function mapCenter(k, anim) { const M = MAPV; if (!M) return; const c = M.centers[k]; if (!c) return; const s = M.base * M.z; M.tx = M.vw / 2 - c[0] * s; M.ty = M.vh / 2 - c[1] * s; const inner = $('#mapInner'); if (inner) inner.style.transition = anim ? 'transform .35s ease-out' : ''; mapApply(); if (anim) setTimeout(() => { if (inner) inner.style.transition = ''; }, 380); }
 function mapZoomAt(f, px, py) { const M = MAPV; if (!M) return; const z0 = M.z, z1 = clamp(z0 * f, 0.6, 1.6); if (z1 === z0) return; const s0 = M.base * z0, s1 = M.base * z1; const mx = (px - M.tx) / s0, my = (py - M.ty) / s0; M.z = z1; M.tx = px - mx * s1; M.ty = py - my * s1; mapApply(); }
 function enterMap() {
-  setChrome(true, false);
+  setChrome(true, false); hideBubble(); // a yard speech bubble must not linger over the pin
   const locked = lockedAreas(), A = mapArt(locked);
   view.innerHTML = `<div id="mapPan" class="mappan"><div id="mapInner" style="width:${A.W}px;height:${A.H}px"><svg class="world mapsvg" viewBox="0 0 ${A.W} ${A.H}" width="${A.W}" height="${A.H}" style="background:radial-gradient(#E3D2BA 1.1px,transparent 1.6px) 0 0/22px 22px,#FFFBF3">${A.svg}</svg><div id="mapHi" hidden></div><div id="mapPin" hidden>${PIN_SVG}<span>you are here</span></div></div></div>
     <button class="xbtn" id="mapX" aria-label="Back to ${esc(PLACES[S.place] ? PLACES[S.place].n : 'your place')}">x</button>
@@ -159,3 +159,11 @@ function mapOverlay() {
   if (c && pin) { pin.hidden = false; pin.style.left = c[0] + 'px'; pin.style.top = (c[1] - 30) + 'px'; }
 }
 
+
+/* v2.3 phone: the place buttons sit where the baked-in "Market Street" sign is, and the HUD chip already names the street, so the sign is hidden on phones. */
+function marketSignHide() {
+  if (!isPhone() || S.place !== 'market') return;
+  const t = [...view.querySelectorAll('svg.world text')].find((x) => x.textContent === 'Market Street'); if (!t) return;
+  [t, t.previousElementSibling, t.previousElementSibling && t.previousElementSibling.previousElementSibling].forEach((e) => { if (e && /^(path|text)$/.test(e.tagName)) e.style.display = 'none'; });
+}
+on('yard:enter', marketSignHide); on('scene:redraw', marketSignHide); on('phone:layout', marketSignHide);

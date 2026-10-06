@@ -20,3 +20,6 @@ html[data-layout="phone"] #view svg.world { touch-action: none; -webkit-touch-ca
 html[data-layout="phone"] #rtView { touch-action: pan-y; }
 html[data-layout="phone"] .rt-nav .arrow { min-width: 56px; min-height: 56px; touch-action: manipulation; }
 html[data-layout="phone"] .rt-foot .btn { min-height: 52px; touch-action: manipulation; }
+/* v2.3: results sheets (walk, fetch): the title clears the header art of the celebrate panel */
+html[data-layout="phone"] .panel.celebrate { padding-top: 44px; }
+html[data-layout="phone"] .panel.celebrate .x { top: 40px; }

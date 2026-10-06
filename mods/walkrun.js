@@ -272,6 +272,7 @@ const CSS = `
 .pw-pt .pw-prompt{font-size:26px}
 .pw-pt .pw-pop{font-size:22px}
 .pw-pt .pw-cd,.pw-cp .pw-cd{font-size:72px}
+.pw-pt .pw-ov:not(.dim){inset:auto 0 auto 0;top:var(--pw-st,0);height:var(--pw-sh,100%)}
 .pw-pt .pw-remind,.pw-cp .pw-remind{white-space:normal;width:92%;max-width:520px;text-align:center;font-size:16px}
 .pw-touchui .pw-card{max-width:94%;max-height:92%;overflow-y:auto;touch-action:pan-y;padding:12px 14px}
 .pw-touchui .pw-card h2{font-size:34px}
@@ -563,12 +564,13 @@ function start(el, o) {
     else mode = (elH / elW > 0.75 || elW / (elH / VIEW_H) < PT_LW) ? 'pt' : 'cp';
     root.classList.toggle('pw-coarse', coarse); root.classList.toggle('pw-pt', mode === 'pt'); root.classList.toggle('pw-cp', mode === 'cp'); root.classList.toggle('pw-touchui', mode !== 'desk');
     DOG.x = mode === 'pt' ? 120 : mode === 'cp' ? 170 : 200;
-    E.stage.style.cssText = ''; E.ctrls.style.cssText = ''; E.legend.style.cssText = '';
+    E.stage.style.cssText = ''; E.ctrls.style.cssText = ''; E.legend.style.cssText = ''; root.style.removeProperty('--pw-st'); root.style.removeProperty('--pw-sh');
     if (mode === 'pt') {
       s = elW / PT_LW; LW = PT_LW;
       const hudB = E.hud.offsetTop + E.hud.offsetHeight + 8, sh = Math.round(VIEW_H * s);
       const top = Math.max(hudB, Math.min(hudB + 40, Math.round((elH - sh) * 0.22)));
       Object.assign(E.stage.style, { inset: 'auto', left: '0', right: '0', top: top + 'px', height: sh + 'px' });
+      root.style.setProperty('--pw-st', top + 'px'); root.style.setProperty('--pw-sh', sh + 'px'); // the countdown stays on the strip, clear of the legend
       Object.assign(E.legend.style, { top: (top + sh + 8) + 'px', bottom: 'auto' });
       Object.assign(E.ctrls.style, { top: (top + sh + 8 + E.legend.offsetHeight + 8) + 'px' });
     } else if (mode === 'cp') {
@@ -1227,7 +1229,7 @@ function start(el, o) {
   E.bagB.addEventListener('click', (e) => { e.stopPropagation(); if (S.mode === 'bag') resume(); else openBag(); });
   E.pauseB.addEventListener('click', (e) => { e.stopPropagation(); if (S.mode === 'paused') resume(); else openPause(); });
   // pressing on the scene itself also jumps (hold for long)
-  // touch: tap the right half to jump (hold = long jump), swipe down anywhere to duck
+  // touch: tap the scene to jump (hold = long jump), swipe down anywhere to duck
   const gest = { id: null, y0: 0, jump: false, duck: false, mouse: false };
   root.addEventListener('pointerdown', (e) => {
     if (S.ended || e.target.closest('button,input,label,.pw-hud,.pw-card,.pw-x')) return;
@@ -1235,7 +1237,7 @@ function start(el, o) {
     const touchy = e.pointerType === 'touch' || mode !== 'desk';
     if (!touchy) { if (e.button !== 0 || !E.stage.contains(e.target)) return; e.preventDefault(); gest.id = e.pointerId; gest.mouse = true; gest.jump = true; jumpPress(); return; }
     e.preventDefault(); gest.id = e.pointerId; gest.y0 = e.clientY; gest.mouse = false; gest.duck = false;
-    const r = root.getBoundingClientRect(); gest.jump = mode === 'pt' || e.clientX > r.left + r.width / 2; if (gest.jump) jumpPress();
+    gest.jump = true; jumpPress(); // the whole scene jumps; Duck stays on its button and the swipe
   });
   root.addEventListener('pointermove', (e) => {
     if (e.pointerId !== gest.id || gest.mouse || gest.duck) return;

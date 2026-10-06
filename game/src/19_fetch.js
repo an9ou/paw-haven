@@ -84,3 +84,10 @@ function endFetch() {
   $('#fOk', p).onclick = () => { SFX.boop(700); closeModal(); };
 }
 
+
+/* v2.3 phone: the portrait-lock card pauses fetch; the ball in the air and the clock pick up where they stopped. */
+on('phone:lock', ({ on: locked }) => {
+  if (!F || F.ended || cur.mode !== 'fetch') return;
+  if (locked && !F.paused) { F.paused = true; F.pAt = performance.now(); cancelAnimationFrame(F.raf); }
+  else if (!locked && F.paused) { const now = performance.now(); F.paused = false; if (F.fly) F.fly.t0 += now - F.pAt; F.last = now; F.raf = requestAnimationFrame(fetchLoop); }
+});

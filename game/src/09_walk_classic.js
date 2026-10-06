@@ -278,3 +278,10 @@ function endWalk(complete) {
   SFX.fanfare();
 }
 
+
+/* v2.3 phone: the portrait-lock card pauses the classic walk (the runner module pauses itself on blur). */
+on('phone:lock', ({ on: locked }) => {
+  if (!W || W.ended || cur.mode !== 'walk' || !document.getElementById('holdBtn')) return;
+  if (locked && !W.paused) { W.paused = true; W.pAt = performance.now(); W.hold = false; cancelAnimationFrame(W.raf); }
+  else if (!locked && W.paused) { const now = performance.now(), d = now - W.pAt; W.paused = false; W.t = now; W.pauseUntil += d; W.hopUntil += d; if (W.skipAt) W.skipAt += d; W.raf = requestAnimationFrame(walkLoop); }
+});
