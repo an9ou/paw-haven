@@ -34,7 +34,7 @@ function renderDog(pose, facing = 'right', force) {
 }
 function setTemp(pose, ms) { tempPose = pose; tempUntil = performance.now() + ms; renderDog(pose); }
 function dogTo(tx, ty = 0, scale = 1, secs = 0.9) {
-  const p = $('#dogPos'); if (!p) return; phCamHome = phLandCx(430 * scale + tx); camTo(phCamHome, secs); p.style.transitionDuration = secs + 's';
+  const p = $('#dogPos'); if (!p) return; phCamHome = phLandCx(430 * scale + tx); if (!phPeekOn) camTo(phCamHome, secs); p.style.transitionDuration = secs + 's';
   p.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
 }
 function bowlArt(food) {
@@ -54,7 +54,7 @@ function enterYard() {
   setChrome(true, true);
   view.innerHTML = yardWorldSVG(); dogKey = ''; busy = false;
   renderDog(dogPoseNow()); setBowl(S.bowl || null);
-  phCamHome = phLandCx(430); clearTimeout(phPanT); cancelAnimationFrame(camRaf);
+  phCamHome = phLandCx(430); clearTimeout(phPanT); cancelAnimationFrame(camRaf); phPeekOn = false;
   camCx = phCamHome; camApply(camCx);
   if (S.sleeping) { dogTo(417.5, S.place === 'house' ? 130 : 140, 0.75, 0); showZzz(true); }
   updateHUD(); bindDev(); bindMess(); bindPack(); greetWalker(); drawFluff(); setTimeout(() => yardReaction(false), 700);
@@ -92,7 +92,7 @@ function enterYard() {
   emit('yard:enter', { place: S.place });
 }
 // v2.2 phone: swipe the yard or house sideways to look around (the camera crop is about half the scene). It eases back to the dog after a few seconds.
-let phCamHome = 430, phPanT = 0;
+let phCamHome = 430, phPanT = 0, phPeekOn = false; // phPeekOn: the look-right button holds the camera away from the dog
 // v2.3 phone: the Town Square easel and the Dog Park board sit left of the dog (world x 214+); keep them inside the crop
 function phLandCx(cx) {
   if (!isPhone() || (S.place !== 'square' && S.place !== 'dogpark')) return cx;
@@ -130,7 +130,7 @@ function phPeek() {
   const sync = () => { const r = right(); b.innerHTML = r ? '&lsaquo;' : '&rsaquo;'; b.setAttribute('aria-label', r ? 'Look back at the dog' : 'Look right'); };
   b.onclick = () => {
     SFX.click(); clearTimeout(phPanT);
-    if (right()) camTo(phCamHome, 0.6); else { camTo(phPeekCx(), 0.7); phPanT = setTimeout(() => { if (cur.mode === 'yard') camTo(phCamHome, 0.8); }, 8000); }
+    if (right()) { phPeekOn = false; camTo(phCamHome, 0.6); } else { phPeekOn = true; camTo(phPeekCx(), 0.7); phPanT = setTimeout(() => { phPeekOn = false; if (cur.mode === 'yard') camTo(phCamHome, 0.8); }, 8000); }
   };
   sync(); const iv = setInterval(sync, 250); onCleanup(() => clearInterval(iv));
 }
@@ -513,8 +513,8 @@ function sleepTray() {
   if (isPhone()) {
     const wasOpen = !!$('#napDet') && !$('#napDet').hidden;
     // v2.3 phone: a one-line strip (energy bar, info, Wake up) so the sleeping dog and the house stay in view; the details open on a tap
-    setTray(`${esc(NAME())} is napping`, `<p class="napdet" id="napDet" hidden style="margin:0">${info}</p>
-    <div class="walkctl napstrip"><button class="btn napinfo" id="napInfo" aria-label="Nap details" aria-expanded="false">?</button><div class="prog" aria-label="Energy"><i id="napBar" style="width:${S.stats.energy}%"></i></div><button class="btn yes" id="wakeBtn">Wake up</button></div>`, { mini: true });
+    setTray(`${esc(NAME())} is napping`, `<p class="napdet" id="napDet" hidden>${info}</p>
+    <div class="walkctl napstrip"><button class="btn napinfo" id="napInfo" aria-label="Nap details" aria-expanded="false">${ICON('sleep')}</button><div class="napmid"><span class="naplbl">${esc(NAME())} is napping</span><div class="prog" aria-label="Energy"><i id="napBar" style="width:${S.stats.energy}%"></i></div></div><button class="btn yes" id="wakeBtn">Wake up</button></div>`, { mini: true });
     $('#trayX').remove(); const t = $('#dock > .tray'); if (t) t.classList.add('nap');
     $('#napInfo').onclick = () => { const d = $('#napDet'), on = d.hidden; d.hidden = !on; $('#napInfo').setAttribute('aria-expanded', on ? 'true' : 'false'); dogTo(417.5, (S.place === 'house' ? 130 : 140) - (on ? 70 : 0), 0.75, 0.4); }; // the details card is taller: the sleeping dog lifts so it stays in view
     if (wasOpen) { $('#napDet').hidden = false; $('#napInfo').setAttribute('aria-expanded', 'true'); }

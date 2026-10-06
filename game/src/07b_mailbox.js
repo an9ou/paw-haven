@@ -206,7 +206,7 @@ function mailboxRefresh() {
 function jrAlbumFound() { jrFields(); return FAMILIES.map((f) => !!S.penpals[f.id]); }
 function jrMailTabs(album) {
   const n = jrAlbumFound().filter(Boolean).length;
-  return `<div class="tabs mbtabs" role="tablist"><button class="btn" role="tab" data-mbt="letters" aria-selected="${!album}">Letters</button><button class="btn" role="tab" data-mbt="album" aria-selected="${album}"><span class="mbt-ic">${iconOr('album', '<rect x="-14" y="-12" width="28" height="24" rx="3" fill="#FFF3D6" stroke="#5B3D32" stroke-width="2.2"/><path d="M-8 -6 h16 v10 h-16z" fill="#BFE3F5" stroke="#5B3D32" stroke-width="1.8"/>')}</span>Album ${n}/12</button></div>`;
+  return `<div class="tabs mbtabs" role="tablist"><button class="btn" role="tab" data-mbt="letters" aria-selected="${!album}"><span class="mbt-ic">${mailIcon()}</span>Letters</button><button class="btn" role="tab" data-mbt="album" aria-selected="${album}"><span class="mbt-ic">${iconOr('album', '<rect x="-14" y="-12" width="28" height="24" rx="3" fill="#FFF3D6" stroke="#5B3D32" stroke-width="2.2"/><path d="M-8 -6 h16 v10 h-16z" fill="#BFE3F5" stroke="#5B3D32" stroke-width="1.8"/>')}</span>Album ${n}/12</button></div>`;
 }
 function jrAlbum() {
   const found = jrAlbumFound(), n = found.filter(Boolean).length, real = artReal('prop', 'album', { found });

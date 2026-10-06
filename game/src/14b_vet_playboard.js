@@ -201,7 +201,7 @@ function playboardFB() {
 }
 const BOARD_AT = { x: 22, y: 262, w: 156, h: 114 }; // dog park: back-left, above the agility tent, clear of every pack spot and the bowl
 function playboardSVG() {
-  const real = artReal('prop', 'playboard'), B = isPhone() ? { x: 214, y: 286, w: 104, h: 76 } : BOARD_AT; // v2.3 phone: beside the dog, inside the camera crop
+  const real = artReal('prop', 'playboard'), B = isPhone() ? { x: 194, y: 318, w: 94, h: 69 } : BOARD_AT; // v2.3 phone: beside the dog, inside the camera crop
   const heads = (S && real ? [] : playboardDogs().map((n, i) => place(headSVG(n), 34 + i * 62 + 5, 70 + 5, 36, 36))).join('');
   const inner = real ? place(real, 0, 0, 300, 220) : place(playboardFB(), 0, 0, 300, 220) + heads;
   return `<g id="playboardG" class="hot" tabindex="0" role="button" aria-label="Playdate Board: meet today's dogs" transform="translate(${B.x} ${B.y}) scale(${(B.w / 300).toFixed(4)})"><rect width="300" height="220" fill="transparent"/>${inner}</g>`;

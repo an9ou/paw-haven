@@ -92,6 +92,9 @@ const SCAN = (sels) => {
       ok(await t.ev(() => !document.getElementById('napDet').hidden), `${tag} nap: a tap on ? opens the details`);
       await t.sleep(700); // the dog lifts while the details are open
       await check('nap details', ['#dogHit']);
+      const dc = await t.ev(() => { const a = document.getElementById('napDet').getBoundingClientRect(), d = document.getElementById('dogHit').getBoundingClientRect(), tr = document.querySelector('#dock > .tray').getBoundingClientRect(); return { over: !(a.right < d.left || a.left > d.right || a.bottom < d.top || a.top > d.bottom), h: tr.height, card: [a.top | 0, a.bottom | 0], dog: [d.top | 0, d.bottom | 0] }; });
+      ok(!dc.over, `${tag} nap details: the details card does not touch the dog's box ${JSON.stringify(dc)}`);
+      ok(dc.h <= 80, `${tag} nap details: the strip does not grow (${dc.h | 0}px)`);
       await t.p.tap('#napInfo'); await t.sleep(600);
       await t.p.tap('#wakeBtn'); await t.until(() => !document.getElementById('wakeBtn'));
 
@@ -159,6 +162,9 @@ const SCAN = (sels) => {
       ok(g.plots.every((p) => p[1] >= 0 && p[2] <= g.vh), `${tag} garden: plots 1-6 fit without scrolling ${JSON.stringify(g.plots.slice(3))} in ${g.vh}`);
       ok(g.info && g.info[1] <= g.vh, `${tag} garden: the plot card fits without scrolling ${JSON.stringify(g.info)} in ${g.vh}`);
       ok(g.cov.length === 0, `${tag} garden: no plot is covered ${g.cov.join(' | ')}`);
+      const gl = await t.ev(() => { const r = (s) => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); return [Math.round(b.top), Math.round(b.bottom)]; }; return { plots: r('.pg-plot:nth-child(6)'), info: r('.pg-info'), chips: r('.pg-chips'), hint: document.querySelector('.pg-hint').textContent, btns: [...document.querySelectorAll('.pg-info .pg-btn')].map((b) => b.textContent) }; });
+      ok(gl.info && gl.chips && gl.chips[0] >= gl.info[1], `${tag} garden: the weather chips sit below the plot card, not under it ${JSON.stringify(gl)}`);
+      ok(!/\([A-Z]\)/.test(gl.hint + gl.btns.join(' ')), `${tag} garden: no keyboard hints on phones "${gl.hint}" ${gl.btns.join(',')}`);
       // one-tap planting: tapping an empty plot opens the seed pouch, one tap on a seed plants it: planted, no separate dig step
       const before = await t.ev(() => document.querySelectorAll('.pg-plot .pg-crop svg, .pg-plot .pg-crop img').length);
       await t.p.locator('.pg-plot').nth(5).tap();
@@ -213,7 +219,7 @@ const SCAN = (sels) => {
   await run('phone_occl_home_desktop_settings', async (t) => {
     await t.newGame({ sex: 'girl' });
     await t.p.click('#gearBtn'); await t.until(() => !!document.getElementById('setReset')); await t.sleep(500);
-    const r = await t.ev(() => { const b = (s) => { const e = document.querySelector(s).getBoundingClientRect(); return [Math.round(e.top), Math.round(e.bottom)]; }; return { reset: b('#setReset'), title: b('#setTitle'), body: b('#modal .panel-body'), vh: innerHeight }; });
+    const r = await t.ev(() => { const b = (s) => { const e = document.querySelector(s).getBoundingClientRect(); return [Math.round(e.top), Math.round(e.bottom)]; }; return { reset: b('#setReset'), title: b('#setTitle'), body: b('#modal .panel'), vh: innerHeight }; });
     t.ok(r.reset[0] >= r.body[0] && r.reset[1] <= r.body[1] + 1 && r.reset[1] <= r.vh, `desktop settings: Reset save is visible without scrolling ${JSON.stringify(r.reset)} in ${r.vh}`);
     t.ok(r.title[0] >= r.body[0] && r.title[1] <= r.body[1] + 1 && r.title[1] <= r.vh, `desktop settings: Title screen is visible without scrolling ${JSON.stringify(r.title)}`);
   });
