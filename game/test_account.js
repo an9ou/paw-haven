@@ -135,6 +135,7 @@ run('account', async (t) => {
   async function device(devName, cfg) {
     const p = await t.mk(devName ? { device: devName } : {}); touch = !!devName;
     p.on('dialog', (d) => { dialogs.push(d.message()); d.dismiss().catch(() => {}); });
+    if (process.env.ACC_TRACE) p.on('pageerror', (e) => console.log('PAGEERROR', e.stack));
     if (cfg !== false) { await t.ctx.exposeBinding('__clSrv', (src, op, a) => srv.handle(src.page, op, a)); await t.ctx.addInitScript(mockInit, cfg || {}); srv.pages.add(p); }
     await p.goto(URL); await p.waitForSelector('#tNew, #tContinue, #tGuest');
     return p;
@@ -231,23 +232,68 @@ run('account', async (t) => {
   await t.SH('desk_07_login_continue');
   let cont = false; for (let k = 0; k < 4 && !cont; k++) { await tap('#tContinue').catch(() => {}); cont = await t.untilMode('yard', 3000); }
   ok(cont, 'Continue goes to the yard'); await t.calm(); await t.lu();
+  await t.until(() => (window.__barkLog || []).some((b) => b.kind === 'whine'), null, 4000); // the greeting (a bark, then a whine 0.7 s later) is over
 
-  sec('desktop: Switch while signed in: a second account (fresh sign-up) and back to guest');
+  sec('desktop: Switch while signed in: a second account starts fresh, and A\'s last change reaches A first');
+  const settled = () => t.until(() => !window.__pawCloud.CL.timer && !window.__pawCloud.CL.busy, null, 8000);
   await ev(() => window.__paw.go('title')); await d2.waitForSelector('#tSwitch');
   await tap('#tSwitch'); await sheetOpen();
-  ok(/signed in as m…@example\.com/.test(await ev(() => document.querySelector('.acwho').textContent)) && /A new account/.test(await ev(() => document.getElementById('acReg').textContent)) && /Log out/.test(await ev(() => document.getElementById('acGuest').textContent)), 'the choices say who is signed in and what each one does');
+  ok(/signed in as m…@example\.com/.test(await ev(() => document.querySelector('.acwho').textContent)) && /A second account/.test(await ev(() => document.getElementById('acReg').textContent)) && /Log out/.test(await ev(() => document.getElementById('acGuest').textContent)), 'the choices say who is signed in and what each one does');
   await t.SH('desk_08_switch_account');
-  await tap('#acReg'); await d2.waitForSelector('#acPw2'); await form('reg', 'second@example.com', 'second123');
-  ok(await t.until((g) => window.__pawCloud.CL.regPath === 'signUp' && window.__pawCloud.CL.uid !== g && !window.__pawCloud.CL.anon, g1, 6000), 'a new account is made with signUp (updateUser would rename the first one) ' + await diag());
+  await tap('#acReg'); await d2.waitForSelector('#acPw2');
+  ok(/fresh start/.test(await ev(() => document.querySelector('.aclead').textContent)), 'the form says the new account starts fresh');
+  await change({ coins: 6060 }); // A's last change, its push still waiting
+  await form('reg', 'second@example.com', 'second123');
+  ok(await t.until((g) => window.__pawCloud.CL.regPath === 'signUp' && window.__pawCloud.CL.uid !== g && !window.__pawCloud.CL.anon && window.__paw.mode === 'adopt', g1, 6000), 'a new account is made with signUp, straight to adoption ' + await diag());
   const a2 = await uid();
+  ok(srv.saves[g1].data.coins === 6060, 'A\'s last change reached A before the switch');
+  ok(!srv.saves[a2] && !srv.backups.some((b) => b.user_id === a2), 'nothing of A\'s game went into the new account');
   ok(srv.users.find((u) => u.id === g1).email === 'mochi@example.com', 'the first account keeps its email');
-  ok(await synced() && srv.saves[a2] && srv.saves[a2].data.dogs[0].name === name1, 'the game on this device becomes the new account\'s save');
+  await ev(() => window.__paw.go('title')); await d2.waitForSelector('#tNew'); await t.adopt({ sex: 'boy' });
+  ok(await synced() && !!srv.saves[a2], 'the new dog is saved to the new account');
+  const dogA2 = srv.saves[a2].data.dogs[0].id, ofA2 = (b) => b.data && b.data.dogs && b.data.dogs[0].id === dogA2;
+  await ev(() => window.__paw.go('title')); await d2.waitForSelector('#tSwitch');
   ok(/^Signed in as s…@example\.com Switch$/.test(await line()), 'title: Signed in as s…@example.com');
+
+  sec('desktop: Play as guest from an account: the last change reaches the account, the game never reaches the guest');
+  await change({ coins: 7070 }); const lp0 = await ev(() => window.__pawCloud.CL.lastPull);
   await tap('#tSwitch'); await sheetOpen(); await tap('#acGuest'); await d2.waitForSelector('.confirm .yes');
   await tap('.confirm .no'); ok((await uid()) === a2, 'Stay keeps the account');
   await tap('#acGuest'); await d2.waitForSelector('.confirm .yes'); await tap('.confirm .yes');
   ok(await t.until((a) => !!window.__pawCloud.CL.uid && window.__pawCloud.CL.anon && window.__pawCloud.CL.uid !== a && document.getElementById('modal').hidden, a2, 6000), 'Play as guest logs out and starts a guest');
+  const gst = await uid();
+  ok(srv.saves[a2].data.coins === 7070, 'log out sends the account\'s last change to the account first');
+  ok(await t.until((l) => window.__pawCloud.CL.lastPull > l, lp0, 6000) && await settled(), 'the guest\'s first pull ran');
+  ok(!srv.saves[gst] && !srv.backups.some((b) => b.user_id === gst), 'the account\'s game is not copied into the guest\'s cloud');
   ok(!!(await d2.locator('#tContinue').count()) && /^Playing as guest Log in$/.test(await line()), 'the game stays on this device: Continue + "Playing as guest"');
+  await change({ coins: 7171 }); await t.sleep(300); ok(await settled() && !srv.saves[gst], 'playing on as a guest never pushes it either');
+  ok((await ev(() => window.__pawCloud.status().text)) === 'Saved on this device', 'status: Saved on this device (not stuck on Syncing)');
+
+  sec('desktop: after a log out, log in as B: the old account\'s game never lands in B');
+  const bkB = srv.backups.length;
+  await tap('#tSwitch'); await sheetOpen(); await tap('#acLogin'); await form('login', 'mochi@example.com', 'pupper123');
+  ok(await t.until((n) => document.getElementById('modal').hidden && !!document.getElementById('tContinue') && window.__paw.S && window.__paw.S.dog.name === n, name1, 8000), 'B\'s save is what\'s played');
+  ok(!srv.backups.slice(bkB).some(ofA2) && srv.saves[g1].data.dogs[0].id !== dogA2, 'no backup and no save of the old account\'s game in B');
+  await ev(() => window.__pawCloud.open()); await d2.waitForSelector('[data-cl=logout]'); await tap('[data-cl=logout]'); await d2.waitForSelector('.confirm .yes'); await tap('.confirm .yes');
+  ok(await t.until(() => !window.__pawCloud.CL.uid, null, 6000), 'Settings: Log out'); await t.closeX();
+  ok((await choices()).length === 3, 'after a log out the title offers the three choices');
+  srv.users.push({ id: 'uD', email: 'dot@example.com', password: 'dot123456' });
+  await tap('#tLogin'); await sheetOpen(); await form('login', 'dot@example.com', 'dot123456');
+  ok(await t.untilMode('adopt', 6000) && (await uid()) === 'uD', 'an account with no save: adoption, not B\'s dogs');
+  ok(!srv.saves.uD && !srv.backups.some((b) => b.user_id === 'uD') && !(await ev(() => localStorage.getItem('pawhaven_proto_v1'))), 'B\'s game left this device and never reached D');
+
+  sec('desktop: after a log out, Settings -> Make an account does not take the old account\'s game');
+  const d2b = await device(null); t.p = d2b;
+  await tap('#tLogin'); await sheetOpen(); await form('login', 'second@example.com', 'second123');
+  ok(await t.until(() => !!document.getElementById('tContinue') && document.getElementById('modal').hidden, null, 8000), 'signed in to the second account, its game loaded');
+  await ev(() => window.__pawCloud.open()); await d2b.waitForSelector('[data-cl=logout]'); await tap('[data-cl=logout]'); await d2b.waitForSelector('.confirm .yes'); await tap('.confirm .yes');
+  await t.until(() => !window.__pawCloud.CL.uid, null, 6000);
+  await tap('[data-cl=reg]'); await d2b.waitForSelector('#clPw2');
+  await d2b.fill('#clEmail', 'eve@example.com'); await d2b.fill('#clPw', 'eve123456'); await d2b.fill('#clPw2', 'eve123456'); await tap('[data-cl=doReg]');
+  ok(await t.until(() => !!window.__pawCloud.CL.uid && !window.__pawCloud.CL.anon && window.__paw.mode === 'title' && document.getElementById('modal').hidden, null, 6000), 'the account is made and the title opens');
+  const aE = await uid(); await settled();
+  ok(!srv.saves[aE] && !srv.backups.some((b) => b.user_id === aE) && !(await ev(() => localStorage.getItem('pawhaven_proto_v1'))), 'the old account\'s game stayed with it: not in the new account, not on this device');
+  ok(!!(await d2b.locator('#tNew').count()) && !(await d2b.locator('#tContinue').count()), 'the title offers New game');
 
   sec('desktop: log in to an account with no save goes to adoption');
   srv.users.push({ id: 'uEmpty', email: 'empty@example.com', password: 'biscuit12' });
@@ -271,7 +317,7 @@ run('account', async (t) => {
   await t.p.waitForSelector('#modal .panel.acct[data-ready] #acEmail'); await t.p.fill('#acEmail', 'fallback@example.com'); await t.p.fill('#acPw', 'fallback1'); await t.p.fill('#acPw2', 'fallback1');
   await change({ coins: 4242 }); const up5 = srv.count(d5, 'saves.upsert'); await tap('#acGo'); // a guest push is waiting (2 s) when the switch starts
   ok(await t.until((g) => window.__pawCloud.CL.regPath === 'signUp' && window.__pawCloud.CL.uid !== g, g5, 6000), 'the signUp fallback runs');
-  const a5 = await uid(); await t.sleep(2600);
+  const a5 = await uid(); ok(await t.until(() => !window.__pawCloud.CL.timer && !window.__pawCloud.CL.busy, null, 6000), 'the waiting guest push was cancelled, nothing in flight');
   ok(srv.saves[a5] && srv.saves[a5].data.coins === 4242, 'the newest game lands on the new account');
   ok(srv.saves[g5].data.coins === coins5 && srv.count(d5, 'saves.upsert') === up5 + 1, `the waiting guest push never runs (guest row kept, ${srv.count(d5, 'saves.upsert') - up5} push)`);
   srv.confirmEmailChange = false;
