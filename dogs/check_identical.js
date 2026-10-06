@@ -23,9 +23,12 @@ const POSES=['idle','happy','pet','eat','sleep','walk','jump','sit','sad','dirty
 const OUTS=[['head','Party Hat'],['head','Flower Crown'],['head','Acorn Cap'],['head','Rain Hat'],['head','Pom-pom Beanie'],['eyes','Heart Sunglasses'],['eyes','Explorer Goggles'],
  ['neck','Red Bandana'],['neck','Bow Tie'],['neck','Seashell Necklace'],['neck','Clover Collar'],['neck','Rainbow Collar'],
  ['body','Yellow Raincoat'],['body','Knit Winter Sweater'],['body','Superhero Cape'],['body','Mossy Poncho'],['body','Frog Raincoat'],['body','Polka-dot Raincoat'],['body','Bubble Raincoat']];
+// v2.4 outfits already merged into the reference and not under change (env CHANGING='Name,Name' leaves some out)
+const CHG=(process.env.CHANGING||'Astronaut Helmet,Cozy Hoodie,Happi Coat,Tutu').split(',');
+[['head','Chef Hat'],['head','Wizard Hat'],['head','Sun Hat'],['head','Cowboy Hat'],['head','Astronaut Helmet'],['neck','Sailor Collar'],['neck','Knit Scarf'],['body','Happi Coat'],['body','Bumblebee Suit'],['body','Cozy Hoodie'],['body','Tutu'],['body','Pyjamas']].forEach(o=>{if(!CHG.includes(o[1]))OUTS.push(o)});
 const outfits=[null,...OUTS.map(([sl,n])=>({[sl]:n})),
  {head:'Party Hat',eyes:'Heart Sunglasses',neck:'Red Bandana',body:'Superhero Cape'},{head:'Rain Hat',body:'Frog Raincoat',neck:'Clover Collar',eyes:'Explorer Goggles'},
- {body:'Yellow Raincoat',sleepwear:true},{sleepwear:true},{head:'Nope',body:'Banana Suit'}];
+ {body:'Yellow Raincoat',sleepwear:true},{sleepwear:true},{body:'Pyjamas',sleepwear:true},{head:'Wizard Hat',neck:'Knit Scarf',body:'Bumblebee Suit'},{head:'Nope',body:'Banana Suit'}];
 let n=0,bad=[];
 const cmp=(lab,f)=>{n++;let a,b;try{a=f(OLD)}catch(e){a='ERR '+e.message}try{b=f(NEW)}catch(e){b='ERR '+e.message}if(a!==b&&bad.length<4000)bad.push(lab)};
 const AGES=[null,'puppy','newborn'];
