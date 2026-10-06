@@ -37,3 +37,5 @@ html[data-layout="phone"] .ms-prize p{font-size:15px}
 html[data-layout="phone"] #stage:has(#dock > .tray:not(.dock-idle):not(.mini)) #msCardG{visibility:hidden}
 /* v2.4 SHOP: the food safety tip line in shop cards, in ink for contrast (about 9:1 on cream) */
 .sitem .sh-tip{color:var(--ink,#5B3D32)}
+/* v2.4 SHOP: the Lighthouse Kennel's lamp beam and glow shine only at night (03_yard toggles #houseG.night from isNight()) */
+#houseG:not(.night) .pa-wb-glow{display:none}

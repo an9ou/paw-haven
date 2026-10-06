@@ -4,7 +4,7 @@ let dogKey = '', tempPose = null, tempUntil = 0, busy = false, pet = { start: 0,
 function yardWorldSVG(extra = '') {
   return `<svg class="world" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMax slice">
     ${sceneG(S.place || 'yard', S.place === 'yard' ? { patch: gkOn() ? patchState() : 'empty' } : S.place === 'house' && hasBedArt() ? { bed: false } : {})}${S.place === 'yard' && !gkOn() ? '<g class="soon-tag" pointer-events="none" transform="translate(112 432) rotate(-6)"><rect x="-58" y="-17" width="116" height="30" rx="6" fill="#FFF3B8" stroke="#5B3D32" stroke-width="2"/><text y="6" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="22" fill="#5B3D32">coming soon</text></g>' : ''}${bedLayers().back}<g id="messG"></g><g id="snowmanG">${S.place === 'yard' ? snowmanSVG() : ''}</g>${S.place === 'yard' && cur.mode === 'yard' && typeof msYardSVG === 'function' ? msYardSVG() : ''}${S.place === 'yard' ? hmDecorSVG() : ''}
-    ${S.place === 'yard' ? `<g id="houseG" class="hot" tabindex="0" role="button" aria-label="Dog house: ${esc(S.house)}">${place(art('house', S.house), 620, 330, 240, 200)}</g>` : ''}
+    ${S.place === 'yard' ? `<g id="houseG" class="hot${isNight() ? ' night' : ''}" tabindex="0" role="button" aria-label="Dog house: ${esc(S.house)}">${place(art('house', S.house), 620, 330, 240, 200)}</g>` : ''}
     <g id="bowlG" class="hot" tabindex="0" role="button" aria-label="Food bowl">${place(art('prop', 'bowl-empty'), 205, 462, 90, 90)}</g>
     <g id="pack">${packSVG()}</g><g id="dogPos"><g id="dogFx"><g id="dogArt"></g><rect id="dogHit" x="${DX + 30}" y="${DY + 40}" width="${DW - 60}" height="${DH - 40}" fill="transparent" pointer-events="all" class="hot" tabindex="0" role="button" aria-label="Pet the dog"/></g><g id="fluffFx" pointer-events="none"></g></g>${bedLayers().front}
     ${S.place === 'yard' && S.mapPieces.length >= 4 && !S.secretDug ? `<g id="secretX" class="hot" tabindex="0" role="button" aria-label="Secret dig: X marks the spot"><rect x="585" y="452" width="150" height="140" fill="transparent"/>${place(artReal('collectible', 'dig') || art('collectible', 'dig'), 615, 495, 90, 90)}<text x="660" y="488" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="26" fill="#5B3D32">X marks the spot!</text></g>` : ''}
@@ -576,7 +576,7 @@ function switchHouse(n) {
   if ((HOUSE_CAP[n] || 1) < S.dogs.length) { nope(`The ${n} only fits ${HOUSE_CAP[n] || 1}. You have ${S.dogs.length} dogs, and nobody is getting left out.`); return; }
   S.house = n; markDirty(); trackAct('house', { name: n }); SFX.thud(); setTimeout(() => SFX.boop(700), 150);
   toast(`${NAME()} moved into the ${n}. ${PICK(['Sniffed every corner.', 'Approves. Mostly.', 'Already shed on it.'])}`, 'good');
-  if (cur.mode === 'yard') { const g = $('#houseG'); if (g) { g.innerHTML = place(art('house', n), 620, 330, 240, 200); g.setAttribute('aria-label', 'Dog house: ' + n); } if (S.sleeping) sleepTray(); }
+  if (cur.mode === 'yard') { const g = $('#houseG'); if (g) { g.innerHTML = place(art('house', n), 620, 330, 240, 200); g.setAttribute('aria-label', 'Dog house: ' + n); shHouseNight(); } if (S.sleeping) sleepTray(); }
 }
 
 
@@ -585,7 +585,9 @@ function bindSceneHots() {
   if (S.place === 'market') hotify($('svg.world', view), '#sceneG [data-shop]', 'data-shop', (k) => openShop(k), (k) => 'Enter ' + (SHOP_NAME[k] || k));
   hotify($('svg.world', view), '#sceneG [data-hot]', 'data-hot', (k) => ({ garden: openGarden, kitchen: openKitchen, notice: squareNotice, 'cafe-menu': cafeMenu, 'vet-desk': vetCheck, 'salon-chair': salonGroom }[k] || (() => {}))(), (k) => 'Open the ' + k);
 }
-on('scene:redraw', () => { if (cur.mode === 'yard' && $('svg.world', view)) bindSceneHots(); });
+on('scene:redraw', () => { if (cur.mode === 'yard' && $('svg.world', view)) { bindSceneHots(); shHouseNight(); } });
+// v2.4: house lamps (the Lighthouse Kennel's beam, .pa-wb-glow) only shine at night
+function shHouseNight() { const g = $('#houseG'); if (g) g.classList.toggle('night', isNight()); }
 
 /* ======================= v2.1 HOME: yard decorations (S.decor) ======================= */
 // at = world x, y, w, h (1000x600 scene). Spots avoid the dog tap box, the mailbox, both doors and the nursery basket.
