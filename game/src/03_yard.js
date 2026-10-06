@@ -228,9 +228,9 @@ function placeAmbient() {
   if (S.place === 'river' && Math.random() < 0.6) { say(PICK(DUCK_LINES), h.x, h.y); SFX.honk(); return; }
   if (S.place === 'dogpark' && Math.random() < 0.8) { const k = PICK(dogsList().filter((d) => d.key !== S.dog.key)).key; SFX.bark(BARK[k] || 1); toast(`A ${dogInfo(k).breed} zooms past: "${PICK(NPC_JOKES)}" (+2 Happiness)`, 'good'); addStat('happy', 2); alertBark(); return; }
   if (S.place === 'hilltop' && weatherNow() === 'sunny' && Math.random() < 0.6) { kiteWatch(); return; }
-  if (S.place === 'pier' && Math.random() < 0.5) { say(PICK(['A seagull is staring at my snacks. I am staring back.', 'The sea is very big. I approve.', 'Boats! Floating houses for fish.']), h.x, h.y); if (isPhone()) townBubbleBelowDog(); return; }
+  if (S.place === 'pier' && Math.random() < 0.5) { say(PICK(['A seagull is staring at my snacks. I am staring back.', 'The sea is very big. I approve.', 'Boats! Floating houses for fish.']), h.x, h.y); townBubbleBelowDog(); return; }
   if (S.place === 'park' && Math.random() < 0.5) { const k = PICK(dogsList().filter((d) => d.key !== S.dog.key)).key; SFX.bark(BARK[k] || 1); toast(`A friendly ${dogInfo(k).breed} trots by: "${PICK(NPC_JOKES)}" (+2 Happiness)`, 'good'); addStat('happy', 2); alertBark(); return; }
-  const l = (PLACE_LINES[S.dog.key] || PLACE_LINES.mutt)[S.place]; if (l) { say(l, h.x, h.y); if (S.place === 'pier' && isPhone()) townBubbleBelowDog(); }
+  const l = (PLACE_LINES[S.dog.key] || PLACE_LINES.mutt)[S.place]; if (l) { say(l, h.x, h.y); if (S.place === 'pier') townBubbleBelowDog(); }
 }
 function beachDig() {
   dailyCheck(); if (S.daily.beachDig) { nope('One beach dig a day. The sand needs to recover. (It does not.)'); return; }
