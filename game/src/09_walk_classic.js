@@ -180,7 +180,7 @@ function walkLoop(now) {
       if (W.found) return;
       if (W.digsLeft <= 0) { if (!W.outOfDigsSaid) { W.outOfDigsSaid = true; sayW('Out of digs. The nose sighs.', W.dogX + 40, 160, 1800); } return; }
       W.digWait = o; W.skipAt = now + 300; $('#digBtn').disabled = false;
-      sayW(`Dig here? ${W.digsLeft} dig${W.digsLeft > 1 ? 's' : ''} left. (Dig! or D to dig, hold walk to skip.)`, W.dogX + 40, 160, 3000); SFX.boop(440);
+      sayW(`Dig here? ${W.digsLeft} dig${W.digsLeft > 1 ? 's' : ''} left. ${isPhone() ? '(Tap Dig! to dig, hold walk to skip.)' : '(Dig! or D to dig, hold walk to skip.)'}`, W.dogX + 40, 160, 3000); SFX.boop(440);
     }
   });
   if (S.stats.energy <= 0 && !W.ended) { toast(`${NAME()} is out of puff. Heading home.`, 'bad'); endWalk(false); return; }
@@ -247,6 +247,11 @@ function meetNpc(o, i) {
   if (dressed) { const c = 3 + (S.outfit.neck === 'Bow Tie' ? 2 : 0); W.coins += c; line = PICK(['Love the outfit. Here, have some coins.', 'Fancy! Is that designer?', 'Wow. Stylish. Take my money.']); setTimeout(() => toast(`Compliment! +${c * BOOST.coins} coins.`, 'gold'), 400); }
   sayW(line, o.x - W.dist - 60, 150, 2600);
 }
+/* v2.3 walkfetch: results tiles. A tile whose number is zero is left out; an all-zero sheet gets one kind line instead of an empty grid. Each row is [shown, label, number]. */
+function wfTiles(rows, cls) {
+  const on = rows.filter((r) => Math.round(+r[2]) !== 0);
+  return on.length ? `<div class="${cls}">${on.map((r) => `<div class="res"><div class="v">${r[0]}</div><div class="k">${r[1]}</div></div>`).join('')}</div>` : '<p class="small wf-nil">Just a stroll. Nothing to count, all good.</p>';
+}
 function endWalk(complete) {
   if (!W || W.ended) return; W.ended = true; pottyWalked(); cancelAnimationFrame(W.raf);
   const R = W.R, frac = complete ? 1 : Math.min(1, W.dist / (R.secs * SPEED));
@@ -271,7 +276,7 @@ function endWalk(complete) {
   const extra = W.extra.length ? `<p class="small">Also found on the path: ${W.extra.map((e) => esc(e.item.n) + (e.dup ? ' (sold, duplicate)' : '')).join(', ')}.</p>` : '';
   const junk = W.junk.length ? `<p class="small">Junk dug up (turned into coins): ${W.junk.map((k) => k === 'junk-sock' ? 'a sock' : 'a rock').join(', ')}.</p>` : '';
   const p = openModal(L ? `<span class="hl">Treasure found: ${esc(R.n)}</span>` : (complete ? `Walk complete: ${esc(R.n)}` : `Walk cut short: ${esc(R.n)}`), `${tre}${extra}${junk}
-    <div class="results compact"><div class="res"><div class="v">+${coins}</div><div class="k">Paw Coins${penny > 1 ? ' (Penny +10%)' : ''}</div></div><div class="res"><div class="v">+${happy}</div><div class="k">Happiness</div></div><div class="res"><div class="v">+${bond}</div><div class="k">Bond points</div></div><div class="res"><div class="v">-${energy}</div><div class="k">Energy</div></div><div class="res"><div class="v">${cleanLoss + W.clean ? '-' + (cleanLoss + W.clean) : '0'}</div><div class="k">Cleanliness</div></div></div>`,
+    ${wfTiles([[`+${coins}`, `Paw Coins${penny > 1 ? ' (Penny +10%)' : ''}`, coins], [`+${happy}`, 'Happiness', happy], [`+${bond}`, 'Bond points', bond], [`-${energy}`, 'Energy', energy], [cleanLoss + W.clean ? '-' + (cleanLoss + W.clean) : '0', 'Cleanliness', cleanLoss + W.clean]], 'results compact')}`,
     { cls: 'celebrate', foot: `${L && L.item && !L.dup ? '<button class="btn" id="resJournal">Open Journal</button>' : ''}<button class="btn yes big" id="resOk">${L && L.item && !L.dup ? 'Add to Journal' : 'Back to ' + esc((PLACES[S.place] || PLACES.yard).n)}</button>`, onClose: () => go('yard') });
   $('#resOk', p).onclick = () => { SFX.boop(700); closeModal(); };
   const rj = $('#resJournal', p); if (rj) rj.onclick = () => { modalClose = null; closeModal(); go('yard'); setTimeout(() => openJournal('treasures'), 300); };

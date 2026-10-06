@@ -10,7 +10,7 @@ function enterFetch(toy) {
   updateHUD(); bindDev();
   dock.innerHTML = `<div class="tray"><div class="tray-h"><h3>Fetch with the ${esc(toy)}</h3><button class="xbtn" id="fQuit" aria-label="Stop fetch">x</button></div>
     <div class="walkctl"><span>Catches: <b id="fScore">0</b></span><span>Time: <b id="fTime">35</b>s</span><div class="prog"><i id="fBar" style="width:100%"></i></div></div>
-    <p class="small" style="margin:0">Tap the grass to throw. Tap again (or Space) when the pink ring meets the dashed one.</p></div>`;
+    <p class="small" style="margin:0">Tap the grass to throw. ${isPhone() ? 'Tap again when the pink ring meets the dashed one.' : 'Tap again (or Space) when the pink ring meets the dashed one.'}</p></div>`;
   $('#fQuit').onclick = () => endFetch();
   const svg = $('svg.world', view);
   svg.addEventListener('pointerdown', (e) => { SFX.init(); e.preventDefault(); if (F.fly) catchTry(); else { const w = toWorld(svg, e.clientX, e.clientY); throwTo(w.x, w.y); } });
@@ -70,7 +70,7 @@ function fetchLoop(now) {
   F.raf = requestAnimationFrame(fetchLoop);
 }
 function endFetch() {
-  if (!F || F.ended) return; F.ended = true; cancelAnimationFrame(F.raf);
+  if (!F || F.ended) return; F.ended = true; cancelAnimationFrame(F.raf); toasts.innerHTML = ''; // a toast from before the game must not linger over the results
   const golden = S.dog.key === 'golden' ? 1.25 : 1;
   const coins = F.coins ? addCoins(F.coins * golden) : 0;
   const key = 'toyAt_' + F.toy, full = !S[key] || S.gameMin - S[key] >= 10; S[key] = S.gameMin;
@@ -80,7 +80,7 @@ function endFetch() {
   if (F.throws) dailyCare('play');
   markDirty();
   const p = openModal('Fetch results', `<p>${F.score >= 6 ? `${esc(NAME())} is a fetch legend. Statues are being considered.` : F.score >= 3 ? `Solid fetching. ${esc(NAME())} would rate you 7/10.` : `${esc(NAME())} has questions about your throwing arm.`}</p>
-    <div class="results"><div class="res"><div class="v">${F.score}</div><div class="k">Catches (${F.great} great)</div></div><div class="res"><div class="v">+${coins}</div><div class="k">Paw Coins${golden > 1 ? ' (Golden +25%)' : ''}</div></div><div class="res"><div class="v">+${happy}</div><div class="k">Happiness</div></div><div class="res"><div class="v">+${bond}</div><div class="k">Bond points</div></div></div>${full ? '' : '<p class="small">Fetch again so soon is less exciting. Wait 10 game minutes for full rewards.</p>'}`, { cls: 'celebrate', foot: '<button class="btn yes big" id="fOk">Back home</button>', onClose: () => go('yard') });
+    ${wfTiles([[F.score, `Catches (${F.great} great)`, F.score], [`+${coins}`, `Paw Coins${golden > 1 ? ' (Golden +25%)' : ''}`, coins], [`+${happy}`, 'Happiness', happy], [`+${bond}`, 'Bond points', bond]], 'results')}${full ? '' : '<p class="small">Fetch again so soon is less exciting. Wait 10 game minutes for full rewards.</p>'}`, { cls: 'celebrate', foot: '<button class="btn yes big" id="fOk">Back home</button>', onClose: () => go('yard') });
   $('#fOk', p).onclick = () => { SFX.boop(700); closeModal(); };
 }
 

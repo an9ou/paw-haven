@@ -92,14 +92,14 @@
 #stage.slimhud #hud{justify-content:space-between;min-height:52px}
 .routes{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;padding:14px 0 16px;background:radial-gradient(var(--dot) 1.1px,transparent 1.6px) 0 0/22px 22px,var(--paper);overflow:hidden}
 .rt-title{margin:0 0 6px;font-family:var(--font-hand);font-size:40px;line-height:1}
-.rt-viewport{position:relative;width:100%;flex:1;min-height:0;overflow:hidden;touch-action:pan-y;cursor:grab}
+.rt-viewport{position:relative;width:100%;flex:1;min-height:0;overflow:hidden;container-type:size;touch-action:pan-y;cursor:grab}
 .rt-track{position:absolute;top:8px;left:0;display:flex;gap:36px;transition:transform .45s cubic-bezier(.3,.7,.3,1)}
 .rt-card{width:580px;flex:none;padding:14px 16px 12px;border-radius:13px 9px 15px 8px;opacity:.55;transform:scale(.86) rotate(-1deg);transition:transform .45s,opacity .45s;--wash:var(--paper);
   background:var(--fr-card) 0 0/100% 100% no-repeat,var(--hatch) var(--ins),linear-gradient(var(--wash),var(--wash)) var(--ins)}
 .rt-card.cur{opacity:1;transform:scale(1) rotate(0)}
 .rt-card.locked{--wash:#F3ECE1}
 .rt-card.locked .rt-prev svg{filter:grayscale(.85) opacity(.6)}
-.rt-prev{position:relative;height:262px;border-radius:10px;overflow:hidden;border:2px solid #5B3D32}
+.rt-prev{position:relative;height:min(262px,max(90px,calc(100cqh - 165px)));border-radius:10px;overflow:hidden;border:2px solid #5B3D32}
 .rt-prev svg{width:100%;height:100%;display:block}
 .rt-lock{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-8deg);font-size:24px;background:rgba(255,251,243,.9)}
 .rt-card h3{margin:8px 0 2px;font-family:var(--font-hand);font-weight:700;font-size:34px;line-height:1}
