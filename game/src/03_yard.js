@@ -149,11 +149,12 @@ function phPeekCx() { // the world x at the middle of the right-half prop (house
 }
 function phPeek() {
   const svg0 = $('#view > svg.world'), vw = view.clientWidth, vh = view.clientHeight; if (!svg0 || !vw || !vh) return;
-  const b = document.createElement('button'); b.type = 'button'; b.className = 'btn ph-peek'; b.id = 'phPeek'; view.appendChild(b);
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'iconbtn ph-peek'; b.id = 'phPeek'; view.appendChild(b);
+  b.innerHTML = '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M19 12 Q29 22 31 24 Q28 28 19 36" fill="none" stroke="#5B3D32" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 11 Q31 21 33 24" fill="none" stroke="#F28FA5" stroke-width="2" stroke-linecap="round" opacity=".7"/></svg>';
   const right = () => camCx > phCamHome + 80;
-  const sync = () => { const r = right(); b.innerHTML = r ? '&lsaquo;' : '&rsaquo;'; b.setAttribute('aria-label', r ? 'Look back at the dog' : 'Look right'); };
+  const sync = () => { const r = right(); b.classList.toggle('back', r); b.setAttribute('aria-label', r ? 'Look back at the dog' : 'Look right'); };
   const back = () => { phPeekOn = false; clearTimeout(phPanT); camTo(phCamHome, 0.6); };
-  b.onclick = () => { SFX.click(); clearTimeout(phPanT); if (right()) back(); else { phPeekOn = true; camTo(phPeekCx(), 0.7); } };
+  b.onclick = () => { SFX.click(); clearTimeout(phPanT); if (right()) back(); else { phPeekOn = true; hideBubble(); camTo(phPeekCx(), 0.7); } };
   // the view stays where the player put it (they may be reading a board): it goes back on their next tap on the scene, or when the dog walks (dogTo)
   svg0.addEventListener('pointerdown', (e) => { if (phPeekOn && !e.target.closest('.hot, [data-hot], [data-shop]')) back(); }, true);
   sync(); const iv = setInterval(sync, 250); onCleanup(() => clearInterval(iv));

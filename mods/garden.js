@@ -385,7 +385,7 @@
     '.pg-portrait .pg-chip{font-size:17px;max-width:280px}',
     '.pg-portrait .pg-info{left:8px;right:8px;top:464px;width:auto}',
     '.pg-portrait .pg-dogw{left:4px;top:700px;width:118px;height:98px}',
-    '.pg-portrait .pg-bubble{left:6px;bottom:auto;top:calc(var(--pg-sy,0px) + 142px - var(--pg-dogtop,880px));max-width:300px}',
+    '.pg-portrait .pg-bubble{left:124px;bottom:auto;top:0;max-width:270px}',
     '.pg-portrait .pg-drops{left:36px;right:auto;top:2px;bottom:auto;transform:none}',
     '.pg-portrait .pg-tag{top:56px;left:50%;transform:translateX(-50%) rotate(-2deg)}',
     '.pg-portrait .pg-pouch{left:8px;right:8px;top:calc(184px + var(--pg-sy,0px));width:auto;max-height:calc(var(--pg-vh,700px) - 196px);overflow-y:auto}',
@@ -815,7 +815,7 @@
       if (tool === 'seeds' && armed) { if (!p.crop) return tryPlant(i, armed); }
       if (isReady(p)) return doHarvest(i);
       if (!p.crop) return openPouch(i);
-      if (p.water === 0) say('Plot ' + (i + 1) + ' looks thirsty. The Watering Can helps (W).', 2600);
+      if (p.water === 0) say('Plot ' + (i + 1) + ' looks thirsty. The Watering Can helps' + (PORT ? '.' : ' (W).'), 2600);
     }
     function toolClick(t) {
       if (closed || modal) return;

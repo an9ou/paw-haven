@@ -88,3 +88,7 @@ html[data-layout="phone"] .panel.birth .panel-body{overflow-x:hidden}
 
 /* v2.3: every sex symbol inside a sheet (nursery pups, litter and birth cards) is at least 15 px */
 html[data-layout="phone"] #modal .sex{font-size:max(1em,17px);font-weight:900;-webkit-text-stroke:.6px currentColor}
+
+/* v2.3 nursery foot: the buttons share one width (their wash used to spill past the border at mismatched widths) */
+html[data-layout="phone"] .panel.nursery .foot{flex-direction:column;align-items:stretch;gap:10px}
+html[data-layout="phone"] .panel.nursery .foot .btn{width:100%;box-sizing:border-box;margin:0}

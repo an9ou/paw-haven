@@ -27,8 +27,10 @@ html[data-layout="phone"] .tray.nap .napinfo{flex:none;width:44px;min-height:44p
 html[data-layout="phone"] .tray.nap .napinfo svg{width:30px;height:30px;display:block;margin:0 auto}
 html[data-layout="phone"] .tray.nap #wakeBtn{flex:none;min-height:44px}
 
-/* v2.3 look-right button: a small paper button on the right edge of the scene, above the dog's head */
-html[data-layout="phone"] #phPeek{position:absolute;right:6px;top:30%;z-index:5;width:44px;height:48px;min-height:44px;padding:0 0 4px;font-family:var(--font-hand);font-weight:700;font-size:36px;line-height:1;--wash:var(--paper);animation:phNudge 1.2s ease-in-out 3}
+/* v2.3 look-right button: the round sketch button of the HUD with a drawn arrow, on the right edge of the scene at about 24% from the top */
+html[data-layout="phone"] #phPeek{position:absolute;right:6px;top:24%;z-index:5;width:48px;height:48px;min-height:48px;padding:0;display:grid;place-items:center;--wash:var(--paper);animation:phNudge 1.2s ease-in-out 3}
+html[data-layout="phone"] #phPeek svg{width:30px;height:30px;display:block}
+html[data-layout="phone"] #phPeek.back svg{transform:scaleX(-1)}
 @keyframes phNudge{50%{transform:translateX(5px)}}
 html[data-motion="off"] #phPeek{animation:none}
 /* v2.3 the scene sits in the part of the view above an open tray (--trayH) and may zoom out (--vfit: Market Street, a visiting dog) */
