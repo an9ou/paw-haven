@@ -58,7 +58,7 @@ There is no separate QA session. `game/test_copy_node.js` (the `copy` suite) and
    - Most merge-day fixes came from lanes guessing at each other's names.
 9. **Don't wait on the owner.**
    - Decisions go to the Project manager with a recommendation.
-   - With no answer in 20 minutes, take the recommendation and list it in the final report.
+   - With no answer in 10 minutes, take the recommendation and list it in the final report.
 10. **Push `main` only when green.** A push deploys GitHub Pages. Work in progress goes to an integration branch.
 
 ## Setup that saves time
@@ -91,9 +91,9 @@ You manage Paw Haven for the owner. You don't build. Start a fresh Coordinator s
 - **Times in JST** (the owner is in Japan).
 - **Quality first:** quality and the game's style come before saving tokens.
 - **Speed and quality over token cost:** lanes may use parallel subagents. Take screenshots before and after for every changed screen.
-- **Decisions:** ask with the AskUserQuestion choice window (2–4 options, recommendation first), not plain text. If the owner says "if I don't answer in N minutes, pick the recommendation", schedule a `send_later` for that time and follow through.
+- **Decisions:** ask with the AskUserQuestion choice window (2–4 options, recommendation first), not plain text. With no answer in 10 minutes, take the recommendation and list it in the final report. When the owner is asleep or says "decide yourself", the Project manager decides without asking and lists every decision in the final report.
 - **Stop means stop.** If the owner says "stop", stop at once: cancel scheduled check-ins, commit nothing, and ask what they meant.
-- **Reports:** only a final report, unless the owner asks for progress. The final report is a claude.ai artifact in the game's own style, with real crayon dogs. To draw the dogs:
+- **Reports:** always send a final report at the end of every release; progress only when the owner asks. The final report is a claude.ai artifact in the game's own style, with real crayon dogs. To draw the dogs:
   - load `dogs/pawart_dogs.js` in node `vm` with a fake `window`, then call `PawArt.dog(key, {pose, outfit, age, sparkle})`;
   - inline the module's own `const css=` animation styles into the page.
   - Example: https://claude.ai/artifact/L39BrWspasZdsMkhNDKtKM
