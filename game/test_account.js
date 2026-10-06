@@ -259,14 +259,15 @@ run('account', async (t) => {
   await change({ coins: 7070 }); const lp0 = await ev(() => window.__pawCloud.CL.lastPull);
   await tap('#tSwitch'); await sheetOpen(); await tap('#acGuest'); await d2.waitForSelector('.confirm .yes');
   await tap('.confirm .no'); ok((await uid()) === a2, 'Stay keeps the account');
+  const nU0 = srv.users.length;
   await tap('#acGuest'); await d2.waitForSelector('.confirm .yes'); await tap('.confirm .yes');
-  ok(await t.until((a) => !!window.__pawCloud.CL.uid && window.__pawCloud.CL.anon && window.__pawCloud.CL.uid !== a && document.getElementById('modal').hidden, a2, 6000), 'Play as guest logs out and starts a guest');
+  ok(await t.until(() => !window.__pawCloud.CL.uid && document.getElementById('modal').hidden, null, 6000), 'Play as guest logs out (no guest user for an account\'s game)');
   const gst = await uid();
   ok(srv.saves[a2].data.coins === 7070, 'log out sends the account\'s last change to the account first');
-  ok(await t.until((l) => window.__pawCloud.CL.lastPull > l, lp0, 6000) && await settled(), 'the guest\'s first pull ran');
+  ok(await settled() && srv.users.length === nU0, 'no orphan anonymous user is made');
   ok(!srv.saves[gst] && !srv.backups.some((b) => b.user_id === gst), 'the account\'s game is not copied into the guest\'s cloud');
-  ok(!!(await d2.locator('#tContinue').count()) && /^Playing as guest Log in$/.test(await line()), 'the game stays on this device: Continue + "Playing as guest"');
-  await change({ coins: 7171 }); await t.sleep(300); ok(await settled() && !srv.saves[gst], 'playing on as a guest never pushes it either');
+  ok(!!(await d2.locator('#tContinue').count()) && /^Saved on this device only Log in$/.test(await line()), 'the game stays on this device: Continue + "Saved on this device only"');
+  await change({ coins: 7171 }); await t.sleep(300); ok(await settled() && !srv.saves[gst] && srv.users.length === nU0, 'playing on never pushes it or makes a user');
   ok((await ev(() => window.__pawCloud.status().text)) === 'Saved on this device', 'status: Saved on this device (not stuck on Syncing)');
 
   sec('desktop: after a log out, log in as B: the old account\'s game never lands in B');
@@ -411,6 +412,32 @@ run('account', async (t) => {
   const p8 = await device('Phone 360x740', false); t.p = p8;
   ok((await line()) === 'Cloud save works on the web version.', 'the note shows on phones too'); await layout('phone cloud off'); await audit('360_740_07_cloud_off');
 
+  // ---- offline log out (v2.3 re-check A, D) ----
+  sec('desktop: a log out while offline never loses or rolls back the newest change');
+  const dO = await device(null); t.p = dO;
+  await tap('#tReg'); await sheetOpen(); await form('reg', 'roll@example.com', 'roll12345');
+  await t.untilMode('adopt', 6000); await ev(() => window.__paw.go('title')); await dO.waitForSelector('#tNew'); await t.adopt({ sex: 'girl' });
+  const aR = await uid(); await change({ coins: 111 }); ok(await synced() && srv.saves[aR].data.coins === 111, 'the account has 111 coins in the cloud');
+  await ev(() => window.__paw.go('title')); await dO.waitForSelector('#tSwitch');
+  srv.offline.add(dO); await change({ coins: 222 }); const nU = srv.users.length;
+  await tap('#tSwitch'); await sheetOpen(); await tap('#acGuest'); await dO.waitForSelector('.confirm .yes'); await tap('.confirm .yes');
+  ok(await t.until(() => !window.__pawCloud.CL.uid && document.getElementById('modal').hidden && /Saved on this device only/.test(document.querySelector('#title .tacct').textContent), null, 8000), 'offline log out: "Saved on this device only" + Log in: ' + await line());
+  ok(srv.users.length === nU, 'Play as guest makes no orphan guest user for an account\'s game');
+  srv.offline.delete(dO); ok(srv.saves[aR].data.coins === 111, 'the 222 coins never reached the cloud (offline)');
+  await tap('#tSwitch'); await sheetOpen(); await tap('#acLogin'); await form('login', 'roll@example.com', 'roll12345');
+  ok(await t.until(() => document.getElementById('modal').hidden && !!document.getElementById('tContinue'), null, 8000) && (await ev(() => JSON.parse(localStorage.getItem('pawhaven_proto_v1')).coins)) === 222, 'log back in: the newer 222 coins stay, no roll-back');
+  ok(await t.until((u) => window.__pawCloud.status().state === 'synced', aR, 8000) && srv.saves[aR].data.coins === 222, 'and they reach the account\'s cloud');
+  srv.offline.add(dO); await change({ coins: 333 });
+  await ev(() => window.__pawCloud.open()); await dO.waitForSelector('[data-cl=logout]'); await tap('[data-cl=logout]'); await dO.waitForSelector('.confirm .yes'); await tap('.confirm .yes');
+  await t.until(() => !window.__pawCloud.CL.uid, null, 8000); srv.offline.delete(dO);
+  await tap('[data-cl=reg]'); await dO.waitForSelector('#clPw2');
+  await dO.fill('#clEmail', 'other@example.com'); await dO.fill('#clPw', 'other1234'); await dO.fill('#clPw2', 'other1234'); await tap('[data-cl=doReg]');
+  ok(await t.until(() => !!window.__pawCloud.CL.uid && !window.__pawCloud.CL.anon, null, 8000), 'Settings: Make account works');
+  const aO = await uid(); await t.until(() => !window.__pawCloud.CL.timer && !window.__pawCloud.CL.busy, null, 6000);
+  ok((await ev(() => JSON.parse(localStorage.getItem('pawhaven_proto_v1') || '{}').coins)) === 333, 'the unsynced 333 coins stay on this device');
+  ok(!srv.saves[aO] && !srv.backups.some((b) => b.user_id === aO), 'and never go into the new account');
+  await t.closeX();
+  // ---- end offline log out ----
   // ---- kitchen (v2.3 occlusion) ----
   // the food-safety lesson, the header hint, the dog's bubble and the kitchen taps on the two phone sizes
   for (const dev of ['Phone 390x844', 'Phone 360x740']) {

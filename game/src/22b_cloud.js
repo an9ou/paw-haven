@@ -41,7 +41,9 @@ function clToast(t, kind) { if (S) toast(t, kind || ''); }
 // v2.3 review fix: which account the local save belongs to (meta.owner, tied to the save's dog id so a new game or reset drops it).
 // A save owned by an account is never pushed or backed up anywhere else (a guest included): the next player may be someone else.
 function clOwner() { const m = clMeta(), l = clLocal(); return m.owner && l && clDogId(l) === m.ownerDog ? m.owner : null; }
-function clOwn(uid) { clMetaSet({ owner: uid || null, ownerDog: uid ? clDogId(clLocal()) : null }); }
+function clOwn(uid, at) { const p = { owner: uid || null, ownerDog: uid ? clDogId(clLocal()) : null }; if (at !== undefined) p.ownerAt = at; clMetaSet(p); }
+// the owner has changes its cloud never got (a log out while offline): those must never be dropped or rolled back
+function clOwnerUnsynced() { return !!clOwner() && clMeta().changedAt > (clMeta().ownerAt || 0); }
 function clMine() { const o = clOwner(); return !o || o === CL.uid; } // may the local save go to the signed-in user's cloud?
 function clMask(e) { const m = String(e || '').match(/^(.)[^@]*@(.+)$/); return m ? `${m[1]}…@${m[2]}` : 'your account'; }
 
@@ -119,7 +121,7 @@ async function clEnsureUser() {
 function clSetUser(u) {
   CL.uid = u.id; CL.email = u.email || ''; CL.anon = u.is_anonymous === true || !u.email; CL.out = false;
   const m = clMeta(); if (m.uid !== u.id) clMetaSet({ uid: u.id, rev: 0, pushedAt: 0 });
-  if (!CL.anon && clLocal() && !clOwner() && !CL.loggingIn) clOwn(u.id); // a guest game upgraded to this account
+  if (!CL.anon && clLocal() && !clOwner() && !CL.loggingIn) clOwn(u.id, m.uid === u.id ? m.pushedAt || 0 : 0); // a guest game upgraded to this account (same user id: its cloud row is already there)
   clSub(); clRender();
 }
 function clSub() {
@@ -179,7 +181,7 @@ async function clPush(force) {
     const rev = Math.max(row ? row.rev : 0, m.rev || 0) + 1;
     const up = await CL.sb.from('saves').upsert({ user_id: uid, data, rev, changed_at: new Date(changedAt).toISOString(), device: clDevice() }, { onConflict: 'user_id' });
     if (up.error) throw up.error;
-    if (uid === CL.uid) { clMetaSet({ rev, pushedAt: changedAt, dogId: clDogId(data) }); CL.lastSync = Date.now(); CL.err = ''; if (!CL.anon) clOwn(uid); }
+    if (uid === CL.uid) { clMetaSet({ rev, pushedAt: changedAt, dogId: clDogId(data) }); CL.lastSync = Date.now(); CL.err = ''; if (!CL.anon) clOwn(uid, changedAt); }
   } catch (e) {
     CL.err = 'offline'; clearTimeout(CL.retryT); CL.retryT = setTimeout(() => { CL.retryT = null; CL.err = ''; clPush(); }, 15000);
   } finally {
@@ -229,7 +231,7 @@ function clApply(data, row, msg) {
   if (!data || data.v !== 1 || !(data.dog || (data.dogs && data.dogs.length))) return false;
   lsSet(SAVE_KEY, JSON.stringify(data)); CL.fp = clFp(data);
   if (row) { const t = Date.parse(row.changed_at) || Date.now(); clMetaSet({ rev: row.rev, changedAt: t, pushedAt: t, dogId: clDogId(data) }); CL.lastSync = Date.now(); }
-  clOwn(row && CL.uid && !CL.anon ? CL.uid : null); // an import or restore is the player's own pick: it goes to whoever is signed in
+  clOwn(row && CL.uid && !CL.anon ? CL.uid : null, row ? Date.parse(row.changed_at) || 0 : 0); // an import or restore is the player's own pick: it goes to whoever is signed in
   CL.savedAt = Date.now();
   const onTitle = cur.mode === 'title' || cur.mode === 'adopt' || !cur.mode;
   S = loadSave(); hudDogKey = ''; if (typeof coatCache !== 'undefined' && coatCache.clear) coatCache.clear();
@@ -260,7 +262,9 @@ async function clFlushNow() {
   await idle(); CL.again = false;
   const m = clMeta(); if (CL.uid && clLocal() && clMine() && m.changedAt > (m.pushedAt || 0)) { await clPush(true); await idle(); }
 }
-function clDropLocal() { lsDel(SAVE_KEY); S = null; CL.fp = clFp(null); CL.pending = null; clMetaSet({ rev: 0, changedAt: 0, pushedAt: 0, dogId: null, owner: null, ownerDog: null }); }
+function clDropLocal() {
+  if (clOwnerUnsynced()) return false; // changes the owner's cloud never got stay on this device, under that owner
+  lsDel(SAVE_KEY); S = null; CL.fp = clFp(null); CL.pending = null; clMetaSet({ rev: 0, changedAt: 0, pushedAt: 0, dogId: null, owner: null, ownerDog: null }); }
 // fresh (v2.3 title "Switch" while logged in to an account): skip updateUser, which would rename the current account.
 // The new account starts with no game: the old account's dogs stay in the old account (they may be someone else's).
 async function clRegister(email, pw, fresh) {
@@ -298,6 +302,8 @@ async function clLogin(email, pw) {
     clSetUser(r.data.user);
     const q = await CL.sb.from('saves').select('*').eq('user_id', CL.uid).maybeSingle();
     if (q.data && q.data.data) {
+      if (local && owner === CL.uid && clMeta().changedAt > (Date.parse(q.data.changed_at) || 0)) { await clPush(true); return { ok: true, loaded: false }; } // back on the owning account with newer changes from this device: they win, no roll-back
+      if (local && other && clOwnerUnsynced()) lsSet(CL_CFG.backupKey, JSON.stringify(local)); // the other account's unsynced game: kept on this device
       if (local && !other && !clSame(local, q.data.data)) await clBackup(local, 'guest save before sign-in');
       clApply(q.data.data, q.data, null); return { ok: true, loaded: true };
     }

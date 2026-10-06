@@ -50,6 +50,7 @@ function acLine(m) {
   if (m === 'off') return { t: 'Cloud save works on the web version.' };
   if (m === 'wait') return { t: 'Checking your cloud save...' };
   if (m === 'acct') return { t: `Signed in as <b>${esc(clMask(c.email))}</b>`, link: 'Switch' };
+  if (!clMine()) return { t: 'Saved on this device only', link: 'Log in' }; // an account's game after a log out
   if (c.err && !c.uid) return { t: 'Cloud save is offline. Your game is saved on this device.', link: 'Log in' };
   return { t: 'Playing as guest', link: 'Log in' };
 }
@@ -94,7 +95,7 @@ async function acPlayGuest(panel) {
   }
   if (!modal.hidden) closeModal();
   acGuest = true; titleAcctRender();
-  if (await clEnsureUser()) clPull(); // a guest with a game on this device gets it into the cloud
+  if (!clOwner() && await clEnsureUser()) clPull(); // a guest with a game on this device gets it into the cloud (an account's game never does)
   titleAcctRender();
 }
 function acDogName(d) { return (d && ((d.dogs && d.dogs[0] && d.dogs[0].name) || (d.dog && d.dog.name))) || 'Your dog'; }
