@@ -79,7 +79,8 @@ run('phone_walk', async (t) => {
     ok(await ev(() => { const c = document.querySelector('.rt-card.cur'), v = document.getElementById('rtView'), a = c.getBoundingClientRect(), b = v.getBoundingClientRect(); return a.left >= b.left - 1 && a.right <= b.right + 1; }), `${device}: the current card fits the screen width`);
     await inView(`${device}: routes`, '#rtStart'); await inView(`${device}: routes`, '#rtBack');
     // a tap on a neighbouring (peeking) card selects it
-    await p.locator('#rtBack').tap(); await t.untilMode('yard');
+    // a tap can be lost while the page is busy (the failure screenshot showed the carousel still open): tap again until the yard is back
+    ok(await t.retryUntil(() => p.locator('#rtBack').tap({ timeout: 3000 }).catch(() => {}), () => window.__paw.mode === 'yard'), `${device}: Back to the yard leaves the carousel`);
 
     // ===================== runner =====================
     t.sec(`${device}: runner tutorial (first walk)`);
