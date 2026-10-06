@@ -270,7 +270,7 @@ const SCAN = (sels) => {
         ok(sx.length === 0 || sx.every((f) => f >= 14.95), `${tag} nursery: sex symbols are >= 15 px (${sx.join(', ') || 'none shown'})`);
         await dismiss(); await t.modalGone();
       } else ok(false, `${tag} nursery: opens (${opened})`);
-    }, { device: 'iPhone 13' });
+    }, { device: 'iPhone 13', timeout: 420000 }); // v2.3: 341 checks per size; under a full --jobs 2 run one size can pass 240 s
   }
   // desktop (unchanged layout): Settings keeps Reset save and Title screen in view at 1280x720 without scrolling
   await run('phone_occl_home_desktop_settings', async (t) => {
