@@ -21,14 +21,14 @@ html[data-layout="phone"] .pd-empty{flex-direction:column;text-align:center}
 
 /* playdate scene: two pals fit a phone-wide stage */
 html[data-layout="phone"] .pd-scene{height:170px}
-html[data-layout="phone"] .pd-pal{width:150px;height:126px}
-html[data-layout="phone"] .pd-pal.a{left:6%}
-html[data-layout="phone"] .pd-pal.b{left:50%}
-html[data-layout="phone"] .ph-rest .pd-pal.a{left:16%}
-html[data-layout="phone"] .ph-rest .pd-pal.b{left:46%}
+/* v2.3 occlusion: the pals face each other, so their heads sit on the facing sides of their boxes.
+   Pal b always starts 128 px (0.91 of a pal) after pal a, in every phase, so the two heads never overlap. */
+html[data-layout="phone"] .pd-pal{width:140px;height:118px}
+html[data-layout="phone"] .pd-pal.a,html[data-layout="phone"] .ph-rest .pd-pal.a{left:calc(50% - 134px)}
+html[data-layout="phone"] .pd-pal.b,html[data-layout="phone"] .ph-rest .pd-pal.b{left:calc(50% - 6px)}
 html[data-layout="phone"] .pd-result p{font-size:17px}
-@keyframes ppChaseA{from{left:0%}to{left:30%}}
-@keyframes ppChaseB{from{left:22%}to{left:52%}}
+@keyframes ppChaseA{from{left:calc(50% - 162px)}to{left:calc(50% - 106px)}}
+@keyframes ppChaseB{from{left:calc(50% - 34px)}to{left:calc(50% + 22px)}}
 html[data-layout="phone"] .ph-chase .pd-pal.a{animation-name:ppChaseA}
 html[data-layout="phone"] .ph-chase .pd-pal.b{animation-name:ppChaseB}
 

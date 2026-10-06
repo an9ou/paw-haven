@@ -11,7 +11,9 @@ function enterBath() {
   updateHUD(); bindDev();
   let prog = 0, last = null, done = false, scrubT = 0;
   const startClean = S.stats.clean;
-  dock.innerHTML = `<div class="tray"><div class="tray-h"><h3>Bath time: rub ${esc(NAME())} to scrub</h3></div><p class="small" style="margin:0">Mouse, finger, or mash Space. ${esc(NAME())} is legally obliged to look betrayed.</p><div class="walkctl"><div class="prog"><i id="bathBar"></i></div><button class="btn" id="bathQuit">Done for now</button></div></div>`;
+  dock.innerHTML = `<div class="tray"><div class="tray-h"><h3>Bath time: rub ${esc(NAME())} to scrub</h3></div><p class="small" style="margin:0">${isPhone() ? 'Scrub with a finger. More suds, more drama.' : 'Mouse, finger, or mash Space.'} ${esc(NAME())} is legally obliged to look betrayed.</p><div class="walkctl"><div class="prog"><i id="bathBar"></i></div><button class="btn" id="bathQuit">Done for now</button></div></div>`;
+  // phone: the tub scene takes all the height above the short tray (not a fixed 40% with blank paper under the tray)
+  if (isPhone()) { view.style.flex = '1 1 auto'; dock.style.flex = '0 0 auto'; onCleanup(() => { view.style.flex = ''; dock.style.flex = ''; }); camApply(camCx); }
   const bump = (amt, wx, wy) => {
     if (done) return; prog = clamp(prog + amt, 0, 100); $('#bathBar').style.width = prog + '%';
     addStat('clean', amt * (100 - startClean) / 100); updateHUD();
