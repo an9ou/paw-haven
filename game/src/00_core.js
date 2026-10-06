@@ -536,8 +536,10 @@ const isFavFood = (n) => S.dog.favFood.includes(n);
 const favAct = (a) => (FAV[S.dog.key] || {}).act === a;
 
 /* ---------------- toasts, bubbles ---------------- */
+// v2.3 phone: toasts start just under the location chip (top-left of the scene), never on it
+function phChipClear() { if (!isPhone()) return 0; const st = $('#status'); return st && !st.hidden && st.offsetParent === view ? st.offsetTop + st.offsetHeight + 4 - 8 : 0; }
 function toast(text, kind = '') {
-  const modScr = stage.classList.contains('modhud'); toasts.style.top = modScr ? 'auto' : (hud.hidden ? 10 : view.offsetTop + 8) + 'px'; toasts.style.bottom = modScr ? '18px' : ''; toasts.style.flexDirection = modScr ? 'column-reverse' : '';
+  const modScr = stage.classList.contains('modhud'); toasts.style.top = modScr ? 'auto' : (hud.hidden ? 10 : view.offsetTop + 8 + phChipClear()) + 'px'; toasts.style.bottom = modScr ? '18px' : ''; toasts.style.flexDirection = modScr ? 'column-reverse' : '';
   const t = document.createElement('div'); t.className = 'toast ' + kind; t.textContent = text; toasts.appendChild(t);
   while (toasts.children.length > 3) toasts.firstChild.remove();
   setTimeout(() => t.remove(), 2900);
@@ -554,6 +556,11 @@ function say(text, wx, wy, ms = 3600) {
   const vtop = view.offsetTop;
   bubble.style.left = clamp(p.x - 40, 6, sw - bw - 6) + 'px';
   bubble.style.top = Math.max(vtop + 4, p.y - bh - 16) + 'px';
+  if (isPhone()) { // v2.3: a bubble never sits on the location chip (top-left of the scene)
+    const st = $('#status'), sr = st && !st.hidden ? st.getBoundingClientRect() : null, sg = stage.getBoundingClientRect();
+    if (sr) { const bt = parseFloat(bubble.style.top), bl = parseFloat(bubble.style.left), cb = sr.bottom - sg.top + 6;
+      if (bt < cb && bl < sr.right - sg.left + 6 && bl + bw > sr.left - sg.left - 6) bubble.style.top = cb + 'px'; }
+  }
   clearTimeout(bubbleTimer); bubbleTimer = setTimeout(() => { bubble.hidden = true; }, ms);
 }
 function hideBubble() { bubble.hidden = true; clearTimeout(bubbleTimer); }

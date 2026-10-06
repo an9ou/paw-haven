@@ -85,3 +85,6 @@ html[data-layout="phone"] .panel.birth{touch-action:pan-x pan-y}
 /* merge fix: the nowrap pup row must never widen the sheet (on Pixel 7 it grew to 570 px and the sheet scrolled sideways) */
 html[data-layout="phone"] .birth .lt-pups{min-width:0;max-width:100%;box-sizing:border-box}
 html[data-layout="phone"] .panel.birth .panel-body{overflow-x:hidden}
+
+/* v2.3: every sex symbol inside a sheet (nursery pups, litter and birth cards) is at least 15 px */
+html[data-layout="phone"] #modal .sex{font-size:max(1em,15px)}

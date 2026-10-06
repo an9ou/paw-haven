@@ -143,9 +143,11 @@ const AUDIT = () => {
       // ---------- mailbox hotspot and camera swipe ----------
       t.sec(dev + ': mailbox, swipe camera');
       await t.until(() => !!document.getElementById('mailboxG'));
+      // the camera may still be easing back to the dog: wait until the crop stops moving
+      await t.until(() => { const x = document.querySelector('#view > svg.world').viewBox.baseVal.x, st = window.__camX !== undefined && Math.abs(window.__camX - x) < 0.05; window.__camX = x; return st; }, null, 6000);
       const mb = await rectOf('#mailboxG');
       ok(!!mb && mb.w >= 44 && mb.h >= 44, `mailbox tap area >= 44 (${mb && Math.round(mb.w)}x${mb && Math.round(mb.h)})`);
-      await t.p.touchscreen.tap(mb.x, mb.y);
+      await t.p.touchscreen.tap(mb.x - mb.w * 0.3, mb.y); // left of centre: the dog's tap box may be parked over the middle of the mailbox
       ok(await modalOpen(), 'tapping the mailbox opens it');
       await t.closeX(); await t.home();
       // the house door is mostly outside the crop: one swipe brings it (and the nursery, chair) into view
