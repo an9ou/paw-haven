@@ -411,5 +411,52 @@ run('account', async (t) => {
   const p8 = await device('Phone 360x740', false); t.p = p8;
   ok((await line()) === 'Cloud save works on the web version.', 'the note shows on phones too'); await layout('phone cloud off'); await audit('360_740_07_cloud_off');
 
+  // ---- hud (v2.3 occlusion) ----
+  // The phone HUD is a fixed 2-row grid of about 100 px (it was 132 px / 3 rows at 360, and with 4 dogs at every width).
+  // Row 1 = dog chip(s), name, coins, the ... menu (the other dogs' chips scroll, they never push coins or the menu down). Row 2 = the 4 rings + Bond.
+  const HUD = () => {
+    const R = (s) => { const e = document.querySelector(s); if (!e || e.hidden || getComputedStyle(e).display === 'none') return null; const b = e.getBoundingClientRect(); return b.width ? { t: b.top, b: b.bottom, l: b.left, r: b.right, h: b.height, w: b.width, c: (b.top + b.bottom) / 2 } : null; };
+    const hud = R('#hud'), who = R('#hud .who'), coins = R('#coins'), more = R('#moreBtn'), meters = R('#meters'), bond = R('#hud .bond');
+    const inRow = (x, row) => !!x && !!row && x.c >= row.t - 1 && x.c <= row.b + 1;
+    const chips = [...document.querySelectorAll('#hudPack .dchip')].map((e) => e.getBoundingClientRect());
+    const rings = [...document.querySelectorAll('#meters .meter')].map((e) => e.getBoundingClientRect());
+    const labels = [...document.querySelectorAll('#bar .act')].map((a) => { const s = a.querySelector(':scope > span:not(.ic)'), rg = document.createRange(); rg.selectNodeContents(s); return { t: s.textContent, fs: parseFloat(getComputedStyle(s).fontSize), w: rg.getBoundingClientRect().width, bw: a.clientWidth }; });
+    const bar = document.getElementById('bar');
+    return {
+      h: hud && Math.round(hud.h), hudTop: hud && hud.t, viewTop: document.getElementById('view').getBoundingClientRect().top,
+      row1: inRow(coins, who) && inRow(more, who) && chips.every((c) => inRow({ c: (c.top + c.bottom) / 2 }, who)),
+      row2: !!meters && meters.t >= who.b - 1 && inRow(bond, meters) && rings.every((r) => inRow({ c: (r.top + r.bottom) / 2 }, meters)),
+      inside: [who, coins, more, meters, bond].every((x) => x && x.b <= hud.b + 1 && x.r <= innerWidth + 1) && coins.r <= more.l && more.r <= innerWidth,
+      taps: [more, ...rings.map((r) => ({ w: r.width, h: r.height })), ...chips.map((c) => ({ w: c.width, h: c.height }))].every((x) => x.w >= 43.5 && x.h >= 43.5),
+      nChips: chips.length, labels, barFits: bar.scrollWidth <= bar.clientWidth + 1 && labels.every((l) => l.w <= l.bw),
+      scroll: document.documentElement.scrollWidth - innerWidth
+    };
+  };
+  for (const dev of ['Phone 360x740', 'Phone 390x844']) {
+    const tag = dev.replace(/\D+/g, '_').replace(/^_|_$/g, '');
+    sec(`${dev}: the phone HUD is 2 rows (1 dog, then 4 dogs), action-bar labels >= 15 px`);
+    const p = await device(dev, false); t.p = p;
+    await t.adopt({ sex: 'girl' }); await t.lu();
+    ok((await ev(() => document.documentElement.dataset.layout)) === 'phone', `${dev}: phone layout is on`);
+    for (const n of [1, 4]) {
+      if (n === 4) await ev(() => { const P = window.__paw, S = P.S; while (S.dogs.length < 4) P.addDog({ key: ['corgi', 'golden', 'husky'][S.dogs.length - 1], sex: S.dogs.length % 2 ? 'male' : 'female' }, ['Biscuit', 'Pal', 'Mo'][S.dogs.length - 1]); });
+      for (const pl of ['yard', 'market']) {
+        await t.home(pl);
+        ok(await t.until((k) => document.querySelectorAll('#hudPack .dchip').length === k && !!document.querySelector('#bar .act'), n - 1, 4000), `${dev} ${n} dog(s) ${pl}: ${n - 1} other dog chip(s) in the HUD`);
+        const h = await ev(HUD), lb = `${dev} ${n} dog(s) ${pl}`;
+        ok(h.h <= 102 && h.viewTop >= h.hudTop + h.h - 1, `${lb}: the HUD is about 100 px (${h.h})`);
+        ok(h.row1, `${lb}: row 1 = dog chip(s), name, coins and the ... menu on one line`);
+        ok(h.row2, `${lb}: row 2 = the 4 rings with Bond beside them (no 3rd row)`);
+        ok(h.inside, `${lb}: everything stays inside the HUD and on screen, coins before the menu`);
+        ok(h.taps, `${lb}: menu, rings and dog chips are >= 44 px`);
+        ok(h.labels.every((l) => l.fs >= 14.95), `${lb}: action-bar labels >= 15 px ${h.labels.map((l) => l.t + ' ' + l.fs).join(', ')}`);
+        ok(h.barFits, `${lb}: every label fits its button, the bar never overflows ${h.labels.map((l) => l.t + ' ' + l.w.toFixed(1) + '/' + l.bw).join(', ')}`);
+        ok(h.scroll <= 0, `${lb}: no sideways scroll (${h.scroll})`);
+        await audit(`${tag}_hud_${n}dog_${pl}`);
+      }
+    }
+  }
+  // ---- end hud ----
+
   ok(!dialogs.length, 'no browser dialogs ' + dialogs.join(' | '));
 }, { timeout: 300000 });
