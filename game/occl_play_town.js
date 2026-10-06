@@ -59,8 +59,10 @@ module.exports = {
       const st = document.getElementById('status'), rg = document.createRange(); rg.selectNodeContents(st); const chipText = [...rg.getClientRects()].filter((q) => q.width > 1).map((q) => ({ left: q.left, top: q.top, right: q.right, bottom: q.bottom }));
       const z = document.getElementById('mapZoom'), pill = document.getElementById('mapZoomLbl'), zin = document.getElementById('mapZin'), cs = (e) => getComputedStyle(e);
       const url = (e) => (cs(e).backgroundImage.match(/url\([^)]*\)/) || [''])[0];
-      const labels = [...document.querySelectorAll('#mapPan svg.world text')].filter((x) => { const q = x.getBoundingClientRect(); return q.width > 2 && q.right > 0 && q.left < innerWidth && q.bottom > 0 && q.top < innerHeight && cs(x).display !== 'none'; }).map((x) => ({ t: x.textContent.trim().slice(0, 24), r: R(x) }));
-      const spots = [...document.querySelectorAll('#mapPan [data-area]')].map((g) => ({ k: g.getAttribute('data-area'), r: R(g) })).filter((o) => o.r.width > 1 && o.r.right > 0 && o.r.left < innerWidth && o.r.bottom > 0 && o.r.top < innerHeight);
+      // only what the map actually draws counts: the pan area clips everything outside it (the controls sit in the gutter beside it)
+      const pan = document.getElementById('mapPan').getBoundingClientRect(), clip = (r) => { const l = Math.max(r.left, pan.left), rr = Math.min(r.right, pan.right), tt = Math.max(r.top, pan.top), b = Math.min(r.bottom, pan.bottom); return { left: l, right: rr, top: tt, bottom: b, width: rr - l, height: b - tt }; };
+      const labels = [...document.querySelectorAll('#mapPan svg.world text')].filter((x) => cs(x).display !== 'none').map((x) => ({ t: x.textContent.trim().slice(0, 24), r: clip(R(x)) })).filter((o) => o.r.width > 2 && o.r.height > 2);
+      const spots = [...document.querySelectorAll('#mapPan [data-area]')].map((g) => ({ k: g.getAttribute('data-area'), r: clip(R(g)) })).filter((o) => o.r.width > 1 && o.r.height > 1);
       return { x: R(document.getElementById('mapX')), zoom: R(z), chipText, labels, spots, btns: [zin, document.getElementById('mapZout')].map(R), pillUrl: url(pill), btnUrl: url(zin), pillBorder: cs(pill).borderTopWidth, pillRadius: cs(pill).borderTopLeftRadius, btnRadius: cs(zin).borderTopLeftRadius, vw: innerWidth, vh: innerHeight, chip: R(st) };
     });
     ok(m.chipText.length > 0 && !m.chipText.some((q) => hit(q, m.x, 4)), `${tag} map: the close X does not cover the location chip text`);

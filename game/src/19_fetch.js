@@ -17,7 +17,7 @@ function enterFetch(toy) {
   cur.key = (e) => { const ok = e.key === ' ' || (e.key === 'Enter' && document.activeElement === document.body); if (!ok || e.repeat) return; e.preventDefault(); if (F.fly) catchTry(); else throwTo(RAND(300, 880), RAND(430, 540)); };
   F.raf = requestAnimationFrame(fetchLoop);
   onCleanup(() => { cancelAnimationFrame(F && F.raf); cur.key = null; busy = false; });
-  toast('Tap the grass to throw!');
+  if (!isPhone()) toast('Tap the grass to throw!'); // on phones the tray says it, and a toast would sit on the ball's start point
 }
 function throwTo(x, y) {
   if (F.ended || F.t <= 0) return;
