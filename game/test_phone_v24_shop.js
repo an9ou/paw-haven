@@ -44,7 +44,9 @@ async function sheetFits(t, label) {
   const r = await t.p.evaluate(() => { const e = document.querySelector('#modal:not([hidden]) .panel'); if (!e) return null; const b = e.getBoundingClientRect(); return { w: Math.round(b.width), iw: innerWidth, h: Math.round(b.height), ih: innerHeight }; });
   t.ok(!!r && Math.abs(r.w - r.iw) < 3 && r.h <= r.ih * 0.9, `${label}: bottom sheet fits (${r ? r.w + 'x' + r.h : 'none'})`);
 }
-async function tapSel(t, sel, wait) { await t.p.locator(sel).first().tap(); await sleep(wait == null ? 250 : wait); }
+// wait until an element's box stops moving (camera pans and the sheet pop-in), polled every 50 ms
+async function settled(t, sel) { await t.ev(() => { window.__stb = ''; }); return t.until((sel) => { const e = document.querySelector(sel); if (!e) return false; const b = e.getBoundingClientRect(), k = [b.left, b.top, b.width, b.height].map(Math.round).join(); const same = k === window.__stb; window.__stb = k; return same; }, sel, 5000); }
+async function tapSel(t, sel, cond) { await t.p.locator(sel).first().tap(); if (cond) await t.until(cond, null, 5000); }
 async function closeSheet(t) { if (await t.p.locator('#modal:not([hidden]) .panel .x').count()) await tapSel(t, '#modal:not([hidden]) .panel .x'); await t.modalGone(); }
 // the sheet body scrolls inside itself: scroll to the end, every Buy button reachable and >= 44 px
 async function shopScroll(t, label, minCards) {
@@ -72,22 +74,22 @@ async function suite(t, dev) {
   t.sec(dev + ': Kibble Corner and the Boutique');
   await ev(() => { const S = window.__paw.S; S.sleeping = false; S.place = 'market'; window.__paw.go('yard'); });
   await t.until(() => !!document.querySelector('#placeBtns [data-sh=kibble]'), null, 8000); await t.calm(); await t.lu();
-  await tapSel(t, '#placeBtns [data-sh=kibble]', 350); await t.until(() => !!document.querySelector('#modal .panel.shop'), null, 5000);
-  await tapSel(t, '[data-tab=food]', 350); await sheetFits(t, 'Kibble Corner food');
+  await tapSel(t, '#placeBtns [data-sh=kibble]'); await t.until(() => !!document.querySelector('#modal .panel.shop'), null, 5000); await settled(t, '#modal .panel');
+  await tapSel(t, '[data-tab=food]', () => !!document.querySelector('[data-tab=food][aria-selected=true]')); await sheetFits(t, 'Kibble Corner food');
   await shopScroll(t, 'Kibble Corner food', 13); await audit(t, 'kibble food');
   const tip = await ev(() => { const e = document.querySelector('#modal .sh-tip'); return e ? parseFloat(getComputedStyle(e).fontSize) : 0; }); ok(tip >= 13, 'the safety tip line is >= 13 px (' + tip + ')');
-  await tapSel(t, '[data-tab=toys]', 350); await shopScroll(t, 'Kibble Corner toys', 11); await audit(t, 'kibble toys');
+  await tapSel(t, '[data-tab=toys]', () => !!document.querySelector('[data-tab=toys][aria-selected=true]')); await shopScroll(t, 'Kibble Corner toys', 11); await audit(t, 'kibble toys');
   await closeSheet(t);
-  await tapSel(t, '#placeBtns [data-sh=boutique]', 350); await t.until(() => !!document.querySelector('#modal .panel.shop'), null, 5000);
+  await tapSel(t, '#placeBtns [data-sh=boutique]'); await t.until(() => !!document.querySelector('#modal .panel.shop'), null, 5000); await settled(t, '#modal .panel');
   await sheetFits(t, 'Boutique'); await shopScroll(t, 'Boutique', 20); await audit(t, 'boutique');
   await closeSheet(t);
-  await tapSel(t, '#placeBtns [data-sh=builder]', 350); await t.until(() => !!document.querySelector('#modal .panel.shop'), null, 5000);
+  await tapSel(t, '#placeBtns [data-sh=builder]'); await t.until(() => !!document.querySelector('#modal .panel.shop'), null, 5000); await settled(t, '#modal .panel');
   await shopScroll(t, 'Barkitecture', 11); await audit(t, 'barkitecture');
   await closeSheet(t);
 
   t.sec(dev + ': the yard clipboard');
   await ev(() => { const S = window.__paw.S; S.sleeping = false; S.place = 'yard'; window.__paw.go('yard'); });
-  await t.until(() => !!document.querySelector('#msCardG > rect'), null, 8000); await t.calm(); await t.lu(); await t.freezeMotion(true); await sleep(400);
+  await t.until(() => !!document.querySelector('#msCardG > rect'), null, 8000); await t.calm(); await t.lu(); await t.freezeMotion(true); await settled(t, '#msCardG > rect');
   const g = await ev(() => { const q = (s) => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); return [b.left, b.top, b.right, b.bottom]; }; return { hit: q('#msCardG > rect'), art: q('#msCardG > svg'), dog: q('#dogHit'), mail: q('#mailboxG > rect') || q('#sceneG [data-hot=mailbox]'), iw: innerWidth, ih: innerHeight }; });
   const ov = (a, b) => !!a && !!b && a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];
   ok(g.hit && g.hit[2] - g.hit[0] >= 47.5 && g.hit[3] - g.hit[1] >= 47.5, `tap rect >= 48 px (${g.hit && Math.round(g.hit[2] - g.hit[0])}x${g.hit && Math.round(g.hit[3] - g.hit[1])})`);
@@ -102,7 +104,7 @@ async function suite(t, dev) {
   ok(await t.until(() => !!document.querySelector('#modal:not([hidden]) .panel.ms-pop'), null, 5000), 'a tap opens the Missions sheet');
 
   t.sec(dev + ': the Missions sheet');
-  await sleep(300); await sheetFits(t, 'Missions'); await audit(t, 'missions sheet');
+  await settled(t, '#modal .panel.ms-pop'); await sheetFits(t, 'Missions'); await audit(t, 'missions sheet');
   const fs = await ev(() => ['.ms-coins', '.ms-sline'].map((s) => parseFloat(getComputedStyle(document.querySelector('#modal ' + s)).fontSize)));
   ok(fs.every((x) => x >= 15), 'Missions text 15 px (' + fs.join(', ') + ')');
   const cw = await ev(() => { const c = document.querySelector('#modal .ms-card').getBoundingClientRect(), b = document.querySelector('#modal .panel-body').getBoundingClientRect(); return [Math.round(c.width), Math.round(b.width)]; });

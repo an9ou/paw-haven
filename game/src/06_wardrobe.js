@@ -22,10 +22,10 @@ function openWardrobe() {
 
 
 /* ---- v2.4 SHOP: the Pyjamas at nap time, nap perks ---- */
-// the outfit a dog is drawn in: while it sleeps (its nap flag or the sleep pose), owned Pyjamas go on with the Nightcap unless the Wardrobe toggle is off
+// the outfit a dog is drawn in: while it sleeps (its nap flag or the sleep pose; dogSVG turns a greyhound's sleep into rollover after this), owned Pyjamas go on with the Nightcap unless the Wardrobe toggle is off
 function shSleepOutfit(d, pose) {
   d = d || D(); const o = outfitOf(d);
-  if ((d.sleeping || pose === 'sleep' || pose === 'rollover') && S && owns('clothes', 'Pyjamas') && S.pjAuto !== false) { o.body = 'Pyjamas'; o.sleepwear = true; }
+  if ((d.sleeping || pose === 'sleep') && S && owns('clothes', 'Pyjamas') && S.pjAuto !== false) { o.body = 'Pyjamas'; o.sleepwear = true; }
   return o;
 }
 const shPjOn = () => S.outfit.body === 'Pyjamas' || (owns('clothes', 'Pyjamas') && S.pjAuto !== false);

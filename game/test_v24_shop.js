@@ -72,16 +72,16 @@ require('./test_lib').run('v24_shop', async (t) => {
   await p().click('[data-food="Carrot Sticks"]');
   ok(await t.waitToast(/^Carrot Sticks: Crunchy and safe raw or cooked\. Cut them small for little dogs\.$/), 'first Carrot Sticks: the tip toast');
   ok(!!(await S()).foodTips['Carrot Sticks'], 'S.foodTips records it');
-  await t.sleep(2500); await t.toasts();
+  await t.until(() => !window.__paw.shop.busy && !document.querySelector('#toasts .toast'), null, 8000); await t.toasts();
   await t.until(() => !document.querySelector('#dock .tray:not(.dock-idle)') || true);
   await t.retryUntil(async () => { await ev(() => { window.__paw.S.stats.hunger = 30; window.__paw.feed('Carrot Sticks'); }); }, () => window.__paw.S.inv.food['Carrot Sticks'] === 1, null, { tries: 4, each: 4000 });
-  await t.sleep(1500);
+  await t.until(() => !window.__paw.shop.busy && !document.querySelector('#toasts .toast'), null, 8000); // the tip would have shown 0.9 s after the eat toast, before the toasts clear
   ok(!(await t.toasts()).some((x) => /^Carrot Sticks: Crunchy/.test(x)), 'second Carrot Sticks: no tip toast');
   ok(await ev(() => window.__paw.shop.tip('Apple Slices', true)) === 'Core and seeds out, every time. Apple seeds hold a little cyanide.' && !(await S()).foodTips['Apple Slices'], 'shFoodTip(name, true) returns the text without recording it');
 
   sec('perks: Chef Hat on meals, Bumblebee Suit on snacks, Happi Coat Pupcake, Sailor Collar water, Frozen Pupsicle cools');
   const EATEN = /\+\d+ Bond\./; // every meal or snack toast ends with the Bond it gave
-  const feedWait = async (n) => { await t.sleep(1200); await t.toasts(); await t.retryUntil(async () => { await ev((n) => { window.__paw.S.stats.hunger = 20; window.__paw.feed(n); }, n); }, (re) => window.__toasts.some((x) => new RegExp(re).test(x)), EATEN.source, { tries: 4, each: 4500 }); await t.sleep(1100); };
+  const feedWait = async (n) => { await t.until(() => !window.__paw.shop.busy, null, 8000); await t.toasts(); await t.retryUntil(async () => { await ev((n) => { window.__paw.S.stats.hunger = 20; window.__paw.feed(n); }, n); }, (re) => window.__toasts.some((x) => new RegExp(re).test(x)), EATEN.source, { tries: 4, each: 4500 }); await t.until(() => !window.__paw.shop.busy, null, 8000); };
   await ev(() => window.__paw.shop.equip('Chef Hat')); await t.toasts();
   await feedWait('Turkey Meatballs'); const tt = await t.toasts(); ok(tt.some((x) => /Chef's kiss: \+5 Happiness\./.test(x)), "Chef Hat: a meal says Chef's kiss +5 " + JSON.stringify(tt));
   await ev(() => window.__paw.shop.equip('Bumblebee Suit')); await t.toasts();
@@ -132,7 +132,7 @@ require('./test_lib').run('v24_shop', async (t) => {
   ok((await S()).pjAuto === false, 'toggle off: S.pjAuto false');
   ok(await t.until(() => window.__lastDogOutfit && window.__lastDogOutfit.body === 'Tutu' && !window.__lastDogOutfit.sleepwear, null, 3000), 'the sleeping dog is redrawn in its own outfit');
   await p().click('#shPj'); await t.until(() => /: on/.test((document.querySelector('#shPj') || {}).textContent || '')); await t.closeX();
-  await ev(() => window.__paw.shop.wake()); await t.sleep(300);
+  await ev(() => window.__paw.shop.wake()); await t.until(() => !window.__paw.S.sleeping, null, 3000);
   const o2 = await ev(() => window.__paw.shop.outfit('idle')); ok(o2.body === 'Tutu' && !o2.sleepwear, 'awake: the Tutu again');
 
   sec('Wardrobe mannequin: every new outfit draws in the preview without errors');
@@ -160,7 +160,7 @@ require('./test_lib').run('v24_shop', async (t) => {
   await p().click('#shWear'); await t.modalGone();
   s1 = await S(); ok(s1.inv.clothes.includes('Cozy Hoodie') && s1.outfit.body === 'Cozy Hoodie' && !!s1.careGifts.hoodie && s1.careDays === 14, 'Wear it: owned, worn, S.careGifts.hoodie set');
   await ev(() => { window.__paw.S.careDays = 20; }); ok(await ev(() => window.__paw.shop.careGift()) === false, 'a second check gives nothing');
-  await t.sleep(400); ok(await ev(() => !document.querySelector('#modal .panel.sh-gift')), 'no second popup');
+  await t.sleep(300); ok(await ev(() => !document.querySelector('#modal .panel.sh-gift')), 'no second popup');
 
   sec('Knit Scarf letter from Mrs. Plum, once, from Bond 3');
   await ev(() => { const S = window.__paw.S; S.inv.clothes = S.inv.clothes.filter((n) => n !== 'Knit Scarf'); S.careGifts.scarf = undefined; delete S.careGifts.scarf; });
