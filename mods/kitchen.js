@@ -482,7 +482,12 @@
     '.pk-portrait{overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch}',
     '.pk-portrait .pk-stage{width:420px;height:800px}',
     '.pk-portrait .pk-top{left:8px;right:8px;top:8px;height:auto;min-height:56px;flex-wrap:wrap;gap:6px 8px;padding:6px 8px}',
-    '.pk-portrait .pk-btn{min-height:50px;min-width:50px}',
+    '.pk-portrait .pk-btn{min-height:52px;min-width:52px}',
+    /* v2.3 phone occlusion: header in two rows (title, fridge, close / touch hint, recipe book), nothing truncated; taps >= 44 px at 360 wide */
+    '.pk-portrait .pk-chip{margin-left:auto}.pk-portrait .pk-x{order:1;width:52px;height:52px}',
+    '.pk-portrait .pk-sub{order:2;flex:1 1 150px;white-space:normal;overflow:visible;text-overflow:clip;line-height:1.15}.pk-portrait .pk-top .pk-gold{order:3}',
+    /* v2.3: the lesson grows instead of clipping, and the slots move down under it */
+    '.pk-portrait .pk-msg{height:auto;min-height:42px;overflow:visible}',
     '.pk-portrait .pk-pot{left:135px;top:150px}',
     '.pk-portrait .pk-drop{left:110px;top:122px}',
     '.pk-portrait .pk-inpot{left:150px;top:128px}',
@@ -493,9 +498,9 @@
     '.pk-portrait .pk-tile{flex:none}',
     '.pk-portrait .pk-tile{width:68px;touch-action:pan-x}.pk-portrait .pk-tile .pk-art{left:12px}.pk-portrait .pk-tile .pk-nm{font-size:16px}',
     '.pk-portrait .pk-tile.pk-people{width:52px;height:52px}',
-    '.pk-portrait .pk-tray{left:8px;top:492px;width:404px;height:150px}',
+    '.pk-portrait .pk-tray{left:8px;top:492px;width:404px;height:auto;min-height:150px}',
     '.pk-portrait .pk-dog{left:230px;top:648px;width:180px;height:150px}',
-    '.pk-portrait .pk-bub{right:196px;left:auto;top:690px;max-width:200px}',
+    '.pk-portrait .pk-bub{right:auto;left:10px;top:660px;max-width:214px;font-size:22px}.pk-portrait .pk-bub::after{right:-8px;bottom:auto;top:calc(50% - 8px);transform:rotate(-45deg)}',
     '.pk-portrait .pk-ov{align-items:flex-start}',
     '.pk-portrait .pk-book{width:404px;height:780px;margin-top:10px;overflow-y:auto}',
     '.pk-portrait .pk-cards{grid-template-columns:1fr}',
@@ -560,6 +565,7 @@
     if (!el) el = document.body;
     /* v1.5B portrait (phones): a 420-wide stage scaled to the screen width (layout only) */
     var PORT = !!(el && (el.clientHeight || 0) > (el.clientWidth || 1) * 1.1); W = PORT ? 420 : 1240; H = PORT ? 800 : 620;
+    var TOUCH = PORT || !!(window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches); // v2.3: touch wording
     var POT_XY = PORT ? { x: 210, y: 200 } : { x: 570, y: 280 };
     var root = document.createElement('div'); root.className = 'pk-root' + (PORT ? ' pk-portrait' : ''); root.tabIndex = 0; root.setAttribute('role', 'application'); root.setAttribute('aria-label', 'Kitchen');
     var stage = document.createElement('div'); stage.className = 'pk-stage'; root.appendChild(stage);
@@ -603,7 +609,7 @@
     var top = div('pk-top pk-paper pk-tape');
     div('pk-ico', top, art('icon', 'kitchen') || doodleProp('pot'));
     div('pk-title', top, 'Kitchen');
-    var subEl = div('pk-sub', top, 'Drag ingredients into the pot, or tap them. 2 to 4 things make a dish.');
+    var subEl = div('pk-sub', top, TOUCH ? 'Tap or drag ingredients into the pot. 2 to 4 things make a dish.' : 'Drag ingredients into the pot, or tap them. 2 to 4 things make a dish.');
     var fridgeEl = div('pk-chip', top);
     var bookBtn = btn((art('icon', 'recipe') || '') + 'Recipe book', 'pk-gold', top, function () { showBook(); });
     var closeBtn = btn(art('icon', 'close') || '&times;', 'pk-x', top, function () { close(); });
@@ -1007,7 +1013,7 @@
 
     /* first paint */
     refresh();
-    var firstMsg = !notesShown.kitchen ? (notesShown.kitchen = 1, '<b>' + NOTES.kitchen + '</b>') : 'Drag 2 to 4 ingredients into the pot, then press <b>Cook!</b>';
+    var firstMsg = !notesShown.kitchen ? (notesShown.kitchen = 1, '<b>' + NOTES.kitchen + '</b>') : (TOUCH ? 'Tap or drag' : 'Drag') + ' 2 to 4 ingredients into the pot, then press <b>Cook!</b>';
     if (S.fridge.count < S.fridge.max) msg(firstMsg);
     later(function () { dogSay(pick(LINES.hello), 2600); }, 400);
     try { root.focus({ preventScroll: true }); } catch (e) { /* ignore */ }

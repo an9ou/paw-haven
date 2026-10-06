@@ -411,5 +411,34 @@ run('account', async (t) => {
   const p8 = await device('Phone 360x740', false); t.p = p8;
   ok((await line()) === 'Cloud save works on the web version.', 'the note shows on phones too'); await layout('phone cloud off'); await audit('360_740_07_cloud_off');
 
+  // ---- kitchen (v2.3 occlusion) ----
+  // the food-safety lesson, the header hint, the dog's bubble and the kitchen taps on the two phone sizes
+  for (const dev of ['Phone 390x844', 'Phone 360x740']) {
+    const tag = 'kitchen_' + dev.replace(/\D+/g, '_').replace(/^_|_$/g, '');
+    sec(`${dev}: kitchen lesson, header, bubble and taps`);
+    await t.newGame({ device: dev }, { inv: { crops: { carrot: [3, 1, 0] }, pantry: { oats: 3, rice: 3, egg: 2, chicken: 2 } } }); touch = true;
+    await ev(() => { window.__paw.S.place = 'house'; window.__paw.go('kitchen'); });
+    ok(await t.untilMode('kitchen'), 'the kitchen opens'); await t.p.waitForSelector('.pk-portrait [data-ing="carrot"]'); await t.sleep(300);
+    const kmsg = () => ev(() => { const m = document.querySelector('.pk-msg'), r = m.getBoundingClientRect(), s = document.querySelector('.pk-slots').getBoundingClientRect(); return { fits: m.scrollHeight <= m.clientHeight + 1, below: s.top >= r.bottom - 1, txt: m.textContent }; });
+    let km = await kmsg();
+    ok(km.fits && km.below, `the lesson is fully visible and the slots sit under it ("${km.txt}")`);
+    const hd = await ev(() => { const e = document.querySelector('.pk-sub'); return { w: e.scrollWidth <= e.clientWidth, h: e.scrollHeight <= e.clientHeight + 2, txt: e.textContent }; });
+    ok(hd.w && hd.h, 'the header hint is not truncated');
+    ok(/^Tap or drag ingredients into the pot\./.test(hd.txt), 'the header uses touch wording: ' + hd.txt);
+    const big = await ev(() => [...document.querySelectorAll('.pk-top .pk-gold, .pk-top .pk-x, .pk-slots .pk-btn')].map((b) => { const r = b.getBoundingClientRect(); return [b.textContent.trim() || 'close', Math.round(r.width * 10) / 10, Math.round(r.height * 10) / 10]; }));
+    ok(big.length === 4 && big.every((b) => b[1] >= 44 && b[2] >= 44), 'Recipe book, close, Empty and Cook! are >= 44 px ' + JSON.stringify(big));
+    await audit(`${tag}_01`);
+    // fill the pot past 4: the longer kind message and the dog's bubble
+    for (const id of ['oats', 'rice', 'egg', 'chicken', 'carrot']) await tap(`[data-ing="${id}"]`);
+    ok(await t.until(() => /4 things at most/.test(document.querySelector('.pk-msg').textContent), null, 3000), 'a fifth thing: the pot-is-full message');
+    km = await kmsg(); ok(km.fits && km.below, 'the longer message is fully visible and the slots sit under it');
+    ok(await t.until(() => document.querySelector('.pk-bub').classList.contains('pk-show'), null, 3000), 'the dog says something');
+    const bb = await ev(() => { const b = document.querySelector('.pk-bub'), r = b.getBoundingClientRect(), tr = document.querySelector('.pk-tray').getBoundingClientRect(); return { on: r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight, clear: r.top >= tr.bottom - 1, txt: b.textContent }; });
+    ok(bb.on && bb.clear, `the bubble is fully on screen, under the tray ("${bb.txt}")`);
+    await audit(`${tag}_02`);
+    await ev(() => window.__paw.go('yard'));
+  }
+  // ---- end kitchen ----
+
   ok(!dialogs.length, 'no browser dialogs ' + dialogs.join(' | '));
 }, { timeout: 300000 });
