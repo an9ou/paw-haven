@@ -68,6 +68,16 @@ Default parallelism = CPU cores - 1 (at least 1); override with `--jobs N`. **On
   - **Prepared state instead of replaying the game:** `t.newGame({}, { bond: {level: 7, pts: 1600}, coins: 1000, inv: {...} })` adopts through the UI (about 3 s) and merges a patch into the live save (`t.patch(obj)`); `t.home('market')` puts you at a place. Old-save tests inject JSON with `t.mk({ storage: { pawhaven_proto_v1: json } })`.
   - **Timing-sensitive game checks must not race the wall clock:** the purchase-window arrow keys wait until the quantity box has focus and read the quantity from the "Total" line; the trick-training mark waits for `__paw.train.att` and pins the attempt age before pressing Good!; layout checks switch Motion off (the pack dogs' CSS sway) before measuring.
 
+## Test pitfalls we hit (v2.1 and v2.2): read before writing a test
+- **"ALL OK":** `run_tests.js` passes a suite only if it exits 0 **and** its output contains `ALL OK`. Node-only tests must print it themselves (`if (!fail) console.log('ALL OK')`).
+- **`t.patch` merges objects.** It doesn't replace them. To set a new object (e.g. `dog.anc`), patch the field to `null` first, then patch the new value.
+- **Faking another lane's function only works before that lane merges.** `window.fn = ...` stops working once the owner's real `fn` is in the shared scope, because the in-scope name wins. Test with real state (e.g. put a litter in `S.litters`, mark `S.sniffed`), not by faking functions.
+- **Real art changes what you measure.** A selector like `[data-decor] rect` matches rectangles inside the art once real art is merged. Measure your own hit box (`> rect`) or a `data-*` hook.
+- **Things that load once can change what you patch.** BREED backfills `anc` on load, and the mailbox migrates pen-pal schedules once (`S.penpalV21`). Patch after `newGame`, knowing those defaults already ran.
+- **The certificate flag:** in cloud containers headless Chromium needs `PAW_ARGS=--ignore-certificate-errors`. `tools/session_start.sh` sets it for you.
+- **Phone suites:** use the `device` option of `test_lib.js` (iPhone 13 / Pixel 7 profiles). Run them with `node game/run_tests.js phone`. `all` stays desktop-only.
+- **Copy rules:** `node game/test_copy_node.js` (the `copy` suite, in `all`). A deliberate exception needs `// copy-ok: <reason>` on the line.
+
 ## Speed rules for every agent
 - Desktop (1280×720) and phone (portrait, see PHONE.md). Phone rules always sit under `html[data-layout="phone"]` / `isPhone()`.
 - Do 1 look-and-fix round for small changes and 2 for big ones. Don't repeat runs that already passed.

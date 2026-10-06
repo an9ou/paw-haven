@@ -35,6 +35,7 @@ const SUITES = {
   v2_town: { file: 'test_v2_town.js', group: 'all', est: 80 },
   v2_play: { file: 'test_v2_play.js', group: 'all', est: 70 },
   v21_genes: { file: 'test_v21_genes_node.js', group: 'all', est: 15 },
+  copy: { file: 'test_copy_node.js', group: 'all', est: 2 },
   v21_breed: { file: 'test_v21_breed.js', group: 'all', est: 15 },
   v21_journal: { file: 'test_v21_journal.js', group: 'all', est: 30 },
   v21_town: { file: 'test_v21_town.js', group: 'all', est: 20 },
@@ -51,7 +52,7 @@ const SUITES = {
   phone_skill: { file: 'test_phone_skill.js', group: 'phone', est: 150 },
 };
 // extra aliases: `all_*` is the same as `all`; `test_all` = the four+ shards of the old test_all.js
-const ALIAS = { test_all: ['all_a', 'all_b', 'all_c', 'all_d', 'all_e'], 'test_v15': ['v15'], 'test_v16': ['v16'], 'test_v16b': ['v16b'], 'test_v17': ['v17'], 'test_v171_garden': ['v171_garden'], 'test_v171_tricks': ['v171_tricks'], 'test_v2_slots': ['v2_slots'], 'test_v2_breed': ['v2_breed'], 'test_v2_journal': ['v2_journal'], 'test_v2_town': ['v2_town'], 'test_v2_play': ['v2_play'], 'test_v21_genes_node': ['v21_genes'], 'test_v21_breed': ['v21_breed'], 'test_v21_journal': ['v21_journal'], 'test_v21_town': ['v21_town'], 'test_v21_home': ['v21_home'] };
+const ALIAS = { test_all: ['all_a', 'all_b', 'all_c', 'all_d', 'all_e'], 'test_v15': ['v15'], 'test_v16': ['v16'], 'test_v16b': ['v16b'], 'test_v17': ['v17'], 'test_v171_garden': ['v171_garden'], 'test_v171_tricks': ['v171_tricks'], 'test_v2_slots': ['v2_slots'], 'test_v2_breed': ['v2_breed'], 'test_v2_journal': ['v2_journal'], 'test_v2_town': ['v2_town'], 'test_v2_play': ['v2_play'], 'test_v21_genes_node': ['v21_genes'], 'test_copy_node': ['copy'], 'test_v21_breed': ['v21_breed'], 'test_v21_journal': ['v21_journal'], 'test_v21_town': ['v21_town'], 'test_v21_home': ['v21_home'] };
 
 const argv = process.argv.slice(2); const opt = { jobs: Math.max(1, os.cpus().length - 1), retries: 1, strict: false, build: true, shots: false, timeout: 420 }; const names = [];
 for (let i = 0; i < argv.length; i++) {

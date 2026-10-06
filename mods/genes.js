@@ -15,12 +15,12 @@
   const SIZE = { shiba: 'medium', corgi: 'small', golden: 'large', dachs: 'small', husky: 'large', mutt: 'medium', chihuahua: 'small', pug: 'small', greyhound: 'large', beagle: 'medium' };
 
   const LOCI = {
-    B:  { name: 'Coat base (B locus, TYRP1)', alleles: ['B', 'b'], dominant: 'B', rule: 'B_ makes black pigment; b/b makes liver (chocolate) pigment, a liver nose and amber eyes.' },
+    B:  { name: 'Coat base (B locus, TYRP1)', alleles: ['B', 'b'], dominant: 'B', rule: 'B_ makes black pigment; b/b makes liver (chocolate) pigment, a liver nose and amber eyes.' }, // copy-ok: reference text, not shown in the game
     D:  { name: 'Dilution (D locus, MLPH)', alleles: ['D', 'd'], dominant: 'D', rule: 'd/d dilutes: black becomes blue, liver becomes lilac (isabella), red becomes cream.' },
     E:  { name: 'Red (E locus, MC1R)', alleles: ['E', 'e'], dominant: 'E', rule: 'e/e makes the coat grow only red pigment: red, gold or tan by breed (cream with d/d). It hides merle (cryptic merle).' },
-    S:  { name: 'White spotting (S locus, MITF)', alleles: ['S', 'sp'], dominant: 'S', rule: 'S/sp gives small white markings; sp/sp gives extensive white piebald patches.' },
+    S:  { name: 'White spotting (S locus, MITF)', alleles: ['S', 'sp'], dominant: 'S', rule: 'S/sp gives small white markings; sp/sp gives extensive white piebald patches.' }, // copy-ok: reference text, not shown in the game
     M:  { name: 'Merle (M locus, PMEL)', alleles: ['M', 'm'], dominant: 'M', rule: 'M/m gives merle marbling on black or liver pigment (hidden on e/e). M/M (double merle) is never allowed.' },
-    Bl: { name: 'Husky blue eyes (ALX4-type)', alleles: ['Bl', 'bl'], dominant: 'Bl', rule: 'Bl/Bl gives blue eyes; Bl/bl gives blue eyes with a 1 in 4 chance of odd eyes instead.' }
+    Bl: { name: 'Husky blue eyes (ALX4-type)', alleles: ['Bl', 'bl'], dominant: 'Bl', rule: 'Bl/Bl gives blue eyes; Bl/bl gives blue eyes with a 1 in 4 chance of odd eyes instead.' } // copy-ok: reference text, not shown in the game
   };
   const LOCUS_KEYS = ['B', 'D', 'E', 'S', 'M', 'Bl'];
 

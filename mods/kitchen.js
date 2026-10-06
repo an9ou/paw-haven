@@ -54,7 +54,7 @@
     { id: 'onion', name: 'Onion', where: ['rack', 'junk'], why: 'Onions (and garlic, leeks and chives) damage a dog\'s red blood cells, cooked or raw.', swap: 'Carrots are a crunchy swap.' },
     { id: 'garlic', name: 'Garlic', where: ['rack'], why: 'Garlic is in the onion family and can cause anaemia in dogs, even as powder.', swap: 'Try peas instead.' },
     { id: 'grapes', name: 'Grapes', where: ['rack', 'junk'], why: 'Grapes and raisins can cause sudden kidney failure in dogs, and there is no known safe amount.', swap: 'Blueberries are a great swap.' },
-    { id: 'chocolate', name: 'Chocolate', where: ['pantry'], why: 'Chocolate has theobromine and caffeine, which can make a dog\'s heart race; dark chocolate is worst.', swap: 'Carrot Crunchies are a safe treat.' },
+    { id: 'chocolate', name: 'Chocolate', where: ['pantry'], why: 'Chocolate has theobromine and caffeine, which can make a dog\'s heart race. Dark chocolate is worst.', swap: 'Carrot Crunchies are a safe treat.' },
     { id: 'raisins', name: 'Raisins', where: ['pantry'], why: 'Raisins are dried grapes and can cause kidney failure in dogs.', swap: 'Blueberries instead.' },
     { id: 'coffee', name: 'Coffee', where: ['pantry'], why: 'Caffeine makes a dog\'s heart race and can cause tremors.', swap: 'Fresh water.' },
     { id: 'gum', name: 'Sugar-free Gum', where: ['pantry'], why: 'It often contains xylitol, which drops a dog\'s blood sugar fast and can harm the liver.', swap: 'A Pumpkin Pupcake instead.' },
