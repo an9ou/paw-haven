@@ -326,3 +326,17 @@ window.__pawTG = {
   beats() { const G = tgG(); return G && G.rhythm ? G.beats.map((b) => b - performance.now()) : null; },
   tap() { tgSpeakTap(); },
 };
+
+/* v2.3 phone: the portrait-lock card pauses a running mini-game and resumes it on rotate (no lost round, no fail). */
+on('phone:lock', ({ on: locked }) => {
+  const G = tgG(); if (!G || G.busy) return;
+  if (locked) {
+    if (G.paused) return; G.paused = true;
+    pkLeadStop(); clearInterval(G.ticker); G.ticker = null; G.grabbed = false;
+    if (G.rhythm) TRN.timers.splice(0).forEach(clearTimeout); // the Speak beats are re-timed on resume
+  } else {
+    if (!G.paused) return; G.paused = false;
+    if (G.rhythm) { G.hits = []; tgSpeakStart(G); return; } // the same attempt starts again from "1, 2"
+    G.holdAt = performance.now(); if (!G.ticker) G.ticker = setInterval(tgTick, 50);
+  }
+});

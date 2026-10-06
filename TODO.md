@@ -33,14 +33,14 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [ ] Install Node and Playwright on this Mac to run the test suites (see README).
 
 ## Phone (v2.2)
-- [ ] The portrait lock pauses CSS animations and the walk runner; fetch and the trick mini-games keep running behind the card. `game/src/19_fetch.js`, `game/src/15b_trick_games.js` (listen to `phone:lock`)
+- [x] The portrait lock pauses CSS animations and the walk runner; fetch and the trick mini-games keep running behind the card. `game/src/19_fetch.js`, `game/src/15b_trick_games.js` (listen to `phone:lock`)
 - [ ] Realtime sync could not be tested live from the build container (its proxy blocks WebSockets). The mocked suite covers it, and a focus pull covers the same path. Check once on real phones. `game/src/22b_cloud.js`
 - [ ] Desktop Settings now scrolls: the Cloud save and Save code section pushes Reset save and Title screen below the fold at 1280×720. `game/src/20_settings_dev.js`
-- [ ] Landscape tablet runner: the hint says "tap the scene", but only the right half jumps (Duck sits on the left). `mods/walkrun.js`
+- [x] Landscape tablet runner: the hint says "tap the scene", but only the right half jumps (Duck sits on the left). `mods/walkrun.js`
 - [ ] Garden on phones: plots 5 and 6 and the plot card sit below the fold; seeds need two taps (dig, then plant). `mods/garden.js`
-- [ ] Walk results sheet: the "Walk complete" title is drawn over the panel's header art. `game/src/09_walk_classic.js`
-- [ ] Runner countdown overlaps the legend in portrait for a moment. `mods/walkrun.js`
-- [ ] Market Street: the place buttons overlap the street sign; the map speech bubble covers "you are here". `game/src/14_town_places.js`, `game/src/08_map.js`
+- [x] Walk results sheet: the "Walk complete" title is drawn over the panel's header art. `game/src/09_walk_classic.js`
+- [x] Runner countdown overlaps the legend in portrait for a moment. `mods/walkrun.js`
+- [x] Market Street: the place buttons overlap the street sign; the map speech bubble covers "you are here". `game/src/14_town_places.js`, `game/src/08_map.js`
 - [ ] Mailbox Letters / Album buttons measure 38–41 px on phones; nursery sex symbols are about 13.6 px. `game/css/23_phone_journal.css`, `game/css/24_phone_puppy.css`
 - [ ] The camera crop can hide the Dog Park board and the Square easel (their place buttons work). `game/src/03_yard.js`
 - [ ] The Playwright iPhone 13 profile is 390×664, not 390×844, so sheet heights were tested at the smaller size. Check once on a real iPhone.
