@@ -43,14 +43,25 @@ const signOverlaps = (cover) => {
   return out;
 };
 
+// wait for the picture to hold still: fonts ready, finite CSS animations done, and the key boxes + the scene's viewBox unchanged for 6 frames in a row (no fixed sleeps)
+const settleFn = async (extra) => {
+  await document.fonts.ready;
+  const SEL = ['#view svg.world', '#dogHit', '#dogWA', '#placeBtns', '#bar', '#hud', '#modal .panel', '#mapInner', '#dock', '#trainPanel', '#mapPin', '.pw-stage', '.pw-dog', '.pw-ctrls'].concat(extra || []);
+  const snap = () => { const sv = document.querySelector('#view svg.world'); return JSON.stringify(SEL.map((s) => { const e = document.querySelector(s); if (!e) return null; const r = e.getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom].map((x) => Math.round(x * 2)); })) + (sv ? sv.getAttribute('viewBox') : '') + document.getAnimations().filter((a) => { const c = a.effect && a.effect.getComputedTiming(); return a.playState === 'running' && c && c.iterations !== Infinity && c.endTime > 0; }).length; };
+  let prev = '', same = 0; const t0 = performance.now();
+  while (same < 6 && performance.now() - t0 < 8000) { await new Promise((r) => requestAnimationFrame(r)); const s = snap(); same = s === prev ? same + 1 : 0; prev = s; }
+};
+
 run('phone_occl_play', async (t) => {
-  const { ok, ev } = t; const sleepMs = sleep;
+  const { ok, ev } = t;
+  const settle = (extra) => ev(`(${settleFn})(${JSON.stringify(extra || [])})`);
+  const vp = async (w, h) => { await t.p.setViewportSize({ width: w, height: h }); await t.until((w) => innerWidth === w, w, 5000); await settle(); };
   const p = new Proxy({}, { get: (_, k) => { const v = t.p[k]; return typeof v === 'function' ? v.bind(t.p) : v; } });
   const check = async (label, sel, cover, pts) => { const bad = await ev(`(${covered})(...${JSON.stringify([sel, cover || COVER, pts || PTS])})`); ok(bad.length === 0, `${label}: ${sel} is not covered${bad.length ? ' -> ' + bad.slice(0, 4).join(' | ') : ''}`); };
   const clear = async (label, aSel, bSels, shrink) => { const bad = await ev(`(${overlaps})(...${JSON.stringify([aSel, bSels, shrink || 0])})`); ok(bad.length === 0, `${label}: ${aSel} is clear of ${bSels.join(', ')}${bad.length ? ' -> ' + bad.slice(0, 3).join(' | ') : ''}`); };
   const toast = () => ev(() => { const h = document.getElementById('toasts'); if (!h) return; const d = document.createElement('div'); d.className = 'toast good'; d.id = 'occlToast'; d.textContent = 'Surprise treasure on the path: a very long toast to test where toasts sit.'; h.appendChild(d); });
   const unToast = () => ev(() => { const d = document.getElementById('occlToast'); if (d) d.remove(); });
-  const at = async (place) => { await ev((k) => { const S = window.__paw.S; S.sleeping = false; S.place = k; window.__paw.go('yard'); }, place); await t.until((k) => window.__paw.S.place === k && window.__paw.mode === 'yard' && !!document.getElementById('placeBtns'), place, 8000); await t.calm(); await t.lu(); await sleepMs(500); };
+  const at = async (place) => { await ev((k) => { const S = window.__paw.S; S.sleeping = false; S.place = k; window.__paw.go('yard'); }, place); await t.until((k) => window.__paw.S.place === k && window.__paw.mode === 'yard' && !!document.getElementById('placeBtns'), place, 8000); await t.calm(); await t.lu(); await settle(); };
 
   t.sec('setup');
   await t.newGame({ device: 'iPhone 13' }, { coins: 3000, bond: { level: 10, pts: 5000 }, stats: { hunger: 80, happy: 80, energy: 95, clean: 90 }, inv: { toys: ['Tennis Ball', 'Frisbee'] } });
@@ -59,7 +70,7 @@ run('phone_occl_play', async (t) => {
 
   for (const [w, h] of SIZES) {
     const tag = `${w}x${h}`;
-    await t.p.setViewportSize({ width: w, height: h }); await sleepMs(500);
+    await vp(w, h);
     ok((await ev(() => document.documentElement.dataset.layout)) === 'phone', `${tag}: still the phone layout`);
 
     // ===================== Market Street =====================
@@ -71,13 +82,12 @@ run('phone_occl_play', async (t) => {
     // the street sign is a protected prop: it stays drawn, and nothing (place buttons, bar, HUD, toasts, status chip) sits on it
     const signBad = await ev(`(${signOverlaps})(${JSON.stringify(COVER)})`);
     ok(signBad.length === 0, `${tag} market: the "Market Street" sign is drawn and nothing covers it${signBad.length ? ' -> ' + signBad.slice(0, 3).join(' | ') : ''}`);
-    await toast(); const signBadT = await ev(`(${signOverlaps})(${JSON.stringify(COVER)})`); ok(signBadT.length === 0, `${tag} market + toast: the sign is still uncovered${signBadT.length ? ' -> ' + signBadT.slice(0, 2).join(' | ') : ''}`); await unToast();
     // the place buttons are one row under the scene: scrollable with a visible peek, every shop reachable, clear of the sign, the dog and the bar
     const rowInfo = await ev(() => { const r = document.getElementById('placeBtns'), b = [...r.querySelectorAll('.btn')], rr = r.getBoundingClientRect(), sv = document.querySelector('#view svg.world').getBoundingClientRect(); return { scrolls: r.scrollWidth > r.clientWidth + 4, oneRow: new Set(b.map((x) => Math.round(x.getBoundingClientRect().top))).size === 1, mask: (getComputedStyle(r).webkitMaskImage || getComputedStyle(r).maskImage) !== 'none', h: Math.min(...b.map((x) => x.getBoundingClientRect().height)), under: rr.top >= sv.bottom - 1, peek: b.some((x) => { const q = x.getBoundingClientRect(); return q.left < rr.right && q.right > rr.right - 1; }) || r.scrollWidth <= r.clientWidth }; });
     ok(rowInfo.oneRow && rowInfo.under, `${tag} market: the place buttons are one row under the scene`);
     ok(rowInfo.h >= 44, `${tag} market: place buttons are >= 44 px tall (${Math.round(rowInfo.h)})`);
     ok(!rowInfo.scrolls || (rowInfo.mask && rowInfo.peek), `${tag} market: a row that scrolls has faded edges and a peeking next button`);
-    await ev(() => { const r = document.getElementById('placeBtns'); r.scrollLeft = r.scrollWidth; }); await sleepMs(250);
+    await ev(() => { const r = document.getElementById('placeBtns'); r.scrollLeft = r.scrollWidth; }); await t.until(() => { const r = document.getElementById('placeBtns'); return r.scrollLeft >= r.scrollWidth - r.clientWidth - 1; }, null, 3000);
     await check(`${tag} market (scrolled to the end)`, '#placeBtns [data-pb="yard"]', '#bar,#hud,#toasts .toast', [[0.5, 0.5]]);
     await ev(() => { document.getElementById('placeBtns').scrollLeft = 0; });
     await toast(); await check(`${tag} market + toast`, '#dogHit', COVER); await check(`${tag} market + toast`, '#placeBtns [data-sh]:nth-child(-n+2)', '#toasts .toast,#bar', [[0.5, 0.5]]); await unToast();
@@ -86,7 +96,7 @@ run('phone_occl_play', async (t) => {
     for (const k of ['kibble', 'boutique', 'builder', 'sprout']) {
       t.sec(`${tag}: shop ${k}`);
       await at('market'); await p.locator(`#placeBtns [data-sh=${k}]`).first().tap();
-      ok(await t.until(() => !document.getElementById('modal').hidden && !!document.querySelector('#modal .panel'), null, 6000), `${tag} shop ${k}: opens`); await sleepMs(500); await t.SH(`${tag}_shop_${k}`);
+      ok(await t.until(() => !document.getElementById('modal').hidden && !!document.querySelector('#modal .panel'), null, 6000), `${tag} shop ${k}: opens`); await settle(['#modal .panel .sitem']); await t.SH(`${tag}_shop_${k}`);
       // the sheet's own controls (close, tabs, first cards, footer buttons) are reachable: nothing from the bar, HUD or toasts sits on them
       await check(`${tag} shop ${k}`, '#modal .panel .x', '#bar,#hud,#toasts .toast,#dock', [[0.5, 0.5]]);
       await check(`${tag} shop ${k}`, '#modal .panel .sitem:nth-child(-n+2)', '#bar,#hud,#toasts .toast,#dock', [[0.5, 0.3]]);
@@ -97,7 +107,7 @@ run('phone_occl_play', async (t) => {
 
     // ===================== town map =====================
     t.sec(`${tag}: town map`);
-    await at('market'); await p.locator('[data-act=map]').first().tap(); ok(await t.until(() => window.__paw.mode === 'map', null, 6000), `${tag} map: opens`); await sleepMs(900); await t.SH(tag + '_map');
+    await at('market'); await p.locator('[data-act=map]').first().tap(); ok(await t.until(() => window.__paw.mode === 'map', null, 6000), `${tag} map: opens`); await t.until(() => { const p = document.getElementById('mapPin'); return !!p && !p.hidden; }, null, 5000); await settle(); await t.SH(tag + '_map');
     await check(`${tag} map`, '#mapPin span', '#mapZoom,#mapX,#mapGo:not([hidden]),#status,#hud,#bar,#toasts .toast', [[0.5, 0.5], [0.2, 0.5], [0.8, 0.5]]);
     await clear(`${tag} map`, '#mapPin', ['#bubble', '#mapTip', '#mapGo', '#mapZoom', '#mapX', '#status:not(:empty)'], 0);
     // the pin and its label stand beside the place: they never sit on the place's own art or on any place name
@@ -107,14 +117,14 @@ run('phone_occl_play', async (t) => {
       const m = document.querySelector('#mapPan [data-area=market]'); if (m) { const q = m.getBoundingClientRect(), core = { left: q.left + q.width * 0.12, right: q.right - q.width * 0.12, top: q.top, bottom: q.top + q.height * 0.55, width: q.width }; if (core.left < r.right && core.right > r.left && core.top < r.bottom && core.bottom > r.top) out.push('pin over the Market Street art'); } return out; });
     ok(pinBad.length === 0, `${tag} map: the "you are here" pin covers no place name or art${pinBad.length ? ' -> ' + pinBad.slice(0, 3).join(' | ') : ''}`);
     await check(`${tag} map`, '[data-area=market]', '#mapZoom,#mapX,#hud,#bar', [[0.5, 0.5]]);
-    await p.locator('[data-area=market]').first().tap({ force: true }); await sleepMs(300);
+    await p.locator('[data-area=market]').first().tap({ force: true }); await t.until(() => !!document.querySelector('#mapGo:not([hidden])'), null, 3000);
     await check(`${tag} map chip`, '#mapGo:not([hidden]) button', '#bar,#hud,#toasts .toast', [[0.5, 0.5]]);
     await clear(`${tag} map chip`, '#mapPin', ['#mapGo'], 0);
     await p.locator('#mapX').tap(); await t.untilMode('yard');
 
     // ===================== route carousel =====================
     t.sec(`${tag}: route carousel`);
-    await at('yard'); await p.locator('[data-act=walk]').first().tap(); await p.waitForSelector('#rtStart'); await sleepMs(500); await t.SH(tag + '_routes');
+    await at('yard'); await p.locator('[data-act=walk]').first().tap(); await p.waitForSelector('#rtStart'); await settle(['.rt-card.cur']); await t.SH(tag + '_routes');
     for (const s of ['#rtStart', '#rtBack', '#rtPrev', '#rtNext', '.rt-card.cur']) await check(`${tag} routes`, s, '#bar,#hud,#toasts .toast,#dock,#modal:not([hidden]) .panel', [[0.5, 0.5]]);
     await toast(); await check(`${tag} routes + toast`, '#rtStart', '#toasts .toast', [[0.5, 0.5]]); await unToast();
     await p.locator('#rtBack').tap(); await t.untilMode('yard');
@@ -122,12 +132,12 @@ run('phone_occl_play', async (t) => {
     // ===================== classic walk + results =====================
     t.sec(`${tag}: classic walk`);
     await ev(() => { window.PawWalk = null; window.__paw.S.walks = 1; window.__paw.go('walk', 'park'); });
-    ok(await t.until(() => window.__paw.mode === 'walk' && !!document.getElementById('holdBtn'), null, 10000), `${tag} classic: opens`); await sleepMs(900); await t.SH(tag + '_classic');
+    ok(await t.until(() => window.__paw.mode === 'walk' && !!document.getElementById('holdBtn'), null, 10000), `${tag} classic: opens`); await settle(); await t.SH(tag + '_classic');
     await check(`${tag} classic`, '#dogWA', COVER);
     for (const s of ['#holdBtn', '#hopBtn', '#walkQuit', '#bagBtn']) await check(`${tag} classic`, s, '#bar,#hud,#toasts .toast,#modal:not([hidden]) .panel', [[0.5, 0.5]]);
     await toast(); await check(`${tag} classic + toast`, '#dogWA', COVER); await unToast();
-    await p.locator('#bagBtn').tap(); await sleepMs(300); await check(`${tag} classic bag open`, '#dogWA', COVER); await check(`${tag} classic bag open`, '#holdBtn', '#bar,#hud,#toasts .toast', [[0.5, 0.5]]); await p.locator('#bagBtn').tap();
-    await p.locator('#walkQuit').tap(); await p.waitForSelector('#resOk'); await sleepMs(600); await t.SH(tag + '_classic_results');
+    await p.locator('#bagBtn').tap(); await t.until(() => !document.getElementById('walkBag').hidden, null, 3000); await check(`${tag} classic bag open`, '#dogWA', COVER); await check(`${tag} classic bag open`, '#holdBtn', '#bar,#hud,#toasts .toast', [[0.5, 0.5]]); await p.locator('#bagBtn').tap();
+    await p.locator('#walkQuit').tap(); await p.waitForSelector('#resOk'); await settle(['#modal .panel']); await t.SH(tag + '_classic_results');
     for (const s of ['#resOk', '#modal .panel .x']) await check(`${tag} classic results`, s, '#bar,#hud,#toasts .toast,#dock', [[0.5, 0.5]]);
     const titleOk = await ev(() => { const hd = document.querySelector('#modal .panel h2'), pn = document.querySelector('#modal .panel'); if (!hd || !pn) return false; return hd.getBoundingClientRect().top - pn.getBoundingClientRect().top >= 36; });
     ok(titleOk, `${tag} classic results: the title sits below the panel's header art`);
@@ -139,16 +149,39 @@ run('phone_occl_play', async (t) => {
     ok(await t.until(() => !!document.querySelector('.pw-root'), null, 12000), `${tag} runner: opens`);
     // the tutorial card (a sheet by design) is paged through; the countdown follows
     await t.until(() => !!document.querySelector('.pw-tut'), null, 8000);
-    for (let i = 0; i < 8 && (await ev(() => !!document.querySelector('.pw-tut'))); i++) { await ev(() => { const b = document.querySelector('.pw-tut [data-go]') || document.querySelector('.pw-tut [data-next]'); if (b) b.click(); }); await sleepMs(200); }
+    for (let i = 0; i < 8 && (await ev(() => !!document.querySelector('.pw-tut'))); i++) {
+      const before = await ev(() => document.querySelector('.pw-tut').innerHTML);
+      await ev(() => { const b = document.querySelector('.pw-tut [data-go]') || document.querySelector('.pw-tut [data-next]'); if (b) b.click(); });
+      await t.until((b) => { const c = document.querySelector('.pw-tut'); return !c || c.innerHTML !== b; }, before, 3000);
+    }
     // the countdown
-    const cd = await t.until(() => { const c = document.querySelector('.pw-cd'); return !!c && c.getBoundingClientRect().height > 5; }, null, 6000);
-    ok(cd, `${tag} runner: countdown shows`);
-    if (cd) {
-      await clear(`${tag} runner countdown`, '.pw-cd', ['.pw-legend', '.pw-ctrls', '.pw-hud']);
-      await check(`${tag} runner countdown`, '.pw-dog', '.pw-hud,.pw-ctrls,.pw-legend,.pw-card', PTS);
+    // measured in the page in the same frame the countdown word is on screen (each word lives about a second)
+    const cdRes = await ev(`(async () => { const ov = ${overlaps}, cv = ${covered}; const t0 = performance.now();
+      while (performance.now() - t0 < 8000) { const c = document.querySelector('.pw-cd'); if (c && c.getBoundingClientRect().height > 5 && +getComputedStyle(c).opacity > 0.5) return { shown: true, text: c.textContent, over: ov('.pw-cd', ['.pw-legend', '.pw-ctrls', '.pw-hud'], 0), dog: cv('.pw-dog', '.pw-hud,.pw-ctrls,.pw-legend,.pw-card', ${JSON.stringify(PTS)}) }; await new Promise((r) => requestAnimationFrame(r)); }
+      return { shown: false }; })()`);
+    ok(cdRes.shown, `${tag} runner: countdown shows`);
+    if (cdRes.shown) {
+      ok(cdRes.over.length === 0, `${tag} runner countdown ("${cdRes.text}"): clear of the legend, controls and HUD${cdRes.over.length ? ' -> ' + cdRes.over.join(' | ') : ''}`);
+      ok(cdRes.dog.length === 0, `${tag} runner countdown: the dog is not covered${cdRes.dog.length ? ' -> ' + cdRes.dog.slice(0, 3).join(' | ') : ''}`);
     }
     ok(await t.until(() => { const o = document.querySelector('.pw-ov'); return !!o && o.hidden; }, null, 15000), `${tag} runner: countdown ends`);
-    await sleepMs(400); await t.SH(tag + '_runner');
+    await settle(); await t.SH(tag + '_runner');
+    // a swipe down on the scene ducks and never hops first (the press and the first moves arrive back to back, so a jump committed on the press itself would show); a tap anywhere on the scene (either half) jumps. A frame watcher records the dog's poses.
+    await ev(() => { window.__seen = { jump: 0, crouch: 0 }; const POSE = ['walk', 'jump', 'crouch']; window.__jd = 0; new MutationObserver(() => { if (document.querySelector('.pw-jump').classList.contains('down')) window.__jd++; }).observe(document.querySelector('.pw-jump'), { attributes: true, attributeFilter: ['class'] }); const loop = () => { const on = document.querySelector('.pw-pose.on'); if (on) { const k = POSE[[...on.parentElement.children].indexOf(on)]; if (k && window.__seen[k] != null) window.__seen[k]++; } window.__seenRaf = requestAnimationFrame(loop); }; loop(); });
+    const sb = await p.locator('.pw-stage').boundingBox(), cdp = await t.ctx.newCDPSession(t.p), tp = (x, y) => [{ x, y, radiusX: 4, radiusY: 4, force: 1, id: 1 }];
+    const sx = sb.x + sb.width * 0.3, sy = sb.y + sb.height * 0.25, frame = () => ev(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: tp(sx, sy) });
+    for (let i = 1; i <= 8; i++) { await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: tp(sx, sy + i * 8) }); await frame(); }
+    ok(await t.until(() => window.__seen.crouch > 0, null, 2000), `${tag} runner: a swipe down on the scene ducks`);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await t.until(() => { const on = document.querySelector('.pw-pose.on'); return !!on && [...on.parentElement.children].indexOf(on) !== 2; }, null, 3000);
+    ok(await ev(() => window.__seen.jump + window.__jd) === 0, `${tag} runner: the swipe never hopped first`);
+    for (const fx of [0.2, 0.8]) {
+      await ev(() => { window.__seen.jump = 0; }); await p.touchscreen.tap(sb.x + sb.width * fx, sb.y + sb.height * 0.4);
+      ok(await t.until(() => window.__seen.jump > 0, null, 2000), `${tag} runner: a tap on the ${fx < 0.5 ? 'left' : 'right'} of the scene jumps`);
+      await t.until(() => { const on = document.querySelector('.pw-pose.on'); return !!on && [...on.parentElement.children].indexOf(on) === 0; }, null, 4000); // landed and running again
+    }
+    await cdp.detach(); await ev(() => cancelAnimationFrame(window.__seenRaf));
     await check(`${tag} runner`, '.pw-dog', '.pw-hud,.pw-ctrls,.pw-legend,.pw-card,#toasts .toast', PTS);
     await clear(`${tag} runner`, '.pw-dog', ['.pw-hud', '.pw-ctrls', '.pw-legend'], 0.1);
     await clear(`${tag} runner`, '.pw-stage', ['.pw-legend', '.pw-ctrls'], 0.02);
@@ -159,35 +192,35 @@ run('phone_occl_play', async (t) => {
     // ===================== fetch =====================
     t.sec(`${tag}: fetch`);
     await ev(() => window.__paw.go('fetch', 'Tennis Ball'));
-    ok(await t.until(() => window.__paw.mode === 'fetch' && !!document.getElementById('fQuit'), null, 8000), `${tag} fetch: opens`); await sleepMs(700); await t.SH(tag + '_fetch');
+    ok(await t.until(() => window.__paw.mode === 'fetch' && !!document.getElementById('fQuit'), null, 8000), `${tag} fetch: opens`); await settle(); await t.SH(tag + '_fetch');
     await check(`${tag} fetch`, '#dogHit', COVER);
     await check(`${tag} fetch`, '#fQuit', '#bar,#hud,#toasts .toast', [[0.5, 0.5]]);
     const tapArea = await ev(() => { const d = document.getElementById('dock').getBoundingClientRect(), v = document.getElementById('view').getBoundingClientRect(), s = document.querySelector('#view svg.world').getBoundingClientRect(); return { dockTop: d.top, viewBottom: v.bottom, svgBottom: s.bottom }; });
     ok(tapArea.dockTop >= tapArea.viewBottom - 1 || tapArea.dockTop >= tapArea.svgBottom - 1, `${tag} fetch: the dock sits under the scene, not on it (dock ${Math.round(tapArea.dockTop)}, scene ends ${Math.round(tapArea.svgBottom)})`);
-    await p.touchscreen.tap(w * 0.6, Math.min(h - 260, 520)); await sleepMs(300);
+    { const vb = await p.locator('#view svg.world').boundingBox(); await p.touchscreen.tap(vb.x + vb.width * 0.6, vb.y + vb.height * 0.78); } ok(await t.until(() => !!window.__paw.F.fly, null, 3000), `${tag} fetch: a tap on the grass throws the ball`);
     await check(`${tag} fetch in flight`, '#dogHit', COVER);
     await toast(); await check(`${tag} fetch + toast`, '#dogHit', COVER); await unToast();
-    await p.locator('#fQuit').tap(); await p.waitForSelector('#fOk'); await sleepMs(500);
+    await p.locator('#fQuit').tap(); await p.waitForSelector('#fOk'); await settle(['#modal .panel']);
     await check(`${tag} fetch results`, '#fOk', '#bar,#hud,#toasts .toast', [[0.5, 0.5]]);
     await p.locator('#fOk').tap(); await t.untilMode('yard');
 
     // ===================== trick mini-games =====================
     t.sec(`${tag}: trick games`);
     const refill = () => ev(() => { window.__paw.S.dog.focus = { v: 100, at: window.__paw.S.gameMin }; });
-    await at('yard'); await p.locator('[data-act=play]').first().tap(); await t.waitPop(true); await p.locator('[data-play=tricks]').tap(); await sleepMs(700);
+    await at('yard'); await p.locator('[data-act=play]').first().tap(); await t.waitPop(true); await p.locator('[data-play=tricks]').tap(); await t.until(() => !!document.querySelector('#trainPanel:not([hidden])'), null, 4000); await settle(['#trainPanel']);
     await refill(); await p.locator('[data-tr="Sit"]').tap(); await t.until(() => window.__paw.train && window.__paw.train.trick === 'Sit', null, 3000);
-    await p.locator('#trStart').tap(); ok(await t.until(() => !!document.querySelector('#trTrack .tg-dots'), null, 5000), `${tag} tricks: the lure track is drawn`); await sleepMs(500); await t.SH(tag + '_trick_lure');
+    await p.locator('#trStart').tap(); ok(await t.until(() => !!document.querySelector('#trTrack .tg-dots'), null, 5000), `${tag} tricks: the lure track is drawn`); await settle(['#trTrack']); await t.SH(tag + '_trick_lure');
     await check(`${tag} lure`, '#dogHit', COVER);
     await check(`${tag} lure`, '#trTrack', '#trainPanel:not([hidden]),#bar,#hud,#toasts .toast', [[0.5, 0.5], [0.3, 0.5], [0.7, 0.5]]);
     for (const s of ['#pkLead', '#trX']) await check(`${tag} lure`, s, '#bar,#hud,#toasts .toast', [[0.5, 0.5]]);
     await toast(); await check(`${tag} lure + toast`, '#trTrack', '#toasts .toast', [[0.5, 0.5], [0.3, 0.5], [0.7, 0.5]]); await check(`${tag} lure + toast`, '#pkLead', '#toasts .toast', [[0.5, 0.5]]); await unToast();
     await p.locator('#trX').tap(); await t.until(() => !window.__paw.train, null, 3000);
 
-    await at('yard'); await p.locator('[data-act=play]').first().tap(); await t.waitPop(true); await p.locator('[data-play=tricks]').tap(); await sleepMs(700);
+    await at('yard'); await p.locator('[data-act=play]').first().tap(); await t.waitPop(true); await p.locator('[data-play=tricks]').tap(); await t.until(() => !!document.querySelector('#trainPanel:not([hidden])'), null, 4000); await settle(['#trainPanel']);
     await ev(() => { window.__paw.S.dog.tricks.Speak = { p: 0.1, shows: 0 }; }); await refill();
     if (await p.locator('[data-tr="Speak"]').count()) {
       await p.locator('[data-tr="Speak"]').tap(); await t.until(() => window.__paw.train && window.__paw.train.trick === 'Speak', null, 3000); await p.locator('#trStart').tap();
-      ok(await t.until(() => !!document.getElementById('trSpeak'), null, 5000), `${tag} tricks: Speak button shows`); await sleepMs(400); await t.SH(tag + '_trick_speak');
+      ok(await t.until(() => !!document.getElementById('trSpeak'), null, 5000), `${tag} tricks: Speak button shows`); await ev(() => new Promise((r) => requestAnimationFrame(r))); await t.SH(tag + '_trick_speak');
       await check(`${tag} speak`, '#dogHit', COVER);
       await check(`${tag} speak`, '#trSpeak', '#bar,#hud,#toasts .toast', [[0.5, 0.5]]);
       await p.locator('#trX').tap(); await t.until(() => !window.__paw.train, null, 3000);
@@ -197,25 +230,32 @@ run('phone_occl_play', async (t) => {
 
   // ===================== portrait lock: fetch and the trick games wait behind the card =====================
   t.sec('portrait lock');
-  await t.p.setViewportSize({ width: 390, height: 844 }); await sleepMs(400);
-  const lock = async (on) => { await t.p.setViewportSize(on ? { width: 800, height: 390 } : { width: 390, height: 844 }); await sleepMs(500); };
+  await vp(390, 844);
+  const lock = async (on) => { await t.p.setViewportSize(on ? { width: 800, height: 390 } : { width: 390, height: 844 }); await t.until((on) => document.documentElement.hasAttribute('data-pslock') === on, on, 5000); await settle(); };
   await ev(() => window.__paw.go('fetch', 'Tennis Ball')); await t.until(() => window.__paw.mode === 'fetch' && !!document.getElementById('fQuit'), null, 8000);
-  await p.touchscreen.tap(250, 560); await sleepMs(250);
+  { const vb = await p.locator('#view svg.world').boundingBox(); await p.touchscreen.tap(vb.x + vb.width * 0.6, vb.y + vb.height * 0.78); } ok(await t.until(() => !!window.__paw.F.fly, null, 3000), 'a throw is in the air when the phone is turned');
   await lock(true); ok(await ev(() => document.documentElement.hasAttribute('data-pslock')), 'lock card shows when the phone is held sideways');
-  const f0 = await ev(() => ({ t: window.__paw.F.t, fly: !!window.__paw.F.fly })); await sleepMs(1800);
+  const f0 = await ev(() => ({ t: window.__paw.F.t, fly: !!window.__paw.F.fly })); await t.sleep(300); // one short settle: "nothing should happen"
   const f1 = await ev(() => ({ t: window.__paw.F.t, ended: window.__paw.F.ended }));
   ok(Math.abs(f1.t - f0.t) < 0.2 && !f1.ended, `fetch is paused behind the card (clock ${f0.t.toFixed(2)} -> ${f1.t.toFixed(2)})`);
-  await lock(false); await sleepMs(600);
+  await lock(false); await t.until((t0) => window.__paw.F.t < t0 - 0.05, f1.t, 4000);
   const f2 = await ev(() => ({ t: window.__paw.F.t, miss: window.__paw.F.throws, ended: window.__paw.F.ended }));
   ok(f2.t < f1.t && !f2.ended, `fetch resumes on rotate back (clock ${f1.t.toFixed(2)} -> ${f2.t.toFixed(2)}, ${f2.miss} throw(s))`);
   await p.locator('#fQuit').tap(); await p.waitForSelector('#fOk'); await p.locator('#fOk').tap(); await t.untilMode('yard');
-  await at('yard'); await p.locator('[data-act=play]').first().tap(); await t.waitPop(true); await p.locator('[data-play=tricks]').tap(); await sleepMs(700);
+  await at('yard'); await p.locator('[data-act=play]').first().tap(); await t.waitPop(true); await p.locator('[data-play=tricks]').tap(); await t.until(() => !!document.querySelector('#trainPanel:not([hidden])'), null, 4000); await settle(['#trainPanel']);
   await ev(() => { window.__paw.S.dog.focus = { v: 100, at: window.__paw.S.gameMin }; }); await p.locator('[data-tr="Sit"]').tap(); await t.until(() => window.__paw.train && window.__paw.train.trick === 'Sit', null, 3000);
   await p.locator('#trStart').tap(); ok(await t.until(() => !!window.__pawTG && !!window.__pawTG.game, null, 5000), 'a trick round is running before the lock');
   await lock(true); const g1 = await ev(() => ({ paused: !!window.__paw.train.game.paused, tick: !!window.__paw.train.game.ticker }));
   ok(g1.paused && !g1.tick, 'the trick game stops its clock behind the card');
   await lock(false); const g2 = await ev(() => { const g = window.__paw.train && window.__paw.train.game; return { on: !!g, paused: !!(g && g.paused), tick: !!(g && g.ticker) }; });
   ok(g2.on && !g2.paused && g2.tick, 'the same trick round resumes on rotate back (no fail, no lost round)');
+  // a lock while the game is "busy" (the gap between the parts of a combo) still pauses it, and the round resumes afterwards
+  await ev(() => { window.__paw.train.game.busy = true; });
+  await lock(true); const g3 = await ev(() => ({ paused: !!window.__paw.train.game.paused, tick: !!window.__paw.train.game.ticker }));
+  ok(g3.paused && !g3.tick, 'a lock while the trick game is busy still pauses it');
+  await ev(() => { window.__paw.train.game.busy = false; });
+  await lock(false); const g4 = await ev(() => { const g = window.__paw.train && window.__paw.train.game; return { on: !!g, paused: !!(g && g.paused), tick: !!(g && g.ticker) }; });
+  ok(g4.on && !g4.paused && g4.tick, 'and it picks up again on rotate back');
   await p.locator('#trX').tap(); await t.until(() => !window.__paw.train, null, 3000);
   await ev(() => window.__paw.go('yard')); await t.untilMode('yard');
 }, { device: 'iPhone 13', timeout: 600000 });
