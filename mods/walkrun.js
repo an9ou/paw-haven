@@ -1230,20 +1230,27 @@ function start(el, o) {
   E.pauseB.addEventListener('click', (e) => { e.stopPropagation(); if (S.mode === 'paused') resume(); else openPause(); });
   // pressing on the scene itself also jumps (hold for long)
   // touch: tap the scene to jump (hold = long jump), swipe down anywhere to duck
-  const gest = { id: null, y0: 0, jump: false, duck: false, mouse: false };
+  const JUMP_WAIT = 90, gest = { id: null, y0: 0, jump: false, duck: false, mouse: false, pend: 0, swipe: false };
   root.addEventListener('pointerdown', (e) => {
     if (S.ended || e.target.closest('button,input,label,.pw-hud,.pw-card,.pw-x')) return;
     if (e.pointerType === 'touch' && !coarse) { coarse = true; layout(); }
     const touchy = e.pointerType === 'touch' || mode !== 'desk';
     if (!touchy) { if (e.button !== 0 || !E.stage.contains(e.target)) return; e.preventDefault(); gest.id = e.pointerId; gest.mouse = true; gest.jump = true; jumpPress(); return; }
     e.preventDefault(); gest.id = e.pointerId; gest.y0 = e.clientY; gest.mouse = false; gest.duck = false;
-    gest.jump = true; jumpPress(); // the whole scene jumps; Duck stays on its button and the swipe
+    // the whole scene jumps, but the jump waits a moment so the start of a swipe-down (duck) never hops first: it commits after JUMP_WAIT ms, or on release for a quick tap
+    gest.jump = false; gest.pend = setTimeout(() => { gest.pend = 0; if (gest.id === e.pointerId && !gest.duck) { gest.jump = true; jumpPress(); } }, JUMP_WAIT);
   });
   root.addEventListener('pointermove', (e) => {
     if (e.pointerId !== gest.id || gest.mouse || gest.duck) return;
-    if (e.clientY - gest.y0 > 26) { if (gest.jump) { jumpRelease(); gest.jump = false; } gest.duck = true; crouchPress(); }
+    const dy = e.clientY - gest.y0;
+    if (dy > 6 && gest.pend) { clearTimeout(gest.pend); gest.pend = 0; gest.swipe = true; } // heading down: this is a duck, not a jump
+    if (dy > 26) { if (gest.jump) { jumpRelease(); gest.jump = false; } gest.duck = true; crouchPress(); }
   });
-  const gEnd = (e) => { if (e.pointerId !== gest.id) return; if (gest.jump) jumpRelease(); if (gest.duck) crouchRelease(); gest.id = null; gest.jump = gest.duck = gest.mouse = false; };
+  const gEnd = (e) => {
+    if (e.pointerId !== gest.id) return;
+    if (gest.pend) { clearTimeout(gest.pend); gest.pend = 0; if (e.type === 'pointerup' && !gest.swipe && !gest.duck) { jumpPress(); jumpRelease(); } } // a quick tap is a hop
+    if (gest.jump) jumpRelease(); if (gest.duck) crouchRelease(); gest.id = null; gest.jump = gest.duck = gest.mouse = gest.swipe = false;
+  };
   root.addEventListener('pointerup', gEnd); root.addEventListener('pointercancel', gEnd);
   E.stage.addEventListener('pointerleave', (e) => { if (gest.mouse) gEnd(e); });
   root.addEventListener('contextmenu', (e) => { if (mode !== 'desk' || e.pointerType === 'touch') e.preventDefault(); });

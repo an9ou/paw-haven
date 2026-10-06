@@ -108,6 +108,7 @@ function tgBegin(n, mode) {
   if (!G.ticker) G.ticker = setInterval(tgTick, 50);
 }
 function tgLoadPart(G) {
+  if (G.paused) { G.loadPending = true; return; } // portrait-lock card up: load the next part when it goes
   const d = D(), pn = G.parts[G.pi], svg = tgSvg(); if (!svg) return;
   const scale = (svg.getScreenCTM() || { a: 1 }).a || 1;
   G.tol = TG_TOL / scale * tgTolMul(pn, d, G.mode);
@@ -210,7 +211,7 @@ function tgTap(G, sg, p) {
   if (G.taps >= sg.n) { G.taps = 0; tgNextSeg(G); } else tgDraw(G);
 }
 function tgTick() {
-  const G = tgG(); if (!G) return; const sg = G.segs[G.si]; if (!sg || sg.type !== 'hold' || G.busy) return;
+  const G = tgG(); if (!G || G.paused) return; const sg = G.segs[G.si]; if (!sg || sg.type !== 'hold' || G.busy) return;
   const now = performance.now(), on = G.grabbed && G.pos && tgDist(G.pos, sg.at) <= G.tol;
   if (!on) { G.holdAt = now; } const f = on ? clamp((now - G.holdAt) / sg.ms, 0, 1) : 0;
   const r = $('#tgRing'); if (r) r.setAttribute('stroke-dasharray', `${Math.round(f * 100)} 100`);
@@ -329,14 +330,15 @@ window.__pawTG = {
 
 /* v2.3 phone: the portrait-lock card pauses a running mini-game and resumes it on rotate (no lost round, no fail). */
 on('phone:lock', ({ on: locked }) => {
-  const G = tgG(); if (!G || G.busy) return;
+  const G = tgG(); if (!G) return;
   if (locked) {
-    if (G.paused) return; G.paused = true;
+    if (G.paused) return; G.paused = true; // also in the gap between the parts of a Signature combo: the next part waits (tgLoadPart)
     pkLeadStop(); clearInterval(G.ticker); G.ticker = null; G.grabbed = false;
-    if (G.rhythm) TRN.timers.splice(0).forEach(clearTimeout); // the Speak beats are re-timed on resume
+    if (G.rhythm && !G.busy) TRN.timers.splice(0).forEach(clearTimeout); // the Speak beats are re-timed on resume
   } else {
     if (!G.paused) return; G.paused = false;
-    if (G.rhythm) { G.hits = []; tgSpeakStart(G); return; } // the same attempt starts again from "1, 2"
-    G.holdAt = performance.now(); if (!G.ticker) G.ticker = setInterval(tgTick, 50);
+    if (G.loadPending) { G.loadPending = false; G.busy = false; tgLoadPart(G); }
+    else if (G.rhythm) { if (!G.busy) { G.hits = []; tgSpeakStart(G); } return; } // the same attempt starts again from "1, 2"
+    G.holdAt = performance.now(); if (!G.ticker && !G.rhythm) G.ticker = setInterval(tgTick, 50);
   }
 });
