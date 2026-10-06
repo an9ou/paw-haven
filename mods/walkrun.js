@@ -299,7 +299,13 @@ const CSS = `
 .pw-pt .pw-card.pw-tut{height:min(88%,660px);display:flex;flex-direction:column;overflow-y:auto}
 .pw-pt .pw-card.pw-tut .pw-tfoot{margin-top:auto}
 .pw-pt .pw-obsgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-.pw-pt .pw-obsc{flex-wrap:wrap;justify-content:center;text-align:center;font-size:15px;padding:6px 4px}
+.pw-pt .pw-obsc{flex-wrap:nowrap;justify-content:flex-start;text-align:left;font-size:15px;padding:3px 6px;gap:4px;min-height:0}
+.pw-pt .pw-obsc .pw-oi{width:50px;height:36px}
+.pw-pt .pw-obsc span b{font-size:21px}
+.pw-pt .pw-obsgrid{gap:6px 8px;margin:4px 0}
+.pw-pt .pw-notes .pw-obsc{min-height:0}
+.pw-pt .pw-notes .pw-obsc .pw-badge{left:38px;top:2px;width:22px;height:22px}
+.pw-pt .pw-mini[style*="width:150px"] img:nth-of-type(1){bottom:6px!important}.pw-pt .pw-mini[style*="width:150px"] img:nth-of-type(2){bottom:22px!important}.pw-pt .pw-mini[style*="width:150px"] img:nth-of-type(3){bottom:38px!important}
 .pw-pt .pw-tfoot,.pw-cp .pw-tfoot{flex-wrap:wrap;justify-content:center}
 .pw-pt .pw-tfoot .pw-dots{flex:1 1 100%;order:-1}
 .pw-touchui .pw-skip{min-height:44px}
@@ -1081,7 +1087,7 @@ function start(el, o) {
         S.cdShown = n; const w = n >= 3 ? 'Ready' : n === 2 ? 'sniff' : n === 1 ? 'GO!' : '';
         if (w) { E.ov.className = 'pw-ov'; E.ov.hidden = false; E.ov.innerHTML = `<div class="pw-cd">${w}</div>` + (S.remind ? (mode !== 'desk' || coarse ? '<div class="pw-remind pw-panel" style="padding:4px 14px"><b>Tap</b> jump &middot; <span style="white-space:nowrap"><b>hold</b> = long jump</span> &middot; <b>swipe down</b> duck &middot; <b>Dig!</b> at an X</div>' : '<div class="pw-remind pw-panel" style="padding:4px 14px"><b>Space/&uarr;</b> jump &middot; <b>hold</b> = long jump &middot; <b>&darr;/S</b> duck &middot; <b>D</b> dig at an X</div>') : ''); sfx(n === 1 ? 'bark' : 'click'); }
       }
-      if (S.cd <= 0.15) { S.mode = 'run'; E.ov.hidden = true; E.ov.innerHTML = ''; if (o.firstWalk) say('Psst: the FIRST X smells amazing. Follow your nose!', 2600); else if (rain) say(dryCoat ? 'Rain! Good thing about the coat.' : `Rain means ${(A.rainWide || ['puddle']).includes('puddle') ? 'puddles' : 'mud'}. Hold jump to leap ${(A.rainWide || ['puddle']).includes('puddle') ? 'them' : 'it'}!`, 2400); }
+      if (S.cd <= 0.15) { S.mode = 'run'; try { (o.onRun || noop)(); } catch (e) { /* ignore */ } E.ov.hidden = true; E.ov.innerHTML = ''; if (o.firstWalk) say('Psst: the FIRST X smells amazing. Follow your nose!', 2600); else if (rain) say(dryCoat ? 'Rain! Good thing about the coat.' : `Rain means ${(A.rainWide || ['puddle']).includes('puddle') ? 'puddles' : 'mud'}. Hold jump to leap ${(A.rainWide || ['puddle']).includes('puddle') ? 'them' : 'it'}!`, 2400); }
       return;
     }
     if (S.mode === 'reveal') { S.revealT -= dt; if (S.revealT <= 0) closeReveal(); return; }

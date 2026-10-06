@@ -6,7 +6,7 @@ function applyAway() {
   const fl = (v, rate, floor) => (v > floor ? Math.max(floor, v - rate * hrs) : v);
   S.dogs.forEach((d) => { const s = d.stats; s.hunger = fl(s.hunger, 3, 30); s.happy = fl(s.happy, 2, 40); s.clean = fl(s.clean, 1, 40); s.energy = clamp(s.energy + 20 * hrs, 0, 100); });
   S.lastReal = Date.now(); dailyCheck(); markDirty();
-  if (secs > 120) setTimeout(() => toast(`While you were away, ${NAME()} napped for ${Math.round(hrs)} game hours and missed you a normal amount.`, 'gold'), 800);
+  if (secs > 120) setTimeout(() => { if (cur.mode === 'yard') toast(`While you were away, ${NAME()} napped for ${Math.round(hrs)} game hours and missed you a normal amount.`, 'gold'); }, 800);
 }
 let lastTick = performance.now(), saveClock = 0, voiceClock = 0;
 function tick() {

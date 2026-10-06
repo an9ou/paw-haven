@@ -1,6 +1,9 @@
 // v2.3 PHONE PLAY lane, area "followup": the style re-check items (runner results, fetch/classic results trays, tutorial pages, walk-start toasts,
 // Market Go home, desktop location chip, pier bubble tail, no mid-run layout flip). Loaded by test_phone_occl_play.js (see its HOOK note).
-const PAGE_TUT = `(async () => { const out = []; for (let i = 0; i < 4; i++) { const c = document.querySelector('.pw-card.pw-tut'); if (!c) break; out.push(Math.round(c.getBoundingClientRect().height)); const b = document.querySelector('.pw-tut [data-next]'); if (!b) break; const before = c.innerHTML; b.click(); const t0 = performance.now(); while (performance.now() - t0 < 2000) { await new Promise((r) => requestAnimationFrame(r)); const n = document.querySelector('.pw-card.pw-tut'); if (n && n.innerHTML !== before) break; } } return out; })()`;
+const PAGE_TUT = `(async () => { const hs = []; const x = { tiles: null, coins: null }; for (let i = 0; i < 4; i++) { const c = document.querySelector('.pw-card.pw-tut'); if (!c) break; hs.push(Math.round(c.getBoundingClientRect().height));
+  if (i === 1) { const cells = [...c.querySelectorAll('.pw-obsc')], f = c.querySelector('.pw-tfoot').getBoundingClientRect(); x.tiles = { n: cells.length, bad: cells.filter((e) => { const r = e.getBoundingClientRect(); return r.bottom > f.top - 2 || r.right > c.getBoundingClientRect().right; }).length }; }
+  if (i === 3) { const m = [...c.querySelectorAll('.pw-mini')].find((e) => e.querySelector('img')); if (m) { const mr = m.getBoundingClientRect(); x.coins = [...m.querySelectorAll('img')].filter((im) => { const r = im.getBoundingClientRect(); return r.top < mr.top - 0.5 || r.bottom > mr.bottom + 0.5 || r.left < mr.left - 0.5 || r.right > mr.right + 0.5; }).length; } }
+  const b = document.querySelector('.pw-tut [data-next]'); if (!b) break; const before = c.innerHTML; b.click(); const t0 = performance.now(); while (performance.now() - t0 < 2000) { await new Promise((r) => requestAnimationFrame(r)); const n = document.querySelector('.pw-card.pw-tut'); if (n && n.innerHTML !== before) break; } } return { hs, x }; })()`;
 
 // open the runner on the first-walk tutorial (PawWalk is restored by the caller on phones)
 async function openRunner(H) {
@@ -33,7 +36,9 @@ module.exports = {
     await ev(() => { const d = document.createElement('div'); d.className = 'toast gold'; d.id = 'occlToast2'; d.textContent = 'Rub Mochi to pet. Tap Feed to fill the bowl.'; document.getElementById('toasts').appendChild(d); });
     ok(await openRunner(H), `${tag} runner: the tutorial opens`);
     ok(await ev(() => !document.getElementById('occlToast2')), `${tag} runner: a toast from the yard does not ride into the walk`);
-    const hs = await ev(PAGE_TUT);
+    const tutRes = await ev(PAGE_TUT), hs = tutRes.hs;
+    ok(tutRes.x.tiles && tutRes.x.tiles.bad === 0, `${tag} runner tutorial page 2: all ${tutRes.x.tiles && tutRes.x.tiles.n} obstacle tiles fit above the buttons`);
+    ok(tutRes.x.coins === 0, `${tag} runner tutorial page 4: every coin sits inside its dashed box (${tutRes.x.coins} outside)`);
     ok(hs.length === 4 && Math.max(...hs) - Math.min(...hs) <= 1, `${tag} runner: the tutorial card keeps one height on every page (${hs.join(', ')})`);
     ok(Math.max(...hs) <= h - 80, `${tag} runner: the tutorial card fits the screen (${Math.max(...hs)} of ${h})`);
     // page 3 (the dig line) says "tap Dig!" with no "press D"; page 4's "-3s" does not sit on its text
@@ -43,7 +48,11 @@ module.exports = {
     const neg = await ev(() => { const n = document.querySelector('.pw-tut .pw-neg'); if (!n) return { skip: true }; const r = n.getBoundingClientRect(), nx = n.nextElementSibling.getBoundingClientRect(); return { skip: false, over: r.right > nx.left + 1, w: Math.round(r.width) }; });
     ok(neg.skip || !neg.over, `${tag} runner: the "-3s" mark clears the text beside it${neg.skip ? ' (not on this page)' : ''}`);
     await skipTutorial(H);
+    await ev(() => { const d = document.createElement('div'); d.className = 'toast gold'; d.textContent = 'A late yard hint'; document.getElementById('toasts').appendChild(d); });
+    await t.until(() => !!document.querySelector('.pw-cd'), null, 6000); // the countdown has really started (the overlay is also hidden for a frame before it)
     ok(await t.until(() => { const o = document.querySelector('.pw-ov'); return !!o && o.hidden; }, null, 15000), `${tag} runner: countdown ends`);
+    const left = await ev(() => [...document.querySelectorAll('#toasts .toast')].map((e) => e.textContent.slice(0, 40)));
+    ok(left.length === 0, `${tag} runner (left: ${left.join(' | ')}): a hint toast that landed during the countdown is cleared when the dog starts running`);
     await ev(() => { document.querySelector('.pw-pauseb').click(); });
     ok(await t.until(() => !!document.querySelector('[data-home]'), null, 4000), `${tag} runner: pause opens`);
     ok(await ev(() => !/Space|Esc\b|\bD\b/.test(document.querySelector('.pw-ov .pw-card').textContent)), `${tag} runner: the pause card uses touch wording`);

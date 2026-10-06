@@ -23,6 +23,7 @@ function enterWalkMod(area) {
     bag: (S.inv.food['Wild Berries'] || 0) > 0 ? [{ name: 'Wild Berries', count: S.inv.food['Wild Berries'] }] : [],
     useBagItem: (name) => { if (name !== 'Wild Berries' || !(S.inv.food[name] > 0)) return false; S.inv.food[name]--; if (S.inv.food[name] <= 0) delete S.inv.food[name]; markDirty(); return true; },
     sfx, say: (t) => toast(t),
+    onRun: () => { if (isPhone()) toasts.innerHTML = ''; }, // the strip is clear when the dog starts running (a late yard hint must not sit on it)
     onEnd: (r) => { if (ended) return; ended = true; W.ended = true; finishWalkMod(R, r || {}); }
   };
   try { modCtl = window.PawWalk.start(showHost(), o); }

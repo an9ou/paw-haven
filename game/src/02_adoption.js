@@ -57,7 +57,7 @@ function intro() {
   const show = () => {
     const [t, b] = pages[i];
     const p = openModal(t, b, { noX: true, foot: `<button class="btn yes big" id="iNext">${i < pages.length - 1 ? 'Next' : 'Let\'s go home'}</button>` });
-    $('#iNext', p).onclick = () => { SFX.boop(600 + i * 80); i++; if (i < pages.length) { modal.hidden = true; show(); } else { closeModal(); go('yard'); setTimeout(() => toast(`Rub ${NAME()} to pet. Tap Feed to fill the bowl.`, 'gold'), 900); } };
+    $('#iNext', p).onclick = () => { SFX.boop(600 + i * 80); i++; if (i < pages.length) { modal.hidden = true; show(); } else { closeModal(); go('yard'); setTimeout(() => { if (cur.mode === 'yard') toast(`Rub ${NAME()} to pet. Tap Feed to fill the bowl.`, 'gold'); }, 900); } };
   };
   show();
 }
