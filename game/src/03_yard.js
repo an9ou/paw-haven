@@ -214,13 +214,14 @@ function placeButtons() {
   pb.querySelectorAll('[data-pb]').forEach((x) => { x.onclick = () => { const v = x.dataset.pb, f = { dig: beachDig, garden: openGarden, kitchen: openKitchen, notice: squareNotice, cafe: cafeMenu, social: socialise, vet: vetCheck, groom: salonGroom, kites: kiteWatch }[v]; if (f) f(); else travelTo(v); }; });
 }
 // v2.3 TOWN-3: the pier bubble goes on the deck under the dog (the boats and the seagull sit above its head); the .below class flips the tail
+let bubbleBelowT = 0;
 function townBubbleBelowDog() {
   const hit = $('#dogHit'); if (!hit || bubble.hidden) return; const hr = hit.getBoundingClientRect(), sg = stage.getBoundingClientRect(), bw = bubble.offsetWidth;
   bubble.classList.add('below'); bubble.style.left = clamp(hr.left + hr.width / 2 - sg.left - bw / 2, 6, stage.clientWidth - bw - 6) + 'px'; bubble.style.top = (hr.bottom - sg.top + 18) + 'px';
   // keep clear of the place buttons (Go home sits bottom-right): slide left of one it would touch
   const bl = parseFloat(bubble.style.left), bt = parseFloat(bubble.style.top), bh = bubble.offsetHeight; // (layout numbers: the pop animation scales the rect)
-  document.querySelectorAll('#placeBtns .btn').forEach((b) => { const q = b.getBoundingClientRect(), ql = q.left - sg.left, qt = q.top - sg.top; if (bl < q.right - sg.left + 12 && bl + bw > ql - 12 && bt < qt + q.height + 6 && bt + bh > qt - 6) bubble.style.left = Math.max(6, ql - 14 - bw) + 'px'; });
-  setTimeout(() => bubble.classList.remove('below'), 3700);
+  document.querySelectorAll('#placeBtns .btn').forEach((b) => { const q = b.getBoundingClientRect(), ql = q.left - sg.left, qt = q.top - sg.top; if (bl < q.right - sg.left + 12 && bl + bw > ql - 12 && bt < qt + q.height + 6 && bt + bh > qt - 6) bubble.style.left = Math.max(6, ql - 24 - bw) + 'px'; });
+  clearTimeout(bubbleBelowT); bubbleBelowT = setTimeout(() => bubble.classList.remove('below'), 3700);
 }
 function placeAmbient() {
   if (cur.mode !== 'yard' || busy || S.sleeping || !modal.hidden) return;

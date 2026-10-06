@@ -22,8 +22,9 @@ const pierBubble = (boats) => {
   bub.hidden = true; bub.textContent = ''; // a bubble left over from another scene (a bark, the adoption tip) is not a pier bubble
   while ((bub.hidden || !bub.textContent) && tries++ < 80) window.__paw.voice.ambient();
   if (bub.hidden) return { err: 'no bubble after ' + tries + ' asks' };
+  bub.getAnimations().forEach((a) => a.finish()); // measure the settled bubble, not the pop-in scale
   const sv = document.querySelector('#view svg.world svg.pa-wc-scene') || document.querySelector('#view svg.world'), s = sv.getBoundingClientRect(), b = bub.getBoundingClientRect(), d = document.getElementById('dogHit').getBoundingClientRect();
-  const bt = [...document.querySelectorAll('#placeBtns .btn')].map((x) => { const r = x.getBoundingClientRect(); return { left: r.left, top: r.top, right: r.right, bottom: r.bottom }; });
+  const bz = +getComputedStyle(bub).zIndex || 0, bt = [...document.querySelectorAll('#placeBtns .btn')].map((x) => { const r = x.getBoundingClientRect(); return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, over: (+getComputedStyle(document.getElementById('placeBtns')).zIndex || 0) > bz }; }); // over: the button row is painted above the bubble
   return { bub: { left: b.left, top: b.top, right: b.right, bottom: b.bottom }, text: bub.textContent, below: bub.classList.contains('below'), dog: { left: d.left, top: d.top, right: d.right, bottom: d.bottom },
     boats: boats.map(([a, c, e, f]) => ({ left: s.left + s.width * a, top: s.top + s.height * c, right: s.left + s.width * e, bottom: s.top + s.height * f })), btns: bt, vh: innerHeight };
 };
@@ -35,7 +36,7 @@ const pierCheck = async (H, label) => {
   const onBoat = r.boats.map((b, i) => hit(r.bub, b) ? 'boat' + i : null).filter(Boolean);
   H.ok(onBoat.length === 0, `${label} pier: the speech bubble does not cover a boat${onBoat.length ? ' -> ' + onBoat.join(',') + ' bubble ' + JSON.stringify(r.bub) : ''}`);
   H.ok(!hit(r.bub, r.dog) || r.bub.top >= r.dog.bottom - 4, `${label} pier: the bubble is beside/under the dog, not over its head`);
-  H.ok(!r.btns.some((b) => hit(r.bub, b)), `${label} pier: the bubble does not cover the Go home button ${JSON.stringify([r.bub, r.btns, r.dog])}`);
+  H.ok(!r.btns.some((b) => hit(r.bub, b) && !b.over), `${label} pier: the bubble does not cover the Go home button ${JSON.stringify([r.bub, r.btns, r.dog])}`);
   H.ok(r.bub.bottom <= r.vh, `${label} pier: the bubble is on screen`);
 };
 

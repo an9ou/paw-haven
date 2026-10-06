@@ -96,7 +96,7 @@ run('phone_occl_play', async (t) => {
     ok(rowInfo.h >= 44, `${tag} market: place buttons are >= 44 px tall (${Math.round(rowInfo.h)})`);
     ok(!rowInfo.scrolls || (rowInfo.mask && rowInfo.peek), `${tag} market: a row that scrolls has faded edges and a peeking next button`);
     await ev(() => { const r = document.getElementById('placeBtns'); r.scrollLeft = r.scrollWidth; }); await t.until(() => { const r = document.getElementById('placeBtns'); return r.scrollLeft >= r.scrollWidth - r.clientWidth - 1; }, null, 3000);
-    await check(`${tag} market (scrolled to the end)`, '#placeBtns [data-pb="yard"]', '#bar,#hud,#toasts .toast', [[0.5, 0.5]]);
+    await check(`${tag} market (scrolled to the end)`, '#placeBtns [data-sh=sprout]', '#bar,#hud,#toasts .toast', [[0.5, 0.5]]);
     await ev(() => { document.getElementById('placeBtns').scrollLeft = 0; });
     await toast(); await check(`${tag} market + toast`, '#dogHit', COVER); await check(`${tag} market + toast`, '#placeBtns [data-sh]:nth-child(-n+2)', '#toasts .toast,#bar', [[0.5, 0.5]]); await unToast();
 
