@@ -95,7 +95,7 @@ function packDogSVG(d, i) {
   if (hmChairDown(d)) { fx = 868; fy = 530; face = 'right'; sc = 0.48; } // Proud Mum lies down next to the Rocking Chair
   const w = DW * sc, h = DH * sc, x = fx - w / 2, y = fy - h * (205 / 220);
   const pose = d.sleeping ? 'sleep' : packPose[d.id] || (Math.min(...Object.values(d.stats)) < 25 ? 'sad' : 'idle');
-  return `<g class="packdog hot" data-dog="${d.id}" tabindex="0" role="button" aria-label="${esc(d.name)}: click to make ${PRd(d).him} the active dog"><g class="pd-wander" style="animation-delay:-${i * 2.3}s"><rect x="${x + 30}" y="${y + 30}" width="${w - 60}" height="${h - 30}" fill="transparent"/>${place(dogSVG(d, { pose, outfit: outfitOf(d), facing: face }), x, y, w, h)}</g></g>`;
+  return `<g class="packdog hot" data-dog="${d.id}" tabindex="0" role="button" aria-label="${esc(d.name)}: click to make ${PRd(d).him} the active dog"><g class="pd-wander" style="animation-delay:-${i * 2.3}s"><rect x="${x + 30}" y="${y + 30}" width="${w - 60}" height="${h - 30}" fill="transparent"/>${place(dogSVG(d, { pose, outfit: typeof shSleepOutfit === 'function' ? shSleepOutfit(d, pose) : outfitOf(d), facing: face }), x, y, w, h)}</g></g>`;
 }
 function hmMumIn(d) { return typeof mumInBasket === 'function' && mumInBasket(d); } // a nursing mum is drawn in the nursery basket, not with the pack
 function hmChairOut4(d) { return !!(d.proud && S.place === 'yard' && hmDecorOut('Rocking Chair') && Math.random() < 0.25); } // about 1 in 4 idle picks
@@ -210,7 +210,23 @@ function reqText(r) { return r.house || /^A dog/.test(r.label) ? r.label.replace
 function markCareDay() {
   if (!S || !S.dogs) return; spotsInit(); const t = localISO();
   if (S.careDayLast === t) return; S.careDayLast = t; S.careDays = (S.careDays || 0) + 1; markDirty(); setTimeout(spotsCheck, 700);
+  shCareGift(); // v2.4 SHOP: the Cozy Hoodie at 14 care days
 }
+/* v2.4 SHOP: care milestone gifts (S.careGifts). 14 care days: Mrs. Plum's Cozy Hoodie, once */
+function shCareGift() {
+  if (!S || !Array.isArray(S.dogs) || !S.dogs.length) return false;
+  if (!S.careGifts || typeof S.careGifts !== 'object') S.careGifts = {};
+  if ((S.careDays || 0) < 14 || S.careGifts.hoodie) return false;
+  S.careGifts.hoodie = localISO(); if (!owns('clothes', 'Cozy Hoodie')) S.inv.clothes.push('Cozy Hoodie'); markDirty(); saveNow();
+  msWhenFree(() => {
+    SFX.fanfare();
+    const p = openModal('<span class="hl">A gift from Mrs. Plum</span>', `<div class="ms-prize"><span class="ms-prize-art">${itemArt('Cozy Hoodie')}</span><div><p>14 days of good care. Mrs. Plum saw it all from her window and made this. Hood up, ears out.</p><p class="small">Cozy Hoodie: no shivering in the snow. It is in the Wardrobe.</p></div></div>`, { cls: 'celebrate sh-gift', foot: '<button class="btn no" id="shLater">Later</button><button class="btn yes big" id="shWear">Wear it</button>' });
+    $('#shLater', p).onclick = () => { SFX.click(); closeModal(); };
+    $('#shWear', p).onclick = () => { closeModal(); equip('Cozy Hoodie', true); toast(`${NAME()} is wearing the Cozy Hoodie. Snug.`, 'good'); };
+  });
+  return true;
+}
+on('game:ready', () => { if (S && (!S.careGifts || typeof S.careGifts !== 'object')) S.careGifts = {}; setTimeout(shCareGift, 2500); });
 let careSnap = null;
 function careWatch() {
   if (!S || !S.daily) return; const n = ['feed', 'pet', 'play'].filter((k) => S.daily[k]).length, dy = S.daily.day;
