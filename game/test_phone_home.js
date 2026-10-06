@@ -146,7 +146,7 @@ const AUDIT = () => {
       await t.sleep(900); // the camera may still be easing back to the dog
       const mb = await rectOf('#mailboxG');
       ok(!!mb && mb.w >= 44 && mb.h >= 44, `mailbox tap area >= 44 (${mb && Math.round(mb.w)}x${mb && Math.round(mb.h)})`);
-      await t.p.touchscreen.tap(mb.x, mb.y);
+      await t.p.touchscreen.tap(mb.x - mb.w * 0.3, mb.y); // left of centre: the dog's tap box may be parked over the middle of the mailbox
       ok(await modalOpen(), 'tapping the mailbox opens it');
       await t.closeX(); await t.home();
       // the house door is mostly outside the crop: one swipe brings it (and the nursery, chair) into view

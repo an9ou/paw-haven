@@ -384,7 +384,7 @@
     '.pg-portrait .pg-chip{font-size:17px;max-width:404px}',
     '.pg-portrait .pg-info{left:8px;right:8px;top:558px;width:auto}',
     '.pg-portrait .pg-dogw{left:4px;top:834px;width:166px;height:138px}',
-    '.pg-portrait .pg-bubble{left:6px;bottom:146px;max-width:300px}',
+    '.pg-portrait .pg-bubble{left:6px;bottom:100px;max-width:300px}',
     '.pg-portrait .pg-pouch{left:8px;right:8px;top:calc(184px + var(--pg-sy,0px));width:auto;max-height:calc(var(--pg-vh,700px) - 196px);overflow-y:auto}',
     '.pg-portrait .pg-pk{width:118px;font-size:17px}',
     '.pg-portrait .pg-card{min-width:0;width:380px;top:calc(var(--pg-vh,700px) / 2 + var(--pg-sy,0px))}'
@@ -751,7 +751,7 @@
     }
     function renderHint() {
       var t;
-      if (tool === 'seeds' && armed) t = BY_ID[armed].seedItem + ' in paw: tap an empty plot' + (buddy === 'dig' ? '.' : ', dig, then tap again to drop the seed.');
+      if (tool === 'seeds' && armed) t = BY_ID[armed].seedItem + ' in paw: tap an empty plot' + (buddy === 'dig' || PORT ? '.' : ', dig, then tap again to drop the seed.');
       else if (tool === 'water') t = 'Watering Can: tap a plot to fill it to 3 drops. Esc puts it down.';
       else if (tool === 'basket') t = 'Basket: tap a sparkly plot to pick it.';
       else t = 'Pick a plot (1-6), then Seeds (P), Watering Can (W) or Basket (H).';

@@ -554,6 +554,11 @@ function say(text, wx, wy, ms = 3600) {
   const vtop = view.offsetTop;
   bubble.style.left = clamp(p.x - 40, 6, sw - bw - 6) + 'px';
   bubble.style.top = Math.max(vtop + 4, p.y - bh - 16) + 'px';
+  if (isPhone()) { // v2.3: a bubble never sits on the location chip (top-left of the scene)
+    const st = $('#status'), sr = st && !st.hidden ? st.getBoundingClientRect() : null, sg = stage.getBoundingClientRect();
+    if (sr) { const bt = parseFloat(bubble.style.top), bl = parseFloat(bubble.style.left), cb = sr.bottom - sg.top + 6;
+      if (bt < cb && bl < sr.right - sg.left + 6 && bl + bw > sr.left - sg.left - 6) bubble.style.top = cb + 'px'; }
+  }
   clearTimeout(bubbleTimer); bubbleTimer = setTimeout(() => { bubble.hidden = true; }, ms);
 }
 function hideBubble() { bubble.hidden = true; clearTimeout(bubbleTimer); }

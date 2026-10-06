@@ -19,5 +19,5 @@ html[data-layout="phone"] .tray.nap .tray-body{overflow:visible}
 html[data-layout="phone"] .tray.nap .napdet{font-size:15px;line-height:1.3;margin:0 0 6px}
 html[data-layout="phone"] .tray.nap .napstrip{flex-wrap:nowrap;gap:10px;margin:0}
 html[data-layout="phone"] .tray.nap .napstrip .prog{flex:1 1 auto;min-width:60px}
-html[data-layout="phone"] .tray.nap .napinfo{flex:none;width:44px;min-height:44px;padding:0;font-family:var(--font-hand);font-size:26px;font-style:italic}
+html[data-layout="phone"] .tray.nap .napinfo{flex:none;width:44px;min-height:44px;padding:0;font-family:var(--font-hand);font-weight:700;font-size:30px;line-height:1;--wash:var(--w-blue)}
 html[data-layout="phone"] .tray.nap #wakeBtn{flex:none;min-height:44px}

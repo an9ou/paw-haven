@@ -85,7 +85,7 @@ const SCAN = (sels) => {
       ok(strip.det, `${tag} nap: details are folded`);
       await check('nap', ['#dogHit', '#houseG']);
       await t.p.tap('#napInfo'); await t.sleep(150);
-      ok(await t.ev(() => !document.getElementById('napDet').hidden), `${tag} nap: a tap on i opens the details`);
+      ok(await t.ev(() => !document.getElementById('napDet').hidden), `${tag} nap: a tap on ? opens the details`);
       await t.p.tap('#napInfo');
       await t.p.tap('#wakeBtn'); await t.until(() => !document.getElementById('wakeBtn'));
 
@@ -100,8 +100,19 @@ const SCAN = (sels) => {
       await check('house nap', ['#dogHit']);
       await t.p.tap('#wakeBtn'); await t.until(() => !document.getElementById('wakeBtn'));
 
+      // a speech bubble never sits on the location chip (the dog talks when petted)
+      const bubbleVsChip = async (label) => {
+        // a bubble anchored near the top-left of the scene (where it would land on the chip)
+        await t.ev(() => window.__paw.home.say('Rub me to pet. I will wag, I promise.', 160, 30));
+        await t.sleep(200);
+        const r = await t.ev(() => { const b = document.getElementById('bubble'), c = document.getElementById('status'); if (!b || b.hidden || !c) return null; const x = b.getBoundingClientRect(), y = c.getBoundingClientRect(); return { over: !(x.right < y.left || x.left > y.right || x.bottom < y.top || x.top > y.bottom) }; });
+        ok(!!r, `${tag} ${label}: a speech bubble shows`); if (r) ok(!r.over, `${tag} ${label}: the speech bubble does not cover the location chip`);
+        await t.ev(() => { document.getElementById('bubble').hidden = true; });
+      };
+      await t.home('yard'); await t.sleep(700); await bubbleVsChip('yard');
+
       // ---------- every town place ----------
-      for (const pl of ['square', 'cafe', 'pier', 'hilltop', 'dogpark', 'vet', 'salon']) {
+      for (const pl of ['market', 'square', 'cafe', 'pier', 'hilltop', 'dogpark', 'vet', 'salon']) {
         t.sec(`${tag}: ${pl}`);
         await t.home(pl); await t.until(() => !!document.getElementById('dogHit')); await t.sleep(900);
         const must = ['#dogHit'];
@@ -109,6 +120,7 @@ const SCAN = (sels) => {
         await check(pl, must, ['#sceneG [data-hot]']);
         await toastsGone();
         await check(pl + ' quiet', must);
+        await bubbleVsChip(pl);
       }
 
       // ---------- garden ----------

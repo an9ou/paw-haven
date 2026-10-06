@@ -54,7 +54,7 @@ function enterYard() {
   setChrome(true, true);
   view.innerHTML = yardWorldSVG(); dogKey = ''; busy = false;
   renderDog(dogPoseNow()); setBowl(S.bowl || null);
-  phCamHome = phLandCx(430); clearTimeout(phPanT);
+  phCamHome = phLandCx(430); clearTimeout(phPanT); cancelAnimationFrame(camRaf);
   camCx = phCamHome; camApply(camCx);
   if (S.sleeping) { dogTo(417.5, S.place === 'house' ? 130 : 140, 0.75, 0); showZzz(true); }
   updateHUD(); bindDev(); bindMess(); bindPack(); greetWalker(); drawFluff(); setTimeout(() => yardReaction(false), 700);
@@ -97,7 +97,7 @@ let phCamHome = 430, phPanT = 0;
 function phLandCx(cx) {
   if (!isPhone() || (S.place !== 'square' && S.place !== 'dogpark')) return cx;
   const vw = view.clientWidth, vh = view.clientHeight; if (!vw || !vh) return cx;
-  return Math.min(cx, 208 + 300 * vw / vh);
+  return Math.min(cx, 190 + 300 * vw / vh);
 }
 function phCamPan(svg) {
   let x0 = null, c0 = 0, id = null, on = false, swallowUntil = 0;
@@ -487,7 +487,7 @@ function sleepTray() {
   if (isPhone()) {
     // v2.3 phone: a one-line strip (energy bar, info, Wake up) so the sleeping dog and the house stay in view; the details open on a tap
     setTray(`${esc(NAME())} is napping`, `<p class="napdet" id="napDet" hidden style="margin:0">${info}</p>
-    <div class="walkctl napstrip"><button class="btn napinfo" id="napInfo" aria-label="Nap details" aria-expanded="false">i</button><div class="prog" aria-label="Energy"><i id="napBar" style="width:${S.stats.energy}%"></i></div><button class="btn yes" id="wakeBtn">Wake up</button></div>`, { mini: true });
+    <div class="walkctl napstrip"><button class="btn napinfo" id="napInfo" aria-label="Nap details" aria-expanded="false">?</button><div class="prog" aria-label="Energy"><i id="napBar" style="width:${S.stats.energy}%"></i></div><button class="btn yes" id="wakeBtn">Wake up</button></div>`, { mini: true });
     $('#trayX').remove(); const t = $('#dock > .tray'); if (t) t.classList.add('nap');
     $('#napInfo').onclick = () => { const d = $('#napDet'), on = d.hidden; d.hidden = !on; $('#napInfo').setAttribute('aria-expanded', on ? 'true' : 'false'); };
     $('#wakeBtn').onclick = () => wake();
@@ -578,7 +578,7 @@ function hmOpenDecor() {
   const p = openModal('Yard decor', away.length ? `<p class="small">These are tucked away. Put them back out any time.</p><div class="shopgrid">${list}</div>` : `<p>Everything you own is out in the yard. Nothing is hiding in the shed.</p>`);
   p.querySelectorAll('[data-back]').forEach((b) => { b.onclick = () => { SFX.click(); S.decor[b.dataset.back].out = true; markDirty(); toast(`${b.dataset.back} is back in the yard.`, 'good'); if (cur.mode === 'yard') { closeModal(); hmDecorRedraw(); hmOpenDecor(); } }; });
 }
-function hmExpose() { if (window.__paw) window.__paw.home = { decorOut: hmDecorOut, redraw: hmDecorRedraw, ambient: () => packAmbient(), emit: (e, d) => emit(e, d), specs: HM_DECOR }; }
+function hmExpose() { if (window.__paw) window.__paw.home = { decorOut: hmDecorOut, redraw: hmDecorRedraw, ambient: () => packAmbient(), say: (t, x, y) => say(t, x, y, 4000), emit: (e, d) => emit(e, d), specs: HM_DECOR }; }
 on('game:ready', () => { hmDecorFields(); setTimeout(hmExpose, 0); });
 on('yard:enter', () => { hmDecorFields(); hmDecorBind(); hmExpose(); });
 on('decor:new', (o) => { hmDecorFields(); if (cur.mode === 'yard' && S.place === 'yard') hmDecorRedraw(); toast(`New for the yard: ${o && o.name}!`, 'gold'); });
