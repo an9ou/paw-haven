@@ -501,7 +501,7 @@
     '.pk-portrait .pk-tile.pk-people{width:52px;height:52px}',
     '.pk-portrait .pk-tray{left:8px;top:492px;width:404px;height:auto;min-height:150px}',
     '.pk-portrait .pk-dog{left:230px;top:648px;width:180px;height:150px}',
-    '.pk-portrait .pk-bub{right:auto;left:10px;top:660px;max-width:214px;font-size:22px}.pk-portrait .pk-bub::after{right:-8px;bottom:auto;top:calc(50% - 8px);transform:rotate(-45deg)}',
+    '.pk-portrait .pk-bub{right:auto;left:10px;top:660px;width:max-content;max-width:250px;font-size:22px;text-wrap:balance;overflow-wrap:break-word}.pk-portrait .pk-bub::after{right:-8px;bottom:auto;top:calc(50% - 8px);transform:rotate(-45deg)}',
     '.pk-portrait .pk-ov{align-items:flex-start}',
     '.pk-portrait .pk-book{width:404px;height:780px;margin-top:10px;overflow-y:auto}',
     '.pk-portrait .pk-cards{grid-template-columns:1fr}',
