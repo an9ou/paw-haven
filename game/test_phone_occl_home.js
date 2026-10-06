@@ -185,6 +185,7 @@ const SCAN = (sels) => {
         const must = ['#dogHit'];
         if (pl === 'square') must.push('#easelG'); if (pl === 'dogpark') must.push('#playboardG');
         await check(pl, must, ['#sceneG [data-hot]']);
+        if (pl === 'market') { await fullyOn('market', ['#dogHit', '#bowlG']); const sh = await t.ev(() => ['kibble', 'boutique'].map((k) => { const b = document.querySelector(`[data-shop=${k}]`).getBoundingClientRect(); return [k, Math.min(b.right, innerWidth) - Math.max(b.left, 0)]; })); for (const [k, w] of sh) ok(w >= 120, `${tag} market: the ${k} shop is partly on screen (${Math.round(w)} px wide) and look-right reaches the rest`); }
         await toastsGone();
         await check(pl + ' quiet', must);
         await bubbleVsChip(pl);

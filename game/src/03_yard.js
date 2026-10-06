@@ -54,7 +54,7 @@ function enterYard() {
   setChrome(true, true);
   view.innerHTML = yardWorldSVG(); dogKey = ''; busy = false;
   renderDog(dogPoseNow()); setBowl(S.bowl || null);
-  phHomeCx = 358; phCamHome = isPhone() ? phHomeCx : 430; clearTimeout(phPanT); cancelAnimationFrame(camRaf); phPeekOn = false; view.style.removeProperty('--vfit'); view.style.removeProperty('--trayH'); phZoom = 1;
+  phHomeCx = 358; phCamHome = isPhone() ? phHomeCx : 430; view.style.background = ''; clearTimeout(phPanT); cancelAnimationFrame(camRaf); phPeekOn = false; view.style.removeProperty('--vfit'); view.style.removeProperty('--trayH'); phZoom = 1;
   camCx = phCamHome; camApply(camCx); if (isPhone()) phHomeRefit();
   if (S.sleeping) { dogTo(417.5, S.place === 'house' ? 130 : 140, 0.75, 0); showZzz(true); }
   updateHUD(); bindDev(); bindMess(); bindPack(); greetWalker(); drawFluff(); setTimeout(() => yardReaction(false), 700);
@@ -102,11 +102,14 @@ function phHomeRefit() {
   if (!isPhone() || (cur.mode !== 'yard' && cur.mode !== 'market') || !$('#view > svg.world')) return;
   let L = 186, R = 530, fitMin = 0.62;
   const vz = $('#visitorG', view);
-  if (S.place === 'market') { L = 226; R = 574; } // the dog and the "Market Street" sign (the bowl may sit half off the left edge here)
+  if (S.place === 'market') { L = 186; R = 592; fitMin = 0.78; } // the bowl, the dog and the "Market Street" sign together: the street zooms out a little when the screen is narrow
   else if (vz) { const sp = visitorSpot(), w = 264 * sp[3]; L = 306; R = Math.max(R, sp[0] + w / 2 + 6); }
   const vw = view.clientWidth, vh = view.clientHeight - (parseFloat(view.style.getPropertyValue('--trayH')) || 0); if (!vw || vh <= 0) return;
   const native = 600 * vw / vh, fit = Math.max(fitMin, Math.min(1, native / (R - L)));
   view.style.setProperty('--vfit', fit.toFixed(3));
+  if (S.place === 'market') { // the street's own layout (22_phone_town.css) ignores --vfit, so it zooms through the viewBox; the extra sky above the scene takes the sky's colour
+    phZoom = fit; const sky = $('#view > svg.world #sceneG rect[width="1000"]'); const f = sky && sky.getAttribute('fill'); view.style.background = f && f.charAt(0) === '#' ? f : '';
+  }
   phHomeCx = (L + R) / 2; if (!S.sleeping) { phCamHome = phHomeCx; camCx = phCamHome; }
   camApply(camCx);
 }
