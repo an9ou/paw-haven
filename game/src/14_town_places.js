@@ -109,7 +109,7 @@ function mapApply() {
   M.tx = mw <= vw ? (vw - mw) / 2 : clamp(M.tx, vw - mw - 40, 40); M.ty = mh <= vh ? (vh - mh) / 2 : clamp(M.ty, vh - mh - 40, 40);
   inner.style.transform = `translate(${M.tx.toFixed(1)}px, ${M.ty.toFixed(1)}px) scale(${s.toFixed(4)})`; inner.style.setProperty('--inv', (1 / s).toFixed(4));
   const zl = $('#mapZoomLbl'); if (zl) zl.textContent = Math.round(M.z * 100) + '%';
-  const pb = M.pinBox, pin = $('#mapPin'); if (pb && pin) { pin.style.left = (pb.x - 70 / s).toFixed(1) + 'px'; pin.style.top = (pb.y + pb.h * 0.62).toFixed(1) + 'px'; } // phones: the pin keeps a fixed screen gap from its place at every zoom
+  const pb = M.pinBox, pin = $('#mapPin'); if (pb && pin) { const lx = pb.x - 46 / s, rx = pb.x + pb.w + 46 / s; pin.style.left = ((M.tx + lx * s >= 46 || M.tx + rx * s > M.vw - 46) ? lx : rx).toFixed(1) + 'px'; pin.style.top = (pb.y + pb.h * 0.62).toFixed(1) + 'px'; } // phones: the pin keeps a fixed screen gap from its place at every zoom, on the side with room for its label
 }
 function mapCenter(k, anim) { const M = MAPV; if (!M) return; const c = M.centers[k]; if (!c) return; const s = M.base * M.z; M.tx = M.vw / 2 - c[0] * s; M.ty = M.vh / 2 - c[1] * s; const inner = $('#mapInner'); if (inner) inner.style.transition = anim ? 'transform .35s ease-out' : ''; mapApply(); if (anim) setTimeout(() => { if (inner) inner.style.transition = ''; }, 380); }
 function mapZoomAt(f, px, py) { const M = MAPV; if (!M) return; const z0 = M.z, z1 = clamp(z0 * f, 0.6, 1.6); if (z1 === z0) return; const s0 = M.base * z0, s1 = M.base * z1; const mx = (px - M.tx) / s0, my = (py - M.ty) / s0; M.z = z1; M.tx = px - mx * s1; M.ty = py - my * s1; mapApply(); }

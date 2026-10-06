@@ -16,7 +16,10 @@ html[data-layout="phone"] #view:has(#placeBtns [data-sh]) #placeBtns .btn { flex
 
 /* v2.3 TOWN-2 (phone map): the close X never covers the location chip (the chip stops short of it and wraps), and the zoom stack moves to the bottom-left edge, above the "go there" chip, clear of the places and the "go there" chip, with 44 px targets and breathing room; the "100%" pill gets the same hand-drawn frame as the buttons. */
 html[data-layout="phone"] #view:has(#mapPan) #status { max-width: calc(100% - 80px); white-space: normal; line-height: 1.15; text-wrap: balance; }
-html[data-layout="phone"] #mapZoom { top: auto; bottom: 104px; left: 10px; right: auto; gap: 8px; }
+/* the map's controls (X, +, 100%, -) live in a gutter on the right that the map never draws under, so they cover no place, label or hotspot wherever the map is panned */
+html[data-layout="phone"] #mapPan { right: 64px; }
+html[data-layout="phone"] #mapX { right: 8px; top: 8px; }
+html[data-layout="phone"] #mapZoom { top: 72px; bottom: auto; left: auto; right: 10px; gap: 8px; }
 html[data-layout="phone"] #mapZoom .btn { width: 44px; height: 44px; min-height: 44px; font-size: 26px; }
 html[data-layout="phone"] #mapZoom span { --fr: var(--fr-btn); --wash: var(--paper); min-width: 44px; min-height: 30px; line-height: 30px; text-align: center; border: 0; border-radius: 13px 9px 15px 8px; padding: 0 4px;
   background: var(--fr) 0 0/100% 100% no-repeat, var(--hatch) var(--ins), linear-gradient(var(--wash), var(--wash)) var(--ins); }
@@ -35,3 +38,5 @@ html:not([data-layout="phone"]) #stage:has(#placeBtns [data-sh]) #toasts { top: 
 html[data-layout="phone"] #view:has(#placeBtns [data-sh]) #placeBtns [data-pb="yard"] { order: -1; }
 /* v2.3 desktop Market Street: the location chip tucks under the HUD edge (a little smaller) so it no longer sits on the "K" of Kibble Corner */
 html:not([data-layout="phone"]) #stage:has(#placeBtns [data-sh]) #status { top: 0; padding: 1px 12px 2px; font-size: 15px; }
+/* the "you are here" label wraps to two short lines, so the pin fits beside its place inside the narrower map */
+html[data-layout="phone"] #mapPin span { white-space: normal; max-width: 76px; text-align: center; line-height: 1.02; font-size: 18px; padding: 1px 8px 3px; }

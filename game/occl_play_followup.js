@@ -53,6 +53,15 @@ module.exports = {
     ok(await t.until(() => { const o = document.querySelector('.pw-ov'); return !!o && o.hidden; }, null, 15000), `${tag} runner: countdown ends`);
     const left = await ev(() => [...document.querySelectorAll('#toasts .toast')].map((e) => e.textContent.slice(0, 40)));
     ok(left.length === 0, `${tag} runner (left: ${left.join(' | ')}): a hint toast that landed during the countdown is cleared when the dog starts running`);
+    // an obstacle hint steps aside while the dog's speech bubble would sit on it (the bubble carries the lesson)
+    ok(await t.until(() => [...document.querySelectorAll('.pw-hint')].some((e) => +e.style.opacity > 0.3 && e.getBoundingClientRect().width > 0 && e.getBoundingClientRect().left > 0 && e.getBoundingClientRect().right < innerWidth), null, 30000), `${tag} runner: an obstacle hint is on screen`);
+    const sayRes = await ev(`(async () => { const say = document.querySelector('.pw-say'), hint = [...document.querySelectorAll('.pw-hint')].find((e) => +e.style.opacity > 0.3 && e.getBoundingClientRect().right < innerWidth && e.getBoundingClientRect().left > 0); if (!hint) return { err: 'hint gone' };
+      say.hidden = false; say.textContent = 'Psst: a long line of dog speech that is wide enough to reach'; say.style.left = '0px'; say.style.top = '0px';
+      for (let k = 0; k < 3; k++) { const hr = hint.getBoundingClientRect(), sr = say.getBoundingClientRect(); say.style.left = (parseFloat(say.style.left) + (hr.left + hr.width / 2) - (sr.left + sr.width / 2)) + 'px'; say.style.top = (parseFloat(say.style.top) + (hr.top + hr.height / 2) - (sr.top + sr.height / 2)) + 'px'; }
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const sr = say.getBoundingClientRect(), hr2 = hint.getBoundingClientRect(); const overlap = sr.left < hr2.right && sr.right > hr2.left && sr.top < hr2.bottom && sr.bottom > hr2.top;
+      const hv = getComputedStyle(hint).visibility, sv = getComputedStyle(say).visibility; say.hidden = true; return { overlap, hint: hv, say: sv }; })()`);
+    ok(!sayRes.err && sayRes.overlap && sayRes.hint === 'hidden' && sayRes.say === 'visible', `${tag} runner: a hint hides while the speech bubble sits on it (${JSON.stringify(sayRes)})`);
     await ev(() => { document.querySelector('.pw-pauseb').click(); });
     ok(await t.until(() => !!document.querySelector('[data-home]'), null, 4000), `${tag} runner: pause opens`);
     ok(await ev(() => !/Space|Esc\b|\bD\b/.test(document.querySelector('.pw-ov .pw-card').textContent)), `${tag} runner: the pause card uses touch wording`);
@@ -76,14 +85,30 @@ module.exports = {
     await ev(() => { if (window.__PW) window.PawWalk = window.__PW; });
 
     // fetch results: no fetch tray and a single X
-    await ev(() => window.__paw.go('fetch', 'Tennis Ball'));
+    await ev(() => { document.querySelectorAll('#toasts .toast').forEach((e) => e.remove()); window.__paw.go('fetch', 'Tennis Ball'); }); // start clean: only a toast fetch itself raises counts
     ok(await t.until(() => !!document.getElementById('fQuit'), null, 8000), `${tag} fetch: opens`);
+    await settle(['#ballG']);
+    const ft = await ev(() => { const b = document.getElementById('ballG').getBoundingClientRect(), tl = [...document.querySelectorAll('#toasts .toast')]; return { n: tl.length, txt: tl.map((e) => e.textContent.slice(0, 40)).join(' | '), over: tl.some((e) => { const r = e.getBoundingClientRect(); return r.left < b.right && r.right > b.left && r.top < b.bottom && r.bottom > b.top; }) }; });
+    ok(ft.n === 0 && !ft.over, `${tag} fetch: no throw-hint toast on the ball's start point (toasts ${ft.n}: ${ft.txt})`);
     await ev(() => document.getElementById('fQuit').click());
     ok(await t.until(() => !!document.getElementById('fOk'), null, 8000), `${tag} fetch: results open`);
     await settle(['#modal .panel']);
     const fx = await ev(() => ({ dock: document.getElementById('dock').children.length, xs: [...document.querySelectorAll('.xbtn, #modal .x')].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== 'hidden'; }).length }));
     ok(fx.dock === 0 && fx.xs === 1, `${tag} fetch results: no fetch tray behind the sheet and one X (tray ${fx.dock}, X buttons ${fx.xs})`);
     await ev(() => document.getElementById('fOk').click()); await t.untilMode('yard');
+
+    // map controls live in a right-hand gutter the map never draws under: nothing is covered wherever the map is centred
+    await H.at('vet');
+    await ev(() => window.__paw.go('map'));
+    ok(await t.until(() => window.__paw.mode === 'map', null, 6000), `${tag} map: opens`);
+    for (const k of ['vet', 'dogpark', 'hilltop', 'market', 'pier']) {
+      await ev((k) => window.__paw.mapTo(k), k); await settle(['#mapInner']);
+      const g = await ev(() => { const pan = document.getElementById('mapPan').getBoundingClientRect(), x = document.getElementById('mapX').getBoundingClientRect(), z = document.getElementById('mapZoom').getBoundingClientRect(); return { pan: pan.right, x: x.left, z: z.left, xr: x.right, zr: z.right, vw: innerWidth }; });
+      const pinIn = k !== 'vet' || await ev(() => { const pin = document.getElementById('mapPin'), pan = document.getElementById('mapPan').getBoundingClientRect(); if (!pin || pin.hidden) return true; const r = pin.getBoundingClientRect(); return r.right < pan.left || r.left > pan.right || (r.left >= pan.left - 0.5 && r.right <= pan.right + 0.5); });
+      ok(pinIn, `${tag} map centred on ${k}: the pin and its label are not cut by the map edge`);
+      ok(g.x >= g.pan - 0.5 && g.z >= g.pan - 0.5 && g.xr <= g.vw + 0.5 && g.zr <= g.vw + 0.5, `${tag} map centred on ${k}: the X and the zoom stack sit beside the map, not on it (map ends ${Math.round(g.pan)}, X ${Math.round(g.x)}, zoom ${Math.round(g.z)})`);
+    }
+    await ev(() => window.__paw.go('yard')); await t.untilMode('yard');
   },
 
   desk: async (H) => {

@@ -1206,6 +1206,11 @@ function start(el, o) {
     // an obstacle's hint fades out as the obstacle reaches the dog, so it never sits on the dog (or its jump)
     for (let i = 0; i < live.length; i++) { const ob = live[i]; if (!ob.el) continue; if (ob.hintEl === undefined) ob.hintEl = ob.el.querySelector('.pw-hint');
       if (ob.hintEl) { const op = clamp((Math.abs(ob.x0 + ob.w / 2 - cx - DOG.x) - 90) / 80, 0, 1); const v = op.toFixed(2); if (ob.hintOp !== v) { ob.hintOp = v; ob.hintEl.style.opacity = v; } } }
+    // an obstacle hint steps aside (hides) while the dog's speech bubble would sit on it: the bubble carries the lesson ("Tap Dig!"), the hint is only a nudge
+    { const sayUp = !E.say.hidden, sr = sayUp ? E.say.getBoundingClientRect() : null;
+      for (let i = 0; i < live.length; i++) { const he = live[i].hintEl; if (!he) continue; let hide = false;
+        if (sayUp && +he.style.opacity >= 0.05) { const hr = he.getBoundingClientRect(); hide = hr.width > 0 && hr.left < sr.right && hr.right > sr.left && hr.top < sr.bottom && hr.bottom > sr.top; }
+        if (live[i].hintHide !== hide) { live[i].hintHide = hide; he.style.visibility = hide ? 'hidden' : ''; } } }
     if (S.prompt) { E.ring.style.transform = `scaleX(${clamp(S.promptT / 1.5, 0, 1).toFixed(3)})`; E.prompt.style.left = px(S.prompt.cx - cx); E.prompt.style.top = ((E.say.hidden ? sayY + 8 : sayY - E.say.offsetHeight) - 8).toFixed(1) + "px"; }
   }
 
