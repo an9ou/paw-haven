@@ -50,6 +50,10 @@ const SUITES = {
   phone_puppy: { file: 'test_phone_puppy.js', group: 'phone', est: 35 },
   phone_walk: { file: 'test_phone_walk.js', group: 'phone', est: 110 },
   phone_skill: { file: 'test_phone_skill.js', group: 'phone', est: 150 },
+  // v2.3 "Cozy Phones"
+  account: { file: 'test_account.js', group: 'phone', est: 60 },
+  phone_occl_home: { file: 'test_phone_occl_home.js', group: 'phone', est: 60 },
+  phone_occl_play: { file: 'test_phone_occl_play.js', group: 'phone', est: 60 },
 };
 // extra aliases: `all_*` is the same as `all`; `test_all` = the four+ shards of the old test_all.js
 const ALIAS = { test_all: ['all_a', 'all_b', 'all_c', 'all_d', 'all_e'], 'test_v15': ['v15'], 'test_v16': ['v16'], 'test_v16b': ['v16b'], 'test_v17': ['v17'], 'test_v171_garden': ['v171_garden'], 'test_v171_tricks': ['v171_tricks'], 'test_v2_slots': ['v2_slots'], 'test_v2_breed': ['v2_breed'], 'test_v2_journal': ['v2_journal'], 'test_v2_town': ['v2_town'], 'test_v2_play': ['v2_play'], 'test_v21_genes_node': ['v21_genes'], 'test_copy_node': ['copy'], 'test_v21_breed': ['v21_breed'], 'test_v21_journal': ['v21_journal'], 'test_v21_town': ['v21_town'], 'test_v21_home': ['v21_home'] };
