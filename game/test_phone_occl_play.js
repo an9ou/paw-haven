@@ -63,6 +63,14 @@ run('phone_occl_play', async (t) => {
   const unToast = () => ev(() => { const d = document.getElementById('occlToast'); if (d) d.remove(); });
   const at = async (place) => { await ev((k) => { const S = window.__paw.S; S.sleeping = false; S.place = k; window.__paw.go('yard'); }, place); await t.until((k) => window.__paw.S.place === k && window.__paw.mode === 'yard' && !!document.getElementById('placeBtns'), place, 8000); await t.calm(); await t.lu(); await settle(); };
 
+  // checks written by the other v2.3 review areas live in game/occl_play_<area>.js (so parallel work never edits the same lines):
+  //   module.exports = { phone: async (H, w, h, tag) => {}  // runs at every phone size, starts on the yard
+  //                      once:  async (H) => {}             // runs once after the portrait-lock section, phone context, 390x844
+  //                      desk:  async (H) => {} }           // runs once in a desktop 1280x720 context (non-phone)
+  // H = { t, ok, ev, p, check, clear, settle, vp, toast, unToast, at, covered, overlaps, COVER, PTS }
+  const H = { t, ok, ev, p, check, clear, settle, vp, toast, unToast, at, covered, overlaps, COVER, PTS };
+  const EXTRA = require('fs').readdirSync(__dirname).filter((f) => /^occl_play_.*\.js$/.test(f)).sort().map((f) => require('./' + f));
+
   t.sec('setup');
   await t.newGame({ device: 'iPhone 13' }, { coins: 3000, bond: { level: 10, pts: 5000 }, stats: { hunger: 80, happy: 80, energy: 95, clean: 90 }, inv: { toys: ['Tennis Ball', 'Frisbee'] } });
   ok((await ev(() => document.documentElement.dataset.layout)) === 'phone', 'phone layout is on');
@@ -226,6 +234,7 @@ run('phone_occl_play', async (t) => {
       await p.locator('#trX').tap(); await t.until(() => !window.__paw.train, null, 3000);
     }
     await ev(() => window.__paw.go('yard')); await t.untilMode('yard');
+    for (const m of EXTRA) if (m.phone) { t.sec(`${tag}: ${m.name || 'extra'}`); await m.phone(H, w, h, tag); await ev(() => { window.__paw.S.sleeping = false; window.__paw.go('yard'); }); await t.untilMode('yard'); }
   }
 
   // ===================== portrait lock: fetch and the trick games wait behind the card =====================
@@ -258,4 +267,12 @@ run('phone_occl_play', async (t) => {
   ok(g4.on && !g4.paused && g4.tick, 'and it picks up again on rotate back');
   await p.locator('#trX').tap(); await t.until(() => !window.__paw.train, null, 3000);
   await ev(() => window.__paw.go('yard')); await t.untilMode('yard');
+  for (const m of EXTRA) if (m.once) { t.sec(`${m.name || 'extra'} (once)`); await vp(390, 844); await m.once(H); await ev(() => { window.__paw.S.sleeping = false; window.__paw.go('yard'); }); await t.untilMode('yard'); }
+  // desktop 1280x720 (not the phone layout): desktop screens must stay put and uncovered too
+  if (EXTRA.some((m) => m.desk)) {
+    t.sec('desktop 1280x720');
+    await t.newGame({ device: null }, { coins: 3000, bond: { level: 10, pts: 5000 }, stats: { hunger: 80, happy: 80, energy: 95, clean: 90 }, inv: { toys: ['Tennis Ball', 'Frisbee'] } });
+    await settle();
+    for (const m of EXTRA) if (m.desk) { t.sec(`${m.name || 'extra'} (desktop)`); await m.desk(H); await ev(() => { window.__paw.S.sleeping = false; window.__paw.go('yard'); }); await t.untilMode('yard'); }
+  }
 }, { device: 'iPhone 13', timeout: 600000 });
