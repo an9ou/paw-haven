@@ -162,7 +162,8 @@ const AUDIT = () => {
       const vb1 = await camX();
       ok(vb1 > vb0 + 100, `a swipe pans the camera right (${Math.round(vb0)} -> ${Math.round(vb1)})`);
       ok(await t.ev(() => document.getElementById('modal').hidden), 'a swipe does not open anything by accident');
-      ok(await t.until((x) => document.querySelector('#view > svg.world').viewBox.baseVal.x < x - 50, vb1, 20000), 'the camera eases back to the dog');
+      // back at the camera home (the dog's place) once the 4 s pan timer has run: wait for the crop to settle there, not for a fixed drop
+      ok(await t.until((h) => { const x = document.querySelector('#view > svg.world').viewBox.baseVal.x; return Math.abs(x - h) < 3; }, vb0, 20000), 'the camera eases back to the dog');
       await peekBack(); await camSteady();
       const houseOn = () => t.ev(() => { const r = document.getElementById('houseG').getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth + 1; });
       let hOn = false; for (let i = 0; i < 4 && !hOn; i++) { await peekOnce(); hOn = await houseOn(); if (!hOn) await peekBack(); } // (the dog may wander and send the camera back: try again)

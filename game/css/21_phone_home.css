@@ -40,7 +40,7 @@ html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row{fle
 html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row::-webkit-scrollbar{display:none}
 html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row > .card{flex:0 0 148px;width:148px;scroll-snap-align:start}
 /* v2.3 Market Street: the look-right button sits lower, clear of the shop signs */
-html[data-layout="phone"] #view:has(#placeBtns [data-sh]) #phPeek{top:calc(24% + 44px)}
+html[data-layout="phone"] #view:has(#placeBtns [data-sh]) #phPeek{top:calc(24% - 36px)}
 /* Feed / Play / Care cards: no empty space under the text (the cards no longer stretch to the tallest one) */
 html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row{align-items:stretch}
 html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row > .card{min-height:0;height:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 6px 10px}
