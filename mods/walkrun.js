@@ -249,9 +249,14 @@ const CSS = `
 .pw-pt .pw-xm,.pw-cp .pw-xm{font-size:22px}
 .pw-touchui .pw-hud .pw-btn{min-height:44px;min-width:44px;padding:2px 8px;justify-content:center}
 .pw-pt .pw-coins{margin-right:auto}
+@media (max-width:400px){.pw-pt .pw-hud{gap:4px 6px;padding:4px 8px}.pw-pt .pw-nose .pw-bar{width:36px}.pw-pt .pw-nose .pw-nl{min-width:0}.pw-pt .pw-digs{font-size:15px;gap:3px}.pw-pt .pw-coins{gap:3px}.pw-touchui .pw-hud .pw-btn{padding:2px 5px}}
 .pw-pt .pw-legend{font-size:15px;padding:2px 10px;white-space:normal;text-align:center;width:max-content;max-width:94%}
 .pw-cp .pw-legend,.pw-coarse:not(.pw-pt) .pw-legend{display:none}
 .pw-coarse .pw-lg-desk{display:none}.pw-coarse .pw-lg-touch{display:inline}
+.pw-coarse.pw-tab .pw-legend{display:block}
+.pw-tab .pw-stage{border-bottom:2.5px solid ${INK};box-shadow:0 3px 0 rgba(91,61,50,.15)}
+.pw-tab .pw-ctrls{bottom:auto}
+.pw-tab .pw-dig{margin-bottom:0;min-width:200px}
 .pw-pt .pw-mini.jump .pw-mp{left:64px!important}
 .pw-pt .pw-mini.long .pw-mp{left:18px!important}
 .pw-pt .pw-mini.long .pw-md{animation-name:pw-mlS}
@@ -259,11 +264,13 @@ const CSS = `
 .pw-pt .pw-mini.jump .pw-md{animation-name:pw-mjS}
 @keyframes pw-mjS{0%,100%{transform:translateY(0)}45%{transform:translateY(-20px)}}
 .pw-pt .pw-ctrls{bottom:0;display:grid;grid-template-columns:1fr 1.25fr;grid-template-rows:auto 1fr;gap:10px;padding:0 10px calc(10px + env(safe-area-inset-bottom,0px))}
+.pw-pt .pw-ctrls{align-items:stretch}
+.pw-pt .pw-legend{text-wrap:balance}
 .pw-pt .pw-big{height:auto;min-height:88px;max-height:190px;min-width:0;font-size:38px}
 .pw-pt .pw-big .pw-k,.pw-cp .pw-big .pw-k{font-size:15px}
 .pw-touchui .pw-tfoot .pw-k{font-size:15px}
-.pw-pt .pw-dig{grid-column:1/3;grid-row:1;margin:0;min-height:72px;max-height:80px}
-.pw-pt .pw-duck{grid-column:1;grid-row:2}.pw-pt .pw-jump{grid-column:2;grid-row:2}
+.pw-pt .pw-dig{grid-column:1/3;grid-row:2;margin:0;min-height:72px;max-height:80px}
+.pw-pt .pw-duck{grid-column:1;grid-row:1}.pw-pt .pw-jump{grid-column:2;grid-row:1}
 .pw-cp .pw-ctrls{bottom:8px;padding:0 10px}
 .pw-cp .pw-big{min-width:104px;height:62px;font-size:28px;opacity:.93}
 .pw-cp .pw-dig{margin-bottom:0;min-width:160px;height:72px}
@@ -461,7 +468,7 @@ function start(el, o) {
       <button class="pw-btn pw-big pw-dig" tabindex="-1" hidden aria-label="Dig">Dig!<span class="pw-k" data-desk="press D" data-touch="tap here!">press D</span><span class="pw-ring"></span></button>
       <button class="pw-btn pw-big pw-jump" tabindex="-1" aria-label="Jump">Jump<span class="pw-k" data-desk="tap = hop &middot; hold = long" data-touch="tap = hop &middot; hold = long">tap = hop &middot; hold = long</span></button>
     </div>
-    <div class="pw-legend"><span class="pw-lg-desk"><b>Space/&uarr;</b> jump (hold = long jump) &middot; <b>&darr;/S</b> duck &middot; <b>D</b> dig &middot; <b>B</b> bag &middot; <b>Esc</b> pause</span><span class="pw-lg-touch"><b>Tap the scene</b> jump &middot; <b>hold</b> = long jump &middot; <b>swipe down</b> duck</span></div>
+    <div class="pw-legend"><span class="pw-lg-desk"><b>Space/&uarr;</b> jump (hold = long jump) &middot; <b>&darr;/S</b> duck &middot; <b>D</b> dig &middot; <b>B</b> bag &middot; <b>Esc</b> pause</span><span class="pw-lg-touch"><b>Tap the scene</b> to jump &middot; <b>hold</b> = long jump &middot; <b>swipe down</b> to duck</span></div>
     <div class="pw-ov"></div>`;
   el.appendChild(root);
   const $ = (s) => root.querySelector(s);
@@ -553,6 +560,7 @@ function start(el, o) {
 
   /* ---------- layout (px per world unit) ---------- */
   let s = 1.5, LW = 800, elW = 1240, elH = 620, mode = '', coarse = false;
+  let sayY = 0;
   try { coarse = !!(window.matchMedia && (window.matchMedia('(pointer: coarse)').matches || (window.matchMedia('(hover: none)').matches && navigator.maxTouchPoints > 0))); } catch (e) { coarse = false; }
   const PT_LW = 620; // world units across in portrait: >= 1.8 s of warning at top speed
   const px = (u) => (u * s).toFixed(2) + 'px';
@@ -560,25 +568,35 @@ function start(el, o) {
     const r = root.getBoundingClientRect(); elW = Math.max(280, r.width || el.clientWidth || 1240); elH = Math.max(240, r.height || el.clientHeight || 620);
     // layout mode: 'desk' (unchanged laptop view), 'cp' (compact landscape phone), 'pt' (portrait: letterboxed landscape strip)
     const prevMode = mode;
-    if (elW >= 820) mode = elH < 500 ? 'cp' : 'desk';
+    if (elW >= 820) mode = coarse && elH >= 440 ? 'tab' : elH < 500 ? 'cp' : 'desk';
     else mode = (elH / elW > 0.75 || elW / (elH / VIEW_H) < PT_LW) ? 'pt' : 'cp';
-    root.classList.toggle('pw-coarse', coarse); root.classList.toggle('pw-pt', mode === 'pt'); root.classList.toggle('pw-cp', mode === 'cp'); root.classList.toggle('pw-touchui', mode !== 'desk');
+    root.classList.toggle('pw-coarse', coarse); root.classList.toggle('pw-pt', mode === 'pt'); root.classList.toggle('pw-cp', mode === 'cp'); root.classList.toggle('pw-touchui', mode !== 'desk'); root.classList.toggle('pw-tab', mode === 'tab');
     DOG.x = mode === 'pt' ? 120 : mode === 'cp' ? 170 : 200;
     E.stage.style.cssText = ''; E.ctrls.style.cssText = ''; E.legend.style.cssText = ''; root.style.removeProperty('--pw-st'); root.style.removeProperty('--pw-sh');
     if (mode === 'pt') {
       s = elW / PT_LW; LW = PT_LW;
       const hudB = E.hud.offsetTop + E.hud.offsetHeight + 8, sh = Math.round(VIEW_H * s);
-      const top = Math.max(hudB, Math.min(hudB + 40, Math.round((elH - sh) * 0.22)));
+      // the strip, the legend and the controls are one group, centred in the space under the HUD; spare height makes the buttons taller (up to 150 px)
+      const lgH = E.legend.offsetHeight, DIGH = 72, GAP = 10, avail = elH - hudB;
+      const fixed = sh + 8 + lgH + 8, bigH = clamp(avail - fixed - DIGH - GAP - 24, 88, 150);
+      const group = fixed + bigH + GAP + DIGH, top = hudB + Math.max(0, Math.min(Math.round((avail - fixed - bigH) / 2), avail - group));
       Object.assign(E.stage.style, { inset: 'auto', left: '0', right: '0', top: top + 'px', height: sh + 'px' });
       root.style.setProperty('--pw-st', top + 'px'); root.style.setProperty('--pw-sh', sh + 'px'); // the countdown stays on the strip, clear of the legend
       Object.assign(E.legend.style, { top: (top + sh + 8) + 'px', bottom: 'auto' });
-      Object.assign(E.ctrls.style, { top: (top + sh + 8 + E.legend.offsetHeight + 8) + 'px' });
+      Object.assign(E.ctrls.style, { top: (top + sh + 8 + lgH + 8) + 'px', bottom: 'auto', height: (bigH + GAP + DIGH) + 'px', gridTemplateRows: bigH + 'px ' + DIGH + 'px', paddingBottom: '0' });
     } else if (mode === 'cp') {
       // compact landscape: the world sits under the slim HUD; the dog stands clear of the Duck button
       const top = E.hud.offsetTop + E.hud.offsetHeight + 4, sh = Math.max(160, elH - top);
       Object.assign(E.stage.style, { inset: 'auto', left: '0', right: '0', top: top + 'px', height: sh + 'px' });
       s = sh / VIEW_H; LW = elW / s; if (LW < PT_LW) { s = elW / PT_LW; LW = PT_LW; }
       DOG.x = Math.max(170, Math.min(LW * 0.4, (E.duckB.offsetWidth + 22) / s + 95));
+    } else if (mode === 'tab') {
+      // touch tablet: the controls and the legend sit under the strip, never on the path
+      const lgH = E.legend.offsetHeight, bh = E.duckB.offsetHeight || 74, sh = Math.max(260, elH - (6 + lgH + 8 + bh + 14));
+      Object.assign(E.stage.style, { inset: 'auto', left: '0', right: '0', top: '0', height: sh + 'px' });
+      s = sh / VIEW_H; LW = elW / s;
+      Object.assign(E.legend.style, { top: (sh + 6) + 'px', bottom: 'auto' });
+      Object.assign(E.ctrls.style, { top: (sh + 6 + lgH + 8) + 'px', bottom: 'auto' });
     } else { s = elH / VIEW_H; LW = elW / s; }
     if (mode !== prevMode || coarse !== S.coarseShown) {
       S.coarseShown = coarse; const touch = mode !== 'desk' || coarse;
@@ -590,7 +608,7 @@ function start(el, o) {
     E.veil.style.height = px(G - 3); E.far.style.opacity = '.6';
     E.dog.style.left = px(DOG.x - 120 * dogSc); E.dog.style.top = px(G - 186 * dogSc); E.dog.style.width = px(240 * dogSc); E.dog.style.height = px(200 * dogSc);
     live.forEach(placeEl); lamps.forEach((l) => { l.k = -99; });
-    E.say.style.left = px(DOG.x + 10); E.say.style.top = px(G - 112);
+    E.say.style.left = px(DOG.x + 10); sayY = (G - 186 * dogSc) * s - 16; E.say.style.top = sayY.toFixed(1) + "px";
     E.prompt.style.left = px(DOG.x + 10);
   }
 
@@ -751,7 +769,7 @@ function start(el, o) {
     if (ob.kind === 'dig' && ob.treasure && ab.goggles) html += `<div class="pw-obj pw-glow" style="left:${px(4)};top:${px(-58)};width:${px(60)};height:${px(60)}"><img alt="" src="${colUri('sparkle-spot')}"></div>`;
     if (ob.kind === 'bonus') html += `<div class="pw-obj" style="left:${px(18)};top:${px(18)};width:${px(32)};height:${px(32)}"><img alt="" src="${colUri('chest')}"></div>`;
     if (ob.arc) html += arcSvg(ob);
-    if (ob.hint) html += `<div class="pw-hint" style="top:${px(ob.cat === 'high' ? -8 : ob.cat === 'wide' ? -72 : -52)}">${esc(ob.hint)}</div>`;
+    if (ob.hint) html += `<div class="pw-hint" style="top:${px(ob.cat === 'high' ? -8 : ob.cat === 'wide' ? -150 : -120)}">${esc(ob.hint)}</div>`;
     d.innerHTML = html; if (ob.hint || ob.arc) d.style.zIndex = 3; ob.el = d; placeEl(ob); E.objs.appendChild(d);
   }
   function placeEl(ob) {
@@ -879,7 +897,7 @@ function start(el, o) {
     if (S.found) return;
     if (S.digsUsed >= S.digsMax) { if (!S.outOfDigsSaid) { S.outOfDigsSaid = true; say('Out of digs. The nose sighs.', 1800); } return; }
     S.prompt = ob; S.promptT = 1.5; E.digB.hidden = false; E.prompt.hidden = false; sfx('pop');
-    if (o.firstWalk && ob.treasure && !S.firstHintSaid) { S.firstHintSaid = true; say('This X smells AMAZING. Press D to dig!', 2200); }
+    if (o.firstWalk && ob.treasure && !S.firstHintSaid) { S.firstHintSaid = true; say(mode !== 'desk' || coarse ? 'This X smells AMAZING. Tap Dig!' : 'This X smells AMAZING. Press D to dig!', 2200); }
   }
   function skipPrompt() { if (!S.prompt) return; S.prompt.skipped = true; S.prompt = null; E.digB.hidden = true; E.prompt.hidden = true; }
   function doDig() {
@@ -1006,11 +1024,11 @@ function start(el, o) {
     const highs = A.high.map((n) => OBS_LABEL[n].toLowerCase()).join(', ');
     if (i === 0) return `<h3>1. Your moves</h3>
       <div class="pw-trow"><div class="pw-mini jump"><div class="pw-mp" style="left:92px;${fitBox(mLow, 44, 24)}">${stickerImg(mLow)}</div><div class="pw-md">${poseStr.jump}</div></div>
-        <div><b>Jump</b> &nbsp;${T ? 'tap the <b>scene</b> (or Jump)' : 'tap <b>Space</b> / <b>&uarr;</b> (or the Jump button)'}.<br>Hop over low things: ${esc(lows)}.</div></div>
+        <div><b>Jump</b> &mdash; ${T ? 'tap the <b>scene</b> (or Jump)' : 'tap <b>Space</b> / <b>&uarr;</b> (or the Jump button)'}.<br>Hop over low things: ${esc(lows)}.</div></div>
       <div class="pw-trow"><div class="pw-mini long"><div class="pw-mp" style="left:40px;${fitBox(mWide, 76, 14)}">${stickerImg(mWide)}</div><div class="pw-md">${poseStr.jump}</div></div>
-        <div><b>Long jump</b> &nbsp;<b>hold</b> ${T ? 'the scene (or Jump)' : 'Space'}.<br>${A.wide.includes('bicycle') ? 'Clears parked bicycles, and floats over puddles to keep you clean.' : 'Floats over puddles and mud, and keeps you clean.'}</div></div>
+        <div><b>Long jump</b> &mdash; <b>hold</b> ${T ? 'the scene (or Jump)' : 'Space'}.<br>${A.wide.includes('bicycle') ? 'Clears parked bicycles, and floats over puddles to keep you clean.' : 'Floats over puddles and mud, and keeps you clean.'}</div></div>
       <div class="pw-trow"><div class="pw-mini duck"><div class="pw-mp" style="left:22px;top:2px;bottom:auto;${fitBox(mHigh, 110, 38)}">${stickerImg(mHigh)}</div><div class="pw-md" style="left:34px">${poseStr.crouch}</div></div>
-        <div><b>Duck</b> &nbsp;${T ? '<b>swipe down</b>, or hold Duck' : 'hold <b>&darr;</b> / <b>S</b> (or the Duck button)'}.<br>Slide under high things: ${esc(highs)}.</div></div>`;
+        <div><b>Duck</b> &mdash; ${T ? '<b>swipe down</b>, or hold Duck' : 'hold <b>&darr;</b> / <b>S</b> (or the Duck button)'}.<br>Slide under high things: ${esc(highs)}.</div></div>`;
     if (i === 1) {
       const RN = ROUTE_NOTES[area], RW = ROUTE_WX[area] || {};
       const cells = routeObstacles().map((n) => { const c = OBS[n].cat; return `<div class="pw-obsc"><div class="pw-oi"><div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);${fitBox(n, 62, 42)}">${stickerImg(n)}</div></div><span><b>${esc(OBS_LABEL[n])}</b>${RN && RN[n] ? `<i>${esc(RN[n])}</i>` : BADGE[c][1]}</span>${badgeHtml(c)}</div>`; }).join('');
@@ -1019,9 +1037,9 @@ function start(el, o) {
     }
     if (i === 2) return `<h3>3. The hidden treasure</h3>
       <div class="pw-trow"><span class="pw-tic">${$('.pw-noseic').innerHTML}</span><div><b>Nose-o-meter</b> (top bar) <span class="pw-nm"><i style="color:#5c86b8">Cold</i><i style="color:#d27a35">Warm</i><i style="color:#d2483b">HOT</i></span>It gets hotter near the treasure${ab.necklace ? ', and your Seashell Necklace smells it from twice as far' : ''}.</div></div>
-      <div class="pw-trow"><span class="pw-tic"><img alt="" src="${colUri('sniff')}"></span><div><b>Sniff spots</b> &nbsp;run through them for a clue.</div></div>
-      <div class="pw-trow"><span class="pw-tic"><img alt="" src="${colUri('dig')}"></span><div><b>X marks a dig spot</b> &nbsp;press <b>D</b> or tap <b>Dig!</b> while standing on it.<br>Only ONE X hides the treasure.${ab.goggles ? ' Your Explorer Goggles make the right X sparkle.' : ''}${o.firstWalk ? ' Psst: on your first walk, try the first X.' : ''}</div></div>
-      <div class="pw-trow"><span class="pw-tic" style="display:flex;align-items:center;justify-content:center"><span class="pw-xm" style="font-size:36px">X${S.digsMax > 2 ? 'XX' : 'X'}</span></span><div><b>Digs left: ${S.digsMax}</b> &nbsp;(${ab.extraDig ? 'the Acorn Cap gives you an extra dig' : '3 with the Acorn Cap'}). Choose wisely!</div></div>`;
+      <div class="pw-trow"><span class="pw-tic"><img alt="" src="${colUri('sniff')}"></span><div><b>Sniff spots</b> &mdash; run through them for a clue.</div></div>
+      <div class="pw-trow"><span class="pw-tic"><img alt="" src="${colUri('dig')}"></span><div><b>X marks a dig spot</b> &mdash; press <b>D</b> or tap <b>Dig!</b> while standing on it.<br>Only ONE X hides the treasure.${ab.goggles ? ' Your Explorer Goggles make the right X sparkle.' : ''}${o.firstWalk ? ' Psst: on your first walk, try the first X.' : ''}</div></div>
+      <div class="pw-trow"><span class="pw-tic" style="display:flex;align-items:center;justify-content:center"><span class="pw-xm" style="font-size:36px">X${S.digsMax > 2 ? 'XX' : 'X'}</span></span><div><b>Digs left: ${S.digsMax}</b> (${ab.extraDig ? 'the Acorn Cap gives you an extra dig' : '3 with the Acorn Cap'}). Choose wisely!</div></div>`;
     return `<h3>4. Bumps and coins</h3>
       <div class="pw-trow"><span class="pw-tic" style="font-family:Caveat,cursive;font-weight:700;font-size:44px;color:#d2483b;line-height:52px;text-align:center">&minus;3s</span><div><b>Each bump costs 3 seconds</b> off the walk clock, then a short blink where nothing can bump you.</div></div>
       <div class="pw-trow"><div class="pw-mini" style="width:150px"><img alt="" src="${colUri('coin')}" style="position:absolute;left:14px;bottom:8px;width:26px"><img alt="" src="${colUri('coin')}" style="position:absolute;left:62px;bottom:34px;width:26px"><img alt="" src="${colUri('coin')}" style="position:absolute;left:110px;bottom:62px;width:26px"></div>
@@ -1169,7 +1187,10 @@ function start(el, o) {
     E.timeBar.style.transform = `scaleX(${(rem / D).toFixed(4)})`;
     const sec = Math.ceil(rem); if (sec !== S.lastSec) { S.lastSec = sec; E.secs.textContent = sec + 's'; E.time.classList.toggle('pw-low', sec <= 10); }
     if (now - noseT > 100) { noseT = now; updateNose(); }
-    if (S.prompt) { E.ring.style.transform = `scaleX(${clamp(S.promptT / 1.5, 0, 1).toFixed(3)})`; E.prompt.style.left = px(S.prompt.cx - cx); E.prompt.style.top = px(G - 150); }
+    // an obstacle's hint fades out as the obstacle reaches the dog, so it never sits on the dog (or its jump)
+    for (let i = 0; i < live.length; i++) { const ob = live[i]; if (!ob.el) continue; if (ob.hintEl === undefined) ob.hintEl = ob.el.querySelector('.pw-hint');
+      if (ob.hintEl) { const op = clamp((Math.abs(ob.x0 + ob.w / 2 - cx - DOG.x) - 90) / 80, 0, 1); const v = op.toFixed(2); if (ob.hintOp !== v) { ob.hintOp = v; ob.hintEl.style.opacity = v; } } }
+    if (S.prompt) { E.ring.style.transform = `scaleX(${clamp(S.promptT / 1.5, 0, 1).toFixed(3)})`; E.prompt.style.left = px(S.prompt.cx - cx); E.prompt.style.top = ((E.say.hidden ? sayY + 8 : sayY - E.say.offsetHeight) - 8).toFixed(1) + "px"; }
   }
 
   /* ---------- loop ---------- */

@@ -20,6 +20,16 @@ html[data-layout="phone"] #view svg.world { touch-action: none; -webkit-touch-ca
 html[data-layout="phone"] #rtView { touch-action: pan-y; }
 html[data-layout="phone"] .rt-nav .arrow { min-width: 56px; min-height: 56px; touch-action: manipulation; }
 html[data-layout="phone"] .rt-foot .btn { min-height: 52px; touch-action: manipulation; }
+html[data-layout="phone"] .rt-prev { height: min(200px, max(90px, calc(100cqh - 165px))); }
 /* v2.3: results sheets (walk, fetch): the title clears the header art of the celebrate panel */
 html[data-layout="phone"] .panel.celebrate { padding-top: 44px; }
 html[data-layout="phone"] .panel.celebrate .x { top: 40px; }
+/* v2.3 walkfetch: the title sits right of the pink tape in the panel's top-left corner; the found-treasure picture stacks above its text so the headline gets the full width; the last tile never ends under the footer */
+html[data-layout="phone"] .panel.celebrate h2 { margin-left: 62px; font-size: 30px; line-height: 1.05; }
+html[data-layout="phone"] .panel.celebrate .tfind { grid-template-columns: minmax(0, 1fr); gap: 4px; justify-items: stretch; text-align: left; }
+html[data-layout="phone"] .panel.celebrate .tfind .tbig { width: 124px; height: 124px; justify-self: center; }
+html[data-layout="phone"] .panel.celebrate .tfind .tbig svg { width: 104px; height: 104px; }
+html[data-layout="phone"] .panel.celebrate .tfind h3 { font-size: 30px; line-height: 1.05; }
+html[data-layout="phone"] .panel.celebrate .tfind .ab { font-size: 17px; }
+html[data-layout="phone"] .panel.celebrate .panel-body { padding-bottom: 14px; }
+html[data-layout="phone"] .panel.celebrate .results.compact { grid-template-columns: repeat(2, minmax(0, 1fr)); }

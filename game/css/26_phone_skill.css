@@ -23,3 +23,30 @@ html[data-layout="phone"] #trainPanel .trshow + .pklead{margin-top:6px}
 /* the track and the hit area never let the browser scroll or zoom mid-drag */
 html[data-layout="phone"] #trTrack,html[data-layout="phone"] #trTrack #tgHit{touch-action:none}
 html[data-layout="phone"] #trainPanel .trbody > .pklead{order:0;margin:0 0 4px}
+/* v2.3 SHELL fix (review 9): compact trick panel. The status line, focus meter and Start/Stop stay in view; only the chip row and the small print scroll */
+html[data-layout="phone"] #trainPanel{max-height:42%;padding:6px 10px calc(4px + env(safe-area-inset-bottom,0px))}
+html[data-layout="phone"] #trainPanel .trhead{gap:6px}
+html[data-layout="phone"] #trainPanel .trhead .tabs{padding-bottom:0}
+html[data-layout="phone"] #trainPanel .trhead .tabs .btn{min-height:44px;font-size:17px;padding-top:0;padding-bottom:0}
+html[data-layout="phone"] #trainPanel .trhead .xbtn{width:44px;height:44px;min-height:44px}
+html[data-layout="phone"] #trainPanel .trbody{gap:3px;padding-top:2px}
+html[data-layout="phone"] #trainPanel .trbody > .trchips{order:1;padding:2px 2px 3px}
+html[data-layout="phone"] #trainPanel .trbody > .trrow{order:2}
+html[data-layout="phone"] #trainPanel .trbody > .trfocus{order:3}
+html[data-layout="phone"] #trainPanel .trbody > .trbtns{order:4}
+html[data-layout="phone"] #trainPanel .trbody > .trline{order:5;line-height:1.15}
+html[data-layout="phone"] #trainPanel .trbody > .small{order:6}
+html[data-layout="phone"] #trainPanel .trbody > .trshow{order:2}
+html[data-layout="phone"] #trainPanel .trchip{width:68px;min-height:52px;padding:2px;font-size:14px}
+html[data-layout="phone"] #trainPanel .trchip .ic{width:24px;height:24px}
+html[data-layout="phone"] #trainPanel .trchip b{font-size:16px}
+html[data-layout="phone"] #trainPanel .trprog{gap:1px}
+html[data-layout="phone"] #trainPanel .trprog span{font-size:15px;line-height:1.1}
+html[data-layout="phone"] #trainPanel .trprog .prog{height:14px}
+html[data-layout="phone"] #trainPanel .trfocus{line-height:1}
+html[data-layout="phone"] #trainPanel .trfocus .prog{height:14px}
+html[data-layout="phone"] #trainPanel .trfocus .ic{width:20px;height:20px}
+html[data-layout="phone"] #trainPanel .trbtns.one{display:flex;flex-direction:row;gap:6px}
+html[data-layout="phone"] #trainPanel .trbtns.one > .btn{flex:1 1 0;min-width:0;min-height:48px;font-size:19px;margin:0}
+html[data-layout="phone"] #trainPanel .trbtns.one > .pklead{width:auto}
+html[data-layout="phone"] #trainPanel .trbody > .pklead{margin:0}

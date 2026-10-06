@@ -208,10 +208,19 @@ function placeButtons() {
   if (S.place === 'beach') { dailyCheck(); b.push(`<button class="btn yes" data-pb="dig" ${S.daily.beachDig ? 'aria-disabled="true"' : ''}>${S.daily.beachDig ? 'Dug today' : 'Dig in the sand'}</button>`); }
   const placeBtn = { square: ['notice', 'Town notice'], cafe: ['cafe', 'Café menu'], dogpark: ['social', 'Socialise'], vet: ['vet', 'Check-up'], salon: ['groom', 'Full groom'], hilltop: weatherNow() === 'sunny' ? ['kites', 'Watch kites'] : null }[S.place];
   if (placeBtn) b.push(`<button class="btn yes" data-pb="${placeBtn[0]}">${placeBtn[1]}</button>`);
-  if (S.place !== 'yard' && S.place !== 'house') b.push('<button class="btn" data-pb="yard">Go home</button>');
+  if (S.place !== 'yard' && S.place !== 'house') b.push(`<button class="btn${S.place === 'market' ? ' yes' : ''}" data-pb="yard">Go home</button>`);
   pb.innerHTML = b.join('');
   pb.querySelectorAll('[data-sh]').forEach((x) => { x.onclick = () => openShop(x.dataset.sh); });
   pb.querySelectorAll('[data-pb]').forEach((x) => { x.onclick = () => { const v = x.dataset.pb, f = { dig: beachDig, garden: openGarden, kitchen: openKitchen, notice: squareNotice, cafe: cafeMenu, social: socialise, vet: vetCheck, groom: salonGroom, kites: kiteWatch }[v]; if (f) f(); else travelTo(v); }; });
+}
+// v2.3 TOWN-3: the pier bubble goes on the deck under the dog (the boats and the seagull sit above its head); the .below class flips the tail
+function townBubbleBelowDog() {
+  const hit = $('#dogHit'); if (!hit || bubble.hidden) return; const hr = hit.getBoundingClientRect(), sg = stage.getBoundingClientRect(), bw = bubble.offsetWidth;
+  bubble.classList.add('below'); bubble.style.left = clamp(hr.left + hr.width / 2 - sg.left - bw / 2, 6, stage.clientWidth - bw - 6) + 'px'; bubble.style.top = (hr.bottom - sg.top + 18) + 'px';
+  // keep clear of the place buttons (Go home sits bottom-right): slide left of one it would touch
+  const bl = parseFloat(bubble.style.left), bt = parseFloat(bubble.style.top), bh = bubble.offsetHeight; // (layout numbers: the pop animation scales the rect)
+  document.querySelectorAll('#placeBtns .btn').forEach((b) => { const q = b.getBoundingClientRect(), ql = q.left - sg.left, qt = q.top - sg.top; if (bl < q.right - sg.left + 12 && bl + bw > ql - 12 && bt < qt + q.height + 6 && bt + bh > qt - 6) bubble.style.left = Math.max(6, ql - 14 - bw) + 'px'; });
+  setTimeout(() => bubble.classList.remove('below'), 3700);
 }
 function placeAmbient() {
   if (cur.mode !== 'yard' || busy || S.sleeping || !modal.hidden) return;
@@ -219,9 +228,9 @@ function placeAmbient() {
   if (S.place === 'river' && Math.random() < 0.6) { say(PICK(DUCK_LINES), h.x, h.y); SFX.honk(); return; }
   if (S.place === 'dogpark' && Math.random() < 0.8) { const k = PICK(dogsList().filter((d) => d.key !== S.dog.key)).key; SFX.bark(BARK[k] || 1); toast(`A ${dogInfo(k).breed} zooms past: "${PICK(NPC_JOKES)}" (+2 Happiness)`, 'good'); addStat('happy', 2); alertBark(); return; }
   if (S.place === 'hilltop' && weatherNow() === 'sunny' && Math.random() < 0.6) { kiteWatch(); return; }
-  if (S.place === 'pier' && Math.random() < 0.5) { say(PICK(['A seagull is staring at my snacks. I am staring back.', 'The sea is very big. I approve.', 'Boats! Floating houses for fish.']), h.x, h.y); return; }
+  if (S.place === 'pier' && Math.random() < 0.5) { say(PICK(['A seagull is staring at my snacks. I am staring back.', 'The sea is very big. I approve.', 'Boats! Floating houses for fish.']), h.x, h.y); townBubbleBelowDog(); return; }
   if (S.place === 'park' && Math.random() < 0.5) { const k = PICK(dogsList().filter((d) => d.key !== S.dog.key)).key; SFX.bark(BARK[k] || 1); toast(`A friendly ${dogInfo(k).breed} trots by: "${PICK(NPC_JOKES)}" (+2 Happiness)`, 'good'); addStat('happy', 2); alertBark(); return; }
-  const l = (PLACE_LINES[S.dog.key] || PLACE_LINES.mutt)[S.place]; if (l) say(l, h.x, h.y);
+  const l = (PLACE_LINES[S.dog.key] || PLACE_LINES.mutt)[S.place]; if (l) { say(l, h.x, h.y); if (S.place === 'pier') townBubbleBelowDog(); }
 }
 function beachDig() {
   dailyCheck(); if (S.daily.beachDig) { nope('One beach dig a day. The sand needs to recover. (It does not.)'); return; }

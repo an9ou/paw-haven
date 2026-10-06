@@ -3,7 +3,9 @@
 #psTurn{display:none}
 html[data-pslock] #psTurn{display:flex;position:fixed;inset:0;z-index:100;align-items:center;justify-content:center;padding:calc(12px + env(safe-area-inset-top,0px)) calc(16px + env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) calc(16px + env(safe-area-inset-left,0px));background:rgba(91,61,50,.55);touch-action:none}
 html[data-pslock] #psTurn[hidden]{display:none}
-.ps-turn-card{max-width:420px;padding:18px 26px 20px;text-align:center;background:var(--paper);border:2.5px solid var(--ink);border-radius:20px 14px 22px 13px;box-shadow:3px 4px 0 rgba(91,61,50,.25)}
+/* the card wears the same hand-drawn frame and washi tape as the panels (--fr-card + .taped) */
+.ps-turn-card{position:relative;max-width:420px;padding:22px 28px 20px;text-align:center;border:0;--fr:var(--fr-card);--wash:var(--paper);background:var(--fr) 0 0/100% 100% no-repeat,var(--hatch) var(--ins),linear-gradient(var(--wash),var(--wash)) var(--ins);border-radius:13px 9px 15px 8px;filter:drop-shadow(0 8px 14px rgba(60,40,25,.25))}
+.ps-turn-card::before{content:"";position:absolute;width:78px;height:21px;top:-10px;left:calc(50% - 39px);background:var(--tape) center/100% 100% no-repeat;transform:rotate(-4deg);pointer-events:none;z-index:2}
 .ps-turn-card h2{margin:4px 0 6px;font-family:var(--font-hand);font-weight:700;font-size:30px;line-height:1.1}
 .ps-turn-card p{margin:0;font-size:17px;line-height:1.35}
 .ps-turn-art{width:84px;height:84px;animation:psTilt 2.4s ease-in-out infinite}

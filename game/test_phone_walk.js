@@ -85,7 +85,8 @@ run('phone_walk', async (t) => {
     t.sec(`${device}: runner tutorial (first walk)`);
     await ev(() => { window.__paw.S.walks = 0; window.__paw.prefs && (window.__paw.prefs.skipTut = false); });
     // the bar button can still be settling after the carousel closes (Playwright's "stable" check): wait for it, then tap
-    await p.waitForSelector('[data-act=walk]:visible'); await t.retryUntil(() => p.locator('[data-act=walk]').first().tap({ force: true, timeout: 3000 }).catch(() => {}), () => !!document.querySelector('#rtStart'));
+    await p.waitForSelector('[data-act=walk]:visible', { timeout: 20000 }).catch(async (e) => { console.log('DIAG walk button not visible', JSON.stringify(await ev(() => { const b = document.querySelector('[data-act=walk]'), r = b && b.getBoundingClientRect(), bar = document.getElementById('bar'); return { mode: window.__paw.mode, place: window.__paw.S.place, sleeping: window.__paw.S.sleeping, btn: r && [r.x, r.y, r.width, r.height].map(Math.round), barHidden: bar && (bar.hidden || getComputedStyle(bar).display), modal: !document.getElementById('modal').hidden, vw: innerWidth, vh: innerHeight, layout: document.documentElement.dataset.layout }; }))); throw e; });
+    await t.retryUntil(() => p.locator('[data-act=walk]').first().tap({ force: true, timeout: 3000 }).catch(() => {}), () => !!document.querySelector('#rtStart'));
     await p.locator('#rtStart').tap();
     const tut = await t.until(() => !!document.querySelector('.pw-tut'), null, 15000);
     ok(tut, `${device}: tutorial card shows on the first walk`);
