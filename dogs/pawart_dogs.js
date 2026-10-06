@@ -235,12 +235,15 @@ function earAngle(s,mode,e){
     if(mode==='droop'&&!e.flop)a=e.side*(/^(giant|bat)$/.test(s.ears)?38:62);
     return a;
 }
+function earPose(s,L,e){// the ear after its pose rotation; L.earFit (Astronaut Helmet only) shrinks it toward its root to stay inside that radius
+  const a=earAngle(s,L.ears,e);let p=a?rotAbout(e.pts,a,e.pivot):e.pts;
+  if(L.earFit){const R=L.earFit,c=e.pivot,at=k=>p.map(q=>[c[0]+(q[0]-c[0])*k,c[1]+(q[1]-c[1])*k]);let k=1;while(k>.3&&!at(k).every(q=>Math.hypot(q[0],q[1])<=R))k-=.05;if(k<1)p=at(k)}
+  return p}
 function drawEars(h,s,L,HT,front){
   const mode=L.ears,col=s.ear||s.hcol;
   earList(s).forEach(e=>{
     const isFront=!!e.flop;if(isFront!==front)return;
-    const a=earAngle(s,mode,e);
-    let p=a?rotAbout(e.pts,a,e.pivot):e.pts;
+    let p=earPose(s,L,e);
     h.shape(p.map(HT),e.col||col,{w:3.8});
     if(e.inner){const c=[(p[0][0]+p[2][0])/2,(p[0][1]+p[2][1])/2];const ip=p.map(q=>[c[0]+(q[0]-c[0])*.55,c[1]+(q[1]-c[1])*.55]);ip[1]=[c[0]+(p[1][0]-c[0])*.7,c[1]+(p[1][1]-c[1])*.7];h.shape(ip.map(HT),s.ears==='tall'?W:'#FFB8C4',{noline:1,ox:0,oy:0});}
   });
@@ -472,13 +475,13 @@ const HAT2={
   h.shape([[-W2*1.9,-H*.5],[-W2*1.82,-H*.18],[-W2*1.45,1.5],[-W2*.6,5],[W2*.6,5],[W2*1.45,1.5],[W2*1.82,-H*.18],[W2*1.9,-H*.5],[W2*1.62,-H*.42],[W2*1.3,-H*.12],[W2*.6,-2],[-W2*.6,-2],[-W2*1.3,-H*.12],[-W2*1.62,-H*.42]].map(P),BR,{w:3.6,step:7});
   h.line([[-W2*1.35,1],[-W2*.5,3.2],[W2*.5,3.2],[W2*1.35,1]].map(P),1.6,DK,.4)},
  'Astronaut Helmet'(h,s,L,HT){const hx=s.head.rx,hy=s.head.ry,pts=circ(0,0,hx,hy,16),N=noseLocal(s);
-  earList(s).forEach(e=>{const a=earAngle(s,L.ears,e);(a?rotAbout(e.pts,a,e.pivot):e.pts).forEach(q=>pts.push(q))});
+  earList(s).forEach(e=>earPose(s,L,e).forEach(q=>pts.push(q)));
   pts.push([N[0]+hx*.16,N[1]],[N[0],N[1]+hy*.55],[N[0]-hx*.3,N[1]+hy*.5]);
   let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;pts.forEach(q=>{x0=Math.min(x0,q[0]);y0=Math.min(y0,q[1]);x1=Math.max(x1,q[0]);y1=Math.max(y1,q[1])});
   const cx=(x0+x1)/2,cy=(y0+y1)/2,a=(x1-x0)/2,b=(y1-y0)/2;let k=0;pts.forEach(q=>{k=Math.max(k,Math.hypot((q[0]-cx)/a,(q[1]-cy)/b))});
-  const lie=/^(rollover|playdead)$/.test(L.pose),rx=Math.min(a*k+5,lie?hx*1.75:1e9),ry=Math.min(b*k+5,lie?hy*1.9:1e9),E=(an,f)=>[cx+Math.cos(an*D2R)*rx*f,cy+Math.sin(an*D2R)*ry*f],cl=q=>[q[0],Math.min(q[1],GY+3)];
+  const lie=/^(rollover|playdead)$/.test(L.pose),rx=Math.min(a*k+5,lie||!s.face.snout?hx*1.75:a*1.06+4),ry=Math.min(b*k+5,hy*1.7),E=(an,f)=>[cx+Math.cos(an*D2R)*rx*f,cy+Math.sin(an*D2R)*ry*f],cl=q=>[q[0],Math.min(q[1],GY+3)];
   const bub=[];for(let i=0;i<24;i++)bub.push(E(i*15,1));
-  h.shape(bub.map(HT).map(cl),'#CFEFFF',{w:3.8,step:12,fop:.25,ox:0,oy:0,sc:1,closed:1,famp:.4,amp:.7});
+  h.shape(bub.map(HT).map(cl),'#CFEFFF',{w:3.8,fop:.25});
   const hl=[];for(let an=200;an<=250;an+=10)hl.push(E(an,.84));h.line(hl.map(HT).map(cl),4,W,.3);const hd=HT(E(262,.84));h.dot(hd[0],hd[1],2.4,2.4,W);
   const ring=[];for(let an=48;an<=150;an+=17)ring.push(E(an,1));h.tube(ring.map(HT).map(cl),6.5,'#B4BCC8',{ow:4.2});
   [70,100,130].forEach(an=>{const q=cl(HT(E(an,1)));h.dot(q[0],q[1],1.6,1.6,'#6E7886')})},
@@ -495,14 +498,15 @@ function drawHood(h,s,L,HT){// Cozy Hoodie, hood up: a soft crescent over the ba
   const hx=s.head.rx,hy=s.head.ry,o=[],n=[];
   for(let an=-38;an>=-232;an-=14)o.push([Math.cos(an*D2R)*hx*1.16,Math.sin(an*D2R)*hy*1.2]);
   for(let an=-232;an<=-38;an+=14)n.push([hx*.14+Math.cos(an*D2R)*hx*.82,hy*.08+Math.sin(an*D2R)*hy*.8]);
-  h.shape(o.concat(n).map(HT),'#BDBAC6',{w:3.8,step:9});h.line(n.map(HT),3.4,'#DCD9E3',.5);h.line(n.slice(2,-2).map(q=>[q[0]*1.05,q[1]*1.05]).map(HT),1.6,'#8D8A98',.5)}
+  h.shape(o.concat(n).map(HT),'#D6CCC0',{w:3.8,step:9});h.line(n.map(HT),3.4,'#EDE6DC',.5);h.line(n.slice(2,-2).map(q=>[q[0]*1.05,q[1]*1.05]).map(HT),1.6,'#7E6E5F',.5)}
 const BODY2={
  'Happi Coat'(h,s,L,B,p){const b=s.body,f=s.fluff?1.12:1.08;
   h.shape(p.map(B),'#3A4FA8',{w:4.6});h.crayon(b.rx*.7,b.ry*.7,q=>B([q[0]+b.rx*.3,q[1]]),'#3A4FA8',6);
-  const hem=[];for(let a=108,i=0;a>=34;a-=7,i++)hem.push([Math.cos(a*D2R)*b.rx*f*.9,Math.sin(a*D2R)*b.ry*f*(.84+(i%2?.07:0))]);h.line(hem.map(B),3.2,W,.5);
-  const wv=[];for(let a=100,i=0;a>=40;a-=10,i++)wv.push([Math.cos(a*D2R)*b.rx*f*.74,Math.sin(a*D2R)*b.ry*f*(.62+(i%2?.09:0))]);h.line(wv.map(B),2.4,W,.5);
+  const hem=[];for(let a=108;a>=30;a-=6)hem.push([Math.cos(a*D2R)*b.rx*f*.88,Math.sin(a*D2R)*b.ry*f*.8]);h.line(hem.map(B),7.5,INK,.5);h.line(hem.map(B),5.2,W,.5);
+  const wave=(P0,P1,n)=>{const q=[];for(let i=0;i<=n*2;i++){const t=i/(n*2),x=P0[0]+(P1[0]-P0[0])*t,y=P0[1]+(P1[1]-P0[1])*t;q.push([x,y+(i%2?-2.2:2.2)])}return q};
+  for(let i=0;i<hem.length-2;i+=2)h.line(wave(B(hem[i]),B(hem[i+2]),1),2,'#3A4FA8',.2);
+  const sl=[[b.rx*.5,b.ry*.32],[b.rx*.82,b.ry*.62]];h.line(sl.map(B),7,INK,.5);h.line(sl.map(B),4.6,W,.5);h.line(wave(B(sl[0]),B(sl[1]),2),1.8,'#3A4FA8',.2);
   const ed=[];for(let a=-74;a<=58;a+=12)ed.push([Math.cos(a*D2R)*b.rx*f*.86,Math.sin(a*D2R)*b.ry*f*.86]);h.line(ed.map(B),6.5,INK,.5);h.line(ed.map(B),4.2,W,.5);
-  const mc=B([b.rx*.08,-b.ry*.22]),mr=Math.min(8,b.ry*.38);h.shape(circ(mc[0],mc[1],mr,mr,9),null,{w:2.4,ox:0,oy:0,sc:1});h.line([[mc[0]-mr*.6,mc[1]+1],[mc[0]-mr*.2,mc[1]-mr*.4],[mc[0]+mr*.2,mc[1]+1],[mc[0]+mr*.6,mc[1]-mr*.4]],2,W,.3);
   const t=B([b.rx*.86,b.ry*.12]);h.line([[t[0],t[1]],[t[0]-5,t[1]+10]],3.2,'#E8322B',.5);h.line([[t[0],t[1]],[t[0]+3,t[1]+11]],3.2,'#E8322B',.5);h.shape(circ(t[0],t[1],4.2,3.4,7),'#E8322B',{w:2.4,ox:0,oy:0,sc:1,closed:1})},
  'Bumblebee Suit'(h,s,L,B,p){const b=s.body,f=s.fluff?1.12:1.08;
   h.shape(p.map(B),'#FFD23A',{w:4.6});
@@ -512,16 +516,16 @@ const BODY2={
   const wl=Math.min(20,b.ry*.95),wb=[b.rx*.02,-b.ry*(s.fluff?1.05:.92)];
   [[-38,1.05,0],[-10,.85,7]].forEach(([an,sz,dx])=>{const c=[wb[0]+dx,wb[1]],e=circ(0,-wl*sz*.5,wl*sz*.36,wl*sz*.55,10).map(q=>{const r2=rot(q,an);return[c[0]+r2[0],c[1]+r2[1]]});
    h.shape(e.map(B),'#E6F6FF',{w:2.6,step:7,fop:.6,ox:0,oy:0,sc:1});h.line([c,[c[0]+Math.sin(an*D2R)*wl*sz*.6,c[1]-Math.cos(an*D2R)*wl*sz*.6]].map(B),1.6,'#8CC8E8',.3)})},
- 'Cozy Hoodie'(h,s,L,B,p){const b=s.body,G='#BDBAC6',DK='#8D8A98';
+ 'Cozy Hoodie'(h,s,L,B,p){const b=s.body,G='#D6CCC0',DK='#7E6E5F';
   if(!/^(cold|sleep)$/.test(L.pose)){const hood=B([b.rx*.6,-b.ry*1.05]);h.shape(circ(hood[0]-4,hood[1]-1,b.ry*.82,b.ry*.62,9),G,{w:3.8});h.line([[hood[0]-b.ry*.5,hood[1]],[hood[0]-b.ry*.1,hood[1]-b.ry*.32],[hood[0]+b.ry*.3,hood[1]-b.ry*.05]],2.4,DK,.4)}
   h.shape(p.map(B),G,{w:4.6});h.crayon(b.rx*.7,b.ry*.7,q=>B([q[0]+b.rx*.3,q[1]]),G,7);
-  for(let i=0;i<7;i++){const q=B([b.rx*(-.15+h.r()*1.0),b.ry*(h.r()-.5)*1.2]);h.dot(q[0],q[1],1.3,1.3,'#9F9CAA')}
-  h.shape([[b.rx*.06,b.ry*.2],[b.rx*.62,b.ry*.14],[b.rx*.72,b.ry*.74],[-b.rx*.02,b.ry*.8]].map(B),'#AFACBA',{w:2.6,step:8,ox:1.2,oy:-.8});
+  for(let i=0;i<7;i++){const q=B([b.rx*(-.15+h.r()*1.0),b.ry*(h.r()-.5)*1.2]);h.dot(q[0],q[1],1.3,1.3,'#B1A493')}
+  h.shape([[b.rx*.06,b.ry*.2],[b.rx*.62,b.ry*.14],[b.rx*.72,b.ry*.74],[-b.rx*.02,b.ry*.8]].map(B),'#C6BAAC',{w:2.6,step:8,ox:1.2,oy:-.8});
   h.line([[b.rx*.12,b.ry*.28],[b.rx*.02,b.ry*.7]].map(B),1.8,DK,.3);h.line([[b.rx*.58,b.ry*.22],[b.rx*.66,b.ry*.66]].map(B),1.8,DK,.3);
   h.line(p.slice(-6).map(B),5,DK,.7);h.line(p.slice(0,4).map(B),5,DK,.7);
   [[.8,-.55,.84,.05],[.7,-.6,.7,-.05]].forEach(q=>{h.line([[b.rx*q[0],b.ry*q[1]],[b.rx*q[2],b.ry*q[3]]].map(B),2.2,W,.4);const e=B([b.rx*q[2],b.ry*q[3]]);h.dot(e[0],e[1],2,2,DK)})},
  'Tutu'(h,s,L,B){// a flat flared skirt round the hips, seen from the side: three scalloped layers; the near hind leg is drawn over the body, under the skirt
-  const b=s.body,lie=/^(sleep|down|crouch|playdead|rollover)$/.test(L.pose),sq=lie?.68:1,cx=-b.rx*(b.long?.5:.36),R0=Math.min(b.rx*.62,34)+6,H0=(b.ry*.4+5)*sq,cl=q=>[q[0],Math.min(q[1],GY-1)];
+  const b=s.body,lie=/^(sleep|down|crouch|playdead|rollover)$/.test(L.pose),sq=lie?.68:1,cx=-b.rx*(b.long?.5:.36),R0=s.fluff?b.rx*.55:Math.min(b.rx*.62,34)+6,H0=(b.ry*(s.fluff?.3:.4)+5)*sq,cl=q=>[q[0],Math.min(q[1],GY-1)];
   h._legOnly='NH';drawLegs(h,s,L);h._legOnly=0;
   [['#FF7AB2',1,.56],['#FF9EC8',.88,.4],['#FFC2DE',.76,.24]].forEach(([col,k,cy])=>{
    const pts=scallop(0,0,R0*k,H0*(.55+.45*k),14,.16).map(q=>[cx+q[0],b.ry*cy*sq+q[1]]);h.shape(pts.map(B).map(cl),col,{w:2.8,step:30,amp:.8})});
@@ -626,7 +630,7 @@ function frame(key,s,pose,outfit,k,seed){
   const h=kit(rng(seed+k*7717)),L=layout(s,pose,k);if(s.pup){h.setJ(s.pup===2?1.5:1.3);if(s.pup===2)newbornL(s,L)}if(pose==='rollover'||pose==='playdead')h.cy=GY+3;const _u=0,B=T(L.bT),HT=T(L.hT),hp=headPts(s),bp=bodyPts(s);
   const has=(slot)=>outfit&&outfit[slot]&&OUT[slot].includes(outfit[slot])?outfit[slot]:null;
   const body=has('body'),neck=has('neck'),hat=has('head'),eyes=has('eyes');
-  if(hat==='Astronaut Helmet'&&L.ears!=='flat')L.ears='norm';
+  if(hat==='Astronaut Helmet'){if(L.ears!=='flat')L.ears=/^(giant|bat|tall)$/.test(s.ears)?'sleep':'norm';L.earFit=Math.max(s.head.rx,s.head.ry)*1.38}
   if(body==='Superhero Cape')drawCape(h,s,L,B);
   drawTail(h,s,L,B);
   if(body==='Tutu'){h._legSkip='NH';drawLegs(h,s,L);h._legSkip=0}else drawLegs(h,s,L);
