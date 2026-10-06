@@ -439,6 +439,70 @@ run('account', async (t) => {
     await ev(() => window.__paw.go('yard'));
   }
   // ---- end kitchen ----
+  // ---- bath/settings/playdate (v2.3 occlusion) ----
+  // phones: no keyboard words (Settings keys hint, bath "Mouse ... Space"), the bath scene fills the screen above its tray, playdate pals' heads stay apart.
+  // desktop 1280x720: the keys hint and the bath wording are unchanged. PAW_SHOTS=1 writes game/shots_account/small_*.jpg.
+  const jpg = async (n) => { if (process.env.PAW_SHOTS) require('fs').mkdirSync(require('path').join(__dirname, 'shots_account'), { recursive: true }); if (process.env.PAW_SHOTS) await t.p.screenshot({ path: require('path').join(__dirname, 'shots_account', 'small_' + n + '.jpg'), type: 'jpeg', quality: 80 }); };
+  const occlGame = async (dev) => {
+    const p = await device(dev, false); t.p = p; await t.adopt({ sex: 'girl' });
+    await t.patch({ bond: { level: 10, pts: 3300 }, coins: 1000, house: 'Royal Castle Kennel', careDays: 60, stats: { hunger: 90, happy: 90, energy: 90, clean: 20 } }); await t.calm(); await t.lu();
+    return p;
+  };
+  const openSet = async (dev) => { if (dev) { await tap('#moreBtn'); await t.p.waitForSelector('#mmSet'); await tap('#mmSet'); } else await tap('#gearBtn'); await t.p.waitForSelector('#setReset'); };
+  const setText = () => ev(() => document.querySelector('#modal .panel').textContent);
+  const bathText = () => ev(() => document.getElementById('dock').textContent);
+  for (const dev of [null, 'Phone 390x844', 'Phone 360x740']) {
+    const tag = dev ? dev.replace(/\D+/g, '_').replace(/^_|_$/g, '') : 'desktop';
+    sec(`${dev || 'desktop 1280x720'}: Settings keys hint, bath wording and layout, playdate spacing`);
+    await occlGame(dev);
+    await openSet(dev);
+    if (dev) { ok(!/Keys:/.test(await setText()), `${dev}: Settings has no "Keys:" hint (no keyboard on a phone)`);
+      // the two checkboxes are tapped through their whole label row, so the row is the target that has to be >= 44 px
+      const a = await ev(AUDIT), rows = await ev(() => [...document.querySelectorAll('#modal label.tog')].map((l) => Math.round(l.getBoundingClientRect().height)));
+      ok(a.scroll <= 0 && !a.text.length, `${dev} Settings: no sideways scroll, text >= 15 px ${a.text.slice(0, 4).join(' | ')}`);
+      ok(!a.small.filter((s) => !/^#set(Mute|Motion) /.test(s)).length && rows.every((h) => h >= 43.5), `${dev} Settings: tap targets >= 44 px (checkbox rows ${rows.join(', ')}) ${a.small.join(' | ')}`); }
+    else ok(/Keys: 1-9 bottom buttons, Space pets \/ throws \/ walks, Esc closes things\./.test(await setText()), 'desktop: Settings keeps the keys hint');
+    await jpg(tag + '_settings'); await t.closeX(); await t.calm();
+    await ev(() => window.__paw.go('bath')); ok(await t.untilMode('bath'), `${tag}: the bath opens`); await t.sleep(300);
+    const bt = await bathText();
+    if (dev) {
+      ok(!/Mouse|Space/.test(bt) && /Scrub with a finger\./.test(bt), `${dev}: bath wording is for fingers, no "Mouse" or "Space": ${bt}`);
+      const m = await ev(() => { const s = document.querySelector('#view > svg.world').getBoundingClientRect(), tr = document.querySelector('#dock .tray').getBoundingClientRect(), q = document.getElementById('bathQuit').getBoundingClientRect(); const hit = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2); return { sb: s.bottom, sh: s.height, tt: tr.top, tb: tr.bottom, H: innerHeight, quit: !!hit && (hit.id === 'bathQuit' || !!hit.closest('#bathQuit')) && q.bottom <= innerHeight }; });
+      ok(m.tt - m.sb < 0.05 * m.H && m.H - m.tb < 0.05 * m.H && m.tt - m.sb + m.H - m.tb < 0.15 * m.H, `${dev}: the bath scene reaches the tray and nothing blank is left under it (gap ${Math.round(m.tt - m.sb)} + ${Math.round(m.H - m.tb)} of ${m.H})`);
+      ok(m.sh > 0.5 * m.H, `${dev}: the bath scene uses over half the screen (${Math.round(m.sh)} of ${m.H})`);
+      ok(m.quit, `${dev}: "Done for now" is on screen and not covered`);
+      await audit(`${tag}_09_bath`);
+    } else {
+      ok(/Mouse, finger, or mash Space\. .+ is legally obliged to look betrayed\./.test(bt), 'desktop: bath wording unchanged: ' + bt);
+      ok(await ev(() => !document.getElementById('view').style.flex && !document.getElementById('dock').style.flex), 'desktop: the bath layout is untouched');
+    }
+    await jpg(tag + '_bath');
+    await ev(() => window.__paw.go('yard')); await t.untilMode('yard'); await t.calm();
+    ok(await ev(() => !document.getElementById('view').style.flex && !document.getElementById('dock').style.flex), `${tag}: leaving the bath restores the yard layout`);
+    const ids = await ev(() => {
+      const P = window.__paw, S = P.S, f = S.dog; const d = new Date(); d.setDate(d.getDate() - 30);
+      const iso = (x) => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+      S.stats = Object.assign(S.stats, { hunger: 90, happy: 90, energy: 90, clean: 90 });
+      f.born = iso(d); f.litters = 0; f.lastLitter = null; f.key = 'corgi'; f.genes.M = ['m', 'm']; f.geneTested = true;
+      const m = P.addDog({ key: 'dachs', sex: 'male', months: 30 }, 'Otto'); m.bond = { level: 10, pts: 3300 }; m.stats = { hunger: 90, happy: 90, energy: 90, clean: 90 }; m.genes.M = ['m', 'm']; m.geneTested = true;
+      P.breed.setSeason(f.id, true); P.saveNow(); return { f: f.id, m: m.id };
+    });
+    await ev(() => window.__paw.breed.openPlaydates()); await t.p.waitForSelector('#pdGo');
+    await tap(`.pd-dog[data-pd="a|${ids.f}"]`); await t.until(() => !!document.querySelector('.pd-verdict.ok'), null, 3000);
+    await tap('#pdGo'); ok(await t.until(() => { const s = document.getElementById('pdScene'); return !!s && !s.hidden; }), `${tag}: the playdate scene shows`);
+    // head box: the facing 45% of each pal's drawn dog (a faces right, b faces left), top 70%. Sampled through bow, chase and rest.
+    const heads = () => ev(() => {
+      const box = (e, right) => { const s = e.querySelector('svg'), b = s.getBBox(), m = s.getScreenCTM(); const x0 = m.a * b.x + m.e, x1 = m.a * (b.x + b.width) + m.e, y0 = m.d * b.y + m.f, y1 = m.d * (b.y + b.height) + m.f; const w = (x1 - x0) * 0.45; return right ? { l: x1 - w, r: x1, t: y0, b: y0 + (y1 - y0) * 0.7 } : { l: x0, r: x0 + w, t: y0, b: y0 + (y1 - y0) * 0.7 }; };
+      const a = document.querySelector('#pdScene .pd-pal.a'), b = document.querySelector('#pdScene .pd-pal.b'); if (!a || !b) return null;
+      const A = box(a, true), B = box(b, false); return { ph: document.getElementById('pdScene').className, over: Math.round(Math.min(A.r, B.r) - Math.max(A.l, B.l)), hit: A.l < B.r && B.l < A.r && A.t < B.b && B.t < A.b };
+    });
+    const seen = new Set(), bad = []; let n = 0;
+    while (n++ < 80 && !(await ev(() => !!document.getElementById('pdResult')))) { const h = await heads(); if (h) { seen.add(h.ph.replace('pd-scene ', '')); if (dev && h.hit) bad.push(h.ph + ' ' + h.over + 'px'); } if (n === 3) await jpg(tag + '_playdate'); await t.sleep(60); }
+    ok(seen.size >= 2, `${tag}: sampled the playdate phases (${[...seen].join(', ')})`);
+    if (dev) ok(!bad.length, `${dev}: the pals' heads never overlap ${bad.slice(0, 4).join(' | ')}`);
+    ok(await t.until(() => !!document.getElementById('pdResult'), null, 12000), `${tag}: the playdate result shows`);
+  }
+  // ---- end bath/settings/playdate ----
 
   ok(!dialogs.length, 'no browser dialogs ' + dialogs.join(' | '));
 }, { timeout: 300000 });
