@@ -46,3 +46,49 @@ label.tog input{width:22px;height:22px;accent-color:#e07a92}
 .trickgrid .btn[aria-disabled="true"]{--wash:var(--paper)}
 .trickgrid .btn small{font-family:var(--font-read);font-weight:normal;font-size:15px;color:var(--muted)}
 
+/* ---------- v2.3 title: account choice and the log in / make an account sheets (ACCOUNT lane) ---------- */
+#tAcct{display:contents}
+.cover.choosing .dd-low{transform:translateY(34px)}
+.tchoose{position:relative;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:2px}
+.tch{width:192px;padding:10px 12px 14px;gap:4px;cursor:pointer;font:inherit;color:var(--ink)}
+.tch .tch-dog{display:block;width:100px;height:82px;pointer-events:none}
+.tch .tch-dog svg{width:100%;height:100%;display:block}
+.tch .tch-t{display:flex;flex-direction:column;gap:4px;align-items:center}
+.tch b{font-size:27px}
+.tch .tch-s{font-size:16px;line-height:1.2;color:var(--muted)}
+.tch-reg{--wash:var(--w-yellow)}
+.tch-guest{--wash:var(--w-mint)}
+.tacct{position:relative;margin:-6px 0 0;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:0 8px;font-size:17px;color:var(--muted);text-align:center}
+/* a paper patch under the line and its link: the cover doodles stay behind them */
+.tacct span,.tacct .tlink{background:var(--wash);border-radius:10px 6px 11px 7px}
+.tacct span{padding:1px 6px}
+.tacct b{color:var(--ink);font-weight:600}
+.tlink{background:none;border:0;box-shadow:none;padding:2px 8px 6px;min-height:44px;min-width:44px;font-family:var(--font-hand);font-weight:700;font-size:23px;color:var(--ink);cursor:pointer;
+  text-decoration:underline wavy rgba(242,143,165,.9);text-decoration-thickness:2px;text-underline-offset:5px}
+.tlink:hover{animation:wig .45s ease-in-out 2}
+.panel.acct{width:min(640px,100%)}
+.panel.acct.acformp{width:min(540px,100%)}
+.panel.acct .acwho{margin:0 0 12px;font-size:18px}
+.panel.acct .insheet{flex-wrap:nowrap;padding:6px 2px 4px}
+.panel.acct .insheet .tch{flex:1 1 0;width:auto;min-width:0}
+.clset.acform{margin:0;padding:0;border:0}
+.acform .aclead{display:flex;gap:14px;align-items:center;margin-bottom:2px}
+.acform .aclead p{margin:0;font-size:18px}
+.acform .acdog{flex:none;width:104px;height:86px;transform:rotate(-3deg)}
+.acform .acdog svg{width:100%;height:100%;display:block}
+.clset.acform .clfield{max-width:none}
+.acform .clmsg{margin:8px 0 0}
+.acform .tlink{font-size:20px;padding-left:0}
+html[data-layout="phone"] .tchoose{flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:10px;width:100%}
+html[data-layout="phone"] .tchoose .tch{width:100%;flex-direction:row;align-items:center;text-align:left;padding:6px 12px 8px 8px;gap:8px;min-height:64px;transform:none}
+html[data-layout="phone"] .tchoose .tch:nth-child(2){transform:rotate(.6deg)}
+html[data-layout="phone"] .tchoose .tch .tch-dog{width:76px;height:62px;flex:none}
+html[data-layout="phone"] .tchoose .tch .tch-t{align-items:flex-start;min-width:0;gap:1px}
+html[data-layout="phone"] .tchoose .tch b{font-size:25px}
+html[data-layout="phone"] .tchoose .tch .tch-s{font-size:15px}
+html[data-layout="phone"] .tacct{font-size:15px;margin-top:-8px}
+html[data-layout="phone"] .panel.acct .acwho{font-size:16px}
+html[data-layout="phone"] .panel.acct .insheet .tch{flex:none}
+html[data-layout="phone"] .acform .aclead p{font-size:16px}
+html[data-layout="phone"] .acform .acdog{width:84px;height:70px}
+html[data-layout="phone"] #modal .panel.acct .foot .btn{flex:1 1 0;min-height:48px}

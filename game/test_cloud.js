@@ -109,10 +109,12 @@ run('cloud', async (t) => {
       await t.ctx.addInitScript(mockInit, cfg || {});
       srv.pages.add(p);
     }
-    await p.goto(URL); await p.waitForSelector('#tNew, #tContinue');
+    await p.goto(URL); await p.waitForSelector('#tNew, #tContinue, #tGuest'); // v2.3: cloud on and no session shows Log in / Make an account / Play as guest
     pages[name] = p; return p;
   }
   const use = (p) => { t.p = p; return p; };
+  // v2.3 title: a fresh device picks Play as guest first (today's flow), then New game
+  const adopt = async (p, o) => { use(p); if (await p.locator('#tGuest').count()) { await p.click('#tGuest'); await p.waitForSelector('#tNew'); } await t.adopt(o); };
   const ev = (p, f, a) => p.evaluate(f, a);
   const st = (p) => ev(p, () => window.__pawCloud.status());
   const until = (p, f, a, ms) => { use(p); return t.until(f, a, ms); };
@@ -139,7 +141,7 @@ run('cloud', async (t) => {
   }
 
   sec('device 1 (iPhone 13): a guest starts automatically and the save reaches the cloud');
-  const d1 = await device('d1', 'iPhone 13'); use(d1); await t.adopt({ sex: 'girl' });
+  const d1 = await device('d1', 'iPhone 13'); await adopt(d1, { sex: 'girl' });
   ok(await until(d1, () => !!window.__pawCloud.CL.uid, null, 8000), 'a guest user is made once there is a save');
   const g1 = await uidOf(d1);
   ok(await until(d1, (u) => window.__pawCloud.meta().rev >= 1 && window.__pawCloud.meta().uid === u, g1, 8000) && !!srv.saves[g1], 'the first save is pushed to the cloud');
@@ -283,7 +285,7 @@ run('cloud', async (t) => {
 
   sec('device 3: register falls back to signUp when the project wants email confirmation');
   srv.confirmEmailChange = true;
-  const d3 = await device('d3', 'iPhone 13'); use(d3); await t.adopt({ sex: 'boy' });
+  const d3 = await device('d3', 'iPhone 13'); await adopt(d3, { sex: 'boy' });
   ok(await until(d3, () => window.__pawCloud.status().state === 'synced', null, 8000), 'device 3 guest save is in the cloud');
   const g3 = await uidOf(d3), name3 = await ev(d3, () => window.__paw.S.dog.name);
   await openCloud(d3); await tap(d3, '[data-cl=reg]'); await d3.waitForSelector('#clPw2');
@@ -297,7 +299,7 @@ run('cloud', async (t) => {
   srv.confirmEmailChange = false; use(d3); await t.closeX();
 
   sec('device 4: log in on a device that has a guest save, plus the nudge');
-  const d4 = await device('d4', 'Pixel 7'); use(d4); await t.adopt({ sex: 'girl' });
+  const d4 = await device('d4', 'Pixel 7'); await adopt(d4, { sex: 'girl' });
   ok(await until(d4, () => window.__pawCloud.status().state === 'synced', null, 8000), 'device 4 guest save is in the cloud');
   await change(d4, { careDays: 3 }); use(d4);
   ok(await t.waitToast(/Make an account to keep .+ safe on every device/), 'after 3 care days: the one-time nudge');
@@ -315,7 +317,7 @@ run('cloud', async (t) => {
   use(d4); await t.closeX();
 
   sec('the artifact copy: cloud off, local save kept');
-  const d5 = await device('d5', 'iPhone 13', { host: 'abc.claudeusercontent.com' }); use(d5); await t.adopt({ sex: 'boy' });
+  const d5 = await device('d5', 'iPhone 13', { host: 'abc.claudeusercontent.com' }); await adopt(d5, { sex: 'boy' });
   const name5 = await ev(d5, () => window.__paw.S.dog.name);
   ok((await st(d5)).state === 'off' && (await ev(d5, () => window.__pawCloud.CL.why)) === 'artifact', 'cloud is off on the claude.ai copy');
   ok(srv.calls.filter((c) => c.page === d5).length === 0, 'the artifact copy never calls the cloud');
@@ -335,7 +337,7 @@ run('cloud', async (t) => {
   ok(!(await ev(d6, () => !!document.querySelector('script[src*="supabase"]'))), 'supabase-js is not loaded');
 
   sec('offline: the library fails to load');
-  const d7 = await device('d7', 'iPhone 13', { broken: true }); use(d7); await t.adopt({ sex: 'girl' });
+  const d7 = await device('d7', 'iPhone 13', { broken: true }); await adopt(d7, { sex: 'girl' });
   ok(await until(d7, () => window.__pawCloud.status().state === 'offline', null, 6000), 'status: Offline');
   use(d7); ok(await t.waitToast(/Cloud save is offline\. Your game is saved on this device\./), 'the offline message shows');
   await change(d7, { coins: 999 }); await t.sleep(300);
