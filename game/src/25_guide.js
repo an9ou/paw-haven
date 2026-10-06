@@ -152,7 +152,7 @@ function gdSkip() {
 // phones: while the strip sits under the HUD, the toasts drop below it (28_guide.css reads --gdToastTop)
 function gdToasts(top) {
   const on = !!top && isPhone(); stage.classList.toggle('gd-top', on);
-  if (on) { const c = $('.gd-card', gd.layer); stage.style.setProperty('--gdToastTop', Math.round(c.offsetTop + c.offsetHeight + 10) + 'px'); }
+  if (on) { const c = $('.gd-card', gd.layer); stage.style.setProperty('--gdToastTop', Math.round(c.getBoundingClientRect().bottom - stage.getBoundingClientRect().top + 10) + 'px'); } // stage coordinates, like #toasts
 }
 function gdStop() { gdToasts(false); gd.on = false; clearInterval(gd.timer); gd.timer = 0; gd.shown = -1; if (gd.layer) { $('.gd-card', gd.layer).hidden = true; $('.gd-card', gd.layer).classList.remove('gd-out'); $('.gd-ring', gd.layer).hidden = true; } }
 function gdStart() {
