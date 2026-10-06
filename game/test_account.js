@@ -537,7 +537,7 @@ run('account', async (t) => {
     const R = (s) => { const e = document.querySelector(s); if (!e || e.hidden || getComputedStyle(e).display === 'none') return null; const b = e.getBoundingClientRect(); return b.width ? { t: b.top, b: b.bottom, l: b.left, r: b.right, h: b.height, w: b.width, c: (b.top + b.bottom) / 2 } : null; };
     const hud = R('#hud'), who = R('#hud .who'), coins = R('#coins'), more = R('#moreBtn'), meters = R('#meters'), bond = R('#hud .bond');
     const inRow = (x, row) => !!x && !!row && x.c >= row.t - 1 && x.c <= row.b + 1;
-    const chips = [...document.querySelectorAll('#hudPack .dchip')].map((e) => e.getBoundingClientRect());
+    const chips = [...document.querySelectorAll('#hudPack .dchip:not([hidden])')].map((e) => e.getBoundingClientRect());
     const rings = [...document.querySelectorAll('#meters .meter')].map((e) => e.getBoundingClientRect());
     const labels = [...document.querySelectorAll('#bar .act')].map((a) => { const s = a.querySelector(':scope > span:not(.ic)'), rg = document.createRange(); rg.selectNodeContents(s); return { t: s.textContent, fs: parseFloat(getComputedStyle(s).fontSize), w: rg.getBoundingClientRect().width, bw: a.clientWidth }; });
     const bar = document.getElementById('bar');
@@ -547,7 +547,7 @@ run('account', async (t) => {
       row2: !!meters && meters.t >= who.b - 1 && inRow(bond, meters) && rings.every((r) => inRow({ c: (r.top + r.bottom) / 2 }, meters)),
       inside: [who, coins, more, meters, bond].every((x) => x && x.b <= hud.b + 1 && x.r <= innerWidth + 1) && coins.r <= more.l && more.r <= innerWidth,
       taps: [more, ...rings.map((r) => ({ w: r.width, h: r.height })), ...chips.map((c) => ({ w: c.width, h: c.height }))].every((x) => x.w >= 43.5 && x.h >= 43.5),
-      nChips: chips.length, labels, barFits: bar.scrollWidth <= bar.clientWidth + 1 && labels.every((l) => l.w <= l.bw),
+      nChips: chips.length, more: (document.querySelector('#hudPack .dmore') || {}).textContent || '', hidden: document.querySelectorAll('#hudPack .dchip[hidden]').length, sx: [...document.querySelectorAll('#hudPack .dsx')].some((e) => e.getClientRects().length), labels, barFits: bar.scrollWidth <= bar.clientWidth + 1 && labels.every((l) => l.w <= l.bw),
       scroll: document.documentElement.scrollWidth - innerWidth
     };
   };
@@ -561,13 +561,23 @@ run('account', async (t) => {
       if (n === 4) await ev(() => { const P = window.__paw, S = P.S; while (S.dogs.length < 4) P.addDog({ key: ['corgi', 'golden', 'husky'][S.dogs.length - 1], sex: S.dogs.length % 2 ? 'male' : 'female' }, ['Biscuit', 'Pal', 'Mo'][S.dogs.length - 1]); });
       for (const pl of ['yard', 'market']) {
         await t.home(pl);
-        ok(await t.until((k) => document.querySelectorAll('#hudPack .dchip').length === k && !!document.querySelector('#bar .act'), n - 1, 4000), `${dev} ${n} dog(s) ${pl}: ${n - 1} other dog chip(s) in the HUD`);
+        ok(await t.until((k) => document.querySelectorAll('#hudPack .dchip:not(.dmore)').length === k && !!document.querySelector('#bar .act'), n - 1, 4000), `${dev} ${n} dog(s) ${pl}: ${n - 1} other dog chip(s) in the HUD`);
         const h = await ev(HUD), lb = `${dev} ${n} dog(s) ${pl}`;
         ok(h.h <= 102 && h.viewTop >= h.hudTop + h.h - 1, `${lb}: the HUD is about 100 px (${h.h})`);
         ok(h.row1, `${lb}: row 1 = dog chip(s), name, coins and the ... menu on one line`);
         ok(h.row2, `${lb}: row 2 = the 4 rings with Bond beside them (no 3rd row)`);
         ok(h.inside, `${lb}: everything stays inside the HUD and on screen, coins before the menu`);
         ok(h.taps, `${lb}: menu, rings and dog chips are >= 44 px`);
+        if (n === 4) {
+          ok(await t.until(() => { const p = document.getElementById('hudPack'); return p.scrollWidth <= p.clientWidth + 3; }, null, 3000) && (!h.hidden || h.more === '+' + h.hidden), `${lb}: every other dog is a chip or counted in a +N chip (${h.nChips - (h.more ? 1 : 0)} shown, ${h.more || 'none hidden'})`);
+          ok(!h.sx, `${lb}: no tiny sex symbols poking out of the chips`);
+          if (h.more && pl === 'yard') {
+            await tap('#hudPack .dmore'); ok(await t.until(() => document.querySelectorAll('.packpick [data-dog]').length === 3, null, 4000), `${lb}: the +N chip opens the pack with all 3 other dogs`);
+            await audit(`${tag}_hud_pack_sheet`);
+            const pick = await ev(() => document.querySelector('.packpick [data-dog]').dataset.dog); await tap('.packpick [data-dog]');
+            ok(await t.until((id) => window.__paw.S.activeId === id && document.getElementById('modal').hidden, pick, 4000), `${lb}: picking a dog there switches to it`);
+          }
+        }
         ok(h.labels.every((l) => l.fs >= 14.95), `${lb}: action-bar labels >= 15 px ${h.labels.map((l) => l.t + ' ' + l.fs).join(', ')}`);
         ok(h.barFits, `${lb}: every label fits its button, the bar never overflows ${h.labels.map((l) => l.t + ' ' + l.w.toFixed(1) + '/' + l.bw).join(', ')}`);
         ok(h.scroll <= 0, `${lb}: no sideways scroll (${h.scroll})`);

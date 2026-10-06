@@ -129,6 +129,26 @@ function renderDogChips() {
   wrap.innerHTML = S.dogs.length > 1 ? others().map((d) => `<button class="dchip" data-dog="${d.id}" aria-label="Switch to ${esc(d.name)}" title="${esc(d.name)}">${headSVG(d)}<i class="mood ${moodOf(d)}"></i><span class="dsx">${d.sex === 'female' ? '♀' : '♂'}</span></button>`).join('') : '';
   wrap.querySelectorAll('[data-dog]').forEach((b) => { b.onclick = () => switchDog(b.dataset.dog); });
   const md = $('#hudMood'); if (md) md.className = 'mood ' + moodOf(D());
+  if (isPhone()) requestAnimationFrame(() => phChipsFit(wrap));
+}
+// v2.3 phone HUD: show as many of the other dogs' chips as fit, then a "+N" chip that opens the pack, so no dog is hidden without a hint
+function phChipsFit(wrap) {
+  if (!wrap || !isPhone()) return;
+  const old = wrap.querySelector('.dmore'); if (old) old.remove();
+  const chips = [...wrap.querySelectorAll('.dchip')]; chips.forEach((c) => { c.hidden = false; });
+  if (!chips.length || wrap.scrollWidth <= wrap.clientWidth + 3) return;
+  const w = wrap.getBoundingClientRect(), r0 = chips[0].getBoundingClientRect(), pitch = chips.length > 1 ? chips[1].getBoundingClientRect().left - r0.left : r0.width;
+  const lim = Math.max(w.right, wrap.parentElement.getBoundingClientRect().right); // the row can grow to the end of its cell
+  const room = lim - r0.left - (parseFloat(getComputedStyle(wrap).paddingRight) || 0); // from the first chip to the visible end
+  const k = Math.max(0, Math.floor((room - r0.width) / pitch)), n = chips.length - k; // k chips, then the +N chip (as wide as one chip)
+  chips.slice(k).forEach((c) => { c.hidden = true; });
+  wrap.insertAdjacentHTML('beforeend', `<button class="dchip dmore" aria-label="${n} more ${n > 1 ? 'dogs' : 'dog'}: see the pack">+${n}</button>`);
+  wrap.querySelector('.dmore').onclick = () => { SFX.click(); openPackSheet(); };
+}
+window.addEventListener('resize', () => { if (S && S.dogs && S.dogs.length > 1) phChipsFit($('#hudPack')); });
+function openPackSheet() {
+  const p = openModal('Your pack', `<div class="packpick">${others().map((d) => `<button class="card" data-dog="${d.id}"><span class="pp-head" aria-hidden="true">${headSVG(d)}</span><b>${esc(d.name)} ${sexSym(d.sex)}</b><span class="small">Tap to switch</span></button>`).join('')}</div>`, { cls: 'packsheet' });
+  p.querySelectorAll('[data-dog]').forEach((b) => { b.onclick = () => { SFX.click(); closeModal(); switchDog(b.dataset.dog); }; });
 }
 function chipsKey() { return S.dogs.map((d) => d.id + d.name + d.sex + moodOf(d) + (d.id === S.activeId ? '*' : '') + (awayFromHome() && staysHome(d) ? 'h' : '')).join('|') + '|' + (S.title || ''); }
 
