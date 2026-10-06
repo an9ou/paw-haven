@@ -275,7 +275,7 @@ function drawLegs(h,s,L){
       if(s.pup&&!(L.paw&&(l.id==='NF'||l.id==='FF')))h.shape(circ(l.foot[0]+2.5,l.foot[1]-l.w*.42,l.w*1.0,l.w*.66,8),l.sock||l.col,{w:3,ox:0,oy:0,sc:1,closed:1});}
     h.acc.splice(a,0,`<g class="pa-d-leg pa-d-leg-${l.id}">`);h.acc.push('</g>');
   };
-  const only=h._legPass||'ground';const ok=l=>only==='raised'?l.raised:!l.raised;
+  const only=h._legPass||'ground';const ok=l=>(only==='raised'?l.raised:!l.raised)&&(!h._legSkip||l.id!==h._legSkip)&&(!h._legOnly||l.id===h._legOnly);
   L.legs.filter(l=>!l.near&&!l.haunch&&ok(l)).forEach(one);L.legs.filter(l=>l.near&&!l.haunch&&ok(l)).forEach(one);
 }
 function drawHaunch(h,s,L,B){
@@ -520,11 +520,13 @@ const BODY2={
   h.line([[b.rx*.12,b.ry*.28],[b.rx*.02,b.ry*.7]].map(B),1.8,DK,.3);h.line([[b.rx*.58,b.ry*.22],[b.rx*.66,b.ry*.66]].map(B),1.8,DK,.3);
   h.line(p.slice(-6).map(B),5,DK,.7);h.line(p.slice(0,4).map(B),5,DK,.7);
   [[.8,-.55,.84,.05],[.7,-.6,.7,-.05]].forEach(q=>{h.line([[b.rx*q[0],b.ry*q[1]],[b.rx*q[2],b.ry*q[3]]].map(B),2.2,W,.4);const e=B([b.rx*q[2],b.ry*q[3]]);h.dot(e[0],e[1],2,2,DK)})},
- 'Tutu'(h,s,L,B){const b=s.body,fl=s.fluff?1.14:1,cx=-b.rx*.22,cl=q=>[q[0],Math.min(q[1],GY-1)];
-  [['#FF7AB2',1,-5],['#FF9EC8',.86,-1],['#FFC2DE',.7,3]].forEach(([col,k,dx])=>{const rx=Math.min(b.rx*.44,26)*(.68+k*.32)+4,ry=b.ry*(s.fluff?.98:1)*(.9+.32*k)+4;
-   const pts=scallop(0,0,rx,ry,12,.18).map(q=>{const r2=rot(q,20);return[cx+dx+r2[0],b.ry*.12+r2[1]]});h.shape(pts.map(B).map(cl),col,{w:2.8,step:30,amp:.8})});
-  h.line([[cx+4,-b.ry*fl*.98],[cx+7,0],[cx+4,b.ry*fl*.98]].map(B).map(cl),4.2,'#E04F86',.5);
-  [[-.5,.15],[0,.55],[.3,-.4]].forEach(q=>{const c=B([cx+q[0]*8,b.ry*q[1]]);h.line([[c[0]-2.5,c[1]-2.5],[c[0]+2.5,c[1]+2.5]],1.4,'#E04F86',.2);h.line([[c[0]+2.5,c[1]-2.5],[c[0]-2.5,c[1]+2.5]],1.4,'#E04F86',.2)})},
+ 'Tutu'(h,s,L,B){// a flat flared skirt round the hips, seen from the side: three scalloped layers; the near hind leg is drawn over the body, under the skirt
+  const b=s.body,lie=/^(sleep|down|crouch|playdead|rollover)$/.test(L.pose),sq=lie?.68:1,cx=-b.rx*(b.long?.5:.36),R0=Math.min(b.rx*.62,34)+6,H0=(b.ry*.4+5)*sq,cl=q=>[q[0],Math.min(q[1],GY-1)];
+  h._legOnly='NH';drawLegs(h,s,L);h._legOnly=0;
+  [['#FF7AB2',1,.56],['#FF9EC8',.88,.4],['#FFC2DE',.76,.24]].forEach(([col,k,cy])=>{
+   const pts=scallop(0,0,R0*k,H0*(.55+.45*k),14,.16).map(q=>[cx+q[0],b.ry*cy*sq+q[1]]);h.shape(pts.map(B).map(cl),col,{w:2.8,step:30,amp:.8})});
+  const wb=[];for(let i=0;i<=6;i++){const t=-1+i/3;wb.push([cx+t*R0*.66,b.ry*(.24*sq-.16)+Math.abs(t)*-2])}h.line(wb.map(B).map(cl),4.2,'#E04F86',.5);
+  [[-.5,.5],[.1,.7],[.55,.45]].forEach(q=>{const c=cl(B([cx+q[0]*R0,b.ry*q[1]*sq]));h.line([[c[0]-2.5,c[1]-2.5],[c[0]+2.5,c[1]+2.5]],1.4,'#E04F86',.2);h.line([[c[0]+2.5,c[1]-2.5],[c[0]-2.5,c[1]+2.5]],1.4,'#E04F86',.2)})},
  'Pyjamas'(h,s,L,B,p){const b=s.body,f=s.fluff?1.12:1.08,BL='#5B8FD8',DK='#3F6FB8';
   h.shape(p.map(B),'#EEF4FF',{w:4.6});
   const y=x=>b.ry*(f+.04)*.9*Math.sqrt(Math.max(0,1-Math.pow(x/(b.rx*f),2)));
@@ -627,7 +629,7 @@ function frame(key,s,pose,outfit,k,seed){
   if(hat==='Astronaut Helmet'&&L.ears!=='flat')L.ears='norm';
   if(body==='Superhero Cape')drawCape(h,s,L,B);
   drawTail(h,s,L,B);
-  drawLegs(h,s,L);
+  if(body==='Tutu'){h._legSkip='NH';drawLegs(h,s,L);h._legSkip=0}else drawLegs(h,s,L);
   // neck: a short tube from the chest to the head, behind the body
   {const nb=B([s.body.rx*.62,-s.body.ry*.3]),nh=HT([-s.head.rx*.2,s.head.ry*.35]);if(L.pose==='eat'||L.pose==='jump'||L.pose==='sit'||L.pose==='sad'||s.neck)h.tube([nb,nh],s.head.rx*.7,s.col)}
   h.shape(bp.map(B),s.col,{step:s.body.long?14:11});h.crayon(s.body.rx,s.body.ry,B,s.col,s.body.long?16:12);
@@ -637,9 +639,10 @@ function frame(key,s,pose,outfit,k,seed){
   if(s.spk)glitter(h,s,B,k,0);
   if(L.scrunch)[-.45,-.1,.25].forEach(x=>h.line([[s.body.rx*x,-s.body.ry*.85],[s.body.rx*(x+.06),0],[s.body.rx*x,s.body.ry*.85]].map(B),2.6));
   if(L.mud)drawMud(h,s,L,B,HT);
-  if(body&&body!=='Superhero Cape')drawCoat(h,s,L,B,body);
+  if(body&&body!=='Superhero Cape'&&body!=='Tutu')drawCoat(h,s,L,B,body);
   if(body==='Superhero Cape')drawCapeTie(h,s,L,B);
   drawHaunch(h,s,L,B);
+  if(body==='Tutu')drawCoat(h,s,L,B,body);
   if(L.paw){h._legPass='raised';drawLegs(h,s,L);h._legPass='ground'}
   drawEars(h,s,L,HT,false);
   {const hf=s.hfluff===undefined?s.fluff:s.hfluff;h.shape(hp.map(HT),s.hcol,{step:hf?30:11,amp:hf?.8:1.2})};h.crayon(s.head.rx,s.head.ry*.6,p=>HT([p[0],p[1]-s.head.ry*.3]),s.hcol,6);
