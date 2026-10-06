@@ -29,3 +29,5 @@ html:not([data-layout="phone"]) #stage:has(#placeBtns [data-sh]) #toasts { top: 
 
 /* v2.3 TOWN-3: a pier bubble sits under the dog (on the deck) instead of above its head, where it covered the boats; its tail points up at the dog */
 #bubble.below::after { bottom: auto; top: -15px; transform: scaleY(-1); }
+/* v2.3: a pier bubble sits under the dog; if a long line still touches a place button, the button stays on top (and tappable) */
+#bubble.below { z-index: 2; }
