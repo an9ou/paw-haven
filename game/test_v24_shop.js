@@ -180,4 +180,4 @@ require('./test_lib').run('v24_shop', async (t) => {
   sec('no console errors');
   const errs = t.errors.filter((e) => !/ERR_CERT|Failed to load resource/.test(e));
   ok(errs.length === 0, 'no console errors ' + errs.slice(0, 3).join(' | '));
-});
+}, { prefs: { msTest: true } });

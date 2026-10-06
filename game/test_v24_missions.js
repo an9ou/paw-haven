@@ -103,4 +103,4 @@ require('./test_lib').run('v24_missions', async (t) => {
   ok(m2.length === 3, 'missions roll on the old save');
   ok(await t.ev(() => { const m = window.__paw.S.missions; return m.stamps === 0 && m.cards === 0 && Array.isArray(m.rewards); }), 'defaults: 0 stamps, 0 cards, no rewards');
   ok(errs().length === 0, 'no console errors ' + errs().slice(0, 3).join(' | '));
-});
+}, { prefs: { msTest: true } });

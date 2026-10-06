@@ -113,5 +113,5 @@ async function suite(t, dev) {
 }
 
 (async () => {
-  for (const dev of ['iPhone 13', 'Pixel 7']) await run('phone_v24_shop_' + dev.replace(/\s+/g, '').toLowerCase(), (t) => suite(t, dev), { device: dev });
+  for (const dev of ['iPhone 13', 'Pixel 7']) await run('phone_v24_shop_' + dev.replace(/\s+/g, '').toLowerCase(), (t) => suite(t, dev), { device: dev, prefs: { msTest: true } });
 })();

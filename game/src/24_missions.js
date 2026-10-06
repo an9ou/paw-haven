@@ -70,8 +70,10 @@ let msQueue = [];
 const msGuideBusy = () => typeof gdActive === 'function' && !!gdActive();
 function msSay(text, kind) { if (msGuideBusy()) msQueue.push([text, kind]); else toast(text, kind); }
 function msFlush() { if (!msQueue.length || msGuideBusy()) return; const q = msQueue; msQueue = []; q.forEach(([t, k], i) => setTimeout(() => toast(t, k), i * 700)); }
+// under the test harness missions only progress when a suite asks for it (prefs.msTest): a mission payout would otherwise change coin totals in older suites
+function msAllowed() { return !navigator.webdriver || !!prefs.msTest; }
 function msOnAct(a) {
-  if (!S || !a || !a.kind || cur.mode === 'title') return; msRoll();
+  if (!S || !a || !a.kind || cur.mode === 'title' || !msAllowed()) return; msRoll();
   const m = S.missions; let changed = false;
   m.list.forEach((it) => {
     const d = msDef(it.id); if (!d || it.done) return;
