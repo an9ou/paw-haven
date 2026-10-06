@@ -116,8 +116,8 @@ function msRewardPop(kind) {
 /* run a popup when nothing else is in the way (a modal, a tray, a walk, Gerald) */
 function msWhenFree(fn, tries = 0) {
   const free = cur.mode === 'yard' && modal.hidden && !busy && !msGuideBusy() && !(typeof popOpen === 'function' && popOpen());
-  if (free || tries > 600) { fn(); return; }
-  setTimeout(() => msWhenFree(fn, tries + 1), 1000);
+  if (free) { fn(); return; }
+  if (tries < 3600) setTimeout(() => msWhenFree(fn, tries + 1), 1000); // after an hour of play the popup is dropped quietly: the item is already given
 }
 
 /* ---- art: the checklist card and the stamp card (WORLD ART props), with a pencil doodle fallback ---- */
