@@ -276,7 +276,32 @@ run('account', async (t) => {
   ok(srv.saves[g5].data.coins === coins5 && srv.count(d5, 'saves.upsert') === up5 + 1, `the waiting guest push never runs (guest row kept, ${srv.count(d5, 'saves.upsert') - up5} push)`);
   srv.confirmEmailChange = false;
 
-  sec('desktop: cloud off (test harness, claude.ai copy): the title is unchanged plus a note');
+  sec('desktop: signed in to account A, log in as B: A\'s game never goes into B, backups included');
+  const d8 = await device(null); t.p = d8;
+  await tap('#tLogin'); await sheetOpen(); await form('login', 'mochi@example.com', 'pupper123');
+  ok(await t.until(() => !!document.getElementById('tContinue') && document.getElementById('modal').hidden, null, 8000), 'signed in to A (mochi) with its save');
+  const nameB = srv.saves[a5].data.dogs[0].name, bk0 = srv.backups.length;
+  await change({ coins: 5150 }); // A's last change, not pushed yet
+  await tap('#tSwitch'); await sheetOpen(); await tap('#acLogin'); await form('login', 'fallback@example.com', 'fallback1');
+  ok(await t.until((n) => document.getElementById('modal').hidden && !!document.getElementById('tContinue') && window.__paw.S && window.__paw.S.dog.name === n, nameB, 8000), `B's save is what's played (${nameB})`);
+  ok(srv.saves[g1].data.coins === 5150, 'A\'s last change reached A\'s own cloud before the switch');
+  ok(!srv.backups.slice(bk0).some((b) => b.user_id === a5) && srv.saves[a5].data.coins === 4242, 'nothing of A lands in B: no backup, save untouched');
+  ok(/^Signed in as f…@example\.com Switch$/.test(await line()), 'Signed in as f…@example.com');
+  srv.users.push({ id: 'uC', email: 'cleo@example.com', password: 'cleo12345' });
+  await tap('#tSwitch'); await sheetOpen(); await tap('#acLogin'); await form('login', 'cleo@example.com', 'cleo12345');
+  ok(await t.untilMode('adopt', 6000) && (await uid()) === 'uC', 'C has no save: straight to adoption, not B\'s dogs');
+  ok(!(await ev(() => localStorage.getItem('pawhaven_proto_v1'))) && !srv.saves.uC && !srv.backups.some((b) => b.user_id === 'uC'), 'B\'s game left this device and never reached C');
+  ok(srv.saves[a5].data.dogs[0].name === nameB, 'B\'s game is still safe in B\'s cloud');
+
+  sec('desktop: typing straight into a just-opened form loses nothing');
+  await ev(() => window.__paw.go('title')); await d8.waitForSelector('#tSwitch');
+  await tap('#tSwitch'); await sheetOpen(); await tap('#acReg');
+  await d8.keyboard.type('quick@example.com'); await d8.keyboard.press('Tab'); await d8.keyboard.type('quick1234'); await d8.keyboard.press('Tab'); await d8.keyboard.type('quick1234');
+  await t.sleep(150);
+  ok(JSON.stringify(await ev(() => ['acEmail', 'acPw', 'acPw2'].map((i) => document.getElementById(i).value))) === JSON.stringify(['quick@example.com', 'quick1234', 'quick1234']), 'every keystroke lands in its field (no focus jump after opening)');
+  await tap('#modal .x'); await closed();
+
+
   const d6 = await device(null, false); t.p = d6;
   ok(!!(await d6.locator('#tNew').count()) && !(await d6.locator('#tGuest, #tSwitch').count()), 'harness: New game, no account choices');
   ok((await line()) === 'Cloud save works on the web version.', 'note: "Cloud save works on the web version."');
@@ -303,6 +328,9 @@ run('account', async (t) => {
     ok(!(await reachable(['#acMsg', '#acGo', '#acBack', '#acPw'])).length, 'message, fields and buttons are on screen and not covered ' + (await reachable(['#acMsg', '#acGo', '#acBack', '#acPw'])).join(','));
     await audit(`${tag}_02_login_error`);
     await tap('#acBack'); await closed();
+    await tap('#tLogin'); await sheetOpen(); await tap('#acEmail'); await p.keyboard.type('fast@example.com'); await t.sleep(150);
+    ok((await ev(() => document.getElementById('acEmail').value)) === 'fast@example.com' && (await ev(() => document.activeElement.id)) === 'acEmail', 'tap a field and type at once: nothing lost, focus stays');
+    await tap('#acBack'); await closed();
 
     sec(`${dev}: make an account sheet`);
     await tap('#tReg'); await sheetOpen(); await form('reg', 'x@example.com', 'short'); ok(/at least 8/.test(await msg()), 'weak password: kind message');
@@ -326,6 +354,7 @@ run('account', async (t) => {
       await tap('#tLogin'); await sheetOpen(); await form('login', 'mochi@example.com', 'pupper123');
       ok(await t.until(() => !!document.getElementById('tContinue') && document.getElementById('modal').hidden, null, 8000), 'the account save loads: Continue');
       ok(/^Signed in as m…@example\.com Switch$/.test(await line()), 'Signed in as m…@example.com + Switch');
+      ok(await ev(() => { const [a, b] = [...document.querySelectorAll('#title .tbtns .btn')].map((e) => e.getBoundingClientRect()); return b.top >= a.bottom - 1 && Math.abs(a.width - b.width) < 2 && Math.abs(a.left - b.left) < 2; }), 'Continue and New game stack tidily, same width');
       await layout(`${dev} signed in`); await audit(`${tag}_04_signed_in`);
       await tap('#tSwitch'); await sheetOpen(); await audit(`${tag}_05_switch_sheet`); await tap('#modal .x'); await closed();
       let c2 = false; for (let k = 0; k < 4 && !c2; k++) { await tap('#tContinue').catch(() => {}); c2 = await t.untilMode('yard', 3000); }

@@ -110,8 +110,12 @@ function acOpenForm(kind, inSheet) {
   $('#acBack', p).onclick = () => { SFX.click(); if (inSheet) acOpenChoices(); else closeModal(); };
   const fg = $('#acForgot', p); if (fg) fg.onclick = () => { SFX.click(); $('#acForgotTxt', p).hidden = false; fg.hidden = true; };
   p.querySelectorAll('input').forEach((i) => i.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); btn.click(); } }));
-  // after openModal's own focus (30 ms): the email field on desktop, no keyboard pop-up on phones. data-ready: focus has settled
-  setTimeout(() => { const f = $('#acEmail', p); if (f && !isPhone()) f.focus({ preventScroll: true }); p.dataset.ready = '1'; }, 40);
+  // Focus without ever losing a keystroke: openModal re-focuses [autofocus] 30 ms after opening, so [autofocus] always follows the
+  // field in use and that late focus lands where the player already is. Desktop starts in the email field; phones wait for a tap
+  // (no keyboard pop-up). data-ready: the form takes input from now on (read by the tests).
+  p.addEventListener('focusin', (e) => { if (!e.target.matches('input')) return; p.querySelectorAll('[autofocus]').forEach((x) => x.removeAttribute('autofocus')); e.target.setAttribute('autofocus', ''); });
+  if (!isPhone()) $('#acEmail', p).focus({ preventScroll: true });
+  p.dataset.ready = '1';
   btn.onclick = async () => {
     const em = val('acEmail').trim(), pw = val('acPw');
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return say('That email looks wrong. Check it and try again.');

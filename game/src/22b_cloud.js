@@ -270,14 +270,23 @@ async function clLogin(email, pw) {
   if (!(await clStart())) return { ok: false, msg: 'Cloud save is offline. Your game is saved on this device.' };
   clearTimeout(CL.timer); CL.timer = null; CL.loggingIn = true; // the scheduled guest push must not run after the switch
   try {
-    const local = clLocal();
+    const local = clLocal(), prev = CL.uid && !CL.anon ? CL.uid : null; // prev: an account is signed in (v2.3 title "Switch")
+    if (prev && local) { // that account's last changes reach its own cloud first
+      for (let i = 0; i < 50 && CL.busy; i++) await new Promise((res) => setTimeout(res, 100));
+      const m = clMeta(); if (m.changedAt > (m.pushedAt || 0)) await clPush(true);
+    }
     const r = await CL.sb.auth.signInWithPassword({ email, password: pw });
     if (r.error || !r.data || !r.data.user) return { ok: false, msg: clErrText(r.error || 'invalid login') };
+    const other = !!prev && r.data.user.id !== prev; // another account's game (maybe another person's) never goes into this one, backups included
     clSetUser(r.data.user);
     const q = await CL.sb.from('saves').select('*').eq('user_id', CL.uid).maybeSingle();
     if (q.data && q.data.data) {
-      if (local && !clSame(local, q.data.data)) await clBackup(local, 'guest save before sign-in');
+      if (local && !other && !clSame(local, q.data.data)) await clBackup(local, 'guest save before sign-in');
       clApply(q.data.data, q.data, null); return { ok: true, loaded: true };
+    }
+    if (other) { // no save on this account: the other account's dogs leave this device (they are safe in its cloud)
+      lsDel(SAVE_KEY); S = null; CL.fp = clFp(null); CL.pending = null; clMetaSet({ rev: 0, changedAt: 0, pushedAt: 0, dogId: null });
+      return { ok: true, loaded: false };
     }
     if (local) { clMetaSet({ changedAt: Date.now(), rev: 0, pushedAt: 0 }); await clPush(true); }
     return { ok: true, loaded: false };
