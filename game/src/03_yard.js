@@ -34,7 +34,7 @@ function renderDog(pose, facing = 'right', force) {
 }
 function setTemp(pose, ms) { tempPose = pose; tempUntil = performance.now() + ms; renderDog(pose); }
 function dogTo(tx, ty = 0, scale = 1, secs = 0.9) {
-  const p = $('#dogPos'); if (!p) return; phCamHome = phLandCx(430 * scale + tx); if (!phPeekOn) camTo(phCamHome, secs); p.style.transitionDuration = secs + 's';
+  const p = $('#dogPos'); if (!p) return; phCamHome = phHomeCx + (scale === 1 ? tx : (430 * scale + tx) - phHomeCx); if (phPeekOn) { phPeekOn = false; clearTimeout(phPanT); } camTo(phCamHome, secs); p.style.transitionDuration = secs + 's';
   p.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
 }
 function bowlArt(food) {
@@ -54,8 +54,8 @@ function enterYard() {
   setChrome(true, true);
   view.innerHTML = yardWorldSVG(); dogKey = ''; busy = false;
   renderDog(dogPoseNow()); setBowl(S.bowl || null);
-  phCamHome = phLandCx(430); clearTimeout(phPanT); cancelAnimationFrame(camRaf); phPeekOn = false;
-  camCx = phCamHome; camApply(camCx);
+  phHomeCx = 358; phCamHome = isPhone() ? phHomeCx : 430; clearTimeout(phPanT); cancelAnimationFrame(camRaf); phPeekOn = false; view.style.removeProperty('--vfit'); view.style.removeProperty('--trayH'); phZoom = 1;
+  camCx = phCamHome; camApply(camCx); if (isPhone()) phHomeRefit();
   if (S.sleeping) { dogTo(417.5, S.place === 'house' ? 130 : 140, 0.75, 0); showZzz(true); }
   updateHUD(); bindDev(); bindMess(); bindPack(); greetWalker(); drawFluff(); setTimeout(() => yardReaction(false), 700);
   const bedG = $('#bedG'); if (bedG) { bedG.onclick = () => { popAct = 'care'; openCareTray(); }; bedG.onkeydown = (e) => { if (e.key === 'Enter') { popAct = 'care'; openCareTray(); } }; }
@@ -89,16 +89,39 @@ function enterYard() {
   }, 1000);
   onCleanup(() => clearInterval(iv));
   if (S.sleeping) sleepTray(); else dockIdle();
+  if (isPhone()) phTrayFit();
   emit('yard:enter', { place: S.place });
 }
 // v2.2 phone: swipe the yard or house sideways to look around (the camera crop is about half the scene). It eases back to the dog after a few seconds.
-let phCamHome = 430, phPanT = 0, phPeekOn = false; // phPeekOn: the look-right button holds the camera away from the dog
-// v2.3 phone: the Town Square easel and the Dog Park board sit left of the dog (world x 214+); keep them inside the crop
-function phLandCx(cx) {
-  if (!isPhone() || (S.place !== 'square' && S.place !== 'dogpark')) return cx;
-  const vw = view.clientWidth, vh = view.clientHeight; if (!vw || !vh) return cx;
-  return Math.min(cx, 190 + 300 * vw / vh);
+let phCamHome = 430, phHomeCx = 358, phPanT = 0, phPeekOn = false, phZoom = 1; // phPeekOn: the look-right button holds the camera away from the dog
+// v2.3 phone: the camera home. The crop is about 346 units wide, so it sits left of the dog (x 358): the bowl (195-305), the Town Square easel / Dog Park board
+// (194+) and the whole dog (332-517) fit together. With a visiting dog it spans dog + visitor, and Market Street zooms out so more than one shop shows.
+// phHomeRefit works out the span, zooms the scene out (--vfit on #view) when the span is wider than the crop, and homes the camera on its middle.
+function phSvgDims() { const svg = $('#view > svg.world'); return { w: (svg && svg.clientWidth) || view.clientWidth, h: (svg && svg.clientHeight) || view.clientHeight }; }
+function phHomeRefit() {
+  if (!isPhone() || (cur.mode !== 'yard' && cur.mode !== 'market') || !$('#view > svg.world')) return;
+  let L = 186, R = 530, fitMin = 0.62;
+  const vz = $('#visitorG', view);
+  if (vz) { const sp = visitorSpot(), w = 264 * sp[3]; L = 306; R = Math.max(R, sp[0] + w / 2 + 6); }
+  const vw = view.clientWidth, vh = view.clientHeight - (parseFloat(view.style.getPropertyValue('--trayH')) || 0); if (!vw || vh <= 0) return;
+  const native = 600 * vw / vh, fit = Math.max(fitMin, Math.min(1, native / (R - L)));
+  view.style.setProperty('--vfit', fit.toFixed(3));
+  phHomeCx = (L + R) / 2; if (!S.sleeping) { phCamHome = phHomeCx; camCx = phCamHome; }
+  camApply(camCx);
 }
+// v2.3 phone: a feed / care / nap tray never covers the scene. The scene shrinks into the part of the view above the tray (the whole scene stays visible).
+function phTrayFit() {
+  if (!isPhone()) return;
+  let h = 0;
+  if (cur.mode === 'yard') {
+    const pb = $('#placeBtns'); if (pb && pb.children.length) h = pb.offsetHeight + 8; // the place buttons (Garden, Go inside, Café menu...) get their own strip under the scene, so they never cover a prop
+    const tr = dock.querySelector(':scope > .tray'); if (tr && !tr.classList.contains('dock-idle')) { h = tr.offsetHeight; const d = tr.querySelector('.napdet:not([hidden])'); if (d) h += d.offsetHeight + 8; }
+  }
+  const cur0 = parseFloat(view.style.getPropertyValue('--trayH')) || 0; if (Math.abs(cur0 - h) < 1) return;
+  if (h) view.style.setProperty('--trayH', h + 'px'); else view.style.removeProperty('--trayH');
+  phHomeRefit();
+}
+{ let raf = 0; new MutationObserver(() => { cancelAnimationFrame(raf); raf = requestAnimationFrame(phTrayFit); }).observe(dock, { childList: true, subtree: true }); }
 function phCamPan(svg) {
   let x0 = null, c0 = 0, id = null, on = false, swallowUntil = 0;
   svg.addEventListener('click', (ev) => { if (performance.now() < swallowUntil) { ev.stopPropagation(); ev.preventDefault(); } }, true);
@@ -107,31 +130,32 @@ function phCamPan(svg) {
   svg.addEventListener('pointermove', (e) => {
     if (x0 == null || e.pointerId !== id) return; const dx = e.clientX - x0;
     if (!on) { if (Math.abs(dx) < 12) return; on = true; clearTimeout(phPanT); cancelAnimationFrame(camRaf); try { svg.setPointerCapture(id); } catch (er) { /* none */ } }
-    const vw = view.clientWidth, vh = view.clientHeight; if (!vw || !vh) return;
-    const vbW = 600 * vw / vh; camCx = clamp(c0 - dx * vbW / vw, vbW / 2, 1000 - vbW / 2); camApply(camCx);
+    const { w: vw, h: vh } = phSvgDims(); if (!vw || !vh) return;
+    const vbW = 600 * vw / vh / phZoom; camCx = clamp(c0 - dx * vbW / vw, vbW / 2, 1000 - vbW / 2); camApply(camCx);
   });
   const end = (e) => {
     if (x0 == null || e.pointerId !== id) return; x0 = null;
-    if (on) { on = false; swallowUntil = performance.now() + 80; clearTimeout(phPanT); phPanT = setTimeout(() => { if (cur.mode === 'yard') camTo(phCamHome, 0.8); }, 4000); }
+    if (on) { on = false; swallowUntil = performance.now() + 80; clearTimeout(phPanT); phPanT = setTimeout(() => { if (cur.mode === 'yard' || cur.mode === 'market') camTo(phCamHome, 0.8); }, 4000); }
   };
   svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end);
   onCleanup(() => clearTimeout(phPanT));
 }
 // v2.3 phone: a small button on the right edge looks at the right half of the scene (the house, notice board, café counter, vet desk, salon table) and back
 function phPeekCx() { // the world x at the middle of the right-half prop (house, notice board, counter, desk, table)
-  const svg = $('svg.world', view), el = $('#houseG') || $('#sceneG [data-hot]'); if (!svg || !el) return 750;
+  const svg = $('svg.world', view), el = $('#houseG') || $('#sceneG [data-hot]'); if (!svg || !el) return S.place === 'market' ? 800 : 750;
+  if ($('#houseG')) return 715; // the yard: the Crayon Box, Doggy Ramp, nursery basket and the whole dog house share one crop (525-871)
   const r = el.getBoundingClientRect(), a = toWorld(svg, r.left, r.top), c = toWorld(svg, r.right, r.bottom), m = (a.x + c.x) / 2;
   return m > phCamHome + 80 ? m : 750;
 }
 function phPeek() {
-  const vw = view.clientWidth, vh = view.clientHeight; if (!vw || !vh || 600 * vw / vh >= 1000) return;
+  const svg0 = $('#view > svg.world'), vw = view.clientWidth, vh = view.clientHeight; if (!svg0 || !vw || !vh) return;
   const b = document.createElement('button'); b.type = 'button'; b.className = 'btn ph-peek'; b.id = 'phPeek'; view.appendChild(b);
   const right = () => camCx > phCamHome + 80;
   const sync = () => { const r = right(); b.innerHTML = r ? '&lsaquo;' : '&rsaquo;'; b.setAttribute('aria-label', r ? 'Look back at the dog' : 'Look right'); };
-  b.onclick = () => {
-    SFX.click(); clearTimeout(phPanT);
-    if (right()) { phPeekOn = false; camTo(phCamHome, 0.6); } else { phPeekOn = true; camTo(phPeekCx(), 0.7); phPanT = setTimeout(() => { phPeekOn = false; if (cur.mode === 'yard') camTo(phCamHome, 0.8); }, 8000); }
-  };
+  const back = () => { phPeekOn = false; clearTimeout(phPanT); camTo(phCamHome, 0.6); };
+  b.onclick = () => { SFX.click(); clearTimeout(phPanT); if (right()) back(); else { phPeekOn = true; camTo(phPeekCx(), 0.7); } };
+  // the view stays where the player put it (they may be reading a board): it goes back on their next tap on the scene, or when the dog walks (dogTo)
+  svg0.addEventListener('pointerdown', (e) => { if (phPeekOn && !e.target.closest('.hot, [data-hot], [data-shop]')) back(); }, true);
   sync(); const iv = setInterval(sync, 250); onCleanup(() => clearInterval(iv));
 }
 // v2.0.1: the dog's rectangular hit box overlaps the yard mailbox (drawn behind the dog). A tap inside the mailbox where the dog itself
@@ -516,7 +540,7 @@ function sleepTray() {
     setTray(`${esc(NAME())} is napping`, `<p class="napdet" id="napDet" hidden>${info}</p>
     <div class="walkctl napstrip"><button class="btn napinfo" id="napInfo" aria-label="Nap details" aria-expanded="false">${ICON('sleep')}</button><div class="napmid"><span class="naplbl">${esc(NAME())} is napping</span><div class="prog" aria-label="Energy"><i id="napBar" style="width:${S.stats.energy}%"></i></div></div><button class="btn yes" id="wakeBtn">Wake up</button></div>`, { mini: true });
     $('#trayX').remove(); const t = $('#dock > .tray'); if (t) t.classList.add('nap');
-    $('#napInfo').onclick = () => { const d = $('#napDet'), on = d.hidden; d.hidden = !on; $('#napInfo').setAttribute('aria-expanded', on ? 'true' : 'false'); dogTo(417.5, (S.place === 'house' ? 130 : 140) - (on ? 70 : 0), 0.75, 0.4); }; // the details card is taller: the sleeping dog lifts so it stays in view
+    $('#napInfo').onclick = () => { const d = $('#napDet'), on = d.hidden; d.hidden = !on; $('#napInfo').setAttribute('aria-expanded', on ? 'true' : 'false'); phTrayFit(); }; // the scene shrinks above the details card, so nothing is covered
     if (wasOpen) { $('#napDet').hidden = false; $('#napInfo').setAttribute('aria-expanded', 'true'); }
     $('#wakeBtn').onclick = () => wake();
     return;
@@ -575,7 +599,7 @@ function hmDecorArt(name) {
 }
 // the tap rect; on phones it grows to at least 48 screen px each way (the scene is scaled to the screen height)
 function hmDecorHit(x, y, w, h) {
-  if (isPhone()) { const s = (view.clientHeight || 500) / 600, m = 48 / s; if (w < m) { x -= (m - w) / 2; w = m; } if (h < m) { y -= (m - h) / 2; h = m; } }
+  if (isPhone()) { const s = ((view.clientHeight || 500) - 60) / 600, m = 48 / s; if (w < m) { x -= (m - w) / 2; w = m; } if (h < m) { y -= (m - h) / 2; h = m; } }
   return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="transparent" pointer-events="all"/>`;
 }
 function hmDecorSVG() {

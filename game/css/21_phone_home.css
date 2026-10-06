@@ -31,3 +31,9 @@ html[data-layout="phone"] .tray.nap #wakeBtn{flex:none;min-height:44px}
 html[data-layout="phone"] #phPeek{position:absolute;right:6px;top:30%;z-index:5;width:44px;height:48px;min-height:44px;padding:0 0 4px;font-family:var(--font-hand);font-weight:700;font-size:36px;line-height:1;--wash:var(--paper);animation:phNudge 1.2s ease-in-out 3}
 @keyframes phNudge{50%{transform:translateX(5px)}}
 html[data-motion="off"] #phPeek{animation:none}
+/* v2.3 the scene sits in the part of the view above an open tray (--trayH) and may zoom out (--vfit: Market Street, a visiting dog) */
+html[data-layout="phone"] #view > svg.world{top:0;bottom:auto;height:calc((100% - var(--trayH,0px)) * var(--vfit,1))}
+/* v2.3 Feed / Play / Care trays: one swipe row of cards, so the tray is short and the scene above it stays big */
+html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;overscroll-behavior-x:contain;scrollbar-width:none;padding:4px 2px 8px}
+html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row::-webkit-scrollbar{display:none}
+html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row > .card{flex:0 0 148px;width:148px;scroll-snap-align:start}
