@@ -1,7 +1,7 @@
 /* v2: 09b_journal_v2.css (SYSTEMS lane): Journal Profile/Family/Coats tabs, Mailbox */
 /* journal tab row: 9 tabs fit one row at 1280x720 */
 .panel.journal .jtabs{flex-wrap:wrap;gap:6px 8px}
-.panel.journal .jtabs .btn{font-size:21px;padding:3px 13px 5px;min-height:40px}
+.panel.journal .jtabs .btn{font-size:19px;padding:3px 10px 5px;min-height:40px} /* v2.4: 11 tabs on one row */
 .panel.journal .tabs.pdogs{margin:2px 0 8px}
 .fhead{display:grid;place-items:center;width:58px;height:58px;border-radius:50%;background:var(--w-cream);border:2px solid #5B3D32;overflow:hidden;flex:none}
 .fhead svg{width:92%;height:92%}
