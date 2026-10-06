@@ -18,3 +18,10 @@
 .ghost{position:fixed;z-index:50;width:70px;height:70px;pointer-events:none;transform:translate(-50%,-50%) rotate(-8deg)}
 .ghost svg{width:100%;height:100%}
 
+/* v2.3: on wide coloured buttons the square wash used to poke past the pencil frame's rounded corners (the frame stretches with the
+   button, its corners grow). The wash and hatch now sit on their own rounded layer, the frame is drawn on top. Specificity stays at
+   one class (:is/:where) so any later rule that places or restyles a button still wins. */
+:is(.btn):where(.yes,.go,.red){background:none;isolation:isolate}
+:where(.btn.yes,.btn.go,.btn.red):not([style*="position"]){position:relative}
+:is(.btn):where(.yes,.go,.red)::before{content:"";position:absolute;inset:3px 3px 4px 4px;z-index:-1;border-radius:7%/24%;background:var(--hatch),linear-gradient(var(--wash),var(--wash));pointer-events:none}
+:is(.btn):where(.yes,.go,.red)::after{content:"";position:absolute;inset:0;z-index:-1;background:var(--fr) 0 0/100% 100% no-repeat;pointer-events:none}

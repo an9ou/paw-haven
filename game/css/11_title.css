@@ -98,3 +98,4 @@ html[data-layout="phone"] .panel.acct .insheet .tch{flex:none}
 html[data-layout="phone"] .acform .aclead p{font-size:16px}
 html[data-layout="phone"] .acform .acdog{width:84px;height:70px}
 html[data-layout="phone"] #modal .panel.acct .foot .btn{flex:1 1 0;min-height:48px}
+html[data-layout="phone"] #stage #modal .panel.pop.acct{padding-bottom:calc(22px + env(safe-area-inset-bottom,0px))} /* the last row never touches the sheet's frame */

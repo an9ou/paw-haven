@@ -480,7 +480,7 @@
     ,
     /* v1.5B portrait (phones): layout only */
     '.pk-portrait{overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch}',
-    '.pk-portrait .pk-stage{width:420px;height:800px}',
+    '.pk-portrait .pk-stage{width:420px;height:800px}', /* the height and the rows below are set by portLayout() */
     '.pk-portrait .pk-top{left:8px;right:8px;top:8px;height:auto;min-height:56px;flex-wrap:wrap;gap:6px 8px;padding:6px 8px}',
     '.pk-portrait .pk-btn{min-height:52px;min-width:52px}',
     /* v2.3 phone occlusion: header in two rows (title, fridge, close / touch hint, recipe book), nothing truncated; taps >= 44 px at 360 wide */
@@ -489,9 +489,10 @@
     /* v2.3: the lesson grows instead of clipping, and the slots move down under it */
     '.pk-portrait .pk-msg{height:auto;min-height:42px;overflow:visible}',
     '.pk-portrait .pk-pot{left:135px;top:150px}',
+    '.pk-portrait .pk-pot,.pk-portrait .pk-drop,.pk-portrait .pk-inpot{translate:0 var(--pk-potdy,0px)}',
     '.pk-portrait .pk-drop{left:110px;top:122px}',
     '.pk-portrait .pk-inpot{left:150px;top:128px}',
-    '.pk-portrait .pk-shelf{left:8px;top:330px;width:404px;height:150px;padding:8px 10px 6px;display:grid;grid-auto-flow:column;grid-template-rows:auto auto;column-gap:16px;overflow-x:auto;overflow-y:hidden;touch-action:pan-x;align-content:start}',
+    '.pk-portrait .pk-shelf{left:8px;top:330px;width:404px;height:auto;padding:8px 10px 10px;display:grid;grid-auto-flow:column;grid-template-rows:auto auto;column-gap:16px;overflow-x:auto;overflow-y:hidden;touch-action:pan-x;align-content:start}',
     '.pk-portrait .pk-sh{white-space:nowrap}',
     '.pk-portrait .pk-row{flex-wrap:nowrap;border-bottom:none;margin-bottom:0;padding:8px 14px 4px 4px;border-right:2px dashed rgba(91,61,50,.28)}',
     '.pk-portrait .pk-row.pk-last{border-right:none}',
@@ -580,7 +581,20 @@
       var w = root.clientWidth || W, h = root.clientHeight || H;
       scale = (PORT ? w / W : Math.min(w / W, h / H)) || 1; offX = Math.max(0, (w - W * scale) / 2); offY = PORT ? 0 : Math.max(0, (h - H * scale) / 2);
       stage.style.transform = 'translate(' + offX + 'px,' + offY + 'px) scale(' + scale + ')';
+      portLayout();
     }
+    /* v2.3 portrait: the stage is as tall as the screen (no blank band under the dog). The dog sits at the bottom, the tray and the
+       pantry stack above it at their real heights (no empty pantry space), and the pot is centred in the room that is left. */
+    function portLayout() {
+      if (!PORT || typeof tray === 'undefined' || !tray || !shelf) return;
+      var Hs = Math.max(700, Math.floor((root.clientHeight || H) / scale)), trH = tray.offsetHeight, shH = shelf.offsetHeight;
+      var dogTop = Hs - 152, trayTop = dogTop - 6 - trH, shelfTop = Math.max(330, trayTop - 10 - shH); // never above its old place under the pot (short screens scroll, as before)
+      if (shelfTop + shH + 10 > trayTop) { trayTop = shelfTop + shH + 10; dogTop = trayTop + trH + 6; Hs = dogTop + 152; }
+      stage.style.height = Hs + 'px'; shelf.style.top = shelfTop + 'px'; tray.style.top = trayTop + 'px';
+      dogEl.style.top = dogTop + 'px'; bub.style.top = (dogTop + 12) + 'px';
+      stage.style.setProperty('--pk-potdy', Math.max(0, Math.round((shelfTop - 330) / 2)) + 'px');
+    }
+
     var ro = null;
     if (typeof ResizeObserver !== 'undefined') { ro = new ResizeObserver(fit); ro.observe(root); } else window.addEventListener('resize', fit);
     fit();
@@ -1018,12 +1032,14 @@
     later(function () { dogSay(pick(LINES.hello), 2600); }, 400);
     try { root.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
 
+    if (PORT) { portLayout(); if (typeof ResizeObserver !== 'undefined') { var pro = new ResizeObserver(portLayout); pro.observe(tray); pro.observe(shelf); } }
     function close() {
       if (closed) return;
       closed = true;
       timers.forEach(clearTimeout); clearTimeout(bubT); cancelAnimationFrame(raf);
       window.removeEventListener('keydown', onKey);
       if (ro) ro.disconnect(); else window.removeEventListener('resize', fit);
+      if (pro) pro.disconnect();
       if (root.parentNode) root.parentNode.removeChild(root);
       call(o.onClose);
     }

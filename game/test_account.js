@@ -259,14 +259,15 @@ run('account', async (t) => {
   await change({ coins: 7070 }); const lp0 = await ev(() => window.__pawCloud.CL.lastPull);
   await tap('#tSwitch'); await sheetOpen(); await tap('#acGuest'); await d2.waitForSelector('.confirm .yes');
   await tap('.confirm .no'); ok((await uid()) === a2, 'Stay keeps the account');
+  const nU0 = srv.users.length;
   await tap('#acGuest'); await d2.waitForSelector('.confirm .yes'); await tap('.confirm .yes');
-  ok(await t.until((a) => !!window.__pawCloud.CL.uid && window.__pawCloud.CL.anon && window.__pawCloud.CL.uid !== a && document.getElementById('modal').hidden, a2, 6000), 'Play as guest logs out and starts a guest');
+  ok(await t.until(() => !window.__pawCloud.CL.uid && document.getElementById('modal').hidden, null, 6000), 'Play as guest logs out (no guest user for an account\'s game)');
   const gst = await uid();
   ok(srv.saves[a2].data.coins === 7070, 'log out sends the account\'s last change to the account first');
-  ok(await t.until((l) => window.__pawCloud.CL.lastPull > l, lp0, 6000) && await settled(), 'the guest\'s first pull ran');
+  ok(await settled() && srv.users.length === nU0, 'no orphan anonymous user is made');
   ok(!srv.saves[gst] && !srv.backups.some((b) => b.user_id === gst), 'the account\'s game is not copied into the guest\'s cloud');
-  ok(!!(await d2.locator('#tContinue').count()) && /^Playing as guest Log in$/.test(await line()), 'the game stays on this device: Continue + "Playing as guest"');
-  await change({ coins: 7171 }); await t.sleep(300); ok(await settled() && !srv.saves[gst], 'playing on as a guest never pushes it either');
+  ok(!!(await d2.locator('#tContinue').count()) && /^Saved on this device only Log in$/.test(await line()), 'the game stays on this device: Continue + "Saved on this device only"');
+  await change({ coins: 7171 }); await t.sleep(300); ok(await settled() && !srv.saves[gst] && srv.users.length === nU0, 'playing on never pushes it or makes a user');
   ok((await ev(() => window.__pawCloud.status().text)) === 'Saved on this device', 'status: Saved on this device (not stuck on Syncing)');
 
   sec('desktop: after a log out, log in as B: the old account\'s game never lands in B');
@@ -411,6 +412,32 @@ run('account', async (t) => {
   const p8 = await device('Phone 360x740', false); t.p = p8;
   ok((await line()) === 'Cloud save works on the web version.', 'the note shows on phones too'); await layout('phone cloud off'); await audit('360_740_07_cloud_off');
 
+  // ---- offline log out (v2.3 re-check A, D) ----
+  sec('desktop: a log out while offline never loses or rolls back the newest change');
+  const dO = await device(null); t.p = dO;
+  await tap('#tReg'); await sheetOpen(); await form('reg', 'roll@example.com', 'roll12345');
+  await t.untilMode('adopt', 6000); await ev(() => window.__paw.go('title')); await dO.waitForSelector('#tNew'); await t.adopt({ sex: 'girl' });
+  const aR = await uid(); await change({ coins: 111 }); ok(await synced() && srv.saves[aR].data.coins === 111, 'the account has 111 coins in the cloud');
+  await ev(() => window.__paw.go('title')); await dO.waitForSelector('#tSwitch');
+  srv.offline.add(dO); await change({ coins: 222 }); const nU = srv.users.length;
+  await tap('#tSwitch'); await sheetOpen(); await tap('#acGuest'); await dO.waitForSelector('.confirm .yes'); await tap('.confirm .yes');
+  ok(await t.until(() => !window.__pawCloud.CL.uid && document.getElementById('modal').hidden && /Saved on this device only/.test(document.querySelector('#title .tacct').textContent), null, 8000), 'offline log out: "Saved on this device only" + Log in: ' + await line());
+  ok(srv.users.length === nU, 'Play as guest makes no orphan guest user for an account\'s game');
+  srv.offline.delete(dO); ok(srv.saves[aR].data.coins === 111, 'the 222 coins never reached the cloud (offline)');
+  await tap('#tSwitch'); await sheetOpen(); await tap('#acLogin'); await form('login', 'roll@example.com', 'roll12345');
+  ok(await t.until(() => document.getElementById('modal').hidden && !!document.getElementById('tContinue'), null, 8000) && (await ev(() => JSON.parse(localStorage.getItem('pawhaven_proto_v1')).coins)) === 222, 'log back in: the newer 222 coins stay, no roll-back');
+  ok(await t.until((u) => window.__pawCloud.status().state === 'synced', aR, 8000) && srv.saves[aR].data.coins === 222, 'and they reach the account\'s cloud');
+  srv.offline.add(dO); await change({ coins: 333 });
+  await ev(() => window.__pawCloud.open()); await dO.waitForSelector('[data-cl=logout]'); await tap('[data-cl=logout]'); await dO.waitForSelector('.confirm .yes'); await tap('.confirm .yes');
+  await t.until(() => !window.__pawCloud.CL.uid, null, 8000); srv.offline.delete(dO);
+  await tap('[data-cl=reg]'); await dO.waitForSelector('#clPw2');
+  await dO.fill('#clEmail', 'other@example.com'); await dO.fill('#clPw', 'other1234'); await dO.fill('#clPw2', 'other1234'); await tap('[data-cl=doReg]');
+  ok(await t.until(() => !!window.__pawCloud.CL.uid && !window.__pawCloud.CL.anon, null, 8000), 'Settings: Make account works');
+  const aO = await uid(); await t.until(() => !window.__pawCloud.CL.timer && !window.__pawCloud.CL.busy, null, 6000);
+  ok((await ev(() => JSON.parse(localStorage.getItem('pawhaven_proto_v1') || '{}').coins)) === 333, 'the unsynced 333 coins stay on this device');
+  ok(!srv.saves[aO] && !srv.backups.some((b) => b.user_id === aO), 'and never go into the new account');
+  await t.closeX();
+  // ---- end offline log out ----
   // ---- kitchen (v2.3 occlusion) ----
   // the food-safety lesson, the header hint, the dog's bubble and the kitchen taps on the two phone sizes
   for (const dev of ['Phone 390x844', 'Phone 360x740']) {
@@ -510,7 +537,7 @@ run('account', async (t) => {
     const R = (s) => { const e = document.querySelector(s); if (!e || e.hidden || getComputedStyle(e).display === 'none') return null; const b = e.getBoundingClientRect(); return b.width ? { t: b.top, b: b.bottom, l: b.left, r: b.right, h: b.height, w: b.width, c: (b.top + b.bottom) / 2 } : null; };
     const hud = R('#hud'), who = R('#hud .who'), coins = R('#coins'), more = R('#moreBtn'), meters = R('#meters'), bond = R('#hud .bond');
     const inRow = (x, row) => !!x && !!row && x.c >= row.t - 1 && x.c <= row.b + 1;
-    const chips = [...document.querySelectorAll('#hudPack .dchip')].map((e) => e.getBoundingClientRect());
+    const chips = [...document.querySelectorAll('#hudPack .dchip:not([hidden])')].map((e) => e.getBoundingClientRect());
     const rings = [...document.querySelectorAll('#meters .meter')].map((e) => e.getBoundingClientRect());
     const labels = [...document.querySelectorAll('#bar .act')].map((a) => { const s = a.querySelector(':scope > span:not(.ic)'), rg = document.createRange(); rg.selectNodeContents(s); return { t: s.textContent, fs: parseFloat(getComputedStyle(s).fontSize), w: rg.getBoundingClientRect().width, bw: a.clientWidth }; });
     const bar = document.getElementById('bar');
@@ -520,7 +547,7 @@ run('account', async (t) => {
       row2: !!meters && meters.t >= who.b - 1 && inRow(bond, meters) && rings.every((r) => inRow({ c: (r.top + r.bottom) / 2 }, meters)),
       inside: [who, coins, more, meters, bond].every((x) => x && x.b <= hud.b + 1 && x.r <= innerWidth + 1) && coins.r <= more.l && more.r <= innerWidth,
       taps: [more, ...rings.map((r) => ({ w: r.width, h: r.height })), ...chips.map((c) => ({ w: c.width, h: c.height }))].every((x) => x.w >= 43.5 && x.h >= 43.5),
-      nChips: chips.length, labels, barFits: bar.scrollWidth <= bar.clientWidth + 1 && labels.every((l) => l.w <= l.bw),
+      nChips: chips.length, more: (document.querySelector('#hudPack .dmore') || {}).textContent || '', hidden: document.querySelectorAll('#hudPack .dchip[hidden]').length, sx: [...document.querySelectorAll('#hudPack .dsx')].some((e) => e.getClientRects().length), labels, barFits: bar.scrollWidth <= bar.clientWidth + 1 && labels.every((l) => l.w <= l.bw),
       scroll: document.documentElement.scrollWidth - innerWidth
     };
   };
@@ -534,13 +561,23 @@ run('account', async (t) => {
       if (n === 4) await ev(() => { const P = window.__paw, S = P.S; while (S.dogs.length < 4) P.addDog({ key: ['corgi', 'golden', 'husky'][S.dogs.length - 1], sex: S.dogs.length % 2 ? 'male' : 'female' }, ['Biscuit', 'Pal', 'Mo'][S.dogs.length - 1]); });
       for (const pl of ['yard', 'market']) {
         await t.home(pl);
-        ok(await t.until((k) => document.querySelectorAll('#hudPack .dchip').length === k && !!document.querySelector('#bar .act'), n - 1, 4000), `${dev} ${n} dog(s) ${pl}: ${n - 1} other dog chip(s) in the HUD`);
+        ok(await t.until((k) => document.querySelectorAll('#hudPack .dchip:not(.dmore)').length === k && !!document.querySelector('#bar .act'), n - 1, 4000), `${dev} ${n} dog(s) ${pl}: ${n - 1} other dog chip(s) in the HUD`);
         const h = await ev(HUD), lb = `${dev} ${n} dog(s) ${pl}`;
         ok(h.h <= 102 && h.viewTop >= h.hudTop + h.h - 1, `${lb}: the HUD is about 100 px (${h.h})`);
         ok(h.row1, `${lb}: row 1 = dog chip(s), name, coins and the ... menu on one line`);
         ok(h.row2, `${lb}: row 2 = the 4 rings with Bond beside them (no 3rd row)`);
         ok(h.inside, `${lb}: everything stays inside the HUD and on screen, coins before the menu`);
         ok(h.taps, `${lb}: menu, rings and dog chips are >= 44 px`);
+        if (n === 4) {
+          ok(await t.until(() => { const p = document.getElementById('hudPack'); return p.scrollWidth <= p.clientWidth + 3; }, null, 3000) && (!h.hidden || h.more === '+' + h.hidden), `${lb}: every other dog is a chip or counted in a +N chip (${h.nChips - (h.more ? 1 : 0)} shown, ${h.more || 'none hidden'})`);
+          ok(!h.sx, `${lb}: no tiny sex symbols poking out of the chips`);
+          if (h.more && pl === 'yard') {
+            await tap('#hudPack .dmore'); ok(await t.until(() => document.querySelectorAll('.packpick [data-dog]').length === 3, null, 4000), `${lb}: the +N chip opens the pack with all 3 other dogs`);
+            await audit(`${tag}_hud_pack_sheet`);
+            const pick = await ev(() => document.querySelector('.packpick [data-dog]').dataset.dog); await tap('.packpick [data-dog]');
+            ok(await t.until((id) => window.__paw.S.activeId === id && document.getElementById('modal').hidden, pick, 4000), `${lb}: picking a dog there switches to it`);
+          }
+        }
         ok(h.labels.every((l) => l.fs >= 14.95), `${lb}: action-bar labels >= 15 px ${h.labels.map((l) => l.t + ' ' + l.fs).join(', ')}`);
         ok(h.barFits, `${lb}: every label fits its button, the bar never overflows ${h.labels.map((l) => l.t + ' ' + l.w.toFixed(1) + '/' + l.bw).join(', ')}`);
         ok(h.scroll <= 0, `${lb}: no sideways scroll (${h.scroll})`);

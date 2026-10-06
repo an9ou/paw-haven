@@ -32,6 +32,18 @@ html[data-layout="phone"] #hudPack:empty{display:none}
 html[data-layout="phone"] #hudPack{flex:0 1 auto;min-width:44px;margin:-7px 0 -4px 0;padding:7px 4px 4px 5px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:none}
 html[data-layout="phone"] #hudPack::-webkit-scrollbar{display:none}
 html[data-layout="phone"] #hudPack .dchip{flex:none}
+/* v2.3: 36 px chip circles inside full 44 px tap boxes (overlapping by 6 px), the sex symbol dropped (the pack sheet shows it), and a "+N" chip */
+html[data-layout="phone"] #hudPack .dchip{width:44px;height:44px;padding:6px;margin-right:-6px;border:0;background:none;isolation:isolate}
+html[data-layout="phone"] #hudPack .dchip::before{content:"";position:absolute;inset:4px;z-index:-1;border:2px solid var(--ink);border-radius:50% 46% 52% 48%;background:var(--paper)}
+html[data-layout="phone"] #hudPack .dchip .dsx{display:none}
+html[data-layout="phone"] #hudPack .dchip .mood{right:2px;bottom:3px}
+html[data-layout="phone"] #hudPack .dchip[hidden]{display:none}
+html[data-layout="phone"] #hudPack .dmore{font-family:var(--font-hand);font-weight:700;font-size:20px;line-height:1;color:var(--ink);padding:0}
+html[data-layout="phone"] #hudPack .dmore::before{background:var(--w-yellow)}
+.packpick{display:flex;flex-wrap:wrap;gap:12px;padding:4px 2px 8px}
+.packpick .card{min-height:44px}
+.packpick .pp-head{display:block;width:64px;height:64px}
+.packpick .pp-head svg{width:100%;height:100%;display:block}
 /* a soft fade on the cut chip, only while there is more to scroll (a scroll-driven animation is inactive when nothing overflows; no support = a plain clip) */
 @property --phPackFade{syntax:'<length>';inherits:false;initial-value:0px}
 @keyframes phPackFade{from{--phPackFade:22px}92%{--phPackFade:22px}to{--phPackFade:0px}}
@@ -113,3 +125,5 @@ html[data-layout="phone"] #toasts{top:auto;bottom:calc(var(--barH) + 12px + env(
 html[data-layout="phone"] #stage.nobar #toasts{bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 html[data-layout="phone"] #stage:has(#modal:not([hidden])) #toasts{top:calc(env(safe-area-inset-top,0px) + 6px)!important;bottom:auto!important}
 html[data-layout="phone"] #stage:has(#modal:not([hidden])) #toasts .toast:nth-last-child(n+3){display:none}
+/* v2.3: the +N chip replaces the sideways scroll and its fade (phChipsFit in 13_more_dogs.js) */
+html[data-layout="phone"] #hudPack{gap:0;-webkit-mask-image:none;mask-image:none;animation:none}
