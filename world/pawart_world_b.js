@@ -3290,7 +3290,8 @@ Object.assign(ICONS,{
 
 /* ---------- props: missions card, stamp card, Gerald ---------- */
 const mcRows=[116,158,200];
-function wrapTxt(s,max){const w=String(s).split(' '),L=[''];w.forEach(x=>{const c=L[L.length-1];if(c&&(c+' '+x).length>max)L.push(x);else L[L.length-1]=c?c+' '+x:x});return L.slice(0,2)}
+// word wrap by visible characters (an escaped entity counts as one); Caveat bold is about 5.7 units a character at 16
+function wrapTxt(s,max,n){const w=String(s).split(' '),L=[''];w.forEach(x=>{const c=L[L.length-1];if(c&&txLen(c+' '+x)>max)L.push(x);else L[L.length-1]=c?c+' '+x:x});return L.slice(0,n)}
 const txLen=s=>String(s).replace(/&[a-z#0-9]+;/gi,'x').length;
 PROPS.missioncard=function(b,o){
   b.shadow(100,256,86,4);
@@ -3307,17 +3308,19 @@ PROPS.missioncard=function(b,o){
   b.tx(100,86,o.day||'',15,{op:.75});
   mcRows.forEach((y,i)=>{const it=items[i];
     if(!it){b.raw(b.st(`M60 ${y+2}H160`,GRAPH,1.4,.6).replace('stroke-linecap','stroke-dasharray="4 4" stroke-linecap'));return}
-    const L=wrapTxt(it.text,20),two=L.length>1;
-    if(it.done){done++;L.forEach((ln,k)=>b.raw(`<path d="M60 ${y+(two?-6+k*16:1)}H${R1(Math.min(170,62+txLen(ln)*6.4))}" stroke="#FFE59A" stroke-width="12" stroke-linecap="round" opacity=".7"/>`));
+    // text stays left of x 146 (the paper ends near 176); p/n sits right-aligned at the row's end, between the rules
+    let fs=16,lh=16,L=wrapTxt(it.text,14,9);if(L.length>2){fs=13;lh=13;L=wrapTxt(it.text,18,3)}
+    const y0=y+6-(L.length-1)*lh/2;
+    if(it.done){done++;L.forEach((ln,k)=>b.raw(`<path d="M60 ${R1(y0-5+k*lh)}H${R1(Math.min(144,62+txLen(ln)*fs*.37))}" stroke="#FFE59A" stroke-width="${fs*.75}" stroke-linecap="round" opacity=".7"/>`));
       b.raw(`<path d="M34 ${y-1}l6 7l14 -18" fill="none" stroke="${C.leafD}" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M34 ${y-1}l6 7l14 -18" fill="none" stroke="#fff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/>`,'top')}
-    L.forEach((ln,k)=>b.tx(60,y+(two?-1+k*16:6),ln,16,{anchor:'start'}));
-    if(it.n>1)b.tx(42,y+24,Math.min(it.p,it.n)+'/'+it.n,12,{op:.75});
+    L.forEach((ln,k)=>b.tx(60,R1(y0+k*lh),ln,fs,{anchor:'start'}));
+    if(it.n>1)b.tx(172,y+5,Math.min(it.p,it.n)+'/'+it.n,13,{anchor:'end',op:.75});
   });
   const st=Math.max(0,Math.min(7,o.stamps|0));
   for(let i=0;i<7;i++){const x=40+i*13,y=234;if(i<st)paw(b,x,y+1,2.6,C.pinkD,{noline:1});else b.raw(`<circle cx="${x}" cy="${y}" r="4.6" fill="none" stroke="${GRAPH}" stroke-width="1" stroke-dasharray="2 2"/>`)}
   b.sh(E(158,229,17,15,18),done===3?C.green:C.yel,{hatch:0,hl:0,lw:1.1,dr:.3});
   b.tx(158,236,done+'/3',19,{});
-  if(done===3){b.ex('spark',184,206,5);b.ex('spark',134,214,3.6)}
+  if(done===3)b.ex('spark',184,206,5);
 };
 const SC_SPOTS=[[48,66],[96,66],[144,66],[192,66],[72,108],[120,108],[168,108]];
 PROPS.stampcard=function(b,o){

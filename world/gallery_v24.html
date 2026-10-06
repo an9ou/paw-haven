@@ -43,8 +43,8 @@ HOUSES.forEach(n=>pair('hcards',n,['Royal Canopy Bed'],PA.item,W?72:96));
 [['missions','check'],['guide','house'],['stamp','heart']].forEach(([n,o])=>pair('icons',n,[o],PA.icon,W?72:96));
 ['point','wave','sit','cheer'].forEach(p=>{const d=document.createElement('div');d.className='pair';d.innerHTML=fig(PA.prop('gerald',{pose:p}),'Gerald: '+p,W?140:160);document.getElementById('gerald').appendChild(d)});
 {const d=document.createElement('div');d.className='pair old';const k=PA.DOGS?PA.DOGS[0].key:null;d.innerHTML=k?fig(PA.dog(k,{pose:'sit'}),'crayon dog',W?170:200,1)+fig(PA.dog(PA.DOGS[4].key,{}),'crayon dog',W?170:200,1):'';document.getElementById('gerald').appendChild(d)}
-const MC=[{items:[{text:'Feed Biscuit a snack',done:true,p:1,n:1},{text:'Walk at Sunny Park',done:false,p:0,n:1},{text:'Pet Biscuit 3 times',done:false,p:1,n:3}],stamps:2,day:'Tuesday 6 October'},
-  {items:[{text:'Play with the Squeaky Duck',done:true,p:1,n:1},{text:'Give Biscuit a bath',done:true,p:1,n:1},{text:'Water the garden twice',done:true,p:2,n:2}],stamps:7,day:'Wednesday 7 October'}];
+const MC=[{items:[{text:'Feed Biscuit a snack',done:true,p:1,n:1},{text:'Try a new snack from Kibble Corner',done:false,p:1,n:2},{text:'Clean up after Mochi',done:false,p:1,n:2}],stamps:2,day:'Tuesday 6 October'},
+  {items:[{text:'Play with the Squeaky Duck',done:true,p:1,n:1},{text:'Give Biscuit a bath',done:true,p:1,n:1},{text:'Visit the Seashell Beach and find a treasure there',done:true,p:2,n:2}],stamps:7,day:'Wednesday 7 October'}];
 MC.forEach((o,i)=>{const d=document.createElement('div');d.className='pair';d.innerHTML=fig(PA.prop('missioncard',o),'missioncard '+(i?'all done':'1 of 3'),W?170:200);document.getElementById('cards').appendChild(d)});
 [0,3,7].forEach(s=>{const d=document.createElement('div');d.className='pair';d.innerHTML=fig(PA.prop('stampcard',{stamps:s}),'stampcard '+s,W?300:240);document.getElementById('cards').appendChild(d)});
 </script></body></html>
