@@ -572,7 +572,7 @@
     var buddy = o.buddy !== undefined ? o.buddy : (BUDDY[dogKey] || null);
     var seeds = Object.assign({}, o.seeds || {});
     var sel = -1, tool = null, armed = null, dug = {}, pouchFor = -1, modal = null, pendingFluff = {}, busy = 0;
-    var tempPose = null, tempTimer = 0, bubbleTimer = 0, lastPose = '';
+    var tempPose = null, tempTimer = 0, bubbleTimer = 0, lastPose = '', bubbleOn = false;
     var R = mulberry(hash(dogKey + '|' + Date.now()));
     function call(fn) { var f = o[fn]; if (typeof f !== 'function') return undefined; try { return f.apply(null, [].slice.call(arguments, 1)); } catch (e) { if (typeof console !== 'undefined') console.warn('PawGarden callback ' + fn + ' failed', e); return undefined; } }
     function sfx(n) { call('sfx', n); }
@@ -687,8 +687,8 @@
     }
     function say(t, ms) {
       if (closed || !t) return;
-      var b = q('.pg-bubble'); b.textContent = t; b.classList.add('pg-show');
-      clearTimeout(bubbleTimer); bubbleTimer = later(function () { b.classList.remove('pg-show'); }, ms || 2600);
+      var b = q('.pg-bubble'); b.textContent = t; b.classList.add('pg-show'); bubbleOn = true; pLayout();
+      clearTimeout(bubbleTimer); bubbleTimer = later(function () { b.classList.remove('pg-show'); bubbleOn = false; pLayout(); }, ms || 2600);
     }
     function hint(t) { var h = q('.pg-hint'); if (h) h.textContent = t; }
     function float(x, y, text, cls) {
@@ -774,7 +774,7 @@
     function kb(k) { return PORT ? '' : ' (' + k + ')'; } // keyboard hints only off phones
     function pLayout() { // v2.3 phone: the plot card, the weather chips and the dog stack in one column, whatever height the card has
       if (!PORT) return; var inf = q('.pg-info'), ch = q('.pg-chips'), dw = q('.pg-dogw'); if (!inf || !ch) return;
-      var t = inf.offsetTop + inf.offsetHeight + 16; ch.style.top = t + 'px'; if (dw) dw.style.top = t + 'px'; root.style.setProperty('--pg-dogtop', t + 'px');
+      var t = inf.offsetTop + inf.offsetHeight + 16; var bb = q('.pg-bubble'), push = bubbleOn && bb ? bb.offsetHeight + 8 : 0; /* the chips drop below the dog's bubble while it shows, so it never hides one */ ch.style.top = (t + push) + 'px'; if (dw) dw.style.top = t + 'px'; root.style.setProperty('--pg-dogtop', t + 'px');
     }
     function renderInfo() {
       var box = q('.pg-info'), p = st.plots[sel], c = p && BY_ID[p.crop];
