@@ -49,7 +49,8 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 
 ## Phone (v2.3)
 - [ ] Realtime sync still needs a real two-phone check. The mocked suite covers it. `game/src/22b_cloud.js`
-- [ ] Playdate pals' noses nearly touch in the bow pose at 390 px wide.
+- [ ] Playdate pals' noses nearly touch in the bow pose at 390 px wide. `game/css/24_phone_puppy.css`
+- [ ] With puppies, the nursery basket sits right of the phone view and is reached with "look right" (accepted in v2.3). `game/src/03_yard.js`
 - [ ] The map zoom buttons were checked clear of the labels only in the default (unpanned) view. `game/src/08_map.js`
 - [ ] Owner: confirm the Supabase project auto-confirms email changes (Confirm email off), so "No email is ever sent" stays true.
 - [ ] The "look right" peek button and the nap details card are new. Check both once on a real phone.
