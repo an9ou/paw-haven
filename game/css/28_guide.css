@@ -68,6 +68,7 @@ html[data-layout="phone"] .gd-skl{display:none}
 html[data-layout="phone"] .gd-sks{display:inline}
 /* while the strip sits under the HUD, toasts drop below it (core toast() sets an inline top, hence !important) */
 html[data-layout="phone"] #stage.gd-top #toasts{top:var(--gdToastTop)!important;bottom:auto!important}
+html:not([data-layout="phone"]) #stage.gd-topd #toasts{left:var(--gdTL);width:var(--gdTW);transform:none}
 html[data-layout="phone"] .gd-lessons{grid-template-columns:minmax(0,1fr)}
 html[data-layout="phone"] .gd-lesson{font-size:15px}
 html[data-layout="phone"] .gd-head .gd-duck{width:72px;height:72px}

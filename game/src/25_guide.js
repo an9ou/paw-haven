@@ -149,10 +149,16 @@ function gdSkip() {
   if (!S || !S.guide) return; S.guide.skipped = localISO(); markDirty(); gdStop();
   toast('Gerald waddles back to the river. The guide is in your Journal, under How to play.');
 }
-// phones: while the strip sits under the HUD, the toasts drop below it (28_guide.css reads --gdToastTop)
+// while the card sits under the HUD the toasts keep clear of it. Phones: they drop below the strip (--gdToastTop).
+// Desktop: the toast column narrows to the widest free band beside the card, clear of the location chip (--gdTL, --gdTW). 28_guide.css applies both.
 function gdToasts(top) {
-  const on = !!top && isPhone(); stage.classList.toggle('gd-top', on);
-  if (on) { const c = $('.gd-card', gd.layer); stage.style.setProperty('--gdToastTop', Math.round(c.getBoundingClientRect().bottom - stage.getBoundingClientRect().top + 10) + 'px'); } // stage coordinates, like #toasts
+  const ph = isPhone(), onP = !!top && ph, onD = !!top && !ph; stage.classList.toggle('gd-top', onP); stage.classList.toggle('gd-topd', onD);
+  if (!top) return; const c = $('.gd-card', gd.layer), cr = gdR(c);
+  if (onP) { stage.style.setProperty('--gdToastTop', Math.round(cr.b + 10) + 'px'); return; } // stage coordinates, like #toasts
+  const v = gdR(view), st = $('#status'), chip = st && !st.hidden && st.getClientRects().length ? gdR(st) : null;
+  const left = [Math.max(v.l + 12, chip && chip.r < cr.l ? chip.r + 10 : v.l + 12), cr.l - 10], right = [cr.r + 10, v.r - 12];
+  const band = left[1] - left[0] >= right[1] - right[0] ? left : right;
+  stage.style.setProperty('--gdTL', Math.round(band[0]) + 'px'); stage.style.setProperty('--gdTW', Math.max(160, Math.round(band[1] - band[0])) + 'px');
 }
 function gdStop() { gdToasts(false); gd.on = false; clearInterval(gd.timer); gd.timer = 0; gd.shown = -1; if (gd.layer) { $('.gd-card', gd.layer).hidden = true; $('.gd-card', gd.layer).classList.remove('gd-out'); $('.gd-ring', gd.layer).hidden = true; } }
 function gdStart() {

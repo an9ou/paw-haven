@@ -20,19 +20,28 @@ run('v24_guide', async (t) => {
     ok(fine, `${label}: the card clears the dog and the ringed button ${bad}`);
   };
   const step = async (i, label) => { ok(await atStep(i), `step ${i} (${label}) shows`); await clearOf(`step ${i}`); await t.SH(`desk_step${i}_${label}`); };
+  // a toast up at steps 0 and 1: the toast column keeps clear of the card and of the location chip (a plain .toast is added if the start-of-game ones timed out)
+  const toastCheck = async (i) => {
+    await t.ev(() => { const box = document.getElementById('toasts'); if (box.querySelector('.toast')) return; const d = document.createElement('div'); d.className = 'toast'; d.textContent = 'Rub the dog to pet. Tap Feed to fill the bowl.'; box.appendChild(d); setTimeout(() => d.remove(), 2900); });
+    await t.until(() => !!document.querySelector('#toasts .toast'), null, 2000);
+    const r = await t.ev(() => { const R = (e) => { const q = e.getBoundingClientRect(); return [q.left, q.top, q.right, q.bottom]; }; const st = document.getElementById('status'); return { card: R(document.querySelector('#gdLayer .gd-card')), chip: st && !st.hidden ? R(st) : null, toasts: [...document.querySelectorAll('#toasts .toast')].map(R) }; });
+    ok(r.toasts.length > 0 && !r.toasts.some((q) => t.hitR(q, r.card)), `step ${i} with a toast showing: no toast on the card ${JSON.stringify(r.toasts.map((q) => q.map(Math.round)))} vs card ${JSON.stringify(r.card.map(Math.round))}`);
+    ok(!r.chip || !r.toasts.some((q) => t.hitR(q, r.chip)), `step ${i}: the toasts stay off the location chip`);
+    await t.SH(`desk_step${i}_toast`);
+  };
   const next = async () => { await t.p.click('#gdLayer .gd-next'); };
 
   sec('new save: step 0 after the intro');
   await t.newGame({ prefs: { gdTest: true } }, { bond: { level: 1, pts: 0 }, coins: 50, stats: { hunger: 50, happy: 70, energy: 60, clean: 90 } });
   p = t.p; await t.freezeMotion(true);
-  await step(0, 'hello');
+  await step(0, 'hello'); await toastCheck(0);
   ok(/I am Gerald/.test(await p.textContent('#gdLayer .gd-txt')), 'step 0 text');
   ok((await t.S()).guide.step === 0, 'S.guide.step is 0');
   ok(await p.locator('#gdLayer .gd-dot').count() === 10, '10 step dots');
   ok(await ev(() => getComputedStyle(document.querySelector('#gdLayer .gd-card')).pointerEvents === 'none'), 'the card itself lets clicks through');
 
   sec('feed advances step 1');
-  await next(); await step(1, 'feed');
+  await next(); await step(1, 'feed'); await toastCheck(1);
   ok(await ev(() => document.querySelector('#gdLayer .gd-ring').dataset.for === '#bar [data-act=feed]'), 'the Feed button is ringed');
   const name = (await t.S()).dog.name; ok((await p.textContent('#gdLayer .gd-txt')).includes(name), 'the text names the dog');
   await p.click('[data-act=feed]'); await t.waitPop(true); ok(await gone(), 'the card hides while the Feed tray is open');
