@@ -633,7 +633,8 @@ function sqSquare(k){
   // the square: perspective flagstones, a cobble ring around the fountain
   k.fill([[0,394],[1000,394],[1000,600],[0,600]],'#E8E1D6',{dx:0,dy:0,sc:0});k.pen([[0,396],[500,394],[1000,396]],false,{w:2});
   paving(k,396,600,500,250,'#BFB2A2','#DDD4C8');
-  k.ss(()=>{seasonGround(k,[0,400,1000,598],100,[[630,306,854,518]],0,1);if(k.so==='winter')wreath(k,560,352,1.2)});// v2.5
+  k.ss(()=>{const so=k.so;if(so==='autumn')k.add('<rect y="396" width="1000" height="204" fill="#F2B25C" fill-opacity=".08"/>');// v2.5: warmer paving in autumn
+    seasonGround(k,[0,400,1000,598],100,[[630,306,854,518]],0,1);if(so==='autumn')seasonGround(k,[200,528,520,598],40,[],0,1);if(so==='winter')wreath(k,560,352,1.2)});// v2.5
   k.fx(()=>{if(k.env.rain){sheen(k,0,1000,404,598,64,HZ);[[450,580,48,9],[760,562,40,8],[930,476,30,6],[60,560,34,7]].forEach(q=>puddle(k,...q))}
     if(k.env.snow){[[450,580,74,13],[760,566,62,11],[934,478,46,9],[70,566,50,9],[300,420,50,8]].forEach(q=>snowPatch(k,...q))}});
   // benches against the shops, lamp posts
@@ -673,6 +674,10 @@ function sqSquare(k){
   {const pg=(x,y,f)=>{k.shape(E(x,y,11,7,10),'#B7B5C9',{w:1.5,one:1});k.shape(E(x+9*f,y-8,5,5,8),'#C9C7D8',{w:1.4,one:1});k.add(`<path d="M${x+14*f} ${y-8}l${4*f} 1 ${-4*f} 2z" fill="${C.orange}"/><circle cx="${x+10*f}" cy="${y-9}" r="1.1" fill="${C.ink}"/><path d="M${x-2} ${y+6}v4M${x+3} ${y+6}v4" stroke="#E8945A" stroke-width="1.4"/>`)};pg(600,566,1);pg(640,580,-1);k.add(`<g fill="#E8C58A"><circle cx="618" cy="586" r="1.6"/><circle cx="626" cy="582" r="1.4"/><circle cx="612" cy="590" r="1.3"/></g>`)}
   fl(k,[[880,584,C.red],[580,592,'#FFB3C7'],[262,588,C.lav],[40,560,C.yellow],[70,580,C.red],[20,590,C.lav]]);
   k.ss(()=>{const so=k.so;if(so==='spring')bulbs(k,968,446,4,.9);else if(so==='autumn')pumpkin(k,930,484,.9);// v2.5
+    {const px=446,gy=420;k.shape([[px-30,gy],[px+30,gy],[px+34,gy-24],[px-34,gy-24]],C.stone,{w:1.8,hatch:{side:.6,gap:4,col:C.stoneD,op:.55}});k.shape(RC(px-38,gy-30,76,7),C.stoneD,{w:1.5,one:1});// a stone planter in the phone crop
+     if(so==='spring'){bulbs(k,px,gy-28,6,1.1);petalAt(k,px-44,gy+4,4,.4,PET[0]);petalAt(k,px+40,gy+8,4,1.9,PET[2])}
+     else if(so==='autumn'){for(let i=0;i<6;i++)flowerDot(k,px-24+i*9.6,gy-36-(i%2)*7,4.2,['#EC9A4E','#F3BE55','#DF7556'][i%3]);k.add(`<path d="M${px-28} ${gy-30}q6 -8 12 -2q6 -8 12 -2q6 -8 12 -2q6 -8 12 -2" fill="none" stroke="#7D9A55" stroke-width="1.6"/>`);pumpkin(k,px+46,gy+4,1.15);pumpkin(k,px+66,gy+6,.8);pumpkin(k,px-48,gy+5,.9)}
+     else if(so==='winter'){for(let i=0;i<5;i++)winterFlower(k,px-22+i*11,gy-40,4.5);frostLine(k,[[px-37,gy-30],[px+37,gy-30]]);frostLine(k,[[px-33,gy-23],[px+33,gy-23]])}}
     if(so==='winter'&&!k.env.night)robin(k,330,348,1.1,1);if(so==='spring'&&!k.env.night&&!k.env.rain)butterfly(k,420,330,1);
     seasonDrift(k,[[300,250,1],[500,170,.9],[760,250,1],[900,310,.85],[200,350,.8]])});
   O.sparkle(k,700,220,7);O.heart(k,400,150,6);O.note(k,460,230,11);
