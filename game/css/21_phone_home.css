@@ -47,3 +47,19 @@ html[data-layout="phone"] #view:has(#placeBtns [data-sh]) #phPeek{top:calc(24% -
 html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row{align-items:stretch}
 html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row > .card{min-height:0;height:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 6px 10px}
 html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row > .card > b{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+/* v2.5 FIXES A: every card in the Feed / Play / Care / snacks trays is reachable (owner: "Feed: tap a food" showed 3 cards and the rest were out of reach).
+   The cards turn sideways (art on the left, name and note on the right) and, from 4 cards on, stack in two rows: four show whole at once, the next column peeks
+   out and the right edge fades (as on Market Street), and the tray is no taller than the old single row. Cards pan both ways, so a swipe that starts on a card
+   scrolls the row. The end padding lets the last column clear the fade. */
+html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row{display:grid;grid-auto-flow:column;grid-template-rows:auto;grid-auto-columns:calc((100vw - 52px) / 2.2);gap:8px 8px;align-items:stretch;justify-content:start;padding:4px 2px 8px;scroll-padding-inline:2px}
+html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row:has(> .card:nth-of-type(4)){grid-template-rows:auto auto}
+html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row:has(> .card:nth-of-type(5)){padding-right:40px;
+  -webkit-mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 30px),transparent 100%);mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 30px),transparent 100%)}
+html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row > .card{width:auto;min-width:0;min-height:58px;flex:none;touch-action:pan-x pan-y;display:grid;grid-template-columns:40px minmax(0,1fr);grid-template-rows:auto auto;column-gap:6px;align-content:center;align-items:center;justify-items:start;text-align:left;padding:6px 6px 7px 6px}
+html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row > .card .art{grid-column:1;grid-row:1 / 3;width:40px;height:40px}
+html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row > .card > b{grid-column:2;grid-row:1;align-self:end;font-size:19px;line-height:.98;max-width:100%}
+html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row > .card > .small{grid-column:2;grid-row:2;align-self:start;font-size:15px;line-height:1.05;max-width:100%;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row > .card > .small:empty{display:none}
+html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row > .card:not(:has(> .small:not(:empty))) > b{grid-row:1 / 3;align-self:center}
+html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row > .card .cnt{min-width:24px;height:24px;font-size:15px;right:-3px;top:-6px;z-index:1}
+html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row > :not(.card){grid-row:1 / -1}

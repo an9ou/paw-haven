@@ -309,6 +309,7 @@
     '.pg-tool:hover,.pg-btn:hover{transform:translateY(-1px) rotate(-1.5deg)}.pg-tool:active,.pg-btn:active{transform:translateY(1px);box-shadow:1px 1px 0 rgba(91,61,50,.25)}',
     '.pg-tool:focus-visible,.pg-btn:focus-visible,.pg-pk:focus-visible{outline:2.5px dashed #F28FA5;outline-offset:3px}',
     '.pg-btn{font-size:25px;padding:0 16px 3px;background:#C8E9CF}',
+    '.pg-x{width:46px;height:46px;padding:0;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex:none;font-size:26px}.pg-x svg{width:28px;height:28px}',
     '.pg-btn.pg-pink{background:#F9D0D9}.pg-btn.pg-yel{background:#FFE3A1}.pg-btn.pg-blue{background:#D7E7F8}.pg-btn.pg-sm{font-size:21px;padding:0 10px 2px}',
     '.pg-btn[disabled]{opacity:.45;cursor:default;transform:none}',
     /* chips (left column) */
@@ -381,6 +382,9 @@
     '.pg-portrait .pg-tool small{font-size:15px;margin-left:5px}',
     '.pg-portrait .pg-done{font-size:19px;padding:0 10px 3px;min-height:56px;min-width:56px}',
     '.pg-portrait .pg-pouch .pg-btn{min-width:56px}',
+    /* v2.5: the pouch's close X sits in its top-right corner and stays there: the title row sticks while the seed packets scroll under it */
+    '.pg-portrait .pg-pouch h3{position:sticky;top:-10px;z-index:3;background:#FFFBF3;margin:-10px -14px 6px;padding:10px 14px 6px;border-radius:14px 10px 0 0}',
+    '.pg-portrait .pg-pouch .pg-x{width:52px;height:52px;min-width:52px;min-height:52px}',
     '.pg-portrait .pg-tool i{width:24px;height:24px}',
     '.pg-portrait .pg-btn{min-height:54px}',
     '.pg-portrait .pg-chips{left:128px;right:8px;top:700px;flex-direction:column;flex-wrap:nowrap;gap:5px}',
@@ -848,7 +852,7 @@
       var owned = CROPS.filter(function (c) { return (seeds[c.id] | 0) > 0; });
       owned.sort(function (a, b) { var ia = a.seasons.indexOf(sz) >= 0 ? 0 : 1, ib = b.seasons.indexOf(sz) >= 0 ? 0 : 1; return ia - ib || CROPS.indexOf(a) - CROPS.indexOf(b); });
       var box = document.createElement('div'); box.className = 'pg-pouch';
-      var h = '<h3><span>Seed pouch' + (target >= 0 ? ' · plot ' + (target + 1) : '') + '</span><button type="button" class="pg-btn pg-pink pg-sm" data-x="1">Close</button></h3>';
+      var h = '<h3><span>Seed pouch' + (target >= 0 ? ' · plot ' + (target + 1) : '') + '</span><button type="button" class="pg-btn pg-pink pg-x" data-x="1" aria-label="Close the seed pouch">' + art('icon', 'close', null, function () { return '&times;'; }) + '</button></h3>';
       if (!owned.length) h += '<div class="pg-empty">' + NO_SEEDS + '.</div>';
       else {
         h += '<div class="pg-pks">';

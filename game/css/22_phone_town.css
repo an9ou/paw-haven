@@ -16,13 +16,17 @@ html[data-layout="phone"] #view:has(#placeBtns [data-sh]) #placeBtns .btn { flex
 
 /* v2.3 TOWN-2 (phone map): the close X never covers the location chip (the chip stops short of it and wraps), and the zoom stack moves to the bottom-left edge, above the "go there" chip, clear of the places and the "go there" chip, with 44 px targets and breathing room; the "100%" pill gets the same hand-drawn frame as the buttons. */
 html[data-layout="phone"] #view:has(#mapPan) #status { max-width: calc(100% - 80px); white-space: normal; line-height: 1.15; text-wrap: balance; }
-/* the map's controls (X, +, 100%, -) live in a gutter on the right that the map never draws under, so they cover no place, label or hotspot wherever the map is panned */
-html[data-layout="phone"] #mapPan { right: 64px; }
+/* v2.5 FIXES A: the map uses the full width. The controls (X, +, 100%, -) float over the map in one column at the top right, over the hills band where no place
+   label sits, with no gutter or bar behind them. mapApply lets the map over-pan 40 px at each edge of the pan box: the box starts 40 px left of the screen, so the
+   west edge stops flush with the screen (no blank strip), and ends 16 px short of the right edge, so a drag can still pull the east edge (and any label under the
+   column) out to the column's left side (the box does not clip, so the map still draws to the screen edge). The dev button leaves the column for the bottom-left corner. */
+html[data-layout="phone"] #mapPan { left: -40px; right: 16px; overflow: visible; }
 html[data-layout="phone"] #mapX { right: 8px; top: 8px; }
-html[data-layout="phone"] #mapZoom { top: 72px; bottom: auto; left: auto; right: 10px; gap: 8px; }
+html[data-layout="phone"] #mapZoom { top: 64px; bottom: auto; left: auto; right: 9px; gap: 6px; }
+html[data-layout="phone"] #view:has(#mapPan) #devBtn { top: auto; right: auto; left: 8px; bottom: 8px; }
 html[data-layout="phone"] #mapZoom .btn { width: 44px; height: 44px; min-height: 44px; font-size: 26px; }
 html[data-layout="phone"] #mapZoom span { --fr: var(--fr-btn); --wash: var(--paper); min-width: 44px; min-height: 30px; line-height: 30px; text-align: center; border: 0; border-radius: 13px 9px 15px 8px; padding: 0 4px;
-  background: var(--fr) 0 0/100% 100% no-repeat, var(--hatch) var(--ins), linear-gradient(var(--wash), var(--wash)) var(--ins); }
+  background: var(--fr) 0 0/100% 100% no-repeat, var(--wf); }
 
 /* v2.3 TOWN-1 (desktop): the Market Street buttons used to sit on the baked-in "Market Street" sign and Pip's cart. They now sit bottom-left in two short rows on the empty cobbles
    (clear of the dog's feet, the sign and the cart), and toasts drop to the awning band so they never cover a shop sign. */

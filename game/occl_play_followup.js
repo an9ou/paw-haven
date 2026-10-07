@@ -97,7 +97,7 @@ module.exports = {
     ok(fx.dock === 0 && fx.xs === 1, `${tag} fetch results: no fetch tray behind the sheet and one X (tray ${fx.dock}, X buttons ${fx.xs})`);
     await ev(() => document.getElementById('fOk').click()); await t.untilMode('yard');
 
-    // map controls live in a right-hand gutter the map never draws under: nothing is covered wherever the map is centred
+    // map controls float over the map (v2.5): on screen, and the centred place's label is never under them
     await H.at('vet');
     await ev(() => window.__paw.go('map'));
     ok(await t.until(() => window.__paw.mode === 'map', null, 6000), `${tag} map: opens`);
@@ -106,7 +106,9 @@ module.exports = {
       const g = await ev(() => { const pan = document.getElementById('mapPan').getBoundingClientRect(), x = document.getElementById('mapX').getBoundingClientRect(), z = document.getElementById('mapZoom').getBoundingClientRect(); return { pan: pan.right, x: x.left, z: z.left, xr: x.right, zr: z.right, vw: innerWidth }; });
       const pinIn = k !== 'vet' || await ev(() => { const pin = document.getElementById('mapPin'), pan = document.getElementById('mapPan').getBoundingClientRect(); if (!pin || pin.hidden) return true; const r = pin.getBoundingClientRect(); return r.right < pan.left || r.left > pan.right || (r.left >= pan.left - 0.5 && r.right <= pan.right + 0.5); });
       ok(pinIn, `${tag} map centred on ${k}: the pin and its label are not cut by the map edge`);
-      ok(g.x >= g.pan - 0.5 && g.z >= g.pan - 0.5 && g.xr <= g.vw + 0.5 && g.zr <= g.vw + 0.5, `${tag} map centred on ${k}: the X and the zoom stack sit beside the map, not on it (map ends ${Math.round(g.pan)}, X ${Math.round(g.x)}, zoom ${Math.round(g.z)})`);
+      // v2.5 (owner's feedback): no gutter any more. The controls float over a full-width map, on screen, and the place the map centres on stays clear of them
+      const lab = await ev((k) => { const P = { vet: 'Vet Clinic', dogpark: 'Dog Park', hilltop: 'Hilltop Meadow', market: 'Market Street', pier: 'Lighthouse Pier' }; const e = [...document.querySelectorAll('#mapInner svg text')].find((t) => t.textContent.trim() === P[k]); if (!e) return true; const r = e.getBoundingClientRect(); return ['mapX', 'mapZoom'].every((id) => { const c = document.getElementById(id).getBoundingClientRect(); return r.right <= c.left || r.left >= c.right || r.bottom <= c.top || r.top >= c.bottom; }); }, k);
+      ok(g.xr <= g.vw + 0.5 && g.zr <= g.vw + 0.5 && lab, `${tag} map centred on ${k}: the X and the zoom stack float on screen, clear of the ${k} label (X ${Math.round(g.x)}, zoom ${Math.round(g.z)})`);
     }
     await ev(() => window.__paw.go('yard')); await t.untilMode('yard');
   },
