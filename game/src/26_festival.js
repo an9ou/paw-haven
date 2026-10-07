@@ -20,7 +20,10 @@ const FS_LETTERS = {
   leaf: { from: 'Baker Bea', title: 'The leaf festival is on', text: 'The leaf festival is on. Leaf piles in the yard, and my stall is in the Square. Pumpkin everything.' },
   halloween: { from: 'Gerald the duck', title: 'Costume parade in the Square', text: 'Costume parade in the Square until the 31st. I am going as a duck.' }
 };
-const FS = { walking: false, walkT: [], pileT: {}, packSq: null };
+const FS = { walking: false, walkT: [], pileT: {}, packSq: null, pending: 0 }; // pending: letter / greeting timers still to run (tests wait on 0)
+// one kind toast instead of a stack trace if a name from another lane is missing (a tap, the stall or the parade)
+function fsTry(fn, ...a) { try { return fn(...a); } catch (e) { console.warn('festival', e); busy = false; toast('The festival hit a small snag. Try again in a moment.'); return null; } }
+function fsLater(fn, ms) { FS.pending++; setTimeout(() => { FS.pending--; fn(); }, ms); }
 
 /* ---- state ---- */
 function fsFields() {
@@ -30,6 +33,8 @@ function fsFields() {
   if (!S.seasonSeen || typeof S.seasonSeen !== 'object') S.seasonSeen = {};
 }
 const fsYear = () => localISO().slice(0, 4);
+// the greeting year of a season: winter runs Dec-Feb, so January and February count to the winter that began the December before
+const fsSeasonYear = (s) => { const y = +fsYear(); return String(s === 'winter' && monthNow() <= 2 ? y - 1 : y); };
 const fsAnyOn = () => festOn('leaf') || festOn('halloween');
 const fsMotionOff = () => document.documentElement.dataset.motion === 'off';
 const fsHere = (pl) => cur.mode === 'yard' && !!S && S.place === pl && !!$('#view svg.world');
@@ -137,20 +142,25 @@ function fsLetters() {
 const fsGreetAllowed = () => !navigator.webdriver || !!prefs.fsTest;
 function fsSeasonGreet() {
   if (!S || S.place !== 'yard' || !fsGreetAllowed()) return; fsFields();
-  const s = seasonNow(), y = fsYear(); if (S.seasonSeen[s] === y || !FS_SEASON_LINE[s]) return;
-  setTimeout(() => {
+  const s = seasonNow(), y = fsSeasonYear(s); if (S.seasonSeen[s] === y || !FS_SEASON_LINE[s]) return;
+  fsLater(() => {
     if (!S || cur.mode !== 'yard' || S.place !== 'yard' || S.seasonSeen[s] === y || (typeof gdActive === 'function' && gdActive())) return;
     S.seasonSeen[s] = y; markDirty(); toast(FS_SEASON_LINE[s], 'good');
   }, 1500);
 }
 
 /* ---- leaf piles ---- */
-function fsPileTap(i) {
+// an awake adult (3 months or older, not nursing) who can jump: the active dog, or for a young puppy the first one of the pack
+const fsJumper = (d) => !!d && ageMonths(d) >= 3 && !d.sleeping && !(typeof hmMumIn === 'function' && hmMumIn(d));
+// the "Jump in a leaf pile" mission gate: the leaf festival is on and some dog is old enough to jump (sleep and nursing pass, they end)
+function fsCanJump() { return festOn('leaf') && !!S && Array.isArray(S.dogs) && S.dogs.some((d) => ageMonths(d) >= 3 && !(typeof hmMumIn === 'function' && hmMumIn(d))); }
+function fsPileTap(i) { return fsTry(fsPileTap0, i); }
+function fsPileTap0(i) {
   if (!FS_PILES[i] || !festOn('leaf') || cur.mode !== 'yard' || S.place !== 'yard') return;
   if (busy || S.sleeping || (typeof curling !== 'undefined' && curling)) return;
   fsFields(); const last = S.fest.piles[i];
   if (typeof last === 'number' && S.gameMin - last >= 0 && S.gameMin - last < FS_PILE_GAP) { toast('The pile needs raking first. Try the other one, or come back in a bit.'); return; }
-  const pup = ageMonths(D()) < 3, adult = pup ? others().find((d) => !d.sleeping && ageMonths(d) >= 3 && !(typeof hmMumIn === 'function' && hmMumIn(d))) : null;
+  const pup = ageMonths(D()) < 3, adult = pup ? others().find(fsJumper) : null;
   if (pup && !adult) { const h = dogHeadWorld(); say('Sniff.', h.x, h.y, 1800); toast(`${NAME()} is too small to jump in yet. Puppies watch the leaves from the grass for now.`); return; }
   const [x, y, w, h] = FS_PILES[i], cx = x + w / 2, gy = y + h * 0.8, face = cx < 430 ? 'left' : 'right';
   busy = true; hideBubble(); SFX.click();
@@ -197,7 +207,9 @@ function fsStallItems() {
   return FOOD.filter((f) => f.fest && on(f)).map((f) => ({ cat: 'food', n: f.n, price: f.price, desc: f.note, tip: f.tip }))
     .concat(CLOTHES.filter((c) => c.fest && !c.reward && on(c)).map((c) => ({ cat: 'clothes', n: c.n, price: c.price, desc: `${SLOT_NAME[c.slot]}. ${c.perk}` })));
 }
-function fsStallOpen() {
+function fsStallOpen() { return fsTry(fsStallOpen0); }
+function fsStallClosed() { if (fsAnyOn()) return false; if (!modal.hidden) closeModal(); toast('The Harvest Stall has packed up. Baker Bea says thank you for the pumpkin business.'); return true; }
+function fsStallOpen0() {
   if (!S) return;
   if (!fsAnyOn()) { toast('The Harvest Stall is packed away. Baker Bea comes back for the leaf festival.'); return; }
   fsFields(); if (S.fest.stall.seen !== localISO()) { S.fest.stall.seen = localISO(); markDirty(); }
@@ -212,9 +224,10 @@ function fsStallOpen() {
   const p = openModal('Harvest Stall', `<div class="fs-bea">${deco}<p><b>Baker Bea:</b> "Everything here is dog-safe. Ask me anything, I will say pumpkin."</p></div><p class="small">Festival treats and outfits, for coins, while the festival is on. You have ${fmtC(S.coins)} Paw Coins.</p><div class="shopgrid">${cards}</div>`, { cls: 'shop fs-stall' });
   p.querySelectorAll('[data-fsbuy]').forEach((b) => {
     b.onclick = async () => {
+      if (fsStallClosed()) return; // the festival ended while the sheet was open (midnight)
       const it = items.find((x) => x.n === b.dataset.fsbuy); if (!it) return; SFX.click();
       const stack = it.cat === 'food', owned = !stack && owns('clothes', it.n);
-      const q = await buyWindow(p, { art: itemArt(it.n), name: it.n, desc: it.desc, price: it.price, stack, owned, have: stack ? (S.inv.food[it.n] || 0) : owned ? 1 : 0, haveLabel: stack ? 'In bag' : 'Owned' }); if (!q) return;
+      const q = await buyWindow(p, { art: itemArt(it.n), name: it.n, desc: it.desc, price: it.price, stack, owned, have: stack ? (S.inv.food[it.n] || 0) : owned ? 1 : 0, haveLabel: stack ? 'In bag' : 'Owned' }); if (!q || fsStallClosed()) return;
       const cost = it.price * q; if (S.coins < cost) { nope('Not enough coins. Walks pay well, and the pumpkins will wait.'); return; }
       S.coins -= cost; SFX.kaching(); trackAct('buy', { name: it.n, cat: it.cat, qty: q, shop: 'stall' });
       if (stack) S.inv.food[it.n] = (S.inv.food[it.n] || 0) + q; else if (!owns('clothes', it.n)) S.inv.clothes.push(it.n);
@@ -236,7 +249,8 @@ function fsParadeDogs(dk = localISO()) {
   return out.map((n) => { const c = FS_COSTUMES[Math.floor(r() * FS_COSTUMES.length)], slot = (CLOTHES.find((x) => x.n === c) || {}).slot || 'body'; return Object.assign({}, n, { costume: c, outfit: { [slot]: c } }); });
 }
 function fsOutfitWords(o) { const w = SLOTS.map((k) => o[k]).filter(Boolean); return w.length ? 'Wearing ' + w.join(' and ') + '.' : 'No costume. Going as a dog. Bold.'; }
-function fsParadeOpen() {
+function fsParadeOpen() { return fsTry(fsParadeOpen0); }
+function fsParadeOpen0() {
   if (!S) return;
   if (!festOn('halloween')) { toast('The costume parade is over for this year. Gerald is already planning the next one.'); return; }
   SFX.boop(700); const dogs = fsParadeDogs(), me = D(), done = fsParadedToday();
@@ -253,7 +267,7 @@ function fsParadeOpen() {
   return p;
 }
 function fsParadeWalk(dogs) {
-  fsFields(); S.fest.parade.date = localISO(); markDirty(); // the day is spent as soon as the walk starts
+  fsFields(); // the day is spent at the payout (fsParadeDone), so a reload mid-walk loses nothing. FS.walking and busy stop a second join meanwhile
   if (fsMotionOff() || !fsHere('square')) { fsParadeDone(); return; }
   const svg = $('#view svg.world'), fx = $('#fx', svg); if (!fx) { fsParadeDone(); return; }
   FS.walking = true; busy = true; hideBubble();
@@ -274,10 +288,11 @@ function fsParadeEnd(here) {
   FS.walking = false; busy = false;
   const g = $('#fsParadeG'); if (g) g.remove();
   ['#dogPos', '#pack', '#visitorG', '#placeBtns'].forEach((s) => { const e = $(s, view); if (e) e.style.visibility = ''; });
-  if (here && fsHere('square')) { fsSquareDraw(); renderDog(dogPoseNow(), 'right', true); }
+  if (here && fsHere('square')) renderDog(dogPoseNow(), 'right', true); // fsParadeDone redraws the stall and the buttons once
   fsParadeDone();
 }
 function fsParadeDone() {
+  fsFields(); S.fest.parade.date = localISO();
   const n = addCoins(10, { raw: true }); addStat('happy', 10); addBond(2); markDirty(); updateHUD(); SFX.kaching();
   toast(`Best in show: ${NAME()}. +${n} coins.`, 'gold'); trackAct('parade', {});
   if (fsHere('square')) fsSquareDraw();
@@ -303,7 +318,7 @@ function fsJournalLine() {
 on('game:ready', () => { fsFields(); fsPackSync(); setTimeout(fsExpose, 0); });
 on('yard:enter', () => {
   fsFields(); fsPackSync(); fsDraw(); fsExpose();
-  setTimeout(() => { if (cur.mode === 'yard') fsLetters(); }, 1200);
+  fsLater(() => { if (cur.mode === 'yard') fsLetters(); }, 1200);
   fsSeasonGreet();
 });
 on('scene:redraw', () => { if (!FS.walking) { fsPackSync(); fsDraw(); } });
@@ -316,6 +331,6 @@ function fsExpose() {
   window.__paw.fest = {
     piles: FS_PILES, stall: () => fsStallBox(), banner: () => fsBannerBox(), pumpkin: FS_PUMPKIN, tap: (i) => fsPileTap(i), stallOpen: () => fsStallOpen(), paradeOpen: () => fsParadeOpen(),
     paradeDogs: (dk) => fsParadeDogs(dk), items: () => fsStallItems().map((x) => x.n), draw: () => fsDraw(), letters: () => fsLetters(), journal: () => fsJournalLine(),
-    warm: () => isWarm(), get walking() { return FS.walking; }, get scattered() { return Object.keys(FS.pileT).map(Number); }, packSpot: () => (typeof PACK_SPOTS !== 'undefined' ? PACK_SPOTS.square[2] : null)
+    warm: () => isWarm(), get walking() { return FS.walking; }, get pending() { return FS.pending; }, canJump: () => fsCanJump(), seasonYear: (s) => fsSeasonYear(s), get scattered() { return Object.keys(FS.pileT).map(Number); }, packSpot: () => (typeof PACK_SPOTS !== 'undefined' ? PACK_SPOTS.square[2] : null)
   };
 }

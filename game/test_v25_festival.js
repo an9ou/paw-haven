@@ -22,13 +22,13 @@ require('./test_lib').run('v25_festival', async (t) => {
   ok(bea && bea.from === 'Baker Bea' && /^The leaf festival is on\. Leaf piles in the yard, and my stall is in the Square\. Pumpkin everything\.$/.test(bea.text), 'Baker Bea: the leaf festival letter');
   ok(ger && /Gerald/.test(ger.from) && /^Costume parade in the Square until the 31st\. I am going as a duck\.$/.test(ger.text), 'Gerald: the costume parade letter');
   ok(s.fest.letters.leaf === year && s.fest.letters.halloween === year, 'S.fest.letters holds this year for both');
-  await t.home('house'); await t.home('yard'); await t.sleep(1500);
+  await t.home('house'); await t.home('yard'); await t.until(() => window.__paw.fest.pending === 0, null, 6000);
   ok((await S()).mail.filter((m) => /^fest_/.test(m.id)).length === 2, 'a second yard entry sends no new letter');
 
   sec('the season greeting: once per season per year');
   ok(await t.waitToast(/^Autumn: the leaves are turning\.$/, 5000), 'toast "Autumn: the leaves are turning."');
   ok((await S()).seasonSeen.autumn === year, 'S.seasonSeen.autumn = this year');
-  await ev(() => window.__toasts.splice(0)); await t.home('house'); await t.home('yard'); await t.sleep(2000);
+  await ev(() => window.__toasts.splice(0)); await t.home('house'); await t.home('yard'); await t.until(() => window.__paw.fest.pending === 0, null, 6000);
   ok(!(await t.toasts()).some((x) => /^Autumn:/.test(x)), 'no second greeting');
 
   sec('leaf piles: two in the yard, a tap makes the dog jump in');
@@ -55,6 +55,7 @@ require('./test_lib').run('v25_festival', async (t) => {
   await p().click('#fsPilesG [data-pile="0"] > rect.fs-hit', { force: true });
   ok(await t.until(() => window.__paw.fest.scattered.includes(0), null, 3000), '21 game minutes later the pile can be jumped again');
   await idle();
+  ok(await ev(() => { const S = window.__paw.S, b = S.dogs.map((d) => d.born), a = window.__paw.fest.canJump(); S.dogs.forEach((d) => { d.born = new Date().toISOString().slice(0, 10); }); const c = window.__paw.fest.canJump(); S.dogs.forEach((d, i) => { d.born = b[i]; }); return a && !c; }), 'the leaf pile mission needs a dog of 3 months or more (only young puppies: not offered)');
   await SH('01_yard_piles');
 
   sec('Harvest Stall: in the Square during the festivals');
@@ -119,23 +120,27 @@ require('./test_lib').run('v25_festival', async (t) => {
   const pd = await ev(() => ({ names: [...document.querySelectorAll('.fs-npc b')].map((b) => b.textContent), costumes: [...document.querySelectorAll('.fs-npc .small')].map((b) => b.textContent), you: document.querySelector('.fs-you b').textContent, banner: !!document.querySelector('.fs-paradepop .fs-banner svg'), join: document.getElementById('fsJoin').textContent }));
   ok(new Set(pd.names).size === 5, 'five different dogs: ' + pd.names.join(', '));
   ok(pd.costumes.every((c) => ['Ghost Sheet', 'Pumpkin Suit', 'Wizard Hat', 'Bumblebee Suit', 'Astronaut Helmet', 'Happi Coat'].includes(c)), 'costumes from the list: ' + pd.costumes.join(', '));
-  ok(await ev(() => JSON.stringify(window.__paw.fest.paradeDogs('2026-10-28').map((d) => d.name + d.costume)) === JSON.stringify(window.__paw.fest.paradeDogs('2026-10-28').map((d) => d.name + d.costume))), 'the line-up is seeded by the date');
+  const lu = await ev(() => ['2026-10-28', '2026-10-28', '2026-10-29'].map((d) => window.__paw.fest.paradeDogs(d).map((x) => x.name + '/' + x.costume).join()));
+  ok(lu[0] === lu[1] && lu[0] !== lu[2], `the line-up is seeded by the date (same date: same dogs and costumes, the next day: a new line-up)`);
   ok(pd.banner && pd.join === 'Join the parade', 'the banner and "Join the parade"');
   await SH('03_parade_sheet');
-  await t.patch({ stats: { happy: 50 } }); s0 = await S();
+  await t.patch({ stats: { happy: 50 } }); s0 = await S(); await ev(() => window.__toasts.splice(0));
   await p().click('#fsJoin');
   ok(await t.until(() => window.__paw.fest.walking && !!document.querySelector('#fsParadeG .fs-line'), null, 3000), 'the walk starts (fsActive is true)');
   ok(await ev(() => document.querySelectorAll('#fsParadeG .fs-pd').length === 6 && getComputedStyle(document.getElementById('dogPos')).visibility === 'hidden'), 'six dogs walk, the yard dog is hidden');
-  await t.sleep(2600); await SH('04_parade_walk');
-  ok(await ev(() => window.__paw.fest.walking && window.__paw.ms.queue >= 0), 'still walking at 2.6 s');
+  ok(await t.until(() => { const l = document.querySelector('#fsParadeG .fs-line'), m = l && new DOMMatrix(getComputedStyle(l).transform); return !!m && m.e > 150 && m.e < 600; }, null, 5000) && await ev(() => window.__paw.fest.walking), 'mid-walk: the line has moved part of the way and is still walking');
+  await SH('04_parade_walk');
+  await ev(() => window.__paw.ms.act('bath', {}));
+  ok(await ev(() => window.__paw.ms.queue > 0 && !window.__toasts.some((x) => /^Mission done/.test(x))), 'a mission finished during the walk: its toast waits (fsActive holds the queue)');
   ok(await t.until(() => !window.__paw.fest.walking, null, 9000), 'the walk ends');
   ok(await t.waitToast(/^Best in show: .+\. \+10 coins\.$/, 3000), 'toast "Best in show: {dog}. +10 coins."');
+  ok(await t.waitToast(/^Mission done: Bath time\./, 4000), 'after the walk the held mission toast shows');
   ok(await t.until(() => !!document.querySelector('#modal .fs-rosette'), null, 6000), 'the first parade of the year: the Parade Rosette popup');
   s = await S();
   ok(s.inv.clothes.includes('Parade Rosette') && s.fest.parade.year === year && s.fest.parade.date === await ev(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }), 'the Rosette is owned, S.fest.parade holds the date and the year');
-  const mPaid = s.missions.list.find((x) => x.id === 'parade').done;
+  const mPaid = s.missions.list.find((x) => x.id === 'parade').done, bPaid = s.missions.list.find((x) => x.id === 'bath').done;
   ok(mPaid, 'act:parade fires (the parade mission is done)');
-  ok(s.coins === s0.coins + 10 + (mPaid ? 15 : 0), `10 raw coins (${s0.coins} -> ${s.coins}, mission +15)`);
+  ok(s.coins === s0.coins + 10 + (mPaid ? 15 : 0) + (bPaid ? 15 : 0), `10 raw coins (${s0.coins} -> ${s.coins}, missions +15 each)`);
   ok(s.stats.happy >= s0.stats.happy + 9 && s.stats.happy <= s0.stats.happy + 10.01, `happy +10 (${s0.stats.happy} -> ${s.stats.happy})`);
   await SH('05_rosette');
   await p().click('#fsWear');
@@ -144,14 +149,13 @@ require('./test_lib').run('v25_festival', async (t) => {
   await t.freezeMotion(true); s0 = await S();
   await ev(() => window.__paw.fest.paradeOpen()); await t.until(() => !!document.getElementById('fsJoin'), null, 3000);
   ok(await ev(() => document.getElementById('fsJoin').getAttribute('aria-disabled') === 'true'), 'the sheet: Join is disabled');
-  await ev(() => document.getElementById('fsJoin').click()); await t.sleep(400); await t.closeX();
+  await ev(() => document.getElementById('fsJoin').click()); ok(await t.waitToast(/^One parade a day is plenty\./, 3000), 'a kind no'); await t.closeX();
   ok((await S()).coins === s0.coins, 'a second parade the same day pays nothing');
   await ev(() => { window.__paw.S.fest.parade.date = '2000-01-01'; window.__toasts.splice(0); }); await t.home('square');
   await p().click('[data-fs=parade]'); await t.until(() => !!document.getElementById('fsJoin'), null, 3000); s0 = await S();
   await p().click('#fsJoin');
   ok(await t.waitToast(/^Best in show: /, 3000), 'the next day (motion off): the result comes at once');
-  await t.sleep(800); s = await S();
-  ok(s.coins === s0.coins + 10, 'the next day pays 10 again');
+  ok(await t.until((c) => window.__paw.S.coins === c + 10, s0.coins, 3000), 'the next day pays 10 again'); s = await S();
   ok(!(await ev(() => !!document.querySelector('#modal .fs-rosette'))), 'no second Rosette popup in the same year');
 
   sec('the Journal Food tab line');
@@ -171,7 +175,7 @@ require('./test_lib').run('v25_festival', async (t) => {
   ok(errs().length === 0, 'no console errors ' + errs().slice(0, 3).join(' | '));
 
   sec("fest 'off': no piles, no pumpkin, no stall, no banner, no letters");
-  await t.ctx.close(); await t.newGame({ fest: 'off' }); await t.home('yard'); await t.sleep(1500);
+  await t.ctx.close(); await t.newGame({ fest: 'off' }); await t.home('yard'); await t.until(() => window.__paw.fest.pending === 0, null, 6000);
   let g = await ev(() => ({ piles: !!document.querySelector('#fsPilesG'), pump: !!document.querySelector('#fsPumpkinG'), mail: window.__paw.S.mail.filter((m) => /^fest_/.test(m.id)).length, j: window.__paw.fest.journal() }));
   ok(!g.piles && !g.pump && g.mail === 0 && g.j === '', 'yard: nothing festive, no letters, no Journal line');
   await t.home('square');
@@ -193,8 +197,20 @@ require('./test_lib').run('v25_festival', async (t) => {
 
   sec("the real date: 2026-10-28 (fest 'auto') turns both on, 2026-12-02 neither");
   const at = async (date) => { await t.ctx.close(); t.clockOffset = new Date(date + 'T10:00:00').getTime() - Date.now(); await t.newGame({ fest: 'auto' }); await t.home('square'); return ev(() => ({ kind: document.querySelector('#fsStallG') && document.querySelector('#fsStallG').dataset.kind, banner: !!document.querySelector('#fsBannerG'), items: window.__paw.fest.items().length })); };
-  g = await at('2026-10-28'); ok(g.kind === 'halloween' && g.banner && g.items === 10, '2026-10-28: the Halloween stall, the banner, 10 items');
+  for (const [d, k, n] of [['2026-10-23', 'leaf', 5], ['2026-10-24', 'halloween', 10], ['2026-10-28', 'halloween', 10], ['2026-10-31', 'halloween', 10], ['2026-11-01', 'leaf', 5], ['2026-11-30', 'leaf', 5], ['2026-12-01', null, 0]]) {
+    g = await at(d); ok((g.kind || null) === k && g.banner === (k === 'halloween') && g.items === n, `${d}: ${k ? k + ' stall, ' + n + ' items' : 'no stall'}${k === 'halloween' ? ', the banner' : ''} (${JSON.stringify(g)})`);
+  }
   g = await at('2026-12-02'); ok(!g.kind && !g.banner && g.items === 0, '2026-12-02: no stall, no banner');
   await t.home('yard'); ok(!(await ev(() => !!document.querySelector('#fsPilesG'))), '2026-12-02: no leaf piles');
+
+  sec('the winter greeting once per winter: 2026-12-15, then 2027-01-05 on the same save');
+  await t.ctx.close(); t.clockOffset = new Date('2026-12-15T10:00:00').getTime() - Date.now(); await t.newGame({ fest: 'auto', season: 'auto' }); await t.home('yard');
+  ok(await t.waitToast(/^Winter: frost on the fence\.$/, 6000), '2026-12-15: "Winter: frost on the fence."');
+  ok((await S()).seasonSeen.winter === '2026', 'S.seasonSeen.winter = 2026');
+  const wsave = await ev(() => { window.__paw.saveNow(); return JSON.stringify(window.__paw.S); });
+  await t.ctx.close(); t.clockOffset = new Date('2027-01-05T10:00:00').getTime() - Date.now();
+  const p3 = await t.mk({ fest: 'auto', season: 'auto', storage: { pawhaven_proto_v1: wsave } }); await p3.goto(URL); await p3.waitForSelector('#tContinue'); await p3.click('#tContinue'); await t.untilMode('yard');
+  await t.home('yard'); await t.until(() => window.__paw.fest.pending === 0, null, 6000);
+  ok(!(await t.toasts()).some((x) => /^Winter:/.test(x)) && (await S()).seasonSeen.winter === '2026', '2027-01-05: no second winter greeting (January counts to the winter that began in 2026)');
   ok(errs().length === 0, 'no console errors ' + errs().slice(0, 3).join(' | '));
 }, { fest: 'both', season: 'autumn', prefs: { msTest: true, fsTest: true } });
