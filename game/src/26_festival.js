@@ -7,7 +7,7 @@
 /* ---- spots (world box x, y, w, h of the 1000x600 scene) ---- */
 // leaf piles: the lawn under the dog (clear of the garden bed, the bowl, #dogHit and the secret X) and in front of the dog house
 // (right of the secret X, left of the place buttons). The spec spots [120,470] and [760,540] sat on the garden bed / bowl and under the buttons.
-const FS_PILES = [[318, 520, 116, 72], [748, 522, 112, 70]];
+const FS_PILES = [[318, 520, 116, 72], [738, 524, 104, 66]];
 const FS_PILE_GAP = 20; // game minutes between two jumps in the same pile
 const FS_STALL = { desk: [850, 378, 150, 138], phone: [182, 380, 118, 109] }; // Square: right foreground (desktop); on phones beside the fountain inside the camera crop
 const FS_BANNER = { desk: [560, 150, 400, 90], phone: [196, 142, 330, 74] }; // strung between the clock tower and the right shopfront, above the shop signs
