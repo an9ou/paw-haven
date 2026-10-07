@@ -104,9 +104,9 @@ require('./test_lib').run('v25_festival', async (t) => {
   sec('perks: Leaf Beret + Autumn Scarf fashion bonus, Pumpkin Suit nap in the Pumpkin Cottage');
   await ev(() => { const S = window.__paw.S; S.inv.clothes.push('Leaf Beret', 'Autumn Scarf', 'Pumpkin Suit'); });
   await ev(() => { window.__paw.S.daily.outfit = true; window.__paw.shop.equip('Autumn Scarf'); window.__paw.S.daily.outfit = false; window.__toasts.splice(0); });
-  const h0 = (await S()).stats.happy; await ev(() => window.__paw.shop.equip('Leaf Beret'));
+  const h0 = await ev(() => { window.__paw.S.stats.happy = 50; window.__paw.shop.equip('Leaf Beret'); return 50; }); // pinned well below the 100 cap, equipped in the same tick
   ok(await t.waitToast(/^Fashion bonus! \+10 Happiness\. Autumn chic\./, 3000), 'both on: the fashion bonus says +10');
-  ok(Math.round((await S()).stats.happy - h0) === 10 || (await S()).stats.happy === 100, 'happy +10');
+  const h1 = (await S()).stats.happy; ok(h1 - h0 >= 9.5 && h1 - h0 <= 10.01, `happy +10 (${h0} -> ${h1}, the clock may tick a little)`);
   const nap = await ev(() => { const S = window.__paw.S, b = S.outfit.body, h = S.house; S.house = 'Pumpkin Cottage'; S.outfit.body = null; const a = window.__paw.shop.napRate(); S.outfit.body = 'Pumpkin Suit'; const c = window.__paw.shop.napRate(); S.house = 'Cardboard Box'; const d = window.__paw.shop.napRate(); S.outfit.body = null; const e = window.__paw.shop.napRate(); S.house = h; S.outfit.body = b; return [a, c, d, e]; });
   ok(Math.abs(nap[1] / nap[0] - 1.1) < 1e-9, `Pumpkin Suit in the Pumpkin Cottage: nap x1.1 (${nap[0]} -> ${nap[1]})`);
   ok(Math.abs(nap[2] - nap[3]) < 1e-9, 'in another house the suit changes nothing');
