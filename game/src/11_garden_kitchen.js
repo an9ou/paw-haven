@@ -184,7 +184,7 @@ const STAR_MULT = [1, 1.5, 2];
 function openPip(tab) {
   if (!gkOn()) { SFX.boop(620); const pip = artReal('prop', 'pip'); openModal("Pip's Sprout Cart", `<div class="pip-top">${pip ? `<span class="pip-art">${pip}</span>` : ''}<p>"Setting up! Back soon with seeds." <span class="small">Pip is untangling a very long hose.</span></p></div>${soonCard('garden')}`, { cls: 'shop' }); return; }
   if (tab) pipTab = tab; audioPlace('shop'); SFX.boop(620);
-  const sz = seasonOf(monthNow()), pip = artReal('prop', 'pip');
+  const sz = seasonNow(), pip = artReal('prop', 'pip'); // v2.5: follows the Season override like the art
   const tabs = [['seeds', 'Seeds'], ['sell', 'Sell crops'], ['people', 'People gardens only']];
   let body = '';
   if (pipTab === 'seeds') body = `<div class="shopgrid">${cropsList().slice().sort((a, b) => (b.seasons.includes(sz) ? 1 : 0) - (a.seasons.includes(sz) ? 1 : 0)).map((c) => `<div class="sitem"><span class="art">${art('item', c.seedItem)}</span><b>${esc(c.seedItem)}</b>${c.seasons.includes(sz) ? '<span class="stamp r1">In season</span>' : ''}<span class="desc">${esc(c.seasons.join(', '))} · ${esc(cropTimeTxt(c))} · ${c.yield} per harvest${c.hardy ? ' · hardy' : ''}</span>${priceHTML(c.seed + ' each')}<span class="small">You have ${S.inv.seeds[c.id] || 0}</span><button class="btn yes" data-seed="${c.id}">Buy…</button></div>`).join('')}</div>`;
@@ -247,7 +247,7 @@ function dishRowHTML(off) {
 }
 /* ---- journal tabs: garden, recipes, profile ---- */
 function journalGarden() {
-  const sz = seasonOf(monthNow());
+  const sz = seasonNow(); // v2.5
   return `<div class="jtop"><div class="jprog"><b>${(S.garden.plots || []).filter((p) => p.crop).length} / 6</b><span class="small">plots planted · season now: ${sz} · buddy perk: ${esc(buddyNow() || 'none')}</span><span class="small">${gardenStatusTxt()}</span><span class="small">Crops grow in real hours, even while you're away. Each plot holds 3 drops: about 3 hours on a sunny day, 6 when cloudy, 9 at night. Rain refills them. Pip buys up to ${PIP_CAP} coins of crops a day (${pipLeft()} left today).</span></div><div><button class="btn yes big" data-jopen="garden">Open garden</button></div></div>
     <div class="jgrid">${cropsList().map((c) => `<div class="jent"><span class="art">${art('item', c.item)}</span><b>${esc(c.name)}</b>${c.seasons.includes(sz) ? '<span class="stamp r1">In season</span>' : ''}<span class="ab">Seasons: ${esc(c.seasons.join(', '))}. Ready in about ${hrs(c.hours)}${c.regrow ? `, regrows in ${hrs(c.regrow)} (${c.picks || 'many'} picks per bush)` : ''}; half speed out of season. Seed ${c.seed}, sells for ${c.sell} (1★).</span><span class="small">Harvested ${(S.garden.harvests || {})[c.id] || 0} times · best ${S.cropBest[c.id] ? '★'.repeat(S.cropBest[c.id]) : 'none yet'} · seeds: ${S.inv.seeds[c.id] || 0}</span></div>`).join('')}</div>`;
 }

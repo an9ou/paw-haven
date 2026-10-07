@@ -937,10 +937,10 @@
     }
     function doWater(i) {
       var p = st.plots[i]; if (!p) return;
-      call('onWater', i); // v2.5: the game counts watering (missions)
       if (p.water >= 3) { say('Plot ' + (i + 1) + ' is already soggy. Three drops is the max.', 2200); return; }
       if (isReady(p)) { say('That one is ready to pick, no water needed.', 2000); return; }
       st = water(st, i); sfx('water');
+      call('onWater', i); // v2.5: the game counts watering (missions), only when a drop really went in
       var z = ZONES[i], can = document.createElement('div'); can.className = 'pg-can';
       can.style.left = (z.x + z.w * .55) + 'px'; can.style.top = (z.y - 66) + 'px';
       can.innerHTML = art('item', 'Watering Can', null, function () { return art('icon', 'water-can', null, fbCan); });
