@@ -72,7 +72,7 @@ const msDoneN = () => (S && S.missions ? S.missions.list.filter((x) => x.done).l
 
 /* ---- progress ---- */
 let msQueue = [];
-const msGuideBusy = () => typeof gdActive === 'function' && !!gdActive();
+const msGuideBusy = () => (typeof gdActive === 'function' && !!gdActive()) || (typeof fsActive === 'function' && !!fsActive()); // v2.5: mission toasts also wait for the costume parade walk
 function msSay(text, kind) { if (msGuideBusy()) msQueue.push([text, kind]); else toast(text, kind); }
 function msFlush() { if (!msQueue.length || msGuideBusy()) return; const q = msQueue; msQueue = []; q.forEach(([t, k], i) => setTimeout(() => toast(t, k), i * 700)); }
 // under the test harness missions only progress when a suite asks for it (prefs.msTest): a mission payout would otherwise change coin totals in older suites
