@@ -90,6 +90,7 @@ You manage Paw Haven for the owner. You don't build. Start a fresh Coordinator s
 **The owner's preferences:**
 - **Times in JST** (the owner is in Japan).
 - **Quality first:** quality and the game's style come before saving tokens.
+- **No Fable from v2.6 on:** Fable is too costly for the owner's usage. Coordinators, specs, lanes and reviews use Opus (Sonnet or Haiku where the rules above allow). v2.5 was the last release run on Fable.
 - **Speed and quality over token cost:** lanes may use parallel subagents. Take screenshots before and after for every changed screen.
 - **Decisions:** ask with the AskUserQuestion choice window (2–4 options, recommendation first), not plain text. With no answer in 10 minutes, take the recommendation and list it in the final report. When the owner is asleep or says "decide yourself", the Project manager decides without asking and lists every decision in the final report.
 - **Stop means stop.** If the owner says "stop", stop at once: cancel scheduled check-ins, commit nothing, and ask what they meant.
