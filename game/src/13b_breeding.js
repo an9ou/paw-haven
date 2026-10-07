@@ -48,7 +48,7 @@ function brBackfill() {
 on('game:ready', () => { brBackfill(); brStoneLetter(); setTimeout(breedTick, 1200); });
 
 /* ---- v2.1 ancestry: { breedKey: fraction } (PawGenes.ancestry when present, else the same rules here) ---- */
-const BR_KEYS = ['shiba', 'corgi', 'golden', 'dachs', 'husky', 'mutt', 'chihuahua', 'pug', 'greyhound', 'beagle'];
+const BR_KEYS = ['shiba', 'corgi', 'golden', 'dachs', 'husky', 'mutt', 'chihuahua', 'pug', 'greyhound', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie'];
 const brKeyOf = (k) => (BR_KEYS.includes(k) ? k : 'mutt');
 function brAncRound(a) { const o = {}; let t = 0; Object.keys(a).forEach((k) => { t += a[k]; }); Object.keys(a).forEach((k) => { const v = Math.round((a[k] / (t || 1)) * 64) / 64; if (v > 0) o[k] = v; }); return o; }
 function brAncLocal(rec, depth, memo) {
@@ -167,6 +167,23 @@ function brGrandPup(pup, dam, sire, gm) {
   const body = m && m.body ? m.body : dam.key, head = m && m.head ? m.head : top.find((k) => k !== body) || body;
   pup.key = body; pup.mix = { a: dam.key, b: sire.key, body, head, name: gm.name, grand: gm.name };
 }
+/* v2.5 (BREEDS): a named mix stays a named mix. Horgi x Horgi = Horgi, and a 3/4 Corgi is a Corgi, not a "Mutt mix".
+   Body and head come from mixOf on the two biggest breeds (own rng, so the litter's other rolls do not change). */
+function bdSameMix(dam, sire) {
+  const a = dam.mix, b = sire.mix;
+  return !!(a && b && a.name && a.name === b.name && a.name !== 'Mutt mix' && !a.grand && !b.grand);
+}
+function bdKeepMix(pup, dam, sire, gm, name) {
+  const G = brG(), r = seeded(hashId('keep|' + pup.id));
+  const top = gm && gm.breeds && gm.breeds.length ? gm.breeds.map((x) => brKeyOf(x[0])) : [];
+  let x = top[0], y = top[1];
+  if (bdSameMix(dam, sire) && dam.mix.a && dam.mix.b && dam.mix.a !== dam.mix.b) { x = brKeyOf(dam.mix.a); y = brKeyOf(dam.mix.b); }
+  if (!x) x = dam.key; if (!y) y = x;
+  if (gm && gm.kind === 'breed' && !bdSameMix(dam, sire)) { pup.key = x; pup.mix = { a: x, b: y, body: x, head: x, name }; return; }
+  let m = null; if (G && typeof G.mixOf === 'function' && x !== y) { try { m = G.mixOf(x, y, r); } catch (e) { m = null; } }
+  const body = m && m.body ? m.body : x, head = m && m.head ? m.head : (body === x ? y : x);
+  pup.key = body; pup.mix = { a: x, b: y, body, head, name };
+}
 function brPendingPups() { let n = 0; (S.dogs || []).forEach((d) => { if (d.preg && d.preg.pups) n += d.preg.pups.length; }); return n; }
 function brGenes(dam, sire, r) {
   const G = brG(); let g = null;
@@ -186,7 +203,9 @@ function rollLitter(dam, sire, o) {
     const sparkle = r() < odds || pity >= BREEDING.RULES.sparklePity - 1 || (o.sparkle && i === 0); pity = sparkle ? 0 : pity + 1;
     const id = 'p_' + hashId(dam.id + '|' + sire.id + '|' + brToday() + '|' + i).toString(36) + i;
     const pup = { id, name: '', key: bm.key, sex, genes, mix: bm.mix, sparkle: !!sparkle, born: null, parents: { dam: dam.id, sire: sire.id }, gen: Math.max(dam.gen || 0, sire.gen || 0) + 1, anc };
-    if (gm && BR_GRAND.includes(gm.kind) && gm.name) brGrandPup(pup, dam, sire, gm);
+    if (bdSameMix(dam, sire)) bdKeepMix(pup, dam, sire, gm, dam.mix.name);
+    else if (gm && BR_GRAND.includes(gm.kind) && gm.name) brGrandPup(pup, dam, sire, gm);
+    else if (gm && (gm.kind === 'mix' || gm.kind === 'breed') && gm.name && (dam.mix || sire.mix)) bdKeepMix(pup, dam, sire, gm, gm.name);
     const c = coatInfo(pup); pup.coat = c ? c.coatName : (STARTER_GENES[pup.key] || STARTER_GENES.mutt).coat; pup.eyes = c ? c.eyes : 'brown';
     pups.push(pup);
   }

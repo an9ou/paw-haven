@@ -299,7 +299,11 @@
     chihuahua: { d: [-12, 14], sit: [0, 8], jump: [-30, 10], eat: [16, -6], crouch: [0, 0], sleep: [-12, 0], sniff: [0, -4] },
     pug: { d: [-22, 10], sit: [-6, 3], jump: [-30, 5], eat: [28, -11], crouch: [0, 0], sleep: [-10, 0], sniff: [-6, 0] },
     greyhound: { d: [32, -42], sit: [48, 2], jump: [18, -53], eat: [28, -4], crouch: [50, 8], sleep: [12, 4], sniff: [12, 4] },
-    beagle: { d: [-4, 0], jump: [-6, -5], eat: [28, -3], sit: [0, 0], crouch: [0, 0], sleep: [0, 0], sniff: [8, 0] }
+    beagle: { d: [-4, 0], jump: [-6, -5], eat: [28, -3], sit: [0, 0], crouch: [0, 0], sleep: [0, 0], sniff: [8, 0] },
+    poodle: { d: [-20, -6], sit: [-20, 0], jump: [-34, 2], eat: [36, -13], crouch: [0, 0], sleep: [-12, 0], sniff: [-6, -2] },
+    collie: { d: [-8, 2], sit: [0, 0], jump: [-8, 0], eat: [24, 0], crouch: [0, 0], sniff: [0, -4] },
+    samoyed: { d: [-24, -6], sit: [-24, 0], jump: [-38, 2], eat: [40, -15], crouch: [0, 0], sleep: [-12, 0], sniff: [-6, -2] },
+    frenchie: { d: [-22, 10], sit: [-6, 3], jump: [-30, 5], eat: [28, -11], crouch: [0, 0], sleep: [-10, 0], sniff: [-6, 0] }
   };
   var POSE_BASE = { walk: 'idle', happy: 'idle', pet: 'idle', shake: 'idle', dirty: 'idle', cold: 'idle', hot: 'idle', sad: 'idle', dig: 'eat' };
   function breedAdj(key, pose) {
@@ -310,7 +314,8 @@
   var TRAITS = {
     greyhound: { run: 1.6, carry: 0.55, flop: true },
     chihuahua: { run: 1.1, fierce: true }, pug: { run: 0.78, snort: true }, beagle: { sniff: true },
-    dachs: { run: 0.85 }, corgi: { run: 0.92 }
+    dachs: { run: 0.85 }, corgi: { run: 0.92 },
+    frenchie: { run: 0.8, snort: true }, collie: { run: 1.15 }, samoyed: { fluff: true }, poodle: { clever: true }   // v2.5
   };
   function trait(key) { return Object.assign({ run: 1, carry: 1 }, TRAITS[key] || {}); }
   /* per-breed flavour lines; any missing slot falls back to the generic lines passed in */
@@ -347,6 +352,32 @@
       snuffleStart: ['I can smell where you hid it. go on.'], snuffleFind: ['nose: 1, mat: 0', 'smelled that from the hall'], coneLick: ['pumpkin! I smelled it from the garden'],
       hogAnswer: ['AROOO!', 'ah-ROO-squeak!'], hogRoll: ['it smells like a hedgehog. suspicious.'], bubblePop: ['they smell of... nothing?! suspicious'],
       poolIn: ['AROOO (wet version)'], tunnelDone: ['AROOOO! again!'], tap: ['sniff sniff. it is you!']
+    },
+    // v2.5 breeds
+    poodle: {
+      fetchStart: ['I have calculated the angle. throw.', 'ready when you are. I was ready first.'], fetchDeliver: ['returned. neatly.', 'not one curl out of place'],
+      puzzleStart: ['I solved this one yesterday', 'it is the middle lid. watch.'], puzzleFound: ['as predicted', 'too easy. again?'], puzzleWrong: ['that was a test. for you.'],
+      duckOk: ['a perfect copy, if I say so myself'], frisbee: ['caught it. elegantly.', 'pom-poms and all'], howl: ['yip! (clearly)', 'yip yip!'],
+      snuffleFind: ['found it. obviously.'], coneLick: ['pumpkin. a classic.'], bubblePop: ['pop. pop. very tidy.'], poolIn: ['the curls! ...ok, it is nice'],
+      tunnelDone: ['in one end, out the other. genius.'], tap: ['yes? I am thinking.']
+    },
+    collie: {
+      fetchStart: ['THROW IT. please. now. please.', 'eyes on the ball. always.'], fetchDeliver: ['again? again. AGAIN.', 'back already. that is my job.'],
+      tugGrowl: ['grr! (working)', 'mine. for now.'], frisbee: ['caught it mid-air. as planned.', 'I was born for this'], howl: ['woof woof!', 'yap! (sharp)'],
+      snuffleStart: ['I will find every last one'], snuffleFind: ['one found. more to go.'], hogRoll: ['it is a ball now. I will herd it.'], bubblePop: ['I will herd the bubbles', 'stay together, bubbles!'],
+      poolIn: ['a quick swim. then back to work.'], tunnelGo: ['ZOOM'], tunnelDone: ['again? I can go faster.'], tap: ['what is the job? is this the job?']
+    },
+    samoyed: {
+      fetchStart: ['woo! throw it!', 'I am smiling. throw it anyway.'], fetchDeliver: ['woo-woo! got it!', 'still smiling'],
+      tugGrowl: ['grr-woo!', 'woo (fiercely)'], howl: ['woo-woo-WOOO!', 'awoo-woo!'], duckOk: ['woo! a duet!'],
+      snuffleFind: ['found it! woo!'], coneLick: ['cold and pumpkin. my favourite.'], hogAnswer: ['woo?', 'woo-woo!'], bubblePop: ['the bubbles stick to my fluff'],
+      poolIn: ['cold water! woo!', 'I am now twice as heavy'], stickShake: ['so much fluff. so much water.', 'shake shake shake. still damp.'], tap: ['woo! hello!']
+    },
+    frenchie: {
+      fetchStart: ['*snort* ...a short throw, please', 'ok. but not far.'], fetchDeliver: ['*snort* got it', 'that was a big run. sit time.'],
+      tugGrowl: ['grrf *snort*', 'rrf rrf!'], tugDogWin: ['*proud snort*'], duckListen: ['*snort*', '*huff*'], duckOk: ['*happy snort*'],
+      howl: ['rrf! *snort*', 'arf-*snort*'], snuffleFind: ['*snort* FOOD'], coneLick: ['lick *snort* lick'], hogAnswer: ['*snort*!', 'rrf?'],
+      poolIn: ['I do not swim. I float. With help.'], tunnelDone: ['*snort* done. sitting now.'], tap: ['*snort*?']
     }
   };
   var FALLBACK = { crouch: ['sit'], dig: ['eat'], shake: ['happy'], sleep: ['sit'], pet: ['happy'], sad: ['sit'], jump: ['happy'], eat: ['sit'], walk: ['idle'] };
@@ -1267,7 +1298,7 @@
         if (!w && wet && dog.x < PX - 10 && st !== 'hold') {
           wet = false; if (!shook) { shook = true; A.sfx('shake'); A.say(pick(A.line('stickShake', ['brrrrrrr!', 'SHAKE SHAKE SHAKE', 'sorry about the floor'])), 1400); me.pause(1.3, 'shake', st); return false; }
         }
-        if (st === 'hold' && dog.pose === 'shake' && Math.random() < dt * 30) A.burst('drop', dog.x + (Math.random() - 0.5) * 120, dog.y - 100 - Math.random() * 60, 1, { sp: 360, g: 1000, color: '#9CC8EA', size: 3.5 });
+        if (st === 'hold' && dog.pose === 'shake' && Math.random() < dt * (A.tr.fluff ? 60 : 30)) A.burst('drop', dog.x + (Math.random() - 0.5) * 120, dog.y - 100 - Math.random() * 60, 1, { sp: 360, g: 1000, color: '#9CC8EA', size: 3.5 });
         if (w && Math.random() < dt * 4) A.addPart({ type: 'drop', x: dog.x + (Math.random() - 0.5) * 140, y: WATER_Y + 4, vx: (Math.random() - 0.5) * 60, vy: -90, g: 500, life: 0.5, size: 2.6, color: '#BBD8EF' });
         return false;
       },
@@ -1559,7 +1590,7 @@
       plan = []; var full = flaps.filter(function (f) { return f.has; }), empty = flaps.filter(function (f) { return !f.has; });
       full.sort(function () { return Math.random() - 0.5; });
       full.forEach(function (f) {
-        var wrong = A.tr.sniff ? (Math.random() < 0.25 ? 1 : 0) : 1 + Math.floor(Math.random() * 2);
+        var wrong = A.tr.sniff ? (Math.random() < 0.25 ? 1 : 0) : A.tr.clever ? (Math.random() < 0.5 ? 1 : 0) : 1 + Math.floor(Math.random() * 2);
         for (var i = 0; i < wrong; i++) { var e = pick(empty); if (plan[plan.length - 1] !== e) plan.push(e); }
         plan.push(f);
       });
@@ -2041,7 +2072,7 @@
             else { padPose = 'shake'; padT = 1; A.sfx('shake'); }
           }
           if (padPose === 'walk') { if (dog.runTo(padTo, 110, dt)) dog.setPose('idle'); if (Math.random() < dt * 6) A.addPart({ type: 'drop', x: dog.x + (Math.random() - 0.5) * 120, y: waterY() - 6, vx: (Math.random() - 0.5) * 80, vy: -140, g: 700, life: 0.5, size: 2.6, color: '#BBD8EF' }); }
-          else { dog.setPose(padPose); if (padPose === 'shake' && Math.random() < dt * 24) A.burst('drop', dog.x + (Math.random() - 0.5) * 100, dog.y - 90 - Math.random() * 50, 1, { sp: 300, g: 1000, life: 0.6, size: 3, color: '#9CC8EA' }); }
+          else { dog.setPose(padPose); if (padPose === 'shake' && Math.random() < dt * (A.tr.fluff ? 48 : 24)) A.burst('drop', dog.x + (Math.random() - 0.5) * 100, dog.y - 90 - Math.random() * 50, 1, { sp: 300, g: 1000, life: 0.6, size: 3, color: '#9CC8EA' }); }
           dog.tilt = padPose === 'happy' ? Math.sin(T * 13) * 2.5 : 0;
           if (fill < 0.7 && !lowSaid) { lowSaid = true; A.say('the lake is leaking! hose please!', 1500); } if (fill > 0.9) lowSaid = false;
         } else if (state === 'splash') {

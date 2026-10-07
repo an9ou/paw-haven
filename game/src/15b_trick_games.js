@@ -9,10 +9,10 @@ const TG_GAIN = { Great: 0.35, Good: 0.2, Missed: 0 };
 const TG_MAXV = 1.15;       // scene px per ms; faster and the dog loses the scent
 const TG_BEAT = 800;        // Speak rhythm: ms between beats
 const TG_FLOOR = 490;
-const NOSE_DY = { chihuahua: 40, pug: 28, dachs: 45, corgi: 30, beagle: 12, greyhound: -40 }; // small dogs: track drawn lower, tall dogs: higher
+const NOSE_DY = { chihuahua: 40, pug: 28, dachs: 45, corgi: 30, beagle: 12, greyhound: -40, frenchie: 28, samoyed: -10 }; // small dogs: track drawn lower, tall dogs: higher
 const NOSE_DX = { dachs: 30, greyhound: 25, corgi: 10 };
-const FOOD_DOGS = ['corgi', 'pug'];
-const SIG_COMBO = { shiba: ['Lie Down', 'Roll Over', 'Play Dead'], corgi: ['Sit', 'Lie Down', 'Bow'], golden: ['Spin', 'Dance', 'Spin'], dachs: ['Dance', 'Bow', 'Spin'], husky: ['Sit', 'Dance', 'Bow'], mutt: ['Sit', 'Paw', 'Lie Down'], chihuahua: ['Spin', 'Spin', 'Dance'], pug: ['Sit', 'Spin', 'Lie Down'], greyhound: ['Spin', 'Lie Down', 'Roll Over'], beagle: ['Sit', 'Bow', 'Dance'] };
+const FOOD_DOGS = ['corgi', 'pug', 'frenchie'];
+const SIG_COMBO = { shiba: ['Lie Down', 'Roll Over', 'Play Dead'], corgi: ['Sit', 'Lie Down', 'Bow'], golden: ['Spin', 'Dance', 'Spin'], dachs: ['Dance', 'Bow', 'Spin'], husky: ['Sit', 'Dance', 'Bow'], mutt: ['Sit', 'Paw', 'Lie Down'], chihuahua: ['Spin', 'Spin', 'Dance'], pug: ['Sit', 'Spin', 'Lie Down'], greyhound: ['Spin', 'Lie Down', 'Roll Over'], beagle: ['Sit', 'Bow', 'Dance'], poodle: ['Spin', 'Bow', 'Dance'], collie: ['Lie Down', 'Sit', 'Paw'], samoyed: ['Sit', 'Paw', 'Dance'], frenchie: ['Sit', 'Lie Down', 'Play Dead'] };
 const TG_PREPOSE = { Sit: ['sit', 0.6], 'Lie Down': ['down', 0.5], Bow: ['bow', 0.75], Dance: ['dance', 0.3], 'Roll Over': ['down', 0] };
 const TG_MISS = ['{n} sniffed the air, sat on nothing, and looked proud anyway.', '{n} followed the treat for a bit, then remembered a very important leaf.', 'Close! {n} invented a brand new trick. Nobody knows what it is.', '{n} is now facing the wrong way and very pleased about it.'];
 

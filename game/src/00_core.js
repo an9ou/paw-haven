@@ -120,12 +120,16 @@ const SIG = {
   chihuahua: { n: 'The Tiny Tornado', fx: 'tk-tornado', pose: 'walk', always: true, snd: 'alert', say: 'I AM A WEATHER EVENT.' },
   pug: { n: 'The Snort Spin', fx: 'tk-spin', pose: 'happy', always: true, snd: 'huff', say: '*snort* *spin* *snort* Ta-da.' },
   greyhound: { n: 'The Zoomie Lap', fx: 'tk-lap', pose: 'walk', always: true, say: '45 mph. Now I need a 20-hour nap.' },
-  beagle: { n: 'The Big Bay', fx: 'tk-bow', pose: 'speak', snd: 'howl', say: 'AROOOOOOOOOO!' }
+  beagle: { n: 'The Big Bay', fx: 'tk-bow', pose: 'speak', snd: 'howl', say: 'AROOOOOOOOOO!' },
+  poodle: { n: 'The Prance', fx: 'tk-dance', pose: 'dance', say: 'Note the footwork. Note the pom-poms.' },
+  collie: { n: 'The Eye', fx: 'tk-perk', pose: 'crouch', say: 'I am herding you with my eyes. Please sit.' },
+  samoyed: { n: 'The Sammy Smile', fx: 'tk-bow', pose: 'happy', snd: 'talk', say: 'Woo-woo! That was the smile. Now with sound.' },
+  frenchie: { n: 'The Sploot', fx: 'tk-lie', pose: 'down', always: true, snd: 'huff', say: 'Back legs out. Belly on the cool floor. Perfect.' }
 };
 const SIG_FB = { n: 'The Grand Finale', fx: 'tk-bow', pose: 'happy', say: 'Ta-da! (Applause, please.)' };
 const sigOf = (k) => SIG[k] || SIG_FB;
 /* v1.7: every breed key in the game, in PawArt order (unknown keys fall back to generic content) */
-const BREED_KEYS = ['shiba', 'corgi', 'golden', 'dachs', 'husky', 'mutt', 'chihuahua', 'pug', 'greyhound', 'beagle'];
+const BREED_KEYS = ['shiba', 'corgi', 'golden', 'dachs', 'husky', 'mutt', 'chihuahua', 'pug', 'greyhound', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie'];
 const ROUTES = {
   park: { n: 'Sunny Park', bond: 1, secs: 60, energy: 15, happy: 15, clean: 5, coins: [20, 30], bp: 8, pool: ['coin', 'leaf', 'flower', 'bone'] },
   river: { n: 'Riverside Trail', bond: 2, secs: 75, energy: 25, happy: 20, clean: 10, coins: [35, 50], bp: 11, pool: ['coin', 'leaf', 'shell'] },
@@ -195,7 +199,11 @@ const PLACE_LINES = {
   chihuahua: { house: 'Sofa secured. Window secured. Toaster under observation.', park: 'Every dog here is twelve times my size. I will bark at all of them.', river: 'The ducks are a threat. I have informed them.', woods: 'A leaf moved. I have filed a report.', beach: 'The waves keep coming back. I keep yelling. It is working.', market: 'I will guard the door. From everyone. Forever.' },
   pug: { house: 'Sofa. Blanket. Snort. Perfect.', park: 'I walked here. That counts as exercise. Can we sit?', river: 'The ducks have bread. I am also bread-shaped. We are allies.', woods: 'Too many trees. Not enough benches. snort.', beach: 'Sand is just a big warm bed. Goodnight.', market: 'Kibble Corner. Kibble. Corner. snort snort.' },
   greyhound: { house: 'Found the softest spot. Lying on it upside down now.', park: 'So much space. Must... sprint... once. Okay, done. Nap.', river: 'Long legs, shallow water. I am basically a heron.', woods: 'Trees are just things I go around at 45 mph.', beach: 'A whole beach of runway! ZOOM. ...zzz.', market: 'I will lean on your legs while you shop. All of my weight.' },
-  beagle: { house: 'Someone had toast here three days ago. I can prove it.', park: 'Hot dog stand: 200 metres. Picnic: 50 metres. Squirrel: everywhere.', river: 'Fish. Mud. Duck. A sandwich from Tuesday. Rich smells here.', woods: 'This trail smells like a rabbit with a story. AROOO!', beach: 'Seaweed, sunscreen, chips. My nose is on holiday.', market: 'I can smell every shop at once. It is a lot. I love it.' }
+  beagle: { house: 'Someone had toast here three days ago. I can prove it.', park: 'Hot dog stand: 200 metres. Picnic: 50 metres. Squirrel: everywhere.', river: 'Fish. Mud. Duck. A sandwich from Tuesday. Rich smells here.', woods: 'This trail smells like a rabbit with a story. AROOO!', beach: 'Seaweed, sunscreen, chips. My nose is on holiday.', market: 'I can smell every shop at once. It is a lot. I love it.' },
+  poodle: { house: 'I have chosen the good cushion. Obviously.', park: 'The other dogs run in circles. I run in shapes.', river: 'I will admire the water. I will not enter the water. The hair.', woods: 'Twigs in my curls. This is a crisis.', beach: 'Sand gets into curls and never leaves. I am being brave.', market: 'I would like to see the Boutique. For research.' },
+  collie: { house: 'Everyone is in the kitchen. I have checked. Twice.', park: 'So many dogs. None of them in a line. I can fix that.', river: 'The ducks are in a group. Good ducks.', woods: 'Every tree is accounted for. I counted.', beach: 'The waves keep leaving. I keep bringing them back.', market: 'I will keep the shoppers together. Nobody wanders off.' },
+  samoyed: { house: 'The sofa is now fluffier. That is me. I am on it.', park: 'Everyone here gets a smile. Even the pigeon.', river: 'Cold water is my favourite water. Woo-woo!', woods: 'The shade is nice. The leaves stick to me. I am a leaf dog now.', beach: 'Too warm for me. I will smile from the shade.', market: 'Hello, shop. Hello, person. Hello, other person. Woo!' },
+  frenchie: { house: 'Sofa. Cushion. Your foot. All good seats.', park: 'I walked to the bench. Now I sit on the bench.', river: 'I do not swim. I sink. I will watch from here.', woods: 'Nice and shady. My kind of walk.', beach: 'Hot sand, flat face. Shade, please. *snort*', market: 'I will sit on your foot while you shop.' }
 };
 const DUCK_LINES = ['A duck looks at you. You look at the duck. Nobody blinks.', 'The ducks are holding a meeting. You were not invited.', 'One duck is wearing a tiny hat. Probably.'];
 const FAV = {
@@ -208,9 +216,13 @@ const FAV = {
   chihuahua: { food: ['Salmon Pâté'], toy: 'Squeaky Duck', act: 'petting' },
   pug: { food: ['Pupcake', 'Chicken & Rice Bowl'], toy: 'Plush Bone', act: 'feeding' },
   greyhound: { food: ['Chicken & Rice Bowl'], toy: 'Frisbee', act: 'fetch' },
-  beagle: { food: ['Basic Kibble', 'Bone-shaped Biscuit'], toy: 'Puzzle Feeder', act: 'digging' }
+  beagle: { food: ['Basic Kibble', 'Bone-shaped Biscuit'], toy: 'Puzzle Feeder', act: 'digging' },
+  poodle: { food: ['Salmon Pâté'], toy: 'Puzzle Feeder', act: 'tricks' },
+  collie: { food: ['Chicken & Rice Bowl'], toy: 'Frisbee', act: 'fetch' },
+  samoyed: { food: ['Chicken & Rice Bowl'], toy: 'Rope Tug', act: 'walks' },
+  frenchie: { food: ['Pupcake'], toy: 'Plush Bone', act: 'petting' }
 };
-const BARK = { shiba: 1.1, corgi: 1.35, golden: 0.9, dachs: 1.2, husky: 0.8, mutt: 1.0, chihuahua: 1.7, pug: 0.95, greyhound: 0.75, beagle: 1.0 };
+const BARK = { shiba: 1.1, corgi: 1.35, golden: 0.9, dachs: 1.2, husky: 0.8, mutt: 1.0, chihuahua: 1.7, pug: 0.95, greyhound: 0.75, beagle: 1.0, poodle: 1.25, collie: 1.15, samoyed: 0.95, frenchie: 0.9 };
 const FALLBACK_DOGS = [
   { key: 'shiba', name: 'Mochi', breed: 'Shiba Inu', personality: 'Proud, independent, dramatic', joke: 'heh.' },
   { key: 'corgi', name: 'Biscuit', breed: 'Corgi', personality: 'Cheerful, greedy for food', joke: 'Is that a snack? Is everything a snack?' },
@@ -221,7 +233,11 @@ const FALLBACK_DOGS = [
   { key: 'chihuahua', name: 'Peanut', breed: 'Chihuahua', personality: 'Tiny, fearless, dramatic guard dog', joke: 'I am the security system.' },
   { key: 'pug', name: 'Dumpling', breed: 'Pug', personality: 'Snorty, cuddly, lazy, food-loving', joke: 'snort.' },
   { key: 'greyhound', name: 'Rocket', breed: 'Greyhound', personality: 'Gentle couch potato who sprints in bursts', joke: '45 mph. Then a 20-hour nap.' },
-  { key: 'beagle', name: 'Bagel', breed: 'Beagle', personality: 'Nose-led, food-obsessed, bays loudly', joke: 'Smelled that from three streets away.' }
+  { key: 'beagle', name: 'Bagel', breed: 'Beagle', personality: 'Nose-led, food-obsessed, bays loudly', joke: 'Smelled that from three streets away.' },
+  { key: 'poodle', name: 'Pretzel', breed: 'Poodle', personality: 'Thinks it is the smartest one in the room. It is.', joke: 'Haircut optional. Dignity not.' },
+  { key: 'collie', name: 'Scout', breed: 'Border Collie', personality: 'Has counted the sheep. There are no sheep. Has counted you.', joke: 'Will herd the puppies, the ducks and the furniture.' },
+  { key: 'samoyed', name: 'Cloud', breed: 'Samoyed', personality: 'Smiles so the snow does not stick. Also just smiles.', joke: 'Sheds a second dog every spring.' },
+  { key: 'frenchie', name: 'Brioche', breed: 'French Bulldog', personality: 'Snores, snorts, sits on your foot. All three at once.', joke: 'Breathes like a tiny engine. Shade and water, please.' }
 ];
 const GENERIC_DOG = (key) => ({ key, name: 'Buddy', breed: 'Mystery Pup', personality: 'A little bit of everything', joke: 'Hi! I am a dog. Probably.' });
 const JOKES = {
@@ -234,7 +250,11 @@ const JOKES = {
   chihuahua: ['I am the security system.', 'I weigh two kilos. Fourteen of them are attitude.', 'A leaf moved. I have alerted the authorities. The authorities is you.', 'I am not shivering. I am vibrating with power.', 'Pick me up. No. Put me down. Pick me up.'],
   pug: ['snort.', 'I have done one thing today. It was a nap. Two things. Two naps.', 'My face is flat so I can get closer to the snacks.', 'Was that a wrapper? snort. snort snort.', 'Lap. Now. Please. snort.'],
   greyhound: ['45 mph. Then a 20-hour nap.', 'I ran once. In 2023. It was amazing.', 'My legs are long so I can lie down in more places at once.', 'I am not lazy. I am charging.', 'Lean mode: activated. You are the wall now.'],
-  beagle: ['Smelled that from three streets away.', 'AROOOO! (That means hello. Also snack.)', 'Somebody ate cheese near here in 2019. I am on the case.', 'My ears are long so they can sweep smells towards my nose.', 'I am not stealing the sandwich. I am inspecting it. With my mouth.']
+  beagle: ['Smelled that from three streets away.', 'AROOOO! (That means hello. Also snack.)', 'Somebody ate cheese near here in 2019. I am on the case.', 'My ears are long so they can sweep smells towards my nose.', 'I am not stealing the sandwich. I am inspecting it. With my mouth.'],
+  poodle: ['Haircut optional. Dignity not.', 'I learned that trick yesterday. I am bored of it today.', 'These are not curls. They are a hairstyle.', 'I have read the instructions. You have not.', 'I could open the treat jar. I am waiting for you to be polite.'],
+  collie: ['Will herd the puppies, the ducks and the furniture.', 'You moved. I noticed. I notice everything.', 'Throw it again. And again. And again. Please.', 'The chairs are in a line now. You are welcome.', 'I need a job. Any job. Is the job you?'],
+  samoyed: ['Sheds a second dog every spring.', 'Woo-woo! That means hello. Also everything.', 'I am not white. I am snow-coloured.', 'You look sad. I will smile at you until you stop.', 'Brush me? Brush me. Now there are two of me.'],
+  frenchie: ['Breathes like a tiny engine. Shade and water, please.', 'I am sitting on your foot. It is my foot now.', 'My ears hear everything. I ignore most of it.', '*snort* That was a compliment.', 'I am not lazy. I am low to the ground.']
 };
 const NPC_JOKES = ['Nice leash. Is that leash new?', 'I am Gary. I have never been happy.', 'Have you seen my ball? It is round. Ball-coloured.', 'WOOF. Sorry. Wrong dog.', 'I ate a bee once. Zero stars.', 'Your human walks funny. Mine too.', 'Sniff my bum? Rude not to.', 'I live here. On this exact spot.'];
 const SMELLS = ['Smells like a sandwich from 2014.', 'Smells like ANOTHER DOG. Scandalous.', 'Smells like adventure. No wait, a sock.', 'Smells like rain and old crisps.', 'Smells like... a squirrel\'s diary.', 'Sniff sniff. Interesting. Very interesting.'];
