@@ -50,10 +50,11 @@ require('./test_lib').run('v25_breeds', async (t) => {
   ok(!!(await S()).breedTips.frenchie, 'S.breedTips.frenchie is stamped');
   ok(await t.until(() => /\*snort\* Flat faces and sun do not mix\. Shade, please\./.test(document.getElementById('bubble').textContent), null, 4000), 'the dog says its hot-day line');
   await t.toasts();
-  await t.dev(async () => { await p.selectOption('#dvWeather', 'cloudy'); });
-  await t.dev(async () => { await p.selectOption('#dvWeather', 'sunny'); });
-  await t.sleep(600);
+  // a second hot reaction (a new place, so the yard reacts again): the line again, but no second tip
+  await ev(() => { document.getElementById('bubble').textContent = ''; }); await t.home('park');
+  ok(await t.until(() => /\*snort\* Flat faces and sun do not mix\. Shade, please\./.test(document.getElementById('bubble').textContent), null, 8000), 'a second hot reaction (in the park): the hot-day line again');
   ok(!(await t.toasts()).some((x) => /Flat faces breathe hard/.test(x)), 'the second hot day: no tip again');
+  await t.home('yard');
   await t.dev(async () => { await p.selectOption('#dvWeather', 'cloudy'); });
 
   sec('Wardrobe mannequin: every outfit on every new breed, no console errors');
@@ -74,7 +75,7 @@ require('./test_lib').run('v25_breeds', async (t) => {
       await ev((n) => { const S = window.__paw.S; S.outfit.head = S.outfit.eyes = S.outfit.neck = S.outfit.body = null; window.__paw.shop.equip(n); window.__paw.shop.wardrobe(); }, n);
       if (await t.until(() => !!document.querySelector('#modal .ward .preview svg'), null, 3000)) drawn++;
     }
-    if (id === allIds[0]) await t.sleep(2500); await t.SH('02_wardrobe_frenchie');
+    if (id === allIds[0]) if (process.env.PAW_SHOTS) await t.sleep(2500); await t.SH('02_wardrobe_frenchie');
   }
   ok(drawn === tried && t.errors.length === e0, `${drawn}/${tried} mannequin previews drawn (4 breeds x ${list && list.length} outfits), no console errors`);
   await ev(() => { const S = window.__paw.S; S.outfit.head = S.outfit.eyes = S.outfit.neck = S.outfit.body = null; });
@@ -94,7 +95,7 @@ require('./test_lib').run('v25_breeds', async (t) => {
   await p.setViewportSize({ width: 1280, height: 720 }); await t.sleep(400);
   await p.click('[data-cbreed="collie"]'); await p.waitForSelector('.cbreed.on[data-cbreed="collie"]');
   ok(await ev(() => document.querySelectorAll('.coat').length) >= 20, 'the Border Collie page lists its coats');
-  await t.sleep(2500); await t.SH('03_journal_coats');
+  if (process.env.PAW_SHOTS) await t.sleep(2500); await t.SH('03_journal_coats');
   await t.closeX(); await t.modalGone();
 
   sec('Poodle x Golden playdate: Goldendoodle pups, shown in the family tree');
@@ -121,7 +122,7 @@ require('./test_lib').run('v25_breeds', async (t) => {
   await p.click(`.fkids [data-fam="${pupId}"]`);
   ok(await t.until(() => /Goldendoodle/.test((document.querySelector('.fam-me') || {}).textContent || ''), null, 4000), 'the pup\'s tree page says Goldendoodle');
   ok(await ev(() => /Pretzel/.test(document.querySelector('.ft').textContent) && /Sunny/.test(document.querySelector('.ft').textContent)), 'mum Pretzel and dad Sunny are on the tree');
-  await t.sleep(2500); await t.SH('04_family_tree_goldendoodle');
+  if (process.env.PAW_SHOTS) await t.sleep(2500); await t.SH('04_family_tree_goldendoodle');
   await t.closeX(); await t.modalGone();
   await ev(() => window.__paw.breed.chooseNow()); await t.until(() => !!document.getElementById('wsOk'), null, 6000);
   await p.click('#wsOk'); await t.until(() => !!document.getElementById('wsBye2'), null, 4000); await p.click('#wsBye2'); await t.untilMode('yard'); await t.modalGone();
@@ -156,7 +157,7 @@ require('./test_lib').run('v25_breeds', async (t) => {
   await t.until(() => !!document.querySelector('.dnacard.done'), null, 5000); await t.sleep(400);
   const dna = await ev(() => ({ h: document.querySelector('#modal .panel h2').textContent, lines: [...document.querySelectorAll('.dna-lines li')].map((e) => e.textContent) }));
   ok(/Blue/.test(dna.h) && dna.lines.some((l) => /^M\/m: merle marbling \(never pair with another merle\)$/.test(l)), 'the card reads M/m: merle marbling, never pair with another merle: ' + dna.lines.join(' | '));
-  await t.sleep(2500); await t.SH('05_gene_sniffer_merle_collie');
+  if (process.env.PAW_SHOTS) await t.sleep(2500); await t.SH('05_gene_sniffer_merle_collie');
   await t.closeX(); await t.modalGone(); await t.home('yard');
 
   sec('Horgi x Horgi = Horgi');
@@ -173,10 +174,17 @@ require('./test_lib').run('v25_breeds', async (t) => {
     f.preg = null; f.lastPlaydate = null; P.breed.setSeason(f.id, true);
     const r2 = P.breed.playdate(f.id, c.id, { force: true, size: 2 });
     const pups2 = (f.preg && f.preg.pups) || [];
-    return { ok: r.ok, pups: pups.map((q) => ({ key: q.key, mix: q.mix })), ok2: r2.ok, pups2: pups2.map((q) => ({ key: q.key, mix: q.mix })) };
+    // two unrelated 3/4 Corgis (named "Corgi" by grandMix): their pups are Corgis with a corgi body and head
+    const q3 = { a: 'corgi', b: 'husky', body: 'corgi', head: 'corgi', name: 'Corgi' }, a3 = { corgi: 0.75, husky: 0.25 };
+    const g = mk('corgi', 'female', Object.assign({}, q3), 'Gwen'), h = mk('corgi', 'male', Object.assign({}, q3), 'Hugo');
+    g.anc = Object.assign({}, a3); h.anc = Object.assign({}, a3); P.breed.backfill(); P.breed.setSeason(g.id, true);
+    const r3 = P.breed.playdate(g.id, h.id, { force: true, size: 3 });
+    const pups3 = (g.preg && g.preg.pups) || [];
+    return { ok: r.ok, pups: pups.map((q) => ({ key: q.key, mix: q.mix })), ok2: r2.ok, pups2: pups2.map((q) => ({ key: q.key, mix: q.mix })), ok3: r3.ok, pups3: pups3.map((q) => ({ key: q.key, mix: q.mix })) };
   }, iso(30));
   ok(hh.ok && hh.pups.length === 3 && hh.pups.every((q) => q.mix && q.mix.name === 'Horgi' && ['corgi', 'husky'].includes(q.key)), 'Horgi x Horgi: every pup is a Horgi ' + JSON.stringify(hh.pups.map((q) => q.key + ' ' + (q.mix && q.mix.name))));
   ok(hh.pups.every((q) => q.mix.head !== q.key && ['corgi', 'husky'].includes(q.mix.head)), 'the pups show a corgi and a husky half');
+  ok(hh.ok3 && hh.pups3.length === 3 && hh.pups3.every((q) => q.key === 'corgi' && q.mix && q.mix.name === 'Corgi' && q.mix.head === 'corgi'), 'two unrelated 3/4 Corgis: Corgi pups with a corgi body and head ' + JSON.stringify(hh.pups3.map((q) => q.key + '/' + (q.mix && q.mix.head) + ' ' + (q.mix && q.mix.name))));
   ok(hh.ok2 && hh.pups2.length === 2 && hh.pups2.every((q) => q.key === 'corgi' && q.mix && q.mix.name === 'Corgi'), 'Horgi x Corgi (3/4 Corgi): the pups are Corgis, not "Mutt mix" ' + JSON.stringify(hh.pups2.map((q) => q.key + ' ' + (q.mix && q.mix.name))));
 
   sec('phones: all 14 heads in the adoption sheet are tappable (iPhone 13, Pixel 7)');
