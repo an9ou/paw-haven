@@ -14,9 +14,9 @@ const C={ink:'#5B3D32',graph:'#A8968A',paper:'#FFFBF3',dot:'#E3D2BA',pink:'#F28F
   stone:'#DED6CC',stoneD:'#C7BCAE',path:'#EFDDBA',soil:'#D9B48E',water:'#BEE0F2',waterD:'#9CCDE8',sand:'#F7E4B5',sandD:'#EBCF95',
   red:'#F4A3A3',redD:'#E57E83',yellow:'#FCE59A',orange:'#F8C08A',lav:'#DCCBF2',mint:'#C9EBDA',blue:'#B9D3F2',white:'#FFFFFF',glass:'#E4F2FA'};
 let _n=0;const uid=()=>'pwc'+(++_n);
-const TIMES=['dawn','day','dusk','night'],WEATHERS=['sunny','cloudy','rain','snow'];
-function mkEnv(o){o=o||{};const time=TIMES.includes(o.time)?o.time:'day',weather=WEATHERS.includes(o.weather)?o.weather:'sunny';
-  return {time,weather,def:time==='day'&&weather==='sunny',night:time==='night',low:time==='dawn'||time==='dusk',sunny:weather==='sunny',
+const TIMES=['dawn','day','dusk','night'],WEATHERS=['sunny','cloudy','rain','snow'],SEASONS=['spring','summer','autumn','winter'];
+function mkEnv(o){o=o||{};const time=TIMES.includes(o.time)?o.time:'day',weather=WEATHERS.includes(o.weather)?o.weather:'sunny',season=SEASONS.includes(o.season)?o.season:'summer';
+  return {time,weather,season,ssn:season==='summer'?'':season,def:time==='day'&&weather==='sunny'&&season==='summer',night:time==='night',low:time==='dawn'||time==='dusk',sunny:weather==='sunny',
     rain:weather==='rain',snow:weather==='snow',lit:time==='night'?1:time==='dusk'?.55:0}}
 const DEF_ENV=mkEnv({});
 const HEXRE=/#(?:[0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})\b/g;
@@ -49,7 +49,7 @@ function smooth(P,closed){
 function kit(seed){
   // two seeded streams: the main one draws the base scene, the side one draws time/weather extras,
   // so every variant keeps exactly the same base layout (and day+sunny is byte-identical to before)
-  let cur=rng(seed);const sideR=rng((seed^0x5bd1e995)>>>0);
+  let cur=rng(seed);const sideR=rng((seed^0x5bd1e995)>>>0),seaR=rng((seed^0x2f6b8d3c)>>>0);
   const r=()=>cur(),out=[],defs=[],J=a=>(r()-.5)*2*a;
   const k={r,J,out,defs,env:DEF_ENV,defs2:[],sky:[],top:[],glows:[],lamps:[],bulbs:[],glints:[],flies:[],rc:null,
     side(fn){const sv=cur;cur=sideR;try{return fn()}finally{cur=sv}},
@@ -57,6 +57,8 @@ function kit(seed){
     // default sky code runs as before; in a variant it still runs (discarded, keeps the stream) and the variant sky is drawn instead
     skyD(fn,cfg){if(k.env.def)fn();else{k.cap(fn);drawSky(k,cfg)}},
     fx(fn){if(!k.env.def)k.side(fn)},
+    // v2.5: season extras run on their own stream, and only in spring, autumn and winter (k.so: the season of outdoor things)
+    so:'',ss(fn){if(!k.env.ssn)return;const sv=cur;cur=seaR;try{return fn()}finally{cur=sv}},
     add(s){out.push(s)},
     // one pencil pass as a filled ribbon: wobble, tapered ends, heavier where the form faces down
     pen(pts,closed,o={}){
@@ -125,35 +127,41 @@ const O={
    k.add(`<ellipse cx="${x-rad*.5}" cy="${y+rad*.2}" rx="5" ry="3" fill="${C.pink}" opacity=".6"/><ellipse cx="${x+rad*.5}" cy="${y+rad*.2}" rx="5" ry="3" fill="${C.pink}" opacity=".6"/>`)},
  bird(k,x,y,s){k.line([[x-s,y-s*.3],[x-s*.4,y-s*.5],[x,y]],1.6);k.line([[x,y],[x+s*.4,y-s*.5],[x+s,y-s*.3]],1.6)},
  tuft(k,x,y,s=1,col=C.grassD){k.add(`<path d="M${R1(x-6*s)} ${y}q${R1(1*s)} ${R1(-7*s)} ${R1(-1*s)} ${R1(-12*s)}M${R1(x)} ${y}q${R1(-1*s)} ${R1(-9*s)} ${R1(2*s)} ${R1(-15*s)}M${R1(x+6*s)} ${y}q${R1(1*s)} ${R1(-6*s)} ${R1(4*s)} ${R1(-10*s)}" fill="none" stroke="${col}" stroke-width="1.6" stroke-linecap="round"/>`)},
- flower(k,x,y,s,col){k.line([[x,y+s*2.6],[x+k.J(1),y]],1.4,'#7DAE66');for(let i=0;i<5;i++){const a=i/5*Math.PI*2;k.add(`<circle cx="${R1(x+Math.cos(a)*s)}" cy="${R1(y+Math.sin(a)*s)}" r="${R1(s*.62)}" fill="${col}" stroke="${C.ink}" stroke-width="1"/>`)}k.add(`<circle cx="${x}" cy="${y}" r="${R1(s*.5)}" fill="#F7C65E" stroke="${C.ink}" stroke-width="1"/>`)},
+ flower(k,x,y,s,col){if(k.so==='winter'){k.cap(()=>{k.line([[x,y+s*2.6],[x+k.J(1),y]],1.4,'#7DAE66')});k.ss(()=>winterFlower(k,x,y,s));return}if(k.so==='autumn')col=AUF[col]||col;
+   k.line([[x,y+s*2.6],[x+k.J(1),y]],1.4,'#7DAE66');for(let i=0;i<5;i++){const a=i/5*Math.PI*2;k.add(`<circle cx="${R1(x+Math.cos(a)*s)}" cy="${R1(y+Math.sin(a)*s)}" r="${R1(s*.62)}" fill="${col}" stroke="${C.ink}" stroke-width="1"/>`)}k.add(`<circle cx="${x}" cy="${y}" r="${R1(s*.5)}" fill="#F7C65E" stroke="${C.ink}" stroke-width="1"/>`)},
  leafy(k,cx,cy,rx,ry,col,colD){// a scribbled leaf cluster: lumpy canopy, little "c" leaf marks, hatched underside
    const p=[];const n=11;for(let i=0;i<n;i++){const a=i/n*Math.PI*2,kk=i%2?1.06:.9+k.r()*.06;p.push([cx+Math.cos(a)*rx*kk,cy+Math.sin(a)*ry*kk])}
    k.fill(p,col);k.hatch(p,{side:.35,gap:5,col:colD,op:.55,w:1.3});k.pen(p,true,{w:2.1});
    let d='';for(let i=0;i<Math.round(rx*ry/260);i++){const a=k.r()*Math.PI*2,rr=Math.sqrt(k.r())*.75,x=cx+Math.cos(a)*rx*rr,y=cy+Math.sin(a)*ry*rr;d+=`M${R1(x)} ${R1(y)}q3 -4 7 -1`}
    k.add(`<path d="${d}" fill="none" stroke="${colD}" stroke-width="1.4" stroke-linecap="round"/>`);
    if(k.env.snow)k.side(()=>{const q=[];for(let i=0;i<=8;i++){const a=Math.PI*1.12+i/8*Math.PI*.76;q.push([cx+Math.cos(a)*rx*1.02,cy+Math.sin(a)*ry*1.04])}capLine(k,q,Math.max(4,ry*.28))})},
- tree(k,x,gy,s=1,o={}){const col=o.col||C.leaf,colD=o.colD||C.leafD;
+ tree(k,x,gy,s=1,o={}){const col=o.col||C.leaf,colD=o.colD||C.leafD,so=k.so,cs=crownCols(k,col,colD,x,gy);
    const tw=14*s,th=70*s;k.shape([[x-tw*.6,gy],[x-tw*.45,gy-th],[x+tw*.45,gy-th],[x+tw*.7,gy]],C.trunk,{hatch:{side:.5,gap:3.5,col:C.trunkD,op:.6}});
    k.line([[x-2*s,gy-10*s],[x-1*s,gy-30*s],[x-3*s,gy-50*s]],1.2,C.trunkD);k.line([[x+3*s,gy-20*s],[x+4*s,gy-40*s]],1.2,C.trunkD);
-   O.leafy(k,x-26*s,gy-th-8*s,34*s,28*s,col,colD);O.leafy(k,x+26*s,gy-th-4*s,32*s,26*s,col,colD);O.leafy(k,x,gy-th-36*s,40*s,34*s,col,colD);
-   if(o.fruit)for(let i=0;i<5;i++)k.add(`<circle cx="${R1(x+(k.r()-.5)*70*s)}" cy="${R1(gy-th-20*s+(k.r()-.5)*40*s)}" r="${R1(3.6*s)}" fill="${o.fruit}" stroke="${C.ink}" stroke-width="1.2"/>`)},
+   const crown=()=>{O.leafy(k,x-26*s,gy-th-8*s,34*s,28*s,cs[0][0],cs[0][1]);O.leafy(k,x+26*s,gy-th-4*s,32*s,26*s,cs[1][0],cs[1][1]);O.leafy(k,x,gy-th-36*s,40*s,34*s,cs[2][0],cs[2][1])};
+   const fruit=()=>{if(o.fruit)for(let i=0;i<5;i++)k.add(`<circle cx="${R1(x+(k.r()-.5)*70*s)}" cy="${R1(gy-th-20*s+(k.r()-.5)*40*s)}" r="${R1(3.6*s)}" fill="${o.fruit}" stroke="${C.ink}" stroke-width="1.2"/>`)};
+   // v2.5: winter keeps the stream but draws bare limbs, spring trades the fruit for blossom (the maples stay plain green)
+   if(so==='winter'){k.cap(crown);k.cap(fruit);k.ss(()=>bareCrown(k,x,gy,s))}else if(so==='spring'){crown();k.cap(fruit);if(!MAPLE[col])k.ss(()=>blossom(k,x,gy,s))}else{crown();fruit()}},
  pine(k,x,gy,s=1,col=C.pine,colD=C.pineD){k.shape([[x-6*s,gy],[x-5*s,gy-30*s],[x+5*s,gy-30*s],[x+6*s,gy]],C.trunkD,{w:1.8});
    [[0,1],[1,.78],[2,.56]].forEach(([i,f])=>{const yb=gy-24*s-i*34*s,w=46*s*f,h=54*s;const p=[[x-w,yb],[x-w*.4,yb-h*.35],[x-w*.66,yb-h*.38],[x,yb-h],[x+w*.66,yb-h*.38],[x+w*.4,yb-h*.35],[x+w,yb]];k.fill(p,col);k.hatch(p,{side:.5,gap:4.5,col:colD,op:.6,w:1.2});k.pen(p,true,{w:2});
      if(k.env.snow)k.side(()=>{capLine(k,[[x-w*.32,yb-h*.71],[x,yb-h],[x+w*.32,yb-h*.71]],6*s);capLine(k,[[x-w,yb],[x-w*.42,yb-h*.34]],3.5*s);capLine(k,[[x+w*.42,yb-h*.34],[x+w,yb]],3.5*s)})})},
- bush(k,x,gy,s=1,col=C.leaf2,colD=C.leafD,berries){const p=[];for(let i=0;i<=8;i++){const a=Math.PI+i/8*Math.PI;p.push([x+Math.cos(a)*40*s,gy+Math.sin(a)*(i%2?30:24)*s])}k.shape(p,col,{hatch:{side:.45,gap:4.5,col:colD,op:.5}});
+ bush(k,x,gy,s=1,col=C.leaf2,colD=C.leafD,berries){if(k.so==='autumn'){col='#C9C27A';colD='#9F9A54'}else if(k.so==='winter'){col='#A3B293';colD='#7F8F74'}const p=[];for(let i=0;i<=8;i++){const a=Math.PI+i/8*Math.PI;p.push([x+Math.cos(a)*40*s,gy+Math.sin(a)*(i%2?30:24)*s])}k.shape(p,col,{hatch:{side:.45,gap:4.5,col:colD,op:.5}});
    let d='';for(let i=0;i<6;i++)d+=`M${R1(x+(k.r()-.5)*56*s)} ${R1(gy-6*s-k.r()*18*s)}q3 -4 7 -1`;k.add(`<path d="${d}" fill="none" stroke="${colD}" stroke-width="1.3" stroke-linecap="round"/>`);
    if(berries)for(let i=0;i<4;i++)k.add(`<circle cx="${R1(x+(k.r()-.5)*50*s)}" cy="${R1(gy-8*s-k.r()*16*s)}" r="${R1(3*s)}" fill="${berries}" stroke="${C.ink}" stroke-width="1"/>`);
+   if(k.so==='spring')k.ss(()=>{for(let i=0;i<6;i++)flowerDot(k,x+(k.r()-.5)*56*s,gy-8*s-k.r()*16*s,2*s,i%2?'#FFFFFF':'#F9C6D4')});
    if(k.env.snow)k.side(()=>capLine(k,p.slice(1,8),6*s))},
  rock(k,x,y,s){k.shape(blobP(x,y,16*s,10*s,k.r,8,.25).map(p=>[p[0],Math.min(p[1],y+4*s)]),C.stone,{w:1.8,hatch:{side:.5,gap:4,col:C.stoneD,op:.6}})},
  board(k,x,y,w,h,col=C.wood,colD=C.woodD,pointy){// one fence board with grain and a knot
    const p=pointy?[[x,y+8],[x+w/2,y],[x+w,y+8],[x+w,y+h],[x,y+h]]:RC(x,y,w,h);k.shape(p,col,{w:1.9,wk:.5});
    const gx=x+w*(.3+k.r()*.4);k.line([[gx,y+12],[gx+k.J(2),y+h*.5],[gx+k.J(2),y+h-6]],1,colD);k.line([[x+w*.75,y+h*.3],[x+w*.72,y+h*.7]],1,colD);
    if(k.r()<.45){const ky=y+h*(.35+k.r()*.3);k.add(`<ellipse cx="${R1(x+w*.4)}" cy="${R1(ky)}" rx="2.6" ry="1.8" fill="none" stroke="${colD}" stroke-width="1.1"/>`)}
+   if(k.so==='winter')k.ss(()=>frostLine(k,pointy?[[x+1,y+8],[x+w/2,y+1],[x+w-1,y+8]]:[[x+1,y+1],[x+w-1,y+1]]));
    if(k.env.snow)k.side(()=>capLine(k,pointy?[[x-1,y+8],[x+w/2,y],[x+w+1,y+8]]:[[x,y],[x+w,y]],Math.max(3,w*.2)))},
  fence(k,x0,x1,yt,yb,o={}){const bw=o.bw||26,gap=o.gap||5;k.shape(RC(x0,yt+20,x1-x0,9),C.woodD,{w:1.7,one:1});k.shape(RC(x0,yb-30,x1-x0,9),C.woodD,{w:1.7,one:1});
    for(let x=x0;x<x1-bw*.5;x+=bw+gap){const h=yb-yt+k.J(3);O.board(k,x,yb-h,bw,h,C.wood,C.woodD,true)}},
  bench(k,x,gy,s=1){k.shape(RC(x-50*s,gy-36*s,100*s,8*s),C.woodD,{w:1.8});k.shape(RC(x-50*s,gy-58*s,100*s,8*s),C.wood,{w:1.8});k.shape(RC(x-50*s,gy-70*s,100*s,8*s),C.wood,{w:1.8});
    [-42,36].forEach(dx=>{k.line([[x+dx*s,gy-28*s],[x+dx*s,gy]],3.2,C.ink);k.line([[x+(dx+4)*s,gy-74*s],[x+(dx+4)*s,gy-36*s]],2.6,C.ink)});
+   if(k.so==='winter')k.ss(()=>{frostLine(k,[[x-49*s,gy-69*s],[x+49*s,gy-69*s]]);frostLine(k,[[x-49*s,gy-35*s],[x+49*s,gy-35*s]])});
    if(k.env.snow)k.side(()=>{capLine(k,[[x-52*s,gy-70*s],[x+52*s,gy-70*s]],6*s);capLine(k,[[x-52*s,gy-36*s],[x+52*s,gy-36*s]],5*s)})},
  lamp(k,x,gy,s=1){k.line([[x,gy],[x,gy-120*s]],4,C.ink);k.shape([[x-12*s,gy-120*s],[x+12*s,gy-120*s],[x+8*s,gy-140*s],[x-8*s,gy-140*s]],C.yellow,{w:1.8});k.shape([[x-14*s,gy-140*s],[x,gy-152*s],[x+14*s,gy-140*s]],'#9AA7B8',{w:1.8});
    k.add(`<circle cx="${x}" cy="${R1(gy-130*s)}" r="${R1(16*s)}" fill="${C.yellow}" opacity=".35"/>`);
@@ -201,9 +209,136 @@ function sheen(k,x0,x1,y0,y1,n,avoid=[],wrapW=0){let d='';for(let i=0;i<n;i++){c
 function ripples(k,x0,x1,y0,y1,n,wrapW){let d='';for(let i=0;i<n;i++){const x=x0+k.r()*(x1-x0),y=y0+k.r()*(y1-y0),r=4+k.r()*6;const e=`M${R1(x-r)} ${R1(y)}a${R1(r)} ${R1(r*.35)} 0 1 0 ${R1(r*2)} 0a${R1(r)} ${R1(r*.35)} 0 1 0 ${R1(-r*2)} 0`;d+=e;if(wrapW&&x+r>wrapW)d+=`M${R1(x-r-wrapW)} ${R1(y)}a${R1(r)} ${R1(r*.35)} 0 1 0 ${R1(r*2)} 0a${R1(r)} ${R1(r*.35)} 0 1 0 ${R1(-r*2)} 0`;if(wrapW&&x-r<0)d+=`M${R1(x-r+wrapW)} ${R1(y)}a${R1(r)} ${R1(r*.35)} 0 1 0 ${R1(r*2)} 0a${R1(r)} ${R1(r*.35)} 0 1 0 ${R1(-r*2)} 0`}
   k.add(`<path d="${d}" fill="none" stroke="#FFFFFF" stroke-width="1.3" opacity=".75"/>`)}
 
+/* ---------- v2.5 seasons: spring, autumn and winter painted over the summer drawing ----------
+   Summer is the base art, byte for byte. A season only recolours the base (recolorFn), swaps tree, bush and
+   flower colours where they are drawn, and adds extras from its own seeded stream (k.ss). The main and side
+   streams, the layout and every hotspot stay exactly where they were. */
+const AU=[['#F2B25C','#C98336'],['#E8895A','#B9603E'],['#F3CB58','#C79C36'],['#DE6650','#AE463A']];// amber, rust, gold, maple red
+const MAPLE={'#E9A86A':1,'#F2C46D':1,'#E9B074':1};
+const AUF={'#F4A3A3':'#E9865C','#FCE59A':'#F3BE55','#FFB3C7':'#EC977C','#F49090':'#DF7556','#F8C08A':'#EC9A4E','#DCCBF2':'#C7AEEC'};
+// season recolour of the outdoor base: g = where the yellow-greens drift, map = exact swaps (winter water)
+const SRC={spring:{g:'#D9F29C',ga:.3},autumn:{g:'#E6D08E',ga:.46,m:'#F6C27C',a:.04},
+  winter:{g:'#E8EEE6',ga:.46,ds:.16,m:'#D9E2EC',a:.07,map:{'#BEE0F2':'#C5D2DB','#9CCDE8':'#AABCC9','#86BDDE':'#98AEBE','#A9D3EC':'#B6C6D1','#7FB6D8':'#95ABBC','#A8C6DD':'#B1C1CD'}}};
+const SKYS={spring:['#DCEEF8','#F2F8F4',.55],autumn:['#C6DBEA','#F6E5CC',.5],winter:['#CDD8E3','#EEF1F4',.65]};
+const hueOf=c=>{const [r,g,b]=c,mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;if(!d||d/mx<.1)return -1;
+  const h=mx===r?((g-b)/d)%6:mx===g?(b-r)/d+2:(r-g)/d+4;return (h*60+360)%360};
+const isLeafy=c=>{const h=hueOf(c);return h>=66&&h<=128};// yellow-greens: grass, leaves, hedges (the blue-green pines stay)
+const hashXY=(x,y)=>(Math.imul(Math.round(x)+977,73856093)^Math.imul(Math.round(y)+331,19349663))>>>0;
+// the colours of one broadleaf crown per season: [[fill, hatch] x3] (left, right, top)
+function crownCols(k,col,colD,x,gy){const so=k.so;
+  if(so==='autumn'){const i=MAPLE[col]?3:hashXY(x,gy)%3,a=AU[i],b=AU[i===3?1:(i+2)%3];return [a,a,[mixH(a[0],b[0],.45),mixH(a[1],b[1],.45)]]}
+  if(so==='spring'&&MAPLE[col])return [[C.leaf,C.leafD],[C.leaf2,C.leafD],[C.leaf,C.leafD]];
+  return [[col,colD],[col,colD],[col,colD]]}
+// winter crown: a faint wash of the old canopy, outlined limbs, twigs, a few brown leaves holding on
+function bareCrown(k,x,gy,s){const th=70*s,top=gy-th,segs=[],tips=[];
+  k.fill(blobP(x,top-30*s,60*s,44*s,k.r,11,.2),'#D8CCC0',{dx:0,dy:0,op:.34});
+  const grow=(x0,y0,a,len,w,d)=>{const x1=x0+Math.cos(a)*len,y1=y0+Math.sin(a)*len;segs.push([[x0,y0],[(x0+x1)/2+k.J(len*.07),(y0+y1)/2+k.J(len*.07)],[x1,y1],w,d]);
+    if(d<2){const n=d?2:2+(k.r()<.5?1:0);for(let i=0;i<n;i++)grow(x1,y1,a+(i-(n-1)/2)*.62+k.J(.16),len*(.6+k.r()*.12),w*.58,d+1)}else tips.push([x1,y1,a])};
+  [[-2.3,30],[-1.9,38],[-1.25,38],[-.85,30]].forEach(([a,l])=>grow(x+k.J(2*s),top+8*s,a+k.J(.08),l*s,4.6*s,0));
+  segs.forEach(([p0,pm,p1,w])=>k.line([p0,pm,p1],w+1.8,C.ink,{amp:.35}));
+  segs.forEach(([p0,pm,p1,w])=>{if(w>2.2)k.line([p0,pm,p1],w-.7,C.trunk,{amp:.25})});
+  let tw='';tips.forEach(([tx,ty,a])=>{[[-.45,9],[.5,7],[.05,6]].forEach(([da,l])=>{tw+=`M${R1(tx)} ${R1(ty)}l${R1(Math.cos(a+da)*l*s)} ${R1(Math.sin(a+da)*l*s)}`})});
+  k.add(`<path d="${tw}" fill="none" stroke="${C.ink}" stroke-width="1.2" stroke-linecap="round"/>`);
+  tips.filter((t,i)=>i%3===1).forEach(([tx,ty,a])=>leafAt(k,tx+Math.cos(a)*3,ty+6*s,4.5*s,a+1.2,'#C2925E','#93673E'));
+  if(k.env.snow){let d='';segs.filter(sg=>sg[4]<2).forEach(([p0,pm,p1,w])=>{d+=`M${R1(p0[0])} ${R1(p0[1]-w*.5)}Q${R1(pm[0])} ${R1(pm[1]-w*.6)} ${R1(p1[0])} ${R1(p1[1]-w*.5)}`});
+    k.add(`<path d="${d}" fill="none" stroke="#FFFFFF" stroke-width="${R1(2.6*s)}" stroke-linecap="round"/>`)}}
+// spring blossom: pink puffs and little five-petal flowers over the crown
+function blossom(k,x,gy,s){const top=gy-70*s,spots=[[x-26*s,top-8*s,30*s,22*s],[x+26*s,top-4*s,28*s,20*s],[x,top-36*s,34*s,26*s]];
+  spots.forEach(([cx,cy,rx,ry])=>{for(let i=0;i<3;i++){const a=k.r()*Math.PI*2,rr=Math.sqrt(k.r())*.7,px=cx+Math.cos(a)*rx*rr,py=cy+Math.sin(a)*ry*rr,r=(7+k.r()*4)*s;
+    k.shape(blobP(px,py,r,r*.82,k.r,8,.3),k.r()<.7?'#F9C6D4':'#FFF1F4',{w:1.2,one:1,lcol:'#C98A9C'})}});
+  spots.forEach(([cx,cy,rx,ry])=>{for(let i=0;i<5;i++){const a=k.r()*Math.PI*2,rr=Math.sqrt(k.r())*.85;flowerDot(k,cx+Math.cos(a)*rx*rr,cy+Math.sin(a)*ry*rr,2.3*s,k.r()<.5?'#FFFFFF':'#F7B6C8')}})}
+function flowerDot(k,x,y,r,col){let s='';for(let i=0;i<5;i++){const a=i/5*Math.PI*2-.3;s+=`<circle cx="${R1(x+Math.cos(a)*r)}" cy="${R1(y+Math.sin(a)*r)}" r="${R1(r*.75)}" fill="${col}" stroke="${C.ink}" stroke-width=".8" stroke-opacity=".75"/>`}
+  k.add(s+`<circle cx="${R1(x)}" cy="${R1(y)}" r="${R1(r*.5)}" fill="#F7C65E"/>`)}
+// one leaf: an almond with a midrib (the same leaf as the Maple Woods floor), rotated
+function leafAt(k,x,y,s,rot,col,colD){const c=Math.cos(rot),n=Math.sin(rot),P=(u,v)=>`${R1(x+u*s*c-v*s*n)} ${R1(y+u*s*n+v*s*c)}`;
+  k.add(`<path d="M${P(-1,0)}Q${P(0,-.75)} ${P(1,0)}Q${P(0,.75)} ${P(-1,0)}Z" fill="${col}" stroke="${colD}" stroke-width=".9"/><path d="M${P(-1.25,0)}L${P(.7,0)}" stroke="${colD}" stroke-width=".9" stroke-linecap="round"/>`)}
+// a maple leaf, outlined in pencil
+function mapleAt(k,x,y,s,rot,col){const p=[];const R=[1,.42,.82,.38,1.05,.38,.82,.42,1,.3];for(let i=0;i<10;i++){const a=rot-Math.PI/2+(i-4.5)/10*Math.PI*1.9;p.push([x+Math.cos(a)*R[i]*s,y+Math.sin(a)*R[i]*s])}p.push([x,y+.35*s]);
+  k.add(`<path d="M${p.map(q=>R1(q[0])+' '+R1(q[1])).join('L')}Z" fill="${col}" stroke="${C.ink}" stroke-width="1" stroke-linejoin="round"/><path d="M${R1(x)} ${R1(y+.3*s)}L${R1(x+Math.cos(rot+Math.PI/2)*.7*s)} ${R1(y+Math.sin(rot+Math.PI/2)*.7*s)}" stroke="${C.ink}" stroke-width="1" stroke-linecap="round"/>`)}
+function petalAt(k,x,y,s,rot,col){const c=Math.cos(rot),n=Math.sin(rot),P=(u,v)=>`${R1(x+u*s*c-v*s*n)} ${R1(y+u*s*n+v*s*c)}`;
+  k.add(`<path d="M${P(-1,0)}Q${P(-.2,-.9)} ${P(.8,-.35)}L${P(.55,0)}L${P(.8,.35)}Q${P(-.2,.9)} ${P(-1,0)}Z" fill="${col}" stroke="#D68CA0" stroke-width=".7"/>`)}
+const PET=['#F9C6D4','#FFF1F4','#F7B6C8','#F9C6D4'];
+// lawn and paving extras. box [x0,y0,x1,y1], avoid = boxes to keep clear, wrapW = seamless strip width
+function seasonGround(k,box,n,avoid=[],wrapW=0){const so=k.so;if(!so)return;const [x0,y0,x1,y1]=box,free=(x,y)=>!avoid.some(a=>x>a[0]&&x<a[2]&&y>a[1]&&y<a[3]);
+  const put=(x,y,hw,fn)=>{if(wrapW&&k.wrap)k.wrap(x,hw,fn);else fn()};
+  for(let i=0;i<n;i++){const x=x0+k.r()*(x1-x0),y=y0+k.r()*(y1-y0),t=k.r(),rot=k.r()*Math.PI*2,sz=.8+k.r()*.6;if(!free(x,y))continue;
+    const yk=1+(y-y0)/Math.max(1,y1-y0)*.35;// a little bigger toward the viewer
+    if(so==='autumn'){const a=AU[Math.floor(t*4)%4];put(x,y,12,()=>t<.16?mapleAt(k,x,y,7.6*sz*yk,rot,a[0]):leafAt(k,x,y,6*sz*yk,rot,a[0],a[1]))}
+    else if(so==='spring'){put(x,y,8,()=>t<.62?petalAt(k,x,y,4.4*sz*yk,rot,PET[Math.floor(t*7)%4]):t<.86?flowerDot(k,x,y,2.6*sz*yk,'#FFFFFF'):k.add(`<circle cx="${R1(x)}" cy="${R1(y)}" r="${R1(3*sz*yk)}" fill="#F7D24E" stroke="${C.ink}" stroke-width=".9"/><path d="M${R1(x)} ${R1(y+3*sz)}v${R1(5*sz)}" stroke="#6FAE5C" stroke-width="1.2"/>`))}
+    else if(so==='winter'){put(x,y,14,()=>t<.22?k.fill(blobP(x,y,(10+k.r()*12)*yk,(2.6+k.r()*2)*yk,k.r,8,.3),'#FFFFFF',{dx:0,dy:0,op:.62}):k.add(`<path d="M${R1(x)} ${R1(y)}q${R1(yk)} ${R1(-6*yk)} ${R1(-yk)} ${R1(-10*yk)}M${R1(x+5*yk)} ${R1(y)}q0 ${R1(-7*yk)} ${R1(3*yk)} ${R1(-12*yk)}" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>`))}}}
+// leaves or petals in the air, each with a little pencil swoosh behind it (drawn on the top layer)
+function seasonDrift(k,pts,wrapW=0){const so=k.so;if(so!=='autumn'&&so!=='spring')return;
+  pts.forEach(([x,y,s],i)=>{const rot=(i*1.7)%6.28,str=k.cap(()=>{k.add(`<path d="M${R1(x-26*s)} ${R1(y-10*s)}q${R1(10*s)} ${R1(12*s)} ${R1(20*s)} ${R1(4*s)}" fill="none" stroke="${C.graph}" stroke-width="1.2" stroke-linecap="round" stroke-dasharray="4 4" opacity=".8"/>`);
+    if(so==='autumn'){const a=AU[i%4];i%3===2?mapleAt(k,x,y,9*s,rot,a[0]):leafAt(k,x,y,7.4*s,rot,a[0],a[1])}else{petalAt(k,x,y,5.6*s,rot,PET[i%4]);if(i%2)petalAt(k,x+9*s,y+7*s,4.4*s,rot+1.4,PET[(i+1)%4])}});
+    k.top.push(str);if(wrapW&&x<30)k.top.push(`<g transform="translate(${wrapW} 0)">${str}</g>`);if(wrapW&&x>wrapW-30)k.top.push(`<g transform="translate(${-wrapW} 0)">${str}</g>`)})}
+// winter frost: a thin white rime along a top edge, with a few glints
+function frostLine(k,pts){const P=dense(pts,false,7);k.line(P.map(p=>[p[0],p[1]+1.2]),1,'#AFC3D6',{amp:.3});k.line(P,2.6,'#FFFFFF',{amp:.3});
+  let g='';for(let i=1;i<P.length-1;i+=3){const p=P[i];g+=`M${R1(p[0]-2)} ${R1(p[1]-2)}l4 4M${R1(p[0]+2)} ${R1(p[1]-2)}l-4 4`}if(g)k.add(`<path d="${g}" stroke="#FFFFFF" stroke-width="1" stroke-linecap="round"/>`)}
+function tulip(k,x,gy,s,col){k.line([[x,gy],[x+k.J(1),gy-22*s]],1.6,'#6FAE5C');k.shape([[x,gy-4*s],[x-9*s,gy-17*s],[x-2*s,gy-13*s]],'#9CCB80',{w:1.1,one:1});
+  k.shape([[x-6*s,gy-21*s],[x-7*s,gy-31*s],[x-3*s,gy-27*s],[x,gy-33*s],[x+3*s,gy-27*s],[x+7*s,gy-31*s],[x+6*s,gy-21*s],[x,gy-18*s]],col,{w:1.4,one:1});k.line([[x,gy-31*s],[x,gy-21*s]],1,C.ink,{op:.45})}
+function daffodil(k,x,gy,s){k.line([[x,gy],[x+k.J(1),gy-24*s]],1.6,'#6FAE5C');k.line([[x+2*s,gy],[x+6*s,gy-14*s]],2.4,'#9CCB80');
+  let p='';for(let i=0;i<6;i++){const a=i/6*Math.PI*2;p+=`<ellipse cx="${R1(x+Math.cos(a)*4.6*s)}" cy="${R1(gy-27*s+Math.sin(a)*4.6*s)}" rx="${R1(3.6*s)}" ry="${R1(2.6*s)}" transform="rotate(${R1(a*57.3)} ${R1(x+Math.cos(a)*4.6*s)} ${R1(gy-27*s+Math.sin(a)*4.6*s)})" fill="#FFF3A8" stroke="${C.ink}" stroke-width=".9"/>`}
+  k.add(p+`<circle cx="${R1(x)}" cy="${R1(gy-27*s)}" r="${R1(3.2*s)}" fill="#F6AE3E" stroke="${C.ink}" stroke-width="1"/><circle cx="${R1(x)}" cy="${R1(gy-27*s)}" r="${R1(1.4*s)}" fill="none" stroke="${C.ink}" stroke-width=".8"/>`)}
+// a little group of spring bulbs: tulips with a daffodil or two
+function bulbs(k,x,gy,n,s=1){const cols=['#F28FA5','#F7D24E','#F4A3A3','#FFFFFF','#E86A8A'];for(let i=0;i<n;i++){const bx=x+(i-(n-1)/2)*11*s+k.J(2),by=gy+k.J(2);i%3===1?daffodil(k,bx,by,s*.95):tulip(k,bx,by,s,cols[(i+Math.floor(x))%5])}}
+// winter in a flower bed: a dry seed head on a bent stalk, now and then a snowdrop
+function winterFlower(k,x,y,s){if(hashXY(x,y)%3===0){k.line([[x,y+s*2.6],[x+k.J(.6),y-s*.2],[x+s*.9,y+s*.3]],1.3,'#7DAE66');
+    k.add(`<path d="M${R1(x+s*.9)} ${R1(y+s*.3)}q${R1(-s*.8)} ${R1(s*.4)} ${R1(-s*.2)} ${R1(s*1.6)}q${R1(s*.5)} ${R1(s*.3)} ${R1(s*.9)} ${R1(-s*.1)}q${R1(s*.4)} ${R1(-s*.8)} ${R1(-s*.7)} ${R1(-s*1.5)}z" fill="#FFFFFF" stroke="${C.ink}" stroke-width="1"/>`)}
+  else{k.line([[x,y+s*2.6],[x+k.J(.8),y+s*.4],[x+s*.5,y]],1.2,'#A8875E');k.add(`<circle cx="${R1(x+s*.5)}" cy="${R1(y-s*.2)}" r="${R1(s*.45)}" fill="#B08A60" stroke="${C.ink}" stroke-width=".8"/>`)}}
+// chimney smoke: soft puffs rising and leaning with the breeze
+function smoke(k,x,y,s=1){let p='';for(let i=0;i<5;i++){const px=x+i*8*s+i*i*2.2*s,py=y-i*15*s,r=(5+i*2.6)*s;
+    p+=`<path d="${smooth(blobP(px,py,r,r*.8,k.r,8,.3),true)}" fill="#F7F4F1" fill-opacity="${R1(.92-i*.1)}" stroke="${C.graph}" stroke-width="1.2" stroke-opacity="${R1(.85-i*.12)}"/>`}k.add(p)}
+// a striped windbreak on its stakes (winter beach)
+function windbreak(k,x0,gy,w,h,cols=['#F4A3A3','#FFFBF3']){const n=Math.max(4,Math.round(w/26)),sw=w/n,b=h*.12;
+  for(let i=0;i<n;i++){const xa=x0+i*sw,xb=xa+sw,bu=b*(i%2?1:.6);k.fill([[xa,gy-h],[xb,gy-h],[xb+bu,gy-h*.5],[xb+1,gy-4],[xa+1,gy-4],[xa+bu,gy-h*.5]],cols[i%2],{dx:.5,dy:.4})}
+  k.pen([[x0,gy-h],[x0+w,gy-h]],false,{w:1.8});k.pen([[x0,gy-4],[x0+w,gy-4]],false,{w:1.8});
+  for(let i=0;i<=n;i+=Math.ceil(n/3)){const sx=x0+i*sw;k.line([[sx,gy+6],[sx+k.J(1),gy-h-8]],3.2,C.trunkD)}k.line([[x0+w,gy+6],[x0+w+k.J(1),gy-h-8]],3.2,C.trunkD)}
+// wind: long pencil swooshes
+function windLines(k,list){let d='';list.forEach(([x,y,l])=>{d+=`M${x} ${y}q${R1(l*.3)} -6 ${R1(l*.6)} 0t${R1(l*.4)} -2`});k.add(`<path d="${d}" fill="none" stroke="${C.graph}" stroke-width="1.5" stroke-linecap="round" opacity=".85"/>`)}
+// thin ice shelves along a river bank
+function iceEdge(k,x0,x1,yf,dir=1,wrapW=0){for(let x=x0;x<x1;x+=34+k.r()*30){const w=24+k.r()*34,y=yf(x),p=[[x,y],[x+w,yf(x+w)],[x+w-6,yf(x+w)+dir*(5+k.r()*4)],[x+w*.4,y+dir*(7+k.r()*5)],[x+4,y+dir*4]];
+  const f=()=>{k.fill(p,'#F2F6F8',{dx:0,dy:0,op:.92});k.line(p.slice(1).concat([p[0]]),1,'#8EA2B8',{op:.9,amp:.3})};if(wrapW&&k.wrap)k.wrap(x+w/2,w/2+4,f);else f()}}
+// a leaf or petal floating on water, with its ring
+function floater(k,x,y,i){const so=k.so;k.add(`<ellipse cx="${R1(x)}" cy="${R1(y+2)}" rx="12" ry="3" fill="none" stroke="#FFFFFF" stroke-width="1.3" opacity=".8"/>`);
+  if(so==='autumn'){const a=AU[i%4];leafAt(k,x,y,6.4,i*1.3,a[0],a[1])}else if(so==='spring')petalAt(k,x,y,4.6,i*1.1,PET[i%4])}
+// sea thrift: a cushion of grass with pink pompoms (spring dunes)
+function thrift(k,x,gy,s=1){let d='';for(let i=0;i<7;i++)d+=`M${R1(x+(i-3)*3*s)} ${gy}q${R1((i-3)*1.2*s)} ${R1(-6*s)} ${R1((i-3)*2*s)} ${R1(-9*s)}`;k.add(`<path d="${d}" fill="none" stroke="#7FA86A" stroke-width="1.4" stroke-linecap="round"/>`);
+  [[-6,-20],[1,-24],[7,-18]].forEach(([dx,dy])=>{k.line([[x+dx*.4*s,gy-6*s],[x+dx*s,gy+dy*s]],1.2,'#7FA86A');k.add(`<circle cx="${R1(x+dx*s)}" cy="${R1(gy+dy*s)}" r="${R1(3.6*s)}" fill="#F7A8C4" stroke="${C.ink}" stroke-width=".9"/>`)})}
+// a small chimney stack (shown in winter, with smoke)
+function chimney(k,x,y,s=1){k.shape(RC(x-10*s,y-28*s,20*s,30*s),'#E3A08C',{w:1.7,one:1,hatch:{side:.6,gap:3.5,col:'#C47F6A',op:.5}});k.shape(RC(x-13*s,y-32*s,26*s,6*s),'#C9CED6',{w:1.4,one:1});smoke(k,x+2*s,y-40*s,.9*s)}
+// winter mulch: straw tucked over a bare plot
+function mulch(k,x,y,w,h){let d='',e='';for(let i=0;i<Math.round(w*h/260);i++){const px=x+4+k.r()*(w-8),py=y+4+k.r()*(h-8),a=k.r()*Math.PI,l=6+k.r()*8;const s=`M${R1(px)} ${R1(py)}l${R1(Math.cos(a)*l)} ${R1(Math.sin(a)*l*.5)}`;if(i%3)d+=s;else e+=s}
+  k.add(`<path d="${d}" stroke="#E7CB86" stroke-width="2" stroke-linecap="round"/><path d="${e}" stroke="#B9935C" stroke-width="1.6" stroke-linecap="round"/>`)}
+function acorn(k,x,y,s=1,rot=0){k.add(`<g transform="rotate(${rot} ${x} ${y})"><ellipse cx="${x}" cy="${R1(y+3*s)}" rx="${R1(3.4*s)}" ry="${R1(4.4*s)}" fill="#D9A866" stroke="${C.ink}" stroke-width="1"/><path d="M${R1(x-4.4*s)} ${R1(y+1*s)}q${R1(4.4*s)} ${R1(-6*s)} ${R1(8.8*s)} 0z" fill="#A97E5A" stroke="${C.ink}" stroke-width="1"/><path d="M${x} ${R1(y-2.4*s)}v${R1(-2.4*s)}" stroke="${C.ink}" stroke-width="1.2" stroke-linecap="round"/></g>`)}
+function pumpkin(k,x,gy,s=1){k.shape(E(x,gy-9*s,13*s,9.5*s,12),'#F2A04E',{w:1.6,hatch:{side:.55,gap:3.5,col:'#D27C34',op:.5}});k.add(`<path d="M${R1(x-5*s)} ${R1(gy-17*s)}q${R1(-3*s)} ${R1(8*s)} 0 ${R1(16*s)}M${R1(x+5*s)} ${R1(gy-17*s)}q${R1(3*s)} ${R1(8*s)} 0 ${R1(16*s)}" fill="none" stroke="#C9762F" stroke-width="1.2"/>`);
+  k.line([[x,gy-18*s],[x+2*s,gy-23*s]],2.4,'#7D9A55')}
+function wreath(k,x,y,s=1){k.add(`<circle cx="${x}" cy="${y}" r="${R1(9*s)}" fill="none" stroke="${C.ink}" stroke-width="${R1(7.6*s)}"/><circle cx="${x}" cy="${y}" r="${R1(9*s)}" fill="none" stroke="#7FAF7A" stroke-width="${R1(5.4*s)}"/><circle cx="${x}" cy="${y}" r="${R1(9*s)}" fill="none" stroke="#5E8F62" stroke-width="${R1(1.6*s)}" stroke-dasharray="3 4"/>`);
+  [[-5,-6],[6,-4],[-7,4],[4,7]].forEach(([dx,dy])=>k.add(`<circle cx="${R1(x+dx*s)}" cy="${R1(y+dy*s)}" r="${R1(1.6*s)}" fill="#E05A5A"/>`));
+  k.shape([[x,y+8*s],[x-7*s,y+4*s],[x-7*s,y+12*s]],'#E57E83',{w:1,one:1});k.shape([[x,y+8*s],[x+7*s,y+4*s],[x+7*s,y+12*s]],'#E57E83',{w:1,one:1})}
+function bluebells(k,x,gy,s=1){k.line([[x,gy],[x+2*s,gy-18*s],[x+6*s,gy-22*s]],1.4,'#6FAE5C');let b='';[[1,-17],[4,-12],[6,-7]].forEach(([dx,dy])=>{const bx=x+dx*s+4*s,by=gy+dy*s;b+=`<path d="M${R1(bx-2.4*s)} ${R1(by)}q${R1(2.4*s)} ${R1(-4*s)} ${R1(4.8*s)} 0l${R1(.6*s)} ${R1(2*s)}h${R1(-6*s)}z" fill="#9EB2EC" stroke="${C.ink}" stroke-width=".9"/>`});k.add(b)}
+// the view through a window per season: hill colour, a little tree, a leaf or petal going past
+function windowSeason(k,x,y,w,h){const env=k.env,so=env.ssn;if(!so)return;k.ss(()=>{const tx=x+w*.78,gy=y+h*.8;
+  if(so==='winter'){k.line([[tx,gy],[tx,gy-h*.22]],2.2,C.trunkD);[[-.7,.16],[-.3,.2],[.4,.18]].forEach(([dx,l])=>k.line([[tx,gy-h*.16],[tx+dx*h*.16,gy-h*(.16+l)]],1.3,C.ink))}
+  else{const c=so==='autumn'?AU[(Math.round(x)>>3)%3]:[C.leaf2,C.leafD];k.line([[tx,gy],[tx,gy-h*.18]],2.2,C.trunkD);O.leafy(k,tx,gy-h*.26,h*.12,h*.1,c[0],c[1]);
+    if(so==='spring')for(let i=0;i<4;i++)flowerDot(k,tx+k.J(h*.08),gy-h*.26+k.J(h*.06),1.6,'#F7B6C8');
+    if(!env.rain&&!env.night){if(so==='autumn')leafAt(k,x+w*.4,y+h*.42,4.5,.8,AU[1][0],AU[1][1]);else petalAt(k,x+w*.4,y+h*.42,3.6,.6,'#F9C6D4')}}})}
+const WIN_HILL={spring:['#C8E79E','#5A7660'],autumn:['#E3CF8E','#6C6A4E'],winter:['#E1E8E1','#77838E']};
+// a flower box hung on a railing (spring by the sea)
+function railBox(k,x,y,w=34){k.shape([[x-w/2,y],[x+w/2,y],[x+w/2-3,y+14],[x-w/2+3,y+14]],'#E9B9A0',{w:1.5,one:1,hatch:{side:.6,gap:4,col:'#CF9479',op:.5}});bulbs(k,x,y+2,3,.7)}
+// icicles under an eave (winter), thin and uneven
+function icicles(k,x0,x1,y){let d='';for(let x=x0+6;x<x1-4;x+=9+k.r()*8){const l=5+k.r()*11;d+=`M${R1(x-2.4)} ${R1(y)}L${R1(x+k.J(.6))} ${R1(y+l)}L${R1(x+2.4)} ${R1(y)}Z`}
+  k.add(`<path d="${d}" fill="#F4F8FB" stroke="#8EA2B8" stroke-width="1" stroke-linejoin="round"/>`);k.line([[x0,y+.5],[x1,y+.5]],2.2,'#FFFFFF',{amp:.3})}
+// a round little robin (winter visitor), facing left or right
+function robin(k,x,y,s=1,f=1){const X=v=>x+v*s*f;k.shape(E(x,y-7*s,9*s,7.5*s,12),'#A98B74',{w:1.5,one:1});k.shape(E(X(-3),y-5*s,5.2*s,4.6*s,10),'#EE8A5E',{w:1,one:1,noline:1});
+  k.shape(E(X(-6),y-14*s,5.6*s,5.4*s,10),'#A98B74',{w:1.4,one:1});k.add(`<path d="M${R1(X(-11))} ${R1(y-14*s)}l${R1(-4*s*f)} ${R1(1.2*s)} ${R1(4*s*f)} ${R1(1.4*s)}z" fill="${C.ink}"/><circle cx="${R1(X(-7))}" cy="${R1(y-15*s)}" r="${R1(1.1*s+.2)}" fill="${C.ink}"/><path d="M${R1(X(7))} ${R1(y-9*s)}l${R1(6*s*f)} ${R1(-3*s)}M${R1(X(-1))} ${R1(y)}v${R1(3*s)}M${R1(X(2))} ${R1(y)}v${R1(3*s)}" stroke="${C.ink}" stroke-width="1.3" stroke-linecap="round"/>`)}
+function butterfly(k,x,y,s=1,col='#F7D24E'){const w=(dx,dy,rx,ry,r)=>`<ellipse cx="${R1(x+dx*s)}" cy="${R1(y+dy*s)}" rx="${R1(rx*s)}" ry="${R1(ry*s)}" transform="rotate(${r} ${R1(x+dx*s)} ${R1(y+dy*s)})" fill="${col}" stroke="${C.ink}" stroke-width="1.1"/>`;
+  k.add(w(-5,-3,5.5,4,-30)+w(5,-3,5.5,4,30)+w(-4,3,3.6,2.6,20)+w(4,3,3.6,2.6,-20)+`<path d="M${x} ${R1(y-5*s)}v${R1(10*s)}M${x} ${R1(y-5*s)}l${R1(-3*s)} ${R1(-5*s)}M${x} ${R1(y-5*s)}l${R1(3*s)} ${R1(-5*s)}" stroke="${C.ink}" stroke-width="1.3" stroke-linecap="round" fill="none"/>`);
+  k.add(`<path d="M${R1(x-30*s)} ${R1(y+8*s)}q${R1(8*s)} ${R1(-12*s)} ${R1(16*s)} ${R1(-4*s)}" fill="none" stroke="${C.graph}" stroke-width="1.1" stroke-dasharray="3 4" stroke-linecap="round"/>`)}
 // sky colours: [top, horizon] per time, pulled toward grey by weather
 const SKYT={dawn:['#F4B8CC','#FDDBB6'],day:['#C9E2F3','#E4F1F8'],dusk:['#B9A4DD','#F8B07E'],night:['#1E2954','#3A4A82']};
-function skyCols(env){let [a,b]=SKYT[env.time];if(env.sunny)return[a,b];
+function skyCols(env){let [a,b]=SKYT[env.time];
+  if(env.ssn){const q=SKYS[env.ssn],f=q[2]*(env.time==='day'?1:env.night?.3:.5);a=mixH(a,q[0],f);b=mixH(b,q[1],f)}
+  if(env.sunny)return[a,b];
   const g=env.night?{cloudy:['#363F5E','#4E5878',.55],rain:['#2A3044','#424A5E',.72],snow:['#46517A','#69759A',.5]}[env.weather]
     :{cloudy:['#CBD2DA','#E3E6EA',.58],rain:['#A6AFBC','#C3CAD2',.75],snow:['#D7DEE6','#EEF1F4',.62]}[env.weather];
   return [mixH(a,g[0],g[2]),mixH(b,g[1],g[2])]}
@@ -248,14 +383,16 @@ function drawSky(k,cfg){const env=k.env;k.side(()=>{k.sky.push(k.cap(()=>{
   if(env.night){const nS=env.sunny?1:env.weather==='cloudy'?.3:env.snow?.15:0;
     if(nS){const m=cfg.moon;stars(k,W,6,H*.82,Math.round((cfg.stars||W/22)*nS),wrap,(x,y)=>Math.hypot(x-m[0],y-m[1])<m[2]*1.6)}
     if(show!=='none'){const m=cfg.moon;ww(m[0],m[2]*3,()=>moon(k,m[0],m[1],m[2],show==='peek'));if(show==='peek')peek=m}}
-  else if(show!=='none'){const sp=env.low?cfg.low:cfg.sun;ww(sp[0],sp[2]*2.8,()=>{
+  else if(show!=='none'){let sp=env.low?cfg.low:cfg.sun;if(!env.low&&(env.ssn==='winter'||env.ssn==='autumn')){const f=env.ssn==='winter'?.36:.15;sp=[sp[0],R1(sp[1]+(cfg.low[1]-sp[1])*f),sp[2]]}ww(sp[0],sp[2]*2.8,()=>{
       if(env.low){const g=glowGrad(k,env.time==='dawn'?'#FFD9A8':'#FFB27A','sun'+env.time);k.add(`<circle cx="${sp[0]}" cy="${sp[1]}" r="${R1(sp[2]*3.2)}" fill="url(#${g})"/>`)}
-      O.sun(k,sp[0],sp[1],sp[2],env.time==='dawn'?'#FDD68E':env.time==='dusk'?'#F9AE6E':env.snow?'#FBEFC8':C.sun)});
+      O.sun(k,sp[0],sp[1],sp[2],env.time==='dawn'?'#FDD68E':env.time==='dusk'?'#F9AE6E':env.snow||env.ssn==='winter'?'#FBEFC8':C.sun)});
     if(show==='peek')peek=sp}
   let cl=[];if(!env.sunny){cl=cfg.clouds.slice();if(env.rain)cl=cl.concat(cfg.rainC||[]).map(c=>[c[0],c[1],c[2]*1.2])}else if(env.low)cl=cfg.clouds.slice(0,2);
   cl.forEach(([x,y,s])=>ww(x,s*1.7,()=>cloudV(k,x,y,s,cc)));
   if(peek){const [x,y,r]=peek;ww(x+r*.5,r*1.9,()=>cloudV(k,x+r*.55,y+r*.5,r*(env.night?.8:.95),cc))}
   if(cfg.birds&&!env.night&&!env.rain)cfg.birds.forEach(([x,y,s])=>ww(x,s+2,()=>O.bird(k,x,y,s)));
+  k.ss(()=>{if(env.sunny&&!env.low&&(env.ssn==='spring'||env.ssn==='winter'))cfg.clouds.slice(0,env.ssn==='spring'?2:1).forEach(([x,y,s])=>ww(x,s*1.7,()=>cloudV(k,x,y,s*.9,cc)));
+    if(env.ssn==='autumn'&&!env.night&&!env.rain){const b=(cfg.birds&&cfg.birds[0])||[cfg.clouds[0][0]+120,cfg.clouds[0][1]+40,8];[[0,0],[-14,-9],[-28,-17],[14,-8],[27,-15]].forEach(([dx,dy])=>ww(b[0]+80+dx,12,()=>O.bird(k,b[0]+80+dx,b[1]+30+dy,6.5)))}});
 }))})}
 
 // colour treatment for the base art: weather mutes/greys, snow pales the greens, time shifts toward warm or navy
@@ -264,10 +401,12 @@ function recolorFn(env,kind){if(env.def)return null;
   const Wt={sunny:null,cloudy:{ds:.2,m:'#B7C0CA',a:.10},rain:{ds:.3,m:'#8592A3',a:.18},snow:{ds:.12,m:'#E9EEF3',a:.10,gr:.5}}[env.weather];
   const Tt=inn?{dawn:{m:'#F3B2A8',a:.06},day:null,dusk:{m:'#E0957E',a:.1},night:{m:'#433A62',a:.26,ds:.12}}[env.time]
     :{dawn:{m:'#F2A6A6',a:.12},day:null,dusk:{m:'#C98698',a:.18,ds:.05},night:{m:'#25325E',a:kind==='strip'?.42:.46,ds:.22}}[env.time];
+  const St=env.ssn&&!inn&&kind!=='map'?SRC[env.ssn]:null;// v2.5 season
   const ws=inn?.4:1,memo={},EX={'#FFFFFE':1,'#5B3D33':1};
   return m=>{let u=m.toUpperCase();if(u.length===4)u='#'+u[1]+u[1]+u[2]+u[2]+u[3]+u[3];if(EX[u])return m;if(memo[u])return memo[u];let c=h2c(u);
     const ap=(o,f)=>{if(!o)return;if(o.gr&&c[1]>c[0]+6&&c[1]>=c[2])c=c.map((v,i)=>v+(h2c('#EEF3EA')[i]-v)*o.gr*sc);
       if(o.ds){const L=.3*c[0]+.59*c[1]+.11*c[2];c=c.map(v=>v+(L-v)*o.ds*f*sc)}const t=h2c(o.m);c=c.map((v,i)=>v+(t[i]-v)*o.a*f*sc)};
+    if(St){const mp=St.map&&St.map[u];if(mp)c=h2c(mp);else if(isLeafy(c))c=c.map((v,i)=>v+(h2c(St.g)[i]-v)*St.ga);if(St.ds){const L=.3*c[0]+.59*c[1]+.11*c[2];c=c.map(v=>v+(L-v)*St.ds)}if(St.m){const t=h2c(St.m);c=c.map((v,i)=>v+(t[i]-v)*St.a)}}
     ap(Wt,ws);ap(Tt,1);return memo[u]=c2h(c)}}
 
 // lights drawn on top of the treated art: lit windows, lamp halos, string-light bulbs, water glints, fireflies
@@ -296,8 +435,9 @@ function windowView(k,x,y,w,h,o={}){const env=k.env,cid=uid();k.defs.push(`<clip
   if(show==='peek')cl.push(env.night?[x+w*.78,y+h*.38,12]:[x+w*.8,y+h*(env.low?.78:.36),13]);
   cl.forEach(([cx,cy,cs])=>cloudV(k,cx,cy,cs,cc));
   const hill=[[x-4,y+h*.84],[x+w*.3,y+h*.74],[x+w*.6,y+h*.8],[x+w+4,y+h*.72],[x+w+4,y+h+4],[x-4,y+h+4]];
-  k.fill(hill,env.snow?'#FFFFFF':env.night?'#55705E':'#BFDDA0',{dx:0,dy:0});k.pen(hill.slice(0,4),false,{w:1.6,col:env.snow?'#8EA2B8':C.ink});
+  k.fill(hill,env.snow?'#FFFFFF':env.ssn?WIN_HILL[env.ssn][env.night?1:0]:env.night?'#55705E':'#BFDDA0',{dx:0,dy:0});k.pen(hill.slice(0,4),false,{w:1.6,col:env.snow?'#8EA2B8':C.ink});
   if(!env.snow)O.pine(k,x+w*.18,y+h*.86,.32,env.night?'#4C6A5A':C.pine,env.night?'#3A5246':C.pineD);else O.pine(k,x+w*.18,y+h*.86,.32);
+  windowSeason(k,x,y,w,h);
   if(o.rainGlass&&env.rain){let d='',dr='';for(let i=0;i<18;i++){const sx=x+6+k.r()*(w-12),sy=y+4+k.r()*h*.75,l=14+k.r()*30;d+=`M${R1(sx)} ${R1(sy)}q${R1(k.J(3))} ${R1(l/2)} ${R1(k.J(2))} ${R1(l)}`;dr+=`<ellipse cx="${R1(sx)}" cy="${R1(sy+l+2)}" rx="2.4" ry="3" fill="#EEF5FA" stroke="#8FA9C0" stroke-width=".9"/>`}
     for(let i=0;i<10;i++){const sx=x+k.r()*w,sy=y+k.r()*h;dr+=`<circle cx="${R1(sx)}" cy="${R1(sy)}" r="${R1(1.2+k.r()*1.4)}" fill="#EEF5FA" stroke="#8FA9C0" stroke-width=".7"/>`}
     k.add(`<path d="${d}" fill="none" stroke="#FFFFFF" stroke-width="1.7" stroke-linecap="round" opacity=".8"/>${dr}`)}
@@ -311,18 +451,20 @@ function hot(k,attr,val,label,hitPts,inner){// clickable group with a transparen
 function skyBand(k,W,yb,col=C.sky){k.add(`<rect x="0" y="0" width="${W}" height="${yb}" fill="${col}" fill-opacity=".75"/>`);let d='';for(let y=20;y<yb-10;y+=26){for(let x=0;x<W;x+=180){d+=`M${R1(x+k.r()*40)} ${R1(y+k.J(4))}h${R1(60+k.r()*70)}`}}k.add(`<path d="${d}" stroke="#FFFFFF" stroke-width="4" stroke-opacity=".32" stroke-linecap="round"/>`)}
 const mOut=(k,pts,col,w=1.5)=>{k.add(`<path d="M${pts.map(p=>R1(p[0]+k.J(.8))+' '+R1(p[1]+k.J(.8))).join('L')}Z" fill="${col}" stroke="${C.ink}" stroke-width="${w}" stroke-linejoin="round"/>`)};
 function mHouse(k,x,y,s,wall,roof){mOut(k,RC(x-15*s,y-12*s,30*s,24*s),wall);mOut(k,[[x-19*s,y-11*s],[x,y-28*s],[x+19*s,y-11*s]],roof);k.add(`<rect x="${R1(x-4*s)}" y="${R1(y)}" width="${R1(7*s)}" height="${R1(12*s)}" fill="${C.ink}" opacity=".55"/>`)}
-function mTree(k,x,y,s,col){k.add(`<path d="M${x} ${R1(y+10*s)}V${y}" stroke="${C.trunkD}" stroke-width="2"/><path d="${smooth(blobP(x,y-6*s,14*s,12*s,k.r,8,.18),true)}" fill="${col||C.leaf}" stroke="${C.ink}" stroke-width="1.4"/>`)}
+function mTree(k,x,y,s,col){const so=k.so,h=hashXY(x,y);if(so==='autumn')col=AU[h%3][0];else if(so==='winter')col='#D6CABD';else if(so==='spring'&&h%3===0)col='#F7C6D3';// v2.5
+  k.add(`<path d="M${x} ${R1(y+10*s)}V${y}" stroke="${C.trunkD}" stroke-width="2"/><path d="${smooth(blobP(x,y-6*s,14*s,12*s,k.r,8,.18),true)}" fill="${col||C.leaf}" stroke="${C.ink}" stroke-width="1.4"/>`);
+  if(so==='winter')k.ss(()=>k.add(`<path d="M${x} ${R1(y-2*s)}l${R1(-6*s)} ${R1(-8*s)}M${x} ${R1(y-4*s)}l${R1(5*s)} ${R1(-9*s)}M${x} ${R1(y-6*s)}v${R1(-9*s)}" stroke="${C.trunkD}" stroke-width="1.3" stroke-linecap="round"/>`))}
 function mPine(k,x,y,s,col){k.add(`<path d="M${x} ${y}v${R1(6*s)}" stroke="${C.trunkD}" stroke-width="2"/>`);mOut(k,[[x-14*s,y],[x+k.J(1),y-34*s],[x+14*s,y]],col||C.pine,1.4)}
 /* ---------- walk strips: seamless, light (no filter, no clips per object beyond hatching) ---------- */
 function strip(area,draw,env){
-  const k=kit(hashS('pwc-strip-'+area));k.env=env||DEF_ENV;k.rc=recolorFn(k.env,'strip');const pp=paperDefs(k,1200,400);
+  const k=kit(hashS('pwc-strip-'+area));k.env=env||DEF_ENV;k.so=k.env.ssn;k.rc=recolorFn(k.env,'strip');const pp=paperDefs(k,1200,400);
   // wrap(x, halfWidth, fn): draw once, and again shifted by 1200 if it crosses an edge
   k.wrap=(x,hw,fn)=>{const s=k.cap(fn);k.add(s);if(x-hw<0)k.add(`<g transform="translate(1200 0)">${s}</g>`);if(x+hw>1200)k.add(`<g transform="translate(-1200 0)">${s}</g>`)};
   // a long edge drawn as overlapping wrapped segments so it matches at x=0 and x=1200
   k.edge=(yf,w,col)=>{[[-40,430],[380,830],[780,1240]].forEach(([a,b])=>k.wrap((a+b)/2,(b-a)/2,()=>{const pts=[];for(let x=a;x<=b;x+=20)pts.push([x,yf(x)]);k.pen(pts,false,{w,col,amp:.6})}))};
   draw(k);
-  const ex=k.env.def?'':` data-time="${k.env.time}" data-weather="${k.env.weather}"`;
-  return assemble(k,pp,1200,`<svg class="pa-wc-strip pa-wc-strip-${area}" viewBox="0 0 1200 400" role="img" aria-label="${area} walking strip${k.env.def?'':`, ${k.env.time}, ${k.env.weather}`}"${ex}>`,true);
+  const ex=k.env.def?'':` data-time="${k.env.time}" data-weather="${k.env.weather}"${k.env.ssn?` data-season="${k.env.ssn}"`:''}`;
+  return assemble(k,pp,1200,`<svg class="pa-wc-strip pa-wc-strip-${area}" viewBox="0 0 1200 400" role="img" aria-label="${area} walking strip${k.env.def?'':`, ${k.env.time}, ${k.env.weather}${k.env.ssn?', '+k.env.ssn:''}`}"${ex}>`,true);
 }
 // ground treatment for strips (always wrapped so the seam stays clean)
 function stripFx(k,o){const e=k.env;
@@ -356,10 +498,10 @@ const INDOOR={cafe:1,vet:1,salon:1};
 // long outlines are resampled a little coarser (same wobble and taper), which keeps big scenes under ~300 KB
 function lighten(k){const pen0=k.pen;k.pen=(pts,closed,o={})=>{if(!o.step){let L=0;const n=pts.length,m=closed?n:n-1;for(let i=0;i<m;i++){const a=pts[i],b=pts[(i+1)%n];L+=Math.hypot(b[0]-a[0],b[1]-a[1])}if(L>260)o=Object.assign({},o,{step:L>1200?15:L>600?12:9})}return pen0(pts,closed,o)}}
 function frameC(name,label,body,env){
-  const k=kit(hashS('pwc-'+name));lighten(k);k.env=env||DEF_ENV;k.xl=[];k.rc=recolorFn(k.env,INDOOR[name]?'in':'out');const pp=paperDefs(k,1000,600);
+  const k=kit(hashS('pwc-'+name));lighten(k);k.env=env||DEF_ENV;k.so=INDOOR[name]?'':k.env.ssn;k.xl=[];k.rc=recolorFn(k.env,INDOOR[name]?'in':'out');const pp=paperDefs(k,1000,600);
   body(k);
-  const ex=k.env.def?'':` data-time="${k.env.time}" data-weather="${k.env.weather}"`;
-  return assemble(k,pp,1000,`<svg class="pa-wc-scene pa-wc-${name}" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" role="img" aria-label="${label}${k.env.def?'':`, ${k.env.time}, ${k.env.weather}`}"${ex}>`,false);
+  const ex=k.env.def?'':` data-time="${k.env.time}" data-weather="${k.env.weather}"${k.env.ssn?` data-season="${k.env.ssn}"`:''}`;
+  return assemble(k,pp,1000,`<svg class="pa-wc-scene pa-wc-${name}" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" role="img" aria-label="${label}${k.env.def?'':`, ${k.env.time}, ${k.env.weather}${k.env.ssn?', '+k.env.ssn:''}`}"${ex}>`,false);
 }
 /* ---------- small doodle kit for world C ---------- */
 const dk=c=>mixH(c,'#5B3D32',.22);
@@ -387,7 +529,8 @@ function bike(k,x,gy,s=1,col=C.red){const r=15*s,ax=x-25*s,bx=x+25*s,wy=gy-r;
   k.shape(RC(sx-8*s,sy-5*s,15*s,4*s),C.ink,{noline:1,dx:0,dy:0});k.line([[hx,hy],[hx+2*s,hy-8*s],[hx+9*s,hy-9*s]],2,C.ink);
   k.shape([[hx+3*s,hy-8*s],[hx+19*s,hy-8*s],[hx+17*s,hy+4*s],[hx+5*s,hy+4*s]],'#E7C79E',{w:1.4,one:1});k.line([[hx+5*s,hy-3*s],[hx+17*s,hy-3*s]],1,'#B5875C')}
 function planterTree(k,x,gy,s=1){k.shape([[x-20*s,gy],[x+20*s,gy],[x+24*s,gy-26*s],[x-24*s,gy-26*s]],'#E9B9A0',{w:1.8,hatch:{side:.6,gap:4,col:'#CF9479',op:.5}});k.shape(RC(x-27*s,gy-32*s,54*s,7*s),'#D9A086',{w:1.5,one:1});
-  k.line([[x,gy-30*s],[x+k.J(1),gy-70*s]],3.4,C.trunkD);O.leafy(k,x,gy-92*s,30*s,28*s,C.leaf,C.leafD)}
+  k.line([[x,gy-30*s],[x+k.J(1),gy-70*s]],3.4,C.trunkD);const so=k.so,c=crownCols(k,C.leaf,C.leafD,x,gy)[0];// v2.5
+  if(so==='winter'){k.cap(()=>O.leafy(k,x,gy-92*s,30*s,28*s,c[0],c[1]));k.ss(()=>bareCrown(k,x,gy+(70*s-70*s*.62)-26*s,s*.62))}else{O.leafy(k,x,gy-92*s,30*s,28*s,c[0],c[1]);if(so==='spring')k.ss(()=>{for(let i=0;i<7;i++)flowerDot(k,x+(k.r()-.5)*44*s,gy-92*s+(k.r()-.5)*36*s,2.2*s,i%2?'#FFFFFF':'#F7B6C8')})}}
 
 // v2 town dressing: window planter, chalkboard sign, passers-by silhouettes
 function planterBox(k,x,gy,w=40,cols=[C.red,C.yellow,C.lav,'#FFB3C7']){
@@ -431,7 +574,8 @@ function shopF(k,x,w,top,base,o){const wall=o.wall||C.wall;k.shape(RC(x,top,w,ba
   k.add(`<path d="M${R1(x+22)} ${R1(base-22)}l${R1(Math.min(30,gw*.3))} ${R1(-(base-gy)*.5)}" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".8"/>`);
   if(o.disp)o.disp(x+12,gy,gw,base-gy-10);
   const dx0=x+w-dw-14;k.shape(RC(dx0,gy-4,dw,base-gy+4),o.door||'#C79A72',{w:2,one:1});k.add(`<circle cx="${R1(dx0+dw-8)}" cy="${R1((gy+base)/2)}" r="2.6" fill="${C.ink}"/>`);
-  k.shape(RC(x-4,base-6,w+8,8),C.stoneD,{w:1.5,one:1})}
+  k.shape(RC(x-4,base-6,w+8,8),C.stoneD,{w:1.5,one:1});
+  k.ss(()=>{const so=k.so,dc=dx0+dw/2,sz=Math.min(1,(base-gy)/60);if(so==='winter'){wreath(k,dc,gy+14*sz,.85*sz+.15);frostLine(k,[[x-5,top-12],[x+w+5,top-12]])}else if(so==='autumn'){pumpkin(k,dx0-10,base-5,.7*sz+.1);pumpkin(k,dx0-24,base-4,.5*sz+.1)}else if(so==='spring')bulbs(k,dx0-14,base-5,2,.65*sz+.15)})}// v2.5
 // light upper-floor window (single pass, used many times on shopfronts)
 function winS(k,x,y,w,h,curt){k.fill(RC(x-3,y-3,w+6,h+6),'#FFFFFF',{dx:0,dy:0,amp:.6});k.add(`<rect x="${R1(x)}" y="${R1(y)}" width="${R1(w)}" height="${R1(h)}" fill="${C.glass}"/>`);
   if(curt)k.add(`<path d="M${R1(x)} ${R1(y)}h${R1(w*.3)}q${R1(-w*.14)} ${R1(h*.4)} 0 ${R1(h*.8)}h${R1(-w*.3)}zM${R1(x+w)} ${R1(y)}h${R1(-w*.3)}q${R1(w*.14)} ${R1(h*.4)} 0 ${R1(h*.8)}h${R1(w*.3)}z" fill="${curt}" stroke="${C.ink}" stroke-width="1.1"/>`);
@@ -471,6 +615,7 @@ function sqSquare(k){
   shopF(k,-14,214,176,394,{wall:C.wall2,noGlow:1,sign:'Bone Appétit',awn:[C.red,'#fff'],door:'#E8A9B8',upper:2,disp:(x,y,w,h)=>{[[x+24,y+h-14],[x+56,y+h-14],[x+88,y+h-14]].forEach(([bx,by],i)=>{k.shape(E(bx,by,13,7,10),'#F0D9B5',{w:1.3,one:1});if(i!==1)donut(k,bx,by-9,.9,i?'#FFB3C7':C.lav);else{k.shape([[bx-9,by-4],[bx+9,by-4],[bx+7,by-18],[bx-7,by-18]],'#F7C5CF',{w:1.3,one:1});k.shape(E(bx,by-20,9,6,10),'#FFFBF3',{w:1.2,one:1})}})}});
   shopF(k,214,290,206,394,{wall:C.wall,brick:1,sign:'Paws &amp; Pages',awn:[C.mint,'#fff'],door:'#B9D3F2',upper:3,curt:C.mint,disp:(x,y,w,h)=>{let bx=x+16;const cs=[C.red,C.blue,C.yellow,C.lav,C.mint,C.orange];for(let i=0;i<9;i++){const bw=10+(i*7%6),bh=28+(i*11%14);k.shape(RC(bx,y+h-bh-4,bw,bh),cs[i%6],{w:1.2,one:1});bx+=bw+3}k.text('(dogs read too)',x+w-60,y+h-8,13,{wt:600,rot:-3})}});
   shopF(k,616,186,190,394,{wall:C.wall3,sign:'Post Office',awn:[C.blue,'#fff'],door:'#E57E83',upper:2,curt:C.yellow,signCol:'#FFFFFF',disp:(x,y,w,h)=>{k.shape(RC(x+14,y+h-34,40,26),'#FFFBF3',{w:1.3,one:1});k.line([[x+14,y+h-34],[x+34,y+h-20],[x+54,y+h-34]],1.2);O.heart(k,x+34,y+h-18,4)}});
+  k.ss(()=>{if(k.so==='winter'){chimney(k,40,166,1);chimney(k,300,196,1.05);chimney(k,700,180,.95)}});// v2.5: chimneys smoke in winter
   shopF(k,816,198,164,394,{wall:C.wall4,sign:'Squeak Shop',awn:[C.yellow,'#fff'],door:'#B9DD92',upper:2,curt:C.lav,disp:(x,y,w,h)=>{k.shape(E(x+26,y+h-14,10,10,10),'#E9F59B',{w:1.4,one:1});k.add(`<path d="M${x+18} ${y+h-20}q8 6 16 0" fill="none" stroke="#fff" stroke-width="1.6"/>`);k.shape([[x+48,y+h-6],[x+50,y+h-26],[x+70,y+h-26],[x+72,y+h-6]],C.yellow,{w:1.3,one:1});k.add(`<circle cx="${x+66}" cy="${y+h-30}" r="7" fill="${C.yellow}" stroke="${C.ink}" stroke-width="1.2"/><path d="M${x+72} ${y+h-31}l6 2 -6 2z" fill="${C.orange}"/>`)}});
   // clock tower
   {const tx=560;k.shape(RC(tx-42,64,84,330),C.stone,{w:2.3,hatch:{side:.78,gap:5,col:C.stoneD,op:.55}});let d='';for(let y=84;y<390;y+=20)d+=`M${tx-38} ${y}h76`;k.add(`<path d="${d}" stroke="#fff" stroke-opacity=".5" stroke-width="1.3"/>`);
@@ -487,6 +632,7 @@ function sqSquare(k){
   // the square: perspective flagstones, a cobble ring around the fountain
   k.fill([[0,394],[1000,394],[1000,600],[0,600]],'#E8E1D6',{dx:0,dy:0,sc:0});k.pen([[0,396],[500,394],[1000,396]],false,{w:2});
   paving(k,396,600,500,250,'#BFB2A2','#DDD4C8');
+  k.ss(()=>seasonGround(k,[0,400,1000,598],100,[[630,306,854,518]]));// v2.5
   k.fx(()=>{if(k.env.rain){sheen(k,0,1000,404,598,64,HZ);[[450,580,48,9],[760,562,40,8],[930,476,30,6],[60,560,34,7]].forEach(q=>puddle(k,...q))}
     if(k.env.snow){[[450,580,74,13],[760,566,62,11],[934,478,46,9],[70,566,50,9],[300,420,50,8]].forEach(q=>snowPatch(k,...q))}});
   // benches against the shops, lamp posts
@@ -525,6 +671,9 @@ function sqSquare(k){
   [[968,452]].forEach(([x,y])=>{k.shape(E(x,y,30,10,12),'#D9A086',{w:1.8});k.shape([[x-28,y],[x+28,y],[x+22,y+30],[x-22,y+30]],'#E9B9A0',{w:1.8,hatch:{side:.6,gap:4,col:'#CF9479',op:.5}});fl(k,[[x-14,y-10,C.red],[x+2,y-16,C.yellow],[x+16,y-8,C.lav]],5)});
   {const pg=(x,y,f)=>{k.shape(E(x,y,11,7,10),'#B7B5C9',{w:1.5,one:1});k.shape(E(x+9*f,y-8,5,5,8),'#C9C7D8',{w:1.4,one:1});k.add(`<path d="M${x+14*f} ${y-8}l${4*f} 1 ${-4*f} 2z" fill="${C.orange}"/><circle cx="${x+10*f}" cy="${y-9}" r="1.1" fill="${C.ink}"/><path d="M${x-2} ${y+6}v4M${x+3} ${y+6}v4" stroke="#E8945A" stroke-width="1.4"/>`)};pg(600,566,1);pg(640,580,-1);k.add(`<g fill="#E8C58A"><circle cx="618" cy="586" r="1.6"/><circle cx="626" cy="582" r="1.4"/><circle cx="612" cy="590" r="1.3"/></g>`)}
   fl(k,[[880,584,C.red],[580,592,'#FFB3C7'],[262,588,C.lav],[40,560,C.yellow],[70,580,C.red],[20,590,C.lav]]);
+  k.ss(()=>{const so=k.so;if(so==='spring')bulbs(k,968,446,4,.9);else if(so==='autumn')pumpkin(k,930,484,.9);// v2.5
+    if(so==='winter'&&!k.env.night)robin(k,330,348,1.1,1);if(so==='spring'&&!k.env.night&&!k.env.rain)butterfly(k,420,330,1);
+    seasonDrift(k,[[300,250,1],[470,300,.9],[760,250,1],[900,310,.85],[200,350,.8]])});
   O.sparkle(k,700,220,7);O.heart(k,400,150,6);O.note(k,460,230,11);
   O.tape(k,8,20,90,-26,'#F9E19A');O.tape(k,920,568,80,-24,'#D3C6F1');
 }
@@ -613,6 +762,7 @@ function sqDogpark(k){
    // gate posts + an arch sign
    [466,546].forEach(x=>k.shape(RC(x-6,yt-40,12,yb-yt+40),C.woodD,{w:1.8}));k.line([[478,yb-4],[478,yt+6],[534,yt+6],[534,yb-4]],2,C.ink,{op:.6});k.line([[478,yt+6],[534,yb-4]],1.6,C.ink,{op:.5});
    const sg=[[430,yt-82],[582,yt-82],[586,yt-40],[426,yt-40]];k.shape(sg,C.wood,{w:2.2,hatch:{side:.8,gap:4,col:C.woodD,op:.4}});k.text('Dog Park',506,yt-52,32,{rot:-2});k.add(`<g fill="${C.pink}"><ellipse cx="444" cy="${yt-58}" rx="5" ry="4"/><circle cx="439" cy="${yt-65}" r="2"/><circle cx="444" cy="${yt-68}" r="2"/><circle cx="449" cy="${yt-65}" r="2"/></g>`);
+   if(k.so==='winter')k.ss(()=>{frostLine(k,[[0,yt+12],[466,yt+12]]);frostLine(k,[[546,yt+12],[1000,yt+12]]);frostLine(k,[[428,yt-82],[584,yt-82]])});// v2.5
    if(k.env.snow)k.side(()=>{capLine(k,[[0,yt+4],[470,yt+4]],5);capLine(k,[[540,yt+4],[1000,yt+4]],5);capLine(k,[[424,yt-82],[588,yt-82]],7)})}
   // a big tree behind the fence (right) and the rules sign
   O.tree(k,880,408,1.3,{fruit:'#F49090'});
@@ -620,6 +770,7 @@ function sqDogpark(k){
   // benches along the fence
   O.bench(k,300,418,.8);O.bench(k,620,416,.72);
   tufts(k,420,598,110);
+  k.ss(()=>seasonGround(k,[0,422,1000,598],110,[[630,420,856,520],[30,470,220,480]]));// v2.5
   k.fx(()=>hubFx(k,{sheen:[424,598],puddles:[[450,580,46,9],[760,568,38,8],[920,440,30,6],[90,580,34,7]],patches:[[450,580,72,13],[760,570,60,11],[130,440,50,8],[900,440,46,8],[300,596,44,8],[960,580,40,8]],flies:[[200,470],[600,480],[880,560],[470,584],[150,380],[760,300]]}));
   // agility: A-frame (back left), weave poles, hoop (behind the dog), tunnel (decor zone), tyre hoop (front right)
   {const a=[[50,476],[130,382],[210,476]];k.shape(a,C.red,{w:2.3,hatch:{side:.55,gap:5,col:C.redD,op:.5}});k.fill([[78,442],[182,442],[166,422],[94,422]],C.yellow,{op:.95,dx:0,dy:0});k.pen(a,true,{w:2.3});
@@ -641,6 +792,7 @@ function sqDogpark(k){
   fl(k,[[600,590,C.red],[880,590,C.yellow],[270,560,C.lav],[984,520,'#FFB3C7'],[14,500,C.yellow]]);
   O.sparkle(k,640,200,7);O.heart(k,330,170,6);O.note(k,250,230,11);
   O.tape(k,6,26,90,-24,'#F7B9C6');O.tape(k,930,566,80,-28,'#BDE7D2');
+  k.ss(()=>{seasonDrift(k,[[820,250,1],[700,300,.9],[960,330,.85],[420,250,.9],[250,300,.8]]);if(k.so==='winter'&&!k.env.night)robin(k,180,368,1.1,1);if(k.so==='spring'&&!k.env.night&&!k.env.rain)butterfly(k,560,330,1,'#F9C6D4')});// v2.5
 }
 
 // ---------- Vet Clinic (indoors) ----------
@@ -779,6 +931,7 @@ function sqHilltop(k){
   {let d='';[[90,440],[560,420],[880,450],[300,580],[700,570]].forEach(([x,y])=>{d+=`M${x} ${y}q20 -10 40 0t40 0`});k.add(`<path d="${d}" fill="none" stroke="${C.grassD}" stroke-width="1.6" stroke-linecap="round" opacity=".8"/>`);
    let s='';[[140,110],[380,190],[640,150],[280,60]].forEach(([x,y])=>{s+=`M${x} ${y}q30 -12 60 0q14 6 4 14q-8 4 -10 -4`});k.add(`<path d="${s}" fill="none" stroke="${C.graph}" stroke-width="1.5" stroke-linecap="round" opacity=".8"/>`)}
   tufts(k,410,598,120);
+  k.ss(()=>seasonGround(k,[0,400,1000,598],110,[[616,420,864,524],[30,400,160,530]]));// v2.5
   k.fx(()=>hubFx(k,{sheen:[414,598],puddles:[[450,580,44,9],[760,560,38,8],[120,560,34,7]],patches:[[450,582,70,13],[760,562,60,11],[120,562,50,9],[300,420,50,8],[960,420,40,8],[600,420,50,8]],flies:[[200,470],[600,476],[880,560],[470,584],[160,420],[760,430]]}));
   // the lone tree, leaning with the wind
   k.add('<g transform="rotate(5 910 474)">');O.tree(k,910,474,1.35,{col:C.leaf2});k.add('</g>');
@@ -792,6 +945,7 @@ function sqHilltop(k){
   fl(k,[[40,560,C.red],[70,590,C.yellow],[180,580,C.lav],[600,588,'#FFB3C7'],[640,560,C.yellow],[880,590,C.red],[960,560,C.lav],[990,520,C.yellow],[200,448,C.red],[580,440,C.lav],[880,520,'#FFB3C7'],[270,590,C.yellow],[230,430,C.yellow]],5);
   O.sparkle(k,440,200,7);O.heart(k,820,250,6);O.note(k,380,60,11);
   O.tape(k,6,26,90,-24,'#F7B9C6');O.tape(k,930,566,80,-28,'#BDE7D2');
+  k.ss(()=>{seasonDrift(k,[[860,300,1],[780,250,.9],[700,330,.85],[460,270,.8],[350,340,.9]]);if(k.so==='spring'&&!k.env.night&&!k.env.rain){butterfly(k,330,440,1);butterfly(k,620,470,.85,'#F9C6D4')}});// v2.5
 }
 
 // ---------- Lighthouse Pier ----------
@@ -825,6 +979,7 @@ function sqPier(k){
    for(let x=20;x<1000;x+=120){k.shape(RC(x-6,rt-8,12,402-rt+8),C.wood,{w:1.8,one:1,hatch:{gap:4,col:C.woodD,op:.5}})}
    k.shape(RC(0,rt,1000,9),C.wood,{w:1.9,one:1});k.shape(RC(0,rt+26,1000,7),C.wood,{w:1.7,one:1});
    let d='';for(let x=10;x<1000;x+=40)d+=`M${x} ${rt+10}v18`;k.add(`<path d="${d}" stroke="${C.woodD}" stroke-width="1.4"/>`);
+   if(k.so==='winter')k.ss(()=>frostLine(k,[[0,rt+1],[1000,rt+1]]));else if(k.so==='spring')k.ss(()=>[80,380,500,620].forEach(x=>railBox(k,x,rt+10)));// v2.5
    if(k.env.snow)k.side(()=>capLine(k,[[0,rt],[1000,rt]],6));
    // life ring on the rail (behind the dog area, left)
    const lx=260,ly=372;k.add(`<circle cx="${lx}" cy="${ly}" r="22" fill="none" stroke="${C.ink}" stroke-width="13"/><circle cx="${lx}" cy="${ly}" r="22" fill="none" stroke="#FFFFFF" stroke-width="10"/><circle cx="${lx}" cy="${ly}" r="22" fill="none" stroke="${C.red}" stroke-width="10" stroke-dasharray="17.3 17.3"/>`)}
@@ -833,6 +988,7 @@ function sqPier(k){
    let d='',f='';rows.forEach((yy,i)=>{d+=`M0 ${R1(yy+k.J(.8))}L1000 ${R1(yy+k.J(.8))}`;const nh=(rows[i+1]||600)-yy,sp=nh*9;for(let x=(i*137)%sp-sp;x<1000;x+=sp)d+=`M${R1(x)} ${R1(yy)}v${R1(nh)}`;if(i%2)f+=`<rect x="0" y="${R1(yy)}" width="1000" height="${R1(nh)}" fill="#E2BE90" opacity=".45"/>`;
      let nl='';for(let x=(i*61)%90+20;x<1000;x+=150)nl+=`<circle cx="${R1(x)}" cy="${R1(yy+nh/2)}" r="1.4" fill="${C.ink}" opacity=".55"/>`;f+=nl});
    k.add(f+`<path d="${d}" stroke="${C.woodD}" stroke-width="1.4" fill="none"/>`);k.pen([[0,405],[500,404],[1000,405]],false,{w:2})}
+  k.ss(()=>{if(k.so==='winter')windLines(k,[[200,150,140],[560,200,150],[360,240,110],[760,120,130]]);else seasonGround(k,[0,410,1000,598],k.so==='autumn'?40:30,[[630,370,900,520]])});// v2.5
   k.fx(()=>hubFx(k,{sheen:[410,598],puddles:[[450,580,44,9],[760,568,38,8],[120,470,30,6]],patches:[[450,582,70,12],[760,570,60,11],[120,470,46,8],[920,440,40,7],[300,596,44,8]]}));
   // lamp post on the pier
   O.lamp(k,588,412,1);
@@ -849,6 +1005,7 @@ function sqPier(k){
   {const x=110,y=556;k.add(`<ellipse cx="${x}" cy="${y}" rx="34" ry="11" fill="#E7C79E" stroke="${C.ink}" stroke-width="2"/><ellipse cx="${x}" cy="${y}" rx="24" ry="7.5" fill="none" stroke="#B5875C" stroke-width="2"/><ellipse cx="${x}" cy="${y}" rx="13" ry="4" fill="none" stroke="#B5875C" stroke-width="2"/>`);k.line([[x+30,y+4],[x+60,y+14],[x+90,y+8]],3,'#B5875C')}
   O.sparkle(k,520,200,7);O.heart(k,700,220,6);
   O.tape(k,8,20,90,-26,'#F9E19A');O.tape(k,920,568,80,-24,'#D3C6F1');
+  k.ss(()=>{seasonDrift(k,[[420,200,1],[640,240,.9],[300,300,.85],[880,330,.8]]);if(k.so==='winter'){windLines(k,[[400,470,120],[60,520,100]])}});// v2.5
 }
 
 /* ======================= WALK STRIPS ======================= */
@@ -888,6 +1045,7 @@ const STRIPS_C={
   // passers-by
   [[88,.8,'#D9CBEA',{hair:'#8A5A44',bag:C.yellow}],[560,.74,'#BFD9EE',{hair:'#3E3A4A',hat:'#F4A3A3',dir:-1}],[868,.5,'#FCE59A',{hair:'#5B3D32',balloon:C.red}],[880,.8,'#C9E4D1',{hair:'#7A5A48',dir:-1}],[1130,.76,'#F8C08A',{hair:'#4A3A34',bag:C.mint}]].forEach(([x,s,c,o])=>k.wrap(x,26,()=>walker(k,x,340+((x*7)%9),s,c,o)));
   k.wrap(560,10,()=>O.sparkle(k,560,96,7));k.wrap(160,10,()=>O.heart(k,160,80,6));
+  k.ss(()=>{seasonGround(k,[0,338,1200,370],k.so==='winter'?30:44,[],1200);seasonDrift(k,[[300,230,1],[700,250,.9],[980,230,.85]],1200)});// v2.5
  },
  hilltop(k){
   k.skyD(()=>k.add(`<rect width="1200" height="250" fill="${C.sky}" fill-opacity=".7"/>`),SKYW.hilltop);
@@ -906,8 +1064,9 @@ const STRIPS_C={
   k.wrap(760,80,()=>{k.add('<g transform="rotate(4 760 300)">');O.tree(k,760,300,.9,{col:C.leaf2});k.add('</g>')});
   k.wrap(240,40,()=>kite(k,240,100,1,C.red,C.yellow,-10,[300,300]));k.wrap(980,60,()=>boneKite(k,980,120,.85,[930,300]));
   // wooden fence behind the path
-  {const fx=[];for(let x=40;x<1200;x+=100)fx.push(x);fx.forEach(x=>k.wrap(x,10,()=>{k.shape(RC(x-5,284,10,44),C.wood,{w:1.7,one:1,hatch:{gap:4,col:C.woodD,op:.5}});if(k.env.snow)k.side(()=>capLine(k,[[x-6,284],[x+6,284]],4))}));
+  {const fx=[];for(let x=40;x<1200;x+=100)fx.push(x);fx.forEach(x=>k.wrap(x,10,()=>{k.shape(RC(x-5,284,10,44),C.wood,{w:1.7,one:1,hatch:{gap:4,col:C.woodD,op:.5}});if(k.so==='winter')k.ss(()=>frostLine(k,[[x-4,285],[x+4,285]]));if(k.env.snow)k.side(()=>capLine(k,[[x-6,284],[x+6,284]],4))}));
    [[292],[310]].forEach(([y])=>{k.add(`<rect y="${y}" width="1200" height="6" fill="${C.wood}"/>`);k.edge(x=>y+per(x,[[1,4,y]]),1.4);k.edge(x=>y+6+per(x,[[1,4,y]]),1.2)});
+   if(k.so==='winter')k.ss(()=>{[[0,600],[600,1200]].forEach(([a,b])=>frostLine(k,[[a,292],[b,292]]))});// v2.5
    if(k.env.snow)k.side(()=>{[[0,600],[600,1200]].forEach(([a,b])=>capLine(k,[[a,292],[b,292]],4))})}
   [[90,C.red],[180,C.yellow],[420,C.lav],[560,'#FFB3C7'],[690,C.yellow],[880,C.red],[1060,C.lav],[1150,C.yellow]].forEach(([x,c])=>k.wrap(x,10,()=>O.flower(k,x,318,4.5,c)));
   // trail
@@ -916,6 +1075,7 @@ const STRIPS_C={
   let pb='';for(let i=0;i<36;i++){const x=(i*37)%1200+4,y=348+(i*23%44);pb+=`<ellipse cx="${x}" cy="${y}" rx="${2+(i%3)}" ry="1.6" fill="#D2BC94"/>`}k.add(pb);
   k.fx(()=>{stripFx(k,{y0:338,y1:396,kind:'path',ns:5});if(k.env.night&&!k.env.rain)[[150,270],[460,250],[700,280],[980,262],[1120,290]].forEach(f=>k.flies.push(f))});
   k.wrap(620,10,()=>O.sparkle(k,620,150,7));
+  k.ss(()=>{seasonGround(k,[0,338,1200,396],50,[],1200);seasonDrift(k,[[700,190,1],[820,240,.9],[400,200,.85],[1080,220,.8]],1200)});// v2.5
  },
  pier(k){
   k.skyD(()=>k.add(`<rect width="1200" height="190" fill="${C.sky}" fill-opacity=".75"/>`),SKYW.pier);
@@ -937,6 +1097,7 @@ const STRIPS_C={
   {const rt=262;for(let x=75;x<1200;x+=150)k.wrap(x,10,()=>{k.shape(RC(x-5,rt-6,10,300-rt+6),C.wood,{w:1.7,one:1,hatch:{gap:4,col:C.woodD,op:.5}})});
    k.add(`<rect y="${rt}" width="1200" height="7" fill="${C.wood}"/><rect y="${rt+22}" width="1200" height="6" fill="${C.wood}"/>`);k.edge(x=>rt+per(x,[[.8,4,.1]]),1.5);k.edge(x=>rt+7+per(x,[[.8,4,.9]]),1.2);k.edge(x=>rt+22+per(x,[[.8,5,.4]]),1.3);k.edge(x=>rt+28+per(x,[[.8,3,.4]]),1.1);
    let bal='';for(let x=15;x<1200;x+=30)bal+=`M${x} ${rt+8}v14`;k.add(`<path d="${bal}" stroke="${C.woodD}" stroke-width="1.3"/>`);
+   if(k.so==='winter')k.ss(()=>{[[0,600],[600,1200]].forEach(([a,b])=>frostLine(k,[[a,rt+1],[b,rt+1]]))});else if(k.so==='spring')k.ss(()=>[300,600,980].forEach(x=>k.wrap(x,22,()=>railBox(k,x,rt+9,30))));// v2.5
    if(k.env.snow)k.side(()=>{[[0,600],[600,1200]].forEach(([a,b])=>capLine(k,[[a,rt],[b,rt]],4))});
    k.wrap(450,24,()=>{const lx=450,ly=284;k.add(`<circle cx="${lx}" cy="${ly}" r="16" fill="none" stroke="${C.ink}" stroke-width="10"/><circle cx="${lx}" cy="${ly}" r="16" fill="none" stroke="#FFFFFF" stroke-width="7.5"/><circle cx="${lx}" cy="${ly}" r="16" fill="none" stroke="${C.red}" stroke-width="7.5" stroke-dasharray="12.6 12.6"/>`)})}
   // seagull posts (taller pilings) behind the path
@@ -947,6 +1108,7 @@ const STRIPS_C={
   {let d='';for(let x=0;x<1200;x+=100)d+=`M${x} 300v30`;k.add(`<path d="${d}" stroke="${C.woodD}" stroke-width="1.2"/>`)}
   k.fx(()=>stripFx(k,{y0:338,y1:396,kind:'path',ns:5}));
   k.wrap(560,10,()=>O.sparkle(k,560,130,7));
+  k.ss(()=>{if(k.so==='winter')windLines(k,[[100,120,140],[480,150,150],[760,110,120],[260,230,110]]);else seasonGround(k,[0,338,1200,396],30,[],1200);seasonDrift(k,[[260,140,1],[640,120,.9],[980,160,.85]],1200)});// v2.5
  }
 };
 
@@ -954,9 +1116,9 @@ const STRIPS_C={
 const MINE={square:['Town Square',sqSquare],cafe:['Pupuccino Café',sqCafe],dogpark:['Dog Park',sqDogpark],vet:['Vet Clinic',sqVet],salon:['Grooming Salon',sqSalon],hilltop:['Hilltop Meadow',sqHilltop],pier:['Lighthouse Pier',sqPier]};
 const cacheC={};
 const freshC=s=>{const suf='x'+(++_n);return s.replace(/pwc(\d+)/g,m=>m+suf)};
-function renderScene(name,o){const env=mkEnv(o),key=name+'|'+env.time+'|'+env.weather;if(cacheC[key])return freshC(cacheC[key]);
+function renderScene(name,o){const env=mkEnv(o),key=name+'|'+env.time+'|'+env.weather+'|'+env.season;if(cacheC[key])return freshC(cacheC[key]);
   const s=frameC(name,MINE[name][0],k=>MINE[name][1](k,o||{}),env);cacheC[key]=s;return s}
-function renderStrip(area,o){const env=mkEnv(o),key='strip|'+area+'|'+env.time+'|'+env.weather;if(cacheC[key])return freshC(cacheC[key]);
+function renderStrip(area,o){const env=mkEnv(o),key='strip|'+area+'|'+env.time+'|'+env.weather+'|'+env.season;if(cacheC[key])return freshC(cacheC[key]);
   const s=strip(area,k=>{k.xl=[];lighten(k);STRIPS_C[area](k)},env);cacheC[key]=s;return s}
 const prevScene=PA.scene,prevStrip=PA.walkStrip;
 PA.scene=function(name,o){return MINE[name]?renderScene(name,o):(prevScene?prevScene.apply(this,arguments):'')};
