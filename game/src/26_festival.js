@@ -86,10 +86,17 @@ function fsBannerBox() {
   const [c0, c1] = fsCrop(), w = Math.min(FS_BANNER.phone[2], c1 - c0 - 50); // clear of the look-right button at the right edge
   return [Math.max(FS_BANNER.phone[0], c0 + 8), FS_BANNER.phone[1], w, f1(FS_BANNER.phone[3] * w / FS_BANNER.phone[2])];
 }
-// a tap rect of at least 48 screen px each way on phones (like hmDecorHit)
-function fsHit(x, y, w, h) {
-  if (isPhone()) { const s = ((view.clientHeight || 500) - 60) / 600, m = 48 / s; if (w < m) { x -= (m - w) / 2; w = m; } if (h < m) { y -= (m - h) / 2; h = m; } }
-  return `<rect class="fs-hit" x="${f1(x)}" y="${f1(y)}" width="${f1(w)}" height="${f1(h)}" fill="transparent" pointer-events="all"/>`;
+// the tap rect: on phones at least 48 screen px each way. It is sized from the real scale of the scene (a tray, a visitor zoom or the place row
+// can shrink the scene after the draw), so fsHitFit runs after every draw and whenever the scene resizes
+function fsHit(x, y, w, h) { return `<rect class="fs-hit" data-box="${f1(x)},${f1(y)},${f1(w)},${f1(h)}" x="${f1(x)}" y="${f1(y)}" width="${f1(w)}" height="${f1(h)}" fill="transparent" pointer-events="all"/>`; }
+function fsHitFit() {
+  const svg = $('#view > svg.world'); if (!svg) return;
+  let k = 0; try { const m = svg.getScreenCTM(); k = m ? Math.abs(m.a) : 0; } catch (e) { k = 0; }
+  svg.querySelectorAll('rect.fs-hit[data-box]').forEach((r) => {
+    let [x, y, w, h] = r.dataset.box.split(',').map(Number);
+    if (isPhone() && k > 0) { const m = 48 / k; if (w < m) { x -= (m - w) / 2; w = m; } if (h < m) { y -= (m - h) / 2; h = m; } }
+    r.setAttribute('x', f1(x)); r.setAttribute('y', f1(y)); r.setAttribute('width', f1(w)); r.setAttribute('height', f1(h));
+  });
 }
 
 /* ---- drawing into the scene (yard:enter, scene:redraw, env:fest) ---- */
@@ -111,6 +118,7 @@ function fsYardDraw() {
   }
 }
 function fsPileBind() {
+  fsHitFit();
   document.querySelectorAll('#fsPilesG [data-pile]').forEach((el) => {
     const go = (e) => { if (e) e.stopPropagation(); fsPileTap(+el.dataset.pile); };
     el.onclick = go; el.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } };
@@ -126,6 +134,7 @@ function fsSquareDraw() {
   let html = `<g id="fsStallG" class="hot" data-kind="${fsKind()}" tabindex="0" role="button" aria-label="Baker Bea's Harvest Stall">${place(fsArt('stall', { kind: fsKind() }), sx, sy, sw, sh)}${fsHit(sx + 8, sy + 10, sw - 16, sh - 10)}</g>`;
   if (festOn('halloween')) { const [bx, by, bw, bh] = fsBannerBox(); html = `<g id="fsBannerG" pointer-events="none">${place(fsArt('paradebanner'), bx, by, bw, bh)}</g>` + html; }
   pack.insertAdjacentHTML('beforebegin', html);
+  fsHitFit();
   const st = $('#fsStallG', svg); st.onclick = (e) => { e.stopPropagation(); SFX.click(); fsStallOpen(); }; st.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fsStallOpen(); } };
   if (pb) {
     const home = pb.querySelector('[data-pb="yard"]'), add = (h) => { if (home) home.insertAdjacentHTML('beforebegin', h); else pb.insertAdjacentHTML('beforeend', h); };
@@ -349,6 +358,7 @@ function fsJournalLine() {
 on('game:ready', () => { fsFields(); fsPackSync(); setTimeout(fsExpose, 0); });
 on('yard:enter', () => {
   fsFields(); fsPackSync(); fsDraw(); fsExpose();
+  { const sv = $('#view > svg.world'); if (sv && isPhone() && typeof ResizeObserver === 'function') { let raf = 0; const ro = new ResizeObserver(() => { cancelAnimationFrame(raf); raf = requestAnimationFrame(fsHitFit); }); ro.observe(sv); onCleanup(() => { ro.disconnect(); cancelAnimationFrame(raf); }); } }
   // a visiting dog can arrive after this (drawVisitor) and move the phone crop: draw the stall and banner again for the new crop
   const tv = S && S.place === 'square' && $('#townV2'); if (tv && isPhone()) { const mo = new MutationObserver(() => { if (!FS.walking && fsHere('square')) fsSquareDraw(); }); mo.observe(tv, { childList: true }); onCleanup(() => mo.disconnect()); }
   fsLater(() => { if (cur.mode === 'yard') fsLetters(); }, 1200);

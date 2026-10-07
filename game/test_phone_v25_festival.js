@@ -78,6 +78,11 @@ async function suite(t, dev) {
   ok(await t.until(() => window.__paw.fest.scattered.includes(0), null, 4000), 'a tap: the dog jumps in, the pile scatters');
   await t.until(() => !window.__paw.shop.busy, null, 6000);
   ok((await t.S()).stats.happy > h0, 'happy went up');
+  // the feed tray shrinks the scene: the pile hotspots (what g.hot measures) still stay 44 px or more
+  await p.locator('[data-act=feed]').first().tap(); await t.waitPop(true); await settled(t, '#fsPilesG [data-pile="0"]');
+  const tr = await ev(() => [...document.querySelectorAll('#fsPilesG g.hot')].map((g) => { const r = g.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)]; }));
+  ok(tr.length === 2 && tr.every(([w, hh]) => w >= 44 && hh >= 44), 'with the feed tray open the pile hotspots stay >= 44 px (' + tr.map((x) => x.join('x')).join(', ') + ')');
+  await p.locator('[data-act=feed]').first().tap(); await t.waitPop(false);
 
   t.sec(dev + ': the Harvest Stall and the parade banner in the Square');
   await ev(() => { const S = window.__paw.S; S.sleeping = false; S.place = 'square'; window.__paw.go('yard'); });
