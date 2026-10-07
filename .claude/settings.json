@@ -1,4 +1,5 @@
 {
+  "effortLevel": "high",
   "hooks": {
     "SessionStart": [
       { "hooks": [ { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/tools/session_start.sh" } ] }
