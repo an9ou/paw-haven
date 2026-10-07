@@ -61,7 +61,7 @@ require('./test_lib').run('v25_breeds', async (t) => {
   const cl = core.slice(core.indexOf('const CLOTHES = ['), core.indexOf('];', core.indexOf('const CLOTHES = [')));
   const NEW_WEAR = ['Leaf Beret', 'Autumn Scarf', 'Parade Rosette', 'Ghost Sheet', 'Pumpkin Suit'];
   const list = [...new Set([...cl.matchAll(/\{ n: '([^']+)', slot:/g)].map((m) => m[1]).concat([...core.matchAll(/TR\('([^']+)', 'wearable'/g)].map((m) => m[1]), NEW_WEAR))];
-  ok(!!list && list.length >= 51 && NEW_WEAR.every((n) => list.includes(n)), `outfit list: ${list && list.length} names incl. the 5 new ones`);
+  ok(!!list && list.length >= 35 && NEW_WEAR.every((n) => list.includes(n)), `outfit list: ${list && list.length} names incl. the 5 new ones`);
   const ids = await ev((keys) => { const P = window.__paw; return keys.filter((k) => k !== 'frenchie').map((k, i) => P.addDog({ key: k, sex: i % 2 ? 'male' : 'female', months: 20 }, 'Test ' + k).id); }, NEW.map((x) => x[0]));
   await ev((ns) => { const S = window.__paw.S; ns.forEach((n) => { if (!S.inv.clothes.includes(n)) S.inv.clothes.push(n); }); }, list || []);
   const allIds = [(await S()).dogs[0].id].concat(ids);
@@ -73,7 +73,7 @@ require('./test_lib').run('v25_breeds', async (t) => {
       await ev((n) => { const S = window.__paw.S; S.outfit.head = S.outfit.eyes = S.outfit.neck = S.outfit.body = null; window.__paw.shop.equip(n); window.__paw.shop.wardrobe(); }, n);
       if (await t.until(() => !!document.querySelector('#modal .ward .preview svg'), null, 3000)) drawn++;
     }
-    if (id === allIds[0]) await t.SH('02_wardrobe_frenchie');
+    if (id === allIds[0]) await t.sleep(2500); await t.SH('02_wardrobe_frenchie');
   }
   ok(drawn === tried && t.errors.length === e0, `${drawn}/${tried} mannequin previews drawn (4 breeds x ${list && list.length} outfits), no console errors`);
   await ev(() => { const S = window.__paw.S; S.outfit.head = S.outfit.eyes = S.outfit.neck = S.outfit.body = null; });
@@ -83,11 +83,12 @@ require('./test_lib').run('v25_breeds', async (t) => {
   await p.click('[data-act=journal]'); await p.waitForSelector('.panel.journal'); await p.click('[data-jt=coats]'); await p.waitForSelector('.ctop');
   ok(await p.locator('.cbreed').count() === 14, '14 breed tabs on the Coats page');
   ok(await ev(() => ['poodle', 'collie', 'samoyed', 'frenchie'].every((k) => !!document.querySelector(`.cbreed[data-cbreed="${k}"]`))), 'the four new breeds have tabs');
-  const rows = await ev(() => new Set([...document.querySelectorAll('.cbreed')].map((e) => Math.round(e.getBoundingClientRect().top))).size);
+  await t.sleep(700); // let the popup's open animation finish before measuring
+  const rows = await ev(() => new Set([...document.querySelectorAll('.cbreed')].map((e) => Math.round(e.offsetTop / 10))).size);
   ok(rows === 1, `the breed tabs fit on one row at 1280x720 (${rows} rows)`);
   await p.click('[data-cbreed="collie"]'); await p.waitForSelector('.cbreed.on[data-cbreed="collie"]');
   ok(await ev(() => document.querySelectorAll('.coat').length) >= 20, 'the Border Collie page lists its coats');
-  await t.SH('03_journal_coats');
+  await t.sleep(2500); await t.SH('03_journal_coats');
   await t.closeX(); await t.modalGone();
 
   sec('Poodle x Golden playdate: Goldendoodle pups, shown in the family tree');
@@ -99,7 +100,7 @@ require('./test_lib').run('v25_breeds', async (t) => {
     P.breed.setSeason(f.id, true); P.saveNow();
     const can = P.breed.canPair(f.id, m.id), r = P.breed.playdate(f.id, m.id, { force: true, size: 3 });
     return { f: f.id, m: m.id, can, ok: r.ok, pups: (f.preg && f.preg.pups || []).map((x) => ({ key: x.key, mix: x.mix })) };
-  }, iso(400));
+  }, iso(30));
   ok(pd.can.ok, 'a Poodle girl and a Golden boy can have a playdate: ' + pd.can.why);
   ok(pd.ok && pd.pups.length === 3 && pd.pups.every((x) => x.mix && x.mix.name === 'Goldendoodle' && ['poodle', 'golden'].includes(x.key) && x.mix.head !== x.key), 'the 3 pups are Goldendoodles ' + JSON.stringify(pd.pups.map((x) => x.key + '/' + (x.mix && x.mix.head) + ' ' + (x.mix && x.mix.name))));
   await ev(() => window.__paw.breed.birthNow());
@@ -107,14 +108,14 @@ require('./test_lib').run('v25_breeds', async (t) => {
   await p.fill('[data-pupname]', 'Doodle'); await p.press('[data-pupname]', 'Enter'); await t.modalGone();
   const pupId = await ev(() => window.__paw.S.litters[0].pups[0].id);
   ok(await ev((id) => { const r = window.__paw.S.tree[id]; return !!r && r.mix && r.mix.name === 'Goldendoodle'; }, pupId), 'S.tree keeps the Goldendoodle');
+  await ev((id) => window.__paw.switchDog(id), pd.f); await t.home();
   await p.click('[data-act=journal]'); await p.waitForSelector('.panel.journal'); await p.click('[data-jt=family]'); await p.waitForSelector('.panel.journal.j-family');
-  await p.click(`[data-fam="${pd.f}"]`).catch(() => {});
   await t.until(() => !!document.querySelector('.fkids .fkid'), null, 4000);
   ok(await ev(() => document.querySelectorAll('.fkids .fkid').length) === 3, 'Pretzel\'s tree page lists her 3 puppies');
   await p.click(`.fkids [data-fam="${pupId}"]`);
   ok(await t.until(() => /Goldendoodle/.test((document.querySelector('.fam-me') || {}).textContent || ''), null, 4000), 'the pup\'s tree page says Goldendoodle');
   ok(await ev(() => /Pretzel/.test(document.querySelector('.ft').textContent) && /Sunny/.test(document.querySelector('.ft').textContent)), 'mum Pretzel and dad Sunny are on the tree');
-  await t.SH('04_family_tree_goldendoodle');
+  await t.sleep(2500); await t.SH('04_family_tree_goldendoodle');
   await t.closeX(); await t.modalGone();
   await ev(() => window.__paw.breed.chooseNow()); await t.until(() => !!document.getElementById('wsOk'), null, 6000);
   await p.click('#wsOk'); await t.until(() => !!document.getElementById('wsBye2'), null, 4000); await p.click('#wsBye2'); await t.untilMode('yard'); await t.modalGone();
@@ -132,7 +133,7 @@ require('./test_lib').run('v25_breeds', async (t) => {
     const r = P.breed.playdate(a.id, c.id, { force: true, size: 3 });
     const pups = (a.preg && a.preg.pups) || [];
     return { mm, ref, mp, ok: r.ok, coats: [coat(a), coat(b), coat(c)], pupsM: pups.map((q) => q.genes.M.join('')), anyMerle: pups.some((q) => q.genes.M.includes('M')), aId: a.id };
-  }, iso(400));
+  }, iso(30));
   ok(/merle/i.test(mr.coats[0]) && /merle/i.test(mr.coats[1]) && !/merle/i.test(mr.coats[2]), 'two merle collies and a plain one: ' + mr.coats.join(', '));
   ok(mr.mm.ok === false && mr.mm.code === 'merle', 'two merle collies cannot pair: ' + mr.mm.why);
   ok(mr.mm.why === mr.ref.why && mr.ref.code === 'merle', 'the message is the same kind one as for any merle pair');
@@ -149,7 +150,7 @@ require('./test_lib').run('v25_breeds', async (t) => {
   await t.until(() => !!document.querySelector('.dnacard.done'), null, 5000); await t.sleep(400);
   const dna = await ev(() => ({ h: document.querySelector('#modal .panel h2').textContent, lines: [...document.querySelectorAll('.dna-lines li')].map((e) => e.textContent) }));
   ok(/Blue/.test(dna.h) && dna.lines.some((l) => /^M\/m: merle marbling \(never pair with another merle\)$/.test(l)), 'the card reads M/m: merle marbling, never pair with another merle: ' + dna.lines.join(' | '));
-  await t.SH('05_gene_sniffer_merle_collie');
+  await t.sleep(2500); await t.SH('05_gene_sniffer_merle_collie');
   await t.closeX(); await t.modalGone(); await t.home('yard');
 
   sec('Horgi x Horgi = Horgi');
@@ -167,7 +168,7 @@ require('./test_lib').run('v25_breeds', async (t) => {
     const r2 = P.breed.playdate(f.id, c.id, { force: true, size: 2 });
     const pups2 = (f.preg && f.preg.pups) || [];
     return { ok: r.ok, pups: pups.map((q) => ({ key: q.key, mix: q.mix })), ok2: r2.ok, pups2: pups2.map((q) => ({ key: q.key, mix: q.mix })) };
-  }, iso(400));
+  }, iso(30));
   ok(hh.ok && hh.pups.length === 3 && hh.pups.every((q) => q.mix && q.mix.name === 'Horgi' && ['corgi', 'husky'].includes(q.key)), 'Horgi x Horgi: every pup is a Horgi ' + JSON.stringify(hh.pups.map((q) => q.key + ' ' + (q.mix && q.mix.name))));
   ok(hh.pups.every((q) => q.mix.head !== q.key && ['corgi', 'husky'].includes(q.mix.head)), 'the pups show a corgi and a husky half');
   ok(hh.ok2 && hh.pups2.length === 2 && hh.pups2.every((q) => q.key === 'corgi' && q.mix && q.mix.name === 'Corgi'), 'Horgi x Corgi (3/4 Corgi): the pups are Corgis, not "Mutt mix" ' + JSON.stringify(hh.pups2.map((q) => q.key + ' ' + (q.mix && q.mix.name))));

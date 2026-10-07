@@ -145,7 +145,7 @@
        frenchie E_ is the brindle look ("Dark fawn", there is no K locus), e/e d/d is "Blue fawn", e/e b/b is "Cream";
        samoyed is always e/e: "White", with b/b "Cream". */
     poodle: {
-      red:      ['#F2C48F', '#FBE3C4', '#D9A066'], // * apricot
+      red:      ['#F2C48F', '#FBE2C0', '#D9A066'], // * apricot
       cream:    ['#F7F1E6', '#FFFFFF', '#E2D6C2'], // white (not #FFFFFF: the curls must still show)
       redliver: ['#EFD8B0', '#FAEEDA', '#D2B486'], // cream, liver nose
       black:    ['#2B2430', '#4A3F4E', '#1D1A22'],
@@ -171,7 +171,7 @@
       lilac:    ['#A8949A', '#C2B2B7', '#8A777E']
     },
     frenchie: {
-      red:      ['#D9B48A', '#EFD6B4', '#3A302E'], // * fawn, dark mask
+      red:      ['#D9B48A', '#F0DCC0', '#3A2E2E'], // * fawn, dark mask
       cream:    ['#D6C6AE', '#EADFCC', '#6E7F96'], // blue fawn, blue mask
       redliver: ['#EEDDC0', '#F8EFDE', '#9A7A5E'], // cream, soft liver mask
       black:    ['#7A5C44', '#A8865E', '#2B2430'], // dark fawn (the brindle look)

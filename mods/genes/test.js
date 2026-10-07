@@ -21,10 +21,10 @@ const EXPECT = {
   greyhound: { name: 'Blue with white markings', eyes: 'brown', base: '#8E9AB0', light: '#FFFFFF', dark: '#6E7A90', white: 0.25 },
   beagle:    { name: 'Tricolour',           eyes: 'brown', base: '#CF8C4C', light: '#FFFFFF', dark: '#2B2430', white: 0.25 },
   // v2.5 breeds (V25.md 6a: the SP art colours)
-  poodle:    { name: 'Apricot',             eyes: 'brown', base: '#F2C48F', white: 0 },
+  poodle:    { name: 'Apricot',             eyes: 'brown', base: '#F2C48F', light: '#FBE2C0', white: 0 },
   collie:    { name: 'Black and white',     eyes: 'brown', base: '#2A2628', light: '#FFFFFF', white: 0.25 },
   samoyed:   { name: 'White',               eyes: 'brown', base: '#FBF6EC', light: '#FFFFFF', dark: '#E8DECB', white: 0 },
-  frenchie:  { name: 'Fawn',                eyes: 'brown', base: '#D9B48A', white: 0 }
+  frenchie:  { name: 'Fawn',                eyes: 'brown', base: '#D9B48A', light: '#F0DCC0', dark: '#3A2E2E', white: 0 }
 };
 ok(Object.keys(EXPECT).length === 14 && G.BREEDS.length === 14, '14 breeds');
 ok(G.BREEDS.slice(10).join() === 'poodle,collie,samoyed,frenchie', 'v2.5 keys appended at the end of BREEDS');
