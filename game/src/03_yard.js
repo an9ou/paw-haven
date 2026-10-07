@@ -428,7 +428,8 @@ function feed(name) {
     addStat('hunger', f.hunger || 0); addStat('happy', happy); addStat('energy', f.energy || 0); addStat('clean', f.clean || 0);
     let bp = name === 'Fresh Water' ? 0 : 2 + (f.bond || 0); if (feeder) bp *= 2;
     if (name === 'Pupcake') S.pupUntil = S.gameMin + shPupMins(); // v2.4: the Happi Coat makes it 2 game hours
-    if (f.cool) { S.coolUntil = S.gameMin + f.cool; extraMsg += ' Cool as a cucumber for 1 game hour.'; } // v2.4: Frozen Pupsicle (isHot honours S.coolUntil)
+    if (f.cool) { S.coolUntil = S.gameMin + f.cool; extraMsg += ' Cool as a cucumber for 1 game hour.'; }
+    if (f.warm) { S.warmUntil = S.gameMin + f.warm; extraMsg += ' Warm paws for 1 game hour.'; } // v2.5: Warm Bone Broth (isWarm honours S.warmUntil) // v2.4: Frozen Pupsicle (isHot honours S.coolUntil)
     if (f.golden) { S.glowUntil = S.gameMin + 1440; addStat('happy', 80 - Math.min(80, S.stats.happy)); bp = 20; }
     const got = bp ? addBond(bp) : 0;
     const secs = (Math.random() * 0.9 + 0.2).toFixed(1);

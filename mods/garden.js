@@ -567,7 +567,7 @@
     var root = null;
     try { injectCSS(); } catch (e) { /* ignore */ }
     var st = norm(clone(o.state) || newState());
-    var env = { time: o.time || 'day', weather: WEATHERS[o.weather] ? o.weather : 'sunny', month: (o.month >= 1 && o.month <= 12) ? o.month : (new Date().getMonth() + 1) };
+    var env = { season: o.season || 'summer', time: o.time || 'day', weather: WEATHERS[o.weather] ? o.weather : 'sunny', month: (o.month >= 1 && o.month <= 12) ? o.month : (new Date().getMonth() + 1) };
     var dog = o.dog || {}; var dogKey = dog.key || 'mutt', dogName = dog.name || 'Your dog', outfit = dog.outfit || {}; var dogCoat = dog.coat, dogSeed = dog.seed;
     var buddy = o.buddy !== undefined ? o.buddy : (BUDDY[dogKey] || null);
     var seeds = Object.assign({}, o.seeds || {});
@@ -698,7 +698,7 @@
 
     /* ---------------- render ---------------- */
     function renderScene() {
-      var s = art('scene', 'garden', { time: env.time, weather: env.weather }, null);
+      var s = art('scene', 'garden', { time: env.time, weather: env.weather, season: env.season }, null);
       if (!s || !/garden/i.test(s.slice(0, 400))) s = fbScene(env.time, env.weather);
       q('.pg-scene').innerHTML = s;
       if (PORT) { var sv = q('.pg-scene>svg'); if (sv) sv.setAttribute('preserveAspectRatio', 'xMidYMax slice'); }
@@ -935,6 +935,7 @@
     }
     function doWater(i) {
       var p = st.plots[i]; if (!p) return;
+      call('onWater', i); // v2.5: the game counts watering (missions)
       if (p.water >= 3) { say('Plot ' + (i + 1) + ' is already soggy. Three drops is the max.', 2200); return; }
       if (isReady(p)) { say('That one is ready to pick, no water needed.', 2000); return; }
       st = water(st, i); sfx('water');

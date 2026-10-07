@@ -337,10 +337,10 @@
   function hasPose(key, pose) {
     try { var s = window.PawArt && window.PawArt.dog ? window.PawArt.dog(key, { pose: pose, anim: false }) : ''; return s.indexOf('pa-pose-' + pose) >= 0; } catch (e) { return false; }
   }
-  function sceneSvg(time, weather) {
+  function sceneSvg(time, weather, season) {
     try {
       if (window.PawArt && typeof window.PawArt.scene === 'function') {
-        var s = window.PawArt.scene('kitchen', { time: time, weather: weather });
+        var s = window.PawArt.scene('kitchen', { time: time, weather: weather, season: season || 'summer' }); // v2.5: the window follows the season
         if (typeof s === 'string' && s.indexOf('<svg') >= 0 && /kitchen/i.test(s.slice(0, 600))) return s;
       }
     } catch (e) { /* fall through */ }
@@ -550,7 +550,7 @@
 
     var dog = o.dog || {}, dogKey = dog.key || 'mutt', dogName = dog.name || 'Your pup'; _kCoat = dog.coat; _kSeed = dog.seed;
     var S = {
-      time: o.time || 'day', weather: o.weather || 'sunny',
+      time: o.time || 'day', weather: o.weather || 'sunny', season: o.season || 'summer',
       known: Array.isArray(o.known) ? o.known.slice() : ['carrot-crunchies', 'chicken-veggie-rice', 'blueberry-pupsicle'],
       best: Object.assign({}, o.best || {}),
       pantry: Object.assign({}, o.pantry || {}),
@@ -602,7 +602,7 @@
 
     /* scene */
     var sceneEl = div('pk-scene');
-    function drawScene() { sceneEl.innerHTML = sceneSvg(S.time, S.weather); if (PORT) { var sv = sceneEl.querySelector('svg'); if (sv) sv.setAttribute('preserveAspectRatio', 'xMidYMid slice'); } }
+    function drawScene() { sceneEl.innerHTML = sceneSvg(S.time, S.weather, S.season); if (PORT) { var sv = sceneEl.querySelector('svg'); if (sv) sv.setAttribute('preserveAspectRatio', 'xMidYMid slice'); } }
     drawScene();
 
     /* pot */

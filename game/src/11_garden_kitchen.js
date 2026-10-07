@@ -44,8 +44,7 @@ const pantryList = () => modData(PK, 'PANTRY', PANTRY_FB).filter((x) => x.id !==
 const cropInfo = (id) => cropsList().find((c) => c.id === id) || CROPS_FB.find((c) => c.id === id);
 const recipeInfo = (id) => recipesList().find((r) => r.id === id) || RECIPES_FB.find((r) => r.id === id);
 const buddyNow = () => modData(PG, 'BUDDY', BUDDY_FB)[S.dog.key] || null;
-const monthNow = () => new Date().getMonth() + 1;
-const seasonOf = (m) => ([12, 1, 2].includes(m) ? 'winter' : m <= 5 ? 'spring' : m <= 8 ? 'summer' : 'autumn');
+// v2.5: monthNow() and seasonOf() moved to 00_core.js (seasons are a core thing now)
 function gardenNew() {
   try { if (PG() && PG().newState) return PG().newState(); } catch (e) { /* module failed */ }
   return { v: 2, plots: Array.from({ length: 6 }, () => ({ crop: null, g: 0, water: 0, wd: 0, dry: 0, inSeason: true, inspected: false, ready: null, took: 0, planted: null, harvested: 0 })), last: gardenHourKey(), harvests: {} };
@@ -118,7 +117,7 @@ function enterGarden() {
   setChrome(true, false); dock.innerHTML = ''; view.innerHTML = '';
   gardenAdvance(); const e = envNow(); let closed = false;
   const o = {
-    state: S.garden, time: e.time, weather: e.weather, month: monthNow(), dog: dogForMod(), buddy: buddyNow(), seeds: seedCounts(), sfx,
+    state: S.garden, time: e.time, weather: e.weather, season: e.season, month: monthNow(), dog: dogForMod(), buddy: buddyNow(), seeds: seedCounts(), sfx,
     say: (t) => toast(t),
     onPlant: (plot, cropId) => { if (!(S.inv.seeds[cropId] > 0)) return false; S.inv.seeds[cropId]--; markDirty(); trackAct('garden', { what: 'plant', crop: cropId }); return true; },
     onHarvest: (plot, items, took) => {
@@ -126,6 +125,7 @@ function enterGarden() {
       const c = items && items[0] && items[0].crop; if (c) { S.garden.harvests = S.garden.harvests || {}; S.garden.harvests[c] = (S.garden.harvests[c] || 0) + 1; }
       audioCue('harvest'); markDirty(); if (items && items.length) trackAct('garden', { what: 'harvest', crop: c }); if (items && items.length) toast(`Harvested ${items.length} ${CROP_PLURAL[c] || c}${took ? ` (Captain Fluff's IOU: -${took})` : ''}. ${NAME()} sniffs ${PR().his} share hopefully.`, 'good');
     },
+    onWater: (plot) => { trackAct('garden', { what: 'water', plot }); }, // v2.5: the watering callback (TODO Shop Day)
     onBonusSeed: (cropId) => { S.inv.seeds[cropId] = (S.inv.seeds[cropId] || 0) + 1; markDirty(); toast(`${NAME()} dug up a bonus ${cropInfo(cropId) ? cropInfo(cropId).seedItem : 'seed'}! ${PR().He} is unbearable about it.`, 'gold'); },
     onChange: (st) => { if (st) { S.garden = mergeHarvests(st); markDirty(); saveNow(); } },
     onClose: () => { if (closed) return; closed = true; if (cur.mode === 'garden') go('yard'); }
@@ -154,7 +154,7 @@ function enterKitchen() {
   setChrome(true, false); dock.innerHTML = ''; view.innerHTML = ''; let closed = false; const e = envNow();
   if (!S.safetySeen.includes('salt')) S.safetySeen.push('salt'); // the module shows the salt note itself
   const o = {
-    dog: dogForMod(), time: e.time, weather: e.weather, known: S.recipes.known.slice(), best: Object.assign({}, S.recipes.best),
+    dog: dogForMod(), time: e.time, weather: e.weather, season: e.season, known: S.recipes.known.slice(), best: Object.assign({}, S.recipes.best),
     pantry: Object.assign({}, S.inv.pantry), crops: JSON.parse(JSON.stringify(S.inv.crops)), fridge: { count: S.inv.dishes.length, max: 8 }, sfx, say: (t) => toast(t),
     onCook: (r) => {
       if (!r || !r.recipe) return;

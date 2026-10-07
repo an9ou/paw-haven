@@ -25,6 +25,13 @@ const FOOD = [
   { n: 'Sweet Potato Chews', price: 10, hunger: 20, happy: 5, snack: true, v24: true, tip: 'Always cooked and plain, never raw. Raw sweet potato is hard to digest.', note: '+20 Hunger, +5 Happiness. A long chew.' },
   { n: 'Pumpkin Purée', price: 12, hunger: 25, happy: 5, clean: 5, v24: true, tip: 'Plain cooked pumpkin only, never pie filling. It is gentle on tummies.', note: '+25 Hunger, +5 Happiness. Gentle on tummies.' },
   { n: 'Turkey Meatballs', price: 18, hunger: 45, happy: 10, v24: true, tip: 'Plain cooked turkey, no onion or garlic. Those are poison for dogs.', note: '+45 Hunger, +10 Happiness. Sunday dinner, dog edition.' },
+  // v2.5 festival foods: sold at Baker Bea's Harvest Stall only (fest), never in Kibble Corner
+  { n: 'Baked Pumpkin Wedges', fest: 'leaf', price: 8, hunger: 15, happy: 10, snack: true, v25: true, tip: 'Plain baked pumpkin, no spice and no sugar. Nutmeg is not for dogs.', note: '+15 Hunger, +10 Happiness. Soft, orange, gone in two bites.' },
+  { n: 'Sweet Potato Coins', fest: 'leaf', price: 9, hunger: 15, happy: 5, clean: 5, snack: true, v25: true, tip: 'Baked soft and plain, never raw. Let them cool before the first bite.', note: '+15 Hunger, +5 Happiness, clean teeth. Chewy little rounds.' },
+  { n: 'Warm Bone Broth', fest: 'leaf', price: 10, hunger: 10, happy: 10, energy: 5, warm: 60, snack: true, v25: true, tip: 'Plain and strained, no onion, garlic or salt. Cooked bones can splinter, so none stay in the cup.', note: '+10 Hunger, +10 Happiness, +5 Energy, warm paws for an hour.' },
+  { n: 'Ghost Biscuits', fest: 'halloween', price: 9, hunger: 10, happy: 15, snack: true, v25: true, tip: 'Plain oats and plain yoghurt, nothing else. Chocolate is never for dogs, it is poison to them.', note: '+10 Hunger, +15 Happiness. Oat biscuits with a yoghurt ghost on top.' },
+  { n: 'Candy Corn Carrots', fest: 'halloween', price: 6, hunger: 10, happy: 5, clean: 5, snack: true, v25: true, tip: 'No sugar at all, just carrot. Real sweets can hold xylitol, which is poison for dogs.', note: '+10 Hunger, +5 Happiness, clean teeth. Carrot points that only look like sweets.' },
+  { n: 'Monster Meatball', fest: 'halloween', price: 14, hunger: 30, happy: 10, v25: true, tip: 'Plain cooked turkey, no onion or garlic. Grapes and raisins never go near it, they are poison for dogs.', note: '+30 Hunger, +10 Happiness. A turkey meatball with a carrot-slice eye.' },
   { n: 'Frozen Pupsicle', price: 22, hunger: 15, happy: 20, energy: 10, cool: 60, snack: true, v24: true, tip: 'Frozen plain yoghurt and fruit, no xylitol ever. Let it soften a little for small dogs.', note: '+15 Hunger, +20 Happiness, +10 Energy. Cools a hot dog for 1 game hour.' }
 ];
 const TOYS = [
@@ -66,6 +73,12 @@ const CLOTHES = [
   { n: 'Happi Coat', slot: 'body', price: 95, bond: 3, v24: true, perk: 'Festival power: Pupcake power lasts 2 game hours instead of 1.' },
   { n: 'Cozy Hoodie', slot: 'body', price: 0, bond: 1, v24: true, reward: true, perk: 'Warm: no shivering in the snow. Hood up, ears out.' },
   { n: 'Knit Scarf', slot: 'neck', price: 0, bond: 1, v24: true, reward: true, perk: 'Warm: no shivering in the snow. Mrs. Plum knitted too much again.' },
+  // v2.5 festival clothes: sold at the Harvest Stall only (fest), never in the Boutique; the Rosette is a parade reward
+  { n: 'Leaf Beret', slot: 'head', fest: 'leaf', price: 55, bond: 1, v25: true, perk: 'Warm: no shivering in the snow. Tilted, like a painter.' },
+  { n: 'Autumn Scarf', slot: 'neck', fest: 'leaf', price: 50, bond: 1, v25: true, perk: 'Warm: no shivering in the snow. With the Leaf Beret, the daily fashion bonus gives +10 Happiness.' },
+  { n: 'Ghost Sheet', slot: 'body', fest: 'halloween', price: 60, bond: 1, v25: true, perk: 'Boo: the parade loves it. Nobody can see the tail wag, but it is wagging.' },
+  { n: 'Pumpkin Suit', slot: 'body', fest: 'halloween', price: 65, bond: 1, v25: true, perk: 'Round: naps in the Pumpkin Cottage restore 10% more.' },
+  { n: 'Parade Rosette', slot: 'neck', fest: 'halloween', price: 0, bond: 1, v25: true, reward: true, perk: 'Pride: won at the Halloween costume parade. It is a little bent.' },
   { n: 'Astronaut Helmet', slot: 'head', price: 0, bond: 1, v24: true, reward: true, perk: 'Space-proof: no soggy shake after rain, no shivering in the snow.' }
 ];
 const HOUSES = [
@@ -347,8 +360,9 @@ function updateWxOverlay() {
 }
 let envKey = '';
 function checkEnv(force) {
-  const e = envNow(), k = e.time + '|' + e.weather;
-  if (k === envKey && !force) return; const first = !envKey; envKey = k;
+  const e = envNow(), fe = festNow(), k = e.time + '|' + e.weather + '|' + e.season + '|' + (fe.leaf ? 'L' : '') + (fe.halloween ? 'H' : '');
+  if (k === envKey && !force) return; const first = !envKey; const oldKey = envKey; envKey = k;
+  if (!first) { const o = oldKey.split('|'); if (o[2] !== e.season) emit('env:season', { season: e.season }); if (o[3] !== k.split('|')[3]) emit('env:fest', fe); } // v2.5
   const g = $('#sceneG'); if (g && !g.dataset.noenv) { let extra = {}; try { extra = JSON.parse(g.dataset.extra || '{}'); } catch (er) { /* none */ } g.innerHTML = sceneArt(g.dataset.scene, e, extra); }
   const sm = $('#snowmanG'); if (sm) sm.innerHTML = snowmanSVG();
   if (g && !g.dataset.noenv) emit('scene:redraw', { mode: cur.mode });
@@ -490,6 +504,7 @@ function freshState(key, name, sex) {
     found: {}, mapPieces: [], walks: 0, glowUntil: -1, secretDug: false, title: '', place: 'yard'
   };
   st.inv.charms = []; st.outfit.charm = null;
+  st.fest = { letters: {}, parade: {}, piles: {}, stall: {} }; st.seasonSeen = {}; st.breedTips = {}; // v2.5
   Object.assign(st.dog, newDogFields(key, sex || 'male', bornDaysAgo(10))); st.kennel = [];
   st.garden = gardenNew(); gkFields(st, false); v131Fields(st);
   if (key === 'mutt') { st.dog.favFood = [PICK(FOOD.slice(1)).n]; st.dog.favToy = PICK(TOYS).n; }
@@ -521,6 +536,7 @@ function migrate(s) {
   gkFields(s, true);
   if (s.seedGiftPending && gkOn()) { delete s.seedGiftPending; s.inv.seeds.carrot = (s.inv.seeds.carrot || 0) + 3; s.inv.seeds.peas = (s.inv.seeds.peas || 0) + 3; s.gkEarly = true; s.gkNote = true; }
   v131Fields(s);
+  if (!s.fest || typeof s.fest !== 'object') s.fest = {}; s.fest.letters = s.fest.letters || {}; s.fest.parade = s.fest.parade || {}; s.fest.piles = s.fest.piles || {}; s.fest.stall = s.fest.stall || {}; s.seasonSeen = s.seasonSeen || {}; s.breedTips = s.breedTips || {}; // v2.5: festivals and seasons
   if (!s.guide || typeof s.guide !== 'object') { s.guide = { step: -1, done: localISO() }; s.guideSeen = true; } // v2.4: saves from before the guide never see the walkthrough, they get a letter
   return s;
 }
@@ -537,7 +553,17 @@ const NAME = () => (S ? S.dog.name : 'Dog');
 const day = () => Math.floor(S.gameMin / 1440) + 1;
 function clock() { const m = Math.floor(S.gameMin % 1440); return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); }
 /* ---- v1.2 real time + weather: clock = device time; weather seeded by date, 3 periods a day ---- */
-const ENV = { time: prefs.ovrTime || 'auto', weather: prefs.ovrWeather || 'auto' };
+const ENV = { time: prefs.ovrTime || 'auto', weather: prefs.ovrWeather || 'auto', season: prefs.ovrSeason || 'auto', fest: prefs.ovrFest || 'auto' }; // v2.5: season and festival overrides
+/* ---- v2.5 seasons on the real calendar (northern hemisphere) and the festival windows. See V25.md section 1 ---- */
+const monthNow = () => new Date().getMonth() + 1;
+const seasonOf = (m) => ([12, 1, 2].includes(m) ? 'winter' : m <= 5 ? 'spring' : m <= 8 ? 'summer' : 'autumn');
+const SEASONS = ['spring', 'summer', 'autumn', 'winter'];
+function seasonNow() { return SEASONS.includes(ENV.season) ? ENV.season : seasonOf(monthNow()); }
+function festNow() {
+  const f = ENV.fest; if (f === 'off') return { leaf: false, halloween: false }; if (f === 'leaf' || f === 'halloween' || f === 'both') return { leaf: f !== 'halloween', halloween: f !== 'leaf' };
+  const d = new Date(), m = d.getMonth() + 1, day = d.getDate(); return { leaf: m === 10 || m === 11, halloween: m === 10 && day >= 24 };
+}
+const festOn = (n) => !!festNow()[n];
 function timePhase() { if (ENV.time !== 'auto') return ENV.time; const h = new Date().getHours(); return h >= 5 && h < 7 ? 'dawn' : h >= 7 && h < 17 ? 'day' : h >= 17 && h < 19 ? 'dusk' : 'night'; }
 function weatherPeriodKey() { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}-${Math.floor(d.getHours() / 8)}`; }
 function weatherNow() {
@@ -548,7 +574,7 @@ function weatherNow() {
   return r < 0.45 ? 'sunny' : r < 0.70 ? 'cloudy' : r < 0.95 ? 'rain' : winter ? 'snow' : 'rain';
 }
 const weather = weatherNow;
-const envNow = () => ({ time: timePhase(), weather: weatherNow() });
+const envNow = () => ({ time: timePhase(), weather: weatherNow(), season: seasonNow() });
 const isNight = () => timePhase() === 'night';
 function isHot() { if (S && S.buff && typeof buffOn === 'function' && buffOn('cool')) return false; if (S && (S.outfit.head === 'Sun Hat' || (S.coolUntil || -1) > S.gameMin)) return false; if (weatherNow() !== 'sunny' || timePhase() !== 'day') return false; if (ENV.time !== 'auto') return true; const h = new Date().getHours(); return h >= 11 && h < 15; }
 function clockText() { if (ENV.time !== 'auto') return { dawn: '06:00', day: '13:00', dusk: '18:00', night: '23:00' }[ENV.time] + '*'; const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
@@ -558,8 +584,8 @@ function wxIconName() { const w = weatherNow(), t = timePhase(); if (w === 'rain
 const RAINCOATS = ['Yellow Raincoat', 'Polka-dot Raincoat', 'Frog Raincoat', 'Bubble Raincoat'];
 const hasRaincoat = () => RAINCOATS.includes(S.outfit.body);
 const hasRainHat = () => S.outfit.head === 'Rain Hat' || S.outfit.head === 'Astronaut Helmet';
-const WARM_WEAR = ['Pom-pom Beanie', 'Knit Winter Sweater', 'Cozy Hoodie', 'Knit Scarf', 'Astronaut Helmet']; // v2.4: three new warm things
-const isWarm = () => SLOTS.some((k) => WARM_WEAR.includes(S.outfit[k])) || (typeof buffOn === 'function' && buffOn('warm'));
+const WARM_WEAR = ['Pom-pom Beanie', 'Knit Winter Sweater', 'Cozy Hoodie', 'Knit Scarf', 'Astronaut Helmet', 'Leaf Beret', 'Autumn Scarf']; // v2.4: three new warm things; v2.5: the leaf festival pair
+const isWarm = () => SLOTS.some((k) => WARM_WEAR.includes(S.outfit[k])) || (typeof buffOn === 'function' && buffOn('warm')) || (S.warmUntil || -1) > S.gameMin; // v2.5: Warm Bone Broth
 const houseInfo = (n) => HOUSES.find((h) => h.n === (n || S.house)) || HOUSES[0];
 const owns = (cat, n) => S.inv[cat].includes(n);
 const glowing = () => (S.gameMin < (S.glowUntil || -1)) || (S.stats.hunger > 80 && S.stats.happy > 80 && S.stats.energy > 80 && S.stats.clean > 80);
@@ -581,6 +607,7 @@ function phChipClear() { if (!isPhone()) return 0; const st = $('#status'); retu
 function toast(text, kind = '') {
   const modScr = stage.classList.contains('modhud') || (isPhone() && cur.mode === 'toy'); // v2.4: in a toy game on a phone, toasts sit under the strip, not on its title bar
   toasts.style.top = modScr ? 'auto' : (hud.hidden ? 10 : view.offsetTop + 8 + phChipClear()) + 'px'; toasts.style.bottom = modScr ? '18px' : ''; toasts.style.flexDirection = modScr ? 'column-reverse' : '';
+  if (isPhone() && !modal.hidden) { const h2 = modal.querySelector('.panel > h2'); const sr = stage.getBoundingClientRect(); toasts.style.setProperty('--toastTop', (h2 ? h2.getBoundingClientRect().bottom - sr.top + 6 : 6) + 'px'); } // v2.5: never over a sheet's title
   const t = document.createElement('div'); t.className = 'toast ' + kind; t.textContent = text; toasts.appendChild(t);
   while (toasts.children.length > 3) toasts.firstChild.remove();
   setTimeout(() => t.remove(), 2900);

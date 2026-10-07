@@ -32,4 +32,5 @@
 22c_phone_shell.js
 24_missions.js
 25_guide.js
+26_festival.js
 23_boot.js

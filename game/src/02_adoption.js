@@ -13,7 +13,7 @@ function renderAdopt(first) {
   dock.innerHTML = `<div class="tray"><div class="tray-h"><h3>Paw Haven Shelter: pick your new best friend</h3></div>
     <div class="adopt-card"><button class="arrow" id="aPrev" aria-label="Previous dog">&lt;</button>
       <div class="info"><h3>${esc(d.name)} <span class="small">the ${esc(d.breed)}</span></h3><p>${esc(d.personality)}</p>
-      <p class="small">Loves: ${esc(favLine(d.key))}</p>
+      <p class="small">Loves: ${esc(favLine(d.key))}</p>${typeof bdTip === 'function' && bdTip(d.key) ? `<p class="small bd-tip">${esc(bdTip(d.key))}</p>` : ''}
       <p class="sexpick">${esc(d.name)} has a brother and a sister here. Which one is coming home? <button class="btn sexbtn m" id="aBoy" aria-pressed="${adoptSex === 'male'}">&#9794; Boy</button><button class="btn sexbtn f" id="aGirl" aria-pressed="${adoptSex === 'female'}">&#9792; Girl</button></p></div>
       <button class="arrow" id="aNext" aria-label="Next dog">&gt;</button></div>
     <div class="heads">${dogs.map((x, i) => `<button data-i="${i}" aria-label="${esc(x.name)} the ${esc(x.breed)}" aria-current="${i === adoptIdx}">${art('dogHead', x.key)}</button>`).join('')}</div>
