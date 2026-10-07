@@ -29,6 +29,12 @@ function dense(pts,closed,step){
 const circ=(cx,cy,rx,ry,n=14,lop=0)=>{const p=[];for(let i=0;i<n;i++){const a=i/n*Math.PI*2;p.push([cx+Math.cos(a)*rx*(1+lop*Math.sin(a*2)),cy+Math.sin(a)*ry*(1+lop*Math.cos(a))*(Math.sin(a)>0?.94:1)])}return p};
 const scallop=(cx,cy,rx,ry,nb,amp)=>{const p=[];for(let j=0;j<nb;j++)for(let t=0;t<1;t+=.25){const a=(j+t)/nb*Math.PI*2,k=1+amp*Math.sin(Math.PI*t)+Math.sin(j*2.3)*.03;p.push([cx+Math.cos(a)*rx*k,cy+Math.sin(a)*ry*k])}return p};
 const spiral=(cx,cy,r0,r1,turns,n,a0)=>{const p=[];for(let i=0;i<=n;i++){const t=i/n,a=a0+t*turns*Math.PI*2,rr=r1+(r0-r1)*t;p.push([cx+Math.cos(a)*rr,cy+Math.sin(a)*rr])}return p};
+// v2.5 helpers: corner rounding (closed polygon) and a convex hull (canvas points)
+const chaikin=(p,it)=>{for(let k=0;k<it;k++){const o=[];p.forEach((a,i)=>{const b=p[(i+1)%p.length];o.push([a[0]*.75+b[0]*.25,a[1]*.75+b[1]*.25],[a[0]*.25+b[0]*.75,a[1]*.25+b[1]*.75])});p=o}return p};
+function hull(P){const p=P.filter(q=>!isNaN(q[0])).slice().sort((a,b)=>a[0]-b[0]||a[1]-b[1]),x=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]),lo=[],up=[];
+  p.forEach(q=>{while(lo.length>1&&x(lo[lo.length-2],lo[lo.length-1],q)<=0)lo.pop();lo.push(q)});
+  for(let i=p.length-1;i>=0;i--){const q=p[i];while(up.length>1&&x(up[up.length-2],up[up.length-1],q)<=0)up.pop();up.push(q)}
+  return lo.slice(0,-1).concat(up.slice(0,-1))}
 
 /* ---------- the crude drawing kit: every point it draws is tracked for fitting ---------- */
 function kit(r){
@@ -107,7 +113,40 @@ SP.beagle={name:'Bagel',breed:'Beagle',personality:'Nose-led, food-obsessed, bay
   marks:(h,B,Hd,s)=>{const b=s.body,K=s.dark;h.shape([[-b.rx*.85,-b.ry*.55],[-b.rx*.3,-b.ry*1.0],[b.rx*.45,-b.ry*.95],[b.rx*.55,-b.ry*.1],[-b.rx*.2,b.ry*.15],[-b.rx*.8,b.ry*.05]].map(B),K,{noline:1,ox:0,oy:-1});
    h.shape([[b.rx*.5,b.ry*.1],[b.rx*1.0,-b.ry*.1],[b.rx*.9,b.ry*1.0],[b.rx*.3,b.ry*1.0]].map(B),s.light,{noline:1});
    const hx=s.head.rx,hy=s.head.ry;h.shape([[hx*.05,-hy*.95],[hx*.25,-hy*.95],[hx*.38,hy*.1],[hx*.95,hy*.3],[hx*.85,hy*.9],[-hx*.4,hy*.9],[-hx*.55,hy*.45],[0,hy*.15]].map(Hd),s.light,{noline:1})}};
-const KEYS=['shiba','corgi','golden','dachs','husky','mutt','chihuahua','pug','greyhound','beagle'];
+/* v2.5 Autumn & New Pups: four more crude ones. Their extras (curlEar, topknot, earS, earRound, legs.pom, tail 'pom',
+   ears 'semi', mouths 'sammy'/'grump', face.browCol) are new spec fields, so the ten older dogs never take these branches */
+const lum=c=>{const v=[1,3,5].map(i=>parseInt(c.slice(i,i+2),16)/255);return v[0]*.3+v[1]*.59+v[2]*.11};
+const curlCol=c=>lum(c)<.32?mix(c,W,.32):mix(c,PEN,.38);
+SP.poodle={name:'Truffle',breed:'Poodle',personality:'Thinks it is the smartest one in the room. It is.',joke:'Haircut optional. Dignity not.',
+  col:'#F2C48F',hcol:'#F2C48F',light:'#FBE2C0',fluff:1,hfluff:1,body:{x:110,y:136,rx:41,ry:26},head:{x:157,y:98,rx:26,ry:25},
+  legs:{h:-26,f:23,w:6.2,pom:1},ears:'flopL',curlEar:1,topknot:1,tail:'pom',eyes:[5.8,5.2],
+  face:{eyes:'smug',mouth:'smile',e0:[-.1,-.16],e1:[.34,-.2],nose:[1.6,.12],snout:2,snoutL:1.6,tilt:-10},
+  marks:(h,B,Hd,s)=>{const b=s.body,hx=s.head.rx,hy=s.head.ry,c=curlCol(s.col),c2=curlCol(s.hcol);
+   [[-.62,-.3],[-.2,-.55],[.25,-.42],[.62,-.12],[-.42,.28],[.02,.06],[.4,.4],[-.06,.58],[-.84,.02]].forEach((q,i)=>h.line(spiral(b.rx*q[0],b.ry*q[1],.6,4.4,1.3,9,i*1.3).map(B),2.1,c,.35));
+   [[-.52,-.42],[-.08,-.66],[-.62,.12],[-.28,.42]].forEach((q,i)=>h.line(spiral(hx*q[0],hy*q[1],.5,3.8,1.25,8,i*1.7).map(Hd),2,c2,.3))}};
+SP.collie={name:'Scout',breed:'Border Collie',personality:'Has counted the sheep. There are no sheep. Has counted you.',joke:'Will herd the puppies, the ducks and the furniture.',
+  col:'#2A2628',hcol:'#2A2628',light:W,body:{x:110,y:144,rx:44,ry:23,lop:.04},head:{x:164,y:106,rx:30,ry:26},
+  legs:{h:-28,f:25,w:8.6,sock:W},ears:'semi',tail:'fluffy',eyes:[7,6.6],
+  face:{eyes:'open',mouth:'smile',e0:[-.14,-.16],e1:[.38,-.2],nose:[1.42,.1],snout:1,snoutL:1.4,brow:'curious',browCol:'#CFC6C0',look:[[-.3,.18],[-.3,.18]]},
+  marks:(h,B,Hd,s)=>{const b=s.body,K=s.light;h.shape([[b.rx*.5,-b.ry*.95],[b.rx*.82,-b.ry*.78],[b.rx*1.03,b.ry*.05],[b.rx*.88,b.ry*.95],[b.rx*.2,b.ry*1.0],[b.rx*.35,b.ry*.55],[b.rx*.62,b.ry*.1]].map(B),K,{noline:1});
+   const hx=s.head.rx,hy=s.head.ry;h.shape([[hx*.06,-hy*.98],[hx*.24,-hy*.98],[hx*.46,hy*.02],[hx*.04,-hy*.02]].map(Hd),K,{noline:1});
+   h.shape([[hx*.0,hy*.42],[hx*.9,hy*.28],[hx*.82,hy*.92],[-hx*.38,hy*.96]].map(Hd),K,{noline:1});h.shape(circ(-hx*.5,hy*.62,hx*.42,hy*.36,9).map(Hd),K,{noline:1,ox:0,oy:0})}};
+SP.samoyed={name:'Cloud',breed:'Samoyed',personality:'Smiles so the snow does not stick. Also just smiles.',joke:'Sheds a second dog every spring.',
+  col:'#FBF6EC',hcol:'#FBF6EC',light:W,dark:'#E8DECB',fluff:1,hfluff:1,body:{x:106,y:128,rx:55,ry:39},head:{x:162,y:93,rx:35,ry:31},
+  legs:{h:-28,f:24,w:9.6},ears:'prick',earS:.8,earRound:1,tail:'spiral',tsc:.64,spS:.7,eyes:[6.4,6],
+  face:{eyes:'open',mouth:'sammy',e0:[-.16,-.1],e1:[.36,-.14],nose:[.64,.24]},
+  marks:(h,B,Hd,s)=>{const b=s.body,hx=s.head.rx,hy=s.head.ry,K=mix(s.dark,PEN,.3);
+   [[-.55,-.4],[-.1,-.62],[.4,-.38],[-.72,.32],[.1,.45],[.68,.38]].forEach(q=>{const x=q[0]*b.rx,y=q[1]*b.ry;h.line([[x-6,y-2],[x-3,y+3],[x,y-2],[x+3,y+3],[x+6,y-1]].map(B),2.2,K,.4)});
+   h.line([[-hx*.78,hy*.12],[-hx*.66,hy*.48],[-hx*.4,hy*.72],[-hx*.08,hy*.84]].map(Hd),2.2,K,.4)}};
+SP.frenchie={name:'Croissant',breed:'French Bulldog',personality:'Snores, snorts, sits on your foot. All three at once.',joke:'Breathes like a tiny engine. Shade and water, please.',
+  col:'#D9B48A',hcol:'#D9B48A',light:'#F0DCC0',dark:'#3A2E2E',body:{x:112,y:150,rx:40,ry:25,lop:.02},head:{x:160,y:116,rx:31,ry:28},
+  legs:{h:-24,f:23,w:10.6},ears:'bat',earS:.8,earRound:1,tail:'nub',eyes:[8.6,9],
+  face:{eyes:'open',mouth:'grump',e0:[-.26,-.1],e1:[.44,-.12],nose:[.2,.3],pupil:.62,brow:'soft',drool:1},
+  marks:(h,B,Hd,s)=>{const b=s.body;h.shape(circ(b.rx*.66,b.ry*.38,b.rx*.3,b.ry*.5,10).map(B),s.light,{noline:1,ox:0,oy:0});
+   const hx=s.head.rx,hy=s.head.ry;h.shape(circ(hx*.2,hy*.42,hx*.5,hy*.36,11).map(Hd),mix(s.dark,s.hcol,.3),{noline:1,ox:0,oy:0});
+   h.line([[hx*-.02,-hy*.42],[hx*.1,-hy*.52],[hx*.22,-hy*.42]].map(Hd),2.2,PEN,.5);h.line([[hx*-.1,hy*.1],[hx*.2,hy*.02],[hx*.5,hy*.1]].map(Hd),2.2,PEN,.5)}};
+const KEYS=['shiba','corgi','golden','dachs','husky','mutt','chihuahua','pug','greyhound','beagle','poodle','collie','samoyed','frenchie'];
+const NEWK=/^(poodle|collie|samoyed|frenchie)$/;
 
 /* ---------- pose -> rig layout ---------- */
 function layout(s,pose,k){
@@ -222,6 +261,10 @@ function earList(s){// the ear shapes in head-local px, before any pose rotation
   if(ty==='roseG')E.push({pts:pr([[-.1,-.88],[-.95,-1.15],[-.75,-.7],[-.35,-.55]]),pivot:pr([[-.3,-.8]])[0],side:-1,flop:1});
   if(ty==='flopL'){E.push({pts:pr([[-.42,-.86],[-.98,-.62],[-1.22,.42],[-.98,.88],[-.72,.05]]),pivot:pr([[-.6,-.78]])[0],side:-1,flop:1});E.push({pts:pr([[.4,-.88],[.95,-.6],[1.16,.4],[.95,.85],[.7,.0]]),pivot:pr([[.6,-.8]])[0],side:1,flop:1})}
   if(ty==='dflop')E.push({pts:pr([[-.25,-.85],[-.85,-.6],[-1.02,.7],[-.7,1.0],[-.42,.2]]),pivot:pr([[-.5,-.75]])[0],side:-1,flop:1});
+  if(ty==='semi'){// upright to about two thirds, then the tip folds forward and down
+    E.push({pts:pr([[-.78,-.44],[-.66,-1.18],[-.5,-1.4],[-.12,-1.2],[-.3,-1.12],[-.06,-.86]]),pivot:pr([[-.42,-.7]])[0],side:-1,fold:[1,4]});
+    E.push({pts:pr([[.08,-.88],[.24,-1.3],[.42,-1.5],[.84,-1.24],[.6,-1.2],[.78,-.38]]),pivot:pr([[.43,-.7]])[0],side:1,fold:[1,4]})}
+  if(s.earS)E.forEach(e=>{const c=e.pivot,k=s.earS;e.pts=e.pts.map(q=>[c[0]+(q[0]-c[0])*k,c[1]+(q[1]-c[1])*k])});
   return E;
 }
 function earAngle(s,mode,e){
@@ -239,19 +282,29 @@ function earPose(s,L,e){// the ear after its pose rotation; L.earFit (Astronaut 
   const a=earAngle(s,L.ears,e);let p=a?rotAbout(e.pts,a,e.pivot):e.pts;
   if(L.earFit){const R=L.earFit,c=e.pivot,at=k=>p.map(q=>[c[0]+(q[0]-c[0])*k,c[1]+(q[1]-c[1])*k]);let k=1;while(k>.3&&!at(k).every(q=>Math.hypot(q[0],q[1])<=R))k-=.05;if(k<1)p=at(k)}
   return p}
+function curlyEar(h,s,p,HT,col){// Poodle: a long drop ear with a lumpy outline and two curls in it
+  const P=dense(p,true,5.5);let cx=0,cy=0;P.forEach(q=>{cx+=q[0]/P.length;cy+=q[1]/P.length});
+  const Q=P.map((q,i)=>{const dx=q[0]-cx,dy=q[1]-cy,m=Math.hypot(dx,dy)||1,k=i%2?2.6:-.4;return[q[0]+dx/m*k,q[1]+dy/m*k]});
+  h.shape(Q.map(HT),col,{w:3.6,step:30,amp:.9});const c=curlCol(col);
+  [[.0,-.05],[.05,.38]].forEach((o,i)=>{const x=cx+o[0]*(cx-p[0][0]),y=cy+o[1]*Math.abs(p[2][1]-p[0][1]);h.line(spiral(x,y,.5,3.6,1.25,8,i*2.1).map(HT),2,c,.3)})}
+function drawTopknot(h,s,HT){// Poodle: a round pom of hair on top of the head, behind the skull outline
+  const hx=s.head.rx,hy=s.head.ry;h.shape(scallop(-hx*.1,-hy*.86,hx*.56,hy*.44,8,.2).map(HT),s.hcol,{step:30,amp:.8});
+  [[-.3,-1.0],[.12,-1.06]].forEach((q,i)=>h.line(spiral(hx*q[0],hy*q[1],.5,3.6,1.25,8,i*2.4).map(HT),2,curlCol(s.hcol),.3))}
 function drawEars(h,s,L,HT,front){
   const mode=L.ears,col=s.ear||s.hcol;
   earList(s).forEach(e=>{
     const isFront=!!e.flop;if(isFront!==front)return;
     let p=earPose(s,L,e);
-    h.shape(p.map(HT),e.col||col,{w:3.8});
-    if(e.inner){const c=[(p[0][0]+p[2][0])/2,(p[0][1]+p[2][1])/2];const ip=p.map(q=>[c[0]+(q[0]-c[0])*.55,c[1]+(q[1]-c[1])*.55]);ip[1]=[c[0]+(p[1][0]-c[0])*.7,c[1]+(p[1][1]-c[1])*.7];h.shape(ip.map(HT),s.ears==='tall'?W:'#FFB8C4',{noline:1,ox:0,oy:0});}
+    if(s.curlEar&&e.flop){if(e.side>0){const c=e.pivot,hx=s.head.rx;p=p.map(q=>[c[0]+(q[0]-c[0])*.84-hx*.16,c[1]+(q[1]-c[1])*.9])}curlyEar(h,s,p,HT,mix(e.col||col,PEN,.16));return}
+    h.shape((s.earRound?chaikin(p,2):p).map(HT),e.col||col,{w:3.8});
+    if(e.inner){const c=[(p[0][0]+p[2][0])/2,(p[0][1]+p[2][1])/2];const ip=p.map(q=>[c[0]+(q[0]-c[0])*.55,c[1]+(q[1]-c[1])*.55]);ip[1]=[c[0]+(p[1][0]-c[0])*.7,c[1]+(p[1][1]-c[1])*.7];h.shape((s.earRound?chaikin(ip,2):ip).map(HT),s.ears==='tall'?W:'#FFB8C4',{noline:1,ox:0,oy:0});}
+    if(e.fold){const a=p[e.fold[0]],b=p[e.fold[1]],c=e.col||col;h.line([a,[(a[0]+b[0])/2,(a[1]+b[1])/2+1.5],b].map(HT),2.4,lum(c)<.32?mix(c,W,.45):mix(c,PEN,.45),.4)}
   });
 }
 function drawTail(h,s,L,B){
   const b=s.body,a=L.tailA,sc=L.tailS*(s.tsc||1),col=s.col;
   const base=[-b.rx*(b.long?.96:.86),-b.ry*.25];
-  let aa=a,ss=sc;if(s.tail==='spiral'){if(L.pose==='sleep'){aa=22;ss=.82}else if(L.pose==='sit'){aa=-22;ss=.85}else if(L.pose==='sad'){aa=-34;ss=.84}}
+  let aa=a,ss=sc;if(s.tail==='spiral'){if(L.pose==='sleep'){aa=22;ss=.82}else if(L.pose==='sit'){aa=-22;ss=.85}else if(L.pose==='sad'){aa=-34;ss=.84}if(s.spS&&/^(sleep|sit|sad)$/.test(L.pose))ss*=s.spS}
   const map=pts=>pts.map(p=>{const q=rot([p[0]*ss,p[1]*ss],aa),c=B([base[0]+q[0],base[1]+q[1]]);return[c[0],Math.min(c[1],GY-2)]});
   switch(s.tail){
    case 'spiral':h.tube(map(spiral(-18,-46,4,30,1.55,26,2.0).reverse().concat([[0,0]]).reverse()),13*Math.min(1,ss*1.1),col,{ow:ss<1?5.5:undefined});break;
@@ -264,7 +317,8 @@ function drawTail(h,s,L,B){
    case 'whip':h.tube(map([[0,0],[-14,10],[-24,26],[-24,42],[-14,50]]),3.6,col,{ow:4.6});break;
    case 'flag':h.tube(map([[0,0],[-5,-14],[-7,-30],[-5,-42]]),7.5,col);{const t=map([[-5,-42]])[0];h.dot(t[0],t[1],5.2,5.2,W)}break;
    case 'line':h.line(map([[0,0],[-14,-10],[-10,-22],[-22,-30],[-22,-44]]),4.8);break;
-  }  if(s.tailTip){const E={spiral:[-18,-46],nub:[-8,-6],wiggle:[-28,-42],thin:[-17,-36],fluffy:[-24,-46],line:[-22,-44],sickle:[3,-27],curl:[-7,-13],whip:[-14,50]}[s.tail];if(E&&s.tail!=='fluffy'){const t=map([E])[0];h.dot(t[0],t[1],s.tail==='spiral'?6:4.5,s.tail==='spiral'?6:4.5,W)}}
+   case 'pom':{h.tube(map([[0,0],[-6,-10],[-8,-22]]),4.2,col,{ow:4.6});const t=map([[-9,-29]])[0],z=9.5*Math.max(.6,ss);h.shape(scallop(t[0],t[1],z,z*.92,7,.22),col,{step:30,amp:.8,w:3.6});h.line(spiral(t[0]-1,t[1]-1,.5,3.6,1.25,8,.6),2,curlCol(col),.3);break}
+  }  if(s.tailTip){const E={pom:[-9,-29],spiral:[-18,-46],nub:[-8,-6],wiggle:[-28,-42],thin:[-17,-36],fluffy:[-24,-46],line:[-22,-44],sickle:[3,-27],curl:[-7,-13],whip:[-14,50]}[s.tail];if(E&&s.tail!=='fluffy'){const t=map([E])[0];h.dot(t[0],t[1],s.tail==='spiral'?6:4.5,s.tail==='spiral'?6:4.5,W)}}
 
 }
 function drawLegs(h,s,L){
@@ -275,7 +329,8 @@ function drawLegs(h,s,L){
     else{h.tube([l.hip,l.mid||[(l.hip[0]+l.foot[0])/2+1,(l.hip[1]+l.foot[1])/2],l.foot],l.w,l.col);
       if(L.paw&&l.foot&&(l.id==='NF'||l.id==='FF'))h.shape(circ(l.foot[0]+2,l.foot[1],l.w*.75,l.w*.6,7),l.sock||l.col,{w:2.8,ox:0,oy:0,sc:1,closed:1});
       if(l.sock&&!l.raised){const t=.62,sx=l.hip[0]+(l.foot[0]-l.hip[0])*t,sy=l.hip[1]+(l.foot[1]-l.hip[1])*t;h.acc.push(`<path d="M${R1(sx+1)} ${R1(sy)}L${R1(l.foot[0]+1)} ${R1(l.foot[1]-1)}" stroke="${l.sock}" stroke-width="${R1(l.w)}" stroke-linecap="round"/>`)}
-      if(s.pup&&!(L.paw&&(l.id==='NF'||l.id==='FF')))h.shape(circ(l.foot[0]+2.5,l.foot[1]-l.w*.42,l.w*1.0,l.w*.66,8),l.sock||l.col,{w:3,ox:0,oy:0,sc:1,closed:1});}
+      if(s.pup&&!(L.paw&&(l.id==='NF'||l.id==='FF')))h.shape(circ(l.foot[0]+2.5,l.foot[1]-l.w*.42,l.w*1.0,l.w*.66,8),l.sock||l.col,{w:3,ox:0,oy:0,sc:1,closed:1});
+      if(s.legs.pom){const m=l.mid||l.hip,t=.7,x=m[0]+(l.foot[0]-m[0])*t,y=m[1]+(l.foot[1]-m[1])*t;h.shape(scallop(x,y,l.w*1.05,l.w*.9,6,.25),l.sock||l.col,{step:30,amp:.6,w:3,ox:0,oy:0,sc:1})}}
     h.acc.splice(a,0,`<g class="pa-d-leg pa-d-leg-${l.id}">`);h.acc.push('</g>');
   };
   const only=h._legPass||'ground';const ok=l=>(only==='raised'?l.raised:!l.raised)&&(!h._legSkip||l.id!==h._legSkip)&&(!h._legOnly||l.id===h._legOnly);
@@ -300,27 +355,28 @@ function drawFace(h,s,L,HT){
   const e0=f.e0||[-.1,-.04],e1=f.e1||[.42,-.1],er=s.eyes;
   const eyes=[[hx*e0[0],hy*e0[1],er[0]],[hx*e1[0],hy*e1[1],er[1]]];
   if(s.face.snout){const sl=s.face.snoutL||1.5,sn=[[hx*.5,-hy*.02],[hx*sl,hy*.0],[hx*(sl+.05),hy*.5],[hx*.6,hy*.62]];h.shape(sn.map(HT),s.face.snout===2?s.hcol:s.light,{w:4.4})}
+  const bc=f.browCol&&lum(s.hcol)<.32?f.browCol:undefined;// light lines on a dark head (v2.5 collie)
   eyes.forEach((e,i)=>{
     const [x,y]=HT([e[0],e[1]]),r=e[2],m=f.eyes;
-    if(m==='happy'){h.line([[x-r,y+r*.35],[x,y-r*.55],[x+r,y+r*.35]],4.2);return}
-    if(m==='x'){h.line([[x-r*.8,y-r*.8],[x+r*.8,y+r*.8]],3.6);h.line([[x+r*.8,y-r*.8],[x-r*.8,y+r*.8]],3.6);return}
-    if(m==='closed'){h.line([[x-r,y],[x,y+r*.5],[x+r,y]],3.8);return}
+    if(m==='happy'){h.line([[x-r,y+r*.35],[x,y-r*.55],[x+r,y+r*.35]],4.2,bc);return}
+    if(m==='x'){h.line([[x-r*.8,y-r*.8],[x+r*.8,y+r*.8]],3.6,bc);h.line([[x+r*.8,y-r*.8],[x-r*.8,y+r*.8]],3.6,bc);return}
+    if(m==='closed'){h.line([[x-r,y],[x,y+r*.5],[x+r,y]],3.8,bc);return}
     h.shape(circ(x,y,r,r*1.05,12),W,{ox:0,oy:0,sc:1,w:2.3,amp:.45,closed:1,famp:.25});
     let lx=.06,ly=.1;const lk=s.face.look&&(L.pose==='idle'||L.pose==='walk'||L.pose==='dirty')?s.face.look[i]:null;if(lk){lx=lk[0];ly=lk[1]}if(m==='hope'){lx=.15;ly=-.45}if(m==='strain'){lx=.1;ly=.1}if(m==='whistle'){lx=-.4;ly=-.5}if(m==='down'||m==='sad')ly=.6;if(m==='smug'){lx=.12;ly=.5}if(L.pose==='jump'){lx=.4;ly=-.35}if(L.pose==='eat')lx=.35;
     const px=x+lx*r*.4,py=y+ly*r*.4;
     const ir=s.irises?s.irises[i]:s.iris;if(ir){h.dot(px,py,r*.68,r*.72,ir);h.dot(px,py,r*.34,r*.36)}else{const pr=s.face.pupil||.57;h.dot(px,py,r*pr,r*(pr+.03))}
     h.dot(px-r*.2,py-r*.26,r*.2,r*.2,W);h.dot(px+r*.2,py+r*.22,r*.09,r*.09,W);
-    if(m==='smug'){const ly2=y-r*.05;h.acc.push(`<path d="M${R1(x-r-1.5)} ${R1(ly2)}L${R1(x-r-1.5)} ${R1(y-r-3)}L${R1(x+r+1.5)} ${R1(y-r-3)}L${R1(x+r+1.5)} ${R1(ly2)}Z" fill="${s.hcol}"/>`);h.line([[x-r-2,ly2],[x+r+2,ly2]],3.4)}
+    if(m==='smug'){const ly2=y-r*.05;h.acc.push(`<path d="M${R1(x-r-1.5)} ${R1(ly2)}L${R1(x-r-1.5)} ${R1(y-r-3)}L${R1(x+r+1.5)} ${R1(y-r-3)}L${R1(x+r+1.5)} ${R1(ly2)}Z" fill="${s.hcol}"/>`);h.line([[x-r-2,ly2],[x+r+2,ly2]],3.4,bc)}
     const inner=i===0?1:-1;// brow: inner end is toward the other eye
-    if(m==='strain'){h.line([[x-r*1.1,y-r*1.3-(inner>0?4:0)],[x+r*1.1,y-r*1.3-(inner>0?0:4)]],3);if(i===0){h.acc.push(`<path d="M${R1(x-r-1.5)} ${R1(y-r*.15)}L${R1(x-r-1.5)} ${R1(y-r-3)}L${R1(x+r+1.5)} ${R1(y-r-3)}L${R1(x+r+1.5)} ${R1(y-r*.15)}Z" fill="${s.hcol}"/>`);h.line([[x-r-2,y-r*.15],[x+r+2,y-r*.15]],2.6)}}
-    else if(m==='whistle'){h.line([[x-r*1.1,y-r*1.6],[x+r*1.1,y-r*1.75]],2.6)}
-    else if(m==='hope'){h.dot(px+r*.22,py+r*.05,r*.12,r*.12,W);h.line([[x-r*1.1,y-r*1.45-(inner<0?5:0)],[x+r*1.1,y-r*1.45-(inner>0?5:0)]],2.6)}
-    else if(m==='sad')h.line([[x-r*1.1,y-r*1.25-(inner<0?5:0)],[x+r*1.1,y-r*1.25-(inner>0?5:0)]],3.6);
-    else if(f.brow==='angry'&&L.pose!=='happy'&&L.pose!=='pet')h.line([[x-r*1.15,y-r*1.3-(inner>0?0:6)],[x+r*1.15,y-r*1.3-(inner>0?6:0)]],4.6);
-    else if(f.eyes==='smug'&&i===1)h.line([[x-r*1.1,y-r*1.6],[x+r*1.1,y-r*2.1]],3.4);
-    else if(f.brow==='eager'&&m!=='down')h.line([[x-r*.55,y-r*2.0-(inner>0?0:2)],[x+r*.55,y-r*2.0-(inner>0?2:0)]],2.8);
-    else if(f.brow==='curious'&&i===1&&m!=='down')h.line([[x-r*1.1,y-r*1.7],[x,y-r*2.4],[x+r*1.2,y-r*1.9]],2.8);
-    else if(f.brow==='soft'&&m!=='down')h.line([[x-r*1.1,y-r*1.45-(inner>0?0:3)],[x+r*1.1,y-r*1.45-(inner>0?3:0)]],2.6);
+    if(m==='strain'){h.line([[x-r*1.1,y-r*1.3-(inner>0?4:0)],[x+r*1.1,y-r*1.3-(inner>0?0:4)]],3,bc);if(i===0){h.acc.push(`<path d="M${R1(x-r-1.5)} ${R1(y-r*.15)}L${R1(x-r-1.5)} ${R1(y-r-3)}L${R1(x+r+1.5)} ${R1(y-r-3)}L${R1(x+r+1.5)} ${R1(y-r*.15)}Z" fill="${s.hcol}"/>`);h.line([[x-r-2,y-r*.15],[x+r+2,y-r*.15]],2.6,bc)}}
+    else if(m==='whistle'){h.line([[x-r*1.1,y-r*1.6],[x+r*1.1,y-r*1.75]],2.6,bc)}
+    else if(m==='hope'){h.dot(px+r*.22,py+r*.05,r*.12,r*.12,W);h.line([[x-r*1.1,y-r*1.45-(inner<0?5:0)],[x+r*1.1,y-r*1.45-(inner>0?5:0)]],2.6,bc)}
+    else if(m==='sad')h.line([[x-r*1.1,y-r*1.25-(inner<0?5:0)],[x+r*1.1,y-r*1.25-(inner>0?5:0)]],3.6,bc);
+    else if(f.brow==='angry'&&L.pose!=='happy'&&L.pose!=='pet')h.line([[x-r*1.15,y-r*1.3-(inner>0?0:6)],[x+r*1.15,y-r*1.3-(inner>0?6:0)]],4.6,bc);
+    else if(f.eyes==='smug'&&i===1)h.line([[x-r*1.1,y-r*1.6],[x+r*1.1,y-r*2.1]],3.4,bc);
+    else if(f.brow==='eager'&&m!=='down')h.line([[x-r*.55,y-r*2.0-(inner>0?0:2)],[x+r*.55,y-r*2.0-(inner>0?2:0)]],2.8,bc);
+    else if(f.brow==='curious'&&i===1&&m!=='down')h.line([[x-r*1.1,y-r*1.7],[x,y-r*2.4],[x+r*1.2,y-r*1.9]],2.8,bc);
+    else if(f.brow==='soft'&&m!=='down')h.line([[x-r*1.1,y-r*1.45-(inner>0?0:3)],[x+r*1.1,y-r*1.45-(inner>0?3:0)]],2.6,bc);
   });
   const N=noseLocal(s),[nx,ny]=HT(N);
   h.dot(nx,ny,4.6*sf,3.5*sf);if(L.blueNose)h.dot(nx+1.5*sf,ny-.5,2.6*sf,2*sf,'#7CC8FF');
@@ -337,6 +393,8 @@ function drawFace(h,s,L,HT){
   if(mo==='whistle'){h.shape(circ(0,0,3.6,3.6,8).map(q=>M([q[0]-4,q[1]+11])),'#7A1F2E',{w:2.6,ox:0,oy:0,sc:1,closed:1})}
   if(mo==='smirk')h.line([[-16,9],[-6,11],[3,6],[7,0]].map(M),3.8);
   if(mo==='frown')h.line([[-16,14],[-7,8],[2,13]].map(M),3.8);
+  if(mo==='sammy'){h.line([[-20,0],[-16,7],[-8,11],[0,9],[5,5],[7,-1]].map(M),3.8);h.line([[-22,-2],[-19,2]].map(M),2.2,PEN,.3);h.line([[8,-3],[8,2]].map(M),2.2,PEN,.3)}
+  if(mo==='grump'){h.line([[-17,13],[-11,9],[-5,11],[1,9],[5,12]].map(M),3.6);h.line([[-20,6],[-17,13]].map(M),2.2,PEN,.4)}
   if(mo==='o')h.shape(circ(0,0,5,6.5,9).map(q=>M([q[0]-1,q[1]+16])),'#7A1F2E',{w:3.2,ox:0,oy:0,sc:1,closed:1});
   if(mo==='grin'||mo==='open'){h.shape([[-17,5],[4,4],[0,16],[-12,18]].map(M),'#7A1F2E',{w:3.4,ox:0,oy:0,sc:1});h.shape([[-12,13],[-1,12],[-3,18],[-10,18]].map(M),'#FF6F9A',{noline:1,ox:0,oy:0})}
   if(mo==='chew'){h.shape(circ(0,0,5,3.5,8).map(q=>M([q[0]-6,q[1]+9])),'#7A1F2E',{w:3,ox:0,oy:0,sc:1,closed:1});[[6,16],[-16,18],[2,24]].forEach(c=>{const p=M(c);h.dot(p[0],p[1],2,1.6,'#C98A4E')});if(L.k===1)h.text('nom',HT([N[0]+16*sf,N[1]-6*sf])[0],HT([N[0]+16*sf,N[1]-6*sf])[1],14,INK,-8)}
@@ -347,7 +405,7 @@ function drawFace(h,s,L,HT){
 }
 
 /* ---------- outfits ---------- */
-const OUT={head:['Party Hat','Flower Crown','Acorn Cap','Rain Hat','Pom-pom Beanie','Chef Hat','Wizard Hat','Sun Hat','Cowboy Hat','Astronaut Helmet'],eyes:['Heart Sunglasses','Explorer Goggles'],neck:['Red Bandana','Bow Tie','Seashell Necklace','Clover Collar','Rainbow Collar','Sailor Collar','Knit Scarf'],body:['Yellow Raincoat','Knit Winter Sweater','Superhero Cape','Mossy Poncho','Frog Raincoat','Polka-dot Raincoat','Bubble Raincoat','Happi Coat','Bumblebee Suit','Cozy Hoodie','Tutu','Pyjamas']};
+const OUT={head:['Party Hat','Flower Crown','Acorn Cap','Rain Hat','Pom-pom Beanie','Chef Hat','Wizard Hat','Sun Hat','Cowboy Hat','Astronaut Helmet','Leaf Beret'],eyes:['Heart Sunglasses','Explorer Goggles'],neck:['Red Bandana','Bow Tie','Seashell Necklace','Clover Collar','Rainbow Collar','Sailor Collar','Knit Scarf','Autumn Scarf','Parade Rosette'],body:['Yellow Raincoat','Knit Winter Sweater','Superhero Cape','Mossy Poncho','Frog Raincoat','Polka-dot Raincoat','Bubble Raincoat','Happi Coat','Bumblebee Suit','Cozy Hoodie','Tutu','Pyjamas','Ghost Sheet','Pumpkin Suit']};
 function coatPts(s){const b=s.body,p=[],f=s.fluff?1.12:1.08;for(let a=-108;a<=108;a+=12){const t=a*D2R;p.push([Math.cos(t)*b.rx*f,Math.sin(t)*b.ry*(f+.04)])}return p}
 function drawCape(h,s,L,B){
   // billows up and back behind the body, so most of it shows above the back and past the rump
@@ -384,6 +442,7 @@ function drawCoat(h,s,L,B,kind){
 function neckAnchor(s,HT){const hx=s.head.rx,hy=s.head.ry;return{c:HT([-hx*.12,hy*.86]),l:HT([-hx*.62,hy*.72]),r:HT([hx*.42,hy*.86]),tip:HT([-hx*.2,hy*1.5])}}
 function clampG(p){return[p[0],Math.min(p[1],GY+5)]}
 function drawNeck(h,s,L,HT,kind){
+  if(kind==='Autumn Scarf')return drawAScarf(h,s,L,HT);if(kind==='Parade Rosette')return drawRosette(h,s,L,HT);
   if(kind==='Sailor Collar')return drawSailor(h,s,L,HT);if(kind==='Knit Scarf')return drawScarf(h,s,L,HT);
   const a=neckAnchor(s,HT);
   if(kind==='Red Bandana'){const t=clampG(a.tip);h.shape([a.l,a.r,t],'#E8322B',{w:4,step:9});
@@ -557,6 +616,65 @@ function drawScarf(h,s,L,HT){
   const z=T2[T2.length-1],zz=T2[T2.length-2],dx=z[0]-zz[0],dy=z[1]-zz[1],mm=Math.hypot(dx,dy)||1,ux=dx/mm,uy=dy/mm;
   for(let j=-1.5;j<=1.5;j++){const bx=z[0]-uy*j*2.6,by=z[1]+ux*j*2.6;h.line([[bx,by],[Math.max(4,bx+ux*6),Math.min(by+uy*6,GY+3)]],1.8,RD,.4)}
   h.shape(circ(k[0],k[1],5.5,4.6,8),RD,{w:2.6,ox:0,oy:0,sc:1,closed:1})}
+/* ---------- v2.5 Autumn & New Pups outfits ---------- */
+HAT2['Leaf Beret']=function(h,s,L,HT){const hx=s.head.rx,hy=s.head.ry,P=hatP(s,L,HT,.02,-10),W2=hx*.6,H=hy*.4,RU='#B5532A',DK='#7E3416';
+  const cr=[];for(let i=0;i<16;i++){const a=i/16*Math.PI*2;cr.push([-W2*.28+Math.cos(a)*W2*1.28*(1+.05*Math.sin(a*3)),-H*.95+Math.sin(a)*H*.8])}
+  h.shape(cr.map(P),RU,{w:3.8,step:8});h.crayon(W2,H*.45,q=>P([q[0]-W2*.3,q[1]-H*1.05]),RU,4);
+  h.shape([[-W2*.84,2],[-W2*.9,-H*.32],[W2*.82,-H*.32],[W2*.78,2]].map(P),DK,{w:3.2,step:8});
+  h.tube([[-W2*.3,-H*1.7],[-W2*.18,-H*2.15],[-W2*.02,-H*2.3]].map(P),2.4,DK,{ow:2.8});
+  const c=P([W2*.5,-H*.2]),lf=[[0,-8],[3,-3],[8,-5],[5,1],[8,5],[2,4],[0,9],[-2,4],[-8,5],[-5,1],[-8,-5],[-3,-3]].map(q=>{const r2=rot(q,-25);return[c[0]+r2[0]*.95,c[1]+r2[1]*.95]});
+  h.shape(lf,'#E8A030',{w:2.4,step:30,ox:.8,oy:-.6,sc:1,amp:.4,closed:1});h.line([c,[c[0]+3,c[1]+8]],1.6,'#9A5A1A',.2);h.line([[c[0]-4,c[1]-2],[c[0]+4,c[1]+2]],1.4,'#9A5A1A',.2)};
+BODY2['Pumpkin Suit']=function(h,s,L,B){// round as a pumpkin, crayon ribs, a ring of green leaves at the neck; rounder still when sitting
+  const b=s.body,f=s.fluff?1.1:1.06,sit=/^(sit|beg|yawn|howl|paw|scratch|dance)$/.test(L.pose),OR='#F08A24',DK='#C25E12',GR='#5E9E3A',GD='#3E6E22',cl=q=>[q[0],Math.min(q[1],GY-1)];
+  const rx=b.rx*f,up=b.ry*(f+.12),dn=b.ry*(f+(sit?.42:.22)),E=a=>{const c=Math.cos(a),sn=Math.sin(a);return[c*rx*(1+.035*Math.cos(a*6)),sn*(sn>0?dn:up)]};
+  const pts=[];for(let i=0;i<22;i++)pts.push(E(i/22*Math.PI*2));
+  h.shape(pts.map(B).map(cl),OR,{w:4.6});h.crayon(rx*.8,b.ry*.85,B,OR,8);
+  [-.64,-.24,.18,.58].forEach(xx=>{const x=xx*rx,yy=Math.sqrt(Math.max(0,1-xx*xx));h.line(dense([[x*.84,-up*yy*.86],[x*1.06,0],[x*.84,dn*yy*.86]],false,6).map(B).map(cl),2.6,DK,.5)});
+  [[.56,-.98],[.8,-.74],[.97,-.36],[1.02,.06]].forEach(([x,y],i)=>{const c=B([rx*x,up*y]),an=Math.atan2(y*up,x*rx)/D2R+(L.bT.a||0)+(i%2?14:-10),lf=[[0,0],[6,-4],[12,-2],[16,2],[10,6],[4,5]].map(q=>{const r2=rot(q,an);return[c[0]+r2[0],c[1]+r2[1]]});
+   h.shape(lf.map(cl),i%2?GR:'#74B04A',{w:2.6,step:30,ox:0,oy:0,sc:1,closed:1,amp:.5});h.line([lf[0],lf[3]].map(cl),1.6,GD,.2)});
+  const v=B([rx*.42,-up*1.02]);h.line(spiral(v[0],v[1]-3,.5,4.5,1.1,9,1).map(cl),2,GD,.3)};
+function drawAScarf(h,s,L,HT){// Autumn Scarf: long, mustard and rust stripes, one end hanging to the knees
+  const a=neckAnchor(s,HT),hy=s.head.ry,MU='#E3A72F',RU='#B5532A';
+  const sag=t=>{const x=a.l[0]+(a.r[0]-a.l[0])*t,y=a.l[1]+(a.r[1]-a.l[1])*t+Math.sin(Math.PI*t)*7;return[x,Math.min(y,GY-3)]};
+  const band=[];for(let i=0;i<=8;i++)band.push(sag(-.14+i/8*.94));h.tube(band,9,MU,{ow:4.6});
+  const xs=(P0,P1,w)=>{const dx=P1[0]-P0[0],dy=P1[1]-P0[1],mm=Math.hypot(dx,dy)||1,nx=-dy/mm*w,ny=dx/mm*w,mx=(P0[0]+P1[0])/2,my=(P0[1]+P1[1])/2;h.line([[mx-nx,my-ny],[mx+nx,my+ny]],3.8,RU,.3)};
+  for(let i=1;i<band.length-1;i+=2)xs(band[i-1],band[i+1],4.6);
+  const k=sag(.6),dn=Math.max(hy*1.35,22),e1=clampG([k[0]-3,Math.min(k[1]+dn*.5,GY-4)]),e2=[k[0]+2,Math.min(k[1]+dn,GY-3)],end=[e2[0]+(e2[1]>=GY-3?-dn*.55:0),e2[1]];
+  const tail=[k,e1,end];h.tube(tail,9,MU,{ow:4.6});
+  const T2=dense(tail,false,6);for(let i=2;i<T2.length-1;i+=2)xs(T2[i-1],T2[i+1],4.6);
+  const z=T2[T2.length-1],zz=T2[T2.length-2],dx=z[0]-zz[0],dy=z[1]-zz[1],mm=Math.hypot(dx,dy)||1,ux=dx/mm,uy=dy/mm;
+  for(let j=-1.5;j<=1.5;j++){const bx=z[0]-uy*j*2.8,by=z[1]+ux*j*2.8;h.line([[bx,by],[Math.max(4,bx+ux*7),Math.min(by+uy*7,GY+3)]],2,j%2?RU:MU,.4)}
+  h.shape(circ(k[0],k[1],6,5,8),MU,{w:2.6,ox:0,oy:0,sc:1,closed:1});h.line([[k[0]-3,k[1]-3],[k[0]+3,k[1]+3]],2.6,RU,.3)}
+function drawRosette(h,s,L,HT){// Parade Rosette: an orange crumpled rosette on a purple collar, two ribbons, a little bent
+  const a=neckAnchor(s,HT),OR='#F08A24',DK='#C25E12',BK='#2B2430',cl=q=>[q[0],Math.min(q[1],GY-1)];
+  const sag=t=>{const x=a.l[0]+(a.r[0]-a.l[0])*t,y=a.l[1]+(a.r[1]-a.l[1])*t+Math.sin(Math.PI*t)*8;return[x,Math.min(y,GY-18)]};
+  const pts=[];for(let i=0;i<=8;i++)pts.push(sag(i/8));h.line(pts,6.4,INK);h.line(pts,4,'#6A4AA8',.4);
+  const c=sag(.58),k=[c[0]+2,Math.min(c[1]+7,GY-14)];
+  h.shape([[k[0]-2,k[1]],[k[0]-11,k[1]+17],[k[0]-6,k[1]+14],[k[0]-4,k[1]+20],[k[0]+2,k[1]+3]].map(cl),OR,{w:2.6,step:30,ox:0,oy:0,sc:1,closed:1,amp:.4});
+  h.shape([[k[0]+1,k[1]],[k[0]+4,k[1]+16],[k[0]+8,k[1]+12],[k[0]+12,k[1]+17],[k[0]+6,k[1]+1]].map(cl),BK,{w:2.6,step:30,ox:0,oy:0,sc:1,closed:1,amp:.4});
+  const ro=scallop(0,0,10.5,9.5,9,.24).map(q=>{const r2=rot(q,14);return[k[0]+r2[0]+(r2[1]<0?r2[1]*.18:0),k[1]+r2[1]*.86]});
+  h.shape(ro.map(cl),OR,{w:2.8,step:30,ox:.6,oy:-.4,sc:1,amp:.5});h.shape(circ(k[0]+.6,k[1],5,4.4,8).map(cl),'#FFD23A',{w:2.2,ox:0,oy:0,sc:1,closed:1,amp:.3});h.dot(k[0]+.6,k[1],1.8,1.8,BK);
+  h.line([[k[0]-8,k[1]-2],[k[0]-4,k[1]-6],[k[0]-1,k[1]-4]].map(cl),1.6,DK,.3)}
+function drawGhost(h,s,L,B,HT){// Ghost Sheet: one white sheet over body and head, scalloped hem, ear bumps, eye holes, tail out the back
+  const b=s.body,hx=s.head.rx,hy=s.head.ry,f=s.fluff?1.12:1.1,P=[],SH='#D9D2C8';
+  circ(0,b.ry*.12,b.rx*f,b.ry*(f+.22),16).forEach(q=>P.push(B(q)));
+  circ(0,0,hx*1.14,hy*1.16,14).forEach(q=>P.push(HT(q)));
+  if(s.face.snout){const N=noseLocal(s);P.push(HT([N[0]+hx*.14,N[1]-hy*.1]),HT([N[0]+hx*.06,N[1]+hy*.32]))}
+  const H=chaikin(hull(P),2);let cx=0,cy=0,my=-1e9;H.forEach(q=>{cx+=q[0]/H.length;cy+=q[1]/H.length;my=Math.max(my,q[1])});
+  // the hem: big soft scallops along the lowest edge only, fading in from the sides
+  const D=dense(H,true,6),y0=cy+(my-cy)*.35,y1=cy+(my-cy)*.7,pts=D.map((q,i)=>{const wt=Math.max(0,Math.min(1,(q[1]-y0)/(y1-y0)));if(!wt)return q;const dx=q[0]-cx,dy=q[1]-cy,m=Math.hypot(dx,dy)||1,k=wt*(6*Math.abs(Math.sin(i*Math.PI/3))-2);return[q[0]+dx/m*k,Math.min(q[1]+dy/m*k,GY+1)]});
+  h.shape(pts,W,{w:4.2,step:30,amp:.45,famp:.5});h.crayon(b.rx,b.ry,B,W,8);h.crayon(hx,hy*.6,q=>HT([q[0],q[1]-hy*.2]),W,4);
+  [[[.6,-.4],[.42,1.25]],[[-.2,-.7],[-.36,1.25]]].forEach(q=>h.line(q.map(B).map(p=>[p[0],Math.min(p[1],GY-2)]),2,SH,.6));
+  earList(s).forEach(e=>{if(e.flop)return;const p=earPose(s,L,e);let ex=0,ey=0;p.forEach(q=>{ex+=q[0]/p.length;ey+=q[1]/p.length});
+   const m=Math.hypot(ex/hx,ey/hy)||1,dir=[ex/hx/m,ey/hy/m],z=hx*(/^(giant|bat|tall)$/.test(s.ears)?.36:.3),c=HT([dir[0]*hx*1.12,dir[1]*hy*1.14]),an=Math.atan2(c[1]-HT([0,0])[1],c[0]-HT([0,0])[0]);
+   h.shape(circ(c[0],c[1],z,z,10),W,{noline:1,ox:0,oy:0,sc:1});const arc=[];for(let j=-4;j<=4;j++){const t=an+j*Math.PI/8.5;arc.push([c[0]+Math.cos(t)*z,c[1]+Math.sin(t)*z])}h.line(arc,4,INK,.8)});
+  ghostEyes(h,s,L,HT)}
+function ghostEyes(h,s,L,HT){const f=L.face,hx=s.head.rx,hy=s.head.ry,e0=f.e0||[-.1,-.04],e1=f.e1||[.42,-.1],er=s.eyes,m=f.eyes,lc=lum(s.hcol)<.32?'#CFC6C0':INK;
+  [[e0,er[0]],[e1,er[1]]].forEach(([e,r],i)=>{const [x,y]=HT([hx*e[0],hy*e[1]]),z=Math.max(r,5.5);
+   h.shape(circ(x,y,z*1.08+2.4,z*1.22+2.4,10),mix(s.hcol,INK,.6),{w:3,ox:0,oy:0,sc:1,closed:1,amp:.5,famp:.3});
+   if(m==='closed'||m==='happy'||m==='x'){h.line(m==='happy'?[[x-r,y+r*.35],[x,y-r*.55],[x+r,y+r*.35]]:[[x-r,y],[x,y+r*.5],[x+r,y]],3.6,lc);return}
+   h.shape(circ(x,y,r,r*1.05,12),W,{ox:0,oy:0,sc:1,w:2.3,amp:.45,closed:1,famp:.25});
+   const ir=s.irises?s.irises[i]:s.iris,ly=m==='down'||m==='sad'?.6:.1,px=x+.06*r*.4,py=y+ly*r*.4;if(ir){h.dot(px,py,r*.68,r*.72,ir);h.dot(px,py,r*.34,r*.36)}else h.dot(px,py,r*.57,r*.6);h.dot(px-r*.2,py-r*.26,r*.2,r*.2,W)})}
 /* ---------- fx ---------- */
 function drawFx(h,s,L,B,HT){
   const hx=s.head.rx,hy=s.head.ry,b=s.body;
@@ -643,21 +761,23 @@ function frame(key,s,pose,outfit,k,seed){
   if(s.spk)glitter(h,s,B,k,0);
   if(L.scrunch)[-.45,-.1,.25].forEach(x=>h.line([[s.body.rx*x,-s.body.ry*.85],[s.body.rx*(x+.06),0],[s.body.rx*x,s.body.ry*.85]].map(B),2.6));
   if(L.mud)drawMud(h,s,L,B,HT);
-  if(body&&body!=='Superhero Cape'&&body!=='Tutu')drawCoat(h,s,L,B,body);
+  if(body&&body!=='Superhero Cape'&&body!=='Tutu'&&body!=='Ghost Sheet')drawCoat(h,s,L,B,body);
   if(body==='Superhero Cape')drawCapeTie(h,s,L,B);
   drawHaunch(h,s,L,B);
   if(body==='Tutu')drawCoat(h,s,L,B,body);
   if(L.paw){h._legPass='raised';drawLegs(h,s,L);h._legPass='ground'}
-  drawEars(h,s,L,HT,false);
+  if(body!=='Ghost Sheet')drawEars(h,s,L,HT,false);
+  if(s.topknot&&!hat)drawTopknot(h,s,HT);
   {const hf=s.hfluff===undefined?s.fluff:s.hfluff;h.shape(hp.map(HT),s.hcol,{step:hf?30:11,amp:hf?.8:1.2})};h.crayon(s.head.rx,s.head.ry*.6,p=>HT([p[0],p[1]-s.head.ry*.3]),s.hcol,6);
   if(s.headMarks)s.headMarks(h,HT,s);
   if(s.pat)s.pat.head(h,HT,L);
   if(s.spk)glitter(h,s,HT,k,1);
   if(L.mud){const hx=s.head.rx,hy=s.head.ry;h.shape(circ(-hx*.45,-hy*.45,hx*.18,hy*.15,7,.2).map(HT),'#7A4A22',{noline:1,ox:0,oy:0})}
   drawFace(h,s,L,HT);
-  if(eyes&&pose!=='sleep')(eyes==='Explorer Goggles'?drawGoggles:drawGlasses)(h,s,L,HT);
+  if(eyes&&pose!=='sleep'&&body!=='Ghost Sheet')(eyes==='Explorer Goggles'?drawGoggles:drawGlasses)(h,s,L,HT);
   if(body==='Cozy Hoodie'&&/^(cold|sleep)$/.test(pose))drawHood(h,s,L,HT);
-  drawEars(h,s,L,HT,true);
+  if(body!=='Ghost Sheet')drawEars(h,s,L,HT,true);
+  if(body==='Ghost Sheet'){drawGhost(h,s,L,B,HT);if(eyes&&pose!=='sleep')(eyes==='Explorer Goggles'?drawGoggles:drawGlasses)(h,s,L,HT)}
   if(neck)drawNeck(h,s,L,HT,neck);
   if(hat)drawHat(h,s,L,HT,hat);
   else if(body==='Bumblebee Suit')HAT2.Antennae(h,s,L,HT);
@@ -722,6 +842,8 @@ function mixSpec(bk,hk){
   s.light=B0.light||H0.light;s.dark=B0.dark||H0.dark;s.hcol=B0.hcol;
   s.ear=H0.ear?(H0.ear===H0.dark?s.dark:mix(B0.col===W?'#E8D2B8':B0.col,PEN,.3)):undefined;
   s.marks=B0.marks;s.headMarks=H0.headMarks;s.mixHead=hk;
+  if(NEWK.test(hk)||NEWK.test(bk)){// v2.5 keys only: the head breed brings its own head (fluff, iris, ear extras, topknot)
+    s.hfluff=H0.hfluff===undefined?!!H0.fluff:!!H0.hfluff;s.iris=H0.iris;s.curlEar=H0.curlEar;s.topknot=H0.topknot;s.earS=H0.earS;s.earRound=H0.earRound}
   return s;
 }
 // puppy (62%) and newborn (42%): drawn at adult scale with puppy proportions, then scaled down by pupScale in dog()
