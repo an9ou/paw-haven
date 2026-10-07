@@ -187,7 +187,12 @@ const SCAN = (sels) => {
         await check(pl, must, ['#sceneG [data-hot]']);
         if (pl === 'market') { await fullyOn('market', ['#dogHit', '#bowlG']); const sh = await t.ev(() => ['kibble', 'boutique'].map((k) => { const b = document.querySelector(`[data-shop=${k}]`).getBoundingClientRect(); return [k, Math.min(b.right, innerWidth) - Math.max(b.left, 0)]; })); for (const [k, w] of sh) ok(w >= 120, `${tag} market: the ${k} shop is partly on screen (${Math.round(w)} px wide) and look-right reaches the rest`); }
         await toastsGone();
+        // v2.5: the idle behaviours are paused for the quiet sample. An idle "zoomies" runs the dog about 330 units right and the camera
+        // follows the dog, so the Dog Park board could be off screen for a moment. A huge idle speed means no new idle comes due (and one
+        // that starts barely moves): wait for the running one to end and the camera to settle, then sample, then restore the speed.
+        await t.ev(() => window.__paw.idle.speed(1e6)); await t.until(() => window.__paw.idle.act === null, null, 8000); await steady();
         await check(pl + ' quiet', must);
+        await t.ev(() => window.__paw.idle.speed(1));
         await bubbleVsChip(pl);
         await peekCheck(pl);
       }
