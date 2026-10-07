@@ -500,7 +500,7 @@ function start(el, o) {
   let stripSvg = call('walkStrip', area, season === 'summer' ? { time, weather } : { time, weather, season });
   let artTW = false; // does the strip art itself draw time/weather?
   if (stripSvg && (time !== 'day' || weather !== 'sunny')) {
-    const plain = call('walkStrip', area); const norm = (s) => s.replace(/pw[a-z]*\d+x?\d*/g, '');
+    const plain = call('walkStrip', area, season === 'summer' ? undefined : { season }); const norm = (s) => s.replace(/pw[a-z]*\d+x?\d*/g, '');
     artTW = plain && norm(plain).length !== norm(stripSvg).length;
   }
   if (!stripSvg) stripSvg = svgWrap([1200, 400], `<rect width="1200" height="400" fill="#D3E9F6" stroke="none"/><rect y="250" width="1200" height="80" fill="#CBE5A6" stroke="none"/><rect y="330" width="1200" height="70" fill="#EFDDBA" stroke="none"/><path d="M0 330h1200"/>`);

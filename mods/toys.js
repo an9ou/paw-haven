@@ -222,16 +222,20 @@
     }
     return s;
   }
-  function backdrop(variant, time, weather, uidp) {
+  function backdrop(variant, time, weather, uidp, season) {
+    // v2.5: outdoor backdrops turn with the season (PawArt.SEASON_TINT); summer keeps the old colours exactly
+    var ST = (typeof window !== 'undefined' && window.PawArt && window.PawArt.SEASON_TINT) || {}, tn = season && season !== 'summer' ? ST[season] : null;
+    var mixc = function (a, b2, t) { var A = [1, 3, 5].map(function (i) { return parseInt(a.slice(i, i + 2), 16); }), B = [1, 3, 5].map(function (i) { return parseInt(b2.slice(i, i + 2), 16); }); return '#' + A.map(function (v, i) { return ('0' + Math.round(v + (B[i] - v) * t).toString(16)).slice(-2); }).join('').toUpperCase(); };
+    var gc = function (c) { return !tn ? c : season === 'winter' ? mixc(mixc(c, tn.grass, 0.2), '#FFFFFF', 0.45) : mixc(c, tn.grass, 0.3); }, lc = function (c) { return tn ? mixc(c, tn.leaf, season === 'spring' ? 0.3 : season === 'winter' ? 0.75 : 0.6) : c; }, fc = function (c) { return tn && season === 'winter' ? mixc(c, '#FFFFFF', 0.55) : tn && season === 'autumn' ? mixc(c, '#E8895A', 0.35) : c; };
     var R = rng(variant === 'pond' ? 901 : 77), s = '', gid = uidp + 'sky';
     var defs = '<defs>' + skyDefs(gid, time, weather) + '<pattern id="' + uidp + 'dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="11" cy="11" r="1.2" fill="#E3D2BA"/></pattern>' +
       '<radialGradient id="' + uidp + 'lamp"><stop offset="0" stop-color="#FFE7A0" stop-opacity=".75"/><stop offset="1" stop-color="#FFE7A0" stop-opacity="0"/></radialGradient></defs>';
     if (variant === 'pond') {
       s += '<rect width="1240" height="340" fill="url(#' + gid + ')"/>' + skyBits(R, 0, 70, 1240, 260, time, weather);
-      s += pencil(R, [[0, 300], [180, 262], [380, 290], [600, 250], [820, 286], [1040, 258], [1240, 284], [1240, 360], [0, 360]], 2.2, INK, 0.8, true, '#D9ECCB');
-      for (var t = 0; t < 7; t++) { var tx = 60 + t * 190 + R() * 40, ty = 300 + R() * 20; s += pencil(R, [[tx, ty], [tx, ty - 40]], 3, INK, 0.7) + pencil(R, ell(tx, ty - 58, 26, 30, 14), 2, INK, 0.7, true, '#BFE0B4'); }
+      s += pencil(R, [[0, 300], [180, 262], [380, 290], [600, 250], [820, 286], [1040, 258], [1240, 284], [1240, 360], [0, 360]], 2.2, INK, 0.8, true, gc('#D9ECCB'));
+      for (var t = 0; t < 7; t++) { var tx = 60 + t * 190 + R() * 40, ty = 300 + R() * 20; s += pencil(R, [[tx, ty], [tx, ty - 40]], 3, INK, 0.7) + pencil(R, ell(tx, ty - 58, 26, 30, 14), 2, INK, 0.7, true, lc('#BFE0B4')); }
       s += '<rect y="340" width="1240" height="280" fill="#E8F3D8"/>' + pencil(R, [[0, 340], [1240, 336]], 2.2, INK, 0.7);
-      for (var g = 0; g < 60; g++) { var gx = R() * 1240, gy = 360 + R() * 250; s += '<path d="M' + f1(gx) + ' ' + f1(gy) + 'l3 -9M' + f1(gx + 5) + ' ' + f1(gy) + 'l-1 -11" stroke="#86B57A" stroke-width="1.5" stroke-linecap="round" opacity=".8"/>'; }
+      for (var g = 0; g < 60; g++) { var gx = R() * 1240, gy = 360 + R() * 250; s += '<path d="M' + f1(gx) + ' ' + f1(gy) + 'l3 -9M' + f1(gx + 5) + ' ' + f1(gy) + 'l-1 -11" stroke="' + gc('#86B57A') + '" stroke-width="1.5" stroke-linecap="round" opacity=".8"/>'; }
       s += pencil(R, [[720, 462], [900, 450], [1100, 452], [1250, 446], [1250, 630], [560, 630], [610, 540]], 2.6, INK, 1, true, '#BBD8EF');
       s += '<path d="' + wob(R, [[720, 462], [900, 450], [1100, 452], [1250, 446], [1250, 630], [560, 630], [610, 540]], 2, true) + '" fill="url(#' + uidp + 'dots)" opacity=".5"/>';
       for (var w = 0; w < 12; w++) { var wx = 700 + R() * 500, wy = 480 + R() * 120; s += pencil(R, [[wx, wy], [wx + 14, wy - 4], [wx + 28, wy], [wx + 42, wy - 4]], 1.6, '#6F93BE', 0.8); }
@@ -240,14 +244,14 @@
     } else if (variant === 'yard') {
       R = rng(611);
       s += '<rect width="1240" height="400" fill="url(#' + gid + ')"/>' + skyBits(R, 0, 70, 1240, 240, time, weather);
-      s += pencil(R, [[0, 292], [160, 266], [330, 284], [500, 262], [680, 282], [860, 260], [1040, 280], [1240, 264], [1240, 340], [0, 340]], 2.2, INK, 0.75, true, '#D9ECCB');
-      for (var yt = 0; yt < 6; yt++) { var ytx = 90 + yt * 215 + R() * 50, yty = 296 + R() * 14; s += pencil(R, [[ytx, yty], [ytx, yty - 36]], 3, INK, 0.7) + pencil(R, ell(ytx, yty - 54, 28, 30, 14), 2, INK, 0.7, true, yt % 2 ? '#BFE0B4' : '#CDE7C1'); }
+      s += pencil(R, [[0, 292], [160, 266], [330, 284], [500, 262], [680, 282], [860, 260], [1040, 280], [1240, 264], [1240, 340], [0, 340]], 2.2, INK, 0.75, true, gc('#D9ECCB'));
+      for (var yt = 0; yt < 6; yt++) { var ytx = 90 + yt * 215 + R() * 50, yty = 296 + R() * 14; s += pencil(R, [[ytx, yty], [ytx, yty - 36]], 3, INK, 0.7) + pencil(R, ell(ytx, yty - 54, 28, 30, 14), 2, INK, 0.7, true, lc(yt % 2 ? '#BFE0B4' : '#CDE7C1')); }
       for (var pk = 0; pk < 28; pk++) { var pkx = 6 + pk * 45; s += pencil(R, [[pkx, 404], [pkx, 322], [pkx + 15, 306], [pkx + 30, 322], [pkx + 30, 404]], 2, INK, 0.85, true, '#FFF4DF'); }
       s += pencil(R, rect(-4, 338, 1248, 12), 2, INK, 0.8, true, '#F3E3CC') + pencil(R, rect(-4, 378, 1248, 12), 2, INK, 0.8, true, '#F3E3CC');
       s += '<rect y="398" width="1240" height="222" fill="#E8F3D8"/>' + pencil(R, [[0, 400], [620, 397], [1240, 399]], 2.2, INK, 0.7);
-      for (var yg = 0; yg < 70; yg++) { var ygx = R() * 1240, ygy = 420 + R() * 190; s += '<path d="M' + f1(ygx) + ' ' + f1(ygy) + 'l3 -9M' + f1(ygx + 5) + ' ' + f1(ygy) + 'l-1 -11" stroke="#86B57A" stroke-width="1.5" stroke-linecap="round" opacity=".8"/>'; }
+      for (var yg = 0; yg < 70; yg++) { var ygx = R() * 1240, ygy = 420 + R() * 190; s += '<path d="M' + f1(ygx) + ' ' + f1(ygy) + 'l3 -9M' + f1(ygx + 5) + ' ' + f1(ygy) + 'l-1 -11" stroke="' + gc('#86B57A') + '" stroke-width="1.5" stroke-linecap="round" opacity=".8"/>'; }
       for (var yf = 0; yf < 16; yf++) {
-        var yfx = 30 + yf * 78 + R() * 30, yfy = 404 + R() * 10, yfc = ['#F9D0D9', '#FFE07A', '#E0D5F0', '#F28FA5'][yf % 4];
+        var yfx = 30 + yf * 78 + R() * 30, yfy = 404 + R() * 10, yfc = fc(['#F9D0D9', '#FFE07A', '#E0D5F0', '#F28FA5'][yf % 4]);
         s += pencil(R, [[yfx, yfy], [yfx + 2, yfy - 26]], 1.8, '#6E8F5A', 0.9);
         for (var pe = 0; pe < 5; pe++) { var pa = pe / 5 * Math.PI * 2; s += '<circle cx="' + f1(yfx + 2 + Math.cos(pa) * 5) + '" cy="' + f1(yfy - 30 + Math.sin(pa) * 5) + '" r="4" fill="' + yfc + '" stroke="#5B3D32" stroke-width="1.1"/>'; }
         s += '<circle cx="' + f1(yfx + 2) + '" cy="' + f1(yfy - 30) + '" r="2.6" fill="#F2C744" stroke="#5B3D32" stroke-width="1"/>';
@@ -550,7 +554,7 @@
     var stage = div('pt-stage', root);
     var cfg = impl.cfg || {};
     var L = {};
-    L.scene = div('pt-layer', stage, backdrop(cfg.scene || 'room', time, weather, uidp));
+    L.scene = div('pt-layer', stage, backdrop(cfg.scene || 'room', time, weather, uidp, ctx.season));
     var outdoor = cfg.scene === 'pond' || cfg.scene === 'yard', wx = outdoor ? { x: 0, y: 0, w: 1240, h: 620 } : { x: 850, y: 110, w: 250, h: 220 };
     if (weather === 'rain' || weather === 'snow') { var rn = div(weather === 'rain' ? 'pt-rain' : 'pt-snow', L.scene); rn.style.cssText += ';left:' + wx.x + 'px;top:' + wx.y + 'px;width:' + wx.w + 'px;height:' + wx.h + 'px;opacity:' + (outdoor ? 0.6 : 0.9); }
     L.actors = div('pt-layer', stage);
