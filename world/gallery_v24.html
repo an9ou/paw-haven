@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>World B v2.4 gallery</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&display=swap">
+<style>body{margin:0;padding:12px;background:#FFFBF3;font:14px/1.3 system-ui,sans-serif;color:#5B3D32}
+h1{font-size:18px;margin:0 0 4px}h2{margin:18px 0 6px;font-size:15px}.row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.pair{display:flex;gap:10px;align-items:flex-end;background:#fff;border:1px dashed #D8CBB8;padding:4px}
+.pair.old{background:#F6EFE3}figure{margin:0;text-align:center}figcaption{font:600 13px 'Caveat',cursive;margin-top:2px;max-width:150px}
+.o figcaption{opacity:.55}svg{display:block}.night{background:#3E4A6B;border-radius:6px;padding:6px}
+.small .pair figure>div{width:40px!important}</style></head>
+<body>
+<h1>Paw Haven world art B: v2.4 "Shop Day" additions</h1>
+<p>Each new drawing sits next to its nearest existing neighbour (greyed caption) so the hand can be compared.</p>
+<h2>Houses (240x200), next to Cozy Cottage and Snow Igloo</h2><div class="row" id="houses"></div>
+<h2>Lighthouse Kennel at night</h2><div class="row" id="night"></div>
+<h2>Clothes (64), next to Party Hat and Yellow Raincoat</h2><div class="row" id="clothes"></div>
+<h2>Toys (64), next to Squeaky Duck and Frisbee</h2><div class="row" id="toys"></div>
+<h2>Foods (64), next to Salmon Pâté and Pupcake</h2><div class="row" id="foods"></div>
+<h2>House cards (64), next to the Royal Canopy Bed icon</h2><div class="row" id="hcards"></div>
+<h2>Shop scale (40 px)</h2><div class="row small" id="small"></div>
+<h2>Icons (64), next to the house and check icons</h2><div class="row" id="icons"></div>
+<h2>Gerald (160x160), next to a crayon dog</h2><div class="row" id="gerald"></div>
+<h2>Missions card and stamp card</h2><div class="row" id="cards"></div>
+<script src="pawart_world_b.js"></script>
+<script src="../dogs/pawart_dogs.js"></script>
+<script>
+const PA=window.PawArt;
+function fig(svg,cap,w,old){return '<figure class="'+(old?'o':'')+'"><div style="width:'+w+'px">'+svg+'</div><figcaption style="max-width:'+w+'px">'+cap+'</figcaption></figure>'}
+function pair(id,newer,olds,fn,w){const d=document.createElement('div');d.className='pair';d.innerHTML=fig(fn(newer),newer,w)+olds.map(o=>fig(fn(o),o,w,1)).join('');document.getElementById(id).appendChild(d)}
+const W=window.innerWidth<600;
+const HOUSES=['Little Tea House','Beach Hut','Camper Van','Pumpkin Cottage','Lighthouse Kennel','Rocket Ship'];
+const CLOTHES=['Happi Coat','Sailor Collar','Chef Hat','Wizard Hat','Bumblebee Suit','Cozy Hoodie','Knit Scarf','Sun Hat','Cowboy Hat','Tutu','Astronaut Helmet','Pyjamas'];
+const TOYS=['Snuffle Mat','Treat Cone','Squeaky Hedgehog','Bubble Machine','Paddling Pool','Agility Tunnel'];
+const FOODS=['Carrot Sticks','Apple Slices','Blueberry Bites','Seedless Watermelon Cubes','Sweet Potato Chews','Pumpkin Purée','Turkey Meatballs','Frozen Pupsicle'];
+HOUSES.forEach((n,i)=>pair('houses',n,[i%2?'Snow Igloo':'Cozy Cottage'],PA.house,W?170:240));
+document.getElementById('night').innerHTML='<div class="night" style="width:'+(W?170:240)+'px">'+PA.house('Lighthouse Kennel')+'</div>';
+const HEADS=['Chef Hat','Wizard Hat','Sun Hat','Cowboy Hat','Astronaut Helmet'];
+CLOTHES.forEach(n=>pair('clothes',n,[HEADS.includes(n)?'Party Hat':'Yellow Raincoat'],PA.item,W?72:96));
+TOYS.forEach((n,i)=>pair('toys',n,[i%2?'Frisbee':'Squeaky Duck'],PA.item,W?72:96));
+FOODS.forEach((n,i)=>pair('foods',n,[i%2?'Pupcake':'Salmon Pâté'],PA.item,W?72:96));
+HOUSES.forEach(n=>pair('hcards',n,['Royal Canopy Bed'],PA.item,W?72:96));
+[...CLOTHES,...TOYS,...FOODS,...HOUSES].forEach(n=>pair('small',n,[],PA.item,40));
+[['missions','check'],['guide','house'],['stamp','heart']].forEach(([n,o])=>pair('icons',n,[o],PA.icon,W?72:96));
+['point','wave','sit','cheer'].forEach(p=>{const d=document.createElement('div');d.className='pair';d.innerHTML=fig(PA.prop('gerald',{pose:p}),'Gerald: '+p,W?140:160);document.getElementById('gerald').appendChild(d)});
+{const d=document.createElement('div');d.className='pair old';const k=PA.DOGS?PA.DOGS[0].key:null;d.innerHTML=k?fig(PA.dog(k,{pose:'sit'}),'crayon dog',W?170:200,1)+fig(PA.dog(PA.DOGS[4].key,{}),'crayon dog',W?170:200,1):'';document.getElementById('gerald').appendChild(d)}
+const MC=[{items:[{text:'Feed Biscuit a snack',done:true,p:1,n:1},{text:'Try a new snack from Kibble Corner',done:false,p:1,n:2},{text:'Clean up after Mochi',done:false,p:1,n:2}],stamps:2,day:'Tuesday 6 October'},
+  {items:[{text:'Play with the Squeaky Duck',done:true,p:1,n:1},{text:'Give Biscuit a bath',done:true,p:1,n:1},{text:'Visit the Seashell Beach and find a treasure there',done:true,p:2,n:2}],stamps:7,day:'Wednesday 7 October'}];
+MC.forEach((o,i)=>{const d=document.createElement('div');d.className='pair';d.innerHTML=fig(PA.prop('missioncard',o),'missioncard '+(i?'all done':'1 of 3'),W?170:200);document.getElementById('cards').appendChild(d)});
+[0,3,7].forEach(s=>{const d=document.createElement('div');d.className='pair';d.innerHTML=fig(PA.prop('stampcard',{stamps:s}),'stampcard '+s,W?300:240);document.getElementById('cards').appendChild(d)});
+</script></body></html>

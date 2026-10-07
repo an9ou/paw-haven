@@ -16,3 +16,5 @@ shots*/
 test_logs/
 **/test_logs/
 merged_test/play.log
+_artifact/
+game/shots_v24_*/

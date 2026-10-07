@@ -294,7 +294,7 @@ function tgApply(G, grade, acc, why) {
   const d = D(), n = G.n, st = trickSt(n), pers = PERS[d.key];
   let gain = TG_GAIN[grade] * (pers === 'stubborn' ? 1.25 : 1) * (G.mode === 'hand' ? 1.3 : 1) * (owns('toys', 'Rubber Chicken') ? 1.25 : 1) * trainBoost(d); // v2: puppies learn x1.2
   const was = st.p; st.p = Math.min(1, st.p + gain); gain = st.p - was; markDirty();
-  tgGrade(grade); TRN.held = true;
+  tgGrade(grade); TRN.held = true; if (grade !== 'Missed') trackAct('trick', { name: n, grade, learned: was < 1 && st.p >= 1 });
   if (grade !== 'Missed') {
     busy = true; playPose(trickPose(n)); if (G.mode === 'lure') treatFly(); else { SFX.boop(880); TRN.timers.push(setTimeout(() => fxText('♥', 520, 330), 300)); }
     addStat('happy', 2); if (grade === 'Great') barkDog(d, 'play', {});

@@ -38,7 +38,7 @@ function finishWalkMod(R, r) {
   const bond = (+r.bond || 0) > 0 ? addBond(+r.bond) : 0;
   const en = Math.abs(+r.energy || 0) * (buffOn('cool') ? 0.75 : 1); addStat('energy', -en);
   let cl = Math.abs(+r.cleanliness || 0); if (rainCoat) cl = 0; else if (e.weather === 'rain') cl += 5; addStat('clean', -cl);
-  S.walks = (S.walks || 0) + 1; dailyCare('play'); markDirty();
+  S.walks = (S.walks || 0) + 1; dailyCare('play'); markDirty(); trackAct('walk', { area: W.area, early: !!r.early });
   const t = r.treasure && r.treasure.name ? tInfo(r.treasure.name) : null, dup = r.treasure && r.treasure.dup;
   let tre;
   if (t) tre = `<div class="tfind"><div class="tbig">${art('item', t.n)}</div><div><h3>${esc(t.n)}</h3>${stamp(t.r)}<p class="ab"><b>${esc(t.ab)}.</b> ${esc(t.txt)}</p>${dup ? '<p class="small">You already have one. A squirrel bought this one for 40 coins.</p>' : t.kind === 'quest' ? `<p class="small">Map pieces: ${S.mapPieces.length}/4.${S.mapPieces.length >= 4 ? ' The map is complete! Check your yard for an X.' : ''}</p>` : '<p class="small">It is in your Treasure Journal now.</p>'}</div></div>`;
@@ -65,14 +65,15 @@ function enterToy(name) {
   let td = S.toyDay[name]; if (!td || td.day !== day()) td = S.toyDay[name] = { day: day(), n: 0 };
   const k = td.n === 0 ? 1 : td.n === 1 ? 0.5 : 0.25; td.n++; markDirty();
   const fav = (S.dog.favToy === name ? 1.5 : 1) * (S.place === 'park' ? 1.2 : 1), e = envNow();
-  let closed = false;
+  let closed = false, acted = false; // v2.4: one 'toy' act per play session
   const ctx = {
     dog: dogForMod(), time: e.time, weather: e.weather, sfx, say: (t) => toast(t),
     reward: (r) => {
       if (!r) return; const hp = (+r.happiness || 0) * k * fav * (S.place === 'dogpark' ? 1.3 : 1); if (hp) addStat('happy', hp);
       const b = (+r.bond || 0) > 0 ? addBond(r.bond * k) : 0; const c = (+r.coins || 0) > 0 ? addCoins(r.coins * k) : 0;
       if (r.energy) addStat('energy', +r.energy);
-      dailyCare('play'); updateHUD(); markDirty();
+      if (r.clean) addStat('clean', +r.clean); if (r.cool) S.coolUntil = S.gameMin + 60; // v2.4 Paddling Pool: +Cleanliness and a cool hour
+      dailyCare('play'); updateHUD(); markDirty(); if (!acted) { acted = true; trackAct('toy', { name }); }
       toast(`+${Math.round(hp)} Happiness${b ? `, +${b} Bond` : ''}${c ? `, +${c} coins` : ''}${fav > 1 ? ' (favourite toy!)' : ''}${k < 1 ? ` (x${k}: played already today)` : ''}`, 'good');
     },
     onClose: () => { if (closed) return; closed = true; if (cur.mode === 'toy') go('yard'); }

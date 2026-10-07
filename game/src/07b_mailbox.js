@@ -61,6 +61,7 @@ const GIFT_ITEM_NOTES = [
 ];
 function giftRoll() {
   const nm = NAME(), r = Math.random();
+  if (topBond() >= 3 && S.inv && !owns('clothes', 'Knit Scarf') && !(S.careGifts && S.careGifts.scarf)) { S.careGifts = S.careGifts || {}; S.careGifts.scarf = localISO(); return { kind: 'gift', from: 'Mrs. Plum next door', title: 'A parcel from Mrs. Plum next door', text: `I knitted too much again. A scarf for ${nm}. It is very long. Like my winters.`, gift: { item: 'Knit Scarf', cat: 'clothes', n: 1 } }; } // v2.4: once, from Bond 3
   if (r < 0.6) {
     const c = 10 + Math.floor(Math.random() * 16), [from, f] = PICK(GIFT_NEIGHBOURS);
     return { kind: 'gift', from: capFirst(from), title: `A little something from ${from}`, text: f(c).replace(/\{dog\}/g, nm), gift: { coins: c } };
@@ -68,11 +69,12 @@ function giftRoll() {
   let item = null;
   try {
     if (r < 0.8) { const c = PICK(cropsList()); item = { cat: 'seeds', id: c.id, name: c.seedItem || c.name + ' Seeds', n: 2 }; }
+    else if (r < 0.88) { item = { cat: 'food', id: 'Pumpkin Purée', name: 'Pumpkin Purée', n: 2, bea: true }; } // v2.4: Baker Bea's parcel
     else { const x = PICK(pantryList()); item = { cat: 'pantry', id: x.id, name: x.name, n: 2 }; }
   } catch (e) { item = null; }
   if (!item) return { kind: 'gift', from: 'Mrs. Plum next door', title: 'A little something from Mrs. Plum next door', text: `12 coins from the sofa. ${nm} supervised.`, gift: { coins: 12 } };
-  const [from, f] = item.cat === 'seeds' ? GIFT_ITEM_NOTES[0] : PICK(GIFT_ITEM_NOTES.slice(1));
-  return { kind: 'gift', from: capFirst(from), title: `A parcel from ${from}`, text: f(`${item.n} × ${item.name}`), gift: { item: item.name, cat: item.cat, id: item.id, n: item.n } };
+  const [from, f] = item.cat === 'seeds' ? GIFT_ITEM_NOTES[0] : item.bea ? GIFT_ITEM_NOTES[1] : PICK(GIFT_ITEM_NOTES.slice(1));
+  return { kind: 'gift', from: capFirst(from), title: `A parcel from ${from}`, text: item.bea ? `Two pots of Pumpkin Purée for ${nm}. Plain pumpkin, no pie spice, no sugar. I checked twice.` : f(`${item.n} × ${item.name}`), gift: { item: item.name, cat: item.cat, id: item.id, n: item.n } };
 }
 function dailyGift() {
   if (!S) return false; mailFields(); const t = localISO();
@@ -83,6 +85,7 @@ function claimGift(m) {
   if (!m || !m.gift || m.gift.claimed) return '';
   m.gift.claimed = true; let txt = '';
   if (m.gift.coins) { const n = addCoins(m.gift.coins, { raw: true }); SFX.coin(); txt = `+${n} coins`; }
+  else if (m.gift.cat === 'clothes' && m.gift.item) { if (!owns('clothes', m.gift.item)) S.inv.clothes.push(m.gift.item); txt = `${m.gift.item} added to the Wardrobe`; SFX.pop(); } // v2.4: the Knit Scarf letter
   else if (m.gift.cat && m.gift.id) {
     S.inv[m.gift.cat] = S.inv[m.gift.cat] || {}; S.inv[m.gift.cat][m.gift.id] = (S.inv[m.gift.cat][m.gift.id] || 0) + (m.gift.n || 1);
     txt = `+${m.gift.n || 1} ${m.gift.item}`; SFX.pop();
@@ -245,7 +248,7 @@ function openMailbox(selId, tab) {
   else if (!album) { const u = S.mail.find((m) => !m.read); if (u) mailSel = u.id; }
   if (!S.mail.some((m) => m.id === mailSel)) mailSel = (S.mail[0] || {}).id || null;
   const sel = S.mail.find((m) => m.id === mailSel) || null;
-  if (!album && sel && !sel.read) { sel.read = true; markDirty(); }
+  if (!album && sel && !sel.read) { sel.read = true; markDirty(); trackAct('mail', { id: sel.id, kind: sel.kind }); }
   if (!album && sel && sel.gift) claimGift(sel);
   const kindIc = { postcard: mailIcon(), gift: mailIcon(), litter: mailIcon(), news: mailIcon() }; // v2.3: the envelope drawing, not a letter monogram
   const list = S.mail.length ? S.mail.map((m) => `<button class="mb-item ${m.read ? '' : 'unread'} ${m.id === mailSel ? 'on' : ''} k-${esc(m.kind)}" data-mail="${esc(m.id)}" aria-pressed="${m.id === mailSel}"><span class="mb-k" aria-hidden="true">${m.dog ? headSVG(m.dog) : kindIc[m.kind] || mailIcon()}</span><span class="mb-t"><b>${esc(m.title)}</b><span class="small">${esc(m.from)}</span></span>${m.read ? '' : '<i class="mb-dot" aria-label="unread"></i>'}</button>`).join('') : '<p class="small">Empty. Just one very determined spider.</p>';

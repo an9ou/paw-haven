@@ -1,0 +1,41 @@
+/* v2.4 missions (SHOP & MISSIONS lane): the checklist card, the stamp card, the yard clipboard. Phone rules under html[data-layout="phone"]. */
+.panel.ms-pop{width:min(720px,100%)}
+.ms-body{display:grid;grid-template-columns:minmax(0,250px) minmax(0,1fr);gap:18px;align-items:start}
+.ms-cardwrap{position:relative}
+.ms-card{display:block;width:100%;aspect-ratio:200/260;transform:rotate(-1.5deg)}
+.ms-card svg,.ms-stampcard svg,.ms-prize-art svg{width:100%;height:100%;display:block}
+/* the lines are drawn on the card; the list is for screen readers and tests */
+.ms-list{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;margin:0;padding:0}
+.ms-side{display:flex;flex-direction:column;gap:8px}
+.ms-coins,.ms-sline{margin:0;font-size:17px;line-height:1.35}
+.ms-stampwrap{width:min(320px,100%);aspect-ratio:240/140;transform:rotate(1deg)}
+.ms-stampcard{display:block;width:100%;height:100%}
+.ms-stampwrap.new{animation:msStamp .7s cubic-bezier(.3,1.6,.5,1)}
+@keyframes msStamp{0%{transform:rotate(1deg) scale(1.18)}60%{transform:rotate(-2deg) scale(.96)}100%{transform:rotate(1deg) scale(1)}}
+[data-motion="off"] .ms-stampwrap.new{animation:none}
+.ms-reset{margin-top:10px}
+.panel.journal .ms-body{max-width:760px}
+/* the reward popup */
+.ms-prize{display:grid;grid-template-columns:150px minmax(0,1fr);gap:16px;align-items:center}
+.ms-prize-art{display:block;width:150px;height:150px}
+.ms-prize-art.house{height:125px}
+.ms-prize p{margin:0 0 8px}
+/* the yard clipboard */
+#msCardG .ms-badge text{pointer-events:none}
+#msCardG:focus-visible{outline:none}
+#msCardG:focus-visible > svg{filter:drop-shadow(0 0 4px #F28FA5)}
+
+html[data-layout="phone"] .ms-body{grid-template-columns:minmax(0,1fr);gap:10px;justify-items:center}
+html[data-layout="phone"] .ms-cardwrap{width:100%;max-width:340px}
+html[data-layout="phone"] .ms-side{width:100%}
+html[data-layout="phone"] .ms-coins,html[data-layout="phone"] .ms-sline,html[data-layout="phone"] .ms-reset{font-size:15px}
+html[data-layout="phone"] .ms-stampwrap{width:100%;max-width:340px;justify-self:center;margin:0 auto}
+html[data-layout="phone"] .ms-prize{grid-template-columns:minmax(0,1fr);justify-items:center;text-align:center;gap:6px}
+html[data-layout="phone"] .ms-prize-art{width:120px;height:120px}
+html[data-layout="phone"] .ms-prize p{font-size:15px}
+/* v2.4 coordinator: on phones a feed / play / care tray shrinks the scene into the strip above it, which would leave the clipboard's tap target under 44 px, so it hides while a tray is open (the mailbox is bigger and stays) */
+html[data-layout="phone"] #stage:has(#dock > .tray:not(.dock-idle):not(.mini)) #msCardG{visibility:hidden}
+/* v2.4 SHOP: the food safety tip line in shop cards, in ink for contrast (about 9:1 on cream) */
+.sitem .sh-tip{color:var(--ink,#5B3D32)}
+/* v2.4 SHOP: the Lighthouse Kennel's lamp beam and glow shine only at night (03_yard toggles #houseG.night from isNight()) */
+#houseG:not(.night) .pa-wb-glow{display:none}

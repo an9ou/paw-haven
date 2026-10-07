@@ -89,7 +89,7 @@ require('./test_lib').run('v2_journal', async (t) => {
 
   sec('journal: tabs + profile genes');
   await p.click('[data-act=journal]'); await p.waitForSelector('.panel.journal'); await p.click('[data-jt=profile]'); await p.waitForSelector('.profile .pf-genes');
-  ok(await ev(() => { const b = [...document.querySelectorAll('.jtabs .btn')]; return b.length === 9 && b.every((x) => x.offsetTop === b[0].offsetTop) && b.every((x) => x.getBoundingClientRect().right <= document.querySelector('.panel.journal').getBoundingClientRect().right); }), '9 tabs on one row inside the popup');
+  ok(await ev(() => { const b = [...document.querySelectorAll('.jtabs .btn')]; return b.length === 11 && b.every((x) => x.offsetTop === b[0].offsetTop) && b.every((x) => x.getBoundingClientRect().right <= document.querySelector('.panel.journal').getBoundingClientRect().right); }), '11 tabs on one row inside the popup');
   let pf = await p.textContent('.profile');
   ok(!/coming in v2/i.test(pf) && !/in v2/.test(pf), 'no "coming in v2" teasers');
   ok(await p.locator('.pf-genes .gslot').count() === 6 && /Gene test at the Vet Clinic/.test(pf), 'genes hidden before a gene test');

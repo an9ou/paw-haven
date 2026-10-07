@@ -120,11 +120,11 @@ function enterGarden() {
   const o = {
     state: S.garden, time: e.time, weather: e.weather, month: monthNow(), dog: dogForMod(), buddy: buddyNow(), seeds: seedCounts(), sfx,
     say: (t) => toast(t),
-    onPlant: (plot, cropId) => { if (!(S.inv.seeds[cropId] > 0)) return false; S.inv.seeds[cropId]--; markDirty(); return true; },
+    onPlant: (plot, cropId) => { if (!(S.inv.seeds[cropId] > 0)) return false; S.inv.seeds[cropId]--; markDirty(); trackAct('garden', { what: 'plant', crop: cropId }); return true; },
     onHarvest: (plot, items, took) => {
       (items || []).forEach((it) => { const a = S.inv.crops[it.crop] = S.inv.crops[it.crop] || [0, 0, 0]; a[clamp((it.stars || 1) - 1, 0, 2)]++; S.cropBest[it.crop] = Math.max(S.cropBest[it.crop] || 0, it.stars || 1); });
       const c = items && items[0] && items[0].crop; if (c) { S.garden.harvests = S.garden.harvests || {}; S.garden.harvests[c] = (S.garden.harvests[c] || 0) + 1; }
-      audioCue('harvest'); markDirty(); if (items && items.length) toast(`Harvested ${items.length} ${CROP_PLURAL[c] || c}${took ? ` (Captain Fluff's IOU: -${took})` : ''}. ${NAME()} sniffs ${PR().his} share hopefully.`, 'good');
+      audioCue('harvest'); markDirty(); if (items && items.length) trackAct('garden', { what: 'harvest', crop: c }); if (items && items.length) toast(`Harvested ${items.length} ${CROP_PLURAL[c] || c}${took ? ` (Captain Fluff's IOU: -${took})` : ''}. ${NAME()} sniffs ${PR().his} share hopefully.`, 'good');
     },
     onBonusSeed: (cropId) => { S.inv.seeds[cropId] = (S.inv.seeds[cropId] || 0) + 1; markDirty(); toast(`${NAME()} dug up a bonus ${cropInfo(cropId) ? cropInfo(cropId).seedItem : 'seed'}! ${PR().He} is unbearable about it.`, 'gold'); },
     onChange: (st) => { if (st) { S.garden = mergeHarvests(st); markDirty(); saveNow(); } },
@@ -164,7 +164,7 @@ function enterKitchen() {
         if (!S.recipes.known.includes(r.recipe)) S.recipes.known.push(r.recipe);
         S.recipes.best[r.recipe] = Math.max(S.recipes.best[r.recipe] || 0, r.stars || 1);
       }
-      audioCue(r.discovered ? 'discover' : 'cooked');
+      audioCue(r.discovered ? 'discover' : 'cooked'); trackAct('cook', { dish: r.recipe, stars: r.stars || 1 });
       const prep = { pumpkin: 'Always cooked and plain.', 'sweet-potato': 'Always cooked and plain.', spinach: 'Small amounts only, so recipes use one.', chicken: 'Boneless, because cooked bones splinter.' };
       (r.used || []).forEach((u) => { const id = u && (u.id || u); if (prep[id] && !S.safetySeen.includes('prep-' + id)) S.safetySeen.push('prep-' + id); }); // the reveal card shows the note
       markDirty(); saveNow();
@@ -195,7 +195,7 @@ function openPip(tab) {
   } else body = `<p class="small">Pip grows these for people only. They are never sold to dog owners. Tap one to see why.</p><div class="shopgrid">${peopleFood().filter((f) => f.where.includes('rack')).map((f) => `<button class="sitem lockd people" data-people="${f.id}"><span class="art">${art('item', f.name)}</span><span class="pawstop">${iconOr('paw-stop', '<circle r="12" fill="#F28FA5" stroke="#5B3D32" stroke-width="2"/><path d="M-6 0h12" stroke="#fff" stroke-width="3"/>')}</span><b>${esc(f.name)}</b><span class="desc">Not for dogs</span></button>`).join('')}</div>`;
   const p = openModal("Pip's Sprout Cart", `<div class="pip-top">${pip ? `<span class="pip-art">${pip}</span>` : ''}<p>"Howdy! Seeds for the patch, and I buy what you grow. Season now: <b>${sz}</b>." <span class="small">You have ${S.coins} Paw Coins.</span></p></div><div class="tabs" role="tablist">${tabs.map(([k, l]) => `<button class="btn" role="tab" data-ptab="${k}" aria-selected="${pipTab === k}">${l}</button>`).join('')}</div>${body}`, { cls: 'shop' });
   p.querySelectorAll('[data-ptab]').forEach((b) => { b.onclick = () => openPip(b.dataset.ptab); });
-  p.querySelectorAll('[data-seed]').forEach((b) => { b.onclick = async () => { const c = cropInfo(b.dataset.seed); SFX.click(); const q = await buyWindow(p, { art: art('item', c.seedItem), name: c.seedItem, desc: `${c.seasons.join(', ')} · ${cropTimeTxt(c)} · ${c.yield} per harvest`, price: c.seed, stack: true, have: S.inv.seeds[c.id] || 0, haveLabel: 'In pouch' }); if (!q) return; const cost = c.seed * q; if (S.coins < cost) { nope('Not enough coins. Have you tried being rich?'); return; } S.coins -= cost; S.inv.seeds[c.id] = (S.inv.seeds[c.id] || 0) + q; SFX.kaching(); markDirty(); updateHUD(); toast(`Bought ${q} × ${c.seedItem}. Pip tips that enormous hat.`, 'gold'); openPip(); }; });
+  p.querySelectorAll('[data-seed]').forEach((b) => { b.onclick = async () => { const c = cropInfo(b.dataset.seed); SFX.click(); const q = await buyWindow(p, { art: art('item', c.seedItem), name: c.seedItem, desc: `${c.seasons.join(', ')} · ${cropTimeTxt(c)} · ${c.yield} per harvest`, price: c.seed, stack: true, have: S.inv.seeds[c.id] || 0, haveLabel: 'In pouch' }); if (!q) return; const cost = c.seed * q; if (S.coins < cost) { nope('Not enough coins. Have you tried being rich?'); return; } S.coins -= cost; S.inv.seeds[c.id] = (S.inv.seeds[c.id] || 0) + q; SFX.kaching(); markDirty(); trackAct('buy', { name: c.seedItem, cat: 'seeds', qty: q, shop: 'sprout' }); updateHUD(); toast(`Bought ${q} × ${c.seedItem}. Pip tips that enormous hat.`, 'gold'); openPip(); }; });
   p.querySelectorAll('[data-sell]').forEach((b) => { b.onclick = async () => {
     const [id, i] = b.dataset.sell.split('|'), c = cropInfo(id), a = S.inv.crops[id]; if (!a || !a[+i]) return;
     const each = Math.round(c.sell * STAR_MULT[+i]), left = pipLeft();

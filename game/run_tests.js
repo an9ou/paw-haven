@@ -40,6 +40,12 @@ const SUITES = {
   v21_journal: { file: 'test_v21_journal.js', group: 'all', est: 30 },
   v21_town: { file: 'test_v21_town.js', group: 'all', est: 20 },
   v21_home: { file: 'test_v21_home.js', group: 'all', est: 15 },
+  // v2.4 Shop Day
+  v24_shop: { file: 'test_v24_shop.js', group: 'all', est: 40 },
+  v24_missions: { file: 'test_v24_missions.js', group: 'all', est: 30 },
+  v24_guide: { file: 'test_v24_guide.js', group: 'all', est: 30 },
+  v24_toys: { file: 'test_v24_toys.js', group: 'all', est: 45 },
+  v24_art: { file: 'test_v24_art_node.js', group: 'all', est: 10 },
   // v2.2 phone suites: `node game/run_tests.js phone` (not part of `all`, which stays the desktop regression set)
   phone_legacy: { file: 'test_phone.js', group: 'phone', est: 90 },
   phone_shell: { file: 'test_phone_shell.js', group: 'phone', est: 40 },
@@ -54,6 +60,8 @@ const SUITES = {
   account: { file: 'test_account.js', group: 'phone', est: 60 },
   phone_occl_home: { file: 'test_phone_occl_home.js', group: 'phone', est: 60 },
   phone_occl_play: { file: 'test_phone_occl_play.js', group: 'phone', est: 60 },
+  phone_v24_shop: { file: 'test_phone_v24_shop.js', group: 'phone', est: 40 }, // v2.4
+  phone_v24_guide: { file: 'test_phone_v24_guide.js', group: 'phone', est: 40 },
 };
 // extra aliases: `all_*` is the same as `all`; `test_all` = the four+ shards of the old test_all.js
 const ALIAS = { test_all: ['all_a', 'all_b', 'all_c', 'all_d', 'all_e'], 'test_v15': ['v15'], 'test_v16': ['v16'], 'test_v16b': ['v16b'], 'test_v17': ['v17'], 'test_v171_garden': ['v171_garden'], 'test_v171_tricks': ['v171_tricks'], 'test_v2_slots': ['v2_slots'], 'test_v2_breed': ['v2_breed'], 'test_v2_journal': ['v2_journal'], 'test_v2_town': ['v2_town'], 'test_v2_play': ['v2_play'], 'test_v21_genes_node': ['v21_genes'], 'test_copy_node': ['copy'], 'test_v21_breed': ['v21_breed'], 'test_v21_journal': ['v21_journal'], 'test_v21_town': ['v21_town'], 'test_v21_home': ['v21_home'] };

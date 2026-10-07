@@ -3,8 +3,8 @@ const DX = 298, DY = 295, DW = 264, DH = 220; // dog box: feet at y=500, centre 
 let dogKey = '', tempPose = null, tempUntil = 0, busy = false, pet = { start: 0, gain: 0, bonded: false, capped: false, dist: 0 };
 function yardWorldSVG(extra = '') {
   return `<svg class="world" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMax slice">
-    ${sceneG(S.place || 'yard', S.place === 'yard' ? { patch: gkOn() ? patchState() : 'empty' } : S.place === 'house' && hasBedArt() ? { bed: false } : {})}${S.place === 'yard' && !gkOn() ? '<g class="soon-tag" pointer-events="none" transform="translate(112 432) rotate(-6)"><rect x="-58" y="-17" width="116" height="30" rx="6" fill="#FFF3B8" stroke="#5B3D32" stroke-width="2"/><text y="6" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="22" fill="#5B3D32">coming soon</text></g>' : ''}${bedLayers().back}<g id="messG"></g><g id="snowmanG">${S.place === 'yard' ? snowmanSVG() : ''}</g>${S.place === 'yard' ? hmDecorSVG() : ''}
-    ${S.place === 'yard' ? `<g id="houseG" class="hot" tabindex="0" role="button" aria-label="Dog house: ${esc(S.house)}">${place(art('house', S.house), 620, 330, 240, 200)}</g>` : ''}
+    ${sceneG(S.place || 'yard', S.place === 'yard' ? { patch: gkOn() ? patchState() : 'empty' } : S.place === 'house' && hasBedArt() ? { bed: false } : {})}${S.place === 'yard' && !gkOn() ? '<g class="soon-tag" pointer-events="none" transform="translate(112 432) rotate(-6)"><rect x="-58" y="-17" width="116" height="30" rx="6" fill="#FFF3B8" stroke="#5B3D32" stroke-width="2"/><text y="6" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="22" fill="#5B3D32">coming soon</text></g>' : ''}${bedLayers().back}<g id="messG"></g><g id="snowmanG">${S.place === 'yard' ? snowmanSVG() : ''}</g>${S.place === 'yard' && cur.mode === 'yard' && typeof msYardSVG === 'function' ? msYardSVG() : ''}${S.place === 'yard' ? hmDecorSVG() : ''}
+    ${S.place === 'yard' ? `<g id="houseG" class="hot${isNight() ? ' night' : ''}" tabindex="0" role="button" aria-label="Dog house: ${esc(S.house)}">${place(art('house', S.house), 620, 330, 240, 200)}</g>` : ''}
     <g id="bowlG" class="hot" tabindex="0" role="button" aria-label="Food bowl">${place(art('prop', 'bowl-empty'), 205, 462, 90, 90)}</g>
     <g id="pack">${packSVG()}</g><g id="dogPos"><g id="dogFx"><g id="dogArt"></g><rect id="dogHit" x="${DX + 30}" y="${DY + 40}" width="${DW - 60}" height="${DH - 40}" fill="transparent" pointer-events="all" class="hot" tabindex="0" role="button" aria-label="Pet the dog"/></g><g id="fluffFx" pointer-events="none"></g></g>${bedLayers().front}
     ${S.place === 'yard' && S.mapPieces.length >= 4 && !S.secretDug ? `<g id="secretX" class="hot" tabindex="0" role="button" aria-label="Secret dig: X marks the spot"><rect x="585" y="452" width="150" height="140" fill="transparent"/>${place(artReal('collectible', 'dig') || art('collectible', 'dig'), 615, 495, 90, 90)}<text x="660" y="488" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="26" fill="#5B3D32">X marks the spot!</text></g>` : ''}
@@ -26,9 +26,9 @@ const POSE_FB = { crouch: 'sit', shake: 'happy', cold: 'sad', hot: 'happy', dig:
 function dogArtSafe(key, o) { let sv = art('dog', key, o); if (o.pose && POSE_FB[o.pose] && !sv.includes('pa-pose-' + o.pose)) sv = art('dog', key, Object.assign({}, o, { pose: POSE_FB[o.pose] })); return sv; }
 function renderDog(pose, facing = 'right', force) {
   const g = $('#dogArt'); if (!g) return;
-  const k = pose + '|' + facing + '|' + JSON.stringify(S.outfit) + '|' + S.dog.key;
+  const o = shSleepOutfit(D(), pose), k = pose + '|' + facing + '|' + JSON.stringify(o) + '|' + S.dog.key; // v2.4: the Pyjamas at nap time
   if (k === dogKey && !force) return; dogKey = k;
-  g.innerHTML = place(dogSVG(D(), { pose, outfit: dogOutfit(), facing }), DX, DY, DW, DH);
+  g.innerHTML = place(dogSVG(D(), { pose, outfit: o, facing }), DX, DY, DW, DH);
   const fx = $('#dogFx'); if (fx) { fx.classList.toggle('tk-shake', pose === 'shake'); fx.classList.toggle('tk-shiver', pose === 'cold'); }
   const bf = $('#bedFront'); if (bf) bf.style.display = pose === 'sleep' ? '' : 'none';
 }
@@ -282,7 +282,7 @@ function travelTo(id) {
   if (id === S.place) { go('yard'); return; }
   if (awayFromHome(id) && staysHome(D())) { nope(stayHomeLine(D())); return; } // v2.0.1: under 3 months / nursing mum: home and yard only
   const going = S.dogs.filter((d) => d === D() || !(awayFromHome(id) && staysHome(d))), stay = S.dogs.filter((d) => !going.includes(d));
-  busy = true; hideBubble(); SFX.whoosh();
+  busy = true; hideBubble(); SFX.whoosh(); trackAct('travel', { place: id });
   if (stay.length && !awayFromHome()) toast(`${stay.map((d) => d.name).join(' and ')} ${stay.length > 1 ? 'stay' : 'stays'} home ${stay.some((d) => ageMonths(d) >= 3) ? 'with the pups' : 'with a chew toy (too little for trips)'}.`, '');
   const card = document.createElement('div'); card.className = 'onway';
   card.innerHTML = `<div class="onway-card"><span class="onway-dog">${going.map((d) => dogSVG(d, { pose: 'walk', outfit: outfitOf(d) })).join('')}</span><b>On the way to ${esc(P.n)}...</b><span class="small">${going.length > 1 ? (stay.length ? 'The pack trots along. -2 Energy each.' : 'The whole pack trots along. -2 Energy each.') : esc(NAME()) + ' trots happily. -2 Energy.'}</span></div>`;
@@ -327,7 +327,7 @@ function petTick(wx, wy) {
   if (outdoorsNow() && weatherNow() === 'rain' && !hasRaincoat() && !pet.wet) { pet.wet = true; toast('Wet dog smell intensifies.'); }
   setTemp('pet', 900); fxText('♥', wx + RAND(-20, 20), wy - 10);
   Math.random() < 0.7 ? SFX.squeak() : SFX.boop(RAND(500, 800));
-  if (!pet.bonded && pet.gain >= 10) { pet.bonded = true; const n = addBond(3); const st = S.outfit.charm === 'Sparkle Stone'; if (st) addStat('happy', 5); toast(`+${n} Bond.${st ? ' The Sparkle Stone hums: +5 Happiness.' : ''} ${NAME()} pretends ${PR().he} did not enjoy that.`, 'good'); dailyCare('pet'); markCareDay(); }
+  if (!pet.bonded && pet.gain >= 10) { pet.bonded = true; const n = addBond(3) + (S.outfit.head === 'Wizard Hat' ? addBond(1, { raw: true }) : 0); const st = S.outfit.charm === 'Sparkle Stone'; if (st) addStat('happy', 5); toast(`+${n} Bond.${S.outfit.head === 'Wizard Hat' ? ' Magic hands: +1 Bond.' : ''}${st ? ' The Sparkle Stone hums: +5 Happiness.' : ''} ${NAME()} pretends ${PR().he} did not enjoy that.`, 'good'); dailyCare('pet'); markCareDay(); trackAct('pet', {}); }
   updateHUD();
 }
 function showZzz(on) { const z = $('#zzz'); if (z) z.innerHTML = on ? place(art('prop', 'zzz'), 760, 280, 90, 90) : ''; }
@@ -363,7 +363,7 @@ function openFeedTray() {
   const home = atHome(), items = FOOD_ALL.filter((f) => f.n === 'Fresh Water' || (S.inv.food[f.n] || 0) > 0);
   const cards = items.map((f) => {
     const cnt = f.n === 'Fresh Water' ? '' : `<span class="cnt">${S.inv.food[f.n]}</span>`;
-    const wait = f.n === 'Fresh Water' && S.gameMin - S.waterAt < 120, off = !home && isMeal(f.n);
+    const wait = f.n === 'Fresh Water' && S.gameMin - S.waterAt < shWaterWait(), off = !home && isMeal(f.n);
     return `<button class="card ${off ? 'off meal' : ''}" data-food="${esc(f.n)}" ${wait || off ? 'aria-disabled="true"' : ''} aria-label="Feed ${esc(f.n)}${off ? ' (meals are served at home)' : ''}">${cnt}<span class="art">${art('item', f.n)}</span><b>${esc(f.n)}</b><span class="small">${off ? 'at home' : wait ? 'refilling...' : isFavFood(f.n) ? 'favourite!' : SNACKS.includes(f.n) ? 'snack' : ''}</span></button>`;
   }).join('');
   const dishes = kOn() ? dishRowHTML(!home) : '';
@@ -397,7 +397,7 @@ function feed(name) {
   if (!atHome() && isMeal(name)) { nope('Meals are served at home. Snacks and water are fine out here.'); return; }
   if (S.place === 'pier' && name !== 'Fresh Water' && Math.random() < 0.2) { popDown(); SFX.honk(); toast(`A seagull took the ${name}! Rude. (Snack refunded: Pip has a deal with the gulls.)`, 'bad'); return; }
   if (name === 'Fresh Water') {
-    if (S.gameMin - S.waterAt < 120) { nope(`The water bowl is refilling. Water takes time. That's science.`); return; }
+    if (S.gameMin - S.waterAt < shWaterWait()) { nope(`The water bowl is refilling. Water takes time. That's science.`); return; }
     S.waterAt = S.gameMin;
   } else {
     if ((S.inv.food[name] || 0) <= 0) { nope('You have none of that. Kibble Corner has some.'); return; }
@@ -423,17 +423,21 @@ function feed(name) {
     const pb = pupBonus(D(), f); if (pb) { happy += pb; extraMsg += ` Puppy-sized bites: +${pb} Happiness.`; }
     if (name !== 'Fresh Water') extraMsg += eatForLine(D());
     if (name === 'Fresh Water' && isHot()) { happy += 5; addStat('energy', 10); extraMsg += ' So refreshing on a hot day! Extra Energy.'; }
+    const perk = shFeedPerk(name, f); if (perk.happy) { happy += perk.happy; extraMsg += perk.msg; } // v2.4: Chef Hat on meals, Bumblebee Suit on snacks
     if (name !== 'Fresh Water' && timePhase() === 'dawn') { dailyCheck(); if (!S.daily.breakfast) { S.daily.breakfast = true; happy += 5; addBond(3); extraMsg += ' Breakfast bonus!'; } }
     addStat('hunger', f.hunger || 0); addStat('happy', happy); addStat('energy', f.energy || 0); addStat('clean', f.clean || 0);
     let bp = name === 'Fresh Water' ? 0 : 2 + (f.bond || 0); if (feeder) bp *= 2;
-    if (name === 'Pupcake') S.pupUntil = S.gameMin + 60;
+    if (name === 'Pupcake') S.pupUntil = S.gameMin + shPupMins(); // v2.4: the Happi Coat makes it 2 game hours
+    if (f.cool) { S.coolUntil = S.gameMin + f.cool; extraMsg += ' Cool as a cucumber for 1 game hour.'; } // v2.4: Frozen Pupsicle (isHot honours S.coolUntil)
     if (f.golden) { S.glowUntil = S.gameMin + 1440; addStat('happy', 80 - Math.min(80, S.stats.happy)); bp = 20; }
     const got = bp ? addBond(bp) : 0;
     const secs = (Math.random() * 0.9 + 0.2).toFixed(1);
     const eatL = breedLine(EAT_LINES, D());
     const msg = name === 'Fresh Water' ? `${n} drank it. Most of it went on the floor.` : eatL && Math.random() < 0.5 ? eatL : PICK([`${n} ate it in ${secs} seconds. ${PR().His} tail approves.`, `${n} inhaled that. ${PR().He} thinks chewing is for quitters.`, `Gone. ${n} is now looking at the bowl for more.`]);
-    toast(`${msg}${isFavFood(name) ? ' Favourite food!' : ''}${got ? ` +${got} Bond.` : ''}${name === 'Pupcake' ? ' Double Bond for 1 game hour!' : ''}${f.golden ? ' GLOWING for a whole game day!' : ''}${S.place === 'river' && name !== 'Fresh Water' ? ' Riverside picnic: +5 Happiness.' : ''}${extraMsg}`, 'good');
+    toast(`${msg}${isFavFood(name) ? ' Favourite food!' : ''}${got ? ` +${got} Bond.` : ''}${name === 'Pupcake' ? ` Double Bond for ${shPupMins() > 60 ? '2 game hours (Happi Coat)' : '1 game hour'}!` : ''}${f.golden ? ' GLOWING for a whole game day!' : ''}${S.place === 'river' && name !== 'Fresh Water' ? ' Riverside picnic: +5 Happiness.' : ''}${extraMsg}`, 'good');
     if (name !== 'Fresh Water') { dailyCare('feed'); markCareDay(); }
+    trackAct(name === 'Fresh Water' ? 'water' : 'feed', { name }); // v2.4 missions and guide
+    if (f.tip) setTimeout(() => shFoodTip(name), 900); // v2.4: the safety tip, once per food
     setTemp('happy', 1600); dogTo(0, 0, 1, 0.8); updateHUD();
     setTimeout(() => { busy = false; renderDog(dogPoseNow()); }, 900);
   }, 2300);
@@ -470,7 +474,7 @@ function playPick(p) {
   if (p === 'duck') { [0, 250, 500].forEach((t) => setTimeout(SFX.squeak, t)); setTemp('happy', 1300); }
   else { $('#dogFx').classList.add('tk-tug'); renderDog('happy'); SFX.whoosh(); setTimeout(() => barkDog(D(), 'growl-play', { player: true }), 600); }
   setTimeout(() => {
-    $('#dogFx').classList.remove('tk-tug'); addStat('happy', happy);
+    $('#dogFx').classList.remove('tk-tug'); addStat('happy', happy); trackAct('toy', { name: toy });
     let msg = p === 'duck' ? `SQUEAK. ${NAME()} is delighted. Your ears are not.` : `${NAME()} won the tug-of-war. As always.`;
     if (p === 'tug') { addStat('energy', -10 * k); msg += ` +${addBond(5 * k)} Bond.`; }
     if (S.dog.favToy === toy) msg += ' Favourite toy!'; if (!full) msg += ' (Less exciting the second time. Wait 10 game minutes.)';
@@ -532,16 +536,16 @@ function openCareTray() {
     ${home ? '' : `<button class="card" data-care="home"><span class="art">${ICON('house')}</span><b>Go home</b><span class="small">to the yard</span></button>`}</div>`);
   dock.querySelectorAll('[data-care]').forEach((b) => { b.onclick = () => { SFX.click(); const c = b.dataset.care; if (!home && (c === 'bath' || c === 'sleep')) { nope(`Bath and naps happen at home. ${NAME()} insists.`); return; } if (c === 'bath') go('bath'); if (c === 'sleep') startSleep(); if (c === 'house') openHouses(); if (c === 'decor') hmOpenDecor(); if (c === 'bed') openBeds(); if (c === 'home') { closeTray(); travelTo('yard'); } }; });
 }
-function napRate() { const h = houseInfo(); const c = S.place === 'house' ? 0.25 + bedInfo().bonus : h.comfort * (S.dog.key === 'husky' && h.n === 'Snow Igloo' ? 2 : 1); return 20 * BOOST.nap * (1 + c) * (owns('toys', 'Plush Bone') ? 1.1 : 1) * (isNight() ? 1.4 : 1) * (weatherNow() === 'rain' ? 1.2 : 1); }
+function napRate() { const h = houseInfo(); const c = S.place === 'house' ? 0.25 + bedInfo().bonus : h.comfort * (S.dog.key === 'husky' && h.n === 'Snow Igloo' ? 2 : 1); return 20 * BOOST.nap * (1 + c) * (owns('toys', 'Plush Bone') ? 1.1 : 1) * (isNight() ? 1.4 : 1) * (weatherNow() === 'rain' ? 1.2 : 1) * shNapMul(); }
 function startSleep() {
   if (busy) return; if (S.stats.energy >= 99) { nope(`${NAME()} is not tired. ${PR().He} is vibrating.`); return; }
-  clearCurl(); busy = false; S.sleeping = true; markDirty(); hideBubble(); popDown(); dogTo(417.5, S.place === 'house' ? 130 : 140, 0.75, 1); renderDog('walk');
+  clearCurl(); busy = false; S.sleeping = true; markDirty(); trackAct('nap', {}); hideBubble(); popDown(); dogTo(417.5, S.place === 'house' ? 130 : 140, 0.75, 1); renderDog('walk');
   setTimeout(() => { if (S.sleeping) { renderDog('sleep'); showZzz(true); } }, 1000);
   sleepTray(); toast(S.place === 'house' ? `${NAME()} curls up on the ${S.bed}. Indoor naps: +25%${bedInfo().bonus ? `, bed +${Math.round(bedInfo().bonus * 100)}%` : ''}.` : weatherNow() === 'rain' ? `${NAME()} curls up in the ${S.house}. Rain on the roof: the best nap sound (+20% nap).` : isNight() ? `${NAME()} climbs into the ${S.house}. Night naps restore more (+40%).` : `${NAME()} climbs into the ${S.house}. Goodnight.`); if (ROACH[D().key]) setTimeout(() => toast(`${NAME()} flips upside down, legs in the air. Greyhounds call that roaching.`, ''), 900); audioPlace();
 }
 function sleepTray() {
   const h = houseInfo(), b = bedInfo(), indoor = S.place === 'house';
-  const info = `Energy refills at <b>${Math.round(napRate())}</b> per game hour${indoor ? ` (${esc(b.n)}: +25% indoors${b.bonus ? `, +${Math.round(b.bonus * 100)}% bed` : ''})` : h.comfort ? ` (${esc(h.n)}: +${Math.round(h.comfort * 100)}% comfort)` : ' (Cardboard Box: no comfort bonus, lots of character)'}${owns('toys', 'Plush Bone') ? ', +10% Plush Bone' : ''}${isNight() ? ', +40% night' : ''}${weatherNow() === 'rain' ? ', +20% rain on the roof' : ''}.`;
+  const info = `Energy refills at <b>${Math.round(napRate())}</b> per game hour${indoor ? ` (${esc(b.n)}: +25% indoors${b.bonus ? `, +${Math.round(b.bonus * 100)}% bed` : ''})` : h.comfort ? ` (${esc(h.n)}: +${Math.round(h.comfort * 100)}% comfort)` : ' (Cardboard Box: no comfort bonus, lots of character)'}${owns('toys', 'Plush Bone') ? ', +10% Plush Bone' : ''}${shNapNote()}${isNight() ? ', +40% night' : ''}${weatherNow() === 'rain' ? ', +20% rain on the roof' : ''}.`;
   if (isPhone()) {
     const wasOpen = !!$('#napDet') && !$('#napDet').hidden;
     // v2.3 phone: a one-line strip (energy bar, info, Wake up) so the sleeping dog and the house stay in view; the details open on a tap
@@ -570,9 +574,9 @@ function openHouses() {
 }
 function switchHouse(n) {
   if ((HOUSE_CAP[n] || 1) < S.dogs.length) { nope(`The ${n} only fits ${HOUSE_CAP[n] || 1}. You have ${S.dogs.length} dogs, and nobody is getting left out.`); return; }
-  S.house = n; markDirty(); SFX.thud(); setTimeout(() => SFX.boop(700), 150);
+  S.house = n; markDirty(); trackAct('house', { name: n }); SFX.thud(); setTimeout(() => SFX.boop(700), 150);
   toast(`${NAME()} moved into the ${n}. ${PICK(['Sniffed every corner.', 'Approves. Mostly.', 'Already shed on it.'])}`, 'good');
-  if (cur.mode === 'yard') { const g = $('#houseG'); if (g) { g.innerHTML = place(art('house', n), 620, 330, 240, 200); g.setAttribute('aria-label', 'Dog house: ' + n); } if (S.sleeping) sleepTray(); }
+  if (cur.mode === 'yard') { const g = $('#houseG'); if (g) { g.innerHTML = place(art('house', n), 620, 330, 240, 200); g.setAttribute('aria-label', 'Dog house: ' + n); shHouseNight(); } if (S.sleeping) sleepTray(); }
 }
 
 
@@ -581,7 +585,9 @@ function bindSceneHots() {
   if (S.place === 'market') hotify($('svg.world', view), '#sceneG [data-shop]', 'data-shop', (k) => openShop(k), (k) => 'Enter ' + (SHOP_NAME[k] || k));
   hotify($('svg.world', view), '#sceneG [data-hot]', 'data-hot', (k) => ({ garden: openGarden, kitchen: openKitchen, notice: squareNotice, 'cafe-menu': cafeMenu, 'vet-desk': vetCheck, 'salon-chair': salonGroom }[k] || (() => {}))(), (k) => 'Open the ' + k);
 }
-on('scene:redraw', () => { if (cur.mode === 'yard' && $('svg.world', view)) bindSceneHots(); });
+on('scene:redraw', () => { if (cur.mode === 'yard' && $('svg.world', view)) { bindSceneHots(); shHouseNight(); } });
+// v2.4: house lamps (the Lighthouse Kennel's beam, .pa-wb-glow) only shine at night
+function shHouseNight() { const g = $('#houseG'); if (g) g.classList.toggle('night', isNight()); }
 
 /* ======================= v2.1 HOME: yard decorations (S.decor) ======================= */
 // at = world x, y, w, h (1000x600 scene). Spots avoid the dog tap box, the mailbox, both doors and the nursery basket.

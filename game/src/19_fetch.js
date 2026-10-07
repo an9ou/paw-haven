@@ -35,7 +35,7 @@ function catchTry() {
   const el = (performance.now() - f.t0) / 1000, diff = Math.abs(el - f.T);
   const win = F.glow ? 0.3 : 0.2;
   if (diff < win) {
-    f.caught = true; const great = diff < (F.glow ? 0.12 : 0.08); F.score++; if (great) F.great++;
+    f.caught = true; const great = diff < (F.glow ? 0.12 : 0.08); F.score++; if (great) F.great++; if (F.score === 1) trackAct('fetch', { name: F.toy });
     const c = (F.fris ? 3 : 2) + (great ? 1 : 0) + (F.stick ? 1 : 0); F.coins += c;
     $('#ballG').setAttribute('opacity', '0'); ringsOff();
     renderDog('jump'); const fx = $('#dogFx'); fx.classList.remove('hop'); void fx.getBBox(); fx.classList.add('hop');

@@ -12,10 +12,12 @@ function openJournal(tab) {
   if (tab) jTab = tab; audioPlace('journal');
   if (jTab === 'coats' || jTab === 'family' || jTab === 'profile') jrCheckAll();
   const foundN = TREASURES.filter((t) => S.found[t.n]).length;
-  const tabs = [['profile', 'Profile'], ['family', 'Family'], ['coats', 'Coats'], ['treasures', `Treasures ${foundN}/${TREASURES.length}`], ['food', 'Food'], ['toys', 'Toys'], ['clothes', 'Clothes'], ['garden', gkOn() ? 'Garden' : 'Garden (soon)'], ['recipes', kOn() ? 'Recipes' : 'Recipes (soon)']];
+  const tabs = [['profile', 'Profile'], ['family', 'Family'], ['coats', 'Coats'], ['treasures', `Treasures ${foundN}/${TREASURES.length}`], ['food', 'Food'], ['toys', 'Toys'], ['clothes', 'Clothes'], ['missions', 'Missions'], ['garden', gkOn() ? 'Garden' : 'Garden (soon)'], ['recipes', kOn() ? 'Recipes' : 'Recipes (soon)'], ['howto', 'How to play']];
   let body = '';
   if (jTab === 'family') body = journalFamily();
   else if (jTab === 'coats') body = journalCoats();
+  else if (jTab === 'missions') body = typeof msTabHTML === 'function' ? msTabHTML() : '<p class="small">Missions are on their way.</p>'; // v2.4 (24_missions.js)
+  else if (jTab === 'howto') body = typeof gdTabHTML === 'function' ? gdTabHTML() : '<p class="small">Gerald is still writing the guide.</p>'; // v2.4 (25_guide.js)
   else if (jTab === 'garden') body = gkOn() ? journalGarden() : soonCard('garden');
   else if (jTab === 'recipes') body = kOn() ? journalRecipes() : soonCard('kitchen');
   else if (jTab === 'profile') { const pd = dogById(jProfDog) || D(); body = pdogTabs(pd.id) + withDog(pd, () => journalProfile()); }
@@ -36,7 +38,7 @@ function openJournal(tab) {
       }).join('')}</div>`;
   } else if (jTab === 'food') {
     const fs = FOOD_ALL.filter((f) => f.n === 'Fresh Water' || (S.inv.food[f.n] || 0) > 0);
-    body = `<div class="jgrid">${fs.map((f) => `<div class="jent"><span class="art">${art('item', f.n)}</span><b>${esc(f.n)}</b>${tInfo(f.n) ? stamp(tInfo(f.n).r) : ''}<span class="ab">${esc(f.note || '')}</span><span class="small">${f.n === 'Fresh Water' ? 'Always free' : 'You have ' + S.inv.food[f.n]}</span><button class="btn yes" data-jfeed="${esc(f.n)}">Feed</button></div>`).join('')}</div>${fs.length <= 1 ? '<p class="small">The pantry is empty. Kibble Corner sells food, walks hide snacks.</p>' : ''}`;
+    body = `<div class="jgrid">${fs.map((f) => `<div class="jent"><span class="art">${art('item', f.n)}</span><b>${esc(f.n)}</b>${tInfo(f.n) ? stamp(tInfo(f.n).r) : ''}<span class="ab">${esc(f.note || '')}</span><span class="small">${f.n === 'Fresh Water' ? 'Always free' : 'You have ' + S.inv.food[f.n]}</span>${f.tip && typeof shFoodTip === 'function' ? `<span class="small jr-tip">${esc(shFoodTip(f.n, true) || f.tip)}</span>` : ''}<button class="btn yes" data-jfeed="${esc(f.n)}">Feed</button></div>`).join('')}</div>${fs.length <= 1 ? '<p class="small">The pantry is empty. Kibble Corner sells food, walks hide snacks.</p>' : ''}`;
   } else if (jTab === 'toys') {
     const ts = TOYS.map((t) => t.n).concat(TREASURES.filter((t) => t.kind === 'toy').map((t) => t.n)).filter((n) => owns('toys', n));
     body = `<div class="jgrid">${ts.map((n) => { const t = tInfo(n), shop = TOYS.find((x) => x.n === n); const act = toySupported(n) ? `<button class="btn yes" data-jtoyplay="${esc(n)}">Play</button>${FETCH_TOYS.includes(n) ? ` <button class="btn" data-jplay="${esc(n)}">Fetch</button>` : ''}` : FETCH_TOYS.includes(n) ? `<button class="btn yes" data-jplay="${esc(n)}">Play fetch</button>` : n === 'Squeaky Duck' || n === 'Rope Tug' ? `<button class="btn yes" data-jtoy="${n === 'Squeaky Duck' ? 'duck' : 'tug'}">Play</button>` : '<span class="chip own">Works automatically</span>'; return `<div class="jent"><span class="art">${art('item', n)}</span><b>${esc(n)}</b>${t ? stamp(t.r) : ''}<span class="ab">${esc(t ? t.ab + '. ' + t.txt : shop.note)}</span>${act}</div>`; }).join('')}</div>${ts.length ? '' : '<p class="small">No toys yet.</p>'}`;

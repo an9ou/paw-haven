@@ -9,7 +9,7 @@ function grantTreasure(t, area) {
   if (t.kind === 'charm') S.inv.charms.push(t.n);
   if (t.kind === 'quest') S.mapPieces.push(t.piece);
   const first = !S.found[t.n]; if (first) S.found[t.n] = { day: day(), route: area };
-  markDirty(); return { first };
+  markDirty(); trackAct('treasure', { name: t.n, first }); return { first };
 }
 function rollTreasure(area, o = {}) {
   if (area === 'river' && S.stoneHint && !hasTreasure(tInfo('Sparkle Stone')) && o.not !== 'Sparkle Stone' && !o.common && !(o.maxR != null && o.maxR < 2)) { // v2.1 BREED: the Stone hint
@@ -265,7 +265,7 @@ function endWalk(complete) {
   addStat('clean', -cleanLoss);
   const bond = frac > 0.05 ? addBond(R.bp * frac + W.bond) : 0;
   const energy = Math.round(W.e0 - S.stats.energy);
-  if (frac > 0.05 || W.found) { dailyCare('play'); S.walks = (S.walks || 0) + 1; }
+  if (frac > 0.05 || W.found) { dailyCare('play'); S.walks = (S.walks || 0) + 1; trackAct('walk', { area: W.area, early: !complete }); }
   markDirty(); hideBubble(); setWalkPose('happy');
   const L = W.found;
   let tre;

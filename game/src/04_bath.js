@@ -23,7 +23,7 @@ function enterBath() {
     if (prog >= 100) finish();
   };
   const finish = () => {
-    done = true; bathZoomies = true; S.stats.clean = 100; SFX.splash(); renderDog('shake'); setTimeout(() => SFX.shake(), 150); markDirty(); updateHUD();
+    done = true; bathZoomies = true; S.stats.clean = 100; trackAct('bath', {}); SFX.splash(); renderDog('shake'); setTimeout(() => SFX.shake(), 150); markDirty(); updateHUD();
     const hot = isHot(); if (hot) addStat('happy', 10);
     const bp = addBond(2); toast(`${hot ? 'Refreshing! +10 Happiness on a hot day. ' : ''}Sparkling. Mostly. +${bp} Bond. ${NAME()} shakes off ON you.`, 'good');
     setTimeout(() => { if (cur.mode === 'bath') go('yard'); }, 1700);

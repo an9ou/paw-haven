@@ -102,11 +102,12 @@ You manage Paw Haven for the owner. You don't build. Start a fresh Coordinator s
 - **Progress page:** the Build Board, https://claude.ai/artifact/Mk2ihLjRMZn1BA4AJ4KVzZ (collections `lanes`, `stages`, `log`).
 - **Releases:** log them in Studio, https://claude.ai/artifact/Raf3Fyx1pS2Gz9U55Wf5BS (collection `releases`).
 
-**State after v2.3 (6 Oct 2026):**
-- v2.3 "Cozy Phones" is live on GitHub Pages. The claude.ai artifact still shows v2.2 (its publish is blocked, see TODO.md "Project").
+**State after v2.4 (6 Oct 2026):**
+- v2.4 "Shop Day" is live on GitHub Pages and on the claude.ai artifact (now a multi-file artifact, see CLAUDE.md "Publishing": `tools/artifact.js`, and a subagent does the required read of the live page).
 - All build sessions are archived.
 - Supabase: the public URL and key are in `PHONE.md` and `game/src/22b_cloud_config.js`, and the tables are in `supabase/schema.sql`.
   - Anonymous sign-ins and email are on, with Confirm email off, so no emails are ever sent.
   - 5 test users (`pawhaven-test-1…5@example.com`) may still exist.
-- The owner still has to check live sync (Realtime) once on two real phones.
-- Next work comes from `TODO.md` (Phone v2.3 and older sections) or whatever the owner asks for.
+- The owner still has to check live sync (Realtime) once on two real phones, and open the claude.ai artifact once.
+- v2.4 ran with 5 Opus lanes, each with its own fresh session, and a Fable coordinator that wrote the spec itself. Lanes did their own screenshot checks (desktop and phone, every breed, pose and age for the dog art) and reported in 25 lines. Three reviews (code, phone, art) ran as subagents of the coordinator.
+- Next work comes from `TODO.md` (Shop Day, Phone and older sections) or whatever the owner asks for.
