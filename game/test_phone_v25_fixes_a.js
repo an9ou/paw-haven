@@ -78,6 +78,14 @@ async function suite(t, dev) {
   ok(m.cover.length === 0, 'at the start no place label is under a control' + (m.cover.length ? ' -> ' + m.cover.join(', ') : ''));
   ok(m.devClear, 'the dev button no longer peeks out behind the zoom column');
   await t.SH('1_map_' + tag);
+  const from = [];
+  for (const k of ['yard', 'house', 'park', 'river', 'woods', 'beach', 'market', 'square', 'cafe', 'dogpark', 'vet', 'salon', 'hilltop', 'pier']) {
+    await ev((k) => { window.__paw.S.place = k; window.__paw.go('map'); }, k); await p.waitForSelector('#mapZoom');
+    const h = await ev(() => { const ctl = ['#mapX', '#mapZoom'].map((s) => document.querySelector(s).getBoundingClientRect()); return [...document.querySelectorAll('#mapInner svg text')].filter((e) => e.textContent.trim().length > 1).filter((e) => { const r = e.getBoundingClientRect(); return ctl.some((c) => r.right > c.left && r.left < c.right && r.bottom > c.top && r.top < c.bottom); }).map((e) => e.textContent.trim()); });
+    if (h.length) from.push(k + ': ' + h.join('/'));
+  }
+  ok(from.length === 0, 'opened from any of the 14 places, the map shows no place name under the controls' + (from.length ? ' -> ' + from.join(' | ') : ''));
+  await ev(() => { window.__paw.S.place = 'yard'; window.__paw.go('map'); }); await p.waitForSelector('#mapZoom');
   // drag across the whole map: every place label is at some point fully on screen and clear of the controls (the right edge can be pulled out from under them)
   const seen = new Set(), all = await ev(() => [...new Set([...document.querySelectorAll('#mapInner svg text')].map((e) => e.textContent.trim()).filter((s) => s.length > 1 && !/Paw Haven Town/.test(s)))]);
   const look = async () => (await ev(() => { const v = document.querySelector('#view').getBoundingClientRect(), ctl = ['#mapX', '#mapZoom', '#devBtn', '#status'].map((s) => document.querySelector(s).getBoundingClientRect()); return [...document.querySelectorAll('#mapInner svg text')].filter((e) => { const r = e.getBoundingClientRect(); return r.left >= v.left && r.right <= v.right && r.top >= v.top && r.bottom <= v.bottom && !ctl.some((c) => r.right > c.left && r.left < c.right && r.bottom > c.top && r.top < c.bottom); }).map((e) => e.textContent.trim()); })).forEach((n) => seen.add(n));

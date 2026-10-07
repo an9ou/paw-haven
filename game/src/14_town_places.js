@@ -113,6 +113,15 @@ function mapApply() {
 }
 function mapCenter(k, anim) { const M = MAPV; if (!M) return; const c = M.centers[k]; if (!c) return; const s = M.base * M.z; M.tx = M.vw / 2 - c[0] * s; M.ty = M.vh / 2 - c[1] * s; const inner = $('#mapInner'); if (inner) inner.style.transition = anim ? 'transform .35s ease-out' : ''; mapApply(); if (anim) setTimeout(() => { if (inner) inner.style.transition = ''; }, 380); }
 function mapZoomAt(f, px, py) { const M = MAPV; if (!M) return; const z0 = M.z, z1 = clamp(z0 * f, 0.6, 1.6); if (z1 === z0) return; const s0 = M.base * z0, s1 = M.base * z1; const mx = (px - M.tx) / s0, my = (py - M.ty) / s0; M.z = z1; M.tx = px - mx * s1; M.ty = py - my * s1; mapApply(); }
+// v2.5 FIXES A: on phones the X and the zoom column float over the map, so on opening the map slides sideways by the smallest step that leaves no place name under them
+function mapClearCtl() {
+  const M = MAPV, ctl = ['#mapX', '#mapZoom'].map((s) => $(s)).filter(Boolean).map((e) => e.getBoundingClientRect()); if (!M || !ctl.length) return;
+  const labs = [...view.querySelectorAll('#mapInner svg text')].filter((e) => e.textContent.trim().length > 1);
+  const hits = () => labs.some((e) => { const r = e.getBoundingClientRect(); return ctl.some((c) => r.right > c.left && r.left < c.right && r.bottom > c.top && r.top < c.bottom); });
+  if (!hits()) return; const tx0 = M.tx;
+  for (let d = 8; d <= 200; d += 8) for (const sg of [1, -1]) { M.tx = tx0 + sg * d; mapApply(); if (Math.abs(M.tx - (tx0 + sg * d)) < 0.5 && !hits()) return; }
+  M.tx = tx0; mapApply();
+}
 function enterMap() {
   setChrome(true, false); hideBubble(); // a yard speech bubble must not linger over the pin
   const locked = lockedAreas(), A = mapArt(locked);
@@ -128,7 +137,7 @@ function enterMap() {
   mapApply();
   // area centres in map units (MAP_AREAS when the art gives them, else measured)
   const measure = () => { const s = MAPV.base * MAPV.z, ir = inner.getBoundingClientRect(); svg.querySelectorAll('[data-area]').forEach((g) => { const r = g.getBoundingClientRect(); MAPV.centers[g.getAttribute('data-area')] = [(r.left + r.width / 2 - ir.left) / s, (r.top + r.height / 2 - ir.top) / s]; }); (A.areas || []).forEach((a) => { MAPV.centers[a.id] = [a.x, a.y]; }); };
-  measure(); mapCenter(S.place === 'house' ? 'yard' : S.place, false);
+  measure(); mapCenter(S.place === 'house' ? 'yard' : S.place, false); if (isPhone()) mapClearCtl();
   const label = (k) => k === 'shelter' ? 'Visit the shelter' : PLACES[k] ? `Go to ${PLACES[k].n}${topBond() < PLACES[k].bond ? ' (locked, Bond ' + PLACES[k].bond + ')' : ''}` : k;
   hotify(svg, '[data-area]', 'data-area', (k) => (isPhone() ? mapPick(k) : pickArea(k)), label);
   // drag pan, pinch + wheel zoom (pointer events: mouse and touch alike)
