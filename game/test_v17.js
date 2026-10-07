@@ -18,26 +18,29 @@ require('./test_lib').run('v17', async (t) => {
   const heading = () => t.p.textContent('.adopt-card h3');
   const headIs = (txt) => t.until((txt) => document.querySelector('.adopt-card h3').textContent.includes(txt), txt, 4000);
 
-  sec('all 10 starters in the adoption carousel');
+  sec('all starters in the adoption carousel (10 since v1.7, 14 since v2.5)');
   const p = await t.boot(); await tap(); await p.click('#tNew'); await p.waitForSelector('.heads button');
-  ok(await p.locator('.heads button').count() === 10, '10 heads in the adoption carousel');
+  const NB = await ev(() => window.PawGenes.BREEDS.length);
+  ok(NB === 14 && await p.locator('.heads button').count() === NB, `${NB} heads in the adoption carousel`);
   for (const [k, br, nm] of ALL) {
     await p.click(`.heads button[aria-label="${nm} the ${br}"]`); await headIs(nm);
     const h3 = await heading(), lab = await p.getAttribute('#adoptDog svg.pa-dog', 'aria-label').catch(() => '');
     ok(h3.includes(nm) && h3.includes(br) && (lab || '').includes(br), `starter ${k}: ${nm} the ${br}, own art`);
   }
   await SH('01_adopt_greyhound_last'); await p.click('.heads button[aria-label="Rocket the Greyhound"]'); await headIs('Rocket'); await SH('01b_adopt_greyhound');
+  const lastLab = await p.getAttribute('.heads button:last-child', 'aria-label'), lastNm = lastLab.split(' the ')[0];
+  await p.click('.heads button:last-child'); await headIs(lastNm);
+  await p.keyboard.press('ArrowRight'); ok(await headIs('Mochi'), `arrow keys wrap around all ${NB} (${lastLab} -> Shiba)`);
+  await p.keyboard.press('ArrowLeft'); ok(await headIs(lastNm), `and back (Shiba -> ${lastLab})`);
   await p.click('.heads button[aria-label="Bagel the Beagle"]'); await headIs('Bagel');
-  await p.keyboard.press('ArrowRight'); ok(await headIs('Mochi'), 'arrow keys wrap around all 10 (Beagle -> Shiba)');
-  await p.keyboard.press('ArrowLeft'); ok(await headIs('Bagel'), 'and back (Shiba -> Beagle)');
   await p.click('#aBoy'); await p.click('#aAdopt'); await p.waitForSelector('#nOk'); await p.click('#nOk'); await t.intro(); await t.calm();
   let s = await S(); ok(s.dog.key === 'beagle' && s.dog.name === 'Bagel' && s.dog.coat === 'Tricolour', 'adopted Bagel the Beagle (coat: ' + s.dog.coat + ')');
   ok(s.dog.favToy === 'Puzzle Feeder' && s.dog.favFood.includes('Basic Kibble'), 'beagle favourites');
   await ev(() => { const S = window.__paw.S; S.bond.level = 10; S.bond.pts = 5000; S.coins = 9000; S.inv.houses.push('Royal Castle Kennel'); S.house = 'Royal Castle Kennel'; S.stats.energy = 90; S.stats.happy = 90; S.stats.hunger = 90; S.stats.clean = 90; });
 
-  sec('rescues drawn from all 10 breeds, with coats');
+  sec('rescues drawn from every breed, with coats');
   const res = await ev(() => { const out = []; const d0 = new Date(2026, 0, 1); for (let i = 0; i < 400; i++) { const d = new Date(d0); d.setDate(d.getDate() + i); const dk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; window.__paw.rescuesOn(dk).forEach((r) => { const c = window.__paw.coat({ id: r.id, key: r.key, genes: r.genes }); out.push({ key: r.key, coat: c && c.coatName, merle: !!(c && c.coat && c.coat.merle) }); }); } return out; });
-  const keys = new Set(res.map((r) => r.key)); ok(keys.size === 10, 'rescue pool over 400 days covers all 10 breeds: ' + [...keys].join(','));
+  const keys = new Set(res.map((r) => r.key)); ok(keys.size === NB, `rescue pool over 400 days covers all ${NB} breeds: ` + [...keys].join(','));
   for (const k of NEW) { const rs = res.filter((r) => r.key === k), coats = [...new Set(rs.map((r) => r.coat))]; ok(rs.length > 20 && rs.every((r) => r.coat) && coats.length >= 2, `${k} rescues have coats (${rs.length}): ${coats.join(', ')}`); }
   ok(!res.some((r) => ['pug', 'greyhound', 'beagle'].includes(r.key) && r.merle), 'no merle pugs, greyhounds or beagles');
 

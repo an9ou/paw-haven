@@ -76,12 +76,13 @@ require('./test_lib').run('v15', async (t) => {
   await ev(() => { const S = window.__paw.S; S.messes.river = []; S.dogs.forEach((d) => { d.potty.poopDue = S.gameMin - 1; }); });
   ok(await t.until(() => { const m = window.__paw.S.messes.river || []; return m.length === 2 && new Set(m.map((x) => x.dog)).size === 2; }, null, 40000), 'both dogs pooped: 2 messes (cap 2 with 2 dogs)'); await SH('09_two_messes');
 
-  sec('v1.7: 10 breeds at the shelter, adopt the new breeds as starters');
+  sec('v1.7: every breed at the shelter (14 since v2.5), adopt the new breeds as starters');
   await t.packPin(true); // pack dogs re-pick poses every tick from here on; pinned to one pose before the layout checks
   await ev(() => { const S = window.__paw.S; ['Royal Castle Kennel'].forEach((h) => { if (!S.inv.houses.includes(h)) S.inv.houses.push(h); }); S.house = 'Royal Castle Kennel'; S.coins = 9999; S.careDays = 60; S.dogs.forEach((d) => { d.bond = { level: 10, pts: 3200 }; }); }); // v2: spots 3 + 4 need Bond 10 dogs, 60 care days, the Castle
-  await t.home('yard'); ok(await t.toShelter(), 'shelter opens (10 breeds)');
+  await t.home('yard'); ok(await t.toShelter(), 'shelter opens');
   const stK = await ev(() => [...document.querySelectorAll('.shcard.starter [data-shadopt]')].map((b) => b.dataset.shadopt.split('|')[1]));
-  ok(stK.length === 9 && ['chihuahua', 'pug', 'greyhound', 'beagle'].every((k) => stK.includes(k)), 'shelter: 9 starter cards left (10 breeds, Mochi home): ' + stK.join(','));
+  const NB = await ev(() => window.PawGenes.BREEDS.length);
+  ok(NB === 14 && stK.length === NB - 1 && ['chihuahua', 'pug', 'greyhound', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie'].every((k) => stK.includes(k)), `shelter: ${NB - 1} starter cards left (${NB} breeds, Mochi home): ` + stK.join(','));
   const labs = await ev(() => [...document.querySelectorAll('.shcard.starter .shdog svg.pa-dog')].map((x) => x.getAttribute('aria-label')));
   ok(['Chihuahua', 'Pug', 'Greyhound', 'Beagle'].every((br) => labs.some((l) => l.includes(br))), 'new starter cards draw their own breed');
   await SH('11_shelter_10_breeds'); await t.leaveShelter();
