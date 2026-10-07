@@ -178,5 +178,18 @@ require('./test_lib').run('v25_breeds', async (t) => {
   ok(hh.ok && hh.pups.length === 3 && hh.pups.every((q) => q.mix && q.mix.name === 'Horgi' && ['corgi', 'husky'].includes(q.key)), 'Horgi x Horgi: every pup is a Horgi ' + JSON.stringify(hh.pups.map((q) => q.key + ' ' + (q.mix && q.mix.name))));
   ok(hh.pups.every((q) => q.mix.head !== q.key && ['corgi', 'husky'].includes(q.mix.head)), 'the pups show a corgi and a husky half');
   ok(hh.ok2 && hh.pups2.length === 2 && hh.pups2.every((q) => q.key === 'corgi' && q.mix && q.mix.name === 'Corgi'), 'Horgi x Corgi (3/4 Corgi): the pups are Corgis, not "Mutt mix" ' + JSON.stringify(hh.pups2.map((q) => q.key + ' ' + (q.mix && q.mix.name))));
+
+  sec('phones: all 14 heads in the adoption sheet are tappable (iPhone 13, Pixel 7)');
+  for (const dev of ['iPhone 13', 'Pixel 7']) {
+    await t.ctx.close();
+    const q = await t.boot({ device: dev }); await q.click('#tNew'); await q.waitForSelector('.heads button'); await t.sleep(500);
+    await ev(() => { const d = document.getElementById('dock'); d.scrollTop = d.scrollHeight; }); await t.sleep(400);
+    const hit = await ev(() => [...document.querySelectorAll('.heads button')].map((b) => { const r = b.getBoundingClientRect(), e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!e && b.contains(e) && r.width >= 44 && r.height >= 44; }));
+    ok(hit.length === 14 && hit.every(Boolean), `${dev}: 14 heads, each 44 px or more and tappable with the sheet scrolled down`);
+    ok(await ev(() => document.documentElement.scrollWidth <= innerWidth), `${dev}: no sideways scroll`);
+    await q.locator('.heads button').last().click();
+    ok(await t.until(() => /the French Bulldog/.test(document.querySelector('.adopt-card h3').textContent)), `${dev}: tapping the last head picks the French Bulldog`);
+    if (dev === 'iPhone 13') await t.SH('06_adopt_phone_scrolled');
+  }
   ok(t.errors.length === 0, 'no console errors');
 });
