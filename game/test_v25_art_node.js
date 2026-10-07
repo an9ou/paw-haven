@@ -30,6 +30,8 @@ const FOODS = ['Baked Pumpkin Wedges', 'Sweet Potato Coins', 'Warm Bone Broth', 
 const CLOTHES = ['Leaf Beret', 'Autumn Scarf', 'Ghost Sheet', 'Pumpkin Suit', 'Parade Rosette'];
 const ITEMS = [...FOODS, ...CLOTHES];
 const ICONS = ['festival', 'parade'];
+// v2.5: the v2.4 and v2.5 foods drawn in the dog bowl (prop bowl {food}, 120x120)
+const BOWLS = ['Carrot Sticks', 'Apple Slices', 'Blueberry Bites', 'Seedless Watermelon Cubes', 'Sweet Potato Chews', 'Pumpkin Purée', 'Turkey Meatballs', 'Frozen Pupsicle', ...FOODS];
 const PROPS = [
   ['leafpile', { state: 'full', seed: 0 }, '0 0 160 100'], ['leafpile', { state: 'scattered', seed: 0 }, '0 0 160 100'],
   ['leafpile', { state: 'full', seed: 5 }, '0 0 160 100'], ['leafpile', {}, '0 0 160 100'],
@@ -53,6 +55,10 @@ function checkNew(PA, tag) {
   ICONS.forEach((n) => good(PA.icon(n), '0 0 64 64', `icon("${n}")`));
   ['spring', 'summer', 'autumn', 'winter'].forEach((s) => good(PA.icon('season-' + s), '0 0 64 64', `icon("season-${s}")`));
   PROPS.forEach(([n, o, vb]) => good(PA.prop(n, o), vb, `prop("${n}", ${JSON.stringify(o)})`));
+  BOWLS.forEach((f) => good(PA.prop('bowl', { food: f }), '0 0 120 120', `prop("bowl", {food:"${f}"})`));
+  ok(BOWLS.every((f) => PA.WORLD_B.bowlFoods.includes(f)), `${tag}: WORLD_B.bowlFoods lists the 14 new bowl foods`);
+  const empty = PA.prop('bowl', {}).replace(/pwb[0-9a-z]+/g, 'ID');
+  ok(BOWLS.every((f) => PA.prop('bowl', { food: f }).replace(/pwb[0-9a-z]+/g, 'ID') !== empty && PA.prop('bowl', { food: f }).length > PA.prop('bowl', {}).length * 1.3), `${tag}: every new bowl food draws food in the bowl (not the empty bowl)`);
   const WB = PA.WORLD_B;
   ok(ITEMS.every((n) => WB.items.includes(n)), `${tag}: WORLD_B.items lists every new item`);
   ok(ICONS.every((n) => WB.icons.includes(n)), `${tag}: WORLD_B.icons lists the new icons`);
@@ -79,6 +85,8 @@ sec('deterministic, cached per name and option, options normalised');
   });
   ICONS.forEach((n) => ok(norm(PAa.icon(n)) === norm(PAb.icon(n)), `icon("${n}") is deterministic`));
   PROPS.forEach(([n, o]) => ok(norm(PAa.prop(n, o)) === norm(PAb.prop(n, o)) && norm(PAa.prop(n, o)) === norm(PAa.prop(n, o)), `prop("${n}", ${JSON.stringify(o)}) is deterministic`));
+  BOWLS.forEach((f) => ok(norm(PAa.prop('bowl', { food: f })) === norm(PAb.prop('bowl', { food: f })), `bowl "${f}" is deterministic`));
+  ok(new Set(BOWLS.map((f) => norm(PAa.prop('bowl', { food: f })))).size === BOWLS.length, 'the 14 new bowls are 14 different drawings');
   ok(new Set([...ITEMS, ...HOUSE_ICONS].map((n) => norm(PAa.item(n)))).size === ITEMS.length + HOUSE_ICONS.length, 'all new item drawings differ');
   const P = (n, o) => norm(PAa.prop(n, o));
   ok(P('leafpile', { state: 'full', seed: 0 }) !== P('leafpile', { state: 'scattered', seed: 0 }), 'full and scattered leaf piles differ');
