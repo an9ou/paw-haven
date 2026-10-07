@@ -3304,7 +3304,7 @@ const HCARD={
 };
 HOUSES24.forEach(name=>{ITEMS[name]=function(b){
   const card=rot(RR(4,6,56,54,4),-.05,32,33);
-  b.sh(card,'#FFFBF3',{k:0,hl:0,hatch:0,base:'#FFFBF3',lw:.95});
+  b.sh(card,'#FFFBF3',{k:0,hl:0,hatch:0,base:'#FFFBF3',lw:.72});
   b.D.push(`<clipPath id="${IDT}hc"><path d="${cr(rot(RR(6,8,52,50,3),-.05,32,33),true,0).d}"/></clipPath>`);
   b.raw(`<g clip-path="url(#${IDT}hc)"><rect x="0" y="0" width="64" height="64" fill="${name==='Rocket Ship'?'#E8F1FA':'#F4F9EC'}" opacity=".7"/><path d="M6 ${name==='Camper Van'?55:54.6}H58" stroke="${GRAPH}" stroke-width="1.6" stroke-linecap="round" opacity=".55"/></g>`);
   HCARD[name](b);
@@ -3533,13 +3533,13 @@ function basketV(b,cx,y,w,h,fill){
 function steam(b,x,y,s,col){b.ln([[x,y],[x-2*s,y-4*s],[x+1*s,y-8*s],[x-1.4*s,y-12*s]],{w:1.2,col:col||GRAPH});}
 
 PROPS.leafpile=function(b,o){
-  const sc=o.state==='scattered',r=b.r,G=94;
+  const sc=o.state==='scattered',r=b.r,G=94,sd=o.seed|0,lean=((sd*7)%5-2)*3;
   b.shadow(80,G,sc?76:70,sc?5:6);
   b.guide([[4,G+.5],[80,G-.4],[156,G+.6]],false);
   // rake marks in the grass either side
   b.raw(b.st('M4 90q8 -3 16 -1M8 95q9 -3 18 -1M136 89q9 -3 17 0M132 95q10 -3 22 -1',GRAPH,1.1,.6),'under');
-  const top=sc?60:28,x0=sc?6:12,x1=sc?154:148,hw=y=>Math.max(0,(x1-x0)/2*Math.pow(Math.max(0,(y-top)/(G-top)),.45));
-  const mound=[];for(let i=0;i<=20;i++){const t=i/20,x=x0+(x1-x0)*t,u=2*t-1,y=G-(G-top)*Math.pow(Math.max(0,1-u*u),sc?.9:.62)+(i%2?3.4:-1.2)*(1-u*u)+(r()-.5)*2.4;mound.push([x,y])}
+  const top=(sc?60:26)+(sd%4)*3,x0=(sc?6:12)+(sd%3)*4,x1=(sc?154:148)-((sd>>1)%3)*4,hw=y=>Math.max(0,(x1-x0)/2*Math.pow(Math.max(0,(y-top)/(G-top)),.45));
+  const mound=[];for(let i=0;i<=20;i++){const t=i/20,x=x0+(x1-x0)*t,u=2*t-1-lean*.012*(1-Math.abs(2*t-1)),y=G-(G-top)*Math.pow(Math.max(0,1-u*u),sc?.9:.62)+(i%2?3.4:-1.2)*(1-u*u)+(r()-.5)*2.4;mound.push([x,y])}
   b.sh([...mound,[x1-2,G+1],[80,G+2],[x0+2,G+1]],'#F29150',{k:.12,hl:0,sh:'#C96E2A',ho:.45,base:'#F7B27A',lw:.75,
    inner:b.st([0,1,2,3,4,5].map(i=>{const x=x0+14+i*(x1-x0-28)/5;return b.jl(x,G-4,x+6,G-14,.6)}).join(''),'#C96E2A',1,.4)});
   // leaves along the top edge, so the outline is leafy, then the rows, back first
@@ -3565,7 +3565,7 @@ PROPS.leafpile=function(b,o){
 };
 
 PROPS.jackolantern=function(b,o){
-  if(o.lit)b.raw(`<g class="pa-wb-glow"><circle cx="40" cy="44" r="38" fill="#FFE59A" opacity=".14"/><circle cx="40" cy="44" r="30" fill="#FFE59A" opacity=".18"/><circle cx="40" cy="46" r="23" fill="#FFF3C2" opacity=".3"/><ellipse cx="40" cy="76" rx="34" ry="4" fill="#FFE59A" opacity=".35"/></g>`,'under');
+  if(o.lit)b.raw(`<g class="pa-wb-glow"><circle cx="40" cy="44" r="38" fill="#FFE59A" opacity=".24"/><circle cx="40" cy="44" r="30" fill="#FFE07A" opacity=".28"/><circle cx="40" cy="46" r="23" fill="#FFF3C2" opacity=".45"/><ellipse cx="40" cy="76" rx="34" ry="4" fill="#FFE59A" opacity=".35"/></g>`,'under');
   b.shadow(40,76,26,3.4);
   jackV(b,40,51,1.24,!!o.lit);
   if(o.lit){b.ex('spark',70,14,3.6,'#FFE59A');b.ex('spark',10,22,2.8,'#FFF3C2')}else b.ex('dots',8,14,4);
@@ -3573,9 +3573,9 @@ PROPS.jackolantern=function(b,o){
 
 PROPS.leafdrift=function(b){
   const r=b.r;
-  b.raw(`<ellipse cx="60" cy="34" rx="56" ry="4" fill="${SHADOW}" opacity=".6"/>`,'under');
+  b.raw(`<ellipse cx="60" cy="33" rx="58" ry="6" fill="${SHADOW}" opacity=".85"/>`,'under');
   [[12,24,0],[30,27,1],[47,20,0],[62,28,0],[78,22,1],[94,27,0],[109,22,0],[40,32,1],[86,33,0]].forEach(([x,y,k],i)=>
-    leafA(b,x,y,(k?7:9.4)+r()*2,(r()-.5)*3.4,AUT[(i*5)%AUT.length],k,{sq:.72+r()*.16}));
+    leafA(b,x,y,(k?8.6:11.6)+r()*2,(r()-.5)*3.4,AUT[(i*5)%AUT.length],k,{sq:.72+r()*.16}));
   b.ex('spark',58,8,3,'#FFE07A');
 };
 
@@ -3622,9 +3622,9 @@ PROPS.stall=function(b,o){
   b.sh(heartP(120,80,7),C.pinkD,{hatch:0,hl:0,lw:.5});
   // the striped awning with a scalloped edge
   const stripes=[];for(let i=0;i<14;i++)if(i%2===0)stripes.push({pts:[[10+i*16.4,16],[26.4+i*16.4,16],[30+i*17.4,70],[12+i*17.4,70]],fill:'#FFF2DA',k:0});
-  b.sh([[18,24],[222,24],[234,58],[6,58]],'#F29150',{k:.02,hl:0,sh:'#C96E2A',ho:.35,marks:stripes});
+  b.sh([[18,24],[222,24],[234,58],[6,58]],C.orange,{k:.02,hl:0,sh:'#C96E2A',ho:.35,marks:stripes});
   const sc=[];for(let i=0;i<=12;i++){const x=234-i*19;sc.push([x,58]);if(i<12)sc.push([x-9.5,70])}
-  b.sh([[6,56],[234,56],...sc],'#F29150',{k:.18,hatch:0,hl:0,lw:1,marks:Array.from({length:6},(_,i)=>({pts:[[6+i*38,50],[25+i*38,50],[25+i*38,74],[6+i*38,74]],fill:'#FFF2DA',k:0}))});
+  b.sh([[6,56],[234,56],...sc],C.orange,{k:.18,hatch:0,hl:0,lw:1,marks:Array.from({length:6},(_,i)=>({pts:[[6+i*38,50],[25+i*38,50],[25+i*38,74],[6+i*38,74]],fill:'#FFF2DA',k:0}))});
   // the sign on top
   b.ln([[78,24],[82,10]],{w:1.1,col:'#8E6446'});b.ln([[162,24],[158,10]],{w:1.1,col:'#8E6446'});
   b.sh(rot(RR(64,0,112,22,5),-.015,120,11),C.wood,{hatch:0,hl:0,lw:1.1,base:'#F3DDB4',sh:WKD});
@@ -3651,15 +3651,15 @@ PROPS.stall=function(b,o){
   }else{
     basketV(b,190,114,50,20,()=>{pumpkinV(b,180,106,.38,{noleaf:1});pumpkinV(b,200,107,.34,{noleaf:1})});
   }
-  b.tx(120,194,"Baker Bea's",18,{mid:1,col:'#B8536F'});
-  paw(b,64,188,3.2,'#E2C9A2',{noline:1});paw(b,176,188,3.2,'#E2C9A2',{noline:1});
+  b.tx(hw?146:120,194,"Baker Bea's",18,{mid:1,col:'#B8536F'});
+  if(!hw)paw(b,64,188,3.2,'#E2C9A2',{noline:1});paw(b,176,188,3.2,'#E2C9A2',{noline:1});
   // at the foot of the stall
   if(hw){
     // the chalk sign (A-frame)
     b.ln([[14,G],[22,150]],{w:4,col:C.woodD});b.ln([[66,G],[58,150]],{w:4,col:C.woodD});
     b.sh(rot([[12,156],[68,156],[66,204],[14,204]],-.03,40,180),'#556B5E',{k:.02,hatch:0,hl:0,lw:1.2,base:'#4A5E52',
      inner:b.st('M18 196q10 -2 20 0M44 168q8 -2 16 0','#fff',1.2,.25)});
-    b.tx(40,174,'Dog-safe',13,{rot:-2,col:'#FFFBF3'});b.tx(40,190,'treats',13,{rot:-2,col:'#FFFBF3'});
+    b.tx(40,175,'Dog-safe',15,{rot:-2,col:'#FFFBF3'});b.tx(40,191,'treats',15,{rot:-2,col:'#FFFBF3'});
     b.raw(b.st('M24 197q8 -2 14 0',C.orange,1.6,.9),'top');b.sh(boneP(52,197,12,4.6,-.08),'#FFFBF3',{hatch:0,hl:0,lw:.6,dr:.1,top:1});
     pumpkinV(b,222,206,.34,{noleaf:1});
     b.ex('spark',230,90,4,'#FFE59A');b.ex('dots',8,96,5);
@@ -3780,8 +3780,9 @@ Object.assign(ITEMS,{
   [[-13,13],[13,13]].forEach(([dx,rx])=>b.sh(E(32+dx,36,rx,19,16),P2,{hl:0,sh:'#C96E2A',ho:.4}));
   b.sh(E(32,36,13,21,18),PUMP,{sh:'#C96E2A',ho:.35,hlo:.45,inner:b.st(b.jl(25,18,24,54,.3)+b.jl(39,18,40,54,.3),'#C96E2A',.9,.5)});
   // leg holes and arm holes
-  [[22,55],[42,55]].forEach(([x,y])=>b.sh(E(x,y,5.6,2.6,12),'#C96E2A',{hatch:0,hl:0,lw:.7,base:'#B5602A'}));
-  [[8,32],[56,32]].forEach(([x,y])=>b.sh(E(x,y,2.6,4.4,10),'#C96E2A',{hatch:0,hl:0,lw:.7,base:'#B5602A'}));
+  [[22,53],[42,53]].forEach(([x,y])=>b.sh(E(x,y,6.4,3.4,12),'#8E5A44',{hatch:0,hl:0,lw:.8,base:'#7A4A33'}));
+  [[7,33],[57,33]].forEach(([x,y])=>b.sh(E(x,y,3,5.4,10),'#8E5A44',{hatch:0,hl:0,lw:.8,base:'#7A4A33'}));
+  b.sh(E(32,18,8,3,14),'#7A4A33',{hatch:0,hl:0,lw:.8,base:'#5E3A28'});
   // the leaf collar around the neck
   [[-2.5,LEAF],[-1.9,LEAFD],[-1.25,LEAF],[-.64,LEAFD]].forEach(([a,c])=>{const x=32+Math.cos(a)*8,y=18+Math.sin(a)*3;b.sh(leafP(x,y,11,6.4,a+(a<-1.57?-.2:.2)),c,{hatch:0,hl:0,lw:.7,dr:.2,det:[[[x,y],[x+Math.cos(a)*8,y+Math.sin(a)*8]]],dw:.55})});
   b.sh(E(32,18,8,3,14),'#8E8A4A',{hatch:0,hl:0,lw:.8,base:'#6E6A3A'});

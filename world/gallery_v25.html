@@ -39,11 +39,11 @@ add('stall',fig(crop(PA.scene('market',ENV),'0 120 500 330'),'Market Street',500
 function inScene(id,scene,env,items,w){const h=w*.6;let on='';items.forEach(([svg,x,y,sw])=>{on+='<div class="on" style="left:'+(x/1000*w)+'px;top:'+(y/600*h)+'px;width:'+(sw/1000*w)+'px">'+svg+'</div>'});
   add(id,'<div class="scene" style="width:'+w+'px;height:'+h+'px"><div class="bg" style="width:100%;height:100%">'+PA.scene(scene,env)+'</div>'+on+'</div>')}
 const SW=W?360:620;
-inScene('stallscene','square',ENV,[[PA.prop('stall',{kind:'leaf'}),700,206,230]],SW);
-inScene('stallscene','square',{time:'dusk',weather:'sunny'},[[PA.prop('stall',{kind:'halloween'}),700,206,230],[PA.prop('paradebanner'),180,96,420]],SW);
+inScene('stallscene','square',ENV,[[PA.prop('stall',{kind:'leaf'}),380,318,200]],SW);
+inScene('stallscene','square',{time:'dusk',weather:'sunny'},[[PA.prop('stall',{kind:'halloween'}),380,318,200],[PA.prop('paradebanner'),30,226,320]],SW);
 add('pile',fig(PA.prop('leafpile',{state:'full',seed:0}),'leafpile full',160*k)+fig(PA.prop('leafpile',{state:'scattered',seed:0}),'scattered',160*k)+fig(crop(PA.scene('park',ENV),'655 400 170 120'),'park bench',170*k,1));
 add('pile',fig(PA.prop('leafpile',{state:'full',seed:1}),'full, seed 1',160*k)+fig(PA.prop('leafpile',{state:'full',seed:2}),'full, seed 2',160*k)+fig(PA.prop('leafpile',{state:'scattered',seed:2}),'scattered, seed 2',160*k));
-inScene('pilescene','yard',ENV,[[PA.prop('leafpile',{seed:0}),120,440,170],[PA.prop('leafpile',{state:'scattered',seed:1}),380,470,170],[PA.prop('jackolantern',{lit:false}),880,470,70],[PA.prop('leafdrift'),560,540,120]],SW);
+inScene('pilescene','yard',ENV,[[PA.prop('leafpile',{seed:0}),220,400,150],[PA.prop('leafpile',{state:'scattered',seed:1}),380,470,170],[PA.prop('jackolantern',{lit:false}),880,470,70],[PA.prop('leafdrift'),560,540,120]],SW);
 add('deco',fig(PA.prop('paradebanner'),'paradebanner',400*k));
 add('deco',fig(PA.prop('jackolantern',{lit:false}),'jackolantern',80)+fig(PA.prop('jackolantern',{lit:true}),'lit',80)+'<div class="night">'+fig(PA.prop('jackolantern',{lit:true}),'lit at night',80)+'</div>'+fig(PA.item('Pumpkin'),'Pumpkin',64,1));
 add('deco',fig(PA.prop('leafdrift'),'leafdrift',120)+fig(PA.collectible('leaf'),'leaf collectible',60,1));
