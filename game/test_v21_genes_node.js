@@ -145,7 +145,7 @@ const sortObj = (o) => { const r = {}; Object.keys(o).sort().forEach((k) => { r[
   } catch (e) { v2 = null; }
   G.BREEDS.forEach((k) => {
     const base = G.coatCatalog(k), all = G.coatCatalog(k, { all: true });
-    if (v2) ok(JSON.stringify(base) === JSON.stringify(v2.coatCatalog(k)), `coatCatalog(${k}): default call identical to v2.0`);
+    if (v2 && v2.BREEDS.includes(k)) ok(JSON.stringify(base) === JSON.stringify(v2.coatCatalog(k)), `coatCatalog(${k}): default call identical to v2.0`); // v2.5: the four new breeds have no v2.0 catalogue
     ok(JSON.stringify(G.coatCatalog(k, {})) === JSON.stringify(base) && base.every((e) => !('extra' in e)), `coatCatalog(${k}): no-option and {} calls carry no extra flags`);
     ok(JSON.stringify(all.slice(0, base.length)) === JSON.stringify(base), `coatCatalog(${k}, all): starts with the default catalog (superset)`);
     const extra = all.slice(base.length);
