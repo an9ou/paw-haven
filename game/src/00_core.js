@@ -234,10 +234,10 @@ const FALLBACK_DOGS = [
   { key: 'pug', name: 'Dumpling', breed: 'Pug', personality: 'Snorty, cuddly, lazy, food-loving', joke: 'snort.' },
   { key: 'greyhound', name: 'Rocket', breed: 'Greyhound', personality: 'Gentle couch potato who sprints in bursts', joke: '45 mph. Then a 20-hour nap.' },
   { key: 'beagle', name: 'Bagel', breed: 'Beagle', personality: 'Nose-led, food-obsessed, bays loudly', joke: 'Smelled that from three streets away.' },
-  { key: 'poodle', name: 'Pretzel', breed: 'Poodle', personality: 'Thinks it is the smartest one in the room. It is.', joke: 'Haircut optional. Dignity not.' },
+  { key: 'poodle', name: 'Truffle', breed: 'Poodle', personality: 'Thinks it is the smartest one in the room. It is.', joke: 'Haircut optional. Dignity not.' },
   { key: 'collie', name: 'Scout', breed: 'Border Collie', personality: 'Has counted the sheep. There are no sheep. Has counted you.', joke: 'Will herd the puppies, the ducks and the furniture.' },
   { key: 'samoyed', name: 'Cloud', breed: 'Samoyed', personality: 'Smiles so the snow does not stick. Also just smiles.', joke: 'Sheds a second dog every spring.' },
-  { key: 'frenchie', name: 'Brioche', breed: 'French Bulldog', personality: 'Snores, snorts, sits on your foot. All three at once.', joke: 'Breathes like a tiny engine. Shade and water, please.' }
+  { key: 'frenchie', name: 'Croissant', breed: 'French Bulldog', personality: 'Snores, snorts, sits on your foot. All three at once.', joke: 'Breathes like a tiny engine. Shade and water, please.' }
 ];
 const GENERIC_DOG = (key) => ({ key, name: 'Buddy', breed: 'Mystery Pup', personality: 'A little bit of everything', joke: 'Hi! I am a dog. Probably.' });
 const JOKES = {
