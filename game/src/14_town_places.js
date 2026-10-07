@@ -33,8 +33,9 @@ function cafeMenu() {
     const it = items.find((x) => x.n === b.dataset.cafe); if (D().cafeDay === todayKey()) { nope(`One café treat per dog per day. ${NAME()} is pretending not to know that.`); return; }
     if (S.coins < it.price) { nope('Not enough coins. The barista is sympathetic but firm.'); return; }
     S.coins -= it.price; D().cafeDay = todayKey(); SFX.kaching(); closeModal(); markDirty();
-    busy = true; renderDog('eat', 'right', true); SFX.slurp();
-    setTimeout(() => { addStat('happy', it.happy); addStat('hunger', it.hunger); busy = false; setTemp('happy', 1400); updateHUD(); toast(`${NAME()} enjoyed a ${it.n}. ${it.n === 'Pupuccino' ? `${PR().He} has a foam moustache now.` : `${PR().He} ate it in one bite. Of course.`} +${it.happy} Happiness.`, 'good'); }, 1300);
+    // v2.5: the treat is served in the bowl (shown only while the dog eats), like every other food
+    busy = true; hideBubble(); setBowl(it.n); dogTo(-125, 0, 1, 0.8); renderDog('walk', 'left'); setTimeout(() => { renderDog('eat', 'left', true); SFX.slurp(); }, 850);
+    setTimeout(() => { setBowl(null); dogTo(0, 0, 1, 0.8); addStat('happy', it.happy); addStat('hunger', it.hunger); setTimeout(() => { busy = false; renderDog(dogPoseNow()); }, 900); setTemp('happy', 1400); updateHUD(); toast(`${NAME()} enjoyed a ${it.n}. ${it.n === 'Pupuccino' ? `${PR().He} has a foam moustache now.` : `${PR().He} ate it in one bite. Of course.`} +${it.happy} Happiness.`, 'good'); }, 2300);
   }; });
 }
 function vetCheck(id) {

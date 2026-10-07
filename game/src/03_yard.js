@@ -31,19 +31,65 @@ function renderDog(pose, facing = 'right', force) {
   g.innerHTML = place(dogSVG(D(), { pose, outfit: o, facing }), DX, DY, DW, DH);
   const fx = $('#dogFx'); if (fx) { fx.classList.toggle('tk-shake', pose === 'shake'); fx.classList.toggle('tk-shiver', pose === 'cold'); }
   const bf = $('#bedFront'); if (bf) bf.style.display = pose === 'sleep' ? '' : 'none';
+  fbNapFit(pose); fbPackNapFit();
+}
+// v2.5: the nap on a house bed. The nap spot (dogTo 417.5, 130, 0.75) is shared by the nap, the curl-up and the idle nap, but the sleeping
+// art differs per breed, age and outfit, and each bed has its own front lip (drawn over the dog). So the sleeping art is measured and
+// fitted inside the dog group: centred on the bed, its bottom just behind the front lip, so the whole curled-up dog shows on the bed.
+const FB_NAP_SPOT = /translate\(417\.5px,\s*130px\)\s*scale\(0\.75\)/;
+function fbNapFit(pose) {
+  const g = $('#dogArt'), hit = $('#dogHit'); if (!g) return;
+  g.removeAttribute('transform'); if (hit) hit.removeAttribute('transform');
+  const p = $('#dogPos'), bed = $('#bedG'), svg = $('svg.world', view);
+  if (pose !== 'sleep' || S.place !== 'house' || !bed || !svg || !p || !FB_NAP_SPOT.test(p.style.transform)) return;
+  const front = $('#bedFront .pa-bed-front'), fr = front && front.getBoundingClientRect(), br = bed.getBoundingClientRect(), r = g.getBoundingClientRect();
+  if (!r.width || !br.width || !g.getScreenCTM()) return;
+  const loc = (x, y) => { const pt = svg.createSVGPoint(); pt.x = x; pt.y = y; return pt.matrixTransform(g.getScreenCTM().inverse()); };
+  const d0 = loc(r.left, r.top), d1 = loc(r.right, r.bottom), b0 = loc(br.left, br.top), b1 = loc(br.right, br.bottom);
+  const lip = fr && fr.width ? loc(fr.left, fr.top).y : b0.y + (b1.y - b0.y) * 0.62, lipW = fr && fr.width ? loc(fr.right, fr.top).x - loc(fr.left, fr.top).x : b1.x - b0.x;
+  const [bx, , bw] = BED_BOX, cx = (d0.x + d1.x) / 2, by = d1.y, k = Math.min(1, (lipW * 0.78) / (d1.x - d0.x)), h = (d1.y - d0.y) * k;
+  const tx = ((bx + bw / 2) - 417.5) / 0.75, ty = lip + h * 0.14; // the lip hides only the bottom 14% (the dog sinks into the cushion a little)
+  const t = `translate(${f1(tx)} ${f1(ty)}) scale(${k.toFixed(3)}) translate(${f1(-cx)} ${f1(-by)})`;
+  g.setAttribute('transform', t); if (hit) hit.setAttribute('transform', t);
+}
+// v2.5: pack dogs napping on the bed (NAP_ZONE) while the bed's front lip shows are lifted the same way: their bottom just behind the lip
+function fbPackNapFit() {
+  const svg = $('svg.world', view), front = $('#bedFront'), lipEl = $('#bedFront .pa-bed-front'); if (!svg) return;
+  const on = S.place === 'house' && !!lipEl && !!front && front.style.display !== 'none', lipR = on && lipEl.getBoundingClientRect();
+  svg.querySelectorAll('#pack .packdog').forEach((g) => {
+    g.removeAttribute('transform'); const d = dogById(g.dataset.dog); if (!on || !d || !d.sleeping || !lipR.width || !g.getScreenCTM()) return;
+    const r = g.getBoundingClientRect(), inv = g.getScreenCTM().inverse(), w = (x, y) => { const pt = svg.createSVGPoint(); pt.x = x; pt.y = y; return pt.matrixTransform(inv); };
+    const top = w(r.left, r.top).y, bot = w(r.left, r.bottom).y, lip = w(lipR.left, lipR.top).y; if (!r.height) return;
+    g.setAttribute('transform', `translate(0 ${f1(lip + (bot - top) * 0.14 - bot)})`);
+  });
 }
 function setTemp(pose, ms) { tempPose = pose; tempUntil = performance.now() + ms; renderDog(pose); }
 function dogTo(tx, ty = 0, scale = 1, secs = 0.9) {
-  const p = $('#dogPos'); if (!p) return; phCamHome = phHomeCx + (scale === 1 ? tx : (430 * scale + tx) - phHomeCx); if (phPeekOn) { phPeekOn = false; clearTimeout(phPanT); } camTo(phCamHome, secs); p.style.transitionDuration = secs + 's';
+  const p = $('#dogPos'); if (!p) return; phCamHome = phHomeCx + (scale === 1 ? tx : (430 * scale + tx) - phHomeCx); if (phPeekOn && typeof IDLE === 'object' && IDLE.act) { /* the player is looking around: an idle wander does not pull the view back */ } else { if (phPeekOn) { phPeekOn = false; clearTimeout(phPanT); } camTo(phCamHome, secs); } p.style.transitionDuration = secs + 's';
   p.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+}
+// v2.5: the art module draws some foods in the bowl itself (WORLD_B.bowlFoods). Every other food (the v2.4 and v2.5 foods) used to
+// show an empty bowl, so it is composed here: the empty bowl, the food's own item art, then the bowl's front wall again on top, so
+// the food sits inside the bowl. The bowl is bowl(60, 62, rx 45, ry 12) in its 120 x 120 box. The front wall is everything below the
+// near half of the rim.
+let fbBowlN = 0;
+function fbBowlKnows(food) {
+  const W = PA().WORLD_B, list = W && Array.isArray(W.bowlFoods) ? W.bowlFoods : null; if (list) return list.includes(food);
+  const real = artReal('prop', 'bowl', { food }), none = artReal('prop', 'bowl', { food: '-' }); return !!real && real.length > none.length * 1.3;
 }
 function bowlArt(food) {
   if (!food) return artReal('prop', 'bowl', {}) || art('prop', 'bowl-empty');
-  const real = artReal('prop', 'bowl', { food }); if (real) return real;
+  const real = fbBowlKnows(food) && artReal('prop', 'bowl', { food }); if (real) return real;
   if (food === 'Fresh Water') return artReal('prop', 'water-bowl') || art('prop', 'bowl-empty');
-  return `<svg viewBox="0 0 120 120">${place(art('prop', 'bowl-empty'), 0, 0, 120, 120)}${place(art('item', food), 32, 22, 56, 56)}</svg>`;
+  const bowl = artReal('prop', 'bowl', {}) || art('prop', 'bowl-empty'), id = 'fbBowlFront' + (++fbBowlN);
+  return `<svg viewBox="0 0 120 120"><defs><clipPath id="${id}"><path d="M14 62 A46 12.5 0 0 0 106 62 L108 122 L12 122 Z"/></clipPath></defs>${place(bowl, 0, 0, 120, 120)}${place(art('item', food), 25, 12, 70, 70)}<g clip-path="url(#${id})">${place(bowl, 0, 0, 120, 120)}</g></svg>`;
 }
-function setBowl(food) { const b = $('#bowlG'); if (b) { b.innerHTML = (isPhone() ? '<rect x="195" y="452" width="110" height="110" fill="transparent"/>' : '') + place(bowlArt(food), 205, 462, 90, 90); b.setAttribute('aria-label', food ? 'Food bowl with ' + food : 'Empty food bowl'); } }
+// v2.5: the bowl shows only while feeding: from the Feed tray opening until the eating ends (also while the dog drinks).
+// Hidden with visibility, so its box (kept clear by the props, piles and pack dogs) stays where it was.
+let fbBowlFood = null;
+function setBowl(food) { fbBowlFood = food || null; const b = $('#bowlG'); if (b) { b.innerHTML = (isPhone() ? '<rect x="195" y="452" width="110" height="110" fill="transparent"/>' : '') + place(bowlArt(food), 205, 462, 90, 90); b.setAttribute('aria-label', food ? 'Food bowl with ' + food : 'Empty food bowl'); } fbBowlSync(); }
+function fbFeedTrayOpen() { return cur.mode === 'yard' && !!dock.querySelector(':scope > .tray [data-food]'); }
+function fbBowlSync() { const b = $('#bowlG'); if (b) b.style.visibility = fbBowlFood || fbFeedTrayOpen() ? '' : 'hidden'; }
 function fxText(txt, x, y, color = '#F28FA5', size = 38) {
   const fx = $('#fx'); if (!fx) return;
   const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -53,14 +99,14 @@ function fxText(txt, x, y, color = '#F28FA5', size = 38) {
 function enterYard() {
   setChrome(true, true);
   view.innerHTML = yardWorldSVG(); dogKey = ''; busy = false;
-  renderDog(dogPoseNow()); setBowl(S.bowl || null);
+  renderDog(dogPoseNow()); setBowl(fbBowlFood); // v2.5: S.bowl is saved, so after a reload mid-meal it could keep a full bowl on show: the live state wins
   phHomeCx = 358; phCamHome = isPhone() ? phHomeCx : 430; view.style.background = ''; clearTimeout(phPanT); cancelAnimationFrame(camRaf); phPeekOn = false; view.style.removeProperty('--vfit'); view.style.removeProperty('--trayH'); phZoom = 1;
   camCx = phCamHome; camApply(camCx); if (isPhone()) phHomeRefit();
-  if (S.sleeping) { dogTo(417.5, S.place === 'house' ? 130 : 140, 0.75, 0); showZzz(true); }
+  if (S.sleeping) { dogTo(417.5, S.place === 'house' ? 130 : 140, 0.75, 0); fbNapFit(dogPoseNow()); showZzz(true); }
   updateHUD(); bindDev(); bindMess(); bindPack(); greetWalker(); drawFluff(); setTimeout(() => yardReaction(false), 700);
   const bedG = $('#bedG'); if (bedG) { bedG.onclick = () => { popAct = 'care'; openCareTray(); }; bedG.onkeydown = (e) => { if (e.key === 'Enter') { popAct = 'care'; openCareTray(); } }; }
   const svg = $('svg.world', view), hit = $('#dogHit');
-  if (isPhone()) { phCamPan(svg); phPeek(); }
+  phCamPan(svg); if (isPhone()) phPeek();
   // petting: rub (mouse hover-rub or touch drag) or tap
   let last = null, down = false, moved = 0;
   const tickFrom = (e) => { const w = toWorld(svg, e.clientX, e.clientY); petTick(w.x, w.y); };
@@ -127,24 +173,36 @@ function phTrayFit() {
   if (h) view.style.setProperty('--trayH', h + 'px'); else view.style.removeProperty('--trayH');
   phHomeRefit();
 }
-{ let raf = 0; new MutationObserver(() => { cancelAnimationFrame(raf); raf = requestAnimationFrame(phTrayFit); }).observe(dock, { childList: true, subtree: true }); }
+// v2.5: at most one fit per frame. It used to cancel and ask again on every dock change, so a dock that changes every frame (the fetch timer) starved it.
+{ let raf = 0; new MutationObserver(() => { fbBowlSync(); if (!raf) raf = requestAnimationFrame(() => { raf = 0; phTrayFit(); }); }).observe(dock, { childList: true, subtree: true }); }
+// v2.5: drag to look around, with a finger or a mouse, in the yard, the house and every town place. A press that moves more than
+// FB_DRAG px is a drag: it pans the camera (phones; the desktop scene already shows its whole width) and never also taps the prop,
+// decoration, pack dog or mess it started on. A drag that starts on the dog still rubs (pets) the dog. The view eases back to the
+// dog 4 s after the drag (the look-right button holds it instead).
+const FB_DRAG = 10;
 function phCamPan(svg) {
-  let x0 = null, c0 = 0, id = null, on = false, swallowUntil = 0;
-  svg.addEventListener('click', (ev) => { if (performance.now() < swallowUntil) { ev.stopPropagation(); ev.preventDefault(); } }, true);
-  const mine = (e) => e.pointerType !== 'mouse' && !e.target.closest('#dogHit');
-  svg.addEventListener('pointerdown', (e) => { if (!mine(e)) return; x0 = e.clientX; c0 = camCx; id = e.pointerId; on = false; });
+  let x0 = null, y0 = 0, c0 = 0, id = null, on = false, swallow = false, swT = 0;
+  svg.addEventListener('click', (ev) => { if (swallow) { swallow = false; ev.stopPropagation(); ev.preventDefault(); } }, true);
+  svg.addEventListener('pointerdown', (e) => {
+    swallow = false; if (x0 != null || (e.pointerType === 'mouse' && e.button !== 0) || e.target.closest('#dogHit')) return;
+    x0 = e.clientX; y0 = e.clientY; c0 = camCx; id = e.pointerId; on = false;
+  });
   svg.addEventListener('pointermove', (e) => {
     if (x0 == null || e.pointerId !== id) return; const dx = e.clientX - x0;
-    if (!on) { if (Math.abs(dx) < 12) return; on = true; clearTimeout(phPanT); cancelAnimationFrame(camRaf); try { svg.setPointerCapture(id); } catch (er) { /* none */ } }
+    if (!on) { if (Math.hypot(dx, e.clientY - y0) < FB_DRAG) return; on = true; clearTimeout(phPanT); cancelAnimationFrame(camRaf); try { svg.setPointerCapture(id); } catch (er) { /* none */ } }
+    if (!isPhone()) return;
     const { w: vw, h: vh } = phSvgDims(); if (!vw || !vh) return;
-    const vbW = 600 * vw / vh / phZoom; camCx = clamp(c0 - dx * vbW / vw, vbW / 2, 1000 - vbW / 2); camApply(camCx);
+    const vbW = 600 * vw / vh / phZoom; if (vbW >= 1000) return;
+    const cx = clamp(c0 - dx * vbW / vw, vbW / 2, 1000 - vbW / 2); if (Math.abs(cx - camCx) < 0.5) return;
+    if (!phPeekOn && Math.abs(camCx - phCamHome) < 1) hideBubble(); phPeekOn = false; camCx = cx; camApply(camCx);
   });
   const end = (e) => {
-    if (x0 == null || e.pointerId !== id) return; x0 = null;
-    if (on) { on = false; swallowUntil = performance.now() + 80; clearTimeout(phPanT); phPanT = setTimeout(() => { if (cur.mode === 'yard' || cur.mode === 'market') camTo(phCamHome, 0.8); }, 4000); }
+    if (x0 == null || e.pointerId !== id) return; x0 = null; if (!on) return;
+    on = false; swallow = true; clearTimeout(swT); swT = setTimeout(() => { swallow = false; }, 400); // the click that follows a drag is not a tap
+    clearTimeout(phPanT); if (isPhone()) phPanT = setTimeout(() => { if ((cur.mode === 'yard' || cur.mode === 'market') && !phPeekOn) camTo(phCamHome, 0.8); }, 4000);
   };
   svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end);
-  onCleanup(() => clearTimeout(phPanT));
+  onCleanup(() => { clearTimeout(phPanT); clearTimeout(swT); });
 }
 // v2.3 phone: a small button on the right edge looks at the right half of the scene (the house, notice board, café counter, vet desk, salon table) and back
 function phPeekCx() { // the world x at the middle of the right-half prop (house, notice board, counter, desk, table)
@@ -161,7 +219,7 @@ function phPeek() {
   const sync = () => { const r = right(); b.classList.toggle('back', r); b.setAttribute('aria-label', r ? 'Look back at the dog' : 'Look right'); };
   const back = () => { phPeekOn = false; clearTimeout(phPanT); camTo(phCamHome, 0.6); };
   b.onclick = () => { SFX.click(); clearTimeout(phPanT); if (right()) back(); else { phPeekOn = true; hideBubble(); camTo(phPeekCx(), 0.7); } };
-  // the view stays where the player put it (they may be reading a board): it goes back on their next tap on the scene, or when the dog walks (dogTo)
+  // the view stays where the player put it (they may be reading a board): it goes back on their next tap on the scene, or when the dog walks (dogTo; v2.5: not its idle wander)
   svg0.addEventListener('pointerdown', (e) => { if (phPeekOn && !e.target.closest('.hot, [data-hot], [data-shop]')) back(); }, true);
   sync(); const iv = setInterval(sync, 250); onCleanup(() => clearInterval(iv));
 }
@@ -381,8 +439,8 @@ function openFeedTray() {
     return `<button class="card ${off ? 'off meal' : ''}" data-food="${esc(f.n)}" ${wait || off ? 'aria-disabled="true"' : ''} aria-label="Feed ${esc(f.n)}${off ? ' (meals are served at home)' : ''}">${cnt}<span class="art">${art('item', f.n)}</span><b>${esc(f.n)}</b><span class="small">${off ? 'at home' : wait ? 'refilling...' : isFavFood(f.n) ? 'favourite!' : SNACKS.includes(f.n) ? 'snack' : ''}</span></button>`;
   }).join('');
   const dishes = kOn() ? dishRowHTML(!home) : '';
-  setTray(home ? 'Feed: tap a food' : `Feed: snacks and water at ${esc(PLACES[S.place] ? PLACES[S.place].n : 'this place')}`, `<div class="row">${cards}${dishes}</div>${items.length <= 1 && !dishes ? '<p class="small" style="margin:0">Pantry is empty. Kibble Corner on Market Street sells food.</p>' : ''}${home && S.dogs.length > 1 ? `<div class="awaynote"><p class="small">${feedAllFood() ? `One portion of <b>${esc(feedAllFood().n)}</b> for every dog (you have ${S.inv.food[feedAllFood().n]}).` : 'No meals left for Feed all.'}</p><button class="btn go" id="feedAll" ${feedAllFood() ? '' : 'aria-disabled="true"'}>Feed all (${S.dogs.length} dogs)</button></div>` : ''}${home ? '' : `<div class="awaynote"><p class="small">Meals are served at home. Out here ${esc(NAME())} eats snacks from your hand.</p><button class="btn go" id="feedHome">Go home</button></div>`}`);
-  dock.querySelectorAll('[data-food]').forEach((c) => { c.onclick = () => { SFX.init(); feed(c.dataset.food); }; });
+  setTray(home ? 'Feed: tap a food' : `Feed: snacks and water at ${esc(PLACES[S.place] ? PLACES[S.place].n : 'this place')}`, `<div class="row">${cards}${dishes}</div>${items.length <= 1 && !dishes ? '<p class="small" style="margin:0">Pantry is empty. Kibble Corner on Market Street sells food.</p>' : ''}${home && S.dogs.length > 1 ? `<div class="awaynote"><p class="small">${feedAllFood() ? `One portion of <b>${esc(feedAllFood().n)}</b> for every dog (you have ${S.inv.food[feedAllFood().n]}).` : 'No meals left for Feed all.'}</p><button class="btn go" id="feedAll" ${feedAllFood() ? '' : 'aria-disabled="true"'}>Feed all (${S.dogs.length} dogs)</button></div>` : ''}${home ? '' : `<div class="awaynote"><p class="small">Meals are served at home. Out here ${esc(NAME())} has snacks and water.</p><button class="btn go" id="feedHome">Go home</button></div>`}`);
+  fbBowlSync(); dock.querySelectorAll('[data-food]').forEach((c) => { c.onclick = () => { SFX.init(); feed(c.dataset.food); }; });
   const fh = $('#feedHome'); if (fh) fh.onclick = () => { closeTray(); travelTo('yard'); };
   const fa = $('#feedAll'); if (fa) fa.onclick = () => feedAll();
   dock.querySelectorAll('[data-dish]').forEach((b) => { b.onclick = () => { const [id, st] = b.dataset.dish.split('|'); eatDish(id, +st); }; });
@@ -420,9 +478,8 @@ function feed(name) {
     S.inv.food[name]--; if (S.inv.food[name] <= 0) delete S.inv.food[name];
   }
   busy = true; hideBubble(); markDirty(); popDown(); clearCurl(); if (D().key === 'corgi' && name !== 'Fresh Water') barkDog(D(), 'yip', {});
-  const hand = !atHome() && name !== 'Fresh Water';
-  if (hand) { renderDog('happy', 'right', true); setTimeout(() => { renderDog('eat', 'right', true); SFX.crunch(); }, 400); }
-  else { S.bowl = name; setBowl(name); dogTo(-125, 0, 1, 0.8); renderDog('walk', 'left'); setTimeout(() => { renderDog('eat', 'left'); name === 'Fresh Water' ? SFX.slurp() : SFX.crunch(); }, 850); }
+  // v2.5: at home and away alike the food goes in the bowl (it used to be eaten from the hand away from home, with no bowl)
+  S.bowl = name; setBowl(name); dogTo(-125, 0, 1, 0.8); renderDog('walk', 'left'); setTimeout(() => { renderDog('eat', 'left'); name === 'Fresh Water' ? SFX.slurp() : SFX.crunch(); }, 850);
   setTimeout(() => { if (name !== 'Fresh Water') SFX.crunch(); }, 1500);
   setTimeout(() => {
     S.bowl = null; setBowl(null); pottyAfter(name === 'Fresh Water' ? 'water' : isMeal(name) ? 'meal' : 'snack');
