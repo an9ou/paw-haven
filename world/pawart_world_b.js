@@ -12,6 +12,8 @@
                             v2.1: sparklejar {fill 0-24} 120x160, crayonbox 200x160, photoframe 160x140, doggyramp 200x120, rockingchair 160x160, album {found[12]} 600x380, easel 160x200, sniffer 200x140; new items Rainbow Collar, Gene Sniffer, Giant Crayon Box, Family Photo Frame, Doggy Ramp, Rocking Chair; icons title, album, decor, sniff, meter
                             v2.4: missioncard {items,stamps,day} 200x260, stampcard {stamps} 240x140, gerald {pose} 160x160; houses Little Tea House, Beach Hut, Camper Van, Pumpkin Cottage,
                                   Lighthouse Kennel, Rocket Ship; 32 new items (clothes, toys, foods, house cards); icons missions, guide, stamp
+                            v2.5: leafpile {state,seed} 160x100, stall {kind} 240x220, paradebanner 400x90, jackolantern {lit} 80x80, leafdrift 120x40;
+                                  6 festival foods, 5 festival clothes, icons festival, parade; the six house cards redrawn bold for 40 px
    Deterministic (seeded per asset name). Each asset is built once and cached as a template; every call
    gets fresh SVG ids. No filters on icons/items/props; houses use one grain filter. */
 window.PawArt = window.PawArt || {};
@@ -3245,22 +3247,71 @@ Object.assign(HOUSES,{
  }
 });
 
-/* ---------- house cards (64): the new houses as small taped cards ---------- */
-CFG.housei={W:7.6,amp:1.4,step:10,drift:4,hatch:1,hg:7.6,hw:2.4,ew:4.6};
+/* ---------- house cards (64): the new houses as small taped cards ----------
+   v2.5: each card is its own bold drawing (thick outline, big shapes, few details) so it reads at the 40 px shop scale. */
 const HOUSES24=['Little Tea House','Beach Hut','Camper Van','Pumpkin Cottage','Lighthouse Kennel','Rocket Ship'];
-// the part of each house that shows on its card: [x, y, w, h] in house units
-const HCROP={'Little Tea House':[14,22,212,176],'Beach Hut':[20,14,212,182],'Camper Van':[0,30,240,166],'Pumpkin Cottage':[12,26,216,170],'Lighthouse Kennel':[24,0,192,196],'Rocket Ship':[30,2,180,194]};
-let HIN=0;
+const HB={lw:1.2,hatch:0,hl:0};
+const hbo=o=>Object.assign({},HB,o);
+const HDOOR=(b,x0,x1,yb,yt)=>{const c=(x0+x1)/2,h=(x1-x0)*.4;x0=c-h;x1=c+h;yt+=2;b.sh(arch(x0-2,x1+2,yb,yt-2),'#FFF2DA',hbo({lw:.9}));b.sh(arch(x0,x1,yb,yt),C.door,hbo({base:'#6E544A',lw:.9}))};
+const HCARD={
+ 'Little Tea House'(b){
+  b.sh([[15,31],[49,31],[49,53],[15,53]],'#FFF2DA',hbo({k:0,hatch:1,sh:'#C9A46A'}));
+  HDOOR(b,27,37,53,39);
+  b.sh(E(20.6,41,3.6,3.6,10),'#CFE8FA',hbo({lw:1.1}));
+  b.sh([[7,35],[20,26],[32,20],[44,26],[57,35],[52,38],[32,27],[12,38]],C.teal,hbo({k:.14}));
+  b.ln([[33,15],[29,13],[28,18],[31,20]],{w:2.2,col:C.pinkD});
+  b.sh(E(36,17,6.6,5,14),C.pink,hbo({lw:1.3}));b.sh(E(36,11.6,2,1.6,8),'#FFE07A',hbo({lw:.9}));
+  b.ln([[42,16],[46,12]],{w:2.6,col:C.pinkD});
+ },
+ 'Beach Hut'(b){
+  b.sh([[15,31],[49,31],[49,53],[15,53]],C.sky,hbo({k:0,marks:[[17,23],[41,47]].map(([a,c])=>({pts:[[a,28],[c,28],[c,56],[a,56]],fill:'#FFFFFF',k:0}))}));
+  HDOOR(b,27,37,53,39);
+  b.sh([[10,34],[32,15],[54,34],[50,37],[32,21],[14,37]],C.red,hbo({k:.02}));
+  b.ln([[32,16],[32,9]],{w:1.6});b.sh([[32,8],[40,10.4],[32,13]],'#FFE07A',hbo({k:.05,lw:1}));
+  b.sh(E(52,44,3.6,10,14,.15),C.teal,hbo({lw:1.2,marks:[{pts:rot([[50.6,30],[53.4,30],[53.4,58],[50.6,58]],.15,52,44),fill:'#FFE07A',k:0}]}));
+ },
+ 'Camper Van'(b){
+  b.sh(RR(8,24,48,25,8),C.mint,hbo({marks:[{pts:[[0,20],[64,20],[64,33],[0,33]],fill:'#FFF2DA',k:0}]}));
+  b.sh(RR(12,27,13,8,3),'#CFE8FA',hbo({lw:1.1}));b.sh([[42,27],[50,27],[53,33],[42,33]],'#CFE8FA',hbo({k:.05,lw:1.1}));
+  HDOOR(b,28,37,49,34);
+  [[18,49],[46,49]].forEach(([x,y])=>{b.sh(E(x,y,5,5,12),C.door,hbo({base:'#6E544A',lw:.9,marks:[{pts:E(x,y,2.2,2.2,8),fill:C.grey}]}))});
+  b.sh(heartP(46,40,6),C.pinkD,hbo({lw:.8}));
+ },
+ 'Pumpkin Cottage'(b){
+  [[-14,10,'#F29150'],[14,10,'#F29150'],[0,13,PUMP]].forEach(([dx,rx,c])=>b.sh(E(32+dx,40,rx,14,16),c,hbo({sh:'#C96E2A'})));
+  b.sh([[9,34],[14,27],[24,22.6],[32,22],[40,22.6],[50,27],[55,34],[47,32],[40,34],[32,32],[24,34],[17,32]],C.leaf,hbo({k:.2}));
+  b.sh(ribbon([[32,22],[33,15],[37,11]],[5.4,4.4,3.4]),'#8E8A4A',hbo({k:1/6,lw:1.1}));
+  HDOOR(b,27,37,54,41);
+  b.sh(E(18.6,43,3.4,3.4,10),'#FFE59A',hbo({lw:1.1}));b.sh(E(45.4,43,3.4,3.4,10),'#FFE59A',hbo({lw:1.1}));
+ },
+ 'Lighthouse Kennel'(b){
+  b.raw('<path d="M32 15L6 11V19ZM32 15L58 11V19Z" fill="#FFF3C2" opacity=".75"/>','under');
+  const lx=y=>[22+(54-y)*5/32,42-(54-y)*5/32];
+  const band=(y0,y1)=>{const [a0,b0]=lx(y0),[a1,b1]=lx(y1);return {pts:[[a0-3,y0],[b0+3,y0],[b1+3,y1],[a1-3,y1]],fill:C.red,k:0}};
+  b.sh([[22,54],[27,22],[37,22],[42,54]],'#FFFBF3',hbo({k:0,base:'#FFFFFF',marks:[band(26,32),band(40,46)]}));
+  HDOOR(b,28,36,54,44);
+  b.sh([[25.6,22],[25.6,13],[38.4,13],[38.4,22]],'#FFE07A',hbo({k:0,base:'#FFF3C2',lw:1.3}));
+  b.ln([[22.6,22.4],[41.4,22.4]],{w:2.6});
+  b.sh([[23,13.4],[32,6.6],[41,13.4]],C.red,hbo({k:.03,lw:1.3}));
+ },
+ 'Rocket Ship'(b){
+  b.raw('<path d="M12 20h.1M52 16h.1M50 40h.1" stroke="#5B3D32" stroke-width="2.4" stroke-linecap="round"/>');
+  b.sh([[19,40],[11,50],[11,55],[19,54]],C.red,hbo({k:.06}));b.sh([[45,40],[53,50],[53,55],[45,54]],C.red,hbo({k:.06}));
+  b.sh([[32,8],[39,15],[44,26],[45,38],[45,54],[19,54],[19,38],[20,26],[25,15]],'#EEF0F4',hbo({k:.12,marks:[{pts:[[10,0],[54,0],[54,20],[10,20]],fill:C.red,k:0}],hatch:1,sh:'#9FA8BC'}));
+  b.sh(E(32,30,5.6,5.6,12),'#CFE8FA',hbo({lw:1.3}));
+  HDOOR(b,27.6,36.4,54,44);
+ }
+};
 HOUSES24.forEach(name=>{ITEMS[name]=function(b){
-  let t=CACHE['hi:'+name];if(t===undefined){const h=mk('housei',name);HOUSES[name](h);t=CACHE['hi:'+name]=h.svg('0 0 240 200','',lab(name))}
-  t=t.split(IDT).join(IDT+'h'+(HIN++).toString(36)).replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'');
-  const [x,y,w,h]=HCROP[name],s=Math.min(50/w,44/h),ox=32-w*s/2,oy=55-h*s,card=rot(RR(4,6,56,54,4),-.05,32,33);
-  b.sh(card,'#FFFBF3',{k:0,hl:0,hatch:0,base:'#FFFBF3',lw:.9});
+  const card=rot(RR(4,6,56,54,4),-.05,32,33);
+  b.sh(card,'#FFFBF3',{k:0,hl:0,hatch:0,base:'#FFFBF3',lw:.72});
   b.D.push(`<clipPath id="${IDT}hc"><path d="${cr(rot(RR(6,8,52,50,3),-.05,32,33),true,0).d}"/></clipPath>`);
-  b.raw(`<g clip-path="url(#${IDT}hc)"><rect x="0" y="0" width="64" height="64" fill="${name==='Rocket Ship'?'#E8F1FA':'#F4F9EC'}" opacity=".7"/><g transform="translate(${R1(ox)} ${R1(oy)}) scale(${R1(s*1000)/1000}) translate(${-x} ${-y})">${t}</g></g>`);
-  tapeB(b,32,7,22,-6,name==='Rocket Ship'?'#BDE7D2':'#F7B9C6');
-  b.ex('spark',58,7,3.4,'#FFE07A');
+  b.raw(`<g clip-path="url(#${IDT}hc)"><rect x="0" y="0" width="64" height="64" fill="${name==='Rocket Ship'?'#E8F1FA':'#F4F9EC'}" opacity=".7"/><path d="M6 ${name==='Camper Van'?55:54.6}H58" stroke="${GRAPH}" stroke-width="1.6" stroke-linecap="round" opacity=".55"/></g>`);
+  HCARD[name](b);
+  tapeB(b,13,10,20,-38,name==='Rocket Ship'?'#BDE7D2':'#F7B9C6');
+  b.ex('spark',57,8,3.6,'#FFE07A');
 }});
+
 
 /* ---------- icons (64) ---------- */
 Object.assign(ICONS,{
@@ -3410,6 +3461,368 @@ PROPS.gerald=function(b,o){
   for(let f=0;f<3;f++)b.raw(`<g class="pa-wb-gf${f}">${geraldFrame(pose,f)}</g>`);
 };
 
+/* ---------- v2.5 "Autumn & New Pups": festival props, foods, clothes and icons ----------
+   leafpile 160x100     o.state 'full' | 'scattered' (after a jump: flatter, leaves flung), o.seed (0..63, picks the leaf layout). Ground y=94.
+   stall 240x220        o.kind 'leaf' | 'halloween'. Baker Bea's Harvest Stall: awning, counter, baskets of pumpkins and sweet potatoes;
+                        halloween adds a lit jack-o-lantern, a paper ghost garland and a "Dog-safe treats" chalk sign. Ground y=214.
+   paradebanner 400x90  a sagging string with "Costume Parade" on a cloth banner, paper ghosts, pumpkins and pennants.
+   jackolantern 80x80   o.lit adds a candle glow (static, no filter) in <g class="pa-wb-glow">. Ground y=76.
+   leafdrift 120x40     a loose handful of fallen leaves for decoration rows. */
+const AUT=['#F29150','#F9A35E','#E46F6B','#FFD56B','#E9B44C','#C96E2A','#D9784A'];
+const AUT_V=c=>mix(c,INK,.42);
+// a five-lobed maple leaf pointing up (a=0), blade centred on (cx,cy), radius s
+function mapleP(cx,cy,s,a){
+  const T=[[-90,1],[-30,.9],[28,.64],[152,.64],[210,.9]],p=[],pol=(d,r)=>[cx+Math.cos(d*Math.PI/180)*r*s,cy+Math.sin(d*Math.PI/180)*r*s];
+  for(let i=0;i<5;i++){const [a0,r0]=T[i],[a1r,r1]=T[(i+1)%5],a1=a1r<a0?a1r+360:a1r,sp=a1-a0;
+    p.push(pol(a0,r0),pol(a0+sp*.14,r0*.6),pol(a0+sp*.22,r0*.7),pol(a0+sp*.5,i===2?.14:.36),pol(a1-sp*.22,r1*.7),pol(a1-sp*.14,r1*.6))}
+  return rot(p,a,cx,cy);
+}
+// one autumn leaf: maple (kind 0) or a plain birch-type leaf (kind 1). sq squashes it flat (lying on the ground)
+function leafA(b,x,y,s,a,col,kind,o={}){
+  const sq=o.sq||1,F=pts=>sq===1?pts:pts.map(p=>[p[0],y+(p[1]-y)*sq]),lw=o.lw||Math.max(.3,Math.min(.55,s/26)),vc=AUT_V(col),ink=mix(INK,col,.18),dw=o.dw||Math.max(.5,s*.07);
+  if(kind===0){
+    const v=[-90,-30,210].map(d=>[x+Math.cos(d*Math.PI/180+a)*s*.78,y+Math.sin(d*Math.PI/180+a)*s*.78]),st=[x-Math.sin(a)*s*.62*-1,y+Math.cos(a)*s*.62];
+    b.sh(F(mapleP(x,y,s,a)),col,{k:.04,hatch:0,hl:0,lw,ink,dr:.35,det:[F([[x,y],v[0]]),F([[x,y],v[1]]),F([[x,y],v[2]]),F([[x,y],st])],dw,dcol:vc,top:o.top,under:o.under});
+  }else{
+    const L=s*1.9,tx=x-Math.cos(a-Math.PI/2)*L*.5,ty=y-Math.sin(a-Math.PI/2)*L*.5,an=a-Math.PI/2;
+    b.sh(F(leafP(tx,ty,L,s*.95,an)),col,{k:.18,hatch:0,hl:0,lw,ink,dr:.35,det:[F([[tx-Math.cos(an)*s*.3,ty-Math.sin(an)*s*.3],[tx+Math.cos(an)*L*.82,ty+Math.sin(an)*L*.82]])],dw,dcol:vc,top:o.top,under:o.under});
+  }
+}
+// a paper ghost (garlands, the banner, the biscuits); h is the height, the hem has three soft points
+function ghostP(cx,cy,w,h,lean=0){
+  const p=[],top=cy-h/2,hy=cy+h/2;
+  for(let i=0;i<=12;i++){const t=Math.PI+i/12*Math.PI;p.push([cx+Math.cos(t)*w/2,top+w/2+Math.sin(t)*w/2])}
+  p.push([cx+w*.54,hy-h*.12]);
+  for(let i=0;i<3;i++){const x0=cx+w/2-i*w/3;p.push([x0-w/6,hy-h*.16+(i===1?h*.04:0)]);p.push([x0-w/3,hy+(i===1?-h*.02:0)])}
+  p.pop();p.push([cx-w*.54,hy+h*.02]);p.push([cx-w*.52,hy-h*.14]);
+  return lean?rot(p,lean,cx,hy):p;
+}
+function ghostV(b,cx,cy,w,h,o={}){
+  b.sh(ghostP(cx,cy,w,h,o.lean||0),'#FFFFFF',{k:.16,hatch:0,hl:0,lw:o.lw||Math.max(.55,Math.min(1.2,w/14)),base:'#FFFFFF',dr:.25,
+   marks:[{pts:E(cx+w*.2,cy+h*.22,w*.4,h*.3,10),fill:'#E4ECF6',op:.85}],top:o.top});
+  const ey=cy-h*.14,ex=w*.17,r=Math.max(.7,w*.075);
+  b.dot(cx-ex+(o.lean||0)*h*.4,ey,r,INK,o.top?'top':undefined);b.dot(cx+ex+(o.lean||0)*h*.4,ey,r,INK,o.top?'top':undefined);
+  if(!o.nomouth)b.raw(`<ellipse cx="${R1(cx+(o.lean||0)*h*.3)}" cy="${R1(cy+h*.06)}" rx="${R1(r*.7)}" ry="${R1(r*.9)}" fill="${INK}" opacity=".8"/>`,o.top?'top':undefined);
+  if(w>12)b.raw(`<ellipse cx="${R1(cx-ex*1.7)}" cy="${R1(ey+r*2.4)}" rx="${R1(r*1.1)}" ry="${R1(r*.6)}" fill="${PINK}" opacity=".45"/>`,o.top?'top':undefined);
+}
+// a carved pumpkin: friendly triangle eyes, a nose and a two-tooth grin. lit fills the cuts with candlelight
+function jackV(b,cx,cy,s,lit,o={}){
+  const lw=o.lw||Math.max(.45,Math.min(.85,s*.62)),cut=lit?'#FFE59A':'#7A4A33',cutL=lit?'#FFF7D6':'#9A6A4E';
+  b.ln([[cx+3*s,cy-19*s],[cx+11*s,cy-25*s],[cx+16*s,cy-22*s],[cx+14*s,cy-18*s]],{w:1.3*lw,col:'#6FA35A'});
+  b.sh(leafP(cx-4*s,cy-21*s,13*s,7*s,-2.7),LEAF,{hatch:0,hl:0,lw:lw*.75,dr:.2,det:[[[cx-4*s,cy-21*s],[cx-14*s,cy-24*s]]],dw:lw*.6});
+  [[-14,15,'#F29150'],[14,15,'#F29150']].forEach(([dx,rx,c])=>b.sh(E(cx+dx*s,cy+1*s,rx*s,19*s,18),c,{lw,hl:0,sh:'#C96E2A',ho:.4}));
+  b.sh(E(cx,cy,15.5*s,20.5*s,18),PUMP,{lw,hlo:.45,sh:'#C96E2A',ho:.35,
+   inner:b.st(b.jl(cx-6*s,cy-17*s,cx-7*s,cy+17*s,.4*s)+b.jl(cx+6*s,cy-17*s,cx+7*s,cy+17*s,.4*s),'#C96E2A',.9*lw,.5)});
+  b.sh(ribbon([[cx,cy-17*s],[cx+1.6*s,cy-23*s],[cx+4.6*s,cy-26*s]],[5.4*s,4.4*s,3.2*s]),'#8E8A4A',{k:1/6,hatch:0,hl:0,lw:lw*.8,dr:.1});
+  const face={k:.04,hatch:0,hl:0,lw:lw*.62,dr:.15,base:cut};
+  [[-1,0],[1,0]].forEach(([d])=>b.sh([[cx+d*4*s,cy-3.6*s],[cx+d*13.6*s,cy-4.4*s],[cx+d*8.6*s,cy-12*s]],cut,Object.assign({marks:lit?[{pts:E(cx+d*8.6*s,cy-6*s,2.6*s,1.8*s,8),fill:cutL}]:undefined},face)));
+  b.sh([[cx-2.6*s,cy+1.6*s],[cx+2.6*s,cy+1.6*s],[cx,cy-2.6*s]],cut,face);
+  const m=[[cx-14*s,cy+4*s],[cx-6*s,cy+9.4*s],[cx-4.4*s,cy+6.6*s],[cx-1.8*s,cy+10.2*s],[cx+5*s,cy+9.6*s],[cx+6.4*s,cy+6.8*s],[cx+8.6*s,cy+9.2*s],[cx+14*s,cy+4*s],[cx+9*s,cy+14.4*s],[cx,cy+16*s],[cx-9*s,cy+14.4*s]];
+  b.sh(m,cut,Object.assign({k:.12,marks:lit?[{pts:E(cx,cy+12.4*s,7*s,2.2*s,10),fill:cutL}]:undefined},face));
+  if(!lit)b.raw(`<ellipse cx="${R1(cx-9*s)}" cy="${R1(cy+3*s)}" rx="${R1(3*s)}" ry="${R1(1.7*s)}" fill="${PINK}" opacity=".4"/>`,'top');
+}
+// a wicker basket in 3/4 view (rim ellipse at y), contents drawn by fill() between the back and the front
+function basketV(b,cx,y,w,h,fill){
+  b.sh(E(cx,y,w/2,h*.2,20),mix(WKD,INK,.25),{hatch:0,hl:0,lw:.9});
+  fill();
+  let wv='';for(let i=1;i<4;i++)wv+=b.jl(cx-w*.48+i*.02*w,y+h*.22*i,cx+w*.48-i*.02*w,y+h*.22*i,.5);
+  for(let x=cx-w*.4;x<cx+w*.42;x+=w*.12)wv+=b.jl(x,y+1,x+(x-cx)*-.08,y+h*.92,.4);
+  b.sh([[cx-w/2,y],[cx+w/2,y],[cx+w*.42,y+h*.9],[cx+w*.2,y+h],[cx-w*.2,y+h],[cx-w*.42,y+h*.9]],WK,{k:.1,sh:WKD,hl:0,inner:b.st(wv,WKD,1,.75)});
+  b.sh(ribbon([[cx-w/2-1,y],[cx,y+h*.12],[cx+w/2+1,y]],[5,5,5]),WKL,{k:1/6,hatch:0,hl:0,lw:.9,inner:b.st(b.jl(cx-w*.4,y+1,cx+w*.4,y+1,.3),WKD,.9,.7)});
+}
+function steam(b,x,y,s,col){b.ln([[x,y],[x-2*s,y-4*s],[x+1*s,y-8*s],[x-1.4*s,y-12*s]],{w:1.2,col:col||GRAPH});}
+
+PROPS.leafpile=function(b,o){
+  const sc=o.state==='scattered',r=b.r,G=94,sd=o.seed|0,lean=((sd*7)%5-2)*3;
+  b.shadow(80,G,sc?76:70,sc?5:6);
+  b.guide([[4,G+.5],[80,G-.4],[156,G+.6]],false);
+  // rake marks in the grass either side
+  b.raw(b.st('M4 90q8 -3 16 -1M8 95q9 -3 18 -1M136 89q9 -3 17 0M132 95q10 -3 22 -1',GRAPH,1.1,.6),'under');
+  const top=(sc?60:26)+(sd%4)*3,x0=(sc?6:12)+(sd%3)*4,x1=(sc?154:148)-((sd>>1)%3)*4,hw=y=>Math.max(0,(x1-x0)/2*Math.pow(Math.max(0,(y-top)/(G-top)),.45));
+  const mound=[];for(let i=0;i<=20;i++){const t=i/20,x=x0+(x1-x0)*t,u=2*t-1-lean*.012*(1-Math.abs(2*t-1)),y=G-(G-top)*Math.pow(Math.max(0,1-u*u),sc?.9:.62)+(i%2?3.4:-1.2)*(1-u*u)+(r()-.5)*2.4;mound.push([x,y])}
+  b.sh([...mound,[x1-2,G+1],[80,G+2],[x0+2,G+1]],'#F29150',{k:.12,hl:0,sh:'#C96E2A',ho:.45,base:'#F7B27A',lw:.75,
+   inner:b.st([0,1,2,3,4,5].map(i=>{const x=x0+14+i*(x1-x0-28)/5;return b.jl(x,G-4,x+6,G-14,.6)}).join(''),'#C96E2A',1,.4)});
+  // leaves along the top edge, so the outline is leafy, then the rows, back first
+  mound.forEach(([x,y],i)=>{if(i%2||i<2||i>18)return;leafA(b,x+(r()-.5)*3,y+3+r()*2,9+r()*3,(r()-.5)*2.4,AUT[Math.floor(r()*AUT.length)],r()<.6?0:1)});
+  const rows=sc?[66,76,86]:[34,44,54,64,74,84];
+  rows.forEach((y,ri)=>{const w=hw(y)*.9,n=Math.max(1,Math.round(w*2/(sc?21:19)));
+    for(let i=0;i<n;i++){const x=80-w+(n===1?w:i*2*w/(n-1))+(r()-.5)*7,yy=y+(r()-.5)*5,s=9.6+r()*3.6,a=(r()-.5)*2.6,k=r()<.62?0:1;
+      leafA(b,x,yy,s,a,AUT[Math.floor(r()*AUT.length)],k,{sq:sc&&ri<2?.8:1})}});
+  // a few loose ones on the ground at the foot
+  const gl=sc?[[2,90],[22,93],[46,95],[116,95],[138,92],[156,90],[66,96],[96,96]]:[[6,91],[26,94],[132,94],[152,91]];
+  gl.forEach(([x,y])=>leafA(b,x,y,8+r()*2,(r()-.5)*3,AUT[Math.floor(r()*AUT.length)],r()<.5?0:1,{sq:.5}));
+  if(sc){
+    // flung leaves in the air with little swoosh lines
+    const fl=[[18,40],[34,18],[54,30],[72,8],[92,22],[110,10],[128,32],[146,20],[62,48],[100,44],[8,22],[150,46]];
+    let sw='';
+    fl.forEach(([x,y],i)=>{const a=(r()-.5)*5,s=7.4+r()*3;leafA(b,x,y,s,a,AUT[(i*3+Math.floor(r()*3))%AUT.length],i%3===1?1:0,{top:1});
+      const dx=x<80?1:-1;sw+=`M${R1(x+dx*6)} ${R1(y+8)}q${R1(dx*5)} ${R1(4)} ${R1(dx*7)} ${R1(12)}`});
+    b.raw(b.st(sw,GRAPH,1.1,.65),'under');
+    b.ex('spark',80,4,4,'#FFE07A');b.ex('dots',140,6,4);
+  }else{
+    b.ex('spark',150,30,4,'#FFE07A');b.ex('heart',12,40,3.2);
+  }
+};
+
+PROPS.jackolantern=function(b,o){
+  if(o.lit)b.raw(`<g class="pa-wb-glow"><circle cx="40" cy="44" r="38" fill="#FFE59A" opacity=".24"/><circle cx="40" cy="44" r="30" fill="#FFE07A" opacity=".28"/><circle cx="40" cy="46" r="23" fill="#FFF3C2" opacity=".45"/><ellipse cx="40" cy="76" rx="34" ry="4" fill="#FFE59A" opacity=".35"/></g>`,'under');
+  b.shadow(40,76,26,3.4);
+  jackV(b,40,51,1.24,!!o.lit);
+  if(o.lit){b.ex('spark',70,14,3.6,'#FFE59A');b.ex('spark',10,22,2.8,'#FFF3C2')}else b.ex('dots',8,14,4);
+};
+
+PROPS.leafdrift=function(b){
+  const r=b.r;
+  b.raw(`<ellipse cx="60" cy="33" rx="58" ry="6" fill="${SHADOW}" opacity=".85"/>`,'under');
+  [[12,24,0],[30,27,1],[47,20,0],[62,28,0],[78,22,1],[94,27,0],[109,22,0],[40,32,1],[86,33,0]].forEach(([x,y,k],i)=>
+    leafA(b,x,y,(k?8.6:11.6)+r()*2,(r()-.5)*3.4,AUT[(i*5)%AUT.length],k,{sq:.72+r()*.16}));
+  b.ex('spark',58,8,3,'#FFE07A');
+};
+
+PROPS.paradebanner=function(b){
+  const sy=x=>8+24*(1-Math.pow((x-200)/194,2));
+  const str=[];for(let x=4;x<=396;x+=14)str.push([x,sy(x)]);str.push([396,sy(396)]);
+  b.ln(str,{w:1.4,col:'#8E6446'});
+  b.sh(E(5,8,3,3,8),C.woodD,{hatch:0,hl:0,lw:.7});b.sh(E(395,8,3,3,8),C.woodD,{hatch:0,hl:0,lw:.7});
+  const hang=(x,len)=>{const y=sy(x);b.ln([[x,y],[x,y+len]],{w:.8,col:'#8E6446'});return y+len};
+  const pen=(x,col)=>{const y=sy(x)-1;b.sh([[x-9,y],[x+9,y+.6],[x+.6,y+24]],col,{k:.05,hatch:0,hl:0,lw:.9,dr:.3,inner:b.st(b.jl(x-6,y+4,x+5,y+4.4,.3),'#fff',1.2,.7)})};
+  const pumpkinC=(x)=>{const y=hang(x,5)+10;b.sh(cloudP(x,y,10.5,9,5,.14,30),'#F29150',{k:.2,hatch:0,hl:0,lw:.9,dr:.3,
+     inner:b.st(b.jl(x-3.6,y-8,x-4.2,y+8,.3)+b.jl(x+3.6,y-8,x+4.2,y+8,.3),'#C96E2A',.9,.6)});
+     b.sh([[x-1.4,y-8],[x+1.6,y-8.4],[x+2.4,y-12],[x-.4,y-12]],'#8E8A4A',{k:.1,hatch:0,hl:0,lw:.6,dr:.1});
+     b.dot(x-3.4,y-1.6,1.1);b.dot(x+3.4,y-1.6,1.1);b.ln([[x-4,y+3],[x,y+5],[x+4,y+3]],{w:.9})};
+  const ghostC=(x,lean)=>{const y=hang(x,3)+13;ghostV(b,x,y,17,24,{lean})};
+  // left run and right run: pennant, ghost, pennant, pumpkin, ...
+  [[14,'p',C.orange],[34,'g',-.1],[54,'p',C.lavD],[75,'k'],[95,'p','#FFE07A'],[306,'p','#FFE07A'],[326,'k'],[347,'p',C.lavD],[367,'g',.1],[387,'p',C.orange]].forEach(([x,t,v])=>
+    t==='p'?pen(x,v):t==='g'?ghostC(x,v):pumpkinC(x));
+  // the cloth banner in the middle, tied to the string at both ends
+  const bn=[[112,26],[200,31],[288,26],[296,42],[289,62],[200,66],[111,62],[104,42]];
+  b.ln([[118,sy(118)],[118,28]],{w:1,col:'#8E6446'});b.ln([[282,sy(282)],[282,28]],{w:1,col:'#8E6446'});
+  b.sh(bn,'#FFF2DA',{k:.12,base:'#FFF8EC',sh:'#C9A46A',ho:.3,hl:0,
+   marks:[{pts:[[100,24],[300,24],[300,32],[100,32]],fill:C.orange,k:0,op:.9},{pts:[[100,59],[300,59],[300,68],[100,68]],fill:C.orange,k:0,op:.9}]});
+  b.sh(E(116,28,3,3,8),C.pinkD,{hatch:0,hl:0,lw:.6,top:1});b.sh(E(284,28,3,3,8),C.pinkD,{hatch:0,hl:0,lw:.6,top:1});
+  b.tx(200,55,'Costume Parade',25,{rot:-1});
+  b.raw(b.st('M136 60q32 -3 64 -1t62 -1',C.redD,1.6,.6),'top');
+  b.ex('spark',106,74,3.6,'#FFE07A');b.ex('spark',296,76,3.2,'#FFE07A');b.ex('heart',200,82,3);
+};
+
+// Baker Bea's Harvest Stall
+PROPS.stall=function(b,o){
+  const hw=o.kind==='halloween',G=214;
+  b.shadow(120,G,114,6);
+  b.guide([[4,G+.5],[120,G-.5],[236,G+.6]],false);
+  // posts
+  [[22,0],[218,0]].forEach(([x])=>b.sh(ribbon([[x,40],[x,130],[x,G]],[9,9,9]),C.wood,{k:.05,hatch:0,hl:0,lw:1.1,base:'#F3DDB4',det:[[[x-1.6,60],[x-1.4,120]]],dw:.7,dcol:WKD}));
+  // back wall and shelf
+  b.sh([[28,66],[212,66],[212,142],[28,142]],'#FFF2DA',{k:0,hl:0,hatch:0,base:'#FFF8EC',lw:.9,inner:b.st([52,84,116,148,180].map(x=>b.jl(x,70,x,138,.5)).join(''),'#E2C9A2',1,.7)});
+  b.sh(RR(34,96,172,7,2),C.woodD,{hatch:0,hl:0,lw:.9});
+  // jars of treats and a stack of paper bags on the shelf
+  [[48,C.mint],[70,C.pink],[170,C.lav],[192,C.mint]].forEach(([x,c])=>{b.sh(RR(x-8,78,16,18,4),'#E8F4FB',{hatch:0,hl:0,lw:.9,base:'#F7FBFE',marks:[{pts:[[x-8,84],[x+8,84],[x+8,96],[x-8,96]],fill:'#E8B48A',op:.8,k:0}]});
+    b.sh(RR(x-9,74,18,5,2),c,{hatch:0,hl:0,lw:.8});b.sh(boneP(x,88,10,4.4,.1),'#FFFBF3',{hatch:0,hl:0,lw:.5,dr:.1})});
+  [[0,'#E8C597'],[5,'#DDB57C'],[10,'#E8C597']].forEach(([dy,c])=>b.sh(rot(RR(104,86-dy,32,8,1.5),dy?.04:-.03,120,90-dy),c,{k:0,hatch:0,hl:0,lw:.8}));
+  b.sh(heartP(120,80,7),C.pinkD,{hatch:0,hl:0,lw:.5});
+  // the striped awning with a scalloped edge
+  const stripes=[];for(let i=0;i<14;i++)if(i%2===0)stripes.push({pts:[[10+i*16.4,16],[26.4+i*16.4,16],[30+i*17.4,70],[12+i*17.4,70]],fill:'#FFF2DA',k:0});
+  b.sh([[18,24],[222,24],[234,58],[6,58]],C.orange,{k:.02,hl:0,sh:'#C96E2A',ho:.35,marks:stripes});
+  const sc=[];for(let i=0;i<=12;i++){const x=234-i*19;sc.push([x,58]);if(i<12)sc.push([x-9.5,70])}
+  b.sh([[6,56],[234,56],...sc],C.orange,{k:.18,hatch:0,hl:0,lw:1,marks:Array.from({length:6},(_,i)=>({pts:[[6+i*38,50],[25+i*38,50],[25+i*38,74],[6+i*38,74]],fill:'#FFF2DA',k:0}))});
+  // the sign on top
+  b.ln([[78,24],[82,10]],{w:1.1,col:'#8E6446'});b.ln([[162,24],[158,10]],{w:1.1,col:'#8E6446'});
+  b.sh(rot(RR(64,0,112,22,5),-.015,120,11),C.wood,{hatch:0,hl:0,lw:1.1,base:'#F3DDB4',sh:WKD});
+  b.tx(120,16.5,'Harvest Stall',17,{rot:-1});
+  leafA(b,58,10,6,-.5,'#E46F6B',0,{top:1});leafA(b,182,9,5.4,.6,'#FFD56B',0,{top:1});
+  // garland under the awning: leaves, or ghosts and leaves at Halloween
+  const gy=x=>72+7*(1-Math.pow((x-120)/96,2));
+  const gs=[];for(let x=26;x<=214;x+=12)gs.push([x,gy(x)]);
+  b.ln(gs,{w:1,col:'#8E6446'});
+  [44,64,84,104,136,156,176,196].forEach((x,i)=>{const y=gy(x);
+    if(hw&&i%2===0){b.ln([[x,y],[x,y+2]],{w:.7,col:'#8E6446'});ghostV(b,x,y+8,10,14,{lean:(i%4?-.1:.1)})}
+    else leafA(b,x,y+5,5.6,Math.PI+(i%2?.3:-.3),AUT[(i*2)%AUT.length],0)});
+  // the counter
+  b.sh([[18,140],[222,140],[222,G],[18,G]],C.wood,{k:0,hl:0,sh:WKD,ho:.35,base:'#F3DDB4',inner:b.st([44,70,96,122,148,174,200].map(x=>b.jl(x,146,x,G-2,.6)).join(''),WKD,1,.6)});
+  b.sh(RR(10,132,220,12,3),C.woodD,{hatch:0,hl:0,lw:1.2,base:'#DDB78F'});
+  const cl=[[30,144],[210,144],[210,160]];for(let i=0;i<=9;i++){const x=210-i*20;cl.push([x,i%2?164:158])}cl.push([30,160]);
+  b.sh(cl,'#FFFBF3',{k:.12,hatch:0,hl:0,lw:.9,base:'#fff',marks:[{pts:[[20,148],[220,148],[220,151],[20,151]],fill:C.orange,k:0,op:.8}]});
+  // baskets on the counter
+  basketV(b,60,112,62,22,()=>{pumpkinV(b,46,106,.44,{noleaf:1});pumpkinV(b,74,106,.4,{noleaf:1});pumpkinV(b,60,96,.4,{noleaf:1})});
+  basketV(b,126,114,62,20,()=>{sweetV(b,112,110,.5,-.3);sweetV(b,140,109,.48,.25);sweetV(b,126,101,.46,-.05)});
+  if(hw){
+    b.raw(`<g class="pa-wb-glow"><circle cx="190" cy="108" r="28" fill="#FFE59A" opacity=".16"/><circle cx="190" cy="110" r="19" fill="#FFF3C2" opacity=".28"/></g>`);
+    jackV(b,190,112,.86,true);
+  }else{
+    basketV(b,190,114,50,20,()=>{pumpkinV(b,180,106,.38,{noleaf:1});pumpkinV(b,200,107,.34,{noleaf:1})});
+  }
+  b.tx(hw?146:120,194,"Baker Bea's",18,{mid:1,col:'#B8536F'});
+  if(!hw)paw(b,64,188,3.2,'#E2C9A2',{noline:1});paw(b,176,188,3.2,'#E2C9A2',{noline:1});
+  // at the foot of the stall
+  if(hw){
+    // the chalk sign (A-frame)
+    b.ln([[14,G],[22,150]],{w:4,col:C.woodD});b.ln([[66,G],[58,150]],{w:4,col:C.woodD});
+    b.sh(rot([[12,156],[68,156],[66,204],[14,204]],-.03,40,180),'#556B5E',{k:.02,hatch:0,hl:0,lw:1.2,base:'#4A5E52',
+     inner:b.st('M18 196q10 -2 20 0M44 168q8 -2 16 0','#fff',1.2,.25)});
+    b.tx(40,175,'Dog-safe',15,{rot:-2,col:'#FFFBF3'});b.tx(40,191,'treats',15,{rot:-2,col:'#FFFBF3'});
+    b.raw(b.st('M24 197q8 -2 14 0',C.orange,1.6,.9),'top');b.sh(boneP(52,197,12,4.6,-.08),'#FFFBF3',{hatch:0,hl:0,lw:.6,dr:.1,top:1});
+    pumpkinV(b,222,206,.34,{noleaf:1});
+    b.ex('spark',230,90,4,'#FFE59A');b.ex('dots',8,96,5);
+  }else{
+    pumpkinV(b,12,206,.38,{noleaf:1});pumpkinV(b,226,208,.3,{noleaf:1});
+    [[40,212],[60,213],[196,212]].forEach(([x,y],i)=>leafA(b,x,y,6,(i-1)*.8,AUT[i*2],i%2,{sq:.5}));
+    b.ex('spark',230,90,4,'#FFE07A');b.ex('heart',8,96,3.6);
+  }
+};
+
+/* foods (64) */
+Object.assign(ITEMS,{
+ 'Baked Pumpkin Wedges'(b){
+  // a paper boat tray of plain baked wedges, standing up out of the tray
+  // half-moon wedges: orange flesh, a darker skin band on the curved back
+  const wedge=(x,y,a)=>{const out=[],inn=[];for(let i=0;i<=10;i++){const t=Math.PI*(1+i/10);out.push([x+Math.cos(t)*11,y+Math.sin(t)*10])}
+    for(let i=10;i>=0;i--){const t=Math.PI*(1+i/10);inn.push([x+Math.cos(t)*8.4,y+Math.sin(t)*7.4])}
+    b.sh(rot(out,a,x,y),PUMP,{k:.14,hatch:0,hl:0,lw:.8,base:'#FBC28A',marks:[{pts:rot(out.concat(inn),a,x,y),fill:'#E07B33'}],inner:b.st(b.jl(x-4,y-3,x+3,y-4.4,.3),'#FFE3C0',1.2,.9)})};
+  wedge(18,34,-.5);wedge(46,34,.5);wedge(32,28,0);wedge(25,41,-.15);wedge(39,41,.18);
+  b.sh([[6,43],[58,43],[52,58],[12,58]],'#FFF2DA',{k:.06,sh:'#C9A46A',hl:0,base:'#FFF8EC',
+   marks:[{pts:[[0,46],[64,46],[64,49],[0,49]],fill:C.orange,k:0,op:.75}],inner:b.st(b.jl(16,46,15,55,.3)+b.jl(48,46,49,55,.3),'#C9A46A',.8,.6)});
+  b.sh(rot(RR(24,50,16,6,1.6),-.03,32,53),'#FFFBF3',{hatch:0,hl:0,lw:.6,base:'#fff'});leafA(b,32,53,2.8,0,'#E46F6B',0,{lw:.3,dw:.4});
+  steam(b,24,16,.9);steam(b,40,15,.9);
+  b.ex('spark',57,10,3.6);b.ex('heart',6,24,2.6);
+ },
+ 'Sweet Potato Coins'(b){
+  plateV(b,32,47,28,10,C.lav,'#FFFFFF');
+  const coin=(x,y,a)=>{b.sh(E(x,y+1.4,8.6,4.8,16,a),'#B96B52',{hatch:0,hl:0,lw:.6,dr:.2});
+    b.sh(E(x,y,8.6,4.8,16,a),SWP,{hatch:0,hl:0,lw:.6,dr:.2,base:'#D99278',marks:[{pts:E(x,y-.2,7.4,3.9,14,a),fill:'#F9A35E'}],
+     inner:b.st(`M${x-3} ${y-.6}l1.4 .6M${x+1} ${y+.8}l1.6 -.4M${x+2.4} ${y-1.6}l.8 .6`,'#C46F2E',.7,.6)})};
+  sweetV(b,44,30,.36,-.3);
+  [[18,46,.05],[32,48,-.04],[46,46,.08],[25,40,-.1],[39,41,.1],[22,33,-.15]].forEach(([x,y,a])=>coin(x,y,a));
+  b.ex('spark',8,12,3.6);b.ex('dots',56,34,4);
+ },
+ 'Warm Bone Broth'(b){
+  // a big mug with a paw print, the broth gold and steaming
+  b.ln([[48,28],[58,30],[58,42],[48,46]],{w:4.6});b.ln([[48,28],[58,30],[58,42],[48,46]],{w:2.4,col:C.blue});
+  b.sh([[12,22],[50,22],[47,54],[42,58],[20,58],[15,54]],C.blue,{k:.12,sh:'#7F9FCB',marks:[{pts:[[0,50],[64,50],[64,54],[0,54]],fill:'#9FBCE6',k:0}]});
+  b.sh(E(31,22,19,5,20),'#9FBCE6',{hatch:0,hl:0,lw:.9});
+  b.sh(E(31,22.6,16,3.6,18),'#F2C96B',{hatch:0,hl:0,lw:.7,base:'#F8D98E',inner:b.st('M22 22q4 -1.6 8 0t8 0',`#fff`,1,.6)});
+  paw(b,31,38,3.4,'#FFFFFF',{noline:1});
+  steam(b,24,14,1,'#B9A69A');steam(b,32,13,1.1,'#B9A69A');steam(b,40,14,.9,'#B9A69A');
+  b.sh(boneP(10,57,14,5,-.3),'#FFFBF3',{hatch:0,hl:0,lw:.6,dr:.1});
+  b.ex('heart',56,12,2.8);b.ex('spark',6,12,3.4);
+ },
+ 'Ghost Biscuits'(b){
+  plateV(b,32,48,29,10,C.mint,'#FFFFFF');
+  const bis=(x,y,s)=>{b.sh(E(x,y,11*s,9*s,16),'#E8C597',{hatch:0,hl:0,lw:.8,base:'#F3DDB4',sh:'#C99A72',
+     inner:[[-.5,-.3],[.4,-.45],[.55,.3],[-.3,.45],[0,0]].map(([dx,dy])=>`<circle cx="${R1(x+dx*9*s)}" cy="${R1(y+dy*7*s)}" r=".8" fill="#C99A72" opacity=".8"/>`).join('')});
+    ghostV(b,x,y-.4*s,10.6*s,11.4*s,{lw:.6,nomouth:s<.9})};
+  bis(18,42,.9);bis(46,42,.9);bis(32,46,1);bis(32,27,1.05);
+  b.ex('spark',57,12,3.6);b.ex('dots',6,14,4);
+ },
+ 'Candy Corn Carrots'(b){
+  // carrot points cut to look like candy corn, in a striped paper cup. Only carrot
+  const pt=(x,y,a,s=1)=>{const P=[[x-7.6*s,y+8*s],[x-6.4*s,y+9.6*s],[x+6.4*s,y+9.6*s],[x+7.6*s,y+8*s],[x+1.8*s,y-9*s],[x-1.8*s,y-9*s]];
+    b.sh(rot(P,a,x,y),'#F59E52',{k:.16,hatch:0,hl:0,lw:.75,dr:.15,base:'#F9BE86',
+     marks:[{pts:rot([[x-10*s,y+3*s],[x+10*s,y+3*s],[x+10*s,y+11*s],[x-10*s,y+11*s]],a,x,y),fill:'#D9682A',k:0},{pts:rot([[x-6*s,y-3.6*s],[x+6*s,y-3.6*s],[x,y-12*s]],a,x,y),fill:'#FFD0A8',k:0}]})};
+  [[21,23,-.4],[32,19,-.04],[43,23,.38],[27,30,.1],[38,30,-.2]].forEach(([x,y,a])=>pt(x,y,a,1.05));
+  b.sh([[12,32],[52,32],[46,60],[18,60]],'#FFFBF3',{k:.06,sh:'#C9A46A',hl:0,base:'#fff',marks:[17,27,37,47].map(x=>({pts:[[x,30],[x+5,30],[x+3.4,62],[x-1.6,62]],fill:C.orange,k:0,op:.85}))});
+  b.sh(RR(10,30,44,6,2),'#FFFBF3',{hatch:0,hl:0,lw:.8,base:'#fff'});
+  pt(55,53,1.25,.8);
+  b.ex('spark',56,10,3.6);b.ex('heart',8,14,2.6);b.ex('dots',6,48,4);
+ },
+ 'Monster Meatball'(b){
+  bowl(b,32,40,26,7,16,C.lav,'#B9A6E8',()=>{
+   b.sh(cloudP(32,36,19,7,7,.25,40),'#E8B48A',{noline:1,hatch:0,hl:0});
+   // one big friendly turkey meatball with a carrot-slice eye and a parsley tuft
+   b.sh(cloudP(32,24,15,13.6,9,.08,40),'#C9895B',{k:.18,hl:0,lw:1,base:'#D9A27A',sh:'#8E5A44',ho:.35,marks:[{pts:E(26,19,5.6,3.4,10,-.4),fill:'#E6B48C'}]});
+   b.sh(E(32,22,6.4,6,14),ORNG,{hatch:0,hl:0,lw:.8,base:'#F9BE86',marks:[{pts:E(32,22,4.4,4,12),fill:'#F9B97A'}],
+    inner:b.st('M32 18v8M28 22h8M29.4 19.4l5.2 5.2M34.6 19.4l-5.2 5.2','#E07B33',.6,.6)});
+   b.dot(32.6,22.4,2.2);b.dot(33.2,21.6,.7,'#fff','top');
+   b.ln([[27,31],[32,33],[37,31]],{w:1});
+   [[-.5,-1.9],[0,-2.2],[.5,-1.8]].forEach(([dx,a],i)=>b.sh(leafP(32+dx*6,12,6,3,a),i===1?LEAFD:LEAF,{hatch:0,hl:0,lw:.55,dr:.1}));
+  });
+  b.ex('spark',57,10,3.6);b.ex('heart',7,20,2.6);
+ }
+});
+
+/* clothes (64) */
+Object.assign(ITEMS,{
+ 'Leaf Beret'(b){
+  const RU='#C96E2A',RD=mix('#C96E2A',INK,.3);
+  b.sh(rot(E(32,40,26,9,22),-.16,32,40),RD,{hl:0,hatch:0,lw:1});
+  b.sh(rot([[7,40],[9,30],[18,21],[32,17],[46,20],[56,28],[58,38],[46,42],[32,43],[18,43]],-.16,32,34),RU,{k:.18,sh:RD,ho:.5,
+   inner:b.st(b.jl(14,30,30,22,.4)+b.jl(24,36,50,26,.4),mix(RU,INK,.2),.8,.5)});
+  b.sh(rot(ribbon([[10,44],[32,47],[56,40]],[5,5,5]),-.16,32,44),RD,{k:1/6,hatch:0,hl:0,lw:.8});
+  b.ln([[33,17],[34,11],[37,9]],{w:2.4,col:RD});
+  leafA(b,44,26,9.6,.5,'#FFD56B',0,{lw:.5,dw:.6});
+  b.ex('spark',8,14,3.6,'#FFE07A');b.ex('dots',54,54,4);
+ },
+ 'Autumn Scarf'(b){
+  const MU=C.goldD,RU='#C96E2A';
+  const rows=(x0,x1,y0,y1,step)=>{const m=[];for(let y=y0,i=0;y<y1;y+=step,i++)if(i%2===0)m.push({pts:[[x0,y],[x1,y],[x1,y+step],[x0,y+step]],fill:RU,k:0});return m};
+  const fringe=(pts,col)=>pts.forEach(([x,y,dx])=>b.ln([[x,y],[x+dx,y+5.4]],{w:1.1,col}));
+  // a little peg, the scarf hung over it: a short tail behind, a long tail in front swinging right
+  b.sh(E(32,8,4,4,10),C.woodD,{hatch:0,hl:0,lw:.8});b.ln([[32,4],[32,1]],{w:1.4,col:WKD});
+  b.sh(ribbon([[25,10],[19,26],[15,44]],[14,14,14]),MU,{k:.12,hl:0,sh:mix(MU,INK,.35),marks:rows(0,64,10,50,7)});
+  fringe([[9,47,-1],[12,48.4,-.5],[15,49,0],[18,48.6,.5],[21,47.6,1]],RU);
+  b.sh(ribbon([[38,10],[42,24],[43,36],[46,46],[52,53]],[14,14,14,14,13]),MU,{k:.12,sh:mix(MU,INK,.35),marks:rows(0,64,10,64,7)});
+  b.sh(E(32,11,11,5,14),MU,{hatch:0,hl:0,lw:.9,marks:[{pts:[[18,9],[46,9],[46,12],[18,12]],fill:RU,k:0}]});
+  fringe([[48,58,-.5],[51,58.6,.4],[54,58.4,1.2],[57,57,1.8],[59,54.6,2.2]],RU);
+  b.ex('spark',8,10,3.4);b.ex('heart',57,14,2.8);
+  leafA(b,54,30,5.4,.4,'#E46F6B',0,{lw:.4,dw:.5});
+ },
+ 'Ghost Sheet'(b){
+  b.sh(ghostP(32,33,48,54),'#FFFFFF',{k:.16,base:'#FFFFFF',sh:'#9FB2CC',ho:.4,hl:0,lw:1.05,marks:[{pts:E(42,44,14,12,12),fill:'#E9EFF7',op:.9}],
+   inner:b.st(b.jl(20,26,18,52,.4)+b.jl(42,30,46,54,.4),'#C9D4E4',1,.8)});
+  [[-1],[1]].forEach(([d])=>b.sh(E(32+d*8.6,27,4.2,5.4,12,d*.12),C.door,{hatch:0,hl:0,lw:.75,base:'#6E544A'}));
+  b.raw(`<ellipse cx="18" cy="34" rx="3" ry="1.7" fill="${PINK}" opacity=".45"/><ellipse cx="46" cy="34" rx="3" ry="1.7" fill="${PINK}" opacity=".45"/>`,'top');
+  b.ln([[29,38],[32,40],[35,38]],{w:1});
+  b.raw(b.st('M54 50q4 -2 6 -6M56 56q4 -1 7 -4',GRAPH,1.2,.8),'top');
+  tapeB(b,32,6,18,-8,'#D3C6F1');
+  b.ex('spark',7,12,3.4);
+ },
+ 'Pumpkin Suit'(b){
+  const P2='#F29150';
+  [[-13,13],[13,13]].forEach(([dx,rx])=>b.sh(E(32+dx,36,rx,19,16),P2,{hl:0,sh:'#C96E2A',ho:.4}));
+  b.sh(E(32,36,13,21,18),PUMP,{sh:'#C96E2A',ho:.35,hlo:.45,inner:b.st(b.jl(25,18,24,54,.3)+b.jl(39,18,40,54,.3),'#C96E2A',.9,.5)});
+  // leg holes and arm holes
+  [[22,53],[42,53]].forEach(([x,y])=>b.sh(E(x,y,6.4,3.4,12),'#8E5A44',{hatch:0,hl:0,lw:.8,base:'#7A4A33'}));
+  [[7,33],[57,33]].forEach(([x,y])=>b.sh(E(x,y,3,5.4,10),'#8E5A44',{hatch:0,hl:0,lw:.8,base:'#7A4A33'}));
+  b.sh(E(32,18,8,3,14),'#7A4A33',{hatch:0,hl:0,lw:.8,base:'#5E3A28'});
+  // the leaf collar around the neck
+  [[-2.5,LEAF],[-1.9,LEAFD],[-1.25,LEAF],[-.64,LEAFD]].forEach(([a,c])=>{const x=32+Math.cos(a)*8,y=18+Math.sin(a)*3;b.sh(leafP(x,y,11,6.4,a+(a<-1.57?-.2:.2)),c,{hatch:0,hl:0,lw:.7,dr:.2,det:[[[x,y],[x+Math.cos(a)*8,y+Math.sin(a)*8]]],dw:.55})});
+  b.sh(E(32,18,8,3,14),'#8E8A4A',{hatch:0,hl:0,lw:.8,base:'#6E6A3A'});
+  [[0,LEAFD],[3.14,LEAF],[.5,LEAF],[2.64,LEAFD]].forEach(([a,c])=>{const x=32+Math.cos(a)*7,y=19+Math.sin(a)*3;b.sh(leafP(x,y,9,5.4,a+.35*(Math.cos(a)>0?1:-1)),c,{hatch:0,hl:0,lw:.65,dr:.2})});
+  b.ex('spark',57,8,3.6);b.ex('heart',7,10,2.6);
+ },
+ 'Parade Rosette'(b){
+  // two ribbon tails, a crumpled pleated ring, a cream centre with a little ghost. It is a little bent
+  b.sh([[25,38],[31,40],[26,61],[22,56],[17,60]],'#F29150',{k:.05,hatch:0,hl:0,lw:.85,inner:b.st(b.jl(25,42,21,56,.3),'#C96E2A',.8,.6)});
+  b.sh([[35,40],[42,37],[49,58],[44,55],[40,60]],C.lavD,{k:.05,hatch:0,hl:0,lw:.85,inner:b.st(b.jl(39,42,44,55,.3),mix(C.lavD,INK,.25),.8,.6)});
+  const ring=[];for(let i=0;i<36;i++){const a=i/36*Math.PI*2,f=(i%2?.82:1)*(1+.06*Math.sin(a*3+1));ring.push([31+Math.cos(a)*21*f,27+Math.sin(a)*19*f+(Math.cos(a)>.5?1.6:0)])}
+  b.sh(ring,'#F9A35E',{k:.05,sh:'#C96E2A',ho:.4,hl:0});
+  const ring2=[];for(let i=0;i<28;i++){const a=i/28*Math.PI*2,f=i%2?.84:1;ring2.push([31.4+Math.cos(a)*14*f,26.6+Math.sin(a)*13*f])}
+  b.sh(ring2,'#F29150',{k:.05,hatch:0,hl:0,lw:.8});
+  b.sh(E(31.6,26.8,9,8.4,16,.1),'#FFF2DA',{hatch:0,hl:0,lw:.9,base:'#FFF8EC'});
+  ghostV(b,31.6,27.4,8,10,{lw:.5,lean:.08,nomouth:1});
+  b.ex('spark',57,10,3.6,'#FFE07A');b.ex('dots',6,12,4);
+ }
+});
+
+/* icons (64) */
+Object.assign(ICONS,{
+ festival(b){ // a maple leaf behind a little pumpkin
+  const lf=rot([[28,4],[33,13],[40,11],[40,20],[49,23],[41,30],[43,39],[31,36],[28,44],[25,36],[13,39],[15,30],[7,23],[16,20],[16,11],[23,13]],-.32,28,26);
+  b.ln(rot([[28,40],[28.6,47],[31,52]],-.32,28,26),{w:2.2});
+  b.sh(lf,'#F28A4E',{k:.08,det:[rot([[28,11],[28,40]],-.32,28,26),rot([[28,27],[38,20]],-.32,28,26),rot([[28,27],[18,20]],-.32,28,26)],dw:1.1});
+  b.ln([[44,37],[45,31],[48,28]],{w:2.4,col:'#7A7636'});
+  [[37,47,9],[51,47,9]].forEach(([x,y,rx])=>b.sh(E(x,y,rx,10.5,14),'#F29150',{lw:.75}));
+  b.sh(E(44,47,8.6,11.6,14),PUMP,{lw:.75});
+ },
+ parade(b){ // a paper ghost waving a little pennant
+  b.ln([[48,40],[52,8]],{w:2.2,col:C.woodD});
+  b.sh([[52,8],[62,13],[51.6,18]],C.orange,{k:.04,hatch:0,hl:0,lw:1});
+  b.sh(ghostP(28,36,34,42,-.06),'#FFFFFF',{k:.16,base:'#FFFFFF',hatch:0,hl:0,lw:1.1,marks:[{pts:E(36,46,10,9,10),fill:'#E4ECF6'}]});
+  b.sh([[40,40],[47,36],[50,40],[44,44]],'#FFFFFF',{k:.2,hatch:0,hl:0,lw:.9,base:'#fff'});
+  b.dot(22,30,2.4);b.dot(33,29.4,2.4);b.raw(`<ellipse cx="28" cy="37.6" rx="2" ry="2.6" fill="${INK}"/>`,'top');
+ }
+});
+
+
 /* ---------- public API ---------- */
 const lab=s=>esc(s);
 PA.icon=function(name){return serve('i:'+name,()=>{const f=ICONS[name];if(!f)return fallback('icon',name,'0 0 64 64');const b=mk('icon',name);f(b);return b.svg('0 0 64 64','',lab(name)+' icon')})};
@@ -3440,6 +3853,19 @@ PA.prop=function(name,o){
   else if(name==='gerald'){opt={pose:o&&GER_POSES.includes(o.pose)?o.pose:'point'};lbl='Gerald the duck'}
   else return _prop24(name,o);
   return serve('p:'+name+':'+JSON.stringify(opt),()=>{const b=mk('prop',name);PROPS[name](b,opt);return b.svg(PROP_VB[name],name==='gerald'?` data-pose="${opt.pose}"`:'',lbl)});
+};
+Object.assign(PROP_VB,{leafpile:'0 0 160 100',stall:'0 0 240 220',paradebanner:'0 0 400 90',jackolantern:'0 0 80 80',leafdrift:'0 0 120 40'});
+const _prop25=PA.prop;
+PA.prop=function(name,o){
+  let opt,lbl,seed=name;
+  if(name==='leafpile'){opt={state:o&&o.state==='scattered'?'scattered':'full',seed:Math.abs((o&&o.seed)|0)%64};seed=name+':'+opt.seed;lbl=opt.state==='scattered'?'Scattered leaf pile':'Leaf pile'}
+  else if(name==='stall'){opt={kind:o&&o.kind==='halloween'?'halloween':'leaf'};seed=name+':'+opt.kind;lbl='Harvest Stall'+(opt.kind==='halloween'?' at Halloween':'')}
+  else if(name==='jackolantern'){opt={lit:!!(o&&o.lit)};lbl=opt.lit?'Lit jack-o-lantern':'Jack-o-lantern'}
+  else if(name==='paradebanner'){opt={};lbl='Costume Parade banner'}
+  else if(name==='leafdrift'){opt={};lbl='Fallen leaves'}
+  else return _prop25(name,o);
+  return serve('p:'+name+':'+JSON.stringify(opt),()=>{const b=mk('prop',seed);PROPS[name](b,opt);
+    return b.svg(PROP_VB[name],name==='leafpile'?` data-state="${opt.state}"`:name==='stall'?` data-kind="${opt.kind}"`:name==='jackolantern'?` data-lit="${opt.lit?1:0}"`:'',lbl)});
 };
 if(typeof document!=='undefined'&&!document.getElementById('pawart-world-b-v24-css')){
   const st=document.createElement('style');st.id='pawart-world-b-v24-css';
