@@ -94,8 +94,9 @@ function buildWalk() {
   W.VW = VW; W.dogX = Math.min(Math.round(VW * 0.3), 380);
   const strip = art('walkStrip', W.area, W.env), n = Math.ceil(VW / 1200) + 1;
   const tiles = Array.from({ length: n }, (_, i) => place(strip, i * 1200, 0, 1200, 400)).join('');
-  const clouds = Array.from({ length: Math.ceil(VW / 500) + 1 }, (_, i) => `<path d="M${i * 500 + 60} 70 q20 -30 50 -10 q25 -25 50 5 q30 -5 25 20 q-5 20 -40 15 q-30 15 -55 0 q-35 5 -30 -30z" fill="#FFFBF3" fill-opacity=".85" stroke="#5B3D32" stroke-width="2.2" stroke-linejoin="round"/>`).join('');
-  const tufts = Array.from({ length: Math.ceil(VW / 300) + 2 }, (_, i) => `<path d="M${i * 300 + 40} 400 l8 -34 l6 30 l9 -40 l5 44" fill="none" stroke="#6E9E62" stroke-width="2.6" stroke-linecap="round" opacity=".85"/>`).join('');
+  const tint = (PA().SEASON_TINT && PA().SEASON_TINT[W.env.season]) || {}; // v2.5: the season art supplies grass / cloud colours per season (summer = the old ones)
+  const clouds = Array.from({ length: Math.ceil(VW / 500) + 1 }, (_, i) => `<path d="M${i * 500 + 60} 70 q20 -30 50 -10 q25 -25 50 5 q30 -5 25 20 q-5 20 -40 15 q-30 15 -55 0 q-35 5 -30 -30z" fill="${tint.cloud || '#FFFBF3'}" fill-opacity=".85" stroke="#5B3D32" stroke-width="2.2" stroke-linejoin="round"/>`).join('');
+  const tufts = Array.from({ length: Math.ceil(VW / 300) + 2 }, (_, i) => `<path d="M${i * 300 + 40} 400 l8 -34 l6 30 l9 -40 l5 44" fill="none" stroke="${tint.grass || '#6E9E62'}" stroke-width="2.6" stroke-linecap="round" opacity=".85"/>`).join('');
   const objs = W.objs.map((o, i) => objSVG(o, i)).join('');
   view.innerHTML = `<svg class="world" viewBox="0 0 ${VW} 400" preserveAspectRatio="xMidYMid slice">
     <g id="stripL">${tiles}</g><g id="farL" opacity=".85">${clouds}</g><g id="objL">${objs}</g>

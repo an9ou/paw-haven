@@ -222,16 +222,20 @@
     }
     return s;
   }
-  function backdrop(variant, time, weather, uidp) {
+  function backdrop(variant, time, weather, uidp, season) {
+    // v2.5: outdoor backdrops turn with the season (PawArt.SEASON_TINT); summer keeps the old colours exactly
+    var ST = (typeof window !== 'undefined' && window.PawArt && window.PawArt.SEASON_TINT) || {}, tn = season && season !== 'summer' ? ST[season] : null;
+    var mixc = function (a, b2, t) { var A = [1, 3, 5].map(function (i) { return parseInt(a.slice(i, i + 2), 16); }), B = [1, 3, 5].map(function (i) { return parseInt(b2.slice(i, i + 2), 16); }); return '#' + A.map(function (v, i) { return ('0' + Math.round(v + (B[i] - v) * t).toString(16)).slice(-2); }).join('').toUpperCase(); };
+    var gc = function (c) { return !tn ? c : season === 'winter' ? mixc(mixc(c, tn.grass, 0.2), '#FFFFFF', 0.45) : mixc(c, tn.grass, 0.3); }, lci = 0, lc = function (c) { if (!tn) return c; var i = lci++; if (season === 'autumn') return ['#F2B25C', '#E8895A', '#F3CB58', '#DE6650'][i % 4]; if (season === 'spring') return i % 2 ? '#F7C6D3' : mixc(c, tn.leaf, 0.3); return mixc(c, tn.leaf, 0.75); }, fc = function (c) { return tn && season === 'winter' ? mixc(c, '#FFFFFF', 0.55) : tn && season === 'autumn' ? mixc(c, '#E8895A', 0.35) : c; };
     var R = rng(variant === 'pond' ? 901 : 77), s = '', gid = uidp + 'sky';
     var defs = '<defs>' + skyDefs(gid, time, weather) + '<pattern id="' + uidp + 'dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="11" cy="11" r="1.2" fill="#E3D2BA"/></pattern>' +
       '<radialGradient id="' + uidp + 'lamp"><stop offset="0" stop-color="#FFE7A0" stop-opacity=".75"/><stop offset="1" stop-color="#FFE7A0" stop-opacity="0"/></radialGradient></defs>';
     if (variant === 'pond') {
       s += '<rect width="1240" height="340" fill="url(#' + gid + ')"/>' + skyBits(R, 0, 70, 1240, 260, time, weather);
-      s += pencil(R, [[0, 300], [180, 262], [380, 290], [600, 250], [820, 286], [1040, 258], [1240, 284], [1240, 360], [0, 360]], 2.2, INK, 0.8, true, '#D9ECCB');
-      for (var t = 0; t < 7; t++) { var tx = 60 + t * 190 + R() * 40, ty = 300 + R() * 20; s += pencil(R, [[tx, ty], [tx, ty - 40]], 3, INK, 0.7) + pencil(R, ell(tx, ty - 58, 26, 30, 14), 2, INK, 0.7, true, '#BFE0B4'); }
+      s += pencil(R, [[0, 300], [180, 262], [380, 290], [600, 250], [820, 286], [1040, 258], [1240, 284], [1240, 360], [0, 360]], 2.2, INK, 0.8, true, gc('#D9ECCB'));
+      for (var t = 0; t < 7; t++) { var tx = 60 + t * 190 + R() * 40, ty = 300 + R() * 20; s += pencil(R, [[tx, ty], [tx, ty - 40]], 3, INK, 0.7) + pencil(R, ell(tx, ty - 58, 26, 30, 14), 2, INK, 0.7, true, lc('#BFE0B4')); }
       s += '<rect y="340" width="1240" height="280" fill="#E8F3D8"/>' + pencil(R, [[0, 340], [1240, 336]], 2.2, INK, 0.7);
-      for (var g = 0; g < 60; g++) { var gx = R() * 1240, gy = 360 + R() * 250; s += '<path d="M' + f1(gx) + ' ' + f1(gy) + 'l3 -9M' + f1(gx + 5) + ' ' + f1(gy) + 'l-1 -11" stroke="#86B57A" stroke-width="1.5" stroke-linecap="round" opacity=".8"/>'; }
+      for (var g = 0; g < 60; g++) { var gx = R() * 1240, gy = 360 + R() * 250; s += '<path d="M' + f1(gx) + ' ' + f1(gy) + 'l3 -9M' + f1(gx + 5) + ' ' + f1(gy) + 'l-1 -11" stroke="' + gc('#86B57A') + '" stroke-width="1.5" stroke-linecap="round" opacity=".8"/>'; }
       s += pencil(R, [[720, 462], [900, 450], [1100, 452], [1250, 446], [1250, 630], [560, 630], [610, 540]], 2.6, INK, 1, true, '#BBD8EF');
       s += '<path d="' + wob(R, [[720, 462], [900, 450], [1100, 452], [1250, 446], [1250, 630], [560, 630], [610, 540]], 2, true) + '" fill="url(#' + uidp + 'dots)" opacity=".5"/>';
       for (var w = 0; w < 12; w++) { var wx = 700 + R() * 500, wy = 480 + R() * 120; s += pencil(R, [[wx, wy], [wx + 14, wy - 4], [wx + 28, wy], [wx + 42, wy - 4]], 1.6, '#6F93BE', 0.8); }
@@ -240,14 +244,14 @@
     } else if (variant === 'yard') {
       R = rng(611);
       s += '<rect width="1240" height="400" fill="url(#' + gid + ')"/>' + skyBits(R, 0, 70, 1240, 240, time, weather);
-      s += pencil(R, [[0, 292], [160, 266], [330, 284], [500, 262], [680, 282], [860, 260], [1040, 280], [1240, 264], [1240, 340], [0, 340]], 2.2, INK, 0.75, true, '#D9ECCB');
-      for (var yt = 0; yt < 6; yt++) { var ytx = 90 + yt * 215 + R() * 50, yty = 296 + R() * 14; s += pencil(R, [[ytx, yty], [ytx, yty - 36]], 3, INK, 0.7) + pencil(R, ell(ytx, yty - 54, 28, 30, 14), 2, INK, 0.7, true, yt % 2 ? '#BFE0B4' : '#CDE7C1'); }
+      s += pencil(R, [[0, 292], [160, 266], [330, 284], [500, 262], [680, 282], [860, 260], [1040, 280], [1240, 264], [1240, 340], [0, 340]], 2.2, INK, 0.75, true, gc('#D9ECCB'));
+      for (var yt = 0; yt < 6; yt++) { var ytx = 90 + yt * 215 + R() * 50, yty = 296 + R() * 14; s += pencil(R, [[ytx, yty], [ytx, yty - 36]], 3, INK, 0.7) + pencil(R, ell(ytx, yty - 54, 28, 30, 14), 2, INK, 0.7, true, lc(yt % 2 ? '#BFE0B4' : '#CDE7C1')); }
       for (var pk = 0; pk < 28; pk++) { var pkx = 6 + pk * 45; s += pencil(R, [[pkx, 404], [pkx, 322], [pkx + 15, 306], [pkx + 30, 322], [pkx + 30, 404]], 2, INK, 0.85, true, '#FFF4DF'); }
       s += pencil(R, rect(-4, 338, 1248, 12), 2, INK, 0.8, true, '#F3E3CC') + pencil(R, rect(-4, 378, 1248, 12), 2, INK, 0.8, true, '#F3E3CC');
       s += '<rect y="398" width="1240" height="222" fill="#E8F3D8"/>' + pencil(R, [[0, 400], [620, 397], [1240, 399]], 2.2, INK, 0.7);
-      for (var yg = 0; yg < 70; yg++) { var ygx = R() * 1240, ygy = 420 + R() * 190; s += '<path d="M' + f1(ygx) + ' ' + f1(ygy) + 'l3 -9M' + f1(ygx + 5) + ' ' + f1(ygy) + 'l-1 -11" stroke="#86B57A" stroke-width="1.5" stroke-linecap="round" opacity=".8"/>'; }
+      for (var yg = 0; yg < 70; yg++) { var ygx = R() * 1240, ygy = 420 + R() * 190; s += '<path d="M' + f1(ygx) + ' ' + f1(ygy) + 'l3 -9M' + f1(ygx + 5) + ' ' + f1(ygy) + 'l-1 -11" stroke="' + gc('#86B57A') + '" stroke-width="1.5" stroke-linecap="round" opacity=".8"/>'; }
       for (var yf = 0; yf < 16; yf++) {
-        var yfx = 30 + yf * 78 + R() * 30, yfy = 404 + R() * 10, yfc = ['#F9D0D9', '#FFE07A', '#E0D5F0', '#F28FA5'][yf % 4];
+        var yfx = 30 + yf * 78 + R() * 30, yfy = 404 + R() * 10, yfc = fc(['#F9D0D9', '#FFE07A', '#E0D5F0', '#F28FA5'][yf % 4]);
         s += pencil(R, [[yfx, yfy], [yfx + 2, yfy - 26]], 1.8, '#6E8F5A', 0.9);
         for (var pe = 0; pe < 5; pe++) { var pa = pe / 5 * Math.PI * 2; s += '<circle cx="' + f1(yfx + 2 + Math.cos(pa) * 5) + '" cy="' + f1(yfy - 30 + Math.sin(pa) * 5) + '" r="4" fill="' + yfc + '" stroke="#5B3D32" stroke-width="1.1"/>'; }
         s += '<circle cx="' + f1(yfx + 2) + '" cy="' + f1(yfy - 30) + '" r="2.6" fill="#F2C744" stroke="#5B3D32" stroke-width="1"/>';
@@ -299,7 +303,12 @@
     chihuahua: { d: [-12, 14], sit: [0, 8], jump: [-30, 10], eat: [16, -6], crouch: [0, 0], sleep: [-12, 0], sniff: [0, -4] },
     pug: { d: [-22, 10], sit: [-6, 3], jump: [-30, 5], eat: [28, -11], crouch: [0, 0], sleep: [-10, 0], sniff: [-6, 0] },
     greyhound: { d: [32, -42], sit: [48, 2], jump: [18, -53], eat: [28, -4], crouch: [50, 8], sleep: [12, 4], sniff: [12, 4] },
-    beagle: { d: [-4, 0], jump: [-6, -5], eat: [28, -3], sit: [0, 0], crouch: [0, 0], sleep: [0, 0], sniff: [8, 0] }
+    beagle: { d: [-4, 0], jump: [-6, -5], eat: [28, -3], sit: [0, 0], crouch: [0, 0], sleep: [0, 0], sniff: [8, 0] },
+    // v2.5 breeds, calibrated on the DOG ART lane's drawings (mods/toys/calib)
+    poodle: { d: [-2, -18], sit: [5, -13], jump: [-15, -14], eat: [32, -13], crouch: [10, -5], sleep: [-2, 0], sniff: [6, -8] },
+    collie: { d: [5, 0], sit: [17, 0], jump: [2, -10], eat: [24, 0], crouch: [19, 5], sleep: [-8, 2], sniff: [10, -4] },
+    samoyed: { d: [-11, -1], sit: [2, -6], jump: [-19, -4], eat: [28, -9], crouch: [13, 0], sleep: [-6, 0], sniff: [0, -2] },
+    frenchie: { d: [-22, 10], sit: [-6, -2], jump: [-30, 5], eat: [28, -11], crouch: [0, 0], sleep: [-10, 0], sniff: [-6, 0] }
   };
   var POSE_BASE = { walk: 'idle', happy: 'idle', pet: 'idle', shake: 'idle', dirty: 'idle', cold: 'idle', hot: 'idle', sad: 'idle', dig: 'eat' };
   function breedAdj(key, pose) {
@@ -310,7 +319,8 @@
   var TRAITS = {
     greyhound: { run: 1.6, carry: 0.55, flop: true },
     chihuahua: { run: 1.1, fierce: true }, pug: { run: 0.78, snort: true }, beagle: { sniff: true },
-    dachs: { run: 0.85 }, corgi: { run: 0.92 }
+    dachs: { run: 0.85 }, corgi: { run: 0.92 },
+    frenchie: { run: 0.8, snort: true }, collie: { run: 1.15 }, samoyed: { fluff: true }, poodle: { clever: true }   // v2.5
   };
   function trait(key) { return Object.assign({ run: 1, carry: 1 }, TRAITS[key] || {}); }
   /* per-breed flavour lines; any missing slot falls back to the generic lines passed in */
@@ -347,6 +357,32 @@
       snuffleStart: ['I can smell where you hid it. go on.'], snuffleFind: ['nose: 1, mat: 0', 'smelled that from the hall'], coneLick: ['pumpkin! I smelled it from the garden'],
       hogAnswer: ['AROOO!', 'ah-ROO-squeak!'], hogRoll: ['it smells like a hedgehog. suspicious.'], bubblePop: ['they smell of... nothing?! suspicious'],
       poolIn: ['AROOO (wet version)'], tunnelDone: ['AROOOO! again!'], tap: ['sniff sniff. it is you!']
+    },
+    // v2.5 breeds
+    poodle: {
+      fetchStart: ['I have calculated the angle. throw.', 'ready when you are. I was ready first.'], fetchDeliver: ['returned. neatly.', 'not one curl out of place'],
+      puzzleStart: ['I solved this one yesterday', 'it is the middle lid. watch.'], puzzleFound: ['as predicted', 'too easy. again?'], puzzleWrong: ['that was a test. for you.'],
+      duckOk: ['a perfect copy, if I say so myself'], frisbee: ['caught it. elegantly.', 'pom-poms and all'], howl: ['yip! (clearly)', 'yip yip!'],
+      snuffleFind: ['found it. obviously.'], coneLick: ['pumpkin. a classic.'], bubblePop: ['pop. pop. very tidy.'], poolIn: ['the curls! ...ok, it is nice'],
+      tunnelDone: ['in one end, out the other. genius.'], tap: ['yes? I am thinking.']
+    },
+    collie: {
+      fetchStart: ['THROW IT. please. now. please.', 'eyes on the ball. always.'], fetchDeliver: ['again? again. AGAIN.', 'back already. that is my job.'],
+      tugGrowl: ['grr! (working)', 'mine. for now.'], frisbee: ['caught it mid-air. as planned.', 'I was born for this'], howl: ['woof woof!', 'yap! (sharp)'],
+      snuffleStart: ['I will find every last one'], snuffleFind: ['one found. more to go.'], hogRoll: ['it is a ball now. I will herd it.'], bubblePop: ['I will herd the bubbles', 'stay together, bubbles!'],
+      poolIn: ['a quick swim. then back to work.'], tunnelGo: ['ZOOM'], tunnelDone: ['again? I can go faster.'], tap: ['what is the job? is this the job?']
+    },
+    samoyed: {
+      fetchStart: ['woo! throw it!', 'I am smiling. throw it anyway.'], fetchDeliver: ['woo-woo! got it!', 'still smiling'],
+      tugGrowl: ['grr-woo!', 'woo (fiercely)'], howl: ['woo-woo-WOOO!', 'awoo-woo!'], duckOk: ['woo! a duet!'],
+      snuffleFind: ['found it! woo!'], coneLick: ['cold and pumpkin. my favourite.'], hogAnswer: ['woo?', 'woo-woo!'], bubblePop: ['the bubbles stick to my fluff'],
+      poolIn: ['cold water! woo!', 'I am now twice as heavy'], stickShake: ['so much fluff. so much water.', 'shake shake shake. still damp.'], tap: ['woo! hello!']
+    },
+    frenchie: {
+      fetchStart: ['*snort* ...a short throw, please', 'ok. but not far.'], fetchDeliver: ['*snort* got it', 'that was a big run. sit time.'],
+      tugGrowl: ['grrf *snort*', 'rrf rrf!'], tugDogWin: ['*proud snort*'], duckListen: ['*snort*', '*huff*'], duckOk: ['*happy snort*'],
+      howl: ['rrf! *snort*', 'arf-*snort*'], snuffleFind: ['*snort* FOOD'], coneLick: ['lick *snort* lick'], hogAnswer: ['*snort*!', 'rrf?'],
+      poolIn: ['I do not swim. I float. With help.'], tunnelDone: ['*snort* done. sitting now.'], tap: ['*snort*?']
     }
   };
   var FALLBACK = { crouch: ['sit'], dig: ['eat'], shake: ['happy'], sleep: ['sit'], pet: ['happy'], sad: ['sit'], jump: ['happy'], eat: ['sit'], walk: ['idle'] };
@@ -518,7 +554,7 @@
     var stage = div('pt-stage', root);
     var cfg = impl.cfg || {};
     var L = {};
-    L.scene = div('pt-layer', stage, backdrop(cfg.scene || 'room', time, weather, uidp));
+    L.scene = div('pt-layer', stage, backdrop(cfg.scene || 'room', time, weather, uidp, ctx.season));
     var outdoor = cfg.scene === 'pond' || cfg.scene === 'yard', wx = outdoor ? { x: 0, y: 0, w: 1240, h: 620 } : { x: 850, y: 110, w: 250, h: 220 };
     if (weather === 'rain' || weather === 'snow') { var rn = div(weather === 'rain' ? 'pt-rain' : 'pt-snow', L.scene); rn.style.cssText += ';left:' + wx.x + 'px;top:' + wx.y + 'px;width:' + wx.w + 'px;height:' + wx.h + 'px;opacity:' + (outdoor ? 0.6 : 0.9); }
     L.actors = div('pt-layer', stage);
@@ -1267,7 +1303,7 @@
         if (!w && wet && dog.x < PX - 10 && st !== 'hold') {
           wet = false; if (!shook) { shook = true; A.sfx('shake'); A.say(pick(A.line('stickShake', ['brrrrrrr!', 'SHAKE SHAKE SHAKE', 'sorry about the floor'])), 1400); me.pause(1.3, 'shake', st); return false; }
         }
-        if (st === 'hold' && dog.pose === 'shake' && Math.random() < dt * 30) A.burst('drop', dog.x + (Math.random() - 0.5) * 120, dog.y - 100 - Math.random() * 60, 1, { sp: 360, g: 1000, color: '#9CC8EA', size: 3.5 });
+        if (st === 'hold' && dog.pose === 'shake' && Math.random() < dt * (A.tr.fluff ? 60 : 30)) A.burst('drop', dog.x + (Math.random() - 0.5) * 120, dog.y - 100 - Math.random() * 60, 1, { sp: 360, g: 1000, color: '#9CC8EA', size: 3.5 });
         if (w && Math.random() < dt * 4) A.addPart({ type: 'drop', x: dog.x + (Math.random() - 0.5) * 140, y: WATER_Y + 4, vx: (Math.random() - 0.5) * 60, vy: -90, g: 500, life: 0.5, size: 2.6, color: '#BBD8EF' });
         return false;
       },
@@ -1559,7 +1595,7 @@
       plan = []; var full = flaps.filter(function (f) { return f.has; }), empty = flaps.filter(function (f) { return !f.has; });
       full.sort(function () { return Math.random() - 0.5; });
       full.forEach(function (f) {
-        var wrong = A.tr.sniff ? (Math.random() < 0.25 ? 1 : 0) : 1 + Math.floor(Math.random() * 2);
+        var wrong = A.tr.sniff ? (Math.random() < 0.25 ? 1 : 0) : A.tr.clever ? (Math.random() < 0.5 ? 1 : 0) : 1 + Math.floor(Math.random() * 2);
         for (var i = 0; i < wrong; i++) { var e = pick(empty); if (plan[plan.length - 1] !== e) plan.push(e); }
         plan.push(f);
       });
@@ -2041,7 +2077,7 @@
             else { padPose = 'shake'; padT = 1; A.sfx('shake'); }
           }
           if (padPose === 'walk') { if (dog.runTo(padTo, 110, dt)) dog.setPose('idle'); if (Math.random() < dt * 6) A.addPart({ type: 'drop', x: dog.x + (Math.random() - 0.5) * 120, y: waterY() - 6, vx: (Math.random() - 0.5) * 80, vy: -140, g: 700, life: 0.5, size: 2.6, color: '#BBD8EF' }); }
-          else { dog.setPose(padPose); if (padPose === 'shake' && Math.random() < dt * 24) A.burst('drop', dog.x + (Math.random() - 0.5) * 100, dog.y - 90 - Math.random() * 50, 1, { sp: 300, g: 1000, life: 0.6, size: 3, color: '#9CC8EA' }); }
+          else { dog.setPose(padPose); if (padPose === 'shake' && Math.random() < dt * (A.tr.fluff ? 48 : 24)) A.burst('drop', dog.x + (Math.random() - 0.5) * 100, dog.y - 90 - Math.random() * 50, 1, { sp: 300, g: 1000, life: 0.6, size: 3, color: '#9CC8EA' }); }
           dog.tilt = padPose === 'happy' ? Math.sin(T * 13) * 2.5 : 0;
           if (fill < 0.7 && !lowSaid) { lowSaid = true; A.say('the lake is leaking! hose please!', 1500); } if (fill > 0.9) lowSaid = false;
         } else if (state === 'splash') {

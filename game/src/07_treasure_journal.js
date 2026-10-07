@@ -38,7 +38,7 @@ function openJournal(tab) {
       }).join('')}</div>`;
   } else if (jTab === 'food') {
     const fs = FOOD_ALL.filter((f) => f.n === 'Fresh Water' || (S.inv.food[f.n] || 0) > 0);
-    body = `<div class="jgrid">${fs.map((f) => `<div class="jent"><span class="art">${art('item', f.n)}</span><b>${esc(f.n)}</b>${tInfo(f.n) ? stamp(tInfo(f.n).r) : ''}<span class="ab">${esc(f.note || '')}</span><span class="small">${f.n === 'Fresh Water' ? 'Always free' : 'You have ' + S.inv.food[f.n]}</span>${f.tip && typeof shFoodTip === 'function' ? `<span class="small jr-tip">${esc(shFoodTip(f.n, true) || f.tip)}</span>` : ''}<button class="btn yes" data-jfeed="${esc(f.n)}">Feed</button></div>`).join('')}</div>${fs.length <= 1 ? '<p class="small">The pantry is empty. Kibble Corner sells food, walks hide snacks.</p>' : ''}`;
+    body = (typeof fsJournalLine === 'function' ? (fsJournalLine() || '') : '') + `<div class="jgrid">${fs.map((f) => `<div class="jent"><span class="art">${art('item', f.n)}</span><b>${esc(f.n)}</b>${tInfo(f.n) ? stamp(tInfo(f.n).r) : ''}<span class="ab">${esc(f.note || '')}</span><span class="small">${f.n === 'Fresh Water' ? 'Always free' : 'You have ' + S.inv.food[f.n]}</span>${f.tip && typeof shFoodTip === 'function' ? `<span class="small jr-tip">${esc(shFoodTip(f.n, true) || f.tip)}</span>` : ''}<button class="btn yes" data-jfeed="${esc(f.n)}">Feed</button></div>`).join('')}</div>${fs.length <= 1 ? '<p class="small">The pantry is empty. Kibble Corner sells food, walks hide snacks.</p>' : ''}`;
   } else if (jTab === 'toys') {
     const ts = TOYS.map((t) => t.n).concat(TREASURES.filter((t) => t.kind === 'toy').map((t) => t.n)).filter((n) => owns('toys', n));
     body = `<div class="jgrid">${ts.map((n) => { const t = tInfo(n), shop = TOYS.find((x) => x.n === n); const act = toySupported(n) ? `<button class="btn yes" data-jtoyplay="${esc(n)}">Play</button>${FETCH_TOYS.includes(n) ? ` <button class="btn" data-jplay="${esc(n)}">Fetch</button>` : ''}` : FETCH_TOYS.includes(n) ? `<button class="btn yes" data-jplay="${esc(n)}">Play fetch</button>` : n === 'Squeaky Duck' || n === 'Rope Tug' ? `<button class="btn yes" data-jtoy="${n === 'Squeaky Duck' ? 'duck' : 'tug'}">Play</button>` : '<span class="chip own">Works automatically</span>'; return `<div class="jent"><span class="art">${art('item', n)}</span><b>${esc(n)}</b>${t ? stamp(t.r) : ''}<span class="ab">${esc(t ? t.ab + '. ' + t.txt : shop.note)}</span>${act}</div>`; }).join('')}</div>${ts.length ? '' : '<p class="small">No toys yet.</p>'}`;
@@ -54,6 +54,7 @@ function openJournal(tab) {
   p.querySelectorAll('[data-spots]').forEach((b) => { b.onclick = () => { SFX.click(); if (typeof openSpots === 'function') openSpots(); else toast(`Dog spots: ${S.dogs.length} dog${S.dogs.length > 1 ? 's' : ''} at home. More spots open with Bond.`); }; });
   if (jTab === 'family') pinFamNodes(p);
   if (isPhone()) pjJournalInit(p);
+  if (isPhone() && jTab === 'coats') { const c = $('.cbreeds', p), on = c && $('.cbreed.on', c); if (on) { const a = c.getBoundingClientRect(), r = on.getBoundingClientRect(); c.scrollLeft += r.left - a.left - (a.width - r.width) / 2; } } // v2.5: 14 tabs, keep the chosen breed in view
   p.querySelectorAll('[data-jtitle]').forEach((b) => { b.onclick = () => { jrToggleTitle(b.dataset.jtitle); openJournal(); }; });
   p.querySelectorAll('[data-fpartner]').forEach((b) => { b.onclick = () => { SFX.click(); closeModal(); if (typeof openPlaydates === 'function') openPlaydates({ with: b.dataset.fpartner }); else toast('The Playdate board is still being pinned up. Try again soon.'); }; });
   p.querySelectorAll('[data-jeq]').forEach((b) => { b.onclick = () => { equip(b.dataset.jeq); openJournal(); }; });
@@ -267,7 +268,7 @@ function jrFamCheck() {
   return got;
 }
 function jrCheckAll() { try { coatSync(); coatRewardsCheck(); jrFamCheck(); } catch (e) { console.warn('journal check', e); } }
-const coatBreeds = () => { const G = window.PawGenes; const b = G && Array.isArray(G.BREEDS) && G.BREEDS.length ? G.BREEDS : dogsList().map((d) => d.key); return b.slice(0, 12); };
+const coatBreeds = () => { const G = window.PawGenes; const b = G && Array.isArray(G.BREEDS) && G.BREEDS.length ? G.BREEDS : dogsList().map((d) => d.key); return b.slice(0, 14); };
 function coatCatalogOf(key) {
   try { const G = window.PawGenes; if (G && typeof G.coatCatalog === 'function') { const c = G.coatCatalog(key); if (Array.isArray(c) && c.length) return c; } } catch (e) { /* older genes module */ }
   return null;

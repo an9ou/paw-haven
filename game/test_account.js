@@ -452,7 +452,7 @@ run('account', async (t) => {
     const hd = await ev(() => { const e = document.querySelector('.pk-sub'); return { w: e.scrollWidth <= e.clientWidth, h: e.scrollHeight <= e.clientHeight + 2, txt: e.textContent }; });
     ok(hd.w && hd.h, 'the header hint is not truncated');
     ok(/^Tap or drag ingredients into the pot\./.test(hd.txt), 'the header uses touch wording: ' + hd.txt);
-    const big = await ev(() => [...document.querySelectorAll('.pk-top .pk-gold, .pk-top .pk-x, .pk-slots .pk-btn')].map((b) => { const r = b.getBoundingClientRect(); return [b.textContent.trim() || 'close', Math.round(r.width * 10) / 10, Math.round(r.height * 10) / 10]; }));
+    const big = await ev(() => [...document.querySelectorAll('.pk-top .pk-gold, .pk-top .pk-x, .pk-xstick, .pk-slots .pk-btn')].map((b) => { const r = b.getBoundingClientRect(); return [b.textContent.trim() || 'close', Math.round(r.width * 10) / 10, Math.round(r.height * 10) / 10]; }));
     ok(big.length === 4 && big.every((b) => b[1] >= 44 && b[2] >= 44), 'Recipe book, close, Empty and Cook! are >= 44 px ' + JSON.stringify(big));
     await audit(`${tag}_01`);
     // fill the pot past 4: the longer kind message and the dog's bubble

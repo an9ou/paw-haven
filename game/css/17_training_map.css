@@ -35,6 +35,8 @@
 #mapZoom{position:absolute;right:14px;bottom:14px;z-index:6;display:flex;flex-direction:column;align-items:center;gap:6px}
 #mapZoom .btn{width:48px;height:48px;min-height:48px;padding:0;font-size:28px}
 #mapZoom span{font-size:14px;background:var(--paper);padding:0 6px;border-radius:6px}
+/* v2.5 FIXES A: the dev button no longer hides behind the zoom column (it peeked out under "-" like a strip of tape) */
+#view:has(#mapPan) #devBtn{right:72px}
 .fbpin{cursor:pointer}.fbpin.locked>circle{fill:#F3ECE1}
 .vetcard p{margin:6px 0}
 html[data-layout="phone"] #trainPanel{position:relative;right:auto;bottom:auto;top:auto!important;width:auto;flex:none;max-height:34%;border-radius:16px 16px 0 0;border-width:2.5px 0 0;box-shadow:none;padding:8px 10px 6px;z-index:5}

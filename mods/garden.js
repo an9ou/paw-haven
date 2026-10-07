@@ -20,9 +20,11 @@
   ];
   var BY_ID = {};
   CROPS.forEach(function (c) { BY_ID[c.id] = c; });
-  var BUDDY = { shiba: 'inspect', corgi: 'guard', golden: 'fetch', dachs: 'dig', husky: 'snow', mutt: 'tend', chihuahua: 'guard', pug: 'tend', greyhound: 'fetch', beagle: 'inspect' };
+  var BUDDY = { shiba: 'inspect', corgi: 'guard', golden: 'fetch', dachs: 'dig', husky: 'snow', mutt: 'tend', chihuahua: 'guard', pug: 'tend', greyhound: 'fetch', beagle: 'inspect', poodle: 'inspect', collie: 'guard', samoyed: 'snow', frenchie: 'tend' };
   // v1.7: breed-flavoured opening lines (other breeds use the perk line)
-  var BREED_LINE = { chihuahua: '{n} is the security system. Captain Fluff has been warned. Loudly.', pug: '{n} lies next to the thirsty plants and snorts until someone waters them.', greyhound: '{n} fetched the basket at 45 mph. Then lay down in it.', beagle: '{n} has sniffed every leaf. Twice. Quality is guaranteed.' };
+  var BREED_LINE = { chihuahua: '{n} is the security system. Captain Fluff has been warned. Loudly.', pug: '{n} lies next to the thirsty plants and snorts until someone waters them.', greyhound: '{n} fetched the basket at 45 mph. Then lay down in it.', beagle: '{n} has sniffed every leaf. Twice. Quality is guaranteed.',
+    poodle: '{n} checks each leaf like a judge at a show. Only the best get through.', collie: '{n} keeps the squirrels in one corner of the garden. They look embarrassed.',
+    samoyed: '{n} keeps the plants company in the snow. The snow is the fun part.', frenchie: '{n} naps next to the dry plants. The snoring reminds you to water them.' };
   // quality points (0-3) -> [1 star, 2 stars, 3 stars] odds
   var STAR_ODDS = [[0.70, 0.25, 0.05], [0.55, 0.35, 0.10], [0.40, 0.40, 0.20], [0.25, 0.45, 0.30]];
   var SELL_MULT = [1, 1.5, 2];
@@ -307,6 +309,7 @@
     '.pg-tool:hover,.pg-btn:hover{transform:translateY(-1px) rotate(-1.5deg)}.pg-tool:active,.pg-btn:active{transform:translateY(1px);box-shadow:1px 1px 0 rgba(91,61,50,.25)}',
     '.pg-tool:focus-visible,.pg-btn:focus-visible,.pg-pk:focus-visible{outline:2.5px dashed #F28FA5;outline-offset:3px}',
     '.pg-btn{font-size:25px;padding:0 16px 3px;background:#C8E9CF}',
+    '.pg-x{width:46px;height:46px;padding:0;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex:none;font-size:26px}.pg-x svg{width:28px;height:28px}',
     '.pg-btn.pg-pink{background:#F9D0D9}.pg-btn.pg-yel{background:#FFE3A1}.pg-btn.pg-blue{background:#D7E7F8}.pg-btn.pg-sm{font-size:21px;padding:0 10px 2px}',
     '.pg-btn[disabled]{opacity:.45;cursor:default;transform:none}',
     /* chips (left column) */
@@ -379,6 +382,9 @@
     '.pg-portrait .pg-tool small{font-size:15px;margin-left:5px}',
     '.pg-portrait .pg-done{font-size:19px;padding:0 10px 3px;min-height:56px;min-width:56px}',
     '.pg-portrait .pg-pouch .pg-btn{min-width:56px}',
+    /* v2.5: the pouch's close X sits in its top-right corner and stays there: the title row sticks while the seed packets scroll under it */
+    '.pg-portrait .pg-pouch h3{position:sticky;top:-10px;z-index:3;background:#FFFBF3;margin:-10px -14px 6px;padding:10px 14px 6px;border-radius:14px 10px 0 0}',
+    '.pg-portrait .pg-pouch .pg-x{width:52px;height:52px;min-width:52px;min-height:52px}',
     '.pg-portrait .pg-tool i{width:24px;height:24px}',
     '.pg-portrait .pg-btn{min-height:54px}',
     '.pg-portrait .pg-chips{left:128px;right:8px;top:700px;flex-direction:column;flex-wrap:nowrap;gap:5px}',
@@ -567,7 +573,7 @@
     var root = null;
     try { injectCSS(); } catch (e) { /* ignore */ }
     var st = norm(clone(o.state) || newState());
-    var env = { time: o.time || 'day', weather: WEATHERS[o.weather] ? o.weather : 'sunny', month: (o.month >= 1 && o.month <= 12) ? o.month : (new Date().getMonth() + 1) };
+    var env = { season: o.season || 'summer', time: o.time || 'day', weather: WEATHERS[o.weather] ? o.weather : 'sunny', month: (o.month >= 1 && o.month <= 12) ? o.month : (new Date().getMonth() + 1) };
     var dog = o.dog || {}; var dogKey = dog.key || 'mutt', dogName = dog.name || 'Your dog', outfit = dog.outfit || {}; var dogCoat = dog.coat, dogSeed = dog.seed;
     var buddy = o.buddy !== undefined ? o.buddy : (BUDDY[dogKey] || null);
     var seeds = Object.assign({}, o.seeds || {});
@@ -698,7 +704,7 @@
 
     /* ---------------- render ---------------- */
     function renderScene() {
-      var s = art('scene', 'garden', { time: env.time, weather: env.weather }, null);
+      var s = art('scene', 'garden', { time: env.time, weather: env.weather, season: env.season }, null);
       if (!s || !/garden/i.test(s.slice(0, 400))) s = fbScene(env.time, env.weather);
       q('.pg-scene').innerHTML = s;
       if (PORT) { var sv = q('.pg-scene>svg'); if (sv) sv.setAttribute('preserveAspectRatio', 'xMidYMax slice'); }
@@ -846,7 +852,7 @@
       var owned = CROPS.filter(function (c) { return (seeds[c.id] | 0) > 0; });
       owned.sort(function (a, b) { var ia = a.seasons.indexOf(sz) >= 0 ? 0 : 1, ib = b.seasons.indexOf(sz) >= 0 ? 0 : 1; return ia - ib || CROPS.indexOf(a) - CROPS.indexOf(b); });
       var box = document.createElement('div'); box.className = 'pg-pouch';
-      var h = '<h3><span>Seed pouch' + (target >= 0 ? ' · plot ' + (target + 1) : '') + '</span><button type="button" class="pg-btn pg-pink pg-sm" data-x="1">Close</button></h3>';
+      var h = '<h3><span>Seed pouch' + (target >= 0 ? ' · plot ' + (target + 1) : '') + '</span><button type="button" class="pg-btn pg-pink pg-x" data-x="1" aria-label="Close the seed pouch">' + art('icon', 'close', null, function () { return '&times;'; }) + '</button></h3>';
       if (!owned.length) h += '<div class="pg-empty">' + NO_SEEDS + '.</div>';
       else {
         h += '<div class="pg-pks">';
@@ -938,6 +944,7 @@
       if (p.water >= 3) { say('Plot ' + (i + 1) + ' is already soggy. Three drops is the max.', 2200); return; }
       if (isReady(p)) { say('That one is ready to pick, no water needed.', 2000); return; }
       st = water(st, i); sfx('water');
+      call('onWater', i); // v2.5: the game counts watering (missions), only when a drop really went in
       var z = ZONES[i], can = document.createElement('div'); can.className = 'pg-can';
       can.style.left = (z.x + z.w * .55) + 'px'; can.style.top = (z.y - 66) + 'px';
       can.innerHTML = art('item', 'Watering Can', null, function () { return art('icon', 'water-can', null, fbCan); });

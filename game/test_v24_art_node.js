@@ -144,7 +144,7 @@ sec('existing names are byte-identical to integration/v2.4');
     calls.forEach(([k, n, o]) => {
       if (typeof P0[k] !== 'function') return;
       const a = P0[k](n, o), b = P1[k](n, o);
-      if (a === b) same++; else diff.push(k + ':' + n + (o && Object.keys(o).length ? ' ' + JSON.stringify(o) : ''));
+      if (a === b) same++; else if (k === 'item' && HOUSES.includes(n)) { /* v2.5 redraws the six house item icons (V25.md section 4) */ } else diff.push(k + ':' + n + (o && Object.keys(o).length ? ' ' + JSON.stringify(o) : ''));
     });
     ok(diff.length === 0, `every existing name is byte-identical (${same} of ${calls.length} same; differ: ${diff.slice(0, 8).join(', ')})`);
     ok(same > 300, `a broad sample was compared (${same} calls)`);

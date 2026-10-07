@@ -25,6 +25,13 @@ const FOOD = [
   { n: 'Sweet Potato Chews', price: 10, hunger: 20, happy: 5, snack: true, v24: true, tip: 'Always cooked and plain, never raw. Raw sweet potato is hard to digest.', note: '+20 Hunger, +5 Happiness. A long chew.' },
   { n: 'Pumpkin Purée', price: 12, hunger: 25, happy: 5, clean: 5, v24: true, tip: 'Plain cooked pumpkin only, never pie filling. It is gentle on tummies.', note: '+25 Hunger, +5 Happiness. Gentle on tummies.' },
   { n: 'Turkey Meatballs', price: 18, hunger: 45, happy: 10, v24: true, tip: 'Plain cooked turkey, no onion or garlic. Those are poison for dogs.', note: '+45 Hunger, +10 Happiness. Sunday dinner, dog edition.' },
+  // v2.5 festival foods: sold at Baker Bea's Harvest Stall only (fest), never in Kibble Corner
+  { n: 'Baked Pumpkin Wedges', fest: 'leaf', price: 8, hunger: 15, happy: 10, snack: true, v25: true, tip: 'Plain baked pumpkin, no spice and no sugar. Nutmeg is not for dogs.', note: '+15 Hunger, +10 Happiness. Soft, orange, gone in two bites.' },
+  { n: 'Sweet Potato Coins', fest: 'leaf', price: 9, hunger: 15, happy: 5, clean: 5, snack: true, v25: true, tip: 'Baked soft and plain, never raw. Let them cool before the first bite.', note: '+15 Hunger, +5 Happiness, clean teeth. Chewy little rounds.' },
+  { n: 'Warm Bone Broth', fest: 'leaf', price: 10, hunger: 10, happy: 10, energy: 5, warm: 60, snack: true, v25: true, tip: 'Plain and strained, no onion, garlic or salt. Cooked bones can splinter, so none stay in the cup.', note: '+10 Hunger, +10 Happiness, +5 Energy, warm paws for an hour.' },
+  { n: 'Ghost Biscuits', fest: 'halloween', price: 9, hunger: 10, happy: 15, snack: true, v25: true, tip: 'Plain oats and plain yoghurt, nothing else. Chocolate is never for dogs, it is poison to them.', note: '+10 Hunger, +15 Happiness. Oat biscuits with a yoghurt ghost on top.' },
+  { n: 'Candy Corn Carrots', fest: 'halloween', price: 6, hunger: 10, happy: 5, clean: 5, snack: true, v25: true, tip: 'No sugar at all, just carrot. Real sweets can hold xylitol, which is poison for dogs.', note: '+10 Hunger, +5 Happiness, clean teeth. Carrot points that only look like sweets.' },
+  { n: 'Monster Meatball', fest: 'halloween', price: 14, hunger: 30, happy: 10, v25: true, tip: 'Plain cooked turkey, no onion or garlic. Grapes and raisins never go near it, they are poison for dogs.', note: '+30 Hunger, +10 Happiness. A turkey meatball with a carrot-slice eye.' },
   { n: 'Frozen Pupsicle', price: 22, hunger: 15, happy: 20, energy: 10, cool: 60, snack: true, v24: true, tip: 'Frozen plain yoghurt and fruit, no xylitol ever. Let it soften a little for small dogs.', note: '+15 Hunger, +20 Happiness, +10 Energy. Cools a hot dog for 1 game hour.' }
 ];
 const TOYS = [
@@ -66,6 +73,12 @@ const CLOTHES = [
   { n: 'Happi Coat', slot: 'body', price: 95, bond: 3, v24: true, perk: 'Festival power: Pupcake power lasts 2 game hours instead of 1.' },
   { n: 'Cozy Hoodie', slot: 'body', price: 0, bond: 1, v24: true, reward: true, perk: 'Warm: no shivering in the snow. Hood up, ears out.' },
   { n: 'Knit Scarf', slot: 'neck', price: 0, bond: 1, v24: true, reward: true, perk: 'Warm: no shivering in the snow. Mrs. Plum knitted too much again.' },
+  // v2.5 festival clothes: sold at the Harvest Stall only (fest), never in the Boutique; the Rosette is a parade reward
+  { n: 'Leaf Beret', slot: 'head', fest: 'leaf', price: 55, bond: 1, v25: true, perk: 'Warm: no shivering in the snow. Tilted, like a painter.' },
+  { n: 'Autumn Scarf', slot: 'neck', fest: 'leaf', price: 50, bond: 1, v25: true, perk: 'Warm: no shivering in the snow. With the Leaf Beret, the daily fashion bonus gives +10 Happiness.' },
+  { n: 'Ghost Sheet', slot: 'body', fest: 'halloween', price: 60, bond: 1, v25: true, perk: 'Boo: the parade loves it. Nobody can see the tail wag, but it is wagging.' },
+  { n: 'Pumpkin Suit', slot: 'body', fest: 'halloween', price: 65, bond: 1, v25: true, perk: 'Round: naps in the Pumpkin Cottage restore 10% more.' },
+  { n: 'Parade Rosette', slot: 'neck', fest: 'halloween', price: 0, bond: 1, v25: true, reward: true, perk: 'Pride: won at the Halloween costume parade. It is a little bent.' },
   { n: 'Astronaut Helmet', slot: 'head', price: 0, bond: 1, v24: true, reward: true, perk: 'Space-proof: no soggy shake after rain, no shivering in the snow.' }
 ];
 const HOUSES = [
@@ -107,12 +120,16 @@ const SIG = {
   chihuahua: { n: 'The Tiny Tornado', fx: 'tk-tornado', pose: 'walk', always: true, snd: 'alert', say: 'I AM A WEATHER EVENT.' },
   pug: { n: 'The Snort Spin', fx: 'tk-spin', pose: 'happy', always: true, snd: 'huff', say: '*snort* *spin* *snort* Ta-da.' },
   greyhound: { n: 'The Zoomie Lap', fx: 'tk-lap', pose: 'walk', always: true, say: '45 mph. Now I need a 20-hour nap.' },
-  beagle: { n: 'The Big Bay', fx: 'tk-bow', pose: 'speak', snd: 'howl', say: 'AROOOOOOOOOO!' }
+  beagle: { n: 'The Big Bay', fx: 'tk-bow', pose: 'speak', snd: 'howl', say: 'AROOOOOOOOOO!' },
+  poodle: { n: 'The Prance', fx: 'tk-dance', pose: 'dance', say: 'Note the footwork. Note the pom-poms.' },
+  collie: { n: 'The Eye', fx: 'tk-perk', pose: 'crouch', say: 'I am herding you with my eyes. Please sit.' },
+  samoyed: { n: 'The Sammy Smile', fx: 'tk-bow', pose: 'happy', snd: 'talk', say: 'Woo-woo! That was the smile. Now with sound.' },
+  frenchie: { n: 'The Sploot', fx: 'tk-lie', pose: 'down', always: true, snd: 'huff', say: 'Back legs out. Belly on the cool floor. Perfect.' }
 };
 const SIG_FB = { n: 'The Grand Finale', fx: 'tk-bow', pose: 'happy', say: 'Ta-da! (Applause, please.)' };
 const sigOf = (k) => SIG[k] || SIG_FB;
 /* v1.7: every breed key in the game, in PawArt order (unknown keys fall back to generic content) */
-const BREED_KEYS = ['shiba', 'corgi', 'golden', 'dachs', 'husky', 'mutt', 'chihuahua', 'pug', 'greyhound', 'beagle'];
+const BREED_KEYS = ['shiba', 'corgi', 'golden', 'dachs', 'husky', 'mutt', 'chihuahua', 'pug', 'greyhound', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie'];
 const ROUTES = {
   park: { n: 'Sunny Park', bond: 1, secs: 60, energy: 15, happy: 15, clean: 5, coins: [20, 30], bp: 8, pool: ['coin', 'leaf', 'flower', 'bone'] },
   river: { n: 'Riverside Trail', bond: 2, secs: 75, energy: 25, happy: 20, clean: 10, coins: [35, 50], bp: 11, pool: ['coin', 'leaf', 'shell'] },
@@ -182,7 +199,11 @@ const PLACE_LINES = {
   chihuahua: { house: 'Sofa secured. Window secured. Toaster under observation.', park: 'Every dog here is twelve times my size. I will bark at all of them.', river: 'The ducks are a threat. I have informed them.', woods: 'A leaf moved. I have filed a report.', beach: 'The waves keep coming back. I keep yelling. It is working.', market: 'I will guard the door. From everyone. Forever.' },
   pug: { house: 'Sofa. Blanket. Snort. Perfect.', park: 'I walked here. That counts as exercise. Can we sit?', river: 'The ducks have bread. I am also bread-shaped. We are allies.', woods: 'Too many trees. Not enough benches. snort.', beach: 'Sand is just a big warm bed. Goodnight.', market: 'Kibble Corner. Kibble. Corner. snort snort.' },
   greyhound: { house: 'Found the softest spot. Lying on it upside down now.', park: 'So much space. Must... sprint... once. Okay, done. Nap.', river: 'Long legs, shallow water. I am basically a heron.', woods: 'Trees are just things I go around at 45 mph.', beach: 'A whole beach of runway! ZOOM. ...zzz.', market: 'I will lean on your legs while you shop. All of my weight.' },
-  beagle: { house: 'Someone had toast here three days ago. I can prove it.', park: 'Hot dog stand: 200 metres. Picnic: 50 metres. Squirrel: everywhere.', river: 'Fish. Mud. Duck. A sandwich from Tuesday. Rich smells here.', woods: 'This trail smells like a rabbit with a story. AROOO!', beach: 'Seaweed, sunscreen, chips. My nose is on holiday.', market: 'I can smell every shop at once. It is a lot. I love it.' }
+  beagle: { house: 'Someone had toast here three days ago. I can prove it.', park: 'Hot dog stand: 200 metres. Picnic: 50 metres. Squirrel: everywhere.', river: 'Fish. Mud. Duck. A sandwich from Tuesday. Rich smells here.', woods: 'This trail smells like a rabbit with a story. AROOO!', beach: 'Seaweed, sunscreen, chips. My nose is on holiday.', market: 'I can smell every shop at once. It is a lot. I love it.' },
+  poodle: { house: 'I have chosen the good cushion. Obviously.', park: 'The other dogs run in circles. I run in shapes.', river: 'I will admire the water. I will not enter the water. The hair.', woods: 'Twigs in my curls. This is a crisis.', beach: 'Sand gets into curls and never leaves. I am being brave.', market: 'I would like to see the Boutique. For research.' },
+  collie: { house: 'Everyone is in the kitchen. I have checked. Twice.', park: 'So many dogs. None of them in a line. I can fix that.', river: 'The ducks are in a group. Good ducks.', woods: 'Every tree is accounted for. I counted.', beach: 'The waves keep leaving. I keep bringing them back.', market: 'I will keep the shoppers together. Nobody wanders off.' },
+  samoyed: { house: 'The sofa is now fluffier. That is me. I am on it.', park: 'Everyone here gets a smile. Even the pigeon.', river: 'Cold water is my favourite water. Woo-woo!', woods: 'The shade is nice. The leaves stick to me. I am a leaf dog now.', beach: 'Too warm for me. I will smile from the shade.', market: 'Hello, shop. Hello, person. Hello, other person. Woo!' },
+  frenchie: { house: 'Sofa. Cushion. Your foot. All good seats.', park: 'I walked to the bench. Now I sit on the bench.', river: 'I do not swim. I sink. I will watch from here.', woods: 'Nice and shady. My kind of walk.', beach: 'Hot sand, flat face. Shade, please. *snort*', market: 'I will sit on your foot while you shop.' }
 };
 const DUCK_LINES = ['A duck looks at you. You look at the duck. Nobody blinks.', 'The ducks are holding a meeting. You were not invited.', 'One duck is wearing a tiny hat. Probably.'];
 const FAV = {
@@ -195,9 +216,13 @@ const FAV = {
   chihuahua: { food: ['Salmon Pâté'], toy: 'Squeaky Duck', act: 'petting' },
   pug: { food: ['Pupcake', 'Chicken & Rice Bowl'], toy: 'Plush Bone', act: 'feeding' },
   greyhound: { food: ['Chicken & Rice Bowl'], toy: 'Frisbee', act: 'fetch' },
-  beagle: { food: ['Basic Kibble', 'Bone-shaped Biscuit'], toy: 'Puzzle Feeder', act: 'digging' }
+  beagle: { food: ['Basic Kibble', 'Bone-shaped Biscuit'], toy: 'Puzzle Feeder', act: 'digging' },
+  poodle: { food: ['Salmon Pâté'], toy: 'Puzzle Feeder', act: 'tricks' },
+  collie: { food: ['Chicken & Rice Bowl'], toy: 'Frisbee', act: 'fetch' },
+  samoyed: { food: ['Chicken & Rice Bowl'], toy: 'Rope Tug', act: 'walks' },
+  frenchie: { food: ['Pupcake'], toy: 'Plush Bone', act: 'petting' }
 };
-const BARK = { shiba: 1.1, corgi: 1.35, golden: 0.9, dachs: 1.2, husky: 0.8, mutt: 1.0, chihuahua: 1.7, pug: 0.95, greyhound: 0.75, beagle: 1.0 };
+const BARK = { shiba: 1.1, corgi: 1.35, golden: 0.9, dachs: 1.2, husky: 0.8, mutt: 1.0, chihuahua: 1.7, pug: 0.95, greyhound: 0.75, beagle: 1.0, poodle: 1.25, collie: 1.15, samoyed: 0.95, frenchie: 0.9 };
 const FALLBACK_DOGS = [
   { key: 'shiba', name: 'Mochi', breed: 'Shiba Inu', personality: 'Proud, independent, dramatic', joke: 'heh.' },
   { key: 'corgi', name: 'Biscuit', breed: 'Corgi', personality: 'Cheerful, greedy for food', joke: 'Is that a snack? Is everything a snack?' },
@@ -208,7 +233,11 @@ const FALLBACK_DOGS = [
   { key: 'chihuahua', name: 'Peanut', breed: 'Chihuahua', personality: 'Tiny, fearless, dramatic guard dog', joke: 'I am the security system.' },
   { key: 'pug', name: 'Dumpling', breed: 'Pug', personality: 'Snorty, cuddly, lazy, food-loving', joke: 'snort.' },
   { key: 'greyhound', name: 'Rocket', breed: 'Greyhound', personality: 'Gentle couch potato who sprints in bursts', joke: '45 mph. Then a 20-hour nap.' },
-  { key: 'beagle', name: 'Bagel', breed: 'Beagle', personality: 'Nose-led, food-obsessed, bays loudly', joke: 'Smelled that from three streets away.' }
+  { key: 'beagle', name: 'Bagel', breed: 'Beagle', personality: 'Nose-led, food-obsessed, bays loudly', joke: 'Smelled that from three streets away.' },
+  { key: 'poodle', name: 'Pretzel', breed: 'Poodle', personality: 'Thinks it is the smartest one in the room. It is.', joke: 'Haircut optional. Dignity not.' },
+  { key: 'collie', name: 'Scout', breed: 'Border Collie', personality: 'Has counted the sheep. There are no sheep. Has counted you.', joke: 'Will herd the puppies, the ducks and the furniture.' },
+  { key: 'samoyed', name: 'Cloud', breed: 'Samoyed', personality: 'Smiles so the snow does not stick. Also just smiles.', joke: 'Sheds a second dog every spring.' },
+  { key: 'frenchie', name: 'Brioche', breed: 'French Bulldog', personality: 'Snores, snorts, sits on your foot. All three at once.', joke: 'Breathes like a tiny engine. Shade and water, please.' }
 ];
 const GENERIC_DOG = (key) => ({ key, name: 'Buddy', breed: 'Mystery Pup', personality: 'A little bit of everything', joke: 'Hi! I am a dog. Probably.' });
 const JOKES = {
@@ -221,7 +250,11 @@ const JOKES = {
   chihuahua: ['I am the security system.', 'I weigh two kilos. Fourteen of them are attitude.', 'A leaf moved. I have alerted the authorities. The authorities is you.', 'I am not shivering. I am vibrating with power.', 'Pick me up. No. Put me down. Pick me up.'],
   pug: ['snort.', 'I have done one thing today. It was a nap. Two things. Two naps.', 'My face is flat so I can get closer to the snacks.', 'Was that a wrapper? snort. snort snort.', 'Lap. Now. Please. snort.'],
   greyhound: ['45 mph. Then a 20-hour nap.', 'I ran once. In 2023. It was amazing.', 'My legs are long so I can lie down in more places at once.', 'I am not lazy. I am charging.', 'Lean mode: activated. You are the wall now.'],
-  beagle: ['Smelled that from three streets away.', 'AROOOO! (That means hello. Also snack.)', 'Somebody ate cheese near here in 2019. I am on the case.', 'My ears are long so they can sweep smells towards my nose.', 'I am not stealing the sandwich. I am inspecting it. With my mouth.']
+  beagle: ['Smelled that from three streets away.', 'AROOOO! (That means hello. Also snack.)', 'Somebody ate cheese near here in 2019. I am on the case.', 'My ears are long so they can sweep smells towards my nose.', 'I am not stealing the sandwich. I am inspecting it. With my mouth.'],
+  poodle: ['Haircut optional. Dignity not.', 'I learned that trick yesterday. I am bored of it today.', 'These are not curls. They are a hairstyle.', 'I have read the instructions. You have not.', 'I could open the treat jar. I am waiting for you to be polite.'],
+  collie: ['Will herd the puppies, the ducks and the furniture.', 'You moved. I noticed. I notice everything.', 'Throw it again. And again. And again. Please.', 'The chairs are in a line now. You are welcome.', 'I need a job. Any job. Is the job you?'],
+  samoyed: ['Sheds a second dog every spring.', 'Woo-woo! That means hello. Also everything.', 'I am not white. I am snow-coloured.', 'You look sad. I will smile at you until you stop.', 'Brush me? Brush me. Now there are two of me.'],
+  frenchie: ['Breathes like a tiny engine. Shade and water, please.', 'I am sitting on your foot. It is my foot now.', 'My ears hear everything. I ignore most of it.', '*snort* That was a compliment.', 'I am not lazy. I am low to the ground.']
 };
 const NPC_JOKES = ['Nice leash. Is that leash new?', 'I am Gary. I have never been happy.', 'Have you seen my ball? It is round. Ball-coloured.', 'WOOF. Sorry. Wrong dog.', 'I ate a bee once. Zero stars.', 'Your human walks funny. Mine too.', 'Sniff my bum? Rude not to.', 'I live here. On this exact spot.'];
 const SMELLS = ['Smells like a sandwich from 2014.', 'Smells like ANOTHER DOG. Scandalous.', 'Smells like adventure. No wait, a sock.', 'Smells like rain and old crisps.', 'Smells like... a squirrel\'s diary.', 'Sniff sniff. Interesting. Very interesting.'];
@@ -347,8 +380,9 @@ function updateWxOverlay() {
 }
 let envKey = '';
 function checkEnv(force) {
-  const e = envNow(), k = e.time + '|' + e.weather;
-  if (k === envKey && !force) return; const first = !envKey; envKey = k;
+  const e = envNow(), fe = festNow(), k = e.time + '|' + e.weather + '|' + e.season + '|' + (fe.leaf ? 'L' : '') + (fe.halloween ? 'H' : '');
+  if (k === envKey && !force) return; const first = !envKey; const oldKey = envKey; envKey = k;
+  if (!first) { const o = oldKey.split('|'); if (o[2] !== e.season) emit('env:season', { season: e.season }); if (o[3] !== k.split('|')[3]) emit('env:fest', fe); } // v2.5
   const g = $('#sceneG'); if (g && !g.dataset.noenv) { let extra = {}; try { extra = JSON.parse(g.dataset.extra || '{}'); } catch (er) { /* none */ } g.innerHTML = sceneArt(g.dataset.scene, e, extra); }
   const sm = $('#snowmanG'); if (sm) sm.innerHTML = snowmanSVG();
   if (g && !g.dataset.noenv) emit('scene:redraw', { mode: cur.mode });
@@ -490,6 +524,7 @@ function freshState(key, name, sex) {
     found: {}, mapPieces: [], walks: 0, glowUntil: -1, secretDug: false, title: '', place: 'yard'
   };
   st.inv.charms = []; st.outfit.charm = null;
+  st.fest = { letters: {}, parade: {}, piles: {}, stall: {} }; st.seasonSeen = {}; st.breedTips = {}; // v2.5
   Object.assign(st.dog, newDogFields(key, sex || 'male', bornDaysAgo(10))); st.kennel = [];
   st.garden = gardenNew(); gkFields(st, false); v131Fields(st);
   if (key === 'mutt') { st.dog.favFood = [PICK(FOOD.slice(1)).n]; st.dog.favToy = PICK(TOYS).n; }
@@ -521,6 +556,7 @@ function migrate(s) {
   gkFields(s, true);
   if (s.seedGiftPending && gkOn()) { delete s.seedGiftPending; s.inv.seeds.carrot = (s.inv.seeds.carrot || 0) + 3; s.inv.seeds.peas = (s.inv.seeds.peas || 0) + 3; s.gkEarly = true; s.gkNote = true; }
   v131Fields(s);
+  if (!s.fest || typeof s.fest !== 'object') s.fest = {}; s.fest.letters = s.fest.letters || {}; s.fest.parade = s.fest.parade || {}; s.fest.piles = s.fest.piles || {}; s.fest.stall = s.fest.stall || {}; s.seasonSeen = s.seasonSeen || {}; s.breedTips = s.breedTips || {}; // v2.5: festivals and seasons
   if (!s.guide || typeof s.guide !== 'object') { s.guide = { step: -1, done: localISO() }; s.guideSeen = true; } // v2.4: saves from before the guide never see the walkthrough, they get a letter
   return s;
 }
@@ -537,7 +573,17 @@ const NAME = () => (S ? S.dog.name : 'Dog');
 const day = () => Math.floor(S.gameMin / 1440) + 1;
 function clock() { const m = Math.floor(S.gameMin % 1440); return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); }
 /* ---- v1.2 real time + weather: clock = device time; weather seeded by date, 3 periods a day ---- */
-const ENV = { time: prefs.ovrTime || 'auto', weather: prefs.ovrWeather || 'auto' };
+const ENV = { time: prefs.ovrTime || 'auto', weather: prefs.ovrWeather || 'auto', season: prefs.ovrSeason || 'auto', fest: prefs.ovrFest || 'auto' }; // v2.5: season and festival overrides
+/* ---- v2.5 seasons on the real calendar (northern hemisphere) and the festival windows. See V25.md section 1 ---- */
+const monthNow = () => new Date().getMonth() + 1;
+const seasonOf = (m) => ([12, 1, 2].includes(m) ? 'winter' : m <= 5 ? 'spring' : m <= 8 ? 'summer' : 'autumn');
+const SEASONS = ['spring', 'summer', 'autumn', 'winter'];
+function seasonNow() { return SEASONS.includes(ENV.season) ? ENV.season : seasonOf(monthNow()); }
+function festNow() {
+  const f = ENV.fest; if (f === 'off') return { leaf: false, halloween: false }; if (f === 'leaf' || f === 'halloween' || f === 'both') return { leaf: f !== 'halloween', halloween: f !== 'leaf' };
+  const d = new Date(), m = d.getMonth() + 1, day = d.getDate(); return { leaf: m === 10 || m === 11, halloween: m === 10 && day >= 24 };
+}
+const festOn = (n) => !!festNow()[n];
 function timePhase() { if (ENV.time !== 'auto') return ENV.time; const h = new Date().getHours(); return h >= 5 && h < 7 ? 'dawn' : h >= 7 && h < 17 ? 'day' : h >= 17 && h < 19 ? 'dusk' : 'night'; }
 function weatherPeriodKey() { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}-${Math.floor(d.getHours() / 8)}`; }
 function weatherNow() {
@@ -548,7 +594,7 @@ function weatherNow() {
   return r < 0.45 ? 'sunny' : r < 0.70 ? 'cloudy' : r < 0.95 ? 'rain' : winter ? 'snow' : 'rain';
 }
 const weather = weatherNow;
-const envNow = () => ({ time: timePhase(), weather: weatherNow() });
+const envNow = () => ({ time: timePhase(), weather: weatherNow(), season: seasonNow() });
 const isNight = () => timePhase() === 'night';
 function isHot() { if (S && S.buff && typeof buffOn === 'function' && buffOn('cool')) return false; if (S && (S.outfit.head === 'Sun Hat' || (S.coolUntil || -1) > S.gameMin)) return false; if (weatherNow() !== 'sunny' || timePhase() !== 'day') return false; if (ENV.time !== 'auto') return true; const h = new Date().getHours(); return h >= 11 && h < 15; }
 function clockText() { if (ENV.time !== 'auto') return { dawn: '06:00', day: '13:00', dusk: '18:00', night: '23:00' }[ENV.time] + '*'; const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
@@ -558,8 +604,8 @@ function wxIconName() { const w = weatherNow(), t = timePhase(); if (w === 'rain
 const RAINCOATS = ['Yellow Raincoat', 'Polka-dot Raincoat', 'Frog Raincoat', 'Bubble Raincoat'];
 const hasRaincoat = () => RAINCOATS.includes(S.outfit.body);
 const hasRainHat = () => S.outfit.head === 'Rain Hat' || S.outfit.head === 'Astronaut Helmet';
-const WARM_WEAR = ['Pom-pom Beanie', 'Knit Winter Sweater', 'Cozy Hoodie', 'Knit Scarf', 'Astronaut Helmet']; // v2.4: three new warm things
-const isWarm = () => SLOTS.some((k) => WARM_WEAR.includes(S.outfit[k])) || (typeof buffOn === 'function' && buffOn('warm'));
+const WARM_WEAR = ['Pom-pom Beanie', 'Knit Winter Sweater', 'Cozy Hoodie', 'Knit Scarf', 'Astronaut Helmet', 'Leaf Beret', 'Autumn Scarf']; // v2.4: three new warm things; v2.5: the leaf festival pair
+const isWarm = () => SLOTS.some((k) => WARM_WEAR.includes(S.outfit[k])) || (typeof buffOn === 'function' && buffOn('warm')) || (S.warmUntil || -1) > S.gameMin; // v2.5: Warm Bone Broth
 const houseInfo = (n) => HOUSES.find((h) => h.n === (n || S.house)) || HOUSES[0];
 const owns = (cat, n) => S.inv[cat].includes(n);
 const glowing = () => (S.gameMin < (S.glowUntil || -1)) || (S.stats.hunger > 80 && S.stats.happy > 80 && S.stats.energy > 80 && S.stats.clean > 80);
@@ -581,6 +627,7 @@ function phChipClear() { if (!isPhone()) return 0; const st = $('#status'); retu
 function toast(text, kind = '') {
   const modScr = stage.classList.contains('modhud') || (isPhone() && cur.mode === 'toy'); // v2.4: in a toy game on a phone, toasts sit under the strip, not on its title bar
   toasts.style.top = modScr ? 'auto' : (hud.hidden ? 10 : view.offsetTop + 8 + phChipClear()) + 'px'; toasts.style.bottom = modScr ? '18px' : ''; toasts.style.flexDirection = modScr ? 'column-reverse' : '';
+  if (isPhone() && !modal.hidden) { const h2 = modal.querySelector('.panel > h2'); const sr = stage.getBoundingClientRect(); toasts.style.setProperty('--toastTop', (h2 ? h2.getBoundingClientRect().bottom - sr.top + 6 : 6) + 'px'); } // v2.5: never over a sheet's title
   const t = document.createElement('div'); t.className = 'toast ' + kind; t.textContent = text; toasts.appendChild(t);
   while (toasts.children.length > 3) toasts.firstChild.remove();
   setTimeout(() => t.remove(), 2900);

@@ -104,9 +104,13 @@ const AUDIT = () => {
       await food.tap();
       ok(await t.until((a) => (window.__paw.S.inv.food[a.n] || 0) < a.had, { n: fname, had }, 6000), 'tapping a food feeds the dog (' + fname + ')');
       await t.home();
-      ok(await t.until(() => !!document.querySelector('#bowlG'), null, 4000), 'bowl is in the yard');
-      const bw = await rectOf('#bowlG'); ok(bw.w >= 44 && bw.h >= 44, `bowl tap area >= 44 (${Math.round(bw.w)}x${Math.round(bw.h)})`);
-      await t.p.touchscreen.tap(bw.x, bw.y); ok(await t.waitPop(true), 'tapping the bowl opens the feed tray');
+      // v2.5: the bowl shows only while feeding (from the Feed tray opening to the end of the meal)
+      const bowlOn = () => t.ev(() => { const b = document.getElementById('bowlG'); return !!b && getComputedStyle(b).visibility !== 'hidden'; });
+      await t.until(() => window.__paw.S.bowl == null, null, 6000); await t.home(); // the meal above ends first (the bowl shows while the dog eats)
+      ok(!(await bowlOn()), 'no bowl in the yard at rest');
+      await t.retryUntil(() => tapSel('[data-act=feed]'), () => !!document.querySelector('#dock .tray:not(.dock-idle):not(.mini)'));
+      const bw = await rectOf('#bowlG'); ok(await bowlOn() && bw.w >= 44 && bw.h >= 44, `the Feed tray shows the bowl, >= 44 px (${Math.round(bw.w)}x${Math.round(bw.h)})`);
+      await t.p.keyboard.press('Escape'); await t.waitPop(false); ok(await t.until(() => getComputedStyle(document.getElementById('bowlG')).visibility === 'hidden', null, 3000), 'closing the tray hides the bowl');
       await t.home();
 
       // ---------- care tray, decor, beds, houses ----------

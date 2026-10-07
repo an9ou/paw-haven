@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>World B v2.5 gallery</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&display=swap">
+<style>body{margin:0;padding:12px;background:#FFFBF3;font:14px/1.3 system-ui,sans-serif;color:#5B3D32}
+h1{font-size:18px;margin:0 0 4px}h2{margin:18px 0 6px;font-size:15px}.row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.pair{display:flex;gap:10px;align-items:flex-end;background:#fff;border:1px dashed #D8CBB8;padding:4px;flex-wrap:wrap}
+figure{margin:0;text-align:center}figcaption{font:600 13px 'Caveat',cursive;margin-top:2px}
+.o figcaption{opacity:.55}svg{display:block;max-width:100%}.night{background:#3E4A6B;border-radius:6px;padding:6px}
+.scene{position:relative;overflow:hidden;border-radius:6px;border:1px solid #E3D2BA}.scene>.bg svg{width:100%;height:100%}.scene>.on{position:absolute}
+.small figure>div{width:40px}</style></head>
+<body>
+<h1>Paw Haven world art B: v2.5 "Autumn &amp; New Pups" additions</h1>
+<p>Each new drawing sits next to its nearest existing neighbour (greyed caption) so the hand can be compared.</p>
+<h2>Harvest Stall (240x220), next to the Town Square shopfronts</h2><div class="row" id="stall"></div>
+<h2>The stall in the Town Square</h2><div class="row" id="stallscene"></div>
+<h2>Leaf pile (160x100), next to the yard bench</h2><div class="row" id="pile"></div>
+<h2>Leaf piles in the yard</h2><div class="row" id="pilescene"></div>
+<h2>Parade banner (400x90), jack-o-lantern (80x80), leaf drift (120x40)</h2><div class="row" id="deco"></div>
+<h2>Foods (64), next to Pumpkin Purée</h2><div class="row" id="foods"></div>
+<h2>Clothes (64), next to the Knit Scarf</h2><div class="row" id="clothes"></div>
+<h2>Icons (64), next to season-autumn and playdate</h2><div class="row" id="icons"></div>
+<h2>Food bowls at the yard scale (90 px), next to Basic Kibble and Salmon Pâté</h2><div class="row" id="bowls"></div>
+<h2>Shop scale (40 px): festival items</h2><div class="row small" id="small"></div>
+<h2>House cards at 40 px, next to the Cozy Cottage house at 40 px</h2><div class="row small" id="houses40"></div>
+<h2>House cards (64)</h2><div class="row" id="houses64"></div>
+<script src="pawart_world_a.js"></script>
+<script src="pawart_world_c.js"></script>
+<script src="pawart_world_b.js"></script>
+<script>
+const PA=window.PawArt,W=window.innerWidth<600;
+const ENV={time:'day',weather:'cloudy'};
+function fig(svg,cap,w,old){return '<figure class="'+(old?'o':'')+'"><div style="width:'+w+'px">'+svg+'</div><figcaption style="max-width:'+Math.max(w,60)+'px">'+cap+'</figcaption></figure>'}
+function add(id,html,cls){const d=document.createElement('div');d.className='pair'+(cls?' '+cls:'');d.innerHTML=html;document.getElementById(id).appendChild(d)}
+const crop=(svg,vb)=>svg.replace(/viewBox="[^"]+"/,'viewBox="'+vb+'"').replace('preserveAspectRatio="xMidYMid slice"','preserveAspectRatio="xMidYMid meet"');
+// scale: one scene unit = k px everywhere in a pair
+const k=W?.62:1;
+add('stall',fig(PA.prop('stall',{kind:'leaf'}),'stall leaf',240*k)+fig(PA.prop('stall',{kind:'halloween'}),'stall halloween',240*k)+fig(crop(PA.scene('square',ENV),'600 160 400 250'),'Town Square shopfronts',400*k,1));
+add('stall',fig(crop(PA.scene('market',ENV),'0 120 500 330'),'Market Street',500*k,1));
+function inScene(id,scene,env,items,w){const h=w*.6;let on='';items.forEach(([svg,x,y,sw])=>{on+='<div class="on" style="left:'+(x/1000*w)+'px;top:'+(y/600*h)+'px;width:'+(sw/1000*w)+'px">'+svg+'</div>'});
+  add(id,'<div class="scene" style="width:'+w+'px;height:'+h+'px"><div class="bg" style="width:100%;height:100%">'+PA.scene(scene,env)+'</div>'+on+'</div>')}
+const SW=W?360:620;
+inScene('stallscene','square',ENV,[[PA.prop('stall',{kind:'leaf'}),380,318,200]],SW);
+inScene('stallscene','square',{time:'dusk',weather:'sunny'},[[PA.prop('stall',{kind:'halloween'}),380,318,200],[PA.prop('paradebanner'),30,226,320]],SW);
+add('pile',fig(PA.prop('leafpile',{state:'full',seed:0}),'leafpile full',160*k)+fig(PA.prop('leafpile',{state:'scattered',seed:0}),'scattered',160*k)+fig(crop(PA.scene('park',ENV),'655 400 170 120'),'park bench',170*k,1));
+add('pile',fig(PA.prop('leafpile',{state:'full',seed:1}),'full, seed 1',160*k)+fig(PA.prop('leafpile',{state:'full',seed:2}),'full, seed 2',160*k)+fig(PA.prop('leafpile',{state:'scattered',seed:2}),'scattered, seed 2',160*k));
+inScene('pilescene','yard',ENV,[[PA.prop('leafpile',{seed:0}),220,400,150],[PA.prop('leafpile',{state:'scattered',seed:1}),380,470,170],[PA.prop('jackolantern',{lit:false}),880,470,70],[PA.prop('leafdrift'),560,540,120]],SW);
+add('deco',fig(PA.prop('paradebanner'),'paradebanner',400*k));
+add('deco',fig(PA.prop('jackolantern',{lit:false}),'jackolantern',80)+fig(PA.prop('jackolantern',{lit:true}),'lit',80)+'<div class="night">'+fig(PA.prop('jackolantern',{lit:true}),'lit at night',80)+'</div>'+fig(PA.item('Pumpkin'),'Pumpkin',64,1));
+add('deco',fig(PA.prop('leafdrift'),'leafdrift',120)+fig(PA.collectible('leaf'),'leaf collectible',60,1));
+const FOODS=['Baked Pumpkin Wedges','Sweet Potato Coins','Warm Bone Broth','Ghost Biscuits','Candy Corn Carrots','Monster Meatball'];
+const CLOTHES=['Leaf Beret','Autumn Scarf','Ghost Sheet','Pumpkin Suit','Parade Rosette'];
+const HOUSES=['Little Tea House','Beach Hut','Camper Van','Pumpkin Cottage','Lighthouse Kennel','Rocket Ship'];
+const IW=W?72:96;
+FOODS.forEach(n=>add('foods',fig(PA.item(n),n,IW)+fig(PA.item('Pumpkin Purée'),'Pumpkin Purée',IW,1)));
+CLOTHES.forEach(n=>add('clothes',fig(PA.item(n),n,IW)+fig(PA.item('Knit Scarf'),'Knit Scarf',IW,1)));
+add('icons',fig(PA.icon('festival'),'festival',IW)+fig(PA.icon('season-autumn'),'season-autumn',IW,1));
+add('icons',fig(PA.icon('parade'),'parade',IW)+fig(PA.icon('playdate'),'playdate',IW,1));
+[...FOODS,...CLOTHES].forEach(n=>add('small',fig(PA.item(n),'',40)));
+add('small',fig(PA.item('Pumpkin Purée'),'',40,1)+fig(PA.item('Knit Scarf'),'',40,1),'old');
+HOUSES.forEach(n=>add('houses40',fig(PA.item(n),'',40)+fig(PA.house('Cozy Cottage'),'',40,1)));
+HOUSES.forEach(n=>add('houses64',fig(PA.item(n),n,IW)+fig(PA.house(n),'house',IW*1.4,1)));
+const BOWLS=['Carrot Sticks','Apple Slices','Blueberry Bites','Seedless Watermelon Cubes','Sweet Potato Chews','Pumpkin Purée','Turkey Meatballs','Frozen Pupsicle','Baked Pumpkin Wedges','Sweet Potato Coins','Warm Bone Broth','Ghost Biscuits','Candy Corn Carrots','Monster Meatball'];
+add('bowls',fig(PA.prop('bowl',{food:'Basic Kibble'}),'Basic Kibble',90,1)+fig(PA.prop('bowl',{food:'Salmon Pâté'}),'Salmon Pâté',90,1),'old');
+BOWLS.forEach(n=>add('bowls',fig(PA.prop('bowl',{food:n}),n,90)));
+</script></body></html>

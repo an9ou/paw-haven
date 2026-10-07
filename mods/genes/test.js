@@ -19,9 +19,15 @@ const EXPECT = {
   chihuahua: { name: 'Fawn',                eyes: 'brown', base: '#F0C48C', light: '#FFF1DC', white: 0 },
   pug:       { name: 'Fawn',                eyes: 'brown', base: '#E8C08C', light: '#F6DDB6', dark: '#2B2430', white: 0 },
   greyhound: { name: 'Blue with white markings', eyes: 'brown', base: '#8E9AB0', light: '#FFFFFF', dark: '#6E7A90', white: 0.25 },
-  beagle:    { name: 'Tricolour',           eyes: 'brown', base: '#CF8C4C', light: '#FFFFFF', dark: '#2B2430', white: 0.25 }
+  beagle:    { name: 'Tricolour',           eyes: 'brown', base: '#CF8C4C', light: '#FFFFFF', dark: '#2B2430', white: 0.25 },
+  // v2.5 breeds (V25.md 6a: the SP art colours)
+  poodle:    { name: 'Apricot',             eyes: 'brown', base: '#F2C48F', light: '#FBE2C0', white: 0 },
+  collie:    { name: 'Black and white',     eyes: 'brown', base: '#2A2628', light: '#FFFFFF', white: 0.25 },
+  samoyed:   { name: 'White',               eyes: 'brown', base: '#FBF6EC', light: '#FFFFFF', dark: '#E8DECB', white: 0 },
+  frenchie:  { name: 'Fawn',                eyes: 'brown', base: '#D9B48A', light: '#F0DCC0', dark: '#3A2E2E', white: 0 }
 };
-ok(Object.keys(EXPECT).length === 10 && G.BREEDS.length === 10, '10 breeds');
+ok(Object.keys(EXPECT).length === 14 && G.BREEDS.length === 14, '14 breeds');
+ok(G.BREEDS.slice(10).join() === 'poodle,collie,samoyed,frenchie', 'v2.5 keys appended at the end of BREEDS');
 console.log('Starter phenotypes:');
 for (const k of Object.keys(EXPECT)) {
   const p = G.phenotype(G.STARTER_GENES[k], k), e = EXPECT[k];
@@ -70,6 +76,29 @@ ok(G.phenotype(mk({ B: ['b', 'b'] }), 'beagle').coatName === 'Chocolate tricolou
 ok(G.phenotype(mk({ B: ['b', 'b'], M: ['M', 'm'] }), 'chihuahua', 'c1').coat.merle === true, 'chihuahua merle shows');
 ok(G.phenotype(mk({}), 'not-a-breed').coat.base === G.SHADES.mutt.black[0], 'unknown breed falls back to mutt');
 ok(G.SIZE.chihuahua === 'small' && G.SIZE.pug === 'small' && G.SIZE.beagle === 'medium' && G.SIZE.greyhound === 'large', 'breed sizes');
+ok(G.SIZE.poodle === 'medium' && G.SIZE.collie === 'medium' && G.SIZE.samoyed === 'large' && G.SIZE.frenchie === 'small', 'v2.5 breed sizes');
+ok(G.BREEDS.every((k) => G.BREED_NAMES[k] && G.SHADES[k] && G.FREQ[k] && G.STARTER_GENES[k] && G.SIZE[k]), 'every breed has names, shades, frequencies, starter genes and a size');
+// v2.5 coats (V25.md 6b)
+const nm = (o, k) => G.phenotype(mk(o), k).coatName;
+ok(nm({}, 'poodle') === 'Black' && nm({ E: ['e', 'e'] }, 'poodle') === 'Apricot' && nm({ B: ['b', 'b'] }, 'poodle') === 'Chocolate', 'poodle black, apricot, chocolate');
+ok(nm({ E: ['e', 'e'], D: ['d', 'd'] }, 'poodle') === 'White' && nm({ E: ['e', 'e'], B: ['b', 'b'] }, 'poodle') === 'Cream' && nm({ D: ['d', 'd'] }, 'poodle') === 'Silver', 'poodle white, cream, silver');
+ok(nm({ E: ['e', 'e'], D: ['d', 'd'], S: ['S', 'sp'] }, 'poodle') === 'White' && nm({ E: ['e', 'e'], D: ['d', 'd'], S: ['sp', 'sp'] }, 'poodle') === 'Parti', 'a white poodle is just White, its parti form just Parti');
+ok(nm({ E: ['e', 'e'], S: ['sp', 'sp'] }, 'samoyed') === 'White' && nm({ E: ['e', 'e'], S: ['S', 'sp'] }, 'samoyed') === 'White', 'a samoyed-bodied mix with spotting is still just White');
+ok(G.BREEDS.every((k) => G.coatCatalog(k, { all: true }).every((c) => !/^White (with|&|parti|pied)/.test(c.coat))), 'no coat name says white twice');
+ok(nm({ S: ['sp', 'sp'] }, 'poodle') === 'Parti' && nm({ S: ['sp', 'sp'], E: ['e', 'e'] }, 'poodle') === 'Apricot parti', 'poodle parti');
+ok(G.phenotype(mk({ E: ['e', 'e'], D: ['d', 'd'] }), 'poodle').coat.base !== '#FFFFFF', 'a white poodle is off-white (pure white is the spot colour)');
+ok(nm({ S: ['S', 'sp'] }, 'collie') === 'Black and white' && nm({}, 'collie') === 'Tricolour' && nm({ S: ['sp', 'sp'] }, 'collie') === 'Black & white piebald', 'collie black and white, tricolour, piebald');
+ok(nm({ S: ['S', 'sp'], E: ['e', 'e'] }, 'collie') === 'Red and white' && nm({ S: ['S', 'sp'], B: ['b', 'b'] }, 'collie') === 'Chocolate and white' && nm({ S: ['S', 'sp'], B: ['b', 'b'], D: ['d', 'd'] }, 'collie') === 'Lilac and white', 'collie red, chocolate, lilac');
+ok(nm({ M: ['M', 'm'], S: ['S', 'sp'] }, 'collie') === 'Blue merle' && nm({ M: ['M', 'm'], B: ['b', 'b'] }, 'collie') === 'Red merle', 'collie merle words');
+ok(G.phenotype(mk({ M: ['M', 'm'], E: ['e', 'e'], S: ['S', 'sp'] }), 'collie').merleHidden === true && nm({ M: ['M', 'm'], E: ['e', 'e'], S: ['S', 'sp'] }, 'collie') === 'Red and white', 'collie cryptic merle hides on e/e');
+ok(nm({ E: ['e', 'e'] }, 'samoyed') === 'White' && nm({ E: ['e', 'e'], B: ['b', 'b'] }, 'samoyed') === 'Cream', 'samoyed white and cream');
+ok(nm({ E: ['e', 'e'] }, 'frenchie') === 'Fawn' && nm({}, 'frenchie') === 'Dark fawn' && nm({ E: ['e', 'e'], D: ['d', 'd'] }, 'frenchie') === 'Blue fawn' && nm({ E: ['e', 'e'], B: ['b', 'b'] }, 'frenchie') === 'Cream', 'frenchie fawn, dark fawn, blue fawn, cream');
+ok(nm({ S: ['sp', 'sp'] }, 'frenchie') === 'Pied' && nm({ S: ['sp', 'sp'], E: ['e', 'e'] }, 'frenchie') === 'Fawn pied', 'frenchie pied');
+const catHas = (k, names) => { const c = G.coatCatalog(k).map((x) => x.coat); return names.every((n) => c.includes(n)); };
+ok(catHas('poodle', ['Black', 'White', 'Apricot', 'Chocolate', 'Cream', 'Silver', 'Parti']), 'poodle catalogue');
+ok(catHas('collie', ['Black and white', 'Red and white', 'Blue merle', 'Red merle', 'Tricolour', 'Chocolate and white', 'Lilac and white']), 'collie catalogue');
+ok(G.coatCatalog('samoyed').map((x) => x.coat).join() === 'White,Cream', 'samoyed catalogue is White, Cream');
+ok(catHas('frenchie', ['Fawn', 'Cream', 'Dark fawn', 'Pied', 'Blue fawn']), 'frenchie catalogue');
 
 /* 3. Inheritance ratios over 10,000 runs (doc: Punnett examples) */
 const N = 10000, S = G.STARTER_GENES;
@@ -98,6 +127,10 @@ ok(G.isDoubleMerle({ genes: mk({ M: ['M', 'm'], E: ['e', 'e'] }) }, { genes: mk(
 { const r2 = seeded(77); let a = null, b = null; while (!a || !b) { const g = G.randomGenotype('chihuahua', r2); if (g.M.includes('M')) { if (!a) a = g; else b = g; } }
   ok(G.isDoubleMerle(a, b) === true, 'merle chihuahua x merle chihuahua blocked'); }
 ok(G.isDoubleMerle(G.STARTER_GENES.pug, G.STARTER_GENES.beagle) === false, 'starter pug x beagle allowed');
+{ const r3 = seeded(78); let a = null, b = null; while (!a || !b) { const g = G.randomGenotype('collie', r3); if (g.M.includes('M')) { if (!a) a = g; else b = g; } }
+  ok(G.isDoubleMerle(a, b) === true, 'merle collie x merle collie blocked');
+  ok(G.isDoubleMerle(a, G.STARTER_GENES.collie) === false, 'merle collie x plain collie allowed');
+  ok(G.predict(a, G.STARTER_GENES.collie, 'collie', 'collie').some((x) => /merle/.test(x.coat)), 'merle x plain collie can make merle pups'); }
 
 /* 5. Relatives */
 const dogs = [
@@ -133,10 +166,13 @@ for (const b of G.BREEDS) {
   counts[b] = { merle: merle / N, ee: ee / N, pie: pie / N };
   ok(mm === 0, `${b}: never M/M`); ok(bad === 0, `${b}: valid alleles`);
   if (['corgi', 'dachs', 'mutt'].includes(b)) near(merle / N, 0.15, 0.015, `${b} merle rate`);
+  else if (b === 'collie') near(merle / N, 0.20, 0.015, 'collie merle rate');
   else if (b === 'chihuahua') near(merle / N, 0.10, 0.012, 'chihuahua merle rate');
   else ok(merle === 0, `${b}: no merle`);
 }
 ok(counts.golden.ee === 1, 'goldens are always e/e');
+ok(counts.samoyed.ee === 1 && counts.samoyed.pie === 0, 'samoyeds are always e/e and never piebald');
+near(counts.frenchie.pie, 0.35 * 0.35, 0.012, 'frenchie pied rate');
 ok(counts.pug.pie === 0, 'pugs are never piebald');
 near(1 - counts.pug.ee, 0.19, 0.015, 'about 19% black pugs');
 console.log('Random rescues (10,000 each):', Object.entries(counts).map(([b, c]) => `${b} merle ${(c.merle * 100).toFixed(1)}% red ${(c.ee * 100).toFixed(0)}%`).join(', '));

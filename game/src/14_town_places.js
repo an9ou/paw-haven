@@ -33,8 +33,9 @@ function cafeMenu() {
     const it = items.find((x) => x.n === b.dataset.cafe); if (D().cafeDay === todayKey()) { nope(`One café treat per dog per day. ${NAME()} is pretending not to know that.`); return; }
     if (S.coins < it.price) { nope('Not enough coins. The barista is sympathetic but firm.'); return; }
     S.coins -= it.price; D().cafeDay = todayKey(); SFX.kaching(); closeModal(); markDirty();
-    busy = true; renderDog('eat', 'right', true); SFX.slurp();
-    setTimeout(() => { addStat('happy', it.happy); addStat('hunger', it.hunger); busy = false; setTemp('happy', 1400); updateHUD(); toast(`${NAME()} enjoyed a ${it.n}. ${it.n === 'Pupuccino' ? `${PR().He} has a foam moustache now.` : `${PR().He} ate it in one bite. Of course.`} +${it.happy} Happiness.`, 'good'); }, 1300);
+    // v2.5: the treat is served in the bowl (shown only while the dog eats), like every other food
+    busy = true; hideBubble(); setBowl(it.n); dogTo(-125, 0, 1, 0.8); renderDog('walk', 'left'); setTimeout(() => { renderDog('eat', 'left', true); SFX.slurp(); }, 850);
+    setTimeout(() => { setBowl(null); dogTo(0, 0, 1, 0.8); addStat('happy', it.happy); addStat('hunger', it.hunger); setTimeout(() => { busy = false; renderDog(dogPoseNow()); }, 900); setTemp('happy', 1400); updateHUD(); toast(`${NAME()} enjoyed a ${it.n}. ${it.n === 'Pupuccino' ? `${PR().He} has a foam moustache now.` : `${PR().He} ate it in one bite. Of course.`} +${it.happy} Happiness.`, 'good'); }, 2300);
   }; });
 }
 function vetCheck(id) {
@@ -113,6 +114,15 @@ function mapApply() {
 }
 function mapCenter(k, anim) { const M = MAPV; if (!M) return; const c = M.centers[k]; if (!c) return; const s = M.base * M.z; M.tx = M.vw / 2 - c[0] * s; M.ty = M.vh / 2 - c[1] * s; const inner = $('#mapInner'); if (inner) inner.style.transition = anim ? 'transform .35s ease-out' : ''; mapApply(); if (anim) setTimeout(() => { if (inner) inner.style.transition = ''; }, 380); }
 function mapZoomAt(f, px, py) { const M = MAPV; if (!M) return; const z0 = M.z, z1 = clamp(z0 * f, 0.6, 1.6); if (z1 === z0) return; const s0 = M.base * z0, s1 = M.base * z1; const mx = (px - M.tx) / s0, my = (py - M.ty) / s0; M.z = z1; M.tx = px - mx * s1; M.ty = py - my * s1; mapApply(); }
+// v2.5 FIXES A: on phones the X and the zoom column float over the map, so on opening the map slides sideways by the smallest step that leaves no place name under them
+function mapClearCtl() {
+  const M = MAPV, ctl = ['#mapX', '#mapZoom'].map((s) => $(s)).filter(Boolean).map((e) => e.getBoundingClientRect()); if (!M || !ctl.length) return;
+  const labs = [...view.querySelectorAll('#mapInner svg text')].filter((e) => e.textContent.trim().length > 1);
+  const hits = () => labs.some((e) => { const r = e.getBoundingClientRect(); return ctl.some((c) => r.right > c.left && r.left < c.right && r.bottom > c.top && r.top < c.bottom); });
+  if (!hits()) return; const tx0 = M.tx;
+  for (let d = 8; d <= 200; d += 8) for (const sg of [1, -1]) { M.tx = tx0 + sg * d; mapApply(); if (Math.abs(M.tx - (tx0 + sg * d)) < 0.5 && !hits()) return; }
+  M.tx = tx0; mapApply();
+}
 function enterMap() {
   setChrome(true, false); hideBubble(); // a yard speech bubble must not linger over the pin
   const locked = lockedAreas(), A = mapArt(locked);
@@ -128,7 +138,7 @@ function enterMap() {
   mapApply();
   // area centres in map units (MAP_AREAS when the art gives them, else measured)
   const measure = () => { const s = MAPV.base * MAPV.z, ir = inner.getBoundingClientRect(); svg.querySelectorAll('[data-area]').forEach((g) => { const r = g.getBoundingClientRect(); MAPV.centers[g.getAttribute('data-area')] = [(r.left + r.width / 2 - ir.left) / s, (r.top + r.height / 2 - ir.top) / s]; }); (A.areas || []).forEach((a) => { MAPV.centers[a.id] = [a.x, a.y]; }); };
-  measure(); mapCenter(S.place === 'house' ? 'yard' : S.place, false);
+  measure(); mapCenter(S.place === 'house' ? 'yard' : S.place, false); if (isPhone()) mapClearCtl();
   const label = (k) => k === 'shelter' ? 'Visit the shelter' : PLACES[k] ? `Go to ${PLACES[k].n}${topBond() < PLACES[k].bond ? ' (locked, Bond ' + PLACES[k].bond + ')' : ''}` : k;
   hotify(svg, '[data-area]', 'data-area', (k) => (isPhone() ? mapPick(k) : pickArea(k)), label);
   // drag pan, pinch + wheel zoom (pointer events: mouse and touch alike)

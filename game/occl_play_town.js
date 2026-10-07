@@ -59,8 +59,8 @@ module.exports = {
       const st = document.getElementById('status'), rg = document.createRange(); rg.selectNodeContents(st); const chipText = [...rg.getClientRects()].filter((q) => q.width > 1).map((q) => ({ left: q.left, top: q.top, right: q.right, bottom: q.bottom }));
       const z = document.getElementById('mapZoom'), pill = document.getElementById('mapZoomLbl'), zin = document.getElementById('mapZin'), cs = (e) => getComputedStyle(e);
       const url = (e) => (cs(e).backgroundImage.match(/url\([^)]*\)/) || [''])[0];
-      // only what the map actually draws counts: the pan area clips everything outside it (the controls sit in the gutter beside it)
-      const pan = document.getElementById('mapPan').getBoundingClientRect(), clip = (r) => { const l = Math.max(r.left, pan.left), rr = Math.min(r.right, pan.right), tt = Math.max(r.top, pan.top), b = Math.min(r.bottom, pan.bottom); return { left: l, right: rr, top: tt, bottom: b, width: rr - l, height: b - tt }; };
+      // only what is on screen counts (v2.5: the controls float over a full-width map, so the view, not the pan box, is the clip)
+      const pan = document.getElementById('view').getBoundingClientRect(), clip = (r) => { const l = Math.max(r.left, pan.left), rr = Math.min(r.right, pan.right), tt = Math.max(r.top, pan.top), b = Math.min(r.bottom, pan.bottom); return { left: l, right: rr, top: tt, bottom: b, width: rr - l, height: b - tt }; };
       const labels = [...document.querySelectorAll('#mapPan svg.world text')].filter((x) => cs(x).display !== 'none').map((x) => ({ t: x.textContent.trim().slice(0, 24), r: clip(R(x)) })).filter((o) => o.r.width > 2 && o.r.height > 2);
       const spots = [...document.querySelectorAll('#mapPan [data-area]')].map((g) => ({ k: g.getAttribute('data-area'), r: clip(R(g)) })).filter((o) => o.r.width > 1 && o.r.height > 1);
       return { x: R(document.getElementById('mapX')), zoom: R(z), chipText, labels, spots, btns: [zin, document.getElementById('mapZout')].map(R), pillUrl: url(pill), btnUrl: url(zin), pillBorder: cs(pill).borderTopWidth, pillRadius: cs(pill).borderTopLeftRadius, btnRadius: cs(zin).borderTopLeftRadius, vw: innerWidth, vh: innerHeight, chip: R(st) };
@@ -68,7 +68,8 @@ module.exports = {
     ok(m.chipText.length > 0 && !m.chipText.some((q) => hit(q, m.x, 4)), `${tag} map: the close X does not cover the location chip text`);
     ok(m.chip.right <= m.x.left - 4, `${tag} map: the chip stops short of the X (${Math.round(m.chip.right)} vs ${Math.round(m.x.left)})`);
     ok(!m.labels.some((l) => hit(l.r, m.zoom)), `${tag} map: the zoom stack covers no place name${m.labels.filter((l) => hit(l.r, m.zoom)).map((l) => ' -> ' + l.t).join('')}`);
-    ok(!m.spots.some((s) => hit(s.r, m.zoom)), `${tag} map: the zoom stack covers no place hotspot${m.spots.filter((s) => hit(s.r, m.zoom)).map((s) => ' -> ' + s.k).join('')}`);
+    const cov = (r, c) => Math.max(0, Math.min(r.right, c.right) - Math.max(r.left, c.left)) * Math.max(0, Math.min(r.bottom, c.bottom) - Math.max(r.top, c.top)) >= r.width * r.height * 0.6; // v2.5: a hotspot partly under the floating column is still tappable
+    ok(!m.spots.some((s) => cov(s.r, m.zoom)), `${tag} map: the zoom stack hides no place hotspot${m.spots.filter((s) => cov(s.r, m.zoom)).map((s) => ' -> ' + s.k).join('')}`);
     ok(m.btns.every((b) => b.width >= 43.5 && b.height >= 43.5), `${tag} map: the zoom buttons are 44 px targets (${m.btns.map((b) => Math.round(b.width) + 'x' + Math.round(b.height)).join(', ')})`);
     ok(m.zoom.top - m.x.bottom >= 8 || m.zoom.bottom < m.x.top, `${tag} map: the zoom stack has room from the X`);
     ok(m.zoom.bottom <= m.vh - 8 && m.zoom.right <= m.vw, `${tag} map: the zoom stack is on screen`);

@@ -1,11 +1,32 @@
 /* ---------- shared sketch surface ---------- */
 .tray,.card,.sitem,.btn,.act,.iconbtn,.xbtn,.opt,.toast,#status,.res,.confirm,.chip,.arrow,.heads button,.namebox,#devPanel,.panel,#bubble,.portrait,#devBtn,.cover{
-  border:0;background:var(--fr) 0 0/100% 100% no-repeat,var(--hatch) var(--ins),linear-gradient(var(--wash),var(--wash)) var(--ins)}
-.btn,.act,.opt,.chip,.toast,.arrow,#devBtn{--fr:var(--fr-btn)}
+  border:0;background:var(--fr) 0 0/100% 100% no-repeat,var(--wf)}
+/* v2.5 FIXES A: the crayon fill stays inside the pencil outline, at every size, day and night (the owner saw fills poke past the lines at night).
+   A frame is one SVG stretched over the whole box, so its line sits a fixed share of the box in from each edge (and wobbles), never a fixed number of px.
+   The fill is the largest rounded rectangle that no point of the frame's line enters, measured on the drawn paths (game/v25_fixes_a_fill.js checks the pixels):
+   inset --fa / --fb from the sides, corners rounded by --frx / --fry, all in % of the box, plus 0.5 px for antialiasing. It is drawn as two crossing rects and
+   four corner ellipses in the element's own --wash, with the hatching on the tall rect. --wf is resolved on each element, so a later --wash or --fa still applies.
+   Single-rect users of --ins (other files) get the plain safe rectangle for a card frame. */
+:root{--ins:center/calc(100% - 5.16% - 1px) calc(100% - 7% - 1px) no-repeat}
+.tray,.card,.sitem,.btn,.act,.opt,.toast,#status,.res,.confirm,.chip,.namebox,#devPanel,.panel,#bubble,#devBtn,.cover,.holdbtn,#mapZoom span{--fa:1.34%;--fb:2.25%;--frx:4%;--fry:6%;
+  --wf:var(--hatch) center/calc(100% - 2 * (var(--fa) + var(--frx)) - 1px) calc(100% - 2 * var(--fb) - 1px) no-repeat,
+    radial-gradient(var(--frx) var(--fry) at calc(var(--fa) + var(--frx) + .5px) calc(var(--fb) + var(--fry) + .5px),var(--wash) calc(100% - .6px),transparent) 0 0/100% 100% no-repeat,
+    radial-gradient(var(--frx) var(--fry) at calc(100% - var(--fa) - var(--frx) - .5px) calc(var(--fb) + var(--fry) + .5px),var(--wash) calc(100% - .6px),transparent) 0 0/100% 100% no-repeat,
+    radial-gradient(var(--frx) var(--fry) at calc(var(--fa) + var(--frx) + .5px) calc(100% - var(--fb) - var(--fry) - .5px),var(--wash) calc(100% - .6px),transparent) 0 0/100% 100% no-repeat,
+    radial-gradient(var(--frx) var(--fry) at calc(100% - var(--fa) - var(--frx) - .5px) calc(100% - var(--fb) - var(--fry) - .5px),var(--wash) calc(100% - .6px),transparent) 0 0/100% 100% no-repeat,
+    linear-gradient(var(--wash),var(--wash)) center/calc(100% - 2 * var(--fa) - 1px) calc(100% - 2 * (var(--fb) + var(--fry)) - 1px) no-repeat,
+    linear-gradient(var(--wash),var(--wash)) center/calc(100% - 2 * (var(--fa) + var(--frx)) - 1px) calc(100% - 2 * var(--fb) - 1px) no-repeat}
+.btn,.act,.opt,.chip,.toast,.arrow,#devBtn,#mapZoom span{--fr:var(--fr-btn);--fa:1.93%;--fb:7.25%;--frx:5.5%;--fry:25%}
+.tray{--fa:.4%;--fb:3%;--frx:1%;--fry:12%}
+.holdbtn{--fa:.41%;--fb:7.75%;--frx:1.5%;--fry:31%}
 .tray,.card,.sitem,.panel,.res,.confirm,.namebox,#devPanel,#status,.cover{--fr:var(--fr-card)}
 .iconbtn,.xbtn,.portrait,.heads button{--fr:var(--fr-round)}
 .tray,.card,.sitem,.btn,.act,.opt,.toast,#status,.res,.confirm,.chip,.namebox,#devPanel,.panel,#bubble,#devBtn,.cover{border-radius:13px 9px 15px 8px}
 .iconbtn,.xbtn,.portrait,.heads button,.arrow{border-radius:50%}
+/* v2.5 FIXES A: round controls keep their crayon fill inside the pencil circle (the owner saw a cream blob top-left and a lip at the bottom of the round ">" at
+   night). The drawn circle wobbles between 43.6% and 45.8% of the box around a point a hair up-left of the middle, so the wash is a circle of 42.5% around that
+   point (the box's own 50% circle used to show past the line). Hatching is dropped on these small buttons: a straight-edged hatch cannot follow a circle. */
+.iconbtn,.xbtn,.portrait,.heads button,.arrow{background:var(--fr) 0 0/100% 100% no-repeat,radial-gradient(closest-side,var(--wash) calc(100% - 1px),transparent) 45.7% 49%/85% 85% no-repeat}
 .tray{--fr:var(--fr-tray)}
 .holdbtn{--fr:var(--fr-wide)}
 @keyframes wig{0%{transform:rotate(-1.4deg)}50%{transform:rotate(1.6deg) translateY(-1px)}100%{transform:rotate(-1.4deg)}}

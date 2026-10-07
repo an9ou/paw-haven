@@ -32,3 +32,4 @@
 26_phone_skill.css
 27_missions.css
 28_guide.css
+29_festival.css

@@ -20,10 +20,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 class T {
   constructor(name, opts) {
-    this.name = name; this.opts = Object.assign({ time: 'day', weather: 'cloudy', clock: true, timeout: 240000 }, opts || {});
+    this.name = name; this.opts = Object.assign({ time: 'day', weather: 'cloudy', season: 'summer', fest: 'off', date: null, clock: true, timeout: 240000 }, opts || {}); // v2.5: season / festival pins (summer, off) and opts.date 'YYYY-MM-DD' for the fake clock
     this.fails = []; this.errors = []; this.p = null; this.ctx = null; this.b = null; this.checks = 0; this.t0 = Date.now();
     // the page clock: "today 10:00" local, ticking. Computed once per suite so reloads and new pages agree.
-    const base = new Date(); base.setHours(10, 0, 0, 0); this.clockOffset = base.getTime() - Date.now();
+    const base = this.opts.date ? new Date(this.opts.date + 'T10:00:00') : new Date(); base.setHours(10, 0, 0, 0); this.clockOffset = base.getTime() - Date.now();
     // bind everything so suites can destructure: const { ok, ev, S, click } = t;
     for (const k of Object.getOwnPropertyNames(T.prototype)) if (k !== 'constructor' && typeof this[k] === 'function') this[k] = this[k].bind(this);
   }
@@ -51,6 +51,7 @@ class T {
         // 2) dev overrides (what the Dev panel Time / Weather selects write). Only set when the key is absent, so a test that picks "auto" stays on auto
         const PK = 'pawhaven_prefs_v1'; let pr = {}; try { pr = JSON.parse(localStorage.getItem(PK) || '{}') || {}; } catch (e) { pr = {}; }
         let ch = false; if (cfg.time && !('ovrTime' in pr)) { pr.ovrTime = cfg.time; ch = true; } if (cfg.weather && !('ovrWeather' in pr)) { pr.ovrWeather = cfg.weather; ch = true; }
+        if (cfg.season && !('ovrSeason' in pr)) { pr.ovrSeason = cfg.season; ch = true; } if (cfg.fest && !('ovrFest' in pr)) { pr.ovrFest = cfg.fest; ch = true; } // v2.5
         for (const k in cfg.prefs || {}) if (!(k in pr)) { pr[k] = cfg.prefs[k]; ch = true; }
         if (ch) localStorage.setItem(PK, JSON.stringify(pr));
         // 3) one-time storage seeding (old-save tests)
@@ -60,7 +61,7 @@ class T {
       window.__toasts = [];
       const arm = () => { const el = document.getElementById('toasts'); if (!el) return; new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((n) => { if (n.classList && n.classList.contains('toast')) window.__toasts.push(n.textContent); }))).observe(el, { childList: true }); };
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arm); else arm();
-    }, { clock: !!o.clock, offset: this.clockOffset, time: o.time, weather: o.weather, prefs: o.prefs || {}, storage: o.storage || null });
+    }, { clock: !!o.clock, offset: this.clockOffset, time: o.time, weather: o.weather, season: o.season, fest: o.fest, prefs: o.prefs || {}, storage: o.storage || null });
     const p = await ctx.newPage();
     p.on('console', (m) => { if (m.type() === 'error') this.errors.push(m.text()); }); p.on('pageerror', (e) => this.errors.push(e.message));
     this.p = p; return p;

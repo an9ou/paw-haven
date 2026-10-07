@@ -1,5 +1,5 @@
 // all_e (shard 5 of 5 of the old test_all.js): old-save handling + the four v1.7 breeds adopted from scratch.
-// Coverage: old save (no sex) -> sex prompt, seed gift exactly once; for chihuahua / pug / greyhound / beagle: 10 dogs in the adoption carousel,
+// Coverage: old save (no sex) -> sex prompt, seed gift exactly once; for chihuahua / pug / greyhound / beagle: 14 dogs in the adoption carousel (v2.5),
 // shelter card + own art, adopted with the right name, drawn in the yard.
 require('./test_lib').run('all_e', async (t) => {
   const { ok, sec, ev, S } = t;
@@ -16,7 +16,7 @@ require('./test_lib').run('all_e', async (t) => {
   sec('v1.7: adopt each new breed and check it renders');
   for (const [k, br, nm] of [['chihuahua', 'Chihuahua', 'Peanut'], ['pug', 'Pug', 'Dumpling'], ['greyhound', 'Greyhound', 'Rocket'], ['beagle', 'Beagle', 'Bagel']]) {
     p = await t.boot(); await p.click('#tNew'); await p.waitForSelector('.heads button');
-    ok(await p.locator('.heads button').count() === 10, `${br}: 10 dogs in the adoption carousel`);
+    ok(await p.locator('.heads button').count() === 14, `${br}: 14 dogs in the adoption carousel`);
     await p.click(`.heads button[aria-label$="the ${br}"]`); await t.until((br) => /the Chihuahua|the Pug|the Greyhound|the Beagle/.test(document.querySelector('.adopt-card h3').textContent) && document.querySelector('.adopt-card h3').textContent.includes(br), br);
     ok(/the Chihuahua|the Pug|the Greyhound|the Beagle/.test(await p.textContent('.adopt-card h3')) && (await p.getAttribute('#adoptDog svg.pa-dog', 'aria-label') || '').includes(br), `${br}: shelter card + art`);
     await p.click('#aBoy'); await p.click('#aAdopt'); await p.waitForSelector('#nOk'); await p.click('#nOk'); await t.intro(); await t.calm();

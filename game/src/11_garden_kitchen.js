@@ -31,8 +31,8 @@ const PEOPLE_FB = [
   { id: 'macadamia', name: 'Macadamia Nuts', where: ['pantry'], why: 'Macadamia nuts cause weakness, wobbly legs, vomiting and fever in dogs.', swap: 'Oats are fine.' },
   { id: 'avocado', name: 'Avocado', where: ['pantry'], why: "Avocado contains persin, which can upset a dog's stomach, and the pit can block the gut.", swap: 'Spinach Scramble instead.' }
 ];
-const DISH_FAV = { shiba: 'golden-harvest-stew', corgi: 'chicken-veggie-rice', golden: 'carrot-crunchies', dachs: 'spinach-scramble', husky: 'blueberry-pupsicle', mutt: 'golden-harvest-stew', chihuahua: 'chicken-veggie-rice', pug: 'pumpkin-pupcake', greyhound: 'carrot-crunchies', beagle: 'golden-harvest-stew' };
-const BUDDY_FB = { shiba: 'inspect', corgi: 'guard', golden: 'fetch', dachs: 'dig', husky: 'snow', mutt: 'tend', chihuahua: 'guard', pug: 'tend', greyhound: 'fetch', beagle: 'inspect' };
+const DISH_FAV = { shiba: 'golden-harvest-stew', corgi: 'chicken-veggie-rice', golden: 'carrot-crunchies', dachs: 'spinach-scramble', husky: 'blueberry-pupsicle', mutt: 'golden-harvest-stew', chihuahua: 'chicken-veggie-rice', pug: 'pumpkin-pupcake', greyhound: 'carrot-crunchies', beagle: 'golden-harvest-stew', poodle: 'spinach-scramble', collie: 'chicken-veggie-rice', samoyed: 'blueberry-pupsicle', frenchie: 'pumpkin-pupcake' };
+const BUDDY_FB = { shiba: 'inspect', corgi: 'guard', golden: 'fetch', dachs: 'dig', husky: 'snow', mutt: 'tend', chihuahua: 'guard', pug: 'tend', greyhound: 'fetch', beagle: 'inspect', poodle: 'inspect', collie: 'guard', samoyed: 'snow', frenchie: 'tend' };
 const START_RECIPES = ['carrot-crunchies', 'chicken-veggie-rice', 'blueberry-pupsicle'];
 const CROP_PLURAL = { carrot: 'carrots', peas: 'peas', spinach: 'spinach', blueberries: 'blueberries', 'sweet-potato': 'sweet potatoes', pumpkin: 'pumpkin' };
 const CROP_ONE = { carrot: 'carrot', peas: 'pea pod', spinach: 'spinach leaf', blueberries: 'blueberry', 'sweet-potato': 'sweet potato', pumpkin: 'pumpkin' };
@@ -44,8 +44,7 @@ const pantryList = () => modData(PK, 'PANTRY', PANTRY_FB).filter((x) => x.id !==
 const cropInfo = (id) => cropsList().find((c) => c.id === id) || CROPS_FB.find((c) => c.id === id);
 const recipeInfo = (id) => recipesList().find((r) => r.id === id) || RECIPES_FB.find((r) => r.id === id);
 const buddyNow = () => modData(PG, 'BUDDY', BUDDY_FB)[S.dog.key] || null;
-const monthNow = () => new Date().getMonth() + 1;
-const seasonOf = (m) => ([12, 1, 2].includes(m) ? 'winter' : m <= 5 ? 'spring' : m <= 8 ? 'summer' : 'autumn');
+// v2.5: monthNow() and seasonOf() moved to 00_core.js (seasons are a core thing now)
 function gardenNew() {
   try { if (PG() && PG().newState) return PG().newState(); } catch (e) { /* module failed */ }
   return { v: 2, plots: Array.from({ length: 6 }, () => ({ crop: null, g: 0, water: 0, wd: 0, dry: 0, inSeason: true, inspected: false, ready: null, took: 0, planted: null, harvested: 0 })), last: gardenHourKey(), harvests: {} };
@@ -118,7 +117,7 @@ function enterGarden() {
   setChrome(true, false); dock.innerHTML = ''; view.innerHTML = '';
   gardenAdvance(); const e = envNow(); let closed = false;
   const o = {
-    state: S.garden, time: e.time, weather: e.weather, month: monthNow(), dog: dogForMod(), buddy: buddyNow(), seeds: seedCounts(), sfx,
+    state: S.garden, time: e.time, weather: e.weather, season: e.season, month: monthNow(), dog: dogForMod(), buddy: buddyNow(), seeds: seedCounts(), sfx,
     say: (t) => toast(t),
     onPlant: (plot, cropId) => { if (!(S.inv.seeds[cropId] > 0)) return false; S.inv.seeds[cropId]--; markDirty(); trackAct('garden', { what: 'plant', crop: cropId }); return true; },
     onHarvest: (plot, items, took) => {
@@ -126,6 +125,7 @@ function enterGarden() {
       const c = items && items[0] && items[0].crop; if (c) { S.garden.harvests = S.garden.harvests || {}; S.garden.harvests[c] = (S.garden.harvests[c] || 0) + 1; }
       audioCue('harvest'); markDirty(); if (items && items.length) trackAct('garden', { what: 'harvest', crop: c }); if (items && items.length) toast(`Harvested ${items.length} ${CROP_PLURAL[c] || c}${took ? ` (Captain Fluff's IOU: -${took})` : ''}. ${NAME()} sniffs ${PR().his} share hopefully.`, 'good');
     },
+    onWater: (plot) => { trackAct('garden', { what: 'water', plot }); }, // v2.5: the watering callback (TODO Shop Day)
     onBonusSeed: (cropId) => { S.inv.seeds[cropId] = (S.inv.seeds[cropId] || 0) + 1; markDirty(); toast(`${NAME()} dug up a bonus ${cropInfo(cropId) ? cropInfo(cropId).seedItem : 'seed'}! ${PR().He} is unbearable about it.`, 'gold'); },
     onChange: (st) => { if (st) { S.garden = mergeHarvests(st); markDirty(); saveNow(); } },
     onClose: () => { if (closed) return; closed = true; if (cur.mode === 'garden') go('yard'); }
@@ -154,7 +154,7 @@ function enterKitchen() {
   setChrome(true, false); dock.innerHTML = ''; view.innerHTML = ''; let closed = false; const e = envNow();
   if (!S.safetySeen.includes('salt')) S.safetySeen.push('salt'); // the module shows the salt note itself
   const o = {
-    dog: dogForMod(), time: e.time, weather: e.weather, known: S.recipes.known.slice(), best: Object.assign({}, S.recipes.best),
+    dog: dogForMod(), time: e.time, weather: e.weather, season: e.season, known: S.recipes.known.slice(), best: Object.assign({}, S.recipes.best),
     pantry: Object.assign({}, S.inv.pantry), crops: JSON.parse(JSON.stringify(S.inv.crops)), fridge: { count: S.inv.dishes.length, max: 8 }, sfx, say: (t) => toast(t),
     onCook: (r) => {
       if (!r || !r.recipe) return;
@@ -184,7 +184,7 @@ const STAR_MULT = [1, 1.5, 2];
 function openPip(tab) {
   if (!gkOn()) { SFX.boop(620); const pip = artReal('prop', 'pip'); openModal("Pip's Sprout Cart", `<div class="pip-top">${pip ? `<span class="pip-art">${pip}</span>` : ''}<p>"Setting up! Back soon with seeds." <span class="small">Pip is untangling a very long hose.</span></p></div>${soonCard('garden')}`, { cls: 'shop' }); return; }
   if (tab) pipTab = tab; audioPlace('shop'); SFX.boop(620);
-  const sz = seasonOf(monthNow()), pip = artReal('prop', 'pip');
+  const sz = seasonNow(), pip = artReal('prop', 'pip'); // v2.5: follows the Season override like the art
   const tabs = [['seeds', 'Seeds'], ['sell', 'Sell crops'], ['people', 'People gardens only']];
   let body = '';
   if (pipTab === 'seeds') body = `<div class="shopgrid">${cropsList().slice().sort((a, b) => (b.seasons.includes(sz) ? 1 : 0) - (a.seasons.includes(sz) ? 1 : 0)).map((c) => `<div class="sitem"><span class="art">${art('item', c.seedItem)}</span><b>${esc(c.seedItem)}</b>${c.seasons.includes(sz) ? '<span class="stamp r1">In season</span>' : ''}<span class="desc">${esc(c.seasons.join(', '))} · ${esc(cropTimeTxt(c))} · ${c.yield} per harvest${c.hardy ? ' · hardy' : ''}</span>${priceHTML(c.seed + ' each')}<span class="small">You have ${S.inv.seeds[c.id] || 0}</span><button class="btn yes" data-seed="${c.id}">Buy…</button></div>`).join('')}</div>`;
@@ -247,7 +247,7 @@ function dishRowHTML(off) {
 }
 /* ---- journal tabs: garden, recipes, profile ---- */
 function journalGarden() {
-  const sz = seasonOf(monthNow());
+  const sz = seasonNow(); // v2.5
   return `<div class="jtop"><div class="jprog"><b>${(S.garden.plots || []).filter((p) => p.crop).length} / 6</b><span class="small">plots planted · season now: ${sz} · buddy perk: ${esc(buddyNow() || 'none')}</span><span class="small">${gardenStatusTxt()}</span><span class="small">Crops grow in real hours, even while you're away. Each plot holds 3 drops: about 3 hours on a sunny day, 6 when cloudy, 9 at night. Rain refills them. Pip buys up to ${PIP_CAP} coins of crops a day (${pipLeft()} left today).</span></div><div><button class="btn yes big" data-jopen="garden">Open garden</button></div></div>
     <div class="jgrid">${cropsList().map((c) => `<div class="jent"><span class="art">${art('item', c.item)}</span><b>${esc(c.name)}</b>${c.seasons.includes(sz) ? '<span class="stamp r1">In season</span>' : ''}<span class="ab">Seasons: ${esc(c.seasons.join(', '))}. Ready in about ${hrs(c.hours)}${c.regrow ? `, regrows in ${hrs(c.regrow)} (${c.picks || 'many'} picks per bush)` : ''}; half speed out of season. Seed ${c.seed}, sells for ${c.sell} (1★).</span><span class="small">Harvested ${(S.garden.harvests || {})[c.id] || 0} times · best ${S.cropBest[c.id] ? '★'.repeat(S.cropBest[c.id]) : 'none yet'} · seeds: ${S.inv.seeds[c.id] || 0}</span></div>`).join('')}</div>`;
 }

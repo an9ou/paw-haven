@@ -11,8 +11,9 @@ function seeded(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) 
 const NAMED = G.BREEDS.filter((k) => k !== 'mutt');
 const BANNED = /nintendo|nintendogs|pok[eé]mon|animal crossing/i;
 
-/* 1. MIXES: all 45 pairs resolve */
-ok(Object.keys(G.MIXES).length === 45, `45 MIXES entries (got ${Object.keys(G.MIXES).length})`);
+/* 1. MIXES: all 91 pairs resolve (45 up to v2.4, 46 more with the v2.5 breeds) */
+ok(G.BREEDS.length === 14, '14 breeds');
+ok(Object.keys(G.MIXES).length === 91, `91 MIXES entries (got ${Object.keys(G.MIXES).length})`);
 const names = new Set();
 let pairs = 0;
 for (let i = 0; i < G.BREEDS.length; i++) for (let j = i + 1; j < G.BREEDS.length; j++) {
@@ -41,11 +42,28 @@ for (let i = 0; i < G.BREEDS.length; i++) for (let j = i + 1; j < G.BREEDS.lengt
     }
   }
 }
-ok(pairs === 45, '45 pairs walked');
+ok(pairs === 91, '91 pairs walked');
+ok(names.size === 78, `78 unique named mixes (got ${names.size})`);
 // examples from the brief
 const want = { 'beagle|pug': 'Puggle', 'chihuahua|dachs': 'Chiweenie', 'golden|husky': 'Goberian', 'corgi|husky': 'Horgi', 'chihuahua|pug': 'Chug', 'corgi|dachs': 'Dorgi', 'shiba|corgi': 'Shorgi', 'golden|beagle': 'Beago', 'greyhound|beagle': 'Greagle' };
 for (const k of Object.keys(want)) { const [a, b] = k.split('|'); ok(G.MIXES[G.mixKey(a, b)].name === want[k], `${k} = ${want[k]} (got ${G.MIXES[G.mixKey(a, b)].name})`); }
 ok(G.MIXES[G.mixKey('corgi', 'husky')].head === 'husky', 'Horgi: husky head');
+// v2.5: the 42 new names (V25.md 6b), each on its pair
+const want25 = {
+  'shiba|poodle': 'Shiba-poo', 'corgi|poodle': 'Corgipoo', 'golden|poodle': 'Goldendoodle', 'dachs|poodle': 'Doxiepoo', 'husky|poodle': 'Huskypoo',
+  'chihuahua|poodle': 'Chipoo', 'pug|poodle': 'Pugapoo', 'greyhound|poodle': 'Greydoodle', 'beagle|poodle': 'Poogle',
+  'corgi|collie': 'Borgi', 'shiba|collie': 'Border Shiba', 'golden|collie': 'Golden Collie', 'dachs|collie': 'Border Doxie', 'husky|collie': 'Border Husky',
+  'chihuahua|collie': 'Border Chi', 'pug|collie': 'Border Pug', 'greyhound|collie': 'Border Grey', 'beagle|collie': 'Border Beagle', 'poodle|collie': 'Bordoodle',
+  'husky|samoyed': 'Samusky', 'poodle|samoyed': 'Samoodle', 'shiba|samoyed': 'Sammy Shiba', 'corgi|samoyed': 'Sammy Corgi', 'golden|samoyed': 'Golden Sammy',
+  'dachs|samoyed': 'Sammy Doxie', 'chihuahua|samoyed': 'Sammy Chi', 'pug|samoyed': 'Sammy Pug', 'greyhound|samoyed': 'Sammy Grey', 'beagle|samoyed': 'Sammy Beagle',
+  'collie|samoyed': 'Border Sammy',
+  'pug|frenchie': 'Frug', 'poodle|frenchie': 'Froodle', 'shiba|frenchie': 'French Shiba', 'corgi|frenchie': 'French Corgi', 'golden|frenchie': 'French Golden',
+  'dachs|frenchie': 'French Doxie', 'husky|frenchie': 'French Husky', 'chihuahua|frenchie': 'French Chi', 'greyhound|frenchie': 'French Grey',
+  'beagle|frenchie': 'French Beagle', 'collie|frenchie': 'French Collie', 'samoyed|frenchie': 'French Sammy'
+};
+ok(Object.keys(want25).length === 42 && new Set(Object.values(want25)).size === 42, '42 new mix names listed');
+for (const k of Object.keys(want25)) { const [a, b] = k.split('|'); ok(G.MIXES[G.mixKey(a, b)].name === want25[k], `${k} = ${want25[k]} (got ${G.MIXES[G.mixKey(a, b)].name})`); }
+['poodle', 'collie', 'samoyed', 'frenchie'].forEach((k) => ok(G.MIXES[G.mixKey('mutt', k)].name === 'Mutt mix', `mutt x ${k} is Mutt mix`));
 // same breed -> null (purebred); unknown key counts as mutt
 G.BREEDS.forEach((k) => ok(G.mixOf(k, k, seeded(1)) === null, `same breed ${k} -> null`));
 ok(G.mixOf('wolfy', 'corgi', seeded(2)).body === 'mutt', 'unknown key -> mutt');
@@ -63,8 +81,8 @@ const sum = (rows) => rows.reduce((s, r) => s + r.pct, 0);
 const pctWhere = (rows, f) => rows.filter(f).reduce((s, r) => s + r.pct, 0);
 {
   const R = seeded(7);
-  for (let i = 0; i < 300; i++) {
-    const ka = G.BREEDS[i % 10], kb = G.BREEDS[(i * 3 + 1) % 10];
+  for (let i = 0; i < 420; i++) {
+    const ka = G.BREEDS[i % G.BREEDS.length], kb = G.BREEDS[(i * 3 + 1) % G.BREEDS.length];
     const ga = G.randomGenotype(ka, R), gb = G.randomGenotype(kb, R);
     const rows = G.predict(ga, gb, ka, kb);
     near(sum(rows), 100, 1e-6, `predict sums to 100 (${ka}x${kb} #${i})`);

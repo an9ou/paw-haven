@@ -123,8 +123,11 @@ html[data-layout="phone"] .clset .btn{touch-action:manipulation}
    the sheet (it is at most 88% tall), so they never cover a sheet's title or its buttons */
 html[data-layout="phone"] #toasts{top:auto;bottom:calc(var(--barH) + 12px + env(safe-area-inset-bottom,0px))}
 html[data-layout="phone"] #stage.nobar #toasts{bottom:calc(12px + env(safe-area-inset-bottom,0px))}
-html[data-layout="phone"] #stage:has(#modal:not([hidden])) #toasts{top:calc(env(safe-area-inset-top,0px) + 6px)!important;bottom:auto!important}
+html[data-layout="phone"] #stage:has(#modal:not([hidden])) #toasts{top:var(--toastTop,calc(env(safe-area-inset-top,0px) + 6px))!important;bottom:auto!important} /* v2.5: toast() sets --toastTop just under the sheet's title */
 html[data-layout="phone"] #stage:has(#modal:not([hidden])) #toasts .toast:nth-last-child(n+3){display:none}
 /* v2.3: the +N chip replaces the sideways scroll and its fade (phChipsFit in 13_more_dogs.js) */
 html[data-layout="phone"] #hudPack{gap:0;-webkit-mask-image:none;mask-image:none;animation:none}
 html[data-layout="phone"] .panel.packsheet::before{left:22px;transform:rotate(-7deg)} /* the tape moves off the drag handle */
+/* v2.5 FIXES A: a close X never scrolls away. The training panel scrolls on phones, so its head row (Train / Show off tabs and the X) sticks to the top of the panel
+   while the rest scrolls under it. (Bottom sheets keep the X outside .panel-body, and the recipe book, the kitchen and the seed pouch pin theirs in their modules.) */
+html[data-layout="phone"] #trainPanel .trhead{position:sticky;top:-6px;z-index:3;background:var(--paper);margin:-6px -10px 0;padding:6px 10px 3px}

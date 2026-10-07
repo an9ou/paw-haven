@@ -1027,7 +1027,11 @@
     chihuahua: { f0: 650, F: [1100, 2100, 3400], mouth: 3800, noise: 0.2, K: 1 },  // high, sharp, yappy (v1.7)
     pug: { f0: 260, F: [500, 1000, 2200], mouth: 1500, noise: 0.45, K: 1 },        // snorty, grunty, muffled
     greyhound: { f0: 200, F: [480, 1000, 2200], mouth: 1900, noise: 0.25, K: 1 },  // quiet, low 'roo'
-    beagle: { f0: 300, F: [650, 1300, 2600], mouth: 2800, noise: 0.2, K: 1 }       // loud musical bay
+    beagle: { f0: 300, F: [650, 1300, 2600], mouth: 2800, noise: 0.2, K: 1 },      // loud musical bay
+    poodle: { f0: 430, F: [860, 1700, 3000], mouth: 3500, noise: 0.16, K: 1 },     // clear, bright yip (v2.5)
+    collie: { f0: 360, F: [720, 1450, 2750], mouth: 3300, noise: 0.22, K: 1 },     // sharp, quick bark (v2.5)
+    samoyed: { f0: 250, F: [560, 1150, 2400], mouth: 2500, noise: 0.2, K: 1 },     // "woo-woo" talker (v2.5)
+    frenchie: { f0: 250, F: [500, 1000, 2200], mouth: 1700, noise: 0.42, K: 1 }    // snorty little bark (v2.5)
   };
   var BARK_KINDS = ['woof', 'yip', 'alert', 'demand', 'play', 'howl', 'talk', 'scream', 'whine', 'growl-play', 'sneeze', 'yawn', 'snore', 'pant', 'huff', 'whimper'];
   // loudness trims in dB per breed, in BARK_KINDS order: measured offline so every voice sits at its target level
@@ -1044,7 +1048,12 @@
     chihuahua: [1.8, -2.5, 1.6, 1.7, 1.6, 0.5, 0.3, -4.1, 4.4, 4.7, -1.2, 1.8, 8.3, 2.5, 1.3],
     pug: [1.0, -5.7, 0.5, 1.1, 1.9, -5.7, -5.7, -2.3, 3.2, 6.8, 3.4, -1.6, 8.1, 7.1, 7.9],
     greyhound: [0.6, -1.8, 0.7, 0.8, 0.7, 2.4, 2.3, -1.2, 3.4, 7.0, 2.8, -0.9, 10.1, 5.8, 4.3],
-    beagle: [1.1, -0.3, 2.4, 1.9, 4.0, 2.5, 0.6, -3.1, -4.6, 6.5, 1.2, -1.6, 8.6, 4.9, 3.1]
+    beagle: [1.1, -0.3, 2.4, 1.9, 4.0, 2.5, 0.6, -3.1, -4.6, 6.5, 1.2, -1.6, 8.6, 4.9, 3.1],
+    // v2.5: measured the same way (4 offline renders each, to the median level of the ten breeds above)
+    poodle: [1.6, -3.5, -0.6, 1.3, 2.0, 0.3, 0.2, -3.6, 1.3, 5.4, 0.8, 2.9, 8.1, 3.7, 2.2],
+    collie: [0.6, -3.5, 0.3, 0.6, 1.9, 2.1, 2.3, -2.8, -4.1, 5.7, 1.4, -1.2, 8.5, 4.4, 3.2],
+    samoyed: [-0.2, -1.2, -1.1, -0.4, 2.4, -4.4, -4.8, -4.0, -2.1, 6.3, 2.2, -1.3, 8.7, 4.8, 4.2],
+    frenchie: [1.1, -3.6, 0.9, 1.4, 2.2, -5.5, -5.5, -2.0, 2.5, 7.1, 2.1, -1.3, 7.3, 6.1, 7.4]
   };
   function breedOf(voice) {
     var b = String((voice && voice.breed) || '').toLowerCase(), k;
@@ -1058,6 +1067,10 @@
     else if (b.indexOf('pug') >= 0) k = 'pug';
     else if (b.indexOf('grey') >= 0 || b.indexOf('gray') >= 0) k = 'greyhound';
     else if (b.indexOf('beag') >= 0) k = 'beagle';
+    else if (b.indexOf('poodle') >= 0) k = 'poodle';
+    else if (b.indexOf('collie') >= 0) k = 'collie';
+    else if (b.indexOf('samoyed') >= 0 || b.indexOf('sammy') >= 0) k = 'samoyed';
+    else if (b.indexOf('frenchie') >= 0 || b.indexOf('french') >= 0) k = 'frenchie';
     var B = copy(BREEDS[k || 'mutt']);
     if (!k) B.f0 *= ({ small: 1.3, medium: 1, large: 0.68 })[voice && voice.size] || 1;   // unknown breed: size decides
     B.key = k || 'mutt';
@@ -1107,6 +1120,26 @@
       add(0.1, { d: bl, p: clamp(420 / B.f0, 1, 1.8), g: 1, a: 0.06, r: 0.3, n: 0.08, fm: 0.9, vib: [5.5, 0.015],
         f: kind === 'howl' ? [[0, 0.9], [0.08, 1.0], [0.4, 1.0], [0.45, 1.12], [0.75, 1.12], [0.8, 1.0], [1, 0.8]] : [[0, 0.9], [0.1, 1.0], [0.6, 1.02], [1, 0.82]],
         m: [[0, 0.6], [0.15, 1.0], [0.8, 0.85], [1, 0.35]] });
+    } else if (bk === 'poodle' && (kind === 'woof' || kind === 'play')) {   // v2.5: a clear, bright yip (play = two)
+      add(0, { d: 0.1 * lk, p: 1.18, g: 1, a: 0.006, n: 0.12, f: [[0, 0.95], [0.25, 1.22], [1, 0.9]], m: [[0, 0.55], [0.25, 1.2], [1, 0.55]] });
+      if (kind === 'play') add(0.15 * lk, { d: 0.09 * lk, p: 1.3, g: 0.9, a: 0.006, n: 0.12, f: [[0, 0.95], [0.25, 1.25], [1, 0.9]], m: [[0, 0.55], [0.25, 1.2], [1, 0.55]] });
+    } else if (bk === 'collie' && loudK) {   // v2.5: sharp, quick barks close together (alert = 3, play = 2)
+      var nc = kind === 'alert' ? 3 : kind === 'play' ? 2 : 1;
+      for (i2 = 0; i2 < nc; i2++) bark(i2 * 0.14 * lk, 0.12, (kind === 'play' ? 1.12 : 1.04) * rnd(0.98, 1.02), i2 ? 0.88 : 1, 1.15);
+    } else if (bk === 'samoyed' && (kind === 'talk' || kind === 'howl')) {   // v2.5: "woo-woo", two rising woos (howl = a long third woo)
+      var ws = kind === 'howl' ? [[0, 0.32], [0.38, 0.32], [0.78, 1.1]] : [[0, 0.3], [0.36, 0.38]];
+      ws.forEach(function (q, j) { add(q[0], { d: q[1], p: hm * (j ? 0.98 : 0.9), g: j ? 0.85 : 0.9, a: 0.04, r: 0.35, n: 0.1, fm: 0.85, vib: [5, 0.012], f: [[0, 0.78], [0.35, 1.12], [0.75, 1.05], [1, 0.8]], m: [[0, 0.35], [0.35, 0.95], [1, 0.35]] }); });
+    } else if (bk === 'frenchie' && loudK) {   // v2.5: a snort, then a short proper bark (snortier than a pug's rrf)
+      var nf = kind === 'alert' || kind === 'play' ? 2 : 1;
+      for (i2 = 0; i2 < nf; i2++) { snort(i2 * 0.26, 0.55); bark(i2 * 0.26 + 0.06, 0.15, kind === 'play' ? 1.12 : 1, 0.95, 0.85); }
+    } else if (bk === 'frenchie' && (kind === 'snore' || kind === 'huff')) {   // v2.5: snorty like the pug
+      if (kind === 'snore') {
+        add(0, { d: 0.75, p: 0.34, g: 0.7, a: 0.25, r: 0.4, n: 0.72, am: [20, 0.8], f: [[0, 1], [1, 1]], m: [[0, 0.2], [0.5, 0.35], [1, 0.15]] });
+        snort(0.8, 0.6);
+      } else {
+        add(0, { d: 0.28, p: 0.55, g: 0.8, a: 0.015, r: 0.6, n: 0.7, am: [30, 0.5], f: [[0, 1.1], [1, 0.8]], m: [[0, 0.45], [0.15, 0.7], [1, 0.25]] });
+        snort(0.25, 0.55); snort(0.36, 0.45);
+      }
     } else handled = false;
     if (!handled) switch (kind) {
       case 'yip':

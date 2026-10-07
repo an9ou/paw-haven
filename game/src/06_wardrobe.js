@@ -2,7 +2,7 @@
 function equip(n, quiet) {
   const c = ALL_WEAR.find((x) => x.n === n) || CHARMS.find((x) => x.n === n); if (!c) return;
   S.outfit[c.slot] = S.outfit[c.slot] === n ? null : n; markDirty(); SFX.pop();
-  if (S.outfit[c.slot] && c.slot !== 'charm') { trackAct('wear', { name: n, slot: c.slot }); dailyCheck(); if (!S.daily.outfit) { S.daily.outfit = true; const tw = S.outfit.body === 'Tutu'; addStat('happy', tw ? 10 : 5); toast(`Fashion bonus! +${tw ? '10 Happiness. Twirl!' : '5 Happiness.'} ${NAME()} is feeling cute.`, 'good'); } else if (!quiet) toast(`${n} on. ${PICK(['Stunning.', 'Iconic.', 'A look.', 'Runway ready.'])}`); }
+  if (S.outfit[c.slot] && c.slot !== 'charm') { trackAct('wear', { name: n, slot: c.slot }); dailyCheck(); if (!S.daily.outfit) { S.daily.outfit = true; const tw = S.outfit.body === 'Tutu', lf = S.outfit.head === 'Leaf Beret' && S.outfit.neck === 'Autumn Scarf'; addStat('happy', tw || lf ? 10 : 5); toast(`Fashion bonus! +${tw ? '10 Happiness. Twirl!' : lf ? '10 Happiness. Autumn chic.' : '5 Happiness.'} ${NAME()} is feeling cute.`, 'good'); /* v2.5: Leaf Beret + Autumn Scarf, like the Tutu */ } else if (!quiet) toast(`${n} on. ${PICK(['Stunning.', 'Iconic.', 'A look.', 'Runway ready.'])}`); }
   if (S.outfit[c.slot] && c.slot === 'charm' && !quiet) toast(`${n} equipped as a charm. ${n === 'Sparkle Stone' ? 'It hums. Ominously. Cutely.' : 'Pocket luck activated.'}`, 'good');
   if (cur.mode === 'yard') renderDog(dogPoseNow());
 }

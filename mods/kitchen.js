@@ -74,7 +74,7 @@
     'sugar-free-gum': 'gum', 'chewing-gum': 'gum', macadamias: 'macadamia', 'macadamia-nut': 'macadamia', 'macadamia-nuts': 'macadamia', avocados: 'avocado', guacamole: 'avocado',
     garlics: 'garlic', 'garlic-clove': 'garlic' };
 
-  var FAV = { shiba: 'golden-harvest-stew', corgi: 'chicken-veggie-rice', golden: 'carrot-crunchies', dachs: 'spinach-scramble', husky: 'blueberry-pupsicle', mutt: 'golden-harvest-stew', chihuahua: 'chicken-veggie-rice', pug: 'pumpkin-pupcake', greyhound: 'carrot-crunchies', beagle: 'golden-harvest-stew' };
+  var FAV = { shiba: 'golden-harvest-stew', corgi: 'chicken-veggie-rice', golden: 'carrot-crunchies', dachs: 'spinach-scramble', husky: 'blueberry-pupsicle', mutt: 'golden-harvest-stew', chihuahua: 'chicken-veggie-rice', pug: 'pumpkin-pupcake', greyhound: 'carrot-crunchies', beagle: 'golden-harvest-stew', poodle: 'spinach-scramble', collie: 'chicken-veggie-rice', samoyed: 'blueberry-pupsicle', frenchie: 'pumpkin-pupcake' };
 
   var NOTES = {
     pumpkin: 'Always cooked and plain.',
@@ -337,10 +337,10 @@
   function hasPose(key, pose) {
     try { var s = window.PawArt && window.PawArt.dog ? window.PawArt.dog(key, { pose: pose, anim: false }) : ''; return s.indexOf('pa-pose-' + pose) >= 0; } catch (e) { return false; }
   }
-  function sceneSvg(time, weather) {
+  function sceneSvg(time, weather, season) {
     try {
       if (window.PawArt && typeof window.PawArt.scene === 'function') {
-        var s = window.PawArt.scene('kitchen', { time: time, weather: weather });
+        var s = window.PawArt.scene('kitchen', { time: time, weather: weather, season: season || 'summer' }); // v2.5: the window follows the season
         if (typeof s === 'string' && s.indexOf('<svg') >= 0 && /kitchen/i.test(s.slice(0, 600))) return s;
       }
     } catch (e) { /* fall through */ }
@@ -415,7 +415,9 @@
     '.pk-ov.pk-clear{background:transparent;pointer-events:none}.pk-ov.pk-clear>*{pointer-events:auto}',
     '.pk-modal{position:relative;padding:14px 18px 16px;box-sizing:border-box}',
     '.pk-mh{display:flex;align-items:center;gap:10px;margin-bottom:8px}.pk-mh .pk-title{flex:1}',
-    '.pk-book{width:960px;height:540px;margin-top:40px}',
+    '.pk-book{width:960px;height:540px;margin-top:40px;overflow-y:auto;overscroll-behavior:contain}',
+    /* v2.5: the book's close X stays in the top-right corner while the recipes scroll under it (it takes no room in the flow); the header leaves it space */
+    '.pk-xfix{position:sticky;top:0;z-index:5;display:flex;margin:0 -4px -46px auto}.pk-book .pk-mh{padding-right:58px;min-height:46px}.pk-book .pk-mh .pk-ico{width:56px;height:56px;flex:none}',
     '.pk-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 16px}',
     '.pk-card{position:relative;height:222px;padding:16px 18px 10px 30px;box-sizing:border-box}',
     '.pk-card>.pk-cardbg{position:absolute;inset:0;z-index:0;pointer-events:none}.pk-cardbg svg{width:100%;height:100%;display:block}',
@@ -485,6 +487,7 @@
     '.pk-portrait .pk-btn{min-height:52px;min-width:52px}',
     /* v2.3 phone occlusion: header in two rows (title, fridge, close / touch hint, recipe book), nothing truncated; taps >= 44 px at 360 wide */
     '.pk-portrait .pk-chip{margin-left:auto}.pk-portrait .pk-x{order:1;width:52px;height:52px}',
+    '.pk-portrait > .pk-xstick{position:sticky;top:8px;z-index:9;display:flex;margin:8px 8px -60px auto}.pk-portrait .pk-top{padding-right:66px}.pk-portrait:has(.pk-ov:not(.pk-clear)) > .pk-xstick{visibility:hidden}',
     '.pk-portrait .pk-sub{order:2;flex:1 1 150px;white-space:normal;overflow:visible;text-overflow:clip;line-height:1.15}.pk-portrait .pk-top .pk-gold{order:3}',
     /* v2.3: the lesson grows instead of clipping, and the slots move down under it */
     '.pk-portrait .pk-msg{height:auto;min-height:42px;overflow:visible}',
@@ -503,7 +506,8 @@
     '.pk-portrait .pk-dog{left:230px;top:648px;width:180px;height:150px}',
     '.pk-portrait .pk-bub{right:auto;left:10px;top:660px;width:max-content;max-width:250px;font-size:22px;text-wrap:balance;overflow-wrap:break-word}.pk-portrait .pk-bub::after{right:-8px;bottom:auto;top:calc(50% - 8px);transform:rotate(-45deg)}',
     '.pk-portrait .pk-ov{align-items:flex-start}',
-    '.pk-portrait .pk-book{width:404px;height:780px;margin-top:10px;overflow-y:auto}',
+    '.pk-portrait .pk-book{width:404px;height:min(780px,calc(var(--pk-vh,800px) - 20px));margin-top:10px;overflow-y:auto}.pk-portrait .pk-xfix{margin-bottom:-52px}',
+    '.pk-portrait:has(.pk-book){overflow-y:hidden}', /* v2.5: while the book is open only the book scrolls, so its X never leaves the screen */
     '.pk-portrait .pk-cards{grid-template-columns:1fr}',
     '.pk-portrait .pk-game{width:404px;height:600px;margin:20px 0 0 0}',
     '.pk-portrait .pk-dialw{left:77px;top:70px}',
@@ -550,7 +554,7 @@
 
     var dog = o.dog || {}, dogKey = dog.key || 'mutt', dogName = dog.name || 'Your pup'; _kCoat = dog.coat; _kSeed = dog.seed;
     var S = {
-      time: o.time || 'day', weather: o.weather || 'sunny',
+      time: o.time || 'day', weather: o.weather || 'sunny', season: o.season || 'summer',
       known: Array.isArray(o.known) ? o.known.slice() : ['carrot-crunchies', 'chicken-veggie-rice', 'blueberry-pupsicle'],
       best: Object.assign({}, o.best || {}),
       pantry: Object.assign({}, o.pantry || {}),
@@ -593,6 +597,7 @@
       stage.style.height = Hs + 'px'; shelf.style.top = shelfTop + 'px'; tray.style.top = trayTop + 'px';
       dogEl.style.top = dogTop + 'px'; bub.style.top = (dogTop + 12) + 'px';
       stage.style.setProperty('--pk-potdy', Math.max(0, Math.round((shelfTop - 330) / 2)) + 'px');
+      stage.style.setProperty('--pk-vh', Math.floor((root.clientHeight || H) / scale) + 'px'); // v2.5: the recipe book fits the visible screen, so its X stays on it
     }
 
     var ro = null;
@@ -602,7 +607,7 @@
 
     /* scene */
     var sceneEl = div('pk-scene');
-    function drawScene() { sceneEl.innerHTML = sceneSvg(S.time, S.weather); if (PORT) { var sv = sceneEl.querySelector('svg'); if (sv) sv.setAttribute('preserveAspectRatio', 'xMidYMid slice'); } }
+    function drawScene() { sceneEl.innerHTML = sceneSvg(S.time, S.weather, S.season); if (PORT) { var sv = sceneEl.querySelector('svg'); if (sv) sv.setAttribute('preserveAspectRatio', 'xMidYMid slice'); } }
     drawScene();
 
     /* pot */
@@ -628,6 +633,8 @@
     var bookBtn = btn((art('icon', 'recipe') || '') + 'Recipe book', 'pk-gold', top, function () { showBook(); });
     var closeBtn = btn(art('icon', 'close') || '&times;', 'pk-x', top, function () { close(); });
     closeBtn.setAttribute('aria-label', 'Close the kitchen');
+    // v2.5 phones: the kitchen page scrolls, so its close X leaves the header and sticks to the top-right corner of the screen instead of scrolling away
+    if (PORT) { closeBtn.classList.add('pk-xstick'); root.insertBefore(closeBtn, root.firstChild); }
     function drawFridge() {
       var full = S.fridge.count >= S.fridge.max;
       fridgeEl.className = 'pk-chip' + (full ? ' pk-full' : '');
@@ -819,10 +826,11 @@
     function drawBook() {
       if (!bookEl) return;
       bookEl.innerHTML = '';
+      // v2.5: the close X is the book's first child and sticks to its top-right corner, so it never scrolls away with the recipes
+      btn(art('icon', 'close') || '&times;', 'pk-x pk-xfix', bookEl, function () { closeOverlay(); root.focus(); }).setAttribute('aria-label', 'Close the recipe book');
       var mh = div('pk-mh', bookEl);
       div('pk-ico', mh, art('icon', 'recipe') || '');
       div('pk-title', mh, 'Recipe book <span style="font-size:20px;color:#8A7468;font-family:Patrick Hand">' + S.known.filter(function (k) { return k !== 'mystery-mush'; }).length + ' of 6 found</span>');
-      btn(art('icon', 'close') || '&times;', 'pk-x', mh, function () { closeOverlay(); root.focus(); });
       var grid = div('pk-cards', bookEl), full = S.fridge.count >= S.fridge.max;
       RECIPES.forEach(function (r) {
         if (r.id === 'mystery-mush') return;

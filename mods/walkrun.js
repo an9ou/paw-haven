@@ -430,6 +430,7 @@ function start(el, o) {
   const area = AREAS[o.area] ? o.area : 'park', A = AREAS[area];
   const time = ['dawn', 'day', 'dusk', 'night'].includes(o.time) ? o.time : 'day';
   const weather = ['sunny', 'cloudy', 'rain', 'snow'].includes(o.weather) ? o.weather : 'sunny';
+  const season = ['spring', 'autumn', 'winter'].includes(o.season) ? o.season : 'summer'; // v2.5: the world art turns with the season
   const ab = o.abilities || {};
   const dogInfo = o.dog || { key: 'shiba', name: 'Mochi', outfit: {} };
   const sfx = (n) => { try { (o.sfx || noop)(n); } catch (e) { /* ignore */ } };
@@ -496,10 +497,10 @@ function start(el, o) {
   $('.pw-clock').innerHTML = icon('speed', svgWrap([64, 64], '<circle cx="32" cy="34" r="22" fill="#fff"/><path d="M32 34v-12M32 34l9 6"/>'));
 
   /* ---------- world look: strip, far layer, foreground, tint, weather ---------- */
-  let stripSvg = call('walkStrip', area, { time, weather });
+  let stripSvg = call('walkStrip', area, season === 'summer' ? { time, weather } : { time, weather, season });
   let artTW = false; // does the strip art itself draw time/weather?
   if (stripSvg && (time !== 'day' || weather !== 'sunny')) {
-    const plain = call('walkStrip', area); const norm = (s) => s.replace(/pw[a-z]*\d+x?\d*/g, '');
+    const plain = call('walkStrip', area, season === 'summer' ? undefined : { season }); const norm = (s) => s.replace(/pw[a-z]*\d+x?\d*/g, '');
     artTW = plain && norm(plain).length !== norm(stripSvg).length;
   }
   if (!stripSvg) stripSvg = svgWrap([1200, 400], `<rect width="1200" height="400" fill="#D3E9F6" stroke="none"/><rect y="250" width="1200" height="80" fill="#CBE5A6" stroke="none"/><rect y="330" width="1200" height="70" fill="#EFDDBA" stroke="none"/><path d="M0 330h1200"/>`);
@@ -515,17 +516,29 @@ function start(el, o) {
         b += `<path transform="translate(${x} ${y}) scale(${s})" d="M0 30q4 -26 34 -18q14 -22 40 -6q26 -6 26 16q14 6 2 18q-40 6 -96 2q-14 -4 -6 -12z" fill="${grey ? '#E4E4EA' : '#FFFFFF'}" fill-opacity=".9"/>`;
       });
     }
+    // v2.5: a few leaves (autumn) or petals (spring) drifting past in the far layer
+    if ((season === 'autumn' || season === 'spring') && !night) {
+      for (let i = 0; i < 7; i++) {
+        const x = 60 + i * 140 + (i * 37) % 50, y = 110 + (i * 61) % 170, r = (i * 47) % 360;
+        const fill = season === 'autumn' ? ['#F2B25C', '#E8895A', '#F3CB58', '#DE6650'][i % 4] : ['#F9C6D4', '#FFF1F4', '#F7B6C8'][i % 3];
+        b += `<path transform="translate(${x} ${y}) rotate(${r})" d="${season === 'autumn' ? 'M-7 0q7 -6 14 0q-7 6 -14 0z' : 'M-5 0q4 -4 9 -1l-1 1l1 1q-5 3 -9 -1z'}" fill="${fill}" stroke-width="1"/>`;
+        b += `<path d="M${x - 30} ${y - 10}q10 12 20 4" fill="none" stroke-width="1.2" stroke-dasharray="4 4" opacity=".6"/>`;
+      }
+    }
     return svgWrap([FARW, 400], b);
   })();
   const fgSvg = (() => {
-    const col = snow ? '#FFFFFF' : area === 'beach' ? '#E9CF96' : area === 'woods' ? '#7FA26A' : '#8DBE73';
+    const col = snow ? '#FFFFFF' : area === 'beach' ? '#E9CF96' : season === 'autumn' ? '#D9963F' : season === 'winter' ? '#B9C4B6' : season === 'spring' ? '#86C26A' : area === 'woods' ? '#7FA26A' : '#8DBE73';
     let b = '';
     for (let i = 0; i < 12; i++) {
       const x = i * 50 + (i * 17) % 23, y = 392 - (i * 7) % 10;
       if (A.fg === 'town') b += (i % 3 === 0 ? `<path d="M${x} 400q1 -9 -2 -13M${x + 5} 400q0 -10 4 -14" stroke="#8DBE73" stroke-width="2.2"/>` : '') + (i % 4 === 1 ? `<path d="M${x + 14} ${y - 2}q6 -6 12 -1q-5 5 -12 1z" fill="#F4C27A" stroke-width="1.4"/>` : `<ellipse cx="${x + 20}" cy="${y}" rx="${3 + i % 3}" ry="1.8" fill="#D3C9BC" stroke="none"/>`);
       else if (A.fg === 'pier') b += (i % 4 === 2 ? `<path d="M${x} ${y}q6 -7 12 0q-6 5 -12 0z" fill="#FFFFFF" stroke-width="1.4"/><path d="M${x + 3} ${y - 1}h6" stroke-width="1"/>` : '') + `<circle cx="${x + 24}" cy="${y + 1}" r="1.5" fill="${INK}" stroke="none" opacity=".45"/>` + (i % 5 === 0 ? `<path d="M${x + 30} ${y}q8 -5 16 0q-8 4 -16 0z" fill="#F9D0D9" stroke-width="1.3"/>` : '');
       else if (area === 'beach') b += `<ellipse cx="${x}" cy="${y}" rx="${4 + i % 3}" ry="2.4" fill="#D9BC86" stroke="none"/>` + (i % 4 === 0 ? `<path d="M${x + 20} ${y - 2}q4 -8 8 0z" fill="#F9D0D9" stroke-width="1.6"/>` : '');
-      else b += `<path d="M${x} 400q2 -16 -3 -24M${x + 6} 400q1 -18 7 -26M${x + 12} 400q-1 -12 4 -16" stroke="${col}" stroke-width="2.6"/>` + (i % 5 === 2 ? `<circle cx="${x + 26}" cy="${y - 4}" r="3.4" fill="#F9D0D9" stroke-width="1.4"/>` : '');
+      else if (season === 'summer') b += `<path d="M${x} 400q2 -16 -3 -24M${x + 6} 400q1 -18 7 -26M${x + 12} 400q-1 -12 4 -16" stroke="${col}" stroke-width="2.6"/>` + (i % 5 === 2 ? `<circle cx="${x + 26}" cy="${y - 4}" r="3.4" fill="#F9D0D9" stroke-width="1.4"/>` : '');
+      // v2.5 season tufts: blossom dots in spring, orange tufts and fallen leaves in autumn, short bare tufts in winter
+      else if (season === 'winter') b += `<path d="M${x} 400q1 -10 -2 -15M${x + 6} 400q1 -11 4 -16" stroke="${col}" stroke-width="2.4"/>`;
+      else b += `<path d="M${x} 400q2 -16 -3 -24M${x + 6} 400q1 -18 7 -26M${x + 12} 400q-1 -12 4 -16" stroke="${col}" stroke-width="2.6"/>` + (season === 'spring' ? (i % 2 ? `<circle cx="${x + 26}" cy="${y - 4}" r="3.4" fill="${i % 4 === 1 ? '#FFFFFF' : '#F9C6D4'}" stroke-width="1.4"/><circle cx="${x + 26}" cy="${y - 4}" r="1.2" fill="#F7C65E" stroke="none"/>` : '') : (i % 2 ? `<path d="M${x + 18} ${y - 1}q7 -6 14 0q-7 5 -14 0z" fill="${['#F2B25C', '#E8895A', '#F3CB58'][i % 3]}" stroke-width="1.2"/>` : ''));
     }
     if (snow) b += `<path d="M0 396q150 -10 300 -2t300 0v8h-600z" fill="#FFFFFF" fill-opacity=".85" stroke="none"/>`;
     return svgWrap([FGW, 400], b);

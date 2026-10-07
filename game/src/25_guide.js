@@ -11,9 +11,9 @@ const GD_STEPS = [
   { k: 'nap', pose: 'point', t: 'Care has the bath and the nap. Naps refill Energy. Better houses mean faster naps.', ring: ['#bar [data-act=care]'], on: ['nap'] },
   { k: 'map', pose: 'point', t: 'The Map goes everywhere: the park, the river, Market Street. Some places unlock with Bond.', ring: ['#bar [data-act=map]'] },
   { k: 'walk', pose: 'point', t: 'Walks earn the most coins and hide treasure. Try the Sunny Park.', ring: ['#bar [data-act=walk]'], on: ['walk'] },
-  { k: 'shops', pose: 'sit', t: 'Market Street has three shops and Pip\'s Sprout Cart. Food at Kibble Corner, clothes at the Boutique, houses at Barkitecture.' },
-  { k: 'garden', pose: 'sit', t: 'At Bond 2 the veggie patch opens. Grow carrots, feed them to {dog}. Nothing toxic can be planted. Ever.' },
-  { k: 'missions', pose: 'point', t: 'Three little missions a day, about 15 coins each. Three done is a stamp. Seven stamps is a surprise.', ring: ['#msCardG', '#bar [data-act=journal]'] },
+  { k: 'shops', pose: 'sit', t: 'Market Street has three shops and Pip\'s Sprout Cart. Food at Kibble Corner, clothes at the Boutique, houses at Barkitecture.', tp: 'Kibble Corner: food. Boutique: clothes. Barkitecture: houses.' },
+  { k: 'garden', pose: 'sit', t: 'At Bond 2 the veggie patch opens. Grow carrots, feed them to {dog}. Nothing toxic can be planted. Ever.', tp: 'Bond 2 opens the veggie patch. Nothing toxic can grow.' },
+  { k: 'missions', pose: 'point', t: 'Three little missions a day, about 15 coins each. Three done is a stamp. Seven stamps is a surprise.', tp: 'Three missions a day, 15 coins each. Seven stamps: a surprise.', ring: ['#msCardG', '#bar [data-act=journal]'] },
   { k: 'done', pose: 'cheer', t: 'That is everything. It is in your Journal under How to play, if you forget. I will be by the river.' }
 ];
 // the Journal page: the 8 lessons (action icon, 2 to 3 sentences)
@@ -72,7 +72,7 @@ function gdLayer() {
   $('.gd-skip', L).onclick = (e) => { e.stopPropagation(); SFX.click(); gdSkip(); };
   return L;
 }
-function gdText(i) { return esc(GD_STEPS[i].t).replace(/\{dog\}/g, esc(NAME())); }
+function gdText(i) { const st = GD_STEPS[i]; return esc(isPhone() && st.tp ? st.tp : st.t).replace(/\{dog\}/g, esc(NAME())); }
 function gdRender() {
   const L = gdLayer(), i = S.guide.step, st = GD_STEPS[i], c = $('.gd-card', L);
   c.dataset.step = i; c.dataset.k = st.k;

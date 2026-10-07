@@ -113,3 +113,10 @@ You manage Paw Haven for the owner. You don't build. Start a fresh Coordinator s
 - The owner still has to check live sync (Realtime) once on two real phones, and open the claude.ai artifact once.
 - v2.4 ran with 5 Opus lanes, each with its own fresh session, and a Fable coordinator that wrote the spec itself. Lanes did their own screenshot checks (desktop and phone, every breed, pose and age for the dog art) and reported in 25 lines. Three reviews (code, phone, art) ran as subagents of the coordinator.
 - Next work comes from `TODO.md` (Shop Day, Phone and older sections) or whatever the owner asks for.
+
+**State after v2.5 (7 Oct 2026):**
+- v2.5 "Autumn & New Pups" is on `main`, GitHub Pages and the claude.ai artifact. Spec and as-built notes: `V25.md` (section 11). Review screenshots for the owner's report are kept by the Coordinator outside the repo (`game/shots_v25/` was removed before the release).
+- Built with a Fable coordinator, 5 Opus feature lanes (SEASON ART, FESTIVAL ART, DOG ART, BREEDS, FESTIVAL) and 2 Opus fix lanes for the owner's v2.4 feedback (FIXES A, FIXES B), three reviews (code and phone on Opus subagents, art by the coordinator). From v2.6 on: no Fable (owner's usage), use the `.claude/agents/` definitions (paw-fixer, paw-artist, paw-reviewer).
+- Git tags do not reach GitHub through the build container's proxy: the base reference `v25-base` is a branch. Tag it from a machine that can and delete the branch.
+- GitHub returned "Internal Server Error" on every push for about two hours on 7 Oct (15:00 to 17:00Z); the retry loop in the coordinator's notes worked.
+- The 5-hour usage limit stopped the coordinator for 90 minutes mid-release (15:20 to 16:50Z). Keep the Board truthful before it hits.

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Paw Haven seasons</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#FFFBF3;--ink:#5B3D32;--dot:#E3D2BA;--pink:#F28FA5}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper) radial-gradient(var(--dot) 1.1px,transparent 1.2px) 0 0/20px 20px;color:var(--ink);font:16px/1.4 system-ui,sans-serif}
+header{padding:14px 16px 6px;display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+h1{font:700 40px 'Caveat',cursive;margin:0}
+label{font:700 22px 'Caveat',cursive;display:flex;gap:6px;align-items:center}
+select{font:16px system-ui;padding:4px 6px;border:2px solid var(--ink);border-radius:8px;background:#fff;color:var(--ink)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:8px 16px 16px}
+.cell{position:relative;background:#fff;border:2px solid var(--ink);border-radius:6px;overflow:hidden}
+.cell .art{display:block;width:100%;aspect-ratio:1000/600}
+.cell.strip .art{aspect-ratio:1200/400}
+.cell svg{display:block;width:100%;height:100%}
+.tag{position:absolute;left:8px;top:6px;font:700 26px 'Caveat',cursive;background:#FFFBF3;border:1.6px solid var(--ink);border-radius:6px;padding:0 10px;transform:rotate(-2deg)}
+body.sheet header{display:none}
+body.sheet .grid{padding:0;gap:0;grid-template-columns:1fr 1fr}
+body.sheet .cell{border:0;border-radius:0;outline:1px solid #FFFBF3}
+@media (max-width:640px){.grid{grid-template-columns:1fr}}
+</style></head>
+<body>
+<header><h1>Four seasons</h1>
+<label>Place <select id="nm"></select></label>
+<label>Time <select id="tm"><option>day</option><option>dawn</option><option>dusk</option><option>night</option></select></label>
+<label>Weather <select id="wx"><option>sunny</option><option>cloudy</option><option>rain</option><option>snow</option></select></label>
+</header>
+<div class="grid" id="grid"></div>
+<script src="pawart_world_a.js"></script>
+<script src="pawart_world_c.js"></script>
+<script>
+const PA = window.PawArt;
+const SCENES = ['yard','market','shelter','house','garden','kitchen','park','river','woods','beach','square','cafe','dogpark','vet','salon','hilltop','pier'];
+const STRIPS = ['park','river','woods','beach','town','hilltop','pier'];
+const q = new URLSearchParams(location.search);
+const nm = document.getElementById('nm'), tm = document.getElementById('tm'), wx = document.getElementById('wx'), grid = document.getElementById('grid');
+nm.innerHTML = SCENES.map((s) => `<option value="scene:${s}">${s}</option>`).join('') + STRIPS.map((s) => `<option value="strip:${s}">${s} walk</option>`).join('');
+if (q.get('sheet')) document.body.classList.add('sheet');
+if (q.get('n')) nm.value = q.get('n'); if (q.get('t')) tm.value = q.get('t'); if (q.get('w')) wx.value = q.get('w');
+function draw() {
+  const [kind, name] = nm.value.split(':'), env = { time: tm.value, weather: wx.value };
+  const seasons = (q.get('s') || 'spring,summer,autumn,winter').split(',');
+  grid.style.gridTemplateColumns = seasons.length === 1 ? '1fr' : '';
+  grid.innerHTML = seasons.map((season) => {
+    const svg = kind === 'scene' ? PA.scene(name, Object.assign({ season }, env)) : PA.walkStrip(name, Object.assign({ season }, env));
+    return `<div class="cell ${kind}"><div class="art">${svg}</div><span class="tag">${season}</span></div>`;
+  }).join('');
+  document.body.dataset.ready = '1';
+}
+[nm, tm, wx].forEach((el) => el.addEventListener('change', draw));
+draw();
+</script>
+</body></html>
