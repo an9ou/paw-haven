@@ -279,7 +279,9 @@
     let name;
     if (merle) name = (breed === 'dachs' ? DAPPLE_WORDS : MERLE_BY[breed] || MERLE_WORDS)[pig];
     else name = WORDS[breed][sk] || WORDS[breed][pig];
-    if (white === 0.6 && PIED[breed]) name = pig === 'black' && !merle ? PIED[breed][0].toUpperCase() + PIED[breed].slice(1) : name + ' ' + PIED[breed];
+    const allWhite = !merle && name === 'White'; // v2.5: a white coat needs no white markings or patches in its name
+    if (white === 0.6 && PIED[breed]) name = (pig === 'black' || allWhite) && !merle ? PIED[breed][0].toUpperCase() + PIED[breed].slice(1) : name + ' ' + PIED[breed];
+    else if (allWhite) { /* "White" already says it */ }
     else if (white === 0.6) name += ' & white piebald';
     else if (TRI_SOLID[breed] && !merle && !white && TRI_SOLID[breed][pig]) name = TRI_SOLID[breed][pig];
     else if (MERLE_BY[breed] && merle) { /* "Blue merle" already says the white */ }

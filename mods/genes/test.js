@@ -82,6 +82,9 @@ ok(G.BREEDS.every((k) => G.BREED_NAMES[k] && G.SHADES[k] && G.FREQ[k] && G.START
 const nm = (o, k) => G.phenotype(mk(o), k).coatName;
 ok(nm({}, 'poodle') === 'Black' && nm({ E: ['e', 'e'] }, 'poodle') === 'Apricot' && nm({ B: ['b', 'b'] }, 'poodle') === 'Chocolate', 'poodle black, apricot, chocolate');
 ok(nm({ E: ['e', 'e'], D: ['d', 'd'] }, 'poodle') === 'White' && nm({ E: ['e', 'e'], B: ['b', 'b'] }, 'poodle') === 'Cream' && nm({ D: ['d', 'd'] }, 'poodle') === 'Silver', 'poodle white, cream, silver');
+ok(nm({ E: ['e', 'e'], D: ['d', 'd'], S: ['S', 'sp'] }, 'poodle') === 'White' && nm({ E: ['e', 'e'], D: ['d', 'd'], S: ['sp', 'sp'] }, 'poodle') === 'Parti', 'a white poodle is just White, its parti form just Parti');
+ok(nm({ E: ['e', 'e'], S: ['sp', 'sp'] }, 'samoyed') === 'White' && nm({ E: ['e', 'e'], S: ['S', 'sp'] }, 'samoyed') === 'White', 'a samoyed-bodied mix with spotting is still just White');
+ok(G.BREEDS.every((k) => G.coatCatalog(k, { all: true }).every((c) => !/^White (with|&|parti|pied)/.test(c.coat))), 'no coat name says white twice');
 ok(nm({ S: ['sp', 'sp'] }, 'poodle') === 'Parti' && nm({ S: ['sp', 'sp'], E: ['e', 'e'] }, 'poodle') === 'Apricot parti', 'poodle parti');
 ok(G.phenotype(mk({ E: ['e', 'e'], D: ['d', 'd'] }), 'poodle').coat.base !== '#FFFFFF', 'a white poodle is off-white (pure white is the spot colour)');
 ok(nm({ S: ['S', 'sp'] }, 'collie') === 'Black and white' && nm({}, 'collie') === 'Tricolour' && nm({ S: ['sp', 'sp'] }, 'collie') === 'Black & white piebald', 'collie black and white, tricolour, piebald');

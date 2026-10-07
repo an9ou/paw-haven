@@ -176,10 +176,10 @@ function bdSameMix(dam, sire) {
 function bdKeepMix(pup, dam, sire, gm, name) {
   const G = brG(), r = seeded(hashId('keep|' + pup.id));
   const top = gm && gm.breeds && gm.breeds.length ? gm.breeds.map((x) => brKeyOf(x[0])) : [];
-  let x = top[0], y = top[1];
+  let x = top[0] || brKeyOf(dam.key), y = top[1] || x;
+  // 3/4 or more of one breed: that breed's body and head, whatever the parents' mix names say
+  if (gm && gm.kind === 'breed') { pup.key = x; pup.mix = { a: x, b: y, body: x, head: x, name: gm.name || name }; return; }
   if (bdSameMix(dam, sire) && dam.mix.a && dam.mix.b && dam.mix.a !== dam.mix.b) { x = brKeyOf(dam.mix.a); y = brKeyOf(dam.mix.b); }
-  if (!x) x = dam.key; if (!y) y = x;
-  if (gm && gm.kind === 'breed' && !bdSameMix(dam, sire)) { pup.key = x; pup.mix = { a: x, b: y, body: x, head: x, name }; return; }
   let m = null; if (G && typeof G.mixOf === 'function' && x !== y) { try { m = G.mixOf(x, y, r); } catch (e) { m = null; } }
   const body = m && m.body ? m.body : x, head = m && m.head ? m.head : (body === x ? y : x);
   pup.key = body; pup.mix = { a: x, b: y, body, head, name };
