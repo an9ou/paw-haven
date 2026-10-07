@@ -60,6 +60,8 @@ begin
 end $$;
 drop trigger if exists save_backups_trim on public.save_backups;
 create trigger save_backups_trim after insert on public.save_backups for each row execute function public.save_backups_trim();
+-- Trigger-only: nobody may call it through the API (Supabase advisor 0028/0029). The trigger still fires.
+revoke execute on function public.save_backups_trim() from public, anon, authenticated;
 
 -- 3. Real time: other devices hear about a new save straight away
 do $$ begin
