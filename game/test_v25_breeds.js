@@ -6,14 +6,15 @@
 // the flat-face tip shows once on the first hot day; the Journal coat tab shows 14 breeds.
 require('./test_lib').run('v25_breeds', async (t) => {
   const { ok, sec, ev, S } = t;
-  const NEW = [['poodle', 'Poodle', 'Pretzel'], ['collie', 'Border Collie', 'Scout'], ['samoyed', 'Samoyed', 'Cloud'], ['frenchie', 'French Bulldog', 'Brioche']];
+  const NEW = [['poodle', 'Poodle'], ['collie', 'Border Collie'], ['samoyed', 'Samoyed'], ['frenchie', 'French Bulldog']];
   const iso = (daysAgo) => { const d = new Date(); d.setDate(d.getDate() - daysAgo); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 
   sec('adopt each new breed through the UI, then feed, pet and walk');
-  for (const [k, br, nm] of NEW) {
+  for (const [k, br] of NEW) {
     const p = await t.boot(); await p.click('#tNew'); await p.waitForSelector('.heads button');
+    const nm = (await p.getAttribute(`.heads button[aria-label$=" the ${br}"]`, 'aria-label')).replace(` the ${br}`, ''); // the starter's name comes from PawArt.DOGS
     ok(await p.locator('.heads button').count() === 14, `${br}: 14 dogs in the adoption carousel`);
-    await p.click(`.heads button[aria-label="${nm} the ${br}"]`);
+    await p.click(`.heads button[aria-label$=" the ${br}"]`);
     ok(await t.until((br) => (document.querySelector('.adopt-card h3') || {}).textContent.includes('the ' + br), br), `${br}: the shelter card shows ${nm} the ${br}`);
     const tip = await ev(() => { const e = document.querySelector('.adopt-card .bd-tip'); return e ? e.textContent : ''; });
     if (k === 'frenchie') ok(/Flat faces breathe hard in heat\. Short walks, shade and water on warm days\./.test(tip), `${br}: the welfare tip is on the card (${tip})`);
@@ -41,7 +42,7 @@ require('./test_lib').run('v25_breeds', async (t) => {
   }
 
   sec('the welfare tip shows once, the first hot day');
-  const p = await t.boot(); await t.adopt({ sex: 'girl', head: 'Brioche the French Bulldog' });
+  const p = await t.boot(); await t.adopt({ sex: 'girl', head: '~ the French Bulldog' });
   ok((await S()).dog.key === 'frenchie' && JSON.stringify((await S()).breedTips) === '{}', 'a fresh French Bulldog, no tip seen yet');
   await t.toasts();
   await t.dev(async () => { await p.selectOption('#dvTime', 'day'); await p.selectOption('#dvWeather', 'sunny'); });

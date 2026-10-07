@@ -159,7 +159,11 @@
       blue:  ['#6E7F96', '#FFFFFF', '#55657A'],
       lilac: ['#A8949A', '#FFFFFF', '#8A777E'],
       red:   ['#C8743E', '#FFFFFF', '#94522A'], // red (e/e)
-      cream: ['#EED2A0', '#FFFFFF', '#CFAE76']
+      cream: ['#EED2A0', '#FFFFFF', '#CFAE76'],
+      mblack: ['#8C96A6', '#FFFFFF', '#2A2628'], // blue merle: grey base, the art adds dark and light patches
+      mliver: ['#C99A7E', '#FFFFFF', '#7A4A2E'], // red merle
+      mblue:  ['#A9B4C4', '#FFFFFF', '#6E7F96'], // slate merle
+      mlilac: ['#C9B8BC', '#FFFFFF', '#A8949A']  // lilac merle
     },
     samoyed: {
       red:      ['#FBF6EC', '#FFFFFF', '#E8DECB'], // * white
@@ -258,9 +262,10 @@
     const breed = breedOf(breedKey), g = normGenes(genesOf(genes)), pig = pigment(g);
     // breed-specific shade keys: pug apricot (e/e + b/b), greyhound red (e/e + b/b, liver nose), v2.5 cream
     const sk = shadeKey(g, breed, pig);
-    const shade = SHADES[breed][sk] || SHADES[breed][pig];
     const merleAllele = has(g.M, 'M');
     const merle = merleAllele && pig !== 'red' && pig !== 'cream'; // cryptic merle hides on e/e
+    // v2.5: a breed may give its merles a lighter base (collie blue merle is grey under the dark patches); 'm' + pigment keys
+    const shade = (merle && SHADES[breed]['m' + pig]) || SHADES[breed][sk] || SHADES[breed][pig];
     const white = both(g.S, 'sp') ? 0.6 : has(g.S, 'sp') ? 0.25 : 0;
 
     // eyes: Bl first, then visible merle, then b/b, else brown
