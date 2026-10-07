@@ -9,8 +9,8 @@
 // (right of the secret X, left of the place buttons). The spec spots [120,470] and [760,540] sat on the garden bed / bowl and under the buttons.
 const FS_PILES = [[318, 520, 116, 72], [738, 524, 104, 66]];
 const FS_PILE_GAP = 20; // game minutes between two jumps in the same pile
-const FS_STALL = { desk: [850, 378, 150, 138], phone: [182, 380, 118, 109] }; // Square: right foreground (desktop); on phones beside the fountain inside the camera crop
-const FS_BANNER = { desk: [560, 150, 400, 90], phone: [196, 142, 330, 74] }; // strung between the clock tower and the right shopfront, above the shop signs
+const FS_STALL = { desk: [858, 384, 136, 126], phone: [196, 380, 110, 109], phoneV: [548, 400, 86, 80] }; // Square: right foreground inside the frame (desktop); on phones beside the fountain, or right of the dog when a visitor shifts the crop
+const FS_BANNER = { desk: [560, 150, 400, 90], phone: [196, 142, 300, 74] }; // strung between the clock tower and the right shopfront, above the shop signs
 const FS_PUMPKIN = [596, 486, 40, 40]; // the porch step, left of the dog-house door
 const FS_PACK_SQ = [905, 470, 'left', 0.53]; // Square pack spot 3 while the stall is up (it stands where the stall is)
 const FS_COSTUMES = ['Ghost Sheet', 'Pumpkin Suit', 'Wizard Hat', 'Bumblebee Suit', 'Astronaut Helmet', 'Happi Coat'];
@@ -67,8 +67,25 @@ const FS_FB = {
 };
 function fsArt(name, o) { return artReal('prop', name, o || {}) || FS_FB[name](o || {}); }
 const fsKind = () => (festOn('halloween') ? 'halloween' : 'leaf');
-const fsStallBox = () => (isPhone() ? FS_STALL.phone : FS_STALL.desk);
-const fsBannerBox = () => (isPhone() ? FS_BANNER.phone : FS_BANNER.desk);
+// phones: the world x range the camera shows at home (a visiting dog shifts and zooms it, phHomeRefit in 03_yard.js)
+function fsCrop() {
+  const svg = $('#view > svg.world'), vb = svg && svg.viewBox && svg.viewBox.baseVal;
+  if (!isPhone() || !vb || !vb.width || vb.width >= 1000) return [0, 1000];
+  const cx = typeof phCamHome === 'number' ? phCamHome : vb.x + vb.width / 2, x0 = clamp(cx - vb.width / 2, 0, 1000 - vb.width); return [x0, x0 + vb.width];
+}
+const fsOver = (a, b) => !!b && a[0] < b[0] + b[2] && a[0] + a[2] > b[0] && a[1] < b[1] + b[3] && a[1] + a[3] > b[1];
+function fsVisitorBox() { const v = $('#visitorG > rect'); if (!v) return null; try { const b = v.getBBox(); return [b.x, b.y, b.width, b.height]; } catch (e) { return null; } }
+function fsStallBox() {
+  if (!isPhone()) return FS_STALL.desk;
+  const [c0, c1] = fsCrop(), dog = [DX + 30, DY + 40, DW - 60, DH - 40], vis = fsVisitorBox();
+  const ok = (b) => b[0] >= c0 && b[0] + b[2] <= c1 && !fsOver(b, dog) && !fsOver(b, vis);
+  return [FS_STALL.phone, FS_STALL.phoneV, [c1 - 104, 396, 92, 86]].find(ok) || FS_STALL.desk; // nothing fits: the desktop spot, seen with the look-right button
+}
+function fsBannerBox() {
+  if (!isPhone()) return FS_BANNER.desk;
+  const [c0, c1] = fsCrop(), w = Math.min(FS_BANNER.phone[2], c1 - c0 - 50); // clear of the look-right button at the right edge
+  return [Math.max(FS_BANNER.phone[0], c0 + 8), FS_BANNER.phone[1], w, f1(FS_BANNER.phone[3] * w / FS_BANNER.phone[2])];
+}
 // a tap rect of at least 48 screen px each way on phones (like hmDecorHit)
 function fsHit(x, y, w, h) {
   if (isPhone()) { const s = ((view.clientHeight || 500) - 60) / 600, m = 48 / s; if (w < m) { x -= (m - w) / 2; w = m; } if (h < m) { y -= (m - h) / 2; h = m; } }
@@ -112,9 +129,11 @@ function fsSquareDraw() {
   const st = $('#fsStallG', svg); st.onclick = (e) => { e.stopPropagation(); SFX.click(); fsStallOpen(); }; st.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fsStallOpen(); } };
   if (pb) {
     const home = pb.querySelector('[data-pb="yard"]'), add = (h) => { if (home) home.insertAdjacentHTML('beforebegin', h); else pb.insertAdjacentHTML('beforeend', h); };
-    add('<button class="btn yes" data-fs="stall">Harvest Stall</button>');
-    if (festOn('halloween')) add(`<button class="btn yes" data-fs="parade" ${fsParadedToday() ? 'aria-disabled="true"' : ''}>${fsParadedToday() ? 'Paraded today' : 'Costume parade'}</button>`);
-    pb.querySelectorAll('[data-fs]').forEach((b) => { b.onclick = () => { SFX.click(); if (b.dataset.fs === 'stall') fsStallOpen(); else fsParadeOpen(); }; });
+    const ph = isPhone(), hw = festOn('halloween'); // phones: one Festival button (a chooser at Halloween) so the Square row stays one line
+    if (ph && hw) add('<button class="btn yes" data-fs="fest">Festival</button>');
+    else add(`<button class="btn yes" data-fs="stall" aria-label="Harvest Stall">${ph ? 'Stall' : 'Harvest Stall'}</button>`);
+    if (hw && !ph) add(`<button class="btn yes" data-fs="parade" aria-label="${fsParadedToday() ? 'Paraded today' : 'Costume parade'}" ${fsParadedToday() ? 'aria-disabled="true"' : ''}>${fsParadedToday() ? (ph ? 'Paraded' : 'Paraded today') : ph ? 'Parade' : 'Costume parade'}</button>`);
+    pb.querySelectorAll('[data-fs]').forEach((b) => { b.onclick = () => { SFX.click(); if (b.dataset.fs === 'stall') fsStallOpen(); else if (b.dataset.fs === 'fest') fsChooser(); else fsParadeOpen(); }; });
   }
   fsPackSync();
 }
@@ -211,6 +230,7 @@ function fsStallOpen() { return fsTry(fsStallOpen0); }
 function fsStallClosed() { if (fsAnyOn()) return false; if (!modal.hidden) closeModal(); toast('The Harvest Stall has packed up. Baker Bea says thank you for the pumpkin business.'); return true; }
 function fsStallOpen0() {
   if (!S) return;
+  const op = !modal.hidden && $('#modal .panel.fs-stall'), keep = op ? [op.scrollTop, ($('.panel-body', op) || {}).scrollTop || 0] : null; // a re-open after a buy keeps the scroll
   if (!fsAnyOn()) { toast('The Harvest Stall is packed away. Baker Bea comes back for the leaf festival.'); return; }
   fsFields(); if (S.fest.stall.seen !== localISO()) { S.fest.stall.seen = localISO(); markDirty(); }
   SFX.boop(620); if (typeof audioPlace === 'function') audioPlace('shop');
@@ -222,6 +242,7 @@ function fsStallOpen0() {
   }).join('');
   const deco = `<span class="fs-drift" aria-hidden="true">${fsArt('leafdrift')}</span>`;
   const p = openModal('Harvest Stall', `<div class="fs-bea">${deco}<p><b>Baker Bea:</b> "Everything here is dog-safe. Ask me anything, I will say pumpkin."</p></div><p class="small">Festival treats and outfits, for coins, while the festival is on. You have ${fmtC(S.coins)} Paw Coins.</p><div class="shopgrid">${cards}</div>`, { cls: 'shop fs-stall' });
+  if (keep) { p.scrollTop = keep[0]; const bd = $('.panel-body', p); if (bd) bd.scrollTop = keep[1]; }
   p.querySelectorAll('[data-fsbuy]').forEach((b) => {
     b.onclick = async () => {
       if (fsStallClosed()) return; // the festival ended while the sheet was open (midnight)
@@ -237,6 +258,15 @@ function fsStallOpen0() {
       if (it.cat === 'clothes') { const pp = $('.panel', modal); const w = await confirmIn(pp, `Put the ${esc(it.n)} on ${esc(NAME())} now?`, 'Wear it', 'Later'); if (w) equip(it.n, true); if (!modal.hidden) fsStallOpen(); }
     };
   });
+  return p;
+}
+
+/* ---- phones at Halloween: one Festival button opens this small chooser ---- */
+function fsChooser() {
+  if (!festOn('halloween')) { fsStallOpen(); return; }
+  const done = fsParadedToday();
+  const p = openModal('Festival', `<div class="fs-choose"><button class="card" data-fsgo="stall"><span class="art">${fsArt('stall', { kind: 'halloween' })}</span><b>Harvest Stall</b><span class="small">Dog-safe treats and outfits.</span></button><button class="card" data-fsgo="parade"><span class="art">${fsArt('paradebanner')}</span><b>Costume parade</b><span class="small">${done ? 'Paraded today.' : 'Once a day, 10 coins.'}</span></button></div>`, { cls: 'fs-choosepop' });
+  p.querySelectorAll('[data-fsgo]').forEach((b) => { b.onclick = () => { SFX.click(); closeModal(); if (b.dataset.fsgo === 'stall') fsStallOpen(); else fsParadeOpen(); }; });
   return p;
 }
 
@@ -273,13 +303,14 @@ function fsParadeWalk(dogs) {
   FS.walking = true; busy = true; hideBubble();
   const hide = ['#dogPos', '#pack', '#visitorG', '#placeBtns'].map((s) => $(s, view)).filter(Boolean); hide.forEach((e) => { e.style.visibility = 'hidden'; });
   const sc = 0.56, w = 264 * sc, hgt = 220 * sc, gap = 104, feetY = 505, line = [D()].concat(dogs);
-  const dist = 700, lead = 200; // the leader walks from the fountain (x 200) to the stall (x 900)
+  // desktop: the leader walks from the fountain (x 200) to the stall (x 900). Phones: the line enters at the left edge of the crop and leaves past the right edge
+  const [c0, c1] = fsCrop(), ph = isPhone(), lead = ph ? c0 - w / 2 : 200, dist = ph ? (c1 + w / 2 + (line.length - 1) * gap) - lead : 700;
   const parts = line.map((d, i) => { const fx0 = lead - i * gap, x = fx0 - w / 2, y = feetY - hgt * (205 / 220); return `<g class="fs-pd" data-i="${i}">${place(dogSVG(d, { pose: 'walk', outfit: i ? d.outfit : outfitOf(d), facing: 'right' }), f1(x), f1(y), f1(w), f1(hgt))}</g>`; }).join('');
   fx.insertAdjacentHTML('beforebegin', `<g id="fsParadeG" pointer-events="none"><g class="fs-line" style="transform:translateX(0px)">${parts}</g><g class="fs-leaves"></g></g>`);
   const lg = $('#fsParadeG .fs-line'), leaves = $('#fsParadeG .fs-leaves');
   for (let k = 0; k < 10; k++) { const el = document.createElementNS('http://www.w3.org/2000/svg', 'g'); el.setAttribute('class', 'fs-drop'); el.style.animationDelay = (k * 0.55).toFixed(2) + 's'; el.style.setProperty('--sway', (k % 2 ? 40 : -40) + 'px'); el.innerHTML = fsLeafPath(120 + ((k * 97) % 800), 150 + (k % 3) * 20, 1.4, k * 40, FS_LEAF_COLS[k % 5]); leaves.appendChild(el); }
   requestAnimationFrame(() => requestAnimationFrame(() => { if (lg) { lg.style.transition = `transform ${FS_PARADE_MS}ms linear`; lg.style.transform = `translateX(${dist}px)`; } }));
-  FS.walkT.push(setTimeout(() => { if (fsHere('square')) say(PICK(['Ooh.', 'Is that a duck?']), isPhone() ? 330 : 260, 300, 2400); }, 1800));
+  const sayAt = 1800; FS.walkT.push(setTimeout(() => { if (fsHere('square')) say(PICK(['Ooh.', 'Is that a duck?']), lead + dist * sayAt / FS_PARADE_MS, feetY - hgt * 0.85, 2400); }, sayAt)); // at the leader's head
   FS.walkT.push(setTimeout(() => fsParadeEnd(true), FS_PARADE_MS + 200));
   onCleanup(() => { if (FS.walking) fsParadeEnd(false); });
 }
@@ -318,6 +349,8 @@ function fsJournalLine() {
 on('game:ready', () => { fsFields(); fsPackSync(); setTimeout(fsExpose, 0); });
 on('yard:enter', () => {
   fsFields(); fsPackSync(); fsDraw(); fsExpose();
+  // a visiting dog can arrive after this (drawVisitor) and move the phone crop: draw the stall and banner again for the new crop
+  const tv = S && S.place === 'square' && $('#townV2'); if (tv && isPhone()) { const mo = new MutationObserver(() => { if (!FS.walking && fsHere('square')) fsSquareDraw(); }); mo.observe(tv, { childList: true }); onCleanup(() => mo.disconnect()); }
   fsLater(() => { if (cur.mode === 'yard') fsLetters(); }, 1200);
   fsSeasonGreet();
 });

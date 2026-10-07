@@ -48,3 +48,11 @@ html[data-layout="phone"] .fs-you{gap:10px;padding:8px 10px}
 html[data-layout="phone"] .fs-you .fs-pdog{width:100px;height:84px;flex:none}
 html[data-layout="phone"] .fs-jline{font-size:15px}
 html[data-layout="phone"] .panel.fs-paradepop .foot .btn,html[data-layout="phone"] .panel.fs-stall .btn{min-height:44px}
+/* ---- phones: the Square row stays one line (the Festival button), and its chooser ---- */
+html[data-layout="phone"] #placeBtns:has([data-fs]){gap:6px}
+html[data-layout="phone"] #placeBtns:has([data-fs]) .btn{padding:4px 8px}
+.fs-choose{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fs-choose .card,html[data-layout="phone"] .fs-choose .card{width:auto;max-width:none;flex:none;display:flex;flex-direction:column;align-items:center;gap:4px;min-height:44px;padding:10px 8px}
+.fs-choose .art{display:block;width:100%;height:96px}
+.fs-choose .art svg{width:100%;height:100%;display:block}
+.fs-choose b{font-family:var(--font-hand);font-size:22px;line-height:1.1}

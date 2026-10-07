@@ -81,14 +81,15 @@ async function suite(t, dev) {
 
   t.sec(dev + ': the Harvest Stall and the parade banner in the Square');
   await ev(() => { const S = window.__paw.S; S.sleeping = false; S.place = 'square'; window.__paw.go('yard'); });
-  await t.until(() => !!document.querySelector('#fsStallG .fs-hit') && !!document.querySelector('[data-fs=stall]'), null, 8000); await t.calm(); await t.lu(); await t.freezeMotion(true);
+  await t.until(() => !!document.querySelector('#fsStallG .fs-hit') && !!document.querySelector('[data-fs=fest]'), null, 8000); await t.calm(); await t.lu(); await t.freezeMotion(true);
   await settled(t, '#fsStallG .fs-hit'); await settled(t, '#placeBtns');
-  const q = await ev(`(() => { const R4 = ${R4}; return { stall: R4('#fsStallG .fs-hit'), art: R4('#fsStallG > svg'), banner: R4('#fsBannerG > svg'), dog: R4('#dogHit'), hud: R4('#hud'), bar: R4('#bar'), chip: R4('#status'), view: R4('#view'), sb: R4('[data-fs=stall]'), pb: R4('[data-fs=parade]'), btns: [...document.querySelectorAll('#placeBtns .btn')].map((b) => { const r = b.getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; }), iw: innerWidth, sw: document.documentElement.scrollWidth }; })()`);
+  const q = await ev(`(() => { const R4 = ${R4}; return { stall: R4('#fsStallG .fs-hit'), art: R4('#fsStallG > svg'), banner: R4('#fsBannerG > svg'), dog: R4('#dogHit'), hud: R4('#hud'), bar: R4('#bar'), chip: R4('#status'), view: R4('#view'), sb: R4('[data-fs=fest]'), rows: new Set([...document.querySelectorAll('#placeBtns .btn')].map((b) => Math.round(b.getBoundingClientRect().top))).size, btns: [...document.querySelectorAll('#placeBtns .btn')].map((b) => { const r = b.getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; }), iw: innerWidth, sw: document.documentElement.scrollWidth }; })()`);
   ok(q.art[0] >= q.view[0] - 1 && q.art[2] <= q.view[2] + 1 && q.art[1] >= q.view[1] && q.art[3] <= q.view[3], 'the stall is inside the camera crop ' + JSON.stringify(q.art.map(Math.round)));
   ok(!ov(q.art, q.dog), 'the stall does not cover #dogHit');
   ok(!ov(q.art, q.hud) && !ov(q.art, q.bar) && !ov(q.art, q.chip) && !q.btns.some((b) => ov(q.art, b)), 'the stall is clear of the HUD, the bar, the location chip and the place buttons');
   ok(q.banner && q.banner[0] >= q.view[0] - 1 && q.banner[2] <= q.view[2] + 1 && !ov(q.banner, q.dog) && !ov(q.banner, q.chip) && !ov(q.banner, q.stall), 'the banner is inside the crop, clear of #dogHit, the chip and the stall');
-  ok(q.sb[2] - q.sb[0] >= 43.5 && q.sb[3] - q.sb[1] >= 43.5 && q.pb[3] - q.pb[1] >= 43.5, `the Harvest Stall and Costume parade buttons are 44 px (${Math.round(q.sb[2] - q.sb[0])}x${Math.round(q.sb[3] - q.sb[1])})`);
+  ok(q.sb[2] - q.sb[0] >= 43.5 && q.sb[3] - q.sb[1] >= 43.5, `the Festival button is 44 px (${Math.round(q.sb[2] - q.sb[0])}x${Math.round(q.sb[3] - q.sb[1])})`);
+  ok(q.rows === 1, `the Square place buttons stay one row (${q.rows})`);
   ok(q.sw === q.iw, 'no sideways page scroll');
   await t.SH('square_stall');
   const sc = [(q.stall[0] + q.stall[2]) / 2, (q.stall[1] + q.stall[3]) / 2];
@@ -98,7 +99,9 @@ async function suite(t, dev) {
   await closeSheet(t);
 
   t.sec(dev + ': the stall sheet');
-  await tapSel(t, '[data-fs=stall]', () => !!document.querySelector('#modal:not([hidden]) .panel.fs-stall')); await settled(t, '#modal .panel');
+  await tapSel(t, '[data-fs=fest]', () => !!document.querySelector('#modal:not([hidden]) .fs-choose')); await settled(t, '#modal .panel');
+  await sheetFits(t, 'Festival chooser'); await audit(t, 'festival chooser');
+  await tapSel(t, '[data-fsgo=stall]', () => !!document.querySelector('#modal:not([hidden]) .panel.fs-stall')); await settled(t, '#modal .panel');
   await sheetFits(t, 'Harvest Stall'); await audit(t, 'stall sheet');
   const sh = await ev(async () => {
     const panel = document.querySelector('#modal .panel'), sc = [panel, panel.querySelector('.panel-body')].find((e) => e && e.scrollHeight > e.clientHeight + 4) || panel, out = [];
@@ -108,13 +111,16 @@ async function suite(t, dev) {
   ok(sh.n === 10, `10 cards (${sh.n})`);
   ok(new Set(sh.out.map((b) => b[0])).size === 10 && sh.out.every((b) => b[1] >= 44 && b[2] >= 44 && b[3]), 'every Buy button is reachable, on screen and >= 44 px');
   ok(sh.pw <= sh.pcw + 1, 'the sheet does not scroll sideways');
+  const scr = () => ev(() => { const pn = document.querySelector('#modal .panel'), sc = [pn, pn.querySelector('.panel-body')].find((e) => e && e.scrollHeight > e.clientHeight + 4) || pn; return sc.scrollTop; });
+  await ev(() => { const b = document.querySelector('[data-fsbuy="Candy Corn Carrots"]'); b.scrollIntoView({ block: 'center' }); }); const st0 = await scr();
   await tapSel(t, '[data-fsbuy="Candy Corn Carrots"]', () => !!document.querySelector('.buyveil .bb-yes')); await audit(t, 'stall buy window');
   await tapSel(t, '.buyveil .bb-yes', () => (window.__paw.S.inv.food['Candy Corn Carrots'] || 0) === 1);
   ok((await t.S()).inv.food['Candy Corn Carrots'] === 1, 'bought Candy Corn Carrots by touch');
+  const st1 = await scr(); ok(st0 > 100 && Math.abs(st1 - st0) < 4, `the sheet keeps its scroll after a buy (${Math.round(st0)} -> ${Math.round(st1)})`);
   await closeSheet(t);
 
   t.sec(dev + ': the parade sheet');
-  await tapSel(t, '[data-fs=parade]', () => !!document.querySelector('#modal:not([hidden]) .panel.fs-paradepop')); await settled(t, '#modal .panel');
+  await tapSel(t, '[data-fs=fest]', () => !!document.querySelector('#modal:not([hidden]) .fs-choose')); await tapSel(t, '[data-fsgo=parade]', () => !!document.querySelector('#modal:not([hidden]) .panel.fs-paradepop')); await settled(t, '#modal .panel');
   await sheetFits(t, 'Costume parade'); await audit(t, 'parade sheet');
   const pr = await ev(() => { const row = document.querySelector('.fs-row'), j = document.getElementById('fsJoin').getBoundingClientRect(), panel = document.querySelector('#modal .panel'); return { rsw: row.scrollWidth, rcw: row.clientWidth, ox: getComputedStyle(row).overflowX, n: row.children.length, j: [j.width, j.height, j.bottom <= innerHeight], pw: panel.scrollWidth, pcw: panel.clientWidth, sw: document.documentElement.scrollWidth, iw: innerWidth }; });
   ok(pr.n === 5 && pr.rsw > pr.rcw && /auto|scroll/.test(pr.ox), `the five dogs scroll sideways inside the row (${pr.rsw} > ${pr.rcw})`);
