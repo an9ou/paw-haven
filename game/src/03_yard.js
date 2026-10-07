@@ -202,6 +202,8 @@ function phCamPan(svg) {
     clearTimeout(phPanT); if (isPhone()) phPanT = setTimeout(() => { if ((cur.mode === 'yard' || cur.mode === 'market') && !phPeekOn) camTo(phCamHome, 0.8); }, 4000);
   };
   svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end);
+  // the scene is touch-action:none, but Safari can still take a finger drag on an SVG for its own page gesture (and cancel the pointer)
+  svg.addEventListener('touchmove', (e) => { if (e.cancelable) e.preventDefault(); }, { passive: false });
   onCleanup(() => { clearTimeout(phPanT); clearTimeout(swT); });
 }
 // v2.3 phone: a small button on the right edge looks at the right half of the scene (the house, notice board, café counter, vet desk, salon table) and back
