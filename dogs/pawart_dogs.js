@@ -117,7 +117,7 @@ SP.beagle={name:'Bagel',breed:'Beagle',personality:'Nose-led, food-obsessed, bay
    ears 'semi', mouths 'sammy'/'grump', face.browCol) are new spec fields, so the ten older dogs never take these branches */
 const lum=c=>{const v=[1,3,5].map(i=>parseInt(c.slice(i,i+2),16)/255);return v[0]*.3+v[1]*.59+v[2]*.11};
 const curlCol=c=>lum(c)<.32?mix(c,W,.32):mix(c,PEN,.38);
-SP.poodle={name:'Truffle',breed:'Poodle',personality:'Thinks it is the smartest one in the room. It is.',joke:'Haircut optional. Dignity not.',
+SP.poodle={name:'Pretzel',breed:'Poodle',personality:'Thinks it is the smartest one in the room. It is.',joke:'Haircut optional. Dignity not.',
   col:'#F2C48F',hcol:'#F2C48F',light:'#FBE2C0',fluff:1,hfluff:1,body:{x:110,y:136,rx:41,ry:26},head:{x:157,y:98,rx:26,ry:25},
   legs:{h:-26,f:23,w:6.2,pom:1},ears:'flopL',curlEar:1,topknot:1,tail:'pom',eyes:[5.8,5.2],
   face:{eyes:'smug',mouth:'smile',e0:[-.1,-.16],e1:[.34,-.2],nose:[1.6,.12],snout:2,snoutL:1.6,tilt:-10},
@@ -138,7 +138,7 @@ SP.samoyed={name:'Cloud',breed:'Samoyed',personality:'Smiles so the snow does no
   marks:(h,B,Hd,s)=>{const b=s.body,hx=s.head.rx,hy=s.head.ry,K=mix(s.dark,PEN,.3);h.crayon(b.rx,b.ry,B,mix(s.dark,PEN,.35),8);
    [[-.55,-.4],[-.1,-.62],[.4,-.38],[-.72,.32],[.1,.45],[.68,.38]].forEach(q=>{const x=q[0]*b.rx,y=q[1]*b.ry;h.line([[x-6,y-2],[x-3,y+3],[x,y-2],[x+3,y+3],[x+6,y-1]].map(B),2.2,K,.4)});
    h.line([[-hx*.78,hy*.12],[-hx*.66,hy*.48],[-hx*.4,hy*.72],[-hx*.08,hy*.84]].map(Hd),2.2,K,.4)}};
-SP.frenchie={name:'Croissant',breed:'French Bulldog',personality:'Snores, snorts, sits on your foot. All three at once.',joke:'Breathes like a tiny engine. Shade and water, please.',
+SP.frenchie={name:'Brioche',breed:'French Bulldog',personality:'Snores, snorts, sits on your foot. All three at once.',joke:'Breathes like a tiny engine. Shade and water, please.',
   col:'#D9B48A',hcol:'#D9B48A',light:'#F0DCC0',dark:'#3A2E2E',body:{x:112,y:150,rx:40,ry:25,lop:.02},head:{x:160,y:116,rx:31,ry:28},
   legs:{h:-24,f:23,w:10.6},ears:'bat',earS:.72,earW:1.3,earRound:3,tail:'nub',eyes:[8.6,9],
   face:{eyes:'open',mouth:'grump',e0:[-.26,-.1],e1:[.44,-.12],nose:[.2,.3],pupil:.62,brow:'soft',drool:1},
