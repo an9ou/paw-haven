@@ -73,6 +73,10 @@ button.fnode:hover .fhead{transform:rotate(-5deg) scale(1.07);box-shadow:0 0 0 3
 .cbreed .ic{width:34px;height:34px}
 .cbreed .ic svg{width:100%;height:100%}
 .cbreed.on{background:var(--w-yellow);transform:translateY(-2px) rotate(-1deg)}
+/* v2.5 (BREEDS): with 13+ breeds the coat tabs get a little smaller so all 14 stay on one desktop row (10-tab layouts are unchanged; phones scroll) */
+html:not([data-layout="phone"]) .cbreeds:has(> .cbreed:nth-child(13)){gap:3px;flex-wrap:nowrap}
+html:not([data-layout="phone"]) .cbreeds:has(> .cbreed:nth-child(13)) .cbreed{padding:1px 4px 1px 1px;gap:1px;font-size:16px}
+html:not([data-layout="phone"]) .cbreeds:has(> .cbreed:nth-child(13)) .cbreed .ic{width:28px;height:28px}
 .cspk{position:absolute;top:-8px;right:-4px;font-style:normal;color:#E0A81C;font-size:16px}
 .cbh{margin:4px 0 0;font-family:var(--font-hand);font-size:28px}
 .cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(138px,1fr));gap:12px 10px;padding:6px 2px 10px}
