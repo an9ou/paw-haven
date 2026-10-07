@@ -72,3 +72,8 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [ ] Spring and winter have no festival yet (the season art is ready for one). `game/src/26_festival.js`
 - [ ] Git tags do not reach GitHub through the build container's proxy, so `v25-base` is also a branch. Delete the branch when the tag is pushed from a machine that can. `tools/`
 - [ ] Owner: play one October day on a phone (leaf piles, the stall, the parade) and check the seasons with the Dev panel Season select.
+- [ ] Fetch on phones: the scene is full width but only about 234 px tall, with blank space under the panel. A taller scene would gain about 10% at most (the throw needs 900 of the 1000 units). `game/src/19_fetch.js`
+- [ ] Market Street on phones: the first camera move re-applies a zoom about 7% tighter than the home framing (pre-existing; the town occlusion checks tune that framing). `game/src/03_yard.js`
+- [ ] Round buttons lost their hatching when the fill was fitted inside the outline (the crayon look is kept by the wash). Decide whether to draw a clipped hatch. `game/css/01_sketch_surface.css`
+- [ ] Tray-card notes clamp at 2 lines on phones. `game/css/21_phone_home.css`
+- [ ] The `account` suite takes about 260 s alone, near its 300 s watchdog, and can hit it under `--jobs 2`. `game/test_account.js`
