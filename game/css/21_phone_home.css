@@ -7,6 +7,8 @@ html[data-layout="phone"] #view > svg.world{touch-action:none}
 /* adoption: the Adopt button stays in reach while the card scrolls */
 html[data-layout="phone"] #stage.flowdock .adopt-card ~ .foot{position:sticky;bottom:0;z-index:2;margin:4px -4px 0;padding:8px 4px calc(6px + env(safe-area-inset-bottom,0px));background:linear-gradient(to bottom,rgba(255,248,235,0),var(--paper) 30%)}
 html[data-layout="phone"] #stage.flowdock .heads{gap:8px}
+/* v2.5 (BREEDS): 14 heads make a third row; the tray must not shrink under it, so the dock scrolls and every head stays tappable above the sticky Adopt bar */
+html[data-layout="phone"] #stage.flowdock #dock > .tray:has(.adopt-card){flex-shrink:0}
 /* decor card: a smaller picture so the sheet is not mostly empty */
 html[data-layout="phone"] .hm-pop{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
 html[data-layout="phone"] .hm-pop .hm-art{display:block;width:min(60%,220px);margin:0 auto}
