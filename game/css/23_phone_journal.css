@@ -53,6 +53,7 @@ html[data-layout="phone"] .ctop{grid-template-columns:minmax(0,1fr);gap:10px}
 html[data-layout="phone"] .csparkle{align-items:flex-start;max-width:100%}
 html[data-layout="phone"] .cstars{flex-wrap:wrap;max-width:100%;font-size:22px}
 html[data-layout="phone"] .cmiles{gap:6px}
+html[data-layout="phone"] .cmile{font-size:15px}
 html[data-layout="phone"] .cbreeds{flex-wrap:nowrap;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:none;touch-action:pan-x}
 html[data-layout="phone"] .cbreeds::-webkit-scrollbar{display:none}
 html[data-layout="phone"] .cbreed{flex:none;min-height:44px;min-width:44px;font-size:19px}

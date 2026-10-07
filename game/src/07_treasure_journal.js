@@ -54,6 +54,7 @@ function openJournal(tab) {
   p.querySelectorAll('[data-spots]').forEach((b) => { b.onclick = () => { SFX.click(); if (typeof openSpots === 'function') openSpots(); else toast(`Dog spots: ${S.dogs.length} dog${S.dogs.length > 1 ? 's' : ''} at home. More spots open with Bond.`); }; });
   if (jTab === 'family') pinFamNodes(p);
   if (isPhone()) pjJournalInit(p);
+  if (isPhone() && jTab === 'coats') { const c = $('.cbreeds', p), on = c && $('.cbreed.on', c); if (on) { const a = c.getBoundingClientRect(), r = on.getBoundingClientRect(); c.scrollLeft += r.left - a.left - (a.width - r.width) / 2; } } // v2.5: 14 tabs, keep the chosen breed in view
   p.querySelectorAll('[data-jtitle]').forEach((b) => { b.onclick = () => { jrToggleTitle(b.dataset.jtitle); openJournal(); }; });
   p.querySelectorAll('[data-fpartner]').forEach((b) => { b.onclick = () => { SFX.click(); closeModal(); if (typeof openPlaydates === 'function') openPlaydates({ with: b.dataset.fpartner }); else toast('The Playdate board is still being pinned up. Try again soon.'); }; });
   p.querySelectorAll('[data-jeq]').forEach((b) => { b.onclick = () => { equip(b.dataset.jeq); openJournal(); }; });

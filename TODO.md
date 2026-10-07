@@ -6,7 +6,7 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [x] Puppies could travel to Park / River / Woods / Beach as a place. Fixed: under 3 months and nursing mums stay home.
 - [x] Spot 4 took about 1.5 months for heavy players. Fixed: 60 care days.
 - [x] Mix puppies can carry coats outside their body breed's coat catalogue. Fixed in v2.1: they show as bonus coats.
-- [ ] Horgi × Horgi pups are still named "Mutt mix". `mods/genes.js` / `game/src/13b_breeding.js`
+- [x] Horgi × Horgi pups are still named "Mutt mix". Fixed in v2.5: a same named mix keeps its name, and 3/4 dogs follow the top breed. `game/src/13b_breeding.js`
 - [ ] Coat catalogue is 186 coats, bigger than the planned 84 (decide: keep or trim). `mods/genes.js`
 
 ## Layout
@@ -57,10 +57,18 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [ ] The "look right" peek button and the nap details card are new. Check both once on a real phone.
 
 ## Shop Day (v2.4)
-- [ ] On phones Gerald's steps 6 to 8 run to 4 lines in the strip (the spec said two). Shorter phone wording would fix it. `game/src/25_guide.js`
-- [ ] Toasts can sit over a sheet's title for 3 s on phones (the Missions sheet, the Wardrobe heading). Core toast placement. `game/src/00_core.js` toast()
+- [x] On phones Gerald's steps 6 to 8 run to 4 lines in the strip (the spec said two). Fixed in v2.5: shorter phone wording (`tp`). `game/src/25_guide.js`
+- [x] Toasts can sit over a sheet's title for 3 s on phones (the Missions sheet, the Wardrobe heading). Fixed in v2.5: toasts sit just under the sheet's title. `game/src/00_core.js` toast()
 - [ ] The yard missions clipboard hides while a feed / play / care tray is open on phones (its tap target would shrink under 44 px). A tray-aware tap rect would let it stay. `game/css/27_missions.css`
 - [ ] Under the test harness missions and the walkthrough only run when a suite sets `prefs.msTest` / `prefs.gdTest`, so the older suites never exercise them alongside the old flows. One combined smoke pass would catch interactions. `game/src/24_missions.js`, `25_guide.js`
-- [ ] The six house-card item icons draw the house at about 50 px, so detail is soft at the 40 px shop scale. `world/pawart_world_b.js`
-- [ ] The garden module has no watering callback, so no mission can ask for watering. `mods/garden.js`
+- [x] The six house-card item icons draw the house at about 50 px, so detail is soft at the 40 px shop scale. Fixed in v2.5: bolder icons. `world/pawart_world_b.js`
+- [x] The garden module has no watering callback, so no mission can ask for watering. Fixed in v2.5: `onWater` and the "Water the garden" mission. `mods/garden.js`
 - [ ] Owner: open the claude.ai artifact once on a phone and a laptop to confirm the multi-file version boots there (it was checked in headless Chromium over http, not on claude.ai itself).
+
+## Autumn & New Pups (v2.5)
+- [ ] Coat catalogue is now 14 breeds; the old keep-or-trim question (planned 84 coats) is still open. `mods/genes.js`
+- [ ] `S.warmUntil` (Warm Bone Broth) is save-wide, so a second dog is warm too for the hour. In the dog's favour, so left as is. `game/src/00_core.js`
+- [ ] The parade line-up draws five dogs from `playboardDogs` (four) plus one extra seeded roll. A sixth town dog would need a bigger board. `game/src/26_festival.js`
+- [ ] Spring and winter have no festival yet (the season art is ready for one). `game/src/26_festival.js`
+- [ ] Git tags do not reach GitHub through the build container's proxy, so `v25-base` is also a branch. Delete the branch when the tag is pushed from a machine that can. `tools/`
+- [ ] Owner: play one October day on a phone (leaf piles, the stall, the parade) and check the seasons with the Dev panel Season select.
