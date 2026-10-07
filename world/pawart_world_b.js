@@ -3823,6 +3823,78 @@ Object.assign(ICONS,{
 });
 
 
+/* v2.5: the v2.4 and v2.5 foods drawn in the dog bowl (prop bowl {food}, 120x120), the food heaped in the bowl like the older bowl foods */
+const BOWL25=['Carrot Sticks','Apple Slices','Blueberry Bites','Seedless Watermelon Cubes','Sweet Potato Chews','Pumpkin Purée','Turkey Meatballs','Frozen Pupsicle',
+  'Baked Pumpkin Wedges','Sweet Potato Coins','Warm Bone Broth','Ghost Biscuits','Candy Corn Carrots','Monster Meatball'];
+BOWL25.forEach(n=>BOWL_FOODS.push(n));
+// spots on the heap, back rows first
+const HEAP=[[60,40],[46,43],[74,43],[34,49],[60,47],[86,49],[26,57],[47,53],[72,54],[94,57],[36,61],[60,59],[84,62]];
+const heapBase=(b,col)=>b.sh([[18,64],[26,50],[42,41],[60,38],[78,41],[94,50],[102,64],[60,70]],col,{hatch:0,hl:0,lw:.8});
+const steamB=(b)=>{b.ln([[48,34],[45,28],[49,22],[46,15]],{w:1.4,col:GRAPH});b.ln([[70,32],[73,26],[69,20],[72,13]],{w:1.4,col:GRAPH})};
+const _bowlFood25=bowlFood;
+bowlFood=function(b,food){
+  if(!BOWL25.includes(food))return _bowlFood25(b,food);
+  const r=b.r;
+  b.shadow(60,99,48,6);
+  if(food==='Warm Bone Broth'||food==='Baked Pumpkin Wedges'||food==='Turkey Meatballs')steamB(b);
+  if(food==='Frozen Pupsicle'){flake(b,14,34,5,'#8FB4D4',1.6);flake(b,104,30,4.4,'#8FB4D4',1.6)}
+  bowl(b,60,62,45,12,32,C.pink,'#E58FA5',()=>{
+   if(food==='Carrot Sticks'){heapBase(b,'#F9BE86');
+     [[34,-.55],[44,-.3],[54,-.08],[64,.1],[74,.32],[84,.55],[49,-.2],[69,.22]].forEach(([x,a],i)=>{const yt=i>5?34:24+Math.abs(x-60)*.3;
+      b.sh(rot(RR(x-4,yt,8,40,3.6),a,x,yt+36),ORNG,{hatch:0,hl:0,lw:.8,base:'#F9BE86',det:[rot([[x-2,yt+9],[x+1.2,yt+9.6]],a,x,yt+36),rot([[x-2,yt+19],[x+1.4,yt+19.6]],a,x,yt+36)],dw:.8,dcol:'#C96E2A'})});
+     b.sh(leafP(58,30,12,6,-1.9),LEAF,{hatch:0,hl:0,lw:.6})}
+   else if(food==='Apple Slices'){heapBase(b,'#E9C98E');
+     HEAP.slice(0,10).forEach(([x,y],i)=>{const a=(i%3-1)*.5+(r()-.5)*.4,out=[],inn=[];for(let j=0;j<=10;j++){const t=Math.PI*(1+j/10);out.push([x+Math.cos(t)*11,y+4+Math.sin(t)*9])}
+      for(let j=10;j>=0;j--){const t=Math.PI*(1+j/10);inn.push([x+Math.cos(t)*8.6,y+4+Math.sin(t)*6.8])}
+      b.sh(rot(out,a,x,y),'#FFE9B0',{k:.15,hatch:0,hl:0,lw:.8,base:'#FFF4D6',marks:[{pts:rot(out.concat(inn),a,x,y),fill:C.redD}]})});
+     b.ln([[60,32],[61,24]],{w:1.6,col:'#8E6446'});b.sh(leafP(61,26,11,5.6,-.5),LEAF,{hatch:0,hl:0,lw:.6})}
+   else if(food==='Blueberry Bites'){heapBase(b,'#C9CFF2');
+     [[30,60],[40,59],[50,60],[60,61],[70,60],[80,59],[90,61],[35,52],[45,51],[55,52],[65,52],[75,51],[85,53],[41,44],[51,43],[61,44],[71,43],[80,46],[48,36],[58,35],[68,36],[60,28]].forEach(([x,y])=>berryV(b,x,y,5.4));
+     b.sh(leafP(64,24,11,5.6,-.6),LEAF,{hatch:0,hl:0,lw:.6})}
+   else if(food==='Seedless Watermelon Cubes'){heapBase(b,'#FCC6D2');
+     const F=C.rose,S=mix(C.rose,C.redD,.5);[[24,54],[40,56],[58,57],[76,55],[32,44],[50,46],[68,45],[84,48],[42,35],[60,36],[52,26]].forEach(([x,y])=>cubeV(b,x,y,9,'#FCC6D2',F,S))}
+   else if(food==='Sweet Potato Chews'){heapBase(b,'#E8A99A');
+     [[30,-.9],[40,-.5],[50,-.2],[60,.05],[70,.3],[80,.6],[90,.95],[45,-.35],[66,.2],[56,-.05]].forEach(([x,a],i)=>{const y=i>6?44:56-Math.max(0,12-Math.abs(x-60)*.35);
+      b.sh(rot([[x-4,y-14],[x+3.6,y-15],[x+4.6,y+10],[x-3.4,y+11]],a+1.57*(i%2),x,y),['#C97E68','#B96B52','#D98E6E'][i%3],{k:.2,hatch:0,hl:0,lw:.8,det:[rot([[x-1,y-8],[x+1,y+2]],a+1.57*(i%2),x,y)],dw:.7,dcol:'#8E5A44'})})}
+   else if(food==='Pumpkin Purée'){
+     b.sh([[20,64],[28,52],[42,43],[60,40],[78,43],[92,52],[100,64],[60,70]],PUMP,{base:'#FBC28A',sh:'#C96E2A',hlo:.5,
+      inner:b.st('M30 58q8 -8 16 -2t16 -4t16 2t12 6M40 50q8 -6 16 -2t14 -2','#E07B33',1.3,.85)});
+     b.sh(cloudP(60,40,7,4,5,.3,20),'#FBC28A',{hatch:0,hl:0,lw:.7});b.sh(leafP(62,38,10,5.4,-2.2),LEAF,{hatch:0,hl:0,lw:.6});b.sh(leafP(62,38,10,5.4,-1),LEAFD,{hatch:0,hl:0,lw:.6})}
+   else if(food==='Turkey Meatballs'||food==='Monster Meatball'){b.sh(cloudP(60,60,38,9,7,.25,40),'#E8B48A',{noline:1,hatch:0,hl:0});
+     if(food==='Turkey Meatballs')[[30,58,9],[48,59,9.6],[68,59,9.6],[88,58,9],[38,46,9.2],[58,45,10],[78,46,9.2],[58,33,9]].forEach(([x,y,rr])=>{
+      b.sh(E(x,y,rr,rr*.9,14),'#C9895B',{hatch:0,hl:0,lw:.8,base:'#D9A27A',marks:[{pts:E(x-rr*.3,y-rr*.35,rr*.42,rr*.26,8),fill:'#E6B48C'}]});b.dot(x+rr*.25,y+rr*.2,.8,'#8E5A44')});
+     else{b.sh(cloudP(60,40,27,23,9,.08,44),'#C9895B',{k:.18,hl:0,lw:.95,base:'#D9A27A',sh:'#8E5A44',ho:.35,marks:[{pts:E(50,32,9,5.6,10,-.4),fill:'#E6B48C'}]});
+      b.sh(E(60,37,11,10,16),ORNG,{hatch:0,hl:0,lw:.8,base:'#F9BE86',marks:[{pts:E(60,37,7.4,6.8,14),fill:'#F9B97A'}],inner:b.st('M60 30v14M53 37h14M55 32l10 10M65 32l-10 10','#E07B33',.8,.6)});
+      b.dot(61,38,3.8);b.dot(62.2,36.6,1.2,'#fff');b.ln([[50,52],[60,55],[70,52]],{w:1.3});
+      [[-.5,-1.9],[0,-2.2],[.5,-1.8]].forEach(([dx,a],i)=>b.sh(leafP(60+dx*10,20,9,4.6,a),i===1?LEAFD:LEAF,{hatch:0,hl:0,lw:.6}))}}
+   else if(food==='Frozen Pupsicle'){heapBase(b,'#E3F2FC');
+     // the pupsicle lying across the bowl, its stick over the rim
+     const T=pts=>rot(pts,-.32,60,48);
+     b.sh(T(RR(84,44,30,7,3.4)),'#E9C9A0',{hatch:0,hl:0,lw:.8});
+     b.sh(T(RR(26,32,60,30,14)),'#FFF8EC',{base:'#FFFFFF',sh:'#B9C3D6',ho:.35,marks:[{pts:T([[38,28],[46,28],[46,66],[38,66]]),fill:'#F7B2C4',k:0,op:.85},{pts:T([[60,28],[67,28],[67,66],[60,66]]),fill:'#F7B2C4',k:0,op:.7}]});
+     T([[34,40],[52,52],[56,40],[74,46]]).forEach(([x,y])=>berryV(b,x,y,3.2))}
+   else if(food==='Baked Pumpkin Wedges'){heapBase(b,'#FBC28A');
+     HEAP.slice(0,10).forEach(([x,y],i)=>{const a=(i%3-1)*.45+(r()-.5)*.3,out=[],inn=[];for(let j=0;j<=10;j++){const t=Math.PI*(1+j/10);out.push([x+Math.cos(t)*12,y+5+Math.sin(t)*11])}
+      for(let j=10;j>=0;j--){const t=Math.PI*(1+j/10);inn.push([x+Math.cos(t)*9.4,y+5+Math.sin(t)*8.2])}
+      b.sh(rot(out,a,x,y),PUMP,{k:.14,hatch:0,hl:0,lw:.8,base:'#FBC28A',marks:[{pts:rot(out.concat(inn),a,x,y),fill:'#E07B33'}],inner:b.st(b.jl(x-4,y-1,x+3,y-2.4,.3),'#FFE3C0',1.3,.9)})})}
+   else if(food==='Sweet Potato Coins'){heapBase(b,'#D99278');
+     HEAP.forEach(([x,y],i)=>{const a=(r()-.5)*.5;b.sh(E(x,y+2,10,5.6,16,a),'#B96B52',{hatch:0,hl:0,lw:.7,dr:.2});
+      b.sh(E(x,y,10,5.6,16,a),SWP,{hatch:0,hl:0,lw:.7,dr:.2,base:'#D99278',marks:[{pts:E(x,y-.2,8.6,4.6,14,a),fill:'#F9A35E'}]})})}
+   else if(food==='Warm Bone Broth'){b.sh(E(60,63,39,8.8,22),'#F2C96B',{hatch:0,hl:0,lw:.7,base:'#F8D98E'});
+     b.loop(E(60,63,26,5.6,18),{w:.8,col:'#C9962E',op:.6});b.loop(E(60,63,13,2.8,14),{w:.9,col:'#fff',op:.8});
+     [[38,62,1.6],[78,64,1.4],[56,60,1.1],[70,66,1.2]].forEach(([x,y,rr])=>b.raw(`<ellipse cx="${x}" cy="${y}" rx="${rr*1.6}" ry="${rr}" fill="#FFF3C2" opacity=".9"/>`));
+     b.ln([[30,62],[38,61]],{w:1.1,col:'#fff'});b.ln([[82,65],[90,64.5]],{w:1.1,col:'#fff'})}
+   else if(food==='Ghost Biscuits'){heapBase(b,'#F3DDB4');
+     [[34,56,1],[60,58,1.05],[86,56,1],[46,44,1.05],[74,44,1.05],[60,32,1]].forEach(([x,y,s])=>{b.sh(E(x,y,15*s,11*s,16),'#E8C597',{hatch:0,hl:0,lw:.8,base:'#F3DDB4',sh:'#C99A72'});
+      ghostV(b,x,y-1,13*s,14*s,{lw:.45})})}
+   else if(food==='Candy Corn Carrots'){heapBase(b,'#F9BE86');
+     HEAP.forEach(([x,y],i)=>{const a=(r()-.5)*1.4,s=1.25,P=[[x-7.6*s,y+8*s],[x-6.4*s,y+9.6*s],[x+6.4*s,y+9.6*s],[x+7.6*s,y+8*s],[x+1.8*s,y-9*s],[x-1.8*s,y-9*s]];
+      b.sh(rot(P,a,x,y),'#F59E52',{k:.16,hatch:0,hl:0,lw:.8,dr:.15,base:'#F9BE86',
+       marks:[{pts:rot([[x-10*s,y+3*s],[x+10*s,y+3*s],[x+10*s,y+11*s],[x-10*s,y+11*s]],a,x,y),fill:'#D9682A',k:0},{pts:rot([[x-6*s,y-3.6*s],[x+6*s,y-3.6*s],[x,y-12*s]],a,x,y),fill:'#FFD0A8',k:0}]})})}
+  });
+  b.tx(60,90,'DOG',17,{mid:1});
+};
+
 /* ---------- public API ---------- */
 const lab=s=>esc(s);
 PA.icon=function(name){return serve('i:'+name,()=>{const f=ICONS[name];if(!f)return fallback('icon',name,'0 0 64 64');const b=mk('icon',name);f(b);return b.svg('0 0 64 64','',lab(name)+' icon')})};

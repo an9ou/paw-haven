@@ -20,6 +20,7 @@ figure{margin:0;text-align:center}figcaption{font:600 13px 'Caveat',cursive;marg
 <h2>Foods (64), next to Pumpkin Purée</h2><div class="row" id="foods"></div>
 <h2>Clothes (64), next to the Knit Scarf</h2><div class="row" id="clothes"></div>
 <h2>Icons (64), next to season-autumn and playdate</h2><div class="row" id="icons"></div>
+<h2>Food bowls at the yard scale (90 px), next to Basic Kibble and Salmon Pâté</h2><div class="row" id="bowls"></div>
 <h2>Shop scale (40 px): festival items</h2><div class="row small" id="small"></div>
 <h2>House cards at 40 px, next to the Cozy Cottage house at 40 px</h2><div class="row small" id="houses40"></div>
 <h2>House cards (64)</h2><div class="row" id="houses64"></div>
@@ -59,4 +60,7 @@ add('icons',fig(PA.icon('parade'),'parade',IW)+fig(PA.icon('playdate'),'playdate
 add('small',fig(PA.item('Pumpkin Purée'),'',40,1)+fig(PA.item('Knit Scarf'),'',40,1),'old');
 HOUSES.forEach(n=>add('houses40',fig(PA.item(n),'',40)+fig(PA.house('Cozy Cottage'),'',40,1)));
 HOUSES.forEach(n=>add('houses64',fig(PA.item(n),n,IW)+fig(PA.house(n),'house',IW*1.4,1)));
+const BOWLS=['Carrot Sticks','Apple Slices','Blueberry Bites','Seedless Watermelon Cubes','Sweet Potato Chews','Pumpkin Purée','Turkey Meatballs','Frozen Pupsicle','Baked Pumpkin Wedges','Sweet Potato Coins','Warm Bone Broth','Ghost Biscuits','Candy Corn Carrots','Monster Meatball'];
+add('bowls',fig(PA.prop('bowl',{food:'Basic Kibble'}),'Basic Kibble',90,1)+fig(PA.prop('bowl',{food:'Salmon Pâté'}),'Salmon Pâté',90,1),'old');
+BOWLS.forEach(n=>add('bowls',fig(PA.prop('bowl',{food:n}),n,90)));
 </script></body></html>
