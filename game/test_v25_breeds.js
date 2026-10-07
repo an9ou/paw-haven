@@ -87,6 +87,11 @@ require('./test_lib').run('v25_breeds', async (t) => {
   await t.sleep(700); // let the popup's open animation finish before measuring
   const rows = await ev(() => new Set([...document.querySelectorAll('.cbreed')].map((e) => Math.round(e.offsetTop / 10))).size);
   ok(rows === 1, `the breed tabs fit on one row at 1280x720 (${rows} rows)`);
+  await p.setViewportSize({ width: 1024, height: 720 }); await t.sleep(700);
+  const rows1024 = await ev(() => ({ rows: new Set([...document.querySelectorAll('.cbreed')].map((e) => Math.round(e.offsetTop / 10))).size, over: document.querySelector('.cbreeds').scrollWidth > document.querySelector('.cbreeds').clientWidth + 1, docW: document.documentElement.scrollWidth }));
+  ok(rows1024.rows === 1 && !rows1024.over && rows1024.docW <= 1024, `at 1024x720 too: one row, nothing cut off (${JSON.stringify(rows1024)})`);
+  await t.SH('03b_journal_coats_1024');
+  await p.setViewportSize({ width: 1280, height: 720 }); await t.sleep(400);
   await p.click('[data-cbreed="collie"]'); await p.waitForSelector('.cbreed.on[data-cbreed="collie"]');
   ok(await ev(() => document.querySelectorAll('.coat').length) >= 20, 'the Border Collie page lists its coats');
   await t.sleep(2500); await t.SH('03_journal_coats');
