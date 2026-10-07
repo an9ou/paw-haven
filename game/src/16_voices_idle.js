@@ -1,12 +1,13 @@
 /* ======================= v1.6b: dog voices + natural idle behaviour ======================= */
 /* ---- voices ---- */
-const DOG_SIZE = { shiba: 'small', corgi: 'small', golden: 'large', dachs: 'small', husky: 'large', mutt: 'medium', chihuahua: 'small', pug: 'small', greyhound: 'large', beagle: 'medium' };
+const DOG_SIZE = { shiba: 'small', corgi: 'small', golden: 'large', dachs: 'small', husky: 'large', mutt: 'medium', chihuahua: 'small', pug: 'small', greyhound: 'large', beagle: 'medium', poodle: 'medium', collie: 'medium', samoyed: 'large', frenchie: 'small' };
 /* v1.7: how each breed answers another dog's bark (greyhounds rarely bark, but roo along with a howl) */
 function echoBark(o, kind) {
   const howly = kind === 'howl' || kind === 'talk';
-  const p = o.key === 'greyhound' ? (howly ? 0.6 : 0.08) : o.key === 'chihuahua' ? 0.55 : o.key === 'beagle' && howly ? 0.6 : 0.3;
+  const p = o.key === 'greyhound' ? (howly ? 0.6 : 0.08) : o.key === 'chihuahua' ? 0.55 : (o.key === 'beagle' || o.key === 'samoyed') && howly ? 0.6 : o.key === 'collie' ? 0.45 : o.key === 'frenchie' ? 0.15 : 0.3;
   if (Math.random() >= p) return null;
   if (o.key === 'husky') return 'talk'; if (o.key === 'greyhound') return howly ? 'howl' : 'woof'; if (o.key === 'beagle' && howly) return 'howl'; if (o.key === 'chihuahua') return 'alert';
+  if (o.key === 'samoyed') return howly ? 'talk' : 'play'; if (o.key === 'collie') return 'alert'; if (o.key === 'frenchie') return 'huff';
   return PICK(['woof', 'alert']);
 }
 const CHI_ALERT = ['INTRUDER! (A leaf.)', 'I heard a noise. It was me. Still suspicious.', 'The mail carrier exists. Unacceptable.', 'Something moved! I barked at the wind. The wind left.', 'Security alert! Everything is fine. Stay alert.'];
@@ -37,10 +38,10 @@ function barkDog(d, kind, opts = {}) {
   return true;
 }
 function alertBark() { const d = D(); if (!d || S.sleeping) return false; const ok = barkDog(d, 'alert', { ambient: true }); if (ok && cur.mode === 'yard' && !busy) { idleStop(); setTemp('idle', 1400); const fx = $('#dogFx'); if (fx) { fx.classList.add('tk-look'); setTimeout(() => fx.classList.remove('tk-look'), 1400); } } return ok; }
-function npcBark(kind, distance) { if (barkMode() !== 'normal') return; const k = PICK(['shiba', 'corgi', 'golden', 'dachs', 'mutt', 'chihuahua', 'pug', 'beagle']); playBark({ breed: k, pitch: +(0.85 + Math.random() * 0.3).toFixed(3), size: DOG_SIZE[k] }, kind, { distance, volume: 0.6 }); window.__barkLog.push({ dog: 'npc', kind, t: Math.round(performance.now()), distance }); }
-const SPEAK_KIND = { husky: 'talk', greyhound: 'talk', beagle: 'howl', chihuahua: 'alert' };
+function npcBark(kind, distance) { if (barkMode() !== 'normal') return; const k = PICK(['shiba', 'corgi', 'golden', 'dachs', 'mutt', 'chihuahua', 'pug', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie']); playBark({ breed: k, pitch: +(0.85 + Math.random() * 0.3).toFixed(3), size: DOG_SIZE[k] }, kind, { distance, volume: 0.6 }); window.__barkLog.push({ dog: 'npc', kind, t: Math.round(performance.now()), distance }); }
+const SPEAK_KIND = { husky: 'talk', greyhound: 'talk', beagle: 'howl', chihuahua: 'alert', samoyed: 'talk', collie: 'alert' };
 const speakKind = (d) => SPEAK_KIND[d.key] || 'woof';
-const GREET_KIND = { greyhound: 'talk', beagle: 'howl', pug: 'huff' };
+const GREET_KIND = { greyhound: 'talk', beagle: 'howl', pug: 'huff', samoyed: 'talk', frenchie: 'huff' };
 function greetBark(d) {
   if (!S) return; d = d || D(); // a timer can fire after Continue then New game / an account switch: S is null by then
   if (!d) return; barkDog(d, GREET_KIND[d.key] || 'play', {}); setTimeout(() => { if (S) barkDog(d, 'whine', { player: true }); }, 700);
@@ -52,7 +53,7 @@ function voiceTick() { // called once a second from tick()
   const now = performance.now(), gm = S.gameMin;
   S.dogs.forEach((d) => {
     if ((d.stats.hunger < 25 || d.stats.happy < 25) && !d.sleeping && now - (demandAt[d.id] ?? -1e9) > 60000) { demandAt[d.id] = now; if (barkDog(d, 'demand', { ambient: true })) setTimeout(() => barkDog(d, 'whine', { player: true, ambient: true }), 900); }
-    if (d.sleeping || (d.id === S.activeId && IDLE.act && IDLE.act.name === 'nap') || packPose[d.id] === 'sleep') { if (Math.random() < (d.key === 'pug' ? 0.45 : 0.2)) barkDog(d, 'snore', { ambient: true, volume: d.key === 'pug' ? 0.65 : 0.5 }); }
+    if (d.sleeping || (d.id === S.activeId && IDLE.act && IDLE.act.name === 'nap') || packPose[d.id] === 'sleep') { const flat = d.key === 'pug' || d.key === 'frenchie'; if (Math.random() < (flat ? 0.45 : 0.2)) barkDog(d, 'snore', { ambient: true, volume: flat ? 0.65 : 0.5 }); }
     else if (d.key === 'chihuahua' && Math.random() < 0.035) { if (d.id === S.activeId) { if (alertBark() && !busy) { const h = dogHeadWorld(); say(PICK(CHI_ALERT), h.x, h.y, 2000); } } else barkDog(d, 'alert', { ambient: true }); }
     if (d.id === S.activeId && dogKey.startsWith('hot|') && Math.random() < 0.25) barkDog(d, 'pant', { ambient: true, volume: 0.6 });
   });
@@ -91,6 +92,10 @@ function idleWeights() {
   if (pk === 'pug') { w.sit += 3; w.nap += 1; w.down += 1; w.zoomies *= 0.3; }
   if (pk === 'greyhound') { w.down += 5; w.nap += 1.5; w.sit = Math.max(0.5, w.sit - 2); w.zoomies += 1.2; }
   if (pk === 'beagle') w.sniff += indoor ? 3 : 5;
+  if (pk === 'poodle') { w.sit += 2; w.watch += 1; }
+  if (pk === 'collie') { w.watch += 3; w.look += 2; w.zoomies += 1; w.nap *= 0.6; }
+  if (pk === 'samoyed') { w.social += 2; w.roll += 1; if (weatherNow() === 'snow') w.zoomies += 2; }
+  if (pk === 'frenchie') { w.sit += 2; w.nap += 1; w.down += 1; w.zoomies *= 0.6; }
   if (typeof pupIdleWeights === 'function') pupIdleWeights(w, d, stage); // v2: puppies and nursing mums (16b)
   if (S.sleeping) return null;
   return w;

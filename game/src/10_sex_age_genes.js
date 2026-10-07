@@ -9,14 +9,18 @@ const STARTER_GENES = {
   chihuahua: { B: ['B', 'b'], D: ['D', 'd'], E: ['e', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Fawn', eyes: 'brown' },
   pug: { B: ['B', 'b'], D: ['D', 'D'], E: ['e', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Fawn', eyes: 'brown' },
   greyhound: { B: ['B', 'B'], D: ['d', 'd'], E: ['E', 'e'], S: ['S', 'sp'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Blue with white markings', eyes: 'brown' },
-  beagle: { B: ['B', 'b'], D: ['D', 'D'], E: ['E', 'e'], S: ['S', 'sp'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Tricolour', eyes: 'brown' }
+  beagle: { B: ['B', 'b'], D: ['D', 'D'], E: ['E', 'e'], S: ['S', 'sp'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Tricolour', eyes: 'brown' },
+  poodle: { B: ['B', 'b'], D: ['D', 'd'], E: ['e', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Apricot', eyes: 'brown' },
+  collie: { B: ['B', 'b'], D: ['D', 'D'], E: ['E', 'E'], S: ['S', 'sp'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Black and white', eyes: 'brown' },
+  samoyed: { B: ['B', 'b'], D: ['D', 'D'], E: ['e', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'White', eyes: 'brown' },
+  frenchie: { B: ['B', 'B'], D: ['D', 'd'], E: ['e', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Fawn', eyes: 'brown' }
 };
 // Breeding rules, stored now and switched on in v2 (1 real day = 1 dog month)
 const BREEDING = window.PawBreeding = window.PawBreeding || { RULES: {
   enabled: false, pair: 'male+female', adultMonths: 12, seniorMonths: 84, noBreedFromMonths: 96,
   heat: { firstMonths: 12, everyDays: 6, lastsDays: 3 }, maleRestDays: 2, pregnancyDays: 2, puppyStayDays: 2,
   female: { skipSeasons: 1, maxLitters: 4, noLittersFromMonths: 72 },
-  litters: { small: { breeds: ['dachs', 'corgi', 'chihuahua', 'pug'], sizes: [1, 2, 3], weights: [40, 40, 20] }, medium: { breeds: ['shiba', 'mutt', 'beagle'], sizes: [1, 2, 3], weights: [30, 50, 20] }, large: { breeds: ['golden', 'husky', 'greyhound'], sizes: [2, 3], weights: [60, 40] } },
+  litters: { small: { breeds: ['dachs', 'corgi', 'chihuahua', 'pug', 'frenchie'], sizes: [1, 2, 3], weights: [40, 40, 20] }, medium: { breeds: ['shiba', 'mutt', 'beagle', 'poodle', 'collie'], sizes: [1, 2, 3], weights: [30, 50, 20] }, large: { breeds: ['golden', 'husky', 'greyhound', 'samoyed'], sizes: [2, 3], weights: [60, 40] } },
   puppySex: 0.5, inheritance: 'mendelian', welfare: { noMerleXMerle: true, minMeters: 50, minBond: 6, noRelatives: ['parent', 'child', 'sibling', 'half-sibling', 'grandparent', 'grandchild', 'aunt', 'uncle', 'niece', 'nephew', 'first-cousin'] },
   expecting: { hungerDecay: 1.2, walkCap: 'park', noPlaydates: true }, fixedNeverBreeds: true
 } };

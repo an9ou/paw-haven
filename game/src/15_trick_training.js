@@ -3,7 +3,7 @@ const TPOSE = { Sit: { pose: 'sit' }, Paw: { pose: 'paw', fx: 'tk-paw' }, 'Lie D
 const TSIG = { Sit: 'sit', Paw: 'paw', 'Lie Down': 'down', 'Roll Over': 'rollover', Spin: 'spin', 'Play Dead': 'playdead', Speak: 'speak', Dance: 'dance', Bow: 'bow', Signature: 'signature' };
 const TCMD = { Sit: 'Sit!', Paw: 'Paw!', 'Lie Down': 'Down!', 'Roll Over': 'Roll over!', Spin: 'Spin!', 'Play Dead': 'Bang!', Speak: 'Speak!', Dance: 'Dance!', Bow: 'Bow!', Signature: 'Showtime!' };
 const WRONG = [{ k: 'sniff', label: 'sniff the ground', pose: 'eat' }, { k: 'scratch', label: 'scratch', pose: 'scratch', fx: 'tk-scratch' }, { k: 'wander', label: 'wander off', pose: 'walk', move: true }, { k: 'sit', label: 'sit', pose: 'sit' }, { k: 'down', label: 'lie down', pose: 'down', fx: 'tk-lie' }, { k: 'stare', label: 'stare at you', pose: 'idle', say: '…' }];
-const PERS = { corgi: 'food', shiba: 'stubborn', golden: 'eager', dachs: 'curious', husky: 'chatty', mutt: 'gentle', chihuahua: 'bold', pug: 'lazy', greyhound: 'sprinter', beagle: 'nose' };
+const PERS = { corgi: 'food', shiba: 'stubborn', golden: 'eager', dachs: 'curious', husky: 'chatty', mutt: 'gentle', chihuahua: 'bold', pug: 'lazy', greyhound: 'sprinter', beagle: 'nose', poodle: 'eager', collie: 'eager', samoyed: 'chatty', frenchie: 'stubborn' };
 /* v1.7 trick modifiers: chance bonus per personality and trick, and extra wrong guesses */
 const PERS_TRICK = { bold: { Speak: 0.2, Bow: -0.05 }, lazy: { 'Lie Down': 0.15, 'Play Dead': 0.15, Spin: -0.1, 'Roll Over': -0.1, Dance: -0.1 }, sprinter: { Sit: -0.15, 'Lie Down': 0.15, Spin: 0.1 }, nose: {} };
 const poseRealCache = {};

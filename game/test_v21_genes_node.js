@@ -39,7 +39,7 @@ const sortObj = (o) => { const r = {}; Object.keys(o).sort().forEach((k) => { r[
   ok(G.ancestry({ id: 'x', key: 'pug', anc: ownAnc, parents: ['p1', 'p2'] }, look) === ownAnc, 'ancestry: rec.anc is returned unchanged');
   const withAnc = Object.assign({}, dogs, { p2: Object.assign({}, dogs.p2, { anc: { beagle: 1 } }) });
   eq(sortObj(G.ancestry(withAnc.kid, (id) => withAnc[id])), { beagle: 0.5, corgi: 0.25, husky: 0.25 }, 'ancestry: a parent\'s anc is honoured');
-  eq(G.ancestry({ id: 'u', key: 'poodle' }, look), { mutt: 1 }, 'ancestry: unknown key counts as mutt');
+  eq(G.ancestry({ id: 'u', key: 'wolfy' }, look), { mutt: 1 }, 'ancestry: unknown key counts as mutt');
   eq(sortObj(G.ancestry({ id: 'u2', key: 'x', mix: { a: 'corgi', b: 'wolf' } }, look)), { corgi: 0.5, mutt: 0.5 }, 'ancestry: unknown mix key counts as mutt');
   eq(G.ancestry({ id: 'o', key: 'shiba', parents: ['g1', 'nobody'] }, look), { shiba: 1 }, 'ancestry: one missing parent falls back to the base case');
   eq(G.ancestry({ id: 'n', key: 'pug' }), { pug: 1 }, 'ancestry: works without a lookup');
@@ -80,7 +80,7 @@ const sortObj = (o) => { const r = {}; Object.keys(o).sort().forEach((k) => { r[
   ok(r.kind === 'grand' && r.name === 'Sunrise Loaf' && r.label === 'Sunrise Loaf: Shiba + Corgi + Golden', `grandMix rule 2: Sunrise Loaf (${r.label})`);
   r = gm({ golden: 0.25, husky: 0.375, mutt: 0.375 });
   ok(r.kind === 'grand' && r.name === 'Snowdrift' && r.label === 'Snowdrift: Golden + Husky + Mutt', `grandMix rule 2: Snowdrift (${r.label})`);
-  r = gm({ golden: 0.25, husky: 0.25, poodle: 0.5 });
+  r = gm({ golden: 0.25, husky: 0.25, wolfy: 0.5 });
   ok(r.kind === 'grand' && r.name === 'Snowdrift', 'grandMix: unknown keys count as Mutt');
   r = gm({ pug: 0.5, beagle: 0.25, greyhound: 0.25 });
   ok(r.kind === 'family' && r.name === 'Pug family mix' && r.label === 'Pug family mix', `grandMix rule 2: unnamed 3-breed mix is a family mix (${r.label})`);

@@ -20,9 +20,11 @@
   ];
   var BY_ID = {};
   CROPS.forEach(function (c) { BY_ID[c.id] = c; });
-  var BUDDY = { shiba: 'inspect', corgi: 'guard', golden: 'fetch', dachs: 'dig', husky: 'snow', mutt: 'tend', chihuahua: 'guard', pug: 'tend', greyhound: 'fetch', beagle: 'inspect' };
+  var BUDDY = { shiba: 'inspect', corgi: 'guard', golden: 'fetch', dachs: 'dig', husky: 'snow', mutt: 'tend', chihuahua: 'guard', pug: 'tend', greyhound: 'fetch', beagle: 'inspect', poodle: 'inspect', collie: 'guard', samoyed: 'snow', frenchie: 'tend' };
   // v1.7: breed-flavoured opening lines (other breeds use the perk line)
-  var BREED_LINE = { chihuahua: '{n} is the security system. Captain Fluff has been warned. Loudly.', pug: '{n} lies next to the thirsty plants and snorts until someone waters them.', greyhound: '{n} fetched the basket at 45 mph. Then lay down in it.', beagle: '{n} has sniffed every leaf. Twice. Quality is guaranteed.' };
+  var BREED_LINE = { chihuahua: '{n} is the security system. Captain Fluff has been warned. Loudly.', pug: '{n} lies next to the thirsty plants and snorts until someone waters them.', greyhound: '{n} fetched the basket at 45 mph. Then lay down in it.', beagle: '{n} has sniffed every leaf. Twice. Quality is guaranteed.',
+    poodle: '{n} checks each leaf like a judge at a show. Only the best get through.', collie: '{n} keeps the squirrels in one corner of the garden. They look embarrassed.',
+    samoyed: '{n} keeps the plants company in the snow. The snow is the fun part.', frenchie: '{n} naps next to the dry plants. The snoring reminds you to water them.' };
   // quality points (0-3) -> [1 star, 2 stars, 3 stars] odds
   var STAR_ODDS = [[0.70, 0.25, 0.05], [0.55, 0.35, 0.10], [0.40, 0.40, 0.20], [0.25, 0.45, 0.30]];
   var SELL_MULT = [1, 1.5, 2];
