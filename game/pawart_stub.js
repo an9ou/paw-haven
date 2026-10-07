@@ -32,10 +32,10 @@ window.PawArt = window.PawArt || {};
     { key: 'husky', name: 'Frost', breed: 'Husky', personality: 'Energetic, chatty (howls)', joke: 'AWOOOO. (That means hello. Loudly.)' },
     { key: 'mutt', name: 'Pepper', breed: 'Shelter Mutt', personality: 'Loyal, gentle', joke: 'I am a little bit of every dog. Mostly the nice bits.' },
     // v2.5 breeds
-    { key: 'poodle', name: 'Truffle', breed: 'Poodle', personality: 'Thinks it is the smartest one in the room. It is.', joke: 'Haircut optional. Dignity not.' },
+    { key: 'poodle', name: 'Pretzel', breed: 'Poodle', personality: 'Thinks it is the smartest one in the room. It is.', joke: 'Haircut optional. Dignity not.' },
     { key: 'collie', name: 'Scout', breed: 'Border Collie', personality: 'Has counted the sheep. There are no sheep. Has counted you.', joke: 'Will herd the puppies, the ducks and the furniture.' },
     { key: 'samoyed', name: 'Cloud', breed: 'Samoyed', personality: 'Smiles so the snow does not stick. Also just smiles.', joke: 'Sheds a second dog every spring.' },
-    { key: 'frenchie', name: 'Croissant', breed: 'French Bulldog', personality: 'Snores, snorts, sits on your foot. All three at once.', joke: 'Breathes like a tiny engine. Shade and water, please.' }
+    { key: 'frenchie', name: 'Brioche', breed: 'French Bulldog', personality: 'Snores, snorts, sits on your foot. All three at once.', joke: 'Breathes like a tiny engine. Shade and water, please.' }
   ];
   const COAT = { shiba: ['#FF8A1E', '#FFE7B3'], corgi: ['#E9A35B', '#FFFFFF'], golden: ['#F6C445', '#FFE8A0'], dachs: ['#7A4A2A', '#B5774B'], husky: ['#8FA3B8', '#FFFFFF'], mutt: ['#FFFFFF', '#2a2420'],
     poodle: ['#F2C48F', '#FBE2C0'], collie: ['#2A2628', '#FFFFFF'], samoyed: ['#FBF6EC', '#E8DECB'], frenchie: ['#D9B48A', '#3A2E2E'] };
