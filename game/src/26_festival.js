@@ -259,7 +259,7 @@ function fsParadeWalk(dogs) {
   FS.walking = true; busy = true; hideBubble();
   const hide = ['#dogPos', '#pack', '#visitorG', '#placeBtns'].map((s) => $(s, view)).filter(Boolean); hide.forEach((e) => { e.style.visibility = 'hidden'; });
   const sc = 0.56, w = 264 * sc, hgt = 220 * sc, gap = 104, feetY = 505, line = [D()].concat(dogs);
-  const dist = 700, lead = 200 - dist / 2; // the leader walks from the fountain (x 200) to the stall (x 900)
+  const dist = 700, lead = 200; // the leader walks from the fountain (x 200) to the stall (x 900)
   const parts = line.map((d, i) => { const fx0 = lead - i * gap, x = fx0 - w / 2, y = feetY - hgt * (205 / 220); return `<g class="fs-pd" data-i="${i}">${place(dogSVG(d, { pose: 'walk', outfit: i ? d.outfit : outfitOf(d), facing: 'right' }), f1(x), f1(y), f1(w), f1(hgt))}</g>`; }).join('');
   fx.insertAdjacentHTML('beforebegin', `<g id="fsParadeG" pointer-events="none"><g class="fs-line" style="transform:translateX(0px)">${parts}</g><g class="fs-leaves"></g></g>`);
   const lg = $('#fsParadeG .fs-line'), leaves = $('#fsParadeG .fs-leaves');
