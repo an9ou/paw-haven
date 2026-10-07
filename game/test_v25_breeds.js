@@ -199,5 +199,17 @@ require('./test_lib').run('v25_breeds', async (t) => {
     ok(await t.until(() => /the French Bulldog/.test(document.querySelector('.adopt-card h3').textContent)), `${dev}: tapping the last head picks the French Bulldog`);
     if (dev === 'iPhone 13') await t.SH('06_adopt_phone_scrolled');
   }
+
+  sec('phones: the Journal coat tabs keep the chosen breed in view, milestone chips at 15 px');
+  await t.ctx.close(); await t.newGame({ device: 'iPhone 13' }); const r = t.p;
+  await r.click('[data-act=journal]'); await r.waitForSelector('.panel.journal'); await r.click('[data-jt=coats]'); await r.waitForSelector('.cbreeds');
+  const vis = () => ev(() => { const c = document.querySelector('.cbreeds'), on = document.querySelector('.cbreed.on'), a = c.getBoundingClientRect(), b = on.getBoundingClientRect(); return { key: on.dataset.cbreed, inView: b.left >= a.left - 1 && b.right <= a.right + 1 }; });
+  for (const k of ['frenchie', 'samoyed', 'shiba']) {
+    await r.locator(`.cbreed[data-cbreed="${k}"]`).click(); await r.waitForSelector(`.cbreed.on[data-cbreed="${k}"]`);
+    const v = await vis(); ok(v.key === k && v.inView, `phone: after tapping ${k} the selected tab is in view`);
+  }
+  const chips = await ev(() => { const m = [...document.querySelectorAll('.cmile')], box = document.querySelector('#modal .panel').getBoundingClientRect(); return { n: m.length, minFont: Math.min(...m.map((e) => parseFloat(getComputedStyle(e).fontSize))), inside: m.every((e) => { const r = e.getBoundingClientRect(); return r.left >= box.left && r.right <= box.right; }), docW: document.documentElement.scrollWidth <= innerWidth }; });
+  ok(chips.n >= 7 && chips.minFont >= 15 && chips.inside && chips.docW, 'phone: milestone chips are 15 px and fit the sheet ' + JSON.stringify(chips));
+  await t.SH('07_phone_coat_tabs');
   ok(t.errors.length === 0, 'no console errors');
 });
