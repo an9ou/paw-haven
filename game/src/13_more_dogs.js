@@ -104,6 +104,7 @@ function packSVG() { return S.dogs.length > 1 ? others().slice(0, 3).map((d, i) 
 function bindPack() {
   const g = $('#pack'); if (!g) return;
   g.querySelectorAll('[data-dog]').forEach((el) => { el.onclick = () => switchDog(el.dataset.dog); el.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); switchDog(el.dataset.dog); } }; });
+  if (typeof fbPackNapFit === 'function') fbPackNapFit(); // v2.5: a pack dog napping on the house bed lies on it, over the bed's front lip
 }
 function redrawPackDog(d) { const g = $(`#pack [data-dog="${d.id}"]`); if (!g) return; const i = others().indexOf(d); g.outerHTML = packDogSVG(d, i); bindPack(); }
 function packAmbient() {
@@ -154,6 +155,14 @@ function openPackSheet() {
 function chipsKey() { return S.dogs.map((d) => d.id + d.name + d.sex + moodOf(d) + (d.id === S.activeId ? '*' : '') + (awayFromHome() && staysHome(d) ? 'h' : '')).join('|') + '|' + (S.title || ''); }
 
 /* ---- Feed all ---- */
+// v2.5: a bowl of the food at each eating pack dog's paws, under the dog (like the yard bowl under the active dog), sized to the dog's
+// depth. The eat pose puts the muzzle about 0.29 of the box in from the side the dog faces. Empty list: the bowls go away.
+function fbPackBowls(dogs, food) {
+  const svg = $('svg.world', view), pack = $('#pack'); let g = $('#fbPackBowls'); if (g) g.remove(); if (!svg || !pack || !dogs.length || cur.mode !== 'yard') return;
+  g = document.createElementNS('http://www.w3.org/2000/svg', 'g'); g.id = 'fbPackBowls'; g.setAttribute('pointer-events', 'none');
+  g.innerHTML = dogs.map((d) => { const i = others().indexOf(d); if (i < 0 || i > 2 || hmMumIn(d)) return ''; const [fx, fy, face, sc0] = packSpots()[i] || packSpots()[0], sc = sc0 || 0.6, w = DW * sc, s = 90 * sc, cx = fx - w / 2 + w * (face === 'left' ? 0.29 : 0.71); return place(bowlArt(food), cx - s / 2, fy + 7 * sc - s / 2, s, s); }).join('');
+  pack.parentNode.insertBefore(g, pack);
+}
 function feedAllFood() { const meals = FOOD.filter((f) => f.n !== 'Fresh Water' && !SNACKS.includes(f.n) && (S.inv.food[f.n] || 0) > 0); meals.sort((a, b) => S.inv.food[b.n] - S.inv.food[a.n]); return meals[0] || null; }
 function feedAll() {
   const f = feedAllFood(); if (!f) { nope('No meals in the pantry. Kibble Corner sells some.'); return; }
@@ -167,7 +176,10 @@ function feedAll() {
   if (S.inv.food[f.n] <= 0) delete S.inv.food[f.n];
   if (!fed.length) { nope('Everyone is full or asleep. Nobody has ever said that before.'); return; }
   dailyCare('feed'); markCareDay(); trackAct('feed', { name: f.n }); if (typeof shFoodTip === 'function') setTimeout(() => shFoodTip(f.n), 900); markDirty(); popDown(); SFX.crunch(); setTimeout(SFX.crunch, 300); setTimeout(SFX.crunch, 600);
-  if (fed.includes(D())) setTemp('eat', 1400); others().forEach((d) => { if (fed.includes(d)) { packPose[d.id] = 'eat'; redrawPackDog(d); setTimeout(() => { packPose[d.id] = 'happy'; redrawPackDog(d); }, 1500); } });
+  // v2.5: every fed dog eats from a bowl of that food: the active dog walks to the yard bowl (shown only while it eats), each pack dog gets its own bowl at its paws
+  if (fed.includes(D())) { busy = true; hideBubble(); setBowl(f.n); dogTo(-125, 0, 1, 0.8); renderDog('walk', 'left'); setTimeout(() => setTemp('eat', 1400), 850); setTimeout(() => { setBowl(null); dogTo(0, 0, 1, 0.8); setTimeout(() => { busy = false; renderDog(dogPoseNow()); }, 900); }, 2300); }
+  const packFed = others().filter((d) => fed.includes(d)); fbPackBowls(packFed, f.n);
+  packFed.forEach((d) => { packPose[d.id] = 'eat'; redrawPackDog(d); setTimeout(() => { packPose[d.id] = 'happy'; redrawPackDog(d); fbPackBowls([], null); }, 1500); });
   const skipped = S.dogs.length - fed.length;
   const pups = fed.filter((d) => pupBonus(d, f)).map((d) => d.name), eats = fed.map(eatForLine).join('');
   toast(`Feed all: ${fed.length} bowl${fed.length > 1 ? 's' : ''} of ${f.n} for ${fed.map((d) => d.name).join(', ')}. A symphony of crunching.${pups.length ? ` Puppy-sized bites: +${f.pupHappy} Happiness for ${pups.join(', ')}.` : ''}${eats}${skipped ? ` (${skipped} skipped: full, asleep or not enough food.)` : ''}`, 'good');

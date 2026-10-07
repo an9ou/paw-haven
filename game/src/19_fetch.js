@@ -7,7 +7,7 @@ function enterFetch(toy) {
   F = { toy, fris, glow: toy === 'Glow Ball', stick: toy === 'Driftwood Stick', t: 35, score: 0, great: 0, throws: 0, coins: 0, fly: null, ended: false, raf: 0, last: performance.now(), dogX: 430, dogY: 500 };
   view.innerHTML = yardWorldSVG(`<g id="fetchL"><circle id="ringIn" r="24" fill="#FFE3A1" fill-opacity=".35" stroke="#5B3D32" stroke-width="2.5" stroke-dasharray="6 5" opacity="0"/><circle id="ringOut" r="90" fill="none" stroke="#F28FA5" stroke-width="4" opacity="0"/><g id="ballG" opacity="0">${place(proj, -30, -30, 60, 60)}</g></g>`);
   $('#bowlG').remove(); dogKey = ''; busy = true; renderDog('idle'); dogTo(0, 0, 1, 0);
-  updateHUD(); bindDev();
+  updateHUD(); bindDev(); fbFetchFit();
   dock.innerHTML = `<div class="tray"><div class="tray-h"><h3>Fetch with the ${esc(toy)}</h3><button class="xbtn" id="fQuit" aria-label="Stop fetch">x</button></div>
     <div class="walkctl"><span>Catches: <b id="fScore">0</b></span><span>Time: <b id="fTime">35</b>s</span><div class="prog"><i id="fBar" style="width:100%"></i></div></div>
     <p class="small" style="margin:0">Tap the grass to throw. ${isPhone() ? 'Tap again when the pink ring meets the dashed one.' : 'Tap again (or Space) when the pink ring meets the dashed one.'}</p></div>`;
@@ -18,6 +18,16 @@ function enterFetch(toy) {
   F.raf = requestAnimationFrame(fetchLoop);
   onCleanup(() => { cancelAnimationFrame(F && F.raf); cur.key = null; busy = false; });
   if (!isPhone()) toast('Tap the grass to throw!'); // on phones the tray says it, and a toast would sit on the ball's start point
+}
+// v2.5 phone: the whole scene shows during fetch, indoors and outdoors. The ball starts at x 130 and lands anywhere from x 300 to 900,
+// so the view takes the scene's own shape (1000 x 600, full width) instead of the 40% strip that crops its sides. The tray height
+// and zoom left from the Play tray (--trayH, --vfit) are cleared. The fetch panel sits under the scene.
+function fbFetchFit() {
+  if (!isPhone()) return;
+  view.style.removeProperty('--trayH'); view.style.removeProperty('--vfit');
+  const fit = () => { if (cur.mode === 'fetch' && view.clientWidth) view.style.flex = `0 0 ${Math.round(view.clientWidth * 0.6)}px`; };
+  fit(); addEventListener('resize', fit);
+  onCleanup(() => { removeEventListener('resize', fit); view.style.flex = ''; });
 }
 function throwTo(x, y) {
   if (F.ended || F.t <= 0) return;
