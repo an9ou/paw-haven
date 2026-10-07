@@ -27,7 +27,7 @@ const MS_POOL = [
   { id: 'treasure', n: 1, t: 'Dig up a treasure', s: 'Dig up a treasure', m: (a) => a.kind === 'treasure' },
   // v2.5: watering (the garden onWater callback) and the festival missions. The FESTIVAL lane fires leafpile / parade / buy shop:'stall'
   { id: 'garden_water', n: 1, t: 'Water the garden', s: 'Water the garden', g: () => gkOn() && gardenUnlocked() && !!(S.garden && Array.isArray(S.garden.plots) && S.garden.plots.some((p) => p && p.crop)), m: (a) => a.kind === 'garden' && a.what === 'water' },
-  { id: 'leafpile', n: 1, t: 'Jump in a leaf pile', s: 'Leaf pile', g: () => festOn('leaf'), m: (a) => a.kind === 'leafpile' },
+  { id: 'leafpile', n: 1, t: 'Jump in a leaf pile', s: 'Leaf pile', g: () => (typeof fsCanJump === 'function' ? fsCanJump() : festOn('leaf')), m: (a) => a.kind === 'leafpile' },
   { id: 'stall', n: 1, t: 'Buy a treat at the Harvest Stall', s: 'Harvest Stall', shop: true, g: () => festOn('leaf'), m: (a) => a.kind === 'buy' && a.shop === 'stall' },
   { id: 'parade', n: 1, t: 'Join the costume parade', s: 'Costume parade', g: () => festOn('halloween'), m: (a) => a.kind === 'parade' },
   { id: 'travel', n: 1, t: 'Visit the Dog Park', s: 'Dog Park visit', g: () => topBond() >= ((PLACES.dogpark && PLACES.dogpark.bond) || 2), m: (a) => a.kind === 'travel' && a.place === 'dogpark' }
