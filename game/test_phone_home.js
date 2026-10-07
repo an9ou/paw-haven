@@ -106,6 +106,7 @@ const AUDIT = () => {
       await t.home();
       // v2.5: the bowl shows only while feeding (from the Feed tray opening to the end of the meal)
       const bowlOn = () => t.ev(() => { const b = document.getElementById('bowlG'); return !!b && getComputedStyle(b).visibility !== 'hidden'; });
+      await t.until(() => window.__paw.S.bowl == null, null, 6000); await t.home(); // the meal above ends first (the bowl shows while the dog eats)
       ok(!(await bowlOn()), 'no bowl in the yard at rest');
       await t.retryUntil(() => tapSel('[data-act=feed]'), () => !!document.querySelector('#dock .tray:not(.dock-idle):not(.mini)'));
       const bw = await rectOf('#bowlG'); ok(await bowlOn() && bw.w >= 44 && bw.h >= 44, `the Feed tray shows the bowl, >= 44 px (${Math.round(bw.w)}x${Math.round(bw.h)})`);
