@@ -87,4 +87,4 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [ ] On phones the dog house's jack-o-lantern can show cut in half at the right edge of the yard's home view. `game/src/26_festival.js`
 - [ ] Market Street's Halloween bat bunting sits right under the place label on phones. `world/pawart_world_a.js`
 - [ ] The v2.6 items are 2026 only. A Halloween 2027 would need new `ed: 2027` items and a `HW_WIN` entry (the pop-up code is written for any edition). `game/src/00_core.js`, `game/src/27_halloween.js`
-- [ ] Under parallel load, `account` can hit its 300 s watchdog, and `phone_town`, `phone_occl_home`, `phone_v25_fixes_a` and `v21_home` can need their retry.
+- [ ] Under parallel load, `account` can hit its 300 s watchdog, and `phone_town`, `phone_occl_home`, `phone_v25_fixes_a`, `phone_puppy` (iPhone 13 "Stay toggles by tap", 3 of 3 clean alone) and `v21_home` can need their retry.
