@@ -2658,7 +2658,7 @@
             if (p.inB && stT > at) { p.inB = false; if (still) { p.x = p.hx; p.y = PY; } else { var mo = mouthOf(); p.fly = { x0: mo.x, y0: mo.y + 40, t: 0, d: 0.45 + k * 0.06 }; } }
             if (p.fly) { p.fly.t += dt; var u = clamp(p.fly.t / p.fly.d, 0, 1); p.x = lerp(p.fly.x0, p.hx, u); p.y = lerp(p.fly.y0, PY, u) - 120 * 4 * u * (1 - u); if (u >= 1) { p.fly = null; p.y = PY; p.wig = 1; A.sfx('land'); A.burst('dust', p.x, GY + 10, 2, { g: -20, sp: 50, life: 0.4, size: 4 }); } }
           });
-          if (stT > (still ? 1 : 1.5)) { planSearch(); nextSniff(); A.say(pick(['sniff mode: ON', 'one of these smells AMAZING', 'nose, do your thing']), 1200); if (round === 1) tip = A.tip('click the pot ' + DN + ' sniffs!', P0 - 30, GY - 150); }
+          if (stT > (still ? 1 : 1.5)) { planSearch(); nextSniff(); A.say(pick(['sniff mode: ON', 'one of these smells AMAZING', 'nose, do your thing']), 1200); if (round === 1) tip = A.tip('click the pot ' + DN + ' sniffs!', P0 - 30, PY + 14); }
         } else {
           brot = state === 'pack' ? (still ? 0 : 82 * (1 - clamp((stT - 0.6) / 0.4, 0, 1))) : 82;
         }
