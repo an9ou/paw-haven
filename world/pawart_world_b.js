@@ -4403,6 +4403,51 @@ PA.prop=function(name,o){
     return b.svg(PROP_VB[name],opt.lit!==undefined?` data-lit="${opt.lit?1:0}"`:'',lbl)});
 };
 
+/* ---------- v2.7 "Home & Pack": 16 everyday decorations, 5 pieces of dog furniture, the Knitted Nest, 21 item cards, icons furniture + arrange ----------
+   Yard decorations (V27.md section 1; drawn at about 0.55 to 0.7 of the viewBox in the yard, bottom edge = the ground unless hung up):
+     birdbath 120x160, flowerbarrel 140x120, stringlights {lit} 300x80, bench 200x120, hammock 260x140, windchime 80x160, sandbox 200x120,
+     steppingstones 240x80 (flat, seen from a little above).
+   House decorations: ragrug 240x80 (flat), toybasket 120x100, cushionpile 180x100, fern 120x160, cuckooclock 100x160, pawpictures 200x100,
+     moonlamp {lit} 100x140, wallquilt 180x140. Wall props carry their nail or hanging string inside the box. lit: a static glow, no filter.
+   Furniture (drawn at 0.8 of the viewBox), o.use: a small in-use state, o.lit (windowseat): a night sky with a moon in the round window.
+     Each has one <g class="pa-front"> holding exactly the parts drawn over a dog on a front spot (the game draws the prop twice and shows only
+     .pa-front in the second copy). PawArt.FURN_SPOTS[prop][spot] = { x, y, w, pose, face, front?, via? }: the dog's feet point and dog box
+     width in viewBox units (the 264x220 dog box scaled to w wide, feet at 205/220 of its height).
+     playtower 200x260, tunnelsofa 300x160, ballpit 240x140, sofaramp 260x160, windowseat 220x240.
+   Bed 'Knitted Nest' 260x160 (floor y 152, sleep area about (130,95), front lip in <g class="pa-bed-front">), its card through the bed-icon code.
+   Items (64): the 16 decorations and the 5 furniture pieces. Icons (64): furniture (an armchair with a paw cushion), arrange (arrows round a frame). */
+const V27_LBL={birdbath:'Bird Bath',flowerbarrel:'Flower Barrel',stringlights:'String Lights',bench:'Garden Bench',hammock:'Hammock',windchime:'Wind Chime',sandbox:'Sandbox',steppingstones:'Stepping Stones',
+  ragrug:'Braided Rag Rug',toybasket:'Toy Basket',cushionpile:'Cushion Pile',fern:'Boston Fern',cuckooclock:'Cuckoo Clock',pawpictures:'Paw Print Pictures',moonlamp:'Moon Lamp',wallquilt:'Patchwork Quilt',
+  playtower:'Dog Play Tower',tunnelsofa:'Tunnel Sofa',ballpit:'Ball Pit',sofaramp:'Sofa Ramp',windowseat:'Window Seat'};
+const V27_FURN=['playtower','tunnelsofa','ballpit','sofaramp','windowseat'],V27_LIT=['stringlights','moonlamp','windowseat'];
+Object.assign(PROP_VB,{birdbath:'0 0 120 160',flowerbarrel:'0 0 140 120',stringlights:'0 0 300 80',bench:'0 0 200 120',hammock:'0 0 260 140',windchime:'0 0 80 160',sandbox:'0 0 200 120',steppingstones:'0 0 240 80',
+  ragrug:'0 0 240 80',toybasket:'0 0 120 100',cushionpile:'0 0 180 100',fern:'0 0 120 160',cuckooclock:'0 0 100 160',pawpictures:'0 0 200 100',moonlamp:'0 0 100 140',wallquilt:'0 0 180 140',
+  playtower:'0 0 200 260',tunnelsofa:'0 0 300 160',ballpit:'0 0 240 140',sofaramp:'0 0 260 160',windowseat:'0 0 220 240'});
+const PFRONT0=b=>b.raw('<g class="pa-front">'),PFRONT1=b=>b.raw('</g>');
+
+/* v27:yard (start) -- the 8 yard decorations: PROPS.<name>(b,o) and their ITEMS cards */
+/* v27:yard (end) */
+
+/* v27:house (start) -- the 8 house decorations: PROPS.<name>(b,o) and their ITEMS cards */
+/* v27:house (end) */
+
+/* v27:furn (start) -- the 5 furniture pieces, FURN_SPOTS, their ITEMS cards */
+/* v27:furn (end) */
+
+/* v27:bed (start) -- the Knitted Nest and the two icons */
+/* v27:bed (end) */
+
+/* public: the v2.7 props normalise their options (use for furniture, lit where listed) and cache per option set */
+const _prop27=PA.prop;
+PA.prop=function(name,o){
+  if(!V27_LBL[name]||!PROPS[name])return _prop27(name,o);
+  const opt={},fu=V27_FURN.includes(name);
+  if(fu)opt.use=!!(o&&o.use);
+  if(V27_LIT.includes(name))opt.lit=!!(o&&o.lit);
+  return serve('p:'+name+':'+JSON.stringify(opt),()=>{const b=mk('prop',name);PROPS[name](b,opt);
+    return b.svg(PROP_VB[name],(opt.lit!==undefined?` data-lit="${opt.lit?1:0}"`:'')+(fu?` data-use="${opt.use?1:0}"`:''),V27_LBL[name]+(opt.lit?', lit':'')+(opt.use?', in use':''))});
+};
+
 if(typeof document!=='undefined'&&!document.getElementById('pawart-world-b-v24-css')){
   const st=document.createElement('style');st.id='pawart-world-b-v24-css';
   st.textContent='.pa-wb .pa-wb-gf1,.pa-wb .pa-wb-gf2{opacity:0}.pa-wb .pa-wb-gf0{animation:pa-wb-g0 1s steps(1,end) infinite}.pa-wb .pa-wb-gf1{animation:pa-wb-g1 1s steps(1,end) infinite}.pa-wb .pa-wb-gf2{animation:pa-wb-g2 1s steps(1,end) infinite}'+
