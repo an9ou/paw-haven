@@ -689,13 +689,15 @@ HAT2['Witch Hat']=function(h,s,L,HT){// a tall black cone, the tip crooked and f
   const bk=P([W2*.12,-8]);h.shape([[-3.6,-3.4],[3.6,-3.4],[3.6,3.4],[-3.6,3.4]].map(q=>[bk[0]+q[0],bk[1]+q[1]]),'#FFD23A',{w:2,ox:0,oy:0,sc:1,closed:1,amp:.3,famp:.2});h.dot(bk[0],bk[1],1.3,1.3,HW_BK);
   const br=[];for(let i=0;i<20;i++){const a=i/20*Math.PI*2,c=Math.cos(a);br.push([c*hx*1.12,1+Math.sin(a)*5.5+(c>.5?(c-.5)*12:0)+(c<-.7?(-.7-c)*7:0)])}
   h.shape(br.map(P),HW_BK,{w:3.6,step:8});h.line(br.slice(1,9).map(q=>[q[0]*.86,q[1]*.6+1.5]).map(P),1.6,HW_GR,.4)};
-function drawCandyCorn(h,s,L,HT){// Candy Corn Bandana: a triangle in yellow, orange and white stripes, the white at the tip
-  const a=neckAnchor(s,HT),m=[(a.l[0]+a.r[0])/2,(a.l[1]+a.r[1])/2],t=clampG([m[0]+(a.tip[0]-m[0])*1.22,m[1]+(a.tip[1]-m[1])*1.22]),l=[a.l[0]-(a.r[0]-a.l[0])*.06,a.l[1]],r=[a.r[0]+(a.r[0]-a.l[0])*.04,a.r[1]];
-  const lp=(p,q,u)=>[p[0]+(q[0]-p[0])*u,p[1]+(q[1]-p[1])*u],o={noline:1,ox:1.4,oy:-1,sc:1,famp:.6};
-  const l1=lp(l,t,.34),r1=lp(r,t,.34),l2=lp(l,t,.68),r2=lp(r,t,.68);
-  h.shape([l,r,t],'#FFE14D',o);h.shape([l1,r1,r2,l2],'#FF8A1F',o);h.shape([l2,r2,t],'#FFFDF6',o);
-  h.line([l1,r1],2.6,INK,.5);h.line([l2,r2],2.6,INK,.5);h.shape([l,r,t],null,{w:4.2,step:9});
-  h.shape(circ(l[0],l[1],4.6,4,7),'#FFE14D',{w:2.6,ox:0,oy:0,sc:1,closed:1})}
+function drawCandyCorn(h,s,L,HT){// Candy Corn Bandana: a long triangle in yellow, orange and white stripes, the white tip hanging well below the chin, a heavy ink edge so it reads on yellow and orange coats
+  const a=neckAnchor(s,HT),hx=s.head.rx,hy=s.head.ry,up=/^(howl|rollover|playdead)$/.test(L.pose),t=clampG(HT([-hx*.24,hy*(up?1.6:2.1)])),l=[a.l[0]-(a.r[0]-a.l[0])*.08,a.l[1]],r=[a.r[0]+(a.r[0]-a.l[0])*.06,a.r[1]];
+  const lp=(p,q,u)=>[p[0]+(q[0]-p[0])*u,p[1]+(q[1]-p[1])*u],o={noline:1,ox:1,oy:-.6,sc:1,famp:.5};
+  const l1=lp(l,t,.3),r1=lp(r,t,.3),l2=lp(l,t,.62),r2=lp(r,t,.62);
+  h.shape([l,r,t],'#FFE14D',o);h.shape([l1,r1,r2,l2],'#FF7A12',o);h.shape([l2,r2,t],'#FFFDF6',o);
+  const ins=(p,q,k)=>[p[0]+(t[0]-p[0])*k*.06+(q[0]-p[0])*k*.04,p[1]+(t[1]-p[1])*k*.06+(q[1]-p[1])*k*.04];// a step in from an edge, for the inner line
+  h.line([ins(l,r,1),lp(ins(l,r,1),t,.92)],2,'#9A4A10',.4);h.line([ins(r,l,1),lp(ins(r,l,1),t,.92)],2,'#9A4A10',.4);
+  h.line([l1,r1],2.8,INK,.5);h.line([l2,r2],2.8,INK,.5);h.shape([l,r,t],null,{w:5,step:9,closed:1});
+  h.shape(circ(l[0],l[1],5,4.4,7),'#FFE14D',{w:3,ox:0,oy:0,sc:1,closed:1})}
 function hwHem(a,b,n,dep){// a scalloped hem from a to b (local px): n soft arcs with little points between, dep = how far the points hang
   const o=[];for(let i=0;i<=n;i++){const t=i/n,x=a[0]+(b[0]-a[0])*t,y=a[1]+(b[1]-a[1])*t;o.push([x,y+dep]);if(i<n){const u=(i+.5)/n;o.push([a[0]+(b[0]-a[0])*u,a[1]+(b[1]-a[1])*u-dep*.2])}}return o}
 BACK2['Vampire Cape']=function(h,s,L,B){// the far side of the cape: it flares out past the rump and swishes, black outside with the red lining showing
