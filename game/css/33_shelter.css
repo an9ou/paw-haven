@@ -1,1 +1,51 @@
 /* v2.7 SHELTER lane (tag sr): the Shelter Playroom, the Adopt-me board, the Meet card. V27.md section 7. The SHELTER lane owns this file. */
+
+/* ---- the room ---- */
+.sr-room .sr-dog,.sr-room .sr-board,.sr-room [data-hot="toys"]{cursor:pointer;outline:none}
+.sr-room .sr-pos{transition-property:transform;transition-timing-function:linear;will-change:transform}
+.sr-room .sr-dog:focus-visible .sr-hit,.sr-room .sr-board:focus-visible > svg,.sr-room [data-hot="toys"]:focus-visible{outline:3px dashed #F28FA5;outline-offset:2px}
+.sr-room .sr-slot{cursor:pointer}
+html:not([data-layout="phone"]) .sr-room .sr-slot:hover > rect,.sr-room .sr-slot:focus-visible > rect{fill:rgba(255,227,161,.45);stroke:#C0566E;stroke-width:2;stroke-dasharray:4 3}
+.sr-room .sr-heart{pointer-events:none}
+.sr-room .sr-toy,.sr-room .sr-held{pointer-events:none}
+html[data-motion="off"] .sr-room .sr-pos{transition:none!important}
+
+/* ---- the shelter tray: three buttons, top right on a laptop, under the room on a phone (never over the dogs) ---- */
+#dock > .tray.sr-tray .tray-h h3{font-size:28px}
+.sr-tray .sr-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.sr-tray .sr-btns .btn{flex:1 1 auto;min-height:48px}
+html[data-layout="phone"] #stage.srmode #dock{position:relative;inset:auto;flex:none;max-height:none;padding:0;background:none;pointer-events:auto;z-index:4}
+html[data-layout="phone"] #stage.srmode #dock > .tray.sr-tray{max-height:none;padding:8px 10px 8px;border-radius:16px 16px 0 0;animation:none;transform:none}
+html[data-layout="phone"] #stage.srmode #dock > .tray.sr-tray::before{display:none}
+html[data-layout="phone"] #stage.srmode #dock > .tray.sr-tray .tray-h{display:none}
+html[data-layout="phone"] .sr-tray .sr-btns{flex-wrap:nowrap;gap:6px;margin:0}
+html[data-layout="phone"] .sr-tray .sr-btns .btn{flex:1 1 0;min-width:0;min-height:48px;padding:6px 6px;font-size:16px;line-height:1.1}
+
+/* ---- adopt mode on a laptop: the carousel card a little narrower, so the whole board shows next to it ---- */
+html:not([data-layout="phone"]) #stage.flowdock.adoptmode #dock{width:430px}
+
+/* ---- the "Looking for a home" sheet ---- */
+.shcard .sr-trait{display:block;font-size:15px;font-style:italic;color:#7A5A48;margin:2px 0 4px}
+.shcard .sr-cardbtns{gap:6px}
+.sr-lead{margin-top:0}
+
+/* ---- the Meet card ---- */
+.panel.sr-meet{width:min(560px,94vw)}
+.sr-meet .sr-mtop{position:relative;display:flex;justify-content:center}
+.sr-meet .sr-mdog{display:block;width:260px;height:217px}
+.sr-meet .sr-mdog svg{width:100%;height:100%}
+.sr-meet .sr-mfx{position:absolute;left:0;right:0;top:4px;display:flex;justify-content:center;gap:10px;pointer-events:none}
+.sr-meet .sr-mfx i{font-style:normal;font-family:var(--font-hand);font-weight:700;font-size:32px;color:#F28FA5;-webkit-text-stroke:1px #5B3D32;animation:srHeart 1s ease-out forwards}
+.sr-meet .sr-mfx i:nth-child(2){animation-delay:.12s}.sr-meet .sr-mfx i:nth-child(3){animation-delay:.24s}.sr-meet .sr-mfx i:nth-child(4){animation-delay:.36s}
+.sr-meet .sr-mfx b{position:absolute;top:34px;font-family:var(--font-hand);font-size:30px;color:#C0566E}
+@keyframes srHeart{from{transform:translateY(20px);opacity:0}30%{opacity:1}to{transform:translateY(-24px);opacity:0}}
+.sr-meet .sr-minfo p{margin:4px 0}
+.sr-meet .sr-mline{font-size:18px}
+.sr-meet .sr-trait{font-size:18px;font-style:italic}
+.sr-meet .sr-block{color:#A0465A}
+.sr-meet .foot .btn[aria-disabled="true"]{opacity:.6}
+html[data-layout="phone"] .sr-meet .sr-mdog{width:210px;height:175px}
+html[data-layout="phone"] .sr-meet .sr-mline,html[data-layout="phone"] .sr-meet .sr-trait{font-size:17px}
+html[data-layout="phone"] .sr-meet .foot{display:flex;gap:6px}
+html[data-layout="phone"] .sr-meet .foot .btn{flex:1 1 auto;min-height:48px;padding:6px 10px}
+html[data-layout="phone"] .shcard .sr-trait{font-size:15px}
