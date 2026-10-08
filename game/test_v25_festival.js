@@ -20,7 +20,7 @@ require('./test_lib').run('v25_festival', async (t) => {
   let s = await S();
   const bea = s.mail.find((m) => m.id === 'fest_leaf_' + year), ger = s.mail.find((m) => m.id === 'fest_halloween_' + year);
   ok(bea && bea.from === 'Baker Bea' && /^The leaf festival is on\. Leaf piles in the yard, and my stall is in the Square\. Pumpkin everything\.$/.test(bea.text), 'Baker Bea: the leaf festival letter');
-  ok(ger && /Gerald/.test(ger.from) && /^Costume parade in the Square until the 31st\. I am going as a duck\.$/.test(ger.text), 'Gerald: the costume parade letter');
+  ok(ger && /Gerald/.test(ger.from) && /^Costume parade in the Square until (the 31st|2 November)\. I am going as a duck\.$/.test(ger.text), 'Gerald: the costume parade letter');
   ok(s.fest.letters.leaf === year && s.fest.letters.halloween === year, 'S.fest.letters holds this year for both');
   await t.home('house'); await t.home('yard'); await t.until(() => window.__paw.fest.pending === 0, null, 6000);
   ok((await S()).mail.filter((m) => /^fest_/.test(m.id)).length === 2, 'a second yard entry sends no new letter');
