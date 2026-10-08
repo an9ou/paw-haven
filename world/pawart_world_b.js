@@ -14,6 +14,8 @@
                                   Lighthouse Kennel, Rocket Ship; 32 new items (clothes, toys, foods, house cards); icons missions, guide, stamp
                             v2.5: leafpile {state,seed} 160x100, stall {kind} 240x220, paradebanner 400x90, jackolantern {lit} 80x80, leafdrift 120x40;
                                   6 festival foods, 5 festival clothes, icons festival, parade; the six house cards redrawn bold for 40 px
+                            v2.6: popup {lit} 240x220, hwlanterns {lit} 200x120, hwbunting 300x80, hwscarecrow 140x200, hwgarland 300x90;
+                                  16 pop-up items (4 treats, 4 toys, 4 clothes, 4 decorations use their props), 4 bowl foods, icon popup
    Deterministic (seeded per asset name). Each asset is built once and cached as a template; every call
    gets fresh SVG ids. No filters on icons/items/props; houses use one grain filter. */
 window.PawArt = window.PawArt || {};
@@ -3939,6 +3941,468 @@ PA.prop=function(name,o){
   return serve('p:'+name+':'+JSON.stringify(opt),()=>{const b=mk('prop',seed);PROPS[name](b,opt);
     return b.svg(PROP_VB[name],name==='leafpile'?` data-state="${opt.state}"`:name==='stall'?` data-kind="${opt.kind}"`:name==='jackolantern'?` data-lit="${opt.lit?1:0}"`:'',lbl)});
 };
+/* ---------- v2.6 "Halloween 2026": the Pumpkin Patch Pop-up, four yard decorations, 16 pop-up items, 4 bowls, icon popup ----------
+   popup 240x220        o.lit: the carved pumpkins glow (static, no filter, in <g class="pa-wb-glow">). Mrs. Plum's pumpkin cart: a plum-painted
+                        cart on two wagon wheels under a domed pumpkin-and-cream canopy, paper bats on the canopy edge, stacked pumpkins,
+                        a hay bale, the chalkboard "Pumpkin Patch Pop-up" on the cart side and a "2026" pennant on top. Ground y=214.
+                        Built to read apart from prop('stall') at a glance: wheels and a dome instead of posts, a counter and a flat awning.
+   hwlanterns 200x120   o.lit: three carved pumpkins (three different smiling faces) on a little straw bed. Ground y=114.
+   hwbunting 300x80     paper bats on a sagging string, cut a bit wonky.
+   hwscarecrow 140x200  a friendly scarecrow: pumpkin head, straw hat, patched coat on a cross post, a crow on his left arm. Ground y=194.
+   hwgarland 300x90     cloth ghosts holding hands, pegged to a sagging string.
+   items (64)           4 treats, 4 toys, 4 clothes; icon popup (64): a small pumpkin with a price tag. Bowls (120) for the 4 treats.
+   The 2026 treat called "Pumpkin Pupcake" in V26.md is drawn as 'Pumpkin Patch Pupcake': 'Pumpkin Pupcake' is the v1.3 kitchen dish. */
+// a little chunk of apple: cream flesh, a strip of red skin
+function hwApple(b,x,y,s,a){b.sh(rot([[x-3*s,y+1.8*s],[x+3*s,y+1.8*s],[x+2.2*s,y-1.8*s],[x-2*s,y-2*s]],a,x,y),'#FFF4D6',{k:.1,hatch:0,hl:0,lw:.6,dr:.1,base:'#FFF8E6',marks:[{pts:rot([[x-4*s,y+.4*s],[x+4*s,y+.4*s],[x+4*s,y+2.6*s],[x-4*s,y+2.6*s]],a,x,y),fill:'#E0504E',k:0}],top:1})}
+const HWP='#8C6BB0',HWPD='#6E5390',HWPL='#C9B6E4',HWB='#6A5E7E',HWBD='#4F465E',HWO='#F29150',HWC='#FFF2DA';
+// a carved, smiling pumpkin; face 0 triangle eyes and a two-tooth grin, 1 happy closed eyes and a big open smile, 2 round eyes and a wink.
+// wf widens (or narrows) the pumpkin, lit fills the cuts with candlelight
+function hwJack(b,cx,cy,s,lit,face,o={}){
+  const wf=o.wf||1,lw=o.lw||Math.max(.5,Math.min(1,s*.62)),cut=lit?'#FFD36E':'#7A4A33',cutL=lit?'#FFF3C2':'#9A6A4E',X=d=>cx+d*s*wf,Y=d=>cy+d*s;
+  if(!o.noleaf){b.ln([[X(3),Y(-19)],[X(11),Y(-25)],[X(16),Y(-22)],[X(14),Y(-18)]],{w:1.3*lw,col:'#6FA35A'});
+    b.sh(leafP(X(-4),Y(-21),13*s,7*s,-2.7),LEAF,{hatch:0,hl:0,lw:lw*.75,dr:.2,det:[[[X(-4),Y(-21)],[X(-14),Y(-24)]]],dw:lw*.6})}
+  [-14,14].forEach(dx=>b.sh(E(X(dx),Y(1),15*s*wf,19*s,18),'#F29150',{lw,hl:0,sh:'#C96E2A',ho:.4}));
+  b.sh(E(cx,cy,15.5*s*wf,20.5*s,18),PUMP,{lw,hlo:.45,sh:'#C96E2A',ho:.35,
+   inner:b.st(b.jl(X(-6),Y(-17),X(-7),Y(17),.4*s)+b.jl(X(6),Y(-17),X(7),Y(17),.4*s),'#C96E2A',.9*lw,.5)});
+  b.sh(ribbon([[cx,Y(-17)],[X(1.6),Y(-23)],[X(4.6),Y(-26)]],[5.4*s,4.4*s,3.2*s]),'#8E8A4A',{k:1/6,hatch:0,hl:0,lw:lw*.8,dr:.1});
+  const C2=(pts,opt)=>{if(o.cuts)o.cuts.push(pts);b.sh(pts,cut,opt)},F={k:.04,hatch:0,hl:0,lw:lw*.62,dr:.15,base:cut},glow=(x,y,rx,ry)=>lit?[{pts:E(x,y,rx,ry,8),fill:cutL}]:undefined;
+  if(face===1){
+    // happy closed eyes (little arches) and a big open half-moon smile with a tongue
+    [-1,1].forEach(d=>{const p=[];for(let i=0;i<=8;i++){const a=Math.PI+i/8*Math.PI;p.push([X(d*8.4+Math.cos(a)*5),Y(-5+Math.sin(a)*4.6)])}
+      for(let i=8;i>=0;i--){const a=Math.PI+i/8*Math.PI;p.push([X(d*8.4+Math.cos(a)*2.6),Y(-4.4+Math.sin(a)*2.2)])}
+      C2(p,Object.assign({k:.1},F))});
+    const m=[];for(let i=0;i<=12;i++){const a=i/12*Math.PI;m.push([X(Math.cos(a)*12.6),Y(3+Math.sin(a)*11)])}
+    C2(m,Object.assign({k:.12,marks:[{pts:E(X(2),Y(10.6),5*s*wf,2.6*s,10),fill:lit?'#FFC48A':'#C9737A'}].concat(glow(X(-4),Y(6.4),4*s,1.6*s)||[])},F));
+  }else if(face===2){
+    // a round eye, a winking eye, a little round nose and a wide grin with one tooth
+    C2(E(X(-8),Y(-6),4.4*s*wf,4.8*s,12),Object.assign({marks:glow(X(-8),Y(-4.6),2*s,1.4*s)},F));
+    b.ln([[X(4),Y(-5)],[X(8),Y(-8.6)],[X(12.6),Y(-5.4)]],{w:2.2*lw,col:mix(cut,INK,lit?.2:.1)});
+    C2(E(cx,Y(1),2.2*s,2*s,8),F);
+    const m=[[X(-13),Y(4.6)],[X(-6),Y(8)],[X(3),Y(8.4)],[X(4.4),Y(6.2)],[X(7.4),Y(6.6)],[X(13.6),Y(3.4)],[X(10),Y(12.6)],[X(0),Y(15)],[X(-9),Y(12.4)]];
+    C2(m,Object.assign({k:.14,marks:glow(cx,Y(11.6),6*s,2*s)},F));
+  }else{
+    [-1,1].forEach(d=>C2([[X(d*4),Y(-3.6)],[X(d*13.6),Y(-4.4)],[X(d*8.6),Y(-12)]],Object.assign({marks:glow(X(d*8.6),Y(-6),2.6*s,1.8*s)},F)));
+    C2([[X(-2.6),Y(1.6)],[X(2.6),Y(1.6)],[cx,Y(-2.6)]],F);
+    const m=[[X(-14),Y(4)],[X(-6),Y(9.4)],[X(-4.4),Y(6.6)],[X(-1.8),Y(10.2)],[X(5),Y(9.6)],[X(6.4),Y(6.8)],[X(8.6),Y(9.2)],[X(14),Y(4)],[X(9),Y(14.4)],[cx,Y(16)],[X(-9),Y(14.4)]];
+    C2(m,Object.assign({k:.12,marks:glow(cx,Y(12.4),7*s,2.2*s)},F));
+  }
+  if(!lit)b.raw(`<ellipse cx="${R1(X(-10.6))}" cy="${R1(Y(3.4))}" rx="${R1(3*s)}" ry="${R1(1.7*s)}" fill="${PINK}" opacity=".42"/><ellipse cx="${R1(X(10.6))}" cy="${R1(Y(3.4))}" rx="${R1(3*s)}" ry="${R1(1.7*s)}" fill="${PINK}" opacity=".42"/>`,o.top?'top':undefined);
+}
+// candlelight behind a lit pumpkin (static, no filter)
+function hwGlow(b,x,y,r,where,op){if(!b._hwg){b._hwg=IDT+'hwg';b.D.push(`<radialGradient id="${b._hwg}"><stop offset="0" stop-color="#FFB45A" stop-opacity=".75"/><stop offset=".45" stop-color="#FFB45A" stop-opacity=".32"/><stop offset="1" stop-color="#FFB45A" stop-opacity="0"/></radialGradient>`)}
+  b.raw(`<g class="pa-wb-glow"><circle cx="${R1(x)}" cy="${R1(y)}" r="${R1(r)}" fill="url(#${b._hwg})" opacity="${op||.85}"/></g>`,where||'under')}
+// a cute paper or felt bat, wingspan w, centred on its body. o.a tilts it, o.col the paper
+function hwBat(b,cx,cy,w,o={}){
+  const a=o.a||0,col=o.col||HWB,s=w,T=pts=>rot(pts.map(p=>[cx+p[0]*s,cy+p[1]*s]),a,cx,cy),lw=o.lw||Math.max(.5,Math.min(1,w/40)),pap=o.paper?{k:0,dr:.15}:{k:.08,dr:.25},top=o.top;
+  const wing=[[.07,-.07],[.17,-.19],[.33,-.25],[.5,-.17],[.45,.01],[.38,-.04],[.32,.07],[.24,.01],[.17,.1],[.08,.06]];
+  [1,-1].forEach(d=>b.sh(T(wing.map(p=>[p[0]*d,p[1]])),col,Object.assign({hatch:0,hl:0,lw,top,det:[T([[.1*d,-.04],[.32*d,-.2]]),T([[.12*d,0],[.25*d,-.03]])],dw:lw*.7,dcol:mix(col,INK,.35)},pap)));
+  b.sh(T([[-.06,-.17],[-.05,-.27],[.0,-.19],[.05,-.27],[.06,-.17],[.1,-.06],[.09,.08],[0,.15],[-.09,.08],[-.1,-.06]]),col,{k:.12,hatch:0,hl:0,lw,top,dr:.2});
+  const e=T([[-.04,-.08],[.04,-.08]]),er=Math.max(.7,w*.034);
+  e.forEach(([x,y])=>{b.raw(`<circle cx="${R1(x)}" cy="${R1(y)}" r="${R1(er)}" fill="#fff"/>`,top?'top':undefined);b.dot(x+er*.18,y+er*.12,R1(er*.55),INK,top?'top':undefined)});
+  if(w>18){const c=T([[-.065,-.02],[.065,-.02]]);b.raw(c.map(([x,y])=>`<ellipse cx="${R1(x)}" cy="${R1(y)}" rx="${R1(er*.8)}" ry="${R1(er*.45)}" fill="${PINK}" opacity=".6"/>`).join(''),'top')}
+  if(w>26){const m=T([[-.03,.03],[0,.05],[.03,.03]]);b.raw(b.st(`M${R1(m[0][0])} ${R1(m[0][1])}Q${R1(m[1][0])} ${R1(m[1][1]+er*.6)} ${R1(m[2][0])} ${R1(m[2][1])}`,'#fff',Math.max(.6,lw*.8),.9),'top')}
+}
+// a stitched plush shape: a dashed seam just inside the outline
+const hwSeam=(pts,cx,cy,f)=>`<path d="${cr(pts.map(p=>[cx+(p[0]-cx)*f,cy+(p[1]-cy)*f]),true,1/6).d}" fill="none" stroke="${INK}" stroke-width=".9" stroke-dasharray="2 2" stroke-opacity=".7"/>`;
+// a spoked wooden cart wheel
+function hwWheel(b,x,y,R){
+  let sp='';for(let i=0;i<6;i++){const a=i/6*Math.PI+.2;sp+=`M${R1(x+Math.cos(a)*R*.9)} ${R1(y+Math.sin(a)*R*.9)}L${R1(x-Math.cos(a)*R*.9)} ${R1(y-Math.sin(a)*R*.9)}`}
+  b.raw(b.st(sp,INK,4.4));b.raw(b.st(sp,C.wood,2.4));
+  b.loop(E(x,y,R,R,30),{w:6.4,col:INK});b.loop(E(x,y,R,R,30),{w:3.6,col:C.woodD});b.loop(E(x,y,R-4.4,R-4.4,28),{w:1,col:WKD,op:.8});
+  b.sh(E(x,y,R*.2,R*.2,12),C.woodD,{hatch:0,hl:0,lw:.9,base:'#DDB78F'});b.dot(x,y,1.6,WKD);
+}
+// a hay bale (box, front face at x0..x1, top y0, ground G)
+function hwHay(b,x0,x1,y0,G){
+  const H='#F3D27A',HD='#D9AE4E';
+  b.sh([[x0+6,y0-8],[x1+5,y0-8],[x1,y0],[x0,y0]],'#FBE3A0',{k:.05,hatch:0,hl:0,lw:.9,base:'#FFF0C4',inner:b.st([0,1,2,3].map(i=>b.jl(x0+6+i*(x1-x0)/4,y0-6,x0+14+i*(x1-x0)/4,y0-2,.4)).join(''),HD,.9,.7)});
+  b.sh([[x1,y0],[x1+5,y0-8],[x1+5,G-6],[x1,G]],HD,{k:.05,hatch:0,hl:0,lw:.9});
+  let st='';for(let y=y0+4;y<G-2;y+=4.4)for(let x=x0+3;x<x1-3;x+=9)st+=b.jl(x+((y|0)%3),y,x+5,y-1.4,.6);
+  b.sh([[x0,y0],[x1,y0],[x1,G],[x0,G]],H,{k:.03,sh:HD,ho:.4,hl:0,base:'#FBE3A0',inner:b.st(st,HD,1,.75)});
+  [x0+(x1-x0)*.28,x0+(x1-x0)*.72].forEach(x=>b.ln([[x,y0-6],[x-1,y0],[x+1,G]],{w:2,col:'#B9773F'}));
+  b.raw(b.st(`M${x0-2} ${G-3}l-3 -5M${x0+1} ${G-2}l-1 -6M${x1+2} ${G-3}l4 -5`,HD,1.1,.9));
+}
+
+PROPS.popup=function(b,o){
+  const lit=!!o.lit,G=214,cuts=lit?[]:null;
+  if(lit)b.raw(`<ellipse cx="118" cy="${G}" rx="112" ry="6" fill="${INK}" opacity=".22"/>`,'under');else b.shadow(118,G,112,6);
+  b.guide([[4,G+.5],[120,G-.5],[236,G+.6]],false);
+  // the cart's two shafts on the left, resting on a little stand
+  b.ln([[38,168],[6,184]],{w:5.6});b.ln([[38,168],[6,184]],{w:3.4,col:C.wood});
+  b.ln([[38,160],[8,174]],{w:5.6});b.ln([[38,160],[8,174]],{w:3.4,col:C.wood});
+  b.ln([[12,180],[12,G-1]],{w:3.6,col:WKD});
+  // canopy poles
+  [[44,0],[196,0]].forEach(([x])=>b.sh(ribbon([[x,66],[x,96],[x,128]],[6,6,6]),C.wood,{k:.05,hatch:0,hl:0,lw:1,base:'#F3DDB4',det:[[[x-1,72],[x-1,124]]],dw:.6,dcol:WKD}));
+  // the pumpkin stack on the cart bed, back row first; three of them are carved
+  const lanterns=[[120,88,.78,1],[82,108,.64,0],[160,110,.62,2]];
+  if(lit)lanterns.forEach(([x,y,s])=>hwGlow(b,x,y+2,s*56));
+  pumpkinV(b,100,96,.5,{noleaf:1});pumpkinV(b,140,97,.48,{noleaf:1});
+  hwJack(b,120,88,.78,lit,1,{noleaf:1,cuts});
+  pumpkinV(b,60,114,.5,{noleaf:1});pumpkinV(b,120,116,.56);pumpkinV(b,182,115,.48,{noleaf:1});
+  hwJack(b,82,108,.64,lit,0,{noleaf:1,cuts});hwJack(b,160,110,.62,lit,2,{noleaf:1,cuts});
+  // the cart body: plum paint, orange trim, a chalkboard on the side
+  b.sh([[28,124],[212,124],[212,134],[28,134]],HWO,{k:0,hatch:0,hl:0,lw:1.1,base:'#F7B27A'});
+  b.sh([[30,134],[210,134],[206,184],[34,184]],HWP,{k:.02,hl:0,sh:HWPD,ho:.4,base:HWPL,inner:b.st([58,92,148,182].map(x=>b.jl(x,138,x-.4,180,.5)).join(''),HWPD,.9,.5)});
+  b.sh(rot(RR(52,140,136,38,4),-.01,120,159),'#556B5E',{k:.02,hatch:0,hl:0,lw:1.1,base:'#4A5E52',inner:b.st('M60 172q14 -2 26 0M150 146q12 -2 30 0','#fff',1.2,.22)});
+  b.tx(120,156,'Pumpkin Patch',17,{rot:-1,col:'#FFFBF3'});b.tx(120,173,'Pop-up',17,{rot:-1,col:'#FFE0B8'});
+  b.raw(b.st('M98 176q10 -2 20 0',HWO,1.6,.9),'top');
+  [[40,144],[200,144],[40,174],[200,174]].forEach(([x,y])=>b.dot(x,y,1.5,HWPD));
+  // wheels
+  hwWheel(b,64,188,25);hwWheel(b,176,188,25);
+  // the domed canopy: pumpkin and cream panels, a scalloped hem with paper bats
+  const dome=[];for(let i=0;i<=20;i++){const a=Math.PI+i/20*Math.PI;dome.push([120+Math.cos(a)*100,66+Math.sin(a)*42])}
+  const pan=[];for(let i=0;i<8;i++)if(i%2===0){const u0=i/8,u1=(i+1)/8,xa=20+u0*200,xb=20+u1*200;pan.push({pts:[[120+(xa-120)*.12,22],[120+(xb-120)*.12,22],[xb,70],[xa,70]],fill:HWP,k:0})}
+  b.sh(dome,HWO,{k:.04,hl:0,sh:'#C96E2A',ho:.35,marks:pan});
+  const sc=[];for(let i=0;i<=10;i++){const x=222-i*20.4;sc.push([x,66]);if(i<10)sc.push([x-10.2,78])}
+  b.sh([[18,62],[222,62],...sc],HWO,{k:.18,hatch:0,hl:0,lw:1,marks:Array.from({length:5},(_,i)=>({pts:[[18+i*40.8,58],[38.4+i*40.8,58],[38.4+i*40.8,82],[18+i*40.8,82]],fill:HWP,k:0}))});
+  b.sh(E(120,24,7,4,10),HWPD,{hatch:0,hl:0,lw:.9});
+  // the 2026 pennant on top
+  b.ln([[120,24],[120,2]],{w:2,col:C.woodD});b.dot(120,2,2,'#FFD56B');
+  b.sh([[121,4],[146,8],[121,15]],HWP,{k:.04,hatch:0,hl:0,lw:.9,base:HWPL});
+  b.tx(131,12.4,'2026',9,{col:'#FFF2DA'});
+  // paper bats dangling from the hem
+  [[26,96,-.2,28],[71,87,.15,21],[169,87,-.12,21],[214,96,.22,28]].forEach(([x,y,a,w],i)=>{b.ln([[x,i%3?78:80],[x,y-w*.26]],{w:.8,col:'#8E6446',top:1});hwBat(b,x,y,w,{a,paper:1,top:1,col:i===2?HWO:HWB})});
+  // the hay bale in front, a little pumpkin on it
+  hwHay(b,190,232,184,G);
+  pumpkinV(b,208,176,.36);
+  [[30,212],[100,213],[150,212]].forEach(([x,y],i)=>leafA(b,x,y,6,(i-1)*.8,AUT[i*2+1],i%2,{sq:.5}));
+  if(lit){
+    // night: a gentle blue tint over the cart, then the candlelight on top of it
+    const P=pts=>'M'+pts.map(p=>R1(p[0])+' '+R1(p[1])).join('L')+'Z',ci=(x,y,rr)=>`M${x-rr} ${y}a${rr} ${rr} 0 1 0 ${2*rr} 0a${rr} ${rr} 0 1 0 ${-2*rr} 0Z`;
+    const tint=[P([...dome,...sc]),P([[41,66],[47,66],[47,128],[41,128]]),P([[193,66],[199,66],[199,128],[193,128]]),P([[44,128],[46,104],[70,94],[96,80],[104,60],[136,60],[144,80],[170,94],[196,104],[198,128]]),
+      P([[28,124],[212,124],[212,134],[206,186],[34,186],[30,134],[28,134]]),ci(64,188,26),ci(176,188,26),P([[190,184],[198,168],[218,162],[226,176],[238,176],[238,208],[232,215],[190,215]]),P([[4,180],[40,156],[40,172],[8,188]]),P([[121,3],[147,8],[121,16]])].join('');
+    b.raw(`<path d="${tint}" fill="#26304F" opacity=".26"/>`,'top');
+    lanterns.forEach(([x,y,s])=>hwGlow(b,x,y+2,s*40,'top',.6));
+    b.raw(cuts.map(p=>`<path d="${cr(p,true,.1).d}" fill="#FFD36E" opacity=".95"/>`).join(''),'top');
+    b.ex('spark',228,40,4,'#FFE59A');b.ex('spark',10,56,3,'#FFF3C2');
+  }else{b.ex('spark',228,40,4,'#FFE07A');b.ex('heart',10,58,3.4)}
+};
+
+PROPS.hwlanterns=function(b,o){
+  const lit=!!o.lit,G=114,r=b.r;
+  if(lit){[[150,86,.96],[44,92,.82],[98,72,1.38]].forEach(([x,y,s])=>hwGlow(b,x,y,s*40));b.raw(`<ellipse cx="100" cy="${G}" rx="90" ry="5" fill="${INK}" opacity=".2"/><g class="pa-wb-glow"><ellipse cx="100" cy="${G-1}" rx="84" ry="6" fill="#FFB45A" opacity=".3"/></g>`,'under')}
+  else b.shadow(100,G,90,5);
+  // a straw bed under them
+  let st='';for(let i=0;i<26;i++){const x=16+i*6.6+(r()-.5)*3,y=G-2+(r()-.5)*3;st+=b.jl(x,y,x+(r()-.5)*10,y-3-r()*4,.4)}
+  b.raw(b.st(st,'#D9AE4E',1.3,.9),'under');
+  hwJack(b,150,86,.96,lit,2,{wf:1.06});
+  hwJack(b,44,92,.82,lit,1,{wf:1.12});
+  hwJack(b,98,72,1.38,lit,0,{wf:.96});
+  [[8,110],[190,108],[136,113]].forEach(([x,y],i)=>leafA(b,x,y,7,(i-1)*.9,AUT[i*2],i%2,{sq:.55}));
+  if(lit){b.ex('spark',184,24,4,'#FFE59A');b.ex('spark',14,40,3,'#FFF3C2')}else{b.ex('spark',184,26,4,'#FFE07A');b.ex('heart',16,44,3.4)}
+};
+
+PROPS.hwbunting=function(b){
+  const sy=x=>7+18*(1-Math.pow((x-150)/146,2));
+  const str=[];for(let x=4;x<=296;x+=12)str.push([x,sy(x)]);str.push([296,sy(296)]);
+  b.ln(str,{w:1.3,col:'#8E6446'});
+  b.sh(E(4,7,3,3,8),C.woodD,{hatch:0,hl:0,lw:.7});b.sh(E(296,7,3,3,8),C.woodD,{hatch:0,hl:0,lw:.7});
+  const cols=[HWB,HWO,HWP,HWB,HWO,HWB];
+  [30,78,126,174,222,270].forEach((x,i)=>{const y=sy(x),a=[.16,-.12,.08,-.1,.14,-.16][i],w=[36,32,36,34,32,36][i],t=[4,9,6,10,5,8][i];
+    b.ln([[x,y],[x+a*4,y+t]],{w:.8,col:'#8E6446'});
+    hwBat(b,x+a*8,y+t+w*.24,w,{a,col:cols[i],paper:1,lw:.8})});
+  // two little paper moons between
+  b.ex('spark',130,70,3.4,'#FFE07A');b.ex('dots',286,30,4);
+};
+
+PROPS.hwscarecrow=function(b){
+  const G=194,SC='#9FB8DA',SCD='#7F9CC4',ST='#F3D27A',STD='#D9AE4E';
+  b.shadow(70,G,48,4.4);
+  b.guide([[20,G+.4],[70,G-.4],[122,G+.4]],false);
+  // the cross post
+  b.sh(ribbon([[70,60],[70,130],[70,G]],[8,8,8]),C.wood,{k:.05,hatch:0,hl:0,lw:1.1,base:'#F3DDB4',det:[[[68.6,140],[68.4,186]]],dw:.7,dcol:WKD});
+  b.sh(ribbon([[10,76],[70,74],[130,76]],[7,7,7]),C.wood,{k:.05,hatch:0,hl:0,lw:1.1,base:'#F3DDB4'});
+  // straw out of the cuffs and the hem
+  const straw=(pts,d)=>{let s='';pts.forEach(([x,y],i)=>{s+=b.jl(x,y,x+d[0]+((i%3)-1)*2.4,y+d[1]+((i%2)?2:-1),.4)});b.raw(b.st(s,STD,2.4,.9));b.raw(b.st(s,ST,1.2,1))};
+  straw([[18,72],[18,76],[18,80],[16,74],[16,79]],[-10,2]);straw([[122,72],[122,76],[122,80],[124,74],[124,79]],[10,2]);
+  straw([[44,140],[52,142],[60,143],[68,143],[76,143],[84,142],[92,141],[98,139]],[0,10]);
+  // the patched coat
+  b.sh([[20,68],[50,66],[56,72],[84,72],[90,66],[120,68],[122,84],[96,86],[100,140],[70,146],[40,140],[44,86],[18,84]],SC,{k:.08,sh:SCD,ho:.45,hl:0,base:'#DCE6F4',
+   det:[[[70,74],[70,140]],[[44,88],[52,96]],[[96,88],[88,96]]],dw:.8,dcol:SCD});
+  [[52,108,12,10,'#F29150',-.1],[86,124,10,9,'#FFE07A',.15],[30,74,8,7,HWPL,.05]].forEach(([x,y,w,h,c,a])=>{
+    b.sh(rot(RR(x-w/2,y-h/2,w,h,1.5),a,x,y),c,{k:.02,hatch:0,hl:0,lw:.7,post:''});
+    b.raw(`<path d="${cr(rot(RR(x-w/2+1.6,y-h/2+1.6,w-3.2,h-3.2,1),a,x,y),true,0).d}" fill="none" stroke="${INK}" stroke-width=".8" stroke-dasharray="1.6 1.8" stroke-opacity=".7"/>`)});
+  [[74,96],[74,114]].forEach(([x,y])=>{b.sh(E(x,y,2.8,2.8,10),'#C99A72',{hatch:0,hl:0,lw:.6});b.dot(x-.7,y,.45);b.dot(x+.7,y,.45)});
+  // a rope belt
+  b.ln([[42,128],[70,132],[98,128]],{w:2.6,col:'#C9A46A'});b.ln([[66,131],[62,140]],{w:1.8,col:'#C9A46A'});b.ln([[70,132],[72,141]],{w:1.8,col:'#C9A46A'});
+  // the pumpkin head with a grin, a straw hat on top
+  hwJack(b,70,46,1.12,false,0,{noleaf:1,wf:1.02});
+  b.sh(E(70,22,30,6,20),'#F3D27A',{hatch:0,hl:0,lw:1,base:'#FBE3A0',inner:b.st(b.jl(46,22,94,22,.4),STD,.9,.7)});
+  b.sh([[54,22],[56,8],[64,3],[78,4],[85,10],[86,22]],ST,{k:.15,sh:STD,ho:.4,hl:0,base:'#FBE3A0',marks:[{pts:[[50,15],[90,15],[90,21],[50,21]],fill:HWO,k:0}]});
+  b.sh(leafP(84,16,10,5,-.6),'#E46F6B',{hatch:0,hl:0,lw:.6,top:1});
+  // the crow on his left arm (our right), chatting
+  const cx=114,cy=60,CR='#6B6478';
+  b.ln([[cx-2,cy+9],[cx-3,cy+15]],{w:1.4,col:'#E9A23B'});b.ln([[cx+3,cy+9],[cx+3,cy+15]],{w:1.4,col:'#E9A23B'});
+  b.sh([[cx+8,cy+2],[cx+20,cy+6],[cx+18,cy+10],[cx+7,cy+8]],CR,{k:.1,hatch:0,hl:0,lw:.8});
+  b.sh(E(cx,cy+3,10.4,8.6,16),CR,{k:.15,hl:0,hatch:0,lw:.95,base:'#9A93A8',marks:[{pts:E(cx-3,cy+6,5,3.4,10),fill:'#857E94'}]});
+  b.sh(E(cx-5,cy-6,6.6,6.2,14),CR,{hatch:0,hl:0,lw:.9,base:'#9A93A8'});
+  b.sh([[cx-11,cy-7],[cx-18,cy-5],[cx-11,cy-3.6]],'#F2B544',{k:.05,hatch:0,hl:0,lw:.7});
+  b.raw(`<circle cx="${cx-6}" cy="${cy-7.4}" r="2" fill="#fff"/>`,'top');b.dot(cx-6.6,cy-7.2,1.1,INK,'top');
+  b.raw(`<ellipse cx="${cx-3}" cy="${cy-3.4}" rx="1.8" ry="1" fill="${PINK}" opacity=".6"/>`,'top');
+  b.ex('note',cx-20,cy-18,8);
+  // a little pumpkin and leaves at his foot
+  pumpkinV(b,100,184,.34);
+  [[40,191],[56,193],[124,192]].forEach(([x,y],i)=>leafA(b,x,y,6,(i-1)*.8,AUT[i*2],i%2,{sq:.5}));
+  b.ex('spark',16,30,4,'#FFE07A');b.ex('heart',126,30,3.2);
+};
+
+PROPS.hwgarland=function(b){
+  const sy=x=>8+14*(1-Math.pow((x-150)/146,2));
+  const str=[];for(let x=4;x<=296;x+=12)str.push([x,sy(x)]);str.push([296,sy(296)]);
+  b.ln(str,{w:1.3,col:'#8E6446'});
+  b.sh(E(4,8,3,3,8),C.woodD,{hatch:0,hl:0,lw:.7});b.sh(E(296,8,3,3,8),C.woodD,{hatch:0,hl:0,lw:.7});
+  const xs=[34,80,126,172,218,264],tints=['#FFFFFF','#FFF8EC','#FFFFFF','#F6F1FF','#FFFFFF','#FFF8EC'];
+  const gy=x=>sy(x)+27;
+  // joined hands: a little cloth arm from each ghost, meeting its neighbour's, drawn behind the bodies
+  for(let i=0;i<xs.length-1;i++){const x0=xs[i],x1=xs[i+1],y0=gy(x0)+5,y1=gy(x1)+5,mx=(x0+x1)/2,my=(y0+y1)/2+4;
+    b.sh(ribbon([[x0+11,y0],[mx-3,my-1],[mx+1,my]],[8,7.4,7]),'#FFFFFF',{k:1/6,hatch:0,hl:0,lw:.8,base:'#fff'});
+    b.sh(ribbon([[x1-11,y1],[mx+3,my-1],[mx-1,my]],[8,7.4,7]),'#FFFFFF',{k:1/6,hatch:0,hl:0,lw:.8,base:'#fff'});
+    b.sh(E(mx-1.6,my,4.4,4.2,10),'#FFFFFF',{hatch:0,hl:0,lw:.7,base:'#fff',top:1});b.sh(E(mx+1.8,my+.6,4.2,4,10),'#FFFFFF',{hatch:0,hl:0,lw:.7,base:'#fff',top:1})}
+  // outer arms waving
+  b.sh(ribbon([[xs[0]-11,gy(xs[0])+4],[xs[0]-19,gy(xs[0])-2],[xs[0]-22,gy(xs[0])-9]],[8,7,6]),'#FFFFFF',{k:1/6,hatch:0,hl:0,lw:.8,base:'#fff'});
+  b.sh(ribbon([[xs[5]+11,gy(xs[5])+4],[xs[5]+19,gy(xs[5])-2],[xs[5]+22,gy(xs[5])-9]],[8,7,6]),'#FFFFFF',{k:1/6,hatch:0,hl:0,lw:.8,base:'#fff'});
+  xs.forEach((x,i)=>{const y=gy(x),lean=[.08,-.05,.06,-.07,.05,-.08][i];
+    b.sh(ghostP(x,y,33,40,lean),tints[i],{k:.16,hatch:0,hl:0,lw:.95,base:'#FFFFFF',dr:.25,
+     marks:[{pts:E(x+6,y+9,9,8,10),fill:'#E9EFF7',op:.85}],inner:b.st(b.jl(x-7,y-4,x-9,y+14,.3)+b.jl(x+8,y+2,x+10,y+16,.3),'#D4DCE8',1,.8)});
+    const ey=y-5,ex=x+lean*20;
+    b.dot(ex-5,ey,1.7);b.dot(ex+5,ey,1.7);
+    b.raw(`<ellipse cx="${R1(ex)}" cy="${R1(y+2.6)}" rx="1.5" ry="${i%2?1.9:1.5}" fill="${INK}" opacity=".8"/><ellipse cx="${R1(ex-8.6)}" cy="${R1(ey+4)}" rx="2.4" ry="1.3" fill="${PINK}" opacity=".5"/><ellipse cx="${R1(ex+8.6)}" cy="${R1(ey+4)}" rx="2.4" ry="1.3" fill="${PINK}" opacity=".5"/>`,'top');
+    // a wooden peg on the line
+    const py=sy(x);b.sh(rot(RR(x-2.4,py-5,4.8,12,1.6),lean,x,py),'#E2B07E',{k:.05,hatch:0,hl:0,lw:.8,top:1,det:[rot([[x,py-3],[x,py+5]],lean,x,py)],dw:.5,dcol:WKD});
+    if(i===2||i===5)b.sh(heartP(x+11,y-14,6),i===2?'#F7B2C4':'#FFD56B',{hatch:0,hl:0,lw:.6,top:1})});
+  b.ex('spark',150,82,3.2,'#FFE07A');b.ex('dots',8,48,4);
+};
+
+/* items (64): treats */
+Object.assign(ITEMS,{
+ 'Pumpkin Patch Pupcake'(b){
+  // a pumpkin cupcake in a plum-striped case, a swirl of plain yoghurt on top
+  b.sh([[13,36],[51,36],[46,58],[18,58]],HWC,{k:0,sh:'#C9A46A',base:'#FFF8EC',marks:[16,24,32,40,48].map(x=>({pts:[[x-2,34],[x+2,34],[x+1,60],[x-3,60]],fill:HWPL,k:0,op:.95}))});
+  b.sh(cloudP(32,33,21,9,9,.14,40),PUMP,{k:.18,sh:'#C96E2A',ho:.4,base:'#FBC28A',inner:b.st(b.jl(18,32,24,30,.3)+b.jl(38,30,46,32,.3),'#E07B33',1,.7)});
+  b.sh(cloudP(32,24,14,6,7,.2,30),'#FFFFFF',{k:.2,hatch:0,hl:0,lw:.85,base:'#fff',marks:[{pts:E(27,23,5,2,8),fill:'#F3F0F8'}]});
+  b.sh(cloudP(32,18,10,4.6,6,.22,24),'#FFFFFF',{k:.2,hatch:0,hl:0,lw:.8,base:'#fff'});
+  b.sh([[29,14],[35,14],[32,7]],'#FFFFFF',{k:.4,hatch:0,hl:0,lw:.75,base:'#fff'});
+  b.raw(b.st('M23 24q6 3 12 0M27 18q4 2 8 0',GRAPH,.9,.6),'top');
+  b.sh(leafP(34,9,9,4.4,-.6),LEAF,{hatch:0,hl:0,lw:.55,top:1});
+  [[16,38],[46,40],[30,40]].forEach(([x,y])=>b.dot(x,y,.9,'#FFF2DA','top'));
+  b.ex('spark',56,12,3.6);b.ex('heart',8,22,2.8);
+ },
+ 'Apple Monster Biscuits'(b){
+  plateV(b,32,48,29,10,C.lav,'#FFFFFF');
+  const eye=(x,y,r,lx,ly)=>{b.sh(E(x,y,r,r,12),'#FFF4D6',{hatch:0,hl:0,lw:.6,dr:.1,base:'#FFF8E6',marks:[{pts:E(x,y+r*.82,r*.9,r*.34,10),fill:C.redD,op:.9}]});b.dot(x+lx*r*.36,y+ly*r*.36,R1(r*.42),INK,'top')};
+  const bis=(x,y,s,lk)=>{b.sh(cloudP(x,y,12*s,10*s,9,.08,30),'#E8C597',{k:.15,hatch:0,hl:0,lw:.85,base:'#F3DDB4',sh:'#C99A72',
+     inner:[[-.55,.4],[.45,.45],[.62,-.2],[-.7,-.3],[0,.62]].map(([dx,dy])=>`<path d="M${R1(x+dx*10*s)} ${R1(y+dy*8*s)}l1.4 -.6" stroke="#C99A72" stroke-width="1" stroke-linecap="round"/>`).join('')});
+    eye(x-4.4*s,y-2.4*s,3.8*s,lk[0],lk[1]);eye(x+4.6*s,y-3*s,4.4*s,lk[2],lk[3]);
+    b.ln([[x-4*s,y+4.4*s],[x-1*s,y+6.2*s],[x+2*s,y+5*s],[x+5*s,y+6.4*s]],{w:.9})};
+  bis(18,42,.88,[1,1,-1,0]);bis(46,42,.88,[0,-1,1,1]);bis(32,46,.98,[-1,1,1,-1]);bis(32,26,1.02,[1,0,-1,1]);
+  [[7,47,1.6,-.3],[57,46,1.6,.4],[20,56,1.4,.2],[45,56,1.5,-.25],[43,15,1.3,.5]].forEach(([x,y,s,a])=>hwApple(b,x,y,s,a));
+  b.ex('spark',57,11,3.6);b.ex('dots',6,13,4);
+ },
+ 'Sweet Potato Bones'(b){
+  // a little kraft bag of baked bones, one more on the table
+  b.sh([[10,24],[42,22],[44,58],[12,59]],'#D9B27C',{k:.03,sh:'#B08550',ho:.4,base:'#EBCB9C',inner:b.st(b.jl(16,26,15,56,.3),'#B08550',.8,.5)});
+  const bn=(x,y,a,s=1)=>b.sh(boneP(x,y,26*s,10*s,a),'#9A5F6E',{k:.2,hatch:0,hl:0,lw:.8,base:'#B98088',marks:[{pts:boneP(x,y,21*s,6.4*s,a),fill:'#F2A262'}],inner:b.st(b.jl(x-6*s,y-1,x+4*s,y-2.2,.3),'#C46F2E',.8,.6)});
+  bn(20,20,-1.1);bn(31,18,-1.6,.95);
+  b.sh([[8,30],[44,28],[46,38],[10,40]],'#E2BE8A',{k:.03,hatch:0,hl:0,lw:.9,base:'#F0D4A8'});
+  b.sh(heartP(26,46,9),HWO,{hatch:0,hl:0,lw:.6,dr:.1});
+  sweetV(b,51,33,.42,-.7);
+  bn(46,52,.25,1.05);
+  b.ex('spark',56,14,3.6);
+ },
+ 'Frozen Yoghurt Ghosts'(b){
+  plateV(b,32,49,29,10,C.blue,'#FFFFFF');
+  const gh=(x,y,s,lean)=>{b.sh(ghostP(x,y,14*s,17*s,lean),'#FFFFFF',{k:.16,hatch:0,hl:0,lw:.7,base:'#fff',dr:.2,marks:[{pts:E(x+3*s,y+4*s,4*s,4*s,8),fill:'#E3F2FC'}]});
+    b.dot(x-2.4*s+lean*8,y-2*s,.95*s);b.dot(x+2.4*s+lean*8,y-2*s,.95*s);b.raw(`<ellipse cx="${R1(x+lean*7)}" cy="${R1(y+1.6*s)}" rx="${R1(.8*s)}" ry="${R1(1*s)}" fill="${INK}" opacity=".8"/>`,'top')};
+  gh(19,40,1.05,-.08);gh(45,40,1.05,.08);gh(32,44,1.15,0);gh(32,25,1.1,.04);
+  b.sh(drop(49,55,2.4),'#E3F2FC',{hatch:0,hl:0,lw:.5,dr:.1,top:1});
+  flake(b,8,14,4,'#8FB4D4',1.4);flake(b,56,18,3.4,'#8FB4D4',1.4);
+  b.ex('spark',52,6,3,'#E3F2FC');
+ }
+});
+
+/* items (64): toys */
+Object.assign(ITEMS,{
+ 'Squeaky Pumpkin'(b){
+  const body=cloudP(32,38,25,18,5,.14,40);
+  b.sh(body,'#F29150',{k:.2,sh:'#C96E2A',ho:.4,post:hwSeam(body,32,38,.86),inner:b.st(b.jl(24,22,22,54,.3)+b.jl(40,22,42,54,.3),'#C96E2A',1,.55)});
+  b.sh(ribbon([[32,22],[33,15],[37,11]],[6,5,4]),'#8E8A4A',{k:1/6,hatch:0,hl:0,lw:.8,dr:.1});
+  b.sh(leafP(31,19,12,6,-2.6),LEAF,{hatch:0,hl:0,lw:.6,dr:.2});
+  // a stitched, sleepy-happy face
+  b.raw(b.st('M22 35q3 -3 6 0M36 35q3 -3 6 0',INK,1.3)+b.st('M24 43q8 7 16 0',INK,1.3),'top');
+  b.raw(`<ellipse cx="19" cy="41" rx="3" ry="1.7" fill="${PINK}" opacity=".6"/><ellipse cx="45" cy="41" rx="3" ry="1.7" fill="${PINK}" opacity=".6"/>`,'top');
+  b.raw(b.st('M50 12l4 -4M54 18l6 -2M46 8l1 -5',INK,1.2),'top');
+ },
+ 'Plush Ghost'(b){
+  const g=ghostP(30,34,38,50,-.08);
+  b.sh([[12,34],[4,40],[6,45],[14,41]],'#FFFFFF',{k:.3,hatch:0,hl:0,lw:.8,base:'#fff'});b.sh([[46,30],[57,25],[59,30],[48,37]],'#FFFFFF',{k:.3,hatch:0,hl:0,lw:.8,base:'#fff'});
+  b.sh(g,'#FFFFFF',{k:.16,base:'#FFFFFF',sh:'#9FB2CC',ho:.35,hl:0,post:hwSeam(g,30,34,.84),marks:[{pts:E(38,44,10,10,10),fill:'#EEF2F8',op:.9}]});
+  // button eyes and a stitched smile
+  [[23,27],[35,26]].forEach(([x,y])=>{b.sh(E(x,y,3.4,3.4,10),HWB,{hatch:0,hl:0,lw:.6,base:HWB});b.dot(x-.9,y-.9,.7,'#fff','top')});
+  b.raw(b.st('M25 35q4 3 8 0',INK,1.2),'top');
+  b.raw(`<ellipse cx="18" cy="33" rx="2.8" ry="1.6" fill="${PINK}" opacity=".55"/><ellipse cx="40" cy="31.6" rx="2.8" ry="1.6" fill="${PINK}" opacity=".55"/>`,'top');
+  b.sh(rot(RR(40,49,10,7,1.4),.2,45,52),HWO,{k:0,hatch:0,hl:0,lw:.6,dr:.1,top:1});
+  b.raw(b.st('M52 50q4 -2 6 -6M54 56q4 -1 7 -4',GRAPH,1.2,.8),'top');
+ },
+ 'Bat-Wing Flyer'(b){
+  // a soft ring flyer with felt bat wings and a little bat face in the middle
+  b.ln([[2,48],[10,46]],{w:1.3,col:GRAPH});b.ln([[4,55],[12,52]],{w:1.3,col:GRAPH});
+  [1,-1].forEach(d=>{const w=[[6,-2],[16,-12],[24,-14],[27,-4],[22,-6],[19,1],[14,-2],[10,4]].map(([x,y])=>[32+d*(x+6),34+y]);
+    b.sh(w,HWB,{k:.08,hatch:0,hl:0,lw:.85,base:'#8E84A0',det:[[[32+d*12,32],[32+d*26,22]]],dw:.6,dcol:HWBD})});
+  b.sh(E(32,38,16,10,22),HWO,{hl:0,sh:'#C96E2A',ho:.4});
+  b.sh(E(32,36,15,9,22),'#F9A35E',{hatch:0,hl:0,lw:.9,base:'#FBC28A'});
+  b.sh(E(32,35.4,9,5.2,18),'#C96E2A',{hatch:0,hl:0,lw:.7,base:'#D9844A'});
+  b.sh([[27,32],[28,26],[31,31],[33,31],[36,26],[37,32]],HWB,{k:.1,hatch:0,hl:0,lw:.6});
+  b.raw(`<circle cx="29.6" cy="34.2" r="1.7" fill="#fff"/><circle cx="34.4" cy="34.2" r="1.7" fill="#fff"/>`,'top');b.dot(29.9,34.4,.9,INK,'top');b.dot(34.7,34.4,.9,INK,'top');
+  b.ex('spark',54,10,4);b.ex('dots',8,12,4);
+ },
+ 'Trick-or-Treat Bucket'(b){
+  // a pumpkin pail with a handle, three little lidded treat pots beside it, one lid off
+  b.ln([[12,24],[14,10],[32,4],[48,10],[50,24]],{w:3});b.ln([[12,24],[14,10],[32,4],[48,10],[50,24]],{w:1.5,col:HWPL});
+  [-10,10].forEach(dx=>b.sh(E(31+dx,36,12,15,16),'#F29150',{hl:0,sh:'#C96E2A',ho:.4}));
+  b.sh(E(31,36,13,17,18),PUMP,{sh:'#C96E2A',ho:.35,hlo:.45});
+  b.sh(E(31,22,14,3.6,16),'#7A4A33',{hatch:0,hl:0,lw:.8,base:'#5E3A28'});
+  nugget(b,27,21,2.6,.4);nugget(b,34,20.6,2.4,1.2);
+  const cut={k:.04,hatch:0,hl:0,lw:.6,dr:.1,base:'#7A4A33'};
+  b.sh([[23,32],[29,32],[26,27]],'#7A4A33',cut);b.sh([[33,32],[39,32],[36,27]],'#7A4A33',cut);
+  b.sh([[22,38],[40,38],[36,45],[26,45]],'#7A4A33',Object.assign({},cut,{k:.2}));
+  // the treat pots
+  const pot=(x,y,c,open)=>{b.sh(RR(x-6,y-4,12,9,2.4),c,{hatch:0,hl:0,lw:.75});
+    if(open){b.sh(rot(E(x+5,y-9,6.4,2,10),.5,x+5,y-9),mix(c,INK,.12),{hatch:0,hl:0,lw:.7,top:1});nugget(b,x,y-5,2.2,.3)}
+    else b.sh(E(x,y-4,6.6,2.2,10),mix(c,INK,.12),{hatch:0,hl:0,lw:.7})};
+  pot(52,40,C.mint,0);pot(52,56,C.lav,1);pot(13,57,C.pink,0);
+  b.ex('spark',58,10,3.6);
+ }
+});
+
+/* items (64): clothes */
+Object.assign(ITEMS,{
+ 'Witch Hat'(b){
+  b.sh(E(32,51,29,8,22),HWB,{hl:0,sh:HWBD,base:'#9A90AE'});
+  const cone=[[13,50],[19,36],[23,24],[27,15],[33,10],[40,7],[47,9],[52,15],[47,13],[42,14],[40,20],[42,32],[47,43],[51,50]];
+  b.sh(cone,HWB,{k:.08,sh:HWBD,base:'#9A90AE',marks:[{pts:[[0,41],[64,41],[64,49],[0,49]],fill:HWO,k:0}],inner:b.st(b.jl(24,30,28,20,.3),'#8E84A0',1,.8)});
+  b.sh(RR(28,40,9,9,1.6),'#FFE07A',{hatch:0,hl:0,lw:.7,top:1});b.sh(RR(30.4,42.4,4.2,4.2,1),HWO,{hatch:0,hl:0,lw:.5,top:1});
+  hwBat(b,51,24,14,{a:.2,col:HWBD,top:1});
+  b.ex('spark',8,14,4);b.ex('dots',56,56,4);
+ },
+ 'Vampire Cape'(b){
+  // a plum cape with a red lining showing at the swish, a tall stand-up collar and a bat clasp
+  b.sh([[20,15],[44,15],[49,24],[55,44],[60,58],[48,54],[38,60],[28,55],[17,59],[8,48],[15,24]],HWB,{sh:HWBD,base:'#9A90AE',
+   marks:[{pts:[[43,36],[55,44],[60,58],[48,54]],fill:C.redD,op:.95},{pts:[[20,38],[8,48],[17,59],[22,50]],fill:C.redD,op:.75}],det:[[[25,20],[21,42],[20,52]],[[39,20],[43,40],[44,50]]],dw:.9,dcol:'#8E84A0'});
+  b.sh([[18,17],[8,4],[22,8],[32,12],[42,8],[56,4],[46,17],[32,20]],C.redD,{k:.12,hatch:0,hl:0,lw:.95,base:'#F08A86',marks:[{pts:[[24,12],[32,14],[40,12],[44,17],[20,17]],fill:HWB,k:0}]});
+  b.sh(E(32,18,4.6,3.6,10),'#FFD56B',{hatch:0,hl:0,lw:.7,top:1});
+  hwBat(b,32,18.4,12,{col:HWBD,top:1});
+  b.ex('spark',58,10,3.4);b.ex('heart',6,30,2.6);
+ },
+ 'Candy Corn Bandana'(b){
+  b.sh([[3,12],[8,16],[3,19]],'#FFD56B',{k:0,hatch:0,hl:0,lw:.7});b.sh([[61,12],[56,16],[61,19]],'#FFD56B',{k:0,hatch:0,hl:0,lw:.7});
+  b.sh([[6,15],[58,15],[32,57]],'#FFE07A',{k:.05,sh:'#C9A24A',
+   marks:[{pts:[[0,10],[64,10],[64,21],[0,21]],fill:'#F2C14E',k:0,op:.8},{pts:[[0,27],[64,27],[64,42],[0,42]],fill:HWO,k:0},{pts:[[0,42],[64,42],[64,64],[0,64]],fill:'#FFFBF3',k:0}],
+   inner:`<path d="M9 19.5H55M14 27.5H50M20 42H44" stroke="#fff" stroke-width="1" stroke-dasharray="2.4 2" stroke-opacity=".8"/>`});
+  [[22,34],[42,34]].forEach(([x,y])=>b.sh([[x-3,y+2.6],[x+3,y+2.6],[x+2,y-2],[x-2,y-2]],'#FFE07A',{k:.2,hatch:0,hl:0,lw:.5,top:1}));
+  b.ex('spark',56,48,3.4);b.ex('dots',6,46,4);
+ },
+ 'Bat Wings'(b){
+  // two felt wings spread wide, scalloped between the fingers, on a thin harness strap and a chest loop
+  const L=[[27,27],[20,17],[11,11],[2,10],[9,19],[3,26],[12,28],[9,37],[17,34],[18,42],[23,36],[27,36]];
+  [1,-1].forEach(d=>{const w=L.map(([x,y])=>[d>0?x:64-x,y]),ax=d>0?27:37,X=x=>d>0?x:64-x;
+    b.sh(w,HWB,{k:.04,sh:HWBD,base:'#9A90AE',det:[[[ax,28],[X(4,11),11]],[[ax,30],[X(5),26]],[[ax,32],[X(10),36]],[[ax,33],[X(18),40]]],dw:.75,dcol:'#8E84A0'})});
+  b.loop(E(32,41,8,6.4,16),{w:1.8,col:HWO});
+  b.sh(RR(23,28,18,4.4,1.8),HWO,{hatch:0,hl:0,lw:.8,base:'#F7B27A'});
+  b.dot(32,30.2,1.3,'#FFE07A','top');
+  b.raw(b.st('M5 52q-3 -3 0 -6M59 52q3 -3 0 -6',GRAPH,1.3),'top');
+  b.ex('spark',32,10,3.4);
+ }
+});
+
+/* items (64): the four decorations, as simple bold cards like the v2.1 decorations */
+Object.assign(ITEMS,{
+ 'Jack-o-Lantern Trio'(b){
+  b.raw(b.st('M6 58q8 -3 14 -1M42 59q8 -3 16 -1','#D9AE4E',1.4,.9),'under');
+  hwJack(b,13,47,.4,false,1,{noleaf:1,wf:1.1,lw:.6});hwJack(b,51,48,.38,false,2,{noleaf:1,wf:1.08,lw:.6});
+  hwJack(b,32,38,.6,false,0,{wf:.96,lw:.75});
+  b.ex('spark',56,12,3.2);
+ },
+ 'Paper Bat Bunting'(b){
+  b.ln([[3,14],[18,22],[32,25],[46,22],[61,14]],{w:1.3,col:'#8E6446'});
+  b.dot(3,14,1.8,C.woodD);b.dot(61,14,1.8,C.woodD);
+  [[14,20,.18,HWB,10],[32,25,0,HWO,14],[50,20,-.18,HWB,10]].forEach(([x,y,a,c,t])=>{b.ln([[x,y],[x,y+t-6]],{w:.8,col:'#8E6446'});hwBat(b,x,y+t,30,{a,col:c,paper:1,lw:.8})});
+  b.ex('spark',8,52,3);b.ex('dots',52,52,4);
+ },
+ 'Friendly Scarecrow'(b){
+  b.ln([[32,30],[32,62]],{w:4,col:WKD});b.ln([[6,32],[58,32]],{w:4,col:WKD});
+  b.sh([[10,29],[24,28],[28,31],[36,31],[40,28],[54,29],[55,36],[44,37],[46,56],[32,59],[18,56],[20,37],[9,36]],'#9FB8DA',{k:.08,hatch:0,hl:0,lw:1,base:'#DCE6F4',
+   marks:[{pts:RR(21,42,8,7,1),fill:'#F29150',k:0},{pts:RR(36,48,7,6,1),fill:'#FFE07A',k:0}]});
+  b.raw(b.st('M8 32l-5 1M8 35l-5 2M56 32l5 1M56 35l5 2M24 57l-1 4M32 59v4M40 57l1 4','#D9AE4E',1.6),'top');
+  hwJack(b,32,20,.5,false,0,{noleaf:1,lw:.65});
+  b.sh(E(32,10,13,2.6,14),'#F3D27A',{hatch:0,hl:0,lw:.75,base:'#FBE3A0'});b.sh([[25,10],[26,4],[32,2],[38,4],[39,10]],'#F3D27A',{k:.15,hatch:0,hl:0,lw:.75,marks:[{pts:[[20,7],[44,7],[44,10],[20,10]],fill:HWO,k:0}]});
+  b.sh(E(54,25,4.6,3.8,10),'#6B6478',{hatch:0,hl:0,lw:.7,base:'#9A93A8'});b.sh([[50,23],[46,24],[50,25.4]],'#F2B544',{k:.05,hatch:0,hl:0,lw:.5});b.dot(52,23.4,.8,'#fff','top');
+ },
+ 'Ghost Garland'(b){
+  b.ln([[3,10],[18,15],[32,17],[46,15],[61,10]],{w:1.3,col:'#8E6446'});
+  b.dot(3,10,1.8,C.woodD);b.dot(61,10,1.8,C.woodD);
+  b.sh(ribbon([[14,40],[23,44],[32,40],[41,44],[50,40]],[5,4.4,4,4.4,5]),'#FFFFFF',{k:1/6,hatch:0,hl:0,lw:.8,base:'#fff'});
+  [[13,15,-.08],[32,17,.04],[51,15,.08]].forEach(([x,y,l],i)=>{const gy=y+20;
+    b.sh(ghostP(x,gy,17,26,l),'#FFFFFF',{k:.16,hatch:0,hl:0,lw:.85,base:'#fff',marks:[{pts:E(x+4,gy+6,5,5,8),fill:'#E9EFF7'}]});
+    b.dot(x-3+l*10,gy-4,1.2);b.dot(x+3+l*10,gy-4,1.2);b.raw(`<ellipse cx="${R1(x+l*8)}" cy="${R1(gy+1.4)}" rx="1" ry="1.3" fill="${INK}" opacity=".8"/>`,'top');
+    b.sh(RR(x-1.6,y-3,3.2,7,1),'#E2B07E',{k:.05,hatch:0,hl:0,lw:.6,top:1})});
+  b.ex('spark',32,58,3);
+ }
+});
+
+/* icon (64): the pop-up, a small pumpkin with a price tag */
+ICONS.popup=function(b){
+  b.ln([[30,20],[31,13],[36,9]],{w:3,col:'#7A7636'});
+  [[21,40,13],[41,40,13]].forEach(([x,y,rx])=>b.sh(E(x,y,rx,17,16),'#F29150',{lw:.8}));
+  b.sh(E(31,40,12,19,16),PUMP,{lw:.8});
+  b.sh(leafP(30,17,13,7,-2.6),LEAF,{hatch:0,hl:0,lw:.7});
+  b.ln([[35,10],[44,14],[50,20]],{w:1.4,col:'#8E6446'});
+  b.sh(rot([[46,18],[58,18],[61,24],[58,36],[46,36]],.38,52,27),HWC,{k:0,hatch:0,hl:0,lw:.95,base:'#FFFBF3'});
+  b.raw(`<circle cx="${R1(49.4)}" cy="${R1(20.6)}" r="1.6" fill="#fff" stroke="${INK}" stroke-width="1"/>`,'top');
+  b.sh(E(51,29.6,3.6,3.6,10),'#FFD56B',{hatch:0,hl:0,lw:.7,top:1});
+};
+
+/* bowls (120): the four 2026 treats heaped in the dog bowl */
+const BOWL26=['Pumpkin Patch Pupcake','Apple Monster Biscuits','Sweet Potato Bones','Frozen Yoghurt Ghosts'];
+BOWL26.forEach(n=>BOWL_FOODS.push(n));
+const _bowlFood26=bowlFood;
+bowlFood=function(b,food){
+  if(!BOWL26.includes(food))return _bowlFood26(b,food);
+  b.shadow(60,99,48,6);
+  if(food==='Frozen Yoghurt Ghosts'){flake(b,14,34,5,'#8FB4D4',1.6);flake(b,104,30,4.4,'#8FB4D4',1.6)}
+  bowl(b,60,62,45,12,32,C.pink,'#E58FA5',()=>{
+   if(food==='Pumpkin Patch Pupcake'){heapBase(b,'#FBC28A');
+     [[38,54],[82,54],[60,40]].forEach(([x,y])=>{b.sh([[x-12,y],[x+12,y],[x+9,y+14],[x-9,y+14]],HWC,{k:0,hatch:0,hl:0,lw:.8,base:'#FFF8EC',marks:[-8,0,8].map(d=>({pts:[[x+d-1.6,y-1],[x+d+1.6,y-1],[x+d+1,y+16],[x+d-2,y+16]],fill:HWPL,k:0}))});
+      b.sh(cloudP(x,y-2,13,6,7,.16,26),PUMP,{k:.18,hatch:0,hl:0,lw:.8,base:'#FBC28A'});
+      b.sh(cloudP(x,y-8,8,4,6,.2,20),'#FFFFFF',{k:.2,hatch:0,hl:0,lw:.7,base:'#fff'});b.sh([[x-3,y-11],[x+3,y-11],[x,y-16]],'#FFFFFF',{k:.4,hatch:0,hl:0,lw:.6,base:'#fff'})})}
+   else if(food==='Apple Monster Biscuits'){heapBase(b,'#F3DDB4');
+     [[34,56,0],[60,58,1],[86,56,2],[46,44,3],[74,44,0],[60,31,1]].forEach(([x,y,k])=>{b.sh(cloudP(x,y,14,11,9,.08,30),'#E8C597',{k:.15,hatch:0,hl:0,lw:.8,base:'#F3DDB4',sh:'#C99A72'});
+      const L=[[1,1],[-1,0],[0,-1],[1,-1]][k];[[-5,-2,4.4],[5,-2.6,5]].forEach(([dx,dy,r])=>{b.sh(E(x+dx,y+dy,r,r,12),'#FFF4D6',{hatch:0,hl:0,lw:.55,dr:.1,base:'#FFF8E6',marks:[{pts:E(x+dx,y+dy+r*.82,r*.9,r*.34,10),fill:C.redD,op:.9}]});
+       b.dot(x+dx+L[0]*r*.36,y+dy+L[1]*r*.36,R1(r*.42))});b.ln([[x-4,y+5],[x,y+7],[x+4,y+5.4]],{w:.9})});
+     [[47,58,.2],[73,58,-.3],[60,45,.5],[33,46,-.4],[87,46,.3],[60,24,-.2]].forEach(([x,y,a])=>hwApple(b,x,y,2,a))}
+   else if(food==='Sweet Potato Bones'){heapBase(b,'#F4BE8A');
+     [[36,58,-.3],[62,60,.2],[86,57,-.15],[46,46,.5],[74,46,-.45],[58,35,.1],[30,48,1.2],[90,46,-1.1]].forEach(([x,y,a])=>
+      b.sh(boneP(x,y,28,10,a),'#9A5F6E',{k:.2,hatch:0,hl:0,lw:.8,base:'#B98088',marks:[{pts:boneP(x,y,23,7,a),fill:'#F2A262'}]}))}
+   else if(food==='Frozen Yoghurt Ghosts'){heapBase(b,'#E3F2FC');
+     [[36,56,-.06],[60,58,0],[84,56,.06],[48,44,-.04],[72,44,.04],[60,30,0]].forEach(([x,y,l])=>{b.sh(ghostP(x,y,16,19,l),'#FFFFFF',{k:.16,hatch:0,hl:0,lw:.6,base:'#fff',dr:.2,marks:[{pts:E(x+3,y+4,4,4,8),fill:'#E3F2FC'}]});
+      b.dot(x-2.6+l*8,y-2.4,1);b.dot(x+2.6+l*8,y-2.4,1);b.raw(`<ellipse cx="${R1(x+l*7)}" cy="${R1(y+1.6)}" rx=".8" ry="1" fill="${INK}" opacity=".8"/>`,'top')})}
+  });
+  b.tx(60,90,'DOG',17,{mid:1});
+};
+
+/* public: the props normalise their options and cache per option set */
+Object.assign(PROP_VB,{popup:'0 0 240 220',hwlanterns:'0 0 200 120',hwbunting:'0 0 300 80',hwscarecrow:'0 0 140 200',hwgarland:'0 0 300 90'});
+const _prop26=PA.prop;
+PA.prop=function(name,o){
+  let opt,lbl,seed=name;
+  if(name==='popup'){opt={lit:!!(o&&o.lit)};lbl='Pumpkin Patch Pop-up'}
+  else if(name==='hwlanterns'){opt={lit:!!(o&&o.lit)};lbl=opt.lit?'Lit Jack-o-Lantern Trio':'Jack-o-Lantern Trio'}
+  else if(name==='hwbunting'){opt={};lbl='Paper Bat Bunting'}
+  else if(name==='hwscarecrow'){opt={};lbl='Friendly Scarecrow'}
+  else if(name==='hwgarland'){opt={};lbl='Ghost Garland'}
+  else return _prop26(name,o);
+  return serve('p:'+name+':'+JSON.stringify(opt),()=>{const b=mk('prop',seed);PROPS[name](b,opt);
+    return b.svg(PROP_VB[name],opt.lit!==undefined?` data-lit="${opt.lit?1:0}"`:'',lbl)});
+};
+
 if(typeof document!=='undefined'&&!document.getElementById('pawart-world-b-v24-css')){
   const st=document.createElement('style');st.id='pawart-world-b-v24-css';
   st.textContent='.pa-wb .pa-wb-gf1,.pa-wb .pa-wb-gf2{opacity:0}.pa-wb .pa-wb-gf0{animation:pa-wb-g0 1s steps(1,end) infinite}.pa-wb .pa-wb-gf1{animation:pa-wb-g1 1s steps(1,end) infinite}.pa-wb .pa-wb-gf2{animation:pa-wb-g2 1s steps(1,end) infinite}'+

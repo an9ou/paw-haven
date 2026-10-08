@@ -11,7 +11,7 @@ function enterWalkMod(area) {
   if (walk15 || dig1) { if (dig1 && S.outfit.head === 'Acorn Cap') { addStat('happy', 10); toast('Spinach power + Acorn Cap: digs are maxed, so +10 Happiness instead.', 'good'); } else toast(walk15 ? 'Carrot Crunchies power: +15 seconds on this walk!' : 'Spinach Scramble power: +1 dig on this walk!', 'good'); S.buff = null; markDirty(); }
   W = { mod: true, area, env: e, ended: false };
   const o = {
-    area, time: e.time, weather: e.weather, season: e.season, dog: dogForMod(), durationSec: Math.round(R.secs * walkScale()) + (walk15 ? 15 : 0), firstWalk, // v2: 3 to 6 months x0.7
+    area, time: e.time, weather: e.weather, season: e.season, halloween: festOn('halloween'), dog: dogForMod(), durationSec: Math.round(R.secs * walkScale()) + (walk15 ? 15 : 0), firstWalk, // v2: 3 to 6 months x0.7
     skipTutorial: !!prefs.skipTut, setSkipTutorial: (v) => { prefs.skipTut = !!v; savePrefs(); },
     abilities: { extraDig: S.outfit.head === 'Acorn Cap' || dig1, goggles: S.outfit.eyes === 'Explorer Goggles', necklace: S.outfit.neck === 'Seashell Necklace', poncho: S.outfit.body === 'Mossy Poncho', clover: S.outfit.neck === 'Clover Collar', luckyPenny: S.outfit.charm === 'Lucky Penny', noseMul: noseMul(), raincoat: hasRaincoat(), rainHat: hasRainHat(), warm: isWarm() },
     rollTreasure: (ar) => {
@@ -67,14 +67,14 @@ function enterToy(name) {
   const fav = (S.dog.favToy === name ? 1.5 : 1) * (S.place === 'park' ? 1.2 : 1), e = envNow();
   let closed = false, acted = false; // v2.4: one 'toy' act per play session
   const ctx = {
-    dog: dogForMod(), time: e.time, weather: e.weather, season: e.season, sfx, say: (t) => toast(t),
+    dog: dogForMod(), time: e.time, weather: e.weather, season: e.season, halloween: festOn('halloween'), sfx, say: (t) => toast(t),
     reward: (r) => {
       if (!r) return; const hp = (+r.happiness || 0) * k * fav * (S.place === 'dogpark' ? 1.3 : 1); if (hp) addStat('happy', hp);
       const b = (+r.bond || 0) > 0 ? addBond(r.bond * k) : 0; const c = (+r.coins || 0) > 0 ? addCoins(r.coins * k) : 0;
       if (r.energy) addStat('energy', +r.energy);
       if (r.clean) addStat('clean', +r.clean); if (r.cool) S.coolUntil = S.gameMin + 60; // v2.4 Paddling Pool: +Cleanliness and a cool hour
       dailyCare('play'); updateHUD(); markDirty(); if (!acted) { acted = true; trackAct('toy', { name }); }
-      toast(`+${Math.round(hp)} Happiness${b ? `, +${b} Bond` : ''}${c ? `, +${c} coins` : ''}${fav > 1 ? ' (favourite toy!)' : ''}${k < 1 ? ` (x${k}: played already today)` : ''}`, 'good');
+      if (Math.round(hp) || b || c) toast(`+${Math.round(hp)} Happiness${b ? `, +${b} Bond` : ''}${c ? `, +${c} coins` : ''}${fav > 1 ? ' (favourite toy!)' : ''}${k < 1 ? ` (x${k}: played already today)` : ''}`, 'good');
     },
     onClose: () => { if (closed) return; closed = true; if (cur.mode === 'toy') go('yard'); }
   };

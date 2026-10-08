@@ -1,0 +1,30 @@
+/* v2.6 HALLOWEEN lane (tag hw): the Pumpkin Patch Pop-up and the 2026 tag. V26.md section 7. The HALLOWEEN lane owns this file. */
+/* ---- the "2026" tag next to an item name (hwTag): a small crayon-outlined chip, orange on cream ---- */
+.hw-tag{display:inline-block;margin-left:6px;padding:0 6px 1px;vertical-align:.12em;font-family:var(--font-read);font-size:13px;font-weight:700;line-height:1.35;letter-spacing:.02em;white-space:nowrap;
+  color:#A8461A;background:var(--w-cream,#FFF4DF);border:2px solid #D9702A;border-radius:9px 6px 10px 5px;transform:rotate(-2deg)}
+html[data-layout="phone"] .hw-tag{font-size:15px;padding:0 7px 1px}
+/* ---- the Pumpkin Patch Pop-up sheet ---- */
+.hw-plum{display:flex;align-items:center;gap:12px;margin:0 0 4px;padding:8px 14px 8px 10px;background:#FFEFD6;border:2px solid var(--ink,#5B3D32);border-radius:9px 13px 8px 14px;transform:rotate(.4deg)}
+.hw-plum p{margin:0;font-size:18px;line-height:1.3}
+.hw-ic{flex:none;width:52px;height:52px}
+.hw-ic svg{width:100%;height:100%;display:block}
+.hw-sec{margin:10px 0 2px}
+.hw-sec h3{margin:6px 2px 6px;font-family:var(--font-hand);font-size:26px;line-height:1.1;color:#A8461A}
+.panel.hw-pop .sh-tip{display:block;margin-top:2px}
+.panel.hw-pop .hw-foot{margin:0 auto 0 0;font-size:17px}
+.panel.hw-pop .sitem b .hw-tag{margin-left:6px}
+/* ---- the Festival chooser on phones: the pop-up is a full-width third row ---- */
+.fs-choose .card.hw-row,html[data-layout="phone"] .fs-choose .card.hw-row{grid-column:1 / -1;flex-direction:row;align-items:center;justify-content:flex-start;gap:12px;text-align:left}
+.fs-choose .card.hw-row .art,html[data-layout="phone"] .fs-choose .card.hw-row .art{width:72px;height:72px;flex:none}
+.fs-choose .card.hw-row .hw-rowt{display:flex;flex-direction:column;gap:2px}
+/* ---- the Journal line ---- */
+.hw-jline .ic svg{width:100%;height:100%}
+/* ---- phones: 15 px text, 44 px buttons ---- */
+html[data-layout="phone"] .hw-plum p{font-size:16px}
+html[data-layout="phone"] .hw-ic{width:44px;height:44px}
+html[data-layout="phone"] .hw-sec h3{font-size:24px}
+html[data-layout="phone"] .panel.hw-pop .btn{min-height:44px}
+html[data-layout="phone"] .panel.hw-pop .hw-foot{font-size:15px}
+/* ---- phones: in the Feed / Play tray cards the tag sits on the card's top-left corner (like the count chip on the right), never in the 2-line clamped text ---- */
+html[data-layout="phone"] #dock .tray .card{position:relative}
+html[data-layout="phone"] #dock .tray .card .hw-tag{position:absolute;left:-3px;top:-6px;z-index:1;margin:0;font-size:15px;line-height:1.2;padding:0 6px 1px}

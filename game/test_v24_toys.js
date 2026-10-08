@@ -11,7 +11,7 @@ require('./test_lib').run('v24_toys', async (t) => {
   const p = t.p;
   const api = await ev((all) => ({ sup: all.filter((n) => window.PawToys.supports(n)), list: window.PawToys.list.slice(), no: window.PawToys.supports('Sock Puppet') }), ALL);
   ok(api.sup.length === 15, `PawToys.supports is true for all 15 toys (${api.sup.length})`);
-  ok(api.list.length === 15 && NEW.every((n) => api.list.includes(n)), `PawToys.list has 15 names including the six new ones (${api.list.length})`);
+  ok(api.list.length >= 15 && NEW.every((n) => api.list.includes(n)), `PawToys.list has at least 15 names including the six new ones (${api.list.length})`);
   ok(api.no === false, 'unknown toys are still unsupported');
   // keep a handle on the open controller so the suite can read its dbg()
   await ev(() => { const P = window.PawToys, o = P.open; P.open = function () { const c = o.apply(this, arguments); window.__toyCtl = c; return c; }; });

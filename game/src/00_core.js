@@ -32,6 +32,11 @@ const FOOD = [
   { n: 'Ghost Biscuits', fest: 'halloween', price: 9, hunger: 10, happy: 15, snack: true, v25: true, tip: 'Plain oats and plain yoghurt, nothing else. Chocolate is never for dogs, it is poison to them.', note: '+10 Hunger, +15 Happiness. Oat biscuits with a yoghurt ghost on top.' },
   { n: 'Candy Corn Carrots', fest: 'halloween', price: 6, hunger: 10, happy: 5, clean: 5, snack: true, v25: true, tip: 'No sugar at all, just carrot. Real sweets can hold xylitol, which is poison for dogs.', note: '+10 Hunger, +5 Happiness, clean teeth. Carrot points that only look like sweets.' },
   { n: 'Monster Meatball', fest: 'halloween', price: 14, hunger: 30, happy: 10, v25: true, tip: 'Plain cooked turkey, no onion or garlic. Grapes and raisins never go near it, they are poison for dogs.', note: '+30 Hunger, +10 Happiness. A turkey meatball with a carrot-slice eye.' },
+  // v2.6 Halloween 2026 pop-up foods: sold only at the Pumpkin Patch Pop-up while hwShopOpen() (fest + ed), never again after the event
+  { n: 'Pumpkin Patch Pupcake', fest: 'halloween', ed: 2026, v26: true, price: 14, hunger: 15, happy: 20, snack: true, tip: 'Plain pumpkin, oat flour and plain yoghurt, no sugar. Chocolate never goes in a dog\'s cake, it is poison to them.', note: '+15 Hunger, +20 Happiness. A little pumpkin cake with a yoghurt swirl.' },
+  { n: 'Apple Monster Biscuits', fest: 'halloween', ed: 2026, v26: true, price: 8, hunger: 10, happy: 10, bond: 1, snack: true, tip: 'Apple flesh only, the core and pips stay out. Oats and water hold it together, no sugar needed.', note: '+10 Hunger, +10 Happiness, a little Bond. Oat biscuits with googly apple eyes.' },
+  { n: 'Sweet Potato Bones', fest: 'halloween', ed: 2026, v26: true, price: 10, hunger: 20, happy: 5, clean: 5, snack: true, tip: 'Baked plain sweet potato, never raw and never buttered. Nutmeg and other baking spices stay in the kitchen, they make dogs ill.', note: '+20 Hunger, +5 Happiness, clean teeth. Baked bone shapes to crunch.' },
+  { n: 'Frozen Yoghurt Ghosts', fest: 'halloween', ed: 2026, v26: true, price: 9, hunger: 5, happy: 15, cool: 30, snack: true, tip: 'Plain yoghurt only, no sugar and no sweetener. Xylitol is poison for dogs, so check the pot every time.', note: '+5 Hunger, +15 Happiness, cools the dog. Little frozen ghosts that melt fast.' },
   { n: 'Frozen Pupsicle', price: 22, hunger: 15, happy: 20, energy: 10, cool: 60, snack: true, v24: true, tip: 'Frozen plain yoghurt and fruit, no xylitol ever. Let it soften a little for small dogs.', note: '+15 Hunger, +20 Happiness, +10 Energy. Cools a hot dog for 1 game hour.' }
 ];
 const TOYS = [
@@ -46,7 +51,12 @@ const TOYS = [
   { n: 'Treat Cone', price: 90, bond: 2, v24: true, note: 'Lick: a treat cone to lick clean, slowly. Calm +Happiness.' },
   { n: 'Bubble Machine', price: 110, bond: 3, v24: true, note: 'Bubbles: dog-safe bubbles to chase and pop. +Happiness, +coins per pop.' },
   { n: 'Paddling Pool', price: 130, bond: 4, v24: true, note: 'Splash: a cool paddle on hot days. +Happiness, +Cleanliness, cools the dog.' },
-  { n: 'Agility Tunnel', price: 150, bond: 5, v24: true, note: 'Zoom: run the tunnel, then do it again faster. +Happiness, -Energy, +Bond.' }
+  { n: 'Agility Tunnel', price: 150, bond: 5, v24: true, note: 'Zoom: run the tunnel, then do it again faster. +Happiness, -Energy, +Bond.' },
+  /* v2.6 Halloween 2026 pop-up toys (fest + ed): only the Pumpkin Patch Pop-up sells them, each has a yard play game in mods/toys.js */
+  { n: 'Squeaky Pumpkin', fest: 'halloween', ed: 2026, v26: true, price: 45, bond: 1, note: 'Squeak: a soft pumpkin that squeaks when pounced. +Happiness.' },
+  { n: 'Plush Ghost', fest: 'halloween', ed: 2026, v26: true, price: 55, bond: 1, note: 'Shake: a floppy ghost to shake and carry about. +Happiness, a little Bond.' },
+  { n: 'Bat-Wing Flyer', fest: 'halloween', ed: 2026, v26: true, price: 65, bond: 2, note: 'Leap: a soft flyer with felt bat wings to jump for. +Happiness, -Energy.' },
+  { n: 'Trick-or-Treat Bucket', fest: 'halloween', ed: 2026, v26: true, price: 80, bond: 2, note: 'Sniff: nose out the treats hidden under the lids. +Happiness, a little Bond.' }
 ];
 const CLOTHES = [
   { n: 'Red Bandana', slot: 'neck', price: 50, bond: 1, perk: '+1 dog friend on every walk.' },
@@ -79,6 +89,11 @@ const CLOTHES = [
   { n: 'Ghost Sheet', slot: 'body', fest: 'halloween', price: 60, bond: 1, v25: true, perk: 'Boo: the parade loves it. Nobody can see the tail wag, but it is wagging.' },
   { n: 'Pumpkin Suit', slot: 'body', fest: 'halloween', price: 65, bond: 1, v25: true, perk: 'Round: naps in the Pumpkin Cottage restore 10% more.' },
   { n: 'Parade Rosette', slot: 'neck', fest: 'halloween', price: 0, bond: 1, v25: true, reward: true, perk: 'Pride: won at the Halloween costume parade. It is a little bent.' },
+  // v2.6 Halloween 2026 pop-up clothes (fest + ed): perks are flavour only
+  { n: 'Witch Hat', slot: 'head', fest: 'halloween', ed: 2026, v26: true, price: 60, bond: 1, perk: 'Pointy: a crooked tip and an orange band. It is not magic, but it looks it.' },
+  { n: 'Vampire Cape', slot: 'body', fest: 'halloween', ed: 2026, v26: true, price: 75, bond: 1, perk: 'Swish: a high collar and a red lining. Very dramatic, not at all bitey.' },
+  { n: 'Candy Corn Bandana', slot: 'neck', fest: 'halloween', ed: 2026, v26: true, price: 50, bond: 1, perk: 'Sweet look: candy-corn stripes and no actual sugar.' },
+  { n: 'Bat Wings', slot: 'body', fest: 'halloween', ed: 2026, v26: true, price: 70, bond: 1, perk: 'Flap: felt wings that bounce when the tail wags.' },
   { n: 'Astronaut Helmet', slot: 'head', price: 0, bond: 1, v24: true, reward: true, perk: 'Space-proof: no soggy shake after rain, no shivering in the snow.' }
 ];
 const HOUSES = [
@@ -527,8 +542,9 @@ function freshState(key, name, sex) {
   st.fest = { letters: {}, parade: {}, piles: {}, stall: {} }; st.seasonSeen = {}; st.breedTips = {}; // v2.5
   Object.assign(st.dog, newDogFields(key, sex || 'male', bornDaysAgo(10))); st.kennel = [];
   st.garden = gardenNew(); gkFields(st, false); v131Fields(st);
-  if (key === 'mutt') { st.dog.favFood = [PICK(FOOD.slice(1)).n]; st.dog.favToy = PICK(TOYS).n; }
+  if (key === 'mutt') { st.dog.favFood = [PICK(FOOD.slice(1).filter((f) => !f.ed)).n]; st.dog.favToy = PICK(TOYS.filter(t => !t.ed)).n; }
   st.dog.adoptedAt = localISO();
+  st.hw = { letter: null, seen: null }; // v2.6 Halloween 2026 pop-up (27_halloween.js)
   st.guide = { step: 0 }; // v2.4: a new save meets Gerald (25_guide.js)
   return linkDogs(st);
 }
@@ -557,6 +573,7 @@ function migrate(s) {
   if (s.seedGiftPending && gkOn()) { delete s.seedGiftPending; s.inv.seeds.carrot = (s.inv.seeds.carrot || 0) + 3; s.inv.seeds.peas = (s.inv.seeds.peas || 0) + 3; s.gkEarly = true; s.gkNote = true; }
   v131Fields(s);
   if (!s.fest || typeof s.fest !== 'object') s.fest = {}; s.fest.letters = s.fest.letters || {}; s.fest.parade = s.fest.parade || {}; s.fest.piles = s.fest.piles || {}; s.fest.stall = s.fest.stall || {}; s.seasonSeen = s.seasonSeen || {}; s.breedTips = s.breedTips || {}; // v2.5: festivals and seasons
+  if (!s.hw || typeof s.hw !== 'object') s.hw = { letter: null, seen: null }; // v2.6: the Halloween 2026 pop-up letter and first visit
   if (!s.guide || typeof s.guide !== 'object') { s.guide = { step: -1, done: localISO() }; s.guideSeen = true; } // v2.4: saves from before the guide never see the walkthrough, they get a letter
   return s;
 }
@@ -579,11 +596,21 @@ const monthNow = () => new Date().getMonth() + 1;
 const seasonOf = (m) => ([12, 1, 2].includes(m) ? 'winter' : m <= 5 ? 'spring' : m <= 8 ? 'summer' : 'autumn');
 const SEASONS = ['spring', 'summer', 'autumn', 'winter'];
 function seasonNow() { return SEASONS.includes(ENV.season) ? ENV.season : seasonOf(monthNow()); }
+/* v2.6: Halloween runs by the JST date. HW_WIN holds the years whose window differs from the default (24-31 Oct), HW_ED is the edition the pop-up sells. See V26.md section 1 */
+const HW_ED = 2026;
+const HW_WIN = { 2026: ['2026-10-08', '2026-11-02'] };
+const jstISO = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+function hwAuto() {
+  const j = jstISO(), w = HW_WIN[+j.slice(0, 4)];
+  if (w) return j >= w[0] && j <= w[1];
+  return +j.slice(5, 7) === 10 && +j.slice(8, 10) >= 24;
+}
 function festNow() {
   const f = ENV.fest; if (f === 'off') return { leaf: false, halloween: false }; if (f === 'leaf' || f === 'halloween' || f === 'both') return { leaf: f !== 'halloween', halloween: f !== 'leaf' };
-  const d = new Date(), m = d.getMonth() + 1, day = d.getDate(); return { leaf: m === 10 || m === 11, halloween: m === 10 && day >= 24 };
+  const m = new Date().getMonth() + 1; return { leaf: m === 10 || m === 11, halloween: hwAuto() };
 }
 const festOn = (n) => !!festNow()[n];
+function hwShopOpen() { const j = jstISO(), w = HW_WIN[HW_ED]; return festOn('halloween') && j >= w[0] && j <= w[1]; } // a Dev panel override outside the dates never reopens the pop-up
 function timePhase() { if (ENV.time !== 'auto') return ENV.time; const h = new Date().getHours(); return h >= 5 && h < 7 ? 'dawn' : h >= 7 && h < 17 ? 'day' : h >= 17 && h < 19 ? 'dusk' : 'night'; }
 function weatherPeriodKey() { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}-${Math.floor(d.getHours() / 8)}`; }
 function weatherNow() {
@@ -594,7 +621,7 @@ function weatherNow() {
   return r < 0.45 ? 'sunny' : r < 0.70 ? 'cloudy' : r < 0.95 ? 'rain' : winter ? 'snow' : 'rain';
 }
 const weather = weatherNow;
-const envNow = () => ({ time: timePhase(), weather: weatherNow(), season: seasonNow() });
+const envNow = () => ({ time: timePhase(), weather: weatherNow(), season: seasonNow(), halloween: festOn('halloween') });
 const isNight = () => timePhase() === 'night';
 function isHot() { if (S && S.buff && typeof buffOn === 'function' && buffOn('cool')) return false; if (S && (S.outfit.head === 'Sun Hat' || (S.coolUntil || -1) > S.gameMin)) return false; if (weatherNow() !== 'sunny' || timePhase() !== 'day') return false; if (ENV.time !== 'auto') return true; const h = new Date().getHours(); return h >= 11 && h < 15; }
 function clockText() { if (ENV.time !== 'auto') return { dawn: '06:00', day: '13:00', dusk: '18:00', night: '23:00' }[ENV.time] + '*'; const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
@@ -762,7 +789,7 @@ function unlocksFor(L) {
   const u = [];
   for (const k in ROUTES) if (ROUTES[k].bond === L && L > 1) u.push(`Walk route: ${ROUTES[k].n}${ROUTES[k].dig ? ' (with digging)' : ''}`);
   TRICKS.forEach((t) => { if (t.bond === L) u.push(t.n === 'Signature' ? `Signature trick: ${sigOf(S.dog.key).n}` : `Trick: ${t.n}`); });
-  TOYS.concat(CLOTHES).forEach((t) => { if (t.bond === L && L > 1) u.push(`Shop: ${t.n}`); });
+  TOYS.concat(CLOTHES).forEach((t) => { if (t.bond === L && L > 1 && !t.ed) u.push(`Shop: ${t.n}`); });
   HOUSES.forEach((h) => { if (h.bond === L && L > 1) u.push(`House: ${h.n}`); });
   if (L === 10) u.push('Best Friends badge (it is invisible, but it is there)');
   return u;

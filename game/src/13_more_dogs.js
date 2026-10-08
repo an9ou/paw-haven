@@ -312,7 +312,7 @@ function addDog(spec, name) {
   const d = Object.assign({ key: spec.key, name, favFood: fav.food.slice(), favToy: fav.toy }, newDogFields(spec.key, spec.sex, spec.born || bornDaysAgo(spec.months || 10)));
   if (spec.genes) d.genes = spec.genes;
   if (spec.id) d.id = spec.id;
-  if (spec.key === 'mutt') { d.favFood = [PICK(FOOD.slice(1)).n]; d.favToy = PICK(TOYS).n; }
+  if (spec.key === 'mutt') { d.favFood = [PICK(FOOD.slice(1).filter((f) => !f.ed)).n]; d.favToy = PICK(TOYS.filter(t => !t.ed)).n; }
   d.rescue = spec.rescue || null; dogDefaults(d, S);
   const c = coatInfo(d); if (c) { d.coat = c.coatName; d.eyes = c.eyes; }
   S.dogs.push(d); markDirty(); hudDogKey = ''; emit('dog:added', { dog: d }); return d;

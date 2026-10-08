@@ -120,3 +120,9 @@ You manage Paw Haven for the owner. You don't build. Start a fresh Coordinator s
 - Git tags do not reach GitHub through the build container's proxy: the base reference `v25-base` is a branch. Tag it from a machine that can and delete the branch.
 - GitHub returned "Internal Server Error" on every push for about two hours on 7 Oct (15:00 to 17:00Z); the retry loop in the coordinator's notes worked.
 - The 5-hour usage limit stopped the coordinator for 90 minutes mid-release (15:20 to 16:50Z). Keep the Board truthful before it hits.
+
+**State after v2.6 (8 Oct 2026):**
+- v2.6 "Halloween 2026" is on `main` (`<main sha>`), GitHub Pages (`<pages run>`) and the claude.ai artifact (`<artifact version>`). Spec and as-built notes: `V26.md` (section 9). `game/shots_v26/` was removed before the release.
+- Built by an Opus coordinator with 5 fresh Opus lanes (HW ART, SCENE ART, DOG ART, TOYS, HALLOWEEN), each in its own session. No Fable.
+- Three `paw-reviewer` reviews (code, phone, art). Their fix batches went back to the lanes that own the files.
+- The pop-up sells `ed: 2026` items only while `hwShopOpen()`. A Halloween 2027 needs new items and a `HW_WIN` entry (see `TODO.md`).

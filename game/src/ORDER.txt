@@ -33,4 +33,5 @@
 24_missions.js
 25_guide.js
 26_festival.js
+27_halloween.js
 23_boot.js

@@ -53,6 +53,11 @@ const SUITES = {
   v25_festival: { file: 'test_v25_festival.js', group: 'all', est: 60 },
   v25_fixes_a: { file: 'test_v25_fixes_a.js', group: 'all', est: 40 }, // the owner's v2.4 fixes (V25.md 7b)
   v25_fixes_b: { file: 'test_v25_fixes_b.js', group: 'all', est: 40 },
+  // v2.6 (V26.md): Halloween 2026 art, scenes, toys and the Pumpkin Patch Pop-up
+  v26_art: { file: 'test_v26_art_node.js', group: 'all', est: 10 },
+  v26_scenes: { file: 'test_v26_scenes_node.js', group: 'all', est: 20 },
+  v26_toys: { file: 'test_v26_toys.js', group: 'all', est: 45 },
+  v26_halloween: { file: 'test_v26_halloween.js', group: 'all', est: 60 },
   // v2.2 phone suites: `node game/run_tests.js phone` (not part of `all`, which stays the desktop regression set)
   phone_legacy: { file: 'test_phone.js', group: 'phone', est: 90 },
   phone_shell: { file: 'test_phone_shell.js', group: 'phone', est: 40 },
@@ -72,6 +77,7 @@ const SUITES = {
   phone_v25_festival: { file: 'test_phone_v25_festival.js', group: 'phone', est: 60 }, // v2.5
   phone_v25_fixes_a: { file: 'test_phone_v25_fixes_a.js', group: 'phone', est: 40 },
   phone_v25_fixes_b: { file: 'test_phone_v25_fixes_b.js', group: 'phone', est: 40 },
+  phone_v26_halloween: { file: 'test_phone_v26_halloween.js', group: 'phone', est: 60 }, // v2.6
 };
 // extra aliases: `all_*` is the same as `all`; `test_all` = the four+ shards of the old test_all.js
 const ALIAS = { test_all: ['all_a', 'all_b', 'all_c', 'all_d', 'all_e'], 'test_v15': ['v15'], 'test_v16': ['v16'], 'test_v16b': ['v16b'], 'test_v17': ['v17'], 'test_v171_garden': ['v171_garden'], 'test_v171_tricks': ['v171_tricks'], 'test_v2_slots': ['v2_slots'], 'test_v2_breed': ['v2_breed'], 'test_v2_journal': ['v2_journal'], 'test_v2_town': ['v2_town'], 'test_v2_play': ['v2_play'], 'test_v21_genes_node': ['v21_genes'], 'test_copy_node': ['copy'], 'test_v21_breed': ['v21_breed'], 'test_v21_journal': ['v21_journal'], 'test_v21_town': ['v21_town'], 'test_v21_home': ['v21_home'] };

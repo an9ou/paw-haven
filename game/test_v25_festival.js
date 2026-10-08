@@ -20,7 +20,7 @@ require('./test_lib').run('v25_festival', async (t) => {
   let s = await S();
   const bea = s.mail.find((m) => m.id === 'fest_leaf_' + year), ger = s.mail.find((m) => m.id === 'fest_halloween_' + year);
   ok(bea && bea.from === 'Baker Bea' && /^The leaf festival is on\. Leaf piles in the yard, and my stall is in the Square\. Pumpkin everything\.$/.test(bea.text), 'Baker Bea: the leaf festival letter');
-  ok(ger && /Gerald/.test(ger.from) && /^Costume parade in the Square until the 31st\. I am going as a duck\.$/.test(ger.text), 'Gerald: the costume parade letter');
+  ok(ger && /Gerald/.test(ger.from) && /^Costume parade in the Square until (the 31st|2 November)\. I am going as a duck\.$/.test(ger.text), 'Gerald: the costume parade letter');
   ok(s.fest.letters.leaf === year && s.fest.letters.halloween === year, 'S.fest.letters holds this year for both');
   await t.home('house'); await t.home('yard'); await t.until(() => window.__paw.fest.pending === 0, null, 6000);
   ok((await S()).mail.filter((m) => /^fest_/.test(m.id)).length === 2, 'a second yard entry sends no new letter');
@@ -196,8 +196,9 @@ require('./test_lib').run('v25_festival', async (t) => {
   ok(await ev(() => { window.__paw.fest.paradeOpen(); return document.getElementById('modal').hidden; }), 'fsParadeOpen does nothing outside Halloween');
 
   sec("the real date: 2026-10-28 (fest 'auto') turns both on, 2026-12-02 neither");
+  // v2.6: Halloween 2026 runs 8 Oct to 2 Nov (JST, V26.md section 1); other years keep 24 to 31 Oct, checked on 2027
   const at = async (date) => { await t.ctx.close(); t.clockOffset = new Date(date + 'T10:00:00').getTime() - Date.now(); await t.newGame({ fest: 'auto' }); await t.home('square'); return ev(() => ({ kind: document.querySelector('#fsStallG') && document.querySelector('#fsStallG').dataset.kind, banner: !!document.querySelector('#fsBannerG'), items: window.__paw.fest.items().length })); };
-  for (const [d, k, n] of [['2026-10-23', 'leaf', 5], ['2026-10-24', 'halloween', 10], ['2026-10-28', 'halloween', 10], ['2026-10-31', 'halloween', 10], ['2026-11-01', 'leaf', 5], ['2026-11-30', 'leaf', 5], ['2026-12-01', null, 0]]) {
+  for (const [d, k, n] of [['2026-10-23', 'halloween', 10], ['2026-10-24', 'halloween', 10], ['2026-10-28', 'halloween', 10], ['2026-10-31', 'halloween', 10], ['2026-11-01', 'halloween', 10], ['2026-11-03', 'leaf', 5], ['2026-11-30', 'leaf', 5], ['2026-12-01', null, 0], ['2027-10-23', 'leaf', 5], ['2027-11-01', 'leaf', 5]]) {
     g = await at(d); ok((g.kind || null) === k && g.banner === (k === 'halloween') && g.items === n, `${d}: ${k ? k + ' stall, ' + n + ' items' : 'no stall'}${k === 'halloween' ? ', the banner' : ''} (${JSON.stringify(g)})`);
   }
   g = await at('2026-12-02'); ok(!g.kind && !g.banner && g.items === 0, '2026-12-02: no stall, no banner');

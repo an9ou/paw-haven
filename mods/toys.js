@@ -11,7 +11,8 @@
   var INK = '#5B3D32', PAPER = '#FFFBF3', PINK = '#F28FA5', MUTED = '#8A7468';
   var W = 1240, H = 620, GY = 540, DS = 1.15, G = 2300;
   var TOYS = ['Tennis Ball', 'Rope Tug', 'Squeaky Duck', 'Frisbee', 'Plush Bone', 'Puzzle Feeder', 'Driftwood Stick', 'Rubber Chicken', 'Glow Ball',
-    'Snuffle Mat', 'Treat Cone', 'Squeaky Hedgehog', 'Bubble Machine', 'Paddling Pool', 'Agility Tunnel'];
+    'Snuffle Mat', 'Treat Cone', 'Squeaky Hedgehog', 'Bubble Machine', 'Paddling Pool', 'Agility Tunnel',
+    'Squeaky Pumpkin', 'Plush Ghost', 'Bat-Wing Flyer', 'Trick-or-Treat Bucket'];
   var CAP = { happiness: 25, bond: 2, coins: 6 };
 
   /* ---------------- helpers ---------------- */
@@ -165,6 +166,7 @@
         for (var ti = 0; ti < 6; ti++) s += pencil(R, [[10 + ti * 7.5, 22], [17.5 + ti * 7.5, 20], [17.5 + ti * 7.5, 52], [10 + ti * 7.5, 51]], 1.4, INK, 0.9, true, ti % 2 ? '#FFE07A' : '#86B3EA');
         s += pencil(R, [[10, 22], [55, 20]], 2.2, INK, 1) + pencil(R, [[10, 51], [55, 52]], 2.2, INK, 1) + pencil(R, ell(10, 36.5, 6, 15, 12), 2.2, INK, 1, true, '#86B3EA') + pencil(R, ell(10, 37, 3.4, 11, 10), 1.4, INK, 1, true, '#4A3A33') +
           pencil(R, ell(55, 36, 5, 16, 12), 2.2, INK, 1, true, '#FFE07A') + '<path d="M2 58H62" stroke="#5B3D32" stroke-width="1.4" opacity=".4"/>'; break;
+      case 'Squeaky Pumpkin': case 'Plush Ghost': case 'Bat-Wing Flyer': case 'Trick-or-Treat Bucket': return v26Icon(name);
       default: s = pencil(R, rect(14, 14, 36, 36), 2.4, INK, 1, true, '#E0D5F0');
     }
     return '<svg viewBox="0 0 64 64">' + s + '</svg>';
@@ -796,7 +798,7 @@
     }
     try { root.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
     var ctl = { close: close };
-    Object.defineProperty(ctl, '_dbg', { value: function () { return { toy: toy.dbg ? toy.dbg() : null, dog: { x: A.dog.x, y: A.dog.y, pose: A.dog.pose, facing: A.dog.facing }, totals: totals, finished: finished, timeLeft: timeLeft }; } });
+    Object.defineProperty(ctl, '_dbg', { value: function () { return { toy: toy.dbg ? toy.dbg() : null, dog: { x: A.dog.x, y: A.dog.y, pose: A.dog.pose, facing: A.dog.facing }, totals: totals, finished: finished, timeLeft: timeLeft, kind: A.kindN || 0 }; } });
     Object.defineProperty(ctl, '_end', { value: function () { endSession(); } });
     Object.defineProperty(ctl, '_map', { value: function (x, y) { var r = stage.getBoundingClientRect(); return { x: r.left + x * scale, y: r.top + y * scale, phone: phone, scale: scale }; } });
     return ctl;
@@ -2216,6 +2218,511 @@
   };
   IMPL['Agility Tunnel'].cfg = { scene: 'yard' };
   IMPL['Agility Tunnel'].phone = { vw: 740, vwMin: 730, fx: 622 };
+
+  /* ==================== v2.6 Halloween 2026 toys (V26.md section 6) ==================== */
+  /* Motion off (the player's "Motion and wobble" switch): the games play the same, the decorative wobble, flapping and tumbling stop */
+  function v26Still() { try { return document.documentElement.getAttribute('data-motion') === 'off'; } catch (e) { return false; } }
+  /* v2.6 games pay through this: a reward with no happiness, bond or coins is not sent (the game toasts every reward) */
+  function v26Pay(A, r) { if ((r.happiness || 0) > 0 || (r.bond || 0) > 0 || (r.coins || 0) > 0) A.reward(r); }
+  /* a tap that hits nothing never fails: a kind sniff in that direction */
+  function kindSniff(A, x, y, lines) {
+    var now = performance.now(); A.kindN = (A.kindN || 0) + 1; if (now - (A.sniffAt || 0) < 700) return; A.sniffAt = now;
+    A.sfx('sniff'); A.float(pick(['sniff?', 'sniff sniff']), x, y - 30, 'pt-small');
+    if (Math.random() < 0.5) A.say(pick(lines || ['just grass there. nice grass.', 'sniff... smells like lawn.', 'nothing there. still fun.']), 1100);
+  }
+
+  /* ---------- v2.6 art (pencil, same hand as the v2.4 toys) ---------- */
+  /* a lumpy felt pumpkin (matches PawArt.item): stitched seam, closed-eye smile, a leaf on the stem */
+  function v26Lumpy(cx, cy, rx, ry, k, n) { var p = []; for (var i = 0; i < n; i++) { var a = i / n * Math.PI * 2, m = 1 + k * Math.sin(a * 4 + 0.6); p.push([cx + Math.cos(a) * rx * m, cy + Math.sin(a) * ry * m]); } return p; }
+  function v26PumpkinIn() {
+    var R = rng(2601), s = '<ellipse cx="60" cy="104" rx="46" ry="5" fill="#5B3D32" opacity=".12"/>';
+    s += pencil(R, [[58, 34], [57, 22], [62, 13], [70, 9]], 6.4, INK, 1) + pencil(R, [[58, 34], [57, 22], [62, 13], [70, 9]], 3.2, '#8E8A4A', 1);
+    s += pencil(R, [[56, 26], [44, 16], [34, 20], [42, 28], [56, 28]], 2, INK, 1, true, '#9CCB86');
+    s += pencil(R, v26Lumpy(60, 66, 50, 37, 0.06, 28), 2.8, INK, 1, true, '#F29150');
+    s += pencil(R, [[46, 34], [40, 66], [46, 98]], 1.4, '#C96E2A', 0.5) + pencil(R, [[74, 34], [80, 66], [74, 98]], 1.4, '#C96E2A', 0.5);
+    s += '<path d="' + wob(R, v26Lumpy(60, 66, 43, 30, 0.06, 28), 0.8, true) + '" fill="none" stroke="#5B3D32" stroke-width="1.5" stroke-dasharray="4 4" opacity=".55"/>';
+    s += '<ellipse cx="38" cy="47" rx="13" ry="6" transform="rotate(-24 38 47)" fill="#fff" opacity=".42"/>';
+    s += '<path d="M38 62q6-7 12 0M70 62q6-7 12 0" fill="none" stroke="#5B3D32" stroke-width="3.2" stroke-linecap="round"/>';
+    s += '<path d="M47 75q13 11 26 0" fill="none" stroke="#5B3D32" stroke-width="3.2" stroke-linecap="round"/>';
+    s += '<ellipse cx="33" cy="72" rx="6.5" ry="3.8" fill="#F28FA5" opacity=".6"/><ellipse cx="87" cy="72" rx="6.5" ry="3.8" fill="#F28FA5" opacity=".6"/>';
+    return s;
+  }
+  function v26Pumpkin() { return '<svg viewBox="0 0 120 110">' + v26PumpkinIn() + '</svg>'; }
+  /* the plush ghost: body (centre 50,66), a little orange bow on top, the arms are separate sprites so they can flop */
+  function v26GhostIn() {
+    var R = rng(2610), s = '';
+    s += pencil(R, [[18, 100], [17, 70], [19, 46], [28, 26], [42, 15], [58, 15], [72, 26], [81, 46], [83, 70], [82, 100], [74, 110], [66, 101], [58, 112], [50, 102], [42, 112], [34, 101], [26, 110]], 2.6, INK, 1, true, '#FFFBF3');
+    s += '<path d="' + wob(R, [[68, 30], [76, 50], [77, 78], [75, 98]], 1, false) + '" fill="none" stroke="#E0D5F0" stroke-width="7" stroke-linecap="round" opacity=".85"/>';
+    s += '<ellipse cx="40" cy="50" rx="5" ry="7" fill="#5B3D32"/><ellipse cx="60" cy="50" rx="5" ry="7" fill="#5B3D32"/><circle cx="41.6" cy="47.4" r="1.8" fill="#fff"/><circle cx="61.6" cy="47.4" r="1.8" fill="#fff"/>';
+    s += pencil(R, ell(50, 66, 5, 4.5, 10), 1.8, INK, 1, true, '#F28FA5');
+    s += '<ellipse cx="30" cy="61" rx="5" ry="3" fill="#F9C4D0"/><ellipse cx="70" cy="61" rx="5" ry="3" fill="#F9C4D0"/>';
+    s += '<path d="' + wob(R, [[22, 97], [34, 95], [50, 97], [66, 95], [78, 97]], 1, false) + '" fill="none" stroke="#C9B8E6" stroke-width="1.5" stroke-dasharray="4 4"/>';
+    s += pencil(R, [[50, 16], [38, 8], [37, 22]], 1.8, INK, 1, true, '#F4A262') + pencil(R, [[50, 16], [62, 8], [63, 22]], 1.8, INK, 1, true, '#F4A262') + pencil(R, ell(50, 15, 4, 4, 8), 1.6, INK, 1, true, '#E8895A');
+    return s;
+  }
+  function v26Ghost() { return '<svg viewBox="0 0 100 120">' + v26GhostIn() + '</svg>'; }
+  function v26ArmIn() { var R = rng(2611); return pencil(R, [[2, 7], [18, 5], [32, 6], [40, 10], [41, 16], [35, 20], [18, 20], [2, 19]], 2.2, INK, 1, true, '#FFFBF3') + '<path d="M30 9q5 4 0 9" fill="none" stroke="#E0D5F0" stroke-width="2.4"/>'; }
+  function v26GhostArm() { return '<svg viewBox="0 0 44 26">' + v26ArmIn() + '</svg>'; }
+  /* the Bat-Wing Flyer: a soft orange felt disc with bat ears and two scalloped felt wings. up: 1 wings up, 0 wings down, 2 level (motion off) */
+  function v26Flyer(up) {
+    var R = rng(2620 + up), s = '<ellipse cx="70" cy="80" rx="26" ry="3" fill="#5B3D32" opacity=".08"/>', ang = up === 2 ? -0.12 : up ? -0.62 : 0.42;
+    var W0 = [[0, -6], [14, -15], [32, -18], [50, -14], [46, -1], [39, -5], [33, 7], [26, 2], [19, 11], [11, 5], [2, 9]];
+    function wing(m) {
+      var c = Math.cos(ang), sn = Math.sin(ang), P = W0.map(function (p) { var x = p[0] * c - p[1] * sn, y = p[0] * sn + p[1] * c; return [m ? 140 - (88 + x) : 88 + x, 42 + y]; });
+      var bone = function (a, b) { var q = [a, b].map(function (p) { var x = p[0] * c - p[1] * sn, y = p[0] * sn + p[1] * c; return [m ? 140 - (88 + x) : 88 + x, 42 + y]; }); return pencil(R, q, 1.4, '#8E8696', 0.9); };
+      return pencil(R, P, 2.2, INK, 1, true, '#4A3F4F') + bone([4, -4], [46, -12]) + bone([5, -1], [33, 4]) + bone([5, 1], [19, 9]);
+    }
+    s += wing(false) + wing(true);
+    s += pencil(R, [[57, 30], [54, 15], [65, 26]], 1.8, INK, 1, true, '#4A3F4F') + pencil(R, [[83, 30], [86, 15], [75, 26]], 1.8, INK, 1, true, '#4A3F4F');
+    s += pencil(R, ell(70, 44, 24, 20, 18), 2.6, INK, 1, true, '#F4A262');
+    s += '<ellipse cx="70" cy="44" rx="18" ry="14.5" fill="none" stroke="#FFE3A1" stroke-width="1.5" stroke-dasharray="3.5 3.5"/>';
+    s += '<circle cx="63" cy="41" r="3.3" fill="#5B3D32"/><circle cx="77" cy="41" r="3.3" fill="#5B3D32"/><circle cx="64.2" cy="39.8" r="1.1" fill="#fff"/><circle cx="78.2" cy="39.8" r="1.1" fill="#fff"/>';
+    s += '<path d="M64 49q6 5 12 0" fill="none" stroke="#5B3D32" stroke-width="2" stroke-linecap="round"/><ellipse cx="57" cy="48" rx="3.6" ry="2.2" fill="#F28FA5" opacity=".6"/><ellipse cx="83" cy="48" rx="3.6" ry="2.2" fill="#F28FA5" opacity=".6"/>';
+    return '<svg viewBox="0 0 140 84">' + s + '</svg>';
+  }
+  /* the round jack-o-lantern treat bucket (matches PawArt.item): lavender handle, happy face, treats peeking out. No shadow: the game draws a flat one */
+  function v26Bucket() {
+    var R = rng(2630), s = '', hd = [[20, 54], [16, 30], [34, 10], [65, 5], [96, 10], [114, 30], [110, 54]];
+    s += pencil(R, hd, 6.4, INK, 1) + pencil(R, hd, 3.2, '#C9B8E6', 1);
+    s += pencil(R, v26Lumpy(65, 80, 52, 43, 0.035, 30), 2.8, INK, 1, true, '#F29150');
+    s += pencil(R, [[46, 42], [36, 80], [46, 120]], 1.5, '#C96E2A', 0.55) + pencil(R, [[84, 42], [94, 80], [84, 120]], 1.5, '#C96E2A', 0.55);
+    s += pencil(R, ell(65, 44, 36, 10, 20), 2.4, INK, 1, true, '#E7AD74') + pencil(R, ell(65, 45, 28, 6.5, 18), 1.6, INK, 1, true, '#5E463D');
+    s += pencil(R, ell(56, 41, 6, 4.5, 10), 1.4, INK, 1, true, '#A8682F') + pencil(R, ell(73, 40, 6, 4.5, 10), 1.4, INK, 1, true, '#A8682F') + '<circle cx="54.5" cy="39.5" r="1.4" fill="#E7AD74"/><circle cx="71.5" cy="38.5" r="1.4" fill="#E7AD74"/>';
+    s += pencil(R, [[41, 77], [48, 66], [55, 77]], 1.8, INK, 1, true, '#5E463D') + pencil(R, [[75, 77], [82, 66], [89, 77]], 1.8, INK, 1, true, '#5E463D');
+    s += pencil(R, [[38, 86], [52, 89], [65, 90], [78, 89], [92, 86], [88, 98], [78, 107], [65, 110], [52, 107], [42, 98]], 2.2, INK, 1, true, '#7A4A33');
+    s += pencil(R, [[48, 100], [65, 104], [82, 100]], 1.6, '#A8682F', 0.6);
+    s += '<ellipse cx="30" cy="68" rx="6" ry="13" transform="rotate(18 30 68)" fill="#fff" opacity=".35"/>';
+    return '<svg viewBox="0 0 130 130">' + s + '</svg>';
+  }
+  /* four little lidded pots, each with a sticker: pumpkin, ghost, moon, bat */
+  var POTC = [['#FFF4DF', '#F3E3CC'], ['#E0D5F0', '#C9B8E6'], ['#C8E9CF', '#A9D6A0'], ['#FCD8BC', '#F4B996']];
+  function v26Pot(i) {
+    var R = rng(2640 + i), c = POTC[i % 4], s = '<ellipse cx="40" cy="70" rx="30" ry="4" fill="#5B3D32" opacity=".12"/>';
+    s += pencil(R, [[12, 26], [68, 26], [72, 44], [66, 62], [56, 70], [24, 70], [14, 62], [8, 44]], 2.4, INK, 1, true, c[0]);
+    s += pencil(R, [[10, 35], [70, 35]], 1.6, INK, 0.45);
+    s += pencil(R, ell(40, 26, 30, 7, 18), 2.2, INK, 1, true, '#5E463D');
+    if (i % 4 === 0) s += pencil(R, ell(40, 52, 9, 8, 12), 1.6, INK, 1, true, '#F4A262') + '<path d="M40 44v-4" stroke="#6E8F5A" stroke-width="2.4" stroke-linecap="round"/>';
+    else if (i % 4 === 1) s += pencil(R, [[33, 62], [33, 49], [36, 43], [44, 43], [47, 49], [47, 62], [43.5, 59], [40, 63], [36.5, 59]], 1.6, INK, 1, true, '#FFFBF3') + '<circle cx="37.6" cy="50" r="1.4" fill="#5B3D32"/><circle cx="42.4" cy="50" r="1.4" fill="#5B3D32"/>';
+    else if (i % 4 === 2) s += '<path d="M44 43a10 10 0 1 0 2 18a8 8 0 1 1-2-18z" fill="#FFE07A" stroke="#5B3D32" stroke-width="1.6"/>';
+    else s += pencil(R, [[28, 52], [34, 46], [37, 50], [40, 47], [43, 50], [46, 46], [52, 52], [46, 54], [40, 58], [34, 54]], 1.4, INK, 1, true, '#4A3F4F');
+    return '<svg viewBox="0 0 80 76">' + s + '</svg>';
+  }
+  function v26Lid(i) {
+    var R = rng(2650 + i), c = POTC[i % 4];
+    return '<svg viewBox="0 0 80 34">' + pencil(R, ell(40, 24, 32, 8, 18), 2.4, INK, 1, true, c[1]) + pencil(R, [[14, 22], [24, 17], [40, 15], [56, 17], [66, 22]], 1.6, INK, 0.45) + pencil(R, ell(40, 13, 7, 6, 10), 2, INK, 1, true, '#FFE07A') + '</svg>';
+  }
+  function v26Treat() { var R = rng(2660); return '<svg viewBox="0 0 50 30">' + pencil(R, [[12, 10], [7, 5], [3, 10], [7, 15], [3, 20], [7, 25], [12, 20], [38, 20], [43, 25], [47, 20], [43, 15], [47, 10], [43, 5], [38, 10]], 2, INK, 1, true, '#E8B36A') + '<circle cx="20" cy="15" r="1.4" fill="#C98B4E"/><circle cx="30" cy="14" r="1.4" fill="#C98B4E"/></svg>'; }
+  /* fallback item icons (until PawArt.item draws them): the in-game art, framed for the 64 px icon */
+  function v26Icon(name) {
+    if (name === 'Squeaky Pumpkin') return '<svg viewBox="-4 -2 128 116">' + v26PumpkinIn() + '</svg>';
+    if (name === 'Plush Ghost') return '<svg viewBox="-24 2 148 118"><g transform="translate(22 66) rotate(150) scale(1 -1)">' + v26ArmIn() + '</g><g transform="translate(78 66) rotate(30)">' + v26ArmIn() + '</g>' + v26GhostIn() + '</svg>';
+    if (name === 'Bat-Wing Flyer') return v26Flyer(1).replace('viewBox="0 0 140 84"', 'viewBox="0 -18 140 112"');
+    return v26Bucket();
+  }
+
+  /* ---------- Squeaky Pumpkin ---------- */
+  IMPL['Squeaky Pumpkin'] = function (A) {
+    var dog = A.dog, DN = A.DN, CP = A.compact, still = v26Still(), LO = CP ? 300 : 240, HI = CP ? 880 : 1000;
+    var pk = { x: CP ? 430 : 420, h: 0, vh: 0, vx: 0, air: false, slide: 0, sq: 0, wob: 0, hopT: 1.4 };
+    var spr = A.sprite(v26Pumpkin(), 136, 125, A.L.actors, 0.5, 104 / 110);
+    var state = 'ready', stT = 0, pounces = 0, squeaks = 0, big = 0, hops = 0, escaped = false, tip = A.tip('click the pumpkin!', pk.x - 90, GY - 200);
+    dog.x = CP ? 740 : 840; dog.face('left'); dog.setPose('sit');
+    A.say(pick(['a pumpkin that SQUEAKS?', 'it is smiling at me. I like it.']), 1800);
+    function pkY() { return GY + 4 - pk.h; }
+    function onPk(x, y) { return dist(x, y, pk.x, pkY() - 52) < A.hitR(84); }
+    function hop(tx, k) {
+      tx = clamp(tx, LO, HI); hops++;
+      if (still) { pk.vx = (tx - pk.x) / 0.45; pk.slide = 0.45; return; }
+      pk.air = true; pk.vh = 430 * (k || 1); pk.vx = (tx - pk.x) / (2 * pk.vh / 2000);
+      A.burst('dust', pk.x, GY, 3, { g: -20, sp: 60, life: 0.5, size: 4 });
+    }
+    function away(d) { var s = pk.x < dog.x ? -1 : 1; if ((s < 0 && pk.x - d < LO + 40) || (s > 0 && pk.x + d > HI - 40)) s = -s; return pk.x + s * d; }
+    return {
+      poses: ['sit', 'idle', 'walk', 'happy', 'bow', 'jump', 'sniff'],
+      dur: 45,
+      hint: 'Click the pumpkin and ' + DN + ' pounces on it. Every pounce gets a squeak!',
+      down: function (x, y) {
+        if (onPk(x, y)) {
+          if (tip) { tip.hide(); tip = null; }
+          if (state === 'ready' || (state === 'proud' && escaped && stT > 0.8)) { state = 'stalk'; stT = 0; dog.tilt = 0; A.sfx('click'); if (Math.random() < 0.5) A.say(pick(['ooh. OOH.', 'wiggle wiggle...', 'I see you, pumpkin']), 900); }
+          return;
+        }
+        if (!dogTap(A, x, y, ['the pumpkin! over there!', 'hi! pounce time?'])) kindSniff(A, x, y, ['no pumpkin there. sniff.', 'just grass. the pumpkin is hiding.']);
+      },
+      move: function (x, y) { A.cursor(onPk(x, y) ? 'pointer' : 'default'); },
+      update: function (dt, T) {
+        stT += dt;
+        if (pk.air) { pk.h += pk.vh * dt; pk.vh -= 2000 * dt; pk.x += pk.vx * dt; if (pk.h <= 0) { pk.h = 0; pk.air = false; pk.vx = 0; pk.sq = Math.max(pk.sq, 0.45); A.sfx('land'); } }
+        if (pk.slide > 0) { pk.slide -= dt; pk.x = clamp(pk.x + pk.vx * dt, LO, HI); if (pk.slide <= 0) pk.vx = 0; }
+        pk.sq = Math.max(0, pk.sq - dt * 2.6); pk.wob = Math.max(0, pk.wob - dt * 1.3);
+        var side = dog.x >= pk.x ? 1 : -1, calm = state === 'ready' || state === 'proud';
+        if (calm && !still && !pk.air) {
+          pk.hopT -= dt;
+          if (pk.hopT <= 0) { pk.hopT = 1.3 + Math.random() * 1.3; var tx = pk.x + (Math.random() < 0.5 ? -1 : 1) * (60 + Math.random() * 90); if (Math.abs(tx - dog.x) < 190) tx = away(110); hop(tx); }
+        }
+        if (state === 'ready') {
+          if (!dog.air) { dog.setPose('sit'); dog.face(side > 0 ? 'left' : 'right'); dog.tilt = still ? 0 : Math.sin(T * 2.2) * 5; }
+          if (Math.abs(dog.x - pk.x) < 150 && !pk.air && pk.slide <= 0) hop(away(200), 1.1);
+        } else if (state === 'stalk') {
+          dog.tilt = 0;
+          var far = Math.abs(dog.x - pk.x), reach = CP ? 290 : 330;
+          if (far > reach) dog.runTo(pk.x + side * (reach - 20), 260 * A.tr.run, dt);
+          else { dog.face(side > 0 ? 'left' : 'right'); state = 'wind'; stT = 0; }
+        } else if (state === 'wind') {
+          dog.setPose('bow'); dog.face(side > 0 ? 'left' : 'right'); dog.tilt = still ? 0 : Math.sin(T * 26) * 4;
+          if (stT > 0.45 && !pk.air && pk.slide <= 0) {
+            dog.tilt = 0; var land = pk.x + side * (dog.mouthOff('idle') + 12), vy = -640, ft = 2 * 640 / G;
+            dog.jump(vy, clamp((land - dog.x) / ft, -760, 760)); state = 'pounce'; stT = 0;
+          }
+        } else if (state === 'pounce') {
+          if (!dog.air && stT > 0.1) {
+            pounces++; squeaks++; state = 'proud'; stT = 0; escaped = false; dog.squash(0.8);
+            pk.sq = 1; pk.wob = 1; A.sfx('squeak');
+            A.burst('note', pk.x + 20, pkY() - 90, 2, { a0: -Math.PI * 0.8, spread: 0.6, g: -30, sp: 90, life: 0.9, size: 8 });
+            if (pounces % 4 === 0) { big++; A.float('SUPER SQUEAK!', pk.x, pkY() - 160, 'pt-gold'); v26Pay(A, { happiness: 1, coins: big <= 2 ? 1 : 0 }); A.burst('heart', dog.head().x, dog.head().y, 6, { g: -50, sp: 110, life: 1.3, size: 9 }); }
+            else { A.float(pick(['squeak!', 'SQUEAK!', 'squeeeak!']), pk.x, pkY() - 150, 'pt-small'); if (pounces <= 6 || pounces % 3 === 0) v26Pay(A, { happiness: 1 }); }
+            if (Math.random() < 0.6) A.say(pick(A.line('hogAnswer', ['got it! it squeaked!', 'squeak? SQUEAK!', 'pumpkin caught. pumpkin released.'])), 1100);
+          }
+        } else if (state === 'proud') {
+          if (!dog.air) { dog.setPose('happy'); if (!still) wiggle(dog, T, 3); }
+          if (stT > 0.55 && !escaped) { escaped = true; hop(away(170 + Math.random() * 90), 1.3); }
+          if (stT > 1.3) { dog.tilt = 0; state = 'ready'; stT = 0; }
+        }
+        var rot = still ? 0 : (pk.air ? pk.vx * 0.012 : 0) + Math.sin(T * 26) * pk.wob * 13;
+        spr.set(pk.x, pkY(), rot, still ? 1 : 1 + pk.sq * 0.18, still ? 1 : 1 - pk.sq * 0.26);
+      },
+      drawFx: function (g) { if (pk.air) A.shadow(g, pk.x, GY + 8, pk.h, 46); },
+      focus: function () { return (pk.x + dog.x) / 2; },
+      finish: function () { return { happiness: 2, energy: -1 }; },
+      dbg: function () { return { state: state, pounces: pounces, squeaks: squeaks, big: big, hops: hops, still: still, pk: { x: pk.x, y: pkY() - 52, air: pk.air } }; }
+    };
+  };
+  IMPL['Squeaky Pumpkin'].cfg = { scene: 'yard' };
+  IMPL['Squeaky Pumpkin'].phone = { vw: 720, vwMin: 700 };
+
+  /* ---------- Plush Ghost ---------- */
+  IMPL['Plush Ghost'] = function (A) {
+    var dog = A.dog, DN = A.DN, CP = A.compact, still = v26Still(), HOME = CP ? 620 : 720, LO = CP ? 290 : 190, HI = CP ? 900 : 1070, GS = 0.86, TOP = 51 * GS, LIE = GY - 24;
+    var aL = A.sprite(v26GhostArm(), 44 * GS, 26 * GS, A.L.actors, 4 / 44, 0.5), aR = A.sprite(v26GhostArm(), 44 * GS, 26 * GS, A.L.actors, 4 / 44, 0.5);
+    var body = A.sprite(v26Ghost(), 100 * GS, 120 * GS, A.L.actors, 0.5, 0.55);
+    var gh = { x: CP ? 430 : 450, y: LIE, rot: -78, prev: -78, py: LIE, vy: 0, aL: 38, aR: 38, vL: 0, vR: 0, carried: false, fly: null, sq: 0 };
+    var state = 'trot', stT = 0, tosses = 0, returns = 0, shakes = 0, tip = null, tipped = false;
+    dog.x = HOME; dog.face('left'); dog.setPose('idle');
+    A.say(pick(['a ghost! a SOFT ghost!', 'boo? BOO! (friendly)']), 1700);
+    function hang(dt) {
+      var tgt = state === 'shake' ? dog.dir() * 10 + (still ? 0 : Math.sin(stT * 17) * 34) : dog.dir() * 12 + (still ? 0 : Math.sin(stT * 2.4) * 4);
+      gh.rot += (tgt - gh.rot) * Math.min(1, dt * (state === 'shake' ? 30 : 10));
+      var m = dog.mouth(), r = gh.rot * Math.PI / 180;
+      gh.x = m.x - TOP * Math.sin(r); gh.y = Math.min(m.y + 4 + TOP * Math.cos(r), GY + 2 - 54 * GS);
+    }
+    function onDog(x, y) { var h = dog.head(); return Math.abs(x - dog.x) < A.hitR(110) && y > h.y - 60 && y < dog.y + 20; }
+    function toss(x) {
+      var tx = clamp(x, LO, HI);
+      if (Math.abs(tx - dog.x) < 170) { tx = dog.x + (tx >= dog.x ? 1 : -1) * 220; if (tx > HI || tx < LO) tx = dog.x - (tx - dog.x); tx = clamp(tx, LO, HI); }
+      dog.face(tx > dog.x ? 'right' : 'left'); state = 'toss'; stT = 0; gh.fly = { x1: tx };
+    }
+    function flop(dt) {
+      if (still) { gh.aL = gh.aR = 38; return; }
+      var dr = clamp((gh.rot - gh.prev) / Math.max(dt, 0.001), -900, 900), lift = clamp(gh.vy * 0.07, -45, 70); gh.prev = gh.rot;
+      var tR = 38 - lift - dr * 0.06, tL = 38 - lift + dr * 0.06;
+      gh.vR += ((tR - gh.aR) * 70 - gh.vR * 5) * dt; gh.vL += ((tL - gh.aL) * 70 - gh.vL * 5) * dt;
+      gh.aR = clamp(gh.aR + gh.vR * dt, -70, 115); gh.aL = clamp(gh.aL + gh.vL * dt, -70, 115);
+    }
+    return {
+      poses: ['idle', 'walk', 'eat', 'happy', 'sit', 'jump'],
+      dur: 45,
+      hint: DN + ' shakes the ghost. Click the lawn to toss it, and ' + DN + ' brings it back.',
+      down: function (x, y) {
+        if (state === 'hold' && !onDog(x, y)) { if (tip) { tip.hide(); tip = null; } toss(x); return; }
+        if (dogTap(A, x, y, ['grrr! (a happy grrr)', 'this ghost is MINE. hi!'])) return;
+        kindSniff(A, x, y, ['wait, I am getting it!', 'one ghost at a time', 'sniff... ghost smell. over there.']);
+      },
+      move: function (x, y) { A.cursor(state === 'hold' && !onDog(x, y) && y > 300 ? 'pointer' : 'default'); },
+      update: function (dt, T) {
+        stT += dt; gh.sq = Math.max(0, gh.sq - dt * 3);
+        if (state === 'trot') {
+          var side = dog.x >= gh.x ? 1 : -1;
+          if (gh.fly && gh.fly.t != null) { dog.runTo(gh.fly.x1 + side * dog.mouthOff('eat'), 300 * A.tr.run, dt); }
+          else if (dog.runTo(gh.x + side * dog.mouthOff('eat'), 330 * A.tr.run, dt)) { dog.face(side > 0 ? 'left' : 'right'); state = 'pick'; stT = 0; A.sfx('pop'); }
+        } else if (state === 'pick') {
+          dog.setPose('eat');
+          if (stT > 0.28) { gh.carried = true; state = 'bring'; stT = 0; dog.setPose('idle'); }
+        } else if (state === 'bring') {
+          if (dog.runTo(HOME, 300 * A.tr.run * A.tr.carry, dt)) { if (tosses) returns++; dog.face('left'); dog.setPose('idle'); state = 'shake'; stT = 0; A.sfx('shake'); A.say(pick(['shake shake SHAKE!', 'grrr! (soft grrr)', 'take THAT, ghost. (gently)']), 1100); }
+        } else if (state === 'shake') {
+          dog.setPose('idle'); dog.tilt = still ? 0 : Math.sin(stT * 17) * 7;
+          if (stT > 1.3) {
+            dog.tilt = 0; shakes++;
+            if (returns) {
+              A.float(pick(['good fetch!', 'ghost returned!', 'boo-tiful!']), dog.x, dog.y - 230, returns % 3 === 0 ? 'pt-gold' : '');
+              v26Pay(A, { happiness: returns % 2 ? 1 : 2, bond: returns === 2 ? 1 : 0, coins: returns % 3 === 0 ? 1 : 0, energy: returns % 2 ? -1 : 0 });
+            } else v26Pay(A, { happiness: 1 });
+            state = 'hold'; stT = 0;
+            if (!tipped) { tipped = true; tip = A.tip('click to toss!', CP ? 330 : 300, GY - 120); }
+          }
+        } else if (state === 'hold') {
+          dog.setPose('idle'); dog.tilt = still ? 0 : Math.sin(T * 9) * 1.2;
+          if (stT > 7) { stT = 0; A.say(pick(['toss it! toss the ghost!', 'I am holding it. for you.', 'click somewhere! I will fetch!']), 1400); }
+        } else if (state === 'toss') {
+          dog.setPose('idle'); dog.tilt = dog.dir() * -9 * Math.min(1, stT / 0.18);
+          if (stT > 0.22) {
+            dog.tilt = 0; gh.carried = false; tosses++;
+            var f = gh.fly; f.x0 = gh.x; f.y0 = gh.y; f.t = 0; f.dur = 0.75 + Math.abs(f.x1 - gh.x) / 900; f.H = 130 + Math.random() * 40; f.r0 = gh.rot; f.r1 = (f.x1 > gh.x ? 78 : -78); f.ph = Math.random() * 6;
+            A.sfx('whoosh'); if (Math.random() < 0.5) A.say(pick(['wheee! fly, ghost!', 'boo! (it flew)', 'I will get it!']), 900);
+            state = 'trot'; stT = 0;
+          }
+        }
+        if (gh.fly && gh.fly.t != null) {
+          var fl = gh.fly; fl.t += dt; var u = clamp(fl.t / fl.dur, 0, 1);
+          gh.x = lerp(fl.x0, fl.x1, u); gh.y = lerp(fl.y0, LIE, u) - fl.H * 4 * u * (1 - u) + (still ? 0 : Math.sin(fl.t * 8 + fl.ph) * 7 * (1 - u));
+          gh.rot = lerp(fl.r0, fl.r1, u) + (still ? 0 : Math.sin(fl.t * 6) * 10 * (1 - u));
+          if (u >= 1) { gh.x = fl.x1; gh.y = LIE; gh.rot = fl.r1; gh.fly = null; gh.sq = 1; A.sfx('land'); A.burst('dust', gh.x, GY, 3, { g: -20, sp: 60, life: 0.5, size: 4 }); }
+        } else if (gh.carried) hang(dt);
+        gh.vy = (gh.y - gh.py) / Math.max(dt, 0.001); gh.py = gh.y; flop(dt);
+        var r = gh.rot * Math.PI / 180, c = Math.cos(r), sn = Math.sin(r), sl = !gh.carried && !gh.fly ? 1 + gh.sq * 0.12 : 1;
+        body.set(gh.x, gh.y, gh.rot, sl, 2 - sl);
+        aR.set(gh.x + (30 * c - 4 * sn) * GS, gh.y + (30 * sn + 4 * c) * GS, gh.rot + gh.aR);
+        aL.set(gh.x + (-30 * c - 4 * sn) * GS, gh.y + (-30 * sn + 4 * c) * GS, gh.rot - gh.aL, -1, 1);
+      },
+      drawFx: function (g) { if (gh.fly && gh.fly.t != null) A.shadow(g, gh.x, GY + 6, LIE - gh.y, 30); },
+      focus: function () { return (gh.x + dog.x) / 2; },
+      finish: function () { return { happiness: 2, energy: -1 }; },
+      dbg: function () { return { state: state, tosses: tosses, returns: returns, shakes: shakes, still: still, flying: !!(gh.fly && gh.fly.t != null), carried: gh.carried, ghost: { x: gh.x, y: gh.y, arms: [gh.aL, gh.aR] }, home: HOME }; }
+    };
+  };
+  IMPL['Plush Ghost'].cfg = { scene: 'yard' };
+  IMPL['Plush Ghost'].phone = { vw: 720, vwMin: 700 };
+
+  /* ---------- Bat-Wing Flyer ---------- */
+  IMPL['Bat-Wing Flyer'] = function (A) {
+    var dog = A.dog, DN = A.DN, CP = A.compact, still = v26Still(), HX = CP ? 300 : 200, HY = GY - 150, WAIT = CP ? 560 : 650, FS = 1.02;
+    var frames = still ? [A.sprite(v26Flyer(2), 140 * FS, 84 * FS)] : [A.sprite(v26Flyer(1), 140 * FS, 84 * FS), A.sprite(v26Flyer(0), 140 * FS, 84 * FS)];
+    var fl = { x: HX + 12, y: HY - 26, st: 'hand', t: 0, dur: 2.4, x0: 0, y0: 0, x1: 0, H: 250, rot: 0, ph: 0 };
+    var state = 'wait', stT = 0, throws = 0, catches = 0, sky = 0, ground = 0, early = 0, leapU = 0, snapped = false, lastFi = -1, tip = A.tip('click to throw!', HX - 50, HY - 130);
+    dog.x = WAIT; dog.face('left'); dog.setPose('sit');
+    A.say(pick(['bat wings?! it can FLY?', 'throw it! I will jump SO high']), 1800);
+    function flyAt(u) { u = clamp(u, 0, 1); return { x: lerp(fl.x0, fl.x1, u), y: lerp(fl.y0, GY - 18, u) - fl.H * 4 * u * (1 - u) + (still ? 0 : Math.sin(u * 13 + fl.ph) * 9 * (1 - u)) }; }
+    function U() { return fl.t / fl.dur; }
+    function inWindow() { return fl.st === 'fly' && U() >= 0.46 && U() <= 0.97; }
+    function launch() {
+      if (tip) { tip.hide(); tip = null; }
+      fl.x0 = fl.x; fl.y0 = fl.y; fl.x1 = CP ? 610 + Math.random() * 240 : 730 + Math.random() * 320; fl.dur = 2.3 + Math.random() * 0.4; fl.H = 175 + Math.random() * 50; fl.t = 0; fl.ph = Math.random() * 6; fl.st = 'fly';
+      throws++; A.sfx('whoosh'); state = 'run'; stT = 0; snapped = false; dog.tilt = 0;
+      A.hint('Click again while the flyer glows and ' + DN + ' leaps for it!');
+    }
+    function leap() {
+      var u = U(), tUp = 0.4, p = flyAt(u), rise = 40, vy = -400;
+      for (var k = 0; k < 2; k++) { p = flyAt(u + tUp / fl.dur); rise = clamp((dog.y - 108 * DS) - p.y + 8, 40, A.key === 'chihuahua' ? 260 : 430); vy = -Math.sqrt(2 * G * rise); tUp = -vy / G; }
+      dog.face(p.x < dog.x ? 'left' : 'right');
+      dog.jump(vy, clamp((p.x - dog.x - dog.dir() * dog.mouthOff('jump')) / Math.max(0.2, tUp), -640, 640));
+      state = 'leap'; stT = 0; leapU = u; snapped = false;
+    }
+    function caught(air) {
+      fl.st = 'carried'; state = 'return'; stT = 0; A.sfx('pop');
+      if (air) {
+        catches++; var h = GY - fl.y;
+        if (h > 230) { sky++; A.float('SKY LEAP!', fl.x, fl.y - 50, 'pt-gold'); v26Pay(A, { happiness: catches <= 6 ? 2 : catches % 2, coins: sky <= 2 ? 1 : 0, energy: -1 }); A.say(pick(['I touched the moon!', 'did you SEE that?']), 1500); }
+        else { A.float(pick(['great leap!', 'caught it!', 'bat catch!']), fl.x, fl.y - 50); v26Pay(A, { happiness: catches <= 6 ? 2 : catches % 2, energy: -1 }); A.say(pick(['flap flap GOT IT', 'air dog!', 'the bat is mine']), 1400); }
+        A.burst('heart', dog.head().x, dog.head().y, 4, { g: -50, sp: 100, life: 1.2, size: 8 });
+      } else { ground++; v26Pay(A, { happiness: 1 }); A.say(pick(['got it on the ground. still counts.', 'it landed. I forgive it.']), 1400); }
+    }
+    return {
+      poses: ['sit', 'idle', 'walk', 'jump', 'happy', 'eat'],
+      dur: 45,
+      hint: 'Click to throw the flyer. Click again while it glows and ' + DN + ' leaps for it!',
+      down: function (x, y) {
+        if (fl.st === 'hand') { if (!dogTap(A, x, y, ['throw it! throw it!'])) launch(); return; }
+        if (inWindow() && !dog.air && state === 'run') { leap(); return; }
+        if (fl.st === 'fly' && U() < 0.46) { early++; A.float('not yet...', dog.x, dog.y - 240, 'pt-blue pt-small'); A.sfx('sniff'); if (Math.random() < 0.5) A.say(pick(['sniff sniff... wait for it', 'not yet! it is still going up']), 900); return; }
+        if (!dogTap(A, x, y, ['flyer first, pats later!', 'hi! did you see me jump?'])) kindSniff(A, x, y, ['the flyer is over there!', 'sniff... bat smell. over there.']);
+      },
+      move: function (x, y) { A.cursor(fl.st === 'hand' || inWindow() ? 'pointer' : 'default'); },
+      update: function (dt, T) {
+        stT += dt;
+        if (fl.st === 'fly') {
+          fl.t += dt; var p = flyAt(U()); fl.x = p.x; fl.y = p.y; fl.rot = still ? 0 : Math.sin(fl.t * 5) * 8;
+          if (U() >= 1) { fl.st = 'ground'; fl.y = GY - 18; fl.rot = 0; A.sfx('land'); A.burst('dust', fl.x, GY, 3, { g: -20, sp: 60, life: 0.5, size: 4 }); if (state === 'run') { state = 'fetch'; stT = 0; } }
+        }
+        if (state === 'wait') {
+          if (!dog.air) { dog.setPose('sit'); dog.face('left'); dog.tilt = still ? 0 : Math.sin(T * 2) * 3; }
+        } else if (state === 'run') {
+          if (fl.st !== 'fly') { state = 'fetch'; stT = 0; }
+          else {
+            var tx = clamp(flyAt(0.74).x + dog.mouthOff('jump'), 160, W - 140), sp = Math.max(300, Math.abs(tx - dog.x) / Math.max(0.3, fl.dur * 0.44 - fl.t)) * A.tr.run;
+            if (dog.runTo(tx, sp, dt)) { dog.face(fl.x < dog.x ? 'left' : 'right'); dog.setPose(inWindow() ? 'idle' : 'sit'); }
+          }
+        } else if (state === 'leap') {
+          if (dog.air && fl.st === 'fly') {
+            var m = dog.mouth(), d = dist(m.x, m.y, fl.x, fl.y);
+            if (d < 72) caught(true);
+            else if (dog.vy >= 0 && !snapped) { snapped = true; if (d < 200) caught(true); }
+          } else if (!dog.air) { state = fl.st === 'fly' ? 'run' : 'fetch'; stT = 0; }
+        } else if (state === 'fetch') {
+          var s2 = dog.x >= fl.x ? 1 : -1;
+          if (dog.runTo(fl.x + s2 * dog.mouthOff('eat'), 340 * A.tr.run, dt)) { dog.face(s2 > 0 ? 'left' : 'right'); state = 'pick'; stT = 0; }
+        } else if (state === 'pick') {
+          dog.setPose('eat'); if (stT > 0.28) { caught(false); dog.setPose('idle'); }
+        } else if (state === 'return') {
+          if (!dog.air) { var gx = HX + 44 + dog.mouthOff('walk'); if (dog.runTo(gx, 330 * A.tr.run * A.tr.carry, dt)) { dog.face('left'); state = 'give'; stT = 0; } }
+        } else if (state === 'give') {
+          dog.setPose('sit');
+          if (stT > 0.4) { fl.st = 'hand'; fl.x = HX + 12; fl.y = HY - 26; fl.rot = 0; A.sfx('pop'); state = 'back'; stT = 0; if (throws === 1) A.hint('Click to throw the flyer. Click again while it glows and ' + DN + ' leaps for it!'); }
+        } else if (state === 'back') {
+          dog.setPose('happy'); if (stT > 0.6 && dog.runTo(WAIT, 260, dt)) { dog.face('left'); state = 'wait'; stT = 0; }
+        }
+        if (fl.st === 'carried') { var mm = dog.mouth(); fl.x = mm.x + dog.dir() * 8; fl.y = mm.y + 4; fl.rot = -dog.dir() * 10; }
+        var fi = frames.length > 1 ? (fl.st === 'fly' ? Math.floor(T * 9) % 2 : fl.st === 'ground' ? 1 : 0) : 0;
+        if (fi !== lastFi) { for (var i = 0; i < frames.length; i++) frames[i].show(i === fi); lastFi = fi; }
+        frames[fi].set(fl.x, fl.y, fl.rot);
+      },
+      drawFx: function (g, T) {
+        g.save(); g.fillStyle = '#F9D0D9'; g.strokeStyle = INK; g.lineWidth = 2.4; g.lineJoin = 'round'; g.beginPath(); g.moveTo(HX - 66, HY - 20); g.lineTo(HX - 460, HY - 30); g.lineTo(HX - 460, HY + 26); g.lineTo(HX - 66, HY + 24); g.fill(); g.stroke();
+        g.strokeStyle = 'rgba(91,61,50,.3)'; g.lineWidth = 1.4; for (var k = 1; k < 5; k++) { g.beginPath(); g.moveTo(HX - 66 - k * 70, HY - 20 - k * 2); g.lineTo(HX - 66 - k * 70 - 8, HY + 24); g.stroke(); } g.restore();
+        drawHand(g, HX - 6, HY, 1);
+        if (fl.st === 'fly') A.shadow(g, fl.x, GY + 6, GY - fl.y, 32);
+        if (inWindow() && state === 'run') {
+          var pr = still ? 0 : Math.sin(T * 8) * 4;
+          g.save(); g.strokeStyle = 'rgba(242,199,68,.9)'; g.lineWidth = 4; g.setLineDash([9, 7]); g.beginPath(); g.arc(fl.x, fl.y, 62 + pr, 0, Math.PI * 2); g.stroke(); g.setLineDash([]);
+          g.fillStyle = INK; g.font = '700 28px Caveat, cursive'; g.textAlign = 'center'; g.fillText(A.isTouch() ? 'tap now!' : 'click now!', fl.x, fl.y < 230 ? fl.y + 98 : fl.y - 76); g.restore();
+        }
+      },
+      focus: function () { return (Math.min(fl.x, dog.x - 100) + Math.max(fl.x, dog.x + 100)) / 2; },
+      finish: function () { return { happiness: 2, energy: -3 }; },
+      dbg: function () { return { state: state, still: still, fl: { st: fl.st, x: fl.x, y: fl.y, u: fl.st === 'fly' ? U() : null }, window: inWindow(), throws: throws, catches: catches, sky: sky, ground: ground, early: early }; }
+    };
+  };
+  IMPL['Bat-Wing Flyer'].cfg = { scene: 'yard' };
+  IMPL['Bat-Wing Flyer'].phone = { vw: 720, vwMin: 700 };
+
+  /* ---------- Trick-or-Treat Bucket ---------- */
+  IMPL['Trick-or-Treat Bucket'] = function (A) {
+    var dog = A.dog, DN = A.DN, CP = A.compact, still = v26Still(), BS = CP ? 0.9 : 1.15, BX = CP ? 300 : 240, PK = CP ? 1 : 1.3, SP = CP ? 104 : 160, P0 = CP ? 452 : 470, PY = GY + 16, HOME = CP ? 800 : 1080;
+    var AX = BX + 47 * BS, AY = GY + 8;
+    var bshadow = A.sprite('<svg viewBox="0 0 120 14"><ellipse cx="60" cy="7" rx="58" ry="6" fill="#5B3D32" opacity=".13"/></svg>', 120 * BS, 14 * BS, A.L.scene, 0.5, 0.5);
+    var bucket = A.sprite(v26Bucket(), 130 * BS, 130 * BS, A.L.front, 112 / 130, 124 / 130);
+    var pots = [];
+    for (var i = 0; i < 4; i++) {
+      var hx = P0 + i * SP;
+      pots.push({ i: i, hx: hx, x: hx, y: PY, open: 0, want: 0, wig: 0, close: 0, fly: null, inB: true, spr: A.sprite(v26Pot(i), 80 * PK, 76 * PK, A.L.front, 0.5, 70 / 76), lid: A.sprite(v26Lid(i), 80 * PK, 34 * PK, A.L.front, 0.5, 24 / 34) });
+    }
+    var treatS = A.sprite(v26Treat(), 50 * PK, 30 * PK, A.L.front); treatS.show(false);
+    var rimDy = 44 * PK;
+    var state = 'tip', stT = 0, round = 0, treat = 0, found = 0, peeks = 0, sniffs = 0, plan = [], tgt = null, puffT = 0, brot = 0, tip = null, ate = false, nosed = false;
+    dog.ground = PY - rimDy - dog.mouthDy('sniff') - 4; dog.y = dog.ground; dog.x = HOME; dog.face('left'); dog.setPose('sit');
+    A.say(pick(['treats! in a PUMPKIN!', 'trick or treat? treat. always treat.']), 1800);
+    function mouthOf() { var a = brot * Math.PI / 180, vx = -47 * BS, vy = -80 * BS; return { x: AX + vx * Math.cos(a) - vy * Math.sin(a), y: AY + vx * Math.sin(a) + vy * Math.cos(a) }; }
+    function newRound() {
+      round++; treat = Math.floor(Math.random() * 4); state = 'tip'; stT = 0; tgt = null; ate = false; A.sfx('whoosh');
+      pots.forEach(function (p) { p.inB = true; p.fly = null; p.open = p.want = 0; p.close = 0; });
+      A.hint('The bucket tips out four pots. Watch ' + DN + '’s nose, then click the pot it points at.');
+    }
+    function planSearch() {
+      plan = []; var wrong = A.tr.sniff ? (Math.random() < 0.3 ? 1 : 0) : A.tr.clever ? (Math.random() < 0.5 ? 1 : 0) : 1 + Math.floor(Math.random() * 2);
+      for (var k = 0; k < wrong; k++) { var e = pots[(treat + 1 + Math.floor(Math.random() * 3)) % 4]; if (plan[plan.length - 1] !== e) plan.push(e); }
+      plan.push(pots[treat]);
+    }
+    function nextSniff() { tgt = plan.shift() || pots[treat]; state = 'walk'; stT = 0; }
+    function spot(p) { var side = dog.x >= p.x ? 1 : -1; return { x: p.x + side * dog.mouthOff('sniff'), side: side }; }
+    function potAt(x, y) { var best = null, bd = 1e9; pots.forEach(function (p) { if (p.inB || p.fly) return; var d = dist(x, y, p.x, p.y - 34 * PK); if (d < A.hitR(58) && d < bd) { bd = d; best = p; } }); return best; }
+    function lift(p) {
+      if (p.want) return;
+      p.want = 1; A.sfx('click');
+      if (p.i === treat) {
+        found++; nosed = state === 'point'; state = 'found'; stT = 0; tgt = p; A.sfx('pop');
+        A.float(round >= 3 && found % 2 ? 'treat found! again!' : 'treat found!', p.x, p.y - 150, 'pt-gold'); A.burst('spark', p.x, p.y - rimDy - 20, 8, { g: 0, sp: 150, life: 0.7, size: 7 });
+        if (tip) { tip.hide(); tip = null; }
+      } else {
+        peeks++; p.close = 0.9; A.float(pick(['not this one', 'empty!', 'just a paper bat']), p.x, p.y - 140, 'pt-small');
+        A.say(pick(['sniff... not this one.', 'empty! sniff again.', 'just air in there. nice try.']), 1000);
+        if (state === 'point' || state === 'sniff') { state = 'walk'; stT = 0; plan.unshift(pots[treat]); tgt = p; }
+      }
+    }
+    newRound();
+    return {
+      poses: ['sit', 'idle', 'walk', 'sniff', 'happy', 'jump'],
+      dur: 50,
+      hint: '',
+      down: function (x, y) {
+        var p = potAt(x, y);
+        if (p && (state === 'walk' || state === 'sniff' || state === 'point')) { lift(p); return; }
+        if (!dogTap(A, x, y, ['sniffing! very busy!', 'pat accepted. back to sniffing.'])) kindSniff(A, x, y, ['the treat is in a pot!', 'sniff... not out here.']);
+      },
+      move: function (x, y) { A.cursor(potAt(x, y) && (state === 'walk' || state === 'sniff' || state === 'point') ? 'pointer' : 'default'); },
+      update: function (dt, T) {
+        stT += dt; puffT -= dt;
+        if (state === 'tip') {
+          brot = still ? 82 : 82 * clamp(stT / 0.45, 0, 1) * (1 + 0.08 * Math.sin(clamp(stT / 0.45, 0, 1) * Math.PI));
+          if (!dog.air) { dog.setPose('sit'); dog.face('left'); dog.tilt = 0; }
+          pots.forEach(function (p, k) {
+            var at = 0.4 + k * 0.14;
+            if (p.inB && stT > at) { p.inB = false; if (still) { p.x = p.hx; p.y = PY; } else { var mo = mouthOf(); p.fly = { x0: mo.x, y0: mo.y + 40, t: 0, d: 0.45 + k * 0.06 }; } }
+            if (p.fly) { p.fly.t += dt; var u = clamp(p.fly.t / p.fly.d, 0, 1); p.x = lerp(p.fly.x0, p.hx, u); p.y = lerp(p.fly.y0, PY, u) - 120 * 4 * u * (1 - u); if (u >= 1) { p.fly = null; p.y = PY; p.wig = 1; A.sfx('land'); A.burst('dust', p.x, GY + 10, 2, { g: -20, sp: 50, life: 0.4, size: 4 }); } }
+          });
+          if (stT > (still ? 1 : 1.5)) { planSearch(); nextSniff(); A.say(pick(['sniff mode: ON', 'one of these smells AMAZING', 'nose, do your thing']), 1200); if (round === 1) tip = A.tip('click the pot ' + DN + ' sniffs!', P0 - 30, PY + 14); }
+        } else {
+          brot = state === 'pack' ? (still ? 0 : 82 * (1 - clamp((stT - 0.6) / 0.4, 0, 1))) : 82;
+        }
+        if (state === 'walk') {
+          var sp = spot(tgt);
+          if (dog.runTo(sp.x, (A.tr.sniff ? 320 : 240) * A.tr.run, dt)) { dog.face(sp.side > 0 ? 'left' : 'right'); state = 'sniff'; stT = 0; sniffs++; A.sfx('sniff'); }
+        } else if (state === 'sniff' || state === 'point') {
+          dog.setPose('sniff'); dog.tilt = still ? 0 : dog.dir() * Math.sin(T * (state === 'point' ? 20 : 34)) * 1.6;
+          if (puffT <= 0) { puffT = 0.3; var m = dog.mouth(); A.burst('dust', m.x, m.y + 4, 1, { a0: -Math.PI * 0.9, spread: Math.PI * 0.8, g: -20, sp: 60, life: 0.45, size: 3.5 }); }
+          if (state === 'sniff' && stT > (A.tr.sniff ? 0.55 : 0.85)) {
+            if (tgt.i === treat) { state = 'point'; stT = 0; A.say(pick(['THIS one. this one!', 'sniff sniff... HERE!', 'my nose says this pot']), 1300); A.hint(DN + ' points at a pot. Click it to lift the lid.'); }
+            else { tgt.wig = 1; if (Math.random() < 0.5) A.say(pick(['hmm. not this one.', 'smells like a pot.', 'nope, next!']), 900); nextSniff(); }
+          }
+          if (state === 'point' && stT > 6) { stT = 0; A.say(pick(['this one! the one by my nose!', 'lift the lid! please!']), 1300); }
+        } else if (state === 'found') {
+          var s3 = spot(tgt);
+          if (!ate && dog.runTo(s3.x, 300 * A.tr.run, dt)) { dog.face(s3.side > 0 ? 'left' : 'right'); }
+          if (Math.abs(dog.x - s3.x) < 6 || stT > 2.2) {
+            if (!ate) { ate = true; stT = Math.min(stT, 0.4); }
+            dog.setPose('sniff'); dog.tilt = still ? 0 : dog.dir() * Math.sin(T * 22) * 1.2;
+            if (Math.floor(stT * 3) !== Math.floor((stT - dt) * 3) && stT < 1.6) { A.sfx('crunch'); var mm = dog.mouth(); A.burst('crumb', mm.x, mm.y, 3, { sp: 120, g: 900, life: 0.5, size: 2.6, color: '#E8B36A' }); }
+            if (stT > 1.7) {
+              dog.tilt = 0; v26Pay(A, { happiness: found > 5 ? 1 : nosed ? 3 : 2, bond: round === 2 ? 1 : 0, coins: round === 3 || round === 5 ? 1 : 0 });
+              A.say(pick(['crunch! best treat ever.', 'trick or treat? TREAT.', 'nose of the year']), 1500); A.burst('heart', dog.head().x, dog.head().y, 6, { g: -50, sp: 110, life: 1.3, size: 9 });
+              state = 'pack'; stT = 0; A.hint('Back in the bucket for another round!');
+            }
+          }
+        } else if (state === 'pack') {
+          if (stT < 0.1) { dog.setPose('happy'); }
+          if (!still) wiggle(dog, T, 2.4);
+          pots.forEach(function (p, k) {
+            p.want = 0;
+            var a = 0.15 + k * 0.08;
+            if (!p.inB && stT > a) { var mo = mouthOf(); var u = clamp((stT - a) / 0.35, 0, 1); if (still) u = 1; p.x = lerp(p.hx, mo.x, u); p.y = lerp(PY, mo.y + 40, u) - 110 * 4 * u * (1 - u); if (u >= 1) p.inB = true; }
+          });
+          if (stT > 1.3) { dog.tilt = 0; newRound(); }
+        }
+        pots.forEach(function (p) {
+          if (p.close > 0) { p.close -= dt; if (p.close <= 0) p.want = 0; }
+          p.open += (p.want - p.open) * Math.min(1, dt * (still ? 30 : 10)); p.wig = Math.max(0, p.wig - dt * 2.5);
+          p.spr.show(!p.inB); p.lid.show(!p.inB);
+          var w = still ? 0 : Math.sin(T * 40) * p.wig * 5;
+          p.spr.set(p.x, p.y, w * 0.4); p.lid.set(p.x + p.open * 14, p.y - rimDy - p.open * 40, w + (still ? 0 : -p.open * 16));
+        });
+        var tp = pots[treat], tOn = (state === 'found' || state === 'point' || state === 'sniff' || state === 'walk') && tp.open > 0.3 && !(ate && stT > 0.9);
+        treatS.show(tOn); if (tOn) treatS.set(tp.x, tp.y - rimDy - 6 - tp.open * 22, still ? 0 : Math.sin(T * 5) * 6);
+        bucket.set(AX, AY, brot);
+        var ba = brot * Math.PI / 180, bcx = AX + (-47 * Math.cos(ba) + 44 * Math.sin(ba)) * BS; bshadow.set(bcx, GY + 8, 0, 1 - 0.12 * Math.sin(ba), 1);
+      },
+      drawFx: function (g, T) {
+        if ((state === 'sniff' || state === 'point') && tgt) {
+          var m = dog.mouth(), a = state === 'point' ? 1 : 0.6;
+          g.save(); g.strokeStyle = 'rgba(91,61,50,' + (0.7 * a).toFixed(3) + ')'; g.lineWidth = 2.2; g.lineCap = 'round';
+          for (var i = 0; i < 3; i++) { var ox = m.x + dog.dir() * (8 + i * 8), oy = m.y - 14 - i * 6; g.beginPath(); g.arc(ox, oy, 5 + i * 3, -2.2 + (still ? 0 : Math.sin(T * 20 + i) * 0.2), -0.9); g.stroke(); }
+          g.fillStyle = INK; g.globalAlpha = a; g.font = '700 24px Caveat, cursive'; g.textAlign = 'center'; g.fillText(state === 'point' ? 'this one!' : 'sniff sniff', tgt.x, tgt.y - rimDy - 58 - (still ? 0 : Math.sin(T * 4) * 3)); g.restore();
+        }
+      },
+      focus: function () { return CP ? 585 : 620; },
+      finish: function () { return { happiness: 2, energy: -1 }; },
+      dbg: function () { return { state: state, still: still, round: round, treat: treat, found: found, peeks: peeks, sniffs: sniffs, pots: pots.map(function (p) { return { x: p.x, y: p.y - 34 * PK, open: p.open, out: !p.inB && !p.fly }; }) }; }
+    };
+  };
+  IMPL['Trick-or-Treat Bucket'].cfg = { scene: 'yard' };
+  IMPL['Trick-or-Treat Bucket'].phone = { vw: 720, vwMin: 700, fx: 585 };
 
   IMPL['Rope Tug'].phone = { vw: 980, fx: 640 };
   IMPL['Squeaky Duck'].phone = { vw: 700, vwMin: 660, fx: 620 };
