@@ -47,8 +47,10 @@ require('./test_lib').run('v2_journal', async (t) => {
   await p.locator('.mb-item.k-postcard').first().click(); await p.waitForSelector('.letter.k-postcard .pc-photo svg');
   ok(await p.locator('.letter .pc-photo svg').count() === 1, 'postcard shows the pup photo'); await t.SH('mailbox_postcard');
   await p.locator('.mb-item.k-gift').first().click(); await p.waitForSelector('.letter.k-gift');
+  ok(!(await S()).mail.some((m) => m.kind === 'gift' && m.gift && m.gift.claimed) && (await S()).coins === c0, 'v2.7: opening a gift letter waits for Collect');
+  await p.click('.letter [data-mbget]'); await p.waitForSelector('.letter .mb-got');
   let s1 = await S(); const g1 = s1.mail.find((m) => m.kind === 'gift' && m.gift && m.gift.claimed);
-  ok(!!g1, 'opening a gift claims it');
+  ok(!!g1, 'Collect claims the gift');
   const coinGift = g1 && g1.gift.coins ? g1.gift.coins : 0;
   ok(s1.coins === c0 + coinGift, `gift coins added once (${coinGift})`); await t.SH('mailbox_gift');
   await p.locator('.mb-item.k-postcard').first().click(); await p.locator(`.mb-item[data-mail="${g1.id}"]`).click(); await p.waitForSelector('.letter.k-gift');
