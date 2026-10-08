@@ -12,11 +12,10 @@ function hwTag(name) {
 }
 
 /* ---- spots (world box x, y, w, h of the 1000x600 scene; the prop viewBox is 240x220) ---- */
-// desktop: left of the dog, in front of the fountain, mirroring the Harvest Stall on the right (clear of pack spot 1 at x 18-212, the bowl and #dogHit).
-// phones: the stall takes that spot, so the pop-up stands in the foreground: under the dog's feet first, then in front of the stall, then the
-// left edge of a visitor-shifted crop. Nothing fits: the desktop spot, seen with the look-right button (like the stall's fallback).
-const HW_POP = { desk: [208, 372, 116, 106], phone: [[341, 516, 82, 75], [212, 494, 100, 92]] };
-const HW_BOWL = [195, 452, 110, 110]; // the phone bowl box (shown while feeding a snack in the Square)
+// desktop: left of the dog, beside the fountain (its wheels clear of the rim), mirroring the Harvest Stall on the right (clear of pack spot 1 at
+// x 18-212, the bowl and #dogHit). Phones: the stall takes that spot, so the pop-up stands in the foreground in front of the stall. It is drawn
+// before the bowl, so a snack's bowl (shown only while feeding) sits in front of it. A visitor-shifted crop: the crop's left edge, else the desktop spot.
+const HW_POP = { desk: [212, 344, 114, 105], phone: [212, 496, 100, 92] };
 const HW_END = '2 November';
 const HW_PLUM = 'Everything here is made for 2026 only. When I pack up on 2 November, it is gone for good, but yours stays yours.';
 const HW_LETTER = { from: 'Mrs. Plum next door', title: 'The Pumpkin Patch Pop-up', text: 'The Pumpkin Patch Pop-up is open in the Square until 2 November. Everything is made for this year only, so have a look.' };
@@ -52,7 +51,7 @@ const HW_FB = {
 };
 // item doodles: one simple crayon shape per item, so the sheet, the trays and the Wardrobe never show "?" before the real icons arrive
 const HW_ITEM_FB = {
-  'Pumpkin Pupcake': () => `<path d="M28 58 h44 l-6 26 h-32Z" fill="#F3D9A8" stroke="${INKG}" stroke-width="3"/><path d="M26 58 q4 -22 24 -22 q20 0 24 22Z" fill="${HW_O}" stroke="${INKG}" stroke-width="3"/><path d="M36 48 q14 -10 28 0" fill="none" stroke="${HW_CR}" stroke-width="4" stroke-linecap="round"/>`,
+  'Pumpkin Patch Pupcake': () => `<path d="M28 58 h44 l-6 26 h-32Z" fill="#F3D9A8" stroke="${INKG}" stroke-width="3"/><path d="M26 58 q4 -22 24 -22 q20 0 24 22Z" fill="${HW_O}" stroke="${INKG}" stroke-width="3"/><path d="M36 48 q14 -10 28 0" fill="none" stroke="${HW_CR}" stroke-width="4" stroke-linecap="round"/>`,
   'Apple Monster Biscuits': () => `<circle cx="50" cy="56" r="26" fill="#E2B57A" stroke="${INKG}" stroke-width="3"/><circle cx="40" cy="50" r="7" fill="#F4F0E0" stroke="${INKG}" stroke-width="2"/><circle cx="60" cy="50" r="7" fill="#F4F0E0" stroke="${INKG}" stroke-width="2"/><circle cx="41" cy="51" r="3" fill="${INKG}"/><circle cx="59" cy="49" r="3" fill="${INKG}"/><path d="M40 66 q10 6 20 0" fill="none" stroke="${INKG}" stroke-width="2.4"/>`,
   'Sweet Potato Bones': () => `<path d="M24 44 a8 8 0 1 1 10 -8 h32 a8 8 0 1 1 10 8 a8 8 0 1 1 -10 8 h-32 a8 8 0 1 1 -10 -8Z" fill="#D9824A" stroke="${INKG}" stroke-width="3" transform="translate(0 14)"/>`,
   'Frozen Yoghurt Ghosts': () => `<path d="M32 78 V48 a18 18 0 0 1 36 0 V78 l-6 -6 l-6 6 l-6 -6 l-6 6 l-6 -6Z" fill="#F4FBFF" stroke="${INKG}" stroke-width="3" stroke-linejoin="round"/><circle cx="44" cy="50" r="3" fill="${INKG}"/><circle cx="56" cy="50" r="3" fill="${INKG}"/><path d="M45 60 q5 4 10 0" fill="none" stroke="${INKG}" stroke-width="2"/>`,
@@ -77,8 +76,8 @@ function hwItemArt(n) { return artReal('item', n) || (HW_ITEM_FB[n] ? `<svg view
 function hwPopBox() {
   if (!isPhone()) return HW_POP.desk;
   const [c0, c1] = fsCrop(), dog = [DX + 30, DY + 40, DW - 60, DH - 40], vis = fsVisitorBox(), stall = fsAnyOn() ? fsStallBox() : null;
-  const ok = (b) => b[0] >= c0 && b[0] + b[2] <= c1 && !fsOver(b, dog) && !fsOver(b, vis) && !fsOver(b, stall) && !fsOver(b, HW_BOWL);
-  return HW_POP.phone.concat([[c0 + 6, 512, 88, 80]]).find(ok) || HW_POP.phone.find((b) => b[0] >= c0 && b[0] + b[2] <= c1 && !fsOver(b, dog) && !fsOver(b, vis) && !fsOver(b, stall)) || HW_POP.desk;
+  const ok = (b) => b[0] >= c0 && b[0] + b[2] <= c1 && !fsOver(b, dog) && !fsOver(b, vis) && !fsOver(b, stall);
+  return [HW_POP.phone, [c0 + 6, 496, 100, 92]].find(ok) || HW_POP.desk;
 }
 
 /* ---- the Square: the pop-up and its place button (fsSquareDraw calls this after it draws the stall and its buttons) ---- */
@@ -87,9 +86,9 @@ function hwSquareDraw() {
   const old = $('#hwPopG', svg); if (old) old.remove();
   const pb = $('#placeBtns'); if (pb) pb.querySelectorAll('[data-hw]').forEach((b) => b.remove());
   HW.open = hwOn(); if (!HW.open || !S || S.place !== 'square') return;
-  const pack = $('#pack', svg); if (!pack) return;
+  const at = $('#bowlG', svg) || $('#pack', svg); if (!at) return;
   const [x, y, w, h] = hwPopBox(), lit = isNight();
-  pack.insertAdjacentHTML('beforebegin', `<g id="hwPopG" class="hot" data-lit="${lit ? 1 : 0}" tabindex="0" role="button" aria-label="Mrs. Plum's Pumpkin Patch Pop-up">${place(hwArt({ lit }), x, y, w, h)}${fsHit(x + 6, y + 8, w - 12, h - 8)}</g>`);
+  at.insertAdjacentHTML('beforebegin', `<g id="hwPopG" class="hot" data-lit="${lit ? 1 : 0}" tabindex="0" role="button" aria-label="Mrs. Plum's Pumpkin Patch Pop-up">${place(hwArt({ lit }), x, y, w, h)}${fsHit(x + 6, y + 8, w - 12, h - 8)}</g>`);
   if (typeof fsHitFit === 'function') fsHitFit();
   const g = $('#hwPopG', svg); g.onclick = (e) => { e.stopPropagation(); SFX.click(); hwOpen(); }; g.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hwOpen(); } };
   if (pb && !isPhone()) { // phones: the third row of the Festival chooser instead, so the Square row stays one line
@@ -141,9 +140,9 @@ async function hwBuy(p, it) {
   else if (it.cat === 'decor') { hmDecorFields(); S.decor[it.n] = { got: localISO(), out: true }; }
   else S.inv[it.cat].push(it.n);
   markDirty(); updateHUD();
-  const tail = { food: PICK(['Mrs. Plum wraps it in orange paper.', 'It smells of pumpkin and oats.']), toys: 'In the Play tray.', clothes: 'Mrs. Plum says it suits you.', decor: 'It is up in the yard.' }[it.cat];
-  toast(`Bought ${q > 1 ? q + ' × ' : ''}${it.n}. ${tail}`, 'gold');
-  if (it.cat === 'decor') emit('decor:new', { name: it.n });
+  const tail = { food: PICK(['Mrs. Plum wraps it in orange paper.', 'It smells of pumpkin and oats.']), toys: 'In the Play tray.', clothes: 'Mrs. Plum says it suits you.', decor: '' }[it.cat];
+  if (it.cat === 'decor') emit('decor:new', { name: it.n }); // its own gold toast: "New for the yard: ...!"
+  else toast(`Bought ${q > 1 ? q + ' × ' : ''}${it.n}. ${tail}`, 'gold');
   hwOpen();
   if (it.cat === 'clothes') { const pp = $('.panel', modal); const w = await confirmIn(pp, `Put the ${esc(it.n)} on ${esc(NAME())} now?`, 'Wear it', 'Later'); if (w) equip(it.n, true); if (!modal.hidden && hwOn()) hwOpen(); }
 }
@@ -173,7 +172,8 @@ function hwTick() {
 on('game:ready', () => { hwFields(); HW.open = hwOn(); setTimeout(hwExpose, 0); setInterval(hwTick, 20000); });
 on('yard:enter', () => { hwFields(); hwExpose(); HW.pending++; setTimeout(() => { HW.pending--; if (cur.mode === 'yard') hwLetter(); }, 1500); });
 // the Jack-o-Lantern Trio glows after dark: redraw the yard decorations when night comes or goes (03_yard.js draws them, hmDecorArt passes lit)
-on('scene:redraw', () => { if (cur.mode !== 'yard' || !S || S.place !== 'yard' || !hmDecorOut('Jack-o-Lantern Trio')) return; const g = $('#decorG [data-decor="Jack-o-Lantern Trio"]'); if (g && g.dataset.lit !== String(+isNight())) { hmDecorRedraw(); const n = $('#decorG [data-decor="Jack-o-Lantern Trio"]'); if (n) n.dataset.lit = String(+isNight()); } });
+on('yard:enter', () => { HW.lit = isNight(); });
+on('scene:redraw', () => { if (cur.mode !== 'yard' || !S || S.place !== 'yard' || HW.lit === isNight()) return; HW.lit = isNight(); if (hmDecorOut('Jack-o-Lantern Trio')) hmDecorRedraw(); });
 on('act', (a) => { if (a && a.kind === 'buy' && a.shop === 'popup') { HW.buys.push(a); if (HW.buys.length > 20) HW.buys.shift(); } });
 on('env:fest', () => { hwTick(); if (cur.mode === 'yard') setTimeout(hwLetter, 600); });
 

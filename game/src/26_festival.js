@@ -20,6 +20,9 @@ const FS_LETTERS = {
   leaf: { from: 'Baker Bea', title: 'The leaf festival is on', text: 'The leaf festival is on. Leaf piles in the yard, and my stall is in the Square. Pumpkin everything.' },
   halloween: { from: 'Gerald the duck', title: 'Costume parade in the Square', text: 'Costume parade in the Square until the 31st. I am going as a duck.' }
 };
+// v2.6: the parade runs to the end of the year's Halloween window: 2 November in 2026 (HW_WIN), the 31st in other years
+const FS_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+function fsParadeUntil(y) { const w = typeof HW_WIN !== 'undefined' && HW_WIN[+y]; if (!w) return 'the 31st'; const [, m, d] = w[1].split('-').map(Number); return `${d} ${FS_MONTHS[m - 1]}`; }
 const FS = { walking: false, walkT: [], pileT: {}, packSq: null, pending: 0 }; // pending: letter / greeting timers still to run (tests wait on 0)
 // one kind toast instead of a stack trace if a name from another lane is missing (a tap, the stall or the parade)
 function fsTry(fn, ...a) { try { return fn(...a); } catch (e) { console.warn('festival', e); busy = false; toast('The festival hit a small snag. Try again in a moment.'); return null; } }
@@ -166,7 +169,7 @@ function fsDraw() {
 /* ---- letters and the season greeting ---- */
 function fsLetters() {
   if (!S || typeof mailPush !== 'function') return; fsFields(); const y = fsYear();
-  ['leaf', 'halloween'].forEach((k) => { if (festOn(k) && S.fest.letters[k] !== y) { S.fest.letters[k] = y; markDirty(); mailPush(Object.assign({ kind: 'news', id: `fest_${k}_${y}` }, FS_LETTERS[k])); } });
+  ['leaf', 'halloween'].forEach((k) => { if (festOn(k) && S.fest.letters[k] !== y) { S.fest.letters[k] = y; markDirty(); mailPush(Object.assign({ kind: 'news', id: `fest_${k}_${y}` }, FS_LETTERS[k], k === 'halloween' ? { text: `Costume parade in the Square until ${fsParadeUntil(y)}. I am going as a duck.` } : {})); } });
 }
 // under the test harness the greeting only shows when a suite asks (prefs.fsTest), so older suites see the toasts they measured before
 const fsGreetAllowed = () => !navigator.webdriver || !!prefs.fsTest;

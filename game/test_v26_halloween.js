@@ -33,6 +33,7 @@ require('./test_lib').run('v26_halloween', async (t) => {
   let s = await S(); const letter = s.mail.find((m) => m.id === 'hw_popup_2026');
   ok(/Mrs\. Plum/.test(letter.from) && letter.text === 'The Pumpkin Patch Pop-up is open in the Square until 2 November. Everything is made for this year only, so have a look.', 'the letter text');
   ok(s.hw.letter === '2026' && s.hw.seen === null, 'S.hw.letter = "2026", seen is still null');
+  ok(await t.until(() => (window.__paw.S.mail || []).some((m) => m.id === 'fest_halloween_2026'), null, 6000) && (await S()).mail.find((m) => m.id === 'fest_halloween_2026').text === 'Costume parade in the Square until 2 November. I am going as a duck.', "Gerald's 2026 letter: the parade runs until 2 November");
   await t.home('house'); await t.home('yard'); await t.until(() => window.__paw.hw.pending === 0, null, 6000);
   ok((await S()).mail.filter((m) => m.id === 'hw_popup_2026').length === 1, 'a second yard entry sends no new letter');
 
@@ -41,12 +42,12 @@ require('./test_lib').run('v26_halloween', async (t) => {
   const sq = await ev(() => {
     const g = document.getElementById('hwPopG'), kids = [...g.parentNode.children], btns = [...document.querySelectorAll('#placeBtns .btn')].map((b) => b.textContent);
     const r = (s) => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); return [b.left, b.top, b.right, b.bottom]; };
-    return { before: kids.indexOf(g) < kids.indexOf(document.getElementById('pack')), afterStall: kids.indexOf(g) > kids.indexOf(document.getElementById('fsStallG')), btns, hit: r('#hwPopG > rect.fs-hit'), dog: r('#dogHit'), stall: r('#fsStallG > rect.fs-hit'), box: window.__paw.hw.popupBox() };
+    return { before: kids.indexOf(g) < kids.indexOf(document.getElementById('pack')), afterStall: g.nextElementSibling === document.getElementById('bowlG'), btns, hit: r('#hwPopG > rect.fs-hit'), dog: r('#dogHit'), stall: r('#fsStallG > rect.fs-hit'), box: window.__paw.hw.popupBox() };
   });
   const ov = (a, b) => !!a && !!b && a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];
-  ok(sq.before && sq.afterStall, '#hwPopG sits before #pack, after the Harvest Stall');
+  ok(sq.before && sq.afterStall, '#hwPopG sits right before #bowlG (a snack bowl draws in front of it), before #pack');
   ok(sq.btns.join('|') === 'Town notice|Family Portrait|Harvest Stall|Costume parade|Pumpkin Patch|Go home', 'place buttons: ' + sq.btns.join(', '));
-  ok(JSON.stringify(sq.box) === JSON.stringify([208, 372, 116, 106]), 'the desktop spot ' + JSON.stringify(sq.box));
+  ok(JSON.stringify(sq.box) === JSON.stringify([212, 344, 114, 105]), 'the desktop spot ' + JSON.stringify(sq.box));
   ok(!ov(sq.hit, sq.dog) && !ov(sq.hit, sq.stall), 'the hotspot is clear of #dogHit and the stall');
   await t.SH('01_square');
   await p().click('#hwPopG > rect.fs-hit', { force: true });
@@ -89,7 +90,8 @@ require('./test_lib').run('v26_halloween', async (t) => {
   s = await S(); ok(s.coins === c0 - 60 && s.inv.clothes.includes('Witch Hat') && s.outfit.head !== 'Witch Hat', 'Witch Hat: -60 coins, in S.inv.clothes, not worn (Later)');
   c0 = await buy('Jack-o-Lantern Trio');
   s = await S(); ok(s.coins === c0 - 120 && s.decor['Jack-o-Lantern Trio'] && s.decor['Jack-o-Lantern Trio'].out === true && /^\d{4}-\d\d-\d\d$/.test(s.decor['Jack-o-Lantern Trio'].got), 'Jack-o-Lantern Trio: -120 coins, S.decor { got, out: true }');
-  ok(await t.waitToast(/It is up in the yard\.$/, 3000), 'toast "It is up in the yard."');
+  ok(await t.waitToast(/^New for the yard: Jack-o-Lantern Trio!$/, 3000), 'toast "New for the yard: Jack-o-Lantern Trio!"');
+  ok(await ev(() => window.__toasts.filter((x) => /Jack-o-Lantern Trio/.test(x)).length) === 1, 'one toast for a decoration, not two');
   const acts = await ev(() => window.__paw.hw.buys);
   ok(acts.length === 4 && acts.every((a) => a.shop === 'popup') && acts.map((a) => a.cat).join() === 'food,toys,clothes,decor' && acts[0].qty === 3 && acts[0].name === CAKE, 'buy fires with shop: "popup" (' + acts.map((a) => a.cat + ':' + a.name).join(', ') + ')');
   const own = await ev(() => ['Squeaky Pumpkin', 'Witch Hat', 'Jack-o-Lantern Trio'].map((n) => { const c = [...document.querySelectorAll('.hw-pop .sitem')].find((e) => e.querySelector('b').firstChild.textContent === n); return !!c && !!c.querySelector('.chip.own') && !c.querySelector('[data-hwbuy]'); }));
@@ -105,10 +107,11 @@ require('./test_lib').run('v26_halloween', async (t) => {
   const dec = await ev(() => { const g = document.querySelector('#decorG [data-decor="Jack-o-Lantern Trio"]'), r = g && g.querySelector(':scope > rect'), d = document.getElementById('dogHit').getBoundingClientRect(), b = r && r.getBoundingClientRect(); return { g: !!g, ov: !!b && b.left < d.right && b.right > d.left && b.top < d.bottom && b.bottom > d.top, at: window.__paw.hw.spot().decor }; });
   ok(dec.g, 'the Jack-o-Lantern Trio is drawn in the yard (#decorG)');
   ok(!dec.ov, 'its tap rect is clear of #dogHit');
-  ok(JSON.stringify(dec.at) === JSON.stringify({ 'Jack-o-Lantern Trio': [440, 528, 112, 67], 'Paper Bat Bunting': [650, 284, 210, 56], 'Friendly Scarecrow': [868, 294, 68, 97], 'Ghost Garland': [62, 226, 216, 65] }), 'the four decoration spots ' + JSON.stringify(dec.at));
+  ok(JSON.stringify(dec.at) === JSON.stringify({ 'Jack-o-Lantern Trio': [440, 528, 112, 67], 'Paper Bat Bunting': [646, 304, 204, 54], 'Friendly Scarecrow': [852, 262, 92, 130], 'Ghost Garland': [62, 226, 216, 65] }), 'the four decoration spots ' + JSON.stringify(dec.at));
   await t.SH('03_yard_decor');
   await p().click('#decorG [data-decor="Jack-o-Lantern Trio"] > rect', { force: true });
   ok(await t.until(() => !!document.querySelector('#modal:not([hidden]) .hm-decor-pop'), null, 3000), 'a tap opens its decor card (Put away)');
+  ok(await ev(() => (document.querySelector('#modal .hm-decor-pop h2 .hw-tag, #modal .panel h2 .hw-tag') || {}).textContent === '2026'), 'the decor card title carries the 2026 tag');
   await t.closeX();
   // the toy: always in the Journal Toys tab; in the Play tray once the TOYS lane's module plays it (PawToys.supports)
   const sup = await ev(() => !!(window.PawToys && typeof window.PawToys.open === 'function' && (!window.PawToys.supports || window.PawToys.supports('Squeaky Pumpkin'))));
@@ -167,6 +170,7 @@ require('./test_lib').run('v26_halloween', async (t) => {
     await t.home('square'); await t.sleep(300);
     const g = await ev(() => ({ pop: !!document.getElementById('hwPopG'), btn: !!document.querySelector('[data-hw]') }));
     ok(g.pop === open && g.btn === open, open ? 'the pop-up and its button are up' : 'no pop-up, no button');
+    if (date === '2027-10-28') ok(await t.until(() => (window.__paw.S.mail || []).some((m) => m.id === 'fest_halloween_2027'), null, 6000) && (await S()).mail.find((m) => m.id === 'fest_halloween_2027').text === 'Costume parade in the Square until the 31st. I am going as a duck.', "Gerald's 2027 letter: until the 31st");
     if (!open) {
       await ev(() => window.__toasts.splice(0)); await ev(() => window.__paw.hw.open());
       ok(await ev(() => document.getElementById('modal').hidden || !document.querySelector('#modal .hw-pop')), 'the sheet does not open');
