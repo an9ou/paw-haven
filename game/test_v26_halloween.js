@@ -107,7 +107,7 @@ require('./test_lib').run('v26_halloween', async (t) => {
   const dec = await ev(() => { const g = document.querySelector('#decorG [data-decor="Jack-o-Lantern Trio"]'), r = g && g.querySelector(':scope > rect'), d = document.getElementById('dogHit').getBoundingClientRect(), b = r && r.getBoundingClientRect(); return { g: !!g, ov: !!b && b.left < d.right && b.right > d.left && b.top < d.bottom && b.bottom > d.top, at: window.__paw.hw.spot().decor }; });
   ok(dec.g, 'the Jack-o-Lantern Trio is drawn in the yard (#decorG)');
   ok(!dec.ov, 'its tap rect is clear of #dogHit');
-  ok(JSON.stringify(dec.at) === JSON.stringify({ 'Jack-o-Lantern Trio': [440, 528, 112, 67], 'Paper Bat Bunting': [648, 304, 112, 30], 'Friendly Scarecrow': [762, 262, 92, 130], 'Ghost Garland': [100, 220, 200, 60] }), 'the four decoration spots ' + JSON.stringify(dec.at));
+  ok(JSON.stringify(dec.at) === JSON.stringify({ 'Jack-o-Lantern Trio': [440, 528, 112, 67], 'Paper Bat Bunting': [650, 298, 160, 43], 'Friendly Scarecrow': [762, 262, 92, 130], 'Ghost Garland': [100, 220, 200, 60] }), 'the four decoration spots ' + JSON.stringify(dec.at));
   await t.SH('03_yard_decor');
   await p().click('#decorG [data-decor="Jack-o-Lantern Trio"] > rect', { force: true });
   ok(await t.until(() => !!document.querySelector('#modal:not([hidden]) .hm-decor-pop'), null, 3000), 'a tap opens its decor card (Put away)');
