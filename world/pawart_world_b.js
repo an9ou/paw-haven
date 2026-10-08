@@ -3952,42 +3952,45 @@ PA.prop=function(name,o){
    hwgarland 300x90     cloth ghosts holding hands, pegged to a sagging string.
    items (64)           4 treats, 4 toys, 4 clothes; icon popup (64): a small pumpkin with a price tag. Bowls (120) for the 4 treats.
    The 2026 treat called "Pumpkin Pupcake" in V26.md is drawn as 'Pumpkin Patch Pupcake': 'Pumpkin Pupcake' is the v1.3 kitchen dish. */
+// a little chunk of apple: cream flesh, a strip of red skin
+function hwApple(b,x,y,s,a){b.sh(rot([[x-3*s,y+1.8*s],[x+3*s,y+1.8*s],[x+2.2*s,y-1.8*s],[x-2*s,y-2*s]],a,x,y),'#FFF4D6',{k:.1,hatch:0,hl:0,lw:.6,dr:.1,base:'#FFF8E6',marks:[{pts:rot([[x-4*s,y+.4*s],[x+4*s,y+.4*s],[x+4*s,y+2.6*s],[x-4*s,y+2.6*s]],a,x,y),fill:'#E0504E',k:0}],top:1})}
 const HWP='#8C6BB0',HWPD='#6E5390',HWPL='#C9B6E4',HWB='#6A5E7E',HWBD='#4F465E',HWO='#F29150',HWC='#FFF2DA';
 // a carved, smiling pumpkin; face 0 triangle eyes and a two-tooth grin, 1 happy closed eyes and a big open smile, 2 round eyes and a wink.
 // wf widens (or narrows) the pumpkin, lit fills the cuts with candlelight
 function hwJack(b,cx,cy,s,lit,face,o={}){
-  const wf=o.wf||1,lw=o.lw||Math.max(.5,Math.min(1,s*.62)),cut=lit?'#FFE59A':'#7A4A33',cutL=lit?'#FFF7D6':'#9A6A4E',X=d=>cx+d*s*wf,Y=d=>cy+d*s;
+  const wf=o.wf||1,lw=o.lw||Math.max(.5,Math.min(1,s*.62)),cut=lit?'#FFD36E':'#7A4A33',cutL=lit?'#FFF3C2':'#9A6A4E',X=d=>cx+d*s*wf,Y=d=>cy+d*s;
   if(!o.noleaf){b.ln([[X(3),Y(-19)],[X(11),Y(-25)],[X(16),Y(-22)],[X(14),Y(-18)]],{w:1.3*lw,col:'#6FA35A'});
     b.sh(leafP(X(-4),Y(-21),13*s,7*s,-2.7),LEAF,{hatch:0,hl:0,lw:lw*.75,dr:.2,det:[[[X(-4),Y(-21)],[X(-14),Y(-24)]]],dw:lw*.6})}
   [-14,14].forEach(dx=>b.sh(E(X(dx),Y(1),15*s*wf,19*s,18),'#F29150',{lw,hl:0,sh:'#C96E2A',ho:.4}));
   b.sh(E(cx,cy,15.5*s*wf,20.5*s,18),PUMP,{lw,hlo:.45,sh:'#C96E2A',ho:.35,
    inner:b.st(b.jl(X(-6),Y(-17),X(-7),Y(17),.4*s)+b.jl(X(6),Y(-17),X(7),Y(17),.4*s),'#C96E2A',.9*lw,.5)});
   b.sh(ribbon([[cx,Y(-17)],[X(1.6),Y(-23)],[X(4.6),Y(-26)]],[5.4*s,4.4*s,3.2*s]),'#8E8A4A',{k:1/6,hatch:0,hl:0,lw:lw*.8,dr:.1});
-  const F={k:.04,hatch:0,hl:0,lw:lw*.62,dr:.15,base:cut},glow=(x,y,rx,ry)=>lit?[{pts:E(x,y,rx,ry,8),fill:cutL}]:undefined;
+  const C2=(pts,opt)=>{if(o.cuts)o.cuts.push(pts);b.sh(pts,cut,opt)},F={k:.04,hatch:0,hl:0,lw:lw*.62,dr:.15,base:cut},glow=(x,y,rx,ry)=>lit?[{pts:E(x,y,rx,ry,8),fill:cutL}]:undefined;
   if(face===1){
     // happy closed eyes (little arches) and a big open half-moon smile with a tongue
     [-1,1].forEach(d=>{const p=[];for(let i=0;i<=8;i++){const a=Math.PI+i/8*Math.PI;p.push([X(d*8.4+Math.cos(a)*5),Y(-5+Math.sin(a)*4.6)])}
       for(let i=8;i>=0;i--){const a=Math.PI+i/8*Math.PI;p.push([X(d*8.4+Math.cos(a)*2.6),Y(-4.4+Math.sin(a)*2.2)])}
-      b.sh(p,cut,Object.assign({k:.1},F))});
+      C2(p,Object.assign({k:.1},F))});
     const m=[];for(let i=0;i<=12;i++){const a=i/12*Math.PI;m.push([X(Math.cos(a)*12.6),Y(3+Math.sin(a)*11)])}
-    b.sh(m,cut,Object.assign({k:.12,marks:[{pts:E(X(2),Y(10.6),5*s*wf,2.6*s,10),fill:lit?'#FFC48A':'#C9737A'}].concat(glow(X(-4),Y(6.4),4*s,1.6*s)||[])},F));
+    C2(m,Object.assign({k:.12,marks:[{pts:E(X(2),Y(10.6),5*s*wf,2.6*s,10),fill:lit?'#FFC48A':'#C9737A'}].concat(glow(X(-4),Y(6.4),4*s,1.6*s)||[])},F));
   }else if(face===2){
     // a round eye, a winking eye, a little round nose and a wide grin with one tooth
-    b.sh(E(X(-8),Y(-6),4.4*s*wf,4.8*s,12),cut,Object.assign({marks:glow(X(-8),Y(-4.6),2*s,1.4*s)},F));
+    C2(E(X(-8),Y(-6),4.4*s*wf,4.8*s,12),Object.assign({marks:glow(X(-8),Y(-4.6),2*s,1.4*s)},F));
     b.ln([[X(4),Y(-5)],[X(8),Y(-8.6)],[X(12.6),Y(-5.4)]],{w:2.2*lw,col:mix(cut,INK,lit?.2:.1)});
-    b.sh(E(cx,Y(1),2.2*s,2*s,8),cut,F);
+    C2(E(cx,Y(1),2.2*s,2*s,8),F);
     const m=[[X(-13),Y(4.6)],[X(-6),Y(8)],[X(3),Y(8.4)],[X(4.4),Y(6.2)],[X(7.4),Y(6.6)],[X(13.6),Y(3.4)],[X(10),Y(12.6)],[X(0),Y(15)],[X(-9),Y(12.4)]];
-    b.sh(m,cut,Object.assign({k:.14,marks:glow(cx,Y(11.6),6*s,2*s)},F));
+    C2(m,Object.assign({k:.14,marks:glow(cx,Y(11.6),6*s,2*s)},F));
   }else{
-    [-1,1].forEach(d=>b.sh([[X(d*4),Y(-3.6)],[X(d*13.6),Y(-4.4)],[X(d*8.6),Y(-12)]],cut,Object.assign({marks:glow(X(d*8.6),Y(-6),2.6*s,1.8*s)},F)));
-    b.sh([[X(-2.6),Y(1.6)],[X(2.6),Y(1.6)],[cx,Y(-2.6)]],cut,F);
+    [-1,1].forEach(d=>C2([[X(d*4),Y(-3.6)],[X(d*13.6),Y(-4.4)],[X(d*8.6),Y(-12)]],Object.assign({marks:glow(X(d*8.6),Y(-6),2.6*s,1.8*s)},F)));
+    C2([[X(-2.6),Y(1.6)],[X(2.6),Y(1.6)],[cx,Y(-2.6)]],F);
     const m=[[X(-14),Y(4)],[X(-6),Y(9.4)],[X(-4.4),Y(6.6)],[X(-1.8),Y(10.2)],[X(5),Y(9.6)],[X(6.4),Y(6.8)],[X(8.6),Y(9.2)],[X(14),Y(4)],[X(9),Y(14.4)],[cx,Y(16)],[X(-9),Y(14.4)]];
-    b.sh(m,cut,Object.assign({k:.12,marks:glow(cx,Y(12.4),7*s,2.2*s)},F));
+    C2(m,Object.assign({k:.12,marks:glow(cx,Y(12.4),7*s,2.2*s)},F));
   }
   if(!lit)b.raw(`<ellipse cx="${R1(X(-10.6))}" cy="${R1(Y(3.4))}" rx="${R1(3*s)}" ry="${R1(1.7*s)}" fill="${PINK}" opacity=".42"/><ellipse cx="${R1(X(10.6))}" cy="${R1(Y(3.4))}" rx="${R1(3*s)}" ry="${R1(1.7*s)}" fill="${PINK}" opacity=".42"/>`,o.top?'top':undefined);
 }
 // candlelight behind a lit pumpkin (static, no filter)
-const hwGlow=(b,x,y,r)=>b.raw(`<g class="pa-wb-glow"><circle cx="${R1(x)}" cy="${R1(y)}" r="${R1(r)}" fill="#FFE59A" opacity=".22"/><circle cx="${R1(x)}" cy="${R1(y)}" r="${R1(r*.74)}" fill="#FFE07A" opacity=".26"/><circle cx="${R1(x)}" cy="${R1(y+r*.06)}" r="${R1(r*.52)}" fill="#FFF3C2" opacity=".42"/></g>`,'under');
+function hwGlow(b,x,y,r,where,op){if(!b._hwg){b._hwg=IDT+'hwg';b.D.push(`<radialGradient id="${b._hwg}"><stop offset="0" stop-color="#FFB45A" stop-opacity=".75"/><stop offset=".45" stop-color="#FFB45A" stop-opacity=".32"/><stop offset="1" stop-color="#FFB45A" stop-opacity="0"/></radialGradient>`)}
+  b.raw(`<g class="pa-wb-glow"><circle cx="${R1(x)}" cy="${R1(y)}" r="${R1(r)}" fill="url(#${b._hwg})" opacity="${op||.85}"/></g>`,where||'under')}
 // a cute paper or felt bat, wingspan w, centred on its body. o.a tilts it, o.col the paper
 function hwBat(b,cx,cy,w,o={}){
   const a=o.a||0,col=o.col||HWB,s=w,T=pts=>rot(pts.map(p=>[cx+p[0]*s,cy+p[1]*s]),a,cx,cy),lw=o.lw||Math.max(.5,Math.min(1,w/40)),pap=o.paper?{k:0,dr:.15}:{k:.08,dr:.25},top=o.top;
@@ -4020,8 +4023,8 @@ function hwHay(b,x0,x1,y0,G){
 }
 
 PROPS.popup=function(b,o){
-  const lit=!!o.lit,G=214;
-  b.shadow(118,G,112,6);
+  const lit=!!o.lit,G=214,cuts=lit?[]:null;
+  if(lit)b.raw(`<ellipse cx="118" cy="${G}" rx="112" ry="6" fill="${INK}" opacity=".22"/>`,'under');else b.shadow(118,G,112,6);
   b.guide([[4,G+.5],[120,G-.5],[236,G+.6]],false);
   // the cart's two shafts on the left, resting on a little stand
   b.ln([[38,168],[6,184]],{w:5.6});b.ln([[38,168],[6,184]],{w:3.4,col:C.wood});
@@ -4031,11 +4034,11 @@ PROPS.popup=function(b,o){
   [[44,0],[196,0]].forEach(([x])=>b.sh(ribbon([[x,66],[x,96],[x,128]],[6,6,6]),C.wood,{k:.05,hatch:0,hl:0,lw:1,base:'#F3DDB4',det:[[[x-1,72],[x-1,124]]],dw:.6,dcol:WKD}));
   // the pumpkin stack on the cart bed, back row first; three of them are carved
   const lanterns=[[120,88,.78,1],[82,108,.64,0],[160,110,.62,2]];
-  if(lit)lanterns.forEach(([x,y,s])=>hwGlow(b,x,y+2,s*40));
+  if(lit)lanterns.forEach(([x,y,s])=>hwGlow(b,x,y+2,s*56));
   pumpkinV(b,100,96,.5,{noleaf:1});pumpkinV(b,140,97,.48,{noleaf:1});
-  hwJack(b,120,88,.78,lit,1,{noleaf:1});
+  hwJack(b,120,88,.78,lit,1,{noleaf:1,cuts});
   pumpkinV(b,60,114,.5,{noleaf:1});pumpkinV(b,120,116,.56);pumpkinV(b,182,115,.48,{noleaf:1});
-  hwJack(b,82,108,.64,lit,0,{noleaf:1});hwJack(b,160,110,.62,lit,2,{noleaf:1});
+  hwJack(b,82,108,.64,lit,0,{noleaf:1,cuts});hwJack(b,160,110,.62,lit,2,{noleaf:1,cuts});
   // the cart body: plum paint, orange trim, a chalkboard on the side
   b.sh([[28,124],[212,124],[212,134],[28,134]],HWO,{k:0,hatch:0,hl:0,lw:1.1,base:'#F7B27A'});
   b.sh([[30,134],[210,134],[206,184],[34,184]],HWP,{k:.02,hl:0,sh:HWPD,ho:.4,base:HWPL,inner:b.st([58,92,148,182].map(x=>b.jl(x,138,x-.4,180,.5)).join(''),HWPD,.9,.5)});
@@ -4047,10 +4050,10 @@ PROPS.popup=function(b,o){
   hwWheel(b,64,188,25);hwWheel(b,176,188,25);
   // the domed canopy: pumpkin and cream panels, a scalloped hem with paper bats
   const dome=[];for(let i=0;i<=20;i++){const a=Math.PI+i/20*Math.PI;dome.push([120+Math.cos(a)*100,66+Math.sin(a)*42])}
-  const pan=[];for(let i=0;i<8;i++)if(i%2===0){const u0=i/8,u1=(i+1)/8,xa=20+u0*200,xb=20+u1*200;pan.push({pts:[[120+(xa-120)*.12,22],[120+(xb-120)*.12,22],[xb,70],[xa,70]],fill:HWC,k:0})}
+  const pan=[];for(let i=0;i<8;i++)if(i%2===0){const u0=i/8,u1=(i+1)/8,xa=20+u0*200,xb=20+u1*200;pan.push({pts:[[120+(xa-120)*.12,22],[120+(xb-120)*.12,22],[xb,70],[xa,70]],fill:HWP,k:0})}
   b.sh(dome,HWO,{k:.04,hl:0,sh:'#C96E2A',ho:.35,marks:pan});
   const sc=[];for(let i=0;i<=10;i++){const x=222-i*20.4;sc.push([x,66]);if(i<10)sc.push([x-10.2,78])}
-  b.sh([[18,62],[222,62],...sc],HWO,{k:.18,hatch:0,hl:0,lw:1,marks:Array.from({length:5},(_,i)=>({pts:[[18+i*40.8,58],[38.4+i*40.8,58],[38.4+i*40.8,82],[18+i*40.8,82]],fill:HWC,k:0}))});
+  b.sh([[18,62],[222,62],...sc],HWO,{k:.18,hatch:0,hl:0,lw:1,marks:Array.from({length:5},(_,i)=>({pts:[[18+i*40.8,58],[38.4+i*40.8,58],[38.4+i*40.8,82],[18+i*40.8,82]],fill:HWP,k:0}))});
   b.sh(E(120,24,7,4,10),HWPD,{hatch:0,hl:0,lw:.9});
   // the 2026 pennant on top
   b.ln([[120,24],[120,2]],{w:2,col:C.woodD});b.dot(120,2,2,'#FFD56B');
@@ -4062,13 +4065,22 @@ PROPS.popup=function(b,o){
   hwHay(b,190,232,184,G);
   pumpkinV(b,208,176,.36);
   [[30,212],[100,213],[150,212]].forEach(([x,y],i)=>leafA(b,x,y,6,(i-1)*.8,AUT[i*2+1],i%2,{sq:.5}));
-  if(lit){b.ex('spark',228,40,4,'#FFE59A');b.ex('spark',10,56,3,'#FFF3C2')}else{b.ex('spark',228,40,4,'#FFE07A');b.ex('heart',10,58,3.4)}
+  if(lit){
+    // night: a gentle blue tint over the cart, then the candlelight on top of it
+    const P=pts=>'M'+pts.map(p=>R1(p[0])+' '+R1(p[1])).join('L')+'Z',ci=(x,y,rr)=>`M${x-rr} ${y}a${rr} ${rr} 0 1 0 ${2*rr} 0a${rr} ${rr} 0 1 0 ${-2*rr} 0Z`;
+    const tint=[P([...dome,...sc]),P([[41,66],[47,66],[47,128],[41,128]]),P([[193,66],[199,66],[199,128],[193,128]]),P([[44,128],[46,104],[70,94],[96,80],[104,60],[136,60],[144,80],[170,94],[196,104],[198,128]]),
+      P([[28,124],[212,124],[212,134],[206,186],[34,186],[30,134],[28,134]]),ci(64,188,26),ci(176,188,26),P([[190,184],[198,168],[218,162],[226,176],[238,176],[238,208],[232,215],[190,215]]),P([[4,180],[40,156],[40,172],[8,188]]),P([[121,3],[147,8],[121,16]])].join('');
+    b.raw(`<path d="${tint}" fill="#26304F" opacity=".26"/>`,'top');
+    lanterns.forEach(([x,y,s])=>hwGlow(b,x,y+2,s*40,'top',.6));
+    b.raw(cuts.map(p=>`<path d="${cr(p,true,.1).d}" fill="#FFD36E" opacity=".95"/>`).join(''),'top');
+    b.ex('spark',228,40,4,'#FFE59A');b.ex('spark',10,56,3,'#FFF3C2');
+  }else{b.ex('spark',228,40,4,'#FFE07A');b.ex('heart',10,58,3.4)}
 };
 
 PROPS.hwlanterns=function(b,o){
   const lit=!!o.lit,G=114,r=b.r;
-  if(lit){hwGlow(b,100,72,56);b.raw(`<g class="pa-wb-glow"><ellipse cx="100" cy="${G}" rx="92" ry="6" fill="#FFE59A" opacity=".35"/></g>`,'under')}
-  b.shadow(100,G,90,5);
+  if(lit){[[150,86,.96],[44,92,.82],[98,72,1.38]].forEach(([x,y,s])=>hwGlow(b,x,y,s*40));b.raw(`<ellipse cx="100" cy="${G}" rx="90" ry="5" fill="${INK}" opacity=".2"/><g class="pa-wb-glow"><ellipse cx="100" cy="${G-1}" rx="84" ry="6" fill="#FFB45A" opacity=".3"/></g>`,'under')}
+  else b.shadow(100,G,90,5);
   // a straw bed under them
   let st='';for(let i=0;i<26;i++){const x=16+i*6.6+(r()-.5)*3,y=G-2+(r()-.5)*3;st+=b.jl(x,y,x+(r()-.5)*10,y-3-r()*4,.4)}
   b.raw(b.st(st,'#D9AE4E',1.3,.9),'under');
@@ -4182,17 +4194,19 @@ Object.assign(ITEMS,{
     eye(x-4.4*s,y-2.4*s,3.8*s,lk[0],lk[1]);eye(x+4.6*s,y-3*s,4.4*s,lk[2],lk[3]);
     b.ln([[x-4*s,y+4.4*s],[x-1*s,y+6.2*s],[x+2*s,y+5*s],[x+5*s,y+6.4*s]],{w:.9})};
   bis(18,42,.88,[1,1,-1,0]);bis(46,42,.88,[0,-1,1,1]);bis(32,46,.98,[-1,1,1,-1]);bis(32,26,1.02,[1,0,-1,1]);
+  [[7,47,1.6,-.3],[57,46,1.6,.4],[20,56,1.4,.2],[45,56,1.5,-.25],[43,15,1.3,.5]].forEach(([x,y,s,a])=>hwApple(b,x,y,s,a));
   b.ex('spark',57,11,3.6);b.ex('dots',6,13,4);
  },
  'Sweet Potato Bones'(b){
   // a little kraft bag of baked bones, one more on the table
   b.sh([[10,24],[42,22],[44,58],[12,59]],'#D9B27C',{k:.03,sh:'#B08550',ho:.4,base:'#EBCB9C',inner:b.st(b.jl(16,26,15,56,.3),'#B08550',.8,.5)});
-  const bn=(x,y,a,s=1)=>b.sh(boneP(x,y,26*s,10*s,a),'#E89A5E',{k:.2,hatch:0,hl:0,lw:.8,base:'#F4BE8A',marks:[{pts:boneP(x+1,y+1.2,22*s,7*s,a),fill:'#F2AE72'}],inner:b.st(b.jl(x-6*s,y-1,x+4*s,y-2.2,.3),'#C46F2E',.8,.6)});
+  const bn=(x,y,a,s=1)=>b.sh(boneP(x,y,26*s,10*s,a),'#9A5F6E',{k:.2,hatch:0,hl:0,lw:.8,base:'#B98088',marks:[{pts:boneP(x,y,21*s,6.4*s,a),fill:'#F2A262'}],inner:b.st(b.jl(x-6*s,y-1,x+4*s,y-2.2,.3),'#C46F2E',.8,.6)});
   bn(20,20,-1.1);bn(31,18,-1.6,.95);
   b.sh([[8,30],[44,28],[46,38],[10,40]],'#E2BE8A',{k:.03,hatch:0,hl:0,lw:.9,base:'#F0D4A8'});
   b.sh(heartP(26,46,9),HWO,{hatch:0,hl:0,lw:.6,dr:.1});
+  sweetV(b,51,33,.42,-.7);
   bn(46,52,.25,1.05);
-  b.ex('spark',56,14,3.6);b.ex('heart',54,32,2.6);
+  b.ex('spark',56,14,3.6);
  },
  'Frozen Yoghurt Ghosts'(b){
   plateV(b,32,49,29,10,C.blue,'#FFFFFF');
@@ -4287,14 +4301,15 @@ Object.assign(ITEMS,{
   b.ex('spark',56,48,3.4);b.ex('dots',6,46,4);
  },
  'Bat Wings'(b){
-  // two felt wings on a soft strap, bouncing
-  [1,-1].forEach(d=>{const w=[[3,-6],[10,-16],[20,-22],[28,-16],[27,2],[22,-2],[19,8],[13,3],[9,12],[3,6]].map(([x,y])=>[32+d*x,32+y]);
-    b.sh(w,HWB,{k:.08,sh:HWBD,base:'#9A90AE',det:[[[32+d*4,30],[32+d*20,15]],[[32+d*4,32],[32+d*24,22]]],dw:.8,dcol:'#8E84A0',post:hwSeam(w,32+d*15,30,.8)})});
-  b.sh(RR(24,26,16,10,4),HWO,{hatch:0,hl:0,lw:.9,base:'#F7B27A'});
-  b.ln([[24,31],[10,44],[8,50]],{w:2.4,col:HWO});b.ln([[40,31],[54,44],[56,50]],{w:2.4,col:HWO});
-  b.sh(E(32,31,3.2,3.2,10),'#FFE07A',{hatch:0,hl:0,lw:.6,top:1});
-  b.raw(b.st('M6 14q-3 -3 0 -6M58 14q3 -3 0 -6',GRAPH,1.3),'top');
-  b.ex('spark',32,8,3.4);
+  // two felt wings spread wide, scalloped between the fingers, on a thin harness strap and a chest loop
+  const L=[[27,27],[20,17],[11,11],[2,10],[9,19],[3,26],[12,28],[9,37],[17,34],[18,42],[23,36],[27,36]];
+  [1,-1].forEach(d=>{const w=L.map(([x,y])=>[d>0?x:64-x,y]),ax=d>0?27:37,X=x=>d>0?x:64-x;
+    b.sh(w,HWB,{k:.04,sh:HWBD,base:'#9A90AE',det:[[[ax,28],[X(4,11),11]],[[ax,30],[X(5),26]],[[ax,32],[X(10),36]],[[ax,33],[X(18),40]]],dw:.75,dcol:'#8E84A0'})});
+  b.loop(E(32,41,8,6.4,16),{w:1.8,col:HWO});
+  b.sh(RR(23,28,18,4.4,1.8),HWO,{hatch:0,hl:0,lw:.8,base:'#F7B27A'});
+  b.dot(32,30.2,1.3,'#FFE07A','top');
+  b.raw(b.st('M5 52q-3 -3 0 -6M59 52q3 -3 0 -6',GRAPH,1.3),'top');
+  b.ex('spark',32,10,3.4);
  }
 });
 
@@ -4361,10 +4376,11 @@ bowlFood=function(b,food){
    else if(food==='Apple Monster Biscuits'){heapBase(b,'#F3DDB4');
      [[34,56,0],[60,58,1],[86,56,2],[46,44,3],[74,44,0],[60,31,1]].forEach(([x,y,k])=>{b.sh(cloudP(x,y,14,11,9,.08,30),'#E8C597',{k:.15,hatch:0,hl:0,lw:.8,base:'#F3DDB4',sh:'#C99A72'});
       const L=[[1,1],[-1,0],[0,-1],[1,-1]][k];[[-5,-2,4.4],[5,-2.6,5]].forEach(([dx,dy,r])=>{b.sh(E(x+dx,y+dy,r,r,12),'#FFF4D6',{hatch:0,hl:0,lw:.55,dr:.1,base:'#FFF8E6',marks:[{pts:E(x+dx,y+dy+r*.82,r*.9,r*.34,10),fill:C.redD,op:.9}]});
-       b.dot(x+dx+L[0]*r*.36,y+dy+L[1]*r*.36,R1(r*.42))});b.ln([[x-4,y+5],[x,y+7],[x+4,y+5.4]],{w:.9})})}
+       b.dot(x+dx+L[0]*r*.36,y+dy+L[1]*r*.36,R1(r*.42))});b.ln([[x-4,y+5],[x,y+7],[x+4,y+5.4]],{w:.9})});
+     [[47,58,.2],[73,58,-.3],[60,45,.5],[33,46,-.4],[87,46,.3],[60,24,-.2]].forEach(([x,y,a])=>hwApple(b,x,y,2,a))}
    else if(food==='Sweet Potato Bones'){heapBase(b,'#F4BE8A');
      [[36,58,-.3],[62,60,.2],[86,57,-.15],[46,46,.5],[74,46,-.45],[58,35,.1],[30,48,1.2],[90,46,-1.1]].forEach(([x,y,a])=>
-      b.sh(boneP(x,y,28,10,a),'#E89A5E',{k:.2,hatch:0,hl:0,lw:.8,base:'#F4BE8A',marks:[{pts:boneP(x+1,y+1.2,24,7,a),fill:'#F2AE72'}]}))}
+      b.sh(boneP(x,y,28,10,a),'#9A5F6E',{k:.2,hatch:0,hl:0,lw:.8,base:'#B98088',marks:[{pts:boneP(x,y,23,7,a),fill:'#F2A262'}]}))}
    else if(food==='Frozen Yoghurt Ghosts'){heapBase(b,'#E3F2FC');
      [[36,56,-.06],[60,58,0],[84,56,.06],[48,44,-.04],[72,44,.04],[60,30,0]].forEach(([x,y,l])=>{b.sh(ghostP(x,y,16,19,l),'#FFFFFF',{k:.16,hatch:0,hl:0,lw:.6,base:'#fff',dr:.2,marks:[{pts:E(x+3,y+4,4,4,8),fill:'#E3F2FC'}]});
       b.dot(x-2.6+l*8,y-2.4,1);b.dot(x+2.6+l*8,y-2.4,1);b.raw(`<ellipse cx="${R1(x+l*7)}" cy="${R1(y+1.6)}" rx=".8" ry="1" fill="${INK}" opacity=".8"/>`,'top')})}
