@@ -77,3 +77,14 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [ ] Round buttons lost their hatching when the fill was fitted inside the outline (the crayon look is kept by the wash). Decide whether to draw a clipped hatch. `game/css/01_sketch_surface.css`
 - [ ] Tray-card notes clamp at 2 lines on phones. `game/css/21_phone_home.css`
 - [ ] The `account` suite takes about 260 s alone, near its 300 s watchdog, and can hit it under `--jobs 2`. `game/test_account.js`
+
+## Halloween 2026 (v2.6)
+- [ ] Owner: play one evening in the Square on a phone (the pop-up, the night glow) and buy one thing from each section.
+- [ ] The yard decorations and the festival props (the Harvest Stall, the pop-up by day) get no night tint, so they look bright next to the night scene. One shared night tint would fix them all. `world/pawart_world_b.js`, `game/src/03_yard.js`
+- [ ] The v2.5 porch jack-o-lantern keeps its pale glow (it must stay byte-identical), while the v2.6 pumpkins glow warm. `world/pawart_world_b.js`
+- [ ] Pre-existing: at night the shop window glow draws over the Town Notice board in the Square. `world/pawart_world_c.js`
+- [ ] Pre-existing: on phones, a visiting dog with no pack dogs takes Square pack spot 0 and the camera only widens to the right, so the visitor and the Harvest Stall can sit off-screen at 360 px. `game/src/03_yard.js` phHomeRefit
+- [ ] On phones the dog house's jack-o-lantern can show cut in half at the right edge of the yard's home view. `game/src/26_festival.js`
+- [ ] Market Street's Halloween bat bunting sits right under the place label on phones. `world/pawart_world_a.js`
+- [ ] The v2.6 items are 2026 only. A Halloween 2027 would need new `ed: 2027` items and a `HW_WIN` entry (the pop-up code is written for any edition). `game/src/00_core.js`, `game/src/27_halloween.js`
+- [ ] Under parallel load, `account` can hit its 300 s watchdog, and `phone_town`, `phone_occl_home`, `phone_v25_fixes_a` and `v21_home` can need their retry.
