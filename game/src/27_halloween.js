@@ -15,7 +15,7 @@ function hwTag(name) {
 // desktop: left of the dog, in front of the fountain, mirroring the Harvest Stall on the right (clear of pack spot 1 at x 18-212, the bowl and #dogHit).
 // phones: the stall takes that spot, so the pop-up stands in the foreground: under the dog's feet first, then in front of the stall, then the
 // left edge of a visitor-shifted crop. Nothing fits: the desktop spot, seen with the look-right button (like the stall's fallback).
-const HW_POP = { desk: [208, 372, 116, 106], phone: [[338, 516, 90, 82], [212, 494, 100, 92]] };
+const HW_POP = { desk: [208, 372, 116, 106], phone: [[341, 516, 82, 75], [212, 494, 100, 92]] };
 const HW_BOWL = [195, 452, 110, 110]; // the phone bowl box (shown while feeding a snack in the Square)
 const HW_END = '2 November';
 const HW_PLUM = 'Everything here is made for 2026 only. When I pack up on 2 November, it is gone for good, but yours stays yours.';
@@ -172,6 +172,8 @@ function hwTick() {
 /* ---- bus ---- */
 on('game:ready', () => { hwFields(); HW.open = hwOn(); setTimeout(hwExpose, 0); setInterval(hwTick, 20000); });
 on('yard:enter', () => { hwFields(); hwExpose(); HW.pending++; setTimeout(() => { HW.pending--; if (cur.mode === 'yard') hwLetter(); }, 1500); });
+// the Jack-o-Lantern Trio glows after dark: redraw the yard decorations when night comes or goes (03_yard.js draws them, hmDecorArt passes lit)
+on('scene:redraw', () => { if (cur.mode !== 'yard' || !S || S.place !== 'yard' || !hmDecorOut('Jack-o-Lantern Trio')) return; const g = $('#decorG [data-decor="Jack-o-Lantern Trio"]'); if (g && g.dataset.lit !== String(+isNight())) { hmDecorRedraw(); const n = $('#decorG [data-decor="Jack-o-Lantern Trio"]'); if (n) n.dataset.lit = String(+isNight()); } });
 on('act', (a) => { if (a && a.kind === 'buy' && a.shop === 'popup') { HW.buys.push(a); if (HW.buys.length > 20) HW.buys.shift(); } });
 on('env:fest', () => { hwTick(); if (cur.mode === 'yard') setTimeout(hwLetter, 600); });
 

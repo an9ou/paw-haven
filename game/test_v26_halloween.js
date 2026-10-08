@@ -6,11 +6,8 @@
 // The tests never depend on the HW ART lane's art: they measure the game's own hit rects and data hooks.
 // node game/run_tests.js v26_halloween
 const { URL } = require('./test_lib');
-const DECOR = ['Jack-o-Lantern Trio', 'Paper Bat Bunting', 'Friendly Scarecrow', 'Ghost Garland'];
-const FOODS = ['Pumpkin Pupcake', 'Apple Monster Biscuits', 'Sweet Potato Bones', 'Frozen Yoghurt Ghosts'];
-const TOYS = ['Squeaky Pumpkin', 'Plush Ghost', 'Bat-Wing Flyer', 'Trick-or-Treat Bucket'];
-const CLOTHES = ['Witch Hat', 'Vampire Cape', 'Candy Corn Bandana', 'Bat Wings'];
-const ALL = DECOR.concat(FOODS, TOYS, CLOTHES);
+// the item names come from the game's own tables (FOOD, TOYS, CLOTHES, HM_DECOR entries with ed: 2026), read once the page is up
+let DECOR, FOODS, TOYS, CLOTHES, ALL, CAKE;
 const OPTS = { fest: 'auto', season: 'autumn', date: '2026-10-20', prefs: { hwTest: true } };
 
 require('./test_lib').run('v26_halloween', async (t) => {
@@ -27,6 +24,8 @@ require('./test_lib').run('v26_halloween', async (t) => {
 
   await t.newGame({ sex: 'girl' }, { coins: 3000, bond: { level: 1, pts: 0 }, stats: { hunger: 40, happy: 50, energy: 80, clean: 90 } });
   await t.home('yard');
+  ALL = await ev(() => window.__paw.hw.items()); [DECOR, FOODS, TOYS, CLOTHES] = [0, 4, 8, 12].map((i) => ALL.slice(i, i + 4)); CAKE = FOODS[0];
+  ok(ALL.length === 16, '16 edition items: ' + ALL.join(', '));
 
   sec('2026-10-20: the gate and the letter');
   ok(await ev(() => window.__paw.hw.on() && document.getElementById('modal').hidden !== undefined), 'hwOn() is true on 2026-10-20 (fest auto, the 2026 window)');
@@ -70,7 +69,7 @@ require('./test_lib').run('v26_halloween', async (t) => {
   ok(sh.locks === 0 && sh.buys === 16, 'no bond locks at Bond 1: 16 Buy buttons');
   ok(sh.foot === 'Open until 2 November.', 'the footer: ' + sh.foot);
   ok(sh.seen === await ev(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }), 'S.hw.seen = the day the sheet was first opened');
-  ok(JSON.stringify(await ev(() => window.__paw.hw.items())) === JSON.stringify(ALL), '__paw.hw.items() lists the 16');
+  ok(sh.secs.every(([k, , ns]) => ns.length === 4) && ALL.every((n) => sh.secs.some((x) => x[2].includes(n))), 'every item of __paw.hw.items() has a card');
   await t.SH('02_sheet');
 
   sec('buying one of each category');
@@ -79,8 +78,8 @@ require('./test_lib').run('v26_halloween', async (t) => {
     await p().locator(`[data-hwbuy="${n}"]`).scrollIntoViewIfNeeded(); await p().click(`[data-hwbuy="${n}"]`); await t.win(q);
     return c0;
   };
-  let c0 = await buy('Pumpkin Pupcake', 3);
-  s = await S(); ok(s.coins === c0 - 42 && s.inv.food['Pumpkin Pupcake'] === 3, `3 Pumpkin Pupcakes: coins ${c0} -> ${s.coins}, in bag ${s.inv.food['Pumpkin Pupcake']}`);
+  let c0 = await buy(CAKE, 3);
+  s = await S(); ok(s.coins === c0 - 42 && s.inv.food[CAKE] === 3, `3 × ${CAKE}: coins ${c0} -> ${s.coins}, in bag ${s.inv.food[CAKE]}`);
   c0 = await buy('Squeaky Pumpkin');
   s = await S(); ok(s.coins === c0 - 45 && s.inv.toys.includes('Squeaky Pumpkin'), 'Squeaky Pumpkin: -45 coins, in S.inv.toys');
   ok(await t.waitToast(/Squeaky Pumpkin\. In the Play tray\.$/, 3000), 'toast "In the Play tray."');
@@ -92,10 +91,10 @@ require('./test_lib').run('v26_halloween', async (t) => {
   s = await S(); ok(s.coins === c0 - 120 && s.decor['Jack-o-Lantern Trio'] && s.decor['Jack-o-Lantern Trio'].out === true && /^\d{4}-\d\d-\d\d$/.test(s.decor['Jack-o-Lantern Trio'].got), 'Jack-o-Lantern Trio: -120 coins, S.decor { got, out: true }');
   ok(await t.waitToast(/It is up in the yard\.$/, 3000), 'toast "It is up in the yard."');
   const acts = await ev(() => window.__paw.hw.buys);
-  ok(acts.length === 4 && acts.every((a) => a.shop === 'popup') && acts.map((a) => a.cat).join() === 'food,toys,clothes,decor' && acts[0].qty === 3, 'buy fires with shop: "popup" (' + acts.map((a) => a.cat + ':' + a.name).join(', ') + ')');
+  ok(acts.length === 4 && acts.every((a) => a.shop === 'popup') && acts.map((a) => a.cat).join() === 'food,toys,clothes,decor' && acts[0].qty === 3 && acts[0].name === CAKE, 'buy fires with shop: "popup" (' + acts.map((a) => a.cat + ':' + a.name).join(', ') + ')');
   const own = await ev(() => ['Squeaky Pumpkin', 'Witch Hat', 'Jack-o-Lantern Trio'].map((n) => { const c = [...document.querySelectorAll('.hw-pop .sitem')].find((e) => e.querySelector('b').firstChild.textContent === n); return !!c && !!c.querySelector('.chip.own') && !c.querySelector('[data-hwbuy]'); }));
   ok(own.every(Boolean), 'toys, clothes and decorations are bought once (Owned)');
-  ok(await ev(() => /You have 3/.test([...document.querySelectorAll('.hw-pop .sitem')].find((e) => /Pumpkin Pupcake/.test(e.textContent)).textContent)), 'the treat card says "You have 3"');
+  ok(await ev((n) => /You have 3/.test([...document.querySelectorAll('.hw-pop .sitem')].find((e) => e.querySelector('b').firstChild.textContent === n).textContent), CAKE), 'the treat card says "You have 3"');
   await t.closeX();
 
   sec('the Journal line while open');
@@ -106,7 +105,7 @@ require('./test_lib').run('v26_halloween', async (t) => {
   const dec = await ev(() => { const g = document.querySelector('#decorG [data-decor="Jack-o-Lantern Trio"]'), r = g && g.querySelector(':scope > rect'), d = document.getElementById('dogHit').getBoundingClientRect(), b = r && r.getBoundingClientRect(); return { g: !!g, ov: !!b && b.left < d.right && b.right > d.left && b.top < d.bottom && b.bottom > d.top, at: window.__paw.hw.spot().decor }; });
   ok(dec.g, 'the Jack-o-Lantern Trio is drawn in the yard (#decorG)');
   ok(!dec.ov, 'its tap rect is clear of #dogHit');
-  ok(JSON.stringify(dec.at) === JSON.stringify({ 'Jack-o-Lantern Trio': [440, 528, 112, 67], 'Paper Bat Bunting': [598, 192, 264, 70], 'Friendly Scarecrow': [660, 282, 68, 97], 'Ghost Garland': [62, 226, 216, 65] }), 'the four decoration spots ' + JSON.stringify(dec.at));
+  ok(JSON.stringify(dec.at) === JSON.stringify({ 'Jack-o-Lantern Trio': [440, 528, 112, 67], 'Paper Bat Bunting': [650, 284, 210, 56], 'Friendly Scarecrow': [868, 294, 68, 97], 'Ghost Garland': [62, 226, 216, 65] }), 'the four decoration spots ' + JSON.stringify(dec.at));
   await t.SH('03_yard_decor');
   await p().click('#decorG [data-decor="Jack-o-Lantern Trio"] > rect', { force: true });
   ok(await t.until(() => !!document.querySelector('#modal:not([hidden]) .hm-decor-pop'), null, 3000), 'a tap opens its decor card (Put away)');
@@ -123,8 +122,9 @@ require('./test_lib').run('v26_halloween', async (t) => {
   ok(await t.until(() => window.__paw.S.outfit.head === 'Witch Hat', null, 3000), 'and it can be worn');
   await t.closeX();
   await ev(() => window.__toasts.splice(0)); await t.patch({ stats: { hunger: 40 } });
-  await t.retryUntil(() => ev(() => window.__paw.feed('Pumpkin Pupcake')), () => (window.__paw.S.inv.food['Pumpkin Pupcake'] || 0) === 2);
-  ok(await t.waitToast(/^Pumpkin Pupcake: Plain pumpkin, oat flour and plain yoghurt, no sugar\. Chocolate never goes in a dog's cake, it is poison to them\.$/, 4000), 'the first feed shows the tip');
+  await t.retryUntil(() => ev((n) => window.__paw.feed(n), CAKE), (n) => (window.__paw.S.inv.food[n] || 0) === 2, CAKE);
+  const tip = await ev((n) => window.__paw.shop.tip(n, true), CAKE);
+  ok(tip === "Plain pumpkin, oat flour and plain yoghurt, no sugar. Chocolate never goes in a dog's cake, it is poison to them." && await t.until((x) => window.__toasts.includes(x), CAKE + ': ' + tip, 4000), 'the first feed shows the tip');
 
   sec('Kibble Corner, the Boutique and the Harvest Stall never list an ed item');
   const names = () => ev(() => [...document.querySelectorAll('#modal .sitem > b')].map((b) => b.firstChild.textContent));

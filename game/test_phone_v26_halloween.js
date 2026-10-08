@@ -117,7 +117,7 @@ async function suite(t, dev) {
     ok(!ov(r, y.bar) && !y.btns.some((b) => ov(r, b)), `${n}: never under the action bar or the place buttons`);
   });
   const vis = y.d.filter((r) => r[0] >= y.view[0] - 1 && r[2] <= y.view[2] + 1);
-  ok(vis.length >= 1, `${vis.length} of 4 decorations in the home crop (the rest pan into view)`);
+  ok(vis.length >= 1, `${vis.length} of 4 decorations in the home crop (the rest pan into view)`); // the Jack-o-Lantern Trio sits in front of the dog, inside every phone crop
   await t.SH('yard_decor');
   const tr = y.d[0], tc = [(tr[0] + Math.min(tr[2], y.iw)) / 2, (tr[1] + tr[3]) / 2];
   await p.touchscreen.tap(tc[0], tc[1]);
