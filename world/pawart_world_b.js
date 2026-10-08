@@ -4950,6 +4950,59 @@ PA.FURN_SPOTS=FURN_SPOTS;
 /* v27:furn (end) */
 
 /* v27:bed (start) -- the Knitted Nest and the two icons */
+// knit stitches: little V pairs along an elliptic band (cx,cy,rx,ry) from angle a0 to a1, rows inward by dr
+function knitV(b,cx,cy,rx,ry,a0,a1,n,s){let d='';for(let i=0;i<=n;i++){const a=a0+(a1-a0)*i/n,x=cx+Math.cos(a)*rx,y=cy+Math.sin(a)*ry,u=s*.5;
+  d+=`M${R1(x-u)} ${R1(y-u*.9)}L${R1(x)} ${R1(y+u*.5)}L${R1(x+u)} ${R1(y-u*.9)}`}return d}
+const KN='#C9DDB0',KNL='#EDF5E2',KND='#93B278',KNC='#FFF2DA';
+BEDS['Knitted Nest']=function(b){
+  b.shadow(130,151,112,3.5);
+  // the back of the chunky knitted ring, a fat round roll, the cable rows following the round
+  b.sh(cloudP(130,104,118,46,22,.05,96),KN,{hl:0,sh:KND,base:KNL,
+   inner:b.st(knitV(b,130,104,106,36,Math.PI*1.04,Math.PI*1.96,22,sw(b,7))+knitV(b,130,106,90,28,Math.PI*1.06,Math.PI*1.94,18,sw(b,6)),KND,sw(b,1.5),.85)});
+  // the dip in the middle: a soft cream cushion
+  b.sh(E(130,100,78,24,30),KND,{hatch:0,hl:0,lw:.9,base:KN,dr:.3});
+  b.sh(E(130,104,74,19,30),KNC,{hl:0,sh:'#D9B98C',ho:.35,base:'#FFF8EC',marks:[{pts:E(118,100,40,7,16),fill:'#FFFFFF',op:.85}]});
+  b.raw(b.st(b.jl(80,108,180,108,.6)+b.jl(94,115,166,115,.6),'#E8CFA8',sw(b,1.2),.7));
+  // a ball of yarn with a needle, tucked at the back right
+  b.sh(E(224,70,15,14,18),'#F7B2C4',{hatch:0,hl:0,lw:.9,base:'#FDE0E8',inner:b.st(b.jl(212,64,234,80,.4)+b.jl(210,72,230,84,.4)+b.jl(216,58,238,72,.4),'#E58FA5',sw(b,1.2),.85)});
+  b.ln([[202,52],[238,82]],{w:sw(b,2.2),col:C.woodD});b.dot(201,51,sw(b,2.2),'#FFD56B');
+  FRONT0(b);
+  // the near half of the roll, standing up in front of the dip: plain strokes only, so the bed front copy draws exactly the same
+  const fr=[];for(let i=0;i<=40;i++){const a=i/40*Math.PI,f=1+.05*(Math.abs(Math.sin(a*11))-.6);fr.push([130+Math.cos(a)*118*f,108+Math.sin(a)*42*f])}
+  for(let i=40;i>=0;i--){const a=i/40*Math.PI;fr.push([130+Math.cos(a)*76,106+Math.sin(a)*16])}
+  b.sh(fr,KN,{k:.12,hatch:0,hl:0,base:KNL});
+  b.raw(b.st(knitV(b,130,110,108,32,Math.PI*.06,Math.PI*.94,26,sw(b,7.4))+knitV(b,130,112,96,24,Math.PI*.1,Math.PI*.9,22,sw(b,7))+knitV(b,130,113,84,17,Math.PI*.14,Math.PI*.86,18,sw(b,6)),KND,sw(b,1.5),.9));
+  b.raw(b.st(b.jl(22,116,50,140,.4)+b.jl(210,140,238,116,.4),KND,sw(b,1.2),.6));
+  b.sh(heartP(130,142,13),'#F7B2C4',{hatch:0,hl:0,lw:.8,base:'#FDE0E8'});
+  FRONT1(b);
+  b.ex('spark',20,72,3.6,'#FFE07A');
+};
+BED_CROP['Knitted Nest']=[6,44,248,112];BED_ICON_H['Knitted Nest']=40;
+ITEMS['Knitted Nest']=function(b){
+  const [x,y,w,h]=BED_CROP['Knitted Nest'],W=62,H=BED_ICON_H['Knitted Nest'];
+  const t=bedTpl('Knitted Nest',true).split(IDT).join(IDT+'n'+(BEDN++).toString(36)).replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'');
+  b.raw(`<g transform="translate(${R1(32-W/2)} ${R1(35-H/2)}) scale(${R1(W/w*1000)/1000} ${R1(H/h*1000)/1000}) translate(${-x} ${-y})">${t}</g>`);b.ex('spark',56,12,3.4,'#FFE07A')};
+
+Object.assign(ICONS,{
+ // a little armchair with a paw cushion (the Furniture corner)
+ furniture(b){
+  b.sh([[12,40],[13,14],[20,8],[44,8],[51,14],[52,40]],'#F9D27A',{k:.14,hl:0,base:'#FFF0C4'});
+  b.sh(RR(4,26,14,26,6),'#F4A6A0',{hatch:0,hl:0,base:'#FCD9D3'});b.sh(RR(46,26,14,26,6),'#F4A6A0',{hatch:0,hl:0,base:'#FCD9D3'});
+  b.sh(RR(14,34,36,12,5),'#FBE3A0',{hatch:0,hl:0,base:'#FFF4D2'});
+  b.sh(RR(10,44,44,10,3),'#F4A6A0',{hatch:0,hl:0,base:'#FCD9D3'});
+  b.ln([[14,54],[13,60]],{w:3.4,col:C.woodD});b.ln([[50,54],[51,60]],{w:3.4,col:C.woodD});
+  paw(b,32,24,4.6,'#F28FA5',{lw:.6});
+  b.ex('spark',58,8,4);
+ },
+ // four little arrows round a picture frame (the Arrange button)
+ arrange(b){
+  b.sh(RR(16,17,32,30,3),C.wood,{hatch:0,hl:0,base:'#F3DDB4'});
+  b.sh(RR(21,22,22,20,2),'#BFE6FA',{k:0,hatch:0,hl:0,lw:.8,base:'#E6F6FD',marks:[{pts:[[21,36],[30,31],[43,35],[43,42],[21,42]],fill:'#B8DE9A',k:.2}]});
+  b.dot(37,27,2,'#FFD56B');
+  const ar=(x,y,a,c)=>b.sh(rot([[x-7,y+1],[x,y-7],[x+7,y+1],[x+2.6,y+1],[x+2.6,y+7],[x-2.6,y+7],[x-2.6,y+1]],a,x,y),c,{k:0,hatch:0,hl:0,lw:.9});
+  ar(32,7.5,0,'#F28FA5');ar(57,32,Math.PI/2,'#7FB7E0');ar(32,57,Math.PI,'#FFD56B');ar(7,32,-Math.PI/2,'#9CCB86');
+ }
+});
 /* v27:bed (end) */
 
 /* public: the v2.7 props normalise their options (use for furniture, lit where listed) and cache per option set */
