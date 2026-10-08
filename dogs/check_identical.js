@@ -1,5 +1,5 @@
 /* Byte-identical check for the dog art module.
-   Loads dogs/pawart_dogs.js (working tree) and the same file from a git ref (default integration/v2.4)
+   Loads dogs/pawart_dogs.js (working tree) and the same file from a git ref (default v26-base, else origin/v26-base)
    in node vm sandboxes and compares PawArt.dog / PawArt.dogHead for every breed x pose x existing outfit
    x age x sparkle, plus mixes, expecting, coats and facing left.
    Usage: node dogs/check_identical.js [ref]   (prints ALL OK on success, exits 1 on any difference)
@@ -13,7 +13,7 @@ if(!process.env.SHARD){// parent: fan out, then sum up
       if(++done===n){console.log(`check_identical vs ${refName}: ${tot} renders compared over ${n} shards, ${bad.length} differ`);if(bad.length){console.log(bad.slice(0,30).join('\n'));process.exit(1)}console.log('ALL OK')}})}
   return;
 }
-const ref=process.argv[2]||(()=>{try{cp.execSync('git rev-parse --verify -q integration/v2.4',{cwd:path.join(__dirname,'..'),stdio:'ignore'});return'integration/v2.4'}catch(e){return'origin/integration/v2.4'}})();
+const ref=process.argv[2]||(()=>{try{cp.execSync('git rev-parse --verify -q v26-base',{cwd:path.join(__dirname,'..'),stdio:'ignore'});return'v26-base'}catch(e){return'origin/v26-base'}})();
 const load=src=>{const sb={window:{}};vm.createContext(sb);vm.runInContext(src,sb);return sb.window.PawArt};
 const NEW=load(fs.readFileSync(path.join(__dirname,'pawart_dogs.js'),'utf8'));
 const OLD=load(cp.execSync(`git show ${ref}:dogs/pawart_dogs.js`,{cwd:path.join(__dirname,'..'),encoding:'utf8',maxBuffer:64<<20}));
@@ -22,7 +22,8 @@ const POSES=['idle','happy','pet','eat','sleep','walk','jump','sit','sad','dirty
 // the outfits that exist in the reference build (anything else is new and is not compared)
 const OUTS=[['head','Party Hat'],['head','Flower Crown'],['head','Acorn Cap'],['head','Rain Hat'],['head','Pom-pom Beanie'],['eyes','Heart Sunglasses'],['eyes','Explorer Goggles'],
  ['neck','Red Bandana'],['neck','Bow Tie'],['neck','Seashell Necklace'],['neck','Clover Collar'],['neck','Rainbow Collar'],
- ['body','Yellow Raincoat'],['body','Knit Winter Sweater'],['body','Superhero Cape'],['body','Mossy Poncho'],['body','Frog Raincoat'],['body','Polka-dot Raincoat'],['body','Bubble Raincoat']];
+ ['body','Yellow Raincoat'],['body','Knit Winter Sweater'],['body','Superhero Cape'],['body','Mossy Poncho'],['body','Frog Raincoat'],['body','Polka-dot Raincoat'],['body','Bubble Raincoat'],
+ ['head','Leaf Beret'],['neck','Autumn Scarf'],['neck','Parade Rosette'],['body','Ghost Sheet'],['body','Pumpkin Suit']]; // v2.5 outfits (in v26-base)
 // v2.4 outfits already merged into the reference and not under change (env CHANGING='Name,Name' leaves some out)
 const CHG=(process.env.CHANGING||'Astronaut Helmet,Cozy Hoodie,Happi Coat,Tutu').split(',');
 [['head','Chef Hat'],['head','Wizard Hat'],['head','Sun Hat'],['head','Cowboy Hat'],['head','Astronaut Helmet'],['neck','Sailor Collar'],['neck','Knit Scarf'],['body','Happi Coat'],['body','Bumblebee Suit'],['body','Cozy Hoodie'],['body','Tutu'],['body','Pyjamas']].forEach(o=>{if(!CHG.includes(o[1]))OUTS.push(o)});

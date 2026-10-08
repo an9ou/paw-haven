@@ -438,7 +438,7 @@ function openFeedTray() {
   const cards = items.map((f) => {
     const cnt = f.n === 'Fresh Water' ? '' : `<span class="cnt">${S.inv.food[f.n]}</span>`;
     const wait = f.n === 'Fresh Water' && S.gameMin - S.waterAt < shWaterWait(), off = !home && isMeal(f.n);
-    return `<button class="card ${off ? 'off meal' : ''}" data-food="${esc(f.n)}" ${wait || off ? 'aria-disabled="true"' : ''} aria-label="Feed ${esc(f.n)}${off ? ' (meals are served at home)' : ''}">${cnt}<span class="art">${art('item', f.n)}</span><b>${esc(f.n)}</b><span class="small">${off ? 'at home' : wait ? 'refilling...' : isFavFood(f.n) ? 'favourite!' : SNACKS.includes(f.n) ? 'snack' : ''}</span></button>`;
+    return `<button class="card ${off ? 'off meal' : ''}" data-food="${esc(f.n)}" ${wait || off ? 'aria-disabled="true"' : ''} aria-label="Feed ${esc(f.n)}${off ? ' (meals are served at home)' : ''}">${cnt}<span class="art">${art('item', f.n)}</span><b>${esc(f.n)}${hwTag(f.n)}</b><span class="small">${off ? 'at home' : wait ? 'refilling...' : isFavFood(f.n) ? 'favourite!' : SNACKS.includes(f.n) ? 'snack' : ''}</span></button>`;
   }).join('');
   const dishes = kOn() ? dishRowHTML(!home) : '';
   setTray(home ? 'Feed: tap a food' : `Feed: snacks and water at ${esc(PLACES[S.place] ? PLACES[S.place].n : 'this place')}`, `<div class="row">${cards}${dishes}</div>${items.length <= 1 && !dishes ? '<p class="small" style="margin:0">Pantry is empty. Kibble Corner on Market Street sells food.</p>' : ''}${home && S.dogs.length > 1 ? `<div class="awaynote"><p class="small">${feedAllFood() ? `One portion of <b>${esc(feedAllFood().n)}</b> for every dog (you have ${S.inv.food[feedAllFood().n]}).` : 'No meals left for Feed all.'}</p><button class="btn go" id="feedAll" ${feedAllFood() ? '' : 'aria-disabled="true"'}>Feed all (${S.dogs.length} dogs)</button></div>` : ''}${home ? '' : `<div class="awaynote"><p class="small">Meals are served at home. Out here ${esc(NAME())} has snacks and water.</p><button class="btn go" id="feedHome">Go home</button></div>`}`);
@@ -522,7 +522,7 @@ function openPlayTray() {
   if (cur.mode !== 'yard') go('yard');
   const fts = FETCH_TOYS.filter((t) => owns('toys', t)), sub = { 'Tennis Ball': 'Tennis Ball', Frisbee: 'Frisbee: 3 coins', 'Driftwood Stick': 'Stick: +1 coin', 'Glow Ball': 'Glow Ball: easy' };
   const b = fts.map((t) => `<button class="card" data-play="fetch:${esc(t)}"><span class="art">${art('item', t)}</span><b>Fetch</b><span class="small">${sub[t]} (challenge)</span></button>`);
-  toysPlayable().forEach((t) => b.push(`<button class="card" data-play="toy:${esc(t)}"><span class="art">${art('item', t)}</span><b>Play</b><span class="small">${esc(t)}</span></button>`));
+  toysPlayable().forEach((t) => b.push(`<button class="card" data-play="toy:${esc(t)}"><span class="art">${art('item', t)}</span><b>Play</b><span class="small">${esc(t)}${hwTag(t)}</span></button>`));
   b.push(`<button class="card" data-play="tricks"><span class="art">${ICON('star')}</span><b>Tricks</b><span class="small">${learnedCount()} learned</span></button>`);
   if (owns('toys', 'Squeaky Duck')) b.push(`<button class="card" data-play="duck"><span class="art">${art('item', 'Squeaky Duck')}</span><b>Squeak</b><span class="small">+10 Happiness</span></button>`);
   if (owns('toys', 'Rope Tug')) b.push(`<button class="card" data-play="tug"><span class="art">${art('item', 'Rope Tug')}</span><b>Tug</b><span class="small">+15 Happy, -10 Energy</span></button>`);
@@ -669,7 +669,12 @@ const HM_DECOR = {
   'Giant Crayon Box': { prop: 'crayonbox', at: [536, 296, 112, 90], vb: [200, 160], story: 'Every crayon is taller than a dog. Nobody has ever finished colouring.' },
   'Family Photo Frame': { prop: 'photoframe', at: [404, 236, 112, 98], vb: [160, 140], story: 'Everyone who ever shared this yard is on the fence. The ugly ones are the best.' },
   'Doggy Ramp': { prop: 'doggyramp', at: [536, 432, 82, 50], vb: [200, 120], story: 'Paw prints lead all the way up. Nobody has needed the ramp yet, but everyone is proud of it.' },
-  'Rocking Chair': { prop: 'rockingchair', at: [910, 452, 84, 84], vb: [160, 160], story: 'A dog-sized chair with a knitted blanket. Mum likes a rock here after a long day of puppies.' }
+  'Rocking Chair': { prop: 'rockingchair', at: [910, 452, 84, 84], vb: [160, 160], story: 'A dog-sized chair with a knitted blanket. Mum likes a rock here after a long day of puppies.' },
+  // v2.6 Halloween 2026 pop-up decorations (bought, not rewards). `at` are starting spots, the HALLOWEEN lane tunes them
+  'Jack-o-Lantern Trio': { prop: 'hwlanterns', at: [868, 380, 100, 60], vb: [200, 120], price: 120, fest: 'halloween', ed: 2026, v26: true, story: 'Three pumpkins, three faces, all of them smiling. They glow a little after dark.' },
+  'Paper Bat Bunting': { prop: 'hwbunting', at: [700, 200, 180, 48], vb: [300, 80], price: 90, fest: 'halloween', ed: 2026, v26: true, story: 'Paper bats on a string, cut a bit wonky. They flutter whenever a dog runs past.' },
+  'Friendly Scarecrow': { prop: 'hwscarecrow', at: [870, 260, 70, 100], vb: [140, 200], price: 140, fest: 'halloween', ed: 2026, v26: true, story: 'A pumpkin head and a big grin. The crows sit on his arms to chat.' },
+  'Ghost Garland': { prop: 'hwgarland', at: [220, 190, 160, 48], vb: [300, 90], price: 100, fest: 'halloween', ed: 2026, v26: true, story: 'Little cloth ghosts holding hands. They say boo very quietly.' }
 };
 const HM_PHOTO = [20, 15, 120, 84]; // the documented data-photo box inside the 160x140 frame
 function hmDecorFields() { if (S && (!S.decor || typeof S.decor !== 'object')) S.decor = {}; }
@@ -714,7 +719,7 @@ function hmDecorCard() {
 }
 function hmOpenDecor() {
   hmDecorFields(); const got = Object.keys(S.decor).filter((n) => HM_DECOR[n]), away = got.filter((n) => !hmDecorOut(n));
-  const list = away.map((n) => `<div class="sitem"><span class="art">${art('item', n)}</span><b>${esc(n)}</b><button class="btn yes" data-back="${esc(n)}">Put back</button></div>`).join('');
+  const list = away.map((n) => `<div class="sitem"><span class="art">${art('item', n)}</span><b>${esc(n)}${hwTag(n)}</b><button class="btn yes" data-back="${esc(n)}">Put back</button></div>`).join('');
   const p = openModal('Yard decor', away.length ? `<p class="small">These are tucked away. Put them back out any time.</p><div class="shopgrid">${list}</div>` : `<p>Everything you own is out in the yard. Nothing is hiding in the shed.</p>`);
   p.querySelectorAll('[data-back]').forEach((b) => { b.onclick = () => { SFX.click(); S.decor[b.dataset.back].out = true; markDirty(); toast(`${b.dataset.back} is back in the yard.`, 'good'); if (cur.mode === 'yard') { closeModal(); hmDecorRedraw(); hmOpenDecor(); } }; });
 }

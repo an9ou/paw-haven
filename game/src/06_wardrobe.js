@@ -8,7 +8,7 @@ function equip(n, quiet) {
 }
 function openWardrobe() {
   const owned = ALL_WEAR.filter((c) => owns('clothes', c.n));
-  const opt = (c, s) => `<button class="opt" data-eq="${esc(c.n)}" aria-pressed="${S.outfit[s] === c.n}"><span class="ic">${art('item', c.n)}</span>${esc(c.n)}${c.treasure || s === 'charm' ? ' <span class="tstar" title="Treasure">&#10022;</span>' : ''}</button>`;
+  const opt = (c, s) => `<button class="opt" data-eq="${esc(c.n)}" aria-pressed="${S.outfit[s] === c.n}"><span class="ic">${art('item', c.n)}</span>${esc(c.n)}${hwTag(c.n)}${c.treasure || s === 'charm' ? ' <span class="tstar" title="Treasure">&#10022;</span>' : ''}</button>`;
   const slotRow = (s, label, opts, empty) => `<div class="slot"><h4>${label}</h4>${opts.length ? `<button class="opt" data-un="${s}" aria-pressed="${!S.outfit[s]}">Nothing</button>` + opts.map((c) => opt(c, s)).join('') : `<span class="small">${empty}</span>`}${s === 'body' ? shPjToggle() : ''}</div>`;
   const slots = SLOTS.map((s) => slotRow(s, SLOT_NAME[s], owned.filter((c) => c.slot === s), 'Nothing owned yet. Bow-Wow Boutique sells some, walks hide others.')).join('')
     + slotRow('charm', 'Charm', CHARMS.filter((c) => S.inv.charms.includes(c.n)), 'No charms yet. They are buried on walks.');

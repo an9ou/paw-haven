@@ -232,8 +232,8 @@ function fsScatter(i) {
 /* ---- Harvest Stall (Square) ---- */
 function fsStallItems() {
   const on = (x) => festOn(x.fest);
-  return FOOD.filter((f) => f.fest && on(f)).map((f) => ({ cat: 'food', n: f.n, price: f.price, desc: f.note, tip: f.tip }))
-    .concat(CLOTHES.filter((c) => c.fest && !c.reward && on(c)).map((c) => ({ cat: 'clothes', n: c.n, price: c.price, desc: `${SLOT_NAME[c.slot]}. ${c.perk}` })));
+  return FOOD.filter((f) => f.fest && !f.ed && on(f)).map((f) => ({ cat: 'food', n: f.n, price: f.price, desc: f.note, tip: f.tip }))
+    .concat(CLOTHES.filter((c) => c.fest && !c.ed && !c.reward && on(c)).map((c) => ({ cat: 'clothes', n: c.n, price: c.price, desc: `${SLOT_NAME[c.slot]}. ${c.perk}` })));
 }
 function fsStallOpen() { return fsTry(fsStallOpen0); }
 function fsStallClosed() { if (fsAnyOn()) return false; if (!modal.hidden) closeModal(); toast('The Harvest Stall has packed up. Baker Bea says thank you for the pumpkin business.'); return true; }

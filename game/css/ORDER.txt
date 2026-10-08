@@ -33,3 +33,4 @@
 27_missions.css
 28_guide.css
 29_festival.css
+30_halloween.css

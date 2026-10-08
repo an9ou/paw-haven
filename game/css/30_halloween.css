@@ -1,0 +1,5 @@
+/* v2.6 HALLOWEEN lane (tag hw): the Pumpkin Patch Pop-up and the 2026 tag. V26.md section 7. The HALLOWEEN lane owns this file. */
+/* ---- the "2026" tag next to an item name (hwTag): a small crayon-outlined chip, orange on cream ---- */
+.hw-tag{display:inline-block;margin-left:6px;padding:0 6px 1px;vertical-align:.12em;font-family:var(--font-read);font-size:13px;font-weight:700;line-height:1.35;letter-spacing:.02em;white-space:nowrap;
+  color:#A8461A;background:var(--w-cream,#FFF4DF);border:2px solid #D9702A;border-radius:9px 6px 10px 5px;transform:rotate(-2deg)}
+html[data-layout="phone"] .hw-tag{font-size:15px;padding:0 7px 1px}
