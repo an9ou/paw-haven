@@ -348,10 +348,10 @@ function hwFace(x,gy,s){const cy=gy-9*s;return `M${R1(x-6.6*s)} ${R1(cy-.6*s)}l$
 function hwJack(k,x,gy,s=1){pumpkin(k,x,gy,s);const d=hwFace(x,gy,s);k.add(`<path d="${d}" fill="#7A4630" stroke="${C.ink}" stroke-width="${R1(Math.max(.6,.8*s))}" stroke-linejoin="round"/>`);
   if(k.env.lit){hwGlow(k,x,gy-9*s,32*s);k.hwl.push(`<path d="${d}" fill="#FFD36E" opacity="${R1(.95*k.env.lit)}"/>`)}}
 // a friendly paper or cloth ghost, y = the top of its head; len = the string it hangs from
-function hwGhost(k,x,y,s=1,len=0){if(len)k.line([[x,y-len],[x+k.J(.5),y+1]],1.1,C.ink,{op:.7});
+function hwGhost(k,x,y,s=1,len=0,mute=0){if(len)k.line([[x,y-len],[x+k.J(.5),y+1]],1.1,C.ink,{op:.7});
   const p=[];for(let i=0;i<=8;i++){const a=Math.PI+i/8*Math.PI;p.push([x+Math.cos(a)*10*s,y+10*s+Math.sin(a)*10*s])}
   p.push([x+11*s,y+22*s],[x+13*s,y+31*s],[x+8.5*s,y+27.5*s],[x+4.2*s,y+32*s],[x,y+28*s],[x-4.2*s,y+32*s],[x-8.5*s,y+27.5*s],[x-13*s,y+31*s],[x-11*s,y+22*s]);
-  k.shape(p,'#FFFFFF',{w:1.5,one:1,hatch:{side:.62,gap:3.5,col:'#C9C2D9',op:.6}});
+  k.shape(p,mute?'#E4DDE6':'#FFFFFF',{w:mute?1.2:1.5,one:1,lop:mute?.75:0,hatch:{side:.55,gap:3.5,col:mute?'#B3A8C2':'#C9C2D9',op:.6}});
   const e=(dx,dy,rx,ry,c,o='')=>`<ellipse cx="${R1(x+dx*s)}" cy="${R1(y+dy*s)}" rx="${R1(rx*s)}" ry="${R1(ry*s)}" fill="${c}"${o}/>`;
   k.add(e(-3.6,10,1.5,2.1,C.ink)+e(3.6,10,1.5,2.1,C.ink)+e(-3.2,9.2,.5,.6,'#FFFFFF')+e(4,9.2,.5,.6,'#FFFFFF')+e(-6.6,14,2,1.2,C.pink,' opacity=".75"')+e(6.6,14,2,1.2,C.pink,' opacity=".75"')+`<path d="M${R1(x-2.2*s)} ${R1(y+14.4*s)}q${R1(2.2*s)} ${R1(2.6*s)} ${R1(4.4*s)} 0" fill="none" stroke="${C.ink}" stroke-width="${R1(Math.max(.8,1.1*s))}" stroke-linecap="round"/>`)}
 // a felt bat with button eyes and a small smile (o.col: paper-cut colour for window bats)
@@ -371,12 +371,12 @@ function hwLanternString(k,x0,y0,x1,y1,sag,n,s=1){const pt=t=>[x0+(x1-x0)*t,y0+(
 function hwBatString(k,x0,x1,y,sag,n,s=1,skip){const pt=t=>[x0+(x1-x0)*t,y+Math.sin(Math.PI*t)*sag],L=[];for(let i=0;i<=24;i++)L.push(pt(i/24));k.line(L,1.4);
   for(let i=0;i<n;i++){const [x,yy]=pt((i+.5)/n);if(skip&&skip(x))continue;k.line([[x,yy],[x,yy+4*s]],1,C.ink,{op:.7});hwBat(k,x,yy+11*s,s)}}
 // a hay bale (a pumpkin usually sits on it)
-function hwHay(k,x,gy,s=1){const w=34*s,h=20*s;k.shape([[x-w/2,gy],[x-w/2-1*s,gy-h+3*s],[x-w/2+3*s,gy-h],[x+w/2-3*s,gy-h],[x+w/2+1*s,gy-h+3*s],[x+w/2,gy]],'#F2D27A',{w:1.5,one:1,hatch:{side:.5,gap:3.5,col:'#D2A94E',op:.55}});
+function hwHay(k,x,gy,s=1){const w=34*s,h=20*s;k.shape([[x-w/2,gy],[x-w/2-1*s,gy-h+3*s],[x-w/2+3*s,gy-h],[x+w/2-3*s,gy-h],[x+w/2+1*s,gy-h+3*s],[x+w/2,gy]],'#E2C88E',{w:1.2,one:1,lop:.75,hatch:{side:.5,gap:3.5,col:'#C4A462',op:.5}});
   let d='';for(let i=0;i<7;i++){const xx=x-w/2+4*s+k.r()*(w-12*s),yy=gy-h+4*s+k.r()*(h-7*s);d+=`M${R1(xx)} ${R1(yy)}l${R1(4*s)} ${R1(-1*s)}`}
   k.add(`<path d="${d}" fill="none" stroke="#C9A04E" stroke-width="1.1" stroke-linecap="round"/><path d="M${R1(x-w*.24)} ${R1(gy-h+1)}v${R1(h-1.6)}M${R1(x+w*.24)} ${R1(gy-h+1)}v${R1(h-1.6)}" fill="none" stroke="#A97E5A" stroke-width="1.6" stroke-linecap="round"/>`)}
 function hwHayJack(k,x,gy,s=1){hwHay(k,x,gy,s);hwJack(k,x+3*s,gy-19*s,.85*s)}
 // a painted ghost cut-out on a wooden stake
-function hwCutout(k,x,gy,s=1){k.shape(RC(x-2.4*s,gy-30*s,4.8*s,30*s),C.woodD,{w:1.3,one:1});hwGhost(k,x,gy-60*s,1.15*s)}
+function hwCutout(k,x,gy,s=1){k.shape(RC(x-2.4*s,gy-30*s,4.8*s,30*s),C.woodD,{w:1.2,one:1,lop:.75});hwGhost(k,x,gy-60*s,1.15*s,0,1)}
 // a little lantern standing on a post top at (x, y)
 function hwPostLantern(k,x,y,s=1){const g=[[x-6*s,y-3*s],[x-7*s,y-17*s],[x+7*s,y-17*s],[x+6*s,y-3*s]];
   k.shape(RC(x-8.5*s,y-3.4*s,17*s,3.4*s),C.ink,{noline:1,dx:0,dy:0});k.shape(g,'#FBE3A6',{w:1.4,one:1});
@@ -384,7 +384,7 @@ function hwPostLantern(k,x,y,s=1){const g=[[x-6*s,y-3*s],[x-7*s,y-17*s],[x+7*s,y
   k.shape([[x-9.5*s,y-16.6*s],[x,y-24*s],[x+9.5*s,y-16.6*s]],'#F59A4A',{w:1.4,one:1});k.add(`<circle cx="${R1(x)}" cy="${R1(y-27*s)}" r="${R1(2.6*s)}" fill="none" stroke="${C.ink}" stroke-width="1.3"/>`);
   if(k.env.lit){hwGlow(k,x,y-10*s,36*s,'#FFC46A');k.hwl.push(`<path d="M${g.map(p=>R1(p[0])+' '+R1(p[1])).join('L')}Z" fill="#FFE7A0" opacity="${R1(.75*k.env.lit)}"/>`)}}
 // walk-strip dressing: [kind, x, ground y, scale] (jack, hay = a hay bale with a pumpkin, ghost = a cut-out on a stake), each wrapped at the seam
-function hwStrip(k,list,bats){hwSkyBats(k,bats.map(([x,y,s])=>[x,y,s*1.3]));list.forEach(([t,x,gy,s])=>(s*=1.15,k.wrap(x,t==='ghost'?17*s:t==='hay'?20*s:14*s,()=>t==='jack'?hwJack(k,x,gy,s):t==='hay'?hwHayJack(k,x,gy,s):hwCutout(k,x,gy,s))))}
+function hwStrip(k,list,bats){hwSkyBats(k,bats.map(([x,y,s])=>[x,y,s*1.3]));list.forEach(([t,x,gy,s])=>(s*=t==='jack'?1.15:.8,k.wrap(x,t==='ghost'?17*s:t==='hay'?20*s:14*s,()=>t==='jack'?hwJack(k,x,gy,s):t==='hay'?hwHayJack(k,x,gy,s):hwCutout(k,x,gy,s))))}
 // felt bats far up in the dusk and night sky: into the sky layer, behind everything (wrapped on the walk strips)
 function hwSkyBats(k,list){const e=k.env;if(!(e.night||e.time==='dusk')||e.rain)return;k.sky.push(k.cap(()=>list.forEach(([x,y,s])=>{const one=()=>hwBat(k,x,y,s,{col:e.night?'#8C78AE':HWF});if(k.wrap)k.wrap(x,21*s,one);else one()})))}
 // sky colours: [top, horizon] per time, pulled toward grey by weather
@@ -670,8 +670,8 @@ function market(k){
   k.fx(()=>{if(k.env.snow){capLine(k,[[408,530],[592,530]],6);[[22,448],[978,448]].forEach(([x,y])=>capLine(k,[[x-15,y-26],[x+15,y-26]],5))}});
   k.side(()=>sproutCart(k));// v1.3, appended
   k.ss(()=>seasonDrift(k,[[150,330,1],[490,300,.9],[820,350,1],[640,410,.8],[300,420,.85]]));// v2.5
-  // v2.6 Halloween: felt bat bunting across the street, high above the signs (a gap where the sun or moon sits)
-  k.hw(()=>{const sx=k.env.low?820:170;hwBatString(k,-12,1012,84,18,15,.82,x=>Math.abs(x-sx)<56)});
+  // v2.6 Halloween: felt bat bunting across the tops of the signs, low enough to show in the desktop and phone crops (clear of the sign text, the bow and the "c")
+  k.hw(()=>hwBatString(k,-12,1012,155,8,15,.76,x=>Math.abs(x-500)<24||Math.abs(x-856)<24));
 }
 
 function shelter(k){
@@ -853,7 +853,7 @@ const STRIPS={
   let tf='';for(let x=10;x<1200;x+=46)tf+=`M${x} 330q1 -7 -1 -11M${x+5} 330q0 -8 3 -13`;k.add(`<path d="${tf}" fill="none" stroke="${C.grassD}" stroke-width="1.5" stroke-linecap="round"/>`);
   k.wrap(1190,30,()=>O.sparkle(k,1190,140,8));k.wrap(620,10,()=>O.heart(k,620,170,6));
   k.ss(()=>{seasonGround(k,[0,300,1200,328],46,[],1200);seasonGround(k,[0,338,1200,396],50,[],1200,1);seasonDrift(k,[[160,170,1],[470,140,.9],[760,190,1],[1040,150,.85]],1200)});// v2.5
-  k.hw(()=>hwStrip(k,[['hay',468,326,.95],['jack',770,324,.8],['jack',790,327,.6],['ghost',1094,324,.9]],[[300,70,.8],[345,52,.6],[1000,96,.7]]));// v2.6
+  k.hw(()=>hwStrip(k,[['hay',468,304,.95],['jack',770,306,.8],['jack',790,309,.6],['ghost',1094,302,.9]],[[300,70,.8],[345,52,.6],[1000,96,.7]]));// v2.6
  },
  river(k){
   k.skyD(()=>k.add(`<rect width="1200" height="210" fill="${C.sky}" fill-opacity=".7"/>`),SKYC.river);
@@ -876,7 +876,7 @@ const STRIPS={
   k.fx(()=>stripFx(k,{y0:338,y1:396,kind:'path',ns:5}));
   k.wrap(600,12,()=>O.sparkle(k,600,120,7));
   k.ss(()=>{if(k.so==='winter')iceEdge(k,0,1170,x=>319+per(x,[[2,4,1]]),-1,1200);seasonGround(k,[0,338,1200,396],50,[],1200,1);seasonDrift(k,[[260,140,1],[700,110,.9],[1000,160,.85]],1200)});// v2.5
-  k.hw(()=>hwStrip(k,[['jack',440,204,.62],['hay',640,330,.9],['jack',380,330,.8],['ghost',1004,330,.85]],[[240,100,.8],[290,80,.6],[700,60,.7]]));// v2.6
+  k.hw(()=>hwStrip(k,[['jack',440,204,.62],['hay',800,224,.75],['ghost',1040,222,.7]],[[240,100,.8],[290,80,.6],[700,60,.7]]));// v2.6
  },
  woods(k){
   k.skyD(()=>k.add(`<rect width="1200" height="330" fill="#E3EDDA" fill-opacity=".85"/>`),SKYC.woods);
@@ -895,7 +895,7 @@ const STRIPS={
     if(k.so==='spring')[[110,320],[380,318],[620,322],[880,320],[1080,318]].forEach(([x,y])=>k.wrap(x,16,()=>{bluebells(k,x,y,.9);bluebells(k,x+9,y+3,.7)}));
     seasonDrift(k,[[240,180,1],[560,150,.9],[820,200,1],[1100,170,.85]],1200)});
   k.fx(()=>{stripFx(k,{y0:338,y1:396,kind:'path',ns:5});if(k.env.night&&!k.env.rain)[[120,290],[380,262],[620,240],[860,300],[1060,270],[250,220]].forEach(f=>k.flies.push(f))});
-  k.hw(()=>hwStrip(k,[['jack',548,264,.8],['hay',284,302,.85],['jack',520,324,.75],['ghost',1076,300,.85]],[[300,60,.7],[350,44,.55],[900,80,.75]]));// v2.6
+  k.hw(()=>hwStrip(k,[['jack',548,264,.8],['hay',284,298,.85],['jack',520,306,.75],['ghost',1076,296,.85]],[[300,60,.7],[350,44,.55],[900,80,.75]]));// v2.6
  },
  beach(k){
   k.skyD(()=>k.add(`<rect width="1200" height="190" fill="${C.sky}" fill-opacity=".75"/>`),SKYC.beach);k.add(`<rect y="186" width="1200" height="84" fill="${C.water}"/>`);
@@ -918,7 +918,7 @@ const STRIPS={
     else if(so==='autumn')[[154,298],[400,300],[724,302],[960,300]].forEach(([x,y])=>k.wrap(x,18,()=>{let d='';for(let i=0;i<6;i++)d+=`M${x+i*5-12} ${y}q${(i-3)*2} -12 ${(i-3)*4} -22`;k.add(`<path d="${d}" fill="none" stroke="#C9A24E" stroke-width="1.6" stroke-linecap="round"/>`)}));
     else if(so==='spring')[[154,298],[400,300],[724,302],[960,300],[1084,296]].forEach(([x,y])=>k.wrap(x,18,()=>thrift(k,x,y,1.05)));
     seasonGround(k,[0,336,1200,396],so==='winter'?0:24,[],1200,1);seasonDrift(k,[[300,130,1],[820,150,.85]],1200)});
-  k.hw(()=>hwStrip(k,[['ghost',470,302,.9],['hay',880,304,.95],['jack',1000,300,.8],['jack',190,300,.7]],[[300,70,.8],[350,52,.6],[640,40,.65]]));// v2.6
+  k.hw(()=>hwStrip(k,[['ghost',470,292,.9],['hay',880,294,.95],['jack',1000,296,.8],['jack',190,296,.7]],[[300,70,.8],[350,52,.6],[640,40,.65]]));// v2.6
  }
 };
 
