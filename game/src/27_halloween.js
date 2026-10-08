@@ -180,6 +180,7 @@ function hwExpose() {
   if (!window.__paw) return;
   window.__paw.hw = {
     open: () => hwOpen(), items: () => hwItems().map((x) => x.n), on: () => hwOn(), spot: () => ({ desk: HW_POP.desk, phone: HW_POP.phone, decor: Object.fromEntries(Object.keys(HM_DECOR).filter((n) => HM_DECOR[n].ed).map((n) => [n, HM_DECOR[n].at])) }),
-    popupBox: () => hwPopBox(), letter: () => hwLetter(), journal: () => hwJournalLine(), tick: () => hwTick(), tag: (n) => hwTag(n), get pending() { return HW.pending; }, get buys() { return HW.buys.slice(); }
+    popupBox: () => hwPopBox(), letter: () => hwLetter(), journal: () => hwJournalLine(), tick: () => hwTick(), tag: (n) => hwTag(n), get pending() { return HW.pending; }, get buys() { return HW.buys.slice(); },
+    allow: (v) => { prefs.hwTest = !!v; hwTick(); } // the harness gate (hwAllowed) for suites that cannot pass prefs.hwTest at load (the occlusion hooks)
   };
 }
