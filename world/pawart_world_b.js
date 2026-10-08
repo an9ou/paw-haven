@@ -4432,6 +4432,212 @@ const PFRONT0=b=>b.raw('<g class="pa-front">'),PFRONT1=b=>b.raw('</g>');
 /* v27:house (end) */
 
 /* v27:furn (start) -- the 5 furniture pieces, FURN_SPOTS, their ITEMS cards */
+const FCT='#9ED8D2',FCTL='#D3F0EB',FCTD='#6FB3AC',FSIS='#E9C690',FSISD='#B88C56',FPEA='#FFD0A8',FPEAD='#E9A272',FIN='#A78A7C';
+// a stitched line (dashed, like the quilting on the beds)
+const fStitch=(b,d,col,op)=>b.raw(`<path d="${d}" fill="none" stroke="${col}" stroke-width="1" stroke-dasharray="3 2.6" stroke-linecap="round" stroke-opacity="${op||.8}"/>`);
+// a squashy carpet pad in 3/4 view: front face x0..x1 from y to y+t, top face d deep going up and right, carpet tufts on top
+function fPad(b,x0,x1,y,d,t,top,side,o={}){
+  const sk=o.sk??d*.6,ds=mix(side,INK,.3);
+  b.sh([[x1,y+1],[x1+sk,y-d+1],[x1+sk,y-d+t*.8],[x1,y+t]],side,{k:.1,hatch:0,hl:0,lw:o.lw||1,base:mix(ds,'#FFFFFF',.3),dr:.3,inner:b.st(b.jl(x1+2,y+t*.4,x1+sk-2,y-d+t*.4,.3),ds,1,.6)});
+  b.sh([[x0+1,y+1],[x0+sk,y-d],[x1+sk,y-d],[x1,y+1]],top,{k:.1,hatch:0,hl:0,lw:o.lw||1,base:mix(top,'#FFFFFF',.55),dr:.4});
+  let tf='';for(let i=0,n=Math.round((x1-x0)/7);i<n;i++){const u=b.r(),v=b.r(),x=x0+6+u*(x1-x0-8)+v*sk*.8,yy=y-2-v*(d-3);tf+=`M${R1(x)} ${R1(yy)}l1.3 -1.1`}
+  b.raw(b.st(tf,mix(top,INK,.35),1,.55));
+  const F=[[x0,y+t*.15],[x0+2,y],[x0+(x1-x0)*.3,y-.6],[x1-(x1-x0)*.3,y-.6],[x1-2,y],[x1,y+t*.15],[x1+1,y+t*.75],[x1-4,y+t],[x0+(x1-x0)*.5,y+t+1.2],[x0+4,y+t],[x0-1,y+t*.75]];
+  b.sh(F,side,{k:.16,hatch:1,hl:0,lw:o.lw||1.15,sh:ds,base:mix(side,'#FFFFFF',.5),dr:.4});
+  fStitch(b,b.jl(x0+5,y+t*.42,x1-5,y+t*.42,.4),'#FFFFFF',.85);
+}
+
+PROPS.playtower=function(b,o){
+  b.shadow(104,255,96,4.5);
+  // the two posts (back): a sisal-wrapped one on the left, a carpet one on the right
+  b.sh(RR(40,74,22,62,4),FSIS,{hatch:1,hl:0,lw:1.1,base:'#F6E2BE',sh:FSISD,
+   inner:b.st(Array.from({length:13},(_,i)=>b.jl(40,78+i*4.8,62,75+i*4.8,.4)).join(''),FSISD,1.1,.75)});
+  b.sh(RR(144,74,20,62,4),FCT,{hatch:1,hl:0,lw:1.1,base:FCTL,sh:FCTD});
+  // the cubby box in 3/4: top face (step one), right side face, front face, the cushioned inside
+  b.sh([[12,140],[24,127],[198,127],[188,140]],FCTL,{k:.05,hatch:0,hl:0,lw:1,base:'#EAF8F5',dr:.4});
+  let tf='';for(let i=0;i<20;i++){const x=24+b.r()*160,y=129+b.r()*9;tf+=`M${R1(x)} ${R1(y)}l1.3 -1.1`}b.raw(b.st(tf,FCTD,1,.5));
+  b.sh([[188,140],[198,127],[198,240],[188,253]],FCTD,{k:0,hatch:1,hl:0,lw:1.1,base:FCT,sh:mix(FCTD,INK,.3)});
+  b.sh(RR(12,138,178,116,7),FCT,{hatch:1,hl:0,lw:1.2,sh:FCTD,base:FCTL});
+  const AR=[[172,252],[172,178],[164,162],[146,152],[100,148],[54,152],[36,162],[28,178],[28,252]];
+  b.sh(AR,FIN,{k:.14,hatch:1,hl:0,lw:1,base:'#C9B2A6',sh:'#6E5A55',hs:1.8,ho:.55,marks:[{pts:[[20,140],[180,140],[180,176],[20,176]],fill:'#8E7468',op:.45,k:0}]});
+  b.sh([[34,250],[38,236],[70,230],[130,230],[162,236],[166,250]],FPEA,{k:.2,hatch:0,hl:0,lw:.9,base:'#FFE6D2'});
+  // the side step (step two), on a little wooden bracket
+  b.ln([[30,119],[42,131]],{w:3.4,col:C.woodD});
+  fPad(b,4,74,106,10,13,FCTL,FCT,{sk:7});
+  // the top step (step three)
+  fPad(b,10,190,64,16,16,FCTL,FCT,{sk:9});
+  paw(b,26,72,3,'#FFFBF3',{a:-.1,lw:.5});paw(b,174,72,3,'#FFFBF3',{a:.1,lw:.5});
+  // the rope to bat, from under the top step, a knotted rope ball at the end
+  const s0=o.use?16:0;
+  b.ln([[176,80],[176+s0*.25,94],[177+s0*.6,106],[177+s0,116]],{w:2.8,col:FSISD});
+  b.raw(b.st([0,1,2,3,4].map(i=>b.jl(174+s0*i*.2,84+i*7,178+s0*i*.2,86+i*7,.2)).join(''),'#FFF2DA',.9,.8));
+  b.sh(cloudP(177+s0,124,9,8.6,7,.12,28),'#F7A1B5',{k:.15,hatch:0,hl:0,lw:1,base:'#FBD0DB',
+   inner:b.st(b.jl(170+s0,118,184+s0,130,.4)+b.jl(170+s0,128,183+s0,119,.4)+b.jl(168+s0,124,186+s0,124,.4),'#C95F7A',1.1,.75)});
+  if(o.use)b.raw(b.st(b.jl(165,112,159,117,.3)+b.jl(165,122,158,126,.3),GRAPH,1.3,.9),'top');
+  // ---- front: the cubby face round the arch (both pillars and the lintel), the arch piping and the cushion lip
+  PFRONT0(b);
+  b.sh([[12,145],[14,140],[20,138],[182,138],[188,140],[190,145],[190,254],[172,254],...AR.slice(0,-1),[28,254],[12,254]],FCT,{k:0,hatch:0,hl:0,lw:1.2,base:FCTL});
+  // hand hatching on the shadow sides (plain strokes: the game's front copy hides masks and clips)
+  let hh='';for(let y=150;y<248;y+=5)hh+=b.jl(176,y+5,185,y-2,.3);for(let y=170;y<246;y+=6)hh+=b.jl(16,y+4,24,y-2,.3);for(let x=40;x<170;x+=6)hh+=b.jl(x,147,x+4,141,.3);
+  b.raw(b.st(hh,FCTD,1,.55));
+  fStitch(b,'M18 246V150Q18 144 24 144H178Q184 144 184 150V246','#FFFFFF',.8);
+  b.sh(ribbon([[30.5,252],[30.5,178],[38.5,164],[55,154.5],[100,150.5],[145,154.5],[161.5,164],[169.5,178],[169.5,252]],[6,6,6,6,6,6,6,6,6]),FPEA,{k:1/6,hatch:0,hl:0,lw:.85,base:'#FFE6D2'});
+  b.sh([[34,251],[50,244],[100,241],[150,244],[166,251],[164,255],[36,255]],FPEA,{k:.2,hatch:0,hl:0,lw:.9,base:'#FFE6D2',det:[[[48,249],[152,249]]],dcol:FPEAD,dw:.7});
+  PFRONT1(b);
+  b.ex('spark',196,40,4.4);b.ex('heart',14,90,3.4,'#F7B2C4');
+};
+
+const FSO='#F4A6A0',FSOL='#FCD9D3',FSOD='#D9786F',FTUN='#B9A6E8';
+// an arch from the floor (x0..x1, floor y, top y at the middle)
+const fArch=(x0,x1,yb,yt)=>{const w=x1-x0,p=[[x0,yb]];for(let i=0;i<=12;i++){const a=Math.PI*(1-i/12);p.push([x0+w/2+Math.cos(a)*w/2,Math.min(yb,yt+(1-Math.sin(a))*w*.46)])}p.push([x1,yb]);return p};
+PROPS.tunnelsofa=function(b,o){
+  const G=156,LA=[56,124],RA=[176,244],AT=55;
+  b.shadow(150,G,146,4.5);
+  // the backrest: two squashy back cushions
+  b.sh(cloudP(150,34,138,30,10,.05,60).map(([x,y])=>[x,Math.min(y,48)]),FSO,{k:.14,hatch:1,hl:0,lw:1.2,sh:FSOD,base:FSOL});
+  [[92,24],[208,24]].forEach(([x,y])=>{b.sh(RR(x-54,y-18,108,38,16),FSO,{hatch:0,hl:0,lw:1.1,base:FSOL,det:[[[x-30,y-6],[x-22,y+2]],[[x+26,y-8],[x+20,y]]],dcol:FSOD,dw:.8});
+    b.sh(E(x,y+1,3,2.4,10),FSOD,{hatch:0,hl:0,lw:.6,dr:.1})});
+  // the inside of the tunnel, seen through both ends: a ribbed lavender lining
+  b.sh([[LA[0]+2,G],[LA[0]+2,AT+12],[RA[1]-2,AT+12],[RA[1]-2,G]],FTUN,{k:0,hatch:1,hl:0,lw:.8,base:'#E4DBF7',sh:'#7C6AAE',hs:1.6,ho:.5,
+   marks:[{pts:[[40,AT],[260,AT],[260,AT+36],[40,AT+36]],fill:'#8E7BC2',op:.35,k:0}],
+   inner:b.st(Array.from({length:12},(_,i)=>{const x=LA[0]+10+i*17;return `M${x} ${AT+10}Q${x-6} ${(AT+G)/2} ${x} ${G-2}`}).join(''),'#FFFFFF',1.4,.55)});
+  b.sh([[LA[0]+2,G-1],[LA[0]+10,G-14],[RA[1]-10,G-14],[RA[1]-2,G-1]],'#D8CBEF',{k:.1,hatch:0,hl:0,lw:.7,dr:.2});
+  // the arms
+  [[0,1],[300,-1]].forEach(([x,d])=>{const X=v=>x+d*v;
+    b.sh([[X(4),G],[X(2),70],[X(4),52],[X(16),42],[X(34),44],[X(48),56],[X(50),G]],FSO,{k:.16,hatch:1,hl:0,lw:1.2,sh:FSOD,base:FSOL});
+    b.loop(E(X(25),58,13,10,16),{w:1,col:FSOD,op:.6});
+    b.sh(E(X(14),G-2,6,4,10),C.woodD,{hatch:0,hl:0,lw:.8,dr:.2});b.sh(E(X(40),G-2,6,4,10),C.woodD,{hatch:0,hl:0,lw:.8,dr:.2})});
+  // the seat cushions (top faces; dented when in use)
+  const dn=o.use?4:0;
+  [[48,150],[150,252]].forEach(([x0,x1],i)=>{const m=(x0+x1)/2;
+    b.sh([[x0,41],[x0+6,27],[m-20,26+(i?dn*.4:dn*.2)],[m+14,26+(i?dn*.2:dn*.4)],[x1-6,27],[x1,41]],'#FBC2B9',{k:.14,hatch:0,hl:0,lw:1,base:'#FDE3DE',dr:.3})});
+  if(o.use)b.raw(b.st(b.jl(120,31,138,32,.3)+b.jl(162,32,182,31,.3),FSOD,1,.7));
+  // ---- front: the base face round both tunnel ends, the cushion fronts and the piping
+  PFRONT0(b);
+  const L=fArch(LA[0],LA[1],G,AT),Rr=fArch(RA[0],RA[1],G,AT),bul=o.use?5:0;
+  b.sh([[44,G],[44,47],[48,41],[252,41],[256,47],[256,G],...Rr.slice().reverse(),[150,G],...L.slice().reverse()].map(([x,y])=>x>126&&x<174&&y>70?[x,y]:[x,y]),FSO,{k:0,hatch:0,hl:0,lw:1.25,base:FSOL});
+  if(bul)b.raw(b.st('M131 84Q150 '+(96)+' 169 84M131 140Q150 128 169 140'+b.jl(116,74,111,70,.2)+b.jl(184,74,189,70,.2)+b.jl(150,66,150,61,.2),FSOD,1.2,.8));
+  let hh='';for(let y=78;y<150;y+=6)hh+=b.jl(160,y+5,168,y-1,.3);for(let x=58;x<244;x+=7)hh+=b.jl(x,54,x+4,49,.3);
+  b.raw(b.st(hh,FSOD,1,.5));
+  [L,Rr].forEach(A=>{const rim=A.slice(1,-1);rim[0]=[rim[0][0],G];rim[rim.length-1]=[rim[rim.length-1][0],G];
+    b.sh(ribbon(rim,rim.map(()=>7)),FTUN,{k:1/6,hatch:0,hl:0,lw:.9,base:'#E4DBF7'});
+    let wr='';for(let i=1;i<rim.length-1;i++){const [x,y]=rim[i];wr+=b.jl(x-1.6,y-2.6,x+1.6,y+2.6,.2)}b.raw(b.st(wr,'#FFFFFF',1.2,.85))});
+  [[48,150],[150,252]].forEach(([x0,x1])=>{b.sh([[x0,41],[x1,41],[x1+1,48],[x1-3,52],[(x0+x1)/2,53.5],[x0+3,52],[x0-1,48]],FSO,{k:.18,hatch:0,hl:0,lw:1.1,base:FSOL});fStitch(b,b.jl(x0+6,47,x1-6,47,.3),'#FFFFFF',.85)});
+  paw(b,150,124+(bul?-2:0),5,'#FFFBF3',{lw:.6});
+  PFRONT1(b);
+  b.ex('spark',290,10,4.4);b.ex('heart',8,24,3.4,'#F7B2C4');
+};
+
+const BALLC=['#F08A86','#FFD56B','#7FB7E0','#9CCB86','#F7A1B5','#B9A6E8','#F9B97A'];
+// a pit ball: a pastel circle with a little shine (plain shapes, safe in the front copy)
+function fBall(b,x,y,r,c){b.sh(E(x,y,r,r,Math.max(10,Math.round(r*1.6))),c,{hatch:0,hl:0,lw:.85,dr:.25,base:mix(c,'#FFFFFF',.45)});b.raw(`<path d="M${R1(x-r*.55)} ${R1(y-r*.1)}Q${R1(x-r*.45)} ${R1(y-r*.55)} ${R1(x-r*.05)} ${R1(y-r*.62)}" fill="none" stroke="#fff" stroke-width="${R1(Math.max(1,r*.22))}" stroke-linecap="round" stroke-opacity=".85"/>`)}
+PROPS.ballpit=function(b,o){
+  const PB='#B9D4F3',PBL='#E2EEFB',PBD='#8FB0DA',CX=120,TY=70,RX=112,RY=28,G=136,sr=rng(hashS('ballpit:balls'));
+  b.shadow(CX,G-1,114,5);
+  // the padded tub: the back of the wall and the far half of the rim, seen from a little above
+  const BW=[];for(let i=0;i<=24;i++){const a=Math.PI+Math.PI*i/24;BW.push([CX+Math.cos(a)*(RX+4),TY+Math.sin(a)*(RY+4)])}for(let i=0;i<=24;i++){const a=Math.PI*i/24;BW.push([CX+Math.cos(a)*(RX+4),G-26+Math.sin(a)*26])}
+  b.sh(BW,PB,{k:1/6,hatch:1,hl:0,lw:1.2,sh:PBD,base:PBL});
+  b.sh(E(CX,TY+2,RX-8,RY-6,44),PBD,{hatch:0,hl:0,lw:1,base:PB,dr:.4});
+  const rimB=[];for(let i=0;i<=24;i++){const a=Math.PI+Math.PI*i/24;rimB.push([CX+Math.cos(a)*RX,TY+Math.sin(a)*RY])}
+  b.sh(ribbon(rimB,rimB.map(()=>13)),PBL,{k:1/6,hatch:0,hl:0,lw:1.1,base:'#F4F8FE'});
+  // the balls inside, back rows first, heaped a little in the middle
+  const back=[];for(let i=0;i<54;i++){const a=sr()*Math.PI*2,rr=Math.sqrt(sr()),x=CX+Math.cos(a)*(RX-16)*rr,y=TY+Math.sin(a)*(RY-8)*rr-4*(1-rr);back.push([x,y,8+sr()*1.8,BALLC[i%7]])}
+  back.sort((p,q)=>p[1]-q[1]).forEach(([x,y,r,c])=>fBall(b,x,y,r,c));
+  if(o.use){[[30,24,8.6,0],[204,16,8,2],[168,0,7.4,4],[62,4,7,1]].forEach(([x,y,r,k])=>fBall(b,x,y,r,BALLC[k]));
+    b.raw(b.st(b.jl(34,38,38,48,.3)+b.jl(24,36,26,46,.3)+b.jl(202,30,198,40,.3)+b.jl(212,30,210,40,.3)+b.jl(166,14,162,24,.3),GRAPH,1.2,.9),'top')}
+  // ---- front: two rows of front balls, the near half of the padded rim and the front wall
+  PFRONT0(b);
+  for(let row=0;row<2;row++)for(let x=CX-RX+18+row*7;x<=CX+RX-16;x+=13){const t=(x-CX)/RX,yy=TY+RY*Math.sqrt(Math.max(0,1-t*t))-7-row*6;
+    fBall(b,x+sr()*3-1.5,yy-sr()*3,8.4+sr()*1.4,BALLC[Math.floor(sr()*7)])}
+  const W=[];for(let i=0;i<=24;i++){const a=Math.PI*i/24;W.push([CX+Math.cos(a)*(RX+4),TY+Math.sin(a)*RY])}
+  for(let i=24;i>=0;i--){const a=Math.PI*i/24;W.push([CX+Math.cos(a)*(RX+4),G-26+Math.sin(a)*26])}
+  b.sh(W,PB,{k:1/6,hatch:0,hl:0,lw:1.25,base:PBL});
+  let hh='';for(let i=0;i<16;i++){const x=CX+RX*.5+i*3.5,t=(x-CX)/(RX+4),y0=TY+RY*Math.sqrt(Math.max(0,1-t*t))+16,y1=G-26+26*Math.sqrt(Math.max(0,1-t*t))-4;hh+=b.jl(x-3,y1,x+3,y0,.3)}b.raw(b.st(hh,PBD,1,.5));
+  const rimF=[];for(let i=0;i<=24;i++){const a=Math.PI*i/24;rimF.push([CX+Math.cos(a)*RX,TY+Math.sin(a)*RY])}
+  b.sh(ribbon(rimF,rimF.map(()=>14)),PBL,{k:1/6,hatch:0,hl:0,lw:1.15,base:'#F4F8FE'});
+  fStitch(b,(()=>{let d='';for(let i=2;i<=22;i++){const a=Math.PI*i/24,x=CX+Math.cos(a)*(RX+3),y=(TY+G-26)/2+8+Math.sin(a)*((RY+26)/2+2);d+=(i===2?'M':'L')+R1(x)+' '+R1(y)}return d})(),'#FFFFFF',.85);
+  [[CX-62,G-14],[CX,G-6],[CX+62,G-14]].forEach(([x,y],i)=>paw(b,x,y-6,4.2,i===1?'#FFE08A':'#FFFBF3',{lw:.6}));
+  PFRONT1(b);
+  b.ex('spark',232,34,4.4);b.ex('heart',8,44,3.4,'#F7B2C4');
+};
+
+PROPS.sofaramp=function(b,o){
+  const G=154,SY=60,SX0=118,SX1=252,MU='#F9D27A',MUL='#FFF0C4',MUD='#D9A84A',LV='#D3C6F1',LVD='#9C8CCF';
+  b.shadow(130,G+1,126,4.5);
+  // the backrest and a round bolster at the right end
+  b.sh([[SX0+10,SY+4],[SX0+12,30],[SX0+24,16],[186,12],[236,16],[250,28],[252,SY+4]],MU,{k:.16,hatch:1,hl:0,lw:1.2,sh:MUD,base:MUL});
+  b.sh(RR(SX0+22,22,104,34,14),MU,{hatch:0,hl:0,lw:1,base:MUL,det:[[[SX0+40,30],[SX0+48,38]],[[SX0+104,28],[SX0+98,36]]],dcol:MUD,dw:.8});
+  b.sh(E(SX0+74,39,3,2.4,10),MUD,{hatch:0,hl:0,lw:.6,dr:.1});
+  // the seat: the cushion top (dented in use), the cushion front, the base on bun feet
+  const dn=o.use?4:0;
+  b.sh([[SX0,SY+6],[SX0+8,SY-6],[SX0+50,SY-7+dn],[SX0+90,SY-7+dn*.6],[SX1-6,SY-6],[SX1,SY+6]],'#FBE3A0',{k:.18,hatch:0,hl:0,lw:1,base:'#FFF4D2',dr:.3});
+  if(o.use)b.raw(b.st(b.jl(SX0+36,SY-2,SX0+54,SY,.3)+b.jl(SX0+84,SY,SX0+100,SY-2,.3),MUD,1,.7));
+  b.sh(RR(SX0,SY+4,SX1-SX0,22,9),MU,{hatch:1,hl:0,lw:1.15,sh:MUD,base:MUL});
+  fStitch(b,b.jl(SX0+8,SY+15,SX1-8,SY+15,.4),'#FFFFFF',.85);
+  b.sh(RR(SX0+4,SY+26,SX1-SX0-8,G-SY-34,6),MU,{hatch:1,hl:0,lw:1.2,sh:MUD,base:MUL,marks:[{pts:[[SX0,SY+70],[SX1,SY+70],[SX1,SY+76],[SX0,SY+76]],fill:'#FFFFFF',op:.55,k:0}]});
+  [[SX0+18,G-4],[SX1-18,G-4]].forEach(([x,y])=>b.sh(E(x,y,7,5,12),C.woodD,{hatch:0,hl:0,lw:.9,dr:.2}));
+  paw(b,(SX0+SX1)/2+24,SY+56,5,'#FFFBF3',{lw:.6});
+  // the ramp: a soft carpeted wedge, its side face and the sloping top with paw treads
+  b.sh([[4,G-2],[SX0+4,SY+8],[SX0+4,G-6],[4,G]],LV,{k:0,hatch:1,hl:0,lw:1.2,sh:LVD,base:'#EAE2FA',dr:.4,
+   inner:b.st(Array.from({length:7},(_,i)=>{const x=22+i*14;return b.jl(x,G-3,x,G-3-(x-4)*.78+6,.3)}).join(''),LVD,1,.4)});
+  b.sh([[2,G-8],[SX0,SY+2],[SX0+8,SY+10],[8,G-1]],'#E4DBF7',{k:0,hatch:0,hl:0,lw:1.2,base:'#F3EFFC',dr:.4});
+  let pl='';for(let i=0;i<22;i++){const t=i/22;pl+=`M${R1(8+t*(SX0-6))} ${R1(G-6-t*(G-SY-10))}l1 -2.6`}b.raw(b.st(pl,LVD,1,.55));
+  [[24,138],[48,122],[72,106],[96,89]].forEach(([x,y],i)=>paw(b,x,y-1,4.2,i%2?'#FFE08A':'#F7B2C4',{a:-.6,lw:.5}));
+  b.sh(E(7,G-8,6,5,12),'#F7B2C4',{hatch:0,hl:0,lw:.8,base:'#FDE0E8'});
+  PFRONT0(b);PFRONT1(b);
+  b.ex('spark',254,6,4.4);b.ex('heart',30,90,3.4,'#F7B2C4');
+};
+
+PROPS.windowseat=function(b,o){
+  const G=236,WX=110,WY=70,WR=44,SX0=14,SX1=206,ST=172;
+  b.shadow(110,G-1,104,4.5);
+  // the nook: two side panels, an arched top with a scalloped valance
+  b.sh([[SX0-4,G],[SX0-4,64],[24,30],[60,10],[110,4],[160,10],[196,30],[SX1+4,64],[SX1+4,G],[110,G]],C.wood,{k:.06,hatch:1,hl:0,lw:1.25,base:'#F3DDB4',sh:WKD});
+  b.sh([[SX0+8,G],[SX0+8,70],[34,40],[66,22],[110,17],[154,22],[186,40],[SX1-8,70],[SX1-8,G],[110,G]],'#FFF2DA',{k:.06,hatch:0,hl:0,lw:1,base:'#FFF8EC',
+   inner:b.st(Array.from({length:9},(_,i)=>`M${36+i*19} 30V${G}`).join(''),'#F2D7C0',2,.6)});
+  // the round window
+  b.sh(E(WX,WY,WR+8,WR+8,32),C.woodD,{hatch:0,hl:0,lw:1.2,base:C.wood});
+  // the sky: day and night are both drawn (so the jitter never changes) and lit shows the night one
+  const nt=!!o.lit;
+  b.raw(`<g${nt?' display="none"':''}>`);
+  b.sh(E(WX,WY,WR,WR,32),'#BFE6FA',{hatch:0,hl:0,lw:1,base:'#E6F6FD',dr:.3,
+   marks:[{pts:cloudP(WX+12,WY-14,18,7,6,.2,24),fill:'#FFFFFF',op:.9},{pts:[[WX-WR,WY+18],[WX-10,WY+10],[WX+WR,WY+20],[WX+WR,WY+WR],[WX-WR,WY+WR]],fill:'#B8DE9A',k:.2}]});
+  b.raw(b.st(`M${WX-22} ${WY-6}q3 -3 6 0q3 -3 6 0M${WX+20} ${WY+4}q2.4 -2.4 4.8 0q2.4 -2.4 4.8 0`,INK,1.1,.8));
+  b.raw('</g>').raw(`<g${nt?'':' display="none"'}>`);
+  if(!b._mg){b._mg=IDT+'mg';b.D.push(`<radialGradient id="${b._mg}"><stop offset="0" stop-color="#FFF4C2" stop-opacity=".7"/><stop offset="1" stop-color="#FFF4C2" stop-opacity="0"/></radialGradient>`)}
+  b.sh(E(WX,WY,WR,WR,32),'#56628A',{hatch:0,hl:0,lw:1,base:'#3E4A6B',dr:.3,marks:[{pts:[[WX-WR,WY+20],[WX-10,WY+12],[WX+WR,WY+22],[WX+WR,WY+WR],[WX-WR,WY+WR]],fill:'#4A5A6E',k:.2}]});
+  b.raw(`<circle cx="${WX-14}" cy="${WY-12}" r="24" fill="url(#${b._mg})"/>`);
+  b.sh(crescent(WX-14,WY-12,11),'#FFE59A',{hatch:0,hl:0,lw:.8,base:'#FFF4C2'});
+  [[WX+16,WY-22],[WX+26,WY+2],[WX-24,WY+14],[WX+4,WY-30]].forEach(([x,y],i)=>b.sh(starP(x,y,i%2?2.6:3.4,1.2),'#FFE59A',{k:.1,hatch:0,hl:0,lw:.5,dr:.1}));
+  b.raw('</g>');
+  b.raw(b.st(`M${WX} ${WY-WR}V${WY+WR}M${WX-WR} ${WY}H${WX+WR}`,C.woodD,3.2,.95));
+  // the valance: scalloped cloth along the arch
+  const val=[];for(let i=0;i<=10;i++){const t=i/10,a=Math.PI*(1-t);val.push([110+Math.cos(a)*84,62-Math.sin(a)*42])}
+  b.sh(ribbon(val,val.map(()=>10)),'#F7B2C4',{k:1/6,hatch:0,hl:0,lw:.9,base:'#FDE0E8'});
+  val.forEach(([x,y],i)=>{if(i%2===0)b.sh(E(x,y+6,4.4,3.4,10),'#F28FA5',{hatch:0,hl:0,lw:.6,dr:.1})});
+  // the seat: a box with two cubbies and a cushion (dented in use)
+  b.sh(RR(SX0,ST+10,SX1-SX0,G-ST-10,5),C.wood,{hatch:1,hl:0,lw:1.2,base:'#F3DDB4',sh:WKD});
+  [[SX0+14,88],[SX0+106,88]].forEach(([x,w])=>{b.sh(RR(x,ST+22,w-14,G-ST-32,6),'#C9A87E',{hatch:1,hl:0,lw:1,base:'#E8D3B4',sh:'#8E6E4E',hs:1.4})});
+  b.sh(boneP(SX0+46,G-16,30,10,0),'#FFE9CF',{hatch:0,hl:0,lw:.8});b.sh(E(SX0+140,G-16,9,8,14),'#7FB7E0',{hatch:0,hl:0,lw:.8,base:'#C5DEF2'});
+  const dn=o.use?4:0;
+  b.sh([[SX0-2,ST+14],[SX0,ST+2],[SX0+10,ST-6],[WX-30,ST-7+dn],[WX+30,ST-7+dn*.6],[SX1-10,ST-6],[SX1,ST+2],[SX1+2,ST+14],[WX,ST+17]],'#9ED8D2',{k:.2,hatch:1,hl:0,lw:1.2,sh:FCTD,base:FCTL});
+  fStitch(b,b.jl(SX0+4,ST+8,SX1-4,ST+8,.4),'#FFFFFF',.85);
+  [[SX0+48,ST+1],[SX1-48,ST+1]].forEach(([x,y])=>b.sh(E(x,y+dn*.4,3,2.2,10),FCTD,{hatch:0,hl:0,lw:.6,dr:.1}));
+  if(o.use)b.raw(b.st(b.jl(WX-40,ST-1,WX-22,ST+1,.3)+b.jl(WX+20,ST+1,WX+38,ST-1,.3),FCTD,1,.7));
+  // a little heart cushion leaning in the corner
+  b.sh(heartP(SX1-20,ST-12,22),'#F7B2C4',{hatch:0,hl:0,lw:.9,base:'#FDE0E8'});
+  PFRONT0(b);PFRONT1(b);
+  b.ex('spark',212,20,4.4);
+};
+
+const FURN_SPOTS={
+  playtower:{top:{x:100,y:58,w:200,pose:'sit',face:'right'},cubby:{x:100,y:250,w:200,pose:'sleep',face:'right',front:true}},
+  tunnelsofa:{tunnel:{x:150,y:154,w:200,pose:'walk',face:'right',front:true},seat:{x:150,y:33,w:200,pose:"down",face:"left"}},
+  ballpit:{a:{x:96,y:106,w:200,pose:'happy',face:'right',front:true},b:{x:150,y:104,w:200,pose:'rollover',face:'left',front:true}},
+  sofaramp:{top:{x:186,y:58,w:200,pose:'sit',face:'left',via:{x:40,y:152}}},
+  windowseat:{seat:{x:110,y:176,w:200,pose:'sit',face:'right'}}
+};
+PA.FURN_SPOTS=FURN_SPOTS;
 /* v27:furn (end) */
 
 /* v27:bed (start) -- the Knitted Nest and the two icons */
