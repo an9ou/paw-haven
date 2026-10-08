@@ -106,6 +106,18 @@ async function suite(t, dev) {
   ok(!!(await t.S()).decor['Ghost Garland'], 'bought the Ghost Garland by touch');
   await closeSheet(t);
 
+  t.sec(dev + ': the 2026 chip in the Feed and Play tray cards sits on the card corner, never in the clamped text');
+  await ev(() => { const S = window.__paw.S; S.inv.food['Sweet Potato Bones'] = 2; S.inv.food['Frozen Yoghurt Ghosts'] = 2; ['Squeaky Pumpkin', 'Trick-or-Treat Bucket'].forEach((n) => { if (!S.inv.toys.includes(n)) S.inv.toys.push(n); }); S.sleeping = false; S.place = 'yard'; window.__paw.go('yard'); });
+  await t.untilMode('yard'); await t.calm(); await t.lu();
+  // w: nothing but the count chip (.cnt, right:-3px, on every counted card since v2.5) pokes out of the card
+  const chips = async (act) => { await p.locator(`#bar [data-act=${act}]`).first().tap(); await t.waitPop(true); await settled(t, '#dock .tray');
+    const r = await ev(() => [...document.querySelectorAll('#dock .tray .card')].filter((c) => c.querySelector('.hw-tag')).map((c) => { c.scrollIntoView({ block: 'nearest', inline: 'nearest' }); const a = c.getBoundingClientRect(), g = c.querySelector('.hw-tag').getBoundingClientRect(), fs = parseFloat(getComputedStyle(c.querySelector('.hw-tag')).fontSize); return { n: c.textContent.trim().slice(0, 22), ins: g.left >= a.left - 6 && g.right <= a.right + 1 && g.top >= a.top - 8 && g.bottom <= a.bottom, w: ![...c.querySelectorAll('*')].some((e) => !e.closest('.cnt') && e.getBoundingClientRect().right > a.right + 0.5), fs, h: g.height > 4 }; }));
+    await p.locator(`#bar [data-act=${act}]`).first().tap(); await t.waitPop(false); return r; };
+  for (const act of ['feed', 'play']) {
+    const r = await chips(act);
+    ok(r.length >= (act === 'feed' ? 3 : 0) && r.every((x) => x.ins && x.w && x.h && x.fs >= 15), `${act} tray: ${r.length} cards with the chip, each whole on the card corner, 15 px, nothing but the count chip wider than the card ${JSON.stringify(r.filter((x) => !(x.ins && x.w && x.h && x.fs >= 15)))}`);
+  }
+
   t.sec(dev + ': the four decorations in the yard');
   await ev((ns) => { const S = window.__paw.S; ns.forEach((n) => { S.decor[n] = S.decor[n] || { got: '2026-10-20', out: true }; }); S.sleeping = false; S.place = 'yard'; window.__paw.go('yard'); }, DECOR);
   await t.until((ns) => ns.every((n) => !!document.querySelector(`#decorG [data-decor="${n}"] > rect`)), DECOR, 8000); await t.calm(); await t.lu();
@@ -119,10 +131,20 @@ async function suite(t, dev) {
   const vis = y.d.filter((r) => r[0] >= y.view[0] - 1 && r[2] <= y.view[2] + 1);
   ok(vis.length >= 1, `${vis.length} of 4 decorations in the home crop (the rest pan into view)`); // the Jack-o-Lantern Trio sits in front of the dog, inside every phone crop
   await t.SH('yard_decor');
+  // four dogs: the pack stands at its yard spots, and no pack dog stands on a decoration's tap rect
+  await ev(() => { const P = window.__paw, S = P.S; while (S.dogs.length < 4) P.addDog({ key: ['corgi', 'golden', 'pug'][S.dogs.length - 1], sex: 'male', months: 20 }, ['Biscuit', 'Pal', 'Nugget'][S.dogs.length - 1]); S.sleeping = false; S.place = 'yard'; P.go('yard'); });
+  await t.untilMode('yard'); await t.calm(); await t.lu(); await t.freezeMotion(true); await settled(t, '#pack');
+  const pk = await ev((ns) => { const area = (a, b) => Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top)); const dogs = [...document.querySelectorAll('#pack [data-dog]')].map((g) => (g.querySelector('rect') || g).getBoundingClientRect()); return { n: dogs.length, ov: ns.map((n) => { const r = document.querySelector(`#decorG [data-decor="${n}"] > rect`).getBoundingClientRect(); return [n, Math.round(dogs.reduce((m, d) => Math.max(m, area(r, d)), 0))]; }) }; }, DECOR);
+  ok(pk.n === 3 && pk.ov.every(([, a]) => a === 0), `four dogs: no pack dog stands on a decoration tap rect ${JSON.stringify(pk.ov)}`);
   const tr = y.d[0], tc = [(tr[0] + Math.min(tr[2], y.iw)) / 2, (tr[1] + tr[3]) / 2];
   await p.touchscreen.tap(tc[0], tc[1]);
   ok(await t.until(() => !!document.querySelector('#modal:not([hidden]) .hm-decor-pop'), null, 4000), 'a tap on the Jack-o-Lantern Trio opens its card');
   await closeSheet(t);
+  if (dev === 'iPhone 13') { await ev(() => { const S = window.__paw.S; S.sleeping = false; S.place = 'yard'; window.__paw.go('yard'); }); await t.untilMode('yard'); await t.calm(); await t.lu(); // the narrowest phone the review measured
+    await p.setViewportSize({ width: 360, height: 740 }); await t.until(() => innerWidth === 360, null, 4000); await t.calm();
+    for (const act of ['feed', 'play']) { const r = await chips(act); ok(r.every((x) => x.ins && x.w && x.h && x.fs >= 15), `360x740 ${act} tray: the chips stay whole on the card corner (${r.length})`); }
+    await p.setViewportSize({ width: 390, height: 844 }); await t.until(() => innerWidth === 390, null, 4000); await t.calm();
+  }
   const errs = t.errors.filter((e) => !/ERR_CERT|Failed to load resource/.test(e));
   ok(errs.length === 0, 'no console errors ' + errs.slice(0, 3).join(' | '));
 }
