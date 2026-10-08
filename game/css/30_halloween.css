@@ -25,3 +25,6 @@ html[data-layout="phone"] .hw-ic{width:44px;height:44px}
 html[data-layout="phone"] .hw-sec h3{font-size:24px}
 html[data-layout="phone"] .panel.hw-pop .btn{min-height:44px}
 html[data-layout="phone"] .panel.hw-pop .hw-foot{font-size:15px}
+/* ---- phones: in the Feed / Play tray cards the tag sits on the card's top-left corner (like the count chip on the right), never in the 2-line clamped text ---- */
+html[data-layout="phone"] #dock .tray .card{position:relative}
+html[data-layout="phone"] #dock .tray .card .hw-tag{position:absolute;left:-3px;top:-6px;z-index:1;margin:0;font-size:15px;line-height:1.2;padding:0 6px 1px}
