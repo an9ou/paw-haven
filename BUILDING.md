@@ -122,7 +122,7 @@ You manage Paw Haven for the owner. You don't build. Start a fresh Coordinator s
 - The 5-hour usage limit stopped the coordinator for 90 minutes mid-release (15:20 to 16:50Z). Keep the Board truthful before it hits.
 
 **State after v2.6 (8 Oct 2026):**
-- v2.6 "Halloween 2026" is on `main` (`<main sha>`), GitHub Pages (`<pages run>`) and the claude.ai artifact (`<artifact version>`). Spec and as-built notes: `V26.md` (section 9). `game/shots_v26/` was removed before the release.
+- v2.6 "Halloween 2026" is on `main` (`af7a135`), GitHub Pages (run 29) and the claude.ai artifact (version 22). The review screenshots are kept in commit `082ab6a` on `integration/v2.6`. Spec and as-built notes: `V26.md` (section 9). `game/shots_v26/` was removed before the release.
 - Built by an Opus coordinator with 5 fresh Opus lanes (HW ART, SCENE ART, DOG ART, TOYS, HALLOWEEN), each in its own session. No Fable.
 - Three `paw-reviewer` reviews (code, phone, art). Their fix batches went back to the lanes that own the files.
 - The pop-up sells `ed: 2026` items only while `hwShopOpen()`. A Halloween 2027 needs new items and a `HW_WIN` entry (see `TODO.md`).
