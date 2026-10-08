@@ -798,7 +798,7 @@
     }
     try { root.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
     var ctl = { close: close };
-    Object.defineProperty(ctl, '_dbg', { value: function () { return { toy: toy.dbg ? toy.dbg() : null, dog: { x: A.dog.x, y: A.dog.y, pose: A.dog.pose, facing: A.dog.facing }, totals: totals, finished: finished, timeLeft: timeLeft }; } });
+    Object.defineProperty(ctl, '_dbg', { value: function () { return { toy: toy.dbg ? toy.dbg() : null, dog: { x: A.dog.x, y: A.dog.y, pose: A.dog.pose, facing: A.dog.facing }, totals: totals, finished: finished, timeLeft: timeLeft, kind: A.kindN || 0 }; } });
     Object.defineProperty(ctl, '_end', { value: function () { endSession(); } });
     Object.defineProperty(ctl, '_map', { value: function (x, y) { var r = stage.getBoundingClientRect(); return { x: r.left + x * scale, y: r.top + y * scale, phone: phone, scale: scale }; } });
     return ctl;
@@ -2224,7 +2224,7 @@
   function v26Still() { try { return document.documentElement.getAttribute('data-motion') === 'off'; } catch (e) { return false; } }
   /* a tap that hits nothing never fails: a kind sniff in that direction */
   function kindSniff(A, x, y, lines) {
-    var now = performance.now(); if (now - (A.sniffAt || 0) < 700) return; A.sniffAt = now;
+    var now = performance.now(); A.kindN = (A.kindN || 0) + 1; if (now - (A.sniffAt || 0) < 700) return; A.sniffAt = now;
     A.sfx('sniff'); A.float(pick(['sniff?', 'sniff sniff']), x, y - 30, 'pt-small');
     if (Math.random() < 0.5) A.say(pick(lines || ['just grass there. nice grass.', 'sniff... smells like lawn.', 'nothing there. still fun.']), 1100);
   }
@@ -2341,7 +2341,7 @@
       down: function (x, y) {
         if (onPk(x, y)) {
           if (tip) { tip.hide(); tip = null; }
-          if (state === 'ready' || state === 'proud') { state = 'stalk'; stT = 0; dog.tilt = 0; A.sfx('click'); if (Math.random() < 0.5) A.say(pick(['ooh. OOH.', 'wiggle wiggle...', 'I see you, pumpkin']), 900); }
+          if (state === 'ready' || (state === 'proud' && escaped && stT > 0.8)) { state = 'stalk'; stT = 0; dog.tilt = 0; A.sfx('click'); if (Math.random() < 0.5) A.say(pick(['ooh. OOH.', 'wiggle wiggle...', 'I see you, pumpkin']), 900); }
           return;
         }
         if (!dogTap(A, x, y, ['the pumpkin! over there!', 'hi! pounce time?'])) kindSniff(A, x, y, ['no pumpkin there. sniff.', 'just grass. the pumpkin is hiding.']);
@@ -2376,8 +2376,8 @@
             pounces++; squeaks++; state = 'proud'; stT = 0; escaped = false; dog.squash(0.8);
             pk.sq = 1; pk.wob = 1; A.sfx('squeak');
             A.burst('note', pk.x + 20, pkY() - 90, 2, { a0: -Math.PI * 0.8, spread: 0.6, g: -30, sp: 90, life: 0.9, size: 8 });
-            if (pounces % 4 === 0) { big++; A.float('SUPER SQUEAK!', pk.x, pkY() - 160, 'pt-gold'); A.reward({ happiness: 2, coins: big <= 3 ? 1 : 0, energy: -1 }); A.burst('heart', dog.head().x, dog.head().y, 6, { g: -50, sp: 110, life: 1.3, size: 9 }); }
-            else { A.float(pick(['squeak!', 'SQUEAK!', 'squeeeak!']), pk.x, pkY() - 150, 'pt-small'); if (pounces <= 8 || pounces % 2 === 0) A.reward({ happiness: 1, energy: pounces % 3 === 0 ? -1 : 0 }); }
+            if (pounces % 4 === 0) { big++; A.float('SUPER SQUEAK!', pk.x, pkY() - 160, 'pt-gold'); A.reward({ happiness: 1, coins: big <= 2 ? 1 : 0 }); A.burst('heart', dog.head().x, dog.head().y, 6, { g: -50, sp: 110, life: 1.3, size: 9 }); }
+            else { A.float(pick(['squeak!', 'SQUEAK!', 'squeeeak!']), pk.x, pkY() - 150, 'pt-small'); if (pounces <= 6 || pounces % 3 === 0) A.reward({ happiness: 1 }); }
             if (Math.random() < 0.6) A.say(pick(A.line('hogAnswer', ['got it! it squeaked!', 'squeak? SQUEAK!', 'pumpkin caught. pumpkin released.'])), 1100);
           }
         } else if (state === 'proud') {
@@ -2390,7 +2390,7 @@
       },
       drawFx: function (g) { if (pk.air) A.shadow(g, pk.x, GY + 8, pk.h, 46); },
       focus: function () { return (pk.x + dog.x) / 2; },
-      finish: function () { return { happiness: 2, energy: -2 }; },
+      finish: function () { return { happiness: 2, energy: -1 }; },
       dbg: function () { return { state: state, pounces: pounces, squeaks: squeaks, big: big, hops: hops, still: still, pk: { x: pk.x, y: pkY() - 52, air: pk.air } }; }
     };
   };
@@ -2452,7 +2452,7 @@
             dog.tilt = 0; shakes++;
             if (returns) {
               A.float(pick(['good fetch!', 'ghost returned!', 'boo-tiful!']), dog.x, dog.y - 230, returns % 3 === 0 ? 'pt-gold' : '');
-              A.reward({ happiness: 2, bond: returns === 2 || returns === 5 ? 1 : 0, coins: returns % 3 === 0 ? 1 : 0, energy: returns % 2 ? -1 : 0 });
+              A.reward({ happiness: returns % 2 ? 1 : 2, bond: returns === 2 ? 1 : 0, coins: returns % 3 === 0 ? 1 : 0, energy: returns % 2 ? -1 : 0 });
             } else A.reward({ happiness: 1 });
             state = 'hold'; stT = 0;
             if (!tipped) { tipped = true; tip = A.tip('click to toss!', CP ? 330 : 300, GY - 120); }
@@ -2518,8 +2518,8 @@
       fl.st = 'carried'; state = 'return'; stT = 0; A.sfx('pop');
       if (air) {
         catches++; var h = GY - fl.y;
-        if (h > 230) { sky++; A.float('SKY LEAP!', fl.x, fl.y - 50, 'pt-gold'); A.reward({ happiness: 3, coins: sky <= 4 ? 1 : 0, energy: -1 }); A.say(pick(['I touched the moon!', 'did you SEE that?']), 1500); }
-        else { A.float(pick(['great leap!', 'caught it!', 'bat catch!']), fl.x, fl.y - 50); A.reward({ happiness: 2, energy: -1 }); A.say(pick(A.line('frisbee', ['flap flap GOT IT', 'air dog!', 'the bat is mine'])), 1400); }
+        if (h > 230) { sky++; A.float('SKY LEAP!', fl.x, fl.y - 50, 'pt-gold'); A.reward({ happiness: catches <= 6 ? 2 : catches % 2, coins: sky <= 2 ? 1 : 0, energy: -1 }); A.say(pick(['I touched the moon!', 'did you SEE that?']), 1500); }
+        else { A.float(pick(['great leap!', 'caught it!', 'bat catch!']), fl.x, fl.y - 50); A.reward({ happiness: catches <= 6 ? 2 : catches % 2, energy: -1 }); A.say(pick(['flap flap GOT IT', 'air dog!', 'the bat is mine']), 1400); }
         A.burst('heart', dog.head().x, dog.head().y, 4, { g: -50, sp: 100, life: 1.2, size: 8 });
       } else { ground++; A.reward({ happiness: 1 }); A.say(pick(['got it on the ground. still counts.', 'it landed. I forgive it.']), 1400); }
     }
@@ -2583,7 +2583,7 @@
           g.fillStyle = INK; g.font = '700 28px Caveat, cursive'; g.textAlign = 'center'; g.fillText(A.isTouch() ? 'tap now!' : 'click now!', fl.x, fl.y < 230 ? fl.y + 98 : fl.y - 76); g.restore();
         }
       },
-      focus: function () { return fl.st === 'fly' ? lerp(fl.x, dog.x, 0.4) : (fl.x + dog.x) / 2; },
+      focus: function () { return (Math.min(fl.x, dog.x - 100) + Math.max(fl.x, dog.x + 100)) / 2; },
       finish: function () { return { happiness: 2, energy: -3 }; },
       dbg: function () { return { state: state, still: still, fl: { st: fl.st, x: fl.x, y: fl.y, u: fl.st === 'fly' ? U() : null }, window: inWindow(), throws: throws, catches: catches, sky: sky, ground: ground, early: early }; }
     };
@@ -2603,7 +2603,7 @@
     }
     var treatS = A.sprite(v26Treat(), 50 * PK, 30 * PK, A.L.front); treatS.show(false);
     var rimDy = 44 * PK;
-    var state = 'tip', stT = 0, round = 0, treat = 0, found = 0, peeks = 0, sniffs = 0, plan = [], tgt = null, puffT = 0, brot = 0, tip = null, ate = false;
+    var state = 'tip', stT = 0, round = 0, treat = 0, found = 0, peeks = 0, sniffs = 0, plan = [], tgt = null, puffT = 0, brot = 0, tip = null, ate = false, nosed = false;
     dog.ground = PY - rimDy - dog.mouthDy('sniff') - 4; dog.y = dog.ground; dog.x = HOME; dog.face('left'); dog.setPose('sit');
     A.say(pick(['treats! in a PUMPKIN!', 'trick or treat? treat. always treat.']), 1800);
     function mouthOf() { var a = brot * Math.PI / 180, vx = -47 * BS, vy = -80 * BS; return { x: AX + vx * Math.cos(a) - vy * Math.sin(a), y: AY + vx * Math.sin(a) + vy * Math.cos(a) }; }
@@ -2624,7 +2624,7 @@
       if (p.want) return;
       p.want = 1; A.sfx('click');
       if (p.i === treat) {
-        found++; state = 'found'; stT = 0; tgt = p; A.sfx('pop');
+        found++; nosed = state === 'point'; state = 'found'; stT = 0; tgt = p; A.sfx('pop');
         A.float(round >= 3 && found % 2 ? 'treat found! again!' : 'treat found!', p.x, p.y - 150, 'pt-gold'); A.burst('spark', p.x, p.y - rimDy - 20, 8, { g: 0, sp: 150, life: 0.7, size: 7 });
         if (tip) { tip.hide(); tip = null; }
       } else {
@@ -2666,7 +2666,7 @@
           if (puffT <= 0) { puffT = 0.3; var m = dog.mouth(); A.burst('dust', m.x, m.y + 4, 1, { a0: -Math.PI * 0.9, spread: Math.PI * 0.8, g: -20, sp: 60, life: 0.45, size: 3.5 }); }
           if (state === 'sniff' && stT > (A.tr.sniff ? 0.55 : 0.85)) {
             if (tgt.i === treat) { state = 'point'; stT = 0; A.say(pick(['THIS one. this one!', 'sniff sniff... HERE!', 'my nose says this pot']), 1300); A.hint(DN + ' points at a pot. Click it to lift the lid.'); }
-            else { tgt.wig = 1; if (Math.random() < 0.5) A.say(pick(['hmm. not this one.', 'smells like pot.', 'nope, next!']), 900); nextSniff(); }
+            else { tgt.wig = 1; if (Math.random() < 0.5) A.say(pick(['hmm. not this one.', 'smells like a pot.', 'nope, next!']), 900); nextSniff(); }
           }
           if (state === 'point' && stT > 6) { stT = 0; A.say(pick(['this one! the one by my nose!', 'lift the lid! please!']), 1300); }
         } else if (state === 'found') {
@@ -2677,7 +2677,7 @@
             dog.setPose('sniff'); dog.tilt = still ? 0 : dog.dir() * Math.sin(T * 22) * 1.2;
             if (Math.floor(stT * 3) !== Math.floor((stT - dt) * 3) && stT < 1.6) { A.sfx('crunch'); var mm = dog.mouth(); A.burst('crumb', mm.x, mm.y, 3, { sp: 120, g: 900, life: 0.5, size: 2.6, color: '#E8B36A' }); }
             if (stT > 1.7) {
-              dog.tilt = 0; A.reward({ happiness: 3, bond: round === 2 ? 1 : 0, coins: round === 3 || round === 5 ? 1 : 0 });
+              dog.tilt = 0; A.reward({ happiness: found > 5 ? 1 : nosed ? 3 : 2, bond: round === 2 ? 1 : 0, coins: round === 3 || round === 5 ? 1 : 0 });
               A.say(pick(['crunch! best treat ever.', 'trick or treat? TREAT.', 'nose of the year']), 1500); A.burst('heart', dog.head().x, dog.head().y, 6, { g: -50, sp: 110, life: 1.3, size: 9 });
               state = 'pack'; stT = 0; A.hint('Back in the bucket for another round!');
             }

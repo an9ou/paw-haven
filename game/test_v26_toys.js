@@ -85,10 +85,13 @@ require('./test_lib').run('v26_toys', async (t) => {
     }
     await t.sleep(1200); await shot(`${tag}_${name.replace(/\W+/g, '')}_start`);
     ok(await play(name, tag), `${tag} ${name}: the main tap plays (dbg moved on: ${JSON.stringify(await toy()).slice(0, 160)})`);
-    // a wrong tap only ever gets a kind sniff: tap the empty sky
-    const s0 = await ev(() => window.__toyCtl._dbg().finished);
-    const dg = await ev(() => window.__toyCtl._dbg().dog); await tap(dg.x, 130); await t.sleep(150);
-    ok(await ev(() => !window.__toyCtl._dbg().finished) && !s0, `${tag} ${name}: a tap on nothing is harmless`);
+    // a wrong tap only ever gets a kind sniff (the Flyer: a kind "not yet" while it climbs). Tap the empty sky while the toy is busy.
+    if (name === 'Plush Ghost') { const d = await toy(); await tap(d.home - 330, 500); await st('trot'); }
+    if (name === 'Bat-Wing Flyer') { await tap(640, 300); await until(() => window.__toyCtl._dbg().toy.fl.st === 'fly', null, 2000); }
+    const k0 = await ev(() => { const d = window.__toyCtl._dbg(); return d.kind + (d.toy.early || 0); }), h0 = await ev(() => window.__toyCtl._dbg().totals.happiness);
+    const dg = await ev(() => window.__toyCtl._dbg().dog); await tap(dg.x, 130);
+    ok(await until((k0) => { const d = window.__toyCtl._dbg(); return d.kind + (d.toy.early || 0) > k0 && !d.finished; }, k0, 1500), `${tag} ${name}: a tap on nothing gets a kind sniff, no fail`);
+    ok(await ev((h0) => window.__toyCtl._dbg().totals.happiness >= h0, h0), `${tag} ${name}: and costs nothing`);
     ok(t.errors.length === errs0, `${tag} ${name}: play with no console errors ${t.errors.slice(errs0, errs0 + 2).join(' | ')}`);
     await ev(() => window.__toyCtl._end());
     ok(await t.waitToast(/\+\d+ Happiness/, 4000), `${tag} ${name}: the reward toast shows`);
@@ -116,6 +119,17 @@ require('./test_lib').run('v26_toys', async (t) => {
     await t.p.keyboard.press('Escape'); await t.untilMode('yard', 5000);
   }
   for (const name of NEW) await session(name, 'desk');
+  // a fast player for a whole session (the timer runs out by itself): the pay stays well under CAP
+  sec('desk: Squeaky Pumpkin, fast player, full session');
+  await t.home(); await t.calm(); await ev(() => window.__paw.go('toy', 'Squeaky Pumpkin')); await t.untilMode('toy', 5000);
+  await ev(() => { window.__bot = setInterval(() => { const c = window.__toyCtl, d = c && c._dbg(); if (!d || d.finished) return; const m = c._map(d.toy.pk.x, d.toy.pk.y), root = document.querySelector('#modHost .pt-root');
+    ['pointerdown', 'pointerup'].forEach((ty) => root.dispatchEvent(new PointerEvent(ty, { bubbles: true, clientX: m.x, clientY: m.y, button: 0, pointerId: 1, pointerType: 'mouse' }))); }, 60); });
+  ok(await until(() => window.__toyCtl._dbg().finished, null, 52000), 'fast player: the session ends by itself (finish())');
+  const full = await ev(() => { clearInterval(window.__bot); const d = window.__toyCtl._dbg(); return { tot: d.totals, pounces: d.toy.pounces, hops: d.toy.hops }; });
+  ok(full.pounces >= 8 && full.hops >= full.pounces, `fast player: lots of pounces and the pumpkin still hops away each time ${JSON.stringify(full)}`);
+  ok(full.tot.happiness <= 20 && full.tot.bond <= 1 && full.tot.coins <= 3, `fast player: whole-session pay well under CAP ${JSON.stringify(full.tot)}`);
+  await t.p.keyboard.press('Escape'); ok(await t.untilMode('yard', 5000), 'fast player: Escape closes it'); await t.lu();
+
   for (const name of NEW.slice(0, 2)) { await t.freezeMotion(true); await session(name, 'desk-still', { tray: false, still: true }); await t.freezeMotion(false); }
 
   // ============ phone ============
