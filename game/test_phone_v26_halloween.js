@@ -128,6 +128,9 @@ async function suite(t, dev) {
     ok(!ov(r, y.dog), `${n}: clear of #dogHit`);
     ok(!ov(r, y.bar) && !y.btns.some((b) => ov(r, b)), `${n}: never under the action bar or the place buttons`);
   });
+  // the bunting's right end is tied to the scarecrow's arm (the scarecrow stands in front): the part left of the scarecrow is still a 48 px target
+  const bs = await ev(() => { const b = document.querySelector('#decorG [data-decor="Paper Bat Bunting"] > rect').getBoundingClientRect(), s = document.querySelector('#decorG [data-decor="Friendly Scarecrow"] > rect').getBoundingClientRect(); return [Math.min(b.right, s.left) - b.left, b.height]; });
+  ok(bs[0] >= 47.5 && bs[1] >= 47.5, `the bunting's own tap area left of the scarecrow is >= 48 px (${bs.map(Math.round).join('x')})`);
   const vis = y.d.filter((r) => r[0] >= y.view[0] - 1 && r[2] <= y.view[2] + 1);
   ok(vis.length >= 1, `${vis.length} of 4 decorations in the home crop (the rest pan into view)`); // the Jack-o-Lantern Trio sits in front of the dog, inside every phone crop
   await t.SH('yard_decor');
