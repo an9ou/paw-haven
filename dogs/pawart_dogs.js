@@ -406,7 +406,7 @@ function drawFace(h,s,L,HT){
 }
 
 /* ---------- outfits ---------- */
-const OUT={head:['Party Hat','Flower Crown','Acorn Cap','Rain Hat','Pom-pom Beanie','Chef Hat','Wizard Hat','Sun Hat','Cowboy Hat','Astronaut Helmet','Leaf Beret'],eyes:['Heart Sunglasses','Explorer Goggles'],neck:['Red Bandana','Bow Tie','Seashell Necklace','Clover Collar','Rainbow Collar','Sailor Collar','Knit Scarf','Autumn Scarf','Parade Rosette'],body:['Yellow Raincoat','Knit Winter Sweater','Superhero Cape','Mossy Poncho','Frog Raincoat','Polka-dot Raincoat','Bubble Raincoat','Happi Coat','Bumblebee Suit','Cozy Hoodie','Tutu','Pyjamas','Ghost Sheet','Pumpkin Suit']};
+const OUT={head:['Party Hat','Flower Crown','Acorn Cap','Rain Hat','Pom-pom Beanie','Chef Hat','Wizard Hat','Sun Hat','Cowboy Hat','Astronaut Helmet','Leaf Beret','Witch Hat'],eyes:['Heart Sunglasses','Explorer Goggles'],neck:['Red Bandana','Bow Tie','Seashell Necklace','Clover Collar','Rainbow Collar','Sailor Collar','Knit Scarf','Autumn Scarf','Parade Rosette','Candy Corn Bandana'],body:['Yellow Raincoat','Knit Winter Sweater','Superhero Cape','Mossy Poncho','Frog Raincoat','Polka-dot Raincoat','Bubble Raincoat','Happi Coat','Bumblebee Suit','Cozy Hoodie','Tutu','Pyjamas','Ghost Sheet','Pumpkin Suit','Vampire Cape','Bat Wings']};
 function coatPts(s){const b=s.body,p=[],f=s.fluff?1.12:1.08;for(let a=-108;a<=108;a+=12){const t=a*D2R;p.push([Math.cos(t)*b.rx*f,Math.sin(t)*b.ry*(f+.04)])}return p}
 function drawCape(h,s,L,B){
   // billows up and back behind the body, so most of it shows above the back and past the rump
@@ -443,7 +443,7 @@ function drawCoat(h,s,L,B,kind){
 function neckAnchor(s,HT){const hx=s.head.rx,hy=s.head.ry;return{c:HT([-hx*.12,hy*.86]),l:HT([-hx*.62,hy*.72]),r:HT([hx*.42,hy*.86]),tip:HT([-hx*.2,hy*1.5])}}
 function clampG(p){return[p[0],Math.min(p[1],GY+5)]}
 function drawNeck(h,s,L,HT,kind){
-  if(kind==='Autumn Scarf')return drawAScarf(h,s,L,HT);if(kind==='Parade Rosette')return drawRosette(h,s,L,HT);
+  if(kind==='Autumn Scarf')return drawAScarf(h,s,L,HT);if(kind==='Candy Corn Bandana')return drawCandyCorn(h,s,L,HT);if(kind==='Parade Rosette')return drawRosette(h,s,L,HT);
   if(kind==='Sailor Collar')return drawSailor(h,s,L,HT);if(kind==='Knit Scarf')return drawScarf(h,s,L,HT);
   const a=neckAnchor(s,HT);
   if(kind==='Red Bandana'){const t=clampG(a.tip);h.shape([a.l,a.r,t],'#E8322B',{w:4,step:9});
@@ -678,6 +678,62 @@ function ghostEyes(h,s,L,HT){const f=L.face,hx=s.head.rx,hy=s.head.ry,e0=f.e0||[
    if(m==='closed'||m==='happy'||m==='x'){h.line(m==='happy'?[[x-r,y+r*.35],[x,y-r*.55],[x+r,y+r*.35]]:[[x-r,y],[x,y+r*.5],[x+r,y]],3.6,lc);return}
    h.shape(circ(x,y,r,r*1.05,12),W,{ox:0,oy:0,sc:1,w:2.3,amp:.45,closed:1,famp:.25});
    const ir=s.irises?s.irises[i]:s.iris,ly=m==='down'||m==='sad'?.6:.1,px=x+.06*r*.4,py=y+ly*r*.4;if(ir){h.dot(px,py,r*.68,r*.72,ir);h.dot(px,py,r*.34,r*.36)}else h.dot(px,py,r*.57,r*.6);h.dot(px-r*.2,py-r*.26,r*.2,r*.2,W)})}
+/* ---------- v2.6 Halloween 2026 outfits ---------- */
+// cute-spooky: felt, crayon and smiles. BACK2 holds the body items that also have a part behind the dog (the cape layer, before the tail)
+const HW_BK='#3B3346',HW_GR='#7D7488',HW_RD='#D7263D',BACK2={};
+HAT2['Witch Hat']=function(h,s,L,HT){// a tall black cone, the tip crooked and flopping forward, a wide floppy brim, an orange band with a buckle
+  const hx=s.head.rx,hy=s.head.ry,P=hatP(s,L,HT,-.02,-3),W2=hx*.5,H=hy*1.72,OR='#F08A24';
+  h.shape([[-W2*.95,-2],[-W2*.6,-H*.42],[-W2*.55,-H*.64],[-W2*.14,-H*.9],[W2*.42,-H*1.03],[W2*1.02,-H*.9],[W2*.62,-H*.8],[W2*.3,-H*.83],[W2*.06,-H*.66],[W2*.18,-H*.45],[W2*.58,-H*.22],[W2*.95,-2]].map(P),HW_BK,{w:3.8,step:8});
+  h.line([[-W2*.62,-H*.2],[-W2*.4,-H*.48],[-W2*.34,-H*.68],[-W2*.04,-H*.88]].map(P),2.4,HW_GR,.5);
+  h.line([[-W2*.9,-8],[W2*.9,-8]].map(P),5.5,OR,.5);
+  const bk=P([W2*.12,-8]);h.shape([[-3.6,-3.4],[3.6,-3.4],[3.6,3.4],[-3.6,3.4]].map(q=>[bk[0]+q[0],bk[1]+q[1]]),'#FFD23A',{w:2,ox:0,oy:0,sc:1,closed:1,amp:.3,famp:.2});h.dot(bk[0],bk[1],1.3,1.3,HW_BK);
+  const br=[];for(let i=0;i<20;i++){const a=i/20*Math.PI*2,c=Math.cos(a);br.push([c*hx*1.12,1+Math.sin(a)*5.5+(c>.5?(c-.5)*12:0)+(c<-.7?(-.7-c)*7:0)])}
+  h.shape(br.map(P),HW_BK,{w:3.6,step:8});h.line(br.slice(1,9).map(q=>[q[0]*.86,q[1]*.6+1.5]).map(P),1.6,HW_GR,.4)};
+function drawCandyCorn(h,s,L,HT){// Candy Corn Bandana: a triangle in yellow, orange and white stripes, the white at the tip
+  const a=neckAnchor(s,HT),m=[(a.l[0]+a.r[0])/2,(a.l[1]+a.r[1])/2],t=clampG([m[0]+(a.tip[0]-m[0])*1.22,m[1]+(a.tip[1]-m[1])*1.22]),l=[a.l[0]-(a.r[0]-a.l[0])*.06,a.l[1]],r=[a.r[0]+(a.r[0]-a.l[0])*.04,a.r[1]];
+  const lp=(p,q,u)=>[p[0]+(q[0]-p[0])*u,p[1]+(q[1]-p[1])*u],o={noline:1,ox:1.4,oy:-1,sc:1,famp:.6};
+  const l1=lp(l,t,.34),r1=lp(r,t,.34),l2=lp(l,t,.68),r2=lp(r,t,.68);
+  h.shape([l,r,t],'#FFE14D',o);h.shape([l1,r1,r2,l2],'#FF8A1F',o);h.shape([l2,r2,t],'#FFFDF6',o);
+  h.line([l1,r1],2.6,INK,.5);h.line([l2,r2],2.6,INK,.5);h.shape([l,r,t],null,{w:4.2,step:9});
+  h.shape(circ(l[0],l[1],4.6,4,7),'#FFE14D',{w:2.6,ox:0,oy:0,sc:1,closed:1})}
+function hwHem(a,b,n,dep){// a scalloped hem from a to b (local px): n soft arcs with little points between, dep = how far the points hang
+  const o=[];for(let i=0;i<=n;i++){const t=i/n,x=a[0]+(b[0]-a[0])*t,y=a[1]+(b[1]-a[1])*t;o.push([x,y+dep]);if(i<n){const u=(i+.5)/n;o.push([a[0]+(b[0]-a[0])*u,a[1]+(b[1]-a[1])*u-dep*.2])}}return o}
+BACK2['Vampire Cape']=function(h,s,L,B){// the far side of the cape: it flares out past the rump and swishes, black outside with the red lining showing
+  const b=s.body,f=s.fluff?1.12:1.06,mv=L.pose==='walk'||L.pose==='happy'||L.pose==='jump'||L.pose==='dance',sw=[0,5,-3][L.k||0]*(mv?1:.4),cl=q=>[q[0],Math.min(q[1],GY)],lie=/^(sleep|down|crouch|playdead|rollover)$/.test(L.pose),dn=lie?.45:1,fx=(L.pose==='jump'?1.3:1)*(s.fluff?.8:1),e=Math.min(b.rx,40);// e: the flare past the rump, capped so long dogs keep a cape, not a train
+  const top=[[b.rx*.5,-b.ry*f],[b.rx*.05,-b.ry*(f+.12)],[-b.rx*.55,-b.ry*(f+.06)],[-b.rx-e*.12*fx,-b.ry*.72],[-b.rx-e*(.2+.3*fx)-sw,-b.ry*.05]];
+  const hem=hwHem([-b.rx-e*(.32+.42*fx)-sw*1.5,b.ry*(.3+.62*dn)],[b.rx*.32,b.ry*(.28+.42*dn)],6,b.ry*.17);
+  h.shape(top.concat(hem).map(B).map(cl),HW_RD,{w:4.2,step:9});
+  h.line(top.map(B).map(cl),5,HW_BK,.5);h.line([[-b.rx*.9,-b.ry*.45],[-b.rx-e*(.15+.32*fx)-sw*1.2,b.ry*(.2+.5*dn)]].map(B).map(cl),2,'#9E1426',.5);
+  h.line([[-b.rx*.6,-b.ry*.75],[-b.rx*.9-e*.25*fx-sw,b.ry*(.25+.5*dn)]].map(B).map(cl),2,'#9E1426',.5)};
+BODY2['Vampire Cape']=function(h,s,L,B){// the near side over the back, black with a red edge, a scalloped hem, and the tall stand-up collar behind the head
+  const b=s.body,f=s.fluff?1.12:1.06,HT=T(L.hT),hx=s.head.rx,hy=s.head.ry,cl=q=>[q[0],Math.min(q[1],GY)],lie=/^(sleep|down|crouch|playdead|rollover)$/.test(L.pose),dn=lie?.5:1,mv=L.pose==='walk'||L.pose==='happy'||L.pose==='jump'||L.pose==='dance',sw=[0,3,-2][L.k||0]*(mv?1:.4);
+  const hem=hwHem([-b.rx*1.1-sw,b.ry*(.05+.32*dn)],[b.rx*.52,b.ry*(-.05+.25*dn)],5,b.ry*.14);
+  const p=[[b.rx*.62,-b.ry*f*.92],[b.rx*.15,-b.ry*(f+.04)],[-b.rx*.5,-b.ry*f*.96],[-b.rx*.98,-b.ry*.62],[-b.rx*1.14-sw,-b.ry*.2]].concat(hem).concat([[b.rx*.66,-b.ry*.35]]);
+  h.shape(p.map(B).map(cl),HW_BK,{w:4.4,step:9});h.crayon(b.rx*.6,b.ry*.4,q=>B([q[0]-b.rx*.2,q[1]-b.ry*.35]),HW_BK,6);
+  h.line([[b.rx*.62,-b.ry*.8],[b.rx*.68,-b.ry*.35],[b.rx*.54,b.ry*(-.05+.25*dn)]].map(B).map(cl),4.4,HW_RD,.5);
+  h.line([[-b.rx*.15,-b.ry*.75],[-b.rx*.6,-b.ry*.55],[-b.rx*.86,-b.ry*.2]].map(B).map(cl),2,HW_GR,.5);
+  // the collar: two tall points standing up behind the head, red inside
+  const C=[[-hx*.05,hy*1.02],[-hx*.85,hy*.95],[-hx*1.38,hy*.45],[-hx*1.66,-hy*.5],[-hx*1.2,-hy*.2],[-hx*1.12,-hy*.98],[-hx*.55,-hy*.3],[-hx*.1,hy*.5]];
+  h.shape(C.map(HT).map(cl),HW_BK,{w:3.8,step:8});
+  h.shape([[-hx*.3,hy*.88],[-hx*.86,hy*.78],[-hx*1.24,hy*.38],[-hx*1.46,-hy*.3],[-hx*1.12,-hy*.04],[-hx*1.04,-hy*.72],[-hx*.62,-hy*.18],[-hx*.3,hy*.5]].map(HT).map(cl),HW_RD,{noline:1,ox:0,oy:0,sc:1,famp:.5});
+  h.line([[-hx*.95,hy*.6],[-hx*1.3,-hy*.1]].map(HT).map(cl),1.6,'#9E1426',.4);
+  const c=cl(HT([-hx*.14,hy*.98]));h.dot(c[0],c[1],3.8,3.8,'#FFD23A');h.dot(c[0],c[1],1.4,1.4,HW_BK)};
+function hwWing(h,B,root,ang,z,cl,far){// one felt bat wing: root on the back (body px), ang tilts it (deg, 0 = straight up), z = span
+  const scal=(p,q,k)=>{const o=[],dx=q[0]-p[0],dy=q[1]-p[1],m=Math.hypot(dx,dy)||1;for(let i=1;i<=4;i++){const t=i/5,s=Math.sin(Math.PI*t)*k;o.push([p[0]+dx*t+dy/m*s,p[1]+dy*t-dx/m*s])}return o};// the edge between two finger tips, sagging in toward the root
+  const Wr=[z*.12,-z*.76],T1=[-z*.6,-z*.98],T2=[-z*1.02,-z*.56],T3=[-z*1.16,-z*.06],R0=[-z*.46,z*.06];
+  const pts=[[0,0],[z*.18,-z*.38],Wr,[z*.16,-z*.9],[z*.04,-z*.84],[-z*.2,-z*.94]].concat([T1],scal(T1,T2,z*.21),[T2],scal(T2,T3,z*.2),[T3],scal(T3,R0,z*.16),[R0]);
+  const M=q=>{const r2=rot(q,ang);return cl(B([root[0]+r2[0],root[1]+r2[1]]))};
+  h.shape(pts.map(M),far?'#2E2834':HW_BK,{w:far?3.4:3.8,step:6,amp:.7});
+  if(!far){[T2,T3].forEach(t=>h.line([Wr,[(Wr[0]+t[0])/2+z*.06,(Wr[1]+t[1])/2+z*.08],t].map(M),1.8,HW_GR,.4));h.line([[z*.1,-z*.14],[z*.18,-z*.42],[z*.1,-z*.7]].map(M),2.8,HW_GR,.4);h.line([[-z*.12,-z*.82],[-z*.42,-z*.86]].map(M),2.4,HW_GR,.4)}}
+function hwWingSet(s,L){const b=s.body,lie=/^(sleep|down|crouch|playdead)$/.test(L.pose),roll=L.pose==='rollover',fl=Math.max(-8,Math.min(8,(L.tailA||0)*.2)),z=Math.max(34,Math.min(52,b.ry*2))*(lie?.78:roll?.62:1);
+  return{z,root:[b.rx*.1,-b.ry*(s.fluff?.98:.84)],ang:roll?-112:lie?-22:4-fl,far:[b.rx*.26,-b.ry*(s.fluff?1.0:.88)],fang:roll?-84:lie?6:34-fl*.6}}
+BACK2['Bat Wings']=function(h,s,L,B){const w=hwWingSet(s,L);hwWing(h,B,w.far,w.fang,w.z*.94,q=>[q[0],Math.min(q[1],GY)],1)};
+BODY2['Bat Wings']=function(h,s,L,B){// the harness strap round the chest, then the near wing over the back
+  const b=s.body,w=hwWingSet(s,L),cl=q=>[q[0],Math.min(q[1],GY)];
+  const st=[[b.rx*.4,-b.ry*.98],[b.rx*.47,0],[b.rx*.42,b.ry*.95]];h.line(st.map(B).map(cl),6.2,INK,.4);h.line(st.map(B).map(cl),3.8,'#8E63C7',.4);
+  h.line([[b.rx*.4,-b.ry*.9],[w.root[0],w.root[1]+2]].map(B).map(cl),5,INK,.4);h.line([[b.rx*.4,-b.ry*.9],[w.root[0],w.root[1]+2]].map(B).map(cl),2.8,'#8E63C7',.4);
+  hwWing(h,B,w.root,w.ang,w.z,cl,0);
+  const bk=cl(B([b.rx*.46,b.ry*.12]));h.shape([[bk[0]-3.4,bk[1]-3.2],[bk[0]+3.4,bk[1]-3.2],[bk[0]+3.4,bk[1]+3.2],[bk[0]-3.4,bk[1]+3.2]],'#FFD23A',{w:2,ox:0,oy:0,sc:1,closed:1,amp:.3,famp:.2})};
 /* ---------- fx ---------- */
 function drawFx(h,s,L,B,HT){
   const hx=s.head.rx,hy=s.head.ry,b=s.body;
@@ -753,6 +809,7 @@ function frame(key,s,pose,outfit,k,seed){
   const body=has('body'),neck=has('neck'),hat=has('head'),eyes=has('eyes');
   if(hat==='Astronaut Helmet'){if(L.ears!=='flat')L.ears=/^(giant|bat|tall)$/.test(s.ears)?'sleep':'norm';L.earFit=Math.max(s.head.rx,s.head.ry)*1.38}
   if(body==='Superhero Cape')drawCape(h,s,L,B);
+  if(body&&BACK2[body])BACK2[body](h,s,L,B);
   drawTail(h,s,L,B);
   if(body==='Tutu'){h._legSkip='NH';drawLegs(h,s,L);h._legSkip=0}else drawLegs(h,s,L);
   // neck: a short tube from the chest to the head, behind the body
