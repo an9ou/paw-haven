@@ -40,6 +40,7 @@ add('popup',fig(PA.prop('popup',{lit:true}),'popup lit',240*k)+'<div class="nigh
 const SW=W?360:620;
 inScene('popscene','square',ENV,[[PA.prop('stall',{kind:'halloween'}),380,318,200],[PA.prop('popup'),640,318,200]],SW);
 inScene('popscene','square',{time:'dusk',weather:'sunny',season:'autumn'},[[PA.prop('stall',{kind:'halloween'}),380,318,200],[PA.prop('popup',{lit:true}),640,318,200],[PA.prop('paradebanner'),30,226,320]],SW);
+inScene('popscene','square',{time:'night',weather:'cloudy',season:'autumn',halloween:true},[[PA.prop('stall',{kind:'halloween'}),380,318,200],[PA.prop('popup',{lit:true}),640,318,200]],SW);
 // decorations at their yard size (HM_DECOR at w x h), one scene unit = s px
 const s=W?.36:.62,DEC=[['hwlanterns',100,60,'Jack-o-Lantern Trio'],['hwbunting',180,48,'Paper Bat Bunting'],['hwscarecrow',70,100,'Friendly Scarecrow'],['hwgarland',160,48,'Ghost Garland']];
 const OLD=[['crayonbox',112,'Giant Crayon Box'],['rockingchair',84,'Rocking Chair']];
