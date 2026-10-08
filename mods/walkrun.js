@@ -431,6 +431,7 @@ function start(el, o) {
   const time = ['dawn', 'day', 'dusk', 'night'].includes(o.time) ? o.time : 'day';
   const weather = ['sunny', 'cloudy', 'rain', 'snow'].includes(o.weather) ? o.weather : 'sunny';
   const season = ['spring', 'autumn', 'winter'].includes(o.season) ? o.season : 'summer'; // v2.5: the world art turns with the season
+  const halloween = o.halloween === true; // v2.6: Halloween dressing in the strip art and felt bats in the far sky at dusk and night
   const ab = o.abilities || {};
   const dogInfo = o.dog || { key: 'shiba', name: 'Mochi', outfit: {} };
   const sfx = (n) => { try { (o.sfx || noop)(n); } catch (e) { /* ignore */ } };
@@ -497,10 +498,11 @@ function start(el, o) {
   $('.pw-clock').innerHTML = icon('speed', svgWrap([64, 64], '<circle cx="32" cy="34" r="22" fill="#fff"/><path d="M32 34v-12M32 34l9 6"/>'));
 
   /* ---------- world look: strip, far layer, foreground, tint, weather ---------- */
-  let stripSvg = call('walkStrip', area, season === 'summer' ? { time, weather } : { time, weather, season });
+  const hwO = (x) => (halloween ? Object.assign(x || {}, { halloween: true }) : x); // v2.6: only added when on, so the calls stay as they were
+  let stripSvg = call('walkStrip', area, hwO(season === 'summer' ? { time, weather } : { time, weather, season }));
   let artTW = false; // does the strip art itself draw time/weather?
   if (stripSvg && (time !== 'day' || weather !== 'sunny')) {
-    const plain = call('walkStrip', area, season === 'summer' ? undefined : { season }); const norm = (s) => s.replace(/pw[a-z]*\d+x?\d*/g, '');
+    const plain = call('walkStrip', area, hwO(season === 'summer' ? undefined : { season })); const norm = (s) => s.replace(/pw[a-z]*\d+x?\d*/g, '');
     artTW = plain && norm(plain).length !== norm(stripSvg).length;
   }
   if (!stripSvg) stripSvg = svgWrap([1200, 400], `<rect width="1200" height="400" fill="#D3E9F6" stroke="none"/><rect y="250" width="1200" height="80" fill="#CBE5A6" stroke="none"/><rect y="330" width="1200" height="70" fill="#EFDDBA" stroke="none"/><path d="M0 330h1200"/>`);
@@ -524,6 +526,13 @@ function start(el, o) {
         b += `<path transform="translate(${x} ${y}) rotate(${r})" d="${season === 'autumn' ? 'M-7 0q7 -6 14 0q-7 6 -14 0z' : 'M-5 0q4 -4 9 -1l-1 1l1 1q-5 3 -9 -1z'}" fill="${fill}" stroke-width="1"/>`;
         b += `<path d="M${x - 30} ${y - 10}q10 12 20 4" fill="none" stroke-width="1.2" stroke-dasharray="4 4" opacity=".6"/>`;
       }
+    }
+    // v2.6 Halloween: a few felt bats flap past in the far sky at dusk and night (not in rain)
+    if (halloween && (night || time === 'dusk') && !rain) {
+      [[180, 70, 1.1], [236, 48, 0.8], [620, 96, 0.95], [860, 40, 0.75]].forEach(([x, y, s]) => {
+        const W = (d) => `M${3 * d} -2.4L${9 * d} -8L${15 * d} -9.4L${20 * d} -5L${16.4 * d} -1.6L${13 * d} -3.2L${10.6 * d} 1.6L${7.2 * d} -.4L${3.6 * d} 3.2Z`;
+        b += `<g transform="translate(${x} ${y}) scale(${s})" stroke-width="1.2"><path d="${W(-1)}${W(1)}M-4.6 -3L-3.8 -10.4L-1 -6L1 -6L3.8 -10.4L4.6 -3L4.4 3.6L0 7L-4.4 3.6Z" fill="${night ? '#8C78AE' : '#7A6698'}"/><circle cx="-2" cy="-1.4" r="1.5" fill="#FFFFFF" stroke="none"/><circle cx="2" cy="-1.4" r="1.5" fill="#FFFFFF" stroke="none"/><circle cx="-1.8" cy="-1.1" r=".75" fill="${INK}" stroke="none"/><circle cx="2.2" cy="-1.1" r=".75" fill="${INK}" stroke="none"/></g>`;
+      });
     }
     return svgWrap([FARW, 400], b);
   })();
