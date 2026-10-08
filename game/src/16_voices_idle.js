@@ -97,6 +97,7 @@ function idleWeights() {
   if (pk === 'samoyed') { w.social += 2; w.roll += 1; if (weatherNow() === 'snow') w.zoomies += 2; }
   if (pk === 'frenchie') { w.sit += 2; w.nap += 1; w.down += 1; w.zoomies *= 0.6; }
   if (typeof pupIdleWeights === 'function') pupIdleWeights(w, d, stage); // v2: puppies and nursing mums (16b)
+  if (typeof hoIdleWeights === 'function') hoIdleWeights(w, d, stage); // v2.7 HOME: furniture use in the house (28_home.js)
   if (S.sleeping) return null;
   return w;
 }
@@ -104,6 +105,7 @@ function pickIdle() { const w = idleWeights(); if (!w) return null; const tot = 
 const R2 = (a, b) => RINT(a, b) * IDLE.speed;
 function idleSteps(name) {
   if (typeof PUP_IDLE !== 'undefined' && PUP_IDLE.includes(name)) return pupIdleSteps(name);
+  const hoS = typeof hoIdleSteps === 'function' ? hoIdleSteps(name) : null; if (hoS) return hoS; // v2.7 HOME: furniture idles (28_home.js)
   const d = D(), indoor = !outdoorsNow(), aloof = d.key === 'shiba' ? 'left' : 'right';
   const bowl = { move: [-125, 0, 1, 0.8 * IDLE.speed], pose: 'walk', facing: 'left', ms: 850 * IDLE.speed };
   const home = { move: [0, 0, 1, 0.6 * IDLE.speed], pose: 'walk', facing: 'right', ms: 650 * IDLE.speed };
@@ -111,7 +113,7 @@ function idleSteps(name) {
     case 'look': if (d.key === 'chihuahua' && chiCold() && Math.random() < 0.6) return [{ pose: 'cold', fb: 'sad', ms: R2(3000, 5000) }]; return [{ pose: 'idle', fx: 'tk-look', facing: Math.random() < 0.5 ? 'left' : 'right', ms: R2(3000, 6000), alert: d.key === 'chihuahua' && Math.random() < 0.4 }];
     case 'sit': return d.stats.hunger < 40 || d.key === 'corgi' || d.key === 'pug' ? [bowl, { pose: 'sit', facing: 'left', ms: R2(5000, 12000) }, home] : [{ pose: 'sit', facing: aloof, ms: R2(5000, 12000) }];
     case 'down': { const s = []; if (Math.random() < 0.4) s.push({ pose: 'walk', fx: 'tk-circle', ms: 1000 * IDLE.speed }); if (d.key === 'mutt') s.push({ move: [0, 40, 1.06, 0.6 * IDLE.speed], pose: 'walk', ms: 650 * IDLE.speed }); s.push({ pose: 'down', fx: 'tk-lie', facing: aloof, ms: d.key === 'greyhound' ? R2(12000, 30000) : R2(8000, 20000) }); if (d.key === 'mutt') s.push(home); return s; }
-    case 'nap': return [{ move: [417.5, S.place === 'house' ? 130 : 140, 0.75, 1 * IDLE.speed], pose: 'walk', ms: 1050 * IDLE.speed }, { pose: 'sleep', ms: R2(15000, 40000), zzz: true }, home];
+    case 'nap': return [{ move: [...napSpot(), 1 * IDLE.speed], pose: 'walk', ms: 1050 * IDLE.speed }, { pose: 'sleep', ms: R2(15000, 40000), zzz: true }, home];
     case 'stretch': return [{ pose: 'bow', fx: 'tk-bow', ms: 1500 * IDLE.speed }];
     case 'yawn': return [{ pose: 'yawn', fx: 'tk-yawn', fb: 'sit', ms: 1200 * IDLE.speed, sound: 'yawn' }];
     case 'scratch': return [{ pose: 'scratch', fx: 'tk-scratch', ms: 2000 * IDLE.speed }];
@@ -153,17 +155,18 @@ function idleRunStep() {
   if (s.other) { packPose[s.other[0].id] = s.other[1]; redrawPackDog(s.other[0]); }
   if (s.say) { const h = dogHeadWorld(); say(s.say, h.x, h.y, 2200); }
   if (s.propOff && typeof pupPropClear === 'function') pupPropClear(); if (s.prop && typeof pupProp === 'function') pupProp(s.prop);
+  if (s.ho && typeof hoIdleStep === 'function') hoIdleStep(s); // v2.7 HOME: a furniture step (front layer on, sounds)
 }
 function idleEnd() {
   const a = IDLE.act; IDLE.act = null; IDLE.steps = [];
   const fx = $('#dogFx'); if (fx) fx.classList.remove(...IDLE_FXS);
   if (typeof pupPropClear === 'function') pupPropClear();
-  if (a) { IDLE.last = a.name; if (a.name === 'nap') showZzz(false); if (a.watered) setBowl(S.bowl || null); }
+  if (a) { IDLE.last = a.name; if (a.name === 'nap') showZzz(false); if (a.watered) setBowl(S.bowl || null); if (typeof hoIdleEnd === 'function') hoIdleEnd(a); } // v2.7 HOME: furniture front layer off
   IDLE.lastEnd = performance.now(); IDLE.nextAt = performance.now() + RINT(4000, 9000) * IDLE.speed;
   if (cur.mode === 'yard' && !busy && !S.sleeping) renderDog(dogPoseNow(), 'right', true);
 }
 function idleStop() { // any player action
-  if (!IDLE.act) return; const wasMoved = IDLE.act.step && (IDLE.act.step.move || IDLE.act.name === 'nap' || IDLE.act.name === 'sniff' || IDLE.act.name === 'zoomies' || IDLE.act.name === 'drink' || IDLE.act.name === 'social' || PUP_MOVERS.includes(IDLE.act.name));
+  if (!IDLE.act) return; const wasMoved = IDLE.act.step && (IDLE.act.step.move || IDLE.act.name === 'nap' || IDLE.act.name === 'sniff' || IDLE.act.name === 'zoomies' || IDLE.act.name === 'drink' || IDLE.act.name === 'social' || PUP_MOVERS.includes(IDLE.act.name) || (typeof hoIdleMoves === 'function' && hoIdleMoves(IDLE.act.name))); // v2.7 HOME: furniture idles move the dog
   if (wasMoved && !busy && !S.sleeping) dogTo(0, 0, 1, 0.25); IDLE.steps = []; idleEnd(); lastActiveAt = performance.now();
 }
 function idleStart(name) {
@@ -188,6 +191,7 @@ function packIdleTick() {
     if (d.sleeping || (IDLE.act && IDLE.act.step && IDLE.act.step.other && IDLE.act.step.other[0] === d)) return;
     if (idlePin) { if (packPose[d.id] !== idlePin) { packPose[d.id] = idlePin; redrawPackDog(d); } return; } // test helper: hold the pose
     if (now < (packNext[d.id] || 0)) return; packNext[d.id] = now + RINT(5000, 10000) * IDLE.speed;
+    if (typeof hoPackIdle === 'function' && hoPackIdle(d)) return; // v2.7 HOME: the pack dog went to use a piece of furniture (it redraws itself)
     const pup = typeof pupPackPool === 'function' ? pupPackPool(d) : null;
     const pool = pup || ['idle', 'idle', 'sit', 'sit', 'down', 'scratch', 'yawn', 'sniff', d.stats.energy < 40 ? 'sleep' : 'idle'].concat(outdoorsNow() && d.stats.happy > 60 ? ['rollover'] : []);
     let p = PICK(pool); if (!poseReal(d.key, p)) p = { down: 'sit', scratch: 'sit', yawn: 'sit', sniff: 'eat', rollover: 'happy' }[p] || p;

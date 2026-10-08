@@ -34,3 +34,6 @@
 28_guide.css
 29_festival.css
 30_halloween.css
+31_home.css
+32_pack_care.css
+33_shelter.css

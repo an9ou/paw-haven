@@ -20,7 +20,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 class T {
   constructor(name, opts) {
-    this.name = name; this.opts = Object.assign({ time: 'day', weather: 'cloudy', season: 'summer', fest: 'off', date: null, clock: true, timeout: 240000 }, opts || {}); // v2.5: season / festival pins (summer, off) and opts.date 'YYYY-MM-DD' for the fake clock
+    this.name = name; this.opts = Object.assign({ time: 'day', weather: 'cloudy', season: 'summer', fest: 'off', date: null, clock: true, timeout: 240000, packCare: false }, opts || {}); // v2.5: season / festival pins (summer, off) and opts.date 'YYYY-MM-DD' for the fake clock. v2.7: packCare false pins prefs.crOne (care acts on the active dog only, as before v2.7)
     this.fails = []; this.errors = []; this.p = null; this.ctx = null; this.b = null; this.checks = 0; this.t0 = Date.now();
     // the page clock: "today 10:00" local, ticking. Computed once per suite so reloads and new pages agree.
     const base = this.opts.date ? new Date(this.opts.date + 'T10:00:00') : new Date(); base.setHours(10, 0, 0, 0); this.clockOffset = base.getTime() - Date.now();
@@ -52,6 +52,7 @@ class T {
         const PK = 'pawhaven_prefs_v1'; let pr = {}; try { pr = JSON.parse(localStorage.getItem(PK) || '{}') || {}; } catch (e) { pr = {}; }
         let ch = false; if (cfg.time && !('ovrTime' in pr)) { pr.ovrTime = cfg.time; ch = true; } if (cfg.weather && !('ovrWeather' in pr)) { pr.ovrWeather = cfg.weather; ch = true; }
         if (cfg.season && !('ovrSeason' in pr)) { pr.ovrSeason = cfg.season; ch = true; } if (cfg.fest && !('ovrFest' in pr)) { pr.ovrFest = cfg.fest; ch = true; } // v2.5
+        if (!cfg.packCare && !('crOne' in pr)) { pr.crOne = true; ch = true; } // v2.7: pack care pinned off for the older suites (V27.md section 1)
         for (const k in cfg.prefs || {}) if (!(k in pr)) { pr[k] = cfg.prefs[k]; ch = true; }
         if (ch) localStorage.setItem(PK, JSON.stringify(pr));
         // 3) one-time storage seeding (old-save tests)
@@ -61,7 +62,7 @@ class T {
       window.__toasts = [];
       const arm = () => { const el = document.getElementById('toasts'); if (!el) return; new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((n) => { if (n.classList && n.classList.contains('toast')) window.__toasts.push(n.textContent); }))).observe(el, { childList: true }); };
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arm); else arm();
-    }, { clock: !!o.clock, offset: this.clockOffset, time: o.time, weather: o.weather, season: o.season, fest: o.fest, prefs: o.prefs || {}, storage: o.storage || null });
+    }, { clock: !!o.clock, offset: this.clockOffset, time: o.time, weather: o.weather, season: o.season, fest: o.fest, packCare: !!o.packCare, prefs: o.prefs || {}, storage: o.storage || null });
     const p = await ctx.newPage();
     p.on('console', (m) => { if (m.type() === 'error') this.errors.push(m.text()); }); p.on('pageerror', (e) => this.errors.push(e.message));
     this.p = p; return p;
@@ -191,8 +192,12 @@ class T {
   // map -> shelter (a screen with a modal, not a place)
   async toShelter() {
     const p = this.p; await p.click('[data-act=map]'); await p.waitForSelector('[data-area=shelter]'); await p.evaluate(() => window.__paw.mapTo('shelter'));
-    for (let i = 0; i < 6; i++) { await p.click('[data-area=shelter]', { force: true }); if (await this.until(() => window.__paw.mode === 'shelter' && !!document.querySelector('#modal .panel .shcard'), null, 2500)) return true; }
-    return false;
+    for (let i = 0; i < 6; i++) { await p.click('[data-area=shelter]', { force: true }); if (await this.until(() => window.__paw.mode === 'shelter', null, 2500)) break; }
+    if (!(await this.until(() => window.__paw.mode === 'shelter', null, 500))) return false;
+    if (await this.until(() => !!document.querySelector('#modal .panel .shcard'), null, 1500)) return true; // v2.6: the list opened by itself
+    // v2.7 the Shelter Playroom: the list ("Looking for a home") opens from the Adopt-me board, not by itself (V27.md section 7)
+    await p.evaluate(() => { const sr = window.__paw.sr; if (sr && typeof sr.list === 'function' && !document.querySelector('#modal .panel .shcard')) sr.list(); });
+    return this.until(() => !!document.querySelector('#modal .panel .shcard'), null, 4000);
   }
   async leaveShelter() { await this.closeX(); await this.p.keyboard.press('Escape'); await this.untilMode('yard'); }
   // open the Dev panel, run fn, close it. (the panel is the real dev panel, so its handlers are the ones under test)

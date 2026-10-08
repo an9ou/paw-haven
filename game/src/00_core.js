@@ -546,6 +546,7 @@ function freshState(key, name, sex) {
   st.dog.adoptedAt = localISO();
   st.hw = { letter: null, seen: null }; // v2.6 Halloween 2026 pop-up (27_halloween.js)
   st.guide = { step: 0 }; // v2.4: a new save meets Gerald (25_guide.js)
+  v27Fields(st); // v2.7 Home & Pack: beds in the house, who naps where, pack care ticks, the shelter playroom (V27.md section 1)
   return linkDogs(st);
 }
 let S = null;
@@ -575,6 +576,22 @@ function migrate(s) {
   if (!s.fest || typeof s.fest !== 'object') s.fest = {}; s.fest.letters = s.fest.letters || {}; s.fest.parade = s.fest.parade || {}; s.fest.piles = s.fest.piles || {}; s.fest.stall = s.fest.stall || {}; s.seasonSeen = s.seasonSeen || {}; s.breedTips = s.breedTips || {}; // v2.5: festivals and seasons
   if (!s.hw || typeof s.hw !== 'object') s.hw = { letter: null, seen: null }; // v2.6: the Halloween 2026 pop-up letter and first visit
   if (!s.guide || typeof s.guide !== 'object') { s.guide = { step: -1, done: localISO() }; s.guideSeen = true; } // v2.4: saves from before the guide never see the walkthrough, they get a letter
+  v27Fields(s); // v2.7 Home & Pack (V27.md section 1): additive, an old save keeps its one bed where it always stood
+  return s;
+}
+/* v2.7 Home & Pack save fields (V27.md section 1). Additive only: S.v stays 1, nothing is dropped.
+   S.decor[name].at  optional [x, y] world top-left of a moved decoration or furniture piece (size and room come from HM_DECOR)
+   S.bedAt           { bedName: [x, y] } the beds standing in the house (260 x 160 each). An old save gets its one bed at the v2.5 spot
+   S.bedOf           { dogId: bedName } who naps on which bed (HOME resolves missing or stale entries)
+   S.careOff         { dogId: true } dogs unticked in the pack care chips (PACK CARE). Empty = everyone present gets the care
+   S.shelter         { adopted: [ids], seen: ISO | null } the playroom's bookkeeping (SHELTER). The roster itself is seeded by date, never saved */
+function v27Fields(s) {
+  if (!s) return s;
+  if (!s.bedAt || typeof s.bedAt !== 'object' || Array.isArray(s.bedAt)) { s.bedAt = {}; s.bedAt[s.bed || 'Old Blanket'] = [610, 360]; } // [610, 360] = BED_BOX x, y (12_popups)
+  if (!s.bedOf || typeof s.bedOf !== 'object' || Array.isArray(s.bedOf)) s.bedOf = {};
+  if (!s.careOff || typeof s.careOff !== 'object' || Array.isArray(s.careOff)) s.careOff = {};
+  if (!s.shelter || typeof s.shelter !== 'object') s.shelter = { adopted: [], seen: null };
+  if (!Array.isArray(s.shelter.adopted)) s.shelter.adopted = []; if (s.shelter.seen === undefined) s.shelter.seen = null;
   return s;
 }
 function migNote() { if (S && S.gkNote) { delete S.gkNote; markDirty(); setTimeout(() => toast('Pip left a packet of seeds on your doorstep. The veggie patch is yours now!', 'gold'), 2200); }
