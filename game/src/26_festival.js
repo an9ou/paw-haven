@@ -128,7 +128,7 @@ function fsSquareDraw() {
   const svg = $('#view svg.world'); if (!svg) return;
   ['#fsStallG', '#fsBannerG'].forEach((s) => { const e = $(s, svg); if (e) e.remove(); });
   const pb = $('#placeBtns'); if (pb) pb.querySelectorAll('[data-fs]').forEach((b) => b.remove());
-  if (!fsAnyOn() || FS.walking) { fsPackSync(); return; }
+  if (!fsAnyOn() || FS.walking) { fsPackSync(); fsHwDraw(); return; }
   const pack = $('#pack', svg); if (!pack) return;
   const [sx, sy, sw, sh] = fsStallBox();
   let html = `<g id="fsStallG" class="hot" data-kind="${fsKind()}" tabindex="0" role="button" aria-label="Baker Bea's Harvest Stall">${place(fsArt('stall', { kind: fsKind() }), sx, sy, sw, sh)}${fsHit(sx + 8, sy + 10, sw - 16, sh - 10)}</g>`;
@@ -144,8 +144,10 @@ function fsSquareDraw() {
     if (hw && !ph) add(`<button class="btn yes" data-fs="parade" aria-label="${fsParadedToday() ? 'Paraded today' : 'Costume parade'}" ${fsParadedToday() ? 'aria-disabled="true"' : ''}>${fsParadedToday() ? (ph ? 'Paraded' : 'Paraded today') : ph ? 'Parade' : 'Costume parade'}</button>`);
     pb.querySelectorAll('[data-fs]').forEach((b) => { b.onclick = () => { SFX.click(); if (b.dataset.fs === 'stall') fsStallOpen(); else if (b.dataset.fs === 'fest') fsChooser(); else fsParadeOpen(); }; });
   }
-  fsPackSync();
+  fsPackSync(); fsHwDraw();
 }
+// v2.6: the Pumpkin Patch Pop-up (27_halloween.js) draws after the stall, so it sits in front of it and its button lands between the parade and Go home
+function fsHwDraw() { if (typeof hwSquareDraw === 'function') hwSquareDraw(); }
 // Square pack spot 3 stands where the stall is: it moves to the front while the stall is up and comes back when the festival packs up
 function fsPackSync() {
   if (typeof PACK_SPOTS === 'undefined' || !PACK_SPOTS.square) return;
@@ -273,9 +275,10 @@ function fsStallOpen0() {
 /* ---- phones at Halloween: one Festival button opens this small chooser ---- */
 function fsChooser() {
   if (!festOn('halloween')) { fsStallOpen(); return; }
-  const done = fsParadedToday();
-  const p = openModal('Festival', `<div class="fs-choose"><button class="card" data-fsgo="stall"><span class="art">${fsArt('stall', { kind: 'halloween' })}</span><b>Harvest Stall</b><span class="small">Dog-safe treats and outfits.</span></button><button class="card" data-fsgo="parade"><span class="art">${fsArt('paradebanner')}</span><b>Costume parade</b><span class="small">${done ? 'Paraded today.' : 'Once a day, 10 coins.'}</span></button></div>`, { cls: 'fs-choosepop' });
-  p.querySelectorAll('[data-fsgo]').forEach((b) => { b.onclick = () => { SFX.click(); closeModal(); if (b.dataset.fsgo === 'stall') fsStallOpen(); else fsParadeOpen(); }; });
+  const done = fsParadedToday(), hw = typeof hwOn === 'function' && hwOn(); // v2.6: a third row for the Pumpkin Patch Pop-up while it is open
+  const pop = hw ? `<button class="card hw-row" data-fsgo="popup"><span class="art">${hwIcon()}</span><span class="hw-rowt"><b>Pumpkin Patch Pop-up</b><span class="small">Mrs. Plum's 2026 things, until 2 November.</span></span></button>` : '';
+  const p = openModal('Festival', `<div class="fs-choose"><button class="card" data-fsgo="stall"><span class="art">${fsArt('stall', { kind: 'halloween' })}</span><b>Harvest Stall</b><span class="small">Dog-safe treats and outfits.</span></button><button class="card" data-fsgo="parade"><span class="art">${fsArt('paradebanner')}</span><b>Costume parade</b><span class="small">${done ? 'Paraded today.' : 'Once a day, 10 coins.'}</span></button>${pop}</div>`, { cls: 'fs-choosepop' });
+  p.querySelectorAll('[data-fsgo]').forEach((b) => { b.onclick = () => { SFX.click(); closeModal(); if (b.dataset.fsgo === 'stall') fsStallOpen(); else if (b.dataset.fsgo === 'popup') hwOpen(); else fsParadeOpen(); }; });
   return p;
 }
 
@@ -351,7 +354,7 @@ function fsParadeDone() {
 function fsJournalLine() {
   if (!S || !fsAnyOn()) return '';
   const until = festOn('leaf') ? '30 November' : '31 October';
-  return `<p class="fs-jline"><span class="ic" aria-hidden="true">${iconOr('festival', '<path d="M0 -12 C6 -8 9 -2 0 12 C-9 -2 -6 -8 0 -12 Z" fill="#E8893A" stroke="#5B3D32" stroke-width="2"/>')}</span><b>Festival:</b> Harvest Stall in the Square until ${until}.</p>`;
+  return `<p class="fs-jline"><span class="ic" aria-hidden="true">${iconOr('festival', '<path d="M0 -12 C6 -8 9 -2 0 12 C-9 -2 -6 -8 0 -12 Z" fill="#E8893A" stroke="#5B3D32" stroke-width="2"/>')}</span><b>Festival:</b> Harvest Stall in the Square until ${until}.</p>` + (typeof hwJournalLine === 'function' ? hwJournalLine() : ''); // v2.6: the pop-up line under it
 }
 
 /* ---- bus ---- */

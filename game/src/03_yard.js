@@ -671,10 +671,10 @@ const HM_DECOR = {
   'Doggy Ramp': { prop: 'doggyramp', at: [536, 432, 82, 50], vb: [200, 120], story: 'Paw prints lead all the way up. Nobody has needed the ramp yet, but everyone is proud of it.' },
   'Rocking Chair': { prop: 'rockingchair', at: [910, 452, 84, 84], vb: [160, 160], story: 'A dog-sized chair with a knitted blanket. Mum likes a rock here after a long day of puppies.' },
   // v2.6 Halloween 2026 pop-up decorations (bought, not rewards). `at` are starting spots, the HALLOWEEN lane tunes them
-  'Jack-o-Lantern Trio': { prop: 'hwlanterns', at: [868, 380, 100, 60], vb: [200, 120], price: 120, fest: 'halloween', ed: 2026, v26: true, story: 'Three pumpkins, three faces, all of them smiling. They glow a little after dark.' },
-  'Paper Bat Bunting': { prop: 'hwbunting', at: [700, 200, 180, 48], vb: [300, 80], price: 90, fest: 'halloween', ed: 2026, v26: true, story: 'Paper bats on a string, cut a bit wonky. They flutter whenever a dog runs past.' },
-  'Friendly Scarecrow': { prop: 'hwscarecrow', at: [870, 260, 70, 100], vb: [140, 200], price: 140, fest: 'halloween', ed: 2026, v26: true, story: 'A pumpkin head and a big grin. The crows sit on his arms to chat.' },
-  'Ghost Garland': { prop: 'hwgarland', at: [220, 190, 160, 48], vb: [300, 90], price: 100, fest: 'halloween', ed: 2026, v26: true, story: 'Little cloth ghosts holding hands. They say boo very quietly.' }
+  'Jack-o-Lantern Trio': { prop: 'hwlanterns', at: [440, 528, 112, 67], vb: [200, 120], price: 120, fest: 'halloween', ed: 2026, v26: true, story: 'Three pumpkins, three faces, all of them smiling. They glow a little after dark.' },
+  'Paper Bat Bunting': { prop: 'hwbunting', at: [598, 192, 264, 70], vb: [300, 80], price: 90, fest: 'halloween', ed: 2026, v26: true, story: 'Paper bats on a string, cut a bit wonky. They flutter whenever a dog runs past.' },
+  'Friendly Scarecrow': { prop: 'hwscarecrow', at: [660, 282, 68, 97], vb: [140, 200], price: 140, fest: 'halloween', ed: 2026, v26: true, story: 'A pumpkin head and a big grin. The crows sit on his arms to chat.' },
+  'Ghost Garland': { prop: 'hwgarland', at: [62, 226, 216, 65], vb: [300, 90], price: 100, fest: 'halloween', ed: 2026, v26: true, story: 'Little cloth ghosts holding hands. They say boo very quietly.' }
 };
 const HM_PHOTO = [20, 15, 120, 84]; // the documented data-photo box inside the 160x140 frame
 function hmDecorFields() { if (S && (!S.decor || typeof S.decor !== 'object')) S.decor = {}; }
