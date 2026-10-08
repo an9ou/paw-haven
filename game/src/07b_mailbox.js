@@ -24,7 +24,42 @@ function mailFields() {
       if (c.bday == null && /^\d{4}-\d{2}-\d{2}/.test(String(r.born || ''))) c.bday = Math.floor(isoDays(r.born, t) / 12);
     });
   }
+  if (!S.mbCollectV27) { // v2.7: once, on the first v2.7 load. Gifts now wait for Collect. Letters opened before v2.7 were paid on open, so they read as collected (never paid twice)
+    S.mbCollectV27 = localISO();
+    S.mail.forEach((m) => { if (m && m.gift && m.read && !m.gift.claimed) { m.gift.claimed = true; m.gift.pre = true; } });
+  }
 }
+/* ---------- v2.7: Collect (gifts wait in the letter until the player collects them) ---------- */
+const mbOwed = (m) => !!(m && m.gift && !m.gift.claimed && (m.gift.coins || m.gift.item));
+const mbAn = (s) => (/^[aeiou]/i.test(String(s)) ? 'an ' : 'a ') + s;
+function mbGiftLabel(g) {
+  if (!g) return '';
+  if (g.coins) return `${g.coins} coin${g.coins === 1 ? '' : 's'}`;
+  const n = g.n || 1, it = g.item || 'a surprise';
+  return n > 1 ? `${n} × ${it}` : mbAn(it);
+}
+const mbJoin = (a) => (a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1]);
+function mbGrant(m) { // pays one letter's gift once. Returns { coins, item } or null when there is nothing owed
+  if (!mbOwed(m)) return null;
+  const g = m.gift; g.claimed = true; g.got = localISO();
+  if (g.coins) { const n = addCoins(g.coins, { raw: true }); return { coins: n || g.coins }; }
+  if (g.cat === 'clothes' && g.item) { if (!owns('clothes', g.item)) S.inv.clothes.push(g.item); return { item: mbGiftLabel(g), ward: g.item }; } // v2.4: the Knit Scarf letter
+  if (g.cat && g.id) { S.inv[g.cat] = S.inv[g.cat] || {}; S.inv[g.cat][g.id] = (S.inv[g.cat][g.id] || 0) + (g.n || 1); }
+  return { item: mbGiftLabel(g) };
+}
+function mbCollect(ids) { // collect the gifts of these letters (ids) in one go. One toast names everything
+  if (!S) return ''; mailFields();
+  const ms = S.mail.filter((m) => ids.includes(m.id) && mbOwed(m)); if (!ms.length) return '';
+  let coins = 0, ward = ''; const items = [];
+  ms.forEach((m) => { const r = mbGrant(m); if (!r) return; if (r.coins) coins += r.coins; if (r.item) items.push(r.item); if (r.ward) ward = r.ward; }); // read marks stay as they were (Read a letter missions count real reads)
+  const parts = (coins ? [`${coins} coin${coins === 1 ? '' : 's'}`] : []).concat(items);
+  const txt = `Collected ${mbJoin(parts)}.` + (ward ? ` The ${ward} is in the Wardrobe.` : '') + (ms.length === 1 ? ` Thank you, ${ms[0].from}!` : ' Thank you, neighbours!');
+  try { if (coins) SFX.coin(); else SFX.pop(); } catch (e) { /* audio off */ }
+  markDirty(); toast(txt, 'good');
+  trackAct('collect', { n: ms.length, coins, items: items.length });
+  return txt;
+}
+function claimGift(m) { return m ? mbCollect([m.id]) : ''; } // older callers: one letter
 const mailUnread = () => (S && Array.isArray(S.mail) ? S.mail.filter((m) => !m.read).length : 0);
 const mailIcon = () => iconOr('mail', '<rect x="-14" y="-10" width="28" height="20" rx="3" fill="#FFF3D6" stroke="#5B3D32" stroke-width="2.2"/><path d="M-13 -8 L0 3 L13 -8" fill="none" stroke="#5B3D32" stroke-width="2.2" stroke-linejoin="round"/><path d="M6 -16 l2 3 3 1 -3 1 -2 3 -1 -3 -3 -1 3 -1z" fill="#F28FA5"/>');
 function mailSfx() { try { const a = PAU(); if (a && typeof a.sfx === 'function') { a.sfx('mail'); return; } } catch (e) { /* no audio module */ } try { SFX.ding(); setTimeout(() => SFX.boop(990), 140); } catch (e) { /* audio off */ } }
@@ -37,7 +72,7 @@ function mailPush(msg) {
   if (S.mail.some((x) => x.id === m.id)) return S.mail.find((x) => x.id === m.id);
   S.mail.unshift(m);
   if (S.mail.length > MAIL_MAX) { // drop the oldest read letters first
-    for (let i = S.mail.length - 1; i >= 0 && S.mail.length > MAIL_MAX; i--) if (S.mail[i].read) S.mail.splice(i, 1);
+    for (let i = S.mail.length - 1; i >= 0 && S.mail.length > MAIL_MAX; i--) if (S.mail[i].read && !mbOwed(S.mail[i])) S.mail.splice(i, 1); // v2.7: a gift still waiting for Collect is kept
     for (let i = S.mail.length - 1; i >= 0 && S.mail.length > MAIL_MAX; i--) if (S.mail[i].kind !== 'litter') S.mail.splice(i, 1); // unread litter letters are kept
   }
   markDirty(); mailSfx();
@@ -80,17 +115,6 @@ function dailyGift() {
   if (!S) return false; mailFields(); const t = localISO();
   if (S.mailGiftDay === t) return false;
   S.mailGiftDay = t; mailPush(giftRoll()); return true;
-}
-function claimGift(m) {
-  if (!m || !m.gift || m.gift.claimed) return '';
-  m.gift.claimed = true; let txt = '';
-  if (m.gift.coins) { const n = addCoins(m.gift.coins, { raw: true }); SFX.coin(); txt = `+${n} coins`; }
-  else if (m.gift.cat === 'clothes' && m.gift.item) { if (!owns('clothes', m.gift.item)) S.inv.clothes.push(m.gift.item); txt = `${m.gift.item} added to the Wardrobe`; SFX.pop(); } // v2.4: the Knit Scarf letter
-  else if (m.gift.cat && m.gift.id) {
-    S.inv[m.gift.cat] = S.inv[m.gift.cat] || {}; S.inv[m.gift.cat][m.gift.id] = (S.inv[m.gift.cat][m.gift.id] || 0) + (m.gift.n || 1);
-    txt = `+${m.gift.n || 1} ${m.gift.item}`; SFX.pop();
-  }
-  markDirty(); if (txt) toast(`${txt}. Thank you, ${m.from}!`, 'good'); return txt;
 }
 
 /* ---------- postcards from rehomed puppies ---------- */
@@ -150,7 +174,7 @@ function jrGiftCard(r, day, coins) {
   const msg = { kind: 'postcard', id: `pp_${r.id}_d${day}`, from: `${nm} & ${shortFam(fam)}`, title: month ? `${nm}: one month in town!` : `A photo from ${nm}`, sparkle: !!r.sparkle,
     text: month ? `${nm} has lived with ${fam} for a whole month. ${p.He} knows the way to every bakery. We sent a little something to say thank you.` : `Here is a photo of ${nm}! ${p.He} sat still for almost a second. We sent a little something to say thank you.`,
     ps: month ? 'P.S. Please accept this for treats and tennis balls.' : 'P.S. The photographer got licked. Twice.', dog: jrPupDog(r), pose: month ? 'happy' : 'sit', pup: r.id };
-  const n = addCoins(coins, { raw: true }); msg.gift = { coins: n || coins, claimed: true }; try { SFX.coin(); } catch (e) { /* audio off */ }
+  msg.gift = { coins }; // v2.7: the coins wait in the card for Collect (before v2.7 they were paid on arrival, those cards carry claimed: true)
   return mailPush(msg);
 }
 // day 14 = 40 coins, day 30 = 80 coins (each paid once per pup, kept on the schedule record), then a birthday card every 12 real days from born (no gift)
@@ -232,7 +256,11 @@ function letterBody(m) {
   if (!m) return '<div class="mb-empty"><p>No letters yet.</p><p class="small">The neighbours leave something every day, and puppies who move to town families write home.</p></div>';
   const date = (() => { try { return new Date(m.date + 'T00:00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'short' }); } catch (e) { return m.date; } })();
   let act = '';
-  if (m.gift) act = `<p class="mb-gift ${m.gift.claimed ? 'got' : ''}">${m.gift.coins ? `${m.gift.coins} coins` : `${m.gift.n || 1} × ${esc(m.gift.item || 'a surprise')}`}${m.gift.claimed ? ' · added to your things' : ''}</p>`;
+  if (m.gift && (m.gift.coins || m.gift.item)) { // v2.7: a Collect button while the gift waits, a Collected stamp afterwards
+    const lbl = esc(capFirst(mbGiftLabel(m.gift)));
+    act = m.gift.claimed ? `<div class="mb-giftrow"><p class="mb-gift got">${lbl}</p><span class="mb-got" data-mbgot="${esc(m.id)}" tabindex="-1">Collected</span></div>`
+      : `<div class="mb-giftrow"><p class="mb-gift">${lbl}</p><button class="btn yes mb-get" data-mbget="${esc(m.id)}">Collect</button></div>`;
+  }
   if (m.kind === 'litter') {
     const taken = m.adopted || m.picked;
     act = taken ? '<p class="mb-gift got">You picked a puppy from this litter.</p>' : `<div class="mb-acts"><button class="btn yes" data-adoptpick="${esc(m.id)}">Adopt this pup</button><span class="small">${typeof slotsFree === 'function' ? `Free dog spots: ${slotsFree()}` : ''}</span></div>`;
@@ -249,13 +277,17 @@ function openMailbox(selId, tab) {
   if (!S.mail.some((m) => m.id === mailSel)) mailSel = (S.mail[0] || {}).id || null;
   const sel = S.mail.find((m) => m.id === mailSel) || null;
   if (!album && sel && !sel.read) { sel.read = true; markDirty(); trackAct('mail', { id: sel.id, kind: sel.kind }); }
-  if (!album && sel && sel.gift) claimGift(sel);
   const kindIc = { postcard: mailIcon(), gift: mailIcon(), litter: mailIcon(), news: mailIcon() }; // v2.3: the envelope drawing, not a letter monogram
-  const list = S.mail.length ? S.mail.map((m) => `<button class="mb-item ${m.read ? '' : 'unread'} ${m.id === mailSel ? 'on' : ''} k-${esc(m.kind)}" data-mail="${esc(m.id)}" aria-pressed="${m.id === mailSel}"><span class="mb-k" aria-hidden="true">${m.dog ? headSVG(m.dog) : kindIc[m.kind] || mailIcon()}</span><span class="mb-t"><b>${esc(m.title)}</b><span class="small">${esc(m.from)}</span></span>${m.read ? '' : '<i class="mb-dot" aria-label="unread"></i>'}</button>`).join('') : '<p class="small">Empty. Just one very determined spider.</p>';
-  const n = mailUnread();
-  const p = openModal(`<span class="mb-h-ic">${mailIcon()}</span>Mailbox`, `${jrMailTabs(album)}${album ? jrAlbum() : `<div class="mbox"><div class="mb-list" role="list">${list}</div><div class="mb-read">${letterBody(sel)}</div></div><p class="small mb-foot">${n ? `${n} unread.` : 'All caught up.'} A neighbour drops something off every day.</p>`}`, { cls: 'mailbox' });
+  const list = S.mail.length ? S.mail.map((m) => `<button class="mb-item ${m.read ? '' : 'unread'} ${m.id === mailSel ? 'on' : ''} k-${esc(m.kind)}" data-mail="${esc(m.id)}" aria-pressed="${m.id === mailSel}"><span class="mb-k" aria-hidden="true">${m.dog ? headSVG(m.dog) : kindIc[m.kind] || mailIcon()}</span><span class="mb-t"><b>${esc(m.title)}</b><span class="small">${esc(m.from)}</span></span>${mbOwed(m) ? '<span class="small mb-chip">Gift</span>' : ''}${m.read ? '' : '<i class="mb-dot" aria-label="unread"></i>'}</button>`).join('') : '<p class="small">Empty. Just one very determined spider.</p>';
+  const n = mailUnread(), owed = S.mail.filter(mbOwed);
+  const allBar = owed.length >= 2 ? `<div class="mb-allbar"><span>${owed.length} letters carry a gift.</span><button class="btn yes mb-all" data-mball="1">Collect all</button></div>` : '';
+  const p = openModal(`<span class="mb-h-ic">${mailIcon()}</span>Mailbox`, `${jrMailTabs(album)}${album ? jrAlbum() : `${allBar}<div class="mbox"><div class="mb-list" role="list">${list}</div><div class="mb-read">${letterBody(sel)}</div></div><p class="small mb-foot">${n ? `${n} unread.` : 'All caught up.'} A neighbour drops something off every day.</p>`}`, { cls: 'mailbox' });
   p.querySelectorAll('[data-mbt]').forEach((b) => { b.onclick = () => { SFX.click(); openMailbox(undefined, b.dataset.mbt); }; });
   p.querySelectorAll('[data-mail]').forEach((b) => { b.onclick = () => { SFX.click(); openMailbox(b.dataset.mail); }; });
+  const mbRedraw = (focus) => { if (modal.hidden || !$('.panel.mailbox', modal)) return; const keep = mailSel; openMailbox(keep);
+    setTimeout(() => { const f = (focus && $(focus, modal)) || $('.mb-got', modal); if (!f) return; try { f.focus({ preventScroll: true }); f.scrollIntoView({ block: 'nearest' }); } catch (e) { /* no focus */ } }, 60); }; // after openModal's own focus (30 ms): the stamp stays in view on a phone sheet
+  p.querySelectorAll('[data-mbget]').forEach((b) => { b.onclick = () => { mbCollect([b.dataset.mbget]); mbRedraw(); }; });
+  p.querySelectorAll('[data-mball]').forEach((b) => { b.onclick = () => { mbCollect(S.mail.filter(mbOwed).map((m) => m.id)); mbRedraw(); }; });
   p.querySelectorAll('[data-adoptpick]').forEach((b) => {
     b.onclick = () => {
       if (typeof adoptPick !== 'function') { nope('The puppy paperwork is still at the printer. Try again soon.'); return; }
@@ -298,6 +330,6 @@ function mailNow() { // dev: deliver every due thing now (the daily gift even if
 })();
 function pawMailHelpers() {
   if (!window.__paw) return;
-  Object.assign(window.__paw, { mailNow, mailPush: (m) => mailPush(m), openMailbox: (id, tab) => openMailbox(id, tab), mailTick: () => mailTick(), dailyGift: () => dailyGift(), coatCheck: () => coatRewardsCheck(), jrFamCheck: () => jrFamCheck(), jrLine: () => jrBestLine(), titleGive: (n) => titleGive(n), jrAlbum: () => jrAlbumFound(), jrDecor: (n) => jrDecor(n), journal: (tab) => openJournal(tab) });
+  Object.assign(window.__paw, { mbCollect: (ids) => mbCollect(ids), mbOwed: () => (S && Array.isArray(S.mail) ? S.mail.filter(mbOwed).map((m) => m.id) : []), mailNow,mailPush: (m) => mailPush(m), openMailbox: (id, tab) => openMailbox(id, tab), mailTick: () => mailTick(), dailyGift: () => dailyGift(), coatCheck: () => coatRewardsCheck(), jrFamCheck: () => jrFamCheck(), jrLine: () => jrBestLine(), titleGive: (n) => titleGive(n), jrAlbum: () => jrAlbumFound(), jrDecor: (n) => jrDecor(n), journal: (tab) => openJournal(tab) });
 }
 on('game:ready', pawMailHelpers); setTimeout(pawMailHelpers, 0);

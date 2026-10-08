@@ -73,6 +73,10 @@ html[data-layout="phone"] .letter{padding:12px 12px 14px;transform:none}
 html[data-layout="phone"] .letter header b{font-size:28px}
 html[data-layout="phone"] .mb-text{font-size:17px}
 html[data-layout="phone"] .mb-acts .btn{min-height:48px}
+/* v2.7 Collect: 48 px buttons, 15 px text and up */
+html[data-layout="phone"] .mb-get,html[data-layout="phone"] .mb-all{min-height:48px;font-size:18px;padding:6px 22px}
+html[data-layout="phone"] .mb-allbar{font-size:16px;padding:6px 6px 6px 12px}
+html[data-layout="phone"] .mb-got{font-size:21px}
 html[data-layout="phone"] .mb-pup{width:48px;height:48px}
 html[data-layout="phone"] .pc-addr{font-size:15px}
 html[data-layout="phone"] .pc{width:100%}
