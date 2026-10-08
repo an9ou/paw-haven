@@ -74,7 +74,7 @@ function enterToy(name) {
       if (r.energy) addStat('energy', +r.energy);
       if (r.clean) addStat('clean', +r.clean); if (r.cool) S.coolUntil = S.gameMin + 60; // v2.4 Paddling Pool: +Cleanliness and a cool hour
       dailyCare('play'); updateHUD(); markDirty(); if (!acted) { acted = true; trackAct('toy', { name }); }
-      toast(`+${Math.round(hp)} Happiness${b ? `, +${b} Bond` : ''}${c ? `, +${c} coins` : ''}${fav > 1 ? ' (favourite toy!)' : ''}${k < 1 ? ` (x${k}: played already today)` : ''}`, 'good');
+      if (Math.round(hp) || b || c) toast(`+${Math.round(hp)} Happiness${b ? `, +${b} Bond` : ''}${c ? `, +${c} coins` : ''}${fav > 1 ? ' (favourite toy!)' : ''}${k < 1 ? ` (x${k}: played already today)` : ''}`, 'good');
     },
     onClose: () => { if (closed) return; closed = true; if (cur.mode === 'toy') go('yard'); }
   };
