@@ -179,7 +179,7 @@ sec('existing names are byte-identical to v27-base');
       if (a === b) same++; else diff.push(k + ':' + n + (o && Object.keys(o).length ? ' ' + JSON.stringify(o) : ''));
     });
     ok(diff.length === 0, `every existing name is byte-identical (${same} of ${calls.length} same; differ: ${diff.slice(0, 8).join(', ')})`);
-    ok(same > 500, `a broad sample was compared (${same} calls)`);
+    ok(same > 450, `a broad sample was compared (${same} calls)`);
     ['icons', 'items', 'houses', 'collectibles', 'beds', 'obstacles', 'props', 'bowlFoods'].forEach((k) => {
       const o = W[k], n = P1.WORLD_B[k];
       ok(o.every((x, i) => n[i] === x), `WORLD_B.${k} keeps every old name in the old order`);

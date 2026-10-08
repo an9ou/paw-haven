@@ -16,6 +16,10 @@
                                   6 festival foods, 5 festival clothes, icons festival, parade; the six house cards redrawn bold for 40 px
                             v2.6: popup {lit} 240x220, hwlanterns {lit} 200x120, hwbunting 300x80, hwscarecrow 140x200, hwgarland 300x90;
                                   16 pop-up items (4 treats, 4 toys, 4 clothes, 4 decorations use their props), 4 bowl foods, icon popup
+                            v2.7: 16 decorations (birdbath, flowerbarrel, stringlights {lit}, bench, hammock, windchime, sandbox, steppingstones, ragrug,
+                                  toybasket, cushionpile, fern, cuckooclock, pawpictures, moonlamp {lit}, wallquilt), 5 furniture pieces {use, lit} with a
+                                  <g class="pa-front"> (playtower, tunnelsofa, ballpit, sofaramp, windowseat) and PawArt.FURN_SPOTS, bed Knitted Nest,
+                                  21 cards, icons furniture and arrange (see the v2.7 block at the end)
    Deterministic (seeded per asset name). Each asset is built once and cached as a template; every call
    gets fresh SVG ids. No filters on icons/items/props; houses use one grain filter. */
 window.PawArt = window.PawArt || {};
@@ -5235,12 +5239,58 @@ PROPS.windowseat=function(b,o){
 
 const FURN_SPOTS={
   playtower:{top:{x:100,y:58,w:200,pose:'sit',face:'right'},cubby:{x:100,y:250,w:200,pose:'sleep',face:'right',front:true}},
-  tunnelsofa:{tunnel:{x:150,y:154,w:200,pose:'walk',face:'right',front:true},seat:{x:150,y:33,w:200,pose:"down",face:"left"}},
+  tunnelsofa:{tunnel:{x:158,y:154,w:200,pose:'walk',face:'right',front:true},seat:{x:150,y:33,w:200,pose:"down",face:"left"}},
   ballpit:{a:{x:96,y:106,w:200,pose:'happy',face:'right',front:true},b:{x:150,y:104,w:200,pose:'rollover',face:'left',front:true}},
-  sofaramp:{top:{x:186,y:58,w:200,pose:'sit',face:'left',via:{x:40,y:152}}},
+  sofaramp:{top:{x:186,y:58,w:200,pose:'sit',face:'left',via:{x:14,y:150}}},
   windowseat:{seat:{x:110,y:176,w:200,pose:'sit',face:'right'}}
 };
 PA.FURN_SPOTS=FURN_SPOTS;
+
+/* items (64): the five furniture cards, bold and simple like the decoration cards */
+Object.assign(ITEMS,{
+ 'Dog Play Tower'(b){
+  b.sh(RR(14,14,8,20,2),FSIS,{hatch:0,hl:0,lw:.9,inner:b.st(b.jl(14,19,22,17,.2)+b.jl(14,25,22,23,.2)+b.jl(14,31,22,29,.2),FSISD,1,.8)});b.sh(RR(42,14,7,20,2),FCT,{hatch:0,hl:0,lw:.9});
+  b.sh(RR(6,32,52,28,4),FCT,{hatch:0,hl:0,base:FCTL});
+  b.sh([[13,59],[13,44],[20,37],[32,35],[44,37],[51,44],[51,59]],FIN,{k:.12,hatch:0,hl:0,lw:.9,base:'#C9B2A6'});
+  b.sh(RR(15,53,34,6,3),FPEA,{hatch:0,hl:0,lw:.7});
+  b.sh(RR(4,8,56,8,3),FCTL,{hatch:0,hl:0,base:'#EAF8F5'});b.sh(RR(2,22,18,6,2.4),FCTL,{hatch:0,hl:0,lw:.8});
+  b.ln([[50,16],[51,24]],{w:1.3,col:FSISD});b.sh(E(51,27,3.4,3.2,10),'#F7A1B5',{hatch:0,hl:0,lw:.7});
+  paw(b,30,11.6,2.2,'#FFFBF3',{noline:1});b.ex('spark',58,4,3);
+ },
+ 'Tunnel Sofa'(b){
+  b.sh([[6,30],[8,14],[20,8],[44,8],[56,14],[58,30]],FSO,{k:.16,hatch:0,hl:0,base:FSOL});
+  b.sh([[4,58],[3,30],[8,24],[14,26],[16,58]],FSO,{k:.14,hatch:0,hl:0,base:FSOL});b.sh([[60,58],[61,30],[56,24],[50,26],[48,58]],FSO,{k:.14,hatch:0,hl:0,base:FSOL});
+  b.sh(RR(14,24,36,10,4),'#FBC2B9',{hatch:0,hl:0,lw:.9,base:'#FDE3DE'});
+  b.sh([[16,34],[48,34],[48,58],[16,58]],FSO,{k:0,hatch:0,hl:0,base:FSOL});
+  [[17,28],[36,47]].forEach(([x0,x1])=>{b.sh(fArch(x0,x1,58,38),FTUN,{k:.1,hatch:0,hl:0,lw:.9,base:'#E4DBF7',inner:b.st(b.jl(x0+4,44,x0+3,57,.2)+b.jl(x1-4,44,x1-3,57,.2),'#fff',1,.7)})});
+  paw(b,32,50,2.2,'#FFFBF3',{noline:1});b.ex('spark',58,6,3);
+ },
+ 'Ball Pit'(b){
+  b.sh(E(32,30,29,10,24),'#8FB0DA',{hatch:0,hl:0,lw:1,base:'#B9D4F3'});
+  [[14,28,0],[22,25,1],[31,24,2],[40,25,3],[48,28,4],[18,32,5],[27,31,6],[36,31,0],[45,32,1],[32,20,2]].forEach(([x,y,k])=>fBall(b,x,y,4.6,BALLC[k]));
+  b.sh([[3,30],[10,39],[32,42],[54,39],[61,30],[61,46],[54,55],[32,58],[10,55],[3,46]],'#B9D4F3',{k:.2,hatch:0,hl:0,base:'#E2EEFB'});
+  b.raw(b.st('M8 44Q32 54 56 44','#fff',1.1,.85).replace('fill="none"','fill="none" stroke-dasharray="2.6 2.2"'));
+  [[30,6,3],[44,10,0]].forEach(([x,y,k])=>fBall(b,x,y,3.6,BALLC[k]));b.ex('spark',58,6,3);
+ },
+ 'Sofa Ramp'(b){
+  b.sh([[30,26],[31,12],[38,8],[58,8],[62,14],[62,26]],'#F9D27A',{k:.14,hatch:0,hl:0,base:'#FFF0C4'});
+  b.sh(RR(28,24,34,8,3.4),'#FBE3A0',{hatch:0,hl:0,lw:.9,base:'#FFF4D2'});
+  b.sh(RR(29,31,32,25,3),'#F9D27A',{hatch:0,hl:0,base:'#FFF0C4'});
+  b.sh([[3,58],[30,30],[30,56]],'#D3C6F1',{k:0,hatch:0,hl:0,base:'#EAE2FA'});b.sh([[2,55],[29,28],[32,31],[5,58]],'#E4DBF7',{k:0,hatch:0,hl:0,lw:.9});
+  [[11,48],[20,39]].forEach(([x,y],i)=>paw(b,x,y-1,2,i?'#FFE08A':'#F7B2C4',{a:-.75,noline:1}));
+  paw(b,45,44,2.6,'#FFFBF3',{noline:1});b.ex('spark',8,10,3);
+ },
+ 'Window Seat'(b){
+  b.sh([[6,60],[6,22],[14,10],[32,4],[50,10],[58,22],[58,60]],C.wood,{k:.1,hatch:0,hl:0,base:'#F3DDB4'});
+  b.sh([[11,60],[11,24],[18,14],[32,9],[46,14],[53,24],[53,60]],'#FFF2DA',{k:.1,hatch:0,hl:0,lw:.8,base:'#FFF8EC'});
+  b.sh(E(32,24,10.5,10.5,18),C.woodD,{hatch:0,hl:0,lw:.9,base:C.wood});
+  b.sh(E(32,24,8,8,18),'#BFE6FA',{hatch:0,hl:0,lw:.8,base:'#E6F6FD',marks:[{pts:[[24,27],[32,25],[40,28],[40,32],[24,32]],fill:'#B8DE9A',k:.2}]});
+  b.raw(b.st('M32 16V32M24 24H40',C.woodD,1.6,.95));
+  b.sh(RR(9,40,46,8,3.4),'#9ED8D2',{hatch:0,hl:0,lw:.9,base:FCTL});
+  b.sh(RR(10,47,44,13,2),C.wood,{hatch:0,hl:0,lw:.9,base:'#F3DDB4'});b.sh(RR(14,50,15,7,2),'#C9A87E',{hatch:0,hl:0,lw:.6});b.sh(RR(35,50,15,7,2),'#C9A87E',{hatch:0,hl:0,lw:.6});
+  b.sh(heartP(46,37,9),'#F7B2C4',{hatch:0,hl:0,lw:.6});b.ex('spark',58,6,3);
+ }
+});
 /* v27:furn (end) */
 
 /* v27:bed (start) -- the Knitted Nest and the two icons */
@@ -5319,7 +5369,7 @@ if(typeof document!=='undefined'&&!document.getElementById('pawart-world-b-v24-c
   document.head.appendChild(st);
 }
 PA._wbFlush=()=>{for(const k in CACHE)delete CACHE[k]};
-PA.WORLD_B={beds:Object.keys(BEDS),obstacles:Object.keys(OBS),bowlFoods:BOWL_FOODS.slice(),icons:Object.keys(ICONS),items:Object.keys(ITEMS),houses:Object.keys(HOUSES),collectibles:Object.keys(COLS),props:Object.keys(PROPS)};
+PA.WORLD_B={beds:Object.keys(BEDS),obstacles:Object.keys(OBS),bowlFoods:BOWL_FOODS.slice(),icons:Object.keys(ICONS),items:Object.keys(ITEMS),houses:Object.keys(HOUSES),collectibles:Object.keys(COLS),props:Object.keys(PROPS),furniture:V27_FURN.slice()};
 
 if(typeof document!=='undefined'&&!document.getElementById('pawart-world-b-css')){
   const st=document.createElement('style');st.id='pawart-world-b-css';

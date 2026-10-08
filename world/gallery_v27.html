@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>World B v2.7 gallery</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&display=swap">
+<style>body{margin:0;padding:12px;background:#FFFBF3;font:14px/1.3 system-ui,sans-serif;color:#5B3D32}
+h1{font-size:18px;margin:0 0 4px}h2{margin:18px 0 6px;font-size:15px}.row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.pair{display:flex;gap:10px;align-items:flex-end;background:#fff;border:1px dashed #D8CBB8;padding:4px;flex-wrap:wrap}
+figure{margin:0;text-align:center}figcaption{font:600 13px 'Caveat',cursive;margin-top:2px}
+.o figcaption{opacity:.55}svg{display:block;max-width:100%}.night{background:#3E4A6B;border-radius:6px;padding:6px}.night figcaption{color:#FFF2DA}
+.scene{position:relative;overflow:hidden;border-radius:6px;border:1px solid #E3D2BA}.scene>.bg svg{width:100%;height:100%}.on{position:absolute}.on>svg{width:100%;height:100%;overflow:visible}
+.furn{position:relative;background:#F3E3CC;border-radius:4px}.small figure>div{width:40px}
+/* the game's front copy (31_home.css, 15_popups.css): only the front group shows */
+.ho-front svg *{visibility:hidden}.ho-front svg .pa-front,.ho-front svg .pa-front *{visibility:visible}
+.bedfront svg *{visibility:hidden}.bedfront svg .pa-bed-front,.bedfront svg .pa-bed-front *{visibility:visible}</style></head>
+<body>
+<h1>Paw Haven world art B: v2.7 "Home &amp; Pack" additions</h1>
+<p>Each new drawing sits next to its nearest existing neighbour (greyed caption) so the hand can be compared. Furniture: the game draws the prop, the dog, then the prop again showing only <code>.pa-front</code>.</p>
+<h2>Yard decorations at the yard scale, next to the Giant Crayon Box and the Rocking Chair</h2><div class="row" id="yard"></div>
+<h2>The yard decorations in the yard: before (v2.6), summer day, autumn with the Halloween 2026 dressing, night (lights lit)</h2><div class="row" id="yardscene"></div>
+<h2>House decorations at the house scale, next to the Rocking Chair and the Family Photo Frame</h2><div class="row" id="house"></div>
+<h2>The house decorations in the house: before (v2.6), day, night (moon lamp lit)</h2><div class="row" id="housescene"></div>
+<h2>Furniture: back only, front only, in use (lit for the Window Seat), then crayon dogs on every spot</h2><div id="furn"></div>
+<h2>Furniture in the house with dogs on the spots (drawn at 0.8)</h2><div class="row" id="furnscene"></div>
+<h2>The Knitted Nest next to the Fluffy Donut Bed and the Old Blanket, and with a dog asleep in it</h2><div class="row" id="bed"></div>
+<h2>Cards (64), next to the Giant Crayon Box, the Rocking Chair and a house card</h2><div class="row" id="cards"></div>
+<h2>Shop scale (40 px): the 22 new cards, then the old neighbours</h2><div class="row small" id="small"></div>
+<h2>Icons (64 and 40): furniture and arrange, next to decor and missions</h2><div class="row" id="icons"></div>
+<script src="pawart_world_a.js"></script>
+<script src="pawart_world_c.js"></script>
+<script src="pawart_world_b.js"></script>
+<script src="../dogs/pawart_dogs.js"></script>
+<script>
+const PA=window.PawArt,W=window.innerWidth<600,SW=W?360:620;
+function fig(svg,cap,w,old){return '<figure class="'+(old?'o':'')+'"><div style="width:'+w+'px">'+svg+'</div><figcaption style="max-width:'+Math.max(w,60)+'px">'+cap+'</figcaption></figure>'}
+function add(id,html,cls){const d=document.createElement('div');d.className='pair'+(cls?' '+cls:'');d.innerHTML=html;document.getElementById(id).appendChild(d)}
+const on=(svg,x,y,w,h,cls)=>'<div class="on'+(cls?' '+cls:'')+'" style="left:'+x+'px;top:'+y+'px;width:'+w+'px;height:'+h+'px">'+svg+'</div>';
+// a crayon dog with its feet at (fx, fy) in a dog box w wide (the game's 264x220 box, feet at 205/220)
+function dogOn(key,o,fx,fy,w){const h=w*220/264;return on(PA.dog(key,Object.assign({anim:false},o)),fx-w/2,fy-h*205/220,w,h)}
+// items: [svg, x, y, w, h] in world units; front: extra layers drawn last
+function inScene(id,scene,env,items,w,extra){const s=w/1000;let h='';items.forEach(([svg,x,y,iw,ih])=>{h+=on(svg,x*s,y*s,iw*s,ih*s)});
+  add(id,'<div class="scene" style="width:'+w+'px;height:'+(w*.6)+'px"><div class="bg" style="width:100%;height:100%">'+PA.scene(scene,env)+'</div>'+h+(extra?extra(s):'')+'</div>')}
+const s=W?.36:.62;
+// ---- yard
+const YD=[['birdbath',66,88,'Bird Bath'],['flowerbarrel',84,72,'Flower Barrel'],['stringlights',210,56,'String Lights'],['bench',130,78,'Garden Bench'],['hammock',156,84,'Hammock'],['windchime',40,80,'Wind Chime'],['sandbox',120,72,'Sandbox'],['steppingstones',168,56,'Stepping Stones']];
+const OLDY=[['crayonbox',112,'Giant Crayon Box'],['rockingchair',84,'Rocking Chair']].map(([p,w,n])=>fig(PA.prop(p),n,w*s*2,1)).join('');
+YD.forEach(([p,w,h,n])=>add('yard',fig(PA.prop(p),n,w*s*2)+(p==='stringlights'?'<div class="night">'+fig(PA.prop(p,{lit:true}),'lit at night',w*s*2)+'</div>':'')+OLDY));
+const YAT={birdbath:[150,330,66,88],flowerbarrel:[880,350,84,72],stringlights:[300,182,210,56],bench:[640,430,130,78],hammock:[700,500,156,84],windchime:[600,236,40,80],sandbox:[250,520,120,72],steppingstones:[470,540,168,56],
+  crayonbox:[536,296,112,90],rockingchair:[910,452,84,84]};
+const HW={hwlanterns:[440,528,112,67],hwbunting:[650,298,160,43],hwscarecrow:[762,262,92,130],hwgarland:[100,220,200,60]};
+const yard=(env,lit,hw)=>{const at=Object.assign({},YAT,hw?HW:{}),order=Object.keys(at).sort((a,b)=>(a==='steppingstones'?-1:b==='steppingstones'?1:(at[a][1]+at[a][3])-(at[b][1]+at[b][3])));
+  inScene('yardscene','yard',env,order.map(p=>[PA.prop(p,(p==='stringlights'||p==='hwlanterns')?{lit}:undefined),...at[p]]),SW,k=>dogOn('golden',{pose:'idle'},430*k,500*k,264*k))};
+inScene('yardscene','yard',{time:'day',weather:'cloudy',season:'summer'},['crayonbox','rockingchair'].map(p=>[PA.prop(p),...YAT[p]]),SW,k=>dogOn('golden',{pose:'idle'},430*k,500*k,264*k));
+yard({time:'day',weather:'cloudy',season:'summer'},false,false);
+yard({time:'day',weather:'sunny',season:'autumn',halloween:true},false,true);
+yard({time:'night',weather:'cloudy',season:'autumn',halloween:true},true,true);
+// ---- house
+const HD=[['ragrug',216,72,'Braided Rag Rug'],['toybasket',84,70,'Toy Basket'],['cushionpile',126,70,'Cushion Pile'],['fern',78,104,'Boston Fern'],['cuckooclock',60,96,'Cuckoo Clock'],['pawpictures',140,70,'Paw Print Pictures'],['moonlamp',60,84,'Moon Lamp'],['wallquilt',126,98,'Patchwork Quilt']];
+const OLDH=[['rockingchair',84,'Rocking Chair'],['photoframe',112,'Family Photo Frame']].map(([p,w,n])=>fig(PA.prop(p),n,w*s*2,1)).join('');
+HD.forEach(([p,w,h,n])=>add('house',fig(PA.prop(p),n,w*s*2)+(p==='moonlamp'?'<div class="night">'+fig(PA.prop(p,{lit:true}),'lit at night',w*s*2)+'</div>':'')+OLDH));
+const HAT={wallquilt:[40,20,126,98],cuckooclock:[600,30,60,96],pawpictures:[690,226,140,70],ragrug:[40,520,216,72],toybasket:[890,470,84,70],cushionpile:[200,440,126,70],fern:[800,300,78,104],moonlamp:[548,404,60,84]};
+const house=(env,lit)=>inScene('housescene','house',Object.assign({bed:false},env),[[PA.bed('Plaid Pillow'),610,360,260,160],...Object.keys(HAT).sort((a,b)=>a==='ragrug'?-1:b==='ragrug'?1:0).map(p=>[PA.prop(p,p==='moonlamp'?{lit}:undefined),...HAT[p]])],SW,k=>dogOn('corgi',{pose:'sit'},430*k,500*k,264*k));
+inScene('housescene','house',{time:'day',weather:'cloudy',season:'summer',bed:false},[[PA.bed('Plaid Pillow'),610,360,260,160]],SW,k=>dogOn('corgi',{pose:'sit'},430*k,500*k,264*k));
+house({time:'day',weather:'cloudy',season:'summer'},false);house({time:'night',weather:'cloudy',season:'summer'},true);
+// ---- furniture
+const FU=[['playtower','Dog Play Tower'],['tunnelsofa','Tunnel Sofa'],['ballpit','Ball Pit'],['sofaramp','Sofa Ramp'],['windowseat','Window Seat']];
+const SETS=[['golden',{}],['corgi',{}],['dachs',{}],['husky',{}],['pug',{}],['samoyed',{}],['greyhound',{}],['golden',{age:'puppy'}],['corgi',{age:'puppy'}]];
+function furnBox(p,k,opt,dogs,mode){const [vw,vh]=PA.prop(p).match(/viewBox="0 0 (\d+) (\d+)"/).slice(1).map(Number),SP=PA.FURN_SPOTS[p];
+  let h='<div class="furn" style="width:'+vw*k+'px;height:'+vh*k+'px;margin-top:'+60*k+'px">';
+  if(mode!=='front')h+=on(PA.prop(p,opt),0,0,vw*k,vh*k);
+  dogs.forEach(([key,o,sn])=>{const sp=SP[sn];h+=dogOn(key,Object.assign({pose:sp.pose,facing:sp.face},o),sp.x*k,sp.y*k,sp.w*k)});
+  if(mode!=='back')h+=on(PA.prop(p,opt),0,0,vw*k,vh*k,'ho-front');
+  return h+'</div>'}
+const fk=W?.62:1.05;
+FU.forEach(([p,n])=>{const d=document.createElement('div');d.className='row';d.id='f-'+p;document.getElementById('furn').appendChild(d);
+  const lit=p==='windowseat';
+  add('f-'+p,fig(furnBox(p,fk,{},[],'back'),n+': back',0)+fig(furnBox(p,fk,{},[],'front'),'front only',0)+fig(furnBox(p,fk,{use:true},[],'back'),'in use',0)+(lit?'<div class="night">'+fig(furnBox(p,fk,{lit:true},[],'back'),'lit at night',0)+'</div>':''));
+  SETS.forEach(([key,o])=>add('f-'+p,fig(furnBox(p,fk*.8,{use:true,lit:false},Object.keys(PA.FURN_SPOTS[p]).map(sn=>[key,o,sn])),key+(o.age?' puppy':''),0)));
+});
+document.querySelectorAll('#furn figure>div').forEach(e=>{e.style.width=''});
+// furniture in the house, at 0.8 of the viewBox, a dog on every spot
+function furnScene(env,list,dogs){const items=[],fronts=[];list.forEach(([p,x,y])=>{const [vw,vh]=PA.prop(p).match(/viewBox="0 0 (\d+) (\d+)"/).slice(1).map(Number);items.push([PA.prop(p,{use:true,lit:env.time==='night'}),x,y,vw*.8,vh*.8])});
+  inScene('furnscene','house',Object.assign({bed:false},env),items,SW,k=>{let h='';list.forEach(([p,x,y],i)=>{const SP=PA.FURN_SPOTS[p];Object.keys(SP).forEach((sn,j)=>{const sp=SP[sn],d=dogs[(i*2+j)%dogs.length];
+    h+=dogOn(d[0],Object.assign({pose:sp.pose,facing:sp.face},d[1]),(x+sp.x*.8)*k,(y+sp.y*.8)*k,sp.w*.8*k)})});
+    list.forEach(([p,x,y])=>{const [vw,vh]=PA.prop(p).match(/viewBox="0 0 (\d+) (\d+)"/).slice(1).map(Number);h+=on(PA.prop(p,{use:true,lit:env.time==='night'}),x*k,y*k,vw*.8*k,vh*.8*k,'ho-front')});return h})}
+const DG=[['golden',{}],['corgi',{}],['husky',{}],['dachs',{}],['pug',{}],['corgi',{age:'puppy'}],['samoyed',{}],['chihuahua',{}]];
+furnScene({time:'day',weather:'cloudy',season:'summer'},[['playtower',20,228],['sofaramp',250,312],['tunnelsofa',350,470],['windowseat',780,222],['ballpit',600,476]],DG);
+furnScene({time:'night',weather:'cloudy',season:'summer'},[['playtower',20,228],['sofaramp',250,312],['tunnelsofa',350,470],['windowseat',780,222],['ballpit',600,476]],DG.slice(3).concat(DG.slice(0,3)));
+// ---- bed
+const bk=W?.9:1.3;
+function bedBox(n,key,o){let h='<div class="furn" style="width:'+260*bk+'px;height:'+160*bk+'px">'+on(PA.bed(n),0,0,260*bk,160*bk);
+  if(key){h+=dogOn(key,Object.assign({pose:'sleep'},o||{}),130*bk,118*bk,150*bk)+on(PA.bed(n),0,0,260*bk,160*bk,'bedfront')}return h+'</div>'}
+add('bed',fig(bedBox('Knitted Nest'),'Knitted Nest',0)+fig(bedBox('Fluffy Donut Bed'),'Fluffy Donut Bed',0,1)+fig(bedBox('Old Blanket'),'Old Blanket',0,1));
+add('bed',fig(bedBox('Knitted Nest','golden'),'golden asleep',0)+fig(bedBox('Knitted Nest','corgi',{age:'puppy'}),'corgi puppy',0)+fig(bedBox('Fluffy Donut Bed','golden'),'Fluffy Donut Bed',0,1));
+document.querySelectorAll('#bed figure>div').forEach(e=>{e.style.width=''});
+// ---- cards and icons
+const IW=W?72:96;
+const NAMES=['Bird Bath','Flower Barrel','String Lights','Garden Bench','Hammock','Wind Chime','Sandbox','Stepping Stones','Braided Rag Rug','Toy Basket','Cushion Pile','Boston Fern','Cuckoo Clock','Paw Print Pictures','Moon Lamp','Patchwork Quilt','Dog Play Tower','Tunnel Sofa','Ball Pit','Sofa Ramp','Window Seat','Knitted Nest'];
+const OLDC=['Giant Crayon Box','Rocking Chair','Little Tea House','Fluffy Donut Bed'];
+for(let i=0;i<NAMES.length;i+=4)add('cards',NAMES.slice(i,i+4).map(n=>fig(PA.item(n),n,IW)).join('')+fig(PA.item(OLDC[(i/4)%4]),OLDC[(i/4)%4],IW,1));
+NAMES.forEach(n=>add('small',fig(PA.item(n),'',40)));
+add('small',OLDC.map(n=>fig(PA.item(n),'',40,1)).join(''),'old');
+const IC=['furniture','arrange'],OI=['decor','missions'];
+add('icons',IC.map(n=>fig(PA.icon(n),n,IW)).join('')+OI.map(n=>fig(PA.icon(n),n,IW,1)).join(''));
+add('icons',IC.map(n=>fig(PA.icon(n),n,40)).join('')+OI.map(n=>fig(PA.icon(n),n,40,1)).join('')+fig(PA.item('Little Tea House'),'house card',40,1));
+</script></body></html>
