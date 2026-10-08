@@ -542,7 +542,7 @@ function freshState(key, name, sex) {
   st.fest = { letters: {}, parade: {}, piles: {}, stall: {} }; st.seasonSeen = {}; st.breedTips = {}; // v2.5
   Object.assign(st.dog, newDogFields(key, sex || 'male', bornDaysAgo(10))); st.kennel = [];
   st.garden = gardenNew(); gkFields(st, false); v131Fields(st);
-  if (key === 'mutt') { st.dog.favFood = [PICK(FOOD.slice(1)).n]; st.dog.favToy = PICK(TOYS).n; }
+  if (key === 'mutt') { st.dog.favFood = [PICK(FOOD.slice(1)).n]; st.dog.favToy = PICK(TOYS.filter(t => !t.ed)).n; }
   st.dog.adoptedAt = localISO();
   st.hw = { letter: null, seen: null }; // v2.6 Halloween 2026 pop-up (27_halloween.js)
   st.guide = { step: 0 }; // v2.4: a new save meets Gerald (25_guide.js)
@@ -789,7 +789,7 @@ function unlocksFor(L) {
   const u = [];
   for (const k in ROUTES) if (ROUTES[k].bond === L && L > 1) u.push(`Walk route: ${ROUTES[k].n}${ROUTES[k].dig ? ' (with digging)' : ''}`);
   TRICKS.forEach((t) => { if (t.bond === L) u.push(t.n === 'Signature' ? `Signature trick: ${sigOf(S.dog.key).n}` : `Trick: ${t.n}`); });
-  TOYS.concat(CLOTHES).forEach((t) => { if (t.bond === L && L > 1) u.push(`Shop: ${t.n}`); });
+  TOYS.concat(CLOTHES).forEach((t) => { if (t.bond === L && L > 1 && !t.ed) u.push(`Shop: ${t.n}`); });
   HOUSES.forEach((h) => { if (h.bond === L && L > 1) u.push(`House: ${h.n}`); });
   if (L === 10) u.push('Best Friends badge (it is invisible, but it is there)');
   return u;
