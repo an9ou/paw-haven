@@ -13,7 +13,7 @@ const SHOTS = path.join(__dirname, 'shots_v26', 'toys');
 require('./test_lib').run('v26_toys', async (t) => {
   const { ok, sec } = t;
   const ev = (f, a) => t.p.evaluate(f, a);
-  const shot = async (n) => { if (!process.env.PAW_SHOTS) return; fs.mkdirSync(SHOTS, { recursive: true }); await t.p.screenshot({ path: path.join(SHOTS, n + '.png') }); };
+  const shot = async (n) => { if (!process.env.PAW_SHOTS) return; fs.mkdirSync(SHOTS, { recursive: true }); await t.p.screenshot({ path: path.join(SHOTS, (process.env.V26_SHOT_PREFIX || '') + n + '.png') }); };
   const toy = () => ev(() => window.__toyCtl && window.__toyCtl._dbg ? window.__toyCtl._dbg().toy : null);
   const at = async (x, y) => { const m = await ev(([x, y]) => window.__toyCtl._map(x, y), [x, y]); return [m.x, m.y]; };
   let phone = false;
@@ -124,7 +124,8 @@ require('./test_lib').run('v26_toys', async (t) => {
   await t.home(); await t.calm(); await ev(() => window.__paw.go('toy', 'Squeaky Pumpkin')); await t.untilMode('toy', 5000);
   await ev(() => { window.__bot = setInterval(() => { const c = window.__toyCtl, d = c && c._dbg(); if (!d || d.finished) return; const m = c._map(d.toy.pk.x, d.toy.pk.y), root = document.querySelector('#modHost .pt-root');
     ['pointerdown', 'pointerup'].forEach((ty) => root.dispatchEvent(new PointerEvent(ty, { bubbles: true, clientX: m.x, clientY: m.y, button: 0, pointerId: 1, pointerType: 'mouse' }))); }, 60); });
-  ok(await until(() => window.__toyCtl._dbg().finished, null, 52000), 'fast player: the session ends by itself (finish())');
+  // the game clock caps frames at 0.05 s, so 45 game seconds can take much longer under load: wait for the toy's own timer, generously
+  ok(await until(() => { const d = window.__toyCtl._dbg(); return d.finished && d.timeLeft <= 0; }, null, 150000), 'fast player: the timer runs out and the session ends by itself (finish())');
   const full = await ev(() => { clearInterval(window.__bot); const d = window.__toyCtl._dbg(); return { tot: d.totals, pounces: d.toy.pounces, hops: d.toy.hops }; });
   ok(full.pounces >= 8 && full.hops >= full.pounces, `fast player: lots of pounces and the pumpkin still hops away each time ${JSON.stringify(full)}`);
   ok(full.tot.happiness <= 20 && full.tot.bond <= 1 && full.tot.coins <= 3, `fast player: whole-session pay well under CAP ${JSON.stringify(full.tot)}`);
@@ -147,4 +148,4 @@ require('./test_lib').run('v26_toys', async (t) => {
     await session(name, still ? 'phone-still' : 'phone', { still });
     if (still) await t.freezeMotion(false);
   }
-});
+}, { timeout: 400000 });

@@ -2222,6 +2222,8 @@
   /* ==================== v2.6 Halloween 2026 toys (V26.md section 6) ==================== */
   /* Motion off (the player's "Motion and wobble" switch): the games play the same, the decorative wobble, flapping and tumbling stop */
   function v26Still() { try { return document.documentElement.getAttribute('data-motion') === 'off'; } catch (e) { return false; } }
+  /* v2.6 games pay through this: a reward with no happiness, bond or coins is not sent (the game toasts every reward) */
+  function v26Pay(A, r) { if ((r.happiness || 0) > 0 || (r.bond || 0) > 0 || (r.coins || 0) > 0) A.reward(r); }
   /* a tap that hits nothing never fails: a kind sniff in that direction */
   function kindSniff(A, x, y, lines) {
     var now = performance.now(); A.kindN = (A.kindN || 0) + 1; if (now - (A.sniffAt || 0) < 700) return; A.sniffAt = now;
@@ -2230,20 +2232,19 @@
   }
 
   /* ---------- v2.6 art (pencil, same hand as the v2.4 toys) ---------- */
+  /* a lumpy felt pumpkin (matches PawArt.item): stitched seam, closed-eye smile, a leaf on the stem */
+  function v26Lumpy(cx, cy, rx, ry, k, n) { var p = []; for (var i = 0; i < n; i++) { var a = i / n * Math.PI * 2, m = 1 + k * Math.sin(a * 4 + 0.6); p.push([cx + Math.cos(a) * rx * m, cy + Math.sin(a) * ry * m]); } return p; }
   function v26PumpkinIn() {
     var R = rng(2601), s = '<ellipse cx="60" cy="104" rx="46" ry="5" fill="#5B3D32" opacity=".12"/>';
-    s += pencil(R, ell(60, 66, 50, 37, 24), 2.8, INK, 1, true, '#F4A262');
-    s += pencil(R, ell(60, 66, 21, 36, 18), 1.8, '#C8642E', 0.75, true, '#F7B275');
-    s += pencil(R, [[31, 33], [20, 66], [31, 99]], 1.6, '#C8642E', 0.7) + pencil(R, [[89, 33], [100, 66], [89, 99]], 1.6, '#C8642E', 0.7);
-    s += pencil(R, [[21, 54], [25, 43], [34, 36]], 3.4, '#FFE3A1', 0.7);
-    s += pencil(R, [[55, 33], [53, 17], [58, 11], [65, 13], [64, 32]], 2.2, INK, 1, true, '#86B57A');
-    s += pencil(R, [[64, 18], [73, 10], [83, 13], [80, 20], [74, 17]], 1.6, '#6E8F5A', 0.9);
-    s += pencil(R, [[48, 30], [37, 21], [32, 27], [41, 33]], 1.8, INK, 1, true, '#A9D6A0');
-    s += '<path d="M37 59q6-8 12 0M71 59q6-8 12 0" fill="none" stroke="#5E463D" stroke-width="3.4" stroke-linecap="round"/>';
-    s += pencil(R, [[39, 71], [50, 77], [60, 79], [70, 77], [81, 71], [73, 84], [60, 89], [47, 84]], 2, INK, 1, true, '#5E463D');
-    s += '<rect x="56.5" y="77.5" width="7" height="5" rx="1.4" fill="#FFF4DF"/>';
-    s += '<ellipse cx="31" cy="72" rx="6" ry="3.6" fill="#F28FA5" opacity=".55"/><ellipse cx="89" cy="72" rx="6" ry="3.6" fill="#F28FA5" opacity=".55"/>';
-    s += '<path d="' + wob(R, arcPts(60, 66, 44, 31, 0.35, Math.PI - 0.35, 14), 1, false) + '" fill="none" stroke="#FFF4DF" stroke-width="1.6" stroke-dasharray="4 4" opacity=".75"/>';
+    s += pencil(R, [[58, 34], [57, 22], [62, 13], [70, 9]], 6.4, INK, 1) + pencil(R, [[58, 34], [57, 22], [62, 13], [70, 9]], 3.2, '#8E8A4A', 1);
+    s += pencil(R, [[56, 26], [44, 16], [34, 20], [42, 28], [56, 28]], 2, INK, 1, true, '#9CCB86');
+    s += pencil(R, v26Lumpy(60, 66, 50, 37, 0.06, 28), 2.8, INK, 1, true, '#F29150');
+    s += pencil(R, [[46, 34], [40, 66], [46, 98]], 1.4, '#C96E2A', 0.5) + pencil(R, [[74, 34], [80, 66], [74, 98]], 1.4, '#C96E2A', 0.5);
+    s += '<path d="' + wob(R, v26Lumpy(60, 66, 43, 30, 0.06, 28), 0.8, true) + '" fill="none" stroke="#5B3D32" stroke-width="1.5" stroke-dasharray="4 4" opacity=".55"/>';
+    s += '<ellipse cx="38" cy="47" rx="13" ry="6" transform="rotate(-24 38 47)" fill="#fff" opacity=".42"/>';
+    s += '<path d="M38 62q6-7 12 0M70 62q6-7 12 0" fill="none" stroke="#5B3D32" stroke-width="3.2" stroke-linecap="round"/>';
+    s += '<path d="M47 75q13 11 26 0" fill="none" stroke="#5B3D32" stroke-width="3.2" stroke-linecap="round"/>';
+    s += '<ellipse cx="33" cy="72" rx="6.5" ry="3.8" fill="#F28FA5" opacity=".6"/><ellipse cx="87" cy="72" rx="6.5" ry="3.8" fill="#F28FA5" opacity=".6"/>';
     return s;
   }
   function v26Pumpkin() { return '<svg viewBox="0 0 120 110">' + v26PumpkinIn() + '</svg>'; }
@@ -2279,16 +2280,18 @@
     s += '<path d="M64 49q6 5 12 0" fill="none" stroke="#5B3D32" stroke-width="2" stroke-linecap="round"/><ellipse cx="57" cy="48" rx="3.6" ry="2.2" fill="#F28FA5" opacity=".6"/><ellipse cx="83" cy="48" rx="3.6" ry="2.2" fill="#F28FA5" opacity=".6"/>';
     return '<svg viewBox="0 0 140 84">' + s + '</svg>';
   }
-  /* the jack-o-lantern treat bucket, a smiling face, a wire handle */
+  /* the round jack-o-lantern treat bucket (matches PawArt.item): lavender handle, happy face, treats peeking out. No shadow: the game draws a flat one */
   function v26Bucket() {
-    var R = rng(2630), s = '<ellipse cx="65" cy="124" rx="50" ry="5" fill="#5B3D32" opacity=".12"/>', hd = [[18, 46], [11, 24], [30, 8], [65, 3], [100, 8], [119, 24], [112, 46]];
-    s += pencil(R, hd, 4.4, INK, 1) + pencil(R, hd, 2, '#A9968A', 1);
-    s += pencil(R, [[14, 44], [116, 44], [112, 98], [104, 116], [86, 122], [44, 122], [26, 116], [18, 98]], 2.8, INK, 1, true, '#F4A262');
-    s += pencil(R, [[44, 49], [38, 85], [44, 120]], 1.6, '#C8642E', 0.7) + pencil(R, [[86, 49], [92, 85], [86, 120]], 1.6, '#C8642E', 0.7);
-    s += pencil(R, ell(65, 44, 51, 11, 22), 2.6, INK, 1, true, '#F7B275') + pencil(R, ell(65, 45, 42, 7, 20), 1.8, INK, 1, true, '#5E463D');
-    s += pencil(R, [[36, 75], [44, 63], [52, 75]], 1.8, INK, 1, true, '#5E463D') + pencil(R, [[78, 75], [86, 63], [94, 75]], 1.8, INK, 1, true, '#5E463D');
-    s += pencil(R, [[34, 86], [50, 94], [65, 96], [80, 94], [96, 86], [86, 104], [65, 110], [44, 104]], 2, INK, 1, true, '#5E463D') + '<path d="M60.5 95.5h9v6h-9z" fill="#F4A262"/>';
-    s += pencil(R, [[24, 56], [23, 80]], 3.4, '#FFE3A1', 0.6);
+    var R = rng(2630), s = '', hd = [[20, 54], [16, 30], [34, 10], [65, 5], [96, 10], [114, 30], [110, 54]];
+    s += pencil(R, hd, 6.4, INK, 1) + pencil(R, hd, 3.2, '#C9B8E6', 1);
+    s += pencil(R, v26Lumpy(65, 80, 52, 43, 0.035, 30), 2.8, INK, 1, true, '#F29150');
+    s += pencil(R, [[46, 42], [36, 80], [46, 120]], 1.5, '#C96E2A', 0.55) + pencil(R, [[84, 42], [94, 80], [84, 120]], 1.5, '#C96E2A', 0.55);
+    s += pencil(R, ell(65, 44, 36, 10, 20), 2.4, INK, 1, true, '#E7AD74') + pencil(R, ell(65, 45, 28, 6.5, 18), 1.6, INK, 1, true, '#5E463D');
+    s += pencil(R, ell(56, 41, 6, 4.5, 10), 1.4, INK, 1, true, '#A8682F') + pencil(R, ell(73, 40, 6, 4.5, 10), 1.4, INK, 1, true, '#A8682F') + '<circle cx="54.5" cy="39.5" r="1.4" fill="#E7AD74"/><circle cx="71.5" cy="38.5" r="1.4" fill="#E7AD74"/>';
+    s += pencil(R, [[41, 77], [48, 66], [55, 77]], 1.8, INK, 1, true, '#5E463D') + pencil(R, [[75, 77], [82, 66], [89, 77]], 1.8, INK, 1, true, '#5E463D');
+    s += pencil(R, [[38, 86], [52, 89], [65, 90], [78, 89], [92, 86], [88, 98], [78, 107], [65, 110], [52, 107], [42, 98]], 2.2, INK, 1, true, '#7A4A33');
+    s += pencil(R, [[48, 100], [65, 104], [82, 100]], 1.6, '#A8682F', 0.6);
+    s += '<ellipse cx="30" cy="68" rx="6" ry="13" transform="rotate(18 30 68)" fill="#fff" opacity=".35"/>';
     return '<svg viewBox="0 0 130 130">' + s + '</svg>';
   }
   /* four little lidded pots, each with a sticker: pumpkin, ghost, moon, bat */
@@ -2376,8 +2379,8 @@
             pounces++; squeaks++; state = 'proud'; stT = 0; escaped = false; dog.squash(0.8);
             pk.sq = 1; pk.wob = 1; A.sfx('squeak');
             A.burst('note', pk.x + 20, pkY() - 90, 2, { a0: -Math.PI * 0.8, spread: 0.6, g: -30, sp: 90, life: 0.9, size: 8 });
-            if (pounces % 4 === 0) { big++; A.float('SUPER SQUEAK!', pk.x, pkY() - 160, 'pt-gold'); A.reward({ happiness: 1, coins: big <= 2 ? 1 : 0 }); A.burst('heart', dog.head().x, dog.head().y, 6, { g: -50, sp: 110, life: 1.3, size: 9 }); }
-            else { A.float(pick(['squeak!', 'SQUEAK!', 'squeeeak!']), pk.x, pkY() - 150, 'pt-small'); if (pounces <= 6 || pounces % 3 === 0) A.reward({ happiness: 1 }); }
+            if (pounces % 4 === 0) { big++; A.float('SUPER SQUEAK!', pk.x, pkY() - 160, 'pt-gold'); v26Pay(A, { happiness: 1, coins: big <= 2 ? 1 : 0 }); A.burst('heart', dog.head().x, dog.head().y, 6, { g: -50, sp: 110, life: 1.3, size: 9 }); }
+            else { A.float(pick(['squeak!', 'SQUEAK!', 'squeeeak!']), pk.x, pkY() - 150, 'pt-small'); if (pounces <= 6 || pounces % 3 === 0) v26Pay(A, { happiness: 1 }); }
             if (Math.random() < 0.6) A.say(pick(A.line('hogAnswer', ['got it! it squeaked!', 'squeak? SQUEAK!', 'pumpkin caught. pumpkin released.'])), 1100);
           }
         } else if (state === 'proud') {
@@ -2452,8 +2455,8 @@
             dog.tilt = 0; shakes++;
             if (returns) {
               A.float(pick(['good fetch!', 'ghost returned!', 'boo-tiful!']), dog.x, dog.y - 230, returns % 3 === 0 ? 'pt-gold' : '');
-              A.reward({ happiness: returns % 2 ? 1 : 2, bond: returns === 2 ? 1 : 0, coins: returns % 3 === 0 ? 1 : 0, energy: returns % 2 ? -1 : 0 });
-            } else A.reward({ happiness: 1 });
+              v26Pay(A, { happiness: returns % 2 ? 1 : 2, bond: returns === 2 ? 1 : 0, coins: returns % 3 === 0 ? 1 : 0, energy: returns % 2 ? -1 : 0 });
+            } else v26Pay(A, { happiness: 1 });
             state = 'hold'; stT = 0;
             if (!tipped) { tipped = true; tip = A.tip('click to toss!', CP ? 330 : 300, GY - 120); }
           }
@@ -2518,10 +2521,10 @@
       fl.st = 'carried'; state = 'return'; stT = 0; A.sfx('pop');
       if (air) {
         catches++; var h = GY - fl.y;
-        if (h > 230) { sky++; A.float('SKY LEAP!', fl.x, fl.y - 50, 'pt-gold'); A.reward({ happiness: catches <= 6 ? 2 : catches % 2, coins: sky <= 2 ? 1 : 0, energy: -1 }); A.say(pick(['I touched the moon!', 'did you SEE that?']), 1500); }
-        else { A.float(pick(['great leap!', 'caught it!', 'bat catch!']), fl.x, fl.y - 50); A.reward({ happiness: catches <= 6 ? 2 : catches % 2, energy: -1 }); A.say(pick(['flap flap GOT IT', 'air dog!', 'the bat is mine']), 1400); }
+        if (h > 230) { sky++; A.float('SKY LEAP!', fl.x, fl.y - 50, 'pt-gold'); v26Pay(A, { happiness: catches <= 6 ? 2 : catches % 2, coins: sky <= 2 ? 1 : 0, energy: -1 }); A.say(pick(['I touched the moon!', 'did you SEE that?']), 1500); }
+        else { A.float(pick(['great leap!', 'caught it!', 'bat catch!']), fl.x, fl.y - 50); v26Pay(A, { happiness: catches <= 6 ? 2 : catches % 2, energy: -1 }); A.say(pick(['flap flap GOT IT', 'air dog!', 'the bat is mine']), 1400); }
         A.burst('heart', dog.head().x, dog.head().y, 4, { g: -50, sp: 100, life: 1.2, size: 8 });
-      } else { ground++; A.reward({ happiness: 1 }); A.say(pick(['got it on the ground. still counts.', 'it landed. I forgive it.']), 1400); }
+      } else { ground++; v26Pay(A, { happiness: 1 }); A.say(pick(['got it on the ground. still counts.', 'it landed. I forgive it.']), 1400); }
     }
     return {
       poses: ['sit', 'idle', 'walk', 'jump', 'happy', 'eat'],
@@ -2595,6 +2598,7 @@
   IMPL['Trick-or-Treat Bucket'] = function (A) {
     var dog = A.dog, DN = A.DN, CP = A.compact, still = v26Still(), BS = CP ? 0.9 : 1.15, BX = CP ? 300 : 240, PK = CP ? 1 : 1.3, SP = CP ? 104 : 160, P0 = CP ? 452 : 470, PY = GY + 16, HOME = CP ? 800 : 1080;
     var AX = BX + 47 * BS, AY = GY + 8;
+    var bshadow = A.sprite('<svg viewBox="0 0 120 14"><ellipse cx="60" cy="7" rx="58" ry="6" fill="#5B3D32" opacity=".13"/></svg>', 120 * BS, 14 * BS, A.L.scene, 0.5, 0.5);
     var bucket = A.sprite(v26Bucket(), 130 * BS, 130 * BS, A.L.front, 112 / 130, 124 / 130);
     var pots = [];
     for (var i = 0; i < 4; i++) {
@@ -2677,7 +2681,7 @@
             dog.setPose('sniff'); dog.tilt = still ? 0 : dog.dir() * Math.sin(T * 22) * 1.2;
             if (Math.floor(stT * 3) !== Math.floor((stT - dt) * 3) && stT < 1.6) { A.sfx('crunch'); var mm = dog.mouth(); A.burst('crumb', mm.x, mm.y, 3, { sp: 120, g: 900, life: 0.5, size: 2.6, color: '#E8B36A' }); }
             if (stT > 1.7) {
-              dog.tilt = 0; A.reward({ happiness: found > 5 ? 1 : nosed ? 3 : 2, bond: round === 2 ? 1 : 0, coins: round === 3 || round === 5 ? 1 : 0 });
+              dog.tilt = 0; v26Pay(A, { happiness: found > 5 ? 1 : nosed ? 3 : 2, bond: round === 2 ? 1 : 0, coins: round === 3 || round === 5 ? 1 : 0 });
               A.say(pick(['crunch! best treat ever.', 'trick or treat? TREAT.', 'nose of the year']), 1500); A.burst('heart', dog.head().x, dog.head().y, 6, { g: -50, sp: 110, life: 1.3, size: 9 });
               state = 'pack'; stT = 0; A.hint('Back in the bucket for another round!');
             }
@@ -2702,6 +2706,7 @@
         var tp = pots[treat], tOn = (state === 'found' || state === 'point' || state === 'sniff' || state === 'walk') && tp.open > 0.3 && !(ate && stT > 0.9);
         treatS.show(tOn); if (tOn) treatS.set(tp.x, tp.y - rimDy - 6 - tp.open * 22, still ? 0 : Math.sin(T * 5) * 6);
         bucket.set(AX, AY, brot);
+        var ba = brot * Math.PI / 180, bcx = AX + (-47 * Math.cos(ba) + 44 * Math.sin(ba)) * BS; bshadow.set(bcx, GY + 8, 0, 1 - 0.12 * Math.sin(ba), 1);
       },
       drawFx: function (g, T) {
         if ((state === 'sniff' || state === 'point') && tgt) {
