@@ -585,9 +585,9 @@ function yard(k,o={}){
   k.side(()=>hotTag(k,'data-hot','garden','Garden',RC(10,430,205,160),176,462,-10));
   // v2.6 Halloween: only at the edges (the path, the end of the fence, the tree); the four pop-up decorations keep their spots
   k.hw(()=>{hwSkyBats(k,[[430,92,.85],[478,70,.65],[704,58,.75]]);
-    hwJack(k,208,426,.78);hwJack(k,266,470,.7);// by the stepping stones
+    hwJack(k,208,426,.78);pumpkin(k,266,470,.7);// by the stepping stones (one plain, so they never read as the Trio)
     hwPostLantern(k,313,313,1.05);hwJack(k,290,414,.9);// the lantern on the end post, a pumpkin at its foot
-    hwGhost(k,948,344,.85,20)});// a paper ghost hanging under the tree
+    hwGhost(k,962,344,.85,18)});// a paper ghost hanging under the tree
 }
 
 function market(k){
@@ -671,7 +671,7 @@ function market(k){
   k.side(()=>sproutCart(k));// v1.3, appended
   k.ss(()=>seasonDrift(k,[[150,330,1],[490,300,.9],[820,350,1],[640,410,.8],[300,420,.85]]));// v2.5
   // v2.6 Halloween: felt bat bunting across the street, high above the signs (a gap where the sun or moon sits)
-  k.hw(()=>{hwBatString(k,-12,1012,84,18,15,.82,x=>Math.abs(x-170)<50);hwSkyBats(k,[[600,60,.6],[880,44,.7]])});
+  k.hw(()=>{const sx=k.env.low?820:170;hwBatString(k,-12,1012,84,18,15,.82,x=>Math.abs(x-sx)<56)});
 }
 
 function shelter(k){

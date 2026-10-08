@@ -527,8 +527,8 @@ function start(el, o) {
         b += `<path d="M${x - 30} ${y - 10}q10 12 20 4" fill="none" stroke-width="1.2" stroke-dasharray="4 4" opacity=".6"/>`;
       }
     }
-    // v2.6 Halloween: a few felt bats flap past in the far sky at dusk and night (not in rain)
-    if (halloween && (night || time === 'dusk') && !rain) {
+    // v2.6 Halloween: a few felt bats in the far sky at dusk and night (not in rain), like the stars only when the strip art does not draw its own
+    if (halloween && !artTW && (night || time === 'dusk') && !rain) {
       [[180, 70, 1.1], [236, 48, 0.8], [620, 96, 0.95], [860, 40, 0.75]].forEach(([x, y, s]) => {
         const W = (d) => `M${3 * d} -2.4L${9 * d} -8L${15 * d} -9.4L${20 * d} -5L${16.4 * d} -1.6L${13 * d} -3.2L${10.6 * d} 1.6L${7.2 * d} -.4L${3.6 * d} 3.2Z`;
         b += `<g transform="translate(${x} ${y}) scale(${s})" stroke-width="1.2"><path d="${W(-1)}${W(1)}M-4.6 -3L-3.8 -10.4L-1 -6L1 -6L3.8 -10.4L4.6 -3L4.4 3.6L0 7L-4.4 3.6Z" fill="${night ? '#8C78AE' : '#7A6698'}"/><circle cx="-2" cy="-1.4" r="1.5" fill="#FFFFFF" stroke="none"/><circle cx="2" cy="-1.4" r="1.5" fill="#FFFFFF" stroke="none"/><circle cx="-1.8" cy="-1.1" r=".75" fill="${INK}" stroke="none"/><circle cx="2.2" cy="-1.1" r=".75" fill="${INK}" stroke="none"/></g>`;
