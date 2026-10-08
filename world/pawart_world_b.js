@@ -4429,6 +4429,300 @@ const PFRONT0=b=>b.raw('<g class="pa-front">'),PFRONT1=b=>b.raw('</g>');
 /* v27:yard (end) */
 
 /* v27:house (start) -- the 8 house decorations: PROPS.<name>(b,o) and their ITEMS cards */
+// shared bits for the house decorations (prefix hs)
+const HSMUD='#9B7356',HSCONE='#B98455';
+// a nail in the wall: a round head with a soft shadow
+function hsNail(b,x,y,s){s=s||1;b.raw(`<ellipse cx="${R1(x+1.2*s)}" cy="${R1(y+2.4*s)}" rx="${R1(3*s)}" ry="${R1(1.5*s)}" fill="${INK}" opacity=".16"/>`,'under');
+  b.sh(E(x,y,2.6*s,2.6*s,8),'#B8AEA6',{hatch:0,hl:0,lw:.55*s,dr:.15,base:'#E2DCD5'})}
+// braid chevrons round a ring of an oval (seen from a little above)
+function hsBraid(b,cx,cy,rx,ry,hw,n,col,a0){let d='';
+  for(let j=0;j<n;j++){const a=a0+j/n*Math.PI*2,c=Math.cos(a),s=Math.sin(a),px=cx+c*rx,py=cy+s*ry,nx=c*hw*rx,ny=s*hw*ry;let tx=-s*rx,ty=c*ry;const tl=Math.hypot(tx,ty)||1,f=Math.min(3.2,Math.PI*2*Math.max(rx,ry)/n*.5);tx=tx/tl*f;ty=ty/tl*f;
+    d+=b.jl(px+nx,py+ny,px+tx,py+ty,.25)+b.jl(px+tx,py+ty,px-nx,py-ny,.25)}
+  return b.st(d,col,.9,.75)}
+// one squashy cushion: pinched corners, bulging sides, a button and its creases; pat 'dots' | 'stripe' | 'heart' | 'check' | 'paw' | ''
+function hsCush(b,cx,cy,w,h,a,col,pat,o={}){
+  const bt=h*.17,bs=w*.05,T=p=>rot(p.map(q=>[cx+q[0],cy+q[1]]),a,cx,cy);
+  const pts=T([[-w/2,-h/2],[-w*.24,-h/2-bt],[w*.24,-h/2-bt],[w/2,-h/2],[w/2+bs,0],[w/2,h/2],[w*.24,h/2+bt],[-w*.24,h/2+bt],[-w/2,h/2],[-w/2-bs,0]]);
+  const dk=mix(col,INK,.28),lt=mix(col,'#FFFFFF',.55),marks=[];let inner='';
+  if(pat==='stripe'||pat==='check')for(let i=-2;i<=2;i++){const x=i*w*.2;marks.push({pts:T([[x-w*.045,-h],[x+w*.045,-h],[x+w*.045,h],[x-w*.045,h]]),fill:pat==='check'?lt:dk,op:pat==='check'?.8:.45,k:0})}
+  if(pat==='check')[-.25,.25].forEach(v=>marks.push({pts:T([[-w,v*h-h*.08],[w,v*h-h*.08],[w,v*h+h*.08],[-w,v*h+h*.08]]),fill:lt,op:.7,k:0}));
+  if(pat==='dots')T([[-.32,-.22],[-.1,.24],[.12,-.24],[.34,.2],[-.36,.26],[.36,-.26],[0,0]].map(([x,y])=>[x*w,y*h])).forEach((p,i)=>{if(i<6)inner+=`<circle cx="${R1(p[0])}" cy="${R1(p[1])}" r="${R1(h*.07)}" fill="#fff" opacity=".85"/>`});
+  let cz='';const bp=T([[0,0]])[0];
+  T([[-w*.2,-h*.3],[w*.2,-h*.3],[w*.2,h*.3],[-w*.2,h*.3]]).forEach(p=>cz+=b.jl(bp[0]+(p[0]-bp[0])*.25,bp[1]+(p[1]-bp[1])*.25,p[0],p[1],.3));
+  inner+=b.st(cz,dk,1,.6);
+  b.sh(pts,col,{k:.16,marks,inner,sh:dk,hl:o.hl,lw:o.lw||1,top:o.top});
+  if(pat==='heart')b.sh(heartP(bp[0],bp[1],h*.42),'#FFFBF3',{hatch:0,hl:0,lw:.5,dr:.2,top:o.top});
+  else if(pat==='paw')paw(b,bp[0],bp[1],h*.13,'#FFFBF3',{a,lw:.45});
+  else b.sh(E(bp[0],bp[1],h*.08+.6,h*.07+.5,8),dk,{hatch:0,hl:0,lw:.4,dr:.1,top:o.top});
+  return pts;
+}
+// one arching Boston fern frond: serrated outline (each tooth a leaflet), midrib and leaflet veins
+// a frond on a quadratic arch p0 -> c -> p1 (rises out of the pot, bends over and hangs), w = widest half-width
+function hsFrond(b,p0,c,p1,w,col,o={}){
+  const P=t=>{const u=1-t;return[u*u*p0[0]+2*u*t*c[0]+t*t*p1[0],u*u*p0[1]+2*u*t*c[1]+t*t*p1[1]]},
+    Tn=t=>{const dx=2*(1-t)*(c[0]-p0[0])+2*t*(p1[0]-c[0]),dy=2*(1-t)*(c[1]-p0[1])+2*t*(p1[1]-c[1]),m=Math.hypot(dx,dy)||1;return[dx/m,dy/m]};
+  const m=o.m||18,Lp=[],Rp=[],mid=[],dk=mix(col,INK,.3);let vein='';
+  for(let i=1;i<m;i++){const t=i/m,p=P(t),tn=Tn(t),nx=-tn[1],ny=tn[0],ww=w*(t<.12?.4+t/.12*.6:1-(t-.12)/.88*.78),tip=i%2===0,rr=tip?ww:ww*.6,f=tip?ww*.32:0;
+    Lp.push([p[0]+nx*rr+tn[0]*f,p[1]+ny*rr+tn[1]*f]);Rp.push([p[0]-nx*rr+tn[0]*f,p[1]-ny*rr+tn[1]*f]);
+    if(tip)[1,-1].forEach(d=>{vein+=b.jl(p[0]+tn[0]*-ww*.15,p[1]+tn[1]*-ww*.15,p[0]+d*nx*ww*.8+tn[0]*ww*.35,p[1]+d*ny*ww*.8+tn[1]*ww*.35,.2)})}
+  for(let i=0;i<=6;i++)mid.push(P(i/6*.96));
+  const n0=Tn(0);
+  b.sh([[p0[0]-n0[1]*w*.3,p0[1]+n0[0]*w*.3],...Lp,P(1),...Rp.reverse(),[p0[0]+n0[1]*w*.3,p0[1]-n0[0]*w*.3]],col,{k:1/6,step:2.4,hl:0,lw:o.lw||.55,sh:dk,ho:.3,dr:.35,inner:b.st(vein,dk,.8,.6),top:o.top});
+  b.ln(mid,{w:o.mw||.9,col:dk,top:o.top});
+}
+// a carved pine-cone weight, scales in rows
+function hsCone(b,x,y,rx,ry){
+  b.sh([[x,y-ry],[x+rx*.8,y-ry*.55],[x+rx,y+ry*.1],[x+rx*.7,y+ry*.7],[x,y+ry],[x-rx*.7,y+ry*.7],[x-rx,y+ry*.1],[x-rx*.8,y-ry*.55]],HSCONE,{k:.16,hl:0,sh:'#8A5A36',lw:.8,base:'#D8AE84',
+    inner:b.st(Array.from({length:5},(_,i)=>{const yy=y-ry*.6+i*ry*.32,ww=rx*(i<1?.6:i>3?.55:.9);let d='';for(let k=-1;k<=1;k+=2)d+=`M${R1(x+k*ww)} ${R1(yy)}Q${R1(x+k*ww*.5)} ${R1(yy+ry*.22)} ${R1(x)} ${R1(yy+ry*.08)}`;return d}).join(''),'#7A4E30',.9,.7)});
+  b.sh(RR(x-rx*.45,y-ry-3.4,rx*.9,3.6,1),'#B8AEA6',{hatch:0,hl:0,lw:.45,dr:.1});
+}
+// a chain of little links, from (x,y0) down to y1
+function hsChain(b,x,y0,y1){let d='';for(let y=y0,i=0;y<y1;y+=3.4,i++)d+=i%2?`M${R1(x)} ${R1(y)}v3.4`:`M${R1(x-1.3)} ${R1(y+1.7)}a1.3 1.7 0 1 0 2.6 0a1.3 1.7 0 1 0 -2.6 0`;b.raw(b.st(d,'#8E8379',.9,.95))}
+// moon-lamp halo (static, no filter)
+function hsGlow(b,x,y,r,op){if(!b._hsg){b._hsg=IDT+'hsg';b.D.push(`<radialGradient id="${b._hsg}"><stop offset="0" stop-color="#FFE38A" stop-opacity=".8"/><stop offset=".5" stop-color="#FFD56B" stop-opacity=".3"/><stop offset="1" stop-color="#FFD56B" stop-opacity="0"/></radialGradient>`)}
+  b.raw(`<g class="pa-wb-glow"><circle cx="${R1(x)}" cy="${R1(y)}" r="${R1(r)}" fill="url(#${b._hsg})" opacity="${op||.9}"/></g>`,'under')}
+// one picture frame hung crooked from a nail by a string: frame colour, mat and a muddy paw
+function hsPawFrame(b,cx,y,w,h,a,col,nx,ny,o={}){
+  const T=p=>rot(p,a,cx,y+h/2),fr=T(RR(cx-w/2,y,w,h,3)),mt=T(RR(cx-w/2+w*.16,y+h*.14,w*.68,h*.72,1.5)),c=T([[cx,y+h*.5]])[0],tl=T([[cx-w*.3,y+1]])[0],tr=T([[cx+w*.3,y+1]])[0];
+  b.ln([tl,[nx,ny],tr],{k:0,w:1.1,col:'#8E6446'});
+  hsNail(b,nx,ny,o.ns);
+  b.sh(fr,col,{k:.1,hl:0,lw:o.lw||1.1,sh:mix(col,INK,.3),base:mix(col,'#FFFFFF',.5)});
+  b.sh(mt,'#FDF3DE',{k:.05,hatch:0,hl:0,lw:(o.lw||1.1)*.6,base:'#FFF9EE',dr:.15});
+  const s=Math.min(w,h)*.11;
+  paw(b,c[0],c[1]+s*.4,s,HSMUD,{a:a+(o.pa||0),lw:.45});
+  if(!o.min){b.raw(`<circle cx="${R1(c[0]+s*2.2)}" cy="${R1(c[1]-s*2.1)}" r="${R1(s*.3)}" fill="${HSMUD}" opacity=".7"/><circle cx="${R1(c[0]-s*2.4)}" cy="${R1(c[1]+s*1.9)}" r="${R1(s*.22)}" fill="${HSMUD}" opacity=".6"/>`);
+    const sg=T([[cx+w*.06,y+h*.78],[cx+w*.26,y+h*.78]]);b.raw(b.st(`M${R1(sg[0][0])} ${R1(sg[0][1])}q2 -3 4 0t4 0t4 0`,'#B98088',.9,.85))}
+}
+// the rubber duck, the plush bone and the ball for the toy basket
+function hsDuck(b,x,y,s){
+  b.sh(E(x,y,9*s,8.6*s,14),'#FFE07A',{hatch:0,hlo:.5,lw:.9*s,sh:'#E3B84A'});
+  b.sh([[x-8*s,y-.6*s],[x-15*s,y+.4*s],[x-14.4*s,y+3.6*s],[x-7.6*s,y+3.2*s]],'#F9A35E',{k:.1,hatch:0,hl:0,lw:.6*s,dr:.2,det:[[[x-14.6*s,y+2*s],[x-8.4*s,y+1.6*s]]],dw:.5*s});
+  b.dot(x-3*s,y-2.4*s,1.5*s);b.dot(x-2.6*s,y-2.9*s,.5*s,'#fff','top');
+  b.raw(`<ellipse cx="${R1(x+1.6*s)}" cy="${R1(y+2.6*s)}" rx="${R1(2.6*s)}" ry="${R1(1.5*s)}" fill="${PINK}" opacity=".5"/>`);
+}
+function hsBone(b,x,y,len,th,a,lw){const bp=boneP(x,y,len,th,a);
+  b.sh(bp,C.pink,{hatch:0,hlo:.45,lw:lw||.8,post:`<path d="${cr(bp.map(p=>[x+(p[0]-x)*.8,y+(p[1]-y)*.8]),true,1/6).d}" fill="none" stroke="${INK}" stroke-width=".8" stroke-dasharray="2 2" stroke-opacity=".7"/>`})}
+function hsBall(b,x,y,r,lw){b.sh(E(x,y,r,r,18),'#DDEB7E',{lw:lw||.9,sh:'#A9BC4E',
+  inner:b.st(`M${R1(x-r*.7)} ${R1(y-r*.75)}Q${R1(x-r*.05)} ${R1(y)} ${R1(x-r*.7)} ${R1(y+r*.75)}M${R1(x+r*.7)} ${R1(y-r*.75)}Q${R1(x+r*.05)} ${R1(y)} ${R1(x+r*.7)} ${R1(y+r*.75)}`,'#fff',r*.16,.9)})}
+
+const HSRUG=['#B9D4F3','#F7B2C4','#FFE08A','#C9C3BD','#BDE7D2','#D3C6F1','#FFD0A8'];
+PROPS.ragrug=function(b){
+  const cx=120,cy=40,RX=114,RY=33,n=HSRUG.length,st=1/(n+.7);
+  b.raw(`<ellipse cx="${cx+2}" cy="${cy+4}" rx="${RX+1}" ry="${RY+1}" fill="${SHADOW}" opacity=".85"/>`,'under');
+  // the coils, outside in (ring 3 is the sock: grey with red stripes and a red toe)
+  HSRUG.forEach((col,i)=>{const f=1-i*st;b.sh(E(cx,cy,RX*f,RY*f,44),col,{k:1/6,hatch:i?0:1,hl:0,lw:i?.42:1,dr:.35,sh:mix(col,INK,.3),ho:.3,lo:i?.75:0})});
+  const fc=1-n*st;b.sh(E(cx,cy,RX*fc,RY*fc,16),'#FFF2DA',{hatch:0,hl:0,lw:.42,dr:.2,lo:.75});
+  let br='';
+  HSRUG.forEach((col,i)=>{const f=1-(i+.5)*st;br+=hsBraid(b,cx,cy,RX*f,RY*f,st*.4/f,Math.round(14+40*f),mix(col,INK,.42),i*.37)});
+  b.raw(br);
+  // sock stripes along the front of ring 3, its red toe
+  {const f=1-3.5*st,hw=st*.42;let sd='';for(let j=0;j<11;j++){const a=.55+j*.16,c=Math.cos(a),s=Math.sin(a);sd+=b.jl(cx+c*RX*(f+hw),cy+s*RY*(f+hw),cx+c*RX*(f-hw),cy+s*RY*(f-hw),.2)}
+   b.raw(b.st(sd,'#F08A86',2.6,.85))}
+  // the braid's loose start in the middle
+  b.ln([[cx-6,cy-1],[cx-1,cy+1.6],[cx+4,cy-.6],[cx+8,cy+1]],{w:1.1,col:'#C99A72'});
+  b.ex('spark',226,10,4);b.ex('heart',12,12,3.2,'#F7B2C4');
+};
+
+PROPS.toybasket=function(b){
+  b.shadow(60,95,52,4);
+  basketV(b,60,48,98,44,()=>{
+    hsBone(b,33,30,44,16,-1.05);
+    hsBall(b,79,40,13);
+    hsDuck(b,57,32,1.15);
+  });
+  // a squeak
+  b.raw(b.st('M66 14l3 -6M72 18l6 -3M60 12l-1 -6',GRAPH,1.4),'top');
+  b.ex('spark',106,16,4);
+};
+
+PROPS.cushionpile=function(b){
+  b.shadow(90,95,86,4);
+  hsCush(b,92,26,54,24,-.14,C.lav,'dots');
+  hsCush(b,60,50,62,27,.1,C.mint,'stripe');
+  hsCush(b,120,50,58,27,-.09,C.peach,'heart');
+  hsCush(b,152,74,40,32,.42,C.yel,'paw');
+  hsCush(b,42,77,70,29,-.04,C.blue,'check');
+  hsCush(b,104,80,70,28,.03,C.pink,'');
+  // tassels on the pink one
+  [[69,92],[139,94]].forEach(([x,y])=>b.ln([[x,y],[x-2,y+3],[x+1,y+4]],{w:1.2,col:'#D9788F'}));
+  b.ex('spark',172,14,4);b.ex('heart',14,30,3.4,'#F7B2C4');
+};
+
+PROPS.fern=function(b){
+  const G=154,DK='#7FB86A',MD='#9CCB86',LT='#B8DE9A';
+  b.shadow(60,G,40,3.6);
+  // the little wooden plant stand: top, three legs and a low shelf
+  b.ln([[38,108],[30,G-1]],{w:4.6,col:C.woodD});b.ln([[82,108],[90,G-1]],{w:4.6,col:C.woodD});b.ln([[60,110],[60,G-4]],{w:4,col:mix(C.woodD,INK,.2)});
+  b.sh(RR(33,132,54,5,2),C.wood,{hatch:0,hl:0,lw:.8,base:'#F3DDB4'});
+  b.sh(RR(26,102,68,9,3),C.wood,{hatch:1,hl:0,lw:1.1,base:'#F3DDB4',sh:C.woodD,det:[[[30,105],[90,105]]],dw:.6,dcol:C.woodD});
+  // the leafy heart of the fern, then the back fronds
+  b.sh(cloudP(60,52,30,24,9,.2,40),DK,{hl:0,hatch:0,lw:.5,base:'#A9D394',dr:.3});
+  [[[56,74],[42,8],[10,40]],[[64,74],[78,8],[110,40]],[[58,74],[54,0],[34,14]],[[62,74],[68,0],[88,12]],[[60,74],[60,20],[62,6]]].forEach(([p,c,q])=>hsFrond(b,p,c,q,8,DK,{m:20}));
+  [[[52,76],[22,22],[4,70]],[[68,76],[98,22],[116,70]]].forEach(([p,c,q])=>hsFrond(b,p,c,q,8,MD,{m:20}));
+  // the pot
+  b.sh([[38,78],[82,78],[78,102],[42,102]],'#EBA48C',{k:.06,hl:0,sh:'#D88870',lw:1.1,base:'#F6CDBE'});
+  b.sh(RR(35,72,50,10,3),'#EBA48C',{hatch:0,hl:0,lw:1,base:'#F6CDBE',sh:'#D88870'});
+  paw(b,60,92,3,'#FFFBF3',{noline:1});
+  // front fronds, spilling over the rim
+  [[[56,74],[44,22],[22,26]],[[64,74],[76,22],[98,26]]].forEach(([p,c,q])=>hsFrond(b,p,c,q,8.4,MD,{m:18}));
+  [[[46,76],[18,50],[8,104]],[[74,76],[102,50],[112,104]]].forEach(([p,c,q])=>hsFrond(b,p,c,q,8,LT,{m:18}));
+  [[[52,76],[34,70],[26,120]],[[68,76],[86,70],[94,120]]].forEach(([p,c,q])=>hsFrond(b,p,c,q,7,LT,{m:16}));
+  b.ex('spark',110,140,3.4);
+};
+
+PROPS.cuckooclock=function(b){
+  const WD=C.wood,WDD=C.woodD,RF='#B9875A';
+  hsNail(b,50,6);b.ln([[45,12],[50,7],[55,12]],{k:0,w:1,col:'#8E6446'});
+  // body
+  b.sh(RR(20,40,60,58,3),WD,{hl:0,sh:WDD,lw:1.2,base:'#F3DDB4',det:[[[24,46],[24,94]],[[76,46],[76,94]]],dw:.6,dcol:WDD});
+  // roof with scalloped shingles
+  const roof=[[6,46],[50,17],[94,46],[90,51],[50,25],[10,51]];
+  b.sh(roof,RF,{k:.02,hl:0,sh:'#8A5F3C',lw:1.1,base:'#D9B48E',inner:b.st('M26 38q4 4 8 0t8 0M58 30q4 4 8 0t8 0M38 30q4 4 8 0M18 44q4 4 8 0M74 44q4 4 8 0','#8A5F3C',.9,.6)});
+  // carved leaves on the gable, round a little wooden acorn
+  [-1,1].forEach(s=>b.sh(leafP(50+s*1.5,18,17,8,-Math.PI/2-s*1.2),'#D9B48E',{hatch:0,hl:0,lw:.6,det:[[[50+s*3,17.5],[50+s*14,13]]],dw:.45,dcol:'#8A5F3C'}));
+  b.sh(leafP(50,19,13,7,-Math.PI/2),'#C99A72',{hatch:0,hl:0,lw:.6,det:[[[50,18],[50,9]]],dw:.45,dcol:'#8A5F3C'});
+  // the little door, swung open, and the bird peeking out
+  b.sh(RR(42,42,16,15,2),'#6E4F43',{hatch:0,hl:0,lw:.8,base:'#6E4F43',dr:.1});
+  b.sh([[58,42],[67,39],[67,56],[58,57]],'#E9C08F',{k:0,hatch:0,hl:0,lw:.8,base:'#F3DDB4'});
+  b.sh(E(49,51,6,5,12),'#B9D4F3',{hatch:0,hl:0,lw:.75});
+  b.sh([[44,50],[38,51.5],[44,53]],'#FFD56B',{k:0,hatch:0,hl:0,lw:.6});
+  b.dot(47.5,49.2,1.1);b.raw(`<ellipse cx="51" cy="53.2" rx="1.6" ry="1" fill="${PINK}" opacity=".6"/>`);
+  // clock face
+  b.sh(E(50,76,16,16,24),'#FFFBF3',{hatch:0,hl:0,lw:1,base:'#FFFBF3',dr:.2});
+  let tk='';for(let i=0;i<12;i++){const a=i/12*Math.PI*2,l=i%3?2:3.6;tk+=`M${R1(50+Math.cos(a)*13)} ${R1(76+Math.sin(a)*13)}L${R1(50+Math.cos(a)*(13-l))} ${R1(76+Math.sin(a)*(13-l))}`}
+  b.raw(b.st(tk,INK,1.1,.85));
+  b.ln([[50,76],[43,71]],{w:1.6});b.ln([[50,76],[56,66.5]],{w:1.3});b.dot(50,76,1.7,'#E46F6B');
+  // carved trim under the body, pendulum, chains and pine-cone weights
+  b.sh([[20,96],[80,96],[76,103],[66,100],[58,106],[50,101],[42,106],[34,100],[24,103]],WDD,{k:.1,hatch:0,hl:0,lw:.9});
+  hsChain(b,34,101,124);hsChain(b,66,101,136);hsChain(b,41,103,112);
+  b.loop(E(41,114.5,2.4,2.4,8),{w:1,col:'#8E8379'});
+  b.ln([[50,103],[50,120]],{w:1.4,col:'#A99A8C'});
+  b.sh(leafP(50,118,17,10,Math.PI/2),'#E9B44C',{hatch:0,hl:0,lw:.7,base:'#FFE08A'});
+  hsCone(b,34,134,5.4,10);hsCone(b,66,146,5.4,10);
+  b.ex('note',84,58,6);b.ex('spark',14,62,3.4);
+};
+
+PROPS.pawpictures=function(b){
+  hsPawFrame(b,38,30,52,56,-.06,C.wood,38,8,{});
+  hsPawFrame(b,101,22,52,62,.04,'#F7B2C4',101,6,{pa:.3});
+  hsPawFrame(b,163,32,48,54,.07,'#BDE7D2',163,10,{pa:-.25});
+  b.ex('spark',192,90,3.6);b.ex('heart',70,92,3.2,'#F7B2C4');
+};
+
+PROPS.moonlamp=function(b,o){
+  const lit=!!o.lit,G=133,MX=50,MY=58,MR=36,MC=lit?'#FFE89A':'#F2EDE0',MB=lit?'#FFF6CF':'#FBF8EF',CR=lit?'#F3C95E':'#DCD3C2',RB=lit?'#E9B84A':'#C9BFAE';
+  b.shadow(48,G,32,3.4);
+  // the cord and its plug, along the floor
+  b.ln([[70,128],[78,131],[84,128],[87,131]],{w:1.4,col:'#8E8379'});
+  b.sh(RR(86,127,7,6,1.6),'#FFFBF3',{hatch:0,hl:0,lw:.6,base:'#fff'});b.raw(b.st('M93 129h2.4M93 131.4h2.4',INK,.8,.8));
+  // wooden stand: base, post
+  b.sh([[24,121],[24,127],[34,131],[66,131],[76,127],[76,121]],C.woodD,{k:.1,hatch:0,hl:0,lw:1});
+  b.sh(E(50,121,26,6,18),C.wood,{hatch:0,hl:0,lw:1,base:'#F3DDB4'});
+  b.sh(RR(45.5,94,9,28,3),C.wood,{hatch:1,hl:0,lw:1,sh:C.woodD,base:'#F3DDB4'});
+  // the paper moon: craters with pencil rims, a soft shade on the right
+  const cra=[[38,46,7,5.6],[62,70,8.6,6.4],[66,42,4.6,3.6],[40,74,3.8,2.8],[54,30,3.2,2.4]];let rim='';
+  cra.forEach(([x,y,rx,ry])=>{rim+=`M${R1(x-rx)} ${R1(y)}A${rx} ${ry} 0 0 1 ${R1(x+rx*.7)} ${R1(y-ry*.7)}`});
+  const shade=[];for(let i=0;i<=12;i++){const a=-Math.PI/2+i/12*Math.PI;shade.push([MX+Math.cos(a)*MR*1.02,MY+Math.sin(a)*MR*1.02])}for(let i=12;i>=0;i--){const a=-Math.PI/2+i/12*Math.PI;shade.push([MX+Math.cos(a)*MR*.55,MY+Math.sin(a)*MR*1.02])}
+  b.sh(E(MX,MY,MR,MR,32),MC,{hlo:.6,sh:RB,ho:.3,lw:1.2,base:MB,
+    marks:[{pts:shade,fill:RB,op:.28}].concat(cra.map(([x,y,rx,ry])=>({pts:E(x,y,rx,ry,12),fill:CR}))),inner:b.st(rim,mix(RB,INK,.25),1,.65)});
+  // the little wooden cradle the moon sits in
+  b.sh([[33,88],[67,88],[63,97],[37,97]],C.woodD,{k:.12,hatch:0,hl:0,lw:1,base:'#E7C9A0'});
+  // lit only (last, so lit and unlit share the jitter): the halo, a soft pool on the floor, sparks
+  if(lit){hsGlow(b,MX,MY,66);b.raw(`<ellipse cx="50" cy="${G}" rx="46" ry="5" fill="#FFE38A" opacity=".35"/>`,'under');b.ex('spark',90,14,4,'#FFF3C2');b.ex('spark',10,96,3,'#FFE59A')}
+};
+
+PROPS.wallquilt=function(b){
+  hsNail(b,90,6);
+  b.ln([[18,24],[90,7],[162,24]],{k:0,w:1.2,col:'#8E6446'});
+  b.sh(RR(10,20,160,8,4),C.wood,{hatch:0,hl:0,lw:1,base:'#F3DDB4',sh:C.woodD});
+  b.sh(E(10,24,5,5,10),C.woodD,{hatch:0,hl:0,lw:.8});b.sh(E(170,24,5,5,10),C.woodD,{hatch:0,hl:0,lw:.8});
+  // the quilt: a border, 5 x 4 squares, the last few still blank
+  const OQ=[[22,29],[158,29],[160,132],[20,134]],Q=[[29,35],[151,35],[152,125],[28,127]],cols=5,rows=4,PAL=['#F7B2C4','#BDE7D2','#FFE08A','#B9D4F3','#D3C6F1','#FFD0A8'];
+  const blank=(i,j)=>(j===3&&i>=2)||(j===2&&i===4);
+  const marks=[];for(let j=0;j<rows;j++)for(let i=0;i<cols;i++)marks.push({pts:[quadPt(Q,i/cols,j/rows),quadPt(Q,(i+1)/cols,j/rows),quadPt(Q,(i+1)/cols,(j+1)/rows),quadPt(Q,i/cols,(j+1)/rows)],fill:blank(i,j)?'#FFF8EC':PAL[(i*2+j*3)%6],k:0});
+  b.sh([[22,29],[90,30],[158,29],[159,80],[160,132],[140,135],[118,132],[90,135],[62,132],[40,135],[20,134],[21,80]],'#E98C88',{k:.12,hl:0,sh:'#B5605C',lw:1.2,base:'#F6C4C0',marks,
+    inner:dash(b,gridLines(Q,cols,rows),'#FFFFFF',1.1,.9)+b.st('M60 40q3 40 -1 84M122 40q-3 40 1 84',mix('#E98C88',INK,.2),2.4,.12)});
+  // tabs over the rod
+  [36,63,90,117,144].forEach(x=>b.sh(RR(x-5,19,10,14,2),'#E98C88',{hatch:0,hl:0,lw:.7,base:'#F6C4C0'}));
+  // one applique per dog: paws, hearts, bones
+  const AP=['#FFFBF3','#E46F6B','#7FB7E0','#F28FA5','#9CCB86','#B9A6E8'];let k=0;
+  for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){if(blank(i,j))continue;const c=quadPt(Q,(i+.5)/cols,(j+.5)/rows),t=(i+j*2)%3,col=AP[(i*5+j*3+1)%6]===marks[j*cols+i].fill?'#FFFBF3':AP[(i*5+j*3+1)%6];k++;
+    if(t===0)paw(b,c[0],c[1]+1,3.2,col,{lw:.4,a:(k%3-1)*.2});
+    else if(t===1)b.sh(heartP(c[0],c[1]+.5,12),col,{hatch:0,hl:0,lw:.45,dr:.15});
+    else b.sh(boneP(c[0],c[1],17,6.4,(k%2?.35:-.35)),col,{hatch:0,hl:0,lw:.45,dr:.15})}
+  // a needle and thread waiting on a blank square
+  {const c=quadPt(Q,3.5/cols,3.5/rows);
+   b.raw(b.st(`M${R1(c[0]-30)} ${R1(c[1]+2)}h4m3 0h4m3 0h4`,'#E46F6B',1.3,.9));
+   b.raw(b.st(`M${R1(c[0]-14)} ${R1(c[1]+2)}q4 6 10 2t6 -8`,'#E46F6B',1.1,.9));
+   b.ln([[c[0]-3,c[1]+7],[c[0]+9,c[1]-7]],{w:1.6,col:'#8E8379'});b.loop(E(c[0]+8,c[1]-5.6,1.4,2.2,8,.8),{w:.8,col:'#8E8379'})}
+  b.ex('spark',172,44,4);b.ex('heart',8,60,3.2,'#F7B2C4');
+};
+
+/* items (64): the eight house decorations, simple bold cards like the v2.1 decorations */
+Object.assign(ITEMS,{
+ 'Braided Rag Rug'(b){
+  b.raw(`<ellipse cx="33" cy="43" rx="29" ry="15" fill="${SHADOW}" opacity=".85"/>`,'under');
+  const RC=['#B9D4F3','#F7B2C4','#C9C3BD','#FFE08A'],st=1/4.6;
+  RC.forEach((col,i)=>{const f=1-i*st;b.sh(E(32,40,29*f,15*f,28),col,{hatch:0,hl:0,lw:i?.5:1.1,dr:.3,lo:i?.8:0})});
+  b.sh(E(32,40,29*(1-4*st),15*(1-4*st),12),'#FFF2DA',{hatch:0,hl:0,lw:.5,dr:.2});
+  let br='';RC.forEach((col,i)=>{const f=1-(i+.5)*st;br+=hsBraid(b,32,40,29*f,15*f,st*.4/f,Math.round(8+16*f),mix(col,INK,.45),i*.4)});b.raw(br);
+  b.ex('spark',56,12,3.2);
+ },
+ 'Toy Basket'(b){
+  basketV(b,32,32,50,26,()=>{hsBone(b,19,20,24,9,-1.05,.7);hsBall(b,42,26,8,.8);hsDuck(b,31,21,.72)});
+  b.ex('spark',57,10,3);
+ },
+ 'Cushion Pile'(b){
+  hsCush(b,32,20,30,14,-.14,C.lav,'dots',{lw:.9});
+  hsCush(b,19,36,30,15,.1,C.mint,'stripe',{lw:.9});hsCush(b,46,36,28,15,-.09,C.peach,'heart',{lw:.9});
+  hsCush(b,32,52,46,16,.02,C.pink,'',{lw:.9});
+  b.ex('spark',57,10,3);
+ },
+ 'Boston Fern'(b){
+  const DK='#7FB86A',MD='#9CCB86',LT='#B8DE9A';
+  const F=(l,col,w)=>l.forEach(([p,c,q])=>hsFrond(b,p,c,q,w,col,{m:14,lw:.7,mw:.8}));
+  b.sh(cloudP(32,24,15,12,7,.2,28),DK,{hl:0,hatch:0,lw:.5,base:'#A9D394',dr:.2});
+  F([[[30,40],[22,4],[5,22]],[[34,40],[42,4],[59,22]],[[32,40],[32,8],[33,3]]],DK,5);
+  b.sh([[19,44],[45,44],[42,60],[22,60]],'#EBA48C',{k:.06,hatch:0,hl:0,lw:1,base:'#F6CDBE'});
+  b.sh(RR(17,39,30,7,2),'#EBA48C',{hatch:0,hl:0,lw:.9,base:'#F6CDBE'});
+  F([[[30,39],[24,12],[11,14]],[[34,39],[40,12],[53,14]]],MD,5.2);
+  F([[[26,41],[8,28],[4,54]],[[38,41],[56,28],[60,54]]],LT,5);
+  b.ex('spark',57,58,2.6);
+ },
+ 'Cuckoo Clock'(b){
+  b.sh(RR(17,20,30,28,2),C.wood,{hatch:0,hl:0,lw:1,base:'#F3DDB4'});
+  b.sh([[10,23],[32,6],[54,23],[51,26],[32,11],[13,26]],'#B9875A',{k:.02,hatch:0,hl:0,lw:1,base:'#D9B48E'});
+  b.sh(RR(27,19,10,8,1),'#6E4F43',{hatch:0,hl:0,lw:.6,base:'#6E4F43'});
+  b.sh(E(31,23,3.6,3,10),'#B9D4F3',{hatch:0,hl:0,lw:.55});b.sh([[28,22.6],[24,23.6],[28,24.6]],'#FFD56B',{k:0,hatch:0,hl:0,lw:.45});
+  b.sh(E(32,36,8,8,16),'#FFFBF3',{hatch:0,hl:0,lw:.8,base:'#FFFBF3'});
+  b.ln([[32,36],[28,33]],{w:1.3});b.ln([[32,36],[35,31]],{w:1.1});
+  b.raw(b.st('M24 48v8M40 48v4',GRAPH,1.1));
+  hsCone(b,24,57,3.2,5.6);hsCone(b,40,54,3.2,5.6);
+  b.ex('note',52,38,5);
+ },
+ 'Paw Print Pictures'(b){
+  hsPawFrame(b,13,18,20,24,-.08,C.wood,13,6,{min:1,lw:.9,ns:.6});
+  hsPawFrame(b,51,18,20,24,.08,'#BDE7D2',51,6,{min:1,lw:.9,ns:.6,pa:-.2});
+  hsPawFrame(b,32,26,24,30,.02,'#F7B2C4',32,10,{min:1,lw:1,ns:.6,pa:.2});
+ },
+ 'Moon Lamp'(b){
+  b.sh([[18,54],[18,57],[24,60],[40,60],[46,57],[46,54]],C.woodD,{k:.1,hatch:0,hl:0,lw:.9});
+  b.sh(E(32,54,14,3.6,14),C.wood,{hatch:0,hl:0,lw:.9,base:'#F3DDB4'});
+  b.sh(RR(29.5,40,5,15,2),C.wood,{hatch:0,hl:0,lw:.8});
+  b.sh(E(32,24,19,19,24),'#FFE89A',{hatch:0,hlo:.55,lw:1.1,base:'#FFF6CF',
+    marks:[{pts:E(25,18,4,3.2,10),fill:'#F5CF6A'},{pts:E(38,31,4.6,3.4,10),fill:'#F5CF6A'},{pts:E(39,16,2.4,2,8),fill:'#F5CF6A'}]});
+  b.ex('spark',56,8,3,'#FFF3C2');b.ex('spark',8,40,2.4);
+ },
+ 'Patchwork Quilt'(b){
+  b.ln([[9,10],[32,3],[55,10]],{k:0,w:1,col:'#8E6446'});b.dot(32,3,1.6,'#B8AEA6');
+  b.sh(RR(4,8,56,5,2.4),C.wood,{hatch:0,hl:0,lw:.9});
+  const Q=[[11,15],[53,15],[54,57],[10,58]],PAL=['#F7B2C4','#BDE7D2','#FFE08A','#B9D4F3','#D3C6F1','#FFD0A8'],marks=[];
+  for(let j=0;j<3;j++)for(let i=0;i<3;i++)marks.push({pts:[quadPt(Q,i/3,j/3),quadPt(Q,(i+1)/3,j/3),quadPt(Q,(i+1)/3,(j+1)/3),quadPt(Q,i/3,(j+1)/3)],fill:i===2&&j===2?'#FFF8EC':PAL[(i*2+j*3)%6],k:0});
+  b.sh([[8,12],[56,12],[57,60],[44,62],[32,60],[20,62],[7,60]],'#E98C88',{k:.1,hatch:0,hl:0,lw:1.1,base:'#F6C4C0',marks,inner:dash(b,gridLines(Q,3,3),'#FFFFFF',.9,.9)});
+  [[0,0,'p'],[1,0,'h'],[2,0,'b'],[0,1,'h'],[1,1,'b'],[2,1,'p'],[0,2,'b'],[1,2,'p']].forEach(([i,j,t])=>{const c=quadPt(Q,(i+.5)/3,(j+.5)/3),col=(i+j)%2?'#E46F6B':'#FFFBF3';
+    if(t==='p')paw(b,c[0],c[1]+1,2.6,col,{lw:.35});else if(t==='h')b.sh(heartP(c[0],c[1],10),col,{hatch:0,hl:0,lw:.4});else b.sh(boneP(c[0],c[1],12,4.6,-.3),col,{hatch:0,hl:0,lw:.4})});
+ }
+});
 /* v27:house (end) */
 
 /* v27:furn (start) -- the 5 furniture pieces, FURN_SPOTS, their ITEMS cards */
