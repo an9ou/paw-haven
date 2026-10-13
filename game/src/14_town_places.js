@@ -104,10 +104,12 @@ function mapArt(locked) {
   }).join('');
   return { W, H, areas: null, svg: `<rect width="${W}" height="${H}" fill="#FFFBF3"/><text x="${W / 2}" y="90" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="72" fill="#5B3D32">Paw Haven Town</text>${roads}${deco}<g id="sceneG" data-scene="map" data-noenv="1">${place(raw, ox, oy, 1000 * sc, 600 * sc)}</g>${pins}` };
 }
+// UI/UX T7 (phones): the location chip floats over the top of the map, so the map can be pulled down past it and the top place names (Hilltop Meadow) come clear
+function mapTopPad() { if (!isPhone()) return 40; const st = $('#status'), pan = $('#mapPan'); if (!st || st.hidden || !st.offsetParent || !pan) return 40; return Math.max(40, Math.round(st.getBoundingClientRect().bottom - pan.getBoundingClientRect().top + 10)); }
 function mapApply() {
   const M = MAPV; if (!M) return; const inner = $('#mapInner'); if (!inner) return;
   const s = M.base * M.z, vw = M.vw, vh = M.vh, mw = M.W * s, mh = M.H * s;
-  M.tx = mw <= vw ? (vw - mw) / 2 : clamp(M.tx, vw - mw - 40, 40); M.ty = mh <= vh ? (vh - mh) / 2 : clamp(M.ty, vh - mh - 40, 40);
+  M.tx = mw <= vw ? (vw - mw) / 2 : clamp(M.tx, vw - mw - 40, 40); M.ty = mh <= vh ? (vh - mh) / 2 : clamp(M.ty, vh - mh - 40, mapTopPad());
   inner.style.transform = `translate(${M.tx.toFixed(1)}px, ${M.ty.toFixed(1)}px) scale(${s.toFixed(4)})`; inner.style.setProperty('--inv', (1 / s).toFixed(4));
   const zl = $('#mapZoomLbl'); if (zl) zl.textContent = Math.round(M.z * 100) + '%';
   const pb = M.pinBox, pin = $('#mapPin'); if (pb && pin) { const lx = pb.x - 46 / s, rx = pb.x + pb.w + 46 / s; pin.style.left = ((M.tx + lx * s >= 46 || M.tx + rx * s > M.vw - 46) ? lx : rx).toFixed(1) + 'px'; pin.style.top = (pb.y + pb.h * 0.62).toFixed(1) + 'px'; } // phones: the pin keeps a fixed screen gap from its place at every zoom, on the side with room for its label

@@ -5,7 +5,7 @@ html[data-layout="phone"] #placeBtns .btn{pointer-events:auto}
 /* the yard and house scenes are swiped sideways by hand (03_yard.js phCamPan), so the browser must not take the gesture */
 html[data-layout="phone"] #view > svg.world{touch-action:none}
 /* adoption: the Adopt button stays in reach while the card scrolls */
-html[data-layout="phone"] #stage.flowdock .adopt-card ~ .foot{position:sticky;bottom:0;z-index:2;margin:4px -4px 0;padding:8px 4px calc(6px + env(safe-area-inset-bottom,0px));background:linear-gradient(to bottom,rgba(255,248,235,0),var(--paper) 30%)}
+html[data-layout="phone"] #stage.flowdock .adopt-card ~ .foot{position:sticky;bottom:0;z-index:2;margin:4px -4px 0;padding:8px 4px calc(6px + env(safe-area-inset-bottom,0px));background:var(--paper);border-top:2px dashed rgba(91,61,50,.22);box-shadow:0 14px 0 var(--paper)} /* UI/UX H10: solid paper down to the dock edge, so no head sits half under a pale band */
 html[data-layout="phone"] #stage.flowdock .heads{gap:8px}
 /* v2.5 (BREEDS): 14 heads make a third row; the tray must not shrink under it, so the dock scrolls and every head stays tappable above the sticky Adopt bar */
 html[data-layout="phone"] #stage.flowdock #dock > .tray:has(.adopt-card){flex-shrink:0}
@@ -53,6 +53,9 @@ html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row > .
    scrolls the row. The end padding lets the last column clear the fade. */
 html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row{display:grid;grid-auto-flow:column;grid-template-rows:auto;grid-auto-columns:calc((100vw - 52px) / 2.2);gap:8px 8px;align-items:stretch;justify-content:start;padding:4px 2px 8px;scroll-padding-inline:2px}
 html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row:has(> .card:nth-of-type(4)){grid-template-rows:auto auto}
+/* v2.6 UI/UX (review H5): with 4 cards (2 x 2) or 1-2 cards nothing scrolls, so the columns share the full width (no empty strip on the right) */
+html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row:has(> .card:nth-of-type(4)):not(:has(> .card:nth-of-type(5))),
+html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row:not(:has(> .card:nth-of-type(3))){grid-auto-columns:calc((100% - 8px) / 2)}
 html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row:has(> .card:nth-of-type(5)){padding-right:40px;
   -webkit-mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 30px),transparent 100%);mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 30px),transparent 100%)}
 html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row > .card{width:auto;min-width:0;min-height:58px;flex:none;touch-action:pan-x pan-y;display:grid;grid-template-columns:40px minmax(0,1fr);grid-template-rows:auto auto;column-gap:6px;align-content:center;align-items:center;justify-items:start;text-align:left;padding:6px 6px 7px 6px}

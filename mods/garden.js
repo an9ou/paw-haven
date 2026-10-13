@@ -327,6 +327,7 @@
     '.pg-bar{height:13px;border:2px solid ' + INK + ';border-radius:8px 6px 9px 5px;overflow:hidden;background:#FFF4DF;margin:3px 0 5px}',
     '.pg-bar i{display:block;height:100%;background:repeating-linear-gradient(-62deg,#8CC09A 0 2.4px,#C8E9CF 2.4px 4.8px)}',
     '.pg-q{display:flex;flex-wrap:wrap;gap:2px 8px;font-size:15px;color:#8A7468;margin-top:3px}',
+    'html[data-layout="phone"] .pg-hint,html[data-layout="phone"] .pg-tool small,html[data-layout="phone"] .pg-info .pg-sub,html[data-layout="phone"] .pg-q{color:#6F5B50}', /* phone contrast: 6.2:1 on paper (was 4.3:1) */
     '.pg-q span.pg-ok{color:' + INK + '}',
     '.pg-acts{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap}',
     /* seed pouch */
@@ -627,7 +628,7 @@
       };
       // v2.2 phone: the 420 x 1000 stage scrolls, so the toolbar, seed pouch and cards follow the scroll position (--pg-sy, --pg-vh in stage pixels)
       var pin = function () { if (closed || !PORT) return; var s2 = (el.clientWidth || SW) / SW; root.style.setProperty('--pg-sy', (root.scrollTop / s2).toFixed(1) + 'px'); root.style.setProperty('--pg-vh', ((el.clientHeight || 700) / s2).toFixed(1) + 'px'); };
-      if (PORT) { root.addEventListener('scroll', pin, { passive: true }); pin(); }
+      if (PORT) { root.addEventListener('scroll', pin, { passive: true }); root.addEventListener('scroll', function () { if (bubbleOn) bubFit(); }, { passive: true }); pin(); }
       fit();
       if (typeof ResizeObserver === 'function') { var ro = new ResizeObserver(fit); ro.observe(el); cleanups.push(function () { ro.disconnect(); }); }
       else { window.addEventListener('resize', fit); cleanups.push(function () { window.removeEventListener('resize', fit); }); }
@@ -693,8 +694,15 @@
     }
     function say(t, ms) {
       if (closed || !t) return;
-      var b = q('.pg-bubble'); b.textContent = t; b.classList.add('pg-show'); bubbleOn = true; pLayout();
+      var b = q('.pg-bubble'); b.textContent = t; b.classList.add('pg-show'); bubbleOn = true; pLayout(); bubFit();
       clearTimeout(bubbleTimer); bubbleTimer = later(function () { b.classList.remove('pg-show'); bubbleOn = false; pLayout(); }, ms || 2600);
+    }
+    // phone (UI/UX H4): on a short screen the dog sits at the bottom edge, so its bubble rises until its bottom is inside the visible part of the page
+    function bubFit() {
+      if (!PORT || closed) return; var b = q('.pg-bubble'), dw = q('.pg-dogw'); if (!b || !dw) return; b.style.top = '';
+      var s = (el.clientWidth || SW) / SW, vb = Math.min(root.getBoundingClientRect().bottom, window.innerHeight) - 10;
+      var bot = dw.getBoundingClientRect().top + (b.offsetTop + b.offsetHeight) * s; // layout numbers: the bubble's pop transform is not counted
+      if (bot > vb) b.style.top = Math.round(b.offsetTop - (bot - vb) / s) + 'px';
     }
     function hint(t) { var h = q('.pg-hint'); if (h) h.textContent = t; }
     function float(x, y, text, cls) {

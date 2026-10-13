@@ -76,8 +76,8 @@ function mailPush(msg) {
     for (let i = S.mail.length - 1; i >= 0 && S.mail.length > MAIL_MAX; i--) if (S.mail[i].kind !== 'litter') S.mail.splice(i, 1); // unread litter letters are kept
   }
   markDirty(); mailSfx();
-  toast(`New mail: ${m.title}`, 'gold');
-  try { const tl = toasts.lastElementChild; if (tl) tl.insertAdjacentHTML('afterbegin', `<span class="mail-tic" aria-hidden="true">${mailIcon()}</span>`); } catch (e) { /* toast gone */ }
+  const tl = toast(`New mail: ${m.title}`, 'gold', { group: 'mail', many: (n) => `${n} new letters in your mailbox.` }); // phones: letters that arrive together make one note
+  try { if (tl) tl.insertAdjacentHTML('afterbegin', `<span class="mail-tic" aria-hidden="true">${mailIcon()}</span>`); } catch (e) { /* toast gone */ }
   mailboxRefresh(); return m;
 }
 

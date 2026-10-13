@@ -80,15 +80,23 @@ function hwPopBox() {
   return [HW_POP.phone, [c0 + 6, 496, 100, 92]].find(ok) || HW_POP.desk;
 }
 
+// UI/UX T4 (phones): the stall's and the pop-up's painted signs are a few pixels tall on a phone, so each gets a paper name chip with 15 px text, centred on
+// its top edge. It sits inside the prop's own group, so a tap on it opens the stall or the pop-up.
+function hwChip(t, cx, y) {
+  const s = typeof phHitScale === 'function' ? phHitScale() : 0.7, fz = 15.5 / s, w = t.length * fz * 0.47 + fz * 1.1, h = fz * 1.45, x = cx - w / 2, ty = y - h * 0.35;
+  return `<g class="hw-chip" transform="rotate(-2 ${f1(cx)} ${f1(ty + h / 2)})"><rect x="${f1(x)}" y="${f1(ty)}" width="${f1(w)}" height="${f1(h)}" rx="${f1(h * 0.32)}" fill="#FFFBF3" stroke="${INKG}" stroke-width="${f1(2 / s)}"/><text x="${f1(cx)}" y="${f1(ty + h * 0.7)}" text-anchor="middle" font-family="Patrick Hand,sans-serif" font-size="${f1(fz)}" fill="${INKG}">${t}</text></g>`;
+}
+
 /* ---- the Square: the pop-up and its place button (fsSquareDraw calls this after it draws the stall and its buttons) ---- */
 function hwSquareDraw() {
   const svg = $('#view svg.world'); if (!svg) return;
   const old = $('#hwPopG', svg); if (old) old.remove();
   const pb = $('#placeBtns'); if (pb) pb.querySelectorAll('[data-hw]').forEach((b) => b.remove());
+  if (isPhone() && S && S.place === 'square') { const st = $('#fsStallG', svg); if (st && !$('.hw-chip', st)) { const b = st.querySelector('svg'); if (b) st.insertAdjacentHTML('beforeend', hwChip('Harvest Stall', +b.getAttribute('x') + +b.getAttribute('width') / 2, +b.getAttribute('y'))); } }
   HW.open = hwOn(); if (!HW.open || !S || S.place !== 'square') return;
   const at = $('#bowlG', svg) || $('#pack', svg); if (!at) return;
   const [x, y, w, h] = hwPopBox(), lit = isNight();
-  at.insertAdjacentHTML('beforebegin', `<g id="hwPopG" class="hot" data-lit="${lit ? 1 : 0}" tabindex="0" role="button" aria-label="Mrs. Plum's Pumpkin Patch Pop-up">${place(lit ? hwArt({ lit }) : propTint(hwArt({ lit })), x, y, w, h)}${fsHit(x + 6, y + 8, w - 12, h - 8)}</g>`);
+  at.insertAdjacentHTML('beforebegin', `<g id="hwPopG" class="hot" data-lit="${lit ? 1 : 0}" tabindex="0" role="button" aria-label="Mrs. Plum's Pumpkin Patch Pop-up">${place(lit ? hwArt({ lit }) : propTint(hwArt({ lit })), x, y, w, h)}${fsHit(x + 6, y + 8, w - 12, h - 8)}${isPhone() ? hwChip('Pumpkin Patch', x + w / 2, y) : ''}</g>`);
   if (typeof fsHitFit === 'function') fsHitFit();
   const g = $('#hwPopG', svg); g.onclick = (e) => { e.stopPropagation(); SFX.click(); hwOpen(); }; g.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hwOpen(); } };
   if (pb && !isPhone()) { // phones: the third row of the Festival chooser instead, so the Square row stays one line

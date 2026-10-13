@@ -85,8 +85,10 @@ function tgHint(n, d, hand) {
   if (n === 'Speak') return `Press Start, then tap Speak! each time ${d.name}'s ears perk up (3 beats).`;
   if (n === 'Paw') return hand ? `Hand signal: tap ${d.name}'s paw twice, then hold your palm still.` : `Tap ${d.name}'s front paw twice, then hold your open palm still for a second.`;
   if (n === 'Signature') return `A 3-part combo: ${(SIG_COMBO[d.key] || ['Sit', 'Spin', 'Bow']).join(', then ')}.`;
+  if (isPhone()) return (hand ? `Hand signal: trace the faint track (x1.3).` : `Press Start, then drag the treat from ${d.name}'s nose along the dots to the star.`) + " Can't drag? After Start, hold the blue Hold to lead button."; // v2.6 phone: the drag fallback is said where it is seen
   return hand ? `Hand signal: trace the faint track with your hand. No treat needed now (x1.3).` : `Press Start, then drag the treat from ${d.name}'s nose along the dotted track to the star. Not too fast!`;
 }
+const PK_LEADHINT = " Can't drag? Hold the blue Hold to lead button.";
 
 /* ---------- attempt lifecycle ---------- */
 const tgG = () => (TRN && TRN.game) || null;
@@ -103,7 +105,7 @@ function tgBegin(n, mode) {
   const G = TRN.game = { n, mode, parts, pi: 0, segs: [], si: 0, s: 0, inside: 0, outside: 0, grabbed: false, retry: false, pos: null, samples: [], taps: 0, holdAt: 0, busy: false, t0: performance.now(), wobble: PERS[d.key] === 'nose' && mode === 'lure' };
   if (n === 'Speak') { tgSpeakStart(G); renderTraining(); return; }
   renderTraining(); tgLoadPart(G);
-  trainLine(mode === 'show' ? `Show off: trace the ${tName(n)} signal.` : mode === 'hand' ? `Hand signal: trace the faint track. ${d.name} watches your hand.` : n === 'Paw' ? 'Tap the paw twice, then hold your palm still.' : `Grab the treat at ${d.name}'s nose and lead the way to the star.`, '');
+  trainLine(mode === 'show' ? `Show off: trace the ${tName(n)} signal.` : mode === 'hand' ? `Hand signal: trace the faint track. ${d.name} watches your hand.` : n === 'Paw' ? 'Tap the paw twice, then hold your palm still.' + (isPhone() ? ' Or tap, tap, hold the blue button.' : '') : `Grab the treat at ${d.name}'s nose and lead the way to the star.` + (isPhone() ? PK_LEADHINT : ''), '');
   tgBind(true);
   if (!G.ticker) G.ticker = setInterval(tgTick, 50);
 }
@@ -128,7 +130,7 @@ function tgDraw(G) {
     const cur = i === G.si, past = i < G.si, op = past ? 0.25 : 1;
     if (sg.type === 'path') {
       const a = sg.pts[0], b = sg.pts[sg.pts.length - 1];
-      h += `<g class="tgseg" opacity="${op}"><polyline class="tg-band" points="${pp(sg.pts)}" stroke-width="${(G.tol * 2).toFixed(1)}"/><polyline class="tg-dots" points="${pp(sg.pts)}"/>`;
+      h += `<g class="tgseg" opacity="${op}"><polyline class="tg-band" points="${pp(sg.pts)}" stroke-width="${(G.tol * 2).toFixed(1)}"/>${isPhone() ? `<polyline class="pk-halo" points="${pp(sg.pts)}"/>` : ''}<polyline class="tg-dots" points="${pp(sg.pts)}"/>`;
       h += `<circle class="tg-start" cx="${a[0]}" cy="${a[1]}" r="9"/><text class="tg-star" x="${b[0]}" y="${b[1] + 12}" text-anchor="middle">★</text></g>`;
       if (cur) h += `<polyline id="tgDone" class="tg-done" points="${pp(sg.pts.slice(0, 1))}"/>`;
     } else if (sg.type === 'tap') {
@@ -266,9 +268,16 @@ function tgSpeakStart(G) {
   G.rhythm = true; G.win = [120 * mul, 220 * mul]; G.beats = []; for (let i = 0; i < n; i++) G.beats.push(now + TG_BEAT * (2 + i)); G.hits = G.beats.map(() => null);
   trainLine(G.mode === 'show' ? `Tap Speak! when ${d.name}'s ears perk up.` : `Listen... 1, 2, then tap Speak! on each ear perk (${n} beats).`, '');
   tgBind(true); renderDog('idle', 'right', true);
-  [0, 1].forEach((i) => TRN.timers.push(setTimeout(() => { if (tgG() !== G) return; SFX.click(); fxText(String(i + 1), 470, 290, '#86B3EA', 40); }, TG_BEAT * i)));
-  G.beats.forEach((b) => TRN.timers.push(setTimeout(() => { if (tgG() !== G) return; const fx = $('#dogFx'); if (fx) { fx.classList.remove('tk-perk'); void fx.getBBox(); fx.classList.add('tk-perk'); } fxText('!', 500, 300, '#F2C744', 54); SFX.boop(880); }, b - now)));
+  [0, 1].forEach((i) => TRN.timers.push(setTimeout(() => { if (tgG() !== G) return; SFX.click(); fxText(String(i + 1), 470, 290, '#86B3EA', 40); pkBeatFx('pkcount', String(i + 1)); }, TG_BEAT * i)));
+  G.beats.forEach((b) => TRN.timers.push(setTimeout(() => { if (tgG() !== G) return; const fx = $('#dogFx'); if (fx) { fx.classList.remove('tk-perk'); void fx.getBBox(); fx.classList.add('tk-perk'); } fxText('!', 500, 300, '#F2C744', 54); SFX.boop(880); pkBeatFx('pkbeat', 'Now!'); }, b - now)));
   TRN.timers.push(setTimeout(() => { if (tgG() === G) tgSpeakEnd(G); }, G.beats[G.beats.length - 1] - now + 450));
+}
+/* v2.6 phone: the count and each ear perk also flash on the Speak! button, so the beat is seen where the thumb is (the dog can be small or under a toast) */
+function pkBeatFx(cls, txt) {
+  if (!isPhone()) return; const b = $('#trSpeak'); if (!b) return;
+  let c = b.querySelector('.pkcue'); if (!c) { c = document.createElement('b'); c.className = 'pkcue'; c.setAttribute('aria-hidden', 'true'); b.appendChild(c); }
+  b.classList.remove('pkcount', 'pkbeat'); void b.offsetWidth; b.classList.add(cls); c.textContent = txt; c.hidden = false;
+  setTimeout(() => { b.classList.remove(cls); if (c.textContent === txt) c.hidden = true; }, cls === 'pkbeat' ? 420 : 360);
 }
 function tgSpeakTap() {
   const G = tgG(); if (!G || !G.rhythm || G.busy) return; const now = performance.now();
