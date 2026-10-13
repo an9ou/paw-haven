@@ -148,6 +148,7 @@ require('./test_lib').run('v27_home', async (t) => {
   for (const n of ['Dog Play Tower', 'Tunnel Sofa', 'Ball Pit', 'Sofa Ramp', 'Window Seat']) await ev((n) => window.__paw.ho.place(n), n);
   await ev(() => window.__paw.ho.done());
   await ev(() => window.__paw.ho.hold(true)); // the pack dogs leave the furniture to us
+  ok(await ev(() => window.__paw.idle.weights().furn) === 2.5, 'with furniture out in the house the idle has a furn weight (2.5 for an adult)');
   const actId = (await S()).activeId; const bad = [];
   for (const n of ['Dog Play Tower', 'Tunnel Sofa', 'Ball Pit', 'Sofa Ramp', 'Window Seat']) {
     for (const k of await ev((n) => window.__paw.ho.spots(n), n)) {

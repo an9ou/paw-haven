@@ -445,7 +445,7 @@ function hoDone(fromCleanup) {
 function hoFurnPop(name) {
   const D = HM_DECOR[name]; if (!D) return; const f = HO.fav[name] || {}, top = Object.keys(f).filter((id) => dogById(id)).sort((a, b) => f[b] - f[a]).slice(0, 2).map((id) => dogById(id).name);
   const fav = top.length ? `Favourite of: ${top.join(' and ')}.` : 'Nobody has claimed it yet. Give it a minute.';
-  const p = openModal(esc(name), `<div class="hm-pop"><span class="art hm-art">${art('item', name)}</span><p>${esc(D.story)}</p><p class="small ho-fav">${esc(fav)}</p></div>`, { cls: 'hm-decor-pop ho-furn-pop', foot: '<button class="btn" id="hoMove">Move</button><button class="btn yes" id="hmAway">Put away</button>' });
+  const p = openModal(esc(name), `<div class="hm-pop"><span class="art hm-art">${hoFurnArt(name)}</span><div><p>${esc(D.story)}</p><p class="small ho-fav">${esc(fav)}</p></div></div>`, { cls: 'hm-decor-pop ho-furn-pop', foot: '<button class="btn" id="hoMove">Move</button><button class="btn yes" id="hmAway">Put away</button>' });
   $('#hoMove', p).onclick = () => { SFX.click(); closeModal(); hoPlaceStart(name); };
   $('#hmAway', p).onclick = () => { SFX.click(); closeModal(); if (hoAway(name)) hoRoomRedraw(); };
 }
