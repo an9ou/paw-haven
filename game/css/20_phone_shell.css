@@ -125,10 +125,8 @@ html[data-layout="phone"] #toasts{top:auto;bottom:calc(var(--barH) + 12px + env(
 html[data-layout="phone"] #stage.nobar #toasts{bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 html[data-layout="phone"] #stage:has(#modal:not([hidden])) #toasts{top:var(--toastTop,calc(env(safe-area-inset-top,0px) + 6px))!important;bottom:auto!important} /* v2.5: toast() sets --toastTop just under the sheet's title */
 html[data-layout="phone"] #stage:has(#modal:not([hidden])) #toasts .toast:nth-last-child(n+3){display:none}
-/* UI/UX (13 Oct 2026): toasts that arrive together share one note, one line each (toast() in 00_core.js); with the guide strip up only the newest shows;
+/* UI/UX (13 Oct 2026): letters arriving together are one toast (toast() in 00_core.js); with the guide strip up only the newest toast shows;
    on the map they keep clear of the zoom column on the right (and stay centred, so the left gutter matches) */
-html[data-layout="phone"] .toast:has(.tl + .tl) .tl{display:block}
-html[data-layout="phone"] .toast .tl + .tl{margin-top:5px;padding-top:5px;border-top:1.5px dashed rgba(91,61,50,.28)}
 html[data-layout="phone"] #stage.gd-top #toasts .toast:not(:last-child){display:none}
 html[data-layout="phone"] #stage.toast-map #toasts{width:calc(100% - 136px)}
 /* v2.3: the +N chip replaces the sideways scroll and its fade (phChipsFit in 13_more_dogs.js) */
@@ -141,7 +139,3 @@ html[data-layout="phone"] #trainPanel .trhead{position:sticky;top:-6px;z-index:3
    The "Collected" gift line #4C9A5A was 3.4:1; #357040 is 5.7:1 on paper. (The garden's own copies of the old grey sit in mods/garden.js.) */
 html[data-layout="phone"]{--muted:#6F5B50}
 html[data-layout="phone"] .mb-gift.got{color:#357040}
-/* UI/UX T8: the Market Street button row fades where more buttons wait (psRowFade, 22c_phone_shell.js) */
-html[data-layout="phone"] #placeBtns.ps-more-r{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 44px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 44px),transparent)}
-html[data-layout="phone"] #placeBtns.ps-more-l{-webkit-mask-image:linear-gradient(90deg,transparent,#000 44px);mask-image:linear-gradient(90deg,transparent,#000 44px)}
-html[data-layout="phone"] #placeBtns.ps-more-l.ps-more-r{-webkit-mask-image:linear-gradient(90deg,transparent,#000 44px,#000 calc(100% - 44px),transparent);mask-image:linear-gradient(90deg,transparent,#000 44px,#000 calc(100% - 44px),transparent)}

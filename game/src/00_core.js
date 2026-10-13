@@ -669,30 +669,18 @@ const favAct = (a) => (FAV[S.dog.key] || {}).act === a;
 // v2.3 phone: toasts start just under the location chip (top-left of the scene), never on it
 function phChipClear() { if (!isPhone()) return 0; const st = $('#status'); return st && !st.hidden && st.offsetParent === view ? st.offsetTop + st.offsetHeight + 4 - 8 : 0; }
 // toast(text, kind, o): o.group + o.many(n) (phones): a toast of the same group still on screen is replaced by one note with a count ("3 new letters").
-// Phones also put toasts that arrive together (within TOAST_JOIN ms) into one note, one line each, and re-place live toasts when a sheet opens, closes or
-// changes height (toastPlace): above the sheet when there is room, else under its tabs or its title, never on them. Returns the toast element.
-const TOAST_MS = 2900, TOAST_JOIN = 450;
+// Phones also re-place live toasts when a sheet opens, closes or changes height (toastPlace): above the sheet when there is room, else under its tabs
+// or its title, never on them. Returns the toast element.
+const TOAST_MS = 2900;
 function toast(text, kind = '', o = {}) {
-  if (isPhone()) {
-    const live = [...toasts.children].filter((e) => e.classList.contains('toast'));
-    const same = o.group && live.find((e) => e.dataset.group === o.group);
-    if (same) { const n = (+same.dataset.n || 1) + 1; same.remove(); return toastAdd([o.many ? o.many(n) : text], kind, o, n); }
-    const last = live[live.length - 1];
-    if (!o.group && last && !last.dataset.group && Date.now() - (+last.dataset.at || 0) < TOAST_JOIN && last.querySelectorAll('.tl').length < 3) { // arrived together: one note
-      const lines = [...last.querySelectorAll('.tl')].map((e) => e.textContent); last.remove(); return toastAdd(lines.concat(text), last.dataset.kind || kind, o, 1);
-    }
-  }
-  return toastAdd([text], kind, o, 1);
-}
-function toastAdd(lines, kind, o, n) {
-  const t = document.createElement('div'); t.className = 'toast ' + kind; t.dataset.at = Date.now(); t.dataset.kind = kind;
+  let n = 1;
+  if (o.group && isPhone()) { const same = [...toasts.children].find((e) => e.dataset.group === o.group); if (same) { n = (+same.dataset.n || 1) + 1; same.remove(); if (o.many) text = o.many(n); } }
+  const t = document.createElement('div'); t.className = 'toast ' + kind; t.textContent = text;
   if (o.group) { t.dataset.group = o.group; t.dataset.n = n; }
-  if (lines.length > 1) lines.forEach((l, i) => { if (i) t.appendChild(document.createTextNode(' ')); const d = document.createElement('span'); d.className = 'tl'; d.textContent = l; t.appendChild(d); });
-  else { const d = document.createElement('span'); d.className = 'tl'; d.textContent = lines[0]; t.appendChild(d); }
   toasts.appendChild(t);
   while (toasts.children.length > 3) toasts.firstChild.remove();
   toastPlace();
-  setTimeout(() => { t.remove(); }, TOAST_MS);
+  setTimeout(() => t.remove(), TOAST_MS);
   return t;
 }
 function toastPlace() {

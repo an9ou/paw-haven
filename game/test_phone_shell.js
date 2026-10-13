@@ -169,9 +169,9 @@ require('./test_lib').run('phone_shell', async (t) => {
     await ev(() => { const P = window.__paw; ['One', 'Two', 'Three'].forEach((n) => P.mailPush({ kind: 'news', from: 'Paw Haven Post', title: 'Letter ' + n, text: 'Hi.' })); });
     const mt = await ev(() => [...document.querySelectorAll('#toasts .toast')].map((e) => e.textContent));
     ok(mt.length === 1 && /3 new letters/.test(mt[0]), `${dev}: three letters arriving together make one toast "${mt.join(' | ')}"`);
-    await clearT(); await ev(() => { window.__paw.toast('First line.', 'gold'); window.__paw.toast('Second line.', 'good'); });
-    const jt = await ev(() => [...document.querySelectorAll('#toasts .toast')].map((e) => e.querySelectorAll('.tl').length));
-    ok(jt.length === 1 && jt[0] === 2, `${dev}: two toasts in the same moment share one note (${JSON.stringify(jt)})`);
+    await ev(() => window.__paw.mailPush({ kind: 'news', from: 'Paw Haven Post', title: 'Letter Four', text: 'Hi.' }));
+    const mt2 = await ev(() => [...document.querySelectorAll('#toasts .toast')].map((e) => e.textContent));
+    ok(mt2.length === 1 && /4 new letters/.test(mt2[0]), `${dev}: a fourth letter while the note shows updates the count "${mt2.join(' | ')}"`);
     // a toast that came before the sheet (the walk's daily bonus) moves off it when the sheet opens
     await clearT(); await ev(() => { window.__paw.toast('Daily care bonus: +20 coins.', 'gold'); window.__paw.journal(); });
     await p.waitForSelector('.panel.journal'); await sleep(500);

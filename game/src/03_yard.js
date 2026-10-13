@@ -325,7 +325,9 @@ function townBubbleBelowDog() {
   bubble.classList.add('below'); bubble.style.left = clamp(hr.left + hr.width / 2 - sg.left - bw / 2, 6, stage.clientWidth - bw - 6) + 'px'; bubble.style.top = (hr.bottom - sg.top + 18) + 'px';
   // keep clear of the place buttons (Go home sits bottom-right): slide left of one it would touch
   const bh = bubble.offsetHeight, pr = isPhone() && $('#placeBtns'), prr = pr && pr.offsetParent && pr.getBoundingClientRect(); // phones: stay above the place-button row (UI/UX T5)
-  if (prr && prr.height) bubble.style.top = Math.min(parseFloat(bubble.style.top), prr.top - sg.top - bh - 8) + 'px';
+  if (prr && prr.height && parseFloat(bubble.style.top) + bh > prr.top - sg.top - 8) { // no room under the dog: beside it if a side has room (else as before: the buttons draw over it)
+    const ty = prr.top - sg.top - bh - 8, rx = hr.right - sg.left + 8, lx = hr.left - sg.left - bw - 8, side = ty >= hr.bottom - sg.top - 4 ? null : rx + bw <= stage.clientWidth - 6 ? rx : lx >= 6 ? lx : -1;
+    if (side !== -1) { bubble.style.top = ty + 'px'; if (side !== null) bubble.style.left = side + 'px'; } }
   const bl = parseFloat(bubble.style.left), bt = parseFloat(bubble.style.top); // (layout numbers: the pop animation scales the rect)
   document.querySelectorAll('#placeBtns .btn').forEach((b) => { const q = b.getBoundingClientRect(), ql = q.left - sg.left, qt = q.top - sg.top; if (bl < q.right - sg.left + 12 && bl + bw > ql - 12 && bt < qt + q.height + 6 && bt + bh > qt - 6) bubble.style.left = Math.max(6, ql - 24 - bw) + 'px'; });
   clearTimeout(bubbleBelowT); bubbleBelowT = setTimeout(() => bubble.classList.remove('below'), 3700);
