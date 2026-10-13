@@ -109,7 +109,7 @@ function hoSync() {
   if (!S.beds.includes(S.bed)) S.bed = Object.keys(S.bedAt)[0] || S.beds[0];
   if (!S.bedAt[S.bed]) { // S.bed is owned but not in the house (old code or a test set it): it takes the place of the active dog's previous bed, or BED_BOX
     const prev = S.bedOf[act];
-    if (prev && prev !== S.bed && S.bedAt[prev]) { S.bedAt[S.bed] = S.bedAt[prev].slice(); delete S.bedAt[prev]; } else S.bedAt[S.bed] = hoFreeSpot(S.bed, [BED_BOX[0], BED_BOX[1]]);
+    if (prev && prev !== S.bed && S.bedAt[prev]) { S.bedAt[S.bed] = S.bedAt[prev].slice(); delete S.bedAt[prev]; } else S.bedAt[S.bed] = [BED_BOX[0], BED_BOX[1]];
   }
   S.bedOf[act] = S.bed; const taken = new Set([S.bed]);
   S.dogs.forEach((d) => {

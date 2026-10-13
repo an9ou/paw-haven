@@ -62,3 +62,5 @@ html:not([data-layout="phone"]) .ho-tray .ho-put{flex:1;min-width:0;padding-bott
 /* phones: the tray under the scene, compact */
 html[data-layout="phone"] #dock > .tray.ho-tray .tray-h h3{font-size:22px}
 html[data-layout="phone"] .ho-tray .ho-hint{font-size:15px}
+/* while placing, the place buttons (Kitchen, Go outside) step aside: Done comes first */
+#stage:has(#dock > .tray.ho-tray) #placeBtns{visibility:hidden}
