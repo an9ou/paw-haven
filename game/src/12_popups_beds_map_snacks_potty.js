@@ -35,7 +35,8 @@ const BEDS = [
   { n: 'Banana Bed', price: 350, bond: 3, bonus: 0.10, note: 'A comedy banana. The peel is the blanket.' },
   { n: 'Hammock Cot', price: 450, bond: 3, bonus: 0.15, note: 'A wooden cot with a striped canvas hammock.' },
   { n: 'Cloud Bed', price: 900, bond: 6, bonus: 0.30, note: 'A puffy cloud with a little rainbow pillow.' },
-  { n: 'Royal Canopy Bed', price: 2000, bond: 8, bonus: 0.45, note: 'Velvet, gold trim, curtains and a crown.' }
+  { n: 'Royal Canopy Bed', price: 2000, bond: 8, bonus: 0.45, note: 'Velvet, gold trim, curtains and a crown.' },
+  { n: 'Knitted Nest', price: 150, bond: 1, bonus: 0.05, v27: true, note: 'A chunky knitted ring with a dip in the middle. Room for one dog, or two puppies.' } // v2.7: a cheap second bed for a growing pack (V27.md)
 ];
 const BED_BOX = [610, 360, 260, 160]; // x, y, w, h in the house scene (floor contact y = 360 + 152)
 const bedInfo = (n) => BEDS.find((b) => b.n === (n || S.bed)) || BEDS[0];
@@ -61,7 +62,7 @@ function openBeds() {
 let curlT = [], curling = false;
 function curlUp() {
   if (busy || curling || S.sleeping || S.place !== 'house' || cur.mode !== 'yard' || popOpen() || !modal.hidden) return;
-  curling = true; hideBubble(); dogTo(417.5, 130, 0.75, 1.2); tempPose = 'walk'; tempUntil = performance.now() + 1250; renderDog('walk', 'right');
+  curling = true; hideBubble(); dogTo(...napSpot(), 1.2); tempPose = 'walk'; tempUntil = performance.now() + 1250; renderDog('walk', 'right');
   curlT.push(setTimeout(() => { setTemp('sleep', 5800); const h = dogHeadWorld(); say(PICK(['zz... (just resting my eyes)', 'zzz. Five more minutes.', 'zz... dreaming of sandwiches.']), h.x, h.y, 2600); addStat('energy', 2); }, 1250));
   curlT.push(setTimeout(() => { tempPose = null; dogTo(0, 0, 1, 1); renderDog('walk', 'left', true); }, 7000));
   curlT.push(setTimeout(() => { curling = false; renderDog(dogPoseNow(), 'right', true); }, 8000));

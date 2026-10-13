@@ -92,6 +92,7 @@ function packSpots() { return PACK_SPOTS[S.place] || PACK_SPOTS.default; }
 function packDogSVG(d, i) {
   let [fx, fy, face, sc] = packSpots()[i] || packSpots()[0]; sc = sc || 0.6;
   const nz = d.sleeping && NAP_ZONE[S.place]; if (nz) { fx = nz[0] + [-36, 36, 0][i % 3]; fy = nz[1]; sc = nz[2]; face = 'right'; } // napping: in the doorway / on the bed, like the active nap
+  const hs = typeof hoPackSpot === 'function' ? hoPackSpot(d, i) : null; if (hs) { [fx, fy, face, sc] = hs; } // v2.7 HOME: napping on its own bed, or on a piece of furniture (V27.md section 1)
   if (hmChairDown(d)) { fx = 868; fy = 530; face = 'right'; sc = 0.48; } // Proud Mum lies down next to the Rocking Chair
   const w = DW * sc, h = DH * sc, x = fx - w / 2, y = fy - h * (205 / 220);
   const pose = d.sleeping ? 'sleep' : packPose[d.id] || (Math.min(...Object.values(d.stats)) < 25 ? 'sad' : 'idle');
