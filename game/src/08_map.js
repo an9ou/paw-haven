@@ -11,12 +11,11 @@ function pickArea(k) {
   go('walk', k);
 }
 function enterShelter() {
-  setChrome(true, true);
-  const rs = rescuesToday();
-  view.innerHTML = `<svg class="world" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMax slice">${sceneG('shelter')}${rs.map((r, i) => { const t = { id: r.id, key: r.key, genes: r.genes }, c = coatInfo(t); return place(dogArtSafe(r.key, Object.assign({ pose: i % 2 ? 'happy' : 'sit' }, c ? { coat: c.coat, seed: hashId(r.id) } : {})), 200 + i * 420, 380, 168, 140); }).join('')}</svg><button class="btn" id="shList" style="position:absolute;left:50%;bottom:20px;transform:translateX(-50%);z-index:4">Meet the dogs</button><div id="status"></div><button id="devBtn">dev</button>`;
-  $('#shList').onclick = () => openShelterList();
-  setTimeout(() => { if (cur.mode === 'shelter') openShelterList(); }, 250);
-  setTimeout(() => { if (cur.mode === 'shelter' && modal.hidden) { say(PICK(NPC_JOKES), 260, 400); SFX.bark(1); } }, 900);
+  // v2.7: the Shelter Playroom (30_shelter.js, V27.md section 7). Desktop hides the HUD here so the whole Adopt-me board and the floor fit
+  setChrome(isPhone(), true);
+  view.innerHTML = `${srRoomSVG('shelter')}<button id="devBtn">dev</button>`;
+  srTray(); srEnter('shelter');
+  if (S.shelter && !S.shelter.seen) { S.shelter.seen = localISO(); markDirty(); setTimeout(() => { if (cur.mode === 'shelter') toast('The shelter has a playroom now. Tap a dog to say hello, or the board to see who is looking for a home.', 'gold'); }, 500); }
+  setTimeout(() => { if (cur.mode === 'shelter' && modal.hidden && SR && SR.dogs.length) { const rd = PICK(SR.dogs); srBark(rd, 'woof'); srLine(rd, ['Hello!', 'A visitor!', 'Did you bring biscuits?'], true); } }, 1200);
   updateHUD(); bindDev();
 }
-
