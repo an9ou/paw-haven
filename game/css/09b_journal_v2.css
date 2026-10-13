@@ -121,6 +121,9 @@ html:not([data-layout="phone"]) .cbreeds:has(> .cbreed:nth-child(13)) .cbreed .i
 .mb-gift{margin:0;font-family:var(--font-hand);font-weight:700;font-size:24px;color:#B07A12}
 .mb-gift.got{color:#4C9A5A}
 .mb-acts{display:flex;gap:10px;align-items:center}
+.mb-collect{justify-content:space-between;flex-wrap:wrap;margin-top:6px;padding:8px 10px;border:2px dashed rgba(176,122,18,.55);border-radius:12px 9px 13px 8px;background:#FFF4DF}
+.mb-collect .btn{min-width:110px}
+.mb-giftic{flex:0 0 auto;width:26px;height:26px;margin-left:auto;margin-right:12px}.mb-giftic svg{width:100%;height:100%;display:block}
 .mb-pups{display:flex;gap:6px;flex-wrap:wrap}
 .mb-pup{width:46px;height:46px;border-radius:50%;border:2px solid #5B3D32;background:var(--w-cream);overflow:hidden}
 .mb-pup svg{width:100%;height:100%}

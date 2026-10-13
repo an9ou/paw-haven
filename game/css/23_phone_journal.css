@@ -73,6 +73,7 @@ html[data-layout="phone"] .letter{padding:12px 12px 14px;transform:none}
 html[data-layout="phone"] .letter header b{font-size:28px}
 html[data-layout="phone"] .mb-text{font-size:17px}
 html[data-layout="phone"] .mb-acts .btn{min-height:48px}
+html[data-layout="phone"] .mb-collect .btn{min-width:120px}
 html[data-layout="phone"] .mb-pup{width:48px;height:48px}
 html[data-layout="phone"] .pc-addr{font-size:15px}
 html[data-layout="phone"] .pc{width:100%}
