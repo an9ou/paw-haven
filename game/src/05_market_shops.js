@@ -88,10 +88,17 @@ function openShop(k) {
   } else if (k === 'boutique') items = CLOTHES.filter((c) => !c.reward && !c.fest).map((c) => ({ cat: 'clothes', n: c.n, price: c.price, bond: c.bond, desc: `${SLOT_NAME[c.slot]}. ${c.perk}` }));
   else {
     const t = shopTab.builder || 'houses';
-    tabs = `<div class="tabs" role="tablist"><button class="btn" role="tab" aria-selected="${t === 'houses'}" data-btab="houses">Houses</button><button class="btn" role="tab" aria-selected="${t === 'beds'}" data-btab="beds">Beds</button></div>`;
-    items = t === 'beds' ? BEDS.map((b) => ({ cat: 'beds', n: b.n, price: b.price, bond: b.bond, desc: `House nap +${Math.round(b.bonus * 100)}%. ${b.note}` })) : HOUSES.filter((h) => !h.reward).map((h) => ({ cat: 'houses', n: h.n, price: h.price, bond: h.bond, desc: `Nap Energy +${Math.round(h.comfort * 100)}%. ${h.note}` }));
+    tabs = `<div class="tabs" role="tablist"><button class="btn" role="tab" aria-selected="${t === 'houses'}" data-btab="houses">Houses</button><button class="btn" role="tab" aria-selected="${t === 'beds'}" data-btab="beds">Beds</button><button class="btn" role="tab" aria-selected="${t === 'decor'}" data-btab="decor">Decor</button><button class="btn ho-ftab" role="tab" aria-selected="${t === 'furniture'}" data-btab="furniture"><span class="ic" aria-hidden="true">${iconOr('furniture', '')}</span>Furniture</button></div>${t === 'furniture' ? '<p class="small ho-shnote">The Furniture corner: big comfy things the dogs actually use.</p>' : ''}`; // v2.7: Decor and the Furniture corner (28_home.js hoShopItems)
+    items = t === 'decor' || t === 'furniture' ? hoShopItems(t) : t === 'beds' ? BEDS.map((b) => ({ cat: 'beds', n: b.n, price: b.price, bond: b.bond, desc: `House nap +${Math.round(b.bonus * 100)}%. ${b.note}` })) : HOUSES.filter((h) => !h.reward).map((h) => ({ cat: 'houses', n: h.n, price: h.price, bond: h.bond, desc: `Nap Energy +${Math.round(h.comfort * 100)}%. ${h.note}` }));
   }
+  const hoCat = (it) => it.cat === 'decor' || it.cat === 'furniture'; // v2.7: decorations and furniture, owned once (S.decor)
   const cards = items.map((it) => {
+    if (it.head) return `<h4 class="ho-shh">${esc(it.head)}</h4>`;
+    if (hoCat(it)) {
+      const lock = topBond() < it.bond, got = !!(S.decor && S.decor[it.n]);
+      const act = lock ? `<span class="chip lock">Bond ${it.bond}</span>` : got ? (hmDecorOut(it.n) ? '<span class="chip own">Owned</span>' : `<button class="btn" data-hoplace="${esc(it.n)}">Owned · Place</button>`) : `<button class="btn yes" data-buy="${esc(it.n)}">Buy</button>`;
+      return `<div class="sitem ${lock ? 'lockd' : ''}"><span class="art">${itemArt(it.n)}</span><b>${esc(it.n)}</b><span class="desc">${esc(it.desc)}</span>${priceHTML(it.price)}${act}</div>`;
+    }
     const lock = topBond() < it.bond, owned = it.cat === 'beds' ? S.beds.includes(it.n) : it.cat === 'tools' ? twOwns(it.n) : it.cat !== 'food' && it.cat !== 'pantry' && owns(it.cat, it.n), have = it.cat === 'food' ? (S.inv.food[it.n] || 0) : it.cat === 'pantry' ? (S.inv.pantry[it.id] || 0) : 0;
     const artH = it.cat === 'houses' ? `<span class="art house">${art('house', it.n)}</span>` : `<span class="art">${itemArt(it.n)}</span>`;
     let act;
@@ -107,18 +114,20 @@ function openShop(k) {
   p.querySelectorAll('[data-tab]').forEach((b) => { b.onclick = () => { shopTab.kibble = b.dataset.tab; openShop('kibble'); }; });
   p.querySelectorAll('[data-btab]').forEach((b) => { b.onclick = () => { SFX.click(); shopTab.builder = b.dataset.btab; openShop('builder'); }; });
   p.querySelectorAll('[data-usebed]').forEach((b) => { b.onclick = () => { useBed(b.dataset.usebed); openShop(k); }; });
+  p.querySelectorAll('[data-hoplace]').forEach((b) => { b.onclick = () => { SFX.click(); closeModal(); hoPlaceStart(b.dataset.hoplace); }; });
   p.querySelectorAll('[data-use]').forEach((b) => { b.onclick = () => { switchHouse(b.dataset.use); openShop(k); }; });
   p.querySelectorAll('[data-buy]').forEach((b) => {
     b.onclick = async () => {
       const it = items.find((x) => x.n === b.dataset.buy); SFX.click();
-      const stack = it.cat === 'food' || it.cat === 'pantry', owned = it.cat === 'beds' ? S.beds.includes(it.n) : it.cat === 'tools' ? twOwns(it.n) : !stack && owns(it.cat, it.n);
+      const stack = it.cat === 'food' || it.cat === 'pantry', owned = it.cat === 'beds' ? S.beds.includes(it.n) : it.cat === 'tools' ? twOwns(it.n) : hoCat(it) ? !!(S.decor && S.decor[it.n]) : !stack && owns(it.cat, it.n);
       const have = it.cat === 'food' ? (S.inv.food[it.n] || 0) : it.cat === 'pantry' ? (S.inv.pantry[it.id] || 0) : owned ? 1 : 0;
       const q = await buyWindow(p, { art: it.cat === 'houses' ? art('house', it.n) : itemArt(it.n), name: it.n, desc: it.desc, price: it.price, stack, owned, have, haveLabel: stack ? 'In bag' : 'Owned' }); if (!q) return;
       const cost = it.price * q; if (S.coins < cost) { nope('Not enough coins. Have you tried being rich?'); return; }
       S.coins -= cost; SFX.kaching(); trackAct('buy', { name: it.n, cat: it.cat, qty: q, shop: k });
-      if (it.cat === 'beds') S.beds.push(it.n); else if (it.cat === 'food') S.inv.food[it.n] = (S.inv.food[it.n] || 0) + q; else if (it.cat === 'pantry') S.inv.pantry[it.id] = (S.inv.pantry[it.id] || 0) + q; else if (it.cat === 'tools') twGiveTool(it.n); else S.inv[it.cat].push(it.n);
+      if (hoCat(it)) { hmDecorFields(); S.decor[it.n] = { got: localISO(), out: false }; } else if (it.cat === 'beds') S.beds.push(it.n); else if (it.cat === 'food') S.inv.food[it.n] = (S.inv.food[it.n] || 0) + q; else if (it.cat === 'pantry') S.inv.pantry[it.id] = (S.inv.pantry[it.id] || 0) + q; else if (it.cat === 'tools') twGiveTool(it.n); else S.inv[it.cat].push(it.n);
       markDirty(); updateHUD();
       toast(`Bought ${q} × ${it.n}. ${PICK(['The shopkeeper did a little dance.', 'Receipt drawn in crayon.', 'No refunds. Ever.', 'Wise purchase. Probably.'])}`, 'gold');
+      if (hoCat(it)) { openShop(k); const pp = $('.panel', modal); const pl = await confirmIn(pp, `Put the ${esc(it.n)} in the ${hoRoomOf(it.n)} now?`, 'Place it', 'Later'); if (pl) { closeModal(); hoPlaceStart(it.n); return; } openShop(k); return; }
       if (it.cat === 'beds') { openShop(k); const pp = $('.panel', modal); const ub = await confirmIn(pp, `Put the ${esc(it.n)} in the house for ${esc(NAME())} now?`, 'Use it', 'Later'); if (ub) useBed(it.n); openShop(k); return; }
       if (it.cat === 'houses') { openShop(k); const pp = $('.panel', modal); const mv = await confirmIn(pp, `Move ${esc(NAME())} into the ${esc(it.n)} now?`, 'Move in', 'Later'); if (mv) switchHouse(it.n); openShop(k); return; }
       if (it.cat === 'clothes') { openShop(k); const pp = $('.panel', modal); const w = await confirmIn(pp, `Put the ${esc(it.n)} on ${esc(NAME())} now?`, 'Wear it', 'Later'); if (w) equip(it.n, true); openShop(k); return; }

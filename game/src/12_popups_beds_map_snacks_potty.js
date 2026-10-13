@@ -42,21 +42,29 @@ const BED_BOX = [610, 360, 260, 160]; // x, y, w, h in the house scene (floor co
 const bedInfo = (n) => BEDS.find((b) => b.n === (n || S.bed)) || BEDS[0];
 const hasBedArt = () => typeof PA().bed === 'function';
 function bedSVG(n) { try { const v = PA().bed(n); return typeof v === 'string' && v.includes('<svg') ? v : ''; } catch (e) { return ''; } }
+// v2.7: the whole house room (28_home.js hoRoomSVG): beds, decorations and furniture at their own spots, the active dog's bed is #bedG.
+// An old save draws exactly its one bed at BED_BOX, as before.
 function bedLayers() {
-  if (S.place !== 'house' || !hasBedArt()) return { back: '', front: '' };
-  const sv = bedSVG(S.bed); if (!sv) return { back: '', front: '' };
-  const [x, y, w, h] = BED_BOX;
-  return { back: `<g id="bedG" class="hot" tabindex="0" role="button" aria-label="Pet bed: ${esc(S.bed)}">${place(sv, x, y, w, h)}</g>`, front: sv.includes('pa-bed-front') ? `<g id="bedFront" class="bedfront" pointer-events="none">${place(sv, x, y, w, h)}</g>` : '' };
+  if (S.place !== 'house') return { back: '', front: '' };
+  hoSync(); return hoRoomSVG();
 }
+// "Use this bed": puts the bed in the house at a free spot (if it is not there yet) and makes it the active dog's bed (whoever had it gets the old one)
 function useBed(n) {
-  if (!S.beds.includes(n)) return; S.bed = n; markDirty(); SFX.pop();
+  if (!S.beds.includes(n)) return; hoSync();
+  if (!S.bedAt[n]) S.bedAt[n] = hoFreeSpot(n, [BED_BOX[0], BED_BOX[1]]);
+  hoGiveBed(S.activeId, n); markDirty(); SFX.pop();
   toast(`${NAME()} inspects the ${n}, turns around three times, and approves.`, 'good');
   if (cur.mode === 'yard' && S.place === 'house') { const keepSleep = S.sleeping; go('yard'); if (keepSleep) sleepTray(); }
 }
+// the beds in the house (with who naps on each) and the beds in the shed
 function openBeds() {
-  const cards = BEDS.filter((b) => S.beds.includes(b.n)).map((b) => `<div class="sitem"><span class="art">${art('item', b.n)}</span><b>${esc(b.n)}</b><span class="desc">House nap +${Math.round(b.bonus * 100)}% (plus +25% indoors)</span>${b.n === S.bed ? '<span class="chip own">In use</span>' : `<button class="btn yes" data-usebed="${esc(b.n)}">Use this bed</button>`}</div>`).join('');
-  const p = openModal('Pet beds', `<p class="small">Beds live in the Cozy House. Naps indoors use the bed you pick. Barkitecture on Market Street sells more.</p><div class="shopgrid">${cards}</div>`, { cls: 'shop' });
+  hoSync(); const inH = BEDS.filter((b) => S.beds.includes(b.n) && S.bedAt[b.n]), shed = BEDS.filter((b) => S.beds.includes(b.n) && !S.bedAt[b.n]);
+  const p = openModal('Pet beds', `<p class="small">Beds live in the Cozy House. Every dog naps on its own bed. Barkitecture on Market Street sells more.</p>
+    <button class="btn yes ho-arrange" id="hoBedsArr"><span class="art">${iconOr('arrange', '<path d="M-12 0h24M0 -12v24" stroke="#5B3D32" stroke-width="3"/>')}</span>Arrange the house</button>
+    <h4 class="ho-h">In the house</h4><div class="shopgrid">${inH.map((b) => hoBedsCard(b, true)).join('')}</div>${shed.length ? `<h4 class="ho-h">In the shed</h4><div class="shopgrid">${shed.map((b) => hoBedsCard(b, false)).join('')}</div>` : ''}`, { cls: 'shop ho-beds' });
   p.querySelectorAll('[data-usebed]').forEach((b) => { b.onclick = () => { useBed(b.dataset.usebed); openBeds(); }; });
+  p.querySelectorAll('[data-bedfor]').forEach((b) => { b.onclick = () => { SFX.click(); const [id, n] = b.dataset.bedfor.split('|'), d = dogById(id); hoGiveBed(id, n); if (d) toast(`${d.name} claims the ${n}.`, 'good'); if (cur.mode === 'yard' && S.place === 'house') { const keep = S.sleeping; go('yard'); if (keep) sleepTray(); } openBeds(); }; });
+  $('#hoBedsArr', p).onclick = () => { SFX.click(); closeModal(); hoPlaceStart(undefined, 'house'); };
 }
 /* idle curl-up on the bed (house only) */
 let curlT = [], curling = false;
