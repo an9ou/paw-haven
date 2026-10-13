@@ -37,8 +37,7 @@ function mailPush(msg) {
   if (S.mail.some((x) => x.id === m.id)) return S.mail.find((x) => x.id === m.id);
   S.mail.unshift(m);
   if (S.mail.length > MAIL_MAX) { // drop the oldest read letters first
-    for (let i = S.mail.length - 1; i >= 0 && S.mail.length > MAIL_MAX; i--) if (S.mail[i].read && !giftWaiting(S.mail[i])) S.mail.splice(i, 1); // gifts not yet collected are kept
-    for (let i = S.mail.length - 1; i >= 0 && S.mail.length > MAIL_MAX; i--) if (S.mail[i].kind !== 'litter' && !giftWaiting(S.mail[i])) S.mail.splice(i, 1);
+    for (let i = S.mail.length - 1; i >= 0 && S.mail.length > MAIL_MAX; i--) if (S.mail[i].read) S.mail.splice(i, 1);
     for (let i = S.mail.length - 1; i >= 0 && S.mail.length > MAIL_MAX; i--) if (S.mail[i].kind !== 'litter') S.mail.splice(i, 1); // unread litter letters are kept
   }
   markDirty(); mailSfx();
@@ -82,10 +81,6 @@ function dailyGift() {
   if (S.mailGiftDay === t) return false;
   S.mailGiftDay = t; mailPush(giftRoll()); return true;
 }
-const giftWaiting = (m) => !!(m && m.gift && !m.gift.claimed);
-const mailGiftsWaiting = () => (S && Array.isArray(S.mail) ? S.mail.filter(giftWaiting).length : 0);
-const giftLabel = (g) => (g.coins ? `${g.coins} coins` : `${g.n || 1} × ${g.item || 'a surprise'}`);
-/* v2.7: gifts wait in their letter until the player taps Collect (claimGift pays them out once) */
 function claimGift(m) {
   if (!m || !m.gift || m.gift.claimed) return '';
   m.gift.claimed = true; let txt = '';
@@ -155,7 +150,7 @@ function jrGiftCard(r, day, coins) {
   const msg = { kind: 'postcard', id: `pp_${r.id}_d${day}`, from: `${nm} & ${shortFam(fam)}`, title: month ? `${nm}: one month in town!` : `A photo from ${nm}`, sparkle: !!r.sparkle,
     text: month ? `${nm} has lived with ${fam} for a whole month. ${p.He} knows the way to every bakery. We sent a little something to say thank you.` : `Here is a photo of ${nm}! ${p.He} sat still for almost a second. We sent a little something to say thank you.`,
     ps: month ? 'P.S. Please accept this for treats and tennis balls.' : 'P.S. The photographer got licked. Twice.', dog: jrPupDog(r), pose: month ? 'happy' : 'sit', pup: r.id };
-  msg.gift = { coins, claimed: false }; // v2.7: paid when the player taps Collect
+  const n = addCoins(coins, { raw: true }); msg.gift = { coins: n || coins, claimed: true }; try { SFX.coin(); } catch (e) { /* audio off */ }
   return mailPush(msg);
 }
 // day 14 = 40 coins, day 30 = 80 coins (each paid once per pup, kept on the schedule record), then a birthday card every 12 real days from born (no gift)
@@ -237,8 +232,7 @@ function letterBody(m) {
   if (!m) return '<div class="mb-empty"><p>No letters yet.</p><p class="small">The neighbours leave something every day, and puppies who move to town families write home.</p></div>';
   const date = (() => { try { return new Date(m.date + 'T00:00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'short' }); } catch (e) { return m.date; } })();
   let act = '';
-  if (m.gift) act = m.gift.claimed ? `<p class="mb-gift got">${esc(giftLabel(m.gift))} · collected</p>`
-    : `<div class="mb-acts mb-collect"><p class="mb-gift">${esc(giftLabel(m.gift))}</p><button class="btn yes" data-collect="${esc(m.id)}">Collect</button></div>`;
+  if (m.gift) act = `<p class="mb-gift ${m.gift.claimed ? 'got' : ''}">${m.gift.coins ? `${m.gift.coins} coins` : `${m.gift.n || 1} × ${esc(m.gift.item || 'a surprise')}`}${m.gift.claimed ? ' · added to your things' : ''}</p>`;
   if (m.kind === 'litter') {
     const taken = m.adopted || m.picked;
     act = taken ? '<p class="mb-gift got">You picked a puppy from this litter.</p>' : `<div class="mb-acts"><button class="btn yes" data-adoptpick="${esc(m.id)}">Adopt this pup</button><span class="small">${typeof slotsFree === 'function' ? `Free dog spots: ${slotsFree()}` : ''}</span></div>`;
@@ -255,15 +249,13 @@ function openMailbox(selId, tab) {
   if (!S.mail.some((m) => m.id === mailSel)) mailSel = (S.mail[0] || {}).id || null;
   const sel = S.mail.find((m) => m.id === mailSel) || null;
   if (!album && sel && !sel.read) { sel.read = true; markDirty(); trackAct('mail', { id: sel.id, kind: sel.kind }); }
+  if (!album && sel && sel.gift) claimGift(sel);
   const kindIc = { postcard: mailIcon(), gift: mailIcon(), litter: mailIcon(), news: mailIcon() }; // v2.3: the envelope drawing, not a letter monogram
-  const list = S.mail.length ? S.mail.map((m) => `<button class="mb-item ${m.read ? '' : 'unread'} ${m.id === mailSel ? 'on' : ''} k-${esc(m.kind)}" data-mail="${esc(m.id)}" aria-pressed="${m.id === mailSel}"><span class="mb-k" aria-hidden="true">${m.dog ? headSVG(m.dog) : kindIc[m.kind] || mailIcon()}</span><span class="mb-t"><b>${esc(m.title)}</b><span class="small">${esc(m.from)}</span></span>${giftWaiting(m) ? `<span class="mb-giftic" aria-label="gift to collect">${iconOr('coin', '<circle r="11" fill="#FFD25E" stroke="#5B3D32" stroke-width="2.2"/><path d="M-4 -5 h8 M-4 0 h8 M-4 5 h8" stroke="#B07A12" stroke-width="2"/>')}</span>` : ''}${m.read ? '' : '<i class="mb-dot" aria-label="unread"></i>'}</button>`).join('') : '<p class="small">Empty. Just one very determined spider.</p>';
-  const n = mailUnread(), gw = mailGiftsWaiting();
-  const p = openModal(`<span class="mb-h-ic">${mailIcon()}</span>Mailbox`, `${jrMailTabs(album)}${album ? jrAlbum() : `<div class="mbox"><div class="mb-list" role="list">${list}</div><div class="mb-read">${letterBody(sel)}</div></div><p class="small mb-foot">${n ? `${n} unread.` : 'All caught up.'}${gw ? ` ${gw} gift${gw > 1 ? 's' : ''} to collect.` : ''} A neighbour drops something off every day.</p>`}`, { cls: 'mailbox' });
+  const list = S.mail.length ? S.mail.map((m) => `<button class="mb-item ${m.read ? '' : 'unread'} ${m.id === mailSel ? 'on' : ''} k-${esc(m.kind)}" data-mail="${esc(m.id)}" aria-pressed="${m.id === mailSel}"><span class="mb-k" aria-hidden="true">${m.dog ? headSVG(m.dog) : kindIc[m.kind] || mailIcon()}</span><span class="mb-t"><b>${esc(m.title)}</b><span class="small">${esc(m.from)}</span></span>${m.read ? '' : '<i class="mb-dot" aria-label="unread"></i>'}</button>`).join('') : '<p class="small">Empty. Just one very determined spider.</p>';
+  const n = mailUnread();
+  const p = openModal(`<span class="mb-h-ic">${mailIcon()}</span>Mailbox`, `${jrMailTabs(album)}${album ? jrAlbum() : `<div class="mbox"><div class="mb-list" role="list">${list}</div><div class="mb-read">${letterBody(sel)}</div></div><p class="small mb-foot">${n ? `${n} unread.` : 'All caught up.'} A neighbour drops something off every day.</p>`}`, { cls: 'mailbox' });
   p.querySelectorAll('[data-mbt]').forEach((b) => { b.onclick = () => { SFX.click(); openMailbox(undefined, b.dataset.mbt); }; });
   p.querySelectorAll('[data-mail]').forEach((b) => { b.onclick = () => { SFX.click(); openMailbox(b.dataset.mail); }; });
-  p.querySelectorAll('[data-collect]').forEach((b) => {
-    b.onclick = () => { const m = S.mail.find((x) => x.id === b.dataset.collect); if (m && claimGift(m)) trackAct('mailCollect', { id: m.id }); openMailbox(b.dataset.collect); };
-  });
   p.querySelectorAll('[data-adoptpick]').forEach((b) => {
     b.onclick = () => {
       if (typeof adoptPick !== 'function') { nope('The puppy paperwork is still at the printer. Try again soon.'); return; }
@@ -306,6 +298,6 @@ function mailNow() { // dev: deliver every due thing now (the daily gift even if
 })();
 function pawMailHelpers() {
   if (!window.__paw) return;
-  Object.assign(window.__paw, { mailNow, mailPush: (m) => mailPush(m), mailCollect: (id) => claimGift((S.mail || []).find((m) => m.id === id)), openMailbox: (id, tab) => openMailbox(id, tab), mailTick: () => mailTick(), dailyGift: () => dailyGift(), coatCheck: () => coatRewardsCheck(), jrFamCheck: () => jrFamCheck(), jrLine: () => jrBestLine(), titleGive: (n) => titleGive(n), jrAlbum: () => jrAlbumFound(), jrDecor: (n) => jrDecor(n), journal: (tab) => openJournal(tab) });
+  Object.assign(window.__paw, { mailNow, mailPush: (m) => mailPush(m), openMailbox: (id, tab) => openMailbox(id, tab), mailTick: () => mailTick(), dailyGift: () => dailyGift(), coatCheck: () => coatRewardsCheck(), jrFamCheck: () => jrFamCheck(), jrLine: () => jrBestLine(), titleGive: (n) => titleGive(n), jrAlbum: () => jrAlbumFound(), jrDecor: (n) => jrDecor(n), journal: (tab) => openJournal(tab) });
 }
 on('game:ready', pawMailHelpers); setTimeout(pawMailHelpers, 0);
