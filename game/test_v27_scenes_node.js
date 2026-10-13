@@ -108,7 +108,10 @@ sec('byte-identity with v27-base');
     const OLD = ['square', 'cafe', 'dogpark', 'vet', 'salon', 'hilltop', 'pier'], STRIPS = ['town', 'hilltop', 'pier'], A = ['shelter', 'house'];
     ok(PB.WORLD_C_SCENES.join() === OLD.join() && PB.WORLD_C_STRIPS.join() === STRIPS.join(), 'v27-base lists the expected world_c scenes and strips');
     let n = 0;
-    const both = (fn, name, o, label) => { const b = PB[fn](name, o), c = PN[fn](name, o); ok(b === c, `${label}: byte-identical to v27-base`); n++; };
+    // v2.6.1 (art-fixes, merged into v2.7): the Square masks its window glows with the notice board (world C lightsLayer, k.unlit). unmask() drops
+    // exactly that wrapper, like test_v26_scenes_node.js, so the rest of the drawing is still compared byte for byte
+    const unmask = (s) => s.replace(/<mask id="pwc0\d+(?:x\d+)?"[^>]*>[\s\S]*?<\/mask><g mask="url\(#pwc0\d+(?:x\d+)?\)">([\s\S]*?)<\/g>/g, '$1');
+    const both = (fn, name, o, label) => { const b = PB[fn](name, o), c = unmask(PN[fn](name, o)); ok(b === c, `${label}: byte-identical to v27-base`); n++; };
     SEASONS.forEach((season) => TIMES.forEach((time) => WEATHERS.forEach((weather) => [false, true].forEach((hw) => {
       const o = opts(time, weather, season, hw ? { halloween: true } : null), t = `${season} ${time}/${weather}${hw ? ' halloween' : ''}`;
       OLD.forEach((nm) => both('scene', nm, o, `scene ${nm} ${t}`));
