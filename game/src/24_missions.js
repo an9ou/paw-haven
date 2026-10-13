@@ -192,7 +192,6 @@ function msYardRedraw() {
   const html = msYardSVG(), old = $('#msCardG');
   if (old) old.outerHTML = html;
   else { const a = svg.querySelector('#decorG') || svg.querySelector('#houseG'); if (a) a.insertAdjacentHTML('beforebegin', html); else return; }
-  if (isPhone()) { const g = $('#msCardG', svg), pk = $('#pack', svg); if (g && pk) pk.after(g); } // phones: the clipboard is drawn above the pack dogs, so a dog standing near it never takes its tap
   msYardBind();
 }
 on('yard:enter', () => { if (window.__paw && !window.__paw.ms) msExpose(); if (S && S.place === 'yard') msYardRedraw(); });
