@@ -163,7 +163,7 @@ function hoFurnArt(n) {
 // placement extras: the outline (and a tap rect at least 48 px on phones), only while placing this room
 function hoPlaceBits(n, x, y, w, h) {
   if (!HO.pl || HO.pl.room !== hoRoomOf(n)) return '';
-  let [hx, hy, hw, hh] = [x, y, w, h]; if (isPhone()) { const s = ((view.clientHeight || 500) - 60) / 600, m = 48 / s; if (hw < m) { hx -= (m - hw) / 2; hw = m; } if (hh < m) { hy -= (m - hh) / 2; hh = m; } }
+  let [hx, hy, hw, hh] = [x, y, w, h]; if (isPhone()) { const svg = $('svg.world', view), M = svg && svg.getScreenCTM(), s = M && M.a > 0 ? M.a : ((view.clientHeight || 500) - 60) / 600, m = 50 / s; /* the tray shrinks the scene: measure the real scale */ if (hw < m) { hx -= (m - hw) / 2; hw = m; } if (hh < m) { hy -= (m - hh) / 2; hh = m; } }
   return `<rect class="ho-hit" x="${f1(hx)}" y="${f1(hy)}" width="${f1(hw)}" height="${f1(hh)}" fill="transparent"/><rect class="ho-ol${HO.pl.sel === n ? ' ho-sel' : ''}" x="${x - 3}" y="${y - 3}" width="${w + 6}" height="${h + 6}" rx="8" fill="none" vector-effect="non-scaling-stroke"/>`;
 }
 function hoItemSVG(n) {
@@ -324,7 +324,7 @@ function hoPlaceStart(name, inRoom) {
   const svg = $('svg.world', view); if (!svg) return;
   idleStop(); clearCurl(); hideBubble(); busy = true; hoFreeAllPack();
   HO.pl = { room, sel: null, pos: {}, moved: {}, cam: phCamHome, svg, drag: null, ground: null };
-  svg.classList.add('ho-placing'); hoRoomRedraw(); hoTray();
+  svg.classList.add('ho-placing'); hoRoomRedraw(); hoTray(); hoCamSel();
   const pl = HO.pl;
   pl.down = (e) => hoPtrDown(e); pl.move = (e) => hoPtrMove(e); pl.up = (e) => hoPtrUp(e); pl.key = (e) => hoKey(e);
   svg.addEventListener('pointerdown', pl.down, true); svg.addEventListener('pointermove', pl.move); svg.addEventListener('pointerup', pl.up); svg.addEventListener('pointercancel', pl.up);
@@ -347,8 +347,12 @@ function hoPut(n) {
 function hoSelect(n) {
   const pl = HO.pl; if (!pl) return; pl.sel = n || null;
   document.querySelectorAll('svg.world .ho-ol').forEach((r) => r.classList.toggle('ho-sel', !!n && r.parentNode && r.parentNode.dataset.hoItem === n));
-  hoTray();
-  if (n && isPhone()) { const [x, , w] = hoBox(n); phCamHome = x + w / 2; camTo(phCamHome, 0.5); }
+  hoTray(); hoCamSel();
+}
+// phones: once the tray has resized the scene, ease the camera to the selected item and redraw the tap rects at the new scale
+function hoCamSel() {
+  if (!isPhone() || !HO.pl) return; clearTimeout(HO.camT);
+  HO.camT = setTimeout(() => { const pl = HO.pl; if (!pl || pl.drag) return; hoRoomRedraw(); if (pl.sel && hoIsOut(pl.sel)) { const [x, , w] = hoBox(pl.sel); phCamHome = x + w / 2; camTo(phCamHome, 0.5); } }, 150);
 }
 function hoTray() {
   const pl = HO.pl; if (!pl) return; const room = pl.room, sel = pl.sel;
