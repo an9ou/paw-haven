@@ -376,7 +376,7 @@ function sceneArt(name, e, extra) {
 }
 function sceneG(name, extra = {}, noEnv) { return `<g id="sceneG" data-scene="${name}" data-noenv="${noEnv ? 1 : ''}" data-extra='${JSON.stringify(extra)}'>${sceneArt(name, noEnv ? null : envNow(), extra)}</g>`; }
 function snowmanSVG() { if (!S || weatherNow() !== 'snow' || !isWarm()) return ''; const sm = artReal('prop', 'snowman'); return sm ? place(sm, 70, 440, 110, 110) : `<g transform="translate(125 545)" stroke="#5B3D32" stroke-width="2.4" fill="#FFFBF3"><circle cy="-22" r="24"/><circle cy="-62" r="17"/><circle cx="-6" cy="-66" r="2" fill="#5B3D32"/><circle cx="6" cy="-66" r="2" fill="#5B3D32"/><path d="M0 -60 l12 3 l-12 3z" fill="#F4A262"/></g>`; }
-const outdoorView = () => (['yard', 'bath', 'fetch'].includes(cur.mode) ? !!(S && PLACES[S.place] && PLACES[S.place].out) : cur.mode === 'shelter');
+const outdoorView = () => (['yard', 'bath', 'fetch'].includes(cur.mode) ? !!(S && PLACES[S.place] && PLACES[S.place].out) : cur.mode === 'shelter' && !(window.PawArt && PawArt.WORLD_C_SCENES && PawArt.WORLD_C_SCENES.includes('playroom'))); // v2.7: the Shelter Playroom is indoors (no rain or snow over it)
 const outdoorsNow = () => !(S && (S.place === 'house' || (PLACES[S.place] && PLACES[S.place].out === false)));
 // fallback tint while a scene module ignores {time, weather}: compare two renders with ids stripped
 const timeSupport = {};
