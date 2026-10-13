@@ -651,13 +651,56 @@ const favAct = (a) => (FAV[S.dog.key] || {}).act === a;
 /* ---------------- toasts, bubbles ---------------- */
 // v2.3 phone: toasts start just under the location chip (top-left of the scene), never on it
 function phChipClear() { if (!isPhone()) return 0; const st = $('#status'); return st && !st.hidden && st.offsetParent === view ? st.offsetTop + st.offsetHeight + 4 - 8 : 0; }
-function toast(text, kind = '') {
-  const modScr = stage.classList.contains('modhud') || (isPhone() && cur.mode === 'toy'); // v2.4: in a toy game on a phone, toasts sit under the strip, not on its title bar
-  toasts.style.top = modScr ? 'auto' : (hud.hidden ? 10 : view.offsetTop + 8 + phChipClear()) + 'px'; toasts.style.bottom = modScr ? '18px' : ''; toasts.style.flexDirection = modScr ? 'column-reverse' : '';
-  if (isPhone() && !modal.hidden) { const h2 = modal.querySelector('.panel > h2'); const sr = stage.getBoundingClientRect(); toasts.style.setProperty('--toastTop', (h2 ? h2.getBoundingClientRect().bottom - sr.top + 6 : 6) + 'px'); } // v2.5: never over a sheet's title
-  const t = document.createElement('div'); t.className = 'toast ' + kind; t.textContent = text; toasts.appendChild(t);
+// toast(text, kind, o): o.group + o.many(n) (phones): a toast of the same group still on screen is replaced by one note with a count ("3 new letters").
+// Phones also put toasts that arrive together (within TOAST_JOIN ms) into one note, one line each, and re-place live toasts when a sheet opens, closes or
+// changes height (toastPlace): above the sheet when there is room, else under its tabs or its title, never on them. Returns the toast element.
+const TOAST_MS = 2900, TOAST_JOIN = 450;
+function toast(text, kind = '', o = {}) {
+  if (isPhone()) {
+    const live = [...toasts.children].filter((e) => e.classList.contains('toast'));
+    const same = o.group && live.find((e) => e.dataset.group === o.group);
+    if (same) { const n = (+same.dataset.n || 1) + 1; same.remove(); return toastAdd([o.many ? o.many(n) : text], kind, o, n); }
+    const last = live[live.length - 1];
+    if (!o.group && last && !last.dataset.group && Date.now() - (+last.dataset.at || 0) < TOAST_JOIN && last.querySelectorAll('.tl').length < 3) { // arrived together: one note
+      const lines = [...last.querySelectorAll('.tl')].map((e) => e.textContent); last.remove(); return toastAdd(lines.concat(text), last.dataset.kind || kind, o, 1);
+    }
+  }
+  return toastAdd([text], kind, o, 1);
+}
+function toastAdd(lines, kind, o, n) {
+  const t = document.createElement('div'); t.className = 'toast ' + kind; t.dataset.at = Date.now(); t.dataset.kind = kind;
+  if (o.group) { t.dataset.group = o.group; t.dataset.n = n; }
+  if (lines.length > 1) lines.forEach((l, i) => { if (i) t.appendChild(document.createTextNode(' ')); const d = document.createElement('span'); d.className = 'tl'; d.textContent = l; t.appendChild(d); });
+  else { const d = document.createElement('span'); d.className = 'tl'; d.textContent = lines[0]; t.appendChild(d); }
+  toasts.appendChild(t);
   while (toasts.children.length > 3) toasts.firstChild.remove();
-  setTimeout(() => t.remove(), 2900);
+  toastPlace();
+  setTimeout(() => { t.remove(); }, TOAST_MS);
+  return t;
+}
+function toastPlace() {
+  const ph = isPhone(), modScr = stage.classList.contains('modhud') || (ph && cur.mode === 'toy'); // v2.4: in a toy game on a phone, toasts sit under the strip, not on its title bar
+  toasts.style.top = modScr ? 'auto' : (hud.hidden ? 10 : view.offsetTop + 8 + phChipClear()) + 'px'; toasts.style.bottom = modScr ? '18px' : ''; toasts.style.flexDirection = modScr ? 'column-reverse' : '';
+  if (!ph) return;
+  stage.classList.toggle('toast-map', cur.mode === 'map'); // the map's zoom and close buttons stay clear (20_phone_shell.css)
+  if (!modal.hidden) toasts.style.setProperty('--toastTop', toastSheetTop() + 'px');
+}
+// stage y for the toast column while a sheet is open. Layout boxes (offsetTop), so the sheet's slide-in transform doesn't move the answer.
+function toastSheetTop() {
+  const pn = modal.querySelector('.panel'); if (!pn) return 6;
+  let top = 0; for (let e = pn; e && e !== stage; e = e.offsetParent) top += e.offsetTop;
+  const safe = Math.max(0, (parseFloat(getComputedStyle(hud).paddingTop) || 4) - 4), h = toasts.offsetHeight; // the HUD's top padding is 4 px + the safe area
+  if (h && top - 8 - h >= safe + 6) return Math.round(top - 8 - h); // room above the sheet (over the dimmed HUD): the sheet stays fully clear
+  const pr = pn.getBoundingClientRect(), lim = pr.top + Math.min(pr.height * 0.45, 260);
+  const tabs = [...pn.querySelectorAll('.tabs, .jtabs, .mbtabs, [role=tablist]')].find((e) => { const r = e.getBoundingClientRect(); return r.height > 0 && r.top < lim; });
+  const anchor = tabs || pn.querySelector(':scope > h2');
+  return Math.round(top + (anchor ? anchor.getBoundingClientRect().bottom - pr.top : 0) + 6); // under the tabs (or the title), never on them
+}
+let toastRO = null;
+function toastWatchSheet(p) { // phones: live toasts follow the sheet as it slides in, grows or shrinks
+  if (toastRO) toastRO.disconnect(); toastRO = null; if (!p || !isPhone()) return;
+  if (typeof ResizeObserver === 'function') { toastRO = new ResizeObserver(() => { if (toasts.children.length) toastPlace(); }); toastRO.observe(p); }
+  toastPlace(); setTimeout(() => { if (!modal.hidden) toastPlace(); }, 320);
 }
 let bubbleTimer = 0;
 function worldToStage(svg, x, y) {
@@ -760,10 +803,11 @@ function openModal(title, bodyHTML, opts = {}) {
   modal.hidden = false; modalClose = opts.onClose || null;
   const p = $('.panel', modal); p.insertAdjacentHTML('afterbegin', '<div class="sheet-grab" aria-hidden="true"></div>'); sheetSwipe(p, () => closeModal()); const x = $('.x', p); if (x) x.onclick = () => { SFX.click(); closeModal(); };
   setTimeout(() => { const f = p.querySelector('[autofocus]') || p.querySelector('.foot .btn') || x; if (f) f.focus({ preventScroll: true }); }, 30);
+  if (isPhone()) toastWatchSheet(p); // toasts that came first (a walk's bonus) move off the new sheet
   return p;
 }
 function closeModal() {
-  if (modal.hidden) return; modal.hidden = true; modal.innerHTML = ''; audioPlace(); const cb = modalClose; modalClose = null; if (cb) cb(); setTimeout(maybeLevelUp, 250);
+  if (modal.hidden) return; modal.hidden = true; modal.innerHTML = ''; if (isPhone()) { toastWatchSheet(null); toastPlace(); } audioPlace(); const cb = modalClose; modalClose = null; if (cb) cb(); setTimeout(maybeLevelUp, 250);
 }
 modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 function confirmIn(panel, html, yes = 'Yes', no = 'No') {

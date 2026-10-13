@@ -160,6 +160,27 @@ require('./test_lib').run('phone_shell', async (t) => {
     await t.SH(dev + '_toast');
     await p.locator('.panel .x').tap(); await t.modalGone(); await t.home();
 
+    // UI/UX (13 Oct 2026, T1 T6 H2 H7): toasts that arrive together merge, live toasts re-place when a sheet opens, and never cover a sheet's tabs
+    sec(dev + ': toast merge and re-place');
+    const clearT = () => ev(() => { document.getElementById('toasts').innerHTML = ''; });
+    const tabHit = () => ev(() => { const hit = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top; const pn = document.querySelector('#modal .panel'), tb = pn && pn.querySelector('.tabs, .jtabs, .mbtabs'), h2 = pn && pn.querySelector(':scope > h2');
+      return [...document.querySelectorAll('#toasts .toast')].filter((e) => getComputedStyle(e).display !== 'none').map((e) => { const r = e.getBoundingClientRect(); return { tabs: !!tb && hit(r, tb.getBoundingClientRect()), title: !!h2 && hit(r, h2.getBoundingClientRect()), box: [r.top | 0, r.bottom | 0] }; }); });
+    await clearT();
+    await ev(() => { const P = window.__paw; ['One', 'Two', 'Three'].forEach((n) => P.mailPush({ kind: 'news', from: 'Paw Haven Post', title: 'Letter ' + n, text: 'Hi.' })); });
+    const mt = await ev(() => [...document.querySelectorAll('#toasts .toast')].map((e) => e.textContent));
+    ok(mt.length === 1 && /3 new letters/.test(mt[0]), `${dev}: three letters arriving together make one toast "${mt.join(' | ')}"`);
+    await clearT(); await ev(() => { window.__paw.toast('First line.', 'gold'); window.__paw.toast('Second line.', 'good'); });
+    const jt = await ev(() => [...document.querySelectorAll('#toasts .toast')].map((e) => e.querySelectorAll('.tl').length));
+    ok(jt.length === 1 && jt[0] === 2, `${dev}: two toasts in the same moment share one note (${JSON.stringify(jt)})`);
+    // a toast that came before the sheet (the walk's daily bonus) moves off it when the sheet opens
+    await clearT(); await ev(() => { window.__paw.toast('Daily care bonus: +20 coins.', 'gold'); window.__paw.journal(); });
+    await p.waitForSelector('.panel.journal'); await sleep(500);
+    let th = await tabHit();
+    ok(th.length === 1 && th.every((x) => !x.tabs && !x.title), `${dev}: a toast from before the sheet opened covers neither its title nor its tabs ${JSON.stringify(th)}`);
+    await clearT(); await ev(() => window.__paw.toast('New mail: a note.', 'gold')); await sleep(300); th = await tabHit();
+    ok(th.length === 1 && th.every((x) => !x.tabs && !x.title), `${dev}: a toast while the Journal is open stays off its tab row ${JSON.stringify(th)}`);
+    await p.locator('.panel .x').tap(); await t.modalGone(); await clearT();
+
     sec(dev + ': long-press tooltip');
     const mb = await box('#meters .meter[data-k="energy"]');
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: tp(mb.x + mb.w / 2, mb.y + mb.h / 2) });
