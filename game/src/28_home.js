@@ -30,7 +30,8 @@ const HO_LINES = {
   sofaramp: { top: ['Up the ramp. No jumping needed.', 'Nice and easy. Like a lift.'] },
   windowseat: { seat: ['Postman watch. On duty.', 'A bird! Two birds!', 'Nothing out there. Still watching.'] }
 };
-const HO = { pl: null, uses: {}, fav: {}, want: null, pending: null, sRef: null, syncFor: null, lit: null, rugDay: '', watch: 0 };
+const HO = { pl: null, uses: {}, fav: {}, want: null, pending: null, sRef: null, syncFor: null, lit: null, rugDay: '', watch: 0, acts: [] };
+on('act', (a) => { if (a && ['buy', 'decorate', 'furniture'].includes(a.kind)) { HO.acts.push(a); if (HO.acts.length > 40) HO.acts.shift(); } }); // the test hook reads them
 
 /* ---------------- items: kind, room, size, position ---------------- */
 const hoIsBed = (n) => !HM_DECOR[n] && BEDS.some((b) => b.n === n);
@@ -144,9 +145,10 @@ function hoZzzSync() {
 function hoGiveBed(id, b) {
   const d = dogById(id); if (!d || !S.bedAt[b]) return; hoSync();
   const prev = hoBedFor(d), o = S.dogs.find((x) => x !== d && hoBedFor(x) === b);
+  if (o && o.id === S.activeId && !prev) { nope(`${o.name} needs a bed too. A second bed from Barkitecture would suit everyone.`); return false; }
   if (o) { if (prev) S.bedOf[o.id] = prev; else delete S.bedOf[o.id]; if (o.id === S.activeId) S.bed = prev || S.bed; }
   S.bedOf[d.id] = b; if (d.id === S.activeId) S.bed = b; if (o && o.id === S.activeId && prev) S.bed = prev;
-  hoSync(); markDirty();
+  hoSync(); markDirty(); return true;
 }
 function hoRugHint(d) {
   const day = localISO(); if (HO.rugDay === day || !d) return; HO.rugDay = day;
@@ -278,7 +280,7 @@ function hoIdleMoves(name) { return name === 'furn'; }
 function hoPackIdle(d) {
   if (!S || !d) return false; const u = HO.uses[d.id], now = performance.now();
   if (u) { if (now < u.until && S.place === 'house' && !HO.pl) return true; hoFree(d, true); return false; }
-  if (S.place !== 'house' || cur.mode !== 'yard' || HO.pl || busy || d.sleeping || d.id === S.activeId) return false;
+  if (S.place !== 'house' || cur.mode !== 'yard' || HO.pl || HO.noPack || busy || d.sleeping || d.id === S.activeId) return false;
   if (Math.random() >= (lifeStage(ageMonths(d)) === 'puppy' ? 0.5 : 0.34)) return false;
   const pick = hoPickSpot(d); if (!pick) return false;
   return hoPackUse(d, pick.name, pick.spot);
@@ -487,7 +489,7 @@ function hoExpose() {
     move: (n, x, y) => { if (HO.pl) return hoMoveTo(n, x, y); const p = hoClamp(n, x, y); if (hoIsBed(n)) { if (S.bedAt[n]) S.bedAt[n] = p; } else if (S.decor[n]) S.decor[n].at = p; markDirty(); hoRoomRedraw(); return p; },
     done: () => hoDone(), select: (n) => hoSelect(n), pos: (n) => hoPos(n).slice(), box: (n) => hoBox(n), free: (id) => hoFree(dogById(id) || id),
     use: (id, name, spot) => { const d = dogById(id); if (!d) return false; if (!spot) spot = Object.keys(hoSpots(name))[0]; if (d.id !== S.activeId) return hoPackUse(d, name, spot); if (IDLE.act) { IDLE.steps = []; idleEnd(); } HO.want = { name, spot }; idleStart('furn'); return true; },
-    uses: () => JSON.parse(JSON.stringify(HO.uses)), spot: (n, k) => hoSpot(n, k), spots: (n) => Object.keys(hoSpots(n)), freeSpot: (n) => hoFreeSpot(n), rug: HO_RUG_NAPS
+    uses: () => JSON.parse(JSON.stringify(HO.uses)), acts: () => HO.acts.slice(), hold: (on) => { HO.noPack = !!on; }, spot: (n, k) => hoSpot(n, k), spots: (n) => Object.keys(hoSpots(n)), freeSpot: (n) => hoFreeSpot(n), rug: HO_RUG_NAPS
   };
 }
 on('game:ready', () => setTimeout(hoExpose, 0));

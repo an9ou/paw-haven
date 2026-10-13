@@ -63,7 +63,7 @@ function openBeds() {
     <button class="btn yes ho-arrange" id="hoBedsArr"><span class="art">${iconOr('arrange', '<path d="M-12 0h24M0 -12v24" stroke="#5B3D32" stroke-width="3"/>')}</span>Arrange the house</button>
     <h4 class="ho-h">In the house</h4><div class="shopgrid">${inH.map((b) => hoBedsCard(b, true)).join('')}</div>${shed.length ? `<h4 class="ho-h">In the shed</h4><div class="shopgrid">${shed.map((b) => hoBedsCard(b, false)).join('')}</div>` : ''}`, { cls: 'shop ho-beds' });
   p.querySelectorAll('[data-usebed]').forEach((b) => { b.onclick = () => { useBed(b.dataset.usebed); openBeds(); }; });
-  p.querySelectorAll('[data-bedfor]').forEach((b) => { b.onclick = () => { SFX.click(); const [id, n] = b.dataset.bedfor.split('|'), d = dogById(id); hoGiveBed(id, n); if (d) toast(`${d.name} claims the ${n}.`, 'good'); if (cur.mode === 'yard' && S.place === 'house') { const keep = S.sleeping; go('yard'); if (keep) sleepTray(); } openBeds(); }; });
+  p.querySelectorAll('[data-bedfor]').forEach((b) => { b.onclick = () => { SFX.click(); const [id, n] = b.dataset.bedfor.split('|'), d = dogById(id); if (!hoGiveBed(id, n)) return; if (d) toast(`${d.name} claims the ${n}.`, 'good'); if (cur.mode === 'yard' && S.place === 'house') { const keep = S.sleeping; go('yard'); if (keep) sleepTray(); } openBeds(); }; });
   $('#hoBedsArr', p).onclick = () => { SFX.click(); closeModal(); hoPlaceStart(undefined, 'house'); };
 }
 /* idle curl-up on the bed (house only) */
