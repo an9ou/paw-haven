@@ -27,14 +27,16 @@ function openTraining(tab) {
   if (tab) TRN.tab = tab;
   const tp = $('#trainPanel'); tp.hidden = false; stage.classList.add('training');
   if (!isPhone()) { tp.style.top = (hud.offsetHeight + 10) + 'px'; const w = $('#view > svg.world'); if (w) w.classList.add('trainzoom'); }
-  else setTimeout(() => camApply(camCx), 30);
+  else setTimeout(() => { camApply(camCx); pkHotsRefit(); }, 30);
   if (PUBLIC_AUDIENCE.includes(S.place)) drawAudience(true);
   renderTraining();
 }
+// UI/UX T3 (phones): the scene shrinks under the panel, so the clipboard and decoration tap boxes are re-sized to the new scale (still >= 48 px)
+function pkHotsRefit() { if (!isPhone() || cur.mode !== 'yard') return; if (typeof msYardRedraw === 'function') msYardRedraw(); if (typeof hmDecorRedraw === 'function') hmDecorRedraw(); }
 function closeTraining() {
   if (!TRN) return; tgAbort(); TRN.timers.forEach(clearTimeout); if (TRN.held) busy = false; TRN = null;
   const tp = $('#trainPanel'); if (tp) { tp.hidden = true; tp.innerHTML = ''; } stage.classList.remove('training');
-  const w = $('#view > svg.world'); if (w) w.classList.remove('trainzoom'); drawAudience(false);
+  const w = $('#view > svg.world'); if (w) w.classList.remove('trainzoom'); drawAudience(false); if (isPhone()) setTimeout(pkHotsRefit, 30);
   const fx = $('#dogFx'); if (fx) fx.setAttribute('class', ''); if (cur.mode === 'yard' && !busy) { dogTo(0, 0, 1, 0.4); renderDog(dogPoseNow(), 'right', true); }
   if (isPhone()) setTimeout(() => camApply(camCx), 30);
 }

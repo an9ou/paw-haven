@@ -90,3 +90,14 @@ window.addEventListener('click', (e) => { if (psTipShownAt && Date.now() - psTip
 window.addEventListener('contextmenu', (e) => { if (isPhone() && e.target.closest && e.target.closest('#stage')) e.preventDefault(); });
 // test hook (like window.__paw): the phone suites read the sheet state and try the long-press helper
 window.__pawShell = { sheetOpen: () => psSheetOpen(), longPress: (el, text) => psLongPress(el, text) };
+// scene tap boxes (hmDecorHit 03_yard.js, msYardHit 24_missions.js): screen px per world unit, read from the live scene (the trick panel halves it), else from the view height
+function phHitScale() { const svg = $('#view > svg.world'), m = svg && svg.isConnected && svg.getScreenCTM(); return m && m.a > 0.05 ? m.a : ((view.clientHeight || 500) - 60) / 600; }
+// UI/UX T8: a place-button row that scrolls sideways (Market Street) fades at the edge that has more buttons, so the hidden ones are hinted (20_phone_shell.css)
+function psRowFade(el) { if (!el || !isPhone()) return; const r = el.scrollWidth - el.clientWidth; el.classList.toggle('ps-more-r', r > 4 && el.scrollLeft < r - 4); el.classList.toggle('ps-more-l', r > 4 && el.scrollLeft > 4); }
+let psRowMO = null, psRowEl = null;
+function psRowWatch() {
+  const el = $('#placeBtns'); if (!el || el === psRowEl) { psRowFade(el); return; } psRowEl = el;
+  if (psRowMO) psRowMO.disconnect(); if (typeof MutationObserver === 'function') { psRowMO = new MutationObserver(() => requestAnimationFrame(() => psRowFade(el))); psRowMO.observe(el, { childList: true }); }
+  el.addEventListener('scroll', () => psRowFade(el), { passive: true }); requestAnimationFrame(() => psRowFade(el));
+}
+on('yard:enter', psRowWatch); on('scene:redraw', psRowWatch); window.addEventListener('resize', () => psRowFade($('#placeBtns')));

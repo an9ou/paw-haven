@@ -737,6 +737,11 @@ function say(text, wx, wy, ms = 3600) {
     const st = $('#status'), sr = st && !st.hidden ? st.getBoundingClientRect() : null, sg = stage.getBoundingClientRect();
     if (sr) { const bt = parseFloat(bubble.style.top), bl = parseFloat(bubble.style.left), cb = sr.bottom - sg.top + 6;
       if (bt < cb && bl < sr.right - sg.left + 6 && bl + bw > sr.left - sg.left - 6) bubble.style.top = cb + 'px'; }
+    const pk = $('#phPeek'), pq = pk && !pk.hidden && pk.offsetParent ? pk.getBoundingClientRect() : null; // UI/UX H9: nor under the look-right button
+    if (pq) { const bt = parseFloat(bubble.style.top), bl = parseFloat(bubble.style.left), bh = bubble.offsetHeight;
+      if (bt < pq.bottom - sg.top + 4 && bt + bh > pq.top - sg.top - 4 && bl + bw > pq.left - sg.left - 8) bubble.style.left = Math.max(6, pq.left - sg.left - bw - 8) + 'px'; }
+    // UI/UX T5: in town places the dog's own lines go under the dog, so they never cover the shop signs above its head (townBubbleBelowDog, 03_yard.js)
+    if (['yard', 'market'].includes(cur.mode) && S && !['yard', 'house'].includes(S.place) && typeof dogHeadWorld === 'function') { const h = dogHeadWorld(); if (Math.abs(h.x - wx) < 40 && Math.abs(h.y - wy) < 40) townBubbleBelowDog(); }
   }
   clearTimeout(bubbleTimer); bubbleTimer = setTimeout(() => { bubble.hidden = true; }, ms);
 }

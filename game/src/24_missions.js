@@ -172,7 +172,7 @@ const MS_YARD = [208, 318, 50, 64]; // on the house wall between the front door 
 const MS_YARD_MAXX = 260; // the mailbox tap box starts at x=261
 // the tap rect: on phones at least 48 screen px each way (like hmDecorHit), kept left of the mailbox
 function msYardHit(x, y, w, h) {
-  if (isPhone()) { const s = ((view.clientHeight || 500) - 60) / 600, m = 48 / s; if (w < m) { x -= (m - w) / 2; w = m; } if (h < m) { y -= (m - h) / 2; h = m; } if (x + w > MS_YARD_MAXX) x = MS_YARD_MAXX - w; }
+  if (isPhone()) { const s = phHitScale(), m = 48 / s; if (w < m) { x -= (m - w) / 2; w = m; } if (h < m) { y -= (m - h) / 2; h = m; } if (x + w > MS_YARD_MAXX) x = MS_YARD_MAXX - w; }
   return `<rect x="${f1(x)}" y="${f1(y)}" width="${f1(w)}" height="${f1(h)}" fill="transparent" pointer-events="all"/>`;
 }
 function msYardSVG() {

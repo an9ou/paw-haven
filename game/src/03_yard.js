@@ -324,7 +324,9 @@ function townBubbleBelowDog() {
   const hit = $('#dogHit'); if (!hit || bubble.hidden) return; const hr = hit.getBoundingClientRect(), sg = stage.getBoundingClientRect(), bw = bubble.offsetWidth;
   bubble.classList.add('below'); bubble.style.left = clamp(hr.left + hr.width / 2 - sg.left - bw / 2, 6, stage.clientWidth - bw - 6) + 'px'; bubble.style.top = (hr.bottom - sg.top + 18) + 'px';
   // keep clear of the place buttons (Go home sits bottom-right): slide left of one it would touch
-  const bl = parseFloat(bubble.style.left), bt = parseFloat(bubble.style.top), bh = bubble.offsetHeight; // (layout numbers: the pop animation scales the rect)
+  const bh = bubble.offsetHeight, pr = isPhone() && $('#placeBtns'), prr = pr && pr.offsetParent && pr.getBoundingClientRect(); // phones: stay above the place-button row (UI/UX T5)
+  if (prr && prr.height) bubble.style.top = Math.min(parseFloat(bubble.style.top), prr.top - sg.top - bh - 8) + 'px';
+  const bl = parseFloat(bubble.style.left), bt = parseFloat(bubble.style.top); // (layout numbers: the pop animation scales the rect)
   document.querySelectorAll('#placeBtns .btn').forEach((b) => { const q = b.getBoundingClientRect(), ql = q.left - sg.left, qt = q.top - sg.top; if (bl < q.right - sg.left + 12 && bl + bw > ql - 12 && bt < qt + q.height + 6 && bt + bh > qt - 6) bubble.style.left = Math.max(6, ql - 24 - bw) + 'px'; });
   clearTimeout(bubbleBelowT); bubbleBelowT = setTimeout(() => bubble.classList.remove('below'), 3700);
 }
@@ -724,7 +726,7 @@ function hmDecorArt(name) {
 }
 // the tap rect; on phones it grows to at least 48 screen px each way (the scene is scaled to the screen height)
 function hmDecorHit(x, y, w, h) {
-  if (isPhone()) { const s = ((view.clientHeight || 500) - 60) / 600, m = 48 / s; if (w < m) { x -= (m - w) / 2; w = m; } if (h < m) { y -= (m - h) / 2; h = m; } }
+  if (isPhone()) { const s = phHitScale(), m = 48 / s; if (w < m) { x -= (m - w) / 2; w = m; } if (h < m) { y -= (m - h) / 2; h = m; } }
   return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="transparent" pointer-events="all"/>`;
 }
 function hmDecorSVG() {
