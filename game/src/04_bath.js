@@ -11,7 +11,9 @@ function enterBath() {
   updateHUD(); bindDev();
   let prog = 0, last = null, done = false, scrubT = 0;
   const startClean = S.stats.clean;
-  dock.innerHTML = `<div class="tray"><div class="tray-h"><h3>Bath time: rub ${esc(NAME())} to scrub</h3></div><p class="small" style="margin:0">${isPhone() ? 'Scrub with a finger. More suds, more drama.' : 'Mouse, finger, or mash Space.'} ${esc(NAME())} is legally obliged to look betrayed.</p><div class="walkctl"><div class="prog"><i id="bathBar"></i></div><button class="btn" id="bathQuit">Done for now</button></div></div>`;
+  // v2.7 PACK CARE: in a pack bath (crBath) one dog at a time is the active dog in the tub; the title counts the queue and "Next dog" skips ahead
+  const crNext = crBath && crBath.i + 1 < crBath.q.length ? '<button class="btn go" id="crBathNext">Next dog</button>' : '';
+  dock.innerHTML = `<div class="tray"><div class="tray-h"><h3>Bath time: rub ${esc(NAME())} to scrub${crBathTitle()}</h3></div><p class="small" style="margin:0">${isPhone() ? 'Scrub with a finger. More suds, more drama.' : 'Mouse, finger, or mash Space.'} ${esc(NAME())} is legally obliged to look betrayed.</p><div class="walkctl"><div class="prog"><i id="bathBar"></i></div>${crNext}<button class="btn" id="bathQuit">Done for now</button></div></div>`;
   // phone: the tub scene takes all the height above the short tray (not a fixed 40% with blank paper under the tray)
   if (isPhone()) { view.style.flex = '1 1 auto'; dock.style.flex = '0 0 auto'; onCleanup(() => { view.style.flex = ''; dock.style.flex = ''; }); camApply(camCx); }
   const bump = (amt, wx, wy) => {
@@ -23,10 +25,10 @@ function enterBath() {
     if (prog >= 100) finish();
   };
   const finish = () => {
-    done = true; bathZoomies = true; S.stats.clean = 100; trackAct('bath', {}); SFX.splash(); renderDog('shake'); setTimeout(() => SFX.shake(), 150); markDirty(); updateHUD();
+    done = true; bathZoomies = true; S.stats.clean = 100; if (crBath) crBath.fin++; else trackAct('bath', {}); // a pack bath: one act when the queue ends SFX.splash(); renderDog('shake'); setTimeout(() => SFX.shake(), 150); markDirty(); updateHUD();
     const hot = isHot(); if (hot) addStat('happy', 10);
     const bp = addBond(2); toast(`${hot ? 'Refreshing! +10 Happiness on a hot day. ' : ''}Sparkling. Mostly. +${bp} Bond. ${NAME()} shakes off ON you.`, 'good');
-    setTimeout(() => { if (cur.mode === 'bath') go('yard'); }, 1700);
+    setTimeout(() => { if (cur.mode === 'bath') { if (crBath) crBathNext(); else go('yard'); } }, 1700);
   };
   svg.addEventListener('pointerdown', (e) => { SFX.init(); last = { x: e.clientX, y: e.clientY }; try { svg.setPointerCapture(e.pointerId); } catch (er) { /* none */ } });
   svg.addEventListener('pointermove', (e) => {
@@ -37,6 +39,7 @@ function enterBath() {
   svg.addEventListener('pointerup', (e) => { if (e.pointerType !== 'mouse') last = null; });
   cur.key = (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); bump(6, 430 + RAND(-60, 60), 420 + RAND(-40, 30)); } };
   $('#bathQuit').onclick = () => { SFX.click(); go('yard'); };
-  onCleanup(() => { cur.key = null; busy = false; });
+  const nx = $('#crBathNext'); if (nx) nx.onclick = () => { SFX.click(); if (!done) crBathNext(); };
+  onCleanup(() => { cur.key = null; busy = false; if (crBath && !crBath.next) crBathEnd(); });
 }
 
