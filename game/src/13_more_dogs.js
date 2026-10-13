@@ -320,43 +320,32 @@ function addDog(spec, name) {
 }
 let shelterSex = {};
 function shelterCard(spec, kind) {
-  const tmp = { id: spec.id || 'tmp_' + spec.key, key: spec.key, genes: spec.genes || (STARTER_GENES[spec.key] || STARTER_GENES.mutt) };
+  // v2.7: rescues and residents (the playroom) gain their trait line and a Meet button (V27.md section 7); starters are as in v2.6
+  const sr = kind !== 'starter', tmp = { id: spec.id || 'tmp_' + spec.key, key: spec.key, genes: spec.genes || (STARTER_GENES[spec.key] || STARTER_GENES.mutt) };
   const c = coatInfo(tmp), info = dogInfo(spec.key), home = spec.id && dogById(spec.id);
   const coatName = c ? c.coatName : (STARTER_GENES[spec.key] || {}).coat || '', eyes = c ? c.eyes : (STARTER_GENES[spec.key] || {}).eyes || 'brown';
-  const sx = kind === 'rescue' ? spec.sex : shelterSex[spec.key] || null;
+  const sx = sr ? spec.sex : shelterSex[spec.key] || null;
   const blocked = adoptBlock();
-  return `<div class="sitem shcard ${kind}">${kind === 'rescue' ? '<span class="stamp r2">Rescue</span>' : '<span class="stamp r0">Starter</span>'}<span class="art shdog">${dogArtSafe(spec.key, Object.assign({ pose: 'sit' }, c ? { coat: c.coat, seed: hashId(tmp.id) } : {}))}</span>
-    <b>${esc(kind === 'rescue' ? spec.name : info.name)} ${kind === 'rescue' ? sexSym(spec.sex) : ''}</b>
-    <span class="desc">${esc(info.breed)}${kind === 'rescue' ? ` · ${spec.sex === 'female' ? 'Girl' : 'Boy'} · ${ageText(spec.months)}` : ''}<br>${esc(coatName)}, ${esc(eyes)} eyes<br><i>${esc(info.personality)}</i></span>
+  const dogArt = sr && spec.months != null && spec.months < 6 ? dogSVG(Object.assign({}, tmp, { born: bornDaysAgo(spec.months) }), { pose: 'sit' }) : dogArtSafe(spec.key, Object.assign({ pose: 'sit' }, c ? { coat: c.coat, seed: hashId(tmp.id) } : {}));
+  const stamp = kind === 'rescue' ? '<span class="stamp r2">Rescue</span>' : kind === 'resident' ? '<span class="stamp r1">Playroom</span>' : '<span class="stamp r0">Starter</span>';
+  return `<div class="sitem shcard ${kind}">${stamp}<span class="art shdog">${dogArt}</span>
+    <b>${esc(sr ? spec.name : info.name)} ${sr ? sexSym(spec.sex) : ''}</b>
+    <span class="desc">${esc(info.breed)}${sr ? ` · ${spec.sex === 'female' ? 'Girl' : 'Boy'} · ${ageText(spec.months)}` : ''}<br>${esc(coatName)}, ${esc(eyes)} eyes<br><i>${esc(sr && spec.trait ? spec.trait : info.personality)}</i></span>
     ${kind === 'starter' ? `<div class="wrap" style="justify-content:center"><button class="btn ${sx === 'male' ? 'yes' : ''}" data-shsex="${spec.key}|male" aria-pressed="${sx === 'male'}">Boy ♂</button><button class="btn ${sx === 'female' ? 'yes' : ''}" data-shsex="${spec.key}|female" aria-pressed="${sx === 'female'}">Girl ♀</button></div>` : ''}
-    ${home ? '<span class="chip own">Already home</span>' : `<button class="btn ${blocked ? '' : 'go'}" data-shadopt="${kind}|${spec.id || spec.key}" ${blocked ? 'aria-disabled="true"' : ''}>${kind === 'rescue' ? 'Rescue' : 'Adopt a starter'}</button>`}</div>`;
+    ${home ? '<span class="chip own">Already home</span>' : `<div class="sr-cardbtns">${sr ? `<button class="btn" data-srmeet="${esc(spec.id)}">Meet</button>` : ''}<button class="btn ${blocked ? '' : 'go'}" data-shadopt="${kind}|${spec.id || spec.key}" ${blocked ? 'aria-disabled="true"' : ''}>${kind === 'rescue' ? 'Rescue' : kind === 'resident' ? 'Adopt' : 'Adopt a starter'}</button></div>`}</div>`;
 }
 function openShelterList() {
-  const rescues = rescuesToday(), starterKeys = dogsList().map((x) => x.key).filter((k) => !S.dogs.some((d) => d.key === k && !d.rescue));
+  const rescues = rescuesToday().map((r) => Object.assign({ trait: srTrait(r.id) }, r)), residents = srRoster().filter((x) => x.kind === 'resident');
+  const starterKeys = dogsList().map((x) => x.key).filter((k) => !S.dogs.some((d) => d.key === k && !d.rescue));
   const sl = dogSlots();
-  const p = openModal('Paw Haven Shelter', `<div class="shspots">${spotsLine(sl)}${spotsHTML(sl)}</div>
+  const p = openModal('Paw Haven Shelter', `<p class="sr-lead">Looking for a home</p><div class="shspots">${spotsLine(sl)}${spotsHTML(sl)}</div>
     <h3 class="shh">Today's rescues <span class="small">(new ones arrive every day)</span></h3><div class="shopgrid">${rescues.map((r) => shelterCard(r, 'rescue')).join('')}</div>
+    ${residents.length ? `<h3 class="shh">Living in the playroom <span class="small">(they stay all week)</span></h3><div class="shopgrid">${residents.map((r) => shelterCard(r, 'resident')).join('')}</div>` : ''}
     ${starterKeys.length ? `<h3 class="shh">Starter dogs</h3><div class="shopgrid">${starterKeys.map((k) => shelterCard({ key: k }, 'starter')).join('')}</div>` : ''}`, { cls: 'shop shelter' });
   p.querySelectorAll('[data-shsex]').forEach((b) => { b.onclick = () => { const [k, sx] = b.dataset.shsex.split('|'); shelterSex[k] = sx; SFX.click(); openShelterList(); }; });
+  p.querySelectorAll('[data-srmeet]').forEach((b) => { b.onclick = () => { SFX.click(); srMeet(b.dataset.srmeet); }; });
   p.querySelectorAll('[data-shadopt]').forEach((b) => {
-    b.onclick = () => {
-      const bl = adoptBlock(); if (bl) { nope(bl); return; }
-      const [kind, id] = b.dataset.shadopt.split('|');
-      let spec;
-      if (kind === 'rescue') spec = rescues.find((r) => r.id === id);
-      else { if (!shelterSex[id]) { nope('Pick Boy or Girl first. The siblings are waiting politely.'); return; } spec = { key: id, sex: shelterSex[id], months: 10 }; }
-      if (!spec) return;
-      const def = kind === 'rescue' ? spec.name : dogInfo(spec.key).name;
-      const pp = openModal(`Name your new ${spec.sex === 'female' ? 'girl' : 'boy'} ${sexSym(spec.sex)}`, `<p>${kind === 'rescue' ? 'The shelter calls this one' : 'The tag says'} <b>${esc(def)}</b>. Keep it, or pick something just as silly.</p><input id="shName" class="namebox" maxlength="16" value="${esc(def)}" autofocus>`, { foot: '<button class="btn no" id="shNo">Back</button><button class="btn yes big" id="shOk">Bring home!</button>' });
-      const done = () => {
-        const nm = ($('#shName', pp).value || def).trim().slice(0, 16) || def; const d = addDog(spec, nm);
-        closeModal(); audioCue('adopt'); SFX.fanfare();
-        const pd = PRd(d); toast(`${nm} is home! ${pd.He} sniffs everything twice. ${S.dogs.length} dogs now.`, 'gold');
-        S.place = 'yard'; go('yard');
-      };
-      $('#shOk', pp).onclick = done; $('#shNo', pp).onclick = () => openShelterList();
-      $('#shName', pp).addEventListener('keydown', (e) => { if (e.key === 'Enter') done(); });
-    };
+    b.onclick = () => { const [kind, id] = b.dataset.shadopt.split('|'); srAdoptFlow(kind, id); };
   });
 }
 
