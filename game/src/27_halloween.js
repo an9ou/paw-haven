@@ -88,7 +88,7 @@ function hwSquareDraw() {
   HW.open = hwOn(); if (!HW.open || !S || S.place !== 'square') return;
   const at = $('#bowlG', svg) || $('#pack', svg); if (!at) return;
   const [x, y, w, h] = hwPopBox(), lit = isNight();
-  at.insertAdjacentHTML('beforebegin', `<g id="hwPopG" class="hot" data-lit="${lit ? 1 : 0}" tabindex="0" role="button" aria-label="Mrs. Plum's Pumpkin Patch Pop-up">${place(hwArt({ lit }), x, y, w, h)}${fsHit(x + 6, y + 8, w - 12, h - 8)}</g>`);
+  at.insertAdjacentHTML('beforebegin', `<g id="hwPopG" class="hot" data-lit="${lit ? 1 : 0}" tabindex="0" role="button" aria-label="Mrs. Plum's Pumpkin Patch Pop-up">${place(lit ? hwArt({ lit }) : propTint(hwArt({ lit })), x, y, w, h)}${fsHit(x + 6, y + 8, w - 12, h - 8)}</g>`);
   if (typeof fsHitFit === 'function') fsHitFit();
   const g = $('#hwPopG', svg); g.onclick = (e) => { e.stopPropagation(); SFX.click(); hwOpen(); }; g.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hwOpen(); } };
   if (pb && !isPhone()) { // phones: the third row of the Festival chooser instead, so the Square row stays one line

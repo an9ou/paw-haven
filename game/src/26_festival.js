@@ -12,6 +12,10 @@ const FS_PILE_GAP = 20; // game minutes between two jumps in the same pile
 const FS_STALL = { desk: [858, 384, 136, 126], phone: [196, 380, 110, 109], phoneV: [548, 400, 86, 80] }; // Square: right foreground inside the frame (desktop); on phones beside the fountain, or right of the dog when a visitor shifts the crop
 const FS_BANNER = { desk: [560, 150, 400, 90], phone: [196, 142, 300, 74] }; // strung between the clock tower and the right shopfront, above the shop signs
 const FS_PUMPKIN = [596, 486, 40, 40]; // the porch step, left of the dog-house door
+// v2.6.1 phones: the porch step sits on the edge of the yard's home view (the camera follows the dog), so the pumpkin showed cut in half.
+// It is tucked in at the dog house's right front corner instead: outside every portrait home view, whole in the look-right crop (525-871)
+const FS_PUMPKIN_PH = [796, 488, 40, 40];
+const fsPumpkinBox = () => (isPhone() ? FS_PUMPKIN_PH : FS_PUMPKIN);
 const FS_PACK_SQ = [905, 470, 'left', 0.53]; // Square pack spot 3 while the stall is up (it stands where the stall is)
 const FS_COSTUMES = ['Ghost Sheet', 'Pumpkin Suit', 'Wizard Hat', 'Bumblebee Suit', 'Astronaut Helmet', 'Happi Coat'];
 const FS_PARADE_MS = 6000;
@@ -105,7 +109,7 @@ function fsHitFit() {
 /* ---- drawing into the scene (yard:enter, scene:redraw, env:fest) ---- */
 function fsPileSVG(i, state) {
   const [x, y, w, h] = FS_PILES[i];
-  return `<g class="hot fs-pile" data-pile="${i}" data-state="${state}" tabindex="0" role="button" aria-label="Leaf pile: jump in">${place(fsArt('leafpile', { state, seed: i }), x, y, w, h)}${fsHit(x, y, w, h)}</g>`;
+  return `<g class="hot fs-pile" data-pile="${i}" data-state="${state}" tabindex="0" role="button" aria-label="Leaf pile: jump in">${place(propTint(fsArt('leafpile', { state, seed: i })), x, y, w, h)}${fsHit(x, y, w, h)}</g>`;
 }
 function fsYardDraw() {
   const svg = $('#view svg.world'); if (!svg) return;
@@ -116,7 +120,7 @@ function fsYardDraw() {
     fsPileBind();
   }
   if (festOn('halloween')) {
-    const [x, y, w, h] = FS_PUMPKIN, lit = isNight(), html = `<g id="fsPumpkinG" pointer-events="none" data-lit="${lit ? 1 : 0}">${place(fsArt('jackolantern', { lit }), x, y, w, h)}</g>`;
+    const [x, y, w, h] = fsPumpkinBox(), lit = isNight(), html = `<g id="fsPumpkinG" pointer-events="none" data-lit="${lit ? 1 : 0}">${place(fsArt('jackolantern', { lit }), x, y, w, h)}</g>`;
     const hg = $('#houseG', svg); if (hg) hg.insertAdjacentHTML('afterend', html);
   }
 }
@@ -134,8 +138,8 @@ function fsSquareDraw() {
   if (!fsAnyOn() || FS.walking) { fsPackSync(); fsHwDraw(); return; }
   const pack = $('#pack', svg); if (!pack) return;
   const [sx, sy, sw, sh] = fsStallBox();
-  let html = `<g id="fsStallG" class="hot" data-kind="${fsKind()}" tabindex="0" role="button" aria-label="Baker Bea's Harvest Stall">${place(fsArt('stall', { kind: fsKind() }), sx, sy, sw, sh)}${fsHit(sx + 8, sy + 10, sw - 16, sh - 10)}</g>`;
-  if (festOn('halloween')) { const [bx, by, bw, bh] = fsBannerBox(); html = `<g id="fsBannerG" pointer-events="none">${place(fsArt('paradebanner'), bx, by, bw, bh)}</g>` + html; }
+  let html = `<g id="fsStallG" class="hot" data-kind="${fsKind()}" tabindex="0" role="button" aria-label="Baker Bea's Harvest Stall">${place(propTint(fsArt('stall', { kind: fsKind() })), sx, sy, sw, sh)}${fsHit(sx + 8, sy + 10, sw - 16, sh - 10)}</g>`;
+  if (festOn('halloween')) { const [bx, by, bw, bh] = fsBannerBox(); html = `<g id="fsBannerG" pointer-events="none">${place(propTint(fsArt('paradebanner')), bx, by, bw, bh)}</g>` + html; }
   pack.insertAdjacentHTML('beforebegin', html);
   fsHitFit();
   const st = $('#fsStallG', svg); st.onclick = (e) => { e.stopPropagation(); SFX.click(); fsStallOpen(); }; st.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fsStallOpen(); } };
@@ -378,7 +382,7 @@ on('env:season', () => fsSeasonGreet());
 function fsExpose() {
   if (!window.__paw) return;
   window.__paw.fest = {
-    piles: FS_PILES, stall: () => fsStallBox(), banner: () => fsBannerBox(), pumpkin: FS_PUMPKIN, tap: (i) => fsPileTap(i), stallOpen: () => fsStallOpen(), paradeOpen: () => fsParadeOpen(),
+    piles: FS_PILES, stall: () => fsStallBox(), banner: () => fsBannerBox(), pumpkin: FS_PUMPKIN, pumpkinBox: () => fsPumpkinBox(), tap: (i) => fsPileTap(i), stallOpen: () => fsStallOpen(), paradeOpen: () => fsParadeOpen(),
     paradeDogs: (dk) => fsParadeDogs(dk), items: () => fsStallItems().map((x) => x.n), draw: () => fsDraw(), letters: () => fsLetters(), journal: () => fsJournalLine(),
     warm: () => isWarm(), get walking() { return FS.walking; }, get pending() { return FS.pending; }, canJump: () => fsCanJump(), seasonYear: (s) => fsSeasonYear(s), get scattered() { return Object.keys(FS.pileT).map(Number); }, packSpot: () => (typeof PACK_SPOTS !== 'undefined' ? PACK_SPOTS.square[2] : null)
   };
