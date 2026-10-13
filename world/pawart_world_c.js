@@ -14,6 +14,7 @@ const C={ink:'#5B3D32',graph:'#A8968A',paper:'#FFFBF3',dot:'#E3D2BA',pink:'#F28F
   stone:'#DED6CC',stoneD:'#C7BCAE',path:'#EFDDBA',soil:'#D9B48E',water:'#BEE0F2',waterD:'#9CCDE8',sand:'#F7E4B5',sandD:'#EBCF95',
   red:'#F4A3A3',redD:'#E57E83',yellow:'#FCE59A',orange:'#F8C08A',lav:'#DCCBF2',mint:'#C9EBDA',blue:'#B9D3F2',white:'#FFFFFF',glass:'#E4F2FA'};
 let _n=0;const uid=()=>'pwc'+(++_n);
+let _un=0;const unlitId=()=>'pwc0'+(++_un);// v2.6.1: its own counter, so the other scenes' ids do not shift (pwc0N never meets uid()'s pwcN: no leading zero there)
 const TIMES=['dawn','day','dusk','night'],WEATHERS=['sunny','cloudy','rain','snow'],SEASONS=['spring','summer','autumn','winter'];
 function mkEnv(o){o=o||{};const time=TIMES.includes(o.time)?o.time:'day',weather=WEATHERS.includes(o.weather)?o.weather:'sunny',season=SEASONS.includes(o.season)?o.season:'summer';
   return {time,weather,season,ssn:season==='summer'?'':season,def:time==='day'&&weather==='sunny'&&season==='summer',night:time==='night',low:time==='dawn'||time==='dusk',sunny:weather==='sunny',
@@ -468,7 +469,7 @@ function lightsLayer(k,W,wrap){const env=k.env,L=env.lit;let s='';
   if(L){const wg=glowGrad(k,'#FFD877','warm');
     const glow=([x,y,w,h])=>add(x+w/2,w,`<rect x="${R1(x-12)}" y="${R1(y-12)}" width="${R1(w+24)}" height="${R1(h+24)}" rx="14" fill="#FFD36E" fill-opacity="${R1(.16*L)}"/><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#FFD25E" fill-opacity="${R1((w>100?.4:.6)*L)}"/><path d="M${R1(x+w*.18)} ${R1(y+h*.7)}l${R1(w*.22)} ${R1(-h*.34)}" stroke="#FFF6D0" stroke-width="3" stroke-linecap="round" opacity="${R1(.8*L)}"/>`);
     // v2.6.1: a scene can list shapes that stand in front of its windows (k.unlit, e.g. the Square's notice board); the window glows are masked by them
-    if(k.unlit&&k.unlit.length&&k.glows.length){const pre=s,m=uid();s='';k.glows.forEach(glow);
+    if(k.unlit&&k.unlit.length&&k.glows.length){const pre=s,m=unlitId();s='';k.glows.forEach(glow);
       s=pre+`<mask id="${m}" maskUnits="userSpaceOnUse" x="-60" y="-60" width="${W+120}" height="760"><rect x="-60" y="-60" width="${W+120}" height="760" fill="#fff"/><path d="${k.unlit.join('')}" fill="#000"/></mask><g mask="url(#${m})">${s}</g>`}
     else k.glows.forEach(glow);
     k.lamps.forEach(l=>{const g=l.glass,gd='M'+g.map(p=>R1(p[0])+' '+R1(p[1])).join('L')+'Z',rr=74*l.s;let rays='';for(let i=0;i<8;i++){const a=i/8*Math.PI*2+.2,r0=22*l.s,r1=(30+(i%2)*8)*l.s;rays+=`M${R1(l.x+Math.cos(a)*r0)} ${R1(l.y+Math.sin(a)*r0)}L${R1(l.x+Math.cos(a)*r1)} ${R1(l.y+Math.sin(a)*r1)}`}

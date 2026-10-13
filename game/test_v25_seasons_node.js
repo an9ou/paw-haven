@@ -48,9 +48,12 @@ if (!BASE_A || !BASE_C) { ok(false, 'v25-base not found: git fetch origin v25-ba
 else {
   const PB = load([BASE_A, BASE_C]), PN = load([SRC_A, SRC_C]);
   let n = 0;
+  // v2.6.1 (art-fixes): the Square masks its window glows with the notice board (world C lightsLayer, k.unlit). unmask() drops exactly that
+  // wrapper, so the rest of the drawing is still compared byte for byte
+  const unmask = (s) => s.replace(/<mask id="pwc0\d+(?:x\d+)?"[^>]*>[\s\S]*?<\/mask><g mask="url\(#pwc0\d+(?:x\d+)?\)">([\s\S]*?)<\/g>/g, '$1');
   const both = (fn, o, label) => {
     const b1 = PB[fn](o.name, o.b), b2 = PB[fn](o.name, o.b);
-    const n1 = PN[fn](o.name, o.n1), n2 = PN[fn](o.name, o.n2);
+    const n1 = unmask(PN[fn](o.name, o.n1)), n2 = unmask(PN[fn](o.name, o.n2));
     ok(b1 === n1, `${label}: no season matches v25-base`); ok(b2 === n2, `${label}: summer matches v25-base`); n += 2;
   };
   SCENES.forEach((name) => TIMES.forEach((time) => WEATHERS.forEach((weather) => both('scene', { name, b: { time, weather }, n1: { time, weather }, n2: { time, weather, season: 'summer' } }, `scene ${name} ${time}/${weather}`))));

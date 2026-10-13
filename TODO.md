@@ -23,8 +23,8 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [x] Pregnant belly was very subtle on the fluffy golden. Fixed.
 - [ ] Greyhound head on short bodies keeps a longish snout. `dogs/pawart_dogs.js`
 - [ ] Some newborn squeaks are a few dB quiet. `mods/pawaudio.js`
-- [ ] The Rainbow Collar tag is a 4-point sparkle; the spec asked for a 5-point star. `dogs/pawart_dogs.js`
-- [ ] The rocking chair's backrest leans a little. `world/pawart_world_b.js`
+- [x] The Rainbow Collar tag is a 4-point sparkle; the spec asked for a 5-point star. `dogs/pawart_dogs.js` Fixed (art-fixes): a 5-point star, same centre and size.
+- [x] The rocking chair's backrest leans a little. `world/pawart_world_b.js` Fixed (art-fixes): it stands upright, on the yard prop and the item card.
 
 ## Project
 - [x] The claude.ai artifact publish was blocked by the full-read requirement on a 1.8 MB page. Fixed in v2.4: `tools/artifact.js` builds a multi-file artifact (152 KB index.html + 6 script files); a subagent does the one-time read.
@@ -80,11 +80,11 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 
 ## Halloween 2026 (v2.6)
 - [ ] Owner: play one evening in the Square on a phone (the pop-up, the night glow) and buy one thing from each section.
-- [ ] The yard decorations and the festival props (the Harvest Stall, the pop-up by day) get no night tint, so they look bright next to the night scene. One shared night tint would fix them all. `world/pawart_world_b.js`, `game/src/03_yard.js`
+- [x] The yard decorations and the festival props (the Harvest Stall, the pop-up by day) get no night tint, so they look bright next to the night scene. One shared night tint would fix them all. `world/pawart_world_b.js`, `game/src/03_yard.js` Fixed (art-fixes): `PawArt.tint(svg, {time, lit})` gives a prop the scenes' own dawn, dusk and night recolour (glows, masks and candlelight kept); `propTint()` in `03_yard.js` uses it for the yard decor (v2.7 decorations included, lit ones drawn lit), the stall, the banner, the leaf piles and the unlit pop-up.
 - [ ] The v2.5 porch jack-o-lantern keeps its pale glow (it must stay byte-identical), while the v2.6 pumpkins glow warm. `world/pawart_world_b.js`
-- [ ] Pre-existing: at night the shop window glow draws over the Town Notice board in the Square. `world/pawart_world_c.js`
+- [x] Pre-existing: at night the shop window glow draws over the Town Notice board in the Square. `world/pawart_world_c.js` Fixed (art-fixes): the window glows are masked by the board's silhouette (`k.unlit`, world C).
 - [ ] Pre-existing: on phones, a visiting dog with no pack dogs takes Square pack spot 0 and the camera only widens to the right, so the visitor and the Harvest Stall can sit off-screen at 360 px. `game/src/03_yard.js` phHomeRefit
-- [ ] On phones the dog house's jack-o-lantern can show cut in half at the right edge of the yard's home view. `game/src/26_festival.js`
-- [ ] Market Street's Halloween bat bunting sits right under the place label on phones. `world/pawart_world_a.js`
+- [x] On phones the dog house's jack-o-lantern can show cut in half at the right edge of the yard's home view. `game/src/26_festival.js` Fixed (art-fixes): phones tuck it in at the dog house's right front corner, `FS_PUMPKIN_PH` [796, 488]: outside every portrait home view, whole in the look-right crop.
+- [x] Market Street's Halloween bat bunting sits right under the place label on phones. `world/pawart_world_a.js` Fixed (art-fixes): strung under the signs at y 229, along the awning tops (the phone label reaches y 130).
 - [ ] The v2.6 items are 2026 only. A Halloween 2027 would need new `ed: 2027` items and a `HW_WIN` entry (the pop-up code is written for any edition). `game/src/00_core.js`, `game/src/27_halloween.js`
-- [ ] Under parallel load, `account` can hit its 300 s watchdog, and `phone_town`, `phone_occl_home`, `phone_v25_fixes_a`, `phone_puppy` (iPhone 13 "Stay toggles by tap", 3 of 3 clean alone) and `v21_home` can need their retry.
+- [ ] Under parallel load, `account` can hit its 300 s watchdog, and `phone_town`, `phone_occl_home`, `phone_v25_fixes_a`, `phone_puppy` (iPhone 13 "Stay toggles by tap", 3 of 3 clean alone) and `v21_home` can need their retry. `v21_home` "chair put away: she does not lie down" also fails about 1 run in 4 on its own, on integration/v2.7 too (idle pose roll).

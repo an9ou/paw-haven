@@ -45,9 +45,12 @@ if (BASE.some((b) => !b)) { ok(false, 'v26-base not found: git fetch origin v26-
 else {
   const PB = load(BASE), PN = load(SRC);
   let n = 0;
+  // v2.6.1 (art-fixes): the Square masks its window glows with the notice board (world C lightsLayer, k.unlit). unmask() drops exactly that
+  // wrapper, so the rest of the drawing is still compared byte for byte
+  const unmask = (s) => s.replace(/<mask id="pwc0\d+(?:x\d+)?"[^>]*>[\s\S]*?<\/mask><g mask="url\(#pwc0\d+(?:x\d+)?\)">([\s\S]*?)<\/g>/g, '$1');
   const both = (fn, name, o, label) => {
     const b1 = PB[fn](name, o), b2 = PB[fn](name, o);
-    const n1 = PN[fn](name, o), n2 = PN[fn](name, Object.assign({}, o, { halloween: false }));
+    const n1 = unmask(PN[fn](name, o)), n2 = unmask(PN[fn](name, Object.assign({}, o, { halloween: false })));
     ok(b1 === n1, `${label}: no flag matches v26-base`); ok(b2 === n2, `${label}: halloween false matches v26-base`); n += 2;
   };
   SEASONS.forEach((season) => TIMES.forEach((time) => WEATHERS.forEach((weather) => {
