@@ -132,9 +132,9 @@ function crPackHead(d) {
   const hs = typeof hoPackSpot === 'function' ? hoPackSpot(d, i) : null; if (hs) [fx, fy, face, sc] = hs;
   const w = DW * sc, h = DH * sc; return [fx - w / 2 + w * (face === 'left' ? 0.34 : 0.66), fy - h * (205 / 220) + h * 0.14];
 }
-// one pet tick for every ticked, awake pack dog present. activeBonded: the active dog has its Bond this session (a pack dog's Bond comes with or after it,
-// so the pack gets one toast). Returns the pack dogs whose Bond is due this tick ([] with pack care off)
-function crPetPack(activeBonded) {
+// one pet tick for every ticked, awake pack dog present. bondNow: the active dog gets its Bond this tick, bonded: it already had it this session.
+// A pack dog's Bond comes with the active dog's (one toast for the pack), or after it at 10 gain. Returns the pack dogs whose Bond is due ([] with pack care off)
+function crPetPack(bondNow, bonded) {
   if (!crPack()) return [];
   const now = performance.now(), tick = crDogs().filter((d) => d !== S.dog), zz = tick.filter((d) => d.sleeping), due = [];
   if (zz.length && now - crPetSleepT > 120000) { crPetSleepT = now; toast(`${crNames(zz)} ${crIs(zz)} asleep, so no pets for now.`); }
@@ -142,7 +142,7 @@ function crPetPack(activeBonded) {
     const s = crPetS[d.id] || (crPetS[d.id] = { gain: 0, bonded: false, at: 0 });
     let g = 1.5 * (withDog(d, () => favAct('petting')) ? 1.5 : 1); if (s.gain >= 20) g *= 0.25;
     s.gain += g; withDog(d, () => addStat('happy', g));
-    if (!s.bonded && activeBonded && s.gain > 0) due.push(d);
+    if (!s.bonded && (bondNow || (bonded && s.gain >= 10))) due.push(d);
     if (now - s.at > 900 && cur.mode === 'yard') {
       s.at = now; crFree(d); packNext[d.id] = Math.max(packNext[d.id] || 0, now + 1100); packPose[d.id] = 'pet'; redrawPackDog(d);
       const hd = crPackHead(d); if (hd) fxText('♥', hd[0] + RAND(-12, 12), hd[1] - 8, '#F28FA5', 30);
@@ -178,7 +178,11 @@ function crNapPack() {
 }
 function crNapToast(c) {
   const l = c.solo ? c.pack : [S.dog].concat(c.pack), nm = crNames(l), one = l.length === 1;
-  if (S.place === 'house') { const b = bedInfo(); toast(`${nm} ${one ? 'curls' : 'curl'} up on ${one ? PRd(l[0]).his + ' bed' : 'their beds'}. Indoor naps: +25%${b.bonus ? `, bed +${Math.round(b.bonus * 100)}%` : ''}.`); return; }
+  if (S.place === 'house') { // HOME puts each dog on its own bed, or on the rug when there are fewer beds than dogs
+    const b = bedInfo(), bed = typeof hoBedFor === 'function' ? l.filter((d) => hoBedFor(d)) : l, rug = l.filter((d) => !bed.includes(d)), bonus = ` Indoor naps: +25%${b.bonus ? `, bed +${Math.round(b.bonus * 100)}%` : ''}.`;
+    const onBed = bed.length ? `${crNames(bed)} ${bed.length === 1 ? `curls up on ${PRd(bed[0]).his} bed` : 'curl up on their beds'}.` : '';
+    toast(`${onBed}${rug.length ? `${onBed ? ' ' : ''}${crNames(rug)} ${rug.length === 1 ? 'naps' : 'nap'} on the rug.` : ''}${bonus}`); return;
+  }
   toast(`${nm} ${one ? 'climbs' : 'pile'} into the ${S.house}.${weatherNow() === 'rain' ? ' Rain on the roof: the best nap sound (+20% nap).' : isNight() ? ' Night naps restore more (+40%).' : ' Goodnight.'}`);
 }
 // the nap tray's extra line: who else is napping
@@ -218,7 +222,7 @@ function crBathEnd() {
   crBathSwap(b.orig);
   if (b.fin) trackAct('bath', { dogs: b.fin });
 }
-const crBathTitle = () => (crBath ? ` (${crBath.i + 1} of ${crBath.q.length})` : '');
+const crBathTitle = () => (crBath ? ` <span class="cr-n">(${crBath.i + 1} of ${crBath.q.length})</span>` : '');
 
 function crExpose() {
   if (!window.__paw) return;

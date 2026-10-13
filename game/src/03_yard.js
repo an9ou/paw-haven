@@ -405,7 +405,7 @@ function petTick(wx, wy) {
   if (outdoorsNow() && weatherNow() === 'rain' && !hasRaincoat() && !pet.wet) { pet.wet = true; toast('Wet dog smell intensifies.'); }
   setTemp('pet', 900); fxText('♥', wx + RAND(-20, 20), wy - 10);
   Math.random() < 0.7 ? SFX.squeak() : SFX.boop(RAND(500, 800));
-  const bondNow = !pet.bonded && pet.gain >= 10, crB = crPetPack(bondNow || pet.bonded); // v2.7 PACK CARE: the ticked pack dogs get the same petting ([] with pack care off)
+  const bondNow = !pet.bonded && pet.gain >= 10, crB = crPetPack(bondNow, pet.bonded); // v2.7 PACK CARE: the ticked pack dogs get the same petting ([] with pack care off)
   if (bondNow && crB.length) { pet.bonded = true; crPetBond(crB); }
   else if (bondNow) { pet.bonded = true; const n = addBond(3) + (S.outfit.head === 'Wizard Hat' ? addBond(1, { raw: true }) : 0); const st = S.outfit.charm === 'Sparkle Stone'; if (st) addStat('happy', 5); toast(`+${n} Bond.${S.outfit.head === 'Wizard Hat' ? ' Magic hands: +1 Bond.' : ''}${st ? ' The Sparkle Stone hums: +5 Happiness.' : ''} ${NAME()} pretends ${PR().he} did not enjoy that.`, 'good'); dailyCare('pet'); markCareDay(); trackAct('pet', {}); }
   else if (crB.length) crPetBond(crB, true);
@@ -487,7 +487,7 @@ function feed(name) {
     if (name === 'Pupcake') { dailyCheck(); if (S.daily.pupcake) { nope('One Pupcake per day. Doctor\'s orders. The doctor is a duck.'); return; } S.daily.pupcake = true; }
     S.inv.food[name]--; if (S.inv.food[name] <= 0) delete S.inv.food[name];
   }
-  busy = true; hideBubble(); markDirty(); popDown(); clearCurl(); if (D().key === 'corgi' && name !== 'Fresh Water') barkDog(D(), 'yip', {});
+  busy = true; hideBubble(); markDirty(); popDown(); clearCurl(); crFree(D()); if (D().key === 'corgi' && name !== 'Fresh Water') barkDog(D(), 'yip', {});
   // v2.5: at home and away alike the food goes in the bowl (it used to be eaten from the hand away from home, with no bowl)
   S.bowl = name; setBowl(name); dogTo(-125, 0, 1, 0.8); renderDog('walk', 'left'); setTimeout(() => { renderDog('eat', 'left'); name === 'Fresh Water' ? SFX.slurp() : SFX.crunch(); }, 850);
   setTimeout(() => { if (name !== 'Fresh Water') SFX.crunch(); }, 1500);
@@ -604,7 +604,7 @@ function napRate() { const h = houseInfo(); const c = S.place === 'house' ? 0.25
 function startSleep() {
   if (busy) return; const crN = crNapPack(); if (crN && crN.done) return; // v2.7 PACK CARE: the ticked pack dogs are tucked in too (null with pack care off)
   if (S.stats.energy >= 99) { nope(`${NAME()} is not tired. ${PR().He} is vibrating.`); return; }
-  clearCurl(); busy = false; S.sleeping = true; markDirty(); trackAct('nap', crN ? { dogs: crN.n } : {}); hideBubble(); popDown(); dogTo(...napSpot(), 1); renderDog('walk');
+  clearCurl(); crFree(D()); busy = false; S.sleeping = true; markDirty(); trackAct('nap', crN ? { dogs: crN.n } : {}); hideBubble(); popDown(); dogTo(...napSpot(), 1); renderDog('walk');
   setTimeout(() => { if (S.sleeping) { renderDog('sleep'); showZzz(true); } }, 1000);
   sleepTray(); if (crN) crNapToast(crN); else toast(S.place === 'house' ? `${NAME()} curls up on the ${S.bed}. Indoor naps: +25%${bedInfo().bonus ? `, bed +${Math.round(bedInfo().bonus * 100)}%` : ''}.` : weatherNow() === 'rain' ? `${NAME()} curls up in the ${S.house}. Rain on the roof: the best nap sound (+20% nap).` : isNight() ? `${NAME()} climbs into the ${S.house}. Night naps restore more (+40%).` : `${NAME()} climbs into the ${S.house}. Goodnight.`); if (ROACH[D().key]) setTimeout(() => toast(`${NAME()} flips upside down, legs in the air. Greyhounds call that roaching.`, ''), 900); audioPlace();
 }
