@@ -1,0 +1,4 @@
+/* v2.7 HOME lane (tag ho): placement mode, the Decorate sheet, beds for every dog, furniture front layers, the Furniture corner tab. V27.md section 5. The HOME lane owns this file. */
+/* furniture front layers: the same prop drawn twice, the second copy shows only its <g class="pa-front"> (like .bedfront and .pa-bed-front) */
+.ho-front svg *{visibility:hidden}
+.ho-front svg .pa-front,.ho-front svg .pa-front *{visibility:visible}

@@ -102,7 +102,7 @@ function enterYard() {
   renderDog(dogPoseNow()); setBowl(fbBowlFood); // v2.5: S.bowl is saved, so after a reload mid-meal it could keep a full bowl on show: the live state wins
   phHomeCx = 358; phCamHome = isPhone() ? phHomeCx : 430; view.style.background = ''; clearTimeout(phPanT); cancelAnimationFrame(camRaf); phPeekOn = false; view.style.removeProperty('--vfit'); view.style.removeProperty('--trayH'); phZoom = 1;
   camCx = phCamHome; camApply(camCx); if (isPhone()) phHomeRefit();
-  if (S.sleeping) { dogTo(417.5, S.place === 'house' ? 130 : 140, 0.75, 0); fbNapFit(dogPoseNow()); showZzz(true); }
+  if (S.sleeping) { dogTo(...napSpot(), 0); fbNapFit(dogPoseNow()); showZzz(true); }
   updateHUD(); bindDev(); bindMess(); bindPack(); greetWalker(); drawFluff(); setTimeout(() => yardReaction(false), 700);
   const bedG = $('#bedG'); if (bedG) { bedG.onclick = () => { popAct = 'care'; openCareTray(); }; bedG.onkeydown = (e) => { if (e.key === 'Enter') { popAct = 'care'; openCareTray(); } }; }
   const svg = $('svg.world', view), hit = $('#dogHit');
@@ -613,7 +613,7 @@ function openCareTray() {
 function napRate() { const h = houseInfo(); const c = S.place === 'house' ? 0.25 + bedInfo().bonus : h.comfort * (S.dog.key === 'husky' && h.n === 'Snow Igloo' ? 2 : 1); return 20 * BOOST.nap * (1 + c) * (owns('toys', 'Plush Bone') ? 1.1 : 1) * (isNight() ? 1.4 : 1) * (weatherNow() === 'rain' ? 1.2 : 1) * shNapMul() * (S.house === 'Pumpkin Cottage' && S.outfit.body === 'Pumpkin Suit' ? 1.1 : 1); } // v2.5: the Pumpkin Suit in the Pumpkin Cottage
 function startSleep() {
   if (busy) return; if (S.stats.energy >= 99) { nope(`${NAME()} is not tired. ${PR().He} is vibrating.`); return; }
-  clearCurl(); busy = false; S.sleeping = true; markDirty(); trackAct('nap', {}); hideBubble(); popDown(); dogTo(417.5, S.place === 'house' ? 130 : 140, 0.75, 1); renderDog('walk');
+  clearCurl(); busy = false; S.sleeping = true; markDirty(); trackAct('nap', {}); hideBubble(); popDown(); dogTo(...napSpot(), 1); renderDog('walk');
   setTimeout(() => { if (S.sleeping) { renderDog('sleep'); showZzz(true); } }, 1000);
   sleepTray(); toast(S.place === 'house' ? `${NAME()} curls up on the ${S.bed}. Indoor naps: +25%${bedInfo().bonus ? `, bed +${Math.round(bedInfo().bonus * 100)}%` : ''}.` : weatherNow() === 'rain' ? `${NAME()} curls up in the ${S.house}. Rain on the roof: the best nap sound (+20% nap).` : isNight() ? `${NAME()} climbs into the ${S.house}. Night naps restore more (+40%).` : `${NAME()} climbs into the ${S.house}. Goodnight.`); if (ROACH[D().key]) setTimeout(() => toast(`${NAME()} flips upside down, legs in the air. Greyhounds call that roaching.`, ''), 900); audioPlace();
 }
@@ -674,7 +674,39 @@ const HM_DECOR = {
   'Jack-o-Lantern Trio': { prop: 'hwlanterns', at: [440, 528, 112, 67], vb: [200, 120], price: 120, fest: 'halloween', ed: 2026, v26: true, story: 'Three pumpkins, three faces, all of them smiling. They glow a little after dark.' },
   'Paper Bat Bunting': { prop: 'hwbunting', at: [650, 298, 160, 43], vb: [300, 80], price: 90, fest: 'halloween', ed: 2026, v26: true, story: 'Paper bats on a string, cut a bit wonky. They flutter whenever a dog runs past.' },
   'Friendly Scarecrow': { prop: 'hwscarecrow', at: [762, 262, 92, 130], vb: [140, 200], price: 140, fest: 'halloween', ed: 2026, v26: true, story: 'A pumpkin head and a big grin. The crows sit on his arms to chat.' },
-  'Ghost Garland': { prop: 'hwgarland', at: [100, 220, 200, 60], vb: [300, 90], price: 100, fest: 'halloween', ed: 2026, v26: true, story: 'Little cloth ghosts holding hands. They say boo very quietly.' }
+  'Ghost Garland': { prop: 'hwgarland', at: [100, 220, 200, 60], vb: [300, 90], price: 100, fest: 'halloween', ed: 2026, v26: true, story: 'Little cloth ghosts holding hands. They say boo very quietly.' },
+  // v2.7 Home & Pack (V27.md section 1): everyday decorations for the yard and the house, and five pieces of dog furniture, all sold at Barkitecture.
+  // room: 'yard' | 'house' (missing = 'yard'). zone: 'floor' (bottom edge on the ground band) | 'wall' (hung up, the whole box on the wall band). flat: drawn under everything else on the floor.
+  // lit: the prop takes { lit: isNight() }. `at` is the starting spot (the HOME lane tunes it in screenshots), S.decor[name].at overrides x, y once the player moves it.
+  'Bird Bath': { prop: 'birdbath', at: [24, 300, 66, 88], vb: [120, 160], price: 90, room: 'yard', zone: 'floor', kind: 'decor', v27: true, story: 'A stone bowl on a pedestal for the garden birds. The sparrows splash in it every morning and the dogs watch, very politely.' },
+  'Flower Barrel': { prop: 'flowerbarrel', at: [880, 340, 84, 72], vb: [140, 120], price: 80, room: 'yard', zone: 'floor', kind: 'decor', v27: true, story: 'An old wooden barrel full of sunflowers and snapdragons. Both are safe for dogs, who sniff every single one.' },
+  'String Lights': { prop: 'stringlights', at: [300, 178, 210, 56], vb: [300, 80], price: 100, room: 'yard', zone: 'wall', kind: 'decor', lit: true, v27: true, story: 'Little round bulbs on a long wire. They come on by themselves when it gets dark, which looks like magic but is a timer.' },
+  'Garden Bench': { prop: 'bench', at: [40, 500, 130, 78], vb: [200, 120], price: 120, room: 'yard', zone: 'floor', kind: 'decor', v27: true, story: 'A painted wooden bench with room for one person and three dogs. The dogs always get the good end.' },
+  'Hammock': { prop: 'hammock', at: [830, 510, 156, 84], vb: [260, 140], price: 140, room: 'yard', zone: 'floor', kind: 'decor', v27: true, story: 'A striped hammock between two posts. It swings in the breeze and nobody has ever got out of it gracefully.' },
+  'Wind Chime': { prop: 'windchime', at: [600, 236, 40, 80], vb: [80, 160], price: 70, room: 'yard', zone: 'wall', kind: 'decor', v27: true, story: 'Bamboo tubes and a little wooden bird that clink in the breeze. The dogs tilt their heads at every note.' },
+  'Sandbox': { prop: 'sandbox', at: [300, 524, 120, 72], vb: [200, 120], price: 110, room: 'yard', zone: 'floor', kind: 'decor', v27: true, story: 'A wooden box of soft sand with a little spade. The one place in the yard where digging gets a round of applause.' },
+  'Stepping Stones': { prop: 'steppingstones', at: [560, 540, 168, 56], vb: [240, 80], price: 60, room: 'yard', zone: 'floor', flat: true, kind: 'decor', v27: true, story: 'Five flat stones in a wobbly line across the grass. Every dog hops them in a different order.' },
+  'Braided Rag Rug': { prop: 'ragrug', at: [20, 512, 216, 72], vb: [240, 80], price: 80, room: 'house', zone: 'floor', flat: true, kind: 'decor', v27: true, story: 'A round rug braided from old shirts and one sock. It is the warmest spot on the floor at four o\'clock.' },
+  'Toy Basket': { prop: 'toybasket', at: [880, 470, 84, 70], vb: [120, 100], price: 70, room: 'house', zone: 'floor', kind: 'decor', v27: true, story: 'A wicker basket of squeaky friends. Every toy comes out and not one of them ever goes back in.' },
+  'Cushion Pile': { prop: 'cushionpile', at: [610, 524, 126, 70], vb: [180, 100], price: 90, room: 'house', zone: 'floor', kind: 'decor', v27: true, story: 'Six squashy cushions in a heap. Officially for people, unofficially for dogs.' },
+  'Boston Fern': { prop: 'fern', at: [800, 300, 78, 104], vb: [120, 160], price: 80, room: 'house', zone: 'floor', kind: 'decor', v27: true, story: 'A big leafy fern on a little wooden stand. Boston ferns are safe around dogs, which is why this one was picked.' },
+  'Cuckoo Clock': { prop: 'cuckooclock', at: [596, 40, 60, 96], vb: [100, 160], price: 120, room: 'house', zone: 'wall', kind: 'decor', v27: true, story: 'A carved wooden clock with a little bird inside. On the hour it pops out, and every dog in the house answers it.' },
+  'Paw Print Pictures': { prop: 'pawpictures', at: [690, 220, 140, 70], vb: [200, 100], price: 90, room: 'house', zone: 'wall', kind: 'decor', v27: true, story: 'Three little frames, each with one muddy paw print. The artists signed them by sitting on them.' },
+  'Moon Lamp': { prop: 'moonlamp', at: [548, 404, 60, 84], vb: [100, 140], price: 100, room: 'house', zone: 'floor', kind: 'decor', lit: true, v27: true, story: 'A round paper moon on a little wooden stand. It glows after dark, so nobody trips over a sleeping dog.' },
+  'Patchwork Quilt': { prop: 'wallquilt', at: [40, 20, 126, 98], vb: [180, 140], price: 110, room: 'house', zone: 'wall', kind: 'decor', v27: true, story: 'A quilt hung on the wall, one square for every dog who ever lived here. There is plenty of room for more squares.' },
+  // v2.7 furniture (kind 'furniture', the Furniture corner tab). The dogs use it in idle time. spots: feet point x, y and the dog box width w, all in the prop's
+  // viewBox units, with the pose and facing. front: the prop's <g class="pa-front"> is drawn over a dog on that spot. via: the path start (the ramp foot).
+  // The art lane may tune the spots and publishes them as PawArt.FURN_SPOTS[prop] (same shape), which wins over these.
+  'Dog Play Tower': { prop: 'playtower', at: [16, 228, 160, 208], vb: [200, 260], price: 320, bond: 3, room: 'house', zone: 'floor', kind: 'furniture', v27: true, story: 'Three carpet steps, a cubby hole and a rope to bat. The top step belongs to whoever got there first.',
+    spots: { top: { x: 100, y: 92, w: 200, pose: 'sit', face: 'right' }, cubby: { x: 100, y: 250, w: 200, pose: 'sleep', face: 'right', front: true } } },
+  'Tunnel Sofa': { prop: 'tunnelsofa', at: [12, 470, 240, 128], vb: [300, 160], price: 360, bond: 3, room: 'house', zone: 'floor', kind: 'furniture', v27: true, story: 'A squashy little sofa with a tunnel straight through the middle. Dogs go in one end and come out the other, very pleased with themselves.',
+    spots: { tunnel: { x: 150, y: 154, w: 200, pose: 'walk', face: 'right', front: true }, seat: { x: 150, y: 70, w: 200, pose: 'down', face: 'left' } } },
+  'Ball Pit': { prop: 'ballpit', at: [640, 476, 192, 112], vb: [240, 140], price: 280, bond: 2, room: 'house', zone: 'floor', kind: 'furniture', v27: true, story: 'A soft round pit full of bright balls. Jumping in is allowed, and so is lying very still.',
+    spots: { a: { x: 96, y: 124, w: 200, pose: 'happy', face: 'right', front: true }, b: { x: 150, y: 124, w: 200, pose: 'rollover', face: 'left', front: true } } },
+  'Sofa Ramp': { prop: 'sofaramp', at: [80, 300, 208, 128], vb: [260, 160], price: 200, bond: 2, room: 'house', zone: 'floor', kind: 'furniture', v27: true, story: 'A carpeted ramp up to a cushioned top step. Short legs, long backs and old knees all get up without a jump.',
+    spots: { top: { x: 204, y: 60, w: 200, pose: 'sit', face: 'left', via: { x: 40, y: 152 } } } },
+  'Window Seat': { prop: 'windowseat', at: [680, 222, 176, 192], vb: [220, 240], price: 260, bond: 2, room: 'house', zone: 'floor', kind: 'furniture', lit: true, v27: true, story: 'A cushioned seat under a little round window. The best place in the house to watch the postman and the birds.',
+    spots: { seat: { x: 110, y: 176, w: 200, pose: 'sit', face: 'right' } } }
 };
 const HM_PHOTO = [20, 15, 120, 84]; // the documented data-photo box inside the 160x140 frame
 function hmDecorFields() { if (S && (!S.decor || typeof S.decor !== 'object')) S.decor = {}; }
@@ -697,7 +729,7 @@ function hmDecorHit(x, y, w, h) {
 }
 function hmDecorSVG() {
   hmDecorFields();
-  return `<g id="decorG">${Object.keys(HM_DECOR).filter(hmDecorOut).map((n) => { const [x, y, w, h] = HM_DECOR[n].at; return `<g class="hot hm-decor" data-decor="${esc(n)}" tabindex="0" role="button" aria-label="${esc(n)}">${place(hmDecorArt(n), x, y, w, h)}${hmDecorHit(x, y, w, h)}</g>`; }).join('')}</g>`;
+  return `<g id="decorG">${Object.keys(HM_DECOR).filter((n) => (HM_DECOR[n].room || 'yard') === 'yard' && hmDecorOut(n)).map((n) => { const [x, y, w, h] = HM_DECOR[n].at; return `<g class="hot hm-decor" data-decor="${esc(n)}" tabindex="0" role="button" aria-label="${esc(n)}">${place(hmDecorArt(n), x, y, w, h)}${hmDecorHit(x, y, w, h)}</g>`; }).join('')}</g>`;
 }
 function hmDecorBind() {
   const g = $('#decorG'); if (!g) return;
