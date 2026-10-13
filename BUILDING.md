@@ -58,7 +58,7 @@ There is no separate QA session. `game/test_copy_node.js` (the `copy` suite) and
    - Most merge-day fixes came from lanes guessing at each other's names.
 9. **Don't wait on the owner.**
    - Decisions go to the Project manager with a recommendation.
-   - With no answer in 10 minutes, take the recommendation and list it in the final report.
+   - With no answer in 5 minutes, take the recommendation and list it in the final report (the owner aims for auto coding).
 10. **Push `main` only when green.** A push deploys GitHub Pages. Work in progress goes to an integration branch.
 
 ## Setup that saves time
@@ -85,6 +85,8 @@ There is no separate QA session. `game/test_copy_node.js` (the `copy` suite) and
 
 ## Project manager handoff (read this first if you're a new Project manager chat)
 
+Since 13 Oct 2026 the Project manager session is called **Paw Haven · Game Manager**. It runs one team session per area (game design, art, UI/UX, QA).
+
 You manage Paw Haven for the owner. You don't build. Start a fresh Coordinator session for each release, following the rules above.
 
 **The owner's preferences:**
@@ -93,7 +95,7 @@ You manage Paw Haven for the owner. You don't build. Start a fresh Coordinator s
 - **No Fable from v2.6 on:** Fable is too costly for the owner's usage. Coordinators, specs, lanes and reviews use Opus (Sonnet or Haiku where the rules above allow). v2.5 was the last release run on Fable.
 - **Effort levels:** `.claude/settings.json` sets `effortLevel: high` for every session in this repo (Coordinators, spec, art lanes, reviews). Routine work (fix batches, shop wiring, docs, test runs, screenshots) goes to the `paw-fixer` subagent (Opus, medium). Art goes to `paw-artist` and reviews to `paw-reviewer` (both Opus, high). Definitions are in `.claude/agents/`. The Project manager chat can run at medium with `/effort medium`.
 - **Speed and quality over token cost:** lanes may use parallel subagents. Take screenshots before and after for every changed screen.
-- **Decisions:** ask with the AskUserQuestion choice window (2–4 options, recommendation first), not plain text. With no answer in 10 minutes, take the recommendation and list it in the final report. When the owner is asleep or says "decide yourself", the Project manager decides without asking and lists every decision in the final report.
+- **Decisions:** the owner aims for auto coding. Ask only real decisions, as 2–4 options with the recommendation first, and arm a 5-minute `send_later` check-in. With no answer in 5 minutes, take the recommendation and list it in the final report. (The AskUserQuestion window blocks the session until answered, so use it only while the owner is clearly active.) When the owner is asleep or says "decide yourself", the Project manager decides without asking and lists every decision in the final report.
 - **Stop means stop.** If the owner says "stop", stop at once: cancel scheduled check-ins, commit nothing, and ask what they meant.
 - **Reports:** always send a final report at the end of every release; progress only when the owner asks. The final report is a claude.ai artifact in the game's own style, with real crayon dogs. To draw the dogs:
   - load `dogs/pawart_dogs.js` in node `vm` with a fake `window`, then call `PawArt.dog(key, {pose, outfit, age, sparkle})`;
