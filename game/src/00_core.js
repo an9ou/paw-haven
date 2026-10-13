@@ -675,7 +675,7 @@ const TOAST_MS = 2900;
 function toast(text, kind = '', o = {}) {
   let n = 1;
   if (o.group && isPhone()) { const same = [...toasts.children].find((e) => e.dataset.group === o.group); if (same) { n = (+same.dataset.n || 1) + 1; same.remove(); if (o.many) text = o.many(n); } }
-  const t = document.createElement('div'); t.className = 'toast ' + kind; t.textContent = text;
+  const t = document.createElement('div'); t.className = 'toast ' + kind + (n > 1 ? ' tmerge' : ''); t.textContent = text; // tmerge: a count update bumps, it does not fade in again
   if (o.group) { t.dataset.group = o.group; t.dataset.n = n; }
   toasts.appendChild(t);
   while (toasts.children.length > 3) toasts.firstChild.remove();

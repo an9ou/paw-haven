@@ -128,6 +128,8 @@ html[data-layout="phone"] #stage:has(#modal:not([hidden])) #toasts .toast:nth-la
 /* UI/UX (13 Oct 2026): letters arriving together are one toast (toast() in 00_core.js); with the guide strip up only the newest toast shows;
    on the map they keep clear of the zoom column on the right (and stay centred, so the left gutter matches) */
 html[data-layout="phone"] #stage.gd-top #toasts .toast:not(:last-child){display:none}
+html[data-layout="phone"] .toast.tmerge{animation:toastBump .25s ease-out}
+@keyframes toastBump{40%{transform:scale(1.04) rotate(-1deg)}}
 html[data-layout="phone"] #stage.toast-map #toasts{width:calc(100% - 136px)}
 /* v2.3: the +N chip replaces the sideways scroll and its fade (phChipsFit in 13_more_dogs.js) */
 html[data-layout="phone"] #hudPack{gap:0;-webkit-mask-image:none;mask-image:none;animation:none}
