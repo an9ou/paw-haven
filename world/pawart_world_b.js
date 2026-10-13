@@ -2613,7 +2613,7 @@ Object.assign(ITEMS,{
   b.ex('spark',56,12,3);
  },
  'Rocking Chair'(b){
-  b.sh([[14,36],[11,10],[19,8],[24,36]],C.wood,{k:.05,hatch:0,hl:0,lw:1,base:'#F3DDB4',det:[[[15,30],[14,16]]],dw:.7});
+  b.sh([[15,36],[14,9],[22,8],[23,36]],C.wood,{k:.05,hatch:0,hl:0,lw:1,base:'#F3DDB4',det:[[[18,30],[18,16]]],dw:.7});// v2.6.1: upright backrest
   b.sh([[46,36],[48,18],[54,18],[53,36]],C.wood,{k:.05,hatch:0,hl:0,lw:.9});
   b.sh(RR(12,34,42,6,2),C.wood,{hatch:0,hl:0,lw:1,base:'#F3DDB4'});
   b.ln([[18,40],[16,52]],{w:3,col:WKD});b.ln([[48,40],[50,52]],{w:3,col:WKD});
@@ -2693,11 +2693,11 @@ PROPS.doggyramp=function(b){
 
 PROPS.rockingchair=function(b){
   b.shadow(80,153,64,4);
-  // back posts + slats
-  b.sh([[44,98],[34,16],[48,12],[58,98]],C.wood,{k:.05,hatch:0,hl:0,lw:1.2,base:'#F3DDB4',det:[[[40,86],[38,30]]],dw:.8});
+  // back posts + slats (v2.6.1: the backrest stands nearly upright, a 2-unit recline instead of the old 10-unit lean)
+  b.sh([[42,98],[40,15],[54,13],[56,98]],C.wood,{k:.05,hatch:0,hl:0,lw:1.2,base:'#F3DDB4',det:[[[46,86],[45,30]]],dw:.8});
   b.sh([[104,98],[104,40],[118,40],[116,98]],C.wood,{k:.05,hatch:0,hl:0,lw:1.1});
-  for(let i=0;i<3;i++){const y=28+i*18;b.sh([[36+i*.6,y],[56+i*.6,y-2],[57,y+8],[37,y+10]],C.wood,{k:0,hatch:0,hl:0,lw:.9,dr:.2})}
-  b.sh(RR(34,6,28,9,3),C.woodD,{hatch:0,hl:0,lw:1.1});
+  for(let i=0;i<3;i++){const y=28+i*18,o=-2*(98-y)/84;b.sh([[38+o,y],[58+o,y-2],[58+o,y+8],[38+o,y+10]],C.wood,{k:0,hatch:0,hl:0,lw:.9,dr:.2})}
+  b.sh(RR(34,5,28,9,3),C.woodD,{hatch:0,hl:0,lw:1.1});
   // seat, arm and legs
   b.sh(RR(34,94,92,14,4),C.wood,{hatch:1,hl:0,lw:1.3,base:'#F3DDB4',sh:WKD});
   b.sh(RR(96,66,24,8,3),C.wood,{hatch:0,hl:0,lw:1});b.ln([[108,74],[108,96]],{w:4,col:WKD});
@@ -4401,6 +4401,31 @@ PA.prop=function(name,o){
   else return _prop26(name,o);
   return serve('p:'+name+':'+JSON.stringify(opt),()=>{const b=mk('prop',seed);PROPS[name](b,opt);
     return b.svg(PROP_VB[name],opt.lit!==undefined?` data-lit="${opt.lit?1:0}"`:'',lbl)});
+};
+
+/* ---------- v2.6.1: one shared time-of-day tint for the props the game lays over a scene ----------
+   PA.tint(svg,{time,lit}) -> svg. The scenes (world A and C) recolour their own art at dawn, dusk and night (recolorFn, the outdoor
+   values); yard decorations, the Harvest Stall, the leaf piles and the pop-up are drawn on top, so they get the same recolour here.
+   'day' (or no time) returns svg unchanged, so daytime art stays byte-identical. Glow groups (.pa-wb-glow), masks, clip paths,
+   gradients and filters are left alone; o.lit also keeps the candlelight colours, so a lit pumpkin still glows. */
+const TOD_TINT={dawn:{m:'#F2A6A6',a:.12},dusk:{m:'#C98698',a:.18,ds:.05},night:{m:'#25325E',a:.46,ds:.22}};
+const CANDLE={'#FFE59A':1,'#FFF7D6':1,'#FFD36E':1,'#FFB45A':1,'#FFC48A':1,'#FFF3C2':1,'#FFE07A':1};
+const TINT_KEEP=/^(mask|clipPath|radialGradient|linearGradient|pattern|filter)$/,TINT_MEMO={},TINT_HEX=/#(?:[0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})\b/g;
+PA.tint=function(svg,o){
+  const t=TOD_TINT[o&&o.time];if(!t||typeof svg!=='string')return svg;
+  const lit=!!o.lit,memo=TINT_MEMO[o.time+(lit?'L':'')]||(TINT_MEMO[o.time+(lit?'L':'')]={}),tm=hex2rgb(t.m);
+  const fx=h=>{let u=h.toUpperCase();if(u.length===4)u='#'+u[1]+u[1]+u[2]+u[2]+u[3]+u[3];if(lit&&CANDLE[u])return h;if(memo[u])return memo[u];
+    let c=hex2rgb(u);if(t.ds){const L=.3*c[0]+.59*c[1]+.11*c[2];c=c.map(v=>v+(L-v)*t.ds)}return memo[u]=rgb2hex(c.map((v,i)=>v+(tm[i]-v)*t.a))};
+  // walk the tags: colours only sit in attributes; a kept element keeps everything inside it
+  const re=/<(\/?)([A-Za-z][\w:-]*)([^>]*?)(\/?)>/g,stack=[];let out='',last=0,keep=0,m;
+  while((m=re.exec(svg))){
+    out+=svg.slice(last,m.index);last=re.lastIndex;
+    if(m[1]){if(stack.pop())keep--;out+=m[0];continue}
+    const k=TINT_KEEP.test(m[2])||(m[2]==='g'&&/class="[^"]*\bpa-wb-glow\b/.test(m[3]));
+    out+=keep||k?m[0]:m[0].replace(TINT_HEX,fx);
+    if(!m[4]){stack.push(k);if(k)keep++}
+  }
+  return out+svg.slice(last);
 };
 
 if(typeof document!=='undefined'&&!document.getElementById('pawart-world-b-v24-css')){

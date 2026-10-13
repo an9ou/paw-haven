@@ -670,8 +670,9 @@ function market(k){
   k.fx(()=>{if(k.env.snow){capLine(k,[[408,530],[592,530]],6);[[22,448],[978,448]].forEach(([x,y])=>capLine(k,[[x-15,y-26],[x+15,y-26]],5))}});
   k.side(()=>sproutCart(k));// v1.3, appended
   k.ss(()=>seasonDrift(k,[[150,330,1],[490,300,.9],[820,350,1],[640,410,.8],[300,420,.85]]));// v2.5
-  // v2.6 Halloween: felt bat bunting across the tops of the signs, low enough to show in the desktop and phone crops (clear of the sign text, the bow and the "c")
-  k.hw(()=>hwBatString(k,-12,1012,155,8,15,.76,x=>Math.abs(x-500)<24||Math.abs(x-856)<24));
+  // v2.6 Halloween: felt bat bunting strung under the signs, along the awning tops (v2.6.1: it hung across the sign tops, right under the place
+  // label on 390-430 px phones, whose label reaches world y 130; the signs end at y 226, the awnings start at 236)
+  k.hw(()=>hwBatString(k,-12,1012,229,5,15,.76));
 }
 
 function shelter(k){

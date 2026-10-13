@@ -685,8 +685,11 @@ function hmPhotoHeads() {
   const [bx, by, bw, bh] = HM_PHOTO, hs = Math.min(60, bw / n), x0 = bx + (bw - n * hs) / 2, y0 = by + (bh - hs) / 2;
   return recs.map((r, i) => { let h; try { h = headSVG(r); } catch (e) { h = art('dogHead', r.key || 'mutt'); } return `<g class="hm-head" data-head="${esc(r.id)}">${place(h, x0 + i * hs, y0, hs, hs)}</g>`; }).join('');
 }
+// v2.6.1: one shared time-of-day tint for the props laid over a scene (yard decor, the Harvest Stall, leaf piles, the pop-up): the scene
+// recolours itself at dawn, dusk and night, and PawArt.tint (world B) gives a prop the same recolour. lit keeps a lit prop's candlelight
+function propTint(svg, lit) { const P = window.PawArt; return P && typeof P.tint === 'function' ? P.tint(svg, { time: timePhase(), lit: !!lit }) : svg; }
 function hmDecorArt(name) {
-  const D = HM_DECOR[name]; let sv = place(D.prop === 'hwlanterns' ? art('prop', D.prop, { lit: isNight() }) : art('prop', D.prop), 0, 0, D.vb[0], D.vb[1]); // v2.6: the lantern trio glows after dark
+  const D = HM_DECOR[name], lit = D.prop === 'hwlanterns' && isNight(); let sv = place(propTint(D.prop === 'hwlanterns' ? art('prop', D.prop, { lit }) : art('prop', D.prop), lit), 0, 0, D.vb[0], D.vb[1]); // v2.6: the lantern trio glows after dark
   if (D.prop === 'photoframe') sv += `<g data-photo-heads>${hmPhotoHeads()}</g>`;
   return `<svg viewBox="0 0 ${D.vb[0]} ${D.vb[1]}" xmlns="http://www.w3.org/2000/svg">${sv}</svg>`;
 }
@@ -697,7 +700,7 @@ function hmDecorHit(x, y, w, h) {
 }
 function hmDecorSVG() {
   hmDecorFields();
-  return `<g id="decorG">${Object.keys(HM_DECOR).filter(hmDecorOut).map((n) => { const [x, y, w, h] = HM_DECOR[n].at; return `<g class="hot hm-decor" data-decor="${esc(n)}" tabindex="0" role="button" aria-label="${esc(n)}">${place(hmDecorArt(n), x, y, w, h)}${hmDecorHit(x, y, w, h)}</g>`; }).join('')}</g>`;
+  return `<g id="decorG" data-tod="${timePhase()}">${Object.keys(HM_DECOR).filter(hmDecorOut).map((n) => { const [x, y, w, h] = HM_DECOR[n].at; return `<g class="hot hm-decor" data-decor="${esc(n)}" tabindex="0" role="button" aria-label="${esc(n)}">${place(hmDecorArt(n), x, y, w, h)}${hmDecorHit(x, y, w, h)}</g>`; }).join('')}</g>`;
 }
 function hmDecorBind() {
   const g = $('#decorG'); if (!g) return;
@@ -726,4 +729,5 @@ function hmOpenDecor() {
 function hmExpose() { if (window.__paw) window.__paw.home = { decorOut: hmDecorOut, redraw: hmDecorRedraw, ambient: () => packAmbient(), say: (t, x, y) => say(t, x, y, 4000), emit: (e, d) => emit(e, d), specs: HM_DECOR }; }
 on('game:ready', () => { hmDecorFields(); setTimeout(hmExpose, 0); });
 on('yard:enter', () => { hmDecorFields(); hmDecorBind(); hmExpose(); });
+on('scene:redraw', () => { const g = $('#decorG'); if (g && g.dataset.tod !== timePhase()) hmDecorRedraw(); }); // v2.6.1: the decor follows the scene's time tint
 on('decor:new', (o) => { hmDecorFields(); if (cur.mode === 'yard' && S.place === 'yard') hmDecorRedraw(); toast(`New for the yard: ${o && o.name}!`, 'gold'); });

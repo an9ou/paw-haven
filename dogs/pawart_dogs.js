@@ -461,7 +461,9 @@ function drawNeck(h,s,L,HT,kind){
     const pts=[];for(let i=0;i<=8;i++)pts.push(sag(i/8));
     cols.forEach((col,i)=>{const offset=i*1.8-4.5;const offsetPts=pts.map(p=>[p[0],p[1]+offset]);h.line(offsetPts,2.8,col)});
     const tipPt=sag(.55);const starX=R1(tipPt[0]+8),starY=R1(tipPt[1]+10);
-    h.acc.push(`<path d="M${starX} ${starY}l1.2 3 3.2 1.2 -3.2 1.2 -1.2 3 -1.2 -3 -3.2 -1.2 3.2 -1.2z" fill="#F2C14E" stroke="${INK}" stroke-width="0.8"/>`);}
+    // v2.6.1: the tag is a 5-point star (it was a 4-point sparkle), same centre and size
+    const sc=starY+4.2,sp=[];for(let i=0;i<10;i++){const an=-Math.PI/2+i*Math.PI/5,rr=i%2?2.1:5;sp.push(R1(starX+Math.cos(an)*rr)+' '+R1(sc+Math.sin(an)*rr))}
+    h.acc.push(`<path d="M${sp.join('L')}Z" fill="#F2C14E" stroke="${INK}" stroke-width="0.8" stroke-linejoin="round"/>`);}
   else{const c=a.c,d=[a.r[0]-a.l[0],a.r[1]-a.l[1]],m=Math.hypot(d[0],d[1])||1,u=[d[0]/m,d[1]/m],v=[-u[1],u[0]],S=11;
     const P=(x,y)=>[c[0]+u[0]*x+v[0]*y,c[1]+u[1]*x+v[1]*y];
     h.shape([P(0,0),P(-S*1.2,-S*.7),P(-S*1.3,S*.75)],'#2D6CDF',{w:3.6,step:8});h.shape([P(0,0),P(S*1.2,-S*.75),P(S*1.2,S*.7)],'#2D6CDF',{w:3.6,step:8});h.shape(circ(...P(0,0),3.6,3.6,6),'#1B4AA8',{w:3,ox:0,oy:0,sc:1,closed:1});}
