@@ -173,6 +173,13 @@ function pjJournalInit(p) {
     const on = p.querySelector('.jtabs [aria-selected="true"]'); if (on) { const bar = on.parentElement; bar.scrollLeft = Math.max(0, on.offsetLeft - (bar.clientWidth - on.offsetWidth) / 2); }
     const pan = p.querySelector('.ft-pan'); if (!pan) return;
     const me = pan.querySelector('.fnode.me');
+    // UI/UX H8: the tree opens narrow enough that both parents and their labels ("Shelter rescue") fit (grandparents may still need a drag)
+    const ft = pan.querySelector('.ft'), pa = [4, 5].map((i) => pan.querySelector(`[data-node-i="${i}"]`));
+    if (ft && pa[0] && pa[1] && !ft.style.width) {
+      const cx = (n) => { const r = n.getBoundingClientRect(); return r.left + r.width / 2; }, lw = Math.max(...pa.map((n) => Math.max(...[...n.children].map((c) => c.getBoundingClientRect().width), 56)));
+      const d = cx(pa[1]) - cx(pa[0]), w0 = ft.offsetWidth, w1 = Math.floor(w0 * (pan.clientWidth - 14 - lw) / d);
+      if (d > 0 && w1 < w0) { ft.style.width = Math.max(400, w1) + 'px'; pinFamNodes(p); }
+    }
     if (me) pan.scrollLeft = Math.max(0, me.offsetLeft - pan.clientWidth / 2);
     const step = () => Math.max(120, Math.round(pan.clientWidth * 0.6));
     p.querySelectorAll('[data-ftpan]').forEach((b) => { b.onclick = () => { SFX.click(); pan.scrollBy({ left: +b.dataset.ftpan * step(), behavior: document.documentElement.dataset.motion === 'off' ? 'auto' : 'smooth' }); }; });

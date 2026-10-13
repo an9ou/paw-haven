@@ -149,8 +149,18 @@ function phChipsFit(wrap) {
   chips.slice(k).forEach((c) => { c.hidden = true; });
   wrap.insertAdjacentHTML('beforeend', `<button class="dchip dmore" aria-label="${n} more ${n > 1 ? 'dogs' : 'dog'}: see the pack">+${n}</button>`);
   wrap.querySelector('.dmore').onclick = () => { SFX.click(); openPackSheet(); };
+  // UI/UX H6: still clipped (the row's cell ends before the coin counter): drop one more chip into the +N
+  for (let j = k - 1; j >= 0 && wrap.scrollWidth > wrap.clientWidth + 3; j--) { chips[j].hidden = true; const mo = wrap.querySelector('.dmore'), m = chips.length - j; mo.textContent = '+' + m; mo.setAttribute('aria-label', `${m} more dogs: see the pack`); }
 }
 window.addEventListener('resize', () => { if (S && S.dogs && S.dogs.length > 1) phChipsFit($('#hudPack')); });
+// UI/UX H6: the name line (clock, title) and the coin counter change width without a resize (garden, kitchen, more coins), so the chips refit then too
+let phChipsRO = null, phChipsRaf = 0;
+function phChipsWatch() {
+  if (phChipsRO || typeof ResizeObserver === 'undefined') return; const els = [$('#hud .namewrap'), $('#coins')].filter(Boolean); if (!els.length) return;
+  phChipsRO = new ResizeObserver(() => { cancelAnimationFrame(phChipsRaf); phChipsRaf = requestAnimationFrame(() => { if (isPhone() && S && S.dogs && S.dogs.length > 1) phChipsFit($('#hudPack')); }); });
+  els.forEach((e) => phChipsRO.observe(e));
+}
+on('game:ready', phChipsWatch);
 function openPackSheet() {
   const p = openModal('Your pack', `<div class="packpick">${others().map((d) => `<button class="card" data-dog="${d.id}"><span class="pp-head" aria-hidden="true">${headSVG(d)}</span><b>${esc(d.name)} ${sexSym(d.sex)}</b><span class="small">Tap to switch</span></button>`).join('')}</div>`, { cls: 'packsheet' });
   p.querySelectorAll('[data-dog]').forEach((b) => { b.onclick = () => { SFX.click(); closeModal(); switchDog(b.dataset.dog); }; });
