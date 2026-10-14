@@ -68,7 +68,7 @@ const SUITES = {
   v27_review: { file: 'test_v27_review.js', group: 'all', est: 40 }, // v2.7 integration review fixes (coordinator)
   // v2.8 (V28.md): Winter & New Year art and scene dressing, the Japan scenery, core dates, the WINTER, NEW YEAR and FUJI HILL lanes
   v28_art: { file: 'test_v28_art_node.js', group: 'all', est: 10 },
-  v28_scenes: { file: 'test_v28_scenes_node.js', group: 'all', est: 20 },
+  v28_scenes: { file: 'test_v28_scenes_node.js', group: 'all', est: 120 },
   v28_dates: { file: 'test_v28_dates_node.js', group: 'all', est: 5 }, // coordinator: wnAuto, festNow overrides, the wnTest / jpTest gates, v28Fields, section 1 data
   v28_japan: { file: 'test_v28_japan_node.js', group: 'all', est: 20 },
   v28_winter: { file: 'test_v28_winter.js', group: 'all', est: 60 },
