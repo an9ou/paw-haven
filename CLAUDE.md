@@ -4,6 +4,12 @@ A cozy browser game: adopt crayon-drawn dogs, care for them, walk a sketchbook t
 
 **Read `PIPELINE.md` and `README.md` first.** Running parallel agents? Read `BUILDING.md` (roles, models and the cost rules). They describe the layout, the shared-scope rules, the lanes and the test runner. Two things there don't apply on this Mac: the `/home/claude/...` paths (they mean this repo root), and the multi-agent worktree workflow (`tools/wt.sh`), unless you're running parallel agents.
 
+## Owner's standing rules (every session and every agent)
+
+- **Usage limit: always resume.** If you stop at the usage limit, continue the task right after the reset, every time, without waiting for the owner. Before you stop, or as soon as you see the reset time, `send_later` yourself a resume for 2 minutes after the reset. The Game Manager also runs an hourly watchdog that resumes any stalled session.
+- **One team busy at a time**, and push automatically once tests are green (details in `BUILDING.md`).
+- **Questions** go to the owner in the choice window with a recommendation first. With no answer in 5 minutes, take the recommendation.
+
 ## This machine
 
 - No Node, Python, or system git (Xcode Command Line Tools aren't installed).
