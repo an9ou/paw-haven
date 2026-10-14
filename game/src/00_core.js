@@ -376,7 +376,7 @@ function sceneArt(name, e, extra) {
 }
 function sceneG(name, extra = {}, noEnv) { return `<g id="sceneG" data-scene="${name}" data-noenv="${noEnv ? 1 : ''}" data-extra='${JSON.stringify(extra)}'>${sceneArt(name, noEnv ? null : envNow(), extra)}</g>`; }
 function snowmanSVG() { if (!S || weatherNow() !== 'snow' || !isWarm()) return ''; const sm = artReal('prop', 'snowman'); return sm ? place(sm, 70, 440, 110, 110) : `<g transform="translate(125 545)" stroke="#5B3D32" stroke-width="2.4" fill="#FFFBF3"><circle cy="-22" r="24"/><circle cy="-62" r="17"/><circle cx="-6" cy="-66" r="2" fill="#5B3D32"/><circle cx="6" cy="-66" r="2" fill="#5B3D32"/><path d="M0 -60 l12 3 l-12 3z" fill="#F4A262"/></g>`; }
-const outdoorView = () => (['yard', 'bath', 'fetch'].includes(cur.mode) ? !!(S && PLACES[S.place] && PLACES[S.place].out) : cur.mode === 'shelter');
+const outdoorView = () => (['yard', 'bath', 'fetch'].includes(cur.mode) ? !!(S && PLACES[S.place] && PLACES[S.place].out) : cur.mode === 'shelter' && !(window.PawArt && PawArt.WORLD_C_SCENES && PawArt.WORLD_C_SCENES.includes('playroom'))); // v2.7: the Shelter Playroom is indoors (no rain or snow over it)
 const outdoorsNow = () => !(S && (S.place === 'house' || (PLACES[S.place] && PLACES[S.place].out === false)));
 // fallback tint while a scene module ignores {time, weather}: compare two renders with ids stripped
 const timeSupport = {};
@@ -546,6 +546,7 @@ function freshState(key, name, sex) {
   st.dog.adoptedAt = localISO();
   st.hw = { letter: null, seen: null }; // v2.6 Halloween 2026 pop-up (27_halloween.js)
   st.guide = { step: 0 }; // v2.4: a new save meets Gerald (25_guide.js)
+  v27Fields(st); // v2.7 Home & Pack: beds in the house, who naps where, pack care ticks, the shelter playroom (V27.md section 1)
   return linkDogs(st);
 }
 let S = null;
@@ -575,6 +576,22 @@ function migrate(s) {
   if (!s.fest || typeof s.fest !== 'object') s.fest = {}; s.fest.letters = s.fest.letters || {}; s.fest.parade = s.fest.parade || {}; s.fest.piles = s.fest.piles || {}; s.fest.stall = s.fest.stall || {}; s.seasonSeen = s.seasonSeen || {}; s.breedTips = s.breedTips || {}; // v2.5: festivals and seasons
   if (!s.hw || typeof s.hw !== 'object') s.hw = { letter: null, seen: null }; // v2.6: the Halloween 2026 pop-up letter and first visit
   if (!s.guide || typeof s.guide !== 'object') { s.guide = { step: -1, done: localISO() }; s.guideSeen = true; } // v2.4: saves from before the guide never see the walkthrough, they get a letter
+  v27Fields(s); // v2.7 Home & Pack (V27.md section 1): additive, an old save keeps its one bed where it always stood
+  return s;
+}
+/* v2.7 Home & Pack save fields (V27.md section 1). Additive only: S.v stays 1, nothing is dropped.
+   S.decor[name].at  optional [x, y] world top-left of a moved decoration or furniture piece (size and room come from HM_DECOR)
+   S.bedAt           { bedName: [x, y] } the beds standing in the house (260 x 160 each). An old save gets its one bed at the v2.5 spot
+   S.bedOf           { dogId: bedName } who naps on which bed (HOME resolves missing or stale entries)
+   S.careOff         { dogId: true } dogs unticked in the pack care chips (PACK CARE). Empty = everyone present gets the care
+   S.shelter         { adopted: [ids], seen: ISO | null } the playroom's bookkeeping (SHELTER). The roster itself is seeded by date, never saved */
+function v27Fields(s) {
+  if (!s) return s;
+  if (!s.bedAt || typeof s.bedAt !== 'object' || Array.isArray(s.bedAt)) { s.bedAt = {}; s.bedAt[s.bed || 'Old Blanket'] = [610, 360]; } // [610, 360] = BED_BOX x, y (12_popups)
+  if (!s.bedOf || typeof s.bedOf !== 'object' || Array.isArray(s.bedOf)) s.bedOf = {};
+  if (!s.careOff || typeof s.careOff !== 'object' || Array.isArray(s.careOff)) s.careOff = {};
+  if (!s.shelter || typeof s.shelter !== 'object') s.shelter = { adopted: [], seen: null };
+  if (!Array.isArray(s.shelter.adopted)) s.shelter.adopted = []; if (s.shelter.seen === undefined) s.shelter.seen = null;
   return s;
 }
 function migNote() { if (S && S.gkNote) { delete S.gkNote; markDirty(); setTimeout(() => toast('Pip left a packet of seeds on your doorstep. The veggie patch is yours now!', 'gold'), 2200); }
@@ -651,13 +668,47 @@ const favAct = (a) => (FAV[S.dog.key] || {}).act === a;
 /* ---------------- toasts, bubbles ---------------- */
 // v2.3 phone: toasts start just under the location chip (top-left of the scene), never on it
 function phChipClear() { if (!isPhone()) return 0; const st = $('#status'); return st && !st.hidden && st.offsetParent === view ? st.offsetTop + st.offsetHeight + 4 - 8 : 0; }
-function toast(text, kind = '') {
-  const modScr = stage.classList.contains('modhud') || (isPhone() && cur.mode === 'toy'); // v2.4: in a toy game on a phone, toasts sit under the strip, not on its title bar
-  toasts.style.top = modScr ? 'auto' : (hud.hidden ? 10 : view.offsetTop + 8 + phChipClear()) + 'px'; toasts.style.bottom = modScr ? '18px' : ''; toasts.style.flexDirection = modScr ? 'column-reverse' : '';
-  if (isPhone() && !modal.hidden) { const h2 = modal.querySelector('.panel > h2'); const sr = stage.getBoundingClientRect(); toasts.style.setProperty('--toastTop', (h2 ? h2.getBoundingClientRect().bottom - sr.top + 6 : 6) + 'px'); } // v2.5: never over a sheet's title
-  const t = document.createElement('div'); t.className = 'toast ' + kind; t.textContent = text; toasts.appendChild(t);
+// toast(text, kind, o): o.group + o.many(n) (phones): a toast of the same group still on screen is replaced by one note with a count ("3 new letters").
+// Phones also re-place live toasts when a sheet opens, closes or changes height (toastPlace): above the sheet when there is room, else under its tabs
+// or its title, never on them. Returns the toast element.
+const TOAST_MS = 2900;
+function toast(text, kind = '', o = {}) {
+  let n = 1;
+  if (o.group && isPhone()) { const same = [...toasts.children].find((e) => e.dataset.group === o.group); if (same) { n = (+same.dataset.n || 1) + 1; same.remove(); if (o.many) text = o.many(n); } }
+  const t = document.createElement('div'); t.className = 'toast ' + kind + (n > 1 ? ' tmerge' : ''); t.textContent = text; // tmerge: a count update bumps, it does not fade in again
+  if (o.group) { t.dataset.group = o.group; t.dataset.n = n; }
+  toasts.appendChild(t);
   while (toasts.children.length > 3) toasts.firstChild.remove();
-  setTimeout(() => t.remove(), 2900);
+  toastPlace();
+  setTimeout(() => t.remove(), TOAST_MS);
+  return t;
+}
+function toastPlace() {
+  const ph = isPhone(), modScr = stage.classList.contains('modhud') || (ph && cur.mode === 'toy'); // v2.4: in a toy game on a phone, toasts sit under the strip, not on its title bar
+  toasts.style.top = modScr ? 'auto' : (hud.hidden ? 10 : view.offsetTop + 8 + phChipClear()) + 'px'; toasts.style.bottom = modScr ? '18px' : ''; toasts.style.flexDirection = modScr ? 'column-reverse' : '';
+  if (!ph) return;
+  // v2.7 phone review: in the shelter playroom the toasts sit low, just above the tray, so they never cover the "Paw Haven Shelter" sign or the Adopt me board
+  const low = cur.mode === 'shelter' && modal.hidden && dock.firstElementChild;
+  if (low) { let y = 0; for (let e = low; e && e !== stage; e = e.offsetParent) y += e.offsetTop; toasts.style.top = 'auto'; toasts.style.bottom = Math.max(8, stage.clientHeight - y + 8) + 'px'; }
+  stage.classList.toggle('toast-map', cur.mode === 'map'); // the map's zoom and close buttons stay clear (20_phone_shell.css)
+  if (!modal.hidden) toasts.style.setProperty('--toastTop', toastSheetTop() + 'px');
+}
+// stage y for the toast column while a sheet is open. Layout boxes (offsetTop), so the sheet's slide-in transform doesn't move the answer.
+function toastSheetTop() {
+  const pn = modal.querySelector('.panel'); if (!pn) return 6;
+  let top = 0; for (let e = pn; e && e !== stage; e = e.offsetParent) top += e.offsetTop;
+  const safe = Math.max(0, (parseFloat(getComputedStyle(hud).paddingTop) || 4) - 4), h = toasts.offsetHeight; // the HUD's top padding is 4 px + the safe area
+  if (h && top - 8 - h >= safe + 6) return Math.round(top - 8 - h); // room above the sheet (over the dimmed HUD): the sheet stays fully clear
+  const pr = pn.getBoundingClientRect(), lim = pr.top + Math.min(pr.height * 0.45, 260);
+  const tabs = [...pn.querySelectorAll('.tabs, .jtabs, .mbtabs, [role=tablist]')].find((e) => { const r = e.getBoundingClientRect(); return r.height > 0 && r.top < lim; });
+  const anchor = tabs || pn.querySelector(':scope > h2');
+  return Math.round(top + (anchor ? anchor.getBoundingClientRect().bottom - pr.top : 0) + 6); // under the tabs (or the title), never on them
+}
+let toastRO = null;
+function toastWatchSheet(p) { // phones: live toasts follow the sheet as it slides in, grows or shrinks
+  if (toastRO) toastRO.disconnect(); toastRO = null; if (!p || !isPhone()) return;
+  if (typeof ResizeObserver === 'function') { toastRO = new ResizeObserver(() => { if (toasts.children.length) toastPlace(); }); toastRO.observe(p); }
+  toastPlace(); setTimeout(() => { if (!modal.hidden) toastPlace(); }, 320);
 }
 let bubbleTimer = 0;
 function worldToStage(svg, x, y) {
@@ -677,6 +728,11 @@ function say(text, wx, wy, ms = 3600) {
     const st = $('#status'), sr = st && !st.hidden ? st.getBoundingClientRect() : null, sg = stage.getBoundingClientRect();
     if (sr) { const bt = parseFloat(bubble.style.top), bl = parseFloat(bubble.style.left), cb = sr.bottom - sg.top + 6;
       if (bt < cb && bl < sr.right - sg.left + 6 && bl + bw > sr.left - sg.left - 6) bubble.style.top = cb + 'px'; }
+    const pk = $('#phPeek'), pq = pk && !pk.hidden && pk.offsetParent ? pk.getBoundingClientRect() : null; // UI/UX H9: nor under the look-right button
+    if (pq) { const bt = parseFloat(bubble.style.top), bl = parseFloat(bubble.style.left), bh = bubble.offsetHeight;
+      if (bt < pq.bottom - sg.top + 4 && bt + bh > pq.top - sg.top - 4 && bl + bw > pq.left - sg.left - 8) bubble.style.left = Math.max(6, pq.left - sg.left - bw - 8) + 'px'; }
+    // UI/UX T5: in town places the dog's own lines go under the dog, so they never cover the shop signs above its head (townBubbleBelowDog, 03_yard.js)
+    if (['yard', 'market'].includes(cur.mode) && S && !['yard', 'house'].includes(S.place) && typeof dogHeadWorld === 'function') { const h = dogHeadWorld(); if (Math.abs(h.x - wx) < 40 && Math.abs(h.y - wy) < 40) townBubbleBelowDog(); }
   }
   clearTimeout(bubbleTimer); bubbleTimer = setTimeout(() => { bubble.hidden = true; }, ms);
 }
@@ -693,7 +749,7 @@ let levelQueue = [];
 function bondMult() { return BOOST.bond * (S.dog.key === 'mutt' ? 1.1 : 1) * (glowing() ? 1.2 : 1) * (S.gameMin < S.pupUntil ? 2 : 1); }
 function addBond(base, opts = {}) {
   const n = Math.max(1, Math.round(base * (opts.raw ? 1 : bondMult()))); S.bond.pts += n; markDirty();
-  while (S.bond.level < 10 && S.bond.pts >= BOND_TH[S.bond.level]) { S.bond.level++; levelQueue.push(S.bond.level); SFX.fanfare(); }
+  while (S.bond.level < 10 && S.bond.pts >= BOND_TH[S.bond.level]) { S.bond.level++; levelQueue.push({ l: S.bond.level, who: NAME() }); SFX.fanfare(); } // v2.7: who levelled up (pack care gives a pack dog its Bond)
   updateHUD(); setTimeout(maybeLevelUp, 400); return n;
 }
 function dailyCheck() {
@@ -760,10 +816,11 @@ function openModal(title, bodyHTML, opts = {}) {
   modal.hidden = false; modalClose = opts.onClose || null;
   const p = $('.panel', modal); p.insertAdjacentHTML('afterbegin', '<div class="sheet-grab" aria-hidden="true"></div>'); sheetSwipe(p, () => closeModal()); const x = $('.x', p); if (x) x.onclick = () => { SFX.click(); closeModal(); };
   setTimeout(() => { const f = p.querySelector('[autofocus]') || p.querySelector('.foot .btn') || x; if (f) f.focus({ preventScroll: true }); }, 30);
+  if (isPhone()) toastWatchSheet(p); // toasts that came first (a walk's bonus) move off the new sheet
   return p;
 }
 function closeModal() {
-  if (modal.hidden) return; modal.hidden = true; modal.innerHTML = ''; audioPlace(); const cb = modalClose; modalClose = null; if (cb) cb(); setTimeout(maybeLevelUp, 250);
+  if (modal.hidden) return; modal.hidden = true; modal.innerHTML = ''; if (isPhone()) { toastWatchSheet(null); toastPlace(); } audioPlace(); const cb = modalClose; modalClose = null; if (cb) cb(); setTimeout(maybeLevelUp, 250);
 }
 modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 function confirmIn(panel, html, yes = 'Yes', no = 'No') {
@@ -796,11 +853,11 @@ function unlocksFor(L) {
 }
 function maybeLevelUp() {
   if (!levelQueue.length || !modal.hidden || !['yard', 'market', 'map', 'shelter'].includes(cur.mode)) return;
-  const levels = levelQueue.splice(0), L = Math.max(...levels); audioCue('levelup');
+  const who = levelQueue[0].who, levels = levelQueue.filter((q) => q.who === who).map((q) => q.l), L = Math.max(...levels); levelQueue = levelQueue.filter((q) => q.who !== who); audioCue('levelup');
   const all = []; levels.sort((a, b) => a - b).forEach((l) => all.push(...unlocksFor(l)));
   const lines = ['now loves you ' + L + ' units. Units are made up.', 'did a little spin about it.', 'would like a raise. In treats.', 'is writing your name in the dirt. Badly.'];
-  openModal(`<span class="hl">Bond level ${L}!</span>`, `<svg class="lu-doodle" viewBox="0 0 600 44" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${doodle('spark', 40, 22, 0.9)}${doodle('heart', 90, 22, 0.8)}${doodle('spark', 140, 20, 0.6)}${doodle('paw', 300, 24, 0.7)}${doodle('spark', 460, 22, 0.6)}${doodle('heart', 510, 20, 0.8, 10)}${doodle('spark', 560, 22, 0.9)}</svg><p><b>${esc(NAME())}</b> ${PICK(lines)}</p><p>${levels.length > 1 ? `(That's ${levels.length} levels at once. Show-off.)</p><p>` : ''}Unlocked:</p><ul class="unlocks">${all.map((u) => `<li>${esc(u)}</li>`).join('') || '<li>Pure friendship. No refunds.</li>'}</ul>`, { cls: 'celebrate', foot: '<button class="btn yes big" id="luOk">Yay!</button>' });
-  $('#luOk').onclick = () => { SFX.boop(700); closeModal(); };
+  openModal(`<span class="hl">Bond level ${L}!</span>`, `<svg class="lu-doodle" viewBox="0 0 600 44" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${doodle('spark', 40, 22, 0.9)}${doodle('heart', 90, 22, 0.8)}${doodle('spark', 140, 20, 0.6)}${doodle('paw', 300, 24, 0.7)}${doodle('spark', 460, 22, 0.6)}${doodle('heart', 510, 20, 0.8, 10)}${doodle('spark', 560, 22, 0.9)}</svg><p><b>${esc(who)}</b> ${PICK(lines)}</p><p>${levels.length > 1 ? `(That's ${levels.length} levels at once. Show-off.)</p><p>` : ''}Unlocked:</p><ul class="unlocks">${all.map((u) => `<li>${esc(u)}</li>`).join('') || '<li>Pure friendship. No refunds.</li>'}</ul>`, { cls: 'celebrate', foot: '<button class="btn yes big" id="luOk">Yay!</button>' });
+  $('#luOk').onclick = () => { SFX.boop(700); closeModal(); if (levelQueue.length) setTimeout(maybeLevelUp, 400); }; // another dog levelled up too
 }
 
 /* ---------------- modes ---------------- */

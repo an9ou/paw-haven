@@ -516,7 +516,12 @@
     '.pk-portrait .pk-tap{left:50%;transform:translateX(-50%);top:486px;min-height:56px}',
     '.pk-portrait .pk-taph{left:87px;top:550px}.pk-portrait .pk-gs{font-size:19px}.pk-portrait .pk-taph{font-size:17px}.pk-portrait .pk-ing{font-size:15px;width:52px}.pk-portrait .pk-entry{font-size:17px}',
     '.pk-portrait .pk-reveal{width:404px;height:740px;margin-top:10px}',
-    '.pk-portrait .pk-note{width:404px;margin:40px 0 0 0}'
+    '.pk-portrait .pk-note{width:404px;margin:40px 0 0 0}',
+    /* v2.6 UI/UX phone review: Empty and Cook! get their own full-width row under the 4 slots (H3), the pantry panel is solid paper (H12) */
+    'html[data-layout="phone"] .pk-portrait .pk-slots{flex-wrap:wrap;row-gap:8px}',
+    'html[data-layout="phone"] .pk-portrait .pk-slots .pk-sp{flex:0 0 100%;height:0}',
+    'html[data-layout="phone"] .pk-portrait .pk-slots .pk-btn{flex:1 1 0;min-width:0;justify-content:center;min-height:52px}',
+    'html[data-layout="phone"] .pk-portrait .pk-shelf{background:#FFFBF3}'
   ].join('\n');
   function injectCSS() {
     if (typeof document === 'undefined' || document.getElementById('pawkitchen-css')) return;
@@ -595,11 +600,19 @@
       var dogTop = Hs - 152, trayTop = dogTop - 6 - trH, shelfTop = Math.max(330, trayTop - 10 - shH); // never above its old place under the pot (short screens scroll, as before)
       if (shelfTop + shH + 10 > trayTop) { trayTop = shelfTop + shH + 10; dogTop = trayTop + trH + 6; Hs = dogTop + 152; }
       stage.style.height = Hs + 'px'; shelf.style.top = shelfTop + 'px'; tray.style.top = trayTop + 'px';
-      dogEl.style.top = dogTop + 'px'; bub.style.top = (dogTop + 12) + 'px';
+      dogEl.style.top = dogTop + 'px'; bub.style.top = (dogTop + 12) + 'px'; bubFit();
       stage.style.setProperty('--pk-potdy', Math.max(0, Math.round((shelfTop - 330) / 2)) + 'px');
       stage.style.setProperty('--pk-vh', Math.floor((root.clientHeight || H) / scale) + 'px'); // v2.5: the recipe book fits the visible screen, so its X stays on it
     }
 
+    /* v2.6 phone (review H4): on a short screen the dog sits below the fold, so its speech bubble rises to stay inside the visible part of the page */
+    var PHONE = PORT && document.documentElement.getAttribute('data-layout') === 'phone';
+    function bubFit() {
+      if (!PHONE || typeof bub === 'undefined' || !bub || !dogEl) return;
+      var dogTop = parseFloat(dogEl.style.top) || 0, vb = (root.scrollTop + root.clientHeight) / scale;
+      bub.style.top = Math.max(0, Math.min(dogTop + 12, vb - bub.offsetHeight - 12)) + 'px';
+    }
+    if (PHONE) root.addEventListener('scroll', function () { if (bub && bub.classList.contains('pk-show')) bubFit(); }, { passive: true });
     var ro = null;
     if (typeof ResizeObserver !== 'undefined') { ro = new ResizeObserver(fit); ro.observe(root); } else window.addEventListener('resize', fit);
     fit();
@@ -622,7 +635,7 @@
     function setPose(p) { if (!poses[p]) p = 'sit'; for (var k in poses) poses[k].classList.toggle('pk-on', k === p); }
     setPose('sit');
     var bub = div('pk-bub');
-    function dogSay(t, ms) { bub.textContent = t; bub.classList.add('pk-show'); clearTimeout(bubT); bubT = setTimeout(function () { bub.classList.remove('pk-show'); }, ms || 2600); }
+    function dogSay(t, ms) { bub.textContent = t; bub.classList.add('pk-show'); bubFit(); clearTimeout(bubT); bubT = setTimeout(function () { bub.classList.remove('pk-show'); }, ms || 2600); }
 
     /* top bar */
     var top = div('pk-top pk-paper pk-tape');

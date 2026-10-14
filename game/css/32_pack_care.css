@@ -1,0 +1,32 @@
+/* v2.7 PACK CARE lane (tag cr): the dog chips row in the Feed and Care trays, pack baths and naps. V27.md section 6. The PACK CARE lane owns this file. */
+.cr-wrap{display:flex;flex-direction:column;gap:2px;min-width:0;margin:0 0 4px}
+.cr-chips{display:flex;flex-wrap:nowrap;gap:8px;overflow-x:auto;overflow-y:hidden;padding:4px 4px 6px;scrollbar-width:thin;overscroll-behavior-x:contain;touch-action:pan-x}
+.cr-chip{flex:none;display:inline-flex;align-items:center;gap:6px;min-height:46px;padding:3px 10px 3px 5px;cursor:pointer;color:var(--ink);--wash:var(--paper)}
+.cr-chip.on{--wash:var(--w-mint)}
+.cr-chip:nth-child(2n){transform:rotate(.8deg)}
+.cr-chip:nth-child(2n+1){transform:rotate(-.6deg)}
+.cr-chip:hover{animation:wig .45s ease-in-out 2}
+.cr-chip:active{transform:translate(1px,2px)}
+.cr-chip:focus-visible{outline:3px dashed var(--ink);outline-offset:2px}
+.cr-head{flex:none;width:36px;height:36px}
+.cr-head svg{width:100%;height:100%;display:block}
+.cr-name{font-family:var(--font-hand);font-weight:700;font-size:22px;line-height:1;white-space:nowrap}
+.cr-zz{font-family:var(--font-hand);font-weight:700;font-size:17px;color:var(--muted);margin-left:-2px;transform:translateY(-6px) rotate(-8deg)}
+.cr-box{flex:none;width:22px;height:22px;border:2px solid var(--ink);border-radius:6px 4px 7px 3px;background:var(--paper);display:grid;place-items:center;transform:rotate(-4deg)}
+.cr-tick{width:20px;height:20px;display:block}
+.cr-chip:not(.on) .cr-head{opacity:.45;filter:grayscale(.6)}
+.cr-chip:not(.on) .cr-name{color:var(--muted);text-decoration:line-through;text-decoration-thickness:1.5px}
+.cr-cap{margin:0 4px;font-size:15px;line-height:1.2}
+[data-motion="off"] .cr-chip:hover{animation:none}
+/* the bath queue: Next dog sits beside Done for now */
+#crBathNext{flex:none}
+/* phones: 44 px chips, 15 px names at least, the row scrolls sideways inside the tray only */
+html[data-layout="phone"] .cr-wrap{margin:0 0 2px;max-width:100%}
+html[data-layout="phone"] .cr-chips{gap:6px;padding:4px 2px 6px;max-width:100%}
+html[data-layout="phone"] .cr-chip{min-height:46px;padding:3px 9px 3px 4px}
+html[data-layout="phone"] .cr-head{width:34px;height:34px}
+html[data-layout="phone"] .cr-name{font-size:21px}
+html[data-layout="phone"] .cr-cap{font-size:14px}
+#dock > .tray h3 .cr-n{white-space:nowrap}
+/* v2.7 phone review: the caption cost the scene band 25 px on iPhone 13; the chips keep their "Who gets this" group label */
+html[data-layout="phone"] .cr-cap{display:none}

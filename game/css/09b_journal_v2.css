@@ -120,6 +120,14 @@ html:not([data-layout="phone"]) .cbreeds:has(> .cbreed:nth-child(13)) .cbreed .i
 .mb-ps{margin:0;font-style:italic}
 .mb-gift{margin:0;font-family:var(--font-hand);font-weight:700;font-size:24px;color:#B07A12}
 .mb-gift.got{color:#4C9A5A}
+/* v2.7 Collect: the gift row in a letter, the Collected stamp, the Gift chip in the list, the Collect all bar */
+.mb-giftrow{display:flex;align-items:center;flex-wrap:wrap;gap:8px 14px;margin-top:2px}
+.mb-get,.mb-all{min-height:44px;min-width:44px;padding:6px 20px;font-size:17px}
+.mb-got{display:inline-block;font-family:var(--font-hand);font-weight:700;font-size:20px;line-height:1;color:#4C9A5A;border:2.5px solid #4C9A5A;border-radius:7px 10px 6px 11px;padding:5px 12px 4px;transform:rotate(-4deg);background:rgba(232,246,218,.6);outline:none}
+.mb-chip{flex:none;margin-left:auto;align-self:flex-end;padding:1px 8px;border:1.5px solid #B07A12;border-radius:9px 7px 10px 6px;background:#FFF0C8;color:#8A5E0C;font-weight:700}
+.mb-allbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px 12px;margin:0 0 10px;padding:6px 8px 6px 14px;border:2px dashed rgba(176,122,18,.6);border-radius:12px 8px 13px 7px;background:#FFF6DE;font-size:16px}
+.mb-allbar + .mbox{min-height:310px}
+.mb-allbar + .mbox .mb-list{max-height:400px}
 .mb-acts{display:flex;gap:10px;align-items:center}
 .mb-pups{display:flex;gap:6px;flex-wrap:wrap}
 .mb-pup{width:46px;height:46px;border-radius:50%;border:2px solid #5B3D32;background:var(--w-cream);overflow:hidden}

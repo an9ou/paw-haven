@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>World C v2.7 playroom gallery</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&display=swap">
+<style>body{margin:0;padding:12px;background:#FFFBF3;font:14px/1.3 system-ui,sans-serif;color:#5B3D32}
+h1{font-size:18px;margin:0 0 4px}h2{margin:18px 0 6px;font-size:15px}.row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+figure{margin:0;text-align:center}figcaption{font:600 15px 'Caveat',cursive;margin-top:2px}.o figcaption{opacity:.55}
+.scene{display:block;border-radius:6px;border:1px solid #E3D2BA;background:#fff}.night{background:#3E4A6B;border-radius:6px;padding:6px}.night figcaption{color:#FFF2DA}
+.phone{width:390px;max-width:100%;height:420px;overflow:hidden;border:1px solid #E3D2BA;border-radius:6px}.phone>svg{width:100%;height:100%;display:block}
+body.solo{padding:0;overflow:hidden;background:#FFFBF3}body.solo h1,body.solo h2,body.solo p,body.solo .row{display:none}
+#solo{display:none}body.solo #solo{display:block;width:100vw;height:100vh}body.phone #solo{height:60vh;border-bottom:2px dashed #E3D2BA}#solo>svg{width:100%;height:100%;display:block}</style></head>
+<body>
+<div id="solo"></div>
+<h1>Paw Haven world art C: v2.7 Shelter Playroom</h1>
+<p>The playroom scene (1000 x 600) as the game composes it: the scene, the "Adopt me!" board at SR_ROOM.board with dog heads in the poster slots, crayon dogs on the floor band and the cushions (scale 0.5 + (fy - 450) / 146 x 0.22, 0.7 on the cushions). Add <code>?solo=day</code> (day, dusk, night, rain, snow, spring, winter, halloween, old) for one scene filling the window, and <code>&amp;crop=phone</code> for the phone crop.</p>
+<h2>Next to the old shelter scene (v2.6, world A) and the Pupuccino Café (world C)</h2><div class="row" id="old"></div>
+<h2>The playroom by time, weather and season, with room dogs and the board</h2><div class="row" id="vars"></div>
+<h2>The phone crop (390 px wide, the middle of the scene: the sign and the board)</h2><div class="row" id="phone"></div>
+<h2>The bare scene (what the game gets before it adds the board and the dogs): the board area stays plain wallpaper</h2><div class="row" id="bare"></div>
+<h2>adoptboard: n 0 to 8, more 0, 3, 12, empty and with heads</h2><div class="row" id="boards"></div>
+<h2>tosstoy: ball, bone, ring, next to the shelf toys at the same scale</h2><div class="row" id="toys"></div>
+<script src="pawart_world_a.js"></script>
+<script src="pawart_world_b.js"></script>
+<script src="pawart_world_c.js"></script>
+<script src="../dogs/pawart_dogs.js"></script>
+<script>
+const PA=window.PawArt,Q=new URLSearchParams(location.search),W=window.innerWidth<600;
+// the game's place(): an inner svg at x, y, w, h
+const place=(svg,x,y,w,h)=>svg.replace(/^\s*<svg\b([^>]*)>/,(m,a)=>`<svg x="${x}" y="${y}" width="${w}" height="${h}" ${a.replace(/\s(?:width|height|x|y)="[^"]*"/g,'')}>`);
+const SLOTS=PA.ADOPT_SLOTS||[0,1,2,3,4,5,6,7].map(i=>[20+(i%4)*70,58+Math.floor(i/4)*80,54,50]);
+const BOARD=[350,84,300,220];
+const HEADS=[['golden'],['pug'],['husky',{age:'puppy'}],['dachs'],['beagle'],['collie'],['samoyed'],['frenchie'],['mutt'],['poodle']];
+function board(n,more,heads){let s=place(PA.prop('adoptboard',{n,more}),0,0,300,220);
+  if(heads)for(let i=0;i<n;i++){const [x,y,w,h]=SLOTS[i],[k,o]=HEADS[i%HEADS.length];s+=place(PA.dogHead(k,o||{}),x,y,w,h)}return s}
+// room dogs: [key, opts, feet x, feet y, scale or null (depth scale)]
+const DOGS=[['corgi',{pose:'sleep'},170,560,.7],['golden',{pose:'sit',facing:'left'},318,500],['husky',{pose:'idle'},640,462],['shiba',{pose:'jump',age:'puppy'},560,520],
+  ['beagle',{pose:'bow',facing:'left'},742,548],['pug',{pose:'sleep',facing:'left'},850,562,.7]];
+const dsc=fy=>.5+(fy-450)/146*.22;
+function dogsSVG(list){return list.slice().sort((a,b)=>a[3]-b[3]).map(([k,o,fx,fy,sc])=>{const s=sc||dsc(fy),w=264*s,h=220*s;return place(PA.dog(k,Object.assign({anim:false},o)),fx-w/2,fy-h*205/220,w,h)}).join('')}
+function room(env,o={}){const sc=PA.scene(o.old?'shelter':'playroom',env);
+  let s=place(sc,0,0,1000,600);if(!o.old&&!o.bare)s+=place(`<svg viewBox="0 0 300 220">${board(o.n??8,o.more??6,true)}</svg>`,...BOARD);if(!o.bare)s+=dogsSVG(o.dogs||DOGS);
+  return `<svg class="scene" viewBox="0 0 1000 600" preserveAspectRatio="${o.par||'xMidYMid meet'}" xmlns="http://www.w3.org/2000/svg">${s}</svg>`}
+const ENV={day:{},dusk:{time:'dusk'},night:{time:'night'},rain:{time:'day',weather:'rain'},snow:{time:'day',weather:'snow',season:'winter'},
+  spring:{season:'spring'},winter:{season:'winter',time:'night',weather:'snow'},halloween:{season:'autumn',halloween:true},hwnight:{season:'autumn',time:'night',halloween:true},old:{}};
+const fig=(svg,cap,w,cls)=>`<figure class="${cls||''}"><div style="width:${w}px">${svg}</div><figcaption>${cap}</figcaption></figure>`;
+const add=(id,h)=>{document.getElementById(id).insertAdjacentHTML('beforeend',h)};
+if(Q.get('solo')){document.body.classList.add('solo');if(Q.get('crop')==='phone')document.body.classList.add('phone');const v=Q.get('solo'),phone=Q.get('crop')==='phone';
+  document.getElementById('solo').innerHTML=room(ENV[v]||{},{old:v==='old',bare:Q.get('bare')==='1',par:phone?'xMidYMax slice':'xMidYMid meet'});}
+else{
+  const SW=W?360:620;
+  add('old',fig(room({},{old:true}),'v2.6 shelter (world A)',SW,'o')+fig(room({}),'v2.7 playroom, summer day',SW)+fig(`<svg class="scene" viewBox="0 0 1000 600">${place(PA.scene('cafe'),0,0,1000,600)}</svg>`,'the café (world C)',SW,'o'));
+  [['day','summer day'],['dusk','dusk'],['night','night: the sconces glow, the moon in the window'],['rain','rain on the glass'],['snow','snow, winter'],['spring','spring: snapdragons'],['halloween','autumn with Halloween 2026: maple twigs and asters, the pumpkin, the paper bats'],['hwnight','autumn night with Halloween'],['winter','winter night, snow: camellias']].forEach(([v,c])=>add('vars',fig(room(ENV[v]),c,SW)));
+  ['day','night','halloween'].forEach(v=>add('phone',fig(`<div class="phone">${room(ENV[v],{par:'xMidYMax slice'})}</div>`,v,390)));
+  add('bare',fig(room({},{bare:true}),'day, no board, no dogs',SW)+fig(room({time:'night'},{bare:true}),'night, no board, no dogs',SW));
+  [[0,0],[1,0],[3,0],[4,0],[8,0],[8,3],[8,12]].forEach(([n,m])=>add('boards',fig(`<svg viewBox="0 0 300 220">${board(n,m,false)}</svg>`,`n ${n}, more ${m}`,W?170:240)));
+  [[2,0],[8,6],[8,12]].forEach(([n,m])=>add('boards',fig(`<svg viewBox="0 0 300 220">${board(n,m,true)}</svg>`,`n ${n}, more ${m}, with heads`,W?170:240)));
+  ['ball','bone','ring'].forEach(k=>add('toys',fig(PA.prop('tosstoy',{kind:k}),k,W?50:80)));
+  add('toys',fig(PA.prop('toybasket'),'Toy Basket (world B, v2.7)',W?90:140,'o'));
+}
+</script>
+</body></html>

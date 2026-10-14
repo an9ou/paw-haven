@@ -2,14 +2,15 @@
 let adoptIdx = 0, adoptSex = null;
 function enterAdopt() {
   setChrome(false, false);
-  view.innerHTML = `<svg class="world" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMax slice">${sceneG('shelter')}<g id="adoptDog"></g></svg>`;
+  view.innerHTML = srRoomSVG('adopt'); // v2.7: the Shelter Playroom (30_shelter.js). No S is read or written here
+  srEnter('adopt');
   renderAdopt(true);
   const onKey = (e) => { if (!modal.hidden) return; const n = dogsList().length; if (e.key === 'ArrowLeft') { adoptIdx = (adoptIdx + n - 1) % n; renderAdopt(); } if (e.key === 'ArrowRight') { adoptIdx = (adoptIdx + 1) % n; renderAdopt(); } };
   window.addEventListener('keydown', onKey); onCleanup(() => window.removeEventListener('keydown', onKey));
 }
 function renderAdopt(first) {
   const dogs = dogsList(); if (adoptIdx >= dogs.length) adoptIdx = 0; const d = dogs[adoptIdx];
-  $('#adoptDog').innerHTML = place(art('dog', d.key, { pose: 'idle' }), isPhone() ? 310 : 150, 210, 380, 317);
+  srMeetShow(d.key); // v2.7: the selected dog trots to the meet spot at the front of the playroom
   dock.innerHTML = `<div class="tray"><div class="tray-h"><h3>Paw Haven Shelter: pick your new best friend</h3></div>
     <div class="adopt-card"><button class="arrow" id="aPrev" aria-label="Previous dog">&lt;</button>
       <div class="info"><h3>${esc(d.name)} <span class="small">the ${esc(d.breed)}</span></h3><p>${esc(d.personality)}</p>
@@ -25,7 +26,8 @@ function renderAdopt(first) {
   $('#aGirl').onclick = () => { adoptSex = 'female'; SFX.boop(700); renderAdopt(true); };
   $('#aAdopt').onclick = () => { if (!adoptSex) { nope(`Pick Boy or Girl first. ${d.name}'s siblings are waiting politely.`); return; } adoptName(d); };
   if (!first) SFX.bark(BARK[d.key] || 1);
-  setTimeout(() => say(d.joke || PICK(JOKES[d.key] || JOKES.mutt), isPhone() ? 560 : 380, 250, 6000), 60);
+  setTimeout(() => { if (cur.mode === 'adopt' && modal.hidden) (typeof srSay === 'function' ? srSay : say)(d.joke || PICK(JOKES[d.key] || JOKES.mutt), SR_MEET[0] + 30, SR_MEET[1] - 200, 6000); }, 60);
+  if (typeof srCam === 'function') requestAnimationFrame(srCam); // the tray's height can change with the dog's text
 }
 function favLine(k) {
   const f = FAV[k]; if (k === 'mutt' || !f) return 'petting. Favourite snack and toy: a surprise, rolled at adoption.';

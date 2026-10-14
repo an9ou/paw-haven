@@ -88,11 +88,18 @@ function switchDog(id, opts = {}) {
 const PACK_SPOTS = {yard: [[250, 402, 'right', 0.52], [930, 438, 'left', 0.57], [120, 402, 'right', 0.52]], house: [[250, 414, 'right', 0.53], [930, 424, 'left', 0.53], [115, 586, 'right', 0.76]], square: [[115, 562, 'right', 0.73], [640, 590, 'left', 0.77], [910, 414, 'left', 0.53]], cafe: [[115, 562, 'right', 0.73], [640, 590, 'left', 0.77], [930, 466, 'left', 0.6]], vet: [[115, 562, 'right', 0.73], [640, 590, 'left', 0.77], [930, 470, 'left', 0.6]], salon: [[240, 480, 'right', 0.62], [615, 412, 'left', 0.53], [640, 592, 'left', 0.77]], market: [[240, 484, 'right', 0.58], [615, 456, 'left', 0.53], [85, 572, 'right', 0.73]], dogpark: [[615, 416, 'left', 0.54], [640, 592, 'left', 0.77], [745, 408, 'left', 0.53]], hilltop: [[240, 478, 'right', 0.62], [615, 406, 'left', 0.53], [640, 590, 'left', 0.77]], pier: [[250, 410, 'right', 0.53], [640, 590, 'left', 0.77], [120, 434, 'right', 0.56]], park: [[240, 476, 'right', 0.62], [640, 592, 'left', 0.77], [670, 408, 'left', 0.53]], river: [[250, 456, 'right', 0.53], [640, 592, 'left', 0.77], [100, 584, 'right', 0.75]], woods: [[240, 476, 'right', 0.62], [615, 424, 'left', 0.55], [640, 592, 'left', 0.77]], beach: [[120, 510, 'right', 0.66], [640, 590, 'left', 0.77], [930, 450, 'left', 0.58]], default: [[240, 482, 'right', 0.62], [615, 430, 'left', 0.55], [640, 590, 'left', 0.77]]};
 const NAP_ZONE = { yard: [740, 515, 0.75], house: [740, 505, 0.75] }; // the dog-house doorway / the bed, where the active dog naps
 const packPose = {};
-function packSpots() { return PACK_SPOTS[S.place] || PACK_SPOTS.default; }
+// phone yard: the camera crop (about x 95-620) put spot 0 on the missions clipboard (MS_YARD, 24_missions.js), so a tap there switched dogs. On phones the first
+// dog stands in front of the door, left of the clipboard's tap box, and the third goes by the hammock (off the crop until the camera follows the dog there).
+// v2.7 phone review: that spot (x 134) was off the left edge on Pixel 7 and at 360 px (their crops start at x 159 and 151), so spot 0 now stands at the
+// front left, in front of the bowl spot and left of the Garden Bench: in the crop on every width, clear of the clipboard, #dogHit, the house door, the
+// place chip and every default decoration spot. Its Feed-all bowl is lifted onto the scene (fbPackBowls).
+const PACK_SPOTS_PH = { yard: [[222, 596, 'right', 0.58], [930, 438, 'left', 0.57], [960, 560, 'left', 0.7]] };
+function packSpots() { return (isPhone() && PACK_SPOTS_PH[S.place]) || PACK_SPOTS[S.place] || PACK_SPOTS.default; }
 function packDogSVG(d, i) {
   let [fx, fy, face, sc] = packSpots()[i] || packSpots()[0]; sc = sc || 0.6;
   const nz = d.sleeping && NAP_ZONE[S.place]; if (nz) { fx = nz[0] + [-36, 36, 0][i % 3]; fy = nz[1]; sc = nz[2]; face = 'right'; } // napping: in the doorway / on the bed, like the active nap
-  if (hmChairDown(d)) { fx = 868; fy = 530; face = 'right'; sc = 0.48; } // Proud Mum lies down next to the Rocking Chair
+  const hs = typeof hoPackSpot === 'function' ? hoPackSpot(d, i) : null; if (hs) { [fx, fy, face, sc] = hs; } // v2.7 HOME: napping on its own bed, or on a piece of furniture (V27.md section 1)
+  if (hmChairDown(d)) { const cp = typeof hoPos === 'function' ? hoPos('Rocking Chair') : [910, 452]; fx = clamp(868 + cp[0] - 910, 40, 960); fy = 530 + cp[1] - 452; face = 'right'; sc = 0.48; } // Proud Mum lies down next to the Rocking Chair (v2.7: wherever it stands now)
   const w = DW * sc, h = DH * sc, x = fx - w / 2, y = fy - h * (205 / 220);
   const pose = d.sleeping ? 'sleep' : packPose[d.id] || (Math.min(...Object.values(d.stats)) < 25 ? 'sad' : 'idle');
   return `<g class="packdog hot" data-dog="${d.id}" tabindex="0" role="button" aria-label="${esc(d.name)}: click to make ${PRd(d).him} the active dog"><g class="pd-wander" style="animation-delay:-${i * 2.3}s"><rect x="${x + 30}" y="${y + 30}" width="${w - 60}" height="${h - 30}" fill="transparent"/>${place(dogSVG(d, { pose, outfit: typeof shSleepOutfit === 'function' ? shSleepOutfit(d, pose) : outfitOf(d), facing: face }), x, y, w, h)}</g></g>`;
@@ -146,8 +153,18 @@ function phChipsFit(wrap) {
   chips.slice(k).forEach((c) => { c.hidden = true; });
   wrap.insertAdjacentHTML('beforeend', `<button class="dchip dmore" aria-label="${n} more ${n > 1 ? 'dogs' : 'dog'}: see the pack">+${n}</button>`);
   wrap.querySelector('.dmore').onclick = () => { SFX.click(); openPackSheet(); };
+  // UI/UX H6: still clipped (the row's cell ends before the coin counter): drop one more chip into the +N
+  for (let j = k - 1; j >= 0 && wrap.scrollWidth > wrap.clientWidth + 3; j--) { chips[j].hidden = true; const mo = wrap.querySelector('.dmore'), m = chips.length - j; mo.textContent = '+' + m; mo.setAttribute('aria-label', `${m} more dogs: see the pack`); }
 }
 window.addEventListener('resize', () => { if (S && S.dogs && S.dogs.length > 1) phChipsFit($('#hudPack')); });
+// UI/UX H6: the name line (clock, title) and the coin counter change width without a resize (garden, kitchen, more coins), so the chips refit then too
+let phChipsRO = null, phChipsRaf = 0;
+function phChipsWatch() {
+  if (phChipsRO || typeof ResizeObserver === 'undefined') return; const els = [$('#hud .namewrap'), $('#coins')].filter(Boolean); if (!els.length) return;
+  phChipsRO = new ResizeObserver(() => { cancelAnimationFrame(phChipsRaf); phChipsRaf = requestAnimationFrame(() => { if (isPhone() && S && S.dogs && S.dogs.length > 1) phChipsFit($('#hudPack')); }); });
+  els.forEach((e) => phChipsRO.observe(e));
+}
+on('game:ready', phChipsWatch);
 function openPackSheet() {
   const p = openModal('Your pack', `<div class="packpick">${others().map((d) => `<button class="card" data-dog="${d.id}"><span class="pp-head" aria-hidden="true">${headSVG(d)}</span><b>${esc(d.name)} ${sexSym(d.sex)}</b><span class="small">Tap to switch</span></button>`).join('')}</div>`, { cls: 'packsheet' });
   p.querySelectorAll('[data-dog]').forEach((b) => { b.onclick = () => { SFX.click(); closeModal(); switchDog(b.dataset.dog); }; });
@@ -160,26 +177,26 @@ function chipsKey() { return S.dogs.map((d) => d.id + d.name + d.sex + moodOf(d)
 function fbPackBowls(dogs, food) {
   const svg = $('svg.world', view), pack = $('#pack'); let g = $('#fbPackBowls'); if (g) g.remove(); if (!svg || !pack || !dogs.length || cur.mode !== 'yard') return;
   g = document.createElementNS('http://www.w3.org/2000/svg', 'g'); g.id = 'fbPackBowls'; g.setAttribute('pointer-events', 'none');
-  g.innerHTML = dogs.map((d) => { const i = others().indexOf(d); if (i < 0 || i > 2 || hmMumIn(d)) return ''; const [fx, fy, face, sc0] = packSpots()[i] || packSpots()[0], sc = sc0 || 0.6, w = DW * sc, s = 90 * sc, cx = fx - w / 2 + w * (face === 'left' ? 0.29 : 0.71); return place(bowlArt(food), cx - s / 2, fy + 7 * sc - s / 2, s, s); }).join('');
+  g.innerHTML = dogs.map((d) => { const i = others().indexOf(d); if (i < 0 || i > 2 || hmMumIn(d)) return ''; const hs = typeof hoPackSpot === 'function' ? hoPackSpot(d, i) : null, [fx, fy, face, sc0] = hs || packSpots()[i] || packSpots()[0], sc = sc0 || 0.6, w = DW * sc, s = 90 * sc, cx = fx - w / 2 + w * (face === 'left' ? 0.29 : 0.71); const cy = isPhone() && S.place === 'yard' ? Math.min(fy + 7 * sc, 598 - s / 2) : fy + 7 * sc; return place(bowlArt(food), cx - s / 2, cy - s / 2, s, s); }).join('');
   pack.parentNode.insertBefore(g, pack);
 }
 function feedAllFood() { const meals = FOOD.filter((f) => f.n !== 'Fresh Water' && !SNACKS.includes(f.n) && (S.inv.food[f.n] || 0) > 0); meals.sort((a, b) => S.inv.food[b.n] - S.inv.food[a.n]); return meals[0] || null; }
 function feedAll() {
   const f = feedAllFood(); if (!f) { nope('No meals in the pantry. Kibble Corner sells some.'); return; }
   if (busy) return; const fed = [];
-  const order = [D()].concat(others());
+  const order = crOn() ? crDogs() : [D()].concat(others()); // v2.7 PACK CARE: with pack care, the ticked dogs present
   order.forEach((d) => {
     if ((S.inv.food[f.n] || 0) <= 0 || d.stats.hunger > 90 || d.sleeping) return;
-    S.inv.food[f.n]--; withDog(d, () => { addStat('hunger', f.hunger || 0); addStat('happy', (f.happy || 0) + (isFavFood(f.n) ? 5 : 0) + pupBonus(d, f)); addStat('energy', f.energy || 0); addBond(2 + (f.bond || 0)); pottyAfter('meal'); });
+    crFree(d); S.inv.food[f.n]--; withDog(d, () => { addStat('hunger', f.hunger || 0); addStat('happy', (f.happy || 0) + (isFavFood(f.n) ? 5 : 0) + pupBonus(d, f)); addStat('energy', f.energy || 0); addBond(2 + (f.bond || 0)); pottyAfter('meal'); });
     fed.push(d);
   });
   if (S.inv.food[f.n] <= 0) delete S.inv.food[f.n];
   if (!fed.length) { nope('Everyone is full or asleep. Nobody has ever said that before.'); return; }
-  dailyCare('feed'); markCareDay(); trackAct('feed', { name: f.n }); if (typeof shFoodTip === 'function') setTimeout(() => shFoodTip(f.n), 900); markDirty(); popDown(); SFX.crunch(); setTimeout(SFX.crunch, 300); setTimeout(SFX.crunch, 600);
+  dailyCare('feed'); markCareDay(); trackAct('feed', crOn() ? { name: f.n, dogs: fed.length } : { name: f.n }); if (typeof shFoodTip === 'function') setTimeout(() => shFoodTip(f.n), 900); markDirty(); popDown(); SFX.crunch(); setTimeout(SFX.crunch, 300); setTimeout(SFX.crunch, 600);
   // v2.5: every fed dog eats from a bowl of that food: the active dog walks to the yard bowl (shown only while it eats), each pack dog gets its own bowl at its paws
   if (fed.includes(D())) { busy = true; hideBubble(); setBowl(f.n); dogTo(-125, 0, 1, 0.8); renderDog('walk', 'left'); setTimeout(() => setTemp('eat', 1400), 850); setTimeout(() => { setBowl(null); dogTo(0, 0, 1, 0.8); setTimeout(() => { busy = false; renderDog(dogPoseNow()); }, 900); }, 2300); }
   const packFed = others().filter((d) => fed.includes(d)); fbPackBowls(packFed, f.n);
-  packFed.forEach((d) => { packPose[d.id] = 'eat'; redrawPackDog(d); setTimeout(() => { packPose[d.id] = 'happy'; redrawPackDog(d); fbPackBowls([], null); }, 1500); });
+  packFed.forEach((d) => { if (crOn()) packNext[d.id] = Math.max(packNext[d.id] || 0, performance.now() + 1800); packPose[d.id] = 'eat'; redrawPackDog(d); setTimeout(() => { packPose[d.id] = 'happy'; redrawPackDog(d); fbPackBowls([], null); }, 1500); });
   const skipped = S.dogs.length - fed.length;
   const pups = fed.filter((d) => pupBonus(d, f)).map((d) => d.name), eats = fed.map(eatForLine).join('');
   toast(`Feed all: ${fed.length} bowl${fed.length > 1 ? 's' : ''} of ${f.n} for ${fed.map((d) => d.name).join(', ')}. A symphony of crunching.${pups.length ? ` Puppy-sized bites: +${f.pupHappy} Happiness for ${pups.join(', ')}.` : ''}${eats}${skipped ? ` (${skipped} skipped: full, asleep or not enough food.)` : ''}`, 'good');
@@ -319,43 +336,32 @@ function addDog(spec, name) {
 }
 let shelterSex = {};
 function shelterCard(spec, kind) {
-  const tmp = { id: spec.id || 'tmp_' + spec.key, key: spec.key, genes: spec.genes || (STARTER_GENES[spec.key] || STARTER_GENES.mutt) };
+  // v2.7: rescues and residents (the playroom) gain their trait line and a Meet button (V27.md section 7); starters are as in v2.6
+  const sr = kind !== 'starter', tmp = { id: spec.id || 'tmp_' + spec.key, key: spec.key, genes: spec.genes || (STARTER_GENES[spec.key] || STARTER_GENES.mutt) };
   const c = coatInfo(tmp), info = dogInfo(spec.key), home = spec.id && dogById(spec.id);
   const coatName = c ? c.coatName : (STARTER_GENES[spec.key] || {}).coat || '', eyes = c ? c.eyes : (STARTER_GENES[spec.key] || {}).eyes || 'brown';
-  const sx = kind === 'rescue' ? spec.sex : shelterSex[spec.key] || null;
+  const sx = sr ? spec.sex : shelterSex[spec.key] || null;
   const blocked = adoptBlock();
-  return `<div class="sitem shcard ${kind}">${kind === 'rescue' ? '<span class="stamp r2">Rescue</span>' : '<span class="stamp r0">Starter</span>'}<span class="art shdog">${dogArtSafe(spec.key, Object.assign({ pose: 'sit' }, c ? { coat: c.coat, seed: hashId(tmp.id) } : {}))}</span>
-    <b>${esc(kind === 'rescue' ? spec.name : info.name)} ${kind === 'rescue' ? sexSym(spec.sex) : ''}</b>
-    <span class="desc">${esc(info.breed)}${kind === 'rescue' ? ` · ${spec.sex === 'female' ? 'Girl' : 'Boy'} · ${ageText(spec.months)}` : ''}<br>${esc(coatName)}, ${esc(eyes)} eyes<br><i>${esc(info.personality)}</i></span>
+  const dogArt = sr && spec.months != null && spec.months < 6 ? dogSVG(Object.assign({}, tmp, { born: bornDaysAgo(spec.months) }), { pose: 'sit' }) : dogArtSafe(spec.key, Object.assign({ pose: 'sit' }, c ? { coat: c.coat, seed: hashId(tmp.id) } : {}));
+  const stamp = kind === 'rescue' ? '<span class="stamp r2">Rescue</span>' : kind === 'resident' ? '<span class="stamp r1">Playroom</span>' : '<span class="stamp r0">Starter</span>';
+  return `<div class="sitem shcard ${kind}">${stamp}<span class="art shdog">${dogArt}</span>
+    <b>${esc(sr ? spec.name : info.name)} ${sr ? sexSym(spec.sex) : ''}</b>
+    <span class="desc">${esc(info.breed)}${sr ? ` · ${spec.sex === 'female' ? 'Girl' : 'Boy'} · ${ageText(spec.months)}` : ''}<br>${esc(coatName)}, ${esc(eyes)} eyes<br><i>${esc(sr && spec.trait ? spec.trait : info.personality)}</i></span>
     ${kind === 'starter' ? `<div class="wrap" style="justify-content:center"><button class="btn ${sx === 'male' ? 'yes' : ''}" data-shsex="${spec.key}|male" aria-pressed="${sx === 'male'}">Boy ♂</button><button class="btn ${sx === 'female' ? 'yes' : ''}" data-shsex="${spec.key}|female" aria-pressed="${sx === 'female'}">Girl ♀</button></div>` : ''}
-    ${home ? '<span class="chip own">Already home</span>' : `<button class="btn ${blocked ? '' : 'go'}" data-shadopt="${kind}|${spec.id || spec.key}" ${blocked ? 'aria-disabled="true"' : ''}>${kind === 'rescue' ? 'Rescue' : 'Adopt a starter'}</button>`}</div>`;
+    ${home ? '<span class="chip own">Already home</span>' : `<div class="sr-cardbtns">${sr ? `<button class="btn" data-srmeet="${esc(spec.id)}">Meet</button>` : ''}<button class="btn ${blocked ? '' : 'go'}" data-shadopt="${kind}|${spec.id || spec.key}" ${blocked ? 'aria-disabled="true"' : ''}>${kind === 'rescue' ? 'Rescue' : kind === 'resident' ? 'Adopt' : 'Adopt a starter'}</button></div>`}</div>`;
 }
 function openShelterList() {
-  const rescues = rescuesToday(), starterKeys = dogsList().map((x) => x.key).filter((k) => !S.dogs.some((d) => d.key === k && !d.rescue));
+  const rescues = rescuesToday().map((r) => Object.assign({ trait: srTrait(r.id) }, r)), residents = srRoster().filter((x) => x.kind === 'resident');
+  const starterKeys = dogsList().map((x) => x.key).filter((k) => !S.dogs.some((d) => d.key === k && !d.rescue));
   const sl = dogSlots();
-  const p = openModal('Paw Haven Shelter', `<div class="shspots">${spotsLine(sl)}${spotsHTML(sl)}</div>
+  const p = openModal('Paw Haven Shelter', `<p class="sr-lead">Looking for a home</p><div class="shspots">${spotsLine(sl)}${spotsHTML(sl)}</div>
     <h3 class="shh">Today's rescues <span class="small">(new ones arrive every day)</span></h3><div class="shopgrid">${rescues.map((r) => shelterCard(r, 'rescue')).join('')}</div>
+    ${residents.length ? `<h3 class="shh">Living in the playroom <span class="small">(they stay all week)</span></h3><div class="shopgrid">${residents.map((r) => shelterCard(r, 'resident')).join('')}</div>` : ''}
     ${starterKeys.length ? `<h3 class="shh">Starter dogs</h3><div class="shopgrid">${starterKeys.map((k) => shelterCard({ key: k }, 'starter')).join('')}</div>` : ''}`, { cls: 'shop shelter' });
   p.querySelectorAll('[data-shsex]').forEach((b) => { b.onclick = () => { const [k, sx] = b.dataset.shsex.split('|'); shelterSex[k] = sx; SFX.click(); openShelterList(); }; });
+  p.querySelectorAll('[data-srmeet]').forEach((b) => { b.onclick = () => { SFX.click(); srMeet(b.dataset.srmeet); }; });
   p.querySelectorAll('[data-shadopt]').forEach((b) => {
-    b.onclick = () => {
-      const bl = adoptBlock(); if (bl) { nope(bl); return; }
-      const [kind, id] = b.dataset.shadopt.split('|');
-      let spec;
-      if (kind === 'rescue') spec = rescues.find((r) => r.id === id);
-      else { if (!shelterSex[id]) { nope('Pick Boy or Girl first. The siblings are waiting politely.'); return; } spec = { key: id, sex: shelterSex[id], months: 10 }; }
-      if (!spec) return;
-      const def = kind === 'rescue' ? spec.name : dogInfo(spec.key).name;
-      const pp = openModal(`Name your new ${spec.sex === 'female' ? 'girl' : 'boy'} ${sexSym(spec.sex)}`, `<p>${kind === 'rescue' ? 'The shelter calls this one' : 'The tag says'} <b>${esc(def)}</b>. Keep it, or pick something just as silly.</p><input id="shName" class="namebox" maxlength="16" value="${esc(def)}" autofocus>`, { foot: '<button class="btn no" id="shNo">Back</button><button class="btn yes big" id="shOk">Bring home!</button>' });
-      const done = () => {
-        const nm = ($('#shName', pp).value || def).trim().slice(0, 16) || def; const d = addDog(spec, nm);
-        closeModal(); audioCue('adopt'); SFX.fanfare();
-        const pd = PRd(d); toast(`${nm} is home! ${pd.He} sniffs everything twice. ${S.dogs.length} dogs now.`, 'gold');
-        S.place = 'yard'; go('yard');
-      };
-      $('#shOk', pp).onclick = done; $('#shNo', pp).onclick = () => openShelterList();
-      $('#shName', pp).addEventListener('keydown', (e) => { if (e.key === 'Enter') done(); });
-    };
+    b.onclick = () => { const [kind, id] = b.dataset.shadopt.split('|'); srAdoptFlow(kind, id); };
   });
 }
 

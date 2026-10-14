@@ -145,7 +145,7 @@ sec('existing names are byte-identical to v25-base (except the six house item ic
       const a = P0[k](n, o), b = P1[k](n, o);
       if (a === b) same++;
       else if (k === 'item' && HOUSE_ICONS.includes(n)) allowed.push(n);
-      else diff.push(k + ':' + n + (o && Object.keys(o).length ? ' ' + JSON.stringify(o) : ''));
+      else if ((k === 'item' && n === 'Rocking Chair') || (k === 'prop' && n === 'rockingchair')) { /* v2.6.1 art-fixes: the rocking chair's backrest stands upright */ } else diff.push(k + ':' + n + (o && Object.keys(o).length ? ' ' + JSON.stringify(o) : ''));
     });
     ok(diff.length === 0, `every existing name is byte-identical (${same} of ${calls.length} same; differ: ${diff.slice(0, 8).join(', ')})`);
     ok(allowed.length === HOUSE_ICONS.length, `the six house item icons are redrawn (${allowed.join(', ')})`);

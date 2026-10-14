@@ -16,6 +16,8 @@ Your save lives in your browser's local storage. On the web version it is also s
 
 - **14 breeds**: shiba, corgi, golden retriever, dachshund, husky, mutt, chihuahua, pug, greyhound, beagle, poodle, border collie, samoyed and french bulldog. Each has its own voice, personality, size and joke.
 - **Seasons and festivals**: the town follows the real calendar (spring, summer, autumn, winter in every scene), with a leaf festival in October and November (leaf piles, a harvest stall) and a Halloween costume parade in late October. For Halloween 2026 (8 Oct to 2 Nov) the town wears pumpkins, paper ghosts and felt bats, and Mrs. Plum's Pumpkin Patch Pop-up in the Square sells 16 things made for 2026 only (decorations, dog-safe treats, toys with yard games, clothes), each with a "2026" tag and yours to keep.
+- **Home and pack**: decorate the yard and the house (16 decorations and 5 pieces of furniture the dogs climb, nap and play on, all movable by drag or tap), a bed for every dog, and Feed, Pet, Bath and Nap that care for the whole pack at once.
+- **The Shelter Playroom**: a cozy dog-café shelter where dogs looking for a home play, nap and fetch tossed toys. Pet them, read the Adopt me board, meet each dog and adopt for free.
 - **Realistic genetics and breeding**: coats and traits are inherited through real-style gene loci. Dogs have sex, age, seasons and life stages, and breeding follows realistic rules.
 - **Puppies and mixes**: raise litters, name them, keep them or rehome them. Mixed-breed pups get a body from one parent and a head from the other.
 - **Sparkle pups**: a rare shimmering puppy that your journal remembers.
@@ -91,6 +93,7 @@ Some folders (`dogs/`, `world/`, `mods/`) also hold earlier art versions and rev
 - **v2.5 "Autumn & New Pups"**: four seasons on the real calendar in every scene, the autumn leaf festival and Halloween (leaf piles, Baker Bea's Harvest Stall, a costume parade, dog-safe treats with lessons), four new breeds (Poodle, Border Collie, Samoyed, French Bulldog) with real mix names, and eight phone fixes from playing v2.4 (full-width map, scrolling trays, a bowl that shows the food, whole dogs on beds, fixed close buttons, drag to pan, phone fetch, tidy button fills).
 - **v2.4 "Shop Day"**: 32 new crayon-drawn items (6 houses, 12 outfits, 6 toys with play games, 8 dog-safe foods with safety tips), daily missions with a stamp card, Gerald the duck's how-to-play guide, and the claude.ai artifact published as a multi-file artifact.
 - **v2.6 "Halloween 2026"**: Halloween from 8 Oct to 2 Nov 2026, dressed over autumn in the yard, the Square, Market Street and the walks, and Mrs. Plum's Pumpkin Patch Pop-up with 16 items made for 2026 only (4 decorations, 4 dog-safe treats with lessons, 4 toys with yard games, 4 clothes on every breed), each with a "2026" tag and owned forever.
+- **v2.7 "Home & Pack"**: home decorating with a placement mode, five pieces of furniture the dogs use, a bed for every dog, pack care (feed, pet, bath and nap the whole pack), the Shelter Playroom with an Adopt me board, a Collect button in the mailbox, 20 phone clarity fixes and the Halloween art fixes.
 
 Full details: [CHANGELOG.md](CHANGELOG.md). Open issues: [TODO.md](TODO.md).
 

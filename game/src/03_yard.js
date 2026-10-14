@@ -33,34 +33,38 @@ function renderDog(pose, facing = 'right', force) {
   const bf = $('#bedFront'); if (bf) bf.style.display = pose === 'sleep' ? '' : 'none';
   fbNapFit(pose); fbPackNapFit();
 }
-// v2.5: the nap on a house bed. The nap spot (dogTo 417.5, 130, 0.75) is shared by the nap, the curl-up and the idle nap, but the sleeping
+// v2.5: the nap on a house bed. The nap spot (napSpot(): the active dog's own bed, 28_home.js) is shared by the nap, the curl-up and the idle nap, but the sleeping
 // art differs per breed, age and outfit, and each bed has its own front lip (drawn over the dog). So the sleeping art is measured and
 // fitted inside the dog group: centred on the bed, its bottom just behind the front lip, so the whole curled-up dog shows on the bed.
-const FB_NAP_SPOT = /translate\(417\.5px,\s*130px\)\s*scale\(0\.75\)/;
+// v2.7: the beds can stand anywhere in the house, so the check is "the dog stands at its own bed's nap spot" (hoAtBedNap), not one fixed transform.
 function fbNapFit(pose) {
   const g = $('#dogArt'), hit = $('#dogHit'); if (!g) return;
-  g.removeAttribute('transform'); if (hit) hit.removeAttribute('transform');
+  g.removeAttribute('transform'); if (hit) hit.removeAttribute('transform'); hoZzzSync();
   const p = $('#dogPos'), bed = $('#bedG'), svg = $('svg.world', view);
-  if (pose !== 'sleep' || S.place !== 'house' || !bed || !svg || !p || !FB_NAP_SPOT.test(p.style.transform)) return;
+  if (pose !== 'sleep' || S.place !== 'house' || !bed || !svg || !p || !hoAtBedNap()) return;
   const front = $('#bedFront .pa-bed-front'), fr = front && front.getBoundingClientRect(), br = bed.getBoundingClientRect(), r = g.getBoundingClientRect();
   if (!r.width || !br.width || !g.getScreenCTM()) return;
   const loc = (x, y) => { const pt = svg.createSVGPoint(); pt.x = x; pt.y = y; return pt.matrixTransform(g.getScreenCTM().inverse()); };
   const d0 = loc(r.left, r.top), d1 = loc(r.right, r.bottom), b0 = loc(br.left, br.top), b1 = loc(br.right, br.bottom);
   const lip = fr && fr.width ? loc(fr.left, fr.top).y : b0.y + (b1.y - b0.y) * 0.62, lipW = fr && fr.width ? loc(fr.right, fr.top).x - loc(fr.left, fr.top).x : b1.x - b0.x;
-  const [bx, , bw] = BED_BOX, cx = (d0.x + d1.x) / 2, by = d1.y, k = Math.min(1, (lipW * 0.78) / (d1.x - d0.x)), h = (d1.y - d0.y) * k;
-  const tx = ((bx + bw / 2) - 417.5) / 0.75, ty = lip + h * 0.14; // the lip hides only the bottom 14% (the dog sinks into the cushion a little)
+  const ns = napSpot(), bx = S.bedAt[S.bed][0], bw = BED_BOX[2], cx = (d0.x + d1.x) / 2, by = d1.y, k = Math.min(1, (lipW * 0.78) / (d1.x - d0.x)), h = (d1.y - d0.y) * k;
+  const tx = ((bx + bw / 2) - ns[0]) / ns[2], ty = lip + h * 0.14; // the lip hides only the bottom 14% (the dog sinks into the cushion a little)
   const t = `translate(${f1(tx)} ${f1(ty)}) scale(${k.toFixed(3)}) translate(${f1(-cx)} ${f1(-by)})`;
   g.setAttribute('transform', t); if (hit) hit.setAttribute('transform', t);
 }
-// v2.5: pack dogs napping on the bed (NAP_ZONE) while the bed's front lip shows are lifted the same way: their bottom just behind the lip
+// v2.5: a pack dog napping on a bed is lifted the same way: its bottom just behind the lip. v2.7: every dog naps on its own bed, so each
+// bed's lip (.ho-bedfront) shows while its own pack dog naps, and the dog is centred and fitted on that bed (28_home.js hoPackSpot puts it there)
 function fbPackNapFit() {
-  const svg = $('svg.world', view), front = $('#bedFront'), lipEl = $('#bedFront .pa-bed-front'); if (!svg) return;
-  const on = S.place === 'house' && !!lipEl && !!front && front.style.display !== 'none', lipR = on && lipEl.getBoundingClientRect();
+  const svg = $('svg.world', view); if (!svg || !S) return; const house = S.place === 'house';
+  svg.querySelectorAll('.ho-bedfront[data-bed]').forEach((f) => { const b = f.dataset.bed; f.style.display = house && S.dogs.some((d) => d.id !== S.activeId && d.sleeping && svg.querySelector(`#pack [data-dog="${d.id}"]`) && hoBedFor(d) === b) ? '' : 'none'; });
   svg.querySelectorAll('#pack .packdog').forEach((g) => {
-    g.removeAttribute('transform'); const d = dogById(g.dataset.dog); if (!on || !d || !d.sleeping || !lipR.width || !g.getScreenCTM()) return;
-    const r = g.getBoundingClientRect(), inv = g.getScreenCTM().inverse(), w = (x, y) => { const pt = svg.createSVGPoint(); pt.x = x; pt.y = y; return pt.matrixTransform(inv); };
-    const top = w(r.left, r.top).y, bot = w(r.left, r.bottom).y, lip = w(lipR.left, lipR.top).y; if (!r.height) return;
-    g.setAttribute('transform', `translate(0 ${f1(lip + (bot - top) * 0.14 - bot)})`);
+    g.removeAttribute('transform'); const d = dogById(g.dataset.dog); if (!house || !d || !d.sleeping) return; const b = hoBedFor(d); if (!b) return;
+    const lipEl = b === S.bed ? $('#bedFront .pa-bed-front') : svg.querySelector(`.ho-bedfront[data-bed="${CSS.escape(b)}"] .pa-bed-front`), lipR = lipEl && lipEl.getBoundingClientRect();
+    if (!lipR || !lipR.width || !g.getScreenCTM()) return;
+    const r = g.getBoundingClientRect(), inv = g.getScreenCTM().inverse(), w = (x, y) => { const pt = svg.createSVGPoint(); pt.x = x; pt.y = y; return pt.matrixTransform(inv); }; if (!r.height) return;
+    const a = w(r.left, r.top), c = w(r.right, r.bottom), l0 = w(lipR.left, lipR.top), l1 = w(lipR.right, lipR.top);
+    const k = Math.min(1, ((l1.x - l0.x) * 0.78) / (c.x - a.x)), h = (c.y - a.y) * k;
+    g.setAttribute('transform', `translate(${f1((l0.x + l1.x) / 2)} ${f1(l0.y + h * 0.14)}) scale(${k.toFixed(3)}) translate(${f1(-(a.x + c.x) / 2)} ${f1(-c.y)})`);
   });
 }
 function setTemp(pose, ms) { tempPose = pose; tempUntil = performance.now() + ms; renderDog(pose); }
@@ -102,9 +106,9 @@ function enterYard() {
   renderDog(dogPoseNow()); setBowl(fbBowlFood); // v2.5: S.bowl is saved, so after a reload mid-meal it could keep a full bowl on show: the live state wins
   phHomeCx = 358; phCamHome = isPhone() ? phHomeCx : 430; view.style.background = ''; clearTimeout(phPanT); cancelAnimationFrame(camRaf); phPeekOn = false; view.style.removeProperty('--vfit'); view.style.removeProperty('--trayH'); phZoom = 1;
   camCx = phCamHome; camApply(camCx); if (isPhone()) phHomeRefit();
-  if (S.sleeping) { dogTo(417.5, S.place === 'house' ? 130 : 140, 0.75, 0); fbNapFit(dogPoseNow()); showZzz(true); }
+  if (S.sleeping) { dogTo(...napSpot(), 0); fbNapFit(dogPoseNow()); showZzz(true); }
   updateHUD(); bindDev(); bindMess(); bindPack(); greetWalker(); drawFluff(); setTimeout(() => yardReaction(false), 700);
-  const bedG = $('#bedG'); if (bedG) { bedG.onclick = () => { popAct = 'care'; openCareTray(); }; bedG.onkeydown = (e) => { if (e.key === 'Enter') { popAct = 'care'; openCareTray(); } }; }
+  hmDecorBind(); // v2.7: every bed (the Care tray), decoration (its card) and piece of furniture (its card) in the yard or the house
   const svg = $('svg.world', view), hit = $('#dogHit');
   phCamPan(svg); if (isPhone()) phPeek();
   // petting: rub (mouse hover-rub or touch drag) or tap
@@ -167,11 +171,20 @@ function phTrayFit() {
   let h = 0;
   if (cur.mode === 'yard') {
     const pb = $('#placeBtns'); if (pb && pb.children.length) h = pb.offsetHeight + 8; // the place buttons (Garden, Go inside, Café menu...) get their own strip under the scene, so they never cover a prop
-    const tr = dock.querySelector(':scope > .tray'); if (tr && !tr.classList.contains('dock-idle')) { h = tr.offsetHeight; const d = tr.querySelector('.napdet:not([hidden])'); if (d) h += d.offsetHeight + 8; }
+    const tr = dock.querySelector(':scope > .tray'); if (tr && !tr.classList.contains('dock-idle')) { phTrayCap(tr); h = tr.offsetHeight; const d = tr.querySelector('.napdet:not([hidden])'); if (d) h += d.offsetHeight + 8; }
   }
   const cur0 = parseFloat(view.style.getPropertyValue('--trayH')) || 0; if (Math.abs(cur0 - h) < 1) return;
   if (h) view.style.setProperty('--trayH', h + 'px'); else view.style.removeProperty('--trayH');
   phHomeRefit();
+}
+// v2.7 phone review: a tall tray (the pack chips over two rows of cards on iPhone 13) left a 135 px scene band, so #dogHit slid under the place chip.
+// The tray is capped so the scene band above it stays at least PH_BAND_MIN px; its body scrolls inside the tray (measured from the dock, as the tray slides up).
+// The nap tray (its note floats above it) is left alone.
+const PH_BAND_MIN = 204;
+function phTrayCap(tr) {
+  if (tr.classList.contains('nap')) { tr.style.removeProperty('max-height'); return; }
+  const cap = Math.round(dock.getBoundingClientRect().bottom - (parseFloat(getComputedStyle(dock).paddingBottom) || 0) - view.getBoundingClientRect().top - PH_BAND_MIN), want = cap >= 160 ? `min(88%, ${cap}px)` : '';
+  if (tr.style.maxHeight !== want) tr.style.maxHeight = want;
 }
 // v2.5: at most one fit per frame. It used to cancel and ask again on every dock change, so a dock that changes every frame (the fetch timer) starved it.
 { let raf = 0; new MutationObserver(() => { fbBowlSync(); if (!raf) raf = requestAnimationFrame(() => { raf = 0; phTrayFit(); }); }).observe(dock, { childList: true, subtree: true }); }
@@ -324,7 +337,11 @@ function townBubbleBelowDog() {
   const hit = $('#dogHit'); if (!hit || bubble.hidden) return; const hr = hit.getBoundingClientRect(), sg = stage.getBoundingClientRect(), bw = bubble.offsetWidth;
   bubble.classList.add('below'); bubble.style.left = clamp(hr.left + hr.width / 2 - sg.left - bw / 2, 6, stage.clientWidth - bw - 6) + 'px'; bubble.style.top = (hr.bottom - sg.top + 18) + 'px';
   // keep clear of the place buttons (Go home sits bottom-right): slide left of one it would touch
-  const bl = parseFloat(bubble.style.left), bt = parseFloat(bubble.style.top), bh = bubble.offsetHeight; // (layout numbers: the pop animation scales the rect)
+  const bh = bubble.offsetHeight, pr = isPhone() && $('#placeBtns'), prr = pr && pr.offsetParent && pr.getBoundingClientRect(); // phones: stay above the place-button row (UI/UX T5)
+  if (prr && prr.height && parseFloat(bubble.style.top) + bh > prr.top - sg.top - 8) { // no room under the dog: beside it if a side has room (else as before: the buttons draw over it)
+    const ty = prr.top - sg.top - bh - 8, rx = hr.right - sg.left + 8, lx = hr.left - sg.left - bw - 8, side = ty >= hr.bottom - sg.top - 4 ? null : rx + bw <= stage.clientWidth - 6 ? rx : lx >= 6 ? lx : -1;
+    if (side !== -1) { bubble.style.top = ty + 'px'; if (side !== null) bubble.style.left = side + 'px'; } }
+  const bl = parseFloat(bubble.style.left), bt = parseFloat(bubble.style.top); // (layout numbers: the pop animation scales the rect)
   document.querySelectorAll('#placeBtns .btn').forEach((b) => { const q = b.getBoundingClientRect(), ql = q.left - sg.left, qt = q.top - sg.top; if (bl < q.right - sg.left + 12 && bl + bw > ql - 12 && bt < qt + q.height + 6 && bt + bh > qt - 6) bubble.style.left = Math.max(6, ql - 24 - bw) + 'px'; });
   clearTimeout(bubbleBelowT); bubbleBelowT = setTimeout(() => bubble.classList.remove('below'), 3700);
 }
@@ -392,7 +409,7 @@ function petTick(wx, wy) {
   if (busy) return;
   if (S.sleeping) { barkDog(D(), 'huff', { player: true, volume: 0.6 }); if (performance.now() - (pet.shh || 0) > 2500) { pet.shh = performance.now(); toast(`Shh. ${NAME()} is asleep. Wake up from the Care menu.`); } return; }
   const now = performance.now();
-  if (now - pet.start > 120000) pet = { start: now, gain: 0, bonded: false, capped: false, dist: 0 };
+  if (now - pet.start > 120000) { pet = { start: now, gain: 0, bonded: false, capped: false, dist: 0 }; crPetReset(); }
   let g = 1.5 * (favAct('petting') ? 1.5 : 1);
   if (pet.gain >= 20) { g *= 0.25; if (!pet.capped) { pet.capped = true; toast(`${NAME()} is 100% petted. More petting is now a luxury.`); } }
   pet.gain += g; addStat('happy', g);
@@ -401,7 +418,10 @@ function petTick(wx, wy) {
   if (outdoorsNow() && weatherNow() === 'rain' && !hasRaincoat() && !pet.wet) { pet.wet = true; toast('Wet dog smell intensifies.'); }
   setTemp('pet', 900); fxText('♥', wx + RAND(-20, 20), wy - 10);
   Math.random() < 0.7 ? SFX.squeak() : SFX.boop(RAND(500, 800));
-  if (!pet.bonded && pet.gain >= 10) { pet.bonded = true; const n = addBond(3) + (S.outfit.head === 'Wizard Hat' ? addBond(1, { raw: true }) : 0); const st = S.outfit.charm === 'Sparkle Stone'; if (st) addStat('happy', 5); toast(`+${n} Bond.${S.outfit.head === 'Wizard Hat' ? ' Magic hands: +1 Bond.' : ''}${st ? ' The Sparkle Stone hums: +5 Happiness.' : ''} ${NAME()} pretends ${PR().he} did not enjoy that.`, 'good'); dailyCare('pet'); markCareDay(); trackAct('pet', {}); }
+  const bondNow = !pet.bonded && pet.gain >= 10, crB = crPetPack(bondNow, pet.bonded); // v2.7 PACK CARE: the ticked pack dogs get the same petting ([] with pack care off)
+  if (bondNow && crB.length) { pet.bonded = true; crPetBond(crB); }
+  else if (bondNow) { pet.bonded = true; const n = addBond(3) + (S.outfit.head === 'Wizard Hat' ? addBond(1, { raw: true }) : 0); const st = S.outfit.charm === 'Sparkle Stone'; if (st) addStat('happy', 5); toast(`+${n} Bond.${S.outfit.head === 'Wizard Hat' ? ' Magic hands: +1 Bond.' : ''}${st ? ' The Sparkle Stone hums: +5 Happiness.' : ''} ${NAME()} pretends ${PR().he} did not enjoy that.`, 'good'); dailyCare('pet'); markCareDay(); trackAct('pet', {}); }
+  else if (crB.length) crPetBond(crB, true);
   updateHUD();
 }
 function showZzz(on) { const z = $('#zzz'); if (z) z.innerHTML = on ? place(art('prop', 'zzz'), 760, 280, 90, 90) : ''; }
@@ -418,7 +438,7 @@ function dockIdle() {
 }
 function moodLine() {
   const n = NAME(), s = S.stats;
-  if (S.sleeping) return `${n} is asleep in the ${S.house}. Snoring at a medium volume.`;
+  if (S.sleeping) { const zz = crOn() ? others().filter((d) => d.sleeping) : []; return zz.length ? `${crNames([D()].concat(zz))} are asleep in the ${S.house}. Snoring in harmony.` : `${n} is asleep in the ${S.house}. Snoring at a medium volume.`; }
   if (s.clean < 25) return `${n} is filthy. Like, artistically filthy. Bath time.`;
   if (s.hunger < 25) return `${n} is staring at the bowl. And then at you. And then at the bowl.`;
   if (s.energy < 25) return `${n} is very sleepy. A nap in the dog house would help.`;
@@ -433,7 +453,7 @@ function setTray(title, body, opt = {}) { if (!opt.mini && !modal.hidden) closeM
 /* ---------------- FEED ---------------- */
 function openFeedTray() {
   if (cur.mode !== 'yard') go('yard');
-  if (D().key === 'corgi') barkDog(D(), 'yip', { player: true }); else if (Math.random() < 0.5) barkDog(D(), 'yip', {});
+  if (crQuiet) { /* v2.7: a chip tap redraws the tray without a bark */ } else if (D().key === 'corgi') barkDog(D(), 'yip', { player: true }); else if (Math.random() < 0.5) barkDog(D(), 'yip', {});
   const home = atHome(), items = FOOD_ALL.filter((f) => f.n === 'Fresh Water' || (S.inv.food[f.n] || 0) > 0);
   const cards = items.map((f) => {
     const cnt = f.n === 'Fresh Water' ? '' : `<span class="cnt">${S.inv.food[f.n]}</span>`;
@@ -441,8 +461,8 @@ function openFeedTray() {
     return `<button class="card ${off ? 'off meal' : ''}" data-food="${esc(f.n)}" ${wait || off ? 'aria-disabled="true"' : ''} aria-label="Feed ${esc(f.n)}${off ? ' (meals are served at home)' : ''}">${cnt}<span class="art">${art('item', f.n)}</span><b>${esc(f.n)}${hwTag(f.n)}</b><span class="small">${off ? 'at home' : wait ? 'refilling...' : isFavFood(f.n) ? 'favourite!' : SNACKS.includes(f.n) ? 'snack' : ''}</span></button>`;
   }).join('');
   const dishes = kOn() ? dishRowHTML(!home) : '';
-  setTray(home ? 'Feed: tap a food' : `Feed: snacks and water at ${esc(PLACES[S.place] ? PLACES[S.place].n : 'this place')}`, `<div class="row">${cards}${dishes}</div>${items.length <= 1 && !dishes ? '<p class="small" style="margin:0">Pantry is empty. Kibble Corner on Market Street sells food.</p>' : ''}${home && S.dogs.length > 1 ? `<div class="awaynote"><p class="small">${feedAllFood() ? `One portion of <b>${esc(feedAllFood().n)}</b> for every dog (you have ${S.inv.food[feedAllFood().n]}).` : 'No meals left for Feed all.'}</p><button class="btn go" id="feedAll" ${feedAllFood() ? '' : 'aria-disabled="true"'}>Feed all (${S.dogs.length} dogs)</button></div>` : ''}${home ? '' : `<div class="awaynote"><p class="small">Meals are served at home. Out here ${esc(NAME())} has snacks and water.</p><button class="btn go" id="feedHome">Go home</button></div>`}`);
-  fbBowlSync(); dock.querySelectorAll('[data-food]').forEach((c) => { c.onclick = () => { SFX.init(); feed(c.dataset.food); }; });
+  setTray(home ? 'Feed: tap a food' : `Feed: snacks and water at ${esc(PLACES[S.place] ? PLACES[S.place].n : 'this place')}`, `${crChipsHTML()}<div class="row">${cards}${dishes}</div>${items.length <= 1 && !dishes ? '<p class="small" style="margin:0">Pantry is empty. Kibble Corner on Market Street sells food.</p>' : ''}${home && S.dogs.length > 1 ? `<div class="awaynote"><p class="small">${feedAllFood() ? `One portion of <b>${esc(feedAllFood().n)}</b> for every ${crOn() ? 'ticked ' : ''}dog (you have ${S.inv.food[feedAllFood().n]}).` : 'No meals left for Feed all.'}</p><button class="btn go" id="feedAll" ${feedAllFood() ? '' : 'aria-disabled="true"'}>Feed all (${crOn() ? crDogsN(crDogs().length) : S.dogs.length + ' dogs'})</button></div>` : ''}${home ? '' : `<div class="awaynote"><p class="small">Meals are served at home. Out here ${esc(NAME())} has snacks and water.</p><button class="btn go" id="feedHome">Go home</button></div>`}`);
+  fbBowlSync(); crBindChips(dock, openFeedTray); dock.querySelectorAll('[data-food]').forEach((c) => { c.onclick = () => { SFX.init(); feed(c.dataset.food); }; });
   const fh = $('#feedHome'); if (fh) fh.onclick = () => { closeTray(); travelTo('yard'); };
   const fa = $('#feedAll'); if (fa) fa.onclick = () => feedAll();
   dock.querySelectorAll('[data-dish]').forEach((b) => { b.onclick = () => { const [id, st] = b.dataset.dish.split('|'); eatDish(id, +st); }; });
@@ -466,6 +486,7 @@ function dragFeed(card) {
 function feed(name) {
   clearCurl();
   const f = FOOD_ALL.find((x) => x.n === name); if (!f || busy) return;
+  if (crFeed(name, f)) return; // v2.7 PACK CARE: every ticked dog present gets a portion (false: the v2.6 path below, for the active dog only)
   const n = NAME();
   if (S.sleeping) { nope(`${n} is asleep. Wake ${n} from the Care menu first.`); return; }
   if (!atHome() && isMeal(name)) { nope('Meals are served at home. Snacks and water are fine out here.'); return; }
@@ -479,36 +500,17 @@ function feed(name) {
     if (name === 'Pupcake') { dailyCheck(); if (S.daily.pupcake) { nope('One Pupcake per day. Doctor\'s orders. The doctor is a duck.'); return; } S.daily.pupcake = true; }
     S.inv.food[name]--; if (S.inv.food[name] <= 0) delete S.inv.food[name];
   }
-  busy = true; hideBubble(); markDirty(); popDown(); clearCurl(); if (D().key === 'corgi' && name !== 'Fresh Water') barkDog(D(), 'yip', {});
+  busy = true; hideBubble(); markDirty(); popDown(); clearCurl(); crFree(D()); if (D().key === 'corgi' && name !== 'Fresh Water') barkDog(D(), 'yip', {});
   // v2.5: at home and away alike the food goes in the bowl (it used to be eaten from the hand away from home, with no bowl)
   S.bowl = name; setBowl(name); dogTo(-125, 0, 1, 0.8); renderDog('walk', 'left'); setTimeout(() => { renderDog('eat', 'left'); name === 'Fresh Water' ? SFX.slurp() : SFX.crunch(); }, 850);
   setTimeout(() => { if (name !== 'Fresh Water') SFX.crunch(); }, 1500);
   setTimeout(() => {
-    S.bowl = null; setBowl(null); pottyAfter(name === 'Fresh Water' ? 'water' : isMeal(name) ? 'meal' : 'snack');
-    let happy = f.happy || 0;
-    if (isFavFood(name)) happy = Math.round(happy * 1.5) + (happy ? 0 : 5);
-    if (S.dog.key === 'corgi' && name !== 'Fresh Water') happy += 5;
-    if (name === 'Pupcake' && S.outfit.head === 'Party Hat') happy = Math.round(happy * 1.5);
-    const feeder = owns('toys', 'Puzzle Feeder') && name !== 'Fresh Water';
-    if (feeder) happy += 10;
-    if (S.place === 'river' && name !== 'Fresh Water') happy += 5;
-    let extraMsg = '';
-    const pb = pupBonus(D(), f); if (pb) { happy += pb; extraMsg += ` Puppy-sized bites: +${pb} Happiness.`; }
-    if (name !== 'Fresh Water') extraMsg += eatForLine(D());
-    if (name === 'Fresh Water' && isHot()) { happy += 5; addStat('energy', 10); extraMsg += ' So refreshing on a hot day! Extra Energy.'; }
-    const perk = shFeedPerk(name, f); if (perk.happy) { happy += perk.happy; extraMsg += perk.msg; } // v2.4: Chef Hat on meals, Bumblebee Suit on snacks
-    if (name !== 'Fresh Water' && timePhase() === 'dawn') { dailyCheck(); if (!S.daily.breakfast) { S.daily.breakfast = true; happy += 5; addBond(3); extraMsg += ' Breakfast bonus!'; } }
-    addStat('hunger', f.hunger || 0); addStat('happy', happy); addStat('energy', f.energy || 0); addStat('clean', f.clean || 0);
-    let bp = name === 'Fresh Water' ? 0 : 2 + (f.bond || 0); if (feeder) bp *= 2;
-    if (name === 'Pupcake') S.pupUntil = S.gameMin + shPupMins(); // v2.4: the Happi Coat makes it 2 game hours
-    if (f.cool) { S.coolUntil = S.gameMin + f.cool; extraMsg += ' Cool as a cucumber for 1 game hour.'; }
-    if (f.warm) { S.warmUntil = S.gameMin + f.warm; extraMsg += ' Warm paws for 1 game hour.'; } // v2.5: Warm Bone Broth (isWarm honours S.warmUntil) // v2.4: Frozen Pupsicle (isHot honours S.coolUntil)
-    if (f.golden) { S.glowUntil = S.gameMin + 1440; addStat('happy', 80 - Math.min(80, S.stats.happy)); bp = 20; }
-    const got = bp ? addBond(bp) : 0;
+    S.bowl = null; setBowl(null);
+    const { got, extraMsg } = crEatFx(name, f);
     const secs = (Math.random() * 0.9 + 0.2).toFixed(1);
     const eatL = breedLine(EAT_LINES, D());
     const msg = name === 'Fresh Water' ? `${n} drank it. Most of it went on the floor.` : eatL && Math.random() < 0.5 ? eatL : PICK([`${n} ate it in ${secs} seconds. ${PR().His} tail approves.`, `${n} inhaled that. ${PR().He} thinks chewing is for quitters.`, `Gone. ${n} is now looking at the bowl for more.`]);
-    toast(`${msg}${isFavFood(name) ? ' Favourite food!' : ''}${got ? ` +${got} Bond.` : ''}${name === 'Pupcake' ? ` Double Bond for ${shPupMins() > 60 ? '2 game hours (Happi Coat)' : '1 game hour'}!` : ''}${f.golden ? ' GLOWING for a whole game day!' : ''}${S.place === 'river' && name !== 'Fresh Water' ? ' Riverside picnic: +5 Happiness.' : ''}${extraMsg}`, 'good');
+    toast(`${msg}${isFavFood(name) ? ' Favourite food!' : ''}${got ? ` +${got} Bond.` : ''}${name === 'Pupcake' ? ` Double Bond for ${shPupMins() > 60 ? '2 game hours (Happi Coat)' : '1 game hour'}!` : ''}${f.golden ? ' GLOWING for a whole game day!' : ''}${S.place === 'river' && name !== 'Fresh Water' ? ' Riverside picnic: +5 Happiness.' : ''}${extraMsg}${crSoloLine(name, f)}`, 'good');
     if (name !== 'Fresh Water') { dailyCare('feed'); markCareDay(); }
     trackAct(name === 'Fresh Water' ? 'water' : 'feed', { name }); // v2.4 missions and guide
     if (f.tip) setTimeout(() => shFoodTip(name), 900); // v2.4: the safety tip, once per food
@@ -602,24 +604,26 @@ function openCareTray() {
   if (cur.mode !== 'yard') go('yard');
   if (S.sleeping) { sleepTray(); return; }
   const home = atHome(), bedArt = artReal('item', S.bed);
-  setTray('Care', `${home ? '' : `<p style="margin:0 0 6px">Bath and naps happen at home. ${esc(NAME())} refuses to nap on a ${S.place === 'beach' ? 'beach towel. Too sandy' : 'stranger\'s bench'}.</p>`}<div class="row">
+  setTray('Care', `${home ? '' : `<p style="margin:0 0 6px">Bath and naps happen at home. ${esc(NAME())} refuses to nap on a ${S.place === 'beach' ? 'beach towel. Too sandy' : 'stranger\'s bench'}.</p>`}${crChipsHTML()}<div class="row">
     <button class="card ${home ? '' : 'off'}" data-care="bath" ${home ? '' : 'aria-disabled="true"'}><span class="art">${ICON('bath')}</span><b>Bath</b><span class="small">Clean ${Math.round(S.stats.clean)}</span></button>
     <button class="card ${home ? '' : 'off'}" data-care="sleep" ${home ? '' : 'aria-disabled="true"'}><span class="art">${ICON('sleep')}</span><b>Nap</b><span class="small">${S.place === 'house' ? 'on the ' + esc(S.bed) : 'Energy ' + Math.round(S.stats.energy)}</span></button>
     <button class="card" data-care="bed"><span class="art">${bedArt || ICON('sleep')}</span><b>Bed</b><span class="small">${esc(S.bed)}</span></button>
     <button class="card" data-care="house"><span class="art">${ICON('house')}</span><b>Houses</b><span class="small">${S.inv.houses.length} owned</span></button>${hmDecorCard()}
     ${home ? '' : `<button class="card" data-care="home"><span class="art">${ICON('house')}</span><b>Go home</b><span class="small">to the yard</span></button>`}</div>`);
-  dock.querySelectorAll('[data-care]').forEach((b) => { b.onclick = () => { SFX.click(); const c = b.dataset.care; if (!home && (c === 'bath' || c === 'sleep')) { nope(`Bath and naps happen at home. ${NAME()} insists.`); return; } if (c === 'bath') go('bath'); if (c === 'sleep') startSleep(); if (c === 'house') openHouses(); if (c === 'decor') hmOpenDecor(); if (c === 'bed') openBeds(); if (c === 'home') { closeTray(); travelTo('yard'); } }; });
+  dock.querySelectorAll('[data-care]').forEach((b) => { b.onclick = () => { SFX.click(); const c = b.dataset.care; if (!home && (c === 'bath' || c === 'sleep')) { nope(`Bath and naps happen at home. ${NAME()} insists.`); return; } if (c === 'bath') crBathGo(); if (c === 'sleep') startSleep(); if (c === 'house') openHouses(); if (c === 'decor') hmOpenDecor(); if (c === 'bed') openBeds(); if (c === 'home') { closeTray(); travelTo('yard'); } }; });
+  crBindChips(dock, openCareTray);
 }
-function napRate() { const h = houseInfo(); const c = S.place === 'house' ? 0.25 + bedInfo().bonus : h.comfort * (S.dog.key === 'husky' && h.n === 'Snow Igloo' ? 2 : 1); return 20 * BOOST.nap * (1 + c) * (owns('toys', 'Plush Bone') ? 1.1 : 1) * (isNight() ? 1.4 : 1) * (weatherNow() === 'rain' ? 1.2 : 1) * shNapMul() * (S.house === 'Pumpkin Cottage' && S.outfit.body === 'Pumpkin Suit' ? 1.1 : 1); } // v2.5: the Pumpkin Suit in the Pumpkin Cottage
+function napRate(d) { const h = houseInfo(), pb = d && typeof hoBedFor === 'function' ? hoBedFor(d) : undefined; const c = S.place === 'house' ? 0.25 + (pb === null ? 0 : bedInfo(pb).bonus) : h.comfort * (S.dog.key === 'husky' && h.n === 'Snow Igloo' ? 2 : 1); return 20 * BOOST.nap * (1 + c) * (owns('toys', 'Plush Bone') ? 1.1 : 1) * (isNight() ? 1.4 : 1) * (weatherNow() === 'rain' ? 1.2 : 1) * shNapMul() * (S.house === 'Pumpkin Cottage' && S.outfit.body === 'Pumpkin Suit' ? 1.1 : 1); } // v2.5: the Pumpkin Suit in the Pumpkin Cottage. v2.7: d = a napping pack dog, its own bed's bonus in the house (none on the rug)
 function startSleep() {
-  if (busy) return; if (S.stats.energy >= 99) { nope(`${NAME()} is not tired. ${PR().He} is vibrating.`); return; }
-  clearCurl(); busy = false; S.sleeping = true; markDirty(); trackAct('nap', {}); hideBubble(); popDown(); dogTo(417.5, S.place === 'house' ? 130 : 140, 0.75, 1); renderDog('walk');
+  if (busy) return; const crN = crNapPack(); if (crN && crN.done) return; // v2.7 PACK CARE: the ticked pack dogs are tucked in too (null with pack care off)
+  if (S.stats.energy >= 99) { nope(`${NAME()} is not tired. ${PR().He} is vibrating.`); return; }
+  clearCurl(); crFree(D()); busy = false; S.sleeping = true; markDirty(); trackAct('nap', crN ? { dogs: crN.n } : {}); hideBubble(); popDown(); dogTo(...napSpot(), 1); renderDog('walk');
   setTimeout(() => { if (S.sleeping) { renderDog('sleep'); showZzz(true); } }, 1000);
-  sleepTray(); toast(S.place === 'house' ? `${NAME()} curls up on the ${S.bed}. Indoor naps: +25%${bedInfo().bonus ? `, bed +${Math.round(bedInfo().bonus * 100)}%` : ''}.` : weatherNow() === 'rain' ? `${NAME()} curls up in the ${S.house}. Rain on the roof: the best nap sound (+20% nap).` : isNight() ? `${NAME()} climbs into the ${S.house}. Night naps restore more (+40%).` : `${NAME()} climbs into the ${S.house}. Goodnight.`); if (ROACH[D().key]) setTimeout(() => toast(`${NAME()} flips upside down, legs in the air. Greyhounds call that roaching.`, ''), 900); audioPlace();
+  sleepTray(); if (crN) crNapToast(crN); else toast(S.place === 'house' ? `${NAME()} curls up on the ${S.bed}. Indoor naps: +25%${bedInfo().bonus ? `, bed +${Math.round(bedInfo().bonus * 100)}%` : ''}.` : weatherNow() === 'rain' ? `${NAME()} curls up in the ${S.house}. Rain on the roof: the best nap sound (+20% nap).` : isNight() ? `${NAME()} climbs into the ${S.house}. Night naps restore more (+40%).` : `${NAME()} climbs into the ${S.house}. Goodnight.`); if (ROACH[D().key]) setTimeout(() => toast(`${NAME()} flips upside down, legs in the air. Greyhounds call that roaching.`, ''), 900); audioPlace();
 }
 function sleepTray() {
   const h = houseInfo(), b = bedInfo(), indoor = S.place === 'house';
-  const info = `Energy refills at <b>${Math.round(napRate())}</b> per game hour${indoor ? ` (${esc(b.n)}: +25% indoors${b.bonus ? `, +${Math.round(b.bonus * 100)}% bed` : ''})` : h.comfort ? ` (${esc(h.n)}: +${Math.round(h.comfort * 100)}% comfort)` : ' (Cardboard Box: no comfort bonus, lots of character)'}${owns('toys', 'Plush Bone') ? ', +10% Plush Bone' : ''}${shNapNote()}${S.house === 'Pumpkin Cottage' && S.outfit.body === 'Pumpkin Suit' ? ', +10% Pumpkin Suit' : ''}${isNight() ? ', +40% night' : ''}${weatherNow() === 'rain' ? ', +20% rain on the roof' : ''}.`;
+  const info = `Energy refills at <b>${Math.round(napRate())}</b> per game hour${indoor ? ` (${esc(b.n)}: +25% indoors${b.bonus ? `, +${Math.round(b.bonus * 100)}% bed` : ''})` : h.comfort ? ` (${esc(h.n)}: +${Math.round(h.comfort * 100)}% comfort)` : ' (Cardboard Box: no comfort bonus, lots of character)'}${owns('toys', 'Plush Bone') ? ', +10% Plush Bone' : ''}${shNapNote()}${S.house === 'Pumpkin Cottage' && S.outfit.body === 'Pumpkin Suit' ? ', +10% Pumpkin Suit' : ''}${isNight() ? ', +40% night' : ''}${weatherNow() === 'rain' ? ', +20% rain on the roof' : ''}.${crNapLine()}`;
   if (isPhone()) {
     const wasOpen = !!$('#napDet') && !$('#napDet').hidden;
     // v2.3 phone: a one-line strip (energy bar, info, Wake up) so the sleeping dog and the house stay in view; the details open on a tap
@@ -638,7 +642,8 @@ function sleepTray() {
 }
 function wake(auto) {
   focusSet(100); S.sleeping = false; setTimeout(() => audioPlace(), 0); markDirty(); showZzz(false); dogTo(0, 0, 1, 0.9); setTemp('happy', 1500);
-  toast(auto ? 'Fully charged. Zoomies imminent.' : `${NAME()} wakes up, stretches, and decides ${PR().he} wants something.`, 'good');
+  const crW = auto ? [] : crWakePack(); // v2.7 PACK CARE: Wake up wakes every napping dog present
+  toast(auto ? 'Fully charged. Zoomies imminent.' : crW.length ? `${crNames([D()].concat(crW))} wake up, stretch, and decide they want something.` : `${NAME()} wakes up, stretches, and decides ${PR().he} wants something.`, 'good');
   if (cur.mode === 'yard') dockIdle();
 }
 function openHouses() {
@@ -674,7 +679,39 @@ const HM_DECOR = {
   'Jack-o-Lantern Trio': { prop: 'hwlanterns', at: [440, 528, 112, 67], vb: [200, 120], price: 120, fest: 'halloween', ed: 2026, v26: true, story: 'Three pumpkins, three faces, all of them smiling. They glow a little after dark.' },
   'Paper Bat Bunting': { prop: 'hwbunting', at: [650, 298, 160, 43], vb: [300, 80], price: 90, fest: 'halloween', ed: 2026, v26: true, story: 'Paper bats on a string, cut a bit wonky. They flutter whenever a dog runs past.' },
   'Friendly Scarecrow': { prop: 'hwscarecrow', at: [762, 262, 92, 130], vb: [140, 200], price: 140, fest: 'halloween', ed: 2026, v26: true, story: 'A pumpkin head and a big grin. The crows sit on his arms to chat.' },
-  'Ghost Garland': { prop: 'hwgarland', at: [100, 220, 200, 60], vb: [300, 90], price: 100, fest: 'halloween', ed: 2026, v26: true, story: 'Little cloth ghosts holding hands. They say boo very quietly.' }
+  'Ghost Garland': { prop: 'hwgarland', at: [100, 220, 200, 60], vb: [300, 90], price: 100, fest: 'halloween', ed: 2026, v26: true, story: 'Little cloth ghosts holding hands. They say boo very quietly.' },
+  // v2.7 Home & Pack (V27.md section 1): everyday decorations for the yard and the house, and five pieces of dog furniture, all sold at Barkitecture.
+  // room: 'yard' | 'house' (missing = 'yard'). zone: 'floor' (bottom edge on the ground band) | 'wall' (hung up, the whole box on the wall band). flat: drawn under everything else on the floor.
+  // lit: the prop takes { lit: isNight() }. `at` is the starting spot (the HOME lane tunes it in screenshots), S.decor[name].at overrides x, y once the player moves it.
+  'Bird Bath': { prop: 'birdbath', at: [24, 300, 66, 88], vb: [120, 160], price: 90, room: 'yard', zone: 'floor', kind: 'decor', v27: true, story: 'A stone bowl on a pedestal for the garden birds. The sparrows splash in it every morning and the dogs watch, very politely.' },
+  'Flower Barrel': { prop: 'flowerbarrel', at: [96, 318, 84, 72], vb: [140, 120], price: 80, room: 'yard', zone: 'floor', kind: 'decor', v27: true, story: 'An old wooden barrel full of sunflowers and snapdragons. Both are safe for dogs, who sniff every single one.' },
+  'String Lights': { prop: 'stringlights', at: [384, 182, 210, 56], vb: [300, 80], price: 100, room: 'yard', zone: 'wall', kind: 'decor', lit: true, v27: true, story: 'Little round bulbs on a long wire. They come on by themselves when it gets dark, which looks like magic but is a timer.' },
+  'Garden Bench': { prop: 'bench', at: [720, 518, 130, 78], vb: [200, 120], price: 120, room: 'yard', zone: 'floor', kind: 'decor', v27: true, story: 'A painted wooden bench with room for one person and three dogs. The dogs always get the good end.' },
+  'Hammock': { prop: 'hammock', at: [844, 330, 156, 84], vb: [260, 140], price: 140, room: 'yard', zone: 'floor', kind: 'decor', v27: true, story: 'A striped hammock between two posts. It swings in the breeze and nobody has ever got out of it gracefully.' },
+  'Wind Chime': { prop: 'windchime', at: [580, 190, 40, 80], vb: [80, 160], price: 70, room: 'yard', zone: 'wall', kind: 'decor', v27: true, story: 'Bamboo tubes and a little wooden bird that clink in the breeze. The dogs tilt their heads at every note.' },
+  'Sandbox': { prop: 'sandbox', at: [300, 524, 120, 72], vb: [200, 120], price: 110, room: 'yard', zone: 'floor', kind: 'decor', v27: true, story: 'A wooden box of soft sand with a little spade. The one place in the yard where digging gets a round of applause.' },
+  'Stepping Stones': { prop: 'steppingstones', at: [560, 540, 168, 56], vb: [240, 80], price: 60, room: 'yard', zone: 'floor', flat: true, kind: 'decor', v27: true, story: 'Five flat stones in a wobbly line across the grass. Every dog hops them in a different order.' },
+  'Braided Rag Rug': { prop: 'ragrug', at: [628, 524, 216, 72], vb: [240, 80], price: 80, room: 'house', zone: 'floor', flat: true, kind: 'decor', v27: true, story: 'A round rug braided from old shirts and one sock. It is the warmest spot on the floor at four o\'clock.' },
+  'Toy Basket': { prop: 'toybasket', at: [300, 524, 84, 70], vb: [120, 100], price: 70, room: 'house', zone: 'floor', kind: 'decor', v27: true, story: 'A wicker basket of squeaky friends. Every toy comes out and not one of them ever goes back in.' },
+  'Cushion Pile': { prop: 'cushionpile', at: [440, 524, 126, 70], vb: [180, 100], price: 90, room: 'house', zone: 'floor', kind: 'decor', v27: true, story: 'Six squashy cushions in a heap. Officially for people, unofficially for dogs.' },
+  'Boston Fern': { prop: 'fern', at: [532, 320, 78, 104], vb: [120, 160], price: 80, room: 'house', zone: 'floor', kind: 'decor', v27: true, story: 'A big leafy fern on a little wooden stand. Boston ferns are safe around dogs, which is why this one was picked.' },
+  'Cuckoo Clock': { prop: 'cuckooclock', at: [784, 206, 60, 96], vb: [100, 160], price: 120, room: 'house', zone: 'wall', kind: 'decor', v27: true, story: 'A carved wooden clock with a little bird inside. On the hour it pops out, and every dog in the house answers it.' },
+  'Paw Print Pictures': { prop: 'pawpictures', at: [212, 236, 140, 70], vb: [200, 100], price: 90, room: 'house', zone: 'wall', kind: 'decor', v27: true, story: 'Three little frames, each with one muddy paw print. The artists signed them by sitting on them.' },
+  'Moon Lamp': { prop: 'moonlamp', at: [548, 436, 60, 84], vb: [100, 140], price: 100, room: 'house', zone: 'floor', kind: 'decor', lit: true, v27: true, story: 'A round paper moon on a little wooden stand. It glows after dark, so nobody trips over a sleeping dog.' },
+  'Patchwork Quilt': { prop: 'wallquilt', at: [656, 206, 126, 98], vb: [180, 140], price: 110, room: 'house', zone: 'wall', kind: 'decor', v27: true, story: 'A quilt hung on the wall, one square for every dog who ever lived here. There is plenty of room for more squares.' },
+  // v2.7 furniture (kind 'furniture', the Furniture corner tab). The dogs use it in idle time. spots: feet point x, y and the dog box width w, all in the prop's
+  // viewBox units, with the pose and facing. front: the prop's <g class="pa-front"> is drawn over a dog on that spot. via: the path start (the ramp foot).
+  // The art lane may tune the spots and publishes them as PawArt.FURN_SPOTS[prop] (same shape), which wins over these.
+  'Dog Play Tower': { prop: 'playtower', at: [840, 216, 160, 208], vb: [200, 260], price: 320, bond: 3, room: 'house', zone: 'floor', kind: 'furniture', v27: true, story: 'Three carpet steps, a cubby hole and a rope to bat. The top step belongs to whoever got there first.',
+    spots: { top: { x: 100, y: 92, w: 200, pose: 'sit', face: 'right' }, cubby: { x: 100, y: 250, w: 200, pose: 'sleep', face: 'right', front: true } } },
+  'Tunnel Sofa': { prop: 'tunnelsofa', at: [612, 296, 240, 128], vb: [300, 160], price: 360, bond: 3, room: 'house', zone: 'floor', kind: 'furniture', v27: true, story: 'A squashy little sofa with a tunnel straight through the middle. Dogs go in one end and come out the other, very pleased with themselves.',
+    spots: { tunnel: { x: 150, y: 154, w: 200, pose: 'walk', face: 'right', front: true }, seat: { x: 150, y: 70, w: 200, pose: 'down', face: 'left' } } },
+  'Ball Pit': { prop: 'ballpit', at: [4, 476, 192, 112], vb: [240, 140], price: 280, bond: 2, room: 'house', zone: 'floor', kind: 'furniture', v27: true, story: 'A soft round pit full of bright balls. Jumping in is allowed, and so is lying very still.',
+    spots: { a: { x: 96, y: 124, w: 200, pose: 'happy', face: 'right', front: true }, b: { x: 150, y: 124, w: 200, pose: 'rollover', face: 'left', front: true } } },
+  'Sofa Ramp': { prop: 'sofaramp', at: [120, 300, 208, 128], vb: [260, 160], price: 200, bond: 2, room: 'house', zone: 'floor', kind: 'furniture', v27: true, story: 'A carpeted ramp up to a cushioned top step. Short legs, long backs and old knees all get up without a jump.',
+    spots: { top: { x: 204, y: 60, w: 200, pose: 'sit', face: 'left', via: { x: 40, y: 152 } } } },
+  'Window Seat': { prop: 'windowseat', at: [0, 232, 176, 192], vb: [220, 240], price: 260, bond: 2, room: 'house', zone: 'floor', kind: 'furniture', lit: true, v27: true, story: 'A cushioned seat under a little round window. The best place in the house to watch the postman and the birds.',
+    spots: { seat: { x: 110, y: 176, w: 200, pose: 'sit', face: 'right' } } }
 };
 const HM_PHOTO = [20, 15, 120, 84]; // the documented data-photo box inside the 160x140 frame
 function hmDecorFields() { if (S && (!S.decor || typeof S.decor !== 'object')) S.decor = {}; }
@@ -685,45 +722,72 @@ function hmPhotoHeads() {
   const [bx, by, bw, bh] = HM_PHOTO, hs = Math.min(60, bw / n), x0 = bx + (bw - n * hs) / 2, y0 = by + (bh - hs) / 2;
   return recs.map((r, i) => { let h; try { h = headSVG(r); } catch (e) { h = art('dogHead', r.key || 'mutt'); } return `<g class="hm-head" data-head="${esc(r.id)}">${place(h, x0 + i * hs, y0, hs, hs)}</g>`; }).join('');
 }
+// v2.6.1: one shared time-of-day tint for the props laid over a scene (yard decor, the Harvest Stall, leaf piles, the pop-up): the scene
+// recolours itself at dawn, dusk and night, and PawArt.tint (world B) gives a prop the same recolour. lit keeps a lit prop's candlelight.
+// v2.7: indoor takes the house's (and the playroom's) softer indoor recolour, for the house items, beds and furniture
+function propTint(svg, lit, indoor) { const P = window.PawArt; return P && typeof P.tint === 'function' ? P.tint(svg, indoor ? { time: timePhase(), lit: !!lit, indoor: true } : { time: timePhase(), lit: !!lit }) : svg; }
 function hmDecorArt(name) {
-  const D = HM_DECOR[name]; let sv = place(D.prop === 'hwlanterns' ? art('prop', D.prop, { lit: isNight() }) : art('prop', D.prop), 0, 0, D.vb[0], D.vb[1]); // v2.6: the lantern trio glows after dark
+  const D = HM_DECOR[name], glows = D.lit || D.prop === 'hwlanterns', lit = glows && isNight(), a = glows ? art('prop', D.prop, { lit }) : art('prop', D.prop); // v2.6: the lantern trio glows after dark (v2.7: and every lit decoration)
+  let sv = place(propTint(a, lit, (D.room || 'yard') !== 'yard'), 0, 0, D.vb[0], D.vb[1]); // v2.6.1: yard decor takes the scene's time tint (v2.7: house things the indoor one)
   if (D.prop === 'photoframe') sv += `<g data-photo-heads>${hmPhotoHeads()}</g>`;
   return `<svg viewBox="0 0 ${D.vb[0]} ${D.vb[1]}" xmlns="http://www.w3.org/2000/svg">${sv}</svg>`;
 }
 // the tap rect; on phones it grows to at least 48 screen px each way (the scene is scaled to the screen height)
 function hmDecorHit(x, y, w, h) {
-  if (isPhone()) { const s = ((view.clientHeight || 500) - 60) / 600, m = 48 / s; if (w < m) { x -= (m - w) / 2; w = m; } if (h < m) { y -= (m - h) / 2; h = m; } }
+  if (isPhone()) { const s = phHitScale(), m = 48 / s; if (w < m) { x -= (m - w) / 2; w = m; } if (h < m) { y -= (m - h) / 2; h = m; } }
   return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="transparent" pointer-events="all"/>`;
 }
+// v2.7: each yard decoration at its own spot (S.decor[n].at, else the catalogue spot): hung things first, then flat ones, then the rest by bottom edge (28_home.js)
 function hmDecorSVG() {
   hmDecorFields();
-  return `<g id="decorG">${Object.keys(HM_DECOR).filter(hmDecorOut).map((n) => { const [x, y, w, h] = HM_DECOR[n].at; return `<g class="hot hm-decor" data-decor="${esc(n)}" tabindex="0" role="button" aria-label="${esc(n)}">${place(hmDecorArt(n), x, y, w, h)}${hmDecorHit(x, y, w, h)}</g>`; }).join('')}</g>`;
+  return `<g id="decorG" data-tod="${timePhase()}">${hoOrder(hoOutIn('yard')).map(hoItemSVG).join('')}</g>`;
 }
+// binds the yard decorations, or in the house every bed (the Care tray), decoration (its card) and piece of furniture (its card). Long-press shows the name (phones).
 function hmDecorBind() {
-  const g = $('#decorG'); if (!g) return;
-  g.querySelectorAll('[data-decor]').forEach((el) => { const go = () => { SFX.click(); hmDecorPop(el.dataset.decor); }; el.onclick = go; el.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } }; });
+  const g = $('#decorG') || $('#hoRoomG'); if (!g) return;
+  const tap = (el, fn) => { const go = () => { if (HO.pl) return; SFX.click(); fn(); }; el.onclick = go; el.onkeydown = (e) => { if (HO.pl) return; if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } }; };
+  g.querySelectorAll('[data-decor]').forEach((el) => { tap(el, () => hmDecorPop(el.dataset.decor)); psLongPress(el, el.dataset.decor); });
+  g.querySelectorAll('[data-furn]').forEach((el) => { tap(el, () => hoFurnPop(el.dataset.furn)); psLongPress(el, el.dataset.furn); });
+  g.querySelectorAll('#bedG, [data-bed]').forEach((el) => { const go = () => { if (HO.pl) return; popAct = 'care'; openCareTray(); }; el.onclick = go; el.onkeydown = (e) => { if (!HO.pl && e.key === 'Enter') go(); }; psLongPress(el, el.id === 'bedG' ? S.bed : el.dataset.bed); });
 }
-function hmDecorRedraw() {
-  const old = $('#decorG'); if (!old || cur.mode !== 'yard' || S.place !== 'yard') return;
-  old.outerHTML = hmDecorSVG(); hmDecorBind();
-}
+function hmDecorRedraw() { hoRoomRedraw(); }
 function hmDecorPop(name) {
   const D = HM_DECOR[name]; if (!D) return;
-  const p = openModal(esc(name) + hwTag(name), `<div class="hm-pop"><span class="art hm-art">${art('item', name)}</span><p>${esc(D.story)}</p></div>`, { cls: 'hm-decor-pop', foot: '<button class="btn yes" id="hmAway">Put away</button>' });
-  $('#hmAway', p).onclick = () => { SFX.click(); if (S.decor[name]) S.decor[name].out = false; markDirty(); closeModal(); hmDecorRedraw(); toast(`${name} is tucked away. It will keep.`); };
+  const p = openModal(esc(name) + hwTag(name), `<div class="hm-pop"><span class="art hm-art">${art('item', name)}</span><p>${esc(D.story)}</p></div>`, { cls: 'hm-decor-pop', foot: '<button class="btn" id="hoMove">Move</button><button class="btn yes" id="hmAway">Put away</button>' });
+  $('#hoMove', p).onclick = () => { SFX.click(); closeModal(); hoPlaceStart(name); };
+  $('#hmAway', p).onclick = () => { SFX.click(); if (S.decor[name]) S.decor[name].out = false; Object.keys(HO.uses).forEach((id) => { if (HO.uses[id].name === name) hoFree(dogById(id) || { id }); }); markDirty(); closeModal(); hmDecorRedraw(); toast(`${name} is tucked away. It will keep.`); };
 }
+// the Care tray card: in the yard when the player owns a yard decoration, in the house always (the house has beds to arrange)
 function hmDecorCard() {
-  hmDecorFields(); const got = Object.keys(S.decor).filter((n) => HM_DECOR[n]); if (!got.length) return '';
-  const away = got.filter((n) => !hmDecorOut(n)).length;
-  return `<button class="card" data-care="decor"><span class="art">${iconOr('decor', '<rect x="-14" y="-10" width="28" height="22" rx="3" fill="#F9D56E" stroke="#5B3D32" stroke-width="2.5"/>')}</span><b>Decor</b><span class="small">${away ? away + ' put away' : 'all out'}</span></button>`;
+  hmDecorFields(); const house = S.place === 'house', got = hoOwned(house ? 'house' : 'yard'); if (!house && !got.length) return '';
+  const away = got.filter((n) => !hmDecorOut(n)).length + (house ? S.beds.filter((n) => !S.bedAt[n]).length : 0);
+  const ic = house ? iconOr('furniture', '<rect x="-14" y="-6" width="28" height="16" rx="4" fill="#F7A1B5" stroke="#5B3D32" stroke-width="2.5"/>') : iconOr('decor', '<rect x="-14" y="-10" width="28" height="22" rx="3" fill="#F9D56E" stroke="#5B3D32" stroke-width="2.5"/>');
+  return `<button class="card" data-care="decor"><span class="art">${ic}</span><b>${house ? 'Decorate' : 'Decor'}</b><span class="small">${away ? away + ' put away' : got.length ? 'all out' : 'arrange'}</span></button>`;
 }
-function hmOpenDecor() {
-  hmDecorFields(); const got = Object.keys(S.decor).filter((n) => HM_DECOR[n]), away = got.filter((n) => !hmDecorOut(n));
-  const list = away.map((n) => `<div class="sitem"><span class="art">${art('item', n)}</span><b>${esc(n)}${hwTag(n)}</b><button class="btn yes" data-back="${esc(n)}">Put back</button></div>`).join('');
-  const p = openModal('Yard decor', away.length ? `<p class="small">These are tucked away. Put them back out any time.</p><div class="shopgrid">${list}</div>` : `<p>Everything you own is out in the yard. Nothing is hiding in the shed.</p>`);
-  p.querySelectorAll('[data-back]').forEach((b) => { b.onclick = () => { SFX.click(); S.decor[b.dataset.back].out = true; markDirty(); toast(`${b.dataset.back} is back in the yard.`, 'good'); if (cur.mode === 'yard') { closeModal(); hmDecorRedraw(); hmOpenDecor(); } }; });
+// the Decorate sheet: what is out (Move, Put away) and what is put away (Place), and the big Arrange button
+function hmOpenDecor(room) {
+  hmDecorFields(); room = room === 'house' || room === 'yard' ? room : S.place === 'house' ? 'house' : 'yard';
+  const got = hoOwned(room), out = got.filter(hmDecorOut), away = got.filter((n) => !hmDecorOut(n)), where = room === 'yard' ? 'yard' : 'house';
+  const card = (n, btns) => `<div class="sitem"><span class="art">${art('item', n)}</span><b>${esc(n)}${hwTag(n)}</b>${btns}</div>`;
+  const body = `<p class="small">${got.length ? `Move things around the ${where}, or tuck them away for later.` : room === 'yard' ? 'Nothing for the yard yet. Barkitecture on Market Street sells yard decorations.' : 'Nothing for the house yet. Barkitecture on Market Street sells house things and furniture. The beds can move about already.'}</p>
+    <button class="btn yes ho-arrange" id="hoArrange"><span class="art">${iconOr('arrange', '<path d="M-12 0h24M0 -12v24" stroke="#5B3D32" stroke-width="3"/>')}</span>Arrange the ${where}</button>
+    ${out.length ? `<h4 class="ho-h">Out</h4><div class="shopgrid">${out.map((n) => card(n, `<div class="ho-btns"><button class="btn" data-homove="${esc(n)}">Move</button><button class="btn" data-hoaway="${esc(n)}">Put away</button></div>`)).join('')}</div>` : ''}
+    ${away.length ? `<h4 class="ho-h">Put away</h4><p class="small">These are tucked away. Put them back out any time.</p><div class="shopgrid">${away.map((n) => card(n, `<button class="btn yes" data-back="${esc(n)}">Place</button>`)).join('')}</div>` : ''}`;
+  const p = openModal(room === 'yard' ? 'Yard decor' : 'House things', body, { cls: 'shop ho-decor' });
+  const atRoom = () => cur.mode === 'yard' && S.place === room;
+  $('#hoArrange', p).onclick = () => { SFX.click(); closeModal(); hoPlaceStart(undefined, room); };
+  p.querySelectorAll('[data-homove]').forEach((b) => { b.onclick = () => { SFX.click(); closeModal(); hoPlaceStart(b.dataset.homove); }; });
+  p.querySelectorAll('[data-hoaway]').forEach((b) => { b.onclick = () => { SFX.click(); if (hoAway(b.dataset.hoaway)) { if (atRoom()) hoRoomRedraw(); hmOpenDecor(room); } }; });
+  p.querySelectorAll('[data-back]').forEach((b) => {
+    b.onclick = () => {
+      SFX.click(); const n = b.dataset.back; toast(`${n} is back in the ${where}.`, 'good');
+      if (atRoom()) { closeModal(); hoPlaceStart(n); return; }
+      S.decor[n].at = hoFreeSpot(n); S.decor[n].out = true; markDirty(); hmOpenDecor(room); // away from home: it waits at a free spot
+    };
+  });
 }
 function hmExpose() { if (window.__paw) window.__paw.home = { decorOut: hmDecorOut, redraw: hmDecorRedraw, ambient: () => packAmbient(), say: (t, x, y) => say(t, x, y, 4000), emit: (e, d) => emit(e, d), specs: HM_DECOR }; }
 on('game:ready', () => { hmDecorFields(); setTimeout(hmExpose, 0); });
 on('yard:enter', () => { hmDecorFields(); hmDecorBind(); hmExpose(); });
-on('decor:new', (o) => { hmDecorFields(); if (cur.mode === 'yard' && S.place === 'yard') hmDecorRedraw(); toast(`New for the yard: ${o && o.name}!`, 'gold'); });
+on('scene:redraw', () => { const g = $('#decorG') || $('#hoRoomG'); if (g && !HO.pl && g.dataset.tod !== timePhase()) hmDecorRedraw(); }); // v2.6.1: the decor follows the scene's time tint (v2.7: the house too, not while arranging)
+on('decor:new', (o) => { hmDecorFields(); const n = o && o.name, room = n && HM_DECOR[n] ? hoRoomOf(n) : 'yard'; if (cur.mode === 'yard' && S.place === room && !HO.pl) hmDecorRedraw(); toast(`New for the ${room}: ${n}!`, 'gold'); });

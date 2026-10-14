@@ -169,8 +169,10 @@ require('./test_lib').run('v24_shop', async (t) => {
   const dn = (await S()).dog.name;
   ok(letter.from === 'Mrs. Plum next door' && letter.text === `I knitted too much again. A scarf for ${dn}. It is very long. Like my winters.` && letter.gift.item === 'Knit Scarf', 'the letter: ' + letter.text);
   ok(!(await S()).inv.clothes.includes('Knit Scarf'), 'not owned before the letter is opened');
-  await ev(() => window.__paw.shop.mail()); await t.until(() => window.__paw.S.inv.clothes.includes('Knit Scarf'), null, 4000);
-  ok((await S()).inv.clothes.includes('Knit Scarf'), 'opening the letter adds the Knit Scarf to the Wardrobe');
+  await ev(() => window.__paw.shop.mail()); await p().waitForSelector('.letter [data-mbget]'); // v2.7: the gift waits for Collect
+  ok(!(await S()).inv.clothes.includes('Knit Scarf'), 'opening the letter shows a Collect button');
+  await p().click('.letter [data-mbget]'); await t.until(() => window.__paw.S.inv.clothes.includes('Knit Scarf'), null, 4000);
+  ok((await S()).inv.clothes.includes('Knit Scarf'), 'Collect adds the Knit Scarf to the Wardrobe');
   await t.closeX();
   const again = await ev(() => { const out = []; for (let i = 0; i < 40; i++) out.push(window.__paw.shop.giftRoll()); return out.filter((g) => g.gift && g.gift.item === 'Knit Scarf').length; });
   ok(again === 0, 'the scarf letter never comes again');

@@ -44,3 +44,9 @@ html[data-layout="phone"] #view:has(#placeBtns [data-sh]) #placeBtns [data-pb="y
 html:not([data-layout="phone"]) #stage:has(#placeBtns [data-sh]) #status { top: 0; padding: 1px 12px 2px; font-size: 15px; }
 /* the "you are here" label wraps to two short lines, so the pin fits beside its place inside the narrower map */
 html[data-layout="phone"] #mapPin span { white-space: normal; max-width: 76px; text-align: center; line-height: 1.02; font-size: 18px; padding: 1px 8px 3px; }
+/* UI/UX T8 (13 Oct 2026): the one-row strip fades only where more buttons wait, and more strongly (56 px), so it reads as "swipe for more"; at the end the
+   last button (the Sprout Cart) is no longer faded. psRowFade (22c_phone_shell.js) sets the classes from the scroll position. */
+html[data-layout="phone"] #view:has(#placeBtns [data-sh]) #placeBtns:not(.ps-more-l):not(.ps-more-r) { -webkit-mask-image: none; mask-image: none; }
+html[data-layout="phone"] #view:has(#placeBtns [data-sh]) #placeBtns.ps-more-r { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 56px), rgba(0,0,0,.12) 100%); mask-image: linear-gradient(90deg, #000 calc(100% - 56px), rgba(0,0,0,.12) 100%); }
+html[data-layout="phone"] #view:has(#placeBtns [data-sh]) #placeBtns.ps-more-l { -webkit-mask-image: linear-gradient(90deg, rgba(0,0,0,.12) 0, #000 56px); mask-image: linear-gradient(90deg, rgba(0,0,0,.12) 0, #000 56px); }
+html[data-layout="phone"] #view:has(#placeBtns [data-sh]) #placeBtns.ps-more-l.ps-more-r { -webkit-mask-image: linear-gradient(90deg, rgba(0,0,0,.12) 0, #000 56px, #000 calc(100% - 56px), rgba(0,0,0,.12) 100%); mask-image: linear-gradient(90deg, rgba(0,0,0,.12) 0, #000 56px, #000 calc(100% - 56px), rgba(0,0,0,.12) 100%); }
