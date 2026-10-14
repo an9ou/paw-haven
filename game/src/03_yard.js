@@ -711,7 +711,13 @@ const HM_DECOR = {
   'Sofa Ramp': { prop: 'sofaramp', at: [120, 300, 208, 128], vb: [260, 160], price: 200, bond: 2, room: 'house', zone: 'floor', kind: 'furniture', v27: true, story: 'A carpeted ramp up to a cushioned top step. Short legs, long backs and old knees all get up without a jump.',
     spots: { top: { x: 204, y: 60, w: 200, pose: 'sit', face: 'left', via: { x: 40, y: 152 } } } },
   'Window Seat': { prop: 'windowseat', at: [0, 232, 176, 192], vb: [220, 240], price: 260, bond: 2, room: 'house', zone: 'floor', kind: 'furniture', lit: true, v27: true, story: 'A cushioned seat under a little round window. The best place in the house to watch the postman and the birds.',
-    spots: { seat: { x: 110, y: 176, w: 200, pose: 'sit', face: 'right' } } }
+    spots: { seat: { x: 110, y: 176, w: 200, pose: 'sit', face: 'right' } } },
+  // v2.8 Winter & New Year (V28.md section 1): sold only at Baker Bea's Winter Stall while their fest flag is on (never at Barkitecture), bought once,
+  // placed with the v2.7 placement mode. `at` is a starting spot, the free-spot scan picks the real one. The props take { night } (WINTER ART)
+  'Paper Snowflake Garland': { prop: 'wnsnowflakes', at: [620, 196, 210, 56], vb: [300, 80], price: 90, room: 'yard', zone: 'wall', kind: 'decor', fest: 'snow', v28: true, story: 'Paper snowflakes cut by the Nguyen kids, no two the same. Some of them are dogs, if you squint.' },
+  'Felt Holly Wreath': { prop: 'wnwreath', at: [880, 200, 72, 72], vb: [120, 120], price: 80, room: 'yard', zone: 'wall', kind: 'decor', fest: 'snow', v28: true, story: 'A round wreath of felt leaves and red felt berries. Real holly berries make dogs ill, so these ones are felt.' },
+  'Red Wooden Sled': { prop: 'wnsled', at: [24, 506, 130, 78], vb: [200, 120], price: 110, room: 'yard', zone: 'floor', kind: 'decor', fest: 'snow', v28: true, story: 'A red sled for leaning on the fence. Nobody has ever pulled it, because a dog is always sitting in it.' },
+  'Kadomatsu Pair': { prop: 'nykadomatsu', at: [866, 404, 80, 100], vb: [160, 200], price: 120, room: 'yard', zone: 'floor', kind: 'decor', fest: 'newyear', v28: true, story: 'Bamboo, pine and plum by the gate to welcome the new year\'s luck. The dogs sniff it every morning to check the luck is still there.' }
 };
 const HM_PHOTO = [20, 15, 120, 84]; // the documented data-photo box inside the 160x140 frame
 function hmDecorFields() { if (S && (!S.decor || typeof S.decor !== 'object')) S.decor = {}; }

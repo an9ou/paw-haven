@@ -37,4 +37,7 @@
 28_home.js
 29_pack_care.js
 30_shelter.js
+31_winter.js
+32_newyear.js
+33_japan.js
 23_boot.js

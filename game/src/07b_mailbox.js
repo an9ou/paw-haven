@@ -73,7 +73,7 @@ function mailPush(msg) {
   S.mail.unshift(m);
   if (S.mail.length > MAIL_MAX) { // drop the oldest read letters first
     for (let i = S.mail.length - 1; i >= 0 && S.mail.length > MAIL_MAX; i--) if (S.mail[i].read && !mbOwed(S.mail[i])) S.mail.splice(i, 1); // v2.7: a gift still waiting for Collect is kept
-    for (let i = S.mail.length - 1; i >= 0 && S.mail.length > MAIL_MAX; i--) if (S.mail[i].kind !== 'litter') S.mail.splice(i, 1); // unread litter letters are kept
+    for (let i = S.mail.length - 1; i >= 0 && S.mail.length > MAIL_MAX; i--) if (S.mail[i].kind !== 'litter' && !mbOwed(S.mail[i])) S.mail.splice(i, 1); // unread litter letters are kept (v2.8: and every gift still waiting for Collect, e.g. a New Year card)
   }
   markDirty(); mailSfx();
   const tl = toast(`New mail: ${m.title}`, 'gold', { group: 'mail', many: (n) => `${n} new letters in your mailbox.` }); // phones: letters that arrive together make one note

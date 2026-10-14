@@ -1,5 +1,5 @@
 /* Byte-identical check for the dog art module.
-   Loads dogs/pawart_dogs.js (working tree) and the same file from a git ref (default v27-base, else origin/v27-base)
+   Loads dogs/pawart_dogs.js (working tree) and the same file from a git ref (default v28-base, else origin/v28-base)
    in node vm sandboxes and compares PawArt.dog / PawArt.dogHead for every breed x pose x existing outfit
    x age x sparkle, plus mixes, expecting, coats and facing left.
    Then it sweeps the v2.6 outfits (NEW_OUTS) on the working tree: every breed x pose x age x facing x sparkle renders with no
@@ -16,7 +16,7 @@ if(!process.env.SHARD){// parent: fan out, then sum up
       if(++done===n){console.log(`check_identical vs ${refName}: ${tot} renders compared over ${n} shards, ${dif} differ`);console.log(`v2.6 outfit sweep: ${sw} renders, ${swBad} bad`);if(bad.length||dif||swBad){console.log(bad.slice(0,30).join('\n'));process.exit(1)}console.log('ALL OK')}})}
   return;
 }
-const ref=process.argv[2]||(()=>{try{cp.execSync('git rev-parse --verify -q v27-base',{cwd:path.join(__dirname,'..'),stdio:'ignore'});return'v27-base'}catch(e){return'origin/v27-base'}})();
+const ref=process.argv[2]||(()=>{try{cp.execSync('git rev-parse --verify -q v28-base',{cwd:path.join(__dirname,'..'),stdio:'ignore'});return'v28-base'}catch(e){return'origin/v28-base'}})();
 const load=src=>{const sb={window:{}};vm.createContext(sb);vm.runInContext(src,sb);return sb.window.PawArt};
 const SRC=fs.readFileSync(path.join(__dirname,'pawart_dogs.js'),'utf8'),NEW=load(SRC);
 const OLD=load(cp.execSync(`git show ${ref}:dogs/pawart_dogs.js`,{cwd:path.join(__dirname,'..'),encoding:'utf8',maxBuffer:64<<20}));
@@ -27,7 +27,7 @@ const OUTS=[['head','Party Hat'],['head','Flower Crown'],['head','Acorn Cap'],['
  ['neck','Red Bandana'],['neck','Bow Tie'],['neck','Seashell Necklace'],['neck','Clover Collar'],['neck','Rainbow Collar'],
  ['body','Yellow Raincoat'],['body','Knit Winter Sweater'],['body','Superhero Cape'],['body','Mossy Poncho'],['body','Frog Raincoat'],['body','Polka-dot Raincoat'],['body','Bubble Raincoat'],
  ['head','Leaf Beret'],['neck','Autumn Scarf'],['neck','Parade Rosette'],['body','Ghost Sheet'],['body','Pumpkin Suit'], // v2.5 outfits
- ['head','Witch Hat'],['body','Vampire Cape'],['neck','Candy Corn Bandana'],['body','Bat Wings']]; // v2.6 outfits (in v27-base)
+ ['head','Witch Hat'],['body','Vampire Cape'],['neck','Candy Corn Bandana'],['body','Bat Wings']]; // v2.6 outfits (v2.7 added none; all in v28-base)
 // the v2.4 outfits, all compared (env CHANGING='Name,Name' leaves some out while they are being redrawn)
 const CHG=(process.env.CHANGING||'').split(',');
 [['head','Chef Hat'],['head','Wizard Hat'],['head','Sun Hat'],['head','Cowboy Hat'],['head','Astronaut Helmet'],['neck','Sailor Collar'],['neck','Knit Scarf'],['body','Happi Coat'],['body','Bumblebee Suit'],['body','Cozy Hoodie'],['body','Tutu'],['body','Pyjamas']].forEach(o=>{if(!CHG.includes(o[1]))OUTS.push(o)});

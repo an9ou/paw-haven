@@ -45,7 +45,10 @@ const fsSeasonYear = (s) => { const y = +fsYear(); return String(s === 'winter' 
 const fsAnyOn = () => festOn('leaf') || festOn('halloween');
 const fsMotionOff = () => document.documentElement.dataset.motion === 'off';
 const fsHere = (pl) => cur.mode === 'yard' && !!S && S.place === pl && !!$('#view svg.world');
-function fsActive() { return FS.walking; }
+function fsActive() { return FS.walking || (typeof wnActive === 'function' && !!wnActive()); } // v2.8: also the Ugly Sweater Contest walk (WINTER)
+// v2.8 (V28.md section 2): [[x, y, w, h], ...] world boxes of every festival prop up now in 'yard' or 'square' (leaf piles, porch pumpkin, snowdrifts,
+// snow heap, stall, banner, fortune box, pop-up), for the HOME free-spot scan and the occlusion tests. Coordinator stub: none. WINTER fills it in
+function fsKeepOut(place) { return []; }
 
 /* ---- art with doodle fallbacks (used until the FESTIVAL ART lane's props are merged) ---- */
 const FS_LEAF_COLS = ['#E8893A', '#D9663B', '#F2C14E', '#B5542F', '#C9A13B'];
