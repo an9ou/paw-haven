@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Japan scenery gallery</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&display=swap">
+<style>body{margin:0;padding:12px;background:#FFFBF3;font:14px/1.3 system-ui,sans-serif;color:#5B3D32}
+h1{font-size:18px;margin:0 0 4px}h2{margin:18px 0 6px;font-size:15px}.row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+figure{margin:0;text-align:center}figcaption{font:600 15px 'Caveat',cursive;margin-top:2px}
+.scene{display:block;border-radius:6px;border:1px solid #E3D2BA;background:#fff;overflow:hidden}.scene>svg{width:100%;height:100%;display:block}
+.phone{width:195px;height:300px;overflow:hidden;border:1px solid #E3D2BA;border-radius:6px;position:relative}.phone>svg{position:absolute;top:0;height:100%;width:auto}
+body.solo{padding:0;overflow:hidden}body.solo h1,body.solo h2,body.solo p,body.solo .row{display:none}#solo{display:none}body.solo #solo{display:block;width:100vw;height:100vh}#solo>svg{width:100%;height:100%;display:block}
+@media (max-width:600px){.scene{width:100%!important;height:auto!important;aspect-ratio:5/3}}</style></head>
+<body>
+<div id="solo"></div>
+<h1>Doodle Doggo world art C: v2.8 Japan scenery (Mt. Fuji, the details, Fuji View Hill)</h1>
+<p>Every outdoor scene with <code>jp: true</code> (V28 section 12). Fuji keeps its own colours (rgb, out of the recolour pass): the snow cap by season, lilac at dawn, red Fuji at dusk, a navy shape with a star at night, a cloud band when cloudy, hidden behind the clouds in rain and snow. Add <code>?solo=fujihill&amp;season=spring&amp;time=dusk&amp;weather=sunny&amp;newyear=1</code> for one scene filling the window.</p>
+<h2>Fuji View Hill: the four seasons by day</h2><div class="row" id="hillS"></div>
+<h2>Fuji View Hill: dawn, day, dusk (red Fuji), night, cloudy, rain, snow</h2><div class="row" id="hillT"></div>
+<h2>Fuji View Hill: New Year (kadomatsu, paper lanterns, kites), Winter Lights, Halloween</h2><div class="row" id="hillF"></div>
+<h2>Fuji on every skyline (summer day), next to the same scene without it</h2><div class="row" id="all"></div>
+<h2>The phone crops (x 186-530, the camera home): the yard, the Square, the hill</h2><div class="row" id="phone"></div>
+<h2>The details: market post box and wires, the Square's vending machine and noren, the café noren, the park koi pond and lanterns, sakura and momiji, jizo, bamboo fences</h2><div class="row" id="det"></div>
+<h2>The Square: Winter Lights and New Year</h2><div class="row" id="sq"></div>
+<h2>The walk strips (town, hilltop, pier, park, river, beach)</h2><div class="row" id="strips"></div>
+<script src="pawart_world_a.js"></script>
+<script src="pawart_world_b.js"></script>
+<script src="pawart_world_c.js"></script>
+<script>
+const PA=window.PawArt,Q=new URLSearchParams(location.search);
+const fig=(id,svg,cap,w=360,h=216,cls='scene')=>{const f=document.createElement('figure');f.innerHTML=`<div class="${cls}" style="width:${w}px;height:${h}px">${svg}</div><figcaption>${cap}</figcaption>`;document.getElementById(id).appendChild(f);return f};
+const sc=(n,o)=>PA.scene(n,Object.assign({jp:true},o));
+if(Q.get('solo')){document.body.classList.add('solo');const o={jp:true};['time','weather','season'].forEach(k=>{if(Q.get(k))o[k]=Q.get(k)});['newyear','lights','halloween'].forEach(k=>{if(Q.get(k))o[k]=true});document.getElementById('solo').innerHTML=PA.scene(Q.get('solo'),o)}
+else{
+['spring','summer','autumn','winter'].forEach(s=>fig('hillS',sc('fujihill',{season:s}),s));
+[['dawn','sunny'],['day','sunny'],['dusk','sunny'],['night','sunny'],['day','cloudy'],['day','rain'],['night','snow']].forEach(([t,w])=>fig('hillT',sc('fujihill',{time:t,weather:w,season:'winter'}),`${t}, ${w}`));
+fig('hillF',sc('fujihill',{season:'winter',newyear:true}),'New Year');fig('hillF',sc('fujihill',{season:'winter',lights:true,time:'night'}),'Winter Lights, night');fig('hillF',sc('fujihill',{season:'autumn',halloween:true,time:'dusk'}),'Halloween, dusk');
+['yard','market','garden','park','river','beach','square','dogpark','hilltop','pier'].forEach(n=>{fig('all',sc(n,{}),n+' (jp)');fig('all',PA.scene(n,{}),n+' (off)',240,144)});
+fig('all',sc('shelter',{}),'shelter window (jp)');fig('all',sc('woods',{}),'woods: no Fuji (the canopy)');
+['yard','square','fujihill'].forEach(n=>{const f=fig('phone',sc(n,{}),n,195,300,'phone'),s=f.querySelector('svg');s.setAttribute('viewBox','186 0 344 600');s.setAttribute('preserveAspectRatio','xMidYMid slice');s.style.width='100%'});
+fig('det',sc('market',{}),'Market Street: post box, poles, sparrows');fig('det',sc('square',{time:'night'}),'Square at night: the lit vending machine');fig('det',sc('cafe',{}),'café: the kitchen noren');
+fig('det',sc('park',{season:'spring'}),'park: koi pond, stone lanterns, sakura');fig('det',sc('park',{season:'autumn'}),'park: momiji');fig('det',sc('park',{season:'winter',time:'night'}),'park: the ice ring, lit lanterns');
+fig('det',sc('river',{season:'spring'}),'riverside: sakura row, jizo, petals');fig('det',sc('river',{season:'winter'}),'jizo in his winter hat');fig('det',sc('garden',{}),'garden: the bamboo fence');
+fig('sq',sc('square',{season:'winter',lights:true}),'lights, day');fig('sq',sc('square',{season:'winter',lights:true,time:'night'}),'lights, night');fig('sq',sc('square',{season:'winter',newyear:true}),'New Year');
+['town','hilltop','pier','park','river','beach'].forEach(n=>fig('strips',PA.walkStrip(n,{jp:true,season:n==='hilltop'?'autumn':'summer'}),n,480,160));
+}
+</script>
+</body></html>
