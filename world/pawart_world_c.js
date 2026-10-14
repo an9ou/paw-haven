@@ -1525,17 +1525,17 @@ function ltFountain(k,fx){const m=[];for(let i=0;i<=14;i++){const a=Math.PI+i/14
   ltString(k,[[fx-86,446],[fx-56,428],[fx-24,440],[fx+8,424],[fx+40,436],[fx+70,426],[fx+88,440]],17)}
 /* ---------- Mt. Fuji (V28 section 12.2) ---------- */
 // [cx, by, w] per scene or strip: in a dip of the far line, clear of the sun and moon spots, inside the phone home crop of the yard and the Square;
-// the Square's sits low behind the roofs so its top shows in the desktop crop too (the sky there starts at y 131)
+// the Square's is big and set low so its cap and upper slopes fill the strip of sky the desktop crop shows over Paws & Pages (y 147-194), right of the location chip
 const JP_SPOTS={yard:[432,304,290],market:[440,140,200],shelter:[470,214,110],garden:[360,118,220],park:[290,322,220],river:[560,294,240],beach:[680,291,240],
-  square:[372,212,240],dogpark:[300,326,240],hilltop:[380,240,380],pier:[400,263,300],fujihill:[400,344,540],
+  square:[420,253,300],dogpark:[300,326,240],hilltop:[380,240,380],pier:[400,263,300],fujihill:[400,344,540],
   'strip:park':[250,252,200],'strip:river':[420,202,200],'strip:beach':[750,188,200],'strip:town':[502,122,200],'strip:hilltop':[520,222,200],'strip:pier':[460,184,200]};
 function jpSpot(name){const s=JP_SPOTS[name];return s?{cx:s[0],by:s[1],w:s[2]}:null}
 const rgbS=h=>{const c=h2c(h);return `rgb(${c[0]},${c[1]},${c[2]})`};
 // [body, shadow side, cap, cap shade, outline] by time: lilac with a peach cap at dawn, blue-grey by day, red Fuji at dusk, a navy shape at night
-const FJ_T={dawn:['#C9B8DC','#A895C6','#FFE6CF','#F0C3AE','#9C8CB2'],day:['#AFC3D6','#8DA4BD','#FFFFFF','#D3DFEB','#8E9EB0'],
+const FJ_T={dawn:['#C9B8DC','#A895C6','#FFE6CF','#F0C3AE','#9C8CB2'],day:['#AFC3D6','#8DA4BD','#FFFFFF','#CCDAE8','#8394A8'],
   dusk:['#E8A08A','#9C6C96','#FAC8D2','#E3A0B4','#93657C'],night:['#5A6688','#48526F','#B8C5D9','#93A2BC','#7480A2']};
 const FJ_CAP={winter:.45,spring:.35,summer:.1,autumn:.15};
-function fjCols(env){let c=FJ_T[env.time].slice();if(env.ssn==='winter'&&env.time==='day')c[0]='#B2C4D7';
+function fjCols(env){let c=FJ_T[env.time].slice();if(env.ssn==='winter'&&env.time==='day'){c[0]='#A6BBD1';c[3]='#C3D3E4'}
   if(env.weather==='cloudy'){const g=env.night?'#4E5878':'#B9C1CB';c=c.map((h,i)=>mixH(h,g,i<2?.3:.16))}
   if(env.rain||env.snow){const g=env.night?'#424A5E':env.snow?'#DCE2EA':'#B7BFCA';c=c.map(h=>mixH(h,g,.45))}
   return c.map(rgbS)}
