@@ -164,10 +164,12 @@ function hoRugHint(d) {
 }
 
 /* ---------------- drawing ---------------- */
+// the house scene takes the indoor time tint, so its beds and furniture do too (PawArt.tint indoor; day is unchanged). A lit Window Seat keeps its moon.
 function hoFurnArt(n) {
   const D = HM_DECOR[n], on = Object.values(HO.uses).some((u) => u.name === n && u.on), o = { use: on }; if (D.lit) o.lit = isNight();
-  return `<svg viewBox="0 0 ${D.vb[0]} ${D.vb[1]}" xmlns="http://www.w3.org/2000/svg">${place(art('prop', D.prop, o), 0, 0, D.vb[0], D.vb[1])}</svg>`;
+  return `<svg viewBox="0 0 ${D.vb[0]} ${D.vb[1]}" xmlns="http://www.w3.org/2000/svg">${place(propTint(art('prop', D.prop, o), o.lit, true), 0, 0, D.vb[0], D.vb[1])}</svg>`;
 }
+function hoBedArt(n) { const sv = bedSVG(n); return sv && propTint(sv, false, true); }
 // placement extras: the outline (and a tap rect at least 48 px on phones), only while placing this room
 function hoPlaceBits(n, x, y, w, h) {
   if (!HO.pl || HO.pl.room !== hoRoomOf(n)) return '';
@@ -177,7 +179,7 @@ function hoPlaceBits(n, x, y, w, h) {
 function hoItemSVG(n) {
   const [x, y] = hoPos(n), [w, h] = hoSize(n), k = hoKind(n), pl = HO.pl && HO.pl.room === hoRoomOf(n) ? ` data-ho-item="${esc(n)}"` : '';
   if (k === 'bed') {
-    const sv = bedSVG(n); if (!sv) return '';
+    const sv = hoBedArt(n); if (!sv) return '';
     if (n === S.bed) return `<g id="bedG" class="hot" tabindex="0" role="button" aria-label="Pet bed: ${esc(n)}"${pl}>${place(sv, x, y, w, h)}${hoPlaceBits(n, x, y, w, h)}</g>`;
     const who = S.dogs.find((d) => hoBedFor(d) === n);
     return `<g class="hot ho-bed" data-bed="${esc(n)}" tabindex="0" role="button" aria-label="Pet bed: ${esc(n)}${who ? ' (' + esc(who.name) + ')' : ''}"${pl}>${place(sv, x, y, w, h)}${hoPlaceBits(n, x, y, w, h)}</g>`;
@@ -187,28 +189,42 @@ function hoItemSVG(n) {
 }
 function hoFrontSVG(n) {
   const [x, y] = hoPos(n), [w, h] = hoSize(n), k = hoKind(n);
-  if (k === 'bed') { const sv = bedSVG(n); if (!sv || !sv.includes('pa-bed-front')) return ''; return n === S.bed ? `<g id="bedFront" class="bedfront" pointer-events="none">${place(sv, x, y, w, h)}</g>` : `<g class="bedfront ho-bedfront" data-bed="${esc(n)}" pointer-events="none" style="display:none">${place(sv, x, y, w, h)}</g>`; }
+  if (k === 'bed') { const sv = hoBedArt(n); if (!sv || !sv.includes('pa-bed-front')) return ''; return n === S.bed ? `<g id="bedFront" class="bedfront" pointer-events="none">${place(sv, x, y, w, h)}</g>` : `<g class="bedfront ho-bedfront" data-bed="${esc(n)}" pointer-events="none" style="display:none">${place(sv, x, y, w, h)}</g>`; }
   if (k === 'furniture') return `<g class="ho-front" data-furn="${esc(n)}" pointer-events="none"${hoFrontOn(n) ? '' : ' style="display:none"'}>${place(hoFurnArt(n), x, y, w, h)}</g>`;
   return '';
 }
 // the whole house room (bedLayers, 12_popups): back = wall, flat, then floor items, beds and furniture by bottom edge; front = bed lips and furniture fronts
 function hoRoomSVG() {
   const names = hoOrder(hoOutIn('house'));
-  return { back: `<g id="hoRoomG">${names.map(hoItemSVG).join('')}</g>`, front: `<g id="hoFrontG" pointer-events="none">${names.map(hoFrontSVG).join('')}</g>` };
+  return { back: `<g id="hoRoomG" data-tod="${timePhase()}">${names.map(hoItemSVG).join('')}</g>`, front: `<g id="hoFrontG" pointer-events="none">${names.map(hoFrontSVG).join('')}</g>` };
 }
 // redraw the room's items in place (yard: #decorG, house: #hoRoomG + #hoFrontG), keep the dog's nap fit and the pack on their beds
 function hoRoomRedraw() {
   if (!S || cur.mode !== 'yard') return;
   if (S.place === 'yard') { const old = $('#decorG'); if (old) old.outerHTML = hmDecorSVG(); }
   else if (S.place === 'house') {
-    hoSync(); const r = hoRoomSVG(), b = $('#hoRoomG'), f = $('#hoFrontG'); if (b) b.outerHTML = r.back; if (f) f.outerHTML = r.front;
+    hoSync(); const r = hoRoomSVG(), b = $('#hoRoomG'), f = $('#hoFrontG'); if (b) b.outerHTML = r.back; if (f) { f.outerHTML = r.front; hoFrontSync(); }
     const bf = $('#bedFront'); if (bf) bf.style.display = dogKey.startsWith('sleep|') ? '' : 'none';
     if (typeof fbNapFit === 'function') fbNapFit(dogKey.split('|')[0]);
   } else return;
   hmDecorBind(); fbPackNapFit();
 }
 function hoFrontOn(n) { return Object.values(HO.uses).some((u) => u.name === n && hoSpot(u.name, u.spot) && hoSpot(u.name, u.spot).front); }
-function hoFrontSync() { document.querySelectorAll('#hoFrontG .ho-front[data-furn]').forEach((g) => { g.style.display = hoFrontOn(g.dataset.furn) ? '' : 'none'; }); }
+// a piece's front layer is drawn over everything, so a bed, decoration or piece standing nearer (lower bottom edge) and overlapping it would jump
+// behind it while a dog uses it. Right after each visible front layer those nearer things are drawn again, clipped to the piece's box (art review).
+// A bed with a dog napping on it is left out (the copy would hide the napping dog).
+function hoNapOn(m) { return hoIsBed(m) && ((S.sleeping && m === S.bed) || S.dogs.some((d) => d.id !== S.activeId && d.sleeping && hoBedFor(d) === m)); }
+function hoOverSVG(n) {
+  const order = hoOrder(hoOutIn('house')), i0 = order.indexOf(n), fb = hoBox(n); if (i0 < 0) return '';
+  const one = (m) => { const [x, y] = hoPos(m), [w, h] = hoSize(m), k = hoKind(m), sv = k === 'bed' ? hoBedArt(m) : k === 'furniture' ? hoFurnArt(m) : hmDecorArt(m); return sv ? place(sv, x, y, w, h) : ''; };
+  const near = order.slice(i0 + 1).filter((m) => hoLayer(m) === 2 && hoHit(hoFoot(m), fb) && !hoNapOn(m)).map(one).join(''); if (!near) return '';
+  const [x, y, w, h] = fb;
+  return `<g class="ho-over" data-over="${esc(n)}" pointer-events="none"><svg x="${x}" y="${y}" width="${w}" height="${h}" viewBox="${x} ${y} ${w} ${h}" overflow="hidden">${near}</svg></g>`;
+}
+function hoFrontSync() {
+  document.querySelectorAll('#hoFrontG .ho-over').forEach((g) => g.remove());
+  document.querySelectorAll('#hoFrontG .ho-front[data-furn]').forEach((g) => { const on = hoFrontOn(g.dataset.furn); g.style.display = on ? '' : 'none'; const o = on && hoOverSVG(g.dataset.furn); if (o) g.insertAdjacentHTML('afterend', o); });
+}
 // the prop's use state (balls up, a dented cushion) while a dog is on it: redraw that piece and its front copy
 function hoFurnRefresh(n) {
   if (cur.mode !== 'yard' || !S || S.place !== 'house') return; const [x, y] = hoPos(n), [w, h] = hoSize(n), sel = CSS.escape(n);
@@ -480,7 +496,7 @@ on('dog:added', () => setTimeout(hoSync, 0));
 on('yard:enter', () => {
   hoSync(); HO.lit = isNight();
   if (S.place !== 'house') HO.uses = {}; else Object.keys(HO.uses).forEach((id) => { if (id === S.activeId || !dogById(id)) { const n = HO.uses[id].name; delete HO.uses[id]; hoFurnRefresh(n); } }); // (the room is drawn already: put the piece back to empty)
-  hoZzzSync(); fbPackNapFit();
+  hoZzzSync(); fbPackNapFit(); if (S.place === 'house') hoFrontSync();
   const pend = HO.pending; HO.pending = null;
   if (pend && pend.room === S.place && Date.now() - pend.t < 10000) setTimeout(() => { if (cur.mode === 'yard' && S.place === pend.room && !HO.pl) hoPlaceStart(pend.name || undefined, pend.room); }, 60);
   clearInterval(HO.watch); // the idle can be dropped without idleEnd (busy, a nap): switch the front layer off then

@@ -31,6 +31,6 @@ require('./test_lib').run('v27_review', async (t) => {
   await ev(() => { window.__paw.addDog({ key: 'corgi', sex: 'male', months: 14 }, 'Bun'); window.__paw.S.decor['Flower Barrel'] = { got: '2026-10-01', out: false }; });
   await t.calm(); await t.home('yard');
   const fs = await ev(() => window.__paw.ho.freeSpot('Flower Barrel'));
-  const clear = !(fs[0] < 192 && fs[0] + 84 > 76 && fs[1] < 402 && fs[1] + 72 > 311);
+  const clear = !(fs[0] < 287 && fs[0] + 84 > 157 && fs[1] < 605 && fs[1] + 72 > 494); // the phone pack spot 0 box since 41e692a ([222, 596, right, 0.58])
   ok(Array.isArray(fs) && clear, 'the Flower Barrel does not land behind the first phone pack dog: ' + JSON.stringify(fs));
 }, { packCare: false });

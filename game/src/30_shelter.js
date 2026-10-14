@@ -113,7 +113,7 @@ function srBoardFallback(n, more) { // until the art merges: a cork board with p
 function srBoardSVG() {
   const L = srBoardList(SR.mode), n = Math.min(8, L.length), more = Math.max(0, L.length - 8), [bx, by, bw, bh] = SR_ROOM.board;
   const slots = Array.isArray(PA().ADOPT_SLOTS) && PA().ADOPT_SLOTS.length >= 8 ? PA().ADOPT_SLOTS : SR_SLOTS;
-  const board = srHasArt('adoptboard', '0 0 300 220') ? art('prop', 'adoptboard', { n, more }) : srBoardFallback(n, more);
+  const board = propTint(srHasArt('adoptboard', '0 0 300 220') ? art('prop', 'adoptboard', { n, more }) : srBoardFallback(n, more), false, true); // the room's indoor time tint (the heads stay untinted, like the dogs)
   const heads = L.slice(0, n).map((x, i) => {
     const [sx, sy, sw, sh] = slots[i], z = Math.min(sw, sh) - 2;
     return `<g class="sr-slot" data-srslot="${esc(x.id)}" aria-label="${esc(x.name)}"><rect x="${bx + sx}" y="${by + sy}" width="${sw}" height="${sh}" fill="transparent"/>${place(headSVG(x.look), bx + sx + (sw - z) / 2, by + sy + (sh - z) / 2, z, z)}</g>`;
@@ -258,7 +258,7 @@ function srPet(id) {
 
 /* ---- toss a toy ---- */
 const SR_BASKET = [870, 396];
-function srToyArt(kind) { return srHasArt('tosstoy', '0 0 60 60') ? art('prop', 'tosstoy', { kind }) : `<svg viewBox="0 0 60 60"><circle cx="30" cy="32" r="18" fill="#F28FA5" stroke="#5B3D32" stroke-width="3"/><path d="M14 30 Q30 22 46 30" fill="none" stroke="#FFE3A1" stroke-width="5"/></svg>`; }
+function srToyArt(kind) { return propTint(srHasArt('tosstoy', '0 0 60 60') ? art('prop', 'tosstoy', { kind }) : `<svg viewBox="0 0 60 60"><circle cx="30" cy="32" r="18" fill="#F28FA5" stroke="#5B3D32" stroke-width="3"/><path d="M14 30 Q30 22 46 30" fill="none" stroke="#FFE3A1" stroke-width="5"/></svg>`, false, true); }
 function srToss() {
   if (!SR) return false; const now = performance.now();
   if (SR.toy || now - (SR.tossAt || -1e9) < 6000) { toast('One toy at a time. The dogs are still busy with the last one.', 'good'); return false; }
@@ -354,12 +354,12 @@ function srBasketHit() {
   const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect'); r.setAttribute('class', 'sr-toyhit');
   [['x', x - 12], ['y', y - 20], ['width', w + 24], ['height', h + 40], ['fill', 'transparent']].forEach(([k, v]) => r.setAttribute(k, v)); g.appendChild(r);
 }
-on('scene:redraw', () => { if (SR) srBasketHit(); });
+on('scene:redraw', () => { if (!SR) return; srBasketHit(); const b = $('#srBoardG'); if (b && b.dataset.tod !== timePhase()) srDrawBoard(); }); // the board follows the room's time tint
 function srRecall() {
   const V = srView(); if (!V || !SR) return;
   SR.dogs.forEach((rd) => { if (rd.away || rd.busy) return; const x = rd.walking ? rd.tx : rd.x, y = rd.walking ? rd.ty : rd.y; if (srSpotOk(x, y, rd, V)) return; srHalt(rd); srWalk(rd, srSpot(rd), () => srRestPose(rd)); });
 }
-function srDrawBoard() { const b = $('#srBoardG'); if (b) b.innerHTML = srBoardSVG(); }
+function srDrawBoard() { const b = $('#srBoardG'); if (b) { b.innerHTML = srBoardSVG(); b.dataset.tod = timePhase(); } }
 function srLeave() { if (!SR) return; SR.timers.forEach(clearTimeout); SR.dogs.forEach((d) => clearTimeout(d.t)); SR = null; }
 function srClick(e) {
   if (!SR) return; const t = e.target;

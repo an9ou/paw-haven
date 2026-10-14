@@ -42,3 +42,5 @@ html[data-layout="phone"] .sr-meetart{width:210px;height:175px}
 html[data-layout="phone"] .sr-meetinfo p{font-size:16px}
 html[data-layout="phone"] .sr-meetinfo .small{font-size:15px}
 html[data-layout="phone"] .panel.sr-meet .foot .btn{min-height:44px}
+/* adopt mode on desktop (art review): the v2.6 adopt card sits on the left, over the window, so the whole Adopt me board and the toy shelf stay in view */
+html:not([data-layout="phone"]) #stage.flowdock.adoptmode #dock{left:14px;right:auto;width:min(410px,max(320px,calc(35vw - 36px)))}

@@ -1275,8 +1275,12 @@ function prCrayonDog(k,cx,cy,s,col,o={}){const f=o.flip?-1:1,X=v=>R1(cx+v*s*f),Y
   k.add(`<path d="${body}" fill="${col}" transform="translate(${R1(1.2*s)} ${R1(.8*s)})"/><path d="${scr}" stroke="${sc}" stroke-width="${R1(1.4*s)}" stroke-linecap="round" opacity=".6"/>`);
   k.add(`<g fill="none" stroke="#2a2420" stroke-width="${R1(Math.max(1.3,1.6*s))}" stroke-linecap="round" stroke-linejoin="round"><path d="${body}"/>`+
     `<path d="M${X(-10)} ${Y(6)}l${R1(-1*s*f)} ${R1(7*s)}M${X(-4)} ${Y(7)}l0 ${R1(7*s)}M${X(5)} ${Y(7)}l${R1(1*s*f)} ${R1(7*s)}M${X(10)} ${Y(5)}l${R1(2*s*f)} ${R1(7*s)}M${X(-14)} ${Y(-1)}q${R1(-5*s*f)} ${R1(-3*s)} ${R1(-6*s*f)} ${R1(-9*s)}"/>`+
-    `<circle cx="${X(15)}" cy="${Y(-11)}" r="${R1(7*s)}" fill="${col}"/><path d="M${X(11)} ${Y(-16)}l${R1(-2*s*f)} ${R1(-7*s)}l${R1(5*s*f)} ${R1(4*s)}M${X(18)} ${Y(-17)}l${R1(3*s*f)} ${R1(-6*s)}l${R1(1*s*f)} ${R1(7*s)}"/>`+
-    `<path d="M${X(14)} ${Y(-8)}q${R1(3*s*f)} ${R1(2.6*s)} ${R1(6*s*f)} 0"/></g><circle cx="${X(17)}" cy="${Y(-12)}" r="${R1(1.3*s)}" fill="#2a2420"/><circle cx="${X(22)}" cy="${Y(-10)}" r="${R1(1.6*s)}" fill="#2a2420"/>`)}
+    // the head (art review: it read as a cat): a snout bump with a dot nose, one floppy ear, one pointy ear and a tongue, still crude
+    `<path d="M${X(18.5)} ${Y(-8)}l0 ${R1(4*s)}q${R1(1.6*s*f)} ${R1(2.4*s)} ${R1(3.2*s*f)} 0l0 ${R1(-4*s)}" fill="#F28FA5" stroke-width="${R1(Math.max(1,1.1*s))}"/>`+
+    `<path d="M${X(16)} ${Y(-14.5)}Q${X(24)} ${Y(-15.5)} ${X(24)} ${Y(-11)}Q${X(24)} ${Y(-7)} ${X(16)} ${Y(-7.5)}" fill="${col}"/>`+
+    `<circle cx="${X(12.5)}" cy="${Y(-11)}" r="${R1(7*s)}" fill="${col}"/><path d="M${X(15.5)} ${Y(-17)}l${R1(3*s*f)} ${R1(-6*s)}l${R1(1*s*f)} ${R1(7*s)}"/>`+
+    `<path d="M${X(9.5)} ${Y(-17)}Q${X(3.5)} ${Y(-17)} ${X(4)} ${Y(-7)}Q${X(7.5)} ${Y(-6)} ${X(10)} ${Y(-12)}" fill="${mixH(col,'#5B3D32',.3)}"/>`+
+    `<path d="M${X(17)} ${Y(-8.5)}q${R1(2.5*s*f)} ${R1(1.2*s)} ${R1(6*s*f)} ${R1(-.6*s)}"/></g><circle cx="${X(15)}" cy="${Y(-12.5)}" r="${R1(1.3*s)}" fill="#2a2420"/><circle cx="${X(23.6)}" cy="${Y(-12.2)}" r="${R1(1.9*s)}" fill="#2a2420"/>`)}
 // a taped polaroid of an adopted dog, with a caption
 function prPhoto(k,x,y,w,h,rot,bg,dog,cap,flip){k.add(`<g transform="rotate(${rot} ${R1(x+w/2)} ${R1(y+h/2)})">`);
   k.add(`<rect x="${x+3}" y="${y+4}" width="${w}" height="${h}" fill="${C.ink}" opacity=".1"/>`);k.shape(RC(x,y,w,h),'#FFFFFF',{w:1.6,one:1});

@@ -5240,7 +5240,7 @@ PROPS.windowseat=function(b,o){
 const FURN_SPOTS={
   playtower:{top:{x:100,y:58,w:200,pose:'sit',face:'right'},cubby:{x:100,y:250,w:200,pose:'sleep',face:'right',front:true}},
   tunnelsofa:{tunnel:{x:158,y:154,w:200,pose:'walk',face:'right',front:true},seat:{x:150,y:33,w:200,pose:"down",face:"left"}},
-  ballpit:{a:{x:96,y:106,w:200,pose:'happy',face:'right',front:true},b:{x:150,y:104,w:200,pose:'rollover',face:'left',front:true}},
+  ballpit:{a:{x:96,y:106,w:200,pose:'happy',face:'right',front:true},b:{x:150,y:90,w:200,pose:'rollover',face:'left',front:true}},
   sofaramp:{top:{x:186,y:58,w:200,pose:'sit',face:'left',via:{x:14,y:150}}},
   windowseat:{seat:{x:110,y:176,w:200,pose:'sit',face:'right'}}
 };
@@ -5364,14 +5364,19 @@ PA.prop=function(name,o){
    PA.tint(svg,{time,lit}) -> svg. The scenes (world A and C) recolour their own art at dawn, dusk and night (recolorFn, the outdoor
    values); yard decorations, the Harvest Stall, the leaf piles and the pop-up are drawn on top, so they get the same recolour here.
    'day' (or no time) returns svg unchanged, so daytime art stays byte-identical. Glow groups (.pa-wb-glow), masks, clip paths,
-   gradients and filters are left alone; o.lit also keeps the candlelight colours, so a lit pumpkin still glows. */
+   gradients and filters are left alone; o.lit also keeps the candlelight colours, so a lit pumpkin still glows.
+   v2.7: o.indoor takes the indoor recolour of the house, the café and the playroom (world A and C recolorFn 'in': the same time values, no
+   weather), for the house items, beds and furniture and the playroom's board and toys. With o.lit it also keeps the Moon Lamp's moon and
+   the Window Seat's moon (MOONLIT). Outdoor calls are unchanged. */
 const TOD_TINT={dawn:{m:'#F2A6A6',a:.12},dusk:{m:'#C98698',a:.18,ds:.05},night:{m:'#25325E',a:.46,ds:.22}};
+const TOD_TINT_IN={dawn:{m:'#F3B2A8',a:.06},dusk:{m:'#E0957E',a:.1},night:{m:'#433A62',a:.26,ds:.12}};
 const CANDLE={'#FFE59A':1,'#FFF7D6':1,'#FFD36E':1,'#FFB45A':1,'#FFC48A':1,'#FFF3C2':1,'#FFE07A':1};
+const MOONLIT={'#FFE89A':1,'#FFF6CF':1,'#F3C95E':1,'#E9B84A':1,'#FFE38A':1,'#FFF4C2':1};
 const TINT_KEEP=/^(mask|clipPath|radialGradient|linearGradient|pattern|filter)$/,TINT_MEMO={},TINT_HEX=/#(?:[0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})\b/g;
 PA.tint=function(svg,o){
-  const t=TOD_TINT[o&&o.time];if(!t||typeof svg!=='string')return svg;
-  const lit=!!o.lit,memo=TINT_MEMO[o.time+(lit?'L':'')]||(TINT_MEMO[o.time+(lit?'L':'')]={}),tm=hex2rgb(t.m);
-  const fx=h=>{let u=h.toUpperCase();if(u.length===4)u='#'+u[1]+u[1]+u[2]+u[2]+u[3]+u[3];if(lit&&CANDLE[u])return h;if(memo[u])return memo[u];
+  const inn=!!(o&&o.indoor),t=(inn?TOD_TINT_IN:TOD_TINT)[o&&o.time];if(!t||typeof svg!=='string')return svg;
+  const lit=!!o.lit,mk=o.time+(lit?'L':'')+(inn?'I':''),memo=TINT_MEMO[mk]||(TINT_MEMO[mk]={}),tm=hex2rgb(t.m);
+  const fx=h=>{let u=h.toUpperCase();if(u.length===4)u='#'+u[1]+u[1]+u[2]+u[2]+u[3]+u[3];if(lit&&(CANDLE[u]||inn&&MOONLIT[u]))return h;if(memo[u])return memo[u];
     let c=hex2rgb(u);if(t.ds){const L=.3*c[0]+.59*c[1]+.11*c[2];c=c.map(v=>v+(L-v)*t.ds)}return memo[u]=rgb2hex(c.map((v,i)=>v+(tm[i]-v)*t.a))};
   // walk the tags: colours only sit in attributes; a kept element keeps everything inside it
   const re=/<(\/?)([A-Za-z][\w:-]*)([^>]*?)(\/?)>/g,stack=[];let out='',last=0,keep=0,m;
