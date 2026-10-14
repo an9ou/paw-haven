@@ -8,6 +8,7 @@ A cozy browser game: adopt crayon-drawn dogs, care for them, walk a sketchbook t
 
 - **Usage limit: always resume.** If you stop at the usage limit, continue the task right after the reset, every time, without waiting for the owner. Before you stop, or as soon as you see the reset time, `send_later` yourself a resume for 2 minutes after the reset. The Game Manager also runs an hourly watchdog that resumes any stalled session.
 - **One team busy at a time**, and push automatically once tests are green (details in `BUILDING.md`).
+- **Reports:** don't send the owner progress updates. Report only when the whole task is finished or when the owner asks.
 - **Questions** go to the owner in the choice window with a recommendation first. With no answer in 5 minutes, take the recommendation.
 
 ## This machine
