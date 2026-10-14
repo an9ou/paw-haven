@@ -11,7 +11,10 @@ const html = fs.readFileSync(path.join(root, '_site', 'index.html'), 'utf8');
 
 const dist = path.join(root, 'dist'), out = path.join(dist, 'itch'), zipPath = path.join(dist, 'doodle-doggo-itch.zip');
 fs.rmSync(out, { recursive: true, force: true }); fs.mkdirSync(out, { recursive: true });
-fs.writeFileSync(path.join(out, 'index.html'), html);
+// itch.io copy only (owner's choice, 14 Oct 2026): players never see the dev button or its panel. GitHub Pages and claude.ai keep it.
+const HIDE_DEV = '<style id="itchNoDev">#devBtn,#devPanel{display:none!important}</style>';
+const itchHtml = html.includes('</head>') ? html.replace('</head>', HIDE_DEV + '</head>') : HIDE_DEV + html;
+fs.writeFileSync(path.join(out, 'index.html'), itchHtml);
 // the brand files the page links to (relative href/src), plus the icons the web manifest names
 const brand = path.join(root, 'brand'), want = new Set();
 const refs = /<link\b[^>]*\bhref="([^":?#]+)"/g; let m;
