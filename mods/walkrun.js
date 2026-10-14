@@ -432,6 +432,7 @@ function start(el, o) {
   const weather = ['sunny', 'cloudy', 'rain', 'snow'].includes(o.weather) ? o.weather : 'sunny';
   const season = ['spring', 'autumn', 'winter'].includes(o.season) ? o.season : 'summer'; // v2.5: the world art turns with the season
   const halloween = o.halloween === true; // v2.6: Halloween dressing in the strip art and felt bats in the far sky at dusk and night
+  const lights = o.lights === true, newyear = o.newyear === true, jp = o.jp === true; // v2.8: Winter Lights, New Year (kites in the far sky too), the Japan scenery (V28 sections 5, 12)
   const ab = o.abilities || {};
   const dogInfo = o.dog || { key: 'shiba', name: 'Mochi', outfit: {} };
   const sfx = (n) => { try { (o.sfx || noop)(n); } catch (e) { /* ignore */ } };
@@ -499,10 +500,11 @@ function start(el, o) {
 
   /* ---------- world look: strip, far layer, foreground, tint, weather ---------- */
   const hwO = (x) => (halloween ? Object.assign(x || {}, { halloween: true }) : x); // v2.6: only added when on, so the calls stay as they were
-  let stripSvg = call('walkStrip', area, hwO(season === 'summer' ? { time, weather } : { time, weather, season }));
+  const wnO = (x) => (lights || newyear || jp ? Object.assign(x || {}, lights ? { lights: true } : {}, newyear ? { newyear: true } : {}, jp ? { jp: true } : {}) : x); // v2.8: the same, each flag only when on
+  let stripSvg = call('walkStrip', area, wnO(hwO(season === 'summer' ? { time, weather } : { time, weather, season })));
   let artTW = false; // does the strip art itself draw time/weather?
   if (stripSvg && (time !== 'day' || weather !== 'sunny')) {
-    const plain = call('walkStrip', area, hwO(season === 'summer' ? undefined : { season })); const norm = (s) => s.replace(/pw[a-z]*\d+x?\d*/g, '');
+    const plain = call('walkStrip', area, wnO(hwO(season === 'summer' ? undefined : { season }))); const norm = (s) => s.replace(/pw[a-z]*\d+x?\d*/g, '');
     artTW = plain && norm(plain).length !== norm(stripSvg).length;
   }
   if (!stripSvg) stripSvg = svgWrap([1200, 400], `<rect width="1200" height="400" fill="#D3E9F6" stroke="none"/><rect y="250" width="1200" height="80" fill="#CBE5A6" stroke="none"/><rect y="330" width="1200" height="70" fill="#EFDDBA" stroke="none"/><path d="M0 330h1200"/>`);
@@ -532,6 +534,16 @@ function start(el, o) {
       [[180, 70, 1.1], [236, 48, 0.8], [620, 96, 0.95], [860, 40, 0.75]].forEach(([x, y, s]) => {
         const W = (d) => `M${3 * d} -2.4L${9 * d} -8L${15 * d} -9.4L${20 * d} -5L${16.4 * d} -1.6L${13 * d} -3.2L${10.6 * d} 1.6L${7.2 * d} -.4L${3.6 * d} 3.2Z`;
         b += `<g transform="translate(${x} ${y}) scale(${s})" stroke-width="1.2"><path d="${W(-1)}${W(1)}M-4.6 -3L-3.8 -10.4L-1 -6L1 -6L3.8 -10.4L4.6 -3L4.4 3.6L0 7L-4.4 3.6Z" fill="${night ? '#8C78AE' : '#7A6698'}"/><circle cx="-2" cy="-1.4" r="1.5" fill="#FFFFFF" stroke="none"/><circle cx="2" cy="-1.4" r="1.5" fill="#FFFFFF" stroke="none"/><circle cx="-1.8" cy="-1.1" r=".75" fill="${INK}" stroke="none"/><circle cx="2.2" cy="-1.1" r=".75" fill="${INK}" stroke="none"/></g>`;
+      });
+    }
+    // v2.8 New Year: two paper kites high in the far sky by day (dawn and day, not in rain), drifting slowly with the far layer. Mt. Fuji is not
+    // drawn here: this layer sits over the strip at 60%, so it would cover the strip's hills; the strip art carries Fuji (jp) behind its hills
+    if (newyear && !night && time !== 'dusk' && !rain) {
+      [[300, 128, 1, 0], [770, 104, 0.8, 1]].forEach(([x, y, s, kind]) => { // under the HUD, which covers the top ~60 units
+        const tail = `<path d="M0 18q7 10 -3 20t3 20" fill="none" stroke-width="1.1"/><path d="M3 24l8 5v-5l-8 5zM-6 34l8 5v-5l-8 5z" fill="${kind ? '#F7D24E' : '#F28FA5'}" stroke-width="1"/>`;
+        const body = kind ? `<path d="M0 -20L14 0L0 19L-14 0Z" fill="#BFD9F5" stroke-width="1.8"/><path d="M-7 -10L7 10M-10 4L4 -16M-4 16L10 -4" stroke="#F28FA5" stroke-width="2.2"/><path d="M0 -20V19M-14 0H14" stroke-width=".9" opacity=".6"/>`
+          : `<path d="M-14 -19H14V18H-14Z" fill="#FFF1D6" stroke-width="1.8"/><circle cy="-1" r="9" fill="#F2B27A" stroke-width="1.3"/><circle cx="-3.6" cy="-3" r="1.4" fill="${INK}" stroke="none"/><circle cx="3.4" cy="-2.4" r="1" fill="${INK}" stroke="none"/><path d="M-3 4q3 2.4 6 0" stroke-width="1"/>`;
+        b += `<g transform="translate(${x} ${y}) scale(${s})"><path d="M0 16q-30 70 -70 ${Math.round(200 / s)}" fill="none" stroke-width="1" opacity=".5"/>${tail}<g transform="rotate(${kind ? -12 : 9})">${body}</g></g>`;
       });
     }
     return svgWrap([FARW, 400], b);
