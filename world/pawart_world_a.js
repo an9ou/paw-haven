@@ -799,7 +799,7 @@ function bigMap(k,o){
   // places
   for(const id of Object.keys(MAPC)){const [x,y]=MAPC[id],hp=E(x,y+12,104,84,12);
     const g=k.cap(()=>{ICON[id](k,x,y);
-      const cap=()=>k.text(AREAS[id].label,x,y+108,36,{rot:k.J(2),halo:'#FFF8EC'});
+      const cap=()=>{const L=AREAS[id].label;k.text(L,x,y+108,L.length>17?Math.round(36*17/L.length):36,{rot:k.J(2),halo:'#FFF8EC'})}; // Doodle Doggo rename: a label longer than the old "Paw Haven Shelter" shrinks to the same width
       if(!locked.has(id))cap();
       else{k.add(`<path d="${smooth(dense(hp,true,30),true)}" fill="#EFE9E0" fill-opacity=".55"/>`);k.hatch(hp,{gap:7,col:C.graph,op:.55,w:1.4});const cx=x-28,cy=y-10;
         k.add(`<path d="M${cx-14} ${cy}v-12a14 14 0 0 1 28 0v12" fill="none" stroke="${C.ink}" stroke-width="5" stroke-linecap="round"/>`);k.shape(RC(cx-22,cy-2,44,36),C.yellow,{w:2.4});k.add(`<circle cx="${cx}" cy="${cy+12}" r="4" fill="${C.ink}"/><path d="M${cx} ${cy+14}v9" stroke="${C.ink}" stroke-width="3" stroke-linecap="round"/>`);

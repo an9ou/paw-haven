@@ -11,7 +11,7 @@ const SRC_A = fs.readFileSync(path.join(ROOT, 'world', 'pawart_world_a.js'), 'ut
 const SRC_C = fs.readFileSync(path.join(ROOT, 'world', 'pawart_world_c.js'), 'utf8');
 function baseSrc(rel) {
   for (const ref of ['v25-base', 'origin/v25-base']) {
-    try { return execFileSync('git', ['show', `${ref}:${rel}`], { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 26, stdio: ['ignore', 'pipe', 'ignore'] }).replace(/Paw Haven/g, 'Doodle Doggo').replace(/PAW HAVEN/g, 'DOODLE DOGGO'); } catch (e) { /* try the next ref */ } // the game was renamed Doodle Doggo (14 Oct 2026): only the painted name differs
+    try { return execFileSync('git', ['show', `${ref}:${rel}`], { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 26, stdio: ['ignore', 'pipe', 'ignore'] }).replace(/Paw Haven/g, 'Doodle Doggo').replace(/PAW HAVEN/g, 'DOODLE DOGGO').replace("const cap=()=>k.text(AREAS[id].label,x,y+108,36,{rot:k.J(2),halo:'#FFF8EC'});", "const cap=()=>{const L=AREAS[id].label;k.text(L,x,y+108,L.length>17?Math.round(36*17/L.length):36,{rot:k.J(2),halo:'#FFF8EC'})};"); } catch (e) { /* try the next ref */ } // the game was renamed Doodle Doggo (14 Oct 2026): only the painted name differs
   }
   return null;
 }
