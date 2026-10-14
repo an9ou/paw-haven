@@ -19,3 +19,5 @@ merged_test/play.log
 _artifact/
 game/shots_v24_*/
 !brand/*.png
+!brand/itch/*.png
+dist/
