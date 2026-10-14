@@ -3,7 +3,7 @@ function enterBath() {
   barkDog(D(), 'huff', { player: D().key === 'shiba' });
   setChrome(true, false);
   view.innerHTML = yardWorldSVG(`<g id="tubG">${place(art('prop', 'tub'), 300, 372, 260, 260)}</g><g id="suds"></g>`);
-  $('#houseG').remove(); $('#bowlG').remove(); dogKey = ''; busy = true;
+  ['#houseG', '#bowlG'].forEach((q) => { const el = $(q); if (el) el.remove(); }); dogKey = ''; busy = true; // a bath from the house has no dog house in the scene (the old code threw there)
   if (isPhone()) { const dg = $('#decorG'); if (dg) dg.remove(); } // phone: nothing small to mis-tap while scrubbing
   camCx = 430; camApply(camCx); dogTo(0, 18, 1, 0); renderDog(S.stats.clean < 25 ? 'dirty' : 'idle');
   // keep dog drawn under the tub: move tub after dog
@@ -25,7 +25,7 @@ function enterBath() {
     if (prog >= 100) finish();
   };
   const finish = () => {
-    done = true; bathZoomies = true; S.stats.clean = 100; if (crBath) crBath.fin++; else trackAct('bath', {}); // a pack bath: one act when the queue ends SFX.splash(); renderDog('shake'); setTimeout(() => SFX.shake(), 150); markDirty(); updateHUD();
+    done = true; bathZoomies = true; S.stats.clean = 100; if (crBath) crBath.fin++; else trackAct('bath', {}); /* a pack bath: one act when the queue ends */ SFX.splash(); renderDog('shake'); setTimeout(() => SFX.shake(), 150); markDirty(); updateHUD();
     const hot = isHot(); if (hot) addStat('happy', 10);
     const bp = addBond(2); toast(`${hot ? 'Refreshing! +10 Happiness on a hot day. ' : ''}Sparkling. Mostly. +${bp} Bond. ${NAME()} shakes off ON you.`, 'good');
     setTimeout(() => { if (cur.mode === 'bath') { if (crBath) crBathNext(); else go('yard'); } }, 1700);

@@ -91,6 +91,8 @@ window.addEventListener('contextmenu', (e) => { if (isPhone() && e.target.closes
 // test hook (like window.__paw): the phone suites read the sheet state and try the long-press helper
 window.__pawShell = { sheetOpen: () => psSheetOpen(), longPress: (el, text) => psLongPress(el, text) };
 // scene tap boxes (hmDecorHit 03_yard.js, msYardHit 24_missions.js): screen px per world unit, read from the live scene (the trick panel halves it), else from the view height
+// v2.7 review: enterYard builds the yard's tap boxes while the outgoing scene is still in #view, so phHitScale read the old scale. Refit once the yard is in
+on('yard:enter', () => { if (isPhone() && typeof pkHotsRefit === 'function') requestAnimationFrame(() => { if (cur.mode === 'yard' && !(typeof HO === 'object' && HO.pl)) pkHotsRefit(); }); });
 function phHitScale() { const svg = $('#view > svg.world'), m = svg && svg.isConnected && svg.getScreenCTM(); return m && m.a > 0.05 ? m.a : ((view.clientHeight || 500) - 60) / 600; }
 // UI/UX T8: a place-button row that scrolls sideways (Market Street) fades only at the edge where more buttons wait (22_phone_town.css)
 function psRowFade(el) { if (!el || !isPhone()) return; const r = el.scrollWidth - el.clientWidth; el.classList.toggle('ps-more-r', r > 4 && el.scrollLeft < r - 4); el.classList.toggle('ps-more-l', r > 4 && el.scrollLeft > 4); }

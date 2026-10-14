@@ -65,6 +65,7 @@ const SUITES = {
   v27_pack: { file: 'test_v27_pack.js', group: 'all', est: 45 },
   v27_shelter: { file: 'test_v27_shelter.js', group: 'all', est: 45 },
   v27_mailbox: { file: 'test_v27_mailbox.js', group: 'all', est: 40 }, // v2.7 owner addition: Collect in the mailbox
+  v27_review: { file: 'test_v27_review.js', group: 'all', est: 40 }, // v2.7 integration review fixes (coordinator)
   // v2.2 phone suites: `node game/run_tests.js phone` (not part of `all`, which stays the desktop regression set)
   phone_legacy: { file: 'test_phone.js', group: 'phone', est: 90 },
   phone_shell: { file: 'test_phone_shell.js', group: 'phone', est: 40 },

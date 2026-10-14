@@ -42,14 +42,6 @@ function srRoster(dk) {
   return all.filter((x) => !(S && Array.isArray(S.dogs) && dogById(x.id)) && !gone.includes(x.id)).map((x) => Object.assign(x, { trait: srTrait(x.id) }));
 }
 
-function srExpose() {
-  if (!window.__paw) return;
-  // list(): the full "Looking for a home" sheet (the stub: the v2.6 shelter list), roster(): today's roster
-  window.__paw.sr = { list: () => openShelterList(), roster: (dk) => srRoster(dk).map((x) => ({ id: x.id, key: x.key, sex: x.sex, months: x.months, name: x.name, kind: x.kind, trait: x.trait })), room: SR_ROOM, slots: SR_SLOTS };
-}
-on('game:ready', () => setTimeout(srExpose, 0));
-setTimeout(srExpose, 0);
-
 /* ---------------- the playroom (V27.md section 7) ---------------- */
 const SR_MEET = [500, 592]; // the meet spot at the front (adopt mode): feet x, y, scale 1
 const SR_TOYS = ['ball', 'bone', 'ring'];
@@ -238,7 +230,7 @@ function srLine(rd, list, force) {
   if (!force && (performance.now() - (SR.lineAt || 0) < 5000 || Math.random() > 0.35)) return;
   SR.lineAt = performance.now(); say(`${rd.name}: ${PICK(list)}`, rd.x, rd.y - 170 * srScale(rd.y), 2400);
 }
-function srBark(rd, kind) { if (barkMode() === 'off') return; playBark(voiceOf(rd.look), kind, { volume: 0.8 }); window.__barkLog.push({ dog: rd.name, id: rd.id, kind, t: Math.round(performance.now()), room: true }); }
+function srBark(rd, kind) { if (barkMode() === 'off') return; playBark(voiceOf(rd.look), kind, { volume: 0.8 }); const bl = window.__barkLog; bl.push({ dog: rd.name, id: rd.id, kind, t: Math.round(performance.now()), room: true }); if (bl.length > 300) bl.shift(); }
 
 /* ---- pet and belly rub ---- */
 function srPet(id) {

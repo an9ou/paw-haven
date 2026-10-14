@@ -746,7 +746,7 @@ let levelQueue = [];
 function bondMult() { return BOOST.bond * (S.dog.key === 'mutt' ? 1.1 : 1) * (glowing() ? 1.2 : 1) * (S.gameMin < S.pupUntil ? 2 : 1); }
 function addBond(base, opts = {}) {
   const n = Math.max(1, Math.round(base * (opts.raw ? 1 : bondMult()))); S.bond.pts += n; markDirty();
-  while (S.bond.level < 10 && S.bond.pts >= BOND_TH[S.bond.level]) { S.bond.level++; levelQueue.push(S.bond.level); SFX.fanfare(); }
+  while (S.bond.level < 10 && S.bond.pts >= BOND_TH[S.bond.level]) { S.bond.level++; levelQueue.push({ l: S.bond.level, who: NAME() }); SFX.fanfare(); } // v2.7: who levelled up (pack care gives a pack dog its Bond)
   updateHUD(); setTimeout(maybeLevelUp, 400); return n;
 }
 function dailyCheck() {
@@ -850,11 +850,11 @@ function unlocksFor(L) {
 }
 function maybeLevelUp() {
   if (!levelQueue.length || !modal.hidden || !['yard', 'market', 'map', 'shelter'].includes(cur.mode)) return;
-  const levels = levelQueue.splice(0), L = Math.max(...levels); audioCue('levelup');
+  const who = levelQueue[0].who, levels = levelQueue.filter((q) => q.who === who).map((q) => q.l), L = Math.max(...levels); levelQueue = levelQueue.filter((q) => q.who !== who); audioCue('levelup');
   const all = []; levels.sort((a, b) => a - b).forEach((l) => all.push(...unlocksFor(l)));
   const lines = ['now loves you ' + L + ' units. Units are made up.', 'did a little spin about it.', 'would like a raise. In treats.', 'is writing your name in the dirt. Badly.'];
-  openModal(`<span class="hl">Bond level ${L}!</span>`, `<svg class="lu-doodle" viewBox="0 0 600 44" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${doodle('spark', 40, 22, 0.9)}${doodle('heart', 90, 22, 0.8)}${doodle('spark', 140, 20, 0.6)}${doodle('paw', 300, 24, 0.7)}${doodle('spark', 460, 22, 0.6)}${doodle('heart', 510, 20, 0.8, 10)}${doodle('spark', 560, 22, 0.9)}</svg><p><b>${esc(NAME())}</b> ${PICK(lines)}</p><p>${levels.length > 1 ? `(That's ${levels.length} levels at once. Show-off.)</p><p>` : ''}Unlocked:</p><ul class="unlocks">${all.map((u) => `<li>${esc(u)}</li>`).join('') || '<li>Pure friendship. No refunds.</li>'}</ul>`, { cls: 'celebrate', foot: '<button class="btn yes big" id="luOk">Yay!</button>' });
-  $('#luOk').onclick = () => { SFX.boop(700); closeModal(); };
+  openModal(`<span class="hl">Bond level ${L}!</span>`, `<svg class="lu-doodle" viewBox="0 0 600 44" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${doodle('spark', 40, 22, 0.9)}${doodle('heart', 90, 22, 0.8)}${doodle('spark', 140, 20, 0.6)}${doodle('paw', 300, 24, 0.7)}${doodle('spark', 460, 22, 0.6)}${doodle('heart', 510, 20, 0.8, 10)}${doodle('spark', 560, 22, 0.9)}</svg><p><b>${esc(who)}</b> ${PICK(lines)}</p><p>${levels.length > 1 ? `(That's ${levels.length} levels at once. Show-off.)</p><p>` : ''}Unlocked:</p><ul class="unlocks">${all.map((u) => `<li>${esc(u)}</li>`).join('') || '<li>Pure friendship. No refunds.</li>'}</ul>`, { cls: 'celebrate', foot: '<button class="btn yes big" id="luOk">Yay!</button>' });
+  $('#luOk').onclick = () => { SFX.boop(700); closeModal(); if (levelQueue.length) setTimeout(maybeLevelUp, 400); }; // another dog levelled up too
 }
 
 /* ---------------- modes ---------------- */

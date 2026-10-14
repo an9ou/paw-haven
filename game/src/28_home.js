@@ -71,7 +71,9 @@ const hoHit = (a, b) => a[0] < b[0] + b[2] && b[0] < a[0] + a[2] && a[1] < b[1] 
 function hoKeepBoxes(room, skip) {
   const out = [HO_DOG_REST, HO_STATUS].concat(HO_KEEP[room] || []);
   // where the pack dogs stand (13_more_dogs.js PACK_SPOTS): a tall thing behind a standing dog would look like the dog stands on it
-  const ps = typeof PACK_SPOTS === 'object' && PACK_SPOTS[room]; if (ps && S.dogs.length > 1) ps.slice(0, Math.min(3, S.dogs.length - 1)).forEach(([fx, fy, , sc]) => { const w = DW * sc, h = DH * sc; out.push([fx - w / 2 + 20 * sc, fy - h * 205 / 220 + 30 * sc, w - 40 * sc, h - 30 * sc]); });
+  // and the phone spots (PACK_SPOTS_PH, UI/UX): one save is played on both, so a spot keeps clear of both sets
+  const sets = [typeof PACK_SPOTS === 'object' && PACK_SPOTS[room], typeof PACK_SPOTS_PH === 'object' && PACK_SPOTS_PH[room]].filter(Boolean);
+  if (S.dogs.length > 1) sets.forEach((ps) => ps.slice(0, Math.min(3, S.dogs.length - 1)).forEach(([fx, fy, , sc]) => { const w = DW * sc, h = DH * sc; out.push([fx - w / 2 + 20 * sc, fy - h * 205 / 220 + 30 * sc, w - 40 * sc, h - 30 * sc]); }));
   if (room === 'yard' && Array.isArray(S.litters) && S.litters.length && typeof NURSERY_AT !== 'undefined') out.push(NURSERY_AT.art);
   const svg = cur.mode === 'yard' && S.place === room && $('svg.world', view);
   if (svg) svg.querySelectorAll('#sceneG [data-hot]').forEach((el) => { const r = el.getBoundingClientRect(); if (!r.width) return; const a = toWorld(svg, r.left, r.top), b = toWorld(svg, r.right, r.bottom); out.push([a.x, a.y, b.x - a.x, b.y - a.y]); });
@@ -150,9 +152,15 @@ function hoGiveBed(id, b) {
   S.bedOf[d.id] = b; if (d.id === S.activeId) S.bed = b; if (o && o.id === S.activeId && prev) S.bed = prev;
   hoSync(); markDirty(); return true;
 }
+// once a day; every dog on the rug in one toast (the napping dogs are drawn one after the other, so gather them for a moment first)
 function hoRugHint(d) {
-  const day = localISO(); if (HO.rugDay === day || !d) return; HO.rugDay = day;
-  setTimeout(() => { if (S && S.place === 'house') toast(`${d.name} naps on the rug tonight. A second bed from Barkitecture would suit ${d.name}.`, ''); }, 600);
+  const day = localISO(); if (HO.rugDay === day || !d) return;
+  (HO.rugWho || (HO.rugWho = [])).includes(d.name) || HO.rugWho.push(d.name); if (HO.rugT) return;
+  HO.rugT = setTimeout(() => {
+    const who = HO.rugWho || []; HO.rugT = 0; HO.rugWho = null; if (!S || S.place !== 'house' || !who.length) return; HO.rugDay = day;
+    if (who.length === 1) toast(`${who[0]} naps on the rug tonight. A second bed from Barkitecture would suit ${who[0]}.`, '');
+    else toast(`${who.slice(0, -1).join(', ')} and ${who[who.length - 1]} nap on the rug tonight. More beds from Barkitecture would suit them.`, '');
+  }, 600);
 }
 
 /* ---------------- drawing ---------------- */
@@ -471,7 +479,7 @@ on('game:ready', () => { HO.uses = {}; HO.pl = null; hoSync(); });
 on('dog:added', () => setTimeout(hoSync, 0));
 on('yard:enter', () => {
   hoSync(); HO.lit = isNight();
-  if (S.place !== 'house') HO.uses = {}; else Object.keys(HO.uses).forEach((id) => { if (id === S.activeId || !dogById(id)) delete HO.uses[id]; });
+  if (S.place !== 'house') HO.uses = {}; else Object.keys(HO.uses).forEach((id) => { if (id === S.activeId || !dogById(id)) { const n = HO.uses[id].name; delete HO.uses[id]; hoFurnRefresh(n); } }); // (the room is drawn already: put the piece back to empty)
   hoZzzSync(); fbPackNapFit();
   const pend = HO.pending; HO.pending = null;
   if (pend && pend.room === S.place && Date.now() - pend.t < 10000) setTimeout(() => { if (cur.mode === 'yard' && S.place === pend.room && !HO.pl) hoPlaceStart(pend.name || undefined, pend.room); }, 60);
