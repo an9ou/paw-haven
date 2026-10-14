@@ -226,9 +226,15 @@ function srHearts(x, y, n) {
     setTimeout(() => g.remove(), 1500);
   }
 }
+// v2.7 phone review: on phones a room dog's line (and the meet dog's) starts below the Adopt me board's bottom edge, so it never covers the board
+function srSay(text, x, y, ms) {
+  say(text, x, y, ms); if (!isPhone() || bubble.hidden) return;
+  const svg = $('svg.world', view); if (!svg) return;
+  const b = Math.round(worldToStage(svg, 0, SR_ROOM.board[1] + SR_ROOM.board[3]).y + 4); if ((parseFloat(bubble.style.top) || 0) < b) bubble.style.top = b + 'px';
+}
 function srLine(rd, list, force) {
   if (!force && (performance.now() - (SR.lineAt || 0) < 5000 || Math.random() > 0.35)) return;
-  SR.lineAt = performance.now(); say(`${rd.name}: ${PICK(list)}`, rd.x, rd.y - 170 * srScale(rd.y), 2400);
+  SR.lineAt = performance.now(); srSay(`${rd.name}: ${PICK(list)}`, rd.x, rd.y - 170 * srScale(rd.y), 2400);
 }
 function srBark(rd, kind) { if (barkMode() === 'off') return; playBark(voiceOf(rd.look), kind, { volume: 0.8 }); const bl = window.__barkLog; bl.push({ dog: rd.name, id: rd.id, kind, t: Math.round(performance.now()), room: true }); if (bl.length > 300) bl.shift(); }
 
@@ -292,7 +298,7 @@ function srPetMeet() {
   const now = performance.now(); SR.meet.taps = (SR.meet.taps || []).filter((t) => now - t < 4000); SR.meet.taps.push(now);
   const belly = SR.meet.taps.length >= 3; if (belly) SR.meet.taps = [];
   m.innerHTML = srMeetSVG(key, belly ? 'rollover' : 'pet', 'right'); srHearts(SR_MEET[0] + 20, SR_MEET[1] - 190, belly ? 5 : 2); SFX.boop(belly ? 880 : 720);
-  playBark(voiceOf(srStarterLook(key)), 'play', { volume: 0.8 }); SR.pets = (SR.pets || 0) + 1; if (belly) { SR.bellies = (SR.bellies || 0) + 1; say(PICK(SR_LINES.belly), SR_MEET[0] + 40, SR_MEET[1] - 200, 2200); }
+  playBark(voiceOf(srStarterLook(key)), 'play', { volume: 0.8 }); SR.pets = (SR.pets || 0) + 1; if (belly) { SR.bellies = (SR.bellies || 0) + 1; srSay(PICK(SR_LINES.belly), SR_MEET[0] + 40, SR_MEET[1] - 200, 2200); }
   clearTimeout(SR.meet.t); SR.meet.t = srAfter(belly ? 2000 : 900, () => { if (SR.meet && SR.meet.key === key && m.isConnected) m.innerHTML = srMeetSVG(key, 'happy', 'right'); });
 }
 function srSelectKey(key, fromRd) {

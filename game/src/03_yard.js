@@ -171,11 +171,20 @@ function phTrayFit() {
   let h = 0;
   if (cur.mode === 'yard') {
     const pb = $('#placeBtns'); if (pb && pb.children.length) h = pb.offsetHeight + 8; // the place buttons (Garden, Go inside, Café menu...) get their own strip under the scene, so they never cover a prop
-    const tr = dock.querySelector(':scope > .tray'); if (tr && !tr.classList.contains('dock-idle')) { h = tr.offsetHeight; const d = tr.querySelector('.napdet:not([hidden])'); if (d) h += d.offsetHeight + 8; }
+    const tr = dock.querySelector(':scope > .tray'); if (tr && !tr.classList.contains('dock-idle')) { phTrayCap(tr); h = tr.offsetHeight; const d = tr.querySelector('.napdet:not([hidden])'); if (d) h += d.offsetHeight + 8; }
   }
   const cur0 = parseFloat(view.style.getPropertyValue('--trayH')) || 0; if (Math.abs(cur0 - h) < 1) return;
   if (h) view.style.setProperty('--trayH', h + 'px'); else view.style.removeProperty('--trayH');
   phHomeRefit();
+}
+// v2.7 phone review: a tall tray (the pack chips over two rows of cards on iPhone 13) left a 135 px scene band, so #dogHit slid under the place chip.
+// The tray is capped so the scene band above it stays at least PH_BAND_MIN px; its body scrolls inside the tray (measured from the dock, as the tray slides up).
+// The nap tray (its note floats above it) is left alone.
+const PH_BAND_MIN = 204;
+function phTrayCap(tr) {
+  if (tr.classList.contains('nap')) { tr.style.removeProperty('max-height'); return; }
+  const cap = Math.round(dock.getBoundingClientRect().bottom - (parseFloat(getComputedStyle(dock).paddingBottom) || 0) - view.getBoundingClientRect().top - PH_BAND_MIN), want = cap >= 160 ? `min(88%, ${cap}px)` : '';
+  if (tr.style.maxHeight !== want) tr.style.maxHeight = want;
 }
 // v2.5: at most one fit per frame. It used to cancel and ask again on every dock change, so a dock that changes every frame (the fetch timer) starved it.
 { let raf = 0; new MutationObserver(() => { fbBowlSync(); if (!raf) raf = requestAnimationFrame(() => { raf = 0; phTrayFit(); }); }).observe(dock, { childList: true, subtree: true }); }

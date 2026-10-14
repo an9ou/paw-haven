@@ -90,7 +90,10 @@ const NAP_ZONE = { yard: [740, 515, 0.75], house: [740, 505, 0.75] }; // the dog
 const packPose = {};
 // phone yard: the camera crop (about x 95-620) put spot 0 on the missions clipboard (MS_YARD, 24_missions.js), so a tap there switched dogs. On phones the first
 // dog stands in front of the door, left of the clipboard's tap box, and the third goes by the hammock (off the crop until the camera follows the dog there).
-const PACK_SPOTS_PH = { yard: [[134, 402, 'right', 0.52], [930, 438, 'left', 0.57], [960, 560, 'left', 0.7]] };
+// v2.7 phone review: that spot (x 134) was off the left edge on Pixel 7 and at 360 px (their crops start at x 159 and 151), so spot 0 now stands at the
+// front left, in front of the bowl spot and left of the Garden Bench: in the crop on every width, clear of the clipboard, #dogHit, the house door, the
+// place chip and every default decoration spot. Its Feed-all bowl is lifted onto the scene (fbPackBowls).
+const PACK_SPOTS_PH = { yard: [[222, 596, 'right', 0.58], [930, 438, 'left', 0.57], [960, 560, 'left', 0.7]] };
 function packSpots() { return (isPhone() && PACK_SPOTS_PH[S.place]) || PACK_SPOTS[S.place] || PACK_SPOTS.default; }
 function packDogSVG(d, i) {
   let [fx, fy, face, sc] = packSpots()[i] || packSpots()[0]; sc = sc || 0.6;
@@ -174,7 +177,7 @@ function chipsKey() { return S.dogs.map((d) => d.id + d.name + d.sex + moodOf(d)
 function fbPackBowls(dogs, food) {
   const svg = $('svg.world', view), pack = $('#pack'); let g = $('#fbPackBowls'); if (g) g.remove(); if (!svg || !pack || !dogs.length || cur.mode !== 'yard') return;
   g = document.createElementNS('http://www.w3.org/2000/svg', 'g'); g.id = 'fbPackBowls'; g.setAttribute('pointer-events', 'none');
-  g.innerHTML = dogs.map((d) => { const i = others().indexOf(d); if (i < 0 || i > 2 || hmMumIn(d)) return ''; const hs = typeof hoPackSpot === 'function' ? hoPackSpot(d, i) : null, [fx, fy, face, sc0] = hs || packSpots()[i] || packSpots()[0], sc = sc0 || 0.6, w = DW * sc, s = 90 * sc, cx = fx - w / 2 + w * (face === 'left' ? 0.29 : 0.71); return place(bowlArt(food), cx - s / 2, fy + 7 * sc - s / 2, s, s); }).join('');
+  g.innerHTML = dogs.map((d) => { const i = others().indexOf(d); if (i < 0 || i > 2 || hmMumIn(d)) return ''; const hs = typeof hoPackSpot === 'function' ? hoPackSpot(d, i) : null, [fx, fy, face, sc0] = hs || packSpots()[i] || packSpots()[0], sc = sc0 || 0.6, w = DW * sc, s = 90 * sc, cx = fx - w / 2 + w * (face === 'left' ? 0.29 : 0.71); const cy = isPhone() && S.place === 'yard' ? Math.min(fy + 7 * sc, 598 - s / 2) : fy + 7 * sc; return place(bowlArt(food), cx - s / 2, cy - s / 2, s, s); }).join('');
   pack.parentNode.insertBefore(g, pack);
 }
 function feedAllFood() { const meals = FOOD.filter((f) => f.n !== 'Fresh Water' && !SNACKS.includes(f.n) && (S.inv.food[f.n] || 0) > 0); meals.sort((a, b) => S.inv.food[b.n] - S.inv.food[a.n]); return meals[0] || null; }

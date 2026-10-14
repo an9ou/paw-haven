@@ -687,6 +687,9 @@ function toastPlace() {
   const ph = isPhone(), modScr = stage.classList.contains('modhud') || (ph && cur.mode === 'toy'); // v2.4: in a toy game on a phone, toasts sit under the strip, not on its title bar
   toasts.style.top = modScr ? 'auto' : (hud.hidden ? 10 : view.offsetTop + 8 + phChipClear()) + 'px'; toasts.style.bottom = modScr ? '18px' : ''; toasts.style.flexDirection = modScr ? 'column-reverse' : '';
   if (!ph) return;
+  // v2.7 phone review: in the shelter playroom the toasts sit low, just above the tray, so they never cover the "Paw Haven Shelter" sign or the Adopt me board
+  const low = cur.mode === 'shelter' && modal.hidden && dock.firstElementChild;
+  if (low) { let y = 0; for (let e = low; e && e !== stage; e = e.offsetParent) y += e.offsetTop; toasts.style.top = 'auto'; toasts.style.bottom = Math.max(8, stage.clientHeight - y + 8) + 'px'; }
   stage.classList.toggle('toast-map', cur.mode === 'map'); // the map's zoom and close buttons stay clear (20_phone_shell.css)
   if (!modal.hidden) toasts.style.setProperty('--toastTop', toastSheetTop() + 'px');
 }

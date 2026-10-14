@@ -26,7 +26,7 @@ function renderAdopt(first) {
   $('#aGirl').onclick = () => { adoptSex = 'female'; SFX.boop(700); renderAdopt(true); };
   $('#aAdopt').onclick = () => { if (!adoptSex) { nope(`Pick Boy or Girl first. ${d.name}'s siblings are waiting politely.`); return; } adoptName(d); };
   if (!first) SFX.bark(BARK[d.key] || 1);
-  setTimeout(() => { if (cur.mode === 'adopt' && modal.hidden) say(d.joke || PICK(JOKES[d.key] || JOKES.mutt), SR_MEET[0] + 30, SR_MEET[1] - 200, 6000); }, 60);
+  setTimeout(() => { if (cur.mode === 'adopt' && modal.hidden) (typeof srSay === 'function' ? srSay : say)(d.joke || PICK(JOKES[d.key] || JOKES.mutt), SR_MEET[0] + 30, SR_MEET[1] - 200, 6000); }, 60);
   if (typeof srCam === 'function') requestAnimationFrame(srCam); // the tray's height can change with the dog's text
 }
 function favLine(k) {

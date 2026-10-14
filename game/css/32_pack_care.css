@@ -28,3 +28,5 @@ html[data-layout="phone"] .cr-head{width:34px;height:34px}
 html[data-layout="phone"] .cr-name{font-size:21px}
 html[data-layout="phone"] .cr-cap{font-size:14px}
 #dock > .tray h3 .cr-n{white-space:nowrap}
+/* v2.7 phone review: the caption cost the scene band 25 px on iPhone 13; the chips keep their "Who gets this" group label */
+html[data-layout="phone"] .cr-cap{display:none}
