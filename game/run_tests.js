@@ -70,7 +70,7 @@ const SUITES = {
   v28_art: { file: 'test_v28_art_node.js', group: 'all', est: 10 },
   v28_scenes: { file: 'test_v28_scenes_node.js', group: 'all', est: 120 },
   v28_dates: { file: 'test_v28_dates_node.js', group: 'all', est: 5 }, // coordinator: wnAuto, festNow overrides, the wnTest / jpTest gates, v28Fields, section 1 data
-  v28_japan: { file: 'test_v28_japan_node.js', group: 'all', est: 20 },
+  v28_japan: { file: 'test_v28_japan_node.js', group: 'all', est: 70 },
   v28_winter: { file: 'test_v28_winter.js', group: 'all', est: 60 },
   v28_newyear: { file: 'test_v28_newyear.js', group: 'all', est: 45 },
   v28_jp: { file: 'test_v28_jp.js', group: 'all', est: 45 },
