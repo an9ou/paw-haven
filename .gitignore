@@ -18,3 +18,4 @@ test_logs/
 merged_test/play.log
 _artifact/
 game/shots_v24_*/
+!brand/*.png
