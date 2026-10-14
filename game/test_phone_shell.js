@@ -166,10 +166,10 @@ require('./test_lib').run('phone_shell', async (t) => {
     const tabHit = () => ev(() => { const hit = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top; const pn = document.querySelector('#modal .panel'), tb = pn && pn.querySelector('.tabs, .jtabs, .mbtabs'), h2 = pn && pn.querySelector(':scope > h2');
       return [...document.querySelectorAll('#toasts .toast')].filter((e) => getComputedStyle(e).display !== 'none').map((e) => { const r = e.getBoundingClientRect(); return { tabs: !!tb && hit(r, tb.getBoundingClientRect()), title: !!h2 && hit(r, h2.getBoundingClientRect()), box: [r.top | 0, r.bottom | 0] }; }); });
     await clearT();
-    await ev(() => { const P = window.__paw; ['One', 'Two', 'Three'].forEach((n) => P.mailPush({ kind: 'news', from: 'Paw Haven Post', title: 'Letter ' + n, text: 'Hi.' })); });
+    await ev(() => { const P = window.__paw; ['One', 'Two', 'Three'].forEach((n) => P.mailPush({ kind: 'news', from: 'Doodle Doggo Post', title: 'Letter ' + n, text: 'Hi.' })); });
     const mt = await ev(() => [...document.querySelectorAll('#toasts .toast')].map((e) => e.textContent));
     ok(mt.length === 1 && /3 new letters/.test(mt[0]), `${dev}: three letters arriving together make one toast "${mt.join(' | ')}"`);
-    await ev(() => window.__paw.mailPush({ kind: 'news', from: 'Paw Haven Post', title: 'Letter Four', text: 'Hi.' }));
+    await ev(() => window.__paw.mailPush({ kind: 'news', from: 'Doodle Doggo Post', title: 'Letter Four', text: 'Hi.' }));
     const mt2 = await ev(() => [...document.querySelectorAll('#toasts .toast')].map((e) => e.textContent));
     ok(mt2.length === 1 && /4 new letters/.test(mt2[0]), `${dev}: a fourth letter while the note shows updates the count "${mt2.join(' | ')}"`);
     // a toast that came before the sheet (the walk's daily bonus) moves off it when the sheet opens

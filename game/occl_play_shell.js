@@ -73,7 +73,7 @@ module.exports = {
     ok(c.uneven && c.shadow === 'none', `lock card: uneven sketch radius ${c.radii} and no flat box-shadow (${c.shadow})`);
     ok(/url\(/.test(c.tape) && c.tapeContent !== 'none', 'lock card: wears the washi tape');
     ok(!c.outline, 'lock card: the generic outline phone (svg rect) is replaced by a hand-drawn path');
-    ok(c.h2 === 'Turn your phone upright' && c.p === 'Paw Haven plays standing up. Your game waits right here.', 'lock card: copy unchanged');
+    ok(c.h2 === 'Turn your phone upright' && c.p === 'Doodle Doggo plays standing up. Your game waits right here.', 'lock card: copy unchanged');
     ok(c.textIn && c.card[0] >= 0 && c.card[2] <= c.vw && c.card[1] >= 0 && c.card[3] <= c.vh && !c.scrollOver, `lock card: title, text and phone art are fully inside the card, and the card inside the screen ${c.card} of ${c.vw}x${c.vh}`);
     await t.p.setViewportSize({ width: 667, height: 375 });
     await t.until(() => innerHeight === 375, null, 4000); await H.settle();

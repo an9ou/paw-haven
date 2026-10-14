@@ -1,4 +1,4 @@
-# Paw Haven
+# Doodle Doggo
 
 A cozy comedy dog-raising game that runs in your browser. The world is a detailed doodle-sketch notebook. The dogs are crude crayon drawings that "drew themselves, on purpose."
 
@@ -99,7 +99,7 @@ Full details: [CHANGELOG.md](CHANGELOG.md). Open issues: [TODO.md](TODO.md).
 
 ## Made with Claude
 
-Paw Haven was designed and built with [Claude](https://claude.ai) (Anthropic) working as a team of coding and art agents, directed by a human.
+Doodle Doggo was designed and built with [Claude](https://claude.ai) (Anthropic) working as a team of coding and art agents, directed by a human.
 
 ## License
 

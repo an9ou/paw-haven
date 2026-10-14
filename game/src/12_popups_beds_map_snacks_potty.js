@@ -186,7 +186,7 @@ function clearPotty() { pottyT.splice(0).forEach(clearTimeout); if (pottyBusy) {
 /* ---- town map: just the map ---- */
 function mapTipText(k) {
   const here = (S.place === 'house' ? 'yard' : S.place) === k;
-  const names = { yard: 'My Yard', market: 'Market Street', shelter: 'Paw Haven Shelter', park: 'Sunny Park', river: 'Riverside', woods: 'Maple Woods', beach: 'Seashell Beach' };
+  const names = { yard: 'My Yard', market: 'Market Street', shelter: 'Doodle Doggo Shelter', park: 'Sunny Park', river: 'Riverside', woods: 'Maple Woods', beach: 'Seashell Beach' };
   const nm = (PLACES[k] && k !== 'yard' ? PLACES[k].n : names[k]) || k;
   if (here) return `${nm}: you are here`;
   if (k === 'shelter') return `${nm}: visit the dogs`;

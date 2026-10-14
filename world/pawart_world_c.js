@@ -1,4 +1,4 @@
-/* Paw Haven world art, module C (v1.6 "bigger town"): 7 hangout scenes + 3 walk strips, style G "Doodle sketch".
+/* Doodle Doggo world art, module C (v1.6 "bigger town"): 7 hangout scenes + 3 walk strips, style G "Doodle sketch".
    Wraps PawArt.scene (square | cafe | dogpark | vet | salon | hilltop | pier) and PawArt.walkStrip (town | hilltop | pier);
    every other name is handed to the previous function. Loads AFTER world A and world B.
    v2.7: the Shelter Playroom scene (playroom, indoor, layout = SR_ROOM in game/src/30_shelter.js) and two props through PawArt.prop:
@@ -1245,7 +1245,7 @@ function prSign(k,x,y,w,h){
   k.shape([[x+5,y],[x+w-5,y],[x+w,y+6],[x+w,y+h-6],[x+w-5,y+h],[x+5,y+h],[x,y+h-6],[x,y+6]],C.wood,{w:2.4,hatch:{side:.84,gap:4.5,col:C.woodD,op:.45}});
   k.line([[x+8,y+h*.5],[x+w*.3,y+h*.5+1],[x+w-8,y+h*.5-1]],1,C.woodD,{op:.55});
   k.add(`<rect x="${x+8}" y="${y+7}" width="${w-16}" height="${h-14}" rx="6" fill="none" stroke="#FFFBF3" stroke-width="2" stroke-dasharray="7 5" opacity=".9"/><circle cx="${x+38}" cy="${y+7}" r="2.4" fill="${C.ink}"/><circle cx="${x+w-38}" cy="${y+7}" r="2.4" fill="${C.ink}"/>`);
-  k.text('Paw Haven Shelter',x+w/2+1,y+h*.66,28,{rot:-1.5});
+  k.text('Doodle Doggo Shelter',x+w/2+1,y+h*.66,28,{rot:-1.5});
   const px=x+21,py=y+h*.52;k.add(`<g fill="${C.pink}" stroke="${C.ink}" stroke-width="1.1"><ellipse cx="${px}" cy="${py+3}" rx="5.6" ry="4.6"/><circle cx="${px-6}" cy="${py-4}" r="2.3"/><circle cx="${px-2}" cy="${py-8}" r="2.3"/><circle cx="${px+3}" cy="${py-8}" r="2.3"/><circle cx="${px+7}" cy="${py-4}" r="2.3"/></g>`);
   O.heart(k,x+w-19,y+h*.5,7)}
 // the chalk menu by the window: "today: belly rubs"

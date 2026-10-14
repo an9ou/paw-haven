@@ -11,7 +11,7 @@ run('phone_v27_mailbox', async (t) => {
   await t.until(() => !!window.__paw.S.mailGiftDay, null, 6000);
   await ev(() => {
     const P = window.__paw, s = P.S; s.mail = []; s.inv.clothes = s.inv.clothes.filter((n) => n !== 'Knit Scarf');
-    P.mailPush({ kind: 'news', from: 'Paw Haven Post', title: 'The pumpkin patch is open', text: 'Come say hi in the Square.' });
+    P.mailPush({ kind: 'news', from: 'Doodle Doggo Post', title: 'The pumpkin patch is open', text: 'Come say hi in the Square.' });
     P.mailPush({ kind: 'gift', id: 'mb_scarf', from: 'Mrs. Plum next door', title: 'A parcel from Mrs. Plum next door', text: 'I knitted too much again. A scarf for your dog. It is very long. Like my winters.', gift: { item: 'Knit Scarf', cat: 'clothes', n: 1 } });
     P.mailPush({ kind: 'gift', id: 'mb_coins2', from: 'the Okafor twins', title: 'A little something from the Okafor twins', text: 'We sold lemonade. Please accept our entire profits: 14 coins.', gift: { coins: 14 } });
     P.mailPush({ kind: 'gift', id: 'mb_coins', from: 'Baker Bea', title: 'A little something from Baker Bea', text: '25 coins from the tip jar. Someone wrote "for the good dog" on a napkin.', gift: { coins: 25 } });

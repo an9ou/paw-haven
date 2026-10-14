@@ -19,7 +19,7 @@ require('./test_lib').run('v27_mailbox', async (t) => {
   ok(seeds && seeds.gift && seeds.gift.cat === 'seeds' && seeds.gift.n === 2, 'a real seed parcel from the gift roll: ' + (seeds && seeds.gift && seeds.gift.item));
   const ids = await ev((seeds) => {
     const P = window.__paw, s = P.S; s.mail = []; s.inv.clothes = s.inv.clothes.filter((n) => n !== 'Knit Scarf');
-    const a = P.mailPush({ kind: 'news', from: 'Paw Haven Post', title: 'The pumpkin patch is open', text: 'Come say hi in the Square.' });
+    const a = P.mailPush({ kind: 'news', from: 'Doodle Doggo Post', title: 'The pumpkin patch is open', text: 'Come say hi in the Square.' });
     const b = P.mailPush(Object.assign({}, seeds, { id: 'mb_seeds' }));
     const c = P.mailPush({ kind: 'gift', id: 'mb_scarf', from: 'Mrs. Plum next door', title: 'A parcel from Mrs. Plum next door', text: 'I knitted too much again.', gift: { item: 'Knit Scarf', cat: 'clothes', n: 1 } });
     const d = P.mailPush({ kind: 'gift', id: 'mb_coins', from: 'Baker Bea', title: 'A little something from Baker Bea', text: '25 coins from the tip jar.', gift: { coins: 25 } });
@@ -105,7 +105,7 @@ require('./test_lib').run('v27_mailbox', async (t) => {
       { id: 'o_paid', kind: 'gift', from: 'Mrs. Plum next door', title: 'Old opened gift', text: '30 coins.', gift: { coins: 30, claimed: true }, date: day, read: true },
       { id: 'o_odd', kind: 'gift', from: 'Pip the farmer', title: 'Old opened parcel', text: 'Seeds.', gift: { item: 'Carrot Seeds', cat: 'seeds', id: 'carrot', n: 2 }, date: day, read: true },
       { id: 'o_card', kind: 'postcard', from: 'Bean & the Tanakas', title: 'A photo from Bean', text: 'A photo.', gift: { coins: 40, claimed: true }, date: day, read: false },
-      { id: 'o_news', kind: 'news', from: 'Paw Haven Post', title: 'News', text: 'Hello.', date: day, read: true }
+      { id: 'o_news', kind: 'news', from: 'Doodle Doggo Post', title: 'News', text: 'Hello.', date: day, read: true }
     ];
     return JSON.stringify(j);
   }, day);

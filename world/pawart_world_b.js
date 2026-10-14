@@ -1,4 +1,4 @@
-/* Paw Haven world art, module B: icons, shop items, dog houses, collectibles, props + UI chrome.
+/* Doodle Doggo world art, module B: icons, shop items, dog houses, collectibles, props + UI chrome.
    Style G "Doodle sketch": coloured-pencil washes that drift off two-stroke tapered pencil outlines,
    light diagonal hatching on shadow sides, Caveat labels, washi tape, sparkles.
    PawArt.icon(name)        viewBox 0 0 64 64

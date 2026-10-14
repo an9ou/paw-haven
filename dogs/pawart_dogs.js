@@ -1,4 +1,4 @@
-/* Paw Haven dog art module, style H "Ugly hand-drawn".
+/* Doodle Doggo dog art module, style H "Ugly hand-drawn".
    PawArt.dog(key, {pose, outfit, anim, facing}) -> SVG string (viewBox 0 0 240 200, feet on y=186)
    PawArt.dogHead(key) -> SVG string (viewBox 0 0 100 100)
    PawArt.DOGS -> [{key, name, breed, personality, joke}]

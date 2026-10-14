@@ -4,7 +4,7 @@
 
 // the playroom scene (PawArt.scene('playroom'), 1000 x 600, world_c). Boxes are [x, y, w, h] in world units, points are [x, y].
 const SR_ROOM = {
-  sign: [370, 10, 260, 64], // painted "Paw Haven Shelter" sign (art)
+  sign: [370, 10, 260, 64], // painted "Doodle Doggo Shelter" sign (art)
   board: [350, 84, 300, 220], // plain wall: the game draws PawArt.prop('adoptboard') here (viewBox 300 x 220, 1:1)
   window: [70, 90, 230, 180], // the window with the real sky (art)
   shelf: [716, 96, 236, 264], // the toy shelf against the right wall (art)
@@ -375,7 +375,7 @@ function srClick(e) {
 /* ---- shelter mode: the dock tray ---- */
 function srHomeLabel() { return !S || ['yard', 'house'].includes(S.place) || !PLACES[S.place] ? 'Go home' : `Back to ${PLACES[S.place].n}`; }
 function srTray() {
-  dock.innerHTML = `<div class="tray sr-tray"><div class="tray-h"><h3>Paw Haven Shelter</h3></div><div class="sr-btns"><button class="btn go" id="srBoard">Adopt me board</button><button class="btn" id="srToss">Toss a toy</button><button class="btn" id="srHome">${esc(srHomeLabel())}</button></div></div>`;
+  dock.innerHTML = `<div class="tray sr-tray"><div class="tray-h"><h3>Doodle Doggo Shelter</h3></div><div class="sr-btns"><button class="btn go" id="srBoard">Adopt me board</button><button class="btn" id="srToss">Toss a toy</button><button class="btn" id="srHome">${esc(srHomeLabel())}</button></div></div>`;
   $('#srBoard').onclick = () => { SFX.click(); openShelterList(); };
   $('#srToss').onclick = () => { SFX.click(); srToss(); };
   $('#srHome').onclick = () => { SFX.click(); go('yard'); };

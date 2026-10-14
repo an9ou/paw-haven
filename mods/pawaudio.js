@@ -1,4 +1,4 @@
-/* Paw Haven v1.2 - PawAudio: generative cozy lo-fi music + ambience.
+/* Doodle Doggo v1.2 - PawAudio: generative cozy lo-fi music + ambience.
    Everything is synthesized live with WebAudio (no files, no hosts). Plain IIFE, attaches only window.PawAudio.
    Palette (shared by every variant): FM Rhodes with tremolo, warm round bass, brushed lo-fi drums,
    generative kalimba / glockenspiel / flute / bird / bubble topline, vinyl crackle, tape wobble, lowpass warmth.
@@ -80,7 +80,7 @@
     return m;
   }
 
-  /* ---------------- the "Paw Haven theme" + motif bank ([step16, pentaIndex, lenSteps, vel]) ---------------- */
+  /* ---------------- the "Doodle Doggo theme" + motif bank ([step16, pentaIndex, lenSteps, vel]) ---------------- */
   // C A C D . C A | G A C ~ A | F A C D C A | G F ~~
   var THEME = [[0, 3, 2, 0.9], [2, 2, 2, 0.75], [4, 3, 2, 0.85], [6, 4, 4, 0.9], [11, 3, 1, 0.6], [12, 2, 4, 0.8],
     [16, 1, 2, 0.75], [18, 2, 2, 0.8], [20, 3, 8, 0.9], [30, 2, 2, 0.6],

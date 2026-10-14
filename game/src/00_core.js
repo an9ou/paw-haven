@@ -1,7 +1,7 @@
 (function () {
 'use strict';
 /* =========================================================================
-   Paw Haven prototype. Numbers come from the game proposal; the prototype
+   Doodle Doggo prototype. Numbers come from the game proposal; the prototype
    speeds the economy up (coins x2, Bond x3, naps x6) and runs 1 game hour
    per real minute.
    ========================================================================= */
@@ -171,10 +171,10 @@ const TREASURES = [
   TR('Glow Ball', 'toy', null, 'Rare', ['woods', 'beach'], 'Easy Glow', 'Fetch with it: the catch window is 50% wider.'),
   TR('Lucky Penny', 'charm', 'charm', 'Common', ['park', 'river'], 'Pocket Luck', '+10% coins on walks while equipped.'),
   TR('Sparkle Stone', 'charm', 'charm', 'Rare', ['river', 'beach'], 'Strange Hum', 'Petting gives +5 extra Happiness while equipped. It hums. Something about it feels... important later.'),
-  TR('Old Map Piece (Park)', 'quest', null, 'Uncommon', ['park'], 'Map Piece', '1 of 4 pieces of the Paw Haven Treasure Map.', { piece: 'park' }),
-  TR('Old Map Piece (River)', 'quest', null, 'Uncommon', ['river'], 'Map Piece', '1 of 4 pieces of the Paw Haven Treasure Map.', { piece: 'river' }),
-  TR('Old Map Piece (Woods)', 'quest', null, 'Rare', ['woods'], 'Map Piece', '1 of 4 pieces of the Paw Haven Treasure Map.', { piece: 'woods' }),
-  TR('Old Map Piece (Beach)', 'quest', null, 'Rare', ['beach'], 'Map Piece', '1 of 4 pieces of the Paw Haven Treasure Map.', { piece: 'beach' }),
+  TR('Old Map Piece (Park)', 'quest', null, 'Uncommon', ['park'], 'Map Piece', '1 of 4 pieces of the Doodle Doggo Treasure Map.', { piece: 'park' }),
+  TR('Old Map Piece (River)', 'quest', null, 'Uncommon', ['river'], 'Map Piece', '1 of 4 pieces of the Doodle Doggo Treasure Map.', { piece: 'river' }),
+  TR('Old Map Piece (Woods)', 'quest', null, 'Rare', ['woods'], 'Map Piece', '1 of 4 pieces of the Doodle Doggo Treasure Map.', { piece: 'woods' }),
+  TR('Old Map Piece (Beach)', 'quest', null, 'Rare', ['beach'], 'Map Piece', '1 of 4 pieces of the Doodle Doggo Treasure Map.', { piece: 'beach' }),
   /* v2.4 Shop Day: two treasures (never sold) */
   TR('Sun Hat', 'wearable', 'head', 'Uncommon', ['beach', 'park'], 'Shady Business', 'Hot days do not bother the dog while worn.', { v24: true }),
   TR('Squeaky Hedgehog', 'toy', null, 'Uncommon', ['woods', 'park'], 'Squeak of Honour', 'Squeeze it and the dog answers. It hops. Three squeaks and it rolls up.', { v24: true })
@@ -687,7 +687,7 @@ function toastPlace() {
   const ph = isPhone(), modScr = stage.classList.contains('modhud') || (ph && cur.mode === 'toy'); // v2.4: in a toy game on a phone, toasts sit under the strip, not on its title bar
   toasts.style.top = modScr ? 'auto' : (hud.hidden ? 10 : view.offsetTop + 8 + phChipClear()) + 'px'; toasts.style.bottom = modScr ? '18px' : ''; toasts.style.flexDirection = modScr ? 'column-reverse' : '';
   if (!ph) return;
-  // v2.7 phone review: in the shelter playroom the toasts sit low, just above the tray, so they never cover the "Paw Haven Shelter" sign or the Adopt me board
+  // v2.7 phone review: in the shelter playroom the toasts sit low, just above the tray, so they never cover the "Doodle Doggo Shelter" sign or the Adopt me board
   const low = cur.mode === 'shelter' && modal.hidden && dock.firstElementChild;
   if (low) { let y = 0; for (let e = low; e && e !== stage; e = e.offsetParent) y += e.offsetTop; toasts.style.top = 'auto'; toasts.style.bottom = Math.max(8, stage.clientHeight - y + 8) + 'px'; }
   stage.classList.toggle('toast-map', cur.mode === 'map'); // the map's zoom and close buttons stay clear (20_phone_shell.css)

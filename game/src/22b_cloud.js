@@ -352,7 +352,7 @@ async function clExport() {
 }
 async function clDecode(code) {
   const c = String(code || '').replace(/\s+/g, ''); const parts = c.split('.');
-  if (parts.length !== 3 || !/^PAWZ?1$/.test(parts[0])) throw new Error("That isn't a Paw Haven save code.");
+  if (parts.length !== 3 || !/^PAWZ?1$/.test(parts[0])) throw new Error("That isn't a Doodle Doggo save code.");
   let raw;
   try { let b = clUnB64(parts[1]); if (parts[0] === 'PAWZ1') b = await clZip(b, false); raw = new TextDecoder().decode(b); } catch (e) { throw new Error('That save code is broken. Copy all of it and try again.'); }
   if (clSum(raw) !== parts[2]) throw new Error('That save code is broken. Copy all of it and try again.');

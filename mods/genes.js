@@ -1,4 +1,4 @@
-/* Paw Haven: PawGenes (v1.5A, breeds extended in v1.7 to 10 and in v2.5 to 14). Loosely real dog coat genetics for the crayon dogs.
+/* Doodle Doggo: PawGenes (v1.5A, breeds extended in v1.7 to 10 and in v2.5 to 14). Loosely real dog coat genetics for the crayon dogs.
    Plain IIFE, no DOM. Matches the v2 doc (Genetics section) and V2_GENES.md.
    API: LOCI, STARTER_GENES, SHADES, phenotype(genes, breedKey, seed?), pigment(genes),
         randomGenotype(breedKey, rng), inherit(mumGenes, dadGenes, rng),

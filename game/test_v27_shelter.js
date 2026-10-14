@@ -87,7 +87,7 @@ require('./test_lib').run('v27_shelter', async (t) => {
   // an empty corner of the board opens the list (6 dogs: slots 7 and 8 are empty)
   const box = await p.locator('#srBoardG > rect').first().boundingBox();
   await p.mouse.click(box.x + box.width * 0.85, box.y + box.height * 0.82);
-  ok(await t.waitH2(/Paw Haven Shelter/), 'the board opens the list sheet');
+  ok(await t.waitH2(/Doodle Doggo Shelter/), 'the board opens the list sheet');
   ok(/Looking for a home/.test(await p.textContent('#modal .panel')), 'it starts with "Looking for a home"');
   ok(await p.locator('.shcard.rescue').count() === 2 && await p.locator('.shcard.resident').count() === 4, '2 rescue cards and 4 resident cards');
   ok(await p.locator('.shcard.starter').count() > 0 && await p.locator('[data-shsex]').count() > 0, 'the starter dogs are still there');

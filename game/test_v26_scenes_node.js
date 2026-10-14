@@ -14,7 +14,7 @@ const FILES = ['world/pawart_world_a.js', 'world/pawart_world_c.js'];
 const SRC = FILES.map((f) => fs.readFileSync(path.join(ROOT, f), 'utf8'));
 function baseSrc(rel) {
   for (const ref of ['v26-base', 'origin/v26-base']) {
-    try { return execFileSync('git', ['show', `${ref}:${rel}`], { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 26, stdio: ['ignore', 'pipe', 'ignore'] }); } catch (e) { /* try the next ref */ }
+    try { return execFileSync('git', ['show', `${ref}:${rel}`], { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 26, stdio: ['ignore', 'pipe', 'ignore'] }).replace(/Paw Haven/g, 'Doodle Doggo').replace(/PAW HAVEN/g, 'DOODLE DOGGO'); } catch (e) { /* try the next ref */ } // the game was renamed Doodle Doggo (14 Oct 2026): only the painted name differs
   }
   return null;
 }

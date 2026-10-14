@@ -271,7 +271,7 @@ function jrFamCheck() {
   if (line.length >= 5 && !F.gen5) { F.gen5 = localISO(); got.push('gen5'); titleGive('Great-Great-Granddog'); markDirty(); }
   const sp = S.sparkleBook && typeof S.sparkleBook === 'object' ? S.sparkleBook : {};
   if (!F.glitter && coatBreeds().length && coatBreeds().every((k) => sp[k])) { F.glitter = localISO(); got.push('glitter'); titleGive('Glitter Legend'); markDirty(); }
-  if (!F.penpals && FAMILIES.every((f) => S.penpals[f.id])) { F.penpals = localISO(); got.push('penpals'); titleGive('Friend of Paw Haven'); markDirty(); }
+  if (!F.penpals && FAMILIES.every((f) => S.penpals[f.id])) { F.penpals = localISO(); got.push('penpals'); titleGive('Friend of Doodle Doggo'); markDirty(); }
   return got;
 }
 function jrCheckAll() { try { coatSync(); coatRewardsCheck(); jrFamCheck(); } catch (e) { console.warn('journal check', e); } }

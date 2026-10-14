@@ -57,7 +57,7 @@ function brBirth(dam) {
 
 /* ---- v2.1 the Sparkle Stone hint (10+ pups born, Stone never found) + the one-time launch letter ---- */
 const brOwnsStone = () => !!(S && S.inv && (S.inv.charms || []).includes('Sparkle Stone'));
-function brMail(title, text) { if (typeof mailPush === 'function') { try { mailPush({ kind: 'news', from: 'Paw Haven Post', title, text }); return; } catch (e) { /* toast instead */ } } toast(text, 'gold'); }
+function brMail(title, text) { if (typeof mailPush === 'function') { try { mailPush({ kind: 'news', from: 'Doodle Doggo Post', title, text }); return; } catch (e) { /* toast instead */ } } toast(text, 'gold'); }
 function brStoneHint() {
   if (!S || S.stoneHint || (S.pupsBorn || 0) < 10 || (S.found && S.found['Sparkle Stone']) || brOwnsStone()) return false;
   S.stoneHint = brToday(); markDirty(); brMail('A curious hum', 'Psst. Something on the Riverside Trail hums whenever puppies are near.'); return true;

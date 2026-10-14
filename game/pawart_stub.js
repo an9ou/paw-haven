@@ -1,4 +1,4 @@
-/* Paw Haven: placeholder art stub for the game prototype.
+/* Doodle Doggo: placeholder art stub for the game prototype.
    Implements the FULL PawArt API from API.md with crude placeholder shapes,
    so the game can be built and tested before the real art modules land.
    Never shipped: the coordinator replaces the merge placeholder with the real modules. */
@@ -147,7 +147,7 @@ window.PawArt = window.PawArt || {};
       const shop = (x, key, label, c) => `<g data-shop="${key}"><rect x="${x}" y="200" width="240" height="280" fill="${c}" stroke="${INK}" stroke-width="6"/><rect x="${x + 20}" y="150" width="200" height="60" fill="#fff" stroke="${INK}" stroke-width="5"/>${txt(label, x + 120, 190, 22)}<rect x="${x + 85}" y="360" width="70" height="120" fill="#2a2420"/></g>`;
       return wrapScene(`${skyLayer(o)}<rect y="480" width="1000" height="120" fill="#C8A26B"/>${shop(130, 'kibble', 'Kibble Corner', '#FF9E80')}${shop(380, 'boutique', 'Bow-Wow Boutique', '#FF8FB1')}${shop(630, 'builder', 'Barkitecture', '#9AD15A')}`, 'Market Street');
     }
-    if (name === 'shelter') return wrapScene(`<rect width="1000" height="600" fill="#FFF1C9"/><rect y="470" width="1000" height="130" fill="#C8A26B"/>${[0, 1, 2, 3, 4].map((i) => `<rect x="${90 + i * 170}" y="180" width="140" height="180" fill="none" stroke="${INK}" stroke-width="6"/>`).join('')}${txt('PAW HAVEN SHELTER (stub)', 500, 110, 40)}`, 'Paw Haven Shelter');
+    if (name === 'shelter') return wrapScene(`<rect width="1000" height="600" fill="#FFF1C9"/><rect y="470" width="1000" height="130" fill="#C8A26B"/>${[0, 1, 2, 3, 4].map((i) => `<rect x="${90 + i * 170}" y="180" width="140" height="180" fill="none" stroke="${INK}" stroke-width="6"/>`).join('')}${txt('DOODLE DOGGO SHELTER (stub)', 500, 110, 40)}`, 'Doodle Doggo Shelter');
     if (name === 'map') {
       const locked = o.locked || [];
       const A = { yard: [250, 420, 'Home Yard', '#9AD15A'], market: [460, 300, 'Market Street', '#FF9E80'], shelter: [250, 200, 'Shelter', '#FFE8A0'], park: [680, 430, 'Sunny Park', '#35B544'], river: [720, 240, 'Riverside Trail', '#5AC8FA'], woods: [470, 130, 'Maple Woods', '#2E7D32'], beach: [860, 120, 'Seashell Beach', '#FFD58A'] };

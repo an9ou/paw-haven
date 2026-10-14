@@ -313,7 +313,7 @@ function secretDig() {
     const c = addCoins(1000, { raw: true }); SFX.treasure(); setTimeout(SFX.fanfare, 400); audioCue('treasure'); markDirty();
     const sx = $('#secretX'); if (sx) sx.remove(); setHudDog(); hudDogKey = ''; setHudDog();
     const chest = artReal('collectible', 'chest') || artReal('icon', 'chest') || art('collectible', 'dig');
-    const p = openModal('<span class="hl">The Grand Treasure Chest!</span>', `<div class="tfind"><div class="tbig">${chest}</div><div><p>The X was real. ${esc(NAME())} dug up the Grand Treasure Chest of Paw Haven.</p><ul class="unlocks"><li>+${c} Paw Coins</li><li>3 Golden Bones (in the Food tab)</li><li>New title: <b>Treasure Legend</b> (on your name tag)</li></ul><div class="jmap-art small-map">${tornMap()}</div></div></div>`, { cls: 'celebrate', foot: '<button class="btn yes big" id="sdOk">Legendary!</button>' });
+    const p = openModal('<span class="hl">The Grand Treasure Chest!</span>', `<div class="tfind"><div class="tbig">${chest}</div><div><p>The X was real. ${esc(NAME())} dug up the Grand Treasure Chest of Doodle Doggo.</p><ul class="unlocks"><li>+${c} Paw Coins</li><li>3 Golden Bones (in the Food tab)</li><li>New title: <b>Treasure Legend</b> (on your name tag)</li></ul><div class="jmap-art small-map">${tornMap()}</div></div></div>`, { cls: 'celebrate', foot: '<button class="btn yes big" id="sdOk">Legendary!</button>' });
     $('#sdOk', p).onclick = () => { SFX.boop(700); closeModal(); };
     busy = false; dogTo(0, 0, 1, 0.9); setTemp('happy', 2500);
   }, 2600);

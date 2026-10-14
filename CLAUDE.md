@@ -1,4 +1,4 @@
-# Paw Haven
+# Doodle Doggo (formerly Paw Haven)
 
 A cozy browser game: adopt crayon-drawn dogs, care for them, walk a sketchbook town, grow a garden, and have puppy playdates with real coat genetics. Current version: **v2.7 "Home & Pack"** (also on claude.ai, where cloud save is off by design). History: `CHANGELOG.md`. Open issues: `TODO.md`.
 

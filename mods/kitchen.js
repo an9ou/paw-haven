@@ -1,4 +1,4 @@
-/* Paw Haven v1.3: kitchen module -> window.PawKitchen
+/* Doodle Doggo v1.3: kitchen module -> window.PawKitchen
    Contract: V13.md, "mods/kitchen.js".
    PawKitchen.RECIPES, PANTRY, PEOPLE_FOOD, FAV
    PawKitchen.match(ids) -> recipeId|null

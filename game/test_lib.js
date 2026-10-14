@@ -1,4 +1,4 @@
-// Paw Haven shared test library (desktop 1280x720, game/test_merged.html).
+// Doodle Doggo shared test library (desktop 1280x720, game/test_merged.html).
 // Every suite is a small file:   require('./test_lib').run('name', async (t) => { ... });
 // Run one suite on its own:      NODE_PATH=$(npm root -g) node game/test_smoke.js      (or via run_tests.js)
 //

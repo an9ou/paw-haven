@@ -1,4 +1,4 @@
-/* Paw Haven world art, module A: scenes + walk strips, style G "Doodle sketch".
+/* Doodle Doggo world art, module A: scenes + walk strips, style G "Doodle sketch".
    PawArt.scene(name, o)  name: yard | market | shelter | map   (viewBox 0 0 1000 600, xMidYMid slice)
    PawArt.walkStrip(area) area: park | river | woods | beach  (viewBox 0 0 1200 400, ground y=330, seamless)
    Everything is drawn on warm sketchbook paper: coloured-pencil fills that drift off the lines,
@@ -692,7 +692,7 @@ function shelter(k){
     k.cap(()=>{k.add(`<g opacity=".9">`);O.cloud(k,470,140,14);k.add(`</g>`)});k.fx(()=>{if(k.env.snow)capLine(k,[[391,243],[609,243]],6)})}
   // banner
   O.bunting(k,40,960,30,30,[C.red,C.yellow,C.mint,C.lav,C.blue,'#FFB3C7']);
-  k.shape([[300,268],[700,268],[690,318],[310,318]],'#FFFFFF',{w:2.4});k.text('Paw Haven Shelter',500,306,42);O.heart(k,282,290,10);O.heart(k,718,290,10);
+  k.shape([[300,268],[700,268],[690,318],[310,318]],'#FFFFFF',{w:2.4});k.text('Doodle Doggo Shelter',500,306,42);O.heart(k,282,290,10);O.heart(k,718,290,10);
   // bulletin board with "adopt me" polaroids
   k.shape(RC(70,120,220,160),'#E1B987',{w:2.4,hatch:{side:.8,gap:5,col:'#BF9767',op:.4}});
   [[96,140,-6,C.orange],[168,136,5,C.blue],[110,206,4,C.yellow],[200,200,-5,C.pink]].forEach(([x,y,a,cc])=>{k.add(`<g transform="rotate(${a} ${x+28} ${y+30})">`);k.shape(RC(x,y,56,62),'#FFFFFF',{w:1.6,one:1});k.shape(RC(x+6,y+6,44,38),cc,{w:1.2,one:1});k.add(`<circle cx="${x+22}" cy="${y+22}" r="2" fill="${C.ink}"/><circle cx="${x+34}" cy="${y+22}" r="2" fill="${C.ink}"/><path d="M${x+24} ${y+30}q4 4 8 0" fill="none" stroke="${C.ink}" stroke-width="1.4"/>`);k.text('adopt me',x+28,y+58,12);k.add(`<circle cx="${x+28}" cy="${y+2}" r="3.4" fill="#E86A7C"/></g>`)});
@@ -716,8 +716,8 @@ function shelter(k){
   O.tape(k,8,18,90,-26,'#F7B9C6');O.tape(k,920,572,80,-24,'#B9D4F3');
 }
 
-/* ---------- town map (v1.6): "Paw Haven Town", viewBox 0 0 2400 1500, no time or weather ---------- */
-const AREAS={yard:{label:'My Yard',bond:1},house:{label:'Cozy House',bond:1},market:{label:'Market Street',bond:1},shelter:{label:'Paw Haven Shelter',bond:1},
+/* ---------- town map (v1.6): "Doodle Doggo Town", viewBox 0 0 2400 1500, no time or weather ---------- */
+const AREAS={yard:{label:'My Yard',bond:1},house:{label:'Cozy House',bond:1},market:{label:'Market Street',bond:1},shelter:{label:'Doodle Doggo Shelter',bond:1},
   square:{label:'Town Square',bond:1},park:{label:'Sunny Park',bond:1},river:{label:'Riverside Trail',bond:2},woods:{label:'Maple Woods',bond:5},beach:{label:'Seashell Beach',bond:8},
   cafe:{label:'Pupuccino Café',bond:1},dogpark:{label:'Dog Park',bond:2},vet:{label:'Vet Clinic',bond:1},salon:{label:'Grooming Salon',bond:3},hilltop:{label:'Hilltop Meadow',bond:4},pier:{label:'Lighthouse Pier',bond:6}};
 // place centres (icon centre; the caption sits below)
@@ -808,7 +808,7 @@ function bigMap(k,o){
     if(locked.has(id))k.out[k.out.length-1]=k.out[k.out.length-1].replace(`data-area="${id}"`,`data-area="${id}" data-locked="1"`)}
   // compass rose + title
   k.shape(E(2290,120,52,52,14),'#FFFFFF',{w:2});k.add(`<path d="M2290 68l10 42 -10 10 -10 -10zM2290 172l10 -42 -10 -10 -10 10z" fill="${C.pink}" stroke="${C.ink}" stroke-width="1.8" stroke-linejoin="round"/>`);k.text('N',2290,60,28);
-  k.text('Paw Haven Town',330,96,72,{rot:-2,halo:'#FFF8EC'});k.line([[130,116],[540,108]],3,C.pink);
+  k.text('Doodle Doggo Town',330,96,72,{rot:-2,halo:'#FFF8EC'});k.line([[130,116],[540,108]],3,C.pink);
   O.sparkle(k,860,330,10);O.sparkle(k,1760,1180,8);O.heart(k,640,1300,8);O.note(k,2080,1000,14);
   O.tape(k,10,26,120,-26,'#F7B9C6');O.tape(k,2250,1450,120,-24,'#BDE7D2');O.tape(k,14,1460,100,24,'#F9E19A');
 }
@@ -1252,7 +1252,7 @@ function kitchen(k){
 }
 
 /* ---------- API ---------- */
-const SCENES={yard:['Your yard',yard],market:['Market Street',market],shelter:['Paw Haven Shelter',shelter],map:['Paw Haven Town map',bigMap],
+const SCENES={yard:['Your yard',yard],market:['Market Street',market],shelter:['Doodle Doggo Shelter',shelter],map:['Doodle Doggo Town map',bigMap],
   house:['Cozy House living room',hubHouse],garden:['Garden',garden],kitchen:['Kitchen',kitchen],park:['Sunny Park',hubPark],river:['Riverside',hubRiver],woods:['Maple Woods',hubWoods],beach:['Seashell Beach',hubBeach]};
 // cache per (name, time, weather, locked, bonds); every call still gets fresh ids
 const cache={};

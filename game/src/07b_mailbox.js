@@ -66,7 +66,7 @@ function mailSfx() { try { const a = PAU(); if (a && typeof a.sfx === 'function'
 /* Add a message. msg: { kind: 'postcard'|'gift'|'litter'|'news', from, title, text, dog?, gift?, ... } */
 function mailPush(msg) {
   if (!S) return null; mailFields();
-  const m = Object.assign({ kind: 'news', from: 'Paw Haven Post', title: 'A letter', text: '' }, msg || {});
+  const m = Object.assign({ kind: 'news', from: 'Doodle Doggo Post', title: 'A letter', text: '' }, msg || {});
   m.id = m.id || 'm_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   m.date = m.date || localISO(); m.read = false;
   if (S.mail.some((x) => x.id === m.id)) return S.mail.find((x) => x.id === m.id);
@@ -249,8 +249,8 @@ function letterPhoto(m) {
 }
 function postcardHTML(m) {
   const real = artReal('prop', 'postcard');
-  return `<div class="pc ${real ? 'pc-real' : 'pc-doodle'}${m.sparkle || (m.dog && m.dog.sparkle) ? ' pc-spk' : ''}">${real ? `<div class="pc-bg">${real}</div>` : '<span class="pc-stamp" aria-hidden="true"><i></i></span><span class="pc-mark" aria-hidden="true">PAW HAVEN</span><span class="pc-tape" aria-hidden="true"></span>'}
-    <div class="pc-photo">${letterPhoto(m)}</div><div class="pc-addr"><span>To: you</span><span>Home Yard</span><span>Paw Haven</span></div></div>`;
+  return `<div class="pc ${real ? 'pc-real' : 'pc-doodle'}${m.sparkle || (m.dog && m.dog.sparkle) ? ' pc-spk' : ''}">${real ? `<div class="pc-bg">${real}</div>` : '<span class="pc-stamp" aria-hidden="true"><i></i></span><span class="pc-mark" aria-hidden="true">DOODLE DOGGO</span><span class="pc-tape" aria-hidden="true"></span>'}
+    <div class="pc-photo">${letterPhoto(m)}</div><div class="pc-addr"><span>To: you</span><span>Home Yard</span><span>Doodle Doggo</span></div></div>`;
 }
 function letterBody(m) {
   if (!m) return '<div class="mb-empty"><p>No letters yet.</p><p class="small">The neighbours leave something every day, and puppies who move to town families write home.</p></div>';

@@ -1,4 +1,4 @@
-/* Paw Haven v1.2: interactive toys module -> window.PawToys
+/* Doodle Doggo v1.2: interactive toys module -> window.PawToys
    PawToys.supports(name) -> bool
    PawToys.open(el, name, ctx) -> controller { close() }
    ctx = { dog:{key,name,outfit}, time, weather, sfx, say, reward({happiness,bond,coins,energy}), onClose }

@@ -173,10 +173,10 @@ require('./test_lib').run('v21_journal', async (t) => {
   await p.click('[data-mbt=letters]'); await p.waitForSelector('.mbox'); await closeAll();
   const ids = ['tanaka', 'reyes', 'okafor', 'lin', 'nguyen', 'patel', 'kowalski', 'abebe', 'moreno', 'haddad', 'sato'];
   await ev((ids) => { const S = window.__paw.S; S.penpals = {}; ids.forEach((i) => { S.penpals[i] = '2026-04-04'; }); S.famRewards.penpals = null; delete S.famRewards.penpals; }, ids);
-  s = await S(); ok(!s.titles['Friend of Paw Haven'], '11 families: no title');
+  s = await S(); ok(!s.titles['Friend of Doodle Doggo'], '11 families: no title');
   await t.patch({ rehomed: [pup({ id: 'pp2', name: 'Fig', born: await ago(3), since: await ago(1), family: { id: 'obrien', name: "the O'Briens", where: 'up on Hill Lane' } })], mailCards: { pp2: { n: 0, next: await ago(0) } } });
   await ev(() => window.__paw.mailTick()); s = await S();
-  ok(!!s.penpals.obrien && !!s.famRewards.penpals && !!s.titles['Friend of Paw Haven'], 'postcard from all 12 families: Friend of Paw Haven');
+  ok(!!s.penpals.obrien && !!s.famRewards.penpals && !!s.titles['Friend of Doodle Doggo'], 'postcard from all 12 families: Friend of Doodle Doggo');
   await p.click('#mailboxG', { position: { x: 40, y: 30 } }); await p.waitForSelector('.panel.mailbox'); await p.click('[data-mbt=album]'); await p.waitForSelector('.album');
   ok(await p.locator('.al-slot.found').count() === 12, 'album: all 12 slots found'); await closeAll();
 

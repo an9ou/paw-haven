@@ -244,7 +244,7 @@ const SCAN = (sels) => {
       // ---------- mailbox ----------
       t.sec(tag + ': mailbox');
       await t.home('yard');
-      await t.ev(() => { const P = window.__paw; P.S.mail = []; P.mailPush({ kind: 'news', from: 'Paw Haven Post', title: 'Hello', text: 'Hello there.' }); P.openMailbox(); });
+      await t.ev(() => { const P = window.__paw; P.S.mail = []; P.mailPush({ kind: 'news', from: 'Doodle Doggo Post', title: 'Hello', text: 'Hello there.' }); P.openMailbox(); });
       await t.until(() => !!document.querySelector('#modal .panel.mailbox, #modal .panel .mbtabs')); await t.sleep(500);
       await sheet('mailbox');
       const mb = await t.ev(() => [...document.querySelectorAll('.mbtabs .btn')].map((b) => { const r = b.getBoundingClientRect(); return b.textContent.trim().slice(0, 10) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height * 10) / 10; }));

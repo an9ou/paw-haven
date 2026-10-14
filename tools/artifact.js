@@ -1,4 +1,4 @@
-// Paw Haven: build the claude.ai multi-file artifact (v2.4).
+// Doodle Doggo: build the claude.ai multi-file artifact (v2.4).
 //   node tools/artifact.js [--src <repo root>] [--out <dir>]
 // Writes <out>/index.html (the shell with the CSS inline and <script src> tags) plus the game, art and module scripts as
 // separate files, from the same sources as `node game/build.js publish`. The Artifact tool then publishes index.html with

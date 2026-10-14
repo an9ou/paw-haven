@@ -1,4 +1,4 @@
-/* Paw Haven v1.3: GARDEN module -> window.PawGarden (v1.7.1: crops grow in real hours, hourly watering)
+/* Doodle Doggo v1.3: GARDEN module -> window.PawGarden (v1.7.1: crops grow in real hours, hourly watering)
    Pure growth model (advance / plant / water / harvest) + the garden screen UI.
    Plain IIFE, no imports. CSS injected once (#pawgarden-css), classes prefixed pg-.
    Never touches browser storage or game state: everything goes through the callbacks in V13.md. */

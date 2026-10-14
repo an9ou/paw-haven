@@ -1,4 +1,4 @@
-// Paw Haven build. Usage:
+// Doodle Doggo build. Usage:
 //   node build.js            -> game/paw_haven_proto.html (game only, art/mod placeholders kept; used by harness.js + tests)
 //   node build.js publish    -> /home/claude/proto/paw_haven_prototype.html (everything merged, ready to publish)
 //   node build.js check      -> rebuild + syntax-check the game script

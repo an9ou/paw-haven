@@ -6,7 +6,7 @@ function enterTitle() {
   const doodles = `<svg viewBox="0 0 800 500" preserveAspectRatio="xMidYMid meet">${doodle('spark', 120, 70, 1.3)}${doodle('spark', 690, 120, 0.9)}${doodle('spark', 150, 330, 0.7)}${doodle('heart', 660, 62, 1.2, 12)}${doodle('heart', 718, 330, 0.8, -10)}${doodle('note', 96, 190, 1.1, -8)}${doodle('note', 700, 230, 0.9, 10)}<g class="dd-low">${doodle('flower', 640, 420, 1.2)}${doodle('flower', 100, 430, 0.9, 20)}${doodle('paw', 250, 450, 0.8, -20)}${doodle('paw', 300, 470, 0.8, -10)}${doodle('paw', 350, 455, 0.8, -25)}${doodle('bone', 560, 455, 1.1, -8)}</g></svg>`;
   titleEl.innerHTML = `<div class="bg">${art('scene', 'yard', envNow())}</div>
     <div class="cover"><div class="rings" aria-hidden="true">${rings}</div><div class="doodles" aria-hidden="true">${doodles}</div>
-      <h1 class="logo" aria-label="Paw Haven"><span style="transform:rotate(-3deg)">Paw</span> <span style="transform:rotate(2deg) translateY(4px)">Haven</span></h1>
+      <h1 class="logo" aria-label="Doodle Doggo"><span style="transform:rotate(-3deg)">Doodle</span> <span style="transform:rotate(2deg) translateY(4px)">Doggo</span></h1>
       <div class="tagline">a cozy dog game, sketchbook edition</div>
       <div id="tAcct"></div>
       <div class="crayon-note">Everything here is lovingly sketched. Except the dogs. The dogs drew themselves, with crayons, on purpose.</div>

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Paw Haven test runner: build -> harness merged -> run suites in PARALLEL (one Chromium process per suite).
+// Doodle Doggo test runner: build -> harness merged -> run suites in PARALLEL (one Chromium process per suite).
 //   node game/run_tests.js smoke                 quick loop (<= 90 s)
 //   node game/run_tests.js all                   every desktop suite, sharded
 //   node game/run_tests.js all_c v15             named suites (see --list)

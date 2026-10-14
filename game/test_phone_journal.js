@@ -24,8 +24,8 @@ async function suite(t, device) {
     s.penpals = { tanaka: '2026-04-03' };
     s.mail = []; P.mailPush({ kind: 'postcard', from: 'Button & the Tanakas', title: 'Button has settled in!', text: 'Button made it home. She has claimed the sofa. A very long line to make sure the text wraps on a small phone screen without trouble.', ps: 'P.S. Muddy paw print attached.', dog: { id: 'pup1', key: me.key, genes: g(), born: '2026-03-01', sparkle: true, sex: 'female', name: 'Button' }, pose: 'happy', pup: 'pup1', sparkle: true });
     P.mailPush({ kind: 'gift', from: 'Mrs. Plum', title: 'A little something from Mrs. Plum next door', text: 'Found 20 coins in my sofa.', gift: { coins: 20 } });
-    P.mailPush({ kind: 'news', from: 'Paw Haven Post', title: 'A long headline for the news letter on a narrow phone', text: 'Hello there.' });
-    s.titles = { 'Gene Detective': '2026-05-01', 'Great-Great-Granddog': '2026-05-02', 'Friend of Paw Haven': '2026-05-03' };
+    P.mailPush({ kind: 'news', from: 'Doodle Doggo Post', title: 'A long headline for the news letter on a narrow phone', text: 'Hello there.' });
+    s.titles = { 'Gene Detective': '2026-05-01', 'Great-Great-Granddog': '2026-05-02', 'Friend of Doodle Doggo': '2026-05-03' };
     s.inv.food['Basic Kibble'] = 3; P.saveNow();
   });
   await t.calm();

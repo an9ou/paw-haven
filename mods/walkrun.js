@@ -1,4 +1,4 @@
-/* Paw Haven v1.2: WALK MINI-GAME (runner + treasure hunt)  ->  window.PawWalk
+/* Doodle Doggo v1.2: WALK MINI-GAME (runner + treasure hunt)  ->  window.PawWalk
    PawWalk.start(el, o) -> { stop() }   (contract: V12.md)
    The dog auto-runs right. Three height bands: LOW (walk to grab, jump to avoid), MID (walk or hop),
    HIGH (jump to grab, crouch to avoid). Tap jump = hop, HOLD jump = long floaty jump that clears puddles.

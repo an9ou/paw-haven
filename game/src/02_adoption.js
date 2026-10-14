@@ -11,7 +11,7 @@ function enterAdopt() {
 function renderAdopt(first) {
   const dogs = dogsList(); if (adoptIdx >= dogs.length) adoptIdx = 0; const d = dogs[adoptIdx];
   srMeetShow(d.key); // v2.7: the selected dog trots to the meet spot at the front of the playroom
-  dock.innerHTML = `<div class="tray"><div class="tray-h"><h3>Paw Haven Shelter: pick your new best friend</h3></div>
+  dock.innerHTML = `<div class="tray"><div class="tray-h"><h3>Doodle Doggo Shelter: pick your new best friend</h3></div>
     <div class="adopt-card"><button class="arrow" id="aPrev" aria-label="Previous dog">&lt;</button>
       <div class="info"><h3>${esc(d.name)} <span class="small">the ${esc(d.breed)}</span></h3><p>${esc(d.personality)}</p>
       <p class="small">Loves: ${esc(favLine(d.key))}</p>${typeof bdTip === 'function' && bdTip(d.key) ? `<p class="small bd-tip">${esc(bdTip(d.key))}</p>` : ''}
@@ -51,7 +51,7 @@ function adoptName(d) {
 function intro() {
   const n = esc(NAME());
   const pages = [
-    ['Welcome to Paw Haven', `<p>Population: you, <b>${n}</b>, and one suspicious duck.</p><p>${n} is now your dog. There is no take-backs policy. ${n} checked.</p>`],
+    ['Welcome to Doodle Doggo', `<p>Population: you, <b>${n}</b>, and one suspicious duck.</p><p>${n} is now your dog. There is no take-backs policy. ${n} checked.</p>`],
     ['How this works', `<p>Keep the four meters up: <b>Hunger</b>, <b>Happiness</b>, <b>Energy</b>, <b>Cleanliness</b>. Nothing bad ever happens if they drop. ${n} just gets very dramatic about it.</p><p>Every game hour here is one real minute.</p>`],
     ['Your starter kit', `<p>5 Basic Kibble, 3 Bone-shaped Biscuits, 1 Pupcake, a Tennis Ball, a Cardboard Box (luxury) and 150 Paw Coins.</p><p><b>Tip:</b> rub ${n} with your mouse or finger to pet. Go on. Rub.</p>`]
   ];

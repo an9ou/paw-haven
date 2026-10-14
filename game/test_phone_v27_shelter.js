@@ -51,7 +51,7 @@ require('./test_lib').run('phone_v27_shelter', async (t) => {
     await t.SH(device.replace(/\s/g, '') + '_02_shelter');
     // the whole board opens the list on phones (a portrait too)
     await p.locator('#srBoardG [data-srslot]').first().tap({ force: true });
-    ok(await t.waitH2(/Paw Haven Shelter/) && await p.locator('.shcard.resident').count() === 4, 'a tap on the board opens the list sheet');
+    ok(await t.waitH2(/Doodle Doggo Shelter/) && await p.locator('.shcard.resident').count() === 4, 'a tap on the board opens the list sheet');
     a = await audit('#modal .panel', 44); ok(!a.miss && !a.small.length && !a.tiny.length && !a.hs, 'the list sheet: buttons >= 44 px, text >= 15 px, no sideways scroll ' + show(a));
     await t.SH(device.replace(/\s/g, '') + '_03_list');
     await p.locator('.shcard.resident [data-srmeet]').first().tap();

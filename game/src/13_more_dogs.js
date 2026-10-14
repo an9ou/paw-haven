@@ -354,7 +354,7 @@ function openShelterList() {
   const rescues = rescuesToday().map((r) => Object.assign({ trait: srTrait(r.id) }, r)), residents = srRoster().filter((x) => x.kind === 'resident');
   const starterKeys = dogsList().map((x) => x.key).filter((k) => !S.dogs.some((d) => d.key === k && !d.rescue));
   const sl = dogSlots();
-  const p = openModal('Paw Haven Shelter', `<p class="sr-lead">Looking for a home</p><div class="shspots">${spotsLine(sl)}${spotsHTML(sl)}</div>
+  const p = openModal('Doodle Doggo Shelter', `<p class="sr-lead">Looking for a home</p><div class="shspots">${spotsLine(sl)}${spotsHTML(sl)}</div>
     <h3 class="shh">Today's rescues <span class="small">(new ones arrive every day)</span></h3><div class="shopgrid">${rescues.map((r) => shelterCard(r, 'rescue')).join('')}</div>
     ${residents.length ? `<h3 class="shh">Living in the playroom <span class="small">(they stay all week)</span></h3><div class="shopgrid">${residents.map((r) => shelterCard(r, 'resident')).join('')}</div>` : ''}
     ${starterKeys.length ? `<h3 class="shh">Starter dogs</h3><div class="shopgrid">${starterKeys.map((k) => shelterCard({ key: k }, 'starter')).join('')}</div>` : ''}`, { cls: 'shop shelter' });

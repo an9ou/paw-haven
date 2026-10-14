@@ -68,7 +68,7 @@ async function suite(t, dev) {
     const xs = [v.right - 3, v.right - 30], ys = [v.top + v.height * 0.45, v.top + v.height * 0.6, v.top + v.height * 0.8];
     out.strip = xs.flatMap((x) => ys.map((y) => { const e = document.elementFromPoint(x, y); return !!e && !!e.closest('#mapInner, #mapZoom, #mapX, #mapGo'); }));
     out.btns = ['#mapX', '#mapZin', '#mapZout'].map((s) => { const b = q(s); return [s, Math.round(b.width), Math.round(b.height)]; });
-    const ctl = ['#mapX', '#mapZoom'].map(q); out.cover = [...document.querySelectorAll('#mapInner svg text')].filter((e) => e.textContent.trim().length > 1 && !/Paw Haven Town/.test(e.textContent)).filter((e) => { const r = e.getBoundingClientRect(); return ctl.some((c) => r.right > c.left && r.left < c.right && r.bottom > c.top && r.top < c.bottom); }).map((e) => e.textContent.trim());
+    const ctl = ['#mapX', '#mapZoom'].map(q); out.cover = [...document.querySelectorAll('#mapInner svg text')].filter((e) => e.textContent.trim().length > 1 && !/Doodle Doggo Town/.test(e.textContent)).filter((e) => { const r = e.getBoundingClientRect(); return ctl.some((c) => r.right > c.left && r.left < c.right && r.bottom > c.top && r.top < c.bottom); }).map((e) => e.textContent.trim());
     const z = q('#mapZoom'), dv = q('#devBtn'); out.devClear = dv.right <= z.left || dv.left >= z.right || dv.bottom <= z.top || dv.top >= z.bottom;
     return out;
   });
@@ -87,7 +87,7 @@ async function suite(t, dev) {
   ok(from.length === 0, 'opened from any of the 14 places, the map shows no place name under the controls' + (from.length ? ' -> ' + from.join(' | ') : ''));
   await ev(() => { window.__paw.S.place = 'yard'; window.__paw.go('map'); }); await p.waitForSelector('#mapZoom');
   // drag across the whole map: every place label is at some point fully on screen and clear of the controls (the right edge can be pulled out from under them)
-  const seen = new Set(), all = await ev(() => [...new Set([...document.querySelectorAll('#mapInner svg text')].map((e) => e.textContent.trim()).filter((s) => s.length > 1 && !/Paw Haven Town/.test(s)))]);
+  const seen = new Set(), all = await ev(() => [...new Set([...document.querySelectorAll('#mapInner svg text')].map((e) => e.textContent.trim()).filter((s) => s.length > 1 && !/Doodle Doggo Town/.test(s)))]);
   const look = async () => (await ev(() => { const v = document.querySelector('#view').getBoundingClientRect(), ctl = ['#mapX', '#mapZoom', '#devBtn', '#status'].map((s) => document.querySelector(s).getBoundingClientRect()); return [...document.querySelectorAll('#mapInner svg text')].filter((e) => { const r = e.getBoundingClientRect(); return r.left >= v.left && r.right <= v.right && r.top >= v.top && r.bottom <= v.bottom && !ctl.some((c) => r.right > c.left && r.left < c.right && r.bottom > c.top && r.top < c.bottom); }).map((e) => e.textContent.trim()); })).forEach((n) => seen.add(n));
   const drag = async (dx) => { await p.mouse.move(200, 420); await p.mouse.down(); for (let i = 1; i <= 8; i++) await p.mouse.move(200 + dx * i / 8, 420); await p.mouse.up(); await t.sleep(60); };
   for (let i = 0; i < 4; i++) await drag(300); await look();
