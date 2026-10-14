@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>World B v2.8 gallery</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&display=swap">
+<style>body{margin:0;padding:12px;background:#FFFBF3;font:14px/1.3 system-ui,sans-serif;color:#5B3D32}
+h1{font-size:18px;margin:0 0 4px}h2{margin:18px 0 6px;font-size:15px}.row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.pair{display:flex;gap:10px;align-items:flex-end;background:#fff;border:1px dashed #D8CBB8;padding:4px;flex-wrap:wrap}
+.pair.frost{background:#E9F0EC}
+figure{margin:0;text-align:center}figcaption{font:600 13px 'Caveat',cursive;margin-top:2px}
+.o figcaption{opacity:.55}svg{display:block;max-width:100%}.night{background:#3E4A6B;border-radius:6px;padding:6px}.night figcaption{color:#FFF2DA}
+.scene{position:relative;overflow:hidden;border-radius:6px;border:1px solid #E3D2BA}.scene>.bg svg{width:100%;height:100%}.on{position:absolute}.on>svg{width:100%;height:100%;overflow:visible}
+.small figure>div{width:40px}</style></head>
+<body>
+<h1>Doodle Doggo world art B: v2.8 "Winter &amp; New Year" additions</h1>
+<p>Each new drawing sits next to its nearest existing neighbour (greyed caption) so the hand can be compared. Night: the new props take <code>{night:true}</code>, the old ones go through <code>PawArt.tint</code> as in the game.</p>
+<h2>Snowdrift (160x100), next to the leaf pile</h2><div class="row" id="drift"></div>
+<h2>The yard in winter: two drifts, the snowdog, the four decorations (day, night)</h2><div class="row" id="yard"></div>
+<h2>Snowdog (140x140): the four stages, the finished one next to the snowman and a crayon dog, at 84 px and big</h2><div class="row" id="sdog"></div>
+<h2>Baker Bea's stall: winter and New Year next to leaf and Halloween</h2><div class="row" id="stall"></div>
+<h2>The Square in winter: the stall, the banner and the fortune box at their spots (December day, New Year night)</h2><div class="row" id="square"></div>
+<h2>Ugly Sweater Contest banner (400x90), next to the Costume Parade banner</h2><div class="row" id="banner"></div>
+<h2>Fortune box (160x200) with 0, 5 and 12 knots, next to the pop-up</h2><div class="row" id="fbox"></div>
+<h2>Winter decorations, next to the String Lights and the Ghost Garland</h2><div class="row" id="decor"></div>
+<h2>New Year card (200x140), next to the postcard</h2><div class="row" id="card"></div>
+<h2>Cards (64): foods next to Ghost Biscuits, clothes next to the Knit Winter Sweater and the Parade Rosette, decorations next to their neighbours</h2><div class="row" id="cards"></div>
+<h2>Shop scale (40 px): the 13 new cards, then the old neighbours</h2><div class="row small" id="small"></div>
+<h2>Icons (64 and 40), next to festival and popup</h2><div class="row" id="icons"></div>
+<h2>Bowls (90 px), next to Ghost Biscuits and Warm Bone Broth</h2><div class="row" id="bowls"></div>
+<script src="pawart_world_a.js"></script>
+<script src="pawart_world_c.js"></script>
+<script src="pawart_world_b.js"></script>
+<script src="../dogs/pawart_dogs.js"></script>
+<script>
+const PA=window.PawArt,W=window.innerWidth<600,SW=W?366:620,k=W?.62:1;
+function fig(svg,cap,w,old){return '<figure class="'+(old?'o':'')+'"><div style="width:'+w+'px">'+svg+'</div><figcaption style="max-width:'+Math.max(w,60)+'px">'+cap+'</figcaption></figure>'}
+function add(id,html,cls){const d=document.createElement('div');d.className='pair'+(cls?' '+cls:'');d.innerHTML=html;document.getElementById(id).appendChild(d)}
+const nightBox=html=>'<div class="night row">'+html+'</div>';
+const T=(svg,t)=>t==='night'?PA.tint(svg,{time:'night'}):svg;
+const on=(svg,x,y,w,h)=>'<div class="on" style="left:'+x+'px;top:'+y+'px;width:'+w+'px;height:'+h+'px">'+svg+'</div>';
+function dogOn(key,o,fx,fy,w){const h=w*220/264;return on(PA.dog(key,Object.assign({anim:false},o)),fx-w/2,fy-h*205/220,w,h)}
+function inScene(id,scene,env,items,w,extra){const s=w/1000;let h='';items.forEach(([svg,x,y,iw,ih])=>{h+=on(svg,x*s,y*s,iw*s,ih*s)});
+  add(id,'<div class="scene" style="width:'+w+'px;height:'+(w*.6)+'px"><div class="bg" style="width:100%;height:100%">'+PA.scene(scene,env)+'</div>'+h+(extra?extra(s):'')+'</div>')}
+// ---- snowdrift
+add('drift',fig(PA.prop('snowdrift',{seed:0}),'snowdrift full',160*k)+fig(PA.prop('snowdrift',{state:'scattered',seed:0}),'scattered',160*k)+fig(PA.prop('leafpile',{seed:0}),'leaf pile',160*k,1)+fig(PA.prop('leafpile',{state:'scattered',seed:0}),'leaf pile scattered',160*k,1),'frost');
+add('drift',fig(PA.prop('snowdrift',{seed:1}),'full, seed 1',160*k)+fig(PA.prop('snowdrift',{seed:2}),'full, seed 2',160*k)+fig(PA.prop('snowdrift',{state:'scattered',seed:2}),'scattered, seed 2',160*k),'frost');
+add('drift',nightBox(fig(PA.prop('snowdrift',{seed:0,night:true}),'night',160*k)+fig(PA.prop('snowdrift',{state:'scattered',seed:1,night:true}),'scattered at night',160*k)+fig(T(PA.prop('leafpile',{seed:0}),'night'),'leaf pile, tinted',160*k,1)));
+// ---- the winter yard (game spots: drifts [318,520,116,72] [738,524,104,66], snowdog [452,512,84,84])
+const YW={wnsnowflakes:[300,182,210,56],wnwreath:[52,226,52,52],wnsled:[600,420,130,78],nykadomatsu:[880,330,80,100]};
+function yard(time,sd){const n=time==='night',env={time,weather:'cloudy',season:'winter'};
+  const items=[[PA.prop('wnsnowflakes',{night:n}),...YW.wnsnowflakes],[PA.prop('wnwreath',{night:n}),...YW.wnwreath],[PA.prop('nykadomatsu',{night:n}),...YW.nykadomatsu],[PA.prop('wnsled',{night:n}),...YW.wnsled],
+    [PA.prop('snowdrift',{seed:0,night:n}),318,520,116,72],[PA.prop('snowdrift',{seed:1,state:sd?'scattered':'full',night:n}),738,524,104,66],[PA.prop('snowdog',Object.assign({stage:3,ears:'flop',scarf:'#E8A23C',night:n})),452,512,84,84]];
+  inScene('yard','yard',env,items,SW,s=>dogOn('golden',{pose:'idle'},300*s,500*s,264*s))}
+yard('day',false);yard('night',true);
+// ---- snowdog
+[0,1,2,3].forEach(st=>add('sdog',fig(PA.prop('snowdog',{stage:st}),'stage '+st,140*k)+fig(PA.prop('snowdog',{stage:st}),'84 px',84),'frost'));
+add('sdog',fig(PA.prop('snowdog',{stage:3,ears:'prick',scarf:'#C99A72'}),'prick, tan scarf',140*k)+fig(PA.prop('snowdog',{stage:3,ears:'flop',scarf:'#5B3D32'}),'flop, dark scarf',140*k)+fig(PA.prop('snowdog',{stage:3,ears:'prick',scarf:'#FFF8EE',nose:false}),'cream scarf, nose eaten',140*k)+fig(PA.prop('snowman'),'snowman',120*k,1)+fig(PA.dog('corgi',{pose:'idle',anim:false}),'crayon corgi',150*k,1),'frost');
+add('sdog',fig(PA.prop('snowdog',{stage:3,ears:'flop',scarf:'#E8A23C'}),'84 px',84)+fig(PA.prop('snowdog',{stage:3,ears:'prick',scarf:'#8E6446',nose:false}),'84 px',84)+fig(PA.dog('golden',{pose:'idle',anim:false}),'golden, 84 px',84,1)+nightBox(fig(PA.prop('snowdog',{stage:3,night:true}),'night',84)+fig(PA.prop('snowdog',{stage:0,night:true}),'heap, night',84)),'frost');
+// ---- stall
+add('stall',fig(PA.prop('stall',{kind:'winter'}),'stall winter',240*k)+fig(PA.prop('stall',{kind:'newyear'}),'stall newyear',240*k)+fig(PA.prop('stall',{kind:'leaf'}),'stall leaf',240*k,1)+fig(PA.prop('stall',{kind:'halloween'}),'stall halloween',240*k,1));
+add('stall',nightBox(fig(PA.prop('stall',{kind:'winter',night:true}),'winter at night, bulbs lit',240*k)+fig(PA.prop('stall',{kind:'newyear',night:true}),'newyear at night',240*k)+fig(T(PA.prop('stall',{kind:'halloween'}),'night'),'halloween, tinted',240*k,1)));
+// ---- the Square (stall [858,384,136,126], banner [560,150,400,90], fortune box in the pop-up spot [212,344,114,105])
+function square(time,ny){const n=time==='night',env={time,weather:'cloudy',season:'winter'};
+  const it=[[PA.prop('stall',{kind:ny?'newyear':'winter',night:n}),858,384,136,126]];
+  if(ny)it.push([PA.prop('fortunebox',{knots:5,night:n}),227,344,84,105]);else it.push([PA.prop('sweaterbanner',{night:n}),560,150,400,90]);
+  inScene('square','square',env,it,SW,s=>dogOn('husky',{pose:'idle'},520*s,520*s,264*s))}
+square('day',false);square('night',true);
+// ---- banner
+add('banner',fig(PA.prop('sweaterbanner'),'sweaterbanner',400*k)+fig(PA.prop('paradebanner'),'paradebanner',400*k,1));
+add('banner',nightBox(fig(PA.prop('sweaterbanner',{night:true}),'at night',400*k)+fig(T(PA.prop('paradebanner'),'night'),'parade banner, tinted',400*k,1)));
+// ---- fortune box
+add('fbox',[0,5,12].map(n=>fig(PA.prop('fortunebox',{knots:n}),n+' knots',160*k)).join('')+fig(PA.prop('popup'),'popup',240*k,1));
+add('fbox',nightBox(fig(PA.prop('fortunebox',{knots:12,night:true}),'12 knots at night',160*k)+fig(PA.prop('popup',{lit:true}),'popup lit',240*k,1)));
+// ---- decorations
+const DEC=[['wnsnowflakes',300,'Paper Snowflake Garland'],['wnwreath',120,'Felt Holly Wreath'],['wnsled',200,'Red Wooden Sled'],['nykadomatsu',160,'Kadomatsu Pair']];
+const ds=W?.6:.8;
+DEC.forEach(([p,w,n])=>add('decor',fig(PA.prop(p),n,w*ds)+fig(PA.prop('stringlights'),'String Lights',300*ds,1)+fig(PA.prop('hwgarland'),'Ghost Garland',300*ds,1)));
+add('decor',nightBox(DEC.map(([p,w,n])=>fig(PA.prop(p,{night:true}),n+' at night',w*ds*.8)).join('')+fig(PA.prop('stringlights',{lit:true}),'String Lights lit',300*ds*.8,1)));
+// ---- card
+add('card',fig(PA.prop('nengajo',{animal:'sheep'}),'nengajo, sheep (2027)',200*k*1.2)+fig(PA.prop('nengajo',{}),'nengajo, pine',200*k*1.2)+fig(PA.prop('postcard'),'postcard',300*k*.8,1));
+// ---- cards and icons
+const IW=W?72:96;
+const FOODS=['Warm Carob Cup','Snowflake Oat Cookies','Snow Day Stew','Pup Kinton'],CLO=['Very Ugly Sweater','Reindeer Antlers','Snowflake Snood','Ugly Sweater Rosette','Year of the Sheep Hood'],DCC=['Paper Snowflake Garland','Felt Holly Wreath','Red Wooden Sled','Kadomatsu Pair'];
+add('cards',FOODS.map(n=>fig(PA.item(n),n,IW)).join('')+fig(PA.item('Ghost Biscuits'),'Ghost Biscuits',IW,1)+fig(PA.item('Warm Bone Broth'),'Warm Bone Broth',IW,1));
+add('cards',CLO.map(n=>fig(PA.item(n),n,IW)).join('')+fig(PA.item('Knit Winter Sweater'),'Knit Winter Sweater',IW,1)+fig(PA.item('Parade Rosette'),'Parade Rosette',IW,1));
+add('cards',DCC.map(n=>fig(PA.item(n),n,IW)).join('')+fig(PA.item('String Lights'),'String Lights',IW,1)+fig(PA.item('Ghost Garland'),'Ghost Garland',IW,1));
+[...FOODS,...CLO,...DCC].forEach(n=>add('small',fig(PA.item(n),'',40)));
+add('small',['Ghost Biscuits','Warm Bone Broth','Knit Winter Sweater','Parade Rosette','String Lights','Ghost Garland'].map(n=>fig(PA.item(n),'',40,1)).join(''));
+const IC=['snowdrift','snowdog','sweater','fortune','wstall','fuji'],OI=['festival','popup'];
+add('icons',IC.map(n=>fig(PA.icon(n),n,IW)).join('')+OI.map(n=>fig(PA.icon(n),n,IW,1)).join(''));
+add('icons',IC.map(n=>fig(PA.icon(n),n,40)).join('')+OI.map(n=>fig(PA.icon(n),n,40,1)).join(''));
+add('bowls',FOODS.map(n=>fig(PA.prop('bowl',{food:n}),n,90)).join('')+fig(PA.prop('bowl',{food:'Ghost Biscuits'}),'Ghost Biscuits',90,1)+fig(PA.prop('bowl',{food:'Warm Bone Broth'}),'Warm Bone Broth',90,1));
+</script></body></html>
