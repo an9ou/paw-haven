@@ -244,7 +244,7 @@ function srPet(id) {
   srHalt(rd); rd.busy = true; rd.mate = null;
   if (SR.mode === 'adopt') { // a pet, then this dog comes to the front to say hello (V27.md section 7: a tap also selects it)
     srPose(rd, 'pet'); srHearts(rd.x, rd.y - 150 * srScale(rd.y), 2); srBark(rd, 'play'); SFX.boop(760); SR.pets = (SR.pets || 0) + 1;
-    srAfter(700, () => srSelectKey(rd.key, rd), rd); return true;
+    srAfter(700, () => { if (!rd.away) srSelectKey(rd.key, rd); }); return true; // (not on rd.t: a play partner's timers must not cancel the hello)
   }
   const now = performance.now(); rd.taps = (rd.taps || []).filter((t) => now - t < 4000); rd.taps.push(now);
   const hy = rd.y - 150 * srScale(rd.y);
