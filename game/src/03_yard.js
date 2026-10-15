@@ -343,14 +343,14 @@ function townBubbleBelowDog() {
   const pr = isPhone() && $('#placeBtns'), prr = pr && pr.offsetParent && pr.getBoundingClientRect(); // phones: stay above the place-button row (UI/UX T5)
   if (prr && prr.height && b.t + b.h > prr.top - sg.top - 8) { // no room under the dog: beside it if a side has room, else under it slid clear of the buttons, else back over its head
     const py = prr.top - sg.top - 8;
-    if (py - b.h >= hb) b = at(b.l, py - b.h);
+    if (py - b.h >= hb + 8) b = at(b.l, py - b.h); // (8 px: the dog bobs a little while the line shows)
     else { const r = at(hrr + 8, py); if (r.l >= hrr + 8) b = at(r.l, py - r.h); else { b = at(6, py); if (6 + b.w <= hl - 8) b = at(hl - 8 - b.w, py - b.h); else b = null; } }
     if (b && b.t < view.offsetTop + 4) b = null;
     if (!b) b = at(clamp(hl + hr.width / 2 - bw0 / 2, 6, W - bw0 - 6), hb + 18); } // else under the dog over the row, slid clear of the buttons (below)
   // keep clear of the place buttons (Go home sits bottom-right): slide left of one it would touch
-  document.querySelectorAll('#placeBtns .btn').forEach((x) => { const q = x.getBoundingClientRect(), ql = q.left - sg.left, qt = q.top - sg.top; if (b.l < q.right - sg.left + 12 && b.l + b.w > ql - 12 && b.t < qt + q.height + 6 && b.t + b.h > qt - 6) b = at(Math.max(6, ql - 24 - b.w), b.t); });
+  document.querySelectorAll('#placeBtns .btn').forEach((x) => { const q = x.getBoundingClientRect(), ql = q.left - sg.left, qt = q.top - sg.top; if (b.l < q.right - sg.left + 12 && b.l + b.w > ql - 12 && b.t < qt + q.height + 6 && b.t + b.h > qt - 6) { if (b.w > ql - 18) bubble.style.maxWidth = Math.max(120, ql - 18) + 'px'; const w = bubble.offsetWidth; b = at(Math.max(6, ql - Math.min(24, ql - 6 - w) - w), b.t); } }); // (narrower when the full width would still touch it)
   const sgH = stage.clientHeight, onBtn = [...document.querySelectorAll('#placeBtns .btn')].some((x) => { const q = x.getBoundingClientRect(), ql = q.left - sg.left, qt = q.top - sg.top; return b.l < q.right - sg.left && b.l + b.w > ql && b.t < qt + q.height && b.t + b.h > qt; });
-  if (onBtn || b.t + b.h > sgH - 4) { bubble.classList.remove('below'); bubble.style.left = up[0]; bubble.style.top = up[1]; return; } // nowhere clear: back over its head
+  if (onBtn || b.t + b.h > sgH - 4) { bubble.classList.remove('below'); bubble.style.maxWidth = ''; bubble.style.left = up[0]; bubble.style.top = up[1]; return; } // nowhere clear: back over its head
   clearTimeout(bubbleBelowT); bubbleBelowT = setTimeout(() => bubble.classList.remove('below'), 3700);
 }
 function placeAmbient() {

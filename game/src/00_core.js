@@ -769,7 +769,7 @@ function toWorld(svg, cx, cy) { const pt = svg.createSVGPoint(); pt.x = cx; pt.y
 function say(text, wx, wy, ms = 3600) {
   const svg = $('svg.world', view); if (!svg) return;
   if (isPhone() && typeof phPeekOn !== 'undefined' && phPeekOn) return; // v2.3: the dog is off-screen while the player looks right, so its bubble would point at nothing
-  bubble.classList.remove('below'); clearTimeout(bubbleBelowT); // a new line starts from the normal tail (the pier flips it, 03_yard.js)
+  bubble.classList.remove('below'); clearTimeout(bubbleBelowT); bubble.style.maxWidth = ''; // (03_yard.js may narrow it beside the place buttons) // a new line starts from the normal tail (the pier flips it, 03_yard.js)
   bubble.textContent = text; bubble.hidden = false; bubble.classList.remove('pop'); void bubble.offsetWidth; bubble.classList.add('pop');
   const p = worldToStage(svg, wx, wy); const sw = stage.clientWidth, bw = bubble.offsetWidth, bh = bubble.offsetHeight;
   const vtop = view.offsetTop;
