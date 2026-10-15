@@ -219,6 +219,7 @@ function wnContestOpen0() {
     if (busy || S.sleeping) { nope(S.sleeping ? `${NAME()} is asleep. The contest can wait one nap.` : `Hold on, ${NAME()} is busy.`); return; }
     SFX.click(); closeModal(); wnContestWalk(dogs);
   };
+  if (isPhone() && !done) setTimeout(() => { const y = $('.wn-you', p); if (y && !modal.hidden) try { y.scrollIntoView({ block: 'nearest' }); } catch (e) { /* no scroll */ } }, 60); // v2.8 phones: your own entry shows with the Enter button (after openModal's focus)
   return p;
 }
 function wnContestWalk(dogs) {

@@ -296,6 +296,7 @@ function openMailbox(selId, tab) {
       markDirty(); if (!modal.hidden && $('.panel.mailbox', modal)) openMailbox(id);
     };
   });
+  if (isPhone() && selId && !album) setTimeout(() => { const c = $('.mb-read .pc', p) || $('.mb-read', p); if (c && !modal.hidden) try { c.scrollIntoView({ block: 'nearest' }); } catch (e) { /* no scroll */ } }, 40); // v2.8 phones: the opened letter (its card) sits under the list, below the fold
   mailboxRefresh();
 }
 

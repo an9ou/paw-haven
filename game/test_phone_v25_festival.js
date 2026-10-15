@@ -93,6 +93,8 @@ async function suite(t, dev) {
   ok(!ov(q.art, q.dog), 'the stall does not cover #dogHit');
   ok(!ov(q.art, q.hud) && !ov(q.art, q.bar) && !ov(q.art, q.chip) && !q.btns.some((b) => ov(q.art, b)), 'the stall is clear of the HUD, the bar, the location chip and the place buttons');
   ok(q.banner && q.banner[0] >= q.view[0] - 1 && q.banner[2] <= q.view[2] + 1 && !ov(q.banner, q.dog) && !ov(q.banner, q.chip) && !ov(q.banner, q.stall), 'the banner is inside the crop, clear of #dogHit, the chip and the stall');
+  const fc = await ev(() => { const svg = document.querySelector('#view svg.world'), M = svg.getScreenCTM().inverse(), fj = svg.querySelector('[data-fuji]'), y = (e) => new DOMPoint(0, e.getBoundingClientRect().top).matrixTransform(M).y; return fj ? { fuji: Math.round(y(fj)), banner: Math.round(y(document.querySelector('#fsBannerG > svg'))) } : null; }); // v2.8 review 2: the Winter banner's rule (y 196)
+  ok(!fc || fc.banner >= fc.fuji + 34, `Mt. Fuji's cap stays in view above the parade banner ${JSON.stringify(fc)}`);
   ok(q.sb[2] - q.sb[0] >= 43.5 && q.sb[3] - q.sb[1] >= 43.5, `the Festival button is 44 px (${Math.round(q.sb[2] - q.sb[0])}x${Math.round(q.sb[3] - q.sb[1])})`);
   ok(q.rows === 1, `the Square place buttons stay one row (${q.rows})`);
   ok(q.sw === q.iw, 'no sideways page scroll');

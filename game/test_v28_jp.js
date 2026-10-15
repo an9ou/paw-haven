@@ -227,6 +227,22 @@ require('./test_lib').run('v28_jp', async (t) => {
   ok(ph.summit[0] >= ph.vb[0] && ph.summit[0] <= ph.vb[0] + ph.vb[2] && ph.summit[1] >= ph.vb[1], `Fuji's summit (${Math.round(ph.summit[0])}, ${Math.round(ph.summit[1])}) is in the crop`);
   ok(ph.dogTop, 'nothing covers #dogHit');
   ok(ph.sw === ph.iw, 'no sideways scroll');
+  // review 2: the hill line sits over the dog's head (no signs there), never under it on the place-button row
+  const ln = await ev(() => { const b = document.getElementById('bubble'); for (let i = 0; i < 20 && (b.hidden || !b.textContent); i++) window.__paw.voice.ambient(); if (b.hidden) return null; b.getAnimations().forEach((a) => a.finish());
+    const r = b.getBoundingClientRect(), d = document.getElementById('dogHit').getBoundingClientRect(), row = [...document.querySelectorAll('#placeBtns .btn')].map((x) => x.getBoundingClientRect());
+    return { below: b.classList.contains('below'), overRow: row.some((q) => q.left < r.right && q.right > r.left && q.top < r.bottom && q.bottom > r.top), aboveDog: r.top < d.top, r: [r.left, r.top, r.right, r.bottom].map(Math.round), sw: innerWidth }; });
+  ok(!!ln && !ln.below && !ln.overRow && ln.aboveDog && ln.r[0] >= 0 && ln.r[2] <= ln.sw, `the hill line sits over the dog's head, clear of the place buttons ${JSON.stringify(ln)}`);
+  await ev(() => { document.getElementById('bubble').hidden = true; });
+  // review 2: a nap on the hill (360 and 393 px) keeps the hill crop: the dog, the bench and Fuji's summit
+  for (const [w, h] of [[360, 740], [393, 659]]) {
+    await p().setViewportSize({ width: w, height: h }); await t.until((w) => innerWidth === w, w, 5000);
+    await ev(() => { const S = window.__paw.S; S.sleeping = true; window.__paw.go('yard'); }); await t.until(() => window.__paw.mode === 'yard' && !!document.getElementById('placeBtns'), null, 8000); await t.calm(); await t.sleep(600);
+    const nap = await ev(() => { const svg = document.querySelector('#view svg.world'), vb = svg.viewBox.baseVal, v = document.getElementById('view').getBoundingClientRect(), M = svg.getScreenCTM().inverse();
+      const fj = document.querySelector('#sceneG [data-fuji]').getBoundingClientRect(), fw = new DOMPoint((fj.left + fj.right) / 2, fj.top).matrixTransform(M), a = new DOMPoint(v.left, 0).matrixTransform(M), b = new DOMPoint(v.right, 0).matrixTransform(M);
+      const d = document.getElementById('dogArt').getBoundingClientRect(); return { crop: [a.x, b.x].map(Math.round), summit: Math.round(fw.x), dog: [d.left, d.right].map(Math.round), vw: [v.left, v.right].map(Math.round) }; });
+    ok(nap.crop[0] <= 488 && nap.crop[1] >= 572 && nap.summit > nap.crop[0] && nap.summit < nap.crop[1] && nap.dog[0] >= nap.vw[0] - 1 && nap.dog[1] <= nap.vw[1] + 1, `${w} px: napping on the hill keeps the bench, Fuji's summit and the dog in the crop ${JSON.stringify(nap)}`);
+  }
+  await ev(() => { const S = window.__paw.S; S.sleeping = false; }); await p().setViewportSize({ width: 393, height: 659 }); await at('fujihill'); await motion(false);
   await shot('phone_fujihill');
   await quiet(); await motion(true); await ev(() => document.querySelector('#placeBtns [data-jp]').click());
   await t.until(() => !!document.querySelector('#view > svg.world.jp-ease'), null, 4000); await t.sleep(4200); await shot('phone_fujihill_gaze');

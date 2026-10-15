@@ -71,7 +71,7 @@ function nySquareDraw() {
   nyFields(); nyKnotsSync();
   const at = typeof fsSlot === 'function' ? fsSlot() : ($('#bowlG', svg) || $('#pack', svg)); if (!at) return;
   const [x, y, w, h] = nyFortuneBox(), night = isNight(), k = S.ny.fortune.knots;
-  at.insertAdjacentHTML('beforebegin', `<g id="nyFortuneG" class="hot" data-knots="${k}" data-night="${night ? 1 : 0}" tabindex="0" role="button" aria-label="Fortune box: shake it for a New Year fortune">${place(nyBoxArt(k, night), x, y, w, h)}${fsHit(x, y, w, h)}${isPhone() && typeof hwChip === 'function' ? hwChip('Fortune box', x + w / 2, y) : ''}</g>`);
+  at.insertAdjacentHTML('beforebegin', `<g id="nyFortuneG" class="hot" data-knots="${k}" data-night="${night ? 1 : 0}" tabindex="0" role="button" aria-label="Fortune box: shake it for a New Year fortune">${place(nyBoxArt(k, night), x, y, w, h)}${fsHit(x, y, w, h)}${isPhone() && typeof hwChip === 'function' ? fsChipAbove('Fortune box', [x, y, w, h], fsAnyOn() ? [fsStallBox()] : []) : ''}</g>`);
   if (typeof fsHitFit === 'function') fsHitFit();
   const g = $('#nyFortuneG', svg), go = () => { SFX.click(); nyFortuneOpen(); };
   g.onclick = (e) => { e.stopPropagation(); go(); }; g.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } };

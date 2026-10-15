@@ -15,7 +15,7 @@
 const fs = require('fs'), path = require('path'), os = require('os'), cp = require('child_process');
 const D = __dirname, LOGS = path.join(D, 'test_logs');
 
-// name -> { file, group, est (seconds, only used for ordering the first time; real timings replace it) }
+// name -> { file, group, est (seconds, only used for ordering the first time; real timings replace it), timeout (optional, seconds: raises --timeout for that suite) }
 const SUITES = {
   smoke: { file: 'test_smoke.js', group: 'smoke', est: 25 },
   all_a: { file: 'test_all_a.js', group: 'all', est: 45 },
@@ -85,7 +85,7 @@ const SUITES = {
   phone_walk: { file: 'test_phone_walk.js', group: 'phone', est: 110 },
   phone_skill: { file: 'test_phone_skill.js', group: 'phone', est: 150 },
   // v2.3 "Cozy Phones"
-  account: { file: 'test_account.js', group: 'phone', est: 60 },
+  account: { file: 'test_account.js', group: 'phone', est: 240, timeout: 500 }, // v2.8: about 230 s alone, more under load (its own watchdog is 480 s)
   phone_occl_home: { file: 'test_phone_occl_home.js', group: 'phone', est: 60 },
   phone_occl_play: { file: 'test_phone_occl_play.js', group: 'phone', est: 60 },
   phone_v24_shop: { file: 'test_phone_v24_shop.js', group: 'phone', est: 40 }, // v2.4
@@ -154,13 +154,13 @@ function runOne(name, attempt) {
   return new Promise((resolve) => {
     const log = path.join(LOGS, name + (attempt ? `.retry${attempt}` : '') + '.log'); const out = fs.openSync(log, 'w'); const s = Date.now();
     const child = cp.spawn('node', [path.resolve(D, SUITES[name].file)], { cwd: D, env, stdio: ['ignore', out, out], detached: true });
-    let killed = false; const kt = setTimeout(() => { killed = true; try { process.kill(-child.pid, 'SIGKILL'); } catch (e) { /* gone */ } }, opt.timeout * 1000);
+    let killed = false; const kt = setTimeout(() => { killed = true; try { process.kill(-child.pid, 'SIGKILL'); } catch (e) { /* gone */ } }, Math.max(opt.timeout, SUITES[name].timeout || 0) * 1000); // a suite with its own longer watchdog (account) gets the runner's time to match
     child.on('exit', (code) => {
       clearTimeout(kt); try { fs.closeSync(out); } catch (e) { /* closed */ }
       try { process.kill(-child.pid, 'SIGKILL'); } catch (e) { /* no stragglers */ } // chromium leftovers
       const txt = fs.readFileSync(log, 'utf8'); const pass = code === 0 && !killed && /ALL OK/.test(txt);
       const bad = txt.split('\n').filter((l) => /^\s*FAIL |^CRASH|^FAILED|Error:/.test(l)).slice(0, 4).map((l) => l.trim().slice(0, 220));
-      if (killed) bad.unshift(`TIMEOUT after ${opt.timeout}s`);
+      if (killed) bad.unshift(`TIMEOUT after ${Math.max(opt.timeout, SUITES[name].timeout || 0)}s`);
       if (!pass && !bad.length) bad.push(`exit code ${code}, see ${path.relative(process.cwd(), log)}`);
       const checks = (txt.match(/^\s+ok\s/gm) || []).length, nfail = (txt.match(/^\s+FAIL\s/gm) || []).length;
       resolve({ name, attempt, pass, secs: (Date.now() - s) / 1000, bad, log, checks, nfail });

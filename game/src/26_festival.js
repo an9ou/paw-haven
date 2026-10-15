@@ -10,7 +10,7 @@
 const FS_PILES = [[318, 520, 116, 72], [738, 524, 104, 66]];
 const FS_PILE_GAP = 20; // game minutes between two jumps in the same pile
 const FS_STALL = { desk: [858, 384, 136, 126], phone: [196, 380, 110, 109], phoneV: [548, 400, 86, 80] }; // Square: right foreground inside the frame (desktop); on phones beside the fountain, or right of the dog when a visitor shifts the crop
-const FS_BANNER = { desk: [560, 150, 400, 90], phone: [196, 142, 300, 74] }; // strung between the clock tower and the right shopfront, above the shop signs
+const FS_BANNER = { desk: [560, 150, 400, 90], phone: [196, 196, 300, 74] }; // strung between the clock tower and the right shopfront, above the shop signs (phones: y 196 like the Winter banner, wnBannerBox, under Fuji's cap)
 const FS_PUMPKIN = [596, 486, 40, 40]; // the porch step, left of the dog-house door
 // v2.6.1 phones: the porch step sits on the edge of the yard's home view (the camera follows the dog), so the pumpkin showed cut in half.
 // It is tucked in at the dog house's right front corner instead: outside every portrait home view, whole in the look-right crop (525-871)
@@ -114,6 +114,24 @@ function fsBannerBox() {
   const [c0, c1] = fsCrop(), w = Math.min(FS_BANNER.phone[2], c1 - c0 - 50); // clear of the look-right button at the right edge
   return [Math.max(FS_BANNER.phone[0], c0 + 8), FS_BANNER.phone[1], w, f1(FS_BANNER.phone[3] * w / FS_BANNER.phone[2])];
 }
+// v2.8 phones: a Square prop's name chip (hwChip) sits above its art, never on it, clear of the dog, the pack dogs' tap rects, the visitor and the
+// Town Notice board, inside the crop. It slides sideways or floats a little higher (or goes under the art) to find room; when nothing is clear
+// (360 px with a visitor and a pack), it takes the spot that covers least, tap rects counting most. `more`: other boxes to keep clear of.
+const FS_NOTICE = [[647, 340, 186, 137], [688, 314, 104, 30]]; // the board's panel and the top of its roof with the "Town Notice" sign (world C)
+function fsChipAbove(t, box, more) {
+  const svg = $('#view > svg.world'), s = phHitScale(), fz = 15.5 / s, w = t.length * fz * 0.47 + fz * 1.1, h = fz * 1.45, [c0, c1] = fsCrop(), g = 4 / s;
+  const inv = svg && svg.getScreenCTM() && svg.getScreenCTM().inverse(), wb = (r) => { const a = new DOMPoint(r.left, r.top).matrixTransform(inv), b = new DOMPoint(r.right, r.bottom).matrixTransform(inv); return [a.x, a.y, b.x - a.x, b.y - a.y]; };
+  const pack = inv ? [...document.querySelectorAll('#pack .packdog .pd-wander > rect')].map((r) => wb(r.getBoundingClientRect())).filter((b) => b[2] > 0) : [];
+  const area = (a, b) => (b ? Math.max(0, Math.min(a[0] + a[2], b[0] + b[2]) - Math.max(a[0], b[0])) * Math.max(0, Math.min(a[1] + a[3], b[1] + b[3]) - Math.max(a[1], b[1])) : 0);
+  const vis = fsVisitorBox(), avoid = [[DX + 30, DY + 40, DW - 60, DH - 40, 3], vis && vis.concat(3), box].concat(pack.map((p) => p.concat(4)), FS_NOTICE, more || []).filter(Boolean), cx0 = box[0] + box[2] / 2, y0 = box[1] - h - g;
+  let best = null;
+  for (const ty of [y0, y0 - 8, y0 - 16, y0 - 24, y0 - 32, y0 - 40, y0 - 48, y0 - 56, y0 - 64, box[1] + box[3] + g]) for (let d = 0; d <= box[2] / 2 + w / 2; d += 8) for (const cx of d ? [cx0 - d, cx0 + d] : [cx0]) {
+    const r = [cx - w / 2, ty, w, h]; if (r[0] < c0 + g || r[0] + w > c1 - g || ty + h > 596 || ty < 120) continue;
+    const sc = avoid.reduce((n, a) => n + area(r, a) * (a[4] || (a === box ? 6 : 2)), 0) + Math.abs(ty - y0) * 6 + d * 2; if (!best || sc < best[0]) best = [sc, cx, ty];
+  }
+  return best ? hwChip(t, best[1], best[2] + h * 0.35) : hwChip(t, cx0, box[1]);
+}
+
 // the tap rect: on phones at least 48 screen px each way. It is sized from the real scale of the scene (a tray, a visitor zoom or the place row
 // can shrink the scene after the draw), so fsHitFit runs after every draw and whenever the scene resizes
 function fsHit(x, y, w, h) { return `<rect class="fs-hit" data-box="${f1(x)},${f1(y)},${f1(w)},${f1(h)}" x="${f1(x)}" y="${f1(y)}" width="${f1(w)}" height="${f1(h)}" fill="transparent" pointer-events="all"/>`; }
@@ -159,7 +177,7 @@ function fsSquareDraw() {
   if (!fsAnyOn() || fsActive()) { fsPackSync(); fsNyDraw(); fsHwDraw(); return; } // v2.8: the contest walk hides the stall too
   const pack = $('#pack', svg); if (!pack) return;
   const [sx, sy, sw, sh] = fsStallBox(), kind = fsKind(), wint = fsWinter();
-  let html = `<g id="fsStallG" class="hot" data-kind="${kind}" tabindex="0" role="button" aria-label="Baker Bea's ${fsStallName()}">${place(fsStallArt(kind), sx, sy, sw, sh)}${fsHit(sx + 8, sy + 10, sw - 16, sh - 10)}${wint && isPhone() && typeof hwChip === 'function' ? hwChip('Winter Stall', sx + sw / 2, sy) : ''}</g>`;
+  let html = `<g id="fsStallG" class="hot" data-kind="${kind}" tabindex="0" role="button" aria-label="Baker Bea's ${fsStallName()}">${place(fsStallArt(kind), sx, sy, sw, sh)}${fsHit(sx + 8, sy + 10, sw - 16, sh - 10)}${wint && isPhone() && typeof hwChip === 'function' ? fsChipAbove('Winter Stall', [sx, sy, sw, sh]) : ''}</g>`;
   if (festOn('halloween')) { const [bx, by, bw, bh] = fsBannerBox(); html = `<g id="fsBannerG" pointer-events="none">${place(propTint(fsArt('paradebanner')), bx, by, bw, bh)}</g>` + html; }
   if (wint) { // v2.8 draw order (V28.md section 7): #fsStallG, #nyFortuneG (NEW YEAR, right after the stall), the sweater banner, #bowlG, #pack
     if (festOn('lights') && typeof wnBannerSVG === 'function') html += wnBannerSVG();

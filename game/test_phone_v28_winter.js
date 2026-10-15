@@ -159,6 +159,8 @@ async function winterPart(t, dev) {
 
   await tapSel(t, '[data-fs=fest]', () => !!document.querySelector('#modal:not([hidden]) .wn-choose'));
   await tapSel(t, '#modal [data-fsgo=contest]', () => !!document.querySelector('#modal:not([hidden]) .panel.wn-contest')); await settled(t, '#modal .panel');
+  const yv = await ev(() => { const y = document.querySelector('.wn-you').getBoundingClientRect(), j = document.getElementById('wnEnter').getBoundingClientRect(), p = document.querySelector('#modal .panel').getBoundingClientRect(); return { you: [y.top, y.bottom].map(Math.round), enter: Math.round(j.top), top: Math.round(p.top) }; }); // v2.8 review 2
+  ok(yv.you[1] <= yv.enter + 1 && yv.you[0] >= yv.top, `${dev}: your own entry shows with Enter the contest ${JSON.stringify(yv)}`);
   await sheet(t, `${dev} contest`); await audit(t, `${dev} contest`);
   const pr = await ev(() => { const row = document.querySelector('.wn-line'), cue = document.querySelector('.wn-cue'), j = document.getElementById('wnEnter').getBoundingClientRect(); return { rsw: row.scrollWidth, rcw: row.clientWidth, ox: getComputedStyle(row).overflowX, n: row.children.length, cue: !!cue && getComputedStyle(cue).display !== 'none' && cue.getBoundingClientRect().height > 0, j: [j.width, j.height, j.bottom <= innerHeight] }; });
   ok(pr.n === 5 && pr.rsw > pr.rcw && /auto|scroll/.test(pr.ox), `${dev}: the line-up scrolls sideways inside its own row (${pr.rsw} > ${pr.rcw})`);
@@ -231,6 +233,8 @@ async function nyBox(t, tag) {
   ok(q.hit[2] - q.hit[0] >= 47.5 && q.hit[3] - q.hit[1] >= 47.5, `${tag}: the tap rect is at least 48 px (${Math.round(q.hit[2] - q.hit[0])}x${Math.round(q.hit[3] - q.hit[1])})`);
   ok(q.top, `${tag}: nothing sits on top of the box`);
   ok(!!q.chip && q.chip[3] - q.chip[1] >= 18, `${tag}: the box wears a name chip`);
+  const pk = await ev(`[...document.querySelectorAll('#pack .packdog .pd-wander > rect')].map((r) => { const b = r.getBoundingClientRect(); return [b.left, b.top, b.right, b.bottom]; })`); // v2.8 review 2
+  ok(q.chip[3] <= q.art[1] + 4 && !pk.some((r) => ov(q.chip, r)), `${tag}: the chip sits above the box art, clear of the pack dogs' tap rects ${JSON.stringify({ chip: q.chip.map(Math.round), art: q.art.map(Math.round) })}`);
   const lab = q.labels.filter(([, r]) => ov(r, q.art)).map(([n]) => n);
   ok(!lab.length, `${tag}: the box is over no place label${lab.length ? ' -> ' + lab.join(', ') : ''}`);
   ok(q.rows === 1 && !q.desk, `${tag}: the place buttons stay one row, no desktop Fortune button`);
@@ -270,6 +274,8 @@ async function newYearPart(t, dev) {
   await t.until(() => !!document.querySelector('#modal .panel.mailbox .ny-card'), null, 5000); await settled(t, '#modal .panel');
   const nc = await ev(() => { const c = document.querySelector('#modal .ny-card'), r = c.getBoundingClientRect(), p = document.querySelector('#modal .panel').getBoundingClientRect(), tx = c.querySelector('.ny-cardtx span'); return { fits: r.left >= p.left - 1 && r.right <= p.right + 1, w: r.width, tx: parseFloat(getComputedStyle(tx).fontSize), ratio: r.width / r.height }; });
   ok(nc.fits && nc.w > 200 && nc.tx >= 15, `${dev}: the nengajo fits the sheet (${Math.round(nc.w)} px wide, card text ${nc.tx} px)`);
+  const nv = await ev(() => { const c = document.querySelector('#modal .ny-card').getBoundingClientRect(), p = document.querySelector('#modal .panel').getBoundingClientRect(), b = document.querySelector('#modal .mb-item.on .mb-t b'); return { card: [c.top, c.bottom].map(Math.round), sheet: [p.top, Math.min(p.bottom, innerHeight)].map(Math.round), clip: b.scrollWidth > b.clientWidth + 1 }; }); // v2.8 review 2
+  ok(nv.card[1] <= nv.sheet[1] + 1 && nv.card[0] >= nv.sheet[0] && !nv.clip, `${dev}: the opened nengajo is scrolled into view and its row title is not clipped ${JSON.stringify(nv)}`);
   await sheet(t, `${dev} mailbox`); await audit(t, `${dev} mailbox`);
   const cr = await ev(() => { const b = document.querySelector('#modal .mb-get, #modal .mb-all'); if (!b) return null; b.scrollIntoView({ block: 'nearest' }); const r = b.getBoundingClientRect(); return [r.width, r.height]; });
   ok(!!cr && cr[0] >= 43.5 && cr[1] >= 43.5, `${dev}: the Collect row buttons are 44 px`);
