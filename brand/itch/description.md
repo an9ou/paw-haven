@@ -1,12 +1,14 @@
 # Doodle Doggo
 
-**A cozy dog game, sketchbook edition. Everything here is lovingly sketched. Except the dogs.**
+**🖍️ Adopt a wobbly crayon pup to love**
+
+A cozy dog game, sketchbook edition. Everything here is lovingly sketched. Except the dogs.
 
 Welcome to a little pencil-drawn town where every fence post, teacup and flower box has been sketched with care. Then someone handed the dogs a crayon. They drew themselves, on purpose, and they are very proud of the result.
 
-Adopt a wonky crayon pup, feed it, bathe it, rub its belly and take it for walks around town. Decorate the yard, fill the house with dog furniture, grow a garden and grow a pack. Nothing bad ever happens here. The worst thing that can happen is a dog walking into a log and pretending it meant to do that.
+Meet Noodle, a very long dachshund who is sure the drawing came out perfectly. Adopt a wobbly crayon pup of your own, feed it, bathe it, rub its belly and take it for walks around town. Decorate the yard, fill the house with dog furniture, grow a garden and grow a pack. Nothing bad ever happens here. The worst thing that can happen is a dog walking into a log and pretending it meant to do that.
 
-The ugly dogs are the joke. You will love them anyway.
+The wobbly dogs are the joke. You will love them anyway.
 
 ## Features
 
@@ -54,5 +56,5 @@ AI disclosure: made with Claude (Anthropic), directed by a human.
 - **Fullscreen button**: on. Leave "Automatically start on page load" off so players press Run game.
 - **Genre**: Simulation.
 - **Tags**: cozy, dogs, pets, casual, cute, hand-drawn, wholesome, virtual-pet, sketch, relaxing.
-- **Cover image**: `cover-630x500.png`. **Screenshots**: the five `screenshot-*.png` at 1280x720 plus `screenshot-phone-390x844.png`.
+- **Cover image**: `cover-630x500.png`. **Screenshots**: the five `screenshot-*.png` at 1280x720 plus `screenshot-phone-393x852.png` (iPhone 15 size).
 - **AI generation disclosure**: Yes (code and art made with Claude).
