@@ -1,6 +1,6 @@
 # Doodle Doggo on Instagram
 
-Profile picture: `doodle-doggo-instagram-1080.png` (1080x1080; Instagram crops it to a circle, everything important sits inside it). Source: `doodle-doggo-instagram.svg`.
+Profile picture: `doodle-doggo-instagram-dachshund-1080.png` (the dachshund, owner pick) or `doodle-doggo-instagram-1080.png` (Biscuit the corgi). 1080x1080; Instagram crops to a circle and everything important sits inside it. Sources: the matching `.svg` files.
 
 **Name field:** Doodle Doggo 🐾 Cozy Dog Game
 
