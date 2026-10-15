@@ -10,7 +10,9 @@ Meet Noodle, a very long dachshund who is sure the drawing came out perfectly. A
 
 The wobbly dogs are the joke. You will love them anyway.
 
-## Features
+**Free to play, right here in your browser, on your phone or your computer. No download, no ads.**
+
+## What you can do
 
 - **14 dog types**: shiba, corgi, golden retriever, dachshund, husky, mutt, chihuahua, pug, greyhound, beagle, poodle, border collie, samoyed and french bulldog. Each has its own voice, personality, size and joke.
 - **Home and pack**: 16 decorations and 5 pieces of furniture the dogs climb, nap and play on, all movable by drag or tap. Every dog gets its own bed, and Feed, Pet, Bath and Nap care for the whole pack at once.
@@ -33,12 +35,13 @@ The wobbly dogs are the joke. You will love them anyway.
 - **Decorate** from the yard or the house: drag a decoration (or tap it, then tap a spot) and press Done.
 - Plays on laptops and on phones held upright. On a phone, tap the fullscreen button for the best view.
 
-## Saves
+## Saving your game
 
-- Your game is saved in your browser, on this device.
-- **Export / Import save codes** are in Settings. Export a code now and then to keep a backup or move your game to another device.
-- **Make a free account** (an email and your own password, no emails are ever sent) to keep your save in the cloud and play the same game on any device.
-- Safari can clear guest saves in embedded games like this one. If you play in Safari, make an account or export a save code.
+- Your game saves by itself in your browser, on the device you play on.
+- **Export / Import save codes** are in Settings. Export a code now and then to keep a backup or to move your game to another device or browser.
+- **Free accounts are coming soon.** With an account (an email and your own password, no emails are ever sent) you will keep your save online and play the same game on any device.
+- Safari can clear saves of games played inside a web page like this one. If you play in Safari, export a save code now and then.
+- Your itch.io save is separate from the save on doodledoggo.app. Use a save code to move between them.
 
 ## Credits
 
@@ -50,11 +53,13 @@ AI disclosure: made with Claude (Anthropic), directed by a human.
 
 ## Suggested itch.io settings (not for the page)
 
+Step by step version: `docs/itch/LAUNCH_GUIDE.md`. The page text is kept in `docs/itch/PAGE_TEXT.md` (this file's top part is the same text).
+
 - **Kind of project**: HTML. Upload `doodle-doggo-itch.zip` and tick "This file will be played in the browser".
 - **Viewport dimensions**: 1280 x 720.
 - **Mobile friendly**: on, orientation Portrait.
-- **Fullscreen button**: on. Leave "Automatically start on page load" off so players press Run game.
+- **Automatically start on page load**: on. **Fullscreen button**: on.
 - **Genre**: Simulation.
-- **Tags**: cozy, dogs, pets, casual, cute, hand-drawn, wholesome, virtual-pet, sketch, relaxing.
+- **Tags**: cozy, cute, dogs, pets, casual, relaxing, hand-drawn, wholesome, virtual-pet, browser.
 - **Cover image**: `cover-630x500.png`. **Screenshots**: the five `screenshot-*.png` at 1280x720 plus `screenshot-phone-393x852.png` (iPhone 15 size).
 - **AI generation disclosure**: Yes (code and art made with Claude).
