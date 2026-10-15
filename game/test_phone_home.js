@@ -1,5 +1,5 @@
 // v2.2 phone, HOME lane: title, adoption, yard and house scenes, bath, feeding, petting, potty, beds, houses, pack dogs, decor, nursery basket, mailbox.
-// Runs on iPhone 13 (390x844) and Pixel 7 (412x915).  node game/run_tests.js game/test_phone_home.js --jobs 2
+// Runs on iPhone 15 (390x844) and Pixel 7 (412x915).  node game/run_tests.js game/test_phone_home.js --jobs 2
 const { run } = require('./test_lib');
 
 // In-page audit of everything visible: tap targets >= 44, text >= 15 (13 for captions), no horizontal scroll.
@@ -27,10 +27,10 @@ const AUDIT = () => {
 };
 
 (async () => {
-  for (const dev of ['iPhone 13', 'Pixel 7']) {
+  for (const dev of ['iPhone 15', 'Pixel 7']) {
     await run('phone_home_' + dev.replace(/\s/g, '').toLowerCase(), async (t) => {
       const { ok } = t;
-      const W = dev === 'iPhone 13' ? 390 : 412;
+      const W = dev === 'iPhone 15' ? 393 : 412;
       const audit = async (label) => {
         const a = await t.ev(AUDIT);
         ok(a.scroll <= 0, `${label}: no horizontal scroll (${a.scroll})`);

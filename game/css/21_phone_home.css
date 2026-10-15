@@ -5,7 +5,7 @@ html[data-layout="phone"] #placeBtns .btn{pointer-events:auto}
 /* the yard and house scenes are swiped sideways by hand (03_yard.js phCamPan), so the browser must not take the gesture */
 html[data-layout="phone"] #view > svg.world{touch-action:none}
 /* adoption: the Adopt button stays in reach while the card scrolls */
-html[data-layout="phone"] #stage.flowdock .adopt-card ~ .foot{position:sticky;bottom:0;z-index:2;margin:4px -4px 0;padding:8px 4px calc(6px + env(safe-area-inset-bottom,0px));background:var(--paper);border-top:2px dashed rgba(91,61,50,.22);box-shadow:0 14px 0 var(--paper)} /* UI/UX H10: solid paper down to the dock edge, so no head sits half under a pale band */
+html[data-layout="phone"] #stage.flowdock .adopt-card ~ .foot{margin:10px -4px 0;padding:10px 4px calc(6px + env(safe-area-inset-bottom,0px));border-top:2px dashed rgba(91,61,50,.22)} /* owner, 15 Oct: the Adopt button sits at the bottom of the menu, under the dog heads (scroll down to it), not pinned over them */
 html[data-layout="phone"] #stage.flowdock .heads{gap:8px}
 /* v2.5 (BREEDS): 14 heads make a third row; the tray must not shrink under it, so the dock scrolls and every head stays tappable above the sticky Adopt bar */
 html[data-layout="phone"] #stage.flowdock #dock > .tray:has(.adopt-card){flex-shrink:0}

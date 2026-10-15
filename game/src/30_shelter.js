@@ -151,21 +151,38 @@ function srSpotOk(x, y, me, V) {
   const s = srScale(y), box = [x - 110 * s, y - 180 * s, x + 110 * s, y];
   if (V) { if (box[0] < V.x0 + 4 || box[2] > V.x1 - 4 || y > V.y1 - 4) return false;
     for (const a of V.avoid) { const ix = Math.min(box[2], a[2]) - Math.max(box[0], a[0]), iy = Math.min(box[3], a[3]) - Math.max(box[1], a[1]); if (ix > 0 && iy > 0 && ix * iy > (box[2] - box[0]) * (box[3] - box[1]) * 0.2) return false; } }
-  if (SR.mode === 'adopt' && Math.abs(x - SR_MEET[0]) < 190 && y > 520) return false; // the meet spot stays clear
-  return SR.dogs.every((o) => o === me || o.away || Math.abs(o.tx - x) > 120 * (s + srScale(o.ty)) || Math.abs(o.ty - y) > 46);
+  if (SR.mode === 'adopt' && box[2] > SR_MEET[0] - 125 && box[0] < SR_MEET[0] + 125 && box[1] < SR_MEET[1] && box[3] > SR_MEET[1] - 195) return false; // the meet dog's whole body stays clear
+  // no two dogs drawn over each other: the art boxes may touch, not cover (a dog further back counts too, not only one in the same row)
+  return SR.dogs.every((o) => { if (o === me || o.away) return true; const so = srScale(o.ty);
+    return Math.abs(o.tx - x) > 120 * (s + so) || Math.abs(o.ty - y) > 46 && Math.abs(o.tx - x) > 70 * (s + so) || Math.abs(o.ty - y) > 150 * Math.max(s, so); });
 }
-function srSpot(me, near) {
+function srSpot(me, near, strict) {
   const V = srView(), F = SR_ROOM.floor, x0 = Math.max(F[0] + 30, V ? V.x0 + 60 : 0), x1 = Math.min(F[2] - 30, V ? V.x1 - 60 : 1000), y1 = Math.min(F[3] - 4, V ? V.y1 - 6 : 600);
   for (let i = 0; i < 40; i++) {
     let x = x0 + Math.random() * Math.max(1, x1 - x0), y = F[1] + 8 + Math.random() * Math.max(1, y1 - F[1] - 8);
     if (near) { x = clamp(near[0] + (Math.random() - 0.5) * 260, x0, x1); y = clamp(near[1] + (Math.random() - 0.5) * 70, F[1] + 8, y1); }
     if (srSpotOk(x, y, me, V)) return [Math.round(x), Math.round(y)];
   }
+  if (strict) return null;
   return [Math.round(clamp(me ? me.x : 500, x0, x1)), Math.round(clamp(me ? me.y : 500, F[1] + 8, y1))];
+}
+// walk to a free spot; when the crop has none (a phone with a meet dog up front), the dog trots out to the back room
+function srGo(rd) {
+  const sp = srSpot(rd, null, true); if (sp) return srWalk(rd, sp, () => srRestPose(rd));
+  const V = srView(), out = V && rd.x - V.x0 < V.x1 - rd.x ? (V ? V.x0 : 0) - 140 : (V ? V.x1 : 1000) + 140;
+  rd.busy = rd.away = rd.leaving = true; srWalk(rd, [out, rd.y], () => { rd.busy = rd.leaving = false; rd.parked = true; const n = srNode(rd); if (n) n.style.display = 'none'; }, 260);
+}
+// a dog from the back room comes in from the nearer side when a spot is free again
+function srUnpark() {
+  const rd = SR && SR.dogs.find((d) => d.parked && !(SR.meet && SR.meet.key === d.key)); if (!rd) return; const sp = srSpot(rd, null, true); if (!sp) return;
+  const V = srView(), fromX = V && sp[0] - V.x0 < V.x1 - sp[0] ? V.x0 - 140 : (V ? V.x1 : 1000) + 140;
+  rd.parked = rd.away = rd.busy = rd.leaving = false; rd.x = rd.tx = fromX; rd.y = rd.ty = sp[1];
+  const n = srNode(rd); if (n) { n.style.transition = 'none'; n.style.transform = srXform(fromX, sp[1], srScale(sp[1])); n.style.display = ''; void n.getBoundingClientRect(); }
+  srOrder(rd); srWalk(rd, sp, () => srRestPose(rd));
 }
 function srCushion(me) {
   const V = srView();
-  const free = SR_ROOM.cushions.map((c, i) => ({ c, i })).filter(({ c, i }) => !SR.dogs.some((o) => o !== me && o.cushion === i) && (!V || (c[0] > V.x0 + 70 && c[0] < V.x1 - 70 && c[1] < V.y1 + 10 && !V.avoid.some((a) => c[0] > a[0] - 60 && c[0] < a[2] + 60 && c[1] > a[1] - 20))));
+  const free = SR_ROOM.cushions.map((c, i) => ({ c, i })).filter(({ c, i }) => !SR.dogs.some((o) => o !== me && o.cushion === i) && (!V || (c[0] > V.x0 + 70 && c[0] < V.x1 - 70 && c[1] < V.y1 + 10 && !V.avoid.some((a) => c[0] > a[0] - 60 && c[0] < a[2] + 60 && c[1] > a[1] - 20))) && srSpotOk(c[0], c[1] - 4, me, V));
   return free.length ? PICK(free) : null;
 }
 
@@ -182,7 +199,7 @@ function srWalk(rd, to, then, speed) {
 }
 function srRest(rd, pose, ms, then) { srPose(rd, pose); srAfter(ms, then || (() => srNext(rd)), rd); }
 function srNext(rd) {
-  if (!SR || rd.away) return; rd.busy = false; rd.cushion = null; rd.mate = null;
+  if (!SR || rd.away) return; rd.busy = false; rd.cushion = null; rd.mate = null; srUnpark();
   const st = rd.stage, r = Math.random();
   const W = st === 'puppy' ? [0.4, 0.3, 0.1] : st === 'senior' ? [0.35, 0.05, 0.3] : [0.5, 0.15, 0.15]; // walk, play, nap; the rest: rest in place
   if (r < W[0]) return srWalk(rd, srSpot(rd), () => srRestPose(rd));
@@ -196,9 +213,11 @@ function srRestPose(rd) {
 }
 function srPlay(a) {
   const b = PICK(SR.dogs.filter((o) => o !== a && !o.away && !o.busy && !o.walking && o.pose !== 'sleep')); if (!b) return false;
-  a.busy = b.busy = true; clearTimeout(b.t); a.mate = b.id; b.mate = a.id;
   const V = srView(), lo = (V ? V.x0 : 0) + 110, hi = (V ? V.x1 : 1000) - 110;
-  const [px, py] = srSpot(a, [clamp((a.x + b.x) / 2, lo + 70, hi - 70), (a.y + b.y) / 2]), ax = clamp(px - 70, lo, hi - 140), bx = ax + 140;
+  const sp = srSpot(a, [clamp((a.x + b.x) / 2, lo + 70, hi - 70), (a.y + b.y) / 2], true); if (!sp) return false;
+  const [px, py] = sp, ax = clamp(px - 70, lo, hi - 140), bx = ax + 140;
+  if (!srSpotOk(ax, py, a, V) || !srSpotOk(bx, py, b, V)) return false; // no play date on top of another dog (or the meet dog)
+  a.busy = b.busy = true; clearTimeout(b.t); a.mate = b.id; b.mate = a.id;
   let arrived = 0;
   const both = () => { if (++arrived < 2) return;
     srPose(a, 'bow', 'right'); srPose(b, 'bow', 'left');
@@ -310,17 +329,18 @@ function srMeetShow(key) {
   if (SR.meet && SR.meet.key === key) return;
   const prev = SR.meet; SR.meet = { key };
   // the old meet dog: a room dog goes back to the room, anyone else trots off
-  if (prev) { const back = SR.dogs.find((d) => d.key === prev.key); if (back) { back.away = false; back.x = SR_MEET[0]; back.y = SR_MEET[1]; const n = srNode(back); if (n) { n.style.display = ''; n.style.transition = 'none'; n.style.transform = `translate(${SR_MEET[0]}px, ${SR_MEET[1]}px) scale(1)`; void n.getBoundingClientRect(); } srNext(back); } }
+  if (prev) { const back = SR.dogs.find((d) => d.key === prev.key); if (back) { back.away = back.parked = back.leaving = false; back.x = SR_MEET[0]; back.y = SR_MEET[1]; const n = srNode(back); if (n) { n.style.display = ''; n.style.transition = 'none'; n.style.transform = `translate(${SR_MEET[0]}px, ${SR_MEET[1]}px) scale(1)`; void n.getBoundingClientRect(); } srGo(back); } }
   const rd = SR.dogs.find((d) => d.key === key && !d.away);
   let from = null;
   if (rd) { srHalt(rd); from = [rd.x, rd.y, srScale(rd.y)]; rd.away = true; rd.busy = true; const n = srNode(rd); if (n) n.style.display = 'none'; }
   else if (prev) { const V = srView(); from = [V && SR_MEET[0] - (V.x0) < (V.x1) - SR_MEET[0] ? (V ? V.x0 : 0) - 100 : (V ? V.x1 : 1000) + 100, SR_MEET[1], 1]; }
   const face = from && from[0] > SR_MEET[0] ? 'left' : 'right';
   g.innerHTML = `<g class="sr-meetdog" style="transform:${from ? srXform(from[0], from[1], from[2]) : srXform(SR_MEET[0], SR_MEET[1], 1)}">${srMeetSVG(key, from ? 'walk' : 'idle', face)}</g>`;
-  if (!from) return;
+  if (!from) { srRecall(); return; }
   const m = g.firstChild, secs = srMotion() ? clamp(Math.hypot(from[0] - SR_MEET[0], from[1] - SR_MEET[1]) / 320, 0.5, 1.4) : 0;
   void m.getBoundingClientRect(); m.style.transition = secs ? `transform ${secs}s ease-out` : 'none'; m.style.transform = srXform(SR_MEET[0], SR_MEET[1], 1);
   srAfter(secs * 1000, () => { if (SR.meet && SR.meet.key === key) m.innerHTML = srMeetSVG(key, 'idle', 'right'); });
+  srRecall(); // room dogs step out of the meet dog's way
 }
 
 /* ---- the room ---- */
@@ -334,13 +354,14 @@ function srEnter(mode) {
   });
   const svg = $('#view > svg.world');
   srCam(); // the camera first, so the dogs start on screen
-  SR.dogs.forEach((rd) => { const [x, y] = srSpot(rd); rd.x = rd.tx = x; rd.y = rd.ty = y; });
+  SR.dogs.forEach((rd) => { const sp = srSpot(rd, null, true); if (sp) { rd.x = rd.tx = sp[0]; rd.y = rd.ty = sp[1]; } else { rd.away = rd.parked = true; rd.x = rd.tx = -300; } });
   SR.dogs.sort((a, b) => a.y - b.y); $('#srDogs').innerHTML = SR.dogs.map(srDogG).join('');
+  SR.dogs.forEach((rd) => { if (rd.parked) { const n = srNode(rd); if (n) n.style.display = 'none'; } });
   srDrawBoard(); srBasketHit();
   // taps: room dogs, the board, the toy basket (delegated, so a scene redraw keeps the basket working)
   svg.addEventListener('click', srClick);
   svg.addEventListener('keydown', (e) => { if (e.key !== 'Enter' && e.key !== ' ') return; const t = e.target.closest && e.target.closest('[data-srdog], #srBoardG'); if (t) { e.preventDefault(); srClick({ target: t }); } });
-  SR.dogs.forEach((rd, i) => srRest(rd, PICK(['idle', 'sit', 'sniff']), 400 + i * 450));
+  SR.dogs.forEach((rd, i) => { if (!rd.parked) srRest(rd, PICK(['idle', 'sit', 'sniff']), 400 + i * 450); });
   // the camera follows the screen and the tray (it can settle a frame later); dogs left out of view walk back in
   let camKey = '';
   const rs = () => { if (!SR) return; srCam(); const hb = srHitBox(); document.querySelectorAll('#srDogs .sr-hit').forEach((r) => { r.setAttribute('x', hb[0].toFixed(1)); r.setAttribute('y', hb[1].toFixed(1)); r.setAttribute('width', hb[2].toFixed(1)); r.setAttribute('height', hb[3].toFixed(1)); }); const k = $('#view > svg.world') ? $('#view > svg.world').getAttribute('viewBox') : ''; if (k !== camKey) { camKey = k; srRecall(); } };
@@ -357,7 +378,8 @@ function srBasketHit() {
 on('scene:redraw', () => { if (!SR) return; srBasketHit(); const b = $('#srBoardG'); if (b && b.dataset.tod !== timePhase()) srDrawBoard(); }); // the board follows the room's time tint
 function srRecall() {
   const V = srView(); if (!V || !SR) return;
-  SR.dogs.forEach((rd) => { if (rd.away || rd.busy) return; const x = rd.walking ? rd.tx : rd.x, y = rd.walking ? rd.ty : rd.y; if (srSpotOk(x, y, rd, V)) return; srHalt(rd); srWalk(rd, srSpot(rd), () => srRestPose(rd)); });
+  SR.dogs.forEach((rd) => { if (rd.away || rd.busy) return; const x = rd.walking ? rd.tx : rd.x, y = rd.walking ? rd.ty : rd.y; if (srSpotOk(x, y, rd, V)) return; srHalt(rd); srGo(rd); });
+  srUnpark();
 }
 function srDrawBoard() { const b = $('#srBoardG'); if (b) { b.innerHTML = srBoardSVG(); b.dataset.tod = timePhase(); } }
 function srLeave() { if (!SR) return; SR.timers.forEach(clearTimeout); SR.dogs.forEach((d) => clearTimeout(d.t)); SR = null; }
@@ -434,6 +456,8 @@ function srExpose() {
     roster: (dk) => srRoster(dk).map((x) => ({ id: x.id, key: x.key, sex: x.sex, months: x.months, name: x.name, kind: x.kind, trait: x.trait })),
     room: SR_ROOM, slots: SR_SLOTS,
     meet: (id) => srMeet(id), toss: () => srToss(), pet: (id) => srPet(id),
+    total: () => (SR ? SR.dogs.length : 0), // every room dog, the one standing at the meet spot included
+    count: () => (SR ? SR.dogs.filter((d) => !d.away || d.parked || d.leaving).length : 0), // room dogs, the back room included (not the meet dog)
     dogs: () => (SR ? SR.dogs.filter((d) => !d.away).map((d) => ({ id: d.id, key: d.key, pose: d.pose, x: Math.round(d.x), y: Math.round(d.y), walking: !!d.walking, busy: !!d.busy })) : []),
     get mode() { return SR ? SR.mode : null; }, get lastFetch() { return SR ? SR.lastFetch : null; }, get pets() { return SR ? SR.pets : 0; }, get bellies() { return SR ? SR.bellies : 0; },
     get meetKey() { return SR && SR.meet ? SR.meet.key : null; }, cam: () => srCam()

@@ -1,4 +1,4 @@
-// v2.7 PACK CARE lane phone test (iPhone 13 and Pixel 7), V27.md section 6: the chip row and both trays pass the phone minimums, chips toggle by tap,
+// v2.7 PACK CARE lane phone test (iPhone 15 and Pixel 7), V27.md section 6: the chip row and both trays pass the phone minimums, chips toggle by tap,
 // no sideways scroll, the pack bowls never cover #dogHit, the bath queue tray fits.
 // node game/run_tests.js phone_v27_pack
 require('./test_lib').run('phone_v27_pack', async (t) => {
@@ -13,7 +13,7 @@ require('./test_lib').run('phone_v27_pack', async (t) => {
   });
   const settled = () => t.until(() => { const tr = document.querySelector('#dock > .tray'); return !!tr && tr.getAnimations({ subtree: true }).every((a) => a.playState !== 'running'); }, null, 3000); // the sheet slides up first
   const hit = (a, b) => a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];
-  for (const device of ['iPhone 13', 'Pixel 7']) {
+  for (const device of ['iPhone 15', 'Pixel 7']) {
     sec(device + ': three dogs, the Feed tray');
     await t.newGame({ device }, { coins: 2000 });
     await ev(() => { const P = window.__paw; P.addDog({ key: 'corgi', sex: 'male', months: 14 }, 'Bun'); P.addDog({ key: 'samoyed', sex: 'female', months: 30 }, 'Clementine'); P.S.inv.food['Basic Kibble'] = 9; P.S.dogs.forEach((d) => { d.stats.hunger = 30; d.stats.clean = 40; }); });
@@ -56,4 +56,4 @@ require('./test_lib').run('phone_v27_pack', async (t) => {
     ok(await ev((a) => window.__paw.S.activeId === a && !window.__paw.cr.bathQueue, ids[0]), `${device}: Done for now: back in the yard with the first dog`);
     await t.ctx.close();
   }
-}, { device: 'iPhone 13', packCare: true });
+}, { device: 'iPhone 15', packCare: true });

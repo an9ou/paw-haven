@@ -1,11 +1,11 @@
 // v2.2 PHONE SHELL (SHELL lane): mode switch, portrait lock, two-row HUD, ... menu, action bar, every openModal as a bottom sheet,
-// base 44 px sizes, toasts above the bar, long-press tooltip. iPhone 13 (390x844) and Pixel 7 (412x915), touch only.
+// base 44 px sizes, toasts above the bar, long-press tooltip. iPhone 15 (390x844) and Pixel 7 (412x915), touch only.
 //   node game/run_tests.js game/test_phone_shell.js      (or PAW_ARGS=... NODE_PATH=$(npm root -g) node game/test_phone_shell.js)
 require('./test_lib').run('phone_shell', async (t) => {
   const { ok, sec, ev } = t;
   const sleep = t.sleep;
 
-  for (const dev of ['iPhone 13', 'Pixel 7']) {
+  for (const dev of ['iPhone 15', 'Pixel 7']) {
     sec(dev + ': mode switch, HUD');
     const p = await t.mk({ device: dev }); await p.goto(require('./test_lib').URL); await p.waitForSelector('#tNew, #tContinue');
     await t.adopt({ sex: 'girl' });
@@ -212,23 +212,23 @@ require('./test_lib').run('phone_shell', async (t) => {
     await p.locator('#fOk').tap(); await t.modalGone(); await ev(() => window.__paw.go('yard')); await t.untilMode('yard'); await t.lu();
 
     sec(dev + ': portrait lock');
-    await p.setViewportSize({ width: dev === 'Pixel 7' ? 915 : 844, height: dev === 'Pixel 7' ? 412 : 390 });
+    await p.setViewportSize({ width: dev === 'Pixel 7' ? 915 : 852, height: dev === 'Pixel 7' ? 412 : 393 });
     ok(await t.until(() => document.documentElement.hasAttribute('data-pslock') && !document.getElementById('psTurn').hidden && getComputedStyle(document.getElementById('psTurn')).display === 'flex'), `${dev}: sideways shows the "Turn your phone upright" card`);
     ok(/Turn your phone upright/.test(await p.textContent('#psTurn')), `${dev}: the card says "Turn your phone upright"`);
     ok(await ev(() => { const el = document.querySelector('#stage .act') || document.getElementById('stage'); return getComputedStyle(el).animationPlayState.split(',').every((s) => s.trim() === 'paused'); }), `${dev}: CSS animations are paused behind the card`);
     await t.SH(dev + '_lock');
-    await p.setViewportSize({ width: dev === 'Pixel 7' ? 412 : 390, height: dev === 'Pixel 7' ? 915 : 844 });
+    await p.setViewportSize({ width: dev === 'Pixel 7' ? 412 : 393, height: dev === 'Pixel 7' ? 915 : 852 });
     ok(await t.until(() => !document.documentElement.hasAttribute('data-pslock') && document.getElementById('psTurn').hidden && document.documentElement.dataset.layout === 'phone'), `${dev}: upright again: the card goes, phone layout is back`);
     await noHScroll('after rotate');
     await t.ctx.close();
   }
 
   sec('desktop: never locked, never phone');
-  const p = await t.boot(); await p.setViewportSize({ width: 844, height: 390 }); await sleep(200);
+  const p = await t.boot(); await p.setViewportSize({ width: 852, height: 393 }); await sleep(200);
   ok(await ev(() => !document.documentElement.hasAttribute('data-pslock') && !(document.getElementById('psTurn') && !document.getElementById('psTurn').hidden)), 'a mouse pointer never sees the portrait lock (844x390)');
   await p.setViewportSize({ width: 1280, height: 720 }); await sleep(200);
   ok(await ev(() => document.documentElement.dataset.layout !== 'phone'), 'desktop 1280x720 stays the laptop layout');
   ok(await ev(() => getComputedStyle(document.getElementById('gearBtn')).display !== 'none' && getComputedStyle(document.getElementById('moreBtn')).display === 'none'), 'desktop HUD keeps its gear and mute buttons');
 }, { timeout: 420000 });
 
-function innerWidthOf(dev) { return dev === 'Pixel 7' ? 412 : 390; }
+function innerWidthOf(dev) { return dev === 'Pixel 7' ? 412 : 393; }

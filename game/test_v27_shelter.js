@@ -15,7 +15,9 @@ require('./test_lib').run('v27_shelter', async (t) => {
   await p.click('#tNew'); await p.waitForSelector('#aAdopt');
   ok(await ev(() => window.__paw.mode === 'adopt' && window.__paw.sr.mode === 'adopt'), 'adopt mode is the playroom');
   ok(await ev(() => !!document.querySelector('#view svg.world #sceneG[data-scene="playroom"]')), 'the playroom scene is drawn');
-  let D = await dogs(); ok(D.length === 6 && new Set(D.map((d) => d.key)).size === 6, `6 starter dogs in the room (${D.map((d) => d.key)})`);
+  let D = await dogs(); const N = () => ev(() => window.__paw.sr.count());
+  ok(await ev(() => window.__paw.sr.total()) === 6 && await N() >= 5 && new Set(D.map((d) => d.key)).size === D.length && D.length >= 3, `6 starter dogs in the room (one may be at the meet spot), the ones that don't fit in the back room (${D.map((d) => d.key)})`);
+  ok(await ev(() => { const L = window.__paw.sr.dogs(), sc = (y) => 0.5 + (y - 450) / 146 * 0.22; return L.every((a, i) => L.every((b, j) => j <= i || Math.abs(a.x - b.x) > 70 * (sc(a.y) + sc(b.y)) || Math.abs(a.y - b.y) > 46 || a.walking || b.walking)); }), 'no two room dogs stand on top of each other');
   ok(D.every((d) => d.x >= 40 && d.x <= 960 && d.y >= 450 && d.y <= 596), 'every room dog stands on the floor band');
   ok(await p.locator('.heads button').count() === 14, 'the 14-head carousel is there');
   ok(await p.locator('#srBoardG [data-srslot]').count() === 8, 'the board shows 8 starters');
@@ -51,7 +53,7 @@ require('./test_lib').run('v27_shelter', async (t) => {
   ok(await ev(() => !!window.__paw.S.shelter.seen), 'S.shelter.seen is set');
   const R = await ev(() => window.__paw.sr.roster());
   D = await dogs();
-  ok(D.length === R.length && R.length === 6, `the room shows the roster (${D.length} dogs, roster ${R.length})`);
+  ok(await N() === R.length && R.length === 6 && D.length >= 3, `the room shows the roster (${await N()} dogs, ${D.length} in view, roster ${R.length})`);
   ok(R.filter((x) => x.kind === 'rescue').length === 2 && R.filter((x) => x.kind === 'resident').length === 4, '2 rescues and 4 residents');
   ok(R.some((x) => x.kind === 'resident' && x.months >= 3 && x.months <= 5), 'a puppy of 3 to 5 months');
   ok(R.some((x) => x.kind === 'resident' && x.months >= 96), 'a senior of 96 months or more');
@@ -122,7 +124,7 @@ require('./test_lib').run('v27_shelter', async (t) => {
   sec('no free spot: the Adopt button explains kindly');
   await t.toasts();
   ok(await ev(() => { window.__paw.go('shelter'); return true; }) && await t.untilMode('shelter'), 'back at the shelter');
-  ok((await dogs()).length === 5, 'the room has 5 dogs now');
+  ok(await N() === 5, 'the room has 5 dogs now');
   const other = (await ev(() => window.__paw.sr.roster())).find((x) => x.kind === 'resident');
   await ev((id) => window.__paw.sr.meet(id), other.id);
   ok(await t.until(() => document.getElementById('srAdopt') && document.getElementById('srAdopt').getAttribute('aria-disabled') === 'true', null, 3000), 'with no free spot the Adopt button is aria-disabled');
@@ -144,6 +146,6 @@ require('./test_lib').run('v27_shelter', async (t) => {
   await p.click('#tContinue'); ok(await t.untilMode('yard'), 'the old save loads');
   ok(await ev(() => { const s = window.__paw.S.shelter; return !!s && Array.isArray(s.adopted) && s.adopted.length === 0 && s.seen === null; }), 'S.shelter gets its defaults');
   await ev(() => window.__paw.go('shelter'));
-  ok(await t.untilMode('shelter') && (await dogs()).length >= 5, 'the playroom opens for the old save');
+  ok(await t.untilMode('shelter') && await ev(() => window.__paw.sr.count()) >= 5, 'the playroom opens for the old save');
   ok(await t.waitToast(/The shelter has a playroom now/), 'with the welcome toast once');
 });

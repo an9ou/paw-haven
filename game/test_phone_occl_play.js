@@ -2,7 +2,7 @@
 // place buttons, runner HUD and controls, countdown) may cover the dog's box or the screen's main interactive props.
 // Run: PAW_ARGS=--ignore-certificate-errors NODE_PATH=$(npm root -g) node game/test_phone_occl_play.js
 const { run, sleep } = require('./test_lib');
-const SIZES = [[390, 844], [360, 740]];
+const SIZES = [[393, 852], [360, 740]];
 
 // ---------- in-page helpers ----------
 // what counts as "on top of the scene"
@@ -72,7 +72,7 @@ run('phone_occl_play', async (t) => {
   const EXTRA = require('fs').readdirSync(__dirname).filter((f) => /^occl_play_.*\.js$/.test(f)).sort().map((f) => require('./' + f));
 
   t.sec('setup');
-  await t.newGame({ device: 'iPhone 13' }, { coins: 3000, bond: { level: 10, pts: 5000 }, stats: { hunger: 80, happy: 80, energy: 95, clean: 90 }, inv: { toys: ['Tennis Ball', 'Frisbee'] } });
+  await t.newGame({ device: 'iPhone 15' }, { coins: 3000, bond: { level: 10, pts: 5000 }, stats: { hunger: 80, happy: 80, energy: 95, clean: 90 }, inv: { toys: ['Tennis Ball', 'Frisbee'] } });
   ok((await ev(() => document.documentElement.dataset.layout)) === 'phone', 'phone layout is on');
   await ev(() => { window.__PW = window.PawWalk; const d = window.__paw.S.dog; ['Sit', 'Paw', 'Lie Down'].forEach((n) => { d.tricks[n] = { p: 0.1, shows: 0 }; }); window.__paw.S.walks = 1; });
 
@@ -239,8 +239,8 @@ run('phone_occl_play', async (t) => {
 
   // ===================== portrait lock: fetch and the trick games wait behind the card =====================
   t.sec('portrait lock');
-  await vp(390, 844);
-  const lock = async (on) => { await t.p.setViewportSize(on ? { width: 800, height: 390 } : { width: 390, height: 844 }); await t.until((on) => document.documentElement.hasAttribute('data-pslock') === on, on, 5000); await settle(); };
+  await vp(393, 852);
+  const lock = async (on) => { await t.p.setViewportSize(on ? { width: 800, height: 390 } : { width: 393, height: 852 }); await t.until((on) => document.documentElement.hasAttribute('data-pslock') === on, on, 5000); await settle(); };
   await ev(() => window.__paw.go('fetch', 'Tennis Ball')); await t.until(() => window.__paw.mode === 'fetch' && !!document.getElementById('fQuit'), null, 8000);
   { const vb = await p.locator('#view svg.world').boundingBox(); await p.touchscreen.tap(vb.x + vb.width * 0.6, vb.y + vb.height * 0.78); } ok(await t.until(() => !!window.__paw.F.fly, null, 3000), 'a throw is in the air when the phone is turned');
   await lock(true); ok(await ev(() => document.documentElement.hasAttribute('data-pslock')), 'lock card shows when the phone is held sideways');
@@ -267,7 +267,7 @@ run('phone_occl_play', async (t) => {
   ok(g4.on && !g4.paused && g4.tick, 'and it picks up again on rotate back');
   await p.locator('#trX').tap(); await t.until(() => !window.__paw.train, null, 3000);
   await ev(() => window.__paw.go('yard')); await t.untilMode('yard');
-  for (const m of EXTRA) if (m.once) { t.sec(`${m.name || 'extra'} (once)`); await vp(390, 844); await m.once(H); await ev(() => { window.__paw.S.sleeping = false; window.__paw.go('yard'); }); await t.untilMode('yard'); }
+  for (const m of EXTRA) if (m.once) { t.sec(`${m.name || 'extra'} (once)`); await vp(393, 852); await m.once(H); await ev(() => { window.__paw.S.sleeping = false; window.__paw.go('yard'); }); await t.untilMode('yard'); }
   // desktop 1280x720 (not the phone layout): desktop screens must stay put and uncovered too
   if (EXTRA.some((m) => m.desk)) {
     t.sec('desktop 1280x720');
@@ -275,4 +275,4 @@ run('phone_occl_play', async (t) => {
     await settle();
     for (const m of EXTRA) if (m.desk) { t.sec(`${m.name || 'extra'} (desktop)`); await m.desk(H); await ev(() => { window.__paw.S.sleeping = false; window.__paw.go('yard'); }); await t.untilMode('yard'); }
   }
-}, { device: 'iPhone 13', timeout: 600000 });
+}, { device: 'iPhone 15', timeout: 600000 });

@@ -1,5 +1,5 @@
 // v2.2 PUPPY lane (phone): Puppy Playdates (picker, Predictor, Sparkle line), playdate scene, birth reveal (swipe + buttons),
-// nursery, Who stays, Sparkle adopt-out confirm, New homes + Doggy Ramp, pick of the litter. iPhone 13 and Pixel 7.
+// nursery, Who stays, Sparkle adopt-out confirm, New homes + Doggy Ramp, pick of the litter. iPhone 15 and Pixel 7.
 //   PAW_ARGS=--ignore-certificate-errors NODE_PATH=$(npm root -g) node game/run_tests.js game/test_phone_puppy.js --jobs 1
 require('./test_lib').run('phone_puppy', async (t) => {
   const { ok, sec, ev } = t;
@@ -39,7 +39,7 @@ require('./test_lib').run('phone_puppy', async (t) => {
     await t.sleep(25); await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   };
 
-  for (const device of ['iPhone 13', 'Pixel 7']) {
+  for (const device of ['iPhone 15', 'Pixel 7']) {
     const tag = device.replace(/\s+/g, '').toLowerCase();
     sec(`${device}: crafted save, a Horgi girl + a Dachshund boy, Bond 10, in season`);
     await t.newGame({ sex: 'girl', device }, { bond: { level: 10, pts: 3300 }, coins: 1000, house: 'Royal Castle Kennel', careDays: 60, stats: { hunger: 90, happy: 90, energy: 90, clean: 90 } });
@@ -150,4 +150,4 @@ require('./test_lib').run('phone_puppy', async (t) => {
     await audit(`${device} playdates (again)`); await t.closeX(); await t.modalGone();
     await t.ctx.close();
   }
-}, { device: 'iPhone 13', timeout: 420000 });
+}, { device: 'iPhone 15', timeout: 420000 });

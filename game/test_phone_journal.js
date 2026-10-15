@@ -1,7 +1,7 @@
-// v2.2 JOURNAL lane (phone): Journal tabs, Family tree (pan + buttons), Coats, Mailbox, album, Dog spots card on iPhone 13 and Pixel 7.
+// v2.2 JOURNAL lane (phone): Journal tabs, Family tree (pan + buttons), Coats, Mailbox, album, Dog spots card on iPhone 15 and Pixel 7.
 // PAW_ARGS=--ignore-certificate-errors NODE_PATH=$(npm root -g) node game/run_tests.js smoke game/test_phone_journal.js --jobs 2
 const run = require('./test_lib').run;
-const DEVICES = ['iPhone 13', 'Pixel 7'];
+const DEVICES = ['iPhone 15', 'Pixel 7'];
 
 async function suite(t, device) {
   const { ok, sec, ev, S } = t, p = () => t.p;
@@ -138,4 +138,4 @@ async function suite(t, device) {
 
 run('phone_journal', async (t) => {
   for (const d of DEVICES) { await suite(t, d); }
-}, { device: 'iPhone 13' });
+}, { device: 'iPhone 15' });

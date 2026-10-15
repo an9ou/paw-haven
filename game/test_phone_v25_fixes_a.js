@@ -1,4 +1,4 @@
-// v2.5 FIXES A on phones (iPhone 13 390x844, Pixel 7 412x915): the owner's v2.4 feedback items 1, 3, 5 and 8, measured on the real page.
+// v2.5 FIXES A on phones (iPhone 15 390x844, Pixel 7 412x915): the owner's v2.4 feedback items 1, 3, 5 and 8, measured on the real page.
 //   1 map: the map draws the full width (no gutter), the controls float over it with 44 px taps, and every place label can be dragged clear of them;
 //   3 trays: every owned food (all 20, the festival foods too) and every Play / Care / snacks card is reachable, 44 px, with a visible "more" cue;
 //   5 close X: the recipe book, the kitchen, the seed pouch, the training panel and the bottom sheets keep a 44 px X in the top-right corner while they scroll;
@@ -184,7 +184,7 @@ async function night(t, dev) { // the owner's case: a round ">" on a dark night 
 }
 
 (async () => {
-  for (const dev of ['iPhone 13', 'Pixel 7']) {
+  for (const dev of ['iPhone 15', 'Pixel 7']) {
     const tag = dev.replace(/\s+/g, '').toLowerCase();
     await run('phone_v25_fixes_a_' + tag, (t) => suite(t, dev), { device: dev, timeout: 360000 });
     await run('phone_v25_fixes_a_night_' + tag, (t) => night(t, dev), { device: dev, time: 'night' });

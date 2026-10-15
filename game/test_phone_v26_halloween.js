@@ -1,7 +1,7 @@
 // v2.6 phone, HALLOWEEN lane (V26.md section 7): the Pumpkin Patch Pop-up in the Square (inside the camera crop, clear of #dogHit, the stall,
 // the HUD, the bar and the place chips, a tap opens the sheet), the third row of the Festival chooser, the pop-up sheet and its buy window
 // (15 px text, 44 px buttons, no sideways scroll, the four sections scroll inside the sheet), and the four 2026 yard decorations
-// (48 px tap rects, clear of #dogHit). iPhone 13 (390x844) and Pixel 7 (412x915). node game/run_tests.js phone_v26_halloween
+// (48 px tap rects, clear of #dogHit). iPhone 15 (390x844) and Pixel 7 (412x915). node game/run_tests.js phone_v26_halloween
 const { run } = require('./test_lib');
 
 const TAP_SEL = 'button, [role=button], a[href], input:not([type=hidden]), select, .card';
@@ -143,15 +143,15 @@ async function suite(t, dev) {
   await p.touchscreen.tap(tc[0], tc[1]);
   ok(await t.until(() => !!document.querySelector('#modal:not([hidden]) .hm-decor-pop'), null, 4000), 'a tap on the Jack-o-Lantern Trio opens its card');
   await closeSheet(t);
-  if (dev === 'iPhone 13') { await ev(() => { const S = window.__paw.S; S.sleeping = false; S.place = 'yard'; window.__paw.go('yard'); }); await t.untilMode('yard'); await t.calm(); await t.lu(); // the narrowest phone the review measured
+  if (dev === 'iPhone 15') { await ev(() => { const S = window.__paw.S; S.sleeping = false; S.place = 'yard'; window.__paw.go('yard'); }); await t.untilMode('yard'); await t.calm(); await t.lu(); // the narrowest phone the review measured
     await p.setViewportSize({ width: 360, height: 740 }); await t.until(() => innerWidth === 360, null, 4000); await t.calm();
     for (const act of ['feed', 'play']) { const r = await chips(act); ok(r.every((x) => x.ins && x.w && x.h && x.fs >= 15), `360x740 ${act} tray: the chips stay whole on the card corner (${r.length})`); }
-    await p.setViewportSize({ width: 390, height: 844 }); await t.until(() => innerWidth === 390, null, 4000); await t.calm();
+    await p.setViewportSize({ width: 393, height: 852 }); await t.until(() => innerWidth === 393, null, 4000); await t.calm();
   }
   const errs = t.errors.filter((e) => !/ERR_CERT|Failed to load resource/.test(e));
   ok(errs.length === 0, 'no console errors ' + errs.slice(0, 3).join(' | '));
 }
 
 (async () => {
-  for (const dev of ['iPhone 13', 'Pixel 7']) await run('phone_v26_halloween_' + dev.replace(/\s+/g, '').toLowerCase(), (t) => suite(t, dev), { device: dev, fest: 'auto', season: 'autumn', date: '2026-10-20', prefs: { hwTest: true } });
+  for (const dev of ['iPhone 15', 'Pixel 7']) await run('phone_v26_halloween_' + dev.replace(/\s+/g, '').toLowerCase(), (t) => suite(t, dev), { device: dev, fest: 'auto', season: 'autumn', date: '2026-10-20', prefs: { hwTest: true } });
 })();

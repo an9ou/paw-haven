@@ -1,4 +1,4 @@
-// v2.5 FIXES B on phones (iPhone 13 and Pixel 7, portrait): the owner's v2.4 feedback, items 2, 4, 6 and 7 (V25.md 7b).
+// v2.5 FIXES B on phones (iPhone 15 and Pixel 7, portrait): the owner's v2.4 feedback, items 2, 4, 6 and 7 (V25.md 7b).
 //  7  fetch started from the Play tray (house and yard): the whole scene, the dog and the ball show, the panel sits under them
 //  6  a finger or mouse drag pans the yard, the house, the town places and the map; a drag never taps what it started on; taps still work
 //  2  the bowl is hidden, shows with the Feed tray and holds the food while the dog eats
@@ -23,10 +23,10 @@ run('phone_v25_fixes_b', async (t) => {
   // a prop the player can tap that is on screen and not under the dog
   const onScreenProp = () => ev(() => { for (const e of document.querySelectorAll('#view svg.world [data-hot], #view svg.world [data-shop], #mailboxG')) { const r = e.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2; if (r.width < 30 || x < 50 || x > innerWidth - 50 || y > innerHeight - 120) continue; const h = document.elementFromPoint(x, y); if (h && e.contains(h)) return { sel: e.id ? '#' + e.id : e.hasAttribute('data-shop') ? `[data-shop="${e.getAttribute('data-shop')}"]` : `[data-hot="${e.getAttribute('data-hot')}"]`, x, y }; } return null; });
 
-  for (const device of ['iPhone 13', 'Pixel 7']) {
-    const tag = device === 'iPhone 13' ? 'iPhone' : 'Pixel';
+  for (const device of ['iPhone 15', 'Pixel 7']) {
+    const tag = device === 'iPhone 15' ? 'iPhone' : 'Pixel';
     await t.newGame({ device }, { inv: { toys: { 'Tennis Ball': 1 }, food: { 'Basic Kibble': 5, 'Carrot Sticks': 5 } }, stats: { hunger: 40, happy: 80, energy: 90, clean: 90 } });
-    if (device === 'iPhone 13') await t.p.setViewportSize({ width: 390, height: 844 }); // the owner's phone: Safari with the bars hidden
+    if (device === 'iPhone 15') await t.p.setViewportSize({ width: 393, height: 852 }); // the owner's phone: Safari with the bars hidden
     const p = t.p; await t.freezeMotion(true);
 
     sec(`${tag}: 7. fetch from the Play tray shows the whole scene, the dog and the panel apart`);

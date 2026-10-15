@@ -1,7 +1,7 @@
 // V26_TOYS: the four Halloween 2026 toy games in mods/toys.js (V26.md section 6). node game/run_tests.js v26_toys
 // Covers: PawToys.supports / list for all 19 names (the old 15 unchanged, in order); each new toy, owned through t.patch, opens from the yard Play tray,
 //         its main tap starts the play (dbg changes), it plays to finish() (the reward toast and end card), the session pay stays within CAP,
-//         Escape closes it cleanly, no console errors. Desktop 1280x720 (motion on, then a motion-off pass) and iPhone 13 (two toys with motion off).
+//         Escape closes it cleanly, no console errors. Desktop 1280x720 (motion on, then a motion-off pass) and iPhone 15 (two toys with motion off).
 // PAW_SHOTS=1 also writes screenshots to game/shots_v26/toys/ (an existing toy, Squeaky Hedgehog, is shot next to them for comparison).
 const path = require('path'), fs = require('fs');
 const NEW = ['Squeaky Pumpkin', 'Plush Ghost', 'Bat-Wing Flyer', 'Trick-or-Treat Bucket'];
@@ -135,8 +135,8 @@ require('./test_lib').run('v26_toys', async (t) => {
 
   // ============ phone ============
   await t.ctx.close(); phone = true;
-  sec('iPhone 13');
-  await t.newGame({ device: 'iPhone 13' }, { bond: { level: 7, pts: 1450 }, inv: { toys: ['Tennis Ball', 'Squeaky Hedgehog'].concat(NEW) } });
+  sec('iPhone 15');
+  await t.newGame({ device: 'iPhone 15' }, { bond: { level: 7, pts: 1450 }, inv: { toys: ['Tennis Ball', 'Squeaky Hedgehog'].concat(NEW) } });
   await hook();
   if (process.env.PAW_SHOTS) {
     await ev(() => window.__paw.go('toy', 'Squeaky Hedgehog')); await t.untilMode('toy', 5000); await t.sleep(1500); await shot('phone_SqueakyHedgehog_ref');

@@ -140,8 +140,8 @@ run('cloud', async (t) => {
     ok(r.sw === r.iw, `${label}: no horizontal scroll (${r.sw} vs ${r.iw})`);
   }
 
-  sec('device 1 (iPhone 13): a guest starts automatically and the save reaches the cloud');
-  const d1 = await device('d1', 'iPhone 13'); await adopt(d1, { sex: 'girl' });
+  sec('device 1 (iPhone 15): a guest starts automatically and the save reaches the cloud');
+  const d1 = await device('d1', 'iPhone 15'); await adopt(d1, { sex: 'girl' });
   ok(await until(d1, () => !!window.__pawCloud.CL.uid, null, 8000), 'a guest user is made once there is a save');
   const g1 = await uidOf(d1);
   ok(await until(d1, (u) => window.__pawCloud.meta().rev >= 1 && window.__pawCloud.meta().uid === u, g1, 8000) && !!srv.saves[g1], 'the first save is pushed to the cloud');
@@ -167,9 +167,9 @@ run('cloud', async (t) => {
   sec('Settings -> Cloud save on the phone, register guest to account (updateUser path)');
   await openCloud(d1);
   ok(/Guest/.test(await d1.textContent('#clStat')), 'status line says Guest');
-  await phoneCheck(d1, 'iPhone 13 Cloud save');
+  await phoneCheck(d1, 'iPhone 15 Cloud save');
   await tap(d1, '[data-cl=reg]'); await d1.waitForSelector('#clPw2');
-  await phoneCheck(d1, 'iPhone 13 make an account form');
+  await phoneCheck(d1, 'iPhone 15 make an account form');
   await d1.fill('#clEmail', 'mochi@example.com'); await d1.fill('#clPw', 'short'); await d1.fill('#clPw2', 'short'); await tap(d1, '[data-cl=doReg]');
   ok(/at least 8/.test(await d1.textContent('.clmsg')), 'a password under 8 characters is refused');
   await d1.fill('#clEmail', 'mochi@example.com'); await d1.fill('#clPw', 'pupper123'); await d1.fill('#clPw2', 'pupper124'); await tap(d1, '[data-cl=doReg]');
@@ -255,7 +255,7 @@ run('cloud', async (t) => {
   await openCloud(d1); await tap(d1, '[data-cl=backups]');
   ok(await until(d1, () => document.querySelectorAll('[data-clrestore]').length >= 2, null, 5000), 'Backups lists the saved versions');
   ok(/coins/.test(await d1.textContent('.clbk')) && /older than your other device/.test(await d1.textContent('.clbk')), 'each backup shows date, dogs, coins and why');
-  await phoneCheck(d1, 'iPhone 13 backups list');
+  await phoneCheck(d1, 'iPhone 15 backups list');
   const idx = await ev(d1, () => window.__pawCloud.CL.bk.findIndex((b) => b.data.coins === 111));
   await tap(d1, `[data-clrestore="${idx}"]`); await d1.waitForSelector('.confirm .yes'); await tap(d1, '.confirm .yes');
   ok(await until(d1, () => window.__paw.S.coins === 111, null, 6000), 'Restore loads the backup');
@@ -267,7 +267,7 @@ run('cloud', async (t) => {
   await openCloud(d1); await tap(d1, '[data-cl=export]'); await d1.waitForSelector('#clCodeOut');
   const code = await d1.inputValue('#clCodeOut');
   ok(/^PAWZ?1\.[A-Za-z0-9+/=]+\.[0-9a-f]{8}$/.test(code), `export makes a save code with a checksum (${code.length} chars)`);
-  await phoneCheck(d1, 'iPhone 13 export');
+  await phoneCheck(d1, 'iPhone 15 export');
   await tap(d1, '[data-cl=copy]'); ok(await until(d1, () => /Copied|copy it by hand/.test((document.querySelector('#clCode .clmsg') || {}).textContent || ''), null, 3000), 'Copy button answers');
   const before = await ev(d1, () => JSON.parse(localStorage.getItem('pawhaven_proto_v1')));
   use(d1); await t.closeX(); await change(d1, { coins: 5 }); await t.sleep(200);
@@ -285,7 +285,7 @@ run('cloud', async (t) => {
 
   sec('device 3: register falls back to signUp when the project wants email confirmation');
   srv.confirmEmailChange = true;
-  const d3 = await device('d3', 'iPhone 13'); await adopt(d3, { sex: 'boy' });
+  const d3 = await device('d3', 'iPhone 15'); await adopt(d3, { sex: 'boy' });
   ok(await until(d3, () => window.__pawCloud.status().state === 'synced', null, 8000), 'device 3 guest save is in the cloud');
   const g3 = await uidOf(d3), name3 = await ev(d3, () => window.__paw.S.dog.name);
   await openCloud(d3); await tap(d3, '[data-cl=reg]'); await d3.waitForSelector('#clPw2');
@@ -317,7 +317,7 @@ run('cloud', async (t) => {
   use(d4); await t.closeX();
 
   sec('the artifact copy: cloud off, local save kept');
-  const d5 = await device('d5', 'iPhone 13', { host: 'abc.claudeusercontent.com' }); await adopt(d5, { sex: 'boy' });
+  const d5 = await device('d5', 'iPhone 15', { host: 'abc.claudeusercontent.com' }); await adopt(d5, { sex: 'boy' });
   const name5 = await ev(d5, () => window.__paw.S.dog.name);
   ok((await st(d5)).state === 'off' && (await ev(d5, () => window.__pawCloud.CL.why)) === 'artifact', 'cloud is off on the claude.ai copy');
   ok(srv.calls.filter((c) => c.page === d5).length === 0, 'the artifact copy never calls the cloud');
@@ -337,7 +337,7 @@ run('cloud', async (t) => {
   ok(!(await ev(d6, () => !!document.querySelector('script[src*="supabase"]'))), 'supabase-js is not loaded');
 
   sec('offline: the library fails to load');
-  const d7 = await device('d7', 'iPhone 13', { broken: true }); await adopt(d7, { sex: 'girl' });
+  const d7 = await device('d7', 'iPhone 15', { broken: true }); await adopt(d7, { sex: 'girl' });
   ok(await until(d7, () => window.__pawCloud.status().state === 'offline', null, 6000), 'status: Offline');
   use(d7); ok(await t.waitToast(/Cloud save is offline\. Your game is saved on this device\./), 'the offline message shows');
   await change(d7, { coins: 999 }); await t.sleep(300);

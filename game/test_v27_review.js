@@ -27,7 +27,7 @@ require('./test_lib').run('v27_review', async (t) => {
   ok(await t.waitToast(/Bun and Pip nap on the rug tonight/), 'the hint names both dogs on the rug');
 
   sec('4. phone free spots keep clear of the phone pack spots');
-  await t.ctx.close(); await t.newGame({ packCare: true, device: 'iPhone 13' }, { coins: 500 });
+  await t.ctx.close(); await t.newGame({ packCare: true, device: 'iPhone 15' }, { coins: 500 });
   await ev(() => { window.__paw.addDog({ key: 'corgi', sex: 'male', months: 14 }, 'Bun'); window.__paw.S.decor['Flower Barrel'] = { got: '2026-10-01', out: false }; });
   await t.calm(); await t.home('yard');
   const fs = await ev(() => window.__paw.ho.freeSpot('Flower Barrel'));

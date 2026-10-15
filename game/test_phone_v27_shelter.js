@@ -1,4 +1,4 @@
-// v2.7 SHELTER lane phone test (iPhone 13 and Pixel 7), V27.md section 7: the playroom (adopt and shelter mode), the shelter tray,
+// v2.7 SHELTER lane phone test (iPhone 15 and Pixel 7), V27.md section 7: the playroom (adopt and shelter mode), the shelter tray,
 // the list sheet and the Meet card pass the phone minimums; the board and the sign sit in the crop; room dogs have 48 px tap rects.
 // node game/run_tests.js phone_v27_shelter
 require('./test_lib').run('phone_v27_shelter', async (t) => {
@@ -22,7 +22,7 @@ require('./test_lib').run('phone_v27_shelter', async (t) => {
   }, box);
   const dogRects = () => ev(() => [...document.querySelectorAll('#srDogs .sr-dog')].filter((g) => g.style.display !== 'none').map((g) => { const r = g.querySelector('.sr-hit').getBoundingClientRect(); return Math.round(Math.min(r.width, r.height)); }));
 
-  for (const device of ['iPhone 13', 'Pixel 7']) {
+  for (const device of ['iPhone 15', 'iPhone 15 Pro Max', 'Pixel 7']) {
     sec(device + ': adopt mode');
     if (t.ctx) await t.ctx.close();
     const p = await t.boot({ device });
@@ -30,7 +30,7 @@ require('./test_lib').run('phone_v27_shelter', async (t) => {
     const room = await ev(() => window.__paw.sr.room);
     ok(await inCrop(room.board) && await inCrop(room.sign), 'the board and the sign sit in the crop');
     let a = await audit('#dock', 44); ok(!a.miss && !a.small.length && !a.hs, 'the adopt tray: buttons >= 44 px, no sideways scroll ' + show(a));
-    let hr = await dogRects(); ok(hr.length === 6 && hr.every((h) => h >= 48), `room dog tap rects >= 48 px (${hr})`);
+    let hr = await dogRects(); ok(hr.length >= 3 && hr.every((h) => h >= 48), `room dog tap rects >= 48 px (${hr}), the rest wait in the back room`);
     await t.SH(device.replace(/\s/g, '') + '_01_adopt');
     const front = await ev(() => window.__paw.sr.dogs().sort((a, b) => b.y - a.y)[0]), id = front.id, key = front.key; // the frontmost dog is drawn on top
     await p.locator(`[data-srdog="${id}"] .sr-hit`).tap({ force: true });
@@ -46,8 +46,9 @@ require('./test_lib').run('phone_v27_shelter', async (t) => {
     a = await audit('#dock .sr-tray', 48);
     ok(big.every((h) => h >= 48) && !a.small.length && !a.tiny.length && !a.hs, `the tray: buttons 48 px (${big}), text 15 px, no sideways scroll ` + show(a));
     ok(await inCrop(room.board) && await inCrop(room.sign), 'the board and the sign sit in the crop, above the tray');
-    hr = await dogRects(); ok(hr.length === 6 && hr.every((h) => h >= 48), `room dog tap rects >= 48 px (${hr})`);
-    ok(await ev(() => window.__paw.sr.dogs().every((d) => { const svg = document.querySelector('#view > svg.world'), pt = svg.createSVGPoint(); pt.x = d.x; pt.y = d.y; const q = pt.matrixTransform(svg.getScreenCTM()), tr = document.querySelector('#dock .sr-tray').getBoundingClientRect(); return q.x >= 0 && q.x <= innerWidth && q.y <= tr.top + 2; })), 'every room dog stands in view, above the tray');
+    hr = await dogRects(); ok(hr.length >= 3 && hr.every((h) => h >= 48), `room dog tap rects >= 48 px (${hr}), the rest wait in the back room`);
+    const outV = await ev(() => window.__paw.sr.dogs().filter((d) => { const svg = document.querySelector('#view > svg.world'), pt = svg.createSVGPoint(); pt.x = d.x; pt.y = d.y; const q = pt.matrixTransform(svg.getScreenCTM()), tr = document.querySelector('#dock .sr-tray').getBoundingClientRect(); return !(q.x >= 0 && q.x <= innerWidth && q.y <= tr.top + 2); }).map((d) => `${d.key}@${d.x},${d.y}${d.walking ? ' walking' : ''}`));
+    ok(!outV.length, `every room dog stands in view, above the tray ${outV.join(' ')}`);
     await t.SH(device.replace(/\s/g, '') + '_02_shelter');
     // the whole board opens the list on phones (a portrait too)
     await p.locator('#srBoardG [data-srslot]').first().tap({ force: true });
@@ -65,4 +66,4 @@ require('./test_lib').run('phone_v27_shelter', async (t) => {
     await p.locator('#srToss').tap(); ok(await t.until(() => !!window.__paw.sr.lastFetch, null, 9000), 'Toss a toy works by tap, and a dog fetches it');
     ok(await ev(() => document.documentElement.scrollWidth <= innerWidth + 1), 'no sideways scroll in the playroom');
   }
-}, { device: 'iPhone 13' });
+}, { device: 'iPhone 15' });
