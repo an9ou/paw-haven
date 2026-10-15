@@ -4,9 +4,9 @@ Profile picture: `doodle-doggo-instagram-dachshund-1080.png` (the dachshund, own
 
 **Name field:** Doodle Doggo 🐾 Cozy Dog Game
 
-**Bio (main pick, 3 lines):**
+**Bio (owner pick, 15 Oct):**
 
-    🖍️ Adopt the ugliest crayon dogs you'll ever love
+    🖍️ Adopt a wobbly crayon pup to love
     🐶 Walks, cuddles, gardens & puppy playdates
     🎮 Free · play in your browser 👇
 
