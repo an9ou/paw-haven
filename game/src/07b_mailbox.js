@@ -266,7 +266,7 @@ function letterBody(m) {
     act = taken ? '<p class="mb-gift got">You picked a puppy from this litter.</p>' : `<div class="mb-acts"><button class="btn yes" data-adoptpick="${esc(m.id)}">Adopt this pup</button><span class="small">${typeof slotsFree === 'function' ? `Free dog spots: ${slotsFree()}` : ''}</span></div>`;
   }
   const pups = Array.isArray(m.pups) && m.pups.length ? `<div class="mb-pups">${m.pups.slice(0, 8).map((p) => `<span class="mb-pup" title="${esc(p.name || '')}">${(() => { try { return headSVG(p); } catch (e) { return ''; } })()}</span>`).join('')}</div>` : '';
-  const card = m.kind === 'postcard' || (m.dog && m.kind !== 'gift') ? postcardHTML(m) : '';
+  const card = (m.card === 'nengajo' && typeof nyCardHTML === 'function' && nyCardHTML(m)) || (m.kind === 'postcard' || (m.dog && m.kind !== 'gift') ? postcardHTML(m) : ''); // v2.8: a New Year letter is drawn as a nengajo (32_newyear.js)
   return `<article class="letter k-${esc(m.kind)}"><header><b>${esc(m.title)}</b><span class="small">From ${esc(m.from)} · ${esc(date)}</span></header>${card}${pups}<p class="mb-text">${esc(m.text)}</p>${m.ps ? `<p class="small mb-ps">${esc(m.ps)}</p>` : ''}${act}</article>`;
 }
 function openMailbox(selId, tab) {

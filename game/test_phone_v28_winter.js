@@ -204,9 +204,99 @@ async function winterPart(t, dev) {
   await t.ctx.close();
 }
 
-/* ======================= NEW YEAR part (the NEW YEAR lane adds it here) ======================= */
+/* ======================= NEW YEAR part (NEW YEAR lane) ======================= */
+// 2 January: the Fortune box in the Square (inside the crop, clear of #dogHit, the HUD, the bar, the location chip, the stall and the look-right button, a 48 px
+// tap rect, nothing on top of it, the chip, one place-button row and no desktop place button), the chooser row, the fortune sheet before and after a shake (bottom
+// sheet, 44 px buttons, 15 px text, the slip at least 17 px, no sideways scroll), the mailbox with the three nengajo cards and the Collect row, 360 px wide,
+// and with a visitor (the v2.6 TODO case: the crop shifts and the box follows it).
+// the iPhone 15 pictures of this part go to game/shots_v28/newyear/ (jpeg, under 300 KB) when PAW_SHOTS or PAW_NY_SHOTS is set
+async function nyShot(t, dev, name) {
+  if (dev !== 'iPhone 15' || !(process.env.PAW_SHOTS || process.env.PAW_NY_SHOTS)) return;
+  const dir = require('path').join(__dirname, 'shots_v28', 'newyear'); require('fs').mkdirSync(dir, { recursive: true });
+  await t.ev(() => document.querySelectorAll('#toasts .toast').forEach((e) => e.remove())); await t.sleep(600);
+  await t.p.screenshot({ path: require('path').join(dir, 'phone_' + name + '.jpg'), type: 'jpeg', quality: 55 });
+}
+async function nyBox(t, tag) {
+  const { ok, ev } = t;
+  await at(t, 'square'); await t.until(() => !!document.querySelector('#nyFortuneG .fs-hit') && !!document.querySelector('#fsStallG .fs-hit') && !!document.querySelector('[data-fs=fest]'), null, 8000); await motionOff(t);
+  await settled(t, '#nyFortuneG .fs-hit'); await settled(t, '#placeBtns');
+  const q = await ev(`(() => { const R4 = ${R4}, svg = document.querySelector('#view svg.world'), M = svg.getScreenCTM().inverse(), wb = (r) => { const a = new DOMPoint(r.left, r.top).matrixTransform(M), b = new DOMPoint(r.right, r.bottom).matrixTransform(M); return [a.x, a.y, b.x, b.y]; };
+    const labels = [...svg.querySelectorAll('#sceneG text')].filter((x) => { const r = x.getBoundingClientRect(); return r.width > 8 && x.textContent.trim().length > 3; }).map((x) => { const r = x.getBoundingClientRect(); return [x.textContent.trim(), [r.left, r.top, r.right, r.bottom]]; });
+    const vis = R4('#visitorG > rect'), hit = R4('#nyFortuneG > rect.fs-hit'), c = hit && [(hit[0] + hit[2]) / 2, (hit[1] + hit[3]) / 2], top = c && document.elementFromPoint(c[0], c[1]);
+    return { hit, art: R4('#nyFortuneG > svg'), chip: R4('#nyFortuneG .hw-chip'), stall: R4('#fsStallG > svg'), dog: R4('#dogHit'), hud: R4('#hud'), bar: R4('#bar'), loc: R4('#status'), peek: R4('#phPeek'), view: R4('#view'), vis, labels, top: !!top && !!top.closest('#nyFortuneG'),
+      rows: new Set([...document.querySelectorAll('#placeBtns .btn')].map((b) => Math.round(b.getBoundingClientRect().top))).size, desk: !!document.querySelector('#placeBtns [data-ny]'), sw: document.documentElement.scrollWidth, iw: innerWidth, boxW: wb(document.querySelector('#nyFortuneG > svg').getBoundingClientRect()) }; })()`);
+  const inCrop = (r) => r[0] >= q.view[0] - 1 && r[2] <= q.view[2] + 1 && r[1] >= q.view[1] - 1 && r[3] <= q.view[3] + 1;
+  ok(inCrop(q.art), `${tag}: the Fortune box is inside the camera crop`);
+  ok(!ov(q.art, q.dog) && !ov(q.art, q.hud) && !ov(q.art, q.bar) && !ov(q.art, q.loc) && !ov(q.art, q.peek) && !ov(q.art, q.stall) && !ov(q.art, q.vis), `${tag}: the box is clear of #dogHit, the HUD, the bar, the location chip, the look-right button, the stall and any visitor`);
+  ok(q.hit[2] - q.hit[0] >= 47.5 && q.hit[3] - q.hit[1] >= 47.5, `${tag}: the tap rect is at least 48 px (${Math.round(q.hit[2] - q.hit[0])}x${Math.round(q.hit[3] - q.hit[1])})`);
+  ok(q.top, `${tag}: nothing sits on top of the box`);
+  ok(!!q.chip && q.chip[3] - q.chip[1] >= 18, `${tag}: the box wears a name chip`);
+  const lab = q.labels.filter(([, r]) => ov(r, q.art)).map(([n]) => n);
+  ok(!lab.length, `${tag}: the box is over no place label${lab.length ? ' -> ' + lab.join(', ') : ''}`);
+  ok(q.rows === 1 && !q.desk, `${tag}: the place buttons stay one row, no desktop Fortune button`);
+  ok(q.sw === q.iw, `${tag}: no sideways page scroll`);
+  return q;
+}
+async function newYearPart(t, dev) {
+  const { ok, ev } = t;
+  t.sec(`NEW YEAR ${dev}: the Square on 2 January`);
+  setDate(t, '2027-01-02');
+  await t.newGame({ device: dev }, { bond: { level: 6, pts: 700 }, coins: 3000 });
+  await ev(() => { const P = window.__paw, S = P.S, me = S.dog; S.mail = []; S.mailCards = {}; S.ny.cards = null; S.rehomed = [{ id: 'nyp1', name: 'Button', key: me.key, sex: 'female', born: '2026-08-01', since: '2026-12-01', family: { id: 'tanaka', name: 'the Tanakas', where: 'by the bakery' }, genes: JSON.parse(JSON.stringify(me.genes)), parents: [me.id, 'dad'], gen: 2 }]; P.ny.cards(); });
+  ok(await ev(() => window.__paw.S.mail.filter((m) => /^ny_/.test(m.id)).length) === 3, `${dev}: Gerald, Plum and one pup card arrived`);
+  await nyBox(t, dev); await t.SH('ny_square_' + dev.replace(/\s+/g, '')); await nyShot(t, dev, 'square_2jan');
+  const ch = await wnChooser(t, `${dev} 2 Jan`, ['Winter Stall', 'Fortune box']);
+  ok(ch.find((r) => r.k === 'fortune').line === 'Only good fortunes, until 7 January.', `${dev}: the Fortune box row line`);
+  await nyShot(t, dev, 'chooser_2jan');
+  await tapSel(t, '#modal [data-fsgo=fortune]', () => !!document.querySelector('#modal:not([hidden]) .panel.ny-fortunepop')); await settled(t, '#modal .panel');
+  await sheet(t, `${dev} fortune (before)`); await audit(t, `${dev} fortune (before)`);
+  const b0 = await ev(() => { const b = document.getElementById('nyShake').getBoundingClientRect(); return [b.width, b.height, b.bottom <= innerHeight]; });
+  ok(b0[1] >= 44 && b0[0] >= 44 && b0[2], `${dev}: "Shake the box" is 44 px and on screen`);
+  await t.SH('ny_fortune_before_' + dev.replace(/\s+/g, '')); await nyShot(t, dev, 'fortune_before');
+  await tapSel(t, '#nyShake', () => !!document.querySelector('.ny-slip')); await settled(t, '#modal .panel');
+  const sl = await ev(() => { const f = document.querySelector('.ny-ftxt'), l = document.querySelector('.ny-luck'), r = document.querySelector('.ny-slip').getBoundingClientRect(), tie = document.getElementById('nyTie').getBoundingClientRect(); return { f: parseFloat(getComputedStyle(f).fontSize), l: parseFloat(getComputedStyle(l).fontSize), inside: r.left >= 0 && r.right <= innerWidth, tie: [tie.width, tie.height, tie.bottom <= innerHeight] }; });
+  ok(sl.f >= 17 && sl.l >= 17 && sl.inside, `${dev}: the slip text is at least 17 px (${sl.f}, ${sl.l}) and inside the screen`);
+  ok(sl.tie[1] >= 44 && sl.tie[2], `${dev}: "Tie it on the rail" is 44 px and on screen`);
+  await sheet(t, `${dev} fortune (after)`); await audit(t, `${dev} fortune (after)`); await t.SH('ny_fortune_after_' + dev.replace(/\s+/g, '')); await nyShot(t, dev, 'fortune_after');
+  await tapSel(t, '#nyTie', () => window.__paw.ny.knots === 1); await t.modalGone();
+  ok(await t.until(() => { const g = document.getElementById('nyFortuneG'); return !!g && g.dataset.knots === '1'; }, null, 4000), `${dev}: one knot on the box`);
+  await tapSel(t, '[data-fs=fest]', () => !!document.querySelector('#modal:not([hidden]) .wn-choose'));
+  await tapSel(t, '#modal [data-fsgo=fortune]', () => !!document.querySelector('#modal:not([hidden]) .panel.ny-fortunepop')); await settled(t, '#modal .panel');
+  ok(await ev(() => /Come back tomorrow for another\./.test(document.querySelector('.ny-intro').textContent) && !document.getElementById('nyShake')), `${dev}: the same day: "Come back tomorrow for another."`);
+  await audit(t, `${dev} fortune (done today)`); await closeSheet(t);
+
+  t.sec(`NEW YEAR ${dev}: the mailbox with the three cards and Collect`);
+  await ev(() => window.__paw.openMailbox('ny_gerald_2027'));
+  await t.until(() => !!document.querySelector('#modal .panel.mailbox .pc-ny'), null, 5000); await settled(t, '#modal .panel');
+  const nc = await ev(() => { const c = document.querySelector('#modal .pc-ny'), r = c.getBoundingClientRect(), p = document.querySelector('#modal .panel').getBoundingClientRect(), tx = c.querySelector('.ny-cardtx span'); return { fits: r.left >= p.left - 1 && r.right <= p.right + 1, w: r.width, tx: parseFloat(getComputedStyle(tx).fontSize), ratio: r.width / r.height }; });
+  ok(nc.fits && nc.w > 200 && nc.tx >= 15, `${dev}: the nengajo fits the sheet (${Math.round(nc.w)} px wide, card text ${nc.tx} px)`);
+  await sheet(t, `${dev} mailbox`); await audit(t, `${dev} mailbox`);
+  const cr = await ev(() => { const b = document.querySelector('#modal .mb-get, #modal .mb-all'); if (!b) return null; b.scrollIntoView({ block: 'nearest' }); const r = b.getBoundingClientRect(); return [r.width, r.height]; });
+  ok(!!cr && cr[0] >= 43.5 && cr[1] >= 43.5, `${dev}: the Collect row buttons are 44 px`);
+  await t.SH('ny_mailbox_' + dev.replace(/\s+/g, '')); await nyShot(t, dev, 'mailbox_gerald');
+  await ev(() => window.__paw.openMailbox('ny_pup_nyp1_2027')); await t.until(() => !!document.querySelector('#modal .pc-ny .pc-photo svg'), null, 4000); await settled(t, '#modal .panel');
+  await audit(t, `${dev} mailbox pup card`); await t.SH('ny_mailbox_pup_' + dev.replace(/\s+/g, '')); await nyShot(t, dev, 'mailbox_pup');
+  const c0 = await ev(() => window.__paw.S.coins);
+  await t.p.locator('#modal .mb-all').first().tap();
+  ok(await t.until((c) => window.__paw.S.coins === c + 30 && window.__paw.S.inv.clothes.includes('Year of the Sheep Hood'), c0, 4000), `${dev}: Collect all pays 30 coins and the hood`);
+  await closeSheet(t);
+
+  t.sec(`NEW YEAR ${dev}: 360 px wide, and with a visitor`);
+  await t.p.setViewportSize({ width: 360, height: 740 }); await t.until(() => innerWidth === 360, null, 5000);
+  await nyBox(t, `${dev} 360`); await t.SH('ny_square_360_' + dev.replace(/\s+/g, ''));
+  await ev(() => { const P = window.__paw, S = P.S; while (S.dogs.length < 3) P.addDog({ key: ['corgi', 'golden'][S.dogs.length - 1], sex: 'male', months: 20 }, ['Biscuit', 'Pal'][S.dogs.length - 1]); S.rehomed = [{ id: 'nyv1', key: 'mutt', name: 'Pickle', sex: 'male', born: new Date(Date.now() - 400 * 864e5).toISOString().slice(0, 10), family: 'the Tanakas by the bakery', genes: null }]; });
+  await at(t, 'square'); await ev(() => window.__paw.town.visit('nyv1')); await t.until(() => !!document.querySelector('#visitorG'), null, 5000);
+  await t.until(() => !!document.querySelector('#nyFortuneG .fs-hit'), null, 8000); await settled(t, '#nyFortuneG .fs-hit'); await settled(t, '#visitorG > rect');
+  await nyBox(t, `${dev} 360 visitor`); await t.SH('ny_square_visitor_' + dev.replace(/\s+/g, '')); await nyShot(t, dev, 'square_visitor_360');
+  await ev(() => { const S = window.__paw.S; S.dogs.splice(1); S.rehomed = []; });
+  await t.p.setViewportSize({ width: dev === 'Pixel 7' ? 412 : 390, height: dev === 'Pixel 7' ? 915 : 844 });
+  const errs = t.errors.filter((e) => !/ERR_CERT|Failed to load resource/.test(e));
+  ok(errs.length === 0, `${dev}: no console errors ` + errs.slice(0, 3).join(' | '));
+  await t.ctx.close();
+}
 /* ======================= FUJI HILL part (the FUJI HILL lane adds it here) ======================= */
 
 run('phone_v28_winter', async (t) => {
   for (const dev of ['iPhone 15', 'Pixel 7']) await winterPart(t, dev);
+  for (const dev of ['iPhone 15', 'Pixel 7']) await newYearPart(t, dev);
 }, { device: 'iPhone 15', fest: 'auto', season: 'winter', prefs: { wnTest: true, jpTest: true, msTest: true } });
