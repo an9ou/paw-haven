@@ -456,6 +456,7 @@ function srExpose() {
     roster: (dk) => srRoster(dk).map((x) => ({ id: x.id, key: x.key, sex: x.sex, months: x.months, name: x.name, kind: x.kind, trait: x.trait })),
     room: SR_ROOM, slots: SR_SLOTS,
     meet: (id) => srMeet(id), toss: () => srToss(), pet: (id) => srPet(id),
+    total: () => (SR ? SR.dogs.length : 0), // every room dog, the one standing at the meet spot included
     count: () => (SR ? SR.dogs.filter((d) => !d.away || d.parked || d.leaving).length : 0), // room dogs, the back room included (not the meet dog)
     dogs: () => (SR ? SR.dogs.filter((d) => !d.away).map((d) => ({ id: d.id, key: d.key, pose: d.pose, x: Math.round(d.x), y: Math.round(d.y), walking: !!d.walking, busy: !!d.busy })) : []),
     get mode() { return SR ? SR.mode : null; }, get lastFetch() { return SR ? SR.lastFetch : null; }, get pets() { return SR ? SR.pets : 0; }, get bellies() { return SR ? SR.bellies : 0; },

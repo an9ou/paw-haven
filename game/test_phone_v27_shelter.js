@@ -47,7 +47,8 @@ require('./test_lib').run('phone_v27_shelter', async (t) => {
     ok(big.every((h) => h >= 48) && !a.small.length && !a.tiny.length && !a.hs, `the tray: buttons 48 px (${big}), text 15 px, no sideways scroll ` + show(a));
     ok(await inCrop(room.board) && await inCrop(room.sign), 'the board and the sign sit in the crop, above the tray');
     hr = await dogRects(); ok(hr.length >= 3 && hr.every((h) => h >= 48), `room dog tap rects >= 48 px (${hr}), the rest wait in the back room`);
-    ok(await ev(() => window.__paw.sr.dogs().every((d) => { const svg = document.querySelector('#view > svg.world'), pt = svg.createSVGPoint(); pt.x = d.x; pt.y = d.y; const q = pt.matrixTransform(svg.getScreenCTM()), tr = document.querySelector('#dock .sr-tray').getBoundingClientRect(); return q.x >= 0 && q.x <= innerWidth && q.y <= tr.top + 2; })), 'every room dog stands in view, above the tray');
+    const outV = await ev(() => window.__paw.sr.dogs().filter((d) => { const svg = document.querySelector('#view > svg.world'), pt = svg.createSVGPoint(); pt.x = d.x; pt.y = d.y; const q = pt.matrixTransform(svg.getScreenCTM()), tr = document.querySelector('#dock .sr-tray').getBoundingClientRect(); return !(q.x >= 0 && q.x <= innerWidth && q.y <= tr.top + 2); }).map((d) => `${d.key}@${d.x},${d.y}${d.walking ? ' walking' : ''}`));
+    ok(!outV.length, `every room dog stands in view, above the tray ${outV.join(' ')}`);
     await t.SH(device.replace(/\s/g, '') + '_02_shelter');
     // the whole board opens the list on phones (a portrait too)
     await p.locator('#srBoardG [data-srslot]').first().tap({ force: true });
