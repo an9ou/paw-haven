@@ -294,7 +294,7 @@ function drawTopknot(h,s,HT){// Poodle: a round pom of hair on top of the head, 
 function drawEars(h,s,L,HT,front){
   const mode=L.ears,col=s.ear||s.hcol;
   earList(s).forEach(e=>{
-    const isFront=!!e.flop;if(isFront!==front)return;
+    const isFront=!!e.flop;if(isFront!==front||L.hood)return;
     let p=earPose(s,L,e);
     if(s.curlEar&&e.flop){if(e.side>0){const c=e.pivot,hx=s.head.rx;p=p.map(q=>[c[0]+(q[0]-c[0])*.84-hx*.16,c[1]+(q[1]-c[1])*.9])}curlyEar(h,s,p,HT,mix(e.col||col,PEN,.16));return}
     h.shape((s.earRound?chaikin(p,s.earRound):p).map(HT),e.col||col,{w:3.8});
@@ -406,7 +406,7 @@ function drawFace(h,s,L,HT){
 }
 
 /* ---------- outfits ---------- */
-const OUT={head:['Party Hat','Flower Crown','Acorn Cap','Rain Hat','Pom-pom Beanie','Chef Hat','Wizard Hat','Sun Hat','Cowboy Hat','Astronaut Helmet','Leaf Beret','Witch Hat'],eyes:['Heart Sunglasses','Explorer Goggles'],neck:['Red Bandana','Bow Tie','Seashell Necklace','Clover Collar','Rainbow Collar','Sailor Collar','Knit Scarf','Autumn Scarf','Parade Rosette','Candy Corn Bandana'],body:['Yellow Raincoat','Knit Winter Sweater','Superhero Cape','Mossy Poncho','Frog Raincoat','Polka-dot Raincoat','Bubble Raincoat','Happi Coat','Bumblebee Suit','Cozy Hoodie','Tutu','Pyjamas','Ghost Sheet','Pumpkin Suit','Vampire Cape','Bat Wings']};
+const OUT={head:['Party Hat','Flower Crown','Acorn Cap','Rain Hat','Pom-pom Beanie','Chef Hat','Wizard Hat','Sun Hat','Cowboy Hat','Astronaut Helmet','Leaf Beret','Witch Hat','Reindeer Antlers','Year of the Sheep Hood'],eyes:['Heart Sunglasses','Explorer Goggles'],neck:['Red Bandana','Bow Tie','Seashell Necklace','Clover Collar','Rainbow Collar','Sailor Collar','Knit Scarf','Autumn Scarf','Parade Rosette','Candy Corn Bandana','Snowflake Snood','Ugly Sweater Rosette'],body:['Yellow Raincoat','Knit Winter Sweater','Superhero Cape','Mossy Poncho','Frog Raincoat','Polka-dot Raincoat','Bubble Raincoat','Happi Coat','Bumblebee Suit','Cozy Hoodie','Tutu','Pyjamas','Ghost Sheet','Pumpkin Suit','Vampire Cape','Bat Wings','Very Ugly Sweater']};
 function coatPts(s){const b=s.body,p=[],f=s.fluff?1.12:1.08;for(let a=-108;a<=108;a+=12){const t=a*D2R;p.push([Math.cos(t)*b.rx*f,Math.sin(t)*b.ry*(f+.04)])}return p}
 function drawCape(h,s,L,B){
   // billows up and back behind the body, so most of it shows above the back and past the rump
@@ -443,6 +443,7 @@ function drawCoat(h,s,L,B,kind){
 function neckAnchor(s,HT){const hx=s.head.rx,hy=s.head.ry;return{c:HT([-hx*.12,hy*.86]),l:HT([-hx*.62,hy*.72]),r:HT([hx*.42,hy*.86]),tip:HT([-hx*.2,hy*1.5])}}
 function clampG(p){return[p[0],Math.min(p[1],GY+5)]}
 function drawNeck(h,s,L,HT,kind){
+  if(NECK2[kind])return NECK2[kind](h,s,L,HT);
   if(kind==='Autumn Scarf')return drawAScarf(h,s,L,HT);if(kind==='Candy Corn Bandana')return drawCandyCorn(h,s,L,HT);if(kind==='Parade Rosette')return drawRosette(h,s,L,HT);
   if(kind==='Sailor Collar')return drawSailor(h,s,L,HT);if(kind==='Knit Scarf')return drawScarf(h,s,L,HT);
   const a=neckAnchor(s,HT);
@@ -738,6 +739,102 @@ BODY2['Bat Wings']=function(h,s,L,B){// the harness strap round the chest, then 
   h.line([[b.rx*.4,-b.ry*.9],[w.root[0],w.root[1]+2]].map(B).map(cl),5,INK,.4);h.line([[b.rx*.4,-b.ry*.9],[w.root[0],w.root[1]+2]].map(B).map(cl),2.8,'#8E63C7',.4);
   hwWing(h,B,w.root,w.ang,w.z,cl,0);
   const bk=cl(B([b.rx*.46,b.ry*.12]));h.shape([[bk[0]-3.4,bk[1]-3.2],[bk[0]+3.4,bk[1]-3.2],[bk[0]+3.4,bk[1]+3.2],[bk[0]-3.4,bk[1]+3.2]],'#FFD23A',{w:2,ox:0,oy:0,sc:1,closed:1,amp:.3,famp:.2})};
+/* ---------- v2.8 Winter & New Year outfits ---------- */
+// NECK2 holds the neck items from v2.8 on (drawNeck looks there first); older necks keep their own branches
+const NECK2={},WN_GR='#3F8F3A',WN_GD='#28682A',WN_RD='#D7263D',WN_RK='#9E1426',WN_CR='#FFF1D6';
+function wnFlake(h,c,z,col,w,wonky){// a crayon snowflake round c (canvas px): three crossing strokes, little V tips; wonky = uneven arms, one tip missing
+  const A=wonky?[12,74,128]:[0,60,120],K=wonky?[[1,.7],[1.25,.85],[.8,1.1]]:[[1,1],[1,1],[1,1]];
+  A.forEach((a,i)=>{const u=[Math.cos(a*D2R),Math.sin(a*D2R)],e0=[c[0]-u[0]*z*K[i][0],c[1]-u[1]*z*K[i][0]],e1=[c[0]+u[0]*z*K[i][1],c[1]+u[1]*z*K[i][1]];h.line([e0,e1],w,col,.35);
+   [[e1,1],[e0,-1]].forEach(([e,sg],j)=>{if(wonky&&i===1&&j)return;const m=[e[0]-u[0]*sg*z*.32,e[1]-u[1]*sg*z*.32],v=[-u[1]*z*.24,u[0]*z*.24];h.line([[m[0]+v[0],m[1]+v[1]],[e[0]-u[0]*sg*z*.08,e[1]-u[1]*sg*z*.08],[m[0]-v[0],m[1]-v[1]]],w*.75,col,.25)})})}
+function wnAlong(P,k){// the start of polyline P up to fraction k of its length
+  let tot=0;for(let i=1;i<P.length;i++)tot+=Math.hypot(P[i][0]-P[i-1][0],P[i][1]-P[i-1][1]);const o=[P[0]];let acc=0;
+  for(let i=1;i<P.length;i++){const d=Math.hypot(P[i][0]-P[i-1][0],P[i][1]-P[i-1][1]);if(acc+d>=tot*k){const t=d?(tot*k-acc)/d:0;o.push([P[i-1][0]+(P[i][0]-P[i-1][0])*t,P[i-1][1]+(P[i][1]-P[i-1][1])*t]);return o}acc+=d;o.push(P[i])}return o}
+BODY2['Very Ugly Sweater']=function(h,s,L,B,p){// green with lumpy red stripes, a wonky crayon snowflake, red ribbing, one sleeve longer than the other, a loose thread
+  const b=s.body,f=s.fluff?1.12:1.08,cl=q=>[q[0],Math.min(q[1],GY-1)];
+  // the sleeves first, so the sweater covers their tops: the far one short, the near one long
+  L.legs.filter(l=>(l.id==='FF'||l.id==='NF')&&l.foot&&!l.raised&&!l.haunch&&!l.sitfoot).sort((x,y)=>x.near-y.near).forEach(l=>{
+   const P=dense([l.hip,l.mid||[(l.hip[0]+l.foot[0])/2+1,(l.hip[1]+l.foot[1])/2],l.foot],false,2),S=wnAlong(P,l.near?.66:.42),cw=Math.max(3.4,l.w*.42),
+    e=S[S.length-1],q=S[Math.max(0,S.length-1-Math.round(cw*1.3))];
+   h.tube(S.map(cl),l.w+3.6,l.near?WN_GR:mix(WN_GR,PEN,.28));h.tube([q,e].map(cl),l.w+5.4,l.near?WN_RD:mix(WN_RD,PEN,.28),{ow:3.6});
+   const dx=e[0]-q[0],dy=e[1]-q[1],m=Math.hypot(dx,dy)||1,nx=-dy/m*(l.w*.5+2),ny=dx/m*(l.w*.5+2),c=[(q[0]+e[0])/2,(q[1]+e[1])/2];h.line([[c[0]-nx,c[1]-ny],[c[0]+nx,c[1]+ny]].map(cl),1.6,WN_RK,.2)});
+  const lp=p.map((q,i)=>{const k=1+.035*Math.sin(i*2.7);return[q[0]*k,q[1]*k]});
+  h.shape(lp.map(B).map(cl),WN_GR,{w:4.6});h.crayon(b.rx*.7,b.ry*.7,q=>B([q[0]+b.rx*.3,q[1]]),WN_GR,6);
+  const yy=x=>b.ry*(f+.02)*.95*Math.sqrt(Math.max(0,1-Math.pow(x/(b.rx*f),2)));
+  [[.74,.09],[.3,.1],[-.12,.09]].forEach(([cx,w],i)=>{const E=[],R=[];for(let j=0;j<=6;j++){const t=-1+j/3,wb=Math.sin(j*1.9+i*2.3)*b.rx*.035,xl=b.rx*(cx-w)+wb,xr=b.rx*(cx+w)+wb*.5+Math.cos(j*1.3+i)*b.rx*.03;E.push([xl,yy(xl)*t]);R.unshift([xr,yy(xr)*t])}
+   h.shape(E.concat(R).map(B).map(cl),WN_RD,{noline:1,ox:0,oy:0,step:6,famp:1});h.line(E.map(B).map(cl),1.8,WN_RK,.5)});
+  for(let i=0;i<6;i++){const q=B([b.rx*(-.25+h.r()*1.1),b.ry*(h.r()-.5)*1.3]);h.dot(q[0],q[1],1.4,1.4,'#FFF6E0')}
+  h.line([[b.rx*.84,-b.ry*.74],[b.rx*.97,-b.ry*.45],[b.rx*1.03,-b.ry*.12]].map(B).map(cl),6.5,WN_RD,.7);
+  [[.86,-.66],[.94,-.42],[1.0,-.2]].forEach(q=>{const c=B([b.rx*q[0],b.ry*q[1]]),d=B([b.rx*(q[0]-.07),b.ry*q[1]]);h.line([c,d].map(cl),1.6,WN_RK,.2)});
+  h.line([lp[0],[lp[0][0]-1.5,-b.ry*.3],[lp[0][0]+1.5,b.ry*.3],lp[lp.length-1]].map(B).map(cl),5.5,WN_RD,.8);
+  wnFlake(h,cl(B([b.rx*.5,-b.ry*.1])),Math.max(6.5,Math.min(b.ry*.5,11.5)),W,3.2,1);
+  // the loose thread, from whichever back corner of the hem is lower
+  const c0=B([lp[0][0]+3,lp[0][1]*.9]),c1=B([lp[lp.length-1][0]+3,lp[lp.length-1][1]*.9]),st=c0[1]>c1[1]?c0:c1,Lt=Math.max(12,Math.min(21,b.ry*.85));
+  const th=[[0,0],[-2.5,Lt*.3],[1.5,Lt*.55],[-2.5,Lt*.8],[-.5,Lt]].map(q=>cl([st[0]+q[0],st[1]+q[1]]));h.line(th,2.2,WN_GD,.35);
+  const e=th[th.length-1];h.line(spiral(e[0]+2.6,e[1]-1.2,.4,2.8,1,8,3.1).map(cl),1.8,WN_GD,.2)};
+HAT2['Reindeer Antlers']=function(h,s,L,HT){// a red felt headband over the crown, two soft brown felt antlers between the ears, a tiny gold bell on each
+  const hx=s.head.rx,hy=s.head.ry,sq=L.pose==='rollover'?.55:1,g=/^(giant|bat)$/.test(s.ears)?-.08:0,z=Math.max(hy,hx*.82)*(L.pose==='rollover'?.75:1.12),BR='#9C6234',BL='#C8925A',GD='#F2C14E',cl=q=>[q[0],Math.min(q[1],GY+3)];
+  const P=q=>HT([q[0],-hy*.42+(q[1]+hy*.42)*sq]);
+  const antler=(root,lean,far)=>{const col=far?mix(BR,PEN,.28):BR,M=q=>{const r2=rot([q[0]*z,q[1]*z],lean);return cl(P([root[0]+r2[0],root[1]+r2[1]]))};
+   const beam=[[0,0],[-.06,-.4],[-.03,-.76],[.1,-1.04]],t1=[[-.04,-.44],[.2,-.58],[.3,-.78]],t2=[[-.03,-.74],[-.22,-.88],[-.27,-1.06]];
+   h.tube(t1.map(M),z*.2,col,{ow:3.4});h.tube(t2.map(M),z*.2,col,{ow:3.4});h.tube(beam.map(M),z*.26,col,{ow:3.6});
+   if(!far)h.line([[-.02,-.12],[-.03,-.6],[.04,-.92]].map(M),Math.max(1.6,z*.05),BL,.3);
+   const k=M([.22,-.6]),bz=Math.max(3.2,z*.14),bc=[k[0],k[1]+bz*1.3];h.line([k,bc],1.4,INK,.1);
+   h.shape(circ(bc[0],bc[1],bz,bz,8),far?mix(GD,PEN,.25):GD,{w:2,ox:0,oy:0,sc:1,closed:1,amp:.25,famp:.2});h.line([[bc[0]-bz*.6,bc[1]+bz*.25],[bc[0]+bz*.6,bc[1]+bz*.25]],1.2,INK,.1);h.dot(bc[0],bc[1]+bz*.62,bz*.28,bz*.28,INK)};
+  antler([hx*(-.12+g),-hy*.95],-27,1);
+  const band=[];for(let i=0;i<=8;i++){const a=Math.PI*(1-i/8);band.push([Math.cos(a)*hx*.84,-hy*.4-Math.sin(a)*hy*.6])}
+  h.tube(band.map(P).map(cl),Math.max(4.6,z*.17),WN_RD,{ow:3.6});h.line(band.slice(2,6).map(q=>[q[0],q[1]-z*.03]).map(P).map(cl),1.4,'#F07080',.3);
+  antler([hx*(.18+g),-hy*.96],24,0)};
+HAT2['Year of the Sheep Hood']=function(h,s,L,HT){// a cream woolly hood, face open; prick ears poke out through two holes (flop ears stay inside, see frame), floppy sheep ears, two small curled horns
+  const hx=s.head.rx,hy=s.head.ry,f=L.face,er=s.eyes,e0=f.e0||[-.1,-.04],e1=f.e1||[.42,-.1],CR='#FBF3E2',CU='#D8C8A6',HN='#D9B77E',HD='#A8844C',PK='#F6B6C2',cl=q=>[q[0],Math.min(q[1],GY+3)];
+  // the face opening: an ellipse that clears both eyes
+  const ox=hx*.2,oy=hy*.12,ex=Math.min(hx*e0[0]-er[0],hx*e1[0]-er[1]),ey=Math.min(hy*e0[1]-er[0],hy*e1[1]-er[1]),rx=Math.max(hx*.8,ox-ex+4),ry=Math.max(hy*.8,oy-ey+3);
+  const o=[],n=[];for(let an=-30,i=0;an>=-238;an-=13,i++){const k=1.15+(i%2?.06:0);o.push([Math.cos(an*D2R)*hx*k,Math.sin(an*D2R)*hy*(k+.03)])}
+  for(let an=-238;an<=-30;an+=13)n.push([ox+Math.cos(an*D2R)*rx,oy+Math.sin(an*D2R)*ry]);
+  h.shape(o.concat(n).map(HT).map(cl),CR,{w:3.8,step:7,amp:.9});
+  h.line(n.slice(1,-1).map(q=>[ox+(q[0]-ox)*1.08,oy+(q[1]-oy)*1.08]).map(HT).map(cl),3,CU,.6);
+  [-60,-100,-140,-175,-205,-80,-160].forEach((an,i)=>{const t=i<5?.5:.75,a=an*D2R,ri=[ox+Math.cos(a)*rx,oy+Math.sin(a)*ry],ro=[Math.cos(a)*hx*1.15,Math.sin(a)*hy*1.18],c=HT([ri[0]+(ro[0]-ri[0])*t,ri[1]+(ro[1]-ri[1])*t]);h.line(spiral(c[0],c[1],.4,Math.max(2.6,hx*.09),1.2,8,i*1.7).map(cl),1.8,CU,.3)});
+  const ear=(root,ang,far)=>{const z=hx*.74,M=q=>{const r2=rot([q[0]*z,q[1]*z],ang);return HT([root[0]+r2[0],root[1]+r2[1]])},E=[[0,-.22],[-.5,-.32],[-.95,-.14],[-1.06,.08],[-.62,.26],[0,.22]];
+   h.shape(E.map(M).map(cl),far?mix(CR,PEN,.22):CR,{w:3.2,step:6,ox:0,oy:0,sc:1,amp:.6});h.shape([[-.12,-.07],[-.56,-.15],[-.86,-.02],[-.56,.11],[-.12,.09]].map(M).map(cl),far?mix(PK,PEN,.2):PK,{noline:1,ox:0,oy:0,sc:1})};
+  ear([-hx*.88,-hy*.66],-30,1);ear([-hx*1.0,-hy*.1],24,0);
+  // the dog's own prick ears out through two holes (frame skips every ear under the hood): each ear from where it leaves the wool, a woolly rim at the hole
+  if(!L.ghost)earList(s).forEach(e=>{if(e.flop)return;let p=earPose(s,L,e).slice();const n=p.length,out=q=>Math.hypot(q[0]/hx,q[1]/hy)>=1.1,cut=(q,t)=>{for(let k=0;k<.85;k+=.05){const r=[q[0]+(t[0]-q[0])*k,q[1]+(t[1]-q[1])*k];if(out(r))return r}return[q[0]+(t[0]-q[0])*.85,q[1]+(t[1]-q[1])*.85]};
+   p[0]=cut(p[0],p[1]);p[n-1]=cut(p[n-1],p[n-2]);const col=e.col||s.ear||s.hcol;
+   h.shape((s.earRound?chaikin(p,s.earRound):p).map(HT).map(cl),col,{w:3.8});
+   if(e.inner){const c=[(p[0][0]+p[2][0])/2,(p[0][1]+p[2][1])/2],ip=p.map(q=>[c[0]+(q[0]-c[0])*.55,c[1]+(q[1]-c[1])*.55]);ip[1]=[c[0]+(p[1][0]-c[0])*.7,c[1]+(p[1][1]-c[1])*.7];h.shape((s.earRound?chaikin(ip,s.earRound):ip).map(HT).map(cl),s.ears==='tall'?W:'#FFB8C4',{noline:1,ox:0,oy:0})}
+   if(e.fold){const a=p[e.fold[0]],b=p[e.fold[1]];h.line([a,[(a[0]+b[0])/2,(a[1]+b[1])/2+1.5],b].map(HT).map(cl),2.4,lum(col)<.32?mix(col,W,.45):mix(col,PEN,.45),.4)}
+   const a=p[0],c=p[n-1],m=[(a[0]+c[0])/2,(a[1]+c[1])/2],k=-.14,ml=Math.hypot(m[0]/hx,m[1]/hy)||1;
+   h.tube([[a[0]+(a[0]-m[0])*-k,a[1]+(a[1]-m[1])*-k],[m[0]*(1+.06/ml),m[1]*(1+.06/ml)],[c[0]+(c[0]-m[0])*-k,c[1]+(c[1]-m[1])*-k]].map(HT).map(cl),Math.max(4.4,hx*.16),CR,{ow:3.2})});
+  // two small curled horns on top, after the ears: the far one peeks out behind the near one
+  const horn=(c,a0,dir,far)=>{const r=Math.max(4.6,hx*.2),sp=spiral(0,0,r*.28,r,.95,16,a0).map(q=>HT([c[0]+q[0]*dir,c[1]+q[1]])).map(cl),col=far?mix(HN,PEN,.25):HN;
+   h.tube(sp.slice(0,9),r*.5,col,{ow:3.2});h.tube(sp.slice(8),r*.34,col,{ow:3});h.line(sp.slice(2,14),1.4,HD,.2)};
+  horn([-hx*.2,-hy*1.08],-2.4,-1,1);horn([hx*.12,-hy*1.04],-2.4,1,0)};
+NECK2['Snowflake Snood']=function(h,s,L,HT){// a chunky knitted tube: blue with cream ribbed rims and white snowflakes, no ends
+  const a=neckAnchor(s,HT),hy=s.head.ry,BL='#4F7FC9',BD='#2F5A9E',th=Math.max(13,hy*.6),cl=q=>[q[0],Math.min(q[1],GY-1)];
+  const d=[a.r[0]-a.l[0],a.r[1]-a.l[1]],m=Math.hypot(d[0],d[1])||1,u=[d[0]/m,d[1]/m],v=[-u[1],u[0]];
+  let lift=0;const sag=t=>{const x=a.l[0]+d[0]*t,y=a.l[1]+d[1]*t,k=Math.sin(Math.PI*Math.max(0,Math.min(1,t)))*6+th*.3;return[x+v[0]*k,y+v[1]*k-lift]};
+  {let my=-1e9;for(let i=0;i<=8;i++){const c=sag(-.22+i/8*1.2);my=Math.max(my,c[1]+Math.max(0,v[1])*th*.6)}lift=Math.min(th*.7,Math.max(0,my-(GY-1)))}// lying down: ride up the chin instead of flattening on the ground
+  const top=[],bot=[];for(let i=0;i<=8;i++){const t=-.22+i/8*1.2,c=sag(t),w=th*(.5+.08*Math.sin(i*2.2));top.push([c[0]-v[0]*th*.5,c[1]-v[1]*th*.5]);bot.unshift([c[0]+v[0]*w*1.1,c[1]+v[1]*w*1.1])}
+  h.shape(chaikin(top.concat(bot),1).map(cl),BL,{w:4,step:7,amp:.9});
+  const rim=(P,dd)=>P.map(q=>[q[0]+v[0]*dd,q[1]+v[1]*dd]);
+  h.line(rim(top.slice(1,-1),th*.13).map(cl),th*.17,WN_CR,.4);h.line(rim(bot.slice(1,-1),-th*.15).map(cl),th*.17,WN_CR,.4);
+  [rim(top.slice(1,-1),th*.13),rim(bot.slice(1,-1),-th*.15)].forEach(R=>R.forEach((q,i)=>{if(i%2)return;h.line([[q[0]-v[0]*th*.07,q[1]-v[1]*th*.07],[q[0]+v[0]*th*.07,q[1]+v[1]*th*.07]].map(cl),1.3,'#C9B48E',.15)}));
+  [.06,.42,.78].forEach((t,i)=>{const c=sag(t);wnFlake(h,cl([c[0]+v[0]*th*.08,c[1]+v[1]*th*.08]),th*(i===1?.25:.2),W,1.9,0)});
+  h.line([sag(-.16),sag(.4),sag(.94)].map(q=>[q[0]+v[0]*th*.42,q[1]+v[1]*th*.42]).map(cl),1.6,BD,.6)};
+NECK2['Ugly Sweater Rosette']=function(h,s,L,HT){// the Parade Rosette's shape in red and green, lumpier, odd ribbons, a tiny knitted sweater badge in the middle
+  const a=neckAnchor(s,HT),GO='#F2C14E',cl=q=>[q[0],Math.min(q[1],GY-1)];
+  const sag=t=>{const x=a.l[0]+(a.r[0]-a.l[0])*t,y=a.l[1]+(a.r[1]-a.l[1])*t+Math.sin(Math.PI*t)*8;return[x,Math.min(y,GY-18)]};
+  const pts=[];for(let i=0;i<=8;i++)pts.push(sag(i/8));h.line(pts,6.4,INK);h.line(pts,4,WN_GR,.4);
+  for(let i=1;i<8;i+=2){const q=pts[i];h.line([[q[0]-2,q[1]-1.5],[q[0]+2,q[1]+1.5]],1.4,WN_RD,.1)}
+  const lie=/^(sleep|down|crouch|playdead|rollover)$/.test(L.pose),c=sag(lie?.15:.58),k=[c[0]+(lie?-4:2),Math.min(c[1]+(lie?0:7),GY-14)];
+  h.shape([[k[0]-2,k[1]],[k[0]-12,k[1]+19],[k[0]-8,k[1]+15],[k[0]-6,k[1]+21],[k[0]-3,k[1]+16],[k[0]+2,k[1]+3]].map(cl),WN_RD,{w:2.6,step:30,ox:0,oy:0,sc:1,closed:1,amp:.4});
+  h.shape([[k[0]+1,k[1]],[k[0]+5,k[1]+13],[k[0]+9,k[1]+10],[k[0]+11,k[1]+14],[k[0]+6,k[1]+1]].map(cl),WN_GR,{w:2.6,step:30,ox:0,oy:0,sc:1,closed:1,amp:.4});
+  const ro=scallop(0,0,12.5,11.5,10,.3).map((q,i)=>{const r2=rot(q,-10),j=1+.07*Math.sin(i*1.9);return[k[0]+r2[0]*j+(r2[1]<0?r2[1]*.16:0),k[1]+r2[1]*.86*j]});
+  h.shape(ro.map(cl),'#EE3B35',{w:2.8,step:30,ox:.6,oy:-.4,sc:1,amp:.6});
+  h.shape(scallop(k[0]+.5,k[1],8.4,7.6,8,.22).map(cl),'#55B24C',{noline:1,step:30,ox:0,oy:0,sc:1});h.line(scallop(k[0]+.5,k[1],8.4,7.6,8,.22).slice(4,26).map(cl),1.4,WN_GD,.3);
+  [[-9.5,-5],[10,4]].forEach(o=>h.dot(k[0]+o[0],k[1]+o[1]*.86,1.6,1.6,GO));
+  const sw=[[-3.2,-4],[-1.2,-5],[1.2,-5],[3.2,-4],[6.4,-.6],[5,1],[3.4,-.4],[3.4,4.6],[-3.4,4.6],[-3.4,-.4],[-5,1],[-6.4,-.6]].map(q=>cl([k[0]+.5+q[0]*1.05,k[1]+q[1]*1.05]));
+  h.shape(sw,WN_CR,{w:1.6,step:30,ox:0,oy:0,sc:1,closed:1,amp:.2,famp:.15});
+  h.line([[k[0]-2.6,k[1]+1],[k[0]-1,k[1]-.6],[k[0]+.5,k[1]+1],[k[0]+2,k[1]-.6],[k[0]+3.6,k[1]+1]].map(cl),1.3,WN_RD,.05);h.dot(k[0]+.5,k[1]+3,.9,.9,WN_GR)};
 /* ---------- fx ---------- */
 function drawFx(h,s,L,B,HT){
   const hx=s.head.rx,hy=s.head.ry,b=s.body;
@@ -812,6 +909,7 @@ function frame(key,s,pose,outfit,k,seed){
   const has=(slot)=>outfit&&outfit[slot]&&OUT[slot].includes(outfit[slot])?outfit[slot]:null;
   const body=has('body'),neck=has('neck'),hat=has('head'),eyes=has('eyes');
   if(hat==='Astronaut Helmet'){if(L.ears!=='flat')L.ears=/^(giant|bat|tall)$/.test(s.ears)?'sleep':'norm';L.earFit=Math.max(s.head.rx,s.head.ry)*1.38}
+  if(hat==='Year of the Sheep Hood'){L.hood=1;if(body==='Ghost Sheet')L.ghost=1}// v2.8: flop ears stay inside the hood, the hood draws the prick ears itself
   if(body==='Superhero Cape')drawCape(h,s,L,B);
   if(body&&BACK2[body])BACK2[body](h,s,L,B);
   drawTail(h,s,L,B);
