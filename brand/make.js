@@ -13,8 +13,9 @@ const PA = win.PawArt;
 const inner = (svg) => svg.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
 // a dog placed as a nested svg; vb crops the 240x200 canvas
 const dogAt = (key, o, x, y, w, h, vb) => `<svg x="${x}" y="${y}" width="${w}" height="${h}" viewBox="${vb || '0 0 240 200'}" overflow="visible">${inner(PA.dog(key, Object.assign({ anim: false }, o)))}</svg>`;
-// Biscuit's head with the ears: dogHead() draws on a 100x100 canvas and its giant ears reach above it (to y -18), so crop wider
-const HEADVB = [11, -22, 75, 120];
+// the crayon head: dogHead() draws on a 100x100 canvas (a corgi's ears would reach above it, to y -18)
+// the brand's dog (owner pick, 15 Oct 2026): Noodle the dachshund. HEADVB crops dogHead()'s 100x100 canvas square around the head
+const HERO = 'dachs', HEADVB = [2, 6, 96, 96];
 const headAt = (key, cx, top, h) => { const k = h / HEADVB[3], w = HEADVB[2] * k; return `<svg x="${f1(cx - w / 2)}" y="${f1(top)}" width="${f1(w)}" height="${f1(h)}" viewBox="${HEADVB.join(' ')}" overflow="visible">${inner(PA.dogHead(key))}</svg>`; };
 
 // ---------- pencil lines (the game's own rrPts / wobble / pencilSVG, game/src/00_core.js) ----------
@@ -87,18 +88,18 @@ async function main() {
   const svgDoc = (w, h, body, label) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${label}"><title>${label}</title>${body}</svg>\n`;
   const dots = (w, h) => `<defs><pattern id="dd-dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="11" cy="11" r="1.3" fill="${DOT}"/></pattern></defs><rect width="${w}" height="${h}" fill="${PAPER}"/><rect width="${w}" height="${h}" fill="url(#dd-dots)"/>`;
 
-  // ---------- 1. horizontal logo: Biscuit the corgi (the title screen's dog), happy, then the wordmark ----------
+  // ---------- 1. horizontal logo: Noodle the dachshund, happy, then the wordmark ----------
   const LF = 124, LW = 900, LH = 280;
   {
     const wm = wordmark(0, 0, LF), dogW = 252, dogH = 252, wx = 262, wy = (LH - wm.H) / 2 + 6;
     const body = `<rect width="${LW}" height="${LH}" fill="${PAPER}"/>`
-      + dogAt('corgi', { pose: 'happy' }, 14, 6, dogW, dogH, '42 30 180 180')
+      + dogAt(HERO, { pose: 'happy' }, 10, 46, dogW, dogW * 160 / 214, '22 40 214 160')
       + wordmark(wx, wy, LF).g
       + doodle('spark', wx + wm.W + 30, wy + 6, 1.15) + doodle('heart', wx + wm.W + 6, wy + wm.H + 18, .8, -10) + doodle('spark', wx - 6, wy - 4, .6);
     fs.writeFileSync(path.join(out, 'doodle-doggo-logo.svg'), svgDoc(LW, LH, body, 'Doodle Doggo'));
   }
 
-  // ---------- 2. app icon: Biscuit's crayon head on a rounded cream page with a pencil border ----------
+  // ---------- 2. app icon: Noodle's crayon head on a rounded cream page with a pencil border ----------
   const swashBlob = (cx, cy, w, h) => `<path d="${swashPath(cx - w / 2, cy - h / 2, w, h)}" fill="${PINK}" opacity=".4" transform="rotate(-6 ${cx} ${cy})"/>`;
   // head = the height of the head with its ears; blob = the pink swash behind the chin
   function icon({ bleed = false, head = 412, border = true, bw = 9, amp = 2.5, dy = 0, blob = true, clip = false } = {}) {
@@ -106,7 +107,7 @@ async function main() {
     const brd = border ? pencil(rrPts(m + 6, m + 6, S - m - 6, S - m - 6, 98, 120), 31, amp, bw) : '';
     const top = (S - head) / 2 + dy, k = head / HEADVB[3], cx = S / 2 - (HEADVB[0] + HEADVB[2] / 2 - 48.5) * k;
     const chin = top + (88 - HEADVB[1]) * k;
-    const art = (blob ? swashBlob(S / 2 + 6, chin - 10, head * .62, head * .15) : '') + headAt('corgi', cx, top, head);
+    const art = (blob ? swashBlob(S / 2 + 6, chin - 10, head * .62, head * .15) : '') + headAt(HERO, cx, top, head);
     // clip: a bigger face for tiny sizes, the ear tips go under the card's edge
     const cl = clip ? `<defs><clipPath id="dd-card"><rect x="${m + 6}" y="${m + 6}" width="${S - 2 * m - 12}" height="${S - 2 * m - 12}" rx="98"/></clipPath></defs>` : '';
     return svgDoc(S, S, cl + card + (clip ? `<g clip-path="url(#dd-card)">${art}</g>` : art) + brd, 'Doodle Doggo');
@@ -121,7 +122,7 @@ async function main() {
     const url = word(C6, 'doodledoggo.app', 34, 0, 0, 0);
     const body = dots(W, H)
       + pencil(rrPts(28, 28, W - 28, H - 28, 26, 200), 11, 3, 4.6)
-      + dogAt('corgi', { pose: 'happy' }, 40, 120, 440, 440, '42 30 180 180')
+      + dogAt(HERO, { pose: 'happy' }, 50, 140, 420, 420 * 160 / 214, '22 40 214 160')
       + wordmark(wx, wy, F).g
       + `<path d="${tag.d}" fill="${INK}" transform="translate(${f1(tx)} ${f1(ty)}) rotate(-1)"/>`
       + `<path d="M${f1(tx - 24)} ${f1(ty + 20)} L${f1(tx + tag.w + 24)} ${f1(ty + 16)}" stroke="#A8968A" stroke-width="2" stroke-dasharray="6 9" stroke-linecap="round" opacity=".8" fill="none"/>`
