@@ -153,6 +153,7 @@ function phHomeRefit() {
   let L = 186, R = 530, fitMin = 0.62;
   const vz = $('#visitorG', view);
   if (S.place === 'market') { L = 186; R = 592; fitMin = 0.78; } // the bowl, the dog and the "Market Street" sign together: the street zooms out a little when the screen is narrow
+  else if (S.place === 'fujihill') { L = 250; R = 596; } // v2.8 FUJI HILL: the dog on the path, the bench (x 488-572) and Fuji's summit in the crop at 390 and 360 px
   else if (vz) { const sp = visitorSpot(), w = 264 * sp[3]; L = 306; R = Math.max(R, sp[0] + w / 2 + 6); }
   const vw = view.clientWidth, vh = view.clientHeight - (parseFloat(view.style.getPropertyValue('--trayH')) || 0); if (!vw || vh <= 0) return;
   const native = 600 * vw / vh, fit = Math.max(fitMin, Math.min(1, native / (R - L)));
