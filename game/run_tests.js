@@ -87,6 +87,7 @@ const SUITES = {
   phone_skill: { file: 'test_phone_skill.js', group: 'phone', est: 150 },
   // v2.3 "Cozy Phones"
   account: { file: 'test_account.js', group: 'phone', est: 240, timeout: 500 }, // v2.8: about 230 s alone, more under load (its own watchdog is 480 s)
+  itch_build: { file: 'test_itch_build.js', group: 'all', est: 40 }, // the itch.io copy has no dev button or panel (tools/itch.js)
   phone_occl_home: { file: 'test_phone_occl_home.js', group: 'phone', est: 60 },
   phone_occl_play: { file: 'test_phone_occl_play.js', group: 'phone', est: 60 },
   phone_v24_shop: { file: 'test_phone_v24_shop.js', group: 'phone', est: 40 }, // v2.4
