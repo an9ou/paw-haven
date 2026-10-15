@@ -295,8 +295,59 @@ async function newYearPart(t, dev) {
   await t.ctx.close();
 }
 /* ======================= FUJI HILL part (the FUJI HILL lane adds it here) ======================= */
+// Fuji View Hill (V28.md sections 12.4 and 9), 2026-12-10 with jpTest, at the device width and 360 px: the place buttons 44 px on one row, the dog and the
+// bench inside the crop, Fuji's summit in the crop, nothing over #dogHit (no place button either), 15 px text; Look at Fuji by touch (motion off), then
+// "Fuji says see you tomorrow." still 44 px on one row. The iPhone 15 pictures go to game/shots_v28/fuji-hill/ when PAW_SHOTS or PAW_JP_SHOTS is set.
+async function jpShot(t, dev, name) {
+  if (dev !== 'iPhone 15' || !(process.env.PAW_SHOTS || process.env.PAW_JP_SHOTS)) return;
+  const dir = require('path').join(__dirname, 'shots_v28', 'fuji-hill'); require('fs').mkdirSync(dir, { recursive: true });
+  await t.ev(() => document.querySelectorAll('#toasts .toast').forEach((e) => e.remove())); await t.sleep(500);
+  await t.p.screenshot({ path: require('path').join(dir, 'phone_dec_' + name + '.jpg'), type: 'jpeg', quality: 60 });
+}
+async function jpHill(t, tag) {
+  const { ok, ev } = t;
+  await at(t, 'fujihill'); await t.until(() => !!document.querySelector('#placeBtns [data-jp]'), null, 8000); await motionOff(t);
+  await settled(t, '#dogHit'); await settled(t, '#placeBtns');
+  const q = await ev(`(() => { const R4 = ${R4}, svg = document.querySelector('#view svg.world'), C = svg.getScreenCTM(), sc = (x, y) => new DOMPoint(x, y).matrixTransform(C);
+    const box = (x, y, w, h) => { const a = sc(x, y), b = sc(x + w, y + h); return [a.x, a.y, b.x, b.y]; }, fj = document.querySelector('#sceneG [data-fuji]'), fr = fj && fj.getBoundingClientRect();
+    const d = R4('#dogHit'), c = [(d[0] + d[2]) / 2, (d[1] + d[3]) / 2], top = document.elementFromPoint(c[0], c[1]);
+    return { dog: d, art: R4('#dogArt'), bench: box(488, 395, 84, 59), summit: fr ? [(fr.left + fr.right) / 2, fr.top] : null, view: R4('#view'), hud: R4('#hud'), chip: R4('#status'), dogTop: !!top && (top.id === 'dogHit' || !!top.closest('#dogPos')),
+      btns: [...document.querySelectorAll('#placeBtns .btn')].map((b) => { const r = b.getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; }), sw: document.documentElement.scrollWidth, iw: innerWidth }; })()`);
+  const inV = (r) => r[0] >= q.view[0] - 1 && r[2] <= q.view[2] + 1 && r[1] >= q.view[1] - 1 && r[3] <= q.view[3] + 1;
+  ok(q.btns.length === 2 && q.btns.every((b) => b[2] - b[0] >= 43.5 && b[3] - b[1] >= 43.5) && new Set(q.btns.map((b) => Math.round(b[1]))).size === 1, `${tag}: Look at Fuji and Go home are 44 px on one row`);
+  ok(inV(q.art) && inV(q.bench), `${tag}: the dog and the bench are inside the crop (dog ${q.art.map(Math.round)}, bench ${q.bench.map(Math.round)}, view ${q.view.map(Math.round)})`);
+  ok(!!q.summit && q.summit[0] > q.view[0] + 10 && q.summit[0] < q.view[2] - 10 && q.summit[1] >= q.view[1] - 1, `${tag}: Fuji's summit is in the crop ${q.summit && q.summit.map(Math.round)}`);
+  ok(q.dogTop && !q.btns.some((b) => ov(b, q.dog)) && !ov(q.chip, q.dog), `${tag}: nothing covers #dogHit`);
+  ok(q.sw === q.iw, `${tag}: no sideways page scroll`);
+  await audit(t, `${tag} Fuji View Hill`);
+  return q;
+}
+async function jpPart(t, dev) {
+  const { ok, ev } = t;
+  t.sec(`FUJI HILL ${dev}: Fuji View Hill on 2026-12-10`);
+  setDate(t, '2026-12-10');
+  await t.newGame({ device: dev }, { bond: { level: 3, pts: 300 } });
+  ok(await ev(() => !!window.__paw.jp.place() && window.__paw.jp.open()), `${dev}: the hill is open (jpTest, Bond 3)`);
+  await jpHill(t, dev); await jpShot(t, dev, 'fujihill');
+  await ev(() => window.__toasts.splice(0));
+  await t.p.locator('#placeBtns [data-jp]').tap();
+  ok(await t.waitToast(/\+6 Happiness, \+\d+ Bond\.$/, 6000), `${dev}: a tap on Look at Fuji: the toast`);
+  await t.until(() => !window.__paw.jp.gazing, null, 8000);
+  const q = await jpHill(t, `${dev} after the look`);
+  ok(await ev(() => document.querySelector('#placeBtns [data-jp]').textContent) === 'Fuji says see you tomorrow.', `${dev}: the button reads "Fuji says see you tomorrow."`);
+  await jpShot(t, dev, 'fujihill_done');
+  t.sec(`FUJI HILL ${dev}: 360 px wide`);
+  await t.p.setViewportSize({ width: 360, height: 740 }); await t.until(() => innerWidth === 360, null, 5000);
+  await jpHill(t, `${dev} 360`); await jpShot(t, dev, 'fujihill_360');
+  await t.p.setViewportSize({ width: dev === 'Pixel 7' ? 412 : 390, height: dev === 'Pixel 7' ? 915 : 844 });
+  const errs = t.errors.filter((e) => !/ERR_CERT|Failed to load resource/.test(e));
+  ok(errs.length === 0, `${dev}: no console errors ` + errs.slice(0, 3).join(' | '));
+  await t.ctx.close();
+  return q;
+}
 
 run('phone_v28_winter', async (t) => {
   for (const dev of ['iPhone 15', 'Pixel 7']) await winterPart(t, dev);
   for (const dev of ['iPhone 15', 'Pixel 7']) await newYearPart(t, dev);
+  for (const dev of ['iPhone 15', 'Pixel 7']) await jpPart(t, dev);
 }, { device: 'iPhone 15', fest: 'auto', season: 'winter', prefs: { wnTest: true, jpTest: true, msTest: true } });
