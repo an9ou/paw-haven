@@ -1,5 +1,5 @@
 // v2.3 phone, HOME lane: occlusion. On a phone nothing may block the view: the dock, sheets, HUD, toasts and action bar must not cover the dog's box
-// or the screen's main interactive props. 390x844 and 360x740 (the viewport is set explicitly: the iPhone 13 profile is 390x664).
+// or the screen's main interactive props. 390x844 and 360x740 (the viewport is set explicitly: the iPhone 15 profile is 390x664).
 // node game/run_tests.js phone_occl_home
 const { run } = require('./test_lib');
 
@@ -24,7 +24,7 @@ const SCAN = (sels) => {
 };
 
 (async () => {
-  for (const [W, H] of [[390, 844], [360, 740]]) {
+  for (const [W, H] of [[393, 852], [360, 740]]) {
     await run(`phone_occl_home_${W}x${H}`, async (t) => {
       const { ok } = t;
       const tag = `${W}x${H}`;
@@ -83,7 +83,7 @@ const SCAN = (sels) => {
       const toastsGone = () => t.until(() => !document.querySelector('#toasts .toast'), null, 9000);
 
       t.sec(tag + ': boot');
-      await t.newGame({ sex: 'girl', device: 'iPhone 13' }, { bond: { level: 10, pts: 3300 }, coins: 1000, house: 'Royal Castle Kennel', stats: { hunger: 80, happy: 80, energy: 30, clean: 90 } });
+      await t.newGame({ sex: 'girl', device: 'iPhone 15' }, { bond: { level: 10, pts: 3300 }, coins: 1000, house: 'Royal Castle Kennel', stats: { hunger: 80, happy: 80, energy: 30, clean: 90 } });
       await t.p.setViewportSize({ width: W, height: H });
       ok(await t.ev((w) => document.documentElement.dataset.layout === 'phone' && innerWidth === w, W), `${tag}: phone layout, ${W} wide`);
       await t.until(() => { const r = document.getElementById('view').getBoundingClientRect(); return r.height > 300; });
@@ -275,7 +275,7 @@ const SCAN = (sels) => {
         ok(sx.length === 0 || sx.every((f) => f >= 14.95), `${tag} nursery: sex symbols are >= 15 px (${sx.join(', ') || 'none shown'})`);
         await dismiss(); await t.modalGone();
       } else ok(false, `${tag} nursery: opens (${opened})`);
-    }, { device: 'iPhone 13', timeout: 420000 }); // v2.3: 341 checks per size; under a full --jobs 2 run one size can pass 240 s
+    }, { device: 'iPhone 15', timeout: 420000 }); // v2.3: 341 checks per size; under a full --jobs 2 run one size can pass 240 s
   }
   // desktop (unchanged layout): Settings keeps Reset save and Title screen in view at 1280x720 without scrolling
   await run('phone_occl_home_desktop_settings', async (t) => {

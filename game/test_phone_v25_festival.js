@@ -1,7 +1,7 @@
 // v2.5 phone, FESTIVAL lane: the leaf piles (48 px tap rects, clear of #dogHit and the bowl, a tap jumps), the Harvest Stall in the Square
 // (inside the camera crop, clear of #dogHit, the HUD, the bar and the place chips, a 44 px place button, the sheet passes the minimums)
 // and the costume parade sheet (15 px text, 44 px Join, the dog row scrolls inside the sheet, no sideways page scroll).
-// iPhone 13 (390x844) and Pixel 7 (412x915). node game/run_tests.js phone_v25_festival
+// iPhone 15 (390x844) and Pixel 7 (412x915). node game/run_tests.js phone_v25_festival
 const { run } = require('./test_lib');
 
 const TAP_SEL = 'button, [role=button], a[href], input:not([type=hidden]), select, .card';
@@ -139,5 +139,5 @@ async function suite(t, dev) {
 }
 
 (async () => {
-  for (const dev of ['iPhone 13', 'Pixel 7']) await run('phone_v25_festival_' + dev.replace(/\s+/g, '').toLowerCase(), (t) => suite(t, dev), { device: dev, fest: 'both', season: 'autumn', prefs: { msTest: true } });
+  for (const dev of ['iPhone 15', 'Pixel 7']) await run('phone_v25_festival_' + dev.replace(/\s+/g, '').toLowerCase(), (t) => suite(t, dev), { device: dev, fest: 'both', season: 'autumn', prefs: { msTest: true } });
 })();

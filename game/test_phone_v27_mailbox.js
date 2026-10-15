@@ -1,9 +1,9 @@
-// v2.7 MAILBOX on a phone (iPhone 13): Collect and Collect all in the bottom sheet, taps >= 44 px, text >= 15 px (captions 13),
+// v2.7 MAILBOX on a phone (iPhone 15): Collect and Collect all in the bottom sheet, taps >= 44 px, text >= 15 px (captions 13),
 // nothing pokes out sideways, the Collected stamp stays in view after a tap, coins and items added once.
 // node game/run_tests.js phone_v27_mailbox
 const run = require('./test_lib').run;
 run('phone_v27_mailbox', async (t) => {
-  const { ok, sec, ev, S } = t, device = 'iPhone 13';
+  const { ok, sec, ev, S } = t, device = 'iPhone 15';
   sec(device + ': new game, three gift letters');
   await t.newGame({ device }, { coins: 300, careGifts: { scarf: '2026-01-01' } });
   const p = t.p;

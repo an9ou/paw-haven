@@ -106,6 +106,6 @@ module.exports = {
     ok(g.duck.bottom <= 768 && g.jump.bottom <= 768, 'tablet runner: the buttons fit the screen');
     await digCheck(H, 'tablet', true);
     await t.quitWalk(true);
-    await vp(390, 844);
+    await vp(393, 852);
   }
 };

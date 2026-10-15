@@ -59,7 +59,7 @@ Read `PIPELINE.md`, `V21.md` (standing rules) and `V15B.md` (the paused v1.5B ph
 
 ## 2. Screens (one lane per group)
 
-Each lane makes its screens pass the phone minimums on iPhone 13 (390×844) and Pixel 7 (412×915), with touch and without horizontal scroll.
+Each lane makes its screens pass the phone minimums on iPhone 15 (393×852) and Pixel 7 (412×915); the shelter suite adds iPhone 15 Pro Max (430×932). Since 15 Oct 2026 (owner) iPhone 15 is the oldest iPhone profile, it replaced iPhone 13, with touch and without horizontal scroll.
 
 | Lane | Screens |
 |---|---|
@@ -149,7 +149,7 @@ Each lane makes its screens pass the phone minimums on iPhone 13 (390×844) and 
 
 ## 4. Tests
 
-- Each lane writes `game/test_phone_<lane>.js` with Playwright device profiles (iPhone 13, Pixel 7; see `game/test_phone.js`) covering its screens. It checks:
+- Each lane writes `game/test_phone_<lane>.js` with Playwright device profiles (iPhone 15, Pixel 7; see `game/test_phone.js`) covering its screens. It checks:
   - every screen opens;
   - tap targets are 44 px or more;
   - text is 15 px or more;

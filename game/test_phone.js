@@ -1,4 +1,4 @@
-// v1.5B phone version: full playthrough with touch on iPhone 13 + a smoke run on Pixel 7 (harness.js merged). node test_phone.js
+// v1.5B phone version: full playthrough with touch on iPhone 15 + a smoke run on Pixel 7 (harness.js merged). node test_phone.js
 const { chromium, devices } = require('playwright'); const path = require('path'); const fs = require('fs');
 const URL = 'file://' + path.join(__dirname, 'test_merged.html');
 // same browser + flags as test_lib.js: the shared Chromium path (PAW_CHROME overrides) and PAW_ARGS (e.g. --ignore-certificate-errors behind a proxy)
@@ -190,7 +190,7 @@ async function run(b, devName, full) {
 
 (async () => {
   const b = await chromium.launch({ executablePath: CHROME, args: ['--mute-audio'].concat(EXTRA) });
-  await run(b, 'iPhone 13', true);
+  await run(b, 'iPhone 15', true);
   await run(b, 'Pixel 7', false);
   console.log(fails.length ? `\nFAILED ${fails.length}: ${fails.join(' | ')}` : '\nALL OK');
   await b.close();

@@ -3,8 +3,8 @@
 // The fake Supabase and the supabase-js lookalike are the same as test_cloud.js (copied: that file runs its suite when required).
 const { run, URL } = require('./test_lib');
 const { devices } = require('playwright');
-// the two phone sizes from the brief (touch, phone UA). The Playwright iPhone 13 profile is 390x664, so add 390x844 and 360x740.
-devices['Phone 390x844'] = Object.assign({}, devices['iPhone 13'], { viewport: { width: 390, height: 844 }, screen: { width: 390, height: 844 } });
+// the two phone sizes from the brief (touch, phone UA). The Playwright iPhone 15 profile is 390x664, so add 390x844 and 360x740.
+devices['Phone 390x844'] = Object.assign({}, devices['iPhone 15'], { viewport: { width: 393, height: 852 }, screen: { width: 393, height: 852 } });
 devices['Phone 360x740'] = Object.assign({}, devices['Pixel 7'], { viewport: { width: 360, height: 740 }, screen: { width: 360, height: 740 } });
 /* ---------------- fake Supabase (Node side) ---------------- */
 function makeServer() {

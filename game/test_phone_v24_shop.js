@@ -1,6 +1,6 @@
 // v2.4 phone, SHOP & MISSIONS lane: the Boutique and Kibble Corner sheets with 20+ cards (scroll inside, no sideways scroll, 44 px Buy buttons),
 // the Missions sheet (15 px text, the card fills the sheet width), the yard clipboard (clear of #dogHit and the mailbox, 48 px tap, opens the sheet).
-// iPhone 13 (390x844) and Pixel 7 (412x915). node game/run_tests.js phone_v24_shop
+// iPhone 15 (390x844) and Pixel 7 (412x915). node game/run_tests.js phone_v24_shop
 const { run, sleep } = require('./test_lib');
 
 const TAP_SEL = 'button, [role=button], a[href], input:not([type=hidden]), select, .card';
@@ -115,5 +115,5 @@ async function suite(t, dev) {
 }
 
 (async () => {
-  for (const dev of ['iPhone 13', 'Pixel 7']) await run('phone_v24_shop_' + dev.replace(/\s+/g, '').toLowerCase(), (t) => suite(t, dev), { device: dev, prefs: { msTest: true } });
+  for (const dev of ['iPhone 15', 'Pixel 7']) await run('phone_v24_shop_' + dev.replace(/\s+/g, '').toLowerCase(), (t) => suite(t, dev), { device: dev, prefs: { msTest: true } });
 })();

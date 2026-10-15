@@ -1,4 +1,4 @@
-// v2.2 phone: SKILL lane. Trick training + mini-games, garden + Pip's Sprout Cart, kitchen + cooking on iPhone 13 (390x844) and Pixel 7 (412x915).
+// v2.2 phone: SKILL lane. Trick training + mini-games, garden + Pip's Sprout Cart, kitchen + cooking on iPhone 15 (390x844) and Pixel 7 (412x915).
 // node game/run_tests.js game/test_phone_skill.js   (PAW_ARGS=--ignore-certificate-errors NODE_PATH=$(npm root -g))
 const { speak, settle, ready } = require('./tricks_drive');
 const AUD = (capSel) => {
@@ -22,7 +22,7 @@ const AUD = (capSel) => {
   return { small, text, hs: document.documentElement.scrollWidth - innerWidth };
 };
 const CAPS = '.pk-ing, .small, .pk-nm, .pk-ct, .pg-q, .pg-tag, .pg-pk em, .pg-stamp, .trshow small, .trchip small, .pg-tool small, .pk-sh small, .pk-lbl, .pg-hint, .pg-num';
-const DEVICES = ['iPhone 13', 'Pixel 7'];
+const DEVICES = ['iPhone 15', 'Pixel 7'];
 
 require('./test_lib').run('phone_skill', async (t) => {
   const { ok, sec, ev, S } = t;
@@ -112,7 +112,7 @@ require('./test_lib').run('phone_skill', async (t) => {
     await p.locator('.pg-pouch [data-c="carrot"]').tap();
     ok(await t.until(() => window.__paw.S.garden.plots[0].crop === 'carrot', null, 4000), tag + 'tap an empty plot, tap a seed: planted in one go (no dig step, no drag)');
     const gr = await ev(() => { const r = (s) => { const b = document.querySelector(s).getBoundingClientRect(); return [Math.round(b.top), Math.round(b.bottom)]; }; return { p6: r('.pg-plot[data-i="5"]'), info: r('.pg-info'), vh: innerHeight }; });
-    ok(gr.p6[1] <= gr.vh && (gr.vh < 730 || gr.info[1] <= gr.vh), // the iPhone 13 profile is only 664 px tall: the card is checked on the 844 and 915 screens
+    ok(gr.p6[1] <= gr.vh && (gr.vh < 730 || gr.info[1] <= gr.vh), // the iPhone 15 profile is only 659 px tall: the card is checked on the 852 and 915 screens
        tag + `plots 5-6 and the plot card are on screen without scrolling (${JSON.stringify(gr)})`);
     // drag a seed with a finger onto plot 4
     await ev(() => window.__paw.S.garden.plots[3].crop); await p.locator('[data-t="seeds"]').tap(); await p.waitForSelector('.pg-pouch [data-c="carrot"]'); await t.sleep(250);
@@ -159,4 +159,4 @@ require('./test_lib').run('phone_skill', async (t) => {
     await p.keyboard.press('Escape'); await t.sleep(200);
     await ev(() => window.__paw.go('yard'));
   }
-}, { device: 'iPhone 13' });
+}, { device: 'iPhone 15' });

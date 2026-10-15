@@ -51,7 +51,7 @@ The tests drive the real game in headless Chromium with Playwright.
 npm install -g playwright && npx playwright install chromium
 NODE_PATH=$(npm root -g) node game/run_tests.js smoke    # about 30 seconds
 NODE_PATH=$(npm root -g) node game/run_tests.js all --jobs 2     # desktop suites
-NODE_PATH=$(npm root -g) node game/run_tests.js phone --jobs 2   # phone suites (iPhone 13, Pixel 7), the mocked cloud-save suite, the title account choice (`account`) and the occlusion suites (`phone_occl_home`, `phone_occl_play`)
+NODE_PATH=$(npm root -g) node game/run_tests.js phone --jobs 2   # phone suites (iPhone 15, Pixel 7), the mocked cloud-save suite, the title account choice (`account`) and the occlusion suites (`phone_occl_home`, `phone_occl_play`)
 ```
 
 ## Project layout

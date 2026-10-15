@@ -170,13 +170,13 @@ function srSpot(me, near, strict) {
 function srGo(rd) {
   const sp = srSpot(rd, null, true); if (sp) return srWalk(rd, sp, () => srRestPose(rd));
   const V = srView(), out = V && rd.x - V.x0 < V.x1 - rd.x ? (V ? V.x0 : 0) - 140 : (V ? V.x1 : 1000) + 140;
-  rd.busy = true; srWalk(rd, [out, rd.y], () => { rd.busy = false; rd.away = rd.parked = true; const n = srNode(rd); if (n) n.style.display = 'none'; }, 260);
+  rd.busy = rd.away = rd.leaving = true; srWalk(rd, [out, rd.y], () => { rd.busy = rd.leaving = false; rd.parked = true; const n = srNode(rd); if (n) n.style.display = 'none'; }, 260);
 }
 // a dog from the back room comes in from the nearer side when a spot is free again
 function srUnpark() {
   const rd = SR && SR.dogs.find((d) => d.parked && !(SR.meet && SR.meet.key === d.key)); if (!rd) return; const sp = srSpot(rd, null, true); if (!sp) return;
   const V = srView(), fromX = V && sp[0] - V.x0 < V.x1 - sp[0] ? V.x0 - 140 : (V ? V.x1 : 1000) + 140;
-  rd.parked = rd.away = rd.busy = false; rd.x = rd.tx = fromX; rd.y = rd.ty = sp[1];
+  rd.parked = rd.away = rd.busy = rd.leaving = false; rd.x = rd.tx = fromX; rd.y = rd.ty = sp[1];
   const n = srNode(rd); if (n) { n.style.transition = 'none'; n.style.transform = srXform(fromX, sp[1], srScale(sp[1])); n.style.display = ''; void n.getBoundingClientRect(); }
   srOrder(rd); srWalk(rd, sp, () => srRestPose(rd));
 }
@@ -329,7 +329,7 @@ function srMeetShow(key) {
   if (SR.meet && SR.meet.key === key) return;
   const prev = SR.meet; SR.meet = { key };
   // the old meet dog: a room dog goes back to the room, anyone else trots off
-  if (prev) { const back = SR.dogs.find((d) => d.key === prev.key); if (back) { back.away = false; back.parked = false; back.x = SR_MEET[0]; back.y = SR_MEET[1]; const n = srNode(back); if (n) { n.style.display = ''; n.style.transition = 'none'; n.style.transform = `translate(${SR_MEET[0]}px, ${SR_MEET[1]}px) scale(1)`; void n.getBoundingClientRect(); } srGo(back); } }
+  if (prev) { const back = SR.dogs.find((d) => d.key === prev.key); if (back) { back.away = back.parked = back.leaving = false; back.x = SR_MEET[0]; back.y = SR_MEET[1]; const n = srNode(back); if (n) { n.style.display = ''; n.style.transition = 'none'; n.style.transform = `translate(${SR_MEET[0]}px, ${SR_MEET[1]}px) scale(1)`; void n.getBoundingClientRect(); } srGo(back); } }
   const rd = SR.dogs.find((d) => d.key === key && !d.away);
   let from = null;
   if (rd) { srHalt(rd); from = [rd.x, rd.y, srScale(rd.y)]; rd.away = true; rd.busy = true; const n = srNode(rd); if (n) n.style.display = 'none'; }
@@ -456,6 +456,7 @@ function srExpose() {
     roster: (dk) => srRoster(dk).map((x) => ({ id: x.id, key: x.key, sex: x.sex, months: x.months, name: x.name, kind: x.kind, trait: x.trait })),
     room: SR_ROOM, slots: SR_SLOTS,
     meet: (id) => srMeet(id), toss: () => srToss(), pet: (id) => srPet(id),
+    count: () => (SR ? SR.dogs.filter((d) => !d.away || d.parked || d.leaving).length : 0), // room dogs, the back room included (not the meet dog)
     dogs: () => (SR ? SR.dogs.filter((d) => !d.away).map((d) => ({ id: d.id, key: d.key, pose: d.pose, x: Math.round(d.x), y: Math.round(d.y), walking: !!d.walking, busy: !!d.busy })) : []),
     get mode() { return SR ? SR.mode : null; }, get lastFetch() { return SR ? SR.lastFetch : null; }, get pets() { return SR ? SR.pets : 0; }, get bellies() { return SR ? SR.bellies : 0; },
     get meetKey() { return SR && SR.meet ? SR.meet.key : null; }, cam: () => srCam()

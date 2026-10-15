@@ -1,5 +1,5 @@
 // UI/UX phone review shots (not a test suite): node game/shots_uiux.js <outdir> [only-regex]
-// iPhone 13 (390x664 profile) and 360x740, day and night, date 2026-10-20 (Halloween window, autumn), hwTest on.
+// iPhone 15 (393x659 profile) and 360x740, day and night, date 2026-10-20 (Halloween window, autumn), hwTest on.
 const { run } = require('./test_lib'); const path = require('path'); const fs = require('fs');
 const OUT = path.resolve(process.argv[2] || 'shots_uiux'); const ONLY = process.argv[3] ? new RegExp(process.argv[3]) : null;
 fs.mkdirSync(OUT, { recursive: true });
@@ -7,7 +7,7 @@ const SIZES = [['ip13', null], ['360', [360, 740]]];
 (async () => {
   for (const [dn, vp] of SIZES) for (const time of ['day', 'night']) {
     await run(`shots_${dn}_${time}`, async (t) => {
-      const p0 = await t.newGame({ sex: 'girl', device: 'iPhone 13' }, { bond: { level: 10, pts: 3300 }, coins: 3000, house: 'Royal Castle Kennel', stats: { hunger: 80, happy: 80, energy: 90, clean: 90 } });
+      const p0 = await t.newGame({ sex: 'girl', device: 'iPhone 15' }, { bond: { level: 10, pts: 3300 }, coins: 3000, house: 'Royal Castle Kennel', stats: { hunger: 80, happy: 80, energy: 90, clean: 90 } });
       void p0; const p = t.p; if (vp) await p.setViewportSize({ width: vp[0], height: vp[1] });
       const shot = async (n) => { if (ONLY && !ONLY.test(n)) return; await t.sleep(450); await p.screenshot({ path: path.join(OUT, `${n}_${dn}_${time}.png`) }); console.log('  shot ' + n); };
       const step = async (n, fn) => { if (ONLY && !ONLY.test(n)) return; try { await fn(); } catch (e) { console.log('  SKIP ' + n + ': ' + e.message.split('\n')[0]); } try { await t.ev(() => { const m = document.getElementById('modal'); if (!m.hidden) m.querySelector('.x')?.click(); }); await p.keyboard.press('Escape'); } catch (e) { } };
@@ -29,6 +29,6 @@ const SIZES = [['ip13', null], ['360', [360, 740]]];
       await step('market', async () => { await t.home('market'); await t.sleep(1200); await shot('market'); });
       await step('map_zoom', async () => { await t.home('yard'); await ev(() => window.__paw.go('map')); await t.untilMode('map'); await t.sleep(500); await p.locator('#mapZin').tap(); await p.locator('#mapZin').tap(); await ev(() => window.__paw.mapTo('hilltop')); await t.sleep(300); const b = await p.locator('#mapPan').boundingBox(); await p.mouse.move(b.x + b.width / 2, b.y + 120); await p.mouse.down(); await p.mouse.move(b.x + b.width / 2, b.y + 700, { steps: 8 }); await p.mouse.up(); await t.sleep(400); await shot('map_zoom'); await ev(() => window.__paw.go('yard')); await t.untilMode('yard'); });
       await step('shelter', async () => { await t.home('yard'); await t.ev(() => window.__paw.go('map')); await t.untilMode('map'); await p.locator('[data-area=shelter]').first().tap({ force: true }); await t.sleep(500); if (await p.locator('#mapGo:not([hidden]) button').count()) await p.locator('#mapGo:not([hidden]) button').first().tap(); await t.until(() => !!document.querySelector('.adopt-card')); await t.sleep(900); await shot('shelter'); await ev(() => { const b = document.querySelector('#dock > .tray'); if (b) b.scrollTop = 140; }); await t.sleep(400); await shot('shelter_scrolled'); });
-    }, { device: 'iPhone 13', date: '2026-10-20', season: 'auto', fest: 'auto', time, prefs: { hwTest: true }, timeout: 400000 });
+    }, { device: 'iPhone 15', date: '2026-10-20', season: 'auto', fest: 'auto', time, prefs: { hwTest: true }, timeout: 400000 });
   }
 })();
