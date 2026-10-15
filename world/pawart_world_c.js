@@ -698,7 +698,8 @@ function sqSquare(k){
    k.lt(()=>ltStar(k,tx,44,.78));// v2.8 Winter Lights: a paper star pinned on the tower roof (clear of the sweater banner below)
    k.ny(()=>{nyKado(k,tx-40,394,1.1,-1);nyKado(k,tx+40,394,1.1,1)})}// v2.8 New Year: the big kadomatsu pair at the tower door
   // bunting from the tower to the edges
-  buntingL(k,0,516,150,26,[C.red,C.yellow,C.mint,C.lav,C.blue]);buntingL(k,604,1000,150,22,[C.yellow,C.mint,C.lav,C.blue,C.red]);
+  if(k.env.jp)buntingL(k,0,207,150,14,[C.red,C.yellow,C.mint,C.lav,C.blue]);else buntingL(k,0,516,150,26,[C.red,C.yellow,C.mint,C.lav,C.blue]);// v2.8: with the Japan scenery the left string ends at the telephone pole, so Fuji shows over Paws & Pages
+  buntingL(k,604,1000,150,22,[C.yellow,C.mint,C.lav,C.blue,C.red]);
   // the square: perspective flagstones, a cobble ring around the fountain
   k.fill([[0,394],[1000,394],[1000,600],[0,600]],'#E8E1D6',{dx:0,dy:0,sc:0});k.pen([[0,396],[500,394],[1000,396]],false,{w:2});
   paving(k,396,600,500,250,'#BFB2A2','#DDD4C8');
@@ -1525,35 +1526,51 @@ function ltFountain(k,fx){const m=[];for(let i=0;i<=14;i++){const a=Math.PI+i/14
   ltString(k,[[fx-86,446],[fx-56,428],[fx-24,440],[fx+8,424],[fx+40,436],[fx+70,426],[fx+88,440]],17)}
 /* ---------- Mt. Fuji (V28 section 12.2) ---------- */
 // [cx, by, w] per scene or strip: in a dip of the far line, clear of the sun and moon spots, inside the phone home crop of the yard and the Square;
-// the Square's is big and set low so its cap and upper slopes fill the strip of sky the desktop crop shows over Paws & Pages (y 147-194), right of the location chip
-const JP_SPOTS={yard:[432,304,290],market:[440,140,200],shelter:[470,214,110],garden:[360,118,220],park:[290,322,220],river:[560,294,240],beach:[680,291,240],
-  square:[420,253,300],dogpark:[300,326,240],hilltop:[380,240,380],pier:[400,263,300],fujihill:[400,344,540],
-  'strip:park':[250,252,200],'strip:river':[420,202,200],'strip:beach':[750,188,200],'strip:town':[502,122,200],'strip:hilltop':[520,222,200],'strip:pier':[460,184,200]};
+// the Square's is big and set low so its cap and upper slopes fill the strip of sky the desktop crop shows over Paws & Pages (y 147-194), right of the location chip;
+// Market Street's summit and cap peek over the Boutique's roof right of the phone location chip (x 543+, above the dev button), and on desktop
+// (05_market_shops.js lifts the street 30 units there, so the crop starts at y 117 instead of the cornices at 136)
+const JP_SPOTS={yard:[432,304,290],market:[586,189,220],shelter:[470,214,110],garden:[360,118,220],park:[290,322,220],river:[560,294,240],beach:[680,291,240],
+  square:[420,253,300],dogpark:[300,326,240],hilltop:[380,246,260],pier:[400,263,300],fujihill:[400,344,540],
+  'strip:park':[250,252,200],'strip:river':[760,202,200],'strip:beach':[750,188,200],'strip:town':[502,122,200],'strip:hilltop':[520,222,200],'strip:pier':[460,184,200]};
 function jpSpot(name){const s=JP_SPOTS[name];return s?{cx:s[0],by:s[1],w:s[2]}:null}
 const rgbS=h=>{const c=h2c(h);return `rgb(${c[0]},${c[1]},${c[2]})`};
-// [body, shadow side, cap, cap shade, outline] by time: lilac with a peach cap at dawn, blue-grey by day, red Fuji at dusk, a navy shape at night
-const FJ_T={dawn:['#C9B8DC','#A895C6','#FFE6CF','#F0C3AE','#9C8CB2'],day:['#AFC3D6','#8DA4BD','#FFFFFF','#CCDAE8','#8394A8'],
+// [body, shadow side, cap, cap shade, outline] by time: lilac with a peach cap at dawn, blue-grey by day, red Fuji at dusk, a navy shape at night.
+// The day cap is an off-white (never pure white on the cream paper), still the brightest thing against the sky
+const FJ_T={dawn:['#C9B8DC','#A895C6','#FFE6CF','#F0C3AE','#9C8CB2'],day:['#AFC3D6','#8DA4BD','#F7F9FC','#CCDAE8','#8394A8'],
   dusk:['#E8A08A','#9C6C96','#FAC8D2','#E3A0B4','#93657C'],night:['#5A6688','#48526F','#B8C5D9','#93A2BC','#7480A2']};
 const FJ_CAP={winter:.45,spring:.35,summer:.1,autumn:.15};
 function fjCols(env){let c=FJ_T[env.time].slice();if(env.ssn==='winter'&&env.time==='day'){c[0]='#A6BBD1';c[3]='#C3D3E4'}
   if(env.weather==='cloudy'){const g=env.night?'#4E5878':'#B9C1CB';c=c.map((h,i)=>mixH(h,g,i<2?.3:.16))}
   if(env.rain||env.snow){const g=env.night?'#424A5E':env.snow?'#DCE2EA':'#B7BFCA';c=c.map(h=>mixH(h,g,.45))}
   return c.map(rgbS)}
-// the real profile: a wide cone with gently concave slopes, a flat summit with three small bumps, a little lopsided (a shoulder low on the right flank)
-function fjProfile(cx,by,w,r){const H=w/3.2,hw=w/2,p=.085,gl=1.24+r()*.06,gr=1.32+r()*.06,bumps=[[-.046,.016],[-.006,.01],[.032,.019]].map(([t,a])=>[t+(r()-.5)*.012,a*(.8+r()*.4)]);
-  const h=t=>{const a=Math.abs(t);let v;if(a<=p)v=.982;else{const u=Math.min(1,(a-p)/(1-p));v=.982*Math.pow(1-u,t<0?gl:gr);if(t>0)v+=.02*Math.exp(-Math.pow((u-.44)/.07,2))*(1-u)}
+// the real profile: a wide cone whose slopes flare out at the foot (concave, exponents about 1.5-1.7), a flat summit with three small bumps,
+// a little lopsided (a shoulder low on the right flank)
+function fjProfile(cx,by,w,r){const H=w/3.2,hw=w/2,p=.09,gl=1.5+r()*.08,gr=1.6+r()*.08,bumps=[[-.046,.016],[-.006,.01],[.032,.019]].map(([t,a])=>[t+(r()-.5)*.012,a*(.8+r()*.4)]);
+  const h=t=>{const a=Math.abs(t);let v;if(a<=p)v=.982;else{const u=Math.min(1,(a-p)/(1-p));v=.982*Math.pow(1-u,t<0?gl:gr);if(t>0)v+=.02*Math.exp(-Math.pow((u-.4)/.07,2))*(1-u)}
     bumps.forEach(([bt,ba])=>{v+=ba*Math.exp(-Math.pow((t-bt)/.016,2))});return Math.max(0,v)};
   const ts=[],N=Math.max(36,Math.round(w/6));for(let i=0;i<=N;i++)ts.push(-1+2*i/N);for(let t=-.11;t<=.11;t+=.008)ts.push(t);ts.sort((a,b)=>a-b);
   const pts=[];ts.forEach(t=>{if(!pts.length||t-pts[pts.length-1].t>.002)pts.push({t,x:cx+t*hw,y:by-h(t)*H})});
   return {H,hw,y:x=>by-h((x-cx)/hw)*H,pts:pts.map(q=>[q.x,q.y])}}
-// a soft cloud band: lumpy top, flatter bottom, crayon hatching underneath, a pencil outline
-function jpCloudBand(k,x0,x1,yb,th,cc,sw){// a long cartoon cloud like the sky ones: a scalloped top of round bumps (the middle ones higher), a flat bottom
+// a soft cloud band: lumpy top, flatter bottom, crayon hatching underneath, a pencil outline. o: { op: fill opacity, ol / olw / olop: the outline's colour, width, opacity }
+function jpCloudBand(k,x0,x1,yb,th,cc,sw,o={}){// a long cartoon cloud like the sky ones: a scalloped top of round bumps (the middle ones higher), a flat bottom
   const n=Math.max(3,Math.round((x1-x0)/(th*.95))),bw=(x1-x0)/n,B=[],p=[];
   for(let j=0;j<n;j++){const cx=x0+bw*(j+.5),mid=1-Math.abs((j+.5)/n-.5)*1.3,r=bw*.62*(.88+k.r()*.24);B.push([cx,yb-th*(.18+.5*mid)+r*.45,r])}
   for(let x=x0-bw*.05;x<=x1+bw*.05;x+=3){let y=yb-2;B.forEach(([cx,cy,r])=>{const d=x-cx;if(Math.abs(d)<r)y=Math.min(y,cy-Math.sqrt(r*r-d*d))});p.push([x,y])}
   p.push([x1+bw*.1,yb],[x0-bw*.1,yb]);
-  k.fill(p,cc[0],{dx:0,dy:0,amp:.5});k.hatch([[x0,yb+1],[x1,yb+1],[x1-bw*.3,yb-th*.3],[x0+bw*.3,yb-th*.3]],{gap:4,col:cc[1],op:.75,w:1.15*sw});k.pen(p,true,{w:1.7*sw,col:cc[2],amp:.5});
-  k.line([[x0+bw*.5,yb-th*.4],[x0+bw*.75,yb-th*.62]],1.1*sw,cc[2]===rgbS(C.ink)?rgbS(C.graph):cc[2],{op:.7})}
+  k.fill(p,cc[0],{dx:0,dy:0,amp:.5,op:o.op});k.hatch([[x0,yb+1],[x1,yb+1],[x1-bw*.3,yb-th*.3],[x0+bw*.3,yb-th*.3]],{gap:4,col:cc[1],op:o.op?.5:.75,w:1.15*sw});
+  k.pen(p,true,{w:o.olw||1.7*sw,col:o.ol||cc[2],amp:.5,op:o.olop});
+  k.line([[x0+bw*.5,yb-th*.4],[x0+bw*.75,yb-th*.62]],1.1*sw,o.ol||(cc[2]===rgbS(C.ink)?rgbS(C.graph):cc[2]),{op:.7})}
+// the snow cap's lower edge, right to left: 5-7 long fingers down the gullies (varied lengths, radiating from the summit) with short irregular
+// scallops between them. Returns the edge points and the finger tips (where the streaks carry on down)
+function fjCapEdge(k,F,cx,yl,xl,xr,so){const H=F.H,hw=F.hw,span=xr-xl,fr={winter:[.12,.25],spring:[.1,.22],summer:[.06,.15],autumn:[.05,.12]}[so]||[.06,.15],
+    nF=5+Math.floor(k.r()*3),edge=[],tips=[],ins=(x,y)=>[x,Math.max(F.y(x)+1,y)];
+  let xa=xr;for(let i=0;i<nF;i++){const c=xr-span*(i+.5+k.J(.28))/nF,bw=span/nF*(.15+k.r()*.17)*(so==='summer'?.55:1),L=H*(fr[0]+Math.pow(k.r(),1.2)*(fr[1]-fr[0])),dx=(c-cx)/hw*L*.6,xb=c+bw;
+    // scallops from the last finger to this one: two or three little bumps, some up, some down
+    const m=2+Math.floor(k.r()*2);for(let j=1;j<=m;j++){const x=xa+(xb-xa)*j/(m+1);edge.push(ins(x,yl+H*(k.r()*.04-.02)))}
+    [[c+bw,yl+L*.04],[c+bw*.56+dx*.4,yl+L*.4],[c+bw*.2+dx*.8,yl+L*.82],[c+dx,yl+L],[c-bw*.24+dx*.78,yl+L*.8],[c-bw*.62+dx*.38,yl+L*.36],[c-bw,yl+L*.03]].forEach(q=>edge.push(ins(q[0],q[1])));
+    tips.push([c+dx,yl+L,L]);xa=c-bw}
+  const m=2;for(let j=1;j<=m;j++){const x=xa+(xl-xa)*j/(m+1);edge.push(ins(x,yl+H*(k.r()*.04-.015)))}
+  return {edge,tips}}
 function jpFujiDraw(k,sp,o={}){if(!sp)return;const env=k.env,{cx,by,w}=sp,F=fjProfile(cx,by,w,k.r),H=F.H,hw=F.hw,cs=fjCols(env),hid=env.rain||env.snow,sw=Math.max(.7,Math.min(1.7,w/220)),so=env.season;
   const draw=()=>{k.add('<g data-fuji="1" pointer-events="none">');
     const body=F.pts.concat([[cx+hw+2,by+10],[cx-hw-2,by+10]]);
@@ -1566,21 +1583,22 @@ function jpFujiDraw(k,sp,o={}){if(!sp)return;const env=k.env,{cx,by,w}=sp,F=fjPr
       k.add(`<path d="${g}" fill="none" stroke="${cs[1]}" stroke-width="${R1(.9*sw)}" stroke-linecap="round" opacity=".55"/>`);
       // the snow cap, by season: a ragged edge with fingers down the gullies (winter and spring), a few streaks at the summit (summer), a patchy dusting (autumn)
       const cf=FJ_CAP[so]||.1,yl=by-H*(1-cf),top=F.pts.filter(q=>q[1]<=yl);
-      if(top.length>2){const xl=top[0][0],xr=top[top.length-1][0],fl={winter:[.07,.15],spring:[.05,.11],summer:[.02,.05],autumn:[.015,.05]}[so],n=Math.max(4,Math.round((xr-xl)/(so==='winter'?8:10))),edge=[];
-        for(let i=1;i<n;i++){const x=xr-(xr-xl)*i/n+k.J((xr-xl)/n*.25),dn=i%2?H*(fl[0]+k.r()*(fl[1]-fl[0])):-H*(.015+k.r()*.035);edge.push([x,Math.max(F.y(x)+1,yl+dn)])}
+      if(top.length>2){const xl=top[0][0],xr=top[top.length-1][0],{edge,tips}=fjCapEdge(k,F,cx,yl,xl,xr,so);
         const cap=top.concat(edge);k.fill(cap,cs[2],{dx:0,dy:0,amp:.35,op:so==='autumn'?.82:null});
         k.hatch(cap.filter(q=>q[0]<=cx+hw*.02),{gap:3.2,col:cs[3],op:.75,w:.8*sw});
         k.line(edge,.9*sw,cs[3],{op:.9,amp:.3});
-        // streaks: snow left in the gullies below the cap
-        let st='';const ns={winter:7,spring:6,summer:5,autumn:3}[so];for(let i=0;i<ns;i++){const t=(i/(ns-1)-.5)*1.7*((xr-xl)/w)+k.J(.03),x=cx+t*hw,y=Math.max(F.y(x)+1,yl)+H*(so==='summer'?-.01:.03),l=H*({winter:.16,spring:.11,summer:.07,autumn:.05}[so])*(.5+k.r()*.7);
-          st+=`M${R1(x)} ${R1(y)}q${R1(t*hw*.04)} ${R1(l*.5)} ${R1(t*hw*.09)} ${R1(l)}`}
-        k.add(`<path d="${st}" fill="none" stroke="${cs[2]}" stroke-width="${R1(1.7*sw)}" stroke-linecap="round" opacity=".92"/>`);
+        // streaks: the snow in the gullies carries on down from the finger tips (not in autumn's first dusting)
+        let st='';if(so!=='autumn')tips.forEach(([x,y,L],i)=>{if(so==='summer'&&i%2)return;const l=L*(.2+k.r()*.3),dx=(x-cx)/hw*l*.5;st+=`M${R1(x)} ${R1(y-1)}q${R1(dx*.4)} ${R1(l*.5)} ${R1(dx)} ${R1(l)}`});
+        if(st)k.add(`<path d="${st}" fill="none" stroke="${cs[2]}" stroke-width="${R1(1.1*sw)}" stroke-linecap="round" opacity=".8"/>`);
         if(so==='autumn'){let ho='';for(let i=0;i<5;i++){const x=xl+(xr-xl)*(.15+k.r()*.7),y=Math.max(F.y(x)+2,yl-H*(.02+k.r()*.06));ho+=`M${R1(x-2.4*sw)} ${R1(y)}a${R1(2.4*sw)} ${R1(1.4*sw)} 0 1 0 ${R1(4.8*sw)} 0a${R1(2.4*sw)} ${R1(1.4*sw)} 0 1 0 ${R1(-4.8*sw)} 0`}k.add(`<path d="${ho}" fill="${cs[0]}" opacity=".7"/>`)}}
       // the pencil outline: two light strokes, lighter than the far hills' line
       k.pen(F.pts,false,{w:1.3*sw,col:cs[4],amp:.45,op:env.night?.5:.92});k.line(F.pts.map(q=>[q[0]+.8,q[1]+.7]),.7*sw,cs[4],{op:env.night?.22:.45,amp:.4,step:10});
-      if(env.night&&env.weather!=='cloudy'){const sx=cx+hw*.13,sy=by-H*1.2,q=Math.max(4,w/42);let d='';for(let j=0;j<10;j++){const a=-Math.PI/2+j*Math.PI/5,rr=j%2?q*.45:q;d+=(j?'L':'M')+R1(sx+Math.cos(a)*rr)+' '+R1(sy+Math.sin(a)*rr)}
+      if(env.night&&env.weather!=='cloudy'){const sx=cx+hw*.18,sy=by-H*1.06,q=Math.max(4,w/42);let d='';for(let j=0;j<10;j++){const a=-Math.PI/2+j*Math.PI/5,rr=j%2?q*.45:q;d+=(j?'L':'M')+R1(sx+Math.cos(a)*rr)+' '+R1(sy+Math.sin(a)*rr)}
         k.add(`<path d="${d}Z" fill="${rgbS('#FFF0A8')}" stroke="${rgbS('#E2C46E')}" stroke-width="1.2" stroke-linejoin="round"/>`)}
-      if(env.weather==='cloudy')jpCloudBand(k,cx-hw*.5,cx+hw*.56,by-H*.64,H*.5,cloudCols(env).map(rgbS),sw)}
+      // cloudy: two lobes of cloud, offset and at different heights (a high one over the left shoulder, a low one across the middle),
+      // see-through enough that the cap ghosts through where they cross it: never a flat lid
+      if(env.weather==='cloudy'){const cc=cloudCols(env).map(rgbS),co={op:.72,ol:cs[4],olw:1.3*sw,olop:.9};
+        jpCloudBand(k,cx-hw*.7,cx-hw*.02,by-H*.76,H*.28,cc,sw,co);jpCloudBand(k,cx-hw*.28,cx+hw*.3,by-H*.54,H*.26,cc,sw,co)}}
     else{// rain and snow: Fuji is behind the clouds, only a faint foot shows
       k.pen(F.pts.filter(q=>q[1]>by-H*.36),false,{w:1.1*sw,col:cs[4],amp:.4,op:.45});
       const cc=cloudCols(env).map(rgbS);jpCloudBand(k,cx-hw*.46,cx+hw*.3,by-H*.66,H*.62,cc,sw);jpCloudBand(k,cx-hw*.12,cx+hw*.64,by-H*.5,H*.56,cc,sw);jpCloudBand(k,cx-hw*.7,cx+hw*.34,by-H*.3,H*.5,cc,sw)}
@@ -1588,10 +1606,13 @@ function jpFujiDraw(k,sp,o={}){if(!sp)return;const env=k.env,{cx,by,w}=sp,F=fjPr
   if(k.wrap&&(cx-hw<0||cx+hw>1200))k.wrap(cx,hw+4,draw);else draw()}
 // a faint reflection in calm water by day (the pier): the body and the cap upside down, broken by ripples
 function jpFujiReflect(k,sp,y0){const env=k.env;if(env.time!=='day'||env.rain||env.snow)return;const {cx,by,w}=sp,F=fjProfile(cx,by,w,rng(4242)),H=F.H,hw=F.hw,cs=fjCols(env);
-  const m=q=>[q[0],y0+(by-q[1])],top=F.pts.map(m);let d='M'+top.map(q=>R1(q[0])+' '+R1(q[1])).join('L')+'Z';
-  const cf=FJ_CAP[env.season]||.1,cap=F.pts.filter(q=>q[1]<=by-H*(1-cf)).map(m);
-  let rp='';for(let y=y0+3;y<y0+H*.9;y+=5)rp+=`M${R1(cx-hw*.8)} ${R1(y)}h${R1(hw*1.6)}`;
-  k.add(`<g pointer-events="none" opacity=".2"><path d="${d}" fill="${cs[0]}"/>${cap.length>2?`<path d="M${cap.map(q=>R1(q[0])+' '+R1(q[1])).join('L')}Z" fill="${cs[2]}"/>`:''}</g><path d="${rp}" stroke="${rgbS(C.water)}" stroke-width="2.2" stroke-dasharray="26 9 14 7" opacity=".7"/>`)}
+  // no solid shape: rows of ripple strokes, each as long as the upside-down mountain is wide at that depth (broken into dashes), the cap's rows
+  // in the cap colour, the whole thing faint
+  const r=rng(4243),cf=FJ_CAP[env.season]||.1,capD=H*(1-cf),wid=d=>{let a=null,b=null;F.pts.forEach(q=>{if(by-q[1]>=d){if(a===null)a=q[0];b=q[0]}});return a===null?null:[a,b]};
+  let rb='',rc='';for(let d=2;d<H*.98;d+=3.6){const e=wid(d);if(!e)break;const y=R1(y0+d+(r()-.5)*.8),xe=e[1]-r()*3;let x=e[0]+r()*3,s='';
+    while(x<xe-2){const L=Math.min(xe-x,6+(e[1]-e[0])*(.18+r()*.4));s+=`M${R1(x)} ${y}h${R1(L)}`;x+=L+2+r()*5}
+    if(d>=capD)rc+=s;else rb+=s}
+  k.add(`<g pointer-events="none" opacity=".3" stroke-linecap="round"><path d="${rb}" stroke="${cs[0]}" stroke-width="2.4"/><path d="${rc}" stroke="${cs[2]}" stroke-width="2.4"/></g>`)}
 
 /* ---------- the Japanese details (V28 section 12.3) ---------- */
 // a grey concrete telephone pole: two crossarms with insulators, step bolts, (tr) a transformer can. Returns the two wire points of its top crossarm
@@ -1629,7 +1650,7 @@ function jpVend(k,x,gy,s=1){const w=44*s,h=74*s,t=gy-h,L=k.env.lit;k.shape(RC(x-
   k.add(bt+`<path d="${bu}" stroke="#E04A3C" stroke-width="${R1(1.4*s)}" stroke-linecap="round"/>`);
   k.shape(RC(x+w*.2,t+8*s,w*.22,h*.4),'#C9D3DD',{w:1,one:1});k.add(`<rect x="${R1(x+w*.26)}" y="${R1(t+14*s)}" width="${R1(w*.1)}" height="${R1(5*s)}" fill="${C.ink}" opacity=".7"/><circle cx="${R1(x+w*.31)}" cy="${R1(t+26*s)}" r="${R1(1.6*s)}" fill="#E04A3C"/>`);
   k.shape(RC(x-w/2+5*s,t+h*.72,w*.6,h*.16),'#5B6170',{w:1.2,one:1});k.shape(RC(x-w/2-1*s,gy-3*s,w+2*s,3*s),'#9AA3AE',{w:1,one:1});
-  if(L){jpGlow(k,x-w*.12,t+h*.32,46*s,.8);wlPush(k,x,`<rect x="${R1(x-w/2+3*s)}" y="${R1(t+4*s)}" width="${R1(w*.66)}" height="${R1(h*.56)}" fill="#FFF6D0" opacity="${R1(.5*L)}"/>`)}
+  if(L){jpGlow(k,x-w*.12,t+h*.32,58*s,1.1);wlPush(k,x,`<rect x="${R1(x-w/2+3*s)}" y="${R1(t+4*s)}" width="${R1(w*.66)}" height="${R1(h*.56)}" fill="#FFF6D0" opacity="${R1(.85*L)}"/><g opacity="${R1(.9*L)}">${bt}</g>`)}// lit: the window glows over the night wash and the bottles show bright in it
   jpCat(k,x-2*s,t,.9*s)}
 // a short indigo noren (a split curtain) on its rod, with a white paw print across the middle
 function jpNoren(k,x0,x1,y,len,n=3){const pw=(x1-x0)/n;k.line([[x0-5,y],[x1+5,y]],2.6,C.woodD,{amp:.2});let ol='';
@@ -1665,7 +1686,7 @@ function jpKoiPond(k,cx,cy,rx,ry){const so=k.env.season,w=E(cx,cy,rx,ry,18).map(
   [[cx-rx*.35,cy+ry*.05,20,-.3,0],[cx+rx*.15,cy-ry*.2,17,2.7,1],[cx+rx*.5,cy+ry*.25,15,.5,2]].forEach(([x,y,L,a,t])=>jpKoi(k,x,y,L,a,t));
   if(so==='summer'){[[cx-rx*.72,cy-ry*.2,9],[cx-rx*.1,cy+ry*.45,7],[cx+rx*.72,cy-ry*.1,8]].forEach(([x,y,r])=>{k.add(`<path d="M${R1(x)} ${R1(y)}L${R1(x+r)} ${R1(y-r*.12)}A${r} ${R1(r*.42)} 0 1 1 ${R1(x+r*.6)} ${R1(y-r*.38)}Z" fill="#8FC27A" stroke="${C.ink}" stroke-width="1"/>`)});flowerDot(k,cx-rx*.68,cy-ry*.36,3,'#F7B6C8')}
   if(so==='spring')[[cx-rx*.6,cy,.3],[cx,cy+ry*.3,1.9],[cx+rx*.3,cy-ry*.35,.9],[cx+rx*.75,cy+ry*.1,2.4]].forEach(([x,y,r],i)=>petalAt(k,x,y,3.4,r,PET[i%3]));
-  if(so==='autumn'){mapleAt(k,cx-rx*.5,cy-ry*.25,5,.4,'#D9462F');mapleAt(k,cx+rx*.62,cy+ry*.3,4.4,-.6,'#E8623A')}
+  if(so==='autumn'){momijiAt(k,cx-rx*.5,cy-ry*.25,6.2,.4,'#D9462F');momijiAt(k,cx+rx*.62,cy+ry*.3,5.4,-.6,'#E8623A')}
   // rim stones and the flat stone
   let n=0;for(let a=0;a<Math.PI*2;a+=.42+k.r()*.14,n++){if(a>.25&&a<1.1&&n%2)continue;const x=cx+Math.cos(a)*rx*1.02,y=cy+Math.sin(a)*ry*1.08,sz=5+k.r()*4;k.shape(blobP(x,y,sz*1.5,sz*.8,k.r,7,.3),n%3?'#D3CCC2':'#C2BAAF',{w:1.2,one:1})}
   k.shape(blobP(cx+rx*.82,cy-ry*.75,15,6,k.r,8,.2),'#DED6CC',{w:1.4,one:1,hatch:{side:.55,gap:3,col:'#B5AC9F',op:.5}});
@@ -1687,18 +1708,25 @@ function jpPuffs(k,cx,cy,rx,ry,col,colD,flowers){[[-.42,.14,.6,.6],[.44,.16,.6,.
 function jpSakuraTree(k,x,gy,s=1){k.shape([[x-4*s,gy],[x-3*s,gy-30*s],[x+3*s,gy-30*s],[x+4.4*s,gy]],'#8A6A5A',{w:1.4,one:1});k.line([[x,gy-24*s],[x-12*s,gy-40*s]],1.6,'#6E5246');k.line([[x+1*s,gy-26*s],[x+13*s,gy-42*s]],1.6,'#6E5246');
   jpPuffs(k,x,gy-48*s,32*s,22*s,'#F9D3DE','#E9A2B8',1)}
 const MOMI=['#D9462F','#E8623A','#C93A2A','#F08A3A'];
-function jpMomiji(k,cx,cy,rx,ry,n,s=1){for(let i=0;i<n;i++){const a=k.r()*Math.PI*2,rr=Math.sqrt(k.r());mapleAt(k,cx+Math.cos(a)*rx*rr,cy+Math.sin(a)*ry*rr,(5+k.r()*2.6)*s,k.J(.8),MOMI[i%4])}}
+// a momiji leaf: seven long pointed lobes cut deep between, each edge with a small tooth (serrated, not a star), and a stem
+const MJ_L=[[0,1],[.66,.9],[-.66,.9],[1.3,.7],[-1.3,.7],[2.02,.42],[-2.02,.42]].sort((a,b)=>a[0]-b[0]);
+function momijiAt(k,x,y,s,rot,col){const P=(a,r)=>{const b=rot-Math.PI/2+a;return R1(x+Math.cos(b)*r*s)+' '+R1(y+Math.sin(b)*r*s)},hw=.28,pts=[];
+  MJ_L.forEach(([a,L],i)=>{const w=hw*(.7+L*.3);pts.push(P(a-w*1.05,.3),P(a-w*.8,.3+(L-.3)*.4),P(a-w*.94,.3+(L-.3)*.48),P(a-w*.46,.3+(L-.3)*.76),P(a-w*.56,.3+(L-.3)*.82),P(a,L),P(a+w*.56,.3+(L-.3)*.82),P(a+w*.46,.3+(L-.3)*.76),P(a+w*.94,.3+(L-.3)*.48),P(a+w*.8,.3+(L-.3)*.4))});
+  pts.push(P(Math.PI,.2));const st=rot+Math.PI/2;
+  k.add(`<path d="M${pts.join('L')}Z" fill="${col}" stroke="${C.ink}" stroke-width=".6" stroke-linejoin="round"/><path d="M${R1(x)} ${R1(y)}L${R1(x+Math.cos(st)*.95*s)} ${R1(y+Math.sin(st)*.95*s)}" stroke="${C.ink}" stroke-width="1" stroke-linecap="round"/>`)}
+function jpMomiji(k,cx,cy,rx,ry,n,s=1){for(let i=0;i<n;i++){const a=k.r()*Math.PI*2,rr=Math.sqrt(k.r());momijiAt(k,cx+Math.cos(a)*rx*rr,cy+Math.sin(a)*ry*rr,(5+k.r()*2.6)*s,k.J(.8),MOMI[i%4])}}
 
 /* ---------- PA.JP.dress: the details per scene and strip, at 'far' (after the far hills) or 'mid' (before the foreground) ---------- */
 const JP_DRESS={
-  market:{far:k=>jpPoleRow(k,[18,342,657,982],448,96,1,14,[1,[.52,.6,.66]],2),mid:k=>jpPostBox(k,374,472,1)},// the wires sit low enough to show over the roofs on desktop too; the post box by the Boutique, clear of its door
+  market:{far:k=>{jpPoleRow(k,[18,342],448,96,1,14);jpPoleRow(k,[657,982],448,96,1,14,[0,[.36,.44,.5]],0)},// no wires over the Boutique, where Fuji peeks over the roof
+    mid:k=>jpPostBox(k,645,472,.85)},// the wires sit low enough to show over the roofs on desktop too; the post box between the Boutique door (559-629) and the lamp (662), clear of the dog
   garden:{far:k=>jpBamboo(k,150,1000,104,252,{rails:[130,222]})},
   park:{mid:k=>{const so=k.env.season;jpToro(k,34,458,.78);jpToro(k,228,462,.7);jpKoiPond(k,120,470,90,18);
     if(so==='spring'){jpPuffs(k,70,294,84,60,'#F9D3DE','#E9A2B8',1);jpPuffs(k,440,312,68,52,'#F9D3DE','#E9A2B8',1);[[180,380,.4],[300,350,1.8],[520,372,2.6],[620,340,.9]].forEach(([x,y,r],i)=>petalAt(k,x,y,4,r,PET[i%3]))}
-    else if(so==='autumn'){jpPuffs(k,935,298,70,50,'#E2583E','#B83E2C');jpMomiji(k,935,298,64,44,20);[[880,380,.4],[840,430,2],[980,420,1.2]].forEach(([x,y,r],i)=>mapleAt(k,x,y,5.4,r,MOMI[i]))}}},
+    else if(so==='autumn'){jpPuffs(k,935,298,70,50,'#E2583E','#B83E2C');jpMomiji(k,935,298,64,44,20);[[880,380,.4],[840,430,2],[980,420,1.2]].forEach(([x,y,r],i)=>momijiAt(k,x,y,5.4,r,MOMI[i]))}}},
   river:{far:k=>{if(k.env.season==='spring')[[255,.46],[302,.52],[348,.44],[708,.48]].forEach(([x,s])=>jpSakuraTree(k,x,318,s))},
     mid:k=>{jpJizo(k,164,484,.95);if(k.env.season==='spring')[[300,372,.4],[342,404,1.9],[420,360,.9],[520,392,2.4],[560,424,1.2],[180,352,.2],[250,428,2.9]].forEach(([x,y,r],i)=>petalAt(k,x,y,3.6,r,PET[i%3]))}},
-  'strip:river':{mid:k=>jpBamboo(k,520,700,282,322,{pw:8,rails:[296,312]})},
+  'strip:river':{mid:k=>k.top.push(k.cap(()=>jpBamboo(k,596,764,294,333,{pw:8,rails:[306,321]})))},// on the near bank (top layer: the bank and path are drawn after 'mid'), clear of the reeds (560, 880),
   square:{far:k=>{jpPoleRow(k,[809,1006],394,104,1,12,[0,[.4,.47,.55]],0);jpPoleRow(k,[-18,207],394,108,1,12)},
     mid:k=>{jpNoren(k,138,188,323,26,2);jpVend(k,424,394,.86)}},
   cafe:{mid:k=>{// the kitchen doorway behind the counter, its noren
@@ -1765,7 +1793,7 @@ function sqFujihill(k){const e=k.env;
   k.own(rng(0x4d4f4d49),()=>fhMomiji(k,44,420,1));
   k.own(rng(0x53414b55),()=>fhSakura(k,928,446,1));
   // the shrine behind the torii, the torii, two stone lanterns
-  jpHokora(k,170,432,.6);k.add('<g class="pa-jp-torii">');jpTorii(k,170,446,1);k.add('</g>');jpToro(k,74,456,.8);jpToro(k,266,456,.8);
+  jpHokora(k,210,432,.6);k.add('<g class="pa-jp-torii">');jpTorii(k,210,446,1);k.add('</g>');jpToro(k,114,456,.8);jpToro(k,306,456,.8);// (x +40 since review 3: the torii is whole in the phone crop)
   // the stepping-stone path from the foreground (where the dog stands) up to the torii
   [[468,594,36,11],[430,556,33,10],[396,522,30,9],[360,494,26,8],[320,474,22,7],[284,462,18,6],[250,453,15,5],[218,447,12,4]].forEach(([x,y,rx,ry])=>{const p=blobP(x,y,rx,ry,k.r,9,.22);k.shape(p,'#DCD3C6',{w:1.6,one:1,hatch:{side:.6,gap:3.6,col:'#B5AC9F',op:.5}})});
   if(e.snow)k.side(()=>[[430,556,30],[360,494,22],[280,458,15]].forEach(([x,y,r])=>capLine(k,[[x-r,y-4],[x+r,y-4]],4)));
@@ -1773,15 +1801,15 @@ function sqFujihill(k){const e=k.env;
   O.bench(k,FH_BENCH[0],FH_BENCH[1],FH_BENCH[2]);
   // wildflowers and the sign
   fl(k,[[40,560,C.red],[90,590,C.yellow],[210,580,C.lav],[640,588,'#FFB3C7'],[700,560,C.yellow],[880,592,C.red],[960,566,C.lav],[600,470,C.yellow],[780,470,'#FFB3C7']],5);
-  signpost(k,905,584,'Fuji View Hill',156);
+  signpost(k,800,490,'Fuji View Hill',150);// further back, clear of the place buttons (desktop x 842-991, y 527+) and the bench
   O.tape(k,6,26,90,-24,'#F7B9C6');O.tape(k,930,566,80,-28,'#BDE7D2');
   k.ss(()=>{const so=k.so;if(so==='spring')[[300,420,.4],[520,440,1.9],[680,500,.9],[760,450,2.4],[860,520,1.2],[620,560,.2],[200,520,2.9],[100,480,1.4]].forEach(([x,y,r],i)=>petalAt(k,x,y,4,r,PET[i%3]));
-    else if(so==='autumn')[[90,470,.4],[150,520,1.9],[640,520,.9],[760,470,2.4],[880,540,1.2],[300,570,.2]].forEach(([x,y,r],i)=>mapleAt(k,x,y,5.4,r,MOMI[i%4]));
+    else if(so==='autumn')[[90,470,.4],[150,520,1.9],[640,520,.9],[760,470,2.4],[880,540,1.2],[300,570,.2]].forEach(([x,y,r],i)=>momijiAt(k,x,y,5.4,r,MOMI[i%4]));
     seasonDrift(k,[[700,200,1],[620,250,.9],[820,300,.85],[450,240,.8]]);if(so==='winter'&&!e.night)robin(k,610,446,1,-1);if(so==='spring'&&!e.night&&!e.rain)butterfly(k,700,420,1,'#F9C6D4')});
   k.hw(()=>{hwJack(k,592,456,.7);hwJack(k,610,460,.5);hwGhost(k,872,302,.75,16)});// v2.6-style: two pumpkins by the bench, a paper ghost hanging in the sakura
   k.lt(()=>{const b=FH_BENCH,s=b[2];ltString(k,sagP(b[0]-50*s,b[1]-70*s,b[0]+50*s,b[1]-70*s,6,10),18);ltString(k,sagP(856,334,930,326,14,10),19);ltString(k,sagP(880,300,976,304,12,10),19)});
-  k.ny(()=>{nyKado(k,118,458,.8,-1);nyKado(k,222,458,.8,1);// the kadomatsu pair at the torii, a row of paper lanterns each side on bamboo poles
-    k.line([[332,452],[332,342]],2.4,'#7FA65E');k.line([[14,452],[14,342]],2.4,'#7FA65E');nyChochins(k,226,352,332,344,7,3,.7);nyChochins(k,14,344,114,352,7,3,.7);
+  k.ny(()=>{nyKado(k,158,458,.8,-1);nyKado(k,262,458,.8,1);// the kadomatsu pair at the torii, a row of paper lanterns each side on bamboo poles
+    k.line([[372,452],[372,342]],2.4,'#7FA65E');k.line([[54,452],[54,342]],2.4,'#7FA65E');nyChochins(k,266,352,372,344,7,3,.7);nyChochins(k,54,344,154,352,7,3,.7);
     nyKites(k,[[104,226,.85,1,30,400],[790,236,.8,0,730,404]])})}
 
 /* ======================= API (wraps world A/B) ======================= */

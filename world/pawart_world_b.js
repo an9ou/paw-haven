@@ -5834,8 +5834,8 @@ PROPS.nengajo=function(b,o){
   b.raw(`<path d="M10 10L198 8L199 139L8 140Z" fill="${SHADOW}" opacity=".8"/>`,'under');
   b.sh([[6,6],[194,4],[196,134],[4,136]],'#FFF6E6',{k:0,hatch:0,hl:0,lw:1.1,base:'#FFFBF3',dr:.4});
   b.raw(`<path d="M11 11H189V129H11ZM17 17V123H183V17Z" fill="${WN_RED}" fill-rule="evenodd" opacity=".95"/><rect x="20" y="20" width="160" height="100" fill="none" stroke="#E9B44C" stroke-width="1.2" stroke-dasharray="5 3" opacity=".9"/>`);
-  b.tx(84,42,'Happy New Year',21,{rot:-2,col:'#C24A4E'});
-  b.raw(b.st('M30 48q30 -4 64 -2t46 -2','#E9B44C',1.6,.8),'top');
+  b.tx(80,42,'Happy New Year',19,{rot:-2,col:'#C24A4E'});// 19 (review 3): 'Year' clears the stamp
+  b.raw(b.st('M30 48q28 -4 60 -2t42 -2','#E9B44C',1.6,.8),'top');
   // the stamp, perforated edge, the year's animal or a pine
   let d='M148 22';const px=(x0,y0,x1,y1)=>{const k=Math.round(Math.hypot(x1-x0,y1-y0)/5);for(let i=0;i<k;i++){const t0=i/k,t1=(i+1)/k,xm=x0+(x1-x0)*(t0+t1)/2,ym=y0+(y1-y0)*(t0+t1)/2,nx=-(y1-y0),ny=(x1-x0),l=Math.hypot(nx,ny);d+=`L${R1(x0+(x1-x0)*t0)} ${R1(y0+(y1-y0)*t0)}Q${R1(xm+nx/l*1.8)} ${R1(ym+ny/l*1.8)} ${R1(x0+(x1-x0)*t1)} ${R1(y0+(y1-y0)*t1)}`}};
   px(148,22,178,22);px(178,22,178,58);px(178,58,148,58);px(148,58,148,22);
@@ -5848,7 +5848,7 @@ PROPS.nengajo=function(b,o){
   b.ln([[22,122],[32,110],[46,104]],{w:1.6,col:'#6E4F43'});
   [[30,112],[42,104],[24,104]].forEach(([x,y])=>{b.sh(flowerP(x,y,4.6,5,.3),'#F28FA5',{hatch:0,hl:0,lw:.55,dr:.1,base:'#FBD3DC'});b.dot(x,y,1,'#E9B44C')});
   b.ln([[178,122],[168,112]],{w:1.4,col:'#8E6446'});[[170,112,5.4],[176,106,4.6],[162,108,4.4]].forEach(([x,y,rr],i)=>b.sh(starP(x,y,rr,rr*.45,9,i*.5),i%2?'#5E9446':'#4F8150',{k:.05,hatch:0,hl:0,lw:.55,dr:.15}));
-  b.ex('spark',138,30,3.4,'#FFE07A');
+  b.ex('spark',58,114,3.4,'#FFE07A');// by the plum sprig, clear of the greeting
 };
 
 /* items (64): foods */
@@ -5878,14 +5878,15 @@ Object.assign(ITEMS,{
   b.ex('spark',57,10,3.6);flake(b,7,14,3.6,SNWS,1.2);
  },
  'Pup Kinton'(b){
-  // a neat dome of golden sweet potato mash, piped in a swirl, on a little red New Year dish; a pine sprig for luck
-  plateV(b,32,50,28,9,WN_RED,'#FFFBF3');
-  b.sh([[9,50],[11,40],[17,32],[25,27],[39,27],[47,32],[53,40],[55,50],[32,54]],'#F5B83D',{k:.2,hl:0,lw:1,base:'#FFDD7E',sh:'#D9962E',ho:.4,
-    inner:b.st('M14 46q18 6 36 0M17 39q15 5 30 0M22 32q10 4 20 0','#E0A52E',1.3,.9)});
-  b.sh([[27,28],[29,22],[32,19],[35,22],[37,28]],'#F5B83D',{k:.25,hatch:0,hl:0,lw:.85,base:'#FFDD7E'});
-  b.raw(`<ellipse cx="24" cy="34" rx="4" ry="2.2" transform="rotate(-30 24 34)" fill="#FFF3C2" opacity=".85"/>`,'top');
-  [[52,22,5.4],[57,28,4.6]].forEach(([x,y,rr],i)=>b.sh(starP(x,y,rr,rr*.45,9,i*.4),i?'#5E9446':'#4F8150',{k:.05,hatch:0,hl:0,lw:.5,dr:.1}));
-  b.ex('spark',8,14,3.6,'#FFE07A');b.ex('spark',44,8,2.8,'#FFE07A');
+  // golden sweet potato mash heaped in a small red lacquer bowl, lumpy and crumbly (not a smooth jelly dome), a green leaf sprig on top (no chestnut)
+  bowl(b,32,42,23,7,14,'#D9534A','#8E3A33',()=>{
+    b.sh([[10,43],[11,36],[15,30],[20,26],[26,23.4],[32,22.4],[38,23],[44,26],[49,30],[53,36],[54,43]],'#F5B83D',{k:.3,hl:0,lw:1,base:'#FFDD7E',sh:'#D9962E',ho:.35,
+      inner:b.st('M16 36q3 -2.6 6 0M27 29q3 -2.6 6 0M38 33q3 -2.4 6 0M22 40q2.4 -2 5 0M41 40q2 -1.8 4.4 0M31 36q2 -1.6 4 0','#C98A2A',1.2,.9)});
+    [[18,31,1.4],[45,35,1.2],[34,27,1.1],[26,35,1]].forEach(([x,y,r])=>b.dot(x,y,r,'#FFE9A8'))});
+  b.ln([[32,23],[33,17]],{w:1.1,col:'#4F8150'});
+  [[28.6,17.6,-.6],[36.4,16.6,.55]].forEach(([x,y,a])=>b.sh(E(x,y,4.6,2.2,12,a),'#7DB360',{hatch:0,hl:0,lw:.7,base:'#9CCB80'}));
+  b.raw(`<ellipse cx="22" cy="30" rx="3.6" ry="1.8" transform="rotate(-30 22 30)" fill="#FFF3C2" opacity=".85"/>`,'top');
+  b.ex('spark',8,14,3.6,'#FFE07A');b.ex('spark',52,10,2.8,'#FFE07A');
  }
 });
 
@@ -5914,15 +5915,16 @@ Object.assign(ITEMS,{
   b.ex('spark',32,10,3.4);
  },
  'Snowflake Snood'(b){
-  // a chunky knitted tube, cream and blue bands, white snowflakes on the blue
-  const BL='#8FB0D8',BLD='#6E8FBC';
-  let rib='';for(let x=10;x<56;x+=4)rib+=b.jl(x,22,x+.4,54,.3);
-  b.sh([[8,20],[56,20],[54,52],[46,58],[18,58],[10,52]],'#FFF2DA',{k:.18,sh:'#C9A46A',ho:.35,hl:0,base:'#FFF8EC',
-    marks:[{pts:[[0,27],[64,27],[64,40],[0,40]],fill:BL,k:0},{pts:[[0,48],[64,48],[64,53],[0,53]],fill:BL,k:0}],inner:b.st(rib,'#B9A68A',.8,.55)});
-  b.sh(E(32,20,24,6.4,22),'#FFF2DA',{hatch:0,hl:0,lw:1,base:'#FFF8EC'});
-  b.sh(E(32,20.6,17,3.6,20),'#C9B49A',{hatch:0,hl:0,lw:.7,base:'#B9A68A'});
-  [[18,33.6],[32,34],[46,33.6]].forEach(([x,y])=>flake(b,x,y,3.4,'#FBFBF7',1.4));
-  b.raw(b.st('M8 44q24 4 48 0',BLD,1,.4),'top');
+  // a soft, slouchy knitted tube standing up (taller than wide, no handle, no rim): a rolled ribbed cuff on top, knit ribs all the way down,
+  // a blue band with one big snowflake, a soft fold where it slumps
+  const BL='#8FB0D8',BLD='#6E8FBC',CR='#FFF2DA';
+  let rib='';for(let x=15.4;x<50;x+=3.6)rib+=b.jl(x,19,x+(x-32)*.06,57,.35);
+  b.sh([[13,16],[51,16],[54,28],[52,40],[55,52],[50,59],[40,61],[24,61],[11,58],[9,51],[12,40],[10,28]],CR,{k:.3,sh:'#D9C3A0',ho:.35,hl:0,base:'#FFF8EC',
+    marks:[{pts:[[0,29],[64,29],[64,43],[0,43]],fill:BL,k:0}],inner:b.st(rib,'#A88F6E',.85,.75)});
+  b.sh(E(32,16,20.4,5.6,22),CR,{k:.2,hatch:0,hl:0,lw:1.1,base:'#FFF8EC',inner:b.st('M15 15.4v3M19 13v5M23 12v5.4M27 11.4v5.6M31 11v5.8M35 11v5.8M39 11.6v5.6M43 12.4v5.2M47 13.6v4.4','#A88F6E',.9,.8)});
+  b.sh(E(32,14.6,13,2.2,16),'#C9B49A',{hatch:0,hl:0,lw:.7,base:'#B9A68A'});
+  flake(b,32,36,6.6,'#FBFBF7',2.2);
+  b.raw(b.st('M12 50q8 3 14 -1q8 4 16 0q6 3 12 0',BLD,1.1,.55),'top');
   b.ex('spark',58,10,3.4,'#E3F2FC');b.ex('dots',6,12,4);
  },
  'Ugly Sweater Rosette'(b){
@@ -5938,15 +5940,15 @@ Object.assign(ITEMS,{
   b.ex('spark',57,10,3.6,'#FFE07A');b.ex('dots',6,12,4);
  },
  'Year of the Sheep Hood'(b){
-  // a cream woolly hood seen from the front: the wool arch round the face, the lining inside, two small curled horns, floppy sheep ears
+  // a cream woolly hood seen from the front: the wool arch round a shadowy face opening, two big curled horns on top, pink sheep ears sticking out
   const WO='#FFF2DA',WOD='#D9C3A0';
-  b.sh([[20,24],[44,24],[46,46],[42,60],[22,60],[18,46]],'#E8D2B4',{k:.25,hatch:0,hl:0,lw:.8,base:'#F1E0C6',marks:[{pts:E(32,26,14,8,14),fill:'#D9BE98',op:.8}]});
-  let cu='';[[14,20],[21,12],[29,8],[37,8],[45,12],[51,20],[53,30],[52,42],[49,53],[14,42],[12,30],[15,53],[26,16],[38,16]].forEach(([x,y])=>{cu+=`M${x-1.8} ${y}a1.8 1.8 0 1 1 3.6 0`});
-  b.sh([[32,4],[46,7],[55,18],[58,34],[56,50],[48,61],[39,61],[42,48],[43,36],[40,26],[32,22],[24,26],[21,36],[22,48],[25,61],[16,61],[8,50],[6,34],[9,18],[18,7]],WO,{k:.18,sh:WOD,ho:.35,hl:0,base:'#FFF8EC',inner:b.st(cu,WOD,1.1,.95)});
-  [[-1,9],[1,55]].forEach(([d,x])=>b.sh([[x,24],[x+d*6,28],[x+d*8,42],[x+d*4,49],[x-d*2,38]],'#F7D9CF',{k:.3,hatch:0,hl:0,lw:.9,base:'#FBE8E2',marks:[{pts:E(x+d*4,38,2,5,10,d*.2),fill:'#F2B8B8',op:.8}]}));
-  [[-1,19],[1,45]].forEach(([d,x])=>{const P=[];for(let i=0;i<=10;i++){const a=i/10*Math.PI*1.7,rr=6.4-i*.42;P.push([x+d*(Math.cos(a+1.3)*rr),9+Math.sin(a+1.3)*rr])}
-    b.ln(P,{w:4.6,col:INK});b.ln(P,{w:2.6,col:'#D9B77A'})});
-  b.ex('spark',58,6,3.2);b.ex('heart',32,40,3,'#F7B2C4');
+  [[-1,11],[1,53]].forEach(([d,x])=>b.sh([[x,30],[x+d*8,31],[x+d*11.5,37],[x+d*8,42],[x,39]],'#F7D9CF',{k:.3,hatch:0,hl:0,lw:1,base:'#FBE8E2',marks:[{pts:E(x+d*6,36.4,3.4,2,10),fill:'#F2A8B0',op:.9}]}));
+  b.sh([[21,27],[43,27],[45,44],[41,60],[23,60],[19,44]],'#CDB08A',{k:.25,hatch:0,hl:0,lw:.8,base:'#DCC3A0',marks:[{pts:E(32,29,13,6,14),fill:'#B8966C',op:.8}]});
+  let cu='';[[16,20],[22,13],[29,10],[36,10],[43,13],[49,20],[51,30],[50,42],[47,53],[14,42],[13,30],[17,53]].forEach(([x,y])=>{cu+=`M${x-1.8} ${y}a1.8 1.8 0 1 1 3.6 0`});
+  b.sh([[32,7],[44,9],[51,18],[53,32],[52,48],[47,61],[39,61],[41,47],[42,35],[39,28],[32,25],[25,28],[22,35],[23,47],[25,61],[17,61],[12,48],[11,32],[13,18],[20,9]],WO,{k:.18,sh:WOD,ho:.35,hl:0,base:'#FFF8EC',inner:b.st(cu,WOD,1.1,.95)});
+  [[-1,15],[1,49]].forEach(([d,x])=>{const P=[];for(let i=0;i<=14;i++){const a=i/14*Math.PI*1.9,rr=8.4-i*.44;P.push([x+d*(Math.cos(a+1.2)*rr),12+Math.sin(a+1.2)*rr])}
+    b.ln(P,{w:6,col:INK});b.ln(P,{w:3.6,col:'#C99A5E'})});
+  b.ex('spark',58,4,3);b.ex('heart',32,44,3,'#F7B2C4');
  }
 });
 

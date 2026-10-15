@@ -114,13 +114,13 @@ sec('Mt. Fuji: seasons, times, weather');
     ok(new Set(TIMES.map((time) => (F(nm, { time }).match(/rgb\([^)]*\)/g) || []).slice(0, 2).join())).size === 4, `${nm}: the colours differ by time`);
     const rain = F(nm, { weather: 'rain' }), snow = F(nm, { weather: 'snow', season: 'winter' }), dry = F(nm, {});
     ok(/fill-opacity="0?\.55"/.test(rain) && /fill-opacity="0?\.55"/.test(snow) && !/fill-opacity="0?\.55"/.test(dry), `${nm}: hidden behind the clouds in rain and snow, a faint foot only`);
-    ok(!/rgb\(255,255,255\)/.test(rain) && /rgb\(255,255,255\)/.test(dry), `${nm}: no snow cap shows in the rain`);
+    ok(!/rgb\(247,249,252\)/.test(rain) && /rgb\(247,249,252\)/.test(dry) && !/rgb\(255,255,255\)/.test(dry), `${nm}: no snow cap shows in the rain (the day cap is off-white, never pure white)`);
     ok(/rgb\(255,240,168\)/.test(F(nm, { time: 'night' })) && !/rgb\(255,240,168\)/.test(dry), `${nm}: one star by the summit at night`);
     ok(/rgb\(236,238,241\)/.test(F(nm, { weather: 'cloudy' })) && !/rgb\(236,238,241\)/.test(dry), `${nm}: a cloud band when cloudy`);
     ok(/rgb\(232,160,138\)/.test(F(nm, { time: 'dusk' })), `${nm}: red Fuji at dusk`);
   });
   ok(!/#[0-9A-Fa-f]{6}/.test(F('yard', { time: 'night' }).replace(/url\(#[^)]+\)/g, '')), 'Fuji keeps its own light (rgb colours, out of the recolour pass)');
-  ok(/<g pointer-events="none" opacity="\.2">/.test(PA.scene('pier', { jp: true })) && !/<g pointer-events="none" opacity="\.2">/.test(PA.scene('pier', { jp: true, time: 'night' })), 'the pier shows a faint reflection by day only');
+  ok(/<g pointer-events="none" opacity="\.3" stroke-linecap="round">/.test(PA.scene('pier', { jp: true })) && !/<g pointer-events="none" opacity="\.3" stroke-linecap="round">/.test(PA.scene('pier', { jp: true, time: 'night' })), 'the pier shows a faint reflection by day only');
   const y = PA.scene('yard', { jp: true }), i = y.indexOf('data-fuji'), hill = y.indexOf('fill="#DCEDC4"');
   ok(i > 0 && hill > i, 'yard (world A kit): Fuji is drawn before the far hills, they hide its foot');
 }
