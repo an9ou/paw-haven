@@ -42,13 +42,27 @@ function fsFields() {
 const fsYear = () => localISO().slice(0, 4);
 // the greeting year of a season: winter runs Dec-Feb, so January and February count to the winter that began the December before
 const fsSeasonYear = (s) => { const y = +fsYear(); return String(s === 'winter' && monthNow() <= 2 ? y - 1 : y); };
-const fsAnyOn = () => festOn('leaf') || festOn('halloween');
+const fsAnyOn = () => festOn('leaf') || festOn('halloween') || festOn('snow'); // v2.8: Baker Bea's Winter Stall stands through the Snow Days (WINTER)
 const fsMotionOff = () => document.documentElement.dataset.motion === 'off';
 const fsHere = (pl) => cur.mode === 'yard' && !!S && S.place === pl && !!$('#view svg.world');
 function fsActive() { return FS.walking || (typeof wnActive === 'function' && !!wnActive()); } // v2.8: also the Ugly Sweater Contest walk (WINTER)
 // v2.8 (V28.md section 2): [[x, y, w, h], ...] world boxes of every festival prop up now in 'yard' or 'square' (leaf piles, porch pumpkin, snowdrifts,
 // snow heap, stall, banner, fortune box, pop-up), for the HOME free-spot scan and the occlusion tests. Coordinator stub: none. WINTER fills it in
-function fsKeepOut(place) { return []; }
+function fsKeepOut(place) {
+  const out = [], ph = isPhone();
+  if (place === 'yard') {
+    if (festOn('leaf')) FS_PILES.forEach((b) => out.push(b.slice()));
+    if (festOn('halloween')) out.push(fsPumpkinBox().slice());
+    if (festOn('snow') && typeof wnYardBoxes === 'function') wnYardBoxes().forEach((b) => out.push(b.slice())); // the two snowdrifts and the snow heap
+  } else if (place === 'square') {
+    if (fsAnyOn()) out.push(fsStallBox().slice());
+    if (festOn('halloween')) out.push(fsBannerBox().slice());
+    if (festOn('lights') && typeof wnBannerBox === 'function') out.push(wnBannerBox().slice()); // the Ugly Sweater Contest banner
+    if (typeof nyDays === 'function' && nyDays()) out.push(typeof nyFortuneBox === 'function' ? nyFortuneBox().slice() : (ph ? [212, 496, 100, 92] : [212, 344, 114, 105])); // NEW YEAR's box (the pop-up spot)
+    if (typeof hwOn === 'function' && hwOn() && typeof hwPopBox === 'function') out.push(hwPopBox().slice());
+  }
+  return out;
+}
 
 /* ---- art with doodle fallbacks (used until the FESTIVAL ART lane's props are merged) ---- */
 const FS_LEAF_COLS = ['#E8893A', '#D9663B', '#F2C14E', '#B5542F', '#C9A13B'];
@@ -76,7 +90,11 @@ const FS_FB = {
   leafdrift: () => { const r = seeded(31); let s = ''; for (let i = 0; i < 9; i++) s += fsLeafPath(10 + i * 12 + r() * 6, 18 + r() * 14, 0.9 + r() * 0.4, r() * 360, FS_LEAF_COLS[i % 5]); return `<svg viewBox="0 0 120 40" xmlns="http://www.w3.org/2000/svg">${s}</svg>`; }
 };
 function fsArt(name, o) { return artReal('prop', name, o || {}) || FS_FB[name](o || {}); }
-const fsKind = () => (festOn('halloween') ? 'halloween' : 'leaf');
+const fsKind = () => (festOn('halloween') ? 'halloween' : festOn('leaf') ? 'leaf' : festOn('newyear') ? 'newyear' : festOn('snow') ? 'winter' : 'leaf'); // v2.8: the Winter Stall kinds
+const fsWinter = () => ['winter', 'newyear'].includes(fsKind()); // the stall is Baker Bea's Winter Stall
+const fsStallName = () => (fsWinter() ? 'Winter Stall' : 'Harvest Stall');
+// the stall picture: the v2.5 kinds take the shared time tint as before; the v2.8 kinds are night-washed by the art itself ({ night }), never tinted twice
+function fsStallArt(kind) { const k = kind || fsKind(); if (k !== 'winter' && k !== 'newyear') return propTint(fsArt('stall', { kind: k })); return isNight() ? fsArt('stall', { kind: k, night: true }) : propTint(fsArt('stall', { kind: k })); }
 // phones: the world x range the camera shows at home (a visiting dog shifts and zooms it, phHomeRefit in 03_yard.js)
 function fsCrop() {
   const svg = $('#view > svg.world'), vb = svg && svg.viewBox && svg.viewBox.baseVal;
@@ -136,26 +154,40 @@ function fsPileBind() {
 }
 function fsSquareDraw() {
   const svg = $('#view svg.world'); if (!svg) return;
-  ['#fsStallG', '#fsBannerG'].forEach((s) => { const e = $(s, svg); if (e) e.remove(); });
+  ['#fsStallG', '#fsBannerG', '#wnBannerG'].forEach((s) => { const e = $(s, svg); if (e) e.remove(); });
   const pb = $('#placeBtns'); if (pb) pb.querySelectorAll('[data-fs]').forEach((b) => b.remove());
-  if (!fsAnyOn() || FS.walking) { fsPackSync(); fsHwDraw(); return; }
+  if (!fsAnyOn() || fsActive()) { fsPackSync(); fsNyDraw(); fsHwDraw(); return; } // v2.8: the contest walk hides the stall too
   const pack = $('#pack', svg); if (!pack) return;
-  const [sx, sy, sw, sh] = fsStallBox();
-  let html = `<g id="fsStallG" class="hot" data-kind="${fsKind()}" tabindex="0" role="button" aria-label="Baker Bea's Harvest Stall">${place(propTint(fsArt('stall', { kind: fsKind() })), sx, sy, sw, sh)}${fsHit(sx + 8, sy + 10, sw - 16, sh - 10)}</g>`;
+  const [sx, sy, sw, sh] = fsStallBox(), kind = fsKind(), wint = fsWinter();
+  let html = `<g id="fsStallG" class="hot" data-kind="${kind}" tabindex="0" role="button" aria-label="Baker Bea's ${fsStallName()}">${place(fsStallArt(kind), sx, sy, sw, sh)}${fsHit(sx + 8, sy + 10, sw - 16, sh - 10)}${wint && isPhone() && typeof hwChip === 'function' ? hwChip('Winter Stall', sx + sw / 2, sy) : ''}</g>`;
   if (festOn('halloween')) { const [bx, by, bw, bh] = fsBannerBox(); html = `<g id="fsBannerG" pointer-events="none">${place(propTint(fsArt('paradebanner')), bx, by, bw, bh)}</g>` + html; }
-  pack.insertAdjacentHTML('beforebegin', html);
+  if (wint) { // v2.8 draw order (V28.md section 7): #fsStallG, #nyFortuneG (NEW YEAR, right after the stall), the sweater banner, #bowlG, #pack
+    if (festOn('lights') && typeof wnBannerSVG === 'function') html += wnBannerSVG();
+    const at = $('#bowlG', svg) || pack; at.insertAdjacentHTML('beforebegin', html);
+  } else pack.insertAdjacentHTML('beforebegin', html);
   fsHitFit();
   const st = $('#fsStallG', svg); st.onclick = (e) => { e.stopPropagation(); SFX.click(); fsStallOpen(); }; st.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fsStallOpen(); } };
   if (pb) {
     const home = pb.querySelector('[data-pb="yard"]'), add = (h) => { if (home) home.insertAdjacentHTML('beforebegin', h); else pb.insertAdjacentHTML('beforeend', h); };
     const ph = isPhone(), hw = festOn('halloween'); // phones: one Festival button (a chooser at Halloween) so the Square row stays one line
-    if (ph && hw) add('<button class="btn yes" data-fs="fest">Festival</button>');
-    else add(`<button class="btn yes" data-fs="stall" aria-label="Harvest Stall">${ph ? 'Stall' : 'Harvest Stall'}</button>`);
-    if (hw && !ph) add(`<button class="btn yes" data-fs="parade" aria-label="${fsParadedToday() ? 'Paraded today' : 'Costume parade'}" ${fsParadedToday() ? 'aria-disabled="true"' : ''}>${fsParadedToday() ? (ph ? 'Paraded' : 'Paraded today') : ph ? 'Parade' : 'Costume parade'}</button>`);
-    pb.querySelectorAll('[data-fs]').forEach((b) => { b.onclick = () => { SFX.click(); if (b.dataset.fs === 'stall') fsStallOpen(); else if (b.dataset.fs === 'fest') fsChooser(); else fsParadeOpen(); }; });
+    if (wint) { // v2.8: the Winter Stall, the Sweater Contest in December; phones: one Festival button when the chooser has more than one row
+      const con = festOn('lights'), many = con || (typeof nyDays === 'function' && nyDays()), done = con && typeof wnJudgedToday === 'function' && wnJudgedToday();
+      if (ph && many) add('<button class="btn yes" data-fs="fest">Festival</button>');
+      else add(`<button class="btn yes" data-fs="stall" aria-label="Winter Stall">${ph ? 'Stall' : 'Winter Stall'}</button>`);
+      if (con && !ph) add(`<button class="btn yes" data-fs="contest" aria-label="${done ? 'Judged today' : 'Sweater Contest'}" ${done ? 'aria-disabled="true"' : ''}>${done ? 'Judged today' : 'Sweater Contest'}</button>`);
+    } else {
+      if (ph && hw) add('<button class="btn yes" data-fs="fest">Festival</button>');
+      else add(`<button class="btn yes" data-fs="stall" aria-label="Harvest Stall">${ph ? 'Stall' : 'Harvest Stall'}</button>`);
+      if (hw && !ph) add(`<button class="btn yes" data-fs="parade" aria-label="${fsParadedToday() ? 'Paraded today' : 'Costume parade'}" ${fsParadedToday() ? 'aria-disabled="true"' : ''}>${fsParadedToday() ? (ph ? 'Paraded' : 'Paraded today') : ph ? 'Parade' : 'Costume parade'}</button>`);
+    }
+    pb.querySelectorAll('[data-fs]').forEach((b) => { b.onclick = () => { SFX.click(); const k = b.dataset.fs; if (k === 'stall') fsStallOpen(); else if (k === 'fest') fsChooser(); else if (k === 'contest') { if (typeof wnContestOpen === 'function') wnContestOpen(); } else fsParadeOpen(); }; });
   }
-  fsPackSync(); fsHwDraw();
+  fsPackSync(); fsNyDraw(); fsHwDraw();
 }
+// v2.8: NEW YEAR's Fortune box (32_newyear.js) draws right after the stall (fsSlot), and its desktop place button lands before Go home
+function fsNyDraw() { if (typeof nySquareDraw === 'function') { try { nySquareDraw(); } catch (e) { console.warn('newyear', e); } } }
+// where a prop that stands right after the stall goes: insert it before this element (the banner, the bowl or the pack)
+function fsSlot() { const svg = $('#view svg.world'); if (!svg) return null; const st = $('#fsStallG', svg); return (st && st.nextElementSibling) || $('#bowlG', svg) || $('#pack', svg); }
 // v2.6: the Pumpkin Patch Pop-up (27_halloween.js) draws after the stall, so it sits in front of it and its button lands between the parade and Go home
 function fsHwDraw() { if (typeof hwSquareDraw === 'function') hwSquareDraw(); }
 // Square pack spot 3 stands where the stall is: it moves to the front while the stall is up and comes back when the festival packs up
@@ -245,37 +277,50 @@ function fsScatter(i) {
 function fsStallItems() {
   const on = (x) => festOn(x.fest);
   return FOOD.filter((f) => f.fest && !f.ed && on(f)).map((f) => ({ cat: 'food', n: f.n, price: f.price, desc: f.note, tip: f.tip }))
-    .concat(CLOTHES.filter((c) => c.fest && !c.ed && !c.reward && on(c)).map((c) => ({ cat: 'clothes', n: c.n, price: c.price, desc: `${SLOT_NAME[c.slot]}. ${c.perk}` })));
+    .concat(CLOTHES.filter((c) => c.fest && !c.ed && !c.reward && on(c)).map((c) => ({ cat: 'clothes', n: c.n, price: c.price, desc: `${SLOT_NAME[c.slot]}. ${c.perk}` })))
+    .concat(Object.keys(HM_DECOR).filter((n) => HM_DECOR[n].fest && !HM_DECOR[n].ed && on(HM_DECOR[n])).map((n) => ({ cat: 'decor', n, price: HM_DECOR[n].price, desc: HM_DECOR[n].story }))); // v2.8: the winter yard decorations
 }
 function fsStallOpen() { return fsTry(fsStallOpen0); }
-function fsStallClosed() { if (fsAnyOn()) return false; if (!modal.hidden) closeModal(); toast('The Harvest Stall has packed up. Baker Bea says thank you for the pumpkin business.'); return true; }
+function fsStallClosed() {
+  if (fsAnyOn()) return false; const wint = !modal.hidden && !!$('#modal .panel.fs-stall.wn-stall'); if (!modal.hidden) closeModal();
+  toast(wint ? 'Baker Bea has packed up the Winter Stall. See you in the spring, with flowers.' : 'The Harvest Stall has packed up. Baker Bea says thank you for the pumpkin business.'); return true; // v2.8: the Winter Stall closes after February
+}
 function fsStallOpen0() {
   if (!S) return;
   const op = !modal.hidden && $('#modal .panel.fs-stall'), keep = op ? [op.scrollTop, ($('.panel-body', op) || {}).scrollTop || 0] : null; // a re-open after a buy keeps the scroll
   if (!fsAnyOn()) { toast('The Harvest Stall is packed away. Baker Bea comes back for the leaf festival.'); return; }
   fsFields(); if (S.fest.stall.seen !== localISO()) { S.fest.stall.seen = localISO(); markDirty(); }
   SFX.boop(620); if (typeof audioPlace === 'function') audioPlace('shop');
-  const items = fsStallItems();
-  const cards = items.map((it) => {
-    const owned = it.cat === 'clothes' && owns('clothes', it.n), have = it.cat === 'food' ? (S.inv.food[it.n] || 0) : 0;
-    const act = owned ? '<span class="chip own">Owned</span>' : `<button class="btn yes" data-fsbuy="${esc(it.n)}">${it.cat === 'food' ? 'Buy…' : 'Buy'}</button>`;
+  const items = fsStallItems(), wint = fsWinter(), owned = (it) => (it.cat === 'decor' ? !!(S.decor && S.decor[it.n]) : it.cat === 'clothes' && owns('clothes', it.n));
+  const card = (it) => {
+    const have = it.cat === 'food' ? (S.inv.food[it.n] || 0) : 0;
+    const act = owned(it) ? '<span class="chip own">Owned</span>' : `<button class="btn yes" data-fsbuy="${esc(it.n)}">${it.cat === 'food' ? 'Buy…' : 'Buy'}</button>`;
     return `<div class="sitem fs-card" data-cat="${it.cat}"><span class="art">${itemArt(it.n)}</span><b>${esc(it.n)}</b><span class="desc">${esc(it.desc)}</span>${it.tip ? `<span class="small sh-tip">${esc(it.tip)}</span>` : ''}${priceHTML(it.price + (it.cat === 'food' ? ' each' : ''))}${have ? `<span class="small">You have ${have}</span>` : ''}${act}</div>`;
-  }).join('');
-  const deco = `<span class="fs-drift" aria-hidden="true">${fsArt('leafdrift')}</span>`;
-  const p = openModal('Harvest Stall', `<div class="fs-bea">${deco}<p><b>Baker Bea:</b> "Everything here is dog-safe. Ask me anything, I will say pumpkin."</p></div><p class="small">Festival treats and outfits, for coins, while the festival is on. You have ${fmtC(S.coins)} Paw Coins.</p><div class="shopgrid">${cards}</div>`, { cls: 'shop fs-stall' });
+  };
+  let p;
+  if (wint) { // v2.8: Baker Bea's Winter Stall, in three sections
+    const ny = fsKind() === 'newyear', line = ny ? 'Happy New Year. Pup Kinton is in, and no mochi, I promise.' : 'Everything here is dog-safe and warm. Ask me anything, I will say carob.';
+    const secs = [['food', 'Treats'], ['clothes', 'Clothes'], ['decor', 'Decorations']].map(([k, l]) => { const its = items.filter((it) => it.cat === k); return its.length ? `<section class="wn-sec" data-sec="${k}"><h3>${l}</h3>${k === 'decor' ? '<p class="small">For the yard. Bought once, placed where you like.</p>' : ''}<div class="shopgrid">${its.map(card).join('')}</div></section>` : ''; }).join('');
+    const ic = `<span class="wn-bea-ic" aria-hidden="true">${typeof wnIcon === 'function' ? wnIcon('wstall') : ''}</span>`;
+    p = openModal('Winter Stall', `<div class="fs-bea wn-bea">${ic}<p><b>Baker Bea:</b> "${line}"</p></div><p class="small">Warm treats, winter clothes and yard decorations, for coins, until the end of February. You have ${fmtC(S.coins)} Paw Coins.</p>${secs}`, { cls: 'shop fs-stall wn-stall' });
+  } else {
+    const deco = `<span class="fs-drift" aria-hidden="true">${fsArt('leafdrift')}</span>`;
+    p = openModal('Harvest Stall', `<div class="fs-bea">${deco}<p><b>Baker Bea:</b> "Everything here is dog-safe. Ask me anything, I will say pumpkin."</p></div><p class="small">Festival treats and outfits, for coins, while the festival is on. You have ${fmtC(S.coins)} Paw Coins.</p><div class="shopgrid">${items.map(card).join('')}</div>`, { cls: 'shop fs-stall' });
+  }
   if (keep) { p.scrollTop = keep[0]; const bd = $('.panel-body', p); if (bd) bd.scrollTop = keep[1]; }
   p.querySelectorAll('[data-fsbuy]').forEach((b) => {
     b.onclick = async () => {
       if (fsStallClosed()) return; // the festival ended while the sheet was open (midnight)
       const it = items.find((x) => x.n === b.dataset.fsbuy); if (!it) return; SFX.click();
-      const stack = it.cat === 'food', owned = !stack && owns('clothes', it.n);
-      const q = await buyWindow(p, { art: itemArt(it.n), name: it.n, desc: it.desc, price: it.price, stack, owned, have: stack ? (S.inv.food[it.n] || 0) : owned ? 1 : 0, haveLabel: stack ? 'In bag' : 'Owned' }); if (!q || fsStallClosed()) return;
-      const cost = it.price * q; if (S.coins < cost) { nope('Not enough coins. Walks pay well, and the pumpkins will wait.'); return; }
+      const stack = it.cat === 'food', own = owned(it);
+      const q = await buyWindow(p, { art: itemArt(it.n), name: it.n, desc: it.desc, price: it.price, stack, owned: own, have: stack ? (S.inv.food[it.n] || 0) : own ? 1 : 0, haveLabel: stack ? 'In bag' : 'Owned' }); if (!q || fsStallClosed() || (!stack && owned(it))) return;
+      const cost = it.price * q; if (S.coins < cost) { nope(wint ? 'Not enough coins. Walks pay well, and the carob will stay warm.' : 'Not enough coins. Walks pay well, and the pumpkins will wait.'); return; }
       S.coins -= cost; SFX.kaching(); trackAct('buy', { name: it.n, cat: it.cat, qty: q, shop: 'stall' });
-      if (stack) S.inv.food[it.n] = (S.inv.food[it.n] || 0) + q; else if (!owns('clothes', it.n)) S.inv.clothes.push(it.n);
+      if (stack) S.inv.food[it.n] = (S.inv.food[it.n] || 0) + q; else if (it.cat === 'decor') { hmDecorFields(); S.decor[it.n] = { got: localISO(), out: false }; } else if (!owns('clothes', it.n)) S.inv.clothes.push(it.n);
       markDirty(); updateHUD();
-      toast(`Bought ${q} × ${it.n}. ${PICK(['Baker Bea wraps it in a paper leaf.', 'It smells of pumpkin. Everything does.', 'Bea says it suits you.'])}`, 'gold');
+      toast(`Bought ${q} × ${it.n}. ${wint ? PICK(['Baker Bea wraps it in snowflake paper.', 'It smells of oats and warm carob.', 'Bea says it suits you.']) : PICK(['Baker Bea wraps it in a paper leaf.', 'It smells of pumpkin. Everything does.', 'Bea says it suits you.'])}`, 'gold');
       fsStallOpen();
+      if (it.cat === 'decor') { const pp = $('.panel', modal); const pl = await confirmIn(pp, `Put the ${esc(it.n)} in the yard now?`, 'Place it', 'Later'); if (pl) { closeModal(); hoPlaceStart(it.n); return; } if (!modal.hidden) fsStallOpen(); return; } // v2.8: like Barkitecture (v2.7)
       if (it.cat === 'clothes') { const pp = $('.panel', modal); const w = await confirmIn(pp, `Put the ${esc(it.n)} on ${esc(NAME())} now?`, 'Wear it', 'Later'); if (w) equip(it.n, true); if (!modal.hidden) fsStallOpen(); }
     };
   });
@@ -284,11 +329,27 @@ function fsStallOpen0() {
 
 /* ---- phones at Halloween: one Festival button opens this small chooser ---- */
 function fsChooser() {
+  if (fsWinter()) return fsChooserWinter(); // v2.8: the Winter Stall, the Sweater Contest (December), the Fortune box (1 to 7 January)
   if (!festOn('halloween')) { fsStallOpen(); return; }
   const done = fsParadedToday(), hw = typeof hwOn === 'function' && hwOn(); // v2.6: a third row for the Pumpkin Patch Pop-up while it is open
   const pop = hw ? `<button class="card hw-row" data-fsgo="popup"><span class="art">${hwIcon()}</span><span class="hw-rowt"><b>Pumpkin Patch Pop-up</b><span class="small">Mrs. Plum's 2026 things, until 2 November.</span></span></button>` : '';
   const p = openModal('Festival', `<div class="fs-choose"><button class="card" data-fsgo="stall"><span class="art">${fsArt('stall', { kind: 'halloween' })}</span><b>Harvest Stall</b><span class="small">Dog-safe treats and outfits.</span></button><button class="card" data-fsgo="parade"><span class="art">${fsArt('paradebanner')}</span><b>Costume parade</b><span class="small">${done ? 'Paraded today.' : 'Once a day, 10 coins.'}</span></button>${pop}</div>`, { cls: 'fs-choosepop' });
   p.querySelectorAll('[data-fsgo]').forEach((b) => { b.onclick = () => { SFX.click(); closeModal(); if (b.dataset.fsgo === 'stall') fsStallOpen(); else if (b.dataset.fsgo === 'popup') hwOpen(); else fsParadeOpen(); }; });
+  return p;
+}
+// v2.8 (V28.md section 9): one Festival sheet of rows, each a 44 px card with an icon, a name and a line. At most three rows at once.
+// The Fortune box row is NEW YEAR's (nyFortuneOpen) and shows while nyDays()
+function fsChooserWinter() {
+  const ic = (n) => (typeof wnIcon === 'function' ? wnIcon(n) : iconOr(n, '<circle r="12" fill="#EDF1F5" stroke="#5B3D32" stroke-width="2"/>'));
+  const row = (k, icon, name, line) => `<button class="card wn-row" data-fsgo="${k}"><span class="art">${ic(icon)}</span><span class="wn-rowt"><b>${name}</b><span class="small">${line}</span></span></button>`;
+  const judged = typeof wnJudgedToday === 'function' && wnJudgedToday();
+  const rows = [row('stall', 'wstall', 'Winter Stall', 'Warm treats, winter clothes and decorations.')]
+    .concat(festOn('lights') ? [row('contest', 'sweater', 'Sweater Contest', judged ? 'Judged today. Gerald needs a sit-down.' : 'Gerald judges. Everyone wins something.')] : [])
+    .concat(typeof nyDays === 'function' && nyDays() ? [row('fortune', 'fortune', 'Fortune box', 'Only good fortunes, until 7 January.')] : []).slice(0, 3);
+  const p = openModal('Festival', `<div class="fs-choose wn-choose">${rows.join('')}</div>`, { cls: 'fs-choosepop wn-choosepop' });
+  p.querySelectorAll('[data-fsgo]').forEach((b) => {
+    b.onclick = () => { SFX.click(); closeModal(); const k = b.dataset.fsgo; if (k === 'stall') fsStallOpen(); else if (k === 'contest') { if (typeof wnContestOpen === 'function') wnContestOpen(); } else if (k === 'fortune' && typeof nyFortuneOpen === 'function') nyFortuneOpen(); };
+  });
   return p;
 }
 
@@ -363,8 +424,14 @@ function fsParadeDone() {
 /* ---- the Journal Food tab line ---- */
 function fsJournalLine() {
   if (!S || !fsAnyOn()) return '';
+  const leafIc = () => iconOr('festival', '<path d="M0 -12 C6 -8 9 -2 0 12 C-9 -2 -6 -8 0 -12 Z" fill="#E8893A" stroke="#5B3D32" stroke-width="2"/>');
+  if (!festOn('leaf') && !festOn('halloween')) { // v2.8: the Winter Stall to the end of February (29 in a leap year), then the contest and the Fortune box lines
+    const y = (typeof wnYear === 'function' ? wnYear() : +localISO().slice(0, 4)) + 1, leap = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+    const ic = typeof wnIcon === 'function' ? wnIcon('wstall') : leafIc();
+    return `<p class="fs-jline wn-jline"><span class="ic" aria-hidden="true">${ic}</span><b>Festival:</b> Winter Stall in the Square until ${leap ? 29 : 28} February.</p>` + (typeof wnJournalLine === 'function' ? wnJournalLine() || '' : '') + (typeof nyJournalLine === 'function' ? nyJournalLine() || '' : '');
+  }
   const until = festOn('leaf') ? '30 November' : '31 October';
-  return `<p class="fs-jline"><span class="ic" aria-hidden="true">${iconOr('festival', '<path d="M0 -12 C6 -8 9 -2 0 12 C-9 -2 -6 -8 0 -12 Z" fill="#E8893A" stroke="#5B3D32" stroke-width="2"/>')}</span><b>Festival:</b> Harvest Stall in the Square until ${until}.</p>` + (typeof hwJournalLine === 'function' ? hwJournalLine() : ''); // v2.6: the pop-up line under it
+  return `<p class="fs-jline"><span class="ic" aria-hidden="true">${leafIc()}</span><b>Festival:</b> Harvest Stall in the Square until ${until}.</p>` + (typeof hwJournalLine === 'function' ? hwJournalLine() : ''); // v2.6: the pop-up line under it
 }
 
 /* ---- bus ---- */
