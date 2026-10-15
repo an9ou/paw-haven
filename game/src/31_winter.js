@@ -29,7 +29,7 @@ const WN_LETTERS = {
   contest: { kind: 'news', from: 'Gerald the duck', title: 'The Ugly Sweater Contest', text: 'The Ugly Sweater Contest is on in the Square until 25 December. I am the judge. I am a duck, so I am very fair.' },
   gift: { kind: 'gift', from: 'Mrs. Plum next door', title: 'A winter parcel from Mrs. Plum', text: 'Three Warm Carob Cups for {dog}. It is carob, not cocoa. I wrote it on the lids twice.', gift: { item: 'Warm Carob Cup', cat: 'food', id: 'Warm Carob Cup', n: 3 } }
 };
-const WN = { walking: false, walkT: [], driftT: {}, pending: 0, salt: false, hills: false, carrotT: 0, acts: [] }; // pending: letter / tip timers still to run (tests wait on 0)
+const WN = { walking: false, walkT: [], driftT: {}, pending: 0, salt: false, hills: false, carrotT: 0, acts: [], sheetMO: null }; // pending: letter / tip timers still to run (tests wait on 0)
 function wnLater(fn, ms) { WN.pending++; setTimeout(() => { WN.pending--; fn(); }, ms); }
 
 /* ---- state ---- */
@@ -86,7 +86,7 @@ function wnHeapRedraw() { const g = $('#wnDogG'); if (g) { g.outerHTML = wnHeapS
 /* ---- the snowdog's day: a new localISO day starts at stage 0 (Pip brings fresh snow); the finished one "went up to the hills" ---- */
 function wnSnowdogSync(show) {
   if (!S) return; wnFields(); const sd = S.wn.snowdog, t = wnToday(); if (sd.date === t) return;
-  const was = sd.stage === 3 && !!sd.date;
+  const y = new Date(); y.setDate(y.getDate() - 1); const was = sd.stage === 3 && sd.date === localISO(y); // only yesterday's snowdog (not one from last winter or days ago)
   Object.assign(sd, { date: t, stage: 0, by: null, nose: true }); markDirty();
   if (!was || !wnSnow()) return;
   if (show === false) { WN.hills = true; return; } // drawn on the way into the yard: the toast comes from the yard:enter that follows
@@ -175,7 +175,8 @@ const wnCarrotDay = (dk) => seeded(hashId('carrot|' + dk))() < 1 / 3;
 function wnCarrot(force) {
   if (!S || !wnSnow()) return false; wnFields(); const sd = S.wn.snowdog;
   if (sd.stage !== 3 || sd.nose === false || sd.date !== wnToday() || !(force || wnCarrotDay(sd.date))) return false;
-  if (!wnHere() || busy) { if (!force) { clearTimeout(WN.carrotT); WN.carrotT = setTimeout(() => wnCarrot(), 6000); } return false; }
+  if (!wnHere()) return false; // away: the next yard:enter checks again
+  if (busy) { if (!force) { clearTimeout(WN.carrotT); WN.carrotT = setTimeout(() => { if (wnHere()) wnCarrot(); }, 6000); } return false; }
   const d = (sd.by && dogById(sd.by)) || D(); sd.nose = false; markDirty(); wnHeapRedraw();
   wnToast(`${d.name} ate the carrot nose. Carrots are good for dogs, so fine.`, 'good'); return true;
 }
@@ -280,9 +281,16 @@ function wnSaltTip() {
   if (!WN.salt || !S) return; wnFields(); const y = wnYear();
   if (S.wn.tips.salt === y) { WN.salt = false; return; }
   wnLater(() => {
-    if (!WN.salt || cur.mode !== 'yard' || !modal.hidden) return; // still on the results sheet: the next yard visit
+    if (!WN.salt || cur.mode !== 'yard') return;
+    if (!modal.hidden) return wnAfterSheet(wnSaltTip); // still on the results sheet (or a sheet after it): the tip comes when it closes
     WN.salt = false; S.wn.tips.salt = y; markDirty(); wnToast('Wipe paws after a winter walk. Road salt stings, and nobody wants to lick it.', 'good');
   }, 900);
+}
+
+function wnAfterSheet(fn) { // once, when the open sheet closes
+  if (WN.sheetMO || typeof MutationObserver !== 'function') return;
+  WN.sheetMO = new MutationObserver(() => { if (!modal.hidden) return; WN.sheetMO.disconnect(); WN.sheetMO = null; fn(); });
+  WN.sheetMO.observe(modal, { attributes: true, attributeFilter: ['hidden'] });
 }
 
 /* ---- Gerald's How to play card and the Journal line ---- */

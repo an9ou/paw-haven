@@ -142,7 +142,7 @@ function nyTie() {
 function nyCardMsgs() {
   const y = nyYear(), nm = NAME(), z = NY_ZODIAC[y], animal = z ? z.animal.toLowerCase() : 'pine';
   const msgs = [];
-  msgs.push({ kind: 'gift', id: `ny_gerald_${y}`, from: 'Gerald the duck', title: 'A New Year card from Gerald', card: 'nengajo', animal, cardText: [`To ${nm}`, 'from Gerald'], duck: true,
+  msgs.push({ kind: z ? 'gift' : 'news', id: `ny_gerald_${y}`, from: 'Gerald the duck', title: 'A New Year card from Gerald', card: 'nengajo', animal, cardText: [`To ${nm}`, 'from Gerald'], duck: true,
     text: z ? `Happy New Year. It is the Year of the ${z.animal}. The Border Collie has been told. A woolly hood for ${nm}, so nobody gets herded by mistake.` : 'Happy New Year. I hope it is a year of long walks.',
     gift: z ? { item: z.item, cat: 'clothes', n: 1 } : undefined });
   msgs.push({ kind: 'gift', id: `ny_plum_${y}`, from: 'Mrs. Plum next door', title: 'Otoshidama from Mrs. Plum', card: 'nengajo', animal, cardText: ['For the youngest,', nm], envelope: true,
@@ -174,7 +174,7 @@ function nyCardHTML(m) {
   else if (m.duck && typeof gdDuck === 'function') inner += `<div class="ny-mini" aria-hidden="true">${gdDuck('sit')}</div>`;
   else if (m.envelope) inner += '<div class="ny-mini" aria-hidden="true"><svg viewBox="0 0 60 60"><rect x="10" y="6" width="40" height="48" rx="4" fill="#FFF3F0" stroke="#5B3D32" stroke-width="2.4"/><path d="M10 6 H50 V24 Q30 36 10 24Z" fill="#E0605C" stroke="#5B3D32" stroke-width="2.4" stroke-linejoin="round"/><circle cx="30" cy="26" r="6" fill="#E9B44C" stroke="#5B3D32" stroke-width="2"/></svg></div>';
   const lines = (m.cardText || []).map((l) => `<span>${esc(l)}</span>`).join('');
-  return `<div class="pc pc-real pc-ny" data-card="nengajo"><div class="pc-bg">${bg}</div>${inner}<div class="ny-cardtx">${lines}</div></div>`;
+  return `<div class="pc pc-real ny-card" data-card="nengajo"><div class="pc-bg">${bg}</div>${inner}<div class="ny-cardtx">${lines}</div></div>`;
 }
 
 /* ---- the Journal line ---- */

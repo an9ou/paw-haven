@@ -113,6 +113,9 @@ require('./test_lib').run('v28_winter', async (t) => {
   ok(await ev(() => document.querySelector('#wnDogG').dataset.stage === '0' && window.__paw.wn.free()), 'the heap draws stage 0 and the snowdog mission is open again');
   await quiet(); await t.home('house'); await t.home('yard'); await t.until(() => window.__paw.wn.pending === 0, null, 5000);
   ok(!(await t.toasts()).some((x) => /^Fresh snow from Pip/.test(x)), 'the "hills" toast once');
+  await ev(() => { Object.assign(window.__paw.S.wn.snowdog, { date: '2026-12-07', stage: 3 }); }); await quiet(); // finished three days ago, not yesterday
+  await t.home('house'); await t.home('yard'); await t.until(() => window.__paw.wn.pending === 0, null, 5000); await t.sleep(300);
+  s = await S(); ok(!(await t.toasts()).some((x) => /^Fresh snow from Pip/.test(x)) && s.wn.snowdog.stage === 0 && s.wn.snowdog.date === '2026-12-10', 'a snowdog from days ago: a fresh heap, no "hills" toast');
 
   sec('the Winter Stall in the Square');
   await t.home('square'); await motion(false);

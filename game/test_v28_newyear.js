@@ -55,17 +55,17 @@ require('./test_lib').run('v28_newyear', async (t) => {
 
   sec('the mailbox: the nengajo is the card picture');
   await ev(() => window.__paw.openMailbox('ny_gerald_2027'));
-  ok(await t.until(() => !!document.querySelector('#modal .letter .pc.pc-ny'), null, 3000), "Gerald's letter has the nengajo card");
-  const gc = await ev(() => { const c = document.querySelector('#modal .pc-ny'), svg = c.querySelector('.pc-bg > svg'), r = c.getBoundingClientRect(); return { bg: !!svg, hny: svg ? /Happy New Year/.test(svg.outerHTML) || /New Year/.test(svg.getAttribute('aria-label') || '') : false, duck: !!c.querySelector('.ny-mini svg'), tx: c.querySelector('.ny-cardtx').textContent, w: r.width, h: r.height, text: !!document.querySelector('#modal .mb-text') }; });
+  ok(await t.until(() => !!document.querySelector('#modal .letter .pc.ny-card'), null, 3000), "Gerald's letter has the nengajo card");
+  const gc = await ev(() => { const c = document.querySelector('#modal .ny-card'), svg = c.querySelector('.pc-bg > svg'), r = c.getBoundingClientRect(); return { bg: !!svg, hny: svg ? /Happy New Year/.test(svg.outerHTML) || /New Year/.test(svg.getAttribute('aria-label') || '') : false, duck: !!c.querySelector('.ny-mini svg'), tx: c.querySelector('.ny-cardtx').textContent, w: r.width, h: r.height, text: !!document.querySelector('#modal .mb-text') }; });
   ok(gc.bg && gc.hny && gc.duck && gc.text && gc.w / gc.h > 1.3 && gc.w / gc.h < 1.55, `the card shows prop('nengajo'), Gerald's drawing and the letter text below (${Math.round(gc.w)}x${Math.round(gc.h)})`);
   ok(/To /.test(gc.tx) && /from Gerald/.test(gc.tx), 'card text: ' + gc.tx);
   await shot('01_mailbox_gerald');
   await ev(() => window.__paw.openMailbox('ny_plum_2027'));
-  ok(await t.until(() => /Otoshidama/.test((document.querySelector('#modal .letter header b') || {}).textContent || '') && !!document.querySelector('#modal .pc-ny .ny-mini svg'), null, 3000), "Mrs. Plum's letter has the nengajo and the envelope");
+  ok(await t.until(() => /Otoshidama/.test((document.querySelector('#modal .letter header b') || {}).textContent || '') && !!document.querySelector('#modal .ny-card .ny-mini svg'), null, 3000), "Mrs. Plum's letter has the nengajo and the envelope");
   await shot('02_mailbox_plum');
   await ev(() => window.__paw.openMailbox('ny_pup_pupA1_2027'));
-  ok(await t.until(() => !!document.querySelector('#modal .pc-ny .pc-photo svg'), null, 3000), "the pup's letter has the nengajo with the pup's photo");
-  ok(await ev(() => !document.querySelector('#modal .pc-ny .ny-mini') && /from Button/.test(document.querySelector('#modal .ny-cardtx').textContent)), 'photo and "from Button" on the card');
+  ok(await t.until(() => !!document.querySelector('#modal .ny-card .pc-photo svg'), null, 3000), "the pup's letter has the nengajo with the pup's photo");
+  ok(await ev(() => !document.querySelector('#modal .ny-card .ny-mini') && /from Button/.test(document.querySelector('#modal .ny-cardtx').textContent)), 'photo and "from Button" on the card');
   await shot('03_mailbox_pup');
   ok(await ev(() => !!document.querySelector('#modal .mb-allbar .mb-all') && /^2 letters carry a gift/.test(document.querySelector('#modal .mb-allbar').textContent)), 'Collect all is offered for the two gifts');
 
@@ -237,10 +237,10 @@ require('./test_lib').run('v28_newyear', async (t) => {
   ok(await t.until(() => window.__paw.S.mail.filter((m) => /^ny_/.test(m.id)).length === 2, null, 9000), 'two cards again');
   ms = await mails(); const dog8 = await ev(() => window.__paw.S.dog.name);
   const g8 = ms.find((m) => m.id === 'ny_gerald_2028'), p8 = ms.find((m) => m.id === 'ny_plum_2028');
-  ok(g8 && g8.text === 'Happy New Year. I hope it is a year of long walks.' && !g8.gift && g8.animal === 'pine', "Gerald's 2028 card: no gift, a pine stamp");
+  ok(g8 && g8.kind === 'news' && g8.text === 'Happy New Year. I hope it is a year of long walks.' && !g8.gift && g8.animal === 'pine', "Gerald's 2028 card: a news letter, no gift, a pine stamp");
   ok(p8 && p8.gift && p8.gift.coins === 30 && p8.text.endsWith(`that is ${dog8}.`), "Mrs. Plum's 2028 card still has the 30 coins");
   await ev(() => window.__paw.openMailbox('ny_gerald_2028'));
-  ok(await t.until(() => !!document.querySelector('#modal .pc-ny .pc-bg svg') && !document.querySelector('#modal .mb-giftrow'), null, 3000), 'the 2028 card shows the nengajo and no Collect row');
+  ok(await t.until(() => !!document.querySelector('#modal .ny-card .pc-bg svg') && !document.querySelector('#modal .mb-giftrow'), null, 3000), 'the 2028 card shows the nengajo and no Collect row');
   await shot('13_mailbox_2028_no_gift');
   ok((await S()).ny.cards === 2028, 'S.ny.cards = 2028');
   await t.closeX();

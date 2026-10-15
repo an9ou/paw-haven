@@ -85,6 +85,17 @@ for (const [iso, w] of [['2026-10-28T03:00:00Z', [1, 1, 0, 0, 0]], ['2026-11-15T
   at(iso); ok(J(vec(X.festNow())) === J(w), `${iso.slice(0, 10)}: ${J(w)} (got ${J(vec(X.festNow()))})`);
 }
 
+sec('festNow: leaf and snow never on together at the 30 Nov / 1 Dec JST boundary (a player west of Japan)');
+const tz0 = process.env.TZ;
+for (const tz of ['America/Los_Angeles', 'Europe/London', 'Asia/Tokyo']) {
+  process.env.TZ = tz;
+  for (const iso of ['2026-11-30T03:00:00Z', '2026-11-30T14:59:00Z', '2026-11-30T15:00:00Z', '2026-11-30T20:00:00Z', '2026-12-01T07:59:00Z', '2026-12-01T12:00:00Z']) {
+    at(iso); const f = X.festNow(), dec = iso >= '2026-11-30T15:00:00Z';
+    ok(!(f.leaf && f.snow) && f.leaf === !dec && f.snow === dec, `${tz} ${iso}: ${dec ? 'snow, no leaf' : 'leaf, no snow'} (got leaf ${f.leaf}, snow ${f.snow})`);
+  }
+}
+if (tz0 === undefined) delete process.env.TZ; else process.env.TZ = tz0;
+
 sec('the harness gate: no winter flag by date without prefs.wnTest');
 at('2026-12-10T03:00:00Z'); harness();
 ok(flags(X.wnAuto()) === 'none' && flags(X.wnAuto('2027-01-02')) === 'none', 'wnAuto is all false under the harness');

@@ -267,14 +267,14 @@ async function newYearPart(t, dev) {
 
   t.sec(`NEW YEAR ${dev}: the mailbox with the three cards and Collect`);
   await ev(() => window.__paw.openMailbox('ny_gerald_2027'));
-  await t.until(() => !!document.querySelector('#modal .panel.mailbox .pc-ny'), null, 5000); await settled(t, '#modal .panel');
-  const nc = await ev(() => { const c = document.querySelector('#modal .pc-ny'), r = c.getBoundingClientRect(), p = document.querySelector('#modal .panel').getBoundingClientRect(), tx = c.querySelector('.ny-cardtx span'); return { fits: r.left >= p.left - 1 && r.right <= p.right + 1, w: r.width, tx: parseFloat(getComputedStyle(tx).fontSize), ratio: r.width / r.height }; });
+  await t.until(() => !!document.querySelector('#modal .panel.mailbox .ny-card'), null, 5000); await settled(t, '#modal .panel');
+  const nc = await ev(() => { const c = document.querySelector('#modal .ny-card'), r = c.getBoundingClientRect(), p = document.querySelector('#modal .panel').getBoundingClientRect(), tx = c.querySelector('.ny-cardtx span'); return { fits: r.left >= p.left - 1 && r.right <= p.right + 1, w: r.width, tx: parseFloat(getComputedStyle(tx).fontSize), ratio: r.width / r.height }; });
   ok(nc.fits && nc.w > 200 && nc.tx >= 15, `${dev}: the nengajo fits the sheet (${Math.round(nc.w)} px wide, card text ${nc.tx} px)`);
   await sheet(t, `${dev} mailbox`); await audit(t, `${dev} mailbox`);
   const cr = await ev(() => { const b = document.querySelector('#modal .mb-get, #modal .mb-all'); if (!b) return null; b.scrollIntoView({ block: 'nearest' }); const r = b.getBoundingClientRect(); return [r.width, r.height]; });
   ok(!!cr && cr[0] >= 43.5 && cr[1] >= 43.5, `${dev}: the Collect row buttons are 44 px`);
   await t.SH('ny_mailbox_' + dev.replace(/\s+/g, '')); await nyShot(t, dev, 'mailbox_gerald');
-  await ev(() => window.__paw.openMailbox('ny_pup_nyp1_2027')); await t.until(() => !!document.querySelector('#modal .pc-ny .pc-photo svg'), null, 4000); await settled(t, '#modal .panel');
+  await ev(() => window.__paw.openMailbox('ny_pup_nyp1_2027')); await t.until(() => !!document.querySelector('#modal .ny-card .pc-photo svg'), null, 4000); await settled(t, '#modal .panel');
   await audit(t, `${dev} mailbox pup card`); await t.SH('ny_mailbox_pup_' + dev.replace(/\s+/g, '')); await nyShot(t, dev, 'mailbox_pup');
   const c0 = await ev(() => window.__paw.S.coins);
   await t.p.locator('#modal .mb-all').first().tap();

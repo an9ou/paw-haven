@@ -17,15 +17,15 @@ html[data-motion="off"] .ny-boxart.ny-shaking{animation:none}
 html[data-motion="off"] .ny-slip{animation:none}
 @media (prefers-reduced-motion:reduce){.ny-slip{animation:none}}
 /* ---- the New Year cards in the mailbox: a nengajo behind a short card text ---- */
-.pc.pc-ny{aspect-ratio:200/140;width:min(100%,340px)}
-.pc-ny .pc-photo{left:13%;top:41%;width:32%;height:44%}
-.pc-ny .ny-mini{position:absolute;left:13%;top:40%;width:28%;height:46%;display:grid;place-items:end center}
-.pc-ny .ny-mini svg{width:100%;height:100%}
-.pc-ny .ny-cardtx{position:absolute;left:47%;right:12%;top:40%;bottom:16%;display:flex;flex-direction:column;justify-content:center;gap:1px;font-family:var(--font-hand);font-weight:700;font-size:19px;line-height:1.1;color:#5B3D32}
+.pc.ny-card{aspect-ratio:200/140;width:min(100%,340px)}
+.ny-card .pc-photo{left:13%;top:41%;width:32%;height:44%}
+.ny-card .ny-mini{position:absolute;left:13%;top:40%;width:28%;height:46%;display:grid;place-items:end center}
+.ny-card .ny-mini svg{width:100%;height:100%}
+.ny-card .ny-cardtx{position:absolute;left:47%;right:12%;top:40%;bottom:16%;display:flex;flex-direction:column;justify-content:center;gap:1px;font-family:var(--font-hand);font-weight:700;font-size:19px;line-height:1.1;color:#5B3D32}
 /* ---- phones: a bottom sheet (openModal), 44 px buttons, the fortune slip at least 17 px ---- */
 html[data-layout="phone"] .ny-intro{font-size:16px}
 html[data-layout="phone"] .ny-luck{font-size:28px}
 html[data-layout="phone"] .ny-ftxt{font-size:22px}
 html[data-layout="phone"] .ny-fortunepop .foot .btn{min-height:44px}
 html[data-layout="phone"] .ny-boxart{width:min(120px,34vw)}
-html[data-layout="phone"] .pc-ny .ny-cardtx{font-size:17px}
+html[data-layout="phone"] .ny-card .ny-cardtx{font-size:17px}

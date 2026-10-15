@@ -669,7 +669,7 @@ function nyYear(j = jstISO()) { const y = +String(j).slice(0, 4), m = +String(j)
 const FEST_OVR = { off: [0, 0, 0, 0, 0], leaf: [1, 0, 0, 0, 0], halloween: [0, 1, 0, 0, 0], both: [1, 1, 0, 0, 0], snow: [0, 0, 1, 0, 0], winter: [0, 0, 1, 1, 0], newyear: [0, 0, 1, 0, 1] };
 function festNow() {
   const o = Object.prototype.hasOwnProperty.call(FEST_OVR, ENV.fest) && FEST_OVR[ENV.fest]; if (o) return { leaf: !!o[0], halloween: !!o[1], snow: !!o[2], lights: !!o[3], newyear: !!o[4] };
-  const m = new Date().getMonth() + 1; return Object.assign({ leaf: m === 10 || m === 11, halloween: hwAuto() }, wnAuto());
+  const j = jstISO(), m = +j.slice(5, 7); return Object.assign({ leaf: m === 10 || m === 11, halloween: hwAuto() }, wnAuto(j)); // leaf by the JST month too, so it never overlaps the snow
 }
 const festOn = (n) => !!festNow()[n];
 // New Year cards and the Fortune box: 1 to 7 January (JST), or any day with the Dev panel's newyear override
