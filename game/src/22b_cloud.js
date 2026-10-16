@@ -257,7 +257,8 @@ function clErrText(e) {
   const s = String((e && (e.message || e.code)) || e || '');
   if (/rate_limited|too many/i.test(s)) return 'Too many tries. Wait a few minutes and try again.';
   if (/invalid.*(login|credential)|invalid_credentials/i.test(s)) return "That email and password don't match. Check them and try again.";
-  if (/already|exists|registered|taken/i.test(s)) return 'That email already has an account. Log in instead.';
+  if (/already|exists|registered|taken/i.test(s)) return 'This email already has an account. Log in, or use Forgot your password.';
+  if (/expired/i.test(s)) return 'That link has run out or was already used. Ask for a new one: Log in, then Forgot your password.';
   if (/password/i.test(s) && /(short|weak|least|characters)/i.test(s)) return `Pick a password with at least ${CL_PW_MIN} characters.`;
   if (/email/i.test(s) && /invalid|format/i.test(s)) return 'That email looks wrong. Check it and try again.';
   if (/fetch|network|offline|timeout|blocked|load/i.test(s)) return 'Cloud save is offline. Your game is saved on this device.';
@@ -288,7 +289,6 @@ async function clRegister(email, pw, fresh) {
       const r = await clApi('POST', '/register', guest ? { email, password: pw } : { email, password: pw, fresh: true }, !guest);
       if (!r.ok || !r.data || !r.data.token || !r.data.user) return { ok: false, msg: clErrText(r.error) };
       clTokSet(r.data.token);
-      if (r.data.migrated) { CL.regPath = 'moved'; return Object.assign(await clSignedIn(r.data.user, local, owner), { moved: true }); } // an old account with this email and password: a log in
       if (r.data.upgraded) { // the guest became the account: same user id, same save
         CL.regPath = 'upgrade'; CL.loggingIn = false; clSetUser(r.data.user);
         if (!clMine()) clDropLocal(); else { const m = clMeta(); if (m.changedAt > (m.pushedAt || 0)) clSchedule(); }
@@ -316,7 +316,7 @@ async function clLogin(email, pw) {
     return await clSignedIn(r.data.user, local, owner);
   } catch (e) { return { ok: false, msg: clErrText(e) }; } finally { CL.loggingIn = false; CL.again = false; }
 }
-// signed in to an account (a log in, or "Make an account" that moved an old account over). Callers hold CL.loggingIn.
+// signed in to an account (a log in). Callers hold CL.loggingIn.
 // The account's own save loads; the game that was on this device is kept safe (a backup, or this device only for another account's game).
 async function clSignedIn(u, local, owner) {
   const other = !!owner && u.id !== owner; // another account's game (maybe another person's) never goes into this one, backups included
@@ -331,6 +331,15 @@ async function clSignedIn(u, local, owner) {
   if (other) { clDropLocal(); return { ok: true, loaded: false }; } // no save here: the other account's dogs leave this device (they are safe in its cloud)
   if (local) { clOwn(CL.uid); clMetaSet({ changedAt: Date.now(), rev: 0, pushedAt: 0 }); await clPush(true); }
   return { ok: true, loaded: false };
+}
+// v2.8.2 Forgot password: ask for an emailed link. { ok, mail } (mail false: no email service yet). The answer never says
+// whether the email has an account.
+async function clForgot(email) {
+  try {
+    if (!(await clStart())) return { ok: false, msg: 'Cloud save is offline. Your game is saved on this device.' };
+    const r = await clApi('POST', '/forgot', { email }, true);
+    return r.ok ? { ok: true, mail: !r.data || r.data.mail !== false } : { ok: false, msg: clErrText(r.error) };
+  } catch (e) { return { ok: false, msg: clErrText(e) }; }
 }
 async function clLogout() {
   CL.loggingIn = true; try { await clFlushNow(); } finally { CL.loggingIn = false; CL.again = false; } // the last ~2 s reach this account, not the next guest
@@ -429,7 +438,6 @@ function clBodyHTML() {
   const acct = CL.uid && !CL.anon;
   if (CL.ui === 'reg') return `<div class="clform"><p>Keep my save on every device: make an account.</p>${clIn('clEmail', 'email', 'Email', 'username')}${clIn('clPw', 'password', `Password (${CL_PW_MIN} or more characters)`, 'new-password')}${clIn('clPw2', 'password', 'Password again', 'new-password')}${msg}<div class="clrow"><button class="btn" data-cl="back">Back</button><button class="btn yes" data-cl="doReg">Make account</button></div></div>`;
   if (CL.ui === 'login') return `<div class="clform"><p>I have an account: log in.</p>${clIn('clEmail', 'email', 'Email', 'username')}${clIn('clPw', 'password', 'Password', 'current-password')}${msg}<div class="clrow"><button class="btn" data-cl="back">Back</button><button class="btn yes" data-cl="doLogin">Log in</button></div><button class="btn cllink" data-cl="forgot">Forgot your password?</button></div>`;
-  if (CL.ui === 'forgot') return `<div class="clform"><p>Passwords can't be reset by email. If you're logged in on another device, change it there.</p><p class="small">The save on this device is never lost.</p><div class="clrow"><button class="btn" data-cl="login">Back</button></div></div>`;
   if (CL.ui === 'pw') return `<div class="clform">${clIn('clPw', 'password', `New password (${CL_PW_MIN} or more characters)`, 'new-password')}${clIn('clPw2', 'password', 'New password again', 'new-password')}${msg}<div class="clrow"><button class="btn" data-cl="back">Back</button><button class="btn yes" data-cl="doPw">Change password</button></div></div>`;
   if (CL.ui === 'backups') {
     const list = CL.bk === null ? '<p class="small">Loading backups...</p>' : !CL.bk.length ? '<p class="small">No backups yet. When two devices disagree, the older save lands here.</p>' : `<ul class="clbk">${CL.bk.map((b, i) => { const d = b.data || {}, dogs = (d.dogs || (d.dog ? [d.dog] : [])).map((x) => x.name).filter(Boolean); return `<li><div class="clbk-t"><b>${esc(new Date(b.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }))}</b><span>${esc(dogs.join(', ') || 'A dog')} · ${d.coins | 0} coins</span><span class="small">${esc(b.reason || '')}</span></div><button class="btn" data-clrestore="${i}">Restore</button></li>`; }).join('')}</ul>`;
@@ -464,7 +472,8 @@ function clBind(p) {
     }
     const k = e.target.closest('[data-cl]'); if (!k) return; const a = k.dataset.cl; SFX.click();
     if (a === 'back') return clGo('');
-    if (a === 'reg' || a === 'login' || a === 'forgot' || a === 'pw') return clGo(a);
+    if (a === 'forgot') return acOpenForgot(val('clEmail').trim(), cloudOpen); // v2.8.2: an emailed link (22d_reset.js)
+    if (a === 'reg' || a === 'login' || a === 'pw') return clGo(a);
     if (a === 'backups') { CL.bk = null; clGo('backups'); CL.bk = (await clBackups()) || []; if (CL.ui === 'backups') clRender(); return; }
     if (a === 'logout') { const ok = await confirmIn(p, 'Log out? The game stays on this device.', 'Log out', 'Stay'); if (!ok) return; await clLogout(); clGo('', 'Logged out. Your game stays on this device.'); return; }
     if (a === 'doReg' || a === 'doPw') {
@@ -475,7 +484,6 @@ function clBind(p) {
       k.disabled = true; CL.msg = '';
       const r = a === 'doReg' ? await clRegister(em, pw) : await clChangePw(pw);
       if (!r.ok) { clGo(CL.ui, r.msg); return; }
-      if (r.moved && r.loaded) { if (!modal.hidden) closeModal(); clToast('You already had an account with that email. Logged in, and your saved game is here.', 'good'); return; }
       if (a === 'doReg' && !clLocal()) { if (!modal.hidden) closeModal(); go('title'); return; } // the game on this device was another account's: it stayed with that account
       clGo('', a === 'doReg' ? `Account made. ${NAME()} is safe on every device now.` : 'Password changed.'); return;
     }

@@ -50,3 +50,20 @@ create table if not exists rate (
   reset_at integer not null
 );
 
+
+-- SHA-256 of the lower-cased email of each Supabase account (v2.8.2, owner's choice: one email = one account). No emails, no
+-- passwords. "Make an account" with one of them is refused until that account logs in once, which moves it over and drops the row.
+-- The list is final: no Supabase accounts are made since v2.8.1.
+create table if not exists legacy (
+  email_hash text primary key
+);
+
+-- Forgot password (v2.8.2): one row per emailed link. Only the SHA-256 of the 32-byte token is kept. 30 minutes, single use.
+create table if not exists resets (
+  token_hash text primary key,
+  user_id    text not null,
+  created_at integer not null,
+  expires_at integer not null,
+  used       integer not null default 0
+);
+create index if not exists resets_user on resets (user_id);

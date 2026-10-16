@@ -9,10 +9,10 @@ let fails = 0, passes = 0;
 const ok = (c, m) => { if (c) passes++; else { fails++; console.log('  FAIL', m); } };
 const sha = (s) => crypto.createHash('sha256').update(s).digest('hex');
 
-const { fakeSupabase } = require('./cloud_mock');
+const { fakeSupabase, fakeMail } = require('./cloud_mock');
 
 /* ---------------- the checks (same for both backends) ---------------- */
-async function checks(label, call, sql, sb) {
+async function checks(label, call, sql, sb, mail) {
   console.log(`--- ${label}`);
   const save = (coins, extra) => Object.assign({ v: 1, coins, dogs: [{ id: 'dog1', name: 'Mochi' }], dog: { id: 'dog1', name: 'Mochi' } }, extra || {});
 
@@ -112,6 +112,8 @@ async function checks(label, call, sql, sb) {
   const oldSave = save(4242, { dogs: [{ id: 'dogL', name: 'Biscuit' }], dog: { id: 'dogL', name: 'Biscuit' } });
   sb.saves[old.id] = { data: oldSave, rev: 17, changed_at: '2026-10-10T10:00:00+00:00', device: 'Mac Safari' };
   sb.backups.push({ user_id: old.id, data: save(1), reason: 'before an import', created_at: '2026-08-01T00:00:00+00:00' }, { user_id: old.id, data: save(2), reason: 'older than your other device', created_at: '2026-10-02T00:00:00+00:00' });
+  await sql('insert into legacy (email_hash) values (?)', sha('legacy@example.com'), true);
+  r = await call('POST', '/register', { email: 'Legacy@example.com', password: 'newpass123' }); ok(r.status === 409 && r.json.error === 'email_exists', '"Make an account" with an old Supabase email (not moved yet) is refused: one email, one account');
   const c0 = sb.calls;
   r = await call('POST', '/login', { email: 'legacy@example.com', password: 'wrongpass9' }); ok(r.status === 401 && sb.calls > c0, 'a wrong password is checked with Supabase and refused');
   ok(!(await sql('select * from users where email = ?', 'legacy@example.com')), 'no user is made for a wrong password');
@@ -121,6 +123,7 @@ async function checks(label, call, sql, sb) {
   r = await call('GET', '/save', null, mt);
   ok(r.json.save && r.json.save.rev === 17 && r.json.save.data.coins === 4242 && r.json.save.data.dogs[0].name === 'Biscuit' && Date.parse(r.json.save.changed_at) === Date.parse('2026-10-10T10:00:00Z') && r.json.save.device === 'Mac Safari', 'the Supabase save came over (data, rev, changed_at, device)');
   r = await call('GET', '/backups', null, mt); ok(r.json.backups.length === 2 && r.json.backups[0].data.coins === 2 && r.json.backups[0].reason === 'older than your other device', 'the Supabase backups came over too');
+  ok(!(await sql('select * from legacy where email_hash = ?', sha('legacy@example.com'))), 'the move drops the email\'s legacy hash');
   const mu = await sql('select * from users where id = ?', old.id);
   ok(mu.migrated === 1 && /^[0-9a-f]{64}$/.test(mu.pw_hash) && mu.pw_hash === crypto.pbkdf2Sync('oldpass123', Buffer.from(mu.pw_salt, 'hex'), 100000, 32, 'sha256').toString('hex'), 'a fresh PBKDF2 hash of the same password is stored');
   const c1 = sb.calls;
@@ -130,16 +133,17 @@ async function checks(label, call, sql, sb) {
   await call('POST', '/login', { email: 'legacy@example.com', password: 'oldpass123' });
   ok((await call('GET', '/save', null, mt)).json.save.data.coins === 4242, 'the save moves only once');
 
-  // "Make an account" with an old Supabase email and the same password: that account moves over (a log in, nothing copied before)
+  // one email, one account (v2.8.2): an old Supabase email is refused even with its own password; nothing is asked or copied
   const oldR = sb.mkUser({ email: 'regmove@example.com', password: 'regmove123' }); sb.saves[oldR.id] = { data: save(515), rev: 4, changed_at: '2026-10-09T00:00:00Z' };
-  const gR = (await call('POST', '/guest', {})).json;
+  await sql('insert into legacy (email_hash) values (?)', sha('regmove@example.com'), true);
+  const gR = (await call('POST', '/guest', {})).json, c2 = sb.calls;
   r = await call('POST', '/register', { email: 'RegMove@example.com', password: 'regmove123' }, gR.token);
-  ok(r.status === 200 && r.json.migrated === true && r.json.upgraded === false && r.json.user.id === oldR.id, '"Make an account" with an old Supabase email and its password moves that account over');
-  ok((await call('GET', '/save', null, r.json.token)).json.save.data.coins === 515, 'with its save');
-  ok((await call('GET', '/me', null, gR.token)).json.user.guest === true, 'the guest stays a guest (the game decides what to do with its save)');
-  ok((await call('POST', '/register', { email: 'regmove@example.com', password: 'other-pass-1' })).status === 409, 'after that the email has an account here');
-  const c2 = sb.calls; r = await call('POST', '/register', { email: 'brand-new@example.com', password: 'brandnew12' });
-  ok(r.status === 200 && !r.json.migrated && sb.calls === c2 + 1, 'a new email asks Supabase once, then makes the account');
+  ok(r.status === 409 && r.json.error === 'email_exists' && sb.calls === c2, 'refused with its own password too, without asking Supabase');
+  ok((await call('GET', '/me', null, gR.token)).json.user.guest === true && !(await sql('select * from users where email = ?', 'regmove@example.com')), 'the guest stays a guest, no user made');
+  r = await call('POST', '/login', { email: 'regmove@example.com', password: 'regmove123' }); ok(r.status === 200 && r.json.migrated && r.json.user.id === oldR.id, 'logging in moves it over');
+  ok((await call('POST', '/register', { email: 'regmove@example.com', password: 'other-pass-1' })).status === 409, 'and the email still has one account');
+  const c3 = sb.calls; r = await call('POST', '/register', { email: 'brand-new@example.com', password: 'brandnew12' });
+  ok(r.status === 200 && sb.calls === c3, 'a new email never asks Supabase at "Make an account"');
 
   // carrying a Supabase login over (no password typed)
   const og = sb.mkUser({}); sb.saves[og.id] = { data: save(77), rev: 3, changed_at: '2026-10-11T00:00:00Z', device: 'iPhone Safari' };
@@ -161,6 +165,50 @@ async function checks(label, call, sql, sb) {
   r = await call('POST', '/login', { email: 'carry2@example.com', password: 'zzzzzzzz9' }); ok(r.status === 401, 'a Supabase account never takes over an email already registered here');
   ok((await call('GET', '/me', null, other.token)).json.user.id === other.user.id && hijack.id !== other.user.id, 'that account is untouched');
 
+  // Forgot password (v2.8.2): an emailed 30-minute single-use link
+  const fu = (await call('POST', '/register', { email: 'forgetful@example.com', password: 'forgetful1' }, null, { 'CF-Connecting-IP': '10.6.6.5' })).json;
+  const fd2 = (await call('POST', '/login', { email: 'forgetful@example.com', password: 'forgetful1' })).json; // a second device
+  let m0 = mail.mails.length;
+  r = await call('POST', '/forgot', { email: 'nobody-here@example.com' });
+  ok(r.status === 200 && r.json.ok && r.json.mail === true && mail.mails.length === m0, 'an unknown email: the same answer, no email');
+  ok((await call('POST', '/forgot', { email: 'not-an-email' })).status === 400, 'a malformed email: 400');
+  r = await call('POST', '/forgot', { email: 'Forgetful@example.com' }, null, { Origin: 'https://an9ou.github.io' });
+  const fm = mail.mails[mail.mails.length - 1];
+  ok(r.status === 200 && r.json.mail === true && mail.mails.length === m0 + 1 && fm.to[0] === 'forgetful@example.com' && /noreply@doodledoggo\.app/.test(fm.from), 'a known email gets one email from noreply@doodledoggo.app, same answer');
+  ok(fm.token && fm.link === 'https://doodledoggo.app/reset?token=' + fm.token && fm.html.includes('href="' + fm.link + '"'), 'the link opens the reset page on doodledoggo.app');
+  ok(/Doodle Doggo/.test(fm.subject) && /Noodle/.test(fm.text) && /30 minutes/.test(fm.text) && /ignore this email/.test(fm.text) && /itch\.io/.test(fm.text), 'plain, friendly copy: Doodle Doggo, Noodle, 30 minutes, back to itch.io, ignore if not you');
+  ok(fm.token.length >= 40 && !(await sql('select * from resets where token_hash = ?', fm.token)) && !!(await sql('select * from resets where token_hash = ?', sha(fm.token))), 'only the SHA-256 of the reset token is stored');
+  ok((await call('POST', '/reset', { token: fm.token, password: 'short' })).json.error === 'weak_password', 'the new password needs 8 or more characters');
+  r = await call('POST', '/reset', { token: fm.token, password: 'remembered1' });
+  ok(r.status === 200 && r.json.user.id === fu.user.id && r.json.token && r.json.user.email === 'forgetful@example.com', 'the link sets the new password and logs in');
+  ok((await call('GET', '/me', null, fu.token)).status === 401 && (await call('GET', '/me', null, fd2.token)).status === 401 && (await call('GET', '/me', null, r.json.token)).status === 200, 'a reset logs every other device out');
+  ok((await call('POST', '/login', { email: 'forgetful@example.com', password: 'forgetful1' })).status === 401 && (await call('POST', '/login', { email: 'forgetful@example.com', password: 'remembered1' })).status === 200, 'the old password stops working, the new one works');
+  r = await call('POST', '/reset', { token: fm.token, password: 'again-again1' }); ok(r.status === 400 && r.json.error === 'expired', 'a link works only once');
+  await call('POST', '/register', { email: 'forgetful2@example.com', password: 'forgetful2' }, null, { 'CF-Connecting-IP': '10.6.6.6' }); // "make an account" allows 10 an hour per IP
+  await call('POST', '/forgot', { email: 'forgetful2@example.com' }); const f1 = mail.mails[mail.mails.length - 1];
+  await sql('update resets set expires_at = ? where token_hash = ?', Date.now() - 1, sha(f1.token), true);
+  ok((await call('POST', '/reset', { token: f1.token, password: 'late-late-1' })).json.error === 'expired', 'a link older than 30 minutes is refused');
+  await call('POST', '/forgot', { email: 'forgetful2@example.com' }); const f2 = mail.mails[mail.mails.length - 1];
+  await call('POST', '/forgot', { email: 'forgetful2@example.com' }); const f3 = mail.mails[mail.mails.length - 1];
+  ok(f2.token !== f3.token && (await call('POST', '/reset', { token: f2.token, password: 'older-link-1' })).json.error === 'expired' && (await call('POST', '/reset', { token: f3.token, password: 'newest-link1' })).status === 200, 'only the newest link works');
+  m0 = mail.mails.length; r = await call('POST', '/forgot', { email: 'forgetful2@example.com' });
+  ok(r.status === 200 && r.json.mail === true && mail.mails.length === m0, 'at most 3 links an hour per email (the answer stays the same)');
+  codes = [];
+  for (let i = 0; i < 11; i++) codes.push((await call('POST', '/forgot', { email: `ip${i}@example.com` }, null, { 'CF-Connecting-IP': '10.7.7.7' })).status);
+  ok(codes[0] === 200 && codes[10] === 429, 'Forgot password is rate-limited per IP');
+  ok((await call('POST', '/reset', { token: 'x'.repeat(43), password: 'whatever-1' })).json.error === 'expired' && (await call('POST', '/reset', { password: 'whatever-1' })).json.error === 'expired', 'a made-up or missing token: expired');
+  // an old Supabase account not moved yet: Supabase sends its own reset email, and its link moves the account over
+  const ol = sb.mkUser({ email: 'oldforgot@example.com', password: 'forgotten-old' }); sb.saves[ol.id] = { data: save(616), rev: 6, changed_at: '2026-10-08T00:00:00Z' };
+  await sql('insert into legacy (email_hash) values (?)', sha('oldforgot@example.com'), true);
+  m0 = mail.mails.length; r = await call('POST', '/forgot', { email: 'OldForgot@example.com' }); const rc = sb.recovers[sb.recovers.length - 1];
+  ok(r.status === 200 && r.json.mail === true && rc && rc.email === 'oldforgot@example.com' && rc.redirect_to === 'https://doodledoggo.app/reset' && mail.mails.length === m0, 'Supabase\'s own recover email is asked for, pointing to the reset page (no Resend email)');
+  ok(!(await sql('select * from users where email = ?', 'oldforgot@example.com')), 'nothing is made or copied before the link is used');
+  r = await call('POST', '/reset', { sb_token: rc.token, password: 'brand-new-pw1' });
+  ok(r.status === 200 && r.json.user.id === ol.id && r.json.user.email === 'oldforgot@example.com', 'the Supabase link moves the account over with the new password');
+  ok((await call('GET', '/save', null, r.json.token)).json.save.data.coins === 616 && (await call('POST', '/login', { email: 'oldforgot@example.com', password: 'brand-new-pw1' })).status === 200, 'with its save, and the new password logs in');
+  ok(!(await sql('select * from legacy where email_hash = ?', sha('oldforgot@example.com'))), 'its legacy hash is gone');
+  ok((await call('POST', '/reset', { sb_token: 'sbat_bogus', password: 'whatever-1' })).json.error === 'expired', 'a bogus Supabase link: expired');
+
   // Supabase down: a kind "try again", nothing written
   const realFetch = sb.fetch; sb.fetch = async () => new Response('down', { status: 502 });
   sb.mkUser({ email: 'later@example.com', password: 'laterpass1' });
@@ -175,8 +223,8 @@ async function checks(label, call, sql, sb) {
 async function inNode() {
   const { d1 } = require(path.join(ROOT, 'cloudflare', 'd1_node.js'));
   const worker = (await import(path.join(ROOT, 'cloudflare', 'worker.js'))).default;
-  const DB = d1(), sb = fakeSupabase();
-  const env = { DB, SUPABASE_URL: 'https://sb.test', SUPABASE_KEY: 'sb_publishable_test', SB_FETCH: (u, o) => sb.fetch(u, o) };
+  const DB = d1(), sb = fakeSupabase(), mail = fakeMail();
+  const env = { DB, SUPABASE_URL: 'https://sb.test', SUPABASE_KEY: 'sb_publishable_test', SB_FETCH: (u, o) => sb.fetch(u, o), RESEND_API_KEY: 're_test', MAIL_FETCH: mail.fetch };
   const call = async (method, p, body, token, headers) => {
     const h = Object.assign({}, headers || {}); if (token) h.Authorization = 'Bearer ' + token;
     let b; if (body !== null && body !== undefined) { b = typeof body === 'string' ? body : JSON.stringify(body); h['Content-Type'] = 'application/json'; }
@@ -185,7 +233,10 @@ async function inNode() {
     return { status: res.status, headers: res.headers, text, json };
   };
   const sql = async (q, ...a) => { const write = a[a.length - 1] === true; if (write) a.pop(); const st = DB.raw.prepare(q); return write ? st.run(...a) : st.get(...a); };
-  await checks('in-process Node, D1 over node:sqlite', call, sql, sb);
+  await checks('in-process Node, D1 over node:sqlite', call, sql, sb, mail);
+  delete env.RESEND_API_KEY; const m0 = mail.mails.length; // no email service set up yet: the game is told, nothing is sent
+  const r = await call('POST', '/forgot', { email: 'forgetful@example.com' }, null, { 'CF-Connecting-IP': '10.8.8.8' });
+  ok(r.status === 200 && r.json.ok === true && r.json.mail === false && mail.mails.length === m0, 'without RESEND_API_KEY: { mail: false } and no email');
 }
 function findMiniflare() {
   const roots = [].concat((process.env.NODE_PATH || '').split(path.delimiter).filter(Boolean), module.paths);
@@ -195,12 +246,12 @@ function findMiniflare() {
 async function inMiniflare() {
   const MF = findMiniflare();
   if (!MF) { console.log('--- Miniflare: not installed here (npm i -g wrangler); skipped'); return; }
-  const fs = require('fs'), sb = fakeSupabase();
+  const fs = require('fs'), sb = fakeSupabase(), mail = fakeMail();
   const worker = {
     name: 'pawhaven-api', modules: true, script: require('fs').readFileSync(path.join(ROOT, 'cloudflare', 'worker.js'), 'utf8'), // the code itself: workerd refuses paths above its starting directory compatibilityDate: '2026-08-01',
     d1Databases: { DB: 'pawhaven-test-' + Date.now() },
-    bindings: { SUPABASE_URL: 'https://sb.test', SUPABASE_KEY: 'sb_publishable_test' },
-    outboundService: (req) => sb.fetch(req)
+    bindings: { SUPABASE_URL: 'https://sb.test', SUPABASE_KEY: 'sb_publishable_test', RESEND_API_KEY: 're_test' },
+    outboundService: (req) => (req.url.startsWith('https://api.resend.com/') ? mail.fetch(req) : sb.fetch(req))
   };
   let mf; // Miniflare 4 takes the worker's options at the top; Miniflare 5 wants them in workers[]
   try { mf = new MF.Miniflare(Object.assign({ d1Persist: false }, worker)); } catch (e) { mf = new MF.Miniflare({ workers: [worker] }); }
@@ -216,7 +267,7 @@ async function inMiniflare() {
       return { status: res.status, headers: res.headers, text, json };
     };
     const sql = async (q, ...a) => { const write = a[a.length - 1] === true; if (write) a.pop(); const st = DB.prepare(q).bind(...a); return write ? st.run() : st.first(); };
-    await checks('Miniflare (workerd + local D1)', call, sql, sb);
+    await checks('Miniflare (workerd + local D1)', call, sql, sb, mail);
   } finally { await mf.dispose(); }
 }
 

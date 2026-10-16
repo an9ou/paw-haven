@@ -2,8 +2,10 @@
 // Contract: docs/CLOUDFLARE_LOGIN.md. The game's client is game/src/22b_cloud.js; tests: game/test_worker.js.
 //
 //   POST /guest                      -> { token, user }            a guest: no email, no password
-//   POST /register {email,password,fresh?}  -> { token, user, upgraded, migrated? }  a guest's session (and no fresh) becomes the account;
-//                                    an old Supabase account with the same email and password moves over instead (migrated: true)
+//   POST /register {email,password,fresh?}  -> { token, user, upgraded }  a guest's session (and no fresh) becomes the account.
+//                                    One email, one account: 409 email_exists for an email here or an old Supabase one (table legacy)
+//   POST /forgot   {email}           -> { ok, mail }   always the same answer (no account lookup leaks); emails a 30-minute link
+//   POST /reset    {token|sb_token, password} -> { token, user }   sets the new password, logs out every other device
 //   POST /login    {email,password}  -> { token, user, migrated? } unknown emails are tried once against Supabase (lazy move)
 //   POST /migrate  {access_token,refresh_token} -> { token, user } a Supabase login from before v2.8.1 carries over
 //   POST /logout   GET /me   POST /password {password}
@@ -145,6 +147,44 @@ async function sbRows(env, token, path) {
   const j = await r.json(); return Array.isArray(j) ? j : [];
 }
 const asJson = (d) => (typeof d === 'string' ? d : JSON.stringify(d));
+
+/* ---------------- email (v2.8.2: Forgot password, through Resend) ---------------- */
+const RESET_MS = 30 * 60 * 1000;
+// the reset page lives on the introduction site (site/reset.html): it sets the password, then sends the player back to the game
+const RESET_PAGE = 'https://doodledoggo.app/reset';
+function mailOn(env) { return !!env.RESEND_API_KEY; }
+function resetMail(link) {
+  const text = `Hi from Doodle Doggo!
+
+Someone (hopefully you) asked to set a new password for this email. Tap the link to pick a new one:
+
+${link}
+
+The link works for 30 minutes, and only once. Then go back to the game on itch.io and log in with the new password.
+
+Didn't ask for this? Just ignore this email. Your password stays the same and your dogs are safe.
+
+Noodle the dachshund says hi. The rest of him is on his way.
+Doodle Doggo`;
+  const html = `<div style="font-family:Georgia,serif;font-size:17px;line-height:1.5;color:#2b2622;max-width:520px">
+<p><b>Hi from Doodle Doggo!</b></p>
+<p>Someone (hopefully you) asked to set a new password for this email. Tap the button to pick a new one.</p>
+<p><a href="${link}" style="display:inline-block;background:#f4d35e;color:#2b2622;padding:12px 22px;border-radius:12px;text-decoration:none;font-weight:bold;border:2px solid #2b2622">Set a new password</a></p>
+<p>The link works for 30 minutes, and only once. Then go back to the game on itch.io and log in with the new password.</p>
+<p>Didn't ask for this? Just ignore this email. Your password stays the same and your dogs are safe.</p>
+<p style="color:#6b6058">Noodle the dachshund says hi. The rest of him is on his way.<br>Doodle Doggo</p>
+<p style="font-size:14px;color:#6b6058">If the button doesn't work, copy this into your browser: ${link}</p></div>`;
+  return { subject: 'Your Doodle Doggo password link', text, html };
+}
+async function sendMail(env, to, m) {
+  const f = env.MAIL_FETCH || fetch; // tests pass a fake
+  const r = await f('https://api.resend.com/emails', {
+    method: 'POST', headers: { Authorization: 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: env.MAIL_FROM || 'Doodle Doggo <noreply@doodledoggo.app>', to: [to], subject: m.subject, text: m.text, html: m.html })
+  });
+  if (!r.ok) console.error('pawhaven-api mail', r.status); // the answer to the player stays the same either way
+  return r.ok;
+}
 // Makes (or completes) the Cloudflare user for a Supabase login: same user id, same email; the save and its backups come
 // over once, when Cloudflare has no save for that user yet. Everything from Supabase is read before anything is written.
 async function moveOver(env, sb, pw) {
@@ -164,6 +204,7 @@ async function moveOver(env, sb, pw) {
   const h = pw ? await newHash(pw) : null;
   if (!u) stmts.unshift(env.DB.prepare('insert into users (id, email, pw_hash, pw_salt, created_at, guest, migrated) values (?1, ?2, ?3, ?4, ?5, ?6, 1)').bind(id, email, h ? h.hash : null, h ? h.salt : null, Date.now(), email ? 0 : 1));
   else if (h) stmts.push(env.DB.prepare('update users set pw_hash = ?1, pw_salt = ?2 where id = ?3').bind(h.hash, h.salt, id));
+  if (email) stmts.push(env.DB.prepare('delete from legacy where email_hash = ?1').bind(await sha256(email))); // moved: the email is an ordinary account now
   if (stmts.length) await env.DB.batch(stmts);
   return one(env, 'select * from users where id = ?1', id);
 }
@@ -183,12 +224,8 @@ const ROUTES = {
     if (pwBad(pw)) return fail('weak_password', 400);
     if (await limited(env, 'reg:' + ip, 10, 3600)) return fail('rate_limited', 429);
     if (await one(env, 'select id from users where email = ?1', email)) return fail('email_exists', 409);
-    // an old Supabase account with this email and this password: it moves over now, exactly as /login does (no user data is copied
-    // before Supabase says yes). An old account with another password can't be told apart from no account (Supabase answers the same).
-    if (sbOn(env)) {
-      const sb = await sbAuth(env, 'password', { email, password: pw });
-      if (sb) { const nu = await moveOver(env, sb, pw); if (!nu) return fail('email_exists', 409); return json({ token: await newSession(env, nu.id), user: pub(nu), upgraded: false, migrated: true }); }
-    }
+    // v2.8.2 (owner): one email, one account. An old Supabase account not moved over yet counts too: logging in moves it.
+    if (await one(env, 'select 1 as x from legacy where email_hash = ?1', await sha256(email))) return fail('email_exists', 409);
     const h = await newHash(pw);
     try {
       if (me && me.guest && !body.fresh) { // the guest becomes the account: same user id, same save
@@ -236,6 +273,59 @@ const ROUTES = {
     const nu = await moveOver(env, sb, null);
     if (!nu) return fail('gone', 401);
     return json({ token: await newSession(env, nu.id), user: pub(nu) });
+  } },
+
+  'POST /forgot': { auth: false, async fn({ env, ip, body }) {
+    const email = norm(body.email);
+    if (!EMAIL.test(email) || email.length > 254) return fail('invalid_email', 400);
+    if (!mailOn(env)) return json({ ok: true, mail: false }); // no email service set up yet: the game says so
+    if (await limited(env, 'forgot:' + ip, 10, 3600)) return fail('rate_limited', 429);
+    const answer = json({ ok: true, mail: true }); // the same answer whether or not the email has an account
+    if (await limited(env, 'forgot:' + (await sha256(email)), 3, 3600)) return answer; // quietly: at most 3 links an hour per email
+    const u = await one(env, 'select id from users where email = ?1 and guest = 0', email);
+    if (u) {
+      const tok = b64url(rnd(32)), now = Date.now();
+      await env.DB.batch([
+        env.DB.prepare('delete from resets where user_id = ?1').bind(u.id), // only the newest link works
+        env.DB.prepare('insert into resets (token_hash, user_id, created_at, expires_at) values (?1, ?2, ?3, ?4)').bind(await sha256(tok), u.id, now, now + RESET_MS)
+      ]);
+      await sendMail(env, email, resetMail(RESET_PAGE + '?token=' + tok));
+    } else if (sbOn(env) && (await one(env, 'select 1 as x from legacy where email_hash = ?1', await sha256(email)))) {
+      // an old account not moved over yet: Supabase sends its own reset email, and its link opens the reset page, which moves the
+      // account over with the new password (POST /reset with sb_token). Nothing is copied before that.
+      const r = await sbCall(env, '/auth/v1/recover?redirect_to=' + encodeURIComponent(RESET_PAGE), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+      if (!r.ok) console.error('pawhaven-api supabase recover', r.status);
+    }
+    return answer;
+  } },
+
+  'POST /reset': { auth: false, async fn({ env, ip, body }) {
+    if (await limited(env, 'reset:' + ip, 20, 600)) return fail('rate_limited', 429);
+    const pw = body.password;
+    if (pwBad(pw)) return fail('weak_password', 400);
+    let uid = null;
+    if (typeof body.token === 'string' && /^[A-Za-z0-9_-]{20,100}$/.test(body.token)) {
+      const th = await sha256(body.token);
+      const r = await one(env, 'select user_id from resets where token_hash = ?1 and used = 0 and expires_at > ?2', th, Date.now());
+      if (!r) return fail('expired', 400);
+      const h = await newHash(pw);
+      const done = await one(env, 'update resets set used = 1 where token_hash = ?1 and used = 0 returning user_id', th); // single use, even when two taps race
+      if (!done) return fail('expired', 400);
+      uid = done.user_id;
+      await env.DB.batch([
+        env.DB.prepare('update users set pw_hash = ?1, pw_salt = ?2, guest = 0 where id = ?3').bind(h.hash, h.salt, uid),
+        env.DB.prepare('delete from resets where user_id = ?1').bind(uid)
+      ]);
+    } else if (typeof body.sb_token === 'string' && body.sb_token.length < 4000 && sbOn(env)) {
+      const su = await sbUser(env, body.sb_token); // a Supabase recovery login: that old account moves over with the new password
+      if (!su || !su.email) return fail('expired', 400);
+      const nu = await moveOver(env, { token: body.sb_token, user: su }, pw); // stores a fresh PBKDF2 hash of the new password
+      if (!nu) return fail('expired', 400);
+      uid = nu.id;
+    } else return fail('expired', 400);
+    await run(env, 'delete from sessions where user_id = ?1', uid); // a new password logs every device out
+    const u = await one(env, 'select * from users where id = ?1', uid);
+    return json({ token: await newSession(env, uid), user: pub(u) });
   } },
 
   'POST /logout': { async fn({ env, me }) {

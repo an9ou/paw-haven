@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Builds the game and deploys https://doodledoggo.app (and www, which redirects to it) to Cloudflare.
+# Builds the doodledoggo.app introduction site (site/, v2.8.2) and deploys it (and www, which redirects to it) to Cloudflare.
+# The game itself is played on itch.io; the site has the home page, /privacy and /reset (the Forgot password link).
 #   bash tools/cf_pages_deploy.sh
 # The site is the Worker "doodle-doggo" (see tools/cf_site.js for why a Worker and not a Pages project), with Workers Custom
 # Domains for doodledoggo.app and www.doodledoggo.app (Cloudflare adds their DNS records itself).
@@ -14,8 +15,6 @@ AUTH=(); if [ -n "${CLOUDFLARE_API_TOKEN:-}" ] && [ "$CLOUDFLARE_API_TOKEN" != "
 SCRIPT=doodle-doggo
 ZONE=doodledoggo.app
 
-node game/build.js publish
-node tools/pages.js
 node tools/cf_site.js
 
 ok() { python3 -c "import json,sys; d=json.load(sys.stdin); sys.exit(0 if d.get('success') else (print(d.get('errors'), file=sys.stderr) or 1))"; }
@@ -37,7 +36,7 @@ done
 
 # 3. check
 sleep 3
-for u in "https://$ZONE/" "https://$ZONE/favicon.svg" "https://$ZONE/logo-1200x630.png"; do
+for u in "https://$ZONE/" "https://$ZONE/privacy" "https://$ZONE/reset" "https://$ZONE/favicon.svg" "https://$ZONE/logo-1200x630.png"; do
   curl -sS -o /dev/null -w "%{http_code} %{content_type} $u\n" "$u" || true
 done
 curl -sS -o /dev/null -w "%{http_code} -> %{redirect_url}  https://www.$ZONE/\n" "https://www.$ZONE/" || true
