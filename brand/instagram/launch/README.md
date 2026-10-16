@@ -9,6 +9,7 @@ Made 16 Oct 2026. Plan, captions and checklist: `docs/marketing/`.
 | `info1-japan-view.jpg`, `info2-meet-the-dogs.jpg`, `info3-what-you-can-do.jpg`, `info4-how-to-play.jpg` | **B. The informative series** (1080 x 1350): Japan view, the 14 dogs, what you can do, how to play |
 | `post1-meet-noodle.jpg`, `post2-pencil-town-fuji.jpg`, `post3-play-free-halloween.jpg` | Extra single posts. Post 3 is a good Halloween push. |
 | `dogs/dog-01-mochi.jpg` ... `dog-14-brioche.jpg` | **The 14 dog introduction posts** (1080 x 1350): whole dog, puppy, name, game quote, what it loves, four traits. Captions: `docs/marketing/DOG_INTRO_POSTS.md` |
+| `soon-more-dogs-coming.jpg` | Teaser post: "More dogs are coming! Stay tuned" (mystery dogs behind a fence) |
 | `grid-preview.jpg` | Mockup of the profile grid, banner and informative posts, with bio and highlights |
 | `highlight-1-meet.png` ... `highlight-4-events.png` | Story highlight covers (1080 x 1920) |
 

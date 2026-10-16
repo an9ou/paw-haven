@@ -4,6 +4,7 @@ Updated 16 Oct 2026 after the owner's feedback.
 
 - **A: the 3-tile banner** (chosen). One word box, on the middle tile only ("Doodle Doggo, a cozy dog game · play free"). 9 big dogs on an autumn meadow with the game's cottage, trees, fence, clothesline, lanterns, scarecrow and pumpkin cart. Some dogs wear nothing, some one item, some two.
 - **B: the informative series** (chosen for the posts that follow): Japan view, the dogs, what you can do, how to play. Same paper-and-pencil style.
+- **Teaser** (see below): `soon-more-dogs-coming.jpg`.
 - **Extras** (optional): `post1-meet-noodle.jpg`, `post2-pencil-town-fuji.jpg`, `post3-play-free-halloween.jpg`. Post 3 is a good Halloween push on Thu 29 Oct.
 
 All images are 1080 x 1350 (4:5). Files are in `brand/instagram/launch/`. Important parts sit in the centre 3:4 area, so the profile grid crop (about 34 px off each side) never cuts anything that matters.
@@ -158,6 +159,28 @@ Works on your phone (hold it upright) or your computer. Nothing to download. Lin
 #cozygames #browsergame #freegame #indiegame #doodledoggo #ブラウザゲーム #無料ゲーム
 ```
 **Alt text:** `How to play in four steps: tap New game, pick a pup, care for it, go for a walk.`
+
+---
+
+## Teaser: more dogs are coming
+
+File: `soon-more-dogs-coming.jpg`. Five mystery dogs peek over a fence ("hello?" question marks), while Noodle, Biscuit and Mochi wonder who they are. It shows no dog types, dates or promises. Post it only when new dogs are really planned. A good moment is after the last dog introduction post (Wed 16 Dec), or whenever the dev team confirms.
+
+**Caption**
+```
+More dogs are coming to Doodle Doggo! 🐶❓
+
+Someone is peeking over the fence... We can't say who yet (even Noodle doesn't know). Stay tuned, and follow along to meet them first.
+
+Which dog would you like to see next? Tell us below 👇
+
+Doodle Doggo is a free cozy dog game you play in your browser. Link in bio.
+
+🇯🇵 新しいワンコがやってきます！お楽しみに🐶
+
+#cozygames #doggame #indiegame #doodledoggo #comingsoon #犬ゲーム #新キャラ
+```
+**Alt text:** `Mystery dog heads with question marks peek over a fence while Noodle, Biscuit and Mochi look on.` (96 characters)
 
 ---
 
