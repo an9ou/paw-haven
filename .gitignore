@@ -21,3 +21,6 @@ game/shots_v24_*/
 !brand/*.png
 !brand/itch/*.png
 dist/
+_cfsite/
+.wrangler/
+**/.wrangler/
