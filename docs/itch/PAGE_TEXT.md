@@ -21,6 +21,8 @@ The wobbly dogs are the joke. You will love them anyway.
 - **Puppy playdates with real coat genetics**: coats and traits are inherited through real-style gene loci, with real welfare rules (age, seasons and rest between litters). Name the puppies, keep them, or find them a loving family for free.
 - **Sparkle pups**: a rare shimmering puppy that your journal remembers.
 - **Seasons and festivals**: the town follows the real calendar, with leaf piles and a harvest stall in autumn and a Halloween costume parade. For Halloween 2026 Mrs. Plum's Pumpkin Patch Pop-up opens in the Square with 16 things made for 2026 only.
+- **Winter and New Year** (new): Snow Days with snowdrifts to dive into and a snowdog to build, Winter Lights and the Ugly Sweater Contest in the Square, Baker Bea's Winter Stall, then a New Year with a fortune box and New Year cards in the mailbox. Five new outfits for every dog type, from the Very Ugly Sweater to the Year of the Sheep Hood.
+- **Mt. Fuji and Fuji View Hill** (new): Mt. Fuji now stands on the skyline all year round, with little Japanese details around town, and a new quiet place on the map, Fuji View Hill, with the best view of the mountain.
 - **Garden and kitchen**: grow veggies, cook dog-safe treats and learn what dogs can and cannot eat.
 - **Trick mini-games**: teach tricks with quick timing games.
 - **Town places**: a map with a market, shops, a vet, a playboard, a wardrobe and more.

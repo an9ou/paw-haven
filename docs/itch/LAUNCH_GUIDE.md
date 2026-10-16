@@ -28,7 +28,7 @@ Your page: https://an9ou.itch.io/doodle-doggo (a draft, so only you can see it f
 | **Release status** | **Released** | The game is playable and finished enough to be called released. |
 | **AI generation disclosure** | **Yes**: code and art were made with Claude, directed by a human | itch.io asks for this honestly. It is also stated at the bottom of the page text. |
 | **Cover image** | `brand/itch/cover-630x500.png` | The big picture on cards and search. Minimum is 315x250 and 630x500 is what we made. |
-| **Screenshots** | Five desktop pictures `brand/itch/screenshot-1-...png` to `screenshot-5-...png`, then the phone one `screenshot-phone-393x852.png` | Upload in that order. The first one shows first on the page. |
+| **Screenshots** | Five desktop pictures `brand/itch/screenshot-1-winter-yard.png` to `screenshot-5-new-year.png`, then the phone one `screenshot-phone-393x852.png` | Upload in that order. The first one shows first on the page. |
 | **Gameplay video** | Leave empty for now | Optional. |
 | **Community** | Choose **Comments** (the "Add a comments section" option) | Players can say hi, and you can answer them. A full discussion board is optional, so leave it off to keep it simple. |
 | **Visibility and access** | Keep **Draft** until the checklist in Part 2 is finished. Then use **Public**. | Draft means only you can see it. |
@@ -47,7 +47,7 @@ Your page: https://an9ou.itch.io/doodle-doggo (a draft, so only you can see it f
 | Screenshots 1 to 5 | `brand/itch/screenshot-*.png` (1280x720) | Screenshots |
 | Phone screenshot | `brand/itch/screenshot-phone-393x852.png` | Screenshots (last) |
 
-(The screenshots are retaken to show the newest version, v2.8, just before launch. The file names stay the same.)
+(The screenshots show v2.8: the winter yard, the winter Square, a walk with Mt. Fuji, Fuji View Hill and New Year. They are made by `brand/itch/make_screenshots.js`, so they can be retaken for a later version.)
 
 ## Part 2. Before you click Publish: checklist
 
