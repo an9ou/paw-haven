@@ -27,7 +27,7 @@ function rollTreasure(area, o = {}) {
 }
 function enterWalk(area) {
   const wb = walkBlock(D(), area); if (wb) { nope(wb); go('yard'); return; } // v2: puppies, expecting and nursing mums (16b)
-  walkPackNote(area);
+  walkPackNote(area); pkWalkPlan(area); // v2.9 PACK: the ticked dogs that are allowed out walk along
   if (isPhone()) toasts.innerHTML = ''; // a toast from the yard must not ride into the walk (it sat on the tutorial title)
   if (window.PawWalk && typeof window.PawWalk.start === 'function') { enterWalkMod(area); return; } enterWalkClassic(area); }
 function enterWalkClassic(area) {
@@ -259,13 +259,14 @@ function endWalk(complete) {
   const R = W.R, frac = complete ? 1 : Math.min(1, W.dist / (R.secs * SPEED));
   const base = Math.round(RAND(R.coins[0], R.coins[1]) * frac);
   const penny = S.outfit.charm === 'Lucky Penny' ? 1.1 : 1;
-  const coins = addCoins((base + W.coins) * penny);
+  const coins = addCoins(pkWalkCoins((base + W.coins) * penny)); // v2.9 PACK: +10% (rounded down) with 2 or more walkers
   const happy = Math.round((R.happy * frac + W.happy + (W.wx === 'rain' && hasRaincoat() ? 5 : 0)) * (W.wx === 'sunny' && S.outfit.eyes === 'Heart Sunglasses' ? 1.1 : 1) * (favAct('walks') ? 1.5 : 1));
   addStat('happy', happy);
   const cleanLoss = Math.round(R.clean * frac + (W.wx === 'rain' && !hasRaincoat() ? 5 * frac : 0)) - (W.wx === 'rain' && hasRaincoat() ? Math.round(R.clean * frac) : 0);
   addStat('clean', -cleanLoss);
   const bond = frac > 0.05 ? addBond(R.bp * frac + W.bond) : 0;
   const energy = Math.round(W.e0 - S.stats.energy);
+  const pkFol = pkWalkDoneClassic(happy, frac > 0.05 ? R.bp * frac + W.bond : 0, cleanLoss + W.clean, energy);
   if (frac > 0.05 || W.found) { dailyCare('play'); S.walks = (S.walks || 0) + 1; trackAct('walk', { area: W.area, early: !complete }); }
   markDirty(); hideBubble(); setWalkPose('happy');
   const L = W.found;
@@ -277,7 +278,7 @@ function endWalk(complete) {
   else tre = `<div class="tfind"><div class="tbig" style="filter:grayscale(1) opacity(.5)">${artReal('collectible', 'chest') || art('collectible', 'dig')}</div><div><h3>The treasure stayed hidden</h3><p class="ab">${W.digsLeft > 0 && complete ? 'You walked past the right X without digging.' : 'It was under a different X.'} Watch the Nose-o-meter: dig when it says HOT.</p></div></div>`;
   const extra = W.extra.length ? `<p class="small">Also found on the path: ${W.extra.map((e) => esc(e.item.n) + (e.dup ? ' (sold, duplicate)' : '')).join(', ')}.</p>` : '';
   const junk = W.junk.length ? `<p class="small">Junk dug up (turned into coins): ${W.junk.map((k) => k === 'junk-sock' ? 'a sock' : 'a rock').join(', ')}.</p>` : '';
-  const p = openModal(L ? `<span class="hl">Treasure found: ${esc(R.n)}</span>` : (complete ? `Walk complete: ${esc(R.n)}` : `Walk cut short: ${esc(R.n)}`), `${tre}${extra}${junk}
+  const p = openModal(L ? `<span class="hl">Treasure found: ${esc(R.n)}</span>` : (complete ? `Walk complete: ${esc(R.n)}` : `Walk cut short: ${esc(R.n)}`), `${tre}${extra}${junk}${pkWalkLine(pkFol)}
     ${wfTiles([[`+${coins}`, `Paw Coins${penny > 1 ? ' (Penny +10%)' : ''}`, coins], [`+${happy}`, 'Happiness', happy], [`+${bond}`, 'Bond points', bond], [`-${energy}`, 'Energy', energy], [cleanLoss + W.clean ? '-' + (cleanLoss + W.clean) : '0', 'Cleanliness', cleanLoss + W.clean]], 'results compact')}`,
     { cls: 'celebrate', foot: `${L && L.item && !L.dup ? '<button class="btn" id="resJournal">Open Journal</button>' : ''}<button class="btn yes big" id="resOk">${L && L.item && !L.dup ? 'Add to Journal' : 'Back to ' + esc((PLACES[S.place] || PLACES.yard).n)}</button>`, onClose: () => go('yard') });
   if (isPhone()) dock.innerHTML = ''; // no walk tray (its hint line) peeking out under the results sheet

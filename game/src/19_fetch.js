@@ -4,9 +4,10 @@ function enterFetch(toy) {
   const fb = fetchBlock(D()); if (fb) { nope(fb); go('yard'); return; } // v2: nursing mums
   setChrome(true, false);
   const fris = toy === 'Frisbee', proj = toy === 'Frisbee' ? art('prop', 'frisbee') : toy === 'Tennis Ball' ? art('prop', 'ball') : art('item', toy);
-  F = { toy, fris, glow: toy === 'Glow Ball', stick: toy === 'Driftwood Stick', t: 35, score: 0, great: 0, throws: 0, coins: 0, fly: null, ended: false, raf: 0, last: performance.now(), dogX: 430, dogY: 500 };
+  F = { toy, fris, glow: toy === 'Glow Ball', stick: toy === 'Driftwood Stick', t: 35, score: 0, great: 0, throws: 0, coins: 0, fly: null, ended: false, raf: 0, last: performance.now(), dogX: 430, dogY: 500, pack: [] };
   view.innerHTML = yardWorldSVG(`<g id="fetchL"><circle id="ringIn" r="24" fill="#FFE3A1" fill-opacity=".35" stroke="#5B3D32" stroke-width="2.5" stroke-dasharray="6 5" opacity="0"/><circle id="ringOut" r="90" fill="none" stroke="#F28FA5" stroke-width="4" opacity="0"/><g id="ballG" opacity="0">${place(proj, -30, -30, 60, 60)}</g></g>`);
   $('#bowlG').remove(); dogKey = ''; busy = true; renderDog('idle'); dogTo(0, 0, 1, 0);
+  F.pack = pkFetchStart(); if (F.pack.length || PKS.skip.length) pkSkipSay(PKS.skip, 900, 'fetch'); // v2.9 PACK: the ticked dogs run along behind the leader
   updateHUD(); bindDev(); fbFetchFit();
   dock.innerHTML = `<div class="tray"><div class="tray-h"><h3>Fetch with the ${esc(toy)}</h3><button class="xbtn" id="fQuit" aria-label="Stop fetch">x</button></div>
     <div class="walkctl"><span>Catches: <b id="fScore">0</b></span><span>Time: <b id="fTime">35</b>s</span><div class="prog"><i id="fBar" style="width:100%"></i></div></div>
@@ -34,6 +35,7 @@ function throwTo(x, y) {
   x = clamp(x, 300, 900); y = clamp(y, 430, 550);
   const T = F.fris ? 1.35 : 1.05;
   F.fly = { x0: 130, y0: 470, x, y, T, t0: performance.now(), tried: false, caught: false };
+  const dir = x < F.dogX ? -1 : 1; pkFetchRun(x, y, T, dir);
   F.throws++; addStat('energy', -(F.fris ? 1.5 : 1)); SFX.whoosh(); barkDog(D(), 'play', {});
   const ring = $('#ringIn'), out = $('#ringOut'); ring.setAttribute('cx', x); ring.setAttribute('cy', y - 70); ring.setAttribute('opacity', '1'); out.setAttribute('cx', x); out.setAttribute('cy', y - 70); out.setAttribute('opacity', '1');
   $('#ballG').setAttribute('opacity', '1');
@@ -52,7 +54,7 @@ function catchTry() {
     great ? SFX.fanfare() : SFX.pop(); setTimeout(() => SFX.bark(BARK[S.dog.key]), 200);
     fxText(great ? 'GREAT CATCH!' : 'Caught it!', f.x, f.y - 190, great ? '#F2C744' : '#9CCF8F', 44);
     $('#fScore').textContent = F.score;
-    setTimeout(() => { if (!F.ended) renderDog('happy'); }, 700);
+    setTimeout(() => { if (!F.ended) renderDog('happy'); }, 700); pkFetchRest('happy');
     F.fly = null;
   } else { fxText('Too early!', f.x, f.y - 190, '#F28FA5', 38); SFX.boop(300); }
 }
@@ -72,7 +74,7 @@ function fetchLoop(now) {
       F.fly = null; ringsOff(); SFX.thud(); setTimeout(SFX.trombone, 150);
       $('#ballG').setAttribute('transform', `translate(${f.x} ${f.y - 20})`);
       fxText(PICK(['Missed!', 'Bonk.', 'Nope.']), f.x, f.y - 160, '#F28FA5', 38);
-      renderDog('sad'); setTimeout(() => { if (!F.ended) { renderDog('idle'); $('#ballG').setAttribute('opacity', '0'); } }, 900);
+      renderDog('sad'); pkFetchRest('idle'); setTimeout(() => { if (!F.ended) { renderDog('idle'); $('#ballG').setAttribute('opacity', '0'); } }, 900);
     }
   }
   updateHUD();
@@ -84,13 +86,15 @@ function endFetch() {
   const golden = S.dog.key === 'golden' ? 1.25 : 1;
   const coins = F.coins ? addCoins(F.coins * golden) : 0;
   const key = 'toyAt_' + F.toy, full = !S[key] || S.gameMin - S[key] >= 10; S[key] = S.gameMin;
-  const happy = Math.round((F.fris ? 20 : 15) * Math.min(1, F.score / 6 + 0.2) * (favAct('fetch') ? 1.5 : 1) * (S.dog.favToy === F.toy ? 1.5 : 1) * (full ? 1 : 0.25) * (S.place === 'park' ? 1.2 : 1) * (S.place === 'dogpark' ? 1.3 : 1));
+  const hap = () => Math.round((F.fris ? 20 : 15) * Math.min(1, F.score / 6 + 0.2) * (favAct('fetch') ? 1.5 : 1) * (S.dog.favToy === F.toy ? 1.5 : 1) * (full ? 1 : 0.25) * (S.place === 'park' ? 1.2 : 1) * (S.place === 'dogpark' ? 1.3 : 1));
+  const happy = hap();
   addStat('happy', happy);
   const bond = F.throws ? addBond((5 + F.score) * (full ? 1 : 0.25)) : 0;
+  F.pack.forEach((d) => withDog(d, () => { addStat('happy', hap()); if (F.throws) addBond((5 + F.score) * (full ? 1 : 0.25)); addStat('energy', -F.throws * (F.fris ? 1.5 : 1)); })); // v2.9 PACK: each dog that ran along gets the play effects and its own Bond, once
   if (F.throws) dailyCare('play');
   markDirty();
   const p = openModal('Fetch results', `<p>${F.score >= 6 ? `${esc(NAME())} is a fetch legend. Statues are being considered.` : F.score >= 3 ? `Solid fetching. ${esc(NAME())} would rate you 7/10.` : `${esc(NAME())} has questions about your throwing arm.`}</p>
-    ${wfTiles([[F.score, `Catches (${F.great} great)`, F.score], [`+${coins}`, `Paw Coins${golden > 1 ? ' (Golden +25%)' : ''}`, coins], [`+${happy}`, 'Happiness', happy], [`+${bond}`, 'Bond points', bond]], 'results')}${full ? '' : '<p class="small">Fetch again so soon is less exciting. Wait 10 game minutes for full rewards.</p>'}`, { cls: 'celebrate', foot: '<button class="btn yes big" id="fOk">Back home</button>', onClose: () => go('yard') });
+    ${wfTiles([[F.score, `Catches (${F.great} great)`, F.score], [`+${coins}`, `Paw Coins${golden > 1 ? ' (Golden +25%)' : ''}`, coins], [`+${happy}`, 'Happiness', happy], [`+${bond}`, 'Bond points', bond]], 'results')}${F.pack.length ? `<p class="small pk-walked">${esc(crNames(F.pack))} ran along and got the Happiness and Bond too.</p>` : ''}${full ? '' : '<p class="small">Fetch again so soon is less exciting. Wait 10 game minutes for full rewards.</p>'}`, { cls: 'celebrate', foot: '<button class="btn yes big" id="fOk">Back home</button>', onClose: () => go('yard') });
   if (isPhone()) dock.innerHTML = ''; // the results sheet is the only thing on screen: no fetch tray (and its second X) behind it
   $('#fOk', p).onclick = () => { SFX.boop(700); closeModal(); };
 }

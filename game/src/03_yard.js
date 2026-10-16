@@ -538,12 +538,14 @@ function openPlayTray() {
   if (owns('toys', 'Rope Tug')) b.push(`<button class="card" data-play="tug"><span class="art">${art('item', 'Rope Tug')}</span><b>Tug</b><span class="small">+15 Happy, -10 Energy</span></button>`);
   b.push(`<button class="card pdcard" data-play="playdates"><span class="art">${iconOr('playdate', doodle('heart', -6, 2, 0.8) + doodle('heart', 7, -3, 0.65))}</span><b>Playdates</b><span class="small">Puppy Playdates</span></button>`);
   if (!fts.length) b.push('<p class="small">No fetch toy. Kibble Corner sells balls.</p>');
-  setTray('Play', `<div class="row">${b.join('')}</div>`);
+  setTray('Play', `${crChipsHTML(PK_CAP_PLAY)}<div class="row">${b.join('')}</div>`); // v2.9 PACK: the chip row (ticked dogs join in), nothing with one dog
+  crBindChips(dock, openPlayTray);
   dock.querySelectorAll('[data-play]').forEach((el) => { el.onclick = () => playPick(el.dataset.play); });
 }
 function playPick(p) {
   SFX.click();
   if (p === 'playdates') { if (typeof openPlaydates === 'function') openPlaydates(); else nope('Puppy Playdates are almost ready.'); return; }
+  if (p === 'tricks' && crPack()) { pkTricksTray(); return; } // v2.9 PACK: the dog picker inside the tray; training a dog never changes the leader
   if (S.sleeping) { nope(`${NAME()} is asleep. Even fun has to wait.`); return; }
   if (p.startsWith('toy:')) { if (S.stats.energy < 5) { nope(`${NAME()} is too tired to play. A nap would help.`); return; } go('toy', p.slice(4)); return; }
   if (p.startsWith('fetch:')) { if (S.stats.energy < 10) { nope(`${NAME()} is too tired to fetch. A nap would help.`); return; } go('fetch', p.slice(6)); return; }
@@ -555,12 +557,15 @@ function playPick(p) {
   const k = full ? 1 : 0.25; S[key] = now;
   let happy = (p === 'duck' ? 10 : 15) * k * (S.dog.favToy === toy ? 1.5 : 1) * (S.place === 'park' ? 1.2 : 1);
   busy = true;
+  const crew = pkDogs('play').slice(1), skip = PKS.skip.slice(); if (crew.length) pkPlayStart(crew, p === 'tug'); // v2.9 PACK: every ticked dog joins in (Tug: the others pile on the far end)
   if (p === 'duck') { [0, 250, 500].forEach((t) => setTimeout(SFX.squeak, t)); setTemp('happy', 1300); }
   else { $('#dogFx').classList.add('tk-tug'); renderDog('happy'); SFX.whoosh(); setTimeout(() => barkDog(D(), 'growl-play', { player: true }), 600); }
   setTimeout(() => {
     $('#dogFx').classList.remove('tk-tug'); addStat('happy', happy); trackAct('toy', { name: toy });
     let msg = p === 'duck' ? `SQUEAK. ${NAME()} is delighted. Your ears are not.` : `${NAME()} won the tug-of-war. As always.`;
-    if (p === 'tug') { addStat('energy', -10 * k); msg += ` +${addBond(5 * k)} Bond.`; }
+    if (p === 'tug') { addStat('energy', -10 * k); msg += ` +${addBond(5 * k)} Bond${crew.length ? ' each' : ''}.`; }
+    if (crew.length) { pkPlayFx(crew, toy, p === 'tug', k); pkPlayEnd(crew); msg += p === 'tug' ? ` ${crNames(crew)} ${crew.length > 1 ? 'pile' : 'piles'} on at the far end of the rope.` : ` ${crNames(crew)} ${crew.length > 1 ? 'squeak' : 'squeaks'} along.`; }
+    if (skip.length) msg += ' ' + pkSkipLines(skip).join(' ');
     if (S.dog.favToy === toy) msg += ' Favourite toy!'; if (!full) msg += ' (Less exciting the second time. Wait 10 game minutes.)';
     toast(msg, 'good'); dailyCare('play'); markCareDay(); busy = false; renderDog(dogPoseNow(), 'right', true); updateHUD();
   }, 1300);

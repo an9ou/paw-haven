@@ -34,7 +34,7 @@ function openTraining(tab) {
 // UI/UX T3 (phones): the scene shrinks under the panel, so the clipboard and decoration tap boxes are re-sized to the new scale (still >= 48 px)
 function pkHotsRefit() { if (!isPhone() || cur.mode !== 'yard') return; if (typeof msYardRedraw === 'function') msYardRedraw(); if (typeof hmDecorRedraw === 'function') hmDecorRedraw(); }
 function closeTraining() {
-  if (!TRN) return; tgAbort(); TRN.timers.forEach(clearTimeout); if (TRN.held) busy = false; TRN = null;
+  if (!TRN) return; tgAbort(); TRN.timers.forEach(clearTimeout); if (TRN.held) busy = false; TRN = null; pkBack(); // v2.9 PACK: training another dog never changes the leader
   const tp = $('#trainPanel'); if (tp) { tp.hidden = true; tp.innerHTML = ''; } stage.classList.remove('training');
   const w = $('#view > svg.world'); if (w) w.classList.remove('trainzoom'); drawAudience(false); if (isPhone()) setTimeout(pkHotsRefit, 30);
   const fx = $('#dogFx'); if (fx) fx.setAttribute('class', ''); if (cur.mode === 'yard' && !busy) { dogTo(0, 0, 1, 0.4); renderDog(dogPoseNow(), 'right', true); }
