@@ -67,7 +67,7 @@ function kit(seed){
     // v2.6: Halloween dressing runs on a fourth stream, only when env.hw (k.hwl: its glows, drawn over the treated art)
     hwl:[],hw(fn){if(!k.env.hw)return;const sv=cur;cur=hwR;try{return fn()}finally{cur=sv}},
     // v2.8: Winter Lights (k.lt), New Year (k.ny) and the Japan scenery (k.jp) each run on their own stream, only with their env flag, so every
-    // render without the flag stays byte-identical. k.wl: their glows, drawn over the treated art at dusk and night. k.own: a stream of its own (Fuji View Hill)
+    // render without the flag stays byte-identical. k.wl: their glows, drawn over the treated art at dusk and night. k.own: a stream of its own (Mt. Fuji Lookout)
     wl:[],lt(fn){if(!k.env.lt)return;const sv=cur;cur=ltR;try{return fn()}finally{cur=sv}},ny(fn){if(!k.env.ny)return;const sv=cur;cur=nyR;try{return fn()}finally{cur=sv}},
     jp(fn){if(!k.env.jp)return;const sv=cur;cur=jpR;try{return fn()}finally{cur=sv}},own(r2,fn){const sv=cur;cur=r2;try{return fn()}finally{cur=sv}},
     add(s){out.push(s)},
@@ -1459,7 +1459,7 @@ function propC(key,name,label,W,H,draw){if(!cacheP[key]){const k=kit(hashS('pwc-
     cacheP[key]=`<svg xmlns="http://www.w3.org/2000/svg" class="pa-wc-prop pa-wc-${name}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${label}">${k.defs.length?`<defs>${k.defs.join('')}</defs>`:''}${k.out.join('')}</svg>`}
   return freshC(cacheP[key])}
 
-/* ======================= v2.8: Winter Lights (k.lt), New Year (k.ny), the Japan scenery (k.jp, PA.JP) and Fuji View Hill (V28 sections 5 and 12) =======================
+/* ======================= v2.8: Winter Lights (k.lt), New Year (k.ny), the Japan scenery (k.jp, PA.JP) and Mt. Fuji Lookout (V28 sections 5 and 12) =======================
    The bulbs, the paper star, the shimekazari and the kites are world A's (SCENE ART), copied here so both modules hang the same ones.
    PA.JP draws Mt. Fuji and the Japanese details into whichever kit it is handed (world A's or this one), with that kit's own pencil only and on the
    stream the caller set (k.jp): it never switches streams, so the base drawing never moves. The details sit in pointer-events:none groups (a tap never
@@ -1739,7 +1739,7 @@ const JP_DRESS={
 function jpDressDraw(k,name,layer){const f=JP_DRESS[name]&&JP_DRESS[name][layer];if(!f)return;k.add('<g class="pa-jp" pointer-events="none">');f(k);k.add('</g>')}
 PA.JP={spot:jpSpot,fuji:(k,sp)=>jpFujiDraw(k,sp),dress:jpDressDraw,SPOTS:JP_SPOTS};
 
-/* ---------- Fuji View Hill (V28 section 12.4): the hero view of Fuji over a lake, a small torii with a knee-high shrine, two stone lanterns,
+/* ---------- Mt. Fuji Lookout (V28 section 12.4): the hero view of Fuji over a lake, a small torii with a knee-high shrine, two stone lanterns,
    a bench facing the view, sakura and momiji, a stepping-stone path the dog stands on. Every time x weather x season and festival flag. ---------- */
 const FH_BENCH=[530,454,.84];// x, ground y, scale: inside the phone crop (x 93-595 at 390 px), right of the dog
 const FH_SPOT=[FH_BENCH[0],R1(FH_BENCH[1]-36*FH_BENCH[2])];// where the dog sits: the middle of the seat

@@ -20,7 +20,7 @@ function enterShelter() {
   updateHUD(); bindDev();
 }
 
-/* ---- v2.8 Fuji View Hill map pin (V28.md section 12.4) ----
+/* ---- v2.8 Mt. Fuji Lookout map pin (V28.md section 12.4) ----
    Data hook: with the place on (PLACES.fujihill, see jpPlaceSync in 14_town_places.js), mapArt passes { jp: true, fujiPin: JP_MAP_PIN.big } to
    PawArt.scene('map'). SCENE ART draws the small Fuji landmark top-left (o.jp) and the real pin as <g data-area="fujihill"> centred on o.fujiPin
    (map units of the 2400 x 1500 town map), and may add { id: 'fujihill', x, y } to PawArt.MAP_AREAS. Until the art draws a data-area="fujihill",

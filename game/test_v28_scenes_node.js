@@ -177,7 +177,7 @@ sec('the Japan call sites');
   ok(PJ.scene('yard', { jp: true, time: 'night' }) !== PJ.scene('yard', { time: 'night' }), 'the cache keeps jp apart');
 }
 
-sec('the map: the Fuji landmark and the Fuji View Hill pin');
+sec('the map: the Fuji landmark and the Mt. Fuji Lookout pin');
 {
   const PA = load(SRC);
   const L = { locked: ['woods'], bonds: { woods: 5, fujihill: 2 } };
@@ -186,7 +186,7 @@ sec('the map: the Fuji landmark and the Fuji View Hill pin');
   ok(/^<svg[^>]* data-jp="1"/.test(jp) && clean(jp) && safe(jp) && norm(jp) !== norm(off), 'jp: the landmark is drawn, data-jp on the root');
   ok(!/data-area="fujihill"/.test(jp), 'jp alone: no pin');
   ok(/<g data-area="fujihill" role="button" tabindex="0" aria-label="Mt\. Fuji Lookout"><path class="pa-wa-hit"/.test(pin) && />Mt\. Fuji Lookout</.test(pin) && clean(pin) && safe(pin), 'fujiPin: a data-area="fujihill" group with its hit shape and the caption');
-  ok(/data-area="fujihill" data-locked="1"/.test(lockd) && />Bond 2</.test(lockd), 'a locked Fuji View Hill shows the padlock and its Bond');
+  ok(/data-area="fujihill" data-locked="1"/.test(lockd) && />Bond 2</.test(lockd), 'a locked Mt. Fuji Lookout shows the padlock and its Bond');
   const hit = /data-area="fujihill"[^>]*><path class="pa-wa-hit" d="M([\d.]+) ([\d.]+)/.exec(pin);
   ok(hit && Math.abs(+hit[1] - 380) < 130 && Math.abs(+hit[2] - 342) < 100, 'the pin is centred on fujiPin');
   ok(hooks(pin).split('|').filter((h) => !/fujihill/.test(h)).join('|') === hooks(off), 'every other place keeps its hotspot');

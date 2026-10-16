@@ -68,7 +68,7 @@ function fbPackNapFit() {
   });
 }
 function setTemp(pose, ms) { tempPose = pose; tempUntil = performance.now() + ms; renderDog(pose); }
-function dogTo(tx, ty = 0, scale = 1, secs = 0.9) { // v2.8 phones: on Fuji View Hill the camera stays on the hill crop (the path, the bench and Fuji, phHomeRefit)
+function dogTo(tx, ty = 0, scale = 1, secs = 0.9) { // v2.8 phones: on Mt. Fuji Lookout the camera stays on the hill crop (the path, the bench and Fuji, phHomeRefit)
   const p = $('#dogPos'); if (!p) return; phCamHome = isPhone() && S && S.place === 'fujihill' ? phHomeCx : phHomeCx + (scale === 1 ? tx : (430 * scale + tx) - phHomeCx); if (phPeekOn && typeof IDLE === 'object' && IDLE.act) { /* the player is looking around: an idle wander does not pull the view back */ } else { if (phPeekOn) { phPeekOn = false; clearTimeout(phPanT); } camTo(phCamHome, secs); } p.style.transitionDuration = secs + 's';
   p.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
 }
