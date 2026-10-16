@@ -198,7 +198,7 @@ function phCamPan(svg) {
   let x0 = null, y0 = 0, c0 = 0, id = null, on = false, swallow = false, swT = 0;
   svg.addEventListener('click', (ev) => { if (swallow) { swallow = false; ev.stopPropagation(); ev.preventDefault(); } }, true);
   svg.addEventListener('pointerdown', (e) => {
-    swallow = false; if (x0 != null || (e.pointerType === 'mouse' && e.button !== 0) || e.target.closest('#dogHit')) return;
+    swallow = false; if (x0 != null || (e.pointerType === 'mouse' && e.button !== 0) || e.target.closest('#dogHit, .cr-pet')) return; // v2.8.4: a rub on a pack dog (crPetBind) is petting, not a pan
     x0 = e.clientX; y0 = e.clientY; c0 = camCx; id = e.pointerId; on = false;
   });
   svg.addEventListener('pointermove', (e) => {

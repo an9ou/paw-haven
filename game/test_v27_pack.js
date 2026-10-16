@@ -90,6 +90,18 @@ require('./test_lib').run('v27_pack', async (t) => {
   ok(st.dogs.every((d, i) => d.bond.pts === b1[i]), 'the Bond comes once a session per dog');
   ok(await t.until(() => document.querySelectorAll('#pack .packdog svg.pa-pose-pet').length > 0, null, 2500) || await ev(() => { window.__paw.cr.petAll(1); return document.querySelectorAll('#pack .packdog svg.pa-pose-pet').length > 0; }), 'the pack dogs show the pet pose');
 
+  sec('7b. v2.8.4: a tap or rub on a pack dog pets it where it stands, no switching');
+  await t.home('yard'); await set('happy', 40); await t.toasts();
+  const act0 = (await S()).activeId, pd = await ev(() => document.querySelector('#pack .packdog').dataset.dog);
+  ok(/rub or tap to pet/.test(await ev(() => document.querySelector('#pack .packdog').getAttribute('aria-label'))), 'the pack dog\'s label says rub or tap to pet');
+  for (let i = 0; i < 3; i++) { await p().click(`#pack [data-dog="${pd}"] .pd-wander > rect`, { force: true }); await p().waitForTimeout(150); }
+  st = await S();
+  ok(st.activeId === act0, 'the active dog stays the same');
+  ok(st.dogs.every((d) => d.stats.happy > 40), 'every ticked dog was petted: ' + JSON.stringify(st.dogs.map((d) => Math.round(d.stats.happy))));
+  await ev((id) => { window.__paw.S.careOff = { [id]: true }; }, pd); await set('happy', 40);
+  await p().click(`#pack [data-dog="${pd}"] .pd-wander > rect`, { force: true });
+  st = await S(); ok(!(st.careOff || {})[pd] && st.dogs.find((d) => d.id === pd).stats.happy > 40, 'an unticked dog touched is ticked back in and petted');
+
   sec('8. the bath queue: one dog at a time, the active dog restored');
   await t.home('yard'); await set('clean', [40, 96, 40]);
   await p().click('[data-act=care]'); await t.waitPop(true);

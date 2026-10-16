@@ -102,7 +102,7 @@ function packDogSVG(d, i) {
   if (hmChairDown(d)) { const cp = typeof hoPos === 'function' ? hoPos('Rocking Chair') : [910, 452]; fx = clamp(868 + cp[0] - 910, 40, 960); fy = 530 + cp[1] - 452; face = 'right'; sc = 0.48; } // Proud Mum lies down next to the Rocking Chair (v2.7: wherever it stands now)
   const w = DW * sc, h = DH * sc, x = fx - w / 2, y = fy - h * (205 / 220);
   const pose = d.sleeping ? 'sleep' : packPose[d.id] || (Math.min(...Object.values(d.stats)) < 25 ? 'sad' : 'idle');
-  return `<g class="packdog hot" data-dog="${d.id}" tabindex="0" role="button" aria-label="${esc(d.name)}: click to make ${PRd(d).him} the active dog"><g class="pd-wander" style="animation-delay:-${i * 2.3}s"><rect x="${x + 30}" y="${y + 30}" width="${w - 60}" height="${h - 30}" fill="transparent"/>${place(dogSVG(d, { pose, outfit: typeof shSleepOutfit === 'function' ? shSleepOutfit(d, pose) : outfitOf(d), facing: face }), x, y, w, h)}</g></g>`;
+  return `<g class="packdog hot" data-dog="${d.id}" tabindex="0" role="button" aria-label="${esc(d.name)}: ${crPack() ? `rub or tap to pet ${PRd(d).him}` : `click to make ${PRd(d).him} the active dog`}"><g class="pd-wander" style="animation-delay:-${i * 2.3}s"><rect x="${x + 30}" y="${y + 30}" width="${w - 60}" height="${h - 30}" fill="transparent"/>${place(dogSVG(d, { pose, outfit: typeof shSleepOutfit === 'function' ? shSleepOutfit(d, pose) : outfitOf(d), facing: face }), x, y, w, h)}</g></g>`;
 }
 function hmMumIn(d) { return typeof mumInBasket === 'function' && mumInBasket(d); } // a nursing mum is drawn in the nursery basket, not with the pack
 function hmChairOut4(d) { return !!(d.proud && S.place === 'yard' && hmDecorOut('Rocking Chair') && Math.random() < 0.25); } // about 1 in 4 idle picks
@@ -110,7 +110,8 @@ function hmChairDown(d) { return !!(d.proud && S.place === 'yard' && !d.sleeping
 function packSVG() { return S.dogs.length > 1 ? others().slice(0, 3).map((d, i) => hmMumIn(d) ? '' : packDogSVG(d, i)).join('') : ''; }
 function bindPack() {
   const g = $('#pack'); if (!g) return;
-  g.querySelectorAll('[data-dog]').forEach((el) => { el.onclick = () => switchDog(el.dataset.dog); el.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); switchDog(el.dataset.dog); } }; });
+  // v2.8.4: with pack care a rub or tap on a pack dog pets it (and the other ticked dogs) where it stands, no switching (crPetBind). Pack care off: a click makes it the active dog
+  g.querySelectorAll('[data-dog]').forEach((el) => { if (crPack()) { crPetBind(el); return; } el.onclick = () => switchDog(el.dataset.dog); el.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); switchDog(el.dataset.dog); } }; });
   if (typeof fbPackNapFit === 'function') fbPackNapFit(); // v2.5: a pack dog napping on the house bed lies on it, over the bed's front lip
 }
 function redrawPackDog(d) { const g = $(`#pack [data-dog="${d.id}"]`); if (!g) return; const i = others().indexOf(d); g.outerHTML = packDogSVG(d, i); bindPack(); }

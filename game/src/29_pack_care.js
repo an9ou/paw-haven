@@ -151,6 +151,34 @@ function crPetPack(bondNow, bonded) {
   });
   return due;
 }
+// v2.8.4: pet a pack dog where it stands, no switching. The dog touched is ticked back in if it was unticked. With the active dog awake this is
+// the same pet as rubbing the active dog (every ticked dog present gets it); with the active dog asleep only the awake ticked pack dogs do
+function crPetAt(d, wx, wy) {
+  if (!d || busy) return;
+  if (d.sleeping) { barkDog(d, 'huff', { player: true, volume: 0.6 }); if (performance.now() - crPetSleepT > 2500) { crPetSleepT = performance.now(); toast(`Shh. ${d.name} is asleep.`); } return; }
+  if (S.careOff && S.careOff[d.id]) { delete S.careOff[d.id]; markDirty(); }
+  if (!S.sleeping) { petTick(wx, wy); return; }
+  const due = crPetPack(false, true); fxText('♥', wx + RAND(-20, 20), wy - 10); Math.random() < 0.7 ? SFX.squeak() : SFX.boop(RAND(500, 800));
+  if (due.length) crPetBond(due, true); else updateHUD();
+}
+// the rub (mouse hover-rub or touch drag) and tap on a pack dog, like the active dog's #dogHit (03_yard.js). The rub state is shared (crRub), because a
+// petted pack dog is redrawn (redrawPackDog replaces its element and binds the new one) in the middle of a touch rub
+const crRub = { id: null, down: false, last: null, moved: 0, dist: 0 };
+function crPetBind(el) {
+  const svg = el.ownerSVGElement, id = el.dataset.dog, at = (e) => { const w = toWorld(svg, e.clientX, e.clientY); crPetAt(dogById(id), w.x, w.y); };
+  el.classList.add('cr-pet'); // the phone camera pan leaves a rub on this dog alone (phCamPan, 03_yard.js)
+  el.addEventListener('pointerdown', (e) => { SFX.init(); Object.assign(crRub, { id, down: true, moved: 0, last: { x: e.clientX, y: e.clientY } }); try { el.setPointerCapture(e.pointerId); } catch (er) { /* capture unsupported */ } });
+  el.addEventListener('pointermove', (e) => {
+    if (e.pointerType !== 'mouse' && !(crRub.down && crRub.id === id)) return;
+    if (crRub.id !== id || !crRub.last) { Object.assign(crRub, { id, last: { x: e.clientX, y: e.clientY } }); return; }
+    const m = Math.hypot(e.clientX - crRub.last.x, e.clientY - crRub.last.y); crRub.last = { x: e.clientX, y: e.clientY }; crRub.moved += m; crRub.dist += m;
+    if (crRub.dist > 70) { crRub.dist = 0; at(e); }
+  });
+  el.addEventListener('pointerup', (e) => { if (crRub.down && crRub.id === id && crRub.moved < 8) { at(e); at(e); } crRub.down = false; });
+  el.addEventListener('pointerleave', () => { if (!crRub.down) crRub.last = null; });
+  el.addEventListener('pointercancel', () => { crRub.down = false; crRub.last = null; });
+  el.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); const r = el.getBBox(); crPetAt(dogById(id), r.x + r.width / 2, r.y + r.height / 3); } };
+}
 // the Bond for the pack, one toast. later: pack dogs whose Bond came after the active dog's (it had its own toast, the act and the care bonus already)
 function crPetBond(due, later) {
   const got = [];
