@@ -10,6 +10,7 @@ A cozy browser game: adopt crayon-drawn dogs, care for them, walk a sketchbook t
 - **One team busy at a time**, and push automatically once tests are green (details in `BUILDING.md`).
 - **Reports:** don't send the owner progress updates. Report only when the whole task is finished or when the owner asks.
 - **Questions** go to the owner in the choice window with a recommendation first. With no answer in 5 minutes, take the recommendation.
+- **5-minute rule for every session and subagent (owner, 16 Oct 2026):** any question or approval the owner leaves unanswered for 5 minutes goes with the recommended choice. A permission prompt can't be approved on the owner's behalf, so when one waits 5 minutes, take the recommended path that doesn't need it and keep going. Prefer paths that need no approval prompt at all.
 
 ## This machine
 
