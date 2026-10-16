@@ -177,6 +177,7 @@ async function main() {
   const helpers = { f1, seeded, pencil, line, box, doodle, swash, swashPath, txt, lines, tape, arrow, dog, prop, shotAt, photo, paper, defs, svgPage, rrPts, INK, PINK, PAPER, MUTED, ORANGE, PLUM, DOT, OUT, PA, inner, wordmark, frame };
   if (WHAT === 'banner' || WHAT === 'all') await require('./make_banner.js')({ render, browser, helpers });
   if (WHAT === 'info' || WHAT === 'all') await require('./make_info.js')({ render, helpers });
+  if (WHAT === 'dogs' || WHAT === 'all') await require('./make_dogs.js')({ render, browser, helpers, only: process.argv[4] });
   if (['profile', 'covers', 'grid', 'all'].includes(WHAT)) await require('./make_extra.js')({ render, helpers, what: WHAT });
   await browser.close();
 }
