@@ -28,15 +28,16 @@ Then **pin all three** (long-press a post, "Pin to your profile") in the same or
 ### Right tile (posted first)
 **Caption**
 ```
-Doodle Doggo 🐶🖍️ A cozy dog game you play in your browser. Free!
+Welcome to Doodle Doggo! 🐶🖍️
+A cozy dog game you play in your browser. Free!
 
-Adopt a wobbly crayon pup, walk around a pencil-sketch town, grow a garden, cook dog-safe treats and have puppy playdates. Nothing to download. Phone or computer. Link in bio.
+Adopt a wobbly crayon pup, walk around a pencil-sketch town, grow a garden, cook dog-safe treats and have puppy playdates. Phone or computer, nothing to download. Link in bio.
 
-🎃 Until 2 Nov, Mrs. Plum's Pumpkin Patch Pop-up is open in the town square.
+🎃 It's Halloween in town: Mrs. Plum's Pumpkin Patch Pop-up is open until 2 Nov.
 
-✨ This is one of three pieces of a picture. Visit our profile to see them all together.
+✨ This is one of three pieces of a big picture. Visit our profile to see all three together!
 
-🇯🇵 ブラウザで遊べる無料のワンコゲーム。プロフィールのリンクからどうぞ🖍️
+🇯🇵 ブラウザで遊べる無料のワンコゲーム「Doodle Doggo」へようこそ！プロフィールのリンクからどうぞ🖍️
 
 #cozygames #browsergame #indiegame #halloweengame #doodledoggo #ブラウザゲーム #ハロウィン
 ```
@@ -45,31 +46,36 @@ Adopt a wobbly crayon pup, walk around a pencil-sketch town, grow a garden, cook
 ### Middle tile
 **Caption**
 ```
-Mt. Fuji on every skyline 🗻
-Doodle Doggo is a pencil-sketch town with crayon dogs, and Fuji peeks over every view. Free in your browser, link in bio.
+Meet Noodle 🐶🗻
+He's a dachshund. He's very long. He drew himself and he is very proud of it.
 
-✨ Piece 2 of 3. Visit our profile to see the whole picture.
+Noodle lives in Doodle Doggo: a pencil-sketch town with Mt. Fuji on every skyline, and 14 crayon dogs who are all a little wobbly on purpose. Free in your browser. Link in bio.
 
-🇯🇵 鉛筆で描いた街に、どの空にも富士山。無料のブラウザゲームです🗻
+Which dog would you adopt first? 👇
 
-#cozygames #handdrawn #mtfuji #indiedev #doodledoggo #富士山 #インディーゲーム
+✨ The middle piece of a 3-part picture. Visit our profile to see all three.
+
+🇯🇵 ダックスフンドのヌードルが案内役。どの空にも富士山がある鉛筆の街と、14匹のクレヨン犬たち🗻
+
+#cozygames #indiegame #handdrawn #mtfuji #doodledoggo #富士山 #インディーゲーム
 ```
 **Alt text:** `Noodle the dachshund under a Doodle Doggo sign: a cozy dog game, play free. Mt. Fuji behind.`
 
 ### Left tile (posted last, shows first on the grid)
 **Caption**
 ```
-Meet the dogs of Doodle Doggo 🐶 Noodle the dachshund is the star in the middle (see the middle piece). He's very long. He drew himself and he is very proud of it.
+Come on in, the yard is open 🏡🍂
+The cottage, the clothesline, the autumn leaves, and a whole crowd of crayon dogs in costumes. Some wear two things, some wear one, and some wear nothing at all.
 
-14 dog types to adopt, walks, a garden, a kitchen and puppy playdates. Free in your browser. Link in bio.
+Doodle Doggo is a cozy dog game with walks, a garden, a kitchen for dog-safe treats and puppy playdates. Free in your browser. Link in bio.
 
-Which dog would you adopt first? 👇
+Spot your favourite? 👇
 
-✨ Piece 3 of 3. Visit our profile to see the whole picture.
+✨ The left piece of a 3-part picture. Visit our profile to see all three.
 
-🇯🇵 クレヨンで描いたゆるい犬たちと暮らす、無料のブラウザゲーム🖍️
+🇯🇵 お家の庭へようこそ。仮装したクレヨン犬たちがいっぱい🍂 無料のブラウザゲームです。
 
-#cozygames #indiegame #browsergame #dachshund #doodledoggo #癒しゲーム #ブラウザゲーム
+#cozygames #browsergame #doggame #dachshund #doodledoggo #癒しゲーム #ブラウザゲーム
 ```
 **Alt text:** `A cozy cottage and crayon dogs in costumes on an autumn meadow under bunting.`
 
