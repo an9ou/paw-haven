@@ -134,7 +134,7 @@ function acOpenForm(kind, inSheet) {
     const now = clLocal();
     if (!now) { go('adopt'); return; }
     tAcctKey = ''; titleAcctRender();
-    toast(reg ? `Account made. ${acDogName(now)} is safe on every device now.` : `Logged in. ${acDogName(now)} is right where you left them.`, 'good');
+    toast(r.moved ? `You already had an account with that email. Logged in, and ${acDogName(now)} is here.` : reg ? `Account made. ${acDogName(now)} is safe on every device now.` : `Logged in. ${acDogName(now)} is right where you left them.`, 'good');
     const tc = $('#tContinue'); if (tc) tc.focus({ preventScroll: true });
   };
 }

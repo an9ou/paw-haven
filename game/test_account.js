@@ -1,103 +1,11 @@
-// ACCOUNT (v2.3): the title screen's account choice against a mocked Supabase (no network). Brief: Log in / Make an account / Play as guest.
+// ACCOUNT (v2.3, v2.8.1): the title screen's account choice against a local copy of the Cloudflare Worker (no network). Brief: Log in / Make an account / Play as guest.
 //   node game/run_tests.js account      (PAW_SHOTS=1 or --shots writes game/shots_account/)
-// The fake Supabase and the supabase-js lookalike are the same as test_cloud.js (copied: that file runs its suite when required).
 const { run, URL } = require('./test_lib');
 const { devices } = require('playwright');
 // the two phone sizes from the brief (touch, phone UA). The Playwright iPhone 15 profile is 390x664, so add 390x844 and 360x740.
 devices['Phone 390x844'] = Object.assign({}, devices['iPhone 15'], { viewport: { width: 393, height: 852 }, screen: { width: 393, height: 852 } });
 devices['Phone 360x740'] = Object.assign({}, devices['Pixel 7'], { viewport: { width: 360, height: 740 }, screen: { width: 360, height: 740 } });
-/* ---------------- fake Supabase (Node side) ---------------- */
-function makeServer() {
-  const srv = { users: [], tokens: {}, saves: {}, backups: [], seq: 1, calls: [], pages: new Set(), offline: new Set(), confirmEmailChange: false };
-  const uidOf = (tok) => srv.tokens[tok] || null;
-  const user = (u) => ({ id: u.id, email: u.email || '', new_email: u.new_email || undefined, is_anonymous: !u.email });
-  const session = (u) => { const tok = 'tok' + srv.seq++; srv.tokens[tok] = u.id; return { access_token: tok, user: user(u) }; };
-  const err = (message, code) => ({ error: { message, code } });
-  srv.push = (row) => { for (const p of srv.pages) if (!srv.offline.has(p)) p.evaluate((r) => window.__clDispatch && window.__clDispatch(r), row).catch(() => {}); };
-  srv.handle = (page, op, a) => {
-    srv.calls.push({ page, op, a: a && a.action ? a.table + '.' + a.action : '' });
-    if (srv.offline.has(page)) return { netError: 'Failed to fetch' };
-    const me = srv.users.find((u) => u.id === uidOf(a && a.token));
-    switch (op) {
-      case 'getUser': return me ? { data: { user: user(me) } } : err('no session');
-      case 'anon': { const u = { id: 'u' + srv.seq++ }; srv.users.push(u); return { data: session(u) }; }
-      case 'update': {
-        if (!me) return err('no session');
-        if (a.email) {
-          if (srv.users.some((u) => u.email === a.email && u !== me)) return err('A user with this email address has already been registered', 'email_exists');
-          if (srv.confirmEmailChange) { me.new_email = a.email; if (a.password) me.password = a.password; return { data: { user: user(me) } }; }
-          me.email = a.email;
-        }
-        if (a.password) { if (a.password.length < 8) return err('Password should be at least 8 characters', 'weak_password'); me.password = a.password; }
-        return { data: { user: user(me) } };
-      }
-      case 'signUp': {
-        if (srv.users.some((u) => u.email === a.email)) return err('User already registered', 'user_already_exists');
-        const u = { id: 'u' + srv.seq++, email: a.email, password: a.password }; srv.users.push(u); return { data: session(u) };
-      }
-      case 'login': { const u = srv.users.find((x) => x.email === a.email); if (!u || u.password !== a.password) return err('Invalid login credentials', 'invalid_credentials'); return { data: session(u) }; }
-      case 'db': {
-        if (!me) return err('JWT expired');
-        const uid = me.id, f = a.filters || {};
-        if (f.user_id && f.user_id !== uid) return { data: a.single ? null : [] }; // RLS: only your own rows
-        if (a.table === 'saves') {
-          if (a.action === 'select') { const r = srv.saves[uid]; return { data: r ? pick(r, a.cols) : null }; }
-          if (a.action === 'upsert') { if (a.row.user_id !== uid) return err('new row violates row-level security policy'); const r = Object.assign({}, a.row, { updated_at: new Date().toISOString() }); srv.saves[uid] = r; setTimeout(() => srv.push(r), 30); return { data: null }; }
-        }
-        if (a.table === 'save_backups') {
-          if (a.action === 'insert') { if (a.row.user_id !== uid) return err('rls'); srv.backups.push(Object.assign({ id: srv.seq++, created_at: new Date(Date.now() + srv.seq).toISOString() }, a.row)); const mine = srv.backups.filter((b) => b.user_id === uid).sort((x, y) => y.id - x.id); const keep = new Set(mine.slice(0, 5)); srv.backups = srv.backups.filter((b) => b.user_id !== uid || keep.has(b)); return { data: null }; }
-          if (a.action === 'select') { let l = srv.backups.filter((b) => b.user_id === uid).sort((x, y) => y.id - x.id); if (a.limit) l = l.slice(0, a.limit); return { data: l.map((b) => pick(b, a.cols)) }; }
-        }
-        return err('bad query');
-      }
-    }
-    return err('bad op ' + op);
-  };
-  const pick = (r, cols) => { if (!cols || cols === '*') return JSON.parse(JSON.stringify(r)); const o = {}; cols.split(',').forEach((c) => { o[c.trim()] = r[c.trim()]; }); return JSON.parse(JSON.stringify(o)); };
-  srv.count = (page, what) => srv.calls.filter((c) => (!page || c.page === page) && (c.op + ':' + c.a).includes(what)).length;
-  return srv;
-}
-
-/* ---------------- supabase-js lookalike (page side, installed before the game runs) ---------------- */
-function mockInit(cfg) {
-  if (cfg.host) window.__pawCloudHost = cfg.host;
-  const call = (op, a) => window.__clSrv(op, a).then((r) => { if (r && r.netError) throw new TypeError(r.netError); return r; });
-  const chans = []; window.__clDispatch = (row) => chans.forEach((c) => { if (c.uid === row.user_id) c.cb({ eventType: 'UPDATE', new: row }); });
-  window.__pawCloudMock = {
-    createClient(url, key, opts) {
-      if (cfg.broken) throw new Error('blocked');
-      const SK = opts.auth.storageKey; const tok = () => { try { return (JSON.parse(localStorage.getItem(SK) || 'null') || {}).access_token; } catch (e) { return null; } };
-      const keep = (r) => { if (r.data && r.data.access_token) localStorage.setItem(SK, JSON.stringify(r.data)); return r.data && r.data.access_token ? { data: { user: r.data.user, session: r.data }, error: null } : { data: r.data || {}, error: r.error || null }; };
-      const auth = {
-        async getSession() { const t = tok(); if (!t) return { data: { session: null } }; const r = await call('getUser', { token: t }); return { data: { session: r.data ? { access_token: t, user: r.data.user } : null } }; },
-        async signInAnonymously() { return keep(await call('anon', {})); },
-        async signUp(a) { return keep(await call('signUp', a)); },
-        async signInWithPassword(a) { return keep(await call('login', a)); },
-        async updateUser(a) { const r = await call('update', Object.assign({ token: tok() }, a)); return r.error ? { data: {}, error: r.error } : { data: r.data, error: null }; },
-        async signOut() { localStorage.removeItem(SK); return { error: null }; }
-      };
-      const from = (table) => {
-        const q = { table, filters: {} };
-        const b = {
-          select(cols) { if (!q.action) q.action = 'select'; q.cols = cols; return b; },
-          eq(c, v) { q.filters[c] = v; return b; },
-          order(c, o) { q.order = [c, o]; return b; },
-          limit(n) { q.limit = n; return b; },
-          maybeSingle() { q.single = true; return b; },
-          insert(row) { q.action = 'insert'; q.row = row; return b; },
-          upsert(row) { q.action = 'upsert'; q.row = row; return b; },
-          then(res, rej) { return call('db', Object.assign({ token: tok() }, q)).then((r) => ({ data: r.data === undefined ? null : r.data, error: r.error || null })).then(res, rej); }
-        };
-        return b;
-      };
-      return {
-        auth, from,
-        channel(name) { const c = { name, uid: null, cb: null, on(type, f, cb) { c.uid = (f.filter || '').replace('user_id=eq.', ''); c.cb = cb; return c; }, subscribe() { chans.push(c); return c; } }; return c; },
-        removeChannel(c) { const i = chans.indexOf(c); if (i >= 0) chans.splice(i, 1); }
-      };
-    }
-  };
-}
+const { makeServer, mockInit } = require('./cloud_mock'); // v2.8.1: the real Cloudflare Worker on a local D1 (see test_cloud.js)
 
 // In-page audit of everything visible (same rules as the phone suites): tap targets >= 44, text >= 15 (13 for captions), no sideways scroll.
 const AUDIT = () => {
@@ -136,7 +44,7 @@ run('account', async (t) => {
     const p = await t.mk(devName ? { device: devName } : {}); touch = !!devName;
     p.on('dialog', (d) => { dialogs.push(d.message()); d.dismiss().catch(() => {}); });
     if (process.env.ACC_TRACE) p.on('pageerror', (e) => console.log('PAGEERROR', e.stack));
-    if (cfg !== false) { await t.ctx.exposeBinding('__clSrv', (src, op, a) => srv.handle(src.page, op, a)); await t.ctx.addInitScript(mockInit, cfg || {}); srv.pages.add(p); }
+    if (cfg !== false) { await t.ctx.exposeBinding('__clSrv', (src, m, u, b, a) => srv.handle(src.page, m, u, b, a)); await t.ctx.addInitScript(mockInit, cfg || {}); srv.pages.add(p); }
     await p.goto(URL); await p.waitForSelector('#tNew, #tContinue, #tGuest');
     return p;
   }
@@ -215,7 +123,7 @@ run('account', async (t) => {
   ok(new RegExp(name1 + ' comes along').test(await ev(() => document.querySelector('.aclead').textContent)), `the form says ${name1} comes along`);
   await tap('#acBack'); ok(await t.until(() => !!document.getElementById('acLogin'), null, 3000), 'Back from the form returns to the choices');
   await tap('#acReg'); await d1.waitForSelector('#acPw2'); await form('reg', 'mochi@example.com', 'pupper123');
-  ok(await closed() && await t.until(() => window.__pawCloud.CL.regPath === 'updateUser' && !window.__pawCloud.CL.anon, null, 6000), 'register: updateUser on the guest ' + await diag());
+  ok(await closed() && await t.until(() => window.__pawCloud.CL.regPath === 'upgrade' && !window.__pawCloud.CL.anon, null, 6000), 'register: the guest becomes the account ' + await diag());
   ok((await uid()) === g1 && srv.users.find((u) => u.id === g1).email === 'mochi@example.com' && srv.saves[g1].data.dogs[0].name === name1, 'same user id, same save, now with an email');
   ok(await t.until(() => /^Signed in as m…@example\.com/.test(document.querySelector('#title .tacct').textContent) && !!document.getElementById('tSwitch'), null, 3000), 'title: "Signed in as m…@example.com" + Switch: ' + await line());
   ok(!!(await d1.locator('#tContinue').count()), 'Continue is offered'); ok(await t.waitToast(/Account made\. .+ is safe on every device now\./), 'toast: Account made.');
@@ -244,7 +152,7 @@ run('account', async (t) => {
   ok(/fresh start/.test(await ev(() => document.querySelector('.aclead').textContent)), 'the form says the new account starts fresh');
   await change({ coins: 6060 }); // A's last change, its push still waiting
   await form('reg', 'second@example.com', 'second123');
-  ok(await t.until((g) => window.__pawCloud.CL.regPath === 'signUp' && window.__pawCloud.CL.uid !== g && !window.__pawCloud.CL.anon && window.__paw.mode === 'adopt', g1, 6000), 'a new account is made with signUp, straight to adoption ' + await diag());
+  ok(await t.until((g) => window.__pawCloud.CL.regPath === 'new' && window.__pawCloud.CL.uid !== g && !window.__pawCloud.CL.anon && window.__paw.mode === 'adopt', g1, 6000), 'a new account is made, straight to adoption ' + await diag());
   const a2 = await uid();
   ok(srv.saves[g1].data.coins === 6060, 'A\'s last change reached A before the switch');
   ok(!srv.saves[a2] && !srv.backups.some((b) => b.user_id === a2), 'nothing of A\'s game went into the new account');
@@ -309,19 +217,17 @@ run('account', async (t) => {
   ok(await t.untilMode('adopt', 6000), 'a brand new account: straight to adoption ' + await diag());
   const a4 = await uid(); ok(srv.users.find((u) => u.id === a4).email === 'newbie@example.com', 'the account has the email (no email sent)');
 
-  sec('desktop: register fallback (signUp) has a push guard like log in');
-  srv.confirmEmailChange = true;
+  sec('desktop: register after the guest login ended on the Worker (a new account) has a push guard like log in');
   const d5 = await device(null); t.p = d5; await tap('#tGuest'); await d5.waitForSelector('#tNew'); await t.adopt({ sex: 'boy' });
   ok(await synced(), 'device 5 guest save is in the cloud'); const g5 = await uid(), coins5 = srv.saves[g5].data.coins;
   await ev(() => window.__paw.go('title')); await d5.waitForSelector('#tSwitch');
   await tap('#tSwitch'); await sheetOpen(); await tap('#acReg'); await d5.waitForSelector('#acPw2');
   await t.p.waitForSelector('#modal .panel.acct[data-ready] #acEmail'); await t.p.fill('#acEmail', 'fallback@example.com'); await t.p.fill('#acPw', 'fallback1'); await t.p.fill('#acPw2', 'fallback1');
-  await change({ coins: 4242 }); const up5 = srv.count(d5, 'saves.upsert'); await tap('#acGo'); // a guest push is waiting (2 s) when the switch starts
-  ok(await t.until((g) => window.__pawCloud.CL.regPath === 'signUp' && window.__pawCloud.CL.uid !== g, g5, 6000), 'the signUp fallback runs');
+  await change({ coins: 4242 }); const up5 = srv.count(d5, 'PUT /save'); srv.endSessions(g5); await tap('#acGo'); // a guest push is waiting (2 s) when the switch starts
+  ok(await t.until((g) => window.__pawCloud.CL.regPath === 'new' && window.__pawCloud.CL.uid !== g, g5, 6000), 'a new account is made');
   const a5 = await uid(); ok(await t.until(() => !window.__pawCloud.CL.timer && !window.__pawCloud.CL.busy, null, 6000), 'the waiting guest push was cancelled, nothing in flight');
   ok(srv.saves[a5] && srv.saves[a5].data.coins === 4242, 'the newest game lands on the new account');
-  ok(srv.saves[g5].data.coins === coins5 && srv.count(d5, 'saves.upsert') === up5 + 1, `the waiting guest push never runs (guest row kept, ${srv.count(d5, 'saves.upsert') - up5} push)`);
-  srv.confirmEmailChange = false;
+  ok(srv.saves[g5].data.coins === coins5 && srv.count(d5, 'PUT /save') === up5 + 1, `the waiting guest push never runs (guest row kept, ${srv.count(d5, 'PUT /save') - up5} push)`);
 
   sec('desktop: signed in to account A, log in as B: A\'s game never goes into B, backups included');
   const d8 = await device(null); t.p = d8;

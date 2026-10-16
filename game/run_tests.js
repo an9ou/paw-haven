@@ -78,6 +78,7 @@ const SUITES = {
   phone_legacy: { file: 'test_phone.js', group: 'phone', est: 90 },
   phone_shell: { file: 'test_phone_shell.js', group: 'phone', est: 40 },
   cloud: { file: 'test_cloud.js', group: 'phone', est: 60 },
+  worker: { file: 'test_worker.js', group: 'phone', est: 5 }, // v2.8.1: the Cloudflare Worker (node + Miniflare, local D1)
   phone_home: { file: 'test_phone_home.js', group: 'phone', est: 60 },
   phone_town: { file: 'test_phone_town.js', group: 'phone', est: 70 },
   phone_journal: { file: 'test_phone_journal.js', group: 'phone', est: 35 },

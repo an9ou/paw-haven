@@ -87,6 +87,8 @@ Each lane makes its screens pass the phone minimums on iPhone 15 (393×852) and 
 - **GitHub Pages and local copies:** on.
 - **The claude.ai artifact:** off, because its sandbox blocks outside servers. That copy keeps the local save, and Settings says: "Cloud save works on the web version."
 
+> **v2.8.1:** cloud save now runs on the Cloudflare Worker `pawhaven-api` (see `docs/CLOUDFLARE_LOGIN.md`, "As built"). The Supabase setup below only matters for moving old accounts over, until Supabase is switched off (about mid-January 2027).
+
 **Supabase setup (the owner does this once):**
 
 1. Authentication → Sign In / Providers:
