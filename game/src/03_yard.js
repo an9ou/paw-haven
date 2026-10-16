@@ -68,8 +68,8 @@ function fbPackNapFit() {
   });
 }
 function setTemp(pose, ms) { tempPose = pose; tempUntil = performance.now() + ms; renderDog(pose); }
-function dogTo(tx, ty = 0, scale = 1, secs = 0.9) {
-  const p = $('#dogPos'); if (!p) return; phCamHome = phHomeCx + (scale === 1 ? tx : (430 * scale + tx) - phHomeCx); if (phPeekOn && typeof IDLE === 'object' && IDLE.act) { /* the player is looking around: an idle wander does not pull the view back */ } else { if (phPeekOn) { phPeekOn = false; clearTimeout(phPanT); } camTo(phCamHome, secs); } p.style.transitionDuration = secs + 's';
+function dogTo(tx, ty = 0, scale = 1, secs = 0.9) { // v2.8 phones: on Fuji View Hill the camera stays on the hill crop (the path, the bench and Fuji, phHomeRefit)
+  const p = $('#dogPos'); if (!p) return; phCamHome = isPhone() && S && S.place === 'fujihill' ? phHomeCx : phHomeCx + (scale === 1 ? tx : (430 * scale + tx) - phHomeCx); if (phPeekOn && typeof IDLE === 'object' && IDLE.act) { /* the player is looking around: an idle wander does not pull the view back */ } else { if (phPeekOn) { phPeekOn = false; clearTimeout(phPanT); } camTo(phCamHome, secs); } p.style.transitionDuration = secs + 's';
   p.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
 }
 // v2.5: the art module draws some foods in the bowl itself (WORLD_B.bowlFoods). Every other food (the v2.4 and v2.5 foods) used to
@@ -153,6 +153,7 @@ function phHomeRefit() {
   let L = 186, R = 530, fitMin = 0.62;
   const vz = $('#visitorG', view);
   if (S.place === 'market') { L = 186; R = 592; fitMin = 0.78; } // the bowl, the dog and the "Market Street" sign together: the street zooms out a little when the screen is narrow
+  else if (S.place === 'fujihill') { L = 250; R = 596; } // v2.8 FUJI HILL: the dog on the path, the bench (x 488-572) and Fuji's summit in the crop at 390 and 360 px
   else if (vz) { const sp = visitorSpot(), w = 264 * sp[3]; L = 306; R = Math.max(R, sp[0] + w / 2 + 6); }
   const vw = view.clientWidth, vh = view.clientHeight - (parseFloat(view.style.getPropertyValue('--trayH')) || 0); if (!vw || vh <= 0) return;
   const native = 600 * vw / vh, fit = Math.max(fitMin, Math.min(1, native / (R - L)));
@@ -162,7 +163,7 @@ function phHomeRefit() {
     const sky = $('#view > svg.world #sceneG rect[width="1000"][height="452"]'), m = sky && /url\(#([^)]+)\)/.exec(sky.getAttribute('fill') || ''), gr = m && $('#view > svg.world #' + m[1]), st = gr && gr.querySelector('stop');
     if (st) view.style.background = st.getAttribute('stop-color') || getComputedStyle(st).stopColor || '';
   }
-  phHomeCx = (L + R) / 2; if (!S.sleeping) { phCamHome = phHomeCx; camCx = phCamHome; }
+  phHomeCx = (L + R) / 2; if (!S.sleeping || S.place === 'fujihill') { phCamHome = phHomeCx; camCx = phCamHome; }
   camApply(camCx);
 }
 // v2.3 phone: a feed / care / nap tray never covers the scene. The scene shrinks into the part of the view above the tray (the whole scene stays visible).
@@ -334,15 +335,22 @@ function placeButtons() {
 // v2.3 TOWN-3: the pier bubble goes on the deck under the dog (the boats and the seagull sit above its head); the .below class flips the tail
 let bubbleBelowT = 0;
 function townBubbleBelowDog() {
-  const hit = $('#dogHit'); if (!hit || bubble.hidden) return; const hr = hit.getBoundingClientRect(), sg = stage.getBoundingClientRect(), bw = bubble.offsetWidth;
-  bubble.classList.add('below'); bubble.style.left = clamp(hr.left + hr.width / 2 - sg.left - bw / 2, 6, stage.clientWidth - bw - 6) + 'px'; bubble.style.top = (hr.bottom - sg.top + 18) + 'px';
+  const hit = $('#dogHit'); if (!hit || bubble.hidden) return; const hr = hit.getBoundingClientRect(), sg = stage.getBoundingClientRect(), W = stage.clientWidth;
+  const hl = hr.left - sg.left, hrr = hr.right - sg.left, hb = hr.bottom - sg.top, up = [bubble.style.left, bubble.style.top]; // say()'s spot over the head: the fallback
+  // the bubble shrinks to fit left of the stage edge, so it re-wraps when it moves: every move re-measures, and it stays on screen (layout numbers: the pop animation scales the rect)
+  const at = (l, tp) => { bubble.style.left = l + 'px'; bubble.style.top = tp + 'px'; let w = bubble.offsetWidth; if (l + w > W - 6) { l = Math.max(6, W - 6 - w); bubble.style.left = l + 'px'; w = bubble.offsetWidth; } return { l, t: tp, w, h: bubble.offsetHeight }; };
+  bubble.classList.add('below'); let b = at(6, hb + 18); const bw0 = b.w; b = at(clamp(hl + hr.width / 2 - bw0 / 2, 6, W - bw0 - 6), hb + 18);
+  const pr = isPhone() && $('#placeBtns'), prr = pr && pr.offsetParent && pr.getBoundingClientRect(); // phones: stay above the place-button row (UI/UX T5)
+  if (prr && prr.height && b.t + b.h > prr.top - sg.top - 8) { // no room under the dog: beside it if a side has room, else under it slid clear of the buttons, else back over its head
+    const py = prr.top - sg.top - 8;
+    if (py - b.h >= hb + 8) b = at(b.l, py - b.h); // (8 px: the dog bobs a little while the line shows)
+    else { const r = at(hrr + 8, py); if (r.l >= hrr + 8) b = at(r.l, py - r.h); else { b = at(6, py); if (6 + b.w <= hl - 8) b = at(hl - 8 - b.w, py - b.h); else b = null; } }
+    if (b && b.t < view.offsetTop + 4) b = null;
+    if (!b) b = at(clamp(hl + hr.width / 2 - bw0 / 2, 6, W - bw0 - 6), hb + 18); } // else under the dog over the row, slid clear of the buttons (below)
   // keep clear of the place buttons (Go home sits bottom-right): slide left of one it would touch
-  const bh = bubble.offsetHeight, pr = isPhone() && $('#placeBtns'), prr = pr && pr.offsetParent && pr.getBoundingClientRect(); // phones: stay above the place-button row (UI/UX T5)
-  if (prr && prr.height && parseFloat(bubble.style.top) + bh > prr.top - sg.top - 8) { // no room under the dog: beside it if a side has room (else as before: the buttons draw over it)
-    const ty = prr.top - sg.top - bh - 8, rx = hr.right - sg.left + 8, lx = hr.left - sg.left - bw - 8, side = ty >= hr.bottom - sg.top - 4 ? null : rx + bw <= stage.clientWidth - 6 ? rx : lx >= 6 ? lx : -1;
-    if (side !== -1) { bubble.style.top = ty + 'px'; if (side !== null) bubble.style.left = side + 'px'; } }
-  const bl = parseFloat(bubble.style.left), bt = parseFloat(bubble.style.top); // (layout numbers: the pop animation scales the rect)
-  document.querySelectorAll('#placeBtns .btn').forEach((b) => { const q = b.getBoundingClientRect(), ql = q.left - sg.left, qt = q.top - sg.top; if (bl < q.right - sg.left + 12 && bl + bw > ql - 12 && bt < qt + q.height + 6 && bt + bh > qt - 6) bubble.style.left = Math.max(6, ql - 24 - bw) + 'px'; });
+  document.querySelectorAll('#placeBtns .btn').forEach((x) => { const q = x.getBoundingClientRect(), ql = q.left - sg.left, qt = q.top - sg.top; if (b.l < q.right - sg.left + 12 && b.l + b.w > ql - 12 && b.t < qt + q.height + 6 && b.t + b.h > qt - 6) { if (b.w > ql - 18) bubble.style.maxWidth = Math.max(120, ql - 18) + 'px'; const w = bubble.offsetWidth; b = at(Math.max(6, ql - Math.min(24, ql - 6 - w) - w), b.t); } }); // (narrower when the full width would still touch it)
+  const sgH = stage.clientHeight, onBtn = [...document.querySelectorAll('#placeBtns .btn')].some((x) => { const q = x.getBoundingClientRect(), ql = q.left - sg.left, qt = q.top - sg.top; return b.l < q.right - sg.left && b.l + b.w > ql && b.t < qt + q.height && b.t + b.h > qt; });
+  if (onBtn || b.t + b.h > sgH - 4) { bubble.classList.remove('below'); bubble.style.maxWidth = ''; bubble.style.left = up[0]; bubble.style.top = up[1]; return; } // nowhere clear: back over its head
   clearTimeout(bubbleBelowT); bubbleBelowT = setTimeout(() => bubble.classList.remove('below'), 3700);
 }
 function placeAmbient() {
@@ -711,7 +719,13 @@ const HM_DECOR = {
   'Sofa Ramp': { prop: 'sofaramp', at: [120, 300, 208, 128], vb: [260, 160], price: 200, bond: 2, room: 'house', zone: 'floor', kind: 'furniture', v27: true, story: 'A carpeted ramp up to a cushioned top step. Short legs, long backs and old knees all get up without a jump.',
     spots: { top: { x: 204, y: 60, w: 200, pose: 'sit', face: 'left', via: { x: 40, y: 152 } } } },
   'Window Seat': { prop: 'windowseat', at: [0, 232, 176, 192], vb: [220, 240], price: 260, bond: 2, room: 'house', zone: 'floor', kind: 'furniture', lit: true, v27: true, story: 'A cushioned seat under a little round window. The best place in the house to watch the postman and the birds.',
-    spots: { seat: { x: 110, y: 176, w: 200, pose: 'sit', face: 'right' } } }
+    spots: { seat: { x: 110, y: 176, w: 200, pose: 'sit', face: 'right' } } },
+  // v2.8 Winter & New Year (V28.md section 1): sold only at Baker Bea's Winter Stall while their fest flag is on (never at Barkitecture), bought once,
+  // placed with the v2.7 placement mode. `at` is a starting spot, the free-spot scan picks the real one. The props take { night } (WINTER ART)
+  'Paper Snowflake Garland': { prop: 'wnsnowflakes', at: [620, 196, 210, 56], vb: [300, 80], price: 90, room: 'yard', zone: 'wall', kind: 'decor', fest: 'snow', v28: true, story: 'Paper snowflakes cut by the Nguyen kids, no two the same. Some of them are dogs, if you squint.' },
+  'Felt Holly Wreath': { prop: 'wnwreath', at: [880, 200, 72, 72], vb: [120, 120], price: 80, room: 'yard', zone: 'wall', kind: 'decor', fest: 'snow', v28: true, story: 'A round wreath of felt leaves and red felt berries. Real holly berries make dogs ill, so these ones are felt.' },
+  'Red Wooden Sled': { prop: 'wnsled', at: [24, 506, 130, 78], vb: [200, 120], price: 110, room: 'yard', zone: 'floor', kind: 'decor', fest: 'snow', v28: true, story: 'A red sled for leaning on the fence. Nobody has ever pulled it, because a dog is always sitting in it.' },
+  'Kadomatsu Pair': { prop: 'nykadomatsu', at: [866, 404, 80, 100], vb: [160, 200], price: 120, room: 'yard', zone: 'floor', kind: 'decor', fest: 'newyear', v28: true, story: 'Bamboo, pine and plum by the gate to welcome the new year\'s luck. The dogs sniff it every morning to check the luck is still there.' }
 };
 const HM_PHOTO = [20, 15, 120, 84]; // the documented data-photo box inside the 160x140 frame
 function hmDecorFields() { if (S && (!S.decor || typeof S.decor !== 'object')) S.decor = {}; }

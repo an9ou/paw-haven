@@ -78,6 +78,7 @@ function hoKeepBoxes(room, skip) {
   const svg = cur.mode === 'yard' && S.place === room && $('svg.world', view);
   if (svg) svg.querySelectorAll('#sceneG [data-hot]').forEach((el) => { const r = el.getBoundingClientRect(); if (!r.width) return; const a = toWorld(svg, r.left, r.top), b = toWorld(svg, r.right, r.bottom); out.push([a.x, a.y, b.x - a.x, b.y - a.y]); });
   hoOutIn(room).forEach((m) => { if (m !== skip) out.push(hoFoot(m)); });
+  if (typeof fsKeepOut === 'function') { try { (fsKeepOut(room) || []).forEach((b) => { if (Array.isArray(b) && b.length === 4) out.push(b); }); } catch (e) { /* festival boxes unavailable */ } } // v2.8: festival props up now (V28.md section 2)
   return out;
 }
 // the house scene's own wall furniture (bookshelf, picture, window, sign, kitchen): a hung item looks for bare wall first
@@ -128,6 +129,7 @@ function hoBedFor(d) {
 }
 // [tx, ty, scale] for dogTo() when the ACTIVE dog naps: in the house its own bed (feet at x + 130, y + 145), else the rug; in the yard the dog-house door
 function napSpot() {
+  if (S && S.place === 'fujihill') return [107.5, 140, 0.75]; // v2.8: on Fuji View Hill the dog naps where it stands, inside the hill's phone crop (phHomeRefit)
   if (!S || S.place !== 'house') return [417.5, 140, 0.75];
   const b = hoBedFor(S.dog); if (b) { const [x, y] = S.bedAt[b]; return [x - 192.5, y - 230, 0.75]; }
   const r = HO_RUG_NAPS[0]; return [r[0] - 430 * r[3], r[1] - 500 * r[3], r[3]];
@@ -485,7 +487,7 @@ function hoBedsCard(b, inHouse) {
 /* ---------------- shop (Barkitecture Decor and Furniture tabs) ---------------- */
 function hoShopItems(kind) {
   const it = (n) => { const D = HM_DECOR[n]; return { cat: kind, n, price: D.price, bond: D.bond || 1, desc: D.story }; };
-  const names = Object.keys(HM_DECOR).filter((n) => HM_DECOR[n].v27 && HM_DECOR[n].kind === kind);
+  const names = Object.keys(HM_DECOR).filter((n) => HM_DECOR[n].v27 && !HM_DECOR[n].fest && HM_DECOR[n].kind === kind); // v2.8: festival decorations are sold at their stall only
   if (kind === 'furniture') return names.map(it);
   return [{ head: 'For the yard' }].concat(names.filter((n) => hoRoomOf(n) === 'yard').map(it), [{ head: 'For the house' }], names.filter((n) => hoRoomOf(n) === 'house').map(it));
 }

@@ -187,8 +187,8 @@ require('./test_lib').run('v25_breeds', async (t) => {
   ok(hh.ok3 && hh.pups3.length === 3 && hh.pups3.every((q) => q.key === 'corgi' && q.mix && q.mix.name === 'Corgi' && q.mix.head === 'corgi'), 'two unrelated 3/4 Corgis: Corgi pups with a corgi body and head ' + JSON.stringify(hh.pups3.map((q) => q.key + '/' + (q.mix && q.mix.head) + ' ' + (q.mix && q.mix.name))));
   ok(hh.ok2 && hh.pups2.length === 2 && hh.pups2.every((q) => q.key === 'corgi' && q.mix && q.mix.name === 'Corgi'), 'Horgi x Corgi (3/4 Corgi): the pups are Corgis, not "Mutt mix" ' + JSON.stringify(hh.pups2.map((q) => q.key + ' ' + (q.mix && q.mix.name))));
 
-  sec('phones: all 14 heads in the adoption sheet are tappable (iPhone 13, Pixel 7)');
-  for (const dev of ['iPhone 13', 'Pixel 7']) {
+  sec('phones: all 14 heads in the adoption sheet are tappable (iPhone 15, Pixel 7)');
+  for (const dev of ['iPhone 15', 'Pixel 7']) {
     await t.ctx.close();
     const q = await t.boot({ device: dev }); await q.click('#tNew'); await q.waitForSelector('.heads button'); await t.sleep(500);
     await ev(() => { const d = document.getElementById('dock'); d.scrollTop = d.scrollHeight; }); await t.sleep(400);
@@ -197,11 +197,11 @@ require('./test_lib').run('v25_breeds', async (t) => {
     ok(await ev(() => document.documentElement.scrollWidth <= innerWidth), `${dev}: no sideways scroll`);
     await q.locator('.heads button').last().click();
     ok(await t.until(() => /the French Bulldog/.test(document.querySelector('.adopt-card h3').textContent)), `${dev}: tapping the last head picks the French Bulldog`);
-    if (dev === 'iPhone 13') await t.SH('06_adopt_phone_scrolled');
+    if (dev === 'iPhone 15') await t.SH('06_adopt_phone_scrolled');
   }
 
   sec('phones: the Journal coat tabs keep the chosen breed in view, milestone chips at 15 px');
-  await t.ctx.close(); await t.newGame({ device: 'iPhone 13' }); const r = t.p;
+  await t.ctx.close(); await t.newGame({ device: 'iPhone 15' }); const r = t.p;
   await r.click('[data-act=journal]'); await r.waitForSelector('.panel.journal'); await r.click('[data-jt=coats]'); await r.waitForSelector('.cbreeds');
   const vis = () => ev(() => { const c = document.querySelector('.cbreeds'), on = document.querySelector('.cbreed.on'), a = c.getBoundingClientRect(), b = on.getBoundingClientRect(); return { key: on.dataset.cbreed, inView: b.left >= a.left - 1 && b.right <= a.right + 1 }; });
   for (const k of ['frenchie', 'samoyed', 'shiba']) {

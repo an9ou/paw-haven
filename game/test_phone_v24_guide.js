@@ -1,10 +1,10 @@
-// v2.4 GUIDE lane, phones (V24.md section 5): on iPhone 13 (390x844) and Pixel 7 (412x915) every step's Gerald strip has 44 px buttons and 15 px text,
+// v2.4 GUIDE lane, phones (V24.md section 5): on iPhone 15 (390x844) and Pixel 7 (412x915) every step's Gerald strip has 44 px buttons and 15 px text,
 // never intersects #dogHit or the ringed button, and the page never scrolls sideways. Also the How to play tab on a phone.
 // node game/run_tests.js phone_v24_guide   (--shots writes every step to game/shots_phone_v24_guide/)
 const { run } = require('./test_lib');
 
 (async () => {
-  for (const [dev, W, H] of [['iPhone 13', 390, 844], ['Pixel 7', 412, 915]]) {
+  for (const [dev, W, H] of [['iPhone 15', 393, 852], ['Pixel 7', 412, 915]]) {
     await run(`phone_v24_guide`, async (t) => {
       const { ok, sec } = t; const tag = dev.replace(/\W/g, '').toLowerCase();
       sec(`${dev} ${W}x${H}`);

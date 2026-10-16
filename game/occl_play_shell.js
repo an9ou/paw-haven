@@ -79,7 +79,7 @@ module.exports = {
     await t.until(() => innerHeight === 375, null, 4000); await H.settle();
     const c2 = await ev(() => { const card = document.querySelector('#psTurn .ps-turn-card'), cr = card.getBoundingClientRect(); return [...card.querySelectorAll('h2,p,svg')].every((e) => { const r = e.getBoundingClientRect(); return r.left >= cr.left && r.right <= cr.right && r.top >= cr.top && r.bottom <= cr.bottom; }) && cr.bottom <= innerHeight && cr.top >= 0; });
     ok(c2, 'lock card at 667x375: text fits inside the card and the card inside the screen');
-    await vp(390, 844);
+    await vp(393, 852);
     await t.until(() => !document.documentElement.hasAttribute('data-pslock'), null, 6000);
 
     // SH-4: the greeting timers (Continue schedules greetBark at 1200 ms, which schedules the whine at 700 ms) must not throw once S is gone
@@ -104,8 +104,8 @@ module.exports = {
     ok(thrown.length === 0, 'greeting: the held 1200 ms and 700 ms timers do nothing after the game is gone (New game)' + (thrown.length ? ' -> ' + thrown.join(' | ') : ''));
     ok(t.errors.length === errs0, 'greeting: no console errors from the timers (t.errors)');
     // give the rest of the suite a game again
-    await t.newGame({ device: 'iPhone 13' }, { coins: 3000, bond: { level: 10, pts: 5000 }, stats: { hunger: 80, happy: 80, energy: 95, clean: 90 }, inv: { toys: ['Tennis Ball', 'Frisbee'] } });
-    await vp(390, 844);
+    await t.newGame({ device: 'iPhone 15' }, { coins: 3000, bond: { level: 10, pts: 5000 }, stats: { hunger: 80, happy: 80, energy: 95, clean: 90 }, inv: { toys: ['Tennis Ball', 'Frisbee'] } });
+    await vp(393, 852);
   },
 };
 

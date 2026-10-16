@@ -1,0 +1,325 @@
+// v2.8 WINTER lane (V28.md sections 7 and 10). fest 'auto', season 'winter', prefs.wnTest. On 2026-12-10: the three winter letters once (the parcel pays
+// 3 Warm Carob Cups on Collect only), a dive into a snowdrift (happy +6, the act, the scatter, the cooldown toast) and the cold tip once, the snowdog in
+// 3 taps (done once, the carrot, a patched next day starts at stage 0 with the "hills" toast), the Winter Stall (3 foods, 3 clothes, 3 decorations,
+// no Pup Kinton, Kadomatsu, rosette or edition item), a decoration buy and Place it clear of fsKeepOut('yard'), the Warm Carob Cup warms, the contest
+// (10 raw coins once a day, the rosette once, every category, fsActive during the walk), the Journal lines, the How to play card, the salt tip once,
+// the four WINTER missions gate and match. 2026-12-27: no contest, the New Year stall. 2027-03-01: nothing up, owned things work. A December date
+// without wnTest: exactly v2.7. No winter item in Kibble Corner, the Boutique or Barkitecture. v2.5 and v2.7 saves load clean.
+// node game/run_tests.js v28_winter
+const { URL } = require('./test_lib');
+require('./test_lib').run('v28_winter', async (t) => {
+  const { ok, sec, ev, S, SH } = t;
+  const p = () => t.p;
+  const errs = () => t.errors.filter((e) => !/ERR_CERT|Failed to load resource/.test(e));
+  const idle = () => t.until(() => !window.__paw.shop.busy && !window.__paw.wn.walking && !window.__paw.fest.walking, null, 8000);
+  const msDone = (id) => ev((id) => { const m = window.__paw.S.missions.list.find((x) => x.id === id); return !!(m && m.done); }, id);
+  const motion = (on) => ev((on) => { document.documentElement.dataset.motion = on ? 'on' : 'off'; }, on); // the player's Motion switch (freezeMotion nests badly when called twice)
+  const quiet = () => ev(() => { window.__toasts.splice(0); document.querySelectorAll('#toasts .toast').forEach((e) => e.remove()); });
+  // a mission is eligible today when some seeded pick of 3 holds it (the pool is shuffled per date string; 160 samples)
+  const eligible = (ids) => ev((ids) => { const seen = new Set(); for (let i = 0; i < 160; i++) window.__paw.ms.pick('x' + i).forEach((m) => seen.add(m.id)); return ids.map((id) => seen.has(id)); }, ids);
+  const setDate = (d) => { t.clockOffset = new Date(d + 'T10:00:00').getTime() - Date.now(); };
+  const ov = (a, b) => a[0] < b[0] + b[2] && a[0] + a[2] > b[0] && a[1] < b[1] + b[3] && a[1] + a[3] > b[1];
+  const WN_ITEMS = ['Warm Carob Cup', 'Snowflake Oat Cookies', 'Snow Day Stew', 'Pup Kinton', 'Very Ugly Sweater', 'Reindeer Antlers', 'Snowflake Snood', 'Ugly Sweater Rosette', 'Year of the Sheep Hood', 'Paper Snowflake Garland', 'Felt Holly Wreath', 'Red Wooden Sled', 'Kadomatsu Pair'];
+
+  setDate('2026-12-10');
+  await t.newGame({ sex: 'girl' }, { bond: { level: 6, pts: 700 }, coins: 2000, stats: { hunger: 40, happy: 50, energy: 80, clean: 90 } });
+  await t.home('yard');
+  const dog = await ev(() => window.__paw.S.dog.name);
+
+  sec('2026-12-10: the three winter letters, once each; the parcel pays only on Collect');
+  ok(await t.until(() => (window.__paw.S.mail || []).filter((m) => /^wn_/.test(m.id)).length === 3, null, 8000), 'three winter letters arrive');
+  let s = await S();
+  const pip = s.mail.find((m) => m.id === 'wn_snow_2026'), ger = s.mail.find((m) => m.id === 'wn_contest_2026'), plum = s.mail.find((m) => m.id === 'wn_gift_2026');
+  ok(pip && pip.from === 'Pip' && pip.kind === 'news' && pip.text === 'It hardly ever snows down here, so I bring a cart of snow from the hills every morning. Two drifts by your fence and a heap for a snowdog. Dive in.', "Pip's snow letter");
+  ok(ger && /Gerald/.test(ger.from) && ger.text === 'The Ugly Sweater Contest is on in the Square until 25 December. I am the judge. I am a duck, so I am very fair.', "Gerald's contest letter");
+  ok(plum && plum.kind === 'gift' && plum.title === 'A winter parcel from Mrs. Plum' && plum.text === `Three Warm Carob Cups for ${dog}. It is carob, not cocoa. I wrote it on the lids twice.`, "Mrs. Plum's winter parcel names the dog");
+  ok(plum && plum.gift && plum.gift.item === 'Warm Carob Cup' && plum.gift.cat === 'food' && plum.gift.n === 3 && !plum.gift.claimed, 'the parcel holds 3 Warm Carob Cups, not yet collected');
+  ok(s.wn.letters.snow === 2026 && s.wn.letters.contest === 2026 && s.wn.letters.gift === 2026, 'S.wn.letters holds the winter year 2026 for all three');
+  ok(!(s.inv.food['Warm Carob Cup'] > 0), 'nothing paid before Collect');
+  await t.home('house'); await t.home('yard'); await t.until(() => window.__paw.wn.pending === 0, null, 6000);
+  ok((await S()).mail.filter((m) => /^wn_/.test(m.id)).length === 3, 'a second yard entry sends no new letter');
+  const col = await ev(() => window.__paw.mbCollect(['wn_gift_2026']));
+  ok(/3 × Warm Carob Cup/.test(col) && (await S()).inv.food['Warm Carob Cup'] === 3, 'Collect pays 3 Warm Carob Cups: ' + col);
+  ok(await ev(() => window.__paw.mbCollect(['wn_gift_2026'])) === '' && (await S()).inv.food['Warm Carob Cup'] === 3, 'a second Collect pays nothing');
+
+  sec('the yard: two snowdrifts and the snow heap');
+  await ev(() => window.__paw.ms.force(['snowdrift', 'snowdog', 'wstall'])); await quiet();
+  const y = await ev(() => ({ d: [...document.querySelectorAll('#wnDriftG [data-drift]')].map((g) => g.dataset.state), heap: document.querySelector('#wnDogG') && document.querySelector('#wnDogG').dataset.stage, after: (() => { const a = document.getElementById('decorG'); return !!a && a.nextElementSibling === document.getElementById('wnDriftG') && document.getElementById('wnDriftG').nextElementSibling === document.getElementById('wnDogG'); })(), art: !!document.querySelector('#wnDriftG svg[data-state="full"]') && !!document.querySelector('#wnDogG svg[data-stage="0"]'), keep: window.__paw.wn.keepOut('yard') }));
+  ok(y.d.length === 2 && y.d.every((x) => x === 'full'), 'two full snowdrifts in #wnDriftG');
+  ok(y.heap === '0' && y.art, 'the snow heap (stage 0) in #wnDogG, drawn by the WINTER ART props');
+  ok(y.after, '#wnDriftG and #wnDogG are drawn right after the yard decorations');
+  ok(JSON.stringify(y.keep) === JSON.stringify([[318, 520, 116, 72], [738, 524, 104, 66], [446, 516, 80, 80]]), 'fsKeepOut(yard): the two drifts and the snow heap ' + JSON.stringify(y.keep));
+  const rest = await ev(() => { const r = document.getElementById('dogHit'); return [+r.getAttribute('x'), +r.getAttribute('y'), +r.getAttribute('width'), +r.getAttribute('height')]; });
+  ok(y.keep.every((b) => !ov(b, rest)) && !ov(y.keep[2], [205, 462, 90, 90]) && !ov(y.keep[2], [596, 486, 40, 40]) && !ov(y.keep[2], y.keep[0]) && !ov(y.keep[2], y.keep[1]), 'the heap is clear of #dogHit at rest, the bowl, the porch step and the drifts');
+  ok(await ev(() => window.__paw.wn.canJump() && window.__paw.wn.free()), 'wnCanJump() and wnSnowdogFree() are true');
+  await SH('01_yard_drifts');
+
+  sec('a dive: happy +6, the act, the scatter (12 snow puffs), the cold tip once');
+  await idle(); await t.patch({ stats: { happy: 50 } }); let s0 = await S();
+  await p().click('#wnDriftG [data-drift="0"] > rect.fs-hit', { force: true });
+  ok(await t.until(() => window.__paw.wn.scattered.includes(0), null, 3000), 'the drift scatters');
+  ok(await t.until(() => document.querySelectorAll('#fx .wn-puff').length === 12, null, 2000), '12 snow puffs in #fx');
+  ok(await t.until(() => { const g = document.querySelector('#wnDriftG [data-drift="0"]'); return g && g.dataset.state === 'scattered' && !!g.querySelector('svg[data-state="scattered"]'); }, null, 2000), 'drift 0 draws its scattered state');
+  ok(await t.until(() => window.__paw.S.missions.list.find((x) => x.id === 'snowdrift').done, null, 4000), 'act:snowdrift fires (the "Dive into a snowdrift" mission is done)');
+  s = await S(); ok(s.stats.happy >= s0.stats.happy + 5.5 && s.stats.happy <= s0.stats.happy + 6.01, `happy +6 (${s0.stats.happy} -> ${s.stats.happy})`);
+  ok(s.bond.pts > s0.bond.pts, 'bond went up');
+  ok(typeof s.wn.drifts[0] === 'number' && s.wn.drifts[0] <= s.gameMin, 'S.wn.drifts[0] holds the game minute of the dive');
+  ok(await ev(() => /^(Floof\.|Snow in my ears\. Worth it\.|I am a snow dog now\.)$/.test(document.getElementById('bubble').textContent)), 'a say line');
+  ok(await t.waitToast(/^Short coats feel the cold fast\. A sweater or a snood makes snow play cosy\.$/, 4000), 'the cold tip (no warm wear)');
+  ok((await S()).wn.tips.cold === 2026, 'S.wn.tips.cold = 2026');
+  await idle(); await quiet();
+  await p().click('#wnDriftG [data-drift="0"] > rect.fs-hit', { force: true });
+  ok(await t.waitToast(/^Pip is fluffing that one up again\.$/, 3000), 'a second dive within 20 game minutes: the kind no');
+  ok(!(await ev(() => window.__paw.shop.busy)), 'and the dog stays put');
+  await ev(() => { window.__paw.S.wn.drifts[0] = window.__paw.S.gameMin - 21; });
+  ok(await t.until(() => !window.__paw.wn.scattered.length, null, 5000), 'the drift is fluffed back after 4 s');
+  await quiet(); await p().click('#wnDriftG [data-drift="0"] > rect.fs-hit', { force: true });
+  ok(await t.until(() => window.__paw.wn.scattered.includes(0), null, 3000), '21 game minutes later the drift takes another dive');
+  await idle(); await t.until(() => window.__paw.wn.pending === 0, null, 4000);
+  ok(!(await t.toasts()).some((x) => /^Short coats/.test(x)), 'no second cold tip this winter');
+  ok(await ev(() => { const S = window.__paw.S, b = S.dogs.map((d) => d.born), a = window.__paw.wn.canJump(); S.dogs.forEach((d) => { d.born = new Date().toISOString().slice(0, 10); }); const c = window.__paw.wn.canJump(); S.dogs.forEach((d, i) => { d.born = b[i]; }); return a && !c; }), 'the drift mission needs a dog of 3 months or more');
+
+  sec('the snowdog: three taps, done once, the carrot, a new day starts again');
+  await motion(false); await t.patch({ stats: { happy: 50 } }); s0 = await S();
+  const tapHeap = async (n) => { await idle(); await p().click('#wnDogG > rect.fs-hit', { force: true }); return t.until((n) => window.__paw.S.wn.snowdog.stage === n && document.querySelector('#wnDogG').dataset.stage === String(n), n, 4000); };
+  ok(await tapHeap(1), 'tap 1: one big rolled ball (stage 1)');
+  ok(await t.until(() => document.getElementById('bubble').textContent === 'Roll, roll, roll.', null, 2000), 'say "Roll, roll, roll."');
+  ok(await tapHeap(2), 'tap 2: body and head (stage 2)');
+  ok(await t.until(() => document.getElementById('bubble').textContent === 'Head on.', null, 2000), 'say "Head on."');
+  ok(!(await msDone('snowdog')), 'the snowdog mission waits for the finished snowdog');
+  ok(await tapHeap(3), 'tap 3: the finished snowdog (stage 3)');
+  ok(await t.waitToast(new RegExp(`^Done\\. It looks just like ${dog}\\. Nobody can tell which is which\\.$`), 3000), 'the gold toast "Done. It looks just like {dog}."');
+  s = await S();
+  ok(s.wn.snowdog.by === s.activeId && s.wn.snowdog.date === '2026-12-10' && s.wn.snowdog.nose === true, 'S.wn.snowdog: by the active dog, today, the carrot nose on');
+  ok(s.stats.happy >= s0.stats.happy + 9.5 && s.stats.happy <= s0.stats.happy + 10.01, `happy +10 at the end (${s0.stats.happy} -> ${s.stats.happy})`);
+  ok(await t.until(() => window.__paw.S.missions.list.find((x) => x.id === 'snowdog').done, null, 3000), 'act:snowdog with done: true (the "Build a snowdog" mission is done)');
+  const sdo = await ev(() => window.__paw.wn.acts.filter((x) => x.kind === 'snowdog').map((x) => x.stage + ':' + x.done));
+  ok(sdo.join() === '1:false,2:false,3:true', 'three snowdog acts, done once: ' + sdo.join());
+  ok(await ev(() => { const s = document.querySelector('#wnDogG svg'); return !!s && s.getAttribute('data-stage') === '3'; }), 'the finished snowdog prop (stage 3)');
+  ok(!(await ev(() => window.__paw.wn.free())), 'wnSnowdogFree() is false once it is finished today');
+  await idle(); await p().click('#wnDogG > rect.fs-hit', { force: true }); await t.sleep(300);
+  ok((await ev(() => window.__paw.wn.acts.filter((x) => x.kind === 'snowdog').length)) === 3 && (await S()).wn.snowdog.stage === 3, 'a fourth tap adds nothing');
+  const cd = await ev(() => { let n = 0; for (let i = 1; i <= 300; i++) if (window.__paw.wn.carrotDay('d' + i)) n++; return [n, window.__paw.wn.carrotDay('2026-12-10') === window.__paw.wn.carrotDay('2026-12-10')]; });
+  ok(cd[0] > 70 && cd[0] < 130 && cd[1], `the carrot is eaten on about 1 day in 3, seeded by the date (${cd[0]} of 300)`);
+  await quiet();
+  ok(await ev(() => window.__paw.wn.carrot(true)) && await t.waitToast(new RegExp(`^${dog} ate the carrot nose\\. Carrots are good for dogs, so fine\\.$`), 3000), 'the carrot toast');
+  ok((await S()).wn.snowdog.nose === false, 'nose: false');
+  ok(!(await ev(() => window.__paw.wn.carrot(true))), 'the carrot goes only once');
+  await SH('02_yard_snowdog');
+  await ev(() => { window.__paw.S.wn.snowdog.date = '2026-12-09'; }); await quiet();
+  await t.home('house'); await t.home('yard');
+  ok(await t.waitToast(/^Fresh snow from Pip\. Yesterday's snowdog went up to the hills to see the others\.$/, 5000), 'a patched next day: the "hills" toast');
+  s = await S(); ok(s.wn.snowdog.stage === 0 && s.wn.snowdog.date === '2026-12-10' && s.wn.snowdog.nose === true && s.wn.snowdog.by === null, 'and the heap is back at stage 0');
+  ok(await ev(() => document.querySelector('#wnDogG').dataset.stage === '0' && window.__paw.wn.free()), 'the heap draws stage 0 and the snowdog mission is open again');
+  await quiet(); await t.home('house'); await t.home('yard'); await t.until(() => window.__paw.wn.pending === 0, null, 5000);
+  ok(!(await t.toasts()).some((x) => /^Fresh snow from Pip/.test(x)), 'the "hills" toast once');
+  await ev(() => { Object.assign(window.__paw.S.wn.snowdog, { date: '2026-12-07', stage: 3 }); }); await quiet(); // finished three days ago, not yesterday
+  await t.home('house'); await t.home('yard'); await t.until(() => window.__paw.wn.pending === 0, null, 5000); await t.sleep(300);
+  s = await S(); ok(!(await t.toasts()).some((x) => /^Fresh snow from Pip/.test(x)) && s.wn.snowdog.stage === 0 && s.wn.snowdog.date === '2026-12-10', 'a snowdog from days ago: a fresh heap, no "hills" toast');
+
+  sec('the Winter Stall in the Square');
+  await t.home('square'); await motion(false);
+  const sq = await ev(() => { const k = (id) => [...document.querySelector('#view svg.world').querySelectorAll('*')].indexOf(document.getElementById(id)); return { kind: document.querySelector('#fsStallG') && document.querySelector('#fsStallG').dataset.kind, art: !!document.querySelector('#fsStallG svg[data-kind="winter"]'), banner: !!document.querySelector('#wnBannerG svg'), parade: !!document.querySelector('#fsBannerG'), order: [k('fsStallG'), k('wnBannerG'), k('bowlG'), k('pack')], btns: [...document.querySelectorAll('#placeBtns .btn')].map((b) => b.textContent), spot: window.__paw.fest.packSpot(), keep: window.__paw.wn.keepOut('square'), aria: document.querySelector('#fsStallG').getAttribute('aria-label') }; });
+  ok(sq.kind === 'winter' && sq.art, 'the stall prop, kind winter');
+  ok(sq.aria === "Baker Bea's Winter Stall", 'its label: ' + sq.aria);
+  ok(sq.banner && !sq.parade, 'the Ugly Sweater Contest banner (no parade banner)');
+  ok(sq.order.every((v, i) => v > 0 && (i === 0 || v > sq.order[i - 1])), 'draw order: #fsStallG, the banner, #bowlG, #pack ' + sq.order.join());
+  ok(sq.btns.join('|') === 'Town notice|Family Portrait|Winter Stall|Sweater Contest|Go home', 'place buttons: ' + sq.btns.join(', '));
+  ok(sq.spot && sq.spot[0] === 905 && sq.spot[1] === 470, 'Square pack spot 3 moves to 905,470 while the stall is up');
+  ok(JSON.stringify(sq.keep) === JSON.stringify([[858, 384, 136, 126], [560, 150, 400, 90]]), 'fsKeepOut(square): the stall and the banner ' + JSON.stringify(sq.keep));
+  await SH('03_square_winter');
+  await p().click('[data-fs=stall]');
+  ok(await t.until(() => !!document.querySelector('#modal .panel.fs-stall.wn-stall .shopgrid'), null, 4000), 'the place button opens the Winter Stall');
+  const st = await ev(() => ({ title: document.querySelector('#modal .panel h2').textContent, bea: document.querySelector('.fs-bea').textContent, secs: [...document.querySelectorAll('.wn-sec h3')].map((h) => h.textContent), names: [...document.querySelectorAll('.wn-sec')].map((x) => [x.dataset.sec, [...x.querySelectorAll('.sitem > b')].map((b) => b.textContent)]), tips: document.querySelectorAll('.wn-stall .sitem[data-cat=food] .sh-tip').length }));
+  ok(st.title === 'Winter Stall' && /Everything here is dog-safe and warm\. Ask me anything, I will say carob\./.test(st.bea), "the title and Baker Bea's winter line");
+  ok(st.secs.join('|') === 'Treats|Clothes|Decorations', 'three sections: ' + st.secs.join(', '));
+  const by = Object.fromEntries(st.names);
+  ok(by.food.join() === 'Warm Carob Cup,Snowflake Oat Cookies,Snow Day Stew', '3 foods: ' + by.food.join(', '));
+  ok(by.clothes.join() === 'Very Ugly Sweater,Reindeer Antlers,Snowflake Snood', '3 clothes: ' + by.clothes.join(', '));
+  ok(by.decor.join() === 'Paper Snowflake Garland,Felt Holly Wreath,Red Wooden Sled', '3 decorations: ' + by.decor.join(', '));
+  ok(!st.names.some(([, n]) => n.some((x) => ['Pup Kinton', 'Kadomatsu Pair', 'Ugly Sweater Rosette', 'Year of the Sheep Hood'].includes(x))), 'no Pup Kinton, Kadomatsu Pair, Rosette or Hood');
+  ok(st.tips === 3, 'every treat shows its safety tip');
+  await SH('04_stall_sheet');
+  s0 = await S();
+  await p().click('[data-fsbuy="Warm Carob Cup"]'); await t.win(2);
+  ok(await t.until(() => (window.__paw.S.inv.food['Warm Carob Cup'] || 0) === 5, null, 4000), 'bought 2 Warm Carob Cups (3 from the parcel)');
+  s = await S(); const wpaid = await msDone('wstall');
+  ok(wpaid, 'buy shop:"stall" fires the "Buy a warm treat from Baker Bea" mission');
+  ok(s.coins === s0.coins - 16 + (wpaid ? 15 : 0), `16 coins (${s0.coins} -> ${s.coins}, mission +15)`);
+  await p().waitForSelector('[data-fsbuy="Very Ugly Sweater"]'); await p().click('[data-fsbuy="Very Ugly Sweater"]'); await t.win();
+  ok(await t.until(() => window.__paw.S.inv.clothes.includes('Very Ugly Sweater'), null, 4000), 'bought the Very Ugly Sweater');
+  ok(await t.until(() => !!document.querySelector('#modal .confirm .yes'), null, 4000) && /Wear it/.test(await ev(() => document.querySelector('#modal .confirm .yes').textContent)), 'the "Wear it / Later" prompt');
+  await p().click('#modal .confirm .yes');
+  ok(await t.until(() => window.__paw.S.dog.outfit.body === 'Very Ugly Sweater', null, 3000), 'Wear it: the Very Ugly Sweater is on');
+  await p().waitForSelector('[data-fsbuy="Red Wooden Sled"]'); s0 = await S();
+  await p().click('[data-fsbuy="Red Wooden Sled"]'); await t.win();
+  ok(await t.until(() => !!(window.__paw.S.decor && window.__paw.S.decor['Red Wooden Sled']), null, 4000), 'bought the Red Wooden Sled');
+  s = await S(); ok(s.decor['Red Wooden Sled'].got === '2026-12-10' && s.decor['Red Wooden Sled'].out === false && s.coins === s0.coins - 110, 'S.decor["Red Wooden Sled"] = { got, out: false }, 110 coins');
+  ok(await ev(() => window.__paw.wn.acts.some((a) => a.kind === 'buy' && a.shop === 'stall' && a.cat === 'decor' && a.name === 'Red Wooden Sled')), 'act buy { shop: stall, cat: decor }');
+  ok(await t.until(() => { const c = document.querySelector('#modal .confirm'); return !!c && /Put the Red Wooden Sled in the yard now\?/.test(c.textContent) && /Place it/.test(c.querySelector('.yes').textContent) && /Later/.test(c.querySelector('.no').textContent); }, null, 4000), '"Put the Red Wooden Sled in the yard now?" Place it / Later');
+  ok(await ev(() => /Owned/.test([...document.querySelectorAll('.wn-stall .sitem')].find((x) => x.querySelector('b').textContent === 'Red Wooden Sled').textContent)), 'the sled card now says Owned');
+  await p().click('#modal .confirm .yes');
+  ok(await t.until(() => window.__paw.S.place === 'yard' && !!window.__paw.ho.placing && window.__paw.ho.placing.sel === 'Red Wooden Sled', null, 15000), 'Place it: home to the yard, placement mode with the sled selected');
+  const keepY = await ev(() => window.__paw.wn.keepOut('yard')), sled = await ev(() => window.__paw.ho.box('Red Wooden Sled'));
+  ok(sled && keepY.length === 3 && keepY.every((b) => !ov(sled, b)), `the sled lands clear of fsKeepOut('yard') ${JSON.stringify(sled)}`);
+  const fs2 = await ev(() => { const D = window.__paw.ho.specs['Red Wooden Sled'], at = D.at; D.at = [318, 520, 130, 78]; const r = window.__paw.ho.freeSpot('Red Wooden Sled'); D.at = at; return r; });
+  ok(fs2 && keepY.every((b) => !ov([fs2[0], fs2[1], 130, 78], b)), `started on drift 0, the free-spot scan moves it clear of the drifts and the heap (${fs2})`);
+  await ev(() => window.__paw.ho.done()); await t.until(() => !window.__paw.ho.placing, null, 4000);
+  ok(await ev(() => !!document.querySelector('#decorG [data-decor="Red Wooden Sled"]')), 'the sled stands in the yard');
+
+  sec('the Warm Carob Cup warms like the Warm Bone Broth');
+  await t.home('yard'); await idle(); await quiet();
+  await t.retryUntil(async () => { await ev(() => { window.__paw.S.stats.hunger = 30; window.__paw.S.warmUntil = 0; window.__paw.feed('Warm Carob Cup'); }); }, () => (window.__paw.S.inv.food['Warm Carob Cup'] || 0) < 5, null, { tries: 4, each: 4000 });
+  await idle(); s = await S();
+  ok(s.warmUntil >= s.gameMin + 55 && s.warmUntil <= s.gameMin + 61, `S.warmUntil = gameMin + 60 (${s.warmUntil} vs ${s.gameMin})`);
+  ok(await ev(() => window.__paw.fest.warm()), 'isWarm() is true');
+  await ev(() => { window.__paw.S.warmUntil = 0; });
+
+  sec('the Ugly Sweater Contest: 10 raw coins once a day, the rosette once, fsActive during the walk');
+  await ev(() => window.__paw.ms.force(['sweater', 'bath', 'nap']));
+  await t.home('square'); await motion(true); await idle(); await t.lu();
+  await p().click('[data-fs=contest]');
+  ok(await t.until(() => document.querySelectorAll('#modal .wn-contest .wn-npc').length === 5, null, 4000), 'the contest sheet: five contestants');
+  const cs = await ev(() => ({ names: [...document.querySelectorAll('.wn-npc b')].map((b) => b.textContent), outs: [...document.querySelectorAll('.wn-npc .small:not(.wn-cat)')].map((b) => b.textContent), cats: [...document.querySelectorAll('.wn-npc .wn-cat')].map((b) => b.textContent), judge: document.querySelector('.wn-judge').textContent, duck: !!document.querySelector('.wn-duck svg'), banner: !!document.querySelector('.wn-cbanner svg'), you: document.querySelector('.wn-you').textContent, enter: document.getElementById('wnEnter').textContent }));
+  ok(new Set(cs.names).size === 5, 'five different dogs: ' + cs.names.join(', '));
+  ok(cs.outs.every((c) => ['Very Ugly Sweater', 'Knit Winter Sweater', 'Reindeer Antlers', 'Pom-pom Beanie', 'Cozy Hoodie', 'Snowflake Snood'].includes(c)), 'outfits from the list: ' + cs.outs.join(', '));
+  ok(cs.cats.every((c, i) => c === (cs.outs[i] === 'Very Ugly Sweater' ? 'Ugliest Sweater in Town' : cs.outs[i] === 'Reindeer Antlers' ? 'Loudest Bell' : 'Cosiest Contestant')), 'each card shows its category: ' + cs.cats.join(', '));
+  ok(/I am the judge\. I am a duck, so I am very fair\./.test(cs.judge) && cs.duck && cs.banner, "Gerald's card (the duck drawing) and the banner");
+  ok(/Very Ugly Sweater/.test(cs.you) && /Ugliest Sweater in Town/.test(cs.you) && cs.enter === 'Enter the contest', 'your dog, its category and "Enter the contest"');
+  const ld = await ev(() => ['2026-12-10', '2026-12-10', '2026-12-11'].map((d) => window.__paw.wn.dogs(d).map((x) => x.name + '/' + x.sweater).join()));
+  ok(ld[0] === ld[1] && ld[0] !== ld[2], 'the line-up is seeded by the date');
+  const cats = await ev(() => [{ body: 'Very Ugly Sweater', head: 'Reindeer Antlers' }, { head: 'Reindeer Antlers', neck: 'Snowflake Snood' }, { neck: 'Knit Scarf' }, { eyes: 'Explorer Goggles' }, {}].map((o) => window.__paw.wn.category(o)));
+  ok(cats.join() === '0,1,2,3,4', 'categories, the first that fits: Very Ugly Sweater, Antlers, other warm wear, something else, nothing');
+  await SH('05_contest_sheet');
+  await t.patch({ stats: { happy: 50 } }); s0 = await S(); await quiet();
+  await p().click('#wnEnter');
+  ok(await t.until(() => window.__paw.wn.walking && !!document.querySelector('#wnWalkG .fs-line'), null, 3000), 'the contest walk starts');
+  ok(await ev(() => document.querySelectorAll('#wnWalkG .fs-pd').length === 6 && document.querySelectorAll('#wnWalkG .wn-flake').length === 12 && getComputedStyle(document.getElementById('dogPos')).visibility === 'hidden' && getComputedStyle(document.getElementById('pack')).visibility === 'hidden'), 'six dogs walk under paper snowflakes, the yard dog and the pack are hidden');
+  ok(await ev(() => !document.querySelector('#fsStallG') && !document.querySelector('#wnBannerG')), 'the stall and the banner step aside during the walk');
+  await SH('06_contest_walk');
+  await ev(() => window.__paw.ms.act('bath', {}));
+  ok(await ev(() => window.__paw.ms.queue > 0 && !window.__toasts.some((x) => /^Mission done/.test(x))), 'a mission done during the walk waits (fsActive() is true)');
+  ok(await t.until(() => !window.__paw.wn.walking, null, 9000), 'the walk ends');
+  ok(await t.waitToast(new RegExp(`^${dog} wins Ugliest Sweater in Town\\. Gerald had to sit down\\. \\+10 coins\\.$`), 3000), 'toast "{dog} wins Ugliest Sweater in Town. Gerald had to sit down. +10 coins."');
+  ok(await t.waitToast(/^Mission done: Bath time\./, 4000), 'after the walk the held mission toast shows');
+  ok(await t.until(() => !!document.querySelector('#modal .wn-rosette'), null, 6000), 'the first contest of the winter: the Ugly Sweater Rosette popup');
+  s = await S();
+  ok(s.inv.clothes.includes('Ugly Sweater Rosette') && s.wn.contest.year === 2026 && s.wn.contest.date === '2026-12-10', 'the Rosette is owned, S.wn.contest holds the date and the winter year');
+  const sPaid = s.missions.list.find((x) => x.id === 'sweater').done, bPaid = s.missions.list.find((x) => x.id === 'bath').done;
+  ok(sPaid, 'act:sweater fires (the contest mission is done)');
+  ok(s.coins === s0.coins + 10 + (sPaid ? 15 : 0) + (bPaid ? 15 : 0), `10 raw coins (${s0.coins} -> ${s.coins}, missions +15 each)`);
+  ok(s.stats.happy >= s0.stats.happy + 9 && s.stats.happy <= s0.stats.happy + 10.01, `happy +10 (${s0.stats.happy} -> ${s.stats.happy})`);
+  await SH('07_rosette');
+  await p().click('#wnWear');
+  ok(await t.until(() => window.__paw.S.dog.outfit.neck === 'Ugly Sweater Rosette', null, 3000), 'Wear it: the rosette is on');
+  ok(await t.until(() => { const b = document.querySelector('[data-fs=contest]'); return b && b.textContent === 'Judged today' && b.getAttribute('aria-disabled') === 'true'; }, null, 3000), 'the button reads "Judged today" (aria-disabled)');
+  await motion(false); s0 = await S();
+  await ev(() => window.__paw.wn.contestOpen()); await t.until(() => !!document.getElementById('wnEnter'), null, 3000);
+  ok(await ev(() => document.getElementById('wnEnter').getAttribute('aria-disabled') === 'true' && document.getElementById('wnEnter').textContent === 'Judged today'), 'the sheet: Judged today');
+  await ev(() => document.getElementById('wnEnter').click()); ok(await t.waitToast(/^Gerald judges once a day\./, 3000), 'a kind no'); await t.closeX();
+  ok((await S()).coins === s0.coins, 'a second contest the same day pays nothing');
+  await ev(() => { const S = window.__paw.S; S.wn.contest.date = '2000-01-01'; S.dog.outfit.body = null; window.__toasts.splice(0); }); await t.home('square');
+  await p().click('[data-fs=contest]'); await t.until(() => !!document.getElementById('wnEnter'), null, 3000); s0 = await S();
+  await p().click('#wnEnter');
+  ok(await t.waitToast(new RegExp(`^${dog} wins Most Confident Walk\\. Gerald took notes\\. \\+10 coins\\.$`), 3000), 'the next day (motion off, the rosette only): the result at once, "Most Confident Walk"');
+  ok(await t.until((c) => window.__paw.S.coins === c + 10, s0.coins, 3000), 'the next day pays 10 again');
+  await t.sleep(600); ok(!(await ev(() => !!document.querySelector('#modal .wn-rosette'))), 'no second rosette popup this winter');
+  const catT = await ev(() => window.__paw.wn.cats);
+  ok(catT.join('|') === "Ugliest Sweater in Town. Gerald had to sit down.|Loudest Bell. Gerald's ears are still ringing.|Cosiest Contestant. Gerald asked where to get one.|Most Confident Walk. Gerald took notes.|Best Natural Look. No sweater, all dog. Bold.", 'the five category lines');
+
+  sec('the Journal line and the How to play card');
+  const jl = await ev(() => window.__paw.wn.journal());
+  ok(/Winter Stall in the Square until 28 February\./.test(jl) && /Ugly Sweater Contest in the Square until 25 December\./.test(jl), 'fsJournalLine: the stall until 28 February and the contest until 25 December');
+  await p().click('[data-act=journal]'); await t.until(() => !!document.querySelector('#modal .tabs'), null, 4000);
+  await ev(() => { const b = [...document.querySelectorAll('#modal .tabs button')].find((x) => x.textContent.trim() === 'Food'); if (b) b.click(); });
+  ok(await t.until(() => document.querySelectorAll('#modal .wn-jline').length === 2, null, 3000), 'the Food tab shows both lines');
+  await ev(() => { const b = [...document.querySelectorAll('#modal .tabs button')].find((x) => /How to play/.test(x.textContent)); if (b) b.click(); });
+  ok(await t.until(() => { const l = document.querySelector('#modal [data-lesson="winter"]'); return !!l && /Pip's snowdrifts by the fence are for diving in\. Short coats like a sweater in the snow\. Wipe paws after a winter walk\./.test(l.textContent) && /Winter/.test(l.querySelector('b').textContent); }, null, 3000), 'How to play: the Winter card');
+  await t.closeX();
+
+  sec('the salt tip after the first winter walk, once');
+  await t.home('yard'); await idle(); await quiet();
+  ok(await t.startWalk(true), 'a walk starts'); ok(await t.quitWalk(true), 'and ends');
+  ok(await t.waitToast(/^Wipe paws after a winter walk\. Road salt stings, and nobody wants to lick it\.$/, 5000), 'the salt tip when the results sheet closes');
+  ok((await S()).wn.tips.salt === 2026, 'S.wn.tips.salt = 2026');
+  await quiet(); await t.startWalk(true); await t.quitWalk(true); await t.until(() => window.__paw.wn.pending === 0, null, 5000); await t.sleep(400);
+  ok(!(await t.toasts()).some((x) => /^Wipe paws/.test(x)), 'not after the second walk');
+
+  sec('the four WINTER missions gate');
+  let el = await eligible(['snowdrift', 'snowdog', 'wstall', 'sweater', 'stall', 'parade', 'fortune', 'yearclean']);
+  ok(el.slice(0, 4).every(Boolean), 'on 2026-12-10 snowdrift, snowdog, wstall and sweater can be picked ' + el.join());
+  ok(!el.slice(4).some(Boolean), 'the leaf stall, the parade, the fortune and the year-end clean cannot ' + el.join());
+  await ev(() => { const s = window.__paw.S.wn.snowdog; Object.assign(s, { date: '2026-12-10', stage: 3 }); });
+  ok(!(await eligible(['snowdog']))[0], 'a finished snowdog today: the snowdog mission is not offered');
+  ok(await ev(() => { const m = window.__paw.S.missions; window.__paw.ms.force(['wstall']); window.__paw.ms.act('buy', { name: 'Very Ugly Sweater', cat: 'clothes', qty: 1, shop: 'stall' }); const a = m.list[0].done; window.__paw.ms.act('buy', { name: 'Snow Day Stew', cat: 'food', qty: 1, shop: 'market' }); const b = m.list[0].done; window.__paw.ms.act('buy', { name: 'Snow Day Stew', cat: 'food', qty: 1, shop: 'stall' }); return !a && !b && !!m.list[0].done; }), 'wstall matches a stall food buy only');
+  const savedDec = await ev(() => { window.__paw.saveNow(); return JSON.stringify(window.__paw.S); });
+
+  sec('no winter item in Kibble Corner, the Boutique or Barkitecture');
+  await t.home('market');
+  const names = () => ev(() => [...document.querySelectorAll('#modal .sitem > b')].map((b) => b.firstChild.textContent));
+  const seen = [];
+  for (const tab of ['food', 'toys']) { await ev(() => window.__paw.shop.shop('kibble')); await p().click(`#modal [data-tab=${tab}]`); await t.until((tb) => document.querySelector(`#modal [data-tab=${tb}][aria-selected=true]`), tab, 3000); seen.push(...await names()); }
+  await t.closeX(); await ev(() => window.__paw.shop.shop('boutique')); seen.push(...await names()); await t.closeX();
+  await ev(() => window.__paw.shop.shop('builder'));
+  for (const tab of ['decor', 'furniture']) { if (await p().locator(`[data-btab=${tab}]`).count()) { await p().click(`[data-btab=${tab}]`); await t.until((tb) => document.querySelector(`[data-btab=${tb}]`).getAttribute('aria-selected') === 'true', tab, 3000); seen.push(...await names()); } }
+  await t.closeX();
+  ok(seen.length > 30 && !seen.some((n) => WN_ITEMS.includes(n)), `Kibble Corner, the Boutique and Barkitecture list none of the 13 winter things (${seen.length} cards)`);
+  ok(errs().length === 0, 'no console errors so far ' + errs().slice(0, 3).join(' | '));
+
+  sec('2026-12-27: no contest, the New Year stall with Pup Kinton and the Kadomatsu Pair');
+  await t.ctx.close(); setDate('2026-12-27');
+  await t.newGame({ sex: 'boy' }, { bond: { level: 6, pts: 700 }, coins: 2000 }); await t.home('square'); await motion(false);
+  let g = await ev(() => ({ kind: document.querySelector('#fsStallG') && document.querySelector('#fsStallG').dataset.kind, art: !!document.querySelector('#fsStallG svg[data-kind="newyear"]'), banner: !!document.querySelector('#wnBannerG'), btns: [...document.querySelectorAll('#placeBtns .btn')].map((b) => b.textContent), items: window.__paw.wn.stallItems(), keep: window.__paw.wn.keepOut('square') }));
+  ok(g.kind === 'newyear' && g.art && !g.banner, 'the stall in its New Year kind, no contest banner');
+  ok(!g.btns.includes('Sweater Contest') && g.btns.includes('Winter Stall'), 'no contest button: ' + g.btns.join(', '));
+  ok(g.items.includes('Pup Kinton') && g.items.includes('Kadomatsu Pair') && g.items.length === 11 && !g.items.includes('Ugly Sweater Rosette') && !g.items.includes('Year of the Sheep Hood'), 'Pup Kinton and the Kadomatsu Pair join the stall (' + g.items.length + ')');
+  ok(JSON.stringify(g.keep) === JSON.stringify([[858, 384, 136, 126]]), 'fsKeepOut(square): the stall only');
+  await SH('08_square_newyear');
+  await p().click('[data-fs=stall]'); await t.until(() => !!document.querySelector('#modal .wn-stall'), null, 4000);
+  ok(/Happy New Year\. Pup Kinton is in, and no mochi, I promise\./.test(await ev(() => document.querySelector('.fs-bea').textContent)), "Baker Bea's New Year line");
+  await t.closeX();
+  ok(await ev(() => { window.__paw.wn.contestOpen(); return document.getElementById('modal').hidden; }) && await t.waitToast(/^The Ugly Sweater Contest is over for this winter\./, 3000), 'the contest sheet does not open, a kind line');
+  await t.home('yard'); await t.until(() => (window.__paw.S.mail || []).some((m) => m.id === 'wn_snow_2026'), null, 6000); await t.until(() => window.__paw.wn.pending === 0, null, 5000);
+  ok((await S()).mail.filter((m) => /^wn_/.test(m.id)).map((m) => m.id).join() === 'wn_snow_2026', "only Pip's letter after the Lights");
+  el = await eligible(['snowdrift', 'wstall', 'sweater', 'yearclean']);
+  ok(el[0] && el[1] && !el[2] && el[3], 'missions: snowdrift and wstall yes, sweater no, the year-end clean yes ' + el.join());
+  ok(!/Ugly Sweater Contest/.test(await ev(() => window.__paw.wn.journal())), 'no contest line in the Journal');
+
+  sec('2027-03-01: nothing up, owned things still work');
+  await t.ctx.close(); setDate('2027-03-01');
+  let pg = await t.mk({ storage: { pawhaven_proto_v1: savedDec } }); await pg.goto(URL); await pg.waitForSelector('#tContinue'); await pg.click('#tContinue'); await t.untilMode('yard'); await t.home('yard');
+  g = await ev(() => ({ drifts: !!document.querySelector('#wnDriftG'), heap: !!document.querySelector('#wnDogG'), sled: !!document.querySelector('#decorG [data-decor="Red Wooden Sled"]'), keep: window.__paw.wn.keepOut('yard'), lesson: window.__paw.wn.lesson(), j: window.__paw.wn.journal() }));
+  ok(!g.drifts && !g.heap && !g.keep.length, 'no drifts, no snow heap, fsKeepOut(yard) is empty');
+  ok(g.sled && g.lesson === '' && g.j === '', 'the sled stays in the yard; no winter card, no Journal line');
+  await t.home('square');
+  g = await ev(() => ({ stall: !!document.querySelector('#fsStallG'), banner: !!document.querySelector('#wnBannerG'), fs: document.querySelectorAll('[data-fs]').length, keep: window.__paw.wn.keepOut('square'), spot: window.__paw.fest.packSpot() }));
+  ok(!g.stall && !g.banner && !g.fs && !g.keep.length && g.spot[0] === 910 && g.spot[1] === 414, 'Square: no stall, no banner, no festival buttons, the pack spot is back');
+  ok(await ev(() => { window.__paw.fest.stallOpen(); return document.getElementById('modal').hidden; }), 'the stall does not open');
+  await ev(() => { window.__paw.S.dog.outfit.body = null; window.__paw.S.warmUntil = 0; window.__paw.shop.equip('Very Ugly Sweater'); });
+  ok(await ev(() => window.__paw.S.dog.outfit.body === 'Very Ugly Sweater' && window.__paw.fest.warm()), 'the Very Ugly Sweater still goes on, and it is warm');
+  await t.home('yard'); const cups = await ev(() => window.__paw.S.inv.food['Warm Carob Cup'] || 0);
+  await t.retryUntil(async () => { await ev(() => { window.__paw.S.stats.hunger = 30; window.__paw.feed('Warm Carob Cup'); }); }, (n) => (window.__paw.S.inv.food['Warm Carob Cup'] || 0) < n, cups, { tries: 4, each: 4000 });
+  ok((await ev(() => window.__paw.S.inv.food['Warm Carob Cup'] || 0)) === cups - 1, 'a Warm Carob Cup from the winter still feeds');
+  ok(!(await eligible(['snowdrift', 'snowdog', 'wstall', 'sweater'])).some(Boolean), 'none of the four WINTER missions');
+  ok(errs().length === 0, 'no console errors ' + errs().slice(0, 3).join(' | '));
+
+  sec('a December date without wnTest: exactly v2.7');
+  await t.ctx.close(); setDate('2026-12-10');
+  await t.newGame({ prefs: { msTest: true } }); await t.home('yard'); await t.until(() => window.__paw.wn.pending === 0, null, 6000);
+  g = await ev(() => ({ f: window.__paw.wn.auto('2026-12-10'), drifts: !!document.querySelector('#wnDriftG, #wnDogG'), mail: window.__paw.S.mail.filter((m) => /^wn_/.test(m.id)).length, lesson: window.__paw.wn.lesson() }));
+  ok(!g.f.snow && !g.f.lights && !g.f.newyear && !g.drifts && !g.mail && g.lesson === '', 'no winter flags, drifts, letters or lesson');
+  await t.home('square');
+  g = await ev(() => ({ stall: !!document.querySelector('#fsStallG'), btns: [...document.querySelectorAll('#placeBtns .btn')].map((b) => b.textContent) }));
+  ok(!g.stall && g.btns.join('|') === 'Town notice|Family Portrait|Go home', 'the Square as in v2.7: ' + g.btns.join(', '));
+
+  sec('old saves load clean (v2.5 and v2.7 shapes, no S.wn)');
+  for (const [lbl, strip] of [['v2.7', (o) => { delete o.wn; delete o.ny; delete o.jp; }], ['v2.5', (o) => { delete o.wn; delete o.ny; delete o.jp; delete o.decor; delete o.hw; delete o.bedAt; delete o.bedOf; delete o.careOff; delete o.shelter; }]]) {
+    const old = JSON.parse(savedDec); strip(old); old.place = 'yard';
+    await t.ctx.close(); setDate('2026-12-12');
+    pg = await t.mk({ prefs: { wnTest: true, msTest: true }, storage: { pawhaven_proto_v1: JSON.stringify(old) } }); await pg.goto(URL); await pg.waitForSelector('#tContinue'); await pg.click('#tContinue'); await t.untilMode('yard');
+    await t.until(() => !!document.querySelector('#wnDriftG'), null, 6000);
+    ok(await ev(() => { const w = window.__paw.S.wn; return !!w && ['letters', 'drifts', 'contest', 'tips'].every((k) => w[k] && typeof w[k] === 'object') && w.snowdog.stage === 0 && w.snowdog.date === '2026-12-12' && !!window.__paw.S.ny && !!window.__paw.S.jp; }), `${lbl} save: S.wn, S.ny and S.jp get their defaults`);
+    ok(await ev(() => document.querySelectorAll('#wnDriftG [data-drift]').length === 2 && !!document.querySelector('#wnDogG')), `${lbl} save: the drifts and the heap draw`);
+  }
+  ok(errs().length === 0, 'no console errors ' + errs().slice(0, 3).join(' | '));
+}, { fest: 'auto', season: 'winter', prefs: { wnTest: true, msTest: true, jpTest: true } });

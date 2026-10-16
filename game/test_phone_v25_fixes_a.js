@@ -1,4 +1,4 @@
-// v2.5 FIXES A on phones (iPhone 13 390x844, Pixel 7 412x915): the owner's v2.4 feedback items 1, 3, 5 and 8, measured on the real page.
+// v2.5 FIXES A on phones (iPhone 15 390x844, Pixel 7 412x915): the owner's v2.4 feedback items 1, 3, 5 and 8, measured on the real page.
 //   1 map: the map draws the full width (no gutter), the controls float over it with 44 px taps, and every place label can be dragged clear of them;
 //   3 trays: every owned food (all 20, the festival foods too) and every Play / Care / snacks card is reachable, 44 px, with a visible "more" cue;
 //   5 close X: the recipe book, the kitchen, the seed pouch, the training panel and the bottom sheets keep a 44 px X in the top-right corner while they scroll;
@@ -48,7 +48,13 @@ async function swipe(t, sel, dx) { // a real touch drag (CDP), not a scrollLeft 
   const y = b.y + b.height / 2; let x = dx < 0 ? b.x + b.width - 40 : b.x + 40;
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
   for (let i = 0; i < 12; i++) { x += dx / 12; await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y }] }); await t.sleep(16); }
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await t.sleep(400); await cdp.detach();
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await cdp.detach();
+  await settle(t, sel);
+}
+// waits until the row stops moving: the fling and the scroll-snap animation after a touch drag run on for a while (v2.8's longer feed row: 700 ms on Pixel 7),
+// and while they run they win over a scrollIntoView, so a tap would land on whatever card the snap brings back under the finger
+async function settle(t, sel) {
+  return t.ev(async (sel) => { const r = document.querySelector(sel); let last = NaN, same = 0; for (let i = 0; i < 120 && same < 10; i++) { await new Promise((q) => requestAnimationFrame(q)); const x = r.scrollLeft; same = x === last ? same + 1 : 0; last = x; } return same >= 10; }, sel);
 }
 async function fillCheck(t, label, sel) { await fillAudit(t, sel || FILL, label, { skip: '#toasts, #bubble' }); }
 
@@ -113,6 +119,7 @@ async function suite(t, dev) {
   await t.SH('3_feed_swiped_' + tag);
   const fed0 = await ev(() => window.__paw.S.inv.food['Frozen Pupsicle']);
   await ev(() => { const c = document.querySelector('#dock [data-food="Frozen Pupsicle"]'); c.scrollIntoView({ inline: 'nearest' }); });
+  await settle(t, '#dock > .tray .row');
   await p.locator('#dock [data-food="Frozen Pupsicle"]').tap();
   ok(await t.until((n) => window.__paw.S.inv.food['Frozen Pupsicle'] === n - 1, fed0, 5000), 'a tap on the last food (after scrolling to it) feeds it');
   await t.home();
@@ -184,7 +191,7 @@ async function night(t, dev) { // the owner's case: a round ">" on a dark night 
 }
 
 (async () => {
-  for (const dev of ['iPhone 13', 'Pixel 7']) {
+  for (const dev of ['iPhone 15', 'Pixel 7']) {
     const tag = dev.replace(/\s+/g, '').toLowerCase();
     await run('phone_v25_fixes_a_' + tag, (t) => suite(t, dev), { device: dev, timeout: 360000 });
     await run('phone_v25_fixes_a_night_' + tag, (t) => night(t, dev), { device: dev, time: 'night' });

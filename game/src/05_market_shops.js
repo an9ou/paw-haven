@@ -8,7 +8,13 @@ function hotify(svg, sel, attr, onPick, label) {
     g.addEventListener('click', () => onPick(k)); g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPick(k); } });
   });
 }
-function enterMarketPlace() { S.place = 'market'; enterYard(); }
+// v2.8 review 3: with the Japan scenery the desktop street sits 30 units higher (the crop used to start at the roof cornices), so a strip of sky
+// over the Boutique shows Mt. Fuji's cap. The "Market Street" sign (y 530-570) and the shops stay whole; phones frame the street in camApply.
+const MK_DESK_LIFT = 30;
+function enterMarketPlace() {
+  S.place = 'market'; enterYard();
+  const svg = !isPhone() && jpOn() && $('#view > svg.world'); if (svg) svg.setAttribute('viewBox', `0 ${-MK_DESK_LIFT} 1000 600`);
+}
 function enterMarketOld() {
   setChrome(true, true);
   view.innerHTML = `<svg class="world" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" style="background:#FFFBF3">${sceneG('market')}</svg><div id="status"></div><button id="devBtn">dev</button>`;

@@ -3,8 +3,8 @@
 // The fake Supabase and the supabase-js lookalike are the same as test_cloud.js (copied: that file runs its suite when required).
 const { run, URL } = require('./test_lib');
 const { devices } = require('playwright');
-// the two phone sizes from the brief (touch, phone UA). The Playwright iPhone 13 profile is 390x664, so add 390x844 and 360x740.
-devices['Phone 390x844'] = Object.assign({}, devices['iPhone 13'], { viewport: { width: 390, height: 844 }, screen: { width: 390, height: 844 } });
+// the two phone sizes from the brief (touch, phone UA). The Playwright iPhone 15 profile is 390x664, so add 390x844 and 360x740.
+devices['Phone 390x844'] = Object.assign({}, devices['iPhone 15'], { viewport: { width: 393, height: 852 }, screen: { width: 393, height: 852 } });
 devices['Phone 360x740'] = Object.assign({}, devices['Pixel 7'], { viewport: { width: 360, height: 740 }, screen: { width: 360, height: 740 } });
 /* ---------------- fake Supabase (Node side) ---------------- */
 function makeServer() {
@@ -438,11 +438,15 @@ run('account', async (t) => {
   ok(!srv.saves[aO] && !srv.backups.some((b) => b.user_id === aO), 'and never go into the new account');
   await t.closeX();
   // ---- end offline log out ----
+  // v2.8: every page this suite opened stayed open (about 30 live games by the end), so the later parts crawled and a button wiggle never settled: from here
+  // on each part closes the earlier pages first (the cloud parts above are done with them)
+  const closeAll = async () => { for (const c of t.b.contexts()) await c.close().catch(() => {}); srv.pages.clear(); };
   // ---- kitchen (v2.3 occlusion) ----
   // the food-safety lesson, the header hint, the dog's bubble and the kitchen taps on the two phone sizes
   for (const dev of ['Phone 390x844', 'Phone 360x740']) {
     const tag = 'kitchen_' + dev.replace(/\D+/g, '_').replace(/^_|_$/g, '');
     sec(`${dev}: kitchen lesson, header, bubble and taps`);
+    await closeAll();
     await t.newGame({ device: dev }, { inv: { crops: { carrot: [3, 1, 0] }, pantry: { oats: 3, rice: 3, egg: 2, chicken: 2 } } }); touch = true;
     await ev(() => { window.__paw.S.place = 'house'; window.__paw.go('kitchen'); });
     ok(await t.untilMode('kitchen'), 'the kitchen opens'); await t.p.waitForSelector('.pk-portrait [data-ing="carrot"]'); await t.sleep(300);
@@ -471,6 +475,7 @@ run('account', async (t) => {
   // desktop 1280x720: the keys hint and the bath wording are unchanged. PAW_SHOTS=1 writes game/shots_account/small_*.jpg.
   const jpg = async (n) => { if (process.env.PAW_SHOTS) require('fs').mkdirSync(require('path').join(__dirname, 'shots_account'), { recursive: true }); if (process.env.PAW_SHOTS) await t.p.screenshot({ path: require('path').join(__dirname, 'shots_account', 'small_' + n + '.jpg'), type: 'jpeg', quality: 80 }); };
   const occlGame = async (dev) => {
+    await closeAll();
     const p = await device(dev, false); t.p = p; await t.adopt({ sex: 'girl' });
     await t.patch({ bond: { level: 10, pts: 3300 }, coins: 1000, house: 'Royal Castle Kennel', careDays: 60, stats: { hunger: 90, happy: 90, energy: 90, clean: 20 } }); await t.calm(); await t.lu();
     return p;
@@ -554,6 +559,7 @@ run('account', async (t) => {
   for (const dev of ['Phone 360x740', 'Phone 390x844']) {
     const tag = dev.replace(/\D+/g, '_').replace(/^_|_$/g, '');
     sec(`${dev}: the phone HUD is 2 rows (1 dog, then 4 dogs), action-bar labels >= 15 px`);
+    await closeAll();
     const p = await device(dev, false); t.p = p;
     await t.adopt({ sex: 'girl' }); await t.lu();
     ok((await ev(() => document.documentElement.dataset.layout)) === 'phone', `${dev}: phone layout is on`);
@@ -588,4 +594,4 @@ run('account', async (t) => {
   // ---- end hud ----
 
   ok(!dialogs.length, 'no browser dialogs ' + dialogs.join(' | '));
-}, { timeout: 300000 });
+}, { timeout: 480000 }); // v2.8: 230 s alone once the later parts close the earlier pages (closeAll); 480 s leaves room for a loaded run

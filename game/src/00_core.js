@@ -37,6 +37,11 @@ const FOOD = [
   { n: 'Apple Monster Biscuits', fest: 'halloween', ed: 2026, v26: true, price: 8, hunger: 10, happy: 10, bond: 1, snack: true, tip: 'Apple flesh only, the core and pips stay out. Oats and water hold it together, no sugar needed.', note: '+10 Hunger, +10 Happiness, a little Bond. Oat biscuits with googly apple eyes.' },
   { n: 'Sweet Potato Bones', fest: 'halloween', ed: 2026, v26: true, price: 10, hunger: 20, happy: 5, clean: 5, snack: true, tip: 'Baked plain sweet potato, never raw and never buttered. Nutmeg and other baking spices stay in the kitchen, they make dogs ill.', note: '+20 Hunger, +5 Happiness, clean teeth. Baked bone shapes to crunch.' },
   { n: 'Frozen Yoghurt Ghosts', fest: 'halloween', ed: 2026, v26: true, price: 9, hunger: 5, happy: 15, cool: 30, snack: true, tip: 'Plain yoghurt only, no sugar and no sweetener. Xylitol is poison for dogs, so check the pot every time.', note: '+5 Hunger, +15 Happiness, cools the dog. Little frozen ghosts that melt fast.' },
+  // v2.8 Winter & New Year (V28.md section 1): sold only at Baker Bea's Winter Stall while their festival flag is on (fest). warm: the Warm Bone Broth rule (S.warmUntil)
+  { n: 'Warm Carob Cup', fest: 'snow', price: 8, hunger: 5, happy: 15, warm: 60, snack: true, v28: true, tip: 'Carob is safe for dogs and only looks like cocoa. Real cocoa and chocolate are poison to them, so the mugs never get mixed up.', note: '+5 Hunger, +15 Happiness, warm paws for an hour. Looks like cocoa. Is not cocoa.' },
+  { n: 'Snowflake Oat Cookies', fest: 'snow', price: 9, hunger: 10, happy: 10, bond: 1, snack: true, v28: true, tip: 'Rolled oats, egg and pumpkin, baked plain. Festive cookies often hide macadamia nuts, which make dogs wobbly and ill, so these have none.', note: '+10 Hunger, +10 Happiness, a little Bond. Oat cookies cut like snowflakes.' },
+  { n: 'Snow Day Stew', fest: 'snow', price: 14, hunger: 30, happy: 10, v28: true, tip: 'Lean chicken with no skin and no bones. Gravy and fatty leftovers upset a dog\'s tummy, so they stay on the people plates.', note: '+30 Hunger, +10 Happiness. Chicken, carrot and green beans, cooked soft.' },
+  { n: 'Pup Kinton', fest: 'newyear', price: 10, hunger: 15, happy: 15, snack: true, v28: true, tip: 'Plain mashed sweet potato, no sugar and no chestnut syrup. Mochi never goes in a dog\'s bowl, it is far too sticky to swallow safely.', note: '+15 Hunger, +15 Happiness. Golden sweet potato mash, for a lucky year.' },
   { n: 'Frozen Pupsicle', price: 22, hunger: 15, happy: 20, energy: 10, cool: 60, snack: true, v24: true, tip: 'Frozen plain yoghurt and fruit, no xylitol ever. Let it soften a little for small dogs.', note: '+15 Hunger, +20 Happiness, +10 Energy. Cools a hot dog for 1 game hour.' }
 ];
 const TOYS = [
@@ -94,6 +99,12 @@ const CLOTHES = [
   { n: 'Vampire Cape', slot: 'body', fest: 'halloween', ed: 2026, v26: true, price: 75, bond: 1, perk: 'Swish: a high collar and a red lining. Very dramatic, not at all bitey.' },
   { n: 'Candy Corn Bandana', slot: 'neck', fest: 'halloween', ed: 2026, v26: true, price: 50, bond: 1, perk: 'Sweet look: candy-corn stripes and no actual sugar.' },
   { n: 'Bat Wings', slot: 'body', fest: 'halloween', ed: 2026, v26: true, price: 70, bond: 1, perk: 'Flap: felt wings that bounce when the tail wags.' },
+  // v2.8 Winter & New Year (V28.md section 1): the Winter Stall sells the first three (fest), the Rosette is the contest reward, the Hood comes in Gerald's New Year card (ed: 2027, never sold)
+  { n: 'Very Ugly Sweater', slot: 'body', fest: 'snow', price: 65, bond: 1, v28: true, perk: 'Warm: no shivering in the snow. Knitted by someone who has never seen a dog, or a snowflake.' },
+  { n: 'Reindeer Antlers', slot: 'head', fest: 'snow', price: 55, bond: 1, v28: true, perk: 'Jingle: a little bell on each antler. Not warm. Very festive.' },
+  { n: 'Snowflake Snood', slot: 'neck', fest: 'snow', price: 50, bond: 1, v28: true, perk: 'Warm: no shivering in the snow. A knitted tube, so no ends to trip on.' },
+  { n: 'Ugly Sweater Rosette', slot: 'neck', fest: 'lights', price: 0, bond: 1, v28: true, reward: true, perk: 'Pride: won at the Ugly Sweater Contest. It is uglier than the sweater.' },
+  { n: 'Year of the Sheep Hood', slot: 'head', fest: 'newyear', ed: 2027, price: 0, bond: 1, v28: true, reward: true, perk: 'Warm: no shivering in the snow. Woolly sheep ears for the Year of the Sheep. The Border Collie has been told.' },
   { n: 'Astronaut Helmet', slot: 'head', price: 0, bond: 1, v24: true, reward: true, perk: 'Space-proof: no soggy shake after rain, no shivering in the snow.' }
 ];
 const HOUSES = [
@@ -395,7 +406,7 @@ function updateWxOverlay() {
 }
 let envKey = '';
 function checkEnv(force) {
-  const e = envNow(), fe = festNow(), k = e.time + '|' + e.weather + '|' + e.season + '|' + (fe.leaf ? 'L' : '') + (fe.halloween ? 'H' : '');
+  const e = envNow(), fe = festNow(), k = e.time + '|' + e.weather + '|' + e.season + '|' + (fe.leaf ? 'L' : '') + (fe.halloween ? 'H' : '') + (fe.snow ? 'S' : '') + (fe.lights ? 'T' : '') + (fe.newyear ? 'N' : '') + '|' + (e.jp ? 'J' : ''); // v2.8: S/T/N, and the jp flag (a suite can flip prefs.jpTest)
   if (k === envKey && !force) return; const first = !envKey; const oldKey = envKey; envKey = k;
   if (!first) { const o = oldKey.split('|'); if (o[2] !== e.season) emit('env:season', { season: e.season }); if (o[3] !== k.split('|')[3]) emit('env:fest', fe); } // v2.5
   const g = $('#sceneG'); if (g && !g.dataset.noenv) { let extra = {}; try { extra = JSON.parse(g.dataset.extra || '{}'); } catch (er) { /* none */ } g.innerHTML = sceneArt(g.dataset.scene, e, extra); }
@@ -542,11 +553,12 @@ function freshState(key, name, sex) {
   st.fest = { letters: {}, parade: {}, piles: {}, stall: {} }; st.seasonSeen = {}; st.breedTips = {}; // v2.5
   Object.assign(st.dog, newDogFields(key, sex || 'male', bornDaysAgo(10))); st.kennel = [];
   st.garden = gardenNew(); gkFields(st, false); v131Fields(st);
-  if (key === 'mutt') { st.dog.favFood = [PICK(FOOD.slice(1).filter((f) => !f.ed)).n]; st.dog.favToy = PICK(TOYS.filter(t => !t.ed)).n; }
+  if (key === 'mutt') { st.dog.favFood = [PICK(FOOD.slice(1).filter((f) => !f.ed && !f.fest)).n]; st.dog.favToy = PICK(TOYS.filter(t => !t.ed && !t.fest)).n; } // v2.8: festival and edition things are never a favourite
   st.dog.adoptedAt = localISO();
   st.hw = { letter: null, seen: null }; // v2.6 Halloween 2026 pop-up (27_halloween.js)
   st.guide = { step: 0 }; // v2.4: a new save meets Gerald (25_guide.js)
   v27Fields(st); // v2.7 Home & Pack: beds in the house, who naps where, pack care ticks, the shelter playroom (V27.md section 1)
+  v28Fields(st); // v2.8 Winter & New Year and Fuji View Hill (V28.md sections 1 and 12.4)
   return linkDogs(st);
 }
 let S = null;
@@ -577,6 +589,7 @@ function migrate(s) {
   if (!s.hw || typeof s.hw !== 'object') s.hw = { letter: null, seen: null }; // v2.6: the Halloween 2026 pop-up letter and first visit
   if (!s.guide || typeof s.guide !== 'object') { s.guide = { step: -1, done: localISO() }; s.guideSeen = true; } // v2.4: saves from before the guide never see the walkthrough, they get a letter
   v27Fields(s); // v2.7 Home & Pack (V27.md section 1): additive, an old save keeps its one bed where it always stood
+  v28Fields(s); // v2.8 Winter & New Year, Fuji View Hill (V28.md section 1): additive
   return s;
 }
 /* v2.7 Home & Pack save fields (V27.md section 1). Additive only: S.v stays 1, nothing is dropped.
@@ -592,6 +605,24 @@ function v27Fields(s) {
   if (!s.careOff || typeof s.careOff !== 'object' || Array.isArray(s.careOff)) s.careOff = {};
   if (!s.shelter || typeof s.shelter !== 'object') s.shelter = { adopted: [], seen: null };
   if (!Array.isArray(s.shelter.adopted)) s.shelter.adopted = []; if (s.shelter.seen === undefined) s.shelter.seen = null;
+  return s;
+}
+/* v2.8 Winter & New Year save fields (V28.md sections 1 and 12.4). Additive only: S.v stays 1, nothing is dropped. Readers default too.
+   S.wn  (WINTER)    { letters: { snow?, gift?, contest?: winterYear }, drifts: { [i]: gameMin of the last dive },
+                       snowdog: { date: localISO of its snow | null, stage: 0-3, by: dog id | null, nose: bool }, contest: { date?, year? }, tips: { salt?, cold?: winterYear } }
+   S.ny  (NEW YEAR)  { cards: nyYear the cards were sent | null, fortune: { date: localISO | null, year: nyYear | null, knots: 0-12 } }
+   S.jp  (FUJI HILL) { letter, gazed, first, mochi } (null until set: the letter's date, the last look's localISO, the nyYear of the first Fuji, the nyYear of the mochi tip) */
+const v28Obj = (o) => !!o && typeof o === 'object' && !Array.isArray(o);
+function v28Fields(s) {
+  if (!s) return s;
+  if (!v28Obj(s.wn)) s.wn = {};
+  ['letters', 'drifts', 'contest', 'tips'].forEach((k) => { if (!v28Obj(s.wn[k])) s.wn[k] = {}; });
+  if (!v28Obj(s.wn.snowdog)) s.wn.snowdog = {};
+  const sd = s.wn.snowdog; if (sd.date === undefined) sd.date = null; if (typeof sd.stage !== 'number') sd.stage = 0; if (sd.by === undefined) sd.by = null; if (typeof sd.nose !== 'boolean') sd.nose = true;
+  if (!v28Obj(s.ny)) s.ny = {}; if (s.ny.cards === undefined) s.ny.cards = null;
+  if (!v28Obj(s.ny.fortune)) s.ny.fortune = {};
+  const fo = s.ny.fortune; if (fo.date === undefined) fo.date = null; if (fo.year === undefined) fo.year = null; if (typeof fo.knots !== 'number') fo.knots = 0;
+  if (!v28Obj(s.jp)) s.jp = {}; ['letter', 'gazed', 'first', 'mochi'].forEach((k) => { if (s.jp[k] === undefined) s.jp[k] = null; });
   return s;
 }
 function migNote() { if (S && S.gkNote) { delete S.gkNote; markDirty(); setTimeout(() => toast('Pip left a packet of seeds on your doorstep. The veggie patch is yours now!', 'gold'), 2200); }
@@ -622,11 +653,31 @@ function hwAuto() {
   if (w) return j >= w[0] && j <= w[1];
   return +j.slice(5, 7) === 10 && +j.slice(8, 10) >= 24;
 }
+/* v2.8 Winter & New Year by the JST date (V28.md section 1). Under the test harness (navigator.webdriver) the winter flags never turn on
+   by date unless the suite sets prefs.wnTest (v2.5 suites run fest 'auto' on December dates). A Dev panel override works everywhere. */
+const wnAllowed = () => !navigator.webdriver || !!prefs.wnTest;
+function wnAuto(j = jstISO()) {
+  if (!wnAllowed()) return { snow: false, lights: false, newyear: false };
+  const md = String(j).slice(5, 10);
+  return { snow: md >= '12-01' || md <= '02-29', lights: md >= '12-01' && md <= '12-25', newyear: md >= '12-26' || md <= '01-07' };
+}
+// the winter year: the JST year, minus 1 in January and February (letters, the rosette, the tips)
+function wnYear(j = jstISO()) { const y = +String(j).slice(0, 4), m = +String(j).slice(5, 7); return m <= 2 ? y - 1 : y; }
+// the New Year: the JST year in January, the year + 1 in December (cards, knots); the JST year otherwise
+function nyYear(j = jstISO()) { const y = +String(j).slice(0, 4), m = +String(j).slice(5, 7); return m === 12 ? y + 1 : y; }
+// override values: off, leaf, halloween, both (the v2.5 ones, winter flags off), snow (snow only), winter (snow + lights), newyear (snow + newyear)
+const FEST_OVR = { off: [0, 0, 0, 0, 0], leaf: [1, 0, 0, 0, 0], halloween: [0, 1, 0, 0, 0], both: [1, 1, 0, 0, 0], snow: [0, 0, 1, 0, 0], winter: [0, 0, 1, 1, 0], newyear: [0, 0, 1, 0, 1] };
 function festNow() {
-  const f = ENV.fest; if (f === 'off') return { leaf: false, halloween: false }; if (f === 'leaf' || f === 'halloween' || f === 'both') return { leaf: f !== 'halloween', halloween: f !== 'leaf' };
-  const m = new Date().getMonth() + 1; return { leaf: m === 10 || m === 11, halloween: hwAuto() };
+  const o = Object.prototype.hasOwnProperty.call(FEST_OVR, ENV.fest) && FEST_OVR[ENV.fest]; if (o) return { leaf: !!o[0], halloween: !!o[1], snow: !!o[2], lights: !!o[3], newyear: !!o[4] };
+  const j = jstISO(), m = +j.slice(5, 7); return Object.assign({ leaf: m === 10 || m === 11, halloween: hwAuto() }, wnAuto(j)); // leaf by the JST month too, so it never overlaps the snow
 }
 const festOn = (n) => !!festNow()[n];
+// New Year cards and the Fortune box: 1 to 7 January (JST), or any day with the Dev panel's newyear override
+function nyDays() { const md = jstISO().slice(5); return festOn('newyear') && (ENV.fest === 'newyear' || (md >= '01-01' && md <= '01-07')); }
+// the year-end clean mission: 26 to 31 December (JST)
+function nyEve() { const md = jstISO().slice(5); return festOn('newyear') && md >= '12-26' && md <= '12-31'; }
+/* v2.8 Japan scenery (V28.md section 12.1): env.jp is on in the game, off under the test harness unless the suite sets prefs.jpTest */
+function jpOn() { return !navigator.webdriver || !!prefs.jpTest; }
 function hwShopOpen() { const j = jstISO(), w = HW_WIN[HW_ED]; return festOn('halloween') && j >= w[0] && j <= w[1]; } // a Dev panel override outside the dates never reopens the pop-up
 function timePhase() { if (ENV.time !== 'auto') return ENV.time; const h = new Date().getHours(); return h >= 5 && h < 7 ? 'dawn' : h >= 7 && h < 17 ? 'day' : h >= 17 && h < 19 ? 'dusk' : 'night'; }
 function weatherPeriodKey() { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}-${Math.floor(d.getHours() / 8)}`; }
@@ -638,7 +689,7 @@ function weatherNow() {
   return r < 0.45 ? 'sunny' : r < 0.70 ? 'cloudy' : r < 0.95 ? 'rain' : winter ? 'snow' : 'rain';
 }
 const weather = weatherNow;
-const envNow = () => ({ time: timePhase(), weather: weatherNow(), season: seasonNow(), halloween: festOn('halloween') });
+const envNow = () => { const f = festNow(); return { time: timePhase(), weather: weatherNow(), season: seasonNow(), halloween: f.halloween, lights: f.lights, newyear: f.newyear, jp: jpOn() }; }; // v2.8: lights, newyear, jp
 const isNight = () => timePhase() === 'night';
 function isHot() { if (S && S.buff && typeof buffOn === 'function' && buffOn('cool')) return false; if (S && (S.outfit.head === 'Sun Hat' || (S.coolUntil || -1) > S.gameMin)) return false; if (weatherNow() !== 'sunny' || timePhase() !== 'day') return false; if (ENV.time !== 'auto') return true; const h = new Date().getHours(); return h >= 11 && h < 15; }
 function clockText() { if (ENV.time !== 'auto') return { dawn: '06:00', day: '13:00', dusk: '18:00', night: '23:00' }[ENV.time] + '*'; const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
@@ -648,7 +699,7 @@ function wxIconName() { const w = weatherNow(), t = timePhase(); if (w === 'rain
 const RAINCOATS = ['Yellow Raincoat', 'Polka-dot Raincoat', 'Frog Raincoat', 'Bubble Raincoat'];
 const hasRaincoat = () => RAINCOATS.includes(S.outfit.body);
 const hasRainHat = () => S.outfit.head === 'Rain Hat' || S.outfit.head === 'Astronaut Helmet';
-const WARM_WEAR = ['Pom-pom Beanie', 'Knit Winter Sweater', 'Cozy Hoodie', 'Knit Scarf', 'Astronaut Helmet', 'Leaf Beret', 'Autumn Scarf']; // v2.4: three new warm things; v2.5: the leaf festival pair
+const WARM_WEAR = ['Pom-pom Beanie', 'Knit Winter Sweater', 'Cozy Hoodie', 'Knit Scarf', 'Astronaut Helmet', 'Leaf Beret', 'Autumn Scarf', 'Very Ugly Sweater', 'Snowflake Snood', 'Year of the Sheep Hood']; // v2.4: three new warm things; v2.5: the leaf festival pair; v2.8: the winter three
 const isWarm = () => SLOTS.some((k) => WARM_WEAR.includes(S.outfit[k])) || (typeof buffOn === 'function' && buffOn('warm')) || (S.warmUntil || -1) > S.gameMin; // v2.5: Warm Bone Broth
 const houseInfo = (n) => HOUSES.find((h) => h.n === (n || S.house)) || HOUSES[0];
 const owns = (cat, n) => S.inv[cat].includes(n);
@@ -718,12 +769,13 @@ function toWorld(svg, cx, cy) { const pt = svg.createSVGPoint(); pt.x = cx; pt.y
 function say(text, wx, wy, ms = 3600) {
   const svg = $('svg.world', view); if (!svg) return;
   if (isPhone() && typeof phPeekOn !== 'undefined' && phPeekOn) return; // v2.3: the dog is off-screen while the player looks right, so its bubble would point at nothing
-  bubble.classList.remove('below'); clearTimeout(bubbleBelowT); // a new line starts from the normal tail (the pier flips it, 03_yard.js)
+  bubble.classList.remove('below'); clearTimeout(bubbleBelowT); bubble.style.maxWidth = ''; // (03_yard.js may narrow it beside the place buttons) // a new line starts from the normal tail (the pier flips it, 03_yard.js)
   bubble.textContent = text; bubble.hidden = false; bubble.classList.remove('pop'); void bubble.offsetWidth; bubble.classList.add('pop');
   const p = worldToStage(svg, wx, wy); const sw = stage.clientWidth, bw = bubble.offsetWidth, bh = bubble.offsetHeight;
   const vtop = view.offsetTop;
   bubble.style.left = clamp(p.x - 40, 6, sw - bw - 6) + 'px';
-  bubble.style.top = Math.max(vtop + 4, p.y - bh - 16) + 'px';
+  { const w2 = bubble.offsetWidth; if (parseFloat(bubble.style.left) + w2 > sw - 6) bubble.style.left = Math.max(6, sw - 6 - w2) + 'px'; } // v2.8: it re-wraps narrower when it moves right, so it is measured again and kept on screen
+  bubble.style.top = Math.max(vtop + 4, p.y - bubble.offsetHeight - 16) + 'px';
   if (isPhone()) { // v2.3: a bubble never sits on the location chip (top-left of the scene)
     const st = $('#status'), sr = st && !st.hidden ? st.getBoundingClientRect() : null, sg = stage.getBoundingClientRect();
     if (sr) { const bt = parseFloat(bubble.style.top), bl = parseFloat(bubble.style.left), cb = sr.bottom - sg.top + 6;
@@ -731,8 +783,8 @@ function say(text, wx, wy, ms = 3600) {
     const pk = $('#phPeek'), pq = pk && !pk.hidden && pk.offsetParent ? pk.getBoundingClientRect() : null; // UI/UX H9: nor under the look-right button
     if (pq) { const bt = parseFloat(bubble.style.top), bl = parseFloat(bubble.style.left), bh = bubble.offsetHeight;
       if (bt < pq.bottom - sg.top + 4 && bt + bh > pq.top - sg.top - 4 && bl + bw > pq.left - sg.left - 8) bubble.style.left = Math.max(6, pq.left - sg.left - bw - 8) + 'px'; }
-    // UI/UX T5: in town places the dog's own lines go under the dog, so they never cover the shop signs above its head (townBubbleBelowDog, 03_yard.js)
-    if (['yard', 'market'].includes(cur.mode) && S && !['yard', 'house'].includes(S.place) && typeof dogHeadWorld === 'function') { const h = dogHeadWorld(); if (Math.abs(h.x - wx) < 40 && Math.abs(h.y - wy) < 40) townBubbleBelowDog(); }
+    // UI/UX T5: in town places the dog's own lines go under the dog, so they never cover the shop signs above its head (townBubbleBelowDog, 03_yard.js); Fuji View Hill has no signs, its line stays over the head
+    if (['yard', 'market'].includes(cur.mode) && S && !['yard', 'house', 'fujihill'].includes(S.place) && typeof dogHeadWorld === 'function') { const h = dogHeadWorld(); if (Math.abs(h.x - wx) < 40 && Math.abs(h.y - wy) < 40) townBubbleBelowDog(); }
   }
   clearTimeout(bubbleTimer); bubbleTimer = setTimeout(() => { bubble.hidden = true; }, ms);
 }

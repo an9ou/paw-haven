@@ -138,3 +138,11 @@ You manage Paw Haven for the owner. You don't build. Start a fresh Coordinator s
 - Final `all` + `phone --jobs 2`: 66 suites, 64 passed, 2 flaky (the `v27_shelter` flake was fixed afterwards). New suites: `v27_art`, `v27_scenes`, `v27_home`, `v27_pack`, `v27_shelter`, `v27_mailbox`, `v27_review` and their phone twins.
 - `node dogs/check_identical.js` against `v27-base` shows only the intended Rainbow Collar star (3302 renders). Make `v28-base` from v2.7 `main` before the next release.
 - Open items are in `TODO.md` "Home & Pack (v2.7)".
+
+**State after v2.8 (16 Oct 2026):**
+- v2.8 "Winter & New Year" (with the Japan scenery) is on `integration/v2.8`. Spec and as-built notes: `V28.md` (section 14).
+- Built by an Opus coordinator with 7 lanes as its own subagents, one at a time: WINTER ART, SCENE ART, JAPAN SCENE ART and DOG ART on `paw-artist`, WINTER and FUJI HILL on Opus, NEW YEAR on Sonnet. Then three `paw-reviewer` reviews, each followed by its own fix batch. Lane branches are `lane/v28-*`. The owner's branch `claude/webgame-cloudflare-updates-1jo46d` was merged twice.
+- The usage limit stopped work about six times; the coordinator resumed after each reset.
+- Final `all` + `phone --jobs 2`: 74 suites, 71 passed, 3 flaky (`v27_home`, `v171_garden`, `v21_home`, all clean alone; see `TODO.md`), 0 failed. New suites: `v28_art`, `v28_dates`, `v28_scenes`, `v28_japan`, `v28_jp`, `v28_winter`, `v28_newyear`, `phone_v28_winter`.
+- Make `v29-base` from v2.8 `main` before the next release.
+- Open items are in `TODO.md` "Winter & New Year (v2.8)".

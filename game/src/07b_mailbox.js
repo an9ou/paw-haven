@@ -73,7 +73,7 @@ function mailPush(msg) {
   S.mail.unshift(m);
   if (S.mail.length > MAIL_MAX) { // drop the oldest read letters first
     for (let i = S.mail.length - 1; i >= 0 && S.mail.length > MAIL_MAX; i--) if (S.mail[i].read && !mbOwed(S.mail[i])) S.mail.splice(i, 1); // v2.7: a gift still waiting for Collect is kept
-    for (let i = S.mail.length - 1; i >= 0 && S.mail.length > MAIL_MAX; i--) if (S.mail[i].kind !== 'litter') S.mail.splice(i, 1); // unread litter letters are kept
+    for (let i = S.mail.length - 1; i >= 0 && S.mail.length > MAIL_MAX; i--) if (S.mail[i].kind !== 'litter' && !mbOwed(S.mail[i])) S.mail.splice(i, 1); // unread litter letters are kept (v2.8: and every gift still waiting for Collect, e.g. a New Year card)
   }
   markDirty(); mailSfx();
   const tl = toast(`New mail: ${m.title}`, 'gold', { group: 'mail', many: (n) => `${n} new letters in your mailbox.` }); // phones: letters that arrive together make one note
@@ -266,7 +266,7 @@ function letterBody(m) {
     act = taken ? '<p class="mb-gift got">You picked a puppy from this litter.</p>' : `<div class="mb-acts"><button class="btn yes" data-adoptpick="${esc(m.id)}">Adopt this pup</button><span class="small">${typeof slotsFree === 'function' ? `Free dog spots: ${slotsFree()}` : ''}</span></div>`;
   }
   const pups = Array.isArray(m.pups) && m.pups.length ? `<div class="mb-pups">${m.pups.slice(0, 8).map((p) => `<span class="mb-pup" title="${esc(p.name || '')}">${(() => { try { return headSVG(p); } catch (e) { return ''; } })()}</span>`).join('')}</div>` : '';
-  const card = m.kind === 'postcard' || (m.dog && m.kind !== 'gift') ? postcardHTML(m) : '';
+  const card = (m.card === 'nengajo' && typeof nyCardHTML === 'function' && nyCardHTML(m)) || (m.kind === 'postcard' || (m.dog && m.kind !== 'gift') ? postcardHTML(m) : ''); // v2.8: a New Year letter is drawn as a nengajo (32_newyear.js)
   return `<article class="letter k-${esc(m.kind)}"><header><b>${esc(m.title)}</b><span class="small">From ${esc(m.from)} · ${esc(date)}</span></header>${card}${pups}<p class="mb-text">${esc(m.text)}</p>${m.ps ? `<p class="small mb-ps">${esc(m.ps)}</p>` : ''}${act}</article>`;
 }
 function openMailbox(selId, tab) {
@@ -296,6 +296,7 @@ function openMailbox(selId, tab) {
       markDirty(); if (!modal.hidden && $('.panel.mailbox', modal)) openMailbox(id);
     };
   });
+  if (isPhone() && selId && !album) setTimeout(() => { const c = $('.mb-read .pc', p) || $('.mb-read', p); if (c && !modal.hidden) try { c.scrollIntoView({ block: 'nearest' }); } catch (e) { /* no scroll */ } }, 40); // v2.8 phones: the opened letter (its card) sits under the list, below the fold
   mailboxRefresh();
 }
 

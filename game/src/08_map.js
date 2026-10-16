@@ -19,3 +19,14 @@ function enterShelter() {
   setTimeout(() => { if (cur.mode === 'shelter' && modal.hidden && SR && SR.dogs.length) { const rd = PICK(SR.dogs); srBark(rd, 'woof'); srLine(rd, ['Hello!', 'A visitor!', 'Did you bring biscuits?'], true); } }, 1200);
   updateHUD(); bindDev();
 }
+
+/* ---- v2.8 Fuji View Hill map pin (V28.md section 12.4) ----
+   Data hook: with the place on (PLACES.fujihill, see jpPlaceSync in 14_town_places.js), mapArt passes { jp: true, fujiPin: JP_MAP_PIN.big } to
+   PawArt.scene('map'). SCENE ART draws the small Fuji landmark top-left (o.jp) and the real pin as <g data-area="fujihill"> centred on o.fujiPin
+   (map units of the 2400 x 1500 town map), and may add { id: 'fujihill', x, y } to PawArt.MAP_AREAS. Until the art draws a data-area="fujihill",
+   the game adds this plain doodle pin there (fb: the same spot on the fallback town map). */
+const JP_MAP_PIN = { big: [380, 330], fb: [520, 150] };
+function jpMapPin(raw, at) {
+  if (!PLACES.fujihill || /data-area="fujihill"/.test(raw || '')) return '';
+  return fbPinSVG('fujihill', at, 'fuji');
+}

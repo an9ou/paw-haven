@@ -1,0 +1,8 @@
+/* v2.8 FUJI HILL lane (tag jp, classes .jp-): Fuji View Hill, the Look at Fuji button, the plain map pin (.jp-pin). V28.md section 12.4. The FUJI HILL lane owns this file. */
+/* Look at Fuji: the scene eases in a little for 6 s toward the bench and the mountain (motion off: the class is never set, and nothing moves) */
+#view > svg.world.jp-ease{transform:scale(1.06);transform-origin:47% 62%;transition:transform 6s cubic-bezier(.33,0,.25,1)}
+html[data-motion="off"] #view > svg.world.jp-ease{transform:none;transition:none}
+/* the button after today's look: quiet, still 44 px */
+#placeBtns .btn.jp-done{opacity:.85}
+/* the place buttons on the hill are 44 px (Look at Fuji and Go home alike, so the row stays even) */
+#placeBtns.jp-row .btn{min-height:44px}

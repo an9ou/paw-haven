@@ -1,7 +1,7 @@
-// v2.2 WALK lane, phone: route carousel, runner (mods/walkrun.js), classic treasure walk, toys, fetch. iPhone 13 (390x844) + Pixel 7 (412x915).
+// v2.2 WALK lane, phone: route carousel, runner (mods/walkrun.js), classic treasure walk, toys, fetch. iPhone 15 (390x844) + Pixel 7 (412x915).
 // Run: PAW_ARGS=--ignore-certificate-errors NODE_PATH=$(npm root -g) node game/test_phone_walk.js
 const { run, sleep } = require('./test_lib');
-const DEVICES = ['iPhone 13', 'Pixel 7'];
+const DEVICES = ['iPhone 15', 'Pixel 7'];
 
 // ---------- measuring helpers (run in the page) ----------
 // tap targets: every visible interactive element under `root` must be >= 44 px in both directions
@@ -217,4 +217,4 @@ run('phone_walk', async (t) => {
     await noH('fetch results'); await targets('fetch results', '#modal'); await text('fetch results', '#modal');
     await p.locator('#fOk').tap(); await t.untilMode('yard');
   }
-}, { device: 'iPhone 13', timeout: 600000 });
+}, { device: 'iPhone 15', timeout: 600000 });

@@ -30,7 +30,18 @@ const MS_POOL = [
   { id: 'stall', n: 1, t: 'Buy a treat at the Harvest Stall', s: 'Harvest Stall', shop: true, g: () => festOn('leaf'), m: (a) => a.kind === 'buy' && a.shop === 'stall' && a.cat === 'food' },
   { id: 'leafpile', n: 1, t: 'Jump in a leaf pile', s: 'Leaf pile', g: () => (typeof fsCanJump === 'function' ? fsCanJump() : festOn('leaf')), m: (a) => a.kind === 'leafpile' },
   { id: 'parade', n: 1, t: 'Join the costume parade', s: 'Costume parade', g: () => festOn('halloween'), m: (a) => a.kind === 'parade' },
-  { id: 'travel', n: 1, t: 'Visit the Dog Park', s: 'Dog Park visit', g: () => topBond() >= ((PLACES.dogpark && PLACES.dogpark.bond) || 2), m: (a) => a.kind === 'travel' && a.place === 'dogpark' }
+  { id: 'travel', n: 1, t: 'Visit the Dog Park', s: 'Dog Park visit', g: () => topBond() >= ((PLACES.dogpark && PLACES.dogpark.bond) || 2), m: (a) => a.kind === 'travel' && a.place === 'dogpark' },
+  // v2.8 Winter & New Year (V28.md section 1): WINTER fires snowdrift / snowdog / sweater and buy shop:'stall', NEW YEAR fires fortune. Lane gates are guarded
+  { id: 'snowdrift', n: 1, t: 'Dive into a snowdrift', s: 'Snowdrift', g: () => typeof wnCanJump === 'function' && !!wnCanJump(), m: (a) => a.kind === 'snowdrift' },
+  { id: 'snowdog', n: 1, t: 'Build a snowdog', s: 'Snowdog', g: () => typeof wnSnowdogFree === 'function' && !!wnSnowdogFree(), m: (a) => a.kind === 'snowdog' && !!a.done },
+  { id: 'wstall', n: 1, t: 'Buy a warm treat from Baker Bea', s: 'Winter Stall', shop: true, g: () => festOn('snow'), m: (a) => a.kind === 'buy' && a.shop === 'stall' && a.cat === 'food' && ['snow', 'newyear'].includes((FOOD.find((f) => f.n === a.name) || {}).fest) },
+  { id: 'sweater', n: 1, t: 'Enter the Ugly Sweater Contest', s: 'Sweater Contest', g: () => festOn('lights'), m: (a) => a.kind === 'sweater' },
+  { id: 'yearclean', n: 1, t: 'Year-end clean: give {dog} a bath', s: 'Year-end clean', g: () => nyEve(), m: (a) => a.kind === 'bath' },
+  { id: 'fortune', n: 1, t: 'Draw a New Year fortune', s: 'New Year fortune', g: () => nyDays() && !(S.ny && S.ny.fortune && S.ny.fortune.date === localISO()), m: (a) => a.kind === 'fortune' },
+  // v2.8 Fuji View Hill (V28.md section 12.4): FUJI HILL fires gaze { first }; travel is the core act. jpHillOpen(): jpOn(), the scene exists, Bond 2
+  { id: 'gaze', n: 1, t: 'Look at Fuji from Fuji View Hill', s: 'Look at Fuji', g: () => jpHillOpen() && !(S.jp && S.jp.gazed === localISO()), m: (a) => a.kind === 'gaze' },
+  { id: 'hatsufuji', n: 1, t: 'See the first Fuji of the year', s: 'First Fuji', g: () => nyDays() && jpHillOpen() && !(S.jp && S.jp.first === nyYear()), m: (a) => a.kind === 'gaze' && !!a.first },
+  { id: 'travel_fuji', n: 1, t: 'Visit Fuji View Hill', s: 'Fuji View Hill visit', g: () => jpHillOpen(), m: (a) => a.kind === 'travel' && a.place === 'fujihill' }
 ];
 const msDef = (id) => MS_POOL.find((x) => x.id === id);
 function msFields() {

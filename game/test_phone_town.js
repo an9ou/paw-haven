@@ -1,5 +1,5 @@
 // v2.2 phone, TOWN lane: town map, Market + shops, purchase sheet, Wardrobe, town places, Vet, Playdate board, painter, visitors.
-// iPhone 13 (390x844) and Pixel 7 (412x915). Run: PAW_ARGS=--ignore-certificate-errors NODE_PATH=$(npm root -g) node game/test_phone_town.js
+// iPhone 15 (390x844) and Pixel 7 (412x915). Run: PAW_ARGS=--ignore-certificate-errors NODE_PATH=$(npm root -g) node game/test_phone_town.js
 const { run, sleep } = require('./test_lib');
 
 const TAP_SEL = 'button, [role=button], a[href], input:not([type=hidden]), select, .card';
@@ -190,5 +190,5 @@ async function suite(t, dev) {
 }
 
 (async () => {
-  for (const dev of ['iPhone 13', 'Pixel 7']) await run('phone_town_' + dev.replace(/\s+/g, '').toLowerCase(), (t) => suite(t, dev), { device: dev });
+  for (const dev of ['iPhone 15', 'Pixel 7']) await run('phone_town_' + dev.replace(/\s+/g, '').toLowerCase(), (t) => suite(t, dev), { device: dev });
 })();

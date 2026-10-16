@@ -61,7 +61,7 @@ Default parallelism = CPU cores - 1 (at least 1); override with `--jobs N`. **On
 | `NODE_PATH=$(npm root -g) node game/test_all_c.js` | one suite directly (same file the runner starts) | |
 
 - **During work:** build + harness merged (the runner does both), then `smoke`, plus the suite(s) of your lane. **Before reporting:** the suites that touch your lane. **Before publishing (coordinator only):** `all`.
-- Phone suites (v2.2, v2.3): `node game/run_tests.js phone` runs `test_phone.js`, `test_phone_<lane>.js`, `test_cloud.js`, `test_account.js` (the title account choice) and the occlusion suites `test_phone_occl_home.js` and `test_phone_occl_play.js` (with `game/occl_play_*.js` helpers) (iPhone 13 / Pixel 7 profiles via test_lib's `device` option). They are not part of `all`, which stays the desktop regression set. The superseded originals of test_all / v15 / v16 / v16b / v17 are archived in `game/legacy_tests/` (not run).
+- Phone suites (v2.2, v2.3): `node game/run_tests.js phone` runs `test_phone.js`, `test_phone_<lane>.js`, `test_cloud.js`, `test_account.js` (the title account choice) and the occlusion suites `test_phone_occl_home.js` and `test_phone_occl_play.js` (with `game/occl_play_*.js` helpers) (iPhone 15 / Pixel 7 profiles via test_lib's `device` option). They are not part of `all`, which stays the desktop regression set. The superseded originals of test_all / v15 / v16 / v16b / v17 are archived in `game/legacy_tests/` (not run).
 - **Writing or editing a test** (use `game/test_lib.js`, see `game/test_smoke.js` for a small example):
   - `require('./test_lib').run('name', async (t) => { ... })`. The library exits non-zero on a failed `t.ok`, a crash or a console error.
   - **Time and weather are pinned** for every page: dev overrides `ovrTime='day'`, `ovrWeather='cloudy'` (neutral: sunny + day makes the dog "hot", which blocks idle behaviours, rain/snow change poses) and the page clock is frozen to "today 10:00" (it ticks, but the hour/date cannot roll over). A test that is about the clock or weather sets it itself (Dev panel selects) and then goes back to the pin, never to `auto`.
@@ -76,7 +76,7 @@ Default parallelism = CPU cores - 1 (at least 1); override with `--jobs N`. **On
 - **Real art changes what you measure.** A selector like `[data-decor] rect` matches rectangles inside the art once real art is merged. Measure your own hit box (`> rect`) or a `data-*` hook.
 - **Things that load once can change what you patch.** BREED backfills `anc` on load, and the mailbox migrates pen-pal schedules once (`S.penpalV21`). Patch after `newGame`, knowing those defaults already ran.
 - **The certificate flag:** in cloud containers headless Chromium needs `PAW_ARGS=--ignore-certificate-errors`. `tools/session_start.sh` sets it for you.
-- **Phone suites:** use the `device` option of `test_lib.js` (iPhone 13 / Pixel 7 profiles). Run them with `node game/run_tests.js phone`. `all` stays desktop-only.
+- **Phone suites:** use the `device` option of `test_lib.js` (iPhone 15 / Pixel 7 profiles). Run them with `node game/run_tests.js phone`. `all` stays desktop-only.
 - **Copy rules:** `node game/test_copy_node.js` (the `copy` suite, in `all`). A deliberate exception needs `// copy-ok: <reason>` on the line.
 
 ## Speed rules for every agent

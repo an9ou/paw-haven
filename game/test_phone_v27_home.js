@@ -1,4 +1,4 @@
-// v2.7 HOME lane phone test (iPhone 13 and Pixel 7), V27.md section 5: the Decorate sheet and the arrange tray pass the phone minimums,
+// v2.7 HOME lane phone test (iPhone 15 and Pixel 7), V27.md section 5: the Decorate sheet and the arrange tray pass the phone minimums,
 // tap-select and tap-place move an item, item tap rects are 48 px, long-press names, nothing covers #dogHit with every v2.7 item out.
 // node game/run_tests.js phone_v27_home
 require('./test_lib').run('phone_v27_home', async (t) => {
@@ -15,7 +15,7 @@ require('./test_lib').run('phone_v27_home', async (t) => {
   const show = (a) => JSON.stringify({ small: a.small, tiny: (a.tiny || []).slice(0, 4), hs: a.hs });
   const tap = async (sel) => { await t.p.locator(sel).first().tap(); };
 
-  for (const device of ['iPhone 13', 'Pixel 7']) {
+  for (const device of ['iPhone 15', 'Pixel 7']) {
     sec(device + ': the House things sheet and the arrange tray');
     if (t.ctx) await t.ctx.close();
     await t.newGame({ device }, { coins: 5000 });
@@ -74,4 +74,4 @@ require('./test_lib').run('phone_v27_home', async (t) => {
       await t.SH(device.replace(/ /g, '') + '_' + room + '_all');
     }
   }
-}, { device: 'iPhone 13', packCare: true });
+}, { device: 'iPhone 15', packCare: true });

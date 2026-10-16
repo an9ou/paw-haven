@@ -103,3 +103,20 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [ ] `node dogs/check_identical.js` exits 1 against `v27-base`: the 3302 differences are all the intended Rainbow Collar star (art-fixes). Make the next base after v2.7 (`v28-base`) so it is clean again.
 - [ ] Flaky under load, clean alone: `phone_legacy` ("settings: tap targets", `#dogHit` measured mid-move), `phone_occl_home` (dog park board), `phone_v27_shelter`. `v21_home` "Proud Mum lies down" fails about 1 run in 3 alone, on `v27-base` too (idle pose roll).
 - [ ] Stale v2.1 branches `lane/home` and `lane/shelter` are still on GitHub (v2.7 used `lane/v27-*`). Delete them from a machine that can.
+
+## Winter & New Year (v2.8)
+- [ ] 2028 needs a `NY_ZODIAC` entry for the Year of the Monkey and its item (a year without one sends Gerald's card as plain news). `game/src/32_newyear.js`
+- [ ] Market Street shows only a small Fuji cap on desktop (the market camera is lifted 30 units under jp). `game/src/05_market_shops.js`
+- [ ] The runner's far layer has no Fuji (the walk strip carries it, repeating every 1200 units). `mods/walkrun.js`
+- [ ] New Year pup cards don't stamp the postcard album (`nyPup`). `game/src/32_newyear.js`
+- [ ] The New Year Square crowds one spot left of centre. `game/src/32_newyear.js`
+- [ ] The stall's New Year kadomatsu are tiny. `world/pawart_world_b.js`
+- [ ] The Paper Snowflake Garland reads as stars when small. `world/pawart_world_b.js`
+- [ ] The Red Wooden Sled can be placed against the house wall. `game/src/28_home.js`, `HM_DECOR`
+- [ ] The yard's ambient sparkle can land on Fuji. `game/src/03_yard.js`
+- [ ] At 360 px with a visitor, the Fortune box chip overlaps the notice board's bottom notes. `game/src/32_newyear.js`
+- [ ] Under jp, the Market Street dog hit box overlaps the desktop place-button row by about 10 px. `game/src/05_market_shops.js`
+- [ ] Dog outfit nits: the antlers squash in rollover, the greyhound's head is small, the snood covers the chin in sleep, the sheep hood's horns overlap. `dogs/pawart_dogs.js`
+- [ ] The itch.io build waits for the Cloudflare login work (`docs/CLOUDFLARE_LOGIN.md`).
+- [ ] Halloween 2027 still needs new items and an `HW_WIN` entry (see Halloween 2026 above).
+- [ ] Flaky under load in the v2.8 `all --jobs 2` run, clean 3 of 3 alone: `v27_home` (the Dog Play Tower's front layer still showed before a use, likely an idle furniture use starting between free and check), `v171_garden` (the reload's `#tContinue` wait timed out at 20 s), and `v21_home` "proud mum" (the known idle pose roll).

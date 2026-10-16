@@ -185,7 +185,10 @@ on('game:ready', () => { gdFields(); gdLetter(); if (gdLive()) setTimeout(() => 
 /* ---------- the Journal "How to play" page ---------- */
 function gdTabHTML() {
   const ic = (n, act) => `<span class="gd-lic">${n === 'missions' ? iconOr('missions', '<path d="M-9 -12h18v24h-18z" fill="#FFF4DF" stroke="#5B3D32" stroke-width="2"/><path d="M-5 0l4 4l7 -9" fill="none" stroke="#5B3D32" stroke-width="2.4" stroke-linecap="round"/>') : n === 'garden' ? iconOr('garden', doodle('flower', 0, 0, 1)) : n === 'bond' ? iconOr('bond', doodle('heart', 0, 0, 1)) : ICON(n)}<span class="gd-lring">${gdRingSVG(64, 64, 300 + act)}</span></span>`;
-  const cards = GD_LESSONS.map(([k, icon, title, txt], j) => `<li class="gd-lesson" data-lesson="${k}">${ic(icon, j)}<div><b>${esc(title)}</b><p>${esc(txt)}</p></div></li>`).join('');
+  const card = ([k, icon, title, txt], j) => `<li class="gd-lesson" data-lesson="${k}">${ic(icon, j)}<div><b>${esc(title)}</b><p>${esc(txt)}</p></div></li>`;
+  // v2.8: WINTER's seasonal card (V28.md section 7). wnLesson() returns a lesson [key, icon, title, text] like GD_LESSONS, or ready <li> HTML, or '' for none
+  let wl = ''; try { wl = typeof wnLesson === 'function' ? wnLesson() : ''; } catch (e) { wl = ''; }
+  const cards = GD_LESSONS.map(card).join('') + (Array.isArray(wl) && wl.length === 4 ? card(wl, GD_LESSONS.length) : typeof wl === 'string' ? wl : '');
   return `<div class="gd-page"><div class="gd-head"><div class="gd-duck">${gdDuck('sit')}</div><div class="gd-say"><p><b>Gerald's notes.</b> Everything a new dog friend needs, written down by a duck who knows everything. You are welcome.</p></div></div>
     <ol class="gd-lessons">${cards}</ol>
     <p class="gd-replay"><button class="btn yes" id="gdReplay" type="button">Replay the guide</button></p></div>`;

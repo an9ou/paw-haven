@@ -15,7 +15,7 @@
 const fs = require('fs'), path = require('path'), os = require('os'), cp = require('child_process');
 const D = __dirname, LOGS = path.join(D, 'test_logs');
 
-// name -> { file, group, est (seconds, only used for ordering the first time; real timings replace it) }
+// name -> { file, group, est (seconds, only used for ordering the first time; real timings replace it), timeout (optional, seconds: raises --timeout for that suite) }
 const SUITES = {
   smoke: { file: 'test_smoke.js', group: 'smoke', est: 25 },
   all_a: { file: 'test_all_a.js', group: 'all', est: 45 },
@@ -66,6 +66,14 @@ const SUITES = {
   v27_shelter: { file: 'test_v27_shelter.js', group: 'all', est: 45 },
   v27_mailbox: { file: 'test_v27_mailbox.js', group: 'all', est: 40 }, // v2.7 owner addition: Collect in the mailbox
   v27_review: { file: 'test_v27_review.js', group: 'all', est: 40 }, // v2.7 integration review fixes (coordinator)
+  // v2.8 (V28.md): Winter & New Year art and scene dressing, the Japan scenery, core dates, the WINTER, NEW YEAR and FUJI HILL lanes
+  v28_art: { file: 'test_v28_art_node.js', group: 'all', est: 10 },
+  v28_scenes: { file: 'test_v28_scenes_node.js', group: 'all', est: 120 },
+  v28_dates: { file: 'test_v28_dates_node.js', group: 'all', est: 5 }, // coordinator: wnAuto, festNow overrides, the wnTest / jpTest gates, v28Fields, section 1 data
+  v28_japan: { file: 'test_v28_japan_node.js', group: 'all', est: 70 },
+  v28_winter: { file: 'test_v28_winter.js', group: 'all', est: 60 },
+  v28_newyear: { file: 'test_v28_newyear.js', group: 'all', est: 45 },
+  v28_jp: { file: 'test_v28_jp.js', group: 'all', est: 45 },
   // v2.2 phone suites: `node game/run_tests.js phone` (not part of `all`, which stays the desktop regression set)
   phone_legacy: { file: 'test_phone.js', group: 'phone', est: 90 },
   phone_shell: { file: 'test_phone_shell.js', group: 'phone', est: 40 },
@@ -77,7 +85,7 @@ const SUITES = {
   phone_walk: { file: 'test_phone_walk.js', group: 'phone', est: 110 },
   phone_skill: { file: 'test_phone_skill.js', group: 'phone', est: 150 },
   // v2.3 "Cozy Phones"
-  account: { file: 'test_account.js', group: 'phone', est: 60 },
+  account: { file: 'test_account.js', group: 'phone', est: 240, timeout: 500 }, // v2.8: about 230 s alone, more under load (its own watchdog is 480 s)
   phone_occl_home: { file: 'test_phone_occl_home.js', group: 'phone', est: 60 },
   phone_occl_play: { file: 'test_phone_occl_play.js', group: 'phone', est: 60 },
   phone_v24_shop: { file: 'test_phone_v24_shop.js', group: 'phone', est: 40 }, // v2.4
@@ -90,6 +98,7 @@ const SUITES = {
   phone_v27_pack: { file: 'test_phone_v27_pack.js', group: 'phone', est: 45 },
   phone_v27_shelter: { file: 'test_phone_v27_shelter.js', group: 'phone', est: 45 },
   phone_v27_mailbox: { file: 'test_phone_v27_mailbox.js', group: 'phone', est: 40 },
+  phone_v28_winter: { file: 'test_phone_v28_winter.js', group: 'phone', est: 60 }, // v2.8 (V28.md section 9): WINTER, with the NEW YEAR and FUJI HILL phone parts
 };
 // extra aliases: `all_*` is the same as `all`; `test_all` = the four+ shards of the old test_all.js
 const ALIAS = { test_all: ['all_a', 'all_b', 'all_c', 'all_d', 'all_e'], 'test_v15': ['v15'], 'test_v16': ['v16'], 'test_v16b': ['v16b'], 'test_v17': ['v17'], 'test_v171_garden': ['v171_garden'], 'test_v171_tricks': ['v171_tricks'], 'test_v2_slots': ['v2_slots'], 'test_v2_breed': ['v2_breed'], 'test_v2_journal': ['v2_journal'], 'test_v2_town': ['v2_town'], 'test_v2_play': ['v2_play'], 'test_v21_genes_node': ['v21_genes'], 'test_copy_node': ['copy'], 'test_v21_breed': ['v21_breed'], 'test_v21_journal': ['v21_journal'], 'test_v21_town': ['v21_town'], 'test_v21_home': ['v21_home'] };
@@ -145,13 +154,13 @@ function runOne(name, attempt) {
   return new Promise((resolve) => {
     const log = path.join(LOGS, name + (attempt ? `.retry${attempt}` : '') + '.log'); const out = fs.openSync(log, 'w'); const s = Date.now();
     const child = cp.spawn('node', [path.resolve(D, SUITES[name].file)], { cwd: D, env, stdio: ['ignore', out, out], detached: true });
-    let killed = false; const kt = setTimeout(() => { killed = true; try { process.kill(-child.pid, 'SIGKILL'); } catch (e) { /* gone */ } }, opt.timeout * 1000);
+    let killed = false; const kt = setTimeout(() => { killed = true; try { process.kill(-child.pid, 'SIGKILL'); } catch (e) { /* gone */ } }, Math.max(opt.timeout, SUITES[name].timeout || 0) * 1000); // a suite with its own longer watchdog (account) gets the runner's time to match
     child.on('exit', (code) => {
       clearTimeout(kt); try { fs.closeSync(out); } catch (e) { /* closed */ }
       try { process.kill(-child.pid, 'SIGKILL'); } catch (e) { /* no stragglers */ } // chromium leftovers
       const txt = fs.readFileSync(log, 'utf8'); const pass = code === 0 && !killed && /ALL OK/.test(txt);
       const bad = txt.split('\n').filter((l) => /^\s*FAIL |^CRASH|^FAILED|Error:/.test(l)).slice(0, 4).map((l) => l.trim().slice(0, 220));
-      if (killed) bad.unshift(`TIMEOUT after ${opt.timeout}s`);
+      if (killed) bad.unshift(`TIMEOUT after ${Math.max(opt.timeout, SUITES[name].timeout || 0)}s`);
       if (!pass && !bad.length) bad.push(`exit code ${code}, see ${path.relative(process.cwd(), log)}`);
       const checks = (txt.match(/^\s+ok\s/gm) || []).length, nfail = (txt.match(/^\s+FAIL\s/gm) || []).length;
       resolve({ name, attempt, pass, secs: (Date.now() - s) / 1000, bad, log, checks, nfail });
