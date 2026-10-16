@@ -16,6 +16,8 @@ Your save lives in your browser's local storage. On the web version it is also s
 
 - **14 breeds**: shiba, corgi, golden retriever, dachshund, husky, mutt, chihuahua, pug, greyhound, beagle, poodle, border collie, samoyed and french bulldog. Each has its own voice, personality, size and joke.
 - **Seasons and festivals**: the town follows the real calendar (spring, summer, autumn, winter in every scene), with a leaf festival in October and November (leaf piles, a harvest stall) and a Halloween costume parade in late October. For Halloween 2026 (8 Oct to 2 Nov) the town wears pumpkins, paper ghosts and felt bats, and Mrs. Plum's Pumpkin Patch Pop-up in the Square sells 16 things made for 2026 only (decorations, dog-safe treats, toys with yard games, clothes), each with a "2026" tag and yours to keep.
+- **Winter and New Year**: Snow Days from December to February (snowdrifts to dive into, a snowdog, Baker Bea's Winter Stall), Winter Lights and an Ugly Sweater Contest in December, and a Japanese New Year (kadomatsu, kites, New Year cards, a Fortune box with only good fortunes).
+- **Japan scenery**: Mt. Fuji on every outdoor skyline in every season, Japanese details around town, and Fuji View Hill, a new place to look at Fuji.
 - **Home and pack**: decorate the yard and the house (16 decorations and 5 pieces of furniture the dogs climb, nap and play on, all movable by drag or tap), a bed for every dog, and Feed, Pet, Bath and Nap that care for the whole pack at once.
 - **The Shelter Playroom**: a cozy dog-café shelter where dogs looking for a home play, nap and fetch tossed toys. Pet them, read the Adopt me board, meet each dog and adopt for free.
 - **Realistic genetics and breeding**: coats and traits are inherited through real-style gene loci. Dogs have sex, age, seasons and life stages, and breeding follows realistic rules.
@@ -94,6 +96,7 @@ Some folders (`dogs/`, `world/`, `mods/`) also hold earlier art versions and rev
 - **v2.4 "Shop Day"**: 32 new crayon-drawn items (6 houses, 12 outfits, 6 toys with play games, 8 dog-safe foods with safety tips), daily missions with a stamp card, Gerald the duck's how-to-play guide, and the claude.ai artifact published as a multi-file artifact.
 - **v2.6 "Halloween 2026"**: Halloween from 8 Oct to 2 Nov 2026, dressed over autumn in the yard, the Square, Market Street and the walks, and Mrs. Plum's Pumpkin Patch Pop-up with 16 items made for 2026 only (4 decorations, 4 dog-safe treats with lessons, 4 toys with yard games, 4 clothes on every breed), each with a "2026" tag and owned forever.
 - **v2.7 "Home & Pack"**: home decorating with a placement mode, five pieces of furniture the dogs use, a bed for every dog, pack care (feed, pet, bath and nap the whole pack), the Shelter Playroom with an Adopt me board, a Collect button in the mailbox, 20 phone clarity fixes and the Halloween art fixes.
+- **v2.8 "Winter & New Year"**: Snow Days (snowdrifts, a snowdog, the Winter Stall), Winter Lights and the Ugly Sweater Contest, a Japanese New Year (kadomatsu, nengajo cards, otoshidama, a Fortune box), Mt. Fuji and Japanese details in every outdoor scene, the new Fuji View Hill, and 5 outfits, 4 foods, 4 decorations and 9 missions.
 
 Full details: [CHANGELOG.md](CHANGELOG.md). Open issues: [TODO.md](TODO.md).
 
