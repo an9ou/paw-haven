@@ -106,6 +106,13 @@ require('./test_lib').run('v171_garden', async (t) => {
   ok(/Ready in about 2 hours/.test(jt) && /regrows in 2 hours/.test(jt) && !/\d+ days?\b/.test(jt), 'Garden tab: "Ready in about 2 hours", "regrows in 2 hours", no "N days"');
   await t.closeX();
 
+  // Chromium sometimes drops a localStorage write that is still in flight when the page reloads (seen about 1 in 25 under load: the title came back with no Continue button, so the next wait timed out at 20 s).
+  // The save is therefore re-seeded through the harness's own init-script mechanism (the one old-save tests use): if the browser lost it, the reloaded page gets the same JSON back before the game boots; if it kept it, nothing changes.
+  const reloadKeepingSave = async () => {
+    const key = 'pawhaven_proto_v1', json = await t.ev((k) => localStorage.getItem(k), key);
+    await t.ctx.addInitScript(({ k, v }) => { try { if (!sessionStorage.getItem('__reseeded')) { sessionStorage.setItem('__reseeded', '1'); if (localStorage.getItem(k) == null) localStorage.setItem(k, v); } } catch (e) { /* storage blocked */ } }, { k: key, v: json });
+    await t.p.reload();
+  };
   sec('old save with day-based timers converts proportionally');
   const old = await ev(() => {
     const d = new Date(), k = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`, pk = (p) => `${k}-${p}`;
@@ -117,7 +124,7 @@ require('./test_lib').run('v171_garden', async (t) => {
       Object.assign({}, e, { crop: 'pumpkin', g: 0.25, water: 3, planted: pk(0) }), e, e, e] };
     window.__paw.saveNow(); return { day: k };
   });
-  await p.reload(); await p.waitForSelector('#tContinue'); await p.click('#tContinue'); await t.untilMode('yard'); await t.lu(); await t.calm();
+  await reloadKeepingSave(); await p.waitForSelector('#tContinue'); await p.click('#tContinue'); await t.untilMode('yard'); await t.lu(); await t.calm();
   s = await S(); const gd = s.garden;
   ok(gd.v === 2 && gd.last === `${old.day}-h15`, `converted to the hourly clock: v ${gd.v}, last ${gd.last} (end of the old 08-16 period)`);
   ok(gd.plots[0].g === 0.5 && gd.plots[2].g === 0.25 && gd.plots[0].water === 2 && gd.harvests.carrot === 2, 'progress and water kept: carrot g 0.5 -> 1.5 of 3 hours left, pumpkin g 0.25 -> 4.5 of 6 hours left');

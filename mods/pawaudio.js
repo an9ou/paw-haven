@@ -1210,6 +1210,10 @@
   }
   /* ---- v2 puppy voices: voice.age = 'newborn' | 'puppy' (anything else = adult, byte-identical to v1.7) ---- */
   function planDur(S) { var d = 0; S.forEach(function (o) { d = Math.max(d, o.at + o.d); }); return d; }
+  // v2.9: the newborn voices were measured per breed (offline render, loudest 50 ms window): the single squeak ran from -29.6 dB (golden, dachshund, samoyed) to -20 dB (shiba, poodle)
+  // and some mews and whimpers were as quiet. NB_TRIM is the dB each breed needs to bring [squeak, whine mew, whimper] to about -24 dB (the puppy yip is about -23.5, the adult -22.8).
+  var NB_TRIM = { shiba: [-4, 0, 5.5], corgi: [-0.5, -1, 1], golden: [5.5, 3, 0.5], dachshund: [4.5, 1, 0], husky: [3, -0.5, 0], mutt: [2, -1, -0.5], chihuahua: [-2.5, 1.5, 7.5],
+    pug: [0, 4.5, 1], greyhound: [2.5, 4, 1], beagle: [0.5, -1, 0], poodle: [-4, -1, 4], collie: [-1, -1, 1.5], samoyed: [4, 0.5, 0], frenchie: [0, 4.5, 1] };
   // newborn: tiny squeaks and mews. Only whine (mew), whimper and yip (squeak pair) are distinct; every other kind is one squeak.
   function newbornPlan(voice, kind) {
     var B = breedOf(voice), S = [], f1 = 1250 * Math.pow(B.f0 / 300, 0.25);   // a hint of breed: bigger-voiced breeds are a little lower
@@ -1232,7 +1236,8 @@
       k = 'yip';   // anything else: one squeak
       squeak(0, 0.1, 1.1, 0.85);
     }
-    return { B: B, S: S, dur: planDur(S), kind: k, noTrim: true, gk: 0.9, age: 'newborn' };
+    var nb = NB_TRIM[B.key] || NB_TRIM.mutt;
+    return { B: B, S: S, dur: planDur(S), kind: k, noTrim: true, gk: 0.9, age: 'newborn', trim: nb[k === 'whine' ? 1 : k === 'whimper' ? 2 : 0] };
   }
   // puppy: the breed's own plan, lifted +5..7 semitones, shorter and squeakier, plus a clumsy bark-hiccup
   function puppyPlan(voice, kind) {
@@ -1294,7 +1299,7 @@
     var ac = this.ac, E = this, o = opts || {}, dist = clamp(Number(o.distance) || 0, 0, 1);
     var vol = clamp(o.volume == null ? 1 : Number(o.volume) || 0, 0, 1);
     var g = ac.createGain(), lp = this.F('lowpass', 600 + 8400 * Math.pow(1 - dist, 2), 0.6);
-    var tr = plan.noTrim ? 0 : (TRIM[plan.B.key] || TRIM.mutt)[BARK_KINDS.indexOf(plan.kind)] || 0;
+    var tr = plan.trim != null ? plan.trim : plan.noTrim ? 0 : (TRIM[plan.B.key] || TRIM.mutt)[BARK_KINDS.indexOf(plan.kind)] || 0;
     g.gain.value = (plan.gk || 1) * 0.16 * vol * (1 - 0.8 * dist) * (KIND_LVL[plan.kind] || 1) * Math.pow(10, tr / 20);
     g.connect(lp); lp.connect(this.sfx);
     plan.S.forEach(function (s) { E.vsyl(g, t + s.at, plan.B, s); });

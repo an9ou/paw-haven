@@ -26,6 +26,9 @@ html[data-layout="phone"] .pd-scene{height:170px}
 html[data-layout="phone"] .pd-pal{width:140px;height:118px}
 html[data-layout="phone"] .pd-pal.a,html[data-layout="phone"] .ph-rest .pd-pal.a{left:calc(50% - 134px)}
 html[data-layout="phone"] .pd-pal.b,html[data-layout="phone"] .ph-rest .pd-pal.b{left:calc(50% - 6px)}
+/* v2.9: in the bow the pals face each other with their noses about 8 px apart at 390 px; 10 px more on each side gives them room (chase and rest keep the v2.3 spots) */
+html[data-layout="phone"] .ph-bow .pd-pal.a{left:calc(50% - 144px)}
+html[data-layout="phone"] .ph-bow .pd-pal.b{left:calc(50% + 4px)}
 html[data-layout="phone"] .pd-result p{font-size:17px}
 @keyframes ppChaseA{from{left:calc(50% - 162px)}to{left:calc(50% - 106px)}}
 @keyframes ppChaseB{from{left:calc(50% - 34px)}to{left:calc(50% + 22px)}}
