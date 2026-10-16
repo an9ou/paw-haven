@@ -149,6 +149,7 @@ require('./test_lib').run('v27_home', async (t) => {
   await ev(() => window.__paw.ho.done());
   await ev(() => window.__paw.ho.hold(true)); // the pack dogs leave the furniture to us
   { const fw = await ev(() => window.__paw.idle.weights().furn); ok(fw === 2.5 || fw === 3.75, 'with furniture out in the house the idle has a furn weight (2.5, puppies 3.75 with the Ball Pit): ' + fw); }
+  await ev(() => window.__paw.idle.speed(200)); // freeze the idle scheduler for the loop: an idle furniture use (weight 2.5) starting between "free" and "front layer off" made the check flaky
   const actId = (await S()).activeId; const bad = [];
   for (const n of ['Dog Play Tower', 'Tunnel Sofa', 'Ball Pit', 'Sofa Ramp', 'Window Seat']) {
     for (const k of await ev((n) => window.__paw.ho.spots(n), n)) {
@@ -176,7 +177,7 @@ require('./test_lib').run('v27_home', async (t) => {
   ok(pr.dx < 40 && pr.front && pr.pose && pr.pose.name === 'Ball Pit', `the pack dog is drawn in the pit (dx ${Math.round(pr.dx)}), its front rim over it`);
   await ev((id) => window.__paw.ho.free(id), pk.id);
   ok(await t.until((id) => !window.__paw.ho.uses()[id], pk.id), 'hoFree frees the pack dog');
-  await ev(() => window.__paw.ho.hold(false));
+  await ev(() => { window.__paw.ho.hold(false); window.__paw.idle.speed(0.3); });
 
   sec('7. the Knitted Nest in the Beds tab, the Beds sheet');
   await shop('beds');

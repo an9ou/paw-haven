@@ -181,16 +181,39 @@ function msRefresh(stampNew) {
 /* ---- the yard clipboard on the left fence (world box, 1000x600 scene) ---- */
 const MS_YARD = [208, 318, 50, 64]; // on the house wall between the front door and the mailbox, under the window; clear of #dogHit, the mailbox, the photo frame, the crayon box and the dog house
 const MS_YARD_MAXX = 260; // the mailbox tap box starts at x=261
-// the tap rect: on phones at least 48 screen px each way (like hmDecorHit), kept left of the mailbox
-function msYardHit(x, y, w, h) {
-  if (isPhone()) { const s = phHitScale(), m = 48 / s; if (w < m) { x -= (m - w) / 2; w = m; } if (h < m) { y -= (m - h) / 2; h = m; } if (x + w > MS_YARD_MAXX) x = MS_YARD_MAXX - w; }
-  return `<rect x="${f1(x)}" y="${f1(y)}" width="${f1(w)}" height="${f1(h)}" fill="transparent" pointer-events="all"/>`;
+// the tap rect: on phones at least 48 screen px each way (like hmDecorHit), kept left of the mailbox.
+// v2.9: while a Feed, Play or Care tray is open the scene shrinks into the strip above it, so the rect grows in world units (44 px, the least a tap needs) instead of the clipboard hiding; msYardFit re-reads the scale whenever the scene resizes.
+function msTrayOpen() { return !!document.querySelector('#dock > .tray:not(.dock-idle):not(.mini)'); }
+function msYardRect() {
+  let [x, y, w, h] = MS_YARD;
+  if (isPhone()) { const s = phHitScale(), m = (msTrayOpen() ? 44 : 48) / s; if (w < m) { x -= (m - w) / 2; w = m; } if (h < m) { y -= (m - h) / 2; h = m; } if (x + w > MS_YARD_MAXX) x = MS_YARD_MAXX - w; }
+  return [x, y, w, h];
 }
+function msYardHit() { const [x, y, w, h] = msYardRect(); return `<rect x="${f1(x)}" y="${f1(y)}" width="${f1(w)}" height="${f1(h)}" fill="transparent" pointer-events="all"/>`; }
+// re-read the scale and resize the tap rect in place (no redraw, so a tap in progress is not lost)
+function msYardFit() {
+  const r = $('#msCardG > rect'); if (!r) return;
+  const [x, y, w, h] = msYardRect(); r.setAttribute('x', f1(x)); r.setAttribute('y', f1(y)); r.setAttribute('width', f1(w)); r.setAttribute('height', f1(h));
+}
+{ let raf = 0; const fit = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; msYardFit(); }); };
+  const dk = $('#dock'), vw = $('#view');
+  if (dk && typeof MutationObserver === 'function') new MutationObserver(fit).observe(dk, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+  if (vw && typeof MutationObserver === 'function') new MutationObserver(fit).observe(vw, { attributes: true, attributeFilter: ['style'] });
+  if (vw) vw.addEventListener('transitionend', fit, true);
+  window.addEventListener('resize', fit); }
+// While a tray is open the dock is a full-screen backdrop (a tap on it closes the tray), so the clipboard cannot take the tap itself: a tap that lands inside its
+// tap rect closes the tray and opens the Missions sheet instead of only closing the tray.
+document.addEventListener('click', (e) => {
+  const dk = $('#dock'); if (!dk || e.target !== dk || !isPhone() || !msTrayOpen()) return;
+  const r = $('#msCardG > rect'); if (!r) return; const b = r.getBoundingClientRect();
+  if (e.clientX < b.left || e.clientX > b.right || e.clientY < b.top || e.clientY > b.bottom) return;
+  e.stopImmediatePropagation(); e.preventDefault(); popDown(); msOpen();
+}, true);
 function msYardSVG() {
   if (!S || S.place !== 'yard') return '';
   msFields(); if (S.missions.date !== localISO()) msRoll();
   const [x, y, w, h] = MS_YARD, nd = msDoneN();
-  return `<g id="msCardG" class="hot" tabindex="0" role="button" aria-label="Daily missions: ${nd} of 3 done" data-done="${nd}">${place(msCardArt(), x, y, w, h)}<g class="ms-badge" pointer-events="none" transform="translate(${x + w - 8} ${y + 8}) rotate(-8)"><circle r="13" fill="${nd >= 3 ? '#BFE3C8' : '#F9D56E'}" stroke="${INKG}" stroke-width="2.4"/><text y="6" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="16" fill="${INKG}">${nd}/3</text></g>${msYardHit(x, y, w, h)}</g>`;
+  return `<g id="msCardG" class="hot" tabindex="0" role="button" aria-label="Daily missions: ${nd} of 3 done" data-done="${nd}">${place(msCardArt(), x, y, w, h)}<g class="ms-badge" pointer-events="none" transform="translate(${x + w - 8} ${y + 8}) rotate(-8)"><circle r="13" fill="${nd >= 3 ? '#BFE3C8' : '#F9D56E'}" stroke="${INKG}" stroke-width="2.4"/><text y="6" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="16" fill="${INKG}">${nd}/3</text></g>${msYardHit()}</g>`;
 }
 function msYardBind() {
   const g = $('#msCardG'); if (!g) return;

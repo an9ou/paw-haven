@@ -97,17 +97,16 @@ require('./test_lib').run('v21_home', async (t) => {
   sec('Proud Mum lies down by the Rocking Chair, the pack skips a mum in the basket');
   await ev(() => { const S = window.__paw.S; window.__paw.addDog({ key: 'beagle', sex: 'female', months: 30 }, 'Mumsy'); S.decor = { 'Rocking Chair': { got: 'x', out: true } }; S.dogs.find((d) => d.name === 'Mumsy').proud = '2026-09-01'; S.litters = []; window.__paw.go('yard'); });
   await t.until(() => document.querySelectorAll('#pack .packdog').length === 1, null, 6000);
-  await t.rnd(0.1); await ev(() => window.__paw.home.ambient()); await t.rnd(null);
-  ok(await t.until(() => /pa-pose-down\b/.test((document.querySelector('#pack svg.pa-dog') || { getAttribute: () => '' }).getAttribute('class') || ''), null, 4000), 'proud mum picks "down" when the chair is out');
+  // one idle roll with Math.random pinned, and the pose read in the SAME page task: the game's own idle ticks (the pack dogs re-pick a pose every 5-10 s, "down" among them) can never get between the roll and the check
+  const rollPose = (v) => ev((v) => { const r = Math.random; Math.random = () => v; try { window.__paw.home.ambient(); } finally { Math.random = r; } const g = document.querySelector('#pack svg.pa-dog'); return g ? g.getAttribute('class') || '' : ''; }, v);
+  ok(/pa-pose-down\b/.test(await rollPose(0.1)), 'proud mum picks "down" when the chair is out');
   const chair = await wr('#decorG [data-decor="Rocking Chair"] > rect'), mum = await wr('#pack .packdog');
   ok(chair && mum && Math.abs((mum[2] + mum[0]) / 2 - (chair[0] + chair[2]) / 2) < 140, `she lies next to the chair: mum ${JSON.stringify(mum)}, chair ${JSON.stringify(chair)}`);
   await SH('04_proud_mum');
-  await t.rnd(0.3); await ev(() => { const S = window.__paw.S; window.__paw.home.ambient(); }); await t.rnd(null);
-  ok(await t.until(() => !/pa-pose-down\b/.test((document.querySelector('#pack svg.pa-dog') || { getAttribute: () => '' }).getAttribute('class') || ''), null, 4000), 'an idle roll above 1 in 4 picks another pose');
+  ok(!/pa-pose-down\b/.test(await rollPose(0.3)), 'an idle roll above 1 in 4 picks another pose');
   await ev(() => { const S = window.__paw.S; S.decor['Rocking Chair'].out = false; window.__paw.go('yard'); });
   await t.until(() => document.querySelectorAll('#pack .packdog').length === 1, null, 6000);
-  await t.rnd(0.1); await ev(() => window.__paw.home.ambient()); await t.rnd(null);
-  ok(!(await t.until(() => /pa-pose-down\b/.test((document.querySelector('#pack svg.pa-dog') || { getAttribute: () => '' }).getAttribute('class') || ''), null, 1500)), 'chair put away: she does not lie down');
+  ok(!/pa-pose-down\b/.test(await rollPose(0.1)), 'chair put away: she does not lie down');
   // v2.1 merge: BREED's real mumInBasket is in scope now, so make her a real nursing mum instead of stubbing the function
   await ev(() => { const S = window.__paw.S, m = S.dogs.find((d) => d.id !== S.dog.id), t0 = new Date().toISOString().slice(0, 10); S.litters = [{ id: 'hmL', mum: m.id, sire: 'npc', born: t0, until: '2999-01-01', named: true, pups: [{ id: 'hmP', name: 'Pip', key: m.key, sex: 'female', genes: m.genes, born: t0, coat: '', eyes: 'brown', parents: { dam: m.id, sire: 'npc' } }] }]; window.__paw.go('yard'); });
   ok(await t.until(() => document.querySelectorAll('#pack .packdog').length === 0, null, 4000), 'nursing mum (mumInBasket true): the pack skips her');
