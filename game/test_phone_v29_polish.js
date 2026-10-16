@@ -20,6 +20,7 @@ async function suite(t, W, H) {
     P.breed.setSeason(f.id, true); P.saveNow(); return { f: f.id, m: m.id };
   });
 
+  const settle2 = async () => { let last = ''; for (let i = 0; i < 40; i++) { const cur = await ev(() => document.getElementById('mapInner').style.transform + document.getElementById('mapInner').getBoundingClientRect().left); if (cur === last) return; last = cur; await t.sleep(80); } };
   sec(`${tag}: 1 the Play board names the dog`);
   await t.home('square'); await t.calm();
   await ev(() => window.__paw.town.openBoard()); await p.waitForSelector('.pbcard');
@@ -90,7 +91,6 @@ async function suite(t, W, H) {
 
   sec(`${tag}: 5 the map controls after panning and zooming`);
   await ev(() => { window.__paw.S.place = 'yard'; window.__paw.go('map'); }); await p.waitForSelector('#mapZoom'); await t.until(() => document.querySelectorAll('#mapInner svg text').length > 5, null, 6000); await settle2();
-  const settle2 = async () => { let last = ''; for (let i = 0; i < 40; i++) { const cur = await ev(() => document.getElementById('mapInner').style.transform + document.getElementById('mapInner').getBoundingClientRect().left); if (cur === last) return; last = cur; await t.sleep(80); } };
   const hits = () => ev(() => { const ctl = ['#mapX', '#mapZoom'].map((s) => R(document.querySelector(s))); return [...document.querySelectorAll('#mapInner svg text')].filter((e) => e.textContent.trim().length > 1).filter((e) => { const r = R(e); return ctl.some((c) => r[2] > c[0] && r[0] < c[2] && r[3] > c[1] && r[1] < c[3]); }).map((e) => e.textContent.trim()); });
   const drag = async (dx, dy) => { await p.mouse.move(200, 420); await p.mouse.down(); for (let i = 1; i <= 8; i++) await p.mouse.move(200 + dx * i / 8, 420 + dy * i / 8); await p.mouse.up(); };
   ok((await hits()).length === 0, `${tag}: the default view is clear`);

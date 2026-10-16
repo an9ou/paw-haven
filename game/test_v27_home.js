@@ -149,20 +149,17 @@ require('./test_lib').run('v27_home', async (t) => {
   await ev(() => window.__paw.ho.done());
   await ev(() => window.__paw.ho.hold(true)); // the pack dogs leave the furniture to us
   { const fw = await ev(() => window.__paw.idle.weights().furn); ok(fw === 2.5 || fw === 3.75, 'with furniture out in the house the idle has a furn weight (2.5, puppies 3.75 with the Ball Pit): ' + fw); }
-  await ev(() => window.__paw.idle.speed(200)); // freeze the idle scheduler for the loop: an idle furniture use (weight 2.5) starting between "free" and "front layer off" made the check flaky
   const actId = (await S()).activeId; const bad = [];
   for (const n of ['Dog Play Tower', 'Tunnel Sofa', 'Ball Pit', 'Sofa Ramp', 'Window Seat']) {
     for (const k of await ev((n) => window.__paw.ho.spots(n), n)) {
-      await ev(() => { Object.keys(window.__paw.ho.uses()).forEach((id) => window.__paw.ho.free(id)); });
-      const front = await ev((n) => window.__paw.ho.spot(n, window.__paw.ho.spots(n)[0]) && Object.keys(window.__paw.ho.uses()).length, n);
-      const offBefore = await ev((n) => { const g = document.querySelector(`#hoFrontG .ho-front[data-furn="${n}"]`); return !g || g.style.display === 'none'; }, n);
+      // free everything and read the front layer in the SAME page task: an idle furniture use (weight 2.5) can start between two awaits and show the layer
+      const offBefore = await ev((n) => { Object.keys(window.__paw.ho.uses()).forEach((id) => window.__paw.ho.free(id)); const g = document.querySelector(`#hoFrontG .ho-front[data-furn="${n}"]`); return !g || g.style.display === 'none'; }, n);
       await ev(([id, n, k]) => window.__paw.ho.use(id, n, k), [actId, n, k]);
       const on = await t.until(([n, k]) => Object.values(window.__paw.ho.uses()).some((u) => u.name === n && u.spot === k && u.on), [n, k], 8000);
       const r = await ev(([n, k]) => { const sp = window.__paw.ho.spot(n, k), g = document.querySelector(`#hoFrontG .ho-front[data-furn="${n}"]`), m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\)\s*scale\(([\d.]+)\)/.exec(document.getElementById('dogPos').style.transform);
         return { front: sp.front, shown: !!g && g.style.display !== 'none', feet: m ? [+m[1] + 430 * +m[3], +m[2] + 500 * +m[3]] : null, want: [sp.fx, sp.fy] }; }, [n, k]);
       const near = r.feet && Math.hypot(r.feet[0] - r.want[0], r.feet[1] - r.want[1]) < 2;
       if (!(on && near && offBefore && r.shown === r.front)) bad.push(`${n}/${k}: on ${on} at spot ${near} front ${r.front} shown ${r.shown} before-off ${offBefore}`);
-      void front;
     }
   }
   ok(!bad.length, 'the active dog uses every furniture spot, standing on the spot, the front layer shows only on front spots' + (bad.length ? ' -> ' + bad.join(' | ') : ''));
@@ -177,7 +174,7 @@ require('./test_lib').run('v27_home', async (t) => {
   ok(pr.dx < 40 && pr.front && pr.pose && pr.pose.name === 'Ball Pit', `the pack dog is drawn in the pit (dx ${Math.round(pr.dx)}), its front rim over it`);
   await ev((id) => window.__paw.ho.free(id), pk.id);
   ok(await t.until((id) => !window.__paw.ho.uses()[id], pk.id), 'hoFree frees the pack dog');
-  await ev(() => { window.__paw.ho.hold(false); window.__paw.idle.speed(0.3); });
+  await ev(() => window.__paw.ho.hold(false));
 
   sec('7. the Knitted Nest in the Beds tab, the Beds sheet');
   await shop('beds');
