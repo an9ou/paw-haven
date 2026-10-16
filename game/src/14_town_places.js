@@ -16,7 +16,7 @@ Object.assign(ROUTE_WORD, { town: 'around town', hilltop: 'up on the hilltop', p
 Object.assign(ROUTE_HINT, { town: 'Found around town...', hilltop: 'Found up on the hilltop...', pier: 'Found on the pier...' });
 /* ---- v2.8 Fuji View Hill (V28.md section 12.4): a town place only while jpOn() and JAPAN SCENE ART's PawArt.scene('fujihill') exists
    (world C lists it in WORLD_C_SCENES). Under the harness it needs prefs.jpTest. FUJI HILL adds its lines to PLACE_LINES (00_core.js) from 33_japan.js. */
-const JP_PLACE = { n: 'Fuji View Hill', bond: 2, out: true };
+const JP_PLACE = { n: 'Mt. Fuji Lookout', bond: 2, out: true };
 const jpSceneReady = () => !!(window.PawArt && Array.isArray(PawArt.WORLD_C_SCENES) && PawArt.WORLD_C_SCENES.includes('fujihill'));
 // adds or removes PLACES.fujihill; call it again after changing prefs.jpTest at run time (a save standing on the hill goes home)
 function jpPlaceSync() {

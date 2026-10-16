@@ -1801,7 +1801,7 @@ function sqFujihill(k){const e=k.env;
   O.bench(k,FH_BENCH[0],FH_BENCH[1],FH_BENCH[2]);
   // wildflowers and the sign
   fl(k,[[40,560,C.red],[90,590,C.yellow],[210,580,C.lav],[640,588,'#FFB3C7'],[700,560,C.yellow],[880,592,C.red],[960,566,C.lav],[600,470,C.yellow],[780,470,'#FFB3C7']],5);
-  signpost(k,800,490,'Fuji View Hill',150);// further back, clear of the place buttons (desktop x 842-991, y 527+) and the bench
+  signpost(k,795,490,'Mt. Fuji Lookout',176);// further back, clear of the place buttons (desktop x 842-991, y 527+) and the bench
   O.tape(k,6,26,90,-24,'#F7B9C6');O.tape(k,930,566,80,-28,'#BDE7D2');
   k.ss(()=>{const so=k.so;if(so==='spring')[[300,420,.4],[520,440,1.9],[680,500,.9],[760,450,2.4],[860,520,1.2],[620,560,.2],[200,520,2.9],[100,480,1.4]].forEach(([x,y,r],i)=>petalAt(k,x,y,4,r,PET[i%3]));
     else if(so==='autumn')[[90,470,.4],[150,520,1.9],[640,520,.9],[760,470,2.4],[880,540,1.2],[300,570,.2]].forEach(([x,y,r],i)=>momijiAt(k,x,y,5.4,r,MOMI[i%4]));
@@ -1814,7 +1814,7 @@ function sqFujihill(k){const e=k.env;
 
 /* ======================= API (wraps world A/B) ======================= */
 const MINE={square:['Town Square',sqSquare],cafe:['Pupuccino Café',sqCafe],dogpark:['Dog Park',sqDogpark],vet:['Vet Clinic',sqVet],salon:['Grooming Salon',sqSalon],hilltop:['Hilltop Meadow',sqHilltop],pier:['Lighthouse Pier',sqPier],playroom:['Shelter Playroom',sqPlayroom],
-  fujihill:['Fuji View Hill',sqFujihill,` data-spot-bench="${FH_SPOT.join(',')}"`]};// v2.8: data-spot-bench = where the dog sits on the bench (the middle of the seat)
+  fujihill:['Mt. Fuji Lookout',sqFujihill,` data-spot-bench="${FH_SPOT.join(',')}"`]};// v2.8: data-spot-bench = where the dog sits on the bench (the middle of the seat)
 const cacheC={};
 const freshC=s=>{const suf='x'+(++_n);return s.replace(/pwc(\d+)/g,m=>m+suf)};
 function renderScene(name,o){const env=mkEnv(o),key=name+'|'+env.time+'|'+env.weather+'|'+env.season+(env.hw?'|hw':'')+wnKey(env);if(cacheC[key])return freshC(cacheC[key]);

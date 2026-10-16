@@ -68,7 +68,7 @@ function jpToastKey() {
 /* ---- the place button (44 px, before Go home) ---- */
 function jpBtnHTML() {
   const done = jpGazedToday();
-  return `<button class="btn ${done ? 'jp-done' : 'yes'} jp-gaze" data-jp="gaze" ${done || JP.gazing ? 'aria-disabled="true"' : ''}>${done ? 'Fuji says see you tomorrow.' : 'Look at Fuji'}</button>`;
+  return `<button class="btn ${done ? 'jp-done' : 'yes'} jp-gaze" data-jp="gaze" ${done || JP.gazing ? 'aria-disabled="true"' : ''}>${done ? 'Fuji says see you tomorrow.' : 'Look at Mt. Fuji'}</button>`;
 }
 function jpPlaceBtn() {
   const pb = $('#placeBtns'); if (!pb) return;

@@ -185,7 +185,7 @@ sec('the map: the Fuji landmark and the Fuji View Hill pin');
   const lockd = PA.scene('map', { jp: true, fujiPin: [380, 330], locked: ['fujihill'], bonds: { fujihill: 2 } });
   ok(/^<svg[^>]* data-jp="1"/.test(jp) && clean(jp) && safe(jp) && norm(jp) !== norm(off), 'jp: the landmark is drawn, data-jp on the root');
   ok(!/data-area="fujihill"/.test(jp), 'jp alone: no pin');
-  ok(/<g data-area="fujihill" role="button" tabindex="0" aria-label="Fuji View Hill"><path class="pa-wa-hit"/.test(pin) && />Fuji View Hill</.test(pin) && clean(pin) && safe(pin), 'fujiPin: a data-area="fujihill" group with its hit shape and the caption');
+  ok(/<g data-area="fujihill" role="button" tabindex="0" aria-label="Mt\. Fuji Lookout"><path class="pa-wa-hit"/.test(pin) && />Mt\. Fuji Lookout</.test(pin) && clean(pin) && safe(pin), 'fujiPin: a data-area="fujihill" group with its hit shape and the caption');
   ok(/data-area="fujihill" data-locked="1"/.test(lockd) && />Bond 2</.test(lockd), 'a locked Fuji View Hill shows the padlock and its Bond');
   const hit = /data-area="fujihill"[^>]*><path class="pa-wa-hit" d="M([\d.]+) ([\d.]+)/.exec(pin);
   ok(hit && Math.abs(+hit[1] - 380) < 130 && Math.abs(+hit[2] - 342) < 100, 'the pin is centred on fujiPin');
