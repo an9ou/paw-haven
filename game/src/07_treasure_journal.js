@@ -20,7 +20,7 @@ function openJournal(tab) {
   else if (jTab === 'howto') body = typeof gdTabHTML === 'function' ? gdTabHTML() : '<p class="small">Gerald is still writing the guide.</p>'; // v2.4 (25_guide.js)
   else if (jTab === 'garden') body = gkOn() ? journalGarden() : soonCard('garden');
   else if (jTab === 'recipes') body = kOn() ? journalRecipes() : soonCard('kitchen');
-  else if (jTab === 'profile') { const pd = dogById(jProfDog) || D(); body = pdogTabs(pd.id) + withDog(pd, () => journalProfile()); }
+  else if (jTab === 'profile') { const pd = dogById(jProfDog) || D(); body = pdogTabs(pd.id) + withDog(pd, () => journalProfile()) + (typeof phJournalLine === 'function' ? phJournalLine() : ''); } // v2.9: "Photos taken"
   else if (jTab === 'treasures') {
     const mp = S.mapPieces.length;
     const mapMsg = S.secretDug ? `Secret dig done. ${esc(NAME())} is a Treasure Legend.` : mp >= 4 ? 'All 4 pieces! An X has appeared on your lawn at home. Go dig it!' : `Map pieces: ${mp}/4. Each route hides one piece.`;
