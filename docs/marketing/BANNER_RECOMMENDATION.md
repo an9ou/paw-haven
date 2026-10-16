@@ -8,7 +8,7 @@
 - It is a one-off. We do not repeat it, which keeps it special.
 
 ## The four conditions (all done in the files)
-1. **Each tile is a complete picture.** The word box is on the middle tile only (the owner's choice). The left tile is the cottage scene, the right tile is the Halloween corner, so they read as pretty scenes on their own, and the caption carries the game name. The grid shows all three together, so the name is always in view on the profile.
+1. **Each tile is a complete picture.** The word box is on the middle tile only (the owner's choice). The middle tile has Noodle, Mt. Fuji and the word box. The left tile is the cottage scene, the right tile is the Halloween corner, so they read as pretty scenes on their own, and the caption carries the game name. The grid shows all three together, so the name is always in view on the profile.
 2. **Built for the grid crop.** The profile grid shows 4:5 posts as 3:4 crops, so about 34 px is trimmed from each side. The tiles overlap by 68 px (34 px each side), so the three grid slices touch exactly: no missing strip at the seams. No dog stands in an overlap strip, so none is cut off.
 3. **Post order matters.** Post the **right** tile first, then the middle, then the left, about 10 minutes apart. The newest post always goes top-left, so the three end up left, middle, right.
 4. **Pin all three.** Instagram lets you pin up to 3 posts, and the most recently pinned goes top-left (pin right, middle, left). Without pins, **the very next post you make shifts the whole row by one and the picture tears apart.** With pins, it stays in row 1 and new posts start below.
@@ -21,7 +21,7 @@
 
 ## What is in the banner now (version 3, after the owner's feedback)
 - **One word box**, middle tile only: the Doodle Doggo wordmark and "a cozy dog game · play free".
-- **9 bigger dogs**, one meadow, nobody overlaps. Three wear two items (Noodle: heart sunglasses and red bandana; Scout: acorn cap and bow tie; Biscuit: witch hat and candy corn bandana), four wear one (Mochi: happi coat; Sunny: flower crown; Frost: autumn scarf; Dumpling: party hat) and two wear nothing (Cloud and Bagel).
+- **9 bigger dogs**, one meadow, nobody overlaps. Noodle, the main character, stands in the centre of the middle tile, right under the word box. Three wear two items (Noodle: heart sunglasses and red bandana; Scout: acorn cap and bow tie; Biscuit: witch hat and candy corn bandana), four wear one (Mochi: happi coat; Sunny: flower crown; Frost: autumn scarf; Dumpling: party hat) and two wear nothing (Cloud and Bagel).
 - **A fuller background:** the game's cottage (blue heart door, curtains, flower box), autumn trees, a fence, a mailbox, a clothesline with laundry, string lights, red paper lanterns, a stone lantern, the torii, Mt. Fuji, a scarecrow, a ghost garland, the Pumpkin Patch cart, leaf piles and pumpkins.
 - The trade: bigger dogs means fewer of them. The full 14 dog types are in the "14 dog types" post.
 - The only seasonal parts are the pumpkin cart, ghost garland, scarecrow and the witch hat, so it still works after 2 Nov. Ask for an evergreen right tile if you want one.

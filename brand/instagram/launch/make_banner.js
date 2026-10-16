@@ -129,12 +129,12 @@ module.exports = async function ({ render, browser, helpers: h }) {
   const FEET = { f: 1300, m: 1212, b: 1134 }, HGT = { f: 335, m: 280, b: 225 }, GAPMIN = 24;
   const tiles = [
     { x0: 70, x1: 1004, items: [
-      { k: 'dachs', d: 'f', tw: 420, fixed: true, pose: 'happy', outfit: { eyes: 'Heart Sunglasses', neck: 'Red Bandana' } },          // two items
       { k: 'shiba', d: 'b', pose: 'sit', outfit: { body: 'Happi Coat' } },                                                             // one item
+      { k: 'samoyed', d: 'f', pose: 'happy' },                                                                                         // nothing
       { k: 'golden', d: 'm', pose: 'happy', outfit: { head: 'Flower Crown' } }] },                                                      // one item
     { x0: 1096, x1: 2014, items: [
       { k: 'husky', d: 'm', pose: 'sit', outfit: { neck: 'Autumn Scarf' } },                                                           // one item
-      { k: 'samoyed', d: 'f', pose: 'happy' },                                                                                         // nothing
+      { k: 'dachs', d: 'f', tw: 480, fixed: true, pose: 'happy', outfit: { eyes: 'Heart Sunglasses', neck: 'Red Bandana' } },          // Noodle, the main character, in the middle: two items
       { k: 'collie', d: 'b', pose: 'beg', outfit: { head: 'Acorn Cap', neck: 'Bow Tie' } }] },                                         // two items
     { x0: 2112, x1: 2856, items: [
       { k: 'corgi', d: 'f', tw: 270, fixed: true, pose: 'happy', outfit: { head: 'Witch Hat', neck: 'Candy Corn Bandana' } },          // two items

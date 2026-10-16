@@ -53,12 +53,12 @@ Doodle Doggo is a pencil-sketch town with crayon dogs, and Fuji peeks over every
 
 #cozygames #handdrawn #mtfuji #indiedev #doodledoggo #富士山 #インディーゲーム
 ```
-**Alt text:** `Doodle Doggo, a cozy dog game, play free. Mt. Fuji, a torii gate and crayon dogs at dusk.`
+**Alt text:** `Noodle the dachshund under a Doodle Doggo sign: a cozy dog game, play free. Mt. Fuji behind.`
 
 ### Left tile (posted last, shows first on the grid)
 **Caption**
 ```
-Meet the dogs of Doodle Doggo 🐶 Noodle the dachshund is the big one on the left. He's very long. He drew himself and he is very proud of it.
+Meet the dogs of Doodle Doggo 🐶 Noodle the dachshund is the star in the middle (see the middle piece). He's very long. He drew himself and he is very proud of it.
 
 14 dog types to adopt, walks, a garden, a kitchen and puppy playdates. Free in your browser. Link in bio.
 
