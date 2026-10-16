@@ -8,7 +8,7 @@ Written 16 Oct 2026 (Friday) for one person, zero budget. All times are **JST** 
 
 1. **Instagram is home base.** Everything else sends people there or back to the game.
 2. **Day 0 (Fri 16 Oct):** set up the profile (see `POSTING_CHECKLIST.md`). Halloween profile picture until 2 Nov.
-3. **Sat 17 Oct, 9:00:** the first three posts go out (the 3-tile banner, or the three separate posts, your choice).
+3. **Sat 17 Oct, 9:00:** the 3-tile banner goes out (right, middle, left tile, then pin all three). The informative series (Japan view, the dogs, what you can do, how to play) follows over the next 10 days.
 4. **Weeks 1 to 3 ride Halloween** (Pumpkin Patch Pop-up until **2 Nov**). It is the one thing with a deadline, so it gets the loudest posts.
 5. **Week 2:** first Reddit post (r/WebGames), first Reels, itch.io page **only if the new login has shipped**.
 6. **Week 3:** Halloween ends, so the story turns to Japan (Mt. Fuji, Culture Day on 3 Nov). The doodledoggo.app announcement goes here **only if the domain is live**.
@@ -135,32 +135,34 @@ You live in Japan and the game has Fuji, nengajo and Culture Day built in, so Ja
 
 ## 5. The 4-week calendar
 
-Dates in 2026. "A" = the banner path, "B" = the separate-posts path. Both are explained in `BANNER_RECOMMENDATION.md`. Times are JST.
+Dates in 2026. The owner chose **A, the banner**, for launch and **B, the informative series**, for the posts after it. Times are JST.
 
 ### Week 1: Set up and say hello (Fri 16 to Fri 23 Oct)
 
 | Date | Time | What |
 |---|---|---|
 | Fri 16 | evening | **Setup day.** Profile, bio, link, Halloween profile picture, 4 highlight covers (see checklist). Follow 30 to 50 accounts: cozy-game makers, dachshund accounts, Japanese indie devs. No posts yet. |
-| Sat 17 | 9:00 | **A:** three tiles, 9:00 right, 9:10 middle, 9:20 left, then pin all three. **B:** Post 1 "Meet Noodle". 9:00 JST is also about 8pm US East (EDT), so both audiences see it. |
-| Sat 17 | 9:30 | Bluesky and X: the Noodle picture (English) and a Japanese version on X. **#screenshotsaturday** |
+| Sat 17 | 9:00 | **The banner:** three tiles, 9:00 right, 9:10 middle, 9:20 left, then pin all three. 9:00 JST is also about 8pm US East (EDT), so both audiences see it. |
+| Sat 17 | 9:30 | Bluesky and X: the wide banner picture (English) and a Japanese version on X. **#screenshotsaturday** |
 | Sun 18 | 20:30 | Story poll: "Which dog should Noodle meet next?" (shiba / corgi / golden). Reply block. |
 | Mon 19 | any | 15 min: comment on 10 accounts, join the 3 subreddits and comment. |
-| Tue 20 | 20:30 | **B:** Post 2 "Pencil town, crayon dogs". **A:** Reel 1 (the Fuji View Hill joke). |
+| Tue 20 | 20:30 | **Info 1/4: the Japan view** (`info1-japan-view.jpg`). |
 | Wed 21 | any | Bluesky/X: a short clip. Record clips for next week. |
-| Thu 22 | 12:00 | **B:** Post 3 "Play free" (Halloween). **A:** single image "dog of the week". Story with a countdown sticker to 2 Nov. 12:00 JST is about 8pm US West (PDT). |
+| Thu 22 | 12:00 | **Info 2/4: the dogs** (`info2-meet-the-dogs.jpg`). Story with a countdown sticker to 2 Nov. 12:00 JST is about 8pm US West (PDT). |
 | Fri 23 | 20:00 | **Reel 1** (costume or Pop-up), cross-post to TikTok and Shorts. Weekly review (20 min). |
+| Sat 24 | 9:00 | **Info 3/4: what you can do** (`info3-what-you-can-do.jpg`) |
 
 ### Week 2: Halloween peak (Sat 24 to Fri 30 Oct)
 
 | Date | Time | What |
 |---|---|---|
-| Sat 24 | 9:00 | Instagram carousel "The Pumpkin Patch Pop-up" (3 to 5 screenshots). X/Bluesky #screenshotsaturday. |
+| Sat 24 | 9:30 | Bluesky/X #screenshotsaturday: the Pumpkin Patch Pop-up (use a screenshot from `shots.js`). |
 | Sun 25 | 20:30 | Story Q and A: "Ask Noodle anything" (answer in Noodle's silly voice). |
 | Mon 26 | any | **Decision gate:** has the new login shipped? If yes, finish the itch.io page. If no, say nothing about itch. |
+| Tue 27 | 20:30 | **Info 4/4: how to play** (`info4-how-to-play.jpg`) |
 | Tue 27 | 22:30 | **r/WebGames post.** Stay online for 2 hours. |
 | Wed 28 | 12:00 | **itch.io page live** (only if the gate passed) plus devlog #1. Instagram Story "also on itch.io". |
-| Thu 29 | 20:30 | Instagram post: costume parade / Witch Hat. |
+| Thu 29 | 20:30 | Halloween push: `post3-play-free-halloween.jpg` (Noodle in the Witch Hat, the Pop-up, how to start). |
 | Fri 30 | 20:00 | Reel 2 plus a Story countdown "Halloween tomorrow". |
 
 ### Week 3: Halloween ends, Japan and the domain (Sat 31 Oct to Fri 6 Nov)

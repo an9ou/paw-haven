@@ -4,8 +4,8 @@
 // Each tile has its own label card, so it also reads well alone in the feed. Left tile = newest post, right tile = first post.
 const path = require('path'), fs = require('fs');
 const BW = 3104, BH = 1350, TILE = 1012, TW = 1080;
-module.exports = async function ({ render, helpers: h }) {
-  const { f1, seeded, line, box, doodle, swash, txt, lines, tape, dog, prop, photo, rrPts, pencil, INK, PINK, PAPER, MUTED, ORANGE, PLUM, defs, svgPage, OUT, wordmark } = h;
+module.exports = async function ({ render, browser, helpers: h }) {
+  const { f1, inner, PA, seeded, line, box, doodle, swash, txt, lines, tape, dog, prop, photo, rrPts, pencil, INK, PINK, PAPER, MUTED, ORANGE, PLUM, defs, svgPage, OUT, wordmark } = h;
   const rnd = seeded(2026);
   const cx = [540, 1552, 2564]; // tile centres of the visible slices (also the centre of each 1080 tile)
 
@@ -62,14 +62,6 @@ module.exports = async function ({ render, helpers: h }) {
   for (let i = 0; i < 22; i++) g += doodle('flower', f1(rnd() * BW), f1(1130 + rnd() * 200), 0.9 + rnd() * 0.5, f1(rnd() * 60));
   for (let i = 0; i < 40; i++) g += doodle('leaf', f1(rnd() * BW), f1(1060 + rnd() * 280), 0.55 + rnd() * 0.45, f1(rnd() * 360), 1.6);
 
-  // ---- the torii (right of Fuji, inside tile 2) ----
-  const TX = 1930, TY = 1085;
-  g += `<g stroke="${INK}" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"><rect x="${TX - 92}" y="${TY - 190}" width="26" height="190" fill="#D9534F"/><rect x="${TX + 66}" y="${TY - 190}" width="26" height="190" fill="#D9534F"/><rect x="${TX - 82}" y="${TY - 150}" width="174" height="20" fill="#D9534F"/><path d="M${TX - 126} ${TY - 198}Q${TX} ${TY - 226} ${TX + 126} ${TY - 198}L${TX + 114} ${TY - 176}Q${TX} ${TY - 202} ${TX - 114} ${TY - 176}Z" fill="#3E3A38"/></g>`;
-  g += `<ellipse cx="${TX}" cy="${TY + 6}" rx="130" ry="14" fill="#5B3D32" opacity=".18"/>`;
-
-  // ---- Noodle's paw trail: continuous across all three tiles ----
-  for (let x = 760, i = 0; x < 2300; x += 98, i++) { const y = 1296 + (i % 2 ? 16 : -10) + Math.sin(i / 2) * 6; g += doodle('paw', x, y, 1.05, 80 + (i % 2 ? 12 : -10)); }
-
   // ---- bunting across the whole picture (continuous, behind the label cards) ----
   const anchors = [-20, 700, 1420, 2140, 2860, 3130], sag = 54, y0 = 78;
   const wireY = (x) => { for (let i = 0; i < anchors.length - 1; i++) if (x <= anchors[i + 1]) { const a = anchors[i], b = anchors[i + 1], t = (x - a) / (b - a); return y0 + sag * 4 * t * (1 - t); } return y0; };
@@ -79,23 +71,58 @@ module.exports = async function ({ render, helpers: h }) {
   for (let x = 40, i = 0; x < BW; x += 92, i++) { const yy = wireY(x), ang = (wireY(x + 10) - wireY(x - 10)) * 1.3; g += `<g transform="rotate(${f1(ang)} ${x} ${f1(yy)})"><path d="M${x - 36} ${f1(yy)}L${x + 36} ${f1(yy)}L${x} ${f1(yy + 86)}Z" fill="${cols[i % 5]}" stroke="${INK}" stroke-width="3.4" stroke-linejoin="round"/></g>`; }
   for (const x of [0, 700, 1420, 2140, 2860]) g += `<circle cx="${x < 0 ? 0 : x}" cy="${y0}" r="7" fill="${INK}"/>`;
 
-  // ---- the three characters / props ----
-  // tile 1: Noodle (feet on y 1236)
-  g += swash(540, 1236, 760, 120, -2, '#FFF3DC', 0.55) + dog('dachs', { pose: 'happy' }, 130, 700, 820);
-  // tile 3: Biscuit the corgi in the Witch Hat + Candy Corn Bandana, and Mrs. Plum's Pumpkin Patch Pop-up
-  g += swash(2480, 1236, 700, 110, 2, '#FFF3DC', 0.55) + dog('corgi', { pose: 'happy', outfit: { head: 'Witch Hat', neck: 'Candy Corn Bandana' } }, 2140, 690, 640, '0 0 240 200');
-  g += prop('popup', { lit: true }, 2700, 928, 340, 311) + prop('jackolantern', { lit: true }, 2530, 1170, 96, 96) + prop('jackolantern', { lit: true }, 2600, 1200, 70, 70);
-  // tile 2: a taped photo of a real walk (the runner game)
-  g += photo('walk', [0, 540, 1179, 780], 1060, 1004, 360, -4, { caption: 'take a walk', seed: 5, tape: '#FFE3A1', tapeRot: 6, pad: 12 }).replace('<g transform', '<g transform');
+  // ---- props that sit in the crowd: the torii (tile 2) and Mrs. Plum's Pumpkin Patch cart (tile 3) ----
+  const toriiSvg = (cx, base) => `<g stroke="${INK}" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"><rect x="${cx - 92}" y="${base - 190}" width="26" height="190" fill="#D9534F"/><rect x="${cx + 66}" y="${base - 190}" width="26" height="190" fill="#D9534F"/><rect x="${cx - 82}" y="${base - 150}" width="174" height="20" fill="#D9534F"/><path d="M${cx - 126} ${base - 198}Q${cx} ${base - 226} ${cx + 126} ${base - 198}L${cx + 114} ${base - 176}Q${cx} ${base - 202} ${cx - 114} ${base - 176}Z" fill="#3E3A38"/></g><ellipse cx="${cx}" cy="${base + 6}" rx="130" ry="14" fill="#5B3D32" opacity=".18"/>`;
 
-  // ---- the label cards (one per tile, same size and height) ----
-  const CARD_Y = 222, CARD_H = 372, CARD_W = 800;
+  // ---- the crowd: every dog type gets its own spot; nobody overlaps ----
+  // The real outline of each dog is measured in the browser (getBBox), so sizes and gaps use the drawn dog, not its canvas.
+  // Depth rows: f = front (feet y 1300), m = middle (1210), b = back (1125). Neighbours sit at different depths.
+  const FEET = { f: 1296, m: 1206, b: 1122 }, HGT = { f: 285, m: 235, b: 190 }, GAPMIN = 22;
+  const tiles = [
+    { x0: 64, x1: 1004, items: [
+      { k: 'dachs', d: 'f', tw: 360, fixed: true, pose: 'happy' }, { k: 'shiba', d: 'b', pose: 'sit' }, { k: 'golden', d: 'm', pose: 'happy' }, { k: 'mutt', d: 'b', pose: 'idle' }, { k: 'chihuahua', d: 'f', pose: 'speak' }] },
+    { x0: 1094, x1: 2014, items: [
+      { k: 'husky', d: 'm', pose: 'sit' }, { k: 'samoyed', d: 'f', pose: 'happy' }, { t: 'torii', d: 'b', tw: 240, fixed: true }, { k: 'collie', d: 'm', pose: 'beg' }, { k: 'frenchie', d: 'f', pose: 'idle' }] },
+    { x0: 2106, x1: 3040, items: [
+      { k: 'corgi', d: 'f', tw: 250, fixed: true, pose: 'happy', outfit: { head: 'Witch Hat', neck: 'Candy Corn Bandana' } }, { k: 'beagle', d: 'b', pose: 'sniff' }, { k: 'pug', d: 'm', pose: 'sit', outfit: { neck: 'Candy Corn Bandana' } }, { k: 'poodle', d: 'f', pose: 'dance' }, { t: 'cart', d: 'b', tw: 260, fixed: true }] },
+  ];
+  const dogsAll = tiles.flatMap((T) => T.items).filter((it) => it.k);
+  for (const it of dogsAll) it.facingKey = 'x';
+  // measure: draw every dog (both facings) into one page and read its bbox in the 240x200 dog canvas
+  const mp = await browser.newPage();
+  await mp.setContent('<body></body>');
+  const bbs = await mp.evaluate((list) => list.map((it) => { const w = document.createElement('div'); w.innerHTML = it.svg; document.body.appendChild(w); const sv = w.querySelector('svg'); sv.setAttribute('width', 240); sv.setAttribute('height', 200); const b = sv.getBBox(); return [b.x, b.y, b.width, b.height]; }),
+    dogsAll.flatMap((it) => ['left', 'right'].map((fc) => ({ svg: PA.dog(it.k, { pose: it.pose, outfit: it.outfit, facing: fc, anim: false }) }))));
+  await mp.close();
+  dogsAll.forEach((it, i) => { it.bb = { left: bbs[i * 2], right: bbs[i * 2 + 1] }; });
+  const placed = [];
+  for (const T of tiles) {
+    const meas = T.items.map((it) => { if (it.k) { const b = it.bb.right; const k = it.tw ? it.tw / b[2] : HGT[it.d] / b[3]; return { w: b[2] * k, h: b[3] * k, k }; } return { w: it.tw, h: it.t === 'cart' ? it.tw * 0.92 : 200, k: 1 }; });
+    const n = T.items.length, room = T.x1 - T.x0, fixedSum = meas.reduce((a, m, i) => a + (T.items[i].fixed ? m.w : 0), 0), flexSum = meas.reduce((a, m, i) => a + (T.items[i].fixed ? 0 : m.w), 0);
+    const sc = Math.min(1, (room - GAPMIN * (n - 1) - fixedSum) / flexSum), gap = (room - fixedSum - flexSum * sc) / (n - 1);
+    let x = T.x0; const mid = (T.x0 + T.x1) / 2;
+    T.items.forEach((it, i) => { const q = it.fixed ? 1 : sc, m = meas[i], w = m.w * q, h = m.h * q, feet = FEET[it.d]; placed.push({ it, x, w, h, top: feet - h, feet, k: m.k * q, cx: x + w / 2, left: x + w / 2 > mid }); x += w + gap; });
+    console.log('tile scale', f1(sc), 'gap', f1(gap));
+  }
+  for (let i = 0; i < placed.length; i++) for (let j = i + 1; j < placed.length; j++) { const a = placed[i], b = placed[j]; if (a.x < b.x + b.w && b.x < a.x + a.w && a.top < b.top + b.h && b.top < a.top + a.h) console.log('OVERLAP', a.it.k || a.it.t, b.it.k || b.it.t); }
+  placed.sort((a, b) => a.feet - b.feet);
+  for (const p of placed) {
+    const { it } = p;
+    if (it.t === 'torii') { g += toriiSvg(f1(p.cx), p.feet - 10); continue; }
+    if (it.t === 'cart') { g += prop('popup', { lit: true }, f1(p.x), f1(p.feet - p.h), f1(p.w), f1(p.h)); continue; }
+    const b = it.bb[p.left ? 'left' : 'right'];
+    g += `<ellipse cx="${f1(p.cx)}" cy="${f1(p.feet - 4)}" rx="${f1(p.w * 0.46)}" ry="${f1(p.w * 0.04)}" fill="#5B3D32" opacity=".14"/>`;
+    g += `<svg x="${f1(p.x)}" y="${f1(p.top)}" width="${f1(p.w)}" height="${f1(p.h)}" viewBox="${b.map(f1).join(' ')}" overflow="visible">${inner(PA.dog(it.k, { pose: it.pose, outfit: it.outfit, facing: p.left ? 'left' : 'right', anim: false }))}</svg>`;
+  }
+  console.log('dogs placed:', placed.filter((p) => p.it.k).length);
+
+  // ---- the label cards: the game name + one short line, same size and height on every tile ----
+  const CARD_Y = 232, CARD_H = 250, CARD_W = 780;
   const card = (c, seed, inner, rot = 0) => `<g transform="rotate(${rot} ${c} ${CARD_Y + CARD_H / 2})"><g filter="url(#dd-shadow)"><rect x="${c - CARD_W / 2}" y="${CARD_Y}" width="${CARD_W}" height="${CARD_H}" rx="34" fill="#FFFBF2"/></g>${box(c - CARD_W / 2, CARD_Y, CARD_W, CARD_H, 34, seed, 2.6, 4.6)}${tape(c - 80, CARD_Y - 22, 160, 44, -3 + seed % 5)}${inner}</g>`;
-  const kicker = (c, y) => txt('Doodle Doggo', c, y, 46, { fill: '#D8607E', w: 700 });
-  g += card(cx[0], 41, kicker(cx[0], CARD_Y + 84) + txt('Meet Noodle.', cx[0], CARD_Y + 216, 140, { rot: -1.5 }) + txt('a wobbly crayon pup to love', cx[0], CARD_Y + 308, 58, { fill: MUTED, w: 600 }), -1);
-  g += card(cx[1], 42, kicker(cx[1], CARD_Y + 76) + lines(['Pencil town,', 'crayon dogs.'], cx[1], CARD_Y + 178, 104, 92, { rot: -1 }) + txt('Mt. Fuji on every skyline', cx[1], CARD_Y + 338, 52, { fill: MUTED, w: 600 }), 0.6);
-  g += card(cx[2], 43, kicker(cx[2], CARD_Y + 82) + txt('Play free.', cx[2], CARD_Y + 204, 140, { rot: -1.5 }) + txt('link in bio · phone or computer', cx[2], CARD_Y + 270, 50, { fill: MUTED, w: 600 })
-    + `<g transform="rotate(-2 ${cx[2]} ${CARD_Y + 322})"><rect x="${cx[2] - 250}" y="${CARD_Y + 298}" width="500" height="54" rx="27" fill="${ORANGE}" stroke="${INK}" stroke-width="3.4"/>${txt('Halloween Pumpkin Patch till 2 Nov', cx[2], CARD_Y + 336, 38, { fill: '#FFF8EC', w: 700 })}</g>`, 1);
+  const named = (c, line) => wordmark(c, CARD_Y + 128, 112) + txt(line, c, CARD_Y + 214, 56, { fill: MUTED, w: 600 });
+  g += card(cx[0], 41, named(cx[0], 'a cozy dog game'), -1);
+  g += card(cx[1], 42, named(cx[1], 'Mt. Fuji on every skyline'), 0.6);
+  g += card(cx[2], 43, named(cx[2], 'play free · link in bio'), 1);
 
   // ---- write: the wide picture, then the three tiles (same svg, different viewBox) ----
   const wide = `<svg xmlns="http://www.w3.org/2000/svg" width="${BW}" height="${BH}" viewBox="0 0 ${BW} ${BH}">${defs}${g}</svg>`;

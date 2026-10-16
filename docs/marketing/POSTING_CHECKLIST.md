@@ -42,28 +42,22 @@ Best times, with the reason. These are sensible defaults, not measured. After tw
 | **20:30 to 22:00** | Japan evening, the busiest time for phones in Japan | Best for Japanese posts and Stories. |
 | **22:30 to 24:00** | US morning | For Reddit posts only (not Instagram). |
 
-### Path A (banner)
+### The plan (banner first, then the informative series)
 
 | Day | Time | Do |
 |---|---|---|
 | Fri 16 | evening | Setup (section 1). No posts. |
-| **Sat 17** | **9:00 / 9:10 / 9:20** | Post right tile, middle tile, left tile. Then **pin all three** in that order. Add the captions from `INSTAGRAM_FIRST_POSTS.md`. |
-| Sat 17 | 9:30 | One Story: "Hi I'm Noodle", with the link sticker. Share it to the highlight **Meet**. Post on Bluesky and X. |
+| **Sat 17** | **9:00 / 9:10 / 9:20** | Post the **right** tile, then the **middle** tile, then the **left** tile. Then **pin all three** in that order. Add the captions from `INSTAGRAM_FIRST_POSTS.md`. |
+| Sat 17 | 9:30 | One Story: "Hi, this is Doodle Doggo", with the link sticker. Share it to the highlight **Meet**. Post on Bluesky and X. |
 | Sun 18 | 20:30 | Story poll "Which dog should Noodle meet next?" |
-| Tue 20 | 20:30 | Reel 1 (the Fuji View Hill joke, 10 seconds). |
-| Thu 22 | 12:00 | A single image "dog of the week" (ask me to make it). Countdown sticker to 2 Nov. |
+| **Tue 20** | **20:30** | Info 1/4: **the Japan view** (`info1-japan-view.jpg`) |
+| **Thu 22** | **12:00** | Info 2/4: **the dogs** (`info2-meet-the-dogs.jpg`). Countdown sticker to 2 Nov. |
 | Fri 23 | 20:00 | Halloween Reel. Weekly review. |
+| **Sat 24** | **9:00** | Info 3/4: **what you can do** (`info3-what-you-can-do.jpg`) |
+| **Tue 27** | **20:30** | Info 4/4: **how to play** (`info4-how-to-play.jpg`) |
+| Thu 29 | 20:30 | Optional Halloween push: `post3-play-free-halloween.jpg` |
 
-### Path B (separate posts)
-
-| Day | Time | Do |
-|---|---|---|
-| Fri 16 | evening | Setup (section 1). No posts. |
-| **Sat 17** | **9:00** | Post 1 "Meet Noodle". Story plus Bluesky and X. |
-| Sun 18 | 20:30 | Story poll. |
-| **Tue 20** | **20:30** | Post 2 "Pencil town, crayon dogs". |
-| **Thu 22** | **12:00** | Post 3 "Play free" (Halloween). Countdown sticker to 2 Nov. |
-| Fri 23 | 20:00 | Halloween Reel. Weekly review. |
+Share each informative post to your Story with the link sticker, and add it to the highlight it belongs to (Fuji, Meet or Play).
 
 ## 4. Every time you post
 

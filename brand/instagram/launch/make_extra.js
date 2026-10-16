@@ -57,7 +57,7 @@ module.exports = async function ({ render, helpers: h, what }) {
     };
     const body = `<rect width="1700" height="1400" fill="#F5EFE6"/><rect width="1700" height="1400" fill="url(#dd-dots)"/>`
       + panel(50, 'A · The 3-tile banner', 'row 1 is pinned, so new posts always start below it', ['banner-1-left-newest.jpg', 'banner-2-middle.jpg', 'banner-3-right-post-first.jpg'], true, 'next posts')
-      + panel(870, 'B · Three separate posts', 'each one stands alone (newest on the left)', ['post3-play-free-halloween.jpg', 'post2-pencil-town-fuji.jpg', 'post1-meet-noodle.jpg'], false, 'next posts')
+      + panel(870, 'B · Informative posts', 'Japan view, dogs, what you can do, how to play', ['info3-what-you-can-do.jpg', 'info2-meet-the-dogs.jpg', 'info1-japan-view.jpg'], false, 'next posts')
       + txt('mockup: how the profile could look (follower numbers are placeholders)', 850, 1372, 36, { fill: MUTED, w: 600 });
     await render(svgPage(1700, 1400, body), 1700, 1400, 'grid-preview.jpg');
   }

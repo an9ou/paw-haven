@@ -86,7 +86,7 @@ function arrow(x0, y0, x1, y1, bend, seed, col = MUTED) {
   return `<path d="M${x0} ${y0}Q${mx} ${my} ${x1} ${y1}" fill="none" stroke="${col}" stroke-width="4" stroke-linecap="round"/>` + `<path d="M${f1(h[0][0])} ${f1(h[0][1])}L${x1} ${y1}L${f1(h[2][0])} ${f1(h[2][1])}" fill="none" stroke="${col}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`;
 }
 // the game wordmark in plain text: "Doodle" tilted left, "Doggo" tilted right, pink swash behind
-const wordmark = (cx, cy, F, o = {}) => `<g>${swash(cx, cy + F * 0.2, F * 5.3, F * 0.34, -1.5)}${txt('Doodle', cx - F * 1.5, cy, F, { rot: -3, fill: o.fill })}${txt('Doggo', cx + F * 1.3, cy + F * 0.05, F, { rot: 2, fill: o.fill })}</g>`;
+const wordmark = (cx, cy, F, o = {}) => `<g>${swash(cx, cy + F * 0.2, F * 4.9, F * 0.34, -1.5)}${txt('Doodle', cx - F * 1.4, cy, F, { rot: -3, fill: o.fill })}${txt('Doggo', cx + F * 1.2, cy + F * 0.05, F, { rot: 2, fill: o.fill })}</g>`;
 // a screenshot crop as a nested svg. img = file name in SHOTS, crop = [sx, sy, sw, sh] in image pixels (images are 1179x1977)
 const shotAt = (img, crop, x, y, w, h) => `<svg x="${x}" y="${y}" width="${w}" height="${h}" viewBox="${crop.join(' ')}" preserveAspectRatio="xMidYMid slice"><image href="file://${path.join(SHOTS, img + '.png')}" width="1179" height="1977"/></svg>`;
 // a taped photo: cream frame, pencil edge, the shot inside, tape on top
@@ -175,7 +175,8 @@ async function main() {
     await render(post1(), W, H, 'post1-meet-noodle.jpg'); await render(post2(), W, H, 'post2-pencil-town-fuji.jpg'); await render(post3(), W, H, 'post3-play-free-halloween.jpg');
   }
   const helpers = { f1, seeded, pencil, line, box, doodle, swash, swashPath, txt, lines, tape, arrow, dog, prop, shotAt, photo, paper, defs, svgPage, rrPts, INK, PINK, PAPER, MUTED, ORANGE, PLUM, DOT, OUT, PA, inner, wordmark, frame };
-  if (WHAT === 'banner' || WHAT === 'all') await require('./make_banner.js')({ render, helpers });
+  if (WHAT === 'banner' || WHAT === 'all') await require('./make_banner.js')({ render, browser, helpers });
+  if (WHAT === 'info' || WHAT === 'all') await require('./make_info.js')({ render, helpers });
   if (['profile', 'covers', 'grid', 'all'].includes(WHAT)) await require('./make_extra.js')({ render, helpers, what: WHAT });
   await browser.close();
 }
