@@ -316,7 +316,7 @@ async function clLogin(email, pw) {
     return await clSignedIn(r.data.user, local, owner);
   } catch (e) { return { ok: false, msg: clErrText(e) }; } finally { CL.loggingIn = false; CL.again = false; }
 }
-// signed in to an account (a log in, or a new password from an emailed link). Callers hold CL.loggingIn.
+// signed in to an account (a log in). Callers hold CL.loggingIn.
 // The account's own save loads; the game that was on this device is kept safe (a backup, or this device only for another account's game).
 async function clSignedIn(u, local, owner) {
   const other = !!owner && u.id !== owner; // another account's game (maybe another person's) never goes into this one, backups included
@@ -340,21 +340,6 @@ async function clForgot(email) {
     const r = await clApi('POST', '/forgot', { email }, true);
     return r.ok ? { ok: true, mail: !r.data || r.data.mail !== false } : { ok: false, msg: clErrText(r.error) };
   } catch (e) { return { ok: false, msg: clErrText(e) }; }
-}
-// the emailed link was opened: set the new password ({ token } from our email, { sb_token } from Supabase's), then it's a log in
-async function clReset(link, pw) {
-  try {
-    if (!(await clStart())) return { ok: false, msg: 'Cloud save is offline. Your game is saved on this device.' };
-  } catch (e) { return { ok: false, msg: clErrText(e) }; }
-  clearTimeout(CL.timer); CL.timer = null; CL.loggingIn = true;
-  try {
-    await clFlushNow();
-    const local = clLocal(), owner = clOwner();
-    const r = await clApi('POST', '/reset', Object.assign({ password: pw }, link), true);
-    if (!r.ok || !r.data || !r.data.token || !r.data.user) return { ok: false, msg: clErrText(r.error) };
-    clTokSet(r.data.token);
-    return await clSignedIn(r.data.user, local, owner);
-  } catch (e) { return { ok: false, msg: clErrText(e) }; } finally { CL.loggingIn = false; CL.again = false; }
 }
 async function clLogout() {
   CL.loggingIn = true; try { await clFlushNow(); } finally { CL.loggingIn = false; CL.again = false; } // the last ~2 s reach this account, not the next guest

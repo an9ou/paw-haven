@@ -175,8 +175,8 @@ async function checks(label, call, sql, sb, mail) {
   r = await call('POST', '/forgot', { email: 'Forgetful@example.com' }, null, { Origin: 'https://an9ou.github.io' });
   const fm = mail.mails[mail.mails.length - 1];
   ok(r.status === 200 && r.json.mail === true && mail.mails.length === m0 + 1 && fm.to[0] === 'forgetful@example.com' && /noreply@doodledoggo\.app/.test(fm.from), 'a known email gets one email from noreply@doodledoggo.app, same answer');
-  ok(fm.link === 'https://an9ou.github.io/paw-haven/?reset=' + fm.token && fm.text.includes('https://doodledoggo.app/?reset=' + fm.token) && fm.html.includes(fm.link), 'the link opens the copy the player asked from (GitHub Pages), doodledoggo.app rides along');
-  ok(/Doodle Doggo/.test(fm.subject) && /Noodle/.test(fm.text) && /30 minutes/.test(fm.text) && /ignore this email/.test(fm.text), 'plain, friendly copy: Doodle Doggo, Noodle, 30 minutes, ignore if not you');
+  ok(fm.token && fm.link === 'https://doodledoggo.app/reset?token=' + fm.token && fm.html.includes('href="' + fm.link + '"'), 'the link opens the reset page on doodledoggo.app');
+  ok(/Doodle Doggo/.test(fm.subject) && /Noodle/.test(fm.text) && /30 minutes/.test(fm.text) && /ignore this email/.test(fm.text) && /itch\.io/.test(fm.text), 'plain, friendly copy: Doodle Doggo, Noodle, 30 minutes, back to itch.io, ignore if not you');
   ok(fm.token.length >= 40 && !(await sql('select * from resets where token_hash = ?', fm.token)) && !!(await sql('select * from resets where token_hash = ?', sha(fm.token))), 'only the SHA-256 of the reset token is stored');
   ok((await call('POST', '/reset', { token: fm.token, password: 'short' })).json.error === 'weak_password', 'the new password needs 8 or more characters');
   r = await call('POST', '/reset', { token: fm.token, password: 'remembered1' });
@@ -186,7 +186,6 @@ async function checks(label, call, sql, sb, mail) {
   r = await call('POST', '/reset', { token: fm.token, password: 'again-again1' }); ok(r.status === 400 && r.json.error === 'expired', 'a link works only once');
   await call('POST', '/register', { email: 'forgetful2@example.com', password: 'forgetful2' }, null, { 'CF-Connecting-IP': '10.6.6.6' }); // "make an account" allows 10 an hour per IP
   await call('POST', '/forgot', { email: 'forgetful2@example.com' }); const f1 = mail.mails[mail.mails.length - 1];
-  ok(f1.link.startsWith('https://doodledoggo.app/?reset='), 'without the GitHub Pages origin the link opens doodledoggo.app');
   await sql('update resets set expires_at = ? where token_hash = ?', Date.now() - 1, sha(f1.token), true);
   ok((await call('POST', '/reset', { token: f1.token, password: 'late-late-1' })).json.error === 'expired', 'a link older than 30 minutes is refused');
   await call('POST', '/forgot', { email: 'forgetful2@example.com' }); const f2 = mail.mails[mail.mails.length - 1];
@@ -202,7 +201,7 @@ async function checks(label, call, sql, sb, mail) {
   const ol = sb.mkUser({ email: 'oldforgot@example.com', password: 'forgotten-old' }); sb.saves[ol.id] = { data: save(616), rev: 6, changed_at: '2026-10-08T00:00:00Z' };
   await sql('insert into legacy (email_hash) values (?)', sha('oldforgot@example.com'), true);
   m0 = mail.mails.length; r = await call('POST', '/forgot', { email: 'OldForgot@example.com' }); const rc = sb.recovers[sb.recovers.length - 1];
-  ok(r.status === 200 && r.json.mail === true && rc && rc.email === 'oldforgot@example.com' && rc.redirect_to === 'https://doodledoggo.app/?sbreset=1' && mail.mails.length === m0, 'Supabase\'s own recover email is asked for, pointing back to the game (no Resend email)');
+  ok(r.status === 200 && r.json.mail === true && rc && rc.email === 'oldforgot@example.com' && rc.redirect_to === 'https://doodledoggo.app/reset' && mail.mails.length === m0, 'Supabase\'s own recover email is asked for, pointing to the reset page (no Resend email)');
   ok(!(await sql('select * from users where email = ?', 'oldforgot@example.com')), 'nothing is made or copied before the link is used');
   r = await call('POST', '/reset', { sb_token: rc.token, password: 'brand-new-pw1' });
   ok(r.status === 200 && r.json.user.id === ol.id && r.json.user.email === 'oldforgot@example.com', 'the Supabase link moves the account over with the new password');

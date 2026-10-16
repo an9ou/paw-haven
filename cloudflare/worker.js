@@ -150,36 +150,30 @@ const asJson = (d) => (typeof d === 'string' ? d : JSON.stringify(d));
 
 /* ---------------- email (v2.8.2: Forgot password, through Resend) ---------------- */
 const RESET_MS = 30 * 60 * 1000;
-const SITE = 'https://doodledoggo.app/', PAGES = 'https://an9ou.github.io/paw-haven/';
+// the reset page lives on the introduction site (site/reset.html): it sets the password, then sends the player back to the game
+const RESET_PAGE = 'https://doodledoggo.app/reset';
 function mailOn(env) { return !!env.RESEND_API_KEY; }
-// the link opens the copy the player asked from (GitHub Pages or doodledoggo.app); the other one rides along as a backup
-function linkBase(origin) {
-  if (origin === 'https://an9ou.github.io') return [PAGES, SITE];
-  if (origin && LOCAL.test(origin)) return [origin + '/', SITE];
-  return [SITE, PAGES];
-}
-function resetMail(links) {
+function resetMail(link) {
   const text = `Hi from Doodle Doggo!
 
 Someone (hopefully you) asked to set a new password for this email. Tap the link to pick a new one:
 
-${links[0]}
+${link}
 
-The link works for 30 minutes, and only once. If it doesn't open, try this one:
-${links[1]}
+The link works for 30 minutes, and only once. Then go back to the game on itch.io and log in with the new password.
 
 Didn't ask for this? Just ignore this email. Your password stays the same and your dogs are safe.
 
 Noodle the dachshund says hi. The rest of him is on his way.
 Doodle Doggo`;
-  const a = (u, t) => `<a href="${u}" style="color:#2f5d8a">${t}</a>`;
   const html = `<div style="font-family:Georgia,serif;font-size:17px;line-height:1.5;color:#2b2622;max-width:520px">
 <p><b>Hi from Doodle Doggo!</b></p>
 <p>Someone (hopefully you) asked to set a new password for this email. Tap the button to pick a new one.</p>
-<p><a href="${links[0]}" style="display:inline-block;background:#f4d35e;color:#2b2622;padding:12px 22px;border-radius:12px;text-decoration:none;font-weight:bold;border:2px solid #2b2622">Set a new password</a></p>
-<p>The link works for 30 minutes, and only once. If the button doesn't open, try ${a(links[1], 'this link')}.</p>
+<p><a href="${link}" style="display:inline-block;background:#f4d35e;color:#2b2622;padding:12px 22px;border-radius:12px;text-decoration:none;font-weight:bold;border:2px solid #2b2622">Set a new password</a></p>
+<p>The link works for 30 minutes, and only once. Then go back to the game on itch.io and log in with the new password.</p>
 <p>Didn't ask for this? Just ignore this email. Your password stays the same and your dogs are safe.</p>
-<p style="color:#6b6058">Noodle the dachshund says hi. The rest of him is on his way.<br>Doodle Doggo</p></div>`;
+<p style="color:#6b6058">Noodle the dachshund says hi. The rest of him is on his way.<br>Doodle Doggo</p>
+<p style="font-size:14px;color:#6b6058">If the button doesn't work, copy this into your browser: ${link}</p></div>`;
   return { subject: 'Your Doodle Doggo password link', text, html };
 }
 async function sendMail(env, to, m) {
@@ -281,14 +275,13 @@ const ROUTES = {
     return json({ token: await newSession(env, nu.id), user: pub(nu) });
   } },
 
-  'POST /forgot': { auth: false, async fn({ env, req, ip, body }) {
+  'POST /forgot': { auth: false, async fn({ env, ip, body }) {
     const email = norm(body.email);
     if (!EMAIL.test(email) || email.length > 254) return fail('invalid_email', 400);
     if (!mailOn(env)) return json({ ok: true, mail: false }); // no email service set up yet: the game says so
     if (await limited(env, 'forgot:' + ip, 10, 3600)) return fail('rate_limited', 429);
     const answer = json({ ok: true, mail: true }); // the same answer whether or not the email has an account
     if (await limited(env, 'forgot:' + (await sha256(email)), 3, 3600)) return answer; // quietly: at most 3 links an hour per email
-    const links = linkBase(req.headers.get('Origin'));
     const u = await one(env, 'select id from users where email = ?1 and guest = 0', email);
     if (u) {
       const tok = b64url(rnd(32)), now = Date.now();
@@ -296,11 +289,11 @@ const ROUTES = {
         env.DB.prepare('delete from resets where user_id = ?1').bind(u.id), // only the newest link works
         env.DB.prepare('insert into resets (token_hash, user_id, created_at, expires_at) values (?1, ?2, ?3, ?4)').bind(await sha256(tok), u.id, now, now + RESET_MS)
       ]);
-      await sendMail(env, email, resetMail(links.map((b) => b + '?reset=' + tok)));
+      await sendMail(env, email, resetMail(RESET_PAGE + '?token=' + tok));
     } else if (sbOn(env) && (await one(env, 'select 1 as x from legacy where email_hash = ?1', await sha256(email)))) {
-      // an old account not moved over yet: Supabase sends its own reset email, and its link opens the game, which moves the
+      // an old account not moved over yet: Supabase sends its own reset email, and its link opens the reset page, which moves the
       // account over with the new password (POST /reset with sb_token). Nothing is copied before that.
-      const r = await sbCall(env, '/auth/v1/recover?redirect_to=' + encodeURIComponent(links[0] + '?sbreset=1'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+      const r = await sbCall(env, '/auth/v1/recover?redirect_to=' + encodeURIComponent(RESET_PAGE), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
       if (!r.ok) console.error('pawhaven-api supabase recover', r.status);
     }
     return answer;

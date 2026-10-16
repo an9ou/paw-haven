@@ -106,7 +106,7 @@ run('cloud', async (t) => {
   await phoneCheck(d2, 'Pixel 7 forgot password', '#modal .panel');
   let mails0 = srv.mails.length; await tap(d2, '#fgGo');
   ok(await until(d2, () => /a link is on its way/.test((document.getElementById('fgMsg') || {}).textContent || ''), null, 5000), 'Send the link: "If that email has an account, a link is on its way"');
-  ok(srv.mails.length === mails0 + 1 && srv.mails[mails0].to[0] === 'mochi@example.com' && /\?reset=/.test(srv.mails[mails0].link), 'one email with a reset link went out');
+  ok(srv.mails.length === mails0 + 1 && srv.mails[mails0].to[0] === 'mochi@example.com' && /^https:\/\/doodledoggo\.app\/reset\?token=/.test(srv.mails[mails0].link), 'one email with a reset link went out');
   await phoneCheck(d2, 'Pixel 7 forgot password sent', '#modal .panel');
   await tap(d2, '#fgBack'); await d2.waitForSelector('#clBox');
   await tap(d2, '[data-cl=login]'); await d2.waitForSelector('#clPw');
@@ -298,31 +298,5 @@ run('cloud', async (t) => {
   ok(await until(d9, () => window.__paw.S && window.__paw.S.coins === 9191 && document.getElementById('modal').hidden, null, 8000), 'logging in moves the old account over and loads its save');
   ok((await uidOf(d9)) === so.id && !(await ev(d9, () => window.__pawCloud.CL.anon)), 'logged in to the moved account (same user id)');
   ok(srv.backups.some((b) => b.user_id === so.id && b.reason === 'guest save before sign-in' && b.data.dogs[0].name === guest9), 'the guest game went to that account\'s backups');
-
-  sec('device 10 (iPhone 15): the emailed link opens "Set a new password", logs in and logs the other devices out');
-  mails0 = srv.mails.length;
-  await srv.handle(null, 'POST', '/forgot', JSON.stringify({ email: 'mochi@example.com' }), null);
-  const link = srv.mails[mails0]; ok(link && link.token, 'a reset email for the first account');
-  const d1Before = await uidOf(d1);
-  const p10 = await t.mk({ device: 'iPhone 15' });
-  await t.ctx.exposeBinding('__clSrv', (src, m, u, b, a) => srv.handle(src.page, m, u, b, a)); await t.ctx.addInitScript(mockInit, {}); srv.pages.add(p10);
-  await p10.goto(URL + '?reset=' + link.token); use(p10);
-  ok(!!(await p10.waitForSelector('#modal .panel[data-ready] #rsPw2', { timeout: 10000 }).catch(() => null)), 'the game opens "Set a new password"');
-  ok(/Set a new password/.test(await p10.textContent('#modal .panel')), 'with a clear title');
-  await phoneCheck(p10, 'iPhone 15 set a new password', '#modal .panel');
-  await p10.fill('#rsPw', 'pupper789'); await p10.fill('#rsPw2', 'pupper780'); await tap(p10, '#rsGo');
-  ok(await until(p10, () => /don't match/.test((document.getElementById('rsMsg') || {}).textContent || ''), null, 3000), 'two different passwords are refused');
-  await p10.fill('#rsPw', 'pupper789'); await p10.fill('#rsPw2', 'pupper789'); await tap(p10, '#rsGo');
-  ok(await until(p10, (g) => window.__pawCloud.CL.uid === g && !window.__pawCloud.CL.anon && document.getElementById('modal').hidden, d1Before, 8000), 'saved: logged in to that account on this device');
-  ok(srv.pwIs(d1Before, 'pupper789') && !srv.pwIs(d1Before, 'pupper456'), 'the new password is stored (PBKDF2), the old one is gone');
-  ok(await until(p10, () => !!window.__paw.S && !!document.querySelector('#tContinue'), null, 6000), 'the account\'s game is here: Continue');
-  ok(await t.waitToast(/Password changed\. You're logged in/), 'toast: Password changed. You\'re logged in...');
-  await focus(d1); ok(await until(d1, () => !window.__pawCloud.CL.uid, null, 8000) && !!(await ev(d1, () => window.__paw.S)), 'device 1 is logged out by the reset, and its game stays');
-  const p11 = await t.mk({ device: 'Pixel 7' });
-  await t.ctx.exposeBinding('__clSrv', (src, m, u, b, a) => srv.handle(src.page, m, u, b, a)); await t.ctx.addInitScript(mockInit, {}); srv.pages.add(p11);
-  await p11.goto(URL + '?reset=' + link.token); use(p11); await p11.waitForSelector('#modal .panel[data-ready] #rsPw2', { timeout: 10000 });
-  await p11.fill('#rsPw', 'pupper999'); await p11.fill('#rsPw2', 'pupper999'); await tap(p11, '#rsGo');
-  ok(await until(p11, () => /run out or was already used/.test((document.getElementById('rsMsg') || {}).textContent || ''), null, 5000), 'the same link a second time: "That link has run out or was already used..."');
-  ok(srv.pwIs(d1Before, 'pupper789'), 'and the password stays the one picked first');
 
 }, { timeout: 300000 });

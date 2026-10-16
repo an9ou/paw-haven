@@ -102,7 +102,7 @@ function acDogName(d) { return (d && ((d.dogs && d.dogs[0] && d.dogs[0].name) ||
 function acOpenForm(kind, inSheet) {
   const reg = kind === 'reg', c = acCl(), local = clLocal(), acct = c && c.uid && !c.anon;
   const carry = local && !acct && clMine(); // a guest game comes along; an account's game stays with that account
-  const lead = reg ? (carry ? `${esc(acDogName(local))} comes along to the new account. No email is ever sent.` : local ? `A fresh start with a new crayon dog. ${esc(acDogName(local))} stays safe in the other account.` : 'Make one, then pick your first crayon dog. No email is ever sent.')
+  const lead = reg ? (carry ? `${esc(acDogName(local))} comes along to the new account. We only email you if you ask for a password link.` : local ? `A fresh start with a new crayon dog. ${esc(acDogName(local))} stays safe in the other account.` : 'Make one, then pick your first crayon dog. We only email you if you ask for a password link.')
     : 'Welcome back. Type the email and password you signed up with.';
   const fields = clIn('acEmail', 'email', 'Email', 'username') + (reg ? clIn('acPw', 'password', `Password (${CL_PW_MIN} or more characters)`, 'new-password') + clIn('acPw2', 'password', 'Password again', 'new-password') : clIn('acPw', 'password', 'Password', 'current-password'));
   const body = `<div class="clset acform"><div class="aclead"><span class="acdog" aria-hidden="true">${art('dog', reg ? 'golden' : 'pug', { pose: reg ? 'happy' : 'paw' })}</span><p>${lead}</p></div>${fields}<p class="clmsg" id="acMsg" role="alert" hidden></p>${reg ? '' : '<button class="tlink" id="acForgot">Forgot your password?</button>'}</div>`;

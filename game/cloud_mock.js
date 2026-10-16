@@ -53,7 +53,7 @@ function fakeMail() {
   const fetchFn = async (input, o) => {
     const req = typeof input === 'string' || input instanceof URL ? new Request(input, o) : input; // Miniflare hands over a Request
     if (req.url !== 'https://api.resend.com/emails' || req.headers.get('Authorization') !== 'Bearer re_test') return new Response('{"message":"bad"}', { status: 401 });
-    const m = await req.json(); m.link = (m.text.match(/https?:\/\/\S+\?reset=[A-Za-z0-9_-]+/) || [''])[0]; m.token = m.link.split('?reset=')[1] || '';
+    const m = await req.json(); m.link = (m.text.match(/https:\/\/doodledoggo\.app\/reset\?token=[A-Za-z0-9_-]+/) || [''])[0]; m.token = m.link.split('?token=')[1] || '';
     mails.push(m); return new Response('{"id":"mail_' + mails.length + '"}', { status: 200 });
   };
   return { mails, fetch: fetchFn };

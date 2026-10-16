@@ -8,7 +8,7 @@ Plays on laptops (designed at **1280×720**) and on phones held upright: the sam
 
 ## Play it
 
-Play in your browser: **https://doodledoggo.app** (Cloudflare) or **https://an9ou.github.io/paw-haven/** (GitHub Pages, live once Pages is switched on: repo Settings → Pages → Source: GitHub Actions).
+Play free on **https://an9ou.itch.io/doodle-doggo** (itch.io). About the game: **https://doodledoggo.app**. The GitHub Pages copy: **https://an9ou.github.io/paw-haven/** (GitHub Pages, live once Pages is switched on: repo Settings → Pages → Source: GitHub Actions).
 
 Your save lives in your browser's local storage. On the web version it is also saved to the cloud (since v2.8.1 on Cloudflare: it syncs on every change, when the game opens and when you come back to it): you start as a guest, and an email plus your own password lets you play the same game on any device (no email is ever sent). Settings has Export / Import save codes on every copy, including the claude.ai one, where cloud save is off.
 
@@ -39,7 +39,7 @@ You only need Node.js (no packages). The game is split into small source files u
 node game/build.js            # game only -> game/paw_haven_proto.html (used by the tests)
 node game/build.js publish    # everything merged -> paw_haven_prototype.html (single file, open it in a browser)
 node tools/pages.js           # wraps the publish build as _site/index.html (what GitHub Pages serves)
-bash tools/cf_pages_deploy.sh # builds and deploys https://doodledoggo.app (Cloudflare)
+bash tools/cf_pages_deploy.sh # deploys the doodledoggo.app introduction site (site/) to Cloudflare
 bash tools/cf_api_deploy.sh   # deploys the cloud save Worker pawhaven-api and its D1 database (cloudflare/)
 ```
 
@@ -72,6 +72,7 @@ world/            scene, prop and icon art modules
 mods/             gameplay modules: genes, audio, walk runner, toys, garden, kitchen
 tools/            build helpers (GitHub Pages wrapper, Cloudflare deploys, worktree script)
 cloudflare/       the cloud save and login Worker (worker.js, schema.sql for D1, wrangler.toml)
+site/             the doodledoggo.app introduction site (home, privacy, the password reset page)
 dashboard/        a small tooling dashboard
 *.md              design and build contracts for each version (see PIPELINE.md)
 docs/design/      game design documents (proposal, v2, garden and kitchen, v1.3 plan)
