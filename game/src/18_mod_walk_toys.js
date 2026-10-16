@@ -11,7 +11,7 @@ function enterWalkMod(area) {
   if (walk15 || dig1) { if (dig1 && S.outfit.head === 'Acorn Cap') { addStat('happy', 10); toast('Spinach power + Acorn Cap: digs are maxed, so +10 Happiness instead.', 'good'); } else toast(walk15 ? 'Carrot Crunchies power: +15 seconds on this walk!' : 'Spinach Scramble power: +1 dig on this walk!', 'good'); S.buff = null; markDirty(); }
   W = { mod: true, area, env: e, ended: false };
   const o = {
-    area, time: e.time, weather: e.weather, season: e.season, halloween: e.halloween, lights: e.lights, newyear: e.newyear, jp: e.jp, dog: dogForMod(), durationSec: Math.round(R.secs * walkScale()) + (walk15 ? 15 : 0), firstWalk, // v2: 3 to 6 months x0.7
+    area, time: e.time, weather: e.weather, season: e.season, halloween: e.halloween, lights: e.lights, newyear: e.newyear, jp: e.jp, dog: dogForMod(), durationSec: Math.round(R.secs * pkWalkScale()) + (walk15 ? 15 : 0), firstWalk, pack: pkWalkLooks(), // v2: 3 to 6 months x0.7 (v2.9 PACK: the shortest walker decides; pack: the followers' looks, [] with one dog)
     skipTutorial: !!prefs.skipTut, setSkipTutorial: (v) => { prefs.skipTut = !!v; savePrefs(); },
     abilities: { extraDig: S.outfit.head === 'Acorn Cap' || dig1, goggles: S.outfit.eyes === 'Explorer Goggles', necklace: S.outfit.neck === 'Seashell Necklace', poncho: S.outfit.body === 'Mossy Poncho', clover: S.outfit.neck === 'Clover Collar', luckyPenny: S.outfit.charm === 'Lucky Penny', noseMul: noseMul(), raincoat: hasRaincoat(), rainHat: hasRainHat(), warm: isWarm() },
     rollTreasure: (ar) => {
@@ -33,11 +33,12 @@ function enterWalkMod(area) {
 function finishWalkMod(R, r) {
   pottyWalked();
   const e = W.env, rainCoat = e.weather === 'rain' && hasRaincoat();
-  const coins = addCoins(Math.max(0, +r.coins || 0));
+  const coins = addCoins(pkWalkCoins(Math.max(0, +r.coins || 0))); // v2.9 PACK: one walk's pay, +10% (rounded down) when 2 or more dogs walk
   const happy = Math.round((+r.happiness || 0) + (rainCoat ? 5 : 0)); addStat('happy', happy);
   const bond = (+r.bond || 0) > 0 ? addBond(+r.bond) : 0;
   const en = Math.abs(+r.energy || 0) * (buffOn('cool') ? 0.75 : 1); addStat('energy', -en);
   let cl = Math.abs(+r.cleanliness || 0); if (rainCoat) cl = 0; else if (e.weather === 'rain') cl += 5; addStat('clean', -cl);
+  const pkFol = pkWalkDone(r, e); // v2.9 PACK: each follower gets the walk's stats and Bond
   S.walks = (S.walks || 0) + 1; dailyCare('play'); markDirty(); trackAct('walk', { area: W.area, early: !!r.early });
   const t = r.treasure && r.treasure.name ? tInfo(r.treasure.name) : null, dup = r.treasure && r.treasure.dup;
   let tre;
@@ -47,7 +48,7 @@ function finishWalkMod(R, r) {
   const bonus = r.bonus && r.bonus.name ? `<p class="small">Bonus sparkle on the path: ${esc(r.bonus.name)}${r.bonus.dup ? ' (sold, duplicate)' : ''}.</p>` : '';
   const junk = Array.isArray(r.junk) && r.junk.length ? `<p class="small">Junk dug up: ${r.junk.map((j) => esc(typeof j === 'string' ? j : (j && j.text) || 'something odd')).join(' ')}</p>` : '';
   const wl = breedLine(WALK_LINES, D());
-  const run = `${wl ? `<p class="small">${esc(wl)}</p>` : ''}<p class="small">${r.cleanRun ? 'Clean run! Not a single bonk. ' : r.obstaclesHit ? `Bonked into ${r.obstaclesHit} thing${r.obstaclesHit > 1 ? 's' : ''}. ` : ''}${r.timeLost ? `Bumps cost you ${Math.round(r.timeLost)}s. ` : ''}${r.puddlesCleared ? `Leapt over ${r.puddlesCleared} puddle${r.puddlesCleared > 1 ? 's' : ''}. ` : ''}${rainCoat ? 'The raincoat kept everything dry (+5 Happiness).' : e.weather === 'rain' ? 'No raincoat, so: soggy dog.' : ''}</p>`;
+  const run = `${pkWalkLine(pkFol)}${wl ? `<p class="small">${esc(wl)}</p>` : ''}<p class="small">${r.cleanRun ? 'Clean run! Not a single bonk. ' : r.obstaclesHit ? `Bonked into ${r.obstaclesHit} thing${r.obstaclesHit > 1 ? 's' : ''}. ` : ''}${r.timeLost ? `Bumps cost you ${Math.round(r.timeLost)}s. ` : ''}${r.puddlesCleared ? `Leapt over ${r.puddlesCleared} puddle${r.puddlesCleared > 1 ? 's' : ''}. ` : ''}${rainCoat ? 'The raincoat kept everything dry (+5 Happiness).' : e.weather === 'rain' ? 'No raincoat, so: soggy dog.' : ''}</p>`;
   const p = openModal(t ? `<span class="hl">Treasure found: ${esc(R.n)}</span>` : (r.early ? `Walk cut short: ${esc(R.n)}` : `Walk complete: ${esc(R.n)}`), `${tre}${bonus}${junk}${run}
     ${wfTiles([[`+${coins}`, 'Paw Coins', coins], [`+${happy}`, 'Happiness', happy], [`+${bond}`, 'Bond points', bond], [`-${Math.round(en)}`, 'Energy', Math.round(en)], [cl ? '-' + Math.round(cl) : '0', 'Cleanliness', cl]], 'results compact')}`,
     { cls: 'celebrate', keep: true, foot: `${t && !dup ? '<button class="btn" id="resJournal">Open Journal</button>' : ''}<button class="btn yes big" id="resOk">${t && !dup ? 'Add to Journal' : 'Back to ' + esc((PLACES[S.place] || PLACES.yard).n)}</button>`, onClose: () => go('yard') });
@@ -66,15 +67,17 @@ function enterToy(name) {
   const k = td.n === 0 ? 1 : td.n === 1 ? 0.5 : 0.25; td.n++; markDirty();
   const fav = (S.dog.favToy === name ? 1.5 : 1) * (S.place === 'park' ? 1.2 : 1), e = envNow();
   let closed = false, acted = false; // v2.4: one 'toy' act per play session
+  const crew = pkDogs('play').slice(1); if (PKS.skip.length) pkSkipSay(PKS.skip, 900, 'toy'); // v2.9 PACK: every ticked dog gets the effects
   const ctx = {
     dog: dogForMod(), time: e.time, weather: e.weather, season: e.season, halloween: e.halloween, lights: e.lights, newyear: e.newyear, jp: e.jp, sfx, say: (t) => toast(t),
     reward: (r) => {
       if (!r) return; const hp = (+r.happiness || 0) * k * fav * (S.place === 'dogpark' ? 1.3 : 1); if (hp) addStat('happy', hp);
       const b = (+r.bond || 0) > 0 ? addBond(r.bond * k) : 0; const c = (+r.coins || 0) > 0 ? addCoins(r.coins * k) : 0;
       if (r.energy) addStat('energy', +r.energy);
+      if (crew.length) pkToyFx(crew, r, k, name);
       if (r.clean) addStat('clean', +r.clean); if (r.cool) S.coolUntil = S.gameMin + 60; // v2.4 Paddling Pool: +Cleanliness and a cool hour
       dailyCare('play'); updateHUD(); markDirty(); if (!acted) { acted = true; trackAct('toy', { name }); }
-      if (Math.round(hp) || b || c) toast(`+${Math.round(hp)} Happiness${b ? `, +${b} Bond` : ''}${c ? `, +${c} coins` : ''}${fav > 1 ? ' (favourite toy!)' : ''}${k < 1 ? ` (x${k}: played already today)` : ''}`, 'good');
+      if (Math.round(hp) || b || c) toast(`+${Math.round(hp)} Happiness${b ? `, +${b} Bond` : ''}${c ? `, +${c} coins` : ''}${fav > 1 ? ' (favourite toy!)' : ''}${k < 1 ? ` (x${k}: played already today)` : ''}${crew.length ? ' (each dog)' : ''}`, 'good');
     },
     onClose: () => { if (closed) return; closed = true; if (cur.mode === 'toy') go('yard'); }
   };

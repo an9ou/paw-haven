@@ -19,13 +19,13 @@ function crFree(d) { if (d && typeof hoFree === 'function') hoFree(d); } // v2.7
 /* ---------------- the chip row (top of the Feed and Care trays) ---------------- */
 const CR_TICK = '<svg class="cr-tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12.8c2 1.6 3.4 3.3 4.6 5.4 2.6-5.3 5.9-9.4 10.4-12.6" fill="none" stroke="#5B3D32" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 let crQuiet = false; // a chip tap redraws its tray: no bark, keep the row's scroll
-function crChipsHTML() {
+function crChipsHTML(cap) { // v2.9: cap = the line under the chips (Play and Walk say who joins in); the default is the Feed and Care line
   if (!crPack()) return '';
   const chips = crPresent().map((d) => {
     const on = !(S.careOff && S.careOff[d.id]);
     return `<button class="chip cr-chip${on ? ' on' : ''}${d.sleeping ? ' asleep' : ''}" data-crdog="${d.id}" aria-pressed="${on}" aria-label="${esc(d.name)}${d.sleeping ? ', asleep' : ''}"><span class="cr-head" aria-hidden="true">${headSVG(d)}</span><span class="cr-name">${esc(d.name)}</span>${d.sleeping ? '<span class="cr-zz" aria-hidden="true">zz</span>' : ''}<span class="cr-box" aria-hidden="true">${on ? CR_TICK : ''}</span></button>`;
   }).join('');
-  return `<div class="cr-wrap"><div class="cr-chips" role="group" aria-label="Who gets this">${chips}</div><p class="small cr-cap">Ticked dogs get fed, petted, bathed and tucked in together.</p></div>`;
+  return `<div class="cr-wrap"><div class="cr-chips" role="group" aria-label="Who gets this">${chips}</div><p class="small cr-cap">${cap ? esc(cap) : 'Ticked dogs get fed, petted, bathed and tucked in together.'}</p></div>`;
 }
 function crBindChips(root, redraw) {
   (root || dock).querySelectorAll('[data-crdog]').forEach((b) => { b.onclick = () => { SFX.init(); crToggle(b.dataset.crdog, redraw); }; });
@@ -174,10 +174,11 @@ function crPetBind(el) {
     const m = Math.hypot(e.clientX - crRub.last.x, e.clientY - crRub.last.y); crRub.last = { x: e.clientX, y: e.clientY }; crRub.moved += m; crRub.dist += m;
     if (crRub.dist > 70) { crRub.dist = 0; at(e); }
   });
-  el.addEventListener('pointerup', (e) => { if (crRub.down && crRub.id === id && crRub.moved < 8) { at(e); at(e); } crRub.down = false; });
+  el.addEventListener('pointerup', (e) => { if (crRub.down && crRub.id === id && crRub.moved < 8 && !pkHeld()) { at(e); at(e); } crRub.down = false; }); // v2.9: a long press opened the dog card, so no pet on release
   el.addEventListener('pointerleave', () => { if (!crRub.down) crRub.last = null; });
   el.addEventListener('pointercancel', () => { crRub.down = false; crRub.last = null; });
   el.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); const r = el.getBBox(); crPetAt(dogById(id), r.x + r.width / 2, r.y + r.height / 3); } };
+  pkHold(el, dogById(id)); // v2.9: a long press (about 0.6 s) opens the dog card: Make leader, Dress, Train. A tap keeps petting
 }
 // the Bond for the pack, one toast. later: pack dogs whose Bond came after the active dog's (it had its own toast, the act and the care bonus already)
 function crPetBond(due, later) {

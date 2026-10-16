@@ -593,6 +593,24 @@ function start(el, o) {
   let curPose = null;
   function setPose(p) { if (p === curPose) return; if (curPose) poseEls[curPose].classList.remove('on'); poseEls[p].classList.add('on'); curPose = p; }
   setPose('idle');
+  /* ---------- v2.9 PACK: followers. o.pack = up to 4 dogForMod()-style looks that trot in a line behind the leader. Without o.pack none of this runs ---------- */
+  const fol = [], folHist = [], FOL_GAP = 50, FOL_K = 0.8, FOL_POSES = ['walk', 'jump', 'happy', 'idle'];
+  function folSvg(fd, p) {
+    for (const q of p === 'idle' ? ['idle'] : [p, 'idle']) {
+      const sv = call('dog', fd.key, { pose: q, outfit: fd.outfit || {}, facing: 'right', coat: fd.coat, seed: fd.seed });
+      if (sv && (sv.indexOf('pa-pose-' + q) >= 0 || q === 'idle' || sv.indexOf('pa-pose-') < 0)) return sv;
+    }
+    return svgWrap([240, 200], '<ellipse cx="120" cy="140" rx="60" ry="30" fill="#F4A262"/><circle cx="175" cy="110" r="26" fill="#F4A262"/>');
+  }
+  if (Array.isArray(o.pack)) {
+    o.pack.slice(0, 4).forEach((fd, i) => {
+      if (!fd || !fd.key) return;
+      const el = document.createElement('div'); el.className = 'pw-dog pw-fol'; el.setAttribute('aria-hidden', 'true'); const poses = {};
+      FOL_POSES.forEach((p) => { const d = document.createElement('div'); d.className = 'pw-pose' + (p === 'idle' ? ' on' : ''); d.innerHTML = folSvg(fd, p); el.appendChild(d); poses[p] = d; });
+      E.dog.parentNode.insertBefore(el, fol.length ? fol[fol.length - 1].el : E.dog); // the one farthest back is drawn first
+      fol.push({ el, poses, cur: 'idle' });
+    });
+  }
   // normalise the breed size so every dog reads at the same height (the hitbox is the same for all)
   let dogSc = 0.68;
   try {
@@ -652,6 +670,7 @@ function start(el, o) {
     tiles(TW, stripSvg, E.strip); tiles(FARW, farSvg, E.far); tiles(FGW, fgSvg, E.fg);
     E.veil.style.height = px(G - 3); E.far.style.opacity = '.6';
     E.dog.style.left = px(DOG.x - 120 * dogSc); E.dog.style.top = px(G - 186 * dogSc); E.dog.style.width = px(240 * dogSc); E.dog.style.height = px(200 * dogSc);
+    fol.forEach((f, i) => { Object.assign(f.el.style, { left: px(DOG.x - 120 * dogSc * FOL_K - (i + 1) * FOL_GAP), top: px(G - 186 * dogSc * FOL_K), width: px(240 * dogSc * FOL_K), height: px(200 * dogSc * FOL_K) }); }); // a step behind and a little smaller, feet on the same ground line
     live.forEach(placeEl); lamps.forEach((l) => { l.k = -99; });
     E.say.style.left = px(DOG.x + 10); sayY = (G - 186 * dogSc) * s - 16; E.say.style.top = sayY.toFixed(1) + "px";
     E.prompt.style.left = px(DOG.x + 10);
@@ -1230,6 +1249,14 @@ function start(el, o) {
     const bob = walking ? -Math.abs(Math.sin(S.camX / 34)) * 3 : 0;
     const tilt = S.stumbleT > 0 ? Math.sin(S.stumbleT * 40) * 4 : !S.grounded ? clamp(-S.vh / 90, -8, 6) : 0;
     E.dog.style.transform = `translate3d(${(S.slideX * s).toFixed(1)}px,${((-S.h + bob) * s).toFixed(1)}px,0) rotate(${tilt.toFixed(1)}deg)`;
+    if (fol.length) { // v2.9: each follower repeats the leader a little later, with smaller hops
+      folHist.push({ t: now, y: (-S.h + bob * 0.5) * s, p: p === 'jump' || p === 'happy' || p === 'walk' ? p : 'idle' }); while (folHist.length > 2 && folHist[1].t < now - 1000) folHist.shift();
+      fol.forEach((f, i) => {
+        const at = now - (i + 1) * 170; let h = folHist[0]; for (let k = folHist.length - 1; k >= 0; k--) if (folHist[k].t <= at) { h = folHist[k]; break; }
+        if (h.p !== f.cur) { f.poses[f.cur].classList.remove('on'); f.poses[h.p].classList.add('on'); f.cur = h.p; }
+        f.el.style.transform = `translate3d(0,${(h.y * 0.8).toFixed(1)}px,0)`;
+      });
+    }
     const blink = S.invT > 0 && S.mode === 'run';
     if (blink !== E.dog._blink) { E.dog._blink = blink; E.dog.classList.toggle('pw-blink', blink); }
     // HUD
