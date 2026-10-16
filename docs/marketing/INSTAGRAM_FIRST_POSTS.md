@@ -2,7 +2,7 @@
 
 Updated 16 Oct 2026 after the owner's feedback.
 
-- **A: the 3-tile banner** (chosen). Less wording: the game name plus one short line per tile, and 13 different dogs on one meadow.
+- **A: the 3-tile banner** (chosen). One word box, on the middle tile only ("Doodle Doggo, a cozy dog game · play free"). 9 big dogs on an autumn meadow with the game's cottage, trees, fence, clothesline, lanterns, scarecrow and pumpkin cart. Some dogs wear nothing, some one item, some two.
 - **B: the informative series** (chosen for the posts that follow): Japan view, the dogs, what you can do, how to play. Same paper-and-pencil style.
 - **Extras** (optional): `post1-meet-noodle.jpg`, `post2-pencil-town-fuji.jpg`, `post3-play-free-halloween.jpg`. Post 3 is a good Halloween push on Thu 29 Oct.
 
@@ -14,7 +14,7 @@ Captions follow the owner's rules: no "ugliest", never "breed" as a verb, no "se
 
 ## A: the 3-tile banner
 
-One wide picture, `banner-0-wide-preview.jpg` (3104 x 1350, **for looking at only, do not post it**), cut into three tiles. Each tile has the game name on its own.
+One wide picture, `banner-0-wide-preview.jpg` (3104 x 1350, **for looking at only, do not post it**), cut into three tiles. Only the middle tile has the word box. The left and right tiles are pure scenes, so their captions carry the game name.
 
 **Post on Sat 17 Oct, in this order, about 10 minutes apart:**
 
@@ -39,7 +39,7 @@ Adopt a wobbly crayon pup, walk around a pencil-sketch town, grow a garden, cook
 
 #cozygames #browsergame #indiegame #halloweengame #doodledoggo #ブラウザゲーム #ハロウィン
 ```
-**Alt text:** `Crayon dogs by a pumpkin cart under bunting at dusk. Card: Doodle Doggo, play free, link in bio.`
+**Alt text:** `A corgi in a witch hat, a pug in a party hat and a pumpkin patch cart under bunting.`
 
 ### Middle tile
 **Caption**
@@ -53,7 +53,7 @@ Doodle Doggo is a pencil-sketch town with crayon dogs, and Fuji peeks over every
 
 #cozygames #handdrawn #mtfuji #indiedev #doodledoggo #富士山 #インディーゲーム
 ```
-**Alt text:** `Pink Mt. Fuji, a red torii gate and crayon dogs at dusk. Card: Doodle Doggo.`
+**Alt text:** `Doodle Doggo, a cozy dog game, play free. Mt. Fuji, a torii gate and crayon dogs at dusk.`
 
 ### Left tile (posted last, shows first on the grid)
 **Caption**
@@ -70,7 +70,7 @@ Which dog would you adopt first? 👇
 
 #cozygames #indiegame #browsergame #dachshund #doodledoggo #癒しゲーム #ブラウザゲーム
 ```
-**Alt text:** `Noodle the crayon dachshund and other dogs on a meadow. Card: Doodle Doggo, a cozy dog game.`
+**Alt text:** `A cozy cottage and crayon dogs in costumes on an autumn meadow under bunting.`
 
 ---
 

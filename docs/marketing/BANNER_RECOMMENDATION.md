@@ -8,8 +8,8 @@
 - It is a one-off. We do not repeat it, which keeps it special.
 
 ## The four conditions (all done in the files)
-1. **Each tile reads well alone.** Every tile has its own card, headline and a subject (Noodle / Mt. Fuji / the corgi and the cart). In the feed nobody sees a "broken" picture.
-2. **Built for the grid crop.** The profile grid shows 4:5 posts as 3:4 crops, so about 34 px is trimmed from each side. The tiles overlap by 68 px (34 px each side), so the three grid slices touch exactly: no missing strip at the seams. Important things stay in the centre.
+1. **Each tile is a complete picture.** The word box is on the middle tile only (the owner's choice). The left tile is the cottage scene, the right tile is the Halloween corner, so they read as pretty scenes on their own, and the caption carries the game name. The grid shows all three together, so the name is always in view on the profile.
+2. **Built for the grid crop.** The profile grid shows 4:5 posts as 3:4 crops, so about 34 px is trimmed from each side. The tiles overlap by 68 px (34 px each side), so the three grid slices touch exactly: no missing strip at the seams. No dog stands in an overlap strip, so none is cut off.
 3. **Post order matters.** Post the **right** tile first, then the middle, then the left, about 10 minutes apart. The newest post always goes top-left, so the three end up left, middle, right.
 4. **Pin all three.** Instagram lets you pin up to 3 posts, and the most recently pinned goes top-left (pin right, middle, left). Without pins, **the very next post you make shifts the whole row by one and the picture tears apart.** With pins, it stays in row 1 and new posts start below.
 
@@ -19,10 +19,12 @@
 - Instagram changes how the grid works from time to time (the 3:4 grid is new, and sources disagree on the dates). If your phone shows something different, tell me and I will re-cut the tiles.
 - On a very small phone the small line under the game name is tiny. The game name itself is still readable.
 
-## Version 2 of the banner (after your feedback)
-- Less wording: the **Doodle Doggo** wordmark on every tile plus one short line ("a cozy dog game", "Mt. Fuji on every skyline", "play free, link in bio").
-- **13 different dogs** (13 of the 14 dog types; Rocket the greyhound is the only one missing, and he is in the dogs post), spread across three depths so the meadow looks full but nobody overlaps anybody. Noodle and Biscuit are drawn larger.
-- Same pencil-and-paper style, bunting, Mt. Fuji and torii.
+## What is in the banner now (version 3, after the owner's feedback)
+- **One word box**, middle tile only: the Doodle Doggo wordmark and "a cozy dog game · play free".
+- **9 bigger dogs**, one meadow, nobody overlaps. Three wear two items (Noodle: heart sunglasses and red bandana; Scout: acorn cap and bow tie; Biscuit: witch hat and candy corn bandana), four wear one (Mochi: happi coat; Sunny: flower crown; Frost: autumn scarf; Dumpling: party hat) and two wear nothing (Cloud and Bagel).
+- **A fuller background:** the game's cottage (blue heart door, curtains, flower box), autumn trees, a fence, a mailbox, a clothesline with laundry, string lights, red paper lanterns, a stone lantern, the torii, Mt. Fuji, a scarecrow, a ghost garland, the Pumpkin Patch cart, leaf piles and pumpkins.
+- The trade: bigger dogs means fewer of them. The full 14 dog types are in the "14 dog types" post.
+- The only seasonal parts are the pumpkin cart, ghost garland, scarecrow and the witch hat, so it still works after 2 Nov. Ask for an evergreen right tile if you want one.
 
 ## The files
 - **A, the banner:** `banner-1-left-newest.jpg`, `banner-2-middle.jpg`, `banner-3-right-post-first.jpg`
