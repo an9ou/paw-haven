@@ -1793,23 +1793,23 @@ function sqFujihill(k){const e=k.env;
   k.own(rng(0x4d4f4d49),()=>fhMomiji(k,44,420,1));
   k.own(rng(0x53414b55),()=>fhSakura(k,928,446,1));
   // the shrine behind the torii, the torii, two stone lanterns
-  jpHokora(k,210,432,.6);k.add('<g class="pa-jp-torii">');jpTorii(k,210,446,1);k.add('</g>');jpToro(k,114,456,.8);jpToro(k,306,456,.8);// (x +40 since review 3: the torii is whole in the phone crop)
+  jpHokora(k,255,428,.8);k.add('<g class="pa-jp-torii">');jpTorii(k,255,448,1.8);k.add('</g>');jpToro(k,128,458,.9);jpToro(k,382,458,.9);// (v2.8.3: the torii at 1.8, taller than the dog, and still whole in the phone crop)
   // the stepping-stone path from the foreground (where the dog stands) up to the torii
-  [[468,594,36,11],[430,556,33,10],[396,522,30,9],[360,494,26,8],[320,474,22,7],[284,462,18,6],[250,453,15,5],[218,447,12,4]].forEach(([x,y,rx,ry])=>{const p=blobP(x,y,rx,ry,k.r,9,.22);k.shape(p,'#DCD3C6',{w:1.6,one:1,hatch:{side:.6,gap:3.6,col:'#B5AC9F',op:.5}})});
+  [[468,594,36,11],[430,556,33,10],[396,522,30,9],[360,494,26,8],[320,474,22,7],[284,462,18,6],[270,454,15,5],[256,449,12,4]].forEach(([x,y,rx,ry])=>{const p=blobP(x,y,rx,ry,k.r,9,.22);k.shape(p,'#DCD3C6',{w:1.6,one:1,hatch:{side:.6,gap:3.6,col:'#B5AC9F',op:.5}})});
   if(e.snow)k.side(()=>[[430,556,30],[360,494,22],[280,458,15]].forEach(([x,y,r])=>capLine(k,[[x-r,y-4],[x+r,y-4]],4)));
   // the bench, facing the view (its back to us)
   O.bench(k,FH_BENCH[0],FH_BENCH[1],FH_BENCH[2]);
   // wildflowers and the sign
   fl(k,[[40,560,C.red],[90,590,C.yellow],[210,580,C.lav],[640,588,'#FFB3C7'],[700,560,C.yellow],[880,592,C.red],[960,566,C.lav],[600,470,C.yellow],[780,470,'#FFB3C7']],5);
-  signpost(k,565,440,'Mt. Fuji Lookout',240,1.2);// further back, clear of the place buttons (desktop x 842-991, y 527+) and the bench
+  signpost(k,578,408,'Mt. Fuji Lookout',200);// further back, clear of the place buttons (desktop x 842-991, y 527+) and the bench
   O.tape(k,6,26,90,-24,'#F7B9C6');O.tape(k,930,566,80,-28,'#BDE7D2');
   k.ss(()=>{const so=k.so;if(so==='spring')[[300,420,.4],[520,440,1.9],[680,500,.9],[760,450,2.4],[860,520,1.2],[620,560,.2],[200,520,2.9],[100,480,1.4]].forEach(([x,y,r],i)=>petalAt(k,x,y,4,r,PET[i%3]));
     else if(so==='autumn')[[90,470,.4],[150,520,1.9],[640,520,.9],[760,470,2.4],[880,540,1.2],[300,570,.2]].forEach(([x,y,r],i)=>momijiAt(k,x,y,5.4,r,MOMI[i%4]));
     seasonDrift(k,[[700,200,1],[620,250,.9],[820,300,.85],[450,240,.8]]);if(so==='winter'&&!e.night)robin(k,610,446,1,-1);if(so==='spring'&&!e.night&&!e.rain)butterfly(k,700,420,1,'#F9C6D4')});
   k.hw(()=>{hwJack(k,592,456,.7);hwJack(k,610,460,.5);hwGhost(k,872,302,.75,16)});// v2.6-style: two pumpkins by the bench, a paper ghost hanging in the sakura
   k.lt(()=>{const b=FH_BENCH,s=b[2];ltString(k,sagP(b[0]-50*s,b[1]-70*s,b[0]+50*s,b[1]-70*s,6,10),18);ltString(k,sagP(856,334,930,326,14,10),19);ltString(k,sagP(880,300,976,304,12,10),19)});
-  k.ny(()=>{nyKado(k,158,458,.8,-1);nyKado(k,262,458,.8,1);// the kadomatsu pair at the torii, a row of paper lanterns each side on bamboo poles
-    k.line([[372,452],[372,342]],2.4,'#7FA65E');k.line([[54,452],[54,342]],2.4,'#7FA65E');nyChochins(k,266,352,372,344,7,3,.7);nyChochins(k,54,344,154,352,7,3,.7);
+  k.ny(()=>{nyKado(k,160,460,.8,-1);nyKado(k,350,460,.8,1);// the kadomatsu pair at the torii, a row of paper lanterns each side on bamboo poles
+    k.line([[430,452],[430,342]],2.4,'#7FA65E');k.line([[54,452],[54,342]],2.4,'#7FA65E');nyChochins(k,340,352,430,344,7,3,.7);nyChochins(k,54,344,154,352,7,3,.7);
     nyKites(k,[[104,226,.85,1,30,400],[790,236,.8,0,730,404]])})}
 
 /* ======================= API (wraps world A/B) ======================= */
