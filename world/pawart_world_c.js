@@ -551,8 +551,8 @@ function duck(k,x,y,s,col){k.add(`<ellipse cx="${x}" cy="${R1(y+3*s)}" rx="${R1(
   k.shape(E(x+12*s,y-16*s,7*s,7*s,10),col,{w:1.7});
   k.add(`<path d="M${R1(x+18*s)} ${R1(y-17*s)}l${R1(8*s)} ${R1(2*s)} ${R1(-8*s)} ${R1(3*s)}z" fill="${C.orange}" stroke="${C.ink}" stroke-width="1.1" stroke-linejoin="round"/><circle cx="${R1(x+14*s)}" cy="${R1(y-18*s)}" r="${R1(1.3*s+.4)}" fill="${C.ink}"/>`);
   k.line([[x-8*s,y-5*s],[x+2*s,y-3*s],[x+7*s,y-7*s]],1.3)}
-function signpost(k,x,gy,txt,w=120){k.line([[x,gy],[x+k.J(1),gy-96]],4,C.ink);const b=RC(x-w/2,gy-112,w,38);k.shape(b,C.wood,{w:2,hatch:{side:.8,gap:4,col:C.woodD,op:.4}});k.text(txt,x,gy-85,24,{rot:-2});
-  if(k.env.snow)k.side(()=>capLine(k,[[x-w/2-2,gy-112],[x+w/2+2,gy-112]],6))}
+function signpost(k,x,gy,txt,w=120,sc=1){k.line([[x,gy],[x+k.J(1),gy-96*sc]],4,C.ink);const b=RC(x-w/2,gy-112*sc,w,38*sc);k.shape(b,C.wood,{w:2,hatch:{side:.8,gap:4,col:C.woodD,op:.4}});k.text(txt,x,gy-85*sc,24*sc,{rot:-2});// sc: a bigger sign (the Mt. Fuji Lookout); sc 1 draws byte for byte as before
+  if(k.env.snow)k.side(()=>capLine(k,[[x-w/2-2,gy-112*sc],[x+w/2+2,gy-112*sc]],6))}
 function tagLabel(k,x,y,txt,rot=-8){return k.cap(()=>{const w=txt.length*8.6+22;k.add(`<g transform="rotate(${rot} ${x} ${y})">`);k.line([[x-w/2-12,y-14],[x-w/2+2,y]],1.2,C.ink,{op:.8});
   k.shape([[x-w/2,y-11],[x+w/2,y-11],[x+w/2,y+11],[x-w/2,y+11],[x-w/2-10,y]],'#FFD8E0',{w:1.6,one:1});k.add(`<circle cx="${R1(x-w/2-3)}" cy="${y}" r="2.2" fill="#FFFBF3" stroke="${C.ink}" stroke-width="1"/>`);k.text(txt,x+3,y+6,18);k.add('</g>')})}
 // appended hotspot: transparent hit, hover outline, label tag (the base art is untouched)
@@ -1801,7 +1801,7 @@ function sqFujihill(k){const e=k.env;
   O.bench(k,FH_BENCH[0],FH_BENCH[1],FH_BENCH[2]);
   // wildflowers and the sign
   fl(k,[[40,560,C.red],[90,590,C.yellow],[210,580,C.lav],[640,588,'#FFB3C7'],[700,560,C.yellow],[880,592,C.red],[960,566,C.lav],[600,470,C.yellow],[780,470,'#FFB3C7']],5);
-  signpost(k,795,490,'Mt. Fuji Lookout',176);// further back, clear of the place buttons (desktop x 842-991, y 527+) and the bench
+  signpost(k,585,455,'Mt. Fuji Lookout',200,1.2);// further back, clear of the place buttons (desktop x 842-991, y 527+) and the bench
   O.tape(k,6,26,90,-24,'#F7B9C6');O.tape(k,930,566,80,-28,'#BDE7D2');
   k.ss(()=>{const so=k.so;if(so==='spring')[[300,420,.4],[520,440,1.9],[680,500,.9],[760,450,2.4],[860,520,1.2],[620,560,.2],[200,520,2.9],[100,480,1.4]].forEach(([x,y,r],i)=>petalAt(k,x,y,4,r,PET[i%3]));
     else if(so==='autumn')[[90,470,.4],[150,520,1.9],[640,520,.9],[760,470,2.4],[880,540,1.2],[300,570,.2]].forEach(([x,y,r],i)=>momijiAt(k,x,y,5.4,r,MOMI[i%4]));
