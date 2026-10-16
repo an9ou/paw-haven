@@ -14,15 +14,15 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [x] Visitor spot is tight with 4 dogs in the Square and Café. Fixed in v2.1: a dedicated visitor spot.
 - [x] Family-tree child branches sit a bit low. Fixed in v2.1.
 - [x] Mum isn't drawn inside the nursery basket. Fixed in v2.1: `mumInBasket`.
-- [ ] The board sniff summary doesn't name the dog. `game/src/14b_vet_playboard.js`
-- [ ] The painter's chip labels are cramped. `game/src/14b_vet_playboard.js`
+- [x] The board sniff summary doesn't name the dog. `game/src/14b_vet_playboard.js` Done in v2.9: "<Dog>'s sniff test: ...".
+- [x] The painter's chip labels are cramped. `game/src/14b_vet_playboard.js` Done in v2.9: head plus name, 44 px, 15 px text (`game/css/13b_town_v2.css`).
 - [ ] The album slot grid is HTML laid over the `album` prop. `game/src/07b_mailbox.js`
 
 ## Art & audio
 - [x] Coat Collector Ribbon had no art. Fixed.
 - [x] Pregnant belly was very subtle on the fluffy golden. Fixed.
 - [ ] Greyhound head on short bodies keeps a longish snout. `dogs/pawart_dogs.js`
-- [ ] Some newborn squeaks are a few dB quiet. `mods/pawaudio.js`
+- [x] Some newborn squeaks are a few dB quiet. `mods/pawaudio.js` Done in v2.9: a per-breed `NB_TRIM` table, spread now -25.7..-22.8 dB.
 - [x] The Rainbow Collar tag is a 4-point sparkle; the spec asked for a 5-point star. `dogs/pawart_dogs.js` Fixed (art-fixes): a 5-point star, same centre and size.
 - [x] The rocking chair's backrest leans a little. `world/pawart_world_b.js` Fixed (art-fixes): it stands upright, on the yard prop and the item card.
 
@@ -30,7 +30,7 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [x] The claude.ai artifact publish was blocked by the full-read requirement on a 1.8 MB page. Fixed in v2.4: `tools/artifact.js` builds a multi-file artifact (152 KB index.html + 6 script files); a subagent does the one-time read.
 - [x] Publish to the claude.ai artifact. Done with v2.1.
 - [x] Saves were per copy with no export. Fixed in v2.2: cloud save on the web version and Export / Import save codes on every copy.
-- [ ] Under parallel load (`--jobs 2`) a few desktop checks time out once and pass on retry: v16b (night bark, the click that interrupts an idle, the dev panel Close button), v21_home (Proud Mum picks "down": the test pins `Math.random` around one call and an idle tick can take it). Same timings as before v2.2. `game/test_v16b.js`, `game/test_v21_home.js`
+- [ ] Under parallel load (`--jobs 2`) a few desktop checks time out once and pass on retry: v16b (night bark, the click that interrupts an idle, the dev panel Close button), v21_home (Proud Mum picks "down": the test pins `Math.random` around one call and an idle tick can take it). Same timings as before v2.2. `game/test_v16b.js`, `game/test_v21_home.js` v2.9: the `v21_home` roll is fixed; the v16b night bark, idle click and Close button items did not reproduce in 5 loaded runs.
 - [ ] Install Node and Playwright on this Mac to run the test suites (see README).
 
 ## Phone (v2.2)
@@ -50,17 +50,17 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 
 ## Phone (v2.3)
 - [ ] Realtime sync still needs a real two-phone check. The mocked suite covers it. `game/src/22b_cloud.js`
-- [ ] Playdate pals' noses nearly touch in the bow pose at 390 px wide. `game/css/24_phone_puppy.css`
+- [x] Playdate pals' noses nearly touch in the bow pose at 390 px wide. `game/css/24_phone_puppy.css` Done in v2.9: pals 20 px further apart on phones.
 - [ ] With puppies, the nursery basket sits right of the phone view and is reached with "look right" (accepted in v2.3). `game/src/03_yard.js`
-- [ ] The map zoom buttons were checked clear of the labels only in the default (unpanned) view. `game/src/08_map.js`
+- [x] The map zoom buttons were checked clear of the labels only in the default (unpanned) view. `game/src/08_map.js` Done in v2.9: after a drag, pinch or zoom tap on phones the map slides clear of the place names (`mapClearCtl` pattern).
 - [ ] Owner: confirm the Supabase project auto-confirms email changes (Confirm email off), so "No email is ever sent" stays true.
 - [ ] The "look right" peek button and the nap details card are new. Check both once on a real phone.
 
 ## Shop Day (v2.4)
 - [x] On phones Gerald's steps 6 to 8 run to 4 lines in the strip (the spec said two). Fixed in v2.5: shorter phone wording (`tp`). `game/src/25_guide.js`
 - [x] Toasts can sit over a sheet's title for 3 s on phones (the Missions sheet, the Wardrobe heading). Fixed in v2.5: toasts sit just under the sheet's title. `game/src/00_core.js` toast()
-- [ ] The yard missions clipboard hides while a feed / play / care tray is open on phones (its tap target would shrink under 44 px). A tray-aware tap rect would let it stay. `game/css/27_missions.css`
-- [ ] Under the test harness missions and the walkthrough only run when a suite sets `prefs.msTest` / `prefs.gdTest`, so the older suites never exercise them alongside the old flows. One combined smoke pass would catch interactions. `game/src/24_missions.js`, `25_guide.js`
+- [x] The yard missions clipboard hides while a feed / play / care tray is open on phones (its tap target would shrink under 44 px). A tray-aware tap rect would let it stay. `game/css/27_missions.css` Done in v2.9: the tap rect follows the shrinking scene (`msYardFit`) and stays 44 px; a tap opens Missions and closes the tray.
+- [x] Under the test harness missions and the walkthrough only run when a suite sets `prefs.msTest` / `prefs.gdTest`, so the older suites never exercise them alongside the old flows. One combined smoke pass would catch interactions. `game/src/24_missions.js`, `25_guide.js` Done in v2.9: `test_v29_flows.js` runs missions and the walkthrough with adopt, feed, pet, toy, walk, shop and travel.
 - [x] The six house-card item icons draw the house at about 50 px, so detail is soft at the 40 px shop scale. Fixed in v2.5: bolder icons. `world/pawart_world_b.js`
 - [x] The garden module has no watering callback, so no mission can ask for watering. Fixed in v2.5: `onWater` and the "Water the garden" mission. `mods/garden.js`
 - [ ] Owner: open the claude.ai artifact once on a phone and a laptop to confirm the multi-file version boots there (it was checked in headless Chromium over http, not on claude.ai itself).
@@ -119,4 +119,13 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [ ] Dog outfit nits: the antlers squash in rollover, the greyhound's head is small, the snood covers the chin in sleep, the sheep hood's horns overlap. `dogs/pawart_dogs.js`
 - [ ] The itch.io build waits for the Cloudflare login work (`docs/CLOUDFLARE_LOGIN.md`).
 - [ ] Halloween 2027 still needs new items and an `HW_WIN` entry (see Halloween 2026 above).
-- [ ] Flaky under load in the v2.8 `all --jobs 2` run, clean 3 of 3 alone: `v27_home` (the Dog Play Tower's front layer still showed before a use, likely an idle furniture use starting between free and check), `v171_garden` (the reload's `#tContinue` wait timed out at 20 s), and `v21_home` "proud mum" (the known idle pose roll).
+- [x] Flaky under load in the v2.8 `all --jobs 2` run, clean 3 of 3 alone: `v27_home` (the Dog Play Tower's front layer still showed before a use, likely an idle furniture use starting between free and check), `v171_garden` (the reload's `#tContinue` wait timed out at 20 s), and `v21_home` "proud mum" (the known idle pose roll). Done in v2.9: `v21_home` and `v27_home` read in one page task; `v171_garden` (and `v16b`) re-seed the save through the harness init script, because Chromium can drop a localStorage write across a reload (about 1 in 25). 5 of 5 clean under load.
+
+## All Together (v2.9)
+- [ ] Safari / iOS: photo mode's Web Share and the second-load font workaround for SVG images are written from known behaviour, not run on a real iPhone (the owner's real-phone check). `game/src/35_photo.js`
+- [ ] Photo mode on the claude.ai artifact picks the "Press and hold to save" view by `clArtifact()`; check it once in the live artifact. `game/src/35_photo.js`
+- [ ] The v2.7 bath queue (`crBathSwap`) can still save the bathing dog as the leader if the game closes mid-bath (pack training is fixed through `saveNow`). `game/src/29_pack_care.js`
+- [ ] `bindPack` re-binds every pack dog's pet handlers after each redraw (v2.8.4 behaviour; `pkHold` binds once). `game/src/13_more_dogs.js`
+- [ ] The classic walk (the fallback when PawWalk fails) pays the followers but does not draw them. `game/src/09_walk_classic.js`
+- [ ] No photo in the Shelter Playroom (its dogs aren't the pack); decide if it should have one. `game/src/35_photo.js`
+- [ ] `v27_review` ("the bath finishes from the house") and `v28_scenes` (420 s timeout) failed once under heavy load (the full run plus three reviewers), clean alone.

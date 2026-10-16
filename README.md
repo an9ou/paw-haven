@@ -103,6 +103,7 @@ Some folders (`dogs/`, `world/`, `mods/`) also hold earlier art versions and rev
 - **v2.8 "Winter & New Year"**: Snow Days (snowdrifts, a snowdog, the Winter Stall), Winter Lights and the Ugly Sweater Contest, a Japanese New Year (kadomatsu, nengajo cards, otoshidama, a Fortune box), Mt. Fuji and Japanese details in every outdoor scene, the new Mt. Fuji Lookout, and 5 outfits, 4 foods, 4 decorations and 9 missions.
 - **v2.8.1 "Cloudflare login"**: cloud save and accounts move to a Cloudflare Worker with a D1 database. Same title screen, same email and password, saves and backups come along. The game is also at https://doodledoggo.app.
 - **v2.8.2 "Account safety"**: one email, one account (old accounts included), and Forgot your password? with an emailed 30-minute link that opens a Set a new password panel.
+- **v2.9 "All Together"**: the whole pack plays, trains, dresses and walks together with no switching (the others follow the leader on walks, a pack bonus on the pay), and photo mode: a crayon postcard of your dogs to save or share, with a daily photo mission.
 
 Full details: [CHANGELOG.md](CHANGELOG.md). Open issues: [TODO.md](TODO.md).
 
