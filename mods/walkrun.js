@@ -190,6 +190,7 @@ const CSS = `
 .pw-ring2{position:absolute;left:-14%;top:38%;width:128%;height:58%;border:3.5em dotted #d2483b;border-radius:50%;animation:pw-ring 1.1s ease-in-out infinite;pointer-events:none}
 @keyframes pw-ring{0%{transform:scale(.85);opacity:.95}100%{transform:scale(1.15);opacity:.35}}
 .pw-obj.pw-dug .pw-ring2{display:none}
+.pw-obj.pw-past .pw-badge,.pw-obj.pw-past .pw-arc,.pw-coin.pw-past{opacity:0;transition:opacity .25s}
 .pw-veil{position:absolute;left:0;right:0;top:0;pointer-events:none;background:rgba(255,251,243,.24)}
 .pw-shadow.light{opacity:.55}
 .pw-card.pw-tut{width:min(860px,94%);max-width:none;padding:14px 30px 12px;text-align:left}
@@ -594,7 +595,10 @@ function start(el, o) {
   function setPose(p) { if (p === curPose) return; if (curPose) poseEls[curPose].classList.remove('on'); poseEls[p].classList.add('on'); curPose = p; }
   setPose('idle');
   /* ---------- v2.9 PACK: followers. o.pack = up to 4 dogForMod()-style looks that trot in a line behind the leader. Without o.pack none of this runs ---------- */
-  const fol = [], folHist = [], FOL_GAP = 50, FOL_K = 0.8, FOL_POSES = ['walk', 'jump', 'happy', 'idle'];
+  // FOL_GAP: world units between the leader's tail and the first nose. FOL_OV: how much of a follower's length tucks behind the dog in front (a natural line).
+  // FOL_AHEAD: the leader keeps at least this much path in view ahead of it (1.8 s at the top speed, as the portrait strip promises)
+  const fol = [], folHist = [], FOL_GAP = 8, FOL_OV = 0.28, FOL_K = 0.8, FOL_AHEAD = 450, FOL_POSES = ['walk', 'jump', 'happy', 'idle'];
+  let folMoveT = 0, folCam = -1;
   function folSvg(fd, p) {
     for (const q of p === 'idle' ? ['idle'] : [p, 'idle']) {
       const sv = call('dog', fd.key, { pose: q, outfit: fd.outfit || {}, facing: 'right', coat: fd.coat, seed: fd.seed });
@@ -612,13 +616,44 @@ function start(el, o) {
     });
   }
   // normalise the breed size so every dog reads at the same height (the hitbox is the same for all)
-  let dogSc = 0.68;
+  let dogSc = 0.68, dogArt = [36, 204];
   try {
     const g = poseEls.walk.querySelector('svg>g') || poseEls.walk.querySelector('svg');
     poseEls.walk.style.width = '240px'; poseEls.walk.style.height = '200px'; poseEls.walk.style.position = 'absolute';
     const b = g.getBBox(); poseEls.walk.style.cssText = '';
     if (b && b.height > 20) dogSc = clamp(Math.min(90 / (186 - b.y), 158 / b.width), 0.55, 0.8);
+    if (fol.length && b && b.width > 20) dogArt = [b.x, b.x + b.width];
   } catch (e) { /* keep default */ }
+  // v2.9 PACK: where each follower's drawing sits in its 240-wide box (the walk pose), so the line is spaced by the dogs, not by their boxes
+  fol.forEach((f) => {
+    f.art = [30, 210];
+    try {
+      const pe = f.poses.walk, g = pe.querySelector('svg>g') || pe.querySelector('svg');
+      pe.style.width = '240px'; pe.style.height = '200px'; pe.style.position = 'absolute';
+      const b = g.getBBox(); pe.style.cssText = '';
+      if (b && b.width > 20) f.art = [b.x, b.x + b.width];
+    } catch (e) { /* keep default */ }
+  });
+  // the room the line needs: from the stage's left edge to the leader's centre (world units)
+  function folNeed() {
+    const k = dogSc * FOL_K; let need = (120 - dogArt[0]) * dogSc + FOL_GAP;
+    fol.forEach((f, i) => { const w = (f.art[1] - f.art[0]) * k; need += i ? w * (1 - FOL_OV) : w; });
+    return need + fol[fol.length - 1].art[0] * k + 2;
+  }
+  // nose to tail behind the leader, every follower inside the strip (a tighter line when the strip is short of room)
+  function folPlace() {
+    const k = dogSc * FOL_K, ws = fol.map((f) => (f.art[1] - f.art[0]) * k), tail = ws.slice(1).reduce((a, b) => a + b, 0);
+    const back = DOG.x - (120 - dogArt[0]) * dogSc, room = back - fol[fol.length - 1].art[0] * k - 2;
+    let gap = FOL_GAP, ov = FOL_OV;
+    if (gap + ws[0] + tail * (1 - ov) > room && tail) ov = clamp(1 - (room - gap - ws[0]) / tail, FOL_OV, 0.6);
+    if (gap + ws[0] + tail * (1 - ov) > room) gap = Math.max(-ws[0] * 0.3, room - ws[0] - tail * (1 - ov));
+    let nose = back - gap;
+    fol.forEach((f, i) => {
+      if (i) nose += ws[i] * ov;
+      const x = Math.max(0, nose - f.art[1] * k); f.dist = DOG.x - (x + 120 * k); nose = x + f.art[0] * k;
+      Object.assign(f.el.style, { left: px(x), top: px(G - 186 * k), width: px(240 * k), height: px(200 * k) }); // a little smaller, feet on the same ground line
+    });
+  }
 
   /* ---------- layout (px per world unit) ---------- */
   let s = 1.5, LW = 800, elW = 1240, elH = 620, mode = '', coarse = false;
@@ -637,7 +672,7 @@ function start(el, o) {
     DOG.x = mode === 'pt' ? 120 : mode === 'cp' ? 170 : 200;
     E.stage.style.cssText = ''; E.ctrls.style.cssText = ''; E.legend.style.cssText = ''; root.style.removeProperty('--pw-st'); root.style.removeProperty('--pw-sh');
     if (mode === 'pt') {
-      s = elW / PT_LW; LW = PT_LW;
+      LW = fol.length ? Math.max(PT_LW, Math.max(DOG.x, folNeed()) + FOL_AHEAD) : PT_LW; s = elW / LW; // v2.9 PACK: a pack line gets room behind the leader, the view ahead stays as long
       const hudB = E.hud.offsetTop + E.hud.offsetHeight + 8, sh = Math.round(VIEW_H * s);
       // the strip, the legend and the controls are one group, centred in the space under the HUD; spare height makes the buttons taller (up to 150 px)
       const lgH = E.legend.offsetHeight, DIGH = 72, GAP = 10, avail = elH - hudB;
@@ -661,6 +696,7 @@ function start(el, o) {
       Object.assign(E.legend.style, { top: (sh + 6) + 'px', bottom: 'auto' });
       Object.assign(E.ctrls.style, { top: (sh + 6 + lgH + 8) + 'px', bottom: 'auto' });
     } else { s = elH / VIEW_H; LW = elW / s; }
+    if (fol.length) DOG.x = Math.max(DOG.x, Math.min(folNeed(), LW - FOL_AHEAD)); // v2.9 PACK: the leader steps forward for its line, keeping FOL_AHEAD of path in view
     if (mode !== prevMode || coarse !== S.coarseShown) {
       S.coarseShown = coarse; const touch = mode !== 'desk' || coarse;
       root.querySelectorAll('[data-touch]').forEach((k) => { k.innerHTML = k.getAttribute(touch ? 'data-touch' : 'data-desk'); });
@@ -670,7 +706,7 @@ function start(el, o) {
     tiles(TW, stripSvg, E.strip); tiles(FARW, farSvg, E.far); tiles(FGW, fgSvg, E.fg);
     E.veil.style.height = px(G - 3); E.far.style.opacity = '.6';
     E.dog.style.left = px(DOG.x - 120 * dogSc); E.dog.style.top = px(G - 186 * dogSc); E.dog.style.width = px(240 * dogSc); E.dog.style.height = px(200 * dogSc);
-    fol.forEach((f, i) => { Object.assign(f.el.style, { left: px(DOG.x - 120 * dogSc * FOL_K - (i + 1) * FOL_GAP), top: px(G - 186 * dogSc * FOL_K), width: px(240 * dogSc * FOL_K), height: px(200 * dogSc * FOL_K) }); }); // a step behind and a little smaller, feet on the same ground line
+    if (fol.length) folPlace();
     live.forEach(placeEl); lamps.forEach((l) => { l.k = -99; });
     E.say.style.left = px(DOG.x + 10); sayY = (G - 186 * dogSc) * s - 16; E.say.style.top = sayY.toFixed(1) + "px";
     E.prompt.style.left = px(DOG.x + 10);
@@ -807,7 +843,7 @@ function start(el, o) {
     const ox = takeoff - ob.x0, oy = G - ob.top;
     const d = pts.filter((q, i) => i % 6 === 0).map((q, i) => `${i ? 'L' : 'M'}${(ox + q.dx).toFixed(1)} ${(oy - q.h - 8).toFixed(1)}`).join('');
     const minX = Math.min(0, ox) - 20, W2 = pts[pts.length - 1].dx + Math.abs(minX) + ob.w;
-    return `<svg class="pw-sup" viewBox="${minX} ${oy - 190} ${W2} 200" style="left:${px(minX)};top:${px(oy - 190)};width:${px(W2)};height:${px(200)}" fill="none"><path d="${d}" stroke="${INK}" stroke-width="2.4" stroke-dasharray="2 9" stroke-linecap="round"/><text x="${ox}" y="${oy - 20}" font-family="Caveat,cursive" font-size="22" font-weight="700" fill="#d2483b">hold jump here!</text><path d="M${ox + 6} ${oy - 12}v10" stroke="#d2483b" stroke-width="2.4"/></svg>`;
+    return `<svg class="pw-sup pw-arc" viewBox="${minX} ${oy - 190} ${W2} 200" style="left:${px(minX)};top:${px(oy - 190)};width:${px(W2)};height:${px(200)}" fill="none"><path d="${d}" stroke="${INK}" stroke-width="2.4" stroke-dasharray="2 9" stroke-linecap="round"/><text x="${ox}" y="${oy - 20}" font-family="Caveat,cursive" font-size="22" font-weight="700" fill="#d2483b">hold jump here!</text><path d="M${ox + 6} ${oy - 12}v10" stroke="#d2483b" stroke-width="2.4"/></svg>`;
   }
   function makeEl(ob) {
     const d = document.createElement('div'); d.className = 'pw-obj';
@@ -1249,13 +1285,20 @@ function start(el, o) {
     const bob = walking ? -Math.abs(Math.sin(S.camX / 34)) * 3 : 0;
     const tilt = S.stumbleT > 0 ? Math.sin(S.stumbleT * 40) * 4 : !S.grounded ? clamp(-S.vh / 90, -8, 6) : 0;
     E.dog.style.transform = `translate3d(${(S.slideX * s).toFixed(1)}px,${((-S.h + bob) * s).toFixed(1)}px,0) rotate(${tilt.toFixed(1)}deg)`;
-    if (fol.length) { // v2.9: each follower repeats the leader a little later, with smaller hops
-      folHist.push({ t: now, y: (-S.h + bob * 0.5) * s, p: p === 'jump' || p === 'happy' || p === 'walk' ? p : 'idle' }); while (folHist.length > 2 && folHist[1].t < now - 1000) folHist.shift();
-      fol.forEach((f, i) => {
-        const at = now - (i + 1) * 170; let h = folHist[0]; for (let k = folHist.length - 1; k >= 0; k--) if (folHist[k].t <= at) { h = folHist[k]; break; }
-        if (h.p !== f.cur) { f.poses[f.cur].classList.remove('on'); f.poses[h.p].classList.add('on'); f.cur = h.p; }
-        f.el.style.transform = `translate3d(0,${(h.y * 0.8).toFixed(1)}px,0)`;
+    if (fol.length) { // v2.9: each follower repeats what the leader did at the spot it has now reached (so it hops the same logs), with smaller hops
+      const hp = p === 'jump' || p === 'happy' || p === 'walk' ? p : 'idle', hy = (-S.h + bob * 0.5) * s, top = folHist[folHist.length - 1];
+      if (top && top.x >= cx - 0.01) { top.y = hy; top.p = hp; } else folHist.push({ x: cx, y: hy, p: hp });
+      if (cx !== folCam) { folCam = cx; folMoveT = now; }
+      while (folHist.length > 2 && folHist[1].x < cx - DOG.x - 40) folHist.shift();
+      const still = now - folMoveT > 160; // the leader stopped (sniffing, digging, the countdown): the line waits too
+      fol.forEach((f) => {
+        const at = cx - (f.dist || 0); let h = folHist[0]; for (let k = folHist.length - 1; k >= 0; k--) if (folHist[k].x <= at) { h = folHist[k]; break; }
+        const fp = still ? (p === 'happy' ? 'happy' : 'idle') : h.p, fy = still ? 0 : h.y;
+        if (fp !== f.cur) { f.poses[f.cur].classList.remove('on'); f.poses[fp].classList.add('on'); f.cur = fp; }
+        f.el.style.transform = `translate3d(0,${(fy * 0.8).toFixed(1)}px,0)`;
       });
+      // what the leader has left behind stays on the ground under the line: its hint and badge go, a missed coin fades
+      for (let i = 0; i < live.length; i++) { const ob = live[i]; if (!ob.el || ob.past || ob.x0 + ob.w > cx + DOG.x + DOG.off - DOG.hw - 4) continue; ob.past = true; ob.el.classList.add('pw-past'); ob.el.style.zIndex = ''; }
     }
     const blink = S.invT > 0 && S.mode === 'run';
     if (blink !== E.dog._blink) { E.dog._blink = blink; E.dog.classList.toggle('pw-blink', blink); }
@@ -1266,7 +1309,7 @@ function start(el, o) {
     if (now - noseT > 100) { noseT = now; updateNose(); }
     // an obstacle's hint fades out as the obstacle reaches the dog, so it never sits on the dog (or its jump)
     for (let i = 0; i < live.length; i++) { const ob = live[i]; if (!ob.el) continue; if (ob.hintEl === undefined) ob.hintEl = ob.el.querySelector('.pw-hint');
-      if (ob.hintEl) { const op = clamp((Math.abs(ob.x0 + ob.w / 2 - cx - DOG.x) - 90) / 80, 0, 1); const v = op.toFixed(2); if (ob.hintOp !== v) { ob.hintOp = v; ob.hintEl.style.opacity = v; } } }
+      if (ob.hintEl) { const op = ob.past ? 0 : clamp((Math.abs(ob.x0 + ob.w / 2 - cx - DOG.x) - 90) / 80, 0, 1); const v = op.toFixed(2); if (ob.hintOp !== v) { ob.hintOp = v; ob.hintEl.style.opacity = v; } } }
     // an obstacle hint steps aside (hides) while the dog's speech bubble would sit on it: the bubble carries the lesson ("Tap Dig!"), the hint is only a nudge
     { const sayUp = !E.say.hidden, sr = sayUp ? E.say.getBoundingClientRect() : null;
       for (let i = 0; i < live.length; i++) { const he = live[i].hintEl; if (!he) continue; let hide = false;

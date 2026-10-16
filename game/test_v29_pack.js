@@ -13,6 +13,17 @@ require('./test_lib').run('v29_pack', async (t) => {
   const modalUp = () => t.until(() => !document.getElementById('modal').hidden && !!document.querySelector('#modal .panel'), null, 5000);
   const quiet = async () => { await t.luWait(1300); await t.lu(); }; // Bond levels can pop a level-up sheet a moment later
   const near = (a, b, e) => Math.abs(a - b) <= (e || 0.6);
+  // v2.9 review: where the drawings really are (scene units, the union of each dog's parts). Fetch: followers in the view, off the veggie bed, apart, not hidden by the leader
+  const ART = () => { const svg = document.querySelector('#view svg.world'), M = svg.getScreenCTM().inverse(); return (el) => { const s = el.querySelector('svg.pa-dog') || el.querySelector('svg'); let b = [1e9, 1e9, -1e9, -1e9]; [...s.children].forEach((c) => { const r = c.getBoundingClientRect(); if (!r.width && !r.height) return; const a = new DOMPoint(r.left, r.top).matrixTransform(M), z = new DOMPoint(r.right, r.bottom).matrixTransform(M); b = [Math.min(b[0], a.x), Math.min(b[1], a.y), Math.max(b[2], z.x), Math.max(b[3], z.y)]; }); return b.map(Math.round); }; };
+  const fetchGeo = () => ev((src) => {
+    const box = eval(src)(), ov = (a, b) => Math.max(0, Math.min(a[2], b[2]) - Math.max(a[0], b[0])) * Math.max(0, Math.min(a[3], b[3]) - Math.max(a[1], b[1])), ar = (a) => (a[2] - a[0]) * (a[3] - a[1]);
+    const els = [...document.querySelectorAll('#pkFol .pk-fl')], L = box(document.getElementById('dogArt')), F = els.map(box), v = document.getElementById('view').getBoundingClientRect();
+    const inView = els.every((e) => { const r = e.querySelector('svg.pa-dog').getBoundingClientRect(); return r.left >= v.left - 1 && r.right <= v.right + 1 && r.top >= v.top - 1 && r.bottom <= v.bottom + 1; });
+    let pair = 0; F.forEach((a, i) => F.forEach((b, j) => { if (i < j) pair = Math.max(pair, ov(a, b) / Math.min(ar(a), ar(b))); }));
+    const pk = document.getElementById('pkFol'), dp = document.getElementById('dogPos');
+    return { n: F.length, inView, bed: Math.min(...F.map((f) => f[0])), lead: +Math.max(...F.map((f) => ov(f, L) / ar(f))).toFixed(2), pair: +pair.toFixed(2), front: !!(dp.compareDocumentPosition(pk) & Node.DOCUMENT_POSITION_FOLLOWING), L, F };
+  }, ART.toString());
+  const fetchOk = (g, mid) => g.n >= 2 && g.inView && g.front && g.bed >= 222 && g.lead <= (mid ? 0.5 : 0.25) && g.pair <= (mid ? 0.5 : 0.12);
 
   sec('1. three dogs: who joins in (pkDogs)');
   await t.newGame({}, { coins: 2000 });
@@ -73,8 +84,12 @@ require('./test_lib').run('v29_pack', async (t) => {
   await playTray(); await p().click('[data-play=tug]');
   ok(await t.until(() => document.querySelectorAll('#pack .packdog.pk-tug').length === 2, null, 2000), 'both pack dogs pile on (class pk-tug)');
   ok(await ev(() => [...document.querySelectorAll('#pack .packdog.pk-tug svg.pa-dog')].every((s) => /pa-pose-(crouch|sit)\b/.test(s.getAttribute('class') || ''))), 'they use the existing crouch pose (sit where a breed has no crouch)');
+  await p().waitForTimeout(550); // the slide into the pile takes 0.4 s
+  const tg = await ev((src) => { const box = eval(src)(), L = box(document.getElementById('dogArt')); return { L, D: [...document.querySelectorAll('#pack .packdog.pk-tug')].map(box) }; }, ART.toString());
+  ok(tg.D.length === 2 && tg.D.every((d) => d[0] < tg.L[0] && d[2] >= tg.L[0] - 30 && d[3] >= tg.L[3] - 110 && d[3] <= tg.L[3] + 30 && d[0] >= 222), 'they pile on right behind the leader, at its end of the rope (off the veggie bed): ' + JSON.stringify(tg));
   await idle();
   ok(await t.until(() => document.querySelectorAll('#pack .packdog.pk-tug').length === 0, null, 3000), 'the pile-on ends with the game');
+  ok(await t.until(() => [...document.querySelectorAll('#pack .packdog')].every((g) => !g.style.transform), null, 2000), 'and they go back to their own spots');
   h = await stat('happy'); const en = await stat('energy'), b1 = await bond();
   ok(h.every((x) => x > 48), 'every dog gained Happiness: ' + JSON.stringify(h.map(Math.round)));
   ok(en.every((x) => x < 85), 'every dog spent Energy: ' + JSON.stringify(en.map(Math.round)));
@@ -100,12 +115,15 @@ require('./test_lib').run('v29_pack', async (t) => {
   await ev(() => window.__paw.go('fetch', 'Tennis Ball')); await t.untilMode('fetch');
   ok(await t.until(() => document.querySelectorAll('#pkFol .pk-fl').length === 2, null, 3000), 'two followers are drawn');
   ok(await ev(() => document.querySelectorAll('#pack .packdog').length) === 0, 'they left their spots in the pack group');
+  let fg = await fetchGeo(); ok(fetchOk(fg), 'at the start every follower is in view, off the veggie bed, clear of the others and not hidden by the leader: ' + JSON.stringify(fg));
   const x0 = await ev(() => [...document.querySelectorAll('#pkFol .pk-fl')].map((g) => g.style.transform));
   await p().click('#view svg.world', { position: { x: 800, y: 500 } });
   ok(await t.until(() => document.querySelectorAll('#pkFol .pk-run').length === 2, null, 2000), 'on a throw both run (class pk-run, walk pose)');
   ok(await ev(() => [...document.querySelectorAll('#pkFol svg.pa-dog')].every((s) => /pa-pose-walk\b/.test(s.getAttribute('class') || ''))), 'in the existing walk pose');
   const x1 = await ev(() => [...document.querySelectorAll('#pkFol .pk-fl')].map((g) => g.style.transform));
   ok(x1.every((x, i) => x !== x0[i]), 'they move toward the ball');
+  await p().waitForTimeout(450); fg = await fetchGeo(); ok(fetchOk(fg, true), 'mid-run they stay in view, drawn over the leader, never hidden behind it: ' + JSON.stringify(fg));
+  await p().waitForTimeout(1400); fg = await fetchGeo(); ok(fetchOk(fg) && fg.F.every((f) => f[2] <= fg.L[0] - 4 || f[1] > fg.L[3] - 60), 'at rest they wait in a line behind the leader with a gap: ' + JSON.stringify(fg));
   ok(await ev(() => { const l = document.querySelector('#dogPos').style.transform; return !!l; }), 'the leader runs too');
   await ev(() => { const F = window.__paw.F; F.score = 4; F.great = 1; F.throws = 5; F.coins = 6; });
   await t.toasts(); await p().click('#fQuit'); await t.until(() => !!document.getElementById('fOk'), null, 5000);
@@ -149,6 +167,10 @@ require('./test_lib').run('v29_pack', async (t) => {
   ok(await ev(() => document.querySelectorAll('.pw-dog.pw-fol').length) === 1, 'one follower is drawn in the runner');
   const geo = await ev(() => { const l = document.querySelector('.pw-dog:not(.pw-fol)').getBoundingClientRect(), f = document.querySelector('.pw-fol').getBoundingClientRect(); return { fl: f.left, ll: l.left, fr: f.right, lr: l.right, ft: f.top, lt: l.top, fh: f.height, lh: l.height, idx: [...document.querySelector('.pw-stage').children].indexOf(document.querySelector('.pw-fol')) < [...document.querySelector('.pw-stage').children].indexOf(document.querySelector('.pw-dog:not(.pw-fol)')) }; });
   ok(geo.fl < geo.ll && geo.idx && geo.fh < geo.lh && geo.fh > geo.lh * 0.7 && Math.abs((geo.ft + geo.fh) - (geo.lt + geo.lh)) < 8, 'the follower trails the leader on the same ground line, a little smaller, drawn behind: ' + JSON.stringify(geo));
+  const rg = await ev(() => { const art = (el) => { let b = [1e9, 1e9, -1e9, -1e9]; [...el.querySelector('.pw-pose.on svg').children].forEach((c) => { const r = c.getBoundingClientRect(); if (!r.width && !r.height) return; b = [Math.min(b[0], r.left), Math.min(b[1], r.top), Math.max(b[2], r.right), Math.max(b[3], r.bottom)]; }); return b; };
+    const st = document.querySelector('.pw-stage').getBoundingClientRect(), L = art(document.querySelector('.pw-dog:not(.pw-fol)')), F = [...document.querySelectorAll('.pw-fol')].map((e) => ({ box: e.getBoundingClientRect(), a: art(e) }));
+    return { inStage: F.every((f) => f.box.left >= st.left - 0.5 && f.box.right <= st.right && f.box.bottom <= st.bottom + 2), cover: Math.max(...F.map((f) => Math.max(0, Math.min(f.a[2], L[2]) - Math.max(f.a[0], L[0])) / (f.a[2] - f.a[0]))), L: L.map(Math.round), F: F.map((f) => f.a.map(Math.round)) }; });
+  ok(rg.inStage && rg.cover <= 0.1, 'the follower is fully on the stage and the leader does not cover it: ' + JSON.stringify(rg));
   ok(await ev(() => document.querySelector('.pw-fol .pw-pose.on svg') !== null), 'a follower pose is showing');
   // finish the walk through the runner's own onEnd with known pay
   await set('happy', 40); await ev(() => { window.__paw.S.dogs.forEach((d) => { d.stats.energy = 90; d.stats.clean = 90; }); });

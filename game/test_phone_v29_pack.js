@@ -46,6 +46,22 @@ require('./test_lib').run('phone_v29_pack', async (t) => {
     ok(await ev(() => { const tp = document.getElementById('trainPanel').getBoundingClientRect(); return tp.width > 0 && tp.right <= window.innerWidth + 1; }), 'the training panel fits the screen');
     await p().click('#trX'); ok(await t.until((a) => !window.__paw.train && window.__paw.S.activeId === a, A, 4000), 'and the leader is back after');
 
+    sec(device + ': Tug and Fetch: the pack piles on by the rope, the followers stay in view');
+    await t.home('yard'); await quiet(); await ev(() => { const P = window.__paw; delete P.S['toyAt_Rope Tug']; P.S.dogs.forEach((d) => { d.stats.energy = 90; }); });
+    await p().click('[data-act=play]'); await t.waitPop(true); await p().click('[data-play=tug]');
+    await t.until(() => document.querySelectorAll('#pack .packdog.pk-tug').length === 2, null, 2000); await p().waitForTimeout(550); await t.SH(device.replace(' ', '') + '_tug');
+    const ART = () => { const svg = document.querySelector('#view svg.world'), M = svg.getScreenCTM().inverse(); return (el) => { const s = el.querySelector('svg.pa-dog') || el.querySelector('svg'); let b = [1e9, 1e9, -1e9, -1e9]; [...s.children].forEach((c) => { const r = c.getBoundingClientRect(); if (!r.width && !r.height) return; const a = new DOMPoint(r.left, r.top).matrixTransform(M), z = new DOMPoint(r.right, r.bottom).matrixTransform(M); b = [Math.min(b[0], a.x), Math.min(b[1], a.y), Math.max(b[2], z.x), Math.max(b[3], z.y)]; }); return b.map(Math.round); }; };
+    const tg = await ev((src) => { const box = eval(src)(), L = box(document.getElementById('dogArt')); return { L, D: [...document.querySelectorAll('#pack .packdog.pk-tug')].map(box) }; }, ART.toString());
+    ok(tg.D.length === 2 && tg.D.every((d) => d[0] < tg.L[0] && d[2] >= tg.L[0] - 30 && d[3] >= tg.L[3] - 110 && d[3] <= tg.L[3] + 30 && d[0] >= 222), 'Tug: both crouch in a pile right behind the leader, off the veggie bed ' + JSON.stringify(tg));
+    await t.until(() => !window.__paw.shop.busy, null, 8000); await t.toasts();
+    await ev(() => window.__paw.go('fetch', 'Tennis Ball')); await t.untilMode('fetch'); await t.until(() => document.querySelectorAll('#pkFol .pk-fl').length === 2, null, 3000); await p().waitForTimeout(300);
+    const fg = await ev((src) => { const box = eval(src)(), L = box(document.getElementById('dogArt')), els = [...document.querySelectorAll('#pkFol .pk-fl')], F = els.map(box), v = document.getElementById('view').getBoundingClientRect();
+      const ov = (a, b) => Math.max(0, Math.min(a[2], b[2]) - Math.max(a[0], b[0])) * Math.max(0, Math.min(a[3], b[3]) - Math.max(a[1], b[1])), ar = (a) => (a[2] - a[0]) * (a[3] - a[1]);
+      return { inView: els.every((e) => { const r = e.querySelector('svg.pa-dog').getBoundingClientRect(); return r.left >= v.left - 1 && r.right <= v.right + 1 && r.top >= v.top - 1 && r.bottom <= v.bottom + 1; }), bed: Math.min(...F.map((f) => f[0])), lead: +Math.max(...F.map((f) => ov(f, L) / ar(f))).toFixed(2), pair: +(ov(F[0], F[1]) / Math.min(ar(F[0]), ar(F[1]))).toFixed(2) }; }, ART.toString());
+    await t.SH(device.replace(' ', '') + '_fetch');
+    ok(fg.inView && fg.bed >= 222 && fg.lead <= 0.25 && fg.pair <= 0.12, 'Fetch: both followers in view, off the veggie bed, apart and not hidden by the leader ' + JSON.stringify(fg));
+    await p().click('#fQuit'); await t.until(() => !!document.getElementById('fOk'), null, 5000); await p().click('#fOk'); await t.untilMode('yard'); await quiet();
+
     sec(device + ': the route screen');
     await t.home('yard'); await quiet(); await p().click('[data-act=walk]'); await p().waitForSelector('#rtStart'); await t.until(() => document.querySelectorAll('#pkWalkLine .pk-lh').length === 3, null, 3000);
     await t.SH(device.replace(' ', '') + '_routes');
@@ -63,8 +79,22 @@ require('./test_lib').run('phone_v29_pack', async (t) => {
     await p().click('#rtStart'); ok(await t.walkGate(true), 'the runner starts');
     ok(await ev(() => window.__opts.pack.length) === 2 && await ev(() => document.querySelectorAll('.pw-fol').length) === 2, 'two followers drawn');
     await t.SH(device.replace(' ', '') + '_runner');
-    const g = await ev(() => { const st = document.querySelector('.pw-stage').getBoundingClientRect(), L = document.querySelector('.pw-dog:not(.pw-fol)').getBoundingClientRect(); const f = [...document.querySelectorAll('.pw-fol')].map((e) => e.getBoundingClientRect()); const hud = [...document.querySelectorAll('.pw-hud,.pw-ctrls,.pw-legend')].map((e) => e.getBoundingClientRect()); const hit = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top && b.width > 0; return { inStage: f.every((r) => r.left >= st.left - 80 && r.right <= st.right && r.top >= st.top && r.bottom <= st.bottom + 2), behind: f.every((r) => r.left < L.left), overHud: f.some((r) => hud.some((h2) => hit(r, h2))), n: f.length }; });
-    ok(g.inStage && g.behind && !g.overHud, 'the followers trail the leader inside the strip and clear of the controls ' + JSON.stringify(g));
+    // v2.9 review: every follower fully on the strip (no slack at the left edge), none under the leader, clear of the controls; the same at 360 px wide
+    const runGeo = () => ev(() => {
+      const art = (el) => { let b = [1e9, 1e9, -1e9, -1e9]; [...el.querySelector('.pw-pose.on svg').children].forEach((c) => { const r = c.getBoundingClientRect(); if (!r.width && !r.height) return; b = [Math.min(b[0], r.left), Math.min(b[1], r.top), Math.max(b[2], r.right), Math.max(b[3], r.bottom)]; }); return b; };
+      const st = document.querySelector('.pw-stage').getBoundingClientRect(), Lel = document.querySelector('.pw-dog:not(.pw-fol)'), L = Lel.getBoundingClientRect(), La = art(Lel);
+      const f = [...document.querySelectorAll('.pw-fol')].map((e) => ({ r: e.getBoundingClientRect(), a: art(e) })), hud = [...document.querySelectorAll('.pw-hud,.pw-ctrls,.pw-legend')].map((e) => e.getBoundingClientRect());
+      const hit = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top && b.width > 0;
+      return { inStage: f.every((x) => x.r.left >= st.left - 0.5 && x.r.right <= st.right && x.r.top >= st.top && x.r.bottom <= st.bottom + 2), behind: f.every((x) => x.r.left < L.left),
+        cover: +Math.max(...f.map((x) => Math.max(0, Math.min(x.a[2], La[2]) - Math.max(x.a[0], La[0])) / (x.a[2] - x.a[0]))).toFixed(2), overHud: f.some((x) => hud.some((h2) => hit(x.r, h2))), n: f.length, left: f.map((x) => Math.round(x.r.left)), leader: [Math.round(La[0]), Math.round(La[2])] };
+    });
+    let g = await runGeo();
+    ok(g.inStage && g.behind && g.cover <= 0.1 && !g.overHud, 'the followers trail the leader fully inside the strip, uncovered and clear of the controls ' + JSON.stringify(g));
+    if (device === 'Pixel 7') {
+      const vp = p().viewportSize(); await p().setViewportSize({ width: 360, height: 740 }); await p().waitForTimeout(400); await t.SH('360_runner');
+      g = await runGeo(); ok(g.inStage && g.behind && g.cover <= 0.1 && !g.overHud, '360 px wide: the same ' + JSON.stringify(g));
+      await p().setViewportSize(vp); await p().waitForTimeout(300);
+    }
     await ev(() => window.__opts.onEnd({ coins: 40, happiness: 10, bond: 2, energy: 4, cleanliness: 1, early: false })); await t.until(() => !!document.getElementById('resOk'), null, 8000);
     await t.SH(device.replace(' ', '') + '_results');
     ok(await ev(() => /walked along/.test(document.querySelector('#modal').textContent)) && await noSide(), 'the results sheet names the walkers and fits');

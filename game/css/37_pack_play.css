@@ -21,8 +21,9 @@
 .pk-fl{transform-box:view-box;transform-origin:0 0;transition:transform .9s ease-in-out}
 .pk-run{transform-box:fill-box;transform-origin:50% 100%;animation:pkRun .3s ease-in-out infinite alternate}
 @keyframes pkRun{from{transform:translateY(0) rotate(-1.5deg)}to{transform:translateY(-9px) rotate(1.5deg)}}
-/* Tug: the pack dogs pile on at the far end of the rope (the existing crouch pose) and pull */
+/* Tug: the pack dogs pile on behind the leader at its end of the rope (the existing crouch pose, facing it) and pull, then go back to their spots */
 .pk-tug .pd-wander{animation:tkTug .12s linear 10 alternate}
+.packdog.pk-slide{transform-box:view-box;transform-origin:0 0;transition:transform .4s ease-in-out}
 /* the long press card on a pack dog: Make leader, Dress, Train */
 .packdog.cr-pet{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .pk-dogcard{position:absolute;z-index:40;display:flex;flex-direction:column;gap:6px;min-width:156px;padding:8px 10px 10px;background:var(--paper);border:3px solid var(--ink);border-radius:14px 10px 15px 9px;box-shadow:3px 4px 0 rgba(91,61,50,.35);transform:rotate(-.6deg);animation:pkPop .18s ease-out}
