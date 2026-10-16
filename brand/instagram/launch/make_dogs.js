@@ -19,18 +19,19 @@ module.exports = async function ({ render, browser, helpers: h, only }) {
   const fit = async (key, o, x, bottom, w) => { const b = await bbox(PA.dog(key, Object.assign({ anim: false }, o))), k = w / b[2], hh = b[3] * k; return { x, y: bottom - hh, w, h: hh, svg: `<svg x="${f1(x)}" y="${f1(bottom - hh)}" width="${f1(w)}" height="${f1(hh)}" viewBox="${b.map(f1).join(' ')}" overflow="visible">${inner(PA.dog(key, Object.assign({ anim: false }, o)))}</svg>` }; };
   const post = async (d) => {
     const A = await fit(d.key, { pose: d.pose || 'happy' }, 52, 800, d.dw || 770);
-    const P = await fit(d.key, { pose: d.puppyPose || 'happy', age: 'puppy', facing: 'left' }, 626, 1036, d.pw || 370);
+    const HC = [846, 930, 148]; // the close-up: centre x, centre y, radius
     let g = paper(W, H) + frame(W, H, 40 + d.num)
       + txt('meet the dogs', 100, 92, 44, { fill: '#D8607E', anchor: 'start' }) + txt(`dog ${d.num} of 14`, 990, 92, 44, { fill: MUTED, w: 600, anchor: 'end' })
       + txt(d.name, 70, 262, d.nameSize || 200, { rot: -3, anchor: 'start' }) + txt(d.title, 84, 336, 60, { fill: MUTED, w: 600, anchor: 'start' })
       + bubble(590, 124, 430, 156, 740, A.y + A.h * 0.08, d.quote, 9)
-      + swash(A.x + A.w / 2, 796, A.w * 0.9, 60, -2, PINK, 0.45) + swash(P.x + P.w / 2, 1032, P.w * 0.95, 44, 2, '#FFE3A1', 0.6)
-      + A.svg + P.svg
-      + txt(`a ${d.name} puppy`, P.x + P.w / 2, 1076, 40, { w: 700, rot: 2 })
+      + swash(A.x + A.w / 2, 796, A.w * 0.9, 60, -2, PINK, 0.45) + swash(HC[0] + 14, HC[1] + 22, HC[2] * 2.1, HC[2] * 1.9, -8, '#FFE3A1', 0.7)
+      + A.svg
+      + `<g><circle cx="${HC[0]}" cy="${HC[1]}" r="${HC[2]}" fill="#FFFBF2"/>${box(HC[0] - HC[2], HC[1] - HC[2], HC[2] * 2, HC[2] * 2, HC[2], 91, 2.6, 5)}<svg x="${HC[0] - 100}" y="${HC[1] - 98}" width="204" height="204" viewBox="2 6 96 96" overflow="visible">${inner(PA.dogHead(d.key))}</svg>${tape(HC[0] - 60, HC[1] - HC[2] - 16, 120, 36, -4)}</g>`
+      + txt('up close', HC[0] - HC[2] - 6, HC[1] - HC[2] + 40, 42, { w: 700, rot: -6, anchor: 'end' }) + arrow(HC[0] - HC[2] + 6, HC[1] - HC[2] + 58, HC[0] - HC[2] + 52, HC[1] - 40, [-20, 10], 3)
       // what it loves: the game's own item icons
       + txt('loves', 100, 892, 50, { fill: '#D8607E', anchor: 'start' })
       + d.loves.map(([name, label], i) => (name ? item(name, 80 + i * 170, 906, 110) : digIcon(80 + i * 170, 906, 110)) + txt(label, 135 + i * 170, 1048, 32, { w: 600, fill: MUTED })).join('')
-      + doodle('heart', 1012, 330, 1.1, 12) + doodle('spark', 560, 420, 0.9) + doodle('spark', 80, 470, 0.8) + doodle('heart', 540, 860, 0.9, -10);
+      + doodle('heart', 1012, 330, 1.1, 12) + doodle('spark', 560, 420, 0.9) + doodle('spark', 80, 470, 0.8);
     // the four traits
     d.traits.forEach(([t, sub], i) => {
       const x = 60 + (i % 2) * 490, y = 1092 + Math.floor(i / 2) * 100;
