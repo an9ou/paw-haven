@@ -20,4 +20,6 @@ Profile picture: `doodle-doggo-instagram-dachshund-1080.png` (the dachshund, own
     🖍️ Cozy dog game · made in Japan 🗻
     🎮 Play free 👇
 
+**Pre-launch (16 Oct):** use `🎮 Free browser game · coming soon ✨` as the last line and leave the link empty until the game is live.
+
 **Link:** https://an9ou.github.io/paw-haven/ (switch to https://doodledoggo.app once the domain is live).

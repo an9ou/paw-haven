@@ -43,7 +43,7 @@ module.exports = async function ({ render, browser, helpers: h, only }) {
       const x = 60 + (i % 2) * 490, y = 1092 + Math.floor(i / 2) * 100;
       g += `<g transform="rotate(${i % 2 ? 0.8 : -0.8} ${x + 235} ${y + 45})">${box(x, y, 470, 90, 30, 70 + i, 2.2, 3.8)}<circle cx="${x + 36}" cy="${y + 47}" r="15" fill="${PINK}" fill-opacity=".7" stroke="${INK}" stroke-width="3"/>${txt(t, x + 66, y + 44, 44, { anchor: 'start', w: 700 })}${txt(sub, x + 66, y + 80, 31, { anchor: 'start', fill: MUTED, w: 600 })}</g>`;
     });
-    g += txt('Doodle Doggo · free in your browser · link in bio', 540, 1312, 36, { fill: MUTED, w: 600 });
+    g += txt('Doodle Doggo · a free browser game · coming soon', 540, 1312, 36, { fill: MUTED, w: 600 });
     return svgPage(W, H, g);
   };
   // The game's own facts: breed, personality line, joke/quote (game/src/00_core.js FALLBACK_DOGS, JOKES, place lines) and favourite food, toy and activity (FAV).
@@ -104,7 +104,7 @@ module.exports = async function ({ render, browser, helpers: h, only }) {
     for (const k of order) {
       const d = DOGS.find((x) => x.key === k), breed = d.title.replace(/^the /, ''), loves = d.loves.map((l) => l[1]).join(', ');
       const alt = `${d.name} the ${breed} with a puppy, favourite things and four traits.`;
-      md += `\n---\n\n### ${d.name} the ${breed}\nFile: \`dogs/dog-${String(d.num).padStart(2, '0')}-${d.name.toLowerCase()}.jpg\`\n\n**Caption**\n\`\`\`\nMeet ${d.name}, the ${breed} 🐶\n"${d.quote.join(' ')}"\n\n${d.traits.map(([t, sub]) => `• ${t}: ${sub}`).join('\\n')}\n\nLoves: ${loves}.\n\nWho is your favourite dog? 👇 Doodle Doggo is free in your browser, link in bio.\n\n🇯🇵 ワンコ紹介：${d.name}（${JP[k]}）。無料のブラウザゲーム「Doodle Doggo」で会えます🐶\n\n#cozygames #doggame #${TAG[k]} #doodledoggo #indiegame #${JTAG[k]} #犬ゲーム\n\`\`\`\n**Alt text:** \`${alt}\` (${alt.length} characters)\n`;
+      md += `\n---\n\n### ${d.name} the ${breed}\nFile: \`dogs/dog-${String(d.num).padStart(2, '0')}-${d.name.toLowerCase()}.jpg\`\n\n**Caption**\n\`\`\`\nMeet ${d.name}, the ${breed} 🐶\n"${d.quote.join(' ')}"\n\n${d.traits.map(([t, sub]) => `• ${t}: ${sub}`).join('\\n')}\n\nLoves: ${loves}.\n\nWho is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.\n\n🇯🇵 ワンコ紹介：${d.name}（${JP[k]}）。近日公開の無料ブラウザゲーム「Doodle Doggo」の仲間です🐶\n\n#cozygames #doggame #${TAG[k]} #doodledoggo #indiegame #${JTAG[k]} #犬ゲーム\n\`\`\`\n**Alt text:** \`${alt}\` (${alt.length} characters)\n`;
     }
     fs.writeFileSync(path.join(h.OUT, '..', '..', '..', 'docs', 'marketing', 'DOG_INTRO_POSTS.md'), md.replace(/\\n/g, '\n'));
   }

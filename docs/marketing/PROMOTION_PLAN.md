@@ -19,6 +19,15 @@ Written 16 Oct 2026 (Friday) for one person, zero budget. All times are **JST** 
 
 ---
 
+## Pre-launch mode (set 16 Oct, read this first)
+
+**The game is not published yet.** For now Instagram builds an audience and says **coming soon**. That changes the plan like this:
+- **No game link in the bio and no "play now" wording.** The bio ends with "Free browser game · coming soon". The images say "coming soon", not "play free".
+- **The goal is followers, not plays.** The call to action is "follow along to be first to know". Measure followers, shares and saves, not link taps.
+- **Reddit and the game-link posts wait.** Do the r/WebGames, r/cozygames and r/IndieGaming posts only when there is something to play. Moving them later is fine; they are in the calendar as placeholders.
+- **Halloween:** the Pumpkin Patch Pop-up ends 2 Nov. If the game is not live before then, skip the Halloween "play now" push (`post3-play-free-halloween.jpg`) and keep Halloween as decoration only.
+- **Launch day:** when the itch.io page (or the game link) is live and tested: add the link to the bio, change the bio line, post the launch-day caption (end of `INSTAGRAM_FIRST_POSTS.md`), then follow the itch.io and Reddit steps below.
+
 ## 2. Where we start
 
 | Fact | Detail |

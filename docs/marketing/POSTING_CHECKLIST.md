@@ -11,9 +11,9 @@ Tick each box. Times are JST. Everything you need is in `brand/instagram/` and `
   ```
   🖍️ Adopt a wobbly crayon pup to love
   🐶 Walks, cuddles, gardens & puppy playdates
-  🎮 Free · play in your browser 👇
+  🎮 Free browser game · coming soon ✨
   ```
-- [ ] **Link:** `https://an9ou.github.io/paw-haven/`. When doodledoggo.app is live, switch it. A free link page that counts clicks (Linktree or similar) lets you see taps; if you use one, point it at the game.
+- [ ] **Link: leave it empty for now.** The game is not published yet. When the itch.io page (or the game link) is live and tested, add it here and change the last bio line to `🎮 Free · play in your browser 👇`. (A free link page that counts clicks, such as Linktree, shows you taps; point it at the game when it is live.)
 - [ ] **Profile picture:** `brand/instagram/doodle-doggo-instagram-halloween-1080.png` (Noodle in the Witch Hat and Candy Corn Bandana).
   - [ ] **Swap on Tue 3 Nov** to `doodle-doggo-instagram-dachshund-1080.png`.
 - [ ] **Contact button:** the Professional account can show email. Use an address you are happy to make public, or leave it off.
@@ -47,8 +47,8 @@ Best times, with the reason. These are sensible defaults, not measured. After tw
 | Day | Time | Do |
 |---|---|---|
 | Fri 16 | evening | Setup (section 1). No posts. |
-| **Sat 17** | **9:00 / 9:10 / 9:20** | Post the **right** tile, then the **middle** tile, then the **left** tile. Then **pin all three** in that order. Add the captions from `INSTAGRAM_FIRST_POSTS.md`. |
-| Sat 17 | 9:30 | One Story: "Hi, this is Doodle Doggo", with the link sticker. Share it to the highlight **Meet**. Post on Bluesky and X. |
+| **Sat 17** | **9:00 / 9:10 / 9:20** | Post the **right** tile, then the **middle** tile, then the **left** tile. Then **pin all three** in that order. Add the "coming soon" captions from `INSTAGRAM_FIRST_POSTS.md`. |
+| Sat 17 | 9:30 | One Story: "Hi, this is Doodle Doggo, coming soon" (no link sticker yet). Share it to the highlight **Meet**. Post on Bluesky and X. |
 | Sun 18 | 20:30 | Story poll "Which dog should Noodle meet next?" |
 | **Tue 20** | **20:30** | Info 1/4: **the Japan view** (`info1-japan-view.jpg`) |
 | **Thu 22** | **12:00** | Info 2/4: **the dogs** (`info2-meet-the-dogs.jpg`). Countdown sticker to 2 Nov. |
@@ -57,7 +57,7 @@ Best times, with the reason. These are sensible defaults, not measured. After tw
 | **Tue 27** | **20:30** | Info 4/4: **how to play** (`info4-how-to-play.jpg`) |
 | Thu 29 | 20:30 | Optional Halloween push: `post3-play-free-halloween.jpg` |
 
-Share each informative post to your Story with the link sticker, and add it to the highlight it belongs to (Fuji, Meet or Play).
+Share each informative post to your Story (no link sticker until the game is live), and add it to the highlight it belongs to (Fuji, Meet or Play).
 
 ## 4. Every time you post
 

@@ -6,7 +6,7 @@ module.exports = async function ({ render, helpers: h }) {
   const { f1, doodle, txt, lines, box, line, arrow, dog, paper, svgPage, frame, tape, photo, shotAt, swash, wordmark, INK, PINK, MUTED, ORANGE, PLUM } = h;
   const W = 1080, H = 1350;
   const tag = (n, label) => txt(`${n}/4`, 990, 92, 44, { fill: MUTED, w: 600, anchor: 'end' }) + txt(label, 100, 92, 44, { fill: '#D8607E', anchor: 'start' });
-  const foot = (extra = '') => txt('Doodle Doggo · free in your browser · link in bio', 540, 1302, 40, { fill: MUTED, w: 600 }) + extra;
+  const foot = (extra = '') => txt('Doodle Doggo · a free browser game · coming soon', 540, 1302, 40, { fill: MUTED, w: 600 }) + extra;
 
   // ---------- 1. Japan view ----------
   const p1 = () => svgPage(W, H, paper(W, H) + frame(W, H, 31) + tag(1, 'the Japan view')

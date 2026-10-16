@@ -41,8 +41,8 @@ module.exports = async function ({ render, helpers: h, what }) {
       const stat = (x, n, l) => `<text x="${x}" y="108" font-family="${SANS}" font-weight="700" font-size="34" text-anchor="middle" fill="#222">${n}</text><text x="${x}" y="142" font-family="${SANS}" font-size="24" text-anchor="middle" fill="#444">${l}</text>`;
       g += stat(330, '3', 'posts') + stat(500, '0', 'followers') + stat(670, '0', 'following');
       g += `<text x="36" y="236" font-family="${SANS}" font-weight="700" font-size="27" fill="#222">Doodle Doggo 🐾 Cozy Dog Game</text>`;
-      ['🖍️ Adopt a wobbly crayon pup to love', '🐶 Walks, cuddles, gardens &amp; puppy playdates', '🎮 Free · play in your browser 👇'].forEach((t, i) => { g += `<text x="36" y="${276 + i * 36}" font-family="${SANS}" font-size="25" fill="#222">${t}</text>`; });
-      g += `<text x="36" y="394" font-family="${SANS}" font-weight="600" font-size="25" fill="#00376B">an9ou.github.io/paw-haven</text>`;
+      ['🖍️ Adopt a wobbly crayon pup to love', '🐶 Walks, cuddles, gardens &amp; puppy playdates', '🎮 Free browser game · coming soon ✨'].forEach((t, i) => { g += `<text x="36" y="${276 + i * 36}" font-family="${SANS}" font-size="25" fill="#222">${t}</text>`; });
+      g += `<text x="36" y="394" font-family="${SANS}" font-weight="600" font-size="25" fill="#00376B">(link coming soon)</text>`;
       g += `<rect x="36" y="420" width="${(PW - 96) / 2}" height="52" rx="12" fill="#EFEFEF"/><text x="${36 + (PW - 96) / 4}" y="455" font-family="${SANS}" font-weight="700" font-size="24" text-anchor="middle" fill="#222">Follow</text><rect x="${48 + (PW - 96) / 2}" y="420" width="${(PW - 96) / 2}" height="52" rx="12" fill="#EFEFEF"/><text x="${48 + (PW - 96) * 3 / 4}" y="455" font-family="${SANS}" font-weight="700" font-size="24" text-anchor="middle" fill="#222">Message</text>`;
       // highlights
       ['highlight-1-meet', 'highlight-2-play', 'highlight-3-fuji', 'highlight-4-events'].forEach((n, i) => {

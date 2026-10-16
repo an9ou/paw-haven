@@ -1,8 +1,10 @@
 # Instagram posts: the banner and the informative series
 
+**Pre-launch mode (set 16 Oct):** the game is **not published yet** (no itch.io page), so nothing says "play now" and there is no link. Everything says **coming soon**. When the game goes live, use the launch-day captions at the end of this file.
+
 Updated 16 Oct 2026 after the owner's feedback.
 
-- **A: the 3-tile banner** (chosen). One word box, on the middle tile only ("Doodle Doggo, a cozy dog game · play free"). 9 big dogs on an autumn meadow with the game's cottage, trees, fence, clothesline, lanterns, scarecrow and pumpkin cart. Some dogs wear nothing, some one item, some two.
+- **A: the 3-tile banner** (chosen). One word box, on the middle tile only ("Doodle Doggo, a cozy dog game · coming soon"). 9 big dogs on an autumn meadow with the game's cottage, trees, fence, clothesline, lanterns, scarecrow and pumpkin cart. Some dogs wear nothing, some one item, some two.
 - **B: the informative series** (chosen for the posts that follow): Japan view, the dogs, what you can do, how to play. Same paper-and-pencil style.
 - **Teaser** (see below): `soon-more-dogs-coming.jpg`.
 - **Extras** (optional): `post1-meet-noodle.jpg`, `post2-pencil-town-fuji.jpg`, `post3-play-free-halloween.jpg`. Post 3 is a good Halloween push on Thu 29 Oct.
@@ -28,18 +30,18 @@ Then **pin all three** (long-press a post, "Pin to your profile") in the same or
 ### Right tile (posted first)
 **Caption**
 ```
-Welcome to Doodle Doggo! 🐶🖍️
-A cozy dog game you play in your browser. Free!
+Doodle Doggo is coming soon! 🐶🖍️
+A cozy dog game you will play in your browser. Free!
 
-Adopt a wobbly crayon pup, walk around a pencil-sketch town, grow a garden, cook dog-safe treats and have puppy playdates. Phone or computer, nothing to download. Link in bio.
+Adopt a wobbly crayon pup, walk around a pencil-sketch town, grow a garden, cook dog-safe treats and have puppy playdates. Phone or computer, nothing to download.
 
-🎃 It's Halloween in town: Mrs. Plum's Pumpkin Patch Pop-up is open until 2 Nov.
+🎃 A little Halloween in town while we get ready: Mrs. Plum's Pumpkin Patch cart is already open for business.
 
-✨ This is one of three pieces of a big picture. Visit our profile to see all three together!
+✨ This is one of three pieces of a big picture. Visit our profile to see all three together, and follow along to be the first to know when the game opens.
 
-🇯🇵 ブラウザで遊べる無料のワンコゲーム「Doodle Doggo」へようこそ！プロフィールのリンクからどうぞ🖍️
+🇯🇵 ブラウザで遊べる無料のワンコゲーム「Doodle Doggo」、近日公開です！フォローしてお待ちください🖍️
 
-#cozygames #browsergame #indiegame #halloweengame #doodledoggo #ブラウザゲーム #ハロウィン
+#cozygames #browsergame #indiegame #comingsoon #doodledoggo #近日公開 #インディーゲーム
 ```
 **Alt text:** `A corgi in a witch hat, a pug in a party hat and a pumpkin patch cart under bunting.`
 
@@ -49,33 +51,33 @@ Adopt a wobbly crayon pup, walk around a pencil-sketch town, grow a garden, cook
 Meet Noodle 🐶🗻
 He's a dachshund. He's very long. He drew himself and he is very proud of it.
 
-Noodle lives in Doodle Doggo: a pencil-sketch town with Mt. Fuji on every skyline, and 14 crayon dogs who are all a little wobbly on purpose. Free in your browser. Link in bio.
+Noodle lives in Doodle Doggo, our cozy dog game coming soon: a pencil-sketch town with Mt. Fuji on every skyline, and 14 crayon dogs who are all a little wobbly on purpose.
 
 Which dog would you adopt first? 👇
 
-✨ The middle piece of a 3-part picture. Visit our profile to see all three.
+✨ The middle piece of a 3-part picture. Follow along so you don't miss the opening.
 
-🇯🇵 ダックスフンドのヌードルが案内役。どの空にも富士山がある鉛筆の街と、14匹のクレヨン犬たち🗻
+🇯🇵 ダックスフンドのヌードルが案内役。どの空にも富士山がある鉛筆の街と、14匹のクレヨン犬たち。近日公開です🗻
 
-#cozygames #indiegame #handdrawn #mtfuji #doodledoggo #富士山 #インディーゲーム
+#cozygames #indiegame #handdrawn #mtfuji #doodledoggo #富士山 #近日公開
 ```
-**Alt text:** `Noodle the dachshund under a Doodle Doggo sign: a cozy dog game, play free. Mt. Fuji behind.`
+**Alt text:** `Noodle the dachshund under a Doodle Doggo sign: a cozy dog game, coming soon. Mt. Fuji behind.`
 
 ### Left tile (posted last, shows first on the grid)
 **Caption**
 ```
-Come on in, the yard is open 🏡🍂
+Come on in, the yard is almost ready 🏡🍂
 The cottage, the clothesline, the autumn leaves, and a whole crowd of crayon dogs in costumes. Some wear two things, some wear one, and some wear nothing at all.
 
-Doodle Doggo is a cozy dog game with walks, a garden, a kitchen for dog-safe treats and puppy playdates. Free in your browser. Link in bio.
+Doodle Doggo is a cozy dog game with walks, a garden, a kitchen for dog-safe treats and puppy playdates. Coming soon, and free to play in your browser.
 
 Spot your favourite? 👇
 
-✨ The left piece of a 3-part picture. Visit our profile to see all three.
+✨ The left piece of a 3-part picture. Follow along to see the whole thing and the opening day.
 
-🇯🇵 お家の庭へようこそ。仮装したクレヨン犬たちがいっぱい🍂 無料のブラウザゲームです。
+🇯🇵 お家の庭はもうすぐ準備完了。仮装したクレヨン犬たちがいっぱい🍂 無料のブラウザゲーム、近日公開です。
 
-#cozygames #browsergame #doggame #dachshund #doodledoggo #癒しゲーム #ブラウザゲーム
+#cozygames #browsergame #doggame #dachshund #doodledoggo #癒しゲーム #近日公開
 ```
 **Alt text:** `A cozy cottage and crayon dogs in costumes on an autumn meadow under bunting.`
 
@@ -103,7 +105,7 @@ Doodle Doggo is made in Japan, and it shows. Fuji peeks over your yard, the town
 
 When winter comes, Snow Days start on 1 Dec. In January you can send New Year cards (年賀状) too.
 
-Which view is your favourite? 👇 Free in your browser, link in bio.
+Which view is your favourite? 👇 Coming soon, free in your browser.
 
 🇯🇵 どの空にも富士山。富士山ビューヒルで、毎日ワンコと富士山を眺めよう🗻 12月1日から雪の日、1月には年賀状も届きます。
 
@@ -120,7 +122,7 @@ Mochi the shiba, Biscuit the corgi, Sunny the golden, Noodle the dachshund, Fros
 
 Each one has its own voice, size and joke. And when two dogs have a playdate, the puppies inherit coats and traits like the real thing. Nothing bad ever happens here.
 
-Which one is yours? 👇 Free in your browser, link in bio.
+Which one is yours? 👇 Coming soon, free in your browser.
 
 🇯🇵 14種類のワンコ。それぞれ声も大きさもクセも違います🐶
 
@@ -140,7 +142,7 @@ So much to do 🌱🍪
 🐶 Puppy playdates: coats get passed down
 🎃 Dress-up: hats, bandanas and (very) ugly sweaters
 
-Which would you try first? 👇 Free in your browser, link in bio.
+Which would you try first? 👇 Coming soon, free in your browser.
 
 🇯🇵 お散歩、畑、おやつ作り、お家づくり、子犬のプレイデート、おしゃれまで。
 
@@ -158,7 +160,7 @@ How to play (and it's free!) 🎮
 3️⃣ Feed, play and care for them
 4️⃣ Go for a walk: tap or press Space to hop, hold for a long jump, swipe down to duck, D to dig
 
-Works on your phone (hold it upright) or your computer. Nothing to download. Link in bio.
+Works on your phone (hold it upright) or your computer. Nothing to download. Coming soon!
 
 🇯🇵 遊び方：①「New game」②ワンコを選ぶ ③お世話する ④お散歩に出かける。スマホもPCもOK、無料です🎮
 
@@ -180,7 +182,7 @@ Someone is peeking over the fence... We can't say who yet (even Noodle doesn't k
 
 Which dog would you like to see next? Tell us below 👇
 
-Doodle Doggo is a free cozy dog game you play in your browser. Link in bio.
+Doodle Doggo is a free cozy dog game for your browser, coming soon.
 
 🇯🇵 新しいワンコがやってきます！お楽しみに🐶
 
@@ -197,7 +199,28 @@ Short, warm, in Noodle's voice sometimes. Change a word each time so it never fe
 | When | English | 日本語 |
 |---|---|---|
 | Someone says it is cute | "Noodle says thank you. He drew himself, so he will be insufferable all day. 🖍️" | 「ヌードルが喜んでます。自分で描いたので、今日一日自慢しそうです🖍️」 |
-| "Where can I play?" | "It's free in your browser. The link is in our bio. Phone or computer both work!" | 「無料でブラウザで遊べます。プロフィールのリンクからどうぞ！スマホもPCも大丈夫です」 |
+| "Where can I play?" | "Soon! It will be free in your browser, on phone and computer. Follow us and you will be the first to know." | 「もうすぐ公開です！無料でブラウザで遊べます。フォローしておくと一番に分かります」 |
 | "Which dog is your favourite?" | "Noodle is the boss, but Biscuit the corgi is catching up. Who is yours?" | 「ヌードルがリーダーですが、コーギーのビスケットも人気です。あなたの推しは？」 |
 | Bug report | "Thank you for telling us! Which device were you on? We will look into it." | 「教えてくれてありがとうございます！どの端末ですか？確認します」 |
 | Asking for a follow back | Do not. Just be kind and thank them for the comment. | |
+
+---
+
+## Launch-day captions (use only when the game is live)
+
+Post these when the itch.io page (or the game link) is live and tested. Put the link in the bio first.
+
+**Single image: use `post3-play-free-halloween.jpg` (before 2 Nov) or any informative post**
+```
+Doodle Doggo is open! 🐶🎉
+A cozy dog game you play in your browser. Free, on phone or computer, nothing to download. Tap the link in our bio and meet Noodle.
+
+1️⃣ Tap the link in bio
+2️⃣ Pick a pup
+3️⃣ Say hi
+
+🇯🇵 「Doodle Doggo」公開しました！プロフィールのリンクから無料で遊べます🐶
+
+#cozygames #browsergame #indiegame #newgame #doodledoggo #ブラウザゲーム #無料ゲーム
+```
+Also: update the bio to `🎮 Free · play in your browser 👇`, add the link, and post a Story with the link sticker.

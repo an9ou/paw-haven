@@ -128,7 +128,7 @@ function post1() { // Meet Noodle
     + txt('very long boy.', 214, 665, 56, { rot: -6, fill: INK, w: 600 }) + arrow(300, 690, 410, 840, [-20, 40], 1)
     + txt('tongue: always out', 860, 630, 52, { rot: 4, w: 600 }) + arrow(880, 662, 800, 752, [50, 0], 2)
     + box(150, 1150, 780, 92, 44, 33, 2.4, 4.4) + txt('walks · gardens · puppy playdates', 540, 1214, 54, { w: 600 })
-    + txt('free · play in your browser', 540, 1284, 46, { fill: MUTED, w: 600 })
+    + txt('a free browser game · coming soon', 540, 1284, 46, { fill: MUTED, w: 600 })
     + doodle('paw', 100, 1197, 1.3, -15) + doodle('paw', 980, 1197, 1.3, 15) + doodle('spark', 960, 560, 0.9) + doodle('heart', 130, 560, 1, -14);
   return svgPage(W, H, body);
 }

@@ -44,9 +44,9 @@ Meet Noodle, the Dachshund 🐶
 
 Loves: bone biscuit, squeaky duck, digging.
 
-Who is your favourite dog? 👇 Doodle Doggo is free in your browser, link in bio.
+Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
 
-🇯🇵 ワンコ紹介：Noodle（ダックスフンド）。無料のブラウザゲーム「Doodle Doggo」で会えます🐶
+🇯🇵 ワンコ紹介：Noodle（ダックスフンド）。近日公開の無料ブラウザゲーム「Doodle Doggo」の仲間です🐶
 
 #cozygames #doggame #dachshund #doodledoggo #indiegame #ダックスフンド #犬ゲーム
 ```
@@ -69,9 +69,9 @@ Meet Biscuit, the Corgi 🐶
 
 Loves: pupcake, puzzle feeder, feeding.
 
-Who is your favourite dog? 👇 Doodle Doggo is free in your browser, link in bio.
+Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
 
-🇯🇵 ワンコ紹介：Biscuit（コーギー）。無料のブラウザゲーム「Doodle Doggo」で会えます🐶
+🇯🇵 ワンコ紹介：Biscuit（コーギー）。近日公開の無料ブラウザゲーム「Doodle Doggo」の仲間です🐶
 
 #cozygames #doggame #corgi #doodledoggo #indiegame #コーギー #犬ゲーム
 ```
@@ -94,9 +94,9 @@ Meet Mochi, the Shiba Inu 🐶
 
 Loves: salmon pâté, plush bone, tricks.
 
-Who is your favourite dog? 👇 Doodle Doggo is free in your browser, link in bio.
+Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
 
-🇯🇵 ワンコ紹介：Mochi（柴犬）。無料のブラウザゲーム「Doodle Doggo」で会えます🐶
+🇯🇵 ワンコ紹介：Mochi（柴犬）。近日公開の無料ブラウザゲーム「Doodle Doggo」の仲間です🐶
 
 #cozygames #doggame #shibainu #doodledoggo #indiegame #柴犬 #犬ゲーム
 ```
@@ -119,9 +119,9 @@ Meet Sunny, the Golden Retriever 🐶
 
 Loves: kibble, tennis ball, fetch.
 
-Who is your favourite dog? 👇 Doodle Doggo is free in your browser, link in bio.
+Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
 
-🇯🇵 ワンコ紹介：Sunny（ゴールデンレトリバー）。無料のブラウザゲーム「Doodle Doggo」で会えます🐶
+🇯🇵 ワンコ紹介：Sunny（ゴールデンレトリバー）。近日公開の無料ブラウザゲーム「Doodle Doggo」の仲間です🐶
 
 #cozygames #doggame #goldenretriever #doodledoggo #indiegame #ゴールデンレトリバー #犬ゲーム
 ```
@@ -144,9 +144,9 @@ Meet Frost, the Husky 🐶
 
 Loves: chicken & rice, rope tug, walks.
 
-Who is your favourite dog? 👇 Doodle Doggo is free in your browser, link in bio.
+Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
 
-🇯🇵 ワンコ紹介：Frost（ハスキー）。無料のブラウザゲーム「Doodle Doggo」で会えます🐶
+🇯🇵 ワンコ紹介：Frost（ハスキー）。近日公開の無料ブラウザゲーム「Doodle Doggo」の仲間です🐶
 
 #cozygames #doggame #husky #doodledoggo #indiegame #ハスキー #犬ゲーム
 ```
@@ -169,9 +169,9 @@ Meet Dumpling, the Pug 🐶
 
 Loves: pupcake, plush bone, feeding.
 
-Who is your favourite dog? 👇 Doodle Doggo is free in your browser, link in bio.
+Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
 
-🇯🇵 ワンコ紹介：Dumpling（パグ）。無料のブラウザゲーム「Doodle Doggo」で会えます🐶
+🇯🇵 ワンコ紹介：Dumpling（パグ）。近日公開の無料ブラウザゲーム「Doodle Doggo」の仲間です🐶
 
 #cozygames #doggame #pug #doodledoggo #indiegame #パグ #犬ゲーム
 ```
@@ -194,9 +194,9 @@ Meet Peanut, the Chihuahua 🐶
 
 Loves: salmon pâté, squeaky duck, petting.
 
-Who is your favourite dog? 👇 Doodle Doggo is free in your browser, link in bio.
+Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
 
-🇯🇵 ワンコ紹介：Peanut（チワワ）。無料のブラウザゲーム「Doodle Doggo」で会えます🐶
+🇯🇵 ワンコ紹介：Peanut（チワワ）。近日公開の無料ブラウザゲーム「Doodle Doggo」の仲間です🐶
 
 #cozygames #doggame #chihuahua #doodledoggo #indiegame #チワワ #犬ゲーム
 ```
@@ -219,9 +219,9 @@ Meet Rocket, the Greyhound 🐶
 
 Loves: chicken & rice, frisbee, fetch.
 
-Who is your favourite dog? 👇 Doodle Doggo is free in your browser, link in bio.
+Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
 
-🇯🇵 ワンコ紹介：Rocket（グレイハウンド）。無料のブラウザゲーム「Doodle Doggo」で会えます🐶
+🇯🇵 ワンコ紹介：Rocket（グレイハウンド）。近日公開の無料ブラウザゲーム「Doodle Doggo」の仲間です🐶
 
 #cozygames #doggame #greyhound #doodledoggo #indiegame #グレイハウンド #犬ゲーム
 ```
@@ -244,9 +244,9 @@ Meet Bagel, the Beagle 🐶
 
 Loves: kibble, puzzle feeder, digging.
 
-Who is your favourite dog? 👇 Doodle Doggo is free in your browser, link in bio.
+Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
 
-🇯🇵 ワンコ紹介：Bagel（ビーグル）。無料のブラウザゲーム「Doodle Doggo」で会えます🐶
+🇯🇵 ワンコ紹介：Bagel（ビーグル）。近日公開の無料ブラウザゲーム「Doodle Doggo」の仲間です🐶
 
 #cozygames #doggame #beagle #doodledoggo #indiegame #ビーグル #犬ゲーム
 ```
@@ -269,9 +269,9 @@ Meet Pretzel, the Poodle 🐶
 
 Loves: salmon pâté, puzzle feeder, tricks.
 
-Who is your favourite dog? 👇 Doodle Doggo is free in your browser, link in bio.
+Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
 
-🇯🇵 ワンコ紹介：Pretzel（プードル）。無料のブラウザゲーム「Doodle Doggo」で会えます🐶
+🇯🇵 ワンコ紹介：Pretzel（プードル）。近日公開の無料ブラウザゲーム「Doodle Doggo」の仲間です🐶
 
 #cozygames #doggame #poodle #doodledoggo #indiegame #プードル #犬ゲーム
 ```
@@ -294,9 +294,9 @@ Meet Scout, the Border Collie 🐶
 
 Loves: chicken & rice, frisbee, fetch.
 
-Who is your favourite dog? 👇 Doodle Doggo is free in your browser, link in bio.
+Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
 
-🇯🇵 ワンコ紹介：Scout（ボーダーコリー）。無料のブラウザゲーム「Doodle Doggo」で会えます🐶
+🇯🇵 ワンコ紹介：Scout（ボーダーコリー）。近日公開の無料ブラウザゲーム「Doodle Doggo」の仲間です🐶
 
 #cozygames #doggame #bordercollie #doodledoggo #indiegame #ボーダーコリー #犬ゲーム
 ```
@@ -319,9 +319,9 @@ Meet Cloud, the Samoyed 🐶
 
 Loves: chicken & rice, rope tug, walks.
 
-Who is your favourite dog? 👇 Doodle Doggo is free in your browser, link in bio.
+Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
 
-🇯🇵 ワンコ紹介：Cloud（サモエド）。無料のブラウザゲーム「Doodle Doggo」で会えます🐶
+🇯🇵 ワンコ紹介：Cloud（サモエド）。近日公開の無料ブラウザゲーム「Doodle Doggo」の仲間です🐶
 
 #cozygames #doggame #samoyed #doodledoggo #indiegame #サモエド #犬ゲーム
 ```
@@ -344,9 +344,9 @@ Meet Brioche, the French Bulldog 🐶
 
 Loves: pupcake, plush bone, petting.
 
-Who is your favourite dog? 👇 Doodle Doggo is free in your browser, link in bio.
+Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
 
-🇯🇵 ワンコ紹介：Brioche（フレンチブルドッグ）。無料のブラウザゲーム「Doodle Doggo」で会えます🐶
+🇯🇵 ワンコ紹介：Brioche（フレンチブルドッグ）。近日公開の無料ブラウザゲーム「Doodle Doggo」の仲間です🐶
 
 #cozygames #doggame #frenchbulldog #doodledoggo #indiegame #フレンチブルドッグ #犬ゲーム
 ```
@@ -369,9 +369,9 @@ Meet Pepper, the Shelter Mutt 🐶
 
 Loves: petting, a home, you.
 
-Who is your favourite dog? 👇 Doodle Doggo is free in your browser, link in bio.
+Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
 
-🇯🇵 ワンコ紹介：Pepper（保護犬のミックス）。無料のブラウザゲーム「Doodle Doggo」で会えます🐶
+🇯🇵 ワンコ紹介：Pepper（保護犬のミックス）。近日公開の無料ブラウザゲーム「Doodle Doggo」の仲間です🐶
 
 #cozygames #doggame #rescuedog #doodledoggo #indiegame #保護犬 #犬ゲーム
 ```

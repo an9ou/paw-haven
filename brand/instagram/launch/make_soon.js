@@ -41,7 +41,7 @@ module.exports = async function ({ render, browser, helpers: h }) {
   const cast = [['dachs', 'happy', 250, 390, { eyes: 'Heart Sunglasses', neck: 'Red Bandana' }, 250], ['corgi', 'happy', 640, 260, null, 215], ['shiba', 'sit', 915, 220, null, 235]];
   for (const [k, pose, cx, mw, outfit, mh] of cast) { const d = await fit(k, { pose, outfit: outfit || undefined }, cx, 1215, mw, mh); g += `<ellipse cx="${f1(cx)}" cy="1211" rx="${f1(mw * 0.4)}" ry="9" fill="#5B3D32" opacity=".14"/>` + d.svg; }
   g += bubble(90, 880, 330, 120, 340, 1040, ['who is behind', 'the fence?'], 6, 38) + bubble(500, 880, 290, 120, 660, 1012, ['snacks?', 'it is snacks.'], 7, 38);
-  g += txt('Doodle Doggo · follow along to meet them first', 540, 1312, 36, { fill: MUTED, w: 600 });
+  g += txt('Doodle Doggo · coming soon · follow along to meet them first', 540, 1312, 36, { fill: MUTED, w: 600 });
   await render(svgPage(W, H, g), W, H, 'soon-more-dogs-coming.jpg');
   await mp.close();
 };

@@ -171,7 +171,7 @@ module.exports = async function ({ render, browser, helpers: h }) {
   // ---- the one word box (middle tile only) ----
   const CY = 214, CW = 900, CH = 320, c1 = cx[1];
   g += `<g transform="rotate(0.6 ${c1} ${CY + CH / 2})"><g filter="url(#dd-shadow)"><rect x="${c1 - CW / 2}" y="${CY}" width="${CW}" height="${CH}" rx="40" fill="#FFFBF2"/></g>${box(c1 - CW / 2, CY, CW, CH, 40, 42, 2.8, 5)}${tape(c1 - 90, CY - 24, 180, 48, -3)}`
-    + wordmark(c1, CY + 150, 138) + txt('a cozy dog game  ·  play free', c1, CY + 262, 64, { fill: MUTED, w: 600 })
+    + wordmark(c1, CY + 150, 138) + txt('a cozy dog game  ·  coming soon', c1, CY + 262, 64, { fill: MUTED, w: 600 })
     + doodle('paw', c1 - CW / 2 + 70, CY + 262, 1.4, -15) + doodle('heart', c1 + CW / 2 - 70, CY + 255, 1.5, 12) + doodle('spark', c1 + CW / 2 - 60, CY + 60, 1.2) + doodle('spark', c1 - CW / 2 + 60, CY + 70, 1) + `</g>`;
 
   // ---- write: the wide picture, then the three tiles (same svg, different viewBox) ----
