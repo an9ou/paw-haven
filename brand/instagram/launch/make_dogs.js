@@ -92,6 +92,22 @@ module.exports = async function ({ render, browser, helpers: h, only }) {
       loves: [['Pupcake', 'pupcake'], ['Plush Bone', 'plush bone'], ['icon:pet', 'petting']],
       traits: [['snorer', 'a tiny engine at nap time'], ['foot sitter', 'your foot is now his seat'], ['shade seeker', 'sunny day? no thanks'], ['cuddly', 'bat ears, big heart']] },
   ];
+  if (process.env.DOG_DOC) {
+    const JP = { shiba: '柴犬', corgi: 'コーギー', golden: 'ゴールデンレトリバー', dachs: 'ダックスフンド', husky: 'ハスキー', mutt: '保護犬のミックス', chihuahua: 'チワワ', pug: 'パグ', greyhound: 'グレイハウンド', beagle: 'ビーグル', poodle: 'プードル', collie: 'ボーダーコリー', samoyed: 'サモエド', frenchie: 'フレンチブルドッグ' };
+    const TAG = { shiba: 'shibainu', corgi: 'corgi', golden: 'goldenretriever', dachs: 'dachshund', husky: 'husky', mutt: 'rescuedog', chihuahua: 'chihuahua', pug: 'pug', greyhound: 'greyhound', beagle: 'beagle', poodle: 'poodle', collie: 'bordercollie', samoyed: 'samoyed', frenchie: 'frenchbulldog' };
+    const JTAG = { shiba: '柴犬', corgi: 'コーギー', golden: 'ゴールデンレトリバー', dachs: 'ダックスフンド', husky: 'ハスキー', mutt: '保護犬', chihuahua: 'チワワ', pug: 'パグ', greyhound: 'グレイハウンド', beagle: 'ビーグル', poodle: 'プードル', collie: 'ボーダーコリー', samoyed: 'サモエド', frenchie: 'フレンチブルドッグ' };
+    const order = ['dachs', 'corgi', 'shiba', 'golden', 'husky', 'pug', 'chihuahua', 'greyhound', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie', 'mutt'];
+    const days = ['Sun 1 Nov', 'Wed 4 Nov', 'Sun 8 Nov', 'Wed 11 Nov', 'Sun 15 Nov', 'Wed 18 Nov', 'Sun 22 Nov', 'Wed 25 Nov', 'Sun 29 Nov', 'Wed 2 Dec', 'Sun 6 Dec', 'Wed 9 Dec', 'Sun 13 Dec', 'Wed 16 Dec'];
+    let md = `# Dog introduction posts (14)\n\nOne post per dog: the whole dog, a puppy of the same dog type, the name, a line from the game, what it loves (the game's own favourites) and four traits. Files: \`brand/instagram/launch/dogs/\`. Remake: \`node brand/instagram/launch/make.js <shots> dogs [key]\`.\n\n**Facts from the game:** the dog type, personality, the speech bubble and the favourite food, toy and activity. **Creative:** the four trait boxes.\n\n## Order and days (2 posts a week, 20:30 JST)\n\nNoodle first (the main character), Pepper last (the shelter mutt: "Can I come home with you?" is a nice closer). These run alongside the winter posts in December.\n\n| Day | Dog | File |\n|---|---|---|\n`;
+    order.forEach((k, i) => { const d = DOGS.find((x) => x.key === k); md += `| ${days[i]} | ${d.name} the ${d.title.replace(/^the /, '')} | \`dog-${String(d.num).padStart(2, '0')}-${d.name.toLowerCase()}.jpg\` |\n`; });
+    md += `\nEach post below has a caption (with a Japanese line), alt text under 100 characters and seven hashtags (five English, two Japanese).\n`;
+    for (const k of order) {
+      const d = DOGS.find((x) => x.key === k), breed = d.title.replace(/^the /, ''), loves = d.loves.map((l) => l[1]).join(', ');
+      const alt = `${d.name} the ${breed} with a puppy, favourite things and four traits.`;
+      md += `\n---\n\n### ${d.name} the ${breed}\nFile: \`dogs/dog-${String(d.num).padStart(2, '0')}-${d.name.toLowerCase()}.jpg\`\n\n**Caption**\n\`\`\`\nMeet ${d.name}, the ${breed} 🐶\n"${d.quote.join(' ')}"\n\n${d.traits.map(([t, sub]) => `• ${t}: ${sub}`).join('\\n')}\n\nLoves: ${loves}.\n\nWho is your favourite dog? 👇 Doodle Doggo is free in your browser, link in bio.\n\n🇯🇵 ワンコ紹介：${d.name}（${JP[k]}）。無料のブラウザゲーム「Doodle Doggo」で会えます🐶\n\n#cozygames #doggame #${TAG[k]} #doodledoggo #indiegame #${JTAG[k]} #犬ゲーム\n\`\`\`\n**Alt text:** \`${alt}\` (${alt.length} characters)\n`;
+    }
+    fs.writeFileSync(path.join(h.OUT, '..', '..', '..', 'docs', 'marketing', 'DOG_INTRO_POSTS.md'), md.replace(/\\n/g, '\n'));
+  }
   for (const d of DOGS) if (!only || only === d.key) await render(await post(d), W, H, `dogs/dog-${String(d.num).padStart(2, '0')}-${d.name.toLowerCase()}.jpg`);
   await mp.close();
 };

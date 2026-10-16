@@ -188,6 +188,10 @@ Dates in 2026. The owner chose **A, the banner**, for launch and **B, the inform
 | Thu 12 | 20:30 | Pillar 3 post: Gerald's dog-safe snack tip. |
 | Fri 13 | 18:00 | **Month review** (section 9). Plan December. |
 
+### Dog introduction series (from Sun 1 Nov)
+
+After the banner and the four informative posts, each of the 14 dogs gets its own introduction post: the whole dog, a puppy, its name, a line from the game, what it loves and four traits. Two a week (Sun and Wed, 20:30 JST), Noodle first and Pepper last. Dates, captions and alt text for all 14 are in `DOG_INTRO_POSTS.md`. This is pillar 1 ("Meet the dogs"), so it keeps feeding the feed through December next to the winter posts.
+
 ### Launch checklists
 
 **doodledoggo.app goes live:**
