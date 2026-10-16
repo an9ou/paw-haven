@@ -19,10 +19,10 @@ require('./test_lib').run('v29_polish', async (t) => {
   await p().click('[data-sniff="1"]');
   ok(await t.until(() => !!document.querySelector('.pbcard[data-npc="1"] .pbsniff'), null, 3000), 'the sniff summary shows');
   const sn = await ev(() => document.querySelector('.pbcard[data-npc="1"] .pbsniff').textContent.trim());
-  ok(sn.startsWith(names[1] + ' sniffed:') && sn.length > names[1].length + 10, `the summary names the dog: "${sn}"`);
+  ok(sn.startsWith(names[1] + "'s sniff test:") && sn.length > names[1].length + 10, `the summary names the dog: "${sn}"`);
   ok(await ev(() => document.querySelectorAll('.pbsniff').length) === 1 && await p().locator('[data-sniff]').count() === 3, 'only that card changed');
   await p().click('[data-sniff="3"]'); const sn3 = await ev(() => document.querySelector('.pbcard[data-npc="3"] .pbsniff').textContent.trim());
-  ok(sn3.startsWith(names[3] + ' sniffed:'), `the other card names its own dog: "${sn3}"`);
+  ok(sn3.startsWith(names[3] + "'s sniff test:"), `the other card names its own dog: "${sn3}"`);
   await ev(() => window.__paw.closeModal ? window.__paw.closeModal() : null); await t.closeX(); await t.modalGone();
   await ev(() => window.__paw.town.openBoard()); await p().waitForSelector('.pbcard');
   ok(await ev(() => document.querySelector('.pbcard[data-npc="1"] .pbsniff').textContent.trim()) === sn, 'reopening the board keeps the named summary');

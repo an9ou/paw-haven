@@ -27,7 +27,7 @@ async function suite(t, W, H) {
   await p.locator('[data-sniff="0"]').first().tap();
   ok(await t.until(() => !!document.querySelector('.pbcard[data-npc="0"] .pbsniff'), null, 3000), `${tag}: the sniff summary shows`);
   const sn = await ev(() => ({ txt: document.querySelector('.pbcard[data-npc="0"] .pbsniff').textContent.trim(), name: document.querySelector('.pbcard[data-npc="0"] > b').childNodes[0].textContent.trim(), fs: parseFloat(getComputedStyle(document.querySelector('.pbsniff')).fontSize), sw: document.documentElement.scrollWidth, iw: innerWidth, r: R(document.querySelector('.pbcard[data-npc="0"] .pbsniff')), card: R(document.querySelector('.pbcard[data-npc="0"]')) }));
-  ok(sn.txt.startsWith(sn.name + ' sniffed:'), `${tag}: the summary names the dog: "${sn.txt}"`);
+  ok(sn.txt.startsWith(sn.name + "'s sniff test:"), `${tag}: the summary names the dog: "${sn.txt}"`);
   ok(sn.fs >= 15 && sn.sw === sn.iw && sn.r[0] >= sn.card[0] && sn.r[2] <= sn.card[2] + 0.5, `${tag}: 15 px text, no sideways scroll, inside its card`);
   await t.SH('board_' + tag); await t.closeX(); await t.modalGone();
 

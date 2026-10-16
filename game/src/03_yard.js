@@ -539,7 +539,7 @@ function openPlayTray() {
   b.push(`<button class="card pdcard" data-play="playdates"><span class="art">${iconOr('playdate', doodle('heart', -6, 2, 0.8) + doodle('heart', 7, -3, 0.65))}</span><b>Playdates</b><span class="small">Puppy Playdates</span></button>`);
   if (!fts.length) b.push('<p class="small">No fetch toy. Kibble Corner sells balls.</p>');
   setTray('Play', `${crChipsHTML(PK_CAP_PLAY)}<div class="row">${b.join('')}</div>`); // v2.9 PACK: the chip row (ticked dogs join in), nothing with one dog
-  crBindChips(dock, openPlayTray);
+  crBindChips(dock, openPlayTray, 'Somebody has to play. Tick another dog first.');
   dock.querySelectorAll('[data-play]').forEach((el) => { el.onclick = () => playPick(el.dataset.play); });
 }
 function playPick(p) {

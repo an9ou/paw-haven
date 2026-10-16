@@ -208,8 +208,8 @@ function pkRoutesLine() {
   el.innerHTML = `<div class="pk-heads" role="img" aria-label="${esc(crNames(l))} walk${l.length > 1 ? '' : 's'} in a line">${heads}</div><p class="small pk-who">${who}${[...blocked, ...pkSkipLines(skip)].map((t) => ' ' + esc(t)).join('')}</p>`;
 }
 function pkRoutesBind() {
-  const redraw = () => { const row = $('#pkWalkRow', view); if (!row) return; row.innerHTML = `${crChipsHTML(PK_CAP_WALK)}<div class="pk-walkline" id="pkWalkLine"></div>`; crBindChips(row, redraw); pkRoutesLine(); };
-  const row = $('#pkWalkRow', view); if (row) crBindChips(row, redraw);
+  const redraw = () => { const row = $('#pkWalkRow', view); if (!row) return; row.innerHTML = `${crChipsHTML(PK_CAP_WALK)}<div class="pk-walkline" id="pkWalkLine"></div>`; crBindChips(row, redraw, 'Somebody has to come along. Tick another dog first.'); pkRoutesLine(); };
+  const row = $('#pkWalkRow', view); if (row) crBindChips(row, redraw, 'Somebody has to come along. Tick another dog first.');
 }
 
 /* ---------------- the long press: Make leader, Dress, Train ---------------- */

@@ -19,7 +19,7 @@ const phActive = () => PH.on;
 
 /* the camera is for the yard, the house and every town place: not on the title, walks, mini-games, the map, in a modal or while placing decorations */
 function phCan() {
-  return !!S && !PH.on && (cur.mode === 'yard' || cur.mode === 'market') && modal.hidden && !hud.hidden && !(typeof HO === 'object' && HO && HO.pl) && !!$('#view > svg.world');
+  return !!S && !PH.on && !busy && !TRN && (cur.mode === 'yard' || cur.mode === 'market') && modal.hidden && !hud.hidden && !(typeof HO === 'object' && HO && HO.pl) && !!$('#view > svg.world');
 }
 
 /* ---------- the camera button (desktop), inserted next to the mute button ---------- */
