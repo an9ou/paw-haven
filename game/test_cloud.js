@@ -34,14 +34,14 @@ run('cloud', async (t) => {
   const openCloud = async (p) => { await ev(p, () => window.__pawCloud.open()); await p.waitForSelector('#clBox'); };
   const tap = async (p, sel) => { await p.locator(sel).first().scrollIntoViewIfNeeded(); await p.locator(sel).first().tap(); };
   // phone minimums for the Cloud save section: tap targets, text size, no sideways scroll
-  async function phoneCheck(p, label) {
-    const r = await ev(p, () => {
-      const box = document.getElementById('clBox'); const small = []; const tiny = [];
+  async function phoneCheck(p, label, sel) {
+    const r = await ev(p, (q) => {
+      const box = document.querySelector(q); const small = []; const tiny = [];
       box.querySelectorAll('button, input, textarea').forEach((e) => { const b = e.getBoundingClientRect(); if (b.width && (b.height < 44 || b.width < 44)) small.push(`${e.dataset.cl || e.id || e.textContent.trim()} ${Math.round(b.width)}x${Math.round(b.height)}`); });
       const walk = document.createTreeWalker(box, NodeFilter.SHOW_TEXT); let n;
       while ((n = walk.nextNode())) { if (!n.textContent.trim()) continue; const el = n.parentElement; if (!el.getClientRects().length) continue; const fs = parseFloat(getComputedStyle(el).fontSize); if (fs < 15) tiny.push(`${n.textContent.trim().slice(0, 24)} ${fs}px`); }
       return { phone: document.documentElement.dataset.layout, small, tiny, sw: document.documentElement.scrollWidth, iw: innerWidth };
-    });
+    }, sel || '#clBox');
     use(p); await t.SH(label.replace(/\W+/g, '_'));
     ok(r.phone === 'phone', `${label}: phone layout is on`);
     ok(!r.small.length, `${label}: every Cloud save tap target is 44 px or more ${r.small.join(', ')}`);
@@ -101,8 +101,14 @@ run('cloud', async (t) => {
   await openCloud(d2); await phoneCheck(d2, 'Pixel 7 Cloud save');
   await tap(d2, '[data-cl=login]'); await d2.waitForSelector('#clPw');
   await phoneCheck(d2, 'Pixel 7 log in form');
-  await tap(d2, '[data-cl=forgot]');
-  ok(/can't be reset by email/.test(await d2.textContent('#clBody')), 'forgotten password: the no-email text shows');
+  await d2.fill('#clEmail', 'Mochi@example.com'); await tap(d2, '[data-cl=forgot]'); await d2.waitForSelector('#modal .panel[data-ready] #fgEmail');
+  ok((await d2.inputValue('#fgEmail')) === 'Mochi@example.com', 'Forgot your password? opens with the email already typed');
+  await phoneCheck(d2, 'Pixel 7 forgot password', '#modal .panel');
+  let mails0 = srv.mails.length; await tap(d2, '#fgGo');
+  ok(await until(d2, () => /a link is on its way/.test((document.getElementById('fgMsg') || {}).textContent || ''), null, 5000), 'Send the link: "If that email has an account, a link is on its way"');
+  ok(srv.mails.length === mails0 + 1 && srv.mails[mails0].to[0] === 'mochi@example.com' && /\?reset=/.test(srv.mails[mails0].link), 'one email with a reset link went out');
+  await phoneCheck(d2, 'Pixel 7 forgot password sent', '#modal .panel');
+  await tap(d2, '#fgBack'); await d2.waitForSelector('#clBox');
   await tap(d2, '[data-cl=login]'); await d2.waitForSelector('#clPw');
   await d2.fill('#clEmail', 'mochi@example.com'); await d2.fill('#clPw', 'wrongpass1'); await tap(d2, '[data-cl=doLogin]');
   ok(await until(d2, () => /don't match/.test((document.querySelector('.clmsg') || {}).textContent || ''), null, 4000), 'wrong password: a kind message');
@@ -277,17 +283,46 @@ run('cloud', async (t) => {
   ok(await until(p8, () => window.__pawCloud.status().state === 'synced', null, 8000) && srv.saves[su.id].data.coins === 6544 && srv.saves[su.id].rev === 13, 'the next change syncs to the same account (rev 13)');
   ok(!srv.pwIs(su.id, 'oldfriend1'), 'no password is stored until the player types it');
 
-  sec('device 9: "Make an account" with an old Supabase email and its password logs in to that account');
-  const so = srv.sb.mkUser({ email: 'returning@example.com', password: 'returning1' });
+  sec('device 9: one email, one account: "Make an account" with an old Supabase email is refused, logging in moves it over');
+  const so = srv.sb.mkUser({ email: 'returning@example.com', password: 'returning1' }); srv.legacy('returning@example.com');
   const save9 = Object.assign({}, oldSave, { coins: 9191 }); save9.dogs = oldSave.dogs.map((d) => Object.assign({}, d, { id: 'dogOld9', name: 'Noodle' })); save9.dog = save9.dogs[0];
   srv.sb.saves[so.id] = { data: save9, rev: 3, changed_at: '2026-10-13T00:00:00Z', device: 'Mac Safari' };
   const d9 = await device('d9', 'Pixel 7'); await adopt(d9, { sex: 'girl' });
   ok(await waitSynced(d9), 'device 9 guest save is in the cloud'); const guest9 = await ev(d9, () => window.__paw.S.dog.name);
   await openCloud(d9); await tap(d9, '[data-cl=reg]'); await d9.waitForSelector('#clPw2');
-  await d9.fill('#clEmail', 'returning@example.com'); await d9.fill('#clPw', 'returning1'); await d9.fill('#clPw2', 'returning1'); await tap(d9, '[data-cl=doReg]');
-  ok(await until(d9, () => window.__paw.S && window.__paw.S.coins === 9191 && document.getElementById('modal').hidden, null, 8000), 'the old account\'s save loads, no question asked');
-  ok((await uidOf(d9)) === so.id && !(await ev(d9, () => window.__pawCloud.CL.anon)) && (await ev(d9, () => window.__pawCloud.CL.regPath)) === 'moved', 'logged in to the moved account (same user id)');
+  await d9.fill('#clEmail', 'Returning@example.com'); await d9.fill('#clPw', 'returning1'); await d9.fill('#clPw2', 'returning1'); await tap(d9, '[data-cl=doReg]');
+  ok(await until(d9, () => /This email already has an account\. Log in, or use Forgot your password\./.test((document.querySelector('#clBox .clmsg') || {}).textContent || ''), null, 6000), 'refused, kindly: "This email already has an account. Log in, or use Forgot your password."');
+  ok(!srv.users.some((u) => u.email === 'returning@example.com') && (await ev(d9, () => window.__pawCloud.CL.anon)), 'no account made, still a guest');
+  await tap(d9, '[data-cl=back]'); await tap(d9, '[data-cl=login]'); await d9.waitForSelector('#clPw');
+  await d9.fill('#clEmail', 'returning@example.com'); await d9.fill('#clPw', 'returning1'); await tap(d9, '[data-cl=doLogin]');
+  ok(await until(d9, () => window.__paw.S && window.__paw.S.coins === 9191 && document.getElementById('modal').hidden, null, 8000), 'logging in moves the old account over and loads its save');
+  ok((await uidOf(d9)) === so.id && !(await ev(d9, () => window.__pawCloud.CL.anon)), 'logged in to the moved account (same user id)');
   ok(srv.backups.some((b) => b.user_id === so.id && b.reason === 'guest save before sign-in' && b.data.dogs[0].name === guest9), 'the guest game went to that account\'s backups');
-  use(d9); ok(await t.waitToast(/already had an account with that email/), 'a kind toast says what happened');
+
+  sec('device 10 (iPhone 15): the emailed link opens "Set a new password", logs in and logs the other devices out');
+  mails0 = srv.mails.length;
+  await srv.handle(null, 'POST', '/forgot', JSON.stringify({ email: 'mochi@example.com' }), null);
+  const link = srv.mails[mails0]; ok(link && link.token, 'a reset email for the first account');
+  const d1Before = await uidOf(d1);
+  const p10 = await t.mk({ device: 'iPhone 15' });
+  await t.ctx.exposeBinding('__clSrv', (src, m, u, b, a) => srv.handle(src.page, m, u, b, a)); await t.ctx.addInitScript(mockInit, {}); srv.pages.add(p10);
+  await p10.goto(URL + '?reset=' + link.token); use(p10);
+  ok(!!(await p10.waitForSelector('#modal .panel[data-ready] #rsPw2', { timeout: 10000 }).catch(() => null)), 'the game opens "Set a new password"');
+  ok(/Set a new password/.test(await p10.textContent('#modal .panel')), 'with a clear title');
+  await phoneCheck(p10, 'iPhone 15 set a new password', '#modal .panel');
+  await p10.fill('#rsPw', 'pupper789'); await p10.fill('#rsPw2', 'pupper780'); await tap(p10, '#rsGo');
+  ok(await until(p10, () => /don't match/.test((document.getElementById('rsMsg') || {}).textContent || ''), null, 3000), 'two different passwords are refused');
+  await p10.fill('#rsPw', 'pupper789'); await p10.fill('#rsPw2', 'pupper789'); await tap(p10, '#rsGo');
+  ok(await until(p10, (g) => window.__pawCloud.CL.uid === g && !window.__pawCloud.CL.anon && document.getElementById('modal').hidden, d1Before, 8000), 'saved: logged in to that account on this device');
+  ok(srv.pwIs(d1Before, 'pupper789') && !srv.pwIs(d1Before, 'pupper456'), 'the new password is stored (PBKDF2), the old one is gone');
+  ok(await until(p10, () => !!window.__paw.S && !!document.querySelector('#tContinue'), null, 6000), 'the account\'s game is here: Continue');
+  ok(await t.waitToast(/Password changed\. You're logged in/), 'toast: Password changed. You\'re logged in...');
+  await focus(d1); ok(await until(d1, () => !window.__pawCloud.CL.uid, null, 8000) && !!(await ev(d1, () => window.__paw.S)), 'device 1 is logged out by the reset, and its game stays');
+  const p11 = await t.mk({ device: 'Pixel 7' });
+  await t.ctx.exposeBinding('__clSrv', (src, m, u, b, a) => srv.handle(src.page, m, u, b, a)); await t.ctx.addInitScript(mockInit, {}); srv.pages.add(p11);
+  await p11.goto(URL + '?reset=' + link.token); use(p11); await p11.waitForSelector('#modal .panel[data-ready] #rsPw2', { timeout: 10000 });
+  await p11.fill('#rsPw', 'pupper999'); await p11.fill('#rsPw2', 'pupper999'); await tap(p11, '#rsGo');
+  ok(await until(p11, () => /run out or was already used/.test((document.getElementById('rsMsg') || {}).textContent || ''), null, 5000), 'the same link a second time: "That link has run out or was already used..."');
+  ok(srv.pwIs(d1Before, 'pupper789'), 'and the password stays the one picked first');
 
 }, { timeout: 300000 });

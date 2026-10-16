@@ -88,8 +88,15 @@ run('account', async (t) => {
   await form('login', 'nobody@example.com', 'wrongpass1'); ok(/don't match/.test(await msg()), 'wrong password: "That email and password don\'t match."');
   srv.offline.add(d1); await form('login', 'nobody@example.com', 'wrongpass1'); ok(/offline/.test(await msg()), 'offline: "Cloud save is offline..."'); srv.offline.delete(d1);
   ok(await ev(() => !document.getElementById('acGo').disabled), 'the Log in button works again after an error');
-  await tap('#acForgot'); ok(/can't be reset by email/.test(await ev(() => document.getElementById('acForgotTxt').textContent)) && await ev(() => !document.getElementById('acForgotTxt').hidden), 'forgot password: the no-email text');
   await t.SH('desk_02_login_error');
+  // v2.8.2 Forgot password: an emailed link, and the same answer for every email (no account lookup leaks)
+  await tap('#acForgot'); await d1.waitForSelector('#modal .panel[data-ready] #fgEmail');
+  ok((await ev(() => document.getElementById('fgEmail').value)) === 'nobody@example.com', 'Forgot your password? opens a form with the email already typed');
+  let mails0 = srv.mails.length; await tap('#fgGo');
+  ok(await t.until(() => /If that email has an account, a link is on its way/.test(document.getElementById('fgMsg').textContent), null, 5000), 'Send the link: the same kind answer for an email with no account');
+  ok(srv.mails.length === mails0, 'and no email goes out');
+  await t.SH('desk_02b_forgot');
+  await tap('#fgBack'); await d1.waitForSelector('#modal .panel.acct[data-ready] #acPw'); ok(true, 'Done goes back to Log in');
   await tap('#acBack'); ok(await closed(), 'Back closes the popup'); ok((await choices()).length === 3, 'the three choices are still there');
 
   sec('desktop: make an account, kind errors');
@@ -277,9 +284,16 @@ run('account', async (t) => {
     await tap('#tLogin'); ok(await sheetOpen(), 'Log in opens a sheet');
     pb = await panelBox(); ok(pb.b >= pb.H - 2 && pb.w >= pb.W - 2, 'a bottom sheet, full width');
     await form('login', 'mochi@example.com', 'nope12345'); ok(/don't match/.test(await msg()), 'wrong password: kind message');
-    await tap('#acForgot');
     ok(!(await reachable(['#acMsg', '#acGo', '#acBack', '#acPw'])).length, 'message, fields and buttons are on screen and not covered ' + (await reachable(['#acMsg', '#acGo', '#acBack', '#acPw'])).join(','));
     await audit(`${tag}_02_login_error`);
+    await tap('#acForgot'); await p.waitForSelector('#modal .panel[data-ready] #fgEmail');
+    pb = await panelBox(); ok(pb.b >= pb.H - 2 && pb.w >= pb.W - 2, 'Forgot your password? is a bottom sheet too');
+    const fm0 = srv.mails.length; await tap('#fgGo');
+    ok(await t.until(() => /a link is on its way/.test(document.getElementById('fgMsg').textContent), null, 5000), 'Send the link: "If that email has an account, a link is on its way"');
+    ok(srv.mails.length === fm0 + 1 && srv.mails[fm0].to[0] === 'mochi@example.com', 'the account\'s email gets the link');
+    ok(!(await reachable(['#fgMsg', '#fgBack', '#fgEmail'])).length, 'the answer and Done are on screen and not covered ' + (await reachable(['#fgMsg', '#fgBack', '#fgEmail'])).join(','));
+    await audit(`${tag}_02b_forgot`);
+    await tap('#fgBack'); await p.waitForSelector('#modal .panel.acct[data-ready] #acPw');
     await tap('#acBack'); await closed();
     await tap('#tLogin'); await sheetOpen(); await tap('#acEmail'); await p.keyboard.type('fast@example.com'); await t.sleep(150);
     ok((await ev(() => document.getElementById('acEmail').value)) === 'fast@example.com' && (await ev(() => document.activeElement.id)) === 'acEmail', 'tap a field and type at once: nothing lost, focus stays');

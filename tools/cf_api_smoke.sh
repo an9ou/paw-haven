@@ -28,4 +28,7 @@ check "$(curl -sS -D - -o /dev/null -X OPTIONS "$API/save" -H 'Origin: https://d
 check "$(curl -sS -D - -o /dev/null -X OPTIONS "$API/save" -H 'Origin: https://html-classic.itch.zone' -H 'Access-Control-Request-Method: PUT' | tr -d '\r' | sed -n 's/^access-control-allow-origin: //Ip')" https://html-classic.itch.zone "CORS: itch.io frame"
 check "$(curl -sS -o /dev/null -w '%{http_code}' -X OPTIONS "$API/save" -H 'Origin: https://evil.example')" 403 "CORS: other origins refused"
 call POST /logout '{}' "$LT" >/dev/null
+check "$(call POST /register "{\"email\":\"$EM\",\"password\":\"another-pass-1\"}" | j "d.get('error')")" email_exists "one email, one account"
+check "$(call POST /forgot "{\"email\":\"nobody-$(date +%s)@example.com\"}" | j "d.get('ok')")" True "forgot password: the same answer for an unknown email"
+check "$(call POST /reset '{"token":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx","password":"whatever-1"}' | j "d.get('error')")" expired "a made-up reset link is refused"
 [ $fail = 0 ] && echo "LIVE SMOKE OK ($EM)" || { echo "LIVE SMOKE FAILED"; exit 1; }

@@ -33,11 +33,17 @@ curl -sS -X POST "$API/d1/database/$DBID/query" "${AUTH[@]}" -H 'Content-Type: a
 echo "schema applied"
 
 # 3. the Worker, bound to D1, with the public Supabase values
-META=$(py "import json; print(json.dumps({'main_module':'worker.js','compatibility_date':'$DATE','bindings':[{'type':'d1','name':'DB','id':'$DBID'},{'type':'plain_text','name':'SUPABASE_URL','text':'$SB_URL'},{'type':'plain_text','name':'SUPABASE_KEY','text':'$SB_KEY'}]}))")
+META=$(py "import json; print(json.dumps({'main_module':'worker.js','compatibility_date':'$DATE','keep_bindings':['secret_text'],'bindings':[{'type':'d1','name':'DB','id':'$DBID'},{'type':'plain_text','name':'SUPABASE_URL','text':'$SB_URL'},{'type':'plain_text','name':'SUPABASE_KEY','text':'$SB_KEY'}]}))")
 curl -sS -X PUT "$API/workers/scripts/$SCRIPT" "${AUTH[@]}" \
   -F "metadata=$META;type=application/json" -F "worker.js=@cloudflare/worker.js;type=application/javascript+module" | ok
 curl -sS -X POST "$API/workers/scripts/$SCRIPT/subdomain" "${AUTH[@]}" -H 'Content-Type: application/json' -d '{"enabled":true,"previews_enabled":false}' | ok
 SUB=$(curl -sS "$API/workers/subdomain" "${AUTH[@]}" | py "import json,sys; print(json.load(sys.stdin)['result']['subdomain'])")
 echo "deployed https://$SCRIPT.$SUB.workers.dev"
+# the Resend key for Forgot password (v2.8.2): a Worker secret, never a plain var. Kept across deploys (keep_bindings above).
+if [ -n "${RESEND_API_KEY:-}" ]; then
+  py "import json,os; print(json.dumps({'name':'RESEND_API_KEY','text':os.environ['RESEND_API_KEY'],'type':'secret_text'}))" \
+    | curl -sS -X PUT "$API/workers/scripts/$SCRIPT/secrets" "${AUTH[@]}" -H 'Content-Type: application/json' --data-binary @- | ok
+  echo "secret RESEND_API_KEY set"
+fi
 sleep 3
 curl -sS "https://$SCRIPT.$SUB.workers.dev/" || true; echo
