@@ -66,6 +66,22 @@ async function suite(t, W, H) {
     await t.closeX(); await t.modalGone();
     await t.until(() => { const r = document.querySelector('#msCardG > rect'); if (!r) return false; const b = r.getBoundingClientRect(); return b.width >= 47.5; }, null, 4000);
   }
+  // v2.9 review: the camera slides the clipboard to the edge (the leader by the dog house with the Feed tray open). The tap box stays fully on screen over the clipboard, or switches off
+  await p.locator('#bar [data-act=feed]').tap(); ok(await t.waitPop(true), `${tag}: feed tray again`); await settle();
+  const slide = await ev(() => new Promise((res) => {
+    const svg = document.querySelector('#view > svg.world'), v0 = svg.getAttribute('viewBox'), out = [];
+    const xs = [0, 60, 120, 160, 180, 190, 200, 210, 220, 240, 260, 300]; let i = 0;
+    const step = () => {
+      if (i) { const b = document.querySelector('#msCardG > rect').getBoundingClientRect(), a = document.querySelector('#msCardG').getBoundingClientRect(), vr = document.getElementById('view').getBoundingClientRect(); out.push({ x: xs[i - 1], l: Math.round(b.left), r: Math.round(b.right), w: Math.round(b.width), h: Math.round(b.height), art: [Math.round(a.left), Math.round(a.right)], vl: Math.max(0, vr.left), vr: Math.min(innerWidth, vr.right) }); }
+      if (i === xs.length) { svg.setAttribute('viewBox', v0); return res(out); }
+      const v = v0.split(' ').map(Number); v[0] = xs[i++]; svg.setAttribute('viewBox', v.join(' ')); requestAnimationFrame(() => requestAnimationFrame(step));
+    };
+    step();
+  }));
+  const badSlide = slide.filter((o) => !(o.w === 0 || (o.l >= o.vl - 0.5 && o.r <= o.vr + 0.5 && o.w >= 43.5 && o.h >= 43.5 && o.r > o.art[0] && o.l < o.art[1])));
+  ok(badSlide.length === 0, `${tag}: as the camera slides, the clipboard tap box is either fully on screen (44 px, over the clipboard) or off ${badSlide.length ? JSON.stringify(badSlide) : slide.map((o) => o.x + ':' + o.l + '-' + o.r).join(' ')}`);
+  ok(slide.some((o) => o.w === 0) && slide.some((o) => o.w >= 43.5 && o.x >= 120), `${tag}: it moves with the camera and switches off only at the edge`);
+  await p.locator('#trayX').tap().catch(() => {}); await t.waitPop(false);
   const after = await clip(); ok(after && after.w >= 47.5 && after.h >= 47.5, `${tag}: tray closed: the 48 px rect is back`);
 
   sec(`${tag}: 4 the bow pose`);

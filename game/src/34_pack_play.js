@@ -3,7 +3,7 @@
    unless the player picks "Make leader". With one dog, or under prefs.crOne, everything is v2.8.4 exactly. The PACK lane owns this file. */
 
 // runtime only (V29.md 5.1: no save field). walk: the followers of the walk that is starting or running. sw: a long screen runs for another dog. skip: why the last pkDogs left a dog out
-const PKS = { walk: null, sw: null, skip: [], lp: false, fetch: null, card: null };
+const PKS = { walk: null, sw: null, skip: [], lp: false, fetch: null, card: null, pickX: 0 };
 const PK_BONUS = 0.1; // pack walk bonus: +10% of one walk's coins (rounded down) when 2 or more dogs walk (V29.md 5.4)
 const PK_CAP_PLAY = 'Ticked dogs join in. The leader always plays.';
 const PK_CAP_WALK = 'Ticked dogs come along. The leader leads.';
@@ -44,7 +44,20 @@ function pkPickHTML(sel, label) {
   return `<div class="cr-wrap pk-pickwrap"><div class="pk-pick" role="group" aria-label="${esc(label || 'Pick a dog')}">${chips}</div></div>`;
 }
 function pkBindPick(root, fn) {
-  (root || dock).querySelectorAll('[data-pkdog]').forEach((b) => { b.onclick = () => { SFX.init(); SFX.click(); fn(b.dataset.pkdog); }; });
+  root = root || dock;
+  root.querySelectorAll('[data-pkdog]').forEach((b) => { b.onclick = () => { const row = b.closest('.pk-pick'); PKS.pickX = row ? row.scrollLeft : 0; SFX.init(); SFX.click(); fn(b.dataset.pkdog); }; });
+  pkPickShow(root);
+}
+// a pick re-renders the row: it keeps where it was scrolled to, and the picked chip is always fully in view (the row scrolls, nothing else does)
+function pkPickShow(root) {
+  const row = $('.pk-pick', root), b = row && $('.pk-pickb[aria-pressed="true"]', row); if (!row) return;
+  const fit = () => {
+    if (!row.isConnected) return;
+    row.scrollLeft = PKS.pickX || 0; if (!b) return;
+    const r = row.getBoundingClientRect(), c = b.getBoundingClientRect(), pad = 6;
+    if (c.left < r.left + pad) row.scrollLeft -= r.left + pad - c.left; else if (c.right > r.right - pad) row.scrollLeft += c.right - (r.right - pad);
+  };
+  fit(); requestAnimationFrame(fit); // once now, once after the sheet has its size
 }
 
 /* ---------------- one dog at a time: the leader comes back ---------------- */
@@ -283,10 +296,31 @@ function pkRoutesHTML() { return crPack() ? `<div class="pk-walkrow" id="pkWalkR
 function pkRoutesLine() {
   const el = $('#pkWalkLine', view); if (!el) return;
   const k = ROUTE_KEYS[routeIdx], l = pkDogs('walk', k), skip = PKS.skip.slice();
-  const blocked = crDogs().filter((d) => d !== S.dog && walkBlock(d, k) && !(typeof hmMumIn === 'function' && hmMumIn(d))).map((d) => walkBlock(d, k));
+  const bDogs = crDogs().filter((d) => d !== S.dog && walkBlock(d, k) && !(typeof hmMumIn === 'function' && hmMumIn(d))), blocked = bDogs.map((d) => walkBlock(d, k));
   const fol = l.slice(1), heads = l.map((d, i) => `<span class="pk-lh${i ? ' pk-fol' : ''}" aria-hidden="true">${headSVG(d)}</span>`).join('');
-  const who = fol.length ? `${esc(NAME())} leads. ${esc(crNames(fol))} ${fol.length > 1 ? 'follow' : 'follows'} behind.` : `${esc(NAME())} walks alone.`;
-  el.innerHTML = `<div class="pk-heads" role="img" aria-label="${esc(crNames(l))} walk${l.length > 1 ? '' : 's'} in a line">${heads}</div><p class="small pk-who">${who}${[...blocked, ...pkSkipLines(skip)].map((t) => ' ' + esc(t)).join('')}</p>`;
+  const who = fol.length ? `${NAME()} leads. ${crNames(fol)} ${fol.length > 1 ? 'follow' : 'follows'} behind.` : `${NAME()} walks alone.`;
+  const full = who + [...blocked, ...pkSkipLines(skip)].map((t) => ' ' + t).join('');
+  el.innerHTML = `<div class="pk-heads" role="img" aria-label="${esc(crNames(l))} walk${l.length > 1 ? '' : 's'} in a line">${heads}</div><p class="small pk-who">${esc(full)}</p>`;
+  if (isPhone()) { pkWhoFit($('.pk-who', el), full, l, bDogs.concat(skip.map((x) => x.d))); pkRoutesFit(); }
+}
+// phones with a pack: the chip row and the who line take room from the card's viewport. The text under the preview is measured, the preview takes what is left
+// (at least 90 px tall, as before) and the screen scrolls when that does not fit, so the card's last line and its border are never cut off
+function pkRoutesFit() {
+  const rt = $('.routes', view), cards = rt ? [...rt.querySelectorAll('.rt-card')] : []; if (!cards.length) return;
+  const rest = Math.max(...cards.map((c) => { const pv = $('.rt-prev', c); return c.offsetHeight - (pv ? pv.offsetHeight : 0); }));
+  if (!(rest > 0)) return;
+  rt.style.setProperty('--pk-rest', Math.ceil(rest) + 'px'); rt.style.setProperty('--pk-rth', Math.ceil(rest + 90 + 13) + 'px');
+}
+// phones: the who line stays on one line, so the route card above keeps its room. The longest summary that fits wins (the full lines come as toasts when the walk starts)
+function pkWhoFit(p, full, l, stay) {
+  if (!p) return;
+  const lead = l[0].name, fol = l.slice(1), n = l.length, s = stay.length;
+  const stayA = s ? ` ${crNames(stay)} ${s > 1 ? 'stay' : 'stays'} home.` : '', stayB = s ? (s === 1 ? ` ${stay[0].name} stays home.` : ` ${s} stay home.`) : '';
+  const walk = fol.length ? (fol.length === 1 ? `${lead} and ${fol[0].name} walk.` : `${lead}, ${fol[0].name} and ${fol.length - 1} more.`) : `${lead} walks alone.`;
+  const many = n > 1 ? `${crDogsN(n)} walk.` : `${lead} walks alone.`;
+  const tries = [full, (fol.length ? `${lead} leads. ${crNames(fol)} ${fol.length > 1 ? 'follow' : 'follows'}.` : `${lead} walks alone.`) + stayA, walk + stayA, walk + stayB, many + stayB, walk, many];
+  p.classList.add('pk-one'); p.title = full;
+  for (const t of tries) { p.textContent = t; if (p.scrollWidth <= p.clientWidth + 1) return; }
 }
 function pkRoutesBind() {
   const redraw = () => { const row = $('#pkWalkRow', view); if (!row) return; row.innerHTML = `${crChipsHTML(PK_CAP_WALK)}<div class="pk-walkline" id="pkWalkLine"></div>`; crBindChips(row, redraw, 'Somebody has to come along. Tick another dog first.'); pkRoutesLine(); };

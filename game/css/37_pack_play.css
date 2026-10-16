@@ -35,3 +35,10 @@ html[data-layout="phone"] .pk-dogcard{min-width:170px}
 html[data-layout="phone"] .pk-dogcard .btn{min-height:46px;font-size:21px}
 html[data-layout="phone"] .pk-pick{gap:6px;padding:4px 2px 6px;max-width:100%}
 html[data-layout="phone"] .pk-who{font-size:15px}
+/* phones, the route screen with a pack: the who line is one line (pkWhoFit picks a summary that fits), the card keeps its full height and the screen scrolls when it is short */
+html[data-layout="phone"] .pk-who.pk-one{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html[data-layout="phone"] .routes:has(.pk-walkrow){overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain}
+html[data-layout="phone"] .routes:has(.pk-walkrow) > *{flex-shrink:0}
+html[data-layout="phone"] .routes:has(.pk-walkrow) .rt-viewport{flex:1 0 auto;min-height:var(--pk-rth,340px)}
+html[data-layout="phone"] .routes:has(.pk-walkrow) .rt-prev{height:min(200px,max(90px,calc(100cqh - var(--pk-rest,165px) - 13px)))}
+html[data-layout="phone"] .routes:has(.pk-walkrow) .rt-nav{margin:2px 0}

@@ -7,7 +7,8 @@
 const PH_CAPS = ['Best day ever', 'Nap champions', 'Snack o\'clock', 'Zoomies loading', 'Drawn on purpose', 'Good dogs, mostly', 'This is my pack', 'Wish you were here'];
 const PH_SEASON_CAP = { spring: 'Spring in my paws', summer: 'Sunny paws, happy dogs', autumn: 'Leaf pile pending', winter: 'Cold noses, warm hearts' };
 const PH_LONG = 1080;
-const PH = { on: false, cap: null, tok: 0, svg: '', size: null, blob: null, blobTok: -1, blobP: null, url: '', saving: false, said: false, force: '', obs: [], keyFn: null, lastFocus: null, timer: 0, hold: null };
+const PH_SQ_MARGIN = 80; // scene units around the dogs in the square picture
+const PH = { on: false, cap: null, names: null, vb: null, tok: 0, svg: '', size: null, blob: null, blobTok: -1, blobP: null, url: '', saving: false, said: false, force: '', obs: [], keyFn: null, lastFocus: null, timer: 0, hold: null };
 
 const phCaps = () => PH_CAPS.map((t, i) => ({ id: 'c' + i, t })).concat([{ id: 'season', t: PH_SEASON_CAP[seasonNow()] || PH_SEASON_CAP.summer }]);
 function phCapNow() { const l = phCaps(); return l.find((c) => c.id === prefs.phCap) || l[0]; }
@@ -54,13 +55,28 @@ function phRules(root) {
   for (const sh of document.styleSheets) { let rs; try { rs = sh.cssRules; } catch (e) { continue; } if (rs) walk(rs); } // a cross-origin sheet (the web fonts) cannot be read: it holds no scene rules
   return out;
 }
-function phDogBox(svg) { // the dogs' x range in scene units, so the phone and square crops keep every dog in
-  const m = svg.getScreenCTM(); if (!m) return null; const inv = m.inverse(); let L = 1e9, R = -1e9;
+function phDogBox(svg) { // the dogs' x ranges in scene units, so the phone and square crops keep every dog in. who: [name, left, right] for each named dog (the leader first)
+  const m = svg.getScreenCTM(); if (!m) return { box: null, who: [] }; const inv = m.inverse(); let L = 1e9, R = -1e9; const who = [];
   svg.querySelectorAll('#dogPos, #pack .packdog, #visitorG').forEach((el) => {
-    const r = el.getBoundingClientRect(); if (!r.width) return;
-    L = Math.min(L, new DOMPoint(r.left, r.top).matrixTransform(inv).x); R = Math.max(R, new DOMPoint(r.right, r.bottom).matrixTransform(inv).x);
+    const nm = el.id === 'dogPos' ? S.dog.name : el.dataset.dog ? (dogById(el.dataset.dog) || {}).name : null, r = el.getBoundingClientRect();
+    if (!r.width) { if (nm) who.push([nm, null, null]); return; } // no box (hidden for a moment): the dog is still named
+    const a = new DOMPoint(r.left, r.top).matrixTransform(inv).x, b = new DOMPoint(r.right, r.bottom).matrixTransform(inv).x;
+    L = Math.min(L, a); R = Math.max(R, b); if (nm) who.push([nm, a, b]);
   });
-  return R > L ? [L, R] : null;
+  const li = who.findIndex((w) => w[0] === S.dog.name); if (li < 0) who.unshift([S.dog.name, null, null]); else if (li > 0) who.unshift(who.splice(li, 1)[0]); // the leader first
+  return { box: R > L ? [L, R] : null, who };
+}
+// the colour at the top of the scene (the sky, or the wall indoors): the square picture fills the extra height above the scene with it
+function phSkyCol(svg) {
+  const top = [...svg.querySelectorAll('rect')].find((r) => !+(r.getAttribute('x') || 0) && !+(r.getAttribute('y') || 0) && +r.getAttribute('width') >= 900 && +r.getAttribute('height') > 60 && +r.getAttribute('height') < 560 && (r.getAttribute('fill') || 'none') !== 'none' && !/transparent/.test(r.getAttribute('fill')));
+  if (!top) return '#D3E9F6';
+  let col = top.getAttribute('fill'); const g = /url\(#([^)]+)\)/.exec(col);
+  if (g) { const st = svg.querySelector('#' + CSS.escape(g[1]) + ' stop'); col = st ? st.getAttribute('stop-color') || getComputedStyle(st).stopColor : '#D3E9F6'; }
+  const op = +(top.getAttribute('fill-opacity') || 1), hex = /^#([0-9a-f]{6})$/i.exec(col || '');
+  if (!hex) return col || '#D3E9F6';
+  if (op >= 1) return col;
+  const n = parseInt(hex[1], 16), paper = [255, 251, 243]; // drawn over the paper: mix it the same way
+  return '#' + [n >> 16, (n >> 8) & 255, n & 255].map((c, i) => Math.round(c * op + paper[i] * (1 - op)).toString(16).padStart(2, '0')).join('');
 }
 function phCapture() {
   const svg = $('#view > svg.world'); if (!svg) return null;
@@ -81,9 +97,9 @@ function phCapture() {
   clean(cl); cl.querySelectorAll('*').forEach(clean); cl.querySelectorAll('script, foreignObject').forEach((e) => e.remove());
   const lv = (svg.getAttribute('viewBox') || '0 0 1000 600').split(/\s+/).map(Number), vb = [0, lv[1], 1000, lv[3]]; // the whole scene width: the phone camera crop is not the photo
   const tint = $('.tintfx', view), wx = $('.wxfx', view);
-  const names = [S.dog.name].concat([...svg.querySelectorAll('#pack [data-dog]')].map((e) => (dogById(e.dataset.dog) || {}).name).filter(Boolean));
+  const db = phDogBox(svg);
   cl.removeAttribute('class'); cl.removeAttribute('style'); cl.removeAttribute('id');
-  return { inner: new XMLSerializer().serializeToString(cl).replace(/^<svg[^>]*>/, '').replace(/<\/svg>\s*$/, ''), vb, dogs: phDogBox(svg), tint: tint ? tint.className : '', wx: wx ? (wx.classList.contains('snow') ? 'snow' : 'rain') : '', names, place: phPlaceName(), date: phDateLine(), year: jstISO().slice(0, 4) };
+  return { inner: new XMLSerializer().serializeToString(cl).replace(/^<svg[^>]*>/, '').replace(/<\/svg>\s*$/, ''), vb, dogs: db.box, who: db.who, names: db.who.map((w) => w[0]), sky: phSkyCol(svg), tint: tint ? tint.className : '', wx: wx ? (wx.classList.contains('snow') ? 'snow' : 'rain') : '', place: phPlaceName(), date: phDateLine(), year: jstISO().slice(0, 4) };
 }
 // the daylight and weather washes live in <div>s over the scene: here they are drawn into the picture
 const PH_TINT = {
@@ -103,9 +119,10 @@ function phWash(c, vb) {
 function phLayout(c, sq) { // the card size and the part of the scene the picture shows
   const PA = window.PawArt, base = c.vb, bh = base[3], by = base[1];
   let vb = base.slice(), size;
-  if (sq) {
+  if (sq) { // the square keeps the full scene height. When the dogs spread wider than that strip, the crop widens to hold them all and the extra height goes above the scene (the sky colour)
     size = { w: PH_LONG, h: PH_LONG }; const win = PA.postcardWindow(size.w, size.h), a = win.w / win.h;
-    vb = [0, by, bh * a, bh];
+    const need = c.dogs ? Math.min(c.dogs[1] - c.dogs[0] + PH_SQ_MARGIN, base[2]) : 0, w = Math.max(bh * a, need), h = w / a;
+    vb = [0, by + bh - h, w, h];
   } else if (isPhone()) {
     const span = c.dogs ? c.dogs[1] - c.dogs[0] : 300, w = clamp(span + 110, 480, base[2]) * bh / 600;
     vb = [0, by, w, bh]; size = PA.postcardSize(w / bh, PH_LONG);
@@ -116,12 +133,17 @@ function phLayout(c, sq) { // the card size and the part of the scene the pictur
   }
   return { vb, size };
 }
+// the dogs in the picture: a dog counts when most of it is inside the crop (a dog without a box is always in)
+function phNamesIn(c, vb) {
+  const x0 = vb[0], x1 = vb[0] + vb[2];
+  return (c.who || []).filter(([, a, b]) => a == null || Math.min(b, x1) - Math.max(a, x0) >= (b - a) * 0.5).map((w) => w[0]);
+}
 function phCompose(c, o) {
-  const PA = window.PawArt, L = phLayout(c, o.sq), win = PA.postcardWindow(L.size.w, L.size.h), vb = L.vb.map((n) => +n.toFixed(2));
-  const scene = `<svg x="${win.x.toFixed(2)}" y="${win.y.toFixed(2)}" width="${win.w.toFixed(2)}" height="${win.h.toFixed(2)}" viewBox="${vb.join(' ')}" preserveAspectRatio="xMidYMid slice" overflow="hidden"><rect x="${vb[0]}" y="${vb[1]}" width="${vb[2]}" height="${vb[3]}" fill="#FFFBF3"/>${c.inner}${phWash(c, vb)}</svg>`;
-  let svg = PA.postcard(L.size.w, L.size.h, { color: o.color, stamp: c.year, scene, caption: o.caption, place: c.place, date: c.date, dogs: phNames(c.names) });
+  const PA = window.PawArt, L = phLayout(c, o.sq), win = PA.postcardWindow(L.size.w, L.size.h), vb = L.vb.map((n) => +n.toFixed(2)), names = phNamesIn(c, vb);
+  const scene = `<svg x="${win.x.toFixed(2)}" y="${win.y.toFixed(2)}" width="${win.w.toFixed(2)}" height="${win.h.toFixed(2)}" viewBox="${vb.join(' ')}" preserveAspectRatio="xMidYMid slice" overflow="hidden"><rect x="${vb[0]}" y="${vb[1]}" width="${vb[2]}" height="${vb[3]}" fill="#FFFBF3"/>${vb[1] < c.vb[1] ? `<rect x="${vb[0]}" y="${vb[1]}" width="${vb[2]}" height="${f1(c.vb[1] - vb[1] + 2)}" fill="${c.sky}"/>` : ''}${c.inner}${phWash(c, vb)}</svg>`;
+  let svg = PA.postcard(L.size.w, L.size.h, { color: o.color, stamp: c.year, scene, caption: o.caption, place: c.place, date: c.date, dogs: phNames(names) });
   svg = svg.replace(/^(<svg[^>]*>)/, `$1<style>${PH_FONT_CSS}*{animation:none!important;transition:none!important}</style>`);
-  return { svg, size: L.size };
+  return { svg, size: L.size, names, vb };
 }
 function phDataURL(svg) {
   const bytes = new TextEncoder().encode(svg); let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
@@ -145,7 +167,7 @@ function phDraw(delay) {
   clearTimeout(PH.timer);
   const run = async () => {
     if (!PH.on || !PH.cap) return; const tok = ++PH.tok; PH.blob = null; PH.blobTok = -1;
-    const o = phOpts(), r = phCompose(PH.cap, o); PH.svg = r.svg; PH.size = r.size;
+    const o = phOpts(), r = phCompose(PH.cap, o); PH.svg = r.svg; PH.size = r.size; PH.names = r.names; PH.vb = r.vb;
     const url = phDataURL(r.svg), pic = $('.ph-pic'), root = $('#phMode'); if (root) root.classList.add('ph-busy');
     let im; try { im = await phLoad(url); } catch (e) { if (root) root.classList.remove('ph-busy'); toast('The camera jammed. Try again.'); return; }
     if (tok !== PH.tok || !PH.on) return;
@@ -203,7 +225,7 @@ function phClose(quiet) {
 function phFileName() { return `doodle-doggo-${jstISO()}-${(S.ph && S.ph.n || 0) + 1}.png`; }
 const phDownloadOK = () => !PH.force && !(typeof clArtifact === 'function' && clArtifact()); // the claude.ai artifact sandbox blocks downloads
 function phCounted(how) {
-  const n = PH.cap ? PH.cap.names.length : 1;
+  const n = (PH.names && PH.names.length) || (PH.cap ? PH.cap.names.length : 1);
   S.ph.n = (S.ph.n || 0) + 1; if (!S.ph.first) S.ph.first = localISO(); markDirty(); saveNow();
   trackAct('photo', { dogs: n, how });
 }
@@ -253,6 +275,6 @@ function phHoldClose() { if (PH.hold) { PH.hold.remove(); PH.hold = null; const 
 function phJournalLine() { const n = (S && S.ph && S.ph.n) || 0; return `<p class="small ph-jline">Photos taken: <b>${n}</b>${n ? '' : '. The camera button is by the sound button, or in the menu on a phone.'}</p>`; }
 function phExpose() {
   if (!window.__paw || window.__paw.ph) return;
-  window.__paw.ph = { open: () => phOpen(), close: () => phClose(), active: () => PH.on, can: () => phCan(), caps: () => phCaps(), svg: () => PH.svg, size: () => PH.size, ready: () => PH.blobTok === PH.tok && !!PH.blob, blobSize: () => PH.blob && PH.blob.size, force: (v) => { PH.force = v || ''; }, say: () => PH.said, place: () => phPlaceName(), date: () => phDateLine(), names: () => PH.cap && PH.cap.names };
+  window.__paw.ph = { open: () => phOpen(), close: () => phClose(), active: () => PH.on, can: () => phCan(), caps: () => phCaps(), svg: () => PH.svg, size: () => PH.size, ready: () => PH.blobTok === PH.tok && !!PH.blob, blobSize: () => PH.blob && PH.blob.size, force: (v) => { PH.force = v || ''; }, say: () => PH.said, place: () => phPlaceName(), date: () => phDateLine(), names: () => PH.cap && PH.cap.names, inShot: () => PH.names, crop: () => PH.vb, boxes: () => PH.cap && PH.cap.who };
 }
 on('game:ready', () => setTimeout(phExpose, 0)); on('yard:enter', () => { phExpose(); phSync(); });

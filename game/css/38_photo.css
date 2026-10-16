@@ -1,6 +1,7 @@
 /* v2.9 PHOTO lane (tag ph, classes .ph-): photo mode and the postcard frame. V29.md sections 2 and 5. The PHOTO lane owns this file. */
 /* the camera button: desktop, next to the sound button. On a phone it lives in the "..." sheet. Hidden in walks, mini-games and modals by 35_photo.js (phSync) */
-#phBtn{order:4}
+/* straight after the sound button: the narrow desktop HUD (12_phone_v1.css) orders #muteBtn 4 and #gearBtn 5, so the camera takes 4 too and follows #muteBtn in the markup */
+@media (max-aspect-ratio: 4/5){html:not([data-layout="phone"]) #phBtn{order:4}}
 #phBtn[hidden]{display:none}
 #stage.slimhud #phBtn{display:none}
 html[data-layout="phone"] #phBtn{display:none}
@@ -28,6 +29,7 @@ html[data-layout="phone"] #phBtn{display:none}
 .ph-mode.ph-saving #phSave{opacity:.6;pointer-events:none}
 /* no share and no download (the claude.ai artifact): the picture fills the screen */
 .ph-hold{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px;box-sizing:border-box;background:var(--paper)}
+html[data-layout="phone"] .ph-hold{padding:calc(env(safe-area-inset-top,0px) + 14px) 14px calc(env(safe-area-inset-bottom,0px) + 14px)}
 .ph-holdtxt{margin:0;font-family:var(--font-hand);font-weight:700;font-size:34px;line-height:1}
 .ph-holdpic{flex:1;min-height:0;max-width:100%;object-fit:contain;-webkit-touch-callout:default;-webkit-user-select:auto;user-select:auto;filter:drop-shadow(0 6px 10px rgba(60,40,25,.28))}
 .ph-jline{margin:8px 0 0;text-align:center}

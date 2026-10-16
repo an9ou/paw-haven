@@ -20,6 +20,8 @@ run('v29_photo', async (t) => {
   sec('the camera button: next to the sound button, only where it belongs');
   ok(await ev(() => { const m = document.getElementById('muteBtn'), c = document.getElementById('phBtn'); return !c.hidden && m.nextElementSibling === c && !!c.querySelector('svg'); }), 'yard: the camera button sits right after #muteBtn and has an icon');
   ok(await ev(() => /camera|photo/i.test(document.getElementById('phBtn').getAttribute('aria-label'))), 'the camera button has a label');
+  const hb = await ev(() => { const r = (id) => { const b = document.getElementById(id).getBoundingClientRect(); return [b.left, b.right, b.top, b.bottom]; }; return { m: r('muteBtn'), c: r('phBtn'), g: r('gearBtn') }; });
+  ok(hb.c[0] >= hb.m[1] - 0.5 && hb.c[1] <= hb.g[0] + 0.5 && Math.abs(hb.c[2] - hb.m[2]) < 4, `on screen the camera sits straight after the sound button, before the gear (mute ${hb.m.map(Math.round)}, camera ${hb.c.map(Math.round)}, gear ${hb.g.map(Math.round)})`);
   await p.click('[data-act=journal]'); await p.waitForSelector('.panel.journal');
   ok(await ev(() => document.getElementById('phBtn').hidden), 'a modal is open: the camera button is hidden');
   ok(!(await ev(() => window.__paw.ph.open())), 'a modal is open: photo mode will not open');
@@ -173,6 +175,24 @@ run('v29_photo', async (t) => {
   ok(/ and /.test(await ev(() => window.__paw.ph.names().join(' and '))) && (await ev(() => window.__paw.ph.names().length)) === 3, 'three dogs, three names');
   ok(!/data-dog|tabindex|onclick|onkeydown/.test(svg), 'no click handles or data hooks leak into the picture');
   await p.keyboard.press('Escape');
+
+  sec('the square holds every dog, however far apart');
+  await ev(() => { window.__paw.addDog({ key: 'pug', sex: 'female', months: 30 }, 'Pip'); });
+  await t.home(); await t.freezeMotion(true); await t.sleep(300);
+  await ev(() => { const svg = document.querySelector('#view > svg.world'), inv = svg.getScreenCTM().inverse(), sx = (x) => new DOMPoint(x, 0).matrixTransform(inv).x; const ds = [...svg.querySelectorAll('#pack .packdog')].map((g) => ({ g, r: g.getBoundingClientRect() })).sort((a, b) => a.r.left - b.r.left); const lo = ds[0], hi = ds[ds.length - 1]; lo.g.style.transform = `translate(${(20 - sx(lo.r.left)).toFixed(1)}px,0)`; hi.g.style.transform = `translate(${(985 - sx(hi.r.right)).toFixed(1)}px,0)`; }); // spread the pack from edge to edge
+  await p.click('#phBtn'); await t.until(() => window.__paw.ph.ready(), null, 15000);
+  await p.click('#phMode [data-sq="1"]'); await t.until(() => { const z = window.__paw.ph.size(); return z.w === z.h && window.__paw.ph.ready(); }, null, 10000);
+  const sq = await ev(() => ({ crop: window.__paw.ph.crop(), boxes: window.__paw.ph.boxes(), names: window.__paw.ph.names(), inShot: window.__paw.ph.inShot(), svg: window.__paw.ph.svg() }));
+  const placed = sq.boxes.filter((b) => b[1] != null), L = Math.min(...placed.map((b) => b[1])), R = Math.max(...placed.map((b) => b[2]));
+  ok(sq.names.length === 4 && placed.length === 4, `four dogs with a place in the scene (${sq.names.join(', ')})`);
+  ok(placed.every(([, a, b]) => a >= sq.crop[0] - 1 && b <= sq.crop[0] + sq.crop[2] + 1 || (a < 0 || b > 1000)), `every dog is inside the square crop (crop x ${Math.round(sq.crop[0])} to ${Math.round(sq.crop[0] + sq.crop[2])}, dogs ${Math.round(L)} to ${Math.round(R)})`);
+  ok(Math.abs(sq.crop[2] / sq.crop[3] - (await ev(() => { const w = window.PawArt.postcardWindow(1080, 1080); return w.w / w.h; }))) < 0.01, 'the crop keeps the picture window shape');
+  const strip = 600 * sq.crop[2] / sq.crop[3]; // the full scene height at the window shape
+  if (R - L > strip) ok(sq.crop[2] >= Math.min(R - L, 1000) - 1 && sq.crop[1] < -1 && new RegExp(`<rect x="[^"]+" y="${+sq.crop[1].toFixed(2)}" width="[^"]+" height="[^"]+" fill="#(?!FFFBF3)`).test(sq.svg), `spread out wider than the strip (${Math.round(strip)}): the crop widens to ${Math.round(sq.crop[2])} and the extra height above the scene takes the sky colour`);
+  else ok(false, `the test spreads the pack wider than the strip (dogs ${Math.round(L)} to ${Math.round(R)}, strip ${Math.round(strip)})`);
+  ok(sq.inShot.length === 4 && sq.inShot.join() === sq.names.join() && sq.inShot.every((n) => sq.svg.includes(n)), `the names line is built from the dogs in the crop: all four (${sq.inShot.join(', ')})`);
+  await p.click('#phMode [data-sq="0"]'); await t.until(() => window.__paw.ph.size().h < 1080 && window.__paw.ph.ready(), null, 10000);
+  await p.keyboard.press('Escape'); await t.freezeMotion(false);
 
   sec('night, rain and snow are in the picture');
   await ev(() => document.getElementById('devBtn').click()); await p.waitForSelector('#devPanel:not([hidden])');
