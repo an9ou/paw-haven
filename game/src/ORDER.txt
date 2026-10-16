@@ -41,4 +41,6 @@
 31_winter.js
 32_newyear.js
 33_japan.js
+34_pack_play.js
+35_photo.js
 23_boot.js
