@@ -27,15 +27,15 @@ function crChipsHTML(cap) { // v2.9: cap = the line under the chips (Play and Wa
   }).join('');
   return `<div class="cr-wrap"><div class="cr-chips" role="group" aria-label="Who gets this">${chips}</div><p class="small cr-cap">${cap ? esc(cap) : 'Ticked dogs get fed, petted, bathed and tucked in together.'}</p></div>`;
 }
-function crBindChips(root, redraw) {
-  (root || dock).querySelectorAll('[data-crdog]').forEach((b) => { b.onclick = () => { SFX.init(); crToggle(b.dataset.crdog, redraw); }; });
+function crBindChips(root, redraw, line) {
+  (root || dock).querySelectorAll('[data-crdog]').forEach((b) => { b.onclick = () => { SFX.init(); crToggle(b.dataset.crdog, redraw, line); }; });
 }
 // tick or untick a dog. The last ticked dog present stays ticked. Returns true when it changed
-function crToggle(id, redraw) {
+function crToggle(id, redraw, line) {
   if (!S) return false; if (!S.careOff || typeof S.careOff !== 'object') S.careOff = {};
   if (!S.careOff[id]) {
     const ticked = crPresent().filter((d) => !S.careOff[d.id]);
-    if (ticked.length <= 1 && ticked.some((d) => d.id === id)) { nope('Someone has to get the treat. Tick another dog first.'); return false; }
+    if (ticked.length <= 1 && ticked.some((d) => d.id === id)) { nope(line || 'Someone has to get the treat. Tick another dog first.'); return false; }
     S.careOff[id] = true;
   } else delete S.careOff[id];
   SFX.click(); markDirty();

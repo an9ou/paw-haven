@@ -61,6 +61,8 @@ const readStream = async (dl) => { const rs = await dl.createReadStream(); const
       await p.click('#phSave'); await p.waitForSelector('#phMode .ph-hold');
       const hold = await ev(() => { const h = document.querySelector('#phMode .ph-hold').getBoundingClientRect(), im = document.querySelector('#phMode .ph-holdpic').getBoundingClientRect(), b = document.getElementById('phHoldDone').getBoundingClientRect(); return { full: h.width === innerWidth && h.height === innerHeight, imgBig: im.width > innerWidth * 0.6 && im.height > innerHeight * 0.5, btn: b.height >= 44 && b.bottom <= innerHeight, txt: /Press and hold to save/.test(document.querySelector('.ph-hold').textContent), callout: getComputedStyle(document.querySelector('.ph-holdpic')).webkitTouchCallout !== 'none' }; });
       ok(hold.full && hold.imgBig && hold.btn && hold.txt, tag + 'the full-screen picture: "Press and hold to save", big, with a Done button');
+      const sa = await ev(() => { let txt = ''; for (const sh of document.styleSheets) { let rs; try { rs = sh.cssRules; } catch (e) { continue; } for (const r of rs) if (r.selectorText === 'html[data-layout="phone"] .ph-hold') txt += r.cssText; } const cs = getComputedStyle(document.querySelector('#phMode .ph-hold')); return { txt, top: parseFloat(cs.paddingTop), bot: parseFloat(cs.paddingBottom), side: parseFloat(cs.paddingLeft) }; });
+      ok(/safe-area-inset-top/.test(sa.txt) && /safe-area-inset-bottom/.test(sa.txt) && sa.top >= 14 && sa.bot >= 14 && sa.side === 14, tag + `the hold-to-save screen keeps clear of the notch and the home bar (safe-area padding, ${sa.top}/${sa.bot} px here)`);
       await t.SH('hold');
       await p.click('#phHoldDone'); ok(await ev(() => !document.querySelector('#phMode .ph-hold') && window.__paw.ph.active()), tag + 'Done returns to photo mode');
       await ev(() => window.__paw.ph.force(''));
@@ -82,6 +84,21 @@ const readStream = async (dl) => { const rs = await dl.createReadStream(); const
       await p.click('#moreBtn'); await p.waitForSelector('#mmPhoto'); await p.click('#mmPhoto'); ok(await t.until(() => window.__paw.ph.active() && window.__paw.ph.ready(), null, 15000), tag + 'Market Street: photo mode opens');
       ok(await ev(() => window.__paw.ph.svg().includes('Market Street')), tag + 'the frame names Market Street');
       await p.keyboard.press('Escape'); ok(await t.until(() => !window.__paw.ph.active(), null, 3000), tag + 'Esc closes it');
+
+      sec(tag + 'the square holds a spread-out pack of four');
+      await ev(() => { const P = window.__paw; P.addDog({ key: 'corgi', sex: 'male', months: 14 }, 'Bun'); P.addDog({ key: 'pug', sex: 'female', months: 30 }, 'Pip'); P.addDog({ key: 'dachshund', sex: 'female', months: 30 }, 'Noodle'); });
+      await t.home(); await t.calm(); await t.freezeMotion(true); await t.sleep(300);
+      await ev(() => { const svg = document.querySelector('#view > svg.world'), inv = svg.getScreenCTM().inverse(), sx = (x) => new DOMPoint(x, 0).matrixTransform(inv).x; const ds = [...svg.querySelectorAll('#pack .packdog')].map((g) => ({ g, r: g.getBoundingClientRect() })).sort((a, b) => a.r.left - b.r.left); const lo = ds[0], hi = ds[ds.length - 1]; lo.g.style.transform = `translate(${(20 - sx(lo.r.left)).toFixed(1)}px,0)`; hi.g.style.transform = `translate(${(985 - sx(hi.r.right)).toFixed(1)}px,0)`; }); // spread the pack from edge to edge
+      await p.click('#moreBtn'); await p.waitForSelector('#mmPhoto'); await p.click('#mmPhoto'); await t.until(() => window.__paw.ph.active() && window.__paw.ph.ready(), null, 15000);
+      if (!(await ev(() => window.__paw.ph.size().w === 1080 && window.__paw.ph.size().h === 1080))) { await p.click('#phMode [data-sq="1"]'); await t.until(() => { const z = window.__paw.ph.size(); return z.w === 1080 && z.h === 1080 && window.__paw.ph.ready(); }, null, 10000); }
+      const sq = await ev(() => ({ crop: window.__paw.ph.crop(), boxes: window.__paw.ph.boxes(), names: window.__paw.ph.names(), inShot: window.__paw.ph.inShot(), svg: window.__paw.ph.svg() }));
+      const placed = sq.boxes.filter((b) => b[1] != null), x0 = sq.crop[0], x1 = sq.crop[0] + sq.crop[2];
+      ok(sq.names.length === 4 && placed.length === 4, tag + `four dogs placed (${sq.names.join(', ')})`);
+      ok(placed.every(([, a, b]) => (Math.min(b, x1) - Math.max(a, x0)) >= (b - a) * 0.9 || a < 0 || b > 1000), tag + `every dog is inside the square crop (${Math.round(x0)} to ${Math.round(x1)}: ${placed.map((b) => b[0] + ' ' + Math.round(b[1]) + '-' + Math.round(b[2])).join(', ')})`);
+      ok(sq.crop[2] > 600 * sq.crop[2] / sq.crop[3] - 1 && sq.crop[1] < -1 && new RegExp(`<rect x="[^"]+" y="${+sq.crop[1].toFixed(2)}" width="[^"]+" height="[^"]+" fill="#(?!FFFBF3)`).test(sq.svg), tag + `edge to edge: the crop widens (${Math.round(sq.crop[2])} wide) and the extra height above the scene takes the sky colour`);
+      ok(sq.inShot.length === 4 && sq.inShot.every((n) => sq.svg.includes(n)), tag + `the names line is the dogs in the crop: all four (${sq.inShot.join(', ')})`);
+      await p.click('#phMode [data-sq="1"]'); await t.until(() => window.__paw.ph.size().w < 1080 && window.__paw.ph.ready(), null, 10000);
+      await p.keyboard.press('Escape'); await t.freezeMotion(false);
     }, { device });
   }
 })();

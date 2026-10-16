@@ -21,7 +21,7 @@ function openWardrobeFor(wd, pick) {
     + slotRow('charm', 'Charm', CHARMS.filter((c) => S.inv.charms.includes(c.n)), 'No charms yet. They are buried on walks.');
   const perks = SLOTS.concat('charm').map((s) => S.outfit[s]).filter(Boolean).map((n) => { const c = ALL_WEAR.find((x) => x.n === n) || CHARMS.find((x) => x.n === n); return c ? `${n}: ${c.perk}` : ''; });
   audioPlace('wardrobe');
-  const p = openModal('Wardrobe', `${pick}<div class="ward"><div class="preview">${dogSVG(D(), { pose: 'happy', outfit: dogOutfit() })}${S.outfit.charm ? `<div class="charmtag">Charm: ${esc(S.outfit.charm)}</div>` : ''}</div><div>${slots}<p class="small">${perks.length ? 'Perks: ' + esc(perks.join(' ')) : 'Wearing: nothing but confidence.'}</p></div></div>`);
+  const p = openModal(pick ? `Wardrobe: ${esc(D().name)}` : 'Wardrobe', `${pick}<div class="ward"><div class="preview">${dogSVG(D(), { pose: 'happy', outfit: dogOutfit() })}${S.outfit.charm ? `<div class="charmtag">Charm: ${esc(S.outfit.charm)}</div>` : ''}</div><div>${slots}<p class="small">${perks.length ? 'Perks: ' + esc(perks.join(' ')) : 'Wearing: nothing but confidence.'}</p></div></div>`);
   pkBindPick(p, (id) => openWardrobe(id));
   p.querySelectorAll('[data-eq]').forEach((b) => { b.onclick = () => { act(() => equip(b.dataset.eq)); again(); }; });
   const pj = $('#shPj', p); if (pj) pj.onclick = () => { S.pjAuto = S.pjAuto === false; markDirty(); SFX.click(); if (cur.mode === 'yard' && !wd) renderDog(dogPoseNow(), 'right', true); again(); };

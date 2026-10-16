@@ -3,7 +3,7 @@
    unless the player picks "Make leader". With one dog, or under prefs.crOne, everything is v2.8.4 exactly. The PACK lane owns this file. */
 
 // runtime only (V29.md 5.1: no save field). walk: the followers of the walk that is starting or running. sw: a long screen runs for another dog. skip: why the last pkDogs left a dog out
-const PKS = { walk: null, sw: null, skip: [], lp: false, fetch: null, card: null };
+const PKS = { walk: null, sw: null, skip: [], lp: false, fetch: null, card: null, pickX: 0 };
 const PK_BONUS = 0.1; // pack walk bonus: +10% of one walk's coins (rounded down) when 2 or more dogs walk (V29.md 5.4)
 const PK_CAP_PLAY = 'Ticked dogs join in. The leader always plays.';
 const PK_CAP_WALK = 'Ticked dogs come along. The leader leads.';
@@ -44,7 +44,20 @@ function pkPickHTML(sel, label) {
   return `<div class="cr-wrap pk-pickwrap"><div class="pk-pick" role="group" aria-label="${esc(label || 'Pick a dog')}">${chips}</div></div>`;
 }
 function pkBindPick(root, fn) {
-  (root || dock).querySelectorAll('[data-pkdog]').forEach((b) => { b.onclick = () => { SFX.init(); SFX.click(); fn(b.dataset.pkdog); }; });
+  root = root || dock;
+  root.querySelectorAll('[data-pkdog]').forEach((b) => { b.onclick = () => { const row = b.closest('.pk-pick'); PKS.pickX = row ? row.scrollLeft : 0; SFX.init(); SFX.click(); fn(b.dataset.pkdog); }; });
+  pkPickShow(root);
+}
+// a pick re-renders the row: it keeps where it was scrolled to, and the picked chip is always fully in view (the row scrolls, nothing else does)
+function pkPickShow(root) {
+  const row = $('.pk-pick', root), b = row && $('.pk-pickb[aria-pressed="true"]', row); if (!row) return;
+  const fit = () => {
+    if (!row.isConnected) return;
+    row.scrollLeft = PKS.pickX || 0; if (!b) return;
+    const r = row.getBoundingClientRect(), c = b.getBoundingClientRect(), pad = 6;
+    if (c.left < r.left + pad) row.scrollLeft -= r.left + pad - c.left; else if (c.right > r.right - pad) row.scrollLeft += c.right - (r.right - pad);
+  };
+  fit(); requestAnimationFrame(fit); // once now, once after the sheet has its size
 }
 
 /* ---------------- one dog at a time: the leader comes back ---------------- */
@@ -102,15 +115,51 @@ function pkDress(wd, fn) {
 }
 
 /* ---------------- Play: Squeaky Duck and Tug ---------------- */
-// the pack dogs that join in. Tug: they crouch at the far end of the rope and pull (class pk-tug)
+// a drawing's box in scene units (the union of its parts, so the empty corners of the 240 x 200 dog box do not count). null when nothing is drawn
+function pkArtBox(el) {
+  const svg = $('svg.world', view), s = el && (el.querySelector('svg.pa-dog') || el.querySelector('svg')); if (!svg || !s || !svg.getScreenCTM()) return null;
+  const M = svg.getScreenCTM().inverse(); let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  [...s.children].forEach((c) => { const r = c.getBoundingClientRect(); if (!r.width && !r.height) return; const a = new DOMPoint(r.left, r.top).matrixTransform(M), b = new DOMPoint(r.right, r.bottom).matrixTransform(M); x0 = Math.min(x0, a.x); y0 = Math.min(y0, a.y); x1 = Math.max(x1, b.x); y1 = Math.max(y1, b.y); });
+  return x1 > x0 ? [x0, y0, x1, y1] : null;
+}
+// where pack dog d stands (packDogSVG's spot: [feet x, feet y, facing, scale])
+function pkSpotOf(d) {
+  const i = others().indexOf(d); let [fx, fy, face, sc] = packSpots()[i] || packSpots()[0]; sc = sc || 0.6;
+  const hs = typeof hoPackSpot === 'function' ? hoPackSpot(d, i) : null; if (hs) [fx, fy, face, sc] = hs;
+  return [fx, fy, face, sc];
+}
+// slide a pack dog's group from one transform to another (Motion off: the global rule drops the transition, so it is simply placed)
+function pkSlide(g, from, to) {
+  g.style.transition = 'none'; g.style.transform = from; void g.getBoundingClientRect();
+  g.style.transition = ''; g.classList.add('pk-slide'); g.style.transform = to;
+}
+const PK_TUG = { sc: 0.56, tuck: 10, rise: 30, step: 16, xmin: 224 }; // the pile: crouching dogs at 56%, the bottom one's nose just under the leader's tail, each one above a little higher and further back
+// Tug: the pack dogs leave their spots and pile on behind the leader (its end of the rope), crouching and facing it, then go back. Toys: a happy pose where they stand
 function pkPlayStart(crew, tug) {
-  const t = performance.now() + 2600;
-  crew.forEach((d) => {
-    packNext[d.id] = Math.max(packNext[d.id] || 0, t); packPose[d.id] = tug ? 'crouch' : 'happy'; redrawPackDog(d);
-    if (tug) { const g = $(`#pack [data-dog="${d.id}"]`); if (g) g.classList.add('pk-tug'); }
+  const t = performance.now() + 2600; PKS.tug = null;
+  crew.forEach((d) => { packNext[d.id] = Math.max(packNext[d.id] || 0, t); packPose[d.id] = tug ? 'crouch' : 'happy'; redrawPackDog(d); });
+  if (!tug) return;
+  const L = pkArtBox($('#dogArt')); if (!L) { crew.forEach((d) => { const g = $(`#pack [data-dog="${d.id}"]`); if (g) g.classList.add('pk-tug'); }); return; }
+  const pile = crew.map((d) => ({ d, g: $(`#pack [data-dog="${d.id}"]`) })).filter((o) => o.g);
+  PKS.tug = pile.map((o, k) => {
+    const [fx, fy, face, sc] = pkSpotOf(o.d), m = PK_TUG.sc / sc, sx = face === 'right' ? m : -m, lvl = pile.length - 1 - k; // the last one drawn is the bottom of the pile
+    const A = pkArtBox(o.g) || [fx - 60 * sc, fy - 100 * sc, fx + 60 * sc, fy], hd = ((face === 'right' ? A[2] - fx : fx - A[0])) * m, tl = ((face === 'right' ? fx - A[0] : A[2] - fx)) * m;
+    const X = Math.max(PK_TUG.xmin + tl, L[0] + PK_TUG.tuck - hd - lvl * PK_TUG.step), Y = L[3] + 4 - lvl * PK_TUG.rise;
+    const to = `translate(${f1(X - sx * fx)}px, ${f1(Y - m * fy)}px) scale(${sx.toFixed(3)}, ${m.toFixed(3)})`, at = `translate(${f1(fx - (face === 'right' ? 1 : -1) * fx)}px, 0px) scale(${face === 'right' ? 1 : -1}, 1)`;
+    o.g.classList.add('pk-tug'); pkSlide(o.g, at, to); return { id: o.d.id, X, Y, m, fx, fy, face };
   });
 }
-function pkPlayEnd(crew) { crew.forEach((d) => { packPose[d.id] = 'happy'; if (cur.mode === 'yard' && !d.sleeping) redrawPackDog(d); }); }
+function pkPlayEnd(crew) {
+  const tug = PKS.tug; PKS.tug = null;
+  crew.forEach((d) => {
+    packPose[d.id] = 'happy'; if (cur.mode !== 'yard' || d.sleeping) return; redrawPackDog(d);
+    const p = tug && tug.find((x) => x.id === d.id), g = p && $(`#pack [data-dog="${d.id}"]`); if (!g) return;
+    // back to its spot, facing the way it goes (f -1: drawn mirrored on the way, it turns round when it gets there)
+    const f = (p.face === 'right' ? 1 : -1) * (p.fx >= p.X ? 1 : -1), back = f > 0 ? '' : `translate(${f1(2 * p.fx)}px, 0px) scale(-1, 1)`;
+    pkSlide(g, `translate(${f1(p.X - f * p.m * p.fx)}px, ${f1(p.Y - p.m * p.fy)}px) scale(${(f * p.m).toFixed(3)}, ${p.m.toFixed(3)})`, back);
+    if (f < 0) setTimeout(() => { if (g.isConnected) { g.style.transition = 'none'; g.style.transform = ''; } }, 450);
+  });
+}
 // the effects for the pack dogs, each under its own dog. Returns the Bond the first one got
 function pkPlayFx(crew, toy, tug, k) {
   let b = 0;
@@ -130,28 +179,73 @@ function pkToyFx(crew, r, k, name) {
 }
 
 /* ---------------- Fetch: the others run along behind the leader ---------------- */
-const PK_FOL = { x0: 430, y0: 500, sc: 0.62, gap: 78 }; // the dog box's feet are at (430, 500); followers are drawn at 62%
+// the dog box's feet are at (430, 500); followers are drawn at 62%. gap: from the leader's tail (or nose) to the next follower; between: tail to nose down the line.
+// Rows: the leader's own line first, then a row in front (lower, drawn in front of the leader) and one behind (higher). In the yard nobody stands on the veggie bed
+// (x < 222) or on the dog house (a follower further back than its front would be drawn over it)
+const PK_FOL = { x0: 430, y0: 500, sc: 0.62, gap: 26, between: 14, xmax: 985, ymin: 430, ymax: 596, front: 88, back: 72 };
 const pkXf = (fx, fy) => `translate(${(fx - PK_FOL.x0 * PK_FOL.sc).toFixed(1)}px, ${(fy - PK_FOL.y0 * PK_FOL.sc).toFixed(1)}px) scale(${PK_FOL.sc})`;
 function pkFolArt(d, pose, face) { return place(dogSVG(d, { pose, outfit: typeof shSleepOutfit === 'function' ? shSleepOutfit(d, pose) : outfitOf(d), facing: face }), DX, DY, DW, DH); }
+// the spots for the line when the leader stands at (lx, ly) facing dir (1 right, -1 left): [middle x, feet y] per follower, the row furthest back first
+function pkFolSpots(lx, ly, dir) {
+  const P = PKS.fetch, n = P.dogs.length, F = PK_FOL, sw = P.len + F.between, out = [];
+  const ok = (a, b, y) => { const x0 = Math.min(a, b), x1 = Math.max(a, b); return x0 >= P.xmin && x1 <= F.xmax && !P.zones.some((z) => y < z[2] && x0 < z[1] && x1 > z[0]) && !out.some((o) => Math.abs(o[1] - y) < 66 && Math.abs(o[0] - (x0 + x1) / 2) < P.len); }; // clear of the yard's things and of the rows close by
+  const run = (from, y, d) => { for (let k = 0; out.length < n; k++) { const a = from + d * k * sw, b = a + d * P.len; if (!ok(a, b, y)) break; out.push([(a + b) / 2, y]); } };
+  const yf = Math.min(F.ymax, ly + F.front), yb = Math.max(F.ymin, ly - F.back), front = yf - ly >= 50, back = ly - yb >= 50;
+  const tail = lx - dir * (P.lb + F.gap), nose = lx + dir * (P.lf + F.gap), under = lx - dir * P.lb * 0.45;
+  run(tail, ly + 4, -dir); // behind the leader on its own line, nose to tail
+  if (front) run(under, yf, -dir); // the front row (lower, drawn in front of the leader) starts under its back legs
+  if (back) run(tail, yb, -dir); // the row behind (higher)
+  if (front) run(under + dir * F.between, yf, dir); // then the front row under and past its nose
+  run(nose, ly + 4, dir); if (back) run(nose, yb, dir); // then ahead of it
+  for (let k = 0; out.length < n; k++) out.push([clamp(tail - dir * (k + 0.5) * sw, P.xmin + P.len / 2, F.xmax - P.len / 2), ly + 4]); // nowhere left: squeeze in behind
+  return out;
+}
+// move the followers to the spots ([middle x, feet y]; the box centre is offset by each dog's own drawing). They keep their order along the ground (nobody
+// crosses another), and the one furthest back is drawn first: when that order changes the groups are re-stacked where they stand, so the slide goes on.
+// T: the run's length in seconds (the nearest dog sets off first), none: placed at once
+function pkFolPlace(spots, face, T) {
+  const P = PKS.fetch, box = $('#pkFol'); if (!box) return;
+  const els = P.dogs.map((d) => box.querySelector(`[data-pkfl="${d.id}"]`)), idx = P.dogs.map((d, i) => i).filter((i) => els[i]);
+  const byX = (a, b) => a[0] - b[0], sp = spots.slice(0, idx.length).sort(byX), now = idx.slice().sort((a, b) => P.at[a][0] - P.at[b][0]);
+  now.forEach((i, k) => { P.at[i] = sp[k]; });
+  const want = idx.slice().sort((a, b) => P.at[a][1] - P.at[b][1] || [...box.children].indexOf(els[a]) - [...box.children].indexOf(els[b]));
+  if (want.some((i, k) => box.children[k] !== els[i])) {
+    const was = want.map((i) => getComputedStyle(els[i]).transform);
+    want.forEach((i, k) => { els[i].style.transition = 'none'; box.appendChild(els[i]); els[i].style.transform = was[k] === 'none' ? '' : was[k]; });
+    void box.getBoundingClientRect(); want.forEach((i) => { els[i].style.transition = ''; });
+  }
+  const lead = P.lead || [PK_FOL.x0, PK_FOL.y0], rank = idx.slice().sort((a, b) => Math.hypot(P.at[a][0] - lead[0], P.at[a][1] - lead[1]) - Math.hypot(P.at[b][0] - lead[0], P.at[b][1] - lead[1]));
+  idx.forEach((i) => {
+    const g = els[i], m = P.mid[i] * (face === 'left' ? -1 : 1);
+    if (T) { g.style.transitionDuration = Math.max(0.2, T - 0.2) + 's'; g.style.transitionDelay = (0.12 * (rank.indexOf(i) + 1)) + 's'; }
+    g.style.transform = pkXf(P.at[i][0] - m, P.at[i][1]);
+  });
+}
 // called by enterFetch once the scene is drawn. Returns the followers ([] with one dog)
 function pkFetchStart() {
   PKS.fetch = null; const l = pkDogs('fetch').slice(1); const svg = $('svg.world', view);
   if (!l.length || !svg || !$('#dogPos')) return [];
   l.forEach((d) => { const g = $(`#pack [data-dog="${d.id}"]`); if (g) g.remove(); }); // they leave their spots and join in
-  const g = l.map((d, i) => `<g class="pk-fl" data-pkfl="${d.id}" style="transform:${pkXf(PK_FOL.x0 - PK_FOL.gap * (i + 1), PK_FOL.y0 + (i % 2 ? 8 : -4))}"><g class="pk-fart">${pkFolArt(d, 'idle', 'right')}</g></g>`).join('');
-  $('#dogPos').insertAdjacentHTML('beforebegin', `<g id="pkFol" pointer-events="none">${g}</g>`);
-  PKS.fetch = { dogs: l }; return l;
+  const g = l.map((d) => `<g class="pk-fl" data-pkfl="${d.id}" style="transition:none;transform:${pkXf(PK_FOL.x0, PK_FOL.y0)}"><g class="pk-fart">${pkFolArt(d, 'idle', 'right')}</g></g>`).join('');
+  $('#dogPos').insertAdjacentHTML('afterend', `<g id="pkFol" pointer-events="none">${g}</g>`); // drawn after the leader: a follower in the front row stands in front of it
+  // measure the drawings: the leader's back and front halves, each follower's length and how far its middle sits from its box centre (facing right)
+  const L = pkArtBox($('#dogArt')), lens = [], mid = [];
+  l.forEach((d) => { const b = pkArtBox($(`#pkFol [data-pkfl="${d.id}"]`)); lens.push(b ? b[2] - b[0] : 120); mid.push(b ? (b[0] + b[2]) / 2 - PK_FOL.x0 : 0); });
+  const zones = ['#houseG', '#bedG'].map((q) => pkArtBox($(q, svg))).filter(Boolean).map((b) => [b[0] - 6, b[2] + 6, b[3] - 40]); // feet clearly further back than its front: it would be drawn standing on it
+  PKS.fetch = { dogs: l, lb: L ? clamp(PK_FOL.x0 - L[0], 60, 140) : 100, lf: L ? clamp(L[2] - PK_FOL.x0, 50, 140) : 90, len: Math.min(150, lens.reduce((a, b) => a + b, 0) / lens.length), mid, zones, xmin: S.place === 'yard' ? 226 : 30, at: l.map((d, i) => [i, 0]), lead: [F.dogX, F.dogY] };
+  pkFolPlace(pkFolSpots(F.dogX, F.dogY, 1), 'right');
+  void svg.getBoundingClientRect(); svg.querySelectorAll('#pkFol .pk-fl').forEach((e) => { e.style.transition = ''; });
+  return l;
 }
-// the leader runs to (x, y) in T seconds: the others chase a little behind it
+// the leader runs to (x, y) in T seconds: the others chase along and line up behind it there
 function pkFetchRun(x, y, T, dir) {
   if (!PKS.fetch) return;
   const face = dir < 0 ? 'left' : 'right';
-  PKS.fetch.dogs.forEach((d, i) => {
+  PKS.fetch.dogs.forEach((d) => {
     const g = $(`#pkFol [data-pkfl="${d.id}"]`); if (!g) return;
     const art = g.querySelector('.pk-fart'); art.innerHTML = pkFolArt(d, 'walk', face); art.classList.add('pk-run'); g.dataset.face = face;
-    g.style.transitionDuration = Math.max(0.2, T - 0.2) + 's'; g.style.transitionDelay = (0.12 * (i + 1)) + 's';
-    g.style.transform = pkXf(clamp(x - dir * PK_FOL.gap * (i + 1), 50, 950), clamp(y + (i % 2 ? 12 : -6), 430, 585));
   });
+  PKS.fetch.lead = [x, y]; pkFolPlace(pkFolSpots(x, y, dir), face, T);
 }
 function pkFetchRest(pose) {
   if (!PKS.fetch) return;
@@ -202,14 +296,35 @@ function pkRoutesHTML() { return crPack() ? `<div class="pk-walkrow" id="pkWalkR
 function pkRoutesLine() {
   const el = $('#pkWalkLine', view); if (!el) return;
   const k = ROUTE_KEYS[routeIdx], l = pkDogs('walk', k), skip = PKS.skip.slice();
-  const blocked = crDogs().filter((d) => d !== S.dog && walkBlock(d, k) && !(typeof hmMumIn === 'function' && hmMumIn(d))).map((d) => walkBlock(d, k));
+  const bDogs = crDogs().filter((d) => d !== S.dog && walkBlock(d, k) && !(typeof hmMumIn === 'function' && hmMumIn(d))), blocked = bDogs.map((d) => walkBlock(d, k));
   const fol = l.slice(1), heads = l.map((d, i) => `<span class="pk-lh${i ? ' pk-fol' : ''}" aria-hidden="true">${headSVG(d)}</span>`).join('');
-  const who = fol.length ? `${esc(NAME())} leads. ${esc(crNames(fol))} ${fol.length > 1 ? 'follow' : 'follows'} behind.` : `${esc(NAME())} walks alone.`;
-  el.innerHTML = `<div class="pk-heads" role="img" aria-label="${esc(crNames(l))} walk${l.length > 1 ? '' : 's'} in a line">${heads}</div><p class="small pk-who">${who}${[...blocked, ...pkSkipLines(skip)].map((t) => ' ' + esc(t)).join('')}</p>`;
+  const who = fol.length ? `${NAME()} leads. ${crNames(fol)} ${fol.length > 1 ? 'follow' : 'follows'} behind.` : `${NAME()} walks alone.`;
+  const full = who + [...blocked, ...pkSkipLines(skip)].map((t) => ' ' + t).join('');
+  el.innerHTML = `<div class="pk-heads" role="img" aria-label="${esc(crNames(l))} walk${l.length > 1 ? '' : 's'} in a line">${heads}</div><p class="small pk-who">${esc(full)}</p>`;
+  if (isPhone()) { pkWhoFit($('.pk-who', el), full, l, bDogs.concat(skip.map((x) => x.d))); pkRoutesFit(); }
+}
+// phones with a pack: the chip row and the who line take room from the card's viewport. The text under the preview is measured, the preview takes what is left
+// (at least 90 px tall, as before) and the screen scrolls when that does not fit, so the card's last line and its border are never cut off
+function pkRoutesFit() {
+  const rt = $('.routes', view), cards = rt ? [...rt.querySelectorAll('.rt-card')] : []; if (!cards.length) return;
+  const rest = Math.max(...cards.map((c) => { const pv = $('.rt-prev', c); return c.offsetHeight - (pv ? pv.offsetHeight : 0); }));
+  if (!(rest > 0)) return;
+  rt.style.setProperty('--pk-rest', Math.ceil(rest) + 'px'); rt.style.setProperty('--pk-rth', Math.ceil(rest + 90 + 13) + 'px');
+}
+// phones: the who line stays on one line, so the route card above keeps its room. The longest summary that fits wins (the full lines come as toasts when the walk starts)
+function pkWhoFit(p, full, l, stay) {
+  if (!p) return;
+  const lead = l[0].name, fol = l.slice(1), n = l.length, s = stay.length;
+  const stayA = s ? ` ${crNames(stay)} ${s > 1 ? 'stay' : 'stays'} home.` : '', stayB = s ? (s === 1 ? ` ${stay[0].name} stays home.` : ` ${s} stay home.`) : '';
+  const walk = fol.length ? (fol.length === 1 ? `${lead} and ${fol[0].name} walk.` : `${lead}, ${fol[0].name} and ${fol.length - 1} more.`) : `${lead} walks alone.`;
+  const many = n > 1 ? `${crDogsN(n)} walk.` : `${lead} walks alone.`;
+  const tries = [full, (fol.length ? `${lead} leads. ${crNames(fol)} ${fol.length > 1 ? 'follow' : 'follows'}.` : `${lead} walks alone.`) + stayA, walk + stayA, walk + stayB, many + stayB, walk, many];
+  p.classList.add('pk-one'); p.title = full;
+  for (const t of tries) { p.textContent = t; if (p.scrollWidth <= p.clientWidth + 1) return; }
 }
 function pkRoutesBind() {
-  const redraw = () => { const row = $('#pkWalkRow', view); if (!row) return; row.innerHTML = `${crChipsHTML(PK_CAP_WALK)}<div class="pk-walkline" id="pkWalkLine"></div>`; crBindChips(row, redraw); pkRoutesLine(); };
-  const row = $('#pkWalkRow', view); if (row) crBindChips(row, redraw);
+  const redraw = () => { const row = $('#pkWalkRow', view); if (!row) return; row.innerHTML = `${crChipsHTML(PK_CAP_WALK)}<div class="pk-walkline" id="pkWalkLine"></div>`; crBindChips(row, redraw, 'Somebody has to come along. Tick another dog first.'); pkRoutesLine(); };
+  const row = $('#pkWalkRow', view); if (row) crBindChips(row, redraw, 'Somebody has to come along. Tick another dog first.');
 }
 
 /* ---------------- the long press: Make leader, Dress, Train ---------------- */

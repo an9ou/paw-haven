@@ -21,8 +21,9 @@
 .pk-fl{transform-box:view-box;transform-origin:0 0;transition:transform .9s ease-in-out}
 .pk-run{transform-box:fill-box;transform-origin:50% 100%;animation:pkRun .3s ease-in-out infinite alternate}
 @keyframes pkRun{from{transform:translateY(0) rotate(-1.5deg)}to{transform:translateY(-9px) rotate(1.5deg)}}
-/* Tug: the pack dogs pile on at the far end of the rope (the existing crouch pose) and pull */
+/* Tug: the pack dogs pile on behind the leader at its end of the rope (the existing crouch pose, facing it) and pull, then go back to their spots */
 .pk-tug .pd-wander{animation:tkTug .12s linear 10 alternate}
+.packdog.pk-slide{transform-box:view-box;transform-origin:0 0;transition:transform .4s ease-in-out}
 /* the long press card on a pack dog: Make leader, Dress, Train */
 .packdog.cr-pet{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .pk-dogcard{position:absolute;z-index:40;display:flex;flex-direction:column;gap:6px;min-width:156px;padding:8px 10px 10px;background:var(--paper);border:3px solid var(--ink);border-radius:14px 10px 15px 9px;box-shadow:3px 4px 0 rgba(91,61,50,.35);transform:rotate(-.6deg);animation:pkPop .18s ease-out}
@@ -34,3 +35,10 @@ html[data-layout="phone"] .pk-dogcard{min-width:170px}
 html[data-layout="phone"] .pk-dogcard .btn{min-height:46px;font-size:21px}
 html[data-layout="phone"] .pk-pick{gap:6px;padding:4px 2px 6px;max-width:100%}
 html[data-layout="phone"] .pk-who{font-size:15px}
+/* phones, the route screen with a pack: the who line is one line (pkWhoFit picks a summary that fits), the card keeps its full height and the screen scrolls when it is short */
+html[data-layout="phone"] .pk-who.pk-one{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html[data-layout="phone"] .routes:has(.pk-walkrow){overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain}
+html[data-layout="phone"] .routes:has(.pk-walkrow) > *{flex-shrink:0}
+html[data-layout="phone"] .routes:has(.pk-walkrow) .rt-viewport{flex:1 0 auto;min-height:var(--pk-rth,340px)}
+html[data-layout="phone"] .routes:has(.pk-walkrow) .rt-prev{height:min(200px,max(90px,calc(100cqh - var(--pk-rest,165px) - 13px)))}
+html[data-layout="phone"] .routes:has(.pk-walkrow) .rt-nav{margin:2px 0}

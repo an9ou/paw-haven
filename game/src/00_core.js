@@ -566,7 +566,7 @@ let S = null;
 let dirty = false;
 function markDirty() { dirty = true; }
 const ALIAS_KEYS = new Set(['dog', 'stats', 'bond', 'outfit', 'potty', 'sleeping', 'dishLog', 'buff', 'glowUntil', 'pupUntil', 'tricks']);
-function saveNow() { if (!S) return; S.lastReal = Date.now(); const root = S; lsSet(SAVE_KEY, JSON.stringify(S, function (k, v) { return this === root && ALIAS_KEYS.has(k) ? undefined : v; })); dirty = false;
+function saveNow() { if (!S) return; S.lastReal = Date.now(); const root = S; lsSet(SAVE_KEY, JSON.stringify(S, function (k, v) { if (this === root && k === 'activeId' && typeof PKS === 'object' && PKS && PKS.sw && PKS.sw.who === v) return PKS.sw.orig; return this === root && ALIAS_KEYS.has(k) ? undefined : v; })); dirty = false;
   if (typeof clOnSaved === 'function') clOnSaved(); }
 function loadSave() { try { const s = JSON.parse(lsGet(SAVE_KEY) || 'null'); return s && (s.dog || (s.dogs && s.dogs.length)) && s.v === 1 ? migrate(s) : null; } catch (e) { return null; }
   finally { if (typeof clOnLoaded === 'function') clOnLoaded(); } }

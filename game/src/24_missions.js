@@ -187,8 +187,22 @@ const MS_YARD_MAXX = 260; // the mailbox tap box starts at x=261
 function msTrayOpen() { return !!document.querySelector('#dock > .tray:not(.dock-idle):not(.mini)'); }
 function msYardRect() {
   let [x, y, w, h] = MS_YARD;
-  if (isPhone()) { const s = phHitScale(), m = (msTrayOpen() ? 44 : 48) / s; if (w < m) { x -= (m - w) / 2; w = m; } if (h < m) { y -= (m - h) / 2; h = m; } if (x + w > MS_YARD_MAXX) x = MS_YARD_MAXX - w; }
+  if (isPhone()) {
+    const s = phHitScale(), m = (msTrayOpen() ? 44 : 48) / s; if (w < m) { x -= (m - w) / 2; w = m; } if (h < m) { y -= (m - h) / 2; h = m; } if (x + w > MS_YARD_MAXX) x = MS_YARD_MAXX - w;
+    // v2.9: the camera can slide the clipboard to the edge (a tray open while the leader is by the dog house). The tap box stays fully on screen; when that would
+    // take it off the clipboard (or onto the mailbox) it is switched off until the camera comes back
+    const vis = msYardVis(); if (vis) {
+      if (x < vis[0]) x = vis[0]; if (x + w > vis[1]) x = vis[1] - w;
+      const [ax, , aw] = MS_YARD; if (x < vis[0] - 0.5 || x + w > vis[1] + 0.5 || x + w > MS_YARD_MAXX + 0.5 || x > ax + aw - 12 || x + w < ax + 12) return [MS_YARD[0], MS_YARD[1], 0, 0];
+    }
+  }
   return [x, y, w, h];
+}
+// the scene x range on screen (the view's box, inside the window), in scene units
+function msYardVis() {
+  const svg = $('#view > svg.world'), m = svg && svg.isConnected && svg.getScreenCTM(); if (!m || !(m.a > 0.05)) return null;
+  const vr = view.getBoundingClientRect(), l = Math.max(vr.left, 0), r = Math.min(vr.right, innerWidth); if (r - l < 10) return null;
+  return [(l - m.e) / m.a, (r - m.e) / m.a];
 }
 function msYardHit() { const [x, y, w, h] = msYardRect(); return `<rect x="${f1(x)}" y="${f1(y)}" width="${f1(w)}" height="${f1(h)}" fill="transparent" pointer-events="all"/>`; }
 // re-read the scale and resize the tap rect in place (no redraw, so a tap in progress is not lost)
@@ -199,7 +213,7 @@ function msYardFit() {
 { let raf = 0; const fit = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; msYardFit(); }); };
   const dk = $('#dock'), vw = $('#view');
   if (dk && typeof MutationObserver === 'function') new MutationObserver(fit).observe(dk, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
-  if (vw && typeof MutationObserver === 'function') new MutationObserver(fit).observe(vw, { attributes: true, attributeFilter: ['style'] });
+  if (vw && typeof MutationObserver === 'function') { new MutationObserver(fit).observe(vw, { attributes: true, attributeFilter: ['style'] }); new MutationObserver(fit).observe(vw, { attributes: true, attributeFilter: ['viewBox'], subtree: true }); } // v2.9: the camera moves (viewBox) too
   if (vw) vw.addEventListener('transitionend', fit, true);
   window.addEventListener('resize', fit); }
 // While a tray is open the dock is a full-screen backdrop (a tap on it closes the tray), so the clipboard cannot take the tap itself: a tap that lands inside its
@@ -207,7 +221,7 @@ function msYardFit() {
 document.addEventListener('click', (e) => {
   const dk = $('#dock'); if (!dk || e.target !== dk || !isPhone() || !msTrayOpen()) return;
   const r = $('#msCardG > rect'); if (!r) return; const b = r.getBoundingClientRect();
-  if (e.clientX < b.left || e.clientX > b.right || e.clientY < b.top || e.clientY > b.bottom) return;
+  if (!b.width || e.clientX < b.left || e.clientX > b.right || e.clientY < b.top || e.clientY > b.bottom) return;
   e.stopImmediatePropagation(); e.preventDefault(); popDown(); msOpen();
 }, true);
 function msYardSVG() {

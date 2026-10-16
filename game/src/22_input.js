@@ -8,6 +8,7 @@ window.addEventListener('keydown', (e) => {
   const tag = (document.activeElement && document.activeElement.tagName) || '';
   if (e.key === 'Escape') { if (buyOpen) return; if (!modal.hidden) { closeModal(); return; } if (!devPanel.hidden) { devPanel.hidden = true; return; } if (['map', 'shelter', 'routes'].includes(cur.mode)) go('yard'); else if (cur.mode === 'garden' || cur.mode === 'kitchen') return; /* the module handles Esc (pouch / book first, then onClose) */ else if (cur.mode === 'yard') { if (TRN) closeTraining(); else closeTray(); } return; }
   if (!modal.hidden || tag === 'INPUT') return;
+  if (typeof phActive === 'function' && phActive()) return; // v2.9: photo mode keeps the bar's number keys and space-petting off
   if (!bar.hidden && /^[1-7]$/.test(e.key)) { doAct(ACTS[+e.key - 1][0]); return; }
   if (cur.mode === 'yard' && e.key === ' ' && tag !== 'BUTTON') { e.preventDefault(); petTick(560 + RAND(-30, 30), 380); }
 });
