@@ -232,6 +232,7 @@ require('./test_lib').run('v29_pack', async (t) => {
   await t.freezeMotion(true); // the pack dogs stand still while the pointer is on them
   const pd = await ev(() => document.querySelector('#pack .packdog').dataset.dog);
   ok(/Press and hold for more/.test(await ev(() => document.querySelector('#pack .packdog').getAttribute('aria-label'))), 'the label mentions press and hold');
+  await t.freezeMotion(true); // hold the pack dogs still: a long press measured mid-wander lands beside the dog
   const rect = await ev((d) => { const r = document.querySelector(`#pack [data-dog="${d}"] .pd-wander > rect`).getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }, pd);
   await p().mouse.move(rect.x, rect.y); await p().mouse.down();
   ok(await t.until(() => !!document.getElementById('pkCard'), null, 2500), 'holding about 0.6 s opens the dog card');
@@ -248,8 +249,9 @@ require('./test_lib').run('v29_pack', async (t) => {
   await p().mouse.move(rect.x, rect.y); await p().mouse.down(); await p().mouse.move(rect.x + 30, rect.y + 4, { steps: 3 }); await p().waitForTimeout(800); await p().mouse.up();
   ok(!(await ev(() => document.getElementById('pkCard'))), 'moving more than 10 px cancels the hold');
   // right click opens it too
-  await p().click(`#pack [data-dog="${pd}"] .pd-wander > rect`, { button: 'right', force: true });
-  ok(await t.until(() => !!document.getElementById('pkCard'), null, 1500), 'a right click opens the card too');
+  let rc = false; // an idle redraw can swap the dog's element under the click (as for the long click below), so try up to three times
+  for (let i = 0; i < 3 && !rc; i++) { await p().click(`#pack [data-dog="${pd}"] .pd-wander > rect`, { button: 'right', force: true }); rc = await t.until(() => !!document.getElementById('pkCard'), null, 1500); }
+  ok(rc, 'a right click opens the card too');
   await p().click('#pkCard [data-pkact="dress"]');
   const wp = await modalUp(), wsel = await ev(() => { const b = document.querySelector('#modal .pk-pickb[aria-pressed="true"]'); return b && b.dataset.pkdog; });
   ok(wp && wsel === pd, 'Dress opens the wardrobe on that dog' + (wsel === pd ? '' : ' ' + JSON.stringify([wp, wsel, pd])));
@@ -293,9 +295,15 @@ require('./test_lib').run('v29_pack', async (t) => {
   await ev(() => window.__paw.go('yard')); await t.untilMode('yard');
   const pd2 = await ev(() => document.querySelector('#pack .packdog').dataset.dog);
   ok(!/Press and hold/.test(await ev(() => document.querySelector('#pack .packdog').getAttribute('aria-label'))), 'no long press hint on a pack dog');
-  const r2 = await ev((d) => { const r = document.querySelector(`#pack [data-dog="${d}"] .pd-wander > rect`).getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }, pd2);
-  await p().mouse.move(r2.x, r2.y); await p().mouse.down(); await p().waitForTimeout(900); await p().mouse.up(); await p().waitForTimeout(200);
-  ok(!(await ev(() => document.getElementById('pkCard'))) && (await S()).activeId === pd2, 'a click (even a long one) just switches dogs, as before');
+  await t.freezeMotion(true); // the pack dogs' wander animation must not move the dog between the measure and the press
+  // a long click (0.9 s) must still switch dogs and never open the card. An idle redraw can replace the dog's element during the hold (v2.8.4 too), so the click is repeated until it lands
+  let card2 = false, tries2 = 0;
+  for (; tries2 < 4 && (await S()).activeId !== pd2; tries2++) {
+    const r2 = await ev((d) => { const r = document.querySelector(`#pack [data-dog="${d}"] .pd-wander > rect`).getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }, pd2);
+    await p().mouse.move(r2.x, r2.y); await p().mouse.down(); await p().waitForTimeout(900);
+    card2 = card2 || !!(await ev(() => document.getElementById('pkCard'))); await p().mouse.up(); await p().waitForTimeout(200);
+  }
+  ok(!card2 && (await S()).activeId === pd2, `a click (even a long one) just switches dogs, as before (${tries2} tries)`);
   await p().click('[data-act=wardrobe]'); await modalUp();
   ok(await p().locator('#modal .pk-pickb').count() === 0, 'the wardrobe has no picker');
 }, { packCare: true });
