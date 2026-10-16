@@ -146,3 +146,11 @@ You manage Paw Haven for the owner. You don't build. Start a fresh Coordinator s
 - Final `all` + `phone --jobs 2`: 74 suites, 71 passed, 3 flaky (`v27_home`, `v171_garden`, `v21_home`, all clean alone; see `TODO.md`), 0 failed. New suites: `v28_art`, `v28_dates`, `v28_scenes`, `v28_japan`, `v28_jp`, `v28_winter`, `v28_newyear`, `phone_v28_winter`.
 - Make `v29-base` from v2.8 `main` before the next release.
 - Open items are in `TODO.md` "Winter & New Year (v2.8)".
+
+**State after v2.9 (16 Oct 2026):**
+- v2.9 "All Together" (pack play and walks, photo mode, polish) is on `main`. Spec and as-built notes: `V29.md` (sections 5 and 6).
+- Built by an Opus coordinator with three fresh Sonnet lane sessions (PACK, PHOTO, POLISH, about $6 each), then three `paw-reviewer` reviews and two fix batches (`paw-artist`, `paw-fixer`). Lane branches `lane/v29-*`, fixes on `fix/v29-review`, `v29-base` is v2.8.4 `main`.
+- Three Opus reviewers in parallel next to a full test run hit the 5-hour usage limit (13:00 to 15:30 UTC). Run reviews one at a time, and don't run `all` while reviewers run (the load turned `v28_scenes` and `v27_review` red once).
+- The art suites need the base refs locally: `git fetch origin integration/v2.4 v25-base v26-base v27-base v28-base` in a fresh clone.
+- Make `v30-base` from v2.9 `main` before the next release.
+- Open items are in `TODO.md` "All Together (v2.9)".
