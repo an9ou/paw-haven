@@ -91,7 +91,7 @@ const fill = (file, tag, html) => {
   fs.writeFileSync(p, s.replace(re, (m, a, b) => `${a}\n${html}\n${b}`));
 };
 // the last card: the dogs on their way (owner, 17 Oct 2026: no dates), crayon silhouettes with a "?"
-const SOON_LINE = 'Akita, Japanese Spitz and Pomeranian are on their way.';
+const SOON_LINE = 'Akita, Japanese Spitz, Pomeranian, Afghan Hound, Great Dane, English Mastiff and German Shepherd are on their way.';
 const sils = ['shiba-still', 'samoyed-still', 'samoyed-pup'].map((f) => `<span class="sil"><img src="/img/art/dogs/${f}.svg" alt="" width="240" height="200" loading="lazy"><b aria-hidden="true">?</b></span>`).join('');
 const soon = (tag) => tag === 'card' ? `<li class="soonli"><div class="soon" id="soon"><div class="sils">${sils}</div><span class="dname">More dogs are coming!</span><span class="dquote">${SOON_LINE}</span></div></li>`
   : `<section class="soonprof" id="soon" aria-labelledby="h-soon"><div class="sils">${sils}</div><div class="txt"><h2 id="h-soon">More dogs are coming!</h2><p class="bubble">${SOON_LINE}</p><p>Three new friends are getting their crayon fur drawn. We will say hello here when they are ready.</p></div></section>`;
