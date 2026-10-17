@@ -180,7 +180,7 @@ function phHomeRefit() {
   }
   // v2.10 ROAM: the wider crop keeps the v2.3 home span (the bowl, the dog's spot, a visitor) in view and leans towards the middle of the pack
   const half = wide ? Math.min(500, native / phZoom / 2) : 0, pk = wide ? rmSpan() : null;
-  phHomeCx = !wide ? (L + R) / 2 : R - L >= half * 2 ? (L + R) / 2 : clamp(clamp((pk[0] + pk[1]) / 2, R - half, L + half), half, 1000 - half);
+  phHomeCx = !wide || !rmWander() || R - L >= half * 2 ? (L + R) / 2 : clamp(clamp((pk[0] + pk[1]) / 2, R - half, L + half), half, 1000 - half); // the harness keeps the v2.3 home (the older suites tap props by where they were)
   if (!S.sleeping || S.place === 'fujihill') { phCamHome = phHomeCx; camCx = phCamHome; }
   camApply(camCx);
 }
@@ -189,7 +189,7 @@ function phTrayFit() {
   if (!isPhone()) return;
   let h = 0;
   if (cur.mode === 'yard') {
-    const pb = $('#placeBtns'); if (pb && pb.children.length) h = pb.offsetHeight + (phZoom < 1 ? 24 : 14); // v2.10: 14 (was 8), so a prop drawn on the scene's bottom edge ends above the buttons (they sit 10 px up) // the place buttons (Garden, Go inside, Café menu...) get their own strip under the scene, so they never cover a prop
+    const pb = $('#placeBtns'); if (pb && pb.children.length) h = pb.offsetHeight + 14; // v2.10: 14 (was 8), so a prop drawn on the scene's bottom edge ends above the buttons (they sit 10 px up) // the place buttons (Garden, Go inside, Café menu...) get their own strip under the scene, so they never cover a prop
     const tr = dock.querySelector(':scope > .tray'); if (tr && !tr.classList.contains('dock-idle')) { phTrayCap(tr); h = tr.offsetHeight; const d = tr.querySelector('.napdet:not([hidden])'); if (d) h += d.offsetHeight + 8; }
   }
   const cur0 = parseFloat(view.style.getPropertyValue('--trayH')) || 0; if (Math.abs(cur0 - h) < 1) return;
