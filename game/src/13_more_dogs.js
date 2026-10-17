@@ -98,8 +98,8 @@ const packPose = {};
 // place chip and every default decoration spot. Its Feed-all bowl is lifted onto the scene (fbPackBowls).
 const PACK_SPOTS_PH = { yard: [[222, 596, 'right', 0.58], [930, 438, 'left', 0.57], [960, 560, 'left', 0.7]] };
 // v2.10 ROAM: the pack dogs roam (37_roam.js), so a "spot" is where each one stands now: [feet x, feet y, facing, scale], in others() order
-// After the dogs (up to index 3) comes a free spot clear of every dog: the visiting dog stands there (14b visitorSpot)
-function packSpots() { const l = others().map((d) => { const r = rmSt(d); return [r.x, r.y, r.face, rmK(r)]; }), f = rmFreeSpot(); while (f && l.length < 4) l.push(f); if (f) l.push(f); return l; }
+// After the dogs comes the visiting dog's spot (14b visitorSpot takes the entry after the pack's)
+function packSpots() { const l = others().map((d) => { const r = rmSt(d); return [r.x, r.y, r.face, rmK(r)]; }), f = rmFreeSpot(); while (f && l.length < Math.min(3, Math.max(0, S.dogs.length - 1))) l.push(f); if (f) l.push(f); return l; }
 function packDogSVG(d, i) {
   rmApplyFixed(d, i); // napping at the door or on its bed, on furniture, the Proud Mum by the chair: those spots still win
   return `<g class="rmdog packdog hot" data-dog="${d.id}" tabindex="0" role="button" aria-label="${esc(d.name)}: rub or tap to pet ${PRd(d).him}">${rmPackInner(d, i)}</g>`;

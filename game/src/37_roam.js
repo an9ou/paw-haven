@@ -102,8 +102,7 @@ function rmNear(d, x, y, strict) { const c = rmCands(d, strict); if (!c.length) 
 // scene looks the same every time). Re-entering the same place keeps everybody where they were.
 function rmSeed() {
   if (!S || !S.dogs) return; const key = S.place + (isPhone() ? '|ph' : '');
-  RM.free = null;
-  if (RM.place !== key) { RM.place = key; RM.no = null; Object.values(RM.d).forEach((r) => { r.seeded = false; r.tw = null; r.q = null; r.fix = false; r.k = null; }); RM.t0 = performance.now(); }
+    if (RM.place !== key) { RM.place = key; RM.no = null; Object.values(RM.d).forEach((r) => { r.seeded = false; r.tw = null; r.q = null; r.fix = false; r.k = null; }); RM.t0 = performance.now(); }
   const ds = rmDogs(), placed = [];
   ds.forEach((d) => { const r = rmSt(d); if (r.seeded) placed.push(r); });
   ds.forEach((d) => {
@@ -118,12 +117,11 @@ function rmSeed() {
     r.hx = r.x; r.hy = r.y; placed.push(r);
   });
 }
-// a spot clear of every dog, the same for the whole scene build (the visiting dog's spot, 14b visitorSpot through packSpots)
+// the visiting dog's spot (14b visitorSpot reads it through packSpots): the v1.7 spot after the pack's, as before v2.10 (the festival stall, the
+// Fortune box and the phone crop are placed around it); the roaming dogs step off it (#visitorG is a no-go box)
 function rmFreeSpot() {
-  if (!S) return null; const key = RM.place + '|' + rmDogs().map((d) => d.id).join(','); if (RM.free && RM.free.key === key) return RM.free.at;
-  const me = { id: '__free' }, c = rmCands(me); let best = null, bv = -1e9;
-  c.forEach(([x, y]) => { const m = rmDogs().reduce((a, d) => { const r = rmSt(d); return Math.min(a, Math.abs(r.x - x) + Math.abs(r.y - y) * 0.6); }, 1e9); const v = Math.min(m, 160) - Math.abs(x - 640) * 0.5 - Math.abs(y - 480) * 0.4; if (v > bv) { bv = v; best = [x, y]; } }); // clear of the dogs, near the leader's right (the phone crop shows both)
-  const at = best ? [best[0], best[1], best[0] > 500 ? 'left' : 'right', rmScale(best[1])] : null; RM.free = { key, at }; return at;
+  if (!S) return null; const sp = PACK_SPOTS[S.place] || PACK_SPOTS.default, used = Math.min(3, Math.max(0, S.dogs.length - 1));
+  return (sp[used] || (typeof VISIT_EXTRA === 'object' && VISIT_EXTRA[S.place]) || [905, 432, 'left', 0.5]).slice();
 }
 // the v1.7 / v2.7 fixed spots that still win: napping at the dog-house door or on its own bed, on a piece of furniture, the Proud Mum by the Rocking Chair
 function rmFixed(d, i) {
@@ -168,7 +166,7 @@ function rmPackInner(d, i) {
 // the leader's shell: the scene build (full) carries the #dogPos markup, a rebuild of #pack gets an empty shell and rmAdopt moves the live #dogPos in
 function rmLeadSVG(full) {
   const d = D(), r = rmSt(d);
-  const inner = full ? `<g id="dogPos"><g id="dogFx"><g id="dogArt"></g><rect id="dogHit" x="${DX + 44}" y="${DY + 40}" width="${DW - 88}" height="175" fill="transparent" pointer-events="all" class="hot" tabindex="0" role="button" aria-label="Pet the dog"/></g><g id="fluffFx" pointer-events="none"></g></g>` : '';
+  const inner = full ? `<g id="dogPos"><g id="dogFx"><g id="dogArt"></g><rect id="dogHit" x="${DX + 30}" y="${DY + 40}" width="${DW - 60}" height="${DH - 40}" fill="transparent" pointer-events="all" class="hot" tabindex="0" role="button" aria-label="Pet the dog"/></g><g id="fluffFx" pointer-events="none"></g></g>` : '';
   return `<g class="rmdog rmlead" data-dog="${d.id}"><g class="rm-at" transform="${rmXf(r)}">${inner}</g></g>`;
 }
 function rmAdopt() {
