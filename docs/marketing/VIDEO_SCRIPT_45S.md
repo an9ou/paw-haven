@@ -18,7 +18,7 @@ Every shot is something that really exists in the game, so it can be recorded wi
 | **0:05 to 0:09** TITLE | Noodle bounces. The Doodle Doggo logo pops in with the pink swash. | "Hi. I'm Noodle. Welcome to Doodle Doggo." | **Doodle Doggo** / a cozy dog game |
 | **0:09 to 0:14** ADOPT | The Shelter Playroom. The row of 14 crayon heads slides past. Tap: a corgi says "Is that a snack?" | "Adopt a wobbly crayon pup. There are fourteen of us. We are all very proud." | **14 dogs to adopt** |
 | **0:14 to 0:19** CARE | Quick cuts: food in the bowl, a belly rub with floating hearts, a bubbly bath, a nap. | "Feed us. Pet us. Bathe us, if you must." | Feed · Pet · Bath · Nap |
-| **0:19 to 0:26** WALK + FUJI | The walk: Noodle hops a log and digs up treasure. Cut to Mt. Fuji Lookout at dusk. His bubble pops up. | "Take us on walks. Dig up treasure. Visit Mt. Fuji." *(bubble on screen)* "Somebody should dig a tunnel through that mountain. I volunteer." | **Mt. Fuji on every skyline** |
+| **0:19 to 0:26** WALK + FUJI | The walk: Noodle hops a log and digs up treasure. Cut to Mt. Fuji Lookout at dusk. His bubble pops up. | "Take us on walks. Play fetch with the whole pack. Visit Mt. Fuji." *(bubble on screen)* "Somebody should dig a tunnel through that mountain. I volunteer." | **Mt. Fuji on every skyline** |
 | **0:26 to 0:32** GARDEN, KITCHEN, PUPPIES | The veggie patch, the cooking pot, then two dogs and their puppies with matching coat colours. | "Grow a garden. Cook dog-safe treats. Have puppy playdates, with real coat genetics." | Garden · Kitchen · Puppies |
 | **0:32 to 0:37** SEASONS | A dog in the Witch Hat, then snow falling, the snowdog, and the Ugly Sweater Contest banner with Gerald the duck. | "Dress up for every season. The ugly sweater contest is judged by a duck." | **New seasons and festivals** |
 | **0:37 to 0:41** THE PROMISE | A dog walks straight into a log, stops, sits down as if it meant to. | "And nothing bad ever happens here. Worst case, you walk into a log." *(beat)* "I meant to do that." | **Nothing bad ever happens** |
@@ -38,7 +38,7 @@ Read this straight through. A pause marked *(beat)* is about half a second.
 >
 > Feed us. Pet us. Bathe us, if you must.
 >
-> Take us on walks. Dig up treasure. Visit Mt. Fuji. *(beat)* Somebody should dig a tunnel through that mountain. I volunteer.
+> Take us on walks. Play fetch with the whole pack. Visit Mt. Fuji. *(beat)* Somebody should dig a tunnel through that mountain. I volunteer.
 >
 > Grow a garden. Cook dog-safe treats. Have puppy playdates, with real coat genetics.
 >

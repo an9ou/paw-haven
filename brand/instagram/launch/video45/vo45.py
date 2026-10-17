@@ -10,7 +10,7 @@ L = {  # punctuation is part of the delivery: "!" gives the voice more lift
  "l2": "Hi, I'm Noodle! Welcome to Doodle Doggo!",
  "l3": "Adopt a wobbly crayon pup! There are fourteen of us. We are all very proud!",
  "l4": "Feed us! Pet us! Bathe us, if you must.",
- "l5a": "Take us on walks! Dig up treasure! Visit Mount Fuji!", "l5b": "Somebody should dig a tunnel through that mountain. I volunteer!",
+ "l5a": "Take us on walks! Play fetch with the whole pack! Visit Mount Fuji!", "l5b": "Somebody should dig a tunnel through that mountain. I volunteer!",
  "l6": "Grow a garden! Cook dog-safe treats! Have puppy playdates, with real coat genetics!",
  "l7": "Dress up for every season! The ugly sweater contest is judged by a duck!",
  "l8a": "And nothing bad ever happens here. Worst case? You walk into a log.", "l8b": "I meant to do that!",

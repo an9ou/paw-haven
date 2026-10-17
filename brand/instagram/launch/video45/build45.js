@@ -8,14 +8,14 @@ const FPS = 30, DUR = 45, NF = DUR * FPS, OUT = __dirname;
 const dur = JSON.parse(fs.readFileSync(path.join(voDir, 'dur.json')));
 
 // ---- the voice-over: when each line starts (seconds) ----
-const VO = [['l1a', 0.25], ['l1b', 3.25], ['l2', 5.3], ['l3', 8.35], ['l4', 13.5], ['l5a', 16.25], ['l5b', 19.85], ['l6', 23.75], ['l7', 29.5], ['l8a', 34.5], ['l8b', 38.85], ['l9', 40.6]];
+const VO = [['l1a', 0.25], ['l1b', 3.25], ['l2', 5.3], ['l3', 8.35], ['l4', 13.5], ['l5a', 16.0], ['l5b', 19.95], ['l6', 23.75], ['l7', 29.5], ['l8a', 34.5], ['l8b', 38.85], ['l9', 40.6]];
 // ---- subtitles: each line split into chunks, timed by length ----
 const CHUNKS = { // must match the punctuation in vo45.py
   l1a: ['Everything in this town was drawn very carefully.'], l1b: ['Except me! I drew myself!'],
   l2: ["Hi, I'm Noodle! Welcome to Doodle Doggo!"],
   l3: ['Adopt a wobbly crayon pup!', 'There are fourteen of us.', 'We are all very proud!'],
   l4: ['Feed us! Pet us!', 'Bathe us, if you must.'],
-  l5a: ['Take us on walks! Dig up treasure!', 'Visit Mount Fuji!'],
+  l5a: ['Take us on walks!', 'Play fetch with the whole pack!', 'Visit Mount Fuji!'],
   l5b: ['Somebody should dig a tunnel through that mountain.', 'I volunteer!'],
   l6: ['Grow a garden! Cook dog-safe treats!', 'Have puppy playdates, with real coat genetics!'],
   l7: ['Dress up for every season!', 'The ugly sweater contest is judged by a duck!'],
@@ -32,8 +32,8 @@ const info = (n) => JSON.parse(fs.readFileSync(path.join(footage, n, 'info.json'
 const bonk = info('bonk'), bonkOff = Math.max(0, Math.min((bonk.event != null ? bonk.event / FPS : 3) - (38.85 - 34.4), bonk.frames / FPS - 6.05));
 const fuji = info('fuji'), FUJI_OFF = fuji.event != null ? fuji.event / FPS + 0.05 - 0.1 : 0.6; // Noodle's tunnel line appears 0.1 s into the Fuji shot
 const PLAY = [ // [video start, video end, clip, clip start]
-  [8.2, 13.4, 'adopt', 0.25], [13.4, 13.95, 'feed', 0.5], [13.95, 14.45, 'pet', 0.6], [14.45, 15.5, 'bath', 0.5], [15.5, 16.2, 'nap', 0.9],
-  [16.2, 19.7, 'walk', 0.4, [1.55, '30% 46%']], [19.7, 23.6, 'fuji', FUJI_OFF], [23.6, 25.0, 'garden', 0.3], [25.0, 26.2, 'kitchen', 0.3], [26.2, 29.4, 'puppies', 0.1],
+  [8.2, 13.4, 'adopt', 0.25], [13.4, 13.95, 'feed', 0.5], [13.95, 14.45, 'pet', 0.6], [14.45, 15.5, 'bath', 0.5], [15.5, 16.0, 'nap', 0.9],
+  [16.0, 17.0, 'walk', 1.2, [1.55, '30% 46%']], [17.0, 19.7, 'fetch', 0.2, [1.45, '92% 30%']], [19.7, 23.6, 'fuji', FUJI_OFF], [23.6, 25.0, 'garden', 0.3], [25.0, 26.2, 'kitchen', 0.3], [26.2, 29.4, 'puppies', 0.1],
   [29.4, 31.0, 'halloween', 0.3], [31.0, 32.6, 'snow', 0.3], [32.6, 34.4, 'sweater', 0.3], [34.4, 40.4, 'bonk', bonkOff, [1.55, '34% 46%']],
 ];
 const T = { title: [5.2, 8.2], play: [8.2, 40.4], end: [40.4, 45], subs, cuts: PLAY.map((q) => q[0]) };

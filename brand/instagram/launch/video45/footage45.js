@@ -89,6 +89,23 @@ run('video45_' + SEASON, async (t) => {
       await setEnv('day', 'sunny'); await at('yard'); await t.sleep(1200); await quiet();
       await rec('puppies', 2.6, [[0.1, () => rub(12)], [0.9, () => rub(12)]]);
     }
+    // ---------- 6b. v2.9 pack fetch: Noodle runs for the ball, Biscuit and Sunny chase along ----------
+    if (want('fetch')) {
+      await ev(() => { const P = window.__paw, S = P.S;
+        if (!S.dogs.some((d) => d.name === 'Biscuit')) P.addDog({ key: 'corgi', sex: 'male', months: 20 }, 'Biscuit');
+        if (!S.dogs.some((d) => d.name === 'Sunny')) P.addDog({ key: 'golden', sex: 'female', months: 20 }, 'Sunny');
+        S.careOff = {}; S.dogs.forEach((d) => { if (!['Noodle', 'Biscuit', 'Sunny'].includes(d.name)) S.careOff[d.id] = true; d.stats.energy = 95; d.stats.happy = 70; d.sleeping = false; }); });
+      await setEnv('day', 'sunny'); await at('yard'); await quiet();
+      await ev(() => window.__paw.go('fetch', 'Tennis Ball')); await t.untilMode('fetch');
+      await t.until(() => document.querySelectorAll('#pkFol .pk-fl').length >= 2, null, 4000); await t.sleep(500); await quiet();
+      const throwBall = async () => { const b = await p().locator('#view svg.world').boundingBox(); await p().mouse.click(b.x + b.width * 0.8, b.y + b.height * 0.6); };
+      // tap again on the frame the pink ring meets the dashed one (the game's catch window), so the clip shows a catch
+      const catchOnTime = () => ev(() => { const F = window.__paw.F, f = F && F.fly; if (f && !f.tried && (performance.now() - f.t0) / 1000 >= f.T - 0.02) document.querySelector('#view svg.world').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); return false; });
+      await rec('fetch', 4.2, [[0.4, throwBall]], catchOnTime);
+      await ev(() => window.__paw.go('yard')); await t.untilMode('yard'); await t.calm();
+    }
+    // only Noodle from here on (the log walk is his alone)
+    await ev(() => { const S = window.__paw.S; S.careOff = {}; S.dogs.forEach((d) => { if (d.name !== 'Noodle') S.careOff[d.id] = true; }); });
     // ---------- 7. Halloween: the witch hat at dusk ----------
     if (want('halloween')) {
       await ev(() => { const S = window.__paw.S; S.inv.clothes.push('Witch Hat', 'Candy Corn Bandana'); S.outfit.head = 'Witch Hat'; S.outfit.neck = 'Candy Corn Bandana'; });
@@ -127,4 +144,4 @@ run('video45_' + SEASON, async (t) => {
     await setEnv('dusk', 'sunny'); await at('square'); await t.sleep(900); await quiet();
     if (want('sweater')) await rec('sweater', 2.6, [[0.6, () => ev(() => window.__paw.wn.contestOpen())]]);
   }
-}, { device: 'iPhone 15', clock: false, season: 'auto', fest: 'auto', prefs: { hwTest: true, jpTest: true, wnTest: true }, timeout: 1800000 });
+}, { device: 'iPhone 15', clock: false, season: 'auto', fest: 'auto', packCare: true, prefs: { hwTest: true, jpTest: true, wnTest: true }, timeout: 1800000 });
