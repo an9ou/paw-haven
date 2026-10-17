@@ -23,6 +23,9 @@ L = {  # "!" gives Bella more lift; keep the subtitles (build60.js) in step with
   "n9": "At the end of the day, we watch the sun go down over Mount Fuji. It's my favourite part.",
   "n10a": "My town is almost ready for you. Doodle Doggo is coming soon!",
   "n10b": "Follow us on Instagram for news, so you don't miss me!",
+  # the launch ending (END=play in build60.js)
+  "n10ap": "My town is ready for you! Doodle Doggo is out now!",
+  "n10bp": "Play free on itch.io. Come and meet me!",
 }
 # spelled for the voice only (the subtitles keep the real names): Kokoro reads "Mochi" as MAH-chai; Mochi is MOH-chee
 SAY = {"Mochi": "Mohchee", "itch.io": "itch dot eye oh"}

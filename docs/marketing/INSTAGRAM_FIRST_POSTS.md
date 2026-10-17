@@ -206,21 +206,21 @@ Short, warm, in Noodle's voice sometimes. Change a word each time so it never fe
 
 ---
 
-## Launch-day captions (use only when the game is live)
+## Launch-day captions (the game is live on itch.io since 17 Oct)
 
 Post these when the itch.io page (or the game link) is live and tested. Put the link in the bio first.
 
 **Single image: use `post3-play-free-halloween.jpg` (before 2 Nov) or any informative post**
 ```
-Doodle Doggo is open! 🐶🎉
+Doodle Doggo is out now on itch.io! 🐶🎉
 A cozy dog game you play in your browser. Free, on phone or computer, nothing to download. Tap the link in our bio and meet Noodle.
 
-1️⃣ Tap the link in bio
+1️⃣ Tap the link in bio (itch.io)
 2️⃣ Pick a pup
 3️⃣ Say hi
 
 公開しました！無料で遊べます🐶
 
-#cozygames #browsergame #indiegame #newgame #doodledoggo #ブラウザゲーム #freegame
+#cozygames #browsergame #indiegame #newgame #doodledoggo #itchio #freegame #ブラウザゲーム
 ```
-Also: update the bio to `🎮 Free · play in your browser 👇`, add the link, and post a Story with the link sticker.
+Also: update the bio's last line to `🎮 Free cozy dog game · play on itch.io 👇`, add the link https://an9ou.itch.io/doodle-doggo, and post a Story with a link sticker to the same page.

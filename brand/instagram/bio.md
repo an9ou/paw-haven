@@ -4,6 +4,12 @@ Profile picture: `doodle-doggo-instagram-dachshund-1080.png` (the dachshund, own
 
 **Name field:** Doodle Doggo 🐾 Cozy Dog Game
 
+**Bio, launched (17 Oct, the game is live on itch.io; link: https://an9ou.itch.io/doodle-doggo):**
+
+    🖍️ Adopt a wobbly crayon pup (he drew himself)
+    🗻 Walks, puppies & Mt. Fuji in a Japan-style town
+    🎮 Free cozy dog game · play on itch.io 👇
+
 **Bio, pre-launch (17 Oct, English-first for an international audience; 133 of 150 characters):**
 
     🖍️ Adopt a wobbly crayon pup (he drew himself)

@@ -4,9 +4,9 @@ Made 17 Oct 2026 from `VIDEO_SCRIPT_TRAILER_90S.md`. Files are in `brand/instagr
 
 | File | Shape | Use it for |
 |---|---|---|
-| `doodle-doggo-trailer-9x16-soon.mp4` | vertical 1080 x 1920 | Instagram Reels, TikTok, YouTube Shorts, **now** |
-| `doodle-doggo-trailer-16x9-soon.mp4` | landscape 1920 x 1080 | YouTube, the doodledoggo.app site, **now** |
-| `doodle-doggo-trailer-9x16-play.mp4`, `...-16x9-play.mp4` | same | **when the game is live**: ends on "Play free · doodledoggo.app" |
+| `doodle-doggo-trailer-9x16-soon.mp4` | vertical 1080 x 1920 | Instagram Reels, TikTok, YouTube Shorts (pre-launch) |
+| `doodle-doggo-trailer-16x9-soon.mp4` | landscape 1920 x 1080 | YouTube, the doodledoggo.app site (pre-launch) |
+| `doodle-doggo-trailer-9x16-play.mp4`, `...-16x9-play.mp4` | same | **now (the game is live)**: ends on "Play free / on itch.io / an9ou.itch.io/doodle-doggo" |
 
 About 89 seconds, 30 fps, H.264 + AAC. The 45-second promo stays the short ad; this is the "what is this game" video.
 
@@ -16,7 +16,7 @@ About 89 seconds, 30 fps, H.264 + AAC. The 45-second promo stays the short ad; t
 2. **Meet the dogs (0:08 to 0:30):** real gameplay in the shelter. Noodle, Biscuit, Mochi and Frost each get a name card and say their own in-game line; then all 14 in a quick run; then Pepper: "Adopt for free".
 3. **Your day together (0:30 to 0:58):** care (food, belly rub, bath, nap), dress-up (the Witch Hat, the Very Ugly Sweater), **pack fetch with Biscuit and Sunny**, a walk, the Mt. Fuji Lookout, the garden and kitchen, the house with the pack, puppies, the seasons (the Ugly Sweater Contest, snow, New Year), and photo mode (the crayon postcard).
 4. **How to play (0:58 to 1:19):** numbered steps on real screens: 1 Tap New game, 2 Pick a pup (and name them), 3 the bottom bar (highlighted), rub to pet, walk controls, and the log: "Nothing bad ever happens" with Noodle's "I meant to do that."
-5. **End (1:19 to 1:29):** the pack at dusk, then the end card: "Coming soon / follow to be first" (or "Play free / doodledoggo.app").
+5. **End (1:19 to 1:29):** the pack at dusk, then the end card: "Coming soon / follow to be first" (or "Play free / on itch.io").
 
 Every gameplay shot was recorded from the real game (v2.9), with the same honest notes as the 45-second video: the bump line "I meant to do that." is one of the game's seven random bump lines, picked for the voice-over. Voice: **Bella** (Kokoro TTS, Apache-2.0, a synthetic voice; label it as AI voice-over if an ad form asks). Music: the game's own. Subtitles are burned in.
 

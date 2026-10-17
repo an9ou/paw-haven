@@ -19,6 +19,10 @@ Written 16 Oct 2026 (Friday) for one person, zero budget. All times are **JST** 
 
 ---
 
+## Launched (17 Oct 2026, read this first)
+
+The game is live on itch.io: **https://an9ou.itch.io/doodle-doggo**. From now on every post can say **"Play free on itch.io"** (link in bio; in ads, the button goes straight to that page). Use the `-play` versions of the videos. doodledoggo.app stays the introduction site. The pre-launch notes below are kept for the record.
+
 ## Pre-launch mode (set 16 Oct, read this first)
 
 **The game is not published yet.** For now Instagram builds an audience and says **coming soon**. That changes the plan like this:

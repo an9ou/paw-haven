@@ -136,8 +136,8 @@ window.draw = async (f) => {
   if (f.name) { $('nameN').textContent = f.name.n; $('nameK').textContent = f.name.k; const k = eoB(seg(t, f.name.at, f.name.at + 0.45)); $('name').style.opacity = seg(t, f.name.at, f.name.at + 0.15); $('name').style.transform = `rotate(-2deg) scale(${0.6 + 0.4 * k})`; }
   if (f.section === 'end') {
     const u = t - f.end.at, soon = f.end.soon;
-    $('e1').textContent = soon ? 'Coming soon' : 'Play free'; $('e2').textContent = soon ? 'follow to be first' : 'doodledoggo.app';
-    $('e3').textContent = soon ? 'a free game for phone & computer' : 'free · phone or computer';
+    $('e1').textContent = soon ? 'Coming soon' : 'Play free'; $('e2').textContent = soon ? 'follow to be first' : 'on itch.io';
+    $('e3').textContent = soon ? 'a free game for phone & computer' : 'an9ou.itch.io/doodle-doggo';
     $('e1').style.fontSize = (soon ? 180 : 220) * (LAND ? 1.05 : 1) + 'px'; $('e2').style.fontSize = (LAND ? 100 : 96) + 'px';
     const a = eoB(seg(u, 0, 0.5)), b = eoB(seg(u, 0.3, 0.8));
     $('e0').style.opacity = seg(u, 0, 0.3);

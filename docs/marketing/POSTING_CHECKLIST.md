@@ -11,9 +11,9 @@ Tick each box. Times are JST. Everything you need is in `brand/instagram/` and `
   ```
   🖍️ Adopt a wobbly crayon pup (he drew himself)
   🗻 Walks, puppies & Mt. Fuji in a Japan-style town
-  🎮 Free cozy dog game · coming soon ✨
+  🎮 Free cozy dog game · play on itch.io 👇
   ```
-- [ ] **Link: leave it empty for now.** The game is not published yet. When the itch.io page (or the game link) is live and tested, add it here and change the last bio line to `🎮 Free · play in your browser 👇`. (A free link page that counts clicks, such as Linktree, shows you taps; point it at the game when it is live.)
+- [ ] **Link: https://an9ou.itch.io/doodle-doggo** (live since 17 Oct). Before launch the link was left empty. When the itch.io page (or the game link) is live and tested, add it here and change the last bio line to `🎮 Free · play in your browser 👇`. (A free link page that counts clicks, such as Linktree, shows you taps; point it at the game when it is live.)
 - [ ] **Profile picture:** `brand/instagram/doodle-doggo-instagram-halloween-1080.png` (Noodle in the Witch Hat and Candy Corn Bandana).
   - [ ] **Swap on Tue 3 Nov** to `doodle-doggo-instagram-dachshund-1080.png`.
 - [ ] **Contact button:** the Professional account can show email. Use an address you are happy to make public, or leave it off.

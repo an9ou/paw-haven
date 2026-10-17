@@ -98,10 +98,10 @@ const sh = (args) => execFileSync('ffmpeg', ['-y', '-loglevel', 'error', ...args
   const cutF = Math.round(endAt * FPS);
   for (const shape of shapes === 'both' ? ['P', 'L'] : [shapes]) {
     const ends = endings === 'both' ? ['soon', 'play'] : [endings];
-    const shared = path.join(WORK, 'frames_' + shape), redraw = !process.env.SOUND_ONLY; // SOUND_ONLY=1: keep the drawn frames, redo only the sound
-    if (redraw) fs.rmSync(shared, { recursive: true, force: true }); fs.mkdirSync(shared, { recursive: true });
+    const shared = path.join(WORK, 'frames_' + shape), redraw = !process.env.SOUND_ONLY, redrawShared = redraw && !process.env.ENDS_ONLY; // SOUND_ONLY=1: keep the drawn frames, redo only the sound; ENDS_ONLY=1: redraw only the end cards
+    if (redrawShared) fs.rmSync(shared, { recursive: true, force: true }); fs.mkdirSync(shared, { recursive: true });
     const parts = 4, step = Math.ceil(cutF / parts);
-    if (redraw) await Promise.all(Array.from({ length: parts }, (_, k) => frames(shape, true, k * step, Math.min(cutF, (k + 1) * step), shared)));
+    if (redrawShared) await Promise.all(Array.from({ length: parts }, (_, k) => frames(shape, true, k * step, Math.min(cutF, (k + 1) * step), shared)));
     for (const m of ends) {
       const dir = path.join(WORK, `frames_${shape}_${m}`);
       if (redraw) {
