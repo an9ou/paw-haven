@@ -17,7 +17,7 @@ Profile picture: `doodle-doggo-instagram-dachshund-1080.png` (the dachshund, own
     Free to play 👇
 
     🐾 Your new best friend is badly drawn
-    🖍️ Cozy dog game · made in Japan 🗻
+    🖍️ Cozy dog game · Japan-style town 🗻
     🎮 Play free 👇
 
 **Pre-launch (16 Oct):** use `🎮 Free browser game · coming soon ✨` as the last line and leave the link empty until the game is live.

@@ -101,7 +101,7 @@ Pin **info4 (how to play)** later if you want new visitors to see it first (only
 ```
 Mt. Fuji on every skyline 🗻
 
-Doodle Doggo is made in Japan, and it shows. Fuji peeks over your yard, the town square and the hills. Visit Mt. Fuji Lookout (a little torii, stone lanterns and a bench) and look at Fuji with your pup once a day.
+Doodle Doggo has a Japan-style look: Fuji peeks over your yard, the town square and the hills. Visit Mt. Fuji Lookout (a little torii, stone lanterns and a bench) and look at Fuji with your pup once a day.
 
 When winter comes, Snow Days start on 1 Dec. In January you can send New Year cards (年賀状) too.
 
