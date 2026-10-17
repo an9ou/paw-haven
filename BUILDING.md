@@ -167,3 +167,12 @@ You manage Paw Haven for the owner. You don't build. Start a fresh Coordinator s
 - Final `all` + `phone`: 89 suites (`all` + `phone --jobs 2`): 85 passed, 4 flaky (`phone_skill`, `phone_v25_fixes_b`, `v29_photo`, `v21_breed`, all passed on retry), 0 failed. New suites: `v210_roam`, `v210_ball`, `phone_v210_roam`, `phone_v210_ball`. `node dogs/check_identical.js v210-base`: 155344 renders, 0 differ.
 - Make `v211-base` from v2.10 `main` before the next release.
 - Open items are in `TODO.md` "Free to Roam (v2.10)".
+
+**State after v2.11 (17 Oct 2026):**
+- v2.11 "Tokyo Trip" (the Shinkansen to six Tokyo places with seven stamps, Dog Cards, seven new breeds for 21 in all) is on `integration/v2.11`. Spec and as-built notes: `V211.md` (sections 5 and 6).
+- Built by an Opus coordinator (handed over once under rule 11) with three lane sessions: TRAVEL and CARDS on Opus, BREEDS on Sonnet, plus five `paw-artist` subagents (TOKYO ART D, TOKYO ART E, BREED ART, BREED ART 2 for the owner's four more breeds, and the art fix batch). Then three `paw-reviewer` reviews (code, phone, art) and the fix batches in the lanes. Lane branches `lane/v211-*`, art fixes on `fix/v211-art`, `v211-base` is a branch at `97a2fc0` (v2.10).
+- Final `all` + `phone`: TESTNUMBERS. New suites: `v211_tokyo`, `v211_cards`, `v211_breeds`, `v211_art_d`, `v211_art_e`, `v211_dogs`, `phone_v211_tokyo`, `phone_v211_cards`. `node dogs/check_identical.js v211-base`: CHECKNUMBERS.
+- The Worker changed (the Dog Card routes and the `cards` and `paws` tables): deploy it with `bash tools/cf_api_deploy.sh` and check with `bash tools/cf_api_smoke.sh`. The claude.ai artifact has eight supporting files now (`world_d.js` and `world_e.js` added). The site's new dog rows are not deployed (owner's go-ahead).
+- Screenshots stay on the lane branches. CARDS and TOKYO ART E put theirs into the history through early merges (accepted); remove `game/shots_*` before a release.
+- Make `v212-base` from v2.11 `main` before the next release.
+- Open items are in `TODO.md` "Tokyo Trip (v2.11)".

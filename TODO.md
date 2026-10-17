@@ -137,6 +137,16 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [ ] `#ballLayer` is not depth-sorted with the dogs: the ball draws over the legs of dogs standing in front of it. `game/src/38_ball.js`
 - [ ] `phone_occl_play` is flaky under load (the walkfetch toast, the runner hint). Not from v2.10. `game/test_phone_occl_play.js`
 
+## Tokyo Trip (v2.11)
+- [ ] Pre-v2.11, found by the phone review: on phones `#mapPan` is 24 px wider than the screen. `game/src/08_map.js`
+- [ ] Pre-v2.11, phone review: the Dog Park sign measures 95 x 40 px on phones.
+- [ ] Pre-v2.11, phone review: photo mode shows a blank band on phones. `game/src/35_photo.js`
+- [ ] `v211_dogs` takes about 440 s alone (its timeout is 700 s). Split it or sample fewer renders. `game/test_v211_dogs_node.js`
+- [ ] `account` and `cloud` are slow under load (the full parallel run), clean alone.
+- [ ] The site rows for the 7 new breeds and the privacy page's Dog Cards section are committed but not deployed (owner's go-ahead: `bash tools/cf_pages_deploy.sh`). `site/`, `tools/site_dogs.js`
+- [ ] The lane screenshots from CARDS (about 8 MB) and TOKYO ART E (about 26 MB) came into the history through early merges (accepted). Later lanes keep theirs on the lane branch only.
+- [ ] Waiting (owner, V211.md section 6): the day trips (Kamakura, Hakone, Kyoto) for v2.12, Quick Chat with preset phrases and friends for v2.12, and the breeds Japanese Chin, Shih Tzu and Kai Ken.
+
 ## Reset code in the game (v2.9.2)
 - [ ] Live email needs the Resend domain doodledoggo.app verified (it was still verifying on 17 Oct). Until then `/forgot` answers the same and the send fails quietly in the Worker log. Re-check with a real account once Resend says verified.
 - [ ] `site/privacy.html` still says the only emails are "a password link". The SITE lane (site/v2) should say "a password code". `site/privacy.html`
