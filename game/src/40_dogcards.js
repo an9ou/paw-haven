@@ -362,7 +362,7 @@ async function dcSync() {
   })().finally(() => { DC.syncP = null; });
   return DC.syncP;
 }
-on('game:ready', () => { dcPrune(); const wait = (i) => { if (CL.started || i > 40) dcRender(); else setTimeout(() => wait(i + 1), 500); }; wait(0); });
+on('game:ready', () => { if (S) dcPrune(); const wait = (i) => { if (CL.started || i > 40) dcRender(); else setTimeout(() => wait(i + 1), 500); }; wait(0); });
 window.addEventListener('focus', () => { if (DC.uid && Date.now() - DC.syncAt > 60000) dcSyncSoon(1500); });
 
 /* ---------------- test hook ---------------- */
