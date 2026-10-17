@@ -112,8 +112,10 @@ require('./test_lib').run('phone_v29_pack', async (t) => {
 
     sec(device + ': the long press with a finger');
     await quiet(); await t.home('yard'); await quiet(); await ev(() => { window.__paw.S.dogs.forEach((d) => { d.stats.happy = 40; }); }); await t.freezeMotion(true);
-    const pd = await ev(() => document.querySelector('#pack .packdog').dataset.dog);
-    const pt = await ev((d) => { const r = document.querySelector(`#pack [data-dog="${d}"] .pd-wander > rect`).getBoundingClientRect(); return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }; }, pd);
+    // v2.10 ROAM: hold a pack dog that is on screen and on top at its middle (on a narrow phone the pack may stand outside the home crop)
+    const { pd, pt } = await ev(() => { const v = document.getElementById('view').getBoundingClientRect(); for (const g of document.querySelectorAll('#pack .packdog')) { const r = g.querySelector('.pd-wander > rect').getBoundingClientRect(), x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2), e = x > v.left && x < v.right && y > v.top && y < v.bottom && document.elementFromPoint(x, y); if (e && e.closest('[data-dog]') === g) return { pd: g.dataset.dog, pt: { x, y } }; }
+      const g = document.querySelector('#pack .packdog'), vb = document.querySelector('#view svg.world').viewBox.baseVal; window.__paw.rm.set(g.dataset.dog, { x: Math.round(vb.x + vb.width * 0.72), y: 584 }); // none in the crop: one steps into its front row
+      const r = g.querySelector('.pd-wander > rect').getBoundingClientRect(); return { pd: g.dataset.dog, pt: { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) } }; });
     const cdp = await t.ctx.newCDPSession(p());
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: pt.x, y: pt.y }] });
     ok(await t.until(() => !!document.getElementById('pkCard'), null, 2500), 'holding a finger about 0.6 s opens the dog card');
