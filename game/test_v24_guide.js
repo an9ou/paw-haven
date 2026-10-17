@@ -85,7 +85,7 @@ run('v24_guide', async (t) => {
 
   sec('reload mid-guide: Continue brings Gerald back at the same step');
   await next(); ok(await atStep(1), 'step 1'); await next(); ok(await atStep(2), 'step 2');
-  await ev(() => window.__paw.saveNow()); await p.reload(); await p.waitForSelector('#tContinue'); await p.click('#tContinue'); await t.untilMode('yard'); await t.calm(); await t.lu();
+  await ev(() => window.__paw.saveNow()); await t.reloadKeepingSave(); await p.waitForSelector('#tContinue'); await p.click('#tContinue'); await t.untilMode('yard'); await t.calm(); await t.lu();
   ok(await atStep(2), 'after a reload and Continue the card is back at step 2');
 
   sec('Skip');
@@ -102,6 +102,6 @@ run('v24_guide', async (t) => {
   const s1 = await t.S(); ok(s1.guideSeen === true && !!s1.guideLetter && s1.guide.step === -1, 'guideSeen, guideLetter set, guide off');
   ok(/How to play/.test(s1.mail.find((m) => m.from === 'Gerald the duck').title), 'the letter title');
   await t.sleep(300); ok(await t.ev(() => { const c = document.querySelector('#gdLayer .gd-card'); return !c || c.hidden; }), 'no Gerald card on an old save'); // the one settle: nothing should show
-  await t.ev(() => window.__paw.saveNow()); await t.p.reload(); await t.p.waitForSelector('#tContinue'); await t.p.click('#tContinue'); await t.untilMode('yard');
+  await t.ev(() => window.__paw.saveNow()); await t.reloadKeepingSave(); await t.p.waitForSelector('#tContinue'); await t.p.click('#tContinue'); await t.untilMode('yard');
   ok(await t.until(() => window.__paw.S.mail.some((m) => m.from === 'Gerald the duck')) && await letters() === 1, 'the letter comes once');
 }, { prefs: { gdTest: true } });

@@ -219,6 +219,13 @@ class T {
     await this.lu(); await this.calm();
   }
   popVisible() { return this.p.evaluate(() => { const d = document.getElementById('dock'); return !!d.querySelector('.tray:not(.dock-idle):not(.mini)') && getComputedStyle(d).display !== 'none'; }); }
+  // reload with the save kept: Chromium can drop a localStorage write still in flight when the page reloads (about 1 in 25, worse under load), and the title then has no Continue.
+  // A one-time init script puts the same JSON back only if the browser lost it. Each call has its own token, so later reloads are not touched by older scripts (v2.9)
+  async reloadKeepingSave() {
+    const key = 'pawhaven_proto_v1', json = await this.p.evaluate((k) => localStorage.getItem(k), key), tok = '__rs_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    if (json != null) await this.ctx.addInitScript(({ k, v, tok }) => { try { if (!sessionStorage.getItem(tok)) { sessionStorage.setItem(tok, '1'); if (localStorage.getItem(k) == null) localStorage.setItem(k, v); } } catch (e) { /* storage blocked */ } }, { k: key, v: json, tok });
+    await this.p.reload();
+  }
   async waitPop(on, ms) { return this.until((on) => { const d = document.getElementById('dock'); const v = !!d.querySelector('.tray:not(.dock-idle):not(.mini)') && getComputedStyle(d).display !== 'none'; return v === on; }, !!on, ms || 5000); }
   // close a modal panel by its X and wait until it is gone
   async closeX() { const p = this.p; if (await p.locator('.panel .x').count()) { await p.click('.panel .x'); await this.until(() => !document.querySelector('#modal .panel .x') || document.getElementById('modal').hidden, null, 4000); } }

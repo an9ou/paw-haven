@@ -129,3 +129,5 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [ ] The classic walk (the fallback when PawWalk fails) pays the followers but does not draw them. `game/src/09_walk_classic.js`
 - [ ] No photo in the Shelter Playroom (its dogs aren't the pack); decide if it should have one. `game/src/35_photo.js`
 - [ ] `v27_review` ("the bath finishes from the house") and `v28_scenes` (420 s timeout) failed once under heavy load (the full run plus three reviewers), clean alone.
+- [ ] Flaky once in the final v2.9 `all` + `phone` run, clean 3 of 3 under load afterwards: `phone_home` (a tap timed out), `v2_journal` (the mailbox centre click, 4 s wait), `phone_v27_shelter` (a tap on a room dog).
+- [x] `v24_guide` lost its save across the reload about 1 in 2 runs, on v2.8.4 too (the Chromium localStorage race). Fixed in v2.9 with `t.reloadKeepingSave()` in `game/test_lib.js`; use it for any reload that must keep the save.
