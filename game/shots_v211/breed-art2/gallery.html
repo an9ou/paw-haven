@@ -1,0 +1,40 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>v2.11 breed art 2</title>
+<!-- BREED ART lane review page (second pass): ?view=breeds (the seven v2.11 breeds in every pose and age next to shiba and samoyed),
+     ?view=line (one idle row of all 21 breeds at the same scale), ?view=bandanas (the three Tokyo bandanas on all 21 breeds),
+     ?view=extra (coats, mixes, sparkle, outfits on the four new ones). &k=dane limits the breeds, &age=puppy|newborn the age, &p= the poses. -->
+<style>body{background:#FFF8EC;margin:0;padding:8px 16px;font:13px/1.3 sans-serif;color:#2E2320}h2{font-size:15px;margin:10px 0 2px}
+.g{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:2px}.g div{text-align:center;font-size:11px}.g svg{width:100%;height:auto;display:block}
+.hd svg{width:70%;margin:auto}</style></head><body>
+<script src="../../../dogs/pawart_dogs.js"></script>
+<div id="o"></div>
+<script>
+const q=new URLSearchParams(location.search),view=q.get('view')||'breeds',P=PawArt;
+const POSES=['idle','happy','pet','eat','sleep','walk','jump','sit','sad','dirty','crouch','shake','cold','hot','dig','beg','squat','leglift','paw','down','rollover','playdead','speak','dance','bow','scratch','sniff','yawn','howl'];
+const cell=(svg,lab,cls)=>`<div class="${cls||''}">${svg}<br>${lab}</div>`;
+let h='';if(q.get('big'))document.head.insertAdjacentHTML('beforeend',`<style>.g{grid-template-columns:repeat(auto-fill,minmax(${+q.get('big')||240}px,1fr))}</style>`);
+if(view==='breeds'){
+  const keys=(q.get('k')||'shiba,samoyed,akita,spitz,pom,afghan,dane,mastiff,gsd').split(','),ages=q.get('age')?[q.get('age')]:[null,'puppy','newborn'],poses=(q.get('p')||POSES.join(',')).split(',');
+  keys.forEach(k=>ages.forEach(age=>{h+=`<h2>${k} ${age||'adult'}</h2><div class="g">`+cell(P.dogHead(k,{age:age||undefined}),'head','hd')+poses.map(p=>cell(P.dog(k,{pose:p,anim:false,age:age||undefined}),p)).join('')+'</div>'}));
+}else if(view==='line'){
+  const ages=q.get('age')?[q.get('age')]:[null,'puppy'],p=q.get('p')||'idle';
+  ages.forEach(age=>{h+=`<h2>all 21 ${p} ${age||'adult'}</h2><div class="g">`+P.DOGS.map(d=>cell(P.dog(d.key,{pose:p,anim:false,age:age||undefined}),d.key)).join('')+'</div>';
+    h+=`<div class="g">`+P.DOGS.map(d=>cell(P.dogHead(d.key,{age:age||undefined}),d.key+' head','hd')).join('')+'</div>'});
+}else if(view==='bandanas'){
+  const keys=(q.get('k')||P.DOGS.map(d=>d.key).join(',')).split(','),B=['Shibuya Bandana','Asakusa Bandana','Tokyo Tower Bandana'],poses=(q.get('p')||'idle').split(',');
+  B.forEach(b=>{h+=`<h2>${b}</h2><div class="g">`+keys.map(k=>poses.map(p=>cell(P.dog(k,{pose:p,anim:false,outfit:{neck:b},age:q.get('age')||undefined}),k+' '+p)).join('')).join('')+'</div>'});
+}else{
+  const keys=(q.get('k')||'afghan,dane,mastiff,gsd').split(',');
+  const C={afghan:[['Cream',null],['Black',{base:'#2B2430',light:'#4A3F4E',dark:'#1D1A22'}],['Red',{base:'#C8763E',light:'#E3A06A',dark:'#3A2E2E'}],['Black and tan',{base:'#2B2430',light:'#D49A5A',dark:'#1D1A22'}],['Silver',{base:'#C9C6C2',light:'#E8E6E2',dark:'#55545A'}]],
+    dane:[['Fawn',null],['Brindle look',{base:'#C99A5E',light:'#D9AF77',dark:'#2B2430',brindle:true}],['Black',{base:'#2A2628',light:'#3A3438',dark:'#1D1A22'}],['Blue',{base:'#7E8A9C',light:'#909CAE',dark:'#4A5568'}],['Mantle',{base:'#2A2628',light:'#FFFFFF',dark:'#1D1A22',white:.25}],['Merle',{base:'#8C96A6',light:'#9EA8B6',dark:'#2A2628',merle:true}],['Harlequin look',{base:'#2A2628',light:'#FFFFFF',dark:'#2A2628',merle:true,white:.6}]],
+    mastiff:[['Fawn',null],['Apricot',{base:'#D98E4E',light:'#E9AE74',dark:'#2B2430'}],['Brindle look',{base:'#C99A5E',light:'#D9AF77',dark:'#2B2430',brindle:true}]],
+    gsd:[['Black and tan',null],['Sable',{base:'#A88A5E',light:'#C8A878',dark:'#3A3030'}],['Black',{base:'#2A2628',light:'#3A3438',dark:'#1D1A22'}],['White',{base:'#FBF6EC',light:'#FFFFFF',dark:'#E8DECB'}]]};
+  keys.forEach(k=>{h+=`<h2>${k} coats, mixes, sparkle, outfits</h2><div class="g">`;
+    C[k].forEach(([n,c])=>{h+=cell(P.dog(k,{pose:'idle',anim:false,coat:c||undefined,seed:'g1'}),n)+cell(P.dogHead(k,{coat:c||undefined}),n+' head','hd')});
+    ['shiba','samoyed','chihuahua'].forEach(o=>{h+=cell(P.dog(k,{pose:'idle',anim:false,mix:{head:o}}),'body '+k+', head '+o)+cell(P.dog(o,{pose:'idle',anim:false,mix:{head:k}}),'body '+o+', head '+k)});
+    h+=cell(P.dog(k,{pose:'idle',anim:false,sparkle:true}),'sparkle')+cell(P.dog(k,{pose:'sit',anim:false,expecting:true}),'expecting')+cell(P.dog(k,{pose:'walk',anim:false,facing:'left'}),'facing left');
+    [{head:'Party Hat',neck:'Red Bandana'},{body:'Yellow Raincoat',head:'Rain Hat'},{body:'Superhero Cape',eyes:'Heart Sunglasses'},{head:'Wizard Hat',body:'Happi Coat'},{body:'Tutu',head:'Flower Crown'},{body:'Ghost Sheet'},{head:'Astronaut Helmet'},{body:'Very Ugly Sweater',head:'Reindeer Antlers'},{head:'Year of the Sheep Hood',neck:'Snowflake Snood'},{body:'Bat Wings',neck:'Candy Corn Bandana'},{body:'Cozy Hoodie',neck:'Tokyo Tower Bandana'},{body:'Pumpkin Suit',head:'Witch Hat'},{body:'Knit Winter Sweater',head:'Pom-pom Beanie'},{body:'Pyjamas',sleepwear:true}].forEach((o,i)=>{h+=cell(P.dog(k,{pose:['idle','walk','sit','happy','idle','idle','idle','walk','sit','idle','idle','idle','idle','sleep'][i],anim:false,outfit:o}),Object.values(o).join(', '))});
+    h+='</div>'});
+}
+document.getElementById('o').innerHTML=h;
+</script></body></html>
