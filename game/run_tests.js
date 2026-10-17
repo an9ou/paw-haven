@@ -78,6 +78,7 @@ const SUITES = {
   v29_pack: { file: 'test_v29_pack.js', group: 'all', est: 60 },
   v210_roam: { file: 'test_v210_roam.js', group: 'all', est: 60 }, // v2.10 ROAM (V210.md)
   v211_cards: { file: 'test_v211_cards.js', group: 'all', est: 70 }, // v2.11 CARDS: Dog Cards (V211.md section 5.5)
+  v211_breeds: { file: 'test_v211_breeds.js', group: 'all', est: 90 }, // v2.11 BREEDS (V211.md 5.2): akita, spitz, pom
   v29_photo: { file: 'test_v29_photo.js', group: 'all', est: 45 },
   v29_polish: { file: 'test_v29_polish.js', group: 'all', est: 45 },
   v29_flows: { file: 'test_v29_flows.js', group: 'all', est: 60 },

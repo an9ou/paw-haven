@@ -1,13 +1,14 @@
 /* ======================= v1.6b: dog voices + natural idle behaviour ======================= */
 /* ---- voices ---- */
-const DOG_SIZE = { shiba: 'small', corgi: 'small', golden: 'large', dachs: 'small', husky: 'large', mutt: 'medium', chihuahua: 'small', pug: 'small', greyhound: 'large', beagle: 'medium', poodle: 'medium', collie: 'medium', samoyed: 'large', frenchie: 'small' };
+const DOG_SIZE = { shiba: 'small', corgi: 'small', golden: 'large', dachs: 'small', husky: 'large', mutt: 'medium', chihuahua: 'small', pug: 'small', greyhound: 'large', beagle: 'medium', poodle: 'medium', collie: 'medium', samoyed: 'large', frenchie: 'small', akita: 'large', spitz: 'medium', pom: 'small' };
 /* v1.7: how each breed answers another dog's bark (greyhounds rarely bark, but roo along with a howl) */
 function echoBark(o, kind) {
   const howly = kind === 'howl' || kind === 'talk';
-  const p = o.key === 'greyhound' ? (howly ? 0.6 : 0.08) : o.key === 'chihuahua' ? 0.55 : (o.key === 'beagle' || o.key === 'samoyed') && howly ? 0.6 : o.key === 'collie' ? 0.45 : o.key === 'frenchie' ? 0.15 : 0.3;
+  const p = o.key === 'greyhound' ? (howly ? 0.6 : 0.08) : o.key === 'chihuahua' ? 0.55 : (o.key === 'beagle' || o.key === 'samoyed') && howly ? 0.6 : o.key === 'collie' ? 0.45 : o.key === 'frenchie' ? 0.15 : o.key === 'akita' ? 0.08 : o.key === 'pom' ? 0.5 : o.key === 'spitz' ? 0.4 : 0.3;
   if (Math.random() >= p) return null;
   if (o.key === 'husky') return 'talk'; if (o.key === 'greyhound') return howly ? 'howl' : 'woof'; if (o.key === 'beagle' && howly) return 'howl'; if (o.key === 'chihuahua') return 'alert';
   if (o.key === 'samoyed') return howly ? 'talk' : 'play'; if (o.key === 'collie') return 'alert'; if (o.key === 'frenchie') return 'huff';
+  if (o.key === 'akita') return 'woof'; if (o.key === 'pom') return 'alert';
   return PICK(['woof', 'alert']);
 }
 const CHI_ALERT = ['INTRUDER! (A leaf.)', 'I heard a noise. It was me. Still suspicious.', 'The mail carrier exists. Unacceptable.', 'Something moved! I barked at the wind. The wind left.', 'Security alert! Everything is fine. Stay alert.'];
@@ -38,8 +39,8 @@ function barkDog(d, kind, opts = {}) {
   return true;
 }
 function alertBark() { const d = D(); if (!d || S.sleeping) return false; const ok = barkDog(d, 'alert', { ambient: true }); if (ok && cur.mode === 'yard' && !busy) { idleStop(); setTemp('idle', 1400); const fx = $('#dogFx'); if (fx) { fx.classList.add('tk-look'); setTimeout(() => fx.classList.remove('tk-look'), 1400); } } return ok; }
-function npcBark(kind, distance) { if (barkMode() !== 'normal') return; const k = PICK(['shiba', 'corgi', 'golden', 'dachs', 'mutt', 'chihuahua', 'pug', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie']); playBark({ breed: k, pitch: +(0.85 + Math.random() * 0.3).toFixed(3), size: DOG_SIZE[k] }, kind, { distance, volume: 0.6 }); window.__barkLog.push({ dog: 'npc', kind, t: Math.round(performance.now()), distance }); }
-const SPEAK_KIND = { husky: 'talk', greyhound: 'talk', beagle: 'howl', chihuahua: 'alert', samoyed: 'talk', collie: 'alert' };
+function npcBark(kind, distance) { if (barkMode() !== 'normal') return; const k = PICK(['shiba', 'corgi', 'golden', 'dachs', 'mutt', 'chihuahua', 'pug', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie', 'akita', 'spitz', 'pom']); playBark({ breed: k, pitch: +(0.85 + Math.random() * 0.3).toFixed(3), size: DOG_SIZE[k] }, kind, { distance, volume: 0.6 }); window.__barkLog.push({ dog: 'npc', kind, t: Math.round(performance.now()), distance }); }
+const SPEAK_KIND = { husky: 'talk', greyhound: 'talk', beagle: 'howl', chihuahua: 'alert', samoyed: 'talk', collie: 'alert', pom: 'alert' };
 const speakKind = (d) => SPEAK_KIND[d.key] || 'woof';
 const GREET_KIND = { greyhound: 'talk', beagle: 'howl', pug: 'huff', samoyed: 'talk', frenchie: 'huff' };
 function greetBark(d) {
@@ -96,6 +97,9 @@ function idleWeights() {
   if (pk === 'collie') { w.watch += 3; w.look += 2; w.zoomies += 1; w.nap *= 0.6; }
   if (pk === 'samoyed') { w.social += 2; w.roll += 1; if (weatherNow() === 'snow') w.zoomies += 2; }
   if (pk === 'frenchie') { w.sit += 2; w.nap += 1; w.down += 1; w.zoomies *= 0.6; }
+  if (pk === 'akita') { w.sit += 3; w.down += 1; w.watch += 2; w.zoomies *= 0.4; }
+  if (pk === 'spitz') { w.social += 2; w.look += 1; w.zoomies += 1; }
+  if (pk === 'pom') { w.look += 2; w.zoomies += 1.5; w.watch += 1; }
   if (typeof pupIdleWeights === 'function') pupIdleWeights(w, d, stage); // v2: puppies and nursing mums (16b)
   if (typeof hoIdleWeights === 'function') hoIdleWeights(w, d, stage); // v2.7 HOME: furniture use in the house (28_home.js)
   if (rmFree()) { const p = rmPers(d); w.roam = 1.5 + 4 * p.energy; if (p.trait === 'aloof') w.roam += 1; } // v2.10 ROAM: the leader walks to a spot of its own (37_roam.js)

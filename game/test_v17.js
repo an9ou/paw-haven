@@ -18,10 +18,10 @@ require('./test_lib').run('v17', async (t) => {
   const heading = () => t.p.textContent('.adopt-card h3');
   const headIs = (txt) => t.until((txt) => document.querySelector('.adopt-card h3').textContent.includes(txt), txt, 4000);
 
-  sec('all starters in the adoption carousel (10 since v1.7, 14 since v2.5)');
+  sec('all starters in the adoption carousel (10 since v1.7, 14 since v2.5, 17 since v2.11)');
   const p = await t.boot(); await tap(); await p.click('#tNew'); await p.waitForSelector('.heads button');
   const NB = await ev(() => window.PawGenes.BREEDS.length);
-  ok(NB === 14 && await p.locator('.heads button').count() === NB, `${NB} heads in the adoption carousel`);
+  ok(NB === 17 && await p.locator('.heads button').count() === NB, `${NB} heads in the adoption carousel`);
   for (const [k, br, nm] of ALL) {
     await p.click(`.heads button[aria-label="${nm} the ${br}"]`); await headIs(nm);
     const h3 = await heading(), lab = await p.getAttribute('#adoptDog svg.pa-dog', 'aria-label').catch(() => '');

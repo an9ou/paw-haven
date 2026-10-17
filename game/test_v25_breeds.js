@@ -1,9 +1,9 @@
 // v25_breeds (BREEDS lane, V25.md 6b): the four new breeds in the game.
-// Covers: adopt Poodle, Border Collie, Samoyed and French Bulldog through the carousel (14 heads), feed, pet, walk each;
+// Covers: adopt Poodle, Border Collie, Samoyed and French Bulldog through the carousel (17 heads since v2.11), feed, pet, walk each;
 // the Wardrobe mannequin draws every outfit (v2.4 and the 5 new ones) on each new breed with no console errors;
 // a Poodle x Golden playdate names the pups Goldendoodle and the family tree shows it; two merle collies cannot pair
 // (the same kind message as any merle pair), a merle x plain collie can and no pup is M/M; Horgi x Horgi = Horgi;
-// the flat-face tip shows once on the first hot day; the Journal coat tab shows 14 breeds.
+// the flat-face tip shows once on the first hot day; the Journal coat tab shows 17 breeds (v2.11).
 require('./test_lib').run('v25_breeds', async (t) => {
   const { ok, sec, ev, S } = t;
   const NEW = [['poodle', 'Poodle'], ['collie', 'Border Collie'], ['samoyed', 'Samoyed'], ['frenchie', 'French Bulldog']];
@@ -13,7 +13,7 @@ require('./test_lib').run('v25_breeds', async (t) => {
   for (const [k, br] of NEW) {
     const p = await t.boot(); await p.click('#tNew'); await p.waitForSelector('.heads button');
     const nm = (await p.getAttribute(`.heads button[aria-label$=" the ${br}"]`, 'aria-label')).replace(` the ${br}`, ''); // the starter's name comes from PawArt.DOGS
-    ok(await p.locator('.heads button').count() === 14, `${br}: 14 dogs in the adoption carousel`);
+    ok(await p.locator('.heads button').count() === 17, `${br}: 17 dogs in the adoption carousel`);
     await p.click(`.heads button[aria-label$=" the ${br}"]`);
     ok(await t.until((br) => (document.querySelector('.adopt-card h3') || {}).textContent.includes('the ' + br), br), `${br}: the shelter card shows ${nm} the ${br}`);
     const tip = await ev(() => { const e = document.querySelector('.adopt-card .bd-tip'); return e ? e.textContent : ''; });
@@ -81,9 +81,9 @@ require('./test_lib').run('v25_breeds', async (t) => {
   await ev(() => { const S = window.__paw.S; S.outfit.head = S.outfit.eyes = S.outfit.neck = S.outfit.body = null; });
   await t.closeX(); await t.modalGone();
 
-  sec('Journal: the coat tab shows 14 breeds');
+  sec('Journal: the coat tab shows 17 breeds');
   await p.click('[data-act=journal]'); await p.waitForSelector('.panel.journal'); await p.click('[data-jt=coats]'); await p.waitForSelector('.ctop');
-  ok(await p.locator('.cbreed').count() === 14, '14 breed tabs on the Coats page');
+  ok(await p.locator('.cbreed').count() === 17, '17 breed tabs on the Coats page');
   ok(await ev(() => ['poodle', 'collie', 'samoyed', 'frenchie'].every((k) => !!document.querySelector(`.cbreed[data-cbreed="${k}"]`))), 'the four new breeds have tabs');
   await t.sleep(700); // let the popup's open animation finish before measuring
   const rows = await ev(() => new Set([...document.querySelectorAll('.cbreed')].map((e) => Math.round(e.offsetTop / 10))).size);
@@ -187,15 +187,15 @@ require('./test_lib').run('v25_breeds', async (t) => {
   ok(hh.ok3 && hh.pups3.length === 3 && hh.pups3.every((q) => q.key === 'corgi' && q.mix && q.mix.name === 'Corgi' && q.mix.head === 'corgi'), 'two unrelated 3/4 Corgis: Corgi pups with a corgi body and head ' + JSON.stringify(hh.pups3.map((q) => q.key + '/' + (q.mix && q.mix.head) + ' ' + (q.mix && q.mix.name))));
   ok(hh.ok2 && hh.pups2.length === 2 && hh.pups2.every((q) => q.key === 'corgi' && q.mix && q.mix.name === 'Corgi'), 'Horgi x Corgi (3/4 Corgi): the pups are Corgis, not "Mutt mix" ' + JSON.stringify(hh.pups2.map((q) => q.key + ' ' + (q.mix && q.mix.name))));
 
-  sec('phones: all 14 heads in the adoption sheet are tappable (iPhone 15, Pixel 7)');
+  sec('phones: all 17 heads in the adoption sheet are tappable (iPhone 15, Pixel 7)');
   for (const dev of ['iPhone 15', 'Pixel 7']) {
     await t.ctx.close();
     const q = await t.boot({ device: dev }); await q.click('#tNew'); await q.waitForSelector('.heads button'); await t.sleep(500);
     await ev(() => { const d = document.getElementById('dock'); d.scrollTop = d.scrollHeight; }); await t.sleep(400);
     const hit = await ev(() => [...document.querySelectorAll('.heads button')].map((b) => { const r = b.getBoundingClientRect(), e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!e && b.contains(e) && r.width >= 44 && r.height >= 44; }));
-    ok(hit.length === 14 && hit.every(Boolean), `${dev}: 14 heads, each 44 px or more and tappable with the sheet scrolled down`);
+    ok(hit.length === 17 && hit.every(Boolean), `${dev}: 17 heads, each 44 px or more and tappable with the sheet scrolled down`);
     ok(await ev(() => document.documentElement.scrollWidth <= innerWidth), `${dev}: no sideways scroll`);
-    await q.locator('.heads button').last().click();
+    await q.locator('.heads button[aria-label$=" the French Bulldog"]').click();
     ok(await t.until(() => /the French Bulldog/.test(document.querySelector('.adopt-card h3').textContent)), `${dev}: tapping the last head picks the French Bulldog`);
     if (dev === 'iPhone 15') await t.SH('06_adopt_phone_scrolled');
   }
