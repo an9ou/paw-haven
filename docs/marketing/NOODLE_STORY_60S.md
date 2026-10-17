@@ -148,7 +148,7 @@ Remake: `CUT=short python vo60.py <kokoroModelDir> <voDir>`, then `CUT=short nod
 
 Written for a paid ad whose goal is **new followers / profile visits** (the game is not live yet). Only the first line or two show before "...more", so each one starts with a hook. None of them say "game".
 
-**A: the joke (recommended to start with)**
+**A: the joke (owner's pick for the 15-second ad, 17 Oct 2026)**
 ```
 This dachshund drew himself. It shows. 🖍️🐶
 Meet Noodle and his wobbly crayon friends in a little pencil-drawn town under Mt. Fuji 🗻
