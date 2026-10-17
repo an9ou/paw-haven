@@ -72,6 +72,9 @@ run('v211_cards', async (t) => {
   ok(V.length === 3 && V.filter((v) => v.card === 'town-2').length === 2 && V.filter((v) => v.card === 'town-7').length === 1, 'two cards: 2 dogs from the first, 1 from the second (3 at most)');
   const pt = await visPt(V.findIndex((v) => v.card === 'town-7'));
   ok(!!pt, 'the visitor is tappable');
+  const keep0 = JSON.stringify(V.map((v) => [v.card, v.i, Math.round(v.x), Math.round(v.y)]));
+  await t.home('dogpark'); await ev(() => window.__paw.rm.pause('test')); await t.until(() => window.__paw.dc.visitors().length >= 2, null, 4000);
+  ok(JSON.stringify((await vis()).map((v) => [v.card, v.i, Math.round(v.x), Math.round(v.y)])) === keep0, 'the scene rebuilt in the same place: every visitor where it stood');
   await t.p.mouse.click(pt.x, pt.y); await t.waitH2(/Starry Lantern/);
   ok(await ev(() => /Starry Lantern/.test(document.querySelector('#modal h2').textContent)), 'a tap opens its card: the picked display name');
   const card = await ev(() => { const p = document.querySelector('#modal .panel'); return { dogs: p.querySelectorAll('.dc-dog').length, art: p.querySelectorAll('.dc-dog .dc-art svg').length, txt: p.textContent, paw: p.querySelector('#dcPaw').textContent, hide: !!p.querySelector('#dcHide') }; });
@@ -80,8 +83,8 @@ run('v211_cards', async (t) => {
   ok(!/@|;/.test(card.txt), 'no email and no free text on the card');
   await t.SH('card_sheet');
   await t.p.click('#dcPaw'); await t.waitToast(/You gave Starry Lantern a paw/);
-  const s1 = await t.S(), today = await ev(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; });
-  ok(s1.dc.given['town-7'] === today, 'S.dc.given keeps today\'s paw');
+  const s1 = await t.S(), today = await ev(() => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10));
+  ok(s1.dc.given['town-7'] === today, 'S.dc.given keeps today\'s paw, on the Japan day like the Worker');
   ok(await ev(() => /5\s*paws/.test(document.querySelector('#modal .panel').textContent) && document.getElementById('dcPaw').textContent === 'Paw given today'), 'the count goes up and the button says Paw given today');
   await ev(() => document.getElementById('dcPaw').click()); ok(await t.waitToast(/already gave Starry Lantern a paw today/), 'a second paw the same day: a kind no');
   await t.closeX();
@@ -169,9 +172,17 @@ run('v211_cards', async (t) => {
   ok(V.some((v) => v.card === cardId), 'the other player\'s card visits the Dog Park');
   ok(V.some((v) => /^town-/.test(v.card)), 'with fewer than 2 real cards, a town player fills up');
   await ev((id) => window.__paw.dc.card(id), cardId); await t.waitH2(/Happy Muffin/);
-  await B.click('#dcPaw'); await t.waitToast(/You gave Happy Muffin a paw/);
+  await ev(() => { window.__toasts.splice(0); const b = document.getElementById('dcPaw'); b.click(); b.click(); b.click(); }); // a quick triple tap
+  await t.waitToast(/You gave Happy Muffin a paw/); await t.sleep(400);
   ok(raw.prepare('select paws from cards where id = ?').get(cardId).paws === 1, 'Give a paw: the Worker counts it (POST /paw)');
+  ok(await ev(() => window.__toasts.filter((x) => /You gave/.test(x)).length === 1), 'a triple tap gives one paw and one toast');
   const ptxt = await ev(() => document.querySelector('#modal .panel .dc-paws').textContent); ok(/^\s*1 paw$/.test(ptxt), 'the card shows 1 paw ' + ptxt);
+  await t.closeX();
+  await t.patch({ dc: { given: null } }); await t.patch({ dc: { given: {} } }); // this device forgot (another device, or another day by the clock)
+  await ev(() => window.__toasts.splice(0)); await ev((id) => window.__paw.dc.card(id), cardId); await t.waitH2(/Happy Muffin/);
+  await B.click('#dcPaw'); ok(await t.waitToast(/Happy Muffin already got your paw today/), 'the Worker says given:false: a kind "already got your paw today"');
+  ok(raw.prepare('select paws from cards where id = ?').get(cardId).paws === 1 && !(await ev(() => window.__toasts.some((x) => /You gave/.test(x)))), 'no second paw and no "You gave"');
+  ok((await t.S()).dc.given[cardId], 'and the device remembers it');
   await t.closeX();
   await ev(() => window.__paw.dc.settings()); await t.waitH2(/Dog Card/);
   ok(/Log in with email/.test(await ev(() => document.querySelector('#modal .panel').textContent)), 'a guest cannot share a card');
@@ -183,14 +194,28 @@ run('v211_cards', async (t) => {
   ok((await t.S()).dc.got === 1, 'S.dc.got remembers it');
   await ev(() => window.__toasts.splice(0)); await ev(() => window.__paw.dc.sync()); await t.sleep(300);
   ok(!(await ev(() => window.__toasts.some((x) => /new paw/.test(x)))), 'only once');
+  ok((await t.S()).dc.uid === uidA, 'S.dc.uid: the account that switched it on');
+  // the opt-in belongs to that account: a save switched on by another account never publishes from here
+  await t.patch({ dc: { uid: 'another-account', name: [5, 5] } }); await ev(() => window.__paw.dc.sync());
+  ok(raw.prepare('select name_a from cards where user_id = ?').get(uidA).name_a === 1, 'S.dc.uid of another account: nothing is published');
+  await ev(() => window.__paw.dc.settings()); await t.waitH2(/My Dog Card/);
+  ok(await ev(() => !document.getElementById('dcOn').checked), 'and the editor shows Share off for this account');
+  await t.closeX(); await t.patch({ dc: { uid: uidA, name: [1, 2] } });
+  // every dog on the card has left (adopted out): the card goes, Settings says so
+  const keepDogs = (await t.S()).dc.dogs; await t.patch({ dc: { dogs: null } }); await t.patch({ dc: { dogs: [{ id: 'gone-dog', nm: 0 }] } });
+  await ev(() => window.__paw.dc.sync());
+  ok(!raw.prepare('select * from cards where user_id = ?').get(uidA), 'no dogs left on the card: DELETE /card');
+  await t.patch({ dc: { dogs: null } }); await t.patch({ dc: { dogs: keepDogs } }); await ev(() => window.__paw.dc.sync());
+  ok(!!raw.prepare('select * from cards where user_id = ?').get(uidA), 'the dogs are back: shared again');
+  const cardId2 = raw.prepare('select id from cards where user_id = ?').get(uidA).id;
   // opt out
   await ev(() => window.__pawCloud.open()); await A.waitForSelector('#dcBox [data-dcs="open"]');
-  ok(/shared\. 1 paw/.test(await ev(() => document.getElementById('dcBox').textContent)), 'the account panel: shared, 1 paw so far');
+  ok(/shared\. 0 paws/.test(await ev(() => document.getElementById('dcBox').textContent)), 'the account panel: shared, 0 paws so far (the card was made again)');
   await A.click('#dcBox [data-dcs="open"]'); await t.waitH2(/My Dog Card/);
   await A.uncheck('#dcOn'); await t.until(() => /not shared any more/.test(document.getElementById('dcMsg').textContent), null, 8000);
-  ok(!raw.prepare('select * from cards where user_id = ?').get(uidA) && !raw.prepare('select * from paws where card_id = ?').get(cardId), 'turning it off deletes the card and its paws (DELETE /card)');
+  ok(!raw.prepare('select * from cards where user_id = ?').get(uidA) && !raw.prepare('select * from paws where card_id = ?').get(cardId2), 'turning it off deletes the card and its paws (DELETE /card)');
   ok((await t.S()).dc.on === false, 'S.dc.on is off');
   use(B); seen = false;
-  for (let i = 0; i < 5 && !seen; i++) seen = (await ev(() => window.__paw.dc.visit(null).then(() => window.__paw.dc.cards()))).includes(cardId);
+  for (let i = 0; i < 5 && !seen; i++) seen = (await ev(() => window.__paw.dc.visit(null).then(() => window.__paw.dc.cards()))).some((id) => id === cardId || id === cardId2);
   ok(!seen, 'it never visits again');
 }, { prefs: { rmTest: true } });

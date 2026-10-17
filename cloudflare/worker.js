@@ -19,7 +19,7 @@
 //   PUT    /card {name, dogs}        -> my card   email accounts only (403 no_account for guests), 400 bad_card, 20 an hour
 //   DELETE /card                     -> { ok }    stop sharing: the card and its paws are deleted
 //   GET    /cards/visit?n=2&not=ids  -> [{ id, name, dogs, paws }]   no session needed (120 an hour per IP); never the caller's own
-//   POST   /paw {id}                 -> { paws, given }   one paw per card per UTC day per account (guests too), never your own, 100 an hour
+//   POST   /paw {id}                 -> { paws, given }   one paw per card per Japan day per account (guests too), never your own, 100 an hour
 //
 // Passwords: PBKDF2-SHA256, 100k iterations, 16-byte salt. Sessions: a random 32-byte bearer token, only its SHA-256 is stored.
 // Nothing here logs a password, a token or a save.
@@ -112,11 +112,20 @@ async function tidy(env) {
     env.DB.prepare('delete from reset_codes where expires_at < ?1').bind(now),
     env.DB.prepare('delete from resets where expires_at < ?1').bind(now),
     env.DB.prepare('delete from sessions where last_seen < ?1').bind(now - 400 * 864e5),
-    // Dog Cards: a deleted account's card and paws (both ways), and paws older than the last 3 days
-    env.DB.prepare('delete from paws where card_id not in (select c.id from cards c join users u on u.id = c.user_id)'),
-    env.DB.prepare('delete from cards where user_id not in (select id from users)'),
-    env.DB.prepare('delete from paws where from_id not in (select id from users) or day < ?1').bind(dcDay(now - 3 * 864e5))
+    env.DB.prepare('delete from paws where day < ?1').bind(dcDay(now - 3 * 864e5)) // Dog Cards: paws only matter for today (index paws_day)
   ]);
+}
+// Dog Cards: a deleted account's card and paws (both ways). Runs only from the card routes (about 1 in 50 of their requests), not on every route.
+async function dcTidy(env) {
+  await env.DB.batch([
+    env.DB.prepare('delete from cards where user_id not in (select id from users)'),
+    env.DB.prepare('delete from paws where card_id not in (select id from cards)'),
+    env.DB.prepare('delete from paws where from_id not in (select id from users)')
+  ]);
+}
+function dcTidySoon(env, ctx) {
+  if (env.TIDY) return dcTidy(env); // tests: at once
+  if (Math.random() < 0.02 && ctx && ctx.waitUntil) ctx.waitUntil(dcTidy(env).catch(() => {}));
 }
 
 async function newSession(env, uid) {
@@ -172,20 +181,20 @@ const DC_COAT = { B: ['B', 'b'], D: ['D', 'd'], E: ['E', 'e'], S: ['S', 'sp'], M
 const DC_DOGS = 4, DC_MAX = 2048, DC_DAYS = 30, DC_ID = /^[A-Za-z0-9_-]{22}$/;
 const dcInt = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
 const dcKeys = (o, keys) => !!o && typeof o === 'object' && !Array.isArray(o) && Object.keys(o).every((k) => keys.includes(k)) && keys.every((k) => k in o);
-const dcDay = (ms) => new Date(ms).toISOString().slice(0, 10);
+const dcDay = (ms) => new Date(ms + 9 * 3600e3).toISOString().slice(0, 10); // the Japan day (JST), the same day the game uses (jstISO)
 function dcCoat(c) {
   if (c === null) return null; // a dog with no genes: its breed's own coat
   if (typeof c === 'string') return /^#[0-9a-fA-F]{6}$/.test(c) ? c.toLowerCase() : undefined;
   if (!c || typeof c !== 'object' || Array.isArray(c)) return undefined;
-  const ks = Object.keys(c); if (!ks.length || ks.some((k) => !DC_COAT[k])) return undefined;
+  const ks = Object.keys(c); if (!ks.length || ks.some((k) => !Object.hasOwn(DC_COAT, k))) return undefined; // own names only (never constructor, __proto__)
   const out = {};
   for (const k of Object.keys(DC_COAT)) {
-    if (!(k in c)) continue; const v = c[k];
+    if (!Object.hasOwn(c, k)) continue; const v = c[k];
     if (!Array.isArray(v) || v.length !== 2 || !v.every((x) => DC_COAT[k].includes(x))) return undefined;
     out[k] = [v[0], v[1]];
   }
   if (out.M && out.M[0] === 'M' && out.M[1] === 'M') return undefined; // never a double merle
-  return out;
+  return Object.keys(out).length ? out : undefined;
 }
 // the body of PUT /card -> { a, b, dogs } in the Worker's own shape, or null (400 bad_card). Anything not on the lists is refused.
 function dcCardOf(body) {
@@ -402,7 +411,8 @@ const ROUTES = {
     return json(dcPub(r, true));
   } },
 
-  'DELETE /card': { auth: true, async fn({ env, me }) {
+  'DELETE /card': { auth: true, async fn({ env, ctx, me }) {
+    await dcTidySoon(env, ctx);
     const r = await one(env, 'select id from cards where user_id = ?1', me.id);
     if (r) await env.DB.batch([
       env.DB.prepare('delete from paws where card_id = ?1').bind(r.id),
@@ -411,28 +421,41 @@ const ROUTES = {
     return json({ ok: true });
   } },
 
-  'GET /cards/visit': { async fn({ env, url, ip, me }) {
+  'GET /cards/visit': { async fn({ env, ctx, url, ip, me }) {
     if (await limited(env, 'visit:' + ip, 120, 3600)) return fail('rate_limited', 429);
     const n = Math.min(4, Math.max(1, parseInt(url.searchParams.get('n'), 10) || 2));
     const not = String(url.searchParams.get('not') || '').split(',').filter((x) => DC_ID.test(x)).slice(0, 40);
-    const marks = not.map((x, i) => '?' + (i + 4)).join(', ');
-    const rows = await all(env, `select ${DC_COLS} from cards c join users u on u.id = c.user_id
-      where u.guest = 0 and c.updated_at > ?1 and c.user_id != ?2 ${not.length ? `and c.id not in (${marks})` : ''} order by random() limit ?3`,
-      Date.now() - DC_DAYS * 864e5, me ? me.id : '', n, ...not);
+    const marks = not.map((x, i) => '?' + (i + 5)).join(', ');
+    // random cards without sorting the whole table: walk the id key from a random id (ids are random too), and wrap round to the start
+    const pick = (cmp, lim) => all(env, `select ${DC_COLS} from cards c join users u on u.id = c.user_id
+      where c.id ${cmp} ?4 and u.guest = 0 and c.updated_at > ?1 and c.user_id != ?2 ${not.length ? `and c.id not in (${marks})` : ''} order by c.id limit ?3`,
+      Date.now() - DC_DAYS * 864e5, me ? me.id : '', lim, start, ...not);
+    const start = b64url(rnd(16));
+    let rows = await pick('>=', n);
+    if (rows.length < n) rows = rows.concat(await pick('<', n - rows.length));
+    await dcTidySoon(env, ctx);
     return json(rows.map((r) => dcPub(r, false)));
   } },
 
-  'POST /paw': { auth: true, async fn({ env, body, me }) {
+  'POST /paw': { auth: true, async fn({ env, ctx, ip, body, me }) {
     const id = body.id;
     if (typeof id !== 'string' || !DC_ID.test(id) || Object.keys(body).length !== 1) return fail('bad_card', 400);
     const c = await one(env, 'select c.user_id, c.paws from cards c join users u on u.id = c.user_id where c.id = ?1 and u.guest = 0', id);
     if (!c) return fail('no_card', 404);
     if (c.user_id === me.id) return fail('own_card', 400);
     if (await limited(env, 'paw:' + me.id, 100, 3600)) return fail('rate_limited', 429);
-    const ins = await run(env, 'insert or ignore into paws (from_id, card_id, day) values (?1, ?2, ?3)', me.id, id, dcDay(Date.now()));
-    if (!(ins && ins.meta && ins.meta.changes)) return json({ paws: c.paws | 0, given: false }); // already a paw from this account today
-    const r = await one(env, 'update cards set paws = paws + 1 where id = ?1 returning paws', id);
-    return json({ paws: r ? r.paws | 0 : (c.paws | 0) + 1, given: true });
+    await dcTidySoon(env, ctx);
+    const day = dcDay(Date.now());
+    // at most 3 paws a day to one card from one IP (many guests on one device can't pile paws on a card): quietly, like a second paw
+    if (await limited(env, 'pawip:' + ip + ':' + id + ':' + day, 3, 86400)) return json({ paws: c.paws | 0, given: false });
+    // the paw and the count in one batch: the count goes up only when this account had no paw on this card today (changes() of the insert)
+    const out = await env.DB.batch([
+      env.DB.prepare('insert or ignore into paws (from_id, card_id, day) values (?1, ?2, ?3)').bind(me.id, id, day),
+      env.DB.prepare('update cards set paws = paws + 1 where id = ?1 and changes() = 1 returning paws').bind(id)
+    ]);
+    const r = out[1] && out[1].results && out[1].results[0];
+    if (!r) return json({ paws: c.paws | 0, given: false }); // already a paw from this account today
+    return json({ paws: r.paws | 0, given: true });
   } },
 
   'POST /backups': { auth: true, async fn({ env, body, me }) {
