@@ -102,12 +102,13 @@ function rmTags(x, y) {
 // a spot for dog d: like = spot kinds it likes, near = [x, y] to stay close to, far = keep away from the front (aloof)
 function rmPick(d, o = {}) {
   let c = rmCands(d); if (!c.length) c = rmCands(d, false); if (!c.length) return null;
-  const r = rmSt(d), like = o.like || persOf(d).spots || [];
+  const r = rmSt(d), like = o.like || persOf(d).spots || [], vb = isPhone() && $('#view > svg.world') ? $('#view > svg.world').viewBox.baseVal : null;
   const w = c.map(([x, y]) => {
     const tg = rmTags(x, y), dist = Math.hypot(x - r.x, y - r.y); let v = 1;
     like.forEach((k) => { if (tg.includes(k)) v *= o.like ? 6 : 2.5; });
     if (o.near) v *= 1 / (1 + Math.hypot(x - o.near[0], y - o.near[1]) / 60);
     if (dist < 60) v *= 0.15; else if (dist > 520) v *= 0.4;
+    if (vb && vb.width && (x < vb.x + 84 || x > vb.x + vb.width - 84)) v *= 0.12; // phones: mostly inside the crop on screen (the look chips find the others)
     return v;
   });
   let s = Math.random() * w.reduce((a, b) => a + b, 0); for (let i = 0; i < c.length; i++) { s -= w[i]; if (s <= 0) return c[i]; } return c[c.length - 1];
