@@ -314,14 +314,14 @@
     samoyed: { d: [-11, -1], sit: [2, -6], jump: [-19, -4], eat: [28, -9], crouch: [13, 0], sleep: [-6, 0], sniff: [0, -2] },
     frenchie: { d: [-22, 10], sit: [-6, -2], jump: [-30, 5], eat: [28, -11], crouch: [0, 0], sleep: [-10, 0], sniff: [-6, 0] },
     // v2.11 breeds, calibrated on the BREED ART drawings (mods/toys/calib)
-    akita: { d: [-2, -12], sit: [4, -6], jump: [-12, -16], eat: [26, -6], crouch: [4, 0], sleep: [-6, 0], sniff: [2, -4] },
+    akita: { d: [12, -9], sit: [14, -6], jump: [-12, -16], eat: [26, -6], crouch: [4, 0], sleep: [2, 6], sniff: [2, -4] },
     spitz: { d: [-11, -1], sit: [2, -6], jump: [-19, -4], eat: [28, -9], crouch: [13, 0], sleep: [-6, 0], sniff: [0, -2] },
     pom: { d: [-12, 8], sit: [0, 4], jump: [-24, 6], eat: [22, -8], crouch: [4, 0], sleep: [-10, 0], sniff: [0, -4] },
-    // v2.11 big breeds (first guess from the nearest old breed, recalibrated on the second artist's drawings)
-    afghan: { d: [10, -6], sit: [14, -4], jump: [-4, -10], eat: [26, -4], crouch: [16, 4], sleep: [-2, 2], sniff: [8, -4] },
-    dane: { d: [-8, -10], sit: [0, -6], jump: [-24, -8], eat: [36, -12], crouch: [6, 0], sleep: [-10, 0], sniff: [0, -6] },
-    mastiff: { d: [-18, 2], sit: [-8, 0], jump: [-30, 0], eat: [30, -10], crouch: [0, 0], sleep: [-12, 0], sniff: [-4, -2] },
-    gsd: { d: [-2, -4], sit: [8, -2], jump: [-14, -6], eat: [26, -6], crouch: [12, 2], sleep: [-6, 0], sniff: [4, -6] }
+    // v2.11 big breeds (the second artist's starting points, checked in mods/toys/calib)
+    afghan: { d: [29, -41], sit: [27, -9], jump: [-5, -26], eat: [2, 5], crouch: [20, 4], sleep: [10, 2], sniff: [27, 6] },
+    dane: { d: [22, -43], sit: [20, -23], jump: [4, -43], eat: [2, 5], crouch: [14, 0], sleep: [6, 0], sniff: [22, 6] },
+    mastiff: { d: [24, -9], sit: [21, -23], jump: [6, -9], eat: [-2, 3], crouch: [10, 0], sleep: [6, 0], sniff: [22, 5] },
+    gsd: { d: [25, -13], sit: [23, -15], jump: [8, -13], eat: [1, 6], crouch: [14, 2], sleep: [8, 0], sniff: [25, 7] }
   };
   var POSE_BASE = { walk: 'idle', happy: 'idle', pet: 'idle', shake: 'idle', dirty: 'idle', cold: 'idle', hot: 'idle', sad: 'idle', dig: 'eat' };
   function breedAdj(key, pose) {

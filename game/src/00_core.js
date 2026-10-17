@@ -297,10 +297,10 @@ const FALLBACK_DOGS = [
   { key: 'akita', name: 'Kuma', breed: 'Akita', personality: 'Calm, loyal, quietly proud. Waits by the gate.', joke: 'I will wait for you. I am very good at waiting.' },
   { key: 'spitz', name: 'Daifuku', breed: 'Japanese Spitz', personality: 'A white fluffball, cheerful, a bit of a show-off.', joke: 'Yes, I am this white on purpose. Look at me.' },
   { key: 'pom', name: 'Mikan', breed: 'Pomeranian', personality: 'A tiny fluffy loudspeaker. Spins when happy.', joke: 'Yip! That was my indoor voice.' },
-  { key: 'afghan', name: 'Zephyr', breed: 'Afghan Hound', personality: 'Elegant, a little aloof and very silky.', joke: 'Ten minutes of running. Two hours of brushing. Fair trade.' },
-  { key: 'dane', name: 'Atlas', breed: 'Great Dane', personality: 'A very big, very gentle dog who thinks he is a lap dog.', joke: 'I sat on the sofa. The sofa is now a footstool.' },
-  { key: 'mastiff', name: 'Bolster', breed: 'English Mastiff', personality: 'Slow, sleepy and soft as a cushion.', joke: 'Big dog, bigger sigh.' },
-  { key: 'gsd', name: 'Rex', breed: 'German Shepherd', personality: 'Clever, loyal and always ready for a job.', joke: 'I have a job. The job is you.' }
+  { key: 'afghan', name: 'Saffron', breed: 'Afghan Hound', personality: 'Elegant and aloof. Not one hair out of place.', joke: 'I do not fetch. I glide.' },
+  { key: 'dane', name: 'Waffle', breed: 'Great Dane', personality: 'A gentle giant who follows you from room to room.', joke: 'I am a lap dog. Your lap is just too small.' },
+  { key: 'mastiff', name: 'Crumpet', breed: 'English Mastiff', personality: 'Huge, slow and sweet. Naps in the biggest patch of shade.', joke: 'A little drool is how I say I love you.' },
+  { key: 'gsd', name: 'Strudel', breed: 'German Shepherd', personality: 'Clever and alert. Loves a job, any job.', joke: 'Ears up. On duty. Was that a squirrel?' }
 ];
 const GENERIC_DOG = (key) => ({ key, name: 'Buddy', breed: 'Mystery Pup', personality: 'A little bit of everything', joke: 'Hi! I am a dog. Probably.' });
 const JOKES = {

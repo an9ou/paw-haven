@@ -77,5 +77,21 @@ module.exports = [
     loves: [['Salmon Pâté', 'salmon pâté'], ['Squeaky Duck', 'squeaky duck'], ['icon:pet', 'petting']],
     traits: [['tiny', 'a small dog with big opinions'], ['spinner', 'spins when happy'], ['yippy', 'a tiny, high yip'], ['bossy', 'leads dogs ten times its size']],
     play: 'Spins in a happy circle, three or four times, with a little yip.',
-    fun: 'Mikan is the Japanese word for a mandarin orange (みかん), a good name for an orange fluffball.' }
+    fun: 'Mikan is the Japanese word for a mandarin orange (みかん), a good name for an orange fluffball.' },
+  { key: 'afghan', jp: 'アフガン・ハウンド', jpRead: 'afugan haundo', nameJp: 'サフラン', pose: 'sit', quote: 'I do not fetch. I glide.',
+    loves: [['Salmon Pâté', 'salmon pâté'], ['Frisbee', 'frisbee'], ['icon:walk', 'walks']],
+    traits: [['elegant', 'not one hair out of place'], ['aloof', 'admires you from a distance'], ['silky', 'a brush a few times a week'], ['fast', 'glides, never hurries']],
+    play: 'Keeps to the open, sunny spots and likes a good run. Then drapes elegantly on a cushion.' },
+  { key: 'dane', jp: 'グレート・デーン', jpRead: 'gurēto dēn', nameJp: 'ワッフル', pose: 'sit', quote: 'I am a lap dog. Your lap is just too small.',
+    loves: [['Chicken & Rice Bowl', 'chicken & rice'], ['Plush Bone', 'plush bone'], ['icon:pet', 'petting']],
+    traits: [['gentle giant', 'big paws, bigger heart'], ['follower', 'room to room, always'], ['leaner', 'leans on you for a hug'], ['slow grower', 'needs gentle walks while young']],
+    play: 'Follows you around the room, then flops by the bed or the front. Careful with the tail.' },
+  { key: 'mastiff', jp: 'イングリッシュ・マスティフ', jpRead: 'ingurisshu masutifu', nameJp: 'クランペット', pose: 'down', quote: 'A little drool is how I say I love you.',
+    loves: [['Pupcake', 'pupcake'], ['Rope Tug', 'rope tug'], ['icon:feed', 'feeding']],
+    traits: [['sleepy', 'naps in the biggest shade'], ['sweet', 'huge and soft as a cushion'], ['drooler', 'a towel for that big face'], ['slow', 'one big sigh at a time']],
+    play: 'Naps by the bed or in the shade. Moves only for snacks, and only slowly.' },
+  { key: 'gsd', jp: 'ジャーマン・シェパード', jpRead: 'jāman shepādo', nameJp: 'シュトゥルーデル', pose: 'sit', quote: 'Ears up. On duty. Was that a squirrel?',
+    loves: [['Chicken & Rice Bowl', 'chicken & rice'], ['Puzzle Feeder', 'puzzle feeder'], ['icon:star', 'tricks']],
+    traits: [['clever', 'learns a trick in a minute'], ['alert', 'ears up at every sound'], ['loyal', 'always by your side'], ['needs a job', 'any job, even tidying']],
+    play: 'Rounds up the pack and guards the gate. Loves a job, any job.' }
 ];

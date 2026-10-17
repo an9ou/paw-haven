@@ -30,10 +30,10 @@ const EXPECT = {
   spitz:     { name: 'White',               eyes: 'brown', base: '#FCF8F0', light: '#FFFFFF', dark: '#E6DCCB', white: 0 },
   pom:       { name: 'Orange',              eyes: 'brown', base: '#F59A3C', light: '#FFD9A6', dark: '#C9701E', white: 0 },
   // v2.11 big breeds (second batch)
-  afghan:    { name: 'Red',                 eyes: 'brown', base: '#D9803E', light: '#F0B878', dark: '#A8571E', white: 0 },
-  dane:      { name: 'Fawn',                eyes: 'brown', base: '#D9B070', light: '#F0D6A0', dark: '#2B2430', white: 0 },
-  mastiff:   { name: 'Fawn',                eyes: 'brown', base: '#D9B07A', light: '#EBCB9C', dark: '#2B2430', white: 0 },
-  gsd:       { name: 'Black and tan',       eyes: 'brown', base: '#2B2430', light: '#C98A4E', dark: '#1D1A22', white: 0 }
+  afghan:    { name: 'Red',                 eyes: 'brown', base: '#C9783E', light: '#E6A86E', dark: '#3A2E2E', white: 0 },
+  dane:      { name: 'Fawn',                eyes: 'brown', base: '#D9A562', light: '#E6BA7E', dark: '#2B2430', white: 0 },
+  mastiff:   { name: 'Fawn',                eyes: 'brown', base: '#D8AE72', light: '#E9C994', dark: '#2B2430', white: 0 },
+  gsd:       { name: 'Black and tan',       eyes: 'brown', base: '#C98A4A', light: '#E2B278', dark: '#2B2430', white: 0 }
 };
 ok(Object.keys(EXPECT).length === 21 && G.BREEDS.length === 21, '21 breeds');
 ok(G.BREEDS.slice(10, 14).join() === 'poodle,collie,samoyed,frenchie', 'v2.5 keys appended after the first ten');
@@ -129,6 +129,10 @@ ok(G.phenotype(mk({ E: ['e', 'e'] }), 'mastiff').coat.dark === '#2B2430' && G.ph
 ok(catHas('dane', ['Fawn', 'Brindle', 'Black', 'Blue', 'Mantle', 'Merle', 'Harlequin']), 'dane catalogue');
 ok(nm({ E: ['e', 'e'] }, 'dane') === 'Fawn' && nm({ B: ['b', 'b'] }, 'dane') === 'Brindle' && nm({}, 'dane') === 'Black' && nm({ D: ['d', 'd'] }, 'dane') === 'Blue' && nm({ S: ['sp', 'sp'] }, 'dane') === 'Mantle', 'dane fawn, brindle, black, blue, mantle');
 ok(nm({ M: ['M', 'm'] }, 'dane') === 'Merle' && nm({ M: ['M', 'm'], S: ['sp', 'sp'] }, 'dane') === 'Harlequin' && nm({ M: ['M', 'm'], D: ['d', 'd'] }, 'dane') === 'Blue merle', 'dane merle and harlequin (merle on white)');
+{ const hq = G.phenotype(mk({ M: ['M', 'm'], S: ['sp', 'sp'] }), 'dane').coat, mp = G.phenotype(mk({ S: ['sp', 'sp'] }), 'dane').coat, br = G.phenotype(mk({ B: ['b', 'b'] }), 'dane').coat, mb = G.phenotype(mk({ B: ['b', 'b'] }), 'mastiff').coat, plain = G.phenotype(mk({ E: ['e', 'e'] }), 'dane').coat;
+  ok(hq.merle && hq.white === 0.6 && hq.base === '#2A2628' && hq.light === '#FFFFFF', 'the harlequin look: black patches (base) on white, white 0.6');
+  ok(mp.white === 0.6 && mp.light === '#FFFFFF' && !mp.merle, 'a Mantle Great Dane has the white chest and collar');
+  ok(br.brindle === true && mb.brindle === true && !plain.brindle && !('brindle' in plain) && !('brindle' in G.phenotype(mk({ B: ['b', 'b'] }), 'golden').coat), 'coat.brindle is set for the brindle looks of the dane and the mastiff only'); }
 ok(G.isDoubleMerle(mk({ M: ['M', 'm'] }), mk({ M: ['M', 'm'] })) && !G.isDoubleMerle(mk({ M: ['M', 'm'] }), mk({})), 'two merle Great Danes would be a double merle, one merle is fine');
 { const a = G.STARTER_GENES.dane, m = Object.assign({}, a, { M: ['M', 'm'] }); let bad = 0, merle = 0; const r = seeded(5); for (let i = 0; i < 4000; i++) { const g = G.inherit(m, a, r); if (g.M[0] === 'M' && g.M[1] === 'M') bad++; if (g.M.includes('M')) merle++; } ok(bad === 0 && merle > 1500 && merle < 2500, 'a merle Great Dane x a plain one: about half the pups are merle and none is M/M (' + merle + ' of 4000)'); }
 

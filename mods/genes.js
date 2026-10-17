@@ -224,48 +224,48 @@
       lilac:    ['#A8949A', '#C2B2B7', '#8A777E']
     },
     /* v2.11 big breeds (BREEDS lane, second batch). The starter cells (*) are matched to dogs/pawart_dogs.js when the second artist's drawings land.
-       afghan red*    silky long coat. E/E black is the 'solid' shade (Black), E/e black is Black and tan, e/e d/d is Cream, E_ d/d is Silver.
+       afghan red*    silky long coat (col #C9783E, light #E6A86E, dark #3A2E2E). E/E black is the 'solid' shade (Black), E/e black is Black and tan, e/e d/d is Cream, E_ d/d is Silver.
        dane fawn*     the black mask is dark. E_ b/b is the brindle look (no K locus), merle names Merle / Blue merle, merle on white (sp/sp) is Harlequin.
        mastiff fawn*  the black mask is always dark; e/e b/b is Apricot (like the pug), E_ is the brindle look.
        gsd black and tan*  E/E is solid Black, e/e is Sable, e/e d/d is White. */
     afghan: {
       cream:  ['#EBD3A4', '#FAF0DC', '#C7AA78'],
-      red:    ['#D9803E', '#F0B878', '#A8571E'], // *
-      black:  ['#2B2430', '#C98A4E', '#1D1A22'], // black and tan
-      solid:  ['#2B2430', '#3A3240', '#1D1A22'], // black
+      red:    ['#C9783E', '#E6A86E', '#3A2E2E'], // *
+      black:  ['#2B2430', '#D49A5A', '#1D1A22'], // black and tan
+      solid:  ['#2B2430', '#4A3F4E', '#1D1A22'], // black
       liver:  ['#6E4430', '#8E5E40', '#4E2E1E'], // chocolate
-      blue:   ['#B9BEC8', '#DDE0E6', '#8E95A3'], // silver
+      blue:   ['#C9C6C2', '#E8E6E2', '#55545A'], // silver
       lilac:  ['#C9B8BC', '#E0D3D6', '#A8949A']
     },
     dane: {
-      red:    ['#D9B070', '#F0D6A0', '#2B2430'], // * fawn, black mask
+      red:    ['#D9A562', '#E6BA7E', '#2B2430'], // * fawn, black mask
       cream:  ['#EAD6B0', '#F8EDD6', '#6E7F96'], // pale fawn
-      black:  ['#2B2430', '#4A3F4E', '#1D1A22'],
-      liver:  ['#8A5A38', '#B07E52', '#2B2430'], // brindle look
-      blue:   ['#6E7F96', '#8C9BB0', '#55657A'],
-      lilac:  ['#B89A8A', '#D2B8A6', '#8A6E5E'], // pale brindle
-      mblack: ['#9AA3B0', '#C8CED8', '#2B2430'], // merle: grey base, the art adds dark patches
+      black:  ['#2A2628', '#3A3438', '#1D1A22'],
+      liver:  ['#C99A5E', '#D9AF77', '#2B2430'], // brindle look (coat.brindle)
+      blue:   ['#7E8A9C', '#909CAE', '#4A5568'],
+      lilac:  ['#C7B08C', '#D9C6A6', '#2B2430'], // pale brindle
+      mblack: ['#8C96A6', '#9EA8B6', '#2A2628'], // merle: grey base, the art adds dark patches
       mliver: ['#C99A7E', '#E0C0A8', '#7A4A2E'],
       mblue:  ['#B3BCC8', '#D5DBE3', '#6E7F96'],
       mlilac: ['#C9B8BC', '#E0D3D6', '#A8949A']
     },
     mastiff: {
-      red:     ['#D9B07A', '#EBCB9C', '#2B2430'], // * fawn, black mask
-      apricot: ['#D98F4E', '#F0BE86', '#2B2430'],
+      red:     ['#D8AE72', '#E9C994', '#2B2430'], // * fawn, black mask
+      apricot: ['#D98E4E', '#E9AE74', '#2B2430'],
       cream:   ['#E6D3B2', '#F4E8D2', '#55657A'],
-      black:   ['#8A5A38', '#B8895E', '#2B2430'], // brindle look
-      liver:   ['#5E3A22', '#7E5638', '#1D1A22'], // dark brindle
-      blue:    ['#9A9AA6', '#B6B6C0', '#55657A'],
-      lilac:   ['#A8949A', '#C2B2B7', '#8A777E']
+      black:   ['#C99A5E', '#D9AF77', '#2B2430'], // brindle look (coat.brindle)
+      liver:   ['#9A7040', '#B58A58', '#2B2430'], // dark brindle
+      blue:    ['#A8A29A', '#C0BBB3', '#2B2430'], // silver brindle
+      lilac:   ['#C7B08C', '#D9C6A6', '#2B2430']  // pale brindle
     },
     gsd: {
-      black:  ['#2B2430', '#C98A4E', '#1D1A22'], // * black and tan
-      solid:  ['#2B2430', '#3A3240', '#1D1A22'], // black
-      red:    ['#C98F4E', '#E0B97C', '#3A2A22'], // sable: tan with a dark saddle
+      black:  ['#C98A4A', '#E2B278', '#2B2430'], // * black and tan (the art draws the tan body, the dark = ears, mask and saddle)
+      solid:  ['#2A2628', '#3A3438', '#1D1A22'], // black
+      red:    ['#A88A5E', '#C8A878', '#3A3030'], // sable
       cream:  ['#FBF6EC', '#FFFFFF', '#E8DECB'], // white
-      liver:  ['#7A4A2E', '#D9A06A', '#5A3420'],
-      blue:   ['#6E7F96', '#D9B48A', '#55657A'],
-      lilac:  ['#A8949A', '#E8CDB0', '#8A777E']
+      liver:  ['#B07A44', '#D9A872', '#5A3420'], // liver and tan
+      blue:   ['#C9A06A', '#E2B88A', '#55657A'], // blue and tan
+      lilac:  ['#C9A890', '#E0C8B0', '#8A777E']  // lilac and tan
     },
     mutt: {
       black: ['#1D1A22', '#FFFFFF', '#1D1A22'], // *
@@ -317,6 +317,8 @@
   const PIED = { poodle: 'parti', frenchie: 'pied', pom: 'parti', dane: 'mantle' };
   // v2.11: merle on white is a Harlequin Great Dane; E/E black is a solid Black for these breeds (E/e is Black and tan)
   const HARLEQUIN = { dane: true }, SOLID_E = { afghan: true, gsd: true };
+  // v2.11: the brindle look (no K locus): the art draws wavy stripes when coat.brindle is set (dane and mastiff only)
+  const BRINDLE = { dane: { liver: 1, lilac: 1 }, mastiff: { black: 1, liver: 1, blue: 1, lilac: 1 } };
   // Breed shade key for red pigment on b/b (liver nose): pug apricot, greyhound red, v2.5 cream.
   const RED_LIVER = { pug: 'apricot', greyhound: 'redliver', poodle: 'redliver', samoyed: 'redliver', frenchie: 'redliver', spitz: 'redliver', pom: 'redliver', mastiff: 'apricot' };
 
@@ -386,10 +388,16 @@
     else if (WHITE_MARKED[breed]) name += ' and white';
     else if (white === 0.25) name += ' with white markings';
 
+    const coat = { base: shade[0], light: shade[1], dark: shade[2], white, merle, eyes };
+    // v2.11: a Great Dane's light is its chest and collar, so white markings show it white (solid coats keep a light close to the base);
+    // merle on white is the harlequin look: black patches (base and dark) on a white dog
+    if (breed === 'dane' && white > 0) coat.light = '#FFFFFF';
+    if (breed === 'dane' && merle && white >= 0.6) { coat.base = '#2A2628'; coat.dark = '#2A2628'; }
+    if (BRINDLE[breed] && BRINDLE[breed][pig] && !merle) coat.brindle = true; // only dane and mastiff ever have this key
     return {
       coatName: name,
       eyes,
-      coat: { base: shade[0], light: shade[1], dark: shade[2], white, merle, eyes },
+      coat,
       pigment: pig,
       merleHidden: merleAllele && !merle
     };
