@@ -1,0 +1,10 @@
+/* v2.9.2 CLOUD lane (tag rs): Forgot your password? in the game, with the emailed 6-digit code (game/src/22d_reset.js). */
+.rsp .clfield.rs-code input{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:24px;letter-spacing:.35em;font-variant-numeric:tabular-nums;max-width:11ch}
+.rsp .aclead b{overflow-wrap:anywhere}
+.acform .tlink.rs-again{display:block;margin-top:2px}
+.tlink.rs-again:disabled{opacity:.6;cursor:default;animation:none}
+/* phones: big enough to tap, never wider than the screen, and room under the fields for the keyboard (--rs-kb, set by rsKeyboard) */
+html[data-layout="phone"] .rsp .panel-body{padding-bottom:var(--rs-kb,0px)}
+html[data-layout="phone"] .rsp .clfield.rs-code input{max-width:none;font-size:24px}
+html[data-layout="phone"] .acform .tlink.rs-again{font-size:17px;min-height:44px}
+html[data-layout="phone"] .rsp .clmsg{font-size:15px}

@@ -1,15 +1,15 @@
 // Turns site/ (the doodledoggo.app introduction site, v2.8.2) plus the brand kit into a small Cloudflare Worker.
 //   node tools/cf_site.js            -> _cfsite/worker.js + its modules + _cfsite/parts.txt (one "name type" line per upload part)
 //   bash tools/cf_pages_deploy.sh    builds this and deploys it to doodledoggo.app (needs the owner's go-ahead)
-// Pages: / (index.html), /privacy, /reset (the Forgot password link: sets the new password through the Worker pawhaven-api).
+// Pages: / (index.html: the live playroom, the dog cards, Dogs in Japan), /dogs (the 14 profiles), /privacy, /reset (the Forgot password link: sets the new password through the Worker pawhaven-api).
 // The game itself is played on itch.io (https://an9ou.itch.io/doodle-doggo); this site only introduces it.
 // Why a Worker and not Pages: Pages and Workers-assets uploads authenticate with a short-lived upload JWT, which the cloud
 // session's proxy replaces with the account API token, so those uploads fail there. A Worker script upload needs only the
 // API token. www.doodledoggo.app answers with a 301 to the apex, keeping the path.
 const fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..'), site = path.join(root, 'site'), brand = path.join(root, 'brand'), out = path.join(root, '_cfsite');
-const TYPES = { html: 'text/html; charset=utf-8', css: 'text/css; charset=utf-8', svg: 'image/svg+xml', png: 'image/png', webp: 'image/webp', woff2: 'font/woff2', webmanifest: 'application/manifest+json', txt: 'text/plain; charset=utf-8' };
-const TEXT = new Set(['html', 'css', 'svg', 'webmanifest', 'txt']);
+const TYPES = { html: 'text/html; charset=utf-8', css: 'text/css; charset=utf-8', svg: 'image/svg+xml', png: 'image/png', webp: 'image/webp', woff2: 'font/woff2', webmanifest: 'application/manifest+json', txt: 'text/plain; charset=utf-8', js: 'text/javascript; charset=utf-8' };
+const TEXT = new Set(['html', 'css', 'svg', 'webmanifest', 'txt', 'js']);
 // url path -> source file
 const files = {};
 const walk = (dir, base) => fs.readdirSync(dir).forEach((f) => {
@@ -20,7 +20,7 @@ const walk = (dir, base) => fs.readdirSync(dir).forEach((f) => {
 walk(site, '');
 ['favicon.svg', 'icon-32.png', 'icon-180.png', 'icon-192.png', 'icon-512.png', 'icon-512-maskable.png', 'site.webmanifest', 'logo-1200x630.png', 'doodle-doggo-logo.svg', 'doodle-doggo-icon.svg']
   .forEach((f) => { files['/' + f] = path.join(brand, f); });
-const PRETTY = { '/': '/index.html', '/privacy': '/privacy.html', '/reset': '/reset.html' };
+const PRETTY = { '/': '/index.html', '/dogs': '/dogs.html', '/privacy': '/privacy.html', '/reset': '/reset.html' };
 
 fs.rmSync(out, { recursive: true, force: true }); fs.mkdirSync(out, { recursive: true });
 const parts = [], imports = [], table = [];
