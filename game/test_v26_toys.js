@@ -111,7 +111,7 @@ require('./test_lib').run('v26_toys', async (t) => {
   await t.newGame({}, { bond: { level: 7, pts: 1450 }, inv: { toys: ['Tennis Ball', 'Squeaky Hedgehog'].concat(NEW) } });
   const api = await ev((all) => ({ sup: all.filter((n) => window.PawToys.supports(n)), list: window.PawToys.list.slice() }), OLD.concat(NEW));
   ok(api.sup.length === 19, `PawToys.supports is true for all 19 toys (${api.sup.length})`);
-  ok(api.list.length === 19 && OLD.every((n, i) => api.list[i] === n) && NEW.every((n) => api.list.includes(n)), `PawToys.list: the old 15 unchanged and in order, then the four new ones (${api.list.length})`);
+  ok(api.list.length === 20 && OLD.every((n, i) => api.list[i] === n) && NEW.every((n) => api.list.includes(n)) && api.list[19] === 'Shinkansen Plush', `PawToys.list: the old 15 unchanged and in order, then the four new ones, then v2.11's Shinkansen Plush (${api.list.length})`);
   await hook();
 
   if (process.env.PAW_SHOTS) { // an existing toy for the side-by-side shots
