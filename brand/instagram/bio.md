@@ -4,7 +4,17 @@ Profile picture: `doodle-doggo-instagram-dachshund-1080.png` (the dachshund, own
 
 **Name field:** Doodle Doggo 🐾 Cozy Dog Game
 
-**Bio (owner pick, 15 Oct):**
+**Bio, pre-launch (17 Oct, English-first for an international audience; 133 of 150 characters):**
+
+    🖍️ Adopt a wobbly crayon pup (he drew himself)
+    🗻 Walks, puppies & Mt. Fuji in a Japan-style town
+    🎮 Free cozy dog game · coming soon ✨
+
+Other pre-launch options: `🐾 Your new best friend is badly drawn / 🖍️ Crayon dogs · pencil town · Mt. Fuji views 🗻 / 🎮 Free cozy dog game · coming soon ✨` (122) or `Crude crayon dogs. Big feelings. 🐶💛 / 🗻 A cozy, Japan-style sketchbook town / 🎮 Free browser game · coming soon ✨` (109).
+
+**At launch:** change the last line to `🎮 Free · play in your browser 👇` and add the game link.
+
+**Bio (first pick, 15 Oct):**
 
     🖍️ Adopt a wobbly crayon pup to love
     🐶 Walks, cuddles, gardens & puppy playdates

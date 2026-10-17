@@ -9,9 +9,9 @@ Tick each box. Times are JST. Everything you need is in `brand/instagram/` and `
 - [ ] **Name field** (this is what people search, so keep the keywords): `Doodle Doggo 🐾 Cozy Dog Game`
 - [ ] **Bio** (copy exactly, 3 lines):
   ```
-  🖍️ Adopt a wobbly crayon pup to love
-  🐶 Walks, cuddles, gardens & puppy playdates
-  🎮 Free browser game · coming soon ✨
+  🖍️ Adopt a wobbly crayon pup (he drew himself)
+  🗻 Walks, puppies & Mt. Fuji in a Japan-style town
+  🎮 Free cozy dog game · coming soon ✨
   ```
 - [ ] **Link: leave it empty for now.** The game is not published yet. When the itch.io page (or the game link) is live and tested, add it here and change the last bio line to `🎮 Free · play in your browser 👇`. (A free link page that counts clicks, such as Linktree, shows you taps; point it at the game when it is live.)
 - [ ] **Profile picture:** `brand/instagram/doodle-doggo-instagram-halloween-1080.png` (Noodle in the Witch Hat and Candy Corn Bandana).
