@@ -38,7 +38,7 @@ run('phone_v25_fixes_b', async (t) => {
       await ev(() => window.__paw.bl.sim(1)); await t.sleep(400);
       const L = await ev(() => { const R = (s) => { const q = document.querySelector(s).getBoundingClientRect(); return [q.left, q.top, q.right, q.bottom]; }; const sv = document.querySelector('#view svg.world'); return { svg: R('#view svg.world'), dog: R('#dogArt'), tray: R('#dock .tray'), vb: sv.viewBox.baseVal.width, sw: document.scrollingElement.scrollWidth, w: innerWidth }; });
       ok(L.dog[3] - L.dog[1] > 40 && L.dog[3] <= L.svg[3] + 1 && L.dog[1] >= L.svg[1] - 1, `${tag} ${pl}: the dog is in the scene ${JSON.stringify(L.dog.map(Math.round))}`);
-      ok(L.vb >= 840, `${tag} ${pl}: the wide crop shows about 900 units (${Math.round(L.vb)})`);
+      ok(L.vb >= 720 && L.vb <= 800, `${tag} ${pl}: the ball crop shows about 760 units (${Math.round(L.vb)})`);
       ok(L.tray[1] >= L.svg[3] - 1, `${tag} ${pl}: the ball panel sits under the scene, clear of the dog and the ball`);
       ok(L.sw <= L.w, `${tag} ${pl}: no sideways scroll`);
       await ev(() => window.__paw.bl.easy()); let inside = true, seen = 0;
