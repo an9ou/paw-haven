@@ -97,10 +97,23 @@ const req = (m) => { for (const r of [].concat((process.env.NODE_PATH || '').spl
       const pos0 = await page.evaluate(() => window.__dd.dogs.map((d) => [d.x, d.y]));
       // a tap on an empty bit of floor throws another ball there
       await page.evaluate(() => document.getElementById('scene').scrollIntoView({ block: 'center' })); await page.waitForTimeout(200);
-      const spot = await page.evaluate(() => { const r = document.getElementById('stage').getBoundingClientRect(), c = document.getElementById('scene').getBoundingClientRect();
-        for (let x = 120; x <= 880; x += 20) for (let y = 470; y <= 585; y += 15) { if (window.__dd.dogs.every((d) => Math.hypot(d.x - x, d.y - 40 - y) > 120)) { const cx = r.left + x / 1000 * r.width, cy = r.top + y / 600 * r.height; if (cx > c.left + 10 && cx < c.right - 10) return [cx, cy]; } } return null; });
+      // find a bit of floor with no dog near it and tap it in the same task, so no dog can walk in between (waits up to 6 s for a clear spot)
       const nb = await page.evaluate(() => window.__dd.balls.length);
-      if (spot) await page.mouse.click(spot[0], spot[1]);
+      const spot = await page.evaluate(async () => {
+        const st = document.getElementById('stage'), sc = document.getElementById('scene');
+        for (let tries = 0; tries < 60; tries++) {
+          const r = st.getBoundingClientRect(), c = sc.getBoundingClientRect();
+          for (let x = 120; x <= 880; x += 20) for (let y = 470; y <= 585; y += 15) {
+            if (!window.__dd.dogs.every((d) => Math.hypot(d.x - x, d.y - 40 - y) > 110)) continue;
+            const cx = r.left + x / 1000 * r.width, cy = r.top + y / 600 * r.height;
+            if (cx < c.left + 10 || cx > c.right - 10) continue;
+            sc.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: cx, clientY: cy }));
+            return [cx, cy];
+          }
+          await new Promise((res) => setTimeout(res, 100));
+        }
+        return null;
+      });
       const tapped = await page.evaluate((n) => ({ n: window.__dd.balls.length, arcs: window.__dd.balls[n] ? window.__dd.balls[n].arcs.length : -1 }), nb);
       ok(spot && tapped.n === nb + 1 && tapped.arcs > 0, `a tap on the floor throws another ball (${nb} -> ${tapped.n}, spot ${spot && spot.map(Math.round)})`);
       for (let i = 0; i < 6; i++) await page.click('#toss');
