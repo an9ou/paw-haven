@@ -56,6 +56,7 @@ html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row:has
 /* v2.6 UI/UX (review H5): with 4 cards (2 x 2) or 1-2 cards nothing scrolls, so the columns share the full width (no empty strip on the right) */
 html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row:has(> .card:nth-of-type(4)):not(:has(> .card:nth-of-type(5))),
 html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row:not(:has(> .card:nth-of-type(3))){grid-auto-columns:calc((100% - 8px) / 2)}
+html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row:has(> .card:nth-of-type(3)):not(:has(> .card:nth-of-type(4))),
 html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row:has(> .card:nth-of-type(5)){padding-right:40px;
   -webkit-mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 30px),transparent 100%);mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 30px),transparent 100%)}
 html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row > .card{width:auto;min-width:0;min-height:58px;flex:none;touch-action:pan-x pan-y;display:grid;grid-template-columns:40px minmax(0,1fr);grid-template-rows:auto auto;column-gap:6px;align-content:center;align-items:center;justify-items:start;text-align:left;padding:6px 6px 7px 6px}
