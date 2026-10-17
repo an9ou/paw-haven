@@ -75,6 +75,7 @@ function moodOf(d) { const lo = Math.min(...Object.values(d.stats)); return lo <
 /* ---- switching ---- */
 function switchDog(id, opts = {}) {
   const d = dogById(id); if (!d || id === S.activeId) return;
+  if (typeof blOn === 'function' && blOn()) return; // v2.10: ball play owns the dogs, the HUD row waits
   if (busy) { nope(`Hold on, ${NAME()} is busy.`); return; }
   if (awayFromHome() && staysHome(d)) { nope(`${d.name} is at home. ${stayHomeLine(d)}`); return; }
   S.activeId = id; markDirty(); hudDogKey = ''; dogKey = ''; SFX.boop(760);
@@ -122,7 +123,7 @@ function bindPack() {
 }
 function redrawPackDog(d) { if (!d || d === D()) return; const g = $(`#pack .packdog[data-dog="${d.id}"]`); if (!g) return; const i = others().indexOf(d); g.outerHTML = packDogSVG(d, i); bindPack(); }
 function packAmbient() {
-  if (S.dogs.length < 2 || cur.mode !== 'yard' || busy || !modal.hidden) return;
+  if (S.dogs.length < 2 || cur.mode !== 'yard' || busy || !modal.hidden || RM.paused.size || (typeof blOn === 'function' && blOn())) return; // v2.10: quiet during ball play
   const os = others(); if (!os.length) return;
   if (Math.random() < 0.55) { const d = PICK(os); if (!d.sleeping) { packPose[d.id] = hmChairOut4(d) ? 'down' : PICK(['sit', 'happy', 'idle', 'sleep']); redrawPackDog(d); } return; }
   const a = PICK(S.dogs), b = PICK(S.dogs.filter((x) => x !== a)); const pa = PRd(a), pb = PRd(b);

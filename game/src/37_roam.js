@@ -35,7 +35,9 @@ const rmOver = (a, b) => Math.max(0, Math.min(a[0] + a[2], b[0] + b[2]) - Math.m
 
 /* ---------------- no-go boxes (section 5.2) ---------------- */
 // before the scene exists: the bowl and the dog house. Once it is up, rmScan reads every tappable thing from the live DOM.
-function rmStaticNo(place) { const l = [[205, 462, 90, 90, 'bowl']]; if (place === 'yard') l.push([620, 330, 240, 200, 'house']); return l; }
+// scenery a dog must not stand in (feet only; its tap rect may cover it): the Town Square fountain basin
+const RM_SCENERY = { square: [[20, 400, 222, 92, 'scene']] };
+function rmStaticNo(place) { const l = [[205, 462, 90, 90, 'bowl']].concat(RM_SCENERY[place] || []); if (place === 'yard') l.push([620, 330, 240, 200, 'house']); return l; }
 function rmWorldBox(svg, M, el) {
   const r = el.getBoundingClientRect(); if (!r.width || !r.height) return null;
   const a = new DOMPoint(r.left, r.top).matrixTransform(M), b = new DOMPoint(r.right, r.bottom).matrixTransform(M);
@@ -50,6 +52,7 @@ function rmScan() {
   });
   [...(($('#placeBtns') || {}).children || [])].concat([$('#phPeek'), $('#rmLookL'), $('#rmLookR')]).forEach((el) => { if (!el || el.hidden) return; const b = rmWorldBox(svg, M, el); if (b && b[1] < 600) out.push(b.concat('btn')); });
   if (S.place === 'yard' && !out.some((b) => b[4] === 'houseG')) out.push([620, 330, 240, 200, 'house']);
+  (RM_SCENERY[S.place] || []).forEach((b) => out.push(b.slice()));
   RM.no = out;
 }
 // may dog d stand with its feet at x, y (scale k)? Feet stay in the zone and out of every no-go box; its tap rect covers no small tappable thing,
@@ -59,6 +62,7 @@ function rmOk(d, x, y, k, strict) {
   const T = rmTapBox(x, y, k); if (T[0] < 4 || T[0] + T[2] > 996) return false;
   for (const b of RM.no || rmStaticNo(S.place)) {
     if (x > b[0] - 8 && x < b[0] + b[2] + 8 && y > b[1] - 8 && y < b[1] + b[3] + 8) return false;
+    if (b[4] === 'scene') continue;
     const A = b[2] * b[3], o = rmOver(T, b); if (!o) continue;
     if (b[2] > 330 || b[3] > 270) continue;
     if (A < 15000 ? o > A * 0.08 : o > A * 0.4 || (b[0] + b[2] / 2 > T[0] && b[0] + b[2] / 2 < T[0] + T[2] && b[1] + b[3] / 2 > T[1] && b[1] + b[3] / 2 < T[1] + T[3])) return false;
@@ -186,7 +190,6 @@ function rmDepth() {
   const want = els.slice().sort((a, b) => y(a) - y(b)), key = want.map((e) => e.dataset.dog).join(','); if (key === els.map((e) => e.dataset.dog).join(',')) return;
   const lead = els.find((e) => e.classList.contains('rmlead')), li = want.indexOf(lead);
   want.forEach((e, i) => { if (e === lead) return; if (!lead) { pk.appendChild(e); return; } if (i < li) pk.insertBefore(e, lead); else pk.appendChild(e); });
-  if (lead) want.slice(0, li).forEach((e) => pk.insertBefore(e, lead)); // keep the back ones in order in front of the leader's node
 }
 
 /* ---------------- moving ---------------- */

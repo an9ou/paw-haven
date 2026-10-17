@@ -140,7 +140,7 @@ function enterYard() {
   // ambient jokes
   let next = performance.now() + 6000;
   const iv = setInterval(() => {
-    if (busy || curling || TRN || !modal.hidden || cur.mode !== 'yard' || popOpen()) return;
+    if (busy || curling || TRN || !modal.hidden || cur.mode !== 'yard' || popOpen() || RM.paused.size || (typeof blOn === 'function' && blOn())) return; // v2.10: quiet during ball play
     if (performance.now() > next) { next = performance.now() + RAND(14000, 24000); if (popOpen()) return; if (S.dogs.length > 1 && Math.random() < 0.5) packAmbient(); else if (!IDLE.act) dogJoke(); }
   }, 1000);
   onCleanup(() => clearInterval(iv));
