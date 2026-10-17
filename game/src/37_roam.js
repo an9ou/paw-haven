@@ -62,11 +62,11 @@ function rmScan() {
 const RM_HUGE = 70000;
 function rmBoxes() { return RM.no || rmStaticNo(S.place); }
 function rmHard(x, y) { return rmBoxes().some((b) => x > b[0] - 8 && x < b[0] + b[2] + 8 && y > b[1] - 8 && y < b[1] + b[3] + 8); }
-function rmSoft(x, y, k) {
+function rmSoft(x, y, k, flat) { // flat: no depth rule (the last fallback when nothing else is free)
   const T = rmTapBox(x, y, k), y0 = rmZoneOf(S.place).y0;
   for (const b of rmBoxes()) {
     const A = b[2] * b[3], base = b[1] + b[3];
-    if (b[4] !== 'btn' && A < RM_HUGE && base > y0 && y < base && T[1] < base && Math.min(T[0] + T[2], b[0] + b[2] - 6) - Math.max(T[0], b[0] + 6) > T[2] * 0.2 && T[1] + T[3] > b[1]) return true; // a fifth of its width over the prop
+    if (!flat && b[4] !== 'btn' && A < RM_HUGE && base > y0 && y < base && T[1] < base && Math.min(T[0] + T[2], b[0] + b[2] - 6) - Math.max(T[0], b[0] + 6) > T[2] * 0.2 && T[1] + T[3] > b[1]) return true; // a fifth of its width over the prop
     if (b[4] === 'scene' || A >= RM_HUGE) continue;
     const o = rmOver(T, b[4] === 'prop' ? [b[0] - 3, b[1] - 3, b[2] + 6, b[3] + 6] : b); if (!o) continue;
     if (b[4] === 'prop' ? o > 0 : A < 15000 ? o > A * 0.08 : o > A * 0.4 || (b[0] + b[2] / 2 > T[0] && b[0] + b[2] / 2 < T[0] + T[2] && b[1] + b[3] / 2 > T[1] && b[1] + b[3] / 2 < T[1] + T[3])) return true;
@@ -81,8 +81,8 @@ function rmDest(o) { const r = rmSt(o), w = r.tw; if (o === D() && r.away) retur
 function rmOk(d, x, y, k, strict) {
   const z = rmZoneOf(S.place); if (y < z.y0 || y > z.y1 || x < z.x0 || x > z.x1) return false;
   const T = rmTapBox(x, y, k); if (T[0] < 4 || T[0] + T[2] > 996) return false;
-  if (rmHard(x, y) || rmSoft(x, y, k)) return false;
-  const lim = strict === false ? 0.5 : 0.3, ll = strict === false ? 0.3 : 0.15, A = T[2] * T[3], L = D(); let front = 0;
+  const loose = strict === 'loose'; if (rmHard(x, y) || rmSoft(x, y, k, loose)) return false;
+  const lim = strict === false || loose ? 0.5 : 0.3, ll = strict === false || loose ? 0.3 : 0.15, A = T[2] * T[3], L = D(); let front = 0;
   for (const o of rmDogs()) {
     if (o === d || !rmSt(o).seeded) continue; const [ox, oy, ok] = rmDest(o), U = rmTapBox(ox, oy, ok), v = rmOver(T, U); if (!v) continue;
     if (v > A * lim || (o === L && y >= oy && v > U[2] * U[3] * ll) || (d === L && oy >= y && v > A * ll)) return false;
@@ -90,6 +90,9 @@ function rmOk(d, x, y, k, strict) {
   }
   return front <= A * 0.45;
 }
+// every free spot, each level looser than the last: strict, the dogs a little closer (false), and no depth rule ('loose': four decorations out
+// can leave nothing else)
+function rmCandsAny(d) { for (const lv of [true, false, 'loose']) { const c = rmCands(d, lv); if (c.length) return c; } return []; }
 function rmCands(d, strict) { const z = rmZoneOf(S.place), out = []; for (let y = z.y0; y <= z.y1; y += 14) for (let x = z.x0; x <= z.x1; x += 20) if (rmOk(d, x, y, rmScale(y), strict)) out.push([x, y]); return out; }
 // spot kinds (section 5.2): open, shade, edge, gate, bowl, dig, front, sun (bed is the nap spots, handled by the nap itself)
 function rmTags(x, y) {
@@ -101,7 +104,7 @@ function rmTags(x, y) {
 }
 // a spot for dog d: like = spot kinds it likes, near = [x, y] to stay close to, far = keep away from the front (aloof)
 function rmPick(d, o = {}) {
-  let c = rmCands(d); if (!c.length) c = rmCands(d, false); if (!c.length) return null;
+  const c = rmCandsAny(d); if (!c.length) return null;
   const r = rmSt(d), like = o.like || persOf(d).spots || [], vb = isPhone() && $('#view > svg.world') ? $('#view > svg.world').viewBox.baseVal : null;
   const w = c.map(([x, y]) => {
     const tg = rmTags(x, y), dist = Math.hypot(x - r.x, y - r.y); let v = 1;
@@ -130,7 +133,7 @@ function rmSeed() {
     const r = rmSt(d); if (r.seeded) return; r.seeded = true; r.tw = null; r.q = null;
     if (d === D() && (!rmWander() || rmOk(d, 430, 500, rmScale(500), false))) { r.x = 430; r.y = 500; r.face = 'right'; } // under the harness the leader keeps its v2.9 spot
     else {
-      let c = rmCands(d); if (!c.length) c = rmCands(d, false); if (!c.length) c = [[[150, 560], [800, 560], [560, 440]][placed.length % 3]];
+      let c = rmCandsAny(d); if (!c.length) c = [[[150, 560], [800, 560], [560, 440]][placed.length % 3]];
       const inC = c.filter((p) => p[0] >= win[0] && p[0] <= win[1]); if (inC.length) c = inC; // phones: inside the home crop while there is room
       let best = c[0], bv = -1e9;
       c.forEach(([x, y]) => { const m = placed.reduce((a, p) => Math.min(a, Math.abs(p.x - x) + Math.abs(p.y - y) * 0.6), 1e9); const v = Math.min(m, 400) - Math.abs(y - 520) * 0.7; if (v > bv) { bv = v; best = [x, y]; } });
@@ -174,7 +177,7 @@ function rmValidate(instant) {
   rmDogs().forEach((d) => {
     const r = rmSt(d); if (r.fix || r.tw || (d === D() && (!rmWander() || busy || IDLE.act || S.sleeping || curling || pottyBusy))) return;
     if (rmOk(d, r.x, r.y, rmK(r))) { r.wake = false; return; }
-    const p = rmNear(d, r.x, r.y) || (rmOk(d, r.x, r.y, rmK(r), false) ? null : rmNear(d, r.x, r.y, false)); if (!p) { r.wake = false; return; }
+    let p = rmNear(d, r.x, r.y); for (const lv of [false, 'loose']) if (!p && !rmOk(d, r.x, r.y, rmK(r), lv)) p = rmNear(d, r.x, r.y, lv); if (!p) { r.wake = false; return; } // the nearest spot at the strictest level that has one
     if (instant) { r.x = p[0]; r.y = p[1]; r.hx = r.x; r.hy = r.y; rmPaint(d); } else rmTo(d, p[0], p[1], { anchor: true });
     r.wake = false;
   });
@@ -373,7 +376,7 @@ const rmAskGap = (d) => (100000 - 70000 * rmPers(d).attention) * Math.max(0.05, 
 function rmPetAgo(d) { return performance.now() - (RM.petT[d.id] || RM.t0 || 0); }
 // the front of the scene (towards the player), near the middle of the view: the front row first, else the nearest free spot
 function rmFrontSpot(d) {
-  const z = rmZoneOf(S.place), r = rmSt(d), cx = isPhone() ? camCx : 500, tx = clamp((r.x + cx) / 2, 120, 880); let c = rmCands(d); if (!c.length) c = rmCands(d, false); if (!c.length) return null;
+  const z = rmZoneOf(S.place), r = rmSt(d), cx = isPhone() ? camCx : 500, tx = clamp((r.x + cx) / 2, 120, 880); const c = rmCandsAny(d); if (!c.length) return null;
   const row = c.filter((p) => p[1] >= z.y1 - 50), pool = row.length ? row : c;
   let best = null, bv = 1e9; pool.forEach((p) => { const v = Math.abs(p[0] - tx) + (z.y1 - p[1]) * 3; if (v < bv) { bv = v; best = p; } }); return best;
 }
