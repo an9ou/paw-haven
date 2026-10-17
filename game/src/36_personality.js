@@ -63,3 +63,20 @@ function persLine(d, lines) { // fills {n} and the pronouns; lines defaults to t
   const p = PRd(d), L = lines || persOf(d).ask;
   return PICK(L).replace(/\{(n|he|him|his|He|His)\}/g, (m, k) => (k === 'n' ? d.name : p[k]));
 }
+
+/* ======================= v2.11.1 SIZES: dogs shown at three sizes by real size (V2111.md section 2) =======================
+   Reverses the v2.10 "every dog the same size" rule. A scene factor only: the dog art never changes (the scenes scale the drawing round its feet).
+   Owner, 17 Oct 2026: every dog first grows SIZE_GROW (1.25) from the v2.10 size, then the class applies (so the small dogs are not too small on a
+   phone): big 1.25 x the v2.10 size, medium 1.075 x, small 0.9 x. Sizes fitted to a prop (the nap door, a bed, the Mt. Fuji bench, a sofa) take the
+   class only, not the growth (37_roam.js rmPropK). Unknown keys (an old save, a mod) are medium. Puppies keep their age scaling on top: the art
+   draws them small inside the same box (pupScale), and this factor multiplies it. Owned by the SIZE lane in v2.11.1. */
+const BREED_SIZE = {
+  chihuahua: 'small', pom: 'small', pug: 'small', frenchie: 'small', dachs: 'small', corgi: 'small',
+  shiba: 'medium', spitz: 'medium', beagle: 'medium', mutt: 'medium', poodle: 'medium', collie: 'medium', husky: 'medium',
+  golden: 'big', greyhound: 'big', samoyed: 'big', akita: 'big', afghan: 'big', dane: 'big', mastiff: 'big', gsd: 'big',
+};
+const SIZE_K = { small: 0.72, medium: 0.86, big: 1 }; // the classes, relative to a big dog
+const SIZE_GROW = 1.25; // every dog, on top of the v2.10 size
+function sizeOf(d) { const k = typeof d === 'string' ? d : d && d.key; return (k && BREED_SIZE[k]) || 'medium'; } // a dog (or a breed key) -> 'small' | 'medium' | 'big'
+function sizeClassK(d) { return SIZE_K[sizeOf(d)] || 1; } // the class alone (big 1)
+function sizeK(d) { return SIZE_GROW * sizeClassK(d); } // the scene factor for that dog: the growth times its class

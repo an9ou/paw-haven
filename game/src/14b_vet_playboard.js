@@ -257,9 +257,10 @@ function visitorSpot() {
   return free[0];
 }
 function visitorDog(v) { return { id: v.id, key: v.key, genes: v.genes, born: v.born, mix: v.mix || null, sparkle: !!v.sparkle }; }
+// v2.11.1: the visitor's drawing takes its size class (sizeK) round its feet; the tap rect keeps the spot's size (44 px on phones)
 function visitorSVG(v) {
   const [fx, fy, face, sc] = visitorSpot(), w = 264 * sc, h = 220 * sc, x = fx - w / 2, y = fy - h * (205 / 220);
-  return `<g id="visitorG" class="visitor hot" data-visitor="${esc(v.id)}" tabindex="0" role="button" aria-label="${esc(v.name)} is visiting with ${esc(famName(v.family))}"><rect x="${(x + 26).toFixed(1)}" y="${(y + 26).toFixed(1)}" width="${(w - 52).toFixed(1)}" height="${(h - 26).toFixed(1)}" fill="transparent"/>${place(dogSVG(visitorDog(v), { pose: 'happy', facing: face }), x, y, w, h)}<g class="vtag" pointer-events="none" transform="translate(${fx} ${fy + 4})"><rect x="-46" y="-2" width="92" height="22" rx="7" fill="#FFF3DA" stroke="#5B3D32" stroke-width="2"/><text y="15" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="17" fill="#5B3D32">${esc(v.name.length > 12 ? v.name.slice(0, 11) + '.' : v.name)}</text></g></g>`;
+  return `<g id="visitorG" class="visitor hot" data-visitor="${esc(v.id)}" tabindex="0" role="button" aria-label="${esc(v.name)} is visiting with ${esc(famName(v.family))}"><rect x="${(x + 26).toFixed(1)}" y="${(y + 26).toFixed(1)}" width="${(w - 52).toFixed(1)}" height="${(h - 26).toFixed(1)}" fill="transparent"/>${((z) => place(dogSVG(visitorDog(v), { pose: 'happy', facing: face }), fx - w * z / 2, fy - h * z * (205 / 220), w * z, h * z))(sizeK(v))}<g class="vtag" pointer-events="none" transform="translate(${fx} ${fy + 4})"><rect x="-46" y="-2" width="92" height="22" rx="7" fill="#FFF3DA" stroke="#5B3D32" stroke-width="2"/><text y="15" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="17" fill="#5B3D32">${esc(v.name.length > 12 ? v.name.slice(0, 11) + '.' : v.name)}</text></g></g>`;
 }
 function rollVisitor() {
   const pool = (Array.isArray(S.rehomed) ? S.rehomed : []).filter((v) => v && v.id && v.key);

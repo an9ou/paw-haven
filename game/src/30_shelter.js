@@ -53,6 +53,7 @@ const SR_LINES = {
 };
 let SR = null; // the live room: { mode, gen, dogs, timers, tossAt, toy, meet, lastFetch, lineAt }
 const srScale = (fy) => 0.5 + (fy - 450) / 146 * 0.22;
+const srK = (rd, fy) => (fy == null ? 1 : srScale(fy)) * (rd ? sizeK(rd) : 1); // v2.11.1: the room depth scale (or the meet spot's 1) times the dog's size class (rd: a room dog or a breed key)
 const srMotion = () => document.documentElement.dataset.motion !== 'off';
 function srAfter(ms, fn, rd) {
   if (!SR) return 0; const g = SR.gen;
@@ -122,13 +123,13 @@ function srBoardSVG() {
 }
 function srDogArt(rd) { return place(dogSVG(rd.look, { pose: rd.pose, facing: rd.face }), -DW / 2, -DH * 205 / 220, DW, DH); }
 function srXform(x, y, s) { return `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) scale(${s.toFixed(3)})`; }
-function srHitBox() { // dog units: at least 52 px on a phone at the smallest room scale (0.5)
-  const svg = $('#view > svg.world'); let m = 0; if (isPhone() && svg) { const vb = svg.viewBox.baseVal, k = svg.clientWidth / vb.width; if (k > 0) m = 52 / (k * 0.5); }
+function srHitBox(rd) { // dog units: at least 52 px on a phone at the smallest room scale (0.5, times a small dog's size class)
+  const svg = $('#view > svg.world'); let m = 0; if (isPhone() && svg) { const vb = svg.viewBox.baseVal, k = svg.clientWidth / vb.width; if (k > 0) m = 52 / (k * 0.5 * (rd ? sizeK(rd) : 1)); }
   const w = Math.max(210, m), h = Math.max(190, m); return [-w / 2, 10 - h, w, h];
 }
 function srDogG(rd) {
-  const [hx, hy, hw, hh] = srHitBox();
-  return `<g class="sr-dog hot" data-srdog="${esc(rd.id)}" role="button" tabindex="0" aria-label="${esc(rd.name)} the ${esc(dogInfo(rd.key).breed)}: tap to pet" style="transform:${srXform(rd.x, rd.y, srScale(rd.y))}"><rect class="sr-hit" x="${hx.toFixed(1)}" y="${hy.toFixed(1)}" width="${hw.toFixed(1)}" height="${hh.toFixed(1)}" fill="transparent"/><g class="sr-art">${srDogArt(rd)}</g></g>`;
+  const [hx, hy, hw, hh] = srHitBox(rd);
+  return `<g class="sr-dog hot" data-srdog="${esc(rd.id)}" role="button" tabindex="0" aria-label="${esc(rd.name)} the ${esc(dogInfo(rd.key).breed)}: tap to pet" style="transform:${srXform(rd.x, rd.y, srK(rd, rd.y))}"><rect class="sr-hit" x="${hx.toFixed(1)}" y="${hy.toFixed(1)}" width="${hw.toFixed(1)}" height="${hh.toFixed(1)}" fill="transparent"/><g class="sr-art">${srDogArt(rd)}</g></g>`;
 }
 const srNode = (rd) => $(`#srDogs [data-srdog="${rd.id}"]`);
 function srPose(rd, pose, face) {
@@ -148,13 +149,13 @@ function srRoomSVG(mode) {
 
 /* ---- floor spots ---- */
 function srSpotOk(x, y, me, V) {
-  const s = srScale(y), box = [x - 110 * s, y - 180 * s, x + 110 * s, y];
+  const s = srK(me, y), box = [x - 110 * s, y - 180 * s, x + 110 * s, y];
   if (V) { if (box[0] < V.x0 + 4 || box[2] > V.x1 - 4 || y > V.y1 - 4) return false;
     for (const a of V.avoid) { const ix = Math.min(box[2], a[2]) - Math.max(box[0], a[0]), iy = Math.min(box[3], a[3]) - Math.max(box[1], a[1]); if (ix > 0 && iy > 0 && ix * iy > (box[2] - box[0]) * (box[3] - box[1]) * 0.2) return false;
       if (box[2] > a[0] && box[0] < a[2] && y > a[1] - 2) return false; } } // the feet stay above the tray top
   if (SR.mode === 'adopt' && box[2] > SR_MEET[0] - 125 && box[0] < SR_MEET[0] + 125 && box[1] < SR_MEET[1] && box[3] > SR_MEET[1] - 195) return false; // the meet dog's whole body stays clear
   // no two dogs drawn over each other: the art boxes may touch, not cover (a dog further back counts too, not only one in the same row)
-  return SR.dogs.every((o) => { if (o === me || o.away) return true; const so = srScale(o.ty);
+  return SR.dogs.every((o) => { if (o === me || o.away) return true; const so = srK(o, o.ty);
     return Math.abs(o.tx - x) > 120 * (s + so) || Math.abs(o.ty - y) > 46 && Math.abs(o.tx - x) > 70 * (s + so) || Math.abs(o.ty - y) > 150 * Math.max(s, so); });
 }
 // pack: the free spot nearest a side wall (of 80 tries), so the dogs placed after it still find room on a small crop
@@ -186,12 +187,12 @@ function srUnpark1(rd) {
   const sp = srSpot(rd, null, true, true); if (!sp) return false;
   if (rd.fresh) { // never drawn yet (the camera settled just after the room opened): it simply starts there
     rd.fresh = rd.parked = rd.away = false; rd.x = rd.tx = sp[0]; rd.y = rd.ty = sp[1];
-    const n = srNode(rd); if (n) { n.style.transition = 'none'; n.style.transform = srXform(sp[0], sp[1], srScale(sp[1])); n.style.display = ''; }
+    const n = srNode(rd); if (n) { n.style.transition = 'none'; n.style.transform = srXform(sp[0], sp[1], srK(rd, sp[1])); n.style.display = ''; }
     srOrder(rd); srRest(rd, PICK(['idle', 'sit', 'sniff']), 400); return true;
   }
   const V = srView(), fromX = V && sp[0] - V.x0 < V.x1 - sp[0] ? V.x0 - 140 : (V ? V.x1 : 1000) + 140;
   rd.parked = rd.away = rd.busy = rd.leaving = false; rd.x = rd.tx = fromX; rd.y = rd.ty = sp[1];
-  const n = srNode(rd); if (n) { n.style.transition = 'none'; n.style.transform = srXform(fromX, sp[1], srScale(sp[1])); n.style.display = ''; void n.getBoundingClientRect(); }
+  const n = srNode(rd); if (n) { n.style.transition = 'none'; n.style.transform = srXform(fromX, sp[1], srK(rd, sp[1])); n.style.display = ''; void n.getBoundingClientRect(); }
   srOrder(rd); srWalk(rd, sp, () => srRestPose(rd)); return true;
 }
 function srCushion(me) {
@@ -207,7 +208,7 @@ function srWalk(rd, to, then, speed) {
   rd.tx = x; rd.ty = y; rd.walking = true;
   srPose(rd, 'walk', x < rd.x ? 'left' : x > rd.x ? 'right' : rd.face);
   const n = srNode(rd);
-  if (n) { n.style.transition = srMotion() ? `transform ${secs}s linear` : 'none'; n.style.transform = srXform(x, y, srScale(y)); }
+  if (n) { n.style.transition = srMotion() ? `transform ${secs}s linear` : 'none'; n.style.transform = srXform(x, y, srK(rd, y)); }
   rd.x = x; rd.y = y;
   srAfter(secs * 1000, () => { rd.walking = false; srOrder(rd); then(); }, rd);
 }
@@ -244,7 +245,7 @@ function srPlay(a) {
 // stop whatever the dog is doing, right where it is (mid-walk too)
 function srHalt(rd) {
   clearTimeout(rd.t); const n = srNode(rd);
-  if (rd.walking && n) { try { const m = new DOMMatrix(getComputedStyle(n).transform); rd.x = m.e; rd.y = m.f; } catch (e) { /* keep the target */ } n.style.transition = 'none'; n.style.transform = srXform(rd.x, rd.y, srScale(rd.y)); }
+  if (rd.walking && n) { try { const m = new DOMMatrix(getComputedStyle(n).transform); rd.x = m.e; rd.y = m.f; } catch (e) { /* keep the target */ } n.style.transition = 'none'; n.style.transform = srXform(rd.x, rd.y, srK(rd, rd.y)); }
   rd.walking = false; rd.tx = rd.x; rd.ty = rd.y; rd.cushion = null;
   const mate = SR.dogs.find((o) => o !== rd && o.busy && o.mate === rd.id); if (mate) srNext(mate);
 }
@@ -267,7 +268,7 @@ function srSay(text, x, y, ms) {
 }
 function srLine(rd, list, force) {
   if (!force && (performance.now() - (SR.lineAt || 0) < 5000 || Math.random() > 0.35)) return;
-  SR.lineAt = performance.now(); srSay(`${rd.name}: ${PICK(list)}`, rd.x, rd.y - 170 * srScale(rd.y), 2400);
+  SR.lineAt = performance.now(); srSay(`${rd.name}: ${PICK(list)}`, rd.x, rd.y - 170 * srK(rd, rd.y), 2400);
 }
 function srBark(rd, kind) { if (barkMode() === 'off') return; playBark(voiceOf(rd.look), kind, { volume: 0.8 }); const bl = window.__barkLog; bl.push({ dog: rd.name, id: rd.id, kind, t: Math.round(performance.now()), room: true }); if (bl.length > 300) bl.shift(); }
 
@@ -276,11 +277,11 @@ function srPet(id) {
   const rd = SR && SR.dogs.find((d) => d.id === id && !d.away); if (!rd) return false;
   srHalt(rd); rd.busy = true; rd.mate = null;
   if (SR.mode === 'adopt') { // a pet, then this dog comes to the front to say hello (V27.md section 7: a tap also selects it)
-    srPose(rd, 'pet'); srHearts(rd.x, rd.y - 150 * srScale(rd.y), 2); srBark(rd, 'play'); SFX.boop(760); SR.pets = (SR.pets || 0) + 1;
+    srPose(rd, 'pet'); srHearts(rd.x, rd.y - 150 * srK(rd, rd.y), 2); srBark(rd, 'play'); SFX.boop(760); SR.pets = (SR.pets || 0) + 1;
     srAfter(700, () => { if (!rd.away) srSelectKey(rd.key, rd); }); return true; // (not on rd.t: a play partner's timers must not cancel the hello)
   }
   const now = performance.now(); rd.taps = (rd.taps || []).filter((t) => now - t < 4000); rd.taps.push(now);
-  const hy = rd.y - 150 * srScale(rd.y);
+  const hy = rd.y - 150 * srK(rd, rd.y);
   if (rd.taps.length >= 3) { // the third tap within 4 s: a belly rub
     rd.taps = []; srPose(rd, 'rollover'); srHearts(rd.x, hy + 30, 5); srBark(rd, 'play'); SFX.boop(880); srLine(rd, SR_LINES.belly, true);
     SR.bellies = (SR.bellies || 0) + 1; srAfter(2000, () => srRest(rd, 'happy', 1200), rd); return true;
@@ -318,7 +319,7 @@ function srFetch() {
         if (SR.toy === T) { T.el.remove(); SR.toy = null; }
         SR.lastFetch = { id: rd.id, at: Date.now() }; srBark(rd, 'play'); srLine(rd, SR_LINES.fetch, true);
         const V = srView(), fy = Math.min(SR_ROOM.floor[3] - 8, V ? V.y1 - 8 : 590), fxp = clamp(rd.x + (500 - rd.x) * 0.3, V ? V.x0 + 90 : 90, V ? V.x1 - 90 : 910);
-        srPose(rd, 'happy'); srAfter(500, () => srWalk(rd, srSpotOk(fxp, fy, rd, V) ? [fxp, fy] : srSpot(rd, [fxp, fy]), () => { srPose(rd, 'bow'); srHearts(rd.x, rd.y - 120 * srScale(rd.y), 3); srAfter(1600, () => srRest(rd, 'happy', 1200), rd); }, 200), rd);
+        srPose(rd, 'happy'); srAfter(500, () => srWalk(rd, srSpotOk(fxp, fy, rd, V) ? [fxp, fy] : srSpot(rd, [fxp, fy]), () => { srPose(rd, 'bow'); srHearts(rd.x, rd.y - 120 * srK(rd, rd.y), 3); srAfter(1600, () => srRest(rd, 'happy', 1200), rd); }, 200), rd);
       } else { srPose(rd, PICK(['sit', 'sniff'])); srLine(rd, SR_LINES.late); srAfter(1800, () => srNext(rd), rd); }
     }, 300 + i * 40);
   });
@@ -330,8 +331,8 @@ function srPetMeet() {
   if (!SR || !SR.meet) return; const key = SR.meet.key, m = $('#adoptDog .sr-meetdog'); if (!m) return;
   const now = performance.now(); SR.meet.taps = (SR.meet.taps || []).filter((t) => now - t < 4000); SR.meet.taps.push(now);
   const belly = SR.meet.taps.length >= 3; if (belly) SR.meet.taps = [];
-  m.innerHTML = srMeetSVG(key, belly ? 'rollover' : 'pet', 'right'); srHearts(SR_MEET[0] + 20, SR_MEET[1] - 190, belly ? 5 : 2); SFX.boop(belly ? 880 : 720);
-  playBark(voiceOf(srStarterLook(key)), 'play', { volume: 0.8 }); SR.pets = (SR.pets || 0) + 1; if (belly) { SR.bellies = (SR.bellies || 0) + 1; srSay(PICK(SR_LINES.belly), SR_MEET[0] + 40, SR_MEET[1] - 200, 2200); }
+  m.innerHTML = srMeetSVG(key, belly ? 'rollover' : 'pet', 'right'); srHearts(SR_MEET[0] + 20, SR_MEET[1] - 190 * srK(key), belly ? 5 : 2); SFX.boop(belly ? 880 : 720);
+  playBark(voiceOf(srStarterLook(key)), 'play', { volume: 0.8 }); SR.pets = (SR.pets || 0) + 1; if (belly) { SR.bellies = (SR.bellies || 0) + 1; srSay(PICK(SR_LINES.belly), SR_MEET[0] + 40, SR_MEET[1] - 200 * srK(key), 2200); }
   clearTimeout(SR.meet.t); SR.meet.t = srAfter(belly ? 2000 : 900, () => { if (SR.meet && SR.meet.key === key && m.isConnected) m.innerHTML = srMeetSVG(key, 'happy', 'right'); });
 }
 function srSelectKey(key, fromRd) {
@@ -343,16 +344,16 @@ function srMeetShow(key) {
   if (SR.meet && SR.meet.key === key) return;
   const prev = SR.meet; SR.meet = { key };
   // the old meet dog: a room dog goes back to the room, anyone else trots off
-  if (prev) { const back = SR.dogs.find((d) => d.key === prev.key); if (back) { back.away = back.parked = back.leaving = false; back.x = SR_MEET[0]; back.y = SR_MEET[1]; const n = srNode(back); if (n) { n.style.display = ''; n.style.transition = 'none'; n.style.transform = `translate(${SR_MEET[0]}px, ${SR_MEET[1]}px) scale(1)`; void n.getBoundingClientRect(); } srGo(back); } }
+  if (prev) { const back = SR.dogs.find((d) => d.key === prev.key); if (back) { back.away = back.parked = back.leaving = false; back.x = SR_MEET[0]; back.y = SR_MEET[1]; const n = srNode(back); if (n) { n.style.display = ''; n.style.transition = 'none'; n.style.transform = srXform(SR_MEET[0], SR_MEET[1], srK(back)); void n.getBoundingClientRect(); } srGo(back); } }
   const rd = SR.dogs.find((d) => d.key === key && !d.away);
   let from = null;
-  if (rd) { srHalt(rd); from = [rd.x, rd.y, srScale(rd.y)]; rd.away = true; rd.busy = true; const n = srNode(rd); if (n) n.style.display = 'none'; }
-  else if (prev) { const V = srView(); from = [V && SR_MEET[0] - (V.x0) < (V.x1) - SR_MEET[0] ? (V ? V.x0 : 0) - 100 : (V ? V.x1 : 1000) + 100, SR_MEET[1], 1]; }
+  if (rd) { srHalt(rd); from = [rd.x, rd.y, srK(rd, rd.y)]; rd.away = true; rd.busy = true; const n = srNode(rd); if (n) n.style.display = 'none'; }
+  else if (prev) { const V = srView(); from = [V && SR_MEET[0] - (V.x0) < (V.x1) - SR_MEET[0] ? (V ? V.x0 : 0) - 100 : (V ? V.x1 : 1000) + 100, SR_MEET[1], srK(key)]; }
   const face = from && from[0] > SR_MEET[0] ? 'left' : 'right';
-  g.innerHTML = `<g class="sr-meetdog" style="transform:${from ? srXform(from[0], from[1], from[2]) : srXform(SR_MEET[0], SR_MEET[1], 1)}">${srMeetSVG(key, from ? 'walk' : 'idle', face)}</g>`;
+  g.innerHTML = `<g class="sr-meetdog" style="transform:${from ? srXform(from[0], from[1], from[2]) : srXform(SR_MEET[0], SR_MEET[1], srK(key))}">${srMeetSVG(key, from ? 'walk' : 'idle', face)}</g>`;
   if (!from) { srRecall(); return; }
   const m = g.firstChild, secs = srMotion() ? clamp(Math.hypot(from[0] - SR_MEET[0], from[1] - SR_MEET[1]) / 320, 0.5, 1.4) : 0;
-  void m.getBoundingClientRect(); m.style.transition = secs ? `transform ${secs}s ease-out` : 'none'; m.style.transform = srXform(SR_MEET[0], SR_MEET[1], 1);
+  void m.getBoundingClientRect(); m.style.transition = secs ? `transform ${secs}s ease-out` : 'none'; m.style.transform = srXform(SR_MEET[0], SR_MEET[1], srK(key));
   srAfter(secs * 1000, () => { if (SR.meet && SR.meet.key === key) m.innerHTML = srMeetSVG(key, 'idle', 'right'); });
   srRecall(); // room dogs step out of the meet dog's way
 }
