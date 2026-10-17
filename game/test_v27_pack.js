@@ -78,26 +78,26 @@ require('./test_lib').run('v27_pack', async (t) => {
   ok(await t.waitToast(/one dog at a time/), 'a line says the Pupcake is for one dog');
   ok(await t.until(() => !document.getElementById('fbPackBowls'), null, 2000) && (await S()).inv.food.Pupcake === undefined, 'one Pupcake used, no pack bowls');
 
-  sec('7. petting: every ticked pack dog gets Happiness and its Bond once');
+  sec('7. petting (v2.10 ROAM): a rub on the active dog pets that dog only, its Bond once a session');
   await t.home('yard'); await set('happy', 40);
   const b0 = (await S()).dogs.map((d) => d.bond.pts); await t.toasts();
-  ok(await t.pet(() => window.__paw.S.dogs.every((d) => d.bond.pts > 0) && window.__toasts.some((x) => /Bond each|Bond:/.test(x))), 'rubbing the active dog');
+  ok(await t.pet(() => window.__paw.S.dogs[0].bond.pts > 0 && window.__toasts.some((x) => /Bond\./.test(x))), 'rubbing the active dog');
   st = await S(); const b1 = st.dogs.map((d) => d.bond.pts);
-  ok(st.dogs.every((d) => d.stats.happy > 48), 'every dog\'s Happiness rose: ' + JSON.stringify(st.dogs.map((d) => Math.round(d.stats.happy))));
-  ok(b1.every((b, i) => b > b0[i]), 'each dog got its Bond: ' + JSON.stringify([b0, b1]));
-  ok(await t.waitToast(/pretend they did not enjoy that/), 'one Bond toast for the pack');
+  ok(st.dogs[0].stats.happy > 48 && st.dogs.slice(1).every((d) => Math.round(d.stats.happy) === 40), 'only the active dog\'s Happiness rose: ' + JSON.stringify(st.dogs.map((d) => Math.round(d.stats.happy))));
+  ok(b1[0] > b0[0] && b1.slice(1).every((b, i) => b === b0[i + 1]), 'only the active dog got its Bond: ' + JSON.stringify([b0, b1]));
+  ok(await t.waitToast(/pretends .* did not enjoy that/), 'one Bond toast for the dog');
   await ev(() => window.__paw.cr.petAll(12)); st = await S();
   ok(st.dogs.every((d, i) => d.bond.pts === b1[i]), 'the Bond comes once a session per dog');
-  ok(await t.until(() => document.querySelectorAll('#pack .packdog svg.pa-pose-pet').length > 0, null, 2500) || await ev(() => { window.__paw.cr.petAll(1); return document.querySelectorAll('#pack .packdog svg.pa-pose-pet').length > 0; }), 'the pack dogs show the pet pose');
 
-  sec('7b. v2.8.4: a tap or rub on a pack dog pets it where it stands, no switching');
+  sec('7b. v2.10 ROAM: a tap or rub on a pack dog pets that dog only, where it stands, no switching');
   await t.home('yard'); await set('happy', 40); await t.toasts();
   const act0 = (await S()).activeId, pd = await ev(() => document.querySelector('#pack .packdog').dataset.dog);
   ok(/rub or tap to pet/.test(await ev(() => document.querySelector('#pack .packdog').getAttribute('aria-label'))), 'the pack dog\'s label says rub or tap to pet');
   for (let i = 0; i < 3; i++) { await p().click(`#pack [data-dog="${pd}"] .pd-wander > rect`, { force: true }); await p().waitForTimeout(150); }
   st = await S();
   ok(st.activeId === act0, 'the active dog stays the same');
-  ok(st.dogs.every((d) => d.stats.happy > 40), 'every ticked dog was petted: ' + JSON.stringify(st.dogs.map((d) => Math.round(d.stats.happy))));
+  ok(st.dogs.every((d) => (d.id === pd ? d.stats.happy > 40 : Math.round(d.stats.happy) === 40)), 'only the dog touched was petted: ' + JSON.stringify(st.dogs.map((d) => Math.round(d.stats.happy))));
+  ok(await t.until((id) => !!document.querySelector(`#pack [data-dog="${id}"] svg.pa-pose-pet, #pack [data-dog="${id}"] svg.pa-pose-happy`), pd, 2500), 'the pack dog shows the pet pose');
   await ev((id) => { window.__paw.S.careOff = { [id]: true }; }, pd); await set('happy', 40);
   await p().click(`#pack [data-dog="${pd}"] .pd-wander > rect`, { force: true });
   st = await S(); ok(!(st.careOff || {})[pd] && st.dogs.find((d) => d.id === pd).stats.happy > 40, 'an unticked dog touched is ticked back in and petted');

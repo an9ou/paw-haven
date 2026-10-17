@@ -1,1 +1,12 @@
 /* v2.10 FREE TO ROAM: the roam engine (lane ROAM, tag rm). Phone rules under html[data-layout="phone"]. */
+/* every dog is a .rmdog group placed by the roam engine (37_roam.js): the leader's #dogPos keeps its old transform as a record only */
+.rmdog #dogPos{transform:none!important;transition:none!important}
+.rmdog.packdog{cursor:pointer}
+html[data-layout="phone"] .rm-look{position:absolute;top:calc(24% + 58px);z-index:5;width:48px;height:48px;min-width:48px;min-height:48px;padding:0;display:grid;place-items:center;--wash:var(--paper)}
+html[data-layout="phone"] .rm-look[hidden]{display:none}
+html[data-layout="phone"] .rm-look.right{right:6px}
+html[data-layout="phone"] .rm-look.left{left:6px}
+html[data-layout="phone"] .rm-look.left svg{transform:scaleX(-1)}
+html[data-layout="phone"] .rm-look svg{width:30px;height:30px;display:block}
+.rm-look{display:none}
+html[data-layout="phone"] .rm-look{display:grid}

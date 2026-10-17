@@ -76,6 +76,7 @@ const SUITES = {
   v28_jp: { file: 'test_v28_jp.js', group: 'all', est: 45 },
   // v2.9 (V29.md): pack play and walks, photo mode, polish (and the combined missions + guide flow)
   v29_pack: { file: 'test_v29_pack.js', group: 'all', est: 60 },
+  v210_roam: { file: 'test_v210_roam.js', group: 'all', est: 60 }, // v2.10 ROAM (V210.md)
   v29_photo: { file: 'test_v29_photo.js', group: 'all', est: 45 },
   v29_polish: { file: 'test_v29_polish.js', group: 'all', est: 45 },
   v29_flows: { file: 'test_v29_flows.js', group: 'all', est: 60 },
@@ -109,6 +110,7 @@ const SUITES = {
   phone_v27_mailbox: { file: 'test_phone_v27_mailbox.js', group: 'phone', est: 40 },
   phone_v28_winter: { file: 'test_phone_v28_winter.js', group: 'phone', est: 60 }, // v2.8 (V28.md section 9): WINTER, with the NEW YEAR and FUJI HILL phone parts
   phone_v29_pack: { file: 'test_phone_v29_pack.js', group: 'phone', est: 50 }, // v2.9 (V29.md)
+  phone_v210_roam: { file: 'test_phone_v210_roam.js', group: 'phone', est: 50 }, // v2.10 ROAM (V210.md)
   phone_v29_photo: { file: 'test_phone_v29_photo.js', group: 'phone', est: 45 },
   phone_v29_polish: { file: 'test_phone_v29_polish.js', group: 'phone', est: 45 },
 };
