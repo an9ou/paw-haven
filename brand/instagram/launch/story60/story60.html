@@ -153,8 +153,8 @@ const SCENE_FN = {
   },
   square(t, sc) {
     const a = S('n4a'), b = E('n4b'), k = eio(seg(t, a + 0.3, S('n4a') + TL.D.n4a * 0.7));
-    cam(sc, lerp(280, 560, k), lerp(330, 250, k), lerp(Z * 1.05, Z * 1.25, k));
-    const wk = k > 0 && k < 1; dog(sc, 'noodle', 'dachs', { x: lerp(300, 610, k), y: 585, w: 190, pose: wk ? 'walk' : t > a + 1 ? 'sit' : 'idle', lift: wk ? Math.abs(Math.sin(t * 9)) * 5 : 0 });
+    cam(sc, lerp(280, 520, k), 300, Z);
+    const wk = k > 0 && k < 1; dog(sc, 'noodle', 'dachs', { x: lerp(320, 640, k), y: 572, w: 190, pose: wk ? 'walk' : t > a + 1 ? 'sit' : 'idle', lift: wk ? Math.abs(Math.sin(t * 9)) * 5 : 0 });
     bubble(sc, 'snack', 'snack time?', 565, 160, S('n4b') - 0.1, t);
   },
   park(t, sc) {
