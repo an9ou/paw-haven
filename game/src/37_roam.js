@@ -370,8 +370,11 @@ function rmCropW() { const svg = $('#view > svg.world'); if (!svg) return RM_CRO
 // the crop width on this phone: about RM_CROP, but never so wide that a tappable thing in the scene (the missions clipboard is the smallest,
 // 120 x 71 units) drops under 44 px. vw: the view's width in px, native: the crop at zoom 1
 function rmCropFit(vw, native) {
-  rmScan(); const small = (RM.no || []).filter((b) => b[4] !== 'btn' && b[4] !== 'scene' && b[4] !== 'msCardG' && b[2] < 330 && b[3] < 270).map((b) => Math.min(b[2], b[3])); // the clipboard grows its own 48 px tap rect (24_missions.js)
-  const side = small.length ? Math.min(...small) : 1e9; return clamp(Math.min(RM_CROP, native * RM_WIDEN, (vw * side) / 46), native, RM_CROP);
+  // the smallest side is read once per scene build, before the seasonal props come (they size their own 48 px tap rects): a later read would narrow
+  // the crop after the festival stall or the Fortune box had picked their spot inside it
+  const svg = $('#view > svg.world');
+  if (!RM.side || RM.side.svg !== svg) { rmScan(); const small = (RM.no || []).filter((b) => b[4] !== 'btn' && b[4] !== 'scene' && b[4] !== 'msCardG' && b[4] !== 'prop' && b[2] < 330 && b[3] < 270).map((b) => Math.min(b[2], b[3])); RM.side = { svg, v: small.length ? Math.min(...small) : 1e9 }; } // the clipboard grows its own 48 px tap rect (24_missions.js)
+  const side = RM.side.v; return clamp(Math.min(RM_CROP, native * RM_WIDEN, (vw * side) / 46), native, RM_CROP);
 }
 // the world x span of every dog's tap rect (and the bowl at home): where the phone camera centres
 function rmSpan() {
