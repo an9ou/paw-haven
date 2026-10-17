@@ -89,7 +89,7 @@ const req = (m) => { for (const r of [].concat((process.env.NODE_PATH || '').spl
       sec(`${label}: privacy`);
       await page.goto(base + '/privacy', { waitUntil: 'networkidle' });
       const pt = await page.textContent('main');
-      ok(/Privacy policy/.test(pt) && /no ads and no tracking/i.test(pt) && /\[CONTACT EMAIL: to be filled in by the owner\]/.test(pt) && /password link/.test(pt), 'the privacy page: no ads, no tracking, emails only for a password link, contact placeholder kept');
+      ok(/Privacy policy/.test(pt) && /no ads and no tracking/i.test(pt) && /contact@doodledoggo\.app/.test(pt) && !/CONTACT EMAIL/.test(pt) && /password link/.test(pt), 'the privacy page: no ads, no tracking, emails only for a password link, the contact email filled in');
       const a2 = await audit(page); ok(a2.scroll <= 0 && !a2.small.length && !a2.tiny.length, 'privacy: phone minimums ' + a2.small.concat(a2.tiny).slice(0, 4).join(', '));
 
       sec(`${label}: the reset page`);
