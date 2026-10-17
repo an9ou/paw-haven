@@ -102,7 +102,7 @@ require('./test_lib').run('v21_home', async (t) => {
   const rollPose = (v) => ev((v) => {
     const r = Math.random; Math.random = () => v; try { window.__paw.home.ambient(); } finally { Math.random = r; }
     const wr = (sel) => { const e = document.querySelector(sel), svg = document.querySelector('#view svg.world'); if (!e || !svg) return null; const M = svg.getScreenCTM().inverse(), b = e.getBoundingClientRect(); const a = new DOMPoint(b.left, b.top).matrixTransform(M), c = new DOMPoint(b.right, b.bottom).matrixTransform(M); return [a.x, a.y, c.x, c.y].map(Math.round); };
-    const g = document.querySelector('#pack svg.pa-dog');
+    const g = document.querySelector('#pack .packdog svg.pa-dog'); // v2.10 ROAM: the leader is in #pack too
     return { cls: g ? g.getAttribute('class') || '' : '', chair: wr('#decorG [data-decor="Rocking Chair"] > rect'), mum: wr('#pack .packdog') };
   }, v);
   const roll = await rollPose(0.1), chair = roll.chair, mum = roll.mum;
