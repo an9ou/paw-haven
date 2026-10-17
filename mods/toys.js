@@ -311,8 +311,8 @@
     collie: { d: [5, 0], sit: [17, 0], jump: [2, -10], eat: [24, 0], crouch: [19, 5], sleep: [-8, 2], sniff: [10, -4] },
     samoyed: { d: [-11, -1], sit: [2, -6], jump: [-19, -4], eat: [28, -9], crouch: [13, 0], sleep: [-6, 0], sniff: [0, -2] },
     frenchie: { d: [-22, 10], sit: [-6, -2], jump: [-30, 5], eat: [28, -11], crouch: [0, 0], sleep: [-10, 0], sniff: [-6, 0] },
-    // v2.11 breeds (first guess from the nearest old breed, recalibrated on the BREED ART drawings)
-    akita: { d: [-4, 0], sit: [2, 0], jump: [-14, 0], eat: [26, -6], crouch: [4, 0], sleep: [-6, 0], sniff: [2, -4] },
+    // v2.11 breeds, calibrated on the BREED ART drawings (mods/toys/calib)
+    akita: { d: [-2, -12], sit: [4, -6], jump: [-12, -16], eat: [26, -6], crouch: [4, 0], sleep: [-6, 0], sniff: [2, -4] },
     spitz: { d: [-11, -1], sit: [2, -6], jump: [-19, -4], eat: [28, -9], crouch: [13, 0], sleep: [-6, 0], sniff: [0, -2] },
     pom: { d: [-12, 8], sit: [0, 4], jump: [-24, 6], eat: [22, -8], crouch: [4, 0], sleep: [-10, 0], sniff: [0, -4] }
   };

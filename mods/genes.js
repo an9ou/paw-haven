@@ -188,13 +188,13 @@
       lilac:    ['#A8949A', '#BBA9AF', '#8A777E']
     },
     /* v2.11 breeds. Starter cells (*) equal dogs/pawart_dogs.js (BREED ART lane):
-       akita red*      col #E07A35, light #FFF4E4 = the white urajiro (mask, chest, belly, socks), dark #B35A24
-       spitz white*    col #FDFAF4, light #FFFFFF, dark #E4DACA (off-white on purpose, like the samoyed)
-       pom orange*     col #E8873A, light #FBD9A8, dark #BD5E1E
+       akita red*      col #D46E36, light #FFF4E2 = the white urajiro (mask, chest, belly, socks), dark #A44E1E
+       spitz white*    col #FCF8F0, light #FFFFFF, dark #E6DCCB (off-white on purpose, like the samoyed)
+       pom orange*     col #F59A3C, light #FFD9A6, dark #C9701E
        Breed folding: akita E_ is a sesame (black-tipped red hairs; there is no K locus, so b/b E_ is "Dark sesame"), e/e d/d is "White";
        spitz is always e/e: "White", with b/b "Cream"; pom e/e is "Orange", e/e d/d "Cream", e/e b/b "White". */
     akita: {
-      red:    ['#E07A35', '#FFF4E4', '#B35A24'], // * red
+      red:    ['#D46E36', '#FFF4E2', '#A44E1E'], // * red
       cream:  ['#FBF6EC', '#FFFFFF', '#E8DECB'], // white
       black:  ['#C9803F', '#FFFFFF', '#3A2A22'], // sesame: red hairs with black tips
       liver:  ['#8A5430', '#FFFFFF', '#2E2018'], // dark sesame
@@ -202,7 +202,7 @@
       lilac:  ['#C7B3A8', '#FFFFFF', '#8A777E']  // pale sesame
     },
     spitz: {
-      red:      ['#FDFAF4', '#FFFFFF', '#E4DACA'], // * white
+      red:      ['#FCF8F0', '#FFFFFF', '#E6DCCB'], // * white
       redliver: ['#F5E6CA', '#FFF9EE', '#DCC8A2'], // cream
       cream:    ['#F4E8D0', '#FFFAF0', '#DCCBA8'],
       black:    ['#2B2430', '#4A3F4E', '#1D1A22'],
@@ -211,7 +211,7 @@
       lilac:    ['#A8949A', '#C2B2B7', '#8A777E']
     },
     pom: {
-      red:      ['#E8873A', '#FBD9A8', '#BD5E1E'], // * orange
+      red:      ['#F59A3C', '#FFD9A6', '#C9701E'], // * orange
       cream:    ['#F0D5A5', '#FFF3DC', '#CDAE78'],
       redliver: ['#FBF6EE', '#FFFFFF', '#E6DCCB'], // white
       black:    ['#2B2430', '#4A3F4E', '#1D1A22'],

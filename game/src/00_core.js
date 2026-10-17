@@ -273,9 +273,9 @@ const FALLBACK_DOGS = [
   { key: 'collie', name: 'Scout', breed: 'Border Collie', personality: 'Has counted the sheep. There are no sheep. Has counted you.', joke: 'Will herd the puppies, the ducks and the furniture.' },
   { key: 'samoyed', name: 'Cloud', breed: 'Samoyed', personality: 'Smiles so the snow does not stick. Also just smiles.', joke: 'Sheds a second dog every spring.' },
   { key: 'frenchie', name: 'Brioche', breed: 'French Bulldog', personality: 'Snores, snorts, sits on your foot. All three at once.', joke: 'Breathes like a tiny engine. Shade and water, please.' },
-  { key: 'akita', name: 'Maple', breed: 'Akita', personality: 'Calm, proud and loyal. Keeps an eye on the door.', joke: 'I do not bark much. I just look at you until you understand.' },
-  { key: 'spitz', name: 'Meringue', breed: 'Japanese Spitz', personality: 'Bright, white and a little bit of a show-off.', joke: 'Fluff check: fluffed. Smile check: smiling. Ready.' },
-  { key: 'pom', name: 'Tangerine', breed: 'Pomeranian', personality: 'Tiny, bossy and full of yips.', joke: 'I may be tiny. My opinions are not.' }
+  { key: 'akita', name: 'Kuma', breed: 'Akita', personality: 'Calm, loyal, quietly proud. Waits by the gate.', joke: 'I will wait for you. I am very good at waiting.' },
+  { key: 'spitz', name: 'Daifuku', breed: 'Japanese Spitz', personality: 'A white fluffball, cheerful, a bit of a show-off.', joke: 'Yes, I am this white on purpose. Look at me.' },
+  { key: 'pom', name: 'Mikan', breed: 'Pomeranian', personality: 'A tiny fluffy loudspeaker. Spins when happy.', joke: 'Yip! That was my indoor voice.' }
 ];
 const GENERIC_DOG = (key) => ({ key, name: 'Buddy', breed: 'Mystery Pup', personality: 'A little bit of everything', joke: 'Hi! I am a dog. Probably.' });
 const JOKES = {

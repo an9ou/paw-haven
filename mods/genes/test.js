@@ -26,9 +26,9 @@ const EXPECT = {
   samoyed:   { name: 'White',               eyes: 'brown', base: '#FBF6EC', light: '#FFFFFF', dark: '#E8DECB', white: 0 },
   frenchie:  { name: 'Fawn',                eyes: 'brown', base: '#D9B48A', light: '#F0DCC0', dark: '#3A2E2E', white: 0 },
   // v2.11 breeds (V211.md 5.2)
-  akita:     { name: 'Red',                 eyes: 'brown', base: '#E07A35', light: '#FFF4E4', dark: '#B35A24', white: 0 },
-  spitz:     { name: 'White',               eyes: 'brown', base: '#FDFAF4', light: '#FFFFFF', dark: '#E4DACA', white: 0 },
-  pom:       { name: 'Orange',              eyes: 'brown', base: '#E8873A', light: '#FBD9A8', dark: '#BD5E1E', white: 0 }
+  akita:     { name: 'Red',                 eyes: 'brown', base: '#D46E36', light: '#FFF4E2', dark: '#A44E1E', white: 0 },
+  spitz:     { name: 'White',               eyes: 'brown', base: '#FCF8F0', light: '#FFFFFF', dark: '#E6DCCB', white: 0 },
+  pom:       { name: 'Orange',              eyes: 'brown', base: '#F59A3C', light: '#FFD9A6', dark: '#C9701E', white: 0 }
 };
 ok(Object.keys(EXPECT).length === 17 && G.BREEDS.length === 17, '17 breeds');
 ok(G.BREEDS.slice(10, 14).join() === 'poodle,collie,samoyed,frenchie', 'v2.5 keys appended after the first ten');
