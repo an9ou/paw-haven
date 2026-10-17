@@ -105,9 +105,15 @@ run('cloud', async (t) => {
   ok((await d2.inputValue('#fgEmail')) === 'Mochi@example.com', 'Forgot your password? opens with the email already typed');
   await phoneCheck(d2, 'Pixel 7 forgot password', '#modal .panel');
   let mails0 = srv.mails.length; await tap(d2, '#fgGo');
-  ok(await until(d2, () => /a link is on its way/.test((document.getElementById('fgMsg') || {}).textContent || ''), null, 5000), 'Send the link: "If that email has an account, a link is on its way"');
-  ok(srv.mails.length === mails0 + 1 && srv.mails[mails0].to[0] === 'mochi@example.com' && /^https:\/\/doodledoggo\.app\/reset\?token=/.test(srv.mails[mails0].link), 'one email with a reset link went out');
-  await phoneCheck(d2, 'Pixel 7 forgot password sent', '#modal .panel');
+  ok(await until(d2, () => !!document.querySelector('#modal .panel[data-ready] #rcCode') && /if that email has an account/.test(document.querySelector('#modal .aclead').textContent), null, 5000), 'Send the code: "We\'ve sent a code to ... if that email has an account"');
+  ok(srv.mails.length === mails0 + 1 && srv.mails[mails0].to[0] === 'mochi@example.com' && /^\d{6}$/.test(srv.mails[mails0].code) && !/https?:/.test(srv.mails[mails0].text), 'one email with a 6-digit code (no website link) went out');
+  ok((await ev(d2, () => { const c = document.getElementById('rcCode'); return c.inputMode + ' ' + c.getAttribute('autocomplete'); })) === 'numeric one-time-code', 'the code field brings up the number pad and takes the code from the email');
+  await phoneCheck(d2, 'Pixel 7 reset code', '#modal .panel');
+  await d2.fill('#rcCode', srv.mails[mails0].code === '000000' ? '000001' : '000000'); await d2.fill('#rcPw', 'pupper999'); await d2.fill('#rcPw2', 'pupper999'); await tap(d2, '#rcGo');
+  ok(await until(d2, () => /isn't right/.test((document.getElementById('rcMsg') || {}).textContent || ''), null, 5000), 'a wrong code: a kind message, nothing changes');
+  await phoneCheck(d2, 'Pixel 7 reset code wrong', '#modal .panel');
+  ok(srv.pwIs(g1, 'pupper456'), 'the password is unchanged');
+  await tap(d2, '#rcBack'); await d2.waitForSelector('#modal .panel[data-ready] #fgEmail');
   await tap(d2, '#fgBack'); await d2.waitForSelector('#clBox');
   await tap(d2, '[data-cl=login]'); await d2.waitForSelector('#clPw');
   await d2.fill('#clEmail', 'mochi@example.com'); await d2.fill('#clPw', 'wrongpass1'); await tap(d2, '[data-cl=doLogin]');

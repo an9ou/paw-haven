@@ -4,8 +4,10 @@
 //   POST /guest                      -> { token, user }            a guest: no email, no password
 //   POST /register {email,password,fresh?}  -> { token, user, upgraded }  a guest's session (and no fresh) becomes the account.
 //                                    One email, one account: 409 email_exists for an email already here
-//   POST /forgot   {email}           -> { ok, mail }   always the same answer (no account lookup leaks); emails a 30-minute link
-//   POST /reset    {token, password} -> { token, user }   sets the new password, logs out every other device
+//   POST /forgot   {email}           -> { ok, mail }   always the same answer (no account lookup leaks); emails a 6-digit code (v2.9.2)
+//   POST /reset-code {email, code, password} -> { token, user }   the code sets the new password, logs out every other device and
+//                                    logs this one in. 400 wrong_code { left } / too_many_tries (5 wrong: the code is dead) / expired
+//   POST /reset    {token, password} -> { token, user }   v2.8.2 emailed links (no new ones since v2.9.2; kept for links already sent)
 //   POST /login    {email,password}  -> { token, user }
 //   POST /migrate  -> 410 gone (v2.9.1: Supabase is switched off, nothing carries over any more)
 //   POST /logout   GET /me   POST /password {password}
@@ -30,7 +32,7 @@ export default {
     const cors = corsFor(req.headers.get('Origin'));
     if (req.method === 'OPTIONS') return new Response(null, { status: cors ? 204 : 403, headers: cors || {} });
     let res;
-    try { res = await route(req, env); } catch (e) { console.error('pawhaven-api error', (e && e.message) || 'unknown'); res = json({ error: 'busy' }, 503); }
+    try { res = await route(req, env, ctx); } catch (e) { console.error('pawhaven-api error', (e && e.message) || 'unknown'); res = json({ error: 'busy' }, 503); }
     if (cors) for (const k in cors) res.headers.set(k, cors[k]);
     if (Math.random() < 0.01 && ctx && ctx.waitUntil) ctx.waitUntil(tidy(env).catch(() => {}));
     return res;
@@ -49,7 +51,7 @@ function corsFor(origin) {
 function json(o, status) { return new Response(JSON.stringify(o), { status: status || 200, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } }); }
 const fail = (error, status, more) => json(Object.assign({ error }, more || {}), status);
 
-async function route(req, env) {
+async function route(req, env, ctx) {
   const url = new URL(req.url), p = url.pathname.replace(/\/+$/, '') || '/', m = req.method;
   const ip = req.headers.get('CF-Connecting-IP') || 'local';
   if (p === '/' && m === 'GET') return json({ ok: true, name: 'pawhaven-api' });
@@ -64,7 +66,7 @@ async function route(req, env) {
   }
   let me = null;
   if (R.auth !== false) { me = await who(req, env); if (R.auth && !me) return fail('no_session', 401); }
-  return R.fn({ req, env, url, ip, body, me });
+  return R.fn({ req, env, ctx, url, ip, body, me });
 }
 
 /* ---------------- crypto ---------------- */
@@ -100,6 +102,8 @@ async function tidy(env) {
   const now = Date.now();
   await env.DB.batch([
     env.DB.prepare('delete from rate where reset_at < ?1').bind(now),
+    env.DB.prepare('delete from reset_codes where expires_at < ?1').bind(now),
+    env.DB.prepare('delete from resets where expires_at < ?1').bind(now),
     env.DB.prepare('delete from sessions where last_seen < ?1').bind(now - 400 * 864e5)
   ]);
 }
@@ -121,33 +125,23 @@ async function who(req, env) {
 const pwBad = (pw) => typeof pw !== 'string' || pw.length < PW_MIN || pw.length > PW_MAX;
 
 
-/* ---------------- email (v2.8.2: Forgot password, through Resend) ---------------- */
-const RESET_MS = 30 * 60 * 1000;
-// the reset page lives on the introduction site (site/reset.html): it sets the password, then sends the player back to the game
-const RESET_PAGE = 'https://doodledoggo.app/reset';
+/* ---------------- email (v2.9.2: Forgot password sends a 6-digit code, through Resend) ---------------- */
+const RESET_MS = 30 * 60 * 1000, CODE_TRIES = 5;
 function mailOn(env) { return !!env.RESEND_API_KEY; }
-function resetMail(link) {
-  const text = `Hi from Doodle Doggo!
+// six digits, every value equally likely (4294000000 is a multiple of a million)
+function code6() { const b = new Uint32Array(1); do crypto.getRandomValues(b); while (b[0] >= 4294000000); return String(b[0] % 1e6).padStart(6, '0'); }
+function codeMail(code) {
+  const text = `Your Doodle Doggo code is ${code}. It works for 30 minutes. If you didn't ask for it, ignore this email.
 
-Someone (hopefully you) asked to set a new password for this email. Tap the link to pick a new one:
+Type it in the game, under Log in > Forgot your password?
 
-${link}
-
-The link works for 30 minutes, and only once. Then go back to the game on itch.io and log in with the new password.
-
-Didn't ask for this? Just ignore this email. Your password stays the same and your dogs are safe.
-
-Noodle the dachshund says hi. The rest of him is on his way.
 Doodle Doggo`;
   const html = `<div style="font-family:Georgia,serif;font-size:17px;line-height:1.5;color:#2b2622;max-width:520px">
-<p><b>Hi from Doodle Doggo!</b></p>
-<p>Someone (hopefully you) asked to set a new password for this email. Tap the button to pick a new one.</p>
-<p><a href="${link}" style="display:inline-block;background:#f4d35e;color:#2b2622;padding:12px 22px;border-radius:12px;text-decoration:none;font-weight:bold;border:2px solid #2b2622">Set a new password</a></p>
-<p>The link works for 30 minutes, and only once. Then go back to the game on itch.io and log in with the new password.</p>
-<p>Didn't ask for this? Just ignore this email. Your password stays the same and your dogs are safe.</p>
-<p style="color:#6b6058">Noodle the dachshund says hi. The rest of him is on his way.<br>Doodle Doggo</p>
-<p style="font-size:14px;color:#6b6058">If the button doesn't work, copy this into your browser: ${link}</p></div>`;
-  return { subject: 'Your Doodle Doggo password link', text, html };
+<p>Your Doodle Doggo code is</p>
+<p style="font-family:Menlo,Consolas,monospace;font-size:34px;font-weight:bold;letter-spacing:6px;margin:6px 0 14px">${code}</p>
+<p>It works for 30 minutes. If you didn't ask for it, ignore this email.</p>
+<p style="color:#6b6058">Type it in the game, under Log in &gt; Forgot your password?<br>Doodle Doggo</p></div>`;
+  return { subject: 'Your Doodle Doggo code', text, html };
 }
 async function sendMail(env, to, m) {
   const f = env.MAIL_FETCH || fetch; // tests pass a fake
@@ -205,23 +199,54 @@ const ROUTES = {
 
   'POST /migrate': { auth: false, async fn() { return fail('gone', 410); } }, // v2.9.1: Supabase is gone, nothing carries over any more
 
-  'POST /forgot': { auth: false, async fn({ env, ip, body }) {
+  'POST /forgot': { auth: false, async fn({ env, ctx, ip, body }) {
     const email = norm(body.email);
     if (!EMAIL.test(email) || email.length > 254) return fail('invalid_email', 400);
     if (!mailOn(env)) return json({ ok: true, mail: false }); // no email service set up yet: the game says so
     if (await limited(env, 'forgot:' + ip, 10, 3600)) return fail('rate_limited', 429);
     const answer = json({ ok: true, mail: true }); // the same answer whether or not the email has an account
-    if (await limited(env, 'forgot:' + (await sha256(email)), 3, 3600)) return answer; // quietly: at most 3 links an hour per email
+    const k = await sha256(email);
+    if (await limited(env, 'forgot:' + k, 5, 3600)) return answer; // quietly: at most 5 codes an hour per email
+    // Every email gets a code row, with or without an account, so /reset-code answers the same for both (only accounts get the mail).
+    // A new code replaces the old one. Only a salted SHA-256 of the code is kept.
+    const code = code6(), salt = hex(rnd(16)), now = Date.now();
+    await run(env, `insert into reset_codes (k, code_hash, salt, created_at, expires_at, tries) values (?1, ?2, ?3, ?4, ?5, 0)
+      on conflict(k) do update set code_hash = excluded.code_hash, salt = excluded.salt, created_at = excluded.created_at, expires_at = excluded.expires_at, tries = 0`,
+      k, await sha256(salt + ':' + code), salt, now, now + RESET_MS);
     const u = await one(env, 'select id from users where email = ?1 and guest = 0', email);
-    if (u) {
-      const tok = b64url(rnd(32)), now = Date.now();
-      await env.DB.batch([
-        env.DB.prepare('delete from resets where user_id = ?1').bind(u.id), // only the newest link works
-        env.DB.prepare('insert into resets (token_hash, user_id, created_at, expires_at) values (?1, ?2, ?3, ?4)').bind(await sha256(tok), u.id, now, now + RESET_MS)
-      ]);
-      await sendMail(env, email, resetMail(RESET_PAGE + '?token=' + tok));
+    if (u) { // the mail goes out after the answer, so an email with an account isn't answered any slower (tests set MAIL_WAIT to see it at once)
+      const sent = sendMail(env, email, codeMail(code)).catch((e) => { console.error('pawhaven-api mail', (e && e.message) || 'failed'); });
+      if (ctx && ctx.waitUntil && !env.MAIL_WAIT) ctx.waitUntil(sent); else await sent;
     }
     return answer;
+  } },
+
+  'POST /reset-code': { auth: false, async fn({ env, ip, body }) {
+    const email = norm(body.email), code = String(body.code == null ? '' : body.code).replace(/\s+/g, ''), pw = body.password;
+    if (!EMAIL.test(email) || email.length > 254) return fail('invalid_email', 400);
+    if (pwBad(pw)) return fail('weak_password', 400); // checked first: a short password costs no try
+    if (!/^\d{6}$/.test(code)) return fail('wrong_code', 400, { left: null }); // not six digits: a typo, costs no try
+    const k = await sha256(email);
+    if ((await limited(env, 'code:' + ip, 30, 600)) || (await limited(env, 'code:' + k, 20, 3600))) return fail('rate_limited', 429);
+    const now = Date.now();
+    // every check takes a try first (atomically), so racing requests still get at most 5 between them
+    const r = await one(env, 'update reset_codes set tries = tries + 1 where k = ?1 and expires_at > ?2 and tries < ?3 returning code_hash, salt, tries', k, now, CODE_TRIES);
+    if (!r) {
+      const d = await one(env, 'select expires_at from reset_codes where k = ?1', k);
+      return fail(d && d.expires_at > now ? 'too_many_tries' : 'expired', 400);
+    }
+    if (!same(await sha256(r.salt + ':' + code), r.code_hash)) return fail(r.tries >= CODE_TRIES ? 'too_many_tries' : 'wrong_code', 400, { left: CODE_TRIES - r.tries });
+    if (!(await one(env, 'delete from reset_codes where k = ?1 and code_hash = ?2 returning k', k, r.code_hash))) return fail('expired', 400); // single use
+    const u = await one(env, 'select id from users where email = ?1 and guest = 0', email);
+    if (!u) return fail('expired', 400);
+    const h = await newHash(pw);
+    await env.DB.batch([
+      env.DB.prepare('update users set pw_hash = ?1, pw_salt = ?2 where id = ?3').bind(h.hash, h.salt, u.id),
+      env.DB.prepare('delete from sessions where user_id = ?1').bind(u.id), // a new password logs every device out
+      env.DB.prepare('delete from resets where user_id = ?1').bind(u.id)
+    ]);
+    const nu = await one(env, 'select * from users where id = ?1', u.id);
+    return json({ token: await newSession(env, u.id), user: pub(nu) }); // and this device logs straight in
   } },
 
   'POST /reset': { auth: false, async fn({ env, ip, body }) {

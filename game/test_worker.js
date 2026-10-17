@@ -121,9 +121,11 @@ async function checks(label, call, sql, mail) {
   r = await call('POST', '/login', { email: 'carry2@example.com', password: 'zzzzzzzz9' }); ok(r.status === 401, 'a wrong password on a registered email is refused');
   ok((await call('GET', '/me', null, other.token)).json.user.id === other.user.id, 'that account is untouched');
 
-  // Forgot password (v2.8.2): an emailed 30-minute single-use link
+  // Forgot password (v2.9.2): an emailed 6-digit code, typed in the game (no website link)
   const fu = (await call('POST', '/register', { email: 'forgetful@example.com', password: 'forgetful1' }, null, { 'CF-Connecting-IP': '10.6.6.5' })).json;
   const fd2 = (await call('POST', '/login', { email: 'forgetful@example.com', password: 'forgetful1' })).json; // a second device
+  const rc = (email, code, password, ip) => call('POST', '/reset-code', { email, code, password }, null, ip ? { 'CF-Connecting-IP': ip } : undefined);
+  const other6 = (c) => String((Number(c) + 1) % 1e6).padStart(6, '0'); // a wrong code, for sure
   let m0 = mail.mails.length;
   r = await call('POST', '/forgot', { email: 'nobody-here@example.com' });
   ok(r.status === 200 && r.json.ok && r.json.mail === true && mail.mails.length === m0, 'an unknown email: the same answer, no email');
@@ -131,31 +133,75 @@ async function checks(label, call, sql, mail) {
   r = await call('POST', '/forgot', { email: 'Forgetful@example.com' }, null, { Origin: 'https://an9ou.github.io' });
   const fm = mail.mails[mail.mails.length - 1];
   ok(r.status === 200 && r.json.mail === true && mail.mails.length === m0 + 1 && fm.to[0] === 'forgetful@example.com' && /noreply@doodledoggo\.app/.test(fm.from), 'a known email gets one email from noreply@doodledoggo.app, same answer');
-  ok(fm.token && fm.link === 'https://doodledoggo.app/reset?token=' + fm.token && fm.html.includes('href="' + fm.link + '"'), 'the link opens the reset page on doodledoggo.app');
-  ok(/Doodle Doggo/.test(fm.subject) && /Noodle/.test(fm.text) && /30 minutes/.test(fm.text) && /ignore this email/.test(fm.text) && /itch\.io/.test(fm.text), 'plain, friendly copy: Doodle Doggo, Noodle, 30 minutes, back to itch.io, ignore if not you');
-  ok(fm.token.length >= 40 && !(await sql('select * from resets where token_hash = ?', fm.token)) && !!(await sql('select * from resets where token_hash = ?', sha(fm.token))), 'only the SHA-256 of the reset token is stored');
-  ok((await call('POST', '/reset', { token: fm.token, password: 'short' })).json.error === 'weak_password', 'the new password needs 8 or more characters');
-  r = await call('POST', '/reset', { token: fm.token, password: 'remembered1' });
-  ok(r.status === 200 && r.json.user.id === fu.user.id && r.json.token && r.json.user.email === 'forgetful@example.com', 'the link sets the new password and logs in');
-  ok((await call('GET', '/me', null, fu.token)).status === 401 && (await call('GET', '/me', null, fd2.token)).status === 401 && (await call('GET', '/me', null, r.json.token)).status === 200, 'a reset logs every other device out');
+  ok(/^\d{6}$/.test(fm.code) && fm.html.includes(fm.code), 'the email carries a 6-digit code');
+  ok(fm.subject === 'Your Doodle Doggo code' && fm.text.startsWith(`Your Doodle Doggo code is ${fm.code}. It works for 30 minutes. If you didn't ask for it, ignore this email.`), "the owner's wording: Your Doodle Doggo code is 123456. It works for 30 minutes...");
+  ok(!/https?:\/\//.test(fm.text) && !/href=/.test(fm.html), 'no website link in the email');
+  let row = await sql('select * from reset_codes where k = ?', sha('forgetful@example.com'));
+  ok(row && row.code_hash === sha(row.salt + ':' + fm.code) && row.salt.length === 32 && !Object.values(row).includes(fm.code), 'only a salted SHA-256 of the code is stored, keyed by the email\'s SHA-256');
+  ok(row.expires_at - row.created_at === 30 * 60 * 1000 && row.tries === 0, 'the code works for 30 minutes');
+  ok((await rc('forgetful@example.com', fm.code, 'short')).json.error === 'weak_password', 'the new password needs 8 or more characters (same rule as Make an account)');
+  ok((await rc('forgetful@example.com', '12345', 'remembered1')).json.error === 'wrong_code', 'not six digits: wrong_code');
+  ok((await sql('select tries from reset_codes where k = ?', sha('forgetful@example.com'))).tries === 0, 'a short password or a code that is not 6 digits costs no try');
+  r = await rc('forgetful@example.com', other6(fm.code), 'remembered1');
+  ok(r.status === 400 && r.json.error === 'wrong_code' && r.json.left === 4, 'a wrong code: wrong_code, 4 tries left');
+  r = await rc(' Forgetful@Example.com ', ' ' + fm.code.slice(0, 3) + ' ' + fm.code.slice(3), 'remembered1');
+  ok(r.status === 200 && r.json.user.id === fu.user.id && r.json.token && r.json.user.email === 'forgetful@example.com' && !r.json.user.guest, 'the right code sets the new password and logs in (spaces and capitals are fine)');
+  ok((await call('GET', '/me', null, fu.token)).status === 401 && (await call('GET', '/me', null, fd2.token)).status === 401 && (await call('GET', '/me', null, r.json.token)).status === 200, 'a reset logs every other device out, this one stays in');
   ok((await call('POST', '/login', { email: 'forgetful@example.com', password: 'forgetful1' })).status === 401 && (await call('POST', '/login', { email: 'forgetful@example.com', password: 'remembered1' })).status === 200, 'the old password stops working, the new one works');
-  r = await call('POST', '/reset', { token: fm.token, password: 'again-again1' }); ok(r.status === 400 && r.json.error === 'expired', 'a link works only once');
-  await call('POST', '/register', { email: 'forgetful2@example.com', password: 'forgetful2' }, null, { 'CF-Connecting-IP': '10.6.6.6' }); // "make an account" allows 10 an hour per IP
-  await call('POST', '/forgot', { email: 'forgetful2@example.com' }); const f1 = mail.mails[mail.mails.length - 1];
-  await sql('update resets set expires_at = ? where token_hash = ?', Date.now() - 1, sha(f1.token), true);
-  ok((await call('POST', '/reset', { token: f1.token, password: 'late-late-1' })).json.error === 'expired', 'a link older than 30 minutes is refused');
-  await call('POST', '/forgot', { email: 'forgetful2@example.com' }); const f2 = mail.mails[mail.mails.length - 1];
-  await call('POST', '/forgot', { email: 'forgetful2@example.com' }); const f3 = mail.mails[mail.mails.length - 1];
-  ok(f2.token !== f3.token && (await call('POST', '/reset', { token: f2.token, password: 'older-link-1' })).json.error === 'expired' && (await call('POST', '/reset', { token: f3.token, password: 'newest-link1' })).status === 200, 'only the newest link works');
-  m0 = mail.mails.length; r = await call('POST', '/forgot', { email: 'forgetful2@example.com' });
-  ok(r.status === 200 && r.json.mail === true && mail.mails.length === m0, 'at most 3 links an hour per email (the answer stays the same)');
+  r = await rc('forgetful@example.com', fm.code, 'again-again1'); ok(r.status === 400 && r.json.error === 'expired', 'a code works only once');
+  // 5 wrong tries kill the code
+  await call('POST', '/forgot', { email: 'forgetful@example.com' }); const fk = mail.mails[mail.mails.length - 1];
+  const tries = [];
+  for (let i = 0; i < 5; i++) { const x = (await rc('forgetful@example.com', other6(fk.code), 'killed-code1')).json; tries.push(x.error + ':' + x.left); }
+  ok(tries.join(' ') === 'wrong_code:4 wrong_code:3 wrong_code:2 wrong_code:1 too_many_tries:0', 'wrong tries count down, the 5th says too_many_tries ' + tries.join(' '));
+  r = await rc('forgetful@example.com', fk.code, 'killed-code1');
+  ok(r.status === 400 && r.json.error === 'too_many_tries', 'after 5 wrong tries even the right code is dead');
+  ok((await call('POST', '/login', { email: 'forgetful@example.com', password: 'remembered1' })).status === 200, 'and the password did not change');
+  await call('POST', '/forgot', { email: 'forgetful@example.com' }); const fk2 = mail.mails[mail.mails.length - 1];
+  ok((await rc('forgetful@example.com', fk2.code, 'fresh-code-1')).status === 200, 'a new code works again after a dead one');
+  // expiry and replacement
+  const ip2 = { 'CF-Connecting-IP': '10.6.6.6' };
+  await call('POST', '/register', { email: 'forgetful2@example.com', password: 'forgetful2' }, null, ip2); // "make an account" allows 10 an hour per IP
+  await call('POST', '/forgot', { email: 'forgetful2@example.com' }, null, ip2); const f1 = mail.mails[mail.mails.length - 1];
+  await sql('update reset_codes set expires_at = ? where k = ?', Date.now() - 1, sha('forgetful2@example.com'), true);
+  ok((await rc('forgetful2@example.com', f1.code, 'late-late-1')).json.error === 'expired', 'a code older than 30 minutes: expired');
+  await call('POST', '/forgot', { email: 'forgetful2@example.com' }, null, ip2); const f2 = mail.mails[mail.mails.length - 1];
+  await call('POST', '/forgot', { email: 'forgetful2@example.com' }, null, ip2); const f3 = mail.mails[mail.mails.length - 1];
+  ok((await sql('select count(*) as n from reset_codes where k = ?', sha('forgetful2@example.com'))).n === 1, 'one code row per email');
+  ok(f2.code === f3.code || (await rc('forgetful2@example.com', f2.code, 'older-code-1')).json.error === 'wrong_code', 'a new code replaces the old one');
+  ok((await rc('forgetful2@example.com', f3.code, 'newest-code1')).status === 200, 'only the newest code works');
+  // per-email limit on /forgot (quiet), per-IP limit (429)
+  const ip3 = { 'CF-Connecting-IP': '10.6.6.7' };
+  await call('POST', '/register', { email: 'forgetful3@example.com', password: 'forgetful3' }, null, ip3);
+  m0 = mail.mails.length; for (let i = 0; i < 5; i++) await call('POST', '/forgot', { email: 'forgetful3@example.com' }, null, ip3);
+  const last3 = mail.mails[mail.mails.length - 1];
+  r = await call('POST', '/forgot', { email: 'forgetful3@example.com' }, null, ip3);
+  ok(mail.mails.length === m0 + 5 && r.status === 200 && r.json.mail === true, 'at most 5 codes an hour per email (the 6th: the same answer, no email)');
+  ok((await rc('forgetful3@example.com', last3.code, 'still-works1')).status === 200, 'and the quiet 6th left the last code working');
   codes = [];
   for (let i = 0; i < 11; i++) codes.push((await call('POST', '/forgot', { email: `ip${i}@example.com` }, null, { 'CF-Connecting-IP': '10.7.7.7' })).status);
   ok(codes[0] === 200 && codes[10] === 429, 'Forgot password is rate-limited per IP');
-  ok((await call('POST', '/reset', { token: 'x'.repeat(43), password: 'whatever-1' })).json.error === 'expired' && (await call('POST', '/reset', { password: 'whatever-1' })).json.error === 'expired', 'a made-up or missing token: expired');
-  ok((await call('POST', '/reset', { sb_token: 'sbat_bogus', password: 'whatever-1' })).json.error === 'expired', 'a Supabase link token is no longer accepted: expired');
+  codes = [];
+  for (let i = 0; i < 31; i++) codes.push((await rc(`guess${i}@example.com`, '123456', 'guessing-1', '10.5.5.5')).status);
+  ok(codes[0] === 400 && codes[29] === 400 && codes[30] === 429, 'typing codes is rate-limited per IP (30 in 10 minutes)');
+  // no account leak: an email with no account answers exactly like one with an account
   m0 = mail.mails.length; r = await call('POST', '/forgot', { email: 'NeverHadOne@example.com' });
   ok(r.status === 200 && r.json.mail === true && mail.mails.length === m0, 'an email with no account gets the same answer and no mail');
+  const a1 = await rc('neverhadone@example.com', '000000', 'whatever-1');
+  await call('POST', '/forgot', { email: 'forgetful@example.com' });
+  const b2 = await rc('forgetful@example.com', mail.mails[mail.mails.length - 1].code === '000000' ? '000001' : '000000', 'whatever-1');
+  ok(a1.status === b2.status && a1.text === b2.text && a1.json.error === 'wrong_code' && a1.json.left === 4, 'a wrong code: the same answer with or without an account ' + a1.text + ' / ' + b2.text);
+  for (let i = 0; i < 4; i++) await rc('neverhadone@example.com', '000000', 'whatever-1');
+  ok((await rc('neverhadone@example.com', '000000', 'whatever-1')).json.error === 'too_many_tries', 'and 5 wrong tries end the same way');
+  const n1 = await rc('never-asked@example.com', '123456', 'whatever-1'), n2 = await rc('carry2@example.com', '123456', 'whatever-1');
+  ok(n1.status === 400 && n1.text === n2.text && n1.json.error === 'expired', 'no code asked for: expired, with or without an account');
+  // the v2.8.2 links already sent keep working until they run out (no new ones are made)
+  const old = 'L'.repeat(43);
+  await sql('insert into resets (token_hash, user_id, created_at, expires_at) values (?, ?, ?, ?)', sha(old), fu.user.id, Date.now(), Date.now() + 6e5, true);
+  ok((await call('POST', '/reset', { token: old, password: 'from-a-link1' })).status === 200 && (await call('POST', '/login', { email: 'forgetful@example.com', password: 'from-a-link1' })).status === 200, 'an old emailed link still sets the password');
+  ok((await call('POST', '/reset', { token: old, password: 'again-again1' })).json.error === 'expired', 'an old link works only once');
+  ok((await call('POST', '/reset', { token: 'x'.repeat(43), password: 'whatever-1' })).json.error === 'expired' && (await call('POST', '/reset', { password: 'whatever-1' })).json.error === 'expired', 'a made-up or missing token: expired');
+  ok((await call('POST', '/reset', { sb_token: 'sbat_bogus', password: 'whatever-1' })).json.error === 'expired', 'a Supabase link token is no longer accepted: expired');
   ok((await call('GET', '/nope')).status === 404, 'unknown paths: 404');
 }
 
@@ -164,7 +210,7 @@ async function inNode() {
   const { d1 } = require(path.join(ROOT, 'cloudflare', 'd1_node.js'));
   const worker = (await import(path.join(ROOT, 'cloudflare', 'worker.js'))).default;
   const DB = d1(), mail = fakeMail();
-  const env = { DB, RESEND_API_KEY: 're_test', MAIL_FETCH: mail.fetch };
+  const env = { DB, RESEND_API_KEY: 're_test', MAIL_FETCH: mail.fetch, MAIL_WAIT: '1' };
   const call = async (method, p, body, token, headers) => {
     const h = Object.assign({}, headers || {}); if (token) h.Authorization = 'Bearer ' + token;
     let b; if (body !== null && body !== undefined) { b = typeof body === 'string' ? body : JSON.stringify(body); h['Content-Type'] = 'application/json'; }
@@ -174,6 +220,13 @@ async function inNode() {
   };
   const sql = async (q, ...a) => { const write = a[a.length - 1] === true; if (write) a.pop(); const st = DB.raw.prepare(q); return write ? st.run(...a) : st.get(...a); };
   await checks('in-process Node, D1 over node:sqlite', call, sql, mail);
+  { // in production the code mail goes out through ctx.waitUntil, after the answer (an account is not answered any slower)
+    delete env.MAIL_WAIT; const pend = [], m1 = mail.mails.length;
+    const res = await worker.fetch(new Request('https://api.test/forgot', { method: 'POST', headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': '10.8.8.9' }, body: JSON.stringify({ email: 'forgetful2@example.com' }) }), env, { waitUntil(p) { pend.push(p); } });
+    ok(res.status === 200 && pend.length >= 1 && mail.mails.length === m1, 'without MAIL_WAIT the answer comes first and the mail waits in ctx.waitUntil');
+    await Promise.all(pend); ok(mail.mails.length === m1 + 1 && /^\d{6}$/.test(mail.mails[m1].code), 'and then it is sent');
+    env.MAIL_WAIT = '1';
+  }
   delete env.RESEND_API_KEY; const m0 = mail.mails.length; // no email service set up yet: the game is told, nothing is sent
   const r = await call('POST', '/forgot', { email: 'forgetful@example.com' }, null, { 'CF-Connecting-IP': '10.8.8.8' });
   ok(r.status === 200 && r.json.ok === true && r.json.mail === false && mail.mails.length === m0, 'without RESEND_API_KEY: { mail: false } and no email');
@@ -190,7 +243,7 @@ async function inMiniflare() {
   const worker = {
     name: 'pawhaven-api', modules: true, script: require('fs').readFileSync(path.join(ROOT, 'cloudflare', 'worker.js'), 'utf8'), // the code itself: workerd refuses paths above its starting directory compatibilityDate: '2026-08-01',
     d1Databases: { DB: 'pawhaven-test-' + Date.now() },
-    bindings: { RESEND_API_KEY: 're_test' },
+    bindings: { RESEND_API_KEY: 're_test', MAIL_WAIT: '1' },
     outboundService: (req) => (req.url.startsWith('https://api.resend.com/') ? mail.fetch(req) : new Response('{}', { status: 404 }))
   };
   let mf; // Miniflare 4 takes the worker's options at the top; Miniflare 5 wants them in workers[]

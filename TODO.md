@@ -131,3 +131,10 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [ ] `v27_review` ("the bath finishes from the house") and `v28_scenes` (420 s timeout) failed once under heavy load (the full run plus three reviewers), clean alone.
 - [ ] Flaky once in the final v2.9 `all` + `phone` run, clean 3 of 3 under load afterwards: `phone_home` (a tap timed out), `v2_journal` (the mailbox centre click, 4 s wait), `phone_v27_shelter` (a tap on a room dog).
 - [x] `v24_guide` lost its save across the reload about 1 in 2 runs, on v2.8.4 too (the Chromium localStorage race). Fixed in v2.9 with `t.reloadKeepingSave()` in `game/test_lib.js`; use it for any reload that must keep the save.
+
+## Reset code in the game (v2.9.2)
+- [ ] Live email needs the Resend domain doodledoggo.app verified (it was still verifying on 17 Oct). Until then `/forgot` answers the same and the send fails quietly in the Worker log. Re-check with a real account once Resend says verified.
+- [ ] `site/privacy.html` still says the only emails are "a password link". The SITE lane (site/v2) should say "a password code". `site/privacy.html`
+- [ ] `POST /reset` (the v2.8.2 link) and the D1 table `resets` stay only for links sent before v2.9.2 (they all ran out 30 minutes after the deploy). Remove both in a later release. `cloudflare/worker.js`, `cloudflare/schema.sql`
+- [ ] The keyboard check runs in Chromium with a shorter screen (the Android way). Check the iPhone overlay keyboard once on a real phone (`rsKeyboard`, `game/src/22d_reset.js`).
+- [ ] `tools/cf_site.js` still describes /reset as the password form in its header comment (harmless).

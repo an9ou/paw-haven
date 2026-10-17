@@ -1,6 +1,6 @@
 // SITE (v2.8.2): the doodledoggo.app introduction site (site/, served by the Worker tools/cf_site.js builds), in Miniflare.
 //   NODE_PATH=$(npm root -g) node game/test_site.js      (or: node game/run_tests.js site)
-// Desktop 1280x800 and iPhone 15: the home page, /privacy, /reset (the Forgot password link) against the real cloudflare/worker.js on a
+// Desktop 1280x800 and iPhone 15: the home page, /privacy, /reset (v2.9.2: a notice, the reset is in the game) against the real cloudflare/worker.js on a
 // local D1 (game/cloud_mock.js), www -> apex, no request leaves the site (no tracking), phone minimums.
 // PAW_SITE_SHOTS=<dir> also saves screenshots there. Node-only runner contract: prints ALL OK when every check passes.
 process.removeAllListeners('warning');
@@ -92,37 +92,20 @@ const req = (m) => { for (const r of [].concat((process.env.NODE_PATH || '').spl
       ok(/Privacy policy/.test(pt) && /no ads and no tracking/i.test(pt) && /contact@doodledoggo\.app/.test(pt) && !/CONTACT EMAIL/.test(pt) && /password link/.test(pt), 'the privacy page: no ads, no tracking, emails only for a password link, the contact email filled in');
       const a2 = await audit(page); ok(a2.scroll <= 0 && !a2.small.length && !a2.tiny.length, 'privacy: phone minimums ' + a2.small.concat(a2.tiny).slice(0, 4).join(', '));
 
-      sec(`${label}: the reset page`);
-      const em = `reset-${tag.toLowerCase()}@example.com`;
-      const reg = srv.json((await srv.handle(null, 'POST', '/register', JSON.stringify({ email: em, password: 'oldpassword1' }), null)).text);
-      const m0 = srv.mails.length; await srv.handle(null, 'POST', '/forgot', JSON.stringify({ email: em }), null);
-      const mail = srv.mails[m0]; ok(mail && mail.link.startsWith('https://doodledoggo.app/reset?token='), 'the email links to https://doodledoggo.app/reset?token=...');
-      await page.goto(base + '/reset?token=' + mail.token, { waitUntil: 'networkidle' });
-      ok((await page.evaluate(() => location.search)) === '', 'the code leaves the address bar at once');
-      ok(/Set a new password/.test(await page.textContent('h1')), 'title: Set a new password');
+      sec(`${label}: the reset page (v2.9.2: only a notice, the reset happens in the game)`);
+      await page.goto(base + '/reset?token=' + 'L'.repeat(43), { waitUntil: 'networkidle' }); // an old emailed link
+      ok((await page.evaluate(() => location.search)) === '', 'an old link\'s code leaves the address bar at once');
+      ok(/Forgot your password\?/.test(await page.textContent('h1')), 'title: Forgot your password?');
+      const rt = await page.textContent('#rsMoved');
+      ok(rt.includes('Password resets now happen in the game: tap Forgot your password? and use the code we email you.'), '"Password resets now happen in the game: tap Forgot your password? and use the code we email you."');
+      ok((await page.getAttribute('#rsMoved a', 'href')) === 'https://an9ou.itch.io/doodle-doggo', 'with the itch.io link');
+      ok(!(await page.locator('input, form').count()), 'no password form on the site any more');
       const a3 = await audit(page); ok(a3.scroll <= 0 && !a3.small.length && !a3.tiny.length, 'reset: phone minimums ' + a3.small.concat(a3.tiny).slice(0, 4).join(', '));
       if (shots) await page.screenshot({ path: path.join(shots, `site_reset_${tag}.png`) });
-      await page.fill('#rsPw', 'newpassword1'); await page.fill('#rsPw2', 'newpassword2'); await page.click('#rsGo');
-      ok(/don't match/.test(await page.textContent('#rsMsg')), 'two different passwords: a kind message');
-      await page.fill('#rsPw2', 'newpassword1'); await page.click('#rsGo');
-      await page.waitForSelector('#rsDone:not([hidden])', { timeout: 8000 }).catch(() => null);
-      const done = await page.textContent('#rsDone');
-      ok(/All set! Go back to the game on itch\.io and log in\./.test(done) && (await page.getAttribute('#rsDone a', 'href')) === 'https://an9ou.itch.io/doodle-doggo', '"All set! Go back to the game on itch.io and log in." with the button');
-      ok(srv.pwIs(reg.user.id, 'newpassword1') && !srv.pwIs(reg.user.id, 'oldpassword1'), 'the new password is stored, the old one is gone');
-      ok((await srv.handle(null, 'GET', '/me', null, 'Bearer ' + reg.token)).status === 401, 'the reset logged out the account\'s other sessions');
-      await page.waitForTimeout(300);
-      ok(srv.calls.some((c) => c.page === page && c.op === 'POST /logout'), 'the page doesn\'t keep a login (it logs its own session out)');
-      if (shots) await page.screenshot({ path: path.join(shots, `site_reset_done_${tag}.png`) });
-      await page.goto(base + '/reset?token=' + mail.token, { waitUntil: 'networkidle' });
-      await page.fill('#rsPw', 'another-pass1'); await page.fill('#rsPw2', 'another-pass1'); await page.click('#rsGo');
-      await page.waitForFunction(() => /run out/.test(document.getElementById('rsMsg').textContent), null, { timeout: 8000 }).catch(() => null);
-      ok(/run out or was already used/.test(await page.textContent('#rsMsg')), 'the same link again: "That link has run out or was already used..."');
-      await page.goto(base + '/reset', { waitUntil: 'networkidle' });
-      ok(await page.isVisible('#rsGone') && !(await page.isVisible('#rsF')), 'no code in the link: a kind note and the itch.io button, no form');
+      ok(!srv.calls.some((c) => c.page === page), 'the page calls nothing');
       if (label === 'iPhone 15') {
-        sec('iPhone 15: an old Supabase link (v2.9.1: Supabase is gone, so it opens the "no link" note)');
         await page.goto('about:blank'); await page.goto(base + '/reset#access_token=sbat_old&type=recovery&expires_in=3600', { waitUntil: 'networkidle' });
-        ok((await page.evaluate(() => location.hash)) === '' && await page.isVisible('#rsGone') && !(await page.isVisible('#rsF')), 'the old login leaves the address bar at once, and the page shows the kind note, no form');
+        ok((await page.evaluate(() => location.hash)) === '' && await page.isVisible('#rsMoved'), 'an old Supabase link: it leaves the address bar, the same notice');
       }
       ok(!outside.length, 'no request leaves the site except the Worker (no tracking) ' + outside.slice(0, 3).join(' '));
       ok(!errs.length, 'no console errors ' + errs.slice(0, 2).join(' | '));

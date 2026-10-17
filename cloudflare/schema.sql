@@ -53,7 +53,7 @@ create table if not exists rate (
 -- v2.9.1: Supabase is gone and its accounts with it, so the one-email-one-account list from v2.8.2 is dropped (an old email can sign up).
 drop table if exists legacy;
 
--- Forgot password (v2.8.2): one row per emailed link. Only the SHA-256 of the 32-byte token is kept. 30 minutes, single use.
+-- Forgot password (v2.8.2): one row per emailed link (no new links since v2.9.2: the code below; kept for links already sent). Only the SHA-256 of the 32-byte token is kept. 30 minutes, single use.
 create table if not exists resets (
   token_hash text primary key,
   user_id    text not null,
@@ -62,3 +62,16 @@ create table if not exists resets (
   used       integer not null default 0
 );
 create index if not exists resets_user on resets (user_id);
+
+
+-- Forgot password (v2.9.2): one 6-digit code per email, typed in the game. k is the SHA-256 of the lower-cased email (every email
+-- that asks gets a row, account or not, so the answers never tell them apart). Only SHA-256(salt:code) is kept. 30 minutes,
+-- single use, a new code replaces the old one, and 5 wrong tries kill it.
+create table if not exists reset_codes (
+  k          text primary key,
+  code_hash  text not null,
+  salt       text not null,
+  created_at integer not null,
+  expires_at integer not null,
+  tries      integer not null default 0
+);
