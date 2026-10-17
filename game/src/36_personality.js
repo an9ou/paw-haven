@@ -47,6 +47,15 @@ const BREED_PERS = {
     ask: ['{n} fluffs up and poses. Admire {him}, please.', '{n} does a little twirl. Applause is pets.'] },
   pom: { attention: 0.7, energy: 0.8, zoomies: 0.6, follows: 0.3, ball: 0.85, steal: 0.3, spots: ['front', 'open'], trait: 'spin',
     ask: ['{n} spins in a circle. Pet {him} and {he} spins again.', '{n} yips a tiny hello. A loud tiny hello.'] },
+  // v2.11 owner's addition (V211.md section 6): four more breeds, existing traits only
+  afghan: { attention: 0.3, energy: 0.5, zoomies: 0.6, follows: 0.1, ball: 1.3, steal: 0.1, spots: ['open', 'sun'], trait: 'aloof',
+    ask: ['{n} drifts over, hair flowing. A pet is allowed.', '{n} rests {his} long nose on your hand, very elegantly.'] },
+  dane: { attention: 0.7, energy: 0.4, zoomies: 0.2, follows: 0.4, ball: 0.95, steal: 0.05, spots: ['bed', 'front'], trait: 'follow',
+    ask: ['{n} leans on you. All of {him}. It is a lot of dog.', '{n} thinks {he} is a lap dog. {He} is not.'] },
+  mastiff: { attention: 0.5, energy: 0.15, zoomies: 0.05, follows: 0.2, ball: 0.6, steal: 0.05, spots: ['bed', 'shade'], trait: 'lazy',
+    ask: ['{n} sighs a big happy sigh by your feet.', '{n} puts {his} huge head on your knee. Slightly drooly.'] },
+  gsd: { attention: 0.6, energy: 0.85, zoomies: 0.3, follows: 0.4, ball: 1.15, steal: 0.05, spots: ['gate', 'open'], trait: 'herd',
+    ask: ['{n} checks in. Everyone is where they should be.', '{n} sits, ears up, waiting for the next job. Pets will do.'] },
 };
 const PERS_DEF = { attention: 0.5, energy: 0.6, zoomies: 0.3, follows: 0.3, ball: 1.0, steal: 0.1, spots: ['open'], trait: '', ask: ['{n} comes over for a pet.'] };
 function persOf(d) { return Object.assign({}, PERS_DEF, (d && BREED_PERS[d.key]) || {}); }
