@@ -294,16 +294,12 @@ require('./test_lib').run('v29_pack', async (t) => {
   ok(await ev(() => window.__opts.pack.length) === 0 && await ev(() => document.querySelectorAll('.pw-fol').length) === 0, 'the runner has no followers');
   await ev(() => window.__paw.go('yard')); await t.untilMode('yard');
   const pd2 = await ev(() => document.querySelector('#pack .packdog').dataset.dog);
-  ok(!/Press and hold/.test(await ev(() => document.querySelector('#pack .packdog').getAttribute('aria-label'))), 'no long press hint on a pack dog');
-  await t.freezeMotion(true); // the pack dogs' wander animation must not move the dog between the measure and the press
-  // a long click (0.9 s) must still switch dogs and never open the card. An idle redraw can replace the dog's element during the hold (v2.8.4 too), so the click is repeated until it lands
-  let card2 = false, tries2 = 0;
-  for (; tries2 < 4 && (await S()).activeId !== pd2; tries2++) {
-    const r2 = await ev((d) => { const r = document.querySelector(`#pack [data-dog="${d}"] .pd-wander > rect`).getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }, pd2);
-    await p().mouse.move(r2.x, r2.y); await p().mouse.down(); await p().waitForTimeout(900);
-    card2 = card2 || !!(await ev(() => document.getElementById('pkCard'))); await p().mouse.up(); await p().waitForTimeout(200);
-  }
-  ok(!card2 && (await S()).activeId === pd2, `a click (even a long one) just switches dogs, as before (${tries2} tries)`);
+  // v2.10 ROAM (V210.md section 1): a tap on any dog pets that dog only, with pack care off too; the leader changes from the HUD head row
+  ok(/rub or tap to pet/.test(await ev(() => document.querySelector('#pack .packdog').getAttribute('aria-label'))), 'a pack dog says rub or tap to pet');
+  await t.freezeMotion(true); await set('happy', 40); const act2 = (await S()).activeId;
+  for (let i = 0; i < 3; i++) { await p().click(`#pack [data-dog="${pd2}"] .pd-wander > rect`, { force: true }); await p().waitForTimeout(150); }
+  st = await S(); ok(st.activeId === act2 && st.dogs.every((d) => (d.id === pd2 ? d.stats.happy > 40 : near(d.stats.happy, 40))), 'a click pets that dog only and never switches: ' + JSON.stringify(st.dogs.map((d) => Math.round(d.stats.happy))));
+  await t.freezeMotion(false);
   await p().click('[data-act=wardrobe]'); await modalUp();
   ok(await p().locator('#modal .pk-pickb').count() === 0, 'the wardrobe has no picker');
 }, { packCare: true });

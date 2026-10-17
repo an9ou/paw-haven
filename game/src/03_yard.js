@@ -75,6 +75,7 @@ function dogTo(tx, ty = 0, scale = 1, secs = 0.9) {
   const p = $('#dogPos'); if (!p) return; p.style.transitionDuration = secs + 's';
   p.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
   if (phPeekOn && !(typeof IDLE === 'object' && IDLE.act)) { phPeekOn = false; clearTimeout(phPanT); }
+  const fol = $('#pkFol'); if (fol && fol.closest('.rmdog')) $('#pack').after(fol); // v2.9 Fetch followers are placed in world units, not with the leader
   if (p.closest('.rmdog')) rmLegacyTo(tx, ty, scale, secs);
 }
 // v2.5: the art module draws some foods in the bowl itself (WORLD_B.bowlFoods). Every other food (the v2.4 and v2.5 foods) used to

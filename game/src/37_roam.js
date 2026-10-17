@@ -7,12 +7,12 @@
    the idle system (16_voices_idle.js idles 'roam' and 'ask'). Positions are not saved. Under the test harness the dogs only walk on their own
    when a suite sets prefs.rmTest (the older suites measure still scenes). Test hook: window.__paw.rm. */
 const RM = { paused: new Set(), d: {}, place: '', no: null, noAt: 0, raf: 0, lead: null, tickAt: 0, order: '', t0: 0, petT: {}, askAt: 0, cam: 0 };
-const RM_BASE = 0.9; // rmScale at feet y 500: the one size for every dog (the leader's v2.9 size was 1, four dogs fit the yard at 0.9)
+const RM_BASE = 0.88; // rmScale at feet y 500: the one size for every dog (the leader's v2.9 size was 1; four dogs fit the yard at 0.88)
 const RM_DEPTH = 0.0012; // a dog further back is a little smaller: y 400 = 0.88 of the base, y 590 = 1.1
 // feet y band per place [back line, front line] (V210.md section 5.2, tuned on screenshots); x is always 60 to 940
 const RM_ZONES = { yard: [404, 590], house: [414, 590], square: [414, 590], cafe: [414, 590], vet: [414, 590], salon: [410, 590], hilltop: [410, 590], park: [410, 590], woods: [410, 590], market: [452, 585], dogpark: [410, 590], pier: [410, 588], river: [452, 588], beach: [452, 588], fujihill: [424, 588], default: [424, 588] };
 const RM_ZONES_PH = { yard: [424, 594] };
-const RM_TAP = [-102, -175, 204, 190]; // a pack dog's tap rect around its feet at scale 1 (DX + 30, DY + 30, DW - 60, DH - 30)
+const RM_TAP = [-88, -170, 176, 180]; // every dog's tap rect around its feet at scale 1 (DX + 44, DY + 35, DW - 88, 180): the drawn body, so four dogs fit
 const RM_WALK = 150, RM_RUN = 360; // world units a second
 const RM_CROP = 700; // the phone crop in world units (section 5.2)
 const RM_OUT = ['yard', 'park', 'beach', 'hilltop', 'dogpark', 'woods', 'pier', 'river', 'fujihill', 'square'];
@@ -97,6 +97,7 @@ function rmNear(d, x, y, strict) { const c = rmCands(d, strict); if (!c.length) 
 // scene looks the same every time). Re-entering the same place keeps everybody where they were.
 function rmSeed() {
   if (!S || !S.dogs) return; const key = S.place + (isPhone() ? '|ph' : '');
+  RM.free = null;
   if (RM.place !== key) { RM.place = key; RM.no = null; Object.values(RM.d).forEach((r) => { r.seeded = false; r.tw = null; r.q = null; r.fix = false; r.k = null; }); RM.t0 = performance.now(); }
   const ds = rmDogs(), placed = [];
   ds.forEach((d) => { const r = rmSt(d); if (r.seeded) placed.push(r); });
@@ -112,6 +113,13 @@ function rmSeed() {
     r.hx = r.x; r.hy = r.y; placed.push(r);
   });
 }
+// a spot clear of every dog, the same for the whole scene build (the visiting dog's spot, 14b visitorSpot through packSpots)
+function rmFreeSpot() {
+  if (!S) return null; const key = RM.place + '|' + rmDogs().map((d) => d.id).join(','); if (RM.free && RM.free.key === key) return RM.free.at;
+  const me = { id: '__free' }, c = rmCands(me); let best = null, bv = -1e9;
+  c.forEach(([x, y]) => { const m = rmDogs().reduce((a, d) => { const r = rmSt(d); return Math.min(a, Math.abs(r.x - x) + Math.abs(r.y - y) * 0.6); }, 1e9); const v = Math.min(m, 420) - Math.abs(y - 500) * 0.4; if (v > bv) { bv = v; best = [x, y]; } });
+  const at = best ? [best[0], best[1], best[0] > 500 ? 'left' : 'right', rmScale(best[1])] : null; RM.free = { key, at }; return at;
+}
 // the v1.7 / v2.7 fixed spots that still win: napping at the dog-house door or on its own bed, on a piece of furniture, the Proud Mum by the Rocking Chair
 function rmFixed(d, i) {
   let f = null;
@@ -122,8 +130,18 @@ function rmFixed(d, i) {
 }
 function rmApplyFixed(d, i) {
   const r = rmSt(d), f = rmFixed(d, i);
-  if (f) { if (!r.fix) { r.fx0 = [r.x, r.y]; } r.x = f[0]; r.y = f[1]; r.face = f[2]; r.k = f[3] || 0.6; r.fix = true; r.tw = null; r.q = null; return; }
-  if (r.fix) { r.fix = false; r.k = null; if (r.fx0) { r.x = r.fx0[0]; r.y = r.fx0[1]; } r.wake = true; } // back where it was before the nap or the sofa
+  const walk = rmWander() && cur.mode === 'yard' && !!$('#pack') && r.seeded; // a dog in the scene walks over (onto the sofa, off its bed); a fresh scene just places it
+  if (f) {
+    const far = Math.hypot(f[0] - r.x, f[1] - r.y) > 30; if (!r.fix) r.fx0 = [r.x, r.y]; r.q = null; r.fix = true; r.face = f[2];
+    if (walk && far && !d.sleeping) { r.tw = { x0: r.x, y0: r.y, k0: rmK(r), x1: f[0], y1: f[1], k1: f[3] || 0.6, t0: performance.now(), dur: Math.min(2600, (Math.hypot(f[0] - r.x, f[1] - r.y) / RM_WALK) * 1000), o: { pose: packPose[d.id] } }; r.face = f[0] < r.x ? 'left' : 'right'; rmLoop(); return; }
+    r.x = f[0]; r.y = f[1]; r.k = f[3] || 0.6; r.tw = null; return;
+  }
+  if (r.fix) { // back where it was before the nap or the sofa
+    r.fix = false; const to = r.fx0 || [r.x, r.y], k0 = rmK(r);
+    if (walk) { r.tw = { x0: r.x, y0: r.y, k0, x1: to[0], y1: to[1], k1: null, t0: performance.now(), dur: Math.min(2600, (Math.hypot(to[0] - r.x, to[1] - r.y) / RM_WALK) * 1000), o: { anchor: true } }; r.face = to[0] < r.x ? 'left' : 'right'; rmLoop(); }
+    else { r.k = null; r.x = to[0]; r.y = to[1]; }
+    r.wake = true;
+  }
 }
 // after the scene is up (and every few seconds): a dog that stands on something tappable or another dog's tap rect steps to the nearest free spot
 function rmValidate(instant) {
@@ -140,12 +158,12 @@ function rmValidate(instant) {
 function rmPackPose(d) { const r = rmSt(d); if (r.tw && !r.tw.o.legacy) return 'walk'; return d.sleeping ? 'sleep' : packPose[d.id] || (Math.min(...Object.values(d.stats)) < 25 ? 'sad' : 'idle'); }
 function rmPackInner(d, i) {
   const r = rmSt(d), pose = rmPackPose(d); r.drawn = pose + '|' + r.face;
-  return `<g class="rm-at" transform="${rmXf(r)}"><g class="pd-wander" style="animation-delay:-${i * 2.3}s"><rect x="${DX + 30}" y="${DY + 30}" width="${DW - 60}" height="${DH - 30}" fill="transparent"/><g class="rm-art">${place(dogSVG(d, { pose, outfit: typeof shSleepOutfit === 'function' ? shSleepOutfit(d, pose) : outfitOf(d), facing: r.face }), DX, DY, DW, DH)}</g></g></g>`;
+  return `<g class="rm-at" transform="${rmXf(r)}"><g class="pd-wander" style="animation-delay:-${i * 2.3}s"><rect x="${DX + 44}" y="${DY + 35}" width="${DW - 88}" height="180" fill="transparent"/><g class="rm-art">${place(dogSVG(d, { pose, outfit: typeof shSleepOutfit === 'function' ? shSleepOutfit(d, pose) : outfitOf(d), facing: r.face }), DX, DY, DW, DH)}</g></g></g>`;
 }
 // the leader's shell: the scene build (full) carries the #dogPos markup, a rebuild of #pack gets an empty shell and rmAdopt moves the live #dogPos in
 function rmLeadSVG(full) {
   const d = D(), r = rmSt(d);
-  const inner = full ? `<g id="dogPos"><g id="dogFx"><g id="dogArt"></g><rect id="dogHit" x="${DX + 30}" y="${DY + 40}" width="${DW - 60}" height="${DH - 40}" fill="transparent" pointer-events="all" class="hot" tabindex="0" role="button" aria-label="Pet the dog"/></g><g id="fluffFx" pointer-events="none"></g></g>` : '';
+  const inner = full ? `<g id="dogPos"><g id="dogFx"><g id="dogArt"></g><rect id="dogHit" x="${DX + 44}" y="${DY + 40}" width="${DW - 88}" height="175" fill="transparent" pointer-events="all" class="hot" tabindex="0" role="button" aria-label="Pet the dog"/></g><g id="fluffFx" pointer-events="none"></g></g>` : '';
   return `<g class="rmdog rmlead" data-dog="${d.id}"><g class="rm-at" transform="${rmXf(r)}">${inner}</g></g>`;
 }
 function rmAdopt() {
@@ -218,7 +236,7 @@ function rmResume(tag) { RM.paused.delete(tag); }
 function rmLegacyTo(tx, ty, s, secs) {
   const d = D(); if (!d) return; const r = rmSt(d), home = tx === 0 && ty === 0 && s === 1;
   if (!home && !r.away) { r.hx = r.x; r.hy = r.y; } r.away = !home;
-  const X = home ? r.hx : 430 * s + tx, Y = home ? r.hy : 500 * s + ty, k = cur.mode !== 'yard' ? s : home || s === 1 ? null : s;
+  const scene = cur.mode === 'yard', X = home ? (scene ? r.hx : 430) : 430 * s + tx, Y = home ? (scene ? r.hy : 500) : 500 * s + ty, k = !scene ? s : home || s === 1 ? null : s; // the bath and the old Fetch keep the v2.9 stage: home is 430, 500 at size 1
   rmTo(d, X, Y, { legacy: true, secs: Math.max(0, secs), k });
   if (isPhone() && cur.mode === 'yard' && !home && typeof camCx === 'number') { const v = rmCropW() / 2; if (X < camCx - v + 60 || X > camCx + v - 60) camTo(clamp(X, v, 1000 - v), Math.max(0.3, secs)); }
 }
@@ -238,7 +256,7 @@ function rmStep(d) {
   const r = rmSt(d); if (!r.q) return; const s = r.q.shift(); if (!s) { r.q = null; return; }
   const sp = IDLE.speed, next = () => { r.qAt = performance.now() + (s.ms || 0) * sp; };
   if (s.fn) s.fn();
-  if (s.say && !S.sleeping && bubble.hidden) { const h = rmHead(d); say(s.say, h.x, h.y, 2600); }
+  if (s.say && !S.sleeping && (bubble.hidden || s.ask)) { const h = rmHead(d); say(s.say, h.x, h.y, s.ask ? 3400 : 2600); }
   if (s.bark) barkDog(d, s.bark, { ambient: true, volume: 0.7 });
   if (s.to) { r.qAt = Infinity; rmTo(d, s.to[0], s.to[1], { run: s.run, pose: s.pose, face: s.face, done: next }); return; }
   if (s.pose) { if (s.face) r.face = s.face; packPose[d.id] = poseReal(d.key, s.pose) ? s.pose : s.fb || 'sit'; rmPaint(d); }
@@ -247,7 +265,7 @@ function rmStep(d) {
 function rmQTick(d, now) { const r = rmSt(d); if (r.q && !r.tw && now >= r.qAt) rmStep(d); }
 // a pack dog's turn (packIdleTick, 16_voices_idle.js): true when it set off on a walk of its own
 function rmPackAct(d) {
-  if (!rmFree() || d === D() || d.sleeping) return false; const r = rmSt(d); if (r.fix || r.tw || r.q) return false;
+  if (!rmFree() || d === D() || d.sleeping || !RM.no || performance.now() - (RM.up || 0) < 1500) return false; const r = rmSt(d); if (r.fix || r.tw || r.q) return false;
   const p = rmPers(d), now = performance.now();
   if (Math.random() > 0.3 + 0.55 * p.energy) return false; // lazy dogs mostly change pose where they are
   const out = outdoorsNow(), w = { wander: 2, zoomies: p.zoomies * (out ? 2.2 : 0.6), follow: p.follows * 1.6, sniff: p.trait === 'sniff' ? 2.5 : out ? 0.6 : 0.2, herd: p.trait === 'herd' && S.dogs.length > 2 ? 2 : 0, guard: p.trait === 'guard' ? 2 : 0, beg: p.trait === 'beg' ? 1.6 : 0, dig: p.trait === 'needy' && GRASSY.includes(S.place) ? 1.2 : 0, doze: (1 - p.energy) * 1.4, front: p.trait === 'follow' || p.trait === 'polite' ? 1 : 0 };
@@ -290,14 +308,19 @@ function rmPackAct(d) {
 // for a while (the dachshund asks most). Ignoring it never hurts anything: it just asks again now and then.
 const rmAskGap = (d) => (100000 - 70000 * rmPers(d).attention) * Math.max(0.05, IDLE.speed);
 function rmPetAgo(d) { return performance.now() - (RM.petT[d.id] || RM.t0 || 0); }
-function rmFrontSpot(d) { const z = rmZoneOf(S.place), r = rmSt(d), cx = isPhone() ? camCx : 500; return rmNear(d, clamp((r.x + cx) / 2, 120, 880), z.y1 - 6) || rmNear(d, r.x, z.y1, false); }
+// the front of the scene (towards the player), near the middle of the view: the front row first, else the nearest free spot
+function rmFrontSpot(d) {
+  const z = rmZoneOf(S.place), r = rmSt(d), cx = isPhone() ? camCx : 500, tx = clamp((r.x + cx) / 2, 120, 880); let c = rmCands(d); if (!c.length) c = rmCands(d, false); if (!c.length) return null;
+  const row = c.filter((p) => p[1] >= z.y1 - 50), pool = row.length ? row : c;
+  let best = null, bv = 1e9; pool.forEach((p) => { const v = Math.abs(p[0] - tx) + (z.y1 - p[1]) * 3; if (v < bv) { bv = v; best = p; } }); return best;
+}
 function rmAsk(d, force) {
   const r = rmSt(d), now = performance.now(); if (!d || d.sleeping || r.fix || (!force && (r.tw || r.q))) return false;
   const to = rmFrontSpot(d); if (!to) return false; r.ask = (r.ask || 0) + 1; RM.askAt = now;
   const line = force || r.ask > 1 || rmPers(d).trait === 'needy' ? persLine(d) : null, pose = PICK(['sit', 'happy']);
   if (d === D()) { IDLE.ask = { to, line, pose }; IDLE.force = 'ask'; return true; }
   packNext[d.id] = now + 60000;
-  rmQueue(d, [{ to }, { pose, face: to[0] < (isPhone() ? camCx : 500) ? 'right' : 'left', ms: 600 }, { say: line, bark: Math.random() < 0.4 ? 'whine' : null, ms: 4200 }, { fn: () => { packNext[d.id] = performance.now() + 2000; } }]);
+  rmQueue(d, [{ to }, { pose, face: to[0] < (isPhone() ? camCx : 500) ? 'right' : 'left', ms: 600 }, { say: line, ask: true, bark: Math.random() < 0.4 ? 'whine' : null, ms: 4200 }, { fn: () => { packNext[d.id] = performance.now() + 2000; } }]);
   return true;
 }
 function rmAttention(now) {
@@ -333,7 +356,8 @@ function rmTick() {
   rmAttention(now);
 }
 function rmSceneUp() {
-  if (!S || !$('#pack')) return; rmAdopt(); RM.no = null;
+  if (!S || !$('#pack')) return; rmAdopt(); RM.up = performance.now();
+  rmScan(); rmValidate(true); rmDepth(); // the scene is in the DOM now: read its tappable things and step anybody off them before the first frame
   requestAnimationFrame(() => { if (cur.mode !== 'yard' && cur.mode !== 'bath') return; rmScan(); rmValidate(true); rmDepth(); if (isPhone()) { phHomeRefit(); rmLookSync(); } });
 }
 on('yard:enter', rmSceneUp);
@@ -363,10 +387,13 @@ function rmLookSync() {
 
 // the colour above the scene when the phone zooms out: the top of the scene's sky (or wall) rect
 function rmSky() {
-  const svg = $('#view > svg.world'); if (!svg) return ''; const l = [...svg.querySelectorAll('#sceneG rect')].slice(0, 12).filter((r) => +(r.getAttribute('width') || 0) >= 1000 && +(r.getAttribute('y') || 0) <= 0 && !r.getAttribute('opacity'));
-  const top = l.filter((r) => /url\(/.test(r.getAttribute('fill') || '')).pop() || l.pop(); if (!top) return '';
-  const f = top.getAttribute('fill') || '', m = /url\(#([^)]+)\)/.exec(f), st = m && svg.querySelector('#' + CSS.escape(m[1]) + ' stop');
-  return st ? st.getAttribute('stop-color') || getComputedStyle(st).stopColor || '' : f;
+  const svg = $('#view > svg.world'); if (!svg) return ''; let col = '';
+  [...svg.querySelectorAll('#sceneG rect')].slice(0, 12).forEach((r) => {
+    if (+(r.getAttribute('width') || 0) < 1000 || +(r.getAttribute('y') || 0) > 0 || r.getAttribute('opacity')) return;
+    const f = r.getAttribute('fill') || '', m = /url\(#([^)]+)\)/.exec(f), g = m && svg.querySelector('#' + CSS.escape(m[1]));
+    if (g && /Gradient$/.test(g.tagName)) { const st = g.querySelector('stop'); if (st) col = st.getAttribute('stop-color') || col; } else if (!m && f) col = f; // a pattern (paper grain) is drawn over the sky: skip it
+  });
+  return col;
 }
 
 /* ---------------- test hook ---------------- */
@@ -374,7 +401,7 @@ function rmExpose() {
   if (!window.__paw) return;
   window.__paw.rm = { on: () => rmOn(), free: () => rmFree(), dogs: () => rmDogs().map((d) => d.id), pos: (id) => rmPos(dogById(id) || D()), scale: (y) => rmScale(y), zone: (p) => rmZone(p),
     set: (id, o) => rmSet(dogById(id), o), to: (id, x, y, o) => rmTo(dogById(id), x, y, o || {}), pause: (t) => rmPause(t), resume: (t) => rmResume(t), ok: (id, x, y) => rmOk(dogById(id), x, y, rmScale(y)),
-    scan: () => { rmScan(); return RM.no; }, act: (id) => rmPackAct(dogById(id)), ask: (id) => rmAsk(dogById(id) || D(), true), petAgo: (id) => rmPetAgo(dogById(id)), span: () => rmSpan(),
+    scan: () => { rmScan(); return RM.no; }, validate: () => { rmScan(); rmValidate(true); }, act: (id) => rmPackAct(dogById(id)), ask: (id) => rmAsk(dogById(id) || D(), true), petAgo: (id) => rmPetAgo(dogById(id)), span: () => rmSpan(),
     tap: (id) => { const d = dogById(id), r = rmSt(d); return rmTapBox(r.x, r.y, rmK(r)); }, get moving() { return rmDogs().filter((d) => rmSt(d).tw || rmSt(d).q).map((d) => d.id); } };
 }
 on('game:ready', () => setTimeout(rmExpose, 0));

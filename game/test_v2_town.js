@@ -84,8 +84,10 @@ require('./test_lib').run('v2_town', async (t) => {
   ok(await t.until(() => !!document.querySelector('#visitorG')), 'roll under 30%: Pip-Squeak visits Town Square');
   ok(await t.until(() => /Look who it is! Pip-Squeak grew up!/.test(window.__paw.town.line)), 'bubble line "Look who it is! Pip-Squeak grew up!"');
   await t.sleep(150);
-  const rects = await ev(() => { const r = (el) => { const b = el.getBoundingClientRect(); return [b.left, b.top, b.right, b.bottom]; }; const vis = document.querySelector('#visitorG > rect'); return { v: r(vis), pack: [...document.querySelectorAll('#pack .packdog > .pd-wander > rect')].map(r), me: r(document.getElementById('dogHit')), btns: [...document.querySelectorAll('#placeBtns .btn')].map(r) }; });
-  ok(rects.pack.length === 3 && !rects.pack.some((r) => t.hitR(rects.v, r)) && !t.hitR(rects.v, rects.me) && !rects.btns.some((r) => t.hitR(rects.v, r)), 'visitor overlaps no dog of yours and no place button');
+  const rects = await ev(() => { const r = (el) => { const b = el.getBoundingClientRect(); return [b.left, b.top, b.right, b.bottom]; }; const vis = document.querySelector('#visitorG > rect'); return { v: r(vis), pack: [...document.querySelectorAll('#pack .packdog .pd-wander > rect')].map(r), me: r(document.getElementById('dogHit')), btns: [...document.querySelectorAll('#placeBtns .btn')].map(r) }; });
+  // v2.10 ROAM: every dog is drawn the same size, so the visitor's tap rect may touch a dog's a little (at most 30% of it), never a place button
+  const ovl = (a, b) => Math.max(0, Math.min(a[2], b[2]) - Math.max(a[0], b[0])) * Math.max(0, Math.min(a[3], b[3]) - Math.max(a[1], b[1])), va = (rects.v[2] - rects.v[0]) * (rects.v[3] - rects.v[1]);
+  ok(rects.pack.length === 3 && rects.pack.concat([rects.me]).every((r) => ovl(rects.v, r) < 0.3 * va) && !rects.btns.some((r) => t.hitR(rects.v, r)), 'visitor overlaps no dog of yours and no place button ' + JSON.stringify(rects));
   await t.SH('04_visitor');
   s = await S(); ok(s.rehomed[0].lastVisit === (await ev(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })), 'lastVisit updated');
   await ev(() => { window.__paw.S.dog.stats.happy = 50; });
