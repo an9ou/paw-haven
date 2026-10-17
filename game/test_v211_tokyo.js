@@ -61,7 +61,7 @@ require('./test_lib').run('v211_tokyo', async (t) => {
   await t.until(() => !!document.querySelector('.tk-ride'), null, 3000);
   s = await S();
   ok(s.coins === 440 && !!s.tk.day && s.tk.rides === 1, `60 coins paid (${s.coins}), S.tk.day set, rides 1`);
-  ok(await ev(() => document.querySelectorAll('.tk-ride .tk-head').length === 3 || (!!document.querySelector('.tk-ride svg') && document.querySelectorAll('.tk-ride svg .pa-head, .tk-ride .tk-head').length >= 3)), 'every dog\'s head is at a window (3 dogs)');
+  ok(await ev(() => document.querySelectorAll('.tk-ride .tk-head').length === 3 || (!!document.querySelector('.tk-ride svg') && document.querySelectorAll('.tk-ride .pa-wd-head, .tk-ride .tk-head').length >= 3)), 'every dog\'s head is at a window (3 dogs)');
   await t.sleep(1200); await t.SH('ride');
   await p().click('.tk-ride'); await t.untilMode('japan', 3000);
   ok(!(await ev(() => !!document.querySelector('.tk-ride'))), 'a tap skips the ride and the Japan map opens');
