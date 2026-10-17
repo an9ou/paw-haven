@@ -9,13 +9,13 @@ const path = require('path'), crypto = require('crypto');
 const { d1 } = require(path.join(__dirname, '..', 'cloudflare', 'd1_node.js'));
 const WORKER = path.join(__dirname, '..', 'cloudflare', 'worker.js');
 
-/* ---------------- a fake Resend: every email lands in mails[] ---------------- */
+/* ---------------- a fake Resend: every email lands in mails[] (m.code: the reset code it carries) ---------------- */
 function fakeMail() {
   const mails = [];
   const fetchFn = async (input, o) => {
     const req = typeof input === 'string' || input instanceof URL ? new Request(input, o) : input; // Miniflare hands over a Request
     if (req.url !== 'https://api.resend.com/emails' || req.headers.get('Authorization') !== 'Bearer re_test') return new Response('{"message":"bad"}', { status: 401 });
-    const m = await req.json(); m.link = (m.text.match(/https:\/\/doodledoggo\.app\/reset\?token=[A-Za-z0-9_-]+/) || [''])[0]; m.token = m.link.split('?token=')[1] || '';
+    const m = await req.json(); m.code = (m.text.match(/code is (\d{6})\b/) || [])[1] || ''; // v2.9.2: the 6-digit reset code
     mails.push(m); return new Response('{"id":"mail_' + mails.length + '"}', { status: 200 });
   };
   return { mails, fetch: fetchFn };
@@ -25,7 +25,7 @@ function fakeMail() {
 function makeServer() {
   const DB = d1(), raw = DB.raw;
   const mail = fakeMail();
-  const env = { DB, RATE_SCALE: 100, RESEND_API_KEY: 're_test', MAIL_FETCH: mail.fetch };
+  const env = { DB, RATE_SCALE: 100, RESEND_API_KEY: 're_test', MAIL_FETCH: mail.fetch, MAIL_WAIT: '1' }; // MAIL_WAIT: the code mail is in mails[] when /forgot answers
   let worker = null;
   const ips = new Map();
   const srv = { env, mails: mail.mails, calls: [], pages: new Set(), offline: new Set() };

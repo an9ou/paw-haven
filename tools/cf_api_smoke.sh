@@ -31,4 +31,5 @@ call POST /logout '{}' "$LT" >/dev/null
 check "$(call POST /register "{\"email\":\"$EM\",\"password\":\"another-pass-1\"}" | j "d.get('error')")" email_exists "one email, one account"
 check "$(call POST /forgot "{\"email\":\"nobody-$(date +%s)@example.com\"}" | j "d.get('ok')")" True "forgot password: the same answer for an unknown email"
 check "$(call POST /reset '{"token":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx","password":"whatever-1"}' | j "d.get('error')")" expired "a made-up reset link is refused"
+check "$(call POST /reset-code "{\"email\":\"never-asked-$(date +%s)@example.com\",\"code\":\"123456\",\"password\":\"whatever-1\"}" | j "d.get('error')")" expired "a reset code for an email that never asked is refused (v2.9.2)"
 [ $fail = 0 ] && echo "LIVE SMOKE OK ($EM)" || { echo "LIVE SMOKE FAILED"; exit 1; }

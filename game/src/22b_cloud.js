@@ -247,10 +247,12 @@ function clApply(data, row, msg) {
 const CL_PW_MIN = 8;
 function clErrText(e) {
   const s = String((e && (e.message || e.code)) || e || '');
+  if (/too_many_tries/.test(s)) return 'Too many wrong tries for that code. Tap Send a new code.'; // v2.9.2 reset codes
+  if (/wrong_code/.test(s)) return "That code isn't right. Check the email and try again.";
   if (/rate_limited|too many/i.test(s)) return 'Too many tries. Wait a few minutes and try again.';
   if (/invalid.*(login|credential)|invalid_credentials/i.test(s)) return "That email and password don't match. Check them and try again.";
   if (/already|exists|registered|taken/i.test(s)) return 'This email already has an account. Log in, or use Forgot your password.';
-  if (/expired/i.test(s)) return 'That link has run out or was already used. Ask for a new one: Log in, then Forgot your password.';
+  if (/expired/i.test(s)) return 'That code has run out or was replaced by a newer one. Tap Send a new code.';
   if (/password/i.test(s) && /(short|weak|least|characters)/i.test(s)) return `Pick a password with at least ${CL_PW_MIN} characters.`;
   if (/email/i.test(s) && /invalid|format/i.test(s)) return 'That email looks wrong. Check it and try again.';
   if (/fetch|network|offline|timeout|blocked|load/i.test(s)) return 'Cloud save is offline. Your game is saved on this device.';
@@ -324,14 +326,33 @@ async function clSignedIn(u, local, owner) {
   if (local) { clOwn(CL.uid); clMetaSet({ changedAt: Date.now(), rev: 0, pushedAt: 0 }); await clPush(true); }
   return { ok: true, loaded: false };
 }
-// v2.8.2 Forgot password: ask for an emailed link. { ok, mail } (mail false: no email service yet). The answer never says
-// whether the email has an account.
+// Forgot password: ask for an emailed 6-digit code (v2.9.2, was a link). { ok, mail } (mail false: no email service yet).
+// The answer never says whether the email has an account.
 async function clForgot(email) {
   try {
     if (!(await clStart())) return { ok: false, msg: 'Cloud save is offline. Your game is saved on this device.' };
     const r = await clApi('POST', '/forgot', { email }, true);
     return r.ok ? { ok: true, mail: !r.data || r.data.mail !== false } : { ok: false, msg: clErrText(r.error) };
   } catch (e) { return { ok: false, msg: clErrText(e) }; }
+}
+// v2.9.2: the emailed code sets a new password, and the Worker logs this device in at once (every other device is logged out).
+// Then it goes on like a log in. { ok, loaded } or { ok: false, msg, left } (left: wrong tries left for this code).
+async function clResetCode(email, code, pw) {
+  try {
+    if (!(await clStart())) return { ok: false, msg: 'Cloud save is offline. Your game is saved on this device.' };
+  } catch (e) { return { ok: false, msg: clErrText(e) }; }
+  clearTimeout(CL.timer); CL.timer = null; CL.loggingIn = true; // as in clLogin: no guest push after the switch
+  try {
+    await clFlushNow();
+    const local = clLocal(), owner = clOwner();
+    const r = await clApi('POST', '/reset-code', { email, code, password: pw }, true);
+    if (!r.ok || !r.data || !r.data.token || !r.data.user) {
+      const left = r.data && typeof r.data.left === 'number' ? r.data.left : null;
+      return { ok: false, err: (r.data && r.data.error) || '', left, msg: clErrText(r.error) };
+    }
+    clTokSet(r.data.token);
+    return await clSignedIn(r.data.user, local, owner);
+  } catch (e) { return { ok: false, msg: clErrText(e) }; } finally { CL.loggingIn = false; CL.again = false; }
 }
 async function clLogout() {
   CL.loggingIn = true; try { await clFlushNow(); } finally { CL.loggingIn = false; CL.again = false; } // the last ~2 s reach this account, not the next guest
@@ -464,7 +485,7 @@ function clBind(p) {
     }
     const k = e.target.closest('[data-cl]'); if (!k) return; const a = k.dataset.cl; SFX.click();
     if (a === 'back') return clGo('');
-    if (a === 'forgot') return acOpenForgot(val('clEmail').trim(), cloudOpen); // v2.8.2: an emailed link (22d_reset.js)
+    if (a === 'forgot') return acOpenForgot(val('clEmail').trim(), cloudOpen); // an emailed code, typed in here (22d_reset.js)
     if (a === 'reg' || a === 'login' || a === 'pw') return clGo(a);
     if (a === 'backups') { CL.bk = null; clGo('backups'); CL.bk = (await clBackups()) || []; if (CL.ui === 'backups') clRender(); return; }
     if (a === 'logout') { const ok = await confirmIn(p, 'Log out? The game stays on this device.', 'Log out', 'Stay'); if (!ok) return; await clLogout(); clGo('', 'Logged out. Your game stays on this device.'); return; }
