@@ -32,9 +32,13 @@ L = {  # "!" gives Bella more lift; keep the subtitles (trailer90.js) in step wi
  "e2soon": "Coming soon! Follow along, so you don't miss a thing!",
  "e2play": "Come and meet your new best friend. Play free today!",
 }
+# spelled for the voice only (the subtitles keep the real names): Kokoro reads "Mochi" as MAH-chai; Mochi is MOH-chee
+SAY = {"Mochi": "Mohchee"}
 out = {}
 for key, text in L.items():
-    a, sr = k.create(text, voice=V, speed=SP, lang="en-gb" if V.startswith("b") else "en-us")
+    said = text
+    for w, sp in SAY.items(): said = said.replace(w, sp)
+    a, sr = k.create(said, voice=V, speed=SP, lang="en-gb" if V.startswith("b") else "en-us")
     idx = np.where(np.abs(a) > 0.01)[0]; a = a[max(0, idx[0] - int(0.03 * sr)): idx[-1] + int(0.08 * sr)]
     sf.write(f"{OUT}/{key}.wav", a, sr); out[key] = round(len(a) / sr, 2)
 json.dump({"dur": out, "text": L}, open(f"{OUT}/vo.json", "w"), indent=1); print(out, "total", round(sum(v for kk, v in out.items() if kk != "e2play"), 1))

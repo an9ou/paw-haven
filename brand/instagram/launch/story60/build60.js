@@ -50,9 +50,10 @@ const sh = (args) => execFileSync('ffmpeg', ['-y', '-loglevel', 'error', ...args
     fs.writeFileSync(path.join(WORK, 'music60.json'), JSON.stringify(plan));
     execFileSync('node', [path.join(__dirname, '..', 'reel_audio.js'), music, path.join(WORK, 'music60.json')], { stdio: 'inherit' });
   }
-  const dir = path.join(WORK, 'frames'); fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });
+  const dir = path.join(WORK, 'frames'), redraw = !process.env.SOUND_ONLY; // SOUND_ONLY=1: keep the drawn frames, redo only the sound
+  if (redraw) fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });
   const parts = 4, step = Math.ceil(NF / parts);
-  await Promise.all(Array.from({ length: parts }, (_, k) => frames(k * step, Math.min(NF, (k + 1) * step), dir)));
+  if (redraw) await Promise.all(Array.from({ length: parts }, (_, k) => frames(k * step, Math.min(NF, (k + 1) * step), dir)));
   const inputs = [], filt = [];
   ORDER.forEach((k, i) => { inputs.push('-i', path.join(VOD, k + '.wav')); filt.push(`[${i + 1}:a]aresample=44100,aformat=channel_layouts=stereo,adelay=${Math.round(ST[k] * 1000)}|${Math.round(ST[k] * 1000)}[v${i}]`); });
   inputs.push('-i', music); const mi = ORDER.length + 1;

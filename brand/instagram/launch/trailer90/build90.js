@@ -98,13 +98,17 @@ const sh = (args) => execFileSync('ffmpeg', ['-y', '-loglevel', 'error', ...args
   const cutF = Math.round(endAt * FPS);
   for (const shape of shapes === 'both' ? ['P', 'L'] : [shapes]) {
     const ends = endings === 'both' ? ['soon', 'play'] : [endings];
-    const shared = path.join(WORK, 'frames_' + shape); fs.rmSync(shared, { recursive: true, force: true }); fs.mkdirSync(shared, { recursive: true });
+    const shared = path.join(WORK, 'frames_' + shape), redraw = !process.env.SOUND_ONLY; // SOUND_ONLY=1: keep the drawn frames, redo only the sound
+    if (redraw) fs.rmSync(shared, { recursive: true, force: true }); fs.mkdirSync(shared, { recursive: true });
     const parts = 4, step = Math.ceil(cutF / parts);
-    await Promise.all(Array.from({ length: parts }, (_, k) => frames(shape, true, k * step, Math.min(cutF, (k + 1) * step), shared)));
+    if (redraw) await Promise.all(Array.from({ length: parts }, (_, k) => frames(shape, true, k * step, Math.min(cutF, (k + 1) * step), shared)));
     for (const m of ends) {
-      const dir = path.join(WORK, `frames_${shape}_${m}`); fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });
-      for (let i = 0; i < cutF; i++) { const n = 'f_' + String(i).padStart(5, '0') + '.jpg'; fs.symlinkSync(path.join(shared, n), path.join(dir, n)); }
-      await frames(shape, m === 'soon', cutF, NF, dir);
+      const dir = path.join(WORK, `frames_${shape}_${m}`);
+      if (redraw) {
+        fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });
+        for (let i = 0; i < cutF; i++) { const n = 'f_' + String(i).padStart(5, '0') + '.jpg'; fs.symlinkSync(path.join(shared, n), path.join(dir, n)); }
+        await frames(shape, m === 'soon', cutF, NF, dir);
+      }
       const lines = ORDER.map((k) => [k === 'e2' ? 'e2' + m : k, ST[k]]), inputs = [], filt = [];
       lines.forEach(([k, st], i) => { inputs.push('-i', path.join(VOD, k + '.wav')); filt.push(`[${i + 1}:a]aresample=44100,aformat=channel_layouts=stereo,adelay=${Math.round(st * 1000)}|${Math.round(st * 1000)}[v${i}]`); });
       inputs.push('-i', music); const mi = lines.length + 1;
