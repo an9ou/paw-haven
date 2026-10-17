@@ -79,6 +79,7 @@ const SUITES = {
   v29_photo: { file: 'test_v29_photo.js', group: 'all', est: 45 },
   v29_polish: { file: 'test_v29_polish.js', group: 'all', est: 45 },
   v29_flows: { file: 'test_v29_flows.js', group: 'all', est: 60 },
+  v210_ball: { file: 'test_v210_ball.js', group: 'all', est: 60 }, // v2.10 (V210.md): free ball play where you are (BALL lane)
   v29_review: { file: 'test_v29_review.js', group: 'all', est: 40 }, // v2.9 integration review fixes (coordinator)
   // v2.2 phone suites: `node game/run_tests.js phone` (not part of `all`, which stays the desktop regression set)
   phone_legacy: { file: 'test_phone.js', group: 'phone', est: 90 },
@@ -109,6 +110,7 @@ const SUITES = {
   phone_v27_mailbox: { file: 'test_phone_v27_mailbox.js', group: 'phone', est: 40 },
   phone_v28_winter: { file: 'test_phone_v28_winter.js', group: 'phone', est: 60 }, // v2.8 (V28.md section 9): WINTER, with the NEW YEAR and FUJI HILL phone parts
   phone_v29_pack: { file: 'test_phone_v29_pack.js', group: 'phone', est: 50 }, // v2.9 (V29.md)
+  phone_v210_ball: { file: 'test_phone_v210_ball.js', group: 'phone', est: 60 },
   phone_v29_photo: { file: 'test_phone_v29_photo.js', group: 'phone', est: 45 },
   phone_v29_polish: { file: 'test_phone_v29_polish.js', group: 'phone', est: 45 },
 };

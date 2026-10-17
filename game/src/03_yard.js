@@ -530,14 +530,14 @@ function feed(name) {
 /* ---------------- PLAY ---------------- */
 function openPlayTray() {
   if (cur.mode !== 'yard') go('yard');
-  const fts = FETCH_TOYS.filter((t) => owns('toys', t)), sub = { 'Tennis Ball': 'Tennis Ball', Frisbee: 'Frisbee: 3 coins', 'Driftwood Stick': 'Stick: +1 coin', 'Glow Ball': 'Glow Ball: easy' };
-  const b = fts.map((t) => `<button class="card" data-play="fetch:${esc(t)}"><span class="art">${art('item', t)}</span><b>Fetch</b><span class="small">${sub[t]} (challenge)</span></button>`);
+  const fts = FETCH_TOYS.filter((t) => owns('toys', t)), sub = { 'Tennis Ball': 'Free throws, every dog races', Frisbee: 'Long throws: 3 coins', 'Driftwood Stick': 'Tumbles: 3 coins', 'Glow Ball': 'Glows after dark' };
+  const b = fts.map((t) => `<button class="card" data-play="ball:${esc(t)}"><span class="art">${art('item', t)}</span><b>Play ball</b><span class="small">${esc(t)}: ${sub[t]}</span></button>`); // v2.10: free ball play where you are (38_ball.js) replaces the timed Fetch challenge
   toysPlayable().forEach((t) => b.push(`<button class="card" data-play="toy:${esc(t)}"><span class="art">${art('item', t)}</span><b>Play</b><span class="small">${esc(t)}${hwTag(t)}</span></button>`));
   b.push(`<button class="card" data-play="tricks"><span class="art">${ICON('star')}</span><b>Tricks</b><span class="small">${learnedCount()} learned</span></button>`);
   if (owns('toys', 'Squeaky Duck')) b.push(`<button class="card" data-play="duck"><span class="art">${art('item', 'Squeaky Duck')}</span><b>Squeak</b><span class="small">+10 Happiness</span></button>`);
   if (owns('toys', 'Rope Tug')) b.push(`<button class="card" data-play="tug"><span class="art">${art('item', 'Rope Tug')}</span><b>Tug</b><span class="small">+15 Happy, -10 Energy</span></button>`);
   b.push(`<button class="card pdcard" data-play="playdates"><span class="art">${iconOr('playdate', doodle('heart', -6, 2, 0.8) + doodle('heart', 7, -3, 0.65))}</span><b>Playdates</b><span class="small">Puppy Playdates</span></button>`);
-  if (!fts.length) b.push('<p class="small">No fetch toy. Kibble Corner sells balls.</p>');
+  if (!fts.length) b.push('<p class="small">No ball toy. Kibble Corner sells balls.</p>');
   setTray('Play', `${crChipsHTML(PK_CAP_PLAY)}<div class="row">${b.join('')}</div>`); // v2.9 PACK: the chip row (ticked dogs join in), nothing with one dog
   crBindChips(dock, openPlayTray, 'Somebody has to play. Tick another dog first.');
   dock.querySelectorAll('[data-play]').forEach((el) => { el.onclick = () => playPick(el.dataset.play); });
@@ -548,7 +548,7 @@ function playPick(p) {
   if (p === 'tricks' && crPack()) { pkTricksTray(); return; } // v2.9 PACK: the dog picker inside the tray; training a dog never changes the leader
   if (S.sleeping) { nope(`${NAME()} is asleep. Even fun has to wait.`); return; }
   if (p.startsWith('toy:')) { if (S.stats.energy < 5) { nope(`${NAME()} is too tired to play. A nap would help.`); return; } go('toy', p.slice(4)); return; }
-  if (p.startsWith('fetch:')) { if (S.stats.energy < 10) { nope(`${NAME()} is too tired to fetch. A nap would help.`); return; } go('fetch', p.slice(6)); return; }
+  if (p.startsWith('ball:') || p.startsWith('fetch:')) { if (S.stats.energy < 10) { nope(`${NAME()} is too tired to play ball. A nap would help.`); return; } blStart(p.slice(p.indexOf(':') + 1)); return; } // v2.10: the journal's old 'fetch:' key lands here too
   if (p === 'tricks') { openTraining(); return; }
   if (busy) return;
   popDown(); clearCurl();
