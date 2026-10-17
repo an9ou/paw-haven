@@ -14,7 +14,7 @@ const RM_ZONES = { yard: [404, 590], house: [414, 590], square: [414, 590], cafe
 const RM_ZONES_PH = { yard: [424, 594] };
 const RM_TAP = [-88, -170, 176, 180]; // every dog's tap rect around its feet at scale 1 (DX + 44, DY + 35, DW - 88, 180): the drawn body, so four dogs fit
 const RM_WALK = 150, RM_RUN = 360; // world units a second
-const RM_CROP = 700; // the phone crop in world units (section 5.2)
+const RM_CROP = 700, RM_WIDEN = 1.3; // the phone crop in world units (section 5.2): at most 700, and at most 1.3 x the v2.9 crop, so the props' 48 px tap rects keep clear of the dog
 const RM_OUT = ['yard', 'park', 'beach', 'hilltop', 'dogpark', 'woods', 'pier', 'river', 'fujihill', 'square'];
 const rmWander = () => !navigator.webdriver || !!prefs.rmTest; // autonomous walking (the harness pins it off unless a suite asks)
 function rmOn() { return !!S && cur.mode === 'yard' && RM.paused.size === 0; } // roaming runs now (the scene is up and nothing holds it)
@@ -371,11 +371,11 @@ function rmCropW() { const svg = $('#view > svg.world'); if (!svg) return RM_CRO
 // 120 x 71 units) drops under 44 px. vw: the view's width in px, native: the crop at zoom 1
 function rmCropFit(vw, native) {
   rmScan(); const small = (RM.no || []).filter((b) => b[4] !== 'btn' && b[4] !== 'scene' && b[4] !== 'msCardG' && b[2] < 330 && b[3] < 270).map((b) => Math.min(b[2], b[3])); // the clipboard grows its own 48 px tap rect (24_missions.js)
-  const side = small.length ? Math.min(...small) : 1e9; return clamp(Math.min(RM_CROP, (vw * side) / 46), native, RM_CROP);
+  const side = small.length ? Math.min(...small) : 1e9; return clamp(Math.min(RM_CROP, native * RM_WIDEN, (vw * side) / 46), native, RM_CROP);
 }
 // the world x span of every dog's tap rect (and the bowl at home): where the phone camera centres
 function rmSpan() {
-  let L = 1e9, R = -1e9; rmDogs().forEach((d) => { const r = rmSt(d), T = rmTapBox(r.tw ? r.tw.x1 : r.x, r.y, rmK(r)); L = Math.min(L, T[0]); R = Math.max(R, T[0] + T[2]); });
+  let L = 1e9, R = -1e9; rmDogs().forEach((d) => { const r = rmSt(d), lead = d === D(), T = rmTapBox(lead ? r.hx : r.tw ? r.tw.x1 : r.x, lead ? r.hy : r.y, rmK(r)); L = Math.min(L, T[0]); R = Math.max(R, T[0] + T[2]); }); // the leader by its own spot (its errands do not move the home crop)
   if (L > R) { L = 186; R = 530; } return [L, R];
 }
 function rmLookSync() {

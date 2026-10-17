@@ -14,7 +14,7 @@ require('./test_lib').run('phone_v210_roam', async (t) => {
     await t.newGame({ device }, { coins: 2000, bond: { level: 8, pts: 3000 } });
     await t.home('yard'); await quiet();
     let v = await vb();
-    ok(v.w > 560 && v.w < 710 && v.y < 0, `the yard crop is wider (about 700 units, so the clipboard stays 44 px), the extra sky above (${Math.round(v.w)} x ${Math.round(v.h)} from y ${Math.round(v.y)})`);
+    ok(v.w > 500 && v.w < 710 && v.y < 0, `the yard crop is wider than v2.9 (1.3 x, at most 700 units), the extra sky above (${Math.round(v.w)} x ${Math.round(v.h)} from y ${Math.round(v.y)})`);
     ok(await ev(() => { const r = document.getElementById('dogHit').getBoundingClientRect(), w = document.getElementById('view').getBoundingClientRect(); return r.left >= w.left - 1 && r.right <= w.right + 1 && r.top >= w.top - 1 && r.bottom <= w.bottom + 1 && r.width >= 44 && r.height >= 44; }), 'the dog\'s tap rect is fully on screen and at least 44 px');
     ok(await ev(() => !!getComputedStyle(document.getElementById('view')).backgroundColor), 'the view behind the extra sky has a colour');
     ok(await noSide(), 'no sideways scroll');
@@ -45,7 +45,7 @@ require('./test_lib').run('phone_v210_roam', async (t) => {
     await ev(() => { window.__paw.rm.pause('test'); window.__paw.S.dogs.forEach((d) => { d.stats.happy = 40; }); });
     const v2 = await vb(); await ev(([id, x]) => window.__paw.rm.set(id, { x, y: 560 }), [ids[2], Math.round(v2.x + v2.w * 0.78)]);
     const xy = await tapAt(ids[2]); ok(!!xy, 'Pip can be tapped');
-    if (xy) { for (let i = 0; i < 3; i++) { await p().touchscreen.tap(xy.x, xy.y); await t.sleep(150); } }
+    if (xy) { for (let i = 0; i < 3; i++) { const q = await tapAt(ids[2]); if (q) await p().touchscreen.tap(q.x, q.y); await t.sleep(150); } } // she walks to the front after the first pet: find her again
     const st = await S();
     ok(st.dogs.every((d) => (d.id === ids[2] ? d.stats.happy > 40 : Math.round(d.stats.happy) === 40)) && st.activeId === ids[0], 'only Pip was petted, the leader stays: ' + JSON.stringify(st.dogs.map((d) => Math.round(d.stats.happy))));
     await ev(() => window.__paw.rm.resume('test'));
@@ -53,7 +53,7 @@ require('./test_lib').run('phone_v210_roam', async (t) => {
     sec(device + ': the house and a town place');
     for (const pl of ['house', 'square']) {
       await t.home(pl); await quiet(); await t.sleep(300); v = await vb();
-      ok(v.w > 560 && v.w < 710, `${pl}: the crop is about 700 units wide (${Math.round(v.w)})`);
+      ok(v.w > 500 && v.w < 710, `${pl}: the crop is wider than v2.9 (${Math.round(v.w)})`);
       ok(await ev(() => { const r = document.getElementById('dogHit').getBoundingClientRect(), w = document.getElementById('view').getBoundingClientRect(); return r.width >= 44 && r.right > w.left && r.left < w.right; }), `${pl}: the leader's tap rect is at least 44 px`);
       ok(await noSide(), `${pl}: no sideways scroll`);
       await t.SH(tag + '_' + pl + '4');

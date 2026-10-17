@@ -189,7 +189,7 @@ function phTrayFit() {
   if (!isPhone()) return;
   let h = 0;
   if (cur.mode === 'yard') {
-    const pb = $('#placeBtns'); if (pb && pb.children.length) h = pb.offsetHeight + 14; // v2.10: 14 (was 8), so a prop drawn on the scene's bottom edge ends above the buttons (they sit 10 px up) // the place buttons (Garden, Go inside, Café menu...) get their own strip under the scene, so they never cover a prop
+    const pb = $('#placeBtns'); if (pb && pb.children.length) h = pb.offsetHeight + (phZoom < 1 ? 24 : 14); // v2.10: 14 (was 8), so a prop drawn on the scene's bottom edge ends above the buttons (they sit 10 px up) // the place buttons (Garden, Go inside, Café menu...) get their own strip under the scene, so they never cover a prop
     const tr = dock.querySelector(':scope > .tray'); if (tr && !tr.classList.contains('dock-idle')) { phTrayCap(tr); h = tr.offsetHeight; const d = tr.querySelector('.napdet:not([hidden])'); if (d) h += d.offsetHeight + 8; }
   }
   const cur0 = parseFloat(view.style.getPropertyValue('--trayH')) || 0; if (Math.abs(cur0 - h) < 1) return;
