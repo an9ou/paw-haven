@@ -91,6 +91,20 @@ Follow @doodledoggo.app so you don't miss what's next! 🔔
 #doodledoggo #comingsoon #dachshund #doglover #cozy #illustration #crayon
 ```
 
+## The 15-second ad cut (made 17 Oct 2026)
+
+`brand/instagram/launch/story60/doodle-doggo-noodle-story-15s.mp4`: 1080 x 1920, about 16 seconds, same look, no game buttons. **Use this one for the paid ad**; post the 60-second story as a normal Reel.
+
+| Time | Picture | Noodle says |
+|---|---|---|
+| 0:00 to 0:03 | The town drawn in pencil, Noodle scribbled in with crayon | "Hi! I'm Noodle. I drew myself!" |
+| 0:03 to 0:07 | A dash through the park, one huge leap over a log, then *bonk* into the next one. Bubble: "I meant to do that." | "I hop over logs. *(beat)* Mostly." |
+| 0:07 to 0:09.5 | The Dog Park: Biscuit runs in ("Is that a snack?"), Frost arrives ("AWOOO!") | "I made friends!" |
+| 0:09.5 to 0:11.5 | The Mt. Fuji Lookout at dusk, the friends in a row | "And every day ends with Mount Fuji." |
+| 0:11.5 to 0:16 | Coming soon / follow us on Instagram / @doodledoggo.app | "Doodle Doggo. Coming soon! Follow us, so you don't miss me!" |
+
+Remake: `CUT=short python vo60.py <kokoroModelDir> <voDir>`, then `CUT=short node build60.js <voDir> <workDir>`.
+
 ## Ad captions (Meta ads, spoiler-free)
 
 Written for a paid ad whose goal is **new followers / profile visits** (the game is not live yet). Only the first line or two show before "...more", so each one starts with a hook. None of them say "game".

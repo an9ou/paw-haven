@@ -122,7 +122,7 @@ function cam(sc, cx, cy, z) {
   sc.el.style.transform = `translate(${VW / 2 - cx * z}px,${VH / 2 - cy * z}px) scale(${z})`;
 }
 const Z = VH / 600; // full height
-const yardS = scene('yard', 'yard'), walkS = scene('walk', 'park'), sqS = scene('square', 'square'), parkS = scene('park', 'dogpark'), rivS = scene('river', 'river'), hillS = scene('hill', 'fujihill', 'dusk');
+const yardS = scene('yard', 'yard'), walkS = scene('walk', 'park'), sqS = scene('square', 'square'), parkS = scene('park', 'dogpark'), park2S = scene('park2', 'dogpark'), rivS = scene('river', 'river'), hillS = scene('hill', 'fujihill', 'dusk');
 const LOG = PA.obstacle('log').replace('<svg ', '<svg width="120" height="50" ');
 const GER = (pose) => PA.prop('gerald', { pose }).replace('<svg ', '<svg width="200" height="200" ');
 
@@ -131,6 +131,7 @@ let TL = null; window.setTL = (tl) => { TL = tl; };
 const S = (k) => TL.ST[k], E = (k) => TL.ST[k] + TL.D[k];
 // which scene is on: [scene id, start line, tag text, tag sub]
 function shots() {
+  if (TL.cut === 'short') return [['walk', 'n3a', 'Morning walk'], ['park2', 'n5a', 'Dog Park'], ['hill', 'n9', 'Mt. Fuji Lookout']];
   return [['yard', 'n2a', 'Home Yard'], ['walk', 'n3a', 'Morning walk'], ['square', 'n4a', 'Town Square'], ['park', 'n5a', 'Dog Park'], ['river', 'n8a', 'Riverside'], ['hill', 'n9', 'Mt. Fuji Lookout']];
 }
 const SCENE_FN = {
@@ -142,14 +143,15 @@ const SCENE_FN = {
     hearts(sc, 'y', 600, 230, S('n2b') + 0.9, t);
   },
   walk(t, sc) {
-    const a = S('n3a') - 0.3, tb = S('n3b') + 0.12, v = 92, x0 = 170;
+    const short = TL.cut === 'short', a = S('n3a') - 0.3, tb = S('n3b') + 0.12, v = short ? 230 : 92, x0 = 170;
     const x = x0 + v * (Math.min(t, tb) - a), xb = x0 + v * (tb - a);
-    const log2 = xb + 160, th = E('n3a') - 0.75, log1 = x0 + v * (th + 0.33 - a);
+    // the short cut is a dash: one long hop (from nose past the log to tail past it), landing right into the second log
+    const h0 = short ? S('n3a') - 0.25 : E('n3a') - 0.85, h1 = short ? tb : E('n3a'), log2 = xb + 160, log1 = x0 + v * ((h0 + h1) / 2 - a);
     cam(sc, x + 140, 300, Z);
     prop(sc, 'log1', () => LOG, 120, 50, log1, 560); prop(sc, 'log2', () => LOG, 120, 50, log2, 560);
-    const hu = seg(t, th - 0.1, th + 0.75), hop = hu > 0 && hu < 1, bumped = t >= tb, sat = t >= tb + 0.55;
+    const hu = seg(t, h0, h1), hop = hu > 0 && hu < 1, bumped = t >= tb, sat = t >= tb + 0.55;
     const recoil = bumped ? Math.sin(seg(t, tb, tb + 0.3) * Math.PI) * 10 : 0;
-    dog(sc, 'noodle', 'dachs', { x: x - recoil, y: 560, w: 200, pose: sat ? 'sit' : bumped ? 'idle' : hop ? 'jump' : 'walk', lift: hop ? Math.sin(hu * Math.PI) * 120 : bumped ? 0 : Math.abs(Math.sin(t * 9)) * 5, rot: bumped && !sat ? -recoil * 0.5 : 0 });
+    dog(sc, 'noodle', 'dachs', { x: x - recoil, y: 560, w: 200, pose: sat ? 'sit' : bumped ? 'idle' : hop ? 'jump' : 'walk', lift: hop ? (short ? Math.min(1, 2.2 * Math.sin(hu * Math.PI)) * 130 : Math.sin(hu * Math.PI) * 120) : bumped ? 0 : Math.abs(Math.sin(t * 9)) * 5, rot: bumped && !sat ? -recoil * 0.5 : 0 });
     bubble(sc, 'meant', 'I meant to do that.', x - 10, 385, tb + 0.4, t);
   },
   square(t, sc) {
@@ -174,6 +176,16 @@ const SCENE_FN = {
     hearts(sc, 'm', 330, 400, S('n6b'), t); hearts(sc, 'm2', 680, 350, S('n6b') + 0.2, t);
     bubble(sc, 'awoo', 'AWOOO!', 840, 320, n7 + TL.D.n7 * 0.4, t);
   },
+  park2(t, sc) { // the 15-second cut: Biscuit, then Frost
+    const n5 = S('n5a'), bi = n5 + 0.3, fr = n5 + 0.9;
+    cam(sc, lerp(400, 620, eio(seg(t, fr - 0.2, fr + 0.6))), 320, Z * 1.06);
+    const bx = lerp(880, 540, eo3(seg(t, bi - 0.5, bi + 0.3))), brun = t < bi + 0.3;
+    dog(sc, 'frost', 'husky', { x: lerp(1000, 820, eo3(seg(t, fr - 0.1, fr + 0.55))), y: 500, w: 165, pose: t < fr + 0.55 ? 'walk' : 'howl', facing: 'left', op: seg(t, fr - 0.1, fr + 0.1) });
+    dog(sc, 'noodle', 'dachs', { x: 320, y: 570, w: 200, pose: 'sit' });
+    dog(sc, 'biscuit', 'corgi', { x: bx, y: 575, w: 180, pose: brun ? 'walk' : 'happy', facing: 'left', lift: brun ? Math.abs(Math.sin(t * 11)) * 8 : 0, op: seg(t, bi - 0.5, bi - 0.3) });
+    if (t < fr + 0.6) bubble(sc, 'snack', 'Is that a snack?', bx + 10, 400, bi + 0.35, t);
+    bubble(sc, 'awoo', 'AWOOO!', 830, 320, fr + 0.65, t);
+  },
   river(t, sc) {
     const a = S('n8a');
     cam(sc, lerp(340, 400, seg(t, a, E('n8b'))), 330, Z * 1.1);
@@ -194,7 +206,7 @@ const SCENE_FN = {
 // ---- draw one frame ----
 window.draw = async (f) => {
   const t = f.t, show = (id, on) => { $(id).style.display = on ? 'block' : 'none'; };
-  const storyAt = S('n2a') - 0.35, endAt = TL.endAt, section = t < storyAt ? 'hook' : t < endAt ? 'story' : 'end';
+  const storyAt = S(shots()[0][1]) - 0.35, endAt = TL.endAt, section = t < storyAt ? 'hook' : t < endAt ? 'story' : 'end';
   document.body.className = section === 'hook' ? 'hk' : '';
   show('hook', section === 'hook'); show('story', section === 'story'); show('end', section === 'end');
   DOOD.forEach((d) => { const e = $('dd' + d.i), y = 1980 - (((t * d.sp) + d.ph * 2000) % 2100), s = 0.6 + (d.i % 4) * 0.2; e.style.transform = `translate(${d.x + Math.sin(t * 1.3 + d.i) * 24}px,${y}px) rotate(${Math.sin(t + d.i) * 14}deg) scale(${s})`; });
@@ -220,6 +232,7 @@ window.draw = async (f) => {
     $('win').style.transform = `translateY(${(1 - first) * 1100}px) rotate(${side * (1 - k) * 3 + side * 0.4}deg) scale(${0.96 + 0.04 * k})`;
     // the sticker: the place, or the friend who is talking
     let tt = tag, tk = '', ta = at;
+    if (id === 'park2') { [[S('n5a') + 0.3, 'Biscuit', 'the corgi'], [S('n5a') + 0.9, 'Frost', 'the husky']].forEach(([a, n, kk]) => { if (t >= a) { tt = n; tk = kk; ta = a; } }); }
     if (id === 'park') { const fr = [[S('n5a') + TL.D.n5a * 0.45, 'Biscuit', 'the corgi'], [S('n6a') - 0.2, 'Mochi', 'the shiba'], [S('n7') - 0.2, 'Frost', 'the husky']]; fr.forEach(([a, n, kk]) => { if (t >= a) { tt = n; tk = kk; ta = a; } }); }
     if (id === 'river' && t >= S('n8a') + 0.3) { tt = 'Gerald'; tk = 'knows everything'; ta = S('n8a') + 0.3; }
     $('tagT').textContent = tt; $('tagK').textContent = tk;

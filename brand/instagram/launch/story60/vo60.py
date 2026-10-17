@@ -26,6 +26,10 @@ L = {  # "!" gives Bella more lift; keep the subtitles (build60.js) in step with
 }
 # spelled for the voice only (the subtitles keep the real names): Kokoro reads "Mochi" as MAH-chai; Mochi is MOH-chee
 SAY = {"Mochi": "Mohchee"}
+# CUT=short: the 15-second ad cut (same keys where the shot is the same)
+if __import__("os").environ.get("CUT") == "short":
+    L = {"n1a": "Hi! I'm Noodle.", "n1b": "I drew myself!", "n3a": "I hop over logs.", "n3b": "Mostly.", "n5a": "I made friends!",
+         "n9": "And every day ends with Mount Fuji.", "n10a": "Doodle Doggo. Coming soon!", "n10b": "Follow us, so you don't miss me!"}
 out = {}
 for key, text in L.items():
     said = text
