@@ -15,3 +15,6 @@ html[data-layout="phone"] .rm-look.right .rm-n{left:-6px}
 html[data-layout="phone"] .rm-look.left .rm-n{right:-6px}
 .rm-look{display:none}
 html[data-layout="phone"] .rm-look{display:flex}
+/* ball play: the missions clipboard's own 48 px tap rect (not a .hot element, so 40_ball.css misses it) opens nothing while playing */
+html.bl-on #view svg.world #msCardG, html.bl-on #view svg.world #msCardG *{pointer-events:none}
+html.bl-on .rm-look{display:none!important} /* the camera follows the ball while playing */

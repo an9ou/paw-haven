@@ -57,7 +57,7 @@ function rmScan() {
   RM.no = out;
 }
 // the feet (hard: never) and the tap rect (soft) against the no-go boxes. Soft: the tap rect covers no small tappable thing, no more than 40% of a bigger
-// one and never its middle (only huge scenery like a shop front keeps just the feet out), and a dog standing behind a prop on the floor (its feet
+// one and never its middle, a decoration or seasonal prop no more than 10% (only huge scenery like a shop front keeps just the feet out), and a dog standing behind a prop on the floor (its feet
 // above the prop's base) keeps its body off it (at most a fifth of its width), or it would be drawn in front of the prop it stands behind
 const RM_HUGE = 70000;
 function rmBoxes() { return RM.no || rmStaticNo(S.place); }
@@ -69,14 +69,14 @@ function rmSoft(x, y, k, flat) { // flat: no depth rule (the last fallback when 
     if (!flat && b[4] !== 'btn' && A < RM_HUGE && base > y0 && y < base && T[1] < base && Math.min(T[0] + T[2], b[0] + b[2] - 6) - Math.max(T[0], b[0] + 6) > T[2] * 0.2 && T[1] + T[3] > b[1]) return true; // a fifth of its width over the prop
     if (b[4] === 'scene' || A >= RM_HUGE) continue;
     const o = rmOver(T, b[4] === 'prop' ? [b[0] - 3, b[1] - 3, b[2] + 6, b[3] + 6] : b); if (!o) continue;
-    if (b[4] === 'prop' ? o > 0 : A < 15000 ? o > A * 0.08 : o > A * 0.4 || (b[0] + b[2] / 2 > T[0] && b[0] + b[2] / 2 < T[0] + T[2] && b[1] + b[3] / 2 > T[1] && b[1] + b[3] / 2 < T[1] + T[3])) return true;
+    if (b[4] === 'prop' ? o > A * 0.1 : A < 15000 ? o > A * 0.08 : o > A * 0.4 || (b[0] + b[2] / 2 > T[0] && b[0] + b[2] / 2 < T[0] + T[2] && b[1] + b[3] / 2 > T[1] && b[1] + b[3] / 2 < T[1] + T[3])) return true;
   }
   return false;
 }
 // where a dog is headed (its feet and scale), the leader by its own spot while it runs an errand (the bowl, the bath)
 function rmDest(o) { const r = rmSt(o), w = r.tw; if (o === D() && r.away) return [r.hx, r.hy, rmScale(r.hy)]; if (!w) return [r.x, r.y, rmK(r)]; const e = w.end || [w.x1, w.y1]; return [e[0], e[1], w.k1 != null ? w.k1 : r.k != null && r.fix ? r.k : rmScale(e[1])]; }
 // may dog d stand with its feet at x, y (scale k)? In the zone, rmHard and rmSoft clear, and the other dogs: no two tap rects overlap by more than
-// 30% (50% when nothing else is free), nobody stands in front of the leader over 15% of its tap rect (its #dogHit stays tappable), and the dogs in front
+// 30% (50% when nothing else is free), nobody overlaps the leader over 15% of its tap rect (in front: its #dogHit stays tappable; behind: the leader would hide it), and the dogs in front
 // of a dog never cover more than 45% of it together (no clumps where one dog disappears)
 function rmOk(d, x, y, k, strict) {
   const z = rmZoneOf(S.place); if (y < z.y0 || y > z.y1 || x < z.x0 || x > z.x1) return false;
@@ -85,14 +85,26 @@ function rmOk(d, x, y, k, strict) {
   const lim = strict === false || loose ? 0.5 : 0.3, ll = strict === false || loose ? 0.3 : 0.15, A = T[2] * T[3], L = D(); let front = 0;
   for (const o of rmDogs()) {
     if (o === d || !rmSt(o).seeded) continue; const [ox, oy, ok] = rmDest(o), U = rmTapBox(ox, oy, ok), v = rmOver(T, U); if (!v) continue;
-    if (v > A * lim || (o === L && y >= oy && v > U[2] * U[3] * ll) || (d === L && oy >= y && v > A * ll)) return false;
+    if (v > A * lim || (o === L && v > U[2] * U[3] * ll) || (d === L && v > A * ll)) return false;
     if (oy >= y) front += v;
   }
-  return front <= A * 0.45;
+  return loose || front <= A * 0.45;
 }
-// every free spot, each level looser than the last: strict, the dogs a little closer (false), and no depth rule ('loose': four decorations out
-// can leave nothing else)
-function rmCandsAny(d) { for (const lv of [true, false, 'loose']) { const c = rmCands(d, lv); if (c.length) return c; } return []; }
+// every free spot, each level looser than the last: strict, the dogs a little closer (false), and 'loose': no depth rule, the dogs only 50% apart
+// (four decorations out can leave nothing else), then the least crowded spot. The feet keep out of every box at every level
+function rmCandsAny(d) { for (const lv of [true, false, 'loose']) { const c = rmCands(d, lv); if (c.length) return c; } const p = rmLeast(d); return p ? [p] : []; }
+// when no level has a free spot (a small yard, four dogs, four decorations out): the spot that covers the least of the props, the small tappable
+// things and the other dogs (the leader counts three times), the feet still out of every box
+function rmLeast(d, x0, y0) {
+  const z = rmZoneOf(S.place), L = D(); let best = null, bv = 1e9;
+  for (let y = z.y0; y <= z.y1; y += 14) for (let x = z.x0; x <= z.x1; x += 20) {
+    if (rmHard(x, y)) continue; const k = rmScale(y), T = rmTapBox(x, y, k), A = T[2] * T[3]; if (T[0] < 4 || T[0] + T[2] > 996) continue; let v = 0;
+    rmBoxes().forEach((b) => { const Ab = b[2] * b[3]; if (b[4] === 'scene' || Ab >= RM_HUGE) return; const o = rmOver(T, b); if (o) v += (o / Ab) * (b[4] === 'prop' || Ab < 15000 ? 3 : 1); });
+    rmDogs().forEach((o) => { if (o === d || !rmSt(o).seeded) return; const [ox, oy, ok] = rmDest(o), w = rmOver(T, rmTapBox(ox, oy, ok)) / A; if (w) v += w * (o === L ? 3 : 1); });
+    if (x0 != null) v += Math.hypot(x - x0, y - y0) / 5000; if (v < bv) { bv = v; best = [x, y]; }
+  }
+  return best;
+}
 function rmCands(d, strict) { const z = rmZoneOf(S.place), out = []; for (let y = z.y0; y <= z.y1; y += 14) for (let x = z.x0; x <= z.x1; x += 20) if (rmOk(d, x, y, rmScale(y), strict)) out.push([x, y]); return out; }
 // spot kinds (section 5.2): open, shade, edge, gate, bowl, dig, front, sun (bed is the nap spots, handled by the nap itself)
 function rmTags(x, y) {
@@ -177,7 +189,9 @@ function rmValidate(instant) {
   rmDogs().forEach((d) => {
     const r = rmSt(d); if (r.fix || r.tw || (d === D() && (!rmWander() || busy || IDLE.act || S.sleeping || curling || pottyBusy))) return;
     if (rmOk(d, r.x, r.y, rmK(r))) { r.wake = false; return; }
-    let p = rmNear(d, r.x, r.y); for (const lv of [false, 'loose']) if (!p && !rmOk(d, r.x, r.y, rmK(r), lv)) p = rmNear(d, r.x, r.y, lv); if (!p) { r.wake = false; return; } // the nearest spot at the strictest level that has one
+    let p = rmNear(d, r.x, r.y); for (const lv of [false, 'loose']) if (!p && !rmOk(d, r.x, r.y, rmK(r), lv)) p = rmNear(d, r.x, r.y, lv); // the nearest spot at the strictest level that has one
+    if (!p && !rmOk(d, r.x, r.y, rmK(r), 'loose')) { p = rmLeast(d, r.x, r.y); if (p && Math.hypot(p[0] - r.x, p[1] - r.y) < 10) p = null; } // or the least crowded one
+    if (!p) { r.wake = false; return; }
     if (instant) { r.x = p[0]; r.y = p[1]; r.hx = r.x; r.hy = r.y; rmPaint(d); } else rmTo(d, p[0], p[1], { anchor: true });
     r.wake = false;
   });
@@ -483,7 +497,8 @@ function rmExpose() {
   window.__paw.rm = { on: () => rmOn(), free: () => rmFree(), dogs: () => rmDogs().map((d) => d.id), pos: (id) => rmPos(dogById(id) || D()), scale: (y) => rmScale(y), zone: (p) => rmZone(p),
     set: (id, o) => rmSet(dogById(id), o), to: (id, x, y, o) => rmTo(dogById(id), x, y, o || {}), pause: (t) => rmPause(t), resume: (t) => rmResume(t), ok: (id, x, y) => rmOk(dogById(id), x, y, rmScale(y)),
     scan: () => { rmScan(); return RM.no; }, validate: () => { rmScan(); rmValidate(true); }, act: (id) => rmPackAct(dogById(id)), ask: (id) => rmAsk(dogById(id) || D(), true), petAgo: (id) => rmPetAgo(dogById(id)), span: () => rmSpan(),
-    hard: (x, y) => rmHard(x, y), soft: (x, y) => rmSoft(x, y, rmScale(y)), route: (x0, y0, x1, y1) => rmRoute(x0, y0, x1, y1), cands: (id) => rmCands(dogById(id) || D()).length,
+    hard: (x, y) => rmHard(x, y), soft: (x, y) => rmSoft(x, y, rmScale(y)), route: (x0, y0, x1, y1) => rmRoute(x0, y0, x1, y1), cands: (id, lv) => rmCands(dogById(id) || D(), lv == null ? true : lv).length,
+    least: (id) => rmLeast(dogById(id) || D()),
     calm: (id, ms) => { const d = dogById(id), t = performance.now() + ms; rmSt(d).askNext = t; RM.askAt = Math.max(RM.askAt, t - 25000); if (d === D()) { IDLE.nextAt = t; if (IDLE.act) idleStop(); } else packNext[d.id] = t; }, // this dog stops what it does and starts nothing of its own for ms
     tap: (id) => { const d = dogById(id), r = rmSt(d); return rmTapBox(r.x, r.y, rmK(r)); }, get moving() { return rmDogs().filter((d) => rmSt(d).tw || rmSt(d).q).map((d) => d.id); } };
 }
