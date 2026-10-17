@@ -310,7 +310,11 @@
     poodle: { d: [-2, -18], sit: [5, -13], jump: [-15, -14], eat: [32, -13], crouch: [10, -5], sleep: [-2, 0], sniff: [6, -8] },
     collie: { d: [5, 0], sit: [17, 0], jump: [2, -10], eat: [24, 0], crouch: [19, 5], sleep: [-8, 2], sniff: [10, -4] },
     samoyed: { d: [-11, -1], sit: [2, -6], jump: [-19, -4], eat: [28, -9], crouch: [13, 0], sleep: [-6, 0], sniff: [0, -2] },
-    frenchie: { d: [-22, 10], sit: [-6, -2], jump: [-30, 5], eat: [28, -11], crouch: [0, 0], sleep: [-10, 0], sniff: [-6, 0] }
+    frenchie: { d: [-22, 10], sit: [-6, -2], jump: [-30, 5], eat: [28, -11], crouch: [0, 0], sleep: [-10, 0], sniff: [-6, 0] },
+    // v2.11 breeds (first guess from the nearest old breed, recalibrated on the BREED ART drawings)
+    akita: { d: [-4, 0], sit: [2, 0], jump: [-14, 0], eat: [26, -6], crouch: [4, 0], sleep: [-6, 0], sniff: [2, -4] },
+    spitz: { d: [-11, -1], sit: [2, -6], jump: [-19, -4], eat: [28, -9], crouch: [13, 0], sleep: [-6, 0], sniff: [0, -2] },
+    pom: { d: [-12, 8], sit: [0, 4], jump: [-24, 6], eat: [22, -8], crouch: [4, 0], sleep: [-10, 0], sniff: [0, -4] }
   };
   var POSE_BASE = { walk: 'idle', happy: 'idle', pet: 'idle', shake: 'idle', dirty: 'idle', cold: 'idle', hot: 'idle', sad: 'idle', dig: 'eat' };
   function breedAdj(key, pose) {
@@ -322,7 +326,8 @@
     greyhound: { run: 1.6, carry: 0.55, flop: true },
     chihuahua: { run: 1.1, fierce: true }, pug: { run: 0.78, snort: true }, beagle: { sniff: true },
     dachs: { run: 0.85 }, corgi: { run: 0.92 },
-    frenchie: { run: 0.8, snort: true }, collie: { run: 1.15 }, samoyed: { fluff: true }, poodle: { clever: true }   // v2.5
+    frenchie: { run: 0.8, snort: true }, collie: { run: 1.15 }, samoyed: { fluff: true }, poodle: { clever: true },   // v2.5
+    akita: { run: 0.95, carry: 1.05 }, spitz: { run: 1.05, fluff: true }, pom: { run: 0.9, fierce: true }   // v2.11
   };
   function trait(key) { return Object.assign({ run: 1, carry: 1 }, TRAITS[key] || {}); }
   /* per-breed flavour lines; any missing slot falls back to the generic lines passed in */
@@ -385,6 +390,19 @@
       tugGrowl: ['grrf *snort*', 'rrf rrf!'], tugDogWin: ['*proud snort*'], duckListen: ['*snort*', '*huff*'], duckOk: ['*happy snort*'],
       howl: ['rrf! *snort*', 'arf-*snort*'], snuffleFind: ['*snort* FOOD'], coneLick: ['lick *snort* lick'], hogAnswer: ['*snort*!', 'rrf?'],
       poolIn: ['I do not swim. I float. With help.'], tunnelDone: ['*snort* done. sitting now.'], tap: ['*snort*?']
+    },
+    akita: {
+      fetchStart: ['one throw. I will bring it back.', 'ok. calmly.'], fetchDeliver: ['here. it is yours.', 'done. I sat down on the way back.'],
+      tugGrowl: ['grr (quietly)', 'mine. politely.'], howl: ['woof.', 'a low, proud woof'], tap: ['yes? I am listening.']
+    },
+    spitz: {
+      fetchStart: ['throw it! watch my fluff fly!', 'ready! look at me!'], fetchDeliver: ['got it! did you see?', 'ta-da! the fluff and the ball!'],
+      tugGrowl: ['grr! (bright)', 'yap! mine!'], howl: ['yap-yap!', 'a bright little bark'], bubblePop: ['the bubbles are white too!'], tap: ['hello! look at me!']
+    },
+    pom: {
+      fetchStart: ['throw it! I am tiny but fast!', 'yip! now!'], fetchDeliver: ['YIP! I won the ball!', 'it was bigger than my head!'],
+      tugStart: ['I am a TIGER.'], tugGrowl: ['yip! grr! yip!', 'I am small. I am FIERCE.'], tugDogWin: ['I am the strongest. It is science.'], howl: ['yip yip yip!', 'tiny but loud!'],
+      poolIn: ['it is deep. I am floof.'], tap: ['yip! hello!']
     }
   };
   var FALLBACK = { crouch: ['sit'], dig: ['eat'], shake: ['happy'], sleep: ['sit'], pet: ['happy'], sad: ['sit'], jump: ['happy'], eat: ['sit'], walk: ['idle'] };

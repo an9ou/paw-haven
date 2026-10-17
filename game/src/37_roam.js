@@ -349,7 +349,7 @@ function rmPackAct(d) {
   if (!rmFree() || d === D() || d.sleeping || !RM.no || performance.now() - (RM.up || 0) < 1500) return false; const r = rmSt(d); if (r.fix || r.tw || r.q) return false;
   const p = rmPers(d), now = performance.now();
   if (Math.random() > 0.3 + 0.55 * p.energy) return false; // lazy dogs mostly change pose where they are
-  const out = outdoorsNow(), w = { wander: 2, zoomies: p.zoomies * (out ? 2.2 : 0.6), follow: p.follows * 1.6, sniff: p.trait === 'sniff' ? 2.5 : out ? 0.6 : 0.2, herd: p.trait === 'herd' && S.dogs.length > 2 ? 2 : 0, guard: p.trait === 'guard' ? 2 : 0, beg: p.trait === 'beg' ? 1.6 : 0, dig: p.trait === 'needy' && GRASSY.includes(S.place) ? 1.2 : 0, doze: (1 - p.energy) * 1.4, front: p.trait === 'follow' || p.trait === 'polite' ? 1 : 0 };
+  const out = outdoorsNow(), w = { wander: 2, zoomies: p.zoomies * (out ? 2.2 : 0.6), follow: p.follows * 1.6, sniff: p.trait === 'sniff' ? 2.5 : out ? 0.6 : 0.2, herd: p.trait === 'herd' && S.dogs.length > 2 ? 2 : 0, guard: p.trait === 'guard' ? 2 : 0, beg: p.trait === 'beg' ? 1.6 : 0, dig: p.trait === 'needy' && GRASSY.includes(S.place) ? 1.2 : 0, doze: (1 - p.energy) * 1.4, front: p.trait === 'follow' || p.trait === 'polite' ? 1 : 0, loyal: p.trait === 'loyal' ? 2 : 0, show: p.trait === 'show' ? 1.8 : 0, spin: p.trait === 'spin' ? 2.2 : 0 };
   if (p.trait === 'burst' && packPose[d.id] === 'sleep') w.zoomies += 3; // the greyhound: a nap, then a burst
   let t = Math.random() * Object.values(w).reduce((a, b) => a + b, 0), kind = 'wander'; for (const k in w) { t -= w[k]; if (t <= 0) { kind = k; break; } }
   const sec = (a, b) => RINT(a, b);
@@ -376,6 +376,12 @@ function rmPackAct(d) {
     to = go({ like: ['shade', 'edge'] }); if (!to) return false; steps = [{ to }, { pose: 'down', fb: 'sit', ms: 1500 }, { pose: 'sleep', ms: sec(12000, 30000) }, { pose: 'idle', ms: 1000 }];
   } else if (kind === 'front') {
     to = go({ like: ['front'] }); if (!to) return false; steps = [{ to }, { pose: 'sit', ms: sec(4000, 9000) }];
+  } else if (kind === 'loyal') { // v2.11 akita: sits quietly at the gate or the front, facing the player (the Hachiko link), no barking
+    to = go({ like: ['gate', 'front'] }); if (!to) return false; steps = [{ to }, { pose: 'sit', face: to[0] < 500 ? 'right' : 'left', ms: sec(6000, 12000) }];
+  } else if (kind === 'show') { // v2.11 Japanese spitz: walks to the front and does a happy pose
+    to = go({ like: ['front'] }); if (!to) return false; steps = [{ to }, { pose: 'happy', face: to[0] < 500 ? 'right' : 'left', ms: 1600 }, { pose: 'sit', ms: sec(3000, 6000) }];
+  } else if (kind === 'spin') { // v2.11 pomeranian: short happy spins in place (a quick face-left / face-right flip, 3 to 4 times) with a small yip
+    steps = [{ pose: 'happy', face: 'left', ms: 220, bark: 'yip' }]; for (let i = 1, n = RINT(3, 4); i < n * 2; i++) steps.push({ pose: 'happy', face: i % 2 ? 'right' : 'left', ms: 220 }); steps.push({ pose: 'idle', ms: sec(1500, 3500) });
   } else {
     to = go(); if (!to) return false; steps = [{ to }, { pose: PICK(['idle', 'sit', 'sit', 'down']), fb: 'sit', ms: sec(2500, 6000) }];
   }

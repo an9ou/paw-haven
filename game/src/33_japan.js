@@ -23,7 +23,7 @@ const jpGdBusy = () => typeof gdActive === 'function' && gdActive();
 function jpToast(text, kind, tries = 0) { if (jpGdBusy() && tries < 120) { setTimeout(() => jpToast(text, kind, tries + 1), 1000); return; } toast(text, kind); }
 const jpName = (s) => s.replace(/\{dog\}/g, NAME());
 
-/* ---- the dog's line on arrival, by breed key (all 14 breeds), merged into PLACE_LINES[breed].fujihill (read by 03_yard.js placeAmbient) ---- */
+/* ---- the dog's line on arrival, by breed key (all 17 breeds), merged into PLACE_LINES[breed].fujihill (read by 03_yard.js placeAmbient) ---- */
 const jpPlaceLines = {
   shiba: 'Fuji is very tall. I am very proud. We understand each other.',
   corgi: 'Fuji looks like a giant rice ball. I am not hungry. I am a little hungry.',
@@ -38,7 +38,10 @@ const jpPlaceLines = {
   poodle: 'Fuji has a perfect white top. We go to the same hairdresser.',
   collie: 'Everything is in its place from up here. The mountain is behaving very well.',
   samoyed: 'Fuji is white and fluffy on top. Like me! We are twins. Woo!',
-  frenchie: 'Good bench. Good view. I will sit here and climb nothing.'
+  frenchie: 'Good bench. Good view. I will sit here and climb nothing.',
+  akita: 'What a fine mountain. I will sit here with you and look at it for a long time.',
+  spitz: 'Fuji wears a white cap. I wear a white everything. Hello, Fuji!',
+  pom: 'That mountain is bigger than everything. Yip! I like it a lot.'
 };
 Object.keys(jpPlaceLines).forEach((k) => { if (PLACE_LINES[k]) PLACE_LINES[k].fujihill = jpPlaceLines[k]; });
 

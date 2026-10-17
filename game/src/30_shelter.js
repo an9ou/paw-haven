@@ -25,7 +25,7 @@ function srWeekKey(dk) { const d = new Date(dk + 'T12:00:00'); d.setDate(d.getDa
 // a dog's trait line, seeded by its id
 function srTrait(id) { return SR_TRAITS[hashId('trait|' + id) % SR_TRAITS.length]; }
 // The playroom roster for a date: today's 2 rescues (rescuesToday, unchanged, kind 'rescue') then 4 residents of the week (kind 'resident'):
-// a puppy (3 to 5 months), a senior (96 to 150 months) and two adults (12 to 60 months), any of the 14 breeds, coats from PawGenes.
+// a puppy (3 to 5 months), a senior (96 to 150 months) and two adults (12 to 60 months), any of the 17 breeds, coats from PawGenes.
 // Seeded, never saved. Dogs already home (dogById) or adopted from here before (S.shelter.adopted) are left out.
 function srRoster(dk) {
   dk = dk || localISO(); const wk = srWeekKey(dk), r = seeded(hashId('resident|' + wk)), G = PGN(), taken = new Set();
