@@ -51,7 +51,7 @@ run('v211_cards', async (t) => {
   await t.home('dogpark'); await t.until(() => window.__paw.dc.visitors().length > 0, null, 4000);
   let V = await vis(); const z = await ev(() => window.__paw.rm.zone('dogpark'));
   check(V, z, 'Dog Park');
-  ok(await ev(() => window.__paw.dc.visitors().every((v) => Math.abs(v.k - window.__paw.rm.scale(v.y)) < 0.002)), 'each is drawn at rmScale(y)');
+  ok(await ev(() => window.__paw.dc.visitors().every((v) => Math.abs(v.k - window.__paw.rm.scale(v.y) * window.__paw.rm.sizeK(v.key)) < 0.002)), 'each is drawn at rmScale(y) x its size factor (v2.11.1: 1.25 x the class)');
   ok(await ev(() => { const g = document.getElementById('dcVis'); return !!g && g.nextElementSibling && g.nextElementSibling.id === 'pack' && g.querySelectorAll('.dcvis').length === window.__paw.dc.visitors().length; }), '#dcVis sits just behind #pack, one group per visitor');
   ok(await ev(() => [...document.querySelectorAll('#dcVis .dcvis')].every((g) => g.querySelector('.dc-tag text').textContent === 'visitor' && g.getAttribute('role') === 'button' && /Dog Card/.test(g.getAttribute('aria-label')))), 'each has a small visitor tag and a button label');
   ok(await ev(() => !window.__paw.rm.scan().some((b) => b[4] === 'hot' && b[0] > 0 && document.querySelector('#dcVis'))), 'the roam scan does not count visitors as no-go boxes');

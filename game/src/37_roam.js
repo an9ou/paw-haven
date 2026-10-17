@@ -1,13 +1,13 @@
 /* ======================= v2.10 FREE TO ROAM: the roam engine (lane ROAM, V210.md sections 1 and 5) =======================
-   Every dog in the scene is its own character: one <g class="rmdog" data-dog="id"> per dog in #pack, the leader too, all drawn at the same
-   size (rmScale, depth only) and placed by their feet in world units (viewBox 0 0 1000 600). Inside each group a .rm-at group carries
+   Every dog in the scene is its own character: one <g class="rmdog" data-dog="id"> per dog in #pack, the leader too, drawn at the depth scale
+   (rmScale) times its size class (v2.11.1: sizeK, 36_personality.js; rmKd / rmK) and placed by their feet in world units (viewBox 0 0 1000 600). Inside each group a .rm-at group carries
    translate(x y) scale(k) translate(-430 -500), so the art keeps its v2.9 box (DX, DY, DW, DH: feet at 430, 500) and the dog art never changes.
    The leader's group holds #dogPos / #dogArt / #dogHit / #dogFx (renderDog, the bath, tricks, the old suites), and dogTo() moves it here.
    Pack dogs wander, sit, sniff, nap and ask for pets by their breed personality (persOf, 36_personality.js); the leader does the same through
    the idle system (16_voices_idle.js idles 'roam' and 'ask'). Positions are not saved. Under the test harness the dogs only walk on their own
    when a suite sets prefs.rmTest (the older suites measure still scenes). Test hook: window.__paw.rm. */
 const RM = { paused: new Set(), d: {}, place: '', no: null, noAt: 0, raf: 0, lead: null, tickAt: 0, order: '', t0: 0, petT: {}, askAt: 0, cam: 0 };
-const RM_BASE = 0.88; // rmScale at feet y 500: the one size for every dog (the leader's v2.9 size was 1; four dogs fit the yard at 0.88)
+const RM_BASE = 0.88; // rmScale at feet y 500: the v2.10 one size (the leader's v2.9 size was 1; four dogs fit the yard at 0.88). v2.11.1: each dog is drawn at rmScale(y) x sizeK(d) = x 1.25 growth x its class (small 0.72, medium 0.86, big 1), V2111.md section 2
 const RM_DEPTH = 0.0012; // a dog further back is a little smaller: y 400 = 0.88 of the base, y 590 = 1.1
 // feet y band per place [back line, front line] (V210.md section 5.2, tuned on screenshots); x is always 60 to 940
 const RM_ZONES = { yard: [404, 590], house: [414, 590], square: [414, 590], cafe: [414, 590], vet: [414, 590], salon: [410, 590], hilltop: [410, 590], park: [410, 590], woods: [410, 590], market: [452, 585], dogpark: [410, 590], pier: [410, 588], river: [452, 588], beach: [452, 588], fujihill: [424, 588],
@@ -24,9 +24,15 @@ function rmFree() { return rmOn() && rmWander() && !!$('#pack') && modal.hidden 
 function rmDogs() { if (!S || !S.dogs) return []; return [D()].concat(others().slice(0, 3).filter((d) => !hmMumIn(d))); } // every dog drawn in this scene, the leader first
 function rmZoneOf(place) { const z = (isPhone() && RM_ZONES_PH[place]) || RM_ZONES[place] || RM_ZONES.default; return { y0: z[0], y1: z[1], x0: 60, x1: 940 }; }
 function rmZone(place) { const p = place || (S && S.place) || 'yard', z = rmZoneOf(p); z.no = (S && p === S.place && RM.no ? RM.no : rmStaticNo(p)).map((b) => b.slice(0, 4)); return z; } // section 5.2
-function rmScale(y) { return RM_BASE * clamp(1 + ((y == null ? 500 : y) - 500) * RM_DEPTH, 0.86, 1.12); } // the depth scale at feet y, the same for every dog
-function rmSt(d) { let r = RM.d[d.id]; if (!r) r = RM.d[d.id] = { x: 430, y: 500, face: 'right', k: null, tw: null, hx: 430, hy: 500, seeded: false, fix: false, q: null, qAt: 0, hold: 0, ask: 0, drawn: '' }; return r; }
-const rmK = (r) => (r.k != null ? r.k : rmScale(r.y));
+function rmScale(y) { return RM_BASE * clamp(1 + ((y == null ? 500 : y) - 500) * RM_DEPTH, 0.86, 1.12); } // the depth scale at feet y (a big dog; rmKd adds the size class)
+function rmSt(d) { let r = RM.d[d.id]; if (!r) r = RM.d[d.id] = { x: 430, y: 500, face: 'right', k: null, tw: null, hx: 430, hy: 500, seeded: false, fix: false, q: null, qAt: 0, hold: 0, ask: 0, drawn: '', sz: 1, nosz: false }; r.sz = sizeK(d); return r; }
+// v2.11.1 sizes: r.k and the walk tweens hold the base scale (depth, or a size fitted to a prop); the size class multiplies it when drawn and measured.
+// nosz: the leader on the old fixed stage (the bath tub, rmLegacyTo off the scene) keeps the stage size
+const rmSz = (r) => (r.nosz ? 1 : r.sz || 1);
+const rmKb = (r) => (r.k != null ? r.k : rmScale(r.y));
+const rmK = (r) => rmKb(r) * rmSz(r);
+const rmKd = (d, y) => rmScale(y) * rmSz(rmSt(d)); // dog d's drawn scale with its feet at y
+const rmPropK = (s) => s / SIZE_GROW; // a size fitted to a prop (nap door, bed, bench, sofa, chair) as a base scale: drawn at s x the class, without the growth
 function rmLeadPose() { return (dogKey || 'idle|right').split('|'); }
 function rmPos(d) { if (!d) return null; const r = rmSt(d), lead = d === D(); return { x: r.x, y: r.y, face: lead ? rmLeadPose()[1] || r.face : r.face, sc: rmK(r), pose: lead ? rmLeadPose()[0] || 'idle' : rmPackPose(d) }; } // feet in world units
 function rmEl(d) { return d ? document.querySelector(`#view [data-dog="${d.id}"]`) : null; } // the dog's <g data-dog> in the scene
@@ -55,6 +61,7 @@ function rmScan() {
     const b = rmWorldBox(svg, M, el); if (b && b[2] > 4 && b[3] > 4 && b[1] < 600 && b[1] + b[3] > 0) out.push(b.concat(el.closest('[data-decor]') ? (rmFestDecor(el) ? 'fest' : 'decor') : el.closest('[data-drift], [data-pile], #wnDogG, #hwPopG') ? 'prop' : el.id || el.dataset.hot || el.dataset.shop || 'hot'));
   });
   [...(($('#placeBtns') || {}).children || [])].concat([$('#phPeek'), $('#rmLookL'), $('#rmLookR')]).forEach((el) => { if (!el || el.hidden) return; const b = rmWorldBox(svg, M, el); if (b && b[1] < 600) out.push(b.concat('btn')); });
+  const vt = svg.querySelector('#visitorG .vtag rect'), vb = vt && rmWorldBox(svg, M, vt); if (vb) out.push(vb.concat('vtag')); // v2.11.1: the visiting pup's name tag keeps readable next to the grown dogs (a small box of its own: at most 8% covered)
   if (S.place === 'yard' && !out.some((b) => b[4] === 'houseG')) out.push([620, 330, 240, 200, 'house']);
   (RM_SCENERY[S.place] || []).forEach((b) => out.push(b.slice()));
   RM.no = out;
@@ -77,7 +84,7 @@ function rmSoft(x, y, k, flat) { // flat: no depth rule (the last fallback when 
   return false;
 }
 // where a dog is headed (its feet and scale), the leader by its own spot while it runs an errand (the bowl, the bath)
-function rmDest(o) { const r = rmSt(o), w = r.tw; if (o === D() && r.away) return [r.hx, r.hy, rmScale(r.hy)]; if (!w) return [r.x, r.y, rmK(r)]; const e = w.end || [w.x1, w.y1]; return [e[0], e[1], w.k1 != null ? w.k1 : r.k != null && r.fix ? r.k : rmScale(e[1])]; }
+function rmDest(o) { const r = rmSt(o), w = r.tw; if (o === D() && r.away) return [r.hx, r.hy, rmScale(r.hy) * (r.sz || 1)]; if (!w) return [r.x, r.y, rmK(r)]; const e = w.end || [w.x1, w.y1]; return [e[0], e[1], (w.k1 != null ? w.k1 : r.k != null && r.fix ? r.k : rmScale(e[1])) * rmSz(r)]; }
 // may dog d stand with its feet at x, y (scale k)? In the zone, rmHard and rmSoft clear, and the other dogs: no two tap rects overlap by more than
 // 30% (50% when nothing else is free), nobody overlaps the leader over 15% of its tap rect (in front: its #dogHit stays tappable; behind: the leader would hide it), and the dogs in front
 // of a dog never cover more than 45% of it together (no clumps where one dog disappears)
@@ -101,14 +108,14 @@ function rmCandsAny(d) { for (const lv of [true, false, 'loose']) { const c = rm
 function rmLeast(d, x0, y0) {
   const z = rmZoneOf(S.place), L = D(); let best = null, bv = 1e9;
   for (let y = z.y0; y <= z.y1; y += 14) for (let x = z.x0; x <= z.x1; x += 20) {
-    if (rmHard(x, y)) continue; const k = rmScale(y), T = rmTapBox(x, y, k), A = T[2] * T[3]; if (T[0] < 4 || T[0] + T[2] > 996) continue; let v = 0;
+    if (rmHard(x, y)) continue; const k = rmKd(d, y), T = rmTapBox(x, y, k), A = T[2] * T[3]; if (T[0] < 4 || T[0] + T[2] > 996) continue; let v = 0;
     rmBoxes().forEach((b) => { const Ab = b[2] * b[3]; if (b[4] === 'scene' || Ab >= RM_HUGE) return; const o = rmOver(T, b); if (o) v += (o / Ab) * (b[4] === 'prop' || b[4] === 'decor' || b[4] === 'fest' || Ab < 15000 ? 3 : 1) + (b[4] === 'fest' ? 3 : 0); }); // a seasonal decoration costs more than standing on a pack dog
     rmDogs().forEach((o) => { if (o === d || !rmSt(o).seeded) return; const [ox, oy, ok] = rmDest(o), w = rmOver(T, rmTapBox(ox, oy, ok)) / A; if (w) v += w * (o === L ? 3 : 1); });
     if (x0 != null) v += Math.hypot(x - x0, y - y0) / 5000; if (v < bv) { bv = v; best = [x, y]; }
   }
   return best;
 }
-function rmCands(d, strict) { const z = rmZoneOf(S.place), out = []; for (let y = z.y0; y <= z.y1; y += 14) for (let x = z.x0; x <= z.x1; x += 20) if (rmOk(d, x, y, rmScale(y), strict)) out.push([x, y]); return out; }
+function rmCands(d, strict) { const z = rmZoneOf(S.place), out = []; for (let y = z.y0; y <= z.y1; y += 14) for (let x = z.x0; x <= z.x1; x += 20) if (rmOk(d, x, y, rmKd(d, y), strict)) out.push([x, y]); return out; }
 // spot kinds (section 5.2): open, shade, edge, gate, bowl, dig, front, sun (bed is the nap spots, handled by the nap itself)
 function rmTags(x, y) {
   const z = rmZoneOf(S.place), out = RM_OUT.includes(S.place), t = [];
@@ -146,7 +153,7 @@ function rmSeed() {
   ds.forEach((d) => { const r = rmSt(d); if (r.seeded) placed.push(r); });
   ds.forEach((d) => {
     const r = rmSt(d); if (r.seeded) return; r.seeded = true; r.tw = null; r.q = null;
-    if (d === D() && (!rmWander() || rmOk(d, 430, 500, rmScale(500), false))) { r.x = 430; r.y = 500; r.face = 'right'; } // under the harness the leader keeps its v2.9 spot
+    if (d === D() && (!rmWander() || rmOk(d, 430, 500, rmKd(d, 500), false))) { r.x = 430; r.y = 500; r.face = 'right'; } // under the harness the leader keeps its v2.9 spot
     else {
       let c = rmCandsAny(d); if (!c.length) c = [[[150, 560], [800, 560], [560, 440]][placed.length % 3]];
       const inC = c.filter((p) => p[0] >= win[0] && p[0] <= win[1]); if (inC.length) c = inC; // phones: inside the home crop while there is room
@@ -177,11 +184,11 @@ function rmApplyFixed(d, i) {
   const walk = rmWander() && cur.mode === 'yard' && !!$('#pack') && r.seeded; // a dog in the scene walks over (onto the sofa, off its bed); a fresh scene just places it
   if (f) {
     const far = Math.hypot(f[0] - r.x, f[1] - r.y) > 30; if (!r.fix) r.fx0 = [r.x, r.y]; r.q = null; r.fix = true; r.face = f[2];
-    if (walk && far && !d.sleeping) { r.tw = { x0: r.x, y0: r.y, k0: rmK(r), x1: f[0], y1: f[1], k1: f[3] || 0.6, t0: performance.now(), dur: Math.min(2600, (Math.hypot(f[0] - r.x, f[1] - r.y) / RM_WALK) * 1000), o: { pose: packPose[d.id] } }; r.face = f[0] < r.x ? 'left' : 'right'; rmLoop(); return; }
-    r.x = f[0]; r.y = f[1]; r.k = f[3] || 0.6; r.tw = null; return;
+    if (walk && far && !d.sleeping) { r.tw = { x0: r.x, y0: r.y, k0: rmKb(r), x1: f[0], y1: f[1], k1: rmPropK(f[3] || 0.6), t0: performance.now(), dur: Math.min(2600, (Math.hypot(f[0] - r.x, f[1] - r.y) / RM_WALK) * 1000), o: { pose: packPose[d.id] } }; r.face = f[0] < r.x ? 'left' : 'right'; rmLoop(); return; }
+    r.x = f[0]; r.y = f[1]; r.k = rmPropK(f[3] || 0.6); r.tw = null; return;
   }
   if (r.fix) { // back where it was before the nap or the sofa
-    r.fix = false; const to = held ? [r.x, r.y] : r.fx0 || [r.x, r.y], k0 = rmK(r); // held: a dog that wakes stands up where it lay
+    r.fix = false; const to = held ? [r.x, r.y] : r.fx0 || [r.x, r.y], k0 = rmKb(r); // held: a dog that wakes stands up where it lay
     if (walk && !held) { r.tw = { x0: r.x, y0: r.y, k0, x1: to[0], y1: to[1], k1: null, t0: performance.now(), dur: Math.min(2600, (Math.hypot(to[0] - r.x, to[1] - r.y) / RM_WALK) * 1000), o: { anchor: true } }; r.face = to[0] < r.x ? 'left' : 'right'; rmLoop(); }
     else { r.k = null; r.x = to[0]; r.y = to[1]; }
     r.wake = true;
@@ -257,16 +264,16 @@ function rmArrive(d, o) {
 }
 // the way from x0, y0 to x1, y1 (review A): straight when the line is clear, else over a coarse grid of the zone where the feet never enter a no-go
 // box and the tap rect keeps off tappable things where it can (a soft cost), smoothed to a few waypoints. The last point is always x1, y1
-function rmLineOk(x0, y0, x1, y1, soft) {
-  const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 12));
-  for (let i = 1; i <= n; i++) { const x = x0 + ((x1 - x0) * i) / n, y = y0 + ((y1 - y0) * i) / n; if (Math.hypot(x - x0, y - y0) < 16) continue; if (rmHard(x, y) || (soft && rmSoft(x, y, rmScale(y)))) return false; } // the start may stand somewhere it is stepping off
+function rmLineOk(x0, y0, x1, y1, soft, sz) { // sz: the walking dog's size factor (v2.11.1)
+  const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 12)), z = sz || 1;
+  for (let i = 1; i <= n; i++) { const x = x0 + ((x1 - x0) * i) / n, y = y0 + ((y1 - y0) * i) / n; if (Math.hypot(x - x0, y - y0) < 16) continue; if (rmHard(x, y) || (soft && rmSoft(x, y, rmScale(y) * z))) return false; } // the start may stand somewhere it is stepping off
   return true;
 }
-function rmRoute(x0, y0, x1, y1) {
-  if (rmLineOk(x0, y0, x1, y1, true)) return [[x1, y1]];
+function rmRoute(x0, y0, x1, y1, sz) {
+  sz = sz || 1; if (rmLineOk(x0, y0, x1, y1, true, sz)) return [[x1, y1]];
   const z = rmZoneOf(S.place), xs = [], ys = []; for (let x = z.x0; x <= z.x1 + 0.1; x += 30) xs.push(x); for (let y = z.y0; y <= z.y1 + 0.1; y += 16) ys.push(y);
   const W = xs.length, N = W * ys.length, P = (i) => [xs[i % W], ys[Math.floor(i / W)]], cost = new Float32Array(N);
-  for (let i = 0; i < N; i++) { const [x, y] = P(i); cost[i] = rmHard(x, y) ? 0 : rmSoft(x, y, rmScale(y)) ? 4 : 1; }
+  for (let i = 0; i < N; i++) { const [x, y] = P(i); cost[i] = rmHard(x, y) ? 0 : rmSoft(x, y, rmScale(y) * sz) ? 4 : 1; }
   const near = (x, y) => { let b = -1, bd = 1e9; for (let i = 0; i < N; i++) { if (!cost[i]) continue; const [px, py] = P(i), v = Math.hypot(px - x, py - y); if (v < bd) { bd = v; b = i; } } return b; };
   const s = near(x0, y0), e = near(x1, y1); if (s < 0 || e < 0 || s === e) return [[x1, y1]];
   const dist = new Float64Array(N).fill(1e12), prev = new Int32Array(N).fill(-1), done = new Uint8Array(N); dist[s] = 0;
@@ -280,7 +287,7 @@ function rmRoute(x0, y0, x1, y1) {
   }
   if (prev[e] < 0) return [[x1, y1]];
   const pts = [[x1, y1]]; for (let i = e; i >= 0; i = prev[i]) pts.unshift(P(i)); pts.unshift([x0, y0]);
-  const out = []; for (let i = 0; i < pts.length - 1;) { let j = pts.length - 1; while (j > i + 1 && !rmLineOk(pts[i][0], pts[i][1], pts[j][0], pts[j][1], true)) j--; out.push(pts[j]); i = j; }
+  const out = []; for (let i = 0; i < pts.length - 1;) { let j = pts.length - 1; while (j > i + 1 && !rmLineOk(pts[i][0], pts[i][1], pts[j][0], pts[j][1], true, sz)) j--; out.push(pts[j]); i = j; }
   return out;
 }
 // walk there (o.run runs, o.speed in world units a second, o.secs a fixed time), then o.pose, o.face, o.done(). o.k: a fixed scale (null = rmScale).
@@ -289,7 +296,8 @@ function rmTo(d, x, y, o = {}) {
   if (!d || !S) return; const r = rmSt(d), now = performance.now();
   if (d !== D() && r.fix) { if (typeof o.done === 'function') o.done(); return; }
   const spd = o.speed || (o.run ? RM_RUN : RM_WALK) * (o.legacy ? 1 : 1 / Math.max(0.05, IDLE.speed));
-  const path = o.legacy || o.secs != null || o.direct || cur.mode !== 'yard' ? [[x, y]] : rmRoute(r.x, r.y, x, y);
+  if (!o.legacy) r.nosz = false;
+  const path = o.legacy || o.secs != null || o.direct || cur.mode !== 'yard' ? [[x, y]] : rmRoute(r.x, r.y, x, y, rmSz(r));
   const dur = rmLeg(d, path, o, spd, true); if (dur <= 0) rmFrame(now); else rmLoop();
 }
 // the next leg of a walk: path is what is left of it (its last point is where the walk ends)
@@ -297,14 +305,14 @@ function rmLeg(d, path, o, spd, first) {
   const r = rmSt(d), now = performance.now(), [x, y] = path.shift(), end = path.length ? path[path.length - 1] : [x, y];
   const dist = Math.hypot(x - r.x, y - r.y), dur = o.secs != null ? o.secs * 1000 : (dist / spd) * 1000, f0 = r.face;
   if (Math.abs(x - r.x) > 3 && !o.legacy) r.face = x < r.x ? 'left' : 'right';
-  r.tw = { x0: r.x, y0: r.y, k0: rmK(r), x1: x, y1: y, k1: o.k != null ? o.k : null, t0: now, dur, o, rest: path, spd, end };
+  r.tw = { x0: r.x, y0: r.y, k0: rmKb(r), x1: x, y1: y, k1: o.k != null ? o.k : null, t0: now, dur, o, rest: path, spd, end };
   if (d === D() && !o.legacy && cur.mode === 'yard' && dist > 3 && (first || f0 !== r.face)) renderDog('walk', r.face, true);
   else if (d !== D()) rmPaint(d);
   return dur;
 }
 // place a dog at once: any of { x, y, face, pose }. Cheap: moves the transform, redraws the art only when the pose or facing changes
 function rmSet(d, o = {}) {
-  if (!d || !S) return; const r = rmSt(d); r.tw = null;
+  if (!d || !S) return; const r = rmSt(d); r.tw = null; if (cur.mode === 'yard') r.nosz = false;
   if (o.x != null) r.x = o.x; if (o.y != null) r.y = o.y; if (o.face) r.face = o.face; if (o.x != null || o.y != null) { r.hx = r.x; r.hy = r.y; if (!r.fix) r.k = null; }
   if (d === D()) { if (o.pose || o.face) { const lp = rmLeadPose(); renderDog(o.pose || lp[0] || 'idle', o.face || lp[1] || 'right'); } }
   else if (o.pose) packPose[d.id] = o.pose;
@@ -319,7 +327,8 @@ function rmResume(tag) { RM.paused.delete(tag); }
 function rmLegacyTo(tx, ty, s, secs) {
   const d = D(); if (!d) return; const r = rmSt(d), home = tx === 0 && ty === 0 && s === 1;
   if (!home && !r.away) { r.hx = r.x; r.hy = r.y; } r.away = !home;
-  const scene = cur.mode === 'yard', X = home ? (scene ? r.hx : 430) : 430 * s + tx, Y = home ? (scene ? r.hy : 500) : 500 * s + ty, k = !scene ? s : home || s === 1 ? null : s; // the bath and the old Fetch keep the v2.9 stage: home is 430, 500 at size 1
+  const scene = cur.mode === 'yard', X = home ? (scene ? r.hx : 430) : 430 * s + tx, Y = home ? (scene ? r.hy : 500) : 500 * s + ty, k = !scene ? s : home || s === 1 ? null : rmPropK(s); // the bath and the old Fetch keep the v2.9 stage: home is 430, 500 at size 1
+  r.nosz = !scene; // v2.11.1: in the scene the size class multiplies (a prop-fitted size too: a small dog on the bench is a small dog); the bath tub is fitted to the one dog in it
   rmTo(d, X, Y, { legacy: true, secs: Math.max(0, secs), k });
 }
 // the leader's head in world units (speech bubbles, hearts)
@@ -399,8 +408,10 @@ const rmAskGap = (d) => (100000 - 70000 * rmPers(d).attention) * Math.max(0.05, 
 function rmPetAgo(d) { return performance.now() - (RM.petT[d.id] || RM.t0 || 0); }
 // the front of the scene (towards the player), near the middle of the view: the front row first, else the nearest free spot
 function rmFrontSpot(d) {
-  const z = rmZoneOf(S.place), r = rmSt(d), cx = isPhone() ? camCx : 500, tx = clamp((r.x + cx) / 2, 120, 880); const c = rmCandsAny(d); if (!c.length) return null;
-  const row = c.filter((p) => p[1] >= z.y1 - 50), pool = row.length ? row : c;
+  const z = rmZoneOf(S.place), r = rmSt(d), cx = isPhone() ? camCx : 500, tx = clamp((r.x + cx) / 2, 120, 880); const fr = (l) => l.filter((p) => p[1] >= z.y1 - 50);
+  // v2.11.1: the grown dogs fill the floor sooner, so the front row is looked for at each level (the dogs a little closer) before any spot further back
+  let c = null, row = []; for (const lv of [true, false, 'loose']) { const l = rmCands(d, lv); if (!c && l.length) c = l; row = fr(l); if (row.length) break; }
+  if (!c) { c = rmCandsAny(d); row = fr(c); } if (!c.length) return null; const pool = row.length ? row : c;
   let best = null, bv = 1e9; pool.forEach((p) => { const v = Math.abs(p[0] - tx) + (z.y1 - p[1]) * 3; if (v < bv) { bv = v; best = p; } }); return best;
 }
 function rmAsk(d, force) {
@@ -450,7 +461,7 @@ function rmTick() {
   rmAttention(now);
 }
 function rmSceneUp() {
-  if (!S || !$('#pack')) return; rmAdopt(); RM.up = performance.now();
+  if (!S || !$('#pack')) return; rmAdopt(); RM.up = performance.now(); if (cur.mode === 'yard') { const lr = rmSt(D()); if (lr.nosz) { lr.nosz = false; rmPaint(D()); } } // back from the bath: the leader takes its size again
   rmScan(); rmValidate(true); rmDepth(); // the scene is in the DOM now: read its tappable things and step anybody off them before the first frame
   requestAnimationFrame(() => { if (cur.mode !== 'yard' && cur.mode !== 'bath') return; rmScan(); rmValidate(true); rmDepth(); if (isPhone()) rmLookSync(); });
 }
@@ -505,7 +516,8 @@ function rmSky() {
 function rmExpose() {
   if (!window.__paw) return;
   window.__paw.rm = { on: () => rmOn(), free: () => rmFree(), dogs: () => rmDogs().map((d) => d.id), pos: (id) => rmPos(dogById(id) || D()), scale: (y) => rmScale(y), zone: (p) => rmZone(p),
-    set: (id, o) => rmSet(dogById(id), o), to: (id, x, y, o) => rmTo(dogById(id), x, y, o || {}), pause: (t) => rmPause(t), resume: (t) => rmResume(t), ok: (id, x, y) => rmOk(dogById(id), x, y, rmScale(y)),
+    set: (id, o) => rmSet(dogById(id), o), to: (id, x, y, o) => rmTo(dogById(id), x, y, o || {}), pause: (t) => rmPause(t), resume: (t) => rmResume(t), ok: (id, x, y) => rmOk(dogById(id), x, y, rmKd(dogById(id) || D(), y)),
+    size: (id) => { const d = dogById(id) || D(); return { cls: sizeOf(d), k: sizeK(d), ck: sizeClassK(d) }; }, sizeK: (key) => sizeK(key), grow: SIZE_GROW, // v2.11.1: k = the scene factor (growth x class), ck = the class
     scan: () => { rmScan(); return RM.no; }, validate: () => { rmScan(); rmValidate(true); }, act: (id) => rmPackAct(dogById(id)), ask: (id) => rmAsk(dogById(id) || D(), true), petAgo: (id) => rmPetAgo(dogById(id)), span: () => rmSpan(),
     hard: (x, y) => rmHard(x, y), soft: (x, y) => rmSoft(x, y, rmScale(y)), route: (x0, y0, x1, y1) => rmRoute(x0, y0, x1, y1), cands: (id, lv) => rmCands(dogById(id) || D(), lv == null ? true : lv).length,
     least: (id) => rmLeast(dogById(id) || D()),

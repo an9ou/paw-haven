@@ -163,15 +163,16 @@ async function dcPickCards() {
   return got.concat(dcFakes(DC_VIS_CARDS - got.length, got.map((c) => c.id))); // fewer than 2 real cards: town players fill up
 }
 
-/* ---------------- visitors: placing and roaming (inside rmZone, at rmScale, held by the roam holds) ---------------- */
+/* ---------------- visitors: placing and roaming (inside rmZone, at rmScale x the size class (dcK), held by the roam holds) ---------------- */
 const dcTapHeld = () => (typeof blOn === 'function' && blOn()) || (typeof phActive === 'function' && phActive()) || !!TRN; // ball play, photo mode, training own the taps
 const dcHeld = () => !rmOn() || !modal.hidden || (typeof blOn === 'function' && blOn()) || (typeof phActive === 'function' && phActive()) || !!TRN;
+const dcK = (v, y) => rmScale(y) * sizeK(v.dog); // v2.11.1: a visitor's drawn scale (depth times its size class)
 function dcCrop() { if (!isPhone()) return [0, 1000]; const w = rmCropW(), c = phCamHome; return [c - w / 2, c + w / 2]; } // phones: the home crop
 // the box a spot must stay clear of: every tappable thing (rmScan's boxes; feet only for big scenery), every player dog's tap rect where it is and
 // where it is going, the other visitors, and on phones the edges of the crop
 function dcOk(v, x, y) {
   const z = rmZoneOf(S.place); if (x < z.x0 || x > z.x1 || y < z.y0 || y > z.y1) return false;
-  const k = rmScale(y), T = rmTapBox(x, y, k), cr = dcCrop();
+  const k = dcK(v, y), T = rmTapBox(x, y, k), cr = dcCrop();
   if (T[0] < cr[0] + 4 || T[0] + T[2] > cr[1] - 4 || T[1] < 0) return false;
   if (rmHard(x, y)) return false;
   if (rmBoxes().some((b) => b[4] !== 'scene' && rmOver(T, b) > 0)) return false;
@@ -184,7 +185,7 @@ function dcOk(v, x, y) {
   }
   if (hid > 0.45 * T[2] * T[3]) return false;
   // the other visitors (drawn back to front among themselves): at most a third of each other's tap rects, where they are and where they go
-  return !DC.vis.some((o) => o !== v && (rmOver(T, rmTapBox(o.x, o.y, o.k)) > T[2] * T[3] / 3 || (o.tw && rmOver(T, rmTapBox(o.tw.x1, o.tw.y1, rmScale(o.tw.y1))) > T[2] * T[3] / 3)));
+  return !DC.vis.some((o) => o !== v && (rmOver(T, rmTapBox(o.x, o.y, o.k)) > T[2] * T[3] / 3 || (o.tw && rmOver(T, rmTapBox(o.tw.x1, o.tw.y1, dcK(o, o.tw.y1))) > T[2] * T[3] / 3)));
 }
 function dcSpots(v, near) {
   const z = rmZoneOf(S.place), out = [];
@@ -193,20 +194,20 @@ function dcSpots(v, near) {
 }
 // a walk: the feet never cross a no-go box, and (taps: true) the tap rect never passes over a tappable spot on the way, so a visitor walking
 // under a sign never takes its tap
-function dcLineOk(x0, y0, x1, y1, taps) {
+function dcLineOk(x0, y0, x1, y1, taps, v) { // v: the walking visitor (its size class)
   const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 16)), hots = taps ? rmBoxes().filter((b) => b[4] !== 'scene') : [];
-  for (let i = 1; i <= n; i++) { const t = i / n, x = x0 + (x1 - x0) * t, y = y0 + (y1 - y0) * t; if (rmHard(x, y)) return false; if (hots.length) { const T = rmTapBox(x, y, rmScale(y)); if (hots.some((b) => rmOver(T, b) > 0)) return false; } }
+  for (let i = 1; i <= n; i++) { const t = i / n, x = x0 + (x1 - x0) * t, y = y0 + (y1 - y0) * t; if (rmHard(x, y)) return false; if (hots.length) { const T = rmTapBox(x, y, v ? dcK(v, y) : rmScale(y)); if (hots.some((b) => rmOver(T, b) > 0)) return false; } }
   return true;
 }
 // the "visitor" tag's font size in world units: 19, and on phones big enough for 13 px (PHONE.md's caption minimum) at the smallest depth scale
-function dcTagFs() {
+function dcTagFs(sz) { // sz: the visitor's size class (v2.11.1: a small dog's tag is drawn a little bigger in its own units, so it still reads at 13 px)
   if (!isPhone()) return 19;
   const svg = $('#view > svg.world'), M = svg && svg.getScreenCTM(), px = M ? Math.hypot(M.a, M.b) : 1;
-  return Math.max(19, 13.6 / (rmScale(rmZoneOf(S.place).y0) * px));
+  return Math.max(19, 13.6 / (rmScale(rmZoneOf(S.place).y0) * (sz || 1) * px));
 }
 function dcVisSVG(v, i) {
   const d = v.dog, pose = v.tw ? 'walk' : v.pose; v.drawn = pose + '|' + v.face;
-  const fs = DC.tagFs || 19, w = 88 * fs / 19, h = 25 * fs / 19;
+  const fs = isPhone() ? dcTagFs(sizeK(d)) : DC.tagFs || 19, w = 88 * fs / 19, h = 25 * fs / 19;
   const tag = `<g class="dc-tag" pointer-events="none" transform="translate(430 512)"><rect x="${f1(-w / 2)}" y="-2" width="${f1(w)}" height="${f1(h)}" rx="8" fill="#FFF3DA" stroke="#5B3D32" stroke-width="2"/><text y="${f1(h * 0.68)}" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="${f1(fs)}" fill="#5B3D32">visitor</text></g>`;
   return `<g class="dcvis" data-dcv="${i}" data-card="${esc(v.card.id)}" tabindex="0" role="button" aria-label="${esc(d.name)}, visiting with ${esc(dcCardName(v.card))}. Tap for the Dog Card."${v.hidden ? ' style="display:none"' : ''}><g class="dc-at" transform="${dcXf(v)}"><rect class="dc-hit" x="${DX + 44}" y="${DY + 35}" width="${DW - 88}" height="180" fill="transparent"/><g class="dc-art">${place(dogSVG(d, { pose, outfit: d.outfit, facing: v.face }), DX, DY, DW, DH)}</g>${tag}</g></g>`;
 }
@@ -233,7 +234,7 @@ function dcDraw(cards) {
       const was = DC.pos[c.id + ':' + i]; // back in the same place (the scene was rebuilt): where it stood, if that spot is still free
       if (was && dcOk(v, was.x, was.y)) { v.x = was.x; v.y = was.y; v.face = was.face; v.home = was.home; }
       else { const sp = dcSpots(v); if (!sp.length) return; const at = PICK(sp); v.x = at[0]; v.y = at[1]; v.home = at.slice(); }
-      v.k = rmScale(v.y); v.wait = performance.now() + RINT(1500, 5000);
+      v.k = dcK(v, v.y); v.wait = performance.now() + RINT(1500, 5000);
       DC.vis.push(v); n++;
     });
   });
@@ -247,10 +248,10 @@ function dcDraw(cards) {
 }
 function dcClear() { dcKeep(); cancelAnimationFrame(DC.raf); DC.raf = 0; DC.vis = []; const g = $('#dcVis'); if (g) g.remove(); }
 function dcKeep() { DC.vis.forEach((v) => { const w = v.tw; DC.pos[v.card.id + ':' + v.i] = { x: w ? w.x1 : v.x, y: w ? w.y1 : v.y, face: v.face, home: v.home }; }); }
-function dcDrop(cardId) { const keep = DC.vis.filter((v) => v.card.id !== cardId); if (keep.length === DC.vis.length) return; const cards = []; keep.forEach((v) => { if (!cards.includes(v.card)) cards.push(v.card); }); const pos = keep.map((v) => [v.x, v.y, v.face]); dcDraw(cards); DC.vis.forEach((v, i) => { if (pos[i]) { v.x = pos[i][0]; v.y = pos[i][1]; v.k = rmScale(v.y); v.face = pos[i][2]; dcPaint(v); } }); }
+function dcDrop(cardId) { const keep = DC.vis.filter((v) => v.card.id !== cardId); if (keep.length === DC.vis.length) return; const cards = []; keep.forEach((v) => { if (!cards.includes(v.card)) cards.push(v.card); }); const pos = keep.map((v) => [v.x, v.y, v.face]); dcDraw(cards); DC.vis.forEach((v, i) => { if (pos[i]) { v.x = pos[i][0]; v.y = pos[i][1]; v.k = dcK(v, v.y); v.face = pos[i][2]; dcPaint(v); } }); }
 // one leg of a visitor's small loop: a free spot near its home, straight there at a walk
 function dcNext(v, now) {
-  const sp = dcSpots(v, v.home).filter((p) => Math.hypot(p[0] - v.x, p[1] - v.y) > 50 && dcLineOk(v.x, v.y, p[0], p[1], true));
+  const sp = dcSpots(v, v.home).filter((p) => Math.hypot(p[0] - v.x, p[1] - v.y) > 50 && dcLineOk(v.x, v.y, p[0], p[1], true, v));
   if (!sp.length) { v.wait = now + RINT(2000, 4000); return; }
   const p = PICK(sp), dist = Math.hypot(p[0] - v.x, p[1] - v.y);
   v.tw = { x0: v.x, y0: v.y, x1: p[0], y1: p[1], k0: v.k, t0: now, dur: (dist / RM_WALK) * 1000 }; v.face = p[0] < v.x ? 'left' : 'right'; dcPaint(v);
@@ -259,9 +260,9 @@ function dcNext(v, now) {
 function dcClearOf(v, now) {
   if (v.tw) return; const ok = dcOk(v, v.x, v.y); if (ok && !v.hidden) return;
   if (ok) { v.hidden = false; dcPaint(v); return; }
-  const all = dcSpots(v), clear = all.filter((p) => dcLineOk(v.x, v.y, p[0], p[1], true)), sp = clear.length ? clear : all.filter((p) => dcLineOk(v.x, v.y, p[0], p[1])); sp.sort((a, b) => Math.hypot(a[0] - v.x, a[1] - v.y) - Math.hypot(b[0] - v.x, b[1] - v.y));
+  const all = dcSpots(v), clear = all.filter((p) => dcLineOk(v.x, v.y, p[0], p[1], true, v)), sp = clear.length ? clear : all.filter((p) => dcLineOk(v.x, v.y, p[0], p[1])); sp.sort((a, b) => Math.hypot(a[0] - v.x, a[1] - v.y) - Math.hypot(b[0] - v.x, b[1] - v.y));
   if (sp.length && !v.hidden) { const p = sp[0]; v.tw = { x0: v.x, y0: v.y, x1: p[0], y1: p[1], k0: v.k, t0: now, dur: Math.max(200, (Math.hypot(p[0] - v.x, p[1] - v.y) / RM_RUN) * 1000) }; v.face = p[0] < v.x ? 'left' : 'right'; dcPaint(v); return; }
-  if (sp.length) { v.x = sp[0][0]; v.y = sp[0][1]; v.k = rmScale(v.y); v.hidden = false; dcPaint(v); return; }
+  if (sp.length) { v.x = sp[0][0]; v.y = sp[0][1]; v.k = dcK(v, v.y); v.hidden = false; dcPaint(v); return; }
   if (!v.hidden) { v.hidden = true; dcPaint(v); }
 }
 // a rehomed pup was drawn (14b drawVisitor) while card visitors are out: rescan the tappable spots now and move any card visitor on its tap
@@ -269,10 +270,10 @@ function dcClearOf(v, now) {
 function dcRoom() {
   if (!$('#dcVis') || !DC.vis.length) return; rmScan();
   DC.vis.forEach((v) => {
-    const w = v.tw; if (w) { v.x = w.x1; v.y = w.y1; v.k = rmScale(v.y); v.tw = null; }
+    const w = v.tw; if (w) { v.x = w.x1; v.y = w.y1; v.k = dcK(v, v.y); v.tw = null; }
     if (dcOk(v, v.x, v.y)) { dcPaint(v); return; }
     const sp = dcSpots(v).sort((a, b) => Math.hypot(a[0] - v.x, a[1] - v.y) - Math.hypot(b[0] - v.x, b[1] - v.y));
-    if (sp.length) { v.x = sp[0][0]; v.y = sp[0][1]; v.k = rmScale(v.y); v.hidden = false; } else v.hidden = true;
+    if (sp.length) { v.x = sp[0][0]; v.y = sp[0][1]; v.k = dcK(v, v.y); v.hidden = false; } else v.hidden = true;
     dcPaint(v);
   });
   dcOrder();
@@ -286,7 +287,7 @@ function dcFrame(t) {
     if (held) { if (v.tw) v.tw.t0 += dt; v.wait += dt; return; } // held where it stands (ball play, photo mode, a modal, training), like the player's dogs
     if (v.tw) {
       const w = v.tw, k = w.dur > 0 ? Math.min(1, (t - w.t0) / w.dur) : 1;
-      v.x = w.x0 + (w.x1 - w.x0) * k; v.y = w.y0 + (w.y1 - w.y0) * k; v.k = w.k0 + (rmScale(w.y1) - w.k0) * k;
+      v.x = w.x0 + (w.x1 - w.x0) * k; v.y = w.y0 + (w.y1 - w.y0) * k; v.k = w.k0 + (dcK(v, w.y1) - w.k0) * k;
       if (k >= 1) { v.tw = null; v.pose = PICK(['idle', 'idle', 'sit', 'happy']); v.wait = t + RINT(2500, 6500); }
       dcPaint(v);
     } else if (t > v.wait && !v.hidden && rmWander()) dcNext(v, t); // the small loop (under the harness only when a suite sets prefs.rmTest, like roaming)
@@ -410,7 +411,7 @@ function dcExpose() {
   if (!window.__paw) return;
   window.__paw.dc = {
     mode: () => dcMode(), fake: DC_FAKE, lists: { a: DC_WORDS_A, b: DC_WORDS_B, n: DC_DOG_NAMES, outfits: DC_OUTFITS, breeds: dcBreeds() },
-    visitors: () => DC.vis.map((v) => ({ card: v.card.id, i: v.i, key: v.dog.key, name: v.dog.name, x: v.x, y: v.y, k: v.k, hidden: v.hidden, moving: !!v.tw, tap: rmTapBox(v.x, v.y, v.k) })),
+    visitors: () => DC.vis.map((v) => ({ card: v.card.id, i: v.i, key: v.dog.key, size: sizeOf(v.dog), name: v.dog.name, x: v.x, y: v.y, k: v.k, hidden: v.hidden, moving: !!v.tw, tap: rmTapBox(v.x, v.y, v.k) })),
     cards: () => (DC.cards || []).map((c) => c.id), visit: (ids) => { DC.pick = ids || null; DC.place = ''; DC.cards = null; return dcVisit(); },
     card: (id) => dcCard((DC.cards || []).concat(DC_FAKE).find((c) => c.id === id)), give: (id) => { const c = (DC.cards || []).concat(DC_FAKE).find((x) => x.id === id); return c ? dcGive(c, document.querySelector('#modal .panel')) : false; },
     settings: (force) => dcSettings(force), payload: () => dcPayload(), sync: () => dcSync(), get mine() { return DC.mine; }, name: (c) => dcCardName(c), ok: (x, y) => dcOk(null, x, y)

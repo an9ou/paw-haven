@@ -131,7 +131,9 @@ require('./test_lib').run('phone_v29_pack', async (t) => {
     await t.freezeMotion(false);
     // a quick tap still pets
     await ev(() => { window.__paw.S.dogs.forEach((d) => { d.stats.happy = 40; }); }); await t.home('yard');
-    const pd2 = await ev(() => document.querySelector('#pack .packdog').dataset.dog);
+    // v2.11.1: the dogs are bigger and may stand in front of each other: a pack dog on screen and on top at its middle (else one steps into the front row)
+    const pd2 = await ev(() => { const v = document.getElementById('view').getBoundingClientRect(); for (const g of document.querySelectorAll('#pack .packdog')) { const r = g.querySelector('.pd-wander > rect').getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2, e = x > v.left && x < v.right && y > v.top && y < v.bottom && document.elementFromPoint(x, y); if (e && e.closest('[data-dog]') === g) return g.dataset.dog; }
+      const g = document.querySelector('#pack .packdog'), vb = document.querySelector('#view svg.world').viewBox.baseVal; window.__paw.rm.set(g.dataset.dog, { x: Math.round(vb.x + vb.width * 0.72), y: 584 }); return g.dataset.dog; });
     const pt2 = await ev((d) => { const r = document.querySelector(`#pack [data-dog="${d}"] .pd-wander > rect`).getBoundingClientRect(); return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }; }, pd2);
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: pt2.x, y: pt2.y }] }); await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     await p().waitForTimeout(300);

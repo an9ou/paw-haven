@@ -1,6 +1,6 @@
 // v2.10 ROAM lane phone test (iPhone 15 and Pixel 7), V210.md sections 1 and 5.2: the home and town crops are about 700 world units wide (zoomed out,
 // the extra sky above the scene), centred on the pack; a dog outside the crop gets a look-left / look-right chip (44 px) that pans to it; every dog is
-// drawn the same size; a finger tap on a pack dog pets that dog only; the leader's #dogHit sits fully on screen; nothing scrolls sideways.
+// drawn at rmScale x its size class (v2.11.1: small 0.72, medium 0.86, big 1; the smallest dog's tap rect stays at least 44 px); a finger tap on a pack dog pets that dog only; the leader's #dogHit sits fully on screen; nothing scrolls sideways.
 // node game/run_tests.js phone_v210_roam
 require('./test_lib').run('phone_v210_roam', async (t) => {
   const { ok, sec } = t; const ev = (f, a) => t.ev(f, a), p = () => t.p, S = () => t.S();
@@ -19,12 +19,16 @@ require('./test_lib').run('phone_v210_roam', async (t) => {
     ok(await ev(() => !!getComputedStyle(document.getElementById('view')).backgroundColor), 'the view behind the extra sky has a colour');
     ok(await noSide(), 'no sideways scroll');
 
-    sec(device + ': four dogs, the same size, the look chips');
+    sec(device + ': four dogs, sized by class, the look chips');
     await ev(() => { const P = window.__paw; P.addDog({ key: 'dachs', sex: 'male', months: 14 }, 'Bun'); P.addDog({ key: 'pug', sex: 'female', months: 30 }, 'Pip'); P.addDog({ key: 'golden', sex: 'female', months: 20 }, 'Goldie'); });
     await t.calm(); await t.home('house'); await t.home('yard'); await quiet(); await t.sleep(500);
     const ids = (await S()).dogs.map((d) => d.id);
-    const g = await ev((l) => l.map((id) => window.__paw.rm.pos(id)), ids);
-    ok(g.every((q) => Math.abs(q.sc - (0.88 * Math.max(0.86, Math.min(1.12, 1 + (q.y - 500) * 0.0012)))) < 0.002), 'every dog at rmScale: ' + JSON.stringify(g.map((q) => [Math.round(q.x), Math.round(q.y), +q.sc.toFixed(2)])));
+    const g = await ev((l) => l.map((id) => Object.assign(window.__paw.rm.pos(id), { k: window.__paw.rm.size(id).k })), ids);
+    ok(g.every((q) => Math.abs(q.sc - q.k * (0.88 * Math.max(0.86, Math.min(1.12, 1 + (q.y - 500) * 0.0012)))) < 0.002), 'every dog at rmScale x its size class: ' + JSON.stringify(g.map((q) => [Math.round(q.x), Math.round(q.y), +q.sc.toFixed(2)])));
+    // v2.11.1: the smallest dogs (the dachshund and the pug) keep a tap rect of at least 44 px, even at the back of the floor
+    const tiny = await ev((l) => { const R = window.__paw.rm; R.pause('test'); const z = R.zone('yard'), v = document.querySelector('#view svg.world').viewBox.baseVal; R.set(l[2], { x: v.x + v.width * 0.5, y: z.y0 }); const r = document.querySelector(`#pack [data-dog="${l[2]}"] .pd-wander > rect`).getBoundingClientRect(); R.resume('test'); return [Math.round(r.width), Math.round(r.height)]; }, ids);
+    ok(tiny[0] >= 44 && tiny[1] >= 44, `a small dog at the back line still has a tap rect of at least 44 px (${tiny.join(' x ')})`);
+    await ev(() => window.__paw.rm.validate());
     v = await vb();
     const outL = g.filter((q) => q.x < v.x + 20).length, outR = g.filter((q) => q.x > v.x + v.w - 20).length;
     const chips = await ev(() => ['rmLookL', 'rmLookR'].map((id) => { const b = document.getElementById(id); if (!b || b.hidden) return null; const r = b.getBoundingClientRect(); return { w: Math.round(r.width), h: Math.round(r.height), label: b.getAttribute('aria-label') }; }));

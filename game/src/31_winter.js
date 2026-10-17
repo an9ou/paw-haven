@@ -231,7 +231,7 @@ function wnContestWalk(dogs) {
   fsSquareDraw(); // the stall and the banner step aside while the line walks (fsActive)
   const sc = 0.56, w = 264 * sc, hgt = 220 * sc, gap = 104, feetY = 505, line = [D()].concat(dogs);
   const [c0, c1] = fsCrop(), ph = isPhone(), lead = ph ? c0 - w / 2 : 200, dist = ph ? (c1 + w / 2 + (line.length - 1) * gap) - lead : 700;
-  const parts = line.map((d, i) => { const x = lead - i * gap - w / 2, y = feetY - hgt * (205 / 220); return `<g class="fs-pd" data-i="${i}">${place(dogSVG(d, { pose: 'walk', outfit: i ? d.outfit : outfitOf(d), facing: 'right' }), f1(x), f1(y), f1(w), f1(hgt))}</g>`; }).join('');
+  const parts = line.map((d, i) => { const z = sizeK(d), x = lead - i * gap - w * z / 2, y = feetY - hgt * z * (205 / 220); return `<g class="fs-pd" data-i="${i}">${place(dogSVG(d, { pose: 'walk', outfit: i ? d.outfit : outfitOf(d), facing: 'right' }), f1(x), f1(y), f1(w * z), f1(hgt * z))}</g>`; }).join(''); // v2.11.1: each dog at its size class, feet on the line
   fx.insertAdjacentHTML('beforebegin', `<g id="wnWalkG" pointer-events="none"><g class="fs-line" style="transform:translateX(0px)">${parts}</g><g class="wn-flakes"></g></g>`);
   const lg = $('#wnWalkG .fs-line'), fl = $('#wnWalkG .wn-flakes');
   for (let k = 0; k < 12; k++) { const el = document.createElementNS('http://www.w3.org/2000/svg', 'g'); el.setAttribute('class', 'fs-drop wn-flake'); el.style.animationDelay = (k * 0.5).toFixed(2) + 's'; el.style.setProperty('--sway', (k % 2 ? 36 : -36) + 'px'); el.innerHTML = wnFlake(120 + ((k * 89) % 800), 150 + (k % 3) * 20, 9 + (k % 3) * 2, k * 17); fl.appendChild(el); }

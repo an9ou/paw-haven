@@ -57,6 +57,7 @@ function blPush(x, y, Z) {
   return [x, y];
 }
 const blScale = (y) => { try { const s = rmScale(y); return typeof s === 'number' && s > 0 ? s : 1; } catch (e) { return 1; } };
+const blDK = (o) => blScale(o.y) * (o && o.d && typeof sizeK === 'function' ? sizeK(o.d) : 1); // v2.11.1: a playing dog's drawn scale (its size class): head, mouth, reach
 const blSign = (o) => (o.face === 'left' ? -1 : 1);
 const blDist = (ax, ay, bx, by) => Math.hypot(ax - bx, (ay - by) * 1.6); // depth counts a little more: the floor is seen from the front
 // where the dogs wait: around the ball's home, the players side
@@ -187,7 +188,7 @@ function blHeadBounce() {
   const b = BL.ball; if (b.state !== 'fly' || b.vz >= 0 || BL.bonkCD > 0) return;
   for (const o of BL.dogs) {
     if (o.role !== 'chase' || !o.bonk || o.bonked) continue;
-    const sc = blScale(o.y), hx = o.x + blSign(o) * 40 * sc, hy = o.y - 170 * sc, sy = b.gy - b.z;
+    const sc = blDK(o), hx = o.x + blSign(o) * 40 * sc, hy = o.y - 170 * sc, sy = b.gy - b.z;
     if (Math.abs(b.gy - o.y) < 55 && Math.abs(b.x - hx) < 55 * sc + BL_R && Math.abs(sy - hy) < 34) {
       o.bonked = true; b.vz = Math.max(560, -b.vz * 0.8); b.vx += (b.x - hx) * 6 + (blRnd() - 0.5) * 120; b.bounces = 0; BL.bonkCD = 0.6;
       SFX.boop(300); fxText('BOING!', hx, hy - 40, '#F2C744', 40); blSay(o, blPick(BL_LINES.boing), true); return;
@@ -233,14 +234,14 @@ function blMove(o, tx, ty, speed, dt) { // one step towards (tx, ty), round the 
 }
 function blSay(o, text, prio) { // a speech bubble over the dog, never a toast. One line at a time, rate limited unless it matters
   if (!BL || (!prio && BL.t - BL.lineAt < 1.7)) return; BL.lineAt = BL.t;
-  const sc = blScale(o.y); say(text, o.x + blSign(o) * 40 * sc, o.y - 175 * sc, 2400);
+  const sc = blDK(o); say(text, o.x + blSign(o) * 40 * sc, o.y - 175 * sc, 2400);
 }
 function blEtaOf(o) { const b = BL.ball; return blDist(o.x, o.y, b.x, b.gy) / Math.max(60, o.sp); }
 function blPickup() { // the first chaser close enough to the ball takes it
   const b = BL.ball; if (b.state === 'held' || b.carrier) return;
   let best = null, bd = 1e9;
   BL.dogs.forEach((o) => {
-    if (o.role !== 'chase') return; const sc = blScale(o.y), dx = (o.x - b.x) / ((45 + 0.12 * o.sp) * sc), dy = (o.y - b.gy) / ((24 + 0.06 * o.sp) * sc), q = dx * dx + dy * dy; // a fast dog lunges from further away
+    if (o.role !== 'chase') return; const sc = blDK(o), dx = (o.x - b.x) / ((45 + 0.12 * o.sp) * sc), dy = (o.y - b.gy) / ((24 + 0.06 * o.sp) * sc), q = dx * dx + dy * dy; // a fast dog lunges from further away
     if (q < 1 && b.z < 95 * sc && (b.vz <= 0 || b.state !== 'fly') && q < bd) { best = o; bd = q; }
   });
   if (best) blGrab(best);
@@ -279,7 +280,7 @@ function blStepDogs(dt) {
   // where the chasers run: the ball's shadow, which slows down when it lands and rolls
   const tgt = blPush(b.x + b.vx * 0.15, b.gy + b.vgy * 0.15, Z); // they run after the ball's shadow: the fastest closes in first
   BL.dogs.forEach((o, i) => {
-    const sc = blScale(o.y);
+    const sc = blDK(o);
     switch (o.role) {
       case 'chase': {
         const k = b.state === 'fly' ? 1 : 0.2, left = blMove(o, tgt[0] + o.off[0] * k, tgt[1] + o.off[1] * k, o.sp, dt);
@@ -319,7 +320,7 @@ function blStepDogs(dt) {
     const a = BL.dogs[i], c = BL.dogs[j], dx = c.x - a.x, dy = (c.y - a.y) * 1.6, d = Math.hypot(dx, dy);
     if (d < 45 && a.role !== 'carry' && c.role !== 'carry') { const k = (45 - d) * 0.06, ux = d > 1 ? dx / d : 1; a.x -= ux * k; c.x += ux * k; }
   }
-  if (b.carrier) { const c = b.carrier, sc = blScale(c.y), m = blMouth(c.d); b.x = c.x + blSign(c) * m[0] * sc; b.gy = c.y; b.z = m[1] * sc + Math.sin(BL.t * 14) * 2; b.rot += 300 * dt; } // in the mouth
+  if (b.carrier) { const c = b.carrier, sc = blDK(c), m = blMouth(c.d); b.x = c.x + blSign(c) * m[0] * sc; b.gy = c.y; b.z = m[1] * sc + Math.sin(BL.t * 14) * 2; b.rot += 300 * dt; } // in the mouth
 }
 function blSteal(t, w) { // the thief snatches the ball: it brings it home with everybody after it
   const b = BL.ball; b.carrier = t; t.role = 'carry'; w.role = 'tail'; t.sp *= 1.0; BL.th.steal = null; BL.th.stolen = true; BL.th.thief = t.id; SFX.squeak();
@@ -332,7 +333,7 @@ function blReturn(o) {
   BL.n++; S.bl.n = (S.bl.n || 0) + 1; o.role = 'cheer'; o.pose = 'happy'; o.until = BL.t + 1.1; o.got = (o.got || 0) + 1;
   BL.dogs.forEach((x) => { if (x !== o) { x.role = 'wait'; x.pose = 'idle'; } });
   const coins = blCoins(c.coin); blSay(o, blCatchLine(o), true);
-  fxText(coins ? `+${coins}` : 'Caught it!', o.x, o.y - 200 * blScale(o.y), coins ? '#F2C744' : '#9CCF8F', 42);
+  fxText(coins ? `+${coins}` : 'Caught it!', o.x, o.y - 200 * blDK(o), coins ? '#F2C744' : '#9CCF8F', 42);
   try { SFX.bark(BARK[o.d.key]); } catch (e) { /* none */ }
   BL.dogs.forEach((x) => blPlayFx(x));
   BL.played = true; trackAct('fetch', { name: BL.toy }); markDirty(); blTrayUpdate(); blHint('Nice! Drag the ball to throw it again.'); updateHUD();
