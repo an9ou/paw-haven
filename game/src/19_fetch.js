@@ -1,4 +1,6 @@
-/* ======================= FETCH ======================= */
+/* ======================= FETCH =======================
+   v2.10: RETIRED. The Play tray has no entry to this timed challenge any more: free ball play in the current place's scene (38_ball.js) replaces it.
+   The file stays for old saves' toyAt_ keys, the old suites and go('fetch', toy). Nothing in the UI starts it. */
 let F = null;
 function enterFetch(toy) {
   const fb = fetchBlock(D()); if (fb) { nope(fb); go('yard'); return; } // v2: nursing mums

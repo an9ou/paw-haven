@@ -1,7 +1,7 @@
 // SMOKE (<= 90 s): the quick "is anything broken" loop. node game/run_tests.js smoke
 // Covers: load -> adopt; open + close every action-bar popup (Feed, Play, Care, Wardrobe, Journal; Walk and Map screens);
 //         feed -> pet; travel to 2 places via the map; open a shop + the purchase window; start a walk -> "Head home early";
-//         open one toy -> close it; no console errors.
+//         ball play -> Done; open one toy -> close it; no console errors.
 require('./test_lib').run('smoke', async (t) => {
   const { ok, sec, ev, S } = t;
   sec('load, adopt');
@@ -51,7 +51,8 @@ require('./test_lib').run('smoke', async (t) => {
   ok(await t.startWalk(), 'walk starts');
   ok(await t.quitWalk(true), 'Head home early -> results -> OK'); ok((await t.mode()) === 'yard', 'back home after the walk');
 
-  sec('toy');
-  await p.click('[data-act=play]'); await t.waitPop(true); await p.click('[data-play="toy:Tennis Ball"]');
-  ok(await t.untilMode('toy'), 'PawToys opens'); await p.keyboard.press('Escape'); ok(await t.untilMode('yard'), 'Esc closes the toy');
+  sec('ball play and a toy');
+  await p.click('[data-act=play]'); await t.waitPop(true); await p.click('[data-play="ball:Tennis Ball"]');
+  ok(await t.until(() => !!window.__paw.bl && window.__paw.bl.on, null, 4000), 'ball play starts from the Play tray (v2.10)'); await p.click('#blDone'); ok(await t.until(() => !window.__paw.bl.on, null, 3000), 'Done ends ball play');
+  await ev(() => window.__paw.go('toy', 'Tennis Ball')); ok(await t.untilMode('toy'), 'PawToys opens'); await p.keyboard.press('Escape'); ok(await t.untilMode('yard'), 'Esc closes the toy');
 });

@@ -67,7 +67,7 @@ require('./test_lib').run('v29_flows', async (t) => {
   await t.closeX(); await t.home('yard'); await t.travel('yard'); await t.calm();
 
   sec('play (a toy), then the walk with Gerald at step 5');
-  await p.click('[data-act=play]'); await t.waitPop(true); await p.click('[data-play="toy:Tennis Ball"]');
+  await ev(() => window.__paw.go('toy', 'Tennis Ball')); // v2.10: the Tennis Ball card starts ball play; the room game is reached directly
   ok(await t.untilMode('toy'), 'the toy opens'); await p.keyboard.press('Escape'); ok(await t.untilMode('yard'), 'Esc closes the toy');
   ok(await cardGone() || await atStep(5), 'Gerald is on step 5 (walk) or tucked away');
   ok(await t.startWalk(true), 'the walk starts');

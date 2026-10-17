@@ -57,7 +57,8 @@ function finishWalkMod(R, r) {
   SFX.fanfare();
 }
 const toySupported = (n) => { try { return !!(window.PawToys && typeof window.PawToys.open === 'function' && (!window.PawToys.supports || window.PawToys.supports(n))); } catch (e) { return false; } };
-const toysPlayable = () => TOYS.map((t) => t.n).concat(TREASURES.filter((t) => t.kind === 'toy').map((t) => t.n)).filter((n) => owns('toys', n) && toySupported(n));
+const BL_BALLS = ['Tennis Ball', 'Glow Ball'];
+const toysPlayable = () => TOYS.map((t) => t.n).concat(TREASURES.filter((t) => t.kind === 'toy').map((t) => t.n)).filter((n) => owns('toys', n) && toySupported(n) && !BL_BALLS.includes(n)); // v2.10: Tennis Ball and Glow Ball are free ball play now (38_ball.js)
 let toyCtl = null;
 function enterToy(name) {
   barkDog(D(), 'play', {});

@@ -128,8 +128,8 @@ async function run(b, devName, full) {
 
     // toy with touch
     await calm(); await tap('[data-act=play]', { wait: 400 });
-    if (await p.locator('[data-play="toy:Tennis Ball"]').count()) {
-      await tap('[data-play="toy:Tennis Ball"]', { wait: 1500 }); ok((await mode()) === 'toy', 'toy opened by tap');
+    if (await p.locator('[data-play="ball:Tennis Ball"]').count()) {
+      await ev(() => window.__paw.go('toy', 'Tennis Ball')); await sleep(1500); ok((await mode()) === 'toy', 'toy opened'); // v2.10: the Tennis Ball card starts free ball play; the room game is still there
       const hc = await center('#modHost'); await touchDrag(line([hc[0], hc[1] + 120], [hc[0] + 40, hc[1] - 160], 6), 16); await sleep(800); await SH('16_toy'); await noHScroll('toy');
       await ev(() => window.__paw.go('yard')); await sleep(600);
     } else ok(false, 'tennis ball toy');
