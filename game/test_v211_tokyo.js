@@ -152,7 +152,7 @@ require('./test_lib').run('v211_tokyo', async (t) => {
   ok((await S()).coins === c0 - 10 && (await toasts()).some((x) => /today's fortune already/.test(x)), 'omikuji is once a day');
   c0 = (await S()).coins; const h0 = (await S()).dogs.map((d) => d.stats.happy);
   await hot('nakamise'); await t.waitH2(/Nakamise/);
-  ok(await ev(() => /Sweet Potato Strip/.test(document.querySelector('#modal').textContent) && /Dog Senbei/.test(document.querySelector('#modal').textContent) && /no salt and no soy/.test(document.querySelector('#modal').textContent)), 'Nakamise: Sweet Potato Chew and Dog Senbei, with the food-safety tip');
+  ok(await ev(() => /Sweet Potato Strip/.test(document.querySelector('#modal').textContent) && /Dog Senbei/.test(document.querySelector('#modal').textContent) && /no salt and no soy/.test(document.querySelector('#modal').textContent)), 'Nakamise: Sweet Potato Strip and Dog Senbei, with the food-safety tip');
   await ev(() => window.__paw.tk.snack('Dog Senbei')); await t.sleep(300);
   s = await S(); ok(s.coins === c0 - 36 && !!s.tk.snack, `one Dog Senbei for each of the 3 dogs: 36 coins (${c0 - s.coins})`);
   ok(s.dogs.every((d, i) => d.stats.happy > h0[i] || d.stats.happy >= 99), 'every dog got happier: ' + JSON.stringify([h0, s.dogs.map((d) => d.stats.happy)]));
@@ -234,7 +234,7 @@ require('./test_lib').run('v211_tokyo', async (t) => {
     out.push(open('builder')); const dt = document.querySelector('#modal [data-btab=decor]'); if (dt) { dt.click(); out.push(document.querySelector('#modal').textContent); }
     document.querySelector('#modal .x').click(); return out.join(' ');
   });
-  ok(!/Shibuya Bandana|Asakusa Bandana|Tokyo Tower Bandana|Shinkansen Plush|Lucky Cat|Dog Senbei|Sweet Potato Strip/.test(shopTxt), 'the Boutique, Kibble Corner and Barkitecture list none of the Tokyo things: ' + ((shopTxt.match(/Shibuya Bandana|Asakusa Bandana|Tokyo Tower Bandana|Shinkansen Plush|Lucky Cat|Dog Senbei|Sweet Potato Chew(?!s)/g) || []).join() || shopTxt.length));
+  ok(!/Shibuya Bandana|Asakusa Bandana|Tokyo Tower Bandana|Shinkansen Plush|Lucky Cat|Dog Senbei|Sweet Potato Strip/.test(shopTxt), 'the Boutique, Kibble Corner and Barkitecture list none of the Tokyo things: ' + ((shopTxt.match(/Shibuya Bandana|Asakusa Bandana|Tokyo Tower Bandana|Shinkansen Plush|Lucky Cat|Dog Senbei|Sweet Potato Strip/g) || []).join() || shopTxt.length));
   await t.ctx.close();
 
   /* ======================= roaming in every place ======================= */

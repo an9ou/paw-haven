@@ -451,13 +451,11 @@ function tkOmikuji() {
 
 /* ---- Nakamise (Asakusa): one dog-safe treat a day for every dog here, served like the café ---- */
 const TK_SNACKS = ['Sweet Potato Strip', 'Dog Senbei'];
-// the icon: world E drew it as 'Sweet Potato Chew' (the spec name before the rename), used until it is drawn under the new name
-function tkItemArt(n) { return n === 'Sweet Potato Strip' && !artReal('item', n) && artReal('item', 'Sweet Potato Chew') ? artReal('item', 'Sweet Potato Chew') : itemArt(n); }
 function tkNakamise() {
   if (!S || S.place !== 'asakusa' || tkCant()) return null; tkFields();
   const done = tkToday('snack'), dogs = tkPack(), n = dogs.length;
   const items = TK_SNACKS.map((nm) => FOOD.find((f) => f.n === nm)).filter(Boolean);
-  const p = openModal('Nakamise treats', `<p class="small">"Welcome! One treat a day for every dog, made just for dogs." ${done ? '<b>The pack already had today\'s treat.</b>' : `${n > 1 ? `${n} dogs, one treat each.` : ''}`} You have ${fmtC(S.coins)} Paw Coins.</p><div class="shopgrid">${items.map((it) => `<div class="sitem"><span class="art">${tkItemArt(it.n)}</span><b>${esc(it.n)}</b><span class="desc">${esc(it.note)}</span><span class="small sh-tip">${esc(it.tip)}</span>${priceHTML(it.price * n)}<button class="btn yes" data-tksnack="${esc(it.n)}" ${done ? 'aria-disabled="true"' : ''}>${n > 1 ? 'Treat everyone' : 'Order and serve'}</button></div>`).join('')}</div>`, { cls: 'shop tk-snackpop' });
+  const p = openModal('Nakamise treats', `<p class="small">"Welcome! One treat a day for every dog, made just for dogs." ${done ? '<b>The pack already had today\'s treat.</b>' : `${n > 1 ? `${n} dogs, one treat each.` : ''}`} You have ${fmtC(S.coins)} Paw Coins.</p><div class="shopgrid">${items.map((it) => `<div class="sitem"><span class="art">${itemArt(it.n)}</span><b>${esc(it.n)}</b><span class="desc">${esc(it.note)}</span><span class="small sh-tip">${esc(it.tip)}</span>${priceHTML(it.price * n)}<button class="btn yes" data-tksnack="${esc(it.n)}" ${done ? 'aria-disabled="true"' : ''}>${n > 1 ? 'Treat everyone' : 'Order and serve'}</button></div>`).join('')}</div>`, { cls: 'shop tk-snackpop' });
   p.querySelectorAll('[data-tksnack]').forEach((b) => { b.onclick = () => tkSnackBuy(b.dataset.tksnack); });
   return p;
 }

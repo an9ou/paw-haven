@@ -12,7 +12,7 @@
    Props: ekistamp { key, got } 0 0 120 120 (the seven keys PawArt.STAMP_KEYS, a dashed circle when !got), luckycat { indoor, time } 0 0 80 100,
      postcard { frame: 'tokyo', w, h, scene, caption, place, date, dogs, stamp } (the Tokyo frame, w x h, default 300 x 200; PawArt.postcard(w, h, { frame: 'tokyo' })
      draws the same; every other postcard call goes to world B unchanged).
-   Items (0 0 64 64): Shibuya Bandana, Asakusa Bandana, Tokyo Tower Bandana, Shinkansen Plush, Lucky Cat, Sweet Potato Chew, Dog Senbei, Stamp Book, Train Ticket, Paw.
+   Items (0 0 64 64): Shibuya Bandana, Asakusa Bandana, Tokyo Tower Bandana, Shinkansen Plush, Lucky Cat, Sweet Potato Strip, Dog Senbei, Stamp Book, Train Ticket, Paw.
    The pencil kit, paper, palette, sky and time/weather/season helpers are copied from world C (ids prefixed pwe), the icon kit from world B (ids pwei, pwep). No filters. */
 window.PawArt = window.PawArt || {};
 (function(){
@@ -941,7 +941,7 @@ const ITEMS_E={
   b.raw(`<ellipse cx="22" cy="23" rx="2.4" ry="1.4" fill="${PINK}" opacity=".55"/><ellipse cx="42" cy="23" rx="2.4" ry="1.4" fill="${PINK}" opacity=".55"/>`,'top');
   b.sh([[15,29],[32,33],[49,29],[49,33],[32,37],[15,33]],'#E04A3C',{hatch:0,hl:0,lw:.6});b.sh(E(32,37.5,3.2,3.2,10),C.gold,{hatch:0,hl:0,lw:.6});
   b.ex('spark',56,16,3.6,'#FFF3B8')},
- 'Sweet Potato Chew'(b){
+ 'Sweet Potato Strip'(b){
   [[18,14,-.5],[30,10,-.2],[42,14,.25]].forEach(([x,y,a],i)=>{const P=rot([[x-5,y],[x+5,y],[x+6,y+40],[x-6,y+40]],a,x,y+20);
    b.sh(P,'#F7C65E',{k:.25,sh:'#D9A03A',base:'#FCE29A',marks:[{pts:rot([[x-6.5,y-1],[x-3.6,y-1],[x-4.4,y+41],[x-7.4,y+41]],a,x,y+20),fill:'#9B5B86',k:0}],
     inner:b.st(b.jl(x-1,y+8,x+1,y+30,.6)+b.jl(x+2,y+12,x+2.4,y+24,.4),'#E3A84A',.9,.8)})});
