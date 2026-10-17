@@ -30,7 +30,7 @@ require('./test_lib').run('v210_ball', async (t) => {
   ok(!/challenge/i.test(await ev(() => document.getElementById('dock').textContent)), 'the tray no longer says "challenge"');
 
   sec('2. start: the scene stays, every eligible dog plays');
-  await ev(() => { const P = window.__paw; P.addDog({ key: 'beagle', sex: 'male', months: 2 }, 'Tiny'); P.S.dogs[2].sleeping = true; }); // Pip sleeps, Tiny is 2 months
+  await ev(() => { const P = window.__paw; P.addDog({ key: 'beagle', sex: 'male', months: 2 }, 'Tiny'); P.S.dogs[2].sleeping = true; P.S.dogs[2].stats.energy = 5; }); // Pip sleeps (energy 5: no waking at 100 mid-check), Tiny is 2 months
   ok(await start(), 'ball play starts');
   ok((await t.mode()) === 'yard' && (await ev(() => window.__paw.bl.on)), 'cur.mode stays yard, blOn() is true');
   const d0 = await dogs();
@@ -169,4 +169,15 @@ require('./test_lib').run('v210_ball', async (t) => {
   const sv = await S(); ok(typeof sv.bl.coins === 'number' && typeof sv.bl.n === 'number', 'S.bl is there (v210Fields)');
   await ev(() => window.__paw.go('fetch', 'Tennis Ball')); ok(await t.untilMode('fetch', 4000), 'go(fetch) still opens the retired challenge (for old suites), nothing in the UI does');
   await ev(() => window.__paw.go('yard')); await t.untilMode('yard');
+
+  sec('12. a dog in the strip right of the dog house gets out; scene taps keep the ball dock');
+  await t.home(); await t.luWait(400);
+  const bun = await ev(() => window.__paw.S.dogs.find((d) => d.key === 'corgi').id);
+  await ev((id) => { window.__paw.rm.set(id, { x: 880, y: 516 }); window.__paw.bl.start('Tennis Ball'); }, bun);
+  const bx0 = (await dogs()).find((d) => d.id === bun);
+  await ev(() => window.__paw.bl.sim(3)); const bx1 = (await dogs()).find((d) => d.id === bun);
+  ok(bx0 && bx0.x > 866 && bx1 && bx1.pose === 'sit' && bx1.role === 'wait', `Bun starts boxed in at x ${bx0 && Math.round(bx0.x)} and reaches the wait spot (${bx1 && Math.round(bx1.x)},${bx1 && Math.round(bx1.y)} ${bx1 && bx1.pose})`);
+  await ev(() => { ['#houseG', '#bowlG'].forEach((q) => { const el = document.querySelector(q); if (el && el.onclick) el.onclick(); }); });
+  ok(await ev(() => window.__paw.bl.on && !!document.getElementById('blDone')), 'tapping the dog house and the bowl keeps the ball dock and its Done button');
+  await ev(() => window.__paw.bl.stop()); await t.untilMode('yard');
 });

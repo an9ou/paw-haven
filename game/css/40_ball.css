@@ -10,3 +10,6 @@
 @keyframes blRing{from{opacity:.55;stroke-width:3}to{opacity:1;stroke-width:5}}
 .bl-ball{pointer-events:none}
 @media (prefers-reduced-motion:reduce){.bl-ring{animation:none}}
+/* while playing (html.bl-on): the scene props open nothing (the dog house, the bowl, the notice board, the stalls, the mailbox, the clipboard...), the place buttons still leave; the phone "look right" button hides */
+html.bl-on #view svg.world .hot{pointer-events:none}
+html.bl-on #phPeek{display:none!important}
