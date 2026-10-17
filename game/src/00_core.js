@@ -104,6 +104,10 @@ const CLOTHES = [
   { n: 'Vampire Cape', slot: 'body', fest: 'halloween', ed: 2026, v26: true, price: 75, bond: 1, perk: 'Swish: a high collar and a red lining. Very dramatic, not at all bitey.' },
   { n: 'Candy Corn Bandana', slot: 'neck', fest: 'halloween', ed: 2026, v26: true, price: 50, bond: 1, perk: 'Sweet look: candy-corn stripes and no actual sugar.' },
   { n: 'Bat Wings', slot: 'body', fest: 'halloween', ed: 2026, v26: true, price: 70, bond: 1, perk: 'Flap: felt wings that bounce when the tail wags.' },
+  // v2.11.1 Halloween 2026 costumes (V2111.md 3): body slot, each with its own head piece, so the hat comes off while one is worn
+  { n: 'Pumpkin Patch Suit', slot: 'body', fest: 'halloween', ed: 2026, v26: true, price: 70, bond: 1, perk: 'Round and proud: crayon pumpkin ribs, a leafy collar and a curly stem on top.' },
+  { n: 'Trick-or-Treat Ghost', slot: 'body', fest: 'halloween', ed: 2026, v26: true, price: 70, bond: 1, perk: 'Boo: a soft sheet with two eye holes and a little pumpkin bucket to carry.' },
+  { n: 'Little Bat Costume', slot: 'body', fest: 'halloween', ed: 2026, v26: true, price: 75, bond: 1, perk: 'Flutter: a purple hood with pointy ears, small wings and an orange frill.' },
   // v2.8 Winter & New Year (V28.md section 1): the Winter Stall sells the first three (fest), the Rosette is the contest reward, the Hood comes in Gerald's New Year card (ed: 2027, never sold)
   { n: 'Very Ugly Sweater', slot: 'body', fest: 'snow', price: 65, bond: 1, v28: true, perk: 'Warm: no shivering in the snow. Knitted by someone who has never seen a dog, or a snowflake.' },
   { n: 'Reindeer Antlers', slot: 'head', fest: 'snow', price: 55, bond: 1, v28: true, perk: 'Jingle: a little bell on each antler. Not warm. Very festive.' },

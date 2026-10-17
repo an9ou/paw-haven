@@ -92,9 +92,9 @@ async function suite(t, dev) {
     for (let yy = 0; yy <= sc.scrollHeight; yy += Math.max(200, sc.clientHeight - 80)) { sc.scrollTop = yy; await new Promise((r) => requestAnimationFrame(r)); document.querySelectorAll('#modal [data-hwbuy]').forEach((b) => { const r = b.getBoundingClientRect(); if (r.top >= 0 && r.bottom <= innerHeight) out.push([b.dataset.hwbuy, Math.round(r.width), Math.round(r.height), r.right <= innerWidth + 0.5 && r.left >= -0.5]); }); document.querySelectorAll('#modal .hw-tag').forEach((g) => { const r = g.getBoundingClientRect(); if (r.top >= 0 && r.bottom <= innerHeight) tags.push(parseFloat(getComputedStyle(g).fontSize)); }); }
     sc.scrollTop = 0; return { out, tags, pw: panel.scrollWidth, pcw: panel.clientWidth, n: document.querySelectorAll('#modal .hw-pop .sitem').length, secs: document.querySelectorAll('#modal .hw-sec').length, scrolls: sc.scrollHeight > sc.clientHeight };
   });
-  ok(sh.n === 16 && sh.secs === 4, `16 cards in four sections (${sh.n}, ${sh.secs})`);
-  ok(new Set(sh.out.map((b) => b[0])).size === 16 && sh.out.every((b) => b[1] >= 44 && b[2] >= 44 && b[3]), 'every Buy button is reachable, on screen and >= 44 px');
-  ok(sh.tags.length >= 16 && sh.tags.every((f) => f >= 15), 'the 2026 tags are 15 px');
+  ok(sh.n === 19 && sh.secs === 4, `19 cards in four sections, 7 clothes since v2.11.1 (${sh.n}, ${sh.secs})`);
+  ok(new Set(sh.out.map((b) => b[0])).size === 19 && sh.out.every((b) => b[1] >= 44 && b[2] >= 44 && b[3]), 'every Buy button is reachable, on screen and >= 44 px');
+  ok(sh.tags.length >= 19 && sh.tags.every((f) => f >= 15), 'the 2026 tags are 15 px');
   ok(sh.scrolls && sh.pw <= sh.pcw + 1, 'the sections scroll inside the sheet, never sideways');
   await ev(() => document.querySelector('[data-hwbuy="Apple Monster Biscuits"]').scrollIntoView({ block: 'center' }));
   await tapSel(t, '[data-hwbuy="Apple Monster Biscuits"]', () => !!document.querySelector('.buyveil .bb-yes')); await audit(t, 'popup buy window');
