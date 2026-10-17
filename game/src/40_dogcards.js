@@ -264,6 +264,19 @@ function dcClearOf(v, now) {
   if (sp.length) { v.x = sp[0][0]; v.y = sp[0][1]; v.k = rmScale(v.y); v.hidden = false; dcPaint(v); return; }
   if (!v.hidden) { v.hidden = true; dcPaint(v); }
 }
+// a rehomed pup was drawn (14b drawVisitor) while card visitors are out: rescan the tappable spots now and move any card visitor on its tap
+// area straight to the nearest free spot (or out of sight), so the pup's tap is never taken, not even for the walk off
+function dcRoom() {
+  if (!$('#dcVis') || !DC.vis.length) return; rmScan();
+  DC.vis.forEach((v) => {
+    const w = v.tw; if (w) { v.x = w.x1; v.y = w.y1; v.k = rmScale(v.y); v.tw = null; }
+    if (dcOk(v, v.x, v.y)) { dcPaint(v); return; }
+    const sp = dcSpots(v).sort((a, b) => Math.hypot(a[0] - v.x, a[1] - v.y) - Math.hypot(b[0] - v.x, b[1] - v.y));
+    if (sp.length) { v.x = sp[0][0]; v.y = sp[0][1]; v.k = rmScale(v.y); v.hidden = false; } else v.hidden = true;
+    dcPaint(v);
+  });
+  dcOrder();
+}
 function dcFrame(t) {
   DC.raf = 0; if (!S || cur.mode !== 'yard' || !$('#dcVis')) return;
   const dt = DC.last ? Math.min(100, t - DC.last) : 0; DC.last = t;

@@ -274,6 +274,7 @@ function drawVisitor(v, greet) {
   host.insertAdjacentHTML('beforeend', visitorSVG(v));
   const g = $('#visitorG', view); g.onclick = () => openVisitor(v.id); g.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openVisitor(v.id); } };
   if (typeof phHomeRefit === 'function') phHomeRefit(); // v2.3 phone: dog and visitor share the crop
+  if (typeof dcRoom === 'function') dcRoom(); // v2.11: a Dog Card visitor never stands on the pup's tap area
   V2T.line = `Look who it is! ${v.name} grew up!${v.sparkle ? ' ...and still sparkly!' : ''}`;
   if (greet) setTimeout(() => { if (cur.mode === 'yard' && $('#visitorG', view) && modal.hidden) { const [fx, fy, , sc] = visitorSpot(); say(V2T.line, fx, fy - 200 * sc, 3200); SFX.bark(BARK[v.key] || 1); } }, 900);
 }
