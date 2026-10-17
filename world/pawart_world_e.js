@@ -3,10 +3,12 @@
    Scenes (1000 x 600, the world C options time, weather, season, halloween, lights, newyear, jp, plus snow: true = snowy weather):
      tokyotower  Tokyo Tower from Shiba Park, the temple gate, the plaza; the tower glows at dusk and night (more with the Winter Lights). data-hot stamp, souvenir
      ueno        Shinobazu pond with lotus, swan boats and the Benten hall, two big cherry trees (pink in spring, green, momiji red in autumn, bare in
-                 winter), paper lanterns at hanami. data-hot stamp, hanami
+                 winter), paper lanterns at hanami; the hanami spot is a little wooden deck over the pond (behind the floor band): a picnic with
+                 the bento only on a spring day, a bench with a folded blanket otherwise. data-hot stamp, hanami
      odaiba      the sand beach (ball play), the Rainbow Bridge over the bay, the city with a tiny Tokyo Tower, palms; a warm dusk. data-hot stamp, sunset
-     The floor band (where the dogs' feet stand) is y 424 to 590 (odaiba 428), x 60 to 940: data-floor on the svg, PawArt.TOKYO_E { floor, hot }.
-     No dogs and no place names in the art. Tall things and the spots stay out of the band's middle and inside the phone crop (x 150 to 850).
+     The floor band (where the dogs' feet stand) is y 424 to 590 (odaiba 428), x 60 to 940: data-floor="y0,y1,x0,x1" on the svg (the world D order),
+     PawArt.TOKYO_E { floor: { name: [y0, y1, x0, x1] }, hot }. No dogs and no place names in the art. Tall things and the spots stay out of the band's
+     middle and inside the phone crop (x 150 to 850); props a dog could stand on (planters, the sandcastle, driftwood) stay out of the band.
    Props: ekistamp { key, got } 0 0 120 120 (the seven keys PawArt.STAMP_KEYS, a dashed circle when !got), luckycat { indoor, time } 0 0 80 100,
      postcard { frame: 'tokyo', w, h, scene, caption, place, date, dogs, stamp } (the Tokyo frame, w x h, default 300 x 200; PawArt.postcard(w, h, { frame: 'tokyo' })
      draws the same; every other postcard call goes to world B unchanged).
@@ -832,19 +834,23 @@ function stampArt(b,key,cx,cy,r,a=0){const col=ST_COL[key],c=Math.cos(a),s=Math.
     line([[-.62,-.29],[.62,-.29]],.03);
     for(let i=-3;i<=3;i++){const t=i*.105;bar(t*Math.SQRT1_2*1.4,.1+t*Math.SQRT1_2*1.4,.08,.022,-Math.PI/4);bar(-t*Math.SQRT1_2*1.4,.1+t*Math.SQRT1_2*1.4,.08,.022,Math.PI/4)}
     for(let i=-4;i<=4;i++)bar(i*.1,.58,.022,.07,0)}
-  else if(key==='hachiko'){// the statue: a sitting Akita on its plinth, facing left, the curled tail on its back
-    fillS([[-.44,.38],[.42,.38],[.46,.6],[-.48,.6]],{base:mix(col,'#FFFFFF',.7)});line([[-.38,.48],[.36,.48]],.025);
-    fillS([[-.3,.37],[-.32,.12],[-.24,-.1],[-.08,-.14],[.08,-.04],[.22,.12],[.3,.3],[.28,.37]]);
-    fillS([[-.22,-.08],[-.32,-.14],[-.5,-.16],[-.54,-.23],[-.46,-.3],[-.3,-.36],[-.14,-.36],[-.06,-.26],[-.08,-.14]]);
-    fillS([[-.27,-.33],[-.25,-.5],[-.16,-.35]]);fillS([[-.15,-.36],[-.08,-.5],[-.05,-.31]]);
-    loop(E(.18,-.06,.11,.1,12),.07);b.ln(UP([[-.18,.36],[-.19,.12]]),{w:w(.025),col:'#FFFBF3'});
-    b.dot(...U(-.32,-.27),Math.max(.6,r*.022),'#FFFBF3','top');b.dot(...U(-.53,-.21),Math.max(.6,r*.022),col,'top');
-    line([[-.62,.22],[-.52,.26]],.02);line([[.5,.2],[.62,.24]],.02)}
+  else if(key==='hachiko'){// the statue (like the one in the Shibuya scene): a sitting Akita on its plinth, facing left, a broad head with two
+    // pricked triangle ears, a short muzzle, a deep chest, the round haunch, and the thick curled tail lying over the back; the plinth in outline
+    loop([[-.44,.39],[-.4,.39],[0,.39],[.38,.39],[.42,.39],[.43,.43],[.46,.56],[.46,.6],[.42,.6],[0,.6],[-.44,.6],[-.48,.6],[-.48,.56],[-.45,.43]],.045);line([[-.36,.48],[.34,.48]],.025);
+    fillS([[-.34,.37],[-.35,.14],[-.33,-.02],[-.24,-.12],[-.06,-.15],[.1,-.11],[.22,-.02],[.31,.13],[.33,.29],[.29,.37]]);
+    fillS([[-.1,-.16],[-.07,-.28],[-.13,-.37],[-.24,-.41],[-.34,-.39],[-.42,-.33],[-.52,-.29],[-.56,-.22],[-.52,-.15],[-.4,-.12],[-.28,-.09],[-.16,-.1]]);
+    fillS([[-.4,-.35],[-.36,-.53],[-.25,-.4]]);fillS([[-.21,-.41],[-.13,-.55],[-.08,-.34]]);
+    loop(E(.13,-.21,.11,.095,14),.09);fillS([[.04,-.13],[.1,-.21],[.2,-.13],[.14,-.08]]);
+    b.ln(UP([[-.2,.36],[-.21,.12]]),{w:w(.025),col:'#FFFBF3'});b.ln(UP([[.04,.36],[.06,.2],[.15,.08],[.26,.1]]),{w:w(.022),col:'#FFFBF3'});
+    b.ln(UP([[-.33,-.1],[-.2,-.15]]),{w:w(.03),col:'#FFFBF3'});b.ln(UP([[-.55,-.2],[-.46,-.19]]),{w:w(.018),col:'#FFFBF3'});
+    b.dot(...U(-.38,-.29),Math.max(.6,r*.024),'#FFFBF3','top');
+    line([[-.64,.22],[-.54,.26]],.02);line([[.52,.2],[.64,.24]],.02)}
   else if(key==='yoyogi'){// a big ginkgo leaf, a ball, the dog run's fence
     const fan=[[0,.14]];for(let i=0;i<=12;i++){const t=Math.PI*(1.08+i/12*.84),rr=i===6?.42:.6;fan.push([Math.cos(t)*rr,.14+Math.sin(t)*rr])}fillS(fan);
     let vn=[];for(let i=1;i<6;i++){const t=Math.PI*(1.1+i/6*.8);vn.push([[0,.12],[Math.cos(t)*.5,.14+Math.sin(t)*.5]])}vn.forEach(v=>b.ln(UP(v),{w:w(.02),col:'#FFFBF3'}));
     line([[0,.12],[.04,.36]],.06);
-    loop(circ(.42,.32,.12),.05);line([[.34,.26],[.5,.38]],.025);
+    // a solid tennis ball with its two curved seams in paper (not a ring with a bar, which read as a "no" sign)
+    fillS(circ(.42,.32,.12,16));b.ln(UP([[.33,.23],[.38,.28],[.39,.35],[.34,.41]]),{w:w(.022),col:'#FFFBF3'});b.ln(UP([[.51,.23],[.46,.28],[.45,.35],[.5,.41]]),{w:w(.022),col:'#FFFBF3'});
     let fx=[];for(let x=-.6;x<=.0;x+=.12)fx.push([[x,.36],[x,.56]]);fx.forEach(v=>line(v,.04));line([[-.64,.42],[.06,.42]],.03);line([[-.64,.52],[.06,.52]],.03)}
   else if(key==='asakusa'){// the great lantern under the gate roof
     fillS([[-.62,-.38],[-.48,-.5],[.48,-.5],[.62,-.38],[.5,-.42],[-.5,-.42]]);line([[-.56,-.36],[.56,-.36]],.04);
@@ -1139,9 +1145,9 @@ function sqTokyoTower(k){const e=k.env;
    rows.forEach(yy=>{d+=`M0 ${R1(yy+k.J(.6))}L1000 ${R1(yy+k.J(.6))}`});for(let i=-16;i<=16;i++){const xb=500+i*90,xt=500+i*28;d+=`M${R1(xt)} 424L${R1(xb)} 600`}
    let f='';rows.forEach((yy,i)=>{const nh=(rows[i+1]||600)-yy;if(i%2)f+=`<rect x="0" y="${R1(yy)}" width="1000" height="${R1(nh)}" fill="#E2D6C2" opacity=".5"/>`});
    k.add(f+`<path d="${d}" stroke="#C9B9A2" stroke-width="1.2" fill="none"/>`);k.pen([[0,425],[500,424],[1000,425]],false,{w:2})}
-  // a manhole cover with a little tower on it, planters at the front corners
+  // a manhole cover with a little tower on it (flat: dogs may walk over it), planters at the front corners, out past the floor band's ends
   {const mx=520,my=548;k.shape(E(mx,my,40,11,20),'#B9B1A7',{w:1.6,one:1});k.add(`<ellipse cx="${mx}" cy="${my}" rx="31" ry="8" fill="none" stroke="#8E867C" stroke-width="1.2"/>${[0,1,2,3,4].map(i=>{const t=i/5*Math.PI*2-Math.PI/2;return `<ellipse cx="${R1(mx+Math.cos(t)*6)}" cy="${R1(my+Math.sin(t)*2.2)}" rx="4" ry="1.8" fill="#F7B6C8" stroke="#8E867C" stroke-width=".8"/>`}).join("")}<circle cx="${mx}" cy="${my}" r="1.6" fill="#E0697F"/><path d="M${mx-24} ${my-2}h6M${mx+18} ${my+2}h6M${mx-18} ${my+4}h5M${mx+14} ${my-4}h5" stroke="#8E867C" stroke-width="1"/>`)}
-  [[64,586,1],[938,586,.95]].forEach(([x,gy,s])=>{k.shape([[x-40*s,gy],[x+40*s,gy],[x+44*s,gy-34*s],[x-44*s,gy-34*s]],'#D8CFC2',{w:1.8,hatch:{side:.6,gap:4,col:'#B5AC9F',op:.5}});k.shape(RC(x-48*s,gy-40*s,96*s,8*s),'#C9C0B3',{w:1.5,one:1});O.bush(k,x,gy-38*s,.95*s);if(k.env.snow)k.side(()=>capLine(k,[[x-48*s,gy-40*s],[x+48*s,gy-40*s]],4))});
+  [[8,588,1],[994,588,.95]].forEach(([x,gy,s])=>{k.shape([[x-40*s,gy],[x+40*s,gy],[x+44*s,gy-34*s],[x-44*s,gy-34*s]],'#D8CFC2',{w:1.8,hatch:{side:.6,gap:4,col:'#B5AC9F',op:.5}});k.shape(RC(x-48*s,gy-40*s,96*s,8*s),'#C9C0B3',{w:1.5,one:1});O.bush(k,x,gy-38*s,.95*s);if(k.env.snow)k.side(()=>capLine(k,[[x-48*s,gy-40*s],[x+48*s,gy-40*s]],4))});
   O.sparkle(k,470,212,7);O.heart(k,764,236,6);
   // flower beds against the hedge, lamps at the ends
   fl(k,[[40,440,C.red],[66,446,C.yellow],[930,440,C.lav],[960,446,'#FFB3C7'],[300,436,C.yellow],[690,436,C.red]],4.6);
@@ -1198,17 +1204,40 @@ function unBenten(k,x,gy){const V='#E2563D',VD='#B83E2C',T='#6E7782',TD='#555D68
   tinyLit(k,x-20,gy-18);tinyLit(k,x+20,gy-18);if(k.env.lit)k.glows.push([x-36,gy-30,72,10]);
   if(k.env.snow)k.side(()=>capLine(k,rf.slice(0,6),6))}
 // the hanami spot: a blue picnic sheet with a bento box, a thermos, a water bowl for the dogs; petals or leaves on it by season
-function unPicnic(k,x,y){const so=k.env.season,P=[[x-84,y-24],[x+80,y-30],[x+96,y+24],[x-98,y+30]];
-  k.shape(P,so==='spring'?'#8FB8E8':'#E9B9C4',{w:1.8,one:1,hatch:{gap:9,col:so==='spring'?'#6E98CC':'#D3949F',op:.5,w:1.4}});
-  let d='';for(let i=1;i<6;i++){const t=i/6;d+=`M${R1(P[0][0]+(P[1][0]-P[0][0])*t)} ${R1(P[0][1]+(P[1][1]-P[0][1])*t)}L${R1(P[3][0]+(P[2][0]-P[3][0])*t)} ${R1(P[3][1]+(P[2][1]-P[3][1])*t)}`}k.add(`<path d="${d}" stroke="#FFFFFF" stroke-width="1.6" opacity=".55"/>`);
-  // the bento box (two tiers), the thermos, two cups, the water bowl
-  k.shape(RC(x-60,y-22,40,14),'#E04A3C',{w:1.5,one:1});k.shape(RC(x-60,y-32,40,10),'#3E3533',{w:1.4,one:1});k.add(`<path d="M${x-40} ${y-32}v24" stroke="#F7D24E" stroke-width="2"/>`);
-  k.shape(RC(x+2,y-40,14,30),'#9CCB80',{w:1.4,one:1,hatch:{side:.6,gap:3,col:'#6FA45E',op:.5}});k.shape(RC(x+1,y-44,16,6),'#FFFFFF',{w:1.2,one:1});
-  [[x+30,y-10],[x+44,y-4]].forEach(([cx,cy])=>{k.shape([[cx-5,cy-10],[cx+5,cy-10],[cx+4,cy],[cx-4,cy]],'#FFF8EC',{w:1.1,one:1})});
-  k.shape(E(x+70,y+6,15,5,14),'#B9D3F2',{w:1.5,one:1});k.add(`<ellipse cx="${x+70}" cy="${y+5}" rx="10" ry="2.6" fill="#DCEFFC" stroke="#8FB0D6" stroke-width=".8"/>`);
-  if(so==='spring')[[x-80,y+8,.4],[x-20,y+14,1.9],[x+10,y-2,.9],[x+60,y-14,2.4],[x-100,y-10,1.2],[x+92,y+18,.2]].forEach(([px,py,r],i)=>petalAt(k,px,py,4,r,PET[i%3]));
-  else if(so==='autumn')[[x-80,y+8,.4],[x+12,y+12,1.9],[x+90,y+16,.9]].forEach(([px,py,r],i)=>momijiAt(k,px,py,5.4,r,MOMI[i%4]));
-  if(k.env.snow)k.side(()=>capLine(k,[[x-60,y-32],[x-20,y-32]],3))}
+// the hanami spot: a little wooden deck out over the pond, behind the path's back line (x: its middle, y: its front edge on the path).
+// On a spring day (no rain or snow) a picnic blanket is spread on it with the bento, the thermos, two cups and the dogs' water bowl; every other
+// time it holds a bench with a folded blanket, so people food never sits where the dogs walk. The deck is drawn on the main stream (the same in
+// every variant), what is on it on a stream of its own.
+function unDeck(k,x,y){const e=k.env,so=e.season,bx0=x-84,bx1=x+84,by=y-56,fx0=x-102,fx1=x+102,lerp=(a,b,t)=>a+(b-a)*t;
+  // two pilings down into the water at the front corners, and the deck's shadow on the water by the sides
+  [fx0+8,fx1-8].forEach(px=>k.shape(RC(px-4,y-2,8,8),C.woodD,{w:1.2,one:1}));
+  k.add(`<path d="M${bx0-4} ${by+4}L${fx0-6} ${y-4}M${bx1+4} ${by+4}L${fx1+6} ${y-4}" stroke="#86BDDE" stroke-width="3" opacity=".6"/>`);
+  // the deck: boards across, a darker front board on the path's edge
+  const top=[[bx0,by],[bx1,by],[fx1,y-4],[fx0,y-4]];k.shape(top,C.wood,{w:1.8,one:1,hatch:{side:.72,gap:4,col:C.woodD,op:.45}});
+  let d='';for(let i=1;i<6;i++){const t=i/6,yy=lerp(by,y-4,t);d+=`M${R1(lerp(bx0,fx0,t)+2)} ${R1(yy)}L${R1(lerp(bx1,fx1,t)-2)} ${R1(yy)}`}k.add(`<path d="${d}" stroke="${C.woodD}" stroke-width="1.2" opacity=".8"/>`);
+  k.shape(RC(fx0,y-5,fx1-fx0,7),C.woodD,{w:1.4,one:1});
+  // the low rail round the back and the sides (open to the path), bamboo green like the pond rail
+  const posts=[[bx0,by],[x-28,by],[x+28,by],[bx1,by],[lerp(bx0,fx0,.55),lerp(by,y-4,.55)],[lerp(bx1,fx1,.55),lerp(by,y-4,.55)]];
+  let pd='';posts.forEach(([px,py])=>{pd+=`M${R1(px)} ${R1(py)}V${R1(py-26)}`});k.add(`<path d="${pd}" stroke="${C.woodD}" stroke-width="4" stroke-linecap="round"/>`);
+  const rl=[[lerp(bx0,fx0,.55),lerp(by,y-4,.55)-22],[bx0,by-22],[bx1,by-22],[lerp(bx1,fx1,.55),lerp(by,y-4,.55)-22]];k.line(rl,2.6,'#B7C98A');k.line(rl,1,C.ink,{op:.6});
+  if(e.snow)k.side(()=>capLine(k,[[bx0,by-22],[bx1,by-22]],4));
+  k.own(rng(0x554e4452),()=>{const pic=so==='spring'&&e.time==='day'&&!e.rain&&!e.snow,cy=y-28;k.add(`<g data-hanami="${pic?'picnic':'bench'}">`);
+    if(pic){// the picnic: a blue blanket, the bento (two tiers), the thermos, two cups, the dogs' water bowl
+      const P=[[x-70,cy-16],[x+64,cy-20],[x+78,cy+16],[x-82,cy+20]];k.shape(P,'#8FB8E8',{w:1.6,one:1,hatch:{gap:9,col:'#6E98CC',op:.5,w:1.3}});
+      let s='';for(let i=1;i<5;i++){const t=i/5;s+=`M${R1(lerp(P[0][0],P[1][0],t))} ${R1(lerp(P[0][1],P[1][1],t))}L${R1(lerp(P[3][0],P[2][0],t))} ${R1(lerp(P[3][1],P[2][1],t))}`}k.add(`<path d="${s}" stroke="#FFFFFF" stroke-width="1.5" opacity=".55"/>`);
+      k.shape(RC(x-52,cy-6,32,11),'#E04A3C',{w:1.4,one:1});k.shape(RC(x-52,cy-14,32,8),'#3E3533',{w:1.3,one:1});k.add(`<path d="M${x-36} ${cy-14}v19" stroke="#F7D24E" stroke-width="2"/>`);
+      k.shape(RC(x-4,cy-22,12,24),'#9CCB80',{w:1.3,one:1,hatch:{side:.6,gap:3,col:'#6FA45E',op:.5}});k.shape(RC(x-5,cy-26,14,5),'#FFFFFF',{w:1.1,one:1});
+      [[x+20,cy+2],[x+32,cy+6]].forEach(([qx,qy])=>k.shape([[qx-4.5,qy-9],[qx+4.5,qy-9],[qx+3.6,qy],[qx-3.6,qy]],'#FFF8EC',{w:1,one:1}));
+      k.shape(E(x+56,cy+10,13,4.4,14),'#B9D3F2',{w:1.4,one:1});k.add(`<ellipse cx="${x+56}" cy="${cy+9}" rx="8.6" ry="2.2" fill="#DCEFFC" stroke="#8FB0D6" stroke-width=".8"/>`)}
+    else{// the bench, its back to us (facing the pond), with a folded blanket on it (not in the rain)
+      const gy=y-14,s=.82,X=v=>x+v*s,Y=v=>gy+v*s;
+      k.shape(RC(X(-56),Y(-46),112*s,8*s),C.wood,{w:1.6});k.shape(RC(X(-56),Y(-60),112*s,8*s),C.wood,{w:1.6});k.shape(RC(X(-56),Y(-30),112*s,7*s),C.woodD,{w:1.5});
+      [-48,44].forEach(dx=>{k.line([[X(dx),Y(-24)],[X(dx),Y(-10)]],2.8,C.ink);k.line([[X(dx+2),Y(-64)],[X(dx+2),Y(-30)]],2.4,C.ink)});
+      if(!e.rain){k.shape([[X(-40),Y(-38)],[X(-8),Y(-38)],[X(-10),Y(-30)],[X(-38),Y(-30)]],so==='spring'?'#8FB8E8':'#E9B9C4',{w:1.1,one:1});k.add(`<path d="M${R1(X(-36))} ${R1(Y(-34))}h${R1(24*s)}" stroke="#FFFFFF" stroke-width="1.5"/>`)}
+      if(e.snow)k.side(()=>capLine(k,[[X(-58),Y(-60)],[X(58),Y(-60)]],4))}
+    k.add('</g>');
+    if(so==='spring'&&!e.rain)[[x-66,y-12,.4],[x-20,y-8,1.9],[x+30,y-40,.9],[x+70,y-14,2.4],[x-50,y-44,1.2]].forEach(([px,py,r],i)=>petalAt(k,px,py,4,r,PET[i%3]));
+    else if(so==='autumn')[[x-66,y-12,.4],[x+10,y-10,1.9],[x+72,y-30,.9]].forEach(([px,py,r],i)=>momijiAt(k,px,py,5.4,r,MOMI[i%4]))})}
 function sqUeno(k){const e=k.env,so=k.env.season;
   k.skyD(()=>{skyBand(k,1000,300);O.sun(k,860,74,28);O.cloud(k,520,70,22);O.cloud(k,300,120,16);O.bird(k,640,110,8);O.bird(k,662,120,6)},
     {W:1000,H:310,sun:[860,74,28],low:[330,236,34],moon:[860,78,24],clouds:[[520,70,22],[300,120,16],[760,160,14]],rainC:[[180,40,26],[620,30,28],[900,90,22]],birds:[[640,110,8],[662,120,6]],stars:46});
@@ -1222,9 +1251,9 @@ function sqUeno(k){const e=k.env,so=k.env.season;
   k.fx(()=>{if(e.rain)ripples(k,0,1000,306,410,26);waterGlints(k,e.night?860:330,304,404)});
   if(so==='winter')k.ss(()=>iceEdge(k,0,1000,()=>404,-1));
   unBenten(k,560,300);
-  // lotus beds on both sides of the pond, clear of the boats
-  [[30,330,15,1],[70,350,18,0],[110,326,13,0],[58,384,20,1],[120,372,16,0],[160,396,14,1],[200,360,13,0],[820,332,14,0],[870,352,18,1],[930,334,15,0],[960,380,20,1],[900,392,16,0],[850,398,13,1],[790,370,12,0]].forEach(([x,y,r,f])=>lotus(k,x,y,r,f));
-  swanBoat(k,330,366,.95,1);swanBoat(k,700,352,.8,-1);duck(k,450,392,.7,'#FFFFFF');duck(k,486,398,.55,'#E3C48F');
+  // lotus beds on both sides of the pond, clear of the boats and the hanami deck
+  [[30,330,15,1],[70,350,18,0],[110,326,13,0],[58,384,20,1],[120,372,16,0],[160,396,14,1],[200,360,13,0],[872,352,18,1],[930,334,15,0],[960,380,20,1],[900,392,16,0],[852,400,13,1]].forEach(([x,y,r,f])=>lotus(k,x,y,r,f));
+  swanBoat(k,330,366,.95,1);swanBoat(k,462,380,.7,-1);duck(k,526,396,.7,'#FFFFFF');duck(k,556,402,.55,'#E3C48F');
   // the low stone kerb and the bamboo rail along the water
   k.shape(RC(0,408,1000,12),C.stone,{w:1.7,one:1,hatch:{side:.6,gap:4,col:C.stoneD,op:.5}});
   {let d='';for(let x=24;x<1000;x+=64)d+=`M${x} 420V394`;k.add(`<path d="${d}" stroke="${C.woodD}" stroke-width="4" stroke-linecap="round"/>`);k.line([[0,398],[1000,398]],2.6,'#B7C98A');k.line([[0,398],[1000,398]],1,C.ink,{op:.6})}
@@ -1237,22 +1266,24 @@ function sqUeno(k){const e=k.env,so=k.env.season;
    [[290,448,22,7],[350,452,18,6],[410,446,20,6],[470,452,16,5],[530,447,19,6],[590,451,17,5]].forEach(([x,y,rx,ry])=>k.shape(blobP(x,y,rx,ry,k.r,9,.22),'#DCD3C6',{w:1.3,one:1,hatch:{side:.6,gap:3.4,col:'#B5AC9F',op:.45}}));
    [[[0,532],[90,546],[190,574],[240,600],[0,600]],[[1000,540],[900,550],[800,578],[760,600],[1000,600]]].forEach(p=>{k.shape(p,C.grass,{w:1.8,one:1,hatch:{side:.5,gap:5,col:C.grass2,op:.5}})});
    tuftsE(k,0,240,546,598,22,[]);tuftsE(k,770,1000,552,598,22,[])}
+  // the hanami deck over the pond, behind the path (its hit shape is added with the other spots below)
+  unDeck(k,730,422);
   fl(k,[[40,566,C.red],[96,584,C.yellow],[150,590,C.lav],[860,580,'#FFB3C7'],[930,566,C.yellow],[960,592,C.red]],4.6);
   // the two big cherry trees lean in from the edges and roof the top of the scene
   k.own(rng(0x55454e4f),()=>{unTree(k,52,446,1,1);unTree(k,950,446,.96,-1)});
   // paper lanterns strung between the trees for hanami (spring), lit after dark
   if(so==='spring')k.ss(()=>{nyChochins(k,120,232,470,250,22,5,.85);nyChochins(k,530,250,890,236,22,5,.85)});
-  k.ss(()=>{seasonGround(k,[0,428,1000,598],so==='spring'?50:so==='autumn'?50:30,[[640,420,880,510],[150,320,262,450]],0,1);
+  k.ss(()=>{seasonGround(k,[0,428,1000,598],so==='spring'?50:so==='autumn'?50:30,[[610,320,850,430],[150,320,262,450]],0,1);
     if(so==='spring')[[100,470,.4],[260,520,1.9],[420,560,.9],[560,480,2.4],[600,540,1.2],[330,580,.2],[880,560,2.9],[760,590,1.4],[480,440,2]].forEach(([x,y,r],i)=>petalAt(k,x,y,4.4,r,PET[i%3]));
     else if(so==='autumn')[[90,470,.4],[200,530,1.9],[460,560,.9],[620,500,2.4],[900,540,1.2],[330,590,.2]].forEach(([x,y,r],i)=>momijiAt(k,x,y,5.6,r,MOMI[i%4]));
-    seasonDrift(k,[[400,160,1],[620,200,.9],[260,330,.85],[780,300,.8]]);if(so==='winter'&&!e.night)robin(k,640,396,1,-1);if(so==='spring'&&!e.night&&!e.rain)butterfly(k,600,440,1,'#F9C6D4')});
-  fxE(k,{sheen:[428,598],avoid:[[640,420,880,510]],puddles:[[420,560,46,9],[260,590,40,8],[900,600,30,6]],patches:[[420,562,72,12],[250,590,60,11],[900,590,46,8],[520,440,60,7],[80,470,44,8]],flies:[[160,330],[860,320],[400,340],[620,380]]});
-  jpToro(k,300,422,.62);jpToro(k,628,422,.62);
+    seasonDrift(k,[[400,160,1],[620,200,.9],[260,330,.85],[780,300,.8]]);if(so==='winter'&&!e.night)robin(k,560,396,1,-1);if(so==='spring'&&!e.night&&!e.rain)butterfly(k,600,440,1,'#F9C6D4')});
+  fxE(k,{sheen:[428,598],avoid:[[610,320,850,430]],puddles:[[420,560,46,9],[260,590,40,8],[900,600,30,6]],patches:[[420,562,72,12],[250,590,60,11],[900,590,46,8],[520,440,60,7],[80,470,44,8]],flies:[[160,330],[860,320],[400,340],[620,380]]});
+  jpToro(k,300,422,.62);jpToro(k,600,422,.62);
   O.sparkle(k,430,180,7);O.note(k,600,150,11);
-  // the tappable spots: the stamp stand (left), the hanami picnic (back right)
+  // the tappable spots: the stamp stand (left), the hanami deck (back right, drawn above)
   {const g=k.cap(()=>stampStand(k,206,444,.95,'#D45A8A','#A8406A'));hot(k,'data-hot','stamp','Station stamp',RC(160,276,92,176),g)}
-  {const g=k.cap(()=>unPicnic(k,742,462));hot(k,'data-hot','hanami','Picnic spot',[[652,418],[830,412],[846,500],[640,506]],g)}
-  k.hw(()=>{hwJack(k,250,452,.72);hwJack(k,676,432,.6);hwGhost(k,300,170,.75,22)});
+  hot(k,'data-hot','hanami','Hanami spot',RC(...HOT_E.ueno.hanami),'');
+  k.hw(()=>{hwJack(k,250,452,.72);hwJack(k,640,420,.6);hwGhost(k,300,170,.75,22)});
   k.lt(()=>{ltString(k,sagP(120,250,470,262,20,14),22);ltString(k,sagP(530,262,890,250,20,14),22)});
   k.ny(()=>{nyKado(k,146,448,.8,-1);nyKites(k,[[420,90,.9,0,400,420],[720,120,.8,1,760,420]])});
   O.tape(k,6,26,90,-24,'#F7B9C6');O.tape(k,920,568,80,-28,'#BDE7D2')}
@@ -1346,14 +1377,16 @@ function sqOdaiba(k){const e=k.env,so=k.env.season;
    let pw='';[[300,560],[326,548],[352,540],[380,528],[408,520],[436,506],[464,498]].forEach(([x,y],i)=>{const o=i%2?6:-6;pw+=`<ellipse cx="${x}" cy="${y+o}" rx="3.4" ry="2.6" fill="#D9BC82"/><circle cx="${x-3}" cy="${y+o-4}" r="1.2" fill="#D9BC82"/><circle cx="${x}" cy="${y+o-5}" r="1.2" fill="#D9BC82"/><circle cx="${x+3}" cy="${y+o-4}" r="1.2" fill="#D9BC82"/>`});k.add(pw)}
   shell(k,140,500,1);shell(k,620,566,.9,'#FFF1D6');starfish(k,860,560,1,.3);shell(k,540,470,.8,'#F7B6C8');
   {let sw='';[[260,440],[600,446],[780,486],[380,452]].forEach(([x,y])=>{sw+=`M${x} ${y}q8 -6 16 -2t14 4M${x+4} ${y+3}q10 -4 20 0`});k.add(`<path d="${sw}" fill="none" stroke="#7FA86A" stroke-width="2" stroke-linecap="round" opacity=".85"/>`)}
-  {const x=880,y=578;k.shape([[x-56,y],[x-50,y-10],[x+40,y-14],[x+58,y-6],[x+52,y+4],[x-48,y+6]],'#CDB79A',{w:1.7,one:1,hatch:{side:.6,gap:3.6,col:'#A99478',op:.5}});k.line([[x-40,y-4],[x+30,y-8]],1,'#A99478');k.add(`<ellipse cx="${x+10}" cy="${y-4}" rx="5" ry="2.4" fill="none" stroke="#A99478" stroke-width="1"/>`)}
+  // driftwood washed up on the wet sand at the water's edge (behind the floor band's back line)
+  {const x=884,y=421,s=.8,P=[[-56,0],[-50,-10],[40,-14],[58,-6],[52,4],[-48,6]].map(([u,v])=>[x+u*s,y+v*s]);k.shape(P,'#CDB79A',{w:1.5,one:1,hatch:{side:.6,gap:3.6,col:'#A99478',op:.5}});k.line([[x-32,y-3],[x+24,y-6]],1,'#A99478');k.add(`<ellipse cx="${x+8}" cy="${y-3}" rx="4" ry="2" fill="none" stroke="#A99478" stroke-width="1"/>`)}
   shell(k,330,590,.9,'#F9D3DE');shell(k,700,520,.7,'#FFFFFF');starfish(k,60,590,.8,1.2);
-  // the palms at the two ends, a beach umbrella (summer) or a windbreak (winter) at the left end, thrift on the dune (spring)
+  // the palms at the two ends, a beach umbrella (summer, left) or a windbreak (winter, right), thrift on the dune (spring); the sandcastle sits
+  // at the water's edge: all of them on the band's back line or past its ends, so no dog stands on them
   palm(k,40,470,1,1);palm(k,964,474,.95,-1);
-  sandcastle(k,104,560,1.1);
-  k.ss(()=>{if(so==='winter')windbreak(k,880,520,90,46);else if(so==='spring')[[30,440],[70,430],[930,438],[960,446]].forEach(([x,y])=>thrift(k,x,y,1));
+  sandcastle(k,126,427,.8);
+  k.ss(()=>{if(so==='winter')windbreak(k,846,428,84,40);else if(so==='spring')[[30,440],[70,430],[930,438],[960,446]].forEach(([x,y])=>thrift(k,x,y,1));
     else if(so==='autumn')seasonGround(k,[0,440,1000,598],30,[[700,360,880,470],[150,300,262,452]],0,1);seasonDrift(k,[[420,200,1],[640,240,.9],[300,330,.85],[880,330,.8]])});
-  if(so==='summer'){const x=96,gy=440;k.line([[x,gy],[x+6,gy-120]],3,C.ink);const cn=[[x-58,gy-100],[x+6,gy-136],[x+70,gy-100]];k.shape(cn.concat([[x+50,gy-96],[x+28,gy-100],[x+6,gy-94],[x-16,gy-100],[x-38,gy-96]]),C.red,{w:1.8,one:1});
+  if(so==='summer'){const x=96,gy=428;k.line([[x,gy],[x+6,gy-120]],3,C.ink);const cn=[[x-58,gy-100],[x+6,gy-136],[x+70,gy-100]];k.shape(cn.concat([[x+50,gy-96],[x+28,gy-100],[x+6,gy-94],[x-16,gy-100],[x-38,gy-96]]),C.red,{w:1.8,one:1});
     k.add(`<path d="M${x+6} ${gy-136}L${x-16} ${gy-100}M${x+6} ${gy-136}L${x+28} ${gy-100}" stroke="#FFFFFF" stroke-width="5" opacity=".85"/>`);
     if(e.snow)k.side(()=>capLine(k,cn,4))}
   fxE(k,{sheen:[440,598],avoid:[[700,360,880,470]],puddles:[[420,560,46,9],[700,590,40,8]],patches:[[420,562,72,12],[700,590,62,11],[260,470,46,8],[860,470,44,8]],flies:[]});
@@ -1369,8 +1402,9 @@ function sqOdaiba(k){const e=k.env,so=k.env.season;
 
 /* ---------------- the scene API ---------------- */
 // the hot-spot boxes and floor band per scene (also published as PA.TOKYO_E for the TRAVEL lane)
-const HOT_E={tokyotower:{stamp:[160,278,92,176],souvenir:[664,306,184,152]},ueno:{stamp:[160,276,92,176],hanami:[640,412,206,94]},odaiba:{stamp:[160,282,92,176],sunset:[662,336,176,128]}};
-const FLOOR_E={tokyotower:[60,424,940,590],ueno:[60,424,940,590],odaiba:[60,428,940,590]};
+const HOT_E={tokyotower:{stamp:[160,278,92,176],souvenir:[664,306,184,152]},ueno:{stamp:[160,276,92,176],hanami:[624,326,212,98]},odaiba:{stamp:[160,282,92,176],sunset:[662,336,176,128]}};
+// [y0, y1, x0, x1], the same order as world D's data-floor
+const FLOOR_E={tokyotower:[424,590,60,940],ueno:[424,590,60,940],odaiba:[428,590,60,940]};
 const MINE_E={tokyotower:['Tokyo Tower',sqTokyoTower],ueno:['Ueno Park',sqUeno],odaiba:['Odaiba Seaside',sqOdaiba]};
 function frameE(name,label,body,env){
   const k=kit(hashS('pwe-'+name));lighten(k);k.env=env||DEF_ENV;k.so=k.env.ssn;k.xl=[];k.rc=recolorFn(k.env,'out');const pp=paperDefs(k,1000,600);

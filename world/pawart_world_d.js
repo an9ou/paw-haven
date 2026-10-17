@@ -110,7 +110,7 @@ function kit(seed){
       for(let x=sx;x<x1+4;x+=gap){d+=`M${R1(x+J(1))} ${R1(y1+3)}L${R1(x+h*.6+J(1))} ${R1(y0-3)}`}
       out.push(`<path d="${d}" clip-path="url(#${id})" fill="none" stroke="${o.col||C.ink}" stroke-width="${o.w||1.1}" stroke-opacity="${o.op??.35}" stroke-linecap="round"/>`);
     },
-    text(s,x,y,size,o={}){out.push(`<text x="${R1(x)}" y="${R1(y)}"${o.rot?` transform="rotate(${o.rot} ${R1(x)} ${R1(y)})"`:''} font-family="'Caveat',cursive" font-size="${size}" font-weight="${o.wt||700}" fill="${o.col||C.ink}"${o.halo?` stroke="${o.halo}" stroke-width="6" stroke-linejoin="round" paint-order="stroke"`:''} text-anchor="${o.anchor||'middle'}"${o.ls?` letter-spacing="${o.ls}"`:''}>${s}</text>`)},
+    text(s,x,y,size,o={}){out.push(`<text x="${R1(x)}" y="${R1(y)}"${o.rot?` transform="rotate(${o.rot} ${R1(x)} ${R1(y)})"`:''} font-family="'Caveat',cursive" font-size="${size}" font-weight="${o.wt||700}" fill="${o.col||C.ink}"${o.halo?` stroke="${o.halo}" stroke-width="${o.hw||6}" stroke-linejoin="round" paint-order="stroke"`:''} text-anchor="${o.anchor||'middle'}"${o.ls?` letter-spacing="${o.ls}"`:''}>${s}</text>`)},
     // capture output of fn into a string (for wrapping copies in strips)
     cap(fn){const a=out.length;fn();return out.splice(a).join('')}
   };
@@ -1015,8 +1015,7 @@ function tkYoyogi(k){const e=k.env;HZ=Object.values(HOTS.yoyogi).map(([x,y,w,h])
   tufts(k,424,598,100);
   k.ss(()=>{seasonGround(k,[0,424,1000,598],110,HZ);if(k.so==='autumn'){let d='';for(let i=0;i<36;i++)d+=ginkgoLeaf(k,20+k.r()*960,430+k.r()*160,1.5,k.r()*6,i%3?'#F7D24E':'#F2C23E');k.add(d)}});
   k.fx(()=>hubFx(k,{sheen:[426,598],puddles:[[300,580,46,9],[720,560,40,8],[120,470,34,7]],patches:[[300,580,72,13],[720,560,60,11],[120,470,50,8],[900,460,46,8],[520,440,56,7]],flies:[[200,470],[600,480],[880,560],[470,584],[760,330]]}));
-  // a ball left on the grass, and the tappable stamp stand by the gate
-  k.shape(E(640,566,10,10,10),'#E9F59B',{w:1.6});k.add(`<path d="M632 562q8 6 16 0" fill="none" stroke="#fff" stroke-width="1.6"/>`);
+  // the tappable stamp stand by the gate (no ball painted on the lawn: the only ball here is the one the dogs play with)
   hotAt(k,'yoyogi','stamp','Station stamp',()=>ekiStand(k,298,436,1,'#7FB86A'));
   k.ss(()=>{seasonDrift(k,[[700,220,1],[620,260,.9],[820,300,.85],[420,240,.8]]);if(k.so==='winter'&&!e.night)robin(k,520,424,1,-1);if(k.so==='spring'&&!e.night&&!e.rain)butterfly(k,700,400,1,'#F9C6D4')});
   k.hw(()=>{hwJack(k,120,428,.7);hwJack(k,270,428,.55);hwGhost(k,880,262,.7,14);hwSkyBats(k,[[560,120,.8],[620,96,.6]])});
@@ -1032,10 +1031,14 @@ function templeRoof(k,cx,y,hw,h,o={}){const p=[[cx-hw,y+h*.2],[cx-hw*.86,y+h*.42
   k.shape(RC(cx-hw*.42,y-h*.1,hw*.84,h*.12),o.colD||TILED,{w:1.4,one:1});[[-1],[1]].forEach(([sg])=>k.add(`<path d="M${R1(cx+sg*hw*.42)} ${R1(y-h*.1)}q${R1(sg*6)} ${R1(-8)} ${R1(sg*12)} ${R1(-4)}" fill="none" stroke="${C.ink}" stroke-width="2.4" stroke-linecap="round"/>`));
   if(k.env.snow)k.side(()=>capLine(k,p.slice(0,8),Math.max(4,h*.12)))}
 function lightningLantern(k,cx,y0,w,h){const t=y0,b=y0+h,body=[];for(let i=0;i<=16;i++){const a=i/16,yy=t+10+a*(h-20),bulge=Math.sin(a*Math.PI);body.push([cx-w/2*(.88+.12*bulge),yy])}for(let i=16;i>=0;i--){const a=i/16,yy=t+10+a*(h-20),bulge=Math.sin(a*Math.PI);body.push([cx+w/2*(.88+.12*bulge),yy])}
-  k.shape(body,VERM,{w:2,one:1,hatch:{side:.6,gap:3.4,col:VERMD,op:.55}});let r='';for(let i=1;i<8;i++){const yy=t+10+i*(h-20)/8;r+=`M${R1(cx-w/2+3)} ${R1(yy)}Q${R1(cx)} ${R1(yy+3)} ${R1(cx+w/2-3)} ${R1(yy)}`}k.add(`<path d="${r}" fill="none" stroke="${VERMD}" stroke-width="1" opacity=".55"/>`);
-  // the bold black mark: a crayon lightning bolt for the thunder gate
-  k.add(`<path d="M${R1(cx+6)} ${R1(t+22)}L${R1(cx-14)} ${R1(t+h*.52)}L${R1(cx+2)} ${R1(t+h*.5)}L${R1(cx-8)} ${R1(b-24)}L${R1(cx+16)} ${R1(t+h*.42)}L${R1(cx)} ${R1(t+h*.44)}L${R1(cx+12)} ${R1(t+22)}Z" fill="#2E2826" stroke="#2E2826" stroke-width="2" stroke-linejoin="round"/>`);
-  [[t,12],[b-12,12]].forEach(([yy,hh])=>{k.shape(RC(cx-w*.46,yy,w*.92,hh),'#3E3533',{w:1.4,one:1});k.add(`<path d="M${R1(cx-w*.4)} ${R1(yy+hh/2)}h${R1(w*.8)}" stroke="#C9A55E" stroke-width="1.6" stroke-dasharray="4 4"/>`)});
+  k.shape(body,VERM,{w:2,one:1,hatch:{side:.6,gap:3.4,col:VERMD,op:.55}});
+  // the paper's bamboo ribs: curved bands all the way down, a little darker every other one
+  let r='',r2='';for(let i=1;i<10;i++){const yy=t+10+i*(h-20)/10,bulge=Math.sin(i/10*Math.PI),hw=w/2*(.88+.12*bulge)-3,s=`M${R1(cx-hw)} ${R1(yy)}Q${R1(cx)} ${R1(yy+4)} ${R1(cx+hw)} ${R1(yy)}`;if(i%2)r+=s;else r2+=s}
+  k.add(`<path d="${r}" fill="none" stroke="${VERMD}" stroke-width="1.5" opacity=".75"/><path d="${r2}" fill="none" stroke="${VERMD}" stroke-width="1" opacity=".5"/>`);
+  // a small soft mark for the thunder gate, rounded like a crayon squiggle
+  {const my=t+h*.5;k.add(`<path d="M${R1(cx+3)} ${R1(my-15)}L${R1(cx-6)} ${R1(my+1)}L${R1(cx+1)} ${R1(my)}L${R1(cx-3)} ${R1(my+15)}L${R1(cx+7)} ${R1(my-3)}L${R1(cx)} ${R1(my-2)}L${R1(cx+5)} ${R1(my-15)}Z" fill="#4A3A36" stroke="#4A3A36" stroke-width="2.6" stroke-linejoin="round" opacity=".85"/>`)}
+  // the black top and bottom rings, a gold band round each
+  [[t-2,15],[b-13,15]].forEach(([yy,hh])=>{k.shape(RC(cx-w*.47,yy,w*.94,hh),'#3E3533',{w:1.5,one:1});k.add(`<path d="M${R1(cx-w*.43)} ${R1(yy+hh*.3)}h${R1(w*.86)}M${R1(cx-w*.43)} ${R1(yy+hh*.72)}h${R1(w*.86)}" stroke="#C9A55E" stroke-width="1.4" opacity=".9"/><path d="M${R1(cx-w*.4)} ${R1(yy+hh/2)}h${R1(w*.8)}" stroke="#5E4E46" stroke-width="2.4" stroke-dasharray="2 5"/>`)});
   k.add(`<path d="M${R1(cx-w*.2)} ${R1(b)}q${R1(w*.2)} 9 ${R1(w*.4)} 0" fill="#3E3533" stroke="${C.ink}" stroke-width="1"/>`);
   if(k.env.lit)jpGlow(k,cx,y0+h/2,w*1.1,.7)}
 function kaminarimon(k,cx,gy){const W=VERM;
@@ -1127,6 +1130,8 @@ function skHouse(k,x,gy,s,col,roof){const p=RC(x-12*s,gy-16*s,24*s,16*s);k.fill(
 function skTree(k,x,gy,s){const so=k.env.season,c=so==='autumn'?'#E8A86A':so==='winter'?'#C9BBA8':so==='spring'&&x%3<1?'#F7C6D3':'#9ACD7C';k.add(`<path d="M${R1(x)} ${R1(gy)}v${R1(-8*s)}" stroke="${C.trunkD}" stroke-width="2"/>`);
   k.shape(E(x,gy-14*s,9*s,8*s,9),c,{w:1.1,one:1})}
 function tkShinkansen(k,o){const e=k.env,W=SK_WIN,wy=W[0].y,wh=W[0].h,hz=wy+96;
+  // the car is lit inside at every hour: only the view through the windows takes the time and weather colouring
+  const rc=k.rc;k.rc=null;
   // the car: ceiling, luggage racks, the wall, the blue stripe, the floor and seats
   k.fill(RC(0,0,1000,600),'#F4F1EA',{dx:0,dy:0,sc:0});
   k.fill(RC(0,0,1000,70),'#E6E3DC',{dx:0,dy:0,sc:0});k.line([[0,70],[1000,70]],1.6,C.graph);
@@ -1137,7 +1142,7 @@ function tkShinkansen(k,o){const e=k.env,W=SK_WIN,wy=W[0].y,wh=W[0].h,hz=wy+96;
   k.shape(RC(640,60,70,32),'#B9D3F2',{w:1.5,one:1,hatch:{side:.7,gap:3,col:'#8FAFD6',op:.5}});k.shape(RC(666,54,18,6),C.ink,{noline:1,dx:0,dy:0});O.heart(k,676,76,6);
   // the window band: the land outside, clipped to the six windows
   const cid=uid();k.defs.push(`<clipPath id="${cid}">${W.map(w=>`<rect x="${w.x}" y="${w.y}" width="${w.w}" height="${w.h}" rx="16"/>`).join('')}</clipPath>`);
-  k.add(`<g clip-path="url(#${cid})">`);
+  const wb0=k.out.length;k.add(`<g clip-path="url(#${cid})">`);
   k.add(`<rect x="0" y="${wy}" width="1000" height="${wh}" fill="${skyGrad(k,wy,wy+wh)}"/>`);
   if(e.night&&(e.sunny||e.weather==='cloudy'))k.fx(()=>{const st=k.cap(()=>stars(k,1000,0,90,e.sunny?40:12,false));k.add(`<g transform="translate(0 ${wy})">${st}</g>`)});
   else if(!e.night&&e.sunny)O.sun(k,820,wy+34,16,e.time==='dawn'?'#FDD68E':e.time==='dusk'?'#F9AE6E':C.sun);
@@ -1179,6 +1184,7 @@ function tkShinkansen(k,o){const e=k.env,W=SK_WIN,wy=W[0].y,wh=W[0].h,hz=wy+96;
   // the dogs' heads, one per window (the game fills these in)
   W.forEach((w,i)=>k.add(`<!--pwd-head-${i}-->`));
   k.add('</g>');
+  if(rc){const wb=k.out.splice(wb0).join('');k.add(wb.replace(HEXRE,rc))}
   // glass glare, the frames, the pull-down blinds, the sills
   W.forEach(w=>{k.add(`<path d="M${w.x+14} ${w.y+wh-26}l40 -60M${w.x+30} ${w.y+wh-18}l22 -32" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" opacity=".35"/>`);
     k.add(`<rect x="${w.x}" y="${w.y}" width="${w.w}" height="${w.h}" rx="16" fill="none" stroke="#DCDFE4" stroke-width="9"/>`);k.pen(RC(w.x-5,w.y-5,w.w+10,w.h+10),true,{w:1.6,one:1});k.pen(RC(w.x+4,w.y+4,w.w-8,w.h-8),true,{w:1,one:1,col:C.graph});
@@ -1204,8 +1210,11 @@ PA.JAPAN_AREAS=Object.keys(JM_AREAS).map(id=>({id,x:JM_AREAS[id].x,y:JM_AREAS[id
 const JM_LOOP=(()=>{const P=[];for(let i=0;i<40;i++){const a=i/40*Math.PI*2;P.push([860+Math.cos(a)*320+Math.sin(a*2)*16,420+Math.sin(a)*230])}return P})();
 const JM_COAST=[[700,1020],[760,940],[860,880],[980,860],[1090,800],[1180,740],[1290,700],[1400,690],[1500,720],[1620,700]];
 const JM_RAIL=[[-20,906],[220,888],[460,862],[700,842],[900,830],[1030,800],[1100,690],[1140,580],[1176,500]];// the Shinkansen line from the west into Tokyo Station
-const JM_RIVER=[[1270,-20],[1290,120],[1260,260],[1240,400],[1250,560],[1220,700],[1200,760]];
-const jmIn=(x,y,pad=0)=>Object.keys(JM_AREAS).some(id=>{const a=JM_AREAS[id];return((x-a.x)/(150+pad))**2+((y-a.y-14)/(124+pad))**2<1});
+// the Sumida river: east of Asakusa (Sensō-ji is on its west bank) and of Tokyo Station, down into the bay east of Odaiba's beach
+const JM_RIVER=[[1424,-20],[1442,100],[1462,220],[1490,330],[1484,460],[1446,580],[1404,694]];
+const JM_TITLE=[210,300];// the "Tokyo" title: clear of the place chip (top left) and of the phone's top bar
+// a place pin or its label (a box round the text under the pin), or the title
+const jmIn=(x,y,pad=0)=>Object.keys(JM_AREAS).some(id=>{const a=JM_AREAS[id];return((x-a.x)/(150+pad))**2+((y-a.y-14)/(124+pad))**2<1||(Math.abs(x-a.x)<160&&y>a.y+60&&y<a.y+140)})||(Math.abs(x-JM_TITLE[0])<150&&y>JM_TITLE[1]-80&&y<JM_TITLE[1]+40);
 const JM_ICON={
   shibuya(k,x,y){k.shape(RC(x-70,y+8,140,44),'#D6D2CC',{w:1.6,one:1});let d='';for(let i=0;i<8;i++)d+=`M${x-62+i*17} ${y+14}h9v32h-9Z`;k.add(`<path d="${d}" fill="#FFFFFF" stroke="${C.ink}" stroke-width=".8"/>`);
     k.shape(RC(x-50,y-56,60,60),'#E9E4DA',{w:1.6,one:1});k.shape(RC(x-44,y-50,48,26),'#BFE3F7',{w:1.2,one:1});O.heart(k,x-20,y-38,7);k.shape(RC(x+18,y-30,34,34),'#D9D3C9',{w:1.4,one:1});
@@ -1214,7 +1223,7 @@ const JM_ICON={
     k.shape([[x-60,y-24],[x-58,y-76],[x-40,y-100],[x-22,y-76],[x-20,y-24]],'#F7D24E',{w:1.6,one:1,hatch:{side:.55,gap:3.6,col:'#E0A93A',op:.5}});O.tree(k,x+44,y-6,.36,{col:C.leaf2});k.shape(E(x+6,y+28,9,9,10),'#E9F59B',{w:1.4})},
   asakusa(k,x,y){k.shape([[x-80,y-30],[x-60,y-48],[x+60,y-48],[x+80,y-30],[x+70,y-24],[x-70,y-24]],TILE,{w:1.8,one:1,hatch:{side:.55,gap:3.4,col:TILED,op:.5}});
     [x-56,x-30,x+22,x+48].forEach(px=>k.shape(RC(px,y-24,8,72),VERM,{w:1.4,one:1}));k.shape(RC(x-60,y-22,120,8),VERM,{w:1.3,one:1});k.shape(E(x,y+12,15,22,12),VERM,{w:1.6,hatch:{side:.6,gap:3,col:VERMD,op:.5}});
-    k.add(`<path d="M${x+2} ${y-2}l-7 14h6l-4 12 9 -16h-6z" fill="#2E2826"/><rect x="${x-11}" y="${y-12}" width="22" height="4" fill="#3E3533"/><rect x="${x-11}" y="${y+32}" width="22" height="4" fill="#3E3533"/>`)},
+    k.add(`<path d="M${x-13} ${y+4}q13 3 26 0M${x-14} ${y+12}q14 3 28 0M${x-13} ${y+20}q13 3 26 0" fill="none" stroke="${VERMD}" stroke-width="1.2" opacity=".7"/><rect x="${x-11}" y="${y-13}" width="22" height="6" rx="1.5" fill="#3E3533"/><rect x="${x-11}" y="${y+31}" width="22" height="6" rx="1.5" fill="#3E3533"/>`)},
   ueno(k,x,y){k.shape(E(x+14,y+30,64,20,14),C.water,{w:1.6});k.add(`<path d="M${x-20} ${y+28}q6 -4 12 0M${x+30} ${y+34}q6 -4 12 0" fill="none" stroke="#86BDDE" stroke-width="1.6"/>`);
     k.shape(E(x+40,y+26,8,4,10),'#8FC27A',{w:1,one:1});k.shape(RC(x-52,y-6,8,30),'#8A6A5A',{w:1.4,one:1});jpPuffs(k,x-48,y-26,40,26,'#F9D3DE','#E9A2B8',1)},
   tokyotower(k,x,y){const t=y-92;k.shape([[x-34,y+44],[x-6,t],[x+6,t],[x+34,y+44]],'#E8664F',{w:1.7,one:1});let d='';for(let i=1;i<9;i++){const yy=t+i*(y+44-t)/9,hw=6+28*i/9;d+=`M${R1(x-hw)} ${R1(yy)}L${R1(x+hw)} ${R1(yy+8)}M${R1(x+hw)} ${R1(yy)}L${R1(x-hw)} ${R1(yy+8)}`}k.add(`<path d="${d}" stroke="#B5322A" stroke-width="1"/>`);
@@ -1258,7 +1267,7 @@ function tkJapanMap(k,o){const lk=o.locked,locked=new Set(Array.isArray(lk)?lk:[
   // the places
   for(const id of Object.keys(JM_AREAS)){const a=JM_AREAS[id],x=a.x,y=a.y,hp=E(x,y+12,104,84,12),isL=locked.has(id);
     const g=k.cap(()=>{k.add(`<path d="${smooth(dense(E(x,y+16,100,66,14),true,30),true)}" fill="#FDF3DF" fill-opacity=".9"/>`);JM_ICON[id](k,x,y);
-      const cap=()=>{const L=a.label;k.text(L,x,y+108,L.length>17?Math.round(34*17/L.length):34,{rot:k.J(2),halo:'#FFF8EC'})};
+      const cap=()=>{const L=a.label;k.text(L,x,y+108,L.length>17?Math.round(34*17/L.length):34,{rot:k.J(2),halo:'#FFF8EC',hw:12})};// a wide paper halo: the loop and the rail stop short of the letters
       if(!isL)cap();
       else{k.add(`<path d="${smooth(dense(hp,true,30),true)}" fill="#EFE9E0" fill-opacity=".55"/>`);k.hatch(hp,{gap:7,col:C.graph,op:.55,w:1.4});const cx=x-28,cy=y-10;
         k.add(`<path d="M${cx-14} ${cy}v-12a14 14 0 0 1 28 0v12" fill="none" stroke="${C.ink}" stroke-width="5" stroke-linecap="round"/>`);k.shape(RC(cx-22,cy-2,44,36),C.yellow,{w:2.4});k.add(`<circle cx="${cx}" cy="${cy+12}" r="4" fill="${C.ink}"/><path d="M${cx} ${cy+14}v9" stroke="${C.ink}" stroke-width="3" stroke-linecap="round"/>`);
@@ -1268,8 +1277,8 @@ function tkJapanMap(k,o){const lk=o.locked,locked=new Set(Array.isArray(lk)?lk:[
     hot(k,'data-area',id,a.label+(isL?' (locked)':''),hp,g);
     if(isL)k.out[k.out.length-1]=k.out[k.out.length-1].replace(`data-area="${id}"`,`data-area="${id}" data-locked="1"`)}
   // compass, the title, doodles
-  k.shape(E(1500,110,48,48,14),'#FFFFFF',{w:2});k.add(`<path d="M1500 62l10 40 -10 10 -10 -10zM1500 158l10 -40 -10 -10 -10 10z" fill="${C.pink}" stroke="${C.ink}" stroke-width="1.8" stroke-linejoin="round"/>`);k.text('N',1500,54,28);
-  k.text('Tokyo',190,104,72,{rot:-3,halo:'#FFF8EC'});k.line([[90,122],[300,116]],3,C.pink);
+  k.shape(E(1540,110,48,48,14),'#FFFFFF',{w:2});k.add(`<path d="M1540 62l10 40 -10 10 -10 -10zM1540 158l10 -40 -10 -10 -10 10z" fill="${C.pink}" stroke="${C.ink}" stroke-width="1.8" stroke-linejoin="round"/>`);k.text('N',1540,54,28);
+  {const [tx,ty]=JM_TITLE;k.text('Tokyo',tx,ty,72,{rot:-3,halo:'#FFF8EC',hw:10});k.line([[tx-100,ty+18],[tx+110,ty+12]],3,C.pink)}
   O.sparkle(k,420,200,10);O.sparkle(k,1460,560,8);O.heart(k,700,920,8);O.note(k,1540,420,14);
   O.tape(k,10,26,120,-26,'#F7B9C6');O.tape(k,1460,960,120,-24,'#BDE7D2');O.tape(k,14,966,100,24,'#F9E19A')}
 const polyXd=(P,y)=>{for(let i=0;i<P.length-1;i++){const a=P[i],b=P[i+1];if((y-a[1])*(y-b[1])<=0){const t=(y-a[1])/((b[1]-a[1])||1);return a[0]+(b[0]-a[0])*t}}return P[P.length-1][0]};

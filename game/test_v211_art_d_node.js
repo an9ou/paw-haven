@@ -155,6 +155,15 @@ sec('5. shinkansen and japanmap');
     ok((m.match(/data-stamp="/g) || []).length === sk.length && sk.every((k) => m.includes(`data-stamp="${k}"`)), `japanmap ${t}: a tick per stamp`);
   });
   ok(norm(P.scene('japanmap', {})) === norm(P.scene('japanmap', { time: 'night' })), 'japanmap: no time or weather');
+  // the art review fixes (v2.11 art fix batch)
+  const jm = P.scene('japanmap', {});
+  const tt = jm.match(/<text x="([\d.]+)" y="([\d.]+)"[^>]*font-size="72"[^>]*>Tokyo<\/text>/);
+  ok(tt && (+tt[1] - 120 > 260 || +tt[2] - 60 > 90), `japanmap: the "Tokyo" title is clear of the top-left 260 x 90 (at ${tt && tt[1]}, ${tt && tt[2]})`);
+  ok(/>Asakusa and Sensō-ji<\/text>/.test(jm) && /stroke-width="12" stroke-linejoin="round" paint-order="stroke"[^>]*>Yoyogi Park Dog Run</.test(jm), 'japanmap: the place labels carry a wide paper halo');
+  const skDay = P.scene('shinkansen', { still: true }), skNight = P.scene('shinkansen', { still: true, time: 'night' });
+  ok(/fill="#F4F1EA"/.test(skDay) && /fill="#F4F1EA"/.test(skNight) && /fill="#5B86C9"/.test(skNight), 'shinkansen at night: the lit cabin keeps its day colours (only the view is tinted)');
+  ok(!/#E9F59B/.test(P.scene('yoyogi', {})), 'yoyogi: no tennis ball painted on the lawn');
+  ok(!/M\d+(\.\d)? \d+(\.\d)?L\d+(\.\d)? \d+(\.\d)?L\d+(\.\d)? \d+(\.\d)?L\d+(\.\d)? \d+(\.\d)?L\d+(\.\d)? \d+(\.\d)?L\d+(\.\d)? \d+(\.\d)?L\d+(\.\d)? \d+(\.\d)?Z" fill="#2E2826"/.test(P.scene('asakusa', {})), 'asakusa: no big black lightning bolt on the lantern');
 }
 
 console.log(`\nv211 art D: ${pass} passed, ${fail} failed  [${Math.round((Date.now() - T0) / 1000)}s]`);
