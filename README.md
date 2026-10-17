@@ -104,6 +104,7 @@ Some folders (`dogs/`, `world/`, `mods/`) also hold earlier art versions and rev
 - **v2.8.1 "Cloudflare login"**: cloud save and accounts move to a Cloudflare Worker with a D1 database. Same title screen, same email and password, saves and backups come along. The game is also at https://doodledoggo.app.
 - **v2.8.2 "Account safety"**: one email, one account (old accounts included), and Forgot your password? with an emailed 30-minute link that opens a Set a new password panel.
 - **v2.9 "All Together"**: the whole pack plays, trains, dresses and walks together with no switching (the others follow the leader on walks, a pack bonus on the pay), and photo mode: a crayon postcard of your dogs to save or share, with a daily photo mission.
+- **v2.10 "Free to Roam"** (current): every dog is drawn at the same size and roams every scene by its breed's personality, petting pets only the dog you touch, and ball play in the place you are in with the whole pack racing for the Tennis Ball, Frisbee, Driftwood Stick or Glow Ball, with wider views on phones.
 
 Full details: [CHANGELOG.md](CHANGELOG.md). Open issues: [TODO.md](TODO.md).
 

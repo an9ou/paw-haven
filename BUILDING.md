@@ -160,3 +160,10 @@ You manage Paw Haven for the owner. You don't build. Start a fresh Coordinator s
 - The art suites need the base refs locally: `git fetch origin integration/v2.4 v25-base v26-base v27-base v28-base` in a fresh clone.
 - Make `v30-base` from v2.9 `main` before the next release.
 - Open items are in `TODO.md` "All Together (v2.9)".
+
+**State after v2.10 (17 Oct 2026):**
+- v2.10 "Free to Roam" (every dog roams by its personality, petting one dog, ball play everywhere) is on `integration/v2.10`. Spec and as-built notes: `V210.md` (sections 5 and 6).
+- Built by an Opus coordinator (handed over once under rule 11) with two lanes: ROAM on Opus (handed over once) and BALL on Sonnet. Then three `paw-reviewer` reviews in parallel and the fix batches: the BALL batch on `paw-fixer`, the ROAM fixes in the lane. Lane branches `lane/v210-*`, `v210-base` is a branch at `db73f22` (v2.9).
+- Final `all` + `phone`: <!--TESTS--> TBD. New suites: `v210_roam`, `v210_ball`, `phone_v210_roam`, `phone_v210_ball`. `node dogs/check_identical.js v210-base`: 155344 renders, 0 differ.
+- Make `v211-base` from v2.10 `main` before the next release.
+- Open items are in `TODO.md` "Free to Roam (v2.10)".

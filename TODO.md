@@ -72,7 +72,7 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [ ] Spring and winter have no festival yet (the season art is ready for one). `game/src/26_festival.js`
 - [ ] Git tags do not reach GitHub through the build container's proxy, so `v25-base` is also a branch. Delete the branch when the tag is pushed from a machine that can. `tools/`
 - [ ] Owner: play one October day on a phone (leaf piles, the stall, the parade) and check the seasons with the Dev panel Season select.
-- [ ] Fetch on phones: the scene is full width but only about 234 px tall, with blank space under the panel. A taller scene would gain about 10% at most (the throw needs 900 of the 1000 units). `game/src/19_fetch.js`
+- [x] Fetch on phones: the scene is full width but only about 234 px tall, with blank space under the panel. Gone in v2.10: the Fetch challenge is retired, and ball play runs in the place's own scene with a 760-unit crop. `game/src/38_ball.js`
 - [ ] Market Street on phones: the first camera move re-applies a zoom about 7% tighter than the home framing (pre-existing; the town occlusion checks tune that framing). `game/src/03_yard.js`
 - [ ] Round buttons lost their hatching when the fill was fitted inside the outline (the crayon look is kept by the wash). Decide whether to draw a clipped hatch. `game/css/01_sketch_surface.css`
 - [ ] Tray-card notes clamp at 2 lines on phones. `game/css/21_phone_home.css`
@@ -131,3 +131,8 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [ ] `v27_review` ("the bath finishes from the house") and `v28_scenes` (420 s timeout) failed once under heavy load (the full run plus three reviewers), clean alone.
 - [ ] Flaky once in the final v2.9 `all` + `phone` run, clean 3 of 3 under load afterwards: `phone_home` (a tap timed out), `v2_journal` (the mailbox centre click, 4 s wait), `phone_v27_shelter` (a tap on a room dog).
 - [x] `v24_guide` lost its save across the reload about 1 in 2 runs, on v2.8.4 too (the Chromium localStorage race). Fixed in v2.9 with `t.reloadKeepingSave()` in `game/test_lib.js`; use it for any reload that must keep the save.
+
+## Free to Roam (v2.10)
+- [ ] On a narrow phone the yard home crop (about 490 units on an iPhone 15) has no free spot beside the leader for the pack dogs, so they stand outside it and the look chip shows them. The leader can roam outside the crop too. `game/src/37_roam.js`
+- [ ] `#ballLayer` is not depth-sorted with the dogs: the ball draws over the legs of dogs standing in front of it. `game/src/38_ball.js`
+- [ ] `phone_occl_play` is flaky under load (the walkfetch toast, the runner hint). Not from v2.10. `game/test_phone_occl_play.js`
