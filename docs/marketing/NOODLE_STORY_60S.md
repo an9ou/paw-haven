@@ -80,15 +80,54 @@ It is a **storybook**, not gameplay: each place is the game's real scene art as 
 
 Voice: Bella (Kokoro TTS, a synthetic voice; label it as AI voice-over if an ad form asks). Music: the game's own, changing with each place.
 
-**Spoiler-free caption (no "game")**
+**Reel captions (spoiler-free, no "game"; English first, one short Japanese line)**
+
+Option 1, the joke (recommended):
 ```
-Hi, I'm Noodle 🖍️🐶 I drew myself.
-Come see my town: my yard, the Town Square, the Dog Park, my friends Biscuit, Mochi and Frost, Gerald the duck (he knows everything), and sunsets over Mt. Fuji 🗻
+Hi, I'm Noodle. I drew myself. It shows. 🖍️🐶
 
-Doodle Doggo is coming soon ✨
-Follow @doodledoggo.app so you don't miss what's next! 🔔
+Come see my town ✨
+🏡 my yard (and my mountain… okay, not my mountain)
+🪵 morning walks (I hop over logs. Mostly.)
+🕰️ a clock that always says snack time
+🐾 my friends Biscuit, Mochi and Frost
+🦆 Gerald the duck, who knows everything (he told me so)
+🗻 sunsets over Mt. Fuji
 
-#doodledoggo #comingsoon #dachshund #doglover #cozy #illustration #crayon
+Doodle Doggo is coming soon.
+Follow @doodledoggo.app so you don't miss me! 🔔
+
+自分で描いたダックスフンドです🖍️
+
+#doodledoggo #comingsoon #dachshund #dachshundsofinstagram #doglover #cozy #crayonart #illustration #sketchbook #mtfuji
+```
+
+Option 2, short and sweet:
+```
+A little pencil-drawn town. One very proud crayon dachshund. 🖍️🗻
+Meet Noodle and his friends 🐶🐾
+
+Doodle Doggo, coming soon ✨ Follow @doodledoggo.app for more!
+
+ゆるいクレヨン犬たち🐶
+
+#doodledoggo #comingsoon #dachshund #doglover #cozy #crayonart #illustration
+```
+
+Option 3, a question (gets comments):
+```
+Which friend would you hang out with? 👇
+🐶 Noodle, who drew himself
+🍪 Biscuit, who thinks everything is a snack
+😏 Mochi, who said "heh."
+🐺 Frost, who has opinions. Loud ones.
+🦆 Gerald, who knows everything
+
+Doodle Doggo is coming soon ✨ Follow @doodledoggo.app so you don't miss them! 🔔
+
+あなたの推しワンコは？🐾
+
+#doodledoggo #comingsoon #dachshund #corgi #shibainu #husky #doglover #cozy #illustration
 ```
 
 ## The 15-second ad cut (made 17 Oct 2026)

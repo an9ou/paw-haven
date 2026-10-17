@@ -40,9 +40,9 @@ Doodle Doggo is coming soon: a cozy dog game with walks, a garden, dog-safe cook
 14 dog types. Which one would you adopt first? 👇
 Follow along to be the first to play!
 
-🇯🇵 クレヨンで描いたゆるい犬と暮らす、のんびりブラウザゲーム「Doodle Doggo」、近日公開！フォローしてお待ちください🗻
+クレヨン犬のゆるいゲーム、近日公開🗻
 
-#cozygames #indiegame #browsergame #comingsoon #doodledoggo #近日公開 #ブラウザゲーム
+#cozygames #indiegame #browsergame #comingsoon #doodledoggo #近日公開
 ```
 **Game-is-live caption** (use with the `-play` file)
 ```
@@ -51,9 +51,9 @@ Doodle Doggo is a cozy dog game: walks, a garden, dog-safe cooking and puppy pla
 
 14 dog types. Which one would you adopt first? 👇
 
-🇯🇵 無料のブラウザゲーム「Doodle Doggo」公開中！プロフィールのリンクから遊べます🗻
+無料で遊べます！🗻
 
-#cozygames #indiegame #browsergame #newgame #doodledoggo #無料ゲーム #ブラウザゲーム
+#cozygames #indiegame #browsergame #newgame #doodledoggo #無料ゲーム
 ```
 5. Also share to your Story, and post the same file as a TikTok and YouTube Short (the sound is yours, so it is safe there too).
 

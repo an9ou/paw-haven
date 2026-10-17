@@ -46,9 +46,9 @@ Loves: bone biscuit, squeaky duck, digging.
 
 Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
 
-🇯🇵 ワンコ紹介：Noodle（ダックスフンド）。近日公開の無料ブラウザゲーム「Doodle Doggo」の仲間です🐶
+ワンコ紹介：Noodle（ダックスフンド）🐶
 
-#cozygames #doggame #dachshund #doodledoggo #indiegame #ダックスフンド #犬ゲーム
+#cozygames #doggame #dachshund #doodledoggo #indiegame #ダックスフンド #doglovers
 ```
 **Alt text:** `Noodle the Dachshund with a puppy, favourite things and four traits.` (68 characters)
 
@@ -71,9 +71,9 @@ Loves: pupcake, puzzle feeder, feeding.
 
 Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
 
-🇯🇵 ワンコ紹介：Biscuit（コーギー）。近日公開の無料ブラウザゲーム「Doodle Doggo」の仲間です🐶
+ワンコ紹介：Biscuit（コーギー）🐶
 
-#cozygames #doggame #corgi #doodledoggo #indiegame #コーギー #犬ゲーム
+#cozygames #doggame #corgi #doodledoggo #indiegame #コーギー #doglovers
 ```
 **Alt text:** `Biscuit the Corgi with a puppy, favourite things and four traits.` (65 characters)
 
@@ -96,9 +96,9 @@ Loves: salmon pâté, plush bone, tricks.
 
 Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
 
-🇯🇵 ワンコ紹介：Mochi（柴犬）。近日公開の無料ブラウザゲーム「Doodle Doggo」の仲間です🐶
+ワンコ紹介：Mochi（柴犬）🐶
 
-#cozygames #doggame #shibainu #doodledoggo #indiegame #柴犬 #犬ゲーム
+#cozygames #doggame #shibainu #doodledoggo #indiegame #柴犬 #doglovers
 ```
 **Alt text:** `Mochi the Shiba Inu with a puppy, favourite things and four traits.` (67 characters)
 
@@ -121,9 +121,9 @@ Loves: kibble, tennis ball, fetch.
 
 Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
 
-🇯🇵 ワンコ紹介：Sunny（ゴールデンレトリバー）。近日公開の無料ブラウザゲーム「Doodle Doggo」の仲間です🐶
+ワンコ紹介：Sunny（ゴールデンレトリバー）🐶
 
-#cozygames #doggame #goldenretriever #doodledoggo #indiegame #ゴールデンレトリバー #犬ゲーム
+#cozygames #doggame #goldenretriever #doodledoggo #indiegame #ゴールデンレトリバー #doglovers
 ```
 **Alt text:** `Sunny the Golden Retriever with a puppy, favourite things and four traits.` (74 characters)
 
@@ -146,9 +146,9 @@ Loves: chicken & rice, rope tug, walks.
 
 Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
 
-🇯🇵 ワンコ紹介：Frost（ハスキー）。近日公開の無料ブラウザゲーム「Doodle Doggo」の仲間です🐶
+ワンコ紹介：Frost（ハスキー）🐶
 
-#cozygames #doggame #husky #doodledoggo #indiegame #ハスキー #犬ゲーム
+#cozygames #doggame #husky #doodledoggo #indiegame #ハスキー #doglovers
 ```
 **Alt text:** `Frost the Husky with a puppy, favourite things and four traits.` (63 characters)
 
@@ -171,9 +171,9 @@ Loves: pupcake, plush bone, feeding.
 
 Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
 
-🇯🇵 ワンコ紹介：Dumpling（パグ）。近日公開の無料ブラウザゲーム「Doodle Doggo」の仲間です🐶
+ワンコ紹介：Dumpling（パグ）🐶
 
-#cozygames #doggame #pug #doodledoggo #indiegame #パグ #犬ゲーム
+#cozygames #doggame #pug #doodledoggo #indiegame #パグ #doglovers
 ```
 **Alt text:** `Dumpling the Pug with a puppy, favourite things and four traits.` (64 characters)
 
@@ -196,9 +196,9 @@ Loves: salmon pâté, squeaky duck, petting.
 
 Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
 
-🇯🇵 ワンコ紹介：Peanut（チワワ）。近日公開の無料ブラウザゲーム「Doodle Doggo」の仲間です🐶
+ワンコ紹介：Peanut（チワワ）🐶
 
-#cozygames #doggame #chihuahua #doodledoggo #indiegame #チワワ #犬ゲーム
+#cozygames #doggame #chihuahua #doodledoggo #indiegame #チワワ #doglovers
 ```
 **Alt text:** `Peanut the Chihuahua with a puppy, favourite things and four traits.` (68 characters)
 
@@ -221,9 +221,9 @@ Loves: chicken & rice, frisbee, fetch.
 
 Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
 
-🇯🇵 ワンコ紹介：Rocket（グレイハウンド）。近日公開の無料ブラウザゲーム「Doodle Doggo」の仲間です🐶
+ワンコ紹介：Rocket（グレイハウンド）🐶
 
-#cozygames #doggame #greyhound #doodledoggo #indiegame #グレイハウンド #犬ゲーム
+#cozygames #doggame #greyhound #doodledoggo #indiegame #グレイハウンド #doglovers
 ```
 **Alt text:** `Rocket the Greyhound with a puppy, favourite things and four traits.` (68 characters)
 
@@ -246,9 +246,9 @@ Loves: kibble, puzzle feeder, digging.
 
 Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
 
-🇯🇵 ワンコ紹介：Bagel（ビーグル）。近日公開の無料ブラウザゲーム「Doodle Doggo」の仲間です🐶
+ワンコ紹介：Bagel（ビーグル）🐶
 
-#cozygames #doggame #beagle #doodledoggo #indiegame #ビーグル #犬ゲーム
+#cozygames #doggame #beagle #doodledoggo #indiegame #ビーグル #doglovers
 ```
 **Alt text:** `Bagel the Beagle with a puppy, favourite things and four traits.` (64 characters)
 
@@ -271,9 +271,9 @@ Loves: salmon pâté, puzzle feeder, tricks.
 
 Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
 
-🇯🇵 ワンコ紹介：Pretzel（プードル）。近日公開の無料ブラウザゲーム「Doodle Doggo」の仲間です🐶
+ワンコ紹介：Pretzel（プードル）🐶
 
-#cozygames #doggame #poodle #doodledoggo #indiegame #プードル #犬ゲーム
+#cozygames #doggame #poodle #doodledoggo #indiegame #プードル #doglovers
 ```
 **Alt text:** `Pretzel the Poodle with a puppy, favourite things and four traits.` (66 characters)
 
@@ -296,9 +296,9 @@ Loves: chicken & rice, frisbee, fetch.
 
 Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
 
-🇯🇵 ワンコ紹介：Scout（ボーダーコリー）。近日公開の無料ブラウザゲーム「Doodle Doggo」の仲間です🐶
+ワンコ紹介：Scout（ボーダーコリー）🐶
 
-#cozygames #doggame #bordercollie #doodledoggo #indiegame #ボーダーコリー #犬ゲーム
+#cozygames #doggame #bordercollie #doodledoggo #indiegame #ボーダーコリー #doglovers
 ```
 **Alt text:** `Scout the Border Collie with a puppy, favourite things and four traits.` (71 characters)
 
@@ -321,9 +321,9 @@ Loves: chicken & rice, rope tug, walks.
 
 Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
 
-🇯🇵 ワンコ紹介：Cloud（サモエド）。近日公開の無料ブラウザゲーム「Doodle Doggo」の仲間です🐶
+ワンコ紹介：Cloud（サモエド）🐶
 
-#cozygames #doggame #samoyed #doodledoggo #indiegame #サモエド #犬ゲーム
+#cozygames #doggame #samoyed #doodledoggo #indiegame #サモエド #doglovers
 ```
 **Alt text:** `Cloud the Samoyed with a puppy, favourite things and four traits.` (65 characters)
 
@@ -346,9 +346,9 @@ Loves: pupcake, plush bone, petting.
 
 Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
 
-🇯🇵 ワンコ紹介：Brioche（フレンチブルドッグ）。近日公開の無料ブラウザゲーム「Doodle Doggo」の仲間です🐶
+ワンコ紹介：Brioche（フレンチブルドッグ）🐶
 
-#cozygames #doggame #frenchbulldog #doodledoggo #indiegame #フレンチブルドッグ #犬ゲーム
+#cozygames #doggame #frenchbulldog #doodledoggo #indiegame #フレンチブルドッグ #doglovers
 ```
 **Alt text:** `Brioche the French Bulldog with a puppy, favourite things and four traits.` (74 characters)
 
@@ -371,8 +371,8 @@ Loves: petting, a home, you.
 
 Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
 
-🇯🇵 ワンコ紹介：Pepper（保護犬のミックス）。近日公開の無料ブラウザゲーム「Doodle Doggo」の仲間です🐶
+ワンコ紹介：Pepper（保護犬のミックス）🐶
 
-#cozygames #doggame #rescuedog #doodledoggo #indiegame #保護犬 #犬ゲーム
+#cozygames #doggame #rescuedog #doodledoggo #indiegame #保護犬 #doglovers
 ```
 **Alt text:** `Pepper the Shelter Mutt with a puppy, favourite things and four traits.` (71 characters)

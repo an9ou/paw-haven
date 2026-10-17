@@ -39,9 +39,9 @@ Adopt a wobbly crayon pup, walk around a pencil-sketch town, grow a garden, cook
 
 ✨ This is one of three pieces of a big picture. Visit our profile to see all three together, and follow along to be the first to know when the game opens.
 
-🇯🇵 ブラウザで遊べる無料のワンコゲーム「Doodle Doggo」、近日公開です！フォローしてお待ちください🖍️
+ワンコゲーム、近日公開🖍️
 
-#cozygames #browsergame #indiegame #comingsoon #doodledoggo #近日公開 #インディーゲーム
+#cozygames #browsergame #indiegame #comingsoon #doodledoggo #近日公開 #indiedev
 ```
 **Alt text:** `A corgi in a witch hat, a pug in a party hat and a pumpkin patch cart under bunting.`
 
@@ -57,9 +57,9 @@ Which dog would you adopt first? 👇
 
 ✨ The middle piece of a 3-part picture. Follow along so you don't miss the opening.
 
-🇯🇵 ダックスフンドのヌードルが案内役。どの空にも富士山がある鉛筆の街と、14匹のクレヨン犬たち。近日公開です🗻
+どの空にも富士山🗻
 
-#cozygames #indiegame #handdrawn #mtfuji #doodledoggo #富士山 #近日公開
+#cozygames #indiegame #handdrawn #mtfuji #doodledoggo #富士山 #comingsoon
 ```
 **Alt text:** `Noodle the dachshund under a Doodle Doggo sign: a cozy dog game, coming soon. Mt. Fuji behind.`
 
@@ -75,9 +75,9 @@ Spot your favourite? 👇
 
 ✨ The left piece of a 3-part picture. Follow along to see the whole thing and the opening day.
 
-🇯🇵 お家の庭はもうすぐ準備完了。仮装したクレヨン犬たちがいっぱい🍂 無料のブラウザゲーム、近日公開です。
+お庭はもうすぐ準備完了🍂
 
-#cozygames #browsergame #doggame #dachshund #doodledoggo #癒しゲーム #近日公開
+#cozygames #browsergame #doggame #dachshund #doodledoggo #癒しゲーム #comingsoon
 ```
 **Alt text:** `A cozy cottage and crayon dogs in costumes on an autumn meadow under bunting.`
 
@@ -107,9 +107,9 @@ When winter comes, Snow Days start on 1 Dec. In January you can send New Year ca
 
 Which view is your favourite? 👇 Coming soon, free in your browser.
 
-🇯🇵 どの空にも富士山。富士山展望台で、毎日ワンコと富士山を眺めよう🗻 12月1日から雪の日、1月には年賀状も届きます。
+毎日ワンコと富士山を🗻
 
-#cozygames #mtfuji #handdrawn #indiedev #doodledoggo #富士山 #年賀状
+#cozygames #mtfuji #handdrawn #indiedev #doodledoggo #富士山 #japanstyle
 ```
 **Alt text:** `Pencil-sketch yard at dusk with Mt. Fuji, plus photos of Mt. Fuji Lookout in autumn and snow.`
 
@@ -124,9 +124,9 @@ Each one has its own voice, size and joke. And when two dogs have a playdate, th
 
 Which one is yours? 👇 Coming soon, free in your browser.
 
-🇯🇵 14種類のワンコ。それぞれ声も大きさもクセも違います🐶
+14匹のクレヨン犬🐶
 
-#cozygames #doggame #indiegame #dachshund #doodledoggo #犬ゲーム #癒しゲーム
+#cozygames #doggame #indiegame #dachshund #doodledoggo #犬ゲーム #wholesomegames
 ```
 **Alt text:** `A grid of 14 crayon dogs with their names, from Mochi the shiba to Brioche the French bulldog.`
 
@@ -144,9 +144,9 @@ So much to do 🌱🍪
 
 Which would you try first? 👇 Coming soon, free in your browser.
 
-🇯🇵 お散歩、畑、おやつ作り、お家づくり、子犬のプレイデート、おしゃれまで。
+お散歩・畑・おやつ作り🌱
 
-#cozygames #cozygaming #browsergame #indiegame #doodledoggo #のんびりゲーム #ブラウザゲーム
+#cozygames #cozygaming #browsergame #indiegame #doodledoggo #のんびりゲーム
 ```
 **Alt text:** `Six game screens: a walk, a garden, a kitchen, a home with dogs, a family tree and a wardrobe.`
 
@@ -162,9 +162,9 @@ How to play (and it's free!) 🎮
 
 Works on your phone (hold it upright) or your computer. Nothing to download. Coming soon!
 
-🇯🇵 遊び方：①「New game」②ワンコを選ぶ ③お世話する ④お散歩に出かける。スマホもPCもOK、無料です🎮
+スマホでもPCでも、無料🎮
 
-#cozygames #browsergame #freegame #indiegame #doodledoggo #ブラウザゲーム #無料ゲーム
+#cozygames #browsergame #freegame #indiegame #doodledoggo #ブラウザゲーム
 ```
 **Alt text:** `How to play in four steps: tap New game, pick a pup, care for it, go for a walk.`
 
@@ -184,9 +184,9 @@ Which dog would you like to see next? Tell us below 👇
 
 Doodle Doggo is a free cozy dog game for your browser, coming soon.
 
-🇯🇵 新しいワンコがやってきます！お楽しみに🐶
+新しいワンコ、お楽しみに🐶
 
-#cozygames #doggame #indiegame #doodledoggo #comingsoon #犬ゲーム #新キャラ
+#cozygames #doggame #indiegame #doodledoggo #comingsoon #犬ゲーム #newcharacter
 ```
 **Alt text:** `Mystery dog heads with question marks peek over a fence while Noodle, Biscuit and Mochi look on.` (96 characters)
 
@@ -219,8 +219,8 @@ A cozy dog game you play in your browser. Free, on phone or computer, nothing to
 2️⃣ Pick a pup
 3️⃣ Say hi
 
-🇯🇵 「Doodle Doggo」公開しました！プロフィールのリンクから無料で遊べます🐶
+公開しました！無料で遊べます🐶
 
-#cozygames #browsergame #indiegame #newgame #doodledoggo #ブラウザゲーム #無料ゲーム
+#cozygames #browsergame #indiegame #newgame #doodledoggo #ブラウザゲーム #freegame
 ```
 Also: update the bio to `🎮 Free · play in your browser 👇`, add the link, and post a Story with the link sticker.
