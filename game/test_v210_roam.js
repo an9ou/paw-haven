@@ -91,7 +91,7 @@ require('./test_lib').run('v210_roam', async (t) => {
   ok(st.coins === c1 || st.coins >= c1, 'no second pet bonus');
 
   sec('5. the HUD head row selects stats, nobody moves');
-  await hold(); const before = JSON.stringify(await ev((l) => l.map((id) => { const p = window.__paw.rm.pos(id); return [Math.round(p.x), Math.round(p.y)]; }), all));
+  await hold(); await still(); const before = JSON.stringify(await ev((l) => l.map((id) => { const p = window.__paw.rm.pos(id); return [Math.round(p.x), Math.round(p.y)]; }), all));
   await p().click(`#hudPack [data-dog="${G}"]`, { force: true });
   ok(await t.until((g) => window.__paw.S.activeId === g, G, 3000), 'tapping Goldie\'s head makes her stats show');
   ok(await ev((g) => !!document.querySelector(`#pack .rmlead[data-dog="${g}"] #dogPos`) && document.querySelectorAll('#dogPos').length === 1, G), 'her group now holds #dogPos (one leader drawing)');
@@ -100,7 +100,8 @@ require('./test_lib').run('v210_roam', async (t) => {
   await p().click(`#hudPack [data-dog="${A}"]`, { force: true }); await t.until((a) => window.__paw.S.activeId === a, A, 3000); await free();
 
   sec('6. attention: the dachshund comes to ask, ignoring it is fine');
-  await set('happy', 80); await t.sleep(2000);
+  await set('happy', 80); await hold(); await still(); // the others step back so the front row is free
+  await ev(([a, c, g]) => { const R = window.__paw.rm; R.set(a, { x: 300, y: 420 }); R.set(c, { x: 560, y: 420 }); R.set(g, { x: 840, y: 440 }); }, [A, C, G]); await free(); await t.sleep(2000);
   ok(await ev((b) => window.__paw.rm.ask(b), B), 'Bun asks for pets');
   ok(await t.until((id) => { const p = window.__paw.rm.pos(id), z = window.__paw.rm.zone('yard'); return p.y >= z.y1 - 40; }, B, 6000), 'he comes to the front');
   ok(await t.until(() => { const b = document.getElementById('bubble'); return !b.hidden && /Bun/.test(b.textContent); }, null, 6000), 'with a short line: ' + await ev(() => document.getElementById('bubble').textContent));

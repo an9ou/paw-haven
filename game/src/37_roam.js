@@ -166,7 +166,7 @@ function rmPackInner(d, i) {
 // the leader's shell: the scene build (full) carries the #dogPos markup, a rebuild of #pack gets an empty shell and rmAdopt moves the live #dogPos in
 function rmLeadSVG(full) {
   const d = D(), r = rmSt(d);
-  const inner = full ? `<g id="dogPos"><g id="dogFx"><g id="dogArt"></g><rect id="dogHit" x="${DX + 30}" y="${DY + 40}" width="${DW - 60}" height="${DH - 40}" fill="transparent" pointer-events="all" class="hot" tabindex="0" role="button" aria-label="Pet the dog"/></g><g id="fluffFx" pointer-events="none"></g></g>` : '';
+  const inner = full ? `<g id="dogPos"><g id="dogFx"><g id="dogArt"></g><rect id="dogHit" x="${DX + 40}" y="${DY + 40}" width="${DW - 80}" height="${DH - 40}" fill="transparent" pointer-events="all" class="hot" tabindex="0" role="button" aria-label="Pet the dog"/></g><g id="fluffFx" pointer-events="none"></g></g>` : '';
   return `<g class="rmdog rmlead" data-dog="${d.id}"><g class="rm-at" transform="${rmXf(r)}">${inner}</g></g>`;
 }
 function rmAdopt() {
