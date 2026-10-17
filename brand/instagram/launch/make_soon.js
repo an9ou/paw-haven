@@ -33,15 +33,17 @@ module.exports = async function ({ render, browser, helpers: h }) {
   for (let i = 0; i < 70; i++) { const x = 70 + rnd() * 940, y = 1080 + rnd() * 190; g += line([[x - 6, y], [x - 2, y - 14 - rnd() * 8]], 200 + i, 1, 2.6, '#8C9A5C', 0.9) + line([[x + 4, y], [x + 4, y - 18 - rnd() * 8]], 300 + i, 1, 2.6, '#8C9A5C', 0.9); }
   // the mystery heads behind the fence
   const heads = [[150, 'floppy', '#7A6A60', -6], [340, 'fold', '#8A7B70', 5], [530, 'bat', '#6F625B', -4], [720, 'curly', '#8A7B70', 6], [905, 'oneup', '#7A6A60', -5]];
-  heads.forEach(([x, kind, col, rot], i) => { g += mystery(x, 536 + (i % 2) * 22, 168, kind, col, rot); g += txt('?', x + (i % 2 ? 66 : -66), 556 + (i % 2) * 22, 80, { rot: i % 2 ? 12 : -12, fill: '#D8607E' }); });
+  // v2: drawn through a wobble filter so they match the crayon dogs
+  g += '<filter id="wob" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency="0.045" numOctaves="2" seed="5"/><feDisplacementMap in="SourceGraphic" scale="9"/></filter>';
+  heads.forEach(([x, kind, col, rot], i) => { g += `<g filter="url(#wob)">${mystery(x, 536 + (i % 2) * 22, 168, kind, col, rot)}</g>`; g += txt('?', x + (i % 2 ? 66 : -66), 556 + (i % 2) * 22, 80, { rot: i % 2 ? 12 : -12, fill: '#D8607E' }); });
   // the fence
-  const fence = (x0, x1, base, hh) => { let s2 = ''; for (let x = x0; x < x1; x += 46) s2 += `<path d="M${x} ${base}V${base - hh + 18}Q${x} ${base - hh} ${x + 21} ${base - hh}Q${x + 42} ${base - hh} ${x + 42} ${base - hh + 18}V${base}Z" fill="#E8CFA2" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/><path d="M${x + 10} ${base - hh + 30}V${base - 8}" stroke="#C9A878" stroke-width="2" opacity=".7"/>`; return s2 + `<rect x="${x0}" y="${base - hh * 0.72}" width="${x1 - x0}" height="14" fill="#D9B880" stroke="${INK}" stroke-width="2.6"/><rect x="${x0}" y="${base - hh * 0.3}" width="${x1 - x0}" height="14" fill="#D9B880" stroke="${INK}" stroke-width="2.6"/>`; };
-  g += fence(56, 1024, 860, 190);
+  const fence = (x0, x1, base, hh) => { let s2 = ''; for (let x = x0; x + 42 <= x1; x += 46) s2 += `<path d="M${x} ${base}V${base - hh + 18}Q${x} ${base - hh} ${x + 21} ${base - hh}Q${x + 42} ${base - hh} ${x + 42} ${base - hh + 18}V${base}Z" fill="#E8CFA2" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/><path d="M${x + 10} ${base - hh + 30}V${base - 8}" stroke="#C9A878" stroke-width="2" opacity=".7"/>`; return s2 + `<rect x="${x0}" y="${base - hh * 0.72}" width="${x1 - x0}" height="14" fill="#D9B880" stroke="${INK}" stroke-width="2.6"/><rect x="${x0}" y="${base - hh * 0.3}" width="${x1 - x0}" height="14" fill="#D9B880" stroke="${INK}" stroke-width="2.6"/>`; };
+  g += fence(62, 1018, 860, 190);
   // the dogs we know, in front of the fence
   const cast = [['dachs', 'happy', 250, 390, { eyes: 'Heart Sunglasses', neck: 'Red Bandana' }, 250], ['corgi', 'happy', 640, 260, null, 215], ['shiba', 'sit', 915, 220, null, 235]];
   for (const [k, pose, cx, mw, outfit, mh] of cast) { const d = await fit(k, { pose, outfit: outfit || undefined }, cx, 1215, mw, mh); g += `<ellipse cx="${f1(cx)}" cy="1211" rx="${f1(mw * 0.4)}" ry="9" fill="#5B3D32" opacity=".14"/>` + d.svg; }
-  g += bubble(90, 880, 330, 120, 340, 1040, ['who is behind', 'the fence?'], 6, 38) + bubble(500, 880, 290, 120, 660, 1012, ['snacks?', 'it is snacks.'], 7, 38);
-  g += txt('Doodle Doggo · coming soon · follow along to meet them first', 540, 1312, 36, { fill: MUTED, w: 600 });
+  g += bubble(80, 880, 330, 120, 300, 1030, ['who is behind', 'the fence?'], 6, 38) + bubble(460, 880, 290, 120, 640, 1012, ['snacks?', 'it is snacks.'], 7, 38) + bubble(800, 896, 170, 92, 930, 1032, ['heh.'], 8, 44);
+  g += txt('Doodle Doggo · coming soon · @doodledoggo.app', 540, 1312, 38, { fill: MUTED, w: 600 });
   await render(svgPage(W, H, g), W, H, 'soon-more-dogs-coming.jpg');
   await mp.close();
 };
