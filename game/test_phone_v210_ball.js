@@ -63,5 +63,16 @@ require('./test_lib').run('phone_v210_ball', async (t) => {
       ok(!E.bar && !E.busy && !E.tray, `${tag}: the bar is back, the dog is free, the ball tray is gone`);
       ok(E.vbW <= L.vbW + 1, `${tag}: the camera is the normal home crop again, not wider than the ball crop (${Math.round(E.vbW)} <= ${Math.round(L.vbW)})`);
     }
+    sec(`${device}: the portrait-lock card pauses the game`);
+    await t.home('yard'); await p().click('[data-act=play]'); await t.waitPop(true); await settled(); await p().locator('[data-play="ball:Tennis Ball"]').tap(); await t.until(() => window.__paw.bl && window.__paw.bl.on, null, 5000);
+    await ev(() => window.__paw.bl.easy()); await t.sleep(150);
+    const vp0 = p().viewportSize();
+    await p().setViewportSize({ width: 800, height: 390 }); ok(await t.until(() => document.documentElement.hasAttribute('data-pslock'), null, 5000), `${device}: the lock card shows when the phone is held sideways`);
+    const q0 = await ev(() => { const s = window.__paw.bl.state; return [s.ball.x, s.ball.z, s.ph]; }); await t.sleep(400);
+    const q1 = await ev(() => { const s = window.__paw.bl.state; return [s.ball.x, s.ball.z, s.ph]; });
+    ok(Math.abs(q1[0] - q0[0]) < 2 && Math.abs(q1[1] - q0[1]) < 2, `${device}: the ball waits behind the card (${q0.map(Math.round)} -> ${q1.map(Math.round)})`);
+    await p().setViewportSize(vp0); ok(await t.until(() => !document.documentElement.hasAttribute('data-pslock'), null, 5000), `${device}: the card goes away on rotate back`);
+    ok(await t.until((x) => { const s = window.__paw.bl.state; return !s || Math.abs(s.ball.x - x) > 3 || s.ph === 'rest'; }, q1[0], 4000), `${device}: the game goes on`);
+    await ev(() => window.__paw.bl.stop());
   }
 }, { device: 'iPhone 15' });

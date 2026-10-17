@@ -153,6 +153,18 @@ require('./test_lib').run('v210_ball', async (t) => {
   }
   await t.home();
 
+
+  sec('11. the toys feel different: the Frisbee floats, the Stick tumbles, the Glow Ball glows at night');
+  const K = await ev(() => JSON.parse(JSON.stringify(window.__paw.bl.toys)));
+  ok(K.Frisbee.g < K['Tennis Ball'].g * 0.6 && K.Frisbee.bounce < 0.2, 'the Frisbee floats (low gravity ' + K.Frisbee.g + ' vs ' + K['Tennis Ball'].g + ') and lands flat');
+  ok(K['Driftwood Stick'].spin > K['Tennis Ball'].spin * 3 && K['Driftwood Stick'].bounce < K['Tennis Ball'].bounce, 'the Stick tumbles (spin ' + K['Driftwood Stick'].spin + ' vs ' + K['Tennis Ball'].spin + ') and does not bounce much');
+  ok(K['Tennis Ball'].coin === 2 && K.Frisbee.coin === 3 && K['Driftwood Stick'].coin === 3 && K['Glow Ball'].coin === 2, 'coins a return: ball 2, Frisbee 3, Stick 2 + 1');
+  await t.home(); await p().click('#devBtn'); await p().waitForSelector('#devPanel:not([hidden])'); await p().selectOption('#dvTime', 'night'); await p().click('#dvX'); await t.lu();
+  ok(await start('Glow Ball'), 'the Glow Ball starts at night'); ok(await ev(() => !!document.getElementById('blHalo')), 'it glows: a halo round the ball after dark');
+  await ev(() => window.__paw.bl.stop()); await t.home(); await p().click('#devBtn'); await p().waitForSelector('#devPanel:not([hidden])'); await p().selectOption('#dvTime', 'day'); await p().click('#dvX'); await t.lu();
+  ok(await start('Glow Ball'), 'the Glow Ball by day'); ok(await ev(() => !document.getElementById('blHalo')), 'no halo in daylight'); await ev(() => window.__paw.bl.stop());
+
+
   sec('10. old saves and the legacy Fetch entry');
   const sv = await S(); ok(typeof sv.bl.coins === 'number' && typeof sv.bl.n === 'number', 'S.bl is there (v210Fields)');
   await ev(() => window.__paw.go('fetch', 'Tennis Ball')); ok(await t.untilMode('fetch', 4000), 'go(fetch) still opens the retired challenge (for old suites), nothing in the UI does');

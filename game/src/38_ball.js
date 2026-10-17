@@ -459,7 +459,7 @@ function blExpose() {
     rng: (fn) => { if (BL) BL.rnd = fn; }, // a fixed random source (tests)
     force: (k) => { if (BL) BL.force = k; }, // 'steal' | 'lap': the next pick-up has one (tests)
     sim: (sec) => { const n = Math.round(sec * 60); for (let i = 0; i < n && BL; i++) blTick(1 / 60); },
-    cap: { session: BL_COIN_SES, day: BL_COIN_DAY },
+    cap: { session: BL_COIN_SES, day: BL_COIN_DAY }, toys: BL_TOYS,
   };
 }
 on('game:ready', () => setTimeout(blExpose, 0)); on('yard:enter', () => { if (!window.__paw || !window.__paw.bl) blExpose(); });
