@@ -10,8 +10,3 @@ workers_dev = true
 binding = "DB"
 database_name = "pawhaven"
 database_id = "d6bacd44-9f88-4c66-9ef6-ca15417a5c97"
-
-[vars]
-# Public values only (the same publishable key the v2.2-v2.8 game carried). Used once per old account, to move it over.
-SUPABASE_URL = "https://oxdupprqfdihklgwwvol.supabase.co"
-SUPABASE_KEY = "sb_publishable_pQ0O3jdn7SRMyxmG3UJYeQ_AxBuJRxe"

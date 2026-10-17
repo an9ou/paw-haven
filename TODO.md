@@ -53,7 +53,7 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [x] Playdate pals' noses nearly touch in the bow pose at 390 px wide. `game/css/24_phone_puppy.css` Done in v2.9: pals 20 px further apart on phones.
 - [ ] With puppies, the nursery basket sits right of the phone view and is reached with "look right" (accepted in v2.3). `game/src/03_yard.js`
 - [x] The map zoom buttons were checked clear of the labels only in the default (unpanned) view. `game/src/08_map.js` Done in v2.9: after a drag, pinch or zoom tap on phones the map slides clear of the place names (`mapClearCtl` pattern).
-- [ ] Owner: confirm the Supabase project auto-confirms email changes (Confirm email off), so "No email is ever sent" stays true.
+- [x] Supabase is gone (v2.9.1): nothing to confirm.
 - [ ] The "look right" peek button and the nap details card are new. Check both once on a real phone.
 
 ## Shop Day (v2.4)
@@ -136,3 +136,10 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [ ] On a narrow phone the yard home crop (about 490 units on an iPhone 15) has no free spot beside the leader for the pack dogs, so they stand outside it and the look chip shows them. The leader can roam outside the crop too. `game/src/37_roam.js`
 - [ ] `#ballLayer` is not depth-sorted with the dogs: the ball draws over the legs of dogs standing in front of it. `game/src/38_ball.js`
 - [ ] `phone_occl_play` is flaky under load (the walkfetch toast, the runner hint). Not from v2.10. `game/test_phone_occl_play.js`
+
+## Reset code in the game (v2.9.2)
+- [ ] Live email needs the Resend domain doodledoggo.app verified (it was still verifying on 17 Oct). Until then `/forgot` answers the same and the send fails quietly in the Worker log. Re-check with a real account once Resend says verified.
+- [ ] `site/privacy.html` still says the only emails are "a password link". The SITE lane (site/v2) should say "a password code". `site/privacy.html`
+- [ ] `POST /reset` (the v2.8.2 link) and the D1 table `resets` stay only for links sent before v2.9.2 (they all ran out 30 minutes after the deploy). Remove both in a later release. `cloudflare/worker.js`, `cloudflare/schema.sql`
+- [ ] The keyboard check runs in Chromium with a shorter screen (the Android way). Check the iPhone overlay keyboard once on a real phone (`rsKeyboard`, `game/src/22d_reset.js`).
+- [ ] `tools/cf_site.js` still describes /reset as the password form in its header comment (harmless).
