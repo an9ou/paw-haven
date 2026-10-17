@@ -10,11 +10,12 @@ require('./test_lib').run('v210_roam', async (t) => {
   const set = (k, v) => ev(([k, v]) => { window.__paw.S.dogs.forEach((d, i) => { d.stats[k] = Array.isArray(v) ? v[i] : v; d.sleeping = false; }); window.__paw.S.sleeping = false; }, [k, v]);
   const hold = () => ev(() => window.__paw.rm.pause('test')), free = () => ev(() => window.__paw.rm.resume('test'));
   const still = () => t.until(() => !window.__paw.rm.moving.length, null, 8000);
-  // a point on dog id's tap rect where that dog is on top (another dog may stand in front of part of it)
-  const tapAt = (id) => ev((id) => { const r = document.querySelector(`#pack [data-dog="${id}"] .pd-wander > rect`).getBoundingClientRect(); for (let fy = 0.5; fy < 0.95; fy += 0.1) for (let fx = 0.5; fx > 0.05 && fx < 0.95; fx = fx >= 0.5 ? 1 - fx + (fx > 0.5 ? 0 : 0.1) : 1 - fx) { const x = r.left + r.width * fx, y = r.top + r.height * fy, e = document.elementFromPoint(x, y), g = e && e.closest('[data-dog]'); if (g && g.dataset.dog === id) return { x, y }; } return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }, id);
+  // a point on dog id's tap rect where that dog is on top (another dog may stand in front of part of it), or null
+  const tapAt = (id) => ev((id) => { const r = document.querySelector(`#pack [data-dog="${id}"] .pd-wander > rect`).getBoundingClientRect(); for (let fy = 0.5; fy < 0.95; fy += 0.1) for (const fx of [0.5, 0.6, 0.4, 0.7, 0.3, 0.8, 0.2]) { const x = r.left + r.width * fx, y = r.top + r.height * fy, e = document.elementFromPoint(x, y), g = e && e.closest('[data-dog]'); if (g && g.dataset.dog === id) return { x, y }; } return null; }, id);
 
   sec('1. one dog: the same scene, that dog roams');
-  await t.newGame({}, { coins: 2000, bond: { level: 8, pts: 3000 }, stats: { hunger: 90, happy: 80, energy: 90, clean: 90 } });
+  // Bond 2000: inside level 8 (BOND_TH 1900-2499), so the leader's rub never brings a level popup over the HUD row (section 5)
+  await t.newGame({}, { coins: 2000, bond: { level: 8, pts: 2000 }, stats: { hunger: 90, happy: 80, energy: 90, clean: 90 } });
   await t.home('yard');
   const [A] = await ids();
   ok(JSON.stringify(await ev(() => window.__paw.rm.dogs())) === JSON.stringify([A]), 'rmDogs: the one dog');
@@ -72,9 +73,10 @@ require('./test_lib').run('v210_roam', async (t) => {
 
   sec('4. petting: only the touched dog, it comes to the front, the daily care bonus once');
   await hold(); await set('happy', 40); await ev(() => { const S = window.__paw.S; S.daily = Object.assign(S.daily || {}, { pet: false }); }); await t.toasts();
-  await ev((id) => window.__paw.rm.set(id, { x: 820, y: 430 }), C); await free();
+  // the others stay held at the back (a roaming dog could walk under the cursor, and a full front row leaves Pip no front spot); the petted dog still walks to the front
+  await ev(([a, b, c, g]) => { const R = window.__paw.rm; R.set(a, { x: 300, y: 420 }); R.set(b, { x: 560, y: 420 }); R.set(g, { x: 420, y: 440 }); R.set(c, { x: 820, y: 430 }); }, [A, B, C, G]);
   const b0 = (await S()).dogs.map((d) => d.bond.pts), c0 = (await S()).coins;
-  for (let i = 0; i < 9; i++) { const xy = await tapAt(C); await p().mouse.click(xy.x, xy.y); await p().waitForTimeout(120); }
+  for (let i = 0; i < 9; i++) { const xy = await tapAt(C); if (xy) await p().mouse.click(xy.x, xy.y); await p().waitForTimeout(120); }
   let st = await S();
   ok(st.dogs.every((d) => (d.id === C ? d.stats.happy > 50 : Math.round(d.stats.happy) === 40)), 'only Pip\'s Happiness rose: ' + JSON.stringify(st.dogs.map((d) => Math.round(d.stats.happy))));
   ok(st.dogs.every((d, i) => (d.id === C ? d.bond.pts > b0[i] : d.bond.pts === b0[i])), 'only Pip got Bond');

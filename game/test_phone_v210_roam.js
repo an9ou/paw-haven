@@ -11,7 +11,7 @@ require('./test_lib').run('phone_v210_roam', async (t) => {
   for (const device of ['iPhone 15', 'Pixel 7']) {
     const tag = device.replace(' ', '');
     sec(device + ': one dog, the wide crop');
-    await t.newGame({ device }, { coins: 2000, bond: { level: 8, pts: 3000 } });
+    await t.newGame({ device }, { coins: 2000, bond: { level: 8, pts: 2000 } }); // inside level 8 (BOND_TH 1900-2499), so no level popup mid-suite
     await t.home('yard'); await quiet();
     let v = await vb();
     ok(v.w > 500 && v.w < 710 && v.y < 0, `the yard crop is wider than v2.9 (1.3 x, at most 700 units), the extra sky above (${Math.round(v.w)} x ${Math.round(v.h)} from y ${Math.round(v.y)})`);
