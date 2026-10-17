@@ -656,7 +656,7 @@ function v210Fields(s) {
 function v211Fields(s) {
   // V211.md section 5.1. S.tk: the Tokyo trip (TRAVEL), S.dc: the Dog Cards settings and paws given (CARDS)
   if (!s) return s;
-  if (!v28Obj(s.tk)) s.tk = {}; ['day', 'hachi', 'omi', 'snack'].forEach((k) => { if (s.tk[k] === undefined) s.tk[k] = null; });
+  if (!v28Obj(s.tk)) s.tk = {}; ['day', 'hachi', 'omi', 'snack', 'hanami', 'sunset'].forEach((k) => { if (s.tk[k] === undefined) s.tk[k] = null; });
   if (typeof s.tk.rides !== 'number' || !(s.tk.rides >= 0)) s.tk.rides = 0;
   ['stamps', 'seen'].forEach((k) => { if (!v28Obj(s.tk[k])) s.tk[k] = {}; }); if (typeof s.tk.frame !== 'boolean') s.tk.frame = false;
   if (!v28Obj(s.dc)) s.dc = {}; if (typeof s.dc.on !== 'boolean') s.dc.on = false; if (s.dc.name === undefined) s.dc.name = null;
