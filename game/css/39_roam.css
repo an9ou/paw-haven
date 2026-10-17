@@ -2,7 +2,7 @@
 /* every dog is a .rmdog group placed by the roam engine (37_roam.js): the leader's #dogPos keeps its old transform as a record only */
 .rmdog #dogPos{transform:none!important;transition:none!important}
 .rmdog.packdog{cursor:pointer}
-html[data-layout="phone"] .rm-look{position:absolute;top:44%;z-index:5;width:48px;height:48px;min-width:48px;min-height:48px;padding:0;display:grid;place-items:center;--wash:var(--paper)}
+html[data-layout="phone"] .rm-look{position:absolute;top:calc(24% + 58px);z-index:5;width:48px;height:48px;min-width:48px;min-height:48px;padding:0;display:grid;place-items:center;--wash:var(--paper)}
 html[data-layout="phone"] .rm-look[hidden]{display:none}
 html[data-layout="phone"] .rm-look.right{right:6px}
 html[data-layout="phone"] .rm-look.left{left:6px}

@@ -64,9 +64,9 @@ function rmOk(d, x, y, k, strict) {
   for (const b of RM.no || rmStaticNo(S.place)) {
     if (x > b[0] - 8 && x < b[0] + b[2] + 8 && y > b[1] - 8 && y < b[1] + b[3] + 8) return false;
     if (b[4] === 'scene') continue;
-    const A = b[2] * b[3], o = rmOver(T, b); if (!o) continue;
+    const A = b[2] * b[3], o = rmOver(T, b[4] === 'prop' ? [b[0] - 3, b[1] - 3, b[2] + 6, b[3] + 6] : b); if (!o) continue;
     if (b[2] > 330 || b[3] > 270) continue;
-    if (b[4] === 'prop' || A < 15000 ? o > A * (b[4] === 'prop' ? 0.02 : 0.08) : o > A * 0.4 || (b[0] + b[2] / 2 > T[0] && b[0] + b[2] / 2 < T[0] + T[2] && b[1] + b[3] / 2 > T[1] && b[1] + b[3] / 2 < T[1] + T[3])) return false;
+    if (b[4] === 'prop' || A < 15000 ? o > (b[4] === 'prop' ? 0 : A * 0.08) : o > A * 0.4 || (b[0] + b[2] / 2 > T[0] && b[0] + b[2] / 2 < T[0] + T[2] && b[1] + b[3] / 2 > T[1] && b[1] + b[3] / 2 < T[1] + T[3])) return false;
   }
   const lim = strict === false ? 0.5 : 0.3; // dogs at different depths may overlap a little (each keeps most of its tap rect)
   for (const o of rmDogs()) { if (o === d || !rmSt(o).seeded) continue; const r = rmSt(o), tx = r.tw ? r.tw.x1 : r.x, ty = r.tw ? r.tw.y1 : r.y, ko = r.tw && r.tw.k1 != null ? r.tw.k1 : r.k != null ? r.k : rmScale(ty); if (rmOver(T, rmTapBox(tx, ty, ko)) > T[2] * T[3] * lim) return false; }
@@ -122,7 +122,7 @@ function rmSeed() {
 function rmFreeSpot() {
   if (!S) return null; const key = RM.place + '|' + rmDogs().map((d) => d.id).join(','); if (RM.free && RM.free.key === key) return RM.free.at;
   const me = { id: '__free' }, c = rmCands(me); let best = null, bv = -1e9;
-  c.forEach(([x, y]) => { const m = rmDogs().reduce((a, d) => { const r = rmSt(d); return Math.min(a, Math.abs(r.x - x) + Math.abs(r.y - y) * 0.6); }, 1e9); const v = Math.min(m, 420) - Math.abs(y - 500) * 0.4; if (v > bv) { bv = v; best = [x, y]; } });
+  c.forEach(([x, y]) => { const m = rmDogs().reduce((a, d) => { const r = rmSt(d); return Math.min(a, Math.abs(r.x - x) + Math.abs(r.y - y) * 0.6); }, 1e9); const v = Math.min(m, 160) - Math.abs(x - 640) * 0.5 - Math.abs(y - 480) * 0.4; if (v > bv) { bv = v; best = [x, y]; } }); // clear of the dogs, near the leader's right (the phone crop shows both)
   const at = best ? [best[0], best[1], best[0] > 500 ? 'left' : 'right', rmScale(best[1])] : null; RM.free = { key, at }; return at;
 }
 // the v1.7 / v2.7 fixed spots that still win: napping at the dog-house door or on its own bed, on a piece of furniture, the Proud Mum by the Rocking Chair
@@ -370,7 +370,7 @@ function rmCropW() { const svg = $('#view > svg.world'); if (!svg) return RM_CRO
 // the crop width on this phone: about RM_CROP, but never so wide that a tappable thing in the scene (the missions clipboard is the smallest,
 // 120 x 71 units) drops under 44 px. vw: the view's width in px, native: the crop at zoom 1
 function rmCropFit(vw, native) {
-  rmScan(); const small = (RM.no || []).filter((b) => b[4] !== 'btn' && b[4] !== 'scene' && b[2] < 330 && b[3] < 270).map((b) => Math.min(b[2], b[3]));
+  rmScan(); const small = (RM.no || []).filter((b) => b[4] !== 'btn' && b[4] !== 'scene' && b[4] !== 'msCardG' && b[2] < 330 && b[3] < 270).map((b) => Math.min(b[2], b[3])); // the clipboard grows its own 48 px tap rect (24_missions.js)
   const side = small.length ? Math.min(...small) : 1e9; return clamp(Math.min(RM_CROP, (vw * side) / 46), native, RM_CROP);
 }
 // the world x span of every dog's tap rect (and the bowl at home): where the phone camera centres

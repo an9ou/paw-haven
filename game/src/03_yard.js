@@ -162,6 +162,7 @@ function phHomeRefit() {
   const vz = $('#visitorG', view), wide = cur.mode === 'yard' && S.place !== 'market' && S.place !== 'fujihill'; // v2.10 ROAM: every other place shows the whole pack
   if (S.place === 'market') { L = 186; R = 592; fitMin = 0.78; } // the bowl, the dog and the "Market Street" sign together: the street zooms out a little when the screen is narrow
   else if (S.place === 'fujihill') { L = 250; R = 596; } // v2.8 FUJI HILL: the dog on the path, the bench (x 488-572) and Fuji's summit in the crop at 390 and 360 px
+  else if (wide && S.place === 'yard' && !vz) { L = 140; } // v2.10: the missions clipboard's 48 px tap rect (it grows left of the clipboard when the scene is zoomed out)
   else if (wide && vz) { const sp = visitorSpot(), w = 264 * sp[3]; L = 306; R = Math.max(R, sp[0] + w / 2 + 6); } // a visiting dog: the dog and the visitor, as in v2.3
   else if (vz) { const sp = visitorSpot(), w = 264 * sp[3]; L = 306; R = Math.max(R, sp[0] + w / 2 + 6); }
   const vw = view.clientWidth, vh = view.clientHeight - (parseFloat(view.style.getPropertyValue('--trayH')) || 0); if (!vw || vh <= 0) return;
@@ -188,7 +189,7 @@ function phTrayFit() {
   if (!isPhone()) return;
   let h = 0;
   if (cur.mode === 'yard') {
-    const pb = $('#placeBtns'); if (pb && pb.children.length) h = pb.offsetHeight + 8; // the place buttons (Garden, Go inside, Café menu...) get their own strip under the scene, so they never cover a prop
+    const pb = $('#placeBtns'); if (pb && pb.children.length) h = pb.offsetHeight + 14; // v2.10: 14 (was 8), so a prop drawn on the scene's bottom edge ends above the buttons (they sit 10 px up) // the place buttons (Garden, Go inside, Café menu...) get their own strip under the scene, so they never cover a prop
     const tr = dock.querySelector(':scope > .tray'); if (tr && !tr.classList.contains('dock-idle')) { phTrayCap(tr); h = tr.offsetHeight; const d = tr.querySelector('.napdet:not([hidden])'); if (d) h += d.offsetHeight + 8; }
   }
   const cur0 = parseFloat(view.style.getPropertyValue('--trayH')) || 0; if (Math.abs(cur0 - h) < 1) return;
