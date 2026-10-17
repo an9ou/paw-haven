@@ -314,7 +314,12 @@
     // v2.11 breeds, calibrated on the BREED ART drawings (mods/toys/calib)
     akita: { d: [-2, -12], sit: [4, -6], jump: [-12, -16], eat: [26, -6], crouch: [4, 0], sleep: [-6, 0], sniff: [2, -4] },
     spitz: { d: [-11, -1], sit: [2, -6], jump: [-19, -4], eat: [28, -9], crouch: [13, 0], sleep: [-6, 0], sniff: [0, -2] },
-    pom: { d: [-12, 8], sit: [0, 4], jump: [-24, 6], eat: [22, -8], crouch: [4, 0], sleep: [-10, 0], sniff: [0, -4] }
+    pom: { d: [-12, 8], sit: [0, 4], jump: [-24, 6], eat: [22, -8], crouch: [4, 0], sleep: [-10, 0], sniff: [0, -4] },
+    // v2.11 big breeds (first guess from the nearest old breed, recalibrated on the second artist's drawings)
+    afghan: { d: [10, -6], sit: [14, -4], jump: [-4, -10], eat: [26, -4], crouch: [16, 4], sleep: [-2, 2], sniff: [8, -4] },
+    dane: { d: [-8, -10], sit: [0, -6], jump: [-24, -8], eat: [36, -12], crouch: [6, 0], sleep: [-10, 0], sniff: [0, -6] },
+    mastiff: { d: [-18, 2], sit: [-8, 0], jump: [-30, 0], eat: [30, -10], crouch: [0, 0], sleep: [-12, 0], sniff: [-4, -2] },
+    gsd: { d: [-2, -4], sit: [8, -2], jump: [-14, -6], eat: [26, -6], crouch: [12, 2], sleep: [-6, 0], sniff: [4, -6] }
   };
   var POSE_BASE = { walk: 'idle', happy: 'idle', pet: 'idle', shake: 'idle', dirty: 'idle', cold: 'idle', hot: 'idle', sad: 'idle', dig: 'eat' };
   function breedAdj(key, pose) {
@@ -327,7 +332,8 @@
     chihuahua: { run: 1.1, fierce: true }, pug: { run: 0.78, snort: true }, beagle: { sniff: true },
     dachs: { run: 0.85 }, corgi: { run: 0.92 },
     frenchie: { run: 0.8, snort: true }, collie: { run: 1.15 }, samoyed: { fluff: true }, poodle: { clever: true },   // v2.5
-    akita: { run: 0.95, carry: 1.05 }, spitz: { run: 1.05, fluff: true }, pom: { run: 0.9, fierce: true }   // v2.11
+    akita: { run: 0.95, carry: 1.05 }, spitz: { run: 1.05, fluff: true }, pom: { run: 0.9, fierce: true },   // v2.11
+    afghan: { run: 1.4, carry: 0.9 }, dane: { run: 0.85 }, mastiff: { run: 0.6, snort: true }, gsd: { run: 1.15, carry: 1.1 }
   };
   function trait(key) { return Object.assign({ run: 1, carry: 1 }, TRAITS[key] || {}); }
   /* per-breed flavour lines; any missing slot falls back to the generic lines passed in */
@@ -403,6 +409,22 @@
       fetchStart: ['throw it! I am tiny but fast!', 'yip! now!'], fetchDeliver: ['YIP! I won the ball!', 'it was bigger than my head!'],
       tugStart: ['I am a TIGER.'], tugGrowl: ['yip! grr! yip!', 'I am small. I am FIERCE.'], tugDogWin: ['I am the strongest. It is science.'], howl: ['yip yip yip!', 'tiny but loud!'],
       poolIn: ['it is deep. I am floof.'], tap: ['yip! hello!']
+    },
+    afghan: {
+      fetchStart: ['I will run. Watch the hair.', 'a very elegant run, ready'], fetchDeliver: ['here. with style.', 'I brought it back. I did not hurry.'],
+      tugGrowl: ['grr (with grace)', 'mine. please.'], howl: ['a soft, silky awoo', 'woo (poetic)'], tap: ['yes? I was posing.']
+    },
+    dane: {
+      fetchStart: ['throw it. I will be gentle.', 'oh a ball. it is tiny. I love it.'], fetchDeliver: ['here. it is a bit wet.', 'got it. my legs did most of the work.'],
+      tugStart: ['careful. I am very strong.'], tugGrowl: ['*deep rumble*', 'grr (a long way down)'], tugDogWin: ['oops. I pulled the whole yard.'], howl: ['*deep woof*', 'WOOF (the floor shook)'], tap: ['hello. down here? no, up here.']
+    },
+    mastiff: {
+      fetchStart: ['a throw? ok. slowly.', 'I will get it. eventually.'], fetchDeliver: ['*puff* here.', 'a long way. a big sigh.'],
+      tugGrowl: ['*slow rumble*', 'mmrf'], tugDogWin: ['I leaned. you moved.'], howl: ['*deep woof*', 'woof. (once)'], poolIn: ['a big splash. a big drool.'], tap: ['*slow blink*']
+    },
+    gsd: {
+      fetchStart: ['ready. throw it.', 'eyes on the ball. always.'], fetchDeliver: ['mission complete.', 'done. again?'],
+      tugStart: ['assignment accepted.'], tugGrowl: ['grr! (working)', 'mine. on duty.'], howl: ['woof! woof!', 'a strong, clear bark'], tap: ['reporting. what is the job?']
     }
   };
   var FALLBACK = { crouch: ['sit'], dig: ['eat'], shake: ['happy'], sleep: ['sit'], pet: ['happy'], sad: ['sit'], jump: ['happy'], eat: ['sit'], walk: ['idle'] };

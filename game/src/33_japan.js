@@ -41,7 +41,11 @@ const jpPlaceLines = {
   frenchie: 'Good bench. Good view. I will sit here and climb nothing.',
   akita: 'What a fine mountain. I will sit here with you and look at it for a long time.',
   spitz: 'Fuji wears a white cap. I wear a white everything. Hello, Fuji!',
-  pom: 'That mountain is bigger than everything. Yip! I like it a lot.'
+  pom: 'That mountain is bigger than everything. Yip! I like it a lot.',
+  afghan: 'Fuji has beautiful lines and no tangles at all. I am a little jealous.',
+  dane: 'I can nearly see over the mountain. Nearly. Hello, Fuji!',
+  mastiff: 'A very big hill. I like it. I will sit and look at it slowly.',
+  gsd: 'A mountain! I will keep watch from here. Fuji is safe.'
 };
 Object.keys(jpPlaceLines).forEach((k) => { if (PLACE_LINES[k]) PLACE_LINES[k].fujihill = jpPlaceLines[k]; });
 

@@ -269,7 +269,7 @@ function blLapWay(w) {
   return way.map((p) => blPush(p[0], p[1], Z));
 }
 // where the mouth is: each breed's head ellipse in the dog art (dogs/pawart_dogs.js: x, y, rx, ry in the 240x200 box, feet on y 186, the dog drawn round x 120), the front lower part of the head
-const BL_HEAD = { shiba: [164, 106, 32, 28], corgi: [166, 126, 31, 27], golden: [160, 96, 34, 30], dachs: [191, 128, 24, 22], husky: [162, 104, 36, 32], mutt: [162, 106, 33, 29], chihuahua: [158, 120, 29, 26], pug: [162, 114, 32, 28], greyhound: [172, 76, 22, 15], beagle: [164, 106, 30, 27], poodle: [157, 98, 26, 25], collie: [164, 106, 30, 26], samoyed: [162, 93, 35, 31], frenchie: [160, 116, 31, 28], akita: [167, 95, 36, 31], spitz: [160, 99, 30, 27], pom: [155, 115, 26, 24] };
+const BL_HEAD = { shiba: [164, 106, 32, 28], corgi: [166, 126, 31, 27], golden: [160, 96, 34, 30], dachs: [191, 128, 24, 22], husky: [162, 104, 36, 32], mutt: [162, 106, 33, 29], chihuahua: [158, 120, 29, 26], pug: [162, 114, 32, 28], greyhound: [172, 76, 22, 15], beagle: [164, 106, 30, 27], poodle: [157, 98, 26, 25], collie: [164, 106, 30, 26], samoyed: [162, 93, 35, 31], frenchie: [160, 116, 31, 28], akita: [167, 95, 36, 31], spitz: [160, 99, 30, 27], pom: [155, 115, 26, 24], afghan: [168, 92, 27, 22], dane: [170, 92, 33, 30], mastiff: [165, 110, 38, 34], gsd: [165, 98, 32, 28] };
 function blMouth(d) { const h = BL_HEAD[d && d.key] || BL_HEAD.mutt; return [h[0] - 120 + h[2] * 0.7, 186 - h[1] - h[3] * 0.35]; } // [forward, up] in world units at scale 1
 function blCatchLine(o) {
   const t = persOf(o.d).trait, tl = BL_LINES.trait[t]; return tl && blRnd() < 0.5 ? blPick(tl) : blPick(BL_LINES.catch);

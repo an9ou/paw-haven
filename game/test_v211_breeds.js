@@ -1,15 +1,19 @@
-// v211_breeds (BREEDS lane, V211.md 5.2): the three new breeds in the game.
-// Covers: adopt Akita, Japanese Spitz and Pomeranian through the carousel (17 heads), the welfare tips on the card (and not as a hot-day toast),
+// v211_breeds (BREEDS lane, V211.md 5.2): the seven new breeds in the game (Akita, Japanese Spitz, Pomeranian and the owner's four more).
+// Covers: adopt each new breed through the carousel (21 heads), the welfare tips on the card (and not as a hot-day toast),
 // feed, pet, walk each; the Wardrobe mannequin draws every outfit on each new breed with no console errors; an Akita x Pomeranian playdate
 // names the pups Pomkita and the family tree shows it; the roam traits loyal / show / spin; the litter rules list the new keys;
 // the Journal coat tab shows 17 breeds; the carousel on phones.
 require('./test_lib').run('v211_breeds', async (t) => {
   const { ok, sec, ev, S } = t;
-  const NEW = [['akita', 'Akita', 'Red'], ['spitz', 'Japanese Spitz', 'White'], ['pom', 'Pomeranian', 'Orange']];
+  const NEW = [['akita', 'Akita', 'Red'], ['spitz', 'Japanese Spitz', 'White'], ['pom', 'Pomeranian', 'Orange'], ['afghan', 'Afghan Hound', 'Red'], ['dane', 'Great Dane', 'Fawn'], ['mastiff', 'English Mastiff', 'Fawn'], ['gsd', 'German Shepherd', 'Black and tan']];
   const TIPS = {
     akita: 'Akitas are calm and proud and like their own space. Let them meet new dogs slowly.',
     spitz: 'That white coat sheds in big clouds twice a year. A good brush keeps it soft, and it never needs shaving.',
-    pom: 'Tiny dogs have delicate knees and windpipes. Use a harness, not a collar, and lift them with both hands.'
+    pom: 'Tiny dogs have delicate knees and windpipes. Use a harness, not a collar, and lift them with both hands.',
+    afghan: 'That long silky coat tangles easily. A gentle brush a few times a week keeps it flowing.',
+    dane: 'Giant pups grow fast and their joints need care. Gentle walks while young, and no long runs until fully grown.',
+    mastiff: 'Big dogs feel the heat and drool when warm. Shade, water and a towel for that big face.',
+    gsd: 'Shepherds are clever and love a job to do. Games, training and walks keep them happy.'
   };
   const iso = (daysAgo) => { const d = new Date(); d.setDate(d.getDate() - daysAgo); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 
@@ -17,7 +21,7 @@ require('./test_lib').run('v211_breeds', async (t) => {
   for (const [k, br, coat] of NEW) {
     const p = await t.boot(); await p.click('#tNew'); await p.waitForSelector('.heads button');
     const nm = (await p.getAttribute(`.heads button[aria-label$=" the ${br}"]`, 'aria-label')).replace(` the ${br}`, ''); // the starter's name comes from PawArt.DOGS
-    ok(await p.locator('.heads button').count() === 17, `${br}: 17 dogs in the adoption carousel`);
+    ok(await p.locator('.heads button').count() === 21, `${br}: 21 dogs in the adoption carousel`);
     await p.click(`.heads button[aria-label$=" the ${br}"]`);
     ok(await t.until((br) => (document.querySelector('.adopt-card h3') || {}).textContent.includes('the ' + br), br), `${br}: the shelter card shows ${nm} the ${br}`);
     const tip = await ev(() => { const e = document.querySelector('.adopt-card .bd-tip'); return e ? e.textContent : ''; });
@@ -54,10 +58,10 @@ require('./test_lib').run('v211_breeds', async (t) => {
   await t.dev(async () => { await p.selectOption('#dvWeather', 'cloudy'); });
 
   sec('the litter rules and the tables list the new keys once');
-  const rules = await ev(() => { const L = window.PawBreeding.RULES.litters; const all = [].concat(L.small.breeds, L.medium.breeds, L.large.breeds); return { akita: L.large.breeds.includes('akita'), spitz: L.medium.breeds.includes('spitz'), pom: L.small.breeds.includes('pom'), dupes: all.length - new Set(all).size, n: all.length }; });
-  ok(rules.akita && rules.spitz && rules.pom && rules.dupes === 0 && rules.n === 17, 'akita is large, spitz medium, pom small, each listed once (' + JSON.stringify(rules) + ')');
-  const tabs = await ev(() => window.PawGenes.BREEDS.length + ':' + window.PawGenes.BREEDS.slice(-3).join());
-  ok(tabs === '17:akita,spitz,pom', 'PawGenes.BREEDS ends akita, spitz, pom (' + tabs + ')');
+  const rules = await ev(() => { const L = window.PawBreeding.RULES.litters; const all = [].concat(L.small.breeds, L.medium.breeds, L.large.breeds, L.giant.breeds); return { akita: L.large.breeds.includes('akita'), spitz: L.medium.breeds.includes('spitz'), pom: L.small.breeds.includes('pom'), big: L.large.breeds.includes('afghan') && L.large.breeds.includes('gsd'), giant: L.giant.breeds.join() === 'dane,mastiff' && L.giant.sizes.join() === '2,3', dupes: all.length - new Set(all).size, n: all.length }; });
+  ok(rules.akita && rules.spitz && rules.pom && rules.big && rules.giant && rules.dupes === 0 && rules.n === 21, 'akita is large, spitz medium, pom small, each listed once (' + JSON.stringify(rules) + ')');
+  const tabs = await ev(() => window.PawGenes.BREEDS.length + ':' + window.PawGenes.BREEDS.slice(-7).join());
+  ok(tabs === '21:akita,spitz,pom,afghan,dane,mastiff,gsd', 'PawGenes.BREEDS ends akita, spitz, pom, afghan, dane, mastiff, gsd (' + tabs + ')');
 
   sec('Wardrobe mannequin: every outfit on every new breed, no console errors');
   const core = require('fs').readFileSync(require('path').join(__dirname, 'src', '00_core.js'), 'utf8');
@@ -77,14 +81,14 @@ require('./test_lib').run('v211_breeds', async (t) => {
     }
     if (id === allIds[0]) { if (process.env.PAW_SHOTS) await t.sleep(2500); await t.SH('02_wardrobe_pom'); }
   }
-  ok(drawn === tried && t.errors.length === e0, `${drawn}/${tried} mannequin previews drawn (3 breeds x ${list && list.length} outfits), no console errors`);
+  ok(drawn === tried && t.errors.length === e0, `${drawn}/${tried} mannequin previews drawn (${NEW.length - 1} more breeds x ${list && list.length} outfits), no console errors`);
   await ev(() => { const S = window.__paw.S; S.outfit.head = S.outfit.eyes = S.outfit.neck = S.outfit.body = null; });
   await t.closeX(); await t.modalGone();
 
-  sec('Journal: the coat tab shows 17 breeds');
+  sec('Journal: the coat tab shows 21 breeds');
   await p.click('[data-act=journal]'); await p.waitForSelector('.panel.journal'); await p.click('[data-jt=coats]'); await p.waitForSelector('.ctop');
-  ok(await p.locator('.cbreed').count() === 17, '17 breed tabs on the Coats page');
-  ok(await ev(() => ['akita', 'spitz', 'pom'].every((k) => !!document.querySelector(`.cbreed[data-cbreed="${k}"]`))), 'the three new breeds have tabs');
+  ok(await p.locator('.cbreed').count() === 21, '21 breed tabs on the Coats page');
+  ok(await ev(() => ['akita', 'spitz', 'pom', 'afghan', 'dane', 'mastiff', 'gsd'].every((k) => !!document.querySelector(`.cbreed[data-cbreed="${k}"]`))), 'the seven new breeds have tabs');
   await t.sleep(700);
   const rows = await ev(() => new Set([...document.querySelectorAll('.cbreed')].map((e) => Math.round(e.offsetTop / 10))).size);
   ok(rows === 1, `the breed tabs fit on one row at 1280x720 (${rows} rows)`);
@@ -131,9 +135,41 @@ require('./test_lib').run('v211_breeds', async (t) => {
   await ev(() => window.__paw.breed.chooseNow()); await t.until(() => !!document.getElementById('wsOk'), null, 6000);
   await p.click('#wsOk'); await t.until(() => !!document.getElementById('wsBye2'), null, 4000); await p.click('#wsBye2'); await t.untilMode('yard'); await t.modalGone();
 
-  sec('no merle in the new breeds, and a merle collie x akita pup is never M/M');
-  const mm = await ev(() => { const G = window.PawGenes, r = () => Math.random(); let merle = 0; for (const k of ['akita', 'spitz', 'pom']) for (let i = 0; i < 400; i++) if (G.randomGenotype(k, r).M.includes('M')) merle++; return merle; });
-  ok(mm === 0, 'random akitas, spitzes and pomeranians never carry merle');
+  sec('no merle in the new breeds except the Great Dane, which keeps the no-double-merle rule');
+  const mm = await ev(() => { const G = window.PawGenes, r = () => Math.random(); let merle = 0; for (const k of ['akita', 'spitz', 'pom', 'afghan', 'mastiff', 'gsd']) for (let i = 0; i < 400; i++) if (G.randomGenotype(k, r).M.includes('M')) merle++; return merle; });
+  ok(mm === 0, 'random akitas, spitzes, pomeranians, afghans, mastiffs and shepherds never carry merle');
+  const dm = await ev((born) => {
+    const P = window.__paw, S = P.S;
+    const mk = (key, sex, merle, name) => { const d = P.addDog({ key, sex, months: 30 }, name); d.born = born; d.bond = { level: 8, pts: 2500 }; d.stats = { hunger: 90, happy: 90, energy: 90, clean: 90 }; d.genes.M = merle ? ['M', 'm'] : ['m', 'm']; d.genes.E = ['E', 'E']; return d; };
+    S.dogs.filter((d) => d.id !== S.dogs[0].id).forEach((d) => { S.dogs.splice(S.dogs.indexOf(d), 1); });
+    const a = mk('dane', 'female', true, 'Harley'), b = mk('dane', 'male', true, 'Quinn'), c = mk('dane', 'male', false, 'Plain');
+    P.breed.setSeason(a.id, true);
+    const mm2 = P.breed.canPair(a.id, b.id), mp = P.breed.canPair(a.id, c.id), r = P.breed.playdate(a.id, c.id, { force: true, size: 3 });
+    const pups = (a.preg && a.preg.pups) || [];
+    return { mm2, mp, ok: r.ok, coats: [P.coat(a).coatName, P.coat(b).coatName, P.coat(c).coatName], pupsM: pups.map((q) => q.genes.M.join('')), n: pups.length };
+  }, iso(30));
+  ok(/merle/i.test(dm.coats[0]) && /merle/i.test(dm.coats[1]) && !/merle/i.test(dm.coats[2]), 'two merle Great Danes and a plain one: ' + dm.coats.join(', '));
+  ok(dm.mm2.ok === false && dm.mm2.code === 'merle', 'two merle Great Danes cannot pair: ' + dm.mm2.why);
+  ok(dm.mp.ok === true && dm.ok && dm.pupsM.length >= 2 && dm.pupsM.length <= 3 && dm.pupsM.every((m) => m !== 'MM'), 'a merle Great Dane and a plain one can: ' + dm.pupsM.join(', ') + ' (a litter of 2 to 3, never M/M)');
+
+  sec('giant rules: Great Dane and English Mastiff wait until 18 months, rest two seasons, at most 3 litters');
+  const gr = await ev((born) => {
+    const P = window.__paw, S = P.S, d18 = (m) => { const x = new Date(); x.setDate(x.getDate() - m); return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`; };
+    S.dogs.filter((d) => d.id !== S.dogs[0].id).forEach((d) => { S.dogs.splice(S.dogs.indexOf(d), 1); });
+    const mk = (key, sex, months, name) => { const d = P.addDog({ key, sex, months }, name); d.bond = { level: 8, pts: 2500 }; d.stats = { hunger: 90, happy: 90, energy: 90, clean: 90 }; d.genes.M = ['m', 'm']; return d; };
+    const out = {}, issue = (d) => P.breed.issues(d.id);
+    const young = mk('dane', 'female', 14, 'Dane'), youngOther = mk('golden', 'female', 14, 'Golly'), adultDane = mk('dane', 'female', 30, 'Dana'), adultGolden = mk('golden', 'female', 30, 'Goldie');
+    out.young = { dane: issue(young), golden: issue(youngOther) };
+    adultDane.lastLitter = d18(8); adultGolden.lastLitter = d18(8);
+    out.rest = { dane: issue(adultDane), golden: issue(adultGolden) };
+    adultDane.lastLitter = d18(13); out.rest13 = issue(adultDane);
+    adultDane.lastLitter = null; adultDane.litters = 3; adultGolden.lastLitter = null; adultGolden.litters = 3; out.lit = { dane: issue(adultDane), golden: issue(adultGolden) };
+    const boy = mk('golden', 'male', 30, 'Gus'); out.text = P.breed.canPair(young.id, boy.id).why;
+    return out;
+  }, iso(30));
+  ok(gr.young.dane.includes('young') && !gr.young.golden.includes('young') && /18 months/.test(gr.text), 'a 14-month Great Dane girl is too young (18 months), a 14-month Golden is not: ' + JSON.stringify(gr.young) + ' ' + gr.text);
+  ok(gr.rest.dane.includes('recover') && !gr.rest.golden.includes('recover') && !gr.rest13.includes('recover'), 'a Great Dane rests two seasons after a litter (12 days), a Golden one (6 days): ' + JSON.stringify(gr.rest) + ' / day 13: ' + JSON.stringify(gr.rest13));
+  ok(gr.lit.dane.includes('litters') && !gr.lit.golden.includes('litters'), 'a Great Dane has at most 3 litters, a Golden 4: ' + JSON.stringify(gr.lit));
 
   sec('roam traits: loyal (akita), show (spitz), spin (pom)');
   await t.ctx.close(); const q = await t.boot({ packCare: true, prefs: { rmTest: true } }); await t.adopt({ sex: 'girl', head: '~ the Akita' });
@@ -163,16 +199,16 @@ require('./test_lib').run('v211_breeds', async (t) => {
   ok((await ev(() => window.__paw.S.dogs.length)) === 3, 'three dogs roam together');
   ok(t.errors.length === 0, 'no console errors so far');
 
-  sec('phones: all 17 heads in the adoption sheet are tappable (iPhone 15, Pixel 7)');
+  sec('phones: all 21 heads in the adoption sheet are tappable (iPhone 15, Pixel 7)');
   for (const dev of ['iPhone 15', 'Pixel 7']) {
     await t.ctx.close();
     const z = await t.boot({ device: dev }); await z.click('#tNew'); await z.waitForSelector('.heads button'); await t.sleep(500);
     await ev(() => { const d = document.getElementById('dock'); d.scrollTop = d.scrollHeight; }); await t.sleep(400);
     const hit = await ev(() => [...document.querySelectorAll('.heads button')].map((b) => { const r = b.getBoundingClientRect(), e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!e && b.contains(e) && r.width >= 44 && r.height >= 44; }));
-    ok(hit.length === 17 && hit.every(Boolean), `${dev}: 17 heads, each 44 px or more and tappable with the sheet scrolled down`);
+    ok(hit.length === 21 && hit.every(Boolean), `${dev}: 21 heads, each 44 px or more and tappable with the sheet scrolled down`);
     ok(await ev(() => document.documentElement.scrollWidth <= innerWidth), `${dev}: no sideways scroll`);
     await z.locator('.heads button').last().click();
-    ok(await t.until(() => /the Pomeranian/.test(document.querySelector('.adopt-card h3').textContent)), `${dev}: tapping the last head picks the Pomeranian`);
+    ok(await t.until(() => /the German Shepherd/.test(document.querySelector('.adopt-card h3').textContent)), `${dev}: tapping the last head picks the German Shepherd`);
     ok(await ev(() => !!document.querySelector('.adopt-card .bd-tip')), `${dev}: the welfare tip shows on the card`);
     if (dev === 'iPhone 15') await t.SH('05_adopt_phone_scrolled');
   }
@@ -187,4 +223,4 @@ require('./test_lib').run('v211_breeds', async (t) => {
   }
   await t.SH('06_phone_coat_tabs');
   ok(t.errors.length === 0, 'no console errors');
-});
+}, { timeout: 480000 });

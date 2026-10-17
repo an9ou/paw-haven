@@ -74,7 +74,7 @@
     'sugar-free-gum': 'gum', 'chewing-gum': 'gum', macadamias: 'macadamia', 'macadamia-nut': 'macadamia', 'macadamia-nuts': 'macadamia', avocados: 'avocado', guacamole: 'avocado',
     garlics: 'garlic', 'garlic-clove': 'garlic' };
 
-  var FAV = { shiba: 'golden-harvest-stew', corgi: 'chicken-veggie-rice', golden: 'carrot-crunchies', dachs: 'spinach-scramble', husky: 'blueberry-pupsicle', mutt: 'golden-harvest-stew', chihuahua: 'chicken-veggie-rice', pug: 'pumpkin-pupcake', greyhound: 'carrot-crunchies', beagle: 'golden-harvest-stew', poodle: 'spinach-scramble', collie: 'chicken-veggie-rice', samoyed: 'blueberry-pupsicle', frenchie: 'pumpkin-pupcake', akita: 'chicken-veggie-rice', spitz: 'pumpkin-pupcake', pom: 'carrot-crunchies' };
+  var FAV = { shiba: 'golden-harvest-stew', corgi: 'chicken-veggie-rice', golden: 'carrot-crunchies', dachs: 'spinach-scramble', husky: 'blueberry-pupsicle', mutt: 'golden-harvest-stew', chihuahua: 'chicken-veggie-rice', pug: 'pumpkin-pupcake', greyhound: 'carrot-crunchies', beagle: 'golden-harvest-stew', poodle: 'spinach-scramble', collie: 'chicken-veggie-rice', samoyed: 'blueberry-pupsicle', frenchie: 'pumpkin-pupcake', akita: 'chicken-veggie-rice', spitz: 'pumpkin-pupcake', pom: 'carrot-crunchies', afghan: 'carrot-crunchies', dane: 'chicken-veggie-rice', mastiff: 'pumpkin-pupcake', gsd: 'golden-harvest-stew' };
 
   var NOTES = {
     pumpkin: 'Always cooked and plain.',

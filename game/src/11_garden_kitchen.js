@@ -31,8 +31,8 @@ const PEOPLE_FB = [
   { id: 'macadamia', name: 'Macadamia Nuts', where: ['pantry'], why: 'Macadamia nuts cause weakness, wobbly legs, vomiting and fever in dogs.', swap: 'Oats are fine.' },
   { id: 'avocado', name: 'Avocado', where: ['pantry'], why: "Avocado contains persin, which can upset a dog's stomach, and the pit can block the gut.", swap: 'Spinach Scramble instead.' }
 ];
-const DISH_FAV = { shiba: 'golden-harvest-stew', corgi: 'chicken-veggie-rice', golden: 'carrot-crunchies', dachs: 'spinach-scramble', husky: 'blueberry-pupsicle', mutt: 'golden-harvest-stew', chihuahua: 'chicken-veggie-rice', pug: 'pumpkin-pupcake', greyhound: 'carrot-crunchies', beagle: 'golden-harvest-stew', poodle: 'spinach-scramble', collie: 'chicken-veggie-rice', samoyed: 'blueberry-pupsicle', frenchie: 'pumpkin-pupcake', akita: 'chicken-veggie-rice', spitz: 'pumpkin-pupcake', pom: 'carrot-crunchies' };
-const BUDDY_FB = { shiba: 'inspect', corgi: 'guard', golden: 'fetch', dachs: 'dig', husky: 'snow', mutt: 'tend', chihuahua: 'guard', pug: 'tend', greyhound: 'fetch', beagle: 'inspect', poodle: 'inspect', collie: 'guard', samoyed: 'snow', frenchie: 'tend', akita: 'guard', spitz: 'snow', pom: 'inspect' };
+const DISH_FAV = { shiba: 'golden-harvest-stew', corgi: 'chicken-veggie-rice', golden: 'carrot-crunchies', dachs: 'spinach-scramble', husky: 'blueberry-pupsicle', mutt: 'golden-harvest-stew', chihuahua: 'chicken-veggie-rice', pug: 'pumpkin-pupcake', greyhound: 'carrot-crunchies', beagle: 'golden-harvest-stew', poodle: 'spinach-scramble', collie: 'chicken-veggie-rice', samoyed: 'blueberry-pupsicle', frenchie: 'pumpkin-pupcake', akita: 'chicken-veggie-rice', spitz: 'pumpkin-pupcake', pom: 'carrot-crunchies', afghan: 'carrot-crunchies', dane: 'chicken-veggie-rice', mastiff: 'pumpkin-pupcake', gsd: 'golden-harvest-stew' };
+const BUDDY_FB = { shiba: 'inspect', corgi: 'guard', golden: 'fetch', dachs: 'dig', husky: 'snow', mutt: 'tend', chihuahua: 'guard', pug: 'tend', greyhound: 'fetch', beagle: 'inspect', poodle: 'inspect', collie: 'guard', samoyed: 'snow', frenchie: 'tend', akita: 'guard', spitz: 'snow', pom: 'inspect', afghan: 'inspect', dane: 'tend', mastiff: 'tend', gsd: 'guard' };
 const START_RECIPES = ['carrot-crunchies', 'chicken-veggie-rice', 'blueberry-pupsicle'];
 const CROP_PLURAL = { carrot: 'carrots', peas: 'peas', spinach: 'spinach', blueberries: 'blueberries', 'sweet-potato': 'sweet potatoes', pumpkin: 'pumpkin' };
 const CROP_ONE = { carrot: 'carrot', peas: 'pea pod', spinach: 'spinach leaf', blueberries: 'blueberry', 'sweet-potato': 'sweet potato', pumpkin: 'pumpkin' };
@@ -266,7 +266,7 @@ function journalRecipes() {
 function journalProfile() {
   const d = S.dog, m = ageMonths(), st = lifeStage(m), ss = seasonStatus(), info = dogInfo(d.key), P = PR(), today = localISO();
   const bday = (() => { const next = 12 - (m % 12); return `Born ${d.born} · next birthday in ${next} day${next > 1 ? 's' : ''}`; })();
-  const R = BREEDING.RULES, maxL = (R.female && R.female.maxLitters) || 4;
+  const R = BREEDING.RULES, maxL = (giantRules(d) && giantRules(d).maxLitters) || (R.female && R.female.maxLitters) || 4;
   const me = famRec(d.id) || { id: d.id, parents: d.parents }, [dam, sire] = famParents(me), kids = famChildren(d.id), gen = d.gen || (dam || sire ? 1 : 0);
   const master = !!(S.coatRewards && S.coatRewards[50]);
   const breedTxt = d.mix && d.mix.name ? mixLine(d) : info.breed;
