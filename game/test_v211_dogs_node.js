@@ -1,6 +1,6 @@
 // v2.11 BREED ART test (plain node). Run: node game/test_v211_dogs_node.js   (exits 1 on any failure)
-// V211.md 5.2: the three new breeds (akita, spitz, pom) render a valid SVG in every pose x age x facing x outfit, with sparkle,
-// coats from genes, mixes both ways and the head; the three Tokyo bandanas draw on all 17 breeds in every pose, age and facing,
+// V211.md 5.2: the seven new breeds (akita, spitz, pom, then afghan, dane, mastiff, gsd) render a valid SVG in every pose x age x facing x outfit, with sparkle,
+// coats from genes, mixes both ways and the head; the three Tokyo bandanas draw on all 21 breeds in every pose, age and facing,
 // touching the dog and staying near the neck. The full byte-identical proof for the 14 old breeds is node dogs/check_identical.js
 // v211-base; this file spot-checks it (every old breed, a few poses) when that ref is there.
 'use strict';
@@ -15,7 +15,7 @@ ok(SRC.split(HOOK).length === 2, 'the hook point PA.dog=dog; is there once');
 const IP = load(SRC.replace(HOOK, HOOK + 'PA._t={OUT,NECK2,headPts,bodyPts,T};'));
 const PA = load(SRC), OUT = IP._t.OUT;
 const POSES = ['idle','happy','pet','eat','sleep','walk','jump','sit','sad','dirty','crouch','shake','cold','hot','dig','beg','squat','leglift','paw','down','rollover','playdead','speak','dance','bow','scratch','sniff','yawn','howl'];
-const AGES = [null, 'puppy', 'newborn'], NEW = ['akita', 'spitz', 'pom'], BAND = ['Shibuya Bandana', 'Asakusa Bandana', 'Tokyo Tower Bandana'];
+const AGES = [null, 'puppy', 'newborn'], NEW = ['akita', 'spitz', 'pom', 'afghan', 'dane', 'mastiff', 'gsd'], BAND = ['Shibuya Bandana', 'Asakusa Bandana', 'Tokyo Tower Bandana'];
 const ALL = ['shiba','corgi','golden','dachs','husky','mutt','chihuahua','pug','greyhound','beagle','poodle','collie','samoyed','frenchie', ...NEW];
 const good = (svg, vb, lab) => {
   ok(typeof svg === 'string' && svg.startsWith('<svg') && svg.endsWith('</svg>'), lab + ': an SVG');
@@ -25,8 +25,8 @@ const good = (svg, vb, lab) => {
 };
 
 console.log('-- keys and names');
-ok(JSON.stringify(PA.DOGS.map((d) => d.key)) === JSON.stringify(ALL), 'PawArt.DOGS lists the 17 keys, akita spitz pom appended in order');
-const BR = { akita: 'Akita', spitz: 'Japanese Spitz', pom: 'Pomeranian' };
+ok(JSON.stringify(PA.DOGS.map((d) => d.key)) === JSON.stringify(ALL), 'PawArt.DOGS lists the 21 keys, akita spitz pom afghan dane mastiff gsd appended in order');
+const BR = { akita: 'Akita', spitz: 'Japanese Spitz', pom: 'Pomeranian', afghan: 'Afghan Hound', dane: 'Great Dane', mastiff: 'English Mastiff', gsd: 'German Shepherd' };
 NEW.forEach((k) => { const d = PA.DOGS.find((x) => x.key === k); ok(d && d.breed === BR[k] && d.name && d.personality && d.joke, k + ': name, breed, personality and joke');
   ok(d && ![d.name, d.personality, d.joke].join(' ').match(/;|\bbreed\b|\bsell/i), k + ': copy has no semicolon, "breed" or "sell"'); });
 BAND.forEach((b) => ok(OUT.neck.includes(b), b + ' is a neck outfit'));
@@ -52,7 +52,12 @@ console.log('-- heads, coats, mixes');
 const COATS = { akita: [{ base: '#D46E36', light: '#FFF4E2', dark: '#3A2E2E' }, { base: '#FBF6EC', light: '#FFFFFF', dark: '#E8DECB' }],
   spitz: [{ base: '#F4E8D0', light: '#FFFAF0', dark: '#DCCBA8' }],
   pom: [{ base: '#F4DDB0', light: '#FFF4E0', dark: '#D6B884' }, { base: '#2B2430', light: '#4A3F4E', dark: '#1D1A22' }, { base: '#7A4A2E', light: '#9A6A4A', dark: '#5A3420' },
-    { base: '#FBF6EC', light: '#FFFFFF', dark: '#E8DECB' }, { base: '#8A96A8', light: '#A9B4C4', dark: '#55657A' }, { base: '#F59A3C', light: '#FFD9A6', dark: '#C9701E', white: 0.7 }] };
+    { base: '#FBF6EC', light: '#FFFFFF', dark: '#E8DECB' }, { base: '#8A96A8', light: '#A9B4C4', dark: '#55657A' }, { base: '#F59A3C', light: '#FFD9A6', dark: '#C9701E', white: 0.7 }],
+  afghan: [{ base: '#2B2430', light: '#4A3F4E', dark: '#1D1A22' }, { base: '#C8763E', light: '#E3A06A', dark: '#3A2E2E' }, { base: '#2B2430', light: '#D49A5A', dark: '#1D1A22' }, { base: '#C9C6C2', light: '#E8E6E2', dark: '#55545A' }],
+  dane: [{ base: '#C99A5E', light: '#D9AF77', dark: '#2B2430', brindle: true }, { base: '#2A2628', light: '#3A3438', dark: '#1D1A22' }, { base: '#7E8A9C', light: '#909CAE', dark: '#4A5568' },
+    { base: '#2A2628', light: '#FFFFFF', dark: '#1D1A22', white: 0.25 }, { base: '#8C96A6', light: '#9EA8B6', dark: '#2A2628', merle: true }, { base: '#2A2628', light: '#FFFFFF', dark: '#2A2628', merle: true, white: 0.6 }],
+  mastiff: [{ base: '#D98E4E', light: '#E9AE74', dark: '#2B2430' }, { base: '#C99A5E', light: '#D9AF77', dark: '#2B2430', brindle: true }],
+  gsd: [{ base: '#A88A5E', light: '#C8A878', dark: '#3A3030' }, { base: '#2A2628', light: '#3A3438', dark: '#1D1A22' }, { base: '#FBF6EC', light: '#FFFFFF', dark: '#E8DECB' }] };
 NEW.forEach((k) => {
   AGES.forEach((age) => [false, true].forEach((sp) => good(PA.dogHead(k, { age: age || undefined, sparkle: sp }), '0 0 100 100', `head ${k} ${age} ${sp}`)));
   COATS[k].forEach((c, i) => { const a = PA.dog(k, { pose: 'idle', coat: c, seed: 's' + i }), hd = PA.dogHead(k, { coat: c });
@@ -66,7 +71,15 @@ NEW.forEach((k) => {
   POSES.forEach((p) => good(PA.dog(k, { pose: p, expecting: true }), '0 0 240 200', `${k} ${p} expecting`));
 });
 
-console.log('-- the three bandanas on all 17 breeds');
+console.log('-- coat looks: brindle, harlequin');
+['dane', 'mastiff'].forEach((k) => { const c = { base: '#C99A5E', light: '#D9AF77', dark: '#2B2430' }; ok(PA.dog(k, { coat: Object.assign({ brindle: true }, c) }) !== PA.dog(k, { coat: c }), k + ': coat.brindle draws the brindle stripes'); });
+{ const hc = { base: '#2A2628', light: '#FFFFFF', dark: '#2A2628', merle: true, white: 0.6 }, hq = PA.dog('dane', { seed: 'h', coat: hc });
+  ok(hq.includes('#FBF8F2') && hq.includes('fill="#2A2628"'), 'dane harlequin look: a white dog with black patches');
+  ok(!PA.dog('collie', { seed: 'h', coat: hc }).includes('#FBF8F2'), 'the harlequin look is the dane only'); }
+['shiba', 'greyhound', 'akita', 'pom'].forEach((k) => { const c = { base: '#C99A5E', light: '#D9AF77', dark: '#2B2430' };
+  ok(PA.dog(k, { coat: Object.assign({ brindle: true }, c) }) === PA.dog(k, { coat: c }), k + ': coat.brindle draws nothing on other dogs'); });
+
+console.log('-- the three bandanas on all 21 breeds');
 // measure each bandana's own strokes as it draws (the same idea as check_identical's v2.8 sweep): it draws, touches the dog, stays near the neck
 const SW = IP._t; let probe = null;
 const box = (acc, from) => { const b = [1e9, 1e9, -1e9, -1e9]; acc.slice(from).forEach((e) => { const d = e.match(/ d="([^"]*)"/); if (d) { const v = d[1].match(/-?[\d.]+(?:e-?\d+)?/g) || []; for (let i = 0; i + 1 < v.length; i += 2) { b[0] = Math.min(b[0], +v[i]); b[1] = Math.min(b[1], +v[i + 1]); b[2] = Math.max(b[2], +v[i]); b[3] = Math.max(b[3], +v[i + 1]); } } }); return b; };
@@ -100,6 +113,14 @@ else { const OLD = load(cp.execSync(`git show ${ref}:dogs/pawart_dogs.js`, { cwd
     ['idle', 'sleep', 'beg', 'rollover'].forEach((p, i) => { const o = { pose: p, outfit: [null, { neck: 'Red Bandana' }, { body: 'Ghost Sheet' }, { head: 'Party Hat' }][i], age: [undefined, 'puppy', undefined, 'newborn'][i], sparkle: i === 2 };
       ok(OLD.dog(k, o) === PA.dog(k, o), `${k} ${p} identical to ${ref}`); });
     ok(OLD.dog(k, { pose: 'walk', mix: { head: 'samoyed' } }) === PA.dog(k, { pose: 'walk', mix: { head: 'samoyed' } }), `${k} mix identical to ${ref}`); }); }
+
+console.log('-- pom unchanged since the first BREED ART pass (cea93f1). Akita (smaller forward ears, broader head) and spitz (plume over the back when sitting) changed on purpose in the art review');
+let ref1 = null; try { cp.execSync('git cat-file -e cea93f1^{commit}', { cwd: ROOT, stdio: 'ignore' }); ref1 = 'cea93f1'; } catch (e) { console.log('   no cea93f1 here, skipped'); }
+if (ref1) { const O1 = load(cp.execSync(`git show ${ref1}:dogs/pawart_dogs.js`, { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 << 20 }));
+  ['pom'].forEach((k) => { ok(O1.dogHead(k) === PA.dogHead(k), `head ${k} identical to ${ref1}`);
+    POSES.forEach((p, i) => { const o = { pose: p, outfit: [null, { neck: 'Shibuya Bandana' }, { body: 'Ghost Sheet' }, { head: 'Party Hat' }][i % 4], age: [undefined, 'puppy', undefined, 'newborn'][i % 4], sparkle: i % 3 === 0 };
+      ok(O1.dog(k, o) === PA.dog(k, o), `${k} ${p} identical to ${ref1}`); });
+    ok(O1.dog(k, { pose: 'walk', mix: { head: 'samoyed' } }) === PA.dog(k, { pose: 'walk', mix: { head: 'samoyed' } }), `${k} mix identical to ${ref1}`); }); }
 
 console.log(`v211_dogs: ${pass} passed, ${fail} failed`);
 if (fail) { console.log(fails.join('\n')); process.exit(1); }

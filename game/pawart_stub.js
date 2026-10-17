@@ -39,11 +39,16 @@ window.PawArt = window.PawArt || {};
     // v2.11 breeds
     { key: 'akita', name: 'Kuma', breed: 'Akita', personality: 'Calm, loyal, quietly proud. Waits by the gate.', joke: 'I will wait for you. I am very good at waiting.' },
     { key: 'spitz', name: 'Daifuku', breed: 'Japanese Spitz', personality: 'A white fluffball, cheerful, a bit of a show-off.', joke: 'Yes, I am this white on purpose. Look at me.' },
-    { key: 'pom', name: 'Mikan', breed: 'Pomeranian', personality: 'A tiny fluffy loudspeaker. Spins when happy.', joke: 'Yip! That was my indoor voice.' }
+    { key: 'pom', name: 'Mikan', breed: 'Pomeranian', personality: 'A tiny fluffy loudspeaker. Spins when happy.', joke: 'Yip! That was my indoor voice.' },
+    { key: 'afghan', name: 'Saffron', breed: 'Afghan Hound', personality: 'Elegant and aloof. Not one hair out of place.', joke: 'I do not fetch. I glide.' },
+    { key: 'dane', name: 'Waffle', breed: 'Great Dane', personality: 'A gentle giant who follows you from room to room.', joke: 'I am a lap dog. Your lap is just too small.' },
+    { key: 'mastiff', name: 'Crumpet', breed: 'English Mastiff', personality: 'Huge, slow and sweet. Naps in the biggest patch of shade.', joke: 'A little drool is how I say I love you.' },
+    { key: 'gsd', name: 'Strudel', breed: 'German Shepherd', personality: 'Clever and alert. Loves a job, any job.', joke: 'Ears up. On duty. Was that a squirrel?' }
   ];
   const COAT = { shiba: ['#FF8A1E', '#FFE7B3'], corgi: ['#E9A35B', '#FFFFFF'], golden: ['#F6C445', '#FFE8A0'], dachs: ['#7A4A2A', '#B5774B'], husky: ['#8FA3B8', '#FFFFFF'], mutt: ['#FFFFFF', '#2a2420'],
     poodle: ['#F2C48F', '#FBE2C0'], collie: ['#2A2628', '#FFFFFF'], samoyed: ['#FBF6EC', '#E8DECB'], frenchie: ['#D9B48A', '#3A2E2E'],
-    akita: ['#D46E36', '#FFF4E2'], spitz: ['#FCF8F0', '#E6DCCB'], pom: ['#F59A3C', '#FFD9A6'] };
+    akita: ['#D46E36', '#FFF4E2'], spitz: ['#FCF8F0', '#E6DCCB'], pom: ['#F59A3C', '#FFD9A6'],
+    afghan: ['#C9783E', '#E6A86E'], dane: ['#D9A562', '#2B2430'], mastiff: ['#D8AE72', '#2B2430'], gsd: ['#C98A4A', '#2B2430'] };
 
   const ln = (d, w = 5, c = INK) => `<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
   const el = (cx, cy, rx, ry, f) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${f}" stroke="${INK}" stroke-width="5"/>`;
