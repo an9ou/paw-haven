@@ -860,8 +860,31 @@ function mapFujiPin(k,x,y,locked,bond){const hp=E(x,y+12,104,84,12),L='Mt. Fuji 
       k.shape(RC(cx+28,cy+2,86,30),C.pink,{w:1.8,one:1});k.text(`Bond ${bond}`,cx+71,cy+25,26,{col:'#fff'});cap()}});
   hot(k,'data-area','fujihill',L+(locked?' (locked)':''),hp,g);
   if(locked)k.out[k.out.length-1]=k.out[k.out.length-1].replace('data-area="fujihill"','data-area="fujihill" data-locked="1"')}
+// v2.11 (V211 section 5.4): the Station pin (o.station) south-west of Sunny Park, with the line running west off the map. The houses keep their
+// draws and only the ones under the pin and the tracks are left out, so the map without o.station stays byte-identical
+const MAP_STATION=[560,1250],stTrackY=x=>MAP_STATION[1]+40+(MAP_STATION[0]-80-x)/(MAP_STATION[0]-60)*26;
+function mapStation(k,x,y,locked,bond){const hp=E(x,y+12,104,84,12),L='Station';
+  const tr=[[x-60,y+40],[x-260,stTrackY(x-260)],[-20,stTrackY(-20)]];k.add(`<path d="${smooth(tr,false)}" fill="none" stroke="${C.ink}" stroke-width="8" stroke-linecap="round"/><path d="${smooth(tr,false)}" fill="none" stroke="#FFFFFF" stroke-width="4.4" stroke-dasharray="14 10"/>`);
+  const g=k.cap(()=>{k.add(`<path d="${smooth(dense(E(x,y+16,96,62,14),true,30),true)}" fill="#FDF3DF" fill-opacity=".9"/>`);
+    // the platform and its canopy, the little station house with a clock, a Shinkansen nose waiting at the platform (drawn a size up, like the other icons)
+    k.add(`<g transform="translate(${x} ${y+8}) scale(1.22) translate(${-x} ${-y-8})">`);
+    k.shape(RC(x-84,y+30,168,16),C.stone,{w:1.8,one:1,hatch:{side:.6,gap:4,col:C.stoneD,op:.5}});
+    k.shape(RC(x-50,y-24,64,54),C.wall3,{w:2,hatch:{side:.65,gap:4,col:'#A9C3DE',op:.45}});k.shape([[x-60,y-20],[x-18,y-50],[x+24,y-20]],C.roof,{w:2,hatch:{side:.6,gap:4,col:C.roofD,op:.5}});
+    k.shape(E(x-18,y-28,8,8,10),'#FFFFFF',{w:1.4,one:1});k.add(`<path d="M${x-18} ${y-33}v5h4" fill="none" stroke="${C.ink}" stroke-width="1.4" stroke-linecap="round"/>`);
+    k.shape(RC(x-26,y+4,16,26),C.woodD,{w:1.5,one:1});O.window(k,x-44,y-10,14,12,{});O.window(k,x-4,y-10,14,12,{});
+    k.line([[x+24,y+30],[x+24,y-14]],2.2);k.line([[x+80,y+30],[x+80,y-14]],2.2);k.shape([[x+16,y-14],[x+88,y-14],[x+92,y-22],[x+12,y-22]],C.mint,{w:1.7,one:1});
+    k.shape([[x-96,y+28],[x+44,y+28],[x+76,y+24],[x+92,y+14],[x+70,y+6],[x+44,y+4],[x-96,y+4]],'#FFFFFF',{w:1.8,one:1});k.add(`<path d="M${x-96} ${y+20}H${x+66}" stroke="#4E7FC4" stroke-width="3.4"/><path d="M${x+46} ${y+9}l14 1l-4 6h-12z" fill="#B9D3F2" stroke="${C.ink}" stroke-width="1.1"/>`);
+    let wd='';for(let wx=x-86;wx<x+30;wx+=20)wd+=`M${wx} ${y+9}h11v6h-11Z`;k.add(`<path d="${wd}" fill="#B9D3F2" stroke="${C.ink}" stroke-width="1"/>`);k.add('</g>');
+    const cap=()=>k.text(L,x,y+108,36,{rot:k.J(2),halo:'#FFF8EC'});
+    if(!locked)cap();
+    else{k.add(`<path d="${smooth(dense(hp,true,30),true)}" fill="#EFE9E0" fill-opacity=".55"/>`);k.hatch(hp,{gap:7,col:C.graph,op:.55,w:1.4});const cx=x-28,cy=y-10;
+      k.add(`<path d="M${cx-14} ${cy}v-12a14 14 0 0 1 28 0v12" fill="none" stroke="${C.ink}" stroke-width="5" stroke-linecap="round"/>`);k.shape(RC(cx-22,cy-2,44,36),C.yellow,{w:2.4});k.add(`<circle cx="${cx}" cy="${cy+12}" r="4" fill="${C.ink}"/><path d="M${cx} ${cy+14}v9" stroke="${C.ink}" stroke-width="3" stroke-linecap="round"/>`);
+      k.shape(RC(cx+28,cy+2,86,30),C.pink,{w:1.8,one:1});k.text(`Bond ${bond}`,cx+71,cy+25,26,{col:'#fff'});cap()}});
+  hot(k,'data-area','station',L+(locked?' (locked)':''),hp,g);
+  if(locked)k.out[k.out.length-1]=k.out[k.out.length-1].replace('data-area="station"','data-area="station" data-locked="1"')}
 function bigMap(k,o){
   const locked=new Set(o.locked||[]),bonds=o.bonds||{};
+  const sp=o.station===true?MAP_STATION:null,inSt=(x,y)=>((x-sp[0])/150)**2+((y-sp[1]-14)/120)**2<1||(x<sp[0]&&Math.abs(y-stTrackY(x))<34);// v2.11
   const fp=k.env.jp&&Array.isArray(o.fujiPin)&&o.fujiPin.length===2&&o.fujiPin.every(Number.isFinite)?o.fujiPin:null,inPin=(x,y)=>((x-fp[0])/150)**2+((y-fp[1]-14)/120)**2<1;// v2.8
   k.add(`<rect width="2400" height="1500" fill="#FDF3DF" fill-opacity=".55"/>`);
   // hills to the north
@@ -891,7 +914,7 @@ function bigMap(k,o){
   const pal=[[C.wall,C.roof],[C.wall2,C.lav],[C.wall3,'#9AA7B8'],[C.wall4,C.redD],['#FFF3DC',C.orange]];
   for(let y=330;y<1460;y+=74)for(let x=90+((y/74)%2)*36;x<2000;x+=76){const jx=x+k.J(14),jy=y+k.J(10);if(!free(jx,jy,0)||k.r()<.4)continue;
     const one=()=>{if(k.r()<.62){const c=pal[Math.floor(k.r()*pal.length)];mHouse(k,jx,jy,.95+k.r()*.25,c[0],c[1])}else mTree(k,jx,jy,.9+k.r()*.4,k.r()<.5?C.leaf:C.leaf2)};
-    if(fp){const s=k.cap(one);if(!inPin(jx,jy))k.add(s)}else one()}// v2.8: the same draws, none under the Mt. Fuji Lookout pin
+    if(fp||sp){const s=k.cap(one);if(!(fp&&inPin(jx,jy))&&!(sp&&inSt(jx,jy)))k.add(s)}else one()}// v2.8: the same draws, none under the Mt. Fuji Lookout pin
   // the eastern forest around Maple Woods
   for(let y=330;y<940;y+=46)for(let x=1950+((y/46)%2)*22;x<2390;x+=44){const jx=x+k.J(10),jy=y+k.J(8);const c=MAPC.woods;if(((jx-c[0])/170)**2+((jy-c[1]-14)/140)**2<1||k.r()<.25)continue;k.r()<.7?mPine(k,jx,jy,.9+k.r()*.4,k.r()<.5?C.pine:C.pineD):mTree(k,jx,jy,1,'#E9B074')}
   // places
@@ -910,6 +933,7 @@ function bigMap(k,o){
   k.text('Doodle Doggo Town',330,96,72,{rot:-2,halo:'#FFF8EC'});k.line([[130,116],[540,108]],3,C.pink);
   O.sparkle(k,860,330,10);O.sparkle(k,1760,1180,8);O.heart(k,640,1300,8);O.note(k,2080,1000,14);
   O.tape(k,10,26,120,-26,'#F7B9C6');O.tape(k,2250,1450,120,-24,'#BDE7D2');O.tape(k,14,1460,100,24,'#F9E19A');
+  if(sp)mapStation(k,sp[0],sp[1],locked.has('station'),Number.isFinite(+bonds.station)&&bonds.station!==null?+bonds.station:3);// v2.11: drawn last, on the stream's tail
 }
 
 /* ---------- walk strips: seamless, light (no filter, no clips per object beyond hatching) ---------- */
@@ -1402,8 +1426,9 @@ PA.scene=function(name,o){
   o=o||{};const s=SCENES[name]||SCENES.yard;name=SCENES[name]?name:'yard';const env=name==='map'?(o.jp===true?MAP_JP_ENV:DEF_ENV):mkEnv(o);// the map never shows time or weather (v2.8: only the Japan flag)
   const lk=name==='map'?'|'+(Array.isArray(o.locked)?o.locked.slice().sort().join(','):'')+'|'+JSON.stringify(o.bonds||{}):'';
   const pt=(name==='yard'&&(o.patch==='empty'||o.patch==='ready')?'|'+o.patch:'')+(name==='house'&&o.bed===false?'|nobed':'');
+  if(name==='map'){const i=PA.MAP_AREAS.findIndex(a=>a.id==='station');if(o.station===true&&i<0)PA.MAP_AREAS.push({id:'station',x:MAP_STATION[0],y:MAP_STATION[1]});else if(o.station!==true&&i>=0)PA.MAP_AREAS.splice(i,1)}// v2.11: the Station pin is in MAP_AREAS only while it is drawn
   const fp=name==='map'&&env.jp&&Array.isArray(o.fujiPin)?'|fp'+o.fujiPin.join(','):'';// v2.8: the Mt. Fuji Lookout pin
-  const key=name+'|'+env.time+'|'+env.weather+'|'+env.season+(env.hw?'|hw':'')+wnKey(env)+lk+pt+fp;if(cache[key])return fresh(cache[key]);
+  const key=name+'|'+env.time+'|'+env.weather+'|'+env.season+(env.hw?'|hw':'')+wnKey(env)+lk+pt+fp+(name==='map'&&o.station===true?'|st':'');if(cache[key])return fresh(cache[key]);
   const svg=frameScene(name,s[0],k=>s[1](k,o),env);cache[key]=svg;return svg;
 };
 PA.walkStrip=function(area,o){
