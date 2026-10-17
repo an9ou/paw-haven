@@ -179,6 +179,7 @@ async function main() {
   if (WHAT === 'info' || WHAT === 'all') await require('./make_info.js')({ render, helpers });
   if (WHAT === 'dogs' || WHAT === 'all') await require('./make_dogs.js')({ render, browser, helpers, only: process.argv[4] });
   if (WHAT === 'soon' || WHAT === 'all') await require('./make_soon.js')({ render, browser, helpers });
+  if (WHAT === 'youtube' || WHAT === 'all') await require('./make_youtube.js')({ render, browser, helpers });
   if (['profile', 'covers', 'grid', 'all'].includes(WHAT)) await require('./make_extra.js')({ render, helpers, what: WHAT });
   await browser.close();
 }
