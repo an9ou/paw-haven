@@ -107,7 +107,7 @@ When winter comes, Snow Days start on 1 Dec. In January you can send New Year ca
 
 Which view is your favourite? 👇 Coming soon, free in your browser.
 
-🇯🇵 どの空にも富士山。富士山ビューヒルで、毎日ワンコと富士山を眺めよう🗻 12月1日から雪の日、1月には年賀状も届きます。
+🇯🇵 どの空にも富士山。富士山展望台で、毎日ワンコと富士山を眺めよう🗻 12月1日から雪の日、1月には年賀状も届きます。
 
 #cozygames #mtfuji #handdrawn #indiedev #doodledoggo #富士山 #年賀状
 ```
