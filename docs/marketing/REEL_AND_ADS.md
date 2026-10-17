@@ -16,7 +16,7 @@ Both are 1080 x 1920 (9:16), 30 fps, 30 seconds, H.264 video with AAC sound, abo
 |---|---|---|
 | 0 to 3 s | "Adopt a wobbly crayon pup" with Noodle bouncing in. "(he drew himself)" | The hook. It names the idea and shows the dog in the first second. |
 | 3 to 8.5 s | **Real gameplay:** the yard at dusk, Noodle gets a rub. Captions "Pencil-sketch town", "Crayon dogs" | Shows the art style and that it is a real game. |
-| 8.5 to 14.5 s | **Real gameplay:** Fuji View Hill, Noodle looks at Mt. Fuji. Caption "Mt. Fuji on every skyline" | The Japan angle, and the prettiest scene. |
+| 8.5 to 14.5 s | **Real gameplay:** Mt. Fuji Lookout, Noodle looks at Mt. Fuji. Caption "Mt. Fuji on every skyline" | The Japan angle, and the prettiest scene. |
 | 14.5 to 20.5 s | A walk (real footage), then the garden, the kitchen and the house with a pack of dogs. Captions say what you can do | Shows there is a lot to do. |
 | 20.5 to 25.5 s | "14 dog types": all 14 dogs run in and line up with their names | Gives a reason to come and meet them. |
 | 25.5 to 30 s | Noodle with heart sunglasses. **Play free / link in bio ↑** (or **Coming soon / follow to be first**) | The call to action. |

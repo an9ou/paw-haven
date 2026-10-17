@@ -1,6 +1,6 @@
 # The 45-second promo video (English)
 
-Made 17 Oct 2026 from the script in `VIDEO_SCRIPT_45S.md`. Files are in `brand/instagram/launch/video45/`.
+Made 17 Oct 2026 from the script in `VIDEO_SCRIPT_45S.md`. **Gameplay re-recorded on v2.9 "All Together"** the same day (the hill is now the Mt. Fuji Lookout, with the bigger torii and its signpost; pets and pack as in v2.9). Voice: Bella (af_bella). Files are in `brand/instagram/launch/video45/`.
 
 | File | Use it for |
 |---|---|
@@ -21,7 +21,7 @@ Both videos: 1080 x 1920 (9:16), 30 fps, 45 seconds, H.264 + AAC, about 20 MB. G
 | 0:08 to 0:13 | **Gameplay:** the shelter. Tapping through the dogs, each says its own line ("is that... a snack?", "BALL? BALL! BALL!!", "snort.", "still loading... (I am long)") | "Adopt a wobbly crayon pup. There are fourteen of us. We are all very proud." |
 | 0:13 to 0:16 | **Gameplay:** feeding, a belly rub with hearts, the bath, a nap | "Feed us. Pet us. Bathe us, if you must." |
 | 0:16 to 0:20 | **Gameplay:** a walk, zoomed in on the run | "Take us on walks. Dig up treasure. Visit Mount Fuji." |
-| 0:20 to 0:24 | **Gameplay:** Fuji View Hill at dusk. Noodle's real line pops up on screen | "Somebody should dig a tunnel through that mountain. I volunteer." |
+| 0:20 to 0:24 | **Gameplay:** Mt. Fuji Lookout at dusk. Noodle's real line pops up on screen | "Somebody should dig a tunnel through that mountain. I volunteer." |
 | 0:24 to 0:29 | **Gameplay:** the veggie patch, the kitchen, a yard with puppies | "Grow a garden. Cook dog-safe treats. Have puppy playdates, with real coat genetics." |
 | 0:29 to 0:34 | **Gameplay:** the witch hat in the Square, Noodle in the Very Ugly Sweater in the snow (with the snowman), the Ugly Sweater Contest sheet | "Dress up for every season. The ugly sweater contest is judged by a duck." |
 | 0:34 to 0:40 | **Gameplay:** a walk where Noodle runs into a log. His bubble: "I meant to do that." | "And nothing bad ever happens here. Worst case, you walk into a log. I meant to do that." |

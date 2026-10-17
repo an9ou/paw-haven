@@ -35,7 +35,7 @@ Written 16 Oct 2026 (Friday) for one person, zero budget. All times are **JST** 
 | Game | Free, cozy, plays in a browser on phone and computer. Adopt crayon dogs, walks, garden, dog-safe cooking, puppy playdates with real coat genetics. 14 dog types. |
 | Brand dog | **Noodle the dachshund** |
 | Tagline | "Adopt a wobbly crayon pup to love" |
-| Live now (v2.8) | Winter & New Year, Mt. Fuji on every skyline, Fuji View Hill, New Year cards (nengajo), Snow Days, the Ugly Sweater Contest |
+| Live now (v2.8) | Winter & New Year, Mt. Fuji on every skyline, Mt. Fuji Lookout, New Year cards (nengajo), Snow Days, the Ugly Sweater Contest |
 | Halloween 2026 | Pumpkin Patch Pop-up, **until 2 Nov (Japan date)**. 16 items made for 2026 only, and players keep them forever. |
 | Links today | https://an9ou.github.io/paw-haven/ |
 | Coming soon | doodledoggo.app (Cloudflare team), https://an9ou.itch.io/doodle-doggo (after the new login ships) |
@@ -54,7 +54,7 @@ Every post fits one of these. Mix them roughly in this order across a week.
 | # | Pillar | Why it works | Examples |
 |---|---|---|---|
 | 1 | **Meet the dogs** | The crude crayon dogs are the joke and the hook. | Noodle intro, "dog of the week", a different dog type each Friday, outfits (Witch Hat, Ugly Sweater) |
-| 2 | **Pencil town & Mt. Fuji** | The art contrast (detailed pencil world, crayon dogs) is what makes people stop scrolling. | Fuji View Hill at dusk, the Square, a day-to-night time-lapse |
+| 2 | **Pencil town & Mt. Fuji** | The art contrast (detailed pencil world, crayon dogs) is what makes people stop scrolling. | Mt. Fuji Lookout at dusk, the Square, a day-to-night time-lapse |
 | 3 | **Cozy, but it teaches** | "Nothing bad ever happens", real dog-safe food, real coat genetics. Shareable and kind. | Gerald's dog-safe snack tip, a playdate coat reveal |
 | 4 | **Seasons & festivals** | Gives a reason to post now and a reason to come back. | Halloween Pop-up, Snow Days, nengajo, the Fortune box |
 | 5 | **Behind the doodles** | Small-game fans love the maker. Free, easy, honest. | How the dogs are drawn on purpose, devlogs, "bug that became a feature", player screenshots (with permission) |
@@ -106,7 +106,7 @@ Safe habits (these are general good manners, not quotes from any sub's rules):
 |---|---|---|
 | r/WebGames | Tue 27 Oct, 22:30 | Link to the game plus 1 image. Title says what it is and that it is free in the browser. |
 | r/cozygames | Wed 4 Nov, 22:30 (after the 2 week gap check) | 3 or 4 screenshots, a short honest paragraph, the Halloween or Fuji angle. |
-| r/IndieGaming | Wed 11 Nov, 22:30 | A 10 to 15 second video (the Fuji View Hill joke or the costume parade). |
+| r/IndieGaming | Wed 11 Nov, 22:30 | A 10 to 15 second video (the Mt. Fuji Lookout joke or the costume parade). |
 
 Title ideas: "I made a cozy browser game about adopting wobbly crayon dogs in a pencil-sketch town (free, no download)" and "Mt. Fuji on every skyline: my dachshund thinks someone should dig a tunnel through it".
 
@@ -122,7 +122,7 @@ Title ideas: "I made a cozy browser game about adopting wobbly crayon dogs in a 
 - One 9:16 video a week is enough. Make it once, post it three times (Reels, TikTok, Shorts), no watermarks.
 - Free editor: CapCut or Instagram's own editor.
 - Seven ideas that need only a phone screen recording:
-  1. Noodle's Fuji View Hill line ("Somebody should dig a tunnel through that mountain. I volunteer.")
+  1. Noodle's Mt. Fuji Lookout line ("Somebody should dig a tunnel through that mountain. I volunteer.")
   2. Dusk falls on the yard, Fuji turns pink
   3. Putting the Witch Hat and Candy Corn Bandana on a dog
   4. The Pumpkin Patch cart opening
@@ -181,7 +181,7 @@ Dates in 2026. The owner chose **A, the banner**, for launch and **B, the inform
 | Sat 31 | 9:00 and 20:00 | **Halloween day.** Feed post at 9:00 ("Happy Halloween from Noodle"), Story at 20:00. Mrs. Plum's cart, Noodle in the Witch Hat. |
 | Sun 1 | evening | Story: "2 days left". The US clocks go back today, so US-evening times become 1 hour later. |
 | Mon 2 | evening | Story: "Last day. Your 2026 items stay yours forever." Pop-up ends at midnight Japan time. |
-| Tue 3 | 9:00 | **Culture Day (national holiday).** Japan-first post: Fuji View Hill in autumn, caption in Japanese first. **Swap the profile picture** to the dachshund one. |
+| Tue 3 | 9:00 | **Culture Day (national holiday).** Japan-first post: Mt. Fuji Lookout in autumn, caption in Japanese first. **Swap the profile picture** to the dachshund one. |
 | Wed 4 | 22:30 | **r/cozygames post** (check the two-week rule first). |
 | Thu 5 | 12:00 | **doodledoggo.app** announcement, only if live and tested. Use the launch checklist below. |
 | Fri 6 | 20:00 | Reel 3. Weekly review. |

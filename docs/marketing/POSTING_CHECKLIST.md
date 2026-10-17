@@ -28,7 +28,7 @@ Add them after your first Stories exist (a highlight needs at least one Story). 
 |---|---|---|
 | **Meet** | `highlight-1-meet.png` (Noodle's face) | The "Hi I'm Noodle" Story, dog polls, "dog of the week" |
 | **Play** | `highlight-2-play.png` (paw) | How to play, a walk, the three steps |
-| **Fuji** | `highlight-3-fuji.png` (Mt. Fuji) | Fuji View Hill, dusk shots, Japan posts |
+| **Fuji** | `highlight-3-fuji.png` (Mt. Fuji) | Mt. Fuji Lookout, dusk shots, Japan posts |
 | **Events** | `highlight-4-events.png` (pumpkin) | Halloween now. From December swap the cover and name to **Winter** (ask me for the snowflake version). |
 
 ## 3. First-week schedule

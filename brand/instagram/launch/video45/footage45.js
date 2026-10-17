@@ -69,7 +69,7 @@ run('video45_' + SEASON, async (t) => {
       await rec('walk', 4.4, [0.3, 1.25, 2.2, 3.15].map((s) => [s, async () => { await p().keyboard.down('Space'); await t.sleep(60); await p().keyboard.up('Space'); }]));
       await t.quitWalk(true);
     }
-    // ---------- 4. Fuji View Hill at dusk: arrive, Noodle's line ----------
+    // ---------- 4. Mt. Fuji Lookout at dusk: arrive, Noodle's line ----------
     await setEnv('dusk', 'sunny'); await at('yard'); await quiet();
     if (want('fuji')) await rec('fuji', 10, [[0.2, () => ev(() => { const S = window.__paw.S; S.place = 'fujihill'; window.__paw.go('yard'); })]], async () => ev(() => { const b = document.getElementById('bubble'); return !!b && !b.hidden && /tunnel/.test(b.textContent); }), 4.3);
     await setEnv('day', 'sunny'); await at('yard'); await quiet();

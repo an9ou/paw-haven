@@ -138,7 +138,7 @@ function post2() { // Pencil town, crayon dogs, Fuji
     + txt('Mt. Fuji on every skyline', 520, 392, 64, { fill: MUTED, w: 600 }) + doodle('spark', 880, 375, 1.1) + doodle('heart', 160, 380, 1, -12)
     // big photo: the yard at dusk, below the place pill so the dev asterisk never shows
     + photo('yard_dusk', [0, 470, 1179, 1150], 78, 440, 700, -1.6, { caption: '', seed: 4, tape: PINK })
-    + photo('fujihill_dusk_bubble', [0, 640, 1179, 980], 660, 940, 330, 3.2, { caption: 'Fuji View Hill', seed: 9, tape: '#FFE3A1', tapeRot: 5, pad: 14 })
+    + photo('fujihill_dusk_bubble', [0, 640, 1179, 980], 660, 940, 330, 3.2, { caption: 'Mt. Fuji Lookout', seed: 9, tape: '#FFE3A1', tapeRot: 5, pad: 14 })
     + lines(['walks, gardens, cooking', 'and puppy playdates'], 330, 1226, 50, 54, { w: 600, rot: -2 }) + doodle('paw', 108, 1200, 1.2, -20) + doodle('bone', 560, 1170, 1.2, 18);
   return svgPage(W, H, body);
 }

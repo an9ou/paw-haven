@@ -32,7 +32,7 @@ const info = (n) => JSON.parse(fs.readFileSync(path.join(footage, n, 'info.json'
 const bonk = info('bonk'), bonkOff = Math.max(0, Math.min((bonk.event != null ? bonk.event / FPS : 3) - (38.85 - 34.4), bonk.frames / FPS - 6.05));
 const fuji = info('fuji'), FUJI_OFF = fuji.event != null ? fuji.event / FPS + 0.05 - 0.1 : 0.6; // Noodle's tunnel line appears 0.1 s into the Fuji shot
 const PLAY = [ // [video start, video end, clip, clip start]
-  [8.2, 13.4, 'adopt', 0.25], [13.4, 14.2, 'feed', 0.45], [14.2, 14.9, 'pet', 0.6], [14.9, 15.6, 'bath', 0.6], [15.6, 16.2, 'nap', 0.9],
+  [8.2, 13.4, 'adopt', 0.25], [13.4, 13.95, 'feed', 0.5], [13.95, 14.45, 'pet', 0.6], [14.45, 15.5, 'bath', 0.5], [15.5, 16.2, 'nap', 0.9],
   [16.2, 19.7, 'walk', 0.4, [1.55, '30% 46%']], [19.7, 23.6, 'fuji', FUJI_OFF], [23.6, 25.0, 'garden', 0.3], [25.0, 26.2, 'kitchen', 0.3], [26.2, 29.4, 'puppies', 0.1],
   [29.4, 31.0, 'halloween', 0.3], [31.0, 32.6, 'snow', 0.3], [32.6, 34.4, 'sweater', 0.3], [34.4, 40.4, 'bonk', bonkOff, [1.55, '34% 46%']],
 ];

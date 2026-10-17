@@ -101,7 +101,7 @@ Pin **info4 (how to play)** later if you want new visitors to see it first (only
 ```
 Mt. Fuji on every skyline 🗻
 
-Doodle Doggo is made in Japan, and it shows. Fuji peeks over your yard, the town square and the hills. Visit Fuji View Hill (a little torii, stone lanterns and a bench) and look at Fuji with your pup once a day.
+Doodle Doggo is made in Japan, and it shows. Fuji peeks over your yard, the town square and the hills. Visit Mt. Fuji Lookout (a little torii, stone lanterns and a bench) and look at Fuji with your pup once a day.
 
 When winter comes, Snow Days start on 1 Dec. In January you can send New Year cards (年賀状) too.
 
@@ -111,7 +111,7 @@ Which view is your favourite? 👇 Coming soon, free in your browser.
 
 #cozygames #mtfuji #handdrawn #indiedev #doodledoggo #富士山 #年賀状
 ```
-**Alt text:** `Pencil-sketch yard at dusk with Mt. Fuji, plus photos of Fuji View Hill in autumn and snow.`
+**Alt text:** `Pencil-sketch yard at dusk with Mt. Fuji, plus photos of Mt. Fuji Lookout in autumn and snow.`
 
 ### 2/4 The dogs
 **Caption**

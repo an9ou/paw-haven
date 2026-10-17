@@ -26,7 +26,7 @@ run('reel_footage', async (t) => {
   // 1. the yard at dusk: Noodle gets a rub
   await setEnv('dusk', 'sunny'); await at('yard'); await hide(); await t.sleep(600);
   await clip('yard', 8, async () => { await t.sleep(1500); const box = await p().locator('#dogHit').boundingBox(); for (let r = 0; r < 5; r++) for (let i = 0; i < 24; i++) { await p().mouse.move(box.x + box.width * (0.3 + 0.4 * (i % 2)), box.y + box.height * 0.4); await t.sleep(25); } });
-  // 2. Fuji View Hill: look at Fuji
+  // 2. Mt. Fuji Lookout: look at Fuji
   await at('fujihill'); await hide(); await t.sleep(800);
   await clip('fuji', 8, async () => { await t.sleep(1800); await ev(() => { const b = document.querySelector('#placeBtns [data-jp]'); if (b) b.click(); }); });
   // 3. a walk (a few hops)

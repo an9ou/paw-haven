@@ -12,9 +12,9 @@ module.exports = async function ({ render, helpers: h }) {
   const p1 = () => svgPage(W, H, paper(W, H) + frame(W, H, 31) + tag(1, 'the Japan view')
     + lines(['Mt. Fuji on', 'every skyline'], 540, 196, 118, 104, { rot: -1.5 })
     + photo('yard_dusk', [0, 470, 1179, 1150], 62, 372, 580, -2, { seed: 4 })
-    + photo('fujihill_dusk_bubble', [0, 640, 1179, 980], 690, 372, 290, 3.5, { caption: 'Fuji View Hill', seed: 9, tape: '#FFE3A1', tapeRot: 5, pad: 12 })
+    + photo('fujihill_dusk_bubble', [0, 640, 1179, 980], 690, 372, 290, 3.5, { caption: 'Mt. Fuji Lookout', seed: 9, tape: '#FFE3A1', tapeRot: 5, pad: 12 })
     + photo('winter_fujihill', [0, 640, 1179, 980], 668, 790, 320, -3, { caption: 'Snow Days, 1 Dec', seed: 12, tape: PINK, tapeRot: -6, pad: 12 })
-    + `<g font-family="Caveat">` + [['Fuji View Hill: torii & lanterns', 1064], ['Look at Fuji once a day', 1132], ['New Year cards (年賀状) in Jan', 1200]].map(([s, y], i) => `<circle cx="92" cy="${y - 14}" r="13" fill="${PINK}" fill-opacity=".6" stroke="${INK}" stroke-width="3"/>` + txt(s, 124, y, 46, { anchor: 'start', w: 600 })).join('') + `</g>`
+    + `<g font-family="Caveat">` + [['Mt. Fuji Lookout: torii & bench', 1064], ['Look at Fuji once a day', 1132], ['New Year cards (年賀状) in Jan', 1200]].map(([s, y], i) => `<circle cx="92" cy="${y - 14}" r="13" fill="${PINK}" fill-opacity=".6" stroke="${INK}" stroke-width="3"/>` + txt(s, 124, y, 46, { anchor: 'start', w: 600 })).join('') + `</g>`
     + doodle('spark', 960, 270, 1.2) + doodle('heart', 130, 1260, 1, -12) + foot());
 
   // ---------- 2. Meet the dogs ----------
