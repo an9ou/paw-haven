@@ -51,7 +51,7 @@ run('v29_photo', async (t) => {
   ok(svg.includes(`${dd} ${MON[mm - 1]} ${yy}`), `the frame has the Japan date, written out (${dd} ${MON[mm - 1]} ${yy})`);
   ok(svg.includes(`>${name}<`), `the frame names the dog (${name})`);
   ok(svg.includes('Best day ever'), 'the default caption shows');
-  ok((svg.match(/@font-face/g) || []).length === 2 && svg.includes('Caveat') && svg.includes('Patrick Hand') && (svg.match(/data:font\/woff2;base64,/g) || []).length === 2, 'both crayon fonts are embedded as data URIs');
+  ok((svg.match(/@font-face/g) || []).length === 4 /* v2.11: plus the two macron subsets (tools/fonts) */ && svg.includes('Caveat') && svg.includes('Patrick Hand') && (svg.match(/data:font\/woff2;base64,/g) || []).length === 4, 'both crayon fonts are embedded as data URIs');
   ok(!/(href|src)\s*=\s*["'](?!#|data:)/i.test(svg) && !/url\(\s*["']?(?!#|data:)/i.test(svg) && !/<image|<script|foreignObject/i.test(svg), 'nothing in the image points outside the file (the canvas stays clean)');
   ok(svg.length < 2.5e6, `the image markup is a sane size (${Math.round(svg.length / 1024)} KB)`);
   ok(!/animation-name|@keyframes/i.test(svg.replace(/<style>.*?<\/style>/s, '')), 'no running animation is left in the picture');

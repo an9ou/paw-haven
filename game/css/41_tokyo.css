@@ -52,7 +52,6 @@ html[data-motion="off"] #view > svg.world.tk-dusk #sceneG{transition:none}
 @keyframes tkPetal{from{transform:translate(0,0);opacity:1}to{transform:translate(var(--dx,0),340px);opacity:0}}
 
 /* phones */
-html[data-layout="phone"] #stage.tk-mapmode #toasts{width:calc(100% - 136px)}
 html[data-layout="phone"] .tk-bookbtn{left:12px;bottom:12px;font-size:16px}
 html[data-layout="phone"] .tk-book{grid-template-columns:repeat(3,1fr);gap:8px}
 html[data-layout="phone"] .tk-stamp .tk-sart,html[data-layout="phone"] .tk-stamp .tk-sart svg{width:78px;height:78px}
@@ -60,3 +59,11 @@ html[data-layout="phone"] .tk-ride-art > svg{height:auto;position:absolute;top:5
 html[data-layout="phone"] .tk-ride .tk-skip{right:12px;bottom:max(12px,env(safe-area-inset-bottom))}
 html[data-layout="phone"] .tk-ticket{flex-direction:column;align-items:flex-start;gap:8px}
 html[data-layout="phone"] .tk-tix{flex-basis:72px;width:72px;height:72px}
+
+/* review fixes (v2.11): Walk is hidden in a Tokyo place (the walk routes start at home), Care stays */
+#stage.tk-in #bar .act[data-act="walk"]{display:none}
+/* map-mode toasts sit at the bottom, clear of the pins, beside the Stamp book button */
+#stage.tk-mapmode #toasts{top:auto;bottom:20px}
+html[data-layout="phone"] #stage.tk-mapmode #toasts{top:auto!important;bottom:calc(68px + env(safe-area-inset-bottom,0px));left:12px;transform:none;width:calc(100% - 80px)}
+/* phones: the zoom column moves to the bottom right, off the map's compass rose */
+html[data-layout="phone"] #stage.tk-mapmode #mapZoom{top:auto;bottom:calc(12px + env(safe-area-inset-bottom,0px))}

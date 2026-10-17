@@ -61,28 +61,28 @@ function tkCare(k, delay = 900) {
 
 /* ---- the arrival line per place for all 17 breeds, merged into PLACE_LINES[breed] (read by 03_yard.js placeAmbient) ---- */
 const TK_LINES = {
-  shiba: { shibuya: 'Hachikō was a very loyal dog. I am also loyal. When I feel like it.', yoyogi: 'A dog run full of strangers. I will pretend not to care. I care a little.', asakusa: 'That lantern is bigger than our house. I approve of big things.', ueno: 'The blossoms are falling on me. I look like a painting now.', tokyotower: 'A tall red tower. Tall, proud, a bit orange. Like me.', odaiba: 'Sand in my curl again. Tokyo sand, though. Very fancy.' },
-  corgi: { shibuya: 'So many people! Someone here has a snack. I can feel it.', yoyogi: 'A whole lawn of friends! And a picnic over there. Hello, picnic.', asakusa: 'The snack street! Do they have dog snacks? They have dog snacks!', ueno: 'Picnic blankets everywhere. I will sit near every one. Politely.', tokyotower: 'From up there you could see every snack in Tokyo.', odaiba: 'Beach zoomies, city edition! My legs were made for this.' },
-  golden: { shibuya: 'Everybody is crossing! Hello everybody! Hello, Hachikō!', yoyogi: 'SO MANY DOGS. I love all of them. I love the fence.', asakusa: 'A giant red lantern! I would like to fetch it. Gently.', ueno: 'Ducks on the pond! Blossoms on my nose! Best day!', tokyotower: 'A tower! Can I fetch the tower? I can try.', odaiba: 'The sea! The bridge! A ball! Everything is wonderful!' },
-  dachs: { shibuya: 'Too many feet up here. I will investigate the ground.', yoyogi: 'This lawn has never been dug. That feels like a missed chance.', asakusa: 'The temple has a very old floor. I will sniff all of it.', ueno: 'Somebody buried a rice ball here in 1998. I am almost sure.', tokyotower: 'Under the tower is the best spot. Nobody digs there. Yet.', odaiba: 'City sand! I could tunnel to the other side of the bay.' },
-  husky: { shibuya: 'AWOO, Hachikō! That is a howl of respect.', yoyogi: 'Every dog here gets a howl. AWOO. AWOO. AWOO.', asakusa: 'A quiet temple. I will howl quietly. awoo.', ueno: 'Pink snow falling from the trees! It is not cold. Disappointing.', tokyotower: 'At night it glows like the northern lights. Almost.', odaiba: 'The sea breeze is cool. Finally something for my coat.' },
-  mutt: { shibuya: 'Hachikō waited for his person. I would wait for you too.', yoyogi: 'Lots of dogs. Can I stay near you while I say hello?', asakusa: 'A lucky lantern. I already feel lucky. I have you.', ueno: 'Petals in the pond. Can we sit here a while?', tokyotower: 'It is a very tall tower. I like the view of you better.', odaiba: 'I found a shell on a city beach. It is for you.' },
-  chihuahua: { shibuya: 'So many people. I will bark at the crossing. The crossing is not listening.', yoyogi: 'Twelve big dogs and me. I am in charge of all of them.', asakusa: 'That lantern looks dangerous. I am keeping an eye on it.', ueno: 'A petal landed on me. I have decided it is a medal.', tokyotower: 'That tower is very tall. I am taller on the inside.', odaiba: 'The waves keep coming. I keep telling them off. City waves are rude.' },
-  pug: { shibuya: 'Too many steps for one crossing. Carry me? snort.', yoyogi: 'I came to the dog run to lie down. In public.', asakusa: 'The snack street smells amazing. snort snort snort.', ueno: 'A picnic blanket under a pink tree. My dream. Goodnight.', tokyotower: 'I looked at the tower. Very nice. Can we sit now?', odaiba: 'Warm sand, cool breeze. A pug paradise. snort.' },
+  shiba: { shibuya: 'Hachikō was a very loyal dog. I am also loyal. When I feel like it.', yoyogi: 'A dog run full of strangers. I will pretend not to care. I care a little.', asakusa: 'That lantern is bigger than our house. I approve of big things.', ueno: 'Swan boats on the pond. I could steer one. I choose not to.', tokyotower: 'A tall red tower. Tall, proud, a bit orange. Like me.', odaiba: 'Sand in my curl again. Tokyo sand, though. Very fancy.' },
+  corgi: { shibuya: 'So many people! Someone here has a snack. I can feel it.', yoyogi: 'A whole lawn of friends! And a picnic over there. Hello, picnic.', asakusa: 'The snack street! Do they have dog snacks? They have dog snacks!', ueno: 'Ducks on the pond, picnics on the grass. Nobody is sharing. Yet.', tokyotower: 'From up there you could see every snack in Tokyo.', odaiba: 'Beach zoomies, city edition! My legs were made for this.' },
+  golden: { shibuya: 'Everybody is crossing! Hello everybody! Hello, Hachikō!', yoyogi: 'SO MANY DOGS. I love all of them. I love the fence.', asakusa: 'A giant red lantern! I would like to fetch it. Gently.', ueno: 'Ducks! Swan boats! A pond! Best day!', tokyotower: 'A tower! Can I fetch the tower? I can try.', odaiba: 'The sea! The bridge! A ball! Everything is wonderful!' },
+  dachs: { shibuya: 'Too many feet up here. I will investigate the ground.', yoyogi: 'This lawn has never been dug. That feels like a missed chance.', asakusa: 'The snack street smells amazing. I will sniff every stall from the path.', ueno: 'So many smells along the pond path. I will check every single one.', tokyotower: 'Under the tower is the best spot. Nobody digs there. Yet.', odaiba: 'City sand! I could tunnel to the other side of the bay.' },
+  husky: { shibuya: 'AWOO, Hachikō! That is a howl of respect.', yoyogi: 'Every dog here gets a howl. AWOO. AWOO. AWOO.', asakusa: 'A quiet temple. I will howl quietly. awoo.', ueno: 'The pond is calm. I will sing to it. awoo, pond.', tokyotower: 'At night it glows like the northern lights. Almost.', odaiba: 'The sea breeze is cool. Finally something for my coat.' },
+  mutt: { shibuya: 'Hachikō waited for his person. I would wait for you too.', yoyogi: 'Lots of dogs. Can I stay near you while I say hello?', asakusa: 'A lucky lantern. I already feel lucky. I have you.', ueno: 'Ducks on the pond. Can we sit here a while?', tokyotower: 'It is a very tall tower. I like the view of you better.', odaiba: 'I found a shell on a city beach. It is for you.' },
+  chihuahua: { shibuya: 'So many people. I will bark at the crossing. The crossing is not listening.', yoyogi: 'Twelve big dogs and me. I am in charge of all of them.', asakusa: 'That lantern looks dangerous. I am keeping an eye on it.', ueno: 'A swan boat looked at me. I have informed it who is in charge.', tokyotower: 'That tower is very tall. I am taller on the inside.', odaiba: 'The waves keep coming. I keep telling them off. City waves are rude.' },
+  pug: { shibuya: 'Too many steps for one crossing. Carry me? snort.', yoyogi: 'I came to the dog run to lie down. In public.', asakusa: 'The snack street smells amazing. snort snort snort.', ueno: 'A bench by the pond. My favourite kind of view. snort.', tokyotower: 'I looked at the tower. Very nice. Can we sit now?', odaiba: 'Warm sand, cool breeze. A pug paradise. snort.' },
   greyhound: { shibuya: 'I could cross that in two strides. I will walk it with you instead.', yoyogi: 'A big lawn! ZOOM. ZOOM. ...okay, nap time.', asakusa: 'Long street, long legs, long nose over every stall.', ueno: 'I found the softest patch of grass in Tokyo. I am upside down on it.', tokyotower: 'A tall, thin, elegant thing. A tower after my own heart.', odaiba: 'A whole beach for a sprint. Then the whole bridge to look at.' },
   beagle: { shibuya: 'A thousand people and every one of them had breakfast. AROOO.', yoyogi: 'Every dog here smells different. I need to sniff all of them.', asakusa: 'Rice crackers, sweet potato, incense. My nose is on a temple trip.', ueno: 'Somebody has a picnic. Somebody else has a picnic. Everybody has a picnic.', tokyotower: 'I can smell the whole city from here. Mostly noodles.', odaiba: 'Seaweed, sunscreen and a hot dog stand on a bridge. AROOO!' },
-  poodle: { shibuya: 'A famous crossing. I will cross it beautifully.', yoyogi: 'The other dogs run around. I prefer to be admired.', asakusa: 'A thousand years old. Older than my haircut. Barely.', ueno: 'Pink blossoms suit my coat. I have known this for years.', tokyotower: 'A tower with style. Red and white. Very tasteful.', odaiba: 'Sand in the curls. I will be brave. For the view.' },
+  poodle: { shibuya: 'A famous crossing. I will cross it beautifully.', yoyogi: 'The other dogs run around. I prefer to be admired.', asakusa: 'A thousand years old. Older than my haircut. Barely.', ueno: 'The swan boats are very elegant. Almost as elegant as me.', tokyotower: 'A tower with style. Red and white. Very tasteful.', odaiba: 'Sand in the curls. I will be brave. For the view.' },
   collie: { shibuya: 'Everyone crosses at once. In all directions. Nobody told me.', yoyogi: 'Twenty dogs and no line. I have work to do.', asakusa: 'The stalls are in a neat line. Somebody here understands.', ueno: 'The ducks on the pond are in a little row. Good ducks.', tokyotower: 'Every street from up there would look like a line. Lovely.', odaiba: 'The boats keep leaving the bay. I keep counting them back.' },
-  samoyed: { shibuya: 'Hello, Hachikō! Hello, Tokyo! Everyone gets a smile.', yoyogi: 'So many friends to smile at. Woo-woo!', asakusa: 'The lantern is red and I am white. We look great together.', ueno: 'Petals are sticking to me. I am a blossom dog now.', tokyotower: 'At night it sparkles. I sparkle too, a bit.', odaiba: 'Too warm for me, but the sea breeze is a good friend.' },
-  frenchie: { shibuya: 'Big crossing. Short legs. I will take my time. *snort*', yoyogi: 'I will sit by the fence and watch. That is my sport.', asakusa: 'A bench by the temple. Good bench. I sit.', ueno: 'Shady tree, soft grass. Wake me at sunset.', tokyotower: 'Very tall. I will look at it from down here, lying flat.', odaiba: 'Hot sand, flat face. Shade and water, please.' },
-  akita: { shibuya: 'Hachikō was an Akita like me. I will sit with him a while.', yoyogi: 'I will stay near the gate and keep watch. That is my kind of play.', asakusa: 'An old temple, a calm crowd. I feel at home here.', ueno: 'The blossoms fall very slowly. I can wait. I am good at waiting.', tokyotower: 'The tower stands still and tall. So do I.', odaiba: 'The sea is calm today. So am I. Mostly.' },
-  spitz: { shibuya: 'A famous crossing! Everybody watch me cross it. Pose!', yoyogi: 'A lawn full of dogs. I am the fluffiest one here. Probably.', asakusa: 'A red lantern and a white dog. It is a perfect photo.', ueno: 'Pink petals on a white coat. I planned this.', tokyotower: 'Red and white, like a show ring ribbon. I approve.', odaiba: 'Sand on my white coat. Someone will brush it. Right?' },
-  pom: { shibuya: 'So many feet! I am small, so I go between them. Yip!', yoyogi: 'Big dogs everywhere. I will do a happy spin to say hello.', asakusa: 'A lantern as big as a house! I am as big as a lantern bow.', ueno: 'A petal fell on my head. Now I am a flower. Yip!', tokyotower: 'That tower is very tall. I did a spin about it.', odaiba: 'Little paws, big beach. Spin, spin, spin!' },
+  samoyed: { shibuya: 'Hello, Hachikō! Hello, Tokyo! Everyone gets a smile.', yoyogi: 'So many friends to smile at. Woo-woo!', asakusa: 'The lantern is red and I am white. We look great together.', ueno: 'The pond breeze is cool on my fluff. Woo!', tokyotower: 'At night it sparkles. I sparkle too, a bit.', odaiba: 'Too warm for me, but the sea breeze is a good friend.' },
+  frenchie: { shibuya: 'Big crossing. Short legs. I will take my time. *snort*', yoyogi: 'I will sit by the fence and watch. That is my sport.', asakusa: 'A bench by the temple. Good bench. I sit.', ueno: 'Shady tree, soft grass. Wake me when it is time to go.', tokyotower: 'Very tall. I will look at it from down here, lying flat.', odaiba: 'Hot sand, flat face. Shade and water, please.' },
+  akita: { shibuya: 'Hachikō was an Akita like me. I will sit with him a while.', yoyogi: 'I will stay near the gate and keep watch. That is my kind of play.', asakusa: 'An old temple, a calm crowd. I feel at home here.', ueno: 'The pond is quiet and still. I can wait here. I am good at waiting.', tokyotower: 'The tower stands still and tall. So do I.', odaiba: 'The sea is calm today. So am I. Mostly.' },
+  spitz: { shibuya: 'A famous crossing! Everybody watch me cross it. Pose!', yoyogi: 'A lawn full of dogs. I am the fluffiest one here. Probably.', asakusa: 'A red lantern and a white dog. It is a perfect photo.', ueno: 'A white dog by a blue pond. It is a perfect photo.', tokyotower: 'Red and white, like a show ring ribbon. I approve.', odaiba: 'Sand on my white coat. Someone will brush it. Right?' },
+  pom: { shibuya: 'So many feet! I am small, so I go between them. Yip!', yoyogi: 'Big dogs everywhere. I will do a happy spin to say hello.', asakusa: 'A lantern as big as a house! I am as big as a lantern bow.', ueno: 'A duck said hello. I did a spin back. Yip!', tokyotower: 'That tower is very tall. I did a spin about it.', odaiba: 'Little paws, big beach. Spin, spin, spin!' },
   // v2.11 owner's addition: four more breeds land later through lane BREEDS (keys as written)
-  afghan: { shibuya: 'The crossing breeze is perfect for my hair. Everyone is looking. Good.', yoyogi: 'A lawn this big deserves one elegant gallop. Then a long rest.', asakusa: 'An old temple and a dog with very old style. We match.', ueno: 'Blossoms in my hair. I did not plan it, but it works.', tokyotower: 'Tall, slim and a little dramatic. The tower and I get along.', odaiba: 'Sea wind in my coat. Somebody will brush it later. Right?' },
+  afghan: { shibuya: 'The crossing breeze is perfect for my hair. Everyone is looking. Good.', yoyogi: 'A lawn this big deserves one elegant gallop. Then a long rest.', asakusa: 'An old temple and a dog with very old style. We match.', ueno: 'Lotus leaves on the pond, wind in my hair. Very elegant.', tokyotower: 'Tall, slim and a little dramatic. The tower and I get along.', odaiba: 'Sea wind in my coat. Somebody will brush it later. Right?' },
   dane: { shibuya: 'I am the tallest thing at the crossing that is not a building.', yoyogi: 'The other dogs are tiny. I will play very gently.', asakusa: 'That lantern is nearly my size. Nearly.', ueno: 'I tried to sit on the picnic blanket. I am the picnic blanket now.', tokyotower: 'Finally, something taller than me. I respect it.', odaiba: 'Big beach, big dog. A good fit.' },
   mastiff: { shibuya: 'So many people. I will lean on you until they pass.', yoyogi: 'I will watch the play from right here. Watching is a sport.', asakusa: 'A calm old temple. I like calm old things. I am one.', ueno: 'A shady tree and soft grass. I am not moving for a while.', tokyotower: 'A very big tower. A very big nap under it, maybe.', odaiba: 'Cool sea breeze on a big warm dog. Lovely.' },
-  gsd: { shibuya: 'Busy crossing. I will keep the pack together. Stay close, everyone.', yoyogi: 'Twenty dogs, one fence. I have checked the whole fence.', asakusa: 'Lots of people at the gate. I am on duty, politely.', ueno: 'Ducks on the pond, picnics on the grass. All in order.', tokyotower: 'From up there you could see everything. I like seeing everything.', odaiba: 'Long beach, long patrol. Then a swim, maybe.' }
+  gsd: { shibuya: 'Busy crossing. I will keep the pack together. Stay close, everyone.', yoyogi: 'Twenty dogs, one fence. I have checked the whole fence.', asakusa: 'Lots of people at the gate. I am on duty, politely.', ueno: 'Ducks on the pond, picnics on the grass. All in order.', tokyotower: 'From up there you could see everything. I like seeing everything.', odaiba: 'Long beach, long patrol. Paws only, no swimming here.' }
 };
 Object.keys(TK_LINES).forEach((k) => { PLACE_LINES[k] = Object.assign(PLACE_LINES[k] || {}, TK_LINES[k]); });
 
@@ -111,7 +111,8 @@ function tkSceneArt(name, o) {
 }
 
 // scenery on the floor band a dog must not stand in (feet only), added to RM_SCENERY (37_roam.js): the Tokyo Tower planters, the Odaiba sandcastle
-Object.assign(RM_SCENERY, { tokyotower: [[14, 516, 100, 70, 'scene'], [890, 540, 110, 50, 'scene']], odaiba: [[70, 512, 70, 52, 'scene']] });
+const TK_SCENERY = { tokyotower: [[14, 516, 100, 70, 'scene'], [890, 540, 110, 50, 'scene']], odaiba: [[70, 512, 70, 52, 'scene']] };
+Object.assign(RM_SCENERY, JSON.parse(JSON.stringify(TK_SCENERY))); // tkFeet adds the hot spots' foot boxes once the scene is up
 
 /* ---- the town map: the Station pin (Bond 3). mapArt passes { station: true } and the lock while PLACES.station exists (TOKYO ART D draws
    <g data-area="station"> and adds it to MAP_AREAS). Until it does, the game adds this doodle pin. big: the 2400 x 1500 art map, fb: the fallback map */
@@ -184,7 +185,7 @@ function tkRide(dir, done) {
   const finish = () => {
     if (!TK.ride || TK.ride.tok !== tok) return; const el = TK.ride.el; TK.ride = null; if (el) el.remove();
     if (typeof done === 'function') done();
-    tkCare('ride', 700);
+    tkCare('ride', TK.welcome ? 3800 : 700); TK.welcome = false; // after the Welcome to Tokyo toast, not on top of it
   };
   const el = document.createElement('div'); el.className = 'tk-ride' + (fast ? ' still' : ''); el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', dir === 'home' ? 'The Shinkansen ride home' : 'The Shinkansen ride to Tokyo');
   const crop = tkRideCrop(heads.length);
@@ -196,6 +197,12 @@ function tkRide(dir, done) {
   if (fast) finish(); else tkLater(finish, TK_RIDE_MS);
   return true;
 }
+
+// keys while the ride is up: Escape, Enter and Space skip it, the rest (the bar's number keys) do nothing. In a Tokyo place the Walk key (4) does nothing either
+window.addEventListener('keydown', (e) => {
+  if (TK.ride) { e.stopPropagation(); e.preventDefault(); if (['Escape', 'Enter', ' '].includes(e.key) && TK.ride.el) TK.ride.el.click(); return; }
+  if (e.key === '4' && cur.mode === 'yard' && tkHere() && modal.hidden) e.stopPropagation();
+}, true);
 
 /* ---- the Japan map (go('japan')): the art map, else a doodle map, a pin per place (locked ones show the Bond), the Tokyo Station pin "Ride home",
    a Stamp book button. Pans and zooms like the town map (the same #mapPan / #mapInner and mapApply / mapZoomAt / mapCenter) ---- */
@@ -275,10 +282,17 @@ function enterJapan() {
   tkMapDrag(pan);
   $('#mapZin').onclick = () => mapZoomAt(1.2, MAPV.vw / 2, MAPV.vh / 2); $('#mapZout').onclick = () => mapZoomAt(1 / 1.2, MAPV.vw / 2, MAPV.vh / 2);
   const onRs = () => { if (cur.mode !== 'japan') return; MAPV.vw = pan.clientWidth; MAPV.vh = pan.clientHeight; mapApply(); }; window.addEventListener('resize', onRs); onCleanup(() => window.removeEventListener('resize', onRs));
-  tkMapOverlay(here ? S.place : 'station'); updateHUD(); bindDev();
-  if (!here && !S.tk.seen.japan) { S.tk.seen.japan = 1; markDirty(); setTimeout(() => { if (cur.mode === 'japan') tkToast('Welcome to Tokyo! Pick a place on the map. Tokyo Station takes you home.', 'good'); }, 400); }
+  tkMapOverlay(here ? S.place : 'station'); updateHUD(); bindDev(); tkStatusTokyo();
+  cur.key = (e) => { if (e.key === 'Escape') { e.preventDefault(); SFX.click(); go('yard'); } }; // back to the place, or home when the map came straight from the ride
+  onCleanup(() => { cur.key = null; });
+  if (!here && !S.tk.seen.japan) { S.tk.seen.japan = 1; TK.welcome = true; markDirty(); setTimeout(() => { if (cur.mode === 'japan') tkToast('Welcome to Tokyo! Pick a place on the map. Tokyo Station takes you home.', 'good'); }, 400); }
 }
 // drag pan, pinch and wheel zoom (pointer events), the same as the town map
+// the status chip says Tokyo on the Japan map (the core writes the place name: it is put back after every rewrite while the map is up)
+function tkStatusTokyo() {
+  const st = $('#status'); if (!st) return; const fix = () => { const n = st.querySelector('.pname'); if (cur.mode === 'japan' && n && n.textContent !== 'Tokyo') n.textContent = 'Tokyo'; };
+  fix(); if (typeof MutationObserver === 'function') { const mo = new MutationObserver(fix); mo.observe(st, { childList: true }); onCleanup(() => mo.disconnect()); }
+}
 function tkMapDrag(pan) {
   const pts = new Map(); let moved = 0, pinch = null, last = null;
   pan.addEventListener('pointerdown', (e) => { pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (pts.size === 1) { moved = 0; last = { x: e.clientX, y: e.clientY }; } if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), z: MAPV.z }; } });
@@ -322,6 +336,8 @@ function tkStampArt(key, got, size = 120) {
   const lbl = (TK_STAMP_N[key] || key).split(' ');
   return `<svg viewBox="0 0 120 120" width="${size}" height="${size}"><circle cx="60" cy="60" r="50" fill="${got ? '#FDE3EA' : 'none'}" stroke="${got ? '#C8463D' : '#B7A79B'}" stroke-width="${got ? 5 : 3}" stroke-dasharray="${got ? 'none' : '8 7'}"/>${got ? `<circle cx="60" cy="60" r="40" fill="none" stroke="#C8463D" stroke-width="2"/>${lbl.map((w, i) => `<text x="60" y="${64 + (i - (lbl.length - 1) / 2) * 24}" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="${w.length > 7 ? 22 : 26}" fill="#C8463D">${esc(w)}</text>`).join('')}` : ''}</svg>`;
 }
+// a stamp not in the book yet whose place is open at today's Bond (the tokyo_stamp mission gate). Hachikō's stamp is in Shibuya
+function tkStampFree() { return !!S && TK_STAMPS.some((k) => !(S.tk && S.tk.stamps && S.tk.stamps[k]) && topBond() >= TK_PLACES[k === 'hachiko' ? 'shibuya' : k].bond); }
 function tkStamp(key) {
   if (!S || !TK_STAMPS.includes(key)) return null; tkFields();
   if (S.tk.stamps[key]) { SFX.click(); toast(`The ${TK_STAMP_N[key]} stamp is already in your book.`); return false; }
@@ -358,13 +374,17 @@ function tkSpotsBy(b, dogs) {
   const z = rmZoneOf(S.place), cx = b ? clamp(b[0] + b[2] / 2, 140, 860) : 500, y = b ? clamp(b[1] + b[3] + 26, z.y0 + 10, z.y1 - 6) : z.y0 + 40;
   return dogs.map((d, i) => [clamp(cx + [0, -120, 120, -230, 230, -330][i % 6], 90, 910), clamp(y + (i % 2) * 20, z.y0, z.y1)]);
 }
+// o.pay: the reward, paid once at arrival, or at once when the player leaves mid-walk (go() runs the cleanup, which also frees busy and the hold).
+// then: the follow-up in the scene, only while the player is still in the place
 function tkGather(dogs, spots, o, then) {
-  const tok = ++TK.tok, fast = motionOff(); let left = dogs.length;
+  const tok = ++TK.tok, fast = motionOff(); let left = dogs.length, paid = false;
+  const pay = () => { if (paid || !o.pay) return; paid = true; o.pay(); };
   TK.busy = true; busy = true; rmPause('tk'); hideBubble(); if (typeof idleStop === 'function') idleStop();
-  const arrive = () => { if (--left > 0 || tok !== TK.tok) return; then(tok); };
+  onCleanup(() => { if (tok !== TK.tok) return; pay(); tkReset(); });
+  const arrive = () => { if (--left > 0 || tok !== TK.tok) return; pay(); if (tkInPlace()) then(tok); else tkReset(); };
   dogs.forEach((d, i) => {
-    let [x, y] = spots[i], q = rmNear(d, x, y, false); const far = (a) => !a || Math.hypot(a[0] - x, a[1] - y) > 150;
-    if (far(q)) q = rmNear(d, x, y, 'loose'); if (!far(q)) [x, y] = q; else if (rmHard(x, y)) y = rmZoneOf(S.place).y1 - 4; // a free spot near the target, else the target itself (never inside a box)
+    let [x, y] = spots[i]; const dd = (a) => (a ? Math.hypot(a[0] - x, a[1] - y) : 1e9), q1 = rmNear(d, x, y, false), q2 = dd(q1) > 150 ? rmNear(d, x, y, 'loose') : null;
+    const q = dd(q2) < dd(q1) ? q2 : q1; if (q) [x, y] = q; else if (rmHard(x, y)) y = rmZoneOf(S.place).y1 - 4; // the nearest free spot (strict, then loose), never inside a box
     const face = o.faceAt != null ? (o.faceAt < x ? 'left' : 'right') : o.face || 'right';
     if (fast) { rmSet(d, { x, y, face, pose: o.pose || 'idle' }); const r = rmSt(d); r.hx = x; r.hy = y; arrive(); }
     else rmTo(d, x, y, { pose: o.pose || 'idle', face, anchor: true, done: arrive });
@@ -386,13 +406,12 @@ function tkHachiko() {
   if (!S || S.place !== 'shibuya' || tkCant()) return null; tkFields();
   if (tkToday('hachi')) { SFX.click(); toast(`${NAME()} already sat with Hachikō today. He will be here tomorrow too. He always is.`); return false; }
   const b = tkHotBox('hachiko'), dogs = tkPack(), first = !S.tk.stamps.hachiko;
-  tkGather(dogs, tkSpotsBy(b, dogs), { pose: 'sit', faceAt: b ? b[0] + b[2] / 2 : 300 }, (tok) => {
+  const pay = () => {
     S.tk.hachi = localISO(); const pts = addBond(TK_HACHI_PTS, { raw: true }); markDirty(); SFX.boop(620);
     tkToast(`${dogs.length > 1 ? 'The pack sat' : `${NAME()} sat`} quietly with Hachikō for a while. +${pts} Bond.`, 'good');
-    tkStamp('hachiko');
-    if (first) setTimeout(() => tkToast(TK_HACHI_STORY, 'gold'), 1600);
-    tkRelease(tok, 3200);
-  });
+    if (first) { tkStamp('hachiko'); setTimeout(() => tkToast(TK_HACHI_STORY, 'gold'), 500); } // the stamp and the story only the first time
+  };
+  tkGather(dogs, tkSpotsBy(b, dogs), { pose: 'sit', faceAt: b ? b[0] + b[2] / 2 : 300, pay }, (tok) => tkRelease(tok, 2400));
   return true;
 }
 // the scramble: every dog walks to the far side together, then roams again
@@ -412,6 +431,7 @@ function tkLantern() {
   const b = tkHotBox('lantern'), dogs = tkPack();
   tkGather(dogs, tkSpotsBy(b, dogs), { pose: 'sit', face: 'right' }, (tok) => {
     TK.busy = false; busy = false; rmResume('tk'); TK.tok++;
+    if (!tkInPlace()) return;
     if (typeof phOpen === 'function' && !phOpen()) toast('Everyone is under the lantern. Say cheese.');
   });
   return true;
@@ -424,18 +444,20 @@ function tkOmikuji() {
   if (tkToday('omi')) { SFX.click(); toast(`${NAME()} has today's fortune already. One a day keeps the luck fresh.`); return false; }
   if (S.coins < TK_OMI_PRICE) { nope(`An omikuji is ${TK_OMI_PRICE} coins. A walk or two will cover it.`); return false; }
   S.coins -= TK_OMI_PRICE; S.tk.omi = localISO(); addStat('happy', 5); SFX.kaching(); markDirty(); updateHUD();
-  const f = PICK(TK_FORTUNES), p = openModal('Omikuji', `<div class="tk-omi"><span class="tk-omipaper" aria-hidden="true"><svg viewBox="0 0 60 120"><rect x="8" y="4" width="44" height="112" rx="4" fill="#FFFBF3" stroke="#5B3D32" stroke-width="2.6"/><rect x="16" y="12" width="28" height="16" fill="#C8463D"/><path d="M18 40 H42 M18 52 H42 M18 64 H36 M18 76 H42 M18 88 H32" stroke="#8A7468" stroke-width="2.4"/></svg></span><div><p>${esc(NAME())} gives the box a shake and a little paper slip drops out.</p><p class="tk-fortune"><b>${esc(f)}</b></p><p class="small">In Japan you tie the slip to a rack at the temple before you go. +5 Happiness.</p></div></div>`, { foot: '<button class="btn yes big" id="tkOmiOk">Lucky dog!</button>' });
+  const f = PICK(TK_FORTUNES), p = openModal('Omikuji', `<div class="tk-omi"><span class="tk-omipaper" aria-hidden="true"><svg viewBox="0 0 60 120"><rect x="8" y="4" width="44" height="112" rx="4" fill="#FFFBF3" stroke="#5B3D32" stroke-width="2.6"/><rect x="16" y="12" width="28" height="16" fill="#C8463D"/><path d="M18 40 H42 M18 52 H42 M18 64 H36 M18 76 H42 M18 88 H32" stroke="#8A7468" stroke-width="2.4"/></svg></span><div><p>${esc(NAME())} gives the box a shake and a little paper slip drops out.</p><p class="tk-fortune"><b>${esc(f)}</b></p><p class="small">Many people tie the slip to a rack at the temple, and some keep a lucky one. +5 Happiness.</p></div></div>`, { foot: '<button class="btn yes big" id="tkOmiOk">Lucky dog!</button>' });
   $('#tkOmiOk', p).onclick = () => { SFX.boop(720); closeModal(); };
   setTemp('happy', 1400); return f;
 }
 
 /* ---- Nakamise (Asakusa): one dog-safe treat a day for every dog here, served like the café ---- */
-const TK_SNACKS = ['Sweet Potato Chew', 'Dog Senbei'];
+const TK_SNACKS = ['Sweet Potato Strip', 'Dog Senbei'];
+// the icon: world E drew it as 'Sweet Potato Chew' (the spec name before the rename), used until it is drawn under the new name
+function tkItemArt(n) { return n === 'Sweet Potato Strip' && !artReal('item', n) && artReal('item', 'Sweet Potato Chew') ? artReal('item', 'Sweet Potato Chew') : itemArt(n); }
 function tkNakamise() {
   if (!S || S.place !== 'asakusa' || tkCant()) return null; tkFields();
   const done = tkToday('snack'), dogs = tkPack(), n = dogs.length;
   const items = TK_SNACKS.map((nm) => FOOD.find((f) => f.n === nm)).filter(Boolean);
-  const p = openModal('Nakamise treats', `<p class="small">"Welcome! One treat a day for every dog, made just for dogs." ${done ? '<b>The pack already had today\'s treat.</b>' : `${n > 1 ? `${n} dogs, one treat each.` : ''}`} You have ${fmtC(S.coins)} Paw Coins.</p><div class="shopgrid">${items.map((it) => `<div class="sitem"><span class="art">${itemArt(it.n)}</span><b>${esc(it.n)}</b><span class="desc">${esc(it.note)}</span><span class="small sh-tip">${esc(it.tip)}</span>${priceHTML(it.price * n)}<button class="btn yes" data-tksnack="${esc(it.n)}" ${done ? 'aria-disabled="true"' : ''}>${n > 1 ? 'Treat everyone' : 'Order and serve'}</button></div>`).join('')}</div>`, { cls: 'shop tk-snackpop' });
+  const p = openModal('Nakamise treats', `<p class="small">"Welcome! One treat a day for every dog, made just for dogs." ${done ? '<b>The pack already had today\'s treat.</b>' : `${n > 1 ? `${n} dogs, one treat each.` : ''}`} You have ${fmtC(S.coins)} Paw Coins.</p><div class="shopgrid">${items.map((it) => `<div class="sitem"><span class="art">${tkItemArt(it.n)}</span><b>${esc(it.n)}</b><span class="desc">${esc(it.note)}</span><span class="small sh-tip">${esc(it.tip)}</span>${priceHTML(it.price * n)}<button class="btn yes" data-tksnack="${esc(it.n)}" ${done ? 'aria-disabled="true"' : ''}>${n > 1 ? 'Treat everyone' : 'Order and serve'}</button></div>`).join('')}</div>`, { cls: 'shop tk-snackpop' });
   p.querySelectorAll('[data-tksnack]').forEach((b) => { b.onclick = () => tkSnackBuy(b.dataset.tksnack); });
   return p;
 }
@@ -473,7 +495,7 @@ async function tkShopBuy(name, p) {
   S.coins -= it.price; SFX.kaching(); trackAct('buy', { name: it.n, cat: it.cat, qty: 1, shop: 'tokyo' });
   if (it.cat === 'decor') { hmDecorFields(); S.decor[it.n] = { got: localISO(), out: false }; } else S.inv[it.cat].push(it.n);
   markDirty(); updateHUD();
-  toast(`Bought the ${it.n}. ${it.cat === 'decor' ? 'It is waiting at home, ready to put out in the yard or the house.' : it.cat === 'toys' ? 'It is in the Play menu now.' : 'Wrapped in paper with a little stamp on it.'}`, 'gold');
+  toast(`Bought the ${it.n}. ${it.cat === 'decor' ? `It is waiting at home, ready to put out in the ${(HM_DECOR[it.n] && HM_DECOR[it.n].room) || 'yard'}.` : it.cat === 'toys' ? 'It is in the Play menu now.' : 'Wrapped in paper with a little stamp on it.'}`, 'gold');
   const pp = tkShop(), pn = pp && $('.panel', modal);
   if (it.cat === 'clothes' && pn) confirmIn(pn, `Put the ${esc(it.n)} on ${esc(NAME())} now?`, 'Wear it', 'Later').then((w) => { if (w) equip(it.n, true); }); // not awaited: the purchase is done either way
   return true;
@@ -487,10 +509,8 @@ function tkHanami() {
   const k = tkUenoKind();
   if (tkToday('hanami')) { SFX.click(); toast('The pack had its Ueno rest today. The park will be just as lovely tomorrow.'); return false; }
   const b = tkHotBox('hanami'), dogs = tkPack();
-  tkGather(dogs, tkSpotsBy(b, dogs), { pose: k === 'momiji' ? 'happy' : 'down', faceAt: b ? b[0] + b[2] / 2 : 500 }, (tok) => {
-    S.tk.hanami = localISO(); tkPackHappy(8); SFX.boop(660); if (k !== 'pond') tkPetals(k);
-    tkToast(TK_UENO[k][1], 'good'); tkRelease(tok, 3000);
-  });
+  const pay = () => { S.tk.hanami = localISO(); tkPackHappy(8); SFX.boop(660); tkToast(TK_UENO[k][1], 'good'); };
+  tkGather(dogs, tkSpotsBy(b, dogs), { pose: k === 'momiji' ? 'happy' : 'down', faceAt: b ? b[0] + b[2] / 2 : 500, pay }, (tok) => { if (k !== 'pond') tkPetals(k); tkRelease(tok, 3000); });
   return true;
 }
 function tkPetals(k) {
@@ -508,9 +528,11 @@ function tkSunset() {
   const dogs = tkPack(), z = rmZoneOf(S.place), lead = rmSt(D()), toLeft = lead.x > 500, svg = $('#view > svg.world');
   if (svg && !motionOff()) svg.classList.add('tk-dusk');
   const spots = dogs.map((d, i) => [toLeft ? 160 + i * 90 : 840 - i * 90, z.y1 - 20 - (i % 2) * 24]);
-  tkGather(dogs, spots, { pose: 'idle', face: toLeft ? 'left' : 'right' }, (tok) => {
+  const pay = () => {
     S.tk.sunset = localISO(); tkPackHappy(8); SFX.boop(560);
     tkToast(`${dogs.length > 1 ? 'The pack' : NAME()} walked along the shore as the sun went down behind the Rainbow Bridge. +8 Happiness${dogs.length > 1 ? ' for the pack' : ''}.`, 'good');
+  };
+  tkGather(dogs, spots, { pose: 'idle', face: toLeft ? 'left' : 'right', pay }, (tok) => {
     tkLater(() => { const s2 = $('#view > svg.world'); if (s2) s2.classList.remove('tk-dusk'); }, motionOff() ? 0 : 2000);
     tkRelease(tok, 2200);
   });
@@ -544,6 +566,7 @@ function tkPlaceBtns() {
   if (P === 'ueno') b.push(['hanami', TK_UENO[tkUenoKind()][0], tkToday('hanami')]);
   if (P === 'tokyotower') b.push(['souvenir', 'Souvenirs', false]);
   if (P === 'odaiba') b.push(['sunset', tkToday('sunset') ? 'Walked at sunset' : 'Sunset walk', tkToday('sunset')]);
+  if (!S.tk.stamps[P]) b.push(['stamp', 'Stamp', false]); // phones: the stamp stall can sit off the crop, so it has a button until it is stamped
   b.push(['map', 'Japan map', false]);
   pb.insertAdjacentHTML('beforeend', b.map(([k, t, done]) => `<button class="btn ${k === 'map' ? '' : done ? 'tk-done' : 'yes'}" data-tk="${k}"${done ? ' aria-disabled="true"' : ''}>${esc(t)}</button>`).join(''));
   pb.querySelectorAll('[data-tk]').forEach((x) => { x.onclick = () => { const k = x.dataset.tk; if (k === 'map') { SFX.click(); go('japan'); } else if (k === 'ball') tkBall(); else tkHot(k); }; });
@@ -554,13 +577,30 @@ on('game:ready', () => { tkFields(); tkPlaceSync(); setTimeout(tkExpose, 0); });
 on('yard:enter', () => {
   tkFields(); tkExpose(); tkReset();
   const svg = $('#view > svg.world'); if (svg) svg.classList.remove('tk-dusk');
+  stage.classList.toggle('tk-in', tkHere()); // Walk is hidden in Tokyo (the walk routes start at home), Care stays
   tkPlaceBtns(); tkBindHots();
-  if (tkHere()) { tkCare(S.place, 1600); requestAnimationFrame(() => requestAnimationFrame(tkLeadClear)); }
+  if (tkHere()) {
+    tkCare(S.place, 1600); tkFeet(); requestAnimationFrame(() => requestAnimationFrame(() => tkLeadClear(false)));
+    const iv = setInterval(() => tkLeadClear(true), 500); onCleanup(() => clearInterval(iv));
+  }
 });
-// the leader steps off a hot spot it was put on (rmValidate leaves the leader alone under the harness): Hachikō, the signal, a stall stay tappable
-function tkLeadClear() {
-  if (!tkInPlace() || TK.busy || busy || S.sleeping) return; const d = D(), r = rmSt(d); if (r.tw || rmOk(d, r.x, r.y, rmK(r))) return;
-  const q = rmNear(d, r.x, r.y) || rmNear(d, r.x, r.y, false); if (!q) return; rmSet(d, { x: q[0], y: q[1] }); r.hx = q[0]; r.hy = q[1]; if (isPhone()) phHomeRefit();
+// the leader steps off a hot spot (rmValidate leaves the leader alone under the harness): on arrival at once, then every 0.5 s it walks off one it
+// ended on (an errand, a legacy dogTo). walk: only when its feet are in a box (a hot spot's foot box, tkFeet)
+function tkLeadClear(walk) {
+  if (!tkInPlace() || TK.busy || busy || S.sleeping || (typeof blOn === 'function' && blOn()) || RM.paused.size) return; const d = D(), r = rmSt(d);
+  if (IDLE.act || r.away) { const e = r.tw ? r.tw.end || [r.tw.x1, r.tw.y1] : null; if (walk && (rmHard(r.x, r.y) || (e && rmHard(e[0], e[1])))) idleStop(); return; } // an idle errand (a nap, a sniff) heading for a hot spot ends, the dog goes back to its spot
+  if (r.tw) return;
+  if (walk ? !rmHard(r.x, r.y) : rmOk(d, r.x, r.y, rmK(r))) return;
+  const q = rmNear(d, r.x, r.y) || rmNear(d, r.x, r.y, false) || rmNear(d, r.x, r.y, 'loose'); if (!q) return;
+  if (walk) { rmTo(d, q[0], q[1], { anchor: true }); return; }
+  rmSet(d, { x: q[0], y: q[1] }); r.hx = q[0]; r.hy = q[1]; if (isPhone()) phHomeRefit();
+}
+// every hot spot gets a foot box in RM_SCENERY: the feet where a dog's body would cover the spot's middle (no dog, not even rmValidate's loose
+// fallback or rmLeast, stands there). Read from the live scene, so it follows the art
+function tkFeet() {
+  if (!tkInPlace()) return; const base = TK_SCENERY[S.place] || [], out = base.map((b) => b.slice());
+  $('#view > svg.world').querySelectorAll('#sceneG [data-hot]').forEach((g) => { const b = tkHotBox(g.getAttribute('data-hot')); if (!b) return; const cx = b[0] + b[2] / 2, cy = b[1] + b[3] / 2; out.push([cx - 62, cy - 12, 124, 162, 'scene']); });
+  RM_SCENERY[S.place] = out; rmScan(); rmValidate(true); rmDepth();
 }
 on('scene:redraw', () => { if (tkInPlace()) { tkBindHots(); if (!$('#placeBtns [data-tk]')) tkPlaceBtns(); } });
 on('day:new', () => { if (tkInPlace() && !TK.busy) tkPlaceBtns(); });

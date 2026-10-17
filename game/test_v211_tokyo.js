@@ -65,7 +65,7 @@ require('./test_lib').run('v211_tokyo', async (t) => {
   await t.sleep(1200); await t.SH('ride');
   await p().click('.tk-ride'); await t.untilMode('japan', 3000);
   ok(!(await ev(() => !!document.querySelector('.tk-ride'))), 'a tap skips the ride and the Japan map opens');
-  ok(await t.until(() => window.__toasts.some((x) => /closed carrier/.test(x)), null, 3000), 'the first ride shows its care note');
+  ok(await t.until(() => window.__toasts.some((x) => /closed carrier/.test(x)), null, 7000), 'the first ride shows its care note (after the welcome)');
 
   sec('the Japan map');
   const jm = await ev(() => ({ pins: [...document.querySelectorAll('#mapInner [data-area]')].map((g) => g.getAttribute('data-area')).sort().join(','), locked: [...document.querySelectorAll('#mapInner [data-area]')].filter((g) => /Bond \d/.test(g.textContent) || g.classList.contains('locked')).map((g) => g.getAttribute('data-area')).sort().join(','), book: !!document.getElementById('tkBookBtn'), x: document.getElementById('mapX').hidden, bar: document.getElementById('bar').hidden }));
@@ -152,11 +152,11 @@ require('./test_lib').run('v211_tokyo', async (t) => {
   ok((await S()).coins === c0 - 10 && (await toasts()).some((x) => /today's fortune already/.test(x)), 'omikuji is once a day');
   c0 = (await S()).coins; const h0 = (await S()).dogs.map((d) => d.stats.happy);
   await hot('nakamise'); await t.waitH2(/Nakamise/);
-  ok(await ev(() => /Sweet Potato Chew/.test(document.querySelector('#modal').textContent) && /Dog Senbei/.test(document.querySelector('#modal').textContent) && /no salt and no soy/.test(document.querySelector('#modal').textContent)), 'Nakamise: Sweet Potato Chew and Dog Senbei, with the food-safety tip');
+  ok(await ev(() => /Sweet Potato Strip/.test(document.querySelector('#modal').textContent) && /Dog Senbei/.test(document.querySelector('#modal').textContent) && /no salt and no soy/.test(document.querySelector('#modal').textContent)), 'Nakamise: Sweet Potato Chew and Dog Senbei, with the food-safety tip');
   await ev(() => window.__paw.tk.snack('Dog Senbei')); await t.sleep(300);
   s = await S(); ok(s.coins === c0 - 36 && !!s.tk.snack, `one Dog Senbei for each of the 3 dogs: 36 coins (${c0 - s.coins})`);
   ok(s.dogs.every((d, i) => d.stats.happy > h0[i] || d.stats.happy >= 99), 'every dog got happier: ' + JSON.stringify([h0, s.dogs.map((d) => d.stats.happy)]));
-  await quiet(); ok((await ev(() => window.__paw.tk.snack('Sweet Potato Chew'))) === false && (await S()).coins === c0 - 36, 'one treat a day');
+  await quiet(); ok((await ev(() => window.__paw.tk.snack('Sweet Potato Strip'))) === false && (await S()).coins === c0 - 36, 'one treat a day');
   await t.closeX();
   await hot('lantern'); await t.until(() => { const m = document.getElementById('phMode'); return !!m && !m.hidden; }, null, 8000);
   ok(await ev(() => { const m = document.getElementById('phMode'); return !!m && !m.hidden; }), 'the lantern: the pack gathers and photo mode opens');
@@ -234,7 +234,7 @@ require('./test_lib').run('v211_tokyo', async (t) => {
     out.push(open('builder')); const dt = document.querySelector('#modal [data-btab=decor]'); if (dt) { dt.click(); out.push(document.querySelector('#modal').textContent); }
     document.querySelector('#modal .x').click(); return out.join(' ');
   });
-  ok(!/Shibuya Bandana|Asakusa Bandana|Tokyo Tower Bandana|Shinkansen Plush|Lucky Cat|Dog Senbei|Sweet Potato Chew(?!s)/.test(shopTxt), 'the Boutique, Kibble Corner and Barkitecture list none of the Tokyo things: ' + ((shopTxt.match(/Shibuya Bandana|Asakusa Bandana|Tokyo Tower Bandana|Shinkansen Plush|Lucky Cat|Dog Senbei|Sweet Potato Chew(?!s)/g) || []).join() || shopTxt.length));
+  ok(!/Shibuya Bandana|Asakusa Bandana|Tokyo Tower Bandana|Shinkansen Plush|Lucky Cat|Dog Senbei|Sweet Potato Strip/.test(shopTxt), 'the Boutique, Kibble Corner and Barkitecture list none of the Tokyo things: ' + ((shopTxt.match(/Shibuya Bandana|Asakusa Bandana|Tokyo Tower Bandana|Shinkansen Plush|Lucky Cat|Dog Senbei|Sweet Potato Chew(?!s)/g) || []).join() || shopTxt.length));
   await t.ctx.close();
 
   /* ======================= roaming in every place ======================= */
@@ -260,6 +260,45 @@ require('./test_lib').run('v211_tokyo', async (t) => {
   await ev(() => window.__paw.tk.pick('shibuya')); await t.until(() => window.__paw.S.place === 'shibuya' && window.__paw.mode === 'yard', null, 5000); await t.lu();
   await hot('stamp');
   ok(await t.until(() => !!window.__paw.S.missions.list.find((m) => m.id === 'tokyo_stamp').done, null, 3000), 'a new station stamp completes tokyo_stamp');
+  await t.ctx.close();
+
+  /* ======================= review fixes (v2.11 review) ======================= */
+  sec('review fixes: the ride keys, the status chip, Escape, Walk hidden, leaving mid-walk, Hachiko on day 2');
+  await t.newGame({ prefs: { tkTest: true } }, { bond: { level: 3, pts: 460 }, coins: 500 });
+  await motion(true); await ev(() => window.__paw.tk.ride('out')); await t.until(() => !!document.querySelector('.tk-ride'), null, 3000);
+  await p().keyboard.press('2'); await t.sleep(250);
+  ok(await ev(() => !!document.querySelector('.tk-ride') && !document.querySelector('#dock .tray:not(.dock-idle):not(.mini)')), 'the number keys do nothing under the ride');
+  await p().keyboard.press('Escape'); await t.untilMode('japan', 3000);
+  ok(!(await ev(() => !!document.querySelector('.tk-ride'))), 'Escape skips the ride');
+  ok(await ev(() => document.querySelector('#status .pname').textContent === 'Tokyo'), 'the status chip says Tokyo on the Japan map');
+  await p().keyboard.press('Escape'); await t.untilMode('yard', 3000);
+  ok((await S()).place === 'yard', 'Escape on the Japan map straight from the ride goes home');
+  await at('shibuya');
+  ok(await ev(() => getComputedStyle(document.querySelector('#bar [data-act=walk]')).display === 'none' && getComputedStyle(document.querySelector('#bar [data-act=care]')).display !== 'none'), 'Walk is hidden in a Tokyo place, Care stays');
+  await p().keyboard.press('4'); await t.sleep(300); ok((await t.mode()) === 'yard', 'the Walk key does nothing in Tokyo');
+  ok((await btns()).includes('Stamp'), 'a Stamp button until the place is stamped');
+  await p().click('[data-act=map]'); await t.untilMode('japan'); await p().keyboard.press('Escape'); await t.untilMode('yard', 3000);
+  ok((await S()).place === 'shibuya', 'Escape on the Japan map goes back to the place');
+  await motion(true); await quiet(); const p1 = await pts();
+  await hot('hachiko'); await t.sleep(250); await p().click('[data-act=map]'); await t.untilMode('japan');
+  ok(await ev(() => !window.__paw.tk.busy && !!window.__paw.S.tk.hachi), 'leaving mid-walk frees the hold at once and still pays the sit');
+  ok((await pts()) - p1 === 35, 'the sit and its first stamp were paid (+35 Bond points)');
+  await ev(() => window.__paw.tk.pick('yoyogi'));
+  ok(await t.until(() => window.__paw.S.place === 'yoyogi' && window.__paw.mode === 'yard', null, 5000), 'a pin tap right after works');
+  ok(!(await toasts()).some((x) => /Everyone is under the lantern/.test(x)), 'nothing from the walk shows on the map');
+  await motion(false); await at('shibuya'); await quiet();
+  await ev(() => { window.__paw.S.tk.hachi = '2000-01-01'; }); await hot('hachiko'); await idle(); await t.sleep(600);
+  ok(!(await toasts()).some((x) => /already in your book/.test(x)) && (await toasts()).some((x) => /quietly with Hachikō/.test(x)), 'Hachikō on a later day: the sit, no stamp toast');
+  await t.ctx.close();
+
+  sec('review fixes: the missions');
+  await t.newGame({ prefs: { tkTest: true, msTest: true } }, { bond: { level: 3, pts: 460 }, coins: 500 });
+  await ev(() => { const s = window.__paw.S; s.tk.stamps = { shibuya: 'x', hachiko: 'x', yoyogi: 'x' }; });
+  ok(await ev(() => { const seen = new Set(); for (let i = 0; i < 300; i++) window.__paw.ms.pick('x' + i).forEach((m) => seen.add(m.id)); return !seen.has('tokyo_stamp') && seen.has('tokyo_ride'); }), 'tokyo_stamp is not eligible when every free stamp is in a locked place');
+  await ev(() => window.__paw.ms.force(['buy'])); await motion(false);
+  await ev(() => window.__paw.tk.buy()); await t.untilMode('japan', 3000);
+  await at('shibuya'); await ev(() => window.__paw.tk.shopBuy('Shibuya Bandana')); await t.sleep(300);
+  ok(await ev(() => !window.__paw.S.missions.list.find((m) => m.id === 'buy').done), 'the ticket and the souvenirs do not count as Market Street shopping');
   await t.ctx.close();
 
   /* ======================= old saves ======================= */
