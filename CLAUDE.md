@@ -7,7 +7,7 @@ A cozy browser game: adopt crayon-drawn dogs, care for them, walk a sketchbook t
 ## Owner's standing rules (every session and every agent)
 
 - **Usage limit: always resume.** If you stop at the usage limit, continue the task right after the reset, every time, without waiting for the owner. Before you stop, or as soon as you see the reset time, `send_later` yourself a resume for 2 minutes after the reset. The Game Manager also runs an hourly watchdog that resumes any stalled session.
-- **One team busy at a time**, and push automatically once tests are green (details in `BUILDING.md`).
+- **Parallel teams are fine (owner, 17 Oct 2026, on the Max plan)**: run independent lanes, fix batches and reviews at the same time when it saves time. Push automatically once tests are green (details in `BUILDING.md`).
 - **Reports:** don't send the owner progress updates. Report only when the whole task is finished or when the owner asks.
 - **Questions** go to the owner in the choice window with a recommendation first. With no answer in 5 minutes, take the recommendation.
 - **itch.io development is paused (owner, 16 Oct 2026); the owner resumes it through the ITCH.IO session. No itch.io work unless the owner asks:** don't build, refresh or upload itch.io files (`tools/itch.js`, `tools/itch_push.sh`, `brand/itch/`) as part of other tasks; it costs extra tokens. doodledoggo.app is an introduction site; players play on itch.io (https://an9ou.itch.io/doodle-doggo).
