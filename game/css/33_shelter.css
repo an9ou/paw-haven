@@ -45,11 +45,7 @@ html[data-layout="phone"] .panel.sr-meet .foot .btn{min-height:44px}
 /* adopt mode on desktop (art review): the v2.6 adopt card sits on the left, over the window, so the whole Adopt me board and the toy shelf stay in view */
 html:not([data-layout="phone"]) #stage.flowdock.adoptmode #dock{left:14px;right:auto;width:min(410px,max(320px,calc(35vw - 36px)))}
 /* v2.11.1 (UI, owner feedback 17 Oct 2026): the adopt panel and the shelter sheets were cramped on phones. Body text 1.45 line-height, paragraph gaps 8 to 12 px.
-   Phone minimums stay: 44 px taps, 15 px text, no sideways scroll. Desktop keeps the base rules in 11_title.css (1.4 / 6 px). */
-.sr-lead{line-height:1.2;margin:0 0 6px}
-.shh{line-height:1.2}
-.sr-meetinfo p{line-height:1.4;margin:6px 0}
-.sr-meettrait{line-height:1.25!important}
+   Phone minimums stay: 44 px taps, 15 px text, no sideways scroll. Desktop keeps the v2.11 rules (PHONE.md: the laptop layout stays unless asked). */
 html[data-layout="phone"] #stage.flowdock #dock > .tray:has(.adopt-card){gap:12px;padding-top:14px}
 html[data-layout="phone"] #stage.flowdock #dock > .tray:has(.adopt-card) .tray-h h3{font-size:26px;line-height:1.22;margin:0}
 html[data-layout="phone"] .adopt-card{gap:10px 8px}
@@ -67,7 +63,7 @@ html[data-layout="phone"] .shspots .spotreqs{font-size:15px;line-height:1.45}
 html[data-layout="phone"] .shspots .spotreqs li{margin:4px 0}
 html[data-layout="phone"] .shspots .spotreqs .ck{font-size:15px;width:20px}
 html[data-layout="phone"] .shspots .spotsum{line-height:1.5;margin:0 0 10px}
-html[data-layout="phone"] .sr-lead{margin:0 0 8px}
+html[data-layout="phone"] .sr-lead{line-height:1.2;margin:0 0 8px}
 html[data-layout="phone"] .shh{margin:20px 0 4px;line-height:1.25}
 html[data-layout="phone"] .shh .small{display:block;line-height:1.4;margin-top:2px}
 html[data-layout="phone"] .shcard{gap:8px}

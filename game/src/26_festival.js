@@ -405,7 +405,7 @@ function fsParadeWalk(dogs) {
   const hide = ['#dogPos', '#pack', '#visitorG', '#placeBtns'].map((s) => $(s, view)).filter(Boolean); hide.forEach((e) => { e.style.visibility = 'hidden'; });
   const sc = 0.56, w = 264 * sc, hgt = 220 * sc, gap = 104, feetY = 505, line = [D()].concat(dogs);
   // desktop: the leader walks from the fountain (x 200) to the stall (x 900). Phones: the line enters at the left edge of the crop and leaves past the right edge
-  const [c0, c1] = fsCrop(), ph = isPhone(), lead = ph ? c0 - w / 2 : 200, dist = ph ? (c1 + w / 2 + (line.length - 1) * gap) - lead : 700;
+  const wz = w * Math.max(...line.map((d) => sizeK(d))), [c0, c1] = fsCrop(), ph = isPhone(), lead = ph ? c0 - wz / 2 : 200, dist = ph ? (c1 + wz / 2 + (line.length - 1) * gap) - lead : 700; // v2.11.1: the widest dog in the line (wz) starts and ends past the crop edge
   const parts = line.map((d, i) => { const z = sizeK(d), fx0 = lead - i * gap, x = fx0 - w * z / 2, y = feetY - hgt * z * (205 / 220); return `<g class="fs-pd" data-i="${i}">${place(dogSVG(d, { pose: 'walk', outfit: i ? d.outfit : outfitOf(d), facing: 'right' }), f1(x), f1(y), f1(w * z), f1(hgt * z))}</g>`; }).join(''); // v2.11.1: each dog at its size class, feet on the line
   fx.insertAdjacentHTML('beforebegin', `<g id="fsParadeG" pointer-events="none"><g class="fs-line" style="transform:translateX(0px)">${parts}</g><g class="fs-leaves"></g></g>`);
   const lg = $('#fsParadeG .fs-line'), leaves = $('#fsParadeG .fs-leaves');

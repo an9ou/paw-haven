@@ -166,7 +166,7 @@ async function dcPickCards() {
 /* ---------------- visitors: placing and roaming (inside rmZone, at rmScale x the size class (dcK), held by the roam holds) ---------------- */
 const dcTapHeld = () => (typeof blOn === 'function' && blOn()) || (typeof phActive === 'function' && phActive()) || !!TRN; // ball play, photo mode, training own the taps
 const dcHeld = () => !rmOn() || !modal.hidden || (typeof blOn === 'function' && blOn()) || (typeof phActive === 'function' && phActive()) || !!TRN;
-const dcK = (v, y) => rmScale(y) * sizeK(v.dog); // v2.11.1: a visitor's drawn scale (depth times its size class)
+const dcK = (v, y) => rmScale(y) * (v ? sizeK(v.dog) : 1); // v2.11.1: a visitor's drawn scale (depth times its size class)
 function dcCrop() { if (!isPhone()) return [0, 1000]; const w = rmCropW(), c = phCamHome; return [c - w / 2, c + w / 2]; } // phones: the home crop
 // the box a spot must stay clear of: every tappable thing (rmScan's boxes; feet only for big scenery), every player dog's tap rect where it is and
 // where it is going, the other visitors, and on phones the edges of the crop

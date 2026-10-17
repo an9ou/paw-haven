@@ -143,6 +143,7 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [ ] With the bigger dogs (v2.10 size x 1.25 x class) the narrow phone yard fits fewer dogs on screen, so the look chips show more often.
 - [ ] At the Dog Park a card visitor may stand partly behind your dogs (allowed since v2.11).
 - [ ] `phone_occl_play` is still flaky under load (passes on retry).
+- [ ] A costume hides the head-slot hat, but the hat's perk still works and the Wardrobe gives no hint that the hat is hidden.
 
 ## Tokyo Trip (v2.11)
 - [ ] Pre-v2.11, found by the phone review: on phones `#mapPan` is 24 px wider than the screen. `game/src/08_map.js`

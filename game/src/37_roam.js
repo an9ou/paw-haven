@@ -73,13 +73,13 @@ const RM_HUGE = 70000;
 function rmBoxes() { return RM.no || rmStaticNo(S.place); }
 function rmHard(x, y) { return rmBoxes().some((b) => x > b[0] - 8 && x < b[0] + b[2] + 8 && y > b[1] - 8 && y < b[1] + b[3] + 8); }
 function rmSoft(x, y, k, flat) { // flat: no depth rule (the last fallback when nothing else is free)
-  const T = rmTapBox(x, y, k), y0 = rmZoneOf(S.place).y0;
+  const T = rmTapBox(x, y, k), y0 = rmZoneOf(S.place).y0, Th = [T[0], T[1] - T[3] / 6, T[2], T[3] * 7 / 6]; // v2.11.1: against a tappable thing, the drawing's head and ears (up to 30 units over the tap rect at scale 1) catch taps too
   for (const b of rmBoxes()) {
     const A = b[2] * b[3], base = b[1] + b[3];
     if (!flat && b[4] !== 'btn' && A < RM_HUGE && base > y0 && y < base && T[1] < base && Math.min(T[0] + T[2], b[0] + b[2] - 6) - Math.max(T[0], b[0] + 6) > T[2] * 0.2 && T[1] + T[3] > b[1]) return true; // a fifth of its width over the prop
     if (b[4] === 'scene' || A >= RM_HUGE) continue;
-    const pr = b[4] === 'prop' || b[4] === 'decor' || b[4] === 'fest', o = rmOver(T, pr ? [b[0] - 3, b[1] - 3, b[2] + 6, b[3] + 6] : b); if (!o) continue;
-    if (pr ? o > (b[4] === 'decor' ? A * 0.1 : 0) : A < 15000 ? o > A * 0.08 : o > A * 0.4 || (b[0] + b[2] / 2 > T[0] && b[0] + b[2] / 2 < T[0] + T[2] && b[1] + b[3] / 2 > T[1] && b[1] + b[3] / 2 < T[1] + T[3])) return true;
+    const pr = b[4] === 'prop' || b[4] === 'decor' || b[4] === 'fest', U = pr ? T : Th, o = rmOver(U, pr ? [b[0] - 3, b[1] - 3, b[2] + 6, b[3] + 6] : b); if (!o) continue;
+    if (pr ? o > (b[4] === 'decor' ? A * 0.1 : 0) : A < 15000 ? o > A * 0.08 : o > A * 0.4 || (b[0] + b[2] / 2 > U[0] && b[0] + b[2] / 2 < U[0] + U[2] && b[1] + b[3] / 2 > U[1] && b[1] + b[3] / 2 < U[1] + U[3])) return true;
   }
   return false;
 }
@@ -105,10 +105,12 @@ function rmOk(d, x, y, k, strict) {
 function rmCandsAny(d) { for (const lv of [true, false, 'loose']) { const c = rmCands(d, lv); if (c.length) return c; } const p = rmLeast(d); return p ? [p] : []; }
 // when no level has a free spot (a small yard, four dogs, four decorations out): the spot that covers the least of the props, the small tappable
 // things and the other dogs (the leader counts three times), the feet still out of every box
-function rmLeast(d, x0, y0) {
+// v2.11.1: a spot whose tap rect would cover a hot spot, a place button or the bowl (rmSoft, flat) is only taken when every spot does
+function rmLeast(d, x0, y0) { return rmLeastAt(d, x0, y0, true) || rmLeastAt(d, x0, y0, false); }
+function rmLeastAt(d, x0, y0, clear) {
   const z = rmZoneOf(S.place), L = D(); let best = null, bv = 1e9;
   for (let y = z.y0; y <= z.y1; y += 14) for (let x = z.x0; x <= z.x1; x += 20) {
-    if (rmHard(x, y)) continue; const k = rmKd(d, y), T = rmTapBox(x, y, k), A = T[2] * T[3]; if (T[0] < 4 || T[0] + T[2] > 996) continue; let v = 0;
+    if (rmHard(x, y)) continue; const k = rmKd(d, y), T = rmTapBox(x, y, k), A = T[2] * T[3]; if (T[0] < 4 || T[0] + T[2] > 996 || (clear && rmSoft(x, y, k, true))) continue; let v = 0;
     rmBoxes().forEach((b) => { const Ab = b[2] * b[3]; if (b[4] === 'scene' || Ab >= RM_HUGE) return; const o = rmOver(T, b); if (o) v += (o / Ab) * (b[4] === 'prop' || b[4] === 'decor' || b[4] === 'fest' || Ab < 15000 ? 3 : 1) + (b[4] === 'fest' ? 3 : 0); }); // a seasonal decoration costs more than standing on a pack dog
     rmDogs().forEach((o) => { if (o === d || !rmSt(o).seeded) return; const [ox, oy, ok] = rmDest(o), w = rmOver(T, rmTapBox(ox, oy, ok)) / A; if (w) v += w * (o === L ? 3 : 1); });
     if (x0 != null) v += Math.hypot(x - x0, y - y0) / 5000; if (v < bv) { bv = v; best = [x, y]; }
