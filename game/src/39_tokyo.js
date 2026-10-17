@@ -105,6 +105,9 @@ function tkSceneArt(name, o) {
   return `<g class="tk-fb" data-tk-fb="${name}">${base}${Object.keys(hots).map((k) => tkFbHot(k, hots[k])).join('')}${placeSign(name)}</g>`;
 }
 
+// scenery on the floor band a dog must not stand in (feet only), added to RM_SCENERY (37_roam.js): the Tokyo Tower planters, the Odaiba sandcastle
+Object.assign(RM_SCENERY, { tokyotower: [[14, 516, 100, 70, 'scene'], [890, 540, 110, 50, 'scene']], odaiba: [[70, 512, 70, 52, 'scene']] });
+
 /* ---- the town map: the Station pin (Bond 3). mapArt passes { station: true } and the lock while PLACES.station exists (TOKYO ART D draws
    <g data-area="station"> and adds it to MAP_AREAS). Until it does, the game adds this doodle pin. big: the 2400 x 1500 art map, fb: the fallback map */
 const TK_MAP_PIN = { big: [1990, 1150], fb: [260, 1330] };
@@ -547,8 +550,13 @@ on('yard:enter', () => {
   tkFields(); tkExpose(); tkReset();
   const svg = $('#view > svg.world'); if (svg) svg.classList.remove('tk-dusk');
   tkPlaceBtns(); tkBindHots();
-  if (tkHere()) tkCare(S.place, 1600);
+  if (tkHere()) { tkCare(S.place, 1600); requestAnimationFrame(() => requestAnimationFrame(tkLeadClear)); }
 });
+// the leader steps off a hot spot it was put on (rmValidate leaves the leader alone under the harness): Hachikō, the signal, a stall stay tappable
+function tkLeadClear() {
+  if (!tkInPlace() || TK.busy || busy || S.sleeping) return; const d = D(), r = rmSt(d); if (r.tw || rmOk(d, r.x, r.y, rmK(r))) return;
+  const q = rmNear(d, r.x, r.y) || rmNear(d, r.x, r.y, false); if (!q) return; rmSet(d, { x: q[0], y: q[1] }); r.hx = q[0]; r.hy = q[1]; if (isPhone()) phHomeRefit();
+}
 on('scene:redraw', () => { if (tkInPlace()) { tkBindHots(); if (!$('#placeBtns [data-tk]')) tkPlaceBtns(); } });
 on('day:new', () => { if (tkInPlace() && !TK.busy) tkPlaceBtns(); });
 
