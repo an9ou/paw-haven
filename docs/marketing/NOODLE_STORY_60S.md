@@ -218,3 +218,25 @@ Tap the link in our bio to play 👆
 
 #doodledoggo #cozygames #indiegame #itchio #freegame #dachshund #browsergame
 ```
+
+## The 60-second story, launch version (17 Oct 2026)
+
+`brand/instagram/launch/story60/doodle-doggo-noodle-story-60s-play.mp4` (60 s): the same story, ending "My town is ready for you! Doodle Doggo is out now! Play free on itch.io. Come and meet me!" with the card **Play now! / free on itch.io / @doodledoggo.app**. Shareable page: https://claude.ai/artifact/R2oeeeEYaddMFmNPMGht95 (private until shared from its Share menu). Remake: `END=play node build60.js <voDir> <workDir>`.
+
+**Reel caption (launch)**
+```
+Hi, I'm Noodle. I drew myself. It shows. 🖍️🐶
+
+Come see my town ✨
+🏡 my yard (and my mountain… okay, not my mountain)
+🪵 morning walks (I hop over logs. Mostly.)
+🐾 my friends Biscuit, Mochi and Frost
+🦆 Gerald the duck, who knows everything
+🗻 sunsets over Mt. Fuji
+
+Doodle Doggo is out now: play free on itch.io, phone or computer. Link in bio 👆
+
+自分で描いたダックスフンド、遊べます🖍️
+
+#doodledoggo #cozygames #indiegame #itchio #freegame #dachshund #doglover #crayonart
+```
