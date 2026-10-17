@@ -145,8 +145,35 @@ SP.frenchie={name:'Brioche',breed:'French Bulldog',personality:'Snores, snorts, 
   marks:(h,B,Hd,s)=>{const b=s.body;h.shape([[b.rx*.48,-b.ry*.05],[b.rx*.82,-b.ry*.2],[b.rx*1.0,b.ry*.3],[b.rx*.86,b.ry*.95],[b.rx*.5,b.ry*.85],[b.rx*.38,b.ry*.4]].map(B),s.light,{noline:1});
    const hx=s.head.rx,hy=s.head.ry;h.shape(circ(hx*.2,hy*.42,hx*.5,hy*.36,11).map(Hd),mix(s.dark,s.hcol,.3),{noline:1,ox:0,oy:0});
    h.line([[hx*-.02,-hy*.42],[hx*.1,-hy*.52],[hx*.22,-hy*.42]].map(Hd),2.2,PEN,.5);h.line([[hx*-.1,hy*.1],[hx*.2,hy*.02],[hx*.5,hy*.1]].map(Hd),2.2,PEN,.5)}};
-const KEYS=['shiba','corgi','golden','dachs','husky','mutt','chihuahua','pug','greyhound','beagle','poodle','collie','samoyed','frenchie'];
-const NEWK=/^(poodle|collie|samoyed|frenchie)$/;
+/* v2.11 Tokyo Trip: three more crude ones (V211.md 5.2). Their extras (ruff, ruffK, tail 'plume', s.dark saddle strokes)
+   are new spec fields, so the fourteen older dogs never take these branches */
+SP.akita={name:'Kuma',breed:'Akita',personality:'Calm, loyal, quietly proud. Waits by the gate.',joke:'I will wait for you. I am very good at waiting.',
+  col:'#D46E36',hcol:'#D46E36',light:'#FFF4E2',dark:'#A44E1E',body:{x:106,y:133,rx:55,ry:31,lop:.04},head:{x:167,y:95,rx:36,ry:31},
+  legs:{h:-31,f:29,w:11.6,sock:'#FFF4E2'},ears:'prick',earS:.58,tail:'spiral',tsc:1.08,eyes:[5,4.6],
+  face:{eyes:'open',mouth:'smile',e0:[-.12,-.14],e1:[.38,-.18],nose:[.72,.26],pupil:.74,tilt:-5},
+  marks:(h,B,Hd,s)=>{const b=s.body,hx=s.head.rx,hy=s.head.ry;
+   h.shape([[-b.rx*.62,b.ry*.48],[b.rx*.3,b.ry*.5],[b.rx*.98,-b.ry*.05],[b.rx*.82,b.ry*.88],[-b.rx*.5,b.ry*.95]].map(B),s.light,{noline:1});
+   const ses=lum(s.col)-lum(s.dark)>.3;// sesame: black-tipped hairs, so more and longer saddle strokes when the dark is really dark
+   (ses?[-.72,-.58,-.44,-.3,-.16,-.02,.12,.26,.4]:[-.6,-.42,-.2,0,.2]).forEach((x,i)=>h.line([[b.rx*x,-b.ry*(.9+(i%2)*.05)],[b.rx*(x+.05),-b.ry*(ses?.4+(i%3)*.08:.68)]].map(B),ses?2.6:2.2,mix(s.dark,s.col,.2),.4));
+   h.shape([[-hx*.86,hy*.22],[-hx*.24,hy*.06],[hx*.28,-hy*.02],[hx*.98,hy*.02],[hx*.94,hy*.74],[hx*.2,hy*.98],[-hx*.66,hy*.8]].map(Hd),s.light,{noline:1});
+   [[-.14,-.52],[.38,-.58]].forEach(e=>h.dot(...Hd([hx*e[0],hy*e[1]]),3.6,2.4,s.light));
+   (lum(s.col)-lum(s.dark)>.3?[[-.3,-.84,-.22,-.66],[.06,-.9,.12,-.7],[-.56,-.66,-.46,-.5],[.3,-.84,.34,-.68]]:[[-.3,-.84,-.22,-.66],[.06,-.9,.12,-.7]]).forEach(q=>h.line([[hx*q[0],hy*q[1]],[hx*q[2],hy*q[3]]].map(Hd),2.4,s.dark,.4))}};
+SP.spitz={name:'Daifuku',breed:'Japanese Spitz',personality:'A white fluffball, cheerful, a bit of a show-off.',joke:'Yes, I am this white on purpose. Look at me.',
+  col:'#FCF8F0',hcol:'#FCF8F0',light:W,dark:'#E6DCCB',fluff:1,hfluff:1,body:{x:110,y:137,rx:44,ry:31},head:{x:160,y:99,rx:30,ry:27},
+  legs:{h:-26,f:22,w:8},ears:'prick',earS:.84,tail:'plume',ruff:1.04,eyes:[6.6,6.2],
+  face:{eyes:'open',mouth:'tongue',e0:[-.14,-.1],e1:[.38,-.14],nose:[.8,.22],pupil:.76},
+  marks:(h,B,Hd,s)=>{const b=s.body,hx=s.head.rx,K=mix(s.dark,PEN,.3);h.crayon(b.rx,b.ry,B,mix(s.dark,PEN,.35),7);
+   [[-.6,-.36],[-.05,-.6],[.5,-.3],[-.66,.36],[.2,.46]].forEach(q=>{const x=q[0]*b.rx,y=q[1]*b.ry;h.line([[x-5,y-2],[x-2,y+3],[x+1,y-2],[x+4,y+3]].map(B),2.2,K,.4)});
+   h.line([[hx*.06,-s.head.ry*.62],[hx*.16,-s.head.ry*.5],[hx*.26,-s.head.ry*.62]].map(Hd),2,K,.3)}};
+SP.pom={name:'Mikan',breed:'Pomeranian',personality:'A tiny fluffy loudspeaker. Spins when happy.',joke:'Yip! That was my indoor voice.',
+  col:'#F59A3C',hcol:'#F59A3C',light:'#FFD9A6',dark:'#C9701E',fluff:1,hfluff:1,body:{x:116,y:150,rx:32,ry:24},head:{x:155,y:115,rx:26,ry:24},
+  legs:{h:-18,f:16,w:5.4},ears:'prick',earS:.62,tail:'plume',tsc:.8,ruff:1.16,ruffK:'light',eyes:[6.8,6.4],
+  face:{eyes:'open',mouth:'smile',e0:[-.18,-.14],e1:[.36,-.18],nose:[.84,.3],pupil:.72},
+  marks:(h,B,Hd,s)=>{const b=s.body,hx=s.head.rx,hy=s.head.ry,K=curlCol(s.col);h.crayon(b.rx,b.ry,B,s.dark,6);
+   [[-.55,-.4],[.05,-.62],[-.7,.3]].forEach(q=>{const x=q[0]*b.rx,y=q[1]*b.ry;h.line([[x-4,y-2],[x-1,y+3],[x+2,y-2],[x+5,y+2]].map(B),2,K,.4)});
+   h.shape(circ(hx*.6,hy*.4,hx*.38,hy*.3,9).map(Hd),s.light,{noline:1,ox:0,oy:0});h.line([[-hx*.42,-hy*.62],[-hx*.3,-hy*.46],[-hx*.18,-hy*.62]].map(Hd),2,K,.3)}};
+const KEYS=['shiba','corgi','golden','dachs','husky','mutt','chihuahua','pug','greyhound','beagle','poodle','collie','samoyed','frenchie','akita','spitz','pom'];
+const NEWK=/^(poodle|collie|samoyed|frenchie|akita|spitz|pom)$/;
 
 /* ---------- pose -> rig layout ---------- */
 function layout(s,pose,k){
@@ -319,9 +346,22 @@ function drawTail(h,s,L,B){
    case 'flag':h.tube(map([[0,0],[-5,-14],[-7,-30],[-5,-42]]),7.5,col);{const t=map([[-5,-42]])[0];h.dot(t[0],t[1],5.2,5.2,W)}break;
    case 'line':h.line(map([[0,0],[-14,-10],[-10,-22],[-22,-30],[-22,-44]]),4.8);break;
    case 'pom':{h.tube(map([[0,0],[-6,-10],[-8,-22]]),4.2,col,{ow:4.6});const t=map([[-9,-29]])[0],z=9.5*Math.max(.6,ss);h.shape(scallop(t[0],t[1],z,z*.92,7,.22),col,{step:30,amp:.8,w:3.6});h.line(spiral(t[0]-1,t[1]-1,.5,3.6,1.25,8,.6),2,curlCol(col),.3);break}
-  }  if(s.tailTip){const E={pom:[-9,-29],spiral:[-18,-46],nub:[-8,-6],wiggle:[-28,-42],thin:[-17,-36],fluffy:[-24,-46],line:[-22,-44],sickle:[3,-27],curl:[-7,-13],whip:[-14,50]}[s.tail];if(E&&s.tail!=='fluffy'){const t=map([E])[0];h.dot(t[0],t[1],s.tail==='spiral'?6:4.5,s.tail==='spiral'?6:4.5,W)}}
+   case 'plume':drawPlume(h,s,L,map,col);break;// v2.11 spitz and pom
+  }  if(s.tailTip){const E={plume:PLUME_TIP,pom:[-9,-29],spiral:[-18,-46],nub:[-8,-6],wiggle:[-28,-42],thin:[-17,-36],fluffy:[-24,-46],line:[-22,-44],sickle:[3,-27],curl:[-7,-13],whip:[-14,50]}[s.tail];if(E&&s.tail!=='fluffy'){const t=map([E])[0];h.dot(t[0],t[1],s.tail==='spiral'?6:4.5,s.tail==='spiral'?6:4.5,W)}}
 
 }
+/* v2.11: the plumed tail (spitz, pom) and the neck ruff (spitz, pom, a little on the akita) */
+const PLUME=[[0,0],[-5,-12],[-3,-25],[6,-35],[20,-39],[33,-34],[40,-25]],PLUME_TIP=[40,-25];
+function drawPlume(h,s,L,map,col){// a fat fluffy plume up off the rump and curled forward over the back, lumpy edge, two fur strokes
+  const C=dense(PLUME,false,4),n=C.length,lt=[],rt=[];
+  C.forEach((p,i)=>{const t=i/(n-1),a=C[Math.max(0,i-1)],b=C[Math.min(n-1,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],m=Math.hypot(dx,dy)||1,w=(3.5+11*Math.sin(Math.PI*Math.min(1,t*1.15)))*(i%2?1.16:.94);
+   lt.push([p[0]-dy/m*w,p[1]+dx/m*w]);rt.push([p[0]+dy/m*w*.9,p[1]-dx/m*w*.9])});
+  h.shape(map(lt.concat(rt.reverse())),col,{step:30,amp:.8,w:3.6});
+  const K=curlCol(col);[[.18,.62,-2],[.4,.92,3]].forEach(q=>{const a=Math.floor(q[0]*(n-1)),b=Math.floor(q[1]*(n-1));h.line(map(C.slice(a,b).map(p=>[p[0]+q[2],p[1]+q[2]*.5])),2.2,K,.4)})}
+function drawRuff(h,s,L,HT){// a big scalloped mane round the neck, behind the head (the head is drawn over most of it)
+  const hx=s.head.rx,hy=s.head.ry,k=s.ruff,col=s.ruffK&&s[s.ruffK]?s[s.ruffK]:s.hcol,cl=q=>[q[0],Math.min(q[1],GY-1)];
+  h.shape(scallop(-hx*.16,hy*.6,hx*.98*k,hy*.66*k,9,.2).map(HT).map(cl),col,{step:30,amp:.8,w:3.6});
+  const K=curlCol(col);[[-.7,.95],[-.2,1.12],[.3,1.02]].forEach(q=>{const x=hx*q[0]*k,y=hy*q[1]*k;h.line([[x-3,y-5],[x,y],[x+3,y-5]].map(HT).map(cl),2,K,.3)})}
 function drawLegs(h,s,L){
   const one=l=>{
     const a=h.acc.length;
@@ -406,7 +446,7 @@ function drawFace(h,s,L,HT){
 }
 
 /* ---------- outfits ---------- */
-const OUT={head:['Party Hat','Flower Crown','Acorn Cap','Rain Hat','Pom-pom Beanie','Chef Hat','Wizard Hat','Sun Hat','Cowboy Hat','Astronaut Helmet','Leaf Beret','Witch Hat','Reindeer Antlers','Year of the Sheep Hood'],eyes:['Heart Sunglasses','Explorer Goggles'],neck:['Red Bandana','Bow Tie','Seashell Necklace','Clover Collar','Rainbow Collar','Sailor Collar','Knit Scarf','Autumn Scarf','Parade Rosette','Candy Corn Bandana','Snowflake Snood','Ugly Sweater Rosette'],body:['Yellow Raincoat','Knit Winter Sweater','Superhero Cape','Mossy Poncho','Frog Raincoat','Polka-dot Raincoat','Bubble Raincoat','Happi Coat','Bumblebee Suit','Cozy Hoodie','Tutu','Pyjamas','Ghost Sheet','Pumpkin Suit','Vampire Cape','Bat Wings','Very Ugly Sweater']};
+const OUT={head:['Party Hat','Flower Crown','Acorn Cap','Rain Hat','Pom-pom Beanie','Chef Hat','Wizard Hat','Sun Hat','Cowboy Hat','Astronaut Helmet','Leaf Beret','Witch Hat','Reindeer Antlers','Year of the Sheep Hood'],eyes:['Heart Sunglasses','Explorer Goggles'],neck:['Red Bandana','Bow Tie','Seashell Necklace','Clover Collar','Rainbow Collar','Sailor Collar','Knit Scarf','Autumn Scarf','Parade Rosette','Candy Corn Bandana','Snowflake Snood','Ugly Sweater Rosette','Shibuya Bandana','Asakusa Bandana','Tokyo Tower Bandana'],body:['Yellow Raincoat','Knit Winter Sweater','Superhero Cape','Mossy Poncho','Frog Raincoat','Polka-dot Raincoat','Bubble Raincoat','Happi Coat','Bumblebee Suit','Cozy Hoodie','Tutu','Pyjamas','Ghost Sheet','Pumpkin Suit','Vampire Cape','Bat Wings','Very Ugly Sweater']};
 function coatPts(s){const b=s.body,p=[],f=s.fluff?1.12:1.08;for(let a=-108;a<=108;a+=12){const t=a*D2R;p.push([Math.cos(t)*b.rx*f,Math.sin(t)*b.ry*(f+.04)])}return p}
 function drawCape(h,s,L,B){
   // billows up and back behind the body, so most of it shows above the back and past the rump
@@ -835,6 +875,26 @@ NECK2['Ugly Sweater Rosette']=function(h,s,L,HT){// the Parade Rosette's shape i
   const sw=[[-3.2,-4],[-1.2,-5],[1.2,-5],[3.2,-4],[6.4,-.6],[5,1],[3.4,-.4],[3.4,4.6],[-3.4,4.6],[-3.4,-.4],[-5,1],[-6.4,-.6]].map(q=>cl([k[0]+.5+q[0]*1.05,k[1]+q[1]*1.05]));
   h.shape(sw,WN_CR,{w:1.6,step:30,ox:0,oy:0,sc:1,closed:1,amp:.2,famp:.15});
   h.line([[k[0]-2.6,k[1]+1],[k[0]-1,k[1]-.6],[k[0]+.5,k[1]+1],[k[0]+2,k[1]-.6],[k[0]+3.6,k[1]+1]].map(cl),1.3,WN_RD,.05);h.dot(k[0]+.5,k[1]+3,.9,.9,WN_GR)};
+/* ---------- v2.11 Tokyo Trip bandanas (V211.md 5.2): a crude triangle under the chin like the Red Bandana, one picture each ---------- */
+function tkBand(h,s,L,HT,col,deco){// fill, then the picture (Q(u,v): u across the top edge, v down toward the tip), then the ink edge and the knot
+  const a=neckAnchor(s,HT),hx=s.head.rx,hy=s.head.ry,up=/^(howl|rollover|playdead)$/.test(L.pose),t=clampG(HT([-hx*.22,hy*(up?1.45:1.78)])),d=[a.r[0]-a.l[0],a.r[1]-a.l[1]],l=[a.l[0]-d[0]*.06,a.l[1]-d[1]*.06],r=[a.r[0]+d[0]*.05,a.r[1]+d[1]*.05];
+  const lp=(p,q,u)=>[p[0]+(q[0]-p[0])*u,p[1]+(q[1]-p[1])*u],Q=(u,v)=>lp(lp(l,r,u),t,v),z=Math.max(4.2,Math.hypot(d[0],d[1])*.16);
+  h.shape([l,r,t],col,{noline:1,ox:1,oy:-.6,sc:1,famp:.5});
+  deco(Q,z);
+  h.shape([l,r,t],null,{w:4,step:9,closed:1});h.shape(circ(l[0],l[1],4.6,4,7),col,{w:2.8,ox:0,oy:0,sc:1,closed:1})}
+NECK2['Shibuya Bandana']=function(h,s,L,HT){// green, a little scramble crossing: one set of white zebra bars, a second set across it
+  tkBand(h,s,L,HT,'#3FA45A',(Q,z)=>{const w=Math.max(2,z*.42);[.3,.42,.54,.66].forEach(u=>h.line([Q(u,.1),Q(u,.36)],w,W,.25));
+   [.5,.64].forEach(v=>h.line([Q(.38,v),Q(.64,v)],w,W,.25));h.line([Q(.16,.14),Q(.8,.12)],1.6,'#22703A',.3)})};
+NECK2['Asakusa Bandana']=function(h,s,L,HT){// red with a tiny Kaminarimon lantern: a fat orange-red paper lantern, black caps, a gold tassel
+  tkBand(h,s,L,HT,'#D7263D',(Q,z)=>{const c=Q(.5,.36),rx=z*.78,ry=z*.98;
+   [[.2,.18],[.8,.16],[.34,.66]].forEach(q=>{const p=Q(q[0],q[1]);h.dot(p[0],p[1],1.6,1.6,W)});
+   h.shape(circ(c[0],c[1],rx,ry,10),'#FF7A45',{w:2.2,ox:0,oy:0,sc:1,closed:1,amp:.3,famp:.2});
+   h.line([[c[0]-rx*.62,c[1]-ry*.92],[c[0]+rx*.62,c[1]-ry*.92]],2.6,INK,.15);h.line([[c[0]-rx*.62,c[1]+ry*.92],[c[0]+rx*.62,c[1]+ry*.92]],2.6,INK,.15);
+   h.line([[c[0]-rx*.5,c[1]],[c[0]+rx*.5,c[1]]],1.4,'#7A1020',.15);h.line([[c[0],c[1]+ry],[c[0],c[1]+ry+3.5]],1.6,'#F2C14E',.1)})};
+NECK2['Tokyo Tower Bandana']=function(h,s,L,HT){// orange and white bands like the tower, a little lattice on the white band
+  tkBand(h,s,L,HT,'#F25C1E',(Q,z)=>{h.shape([Q(0,.32),Q(1,.32),Q(1,.54),Q(0,.54)],'#FFFBF2',{noline:1,ox:0,oy:0,sc:1,famp:.3});h.shape([Q(0,.76),Q(1,.76),Q(.5,1)],'#FFFBF2',{noline:1,ox:0,oy:0,sc:1,famp:.3});
+   [.25,.45,.65].forEach(u=>{h.line([Q(u,.34),Q(u+.14,.52)],1.3,'#F25C1E',.15);h.line([Q(u+.14,.34),Q(u,.52)],1.3,'#F25C1E',.15)});
+   h.line([Q(.02,.32),Q(.98,.32)],1.8,INK,.3);h.line([Q(.02,.54),Q(.98,.54)],1.8,INK,.3);h.line([Q(.02,.76),Q(.98,.76)],1.8,INK,.3)})};
 /* ---------- fx ---------- */
 function drawFx(h,s,L,B,HT){
   const hx=s.head.rx,hy=s.head.ry,b=s.body;
@@ -928,6 +988,7 @@ function frame(key,s,pose,outfit,k,seed){
   drawHaunch(h,s,L,B);
   if(body==='Tutu')drawCoat(h,s,L,B,body);
   if(L.paw){h._legPass='raised';drawLegs(h,s,L);h._legPass='ground'}
+  if(s.ruff&&body!=='Ghost Sheet')drawRuff(h,s,L,HT);
   if(body!=='Ghost Sheet')drawEars(h,s,L,HT,false);
   if(s.topknot&&!hat)drawTopknot(h,s,HT);
   {const hf=s.hfluff===undefined?s.fluff:s.hfluff;h.shape(hp.map(HT),s.hcol,{step:hf?30:11,amp:hf?.8:1.2})};h.crayon(s.head.rx,s.head.ry*.6,p=>HT([p[0],p[1]-s.head.ry*.3]),s.hcol,6);
@@ -1067,7 +1128,7 @@ function dogHead(key,o={}){
   key=SP[key]?key:'shiba';const SF=specFor(key,o),s=SF.s,h=kit(rng(hashS('pahead'+key))),L=layout(s,'idle',0),HT=T(L.hT);
   if(s.ears!=='giant')L.face.eyes=s.face.eyes;if(s.pup===2){L.face.eyes='closed';L.ears='sleep';L.face.mouth='smile'}
   if(s.pup)h.setJ(s.pup===2?1.25:1.15);
-  drawEars(h,s,L,HT,false);h.shape(headPts(s).map(HT),s.hcol,{step:(s.hfluff===undefined?s.fluff:s.hfluff)?30:11});if(s.headMarks)s.headMarks(h,HT,s);if(s.pat)s.pat.head(h,HT,L);drawFace(h,s,L,HT);drawEars(h,s,L,HT,true);
+  if(s.ruff)drawRuff(h,s,L,HT);drawEars(h,s,L,HT,false);h.shape(headPts(s).map(HT),s.hcol,{step:(s.hfluff===undefined?s.fluff:s.hfluff)?30:11});if(s.headMarks)s.headMarks(h,HT,s);if(s.pat)s.pat.head(h,HT,L);drawFace(h,s,L,HT);drawEars(h,s,L,HT,true);
   let b=h.bb;if(NEWK.test(s.mixHead||key)){if(s.ears==='bat'){const hd=s.head,c=HT([0,0]);b=[c[0]-hd.rx*1.4,c[1]-hd.ry*1.8,c[0]+hd.rx*1.4,c[1]+hd.ry*1.08]}}// v2.5 heads fit by what was drawn (their ears and muzzles differ from the fixed boxes below)
   else if(/^(giant|bat)$/.test(s.ears)){const hd=s.head,c=HT([0,0]);b=[c[0]-hd.rx*1.25,c[1]-hd.ry*2.1,c[0]+hd.rx*1.25,c[1]+hd.ry*1.05]}else if(s.face.snoutL){const hd=s.head,c=HT([0,0]);b=[c[0]-hd.rx*1.25,c[1]-hd.ry*1.7,c[0]+hd.rx*1.75,c[1]+hd.ry*1.25]}
   const w=b[2]-b[0],ht=b[3]-b[1],sc=Math.min(86/w,86/ht),cx=(b[0]+b[2])/2,cy=(b[1]+b[3])/2;
