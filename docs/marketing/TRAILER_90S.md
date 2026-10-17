@@ -59,3 +59,23 @@ python brand/instagram/launch/trailer90/vo90.py <kokoroModelDir> <voDir>        
 node brand/instagram/launch/trailer90/build90.js <f45> <f90> <voDir> <work> both both   # 4 videos
 ```
 The shot list (which clip under which line, the chips and name cards) is `PLAN` at the top of `build90.js`; the layouts are in `trailer90.html`.
+
+## Captions after launch (17 Oct 2026, the game is on itch.io)
+
+**YouTube title:** `Doodle Doggo – Overview Trailer | Free cozy crayon dog game (play on itch.io)`
+
+**YouTube description**
+```
+Welcome to Doodle Doggo: a little town drawn in pencil, where every dog drew themselves.
+
+Adopt one of 14 wobbly crayon dogs, care for them, play fetch with the whole pack, take walks, visit the Mt. Fuji Lookout, grow a garden, cook dog-safe treats, plan puppy playdates with real coat genetics, and snap postcards of your best friends. Nothing bad ever happens here.
+
+▶ Play free on itch.io (phone or computer, no download): https://an9ou.itch.io/doodle-doggo
+📷 Instagram: @doodledoggo.app
+
+0:00 Welcome
+0:08 Meet the dogs
+0:30 Your day together
+0:58 How to play
+1:19 Play free
+```
