@@ -23,7 +23,7 @@ run('phone_v211_cards', async (t) => {
   }
   const visPt = (i) => ev((i) => {
     const el = document.querySelector(`#dcVis [data-dcv="${i}"] .dc-hit`); if (!el) return null; const r = el.getBoundingClientRect();
-    for (let fy = 0.5; fy < 0.95; fy += 0.1) for (const fx of [0.5, 0.4, 0.6, 0.3, 0.7]) { const x = r.left + r.width * fx, y = r.top + r.height * fy, e = document.elementFromPoint(x, y); if (e && e.closest(`[data-dcv="${i}"]`)) return { x, y }; }
+    for (const fy of [0.5, 0.6, 0.7, 0.8, 0.9, 0.4, 0.3, 0.2, 0.1]) for (const fx of [0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8, 0.1, 0.9]) { const x = r.left + r.width * fx, y = r.top + r.height * fy, e = document.elementFromPoint(x, y); if (e && e.closest(`[data-dcv="${i}"]`)) return { x, y }; }
     return null;
   }, i);
   const inCrop = () => ev(() => { const vb = document.querySelector('#view > svg.world').viewBox.baseVal; return window.__paw.dc.visitors().filter((v) => !v.hidden).every((v) => v.tap[0] >= vb.x && v.tap[0] + v.tap[2] <= vb.x + vb.width); });
@@ -46,8 +46,11 @@ run('phone_v211_cards', async (t) => {
     ok(await inCrop(), 'every visitor stands inside the home crop');
     ok(!(await tapsClear()).length, 'a tap on the player\'s dog or a spot never lands on a visitor');
     ok(await ev(() => { const s = document.querySelector('#dcVis .dc-hit').getBoundingClientRect(); return s.width >= 44 && s.height >= 44; }), 'a visitor\'s tap rect is 44 px or more');
+    const tagPx = await ev(() => Math.min(...[...document.querySelectorAll('#dcVis .dc-tag text')].map((e) => { const M = e.getScreenCTM(); return +e.getAttribute('font-size') * Math.hypot(M.a, M.b); })));
+    ok(tagPx >= 13, `the visitor tag is 13 px or more (PHONE.md captions): ${tagPx.toFixed(1)} px`);
     await t.SH(`dogpark_${tag}`);
-    const pt = await visPt(0); ok(!!pt, 'a visitor is on top somewhere in its tap rect');
+    let pt = null; for (let i = 0; i < V.length && !pt; i++) pt = await visPt(i); // the visible part of a visitor (one may stand partly behind a player dog)
+    ok(!!pt, 'a visitor is on top somewhere in its tap rect');
     await t.p.touchscreen.tap(pt.x, pt.y); await t.waitH2(/\w+ \w+/);
     ok(await ev(() => !!document.querySelector('#modal .panel.dcpop #dcPaw')), 'a tap opens its card');
     await t.sleep(500); await t.SH(`card_${tag}`);
@@ -68,8 +71,9 @@ run('phone_v211_cards', async (t) => {
   await p.locator('[data-cl=reg]').tap(); await p.waitForSelector('#clPw2');
   await p.fill('#clEmail', 'phonecard@example.com'); await p.fill('#clPw', 'pupper123'); await p.fill('#clPw2', 'pupper123'); await p.locator('[data-cl=doReg]').tap();
   ok(await t.until(() => !!document.querySelector('#dcBox [data-dcs="open"]'), null, 8000), 'the account gets the Dog Card button');
+  await ev(() => window.__paw.dc.sync()); // the first sync after the log in has run (it may redraw the block)
   await phoneCheck('account Dog Card block', '#dcBox');
-  await p.locator('#dcBox [data-dcs="open"]').scrollIntoViewIfNeeded(); await p.locator('#dcBox [data-dcs="open"]').tap(); await t.waitH2(/My Dog Card/);
+  await p.locator('#dcBox [data-dcs="open"]').tap(); await t.waitH2(/My Dog Card/);
   await p.locator('#dcOn').tap(); await t.sleep(400); await t.SH('settings_editor_Pixel_7');
   await phoneCheck('Dog Card editor', '#modal .panel');
   await p.locator('#dcSave').tap(); ok(await t.until(() => /Your Dog Card is shared/.test(document.getElementById('dcMsg').textContent), null, 8000), 'Save shares the card');

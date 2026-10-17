@@ -17,7 +17,7 @@ const DC_PET_NAMES = ['Mochi', 'Noodle', 'Biscuit', 'Bella', 'Luna', 'Max', 'Cha
   'Molly', 'Toby', 'Ruby', 'Oscar', 'Penny', 'Maple', 'Ginger', 'Pepper', 'Hazel', 'Olive', 'Winston', 'Leo', 'Ollie', 'Finn', 'Gus', 'Murphy', 'Rex', 'Rusty', 'Scout', 'Ziggy',
   'Lola', 'Nala', 'Stella', 'Zoe', 'Willow', 'Honey', 'Peanut', 'Waffles', 'Pancake', 'Muffin', 'Cookie', 'Tofu', 'Kuma', 'Hana', 'Sora', 'Yuki', 'Momo', 'Kiki', 'Taro', 'Pip',
   'Bean', 'Button', 'Sunny', 'Lucky', 'Bingo', 'Rufus', 'Benji', 'Archie', 'Frankie', 'Louie', 'Marley', 'Maggie', 'Poppy', 'Sasha', 'Tilly', 'Sammy', 'Bruno', 'Otis', 'Juno', 'Chip'];
-const DC_BREED_WORDS = ['Shiba', 'Corgi', 'Golden', 'Dachshund', 'Husky', 'Mutt', 'Chihuahua', 'Pug', 'Greyhound', 'Beagle', 'Poodle', 'Collie', 'Samoyed', 'Frenchie', 'Akita', 'Spitz', 'Pom'];
+const DC_BREED_WORDS = ['Shiba', 'Corgi', 'Golden', 'Dachshund', 'Husky', 'Mutt', 'Chihuahua', 'Pug', 'Greyhound', 'Beagle', 'Poodle', 'Collie', 'Samoyed', 'Frenchie', 'Akita', 'Spitz', 'Pom', 'Afghan', 'Dane', 'Mastiff', 'Shepherd'];
 const DC_DOG_NAMES = DC_PET_NAMES.concat(DC_BREED_WORDS);
 // every wearable a card can show (one per dog): the shop clothes, the treasure wearables, the v2.11 Tokyo bandanas
 const DC_OUTFITS = ['Red Bandana', 'Party Hat', 'Bow Tie', 'Flower Crown', 'Heart Sunglasses', 'Yellow Raincoat', 'Polka-dot Raincoat', 'Frog Raincoat', 'Bubble Raincoat', 'Rain Hat',
@@ -46,18 +46,19 @@ const DC_FAKE = [
 ];
 
 /* ---------------- mode and helpers ---------------- */
-const DC = { place: '', cards: null, vis: [], raf: 0, last: 0, chk: 0, uid: null, mine: null, syncAt: 0, syncP: null, seq: 0, fetchP: null, pick: null };
+const DC = { place: '', cards: null, vis: [], pos: {}, tagFs: 19, raf: 0, last: 0, chk: 0, uid: null, mine: null, syncAt: 0, syncP: null, seq: 0, fetchP: null, pick: null };
 function dcMode() {
   if (CL.why === 'artifact' || (navigator.webdriver && !window.__pawCloudMock)) return 'fake';
   return CL.on && CL.uid && clTok() ? 'on' : 'off';
 }
 const dcAcct = () => dcMode() === 'on' && !CL.anon && !!CL.email; // only email accounts share a card
+const dcOptIn = () => !!S && S.dc.on && !!CL.uid && S.dc.uid === CL.uid; // switched on by this account (a save that stays on a device after a log out never shares for the next account)
 const dcBreeds = () => { const G = PGN(); return (G && G.BREEDS) || []; };
-const dcDay = () => localISO();
+const dcDay = () => jstISO(); // one day for the paws on both sides: the Worker counts them by the Japan day too (dcDay in worker.js)
 const dcCardName = (c) => `${DC_WORDS_A[c.name[0]]} ${DC_WORDS_B[c.name[1]]}`;
 const dcGiven = (c) => S && S.dc.given[c.id] === dcDay();
 const dcPawsOf = (c) => (c.paws | 0) + (c.fake && dcGiven(c) ? 1 : 0); // a paw to a town player stays in this save
-function dcPrune() { const y = localISO(new Date(Date.now() - 864e5)); Object.keys(S.dc.given).forEach((k) => { if (!(S.dc.given[k] >= y)) delete S.dc.given[k]; }); }
+function dcPrune() { const y = new Date(Date.now() + 9 * 3600e3 - 864e5).toISOString().slice(0, 10); Object.keys(S.dc.given).forEach((k) => { if (!(S.dc.given[k] >= y)) delete S.dc.given[k]; }); }
 // a card dog -> a dog object the game's art draws (null when this copy of the game does not know its breed yet)
 function dcDog(c, i) {
   const x = c.dogs[i], key = dcBreeds()[x.b]; if (!key) return null;
@@ -115,7 +116,7 @@ function dcCard(c) {
   const given = dcGiven(c);
   const p = openModal(esc(dcCardName(c)), dcCardBody(c, 'A Dog Card from another player. Their dogs are visiting today.'), { cls: 'dcpop', foot: `<button class="btn" id="dcHide">Hide this card</button><button class="btn yes big" id="dcPaw" ${given ? 'aria-disabled="true"' : ''}>${given ? 'Paw given today' : 'Give a paw'}</button>` });
   p.dataset.dcCard = c.id;
-  $('#dcPaw', p).onclick = () => dcGive(c, p);
+  $('#dcPaw', p).onclick = () => { if ($('#dcPaw', p).getAttribute('aria-disabled') === 'true' && !dcGiven(c)) return; dcGive(c, p); }; // a paw on its way: a second tap waits
   $('#dcHide', p).onclick = async () => {
     SFX.click();
     const ok = await confirmIn(p, 'Hide this card? Its dogs will not visit you again.', 'Hide it', 'Keep it'); if (!ok) return;
@@ -133,6 +134,11 @@ async function dcGive(c, p) {
     let r = null; try { r = await dcApi('POST', '/paw', { id: c.id }); } catch (e) { r = null; }
     if (!r || !r.ok || !r.data) { if (btn) btn.removeAttribute('aria-disabled'); nope(r && r.status === 404 ? 'That card is not shared any more.' : 'Paws need the cloud. Try again in a moment.'); return false; }
     c.paws = r.data.paws | 0;
+    if (r.data.given === false) { // the Worker already has a paw from this account today (another device, or a race)
+      S.dc.given[c.id] = dcDay(); dcPrune(); markDirty();
+      if (p && p.dataset.dcCard === c.id) { if (btn) btn.textContent = 'Paw given today'; const pw = $('.dc-pawn', p); if (pw) pw.innerHTML = dcPawWord(dcPawsOf(c)); }
+      toast(`${dcCardName(c)} already got your paw today. Come back tomorrow.`, 'good'); return false;
+    }
   }
   S.dc.given[c.id] = dcDay(); dcPrune(); markDirty(); trackAct('paw', { id: c.id });
   SFX.boop(860);
@@ -158,6 +164,7 @@ async function dcPickCards() {
 }
 
 /* ---------------- visitors: placing and roaming (inside rmZone, at rmScale, held by the roam holds) ---------------- */
+const dcTapHeld = () => (typeof blOn === 'function' && blOn()) || (typeof phActive === 'function' && phActive()) || !!TRN; // ball play, photo mode, training own the taps
 const dcHeld = () => !rmOn() || !modal.hidden || (typeof blOn === 'function' && blOn()) || (typeof phActive === 'function' && phActive()) || !!TRN;
 function dcCrop() { if (!isPhone()) return [0, 1000]; const w = rmCropW(), c = phCamHome; return [c - w / 2, c + w / 2]; } // phones: the home crop
 // the box a spot must stay clear of: every tappable thing (rmScan's boxes; feet only for big scenery), every player dog's tap rect where it is and
@@ -184,10 +191,23 @@ function dcSpots(v, near) {
   for (let y = z.y0; y <= z.y1; y += 14) for (let x = z.x0; x <= z.x1; x += 20) if ((!near || (Math.abs(x - near[0]) < 150 && Math.abs(y - near[1]) < 60)) && dcOk(v, x, y)) out.push([x, y]);
   return out;
 }
-function dcLineOk(x0, y0, x1, y1) { const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 16)); for (let i = 1; i <= n; i++) { const t = i / n; if (rmHard(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t)) return false; } return true; }
+// a walk: the feet never cross a no-go box, and (taps: true) the tap rect never passes over a tappable spot on the way, so a visitor walking
+// under a sign never takes its tap
+function dcLineOk(x0, y0, x1, y1, taps) {
+  const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 16)), hots = taps ? rmBoxes().filter((b) => b[4] !== 'scene') : [];
+  for (let i = 1; i <= n; i++) { const t = i / n, x = x0 + (x1 - x0) * t, y = y0 + (y1 - y0) * t; if (rmHard(x, y)) return false; if (hots.length) { const T = rmTapBox(x, y, rmScale(y)); if (hots.some((b) => rmOver(T, b) > 0)) return false; } }
+  return true;
+}
+// the "visitor" tag's font size in world units: 19, and on phones big enough for 13 px (PHONE.md's caption minimum) at the smallest depth scale
+function dcTagFs() {
+  if (!isPhone()) return 19;
+  const svg = $('#view > svg.world'), M = svg && svg.getScreenCTM(), px = M ? Math.hypot(M.a, M.b) : 1;
+  return Math.max(19, 13.6 / (rmScale(rmZoneOf(S.place).y0) * px));
+}
 function dcVisSVG(v, i) {
   const d = v.dog, pose = v.tw ? 'walk' : v.pose; v.drawn = pose + '|' + v.face;
-  const tag = `<g class="dc-tag" pointer-events="none" transform="translate(430 512)"><rect x="-44" y="-2" width="88" height="25" rx="8" fill="#FFF3DA" stroke="#5B3D32" stroke-width="2"/><text y="17" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="19" fill="#5B3D32">visitor</text></g>`;
+  const fs = DC.tagFs || 19, w = 88 * fs / 19, h = 25 * fs / 19;
+  const tag = `<g class="dc-tag" pointer-events="none" transform="translate(430 512)"><rect x="${f1(-w / 2)}" y="-2" width="${f1(w)}" height="${f1(h)}" rx="8" fill="#FFF3DA" stroke="#5B3D32" stroke-width="2"/><text y="${f1(h * 0.68)}" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="${f1(fs)}" fill="#5B3D32">visitor</text></g>`;
   return `<g class="dcvis" data-dcv="${i}" data-card="${esc(v.card.id)}" tabindex="0" role="button" aria-label="${esc(d.name)}, visiting with ${esc(dcCardName(v.card))}. Tap for the Dog Card."${v.hidden ? ' style="display:none"' : ''}><g class="dc-at" transform="${dcXf(v)}"><rect class="dc-hit" x="${DX + 44}" y="${DY + 35}" width="${DW - 88}" height="180" fill="transparent"/><g class="dc-art">${place(dogSVG(d, { pose, outfit: d.outfit, facing: v.face }), DX, DY, DW, DH)}</g>${tag}</g></g>`;
 }
 const dcXf = (v) => `translate(${f1(v.x)} ${f1(v.y)}) scale(${v.k.toFixed(3)}) translate(-430 -500)`;
@@ -202,7 +222,7 @@ function dcOrder() { const g = $('#dcVis'); if (!g) return; const els = DC.vis.m
 // draw the picked cards' dogs in the scene: up to 2 cards, at most 3 dogs, each on a free spot
 function dcDraw(cards) {
   const svg = $('#view > svg.world'), pack = svg && $('#pack', svg); if (!pack || !S || !DC_PLACES.includes(S.place)) return;
-  dcClear(); rmScan();
+  dcClear(); rmScan(); DC.tagFs = dcTagFs();
   const per = cards.length > 1 ? [Math.min(2, cards[0].dogs.length), DC_VIS_DOGS] : [DC_VIS_DOGS];
   cards.forEach((c, ci) => {
     let n = 0;
@@ -210,24 +230,27 @@ function dcDraw(cards) {
       if (DC.vis.length >= DC_VIS_DOGS || n >= per[ci] || (ci === 0 && cards.length > 1 && DC.vis.length >= DC_VIS_DOGS - 1)) return;
       const dog = dcDog(c, i); if (!dog) return;
       const v = { card: c, i, dog, x: 0, y: 0, k: 1, face: Math.random() < 0.5 ? 'left' : 'right', pose: PICK(['idle', 'sit', 'happy']), tw: null, wait: 0, home: null, hidden: false, drawn: '' };
-      const sp = dcSpots(v); if (!sp.length) return;
-      const at = PICK(sp); v.x = at[0]; v.y = at[1]; v.k = rmScale(v.y); v.home = at.slice(); v.wait = performance.now() + RINT(1500, 5000);
+      const was = DC.pos[c.id + ':' + i]; // back in the same place (the scene was rebuilt): where it stood, if that spot is still free
+      if (was && dcOk(v, was.x, was.y)) { v.x = was.x; v.y = was.y; v.face = was.face; v.home = was.home; }
+      else { const sp = dcSpots(v); if (!sp.length) return; const at = PICK(sp); v.x = at[0]; v.y = at[1]; v.home = at.slice(); }
+      v.k = rmScale(v.y); v.wait = performance.now() + RINT(1500, 5000);
       DC.vis.push(v); n++;
     });
   });
   if (!DC.vis.length) return;
   pack.insertAdjacentHTML('beforebegin', `<g id="dcVis">${DC.vis.map((v, i) => dcVisSVG(v, i)).join('')}</g>`);
   document.querySelectorAll('#dcVis .dcvis').forEach((el) => {
-    const open = (e) => { if (e) e.stopPropagation(); const v = DC.vis[+el.dataset.dcv]; if (v && !(typeof blOn === 'function' && blOn())) dcCard(v.card); };
+    const open = (e) => { if (e) e.stopPropagation(); const v = DC.vis[+el.dataset.dcv]; if (v && !dcTapHeld()) dcCard(v.card); };
     el.addEventListener('click', open); el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(e); } });
   });
   dcOrder(); dcLoop();
 }
-function dcClear() { cancelAnimationFrame(DC.raf); DC.raf = 0; DC.vis = []; const g = $('#dcVis'); if (g) g.remove(); }
+function dcClear() { dcKeep(); cancelAnimationFrame(DC.raf); DC.raf = 0; DC.vis = []; const g = $('#dcVis'); if (g) g.remove(); }
+function dcKeep() { DC.vis.forEach((v) => { const w = v.tw; DC.pos[v.card.id + ':' + v.i] = { x: w ? w.x1 : v.x, y: w ? w.y1 : v.y, face: v.face, home: v.home }; }); }
 function dcDrop(cardId) { const keep = DC.vis.filter((v) => v.card.id !== cardId); if (keep.length === DC.vis.length) return; const cards = []; keep.forEach((v) => { if (!cards.includes(v.card)) cards.push(v.card); }); const pos = keep.map((v) => [v.x, v.y, v.face]); dcDraw(cards); DC.vis.forEach((v, i) => { if (pos[i]) { v.x = pos[i][0]; v.y = pos[i][1]; v.k = rmScale(v.y); v.face = pos[i][2]; dcPaint(v); } }); }
 // one leg of a visitor's small loop: a free spot near its home, straight there at a walk
 function dcNext(v, now) {
-  const sp = dcSpots(v, v.home).filter((p) => Math.hypot(p[0] - v.x, p[1] - v.y) > 50 && dcLineOk(v.x, v.y, p[0], p[1]));
+  const sp = dcSpots(v, v.home).filter((p) => Math.hypot(p[0] - v.x, p[1] - v.y) > 50 && dcLineOk(v.x, v.y, p[0], p[1], true));
   if (!sp.length) { v.wait = now + RINT(2000, 4000); return; }
   const p = PICK(sp), dist = Math.hypot(p[0] - v.x, p[1] - v.y);
   v.tw = { x0: v.x, y0: v.y, x1: p[0], y1: p[1], k0: v.k, t0: now, dur: (dist / RM_WALK) * 1000 }; v.face = p[0] < v.x ? 'left' : 'right'; dcPaint(v);
@@ -236,7 +259,7 @@ function dcNext(v, now) {
 function dcClearOf(v, now) {
   if (v.tw) return; const ok = dcOk(v, v.x, v.y); if (ok && !v.hidden) return;
   if (ok) { v.hidden = false; dcPaint(v); return; }
-  const sp = dcSpots(v).filter((p) => dcLineOk(v.x, v.y, p[0], p[1])); sp.sort((a, b) => Math.hypot(a[0] - v.x, a[1] - v.y) - Math.hypot(b[0] - v.x, b[1] - v.y));
+  const all = dcSpots(v), clear = all.filter((p) => dcLineOk(v.x, v.y, p[0], p[1], true)), sp = clear.length ? clear : all.filter((p) => dcLineOk(v.x, v.y, p[0], p[1])); sp.sort((a, b) => Math.hypot(a[0] - v.x, a[1] - v.y) - Math.hypot(b[0] - v.x, b[1] - v.y));
   if (sp.length && !v.hidden) { const p = sp[0]; v.tw = { x0: v.x, y0: v.y, x1: p[0], y1: p[1], k0: v.k, t0: now, dur: Math.max(200, (Math.hypot(p[0] - v.x, p[1] - v.y) / RM_RUN) * 1000) }; v.face = p[0] < v.x ? 'left' : 'right'; dcPaint(v); return; }
   if (sp.length) { v.x = sp[0][0]; v.y = sp[0][1]; v.k = rmScale(v.y); v.hidden = false; dcPaint(v); return; }
   if (!v.hidden) { v.hidden = true; dcPaint(v); }
@@ -263,11 +286,11 @@ async function dcVisit(place) {
   place = place || (S && S.place); DC.vis = [];
   if (!S || cur.mode !== 'yard' || !DC_PLACES.includes(place)) { DC.place = ''; DC.cards = null; return []; }
   const seq = ++DC.seq;
-  if (DC.place !== place || !DC.cards) { DC.place = place; DC.cards = null; DC.cards = await dcPickCards(); }
+  if (DC.place !== place || !DC.cards) { DC.place = place; DC.cards = null; DC.pos = {}; DC.cards = await dcPickCards(); }
   if (seq !== DC.seq || cur.mode !== 'yard' || S.place !== place) return [];
   dcDraw(DC.cards); return DC.vis;
 }
-on('yard:enter', (e) => { if (!S) return; if (!DC_PLACES.includes(S.place)) { DC.place = ''; DC.cards = null; return; } onCleanup(() => { ++DC.seq; dcClear(); }); dcVisit(S.place); });
+on('yard:enter', (e) => { if (!S) return; if (!DC_PLACES.includes(S.place)) { DC.place = ''; DC.cards = null; DC.pos = {}; return; } onCleanup(() => { ++DC.seq; dcClear(); }); dcVisit(S.place); });
 
 /* ---------------- my card: settings in the account panel ---------------- */
 // the Settings hook (22b_cloud.js clSection / clRender): a short status and the Dog Card button
@@ -275,11 +298,12 @@ function dcSection() { return `<h4 class="clh">Dog Card</h4><div id="dcBox">${dc
 function dcBoxHTML() {
   if (CL.why === 'artifact') return '<p class="small">Dog Cards work on the web version, with an email account.</p>';
   if (!dcAcct()) return '<p class="small">Log in with email to share a Dog Card.</p>';
-  const on = S && S.dc.on && DC.mine;
-  return `<p class="small" id="dcStat">${on ? `Your Dog Card is shared. ${DC.mine.paws | 0} ${(DC.mine.paws | 0) === 1 ? 'paw' : 'paws'} so far.` : S && S.dc.on ? 'Your Dog Card is shared.' : 'Your Dog Card is not shared. Other players see only cards that are switched on.'}</p><div class="clrow"><button class="btn" data-dcs="open">Dog Card</button></div>`;
+  const on = dcOptIn(), n = DC.mine ? DC.mine.paws | 0 : 0;
+  const line = !on ? 'Your Dog Card is not shared. Other players see only cards that are switched on.' : !dcPayload().dogs.length ? 'Your Dog Card has no dogs now, so it is not shared. Pick dogs to share it again.' : DC.mine ? `Your Dog Card is shared. ${n} ${n === 1 ? 'paw' : 'paws'} so far.` : 'Your Dog Card is shared.';
+  return `<p class="small" id="dcStat">${line}</p><div class="clrow"><button class="btn" data-dcs="open">Dog Card</button></div>`;
 }
 function dcRender() {
-  const b = document.getElementById('dcBox'); if (b) b.innerHTML = dcBoxHTML();
+  const b = document.getElementById('dcBox'); if (b) { const h = dcBoxHTML(); if (b.dataset.h !== h) { b.dataset.h = h; b.innerHTML = h; } } // only when it changed: a tap on the button never meets a fresh copy of it
   const uid = dcMode() === 'on' && !CL.anon ? CL.uid : null; if (uid !== DC.uid) { DC.uid = uid; DC.mine = null; if (uid) dcSyncSoon(1500); }
 }
 modal.addEventListener('click', (e) => { const b = e.target.closest('[data-dcs="open"]'); if (!b) return; SFX.click(); dcSettings(); });
@@ -287,7 +311,7 @@ const dcSel = (id, list, val, label) => `<label class="dc-sel" for="${id}"><span
 function dcSettings(force) {
   if (!S) return null;
   if (!dcAcct() && !force) { openModal('Dog Card', `<p>${CL.why === 'artifact' ? 'Dog Cards work on the web version, with an email account.' : 'Log in with email to share a Dog Card.'}</p>`, { foot: '<button class="btn yes" id="dcBack">OK</button>' }); $('#dcBack').onclick = () => { SFX.click(); closeModal(); }; return null; }
-  const ed = { on: !!S.dc.on, name: Array.isArray(S.dc.name) ? S.dc.name.slice() : [RINT(0, DC_WORDS_A.length - 1), RINT(0, DC_WORDS_B.length - 1)], dogs: S.dc.dogs.filter((x) => dcCanShow(dogById(x.id))).map((x) => ({ id: x.id, nm: x.nm })) };
+  const ed = { on: dcOptIn(), name: Array.isArray(S.dc.name) ? S.dc.name.slice() : [RINT(0, DC_WORDS_A.length - 1), RINT(0, DC_WORDS_B.length - 1)], dogs: S.dc.dogs.filter((x) => dcCanShow(dogById(x.id))).map((x) => ({ id: x.id, nm: x.nm })) };
   if (!ed.dogs.length) ed.dogs = S.dogs.filter(dcCanShow).slice(0, DC_MAX_DOGS).map((d) => ({ id: d.id, nm: dcDefaultNm(d) }));
   const rows = S.dogs.filter(dcCanShow).map((d) => {
     const own = dcOwnNameIdx(d), sel = ed.dogs.find((x) => x.id === d.id), nm = sel && typeof sel.nm === 'number' ? sel.nm : dcDefaultNm(d);
@@ -309,7 +333,7 @@ function dcSettings(force) {
     const t = e.target;
     if (t.matches('[data-dcdog]') && t.checked && p.querySelectorAll('[data-dcdog]:checked').length > DC_MAX_DOGS) { t.checked = false; nope(`A Dog Card fits ${DC_MAX_DOGS} dogs.`); }
     if (t.id === 'dcOn' && !t.checked && S.dc.on) { // turning it off deletes the card at once
-      S.dc.on = false; markDirty(); saveNow(); msg('Deleting your Dog Card...');
+      S.dc.on = false; S.dc.uid = null; markDirty(); saveNow(); msg('Deleting your Dog Card...');
       const ok = await dcUnshare(); msg(ok ? 'Your Dog Card is not shared any more. It was deleted.' : 'Your Dog Card is off. It will be deleted when the cloud is back.'); dcRender(); return;
     }
     prev();
@@ -319,7 +343,7 @@ function dcSettings(force) {
   $('#dcSave', p).onclick = async () => {
     read(); const on = $('#dcOn', p).checked;
     if (on && !ed.dogs.length) { msg('Pick at least one dog for your card.'); return; }
-    S.dc.name = ed.name.slice(); S.dc.dogs = ed.dogs.map((x) => ({ id: x.id, nm: x.nm })); S.dc.on = on; markDirty(); saveNow();
+    S.dc.name = ed.name.slice(); S.dc.dogs = ed.dogs.map((x) => ({ id: x.id, nm: x.nm })); S.dc.on = on; S.dc.uid = on ? CL.uid : null; markDirty(); saveNow();
     if (!on) { await dcUnshare(); msg('Saved. Your Dog Card is not shared.'); dcRender(); return; }
     const b = $('#dcSave', p); b.disabled = true; msg('Sharing your Dog Card...');
     const r = await dcPublish(); b.disabled = false;
@@ -331,6 +355,7 @@ function dcSettings(force) {
 /* ---------------- my card: the Worker ---------------- */
 async function dcPublish() {
   if (!dcAcct()) return { ok: false, msg: 'Log in with email to share a Dog Card.' };
+  if (!dcOptIn()) return { ok: false, msg: 'Switch on Share my Dog Card first.' };
   const pl = dcPayload(); if (!pl.dogs.length) return { ok: false, msg: 'Pick at least one dog for your card.' };
   let r = null; try { r = await dcApi('PUT', '/card', pl); } catch (e) { r = null; }
   if (!r) return { ok: false, msg: 'Cloud save is offline. Try again in a moment.' };
@@ -348,10 +373,12 @@ async function dcSync() {
     let r = null; try { r = await dcApi('GET', '/card'); } catch (e) { return null; }
     if (!r.ok) return null;
     let mine = r.data || null;
-    if (S.dc.on) {
+    if (dcOptIn()) {
       const pl = dcPayload();
-      if (pl.dogs.length && (!mine || !dcSame(pl, mine) || Date.now() - (mine.at || 0) > 7 * 864e5)) { const p = await dcPublish(); if (p.ok) mine = DC.mine; } // keeps the card fresh (visitors are cards updated in the last 30 days)
-    } else if (mine) { await dcUnshare(); mine = null; } // switched off on this save: never left online
+      if (!pl.dogs.length) { if (mine) { await dcUnshare(); mine = null; } } // every dog on the card has left (adopted out): the card goes
+      else if (!mine || !dcSame(pl, mine) || Date.now() - (mine.at || 0) > 7 * 864e5) { const p = await dcPublish(); if (p.ok) mine = DC.mine; } // keeps the card fresh (visitors are cards updated in the last 30 days)
+    } else if (S.dc.on) { DC.mine = mine; dcRender(); return mine; } // switched on by another account on this device: this account's card is left as it is, and never published from here
+    else if (mine) { await dcUnshare(); mine = null; } // switched off on this save: never left online
     DC.mine = mine;
     if (mine) {
       const n = mine.paws | 0, add = n - (S.dc.got | 0);

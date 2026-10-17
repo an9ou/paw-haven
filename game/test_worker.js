@@ -210,7 +210,7 @@ async function checks(label, call, sql, mail) {
     const cb = (await call('POST', '/register', { email: 'cards-b@example.com', password: 'cardspass2' }, null, ipC(1))).json;
     const cg = (await call('POST', '/guest', {}, null, ipC(2))).json;
     const dog = (o) => Object.assign({ b: 0, c: { B: ['B', 'b'], D: ['D', 'd'], E: ['e', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'] }, o: 0, a: 'adult', s: 'f', sp: 0, n: 0 }, o || {});
-    const card = (o) => Object.assign({ name: [3, 7], dogs: [dog(), dog({ b: 16, o: -1, a: 'pup', s: 'm', sp: 1, n: 96, c: null })] }, o || {});
+    const card = (o) => Object.assign({ name: [3, 7], dogs: [dog(), dog({ b: 20, o: -1, a: 'pup', s: 'm', sp: 1, n: 100, c: null })] }, o || {});
     ok((await call('PUT', '/card', card())).status === 401, 'PUT /card needs a session');
     r = await call('PUT', '/card', card(), cg.token); ok(r.status === 403 && r.json.error === 'no_account', 'a guest cannot publish a card (403 no_account)');
     ok(!(await sql('select * from cards where user_id = ?', cg.user.id)), 'and nothing is stored for the guest');
@@ -218,23 +218,24 @@ async function checks(label, call, sql, mail) {
       ['an extra field', card({ note: 'hi' })], ['a name as text', card({ name: ['Sunny', 'Biscuit'] })], ['a name index as a string', card({ name: ['3', 7] })],
       ['a name word past the list', card({ name: [40, 0] })], ['a negative index', card({ name: [-1, 0] })], ['a fraction', card({ name: [1.5, 0] })], ['one name word', card({ name: [1] })],
       ['no dogs', card({ dogs: [] })], ['5 dogs', card({ dogs: [dog(), dog(), dog(), dog(), dog()] })], ['dogs as an object', card({ dogs: { 0: dog() } })],
-      ['a dog name as text', card({ dogs: [dog({ n: 'Mochi' })] })], ['a dog name index past the list', card({ dogs: [dog({ n: 97 })] })],
-      ['a breed past the list', card({ dogs: [dog({ b: 17 })] })], ['a breed as text', card({ dogs: [dog({ b: 'shiba' })] })],
+      ['a dog name as text', card({ dogs: [dog({ n: 'Mochi' })] })], ['a dog name index past the list', card({ dogs: [dog({ n: 101 })] })],
+      ['a breed past the list', card({ dogs: [dog({ b: 21 })] })], ['a breed as text', card({ dogs: [dog({ b: 'shiba' })] })],
       ['an outfit past the list', card({ dogs: [dog({ o: 47 })] })], ['an outfit as text', card({ dogs: [dog({ o: 'Red Bandana' })] })], ['an outfit under -1', card({ dogs: [dog({ o: -2 })] })],
       ['an age that is not pup or adult', card({ dogs: [dog({ a: 'old' })] })], ['a sex that is not m or f', card({ dogs: [dog({ s: 'x' })] })], ['sparkle 2', card({ dogs: [dog({ sp: 2 })] })],
       ['a dog with an extra key', card({ dogs: [Object.assign(dog(), { name: 'Mochi' })] })], ['a dog missing a key', card({ dogs: [(() => { const d = dog(); delete d.sp; return d; })()] })],
       ['a coat allele not in the set', card({ dogs: [dog({ c: { B: ['B', 'x'] } })] })], ['a coat word', card({ dogs: [dog({ c: 'red' })] })], ['a coat with an unknown locus', card({ dogs: [dog({ c: { K: ['K', 'k'] } })] })],
       ['a coat locus with 3 alleles', card({ dogs: [dog({ c: { B: ['B', 'b', 'b'] } })] })], ['a double merle', card({ dogs: [dog({ c: { M: ['M', 'M'] } })] })], ['an empty coat', card({ dogs: [dog({ c: {} })] })],
+      ['a coat locus named constructor', card({ dogs: [dog({ c: { constructor: ['B', 'b'] } })] })], ['a coat with __proto__', card({ dogs: [dog({ c: JSON.parse('{"__proto__":["B","b"]}') })] })],
       ['a coat colour that is not #rrggbb', card({ dogs: [dog({ c: '#12345g' })] })], ['an oversized card', card({ dogs: [dog({ c: '#' + 'a'.repeat(3000) })] })], ['an array body', [card()]]
     ];
     const bad = [];
     for (const [label, b] of junk) { const x = await call('PUT', '/card', b, ca.token); if (!(x.status === 400 && x.json && (x.json.error === 'bad_card' || x.json.error === 'bad_json'))) bad.push(label + ' ' + x.status); }
     ok(!bad.length, `every junk card is refused with 400 bad_card (${junk.length} kinds) ${bad.join(', ')}`);
     ok(!(await sql('select * from cards where user_id = ?', ca.user.id)), 'no junk card was stored');
-    r = await call('PUT', '/card', card({ dogs: [dog(), dog({ b: 16, o: -1, a: 'pup', s: 'm', sp: 1, n: 96, c: null }), dog({ c: '#AABBCC' })] }), ca.token);
+    r = await call('PUT', '/card', card({ dogs: [dog(), dog({ b: 20, o: -1, a: 'pup', s: 'm', sp: 1, n: 100, c: null }), dog({ c: '#AABBCC' })] }), ca.token);
     const mine = r.json;
     ok(r.status === 200 && /^[A-Za-z0-9_-]{22}$/.test(mine.id) && mine.name.join() === '3,7' && mine.dogs.length === 3 && mine.paws === 0, 'an email account publishes a card: a random card id, the name, the dogs, 0 paws');
-    ok(mine.dogs[1].c === null && mine.dogs[2].c === '#aabbcc' && JSON.stringify(mine.dogs[0]) === JSON.stringify(dog()), 'the dogs come back in the Worker\'s own shape (coat alleles, null or #rrggbb)');
+    ok(mine.dogs[1].c === null && mine.dogs[2].c === '#aabbcc' && JSON.stringify(mine.dogs[0]) === JSON.stringify(dog()) && mine.dogs[1].b === 20 && mine.dogs[1].n === 100, 'the dogs come back in the Worker\'s own shape (coat alleles, null or #rrggbb)');
     ok(mine.id !== ca.user.id && !r.text.includes(ca.user.id) && !r.text.includes('cards-a'), 'the card id is not the user id, and neither the user id nor the email is in the answer');
     const row = await sql('select * from cards where user_id = ?', ca.user.id);
     ok(row && !/[a-z]{3,}@/.test(row.dogs) && JSON.parse(row.dogs).every((d) => Object.keys(d).join() === 'b,c,o,a,s,sp,n'), 'D1 keeps only the checked fields');
@@ -260,16 +261,22 @@ async function checks(label, call, sql, mail) {
     ok(codesV[0] === 200 && codesV[119] === 200 && codesV[120] === 429, 'visits are rate-limited per IP (120 an hour)');
     // paws
     ok((await call('POST', '/paw', { id: mine.id })).status === 401, 'POST /paw needs a session');
-    r = await call('POST', '/paw', { id: mine.id }, cg.token); ok(r.status === 200 && r.json.paws === 1 && r.json.given === true, 'a guest gives a paw');
-    r = await call('POST', '/paw', { id: mine.id }, cg.token); ok(r.status === 200 && r.json.paws === 1 && r.json.given === false, 'a second paw the same day counts nothing');
-    r = await call('POST', '/paw', { id: mine.id }, cb.token); ok(r.json.paws === 2 && r.json.given, 'another account gives one more');
-    r = await call('POST', '/paw', { id: mine.id }, ca.token); ok(r.status === 400 && r.json.error === 'own_card', 'never a paw to your own card');
+    r = await call('POST', '/paw', { id: mine.id }, cg.token, ipC(20)); ok(r.status === 200 && r.json.paws === 1 && r.json.given === true, 'a guest gives a paw');
+    const jst = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+    ok((await sql('select day from paws where from_id = ? and card_id = ?', cg.user.id, mine.id)).day === jst, 'the paw counts on the Japan day (the game\'s jstISO)');
+    r = await call('POST', '/paw', { id: mine.id }, cg.token, ipC(21)); ok(r.status === 200 && r.json.paws === 1 && r.json.given === false, 'a second paw the same day counts nothing');
+    r = await call('POST', '/paw', { id: mine.id }, cb.token, ipC(22)); ok(r.json.paws === 2 && r.json.given, 'another account gives one more');
+    r = await call('POST', '/paw', { id: mine.id }, ca.token, ipC(23)); ok(r.status === 400 && r.json.error === 'own_card', 'never a paw to your own card');
     await sql("update paws set day = '2000-01-01' where from_id = ? and card_id = ?", cg.user.id, mine.id, true);
-    r = await call('POST', '/paw', { id: mine.id }, cg.token); ok(r.json.paws === 3 && r.json.given, 'a new day, a new paw');
+    r = await call('POST', '/paw', { id: mine.id }, cg.token, ipC(24)); ok(r.json.paws === 3 && r.json.given, 'a new day, a new paw');
+    // many guests on one IP: at most 3 paws a day to one card, then quietly nothing
+    const farm = []; for (let i = 0; i < 5; i++) { const gx = (await call('POST', '/guest', {}, null, ipC(30 + i))).json; farm.push((await call('POST', '/paw', { id: mine.id }, gx.token, ipC(25))).json.given); }
+    ok(farm.join() === 'true,true,true,false,false', 'one IP gives one card at most 3 paws a day (' + farm.join() + ')');
+    ok((await call('GET', '/card', null, ca.token)).json.paws === 6, 'and only those count');
     ok((await call('POST', '/paw', { id: 'A'.repeat(22) }, cg.token)).json.error === 'no_card' && (await call('POST', '/paw', { id: 'nope' }, cg.token)).json.error === 'bad_card' && (await call('POST', '/paw', { id: mine.id, x: 1 }, cg.token)).json.error === 'bad_card', 'an unknown card: no_card, a bad id or extra fields: bad_card');
-    r = await call('GET', '/card', null, ca.token); ok(r.json.paws === 3, 'the owner sees the paws');
+    r = await call('GET', '/card', null, ca.token); ok(r.json.paws === 6, 'the owner sees the paws');
     const cg2 = (await call('POST', '/guest', {}, null, ipC(8))).json;
-    const codesP = []; for (let i = 0; i < 101; i++) codesP.push((await call('POST', '/paw', { id: cbCard.id }, cg2.token)).status);
+    const codesP = []; for (let i = 0; i < 101; i++) codesP.push((await call('POST', '/paw', { id: cbCard.id }, cg2.token, ipC(40))).status);
     ok(codesP[0] === 200 && codesP[99] === 200 && codesP[100] === 429, 'paws are rate-limited per account (100 an hour)');
     const codesU = []; for (let i = 0; i < 19; i++) codesU.push((await call('PUT', '/card', card(), ca.token)).status); // 2 PUTs above: the 21st is refused
     ok(codesU[17] === 200 && codesU[18] === 429, 'publishing is rate-limited (20 an hour)');

@@ -676,7 +676,7 @@ function v211Fields(s) {
   ['stamps', 'seen'].forEach((k) => { if (!v28Obj(s.tk[k])) s.tk[k] = {}; }); if (typeof s.tk.frame !== 'boolean') s.tk.frame = false;
   if (!v28Obj(s.dc)) s.dc = {}; if (typeof s.dc.on !== 'boolean') s.dc.on = false; if (s.dc.name === undefined) s.dc.name = null;
   if (!Array.isArray(s.dc.dogs)) s.dc.dogs = []; if (!Array.isArray(s.dc.hide)) s.dc.hide = []; if (!v28Obj(s.dc.given)) s.dc.given = {};
-  if (typeof s.dc.got !== 'number' || !(s.dc.got >= 0)) s.dc.got = 0;
+  if (typeof s.dc.got !== 'number' || !(s.dc.got >= 0)) s.dc.got = 0; if (s.dc.uid === undefined) s.dc.uid = null; // v2.11 CARDS review: the account that switched the card on
   return s;
 }
 function migNote() { if (S && S.gkNote) { delete S.gkNote; markDirty(); setTimeout(() => toast('Pip left a packet of seeds on your doorstep. The veggie patch is yours now!', 'gold'), 2200); }
