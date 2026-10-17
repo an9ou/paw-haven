@@ -50,7 +50,7 @@ const req = (m) => { for (const r of [].concat((process.env.NODE_PATH || '').spl
     ok(/og:image" content="https:\/\/doodledoggo\.app\/logo-1200x630\.png/.test(home) && /rel="icon" href="\/favicon\.svg/.test(home) && /<title>Doodle Doggo/.test(home), 'title, favicon and og:image tags');
     ok(!/googleapis|gstatic|google-analytics|gtag|facebook|plausible|cdn\./i.test(home + dogsHtml + js + (await (await get('https://doodledoggo.app/style.css')).text())), 'no third-party fonts, scripts or trackers in the pages, the script or the CSS');
     for (const u of ['/favicon.svg', '/logo-1200x630.png', '/icon-180.png', '/site.webmanifest', '/doodle-doggo-logo.svg', '/fonts/caveat.woff2', '/img/screenshot-1-winter-yard.webp', '/img/noodle-happy.svg', '/privacy', '/reset', '/js/site.js', '/img/art/playroom.webp', '/img/art/ball.svg', '/img/art/fuji-spring.webp', '/img/art/fuji-summer.webp', '/img/art/fuji-autumn.webp', '/img/art/fuji-winter.webp', '/img/art/momiji.svg', '/img/art/sakura.svg', '/img/art/washi.svg']
-      .concat(...BREEDS.map((k) => ['walk', 'jump', 'sit', 'happy', 'sniff', 'still', 'pup'].map((p) => `/img/art/dogs/${k}-${p}.svg`)))) {
+      .concat(...BREEDS.map((k) => ['walk', 'jump', 'sit', 'happy', 'sniff', 'still', 'pup', 'sleep'].map((p) => `/img/art/dogs/${k}-${p}.svg`)))) {
       r = await get('https://doodledoggo.app' + u); ok(r.status === 200, `${u}: 200 ${r.headers.get('content-type')}`); await r.arrayBuffer();
     }
     r = await get('https://www.doodledoggo.app/privacy?x=1'); ok(r.status === 301 && r.headers.get('location') === 'https://doodledoggo.app/privacy?x=1', 'www.doodledoggo.app redirects to the apex, keeping the path');
@@ -89,14 +89,27 @@ const req = (m) => { for (const r of [].concat((process.env.NODE_PATH || '').spl
       const outside = await wire(page);
       await page.goto(base + '/', { waitUntil: 'networkidle' });
       const phone = label === 'iPhone 15';
-      const live = await page.evaluate(() => ({ on: document.getElementById('scene').classList.contains('live'), dogs: window.__dd ? window.__dd.dogs.map((d) => d.key) : [], toss: !document.getElementById('toss').hidden }));
-      ok(live.on && live.dogs.length === (phone ? 4 : 5) && live.toss, `the live playroom runs with ${phone ? 4 : 5} dogs and a Toss the ball button (${live.dogs.join(', ')})`);
+      const live = await page.evaluate(() => ({ on: document.getElementById('scene').classList.contains('live'), dogs: window.__dd ? window.__dd.dogs.map((d) => d.key) : [], balls: window.__dd ? window.__dd.balls.length : 0, toss: !document.getElementById('toss').hidden }));
+      ok(live.on && live.dogs.length === (phone ? 5 : 8) && new Set(live.dogs).size === live.dogs.length && live.toss, `the live playroom runs with ${phone ? 5 : 8} different dogs and a Throw another ball button (${live.dogs.join(', ')})`);
+      ok(live.balls === (phone ? 2 : 3), `${phone ? 2 : 3} balls in play from the start (${live.balls})`);
       const seen = await page.evaluate(async () => { const P = {}; for (let i = 0; i < 40; i++) { window.__dd.dogs.forEach((d) => { P[d.pose] = 1; }); await new Promise((r) => setTimeout(r, 150)); } return Object.keys(P); });
-      ok(seen.length >= 2 && seen.every((p) => ['walk', 'jump', 'sit', 'happy', 'sniff'].includes(p)), 'the dogs move between poses (' + seen.join(', ') + ')');
+      ok(seen.length >= 2 && seen.every((p) => ['walk', 'jump', 'sit', 'happy', 'sniff', 'sleep'].includes(p)), 'the dogs move between poses (' + seen.join(', ') + ')');
       const pos0 = await page.evaluate(() => window.__dd.dogs.map((d) => [d.x, d.y]));
-      await page.click('#toss');
-      const caught = await page.waitForFunction(() => window.__dd.ball.holder, null, { timeout: 9000 }).then(() => true).catch(() => false);
-      ok(caught, 'Toss the ball: the ball flies and a dog catches it');
+      // a tap on an empty bit of floor throws another ball there
+      await page.evaluate(() => document.getElementById('scene').scrollIntoView({ block: 'center' })); await page.waitForTimeout(200);
+      const spot = await page.evaluate(() => { const r = document.getElementById('stage').getBoundingClientRect(), c = document.getElementById('scene').getBoundingClientRect();
+        for (let x = 120; x <= 880; x += 20) for (let y = 470; y <= 585; y += 15) { if (window.__dd.dogs.every((d) => Math.hypot(d.x - x, d.y - 40 - y) > 120)) { const cx = r.left + x / 1000 * r.width, cy = r.top + y / 600 * r.height; if (cx > c.left + 10 && cx < c.right - 10) return [cx, cy]; } } return null; });
+      const nb = await page.evaluate(() => window.__dd.balls.length);
+      if (spot) await page.mouse.click(spot[0], spot[1]);
+      const tapped = await page.evaluate((n) => ({ n: window.__dd.balls.length, arcs: window.__dd.balls[n] ? window.__dd.balls[n].arcs.length : -1 }), nb);
+      ok(spot && tapped.n === nb + 1 && tapped.arcs > 0, `a tap on the floor throws another ball (${nb} -> ${tapped.n}, spot ${spot && spot.map(Math.round)})`);
+      for (let i = 0; i < 6; i++) await page.click('#toss');
+      ok(await page.evaluate(() => window.__dd.balls.length === window.__dd.max && window.__dd.max === 4), 'more taps and the button stop at 4 balls (they throw the free ones again)');
+      const chase = await page.evaluate(async () => { let most = 0, split = false; for (let i = 0; i < 60; i++) { const c = window.__dd.dogs.filter((d) => d.task && d.task.kind === 'chase' && d.task.t >= 0);
+        most = Math.max(most, c.length); if (new Set(c.map((d) => d.task.ball)).size >= 2) split = true; if (most >= 2 && split && window.__dd.stats().catches) break; await new Promise((r) => setTimeout(r, 150)); } return { most, split, catches: window.__dd.stats().catches }; });
+      ok(chase.most >= 2 && chase.split, `several dogs chase at once, and they pick different balls (up to ${chase.most} chasing)`);
+      const caught = chase.catches > 0 || await page.waitForFunction(() => window.__dd.stats().catches > 0, null, { timeout: 9000 }).then(() => true).catch(() => false);
+      ok(caught, 'a dog catches a ball and trots it back');
       const moved = await page.evaluate((p0) => window.__dd.dogs.some((d, i) => Math.hypot(d.x - p0[i][0], d.y - p0[i][1]) > 30), pos0);
       ok(moved, 'the dogs run after the ball');
       const inside = await page.evaluate(() => window.__dd.dogs.every((d) => d.x >= 60 && d.x <= 940 && d.y >= 450 && d.y <= 596));
@@ -151,7 +164,7 @@ const req = (m) => { for (const r of [].concat((process.env.NODE_PATH || '').spl
       sec(`${label}: privacy`);
       await page.goto(base + '/privacy', { waitUntil: 'networkidle' });
       const pt = await page.textContent('main');
-      ok(/Privacy policy/.test(pt) && /no ads and no tracking/i.test(pt) && /contact@doodledoggo\.app/.test(pt) && !/CONTACT EMAIL/.test(pt) && (await page.getAttribute('footer #contact', 'href')) === 'mailto:contact@doodledoggo.app' && /password code/.test(pt) && !/password link/.test(pt), 'the privacy page: no ads, no tracking, emails only for a password code, the contact email filled in');
+      ok(/Privacy policy/.test(pt) && /no ads and no tracking/i.test(pt) && /contact@doodledoggo\.app/.test(pt) && !/CONTACT EMAIL/.test(pt) && (await page.getAttribute('footer #contact', 'href')) === 'mailto:contact@doodledoggo.app' && /6-digit code/.test(pt) && !/password link/.test(pt), 'the privacy page: no ads, no tracking, emails only for a 6-digit reset code, the contact email filled in');
       const a2 = await audit(page); ok(a2.scroll <= 0 && !a2.small.length && !a2.tiny.length, 'privacy: phone minimums ' + a2.small.concat(a2.tiny).slice(0, 4).join(', '));
 
       sec(`${label}: the reset page (v2.9.2: only a notice, the reset happens in the game)`);

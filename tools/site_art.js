@@ -4,6 +4,7 @@
 //   dogs/<key>-<pose>.svg      the 14 dogs, scene poses (walk, jump, sit, happy, sniff), 3 boiling frames (the game's 3 fps flip)
 //   dogs/<key>-still.svg       each dog's card pose, one frame (cards, profiles, the reduced-motion scene)
 //   dogs/<key>-pup.svg         a puppy of each dog, one frame (profiles)
+//   dogs/<key>-sleep.svg       each dog napping, one frame (the playroom)
 //   loves/<slug>.svg           the game's item and icon drawings for each dog's favourites
 //   ball.svg, momiji.svg, sakura.svg   the playroom toss toy and one leaf / one blossom from the game's Japan art
 //   washi.svg                  a washi-paper fibre tile (seeded)
@@ -38,6 +39,7 @@ fs.rmSync(OUT, { recursive: true, force: true });
 for (const d of DOGS) {
   for (const pose of SCENE_POSES) write(`dogs/${d.key}-${pose}.svg`, standalone(PA.dog(d.key, { pose }), 240, 200, FLIP));
   write(`dogs/${d.key}-still.svg`, standalone(PA.dog(d.key, { pose: d.pose, anim: false }), 240, 200));
+  write(`dogs/${d.key}-sleep.svg`, standalone(PA.dog(d.key, { pose: 'sleep', anim: false }), 240, 200)); // the playroom nap, one frame
   write(`dogs/${d.key}-pup.svg`, standalone(PA.dog(d.key, { pose: 'happy', age: 'puppy', facing: 'left', anim: false }), 240, 200));
 }
 // ---- favourites: the game's item and icon drawings; 'dig' is the marketing posts' dirt mound with a bone
