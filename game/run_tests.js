@@ -78,10 +78,13 @@ const SUITES = {
   v29_pack: { file: 'test_v29_pack.js', group: 'all', est: 60 },
   v210_roam: { file: 'test_v210_roam.js', group: 'all', est: 60 }, // v2.10 ROAM (V210.md)
   v211_breeds: { file: 'test_v211_breeds.js', group: 'all', est: 90 }, // v2.11 BREEDS (V211.md 5.2): akita, spitz, pom
+  v211_cards: { file: 'test_v211_cards.js', group: 'all', est: 70 }, // v2.11 CARDS: Dog Cards (V211.md section 5.5)
   v29_photo: { file: 'test_v29_photo.js', group: 'all', est: 45 },
   v29_polish: { file: 'test_v29_polish.js', group: 'all', est: 45 },
   v29_flows: { file: 'test_v29_flows.js', group: 'all', est: 60 },
   v210_ball: { file: 'test_v210_ball.js', group: 'all', est: 60 }, // v2.10 (V210.md): free ball play where you are (BALL lane)
+  v211_art_e: { file: 'test_v211_art_e_node.js', group: 'all', est: 15 }, // v2.11 (V211.md 5.4): world E, the Tokyo Tower, Ueno and Odaiba scenes, eki stamps, lucky cat, Tokyo frame, items (TOKYO ART E)
+  v211_art_d: { file: 'test_v211_art_d_node.js', group: 'all', est: 30 }, // v2.11 TOKYO ART D (V211.md 5.4): Japan map, Shinkansen, Shibuya, Yoyogi, Asakusa, the town map's Station pin
   v29_review: { file: 'test_v29_review.js', group: 'all', est: 40 }, // v2.9 integration review fixes (coordinator)
   v211_dogs: { file: 'test_v211_dogs_node.js', group: 'all', est: 150 }, // v2.11 BREED ART (V211.md 5.2): akita, spitz, pom and the three Tokyo bandanas
   // v2.2 phone suites: `node game/run_tests.js phone` (not part of `all`, which stays the desktop regression set)
@@ -115,6 +118,7 @@ const SUITES = {
   phone_v29_pack: { file: 'test_phone_v29_pack.js', group: 'phone', est: 50 }, // v2.9 (V29.md)
   phone_v210_ball: { file: 'test_phone_v210_ball.js', group: 'phone', est: 60 },
   phone_v210_roam: { file: 'test_phone_v210_roam.js', group: 'phone', est: 50 }, // v2.10 ROAM (V210.md)
+  phone_v211_cards: { file: 'test_phone_v211_cards.js', group: 'phone', est: 50 }, // v2.11 CARDS: Dog Cards on phones (V211.md section 5.5)
   phone_v29_photo: { file: 'test_phone_v29_photo.js', group: 'phone', est: 45 },
   phone_v29_polish: { file: 'test_phone_v29_polish.js', group: 'phone', est: 45 },
 };

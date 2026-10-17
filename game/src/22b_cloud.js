@@ -443,7 +443,7 @@ function clStatLine() {
   return st.state === 'synced' || st.state === 'syncing' ? `${who} · ${st.text}` : who;
 }
 function clStat() { const el = document.getElementById('clStat'); if (el) el.textContent = clStatLine(); }
-function clSection() { return `<section class="clset" id="clBox" aria-label="Cloud save"><h4 class="clh">Cloud save</h4><p class="clstat" id="clStat" role="status">${esc(clStatLine())}</p><div id="clBody">${clBodyHTML()}</div><h4 class="clh">Save code</h4><div id="clCode">${clCodeHTML()}</div></section>`; }
+function clSection() { return `<section class="clset" id="clBox" aria-label="Cloud save"><h4 class="clh">Cloud save</h4><p class="clstat" id="clStat" role="status">${esc(clStatLine())}</p><div id="clBody">${clBodyHTML()}</div>${dcSection()}<h4 class="clh">Save code</h4><div id="clCode">${clCodeHTML()}</div></section>`; }
 const clIn = (id, type, label, ac) => `<label class="clfield" for="${id}"><span>${label}</span><input id="${id}" type="${type}" autocomplete="${ac}" ${type === 'email' ? 'inputmode="email" autocapitalize="off" spellcheck="false"' : ''}></label>`;
 function clBodyHTML() {
   if (!CL.on) return CL.why === 'artifact' ? '<p class="small">This copy keeps your game on this device. Use a save code below to move it.</p>' : '';
@@ -466,6 +466,7 @@ function clCodeHTML() {
 }
 function clRender() {
   titleAcctRender(); // v2.3: the title's account line follows the cloud state
+  dcRender(); // v2.11 Dog Cards (40_dogcards.js): the Dog Card block in this panel, and a log in syncs the card
   const box = document.getElementById('clBox'); if (!box) return;
   const b = document.getElementById('clBody'), c = document.getElementById('clCode');
   if (b) b.innerHTML = clBodyHTML(); if (c) c.innerHTML = clCodeHTML(); clStat();

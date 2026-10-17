@@ -14,6 +14,12 @@
 //   GET  /save[?meta=1] -> { save: {data,rev,changed_at,device,updated_at} | null }
 //   PUT  /save {data,rev,changed_at,device} -> { rev }   409 { error:'stale', rev, changed_at } if the cloud has a newer rev
 //   GET  /backups -> { backups: [{id,data,reason,created_at}] }   POST /backups {data,reason}  (the newest 5 are kept)
+//   Dog Cards (v2.11, V211.md section 5.5). No free text anywhere: only integers and fixed tokens, checked by dcCardOf().
+//   GET    /card                     -> { id, name, dogs, paws, at } | null      my card (at: last update, ms)
+//   PUT    /card {name, dogs}        -> my card   email accounts only (403 no_account for guests), 400 bad_card, 20 an hour
+//   DELETE /card                     -> { ok }    stop sharing: the card and its paws are deleted
+//   GET    /cards/visit?n=2&not=ids  -> [{ id, name, dogs, paws }]   no session needed (120 an hour per IP); never the caller's own
+//   POST   /paw {id}                 -> { paws, given }   one paw per card per UTC day per account (guests too), never your own, 100 an hour
 //
 // Passwords: PBKDF2-SHA256, 100k iterations, 16-byte salt. Sessions: a random 32-byte bearer token, only its SHA-256 is stored.
 // Nothing here logs a password, a token or a save.
@@ -34,7 +40,8 @@ export default {
     let res;
     try { res = await route(req, env, ctx); } catch (e) { console.error('pawhaven-api error', (e && e.message) || 'unknown'); res = json({ error: 'busy' }, 503); }
     if (cors) for (const k in cors) res.headers.set(k, cors[k]);
-    if (Math.random() < 0.01 && ctx && ctx.waitUntil) ctx.waitUntil(tidy(env).catch(() => {}));
+    if (env.TIDY) await tidy(env); // tests: tidy after every request
+    else if (Math.random() < 0.01 && ctx && ctx.waitUntil) ctx.waitUntil(tidy(env).catch(() => {}));
     return res;
   }
 };
@@ -43,7 +50,7 @@ function corsFor(origin) {
   if (!origin || !(ORIGINS.has(origin) || LOCAL.test(origin))) return null;
   return {
     'Access-Control-Allow-Origin': origin, 'Vary': 'Origin',
-    'Access-Control-Allow-Methods': 'GET, PUT, POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, PUT, POST, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Authorization, Content-Type',
     'Access-Control-Max-Age': '86400'
   };
@@ -104,7 +111,11 @@ async function tidy(env) {
     env.DB.prepare('delete from rate where reset_at < ?1').bind(now),
     env.DB.prepare('delete from reset_codes where expires_at < ?1').bind(now),
     env.DB.prepare('delete from resets where expires_at < ?1').bind(now),
-    env.DB.prepare('delete from sessions where last_seen < ?1').bind(now - 400 * 864e5)
+    env.DB.prepare('delete from sessions where last_seen < ?1').bind(now - 400 * 864e5),
+    // Dog Cards: a deleted account's card and paws (both ways), and paws older than the last 3 days
+    env.DB.prepare('delete from paws where card_id not in (select c.id from cards c join users u on u.id = c.user_id)'),
+    env.DB.prepare('delete from cards where user_id not in (select id from users)'),
+    env.DB.prepare('delete from paws where from_id not in (select id from users) or day < ?1').bind(dcDay(now - 3 * 864e5))
   ]);
 }
 
@@ -152,6 +163,56 @@ async function sendMail(env, to, m) {
   if (!r.ok) console.error('pawhaven-api mail', r.status); // the answer to the player stays the same either way
   return r.ok;
 }
+
+/* ---------------- Dog Cards (v2.11): no free text anywhere ---------------- */
+// The game keeps the lists (game/src/40_dogcards.js: DC_WORDS_A, DC_WORDS_B, DC_DOG_NAMES, DC_OUTFITS, and PawGenes BREEDS). They are
+// append-only, so a card is only indices into them. When a list grows, raise its count here in the same release (test_v211_cards checks).
+const DC_LIM = { a: 40, b: 40, n: 97, breed: 17, outfit: 47 };
+const DC_COAT = { B: ['B', 'b'], D: ['D', 'd'], E: ['E', 'e'], S: ['S', 'sp'], M: ['M', 'm'], Bl: ['Bl', 'bl'] }; // allele tokens (mods/genes.js LOCI)
+const DC_DOGS = 4, DC_MAX = 2048, DC_DAYS = 30, DC_ID = /^[A-Za-z0-9_-]{22}$/;
+const dcInt = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
+const dcKeys = (o, keys) => !!o && typeof o === 'object' && !Array.isArray(o) && Object.keys(o).every((k) => keys.includes(k)) && keys.every((k) => k in o);
+const dcDay = (ms) => new Date(ms).toISOString().slice(0, 10);
+function dcCoat(c) {
+  if (c === null) return null; // a dog with no genes: its breed's own coat
+  if (typeof c === 'string') return /^#[0-9a-fA-F]{6}$/.test(c) ? c.toLowerCase() : undefined;
+  if (!c || typeof c !== 'object' || Array.isArray(c)) return undefined;
+  const ks = Object.keys(c); if (!ks.length || ks.some((k) => !DC_COAT[k])) return undefined;
+  const out = {};
+  for (const k of Object.keys(DC_COAT)) {
+    if (!(k in c)) continue; const v = c[k];
+    if (!Array.isArray(v) || v.length !== 2 || !v.every((x) => DC_COAT[k].includes(x))) return undefined;
+    out[k] = [v[0], v[1]];
+  }
+  if (out.M && out.M[0] === 'M' && out.M[1] === 'M') return undefined; // never a double merle
+  return out;
+}
+// the body of PUT /card -> { a, b, dogs } in the Worker's own shape, or null (400 bad_card). Anything not on the lists is refused.
+function dcCardOf(body) {
+  if (JSON.stringify(body).length > DC_MAX || !dcKeys(body, ['name', 'dogs'])) return null;
+  const nm = body.name, ds = body.dogs;
+  if (!Array.isArray(nm) || nm.length !== 2 || !dcInt(nm[0], 0, DC_LIM.a - 1) || !dcInt(nm[1], 0, DC_LIM.b - 1)) return null;
+  if (!Array.isArray(ds) || ds.length < 1 || ds.length > DC_DOGS) return null;
+  const dogs = [];
+  for (const d of ds) {
+    if (!dcKeys(d, ['b', 'c', 'o', 'a', 's', 'sp', 'n'])) return null;
+    const c = dcCoat(d.c);
+    if (c === undefined || !dcInt(d.b, 0, DC_LIM.breed - 1) || !dcInt(d.o, -1, DC_LIM.outfit - 1) || !dcInt(d.n, 0, DC_LIM.n - 1) || !dcInt(d.sp, 0, 1)) return null;
+    if (d.a !== 'pup' && d.a !== 'adult') return null;
+    if (d.s !== 'm' && d.s !== 'f') return null;
+    dogs.push({ b: d.b, c, o: d.o, a: d.a, s: d.s, sp: d.sp, n: d.n });
+  }
+  return { a: nm[0], b: nm[1], dogs };
+}
+// a stored row -> what another player sees: the card id, the two name words, the dogs, the paws. Never a user id or an email.
+function dcPub(r, mine) {
+  let dogs = []; try { dogs = JSON.parse(r.dogs); } catch (e) { dogs = []; }
+  const o = { id: r.id, name: [r.name_a | 0, r.name_b | 0], dogs, paws: r.paws | 0 };
+  if (mine) o.at = r.updated_at | 0;
+  return o;
+}
+const DC_COLS = 'c.id, c.name_a, c.name_b, c.dogs, c.paws, c.updated_at';
+
 /* ---------------- routes ---------------- */
 const ROUTES = {
   'POST /guest': { auth: false, async fn({ env, ip }) {
@@ -322,6 +383,56 @@ const ROUTES = {
     const rows = await all(env, `select id, data, reason, created_at from save_backups where user_id = ?1 order by created_at desc, id desc limit ${KEEP}`, me.id);
     return new Response(`{"backups":[${rows.map((b) => `{"id":${b.id | 0},"data":${b.data},"reason":${JSON.stringify(b.reason || '')},"created_at":${JSON.stringify(b.created_at)}}`).join(',')}]}`,
       { headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
+  } },
+
+  /* ---------- Dog Cards (v2.11) ---------- */
+  'GET /card': { auth: true, async fn({ env, me }) {
+    const r = await one(env, `select ${DC_COLS} from cards c where c.user_id = ?1`, me.id);
+    return json(r ? dcPub(r, true) : null);
+  } },
+
+  'PUT /card': { auth: true, async fn({ env, body, me }) {
+    if (me.guest || !me.email) return fail('no_account', 403); // only email accounts share a card
+    const c = dcCardOf(body);
+    if (!c) return fail('bad_card', 400);
+    if (await limited(env, 'card:' + me.id, 20, 3600)) return fail('rate_limited', 429);
+    const r = await one(env, `insert into cards (id, user_id, name_a, name_b, dogs, paws, updated_at) values (?1, ?2, ?3, ?4, ?5, 0, ?6)
+      on conflict(user_id) do update set name_a = excluded.name_a, name_b = excluded.name_b, dogs = excluded.dogs, updated_at = excluded.updated_at
+      returning id, name_a, name_b, dogs, paws, updated_at`, b64url(rnd(16)), me.id, c.a, c.b, JSON.stringify(c.dogs), Date.now());
+    return json(dcPub(r, true));
+  } },
+
+  'DELETE /card': { auth: true, async fn({ env, me }) {
+    const r = await one(env, 'select id from cards where user_id = ?1', me.id);
+    if (r) await env.DB.batch([
+      env.DB.prepare('delete from paws where card_id = ?1').bind(r.id),
+      env.DB.prepare('delete from cards where id = ?1').bind(r.id)
+    ]);
+    return json({ ok: true });
+  } },
+
+  'GET /cards/visit': { async fn({ env, url, ip, me }) {
+    if (await limited(env, 'visit:' + ip, 120, 3600)) return fail('rate_limited', 429);
+    const n = Math.min(4, Math.max(1, parseInt(url.searchParams.get('n'), 10) || 2));
+    const not = String(url.searchParams.get('not') || '').split(',').filter((x) => DC_ID.test(x)).slice(0, 40);
+    const marks = not.map((x, i) => '?' + (i + 4)).join(', ');
+    const rows = await all(env, `select ${DC_COLS} from cards c join users u on u.id = c.user_id
+      where u.guest = 0 and c.updated_at > ?1 and c.user_id != ?2 ${not.length ? `and c.id not in (${marks})` : ''} order by random() limit ?3`,
+      Date.now() - DC_DAYS * 864e5, me ? me.id : '', n, ...not);
+    return json(rows.map((r) => dcPub(r, false)));
+  } },
+
+  'POST /paw': { auth: true, async fn({ env, body, me }) {
+    const id = body.id;
+    if (typeof id !== 'string' || !DC_ID.test(id) || Object.keys(body).length !== 1) return fail('bad_card', 400);
+    const c = await one(env, 'select c.user_id, c.paws from cards c join users u on u.id = c.user_id where c.id = ?1 and u.guest = 0', id);
+    if (!c) return fail('no_card', 404);
+    if (c.user_id === me.id) return fail('own_card', 400);
+    if (await limited(env, 'paw:' + me.id, 100, 3600)) return fail('rate_limited', 429);
+    const ins = await run(env, 'insert or ignore into paws (from_id, card_id, day) values (?1, ?2, ?3)', me.id, id, dcDay(Date.now()));
+    if (!(ins && ins.meta && ins.meta.changes)) return json({ paws: c.paws | 0, given: false }); // already a paw from this account today
+    const r = await one(env, 'update cards set paws = paws + 1 where id = ?1 returning paws', id);
+    return json({ paws: r ? r.paws | 0 : (c.paws | 0) + 1, given: true });
   } },
 
   'POST /backups': { auth: true, async fn({ env, body, me }) {
