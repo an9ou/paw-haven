@@ -1,6 +1,6 @@
 # Doodle Doggo: 45-second promo video script
 
-Written 17 Oct 2026. **Narrator: Noodle the dachshund**, speaking in a calm, proud, slightly deadpan voice (he thinks he is the star, because he is). About 105 spoken words, a relaxed pace that fits 45 seconds with room for the jokes to land.
+Written 17 Oct 2026. **Narrator: Noodle the dachshund**, speaking in a calm, proud, slightly deadpan voice (he thinks he is the star, because he is). About 120 spoken words (about 2.6 words a second), a relaxed pace that fits 45 seconds with room for the jokes to land.
 
 Every shot is something that really exists in the game, so it can be recorded with the same tools as the 30-second Reel. The dog lines in quotes are real lines from the game.
 
