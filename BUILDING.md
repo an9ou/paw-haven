@@ -117,7 +117,7 @@ You manage Paw Haven for the owner. You don't build. Start a fresh Coordinator s
 **State after v2.4 (6 Oct 2026):**
 - v2.4 "Shop Day" is live on GitHub Pages and on the claude.ai artifact (now a multi-file artifact, see CLAUDE.md "Publishing": `tools/artifact.js`, and a subagent does the required read of the live page).
 - All build sessions are archived.
-- Supabase: the public URL and key are in `PHONE.md` and `game/src/22b_cloud_config.js`, and the tables are in `supabase/schema.sql`.
+- Cloud save runs on the Cloudflare Worker `pawhaven-api` (`docs/CLOUDFLARE_LOGIN.md`). Supabase is gone since v2.9.1.
   - Anonymous sign-ins and email are on, with Confirm email off, so no emails are ever sent.
   - 5 test users (`pawhaven-test-1…5@example.com`) may still exist.
 - The owner still has to check live sync (Realtime) once on two real phones, and open the claude.ai artifact once.

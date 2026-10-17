@@ -53,7 +53,7 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [x] Playdate pals' noses nearly touch in the bow pose at 390 px wide. `game/css/24_phone_puppy.css` Done in v2.9: pals 20 px further apart on phones.
 - [ ] With puppies, the nursery basket sits right of the phone view and is reached with "look right" (accepted in v2.3). `game/src/03_yard.js`
 - [x] The map zoom buttons were checked clear of the labels only in the default (unpanned) view. `game/src/08_map.js` Done in v2.9: after a drag, pinch or zoom tap on phones the map slides clear of the place names (`mapClearCtl` pattern).
-- [ ] Owner: confirm the Supabase project auto-confirms email changes (Confirm email off), so "No email is ever sent" stays true.
+- [x] Supabase is gone (v2.9.1): nothing to confirm.
 - [ ] The "look right" peek button and the nap details card are new. Check both once on a real phone.
 
 ## Shop Day (v2.4)

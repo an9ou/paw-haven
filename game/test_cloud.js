@@ -251,7 +251,7 @@ run('cloud', async (t) => {
   sec('the test harness (no mock): cloud off, no network');
   const d6 = await device('d6', 'Pixel 7', false);
   ok((await ev(d6, () => window.__pawCloud.status().state)) === 'off' && (await ev(d6, () => window.__pawCloud.CL.why)) === 'harness', 'under the test harness the cloud is off');
-  ok(!(await ev(d6, () => !!document.querySelector('script[src*="supabase"]'))) && !(await ev(d6, () => !!localStorage.getItem('pawhaven_cf_auth'))), 'no cloud library and no login on this device');
+  ok(!(await ev(d6, () => !!localStorage.getItem('pawhaven_cf_auth'))), 'no login on this device');
 
   sec('offline: the Worker can\'t be reached');
   const d7 = await device('d7', 'iPhone 15', { broken: true }); await adopt(d7, { sex: 'girl' });
@@ -261,42 +261,25 @@ run('cloud', async (t) => {
   ok((await ev(d7, () => JSON.parse(localStorage.getItem('pawhaven_proto_v1')).coins)) === 999 && (await ev(d7, () => window.__paw.mode)) === 'yard', 'the game keeps playing and saving locally');
 
 
-  sec('device 8: a v2.8 Supabase login on this device carries over (same account, same save, no password typed)');
-  const su = srv.sb.mkUser({ email: 'old-friend@example.com', password: 'oldfriend1' }), tk = srv.sb.login(su);
+  sec('device 8: a v2.8 Supabase login left on this device is just deleted (v2.9.1), the game on the device is untouched');
   const oldSave = Object.assign({}, srv.saves[g1].data, { coins: 6543 }); oldSave.dogs = oldSave.dogs.map((d) => Object.assign({}, d, { id: 'dogOld8', name: 'Pickle' })); oldSave.dog = oldSave.dogs[0];
-  srv.sb.saves[su.id] = { data: oldSave, rev: 12, changed_at: '2026-10-14T09:00:00Z', device: 'iPhone Safari' };
-  const at8 = Date.parse('2026-10-14T09:00:00Z');
   const p8 = await t.mk({ device: 'iPhone 15', storage: {
     pawhaven_proto_v1: JSON.stringify(oldSave),
-    pawhaven_cloud_v1: JSON.stringify({ rev: 12, changedAt: at8, pushedAt: at8, uid: su.id, dogId: 'dogOld8', nudged: true, owner: su.id, ownerDog: 'dogOld8', ownerAt: at8 }),
-    pawhaven_sb_auth: JSON.stringify({ access_token: tk.at, refresh_token: tk.rt, token_type: 'bearer', user: { id: su.id, email: 'old-friend@example.com' } })
+    pawhaven_sb_auth: JSON.stringify({ access_token: 'sbat_gone', refresh_token: 'sbrt_gone', token_type: 'bearer', user: { id: 'sb-user-gone', email: 'old-friend@example.com' } })
   } });
   await t.ctx.exposeBinding('__clSrv', (src, m, u, b, a) => srv.handle(src.page, m, u, b, a)); await t.ctx.addInitScript(mockInit, {}); srv.pages.add(p8);
-  const nUsers8 = srv.users.length;
   await p8.goto(URL); await p8.waitForSelector('#tContinue, #tNew, #tGuest');
-  ok(await until(p8, (id) => window.__pawCloud.CL.uid === id && !window.__pawCloud.CL.anon, su.id, 8000), 'the Supabase login carried over: the same user id, logged in');
-  ok(srv.users.length === nUsers8 + 1 && srv.users.find((u) => u.id === su.id).email === 'old-friend@example.com', 'one account made on the Worker, with the same email (no guest)');
-  ok(srv.saves[su.id] && srv.saves[su.id].rev === 12 && srv.saves[su.id].data.coins === 6543, 'the Supabase save came over with its rev');
-  ok(await ev(p8, () => !localStorage.getItem('pawhaven_sb_auth') && !!JSON.parse(localStorage.getItem('pawhaven_cf_auth')).token), 'the old login is removed, the new one is kept');
+  ok(await until(p8, () => !localStorage.getItem('pawhaven_sb_auth'), null, 8000), 'the old Supabase login is deleted');
+  ok(srv.count(p8, '/migrate') === 0, 'and nothing asks the Worker to carry it over');
   ok(await ev(p8, () => !!document.querySelector('#tContinue')) && (await ev(p8, () => JSON.parse(localStorage.getItem('pawhaven_proto_v1')).coins)) === 6543, 'the game on this device is unchanged: Continue');
-  await change(p8, { coins: 6544 });
-  ok(await until(p8, () => window.__pawCloud.status().state === 'synced', null, 8000) && srv.saves[su.id].data.coins === 6544 && srv.saves[su.id].rev === 13, 'the next change syncs to the same account (rev 13)');
-  ok(!srv.pwIs(su.id, 'oldfriend1'), 'no password is stored until the player types it');
 
-  sec('device 9: one email, one account: "Make an account" with an old Supabase email is refused, logging in moves it over');
-  const so = srv.sb.mkUser({ email: 'returning@example.com', password: 'returning1' }); srv.legacy('returning@example.com');
-  const save9 = Object.assign({}, oldSave, { coins: 9191 }); save9.dogs = oldSave.dogs.map((d) => Object.assign({}, d, { id: 'dogOld9', name: 'Noodle' })); save9.dog = save9.dogs[0];
-  srv.sb.saves[so.id] = { data: save9, rev: 3, changed_at: '2026-10-13T00:00:00Z', device: 'Mac Safari' };
+  sec('device 9: an email an old Supabase account used can make a new account now (v2.9.1)');
   const d9 = await device('d9', 'Pixel 7'); await adopt(d9, { sex: 'girl' });
   ok(await waitSynced(d9), 'device 9 guest save is in the cloud'); const guest9 = await ev(d9, () => window.__paw.S.dog.name);
   await openCloud(d9); await tap(d9, '[data-cl=reg]'); await d9.waitForSelector('#clPw2');
   await d9.fill('#clEmail', 'Returning@example.com'); await d9.fill('#clPw', 'returning1'); await d9.fill('#clPw2', 'returning1'); await tap(d9, '[data-cl=doReg]');
-  ok(await until(d9, () => /This email already has an account\. Log in, or use Forgot your password\./.test((document.querySelector('#clBox .clmsg') || {}).textContent || ''), null, 6000), 'refused, kindly: "This email already has an account. Log in, or use Forgot your password."');
-  ok(!srv.users.some((u) => u.email === 'returning@example.com') && (await ev(d9, () => window.__pawCloud.CL.anon)), 'no account made, still a guest');
-  await tap(d9, '[data-cl=back]'); await tap(d9, '[data-cl=login]'); await d9.waitForSelector('#clPw');
-  await d9.fill('#clEmail', 'returning@example.com'); await d9.fill('#clPw', 'returning1'); await tap(d9, '[data-cl=doLogin]');
-  ok(await until(d9, () => window.__paw.S && window.__paw.S.coins === 9191 && document.getElementById('modal').hidden, null, 8000), 'logging in moves the old account over and loads its save');
-  ok((await uidOf(d9)) === so.id && !(await ev(d9, () => window.__pawCloud.CL.anon)), 'logged in to the moved account (same user id)');
-  ok(srv.backups.some((b) => b.user_id === so.id && b.reason === 'guest save before sign-in' && b.data.dogs[0].name === guest9), 'the guest game went to that account\'s backups');
+  ok(await until(d9, () => !(window.__pawCloud.CL.anon), null, 8000), 'the sign-up works: no longer "This email already has an account"');
+  ok(srv.users.some((u) => u.email === 'returning@example.com') && (await uidOf(d9)) === srv.users.find((u) => u.email === 'returning@example.com').id, 'a new account with that email');
+  ok(await ev(d9, () => window.__paw.S.dog.name) === guest9, 'the guest game came along to the new account');
 
 }, { timeout: 300000 });

@@ -14,9 +14,6 @@ DBNAME=pawhaven
 py() { python3 -c "$1"; }
 ok() { py "import json,sys; d=json.load(sys.stdin); sys.exit(0 if d.get('success') else (print(d.get('errors'), file=sys.stderr) or 1))"; }
 
-# the public Supabase values the Worker uses to move old accounts over (from cloudflare/wrangler.toml [vars])
-SB_URL=$(sed -n 's/^SUPABASE_URL = "\(.*\)"/\1/p' cloudflare/wrangler.toml)
-SB_KEY=$(sed -n 's/^SUPABASE_KEY = "\(.*\)"/\1/p' cloudflare/wrangler.toml)
 DATE=$(sed -n 's/^compatibility_date = "\(.*\)"/\1/p' cloudflare/wrangler.toml)
 
 # 1. D1 database
@@ -32,8 +29,8 @@ SQL=$(py "import json,re; s=open('cloudflare/schema.sql').read(); print(json.dum
 curl -sS -X POST "$API/d1/database/$DBID/query" "${AUTH[@]}" -H 'Content-Type: application/json' -d "$SQL" | ok
 echo "schema applied"
 
-# 3. the Worker, bound to D1, with the public Supabase values
-META=$(py "import json; print(json.dumps({'main_module':'worker.js','compatibility_date':'$DATE','keep_bindings':['secret_text'],'bindings':[{'type':'d1','name':'DB','id':'$DBID'},{'type':'plain_text','name':'SUPABASE_URL','text':'$SB_URL'},{'type':'plain_text','name':'SUPABASE_KEY','text':'$SB_KEY'}]}))")
+# 3. the Worker, bound to D1 (no plain vars since v2.9.1: Supabase is gone)
+META=$(py "import json; print(json.dumps({'main_module':'worker.js','compatibility_date':'$DATE','keep_bindings':['secret_text'],'bindings':[{'type':'d1','name':'DB','id':'$DBID'}]}))")
 curl -sS -X PUT "$API/workers/scripts/$SCRIPT" "${AUTH[@]}" \
   -F "metadata=$META;type=application/json" -F "worker.js=@cloudflare/worker.js;type=application/javascript+module" | ok
 curl -sS -X POST "$API/workers/scripts/$SCRIPT/subdomain" "${AUTH[@]}" -H 'Content-Type: application/json' -d '{"enabled":true,"previews_enabled":false}' | ok
