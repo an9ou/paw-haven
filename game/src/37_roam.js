@@ -51,7 +51,7 @@ function rmScan() {
   const M = svg.getScreenCTM().inverse(), out = [];
   const Q = '.hot, [data-hot], [data-shop], [data-decor], [data-drift], [data-pile], [role="button"], .fs-hit, #mailboxG';
   svg.querySelectorAll(Q).forEach((el) => {
-    if (el.closest('#pack, #fx, #ballLayer, #zzz, #fbPackBowls') || el.parentElement.closest(Q)) return; // dogs are not no-go, and a nested hot thing is covered by its parent
+    if (el.closest('#pack, #fx, #ballLayer, #zzz, #fbPackBowls, #dcVis') || el.parentElement.closest(Q)) return; // dogs are not no-go, and a nested hot thing is covered by its parent
     const b = rmWorldBox(svg, M, el); if (b && b[2] > 4 && b[3] > 4 && b[1] < 600 && b[1] + b[3] > 0) out.push(b.concat(el.closest('[data-decor]') ? (rmFestDecor(el) ? 'fest' : 'decor') : el.closest('[data-drift], [data-pile], #wnDogG, #hwPopG') ? 'prop' : el.id || el.dataset.hot || el.dataset.shop || 'hot'));
   });
   [...(($('#placeBtns') || {}).children || [])].concat([$('#phPeek'), $('#rmLookL'), $('#rmLookR')]).forEach((el) => { if (!el || el.hidden) return; const b = rmWorldBox(svg, M, el); if (b && b[1] < 600) out.push(b.concat('btn')); });

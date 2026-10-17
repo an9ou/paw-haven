@@ -35,10 +35,15 @@ window.PawArt = window.PawArt || {};
     { key: 'poodle', name: 'Pretzel', breed: 'Poodle', personality: 'Thinks it is the smartest one in the room. It is.', joke: 'Haircut optional. Dignity not.' },
     { key: 'collie', name: 'Scout', breed: 'Border Collie', personality: 'Has counted the sheep. There are no sheep. Has counted you.', joke: 'Will herd the puppies, the ducks and the furniture.' },
     { key: 'samoyed', name: 'Cloud', breed: 'Samoyed', personality: 'Smiles so the snow does not stick. Also just smiles.', joke: 'Sheds a second dog every spring.' },
-    { key: 'frenchie', name: 'Brioche', breed: 'French Bulldog', personality: 'Snores, snorts, sits on your foot. All three at once.', joke: 'Breathes like a tiny engine. Shade and water, please.' }
+    { key: 'frenchie', name: 'Brioche', breed: 'French Bulldog', personality: 'Snores, snorts, sits on your foot. All three at once.', joke: 'Breathes like a tiny engine. Shade and water, please.' },
+    // v2.11 breeds
+    { key: 'akita', name: 'Kuma', breed: 'Akita', personality: 'Calm, loyal, quietly proud. Waits by the gate.', joke: 'I will wait for you. I am very good at waiting.' },
+    { key: 'spitz', name: 'Daifuku', breed: 'Japanese Spitz', personality: 'A white fluffball, cheerful, a bit of a show-off.', joke: 'Yes, I am this white on purpose. Look at me.' },
+    { key: 'pom', name: 'Mikan', breed: 'Pomeranian', personality: 'A tiny fluffy loudspeaker. Spins when happy.', joke: 'Yip! That was my indoor voice.' }
   ];
   const COAT = { shiba: ['#FF8A1E', '#FFE7B3'], corgi: ['#E9A35B', '#FFFFFF'], golden: ['#F6C445', '#FFE8A0'], dachs: ['#7A4A2A', '#B5774B'], husky: ['#8FA3B8', '#FFFFFF'], mutt: ['#FFFFFF', '#2a2420'],
-    poodle: ['#F2C48F', '#FBE2C0'], collie: ['#2A2628', '#FFFFFF'], samoyed: ['#FBF6EC', '#E8DECB'], frenchie: ['#D9B48A', '#3A2E2E'] };
+    poodle: ['#F2C48F', '#FBE2C0'], collie: ['#2A2628', '#FFFFFF'], samoyed: ['#FBF6EC', '#E8DECB'], frenchie: ['#D9B48A', '#3A2E2E'],
+    akita: ['#D46E36', '#FFF4E2'], spitz: ['#FCF8F0', '#E6DCCB'], pom: ['#F59A3C', '#FFD9A6'] };
 
   const ln = (d, w = 5, c = INK) => `<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
   const el = (cx, cy, rx, ry, f) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${f}" stroke="${INK}" stroke-width="5"/>`;
@@ -50,6 +55,8 @@ window.PawArt = window.PawArt || {};
     if (o.body === 'Yellow Raincoat') s += `<ellipse cx="${bx}" cy="${by}" rx="${brx - 6}" ry="22" fill="#FFD21F" stroke="${INK}" stroke-width="4" opacity=".95"/>`;
     if (o.body === 'Knit Winter Sweater') s += `<ellipse cx="${bx}" cy="${by}" rx="${brx - 6}" ry="22" fill="#3B7BE0" stroke="${INK}" stroke-width="4"/>${ln(`M${bx - 30} ${by - 4} l10 8 l10 -8 l10 8 l10 -8 l10 8`, 3, '#fff')}`;
     if (o.neck === 'Red Bandana') s += `<path d="M${hx - 22} ${hy + 22} L${hx + 22} ${hy + 22} L${hx} ${hy + 46} Z" fill="#E8322B" stroke="${INK}" stroke-width="4"/>`;
+    const TKB = { 'Shibuya Bandana': '#3FA45A', 'Asakusa Bandana': '#D7263D', 'Tokyo Tower Bandana': '#F25C1E' }; // v2.11
+    if (TKB[o.neck]) s += `<path d="M${hx - 22} ${hy + 22} L${hx + 22} ${hy + 22} L${hx} ${hy + 46} Z" fill="${TKB[o.neck]}" stroke="${INK}" stroke-width="4"/>`;
     if (o.neck === 'Bow Tie') s += `<path d="M${hx} ${hy + 30} l-16 -9 v18 Z M${hx} ${hy + 30} l16 -9 v18 Z" fill="#7B3FE4" stroke="${INK}" stroke-width="4"/>`;
     if (o.head === 'Party Hat') s += `<path d="M${hx - 16} ${hy - 26} L${hx + 4} ${hy - 70} L${hx + 20} ${hy - 26} Z" fill="#FF5DA2" stroke="${INK}" stroke-width="4"/><circle cx="${hx + 4}" cy="${hy - 72}" r="6" fill="#FFC21A" stroke="${INK}" stroke-width="3"/>`;
     if (o.head === 'Flower Crown') s += [-22, -8, 6, 20].map((dx, i) => `<circle cx="${hx + dx}" cy="${hy - 30 + (i % 2) * 4}" r="7" fill="${['#FF5DA2', '#FFC21A', '#fff', '#E8322B'][i]}" stroke="${INK}" stroke-width="3"/>`).join('');
@@ -123,7 +130,7 @@ window.PawArt = window.PawArt || {};
     return `<svg viewBox="0 0 64 64" role="img" aria-label="${name}"><circle cx="32" cy="33" r="24" fill="${c}" fill-opacity=".55" stroke="${GI}" stroke-width="3"/><text x="32" y="43" text-anchor="middle" font-size="26" font-family="'Caveat',cursive" fill="${GI}">${glyph}</text></svg>`;
   };
 
-  const ITEM_COL = { 'Basic Kibble': '#B5774B', 'Chicken & Rice Bowl': '#FFE8A0', 'Salmon Pâté': '#FF9E80', 'Bone-shaped Biscuit': '#F3D9A4', 'Pupcake': '#FF8FB1', 'Fresh Water': '#5AC8FA', 'Tennis Ball': '#C6F432', 'Rope Tug': '#E8322B', 'Squeaky Duck': '#FFD21F', 'Frisbee': '#3B7BE0', 'Plush Bone': '#FFFFFF', 'Puzzle Feeder': '#9AD15A', 'Red Bandana': '#E8322B', 'Yellow Raincoat': '#FFD21F', 'Knit Winter Sweater': '#3B7BE0', 'Party Hat': '#FF5DA2', 'Heart Sunglasses': '#E8322B', 'Superhero Cape': '#E8322B', 'Flower Crown': '#FF5DA2', 'Bow Tie': '#7B3FE4' };
+  const ITEM_COL = { 'Basic Kibble': '#B5774B', 'Chicken & Rice Bowl': '#FFE8A0', 'Salmon Pâté': '#FF9E80', 'Bone-shaped Biscuit': '#F3D9A4', 'Pupcake': '#FF8FB1', 'Fresh Water': '#5AC8FA', 'Tennis Ball': '#C6F432', 'Rope Tug': '#E8322B', 'Squeaky Duck': '#FFD21F', 'Frisbee': '#3B7BE0', 'Plush Bone': '#FFFFFF', 'Puzzle Feeder': '#9AD15A', 'Red Bandana': '#E8322B', 'Yellow Raincoat': '#FFD21F', 'Knit Winter Sweater': '#3B7BE0', 'Party Hat': '#FF5DA2', 'Heart Sunglasses': '#E8322B', 'Superhero Cape': '#E8322B', 'Flower Crown': '#FF5DA2', 'Bow Tie': '#7B3FE4', 'Shibuya Bandana': '#3FA45A', 'Asakusa Bandana': '#D7263D', 'Tokyo Tower Bandana': '#F25C1E' };
   P.item = function (name) {
     const c = ITEM_COL[name] || '#ccc';
     const init = name.split(/\s+/).map((w) => w[0]).join('').slice(0, 2);

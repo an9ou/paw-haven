@@ -202,6 +202,88 @@ async function checks(label, call, sql, mail) {
   ok((await call('POST', '/reset', { token: old, password: 'again-again1' })).json.error === 'expired', 'an old link works only once');
   ok((await call('POST', '/reset', { token: 'x'.repeat(43), password: 'whatever-1' })).json.error === 'expired' && (await call('POST', '/reset', { password: 'whatever-1' })).json.error === 'expired', 'a made-up or missing token: expired');
   ok((await call('POST', '/reset', { sb_token: 'sbat_bogus', password: 'whatever-1' })).json.error === 'expired', 'a Supabase link token is no longer accepted: expired');
+
+  // Dog Cards (v2.11, V211.md section 5.5): only integers and fixed tokens, opt-in, email accounts only
+  {
+    const ipC = (n) => ({ 'CF-Connecting-IP': '10.11.' + n + '.1' });
+    const ca = (await call('POST', '/register', { email: 'cards-a@example.com', password: 'cardspass1' }, null, ipC(1))).json;
+    const cb = (await call('POST', '/register', { email: 'cards-b@example.com', password: 'cardspass2' }, null, ipC(1))).json;
+    const cg = (await call('POST', '/guest', {}, null, ipC(2))).json;
+    const dog = (o) => Object.assign({ b: 0, c: { B: ['B', 'b'], D: ['D', 'd'], E: ['e', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'] }, o: 0, a: 'adult', s: 'f', sp: 0, n: 0 }, o || {});
+    const card = (o) => Object.assign({ name: [3, 7], dogs: [dog(), dog({ b: 16, o: -1, a: 'pup', s: 'm', sp: 1, n: 96, c: null })] }, o || {});
+    ok((await call('PUT', '/card', card())).status === 401, 'PUT /card needs a session');
+    r = await call('PUT', '/card', card(), cg.token); ok(r.status === 403 && r.json.error === 'no_account', 'a guest cannot publish a card (403 no_account)');
+    ok(!(await sql('select * from cards where user_id = ?', cg.user.id)), 'and nothing is stored for the guest');
+    const junk = [
+      ['an extra field', card({ note: 'hi' })], ['a name as text', card({ name: ['Sunny', 'Biscuit'] })], ['a name index as a string', card({ name: ['3', 7] })],
+      ['a name word past the list', card({ name: [40, 0] })], ['a negative index', card({ name: [-1, 0] })], ['a fraction', card({ name: [1.5, 0] })], ['one name word', card({ name: [1] })],
+      ['no dogs', card({ dogs: [] })], ['5 dogs', card({ dogs: [dog(), dog(), dog(), dog(), dog()] })], ['dogs as an object', card({ dogs: { 0: dog() } })],
+      ['a dog name as text', card({ dogs: [dog({ n: 'Mochi' })] })], ['a dog name index past the list', card({ dogs: [dog({ n: 97 })] })],
+      ['a breed past the list', card({ dogs: [dog({ b: 17 })] })], ['a breed as text', card({ dogs: [dog({ b: 'shiba' })] })],
+      ['an outfit past the list', card({ dogs: [dog({ o: 47 })] })], ['an outfit as text', card({ dogs: [dog({ o: 'Red Bandana' })] })], ['an outfit under -1', card({ dogs: [dog({ o: -2 })] })],
+      ['an age that is not pup or adult', card({ dogs: [dog({ a: 'old' })] })], ['a sex that is not m or f', card({ dogs: [dog({ s: 'x' })] })], ['sparkle 2', card({ dogs: [dog({ sp: 2 })] })],
+      ['a dog with an extra key', card({ dogs: [Object.assign(dog(), { name: 'Mochi' })] })], ['a dog missing a key', card({ dogs: [(() => { const d = dog(); delete d.sp; return d; })()] })],
+      ['a coat allele not in the set', card({ dogs: [dog({ c: { B: ['B', 'x'] } })] })], ['a coat word', card({ dogs: [dog({ c: 'red' })] })], ['a coat with an unknown locus', card({ dogs: [dog({ c: { K: ['K', 'k'] } })] })],
+      ['a coat locus with 3 alleles', card({ dogs: [dog({ c: { B: ['B', 'b', 'b'] } })] })], ['a double merle', card({ dogs: [dog({ c: { M: ['M', 'M'] } })] })], ['an empty coat', card({ dogs: [dog({ c: {} })] })],
+      ['a coat colour that is not #rrggbb', card({ dogs: [dog({ c: '#12345g' })] })], ['an oversized card', card({ dogs: [dog({ c: '#' + 'a'.repeat(3000) })] })], ['an array body', [card()]]
+    ];
+    const bad = [];
+    for (const [label, b] of junk) { const x = await call('PUT', '/card', b, ca.token); if (!(x.status === 400 && x.json && (x.json.error === 'bad_card' || x.json.error === 'bad_json'))) bad.push(label + ' ' + x.status); }
+    ok(!bad.length, `every junk card is refused with 400 bad_card (${junk.length} kinds) ${bad.join(', ')}`);
+    ok(!(await sql('select * from cards where user_id = ?', ca.user.id)), 'no junk card was stored');
+    r = await call('PUT', '/card', card({ dogs: [dog(), dog({ b: 16, o: -1, a: 'pup', s: 'm', sp: 1, n: 96, c: null }), dog({ c: '#AABBCC' })] }), ca.token);
+    const mine = r.json;
+    ok(r.status === 200 && /^[A-Za-z0-9_-]{22}$/.test(mine.id) && mine.name.join() === '3,7' && mine.dogs.length === 3 && mine.paws === 0, 'an email account publishes a card: a random card id, the name, the dogs, 0 paws');
+    ok(mine.dogs[1].c === null && mine.dogs[2].c === '#aabbcc' && JSON.stringify(mine.dogs[0]) === JSON.stringify(dog()), 'the dogs come back in the Worker\'s own shape (coat alleles, null or #rrggbb)');
+    ok(mine.id !== ca.user.id && !r.text.includes(ca.user.id) && !r.text.includes('cards-a'), 'the card id is not the user id, and neither the user id nor the email is in the answer');
+    const row = await sql('select * from cards where user_id = ?', ca.user.id);
+    ok(row && !/[a-z]{3,}@/.test(row.dogs) && JSON.parse(row.dogs).every((d) => Object.keys(d).join() === 'b,c,o,a,s,sp,n'), 'D1 keeps only the checked fields');
+    r = await call('GET', '/card', null, ca.token); ok(r.status === 200 && r.json.id === mine.id && r.json.paws === 0 && r.json.at > 0, 'GET /card: my card');
+    ok((await call('GET', '/card', null, cb.token)).json === null, 'GET /card: null with no card');
+    r = await call('PUT', '/card', card({ name: [0, 39] }), ca.token); ok(r.json.id === mine.id && r.json.name.join() === '0,39' && r.json.dogs.length === 2, 'PUT /card again replaces the card and keeps its id');
+    ok((await sql('select count(*) as n from cards where user_id = ?', ca.user.id)).n === 1, 'one card per account');
+    // visiting: anyone, never the caller's own, only fresh cards, no ids or emails
+    const cbCard = (await call('PUT', '/card', card({ name: [1, 1] }), cb.token)).json;
+    r = await call('GET', '/cards/visit?n=4', null, null, ipC(3));
+    ok(r.status === 200 && Array.isArray(r.json) && r.json.some((x) => x.id === mine.id) && r.json.some((x) => x.id === cbCard.id), 'GET /cards/visit needs no session and returns cards');
+    ok(r.json.every((x) => Object.keys(x).join() === 'id,name,dogs,paws') && !r.text.includes(ca.user.id) && !r.text.includes(cb.user.id) && !r.text.includes('@'), 'visit cards carry only id, name, dogs, paws: no user id, no email');
+    r = await call('GET', '/cards/visit?n=4', null, ca.token, ipC(3)); ok(r.json.length >= 1 && !r.json.some((x) => x.id === mine.id), 'never the caller\'s own card');
+    r = await call('GET', '/cards/visit?n=4&not=' + cbCard.id + ',junk!,' + 'x'.repeat(300), null, ca.token, ipC(3)); ok(!r.json.some((x) => x.id === cbCard.id || x.id === mine.id), 'not= leaves out hidden cards (junk ids are ignored)');
+    for (let i = 0; i < 5; i++) await call('PUT', '/card', card(), (await call('POST', '/register', { email: `cards-x${i}@example.com`, password: 'cardspass9' }, null, ipC(4))).json.token);
+    r = await call('GET', '/cards/visit?n=99', null, null, ipC(3)); ok(r.json.length === 4, 'at most 4 cards a visit');
+    r = await call('GET', '/cards/visit', null, null, ipC(3)); ok(r.json.length === 2, 'n defaults to 2');
+    await sql('update cards set updated_at = ? where id = ?', Date.now() - 31 * 864e5, cbCard.id, true);
+    let seen = false; for (let i = 0; i < 6 && !seen; i++) seen = (await call('GET', '/cards/visit?n=4', null, null, ipC(5))).json.some((x) => x.id === cbCard.id);
+    ok(!seen, 'a card not updated for 30 days does not visit');
+    await call('PUT', '/card', card({ name: [1, 1] }), cb.token);
+    const codesV = []; for (let i = 0; i < 121; i++) codesV.push((await call('GET', '/cards/visit', null, null, ipC(6))).status);
+    ok(codesV[0] === 200 && codesV[119] === 200 && codesV[120] === 429, 'visits are rate-limited per IP (120 an hour)');
+    // paws
+    ok((await call('POST', '/paw', { id: mine.id })).status === 401, 'POST /paw needs a session');
+    r = await call('POST', '/paw', { id: mine.id }, cg.token); ok(r.status === 200 && r.json.paws === 1 && r.json.given === true, 'a guest gives a paw');
+    r = await call('POST', '/paw', { id: mine.id }, cg.token); ok(r.status === 200 && r.json.paws === 1 && r.json.given === false, 'a second paw the same day counts nothing');
+    r = await call('POST', '/paw', { id: mine.id }, cb.token); ok(r.json.paws === 2 && r.json.given, 'another account gives one more');
+    r = await call('POST', '/paw', { id: mine.id }, ca.token); ok(r.status === 400 && r.json.error === 'own_card', 'never a paw to your own card');
+    await sql("update paws set day = '2000-01-01' where from_id = ? and card_id = ?", cg.user.id, mine.id, true);
+    r = await call('POST', '/paw', { id: mine.id }, cg.token); ok(r.json.paws === 3 && r.json.given, 'a new day, a new paw');
+    ok((await call('POST', '/paw', { id: 'A'.repeat(22) }, cg.token)).json.error === 'no_card' && (await call('POST', '/paw', { id: 'nope' }, cg.token)).json.error === 'bad_card' && (await call('POST', '/paw', { id: mine.id, x: 1 }, cg.token)).json.error === 'bad_card', 'an unknown card: no_card, a bad id or extra fields: bad_card');
+    r = await call('GET', '/card', null, ca.token); ok(r.json.paws === 3, 'the owner sees the paws');
+    const cg2 = (await call('POST', '/guest', {}, null, ipC(8))).json;
+    const codesP = []; for (let i = 0; i < 101; i++) codesP.push((await call('POST', '/paw', { id: cbCard.id }, cg2.token)).status);
+    ok(codesP[0] === 200 && codesP[99] === 200 && codesP[100] === 429, 'paws are rate-limited per account (100 an hour)');
+    const codesU = []; for (let i = 0; i < 19; i++) codesU.push((await call('PUT', '/card', card(), ca.token)).status); // 2 PUTs above: the 21st is refused
+    ok(codesU[17] === 200 && codesU[18] === 429, 'publishing is rate-limited (20 an hour)');
+    // stop sharing: the card and its paws go
+    r = await call('DELETE', '/card', null, cb.token); ok(r.status === 200 && r.json.ok, 'DELETE /card');
+    ok(!(await sql('select * from cards where id = ?', cbCard.id)) && !(await sql('select * from paws where card_id = ?', cbCard.id)), 'the card and its paws are deleted');
+    ok((await call('GET', '/card', null, cb.token)).json === null && (await call('POST', '/paw', { id: cbCard.id }, cg.token)).json.error === 'no_card', 'it no longer exists for anyone');
+    r = await call('OPTIONS', '/card', null, null, { Origin: 'https://doodledoggo.app', 'Access-Control-Request-Method': 'DELETE' }); ok(/DELETE/.test(r.headers.get('access-control-allow-methods')), 'CORS allows DELETE');
+    // deleting the account deletes its card and its paws
+    await sql('delete from users where id = ?', ca.user.id, true);
+    r = await call('GET', '/cards/visit?n=4', null, null, ipC(7)); ok(!r.json.some((x) => x.id === mine.id), 'a deleted account\'s card never visits again');
+    ok((await call('POST', '/paw', { id: mine.id }, cg.token)).json.error === 'no_card', 'and takes no paws');
+    ok(!(await sql('select * from cards where id = ?', mine.id)) && !(await sql('select * from paws where card_id = ?', mine.id)), 'tidy deletes the card and its paws');
+  }
   ok((await call('GET', '/nope')).status === 404, 'unknown paths: 404');
 }
 
@@ -210,7 +292,7 @@ async function inNode() {
   const { d1 } = require(path.join(ROOT, 'cloudflare', 'd1_node.js'));
   const worker = (await import(path.join(ROOT, 'cloudflare', 'worker.js'))).default;
   const DB = d1(), mail = fakeMail();
-  const env = { DB, RESEND_API_KEY: 're_test', MAIL_FETCH: mail.fetch, MAIL_WAIT: '1' };
+  const env = { DB, RESEND_API_KEY: 're_test', MAIL_FETCH: mail.fetch, MAIL_WAIT: '1', TIDY: '1' }; // TIDY: tidy after every request (Dog Cards: a deleted account)
   const call = async (method, p, body, token, headers) => {
     const h = Object.assign({}, headers || {}); if (token) h.Authorization = 'Bearer ' + token;
     let b; if (body !== null && body !== undefined) { b = typeof body === 'string' ? body : JSON.stringify(body); h['Content-Type'] = 'application/json'; }
@@ -243,7 +325,7 @@ async function inMiniflare() {
   const worker = {
     name: 'pawhaven-api', modules: true, script: require('fs').readFileSync(path.join(ROOT, 'cloudflare', 'worker.js'), 'utf8'), // the code itself: workerd refuses paths above its starting directory compatibilityDate: '2026-08-01',
     d1Databases: { DB: 'pawhaven-test-' + Date.now() },
-    bindings: { RESEND_API_KEY: 're_test', MAIL_WAIT: '1' },
+    bindings: { RESEND_API_KEY: 're_test', MAIL_WAIT: '1', TIDY: '1' },
     outboundService: (req) => (req.url.startsWith('https://api.resend.com/') ? mail.fetch(req) : new Response('{}', { status: 404 }))
   };
   let mf; // Miniflare 4 takes the worker's options at the top; Miniflare 5 wants them in workers[]
