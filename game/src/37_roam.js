@@ -61,6 +61,7 @@ function rmScan() {
     const b = rmWorldBox(svg, M, el); if (b && b[2] > 4 && b[3] > 4 && b[1] < 600 && b[1] + b[3] > 0) out.push(b.concat(el.closest('[data-decor]') ? (rmFestDecor(el) ? 'fest' : 'decor') : el.closest('[data-drift], [data-pile], #wnDogG, #hwPopG') ? 'prop' : el.id || el.dataset.hot || el.dataset.shop || 'hot'));
   });
   [...(($('#placeBtns') || {}).children || [])].concat([$('#phPeek'), $('#rmLookL'), $('#rmLookR')]).forEach((el) => { if (!el || el.hidden) return; const b = rmWorldBox(svg, M, el); if (b && b[1] < 600) out.push(b.concat('btn')); });
+  const vt = svg.querySelector('#visitorG .vtag rect'), vb = vt && rmWorldBox(svg, M, vt); if (vb) out.push(vb.concat('vtag')); // v2.11.1: the visiting pup's name tag keeps readable next to the grown dogs (a small box of its own: at most 8% covered)
   if (S.place === 'yard' && !out.some((b) => b[4] === 'houseG')) out.push([620, 330, 240, 200, 'house']);
   (RM_SCENERY[S.place] || []).forEach((b) => out.push(b.slice()));
   RM.no = out;
