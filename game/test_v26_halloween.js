@@ -1,5 +1,5 @@
 // v2.6 HALLOWEEN lane (V26.md section 7): Mrs. Plum's Pumpkin Patch Pop-up in the Square, open 8 Oct to 2 Nov 2026 (JST).
-// 2026-10-20: the pop-up, its place button, the sheet (16 items in four sections with the 2026 tag), buying one of each category (coins, inventory,
+// 2026-10-20: the pop-up, its place button, the sheet (19 items in four sections with the 2026 tag: v2.11.1 added three costumes, 7 clothes), buying one of each category (coins, inventory,
 // buy shop:'popup'), the decoration in the yard, the toy, the clothes with the tag in the Wardrobe, the food tip on first feed, the letter once,
 // the Journal line. Kibble Corner, the Boutique and the Harvest Stall never list an `ed` item. The dates: 2026-11-02 open, 2026-11-03 and
 // 2027-10-28 closed with the bought items still working and tagged, 2026-10-07 closed. festNow() in auto across the windows. An old v2.5 save loads.
@@ -24,8 +24,8 @@ require('./test_lib').run('v26_halloween', async (t) => {
 
   await t.newGame({ sex: 'girl' }, { coins: 3000, bond: { level: 1, pts: 0 }, stats: { hunger: 40, happy: 50, energy: 80, clean: 90 } });
   await t.home('yard');
-  ALL = await ev(() => window.__paw.hw.items()); [DECOR, FOODS, TOYS, CLOTHES] = [0, 4, 8, 12].map((i) => ALL.slice(i, i + 4)); CAKE = FOODS[0];
-  ok(ALL.length === 16, '16 edition items: ' + ALL.join(', '));
+  ALL = await ev(() => window.__paw.hw.items()); [DECOR, FOODS, TOYS] = [0, 4, 8].map((i) => ALL.slice(i, i + 4)); CLOTHES = ALL.slice(12); CAKE = FOODS[0];
+  ok(ALL.length === 19 && CLOTHES.length === 7 && ['Pumpkin Patch Suit', 'Trick-or-Treat Ghost', 'Little Bat Costume'].every((n) => CLOTHES.includes(n)), '19 edition items (7 clothes with the v2.11.1 costumes): ' + ALL.join(', '));
 
   sec('2026-10-20: the gate and the letter');
   ok(await ev(() => window.__paw.hw.on() && document.getElementById('modal').hidden !== undefined), 'hwOn() is true on 2026-10-20 (fest auto, the 2026 window)');
@@ -56,7 +56,7 @@ require('./test_lib').run('v26_halloween', async (t) => {
   await p().click('[data-hw=popup]');
   ok(await t.until(() => !!document.querySelector('#modal:not([hidden]) .panel.hw-pop'), null, 4000), 'the place button opens the sheet');
 
-  sec('the sheet: Mrs. Plum, four sections, 16 cards with the 2026 tag');
+  sec('the sheet: Mrs. Plum, four sections, 19 cards with the 2026 tag');
   const sh = await ev(() => ({
     plum: document.querySelector('.hw-plum').textContent, secs: [...document.querySelectorAll('.hw-sec')].map((e) => [e.dataset.sec, e.querySelector('h3').textContent, [...e.querySelectorAll('.sitem > b')].map((b) => b.firstChild.textContent)]),
     tags: [...document.querySelectorAll('.hw-pop .sitem > b .hw-tag')].map((x) => x.textContent), tips: document.querySelectorAll('.hw-pop .sitem[data-cat=food] .sh-tip').length, locks: document.querySelectorAll('.hw-pop .chip.lock').length,
@@ -64,13 +64,13 @@ require('./test_lib').run('v26_halloween', async (t) => {
   }));
   ok(/^Mrs\. Plum: "Everything here is made for 2026 only\. When I pack up on 2 November, it is gone for good, but yours stays yours\."$/.test(sh.plum.trim()), "Mrs. Plum's line");
   ok(sh.secs.map((x) => x[1]).join('|') === 'Decorations|Treats|Toys|Clothes', 'four sections: ' + sh.secs.map((x) => x[1]).join(', '));
-  ok(JSON.stringify(sh.secs.map((x) => x[2])) === JSON.stringify([DECOR, FOODS, TOYS, CLOTHES]), 'the 16 items, four per section');
-  ok(sh.tags.length === 16 && sh.tags.every((x) => x === '2026'), 'every card has the 2026 tag');
+  ok(JSON.stringify(sh.secs.map((x) => x[2])) === JSON.stringify([DECOR, FOODS, TOYS, CLOTHES]), 'the 19 items: 4 decorations, 4 treats, 4 toys, 7 clothes');
+  ok(sh.tags.length === 19 && sh.tags.every((x) => x === '2026'), 'every card has the 2026 tag');
   ok(sh.tips === 4, 'every treat shows its two-sentence tip');
-  ok(sh.locks === 0 && sh.buys === 16, 'no bond locks at Bond 1: 16 Buy buttons');
+  ok(sh.locks === 0 && sh.buys === 19, 'no bond locks at Bond 1: 19 Buy buttons');
   ok(sh.foot === 'Open until 2 November.', 'the footer: ' + sh.foot);
   ok(sh.seen === await ev(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }), 'S.hw.seen = the day the sheet was first opened');
-  ok(sh.secs.every(([k, , ns]) => ns.length === 4) && ALL.every((n) => sh.secs.some((x) => x[2].includes(n))), 'every item of __paw.hw.items() has a card');
+  ok(sh.secs.map((x) => x[2].length).join() === '4,4,4,7' && ALL.every((n) => sh.secs.some((x) => x[2].includes(n))), 'every item of __paw.hw.items() has a card');
   await t.SH('02_sheet');
 
   sec('buying one of each category');
@@ -135,7 +135,7 @@ require('./test_lib').run('v26_halloween', async (t) => {
   for (const tab of ['food', 'toys']) { await ev(() => window.__paw.shop.shop('kibble')); await p().click(`#modal [data-tab=${tab}]`); await t.until((tb) => document.querySelector(`#modal [data-tab=${tb}][aria-selected=true]`), tab, 3000); seen.push(...await names()); }
   await t.closeX(); await ev(() => window.__paw.shop.shop('boutique')); seen.push(...await names()); await t.closeX();
   const stall = await ev(() => window.__paw.fest.items());
-  ok(seen.length > 20 && !seen.some((n) => ALL.includes(n)), `Kibble Corner (food, toys) and the Boutique list none of the 16 (${seen.length} cards)`);
+  ok(seen.length > 20 && !seen.some((n) => ALL.includes(n)), `Kibble Corner (food, toys) and the Boutique list none of the 19 (${seen.length} cards)`);
   ok(stall.length === 10 && !stall.some((n) => ALL.includes(n)), 'the Harvest Stall lists its 10 v2.5 items only');
 
   sec('festNow() in auto and hwShopOpen() across the dates (JST)');
