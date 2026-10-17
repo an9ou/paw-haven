@@ -5,7 +5,7 @@
 // runtime only (V29.md 5.1: no save field). walk: the followers of the walk that is starting or running. sw: a long screen runs for another dog. skip: why the last pkDogs left a dog out
 const PKS = { walk: null, sw: null, skip: [], lp: false, fetch: null, card: null, pickX: 0 };
 const PK_BONUS = 0.1; // pack walk bonus: +10% of one walk's coins (rounded down) when 2 or more dogs walk (V29.md 5.4)
-const PK_CAP_PLAY = 'Ticked dogs join in. The leader always plays.';
+const PK_CAP_PLAY = 'Ticked dogs join in. The leader always plays. Every awake dog plays ball.';
 const PK_CAP_WALK = 'Ticked dogs come along. The leader leads.';
 
 /* ---------------- who joins in ---------------- */
