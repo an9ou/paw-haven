@@ -110,8 +110,8 @@ function tkSceneArt(name, o) {
   return `<g class="tk-fb" data-tk-fb="${name}">${base}${Object.keys(hots).map((k) => tkFbHot(k, hots[k])).join('')}${placeSign(name)}</g>`;
 }
 
-// scenery on the floor band a dog must not stand in (feet only), added to RM_SCENERY (37_roam.js): the Tokyo Tower planters, the Odaiba sandcastle
-const TK_SCENERY = { tokyotower: [[14, 516, 100, 70, 'scene'], [890, 540, 110, 50, 'scene']], odaiba: [[70, 512, 70, 52, 'scene']] };
+// scenery on the floor band a dog must not stand in (feet only), added to RM_SCENERY (37_roam.js): the Tokyo Tower corner planter
+const TK_SCENERY = { tokyotower: [[0, 530, 80, 60, 'scene']] }; // the corner planter (the art fix moved the rest of the props out of the floor band)
 Object.assign(RM_SCENERY, JSON.parse(JSON.stringify(TK_SCENERY))); // tkFeet adds the hot spots' foot boxes once the scene is up
 
 /* ---- the town map: the Station pin (Bond 3). mapArt passes { station: true } and the lock while PLACES.station exists (TOKYO ART D draws
