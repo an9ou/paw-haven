@@ -43,7 +43,7 @@ require('./test_lib').run('phone_v210_roam', async (t) => {
 
     sec(device + ': a finger tap pets that dog only');
     await ev(() => { window.__paw.rm.pause('test'); window.__paw.S.dogs.forEach((d) => { d.stats.happy = 40; }); });
-    const v2 = await vb(); await ev(([id, x]) => window.__paw.rm.set(id, { x, y: 560 }), [ids[2], Math.round(v2.x + v2.w * 0.78)]);
+    const v2 = await vb(); await ev(([id, x]) => window.__paw.rm.set(id, { x, y: 590 }), [ids[2], Math.round(v2.x + v2.w * 0.78)]); // the front row: Goldie (moved off the crop above, y 560) may stand there
     const xy = await tapAt(ids[2]); ok(!!xy, 'Pip can be tapped');
     if (xy) { for (let i = 0; i < 3; i++) { const q = await tapAt(ids[2]); if (q) await p().touchscreen.tap(q.x, q.y); await t.sleep(150); } } // she walks to the front after the first pet: find her again
     const st = await S();

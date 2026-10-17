@@ -56,7 +56,7 @@ require('./test_lib').run('v210_roam', async (t) => {
   await ev((id) => { window.__rmDone = 0; window.__paw.rm.to(id, 560, 470, { run: true, pose: 'happy', done: () => { window.__rmDone++; } }); }, B);
   ok(await t.until(() => window.__rmDone === 1, null, 4000), 'rmTo runs there and calls done once');
   q = await pos(B); ok(Math.round(q.x) === 560 && Math.round(q.y) === 470 && q.pose === 'happy', 'it arrives with the pose asked for');
-  await ev((id) => window.__paw.rm.set(id, { pose: 'walk', face: 'right' }), A);
+  await ev((id) => { window.__paw.rm.calm(id, 3000); window.__paw.rm.set(id, { pose: 'walk', face: 'right' }); }, A); // calm: its own idle would pick the next pose
   ok((await pos(A)).pose === 'walk' && (await pos(A)).face === 'right', 'rmSet on the leader redraws its art (renderDog)');
   await ev(() => window.__paw.S.prefs || 0); await ev(() => { window.__paw.idle.speed(0.02); });
   const snap = JSON.stringify(await ev((l) => l.map((id) => { const p = window.__paw.rm.pos(id); return [Math.round(p.x), Math.round(p.y)]; }), all));
@@ -73,12 +73,15 @@ require('./test_lib').run('v210_roam', async (t) => {
 
   sec('4. petting: only the touched dog, it comes to the front, the daily care bonus once');
   await hold(); await set('happy', 40); await ev(() => { const S = window.__paw.S; S.daily = Object.assign(S.daily || {}, { pet: false }); }); await t.toasts();
-  // the others stay held at the back (a roaming dog could walk under the cursor, and a full front row leaves Pip no front spot); the petted dog still walks to the front
-  await ev(([a, b, c, g]) => { const R = window.__paw.rm; R.set(a, { x: 300, y: 420 }); R.set(b, { x: 560, y: 420 }); R.set(g, { x: 420, y: 440 }); R.set(c, { x: 820, y: 430 }); }, [A, B, C, G]);
+  // the others stand still at the back (a roaming dog could walk under the cursor, and a full front row leaves Pip no front spot), then roaming runs
+  // again so the petted dog walks to the front (it does not while roaming is held: ball play keeps its dogs where it put them)
+  await ev(([a, b, c, g]) => { const R = window.__paw.rm; R.set(a, { x: 430, y: 470 }); R.set(b, { x: 620, y: 420 }); R.set(g, { x: 330, y: 430 }); R.set(c, { x: 820, y: 430 }); R.validate(); [a, b, c, g].forEach((id) => R.calm(id, 40000)); }, [A, B, C, G]);
+  await free(); const amb0 = await ev(() => (window.__toasts || []).filter((x) => /Happiness each/.test(x)).length);
   const b0 = (await S()).dogs.map((d) => d.bond.pts), c0 = (await S()).coins;
   for (let i = 0; i < 9; i++) { const xy = await tapAt(C); if (xy) await p().mouse.click(xy.x, xy.y); await p().waitForTimeout(120); }
-  let st = await S();
-  ok(st.dogs.every((d) => (d.id === C ? d.stats.happy > 50 : Math.round(d.stats.happy) === 40)), 'only Pip\'s Happiness rose: ' + JSON.stringify(st.dogs.map((d) => Math.round(d.stats.happy))));
+  let st = await S(); const amb = 2 * ((await ev(() => (window.__toasts || []).filter((x) => /Happiness each/.test(x)).length)) - amb0); // a pack joke (+2 each) may come by
+  ok(st.dogs.every((d) => (d.id === C ? d.stats.happy > 50 : Math.abs(d.stats.happy - (40 + amb)) < 1.5)), // 1.5: the hourly decay under load
+    'only Pip\'s Happiness rose: ' + JSON.stringify(st.dogs.map((d) => Math.round(d.stats.happy))));
   ok(st.dogs.every((d, i) => (d.id === C ? d.bond.pts > b0[i] : d.bond.pts === b0[i])), 'only Pip got Bond');
   ok(await t.waitToast(/Pip pretends she did not enjoy that/), 'one Bond toast for Pip');
   ok(st.daily.pet === true && st.coins > c0, 'the daily care bonus on the first good petting of any dog');
@@ -86,9 +89,10 @@ require('./test_lib').run('v210_roam', async (t) => {
   ok(await t.until((id) => { const p = window.__paw.rm.pos(id), z = window.__paw.rm.zone('yard'); return p.y >= z.y1 - 40 && !window.__paw.rm.moving.includes(id); }, C, 6000), 'Pip walked to the front of the scene');
   const pf = await pos(C); await t.sleep(1500);
   const pf2 = await pos(C); ok(Math.abs(pf2.x - pf.x) < 1 && Math.abs(pf2.y - pf.y) < 1, 'and stays there a moment');
-  const c1 = (await S()).coins; await set('happy', 40);
+  const c1 = (await S()).coins; await set('happy', 40); const amb1 = await ev(() => (window.__toasts || []).filter((x) => /Happiness each/.test(x)).length);
   ok(await t.pet(() => window.__paw.S.dog.stats.happy > 45), 'rubbing the leader');
-  st = await S(); ok(st.dogs.every((d) => (d.id === A ? d.stats.happy > 45 : Math.round(d.stats.happy) === 40)), 'only the leader\'s Happiness rose: ' + JSON.stringify(st.dogs.map((d) => Math.round(d.stats.happy))));
+  const amb2 = 2 * ((await ev(() => (window.__toasts || []).filter((x) => /Happiness each/.test(x)).length)) - amb1);
+  st = await S(); ok(st.dogs.every((d) => (d.id === A ? d.stats.happy > 45 : Math.abs(d.stats.happy - (40 + amb2)) < 1.5)), 'only the leader\'s Happiness rose: ' + JSON.stringify(st.dogs.map((d) => Math.round(d.stats.happy))));
   ok(!(await ev(() => (window.__toasts || []).some((x) => /Daily care bonus/.test(x) && /pet/.test(x) && window.__toasts.filter((y) => /Daily care bonus: .* pet/.test(y)).length > 1))), 'the care bonus did not come twice');
   ok(st.coins === c1 || st.coins >= c1, 'no second pet bonus');
 
@@ -99,6 +103,9 @@ require('./test_lib').run('v210_roam', async (t) => {
   ok(await ev((g) => !!document.querySelector(`#pack .rmlead[data-dog="${g}"] #dogPos`) && document.querySelectorAll('#dogPos').length === 1, G), 'her group now holds #dogPos (one leader drawing)');
   ok(JSON.stringify(await ev((l) => l.map((id) => { const p = window.__paw.rm.pos(id); return [Math.round(p.x), Math.round(p.y)]; }), all)) === before, 'every dog stayed where it was');
   ok((await t.mode()) === 'yard', 'still in the yard (no scene rebuild)');
+  await ev((id) => { window.__paw.S.dogs.find((x) => x.id === id).sleeping = false; window.__paw.rm.set(id, { x: 620, y: 420 }); }, B);
+  for (let i = 0; i < 3; i++) { const xy = await tapAt(B); if (xy) await p().mouse.click(xy.x, xy.y); await p().waitForTimeout(120); }
+  await t.sleep(600); q = await pos(B); ok(q.x === 620 && q.y === 420, `petted while roaming is held (ball play), a dog stays where the game put it (${Math.round(q.x)}, ${Math.round(q.y)})`);
   await p().click(`#hudPack [data-dog="${A}"]`, { force: true }); await t.until((a) => window.__paw.S.activeId === a, A, 3000); await free();
 
   sec('6. attention: the dachshund comes to ask, ignoring it is fine');

@@ -56,21 +56,39 @@ function rmScan() {
   (RM_SCENERY[S.place] || []).forEach((b) => out.push(b.slice()));
   RM.no = out;
 }
-// may dog d stand with its feet at x, y (scale k)? Feet stay in the zone and out of every no-go box; its tap rect covers no small tappable thing,
-// no more than 40% of a bigger one and never its middle (huge scenery like a shop front only keeps the feet out); other dogs' tap rects stay clear
+// the feet (hard: never) and the tap rect (soft) against the no-go boxes. Soft: the tap rect covers no small tappable thing, no more than 40% of a bigger
+// one and never its middle (only huge scenery like a shop front keeps just the feet out), and a dog standing behind a prop on the floor (its feet
+// above the prop's base) keeps its body off it (at most a fifth of its width), or it would be drawn in front of the prop it stands behind
+const RM_HUGE = 70000;
+function rmBoxes() { return RM.no || rmStaticNo(S.place); }
+function rmHard(x, y) { return rmBoxes().some((b) => x > b[0] - 8 && x < b[0] + b[2] + 8 && y > b[1] - 8 && y < b[1] + b[3] + 8); }
+function rmSoft(x, y, k) {
+  const T = rmTapBox(x, y, k), y0 = rmZoneOf(S.place).y0;
+  for (const b of rmBoxes()) {
+    const A = b[2] * b[3], base = b[1] + b[3];
+    if (b[4] !== 'btn' && A < RM_HUGE && base > y0 && y < base && T[1] < base && Math.min(T[0] + T[2], b[0] + b[2] - 6) - Math.max(T[0], b[0] + 6) > T[2] * 0.2 && T[1] + T[3] > b[1]) return true; // a fifth of its width over the prop
+    if (b[4] === 'scene' || A >= RM_HUGE) continue;
+    const o = rmOver(T, b[4] === 'prop' ? [b[0] - 3, b[1] - 3, b[2] + 6, b[3] + 6] : b); if (!o) continue;
+    if (b[4] === 'prop' ? o > 0 : A < 15000 ? o > A * 0.08 : o > A * 0.4 || (b[0] + b[2] / 2 > T[0] && b[0] + b[2] / 2 < T[0] + T[2] && b[1] + b[3] / 2 > T[1] && b[1] + b[3] / 2 < T[1] + T[3])) return true;
+  }
+  return false;
+}
+// where a dog is headed (its feet and scale), the leader by its own spot while it runs an errand (the bowl, the bath)
+function rmDest(o) { const r = rmSt(o), w = r.tw; if (o === D() && r.away) return [r.hx, r.hy, rmScale(r.hy)]; if (!w) return [r.x, r.y, rmK(r)]; const e = w.end || [w.x1, w.y1]; return [e[0], e[1], w.k1 != null ? w.k1 : r.k != null && r.fix ? r.k : rmScale(e[1])]; }
+// may dog d stand with its feet at x, y (scale k)? In the zone, rmHard and rmSoft clear, and the other dogs: no two tap rects overlap by more than
+// 30% (50% when nothing else is free), nobody stands in front of the leader over 15% of its tap rect (its #dogHit stays tappable), and the dogs in front
+// of a dog never cover more than 45% of it together (no clumps where one dog disappears)
 function rmOk(d, x, y, k, strict) {
   const z = rmZoneOf(S.place); if (y < z.y0 || y > z.y1 || x < z.x0 || x > z.x1) return false;
   const T = rmTapBox(x, y, k); if (T[0] < 4 || T[0] + T[2] > 996) return false;
-  for (const b of RM.no || rmStaticNo(S.place)) {
-    if (x > b[0] - 8 && x < b[0] + b[2] + 8 && y > b[1] - 8 && y < b[1] + b[3] + 8) return false;
-    if (b[4] === 'scene') continue;
-    const A = b[2] * b[3], o = rmOver(T, b[4] === 'prop' ? [b[0] - 3, b[1] - 3, b[2] + 6, b[3] + 6] : b); if (!o) continue;
-    if (b[2] > 330 || b[3] > 270) continue;
-    if (b[4] === 'prop' || A < 15000 ? o > (b[4] === 'prop' ? 0 : A * 0.08) : o > A * 0.4 || (b[0] + b[2] / 2 > T[0] && b[0] + b[2] / 2 < T[0] + T[2] && b[1] + b[3] / 2 > T[1] && b[1] + b[3] / 2 < T[1] + T[3])) return false;
+  if (rmHard(x, y) || rmSoft(x, y, k)) return false;
+  const lim = strict === false ? 0.5 : 0.3, ll = strict === false ? 0.3 : 0.15, A = T[2] * T[3], L = D(); let front = 0;
+  for (const o of rmDogs()) {
+    if (o === d || !rmSt(o).seeded) continue; const [ox, oy, ok] = rmDest(o), U = rmTapBox(ox, oy, ok), v = rmOver(T, U); if (!v) continue;
+    if (v > A * lim || (o === L && y >= oy && v > U[2] * U[3] * ll) || (d === L && oy >= y && v > A * ll)) return false;
+    if (oy >= y) front += v;
   }
-  const lim = strict === false ? 0.5 : 0.3; // dogs at different depths may overlap a little (each keeps most of its tap rect)
-  for (const o of rmDogs()) { if (o === d || !rmSt(o).seeded) continue; const r = rmSt(o), tx = r.tw ? r.tw.x1 : r.x, ty = r.tw ? r.tw.y1 : r.y, ko = r.tw && r.tw.k1 != null ? r.tw.k1 : r.k != null ? r.k : rmScale(ty); if (rmOver(T, rmTapBox(tx, ty, ko)) > T[2] * T[3] * lim) return false; }
-  return true;
+  return front <= A * 0.45;
 }
 function rmCands(d, strict) { const z = rmZoneOf(S.place), out = []; for (let y = z.y0; y <= z.y1; y += 14) for (let x = z.x0; x <= z.x1; x += 20) if (rmOk(d, x, y, rmScale(y), strict)) out.push([x, y]); return out; }
 // spot kinds (section 5.2): open, shade, edge, gate, bowl, dig, front, sun (bed is the nap spots, handled by the nap itself)
@@ -104,12 +122,15 @@ function rmSeed() {
   if (!S || !S.dogs) return; const key = S.place + (isPhone() ? '|ph' : '');
     if (RM.place !== key) { RM.place = key; RM.no = null; Object.values(RM.d).forEach((r) => { r.seeded = false; r.tw = null; r.q = null; r.fix = false; r.k = null; }); RM.t0 = performance.now(); }
   const ds = rmDogs(), placed = [];
+  // phones: the feet x where a dog's whole tap rect shows in the home crop (about the v2.3 home's middle, x 358, at most 700 units wide)
+  const cw = isPhone() ? Math.min(RM_CROP, rmCropW()) : 1000, cx = clamp(358, cw / 2, 1000 - cw / 2), win = isPhone() ? [cx - cw / 2 + 84, cx + cw / 2 - 84] : [0, 1000];
   ds.forEach((d) => { const r = rmSt(d); if (r.seeded) placed.push(r); });
   ds.forEach((d) => {
     const r = rmSt(d); if (r.seeded) return; r.seeded = true; r.tw = null; r.q = null;
     if (d === D() && (!rmWander() || rmOk(d, 430, 500, rmScale(500), false))) { r.x = 430; r.y = 500; r.face = 'right'; } // under the harness the leader keeps its v2.9 spot
     else {
       let c = rmCands(d); if (!c.length) c = rmCands(d, false); if (!c.length) c = [[[150, 560], [800, 560], [560, 440]][placed.length % 3]];
+      const inC = c.filter((p) => p[0] >= win[0] && p[0] <= win[1]); if (inC.length) c = inC; // phones: inside the home crop while there is room
       let best = c[0], bv = -1e9;
       c.forEach(([x, y]) => { const m = placed.reduce((a, p) => Math.min(a, Math.abs(p.x - x) + Math.abs(p.y - y) * 0.6), 1e9); const v = Math.min(m, 400) - Math.abs(y - 520) * 0.7; if (v > bv) { bv = v; best = [x, y]; } });
       r.x = best[0]; r.y = best[1]; r.face = r.x > 500 ? 'left' : 'right';
@@ -132,7 +153,8 @@ function rmFixed(d, i) {
   return f;
 }
 function rmApplyFixed(d, i) {
-  const r = rmSt(d), f = rmFixed(d, i);
+  const r = rmSt(d), f = rmFixed(d, i), held = RM.paused.size > 0 && r.seeded;
+  if (held && f && !d.sleeping && !r.fix) return; // held (ball play): nobody walks off to the sofa or the chair
   const walk = rmWander() && cur.mode === 'yard' && !!$('#pack') && r.seeded; // a dog in the scene walks over (onto the sofa, off its bed); a fresh scene just places it
   if (f) {
     const far = Math.hypot(f[0] - r.x, f[1] - r.y) > 30; if (!r.fix) r.fx0 = [r.x, r.y]; r.q = null; r.fix = true; r.face = f[2];
@@ -140,8 +162,8 @@ function rmApplyFixed(d, i) {
     r.x = f[0]; r.y = f[1]; r.k = f[3] || 0.6; r.tw = null; return;
   }
   if (r.fix) { // back where it was before the nap or the sofa
-    r.fix = false; const to = r.fx0 || [r.x, r.y], k0 = rmK(r);
-    if (walk) { r.tw = { x0: r.x, y0: r.y, k0, x1: to[0], y1: to[1], k1: null, t0: performance.now(), dur: Math.min(2600, (Math.hypot(to[0] - r.x, to[1] - r.y) / RM_WALK) * 1000), o: { anchor: true } }; r.face = to[0] < r.x ? 'left' : 'right'; rmLoop(); }
+    r.fix = false; const to = held ? [r.x, r.y] : r.fx0 || [r.x, r.y], k0 = rmK(r); // held: a dog that wakes stands up where it lay
+    if (walk && !held) { r.tw = { x0: r.x, y0: r.y, k0, x1: to[0], y1: to[1], k1: null, t0: performance.now(), dur: Math.min(2600, (Math.hypot(to[0] - r.x, to[1] - r.y) / RM_WALK) * 1000), o: { anchor: true } }; r.face = to[0] < r.x ? 'left' : 'right'; rmLoop(); }
     else { r.k = null; r.x = to[0]; r.y = to[1]; }
     r.wake = true;
   }
@@ -201,6 +223,7 @@ function rmFrame(t) {
     const k = w.dur > 0 ? Math.min(1, (t - w.t0) / w.dur) : 1, e = w.o.legacy ? rmEase(k) : k < 1 ? k : 1;
     r.x = w.x0 + (w.x1 - w.x0) * e; r.y = w.y0 + (w.y1 - w.y0) * e;
     const k1 = w.k1 != null ? w.k1 : rmScale(w.y1); r.k = k < 1 ? w.k0 + (k1 - w.k0) * e : w.k1;
+    if (k >= 1 && w.rest && w.rest.length) { r.x = w.x1; r.y = w.y1; rmLeg(d, w.rest, w.o, w.spd); rmPaint(d); any = true; return; } // the next waypoint
     if (k >= 1) { r.tw = null; if (w.o.anchor) { r.hx = r.x; r.hy = r.y; } if (w.o.face) r.face = w.o.face; rmPaint(d); rmArrive(d, w.o); } else { rmPaint(d); any = true; }
   });
   rmDepth(); if (any) RM.raf = requestAnimationFrame(rmFrame);
@@ -211,17 +234,52 @@ function rmArrive(d, o) {
   if (d !== D() && o.pose) { packPose[d.id] = o.pose; rmPaint(d); }
   if (typeof o.done === 'function') { try { o.done(); } catch (e) { console.error(e); } }
 }
-// walk there (o.run runs, o.speed in world units a second, o.secs a fixed time), then o.pose, o.face, o.done(). o.k: a fixed scale (null = rmScale)
+// the way from x0, y0 to x1, y1 (review A): straight when the line is clear, else over a coarse grid of the zone where the feet never enter a no-go
+// box and the tap rect keeps off tappable things where it can (a soft cost), smoothed to a few waypoints. The last point is always x1, y1
+function rmLineOk(x0, y0, x1, y1, soft) {
+  const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 12));
+  for (let i = 1; i <= n; i++) { const x = x0 + ((x1 - x0) * i) / n, y = y0 + ((y1 - y0) * i) / n; if (Math.hypot(x - x0, y - y0) < 16) continue; if (rmHard(x, y) || (soft && rmSoft(x, y, rmScale(y)))) return false; } // the start may stand somewhere it is stepping off
+  return true;
+}
+function rmRoute(x0, y0, x1, y1) {
+  if (rmLineOk(x0, y0, x1, y1, true)) return [[x1, y1]];
+  const z = rmZoneOf(S.place), xs = [], ys = []; for (let x = z.x0; x <= z.x1 + 0.1; x += 30) xs.push(x); for (let y = z.y0; y <= z.y1 + 0.1; y += 16) ys.push(y);
+  const W = xs.length, N = W * ys.length, P = (i) => [xs[i % W], ys[Math.floor(i / W)]], cost = new Float32Array(N);
+  for (let i = 0; i < N; i++) { const [x, y] = P(i); cost[i] = rmHard(x, y) ? 0 : rmSoft(x, y, rmScale(y)) ? 4 : 1; }
+  const near = (x, y) => { let b = -1, bd = 1e9; for (let i = 0; i < N; i++) { if (!cost[i]) continue; const [px, py] = P(i), v = Math.hypot(px - x, py - y); if (v < bd) { bd = v; b = i; } } return b; };
+  const s = near(x0, y0), e = near(x1, y1); if (s < 0 || e < 0 || s === e) return [[x1, y1]];
+  const dist = new Float64Array(N).fill(1e12), prev = new Int32Array(N).fill(-1), done = new Uint8Array(N); dist[s] = 0;
+  for (;;) {
+    let u = -1; for (let i = 0; i < N; i++) if (!done[i] && cost[i] && (u < 0 || dist[i] < dist[u])) u = i;
+    if (u < 0 || dist[u] >= 1e12 || u === e) break; done[u] = 1; const ui = u % W, uj = Math.floor(u / W), [ux, uy] = P(u);
+    for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+      const vi = ui + di, vj = uj + dj; if ((!di && !dj) || vi < 0 || vi >= W || vj < 0 || vj >= ys.length) continue; const v = vj * W + vi; if (!cost[v] || done[v]) continue;
+      const [vx, vy] = P(v), nd = dist[u] + Math.hypot(vx - ux, vy - uy) * (cost[u] + cost[v]) / 2; if (nd < dist[v]) { dist[v] = nd; prev[v] = u; }
+    }
+  }
+  if (prev[e] < 0) return [[x1, y1]];
+  const pts = [[x1, y1]]; for (let i = e; i >= 0; i = prev[i]) pts.unshift(P(i)); pts.unshift([x0, y0]);
+  const out = []; for (let i = 0; i < pts.length - 1;) { let j = pts.length - 1; while (j > i + 1 && !rmLineOk(pts[i][0], pts[i][1], pts[j][0], pts[j][1], true)) j--; out.push(pts[j]); i = j; }
+  return out;
+}
+// walk there (o.run runs, o.speed in world units a second, o.secs a fixed time), then o.pose, o.face, o.done(). o.k: a fixed scale (null = rmScale).
+// The walk goes round the no-go boxes (rmRoute) unless it is a legacy errand (dogTo), a fixed-time move or o.direct
 function rmTo(d, x, y, o = {}) {
   if (!d || !S) return; const r = rmSt(d), now = performance.now();
   if (d !== D() && r.fix) { if (typeof o.done === 'function') o.done(); return; }
-  const dist = Math.hypot(x - r.x, y - r.y), spd = o.speed || (o.run ? RM_RUN : RM_WALK) * (o.legacy ? 1 : 1 / Math.max(0.05, IDLE.speed));
-  const dur = o.secs != null ? o.secs * 1000 : (dist / spd) * 1000;
+  const spd = o.speed || (o.run ? RM_RUN : RM_WALK) * (o.legacy ? 1 : 1 / Math.max(0.05, IDLE.speed));
+  const path = o.legacy || o.secs != null || o.direct || cur.mode !== 'yard' ? [[x, y]] : rmRoute(r.x, r.y, x, y);
+  const dur = rmLeg(d, path, o, spd, true); if (dur <= 0) rmFrame(now); else rmLoop();
+}
+// the next leg of a walk: path is what is left of it (its last point is where the walk ends)
+function rmLeg(d, path, o, spd, first) {
+  const r = rmSt(d), now = performance.now(), [x, y] = path.shift(), end = path.length ? path[path.length - 1] : [x, y];
+  const dist = Math.hypot(x - r.x, y - r.y), dur = o.secs != null ? o.secs * 1000 : (dist / spd) * 1000, f0 = r.face;
   if (Math.abs(x - r.x) > 3 && !o.legacy) r.face = x < r.x ? 'left' : 'right';
-  r.tw = { x0: r.x, y0: r.y, k0: rmK(r), x1: x, y1: y, k1: o.k != null ? o.k : null, t0: now, dur, o };
-  if (d === D() && !o.legacy && cur.mode === 'yard' && dist > 3) renderDog('walk', r.face, true);
+  r.tw = { x0: r.x, y0: r.y, k0: rmK(r), x1: x, y1: y, k1: o.k != null ? o.k : null, t0: now, dur, o, rest: path, spd, end };
+  if (d === D() && !o.legacy && cur.mode === 'yard' && dist > 3 && (first || f0 !== r.face)) renderDog('walk', r.face, true);
   else if (d !== D()) rmPaint(d);
-  if (dur <= 0) rmFrame(now); else rmLoop();
+  return dur;
 }
 // place a dog at once: any of { x, y, face, pose }. Cheap: moves the transform, redraws the art only when the pose or facing changes
 function rmSet(d, o = {}) {
@@ -232,7 +290,8 @@ function rmSet(d, o = {}) {
   rmPaint(d); rmDepth();
 }
 function rmStop(d) { const r = rmSt(d); if (r.tw) { r.tw = null; r.hx = r.x; r.hy = r.y; rmPaint(d); } r.q = null; }
-function rmPause(tag) { RM.paused.add(tag); rmDogs().forEach((d) => { const r = rmSt(d); r.q = null; }); }
+// the steps dropped here held the reset of packNext (an errand sets it 60 s ahead): a pack dog picks its next move a few seconds after the release
+function rmPause(tag) { RM.paused.add(tag); const t = performance.now() + RINT(2000, 4000); rmDogs().forEach((d) => { const r = rmSt(d); if (r.q && d !== D()) packNext[d.id] = t; r.q = null; }); }
 function rmResume(tag) { RM.paused.delete(tag); }
 // dogTo (03_yard.js) for the leader: the v2.9 calls give the box offset (feet at 430 * s + tx, 500 * s + ty). 0, 0, 1 means "back to where it stands"
 // (its roam spot). s = 1 is the normal size (rmScale), another s is a size fitted to a prop (the nap door, a bed, the Mt. Fuji bench, a sofa)
@@ -278,7 +337,8 @@ function rmPackAct(d) {
   let to = null, steps = null;
   if (kind === 'zoomies') {
     const z = rmZoneOf(S.place), y = clamp(r.y + RINT(-30, 30), z.y0 + 10, z.y1 - 10), a = clamp(r.x < 500 ? r.x + RINT(260, 380) : r.x - RINT(260, 380), 90, 910);
-    steps = [{ to: [a, y], run: true }, { to: [clamp(r.x + RINT(-60, 60), 90, 910), y], run: true }, { pose: 'happy', ms: 900 }];
+    const p1 = rmNear(d, a, y, false), p2 = rmNear(d, clamp(r.x + RINT(-60, 60), 90, 910), y, false); if (!p1 || !p2) return false; // free spots, not a box
+    steps = [{ to: p1, run: true }, { to: p2, run: true }, { pose: 'happy', ms: 900 }];
     const back = rmNear(d, r.x, r.y, false); if (back) steps.push({ to: back }); steps.push({ pose: p.trait === 'burst' ? 'down' : 'idle', ms: sec(2000, 4000) });
   } else if (kind === 'follow' || kind === 'herd') {
     const os = rmDogs().filter((o) => o !== d); const o = PICK(os); if (!o) return false; const ro = rmSt(o);
@@ -341,6 +401,7 @@ function rmPetted(d) {
   const r = rmSt(d), now = performance.now(); RM.petT[d.id] = now; r.ask = 0; r.askNext = now + 30000;
   if (!rmWander() || cur.mode !== 'yard' || r.fix || d.sleeping) return;
   r.hold = now + 4000; if (d !== D()) packNext[d.id] = Math.max(packNext[d.id] || 0, now + 4000);
+  if (RM.paused.size || (typeof blOn === 'function' && blOn())) return; // held (ball play): the pet counts, the dog stays where the game put it
   if (r.petFront && now - r.petFront < 9000) return; r.petFront = now;
   const z = rmZoneOf(S.place); if (r.y >= z.y1 - 40) return;
   const to = rmFrontSpot(d); if (!to || Math.hypot(to[0] - r.x, to[1] - r.y) < 30) return;
@@ -351,7 +412,11 @@ function rmPetted(d) {
 /* ---------------- the scene ---------------- */
 function rmTick() {
   if (!S || cur.mode !== 'yard' || !$('#pack')) return; const now = performance.now(); if (now < RM.tickAt) return; RM.tickAt = now + 200;
-  if (!RM.no || now > RM.noAt) { rmScan(); if (rmWander()) rmValidate(false); }
+  if (!RM.no || now > RM.noAt) { // held (ball play, photo mode, a modal, training): nobody is walked off its spot
+    const n0 = RM.no ? RM.no.length : -1; rmScan();
+    if (rmFree()) rmValidate(false);
+    else if (!rmWander() && n0 >= 0 && RM.no && RM.no.length !== n0 && rmOn() && modal.hidden && !TRN && !(typeof blOn === 'function' && blOn())) rmValidate(true); // the harness: a prop that came later (a snow drift) is stepped off at once
+  }
   if (isPhone()) rmLookSync();
   if (!rmFree()) return;
   rmDogs().forEach((d) => { if (d !== D()) rmQTick(d, now); });
@@ -377,7 +442,7 @@ function rmCropFit(vw, native) {
 }
 // the world x span of every dog's tap rect (and the bowl at home): where the phone camera centres
 function rmSpan() {
-  let L = 1e9, R = -1e9; rmDogs().forEach((d) => { const r = rmSt(d), lead = d === D(), T = rmTapBox(lead ? r.hx : r.tw ? r.tw.x1 : r.x, lead ? r.hy : r.y, rmK(r)); L = Math.min(L, T[0]); R = Math.max(R, T[0] + T[2]); }); // the leader by its own spot (its errands do not move the home crop)
+  let L = 1e9, R = -1e9; rmDogs().forEach((d) => { const r = rmSt(d), lead = d === D(), T = rmTapBox(lead ? r.hx : r.tw ? (r.tw.end || [r.tw.x1])[0] : r.x, lead ? r.hy : r.y, rmK(r)); L = Math.min(L, T[0]); R = Math.max(R, T[0] + T[2]); }); // the leader by its own spot (its errands do not move the home crop)
   if (L > R) { L = 186; R = 530; } return [L, R];
 }
 function rmLookSync() {
@@ -389,9 +454,10 @@ function rmLookSync() {
     if (!l.length || (typeof phPeekOn !== 'undefined' && phPeekOn)) { if (b) b.hidden = true; return; }
     if (!b) {
       b = document.createElement('button'); b.type = 'button'; b.id = id; b.className = 'iconbtn rm-look ' + (side < 0 ? 'left' : 'right'); view.appendChild(b);
-      b.innerHTML = '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M19 12 Q29 22 31 24 Q28 28 19 36" fill="none" stroke="#5B3D32" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
       b.onclick = (e) => { e.stopPropagation(); SFX.click(); const ds = off(side); if (!ds.length) return; const v = rmCropW() / 2, x = side < 0 ? Math.min(...ds.map((d) => rmSt(d).x)) : Math.max(...ds.map((d) => rmSt(d).x)); clearTimeout(phPanT); phCamHome = clamp(x + (side < 0 ? v - 160 : 160 - v), v, 1000 - v); camTo(phCamHome, 0.6); };
     }
+    // a dog chip, not the scene's look-around arrow (#phPeek): the head of the dog out there (as in the HUD row) with a small arrow pointing to it
+    const key = l.map((d) => d.id + coatNameOf(d)).join(); if (b.dataset.k !== key) { b.dataset.k = key; b.innerHTML = `<span class="rm-head">${headSVG(l[0])}</span><svg class="rm-arrow" viewBox="0 0 20 24" aria-hidden="true"><path d="M6 4 Q13 10 14 12 Q12 15 6 20" fill="none" stroke="#5B3D32" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>${l.length > 1 ? `<i class="rm-n">${l.length}</i>` : ''}`; }
     b.hidden = false; const n = l.map((d) => d.name); b.setAttribute('aria-label', `Look ${side < 0 ? 'left' : 'right'}: ${n.join(' and ')}`); b.title = n.join(', ');
   });
 }
@@ -413,6 +479,8 @@ function rmExpose() {
   window.__paw.rm = { on: () => rmOn(), free: () => rmFree(), dogs: () => rmDogs().map((d) => d.id), pos: (id) => rmPos(dogById(id) || D()), scale: (y) => rmScale(y), zone: (p) => rmZone(p),
     set: (id, o) => rmSet(dogById(id), o), to: (id, x, y, o) => rmTo(dogById(id), x, y, o || {}), pause: (t) => rmPause(t), resume: (t) => rmResume(t), ok: (id, x, y) => rmOk(dogById(id), x, y, rmScale(y)),
     scan: () => { rmScan(); return RM.no; }, validate: () => { rmScan(); rmValidate(true); }, act: (id) => rmPackAct(dogById(id)), ask: (id) => rmAsk(dogById(id) || D(), true), petAgo: (id) => rmPetAgo(dogById(id)), span: () => rmSpan(),
+    hard: (x, y) => rmHard(x, y), soft: (x, y) => rmSoft(x, y, rmScale(y)), route: (x0, y0, x1, y1) => rmRoute(x0, y0, x1, y1), cands: (id) => rmCands(dogById(id) || D()).length,
+    calm: (id, ms) => { const d = dogById(id), t = performance.now() + ms; rmSt(d).askNext = t; RM.askAt = Math.max(RM.askAt, t - 25000); if (d === D()) { IDLE.nextAt = t; if (IDLE.act) idleStop(); } else packNext[d.id] = t; }, // this dog stops what it does and starts nothing of its own for ms
     tap: (id) => { const d = dogById(id), r = rmSt(d); return rmTapBox(r.x, r.y, rmK(r)); }, get moving() { return rmDogs().filter((d) => rmSt(d).tw || rmSt(d).q).map((d) => d.id); } };
 }
 on('game:ready', () => setTimeout(rmExpose, 0));
