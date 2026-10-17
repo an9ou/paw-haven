@@ -120,18 +120,9 @@ const req = (m) => { for (const r of [].concat((process.env.NODE_PATH || '').spl
       await page.goto(base + '/reset', { waitUntil: 'networkidle' });
       ok(await page.isVisible('#rsGone') && !(await page.isVisible('#rsF')), 'no code in the link: a kind note and the itch.io button, no form');
       if (label === 'iPhone 15') {
-        sec('iPhone 15: an old Supabase account not moved yet (its own reset email links here)');
-        const su = srv.sb.mkUser({ email: 'old-reset@example.com', password: 'forgotten-1' }); srv.legacy('old-reset@example.com');
-        srv.sb.saves[su.id] = { data: { v: 1, coins: 4321, dogs: [{ id: 'oldR', name: 'Pickle' }] }, rev: 4, changed_at: '2026-10-01T00:00:00Z' };
-        await srv.handle(null, 'POST', '/forgot', JSON.stringify({ email: 'old-reset@example.com' }), null);
-        const rc = srv.sb.recovers[srv.sb.recovers.length - 1];
-        ok(rc && rc.redirect_to === 'https://doodledoggo.app/reset', 'Supabase\'s reset email is sent to come back to this page');
-        await page.goto('about:blank'); await page.goto(base + '/reset#access_token=' + rc.token + '&type=recovery&expires_in=3600', { waitUntil: 'networkidle' });
-        ok((await page.evaluate(() => location.hash)) === '', 'the Supabase login leaves the address bar at once');
-        await page.fill('#rsPw', 'moved-over-1'); await page.fill('#rsPw2', 'moved-over-1'); await page.click('#rsGo');
-        await page.waitForSelector('#rsDone:not([hidden])', { timeout: 8000 }).catch(() => null);
-        ok(await page.isVisible('#rsDone'), 'All set');
-        ok(srv.users.some((u) => u.id === su.id && u.email === 'old-reset@example.com') && srv.saves[su.id] && srv.saves[su.id].data.coins === 4321 && srv.pwIs(su.id, 'moved-over-1'), 'the old account moved over with its save and the new password');
+        sec('iPhone 15: an old Supabase link (v2.9.1: Supabase is gone, so it opens the "no link" note)');
+        await page.goto('about:blank'); await page.goto(base + '/reset#access_token=sbat_old&type=recovery&expires_in=3600', { waitUntil: 'networkidle' });
+        ok((await page.evaluate(() => location.hash)) === '' && await page.isVisible('#rsGone') && !(await page.isVisible('#rsF')), 'the old login leaves the address bar at once, and the page shows the kind note, no form');
       }
       ok(!outside.length, 'no request leaves the site except the Worker (no tracking) ' + outside.slice(0, 3).join(' '));
       ok(!errs.length, 'no console errors ' + errs.slice(0, 2).join(' | '));

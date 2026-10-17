@@ -29,10 +29,9 @@
 <script>
 (function () {
   var API = 'https://pawhaven-api.ansonyuen0108.workers.dev';
-  var q = new URLSearchParams(location.search), h = new URLSearchParams(location.hash.replace(/^#/, ''));
-  // our email: ?token=...  An old account's Supabase email: #access_token=...&type=recovery
-  var link = /^[A-Za-z0-9_-]{20,100}$/.test(q.get('token') || '') ? { token: q.get('token') }
-    : (h.get('type') === 'recovery' && h.get('access_token')) ? { sb_token: h.get('access_token') } : null;
+  var q = new URLSearchParams(location.search);
+  // our email: ?token=...
+  var link = /^[A-Za-z0-9_-]{20,100}$/.test(q.get('token') || '') ? { token: q.get('token') } : null;
   try { history.replaceState(null, '', location.pathname); } catch (e) { /* keep going */ } // the code leaves the address bar
   var el = function (id) { return document.getElementById(id); };
   if (!link) { el('rsForm').hidden = true; el('rsGone').hidden = false; return; }

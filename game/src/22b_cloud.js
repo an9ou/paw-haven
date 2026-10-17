@@ -82,23 +82,15 @@ async function clApi(method, path, body, anon) {
 }
 // the Worker no longer knows this device's login: logged out here, and the game stays on this device
 function clGone() { clTokSet(null); if (!CL.uid) return; CL.uid = null; CL.email = ''; CL.anon = true; clMetaSet({ uid: null, rev: 0, pushedAt: 0 }); clRender(); }
-// a Supabase login from v2.2-v2.8 on this device carries over once: same user id and save, no password typed
-async function clCarry() {
-  let sb = null; try { sb = JSON.parse(lsGet(CL_CFG.sbKey) || 'null'); } catch (e) { sb = null; }
-  if (!sb) return;
-  const s = sb.currentSession || sb; // supabase-js keeps { access_token, refresh_token, user, ... }
-  if (!s.access_token && !s.refresh_token) { lsDel(CL_CFG.sbKey); return; }
-  const r = await clApi('POST', '/migrate', { access_token: s.access_token || '', refresh_token: s.refresh_token || '' }, true);
-  if (r.ok && r.data && r.data.token) { clTokSet(r.data.token); lsDel(CL_CFG.sbKey); }
-  else if (r.status === 401) lsDel(CL_CFG.sbKey); // Supabase doesn't know it any more: log in by hand, same email and password
-}
+// v2.9.1: Supabase is gone. The old login it left on this device is just deleted, quietly.
+function clDropOld() { lsDel('pawhaven_sb_auth'); }
 function clStart() {
   if (!CL.on) return Promise.resolve(false);
   if (CL.live) return Promise.resolve(true);
   if (!CL.startP) {
     CL.startP = (async () => {
       try {
-        if (!clTok()) await clCarry();
+        clDropOld();
         if (clTok()) {
           const r = await clApi('GET', '/me');
           if (r.ok && r.data && r.data.user) clSetUser(r.data.user);
@@ -310,7 +302,7 @@ async function clLogin(email, pw) {
   try {
     await clFlushNow(); // the signed-in user's last changes reach its own cloud first
     const local = clLocal(), owner = clOwner();
-    const r = await clApi('POST', '/login', { email, password: pw }, true); // an old Supabase account moves over here (same email and password)
+    const r = await clApi('POST', '/login', { email, password: pw }, true);
     if (!r.ok || !r.data || !r.data.token || !r.data.user) return { ok: false, msg: clErrText(r.error || 'invalid login') };
     clTokSet(r.data.token);
     return await clSignedIn(r.data.user, local, owner);
