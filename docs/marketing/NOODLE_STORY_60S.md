@@ -1,6 +1,6 @@
 # "Hi, I'm Noodle": a 1-minute story
 
-Written 17 Oct 2026. **Told by Noodle the dachshund, in his own words.** He shows you his town, meets his friends, and ends on Coming Soon and following on Instagram. About 150 spoken words, at a relaxed pace of about 2.6 words a second, with short pauses for the jokes, so it runs about 60 seconds.
+Written 17 Oct 2026. **Told by Noodle the dachshund, in his own words.** He shows you his town, meets his friends, and ends on Coming Soon and following on Instagram. About 160 spoken words. At Bella's pace (about 2.9 words a second) plus the short pauses for the jokes, it runs about 60 seconds. A slower reader should drop the Gerald line.
 
 Everything in it is in the game today (v2.9): the places, the friends, and their real in-game lines (Biscuit's "Is that a snack?", Mochi's "heh.", Frost's "AWOOO", Gerald the duck by the river).
 
