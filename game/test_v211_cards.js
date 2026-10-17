@@ -22,7 +22,7 @@ run('v211_cards', async (t) => {
   // a point where visitor i is on top (a player dog may stand in front of part of it), in page px
   const visPt = (i) => ev((i) => {
     const el = document.querySelector(`#dcVis [data-dcv="${i}"] .dc-hit`); if (!el) return null; const r = el.getBoundingClientRect();
-    for (let fy = 0.5; fy < 0.95; fy += 0.1) for (const fx of [0.5, 0.4, 0.6, 0.3, 0.7]) { const x = r.left + r.width * fx, y = r.top + r.height * fy, e = document.elementFromPoint(x, y); if (e && e.closest(`[data-dcv="${i}"]`)) return { x, y }; }
+    for (const fy of [0.5, 0.6, 0.7, 0.8, 0.9, 0.4, 0.3, 0.2, 0.1]) for (const fx of [0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8, 0.1, 0.9]) { const x = r.left + r.width * fx, y = r.top + r.height * fy, e = document.elementFromPoint(x, y); if (e && e.closest(`[data-dcv="${i}"]`)) return { x, y }; }
     return null;
   }, i);
   const check = (V, z, label) => {
@@ -37,13 +37,14 @@ run('v211_cards', async (t) => {
   await t.newGame({}, { coins: 2000, bond: { level: 8, pts: 2000 }, stats: { hunger: 90, happy: 80, energy: 90, clean: 90 } });
   const L = await ev(() => { const l = window.__paw.dc.lists; return { a: l.a.length, b: l.b.length, n: l.n.length, outfit: l.outfits.length, breeds: l.breeds.length, words: l.a.concat(l.b, l.n), outfits: l.outfits }; });
   ok(L.a === lim.a && L.b === lim.b && L.n === lim.n && L.outfit === lim.outfit, `DC_WORDS_A ${L.a}, DC_WORDS_B ${L.b}, DC_DOG_NAMES ${L.n}, DC_OUTFITS ${L.outfit} match the Worker's DC_LIM`);
-  ok(L.breeds <= lim.breed && lim.breed === 17, `PawGenes BREEDS (${L.breeds}) fits the Worker's 17 breeds`);
+  ok(L.breeds <= lim.breed && lim.breed === 21, `PawGenes BREEDS (${L.breeds}) fits the Worker's 21 breeds`);
+  ok(L.n - 80 === lim.breed, 'one breed name word per breed the Worker allows');
   ok(L.words.every((w) => /^[A-Z][a-z]+$/.test(w)), 'every name word is one plain capitalised word');
-  ok(L.n === 97 && (await ev(() => window.__paw.dc.lists.n.slice(80).join())) === 'Shiba,Corgi,Golden,Dachshund,Husky,Mutt,Chihuahua,Pug,Greyhound,Beagle,Poodle,Collie,Samoyed,Frenchie,Akita,Spitz,Pom', '80 pet names, then the 17 breed name words');
+  ok(L.n === 101 && (await ev(() => window.__paw.dc.lists.n.slice(80).join())) === 'Shiba,Corgi,Golden,Dachshund,Husky,Mutt,Chihuahua,Pug,Greyhound,Beagle,Poodle,Collie,Samoyed,Frenchie,Akita,Spitz,Pom,Afghan,Dane,Mastiff,Shepherd', '80 pet names, then the 21 breed name words');
   ok(await ev(() => window.__paw.dc.lists.outfits.slice(0, 44).every((n) => typeof n === 'string' && /Bandana|Hat|Tie|Crown|Sunglasses|Raincoat|Beanie|Sweater|Cape|Collar|Tutu|Pyjamas|Suit|Coat|Hoodie|Scarf|Beret|Sheet|Rosette|Wings|Antlers|Snood|Hood|Helmet|Cap|Goggles|Necklace|Poncho/.test(n))), 'DC_OUTFITS are the game\'s wearables');
   const F = await ev(() => window.__paw.dc.fake.map((c) => ({ id: c.id, n: c.dogs.length, b: c.dogs.map((d) => d.b), ok: c.dogs.every((d) => d.n >= 0 && d.o >= -1) })));
   ok(F.length === 8 && F.every((c) => c.n >= 1 && c.n <= 3 && c.ok), 'DC_FAKE: 8 town players with 1 to 3 dogs each');
-  ok(new Set([].concat(...F.map((c) => c.b))).size === 17, 'all 17 breeds appear among them');
+  ok(new Set([].concat(...F.map((c) => c.b))).size >= 17, 'the 17 v2.11 breeds appear among them (lane BREEDS adds the four after pom)');
   ok(await ev(() => window.__paw.dc.mode()) === 'fake', 'dcMode is fake under the harness');
 
   sec('2. one dog in the Dog Park: visitors from the town players');
