@@ -133,10 +133,10 @@ function enterYard() {
   hit.addEventListener('pointerleave', () => { if (!down) last = null; });
   hit.addEventListener('pointercancel', () => { down = false; last = null; });
   hit.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); petTick(560, 380); } });
-  const bowl = $('#bowlG'); bowl.onclick = () => { popAct = 'feed'; openFeedTray(); }; bowl.onkeydown = (e) => { if (e.key === 'Enter') { popAct = 'feed'; openFeedTray(); } };
+  const bowl = $('#bowlG'); bowl.onclick = () => { if (blOn()) return; popAct = 'feed'; openFeedTray(); }; bowl.onkeydown = (e) => { if (e.key === 'Enter' && !blOn()) { popAct = 'feed'; openFeedTray(); } }; // v2.10: ball play keeps its dock
   if (S.place !== 'house' && S.place !== 'yard' && S.place !== 'market') setTimeout(() => placeAmbient(), 2500);
   const sx = $('#secretX'); if (sx) { sx.onclick = secretDig; sx.onkeydown = (e) => { if (e.key === 'Enter') secretDig(); }; }
-  const house = $('#houseG'); if (house) { house.onclick = () => { popAct = 'care'; openCareTray(); }; house.onkeydown = (e) => { if (e.key === 'Enter') { popAct = 'care'; openCareTray(); } }; }
+  const house = $('#houseG'); if (house) { house.onclick = () => { if (blOn()) return; popAct = 'care'; openCareTray(); }; house.onkeydown = (e) => { if (e.key === 'Enter' && !blOn()) { popAct = 'care'; openCareTray(); } }; }
   placeButtons();
   bindSceneHots();
   // ambient jokes
@@ -473,7 +473,8 @@ function moodLine() {
 }
 function closeTray() { SFX.click(); if (cur.mode === 'yard') { S.sleeping ? sleepTray() : dockIdle(); } else dock.innerHTML = ''; }
 function trayHTML(title, body) { return `<div class="tray"><div class="tray-h"><h3>${title}</h3><button class="xbtn" id="trayX" aria-label="Close">x</button></div><div class="tray-body">${body}</div></div>`; }
-function setTray(title, body, opt = {}) { if (!opt.mini && !modal.hidden) closeModal(); dock.innerHTML = trayHTML(title, body).replace('class="tray"', `class="tray${opt.mini ? ' mini' : ''}"`); $('#trayX').onclick = closeTray; if (!opt.mini) sheetSwipe($('#dock > .tray'), closeTray); }
+function setTray(title, body, opt = {}) { if (typeof blOn === 'function' && blOn()) return; // ball play keeps its own dock (38_ball.js): a scene tap (dog house, bowl, decoration) must not swap it
+  if (!opt.mini && !modal.hidden) closeModal(); dock.innerHTML = trayHTML(title, body).replace('class="tray"', `class="tray${opt.mini ? ' mini' : ''}"`); $('#trayX').onclick = closeTray; if (!opt.mini) sheetSwipe($('#dock > .tray'), closeTray); }
 
 /* ---------------- FEED ---------------- */
 function openFeedTray() {
@@ -781,10 +782,10 @@ function hmDecorSVG() {
 // binds the yard decorations, or in the house every bed (the Care tray), decoration (its card) and piece of furniture (its card). Long-press shows the name (phones).
 function hmDecorBind() {
   const g = $('#decorG') || $('#hoRoomG'); if (!g) return;
-  const tap = (el, fn) => { const go = () => { if (HO.pl) return; SFX.click(); fn(); }; el.onclick = go; el.onkeydown = (e) => { if (HO.pl) return; if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } }; };
+  const tap = (el, fn) => { const go = () => { if (HO.pl || blOn()) return; SFX.click(); fn(); }; el.onclick = go; el.onkeydown = (e) => { if (HO.pl || blOn()) return; if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } }; };
   g.querySelectorAll('[data-decor]').forEach((el) => { tap(el, () => hmDecorPop(el.dataset.decor)); psLongPress(el, el.dataset.decor); });
   g.querySelectorAll('[data-furn]').forEach((el) => { tap(el, () => hoFurnPop(el.dataset.furn)); psLongPress(el, el.dataset.furn); });
-  g.querySelectorAll('#bedG, [data-bed]').forEach((el) => { const go = () => { if (HO.pl) return; popAct = 'care'; openCareTray(); }; el.onclick = go; el.onkeydown = (e) => { if (!HO.pl && e.key === 'Enter') go(); }; psLongPress(el, el.id === 'bedG' ? S.bed : el.dataset.bed); });
+  g.querySelectorAll('#bedG, [data-bed]').forEach((el) => { const go = () => { if (HO.pl || blOn()) return; popAct = 'care'; openCareTray(); }; el.onclick = go; el.onkeydown = (e) => { if (!HO.pl && e.key === 'Enter') go(); }; psLongPress(el, el.id === 'bedG' ? S.bed : el.dataset.bed); });
 }
 function hmDecorRedraw() { hoRoomRedraw(); }
 function hmDecorPop(name) {

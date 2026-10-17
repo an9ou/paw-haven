@@ -1,5 +1,5 @@
 // v2.10 BALL lane test (phone), V210.md sections 2 and 5.4: free ball play on iPhone 15 (390x844) and Pixel 7 (412x915).
-// Crop about 900 world units wide, the camera follows the ball, a drag-and-release throw, no toast over the play area, a 44 px Done button, no sideways scroll.
+// Crop about 760 world units wide (the band above continues the scene), the camera follows the ball, a drag-and-release throw, no toast over the play area, a 44 px Done button, no sideways scroll.
 // node game/run_tests.js phone_v210_ball
 require('./test_lib').run('phone_v210_ball', async (t) => {
   const { ok, sec } = t; const ev = (f, a) => t.ev(f, a), p = () => t.p, S = () => t.S();
@@ -24,7 +24,7 @@ require('./test_lib').run('phone_v210_ball', async (t) => {
           ring: [ring.left, ring.top, ring.right, ring.bottom], iw: innerWidth, ih: innerHeight, sw: document.scrollingElement.scrollWidth, bw: document.body.scrollWidth, toasts: (() => { const hit = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top, rg = document.getElementById('blRing').getBoundingClientRect(), dh = document.getElementById('dogHit').getBoundingClientRect(); return [...document.querySelectorAll('#toasts .toast')].filter((e) => { const r = e.getBoundingClientRect(); return hit(r, rg) || hit(r, dh); }).length; })(),
           dockTop: document.querySelector('#dock > .tray').getBoundingClientRect().top, toastTxt: [...document.querySelectorAll('#toasts .toast')].map((e) => e.textContent).join(' | ') };
       });
-      ok(L.vbW >= 840 && L.vbW <= 1000, `${tag}: the crop is about 900 world units wide (${Math.round(L.vbW)})`);
+      ok(L.vbW >= 720 && L.vbW <= 800, `${tag}: the crop is about 760 world units wide (${Math.round(L.vbW)})`);
       ok(L.done[2] >= 44 && L.done[3] >= 44, `${tag}: Done is at least 44x44 (${Math.round(L.done[2])}x${Math.round(L.done[3])})`);
       ok(L.doneTop, `${tag}: nothing covers the Done button`);
       ok(L.done[1] + L.done[3] <= L.ih + 1 && L.done[0] >= 0 && L.done[0] + L.done[2] <= L.iw + 1, `${tag}: Done is on the screen`);
@@ -33,6 +33,17 @@ require('./test_lib').run('phone_v210_ball', async (t) => {
       ok(L.ring[0] >= L.svg[0] - 2 && L.ring[2] <= L.svg[2] + 2 && L.ring[3] <= L.svg[3] + 2 && L.ring[1] >= L.svg[1] - 2, `${tag}: the ball ring is inside the scene`);
       ok(L.toasts === 0, `${tag}: no toast over the ball or the dog (${L.toastTxt})`);
       ok(L.svg[3] <= L.dockTop + 2, `${tag}: the dock sits under the scene, not on it (scene ends ${Math.round(L.svg[3])}, dock ${Math.round(L.dockTop)})`);
+      const Q = await ev(() => { const pk = document.getElementById('phPeek'), props = [...document.querySelectorAll('#view svg.world .hot')].filter((e) => e.getBoundingClientRect().width > 0);
+        const ext = document.getElementById('blSkyExt'); return { peek: !pk || getComputedStyle(pk).display === 'none', ext: !!ext && ext.childElementCount > 0, props: props.length, live: props.filter((e) => getComputedStyle(e).pointerEvents !== 'none').map((e) => e.id || e.getAttribute('aria-label')) }; });
+      ok(Q.peek, `${tag}: the look-right button hides while playing`);
+      ok(Q.ext, `${tag}: the band above the scene continues the scene's layers (no seam)`);
+      ok(Q.props > 0 && Q.live.length === 0, `${tag}: the scene props (${Q.props}) open nothing while playing (${Q.live.join(', ')})`);
+      const pr = await ev(() => { // the prop furthest from the ball (a tap near the ball would grab it)
+        const g = document.getElementById('blRing').getBoundingClientRect(), gx = g.x + g.width / 2, gy = g.y + g.height / 2, vr = document.querySelector('#view svg.world').getBoundingClientRect();
+        const c = [...document.querySelectorAll('#view svg.world .hot')].map((e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, w: r.width }; }).filter((q) => q.w > 0 && q.x > 0 && q.x < innerWidth && q.y > vr.top && q.y < vr.bottom);
+        c.sort((a, b) => Math.hypot(b.x - gx, b.y - gy) - Math.hypot(a.x - gx, a.y - gy)); return c[0] || null; });
+      if (pr) { await p().touchscreen.tap(pr.x, pr.y); await t.sleep(300); }
+      ok(await ev(() => window.__paw.bl.on && !!document.getElementById('blDone') && document.getElementById('modal').hidden), `${tag}: tapping a scene prop keeps the ball dock and opens no sheet`);
       await t.SH(`${device.replace(' ', '')}_${place}_ball_rest`);
 
       sec(`${tag}: a touch drag throws, the camera keeps the ball in view`);

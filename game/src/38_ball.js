@@ -207,7 +207,8 @@ function blSegHits(x0, y0, x1, y1, L, T, R, B) {
 // a straight run that would cross a no-go box (the dog house, the bowl, a decoration) goes round the boxes' corners: the first stop of the shortest way
 function blVia(x0, y0, x1, y1) {
   const Z = BL.zone; if (!Z.no.length) return null;
-  const bx = Z.no.map((b) => [b[0] - 6, b[1] - 6, b[0] + b[2] + 6, b[1] + b[3] + 6]), hit = (ax, ay, cx, cy) => bx.some((q) => blSegHits(ax, ay, cx, cy, q[0], q[1], q[2], q[3]));
+  const bx = Z.no.map((b) => [b[0] - 6, b[1] - 6, b[0] + b[2] + 6, b[1] + b[3] + 6]), raw = Z.no.map((b) => [b[0], b[1], b[0] + b[2], b[1] + b[3]]), inq = (q, x, y) => x > q[0] && x < q[2] && y > q[1] && y < q[3];
+  const hit = (ax, ay, cx, cy) => bx.some((q, j) => { const r = inq(q, ax, ay) || inq(q, cx, cy) ? raw[j] : q; return blSegHits(ax, ay, cx, cy, r[0], r[1], r[2], r[3]); }); // feet already in a box's 6-unit margin: that box counts without the margin, or no route could ever start
   if (!hit(x0, y0, x1, y1)) return null;
   const N = [[x0, y0], [x1, y1]];
   Z.no.forEach((b) => [[b[0] - 18, b[1] - 18], [b[0] + b[2] + 18, b[1] - 18], [b[0] - 18, b[1] + b[3] + 18], [b[0] + b[2] + 18, b[1] + b[3] + 18]].forEach((c) => {
@@ -218,11 +219,14 @@ function blVia(x0, y0, x1, y1) {
     let u = -1; N.forEach((n, i) => { if (!done[i] && (u < 0 || dist[i] < dist[u])) u = i; }); if (u < 0 || dist[u] >= 1e9) break; done[u] = true; if (u === 1) break;
     N.forEach((n, v) => { if (done[v]) return; const d = dist[u] + Math.hypot(n[0] - N[u][0], n[1] - N[u][1]); if (d < dist[v] && !hit(N[u][0], N[u][1], n[0], n[1])) { dist[v] = d; prev[v] = u; } });
   }
-  if (prev[1] < 0) return null;
+  if (prev[1] < 0) return false; // boxed in (the strip right of the dog house): no way round at all
   let v = 1; while (prev[v] > 0) v = prev[v]; return v === 1 ? null : N[v];
 }
 function blMove(o, tx, ty, speed, dt) { // one step towards (tx, ty), round the no-go boxes; returns the distance left
-  const via = blVia(o.x, o.y, tx, ty), gx = via ? via[0] : tx, gy = via ? via[1] : ty;
+  const via = blVia(o.x, o.y, tx, ty);
+  o.stk = via === false && o.role !== 'chase' && o.role !== 'thief' ? (o.stk || 0) + dt : 0; // boxed in for half a second (the strip between the dog house and the Garden button): hop onto the target instead of walking in place (never mid-chase: no free wins)
+  if (o.stk > 0.5) { const q = blPush(tx, ty); o.x = q[0]; o.y = q[1]; o.stk = 0; return Math.hypot(tx - o.x, ty - o.y); }
+  const gx = via ? via[0] : tx, gy = via ? via[1] : ty;
   const dx = gx - o.x, dy = gy - o.y, dist = Math.hypot(dx, dy);
   if (dist > 0.5) { const m = Math.min(dist, speed * dt); o.x += dx / dist * m; o.y += dy / dist * m; if (Math.abs(dx) > 10) o.face = dx < 0 ? 'left' : 'right'; }
   return Math.max(0, via ? Math.hypot(tx - gx, ty - gy) + dist - speed * dt : dist - speed * dt);
@@ -264,6 +268,9 @@ function blLapWay(w) {
   if (w.sp < 330) way.pop();
   return way.map((p) => blPush(p[0], p[1], Z));
 }
+// where the mouth is: each breed's head ellipse in the dog art (dogs/pawart_dogs.js: x, y, rx, ry in the 240x200 box, feet on y 186, the dog drawn round x 120), the front lower part of the head
+const BL_HEAD = { shiba: [164, 106, 32, 28], corgi: [166, 126, 31, 27], golden: [160, 96, 34, 30], dachs: [191, 128, 24, 22], husky: [162, 104, 36, 32], mutt: [162, 106, 33, 29], chihuahua: [158, 120, 29, 26], pug: [162, 114, 32, 28], greyhound: [172, 76, 22, 15], beagle: [164, 106, 30, 27], poodle: [157, 98, 26, 25], collie: [164, 106, 30, 26], samoyed: [162, 93, 35, 31], frenchie: [160, 116, 31, 28] };
+function blMouth(d) { const h = BL_HEAD[d && d.key] || BL_HEAD.mutt; return [h[0] - 120 + h[2] * 0.7, 186 - h[1] - h[3] * 0.35]; } // [forward, up] in world units at scale 1
 function blCatchLine(o) {
   const t = persOf(o.d).trait, tl = BL_LINES.trait[t]; return tl && blRnd() < 0.5 ? blPick(tl) : blPick(BL_LINES.catch);
 }
@@ -296,7 +303,10 @@ function blStepDogs(dt) {
         if (d > 105) { blMove(o, c.x - blSign(c) * 70, c.y + (i % 2 ? 22 : -22), o.sp * 0.88, dt); o.pose = 'walk'; } else o.pose = 'idle';
         break;
       }
-      case 'cheer': if (BL.t >= o.until) { o.role = 'wait'; o.pose = 'idle'; } break;
+      case 'cheer': { // a happy hop, then off to its spot: nobody stands on the ball's home (the ball and its ring draw over the dogs)
+        if (BL.t < o.until - 0.7) break; const sp = BL.spots[i] || [BL.hx, BL.hy];
+        if (blMove(o, sp[0], sp[1], 260, dt) > 5) o.pose = 'walk'; else if (BL.t >= o.until) { o.role = 'wait'; o.pose = 'idle'; } else o.pose = 'happy'; break;
+      }
       default: { // wait: stroll to the spot, then sit facing the ball
         const sp = BL.spots[i] || [BL.hx, BL.hy], left = blMove(o, sp[0], sp[1], 230, dt);
         if (left > 5) o.pose = 'walk'; else { o.pose = 'sit'; if (Math.abs(BL.hx - o.x) > 10) o.face = BL.hx < o.x ? 'left' : 'right'; }
@@ -309,7 +319,7 @@ function blStepDogs(dt) {
     const a = BL.dogs[i], c = BL.dogs[j], dx = c.x - a.x, dy = (c.y - a.y) * 1.6, d = Math.hypot(dx, dy);
     if (d < 45 && a.role !== 'carry' && c.role !== 'carry') { const k = (45 - d) * 0.06, ux = d > 1 ? dx / d : 1; a.x -= ux * k; c.x += ux * k; }
   }
-  if (b.carrier) { const c = b.carrier, sc = blScale(c.y); b.x = c.x + blSign(c) * 46 * sc; b.gy = c.y; b.z = 64 * sc + Math.sin(BL.t * 14) * 3; b.rot += 300 * dt; }
+  if (b.carrier) { const c = b.carrier, sc = blScale(c.y), m = blMouth(c.d); b.x = c.x + blSign(c) * m[0] * sc; b.gy = c.y; b.z = m[1] * sc + Math.sin(BL.t * 14) * 2; b.rot += 300 * dt; } // in the mouth
 }
 function blSteal(t, w) { // the thief snatches the ball: it brings it home with everybody after it
   const b = BL.ball; b.carrier = t; t.role = 'carry'; w.role = 'tail'; t.sp *= 1.0; BL.th.steal = null; BL.th.stolen = true; BL.th.thief = t.id; SFX.squeak();
@@ -372,12 +382,27 @@ function blApplyDog(o) {
   o.px = o.x; o.py = o.y; o.key = key;
   try { rmSet(o.d, { x: o.x, y: o.y, face: o.face, pose: o.pose }); } catch (e) { /* the roam engine is not ready yet */ }
 }
-// phones: the crop is about 900 world units wide (the camera follows the ball), the extra sky above the scene takes the sky colour
-function blSky() { view.style.background = typeof rmSky === 'function' ? rmSky() : ''; } // ROAM's sky (or wall) colour of the scene
+// phones: the crop is about 760 world units wide (the camera follows the ball), the extra sky above the scene continues the scene
+const BL_CROP = 760; // phones: wide enough for the race, narrow enough that the dogs stay big and the band above stays small (art review)
+function blSky() { // ROAM's sky (or wall) colour of the scene, and the scene's full-height layers continued upwards (paper grain, wallpaper stripes): no seam over the scene
+  view.style.background = typeof rmSky === 'function' ? rmSky() : '';
+  const svg = $('svg.world', view), sg = svg && $('#sceneG', svg); if (!sg || $('#blSkyExt', svg)) return; const H = 1600;
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g'); g.id = 'blSkyExt'; g.setAttribute('pointer-events', 'none');
+  [...sg.querySelectorAll('rect')].slice(0, 40).forEach((r) => {
+    if (+(r.getAttribute('y') || 0) > 0 || +(r.getAttribute('height') || 0) < 300 || r.closest('defs,pattern,clipPath,mask')) return;
+    const c = r.cloneNode(false), m = /url\(#([^)]+)\)/.exec(r.getAttribute('fill') || ''), gr = m && svg.querySelector('#' + CSS.escape(m[1]));
+    if (gr && /Gradient$/.test(gr.tagName)) { const st = gr.querySelector('stop'); if (!st) return; c.setAttribute('fill', st.getAttribute('stop-color') || st.style.stopColor || '#fff'); const so = st.getAttribute('stop-opacity'); if (so) c.setAttribute('fill-opacity', so); } // a vertical gradient: its top colour
+    c.setAttribute('y', -H); c.setAttribute('height', H); c.removeAttribute('id'); g.appendChild(c);
+  });
+  sg.parentNode.insertBefore(g, sg);
+  sg.querySelectorAll('g[transform^="translate("] > path[fill-opacity=".78"]:first-child + path[stroke-dasharray="6 5"]').forEach((p) => { // the washi tape on the scene's top corner would float mid-sky
+    const t = p.parentNode, m = /translate\(\s*[-\d.]+[ ,]+([-\d.]+)/.exec(t.getAttribute('transform')); if (m && +m[1] < 60) { t.dataset.blTape = '1'; t.style.visibility = 'hidden'; }
+  });
+}
 function blCamera(dt) {
   if (!isPhone()) return;
   const dm = phSvgDims(); if (!dm.w || !dm.h) return;
-  const vbW = 600 * dm.w / dm.h, zf = vbW >= 900 ? 1 : vbW / 900;
+  const vbW = 600 * dm.w / dm.h, zf = vbW >= BL_CROP ? 1 : vbW / BL_CROP;
   if (Math.abs(phZoom - zf) > 0.001) { phZoom = zf; blSky(); }
   const b = BL.ball, target = BL.ph === 'rest' ? BL.hx : clamp(b.x, 0, 1000);
   camCx += (target - camCx) * Math.min(1, dt * 5); cancelAnimationFrame(camRaf); clearTimeout(phPanT); camApply(camCx);
@@ -397,6 +422,7 @@ function blCoinsText() {
 function blTrayUpdate() { const c = $('#blCoins'); if (c) { const t = blCoinsText(); if (c.textContent !== t) c.textContent = t; } }
 
 /* ---------------- start and stop ---------------- */
+function blKeyBlock(e) { if (BL && (e.key === 'Enter' || e.key === ' ') && e.target.closest && e.target.closest('svg.world .hot')) { e.stopPropagation(); e.preventDefault(); } } // Enter on a focused scene prop opens nothing either
 function blStart(toy) {
   const cfg = BL_TOYS[toy]; if (BL || !cfg || !S || cur.mode !== 'yard') return false;
   const lead = D(), svg = $('svg.world', view); if (!svg || !$('#ballLayer')) return false;
@@ -416,6 +442,7 @@ function blStart(toy) {
   BL.ball.x = BL.hx; BL.ball.gy = BL.hy;
   try { rmPause('ball'); } catch (e) { /* none */ }
   busy = true; tempPose = null; setChrome(true, false);
+  document.documentElement.classList.add('bl-on'); view.addEventListener('keydown', blKeyBlock, true); // the scene props (notice board, stalls, mailbox, clipboard...) sleep while playing (40_ball.css); the place buttons still leave
   dock.innerHTML = blTrayHTML(); $('#blDone').onclick = () => { SFX.boop(700); blStop(); }; blTrayUpdate();
   $('#ballLayer').innerHTML = blBallSVG(); blBind(svg); blDraw();
   cur.key = (e) => { const ok = e.key === ' ' || (e.key === 'Enter' && document.activeElement === document.body); if (!ok || e.repeat || !BL || BL.ph !== 'rest' || BL.grab) return; e.preventDefault(); blEasyThrow(); };
@@ -427,7 +454,8 @@ function blStart(toy) {
 function blStop(quiet) {
   if (!BL) return; const B = BL; BL = null; cancelAnimationFrame(B.raf);
   if (B.unbind) B.unbind();
-  const L = $('#ballLayer'); if (L) L.innerHTML = '';
+  const L = $('#ballLayer'); if (L) L.innerHTML = ''; const X = $('#blSkyExt'); if (X) X.remove(); document.querySelectorAll('[data-bl-tape]').forEach((e) => { e.style.visibility = ''; delete e.dataset.blTape; });
+  document.documentElement.classList.remove('bl-on'); view.removeEventListener('keydown', blKeyBlock, true);
   try { rmResume('ball'); } catch (e) { /* none */ }
   cur.key = B.key0 || null;
   // Bond once a session for every dog that ran, and the daily play care
