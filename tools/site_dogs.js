@@ -1,4 +1,4 @@
-// The 14 dog profiles on doodledoggo.app (the home page cards and /dogs). Read by tools/site_art.js, which writes the card and profile HTML.
+// The dog profiles on doodledoggo.app (the home page cards and /dogs). Read by tools/site_art.js, which writes the card and profile HTML.
 // Sources: the game's own facts (game/src/00_core.js through PawArt.DOGS: name, dog type, personality; FAV: food, toy, activity),
 // the marketing posts (marketing/launch: docs/marketing/DOG_INTRO_POSTS.md, brand/instagram/launch/make_dogs.js: the line and the four traits)
 // and the v2.10 personality table (integration/v2.10: V210.md 5.1, game/src/36_personality.js: how each dog behaves in the playroom).
@@ -62,5 +62,36 @@ module.exports = [
   { key: 'frenchie', jp: 'フレンチブルドッグ', jpRead: 'furenchi burudoggu', nameJp: 'ブリオッシュ', pose: 'sit', quote: 'Sofa. Cushion. Your foot. All good seats.',
     loves: [['Pupcake', 'pupcake'], ['Plush Bone', 'plush bone'], ['icon:pet', 'petting']],
     traits: [['snorer', 'a tiny engine at nap time'], ['foot sitter', 'your foot is now his seat'], ['shade seeker', 'sunny day? no thanks'], ['cuddly', 'bat ears, big heart']],
-    play: 'Short, cheeky zoomies, and a likely ball thief. Then sits on your foot.' }
+    play: 'Short, cheeky zoomies, and a likely ball thief. Then sits on your foot.' },
+  { key: 'akita', jp: '秋田犬', jpRead: 'akita inu', nameJp: 'クマ', pose: 'sit', quote: 'I will wait for you. I am very good at waiting.',
+    loves: [['Chicken & Rice Bowl', 'chicken & rice'], ['Tennis Ball', 'tennis ball'], ['icon:walk', 'walks']],
+    traits: [['loyal', 'waits at the gate for you'], ['calm', 'one low woof, no fuss'], ['proud', 'likes its own space'], ['gentle', 'meets new dogs slowly']],
+    play: 'Sits quietly at the gate or the front, facing you. Never barks, always waiting.',
+    fun: 'The Akita is a native dog of Japan. Hachikō, the famous dog who waited at Shibuya Station, was an Akita.' },
+  { key: 'spitz', jp: '日本スピッツ', jpRead: 'nihon supittsu', nameJp: 'ダイフク', pose: 'happy', quote: 'Yes, I am this white on purpose. Look at me.',
+    loves: [['Bone-shaped Biscuit', 'bone biscuit'], ['Frisbee', 'frisbee'], ['icon:star', 'tricks']],
+    traits: [['show-off', 'walks to the front and poses'], ['fluffy', 'a white cloud with ears'], ['cheerful', 'a bright little bark'], ['shedder', 'a good brush keeps it soft']],
+    play: 'Trots to the front of the room and strikes a happy pose. Then waits for applause.',
+    fun: 'Daifuku is a soft, round rice sweet (大福). The Japanese Spitz was bred in Japan, and it is always white.' },
+  { key: 'pom', jp: 'ポメラニアン', jpRead: 'pomeranian', nameJp: 'ミカン', pose: 'happy', quote: 'Yip! That was my indoor voice.',
+    loves: [['Salmon Pâté', 'salmon pâté'], ['Squeaky Duck', 'squeaky duck'], ['icon:pet', 'petting']],
+    traits: [['tiny', 'a small dog with big opinions'], ['spinner', 'spins when happy'], ['yippy', 'a tiny, high yip'], ['bossy', 'leads dogs ten times its size']],
+    play: 'Spins in a happy circle, three or four times, with a little yip.',
+    fun: 'Mikan is the Japanese word for a mandarin orange (みかん), a good name for an orange fluffball.' },
+  { key: 'afghan', jp: 'アフガン・ハウンド', jpRead: 'afugan haundo', nameJp: 'サフラン', pose: 'sit', quote: 'I do not fetch. I glide.',
+    loves: [['Salmon Pâté', 'salmon pâté'], ['Frisbee', 'frisbee'], ['icon:walk', 'walks']],
+    traits: [['elegant', 'not one hair out of place'], ['aloof', 'admires you from a distance'], ['silky', 'a brush a few times a week'], ['fast', 'glides, never hurries']],
+    play: 'Keeps to the open, sunny spots and likes a good run. Then drapes elegantly on a cushion.' },
+  { key: 'dane', jp: 'グレート・デーン', jpRead: 'gurēto dēn', nameJp: 'ワッフル', pose: 'sit', quote: 'I am a lap dog. Your lap is just too small.',
+    loves: [['Chicken & Rice Bowl', 'chicken & rice'], ['Plush Bone', 'plush bone'], ['icon:pet', 'petting']],
+    traits: [['gentle giant', 'big paws, bigger heart'], ['follower', 'room to room, always'], ['leaner', 'leans on you for a hug'], ['slow grower', 'needs gentle walks while young']],
+    play: 'Follows you around the room, then flops by the bed or the front. Careful with the tail.' },
+  { key: 'mastiff', jp: 'イングリッシュ・マスティフ', jpRead: 'ingurisshu masutifu', nameJp: 'クランペット', pose: 'down', quote: 'A little drool is how I say I love you.',
+    loves: [['Pupcake', 'pupcake'], ['Rope Tug', 'rope tug'], ['icon:feed', 'feeding']],
+    traits: [['sleepy', 'naps in the biggest shade'], ['sweet', 'huge and soft as a cushion'], ['drooler', 'a towel for that big face'], ['slow', 'one big sigh at a time']],
+    play: 'Naps by the bed or in the shade. Moves only for snacks, and only slowly.' },
+  { key: 'gsd', jp: 'ジャーマン・シェパード', jpRead: 'jāman shepādo', nameJp: 'シュトゥルーデル', pose: 'sit', quote: 'Ears up. On duty. Was that a squirrel?',
+    loves: [['Chicken & Rice Bowl', 'chicken & rice'], ['Puzzle Feeder', 'puzzle feeder'], ['icon:star', 'tricks']],
+    traits: [['clever', 'learns a trick in a minute'], ['alert', 'ears up at every sound'], ['loyal', 'always by your side'], ['needs a job', 'any job, even tidying']],
+    play: 'Rounds up the pack and guards the gate. Loves a job, any job.' }
 ];

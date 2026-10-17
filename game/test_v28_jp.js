@@ -103,11 +103,11 @@ require('./test_lib').run('v28_jp', async (t) => {
   ok(await ev(() => !document.querySelector('#sceneG [role=button], #sceneG .hot')), 'the torii, the shrine and the lanterns are scenery: nothing in the scene is a button');
   await quiet(); await shot('arrive');
 
-  sec('the arrival line, all 17 breeds');
+  sec('the arrival line, all 21 breeds');
   const lines = await ev(() => window.__paw.jp.lines);
   const keys = await ev(() => Object.keys(window.__paw.S.dogs.length ? window.__paw.jp.lines : {}));
-  const BREEDS = ['shiba', 'corgi', 'golden', 'dachs', 'husky', 'mutt', 'chihuahua', 'pug', 'greyhound', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie', 'akita', 'spitz', 'pom'];
-  ok(BREEDS.every((k) => typeof lines[k] === 'string' && lines[k].length > 10 && lines[k].length < 110 && !/;/.test(lines[k])) && keys.length === 17, 'a line for each of the 17 breeds');
+  const BREEDS = ['shiba', 'corgi', 'golden', 'dachs', 'husky', 'mutt', 'chihuahua', 'pug', 'greyhound', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie', 'akita', 'spitz', 'pom', 'afghan', 'dane', 'mastiff', 'gsd'];
+  ok(BREEDS.every((k) => typeof lines[k] === 'string' && lines[k].length > 10 && lines[k].length < 110 && !/;/.test(lines[k])) && keys.length === 21, 'a line for each of the 21 breeds');
   ok(lines.shiba === 'Fuji is very tall. I am very proud. We understand each other.', 'the Shiba line is the spec line');
   ok(await ev(() => { const k = window.__paw.S.dog.key; window.__paw.voice.ambient(); const b = document.getElementById('bubble'); return !b.hidden && b.textContent === window.__paw.jp.lines[k]; }), 'placeAmbient on the hill says the breed\'s hill line');
 

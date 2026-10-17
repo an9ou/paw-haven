@@ -1,7 +1,7 @@
 // doodledoggo.app v2 art and dog pages: pre-renders the game's own art for the site, so the site needs no art modules at run time.
 //   NODE_PATH=$(npm root -g) node tools/site_art.js        (needs Node and Playwright; the outputs are committed)
 // Writes site/img/art/:
-//   dogs/<key>-<pose>.svg      the 14 dogs, scene poses (walk, jump, sit, happy, sniff), 3 boiling frames (the game's 3 fps flip)
+//   dogs/<key>-<pose>.svg      every dog (21 since v2.11), scene poses (walk, jump, sit, happy, sniff), 3 boiling frames (the game's 3 fps flip)
 //   dogs/<key>-still.svg       each dog's card pose, one frame (cards, profiles, the reduced-motion scene)
 //   dogs/<key>-pup.svg         a puppy of each dog, one frame (profiles)
 //   dogs/<key>-sleep.svg       each dog napping, one frame (the playroom)
@@ -23,7 +23,7 @@ const ctx = { window: {}, console }; ctx.window.window = ctx.window; vm.createCo
 for (const f of ['dogs/pawart_dogs.js', 'world/pawart_world_a.js', 'world/pawart_world_b.js', 'world/pawart_world_c.js', 'world/pawart_world_d.js', 'world/pawart_world_e.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f });
 const PA = ctx.window.PawArt;
 const DOGS = PA.DOGS.map((d) => Object.assign({}, d, PROFILES.find((p) => p.key === d.key)));
-if (DOGS.length !== 14 || DOGS.some((d) => !d.quote)) throw new Error('every dog needs a profile in tools/site_dogs.js');
+if (DOGS.length !== PROFILES.length || DOGS.some((d) => !d.quote)) throw new Error('every dog needs a profile in tools/site_dogs.js');
 
 const SCENE_POSES = ['walk', 'jump', 'sit', 'happy', 'sniff'];
 const FLIP = '<style>.pa-d-f1,.pa-d-f2{opacity:0}.pa-d-f0{animation:b0 1s steps(1,end) infinite}.pa-d-f1{animation:b1 1s steps(1,end) infinite}.pa-d-f2{animation:b2 1s steps(1,end) infinite}'
@@ -91,7 +91,7 @@ const fill = (file, tag, html) => {
   fs.writeFileSync(p, s.replace(re, (m, a, b) => `${a}\n${html}\n${b}`));
 };
 // the last card: the dogs on their way (owner, 17 Oct 2026: no dates), crayon silhouettes with a "?"
-const SOON_LINE = 'Akita, Japanese Spitz and Pomeranian are on their way.';
+const SOON_LINE = 'Japanese Chin, Shih Tzu and Kai Ken are on their way.'; // v2.11: Akita, Spitz and Pomeranian (and four more) are in the game now; these three wait (V211.md section 6)
 const sils = ['shiba-still', 'samoyed-still', 'samoyed-pup'].map((f) => `<span class="sil"><img src="/img/art/dogs/${f}.svg" alt="" width="240" height="200" loading="lazy"><b aria-hidden="true">?</b></span>`).join('');
 const soon = (tag) => tag === 'card' ? `<li class="soonli"><div class="soon" id="soon"><div class="sils">${sils}</div><span class="dname">More dogs are coming!</span><span class="dquote">${SOON_LINE}</span></div></li>`
   : `<section class="soonprof" id="soon" aria-labelledby="h-soon"><div class="sils">${sils}</div><div class="txt"><h2 id="h-soon">More dogs are coming!</h2><p class="bubble">${SOON_LINE}</p><p>Three new friends are getting their crayon fur drawn. We will say hello here when they are ready.</p></div></section>`;
