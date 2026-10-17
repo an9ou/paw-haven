@@ -1,10 +1,11 @@
-// v2.10 ROAM lane test, V210.md sections 1 and 5.1-5.3: every dog its own character, drawn the same size (rmScale), roaming in the place's zone
+// v2.10 ROAM lane test, V210.md sections 1 and 5.1-5.3: every dog its own character, drawn at rmScale(y) x its size class (v2.11.1 sizeK: small 0.72, medium 0.86, big 1), roaming in the place's zone
 // clear of the bowl, the mailbox, the clipboard and each other, petting only the touched dog (it comes to the front), the HUD head row selecting
 // stats without moving anybody, attention asks by personality, the cross-lane API (rmDogs, rmPos, rmSet, rmTo, rmPause, rmZone, rmEl), one dog.
 // node game/run_tests.js v210_roam
 require('./test_lib').run('v210_roam', async (t) => {
   const { ok, sec } = t; const ev = (f, a) => t.ev(f, a), p = () => t.p, S = () => t.S();
-  const pos = (id) => ev((id) => window.__paw.rm.pos(id), id);
+  const pos = (id) => ev((id) => Object.assign(window.__paw.rm.pos(id), window.__paw.rm.size(id)), id); // k: the scene size factor (v2.11.1: 1.25 growth x the class), ck: the class
+  const atScale = (q) => Math.abs(q.sc - q.k * (0.88 * Math.max(0.86, Math.min(1.12, 1 + (q.y - 500) * 0.0012)))) < 0.002; // rmScale(feet y) x the size class
   const ids = async () => (await S()).dogs.map((d) => d.id);
   const ar = (a) => a[2] * a[3], ov = (a, b) => Math.max(0, Math.min(a[0] + a[2], b[0] + b[2]) - Math.max(a[0], b[0])) * Math.max(0, Math.min(a[1] + a[3], b[1] + b[3]) - Math.max(a[1], b[1]));
   const set = (k, v) => ev(([k, v]) => { window.__paw.S.dogs.forEach((d, i) => { d.stats[k] = Array.isArray(v) ? v[i] : v; d.sleeping = false; }); window.__paw.S.sleeping = false; }, [k, v]);
@@ -29,17 +30,25 @@ require('./test_lib').run('v210_roam', async (t) => {
   await still(); await ev(() => window.__paw.idle.speed(1));
   const z1 = await ev(() => window.__paw.rm.zone('yard')), p1 = await pos(A);
   ok(p1.y >= z1.y0 && p1.y <= z1.y1 && p1.x >= z1.x0 && p1.x <= z1.x1, `it stands in the yard's zone (${Math.round(p1.x)}, ${Math.round(p1.y)})`);
-  ok(Math.abs(p1.sc - await ev((y) => window.__paw.rm.scale(y), p1.y)) < 0.002, 'its scale is rmScale(feet y)');
+  ok(Math.abs(p1.sc - p1.k * await ev((y) => window.__paw.rm.scale(y), p1.y)) < 0.002 && p1.ck === 0.86 && Math.abs(p1.k - 1.25 * 0.86) < 1e-9, 'its scale is rmScale(feet y) x 1.25 x its size class (a shiba: medium, 0.86)');
 
-  sec('2. four dogs: the same size, apart, clear of the bowl, mailbox and clipboard');
+  sec('2. four dogs: sized by class, apart, clear of the bowl, mailbox and clipboard');
   await ev(() => { const P = window.__paw; P.addDog({ key: 'dachs', sex: 'male', months: 14 }, 'Bun'); P.addDog({ key: 'pug', sex: 'female', months: 30 }, 'Pip'); P.addDog({ key: 'golden', sex: 'female', months: 20 }, 'Goldie'); });
   await t.calm(); await t.home('house'); await t.home('yard'); await t.sleep(400);
   const all = await ids(), [, B, C, G] = all;
   ok(JSON.stringify(await ev(() => window.__paw.rm.dogs())) === JSON.stringify(all), 'rmDogs: the leader first, then the pack');
   ok(await ev((l) => l.every((id) => { const g = document.querySelector(`#view [data-dog="${id}"]`); return g && g.classList.contains('rmdog') && g.closest('#pack'); }), all), 'every dog is a .rmdog group in #pack (rmEl)');
-  const P4 = await ev((l) => l.map((id) => window.__paw.rm.pos(id)), all);
-  ok(P4.every((q) => Math.abs(q.sc - (0.88 * Math.max(0.86, Math.min(1.12, 1 + (q.y - 500) * 0.0012)))) < 0.002), 'every dog at rmScale(its feet y): ' + JSON.stringify(P4.map((q) => +q.sc.toFixed(2))));
-  ok(Math.max(...P4.map((q) => q.sc)) / Math.min(...P4.map((q) => q.sc)) < 1.2, 'nobody is a big main character: sizes within depth (' + P4.map((q) => q.sc.toFixed(2)).join(', ') + ')');
+  const P4 = await ev((l) => l.map((id) => Object.assign(window.__paw.rm.pos(id), window.__paw.rm.size(id))), all);
+  ok(P4.every(atScale), 'every dog at rmScale(its feet y) x 1.25 x its size class: ' + JSON.stringify(P4.map((q) => [+q.sc.toFixed(2), q.k])));
+  ok(JSON.stringify(P4.map((q) => q.ck)) === JSON.stringify([0.86, 0.72, 0.72, 1]), 'the classes: shiba medium, dachshund and pug small, golden big');
+  ok(Math.max(...P4.map((q) => q.sc / q.k)) / Math.min(...P4.map((q) => q.sc / q.k)) < 1.2, 'the leader is not a big main character: past the size class, sizes differ only by depth (' + P4.map((q) => (q.sc / q.k).toFixed(2)).join(', ') + ')');
+  // v2.11.1 (V2111.md section 2): at the same feet y a small dog renders at 0.72 of a big one (the drawing and its tap rect), a medium one at 0.86
+  await hold();
+  await ev(([b, g, a]) => { const R = window.__paw.rm; R.set(b, { x: 200, y: 560 }); R.set(g, { x: 560, y: 560 }); R.set(a, { x: 820, y: 560 }); }, [B, G, A]);
+  const rh = await ev((l) => l.map((id) => { const g = document.querySelector(`#view [data-dog="${id}"]`), h = g.querySelector('.pd-wander > rect') || document.getElementById('dogHit'), at = g.querySelector('.rm-at'); return { h: h.getBoundingClientRect().height, k: +/scale\(([\d.]+)\)/.exec(at.getAttribute('transform'))[1] }; }), [B, G]);
+  ok(Math.abs(rh[0].k / rh[1].k - 0.72) < 0.01 && Math.abs(rh[0].h / rh[1].h - 0.72) < 0.02, `at the same feet y the dachshund renders at 0.72 of the golden (scale ${(rh[0].k / rh[1].k).toFixed(3)}, tap rect height ${(rh[0].h / rh[1].h).toFixed(3)})`);
+  const am = await pos(A), gm = await pos(G); ok(Math.abs(am.sc / gm.sc - 0.86) < 0.01, `the shiba (medium) at 0.86 of the golden (${(am.sc / gm.sc).toFixed(3)})`);
+  await ev(([l, P]) => l.forEach((id, i) => window.__paw.rm.set(id, { x: P[i].x, y: P[i].y })), [all, P4]); await free(); // back where they stood
   const geo = await ev((l) => { const R = window.__paw.rm; R.scan(); return { tap: l.map((id) => R.tap(id)), no: R.zone('yard').no }; }, all);
   const small = geo.no.filter((b) => b[2] * b[3] < 15000);
   ok(geo.tap.every((T) => small.every((b) => ov(T, b) <= 0.08 * ar(b) + 1)), 'no dog\'s tap rect covers the bowl, mailbox, clipboard or a place button: ' + JSON.stringify({ tap: geo.tap.map((x) => x.map(Math.round)), small: small.map((x) => x.map(Math.round)) }));
@@ -131,12 +140,12 @@ require('./test_lib').run('v210_roam', async (t) => {
   q = await pos(C); ok(Math.abs(q.x - 740) < 60 && Math.abs(q.y - 515) < 4 && q.pose === 'sleep', `a napping pack dog lies at the dog-house door (${Math.round(q.x)}, ${Math.round(q.y)}, ${q.pose})`);
   await ev((id) => { window.__paw.S.dogs.find((x) => x.id === id).sleeping = false; window.__paw.go('yard'); }, C); await t.untilMode('yard');
 
-  sec('8. town places: everybody the same size, inside the zone');
+  sec('8. town places: everybody at its size class, inside the zone');
   for (const pl of ['square', 'dogpark']) {
     await t.home(pl); await t.sleep(400);
-    const g = await ev(() => { const R = window.__paw.rm; return R.dogs().map((id) => R.pos(id)); });
+    const g = await ev(() => { const R = window.__paw.rm; return R.dogs().map((id) => Object.assign(R.pos(id), { k: R.size(id).k })); });
     const z = await ev((pl) => window.__paw.rm.zone(pl), pl);
-    ok(g.length === 4 && g.every((q) => q.y >= z.y0 - 1 && q.y <= z.y1 + 1 && Math.abs(q.sc - (0.88 * Math.max(0.86, Math.min(1.12, 1 + (q.y - 500) * 0.0012)))) < 0.002), `${pl}: four dogs at rmScale, in the zone ` + JSON.stringify(g.map((q) => [Math.round(q.x), Math.round(q.y)])));
+    ok(g.length === 4 && g.every((q) => q.y >= z.y0 - 1 && q.y <= z.y1 + 1 && atScale(q)), `${pl}: four dogs at rmScale, in the zone ` + JSON.stringify(g.map((q) => [Math.round(q.x), Math.round(q.y)])));
   }
   if (!t.failed) console.log('ALL OK');
 }, { packCare: true, prefs: { rmTest: true } });

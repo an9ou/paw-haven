@@ -137,6 +137,15 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [ ] `#ballLayer` is not depth-sorted with the dogs: the ball draws over the legs of dogs standing in front of it. `game/src/38_ball.js`
 - [ ] `phone_occl_play` is flaky under load (the walkfetch toast, the runner hint). Not from v2.10. `game/test_phone_occl_play.js`
 
+## Costumes & Sizes (v2.11.1)
+- [ ] The three new costumes (Pumpkin Patch Suit, Trick-or-Treat Ghost, Little Bat Costume) are not in the Dog Card list `DC_OUTFITS`: adding them changes the Worker's list counts and needs a Worker deploy in the same release. A card dog wearing one shows its next listed item. `game/src/40_dogcards.js`, `cloudflare/worker.js`
+- [ ] The new costumes have no item drawing in the art module: the pop-up, Wardrobe and Journal use the `HW_ITEM_FB` doodles in `27_halloween.js`.
+- [ ] With the bigger dogs (v2.10 size x 1.25 x class) the narrow phone yard fits fewer dogs on screen, so the look chips show more often.
+- [ ] At the Dog Park a card visitor may stand partly behind your dogs (allowed since v2.11).
+- [ ] `phone_occl_play` is still flaky under load (passes on retry).
+- [ ] `phone_v25_fixes_b` "the view eases back to the dog after the drag" (iPhone or Pixel yard) fails about half the runs, on `v2111-base` (v2.11) too: the camera does not settle within 3 units in 9 s. Pre-existing, not caused by v2.11.1. `game/test_phone_v25_fixes_b.js:77`
+- [ ] A costume hides the head-slot hat, but the hat's perk still works and the Wardrobe gives no hint that the hat is hidden.
+
 ## Tokyo Trip (v2.11)
 - [ ] Pre-v2.11, found by the phone review: on phones `#mapPan` is 24 px wider than the screen. `game/src/08_map.js`
 - [ ] Pre-v2.11, phone review: the Dog Park sign measures 95 x 40 px on phones.

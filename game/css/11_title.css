@@ -99,3 +99,5 @@ html[data-layout="phone"] .acform .aclead p{font-size:16px}
 html[data-layout="phone"] .acform .acdog{width:84px;height:70px}
 html[data-layout="phone"] #modal .panel.acct .foot .btn{flex:1 1 0;min-height:48px}
 html[data-layout="phone"] #stage #modal .panel.pop.acct{padding-bottom:calc(22px + env(safe-area-inset-bottom,0px))} /* the last row never touches the sheet's frame */
+/* v2.11.1 (UI): the adopt card reads comfortably on phones (the card's spacing is in 33_shelter.css); desktop keeps the v2.11 card (PHONE.md) */
+html[data-layout="phone"] .heads{gap:8px;max-width:380px;margin:4px auto 0}
