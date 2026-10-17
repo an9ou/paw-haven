@@ -40,7 +40,7 @@ function ids(svg, what) {
 const PA = cur();
 const SCENES = ['tokyotower', 'ueno', 'odaiba'], HOTS = { tokyotower: ['stamp', 'souvenir'], ueno: ['stamp', 'hanami'], odaiba: ['stamp', 'sunset'] };
 const KEYS = ['shibuya', 'hachiko', 'yoyogi', 'asakusa', 'tokyotower', 'ueno', 'odaiba'];
-const ITEMS = ['Shibuya Bandana', 'Asakusa Bandana', 'Tokyo Tower Bandana', 'Shinkansen Plush', 'Lucky Cat', 'Sweet Potato Chew', 'Dog Senbei', 'Stamp Book', 'Train Ticket', 'Paw'];
+const ITEMS = ['Shibuya Bandana', 'Asakusa Bandana', 'Tokyo Tower Bandana', 'Shinkansen Plush', 'Lucky Cat', 'Sweet Potato Strip', 'Dog Senbei', 'Stamp Book', 'Train Ticket', 'Paw'];
 const PLACE_WORDS = /tokyo|ueno|odaiba|shiba|zojo|zōjō|rainbow|shinobazu|asakusa|shibuya|yoyogi|hachi/i;
 
 sec('the module registers its names');

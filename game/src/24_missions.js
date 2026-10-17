@@ -18,7 +18,7 @@ const MS_POOL = [
   { id: 'garden_plant', n: 1, t: 'Plant a seed', s: 'Plant a seed', g: () => gkOn() && gardenUnlocked() && Object.values(S.inv.seeds || {}).some((v) => v > 0), m: (a) => a.kind === 'garden' && a.what === 'plant' },
   { id: 'harvest', n: 1, t: 'Harvest a crop', s: 'Harvest a crop', g: () => gkOn() && gardenUnlocked() && !!(S.garden && Array.isArray(S.garden.plots) && S.garden.plots.some((p) => p && p.crop)), m: (a) => a.kind === 'garden' && a.what === 'harvest' },
   { id: 'cook', n: 1, t: 'Cook a dish', s: 'Cook a dish', g: () => kOn() && kitchenUnlocked(), m: (a) => a.kind === 'cook' },
-  { id: 'buy', n: 1, t: 'Buy something on Market Street', s: 'Market Street shopping', shop: true, m: (a) => a.kind === 'buy' && a.shop !== 'stall' && a.shop !== 'popup' }, // v2.5/v2.6: the stall and the pop-up are in the Square, not on Market Street
+  { id: 'buy', n: 1, t: 'Buy something on Market Street', s: 'Market Street shopping', shop: true, m: (a) => a.kind === 'buy' && !['stall', 'popup', 'station', 'tokyo'].includes(a.shop) }, // v2.5/v2.6: the stall and the pop-up are in the Square, not on Market Street
   { id: 'buy_food_new', n: 1, t: 'Try a new snack from Kibble Corner', s: 'New snack', shop: true, m: (a) => a.kind === 'buy' && a.cat === 'food' && MS_V24FOOD().includes(a.name) },
   { id: 'feed_new', n: 1, t: 'Feed {dog} the {arg}', s: 'Feed the {arg}', arg: () => MS_V24FOOD().filter((n) => (S.inv.food[n] || 0) > 0), m: (a, it) => a.kind === 'feed' && a.name === it.arg },
   { id: 'toy_new', n: 1, t: 'Play with the {arg}', s: 'Play with the {arg}', arg: () => MS_V24TOYS().filter((n) => owns('toys', n)), m: (a, it) => (a.kind === 'toy' || a.kind === 'fetch') && a.name === it.arg },
@@ -45,7 +45,7 @@ const MS_POOL = [
   { id: 'travel_fuji', n: 1, t: 'Visit the Mt. Fuji Lookout', s: 'Mt. Fuji Lookout visit', g: () => jpHillOpen(), m: (a) => a.kind === 'travel' && a.place === 'fujihill' },
   // v2.11 Tokyo Trip (V211.md section 5.3, 39_tokyo.js): the ride out and a new station stamp, from the Station's Bond on
   { id: 'tokyo_ride', n: 1, t: 'Ride the Shinkansen to Tokyo', s: 'Shinkansen ride', g: () => tkOn() && topBond() >= TK_STATION_BOND, m: (a) => a.kind === 'ride' && a.dir === 'out' },
-  { id: 'tokyo_stamp', n: 1, t: 'Collect a station stamp', s: 'Station stamp', g: () => tkOn() && topBond() >= TK_STATION_BOND && tkStampCount() < TK_STAMPS.length, m: (a) => a.kind === 'stamp' }
+  { id: 'tokyo_stamp', n: 1, t: 'Collect a station stamp', s: 'Station stamp', g: () => tkOn() && topBond() >= TK_STATION_BOND && tkStampFree(), m: (a) => a.kind === 'stamp' }
 ];
 const msDef = (id) => MS_POOL.find((x) => x.id === id);
 function msFields() {

@@ -48,6 +48,9 @@ require('./test_lib').run('phone_v211_tokyo', async (t) => {
   ok(await ev(() => { const r = document.querySelector('.tk-ride svg').getBoundingClientRect(); return r.width <= window.innerWidth + 1 && r.height > 150; }), 'the ride fits the phone width');
   await t.SH('ride');
   await p().tap('.tk-ride'); await t.untilMode('japan', 3000); await motion(false);
+  await t.until(() => window.__toasts.some((x) => /Welcome to Tokyo/.test(x)), null, 3000); await t.sleep(300);
+  ok(await ev(() => { const r = document.getElementById('toasts').getBoundingClientRect(), z = document.getElementById('mapZoom').getBoundingClientRect(); return r.top > window.innerHeight * 0.5 && (r.right <= z.left + 1 || r.bottom <= z.top + 1); }), 'map-mode toasts sit at the bottom, clear of the zoom buttons');
+  ok(await ev(() => document.querySelector('#status .pname').textContent === 'Tokyo'), 'the status chip says Tokyo');
 
   sec('iPhone 15: the Japan map');
   await quiet(); await t.sleep(500);
@@ -95,4 +98,27 @@ require('./test_lib').run('phone_v211_tokyo', async (t) => {
   ok(big(await sizes('#modal .sitem .btn')) && await noSide(), 'the Nakamise sheet: 44 px buttons, no sideways scroll');
   await t.closeX();
   await t.ctx.close();
+
+  /* the pack roams (prefs.rmTest, 4 dogs): no dog stands on a hot spot, the Stamp button is there on Pixel 7 too */
+  for (const device of ['iPhone 15', 'Pixel 7']) {
+    sec(device + ': four roaming dogs keep off the hot spots');
+    await t.newGame({ device, prefs: { tkTest: true, rmTest: true } }, { coins: 2000, bond: { level: 6, pts: 1500 } });
+    await ev(() => { const P = window.__paw; P.addDog({ key: 'dachs', sex: 'male', months: 14 }, 'Bun'); P.addDog({ key: 'pug', sex: 'female', months: 30 }, 'Pip'); P.addDog({ key: 'golden', sex: 'female', months: 20 }, 'Goldie'); });
+    await t.calm(); await ev(() => window.__paw.idle.speed(0.05));
+    for (const k of ['shibuya', 'yoyogi', 'asakusa', 'ueno', 'tokyotower', 'odaiba']) {
+      await at(k); let bad = [], prev = [];
+      // a dog whose feet stay in a hot spot's foot box (the feet where its body covers the spot's middle) for two samples in a row, not one passing by
+      for (let i = 0; i < 8; i++) {
+        await t.sleep(800);
+        const now = await ev(() => { const svg = document.querySelector('#view > svg.world'), M = svg.getScreenCTM().inverse(), feet = [...svg.querySelectorAll('#sceneG [data-hot]')].map((g) => { const r = g.getBoundingClientRect(), a = new DOMPoint(r.left, r.top).matrixTransform(M), c = new DOMPoint(r.right, r.bottom).matrixTransform(M); return [(a.x + c.x) / 2, (a.y + c.y) / 2, g.getAttribute('data-hot')]; });
+          return window.__paw.S.dogs.map((d) => { const q = window.__paw.rm.pos(d.id), h = feet.find(([cx, cy]) => Math.abs(q.x - cx) < 60 && q.y > cy - 10 && q.y < cy + 148); return h ? d.id + '@' + h[2] + ' ' + Math.round(q.x) + ',' + Math.round(q.y) : null; }).filter(Boolean); });
+        bad = bad.concat(now.filter((x) => prev.includes(x))); prev = now;
+      }
+      ok(!bad.length, `${k}: no dog stood on a hot spot or its foot box (${bad.join(' ')})`);
+      const sb = await sizes('#placeBtns [data-tk=stamp]'); ok(big(sb), `${k}: the Stamp button is 44 px`);
+      ok(await noSide(), `${k}: no sideways scroll`);
+    }
+    await t.SH(device.replace(' ', '') + '_odaiba_roam');
+    await t.ctx.close();
+  }
 });
