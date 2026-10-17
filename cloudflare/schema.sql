@@ -75,3 +75,28 @@ create table if not exists reset_codes (
   expires_at integer not null,
   tries      integer not null default 0
 );
+
+-- Dog Cards (v2.11, V211.md section 5.5): an opt-in public card per email account. No free text anywhere: the Worker stores only
+-- integers and fixed tokens (indices into the game's append-only lists, coat alleles), validated in cloudflare/worker.js.
+-- id is a random card id (user ids never leave the Worker). dogs: the Worker's own JSON of up to 4 validated dogs.
+-- Deleting an account deletes its card and its paws: every card route joins users (a card with no account is gone at once)
+-- and tidy() removes the rows left behind.
+create table if not exists cards (
+  id         text primary key,
+  user_id    text unique not null,
+  name_a     integer not null,
+  name_b     integer not null,
+  dogs       text not null,
+  paws       integer not null default 0,
+  updated_at integer not null          -- ms; visitors are cards updated in the last 30 days
+);
+create index if not exists cards_updated on cards (updated_at);
+
+-- One paw per card per day per account (guests too). from_id: the giver's user id. day: the UTC day, YYYY-MM-DD.
+create table if not exists paws (
+  from_id text not null,
+  card_id text not null,
+  day     text not null,
+  primary key (from_id, card_id, day)
+);
+create index if not exists paws_card on paws (card_id);
