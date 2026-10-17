@@ -14,7 +14,7 @@ require('./test_lib').run('phone_v210_roam', async (t) => {
     await t.newGame({ device }, { coins: 2000, bond: { level: 8, pts: 3000 } });
     await t.home('yard'); await quiet();
     let v = await vb();
-    ok(v.w > 640 && v.w < 760 && v.y < 0, `the yard crop is about 700 units wide, the extra sky above (${Math.round(v.w)} x ${Math.round(v.h)} from y ${Math.round(v.y)})`);
+    ok(v.w > 560 && v.w < 710 && v.y < 0, `the yard crop is wider (about 700 units, so the clipboard stays 44 px), the extra sky above (${Math.round(v.w)} x ${Math.round(v.h)} from y ${Math.round(v.y)})`);
     ok(await ev(() => { const r = document.getElementById('dogHit').getBoundingClientRect(), w = document.getElementById('view').getBoundingClientRect(); return r.left >= w.left - 1 && r.right <= w.right + 1 && r.top >= w.top - 1 && r.bottom <= w.bottom + 1 && r.width >= 44 && r.height >= 44; }), 'the dog\'s tap rect is fully on screen and at least 44 px');
     ok(await ev(() => !!getComputedStyle(document.getElementById('view')).backgroundColor), 'the view behind the extra sky has a colour');
     ok(await noSide(), 'no sideways scroll');
@@ -53,7 +53,7 @@ require('./test_lib').run('phone_v210_roam', async (t) => {
     sec(device + ': the house and a town place');
     for (const pl of ['house', 'square']) {
       await t.home(pl); await quiet(); await t.sleep(300); v = await vb();
-      ok(v.w > 640 && v.w < 760, `${pl}: the crop is about 700 units wide (${Math.round(v.w)})`);
+      ok(v.w > 560 && v.w < 710, `${pl}: the crop is about 700 units wide (${Math.round(v.w)})`);
       ok(await ev(() => { const r = document.getElementById('dogHit').getBoundingClientRect(), w = document.getElementById('view').getBoundingClientRect(); return r.width >= 44 && r.right > w.left && r.left < w.right; }), `${pl}: the leader's tap rect is at least 44 px`);
       ok(await noSide(), `${pl}: no sideways scroll`);
       await t.SH(tag + '_' + pl + '4');

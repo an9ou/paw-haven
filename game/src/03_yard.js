@@ -165,7 +165,7 @@ function phHomeRefit() {
   const vw = view.clientWidth, vh = view.clientHeight - (parseFloat(view.style.getPropertyValue('--trayH')) || 0); if (!vw || vh <= 0) return;
   const native = 600 * vw / vh;
   if (wide) { // v2.10 ROAM: about 700 world units wide (V210.md section 5.2): zoomed out through the viewBox like Market Street, the extra sky above the scene
-    phZoom = Math.min(1, native / RM_CROP); view.style.removeProperty('--vfit'); view.style.background = phZoom < 1 ? rmSky() : '';
+    phZoom = Math.min(1, native / rmCropFit(vw, native)); view.style.removeProperty('--vfit'); view.style.background = phZoom < 1 ? rmSky() : '';
   } else {
     const fit = Math.max(fitMin, Math.min(1, native / (R - L)));
     view.style.setProperty('--vfit', fit.toFixed(3));

@@ -367,6 +367,12 @@ on('yard:enter', rmSceneUp);
 
 /* ---------------- phones: the wide crop and the look-left / look-right chips (section 5.2) ---------------- */
 function rmCropW() { const svg = $('#view > svg.world'); if (!svg) return RM_CROP; const vb = svg.viewBox.baseVal; return vb && vb.width ? vb.width : RM_CROP; }
+// the crop width on this phone: about RM_CROP, but never so wide that a tappable thing in the scene (the missions clipboard is the smallest,
+// 120 x 71 units) drops under 44 px. vw: the view's width in px, native: the crop at zoom 1
+function rmCropFit(vw, native) {
+  rmScan(); const small = (RM.no || []).filter((b) => b[4] !== 'btn' && b[4] !== 'scene' && b[2] < 330 && b[3] < 270).map((b) => Math.min(b[2], b[3]));
+  const side = small.length ? Math.min(...small) : 1e9; return clamp(Math.min(RM_CROP, (vw * side) / 46), native, RM_CROP);
+}
 // the world x span of every dog's tap rect (and the bowl at home): where the phone camera centres
 function rmSpan() {
   let L = 1e9, R = -1e9; rmDogs().forEach((d) => { const r = rmSt(d), T = rmTapBox(r.tw ? r.tw.x1 : r.x, r.y, rmK(r)); L = Math.min(L, T[0]); R = Math.max(R, T[0] + T[2]); });
