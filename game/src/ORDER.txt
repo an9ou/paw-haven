@@ -44,4 +44,7 @@
 34_pack_play.js
 35_photo.js
 35b_photo_fonts.js
+36_personality.js
+37_roam.js
+38_ball.js
 23_boot.js

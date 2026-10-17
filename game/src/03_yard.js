@@ -8,7 +8,7 @@ function yardWorldSVG(extra = '') {
     <g id="bowlG" class="hot" tabindex="0" role="button" aria-label="Food bowl">${place(art('prop', 'bowl-empty'), 205, 462, 90, 90)}</g>
     <g id="pack">${packSVG()}</g><g id="dogPos"><g id="dogFx"><g id="dogArt"></g><rect id="dogHit" x="${DX + 30}" y="${DY + 40}" width="${DW - 60}" height="${DH - 40}" fill="transparent" pointer-events="all" class="hot" tabindex="0" role="button" aria-label="Pet the dog"/></g><g id="fluffFx" pointer-events="none"></g></g>${bedLayers().front}
     ${S.place === 'yard' && S.mapPieces.length >= 4 && !S.secretDug ? `<g id="secretX" class="hot" tabindex="0" role="button" aria-label="Secret dig: X marks the spot"><rect x="585" y="452" width="150" height="140" fill="transparent"/>${place(artReal('collectible', 'dig') || art('collectible', 'dig'), 615, 495, 90, 90)}<text x="660" y="488" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="26" fill="#5B3D32">X marks the spot!</text></g>` : ''}
-    <g id="zzz"></g>${extra}<g id="fx"></g></svg><div id="status"></div><div id="placeBtns"></div><button id="devBtn">dev</button>`;
+    <g id="zzz"></g><g id="ballLayer" pointer-events="none"></g>${extra}<g id="fx"></g></svg><div id="status"></div><div id="placeBtns"></div><button id="devBtn">dev</button>`;
 }
 function dogPoseNow() {
   if (tempPose && performance.now() < tempUntil) return tempPose;
