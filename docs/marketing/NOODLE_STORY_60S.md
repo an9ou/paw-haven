@@ -68,4 +68,27 @@ Follow us for news so you don't miss Noodle! 🔔
 
 - **The bump at 0:13 is real:** in the game, a dog that walks into a log just stops and says something proud. Nothing bad ever happens.
 - **Words rules:** checked. No "ugliest", no "breed" as a verb, no "sell" for dogs, no other game names.
-- **I can build it as a video** with the same pipeline as the 90-second trailer: real gameplay, Bella's voice, the game's music and subtitles.
+- **Spoiler-free:** the video never shows the game's buttons, menus or scores, and never says "game", so it reads as a little animated story. Keep the caption the same way (below) until you announce it.
+
+---
+
+## The video (made 17 Oct 2026)
+
+`brand/instagram/launch/story60/doodle-doggo-noodle-story-60s.mp4`: 1080 x 1920, 30 fps, about 61 seconds, H.264 + AAC, subtitles burned in.
+
+It is a **storybook**, not gameplay: each place is the game's real scene art as a sketchbook page (Home Yard, a morning walk in Sunny Park, the Town Square, the Dog Park, Riverside, the Mt. Fuji Lookout at dusk), and the real crayon dogs and Gerald act in front of it, with speech bubbles drawn in the same hand. The camera pans and zooms like a picture book. No buttons, no menus, no coins or timers. It opens like the trailer (the town drawn in pencil, then Noodle scribbled in) and ends on **Coming soon / follow us on Instagram**.
+
+Voice: Bella (Kokoro TTS, a synthetic voice; label it as AI voice-over if an ad form asks). Music: the game's own, changing with each place.
+
+**Spoiler-free caption (no "game")**
+```
+Hi, I'm Noodle 🖍️🐶 I drew myself.
+Come see my town: my yard, the Town Square, the Dog Park, my friends Biscuit, Mochi and Frost, Gerald the duck (he knows everything), and sunsets over Mt. Fuji 🗻
+
+Doodle Doggo is coming soon ✨
+Follow us so you don't miss what's next! 🔔
+
+#doodledoggo #comingsoon #dachshund #doglover #cozy #illustration #crayon
+```
+
+**Remake:** `python vo60.py <kokoroModelDir> <voDir>` (Bella), then `node build60.js <voDir> <workDir>` in `brand/instagram/launch/story60/` (`ONLY=3,12.5` renders just those seconds to check). The shots, the camera and the bubbles are in `story60.html` (`SCENE_FN`); the pauses between lines are `GAP` in `build60.js`.

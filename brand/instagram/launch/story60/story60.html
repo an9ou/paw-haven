@@ -1,0 +1,246 @@
+<!doctype html>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&display=swap" rel="stylesheet">
+<!-- "Hi, I'm Noodle": a 1-minute storybook video (9:16). Only the game's art (scenes, dogs, Gerald, logs), never its buttons or HUD.
+     build60.js calls window.draw({ t, sub, subAt }) once per frame after window.setTL(timeline). -->
+<style>
+  :root { --ink:#5B3D32; --pink:#F28FA5; --paper:#FFF8EC; --muted:#8A7468; }
+  html,body { margin:0; background:var(--paper); }
+  #stage { position:relative; width:1080px; height:1920px; overflow:hidden; background:var(--paper); font-family:'Caveat',cursive; color:var(--ink); }
+  #dots { position:absolute; inset:0; background-image:radial-gradient(circle, #E3D2BA 1.6px, transparent 2px); background-size:22px 22px; }
+  .abs { position:absolute; left:0; top:0; transform-origin:50% 50%; }
+  .txt { position:absolute; text-align:center; font-weight:700; line-height:1; white-space:nowrap; }
+  .sw { position:absolute; background:var(--pink); opacity:.42; border-radius:40% 60% 50% 45% / 60% 40% 55% 45%; transform-origin:50% 50%; }
+  /* the opening (as in the trailer): the yard drawn in pencil, then colour; Noodle scribbled in */
+  #book { position:absolute; left:40px; top:380px; width:1000px; height:600px; }
+  #book .page { position:absolute; inset:-22px; background:#FFFDF7; border-radius:18px; box-shadow:0 14px 34px rgba(91,61,50,.22); }
+  #book .art { position:absolute; inset:0; overflow:hidden; border-radius:6px; }
+  #book .art > div { position:absolute; inset:0; }
+  #book svg.world { width:1000px; height:600px; display:block; }
+  #pencilArt svg { filter: grayscale(1) contrast(1.35) brightness(1.08); }
+  /* the storybook page: a window onto one scene, with the dogs acting in it */
+  #win { position:absolute; left:34px; top:300px; width:1012px; height:1100px; }
+  #win .page { position:absolute; inset:-20px; background:#FFFDF7; border-radius:22px; box-shadow:0 14px 34px rgba(91,61,50,.22); }
+  #win .vp { position:absolute; inset:0; overflow:hidden; border-radius:10px; border:4px solid rgba(91,61,50,.55); }
+  .scn { position:absolute; left:0; top:0; width:1000px; height:600px; transform-origin:0 0; display:none; }
+  .scn > svg { position:absolute; left:0; top:0; width:1000px; height:600px; }
+  .act { position:absolute; left:0; top:0; transform-origin:50% 100%; }
+  .act svg { display:block; overflow:visible; }
+  .bub { position:absolute; left:0; top:0; transform-origin:50% 100%; white-space:nowrap; }
+  .bub .in { position:relative; display:inline-block; background:#FFFDF7; border:3px solid var(--ink); border-radius:18px; padding:2px 14px 6px; font-size:30px; font-weight:700; box-shadow:0 3px 0 rgba(91,61,50,.18); }
+  .bub .in:after { content:''; position:absolute; left:50%; bottom:-11px; width:16px; height:16px; margin-left:-8px; background:#FFFDF7; border-right:3px solid var(--ink); border-bottom:3px solid var(--ink); transform:rotate(45deg); }
+  /* place sticker and friend name card */
+  #tag { position:absolute; left:60px; top:96px; transform-origin:0 50%; white-space:nowrap; font-size:76px; }
+  #tag .in { display:inline-block; background:#FFE3A1; border:6px solid var(--ink); border-radius:30px; padding:8px 34px 16px; box-shadow:0 8px 0 rgba(91,61,50,.2); font-weight:700; }
+  #tag .k { font-size:.62em; color:var(--muted); font-weight:600; margin-left:14px; }
+  #sub { position:absolute; left:60px; width:960px; top:1452px; text-align:center; }
+  #sub span { display:inline-block; background:#FFFBF2; border:5px solid var(--ink); border-radius:34px; padding:10px 30px 16px; font-weight:700; line-height:1.08; box-shadow:0 8px 0 rgba(91,61,50,.18); font-size:60px; }
+  .hk #sub { top:1500px; }
+</style>
+<body>
+<div id="stage">
+  <div id="dots"></div><div id="doodles"></div>
+  <div id="hook">
+    <div id="book"><div class="page"></div><div class="art"><div id="pencilArt"></div><div id="colorArt"></div></div><div class="abs" id="pencil"></div></div>
+    <div class="abs" id="hookDog"></div>
+    <div id="hookLogo" class="txt" style="left:0;width:1080px;top:170px;font-size:150px"><span style="display:inline-block;transform:rotate(-3deg)">Doodle</span> <span style="display:inline-block;transform:rotate(2deg)">Doggo</span></div>
+  </div>
+  <div id="story"><div id="win"><div class="page"></div><div class="vp" id="vp"></div></div><div id="tag"><span class="in"><span id="tagT"></span><span class="k" id="tagK"></span></span></div></div>
+  <div id="end">
+    <div class="sw" id="esw" style="left:110px;top:590px;width:860px;height:130px"></div>
+    <div class="txt" id="e0" style="left:0;width:1080px;top:200px;font-size:110px"><span style="display:inline-block;transform:rotate(-3deg)">Doodle</span> <span style="display:inline-block;transform:rotate(2deg)">Doggo</span></div>
+    <div class="txt" id="e1" style="left:0;width:1080px;top:350px;font-size:190px">Coming soon</div>
+    <div class="txt" id="e2" style="left:0;width:1080px;top:592px;font-size:92px">follow us on Instagram</div>
+    <div class="txt" id="e3" style="left:0;width:1080px;top:750px;font-size:62px;color:var(--muted);font-weight:600">for news, so you don't miss Noodle!</div>
+    <div class="abs" id="endDog"></div>
+  </div>
+  <div id="sub"><span id="subT"></span></div>
+</div>
+<script src="../../../../dogs/pawart_dogs.js"></script>
+<script src="../../../../world/pawart_world_a.js"></script>
+<script src="../../../../world/pawart_world_b.js"></script>
+<script src="../../../../world/pawart_world_c.js"></script>
+<script>
+const PA = window.PawArt, $ = (id) => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x)), seg = (t, a, b) => clamp((t - a) / (b - a)), lerp = (a, b, k) => a + (b - a) * k;
+const eo3 = (x) => 1 - Math.pow(1 - clamp(x), 3), eio = (x) => { x = clamp(x); return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+const eoB = (x) => { x = clamp(x); const c1 = 1.9, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+const inner = (svg) => svg.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
+const ENV = (time) => ({ time: time || 'day', weather: 'sunny', season: 'autumn', halloween: false, jp: true });
+// ---- the opening (the trailer's hook) ----
+const yardArt = PA.scene('yard', ENV());
+$('pencilArt').innerHTML = yardArt; $('colorArt').innerHTML = yardArt;
+document.querySelectorAll('#book svg').forEach((s) => { s.setAttribute('width', 1000); s.setAttribute('height', 600); s.classList.add('world'); });
+$('pencil').innerHTML = '<svg width="150" height="150" viewBox="0 0 100 100"><g transform="rotate(35 50 50)"><rect x="42" y="2" width="16" height="70" rx="3" fill="#F2C14E" stroke="#5B3D32" stroke-width="3"/><rect x="42" y="2" width="16" height="12" rx="3" fill="#F28FA5" stroke="#5B3D32" stroke-width="3"/><path d="M42 72 L50 92 L58 72Z" fill="#F4E0BF" stroke="#5B3D32" stroke-width="3" stroke-linejoin="round"/><path d="M47.5 86 L50 92 L52.5 86Z" fill="#5B3D32"/></g></svg>';
+const dogSvg = (key, opts, w) => `<svg viewBox="0 40 240 160" width="${w}" height="${w * 160 / 240}">${inner(PA.dog(key, Object.assign({ anim: true }, opts)))}</svg>`;
+const W0 = 760, H0 = W0 * 160 / 240;
+let scrib = ''; { const rows = 13; for (let i = 0; i < rows; i++) { const y = 18 + i * (H0 - 30) / (rows - 1); scrib += (i ? 'L' : 'M') + (i % 2 ? W0 - 10 : 10) + ' ' + y.toFixed(1) + ' '; } }
+$('hookDog').innerHTML = `<svg width="${W0}" height="${H0}" viewBox="0 0 ${W0} ${H0}" overflow="visible"><defs><mask id="scr" maskUnits="userSpaceOnUse" x="-50" y="-80" width="${W0 + 100}" height="${H0 + 160}"><path id="scrP" d="${scrib}" fill="none" stroke="#fff" stroke-width="96" stroke-linecap="round" stroke-linejoin="round"/></mask></defs><g mask="url(#scr)">${dogSvg('dachs', { pose: 'happy' }, W0)}</g></svg>`;
+const scrLen = $('scrP').getTotalLength(); $('scrP').style.strokeDasharray = scrLen; $('scrP').style.strokeDashoffset = scrLen;
+$('endDog').innerHTML = dogSvg('dachs', { pose: 'happy', outfit: { eyes: 'Heart Sunglasses', neck: 'Red Bandana' } }, 760);
+// floating doodles
+const heart = '<svg viewBox="-18 -16 36 32" width="60" height="53"><path d="M0 12 C-16 0 -12 -14 0 -6 C12 -14 16 0 0 12Z" fill="#F28FA5" fill-opacity=".8" stroke="#5B3D32" stroke-width="2.4" stroke-linejoin="round"/></svg>';
+const spark = '<svg viewBox="-16 -16 32 32" width="56" height="56"><path d="M0 -14 Q1.5 -1.5 14 0 Q1.5 1.5 0 14 Q-1.5 1.5 -14 0 Q-1.5 -1.5 0 -14Z" fill="#FFE3A1" stroke="#5B3D32" stroke-width="2.4" stroke-linejoin="round"/></svg>';
+const paw = '<svg viewBox="-16 -16 32 32" width="60" height="60"><g stroke="#5B3D32" stroke-width="2.4" fill="#E0D5F0"><ellipse cx="0" cy="6" rx="9" ry="7.5"/><circle cx="-10" cy="-5" r="3.8"/><circle cx="-3.5" cy="-10" r="3.8"/><circle cx="3.5" cy="-10" r="3.8"/><circle cx="10" cy="-5" r="3.8"/></g></svg>';
+let dd = ''; const DOOD = [];
+for (let i = 0; i < 16; i++) { const x = 40 + ((i * 337) % 1000), sp = 60 + (i * 53) % 70, ph = (i * 0.37) % 1; DOOD.push({ x, sp, ph, i }); dd += `<div class="abs" id="dd${i}" style="opacity:.55">${[heart, spark, paw][i % 3]}</div>`; }
+$('doodles').innerHTML = dd;
+
+// ---- the scenes: one layer each (scene art + actors), drawn in scene units (1000 x 600) ----
+const VW = 1004, VH = 1092; // the viewport inside the page border
+const SC = {};
+function scene(id, name, time) {
+  const d = document.createElement('div'); d.className = 'scn'; d.innerHTML = PA.scene(name, ENV(time)); $('vp').appendChild(d);
+  SC[id] = { el: d, acts: {} }; return SC[id];
+}
+// an actor element per (scene, id, look); only the current look is shown
+function actor(sc, id, look, html, w, h) {
+  const k = id + '|' + look; let a = sc.acts[k];
+  if (!a) { a = document.createElement('div'); a.className = 'act'; a.innerHTML = html(); a.style.width = w + 'px'; a.style.height = h + 'px'; sc.el.appendChild(a); sc.acts[k] = { el: a, id, w, h }; a = sc.acts[k]; }
+  return a;
+}
+// place a dog by its feet: x, y = ground point in scene units; w = width in units
+function dog(sc, id, key, o) {
+  const look = (o.pose || 'idle') + (o.facing || 'right') + JSON.stringify(o.outfit || {});
+  const w = (o.w || 170) * 1.4, h = w * 160 / 240, a = actor(sc, id, look, () => dogSvg(key, { pose: o.pose || 'idle', facing: o.facing || 'right', outfit: o.outfit }, w), w, h);
+  a.used = true; const fy = h * (186 - 40) / 160;
+  a.el.style.transform = `translate(${o.x - w / 2}px,${o.y - fy - (o.lift || 0)}px) scale(${o.sx || 1},${o.sy || 1}) rotate(${o.rot || 0}deg)`; a.el.style.opacity = o.op == null ? 1 : o.op;
+}
+function prop(sc, id, html, w, h, x, y, op) { const a = actor(sc, id, '', html, w, h); a.used = true; a.el.style.transform = `translate(${x - w / 2}px,${y - h}px)`; a.el.style.opacity = op == null ? 1 : op; }
+function bubble(sc, id, text, x, y, at, t) {
+  if (t < at) return; const a = actor(sc, 'b:' + id, text, () => `<div class="in">${text}</div>`, 0, 0); a.used = true; a.el.className = 'bub';
+  const k = eoB(seg(t, at, at + 0.35)); const wpx = a.el.firstChild.offsetWidth || 120;
+  a.el.style.transform = `translate(${x - wpx / 2}px,${y - 52}px) scale(${0.3 + 0.7 * k})`; a.el.style.opacity = seg(t, at, at + 0.12); a.el.style.transformOrigin = `${wpx / 2}px 100%`;
+}
+function hearts(sc, id, x, y, at, t) {
+  for (let i = 0; i < 3; i++) { const u = t - at - i * 0.35; if (u < 0 || u > 1.8) continue; const a = actor(sc, 'h:' + id + i, '', () => heart.replace('width="60" height="53"', 'width="30" height="27"'), 30, 27); a.used = true; a.el.style.transform = `translate(${x + (i - 1) * 26 + Math.sin(u * 5 + i) * 6}px,${y - u * 60}px) scale(${0.6 + 0.5 * eoB(u * 2)})`; a.el.style.opacity = 1 - seg(u, 1.2, 1.8); }
+}
+// the camera: centre (cx, cy) and zoom z (px per scene unit); kept inside the scene
+function cam(sc, cx, cy, z) {
+  z = Math.max(z, VH / 600); const hw = VW / 2 / z, hh = VH / 2 / z; cx = clamp(cx, hw, 1000 - hw); cy = clamp(cy, hh, 600 - hh);
+  sc.el.style.transform = `translate(${VW / 2 - cx * z}px,${VH / 2 - cy * z}px) scale(${z})`;
+}
+const Z = VH / 600; // full height
+const yardS = scene('yard', 'yard'), walkS = scene('walk', 'park'), sqS = scene('square', 'square'), parkS = scene('park', 'dogpark'), rivS = scene('river', 'river'), hillS = scene('hill', 'fujihill', 'dusk');
+const LOG = PA.obstacle('log').replace('<svg ', '<svg width="120" height="50" ');
+const GER = (pose) => PA.prop('gerald', { pose }).replace('<svg ', '<svg width="200" height="200" ');
+
+// ---- timeline (set by build60.js): ST[line] = start, D[line] = spoken length ----
+let TL = null; window.setTL = (tl) => { TL = tl; };
+const S = (k) => TL.ST[k], E = (k) => TL.ST[k] + TL.D[k];
+// which scene is on: [scene id, start line, tag text, tag sub]
+function shots() {
+  return [['yard', 'n2a', 'Home Yard'], ['walk', 'n3a', 'Morning walk'], ['square', 'n4a', 'Town Square'], ['park', 'n5a', 'Dog Park'], ['river', 'n8a', 'Riverside'], ['hill', 'n9', 'Mt. Fuji Lookout']];
+}
+const SCENE_FN = {
+  yard(t, sc) {
+    const a = S('n2a'), m = a + TL.D.n2a * 0.62, b = E('n2b');
+    const k = eio(seg(t, m - 0.4, m + 1.4)); cam(sc, lerp(270, 600, k), 300, Z);
+    const wk = seg(t, a, m + 1.2), x = lerp(190, 470, eio(wk)), moving = wk > 0 && wk < 1;
+    dog(sc, 'noodle', 'dachs', { x, y: 545, w: 210, pose: moving ? 'walk' : t > S('n2b') ? 'sit' : 'happy', lift: moving ? Math.abs(Math.sin(t * 9)) * 5 : 0 });
+    hearts(sc, 'y', 600, 230, S('n2b') + 0.9, t);
+  },
+  walk(t, sc) {
+    const a = S('n3a') - 0.3, tb = S('n3b') + 0.12, v = 92, x0 = 170;
+    const x = x0 + v * (Math.min(t, tb) - a), xb = x0 + v * (tb - a);
+    const log2 = xb + 160, th = E('n3a') - 0.75, log1 = x0 + v * (th + 0.33 - a);
+    cam(sc, x + 140, 300, Z);
+    prop(sc, 'log1', () => LOG, 120, 50, log1, 560); prop(sc, 'log2', () => LOG, 120, 50, log2, 560);
+    const hu = seg(t, th - 0.1, th + 0.75), hop = hu > 0 && hu < 1, bumped = t >= tb, sat = t >= tb + 0.55;
+    const recoil = bumped ? Math.sin(seg(t, tb, tb + 0.3) * Math.PI) * 10 : 0;
+    dog(sc, 'noodle', 'dachs', { x: x - recoil, y: 560, w: 200, pose: sat ? 'sit' : bumped ? 'idle' : hop ? 'jump' : 'walk', lift: hop ? Math.sin(hu * Math.PI) * 120 : bumped ? 0 : Math.abs(Math.sin(t * 9)) * 5, rot: bumped && !sat ? -recoil * 0.5 : 0 });
+    bubble(sc, 'meant', 'I meant to do that.', x - 10, 385, tb + 0.4, t);
+  },
+  square(t, sc) {
+    const a = S('n4a'), b = E('n4b'), k = eio(seg(t, a + 0.3, S('n4a') + TL.D.n4a * 0.7));
+    cam(sc, lerp(280, 560, k), lerp(330, 250, k), lerp(Z * 1.05, Z * 1.25, k));
+    const wk = k > 0 && k < 1; dog(sc, 'noodle', 'dachs', { x: lerp(300, 610, k), y: 585, w: 190, pose: wk ? 'walk' : t > a + 1 ? 'sit' : 'idle', lift: wk ? Math.abs(Math.sin(t * 9)) * 5 : 0 });
+    bubble(sc, 'snack', 'snack time?', 565, 160, S('n4b') - 0.1, t);
+  },
+  park(t, sc) {
+    const n5 = S('n5a'), bi = n5 + TL.D.n5a * 0.45, n6 = S('n6a'), n7 = S('n7');
+    // the camera moves to whoever is talking
+    const ks = [[n5, 330, 0], [bi, 430, 0], [n6 - 0.3, 560, 0], [n7 - 0.3, 650, 0]]; let cx = 330;
+    ks.forEach(([at, c], i) => { if (i) cx = lerp(cx, c, eio(seg(t, at, at + 0.9))); });
+    cam(sc, cx, 320, Z * 1.06);
+    const bx = lerp(880, 520, eo3(seg(t, bi - 0.6, bi + 0.4))), brun = t < bi + 0.4;
+    dog(sc, 'mochi', 'shiba', { x: lerp(940, 680, eo3(seg(t, n6 - 0.9, n6))), y: 495, w: 150, pose: t < n6 ? 'walk' : 'sit', facing: 'left', op: seg(t, n6 - 0.9, n6 - 0.6) });
+    dog(sc, 'frost', 'husky', { x: lerp(1000, 830, eo3(seg(t, n7 - 0.9, n7))), y: 500, w: 165, pose: t < n7 ? 'walk' : t < n7 + TL.D.n7 * 0.35 ? 'sit' : 'howl', facing: 'left', op: seg(t, n7 - 0.9, n7 - 0.6) });
+    dog(sc, 'noodle', 'dachs', { x: 300, y: 570, w: 200, pose: t > n6 + TL.D.n6a ? 'happy' : 'sit' });
+    dog(sc, 'biscuit', 'corgi', { x: bx, y: 575, w: 180, pose: brun ? 'walk' : t > S('n5b') ? 'sniff' : 'happy', facing: 'left', lift: brun ? Math.abs(Math.sin(t * 11)) * 8 : 0, op: seg(t, bi - 0.6, bi - 0.4) });
+    if (t < n6 + 0.2) bubble(sc, 'snack', 'Is that a snack?', bx + 10, 400, bi + 0.6, t);
+    if (t < n7) bubble(sc, 'heh', 'heh.', 690, 345, n6 + TL.D.n6a * 0.55, t);
+    hearts(sc, 'm', 330, 400, S('n6b'), t); hearts(sc, 'm2', 680, 350, S('n6b') + 0.2, t);
+    bubble(sc, 'awoo', 'AWOOO!', 840, 320, n7 + TL.D.n7 * 0.4, t);
+  },
+  river(t, sc) {
+    const a = S('n8a');
+    cam(sc, lerp(340, 400, seg(t, a, E('n8b'))), 330, Z * 1.1);
+    dog(sc, 'noodle', 'dachs', { x: 250, y: 575, w: 200, pose: t < a + 0.5 ? 'walk' : 'sit' });
+    const gp = t < a + TL.D.n8a * 0.5 ? 'wave' : t < S('n8b') ? 'point' : 'cheer';
+    prop(sc, 'g' + gp, () => GER(gp), 200, 200, 510, 590);
+    bubble(sc, 'know', 'I know everything.', 520, 395, a + TL.D.n8a * 0.55, t);
+  },
+  hill(t, sc) {
+    const a = S('n9'), b = TL.hillEnd, k = eio(seg(t, a, b));
+    cam(sc, lerp(330, 480, k), lerp(380, 300, k), lerp(Z * 1.3, Z, k));
+    const row = [['frost', 'husky', 690, 150], ['mochi', 'shiba', 555, 140], ['biscuit', 'corgi', 425, 150], ['noodle', 'dachs', 280, 175]];
+    row.forEach(([id, key, x, w]) => dog(sc, id, key, { x, y: 570, w, pose: 'sit' }));
+    hearts(sc, 'h', 480, 370, a + TL.D.n9 * 0.6, t);
+  },
+};
+
+// ---- draw one frame ----
+window.draw = async (f) => {
+  const t = f.t, show = (id, on) => { $(id).style.display = on ? 'block' : 'none'; };
+  const storyAt = S('n2a') - 0.35, endAt = TL.endAt, section = t < storyAt ? 'hook' : t < endAt ? 'story' : 'end';
+  document.body.className = section === 'hook' ? 'hk' : '';
+  show('hook', section === 'hook'); show('story', section === 'story'); show('end', section === 'end');
+  DOOD.forEach((d) => { const e = $('dd' + d.i), y = 1980 - (((t * d.sp) + d.ph * 2000) % 2100), s = 0.6 + (d.i % 4) * 0.2; e.style.transform = `translate(${d.x + Math.sin(t * 1.3 + d.i) * 24}px,${y}px) rotate(${Math.sin(t + d.i) * 14}deg) scale(${s})`; });
+  if (section === 'hook') {
+    const a1 = S('n1a'), b1 = E('n1a'), a2 = S('n1b'), b2 = E('n1b');
+    const pIn = seg(t, a1, a1 + (b1 - a1) * 0.85), cIn = seg(t, a1 + (b1 - a1) * 0.45, b1 + 0.2);
+    $('pencilArt').style.clipPath = `inset(0 ${100 - pIn * 100}% 0 0)`; $('colorArt').style.clipPath = `inset(0 ${100 - cIn * 100}% 0 0)`;
+    $('pencil').style.display = pIn > 0 && pIn < 1 ? 'block' : 'none'; $('pencil').style.transform = `translate(${pIn * 1000 - 20}px,${300 + Math.sin(t * 22) * 230 - 130}px)`;
+    const s = seg(t, a2 - 0.1, a2 + (b2 - a2) * 0.8); $('scrP').style.strokeDashoffset = scrLen * (1 - s);
+    const bob = t > b2 ? Math.abs(Math.sin((t - b2) * 6)) * 14 : 0;
+    $('hookDog').style.transform = `translate(160px,${1010 - bob}px)`;
+    const lg = eoB(seg(t, b2 - 0.2, b2 + 0.4)); $('hookLogo').style.opacity = seg(t, b2 - 0.2, b2); $('hookLogo').style.transform = `scale(${0.5 + 0.5 * lg})`;
+  }
+  if (section === 'story') {
+    const L = shots(); let i = 0; L.forEach((s, j) => { if (t >= S(s[1]) - 0.35) i = j; });
+    const [id, line, tag] = L[i], at = i === 0 ? storyAt : S(line) - 0.35, sc = SC[id];
+    for (const k in SC) SC[k].el.style.display = k === id ? 'block' : 'none';
+    for (const k in sc.acts) sc.acts[k].used = false;
+    SCENE_FN[id](t, sc);
+    for (const k in sc.acts) sc.acts[k].el.style.display = sc.acts[k].used ? 'block' : 'none';
+    // the page slides in for the first shot and turns (a quick swing) on each cut
+    const k = eoB(seg(t, at, at + 0.45)), first = eo3(seg(t, storyAt, storyAt + 0.55)), side = i % 2 ? 1 : -1;
+    $('win').style.transform = `translateY(${(1 - first) * 1100}px) rotate(${side * (1 - k) * 3 + side * 0.4}deg) scale(${0.96 + 0.04 * k})`;
+    // the sticker: the place, or the friend who is talking
+    let tt = tag, tk = '', ta = at;
+    if (id === 'park') { const fr = [[S('n5a') + TL.D.n5a * 0.45, 'Biscuit', 'the corgi'], [S('n6a') - 0.2, 'Mochi', 'the shiba'], [S('n7') - 0.2, 'Frost', 'the husky']]; fr.forEach(([a, n, kk]) => { if (t >= a) { tt = n; tk = kk; ta = a; } }); }
+    if (id === 'river' && t >= S('n8a') + 0.3) { tt = 'Gerald'; tk = 'knows everything'; ta = S('n8a') + 0.3; }
+    $('tagT').textContent = tt; $('tagK').textContent = tk;
+    const kt = eoB(seg(t, ta, ta + 0.45)); $('tag').style.opacity = seg(t, ta, ta + 0.15); $('tag').style.transform = `rotate(-2.5deg) scale(${0.6 + 0.4 * kt})`;
+  }
+  if (section === 'end') {
+    const u = t - endAt, a = eoB(seg(u, 0, 0.5)), b = eoB(seg(u - (S('n10b') - endAt), 0, 0.5));
+    $('e0').style.opacity = seg(u, 0, 0.3);
+    $('e1').style.opacity = clamp(u / 0.2); $('e1').style.transform = `scale(${0.6 + 0.4 * a}) rotate(-3deg)`;
+    const v = t - S('n10b');
+    $('esw').style.opacity = 0.42 * seg(v, 0.2, 0.6); $('esw').style.transform = `rotate(-1.5deg) scaleX(${seg(v, 0.2, 0.8)})`;
+    $('e2').style.opacity = seg(v, 0, 0.2); $('e2').style.transform = `scale(${0.6 + 0.4 * b}) rotate(1.5deg)`;
+    $('e3').style.opacity = seg(v, 0.6, 1.0);
+    const rise = eoB(seg(u, 0.3, 1.0)), bounce = u > 1.0 ? Math.abs(Math.sin((u - 1.0) * 5)) * 28 : 0;
+    $('endDog').style.transform = `translate(160px,${1960 - 1080 * rise - bounce}px)`;
+  }
+  $('sub').style.display = f.sub ? 'block' : 'none';
+  if (f.sub) { $('subT').textContent = f.sub; const k = seg(t, f.subAt, f.subAt + 0.15); $('sub').style.opacity = k; $('sub').style.transform = `translateY(${(1 - k) * 12}px)`; }
+  // every CSS animation (the crayon wobble of the dogs and Gerald) follows the video clock
+  for (const an of document.getAnimations()) { an.pause(); an.currentTime = t * 1000; }
+  return true;
+};
+document.fonts.ready.then(() => { window.READY = true; });
+</script>
+</body>
