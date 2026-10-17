@@ -84,14 +84,14 @@ Object.keys(TK_LINES).forEach((k) => { PLACE_LINES[k] = Object.assign(PLACE_LINE
 /* ---- the scenes: the world D / E art, else a stand-in (an existing scene of the same kind, its own hot spots taken off) with the place sign and
    doodle hot spots, so every feature works before the art lands. Called from sceneArt (00_core.js) for every scene name */
 const TK_FB = { shibuya: 'square', tokyotower: 'square', yoyogi: 'dogpark', asakusa: 'market', ueno: 'park', odaiba: 'beach' };
-// [x, y, w, h, label] in scene units: on the back line of the floor band, so the pack can stand in front
+// [x, y, w, h, label] in scene units: above the floor band (bottom edge at y 410 at most), so the pack can stand in front
 const TK_FB_HOTS = {
-  shibuya: { hachiko: [270, 300, 150, 130, 'Hachikō'], crossing: [430, 420, 150, 70, 'Crossing'], souvenir: [640, 330, 140, 100, 'Souvenirs'], stamp: [820, 340, 120, 90, 'Stamp'] },
-  yoyogi: { stamp: [820, 340, 120, 90, 'Stamp'] },
-  asakusa: { lantern: [400, 200, 160, 150, 'Lantern'], nakamise: [120, 330, 150, 100, 'Treats'], omikuji: [620, 330, 130, 100, 'Omikuji'], souvenir: [770, 330, 130, 100, 'Souvenirs'], stamp: [30, 340, 80, 90, 'Stamp'] },
-  ueno: { hanami: [560, 330, 170, 100, 'Picnic'], stamp: [820, 340, 120, 90, 'Stamp'] },
-  tokyotower: { souvenir: [640, 330, 140, 100, 'Souvenirs'], stamp: [820, 340, 120, 90, 'Stamp'] },
-  odaiba: { sunset: [380, 300, 200, 100, 'Sunset'], stamp: [820, 340, 120, 90, 'Stamp'] }
+  shibuya: { hachiko: [270, 280, 150, 130, 'Hachikō'], crossing: [440, 330, 150, 70, 'Crossing'], souvenir: [630, 300, 140, 100, 'Souvenirs'], stamp: [820, 310, 110, 90, 'Stamp'] },
+  yoyogi: { stamp: [820, 310, 110, 90, 'Stamp'] },
+  asakusa: { lantern: [420, 190, 160, 150, 'Lantern'], nakamise: [110, 300, 150, 100, 'Treats'], omikuji: [620, 300, 130, 100, 'Omikuji'], souvenir: [770, 300, 130, 100, 'Souvenirs'], stamp: [20, 310, 80, 90, 'Stamp'] },
+  ueno: { hanami: [560, 300, 170, 100, 'Picnic'], stamp: [820, 310, 110, 90, 'Stamp'] },
+  tokyotower: { souvenir: [630, 300, 140, 100, 'Souvenirs'], stamp: [820, 310, 110, 90, 'Stamp'] },
+  odaiba: { sunset: [380, 280, 200, 100, 'Sunset'], stamp: [820, 310, 110, 90, 'Stamp'] }
 };
 function tkSceneReal(name) { const P = window.PawArt; return !!P && ['WORLD_D_SCENES', 'WORLD_E_SCENES'].some((k) => Array.isArray(P[k]) && P[k].includes(name)); }
 function tkFbHot(id, [x, y, w, h, label]) {
@@ -100,7 +100,7 @@ function tkFbHot(id, [x, y, w, h, label]) {
 function tkSceneArt(name, o) {
   if (!TK_PLACES[name]) return '';
   if (tkSceneReal(name)) return place(art('scene', name, o), 0, 0, 1000, 600);
-  const base = sceneArt(TK_FB[name], o, {}).replace(/\sdata-(hot|shop)="[^"]*"/g, '').replace(/<g class="fbsign"[\s\S]*?<\/g>/, ''); // the stand-in's own hot spots and sign come off
+  const base = sceneArt(TK_FB[name], o, {}).replace(/\s(data-hot|data-shop|role|tabindex)="[^"]*"/g, '').replace(/<g class="fbsign"[\s\S]*?<\/g>/, ''); // the stand-in's own hot spots and sign come off
   const hots = TK_FB_HOTS[name] || {};
   return `<g class="tk-fb" data-tk-fb="${name}">${base}${Object.keys(hots).map((k) => tkFbHot(k, hots[k])).join('')}${placeSign(name)}</g>`;
 }
@@ -108,6 +108,7 @@ function tkSceneArt(name, o) {
 /* ---- the town map: the Station pin (Bond 3). mapArt passes { station: true } and the lock while PLACES.station exists (TOKYO ART D draws
    <g data-area="station"> and adds it to MAP_AREAS). Until it does, the game adds this doodle pin. big: the 2400 x 1500 art map, fb: the fallback map */
 const TK_MAP_PIN = { big: [1990, 1150], fb: [260, 1330] };
+function tkTownTip() { return topBond() < TK_STATION_BOND ? `Station: Bond ${TK_STATION_BOND}` : 'Station: the Shinkansen to Tokyo'; } // the town map tooltip
 function tkMapOpts() { return PLACES.station ? { station: true } : {}; }
 function tkTrainDoodle() {
   return '<g stroke="#5B3D32" stroke-width="3" stroke-linejoin="round"><path d="M-40 14 L-40 -8 Q-40 -20 -26 -20 L18 -20 Q42 -18 46 6 L46 14 Z" fill="#FFFBF3"/><path d="M-40 2 H44" stroke="#3E6FB0" stroke-width="5"/><rect x="-30" y="-14" width="14" height="10" rx="2" fill="#BFE6FA" stroke-width="2"/><rect x="-10" y="-14" width="14" height="10" rx="2" fill="#BFE6FA" stroke-width="2"/><path d="M14 -14 L30 -14 Q36 -12 38 -4 L14 -4 Z" fill="#BFE6FA" stroke-width="2"/><path d="M-46 22 H52" stroke-width="3"/></g>';
@@ -343,7 +344,8 @@ function tkGather(dogs, spots, o, then) {
   TK.busy = true; busy = true; rmPause('tk'); hideBubble(); if (typeof idleStop === 'function') idleStop();
   const arrive = () => { if (--left > 0 || tok !== TK.tok) return; then(tok); };
   dogs.forEach((d, i) => {
-    let [x, y] = spots[i]; const q = rmNear(d, x, y, false) || rmNear(d, x, y, 'loose'); if (q) [x, y] = q;
+    let [x, y] = spots[i], q = rmNear(d, x, y, false); const far = (a) => !a || Math.hypot(a[0] - x, a[1] - y) > 150;
+    if (far(q)) q = rmNear(d, x, y, 'loose'); if (!far(q)) [x, y] = q; else if (rmHard(x, y)) y = rmZoneOf(S.place).y1 - 4; // a free spot near the target, else the target itself (never inside a box)
     const face = o.faceAt != null ? (o.faceAt < x ? 'left' : 'right') : o.face || 'right';
     if (fast) { rmSet(d, { x, y, face, pose: o.pose || 'idle' }); const r = rmSt(d); r.hx = x; r.hy = y; arrive(); }
     else rmTo(d, x, y, { pose: o.pose || 'idle', face, anchor: true, done: arrive });
@@ -453,8 +455,8 @@ async function tkShopBuy(name, p) {
   if (it.cat === 'decor') { hmDecorFields(); S.decor[it.n] = { got: localISO(), out: false }; } else S.inv[it.cat].push(it.n);
   markDirty(); updateHUD();
   toast(`Bought the ${it.n}. ${it.cat === 'decor' ? 'It is waiting at home, ready to put out in the yard or the house.' : it.cat === 'toys' ? 'It is in the Play menu now.' : 'Wrapped in paper with a little stamp on it.'}`, 'gold');
-  if (it.cat === 'clothes') { const pp = tkShop(), pn = pp && $('.panel', modal); if (pn) { const w = await confirmIn(pn, `Put the ${esc(it.n)} on ${esc(NAME())} now?`, 'Wear it', 'Later'); if (w) equip(it.n, true); } }
-  else tkShop();
+  const pp = tkShop(), pn = pp && $('.panel', modal);
+  if (it.cat === 'clothes' && pn) confirmIn(pn, `Put the ${esc(it.n)} on ${esc(NAME())} now?`, 'Wear it', 'Later').then((w) => { if (w) equip(it.n, true); }); // not awaited: the purchase is done either way
   return true;
 }
 

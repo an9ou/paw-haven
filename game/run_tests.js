@@ -81,6 +81,7 @@ const SUITES = {
   v29_polish: { file: 'test_v29_polish.js', group: 'all', est: 45 },
   v29_flows: { file: 'test_v29_flows.js', group: 'all', est: 60 },
   v210_ball: { file: 'test_v210_ball.js', group: 'all', est: 60 }, // v2.10 (V210.md): free ball play where you are (BALL lane)
+  v211_tokyo: { file: 'test_v211_tokyo.js', group: 'all', est: 150, timeout: 420 }, // v2.11 TRAVEL (V211.md 5.3): the Station, the ride, the Japan map, the Tokyo places
   v29_review: { file: 'test_v29_review.js', group: 'all', est: 40 }, // v2.9 integration review fixes (coordinator)
   // v2.2 phone suites: `node game/run_tests.js phone` (not part of `all`, which stays the desktop regression set)
   phone_legacy: { file: 'test_phone.js', group: 'phone', est: 90 },
@@ -113,6 +114,7 @@ const SUITES = {
   phone_v29_pack: { file: 'test_phone_v29_pack.js', group: 'phone', est: 50 }, // v2.9 (V29.md)
   phone_v210_ball: { file: 'test_phone_v210_ball.js', group: 'phone', est: 60 },
   phone_v210_roam: { file: 'test_phone_v210_roam.js', group: 'phone', est: 50 }, // v2.10 ROAM (V210.md)
+  phone_v211_tokyo: { file: 'test_phone_v211_tokyo.js', group: 'phone', est: 90 }, // v2.11 TRAVEL (V211.md 5.3): the Japan map, the ride, the Tokyo places on phones
   phone_v29_photo: { file: 'test_phone_v29_photo.js', group: 'phone', est: 45 },
   phone_v29_polish: { file: 'test_phone_v29_polish.js', group: 'phone', est: 45 },
 };
