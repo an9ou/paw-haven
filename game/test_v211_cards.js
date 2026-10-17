@@ -40,7 +40,7 @@ run('v211_cards', async (t) => {
   ok(L.breeds <= lim.breed && lim.breed === 21, `PawGenes BREEDS (${L.breeds}) fits the Worker's 21 breeds`);
   ok(L.n - 80 === lim.breed, 'one breed name word per breed the Worker allows');
   ok(L.words.every((w) => /^[A-Z][a-z]+$/.test(w)), 'every name word is one plain capitalised word');
-  ok(L.n === 101 && (await ev(() => window.__paw.dc.lists.n.slice(80).join())) === 'Shiba,Corgi,Golden,Dachshund,Husky,Mutt,Chihuahua,Pug,Greyhound,Beagle,Poodle,Collie,Samoyed,Frenchie,Akita,Spitz,Pom,Afghan,Dane,Mastiff,Shepherd', '80 pet names, then the 21 breed name words');
+  ok(L.n === 101 && (await ev(() => window.__paw.dc.lists.n.slice(80).join())) === 'Shiba,Corgi,Golden,Dachshund,Husky,Mutt,Chihuahua,Pug,Greyhound,Beagle,Poodle,Collie,Samoyed,Frenchie,Akita,Spitz,Pom,Hound,Dane,Mastiff,Shepherd', '80 pet names, then the 21 breed name words');
   ok(await ev(() => window.__paw.dc.lists.outfits.slice(0, 44).every((n) => typeof n === 'string' && /Bandana|Hat|Tie|Crown|Sunglasses|Raincoat|Beanie|Sweater|Cape|Collar|Tutu|Pyjamas|Suit|Coat|Hoodie|Scarf|Beret|Sheet|Rosette|Wings|Antlers|Snood|Hood|Helmet|Cap|Goggles|Necklace|Poncho/.test(n))), 'DC_OUTFITS are the game\'s wearables');
   const F = await ev(() => window.__paw.dc.fake.map((c) => ({ id: c.id, n: c.dogs.length, b: c.dogs.map((d) => d.b), ok: c.dogs.every((d) => d.n >= 0 && d.o >= -1) })));
   ok(F.length === 8 && F.every((c) => c.n >= 1 && c.n <= 3 && c.ok), 'DC_FAKE: 8 town players with 1 to 3 dogs each');
@@ -154,7 +154,7 @@ run('v211_cards', async (t) => {
   ok(await ev(() => !document.getElementById('dcOn').checked && document.querySelectorAll('[data-dcdog]').length === 1 && !!document.querySelector('#dcPrev .dc-dog')), 'the editor: Share off, the dogs to pick, a live preview');
   ok(await ev(() => !document.querySelector('#modal input[type=text], #modal textarea')), 'no text box anywhere: only lists');
   await A.check('#dcOn'); await A.selectOption('#dcA', '1'); await A.selectOption('#dcB', '2');
-  ok(/Happy Muffin/.test(await ev(() => document.getElementById('dcPrev').textContent)), 'the preview follows the picked name');
+  ok(/Happy Dewdrop/.test(await ev(() => document.getElementById('dcPrev').textContent)), 'the preview follows the picked name');
   await t.SH('settings_editor');
   await A.click('#dcSave'); await t.until(() => /Your Dog Card is shared/.test(document.getElementById('dcMsg').textContent), null, 8000);
   const uidA = await ev(() => window.__pawCloud.CL.uid);
@@ -172,16 +172,16 @@ run('v211_cards', async (t) => {
   V = await vis();
   ok(V.some((v) => v.card === cardId), 'the other player\'s card visits the Dog Park');
   ok(V.some((v) => /^town-/.test(v.card)), 'with fewer than 2 real cards, a town player fills up');
-  await ev((id) => window.__paw.dc.card(id), cardId); await t.waitH2(/Happy Muffin/);
+  await ev((id) => window.__paw.dc.card(id), cardId); await t.waitH2(/Happy Dewdrop/);
   await ev(() => { window.__toasts.splice(0); const b = document.getElementById('dcPaw'); b.click(); b.click(); b.click(); }); // a quick triple tap
-  await t.waitToast(/You gave Happy Muffin a paw/); await t.sleep(400);
+  await t.waitToast(/You gave Happy Dewdrop a paw/); await t.sleep(400);
   ok(raw.prepare('select paws from cards where id = ?').get(cardId).paws === 1, 'Give a paw: the Worker counts it (POST /paw)');
   ok(await ev(() => window.__toasts.filter((x) => /You gave/.test(x)).length === 1), 'a triple tap gives one paw and one toast');
   const ptxt = await ev(() => document.querySelector('#modal .panel .dc-paws').textContent); ok(/^\s*1 paw$/.test(ptxt), 'the card shows 1 paw ' + ptxt);
   await t.closeX();
   await t.patch({ dc: { given: null } }); await t.patch({ dc: { given: {} } }); // this device forgot (another device, or another day by the clock)
-  await ev(() => window.__toasts.splice(0)); await ev((id) => window.__paw.dc.card(id), cardId); await t.waitH2(/Happy Muffin/);
-  await B.click('#dcPaw'); ok(await t.waitToast(/Happy Muffin already got your paw today/), 'the Worker says given:false: a kind "already got your paw today"');
+  await ev(() => window.__toasts.splice(0)); await ev((id) => window.__paw.dc.card(id), cardId); await t.waitH2(/Happy Dewdrop/);
+  await B.click('#dcPaw'); ok(await t.waitToast(/Happy Dewdrop already got your paw today/), 'the Worker says given:false: a kind "already got your paw today"');
   ok(raw.prepare('select paws from cards where id = ?').get(cardId).paws === 1 && !(await ev(() => window.__toasts.some((x) => /You gave/.test(x)))), 'no second paw and no "You gave"');
   ok((await t.S()).dc.given[cardId], 'and the device remembers it');
   await t.closeX();
