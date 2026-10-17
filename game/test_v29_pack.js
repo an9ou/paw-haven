@@ -282,7 +282,7 @@ require('./test_lib').run('v29_pack', async (t) => {
   ok(JSON.stringify(await pk('play')) === JSON.stringify(lone) && JSON.stringify(await pk('walk', 'park')) === JSON.stringify(lone), 'pkDogs: the active dog only');
   await playTray(); ok(await p().locator('#dock .cr-chips').count() === 0, 'no chips in the Play tray');
   await p().click('[data-play=duck]'); await idle();
-  h = await stat('happy'); ok(h[0] > 48 && near(h[1], 40) && near(h[2], 40), 'the Duck pleases the active dog only: ' + JSON.stringify(h.map(Math.round)));
+  h = await stat('happy'); ok(h[0] > 48 && h[1] < 40.6 && h[1] > 37 && h[2] < 40.6 && h[2] > 37, 'the Duck pleases the active dog only (the others only see the hourly decay): ' + JSON.stringify(h.map(Math.round)));
   ok(await ev(() => document.querySelectorAll('#pack .packdog.pk-tug').length) === 0, 'no pile-on');
   await playTray(); await p().click('[data-play=tricks]');
   ok(await t.until(() => !!window.__paw.train, null, 4000) && await p().locator('#dock .pk-pickb').count() === 0, 'Tricks opens training directly, no picker');
