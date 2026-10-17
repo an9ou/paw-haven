@@ -1,23 +1,23 @@
-# Doodle Doggo: overview trailer script (about 75 seconds)
+# Doodle Doggo: overview trailer script (about 90 seconds)
 
 Written 17 Oct 2026. An **original** script in the style of a cozy console-game overview trailer: a warm welcome, meet the residents, a tour of what you can do, how to play, then the call to action. No wording is copied from any other game's trailer (those scripts are copyrighted, and the project's own rules keep other game names out of everything we publish).
 
-**Use it for:** YouTube, the itch.io page, the doodledoggo.app introduction site, and a pinned Instagram Reel. The 45-second promo stays the short ad.
+**Use it for:** YouTube, the itch.io page, the doodledoggo.app introduction site, and a pinned Instagram Reel. The 45-second promo stays the short ad; this is the longer "what is this game" video.
 **Narrator:** Bella (the warm, upbeat female voice from the 45-second video), speaking as a friendly town host, not as a dog.
 **Format:** 16:9 (1920 x 1080) for YouTube and the web, plus a 9:16 cut for Reels. Every shot is real gameplay from v2.9.
 **Music:** the game's own soundtrack. A soft start, a lift at "Meet the dogs", calm again for "How to play", a little flourish on the logo.
-**Words:** about 190 spoken words. Checked against the house rules: no "ugliest", no "breed" as a verb, no "sell" for dogs.
+**Words:** about 260 spoken words (about 90 seconds at Bella's pace). Checked against the house rules: no "ugliest", no "breed" as a verb, no "sell" for dogs.
 
 ---
 
-## 1. Welcome (0:00 to 0:08)
+## 1. Welcome (0:00 to 0:09)
 
 | Picture | Bella says | On screen |
 |---|---|---|
 | A sketchbook opens. Pencil lines draw the town, Mt. Fuji on the skyline, morning light. | "Welcome to a little town drawn in pencil, where every fence post was sketched with care." | |
 | A crayon scribble: Noodle the dachshund appears, very proud. | "And where every dog... drew themselves." | **Doodle Doggo** |
 
-## 2. Meet the dogs (0:08 to 0:24)
+## 2. Meet the dogs (0:09 to 0:30)
 
 Quick, bouncy cuts. Each dog gets a name card in its own colour, and its own line from the game in a speech bubble.
 
@@ -30,7 +30,7 @@ Quick, bouncy cuts. Each dog gets a name card in its own colour, and its own lin
 | Fast montage of the rest: Sunny, Dumpling, Peanut, Rocket, Bagel, Pretzel, Scout, Cloud, Brioche, Pepper. | "Fourteen dogs in all, each with their own voice, size and very silly joke." | **14 dogs to meet** |
 | The shelter playroom: Pepper looks up hopefully. | "Find the one that's yours, and adopt them for free." | **Adopt for free** |
 
-## 3. Your day together (0:24 to 0:46)
+## 3. Your day together (0:30 to 0:59)
 
 | Picture | Bella says | On screen |
 |---|---|---|
@@ -45,7 +45,7 @@ Quick, bouncy cuts. Each dog gets a name card in its own colour, and its own lin
 | Seasons montage: leaf piles, the Pumpkin Patch, snow and a snowdog, a New Year card. | "And as the seasons change, the town changes too." | **Seasons and festivals** |
 | Photo mode: a crayon postcard of the pack is saved. | "Snap a postcard of your best friends to keep." | **Photo mode** |
 
-## 4. How to play (0:46 to 0:62)
+## 4. How to play (0:59 to 1:19)
 
 Slower, clearer. A big numbered card for each step, the real screen beside it.
 
@@ -59,7 +59,7 @@ Slower, clearer. A big numbered card for each step, the real screen beside it.
 | Noodle walks into a log, sits down proudly. | "And don't worry. Nothing bad ever happens here." | **Nothing bad ever happens** |
 | Noodle's bubble: "I meant to do that." | *(let the bubble land, no voice)* | |
 
-## 5. Call to action (0:62 to 0:75)
+## 5. Call to action (1:19 to 1:30)
 
 | Picture | Bella says | On screen |
 |---|---|---|
@@ -87,5 +87,5 @@ Slower, clearer. A big numbered card for each step, the real screen beside it.
 
 - **Everything shown is in the game today (v2.9):** the 14 dogs and their lines, adoption, care, wardrobe, pack fetch, walks and treasure, the Mt. Fuji Lookout, garden and kitchen, home decorating, puppy playdates, seasons, photo mode.
 - **Mochi is "she"** in this script for variety; change it if the game gives Mochi a fixed sex on the adoption screen (the player chooses Boy or Girl).
-- **Timing** is a guide. With Bella at the same pace as the 45-second video, the voice runs about 70 seconds, leaving room for the pauses and the logo.
+- **Timing** is a guide. With Bella at the same pace as the 45-second video, the voice runs about 85 seconds, leaving room for the pauses and the logo. For a 60-second cut, drop "Dress them up", "Decorate your home", the photo-mode line and two of the four named dogs.
 - **I can build it** with the same pipeline as the 45-second video (real gameplay, Bella's voice, subtitles, the game's music), in 16:9 and 9:16. A few extra shots need recording first: the wardrobe, the playdate and puppies, photo mode and the title screen.
