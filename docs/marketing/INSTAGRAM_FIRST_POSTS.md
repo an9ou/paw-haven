@@ -172,13 +172,13 @@ Works on your phone (hold it upright) or your computer. Nothing to download. Com
 
 ## Teaser: more dogs are coming
 
-File: `soon-more-dogs-coming.jpg`. Five mystery dogs peek over a fence ("hello?" question marks), while Noodle, Biscuit and Mochi wonder who they are. It shows no dog types, dates or promises. Post it only when new dogs are really planned. A good moment is after the last dog introduction post (Wed 16 Dec), or whenever the dev team confirms.
+File: `soon-more-dogs-coming.jpg`. Five mystery dogs peek over a fence ("hello?" question marks), while Noodle, Biscuit and Mochi wonder who they are (Mochi: "heh."). It shows no dog types, dates or promises. Post it only when new dogs are really planned. A good moment is after the last dog introduction post (Wed 16 Dec), or whenever the dev team confirms.
 
 **Caption**
 ```
 More dogs are coming to Doodle Doggo! 🐶❓
 
-Someone is peeking over the fence... We can't say who yet (even Noodle doesn't know). Stay tuned, and follow along to meet them first.
+Someone is peeking over the fence... We can't say who yet (even Noodle doesn't know). Stay tuned, and follow @doodledoggo.app to meet them first.
 
 Which dog would you like to see next? Tell us below 👇
 
