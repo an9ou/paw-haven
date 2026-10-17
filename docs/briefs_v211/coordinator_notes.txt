@@ -1,0 +1,20 @@
+TRAVEL session_01KEsshsEJfcAKHF1KAZ3vjh lane/v211-travel
+CARDS  session_01FQ1ywFfSEM7f1aC7rpgaav lane/v211-cards
+BREEDS session_01C1jz9vJiwKwqvqDC12bd3N lane/v211-breeds
+GM     session_01YWqF1YmkskA96YAshTRHg3
+fallback trig_013BbHBrJeCKTTbePqufd8TL (13:15Z)
+BREED ART agent a1daea4907b4fd48b lane/v211-breed-art
+ART D agent a966978b85b7df21e lane/v211-art-d
+ART E agent a9eb9cad91a8d9bf7 lane/v211-art-e
+integration/v2.11 at 833c191 (stubs + briefs)
+phone_v211_cards: failed twice (CRASH scrollIntoViewIfNeeded detached) under load with 3 art agents, passes alone - check in review
+OWNER ADDITION 13:15Z: +4 breeds afghan dane mastiff gsd (BREEDS does all 7). BREED ART 2 agent a802676a0bad8a2dd lane/v211-breed-art2 (from cea93f1)
+CARDS fix batch (12 review items + DC_LIM 21) sent 13:0x
+fallback #2 trig_01Rdi4qkDx3YNxZd9mZBVEfP 14:27Z
+TRAVEL merged 834a1ce 13:2x. Notes for as-built: tkOn no art gate, PLACES.station, fest:'tokyo' items, S.tk.hanami/sunset, Nakamise price x dogs, 'Sweet Potato Chew' vs 'Sweet Potato Chews', RM_SCENERY. Open: Walk button in Tokyo uses town routes
+BREEDS 3 merged b2c8a37 13:3x. v210_roam flaky 'rmSet on the leader redraws its art' under load (also noted by BREEDS). test_site will fail until site_dogs rows for new breeds + site_art regenerate
+ART REVIEW done. ART FIX agent a0f884a090e2825df fix/v211-art (items 2,3,4title,6,7,10,13,14,15). #16 akita/spitz -> BREED ART 2.
+PENDING for TRAVEL batch (from art review): 1 Ueno lines season-neutral; 4 chip text 'Tokyo' on Japan map; 5 photo font lacks ō/ū (tools/photo_fonts.js regen latin-ext); 9 rename Sweet Potato Chew -> 'Sweet Potato Strip'; 11 omikuji note wording "Many people tie the slip to a rack at the temple, and some keep a lucky one."; 12 lines gsd Odaiba swim, dachs Ueno 1998 rice ball, dachs Asakusa temple floor; Walk button in Tokyo.
+PENDING for CARDS: 8 drop Muffin, Noodle from DC_WORDS_B (append-only! -> retire them: keep index, never offered, server rejects?) ; 'Afghan' default name -> 'Hound'
+PHONE REVIEW done (no blockers). For TRAVEL: P1 dogs stand on hot spots (hot foot boxes into RM_SCENERY, tkLeadClear after every leader move); P2 Pixel 7 home crop cuts stamp stall (x=-21) in ueno/tokyotower/odaiba: keep stamp in crop or add Stamp place button; P3 two toasts on first Japan map arrival (chain care note, map toasts at bottom); P4 status chip 'Home Yard' on Japan map; P6 Hachiko story toast delay over Stamp book; P7 zoom buttons on compass rose. Shots for report: review_phone/shots/iPhone_15_4/03_ride.png, p_shibuya_a.png, ph_tokyo.png
+CODE REVIEW done; TRAVEL batch sent ~13:40 (code 1-7, phone P1-P7, words W1-W6). v210_roam flake fixed (test). BREEDS #9 rescue reshuffle: accepted, fix comment -> tell BREEDS
