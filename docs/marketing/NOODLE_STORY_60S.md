@@ -183,3 +183,13 @@ Doodle Doggo is coming soon. Follow @doodledoggo.app 🔔
 **Tips:** run A and B side by side for 3 to 5 days and keep the one with the cheaper follow. Hashtags do nothing in a paid ad, so leave them out there (keep them for the normal post). The video starts with the pencil drawing and Noodle's first line, which is the hook; don't trim the first 3 seconds.
 
 **Remake:** `python vo60.py <kokoroModelDir> <voDir>` (Bella), then `node build60.js <voDir> <workDir>` in `brand/instagram/launch/story60/` (`ONLY=3,12.5` renders just those seconds to check). The shots, the camera and the bubbles are in `story60.html` (`SCENE_FN`); the pauses between lines are `GAP` in `build60.js`.
+
+## ¥4,000 test plan for the 15-second ad (17 Oct 2026)
+
+- **How:** boost it from the Instagram app (simplest), goal **"More profile visits"**. Post the 15-second cut as a Reel first (or boost the 60-second Reel's short cut, if you post that), caption A.
+- **Budget:** **¥500 a day for 7 days = ¥3,500**, keep ¥500 in reserve. Meta's technical minimum is about US$1 a day (about ¥150), but at that level the ad barely shows; ¥500 gives Meta enough to learn something in a week.
+- **Days:** 7 in a row, so it runs on weekdays and a weekend. Good window: Mon 19 to Sun 25 Oct, while the informative posts go up, so visitors find a fresh profile.
+- **Audience:** United States, United Kingdom, Canada, Australia, age 18 to 44, interests dogs, dachshunds, cozy games, illustration. Or let Meta choose (Advantage+ audience).
+- **Check on day 3:** if the cost per profile visit looks high or almost nobody watches past 3 seconds, stop it and spend the rest on caption B. Otherwise leave it alone (changing it restarts Meta's learning).
+- **After 7 days, write down:** reach, 3-second views, profile visits, cost per profile visit, and new followers that week (Insights). That number is the baseline for the next ad.
+- Meta may add consumption tax on top of the budget; check the payment screen.
