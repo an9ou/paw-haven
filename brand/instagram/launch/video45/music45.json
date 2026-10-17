@@ -1,0 +1,10 @@
+{ "seconds": 45.5, "wav": true, "vols": { "master": 0.85, "music": 0.62, "ambience": 0.1 },
+  "segments": [ { "at": 0, "ctx": { "place": "title", "time": "day", "weather": "sunny" } },
+                { "at": 8.2, "ctx": { "place": "shelter", "time": "day", "weather": "sunny" } },
+                { "at": 16.2, "ctx": { "place": "walk", "time": "day", "weather": "sunny" } },
+                { "at": 19.7, "ctx": { "place": "hilltop", "time": "dusk", "weather": "sunny" } },
+                { "at": 23.6, "ctx": { "place": "garden", "time": "day", "weather": "sunny" } },
+                { "at": 29.4, "ctx": { "place": "square", "time": "dusk", "weather": "sunny" } },
+                { "at": 34.4, "ctx": { "place": "walk", "time": "day", "weather": "sunny" } },
+                { "at": 40.4, "ctx": { "place": "title", "time": "day", "weather": "sunny" } } ],
+  "stingers": [ { "at": 5.25, "name": "sparkle" }, { "at": 8.3, "name": "adopt" }, { "at": 19.8, "name": "discover" }, { "at": 40.45, "name": "levelup" } ] }

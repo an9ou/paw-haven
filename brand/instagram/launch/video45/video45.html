@@ -1,0 +1,140 @@
+<!doctype html>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --ink:#5B3D32; --pink:#F28FA5; --paper:#FFF8EC; --muted:#8A7468; }
+  html,body { margin:0; background:var(--paper); }
+  #stage { position:relative; width:1080px; height:1920px; overflow:hidden; background:var(--paper); font-family:'Caveat',cursive; color:var(--ink); }
+  #dots { position:absolute; inset:0; background-image:radial-gradient(circle, #E3D2BA 1.6px, transparent 2px); background-size:22px 22px; }
+  .abs { position:absolute; left:0; top:0; transform-origin:50% 50%; }
+  .txt { position:absolute; left:0; width:1080px; text-align:center; font-weight:700; line-height:1; white-space:nowrap; }
+  .sw { position:absolute; background:var(--pink); opacity:.42; border-radius:40% 60% 50% 45% / 60% 40% 55% 45%; transform-origin:50% 50%; }
+  #phone { position:absolute; left:160px; top:150px; width:760px; height:1250px; transform-origin:50% 60%; }
+  #phone .bez { position:absolute; inset:0; border-radius:64px; background:#FFFDF7; box-shadow:0 18px 40px rgba(91,61,50,.28); border:7px solid var(--ink); }
+  #phone .scr { position:absolute; left:18px; top:18px; width:724px; height:1214px; border-radius:46px; overflow:hidden; background:#fff; border:3px solid rgba(91,61,50,.35); }
+  #phone img { position:absolute; left:0; top:0; width:100%; height:100%; object-fit:cover; }
+  #sub { position:absolute; left:70px; width:940px; top:1372px; text-align:center; }
+  #sub span { display:inline-block; background:#FFFBF2; border:5px solid var(--ink); border-radius:34px; padding:10px 30px 16px; font-size:62px; font-weight:700; line-height:1.08; box-shadow:0 8px 0 rgba(91,61,50,.18); white-space:normal; }
+  #book { position:absolute; left:40px; top:380px; width:1000px; height:600px; }
+  #book .page { position:absolute; inset:-22px; background:#FFFDF7; border-radius:18px; box-shadow:0 14px 34px rgba(91,61,50,.22); }
+  #book .art { position:absolute; inset:0; overflow:hidden; border-radius:6px; }
+  #book .art > div { position:absolute; inset:0; }
+  #book svg.world { width:1000px; height:600px; display:block; }
+  #pencilArt svg { filter: grayscale(1) contrast(1.35) brightness(1.08); }
+</style>
+<div id="stage">
+  <div id="dots"></div>
+  <div id="doodles"></div>
+  <!-- 1. the sketchbook opening -->
+  <div id="hook">
+    <div id="book"><div class="page"></div><div class="art"><div id="pencilArt"></div><div id="colorArt"></div></div><div class="abs" id="pencil"></div></div>
+    <div class="abs" id="hookDog"></div>
+  </div>
+  <!-- 2. the title -->
+  <div id="title">
+    <div class="sw" id="tsw" style="left:150px;top:860px;width:780px;height:120px;"></div>
+    <div class="txt" style="top:640px;font-size:210px;"><span id="tw1" style="display:inline-block">Doodle</span> <span id="tw2" style="display:inline-block">Doggo</span></div>
+    <div class="txt" id="tsub" style="top:900px;font-size:76px;color:var(--muted);font-weight:600;">a cozy dog game</div>
+    <div class="abs" id="titleDog"></div>
+  </div>
+  <!-- 3. gameplay in the phone -->
+  <div id="play"><div id="phone"><div class="bez"></div><div class="scr"><img id="frame"></div></div></div>
+  <!-- 4. the end card -->
+  <div id="end">
+    <div class="sw" id="esw" style="left:140px;top:575px;width:800px;height:130px;"></div>
+    <div class="txt" id="e0" style="top:200px;font-size:110px;"><span style="display:inline-block;transform:rotate(-3deg)">Doodle</span> <span style="display:inline-block;transform:rotate(2deg)">Doggo</span></div>
+    <div class="txt" id="e1" style="top:350px;font-size:200px;"></div>
+    <div class="txt" id="e2" style="top:575px;font-size:108px;"></div>
+    <div class="abs" id="endDog"></div>
+    <div class="txt" id="e3" style="top:1300px;font-size:62px;color:var(--muted);font-weight:600;"></div>
+  </div>
+  <div id="sub"><span id="subT"></span></div>
+</div>
+<script src="../../../../dogs/pawart_dogs.js"></script>
+<script src="../../../../world/pawart_world_a.js"></script>
+<script src="../../../../world/pawart_world_b.js"></script>
+<script src="../../../../world/pawart_world_c.js"></script>
+<script>
+const PA = window.PawArt, $ = (id) => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x)), seg = (t, a, b) => clamp((t - a) / (b - a));
+const eo3 = (x) => 1 - Math.pow(1 - clamp(x), 3);
+const eoB = (x) => { x = clamp(x); const c1 = 1.9, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+const inner = (svg) => svg.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
+const dogSvg = (key, opts, w) => `<svg viewBox="22 40 214 160" width="${w}" height="${w * 160 / 214}" overflow="visible">${inner(PA.dog(key, Object.assign({ anim: false }, opts)))}</svg>`;
+
+// ---- the real yard art, as a pencil pass and a colour pass ----
+const yard = PA.scene('yard', { time: 'day', weather: 'sunny', season: 'autumn', halloween: false, jp: true });
+$('pencilArt').innerHTML = yard; $('colorArt').innerHTML = yard;
+document.querySelectorAll('#book svg').forEach((s) => { s.setAttribute('width', 1000); s.setAttribute('height', 600); s.classList.add('world'); });
+$('pencil').innerHTML = '<svg width="150" height="150" viewBox="0 0 100 100"><g transform="rotate(35 50 50)"><rect x="42" y="2" width="16" height="70" rx="3" fill="#F2C14E" stroke="#5B3D32" stroke-width="3"/><rect x="42" y="2" width="16" height="12" rx="3" fill="#F28FA5" stroke="#5B3D32" stroke-width="3"/><path d="M42 72 L50 92 L58 72Z" fill="#F4E0BF" stroke="#5B3D32" stroke-width="3" stroke-linejoin="round"/><path d="M47.5 86 L50 92 L52.5 86Z" fill="#5B3D32"/></g></svg>';
+// ---- Noodle in crayon: revealed by a scribble mask ----
+const W0 = 760, H0 = W0 * 160 / 214;
+let scrib = ''; { const rows = 13; for (let i = 0; i < rows; i++) { const y = 18 + i * (H0 - 30) / (rows - 1); scrib += (i ? 'L' : 'M') + (i % 2 ? W0 - 10 : 10) + ' ' + y.toFixed(1) + ' '; } }
+$('hookDog').innerHTML = `<svg width="${W0}" height="${H0}" viewBox="0 0 ${W0} ${H0}" overflow="visible"><defs><mask id="scr" maskUnits="userSpaceOnUse" x="-50" y="-80" width="${W0 + 100}" height="${H0 + 160}"><path id="scrP" d="${scrib}" fill="none" stroke="#fff" stroke-width="96" stroke-linecap="round" stroke-linejoin="round"/></mask></defs><g mask="url(#scr)">${dogSvg('dachs', { pose: 'happy' }, W0)}</g></svg>`;
+const scrLen = document.getElementById('scrP').getTotalLength(); $('scrP').style.strokeDasharray = scrLen; $('scrP').style.strokeDashoffset = scrLen;
+$('titleDog').innerHTML = dogSvg('dachs', { pose: 'happy' }, 760);
+$('endDog').innerHTML = dogSvg('dachs', { pose: 'happy', outfit: { eyes: 'Heart Sunglasses', neck: 'Red Bandana' } }, 720);
+// ---- floating doodles ----
+const heart = '<svg viewBox="-18 -16 36 32" width="60" height="53"><path d="M0 12 C-16 0 -12 -14 0 -6 C12 -14 16 0 0 12Z" fill="#F28FA5" fill-opacity=".8" stroke="#5B3D32" stroke-width="2.4" stroke-linejoin="round"/></svg>';
+const spark = '<svg viewBox="-16 -16 32 32" width="56" height="56"><path d="M0 -14 Q1.5 -1.5 14 0 Q1.5 1.5 0 14 Q-1.5 1.5 -14 0 Q-1.5 -1.5 0 -14Z" fill="#FFE3A1" stroke="#5B3D32" stroke-width="2.4" stroke-linejoin="round"/></svg>';
+const paw = '<svg viewBox="-16 -16 32 32" width="60" height="60"><g stroke="#5B3D32" stroke-width="2.4" fill="#E0D5F0"><ellipse cx="0" cy="6" rx="9" ry="7.5"/><circle cx="-10" cy="-5" r="3.8"/><circle cx="-3.5" cy="-10" r="3.8"/><circle cx="3.5" cy="-10" r="3.8"/><circle cx="10" cy="-5" r="3.8"/></g></svg>';
+let dd = ''; const DOOD = [];
+for (let i = 0; i < 14; i++) { const x = 40 + ((i * 337) % 1000), sp = 70 + (i * 53) % 80, ph = (i * 0.37) % 1; DOOD.push({ x, sp, ph, i }); dd += `<div class="abs" id="dd${i}" style="opacity:.6">${[heart, spark, paw][i % 3]}</div>`; }
+$('doodles').innerHTML = dd;
+
+// ---- timing (seconds), set by the renderer from the voice-over ----
+window.T = null; // { hook:[a,b], title:[a,b], play:[a,b], end:[a,b], subs:[[start,end,text]], cuts:[t...] }
+window.draw = async (t, src, mode, zoom) => {
+  const T = window.T, show = (id, on) => { $(id).style.display = on ? 'block' : 'none'; };
+  const inHook = t < T.title[0], inTitle = t >= T.title[0] && t < T.play[0], inPlay = t >= T.play[0] && t < T.end[0], inEnd = t >= T.end[0];
+  show('hook', inHook); show('title', inTitle); show('play', inPlay); show('end', inEnd);
+  DOOD.forEach((d) => { const e = $('dd' + d.i), y = 1980 - (((t * d.sp) + d.ph * 2000) % 2100), s = 0.6 + (d.i % 4) * 0.2; e.style.transform = `translate(${d.x + Math.sin(t * 1.3 + d.i) * 24}px,${y}px) rotate(${Math.sin(t + d.i) * 14}deg) scale(${s})`; });
+  if (inHook) {
+    const pIn = seg(t, 0.15, 2.7), cIn = seg(t, 1.3, 3.1);
+    $('pencilArt').style.clipPath = `inset(0 ${100 - pIn * 100}% 0 0)`; $('colorArt').style.clipPath = `inset(0 ${100 - cIn * 100}% 0 0)`;
+    const px = pIn * 1000, py = 300 + Math.sin(t * 22) * 230;
+    $('pencil').style.display = pIn > 0 && pIn < 1 ? 'block' : 'none'; $('pencil').style.transform = `translate(${px - 20}px,${py - 130}px)`;
+    $('book').style.transform = `rotate(${-1.2 + 0.4 * Math.sin(t)}deg)`;
+    const s = seg(t, 3.15, 4.4); $('scrP').style.strokeDashoffset = scrLen * (1 - s);
+    const bob = t > 4.4 ? Math.abs(Math.sin((t - 4.4) * 6)) * 14 : 0, blink = (t > 4.5 && t < 4.62) ? 0.96 : 1;
+    $('hookDog').style.transform = `translate(160px,${1010 - bob}px) scaleY(${blink})`;
+  }
+  if (inTitle) {
+    const u = t - T.title[0], a = eoB(seg(u, 0, 0.5)), b = eoB(seg(u, 0.2, 0.7));
+    $('tw1').style.transform = `scale(${0.5 + 0.5 * a}) rotate(-3deg)`; $('tw1').style.opacity = clamp(u / 0.2);
+    $('tw2').style.transform = `scale(${0.5 + 0.5 * b}) rotate(2deg) translateY(6px)`; $('tw2').style.opacity = clamp((u - 0.2) / 0.2);
+    $('tsw').style.opacity = 0.42 * seg(u, 0.4, 0.8); $('tsw').style.transform = `rotate(-1.5deg) scaleX(${seg(u, 0.4, 1)})`;
+    $('tsub').style.opacity = seg(u, 0.6, 1.0);
+    const rise = eoB(seg(u, 0.3, 1.0)), bounce = u > 1 ? Math.abs(Math.sin((u - 1) * 5.5)) * 26 : 0;
+    $('titleDog').style.transform = `translate(160px,${1960 - 860 * rise - bounce}px)`;
+  }
+  if (inPlay) {
+    const img = $('frame'); if (src && img.getAttribute('src') !== src) { img.src = src; try { await img.decode(); } catch (e) {} }
+    img.style.transformOrigin = zoom ? zoom[1] : '50% 50%'; img.style.transform = zoom ? `scale(${zoom[0]})` : 'none';
+    let last = T.play[0]; for (const c of T.cuts) if (c <= t) last = c;
+    const k = eoB(seg(t, last, last + 0.4)), side = (T.cuts.indexOf(last) % 2 ? 1 : -1), first = eo3(seg(t, T.play[0], T.play[0] + 0.5));
+    $('phone').style.transform = `translateY(${(1 - first) * 1000}px) rotate(${side * (1 - k) * 2.5 + side * 0.5}deg) scale(${0.97 + 0.03 * k})`;
+  }
+  if (inEnd) {
+    const u = t - T.end[0], soon = mode === 'soon';
+    $('e1').textContent = soon ? 'Coming soon' : 'Play free'; $('e2').textContent = soon ? 'follow to be first' : 'link in bio ↑';
+    $('e3').textContent = soon ? 'a free game for phone & computer' : 'free · phone or computer';
+    $('e1').style.fontSize = soon ? '180px' : '220px'; $('e2').style.fontSize = soon ? '96px' : '112px';
+    const a = eoB(seg(u, 0, 0.5)), b = eoB(seg(u, 0.3, 0.8));
+    $('e0').style.opacity = seg(u, 0, 0.3);
+    $('e1').style.opacity = clamp(u / 0.2); $('e1').style.transform = `scale(${0.6 + 0.4 * a}) rotate(-3deg)`;
+    $('esw').style.opacity = 0.42 * seg(u, 0.5, 0.9); $('esw').style.transform = `rotate(-1.5deg) scaleX(${seg(u, 0.5, 1.1)})`;
+    $('e2').style.opacity = seg(u, 0.3, 0.5); $('e2').style.transform = `scale(${0.6 + 0.4 * b}) rotate(1.5deg) translateY(${soon ? 0 : Math.sin(u * 6) * 8}px)`;
+    const rise = eoB(seg(u, 0.4, 1.1)), bounce = u > 1.1 ? Math.abs(Math.sin((u - 1.1) * 5)) * 28 : 0;
+    $('endDog').style.transform = `translate(180px,${1960 - 1160 * rise - bounce}px)`;
+    $('e3').style.opacity = seg(u, 0.9, 1.3);
+  }
+  // subtitles
+  const sb = T.subs.find((q) => t >= q[0] && t < q[1]);
+  $('sub').style.display = sb && !inEnd ? 'block' : 'none';
+  if (sb) { $('subT').textContent = sb[2]; const k = seg(t, sb[0], sb[0] + 0.15); $('sub').style.opacity = k; $('sub').style.transform = `translateY(${(1 - k) * 12}px)`; }
+  $('sub').style.top = (inHook || inTitle) ? '170px' : '1428px';
+  return true;
+};
+document.fonts.ready.then(() => { window.READY = true; });
+</script>

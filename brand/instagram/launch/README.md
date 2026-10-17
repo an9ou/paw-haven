@@ -11,6 +11,7 @@ Made 16 Oct 2026. Plan, captions and checklist: `docs/marketing/`.
 | `dogs/dog-01-mochi.jpg` ... `dog-14-brioche.jpg` | **The 14 dog introduction posts** (1080 x 1350): whole dog, puppy, name, game quote, what it loves, four traits. Captions: `docs/marketing/DOG_INTRO_POSTS.md` |
 | `soon-more-dogs-coming.jpg` | Teaser post: "More dogs are coming! Stay tuned" (mystery dogs behind a fence) |
 | `reel/doodle-doggo-reel-30s-soon.mp4`, `reel/doodle-doggo-reel-30s-play.mp4`, `reel/reel-cover.jpg` | The 30 s Reel (1080 x 1920) with the game's own music. `-soon` ends on "coming soon", `-play` on "play free, link in bio". Guide: `docs/marketing/REEL_AND_ADS.md` |
+| `video45/doodle-doggo-promo-45s-soon.mp4`, `video45/doodle-doggo-promo-45s-play.mp4`, `video45/promo-45s-cover.jpg` | The 45 s English promo video: real gameplay, Noodle narrates (Kokoro voice), burned-in subtitles, the game's music. Guide: `docs/marketing/PROMO_VIDEO_45S.md` |
 | `grid-preview.jpg` | Mockup of the profile grid, banner and informative posts, with bio and highlights |
 | `highlight-1-meet.png` ... `highlight-4-events.png` | Story highlight covers (1080 x 1920) |
 
