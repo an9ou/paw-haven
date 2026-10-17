@@ -45,11 +45,11 @@ const FOOD = [
   { n: 'Frozen Pupsicle', price: 22, hunger: 15, happy: 20, energy: 10, cool: 60, snack: true, v24: true, tip: 'Frozen plain yoghurt and fruit, no xylitol ever. Let it soften a little for small dogs.', note: '+15 Hunger, +20 Happiness, +10 Energy. Cools a hot dog for 1 game hour.' }
 ];
 const TOYS = [
-  { n: 'Tennis Ball', price: 40, bond: 1, note: 'Fetch: 2 coins per catch.' },
+  { n: 'Tennis Ball', price: 40, bond: 1, note: 'Ball play: 2 coins per return.' },
   { n: 'Squeaky Duck', price: 50, bond: 1, note: 'Squeeze: +10 Happiness. The neighbours love it (no).' },
   { n: 'Rope Tug', price: 60, bond: 1, note: 'Tug-of-war: +15 Happiness, -10 Energy, +5 Bond.' },
   { n: 'Plush Bone', price: 80, bond: 1, note: 'Nap buddy: +10% nap Energy. Works automatically.' },
-  { n: 'Frisbee', price: 120, bond: 3, note: 'Long fetch: 3 coins per catch, +20 Happiness.' },
+  { n: 'Frisbee', price: 120, bond: 3, note: 'Long floaty throws: 3 coins per return, +20 Happiness.' },
   { n: 'Puzzle Feeder', price: 150, bond: 4, note: 'Every meal: +10 Happiness and double Bond. Automatic.' },
   /* v2.4 Shop Day: five shop toys, each with its own yard play game in mods/toys.js (the Squeaky Hedgehog is a walk treasure) */
   { n: 'Snuffle Mat', price: 70, bond: 2, v24: true, note: 'Snuffle: hide kibble in the mat, the nose finds it. +Happiness, a little Bond.' },
@@ -177,9 +177,9 @@ const TREASURES = [
   TR('Wild Berries', 'food', null, 'Common', ['park', 'woods'], 'Trail Snack', 'Feed: +15 Hunger, +10 Energy. Use on a walk (Bag): +15 seconds of walk time.'),
   TR("Duck's Picnic Sandwich", 'food', null, 'Uncommon', ['river', 'park'], 'Stolen Lunch', 'Feed: +40 Hunger, +15 Happiness. The duck wants it back.'),
   TR('Golden Bone', 'food', null, 'Rare', 'any', 'Pure Gold', 'Feed: +60 Bond points and a Glowing mood for 1 game day (Happiness stays at 80 or more).'),
-  TR('Driftwood Stick', 'toy', null, 'Common', ['beach', 'river'], 'Splinter Bonus', 'Fetch with it: +1 coin per catch.'),
+  TR('Driftwood Stick', 'toy', null, 'Common', ['beach', 'river'], 'Splinter Bonus', 'Play ball with it: +1 coin per return.'),
   TR('Rubber Chicken', 'toy', null, 'Uncommon', ['park'], 'Honk of Wisdom', 'Tricks are learned in 2 taps instead of 3. It honks. Automatic.'),
-  TR('Glow Ball', 'toy', null, 'Rare', ['woods', 'beach'], 'Easy Glow', 'Fetch with it: the catch window is 50% wider.'),
+  TR('Glow Ball', 'toy', null, 'Rare', ['woods', 'beach'], 'Easy Glow', 'Play ball with it: it glows after dark, so it never gets lost.'),
   TR('Lucky Penny', 'charm', 'charm', 'Common', ['park', 'river'], 'Pocket Luck', '+10% coins on walks while equipped.'),
   TR('Sparkle Stone', 'charm', 'charm', 'Rare', ['river', 'beach'], 'Strange Hum', 'Petting gives +5 extra Happiness while equipped. It hums. Something about it feels... important later.'),
   TR('Old Map Piece (Park)', 'quest', null, 'Uncommon', ['park'], 'Map Piece', '1 of 4 pieces of the Doodle Doggo Treasure Map.', { piece: 'park' }),
