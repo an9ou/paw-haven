@@ -102,6 +102,12 @@ const req = (m) => { for (const r of [].concat((process.env.NODE_PATH || '').spl
       ok(inside, 'every dog stays on the playroom floor');
       const cards = await page.evaluate(() => [...document.querySelectorAll('.cards .dcard')].map((a) => [a.getAttribute('href'), a.querySelector('.dname').textContent, a.querySelector('.dimg').getAttribute('src')]));
       ok(cards.length === 14 && BREEDS.every((k, i) => cards[i] && cards[i][0] === '/dogs#' + k && cards[i][2] === `/img/art/dogs/${k}-still.svg`), 'one card per dog (all 14 in BREEDS order), each linking to its profile on /dogs'.replace('BREEDS_IN', ''));
+      const soon = await page.evaluate(() => { const c = document.querySelector('.cards li:last-child .soon'); return c && { t: c.textContent, sils: c.querySelectorAll('.sil img').length, q: c.querySelectorAll('.sil b').length }; });
+      ok(soon && /More dogs are coming!/.test(soon.t) && /Akita, Japanese Spitz and Pomeranian are on their way/.test(soon.t) && soon.sils === 3 && soon.q === 3 && !/\b(20\d\d|soon|month|week)\b/i.test(soon.t.replace('coming', '')), 'the last card: More dogs are coming! with three "?" silhouettes (Akita, Japanese Spitz, Pomeranian), no dates');
+      const wall = await page.evaluate(() => ({ pic: !!document.querySelector('#stage .wallpic img'), text: [...document.querySelectorAll('#stage *:not(.bark)')].filter((e) => e.children.length === 0 && e.textContent.trim()).map((e) => e.textContent.trim()) }));
+      ok(wall.pic && !wall.text.some((t) => /[\u3040-\u30FF\u4E00-\u9FFF]/.test(t)), 'the playroom wall has a framed Mt. Fuji picture, no kanji');
+      const contact = await page.evaluate(() => { const a = document.querySelector('footer #contact'); const b = a && a.getBoundingClientRect(); return a && { text: a.textContent.trim(), href: a.getAttribute('href'), h: b.height, w: b.width, insta: !!document.querySelector('footer #insta'), privacy: !!document.querySelector('footer a[href="/privacy"]') }; });
+      ok(contact && contact.text === 'CONTACT US' && contact.href === 'mailto:contact@doodledoggo.app' && contact.h >= 44 && contact.w >= 44 && contact.insta && contact.privacy, 'the footer: CONTACT US (mailto:contact@doodledoggo.app, 44 px) next to Instagram and Privacy');
       const jp = await page.evaluate(() => ({ notes: [...document.querySelectorAll('#japan .notes h3')].map((h) => h.textContent), trip: document.querySelector('#japan .trip').textContent, words: document.querySelectorAll('#japan .words dt').length, hanko: document.querySelectorAll('.hanko').length }));
       ok(jp.notes.length === 6 && /Hachiko/.test(jp.notes[0]) && /Shiba and Akita/.test(jp.notes[1]) && /café/.test(jp.notes[2]) && /Strollers/.test(jp.notes[3]) && /lead/.test(jp.notes[4]) && /shrines/.test(jp.notes[5]), 'Dogs in Japan: Hachiko, Shiba and Akita, dog cafés, strollers, leads in parks, shrines ' + jp.notes.join(' / '));
       ok(/Tokyo Trip/.test(jp.trip) && /Shibuya/.test(jp.trip) && /Asakusa/.test(jp.trip) && !/\b(20\d\d|January|February|March|April|May|June|July|August|September|October|November|December|spring|summer|autumn|winter|soon)\b/i.test(jp.trip), 'the Tokyo Trip teaser names Shibuya and Asakusa and promises no date');
@@ -130,6 +136,7 @@ const req = (m) => { for (const r of [].concat((process.env.NODE_PATH || '').spl
         full: [...document.querySelectorAll('article.prof')].every((a) => a.querySelector('h2').textContent.trim() && a.querySelector('.bubble').textContent.length > 4 && a.querySelectorAll('.traits li').length === 4 && a.querySelectorAll('.loves li').length === 3 && a.querySelector('.pup') && a.querySelector('.playline') && /[\u30A0-\u30FF\u4E00-\u9FFF]/.test(a.querySelector('.jpline').textContent)),
         top: Math.round(document.getElementById('shiba').getBoundingClientRect().top), play: (document.querySelector('#play') || {}).href }));
       ok(dg.ids.join() === BREEDS.join(), 'a profile for every dog in BREEDS order, with the dog\'s key as its anchor (/dogs#shiba ...)');
+      ok(await page.evaluate(() => { const x = document.querySelector('section.soonprof#soon'); return !!x && x.previousElementSibling.id === 'frenchie' && /More dogs are coming!/.test(x.textContent) && /Akita, Japanese Spitz and Pomeranian are on their way/.test(x.textContent) && x.querySelectorAll('.sil').length === 3 && document.querySelector('footer #contact').getAttribute('href') === 'mailto:contact@doodledoggo.app'; }), '/dogs ends with More dogs are coming! and has CONTACT US in the footer');
       ok(dg.full, 'every profile: name, line, 4 traits, 3 favourites, a puppy drawing, the playroom habit and the Japanese name');
       ok(dg.nav.join() === BREEDS.map((k) => '#' + k).join(), 'the picture menu links every profile');
       ok(Math.abs(dg.top) < 40, `/dogs#shiba opens at Mochi's profile (top ${dg.top})`);
@@ -143,7 +150,7 @@ const req = (m) => { for (const r of [].concat((process.env.NODE_PATH || '').spl
       sec(`${label}: privacy`);
       await page.goto(base + '/privacy', { waitUntil: 'networkidle' });
       const pt = await page.textContent('main');
-      ok(/Privacy policy/.test(pt) && /no ads and no tracking/i.test(pt) && /contact@doodledoggo\.app/.test(pt) && !/CONTACT EMAIL/.test(pt) && /password link/.test(pt), 'the privacy page: no ads, no tracking, emails only for a password link, the contact email filled in');
+      ok(/Privacy policy/.test(pt) && /no ads and no tracking/i.test(pt) && /contact@doodledoggo\.app/.test(pt) && !/CONTACT EMAIL/.test(pt) && (await page.getAttribute('footer #contact', 'href')) === 'mailto:contact@doodledoggo.app' && /password link/.test(pt), 'the privacy page: no ads, no tracking, emails only for a password link, the contact email filled in');
       const a2 = await audit(page); ok(a2.scroll <= 0 && !a2.small.length && !a2.tiny.length, 'privacy: phone minimums ' + a2.small.concat(a2.tiny).slice(0, 4).join(', '));
 
       sec(`${label}: the reset page`);

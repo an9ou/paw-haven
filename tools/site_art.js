@@ -10,6 +10,7 @@
 //   playroom.webp              the Shelter Playroom (world C), 2000 x 1200, with the site's own Caveat for its painted sign
 //   fuji-<season>.webp         the Mt. Fuji Lookout (world C, Japan scenery on) for each season, 1280 x 768
 //   torii.webp                 the Lookout's torii and shrine, cropped
+//   wall-fuji.webp             Mt. Fuji from the Lookout in spring, cropped: the framed picture on the playroom wall
 // and fills the dog cards in site/index.html and the profiles in site/dogs.html between the <!-- dogs:... --> markers.
 // Profile text: tools/site_dogs.js. Dog art is never changed here: everything is drawn by dogs/ and world/ as the game draws it.
 const fs = require('fs'), path = require('path'), vm = require('vm');
@@ -87,8 +88,13 @@ const fill = (file, tag, html) => {
   if (!re.test(s)) throw new Error(`site/${file} has no <!-- dogs:${tag} --> markers`);
   fs.writeFileSync(p, s.replace(re, (m, a, b) => `${a}\n${html}\n${b}`));
 };
-fill('index.html', 'cards', DOGS.map(card).join('\n'));
-fill('dogs.html', 'profiles', DOGS.map(profile).join('\n'));
+// the last card: the dogs on their way (owner, 17 Oct 2026: no dates), crayon silhouettes with a "?"
+const SOON_LINE = 'Akita, Japanese Spitz and Pomeranian are on their way.';
+const sils = ['shiba-still', 'samoyed-still', 'samoyed-pup'].map((f) => `<span class="sil"><img src="/img/art/dogs/${f}.svg" alt="" width="240" height="200" loading="lazy"><b aria-hidden="true">?</b></span>`).join('');
+const soon = (tag) => tag === 'card' ? `<li class="soonli"><div class="soon" id="soon"><div class="sils">${sils}</div><span class="dname">More dogs are coming!</span><span class="dquote">${SOON_LINE}</span></div></li>`
+  : `<section class="soonprof" id="soon" aria-labelledby="h-soon"><div class="sils">${sils}</div><div class="txt"><h2 id="h-soon">More dogs are coming!</h2><p class="bubble">${SOON_LINE}</p><p>Three new friends are getting their crayon fur drawn. We will say hello here when they are ready.</p></div></section>`;
+fill('index.html', 'cards', DOGS.map(card).concat(soon('card')).join('\n'));
+fill('dogs.html', 'profiles', DOGS.map(profile).concat(soon('profile')).join('\n'));
 fill('dogs.html', 'nav', DOGS.map((d) => `<li><a href="#${d.key}"><img src="/img/art/dogs/${d.key}-still.svg" alt="" width="240" height="200">${esc(d.name)}</a></li>`).join('\n'));
 
 // ---- rasters (Playwright): the playroom, the Mt. Fuji Lookout in four seasons, the torii crop
@@ -112,6 +118,7 @@ fill('dogs.html', 'nav', DOGS.map((d) => `<li><a href="#${d.key}"><img src="/img
   await raster(PA.scene('playroom', {}), 2000, 1200, 'playroom.webp', 0.82);
   for (const season of ['spring', 'summer', 'autumn', 'winter']) await raster(PA.scene('fujihill', { season, jp: true }), 1280, 768, `fuji-${season}.webp`, 0.78);
   await raster(PA.scene('fujihill', { season: 'autumn', jp: true }), 720, 600, 'torii.webp', 0.82, '100 268 300 250');
+  await raster(PA.scene('fujihill', { season: 'spring', jp: true }), 600, 360, 'wall-fuji.webp', 0.82, '150 160 560 336');
   await browser.close();
   const size = (dir) => fs.readdirSync(dir).reduce((n, f) => { const p = path.join(dir, f); return n + (fs.statSync(p).isDirectory() ? size(p) : fs.statSync(p).size); }, 0);
   console.log('site art:', (size(OUT) / 1e6).toFixed(2), 'MB in site/img/art; cards and profiles filled');
