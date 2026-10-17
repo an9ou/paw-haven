@@ -201,6 +201,9 @@ function rmValidate(instant) {
   rmDogs().forEach((d) => {
     const r = rmSt(d); if (r.fix || r.tw || (d === D() && (!rmWander() || busy || IDLE.act || S.sleeping || curling || pottyBusy))) return;
     if (rmOk(d, r.x, r.y, rmK(r))) { r.wake = false; return; }
+    // v2.11.1: a petted or asking dog keeps its front spot for its moment (r.hold) while the spot stays free at the level it was picked at
+    // ('least': only off the hot spots, place buttons and the bowl, rmSoft flat); the bigger dogs often only find a front spot at a looser level
+    if (r.hold > performance.now() && r.holdLv != null && (r.holdLv === 'least' ? !rmHard(r.x, r.y) && !rmSoft(r.x, r.y, rmK(r), true) : rmOk(d, r.x, r.y, rmK(r), r.holdLv))) return;
     let p = rmNear(d, r.x, r.y); for (const lv of [false, 'loose']) if (!p && !rmOk(d, r.x, r.y, rmK(r), lv)) p = rmNear(d, r.x, r.y, lv); // the nearest spot at the strictest level that has one
     if (!p && !rmOk(d, r.x, r.y, rmK(r), 'loose')) { p = rmLeast(d, r.x, r.y); if (p && Math.hypot(p[0] - r.x, p[1] - r.y) < 10) p = null; } // or the least crowded one
     if (!p) { r.wake = false; return; }
@@ -298,7 +301,7 @@ function rmTo(d, x, y, o = {}) {
   if (!d || !S) return; const r = rmSt(d), now = performance.now();
   if (d !== D() && r.fix) { if (typeof o.done === 'function') o.done(); return; }
   const spd = o.speed || (o.run ? RM_RUN : RM_WALK) * (o.legacy ? 1 : 1 / Math.max(0.05, IDLE.speed));
-  if (!o.legacy) r.nosz = false;
+  if (!o.legacy) r.nosz = false; r.holdLv = null; // a new walk: its front-spot hold level (rmPetted, rmAsk) is set again on arrival
   const path = o.legacy || o.secs != null || o.direct || cur.mode !== 'yard' ? [[x, y]] : rmRoute(r.x, r.y, x, y, rmSz(r));
   const dur = rmLeg(d, path, o, spd, true); if (dur <= 0) rmFrame(now); else rmLoop();
 }
@@ -412,9 +415,10 @@ function rmPetAgo(d) { return performance.now() - (RM.petT[d.id] || RM.t0 || 0);
 function rmFrontSpot(d) {
   const z = rmZoneOf(S.place), r = rmSt(d), cx = isPhone() ? camCx : 500, tx = clamp((r.x + cx) / 2, 120, 880); const fr = (l) => l.filter((p) => p[1] >= z.y1 - 50);
   // v2.11.1: the grown dogs fill the floor sooner, so the front row is looked for at each level (the dogs a little closer) before any spot further back
-  let c = null, row = []; for (const lv of [true, false, 'loose']) { const l = rmCands(d, lv); if (!c && l.length) c = l; row = fr(l); if (row.length) break; }
-  if (!c) { c = rmCandsAny(d); row = fr(c); } if (!c.length) return null; const pool = row.length ? row : c;
-  let best = null, bv = 1e9; pool.forEach((p) => { const v = Math.abs(p[0] - tx) + (z.y1 - p[1]) * 3; if (v < bv) { bv = v; best = p; } }); return best;
+  // the spot carries the level it was found at (lv), so the petted dog may stay on it for its moment (rmValidate, r.hold)
+  let c = null, cl = true, row = [], rl = true; for (const lv of [true, false, 'loose']) { const l = rmCands(d, lv); if (!c && l.length) { c = l; cl = lv; } row = fr(l); rl = lv; if (row.length) break; }
+  if (!c) { c = rmCandsAny(d); row = fr(c); cl = rl = 'least'; } if (!c.length) return null; const pool = row.length ? row : c, lv = row.length ? rl : cl;
+  let best = null, bv = 1e9; pool.forEach((p) => { const v = Math.abs(p[0] - tx) + (z.y1 - p[1]) * 3; if (v < bv) { bv = v; best = p; } }); return best && Object.assign(best.slice(), { lv });
 }
 function rmAsk(d, force) {
   const r = rmSt(d), now = performance.now(); if (!d || d.sleeping || r.fix || (!force && (r.tw || r.q))) return false;
@@ -422,7 +426,7 @@ function rmAsk(d, force) {
   const line = force || r.ask > 1 || rmPers(d).trait === 'needy' ? persLine(d) : null, pose = PICK(['sit', 'happy']);
   if (d === D()) { IDLE.ask = { to, line, pose }; IDLE.force = 'ask'; return true; }
   packNext[d.id] = now + 60000;
-  rmQueue(d, [{ to }, { pose, face: to[0] < (isPhone() ? camCx : 500) ? 'right' : 'left', ms: 600 }, { say: line, ask: true, bark: Math.random() < 0.4 ? 'whine' : null, ms: 4200 }, { fn: () => { packNext[d.id] = performance.now() + 2000; } }]);
+  rmQueue(d, [{ to }, { fn: () => { r.holdLv = to.lv; r.hold = Math.max(r.hold, performance.now() + 4800 * IDLE.speed); } }, { pose, face: to[0] < (isPhone() ? camCx : 500) ? 'right' : 'left', ms: 600 }, { say: line, ask: true, bark: Math.random() < 0.4 ? 'whine' : null, ms: 4200 }, { fn: () => { packNext[d.id] = performance.now() + 2000; } }]);
   return true;
 }
 function rmAttention(now) {
@@ -445,8 +449,9 @@ function rmPetted(d) {
   if (r.petFront && now - r.petFront < 9000) return; r.petFront = now;
   const z = rmZoneOf(S.place); if (r.y >= z.y1 - 40) return;
   const to = rmFrontSpot(d); if (!to || Math.hypot(to[0] - r.x, to[1] - r.y) < 30) return;
-  if (d === D()) { if (busy || S.sleeping) return; if (IDLE.act) idleStop(); rmTo(d, to[0], to[1], { anchor: true, pose: 'happy' }); }
-  else { r.q = null; rmTo(d, to[0], to[1], { pose: 'happy' }); }
+  const there = () => { r.holdLv = to.lv; r.hold = Math.max(r.hold, performance.now() + 4000); if (d !== D()) packNext[d.id] = Math.max(packNext[d.id] || 0, r.hold); }; // the moment starts once it is there
+  if (d === D()) { if (busy || S.sleeping) return; if (IDLE.act) idleStop(); rmTo(d, to[0], to[1], { anchor: true, pose: 'happy', done: there }); }
+  else { r.q = null; rmTo(d, to[0], to[1], { pose: 'happy', done: there }); }
 }
 
 /* ---------------- the scene ---------------- */
