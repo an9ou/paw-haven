@@ -76,7 +76,7 @@ Follow us for news so you don't miss Noodle! 🔔
 
 `brand/instagram/launch/story60/doodle-doggo-noodle-story-60s.mp4`: 1080 x 1920, 30 fps, about 61 seconds, H.264 + AAC, subtitles burned in.
 
-It is a **storybook**, not gameplay: each place is the game's real scene art as a sketchbook page (Home Yard, a morning walk in Sunny Park, the Town Square, the Dog Park, Riverside, the Mt. Fuji Lookout at dusk), and the real crayon dogs and Gerald act in front of it, with speech bubbles drawn in the same hand. The camera pans and zooms like a picture book. No buttons, no menus, no coins or timers. It opens like the trailer (the town drawn in pencil, then Noodle scribbled in) and ends on **Coming soon / follow us on Instagram**.
+It is a **storybook**, not gameplay: each place is the game's real scene art as a sketchbook page (Home Yard, a morning walk in Sunny Park, the Town Square, the Dog Park, Riverside, the Mt. Fuji Lookout at dusk), and the real crayon dogs and Gerald act in front of it, with speech bubbles drawn in the same hand. The camera pans and zooms like a picture book. No buttons, no menus, no coins or timers. It opens like the trailer (the town drawn in pencil, then Noodle scribbled in) and ends on **Coming soon / follow us on Instagram / @doodledoggo.app**.
 
 Voice: Bella (Kokoro TTS, a synthetic voice; label it as AI voice-over if an ad form asks). Music: the game's own, changing with each place.
 
@@ -86,9 +86,47 @@ Hi, I'm Noodle 🖍️🐶 I drew myself.
 Come see my town: my yard, the Town Square, the Dog Park, my friends Biscuit, Mochi and Frost, Gerald the duck (he knows everything), and sunsets over Mt. Fuji 🗻
 
 Doodle Doggo is coming soon ✨
-Follow us so you don't miss what's next! 🔔
+Follow @doodledoggo.app so you don't miss what's next! 🔔
 
 #doodledoggo #comingsoon #dachshund #doglover #cozy #illustration #crayon
 ```
+
+## Ad captions (Meta ads, spoiler-free)
+
+Written for a paid ad whose goal is **new followers / profile visits** (the game is not live yet). Only the first line or two show before "...more", so each one starts with a hook. None of them say "game".
+
+**A: the joke (recommended to start with)**
+```
+This dachshund drew himself. It shows. 🖍️🐶
+Meet Noodle and his wobbly crayon friends in a little pencil-drawn town under Mt. Fuji 🗻
+Something cozy is coming soon ✨ Follow @doodledoggo.app so you don't miss it 🔔
+```
+
+**B: the question**
+```
+Would you trust a duck who says he knows everything? 🦆
+Noodle does. Meet the crayon dogs of a tiny sketchbook town, where nothing bad ever happens 🐾
+Coming soon. Follow @doodledoggo.app for first looks 👀
+```
+
+**C: the cozy mood**
+```
+Need 60 seconds of pure cozy? ☕🐾
+Morning walks, a clock that always says snack time, best friends who say "heh.", and sunsets over Mt. Fuji 🌅
+Doodle Doggo is coming soon. Follow @doodledoggo.app 🔔
+```
+
+**Headline** (the bold line under the video; pick one): `Meet Noodle. He drew himself.` · `Something cozy is coming soon` · `The wobbliest dog in town`
+
+**Button:** the one Ads Manager offers for a profile goal (for example "Visit Instagram profile" or "Learn more"). Check the choices on screen.
+
+**Japan audience (optional, Japanese ad):**
+```
+自分で自分を描いたダックスフンド、ヌードルです🖍️🐶
+鉛筆で描いた小さな町で、クレヨンの仲間たちと富士山を見ながらのんびり暮らしています🗻
+もうすぐ公開！フォローして待っててね🔔 @doodledoggo.app
+```
+
+**Tips:** run A and B side by side for 3 to 5 days and keep the one with the cheaper follow. Hashtags do nothing in a paid ad, so leave them out there (keep them for the normal post). The video starts with the pencil drawing and Noodle's first line, which is the hook; don't trim the first 3 seconds.
 
 **Remake:** `python vo60.py <kokoroModelDir> <voDir>` (Bella), then `node build60.js <voDir> <workDir>` in `brand/instagram/launch/story60/` (`ONLY=3,12.5` renders just those seconds to check). The shots, the camera and the bubbles are in `story60.html` (`SCENE_FN`); the pauses between lines are `GAP` in `build60.js`.
