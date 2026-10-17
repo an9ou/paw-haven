@@ -60,10 +60,10 @@ There is no separate QA session. `game/test_copy_node.js` (the `copy` suite) and
    - Decisions go to the Project manager with a recommendation.
    - With no answer in 5 minutes, take the recommendation and list it in the final report (the owner aims for auto coding).
 10. **Push `main` only when green.** A push deploys GitHub Pages. Work in progress goes to an integration branch.
-11. **Fresh context every 2 hours (owner, 17 Oct 2026).** A session can't run `/compact` on itself or on another session (a `/compact` sent with send_message arrives as a plain message), so a session that has worked for 2 hours since it started or last handed over is handed over instead:
+11. **Fresh context when a session gets big (owner, 17 Oct 2026).** A session can't run `/compact` on itself or on another session (a `/compact` sent with send_message arrives as a plain message). So a session whose context passes about **300k tokens** (`get_session` → `context_usage.used_tokens`) with more than about an hour of work left is handed over instead. Every step re-reads the whole context, so a 490k session pays about 5x per step what a fresh one does; below 300k a handover saves too little to be worth the extra steps:
    - At the next natural stopping point (tests run, work committed and pushed), it writes a handoff of 25 lines at most: the brief, what is done (commits), what is left, open decisions and the session IDs it talks to. It sends that to its parent with send_message: "HANDOFF: start my replacement".
    - The parent creates a fresh session with the same name, model and branch, gives it the original brief plus the handoff, tells anyone who messages the old session (other lanes, the Coordinator) the new ID, and archives the old session.
-   - The Coordinator does this for its lanes and the Game Manager for the Coordinator. The hourly watchdog checks it: any session running past 2 hours gets "HANDOFF due at your next stopping point".
+   - The Coordinator does this for its lanes and the Game Manager for the Coordinator. The hourly watchdog checks it: any working session past 300k gets "HANDOFF due at your next stopping point".
    - Never hand over in the middle of a merge, a test run or a push. A session that will finish within about 30 minutes finishes instead.
    - The Game Manager chat can't be replaced this way: the owner types `/compact` there.
 
