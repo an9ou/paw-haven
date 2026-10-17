@@ -10,6 +10,7 @@ Made 16 Oct 2026. Plan, captions and checklist: `docs/marketing/`.
 | `post1-meet-noodle.jpg`, `post2-pencil-town-fuji.jpg`, `post3-play-free-halloween.jpg` | Extra single posts. Post 3 is a good Halloween push. |
 | `dogs/dog-01-mochi.jpg` ... `dog-14-brioche.jpg` | **The 14 dog introduction posts** (1080 x 1350): whole dog, puppy, name, game quote, what it loves, four traits. Captions: `docs/marketing/DOG_INTRO_POSTS.md` |
 | `soon-more-dogs-coming.jpg` | Teaser post: "More dogs are coming! Stay tuned" (mystery dogs behind a fence) |
+| `reel/doodle-doggo-reel-30s-soon.mp4`, `reel/doodle-doggo-reel-30s-play.mp4`, `reel/reel-cover.jpg` | The 30 s Reel (1080 x 1920) with the game's own music. `-soon` ends on "coming soon", `-play` on "play free, link in bio". Guide: `docs/marketing/REEL_AND_ADS.md` |
 | `grid-preview.jpg` | Mockup of the profile grid, banner and informative posts, with bio and highlights |
 | `highlight-1-meet.png` ... `highlight-4-events.png` | Story highlight covers (1080 x 1920) |
 
@@ -26,3 +27,6 @@ node brand/instagram/launch/make.js   /tmp/shots all           # posts | banner 
 DOG_DOC=1 node brand/instagram/launch/make.js /tmp/shots dogs   # also rewrites docs/marketing/DOG_INTRO_POSTS.md (DOG_MODE=head swaps the puppy for a big head close-up)
 ```
 `make.js` draws the extra posts, `make_banner.js` the panorama and tiles (it measures each dog's real outline and lays the dogs out so none overlap; the cottage, trees, fence and lanterns are drawn there too), `make_info.js` the informative series, `make_extra.js` the covers, profile pictures and grid mockup. The dogs and props are the real art (`PawArt.dog`, `PawArt.prop`). Text is Caveat from Google Fonts (needs network). The tiles are cut from one 3104 px picture, each 1080 wide and overlapping by 68 px, so the 3:4 grid crop (34 px off each side) joins exactly.
+
+## Reel
+`sh brand/instagram/launch/reel_build.sh <workdir> <shotsdir>` rebuilds both videos (`reel_footage.js` real gameplay, `reel_audio.js` the game's music, `reel_render.js` frames, `reel/reel.html` layout and timing).

@@ -1,0 +1,144 @@
+<!doctype html>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --ink:#5B3D32; --pink:#F28FA5; --paper:#FFF8EC; --muted:#8A7468; --orange:#E8863A; }
+  html,body { margin:0; background:#FFF8EC; }
+  #stage { position:relative; width:1080px; height:1920px; overflow:hidden; background:var(--paper); font-family:'Caveat',cursive; color:var(--ink); }
+  #dots { position:absolute; inset:0; background-image:radial-gradient(circle, #E3D2BA 1.6px, transparent 2px); background-size:22px 22px; }
+  .abs { position:absolute; left:0; top:0; transform-origin:50% 50%; will-change:transform,opacity; }
+  .txt { position:absolute; left:0; width:1080px; text-align:center; font-weight:700; line-height:1; white-space:nowrap; }
+  .sw { position:absolute; background:var(--pink); opacity:.42; border-radius:40% 60% 50% 45% / 60% 40% 55% 45%; transform-origin:50% 50%; }
+  #phone { position:absolute; left:178px; top:350px; width:724px; height:1190px; transform-origin:50% 50%; }
+  #phone .bez { position:absolute; inset:0; border-radius:64px; background:#FFFDF7; box-shadow:0 18px 40px rgba(91,61,50,.28); border:7px solid var(--ink); }
+  #phone .scr { position:absolute; left:18px; top:18px; width:688px; height:1154px; border-radius:44px; overflow:hidden; background:#fff; border:3px solid rgba(91,61,50,.35); }
+  #phone img { position:absolute; left:0; top:0; width:100%; height:100%; object-fit:cover; transform-origin:50% 50%; }
+  #phone .tape { position:absolute; left:250px; top:-26px; width:160px; height:48px; background:rgba(242,143,165,.7); transform:rotate(-3deg); }
+  .dogw { position:absolute; left:0; top:0; transform-origin:50% 100%; }
+  .name { position:absolute; width:200px; text-align:center; font-size:40px; font-weight:700; }
+</style>
+<div id="stage">
+  <div id="dots"></div>
+  <div id="doodles"></div>
+  <!-- the hook -->
+  <div id="hook">
+    <div class="sw" id="hsw" style="left:190px;top:700px;width:700px;height:130px;"></div>
+    <div class="txt" id="h1" style="top:430px;font-size:140px;">Adopt a wobbly</div>
+    <div class="txt" id="h2" style="top:600px;font-size:200px;">crayon pup</div>
+    <div class="txt" id="h3" style="top:810px;font-size:68px;color:var(--muted);font-weight:600;">(he drew himself)</div>
+    <div class="abs" id="noodle" style="width:820px;height:612px;"></div>
+  </div>
+  <!-- the phone with real footage -->
+  <div id="phoneWrap">
+    <div id="cap1" class="txt" style="top:215px;font-size:100px;"></div>
+    <div id="cap2" class="txt" style="display:none"></div>
+    <div id="phone"><div class="bez"></div><div class="scr"><img id="frame"></div></div>
+  </div>
+  <!-- the 14 dogs -->
+  <div id="parade">
+    <div class="txt" id="pt1" style="top:230px;font-size:170px;">14 dog types</div>
+    <div class="txt" id="pt2" style="display:none;top:1440px;font-size:62px;color:var(--muted);font-weight:600;">each with its own voice, size and joke</div>
+    <div id="pdogs"></div>
+  </div>
+  <!-- the end card -->
+  <div id="cta">
+    <div class="sw" id="csw" style="left:140px;top:575px;width:800px;height:130px;"></div>
+    <div class="txt" id="c1" style="top:330px;font-size:210px;"></div>
+    <div class="txt" id="c2" style="top:570px;font-size:120px;"></div>
+    <div class="abs" id="noodle2" style="width:700px;height:522px;"></div>
+    <div class="txt" id="c3" style="top:1390px;font-size:66px;color:var(--muted);font-weight:600;"></div>
+  </div>
+  <!-- brand mark on every scene -->
+  <div id="brand" class="txt" style="top:1500px;font-size:96px;"><span style="display:inline-block;transform:rotate(-3deg)">Doodle</span> <span style="display:inline-block;transform:rotate(2deg) translateY(4px)">Doggo</span></div>
+  <div id="fade" style="position:absolute;inset:0;background:var(--paper);opacity:0;"></div>
+</div>
+<script src="../../../../dogs/pawart_dogs.js"></script>
+<script>
+const PA = window.PawArt, $ = (id) => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const eo3 = (x) => 1 - Math.pow(1 - clamp(x), 3);
+const eoB = (x) => { x = clamp(x); const c1 = 1.9, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const inner = (svg) => svg.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
+const dogEl = (key, opts, w) => `<svg viewBox="22 40 214 160" width="${w}" height="${w * 160 / 214}" overflow="visible">${inner(PA.dog(key, Object.assign({ anim: false }, opts)))}</svg>`;
+// ----- static pieces -----
+$('noodle').innerHTML = dogEl('dachs', { pose: 'happy' }, 820);
+$('noodle2').innerHTML = dogEl('dachs', { pose: 'happy', outfit: { eyes: 'Heart Sunglasses', neck: 'Red Bandana' } }, 700);
+const KEYS = [['dachs', 'Noodle', 'happy'], ['corgi', 'Biscuit', 'happy'], ['shiba', 'Mochi', 'sit'], ['golden', 'Sunny', 'happy'], ['husky', 'Frost', 'howl'], ['pug', 'Dumpling', 'sit'], ['chihuahua', 'Peanut', 'speak'], ['greyhound', 'Rocket', 'happy'], ['beagle', 'Bagel', 'sniff'], ['poodle', 'Pretzel', 'bow'], ['collie', 'Scout', 'happy'], ['samoyed', 'Cloud', 'happy'], ['frenchie', 'Brioche', 'sit'], ['mutt', 'Pepper', 'happy']];
+const ROWS = [4, 4, 3, 3], ROWY = [620, 900, 1180, 1460];
+let pd = ''; const place = [];
+KEYS.forEach(([k, n, pose], i) => {
+  let r = 0, c = i; while (c >= ROWS[r]) { c -= ROWS[r]; r++; }
+  const n2 = ROWS[r], x = 540 + (c - (n2 - 1) / 2) * 255, y = ROWY[r];
+  place.push({ x, y, i });
+  pd += `<div class="dogw" id="pd${i}" style="width:250px;height:200px;">${dogEl(k, { pose }, 250)}<div class="name" style="left:25px;top:190px;font-size:46px;">${n}</div></div>`;
+});
+$('pdogs').innerHTML = pd;
+// floating doodles (hearts, sparks, paws)
+const heart = '<svg viewBox="-18 -16 36 32" width="60" height="53"><path d="M0 12 C-16 0 -12 -14 0 -6 C12 -14 16 0 0 12Z" fill="#F28FA5" fill-opacity=".8" stroke="#5B3D32" stroke-width="2.4" stroke-linejoin="round"/></svg>';
+const spark = '<svg viewBox="-16 -16 32 32" width="56" height="56"><path d="M0 -14 Q1.5 -1.5 14 0 Q1.5 1.5 0 14 Q-1.5 1.5 -14 0 Q-1.5 -1.5 0 -14Z" fill="#FFE3A1" stroke="#5B3D32" stroke-width="2.4" stroke-linejoin="round"/></svg>';
+const paw = '<svg viewBox="-16 -16 32 32" width="60" height="60"><g stroke="#5B3D32" stroke-width="2.4" fill="#E0D5F0"><ellipse cx="0" cy="6" rx="9" ry="7.5"/><circle cx="-10" cy="-5" r="3.8"/><circle cx="-3.5" cy="-10" r="3.8"/><circle cx="3.5" cy="-10" r="3.8"/><circle cx="10" cy="-5" r="3.8"/></g></svg>';
+let dd = ''; const DOOD = [];
+for (let i = 0; i < 16; i++) { const kind = [heart, spark, paw][i % 3], x = 70 + ((i * 337) % 940), sp = 90 + (i * 53) % 90, ph = (i * 0.37) % 1; DOOD.push({ x, sp, ph, i }); dd += `<div class="abs" id="dd${i}" style="opacity:.7">${kind}</div>`; }
+$('doodles').innerHTML = dd;
+
+// ----- scene timing (seconds) -----
+const T = { hookEnd: 3.0, yard: [3.0, 8.5], fuji: [8.5, 14.5], walk: [14.5, 17.5], garden: [17.5, 18.5], kitchen: [18.5, 19.5], house: [19.5, 20.5], parade: [20.5, 25.5], cta: [25.5, 30.0] };
+const CAPS = [[3.0, 5.8, 'Pencil-sketch town 🖍️', 100], [5.8, 8.5, 'Crayon dogs 🐶', 104], [8.5, 14.5, 'Mt. Fuji on every skyline 🗻', 92], [14.5, 17.5, 'Walks & treasure 🐾', 100], [17.5, 18.5, 'Grow a garden 🥕', 100], [18.5, 19.5, 'Cook dog-safe treats 🍪', 94], [19.5, 20.5, 'A whole pack 🏡', 100]];
+
+window.draw = async (t, src, kb, mode) => {
+  const show = (id, on) => { $(id).style.display = on ? 'block' : 'none'; };
+  const inHook = t < T.hookEnd, inPhone = t >= T.yard[0] && t < T.parade[0], inPar = t >= T.parade[0] && t < T.cta[0], inCta = t >= T.cta[0];
+  show('hook', inHook); show('phoneWrap', inPhone); show('parade', inPar); show('cta', inCta);
+  // doodles drift up all the time
+  DOOD.forEach((d) => { const e = $('dd' + d.i), y = 1980 - (((t * d.sp) + d.ph * 2000) % 2100), s = 0.6 + (d.i % 4) * 0.2; e.style.transform = `translate(${d.x + Math.sin(t * 1.3 + d.i) * 24}px,${y}px) rotate(${Math.sin(t + d.i) * 14}deg) scale(${s})`; });
+  $('brand').style.display = (inHook || inPar || inCta) ? 'block' : 'none'; $('brand').style.top = inHook ? '190px' : inPar ? '1545px' : '1490px'; $('brand').style.fontSize = inHook ? '100px' : '96px'; $('brand').style.opacity = inHook ? clamp((t - 0.1) / 0.4) : 1;
+  if (inHook) {
+    const a = eoB(seg(t, 0.0, 0.55)), b = eoB(seg(t, 0.35, 0.95)), n = seg(t, 0.4, 1.2);
+    $('h1').style.opacity = clamp(t / 0.25); $('h1').style.transform = `scale(${0.6 + 0.4 * a}) rotate(${-3 * (1 - a) - 2}deg)`;
+    $('h2').style.opacity = clamp((t - 0.3) / 0.25); $('h2').style.transform = `scale(${0.5 + 0.5 * b}) rotate(${2 - 3 * (1 - b)}deg)`;
+    $('hsw').style.opacity = 0.42 * seg(t, 0.5, 0.9); $('hsw').style.transform = `rotate(-2deg) scaleX(${seg(t, 0.5, 1.1)})`;
+    const rise = eoB(seg(t, 0.7, 1.4)), bounce = Math.abs(Math.sin((t - 1.0) * 5.5)) * (t > 1.4 ? 26 : 0);
+    $('noodle').style.transform = `translate(130px,${1900 - 970 * rise - bounce}px) scale(${1 + (t > 1.4 ? Math.abs(Math.sin((t - 1.0) * 5.5)) * 0.03 : 0)})`;
+    $('h3').style.opacity = seg(t, 1.8, 2.2); $('h3').style.transform = `rotate(-2deg) translateY(${(1 - seg(t, 1.8, 2.2)) * 20}px)`;
+    $('fade').style.opacity = 0;
+  }
+  if (inPhone) {
+    const cap = CAPS.find((c) => t >= c[0] && t < c[1]) || CAPS[CAPS.length - 1], k = seg(t, cap[0], cap[0] + 0.35);
+    $('cap1').textContent = cap[2]; $('cap1').style.fontSize = cap[3] + 'px'; $('cap1').style.top = '215px';
+    $('cap1').style.opacity = k; $('cap1').style.transform = `translateY(${(1 - eo3(k)) * 40}px) scale(${0.9 + 0.1 * eoB(seg(t, cap[0], cap[0] + 0.5))}) rotate(-1.5deg)`;
+    // the phone pops in at the start of every segment
+    const pk = eoB(seg(t, cap[0], cap[0] + 0.45)), side = (CAPS.indexOf(cap) % 2 ? 1 : -1);
+    const first = t < T.yard[0] + 0.6 ? eo3(seg(t, T.yard[0], T.yard[0] + 0.6)) : 1;
+    $('phone').style.transform = `translateY(${(1 - first) * 900}px) rotate(${side * (1 - pk) * 3 + side * 0.6}deg) scale(${0.96 + 0.04 * pk})`;
+    const img = $('frame'); if (src && img.getAttribute('src') !== src) { img.src = src; try { await img.decode(); } catch (e) {} }
+    const z = 1 + (kb ? kb[0] + kb[1] * seg(t, cap[0], cap[1]) : 0); img.style.transform = `scale(${z})`;
+    $('fade').style.opacity = 0;
+  }
+  if (inPar) {
+    const u = t - T.parade[0];
+    $('pt1').style.opacity = seg(u, 0, 0.3); $('pt1').style.transform = `scale(${0.8 + 0.2 * eoB(seg(u, 0, 0.5))}) rotate(-2deg)`;
+        place.forEach((p) => {
+      const t0 = 0.2 + p.i * 0.28, k = seg(u, t0, t0 + 0.9), e = eo3(k), x = -300 + (p.x - 125 + 300) * e, bob = k < 1 ? Math.abs(Math.sin(k * 9 * Math.PI / 2)) * 36 : 0, land = k >= 1 ? Math.max(0, 1 - (u - t0 - 0.9) * 3) * Math.abs(Math.sin((u - t0 - 0.9) * 14)) * 18 : 0;
+      const el = $('pd' + p.i); el.style.opacity = k > 0 ? 1 : 0; el.style.transform = `translate(${x}px,${p.y - 200 - bob - land}px) scaleY(${1 - (k >= 1 ? Math.max(0, 1 - (u - t0 - 0.9) * 4) * 0.06 : 0)})`;
+    });
+    $('fade').style.opacity = 0;
+  }
+  if (inCta) {
+    const u = t - T.cta[0], variant = mode === 'soon';
+    $('c1').textContent = variant ? 'Coming soon' : 'Play free'; $('c2').textContent = variant ? 'follow to be first' : 'link in bio  ↑';
+    $('c3').textContent = variant ? 'a free browser game for phone & computer' : 'free · phone or computer';
+    $('c1').style.fontSize = variant ? '190px' : '230px'; $('c2').style.fontSize = variant ? '100px' : '116px';
+    const a = eoB(seg(u, 0.0, 0.5)), b = eoB(seg(u, 0.35, 0.9)), c = seg(u, 0.9, 1.3);
+    $('c1').style.opacity = clamp(u / 0.2); $('c1').style.transform = `scale(${0.6 + 0.4 * a}) rotate(-3deg)`;
+    $('csw').style.opacity = 0.42 * seg(u, 0.5, 0.9); $('csw').style.transform = `rotate(-1.5deg) scaleX(${seg(u, 0.5, 1.1)})`;
+    $('c2').style.opacity = clamp((u - 0.35) / 0.25); $('c2').style.transform = `translateY(${Math.sin(u * 6) * (variant ? 0 : 8)}px) scale(${0.6 + 0.4 * b}) rotate(1.5deg)`;
+    const rise = eoB(seg(u, 0.5, 1.2)), bounce = Math.abs(Math.sin((u - 0.9) * 5)) * (u > 1.2 ? 30 : 0);
+    $('noodle2').style.transform = `translate(190px,${2000 - 1200 * rise - bounce}px)`;
+    $('c3').style.opacity = c;
+    $('fade').style.opacity = clamp((u - 3.6) / 0.4) * 0.0;
+  }
+  return true;
+};
+document.fonts.ready.then(() => { window.READY = true; });
+</script>
