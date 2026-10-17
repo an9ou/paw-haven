@@ -176,3 +176,12 @@ You manage Paw Haven for the owner. You don't build. Start a fresh Coordinator s
 - Screenshots stay on the lane branches. CARDS and TOKYO ART E put theirs into the history through early merges (accepted); remove `game/shots_*` before a release.
 - Make `v212-base` from v2.11 `main` before the next release.
 - Open items are in `TODO.md` "Tokyo Trip (v2.11)".
+
+**State after v2.11.1 (17 Oct 2026):**
+- v2.11.1 "Costumes & Sizes" (three Halloween 2026 costumes, dog sizes by class with the owner's 1.25x growth, the gsd neck, roomier Shelter text on phones) is on `main`, GitHub Pages, itch.io (2.11.1) and the doodledoggo.app site (the gsd art). Spec and as-built notes: `V2111.md` (sections 2, 3 and 6).
+- Built by an Opus coordinator with three lane subagents in their own worktrees, all at once: ART (`paw-artist`), SIZE (Opus), UI (Sonnet). Then one `paw-reviewer` pass and three fix batches (`fix/v2111-review`, `fix/v2111-art`, `fix/v2111-roam`). `v2111-base` is a branch at `17e513b` (v2.11).
+- Final `all` + `phone --jobs 2` after the last fix: 97 suites, 95 passed, `v27_mailbox` flaky (4/4 alone), `v29_pack` failed under load (3/3 alone); `phone` 32 of 32. `phone_v25_fixes_b` (camera ease-back) fails about half the runs on `v2111-base` too (TODO). `SKIP=gsd node dogs/check_identical.js v2111-base`: 226840 renders, 0 differ; outfit sweep 71253, 0 bad.
+- The Worker is unchanged (the costumes are not in `DC_OUTFITS`, see TODO). The claude.ai artifact still needs publishing by the Game Manager (`node tools/artifact.js`).
+- Make `v212-base` from v2.11.1 `main` before the next release.
+- Open items are in `TODO.md` "Costumes & Sizes (v2.11.1)".
+
