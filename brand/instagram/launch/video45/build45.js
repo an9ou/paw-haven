@@ -10,16 +10,16 @@ const dur = JSON.parse(fs.readFileSync(path.join(voDir, 'dur.json')));
 // ---- the voice-over: when each line starts (seconds) ----
 const VO = [['l1a', 0.25], ['l1b', 3.25], ['l2', 5.3], ['l3', 8.35], ['l4', 13.5], ['l5a', 16.25], ['l5b', 19.85], ['l6', 23.75], ['l7', 29.5], ['l8a', 34.5], ['l8b', 38.85], ['l9', 40.6]];
 // ---- subtitles: each line split into chunks, timed by length ----
-const CHUNKS = {
-  l1a: ['Everything in this town was drawn very carefully.'], l1b: ['Except me. I drew myself.'],
-  l2: ["Hi, I'm Noodle. Welcome to Doodle Doggo."],
-  l3: ['Adopt a wobbly crayon pup.', 'There are fourteen of us.', 'We are all very proud.'],
-  l4: ['Feed us. Pet us.', 'Bathe us, if you must.'],
-  l5a: ['Take us on walks. Dig up treasure.', 'Visit Mount Fuji.'],
-  l5b: ['Somebody should dig a tunnel through that mountain.', 'I volunteer.'],
-  l6: ['Grow a garden. Cook dog-safe treats.', 'Have puppy playdates, with real coat genetics.'],
-  l7: ['Dress up for every season.', 'The ugly sweater contest is judged by a duck.'],
-  l8a: ['And nothing bad ever happens here.', 'Worst case, you walk into a log.'], l8b: ['I meant to do that.'],
+const CHUNKS = { // must match the punctuation in vo45.py
+  l1a: ['Everything in this town was drawn very carefully.'], l1b: ['Except me! I drew myself!'],
+  l2: ["Hi, I'm Noodle! Welcome to Doodle Doggo!"],
+  l3: ['Adopt a wobbly crayon pup!', 'There are fourteen of us.', 'We are all very proud!'],
+  l4: ['Feed us! Pet us!', 'Bathe us, if you must.'],
+  l5a: ['Take us on walks! Dig up treasure!', 'Visit Mount Fuji!'],
+  l5b: ['Somebody should dig a tunnel through that mountain.', 'I volunteer!'],
+  l6: ['Grow a garden! Cook dog-safe treats!', 'Have puppy playdates, with real coat genetics!'],
+  l7: ['Dress up for every season!', 'The ugly sweater contest is judged by a duck!'],
+  l8a: ['And nothing bad ever happens here.', 'Worst case? You walk into a log.'], l8b: ['I meant to do that!'],
 };
 const subs = [];
 VO.forEach(([k, st], i) => {
@@ -68,7 +68,7 @@ const sh = (args) => execFileSync('ffmpeg', ['-y', '-loglevel', 'error', ...args
     filt.push(`[${mi}:a]aresample=44100,atrim=0:${DUR},volume=0.55,afade=t=in:d=0.4,afade=t=out:st=${DUR - 1.4}:d=1.4[mu]`);
     filt.push(`[mu][vo1]sidechaincompress=threshold=0.02:ratio=6:attack=15:release=350[duck]`);
     filt.push(`[duck][vo2]amix=inputs=2:normalize=0,loudnorm=I=-15:TP=-1.5:LRA=9[a]`);
-    const outFile = path.join(OUT, `doodle-doggo-promo-45s-${m}.mp4`);
+    const outFile = path.join(OUT, `doodle-doggo-promo-45s-${m}${process.env.VOICE_TAG ? '-' + process.env.VOICE_TAG : ''}.mp4`);
     sh(['-framerate', String(FPS), '-i', path.join(dir, 'f_%05d.jpg'), ...inputs, '-filter_complex', filt.join(';').replace(/\[(\d+):a\]/g, (s, n) => `[${+n + 1}:a]`), '-map', '0:v', '-map', '[a]',
       '-c:v', 'libx264', '-preset', 'slow', '-crf', '18', '-pix_fmt', 'yuv420p', '-profile:v', 'high', '-r', String(FPS), '-c:a', 'aac', '-b:a', '192k', '-ar', '44100', '-movflags', '+faststart', '-t', String(DUR), outFile]);
     console.log('wrote', outFile);

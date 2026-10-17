@@ -7,7 +7,8 @@ Made 17 Oct 2026 from the script in `VIDEO_SCRIPT_45S.md`. Files are in `brand/i
 | `doodle-doggo-promo-45s-soon.mp4` | **Now.** Ends: "Doodle Doggo. Coming soon. Follow, so you don't miss me." |
 | `doodle-doggo-promo-45s-play.mp4` | **When the game is live.** Ends: "Doodle Doggo. Free to play in your browser. Link in bio." |
 | `promo-45s-cover.jpg` | Cover picture (1080 x 1440, the part the profile grid shows). |
-| `voice-samples/noodle-voice-*.mp3` | Four other voices for Noodle, if you want to change the narrator. |
+| `doodle-doggo-promo-45s-soon-male-voice.mp4`, `...-play-male-voice.mp4` | The first version, with a calm male voice. |
+| `voice-samples/noodle-voice-*.mp3` | Other voices for Noodle (four female, four male), if you want to change the narrator. |
 
 Both videos: 1080 x 1920 (9:16), 30 fps, 45 seconds, H.264 + AAC, about 20 MB. Good for Instagram Reels, TikTok, YouTube Shorts, and Meta ads (Reels and Stories placements).
 
@@ -34,7 +35,7 @@ Both videos: 1080 x 1920 (9:16), 30 fps, 45 seconds, H.264 + AAC, about 20 MB. G
 - **One small staging:** when a dog bumps into something on a walk, the game picks one of seven real lines at random. For this video we used "I meant to do that." (one of those seven) so it matches the voice-over.
 - **The opening drawing** uses the game's own yard art and Noodle's own crayon art, animated for the video.
 - **Music** is the game's own soundtrack, made by the game's music engine. It is original, so there are no licence problems on any platform. It gets quieter while Noodle talks.
-- **Voice:** a computer voice made with **Kokoro** (an open text-to-speech model, Apache-2.0 licence, so commercial use and ads are allowed). Voice "am_michael", slightly faster than normal. I could not listen to it myself, so **please listen once before you publish.** If a word sounds wrong, or you prefer another voice, tell me: changing it takes a few minutes. Four alternatives are in `voice-samples/`.
+- **Voice:** a computer voice made with **Kokoro** (an open text-to-speech model, Apache-2.0 licence, so commercial use and ads are allowed). Main version: the female voice **"af_bella"**, the most expressive one, at 1.1x speed, with exclamation marks in the script for a warm, passionate read (owner's choice, 17 Oct). Noodle is still the character speaking; a woman voicing a boy dog is normal in cartoons. The engine has no emotion setting, so the energy comes from the voice, the pace and the punctuation. The first version used the male voice "am_michael". I could not listen to it myself, so **please listen once before you publish.** If a word sounds wrong, or you prefer another voice, tell me: changing it takes a few minutes. Four alternatives are in `voice-samples/`.
 - **Platform labels:** some platforms ask you to label AI-generated or synthetic media in ads. The voice is synthetic, the pictures are real gameplay. If an ad form asks, say the voice-over is AI-generated.
 
 ## Caption to post with it (English)
@@ -72,7 +73,7 @@ All steps are scripts in `brand/instagram/launch/video45/`:
 ```
 NODE_PATH=/opt/node-tools/node_modules
 node footage45.js <footage> autumn          # real gameplay (and: node footage45.js <footage> winter)
-python vo45.py am_michael 1.08 <modelDir> <voDir>   # the voice (Kokoro; see the top of vo45.py)
+python vo45.py af_bella 1.1 <modelDir> <voDir>     # (the male version: am_michael 1.08)   # the voice (Kokoro; see the top of vo45.py)
 node ../reel_audio.js <music.wav> music45.json       # the game's music
 node build45.js <footage> <voDir> <music.wav> <work> both   # frames, mix, MP4
 ```
