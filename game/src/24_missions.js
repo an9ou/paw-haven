@@ -42,7 +42,10 @@ const MS_POOL = [
   // v2.8 Mt. Fuji Lookout (V28.md section 12.4): FUJI HILL fires gaze { first }; travel is the core act. jpHillOpen(): jpOn(), the scene exists, Bond 2
   { id: 'gaze', n: 1, t: 'Look at Mt. Fuji from the Mt. Fuji Lookout', s: 'Look at Mt. Fuji', g: () => jpHillOpen() && !(S.jp && S.jp.gazed === localISO()), m: (a) => a.kind === 'gaze' },
   { id: 'hatsufuji', n: 1, t: 'See the first Fuji of the year', s: 'First Fuji', g: () => nyDays() && jpHillOpen() && !(S.jp && S.jp.first === nyYear()), m: (a) => a.kind === 'gaze' && !!a.first },
-  { id: 'travel_fuji', n: 1, t: 'Visit the Mt. Fuji Lookout', s: 'Mt. Fuji Lookout visit', g: () => jpHillOpen(), m: (a) => a.kind === 'travel' && a.place === 'fujihill' }
+  { id: 'travel_fuji', n: 1, t: 'Visit the Mt. Fuji Lookout', s: 'Mt. Fuji Lookout visit', g: () => jpHillOpen(), m: (a) => a.kind === 'travel' && a.place === 'fujihill' },
+  // v2.11 Tokyo Trip (V211.md section 5.3, 39_tokyo.js): the ride out and a new station stamp, from the Station's Bond on
+  { id: 'tokyo_ride', n: 1, t: 'Ride the Shinkansen to Tokyo', s: 'Shinkansen ride', g: () => tkOn() && topBond() >= TK_STATION_BOND, m: (a) => a.kind === 'ride' && a.dir === 'out' },
+  { id: 'tokyo_stamp', n: 1, t: 'Collect a station stamp', s: 'Station stamp', g: () => tkOn() && topBond() >= TK_STATION_BOND && tkStampCount() < TK_STAMPS.length, m: (a) => a.kind === 'stamp' }
 ];
 const msDef = (id) => MS_POOL.find((x) => x.id === id);
 function msFields() {

@@ -42,6 +42,9 @@ const FOOD = [
   { n: 'Snowflake Oat Cookies', fest: 'snow', price: 9, hunger: 10, happy: 10, bond: 1, snack: true, v28: true, tip: 'Rolled oats, egg and pumpkin, baked plain. Festive cookies often hide macadamia nuts, which make dogs wobbly and ill, so these have none.', note: '+10 Hunger, +10 Happiness, a little Bond. Oat cookies cut like snowflakes.' },
   { n: 'Snow Day Stew', fest: 'snow', price: 14, hunger: 30, happy: 10, v28: true, tip: 'Lean chicken with no skin and no bones. Gravy and fatty leftovers upset a dog\'s tummy, so they stay on the people plates.', note: '+30 Hunger, +10 Happiness. Chicken, carrot and green beans, cooked soft.' },
   { n: 'Pup Kinton', fest: 'newyear', price: 10, hunger: 15, happy: 15, snack: true, v28: true, tip: 'Plain mashed sweet potato, no sugar and no chestnut syrup. Mochi never goes in a dog\'s bowl, it is far too sticky to swallow safely.', note: '+15 Hunger, +15 Happiness. Golden sweet potato mash, for a lucky year.' },
+  // v2.11 Tokyo Trip (V211.md section 5.3): the Nakamise treats in Asakusa, served there like the café (tokyo + fest 'tokyo': never in a town shop or stall)
+  { n: 'Sweet Potato Chew', fest: 'tokyo', tokyo: true, price: 15, hunger: 10, happy: 10, snack: true, v211: true, tip: 'Steamed and dried plain sweet potato, nothing added. Cut it into small strips so it is not a choking piece.', note: '+10 Hunger, +10 Happiness. A chewy Asakusa favourite, made for dogs.' },
+  { n: 'Dog Senbei', fest: 'tokyo', tokyo: true, price: 12, hunger: 5, happy: 10, snack: true, v211: true, tip: 'A plain rice cracker made for dogs, with no salt and no soy sauce. The ones people eat are far too salty.', note: '+5 Hunger, +10 Happiness. A crunchy round rice cracker.' },
   { n: 'Frozen Pupsicle', price: 22, hunger: 15, happy: 20, energy: 10, cool: 60, snack: true, v24: true, tip: 'Frozen plain yoghurt and fruit, no xylitol ever. Let it soften a little for small dogs.', note: '+15 Hunger, +20 Happiness, +10 Energy. Cools a hot dog for 1 game hour.' }
 ];
 const TOYS = [
@@ -61,7 +64,9 @@ const TOYS = [
   { n: 'Squeaky Pumpkin', fest: 'halloween', ed: 2026, v26: true, price: 45, bond: 1, note: 'Squeak: a soft pumpkin that squeaks when pounced. +Happiness.' },
   { n: 'Plush Ghost', fest: 'halloween', ed: 2026, v26: true, price: 55, bond: 1, note: 'Shake: a floppy ghost to shake and carry about. +Happiness, a little Bond.' },
   { n: 'Bat-Wing Flyer', fest: 'halloween', ed: 2026, v26: true, price: 65, bond: 2, note: 'Leap: a soft flyer with felt bat wings to jump for. +Happiness, -Energy.' },
-  { n: 'Trick-or-Treat Bucket', fest: 'halloween', ed: 2026, v26: true, price: 80, bond: 2, note: 'Sniff: nose out the treats hidden under the lids. +Happiness, a little Bond.' }
+  { n: 'Trick-or-Treat Bucket', fest: 'halloween', ed: 2026, v26: true, price: 80, bond: 2, note: 'Sniff: nose out the treats hidden under the lids. +Happiness, a little Bond.' },
+  /* v2.11 Tokyo Trip: the Tokyo Tower souvenir stand only (tokyo + fest 'tokyo'), with its own play game in mods/toys.js */
+  { n: 'Shinkansen Plush', fest: 'tokyo', tokyo: true, price: 80, bond: 1, v211: true, note: 'Zoom: a soft bullet train to roll along the ground and chase. +Happiness.' },
 ];
 const CLOTHES = [
   { n: 'Red Bandana', slot: 'neck', price: 50, bond: 1, perk: '+1 dog friend on every walk.' },
@@ -105,6 +110,10 @@ const CLOTHES = [
   { n: 'Snowflake Snood', slot: 'neck', fest: 'snow', price: 50, bond: 1, v28: true, perk: 'Warm: no shivering in the snow. A knitted tube, so no ends to trip on.' },
   { n: 'Ugly Sweater Rosette', slot: 'neck', fest: 'lights', price: 0, bond: 1, v28: true, reward: true, perk: 'Pride: won at the Ugly Sweater Contest. It is uglier than the sweater.' },
   { n: 'Year of the Sheep Hood', slot: 'head', fest: 'newyear', ed: 2027, price: 0, bond: 1, v28: true, reward: true, perk: 'Warm: no shivering in the snow. Woolly sheep ears for the Year of the Sheep. The Border Collie has been told.' },
+  // v2.11 Tokyo Trip (V211.md section 5.3): souvenir bandanas, sold only at the stands in Tokyo (tokyo + fest 'tokyo')
+  { n: 'Shibuya Bandana', slot: 'neck', fest: 'tokyo', tokyo: true, price: 60, bond: 1, v211: true, perk: 'Scramble: green, with little crossing stripes. Everyone stops to say hello.' },
+  { n: 'Asakusa Bandana', slot: 'neck', fest: 'tokyo', tokyo: true, price: 60, bond: 1, v211: true, perk: 'Lucky red: a tiny lantern in the corner, like the big one at the temple gate.' },
+  { n: 'Tokyo Tower Bandana', slot: 'neck', fest: 'tokyo', tokyo: true, price: 60, bond: 1, v211: true, perk: 'Tall look: orange and white stripes, like the tower on a sunny day.' },
   { n: 'Astronaut Helmet', slot: 'head', price: 0, bond: 1, v24: true, reward: true, perk: 'Space-proof: no soggy shake after rain, no shivering in the snow.' }
 ];
 const HOUSES = [
@@ -416,6 +425,7 @@ function hasRealScene(name) {
 }
 function sceneArt(name, e, extra) {
   const o = Object.assign({}, e || {}, extra || {});
+  const tk = tkSceneArt(name, o); if (tk) return tk; // v2.11: the six Tokyo places (world D / E art, else a stand-in, 39_tokyo.js)
   if (NEW_PLACES.includes(name) && !hasRealScene(name)) return place(art('scene', SCENE_FB[name], o), 0, 0, 1000, 600) + placeSign(name);
   if (HANG.includes(name) && !hasRealScene(name)) return name === 'house' ? place(art('scene', 'yard', o), 0, 0, 1000, 600) : place(art('walkStrip', name, e), -400, 0, 1800, 600);
   return place(art('scene', name, o), 0, 0, 1000, 600);
@@ -681,12 +691,12 @@ function v210Fields(s) {
 function v211Fields(s) {
   // V211.md section 5.1. S.tk: the Tokyo trip (TRAVEL), S.dc: the Dog Cards settings and paws given (CARDS)
   if (!s) return s;
-  if (!v28Obj(s.tk)) s.tk = {}; ['day', 'hachi', 'omi', 'snack'].forEach((k) => { if (s.tk[k] === undefined) s.tk[k] = null; });
+  if (!v28Obj(s.tk)) s.tk = {}; ['day', 'hachi', 'omi', 'snack', 'hanami', 'sunset'].forEach((k) => { if (s.tk[k] === undefined) s.tk[k] = null; });
   if (typeof s.tk.rides !== 'number' || !(s.tk.rides >= 0)) s.tk.rides = 0;
   ['stamps', 'seen'].forEach((k) => { if (!v28Obj(s.tk[k])) s.tk[k] = {}; }); if (typeof s.tk.frame !== 'boolean') s.tk.frame = false;
   if (!v28Obj(s.dc)) s.dc = {}; if (typeof s.dc.on !== 'boolean') s.dc.on = false; if (s.dc.name === undefined) s.dc.name = null;
   if (!Array.isArray(s.dc.dogs)) s.dc.dogs = []; if (!Array.isArray(s.dc.hide)) s.dc.hide = []; if (!v28Obj(s.dc.given)) s.dc.given = {};
-  if (typeof s.dc.got !== 'number' || !(s.dc.got >= 0)) s.dc.got = 0;
+  if (typeof s.dc.got !== 'number' || !(s.dc.got >= 0)) s.dc.got = 0; if (s.dc.uid === undefined) s.dc.uid = null; // v2.11 CARDS review: the account that switched the card on
   return s;
 }
 function migNote() { if (S && S.gkNote) { delete S.gkNote; markDirty(); setTimeout(() => toast('Pip left a packet of seeds on your doorstep. The veggie patch is yours now!', 'gold'), 2200); }
@@ -916,7 +926,7 @@ function doAct(a) {
   if (pop && popAct === a) { if (!modal.hidden) closeModal(); else closeTray(); return; }
   if (!modal.hidden) closeModal();
   if (['feed', 'play', 'care', 'wardrobe', 'journal'].includes(a)) popAct = a;
-  if (a === 'map') return cur.mode === 'map' ? go('yard') : go('map');
+  if (a === 'map') return tkMapAct(); // v2.11: in a Tokyo place the Map button opens the Japan map (39_tokyo.js)
   if (a === 'walk') return go('routes');
   if (a === 'wardrobe') return openWardrobe();
   if (a === 'journal') return openJournal();
@@ -996,7 +1006,7 @@ function go(mode, arg) {
   stage.classList.toggle('flowdock', ['walk', 'fetch', 'bath', 'adopt'].includes(mode)); stage.classList.toggle('adoptmode', mode === 'adopt');
   stage.classList.toggle('slimhud', mode === 'walk' || mode === 'routes' || mode === 'garden' || mode === 'kitchen' || mode === 'map');
   stage.classList.toggle('modhud', mode === 'garden' || mode === 'kitchen');
-  ({ garden: enterGarden, kitchen: enterKitchen, title: enterTitle, adopt: enterAdopt, yard: enterYard, market: enterMarketPlace, routes: enterRoutes, map: enterMap, shelter: enterShelter, walk: enterWalk, fetch: enterFetch, bath: enterBath, toy: enterToy })[mode](arg);
+  ({ garden: enterGarden, kitchen: enterKitchen, title: enterTitle, adopt: enterAdopt, yard: enterYard, market: enterMarketPlace, routes: enterRoutes, map: enterMap, japan: enterJapan, shelter: enterShelter, walk: enterWalk, fetch: enterFetch, bath: enterBath, toy: enterToy })[mode](arg);
   refreshActs();
   updateHUD(); updateWxOverlay(); audioPlace(); setTimeout(maybeLevelUp, 300); markDirty();
 }

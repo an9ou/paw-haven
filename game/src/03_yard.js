@@ -758,7 +758,9 @@ const HM_DECOR = {
   'Paper Snowflake Garland': { prop: 'wnsnowflakes', at: [620, 196, 210, 56], vb: [300, 80], price: 90, room: 'yard', zone: 'wall', kind: 'decor', fest: 'snow', v28: true, story: 'Paper snowflakes cut by the Nguyen kids, no two the same. Some of them are dogs, if you squint.' },
   'Felt Holly Wreath': { prop: 'wnwreath', at: [880, 200, 72, 72], vb: [120, 120], price: 80, room: 'yard', zone: 'wall', kind: 'decor', fest: 'snow', v28: true, story: 'A round wreath of felt leaves and red felt berries. Real holly berries make dogs ill, so these ones are felt.' },
   'Red Wooden Sled': { prop: 'wnsled', at: [24, 506, 130, 78], vb: [200, 120], price: 110, room: 'yard', zone: 'floor', kind: 'decor', fest: 'snow', v28: true, story: 'A red sled for leaning on the fence. Nobody has ever pulled it, because a dog is always sitting in it.' },
-  'Kadomatsu Pair': { prop: 'nykadomatsu', at: [866, 404, 80, 100], vb: [160, 200], price: 120, room: 'yard', zone: 'floor', kind: 'decor', fest: 'newyear', v28: true, story: 'Bamboo, pine and plum by the gate to welcome the new year\'s luck. The dogs sniff it every morning to check the luck is still there.' }
+  'Kadomatsu Pair': { prop: 'nykadomatsu', at: [866, 404, 80, 100], vb: [160, 200], price: 120, room: 'yard', zone: 'floor', kind: 'decor', fest: 'newyear', v28: true, story: 'Bamboo, pine and plum by the gate to welcome the new year\'s luck. The dogs sniff it every morning to check the luck is still there.' },
+  // v2.11 Tokyo Trip (V211.md section 5.3): the Asakusa souvenir stand only (tokyo + fest 'tokyo', never at Barkitecture), placed with the v2.7 placement mode. Prop by TOKYO ART E (0 0 80 100, o.indoor)
+  'Lucky Cat': { prop: 'luckycat', at: [470, 436, 64, 80], vb: [80, 100], price: 150, room: 'house', zone: 'floor', kind: 'decor', fest: 'tokyo', tokyo: true, v211: true, story: 'A white maneki-neko with one paw raised to wave good luck in. The dogs wave back, in their own way.' }
 };
 const HM_PHOTO = [20, 15, 120, 84]; // the documented data-photo box inside the 160x140 frame
 function hmDecorFields() { if (S && (!S.decor || typeof S.decor !== 'object')) S.decor = {}; }

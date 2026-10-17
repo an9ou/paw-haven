@@ -69,7 +69,8 @@ for (const sc of SCENES) {
     ok(HOTS[sc].every((h) => (s.match(new RegExp(`data-hot="${h}"`, 'g')) || []).length === 1), what + ' has its data-hot spots once each');
     ok(/class="pa-wc-hit"/.test(s) && /class="pa-wc-hl"/.test(s), what + ' hot spots use the world C hit and hover shapes');
     ok(!/<text/.test(s), what + ' writes no text (no place name in the art)');
-    ok(/data-floor="60,42\d,940,590"/.test(s), what + ' carries data-floor');
+    ok(/data-floor="42\d,590,60,940"/.test(s), what + ' carries data-floor (y0,y1,x0,x1 like world D)');
+    if (sc === 'ueno' && o && o.time) ok((s.match(/data-hanami="(picnic|bench)"/g) || []).length === 1 && /data-hanami="picnic"/.test(s) === (o.season === 'spring' && o.time === 'day' && o.weather === 'sunny' || o.season === 'spring' && o.time === 'day' && o.weather === 'cloudy'), what + ': the picnic food only on a spring day without rain or snow, else the bench');
     if (o && o.time === 'night' && !o.weather) ok(/data-time="night"/.test(s), what + ' is marked night');
     seen.add(s.replace(/pwe\d+x\d+/g, 'ID').replace(/pwe\d+/g, 'ID').length);
     if (o === undefined || (o && o.time === 'day' && o.weather === 'sunny' && o.season === 'summer')) ids(s, what);
@@ -101,7 +102,7 @@ sec('scenes: details by option');
 
 sec('hot spots: inside the phone crop, at the back corners, out of the floor band middle');
 for (const sc of SCENES) {
-  const fb = PA.TOKYO_E.floor[sc]; ok(fb[0] === 60 && fb[2] === 940 && fb[1] >= 420 && fb[1] <= 430 && fb[3] === 590, sc + ': floor band x 60-940, y 42x-590');
+  const fb = PA.TOKYO_E.floor[sc]; ok(fb[2] === 60 && fb[3] === 940 && fb[0] >= 420 && fb[0] <= 430 && fb[1] === 590, sc + ': floor band [y0, y1, x0, x1] = [42x, 590, 60, 940]');
   for (const h of HOTS[sc]) {
     const [x, y, w, hh] = PA.TOKYO_E.hot[sc][h];
     ok(x >= 150 && x + w <= 850, `${sc} ${h}: inside the phone crop x 150-850 (${x}..${x + w})`);
@@ -110,6 +111,7 @@ for (const sc of SCENES) {
     ok(y + hh <= 520, `${sc} ${h}: at the back of the band`);
   }
 }
+{ const [, y, , hh] = PA.TOKYO_E.hot.ueno.hanami; ok(y + hh <= PA.TOKYO_E.floor.ueno[0], `ueno hanami: the deck sits behind the floor band's back line (bottom ${y + hh})`); }
 
 sec('props: ekistamp, luckycat, the tokyo postcard frame');
 for (const key of KEYS) for (const got of [true, false]) {

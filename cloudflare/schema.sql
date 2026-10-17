@@ -80,7 +80,7 @@ create table if not exists reset_codes (
 -- integers and fixed tokens (indices into the game's append-only lists, coat alleles), validated in cloudflare/worker.js.
 -- id is a random card id (user ids never leave the Worker). dogs: the Worker's own JSON of up to 4 validated dogs.
 -- Deleting an account deletes its card and its paws: every card route joins users (a card with no account is gone at once)
--- and tidy() removes the rows left behind.
+-- and dcTidy() (from the card routes) removes the rows left behind.
 create table if not exists cards (
   id         text primary key,
   user_id    text unique not null,
@@ -92,7 +92,7 @@ create table if not exists cards (
 );
 create index if not exists cards_updated on cards (updated_at);
 
--- One paw per card per day per account (guests too). from_id: the giver's user id. day: the UTC day, YYYY-MM-DD.
+-- One paw per card per day per account (guests too). from_id: the giver's user id. day: the Japan (JST) day, YYYY-MM-DD, the same day the game uses.
 create table if not exists paws (
   from_id text not null,
   card_id text not null,
@@ -100,3 +100,4 @@ create table if not exists paws (
   primary key (from_id, card_id, day)
 );
 create index if not exists paws_card on paws (card_id);
+create index if not exists paws_day on paws (day); -- tidy() drops paws older than 3 days

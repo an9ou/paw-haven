@@ -11,7 +11,7 @@ function d1(file) {
     async first(col) { const r = db.prepare(sql).get(...this.args); const o = r ? Object.assign({}, r) : null; return col && o ? o[col] : o; },
     async all() { return { results: db.prepare(sql).all(...this.args).map((r) => Object.assign({}, r)), success: true }; },
     async run() { const r = db.prepare(sql).run(...this.args); return { success: true, meta: { changes: r.changes, last_row_id: Number(r.lastInsertRowid) } }; },
-    exec() { return /^\s*(select|insert[\s\S]*returning|with)/i.test(sql) ? db.prepare(sql).all(...this.args) : db.prepare(sql).run(...this.args); }
+    exec() { return /^\s*(select|with)|\breturning\b/i.test(sql) ? db.prepare(sql).all(...this.args) : db.prepare(sql).run(...this.args); }
   });
   return {
     raw: db,
