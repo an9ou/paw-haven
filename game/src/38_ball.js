@@ -60,8 +60,23 @@ const blScale = (y) => { try { const s = rmScale(y); return typeof s === 'number
 const blSign = (o) => (o.face === 'left' ? -1 : 1);
 const blDist = (ax, ay, bx, by) => Math.hypot(ax - bx, (ay - by) * 1.6); // depth counts a little more: the floor is seen from the front
 // where the dogs wait: around the ball's home, the players side
-const BL_WAIT = [[-115, -25], [115, -25], [-40, -90], [40, -90], [-200, -70], [200, -70], [-280, -30], [280, -30]]; // a tight bunch round the player: a throw is long, so speed decides the race, not who stood nearer
-function blSpots() { return BL.dogs.map((o, i) => { const w = BL_WAIT[i % BL_WAIT.length]; return blPush(BL.hx + w[0], BL.hy + w[1], BL.zone); }); }
+const BL_WAIT = [[-105, -22], [105, -22], [-215, -82], [215, -82], [0, -95], [-320, -40], [320, -40], [0, -150]]; // two rows round the player, a dog's width apart: close enough that a throw is long and speed decides the race
+// each dog takes the next free spot of the bunch: not in a no-go box (the dog house, the bowl) and a dog's width from the spots already taken
+function blSpots() {
+  const taken = [], out = [];
+  BL.dogs.forEach((o, i) => {
+    let pick = null;
+    for (let k = 0; k < BL_WAIT.length && !pick; k++) {
+      const w = BL_WAIT[(i + k) % BL_WAIT.length], x = BL.hx + w[0], y = BL.hy + w[1], q = blPush(x, y, BL.zone);
+      if (Math.abs(q[0] - x) > 1 || Math.abs(q[1] - y) > 1) continue; // it stood in a box
+      if (taken.some((t) => Math.hypot(t[0] - q[0], (t[1] - q[1]) * 1.6) < 120)) continue;
+      pick = q;
+    }
+    if (!pick) { const w = BL_WAIT[i % BL_WAIT.length]; pick = blPush(BL.hx + w[0], BL.hy + w[1], BL.zone); }
+    taken.push(pick); out.push(pick);
+  });
+  return out;
+}
 
 /* ---------------- who plays ---------------- */
 function blEligible(d, lead) {
@@ -358,11 +373,7 @@ function blApplyDog(o) {
   try { rmSet(o.d, { x: o.x, y: o.y, face: o.face, pose: o.pose }); } catch (e) { /* the roam engine is not ready yet */ }
 }
 // phones: the crop is about 900 world units wide (the camera follows the ball), the extra sky above the scene takes the sky colour
-function blSky() {
-  const sc = $('#view > svg.world #sceneG'), r = sc && sc.querySelector('rect[width="1000"]'); let col = '';
-  if (r) { const f = r.getAttribute('fill') || '', m = /url\(#([^)]+)\)/.exec(f), gr = m && $('#view > svg.world #' + m[1]), st = gr && gr.querySelector('stop'); col = st ? (st.getAttribute('stop-color') || getComputedStyle(st).stopColor) : (f.startsWith('#') ? f : ''); }
-  view.style.background = col || '';
-}
+function blSky() { view.style.background = typeof rmSky === 'function' ? rmSky() : ''; } // ROAM's sky (or wall) colour of the scene
 function blCamera(dt) {
   if (!isPhone()) return;
   const dm = phSvgDims(); if (!dm.w || !dm.h) return;

@@ -59,9 +59,9 @@ require('./test_lib').run('phone_v210_ball', async (t) => {
 
       sec(`${tag}: Done puts the scene back`);
       await p().locator('#blDone').tap(); ok(await t.until(() => !window.__paw.bl.on, null, 3000), `${tag}: Done ends ball play`); await t.lu();
-      const E = await ev(() => ({ bar: document.getElementById('bar').hidden, busy: window.__paw.busy, bg: document.getElementById('view').style.background, tray: !!document.getElementById('blDone') }));
+      const E = await ev(() => ({ bar: document.getElementById('bar').hidden, busy: window.__paw.busy, vbW: document.querySelector('#view svg.world').viewBox.baseVal.width, tray: !!document.getElementById('blDone') }));
       ok(!E.bar && !E.busy && !E.tray, `${tag}: the bar is back, the dog is free, the ball tray is gone`);
-      ok(E.bg === '', `${tag}: the sky colour behind the wide crop is cleared`);
+      ok(E.vbW <= L.vbW + 1, `${tag}: the camera is the normal home crop again, not wider than the ball crop (${Math.round(E.vbW)} <= ${Math.round(L.vbW)})`);
     }
   }
 }, { device: 'iPhone 15' });
