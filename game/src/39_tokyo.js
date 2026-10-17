@@ -146,9 +146,18 @@ function tkTicketArt() { const a = typeof artReal === 'function' && artReal('ite
 
 /* ---- the Shinkansen ride: about 4 s, a tap skips it, instant with Motion off. Every dog's head at a window ---- */
 function tkRideDogs() { if (!S) return []; const lead = D(); return [lead].concat(S.dogs.filter((d) => d !== lead && !staysHome(d))).slice(0, 6); }
-function tkRideSVG(dir, heads, still) {
+// phones: the crop round the windows in use (at least three), so the heads are big on a narrow screen. [x, y, w, h] in scene units, null on desktop
+const TK_WIN_X = [70, 220, 370, 520, 670, 820];
+function tkRideCrop(n) {
+  if (!isPhone()) return null; const k = clamp(n, 3, 6), A = PA().SHINKANSEN_WINDOWS;
+  const wins = tkSceneReal('shinkansen') ? (Array.isArray(A) ? A.map((w) => (Array.isArray(w) ? w : [w.x, w.y, w.w, w.h])) : null) : TK_WIN_X.map((x) => [x - 14, 130, 140, 146]);
+  if (!wins || wins.length < k) return null;
+  const x0 = Math.max(0, wins[0][0] - 30), x1 = Math.min(1000, wins[k - 1][0] + wins[k - 1][2] + 30);
+  return [x0, 90, x1 - x0, 470];
+}
+function tkRideSVG(dir, heads, still, crop) {
   if (tkSceneReal('shinkansen')) return art('scene', 'shinkansen', { dir, heads, still, time: timePhase(), weather: weatherNow(), season: seasonNow() });
-  const W = [70, 220, 370, 520, 670, 820], hole = W.map((x) => `M${x} 130 h112 a14 14 0 0 1 14 14 v118 a14 14 0 0 1 -14 14 h-112 a14 14 0 0 1 -14 -14 v-118 a14 14 0 0 1 14 -14 z`).join(' ');
+  const W = TK_WIN_X, cx = crop ? crop[0] + crop[2] / 2 : 500, hole = W.map((x) => `M${x} 130 h112 a14 14 0 0 1 14 14 v118 a14 14 0 0 1 -14 14 h-112 a14 14 0 0 1 -14 -14 v-118 a14 14 0 0 1 14 -14 z`).join(' ');
   const hills = Array.from({ length: 14 }, (_, i) => `<path d="M${i * 220 - 40} 300 Q${i * 220 + 70} ${210 + (i % 3) * 18} ${i * 220 + 180} 300 Z" fill="${i % 2 ? '#BFD8A6' : '#A9CB8E'}" stroke="#5B3D32" stroke-width="2"/>`).join('');
   const poles = Array.from({ length: 22 }, (_, i) => `<path d="M${i * 140 + 30} 300 V170" stroke="#8A7468" stroke-width="4"/>`).join('');
   const fuji = '<g transform="translate(1500 300)"><path d="M-230 0 L-40 -190 Q0 -205 40 -190 L230 0 Z" fill="#9FB7D6" stroke="#5B3D32" stroke-width="3"/><path d="M-62 -168 L-40 -190 Q0 -205 40 -190 L62 -168 Q36 -150 20 -164 Q4 -146 -14 -162 Q-34 -146 -62 -168 Z" fill="#FFFBF3" stroke="#5B3D32" stroke-width="2.4"/></g>';
@@ -157,7 +166,7 @@ function tkRideSVG(dir, heads, still) {
   return `<svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg" class="tk-train"><defs><clipPath id="tkWin"><path d="${hole}"/></clipPath></defs><g clip-path="url(#tkWin)">${strip}</g>
     <path d="M0 0 H1000 V600 H0 Z ${hole}" fill="#F4EEE2" fill-rule="evenodd" stroke="#5B3D32" stroke-width="3"/><path d="M0 96 H1000" stroke="#3E6FB0" stroke-width="12"/><path d="M0 330 H1000" stroke="#3E6FB0" stroke-width="6"/>
     ${heads.map(head).join('')}${W.map((x) => `<path d="M${x - 10} 300 h132 v46 q0 14 -14 14 h-104 q-14 0 -14 -14 z" fill="#5E86B4" stroke="#5B3D32" stroke-width="3"/>`).join('')}
-    <rect x="0" y="420" width="1000" height="180" fill="#E3D2BA" stroke="#5B3D32" stroke-width="3"/><text x="500" y="500" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="54" fill="#5B3D32">${dir === 'home' ? 'Shinkansen home' : 'Shinkansen to Tokyo'}</text></svg>`;
+    <rect x="0" y="420" width="1000" height="180" fill="#E3D2BA" stroke="#5B3D32" stroke-width="3"/><text x="${cx}" y="500" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="${crop ? 44 : 54}" fill="#5B3D32">${dir === 'home' ? 'Shinkansen home' : 'Shinkansen to Tokyo'}</text></svg>`;
 }
 function tkRide(dir, done) {
   if (!S || TK.ride) return false; tkFields();
@@ -170,8 +179,10 @@ function tkRide(dir, done) {
     tkCare('ride', 700);
   };
   const el = document.createElement('div'); el.className = 'tk-ride' + (fast ? ' still' : ''); el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', dir === 'home' ? 'The Shinkansen ride home' : 'The Shinkansen ride to Tokyo');
-  el.innerHTML = `<div class="tk-ride-art">${tkRideSVG(dir, heads, fast)}</div><button class="btn tk-skip" type="button">${fast ? 'Off we go' : 'Tap to skip'}</button>`;
+  const crop = tkRideCrop(heads.length);
+  el.innerHTML = `<div class="tk-ride-art">${tkRideSVG(dir, heads, fast, crop)}</div><button class="btn tk-skip" type="button">${fast ? 'Off we go' : 'Tap to skip'}</button>`;
   stage.appendChild(el); TK.ride = { el, tok, dir };
+  const rs = crop && el.querySelector('.tk-ride-art > svg'); if (rs) rs.setAttribute('viewBox', crop.join(' '));
   el.addEventListener('click', () => { SFX.click(); finish(); });
   SFX.whoosh();
   if (fast) finish(); else tkLater(finish, TK_RIDE_MS);
