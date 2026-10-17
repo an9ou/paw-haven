@@ -11,7 +11,7 @@ const RM_BASE = 0.88; // rmScale at feet y 500: the one size for every dog (the 
 const RM_DEPTH = 0.0012; // a dog further back is a little smaller: y 400 = 0.88 of the base, y 590 = 1.1
 // feet y band per place [back line, front line] (V210.md section 5.2, tuned on screenshots); x is always 60 to 940
 const RM_ZONES = { yard: [404, 590], house: [414, 590], square: [414, 590], cafe: [414, 590], vet: [414, 590], salon: [410, 590], hilltop: [410, 590], park: [410, 590], woods: [410, 590], market: [452, 585], dogpark: [410, 590], pier: [410, 588], river: [452, 588], beach: [452, 588], fujihill: [424, 588],
-  shibuya: [430, 588], yoyogi: [420, 590], asakusa: [440, 588], ueno: [424, 588], tokyotower: [430, 588], odaiba: [452, 588], default: [424, 588] }; // v2.11 Tokyo (TRAVEL, tuned on the world D / E art)
+  shibuya: [426, 588], yoyogi: [422, 590], asakusa: [432, 588], ueno: [426, 588], tokyotower: [430, 588], odaiba: [434, 588], default: [424, 588] }; // v2.11 Tokyo (TRAVEL, tuned on the world D / E art)
 const RM_ZONES_PH = { yard: [424, 594] };
 const RM_TAP = [-88, -170, 176, 180]; // every dog's tap rect around its feet at scale 1 (DX + 44, DY + 35, DW - 88, 180): the drawn body, so four dogs fit
 const RM_WALK = 150, RM_RUN = 360; // world units a second
