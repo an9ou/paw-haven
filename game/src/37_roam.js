@@ -43,13 +43,15 @@ function rmWorldBox(svg, M, el) {
   const a = new DOMPoint(r.left, r.top).matrixTransform(M), b = new DOMPoint(r.right, r.bottom).matrixTransform(M);
   return [Math.min(a.x, b.x), Math.min(a.y, b.y), Math.abs(b.x - a.x), Math.abs(b.y - a.y)];
 }
+// a seasonal decoration (a festival item: fest in HM_DECOR, the Halloween 2026 ones; tag 'fest') keeps every dog's tap rect off it, as the seasonal props do
+const rmFestDecor = (el) => { const n = el.closest('[data-decor]').dataset.decor; return !!(HM_DECOR[n] && HM_DECOR[n].fest); };
 function rmScan() {
   RM.noAt = performance.now() + 3000; const svg = $('#view > svg.world'); if (!svg || !svg.getScreenCTM()) { RM.no = null; return; }
   const M = svg.getScreenCTM().inverse(), out = [];
   const Q = '.hot, [data-hot], [data-shop], [data-decor], [data-drift], [data-pile], [role="button"], .fs-hit, #mailboxG';
   svg.querySelectorAll(Q).forEach((el) => {
     if (el.closest('#pack, #fx, #ballLayer, #zzz, #fbPackBowls') || el.parentElement.closest(Q)) return; // dogs are not no-go, and a nested hot thing is covered by its parent
-    const b = rmWorldBox(svg, M, el); if (b && b[2] > 4 && b[3] > 4 && b[1] < 600 && b[1] + b[3] > 0) out.push(b.concat(el.closest('[data-decor]') ? 'decor' : el.closest('[data-drift], [data-pile], #wnDogG, #hwPopG') ? 'prop' : el.id || el.dataset.hot || el.dataset.shop || 'hot'));
+    const b = rmWorldBox(svg, M, el); if (b && b[2] > 4 && b[3] > 4 && b[1] < 600 && b[1] + b[3] > 0) out.push(b.concat(el.closest('[data-decor]') ? (rmFestDecor(el) ? 'fest' : 'decor') : el.closest('[data-drift], [data-pile], #wnDogG, #hwPopG') ? 'prop' : el.id || el.dataset.hot || el.dataset.shop || 'hot'));
   });
   [...(($('#placeBtns') || {}).children || [])].concat([$('#phPeek'), $('#rmLookL'), $('#rmLookR')]).forEach((el) => { if (!el || el.hidden) return; const b = rmWorldBox(svg, M, el); if (b && b[1] < 600) out.push(b.concat('btn')); });
   if (S.place === 'yard' && !out.some((b) => b[4] === 'houseG')) out.push([620, 330, 240, 200, 'house']);
@@ -68,7 +70,7 @@ function rmSoft(x, y, k, flat) { // flat: no depth rule (the last fallback when 
     const A = b[2] * b[3], base = b[1] + b[3];
     if (!flat && b[4] !== 'btn' && A < RM_HUGE && base > y0 && y < base && T[1] < base && Math.min(T[0] + T[2], b[0] + b[2] - 6) - Math.max(T[0], b[0] + 6) > T[2] * 0.2 && T[1] + T[3] > b[1]) return true; // a fifth of its width over the prop
     if (b[4] === 'scene' || A >= RM_HUGE) continue;
-    const pr = b[4] === 'prop' || b[4] === 'decor', o = rmOver(T, pr ? [b[0] - 3, b[1] - 3, b[2] + 6, b[3] + 6] : b); if (!o) continue;
+    const pr = b[4] === 'prop' || b[4] === 'decor' || b[4] === 'fest', o = rmOver(T, pr ? [b[0] - 3, b[1] - 3, b[2] + 6, b[3] + 6] : b); if (!o) continue;
     if (pr ? o > (b[4] === 'decor' ? A * 0.1 : 0) : A < 15000 ? o > A * 0.08 : o > A * 0.4 || (b[0] + b[2] / 2 > T[0] && b[0] + b[2] / 2 < T[0] + T[2] && b[1] + b[3] / 2 > T[1] && b[1] + b[3] / 2 < T[1] + T[3])) return true;
   }
   return false;
@@ -99,7 +101,7 @@ function rmLeast(d, x0, y0) {
   const z = rmZoneOf(S.place), L = D(); let best = null, bv = 1e9;
   for (let y = z.y0; y <= z.y1; y += 14) for (let x = z.x0; x <= z.x1; x += 20) {
     if (rmHard(x, y)) continue; const k = rmScale(y), T = rmTapBox(x, y, k), A = T[2] * T[3]; if (T[0] < 4 || T[0] + T[2] > 996) continue; let v = 0;
-    rmBoxes().forEach((b) => { const Ab = b[2] * b[3]; if (b[4] === 'scene' || Ab >= RM_HUGE) return; const o = rmOver(T, b); if (o) v += (o / Ab) * (b[4] === 'prop' || b[4] === 'decor' || Ab < 15000 ? 3 : 1); });
+    rmBoxes().forEach((b) => { const Ab = b[2] * b[3]; if (b[4] === 'scene' || Ab >= RM_HUGE) return; const o = rmOver(T, b); if (o) v += (o / Ab) * (b[4] === 'prop' || b[4] === 'decor' || b[4] === 'fest' || Ab < 15000 ? 3 : 1) + (b[4] === 'fest' ? 3 : 0); }); // a seasonal decoration costs more than standing on a pack dog
     rmDogs().forEach((o) => { if (o === d || !rmSt(o).seeded) return; const [ox, oy, ok] = rmDest(o), w = rmOver(T, rmTapBox(ox, oy, ok)) / A; if (w) v += w * (o === L ? 3 : 1); });
     if (x0 != null) v += Math.hypot(x - x0, y - y0) / 5000; if (v < bv) { bv = v; best = [x, y]; }
   }
@@ -455,8 +457,9 @@ function rmCropFit(vw, native) {
   // the smallest side is read once per scene build, before the seasonal props come (they size their own 48 px tap rects): a later read would narrow
   // the crop after the festival stall or the Fortune box had picked their spot inside it
   const svg = $('#view > svg.world');
-  if (!RM.side || RM.side.svg !== svg) { rmScan(); const small = (RM.no || []).filter((b) => b[4] !== 'btn' && b[4] !== 'scene' && b[4] !== 'msCardG' && b[4] !== 'prop' && b[4] !== 'decor' && b[2] < 330 && b[3] < 270).map((b) => Math.min(b[2], b[3])); RM.side = { svg, v: small.length ? Math.min(...small) : 1e9 }; } // the clipboard grows its own 48 px tap rect (24_missions.js)
-  const side = RM.side.v; return clamp(Math.min(RM_CROP, native * RM_WIDEN, (vw * side) / 46), native, RM_CROP);
+  if (!RM.side || RM.side.svg !== svg) { rmScan(); const small = (RM.no || []).filter((b) => b[4] !== 'btn' && b[4] !== 'scene' && b[4] !== 'msCardG' && b[4] !== 'prop' && b[4] !== 'decor' && b[4] !== 'fest' && b[2] < 330 && b[3] < 270).map((b) => Math.min(b[2], b[3])); RM.side = { svg, v: small.length ? Math.min(...small) : 1e9 }; } // the clipboard grows its own 48 px tap rect (24_missions.js)
+  // the nursery basket comes after the read (13c_litter.js, on yard:enter): its own hit rect counts whenever a litter is drawn
+  const nb = (S.place === 'yard' || S.place === 'house') && (S.litters || []).some((x) => dogById(x.mum)), side = Math.min(RM.side.v, nb ? Math.min(NURSERY_AT.hit[2], NURSERY_AT.hit[3]) : 1e9); return clamp(Math.min(RM_CROP, native * RM_WIDEN, (vw * side) / 46), native, RM_CROP);
 }
 // the world x span of every dog's tap rect (and the bowl at home): where the phone camera centres
 function rmSpan() {

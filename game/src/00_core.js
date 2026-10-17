@@ -790,7 +790,9 @@ function say(text, wx, wy, ms = 3600) {
   const p = worldToStage(svg, wx, wy); const sw = stage.clientWidth, bw = bubble.offsetWidth, bh = bubble.offsetHeight;
   const vtop = view.offsetTop;
   bubble.style.left = clamp(p.x - 40, 6, sw - bw - 6) + 'px';
-  { const w2 = bubble.offsetWidth; if (parseFloat(bubble.style.left) + w2 > sw - 6) bubble.style.left = Math.max(6, sw - 6 - w2) + 'px'; } // v2.8: it re-wraps narrower when it moves right, so it is measured again and kept on screen
+  // v2.8: it re-wraps narrower when it moves right, so it is measured again and kept on screen (v2.10: at that width, or it would grow back to the edge)
+  const onScreen = () => { const w2 = bubble.offsetWidth; if (parseFloat(bubble.style.left) + w2 > sw - 6) { bubble.style.maxWidth = w2 + 'px'; bubble.style.left = Math.max(6, sw - 6 - w2) + 'px'; } };
+  onScreen();
   bubble.style.top = Math.max(vtop + 4, p.y - bubble.offsetHeight - 16) + 'px';
   if (isPhone()) { // v2.3: a bubble never sits on the location chip (top-left of the scene)
     const st = $('#status'), sr = st && !st.hidden ? st.getBoundingClientRect() : null, sg = stage.getBoundingClientRect();
@@ -798,7 +800,7 @@ function say(text, wx, wy, ms = 3600) {
       if (bt < cb && bl < sr.right - sg.left + 6 && bl + bw > sr.left - sg.left - 6) bubble.style.top = cb + 'px'; }
     const pk = $('#phPeek'), pq = pk && !pk.hidden && pk.offsetParent ? pk.getBoundingClientRect() : null; // UI/UX H9: nor under the look-right button
     if (pq) { const bt = parseFloat(bubble.style.top), bl = parseFloat(bubble.style.left), bh = bubble.offsetHeight;
-      if (bt < pq.bottom - sg.top + 4 && bt + bh > pq.top - sg.top - 4 && bl + bw > pq.left - sg.left - 8) bubble.style.left = Math.max(6, pq.left - sg.left - bw - 8) + 'px'; }
+      if (bt < pq.bottom - sg.top + 4 && bt + bh > pq.top - sg.top - 4 && bl + bw > pq.left - sg.left - 8) { bubble.style.left = Math.max(6, pq.left - sg.left - bw - 8) + 'px'; onScreen(); } } // (it re-wraps wider further left)
     // UI/UX T5: in town places the dog's own lines go under the dog, so they never cover the shop signs above its head (townBubbleBelowDog, 03_yard.js); Mt. Fuji Lookout has no signs, its line stays over the head
     if (['yard', 'market'].includes(cur.mode) && S && !['yard', 'house', 'fujihill'].includes(S.place) && typeof dogHeadWorld === 'function') { const h = dogHeadWorld(); if (Math.abs(h.x - wx) < 40 && Math.abs(h.y - wy) < 40) townBubbleBelowDog(); }
   }

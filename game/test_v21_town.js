@@ -88,7 +88,7 @@ require('./test_lib').run('v21_town', async (t) => {
     const m = await ev(() => {
       const r = (el) => { const b = el.getBoundingClientRect(); return [b.left, b.top, b.right, b.bottom]; }, ar = (a) => (a[2] - a[0]) * (a[3] - a[1]);
       const inter = (a, b) => Math.max(0, Math.min(a[2], b[2]) - Math.max(a[0], b[0])) * Math.max(0, Math.min(a[3], b[3]) - Math.max(a[1], b[1]));
-      const v = r(document.querySelector('#visitorG > rect')), tag = r(document.querySelector('#visitorG .vtag rect')), packs = [...document.querySelectorAll('#pack .packdog > .pd-wander > rect')].map(r), me = r(document.querySelector('#dogHit'));
+      const v = r(document.querySelector('#visitorG > rect')), tag = r(document.querySelector('#visitorG .vtag rect')), packs = [...document.querySelectorAll('#pack .packdog .pd-wander > rect')].map(r), me = r(document.querySelector('#dogHit'));
       const others = packs.concat([me]);
       return { frac: Math.max(...others.map((o) => inter(v, o) / ar(v))), tagFrac: Math.max(...packs.map((o) => inter(tag, o) / ar(tag))), n: packs.length, tagW: tag[2] - tag[0] };
     });
