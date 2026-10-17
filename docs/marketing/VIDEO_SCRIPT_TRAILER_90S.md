@@ -15,7 +15,7 @@ Written 17 Oct 2026. An **original** script in the style of a cozy console-game 
 | Picture | Bella says | On screen |
 |---|---|---|
 | A sketchbook opens. Pencil lines draw the town, Mt. Fuji on the skyline, morning light. | "Welcome to a little town drawn in pencil, where every fence post was sketched with care." | |
-| A crayon scribble: Noodle the dachshund appears, very proud. | "And where every dog... drew themselves." | **Doodle Doggo** |
+| A crayon scribble: Noodle the dachshund appears, very proud. | "And where every dog... drew themselves!" | **Doodle Doggo** |
 
 ## 2. Meet the dogs (0:09 to 0:30)
 
@@ -23,26 +23,26 @@ Quick, bouncy cuts. Each dog gets a name card in its own colour, and its own lin
 
 | Picture | Bella says | Name card |
 |---|---|---|
-| Noodle, very long, walking in from off screen... still walking. | "There's Noodle. The rest of him is on its way." | **Noodle** · dachshund · curious digger |
+| Noodle, very long, walking in from off screen... still walking. | "There's Noodle! The rest of him is on its way." | **Noodle** · dachshund · curious digger |
 | Biscuit stares at a bowl. Bubble: "is that... a snack?" | "Biscuit, who believes everything is a snack." | **Biscuit** · corgi · snack inspector |
 | Mochi sits, unimpressed. Bubble: "heh." | "Mochi, who could leave any time. She chooses not to." | **Mochi** · shiba · proud and dramatic |
-| Frost, head up. Bubble: "AWOOO." | "Frost, who has opinions. Loud ones." | **Frost** · husky · chatty |
-| Fast montage of the rest: Sunny, Dumpling, Peanut, Rocket, Bagel, Pretzel, Scout, Cloud, Brioche, Pepper. | "Fourteen dogs in all, each with their own voice, size and very silly joke." | **14 dogs to meet** |
-| The shelter playroom: Pepper looks up hopefully. | "Find the one that's yours, and adopt them for free." | **Adopt for free** |
+| Frost, head up. Bubble: "AWOOO." | "Frost, who has opinions. Loud ones!" | **Frost** · husky · chatty |
+| Fast montage of the rest: Sunny, Dumpling, Peanut, Rocket, Bagel, Pretzel, Scout, Cloud, Brioche, Pepper. | "Fourteen dogs in all, each with their own voice, size, and very silly joke." | **14 dogs to meet** |
+| The shelter playroom: Pepper looks up hopefully. | "Find the one that's yours, and adopt them for free!" | **Adopt for free** |
 
 ## 3. Your day together (0:30 to 0:59)
 
 | Picture | Bella says | On screen |
 |---|---|---|
 | Feeding, a belly rub with floating hearts, the bubble bath, a nap in the dog house. | "Feed them, cuddle them, give them a bath, and tuck them in for a nap." | **Care for your pup** |
-| The wardrobe: Noodle tries the Witch Hat, then heart sunglasses. | "Dress them up. Crayon dogs love a hat." | **Dress up** |
-| Pack fetch: Noodle catches the ball, Biscuit and Sunny chase along. | "Bring the whole pack along to play." | **Play together** |
-| The walk: hop over a log, coins, a dig spot, a treasure. | "Head out on walks around town, and dig up hidden treasure." | **Walks and treasure** |
-| The Mt. Fuji Lookout at dusk. Noodle's bubble: "Somebody should dig a tunnel through that mountain. I volunteer." | "Visit the Mt. Fuji Lookout, and watch the sun go down." | **Explore the town** |
-| The veggie patch, then the kitchen pot. | "Grow a garden and cook treats that are safe for dogs." | **Garden and kitchen** |
-| The cottage with beds and furniture, then the yard full of dogs. | "Decorate your home, and make room for a bigger family." | **Home and pack** |
+| The wardrobe: Noodle tries the Witch Hat, then heart sunglasses. | "Dress them up! Crayon dogs love a hat." | **Dress up** |
+| Pack fetch: Noodle catches the ball, Biscuit and Sunny chase along. | "Bring the whole pack along to play!" | **Play together** |
+| The walk: Noodle hops over a log. | "Head out on walks around town, and hop over anything in your way." | **Walks around town** |
+| The Mt. Fuji Lookout at dusk. Noodle's bubble: "Somebody should dig a tunnel through that mountain. I volunteer." | "Visit the Mount Fuji Lookout, and watch the sun go down." | **Explore the town** |
+| The veggie patch, then the kitchen pot. | "Grow a garden, and cook treats that are safe for dogs." | **Garden & kitchen** |
+| The cottage with beds and furniture, then the yard full of dogs. | "Decorate your home, and make room for a bigger family." | **Home & pack** |
 | Two dogs on a playdate, then their puppies, coats mixed from both parents. | "Plan puppy playdates, where every coat is passed down for real." | **Puppy playdates** |
-| Seasons montage: leaf piles, the Pumpkin Patch, snow and a snowdog, a New Year card. | "And as the seasons change, the town changes too." | **Seasons and festivals** |
+| Seasons montage: leaf piles, the Pumpkin Patch, snow and a snowdog, a New Year card. | "And as the seasons change, the town changes too!" | **Seasons & festivals** |
 | Photo mode: a crayon postcard of the pack is saved. | "Snap a postcard of your best friends to keep." | **Photo mode** |
 
 ## 4. How to play (0:59 to 1:19)
@@ -51,8 +51,8 @@ Slower, clearer. A big numbered card for each step, the real screen beside it.
 
 | Picture | Bella says | On screen |
 |---|---|---|
-| The title screen, a finger taps "New game". | "Getting started is easy. Tap New game..." | **1** Tap New game |
-| The adoption carousel, a tap on a head, then Adopt. | "...pick your pup and give them a name." | **2** Pick a pup |
+| The title screen, a finger taps "New game". | "Getting started is easy! Tap New game..." | **1** Tap New game |
+| The adoption carousel, a tap on a head, then Adopt. | "...pick your pup, and give them a name." | **2** Pick a pup |
 | The bottom bar: Feed, Play, Care, Walk, Wardrobe, Journal, Map light up one by one. | "Everything you need is right along the bottom." | **3** Feed · Play · Care · Walk |
 | A finger rubs the dog: hearts. | "Rub your dog to give them a pet." | **Rub to pet** |
 | On a walk: tap to hop, hold to jump further, swipe down to duck. | "On walks, tap to hop, hold to jump further, and swipe down to duck." | **Tap · hold · swipe** |
@@ -63,8 +63,8 @@ Slower, clearer. A big numbered card for each step, the real screen beside it.
 
 | Picture | Bella says | On screen |
 |---|---|---|
-| The whole pack on the lawn at dusk, Mt. Fuji behind, the logo fades in. | "Doodle Doggo. A cozy dog game, free in your browser, on your phone or computer." | **Doodle Doggo** / free · phone or computer |
-| *Before launch:* Noodle in heart sunglasses. | "Coming soon. Follow along, so you don't miss a thing!" | **Coming soon** |
+| The whole pack on the lawn at dusk, Mt. Fuji behind, the logo fades in. | "Doodle Doggo! A cozy dog game, free in your browser, on your phone or computer." | **Doodle Doggo** / free · phone or computer |
+| *Before launch:* Noodle in heart sunglasses. | "Coming soon! Follow along, so you don't miss a thing!" | **Coming soon** |
 | *After launch:* the same shot. | "Come and meet your new best friend. Play free today!" | **Play free · doodledoggo.app** |
 
 ---
@@ -73,13 +73,13 @@ Slower, clearer. A big numbered card for each step, the real screen beside it.
 
 > Welcome to a little town drawn in pencil, where every fence post was sketched with care. And where every dog... drew themselves.
 >
-> There's Noodle. The rest of him is on its way. Biscuit, who believes everything is a snack. Mochi, who could leave any time. She chooses not to. Frost, who has opinions. Loud ones. Fourteen dogs in all, each with their own voice, size and very silly joke. Find the one that's yours, and adopt them for free.
+> There's Noodle! The rest of him is on its way. Biscuit, who believes everything is a snack. Mochi, who could leave any time. She chooses not to. Frost, who has opinions. Loud ones! Fourteen dogs in all, each with their own voice, size, and very silly joke. Find the one that's yours, and adopt them for free!
 >
-> Feed them, cuddle them, give them a bath, and tuck them in for a nap. Dress them up. Crayon dogs love a hat. Bring the whole pack along to play. Head out on walks around town, and dig up hidden treasure. Visit the Mt. Fuji Lookout, and watch the sun go down. Grow a garden and cook treats that are safe for dogs. Decorate your home, and make room for a bigger family. Plan puppy playdates, where every coat is passed down for real. And as the seasons change, the town changes too. Snap a postcard of your best friends to keep.
+> Feed them, cuddle them, give them a bath, and tuck them in for a nap. Dress them up! Crayon dogs love a hat. Bring the whole pack along to play! Head out on walks around town, and hop over anything in your way. Visit the Mount Fuji Lookout, and watch the sun go down. Grow a garden, and cook treats that are safe for dogs. Decorate your home, and make room for a bigger family. Plan puppy playdates, where every coat is passed down for real. And as the seasons change, the town changes too! Snap a postcard of your best friends to keep.
 >
-> Getting started is easy. Tap New game, pick your pup and give them a name. Everything you need is right along the bottom. Rub your dog to give them a pet. On walks, tap to hop, hold to jump further, and swipe down to duck. And don't worry. Nothing bad ever happens here.
+> Getting started is easy! Tap New game, pick your pup, and give them a name. Everything you need is right along the bottom. Rub your dog to give them a pet. On walks, tap to hop, hold to jump further, and swipe down to duck. And don't worry. Nothing bad ever happens here.
 >
-> Doodle Doggo. A cozy dog game, free in your browser, on your phone or computer. Coming soon. Follow along, so you don't miss a thing!
+> Doodle Doggo! A cozy dog game, free in your browser, on your phone or computer. Coming soon! Follow along, so you don't miss a thing!
 
 ---
 

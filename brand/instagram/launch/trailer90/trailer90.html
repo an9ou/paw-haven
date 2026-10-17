@@ -1,0 +1,157 @@
+<!doctype html>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --ink:#5B3D32; --pink:#F28FA5; --paper:#FFF8EC; --muted:#8A7468; }
+  html,body { margin:0; background:var(--paper); }
+  #stage { position:relative; overflow:hidden; background:var(--paper); font-family:'Caveat',cursive; color:var(--ink); }
+  .P #stage { width:1080px; height:1920px; } .L #stage { width:1920px; height:1080px; }
+  #dots { position:absolute; inset:0; background-image:radial-gradient(circle, #E3D2BA 1.6px, transparent 2px); background-size:22px 22px; }
+  .abs { position:absolute; left:0; top:0; transform-origin:50% 50%; }
+  .sw { position:absolute; background:var(--pink); opacity:.42; border-radius:40% 60% 50% 45% / 60% 40% 55% 45%; transform-origin:50% 50%; }
+  /* the phone */
+  #phone { position:absolute; transform-origin:50% 60%; }
+  .P #phone { left:160px; top:170px; width:760px; height:1250px; } .L #phone { left:1180px; top:40px; width:600px; height:986px; }
+  #phone .bez { position:absolute; inset:0; border-radius:64px; background:#FFFDF7; box-shadow:0 18px 40px rgba(91,61,50,.28); border:7px solid var(--ink); }
+  .L #phone .bez { border-radius:52px; }
+  #phone .scr { position:absolute; left:18px; top:18px; right:18px; bottom:18px; border-radius:46px; overflow:hidden; background:#fff; border:3px solid rgba(91,61,50,.35); }
+  .L #phone .scr { left:14px; top:14px; right:14px; bottom:14px; border-radius:38px; }
+  #phone img { position:absolute; left:0; top:0; width:100%; height:100%; object-fit:cover; }
+  #barHi { position:absolute; left:1%; right:1%; bottom:0.5%; height:9.5%; border:7px solid #F2C14E; border-radius:26px; box-shadow:0 0 0 6px rgba(242,193,78,.35); display:none; }
+  /* stickers: the feature chip and the dog name card */
+  #chip { position:absolute; transform-origin:0 50%; white-space:nowrap; }
+  #chip .in { display:inline-flex; align-items:center; gap:20px; background:#FFE3A1; border:6px solid var(--ink); border-radius:30px; padding:10px 34px 16px; box-shadow:0 8px 0 rgba(91,61,50,.2); font-weight:700; }
+  #chip .num { display:inline-flex; align-items:center; justify-content:center; width:1.05em; height:1.05em; border-radius:50%; background:#E8863A; color:#FFF8EC; border:5px solid var(--ink); font-size:.82em; padding-bottom:6px; }
+  .P #chip { left:60px; top:96px; font-size:74px; } .L #chip { left:110px; top:250px; font-size:96px; }
+  #name { position:absolute; transform-origin:0 50%; }
+  #name .in { display:inline-block; background:#FFFBF2; border:6px solid var(--ink); border-radius:34px; padding:8px 40px 18px; box-shadow:0 8px 0 rgba(91,61,50,.2); }
+  #name .n { font-weight:700; line-height:1; } #name .k { color:var(--muted); font-weight:600; line-height:1.05; }
+  .P #name { left:60px; top:60px; } .P #name .n { font-size:118px; } .P #name .k { font-size:52px; }
+  .L #name { left:110px; top:190px; } .L #name .n { font-size:150px; } .L #name .k { font-size:64px; }
+  /* subtitles */
+  #sub { position:absolute; text-align:center; }
+  .P #sub { left:60px; width:960px; top:1440px; } .L #sub { left:80px; width:1020px; top:760px; }
+  #sub span { display:inline-block; background:#FFFBF2; border:5px solid var(--ink); border-radius:34px; padding:10px 30px 16px; font-weight:700; line-height:1.08; box-shadow:0 8px 0 rgba(91,61,50,.18); white-space:normal; }
+  .P #sub span { font-size:60px; } .L #sub span { font-size:64px; }
+  .hk #sub { top:auto; } .P.hk #sub { top:1500px; } .L.hk #sub { left:260px; width:1400px; top:930px; }
+  /* the sketchbook opening */
+  #book { position:absolute; width:1000px; height:600px; transform-origin:0 0; }
+  .P #book { left:40px; top:380px; } .L #book { left:250px; top:40px; }
+  #book .page { position:absolute; inset:-22px; background:#FFFDF7; border-radius:18px; box-shadow:0 14px 34px rgba(91,61,50,.22); }
+  #book .art { position:absolute; inset:0; overflow:hidden; border-radius:6px; }
+  #book .art > div { position:absolute; inset:0; }
+  #book svg.world { width:1000px; height:600px; display:block; }
+  #pencilArt svg { filter: grayscale(1) contrast(1.35) brightness(1.08); }
+  .txt { position:absolute; text-align:center; font-weight:700; line-height:1; white-space:nowrap; }
+</style>
+<body>
+<div id="stage">
+  <div id="dots"></div><div id="doodles"></div>
+  <div id="hook">
+    <div id="book"><div class="page"></div><div class="art"><div id="pencilArt"></div><div id="colorArt"></div></div><div class="abs" id="pencil"></div></div>
+    <div class="abs" id="hookDog"></div>
+    <div id="hookLogo" class="txt"><span style="display:inline-block;transform:rotate(-3deg)">Doodle</span> <span style="display:inline-block;transform:rotate(2deg)">Doggo</span></div>
+  </div>
+  <div id="play"><div id="phone"><div class="bez"></div><div class="scr"><img id="frame"><div id="barHi"></div></div></div></div>
+  <div id="chip"><span class="in"><span class="num" id="chipNum"></span><span id="chipT"></span></span></div>
+  <div id="name"><span class="in"><div class="n" id="nameN"></div><div class="k" id="nameK"></div></span></div>
+  <div id="end">
+    <div class="sw" id="esw"></div>
+    <div class="txt" id="e0"><span style="display:inline-block;transform:rotate(-3deg)">Doodle</span> <span style="display:inline-block;transform:rotate(2deg)">Doggo</span></div>
+    <div class="txt" id="e1"></div><div class="txt" id="e2"></div>
+    <div class="abs" id="endDog"></div><div class="txt" id="e3"></div>
+  </div>
+  <div id="sub"><span id="subT"></span></div>
+</div>
+<script src="../../../../dogs/pawart_dogs.js"></script>
+<script src="../../../../world/pawart_world_a.js"></script>
+<script src="../../../../world/pawart_world_b.js"></script>
+<script src="../../../../world/pawart_world_c.js"></script>
+<script>
+const LAND = location.hash === '#L'; document.body.className = LAND ? 'L' : 'P';
+const WW = LAND ? 1920 : 1080, HH = LAND ? 1080 : 1920;
+const PA = window.PawArt, $ = (id) => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x)), seg = (t, a, b) => clamp((t - a) / (b - a));
+const eo3 = (x) => 1 - Math.pow(1 - clamp(x), 3);
+const eoB = (x) => { x = clamp(x); const c1 = 1.9, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+const inner = (svg) => svg.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
+const dogSvg = (key, opts, w) => `<svg viewBox="22 40 214 160" width="${w}" height="${w * 160 / 214}" overflow="visible">${inner(PA.dog(key, Object.assign({ anim: false }, opts)))}</svg>`;
+// ---- the opening: the real yard art, pencil then colour; Noodle scribbled in with crayon ----
+const yard = PA.scene('yard', { time: 'day', weather: 'sunny', season: 'autumn', halloween: false, jp: true });
+$('pencilArt').innerHTML = yard; $('colorArt').innerHTML = yard;
+document.querySelectorAll('#book svg').forEach((s) => { s.setAttribute('width', 1000); s.setAttribute('height', 600); s.classList.add('world'); });
+if (LAND) $('book').style.transform = 'scale(1.42)';
+$('pencil').innerHTML = '<svg width="150" height="150" viewBox="0 0 100 100"><g transform="rotate(35 50 50)"><rect x="42" y="2" width="16" height="70" rx="3" fill="#F2C14E" stroke="#5B3D32" stroke-width="3"/><rect x="42" y="2" width="16" height="12" rx="3" fill="#F28FA5" stroke="#5B3D32" stroke-width="3"/><path d="M42 72 L50 92 L58 72Z" fill="#F4E0BF" stroke="#5B3D32" stroke-width="3" stroke-linejoin="round"/><path d="M47.5 86 L50 92 L52.5 86Z" fill="#5B3D32"/></g></svg>';
+const W0 = LAND ? 640 : 760, H0 = W0 * 160 / 214;
+let scrib = ''; { const rows = 13; for (let i = 0; i < rows; i++) { const y = 18 + i * (H0 - 30) / (rows - 1); scrib += (i ? 'L' : 'M') + (i % 2 ? W0 - 10 : 10) + ' ' + y.toFixed(1) + ' '; } }
+$('hookDog').innerHTML = `<svg width="${W0}" height="${H0}" viewBox="0 0 ${W0} ${H0}" overflow="visible"><defs><mask id="scr" maskUnits="userSpaceOnUse" x="-50" y="-80" width="${W0 + 100}" height="${H0 + 160}"><path id="scrP" d="${scrib}" fill="none" stroke="#fff" stroke-width="${LAND ? 82 : 96}" stroke-linecap="round" stroke-linejoin="round"/></mask></defs><g mask="url(#scr)">${dogSvg('dachs', { pose: 'happy' }, W0)}</g></svg>`;
+const scrLen = $('scrP').getTotalLength(); $('scrP').style.strokeDasharray = scrLen; $('scrP').style.strokeDashoffset = scrLen;
+$('endDog').innerHTML = dogSvg('dachs', { pose: 'happy', outfit: { eyes: 'Heart Sunglasses', neck: 'Red Bandana' } }, LAND ? 760 : 720);
+// layout bits that differ
+const put = (id, css) => Object.assign($(id).style, css);
+if (LAND) {
+  put('hookLogo', { left: '0px', width: WW + 'px', top: '40px', fontSize: '120px' });
+  put('e0', { left: '120px', width: '900px', top: '180px', fontSize: '120px' }); put('e1', { left: '120px', width: '900px', top: '340px' }); put('e2', { left: '120px', width: '900px', top: '560px' }); put('e3', { left: '120px', width: '900px', top: '760px', fontSize: '60px', color: 'var(--muted)', fontWeight: 600 });
+  put('esw', { left: '180px', top: '560px', width: '780px', height: '130px' });
+} else {
+  put('hookLogo', { left: '0px', width: WW + 'px', top: '170px', fontSize: '150px' });
+  put('e0', { left: '0px', width: '1080px', top: '200px', fontSize: '110px' }); put('e1', { left: '0px', width: '1080px', top: '350px' }); put('e2', { left: '0px', width: '1080px', top: '575px' }); put('e3', { left: '0px', width: '1080px', top: '1300px', fontSize: '62px', color: 'var(--muted)', fontWeight: 600 });
+  put('esw', { left: '140px', top: '575px', width: '800px', height: '130px' });
+}
+// floating doodles
+const heart = '<svg viewBox="-18 -16 36 32" width="60" height="53"><path d="M0 12 C-16 0 -12 -14 0 -6 C12 -14 16 0 0 12Z" fill="#F28FA5" fill-opacity=".8" stroke="#5B3D32" stroke-width="2.4" stroke-linejoin="round"/></svg>';
+const spark = '<svg viewBox="-16 -16 32 32" width="56" height="56"><path d="M0 -14 Q1.5 -1.5 14 0 Q1.5 1.5 0 14 Q-1.5 1.5 -14 0 Q-1.5 -1.5 0 -14Z" fill="#FFE3A1" stroke="#5B3D32" stroke-width="2.4" stroke-linejoin="round"/></svg>';
+const paw = '<svg viewBox="-16 -16 32 32" width="60" height="60"><g stroke="#5B3D32" stroke-width="2.4" fill="#E0D5F0"><ellipse cx="0" cy="6" rx="9" ry="7.5"/><circle cx="-10" cy="-5" r="3.8"/><circle cx="-3.5" cy="-10" r="3.8"/><circle cx="3.5" cy="-10" r="3.8"/><circle cx="10" cy="-5" r="3.8"/></g></svg>';
+let dd = ''; const DOOD = [];
+for (let i = 0; i < 16; i++) { const x = 40 + ((i * 337) % (WW - 80)), sp = 60 + (i * 53) % 70, ph = (i * 0.37) % 1; DOOD.push({ x, sp, ph, i }); dd += `<div class="abs" id="dd${i}" style="opacity:.55">${[heart, spark, paw][i % 3]}</div>`; }
+$('doodles').innerHTML = dd;
+
+// ---- draw one frame. f = { t, section:'hook'|'play'|'end', hook:{w1:[a,b], w2:[a,b]}, src, zoom, chip:{n,t,at}, name:{n,k,at}, barHi, sub, subAt, end:{at, soon} } ----
+window.draw = async (f) => {
+  const t = f.t, show = (id, on) => { $(id).style.display = on ? 'block' : 'none'; };
+  document.body.className = (LAND ? 'L' : 'P') + (f.section === 'hook' ? ' hk' : '');
+  show('hook', f.section === 'hook'); show('play', f.section === 'play'); show('end', f.section === 'end');
+  DOOD.forEach((d) => { const e = $('dd' + d.i), y = HH + 60 - (((t * d.sp) + d.ph * 2000) % (HH + 180)), s = 0.6 + (d.i % 4) * 0.2; e.style.transform = `translate(${d.x + Math.sin(t * 1.3 + d.i) * 24}px,${y}px) rotate(${Math.sin(t + d.i) * 14}deg) scale(${s})`; });
+  if (f.section === 'hook') {
+    const [a1, b1] = f.hook.w1, [a2, b2] = f.hook.w2;
+    const pIn = seg(t, a1, a1 + (b1 - a1) * 0.85), cIn = seg(t, a1 + (b1 - a1) * 0.45, b1 + 0.2);
+    $('pencilArt').style.clipPath = `inset(0 ${100 - pIn * 100}% 0 0)`; $('colorArt').style.clipPath = `inset(0 ${100 - cIn * 100}% 0 0)`;
+    $('pencil').style.display = pIn > 0 && pIn < 1 ? 'block' : 'none'; $('pencil').style.transform = `translate(${pIn * 1000 - 20}px,${300 + Math.sin(t * 22) * 230 - 130}px)`;
+    const s = seg(t, a2 - 0.1, a2 + (b2 - a2) * 0.8); $('scrP').style.strokeDashoffset = scrLen * (1 - s);
+    const bob = t > b2 ? Math.abs(Math.sin((t - b2) * 6)) * 14 : 0;
+    $('hookDog').style.transform = LAND ? `translate(1180px,${560 - bob}px)` : `translate(160px,${1010 - bob}px)`;
+    const lg = eoB(seg(t, b2 - 0.2, b2 + 0.4)); $('hookLogo').style.opacity = seg(t, b2 - 0.2, b2); $('hookLogo').style.transform = `scale(${0.5 + 0.5 * lg})`;
+  }
+  if (f.section === 'play') {
+    const img = $('frame'); if (f.src && img.getAttribute('src') !== f.src) { img.src = f.src; try { await img.decode(); } catch (e) {} }
+    img.style.transformOrigin = f.zoom ? f.zoom[1] : '50% 50%'; img.style.transform = f.zoom ? `scale(${f.zoom[0]})` : 'none';
+    const k = eoB(seg(t, f.cutAt, f.cutAt + 0.4)), side = f.cutIdx % 2 ? 1 : -1, first = eo3(seg(t, f.playAt, f.playAt + 0.5));
+    $('phone').style.transform = `translateY(${(1 - first) * HH * 0.55}px) rotate(${side * (1 - k) * 2.5 + side * 0.5}deg) scale(${0.97 + 0.03 * k})`;
+    $('barHi').style.display = f.barHi ? 'block' : 'none'; if (f.barHi) $('barHi').style.opacity = 0.55 + 0.45 * Math.abs(Math.sin(t * 4));
+  }
+  // the feature chip (with an optional step number) and the dog name card
+  show('chip', f.section === 'play' && !!f.chip);
+  if (f.chip) { $('chipT').textContent = f.chip.t; $('chipNum').style.display = f.chip.n ? 'inline-flex' : 'none'; $('chipNum').textContent = f.chip.n || ''; const k = eoB(seg(t, f.chip.at, f.chip.at + 0.45)); $('chip').style.opacity = seg(t, f.chip.at, f.chip.at + 0.15); $('chip').style.transform = `rotate(-2.5deg) scale(${0.6 + 0.4 * k})`; }
+  show('name', f.section === 'play' && !!f.name);
+  if (f.name) { $('nameN').textContent = f.name.n; $('nameK').textContent = f.name.k; const k = eoB(seg(t, f.name.at, f.name.at + 0.45)); $('name').style.opacity = seg(t, f.name.at, f.name.at + 0.15); $('name').style.transform = `rotate(-2deg) scale(${0.6 + 0.4 * k})`; }
+  if (f.section === 'end') {
+    const u = t - f.end.at, soon = f.end.soon;
+    $('e1').textContent = soon ? 'Coming soon' : 'Play free'; $('e2').textContent = soon ? 'follow to be first' : 'doodledoggo.app';
+    $('e3').textContent = soon ? 'a free game for phone & computer' : 'free · phone or computer';
+    $('e1').style.fontSize = (soon ? 180 : 220) * (LAND ? 1.05 : 1) + 'px'; $('e2').style.fontSize = (LAND ? 100 : 96) + 'px';
+    const a = eoB(seg(u, 0, 0.5)), b = eoB(seg(u, 0.3, 0.8));
+    $('e0').style.opacity = seg(u, 0, 0.3);
+    $('e1').style.opacity = clamp(u / 0.2); $('e1').style.transform = `scale(${0.6 + 0.4 * a}) rotate(-3deg)`;
+    $('esw').style.opacity = 0.42 * seg(u, 0.5, 0.9); $('esw').style.transform = `rotate(-1.5deg) scaleX(${seg(u, 0.5, 1.1)})`;
+    $('e2').style.opacity = seg(u, 0.3, 0.5); $('e2').style.transform = `scale(${0.6 + 0.4 * b}) rotate(1.5deg)`;
+    const rise = eoB(seg(u, 0.4, 1.1)), bounce = u > 1.1 ? Math.abs(Math.sin((u - 1.1) * 5)) * 28 : 0;
+    $('endDog').style.transform = LAND ? `translate(1100px,${1150 - 760 * rise - bounce}px)` : `translate(180px,${1960 - 1160 * rise - bounce}px)`;
+    $('e3').style.opacity = seg(u, 0.9, 1.3);
+  }
+  $('sub').style.display = f.sub ? 'block' : 'none';
+  if (f.sub) { $('subT').textContent = f.sub; const k = seg(t, f.subAt, f.subAt + 0.15); $('sub').style.opacity = k; $('sub').style.transform = `translateY(${(1 - k) * 12}px)`; }
+  return true;
+};
+document.fonts.ready.then(() => { window.READY = true; });
+</script>
+</body>
