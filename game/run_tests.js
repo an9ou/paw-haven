@@ -82,6 +82,7 @@ const SUITES = {
   v29_flows: { file: 'test_v29_flows.js', group: 'all', est: 60 },
   v210_ball: { file: 'test_v210_ball.js', group: 'all', est: 60 }, // v2.10 (V210.md): free ball play where you are (BALL lane)
   v29_review: { file: 'test_v29_review.js', group: 'all', est: 40 }, // v2.9 integration review fixes (coordinator)
+  v211_dogs: { file: 'test_v211_dogs_node.js', group: 'all', est: 150 }, // v2.11 BREED ART (V211.md 5.2): akita, spitz, pom and the three Tokyo bandanas
   // v2.2 phone suites: `node game/run_tests.js phone` (not part of `all`, which stays the desktop regression set)
   phone_legacy: { file: 'test_phone.js', group: 'phone', est: 90 },
   phone_shell: { file: 'test_phone_shell.js', group: 'phone', est: 40 },
