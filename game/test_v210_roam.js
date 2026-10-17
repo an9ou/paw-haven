@@ -56,8 +56,9 @@ require('./test_lib').run('v210_roam', async (t) => {
   await ev((id) => { window.__rmDone = 0; window.__paw.rm.to(id, 560, 470, { run: true, pose: 'happy', done: () => { window.__rmDone++; } }); }, B);
   ok(await t.until(() => window.__rmDone === 1, null, 4000), 'rmTo runs there and calls done once');
   q = await pos(B); ok(Math.round(q.x) === 560 && Math.round(q.y) === 470 && q.pose === 'happy', 'it arrives with the pose asked for');
-  await ev((id) => { window.__paw.rm.calm(id, 3000); window.__paw.rm.set(id, { pose: 'walk', face: 'right' }); }, A); // calm: its own idle would pick the next pose
-  ok((await pos(A)).pose === 'walk' && (await pos(A)).face === 'right', 'rmSet on the leader redraws its art (renderDog)');
+  // calm: its own idle would pick the next pose. Set and read in one evaluate: the 250 ms tick (21_time_loop.js) redraws an idle leader in between on a loaded machine
+  const qa = await ev((id) => { window.__paw.rm.calm(id, 3000); window.__paw.rm.set(id, { pose: 'walk', face: 'right' }); return window.__paw.rm.pos(id); }, A);
+  ok(qa.pose === 'walk' && qa.face === 'right', 'rmSet on the leader redraws its art (renderDog)');
   await ev(() => window.__paw.S.prefs || 0); await ev(() => { window.__paw.idle.speed(0.02); });
   const snap = JSON.stringify(await ev((l) => l.map((id) => { const p = window.__paw.rm.pos(id); return [Math.round(p.x), Math.round(p.y)]; }), all));
   for (const id of [B, C, G]) await ev((id) => window.__paw.rm.act(id), id);
