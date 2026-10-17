@@ -74,7 +74,9 @@ function setTemp(pose, ms) { tempPose = pose; tempUntil = performance.now() + ms
 function dogTo(tx, ty = 0, scale = 1, secs = 0.9) {
   const p = $('#dogPos'); if (!p) return; p.style.transitionDuration = secs + 's';
   p.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
-  if (phPeekOn && !(typeof IDLE === 'object' && IDLE.act)) { phPeekOn = false; clearTimeout(phPanT); }
+  // phones: the camera follows the leader's errands as in v2.9 (back home = the scene's home crop); an idle wander while the player looks around leaves the view
+  if (isPhone() && cur.mode === 'yard') { const home = tx === 0 && ty === 0 && scale === 1; phCamHome = S.place === 'fujihill' || home ? phHomeCx : scale === 1 ? phHomeCx + tx : 430 * scale + tx; if (phPeekOn && typeof IDLE === 'object' && IDLE.act) { /* looking around */ } else { if (phPeekOn) { phPeekOn = false; clearTimeout(phPanT); } camTo(phCamHome, secs); } }
+  else if (phPeekOn && !(typeof IDLE === 'object' && IDLE.act)) { phPeekOn = false; clearTimeout(phPanT); }
   const fol = $('#pkFol'); if (fol && fol.closest('.rmdog')) $('#pack').after(fol); // v2.9 Fetch followers are placed in world units, not with the leader
   if (p.closest('.rmdog')) rmLegacyTo(tx, ty, scale, secs);
 }
@@ -160,7 +162,7 @@ function phHomeRefit() {
   const vz = $('#visitorG', view), wide = cur.mode === 'yard' && S.place !== 'market' && S.place !== 'fujihill'; // v2.10 ROAM: every other place shows the whole pack
   if (S.place === 'market') { L = 186; R = 592; fitMin = 0.78; } // the bowl, the dog and the "Market Street" sign together: the street zooms out a little when the screen is narrow
   else if (S.place === 'fujihill') { L = 250; R = 596; } // v2.8 FUJI HILL: the dog on the path, the bench (x 488-572) and Fuji's summit in the crop at 390 and 360 px
-  else if (wide) { [L, R] = rmSpan(); if (S.place === 'yard' || S.place === 'house') L = Math.min(L, 195); if (vz) { const sp = visitorSpot(), w = 264 * sp[3]; R = Math.max(R, sp[0] + w / 2 + 6); } }
+  else if (wide && vz) { const sp = visitorSpot(), w = 264 * sp[3]; L = 306; R = Math.max(R, sp[0] + w / 2 + 6); } // a visiting dog: the dog and the visitor, as in v2.3
   else if (vz) { const sp = visitorSpot(), w = 264 * sp[3]; L = 306; R = Math.max(R, sp[0] + w / 2 + 6); }
   const vw = view.clientWidth, vh = view.clientHeight - (parseFloat(view.style.getPropertyValue('--trayH')) || 0); if (!vw || vh <= 0) return;
   const native = 600 * vw / vh;
@@ -175,8 +177,10 @@ function phHomeRefit() {
       if (st) view.style.background = st.getAttribute('stop-color') || getComputedStyle(st).stopColor || '';
     }
   }
-  const half = wide ? Math.min(500, native / phZoom / 2) : 0;
-  phHomeCx = wide ? clamp((L + R) / 2, half, 1000 - half) : (L + R) / 2; if (!S.sleeping || S.place === 'fujihill' || wide) { phCamHome = phHomeCx; camCx = phCamHome; }
+  // v2.10 ROAM: the wider crop keeps the v2.3 home span (the bowl, the dog's spot, a visitor) in view and leans towards the middle of the pack
+  const half = wide ? Math.min(500, native / phZoom / 2) : 0, pk = wide ? rmSpan() : null;
+  phHomeCx = !wide ? (L + R) / 2 : R - L >= half * 2 ? (L + R) / 2 : clamp(clamp((pk[0] + pk[1]) / 2, R - half, L + half), half, 1000 - half);
+  if (!S.sleeping || S.place === 'fujihill') { phCamHome = phHomeCx; camCx = phCamHome; }
   camApply(camCx);
 }
 // v2.3 phone: a feed / care / nap tray never covers the scene. The scene shrinks into the part of the view above the tray (the whole scene stays visible).

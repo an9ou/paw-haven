@@ -46,9 +46,10 @@ function rmWorldBox(svg, M, el) {
 function rmScan() {
   RM.noAt = performance.now() + 3000; const svg = $('#view > svg.world'); if (!svg || !svg.getScreenCTM()) { RM.no = null; return; }
   const M = svg.getScreenCTM().inverse(), out = [];
-  svg.querySelectorAll('.hot, [data-hot], [data-shop], [data-decor], #mailboxG').forEach((el) => {
-    if (el.closest('#pack, #fx, #ballLayer, #zzz, #fbPackBowls') || el.parentElement.closest('.hot, [data-hot], [data-shop], [data-decor]')) return; // dogs are not no-go, and a nested hot thing is covered by its parent
-    const b = rmWorldBox(svg, M, el); if (b && b[2] > 4 && b[3] > 4 && b[1] < 600 && b[1] + b[3] > 0) out.push(b.concat(el.id || el.dataset.hot || el.dataset.shop || el.dataset.decor || 'hot'));
+  const Q = '.hot, [data-hot], [data-shop], [data-decor], [data-drift], [data-pile], [role="button"], .fs-hit, #mailboxG';
+  svg.querySelectorAll(Q).forEach((el) => {
+    if (el.closest('#pack, #fx, #ballLayer, #zzz, #fbPackBowls') || el.parentElement.closest(Q)) return; // dogs are not no-go, and a nested hot thing is covered by its parent
+    const b = rmWorldBox(svg, M, el); if (b && b[2] > 4 && b[3] > 4 && b[1] < 600 && b[1] + b[3] > 0) out.push(b.concat(el.closest('[data-decor], [data-drift], [data-pile], #wnDogG, #hwPopG') ? 'prop' : el.id || el.dataset.hot || el.dataset.shop || 'hot'));
   });
   [...(($('#placeBtns') || {}).children || [])].concat([$('#phPeek'), $('#rmLookL'), $('#rmLookR')]).forEach((el) => { if (!el || el.hidden) return; const b = rmWorldBox(svg, M, el); if (b && b[1] < 600) out.push(b.concat('btn')); });
   if (S.place === 'yard' && !out.some((b) => b[4] === 'houseG')) out.push([620, 330, 240, 200, 'house']);
@@ -65,7 +66,7 @@ function rmOk(d, x, y, k, strict) {
     if (b[4] === 'scene') continue;
     const A = b[2] * b[3], o = rmOver(T, b); if (!o) continue;
     if (b[2] > 330 || b[3] > 270) continue;
-    if (A < 15000 ? o > A * 0.08 : o > A * 0.4 || (b[0] + b[2] / 2 > T[0] && b[0] + b[2] / 2 < T[0] + T[2] && b[1] + b[3] / 2 > T[1] && b[1] + b[3] / 2 < T[1] + T[3])) return false;
+    if (b[4] === 'prop' || A < 15000 ? o > A * (b[4] === 'prop' ? 0.02 : 0.08) : o > A * 0.4 || (b[0] + b[2] / 2 > T[0] && b[0] + b[2] / 2 < T[0] + T[2] && b[1] + b[3] / 2 > T[1] && b[1] + b[3] / 2 < T[1] + T[3])) return false;
   }
   const lim = strict === false ? 0.5 : 0.3; // dogs at different depths may overlap a little (each keeps most of its tap rect)
   for (const o of rmDogs()) { if (o === d || !rmSt(o).seeded) continue; const r = rmSt(o), tx = r.tw ? r.tw.x1 : r.x, ty = r.tw ? r.tw.y1 : r.y, ko = r.tw && r.tw.k1 != null ? r.tw.k1 : r.k != null ? r.k : rmScale(ty); if (rmOver(T, rmTapBox(tx, ty, ko)) > T[2] * T[3] * lim) return false; }
@@ -107,7 +108,7 @@ function rmSeed() {
   ds.forEach((d) => { const r = rmSt(d); if (r.seeded) placed.push(r); });
   ds.forEach((d) => {
     const r = rmSt(d); if (r.seeded) return; r.seeded = true; r.tw = null; r.q = null;
-    if (d === D() && rmOk(d, 430, 500, rmScale(500), false)) { r.x = 430; r.y = 500; r.face = 'right'; }
+    if (d === D() && (!rmWander() || rmOk(d, 430, 500, rmScale(500), false))) { r.x = 430; r.y = 500; r.face = 'right'; } // under the harness the leader keeps its v2.9 spot
     else {
       let c = rmCands(d); if (!c.length) c = rmCands(d, false); if (!c.length) c = [[[150, 560], [800, 560], [560, 440]][placed.length % 3]];
       let best = c[0], bv = -1e9;
@@ -150,7 +151,7 @@ function rmApplyFixed(d, i) {
 // after the scene is up (and every few seconds): a dog that stands on something tappable or another dog's tap rect steps to the nearest free spot
 function rmValidate(instant) {
   rmDogs().forEach((d) => {
-    const r = rmSt(d); if (r.fix || r.tw || (d === D() && (busy || IDLE.act || S.sleeping || curling || pottyBusy))) return;
+    const r = rmSt(d); if (r.fix || r.tw || (d === D() && (!rmWander() || busy || IDLE.act || S.sleeping || curling || pottyBusy))) return;
     if (rmOk(d, r.x, r.y, rmK(r))) { r.wake = false; return; }
     const p = rmNear(d, r.x, r.y) || (rmOk(d, r.x, r.y, rmK(r), false) ? null : rmNear(d, r.x, r.y, false)); if (!p) { r.wake = false; return; }
     if (instant) { r.x = p[0]; r.y = p[1]; r.hx = r.x; r.hy = r.y; rmPaint(d); } else rmTo(d, p[0], p[1], { anchor: true });
@@ -241,7 +242,6 @@ function rmLegacyTo(tx, ty, s, secs) {
   if (!home && !r.away) { r.hx = r.x; r.hy = r.y; } r.away = !home;
   const scene = cur.mode === 'yard', X = home ? (scene ? r.hx : 430) : 430 * s + tx, Y = home ? (scene ? r.hy : 500) : 500 * s + ty, k = !scene ? s : home || s === 1 ? null : s; // the bath and the old Fetch keep the v2.9 stage: home is 430, 500 at size 1
   rmTo(d, X, Y, { legacy: true, secs: Math.max(0, secs), k });
-  if (isPhone() && cur.mode === 'yard' && !home && typeof camCx === 'number') { const v = rmCropW() / 2; if (X < camCx - v + 60 || X > camCx + v - 60) camTo(clamp(X, v, 1000 - v), Math.max(0.3, secs)); }
 }
 // the leader's head in world units (speech bubbles, hearts)
 function rmHead(d) { const r = rmSt(d || D()), k = rmK(r), lf = (d && d !== D() ? r.face : rmLeadPose()[1]) === 'left'; return { x: r.x + (lf ? -43 : 43) * k, y: r.y - 175 * k }; }
@@ -361,7 +361,7 @@ function rmTick() {
 function rmSceneUp() {
   if (!S || !$('#pack')) return; rmAdopt(); RM.up = performance.now();
   rmScan(); rmValidate(true); rmDepth(); // the scene is in the DOM now: read its tappable things and step anybody off them before the first frame
-  requestAnimationFrame(() => { if (cur.mode !== 'yard' && cur.mode !== 'bath') return; rmScan(); rmValidate(true); rmDepth(); if (isPhone()) { phHomeRefit(); rmLookSync(); } });
+  requestAnimationFrame(() => { if (cur.mode !== 'yard' && cur.mode !== 'bath') return; rmScan(); rmValidate(true); rmDepth(); if (isPhone()) rmLookSync(); });
 }
 on('yard:enter', rmSceneUp);
 
