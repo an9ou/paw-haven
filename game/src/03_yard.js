@@ -6,7 +6,7 @@ function yardWorldSVG(extra = '') {
     ${sceneG(S.place || 'yard', S.place === 'yard' ? { patch: gkOn() ? patchState() : 'empty' } : S.place === 'house' && hasBedArt() ? { bed: false } : {})}${S.place === 'yard' && !gkOn() ? '<g class="soon-tag" pointer-events="none" transform="translate(112 432) rotate(-6)"><rect x="-58" y="-17" width="116" height="30" rx="6" fill="#FFF3B8" stroke="#5B3D32" stroke-width="2"/><text y="6" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="22" fill="#5B3D32">coming soon</text></g>' : ''}${bedLayers().back}<g id="messG"></g><g id="snowmanG">${S.place === 'yard' ? snowmanSVG() : ''}</g>${S.place === 'yard' && cur.mode === 'yard' && typeof msYardSVG === 'function' ? msYardSVG() : ''}${S.place === 'yard' ? hmDecorSVG() : ''}
     ${S.place === 'yard' ? `<g id="houseG" class="hot${isNight() ? ' night' : ''}" tabindex="0" role="button" aria-label="Dog house: ${esc(S.house)}">${place(art('house', S.house), 620, 330, 240, 200)}</g>` : ''}
     <g id="bowlG" class="hot" tabindex="0" role="button" aria-label="Food bowl">${place(art('prop', 'bowl-empty'), 205, 462, 90, 90)}</g>
-    <g id="pack">${packSVG()}</g><g id="dogPos"><g id="dogFx"><g id="dogArt"></g><rect id="dogHit" x="${DX + 30}" y="${DY + 40}" width="${DW - 60}" height="${DH - 40}" fill="transparent" pointer-events="all" class="hot" tabindex="0" role="button" aria-label="Pet the dog"/></g><g id="fluffFx" pointer-events="none"></g></g>${bedLayers().front}
+    <g id="pack">${packSVG(true)}</g>${bedLayers().front}
     ${S.place === 'yard' && S.mapPieces.length >= 4 && !S.secretDug ? `<g id="secretX" class="hot" tabindex="0" role="button" aria-label="Secret dig: X marks the spot"><rect x="585" y="452" width="150" height="140" fill="transparent"/>${place(artReal('collectible', 'dig') || art('collectible', 'dig'), 615, 495, 90, 90)}<text x="660" y="488" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="26" fill="#5B3D32">X marks the spot!</text></g>` : ''}
     <g id="zzz"></g><g id="ballLayer" pointer-events="none"></g>${extra}<g id="fx"></g></svg><div id="status"></div><div id="placeBtns"></div><button id="devBtn">dev</button>`;
 }
@@ -68,9 +68,14 @@ function fbPackNapFit() {
   });
 }
 function setTemp(pose, ms) { tempPose = pose; tempUntil = performance.now() + ms; renderDog(pose); }
-function dogTo(tx, ty = 0, scale = 1, secs = 0.9) { // v2.8 phones: on Mt. Fuji Lookout the camera stays on the hill crop (the path, the bench and Fuji, phHomeRefit)
-  const p = $('#dogPos'); if (!p) return; phCamHome = isPhone() && S && S.place === 'fujihill' ? phHomeCx : phHomeCx + (scale === 1 ? tx : (430 * scale + tx) - phHomeCx); if (phPeekOn && typeof IDLE === 'object' && IDLE.act) { /* the player is looking around: an idle wander does not pull the view back */ } else { if (phPeekOn) { phPeekOn = false; clearTimeout(phPanT); } camTo(phCamHome, secs); } p.style.transitionDuration = secs + 's';
+// v2.10 ROAM: the leader is one of the roaming dogs (37_roam.js). The v2.9 calls still say where the dog box goes (feet at 430 * scale + tx,
+// 500 * scale + ty) and 0, 0, 1 means back where it stands now. #dogPos keeps the old transform as a record (hoAtBedNap, the old suites): inside
+// its .rmdog group the CSS keeps it flat and rmLegacyTo moves the group
+function dogTo(tx, ty = 0, scale = 1, secs = 0.9) {
+  const p = $('#dogPos'); if (!p) return; p.style.transitionDuration = secs + 's';
   p.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+  if (phPeekOn && !(typeof IDLE === 'object' && IDLE.act)) { phPeekOn = false; clearTimeout(phPanT); }
+  if (p.closest('.rmdog')) rmLegacyTo(tx, ty, scale, secs);
 }
 // v2.5: the art module draws some foods in the bowl itself (WORLD_B.bowlFoods). Every other food (the v2.4 and v2.5 foods) used to
 // show an empty bowl, so it is composed here: the empty bowl, the food's own item art, then the bowl's front wall again on top, so
@@ -151,19 +156,26 @@ function phSvgDims() { const svg = $('#view > svg.world'); return { w: (svg && s
 function phHomeRefit() {
   if (!isPhone() || (cur.mode !== 'yard' && cur.mode !== 'market') || !$('#view > svg.world')) return;
   let L = 186, R = 530, fitMin = 0.62;
-  const vz = $('#visitorG', view);
+  const vz = $('#visitorG', view), wide = cur.mode === 'yard' && S.place !== 'market' && S.place !== 'fujihill'; // v2.10 ROAM: every other place shows the whole pack
   if (S.place === 'market') { L = 186; R = 592; fitMin = 0.78; } // the bowl, the dog and the "Market Street" sign together: the street zooms out a little when the screen is narrow
   else if (S.place === 'fujihill') { L = 250; R = 596; } // v2.8 FUJI HILL: the dog on the path, the bench (x 488-572) and Fuji's summit in the crop at 390 and 360 px
+  else if (wide) { [L, R] = rmSpan(); if (S.place === 'yard' || S.place === 'house') L = Math.min(L, 195); if (vz) { const sp = visitorSpot(), w = 264 * sp[3]; R = Math.max(R, sp[0] + w / 2 + 6); } }
   else if (vz) { const sp = visitorSpot(), w = 264 * sp[3]; L = 306; R = Math.max(R, sp[0] + w / 2 + 6); }
   const vw = view.clientWidth, vh = view.clientHeight - (parseFloat(view.style.getPropertyValue('--trayH')) || 0); if (!vw || vh <= 0) return;
-  const native = 600 * vw / vh, fit = Math.max(fitMin, Math.min(1, native / (R - L)));
-  view.style.setProperty('--vfit', fit.toFixed(3));
-  if (S.place === 'market') { // the street's own layout (22_phone_town.css) ignores --vfit, so it zooms through the viewBox; the extra sky above the scene takes the sky's colour
-    phZoom = fit; view.style.background = '';
-    const sky = $('#view > svg.world #sceneG rect[width="1000"][height="452"]'), m = sky && /url\(#([^)]+)\)/.exec(sky.getAttribute('fill') || ''), gr = m && $('#view > svg.world #' + m[1]), st = gr && gr.querySelector('stop');
-    if (st) view.style.background = st.getAttribute('stop-color') || getComputedStyle(st).stopColor || '';
+  const native = 600 * vw / vh;
+  if (wide) { // v2.10 ROAM: about 700 world units wide (V210.md section 5.2): zoomed out through the viewBox like Market Street, the extra sky above the scene
+    phZoom = Math.min(1, native / RM_CROP); view.style.removeProperty('--vfit'); view.style.background = phZoom < 1 ? rmSky() : '';
+  } else {
+    const fit = Math.max(fitMin, Math.min(1, native / (R - L)));
+    view.style.setProperty('--vfit', fit.toFixed(3));
+    if (S.place === 'market') { // the street's own layout (22_phone_town.css) ignores --vfit, so it zooms through the viewBox; the extra sky above the scene takes the sky's colour
+      phZoom = fit; view.style.background = '';
+      const sky = $('#view > svg.world #sceneG rect[width="1000"][height="452"]'), m = sky && /url\(#([^)]+)\)/.exec(sky.getAttribute('fill') || ''), gr = m && $('#view > svg.world #' + m[1]), st = gr && gr.querySelector('stop');
+      if (st) view.style.background = st.getAttribute('stop-color') || getComputedStyle(st).stopColor || '';
+    }
   }
-  phHomeCx = (L + R) / 2; if (!S.sleeping || S.place === 'fujihill') { phCamHome = phHomeCx; camCx = phCamHome; }
+  const half = wide ? Math.min(500, native / phZoom / 2) : 0;
+  phHomeCx = wide ? clamp((L + R) / 2, half, 1000 - half) : (L + R) / 2; if (!S.sleeping || S.place === 'fujihill' || wide) { phCamHome = phHomeCx; camCx = phCamHome; }
   camApply(camCx);
 }
 // v2.3 phone: a feed / care / nap tray never covers the scene. The scene shrinks into the part of the view above the tray (the whole scene stays visible).
@@ -396,7 +408,7 @@ function travelTo(id) {
     toast(msg, 'good');
   }, 1200);
 }
-function dogHeadWorld() { const p = $('#dogPos'); let tx = 0, ty = 0, sc = 1; const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\)\s*scale\(([\d.]+)\)/.exec(p ? p.style.transform : ''); if (m) { tx = +m[1]; ty = +m[2]; sc = +m[3]; } return { x: (DX + 175) * sc + tx, y: (DY + 30) * sc + ty }; }
+function dogHeadWorld() { return rmHead(D()); } // v2.10 ROAM: wherever the leader stands
 function dogJoke(text) {
   const n = NAME(); let line = text;
   if (!line) {
@@ -426,10 +438,9 @@ function petTick(wx, wy) {
   if (outdoorsNow() && weatherNow() === 'rain' && !hasRaincoat() && !pet.wet) { pet.wet = true; toast('Wet dog smell intensifies.'); }
   setTemp('pet', 900); fxText('♥', wx + RAND(-20, 20), wy - 10);
   Math.random() < 0.7 ? SFX.squeak() : SFX.boop(RAND(500, 800));
-  const bondNow = !pet.bonded && pet.gain >= 10, crB = crPetPack(bondNow, pet.bonded); // v2.7 PACK CARE: the ticked pack dogs get the same petting ([] with pack care off)
-  if (bondNow && crB.length) { pet.bonded = true; crPetBond(crB); }
-  else if (bondNow) { pet.bonded = true; const n = addBond(3) + (S.outfit.head === 'Wizard Hat' ? addBond(1, { raw: true }) : 0); const st = S.outfit.charm === 'Sparkle Stone'; if (st) addStat('happy', 5); toast(`+${n} Bond.${S.outfit.head === 'Wizard Hat' ? ' Magic hands: +1 Bond.' : ''}${st ? ' The Sparkle Stone hums: +5 Happiness.' : ''} ${NAME()} pretends ${PR().he} did not enjoy that.`, 'good'); dailyCare('pet'); markCareDay(); trackAct('pet', {}); }
-  else if (crB.length) crPetBond(crB, true);
+  const bondNow = !pet.bonded && pet.gain >= 10; // v2.10 ROAM: petting pets this dog only (the v2.8.4 whole-pack rub is gone)
+  rmPetted(D());
+  if (bondNow) { pet.bonded = true; const n = addBond(3) + (S.outfit.head === 'Wizard Hat' ? addBond(1, { raw: true }) : 0); const st = S.outfit.charm === 'Sparkle Stone'; if (st) addStat('happy', 5); toast(`+${n} Bond.${S.outfit.head === 'Wizard Hat' ? ' Magic hands: +1 Bond.' : ''}${st ? ' The Sparkle Stone hums: +5 Happiness.' : ''} ${NAME()} pretends ${PR().he} did not enjoy that.`, 'good'); dailyCare('pet'); markCareDay(); trackAct('pet', {}); }
   updateHUD();
 }
 function showZzz(on) { const z = $('#zzz'); if (z) z.innerHTML = on ? place(art('prop', 'zzz'), 760, 280, 90, 90) : ''; }

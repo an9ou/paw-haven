@@ -78,7 +78,9 @@ function switchDog(id, opts = {}) {
   if (busy) { nope(`Hold on, ${NAME()} is busy.`); return; }
   if (awayFromHome() && staysHome(d)) { nope(`${d.name} is at home. ${stayHomeLine(d)}`); return; }
   S.activeId = id; markDirty(); hudDogKey = ''; dogKey = ''; SFX.boop(760);
-  if (cur.mode === 'yard') { go('yard'); setTimeout(() => { const fx = $('#dogFx'); if (fx) { fx.classList.remove('tk-bounce'); void fx.getBBox(); fx.classList.add('tk-bounce'); } const h = dogHeadWorld(); say(PICK([`${d.name} reporting for duty.`, `${d.name}'s turn! ${PRd(d).He} has been waiting politely. Ish.`, `${d.name} steps up.`]), h.x, h.y, 1800); }, 60); }
+  // v2.10 ROAM: the stats switch to that dog where it stands. Nobody moves and the camera stays (every dog is drawn the same; the leader is data)
+  if (cur.mode === 'yard' && $('#pack')) { if (IDLE.act) { IDLE.steps = []; idleEnd(); } const pk = $('#pack'); pk.innerHTML = packSVG(); bindPack(); renderDog(dogPoseNow(), rmSt(d).face, true); setHudDog(); updateHUD(); setTimeout(() => { const fx = $('#dogFx'); if (fx) { fx.classList.remove('tk-bounce'); void fx.getBBox(); fx.classList.add('tk-bounce'); } const h = dogHeadWorld(); say(PICK([`${d.name} reporting for duty.`, `${d.name}'s turn! ${PRd(d).He} has been waiting politely. Ish.`, `${d.name} steps up.`]), h.x, h.y, 1800); }, 60); }
+  else if (cur.mode === 'yard') go('yard');
   else { setHudDog(); updateHUD(); }
 }
 
@@ -94,27 +96,30 @@ const packPose = {};
 // front left, in front of the bowl spot and left of the Garden Bench: in the crop on every width, clear of the clipboard, #dogHit, the house door, the
 // place chip and every default decoration spot. Its Feed-all bowl is lifted onto the scene (fbPackBowls).
 const PACK_SPOTS_PH = { yard: [[222, 596, 'right', 0.58], [930, 438, 'left', 0.57], [960, 560, 'left', 0.7]] };
-function packSpots() { return (isPhone() && PACK_SPOTS_PH[S.place]) || PACK_SPOTS[S.place] || PACK_SPOTS.default; }
+// v2.10 ROAM: the pack dogs roam (37_roam.js), so a "spot" is where each one stands now: [feet x, feet y, facing, scale], in others() order
+function packSpots() { return others().map((d) => { const r = rmSt(d); return [r.x, r.y, r.face, rmK(r)]; }); }
 function packDogSVG(d, i) {
-  let [fx, fy, face, sc] = packSpots()[i] || packSpots()[0]; sc = sc || 0.6;
-  const nz = d.sleeping && NAP_ZONE[S.place]; if (nz) { fx = nz[0] + [-36, 36, 0][i % 3]; fy = nz[1]; sc = nz[2]; face = 'right'; } // napping: in the doorway / on the bed, like the active nap
-  const hs = typeof hoPackSpot === 'function' ? hoPackSpot(d, i) : null; if (hs) { [fx, fy, face, sc] = hs; } // v2.7 HOME: napping on its own bed, or on a piece of furniture (V27.md section 1)
-  if (hmChairDown(d)) { const cp = typeof hoPos === 'function' ? hoPos('Rocking Chair') : [910, 452]; fx = clamp(868 + cp[0] - 910, 40, 960); fy = 530 + cp[1] - 452; face = 'right'; sc = 0.48; } // Proud Mum lies down next to the Rocking Chair (v2.7: wherever it stands now)
-  const w = DW * sc, h = DH * sc, x = fx - w / 2, y = fy - h * (205 / 220);
-  const pose = d.sleeping ? 'sleep' : packPose[d.id] || (Math.min(...Object.values(d.stats)) < 25 ? 'sad' : 'idle');
-  return `<g class="packdog hot" data-dog="${d.id}" tabindex="0" role="button" aria-label="${esc(d.name)}: ${crPack() ? `rub or tap to pet ${PRd(d).him}` : `click to make ${PRd(d).him} the active dog`}"><g class="pd-wander" style="animation-delay:-${i * 2.3}s"><rect x="${x + 30}" y="${y + 30}" width="${w - 60}" height="${h - 30}" fill="transparent"/>${place(dogSVG(d, { pose, outfit: typeof shSleepOutfit === 'function' ? shSleepOutfit(d, pose) : outfitOf(d), facing: face }), x, y, w, h)}</g></g>`;
+  rmApplyFixed(d, i); // napping at the door or on its bed, on furniture, the Proud Mum by the chair: those spots still win
+  return `<g class="rmdog packdog hot" data-dog="${d.id}" tabindex="0" role="button" aria-label="${esc(d.name)}: rub or tap to pet ${PRd(d).him}">${rmPackInner(d, i)}</g>`;
 }
 function hmMumIn(d) { return typeof mumInBasket === 'function' && mumInBasket(d); } // a nursing mum is drawn in the nursery basket, not with the pack
 function hmChairOut4(d) { return !!(d.proud && S.place === 'yard' && hmDecorOut('Rocking Chair') && Math.random() < 0.25); } // about 1 in 4 idle picks
 function hmChairDown(d) { return !!(d.proud && S.place === 'yard' && !d.sleeping && packPose[d.id] === 'down' && typeof hmDecorOut === 'function' && hmDecorOut('Rocking Chair')); }
-function packSVG() { return S.dogs.length > 1 ? others().slice(0, 3).map((d, i) => hmMumIn(d) ? '' : packDogSVG(d, i)).join('') : ''; }
-function bindPack() {
-  const g = $('#pack'); if (!g) return;
-  // v2.8.4: with pack care a rub or tap on a pack dog pets it (and the other ticked dogs) where it stands, no switching (crPetBind). Pack care off: a click makes it the active dog
-  g.querySelectorAll('[data-dog]').forEach((el) => { if (crPack()) { crPetBind(el); return; } el.onclick = () => switchDog(el.dataset.dog); el.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); switchDog(el.dataset.dog); } }; });
-  if (typeof fbPackNapFit === 'function') fbPackNapFit(); // v2.5: a pack dog napping on the house bed lies on it, over the bed's front lip
+// v2.10 ROAM: every dog in one layer, back to front by feet y, the leader too (its shell holds #dogPos: full = the scene build's markup)
+function packSVG(full) {
+  if (!S || !S.dogs) return ''; rmSeed();
+  const os = others().slice(0, 3), items = os.map((d, i) => { if (hmMumIn(d)) return null; const s = packDogSVG(d, i); return { y: rmSt(d).y, s }; }).filter(Boolean);
+  items.push({ y: rmSt(D()).y, s: rmLeadSVG(full), lead: true });
+  return items.sort((a, b) => a.y - b.y).map((o) => o.s).join('');
 }
-function redrawPackDog(d) { const g = $(`#pack [data-dog="${d.id}"]`); if (!g) return; const i = others().indexOf(d); g.outerHTML = packDogSVG(d, i); bindPack(); }
+function bindPack() {
+  const g = $('#pack'); if (!g) return; rmAdopt();
+  // v2.10 ROAM: a rub or tap on any dog pets that dog only (crPetBind), with or without pack care; a long press opens its card (Make leader, Dress, Train)
+  g.querySelectorAll('.packdog[data-dog]').forEach((el) => { if (el.dataset.rmb) return; el.dataset.rmb = '1'; crPetBind(el); });
+  if (typeof fbPackNapFit === 'function') fbPackNapFit(); // v2.5: a pack dog napping on the house bed lies on it, over the bed's front lip
+  rmDepth();
+}
+function redrawPackDog(d) { if (!d || d === D()) return; const g = $(`#pack .packdog[data-dog="${d.id}"]`); if (!g) return; const i = others().indexOf(d); g.outerHTML = packDogSVG(d, i); bindPack(); }
 function packAmbient() {
   if (S.dogs.length < 2 || cur.mode !== 'yard' || busy || !modal.hidden) return;
   const os = others(); if (!os.length) return;
