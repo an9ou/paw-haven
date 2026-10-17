@@ -59,7 +59,7 @@ Every post fits one of these. Mix them roughly in this order across a week.
 | 4 | **Seasons & festivals** | Gives a reason to post now and a reason to come back. | Halloween Pop-up, Snow Days, nengajo, the Fortune box |
 | 5 | **Behind the doodles** | Small-game fans love the maker. Free, easy, honest. | How the dogs are drawn on purpose, devlogs, "bug that became a feature", player screenshots (with permission) |
 
-Tone: warm, a bit silly, short sentences. Dogs are never "ugliest" (we say wobbly, crayon, proud). Never use "breed" as a verb, "stud", "sell" for dogs or "litter price".
+Tone: warm, a bit silly, short sentences. Dogs are never "ugliest" (we say wobbly, crayon, proud). Never use "breed" as a verb, "stud", "sell" for dogs or "litter price". Never say "made in Japan" (or 日本製 / 日本発): say "Japan-style" (a Japan-style town, Japan-style scenery). Owner rule, 17 Oct 2026.
 
 ---
 
@@ -295,7 +295,7 @@ Also note: top 3 posts of the month and what they had in common. Do more of that
 ## 11. Things to avoid
 
 - The word **"ugliest"**. We say wobbly, crayon, proud.
-- **Words rules:** never "breed" as a verb, "stud", "litter price", or "sell" for dogs. No comparisons to other games by name.
+- **Words rules:** never "breed" as a verb, "stud", "litter price", or "sell" for dogs. No comparisons to other games by name. Never "made in Japan": say "Japan-style".
 - **Buying followers, follow/unfollow, engagement pods, "follow for follow".** They look good for a week and hurt reach after.
 - **Posting the link everywhere at once** or the same text on three subreddits on one day.
 - Hiding that you made the game. Always say "I made this".
