@@ -193,3 +193,28 @@ Doodle Doggo is coming soon. Follow @doodledoggo.app 🔔
 - **Check on day 3:** if the cost per profile visit looks high or almost nobody watches past 3 seconds, stop it and spend the rest on caption B. Otherwise leave it alone (changing it restarts Meta's learning).
 - **After 7 days, write down:** reach, 3-second views, profile visits, cost per profile visit, and new followers that week (Insights). That number is the baseline for the next ad.
 - Meta may add consumption tax on top of the budget; check the payment screen.
+
+## The 15-second cut, launch version (17 Oct 2026)
+
+`brand/instagram/launch/story60/doodle-doggo-noodle-story-15s-play.mp4`: the same 15-second story, about 17 seconds, with the launch ending. Noodle says "Doodle Doggo. Play free now! It's on itch.io. Come and play with me!" and the end card reads **Play now! / free on itch.io / @doodledoggo.app / link in bio · phone or computer**. Use it once the itch.io page is public and tested on a phone. Remake: `CUT=short END=play node build60.js <voDir> <workDir>`.
+
+**Ad caption (launch, caption A)**
+```
+This dachshund drew himself. It shows. 🖍️🐶
+Meet Noodle and his wobbly crayon friends in a little pencil-drawn town under Mt. Fuji 🗻
+Play Doodle Doggo free in your browser, no download ✨
+```
+Ad goal: **Traffic**, website = the itch.io page, button **Play game** (or Learn more). Headline: `Meet Noodle. He drew himself.`
+
+**Reel caption (launch)**
+```
+This dachshund drew himself. It shows. 🖍️🐶
+Meet Noodle and his wobbly crayon friends in a little pencil-drawn town under Mt. Fuji 🗻
+
+Doodle Doggo is out now! Free on itch.io, phone or computer ✨
+Tap the link in our bio to play 👆
+
+自分で描いたダックスフンド、遊べます🖍️
+
+#doodledoggo #cozygames #indiegame #itchio #freegame #dachshund #browsergame
+```

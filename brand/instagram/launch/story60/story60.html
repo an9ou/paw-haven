@@ -239,6 +239,7 @@ window.draw = async (f) => {
     const kt = eoB(seg(t, ta, ta + 0.45)); $('tag').style.opacity = seg(t, ta, ta + 0.15); $('tag').style.transform = `rotate(-2.5deg) scale(${0.6 + 0.4 * kt})`;
   }
   if (section === 'end') {
+    if (TL.ending === 'play') { $('e1').textContent = 'Play now!'; $('e2').textContent = 'free on itch.io'; $('e3').textContent = 'link in bio · phone or computer'; } // the launch ending
     const u = t - endAt, a = eoB(seg(u, 0, 0.5)), b = eoB(seg(u - (S('n10b') - endAt), 0, 0.5));
     $('e0').style.opacity = seg(u, 0, 0.3);
     $('e1').style.opacity = clamp(u / 0.2); $('e1').style.transform = `scale(${0.6 + 0.4 * a}) rotate(-3deg)`;
