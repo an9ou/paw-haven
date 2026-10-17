@@ -4,7 +4,7 @@
    x age x sparkle, plus mixes, expecting, coats and facing left.
    Then it sweeps the v2.8 outfits and the v2.11.1 costumes (NEW_OUTS) on the working tree: every breed x pose x age x facing x sparkle renders with no
    NaN/undefined, and each outfit's own strokes touch the dog and stay within a margin of its body and head.
-   Usage: node dogs/check_identical.js [ref]   (env SWEEP_ONLY=1: the sweep alone, SWEEP_EXT=1: print the closest calls)
+   Usage: node dogs/check_identical.js [ref]   (env SWEEP_ONLY=1: the sweep alone, SWEEP_EXT=1: print the closest calls, SKIP=gsd: leave a redrawn breed out)
      (prints ALL OK on success, exits 1 on any difference)
    The breeds are split over one child process per CPU core (env SHARD=i/n runs one share). */
 'use strict';
@@ -35,7 +35,8 @@ const outfits=[null,...OUTS.map(([sl,n])=>({[sl]:n})),
  {head:'Party Hat',eyes:'Heart Sunglasses',neck:'Red Bandana',body:'Superhero Cape'},{head:'Rain Hat',body:'Frog Raincoat',neck:'Clover Collar',eyes:'Explorer Goggles'},
  {body:'Yellow Raincoat',sleepwear:true},{sleepwear:true},{body:'Pyjamas',sleepwear:true},{head:'Wizard Hat',neck:'Knit Scarf',body:'Bumblebee Suit'},{head:'Nope',body:'Banana Suit'}];
 let n=0,bad=[];
-const cmp=(lab,f)=>{n++;let a,b;try{a=f(OLD)}catch(e){a='ERR '+e.message}try{b=f(NEW)}catch(e){b='ERR '+e.message}if(a!==b&&bad.length<4000)bad.push(lab)};
+const SKIP=(process.env.SKIP||'').split(',').filter(Boolean);// env SKIP='gsd': leave out every render whose label names a breed being redrawn on purpose
+const cmp=(lab,f)=>{if(SKIP.some(k=>lab.split(/[ |,/]/).includes(k)))return;n++;let a,b;try{a=f(OLD)}catch(e){a='ERR '+e.message}try{b=f(NEW)}catch(e){b='ERR '+e.message}if(a!==b&&bad.length<4000)bad.push(lab)};
 const AGES=[null,'puppy','newborn'];
 const [SI,SN]=process.env.SHARD.split('/').map(Number);
 (process.env.SWEEP_ONLY?[]:K).filter((k,i)=>i%SN===SI).forEach(k=>{
