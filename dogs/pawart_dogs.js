@@ -1003,15 +1003,18 @@ TOP2['Trick-or-Treat Ghost']=function(h,s,L,HT){// one big white sheet over ever
   const D=dense(H,true,5),y0=cy+(my-cy)*.3,y1=cy+(my-cy)*.65,pts=D.map((q,i)=>{const wt=Math.max(0,Math.min(1,(q[1]-y0)/(y1-y0)));if(!wt)return q;const dx=q[0]-cx,dy=q[1]-cy,m=Math.hypot(dx,dy)||1,k=wt*(i%3===0?7:i%3===1?-1:2);return[q[0]+dx/m*k,Math.min(q[1]+dy/m*k,GY+1)]});
   h.shape(pts,SH,{w:4.2,step:30,amp:.5,famp:.5});h.crayon(b.rx,b.ry,B,SH,7);h.crayon(hx,hy*.6,q=>HT([q[0],q[1]-hy*.2]),SH,4);
   [[[.45,-.55],[.3,1.2]],[[-.35,-.6],[-.5,1.25]],[[-.75,-.2],[-.85,1.1]]].forEach(q=>h.line(q.map(B).map(p=>[p[0],Math.min(p[1],GY-2)]),2,'#C9CED8',.7));
-  earList(s).forEach(e=>{if(e.flop)return;const p=earPose(s,L,e);let ex=0,ey=0;p.forEach(q=>{ex+=q[0]/p.length;ey+=q[1]/p.length});
+  const lie=/^(rollover|playdead)$/.test(L.pose);// lying on its side or rolled over: no ear bumps (they would float off the sheet), the bucket set down on the ground
+  if(!lie)earList(s).forEach(e=>{if(e.flop)return;const p=earPose(s,L,e);let ex=0,ey=0;p.forEach(q=>{ex+=q[0]/p.length;ey+=q[1]/p.length});
    const m=Math.hypot(ex/hx,ey/hy)||1,dir=[ex/hx/m,ey/hy/m],z=hx*(/^(giant|bat|tall)$/.test(s.ears)?.34:.28),c=HT([dir[0]*hx*1.14,dir[1]*hy*1.18]),an=Math.atan2(c[1]-HT([0,0])[1],c[0]-HT([0,0])[0]);
    h.shape(circ(c[0],c[1],z,z,10),SH,{noline:1,ox:0,oy:0,sc:1});const arc=[];for(let j=-4;j<=4;j++){const t=an+j*Math.PI/8.5;arc.push([c[0]+Math.cos(t)*z,c[1]+Math.sin(t)*z])}h.line(arc,4,INK,.8)});
   ghostEyes(h,s,L,HT);
-  // the treat bucket: a round orange pail with a carved face, hanging by its handle from the mouth (resting on the ground when the head is low)
-  const m=HT([N[0]-hx*.12,N[1]+hy*.42]),z=Math.max(10,Math.min(16,hx*.46)),lie=/^(rollover|playdead)$/.test(L.pose);
-  let c=[m[0]+(lie?z*.6:2),m[1]+z*1.35];if(c[1]+z*.9>GY)c=[c[0]+(lie?0:z*.4),GY-z*.9];
-  const rim=[[c[0]-z*.92,c[1]-z*.62],[c[0]+z*.92,c[1]-z*.62]],ty=Math.min(m[1],c[1]-z*.9);
-  h.line([rim[0],[c[0]-z*.5,ty-z*.25],[m[0],ty-1],[c[0]+z*.5,ty-z*.25],rim[1]],2.4,INK,.4);
+  // the treat bucket: a round orange pail with a carved face, hanging by its handle from the mouth (resting on the ground when the head is low);
+  // lying down it stands on the ground just in front of the head, its handle up
+  const m=HT([N[0]-hx*.12,N[1]+hy*.42]),z=Math.max(10,Math.min(16,hx*.46));let c;
+  if(lie){let fx=-1e9;circ(0,0,hx*1.1,hy*1.1,12).forEach(q=>{fx=Math.max(fx,HT(q)[0])});c=[fx+z*.45,GY-z*.9]}
+  else{c=[m[0]+2,m[1]+z*1.35];if(c[1]+z*.9>GY)c=[c[0]+z*.4,GY-z*.9]}
+  const rim=[[c[0]-z*.92,c[1]-z*.62],[c[0]+z*.92,c[1]-z*.62]],ty=lie?c[1]-z*1.5:Math.min(m[1],c[1]-z*.9),tx=lie?c[0]-z*.15:m[0];
+  h.line([rim[0],[c[0]-z*.5,ty-z*.25],[tx,ty-1],[c[0]+z*.5,ty-z*.25],rim[1]],2.4,INK,.4);
   const pail=[];for(let i=0;i<14;i++){const an=i/14*Math.PI*2,k=1+.05*Math.cos(an*5);pail.push([c[0]+Math.cos(an)*z*k,c[1]+Math.sin(an)*z*.9*k])}
   h.shape(pail,HW2_OR,{w:2.8,step:30,ox:0,oy:0,sc:1,closed:1,amp:.4,famp:.3});
   h.line([[c[0]-z*.35,c[1]-z*.82],[c[0]-z*.42,c[1]+z*.82]],1.6,HW2_OD,.2);h.line([[c[0]+z*.35,c[1]-z*.82],[c[0]+z*.42,c[1]+z*.82]],1.6,HW2_OD,.2);
