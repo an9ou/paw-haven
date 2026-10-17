@@ -19,23 +19,23 @@ function crFree(d) { if (d && typeof hoFree === 'function') hoFree(d); } // v2.7
 /* ---------------- the chip row (top of the Feed and Care trays) ---------------- */
 const CR_TICK = '<svg class="cr-tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12.8c2 1.6 3.4 3.3 4.6 5.4 2.6-5.3 5.9-9.4 10.4-12.6" fill="none" stroke="#5B3D32" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 let crQuiet = false; // a chip tap redraws its tray: no bark, keep the row's scroll
-function crChipsHTML() {
+function crChipsHTML(cap) { // v2.9: cap = the line under the chips (Play and Walk say who joins in); the default is the Feed and Care line
   if (!crPack()) return '';
   const chips = crPresent().map((d) => {
     const on = !(S.careOff && S.careOff[d.id]);
     return `<button class="chip cr-chip${on ? ' on' : ''}${d.sleeping ? ' asleep' : ''}" data-crdog="${d.id}" aria-pressed="${on}" aria-label="${esc(d.name)}${d.sleeping ? ', asleep' : ''}"><span class="cr-head" aria-hidden="true">${headSVG(d)}</span><span class="cr-name">${esc(d.name)}</span>${d.sleeping ? '<span class="cr-zz" aria-hidden="true">zz</span>' : ''}<span class="cr-box" aria-hidden="true">${on ? CR_TICK : ''}</span></button>`;
   }).join('');
-  return `<div class="cr-wrap"><div class="cr-chips" role="group" aria-label="Who gets this">${chips}</div><p class="small cr-cap">Ticked dogs get fed, petted, bathed and tucked in together.</p></div>`;
+  return `<div class="cr-wrap"><div class="cr-chips" role="group" aria-label="Who gets this">${chips}</div><p class="small cr-cap">${cap ? esc(cap) : 'Ticked dogs get fed, petted, bathed and tucked in together.'}</p></div>`;
 }
-function crBindChips(root, redraw) {
-  (root || dock).querySelectorAll('[data-crdog]').forEach((b) => { b.onclick = () => { SFX.init(); crToggle(b.dataset.crdog, redraw); }; });
+function crBindChips(root, redraw, line) {
+  (root || dock).querySelectorAll('[data-crdog]').forEach((b) => { b.onclick = () => { SFX.init(); crToggle(b.dataset.crdog, redraw, line); }; });
 }
 // tick or untick a dog. The last ticked dog present stays ticked. Returns true when it changed
-function crToggle(id, redraw) {
+function crToggle(id, redraw, line) {
   if (!S) return false; if (!S.careOff || typeof S.careOff !== 'object') S.careOff = {};
   if (!S.careOff[id]) {
     const ticked = crPresent().filter((d) => !S.careOff[d.id]);
-    if (ticked.length <= 1 && ticked.some((d) => d.id === id)) { nope('Someone has to get the treat. Tick another dog first.'); return false; }
+    if (ticked.length <= 1 && ticked.some((d) => d.id === id)) { nope(line || 'Someone has to get the treat. Tick another dog first.'); return false; }
     S.careOff[id] = true;
   } else delete S.careOff[id];
   SFX.click(); markDirty();
@@ -150,6 +150,35 @@ function crPetPack(bondNow, bonded) {
     }
   });
   return due;
+}
+// v2.8.4: pet a pack dog where it stands, no switching. The dog touched is ticked back in if it was unticked. With the active dog awake this is
+// the same pet as rubbing the active dog (every ticked dog present gets it); with the active dog asleep only the awake ticked pack dogs do
+function crPetAt(d, wx, wy) {
+  if (!d || busy) return;
+  if (d.sleeping) { barkDog(d, 'huff', { player: true, volume: 0.6 }); if (performance.now() - crPetSleepT > 2500) { crPetSleepT = performance.now(); toast(`Shh. ${d.name} is asleep.`); } return; }
+  if (S.careOff && S.careOff[d.id]) { delete S.careOff[d.id]; markDirty(); }
+  if (!S.sleeping) { petTick(wx, wy); return; }
+  const due = crPetPack(false, true); fxText('♥', wx + RAND(-20, 20), wy - 10); Math.random() < 0.7 ? SFX.squeak() : SFX.boop(RAND(500, 800));
+  if (due.length) crPetBond(due, true); else updateHUD();
+}
+// the rub (mouse hover-rub or touch drag) and tap on a pack dog, like the active dog's #dogHit (03_yard.js). The rub state is shared (crRub), because a
+// petted pack dog is redrawn (redrawPackDog replaces its element and binds the new one) in the middle of a touch rub
+const crRub = { id: null, down: false, last: null, moved: 0, dist: 0 };
+function crPetBind(el) {
+  const svg = el.ownerSVGElement, id = el.dataset.dog, at = (e) => { const w = toWorld(svg, e.clientX, e.clientY); crPetAt(dogById(id), w.x, w.y); };
+  el.classList.add('cr-pet'); // the phone camera pan leaves a rub on this dog alone (phCamPan, 03_yard.js)
+  el.addEventListener('pointerdown', (e) => { SFX.init(); Object.assign(crRub, { id, down: true, moved: 0, last: { x: e.clientX, y: e.clientY } }); try { el.setPointerCapture(e.pointerId); } catch (er) { /* capture unsupported */ } });
+  el.addEventListener('pointermove', (e) => {
+    if (e.pointerType !== 'mouse' && !(crRub.down && crRub.id === id)) return;
+    if (crRub.id !== id || !crRub.last) { Object.assign(crRub, { id, last: { x: e.clientX, y: e.clientY } }); return; }
+    const m = Math.hypot(e.clientX - crRub.last.x, e.clientY - crRub.last.y); crRub.last = { x: e.clientX, y: e.clientY }; crRub.moved += m; crRub.dist += m;
+    if (crRub.dist > 70) { crRub.dist = 0; at(e); }
+  });
+  el.addEventListener('pointerup', (e) => { if (crRub.down && crRub.id === id && crRub.moved < 8 && !pkHeld()) { at(e); at(e); } crRub.down = false; }); // v2.9: a long press opened the dog card, so no pet on release
+  el.addEventListener('pointerleave', () => { if (!crRub.down) crRub.last = null; });
+  el.addEventListener('pointercancel', () => { crRub.down = false; crRub.last = null; });
+  el.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); const r = el.getBBox(); crPetAt(dogById(id), r.x + r.width / 2, r.y + r.height / 3); } };
+  pkHold(el, dogById(id)); // v2.9: a long press (about 0.6 s) opens the dog card: Make leader, Dress, Train. A tap keeps petting
 }
 // the Bond for the pack, one toast. later: pack dogs whose Bond came after the active dog's (it had its own toast, the act and the care bonus already)
 function crPetBond(due, later) {

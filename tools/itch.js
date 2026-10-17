@@ -13,7 +13,14 @@ const dist = path.join(root, 'dist'), out = path.join(dist, 'itch'), zipPath = p
 fs.rmSync(out, { recursive: true, force: true }); fs.mkdirSync(out, { recursive: true });
 // itch.io copy only (owner's choice, 14 Oct 2026): players never see the dev button or its panel. GitHub Pages and claude.ai keep it.
 const HIDE_DEV = '<style id="itchNoDev">#devBtn,#devPanel{display:none!important}</style>';
-const itchHtml = html.includes('</head>') ? html.replace('</head>', HIDE_DEV + '</head>') : HIDE_DEV + html;
+// The CSS alone only hides them, so this script (it runs after the game script has booted) also takes both out of the DOM.
+// #devBtn is drawn again by every scene (view.innerHTML), so a MutationObserver removes it each time, before it can paint.
+// The panel opens only from #devBtn (bindDev), and Esc only closes it; the game keeps its own detached reference to #devPanel.
+const STRIP_DEV = '<script id="itchNoDevJs">(function(){var Q="#devBtn,#devPanel";function strip(r){var n=r.querySelectorAll(Q);for(var i=0;i<n.length;i++)n[i].remove();}strip(document);'
+  + 'new MutationObserver(function(ms){for(var i=0;i<ms.length;i++){var a=ms[i].addedNodes;for(var j=0;j<a.length;j++){var e=a[j];if(e.nodeType!==1)continue;if(e.matches(Q))e.remove();else strip(e);}}}).observe(document.documentElement,{childList:true,subtree:true});})();</script>';
+let itchHtml = html.includes('</head>') ? html.replace('</head>', () => HIDE_DEV + '</head>') : HIDE_DEV + html;
+const bodyEnd = itchHtml.lastIndexOf('</body>');
+itchHtml = bodyEnd >= 0 ? itchHtml.slice(0, bodyEnd) + STRIP_DEV + itchHtml.slice(bodyEnd) : itchHtml + STRIP_DEV;
 fs.writeFileSync(path.join(out, 'index.html'), itchHtml);
 // the brand files the page links to (relative href/src), plus the icons the web manifest names
 const brand = path.join(root, 'brand'), want = new Set();

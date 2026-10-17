@@ -125,7 +125,7 @@ sec('Mt. Fuji: seasons, times, weather');
   ok(i > 0 && hill > i, 'yard (world A kit): Fuji is drawn before the far hills, they hide its foot');
 }
 
-sec('Fuji View Hill');
+sec('Mt. Fuji Lookout');
 {
   const PA = load(SRC), P2 = load(SRC);
   let n = 0;
@@ -146,7 +146,7 @@ sec('Fuji View Hill');
   ok(/#E3C989/.test(d) && /#E3C989/.test(PA.scene('fujihill', { season: 'spring' })) && !/#F1EAC2/.test(d), 'the shrine wears its shimenawa all year (no kadomatsu without New Year)');
   const torii = (s) => norm(group(s, '<g class="pa-jp-torii"')).replace(/#[0-9A-Fa-f]{6}|rgb\([^)]*\)/g, 'C');
   ok(torii(d).length > 100 && SEASONS.every((season) => torii(PA.scene('fujihill', { season, jp: true })) === torii(d)), 'the torii stays in the same place in every season and with jp');
-  console.log(`  ${n} Fuji View Hill renders checked`);
+  console.log(`  ${n} Mt. Fuji Lookout renders checked`);
 }
 
 offDone.then((n) => {

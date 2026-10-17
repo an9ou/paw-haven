@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#FFF8EC"><meta name="referrer" content="no-referrer"><meta name="robots" content="noindex"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/icon-32.png" sizes="32x32"><link rel="apple-touch-icon" href="/icon-180.png"><link rel="stylesheet" href="/style.css">
+<title>Doodle Doggo: set a new password</title>
+</head><body>
+<main class="page">
+  <div class="sheet prose">
+    <img class="rsdog" id="rsDog" src="/img/noodle-sit.svg" alt="Noodle the dachshund, sitting politely" width="240" height="200">
+    <h1 class="center" style="font-size:44px" id="rsTitle">Set a new password</h1>
+    <div id="rsForm">
+      <p class="center">Pick a new password for Doodle Doggo. Every device logs out, and your dogs stay safe.</p>
+      <form id="rsF" novalidate>
+        <label><span>New password (8 or more characters)</span><input id="rsPw" type="password" autocomplete="new-password" required minlength="8"></label>
+        <label><span>New password again</span><input id="rsPw2" type="password" autocomplete="new-password" required minlength="8"></label>
+        <p class="msg bad" id="rsMsg" role="alert"></p>
+        <button class="play" id="rsGo" type="submit">Save password</button>
+      </form>
+    </div>
+    <div id="rsDone" hidden>
+      <p class="center" style="font-size:24px" role="status"><b>All set!</b> Go back to the game on itch.io and log in.</p>
+      <p class="cta"><a class="play" href="https://an9ou.itch.io/doodle-doggo">Back to the game</a></p>
+    </div>
+    <div id="rsGone" hidden>
+      <p class="center" role="status">This link is missing its code. Open the newest link from the email, or ask for a new one in the game: Log in, then Forgot your password?</p>
+      <p class="cta"><a class="play" href="https://an9ou.itch.io/doodle-doggo">Go to the game on itch.io</a></p>
+    </div>
+  </div>
+  <footer class="foot"><a href="/">Home</a> · <a href="/privacy">Privacy</a></footer>
+</main>
+<script>
+(function () {
+  var API = 'https://pawhaven-api.ansonyuen0108.workers.dev';
+  var q = new URLSearchParams(location.search), h = new URLSearchParams(location.hash.replace(/^#/, ''));
+  // our email: ?token=...  An old account's Supabase email: #access_token=...&type=recovery
+  var link = /^[A-Za-z0-9_-]{20,100}$/.test(q.get('token') || '') ? { token: q.get('token') }
+    : (h.get('type') === 'recovery' && h.get('access_token')) ? { sb_token: h.get('access_token') } : null;
+  try { history.replaceState(null, '', location.pathname); } catch (e) { /* keep going */ } // the code leaves the address bar
+  var el = function (id) { return document.getElementById(id); };
+  if (!link) { el('rsForm').hidden = true; el('rsGone').hidden = false; return; }
+  var msg = el('rsMsg'), go = el('rsGo');
+  var say = function (t) { msg.textContent = t || ''; };
+  var texts = {
+    weak_password: 'Pick a password with at least 8 characters.',
+    expired: 'That link has run out or was already used. In the game, tap Log in, then Forgot your password? for a new one.',
+    rate_limited: 'Too many tries. Wait a few minutes and try again.'
+  };
+  el('rsF').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var pw = el('rsPw').value, pw2 = el('rsPw2').value;
+    if (pw.length < 8) return say(texts.weak_password);
+    if (pw !== pw2) return say("The two passwords don't match.");
+    say(''); go.disabled = true; go.textContent = 'Saving...';
+    var body = { password: pw }; for (var k in link) body[k] = link[k];
+    fetch(API + '/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (r) {
+        if (!r.ok || !r.d.token) { go.disabled = false; go.textContent = 'Save password'; return say(texts[r.d.error] || "That didn't work. Try again in a moment."); }
+        // this page doesn't keep the login: the player logs in inside the game
+        fetch(API + '/logout', { method: 'POST', headers: { Authorization: 'Bearer ' + r.d.token, 'Content-Type': 'application/json' }, body: '{}' }).catch(function () {});
+        link = null; el('rsForm').hidden = true; el('rsDone').hidden = false;
+        el('rsTitle').textContent = 'Password changed'; el('rsDog').src = '/img/noodle-happy.svg'; el('rsDog').alt = 'Noodle the dachshund, wagging';
+      })
+      .catch(function () { go.disabled = false; go.textContent = 'Save password'; say("Can't reach Doodle Doggo right now. Check your connection and try again."); });
+  });
+})();
+</script>
+</body></html>

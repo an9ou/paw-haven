@@ -301,7 +301,7 @@ async function newYearPart(t, dev) {
   await t.ctx.close();
 }
 /* ======================= FUJI HILL part (the FUJI HILL lane adds it here) ======================= */
-// Fuji View Hill (V28.md sections 12.4 and 9), 2026-12-10 with jpTest, at the device width and 360 px: the place buttons 44 px on one row, the dog and the
+// Mt. Fuji Lookout (V28.md sections 12.4 and 9), 2026-12-10 with jpTest, at the device width and 360 px: the place buttons 44 px on one row, the dog and the
 // bench inside the crop, Fuji's summit in the crop, nothing over #dogHit (no place button either), 15 px text; Look at Fuji by touch (motion off), then
 // "Fuji says see you tomorrow." still 44 px on one row. The iPhone 15 pictures go to game/shots_v28/fuji-hill/ when PAW_SHOTS or PAW_JP_SHOTS is set.
 async function jpShot(t, dev, name) {
@@ -325,12 +325,12 @@ async function jpHill(t, tag) {
   ok(!!q.summit && q.summit[0] > q.view[0] + 10 && q.summit[0] < q.view[2] - 10 && q.summit[1] >= q.view[1] - 1, `${tag}: Fuji's summit is in the crop ${q.summit && q.summit.map(Math.round)}`);
   ok(q.dogTop && !q.btns.some((b) => ov(b, q.dog)) && !ov(q.chip, q.dog), `${tag}: nothing covers #dogHit`);
   ok(q.sw === q.iw, `${tag}: no sideways page scroll`);
-  await audit(t, `${tag} Fuji View Hill`);
+  await audit(t, `${tag} Mt. Fuji Lookout`);
   return q;
 }
 async function jpPart(t, dev) {
   const { ok, ev } = t;
-  t.sec(`FUJI HILL ${dev}: Fuji View Hill on 2026-12-10`);
+  t.sec(`FUJI HILL ${dev}: Mt. Fuji Lookout on 2026-12-10`);
   setDate(t, '2026-12-10');
   await t.newGame({ device: dev }, { bond: { level: 3, pts: 300 } });
   ok(await ev(() => !!window.__paw.jp.place() && window.__paw.jp.open()), `${dev}: the hill is open (jpTest, Bond 3)`);

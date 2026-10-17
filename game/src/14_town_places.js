@@ -14,9 +14,9 @@ const LOOT16 = { town: ['Lucky Penny', "Duck's Picnic Sandwich", 'Rubber Chicken
 Object.keys(LOOT16).forEach((r) => LOOT16[r].forEach((n) => { const t = TREASURES.find((x) => x.n === n); if (t && !t.routes.includes(r)) t.routes.push(r); }));
 Object.assign(ROUTE_WORD, { town: 'around town', hilltop: 'up on the hilltop', pier: 'on the pier' });
 Object.assign(ROUTE_HINT, { town: 'Found around town...', hilltop: 'Found up on the hilltop...', pier: 'Found on the pier...' });
-/* ---- v2.8 Fuji View Hill (V28.md section 12.4): a town place only while jpOn() and JAPAN SCENE ART's PawArt.scene('fujihill') exists
+/* ---- v2.8 Mt. Fuji Lookout (V28.md section 12.4): a town place only while jpOn() and JAPAN SCENE ART's PawArt.scene('fujihill') exists
    (world C lists it in WORLD_C_SCENES). Under the harness it needs prefs.jpTest. FUJI HILL adds its lines to PLACE_LINES (00_core.js) from 33_japan.js. */
-const JP_PLACE = { n: 'Fuji View Hill', bond: 2, out: true };
+const JP_PLACE = { n: 'Mt. Fuji Lookout', bond: 2, out: true };
 const jpSceneReady = () => !!(window.PawArt && Array.isArray(PawArt.WORLD_C_SCENES) && PawArt.WORLD_C_SCENES.includes('fujihill'));
 // adds or removes PLACES.fujihill; call it again after changing prefs.jpTest at run time (a save standing on the hill goes home)
 function jpPlaceSync() {
@@ -114,7 +114,7 @@ function mapArt(locked) {
   const pins = NEW_PLACES.filter((k) => !new RegExp(`data-area="${k}"`).test(raw)).map((k) => fbPinSVG(k, FB_PINS[k], k)).join('') + jpMapPin(raw, JP_MAP_PIN.fb);
   return { W, H, areas: null, svg: `<rect width="${W}" height="${H}" fill="#FFFBF3"/><text x="${W / 2}" y="90" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="72" fill="#5B3D32">Doodle Doggo Town</text>${roads}${deco}<g id="sceneG" data-scene="map" data-noenv="1">${place(raw, ox, oy, 1000 * sc, 600 * sc)}</g>${pins}` };
 }
-// a plain doodle pin for a place the map art does not draw yet (the v1.6 town places, v2.8 Fuji View Hill). icon: the PawArt.icon name
+// a plain doodle pin for a place the map art does not draw yet (the v1.6 town places, v2.8 Mt. Fuji Lookout). icon: the PawArt.icon name
 function fbPinSVG(k, [x, y], icon) {
   const P = PLACES[k], lock = topBond() < P.bond;
   return `<g data-area="${k}" class="fbpin${lock ? ' locked' : ''}" transform="translate(${x} ${y})"><circle r="78" fill="#FFFBF3" stroke="#5B3D32" stroke-width="5"/><g transform="translate(-44 -62)">${place(iconOr(icon, `<circle r="14" fill="#F28FA5" stroke="#5B3D32" stroke-width="2"/>`), 0, 0, 88, 88)}</g><text y="${lock ? 62 : 58}" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="${P.n.length > 13 ? 26 : 30}" fill="#5B3D32">${esc(P.n)}</text>${lock ? `<g transform="translate(40 -66) rotate(8)"><rect x="-44" y="-18" width="88" height="34" rx="8" fill="#F28FA5" stroke="#5B3D32" stroke-width="3"/><text y="8" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="24" fill="#fff">Bond ${P.bond}</text></g>` : ''}</g>`;

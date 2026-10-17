@@ -4,9 +4,16 @@ function equip(n, quiet) {
   S.outfit[c.slot] = S.outfit[c.slot] === n ? null : n; markDirty(); SFX.pop();
   if (S.outfit[c.slot] && c.slot !== 'charm') { trackAct('wear', { name: n, slot: c.slot }); dailyCheck(); if (!S.daily.outfit) { S.daily.outfit = true; const tw = S.outfit.body === 'Tutu', lf = S.outfit.head === 'Leaf Beret' && S.outfit.neck === 'Autumn Scarf'; addStat('happy', tw || lf ? 10 : 5); toast(`Fashion bonus! +${tw ? '10 Happiness. Twirl!' : lf ? '10 Happiness. Autumn chic.' : '5 Happiness.'} ${NAME()} is feeling cute.`, 'good'); /* v2.5: Leaf Beret + Autumn Scarf, like the Tutu */ } else if (!quiet) toast(`${n} on. ${PICK(['Stunning.', 'Iconic.', 'A look.', 'Runway ready.'])}`); }
   if (S.outfit[c.slot] && c.slot === 'charm' && !quiet) toast(`${n} equipped as a charm. ${n === 'Sparkle Stone' ? 'It hums. Ominously. Cutely.' : 'Pocket luck activated.'}`, 'good');
-  if (cur.mode === 'yard') renderDog(dogPoseNow());
+  if (cur.mode === 'yard' && !pkDressing) renderDog(dogPoseNow()); // v2.9 PACK: a pack dog being dressed is redrawn by pkDress, the leader's picture stays
 }
-function openWardrobe() {
+// did: v2.9 PACK, the dog picked in the picker (a pack dog is dressed under withDog and redrawn in place; the leader is never changed)
+function openWardrobe(did) {
+  const wd = pkWardDog(did), pick = pkPickHTML(wd ? wd.id : S.activeId, 'Who to dress'); // the picker is built before withDog, so the heads keep their order
+  if (wd) return withDog(wd, () => openWardrobeFor(wd, pick));
+  return openWardrobeFor(null, pick);
+}
+function openWardrobeFor(wd, pick) {
+  const act = (f) => { if (wd) pkDress(wd, f); else f(); }, again = () => openWardrobe(wd ? wd.id : undefined);
   const owned = ALL_WEAR.filter((c) => owns('clothes', c.n));
   const opt = (c, s) => `<button class="opt" data-eq="${esc(c.n)}" aria-pressed="${S.outfit[s] === c.n}"><span class="ic">${art('item', c.n)}</span>${esc(c.n)}${hwTag(c.n)}${c.treasure || s === 'charm' ? ' <span class="tstar" title="Treasure">&#10022;</span>' : ''}</button>`;
   const slotRow = (s, label, opts, empty) => `<div class="slot"><h4>${label}</h4>${opts.length ? `<button class="opt" data-un="${s}" aria-pressed="${!S.outfit[s]}">Nothing</button>` + opts.map((c) => opt(c, s)).join('') : `<span class="small">${empty}</span>`}${s === 'body' ? shPjToggle() : ''}</div>`;
@@ -14,10 +21,11 @@ function openWardrobe() {
     + slotRow('charm', 'Charm', CHARMS.filter((c) => S.inv.charms.includes(c.n)), 'No charms yet. They are buried on walks.');
   const perks = SLOTS.concat('charm').map((s) => S.outfit[s]).filter(Boolean).map((n) => { const c = ALL_WEAR.find((x) => x.n === n) || CHARMS.find((x) => x.n === n); return c ? `${n}: ${c.perk}` : ''; });
   audioPlace('wardrobe');
-  const p = openModal('Wardrobe', `<div class="ward"><div class="preview">${dogSVG(D(), { pose: 'happy', outfit: dogOutfit() })}${S.outfit.charm ? `<div class="charmtag">Charm: ${esc(S.outfit.charm)}</div>` : ''}</div><div>${slots}<p class="small">${perks.length ? 'Perks: ' + esc(perks.join(' ')) : 'Wearing: nothing but confidence.'}</p></div></div>`);
-  p.querySelectorAll('[data-eq]').forEach((b) => { b.onclick = () => { equip(b.dataset.eq); openWardrobe(); }; });
-  const pj = $('#shPj', p); if (pj) pj.onclick = () => { S.pjAuto = S.pjAuto === false; markDirty(); SFX.click(); if (cur.mode === 'yard') renderDog(dogPoseNow(), 'right', true); openWardrobe(); };
-  p.querySelectorAll('[data-un]').forEach((b) => { b.onclick = () => { S.outfit[b.dataset.un] = null; markDirty(); SFX.click(); if (cur.mode === 'yard') renderDog(dogPoseNow()); openWardrobe(); }; });
+  const p = openModal(pick ? `Wardrobe: ${esc(D().name)}` : 'Wardrobe', `${pick}<div class="ward"><div class="preview">${dogSVG(D(), { pose: 'happy', outfit: dogOutfit() })}${S.outfit.charm ? `<div class="charmtag">Charm: ${esc(S.outfit.charm)}</div>` : ''}</div><div>${slots}<p class="small">${perks.length ? 'Perks: ' + esc(perks.join(' ')) : 'Wearing: nothing but confidence.'}</p></div></div>`);
+  pkBindPick(p, (id) => openWardrobe(id));
+  p.querySelectorAll('[data-eq]').forEach((b) => { b.onclick = () => { act(() => equip(b.dataset.eq)); again(); }; });
+  const pj = $('#shPj', p); if (pj) pj.onclick = () => { S.pjAuto = S.pjAuto === false; markDirty(); SFX.click(); if (cur.mode === 'yard' && !wd) renderDog(dogPoseNow(), 'right', true); again(); };
+  p.querySelectorAll('[data-un]').forEach((b) => { b.onclick = () => { act(() => { S.outfit[b.dataset.un] = null; markDirty(); SFX.click(); if (cur.mode === 'yard' && !pkDressing) renderDog(dogPoseNow()); }); again(); }; });
 }
 
 

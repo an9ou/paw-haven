@@ -175,7 +175,7 @@ function twNpcSummary(n) {
   if (r && r.summary) return String(r.summary);
   return geneReport(n).summary;
 }
-function twSniffBlock(n) { return npcTested(n) ? `<p class="pbsniff"><span class="pbsl">Sniffed:</span> ${esc(twNpcSummary(n))}</p>` : ''; }
+function twSniffBlock(n) { return npcTested(n) ? `<p class="pbsniff"><span class="pbsl">${esc(n.name)}'s sniff test:</span> ${esc(twNpcSummary(n))}</p>` : ''; }
 function openPlayboard() {
   SFX.boop(640);
   const list = playboardDogs();

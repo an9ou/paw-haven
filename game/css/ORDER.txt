@@ -40,3 +40,5 @@
 34_winter.css
 35_newyear.css
 36_japan.css
+37_pack_play.css
+38_photo.css

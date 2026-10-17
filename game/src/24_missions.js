@@ -30,6 +30,7 @@ const MS_POOL = [
   { id: 'stall', n: 1, t: 'Buy a treat at the Harvest Stall', s: 'Harvest Stall', shop: true, g: () => festOn('leaf'), m: (a) => a.kind === 'buy' && a.shop === 'stall' && a.cat === 'food' },
   { id: 'leafpile', n: 1, t: 'Jump in a leaf pile', s: 'Leaf pile', g: () => (typeof fsCanJump === 'function' ? fsCanJump() : festOn('leaf')), m: (a) => a.kind === 'leafpile' },
   { id: 'parade', n: 1, t: 'Join the costume parade', s: 'Costume parade', g: () => festOn('halloween'), m: (a) => a.kind === 'parade' },
+  { id: 'photo', n: 1, t: 'Take a photo of your pack', s: 'Take a photo', m: (a) => a.kind === 'photo' }, // v2.9 PHOTO lane: fired once per saved photo (35_photo.js)
   { id: 'travel', n: 1, t: 'Visit the Dog Park', s: 'Dog Park visit', g: () => topBond() >= ((PLACES.dogpark && PLACES.dogpark.bond) || 2), m: (a) => a.kind === 'travel' && a.place === 'dogpark' },
   // v2.8 Winter & New Year (V28.md section 1): WINTER fires snowdrift / snowdog / sweater and buy shop:'stall', NEW YEAR fires fortune. Lane gates are guarded
   { id: 'snowdrift', n: 1, t: 'Dive into a snowdrift', s: 'Snowdrift', g: () => typeof wnCanJump === 'function' && !!wnCanJump(), m: (a) => a.kind === 'snowdrift' },
@@ -38,10 +39,10 @@ const MS_POOL = [
   { id: 'sweater', n: 1, t: 'Enter the Ugly Sweater Contest', s: 'Sweater Contest', g: () => festOn('lights'), m: (a) => a.kind === 'sweater' },
   { id: 'yearclean', n: 1, t: 'Year-end clean: give {dog} a bath', s: 'Year-end clean', g: () => nyEve(), m: (a) => a.kind === 'bath' },
   { id: 'fortune', n: 1, t: 'Draw a New Year fortune', s: 'New Year fortune', g: () => nyDays() && !(S.ny && S.ny.fortune && S.ny.fortune.date === localISO()), m: (a) => a.kind === 'fortune' },
-  // v2.8 Fuji View Hill (V28.md section 12.4): FUJI HILL fires gaze { first }; travel is the core act. jpHillOpen(): jpOn(), the scene exists, Bond 2
-  { id: 'gaze', n: 1, t: 'Look at Fuji from Fuji View Hill', s: 'Look at Fuji', g: () => jpHillOpen() && !(S.jp && S.jp.gazed === localISO()), m: (a) => a.kind === 'gaze' },
+  // v2.8 Mt. Fuji Lookout (V28.md section 12.4): FUJI HILL fires gaze { first }; travel is the core act. jpHillOpen(): jpOn(), the scene exists, Bond 2
+  { id: 'gaze', n: 1, t: 'Look at Mt. Fuji from the Mt. Fuji Lookout', s: 'Look at Mt. Fuji', g: () => jpHillOpen() && !(S.jp && S.jp.gazed === localISO()), m: (a) => a.kind === 'gaze' },
   { id: 'hatsufuji', n: 1, t: 'See the first Fuji of the year', s: 'First Fuji', g: () => nyDays() && jpHillOpen() && !(S.jp && S.jp.first === nyYear()), m: (a) => a.kind === 'gaze' && !!a.first },
-  { id: 'travel_fuji', n: 1, t: 'Visit Fuji View Hill', s: 'Fuji View Hill visit', g: () => jpHillOpen(), m: (a) => a.kind === 'travel' && a.place === 'fujihill' }
+  { id: 'travel_fuji', n: 1, t: 'Visit the Mt. Fuji Lookout', s: 'Mt. Fuji Lookout visit', g: () => jpHillOpen(), m: (a) => a.kind === 'travel' && a.place === 'fujihill' }
 ];
 const msDef = (id) => MS_POOL.find((x) => x.id === id);
 function msFields() {
@@ -181,16 +182,53 @@ function msRefresh(stampNew) {
 /* ---- the yard clipboard on the left fence (world box, 1000x600 scene) ---- */
 const MS_YARD = [208, 318, 50, 64]; // on the house wall between the front door and the mailbox, under the window; clear of #dogHit, the mailbox, the photo frame, the crayon box and the dog house
 const MS_YARD_MAXX = 260; // the mailbox tap box starts at x=261
-// the tap rect: on phones at least 48 screen px each way (like hmDecorHit), kept left of the mailbox
-function msYardHit(x, y, w, h) {
-  if (isPhone()) { const s = phHitScale(), m = 48 / s; if (w < m) { x -= (m - w) / 2; w = m; } if (h < m) { y -= (m - h) / 2; h = m; } if (x + w > MS_YARD_MAXX) x = MS_YARD_MAXX - w; }
-  return `<rect x="${f1(x)}" y="${f1(y)}" width="${f1(w)}" height="${f1(h)}" fill="transparent" pointer-events="all"/>`;
+// the tap rect: on phones at least 48 screen px each way (like hmDecorHit), kept left of the mailbox.
+// v2.9: while a Feed, Play or Care tray is open the scene shrinks into the strip above it, so the rect grows in world units (44 px, the least a tap needs) instead of the clipboard hiding; msYardFit re-reads the scale whenever the scene resizes.
+function msTrayOpen() { return !!document.querySelector('#dock > .tray:not(.dock-idle):not(.mini)'); }
+function msYardRect() {
+  let [x, y, w, h] = MS_YARD;
+  if (isPhone()) {
+    const s = phHitScale(), m = (msTrayOpen() ? 44 : 48) / s; if (w < m) { x -= (m - w) / 2; w = m; } if (h < m) { y -= (m - h) / 2; h = m; } if (x + w > MS_YARD_MAXX) x = MS_YARD_MAXX - w;
+    // v2.9: the camera can slide the clipboard to the edge (a tray open while the leader is by the dog house). The tap box stays fully on screen; when that would
+    // take it off the clipboard (or onto the mailbox) it is switched off until the camera comes back
+    const vis = msYardVis(); if (vis) {
+      if (x < vis[0]) x = vis[0]; if (x + w > vis[1]) x = vis[1] - w;
+      const [ax, , aw] = MS_YARD; if (x < vis[0] - 0.5 || x + w > vis[1] + 0.5 || x + w > MS_YARD_MAXX + 0.5 || x > ax + aw - 12 || x + w < ax + 12) return [MS_YARD[0], MS_YARD[1], 0, 0];
+    }
+  }
+  return [x, y, w, h];
 }
+// the scene x range on screen (the view's box, inside the window), in scene units
+function msYardVis() {
+  const svg = $('#view > svg.world'), m = svg && svg.isConnected && svg.getScreenCTM(); if (!m || !(m.a > 0.05)) return null;
+  const vr = view.getBoundingClientRect(), l = Math.max(vr.left, 0), r = Math.min(vr.right, innerWidth); if (r - l < 10) return null;
+  return [(l - m.e) / m.a, (r - m.e) / m.a];
+}
+function msYardHit() { const [x, y, w, h] = msYardRect(); return `<rect x="${f1(x)}" y="${f1(y)}" width="${f1(w)}" height="${f1(h)}" fill="transparent" pointer-events="all"/>`; }
+// re-read the scale and resize the tap rect in place (no redraw, so a tap in progress is not lost)
+function msYardFit() {
+  const r = $('#msCardG > rect'); if (!r) return;
+  const [x, y, w, h] = msYardRect(); r.setAttribute('x', f1(x)); r.setAttribute('y', f1(y)); r.setAttribute('width', f1(w)); r.setAttribute('height', f1(h));
+}
+{ let raf = 0; const fit = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; msYardFit(); }); };
+  const dk = $('#dock'), vw = $('#view');
+  if (dk && typeof MutationObserver === 'function') new MutationObserver(fit).observe(dk, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+  if (vw && typeof MutationObserver === 'function') { new MutationObserver(fit).observe(vw, { attributes: true, attributeFilter: ['style'] }); new MutationObserver(fit).observe(vw, { attributes: true, attributeFilter: ['viewBox'], subtree: true }); } // v2.9: the camera moves (viewBox) too
+  if (vw) vw.addEventListener('transitionend', fit, true);
+  window.addEventListener('resize', fit); }
+// While a tray is open the dock is a full-screen backdrop (a tap on it closes the tray), so the clipboard cannot take the tap itself: a tap that lands inside its
+// tap rect closes the tray and opens the Missions sheet instead of only closing the tray.
+document.addEventListener('click', (e) => {
+  const dk = $('#dock'); if (!dk || e.target !== dk || !isPhone() || !msTrayOpen()) return;
+  const r = $('#msCardG > rect'); if (!r) return; const b = r.getBoundingClientRect();
+  if (!b.width || e.clientX < b.left || e.clientX > b.right || e.clientY < b.top || e.clientY > b.bottom) return;
+  e.stopImmediatePropagation(); e.preventDefault(); popDown(); msOpen();
+}, true);
 function msYardSVG() {
   if (!S || S.place !== 'yard') return '';
   msFields(); if (S.missions.date !== localISO()) msRoll();
   const [x, y, w, h] = MS_YARD, nd = msDoneN();
-  return `<g id="msCardG" class="hot" tabindex="0" role="button" aria-label="Daily missions: ${nd} of 3 done" data-done="${nd}">${place(msCardArt(), x, y, w, h)}<g class="ms-badge" pointer-events="none" transform="translate(${x + w - 8} ${y + 8}) rotate(-8)"><circle r="13" fill="${nd >= 3 ? '#BFE3C8' : '#F9D56E'}" stroke="${INKG}" stroke-width="2.4"/><text y="6" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="16" fill="${INKG}">${nd}/3</text></g>${msYardHit(x, y, w, h)}</g>`;
+  return `<g id="msCardG" class="hot" tabindex="0" role="button" aria-label="Daily missions: ${nd} of 3 done" data-done="${nd}">${place(msCardArt(), x, y, w, h)}<g class="ms-badge" pointer-events="none" transform="translate(${x + w - 8} ${y + 8}) rotate(-8)"><circle r="13" fill="${nd >= 3 ? '#BFE3C8' : '#F9D56E'}" stroke="${INKG}" stroke-width="2.4"/><text y="6" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="16" fill="${INKG}">${nd}/3</text></g>${msYardHit()}</g>`;
 }
 function msYardBind() {
   const g = $('#msCardG'); if (!g) return;

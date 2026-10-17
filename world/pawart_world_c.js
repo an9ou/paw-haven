@@ -67,7 +67,7 @@ function kit(seed){
     // v2.6: Halloween dressing runs on a fourth stream, only when env.hw (k.hwl: its glows, drawn over the treated art)
     hwl:[],hw(fn){if(!k.env.hw)return;const sv=cur;cur=hwR;try{return fn()}finally{cur=sv}},
     // v2.8: Winter Lights (k.lt), New Year (k.ny) and the Japan scenery (k.jp) each run on their own stream, only with their env flag, so every
-    // render without the flag stays byte-identical. k.wl: their glows, drawn over the treated art at dusk and night. k.own: a stream of its own (Fuji View Hill)
+    // render without the flag stays byte-identical. k.wl: their glows, drawn over the treated art at dusk and night. k.own: a stream of its own (Mt. Fuji Lookout)
     wl:[],lt(fn){if(!k.env.lt)return;const sv=cur;cur=ltR;try{return fn()}finally{cur=sv}},ny(fn){if(!k.env.ny)return;const sv=cur;cur=nyR;try{return fn()}finally{cur=sv}},
     jp(fn){if(!k.env.jp)return;const sv=cur;cur=jpR;try{return fn()}finally{cur=sv}},own(r2,fn){const sv=cur;cur=r2;try{return fn()}finally{cur=sv}},
     add(s){out.push(s)},
@@ -551,8 +551,8 @@ function duck(k,x,y,s,col){k.add(`<ellipse cx="${x}" cy="${R1(y+3*s)}" rx="${R1(
   k.shape(E(x+12*s,y-16*s,7*s,7*s,10),col,{w:1.7});
   k.add(`<path d="M${R1(x+18*s)} ${R1(y-17*s)}l${R1(8*s)} ${R1(2*s)} ${R1(-8*s)} ${R1(3*s)}z" fill="${C.orange}" stroke="${C.ink}" stroke-width="1.1" stroke-linejoin="round"/><circle cx="${R1(x+14*s)}" cy="${R1(y-18*s)}" r="${R1(1.3*s+.4)}" fill="${C.ink}"/>`);
   k.line([[x-8*s,y-5*s],[x+2*s,y-3*s],[x+7*s,y-7*s]],1.3)}
-function signpost(k,x,gy,txt,w=120){k.line([[x,gy],[x+k.J(1),gy-96]],4,C.ink);const b=RC(x-w/2,gy-112,w,38);k.shape(b,C.wood,{w:2,hatch:{side:.8,gap:4,col:C.woodD,op:.4}});k.text(txt,x,gy-85,24,{rot:-2});
-  if(k.env.snow)k.side(()=>capLine(k,[[x-w/2-2,gy-112],[x+w/2+2,gy-112]],6))}
+function signpost(k,x,gy,txt,w=120,sc=1){k.line([[x,gy],[x+k.J(1),gy-96*sc]],4,C.ink);const b=RC(x-w/2,gy-112*sc,w,38*sc);k.shape(b,C.wood,{w:2,hatch:{side:.8,gap:4,col:C.woodD,op:.4}});k.text(txt,x,gy-85*sc,24*sc,{rot:-2});// sc: a bigger sign (the Mt. Fuji Lookout); sc 1 draws byte for byte as before
+  if(k.env.snow)k.side(()=>capLine(k,[[x-w/2-2,gy-112*sc],[x+w/2+2,gy-112*sc]],6))}
 function tagLabel(k,x,y,txt,rot=-8){return k.cap(()=>{const w=txt.length*8.6+22;k.add(`<g transform="rotate(${rot} ${x} ${y})">`);k.line([[x-w/2-12,y-14],[x-w/2+2,y]],1.2,C.ink,{op:.8});
   k.shape([[x-w/2,y-11],[x+w/2,y-11],[x+w/2,y+11],[x-w/2,y+11],[x-w/2-10,y]],'#FFD8E0',{w:1.6,one:1});k.add(`<circle cx="${R1(x-w/2-3)}" cy="${y}" r="2.2" fill="#FFFBF3" stroke="${C.ink}" stroke-width="1"/>`);k.text(txt,x+3,y+6,18);k.add('</g>')})}
 // appended hotspot: transparent hit, hover outline, label tag (the base art is untouched)
@@ -1459,7 +1459,7 @@ function propC(key,name,label,W,H,draw){if(!cacheP[key]){const k=kit(hashS('pwc-
     cacheP[key]=`<svg xmlns="http://www.w3.org/2000/svg" class="pa-wc-prop pa-wc-${name}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${label}">${k.defs.length?`<defs>${k.defs.join('')}</defs>`:''}${k.out.join('')}</svg>`}
   return freshC(cacheP[key])}
 
-/* ======================= v2.8: Winter Lights (k.lt), New Year (k.ny), the Japan scenery (k.jp, PA.JP) and Fuji View Hill (V28 sections 5 and 12) =======================
+/* ======================= v2.8: Winter Lights (k.lt), New Year (k.ny), the Japan scenery (k.jp, PA.JP) and Mt. Fuji Lookout (V28 sections 5 and 12) =======================
    The bulbs, the paper star, the shimekazari and the kites are world A's (SCENE ART), copied here so both modules hang the same ones.
    PA.JP draws Mt. Fuji and the Japanese details into whichever kit it is handed (world A's or this one), with that kit's own pencil only and on the
    stream the caller set (k.jp): it never switches streams, so the base drawing never moves. The details sit in pointer-events:none groups (a tap never
@@ -1739,7 +1739,7 @@ const JP_DRESS={
 function jpDressDraw(k,name,layer){const f=JP_DRESS[name]&&JP_DRESS[name][layer];if(!f)return;k.add('<g class="pa-jp" pointer-events="none">');f(k);k.add('</g>')}
 PA.JP={spot:jpSpot,fuji:(k,sp)=>jpFujiDraw(k,sp),dress:jpDressDraw,SPOTS:JP_SPOTS};
 
-/* ---------- Fuji View Hill (V28 section 12.4): the hero view of Fuji over a lake, a small torii with a knee-high shrine, two stone lanterns,
+/* ---------- Mt. Fuji Lookout (V28 section 12.4): the hero view of Fuji over a lake, a small torii with a knee-high shrine, two stone lanterns,
    a bench facing the view, sakura and momiji, a stepping-stone path the dog stands on. Every time x weather x season and festival flag. ---------- */
 const FH_BENCH=[530,454,.84];// x, ground y, scale: inside the phone crop (x 93-595 at 390 px), right of the dog
 const FH_SPOT=[FH_BENCH[0],R1(FH_BENCH[1]-36*FH_BENCH[2])];// where the dog sits: the middle of the seat
@@ -1793,28 +1793,28 @@ function sqFujihill(k){const e=k.env;
   k.own(rng(0x4d4f4d49),()=>fhMomiji(k,44,420,1));
   k.own(rng(0x53414b55),()=>fhSakura(k,928,446,1));
   // the shrine behind the torii, the torii, two stone lanterns
-  jpHokora(k,210,432,.6);k.add('<g class="pa-jp-torii">');jpTorii(k,210,446,1);k.add('</g>');jpToro(k,114,456,.8);jpToro(k,306,456,.8);// (x +40 since review 3: the torii is whole in the phone crop)
+  jpHokora(k,255,428,.8);k.add('<g class="pa-jp-torii">');jpTorii(k,255,448,1.8);k.add('</g>');jpToro(k,128,458,.9);jpToro(k,382,458,.9);// (v2.8.3: the torii at 1.8, taller than the dog, and still whole in the phone crop)
   // the stepping-stone path from the foreground (where the dog stands) up to the torii
-  [[468,594,36,11],[430,556,33,10],[396,522,30,9],[360,494,26,8],[320,474,22,7],[284,462,18,6],[250,453,15,5],[218,447,12,4]].forEach(([x,y,rx,ry])=>{const p=blobP(x,y,rx,ry,k.r,9,.22);k.shape(p,'#DCD3C6',{w:1.6,one:1,hatch:{side:.6,gap:3.6,col:'#B5AC9F',op:.5}})});
+  [[468,594,36,11],[430,556,33,10],[396,522,30,9],[360,494,26,8],[320,474,22,7],[284,462,18,6],[270,454,15,5],[256,449,12,4]].forEach(([x,y,rx,ry])=>{const p=blobP(x,y,rx,ry,k.r,9,.22);k.shape(p,'#DCD3C6',{w:1.6,one:1,hatch:{side:.6,gap:3.6,col:'#B5AC9F',op:.5}})});
   if(e.snow)k.side(()=>[[430,556,30],[360,494,22],[280,458,15]].forEach(([x,y,r])=>capLine(k,[[x-r,y-4],[x+r,y-4]],4)));
   // the bench, facing the view (its back to us)
   O.bench(k,FH_BENCH[0],FH_BENCH[1],FH_BENCH[2]);
   // wildflowers and the sign
   fl(k,[[40,560,C.red],[90,590,C.yellow],[210,580,C.lav],[640,588,'#FFB3C7'],[700,560,C.yellow],[880,592,C.red],[960,566,C.lav],[600,470,C.yellow],[780,470,'#FFB3C7']],5);
-  signpost(k,800,490,'Fuji View Hill',150);// further back, clear of the place buttons (desktop x 842-991, y 527+) and the bench
+  signpost(k,606,408,'Mt. Fuji Lookout',150,.75);// further back, clear of the place buttons (desktop x 842-991, y 527+) and the bench
   O.tape(k,6,26,90,-24,'#F7B9C6');O.tape(k,930,566,80,-28,'#BDE7D2');
   k.ss(()=>{const so=k.so;if(so==='spring')[[300,420,.4],[520,440,1.9],[680,500,.9],[760,450,2.4],[860,520,1.2],[620,560,.2],[200,520,2.9],[100,480,1.4]].forEach(([x,y,r],i)=>petalAt(k,x,y,4,r,PET[i%3]));
     else if(so==='autumn')[[90,470,.4],[150,520,1.9],[640,520,.9],[760,470,2.4],[880,540,1.2],[300,570,.2]].forEach(([x,y,r],i)=>momijiAt(k,x,y,5.4,r,MOMI[i%4]));
     seasonDrift(k,[[700,200,1],[620,250,.9],[820,300,.85],[450,240,.8]]);if(so==='winter'&&!e.night)robin(k,610,446,1,-1);if(so==='spring'&&!e.night&&!e.rain)butterfly(k,700,420,1,'#F9C6D4')});
   k.hw(()=>{hwJack(k,592,456,.7);hwJack(k,610,460,.5);hwGhost(k,872,302,.75,16)});// v2.6-style: two pumpkins by the bench, a paper ghost hanging in the sakura
   k.lt(()=>{const b=FH_BENCH,s=b[2];ltString(k,sagP(b[0]-50*s,b[1]-70*s,b[0]+50*s,b[1]-70*s,6,10),18);ltString(k,sagP(856,334,930,326,14,10),19);ltString(k,sagP(880,300,976,304,12,10),19)});
-  k.ny(()=>{nyKado(k,158,458,.8,-1);nyKado(k,262,458,.8,1);// the kadomatsu pair at the torii, a row of paper lanterns each side on bamboo poles
-    k.line([[372,452],[372,342]],2.4,'#7FA65E');k.line([[54,452],[54,342]],2.4,'#7FA65E');nyChochins(k,266,352,372,344,7,3,.7);nyChochins(k,54,344,154,352,7,3,.7);
+  k.ny(()=>{nyKado(k,160,460,.8,-1);nyKado(k,350,460,.8,1);// the kadomatsu pair at the torii, a row of paper lanterns each side on bamboo poles
+    k.line([[430,452],[430,342]],2.4,'#7FA65E');k.line([[54,452],[54,342]],2.4,'#7FA65E');nyChochins(k,340,352,430,344,7,3,.7);nyChochins(k,54,344,154,352,7,3,.7);
     nyKites(k,[[104,226,.85,1,30,400],[790,236,.8,0,730,404]])})}
 
 /* ======================= API (wraps world A/B) ======================= */
 const MINE={square:['Town Square',sqSquare],cafe:['Pupuccino Café',sqCafe],dogpark:['Dog Park',sqDogpark],vet:['Vet Clinic',sqVet],salon:['Grooming Salon',sqSalon],hilltop:['Hilltop Meadow',sqHilltop],pier:['Lighthouse Pier',sqPier],playroom:['Shelter Playroom',sqPlayroom],
-  fujihill:['Fuji View Hill',sqFujihill,` data-spot-bench="${FH_SPOT.join(',')}"`]};// v2.8: data-spot-bench = where the dog sits on the bench (the middle of the seat)
+  fujihill:['Mt. Fuji Lookout',sqFujihill,` data-spot-bench="${FH_SPOT.join(',')}"`]};// v2.8: data-spot-bench = where the dog sits on the bench (the middle of the seat)
 const cacheC={};
 const freshC=s=>{const suf='x'+(++_n);return s.replace(/pwc(\d+)/g,m=>m+suf)};
 function renderScene(name,o){const env=mkEnv(o),key=name+'|'+env.time+'|'+env.weather+'|'+env.season+(env.hw?'|hw':'')+wnKey(env);if(cacheC[key])return freshC(cacheC[key]);

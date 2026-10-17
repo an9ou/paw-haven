@@ -1,0 +1,51 @@
+/* v2.9 PHOTO lane (tag ph, classes .ph-): photo mode and the postcard frame. V29.md sections 2 and 5. The PHOTO lane owns this file. */
+/* the camera button: desktop, next to the sound button. On a phone it lives in the "..." sheet. Hidden in walks, mini-games and modals by 35_photo.js (phSync) */
+/* straight after the sound button: the narrow desktop HUD (12_phone_v1.css) orders #muteBtn 4 and #gearBtn 5, so the camera takes 4 too and follows #muteBtn in the markup */
+@media (max-aspect-ratio: 4/5){html:not([data-layout="phone"]) #phBtn{order:4}}
+#phBtn[hidden]{display:none}
+#stage.slimhud #phBtn{display:none}
+html[data-layout="phone"] #phBtn{display:none}
+
+/* photo mode hides the HUD, the bar and the trays (the screen also covers them) */
+#stage.ph-on #hud,#stage.ph-on #bar,#stage.ph-on #dock,#stage.ph-on #status,#stage.ph-on #placeBtns,#stage.ph-on #devBtn,#stage.ph-on #bubble{visibility:hidden}
+.ph-mode{position:absolute;inset:0;z-index:12;display:flex;gap:16px;padding:16px 18px;box-sizing:border-box;overflow:hidden;
+  background:radial-gradient(var(--dot) 1.1px,transparent 1.6px) 0 0/22px 22px,var(--paper)}
+.ph-mode[hidden]{display:none}
+.ph-view{flex:1;min-width:0;min-height:0;position:relative}
+.ph-pic{position:absolute;inset:0;margin:auto;display:block;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;filter:drop-shadow(0 6px 10px rgba(60,40,25,.28));user-select:none;-webkit-user-drag:none}
+.ph-mode.ph-busy .ph-pic{opacity:.55}
+.ph-side{flex:none;width:300px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;padding:2px 2px 4px}
+.ph-h{margin:0;font-family:var(--font-hand);font-weight:700;font-size:38px;line-height:1}
+.ph-sec{display:flex;flex-direction:column;gap:4px}
+.ph-lbl{font-size:16px;color:var(--muted)}
+.ph-row{display:flex;flex-wrap:wrap;gap:8px}
+.ph-swatch{width:44px;height:44px;flex:none;padding:0;border-radius:50%;border:2.5px solid var(--ink);background:var(--sw,#F7B2C4);box-shadow:inset 0 0 0 3px #FFFBF3;cursor:pointer}
+.ph-swatch[aria-pressed="true"]{outline:3px solid var(--ink);outline-offset:2px}
+.ph-cap,.ph-shape{min-height:44px;padding:4px 12px 5px;font-size:16px;line-height:1.1}
+.ph-cap[aria-pressed="true"],.ph-shape[aria-pressed="true"]{--wash:var(--w-yellow)}
+.ph-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto;padding-top:4px}
+.ph-acts .btn{flex:1 1 auto;min-height:46px}
+.ph-acts #phSave{flex:1 1 100%;font-family:var(--font-hand);font-weight:700;font-size:26px}
+.ph-mode.ph-saving #phSave{opacity:.6;pointer-events:none}
+/* no share and no download (the claude.ai artifact): the picture fills the screen */
+.ph-hold{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px;box-sizing:border-box;background:var(--paper)}
+html[data-layout="phone"] .ph-hold{padding:calc(env(safe-area-inset-top,0px) + 14px) 14px calc(env(safe-area-inset-bottom,0px) + 14px)}
+.ph-holdtxt{margin:0;font-family:var(--font-hand);font-weight:700;font-size:34px;line-height:1}
+.ph-holdpic{flex:1;min-height:0;max-width:100%;object-fit:contain;-webkit-touch-callout:default;-webkit-user-select:auto;user-select:auto;filter:drop-shadow(0 6px 10px rgba(60,40,25,.28))}
+.ph-jline{margin:8px 0 0;text-align:center}
+
+/* phone: the picture on top, the choices underneath (44 px taps, 15 px text). The frame colours and the shape share one row, the captions scroll sideways */
+html[data-layout="phone"] .ph-mode{flex-direction:column;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 8px) 12px calc(env(safe-area-inset-bottom,0px) + 10px)}
+html[data-layout="phone"] .ph-side{width:auto;flex:none;max-height:48%;flex-direction:row;flex-wrap:wrap;align-items:center;column-gap:10px;row-gap:6px}
+html[data-layout="phone"] .ph-h,html[data-layout="phone"] .ph-lbl,html[data-layout="phone"] .ph-shape[data-sq="0"]{display:none}
+html[data-layout="phone"] .ph-sec{flex-direction:row;align-items:center;gap:8px;min-width:0}
+html[data-layout="phone"] .ph-sec:nth-of-type(2){flex:1 1 100%;order:3}
+html[data-layout="phone"] .ph-row{flex-wrap:nowrap;overflow-x:auto;gap:8px;padding:6px 6px 6px;min-width:0;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+html[data-layout="phone"] .ph-row::-webkit-scrollbar{display:none}
+html[data-layout="phone"] .ph-cap,html[data-layout="phone"] .ph-shape{flex:none;white-space:nowrap;min-height:44px;font-size:16px}
+html[data-layout="phone"] .ph-acts{flex:1 1 100%;order:4;flex-wrap:nowrap;margin-top:0;padding-top:0}
+html[data-layout="phone"] .ph-acts #phSave{flex:2 1 0;font-size:24px}
+html[data-layout="phone"] .ph-acts .btn{flex:1 1 0;min-height:48px;padding-left:8px;padding-right:8px}
+html[data-layout="phone"] .ph-holdtxt{font-size:30px}
+html[data-layout="phone"] #stage.ph-on #toasts{top:calc(env(safe-area-inset-top,0px) + 8px)!important;bottom:auto!important}
+@media (prefers-reduced-motion:reduce){.ph-pic{transition:none}}

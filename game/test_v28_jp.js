@@ -55,7 +55,7 @@ require('./test_lib').run('v28_jp', async (t) => {
   ok((await eligible(['gaze', 'hatsufuji', 'travel_fuji'])).every((x) => !x), 'none of the three Fuji missions is eligible');
   ok(await ev(() => window.__paw.jp.gaze() === null && window.__paw.jp.letter() === null), 'jpGaze() and jpLetter() do nothing');
   await p().click('[data-act=map]'); await t.untilMode('map');
-  ok(await ev(() => !document.querySelector('[data-area=fujihill]')), 'the map has no Fuji View Hill');
+  ok(await ev(() => !document.querySelector('[data-area=fujihill]')), 'the map has no Mt. Fuji Lookout');
   await t.ctx.close();
 
   /* ======================= Bond 1 and Bond 2 ======================= */
@@ -70,7 +70,7 @@ require('./test_lib').run('v28_jp', async (t) => {
   await ev(() => window.__paw.mapTo('fujihill')); await quiet();
   ok(await ev(() => document.querySelector('[data-area=fujihill]').dataset.locked === '1' || document.querySelector('[data-area=fujihill]').classList.contains('locked')), 'the pin is drawn locked');
   await p().click('[data-area=fujihill]', { force: true });
-  ok(await t.waitToast(/Fuji View Hill opens at Bond 2/, 4000), 'a tap on the pin at Bond 1: "Fuji View Hill opens at Bond 2"');
+  ok(await t.waitToast(/Mt\. Fuji Lookout opens at Bond 2/, 4000), 'a tap on the pin at Bond 1: "Mt. Fuji Lookout opens at Bond 2"');
   ok(await ev(() => window.__paw.S.place) !== 'fujihill', 'and the dog stays home');
   await shot('map_bond1_locked');
   await ev(() => window.__paw.go('yard')); await t.untilMode('yard');
@@ -93,10 +93,10 @@ require('./test_lib').run('v28_jp', async (t) => {
   await shot('map_pin');
   await ev(() => window.__paw.go('yard')); await t.untilMode('yard');
   await t.travel('fujihill');
-  ok(await ev(() => window.__paw.S.place) === 'fujihill', 'travel through the map reaches Fuji View Hill');
+  ok(await ev(() => window.__paw.S.place) === 'fujihill', 'travel through the map reaches Mt. Fuji Lookout');
   ok(await t.until(() => { const m = window.__paw.S.missions.list.find((x) => x.id === 'travel_fuji'); return !!(m && m.done); }, null, 4000), 'travel_fuji is done by the trip');
   const b0 = await btn();
-  ok(b0 && b0.text === 'Look at Fuji' && !b0.dis, 'the place button reads "Look at Fuji"');
+  ok(b0 && b0.text === 'Look at Mt. Fuji' && !b0.dis, 'the place button reads "Look at Mt. Fuji"');
   const bh = await ev(() => [...document.querySelectorAll('#placeBtns .btn')].map((b) => b.getBoundingClientRect().height));
   ok(bh.length === 2 && bh.every((h) => h >= 43.5), `Look at Fuji and Go home are 44 px (${bh.map(Math.round).join(', ')})`);
   ok(await ev(() => [...document.querySelectorAll('#placeBtns .btn')].map((b) => b.dataset.jp || b.dataset.pb).join()) === 'gaze,yard', 'Look at Fuji sits before Go home');
@@ -139,11 +139,11 @@ require('./test_lib').run('v28_jp', async (t) => {
   ok(await t.waitToast(/already looked at Fuji today\. Fuji says see you tomorrow\./, 2000), 'a kind note instead');
   ok((await eligible(['gaze']))[0] === false, 'gaze is not eligible after today\'s look');
   await yesterday(); await at('fujihill');
-  ok((await btn()).text === 'Look at Fuji', 'a new day: the button is back');
+  ok((await btn()).text === 'Look at Mt. Fuji', 'a new day: the button is back');
   await ev(() => window.__paw.ms.force(['gaze'])); await env({ Weather: 'cloudy' });
   let r = await look();
   ok(r.toasts.includes(`Only the top of Fuji is in the clouds. ${dog} is sure it is still there. +6 Happiness, +${r.bond} Bond.`) && Math.abs(r.happy - 6) < 1 && r.bond >= 1, `cloudy: the clouds toast, +6 Happiness, +${r.bond} Bond pts`);
-  ok(await t.until(() => { const m = window.__paw.S.missions.list.find((x) => x.id === 'gaze'); return !!(m && m.done); }, null, 4000), 'act:gaze completes "Look at Fuji from Fuji View Hill"');
+  ok(await t.until(() => { const m = window.__paw.S.missions.list.find((x) => x.id === 'gaze'); return !!(m && m.done); }, null, 4000), 'act:gaze completes "Look at Mt. Fuji from the Mt. Fuji Lookout"');
 
   sec('the toast table: rain, snow, dusk, night, dawn, winter day, spring day');
   const cases = [

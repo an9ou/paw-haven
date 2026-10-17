@@ -29,7 +29,7 @@ The platform's usage meters, at list price:
 
 There is no separate QA session. `game/test_copy_node.js` (the `copy` suite) and the phone suites check the standing rules for free.
 
-## The ten rules
+## The eleven rules
 
 1. **Same name, fresh session, every release.** Name sessions `Paw Haven · <AREA> (<Model>)`, with no version number. Start a **new** session for each release and archive the old one when the release ships. Never reuse a session across releases: it carries its whole history into every turn.
 2. **Wake on events, not on a timer.**
@@ -60,6 +60,12 @@ There is no separate QA session. `game/test_copy_node.js` (the `copy` suite) and
    - Decisions go to the Project manager with a recommendation.
    - With no answer in 5 minutes, take the recommendation and list it in the final report (the owner aims for auto coding).
 10. **Push `main` only when green.** A push deploys GitHub Pages. Work in progress goes to an integration branch.
+11. **Fresh context when a session gets big (owner, 17 Oct 2026).** A session can't run `/compact` on itself or on another session (a `/compact` sent with send_message arrives as a plain message). So a session whose context passes about **300k tokens** (`get_session` → `context_usage.used_tokens`) with more than about an hour of work left is handed over instead. Every step re-reads the whole context, so a 490k session pays about 5x per step what a fresh one does; below 300k a handover saves too little to be worth the extra steps:
+   - At the next natural stopping point (tests run, work committed and pushed), it writes a handoff of 25 lines at most: the brief, what is done (commits), what is left, open decisions and the session IDs it talks to. It sends that to its parent with send_message: "HANDOFF: start my replacement".
+   - The parent creates a fresh session with the same name, model and branch, gives it the original brief plus the handoff, tells anyone who messages the old session (other lanes, the Coordinator) the new ID, and archives the old session.
+   - The Coordinator does this for its lanes and the Game Manager for the Coordinator. The hourly watchdog checks it: any working session past 300k gets "HANDOFF due at your next stopping point".
+   - Never hand over in the middle of a merge, a test run or a push. A session that will finish within about 30 minutes finishes instead.
+   - The Game Manager chat can't be replaced this way: the owner types `/compact` there.
 
 ## Setup that saves time
 
@@ -95,7 +101,7 @@ You manage Paw Haven for the owner. You don't build. Start a fresh Coordinator s
 - **No Fable from v2.6 on:** Fable is too costly for the owner's usage. Coordinators, specs, lanes and reviews use Opus (Sonnet or Haiku where the rules above allow). v2.5 was the last release run on Fable.
 - **Effort levels:** `.claude/settings.json` sets `effortLevel: high` for every session in this repo (Coordinators, spec, art lanes, reviews). Routine work (fix batches, shop wiring, docs, test runs, screenshots) goes to the `paw-fixer` subagent (Opus, medium). Art goes to `paw-artist` and reviews to `paw-reviewer` (both Opus, high). Definitions are in `.claude/agents/`. The Project manager chat can run at medium with `/effort medium`.
 - **Speed and quality over token cost:** lanes may use parallel subagents. Take screenshots before and after for every changed screen.
-- **Decisions:** the owner aims for auto coding. Ask only real decisions, always in the AskUserQuestion choice window (2–4 options, recommendation first), never as plain-text A/B/C. If the owner has not answered in 5 minutes, take the recommendation and list it in the final report. This applies to every question, including releases.
+- **Decisions:** the owner aims for auto coding. Ask only real decisions, always in the AskUserQuestion choice window (2–4 options, recommendation first), never as plain-text A/B/C. If the owner has not answered in 5 minutes, take the recommendation and list it in the final report. This applies to every question, including releases. The same 5 minutes apply to approvals: a permission prompt that waits 5 minutes is not approved for the owner; the session takes the recommended path that doesn't need it and carries on, and every team prefers paths with no approval prompt (owner, 16 Oct 2026).
 - **Pushing (owner's rule, 14 Oct 2026):** push automatically, without asking, to GitHub branches and to `main`, once the tests are green. A green `main` push deploys GitHub Pages, and that is expected. Then check the Pages run and report what went live.
 - **Usage limit: resume at once.** When a session stops at the usage limit, it resumes right after the reset, without waiting for the owner. Each session that hits the limit sets a `send_later` for 2 minutes after the reset time, and the Game Manager keeps an hourly watchdog Routine that resumes any session still stopped. Since 13 Oct the owner wants **one team busy at a time** (the queue is in `docs/CLOUDFLARE_LOGIN.md`); the old cap was 4 Opus sessions at once (7 at once used the whole 5-hour limit in about 25 minutes on 13 Oct).
 - **Stop means stop.** If the owner says "stop", stop at once: cancel scheduled check-ins, commit nothing, and ask what they meant.
@@ -146,3 +152,11 @@ You manage Paw Haven for the owner. You don't build. Start a fresh Coordinator s
 - Final `all` + `phone --jobs 2`: 74 suites, 71 passed, 3 flaky (`v27_home`, `v171_garden`, `v21_home`, all clean alone; see `TODO.md`), 0 failed. New suites: `v28_art`, `v28_dates`, `v28_scenes`, `v28_japan`, `v28_jp`, `v28_winter`, `v28_newyear`, `phone_v28_winter`.
 - Make `v29-base` from v2.8 `main` before the next release.
 - Open items are in `TODO.md` "Winter & New Year (v2.8)".
+
+**State after v2.9 (16 Oct 2026):**
+- v2.9 "All Together" (pack play and walks, photo mode, polish) is on `main`. Spec and as-built notes: `V29.md` (sections 5 and 6).
+- Built by an Opus coordinator with three fresh Sonnet lane sessions (PACK, PHOTO, POLISH, about $6 each), then three `paw-reviewer` reviews and two fix batches (`paw-artist`, `paw-fixer`). Lane branches `lane/v29-*`, fixes on `fix/v29-review`, `v29-base` is v2.8.4 `main`.
+- Three Opus reviewers in parallel next to a full test run hit the 5-hour usage limit (13:00 to 15:30 UTC). Run reviews one at a time, and don't run `all` while reviewers run (the load turned `v28_scenes` and `v27_review` red once).
+- The art suites need the base refs locally: `git fetch origin integration/v2.4 v25-base v26-base v27-base v28-base` in a fresh clone.
+- Make `v30-base` from v2.9 `main` before the next release.
+- Open items are in `TODO.md` "All Together (v2.9)".

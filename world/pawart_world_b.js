@@ -6091,6 +6091,69 @@ if(typeof document!=='undefined'&&!document.getElementById('pawart-world-b-v24-c
     '@media (prefers-reduced-motion: reduce){.pa-wb [class^="pa-wb-gf"]{animation:none!important}.pa-wb .pa-wb-gf0{opacity:1}}';
   document.head.appendChild(st);
 }
+/* ===================================== v2.9 PHOTO lane (V29.md 2 and 5.3) =====================================
+   PawArt.icon('camera')              the menu button icon (64x64)
+   PawArt.postcard(w, h, o)           the crayon postcard frame as a full SVG string (viewBox 0 0 w h, width w, height h).
+                                      o: { color: 'rose'|'sun'|'mint'|'sky'|'lilac', stamp: short text on the stamp, scene: SVG markup placed in the picture window
+                                      (under the frame), caption, place, date, dogs: the text lines }. No external references: fonts are named Caveat and
+                                      Patrick Hand, the game embeds them when it saves the PNG. Drawn at 1/s scale (s = long side / 450) so the pencil weight holds at 1080 px.
+   PawArt.postcardWindow(w, h)        { x, y, w, h } picture window in px     PawArt.postcardSize(aspect, long)   { w, h } of the card around a picture of that aspect
+   PawArt.POSTCARD_COLORS             [{ k, n, c }] the frame colours */
+ICONS.camera=function(b){
+  b.sh(RR(23,13,18,11,3.5),C.grey,{hatch:0,hl:0,lw:.8});
+  b.sh(RR(6,20,52,35,8),C.pink,{lw:1,base:'#FDE3EA'});
+  b.sh(RR(10,25,12,7,2.4),C.yel,{hatch:0,hl:0,lw:.75,base:'#FFF3C9'});
+  b.sh(RR(45,14,9,6,2),C.redD,{hatch:0,hl:0,lw:.75,base:'#F7BDBB'});
+  b.sh(E(33,39,14.5,14.5,20),C.grey,{hatch:0,hl:0,lw:.95,base:'#F3EFEA'});
+  b.sh(E(33,39,9.6,9.6,16),C.blue,{hatch:0,hl:0,lw:.85,base:'#DCEAFA',marks:[{pts:E(35,41,5.6,4.4,10,-.5),fill:C.lav,op:.55}]});
+  b.dot(33,39,2.6,INK);
+  b.ex('glint',28.5,34,6.6);
+  b.ex('spark',52,31,3.4,'#FFF3B8');
+};
+const PC_COLORS=[{k:'rose',n:'Rose',c:'#F7B2C4',d:'#E58FA5'},{k:'sun',n:'Sunny',c:'#FFE08A',d:'#E9B44C'},{k:'mint',n:'Mint',c:'#BDE7D2',d:'#7FB89A'},
+  {k:'sky',n:'Sky',c:'#BFE6FA',d:'#7FB4D6'},{k:'lilac',n:'Lilac',c:'#D3C6F1',d:'#A894DC'}];
+const PC_M=14,PC_SH=60,PC_FONT_R="'Patrick Hand',cursive";
+let PC_UID=0;
+PA.POSTCARD_COLORS=PC_COLORS.map(c=>({k:c.k,n:c.n,c:c.c}));
+PA.postcardWindow=function(w,h){const s=Math.max(w,h)/450;return {x:PC_M*s,y:PC_M*s,w:w-2*PC_M*s,h:h-(PC_M+PC_SH)*s}};
+PA.postcardSize=function(aspect,long){
+  long=long||1080;const s=long/450,mp=PC_M*s,sp=PC_SH*s,a=Math.max(.3,Math.min(4,aspect||1.5));
+  let w=long,h=Math.round((long-2*mp)/a+mp+sp);
+  if(h>long){h=long;w=Math.round((long-mp-sp)*a+2*mp)}
+  return {w,h};
+};
+PA.postcard=function(w,h,o){
+  o=o||{};const col=PC_COLORS.find(c=>c.k===o.color)||PC_COLORS[0],s=Math.max(w,h)/450,lw=w/s,lh=h/s;
+  const b=mk('prop','postcard:'+col.k+':'+w+'x'+h),x0=PC_M,y0=PC_M,x1=lw-PC_M,y1=lh-PC_SH,bd=7,SPK='#FFF3B8';
+  // the card edge, then the coloured frame around the picture window (four mitred bands), then the inner pencil line of the window
+  b.loop(RR(3,3,lw-6,lh-6,7),{w:1.5,col:GRAPH,op:.9});
+  [[[x0-bd,y0-bd],[x1+bd,y0-bd],[x1,y0],[x0,y0]],[[x1+bd,y0-bd],[x1+bd,y1+bd],[x1,y1],[x1,y0]],
+   [[x0-bd,y1+bd],[x1+bd,y1+bd],[x1,y1],[x0,y1]],[[x0-bd,y0-bd],[x0,y0],[x0,y1],[x0-bd,y1+bd]]].forEach(q=>b.sh(q,col.c,{k:0,hl:0,lw:.7,sh:col.d,base:mix(col.c,'#FFFFFF',.5),dr:.5}));
+  b.loop([[x0,y0],[x1,y0],[x1,y1],[x0,y1]],{k:0,w:1.6,col:INK});
+  // two bits of washi tape over the picture corners
+  const tape=(cx,cy,a)=>b.sh(rot([[cx-17,cy-5.5],[cx+17,cy-5.5],[cx+17,cy+5.5],[cx-17,cy+5.5]],a,cx,cy),col.d,{k:0,hatch:0,hl:0,lw:.55,op:.85,base:mix(col.d,'#FFFFFF',.35),
+    post:`<g transform="rotate(${R1(a*180/Math.PI)} ${cx} ${cy})" stroke="#fff" stroke-opacity=".6" stroke-width="1.2">${[-12,-6,0,6,12].map(d=>`<path d="M${cx+d-2} ${cy+5.5}l4 -11"/>`).join('')}</g>`});
+  tape(x0+6,y0+3,-.62);tape(x1-6,y0+3,.62);
+  // the stamp (bottom right): scalloped edge, a paw, the stamp text
+  const sw=32,sh=40,sx=lw-PC_M-sw-1,sy=y1+bd+4,pts=[];
+  for(let i=0;i<=8;i++)pts.push([sx+i*sw/8,sy+(i%2?1.3:0)]);for(let i=1;i<=10;i++)pts.push([sx+sw+(i%2?-1.3:0),sy+i*sh/10]);
+  for(let i=7;i>=0;i--)pts.push([sx+i*sw/8,sy+sh+(i%2?-1.3:0)]);for(let i=9;i>=1;i--)pts.push([sx+(i%2?1.3:0),sy+i*sh/10]);
+  b.sh(rot(pts,.07,sx+sw/2,sy+sh/2),'#FFF6DC',{k:0,hatch:0,hl:0,lw:.55,base:'#FFFBF3'});
+  b.sh(rot(RR(sx+3.5,sy+3.5,sw-7,sh-12,1.5),.07,sx+sw/2,sy+sh/2),col.c,{k:0,hatch:0,hl:0,lw:.45,base:mix(col.c,'#FFFFFF',.4)});
+  paw(b,sx+sw/2+.6,sy+sh/2-3,5.2,col.d,{a:.07,lw:.6});
+  if(o.stamp)b.raw(`<text x="${R1(sx+sw/2+1.2)}" y="${R1(sy+sh-3.4)}" text-anchor="middle" font-family="${FONT}" font-size="8.6" font-weight="700" fill="${INK}" transform="rotate(4 ${R1(sx+sw/2)} ${R1(sy+sh/2)})">${esc(o.stamp)}</text>`,'top');
+  b.ex('heart',x0+4,y1+bd+8,2.6,col.c);b.ex('spark',x1-sw-10,y1+bd+10,3,SPK);
+  // the text lines, shrunk to fit the room beside the stamp
+  const tw=lw-2*PC_M-sw-12,tx=PC_M+2,ty=y1+bd;
+  const fit=(t,sz,k)=>R1(Math.min(sz,tw/Math.max(1,String(t).length*k)));
+  if(o.caption){const sz=fit(o.caption,25,.44);b.raw(`<text x="${tx}" y="${R1(ty+19)}" style="font-family:${FONT}" font-size="${sz}" font-weight="700" fill="${INK}" transform="rotate(-1.2 ${tx} ${R1(ty+19)})">${esc(o.caption)}</text>`,'top')}
+  const l2=[o.place,o.date].filter(Boolean).join(' · ');
+  if(l2){const sz=fit(l2,12,.5);b.raw(`<text x="${tx}" y="${R1(ty+34)}" font-size="${sz}" fill="${INK}" style="font-family:${PC_FONT_R}">${esc(l2)}</text>`,'top')}
+  if(o.dogs){const sz=fit(o.dogs,11.5,.5);b.raw(`<text x="${tx}" y="${R1(ty+47)}" font-size="${sz}" fill="#7A6358" style="font-family:${PC_FONT_R}">${esc(o.dogs)}</text>`,'top')}
+  const front=b.svg('0 0 '+R1(lw)+' '+R1(lh),` width="${w}" height="${h}" x="0" y="0" aria-hidden="true"`,'Postcard frame').split(IDT).join('pwc'+(++PC_UID).toString(36));
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="Postcard"><rect width="${w}" height="${h}" fill="#FFFBF3"/>${o.scene||''}${front}</svg>`;
+};
+
 PA._wbFlush=()=>{for(const k in CACHE)delete CACHE[k]};
 PA.WORLD_B={beds:Object.keys(BEDS),obstacles:Object.keys(OBS),bowlFoods:BOWL_FOODS.slice(),icons:Object.keys(ICONS),items:Object.keys(ITEMS),houses:Object.keys(HOUSES),collectibles:Object.keys(COLS),props:Object.keys(PROPS),furniture:V27_FURN.slice(),
   winter:{props:Object.keys(WN_LBL),stallKinds:['winter','newyear'],items:['Warm Carob Cup','Snowflake Oat Cookies','Snow Day Stew','Pup Kinton','Very Ugly Sweater','Reindeer Antlers','Snowflake Snood','Ugly Sweater Rosette','Year of the Sheep Hood','Paper Snowflake Garland','Felt Holly Wreath','Red Wooden Sled','Kadomatsu Pair'],icons:['snowdrift','snowdog','sweater','fortune','wstall','fuji'],bowlFoods:BOWL28.slice()}};

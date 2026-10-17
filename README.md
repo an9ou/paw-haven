@@ -8,16 +8,16 @@ Plays on laptops (designed at **1280×720**) and on phones held upright: the sam
 
 ## Play it
 
-Play in your browser: **https://an9ou.github.io/paw-haven/** (live once GitHub Pages is switched on: repo Settings → Pages → Source: GitHub Actions).
+Play free on **https://an9ou.itch.io/doodle-doggo** (itch.io). About the game: **https://doodledoggo.app**. The GitHub Pages copy: **https://an9ou.github.io/paw-haven/** (GitHub Pages, live once Pages is switched on: repo Settings → Pages → Source: GitHub Actions).
 
-Your save lives in your browser's local storage. On the web version it is also saved to the cloud in real time: you start as a guest, and an email plus your own password lets you play the same game on any device (no email is ever sent). Settings has Export / Import save codes on every copy, including the claude.ai one, where cloud save is off.
+Your save lives in your browser's local storage. On the web version it is also saved to the cloud (since v2.8.1 on Cloudflare: it syncs on every change, when the game opens and when you come back to it): you start as a guest, and an email plus your own password lets you play the same game on any device (no email is ever sent). Settings has Export / Import save codes on every copy, including the claude.ai one, where cloud save is off.
 
 ## What's in the game
 
 - **14 breeds**: shiba, corgi, golden retriever, dachshund, husky, mutt, chihuahua, pug, greyhound, beagle, poodle, border collie, samoyed and french bulldog. Each has its own voice, personality, size and joke.
 - **Seasons and festivals**: the town follows the real calendar (spring, summer, autumn, winter in every scene), with a leaf festival in October and November (leaf piles, a harvest stall) and a Halloween costume parade in late October. For Halloween 2026 (8 Oct to 2 Nov) the town wears pumpkins, paper ghosts and felt bats, and Mrs. Plum's Pumpkin Patch Pop-up in the Square sells 16 things made for 2026 only (decorations, dog-safe treats, toys with yard games, clothes), each with a "2026" tag and yours to keep.
 - **Winter and New Year**: Snow Days from December to February (snowdrifts to dive into, a snowdog, Baker Bea's Winter Stall), Winter Lights and an Ugly Sweater Contest in December, and a Japanese New Year (kadomatsu, kites, New Year cards, a Fortune box with only good fortunes).
-- **Japan scenery**: Mt. Fuji on every outdoor skyline in every season, Japanese details around town, and Fuji View Hill, a new place to look at Fuji.
+- **Japan scenery**: Mt. Fuji on every outdoor skyline in every season, Japanese details around town, and Mt. Fuji Lookout, a new place to look at Fuji.
 - **Home and pack**: decorate the yard and the house (16 decorations and 5 pieces of furniture the dogs climb, nap and play on, all movable by drag or tap), a bed for every dog, and Feed, Pet, Bath and Nap that care for the whole pack at once.
 - **The Shelter Playroom**: a cozy dog-café shelter where dogs looking for a home play, nap and fetch tossed toys. Pet them, read the Adopt me board, meet each dog and adopt for free.
 - **Realistic genetics and breeding**: coats and traits are inherited through real-style gene loci. Dogs have sex, age, seasons and life stages, and breeding follows realistic rules.
@@ -39,6 +39,8 @@ You only need Node.js (no packages). The game is split into small source files u
 node game/build.js            # game only -> game/paw_haven_proto.html (used by the tests)
 node game/build.js publish    # everything merged -> paw_haven_prototype.html (single file, open it in a browser)
 node tools/pages.js           # wraps the publish build as _site/index.html (what GitHub Pages serves)
+bash tools/cf_pages_deploy.sh # deploys the doodledoggo.app introduction site (site/) to Cloudflare
+bash tools/cf_api_deploy.sh   # deploys the cloud save Worker pawhaven-api and its D1 database (cloudflare/)
 ```
 
 No Node? `perl tools/build.pl` makes the same `paw_haven_prototype.html`.
@@ -68,7 +70,9 @@ game/
 dogs/             dog art module (SVG strings)
 world/            scene, prop and icon art modules
 mods/             gameplay modules: genes, audio, walk runner, toys, garden, kitchen
-tools/            build helpers (GitHub Pages wrapper, worktree script)
+tools/            build helpers (GitHub Pages wrapper, Cloudflare deploys, worktree script)
+cloudflare/       the cloud save and login Worker (worker.js, schema.sql for D1, wrangler.toml)
+site/             the doodledoggo.app introduction site (home, privacy, the password reset page)
 dashboard/        a small tooling dashboard
 *.md              design and build contracts for each version (see PIPELINE.md)
 docs/design/      game design documents (proposal, v2, garden and kitchen, v1.3 plan)
@@ -96,7 +100,10 @@ Some folders (`dogs/`, `world/`, `mods/`) also hold earlier art versions and rev
 - **v2.4 "Shop Day"**: 32 new crayon-drawn items (6 houses, 12 outfits, 6 toys with play games, 8 dog-safe foods with safety tips), daily missions with a stamp card, Gerald the duck's how-to-play guide, and the claude.ai artifact published as a multi-file artifact.
 - **v2.6 "Halloween 2026"**: Halloween from 8 Oct to 2 Nov 2026, dressed over autumn in the yard, the Square, Market Street and the walks, and Mrs. Plum's Pumpkin Patch Pop-up with 16 items made for 2026 only (4 decorations, 4 dog-safe treats with lessons, 4 toys with yard games, 4 clothes on every breed), each with a "2026" tag and owned forever.
 - **v2.7 "Home & Pack"**: home decorating with a placement mode, five pieces of furniture the dogs use, a bed for every dog, pack care (feed, pet, bath and nap the whole pack), the Shelter Playroom with an Adopt me board, a Collect button in the mailbox, 20 phone clarity fixes and the Halloween art fixes.
-- **v2.8 "Winter & New Year"**: Snow Days (snowdrifts, a snowdog, the Winter Stall), Winter Lights and the Ugly Sweater Contest, a Japanese New Year (kadomatsu, nengajo cards, otoshidama, a Fortune box), Mt. Fuji and Japanese details in every outdoor scene, the new Fuji View Hill, and 5 outfits, 4 foods, 4 decorations and 9 missions.
+- **v2.8 "Winter & New Year"**: Snow Days (snowdrifts, a snowdog, the Winter Stall), Winter Lights and the Ugly Sweater Contest, a Japanese New Year (kadomatsu, nengajo cards, otoshidama, a Fortune box), Mt. Fuji and Japanese details in every outdoor scene, the new Mt. Fuji Lookout, and 5 outfits, 4 foods, 4 decorations and 9 missions.
+- **v2.8.1 "Cloudflare login"**: cloud save and accounts move to a Cloudflare Worker with a D1 database. Same title screen, same email and password, saves and backups come along. The game is also at https://doodledoggo.app.
+- **v2.8.2 "Account safety"**: one email, one account (old accounts included), and Forgot your password? with an emailed 30-minute link that opens a Set a new password panel.
+- **v2.9 "All Together"**: the whole pack plays, trains, dresses and walks together with no switching (the others follow the leader on walks, a pack bonus on the pay), and photo mode: a crayon postcard of your dogs to save or share, with a daily photo mission.
 
 Full details: [CHANGELOG.md](CHANGELOG.md). Open issues: [TODO.md](TODO.md).
 

@@ -152,16 +152,14 @@ require('./test_lib').run('v27_home', async (t) => {
   const actId = (await S()).activeId; const bad = [];
   for (const n of ['Dog Play Tower', 'Tunnel Sofa', 'Ball Pit', 'Sofa Ramp', 'Window Seat']) {
     for (const k of await ev((n) => window.__paw.ho.spots(n), n)) {
-      await ev(() => { Object.keys(window.__paw.ho.uses()).forEach((id) => window.__paw.ho.free(id)); });
-      const front = await ev((n) => window.__paw.ho.spot(n, window.__paw.ho.spots(n)[0]) && Object.keys(window.__paw.ho.uses()).length, n);
-      const offBefore = await ev((n) => { const g = document.querySelector(`#hoFrontG .ho-front[data-furn="${n}"]`); return !g || g.style.display === 'none'; }, n);
+      // free everything and read the front layer in the SAME page task: an idle furniture use (weight 2.5) can start between two awaits and show the layer
+      const offBefore = await ev((n) => { Object.keys(window.__paw.ho.uses()).forEach((id) => window.__paw.ho.free(id)); const g = document.querySelector(`#hoFrontG .ho-front[data-furn="${n}"]`); return !g || g.style.display === 'none'; }, n);
       await ev(([id, n, k]) => window.__paw.ho.use(id, n, k), [actId, n, k]);
       const on = await t.until(([n, k]) => Object.values(window.__paw.ho.uses()).some((u) => u.name === n && u.spot === k && u.on), [n, k], 8000);
       const r = await ev(([n, k]) => { const sp = window.__paw.ho.spot(n, k), g = document.querySelector(`#hoFrontG .ho-front[data-furn="${n}"]`), m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\)\s*scale\(([\d.]+)\)/.exec(document.getElementById('dogPos').style.transform);
         return { front: sp.front, shown: !!g && g.style.display !== 'none', feet: m ? [+m[1] + 430 * +m[3], +m[2] + 500 * +m[3]] : null, want: [sp.fx, sp.fy] }; }, [n, k]);
       const near = r.feet && Math.hypot(r.feet[0] - r.want[0], r.feet[1] - r.want[1]) < 2;
       if (!(on && near && offBefore && r.shown === r.front)) bad.push(`${n}/${k}: on ${on} at spot ${near} front ${r.front} shown ${r.shown} before-off ${offBefore}`);
-      void front;
     }
   }
   ok(!bad.length, 'the active dog uses every furniture spot, standing on the spot, the front layer shows only on front spots' + (bad.length ? ' -> ' + bad.join(' | ') : ''));

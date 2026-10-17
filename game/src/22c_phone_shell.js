@@ -45,10 +45,11 @@ function psSheetOpen() { return isPhone() && (!modal.hidden || (typeof popOpen =
 /* ---------- the "..." menu: Settings, sound, cloud status ---------- */
 function psCloud() { try { return typeof cloudStatus === 'function' ? cloudStatus() : null; } catch (e) { return null; } }
 function openMore() {
-  const cs = psCloud(), hasCloud = !!cs || typeof cloudOpen === 'function';
-  const p = openModal('Menu', `<div class="moremenu"><button class="btn big" id="mmSet"><span class="ic">${ICON('settings')}</span>Settings</button><button class="btn big" id="mmMute"><span class="ic">${ICON(prefs.mute ? 'sound-on' : 'sound-off')}</span>${prefs.mute ? 'Sound on' : 'Mute sound'}</button>${hasCloud ? `<button class="btn big" id="mmCloud">Cloud save</button>` : ''}${cs && cs.text ? `<p class="ps-cloud" data-state="${esc(cs.state || '')}" id="mmCloudTxt">${esc(cs.text)}</p>` : ''}</div>`, { cls: 'ps-more' });
+  const cs = psCloud(), hasCloud = !!cs || typeof cloudOpen === 'function', canPh = typeof phCan === 'function' && phCan(); // v2.9: the camera is for the yard, the house and the town places
+  const p = openModal('Menu', `<div class="moremenu"><button class="btn big" id="mmSet"><span class="ic">${ICON('settings')}</span>Settings</button><button class="btn big" id="mmMute"><span class="ic">${ICON(prefs.mute ? 'sound-on' : 'sound-off')}</span>${prefs.mute ? 'Sound on' : 'Mute sound'}</button>${canPh ? `<button class="btn big" id="mmPhoto"><span class="ic">${ICON('camera')}</span>Take a photo</button>` : ''}${hasCloud ? `<button class="btn big" id="mmCloud">Cloud save</button>` : ''}${cs && cs.text ? `<p class="ps-cloud" data-state="${esc(cs.state || '')}" id="mmCloudTxt">${esc(cs.text)}</p>` : ''}</div>`, { cls: 'ps-more' });
   $('#mmSet', p).onclick = () => { closeModal(); openSettings(); };
   $('#mmMute', p).onclick = () => { closeModal(); $('#muteBtn').click(); };
+  const mp = $('#mmPhoto', p); if (mp) mp.onclick = () => { closeModal(); setTimeout(phOpen, 60); };
   const cb = $('#mmCloud', p); if (cb) cb.onclick = () => { closeModal(); if (typeof cloudOpen === 'function') cloudOpen(); else openSettings(); };
 }
 

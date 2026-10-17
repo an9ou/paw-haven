@@ -1,4 +1,4 @@
-/* ======================= v2.8 FUJI HILL lane (tag jp): Fuji View Hill, Look at Fuji, the first Fuji of the year, Gerald's letter. See V28.md section 12.4 =======================
+/* ======================= v2.8 FUJI HILL lane (tag jp): Mt. Fuji Lookout, Look at Fuji, the first Fuji of the year, Gerald's letter. See V28.md section 12.4 =======================
    Core names: jpOn() (00_core.js: true in the game, false under the harness unless prefs.jpTest), envNow().jp, S.jp { letter, gazed, first, mochi } (v28Fields),
    PLACES.fujihill / jpPlaceSync() / jpHillOpen() (14_town_places.js: only while jpOn() and PawArt.scene('fujihill') exists), JP_MAP_PIN / jpMapPin (08_map.js),
    the missions gaze / hatsufuji / travel_fuji (24_missions.js). Acts: trackAct('gaze', { first }), travel { place: 'fujihill' } (core).
@@ -68,7 +68,7 @@ function jpToastKey() {
 /* ---- the place button (44 px, before Go home) ---- */
 function jpBtnHTML() {
   const done = jpGazedToday();
-  return `<button class="btn ${done ? 'jp-done' : 'yes'} jp-gaze" data-jp="gaze" ${done || JP.gazing ? 'aria-disabled="true"' : ''}>${done ? 'Fuji says see you tomorrow.' : 'Look at Fuji'}</button>`;
+  return `<button class="btn ${done ? 'jp-done' : 'yes'} jp-gaze" data-jp="gaze" ${done || JP.gazing ? 'aria-disabled="true"' : ''}>${done ? 'Fuji says see you tomorrow.' : 'Look at Mt. Fuji'}</button>`;
 }
 function jpPlaceBtn() {
   const pb = $('#placeBtns'); if (!pb) return;

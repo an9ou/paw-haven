@@ -14,13 +14,20 @@ require('./test_lib').run('v16b', async (t) => {
   const settle = (ms) => sleep(ms || 300); // only for "nothing should happen" checks
   const dayPin = () => t.dev(async () => { await t.p.selectOption('#dvTime', 'day'); await t.p.selectOption('#dvWeather', 'cloudy'); });
 
+  // Chromium sometimes drops a localStorage write that is still in flight when the page reloads (seen about 1 in 25 under load: the title came back with no Continue button, so the next wait timed out at 20 s).
+  // The save is therefore re-seeded through the harness's own init-script mechanism (the one old-save tests use): if the browser lost it, the reloaded page gets the same JSON back before the game boots; if it kept it, nothing changes.
+  const reloadKeepingSave = async () => {
+    const key = 'pawhaven_proto_v1', json = await t.ev((k) => localStorage.getItem(k), key);
+    await t.ctx.addInitScript(({ k, v }) => { try { if (!sessionStorage.getItem('__reseeded')) { sessionStorage.setItem('__reseeded', '1'); if (localStorage.getItem(k) == null) localStorage.setItem(k, v); } } catch (e) { /* storage blocked */ } }, { k: key, v: json });
+    await t.p.reload();
+  };
   const p = await t.boot(); await t.adopt({ sex: 'girl' }); await tap();
   await t.patch({ bond: { level: 7, pts: 1600 }, coins: 2000 }); await t.calm();
   ok(await ev(() => typeof window.PawAudio.bark === 'function'), 'PawAudio.bark is available (no fallback needed)');
   ok((await ev(() => JSON.parse(localStorage.getItem('pawhaven_prefs_v1') || '{}').ovrTime)) === 'day', 'time is pinned to day by the test harness');
 
   sec('greeting when the game opens');
-  await ev(() => window.__paw.saveNow()); await p.reload(); await p.waitForSelector('#tContinue'); await tap(); let n = await mark();
+  await ev(() => window.__paw.saveNow()); await reloadKeepingSave(); await p.waitForSelector('#tContinue'); await tap(); let n = await mark();
   await p.click('#tContinue'); await hasWait(n, 'play', 10000); await hasWait(n, 'whine', 10000); await t.calm();
   ok(await has(n, 'play') && await has(n, 'whine'), 'greeting on open: play bark + whine');
   const c0 = (await calls()).find((c) => c.k === 'play');

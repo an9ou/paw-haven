@@ -74,10 +74,18 @@ const SUITES = {
   v28_winter: { file: 'test_v28_winter.js', group: 'all', est: 60 },
   v28_newyear: { file: 'test_v28_newyear.js', group: 'all', est: 45 },
   v28_jp: { file: 'test_v28_jp.js', group: 'all', est: 45 },
+  // v2.9 (V29.md): pack play and walks, photo mode, polish (and the combined missions + guide flow)
+  v29_pack: { file: 'test_v29_pack.js', group: 'all', est: 60 },
+  v29_photo: { file: 'test_v29_photo.js', group: 'all', est: 45 },
+  v29_polish: { file: 'test_v29_polish.js', group: 'all', est: 45 },
+  v29_flows: { file: 'test_v29_flows.js', group: 'all', est: 60 },
+  v29_review: { file: 'test_v29_review.js', group: 'all', est: 40 }, // v2.9 integration review fixes (coordinator)
   // v2.2 phone suites: `node game/run_tests.js phone` (not part of `all`, which stays the desktop regression set)
   phone_legacy: { file: 'test_phone.js', group: 'phone', est: 90 },
   phone_shell: { file: 'test_phone_shell.js', group: 'phone', est: 40 },
   cloud: { file: 'test_cloud.js', group: 'phone', est: 60 },
+  worker: { file: 'test_worker.js', group: 'phone', est: 5 }, // v2.8.1: the Cloudflare Worker (node + Miniflare, local D1)
+  site: { file: 'test_site.js', group: 'phone', est: 20 }, // v2.8.2: the doodledoggo.app introduction site and its reset page (Miniflare, desktop + iPhone 15)
   phone_home: { file: 'test_phone_home.js', group: 'phone', est: 60 },
   phone_town: { file: 'test_phone_town.js', group: 'phone', est: 70 },
   phone_journal: { file: 'test_phone_journal.js', group: 'phone', est: 35 },
@@ -86,6 +94,7 @@ const SUITES = {
   phone_skill: { file: 'test_phone_skill.js', group: 'phone', est: 150 },
   // v2.3 "Cozy Phones"
   account: { file: 'test_account.js', group: 'phone', est: 240, timeout: 500 }, // v2.8: about 230 s alone, more under load (its own watchdog is 480 s)
+  itch_build: { file: 'test_itch_build.js', group: 'all', est: 40 }, // the itch.io copy has no dev button or panel (tools/itch.js)
   phone_occl_home: { file: 'test_phone_occl_home.js', group: 'phone', est: 60 },
   phone_occl_play: { file: 'test_phone_occl_play.js', group: 'phone', est: 60 },
   phone_v24_shop: { file: 'test_phone_v24_shop.js', group: 'phone', est: 40 }, // v2.4
@@ -99,6 +108,9 @@ const SUITES = {
   phone_v27_shelter: { file: 'test_phone_v27_shelter.js', group: 'phone', est: 45 },
   phone_v27_mailbox: { file: 'test_phone_v27_mailbox.js', group: 'phone', est: 40 },
   phone_v28_winter: { file: 'test_phone_v28_winter.js', group: 'phone', est: 60 }, // v2.8 (V28.md section 9): WINTER, with the NEW YEAR and FUJI HILL phone parts
+  phone_v29_pack: { file: 'test_phone_v29_pack.js', group: 'phone', est: 50 }, // v2.9 (V29.md)
+  phone_v29_photo: { file: 'test_phone_v29_photo.js', group: 'phone', est: 45 },
+  phone_v29_polish: { file: 'test_phone_v29_polish.js', group: 'phone', est: 45 },
 };
 // extra aliases: `all_*` is the same as `all`; `test_all` = the four+ shards of the old test_all.js
 const ALIAS = { test_all: ['all_a', 'all_b', 'all_c', 'all_d', 'all_e'], 'test_v15': ['v15'], 'test_v16': ['v16'], 'test_v16b': ['v16b'], 'test_v17': ['v17'], 'test_v171_garden': ['v171_garden'], 'test_v171_tricks': ['v171_tricks'], 'test_v2_slots': ['v2_slots'], 'test_v2_breed': ['v2_breed'], 'test_v2_journal': ['v2_journal'], 'test_v2_town': ['v2_town'], 'test_v2_play': ['v2_play'], 'test_v21_genes_node': ['v21_genes'], 'test_copy_node': ['copy'], 'test_v21_breed': ['v21_breed'], 'test_v21_journal': ['v21_journal'], 'test_v21_town': ['v21_town'], 'test_v21_home': ['v21_home'] };

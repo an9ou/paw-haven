@@ -29,6 +29,7 @@
 22_input.js
 22b_cloud_config.js
 22b_cloud.js
+22d_reset.js
 22c_phone_shell.js
 24_missions.js
 25_guide.js
@@ -40,4 +41,7 @@
 31_winter.js
 32_newyear.js
 33_japan.js
+34_pack_play.js
+35_photo.js
+35b_photo_fonts.js
 23_boot.js

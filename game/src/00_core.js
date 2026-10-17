@@ -558,14 +558,15 @@ function freshState(key, name, sex) {
   st.hw = { letter: null, seen: null }; // v2.6 Halloween 2026 pop-up (27_halloween.js)
   st.guide = { step: 0 }; // v2.4: a new save meets Gerald (25_guide.js)
   v27Fields(st); // v2.7 Home & Pack: beds in the house, who naps where, pack care ticks, the shelter playroom (V27.md section 1)
-  v28Fields(st); // v2.8 Winter & New Year and Fuji View Hill (V28.md sections 1 and 12.4)
+  v28Fields(st); // v2.8 Winter & New Year and Mt. Fuji Lookout (V28.md sections 1 and 12.4)
+  v29Fields(st); // v2.9 All Together: photo mode (V29.md section 5)
   return linkDogs(st);
 }
 let S = null;
 let dirty = false;
 function markDirty() { dirty = true; }
 const ALIAS_KEYS = new Set(['dog', 'stats', 'bond', 'outfit', 'potty', 'sleeping', 'dishLog', 'buff', 'glowUntil', 'pupUntil', 'tricks']);
-function saveNow() { if (!S) return; S.lastReal = Date.now(); const root = S; lsSet(SAVE_KEY, JSON.stringify(S, function (k, v) { return this === root && ALIAS_KEYS.has(k) ? undefined : v; })); dirty = false;
+function saveNow() { if (!S) return; S.lastReal = Date.now(); const root = S; lsSet(SAVE_KEY, JSON.stringify(S, function (k, v) { if (this === root && k === 'activeId' && typeof PKS === 'object' && PKS && PKS.sw && PKS.sw.who === v) return PKS.sw.orig; return this === root && ALIAS_KEYS.has(k) ? undefined : v; })); dirty = false;
   if (typeof clOnSaved === 'function') clOnSaved(); }
 function loadSave() { try { const s = JSON.parse(lsGet(SAVE_KEY) || 'null'); return s && (s.dog || (s.dogs && s.dogs.length)) && s.v === 1 ? migrate(s) : null; } catch (e) { return null; }
   finally { if (typeof clOnLoaded === 'function') clOnLoaded(); } }
@@ -589,7 +590,8 @@ function migrate(s) {
   if (!s.hw || typeof s.hw !== 'object') s.hw = { letter: null, seen: null }; // v2.6: the Halloween 2026 pop-up letter and first visit
   if (!s.guide || typeof s.guide !== 'object') { s.guide = { step: -1, done: localISO() }; s.guideSeen = true; } // v2.4: saves from before the guide never see the walkthrough, they get a letter
   v27Fields(s); // v2.7 Home & Pack (V27.md section 1): additive, an old save keeps its one bed where it always stood
-  v28Fields(s); // v2.8 Winter & New Year, Fuji View Hill (V28.md section 1): additive
+  v28Fields(s); // v2.8 Winter & New Year, Mt. Fuji Lookout (V28.md section 1): additive
+  v29Fields(s); // v2.9 All Together (V29.md section 5): additive
   return s;
 }
 /* v2.7 Home & Pack save fields (V27.md section 1). Additive only: S.v stays 1, nothing is dropped.
@@ -623,6 +625,12 @@ function v28Fields(s) {
   if (!v28Obj(s.ny.fortune)) s.ny.fortune = {};
   const fo = s.ny.fortune; if (fo.date === undefined) fo.date = null; if (fo.year === undefined) fo.year = null; if (typeof fo.knots !== 'number') fo.knots = 0;
   if (!v28Obj(s.jp)) s.jp = {}; ['letter', 'gazed', 'first', 'mochi'].forEach((k) => { if (s.jp[k] === undefined) s.jp[k] = null; });
+  return s;
+}
+// v2.9 (V29.md section 5): S.ph = { n: photos taken (the journal line), first: localISO() of the first photo, or null (Gerald's line) }. Photos themselves are never saved
+function v29Fields(s) {
+  if (!s) return s;
+  if (!v28Obj(s.ph)) s.ph = {}; if (typeof s.ph.n !== 'number' || !(s.ph.n >= 0)) s.ph.n = 0; if (s.ph.first === undefined) s.ph.first = null;
   return s;
 }
 function migNote() { if (S && S.gkNote) { delete S.gkNote; markDirty(); setTimeout(() => toast('Pip left a packet of seeds on your doorstep. The veggie patch is yours now!', 'gold'), 2200); }
@@ -783,7 +791,7 @@ function say(text, wx, wy, ms = 3600) {
     const pk = $('#phPeek'), pq = pk && !pk.hidden && pk.offsetParent ? pk.getBoundingClientRect() : null; // UI/UX H9: nor under the look-right button
     if (pq) { const bt = parseFloat(bubble.style.top), bl = parseFloat(bubble.style.left), bh = bubble.offsetHeight;
       if (bt < pq.bottom - sg.top + 4 && bt + bh > pq.top - sg.top - 4 && bl + bw > pq.left - sg.left - 8) bubble.style.left = Math.max(6, pq.left - sg.left - bw - 8) + 'px'; }
-    // UI/UX T5: in town places the dog's own lines go under the dog, so they never cover the shop signs above its head (townBubbleBelowDog, 03_yard.js); Fuji View Hill has no signs, its line stays over the head
+    // UI/UX T5: in town places the dog's own lines go under the dog, so they never cover the shop signs above its head (townBubbleBelowDog, 03_yard.js); Mt. Fuji Lookout has no signs, its line stays over the head
     if (['yard', 'market'].includes(cur.mode) && S && !['yard', 'house', 'fujihill'].includes(S.place) && typeof dogHeadWorld === 'function') { const h = dogHeadWorld(); if (Math.abs(h.x - wx) < 40 && Math.abs(h.y - wy) < 40) townBubbleBelowDog(); }
   }
   clearTimeout(bubbleTimer); bubbleTimer = setTimeout(() => { bubble.hidden = true; }, ms);

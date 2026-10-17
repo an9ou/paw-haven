@@ -102,16 +102,16 @@ function acDogName(d) { return (d && ((d.dogs && d.dogs[0] && d.dogs[0].name) ||
 function acOpenForm(kind, inSheet) {
   const reg = kind === 'reg', c = acCl(), local = clLocal(), acct = c && c.uid && !c.anon;
   const carry = local && !acct && clMine(); // a guest game comes along; an account's game stays with that account
-  const lead = reg ? (carry ? `${esc(acDogName(local))} comes along to the new account. No email is ever sent.` : local ? `A fresh start with a new crayon dog. ${esc(acDogName(local))} stays safe in the other account.` : 'Make one, then pick your first crayon dog. No email is ever sent.')
+  const lead = reg ? (carry ? `${esc(acDogName(local))} comes along to the new account. We only email you if you ask for a password link.` : local ? `A fresh start with a new crayon dog. ${esc(acDogName(local))} stays safe in the other account.` : 'Make one, then pick your first crayon dog. We only email you if you ask for a password link.')
     : 'Welcome back. Type the email and password you signed up with.';
   const fields = clIn('acEmail', 'email', 'Email', 'username') + (reg ? clIn('acPw', 'password', `Password (${CL_PW_MIN} or more characters)`, 'new-password') + clIn('acPw2', 'password', 'Password again', 'new-password') : clIn('acPw', 'password', 'Password', 'current-password'));
-  const body = `<div class="clset acform"><div class="aclead"><span class="acdog" aria-hidden="true">${art('dog', reg ? 'golden' : 'pug', { pose: reg ? 'happy' : 'paw' })}</span><p>${lead}</p></div>${fields}<p class="clmsg" id="acMsg" role="alert" hidden></p>${reg ? '' : '<button class="tlink" id="acForgot">Forgot your password?</button><p class="small" id="acForgotTxt" hidden>Passwords can\'t be reset by email. If you\'re logged in on another device, change it there. The game on this device is never lost.</p>'}</div>`;
+  const body = `<div class="clset acform"><div class="aclead"><span class="acdog" aria-hidden="true">${art('dog', reg ? 'golden' : 'pug', { pose: reg ? 'happy' : 'paw' })}</span><p>${lead}</p></div>${fields}<p class="clmsg" id="acMsg" role="alert" hidden></p>${reg ? '' : '<button class="tlink" id="acForgot">Forgot your password?</button>'}</div>`;
   const p = openModal(reg ? 'Make an account' : 'Log in', body, { cls: 'acct acformp', foot: `<button class="btn" id="acBack">Back</button><button class="btn yes" id="acGo">${reg ? 'Make account' : 'Log in'}</button>` });
   const val = (id) => { const e = document.getElementById(id); return e ? e.value : ''; };
   const msgEl = $('#acMsg', p), btn = $('#acGo', p);
   const say = (t) => { msgEl.textContent = t; msgEl.hidden = !t; if (t) SFX.nope(); };
   $('#acBack', p).onclick = () => { SFX.click(); if (inSheet) acOpenChoices(); else closeModal(); };
-  const fg = $('#acForgot', p); if (fg) fg.onclick = () => { SFX.click(); $('#acForgotTxt', p).hidden = false; fg.hidden = true; };
+  const fg = $('#acForgot', p); if (fg) fg.onclick = () => { SFX.click(); acOpenForgot(val('acEmail').trim(), () => acOpenForm('login', inSheet)); }; // v2.8.2: 22d_reset.js
   p.querySelectorAll('input').forEach((i) => i.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); btn.click(); } }));
   // Focus without ever losing a keystroke: openModal re-focuses [autofocus] 30 ms after opening, so [autofocus] always follows the
   // field in use and that late focus lands where the player already is. Desktop starts in the email field; phones wait for a tap

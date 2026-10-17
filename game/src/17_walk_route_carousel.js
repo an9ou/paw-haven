@@ -17,7 +17,7 @@ function enterRoutes(startKey) {
   };
   view.innerHTML = `<div class="routes"><h2 class="rt-title">Pick a walk</h2><div class="rt-viewport" id="rtView"><div class="rt-track" id="rtTrack">${ROUTE_KEYS.map(card).join('')}</div></div>
     <div class="rt-nav"><button class="arrow" id="rtPrev" aria-label="Previous route">&lt;</button><span class="small" id="rtCount"></span><button class="arrow" id="rtNext" aria-label="Next route">&gt;</button></div>
-    <div class="rt-foot"><button class="btn" id="rtBack">Back to ${esc((PLACES[S.place] || PLACES.yard).n)}</button><button class="btn big yes" id="rtStart">Start walk</button></div></div>`;
+    ${pkRoutesHTML()}<div class="rt-foot"><button class="btn" id="rtBack">Back to ${esc((PLACES[S.place] || PLACES.yard).n)}</button><button class="btn big yes" id="rtStart">Start walk</button></div></div>`;
   const shift = (d) => { routeIdx = clamp(routeIdx + d, 0, ROUTE_KEYS.length - 1); layoutRoutes(); SFX.click(); };
   $('#rtPrev').onclick = () => shift(-1); $('#rtNext').onclick = () => shift(1);
   $('#rtBack').onclick = () => go('yard'); $('#rtStart').onclick = () => startRoute(ROUTE_KEYS[routeIdx]);
@@ -26,6 +26,7 @@ function enterRoutes(startKey) {
   vp.addEventListener('pointerdown', (ev) => { x0 = ev.clientX; }); vp.addEventListener('pointerup', (ev) => { if (x0 === null) return; const dx = ev.clientX - x0; x0 = null; if (Math.abs(dx) > 60) shift(dx < 0 ? 1 : -1); });
   cur.key = (ev) => { if (ev.key === 'ArrowLeft') { ev.preventDefault(); shift(-1); } if (ev.key === 'ArrowRight') { ev.preventDefault(); shift(1); } };
   onCleanup(() => { cur.key = null; });
+  pkRoutesBind(); // v2.9 PACK: the chip row on the route screen
   layoutRoutes();
 }
 function layoutRoutes() {
@@ -35,6 +36,7 @@ function layoutRoutes() {
   cards.forEach((c, i) => c.classList.toggle('cur', i === routeIdx));
   const k = ROUTE_KEYS[routeIdx], lock = topBond() < ROUTES[k].bond;
   $('#rtCount').textContent = `${routeIdx + 1} / ${ROUTE_KEYS.length} · ${isPhone() ? 'swipe, or tap the arrows' : 'drag, or use the arrow keys'}`;
+  pkRoutesLine();
   const blk = !lock && walkBlock(D(), k), st = $('#rtStart'); st.textContent = lock ? `Locked (Bond ${ROUTES[k].bond})` : blk ? `Not for ${D().name} yet` : `Start walk: ${ROUTES[k].n}`; st.setAttribute('aria-disabled', lock || blk ? 'true' : 'false');
 }
 function startRoute(k) {

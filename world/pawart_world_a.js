@@ -841,12 +841,12 @@ const ICON={
    k.shape(RC(x+48,y-66,32,16),C.yellow,{w:1.6});k.shape([[x+44,y-66],[x+64,y-82],[x+84,y-66]],C.red,{w:1.6});k.add(`<path d="M${x+84} ${y-58}l36 -10M${x+84} ${y-58}l36 8" stroke="#FFE7A0" stroke-width="3" stroke-linecap="round"/>`);
    k.shape([[x-40,y+40],[x+4,y+40],[x-4,y+52],[x-34,y+52]],C.red,{w:1.5});k.line([[x-18,y+40],[x-18,y+12]],1.4);k.shape([[x-16,y+14],[x+2,y+38],[x-16,y+38]],'#FFFFFF',{w:1.3,one:1});O.bird(k,x-60,y-62,8)}
 };
-// v2.8 (V28 section 12): the small crayon Fuji landmark (o.jp) and the Fuji View Hill pin (o.fujiPin), both on the k.jp stream
+// v2.8 (V28 section 12): the small crayon Fuji landmark (o.jp) and the Mt. Fuji Lookout pin (o.fujiPin), both on the k.jp stream
 function mapFuji(k,x,by,w){const h=w/2.5,P=[[x-w/2,by],[x-w*.32,by-h*.28],[x-w*.18,by-h*.62],[x-w*.08,by-h*.97],[x-w*.03,by-h],[x+w*.02,by-h*.95],[x+w*.07,by-h*1.01],[x+w*.11,by-h*.93],[x+w*.21,by-h*.6],[x+w*.34,by-h*.26],[x+w/2,by]];
   k.shape(P,'#AFC3D6',{w:1.7,lcol:'#7D8FA6',hatch:{side:.05,gap:4,col:'#8EA2B8',op:.55}});
   const cap=[[x-w*.105,by-h*.86],[x-w*.08,by-h*.97],[x-w*.03,by-h],[x+w*.02,by-h*.95],[x+w*.07,by-h*1.01],[x+w*.11,by-h*.93],[x+w*.15,by-h*.8],[x+w*.12,by-h*.7],[x+w*.08,by-h*.78],[x+w*.05,by-h*.62],[x+w*.01,by-h*.74],[x-w*.03,by-h*.6],[x-w*.06,by-h*.76],[x-w*.1,by-h*.66]];
   k.shape(cap,'#FFFFFF',{w:1.3,lcol:'#7D8FA6',one:1});k.line([[x-w*.02,by-h*.6],[x-w*.05,by-h*.4]],1.2,'#FFFFFF');k.line([[x+w*.05,by-h*.62],[x+w*.09,by-h*.44]],1.2,'#FFFFFF')}
-function mapFujiPin(k,x,y,locked,bond){const hp=E(x,y+12,104,84,12),L='Fuji View Hill';
+function mapFujiPin(k,x,y,locked,bond){const hp=E(x,y+12,104,84,12),L='Mt. Fuji Lookout';
   const g=k.cap(()=>{k.add(`<path d="${smooth(dense(E(x,y+16,96,62,14),true,30),true)}" fill="#FDF3DF" fill-opacity=".9"/>`);// a clearing in the little houses
     const m=[[x-86,y+46],[x-50,y+2],[x+4,y-14],[x+52,y-2],[x+88,y+44]];k.fill(m,'#B9DD92',{dx:0,dy:0});k.pen(m,false,{w:2});
     // a tiny vermilion torii on the left, the bench facing Fuji on the right, a stepping-stone path
@@ -866,7 +866,7 @@ function bigMap(k,o){
   k.add(`<rect width="2400" height="1500" fill="#FDF3DF" fill-opacity=".55"/>`);
   // hills to the north
   const h1=[[0,170],[220,120],[460,160],[700,100],[960,150],[1250,90],[1500,60],[1760,110],[2000,80],[2240,130],[2400,100],[2400,300],[0,300]];k.fill(h1,'#DCEDC4',{dx:0,dy:0,sc:0});k.pen(h1.slice(0,11),false,{w:1.8,col:C.graph});
-  k.jp(()=>mapFuji(k,(fp?fp[0]:380)+50,(fp?fp[1]:330)-102,130));// v2.8: the Fuji landmark over the Fuji View Hill pin, its foot behind the second row of hills
+  k.jp(()=>mapFuji(k,(fp?fp[0]:380)+50,(fp?fp[1]:330)-102,130));// v2.8: the Fuji landmark over the Mt. Fuji Lookout pin, its foot behind the second row of hills
   const h2=[[0,250],[300,210],[620,250],[900,215],[1200,240],[1500,200],[1800,235],[2100,205],[2400,240],[2400,310],[0,310]];k.fill(h2,'#CFE6B4',{dx:0,dy:0,sc:0});k.pen(h2.slice(0,9),false,{w:1.6,col:C.graph});
   [[120,190],[380,165],[860,190],[1060,175],[1900,160],[2150,175],[2330,200],[640,215]].forEach(([x,y])=>mTree(k,x,y,1,C.leaf2));
   // sea and the sandy coast (south-east)
@@ -891,7 +891,7 @@ function bigMap(k,o){
   const pal=[[C.wall,C.roof],[C.wall2,C.lav],[C.wall3,'#9AA7B8'],[C.wall4,C.redD],['#FFF3DC',C.orange]];
   for(let y=330;y<1460;y+=74)for(let x=90+((y/74)%2)*36;x<2000;x+=76){const jx=x+k.J(14),jy=y+k.J(10);if(!free(jx,jy,0)||k.r()<.4)continue;
     const one=()=>{if(k.r()<.62){const c=pal[Math.floor(k.r()*pal.length)];mHouse(k,jx,jy,.95+k.r()*.25,c[0],c[1])}else mTree(k,jx,jy,.9+k.r()*.4,k.r()<.5?C.leaf:C.leaf2)};
-    if(fp){const s=k.cap(one);if(!inPin(jx,jy))k.add(s)}else one()}// v2.8: the same draws, none under the Fuji View Hill pin
+    if(fp){const s=k.cap(one);if(!inPin(jx,jy))k.add(s)}else one()}// v2.8: the same draws, none under the Mt. Fuji Lookout pin
   // the eastern forest around Maple Woods
   for(let y=330;y<940;y+=46)for(let x=1950+((y/46)%2)*22;x<2390;x+=44){const jx=x+k.J(10),jy=y+k.J(8);const c=MAPC.woods;if(((jx-c[0])/170)**2+((jy-c[1]-14)/140)**2<1||k.r()<.25)continue;k.r()<.7?mPine(k,jx,jy,.9+k.r()*.4,k.r()<.5?C.pine:C.pineD):mTree(k,jx,jy,1,'#E9B074')}
   // places
@@ -1402,7 +1402,7 @@ PA.scene=function(name,o){
   o=o||{};const s=SCENES[name]||SCENES.yard;name=SCENES[name]?name:'yard';const env=name==='map'?(o.jp===true?MAP_JP_ENV:DEF_ENV):mkEnv(o);// the map never shows time or weather (v2.8: only the Japan flag)
   const lk=name==='map'?'|'+(Array.isArray(o.locked)?o.locked.slice().sort().join(','):'')+'|'+JSON.stringify(o.bonds||{}):'';
   const pt=(name==='yard'&&(o.patch==='empty'||o.patch==='ready')?'|'+o.patch:'')+(name==='house'&&o.bed===false?'|nobed':'');
-  const fp=name==='map'&&env.jp&&Array.isArray(o.fujiPin)?'|fp'+o.fujiPin.join(','):'';// v2.8: the Fuji View Hill pin
+  const fp=name==='map'&&env.jp&&Array.isArray(o.fujiPin)?'|fp'+o.fujiPin.join(','):'';// v2.8: the Mt. Fuji Lookout pin
   const key=name+'|'+env.time+'|'+env.weather+'|'+env.season+(env.hw?'|hw':'')+wnKey(env)+lk+pt+fp;if(cache[key])return fresh(cache[key]);
   const svg=frameScene(name,s[0],k=>s[1](k,o),env);cache[key]=svg;return svg;
 };

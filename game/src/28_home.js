@@ -129,7 +129,7 @@ function hoBedFor(d) {
 }
 // [tx, ty, scale] for dogTo() when the ACTIVE dog naps: in the house its own bed (feet at x + 130, y + 145), else the rug; in the yard the dog-house door
 function napSpot() {
-  if (S && S.place === 'fujihill') return [107.5, 140, 0.75]; // v2.8: on Fuji View Hill the dog naps where it stands, inside the hill's phone crop (phHomeRefit)
+  if (S && S.place === 'fujihill') return [107.5, 140, 0.75]; // v2.8: on Mt. Fuji Lookout the dog naps where it stands, inside the hill's phone crop (phHomeRefit)
   if (!S || S.place !== 'house') return [417.5, 140, 0.75];
   const b = hoBedFor(S.dog); if (b) { const [x, y] = S.bedAt[b]; return [x - 192.5, y - 230, 0.75]; }
   const r = HO_RUG_NAPS[0]; return [r[0] - 430 * r[3], r[1] - 500 * r[3], r[3]];
