@@ -103,15 +103,15 @@ const FB_PINS = { square: [1900, 330], cafe: [2180, 560], vet: [1880, 760], salo
 let MAPV = null;
 function mapArt(locked) {
   const bonds = {}; Object.keys(PLACES).forEach((k) => { bonds[k] = PLACES[k].bond; });
-  const raw = art('scene', 'map', Object.assign({ locked, bonds }, jpOn() ? { jp: true } : {}, PLACES.fujihill ? { fujiPin: JP_MAP_PIN.big } : {})); // v2.8: jp = the Fuji landmark, fujiPin = where SCENE ART draws <g data-area="fujihill">
+  const raw = art('scene', 'map', Object.assign({ locked, bonds }, jpOn() ? { jp: true } : {}, PLACES.fujihill ? { fujiPin: JP_MAP_PIN.big } : {}, tkMapOpts())); // v2.11: station = the Station pin (TOKYO ART D) // v2.8: jp = the Fuji landmark, fujiPin = where SCENE ART draws <g data-area="fujihill">
   const m = /viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(raw || ''), W0 = m ? +m[1] : 1000, H0 = m ? +m[2] : 600;
   const big = W0 > 1500 && Array.isArray(PA().MAP_AREAS);
-  if (big) return { W: W0, H: H0, svg: `<g id="sceneG" data-scene="map" data-noenv="1">${place(raw, 0, 0, W0, H0)}</g>${jpMapPin(raw, JP_MAP_PIN.big)}`, areas: PA().MAP_AREAS };
+  if (big) return { W: W0, H: H0, svg: `<g id="sceneG" data-scene="map" data-noenv="1">${place(raw, 0, 0, W0, H0)}</g>${jpMapPin(raw, JP_MAP_PIN.big)}${tkMapPin(raw, TK_MAP_PIN.big)}`, areas: PA().MAP_AREAS };
   // fallback town: today's map, enlarged, with doodle pins for the new places around it
   const W = 2400, H = 1500, ox = 100, oy = 260, sc = 1.6;
   const roads = `<g fill="none" stroke="#D9C7AB" stroke-width="10" stroke-linecap="round" stroke-dasharray="2 18"><path d="M1700 700 C1800 650 1850 400 1900 330 M1700 700 C1900 640 2050 600 2180 560 M1700 760 L1880 760 M1700 820 C1900 900 2050 950 2170 980 M1700 900 C1800 1000 1880 1150 1920 1220 M760 150 C760 250 700 260 700 320 M1100 1210 C1150 1300 1250 1350 1300 1390"/></g>`;
   const deco = [[1780, 180], [2300, 260], [2300, 1350], [600, 1350], [300, 160], [1500, 160], [2050, 1400]].map(([x, y], i) => i % 2 ? `<g transform="translate(${x} ${y})" stroke="#5B3D32" stroke-width="3"><rect x="-26" y="-20" width="52" height="40" fill="#F9E3C8"/><path d="M-32 -20 L0 -46 L32 -20 Z" fill="#E8A598"/></g>` : `<g transform="translate(${x} ${y})" stroke="#5B3D32" stroke-width="3"><path d="M0 30 V8" /><circle r="26" cy="-6" fill="#BFD8A6"/></g>`).join('');
-  const pins = NEW_PLACES.filter((k) => !new RegExp(`data-area="${k}"`).test(raw)).map((k) => fbPinSVG(k, FB_PINS[k], k)).join('') + jpMapPin(raw, JP_MAP_PIN.fb);
+  const pins = NEW_PLACES.filter((k) => !new RegExp(`data-area="${k}"`).test(raw)).map((k) => fbPinSVG(k, FB_PINS[k], k)).join('') + jpMapPin(raw, JP_MAP_PIN.fb) + tkMapPin(raw, TK_MAP_PIN.fb);
   return { W, H, areas: null, svg: `<rect width="${W}" height="${H}" fill="#FFFBF3"/><text x="${W / 2}" y="90" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="72" fill="#5B3D32">Doodle Doggo Town</text>${roads}${deco}<g id="sceneG" data-scene="map" data-noenv="1">${place(raw, ox, oy, 1000 * sc, 600 * sc)}</g>${pins}` };
 }
 // a plain doodle pin for a place the map art does not draw yet (the v1.6 town places, v2.8 Mt. Fuji Lookout). icon: the PawArt.icon name

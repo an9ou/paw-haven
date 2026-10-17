@@ -12,7 +12,7 @@
   var W = 1240, H = 620, GY = 540, DS = 1.15, G = 2300;
   var TOYS = ['Tennis Ball', 'Rope Tug', 'Squeaky Duck', 'Frisbee', 'Plush Bone', 'Puzzle Feeder', 'Driftwood Stick', 'Rubber Chicken', 'Glow Ball',
     'Snuffle Mat', 'Treat Cone', 'Squeaky Hedgehog', 'Bubble Machine', 'Paddling Pool', 'Agility Tunnel',
-    'Squeaky Pumpkin', 'Plush Ghost', 'Bat-Wing Flyer', 'Trick-or-Treat Bucket'];
+    'Squeaky Pumpkin', 'Plush Ghost', 'Bat-Wing Flyer', 'Trick-or-Treat Bucket', 'Shinkansen Plush'];
   var CAP = { happiness: 25, bond: 2, coins: 6 };
 
   /* ---------------- helpers ---------------- */
@@ -166,6 +166,8 @@
         for (var ti = 0; ti < 6; ti++) s += pencil(R, [[10 + ti * 7.5, 22], [17.5 + ti * 7.5, 20], [17.5 + ti * 7.5, 52], [10 + ti * 7.5, 51]], 1.4, INK, 0.9, true, ti % 2 ? '#FFE07A' : '#86B3EA');
         s += pencil(R, [[10, 22], [55, 20]], 2.2, INK, 1) + pencil(R, [[10, 51], [55, 52]], 2.2, INK, 1) + pencil(R, ell(10, 36.5, 6, 15, 12), 2.2, INK, 1, true, '#86B3EA') + pencil(R, ell(10, 37, 3.4, 11, 10), 1.4, INK, 1, true, '#4A3A33') +
           pencil(R, ell(55, 36, 5, 16, 12), 2.2, INK, 1, true, '#FFE07A') + '<path d="M2 58H62" stroke="#5B3D32" stroke-width="1.4" opacity=".4"/>'; break;
+      case 'Shinkansen Plush': // v2.11: a white bullet train with a blue stripe (TOKYO ART E draws the real icon)
+        s = pencil(R, [[6, 46], [6, 30], [12, 24], [40, 22], [54, 30], [60, 42], [58, 46]], 2.4, INK, 1, true, '#FFFBF3') + '<path d="M7 38 H58" stroke="#3E6FB0" stroke-width="4"/><rect x="14" y="28" width="8" height="6" rx="1.5" fill="#BFE6FA" stroke="#5B3D32" stroke-width="1.2"/><rect x="26" y="28" width="8" height="6" rx="1.5" fill="#BFE6FA" stroke="#5B3D32" stroke-width="1.2"/><path d="M40 27 L50 30 L52 34 L40 34 Z" fill="#BFE6FA" stroke="#5B3D32" stroke-width="1.2"/><path d="M4 52 H60" stroke="#5B3D32" stroke-width="1.6" opacity=".5"/>'; break;
       case 'Squeaky Pumpkin': case 'Plush Ghost': case 'Bat-Wing Flyer': case 'Trick-or-Treat Bucket': return v26Icon(name);
       default: s = pencil(R, rect(14, 14, 36, 36), 2.4, INK, 1, true, '#E0D5F0');
     }
@@ -2723,6 +2725,64 @@
   };
   IMPL['Trick-or-Treat Bucket'].cfg = { scene: 'yard' };
   IMPL['Trick-or-Treat Bucket'].phone = { vw: 720, vwMin: 700, fx: 585 };
+
+  /* ---------- v2.11 Shinkansen Plush (the Tokyo Tower souvenir, lane TRAVEL): roll the soft bullet train along the lawn, the dog chases it and brings it back ---------- */
+  IMPL['Shinkansen Plush'] = function (A) {
+    var dog = A.dog, DN = A.DN, CP = A.compact, still = v26Still(), HOME = CP ? 620 : 720, LO = CP ? 290 : 190, HI = CP ? 900 : 1070, TS = 150, LIE = GY - 30;
+    var spr = A.sprite(A.itemSVG('Shinkansen Plush'), TS, TS, A.L.actors, 0.5, 0.5);
+    var tr = { x: HOME - 150, y: LIE, rot: 0, tx: 0, carried: false, rolling: false };
+    var state = 'wait', stT = 0, rolls = 0, returns = 0, tip = A.tip('click the lawn to roll it!', CP ? 330 : 300, GY - 120);
+    dog.x = HOME; dog.face('left'); dog.setPose('sit');
+    A.say(pick(['a TRAIN! a soft one!', 'choo choo? is that how it goes?']), 1700);
+    function onDog(x, y) { var h = dog.head(); return Math.abs(x - dog.x) < A.hitR(110) && y > h.y - 60 && y < dog.y + 20; }
+    function roll(x) {
+      var tx = clamp(x, LO, HI); if (Math.abs(tx - tr.x) < 160) tx = clamp(tr.x + (tx >= tr.x ? 1 : -1) * 260, LO, HI);
+      tr.tx = tx; tr.rolling = true; tr.carried = false; rolls++; state = 'chase'; stT = 0; A.sfx('whoosh');
+      if (tip) { tip.hide(); tip = null; }
+      if (Math.random() < 0.5) A.say(pick(['zoom zoom!', 'it is so fast!', 'wait for me, train!']), 900);
+    }
+    return {
+      poses: ['sit', 'idle', 'walk', 'eat', 'happy'],
+      dur: 45,
+      hint: 'Click the lawn to roll the Shinkansen Plush, and ' + DN + ' chases it.',
+      down: function (x, y) {
+        if (state === 'wait' && !onDog(x, y) && y > 300) { roll(x); return; }
+        if (dogTap(A, x, y, ['all aboard! (that is me)', 'next stop: you!'])) return;
+        kindSniff(A, x, y, ['the train is over there!', 'one train at a time', 'sniff... smells like a station.']);
+      },
+      move: function (x, y) { A.cursor(state === 'wait' && !onDog(x, y) && y > 300 ? 'pointer' : 'default'); },
+      update: function (dt, T) {
+        stT += dt;
+        if (tr.rolling) {
+          var dx = tr.tx - tr.x, sp = Math.max(160, Math.abs(dx) * 3.2);
+          tr.x += (dx < 0 ? -1 : 1) * Math.min(Math.abs(dx), sp * dt);
+          if (Math.abs(tr.tx - tr.x) < 1) { tr.x = tr.tx; tr.rolling = false; A.sfx('land'); A.burst('dust', tr.x, GY, 3, { g: -20, sp: 60, life: 0.5, size: 4 }); }
+        }
+        if (state === 'chase') {
+          var side = dog.x >= tr.x ? 1 : -1;
+          if (dog.runTo(tr.x + side * dog.mouthOff('eat'), 320 * A.tr.run, dt) && !tr.rolling) { dog.face(side > 0 ? 'left' : 'right'); state = 'pick'; stT = 0; A.sfx('pop'); }
+        } else if (state === 'pick') {
+          dog.setPose('eat'); if (stT > 0.3) { tr.carried = true; state = 'bring'; stT = 0; dog.setPose('idle'); }
+        } else if (state === 'bring') {
+          if (dog.runTo(HOME, 300 * A.tr.run * A.tr.carry, dt)) {
+            returns++; tr.carried = false; tr.x = HOME - 150; dog.face('left'); dog.setPose('sit'); state = 'wait'; stT = 0; A.sfx('squeak');
+            A.float(pick(['next stop: you!', 'train returned!', 'right on time!']), dog.x, dog.y - 230, returns % 3 === 0 ? 'pt-gold' : '');
+            v26Pay(A, { happiness: returns % 2 ? 1 : 2, bond: returns === 2 ? 1 : 0, coins: returns % 3 === 0 ? 1 : 0, energy: returns % 2 ? -1 : 0 });
+          }
+        } else if (state === 'wait') {
+          dog.setPose('sit'); if (stT > 7) { stT = 0; A.say(pick(['roll it! roll the train!', 'I am ready. very ready.']), 1400); }
+        }
+        if (tr.carried) { var m = dog.mouth(); tr.x = m.x - dog.dir() * 10; tr.y = m.y + 18; tr.rot = dog.dir() * -8; } else { tr.y = LIE; tr.rot = 0; }
+        spr.set(tr.x, tr.y, tr.rot + (tr.rolling && !still ? Math.sin(T * 30) * 2 : 0));
+      },
+      drawFx: function (g) { if (tr.rolling) A.shadow(g, tr.x, GY + 6, 0, 40); },
+      focus: function () { return (tr.x + dog.x) / 2; },
+      finish: function () { return { happiness: 2, energy: -1 }; },
+      dbg: function () { return { state: state, rolls: rolls, returns: returns, still: still, train: { x: tr.x, y: tr.y, rolling: tr.rolling, carried: tr.carried } }; }
+    };
+  };
+  IMPL['Shinkansen Plush'].cfg = { scene: 'yard' };
+  IMPL['Shinkansen Plush'].phone = { vw: 720, vwMin: 700 };
 
   IMPL['Rope Tug'].phone = { vw: 980, fx: 640 };
   IMPL['Squeaky Duck'].phone = { vw: 700, vwMin: 660, fx: 620 };

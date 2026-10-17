@@ -10,12 +10,13 @@ const RM = { paused: new Set(), d: {}, place: '', no: null, noAt: 0, raf: 0, lea
 const RM_BASE = 0.88; // rmScale at feet y 500: the one size for every dog (the leader's v2.9 size was 1; four dogs fit the yard at 0.88)
 const RM_DEPTH = 0.0012; // a dog further back is a little smaller: y 400 = 0.88 of the base, y 590 = 1.1
 // feet y band per place [back line, front line] (V210.md section 5.2, tuned on screenshots); x is always 60 to 940
-const RM_ZONES = { yard: [404, 590], house: [414, 590], square: [414, 590], cafe: [414, 590], vet: [414, 590], salon: [410, 590], hilltop: [410, 590], park: [410, 590], woods: [410, 590], market: [452, 585], dogpark: [410, 590], pier: [410, 588], river: [452, 588], beach: [452, 588], fujihill: [424, 588], default: [424, 588] };
+const RM_ZONES = { yard: [404, 590], house: [414, 590], square: [414, 590], cafe: [414, 590], vet: [414, 590], salon: [410, 590], hilltop: [410, 590], park: [410, 590], woods: [410, 590], market: [452, 585], dogpark: [410, 590], pier: [410, 588], river: [452, 588], beach: [452, 588], fujihill: [424, 588],
+  shibuya: [430, 588], yoyogi: [420, 590], asakusa: [440, 588], ueno: [424, 588], tokyotower: [430, 588], odaiba: [452, 588], default: [424, 588] }; // v2.11 Tokyo (TRAVEL, tuned on the world D / E art)
 const RM_ZONES_PH = { yard: [424, 594] };
 const RM_TAP = [-88, -170, 176, 180]; // every dog's tap rect around its feet at scale 1 (DX + 44, DY + 35, DW - 88, 180): the drawn body, so four dogs fit
 const RM_WALK = 150, RM_RUN = 360; // world units a second
 const RM_CROP = 700, RM_WIDEN = 1.3; // the phone crop in world units (section 5.2): at most 700, and at most 1.3 x the v2.9 crop, so the props' 48 px tap rects keep clear of the dog
-const RM_OUT = ['yard', 'park', 'beach', 'hilltop', 'dogpark', 'woods', 'pier', 'river', 'fujihill', 'square'];
+const RM_OUT = ['yard', 'park', 'beach', 'hilltop', 'dogpark', 'woods', 'pier', 'river', 'fujihill', 'square', 'shibuya', 'yoyogi', 'asakusa', 'ueno', 'tokyotower', 'odaiba']; // v2.11: the six Tokyo places
 const rmWander = () => !navigator.webdriver || !!prefs.rmTest; // autonomous walking (the harness pins it off unless a suite asks)
 function rmOn() { return !!S && cur.mode === 'yard' && RM.paused.size === 0; } // roaming runs now (the scene is up and nothing holds it)
 // the autonomous part may act now: walks, asks, ambient lines (never during ball play, photo mode, a modal, training or the pinned test pose)
