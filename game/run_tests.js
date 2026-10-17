@@ -82,6 +82,7 @@ const SUITES = {
   v29_polish: { file: 'test_v29_polish.js', group: 'all', est: 45 },
   v29_flows: { file: 'test_v29_flows.js', group: 'all', est: 60 },
   v210_ball: { file: 'test_v210_ball.js', group: 'all', est: 60 }, // v2.10 (V210.md): free ball play where you are (BALL lane)
+  v211_art_e: { file: 'test_v211_art_e_node.js', group: 'all', est: 15 }, // v2.11 (V211.md 5.4): world E, the Tokyo Tower, Ueno and Odaiba scenes, eki stamps, lucky cat, Tokyo frame, items (TOKYO ART E)
   v29_review: { file: 'test_v29_review.js', group: 'all', est: 40 }, // v2.9 integration review fixes (coordinator)
   // v2.2 phone suites: `node game/run_tests.js phone` (not part of `all`, which stays the desktop regression set)
   phone_legacy: { file: 'test_phone.js', group: 'phone', est: 90 },
