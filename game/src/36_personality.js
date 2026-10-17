@@ -40,6 +40,13 @@ const BREED_PERS = {
     ask: ['{n} smiles at you. It is hard to say no.', '{n} is fluffy and would like to be patted.'] },
   frenchie: { attention: 0.7, energy: 0.35, zoomies: 0.5, follows: 0.3, ball: 0.8, steal: 0.3, spots: ['bed', 'front'], trait: 'cheeky',
     ask: ['{n} snorts, then sits on your foot.', '{n} gives you the bat-ear look.'] },
+  // v2.11 Tokyo Trip (V211.md section 5.2): traits loyal / show / spin are handled in 37_roam.js rmPackAct
+  akita: { attention: 0.4, energy: 0.5, zoomies: 0.15, follows: 0.2, ball: 1.0, steal: 0.05, spots: ['gate', 'shade'], trait: 'loyal',
+    ask: ['{n} sits by you, calm and proud.', '{n} waited for you. {He} always does.', '{n} leans on you, just a little.'] },
+  spitz: { attention: 0.6, energy: 0.75, zoomies: 0.5, follows: 0.4, ball: 1.05, steal: 0.15, spots: ['front', 'sun'], trait: 'show',
+    ask: ['{n} fluffs up and poses. Admire {him}, please.', '{n} does a little twirl. Applause is pets.'] },
+  pom: { attention: 0.7, energy: 0.8, zoomies: 0.6, follows: 0.3, ball: 0.85, steal: 0.3, spots: ['front', 'open'], trait: 'spin',
+    ask: ['{n} spins in a circle. Pet {him} and {he} spins again.', '{n} yips a tiny hello. A loud tiny hello.'] },
 };
 const PERS_DEF = { attention: 0.5, energy: 0.6, zoomies: 0.3, follows: 0.3, ball: 1.0, steal: 0.1, spots: ['open'], trait: '', ask: ['{n} comes over for a pet.'] };
 function persOf(d) { return Object.assign({}, PERS_DEF, (d && BREED_PERS[d.key]) || {}); }

@@ -8,7 +8,7 @@
 const fs = require('fs'), path = require('path'), cp = require('child_process');
 const D = __dirname, P = path.join(D, '..');
 const cat = (dir) => fs.readFileSync(path.join(D, dir, 'ORDER.txt'), 'utf8').split('\n').map((s) => s.trim()).filter(Boolean).map((f) => fs.readFileSync(path.join(D, dir, f), 'utf8')).join('');
-const ART = ['dogs/pawart_dogs.js', 'world/pawart_world_a.js', 'world/pawart_world_b.js', 'world/pawart_world_c.js'];
+const ART = ['dogs/pawart_dogs.js', 'world/pawart_world_a.js', 'world/pawart_world_b.js', 'world/pawart_world_c.js', 'world/pawart_world_d.js', 'world/pawart_world_e.js'];
 const MODS = ['mods/genes.js', 'mods/pawaudio.js', 'mods/walkrun.js', 'mods/toys.js', 'mods/garden.js', 'mods/kitchen.js'];
 function buildGame() {
   const shell = fs.readFileSync(path.join(D, 'shell.html'), 'utf8');

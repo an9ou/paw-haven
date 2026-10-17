@@ -47,4 +47,6 @@
 36_personality.js
 37_roam.js
 38_ball.js
+39_tokyo.js
+40_dogcards.js
 23_boot.js

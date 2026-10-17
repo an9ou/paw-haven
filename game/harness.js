@@ -5,7 +5,7 @@ const dir = __dirname;
 const html = fs.readFileSync(path.join(dir, 'paw_haven_proto.html'), 'utf8');
 const mode = process.argv[2] || 'plain', merged = mode === 'merged' || mode === 'published'; // published = merged minus garden/kitchen (what is live)
 const rd = (f) => fs.readFileSync(path.join(dir, '..', f), 'utf8');
-const stub = merged ? ['dogs/pawart_dogs.js', 'world/pawart_world_a.js', 'world/pawart_world_b.js', 'world/pawart_world_c.js'].filter((f) => fs.existsSync(path.join(dir, '..', f))).map(rd).join('\n') : rd('dogs/pawart_dogs.js') + '\n' + fs.readFileSync(path.join(dir, 'pawart_stub.js'), 'utf8');
+const stub = merged ? ['dogs/pawart_dogs.js', 'world/pawart_world_a.js', 'world/pawart_world_b.js', 'world/pawart_world_c.js', 'world/pawart_world_d.js', 'world/pawart_world_e.js'].filter((f) => fs.existsSync(path.join(dir, '..', f))).map(rd).join('\n') : rd('dogs/pawart_dogs.js') + '\n' + fs.readFileSync(path.join(dir, 'pawart_stub.js'), 'utf8');
 const n = html.split('/*@@PAWART@@*/').length - 1;
 if (n !== 1) throw new Error('placeholder count ' + n);
 const realMods = ['mods/genes.js', 'mods/pawaudio.js', 'mods/walkrun.js', 'mods/toys.js', 'mods/garden.js', 'mods/kitchen.js'].filter((f) => mode !== 'published' || !/garden|kitchen/.test(f)).filter((f) => fs.existsSync(path.join(dir, '..', f))).map(rd).join('\n');

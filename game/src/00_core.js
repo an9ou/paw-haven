@@ -561,6 +561,7 @@ function freshState(key, name, sex) {
   v28Fields(st); // v2.8 Winter & New Year and Mt. Fuji Lookout (V28.md sections 1 and 12.4)
   v29Fields(st); // v2.9 All Together: photo mode (V29.md section 5)
   v210Fields(st); // v2.10 Free to Roam: ball play (V210.md section 5)
+  v211Fields(st); // v2.11 Tokyo Trip: the trip and Dog Cards (V211.md section 5)
   return linkDogs(st);
 }
 let S = null;
@@ -594,6 +595,7 @@ function migrate(s) {
   v28Fields(s); // v2.8 Winter & New Year, Mt. Fuji Lookout (V28.md section 1): additive
   v29Fields(s); // v2.9 All Together (V29.md section 5): additive
   v210Fields(s); // v2.10 Free to Roam (V210.md section 5): additive
+  v211Fields(s); // v2.11 Tokyo Trip (V211.md section 5.1): additive
   return s;
 }
 /* v2.7 Home & Pack save fields (V27.md section 1). Additive only: S.v stays 1, nothing is dropped.
@@ -639,6 +641,17 @@ function v29Fields(s) {
 function v210Fields(s) {
   if (!s) return s;
   if (!v28Obj(s.bl)) s.bl = {}; if (s.bl.day === undefined) s.bl.day = null; ['coins', 'n'].forEach((k) => { if (typeof s.bl[k] !== 'number' || !(s.bl[k] >= 0)) s.bl[k] = 0; });
+  return s;
+}
+function v211Fields(s) {
+  // V211.md section 5.1. S.tk: the Tokyo trip (TRAVEL), S.dc: the Dog Cards settings and paws given (CARDS)
+  if (!s) return s;
+  if (!v28Obj(s.tk)) s.tk = {}; ['day', 'hachi', 'omi', 'snack'].forEach((k) => { if (s.tk[k] === undefined) s.tk[k] = null; });
+  if (typeof s.tk.rides !== 'number' || !(s.tk.rides >= 0)) s.tk.rides = 0;
+  ['stamps', 'seen'].forEach((k) => { if (!v28Obj(s.tk[k])) s.tk[k] = {}; }); if (typeof s.tk.frame !== 'boolean') s.tk.frame = false;
+  if (!v28Obj(s.dc)) s.dc = {}; if (typeof s.dc.on !== 'boolean') s.dc.on = false; if (s.dc.name === undefined) s.dc.name = null;
+  if (!Array.isArray(s.dc.dogs)) s.dc.dogs = []; if (!Array.isArray(s.dc.hide)) s.dc.hide = []; if (!v28Obj(s.dc.given)) s.dc.given = {};
+  if (typeof s.dc.got !== 'number' || !(s.dc.got >= 0)) s.dc.got = 0;
   return s;
 }
 function migNote() { if (S && S.gkNote) { delete S.gkNote; markDirty(); setTimeout(() => toast('Pip left a packet of seeds on your doorstep. The veggie patch is yours now!', 'gold'), 2200); }

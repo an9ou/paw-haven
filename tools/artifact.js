@@ -17,6 +17,8 @@ const FILES = {
   'world_a.js': ['world/pawart_world_a.js'],
   'world_b.js': ['world/pawart_world_b.js'],
   'world_c.js': ['world/pawart_world_c.js'],
+  'world_d.js': ['world/pawart_world_d.js'],
+  'world_e.js': ['world/pawart_world_e.js'],
   'mods.js': ['mods/genes.js', 'mods/pawaudio.js', 'mods/walkrun.js', 'mods/toys.js', 'mods/garden.js', 'mods/kitchen.js']
 };
 fs.mkdirSync(OUT, { recursive: true });
@@ -29,7 +31,7 @@ write('game.js', js);
 const tags = (names) => names.map((n) => `<script src="${n}"></script>`).join('\n');
 const index = shell
   .replace('/*@@CSS@@*/', () => css)
-  .replace('<script id="pawart">/*@@PAWART@@*/</script>', () => tags(['dogs.js', 'world_a.js', 'world_b.js', 'world_c.js']))
+  .replace('<script id="pawart">/*@@PAWART@@*/</script>', () => tags(['dogs.js', 'world_a.js', 'world_b.js', 'world_c.js', 'world_d.js', 'world_e.js']))
   .replace('<script id="pawmods">/*@@PAWMODS@@*/</script>', () => tags(['mods.js']))
   .replace(/<script>\s*\/\*@@GAME@@\*\/\s*<\/script>/, () => tags(['game.js']));
 if (/@@(CSS|PAWART|PAWMODS|GAME)@@/.test(index)) throw new Error('a shell slot was not filled');
