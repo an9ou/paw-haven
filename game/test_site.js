@@ -44,6 +44,7 @@ const req = (m) => { for (const r of [].concat((process.env.NODE_PATH || '').spl
     const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>|<[^>]+>/g, ' ').replace(/\s+/g, ' ');
     const bad = WORDS.filter((re) => re.test(words(home)) || re.test(words(dogsHtml)));
     ok(!bad.length, 'the words rules: no "breed" as a verb, no selling dogs ' + bad.join(' '));
+    ok(!/made in japan|(made|from|created|built) [^.]{0,30}\bin japan\b|from japan|japanese-made/i.test(words(home) + words(dogsHtml) + words(await (await get('https://doodledoggo.app/privacy')).text())), 'no claim that the game is made in Japan (a Japanese style, not an origin)');
     const js = await (await get('https://doodledoggo.app/js/site.js')).text();
     ok(!/https?:\/\//.test(js.replace(/^\s*\/\/.*$/mg, '')) && !/fetch\(|XMLHttpRequest|cookie|localStorage/.test(js), 'site.js asks no one for anything (no URLs, fetch, cookies or storage)');
     ok(/og:image" content="https:\/\/doodledoggo\.app\/logo-1200x630\.png/.test(home) && /rel="icon" href="\/favicon\.svg/.test(home) && /<title>Doodle Doggo/.test(home), 'title, favicon and og:image tags');
