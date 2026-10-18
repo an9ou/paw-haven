@@ -395,3 +395,14 @@ Never hit (the `allow` list, also used as negative tests): 「견종」 「품�
 - 놀이 데이트 for "playdate": natural for kids?
 - 멍축 사무소, 멍케이크, 퍼푸치노 카페: check the puns.
 - 친밀도 vs 유대감 for "Bond".
+
+## Site
+
+`site/i18n/ko.json` (v2.14 phase 1b, 714 keys). No particle follows a placeholder (no `josa` needed): lines are phrased as `{breed} {name}`, `{name}의 …`, `{mail} 앞으로`.
+- "wobbly" is 삐뚤빼뚤. Dog names follow section 7 (모찌, 땅콩, 만두, 구름, 복숭아 …). `footer.home` is 홈으로 (a bare 홈 failed the 44 px tap test).
+- Westie quote avoids 얬 (not in Jua): 「오늘 아침엔 새하얀 강아지였어.」
+- TODO(native): Kai Ken as 카이견 (soon.line); Japanese Chin as 재패니즈 친.
+- TODO(native): dog trait lines and quotes (반말), e.g. 깐깐함 (judgy), 공놀이 광, 수달 꼬리, 머리 묶음 (top-knot).
+- TODO(native): love items (연어 파테, 봉제 뼈다귀, 퍼즐 급식기, 삑삑 오리) must match the game's item names once game/i18n/ko.json exists.
+- TODO(native): “이 카드 숨기기” (privacy.cards.off) must match the game's "Hide this card" button.
+- TODO(native): privacy page register and the English-prevails sentence in privacy.updated.
