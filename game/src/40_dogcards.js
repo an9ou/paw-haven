@@ -181,7 +181,7 @@ function dcOk(v, x, y) {
   const k = dcK(v, y), T = rmTapBox(x, y, k), cr = dcCrop();
   if (T[0] < cr[0] + 4 || T[0] + T[2] > cr[1] - 4 || T[1] < 0) return false;
   if (rmHard(x, y)) return false;
-  if (rmBoxes().some((b) => b[4] !== 'scene' && rmOver(T, b) > 0)) return false;
+  if (rmBoxes().some((b) => b[4] !== 'scene' && b[4] !== 'dctag' && rmOver(T, b) > 0)) return false; // (the visitors' own tags are drawn under the visitors: not a box for them)
   // #dcVis is drawn behind #pack, so a player dog's tap rect always stays on top. A visitor may stand partly behind a player dog (further back,
   // where it is also drawn behind), never in front of one, and keeps at least 55% of its own tap rect clear for its own tap
   let hid = 0;
@@ -196,12 +196,18 @@ function dcOk(v, x, y) {
 function dcSpots(v, near) {
   const z = rmZoneOf(S.place), out = [];
   for (let y = z.y0; y <= z.y1; y += 14) for (let x = z.x0; x <= z.x1; x += 20) if ((!near || (Math.abs(x - near[0]) < 150 && Math.abs(y - near[1]) < 60)) && dcOk(v, x, y)) out.push([x, y]);
-  return out;
+  const fs = isPhone() ? dcTagFs(sizeK(v.dog)) : DC.tagFs || 19, free = out.filter((p) => dcTagFree(v, p[0], p[1], fs)); return free.length || near ? free : out; // v2.12 LAYOUT: spots whose "visitor" tag no player dog covers first (a loop leg, near: only those, or it waits)
+}
+// v2.12 LAYOUT: no player dog (where it is and where it goes, its tap rect raised by a sixth as in rmSoft) covers more than 8% of the visitor's tag at
+// feet x, y. The player dogs keep off the tags themselves (rmScan 'dctag'); this keeps a visitor from walking its tag under them
+function dcTagFree(v, x, y, fs) {
+  const k = dcK(v, y), w = 88 * fs / 19 * k, h = 25 * fs / 19 * k, TG = [x - w / 2, y + 10 * k, w, h];
+  return !rmDogs().some((d) => { const r = rmSt(d); return [[r.x, r.y, rmK(r)], rmDest(d)].some(([px, py, pk]) => { const U = rmTapBox(px, py, pk); return rmOver([U[0], U[1] - U[3] / 6, U[2], U[3] * 7 / 6], TG) > TG[2] * TG[3] * 0.08; }); });
 }
 // a walk: the feet never cross a no-go box, and (taps: true) the tap rect never passes over a tappable spot on the way, so a visitor walking
 // under a sign never takes its tap
 function dcLineOk(x0, y0, x1, y1, taps, v) { // v: the walking visitor (its size class)
-  const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 16)), hots = taps ? rmBoxes().filter((b) => b[4] !== 'scene') : [];
+  const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 16)), hots = taps ? rmBoxes().filter((b) => b[4] !== 'scene' && b[4] !== 'dctag') : [];
   for (let i = 1; i <= n; i++) { const t = i / n, x = x0 + (x1 - x0) * t, y = y0 + (y1 - y0) * t; if (rmHard(x, y)) return false; if (hots.length) { const T = rmTapBox(x, y, v ? dcK(v, y) : rmScale(y)); if (hots.some((b) => rmOver(T, b) > 0)) return false; } }
   return true;
 }

@@ -31,7 +31,7 @@ run('phone_v211_cards', async (t) => {
     const svg = document.querySelector('#view > svg.world'), M = svg.getScreenCTM(), out = [];
     const at = (x, y) => { const p = new DOMPoint(x, y).matrixTransform(M); return document.elementFromPoint(p.x, p.y); };
     window.__paw.rm.dogs().forEach((id) => { const b = window.__paw.rm.tap(id), e = at(b[0] + b[2] / 2, b[1] + b[3] / 2); if (e && e.closest('#dcVis')) out.push('dog ' + id); });
-    window.__paw.rm.scan().filter((b) => b[4] !== 'btn' && b[4] !== 'scene').forEach((b) => { const e = at(b[0] + b[2] / 2, b[1] + b[3] / 2); if (e && e.closest('#dcVis')) out.push(b[4]); });
+    window.__paw.rm.scan().filter((b) => b[4] !== 'btn' && b[4] !== 'scene' && b[4] !== 'dctag').forEach((b) => { const e = at(b[0] + b[2] / 2, b[1] + b[3] / 2); if (e && e.closest('#dcVis')) out.push(b[4]); });
     return out;
   });
 

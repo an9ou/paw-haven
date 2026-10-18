@@ -472,8 +472,12 @@ function townBubbleBelowDog() {
     if (!b) b = at(clamp(hl + hr.width / 2 - bw0 / 2, 6, W - bw0 - 6), hb + 18); } // else under the dog over the row, slid clear of the buttons (below)
   // keep clear of the place buttons (Go home sits bottom-right): slide left of one it would touch
   document.querySelectorAll('#placeBtns .btn').forEach((x) => { const q = x.getBoundingClientRect(), ql = q.left - sg.left, qt = q.top - sg.top; if (b.l < q.right - sg.left + 12 && b.l + b.w > ql - 12 && b.t < qt + q.height + 6 && b.t + b.h > qt - 6) { if (b.w > ql - 18) bubble.style.maxWidth = Math.max(120, ql - 18) + 'px'; const w = bubble.offsetWidth; b = at(Math.max(6, ql - Math.min(24, ql - 6 - w) - w), b.t); } }); // (narrower when the full width would still touch it)
-  const sgH = stage.clientHeight, onBtn = [...document.querySelectorAll('#placeBtns .btn')].some((x) => { const q = x.getBoundingClientRect(), ql = q.left - sg.left, qt = q.top - sg.top; return b.l < q.right - sg.left && b.l + b.w > ql && b.t < qt + q.height && b.t + b.h > qt; });
-  if (onBtn || b.t + b.h > sgH - 4) { bubble.classList.remove('below'); bubble.style.maxWidth = ''; bubble.style.left = up[0]; bubble.style.top = up[1]; return; } // nowhere clear: back over its head
+  // v2.12 LAYOUT: the floor is the action bar's top on phones (the bar sits inside the stage: a line slid beside the place buttons re-wraps taller and ran
+  // 33 px under it at the Yoyogi dog run); a line that would cross it is lifted to sit on it while it stays beside the dog's lower half
+  const bar = isPhone() && $('#bar'), barR = bar && !bar.hidden && bar.offsetParent ? bar.getBoundingClientRect() : null, sgH = barR && barR.height ? Math.min(stage.clientHeight, barR.top - sg.top) : stage.clientHeight;
+  if (b.t + b.h > sgH - 4) { b.h = bubble.offsetHeight; const tp = sgH - 6 - b.h; if (tp >= hr.top - sg.top + hr.height / 2 && tp > view.offsetTop + 4) b = at(b.l, tp); }
+  const onBtn = [...document.querySelectorAll('#placeBtns .btn')].some((x) => { const q = x.getBoundingClientRect(), ql = q.left - sg.left, qt = q.top - sg.top; return b.l < q.right - sg.left && b.l + b.w > ql && b.t < qt + q.height && b.t + b.h > qt; });
+  if (onBtn || b.t + b.h > sgH - 4 || parseFloat(bubble.style.maxWidth || 999) < 170) { bubble.classList.remove('below'); bubble.style.maxWidth = ''; bubble.style.left = up[0]; bubble.style.top = up[1]; return; } // nowhere clear: back over its head (v2.12: also when squeezed under 170 px beside the buttons, where the speech balloon's text ran over its tail)
   clearTimeout(bubbleBelowT); bubbleBelowT = setTimeout(() => bubble.classList.remove('below'), 3700);
 }
 function placeAmbient() {

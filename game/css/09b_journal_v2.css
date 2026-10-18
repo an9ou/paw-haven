@@ -68,6 +68,7 @@ button.fnode:hover .fhead{transform:rotate(-5deg) scale(1.07);box-shadow:0 0 0 3
 .cstars{display:flex;gap:3px;font-size:24px;line-height:1}
 .cstars i{font-style:normal;color:#DCD3C8}
 .cstars i.on{color:#E0A81C;text-shadow:0 0 6px rgba(255,214,110,.9)}
+html:not([data-layout="phone"]) .cstars:has(> i:nth-child(26)){display:grid;grid-template-columns:repeat(12,auto);gap:2px 3px;font-size:21px;justify-content:center;max-width:100%} /* v2.12 LAYOUT: from 26 breeds on the stars wrap into rows of 12 (35 in one row ran behind the milestone boxes) */
 .cbreeds{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 4px}
 .cbreed{position:relative;display:flex;align-items:center;gap:3px;padding:2px 8px 2px 3px;border:2px solid #5B3D32;border-radius:12px 8px 13px 7px;background:var(--paper);cursor:pointer;font-family:var(--font-hand);font-weight:700;font-size:19px;color:var(--ink)}
 .cbreed .ic{width:34px;height:34px}
@@ -186,6 +187,7 @@ html[data-motion="off"] #mailboxG.mb-new > svg{animation:none}
 .mchip.found.mix{background:var(--w-pink)}
 .mchip.found.grand{background:#FFE3A1}
 .mchip.unk{border-style:dashed;border-color:var(--graph);color:var(--graph);background:transparent}
+.mchip.more{border-style:dashed;border-color:var(--graph);color:var(--muted);background:transparent;font-weight:400} /* v2.12 LAYOUT: the mixes not found yet are one count chip (there are over 300), not one "?" chip each */
 .coat.bonus .cframe{box-shadow:0 0 0 3px #C9B6F0}
 .bonuschip{display:inline-block;font-size:12px;font-weight:700;background:#C9B6F0;border-radius:6px;padding:0 5px}
 .ancline{margin:1px 0}
