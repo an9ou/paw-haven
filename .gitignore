@@ -25,3 +25,4 @@ _cfsite/
 .wrangler/
 **/.wrangler/
 .claude/worktrees/
+_i18n/
