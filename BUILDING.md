@@ -185,3 +185,11 @@ You manage Paw Haven for the owner. You don't build. Start a fresh Coordinator s
 - Make `v212-base` from v2.11.1 `main` before the next release.
 - Open items are in `TODO.md` "Costumes & Sizes (v2.11.1)".
 
+**State after v2.12 (18 Oct 2026):**
+- v2.12 "Fourteen New Friends" (14 new breeds for 35 in all, their coats, 371 mix names, care notes and voices, Dog Card words and the costumes in `DC_OUTFITS`, the old poodle shown as Miniature Poodle, site profiles for all 35) is on `main`, GitHub Pages, itch.io (2.12) and the doodledoggo.app site. Spec and as-built notes: `V212.md` (sections 2 to 7).
+- Built by an Opus coordinator (handed over once under rule 11) with the GENES (Opus) and LINES (Sonnet) lanes and four `paw-artist` art lanes A–D, then the fix batches `fix/v212-numbers` (art-measured rows and site art), `fix/v212-layout`, `fix/v212-art` and the code-review fixes (`faf5ecd`). Lane branches `lane/v212-*`, `v212-base` is a branch at `44425af` (v2.11.1).
+- Final run: TBD. `SKIP=poodle node dogs/check_identical.js v212-base`: 226,840 renders, 0 differ (only the poodle's aria-label changed; `v212_dogs` checks the rest of its renders).
+- The Worker changed (`DC_LIM` { a: 40, b: 40, n: 115, breed: 35, outfit: 50 }): deploy it with `bash tools/cf_api_deploy.sh` and check with `bash tools/cf_api_smoke.sh`. Screenshots stay on the branches `shots/v212-art-a` … `shots/v212-art-d` and `shots/v212-artfix`.
+- Make `v213-base` from v2.12 `main` before the next release.
+- Open items are in `TODO.md` "Fourteen New Friends (v2.12)".
+
