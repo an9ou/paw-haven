@@ -2,11 +2,11 @@
 //   info1-japan-view, info2-meet-the-dogs, info3-what-you-can-do, info4-how-to-play
 // Screenshots come from shots.js / shots2.js / shots3.js (real game screens).
 const path = require('path');
-module.exports = async function ({ render, helpers: h }) {
+module.exports = async function ({ render, helpers: h, only }) {
   const { f1, doodle, txt, lines, box, line, arrow, dog, paper, svgPage, frame, tape, photo, shotAt, swash, wordmark, INK, PINK, MUTED, ORANGE, PLUM } = h;
   const W = 1080, H = 1350;
   const tag = (n, label) => txt(label, 100, 92, 44, { fill: '#D8607E', anchor: 'start' }); // no "n/4" counter (owner, 17 Oct 2026)
-  const foot = (extra = '') => txt('Doodle Doggo · a free browser game · coming soon', 540, 1302, 40, { fill: MUTED, w: 600 }) + extra;
+  const foot = (extra = '') => txt('Doodle Doggo · play free on itch.io', 540, 1302, 40, { fill: MUTED, w: 600 }) + extra;
 
   // ---------- 1. Japan view ----------
   const p1 = () => svgPage(W, H, paper(W, H) + frame(W, H, 31) + tag(1, 'the Japan view')
@@ -21,19 +21,22 @@ module.exports = async function ({ render, helpers: h }) {
   const D = [['shiba', 'Mochi', 'Shiba Inu', 'sit'], ['corgi', 'Biscuit', 'Corgi', 'happy'], ['golden', 'Sunny', 'Golden Retriever', 'happy'], ['dachs', 'Noodle', 'Dachshund', 'happy'],
     ['husky', 'Frost', 'Husky', 'sit'], ['mutt', 'Pepper', 'Shelter Mutt', 'idle'], ['chihuahua', 'Peanut', 'Chihuahua', 'speak'], ['pug', 'Dumpling', 'Pug', 'sit'],
     ['greyhound', 'Rocket', 'Greyhound', 'idle'], ['beagle', 'Bagel', 'Beagle', 'sniff'], ['poodle', 'Pretzel', 'Poodle', 'dance'], ['collie', 'Scout', 'Border Collie', 'beg'],
-    ['samoyed', 'Cloud', 'Samoyed', 'happy'], ['frenchie', 'Brioche', 'French Bulldog', 'idle']];
+    ['samoyed', 'Cloud', 'Samoyed', 'happy'], ['frenchie', 'Brioche', 'French Bulldog', 'idle'],
+    // v2.11 Tokyo Trip
+    ['akita', 'Kuma', 'Akita', 'sit'], ['spitz', 'Daifuku', 'Japanese Spitz', 'happy'], ['pom', 'Mikan', 'Pomeranian', 'happy'], ['afghan', 'Saffron', 'Afghan Hound', 'idle'],
+    ['dane', 'Waffle', 'Great Dane', 'idle'], ['mastiff', 'Crumpet', 'English Mastiff', 'idle'], ['gsd', 'Strudel', 'German Shepherd', 'sit']];
   const p2 = () => {
-    let g = paper(W, H) + frame(W, H, 32) + tag(2, 'the dogs') + txt('14 dog types', 540, 210, 130, { rot: -1.5 }) + txt('each one has its own voice, size and joke', 540, 280, 52, { fill: MUTED, w: 600 });
-    const CW = 225, GX = 20, X0 = 60, Y0 = 318, RH = 232;
+    let g = paper(W, H) + frame(W, H, 32) + tag(2, 'the dogs') + txt(`${D.length} dog types`, 540, 206, 124, { rot: -1.5 }) + txt('each one has its own voice, size and joke', 540, 270, 50, { fill: MUTED, w: 600 });
+    const COLS = 5, CW = 186, GX = 10, X0 = (W - COLS * CW - (COLS - 1) * GX) / 2, Y0 = 298, RH = 188;
     D.forEach(([k, n, b, pose], i) => {
-      const c = i % 4, r = Math.floor(i / 4), x = X0 + c * (CW + GX), y = Y0 + r * RH, hero = k === 'dachs';
-      if (hero) g += swash(x + CW / 2, y + 138, CW * 0.95, 56, -3, PINK, 0.55);
-      g += dog(k, { pose }, f1(x + 6), f1(y + 6), 205) + txt(n, x + CW / 2, y + 190, 46, { fill: INK }) + txt(b.toLowerCase(), x + CW / 2, y + 224, 34, { fill: MUTED, w: 600 });
-      if (hero) g += doodle('heart', x + CW - 20, y + 20, 0.9, 12);
+      const c = i % COLS, r = Math.floor(i / COLS), x = X0 + c * (CW + GX), y = Y0 + r * RH, hero = k === 'dachs';
+      if (hero) g += swash(x + CW / 2, y + 112, CW * 0.95, 46, -3, PINK, 0.55);
+      g += dog(k, { pose }, f1(x + 8), f1(y + 2), 170) + txt(n, x + CW / 2, y + 152, 40, { fill: INK }) + txt(b.toLowerCase(), x + CW / 2, y + 180, 28, { fill: MUTED, w: 600 });
+      if (hero) g += doodle('heart', x + CW - 16, y + 16, 0.8, 12);
     });
-    // the 15th and 16th cell: a note card about puppies
-    const nx = X0 + 2 * (CW + GX), ny = Y0 + 3 * RH + 4;
-    g += `<g transform="rotate(-1.5 ${nx + CW} ${ny + 100})">${box(nx, ny, 2 * CW + GX, 200, 28, 77, 2.4, 4)}${lines(['plus puppies!', 'coats are passed down', 'like the real thing'], nx + CW + GX / 2, ny + 70, 48, 52, { w: 700 })}${tape(nx + CW - 60, ny - 18, 120, 36, 3)}</g>`;
+    // the cells after the last dog: a note card about puppies
+    const ni = D.length % COLS, nx = X0 + ni * (CW + GX) + 14, ny = Y0 + Math.floor(D.length / COLS) * RH + 18, nw = (COLS - ni) * (CW + GX) - GX - 28;
+    g += `<g transform="rotate(-1.2 ${nx + nw / 2} ${ny + 70})">${box(nx, ny, nw, 140, 28, 77, 2.4, 4)}${lines(['plus puppies!', 'coats are passed down like the real thing'], nx + nw / 2, ny + 58, 46, 50, { w: 700 })}${tape(nx + nw / 2 - 60, ny - 18, 120, 36, 3)}</g>`;
     return svgPage(W, H, g + foot() + doodle('paw', 100, 1285, 1, -15) + doodle('paw', 980, 1285, 1, 15));
   };
 
@@ -59,7 +62,7 @@ module.exports = async function ({ render, helpers: h }) {
       + `<g transform="rotate(${rot} ${x + (w + 24) / 2} ${y + 300})"><circle cx="${x + 10}" cy="${y + 8}" r="34" fill="${ORANGE}" stroke="${INK}" stroke-width="4"/>${txt(String(n), x + 10, y + 24, 46, { fill: '#FFF8EC' })}</g>`
       + txt(t, x + (w + 24) / 2, y + Math.round(w * crop[3] / crop[2]) + 24 + 38, 44, { rot, w: 700 }) + txt(sub, x + (w + 24) / 2, y + Math.round(w * crop[3] / crop[2]) + 24 + 72, 31, { fill: MUTED, rot, w: 600 });
     g += card('title', [0, 230, 1179, 1450], 62, 330, 282, 1, 'Tap New game', 'it opens on the title page', -2, PINK);
-    g += card('adopt', [0, 0, 1179, 1450], 398, 342, 282, 2, 'Pick a pup', 'there are 14 to meet', 1.5, '#FFE3A1');
+    g += card('adopt', [0, 0, 1179, 1450], 398, 342, 282, 2, 'Pick a pup', `there are ${D.length} to meet`, 1.5, '#FFE3A1');
     g += card('yard_dusk', [0, 1150, 1179, 830], 728, 360, 282, 3, 'Care for them', 'Feed · Play · Care · Walk', -1.5, PINK);
     // step 4 + controls
     g += card('walk', [0, 560, 1179, 740], 62, 824, 500, 4, 'Go for a walk', 'it is the main way to earn coins', -1.5, '#FFE3A1');
@@ -70,8 +73,7 @@ module.exports = async function ({ render, helpers: h }) {
     return svgPage(W, H, g + foot() + doodle('paw', 100, 1296, 1, -15) + doodle('spark', 980, 280, 1.2));
   };
 
-  await render(p1(), W, H, 'info1-japan-view.jpg');
-  await render(p2(), W, H, 'info2-meet-the-dogs.jpg');
-  await render(p3(), W, H, 'info3-what-you-can-do.jpg');
-  await render(p4(), W, H, 'info4-how-to-play.jpg');
+  // make.js <shots> info [info2]: one post only (info2 needs no screenshots)
+  const P = { info1: [p1, 'info1-japan-view.jpg'], info2: [p2, 'info2-meet-the-dogs.jpg'], info3: [p3, 'info3-what-you-can-do.jpg'], info4: [p4, 'info4-how-to-play.jpg'] };
+  for (const [k, [f, file]] of Object.entries(P)) if (!only || only === k) await render(f(), W, H, file);
 };

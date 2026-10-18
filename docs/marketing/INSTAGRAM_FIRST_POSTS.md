@@ -1,6 +1,6 @@
 # Instagram posts: the banner and the informative series
 
-**Pre-launch mode (set 16 Oct):** the game is **not published yet** (no itch.io page), so nothing says "play now" and there is no link. Everything says **coming soon**. When the game goes live, use the launch-day captions at the end of this file.
+**The game is live on itch.io since 17 Oct** (https://an9ou.itch.io/doodle-doggo). The informative series and the dog posts say **play free on itch.io** (images re-made 18 Oct, with **21 dogs** since v2.11 "Tokyo Trip"). The banner captions below are the coming-soon ones from 16 Oct; if a tile is not up yet, swap "coming soon" for "play free on itch.io". Launch-day captions are at the end of this file.
 
 Updated 16 Oct 2026 after the owner's feedback.
 
@@ -51,7 +51,7 @@ Adopt a wobbly crayon pup, walk around a pencil-sketch town, grow a garden, cook
 Meet Noodle 🐶🗻
 He's a dachshund. He's very long. He drew himself and he is very proud of it.
 
-Noodle lives in Doodle Doggo, our cozy dog game coming soon: a pencil-sketch town with Mt. Fuji on every skyline, and 14 crayon dogs who are all a little wobbly on purpose.
+Noodle lives in Doodle Doggo, our cozy dog game coming soon: a pencil-sketch town with Mt. Fuji on every skyline, and 21 crayon dogs who are all a little wobbly on purpose.
 
 Which dog would you adopt first? 👇
 
@@ -105,7 +105,7 @@ Doodle Doggo has a Japan-style look: Fuji peeks over your yard, the town square 
 
 When winter comes, Snow Days start on 1 Dec. In January you can send New Year cards (年賀状) too.
 
-Which view is your favourite? 👇 Coming soon, free in your browser.
+Which view is your favourite? 👇 Play free on itch.io (link in bio).
 
 毎日ワンコと富士山を🗻
 
@@ -116,19 +116,21 @@ Which view is your favourite? 👇 Coming soon, free in your browser.
 ### 2/4 The dogs
 **Caption**
 ```
-14 dog types, 14 tiny personalities 🐶
+21 dog types, 21 tiny personalities 🐶
 
 Mochi the shiba, Biscuit the corgi, Sunny the golden, Noodle the dachshund, Frost the husky, Pepper the shelter mutt, Peanut the chihuahua, Dumpling the pug, Rocket the greyhound, Bagel the beagle, Pretzel the poodle, Scout the border collie, Cloud the samoyed and Brioche the French bulldog.
 
+✨ New with the Tokyo Trip update: Kuma the Akita, Daifuku the Japanese spitz, Mikan the Pomeranian, Saffron the Afghan hound, Waffle the Great Dane, Crumpet the English mastiff and Strudel the German shepherd.
+
 Each one has its own voice, size and joke. And when two dogs have a playdate, the puppies inherit coats and traits like the real thing. Nothing bad ever happens here.
 
-Which one is yours? 👇 Coming soon, free in your browser.
+Which one is yours? 👇 Play free on itch.io (link in bio).
 
-14匹のクレヨン犬🐶
+21匹のクレヨン犬🐶
 
 #cozygames #doggame #indiegame #dachshund #doodledoggo #犬ゲーム #wholesomegames
 ```
-**Alt text:** `A grid of 14 crayon dogs with their names, from Mochi the shiba to Brioche the French bulldog.`
+**Alt text:** `A grid of 21 crayon dogs with their names, from Mochi the shiba to Strudel the German shepherd.`
 
 ### 3/4 What you can do
 **Caption**
@@ -142,7 +144,7 @@ So much to do 🌱🍪
 🐶 Puppy playdates: coats get passed down
 🎃 Dress-up: hats, bandanas and (very) ugly sweaters
 
-Which would you try first? 👇 Coming soon, free in your browser.
+Which would you try first? 👇 Play free on itch.io (link in bio).
 
 お散歩・畑・おやつ作り🌱
 
@@ -156,11 +158,11 @@ Which would you try first? 👇 Coming soon, free in your browser.
 How to play (and it's free!) 🎮
 
 1️⃣ Tap New game
-2️⃣ Pick a pup (there are 14 to meet)
+2️⃣ Pick a pup (there are 21 to meet)
 3️⃣ Feed, play and care for them
 4️⃣ Go for a walk: tap or press Space to hop, hold for a long jump, swipe down to duck, D to dig
 
-Works on your phone (hold it upright) or your computer. Nothing to download. Coming soon!
+Works on your phone (hold it upright) or your computer. Nothing to download. Play free on itch.io (link in bio)!
 
 スマホでもPCでも、無料🎮
 
@@ -172,7 +174,7 @@ Works on your phone (hold it upright) or your computer. Nothing to download. Com
 
 ## Teaser: more dogs are coming
 
-File: `soon-more-dogs-coming.jpg`. Five mystery dogs peek over a fence ("hello?" question marks), while Noodle, Biscuit and Mochi wonder who they are (Mochi: "heh."). It shows no dog types, dates or promises. Post it only when new dogs are really planned. A good moment is after the last dog introduction post (Wed 16 Dec), or whenever the dev team confirms.
+File: `soon-more-dogs-coming.jpg`. Five mystery dogs peek over a fence ("hello?" question marks), while Noodle, Biscuit and Mochi wonder who they are (Mochi: "heh."). It shows no dog types, dates or promises. Post it only when new dogs are really planned. A good moment is after the last dog introduction post (Sun 10 Jan), or whenever the dev team confirms the next dogs.
 
 **Caption**
 ```
@@ -182,7 +184,7 @@ Someone is peeking over the fence... We can't say who yet (even Noodle doesn't k
 
 Which dog would you like to see next? Tell us below 👇
 
-Doodle Doggo is a free cozy dog game for your browser, coming soon.
+Play Doodle Doggo free on itch.io (link in bio).
 
 新しいワンコ、お楽しみに🐶
 
@@ -199,7 +201,7 @@ Short, warm, in Noodle's voice sometimes. Change a word each time so it never fe
 | When | English | 日本語 |
 |---|---|---|
 | Someone says it is cute | "Noodle says thank you. He drew himself, so he will be insufferable all day. 🖍️" | 「ヌードルが喜んでます。自分で描いたので、今日一日自慢しそうです🖍️」 |
-| "Where can I play?" | "Soon! It will be free in your browser, on phone and computer. Follow us and you will be the first to know." | 「もうすぐ公開です！無料でブラウザで遊べます。フォローしておくと一番に分かります」 |
+| "Where can I play?" | "Right now, free on itch.io (the link is in our bio). It plays in your browser, on phone and computer." | 「itch.ioで無料で遊べます！プロフィールのリンクからどうぞ。スマホでもPCでもOKです」 |
 | "Which dog is your favourite?" | "Noodle is the boss, but Biscuit the corgi is catching up. Who is yours?" | 「ヌードルがリーダーですが、コーギーのビスケットも人気です。あなたの推しは？」 |
 | Bug report | "Thank you for telling us! Which device were you on? We will look into it." | 「教えてくれてありがとうございます！どの端末ですか？確認します」 |
 | Asking for a follow back | Do not. Just be kind and thank them for the comment. | |

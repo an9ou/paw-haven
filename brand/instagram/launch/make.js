@@ -176,7 +176,7 @@ async function main() {
   }
   const helpers = { f1, seeded, pencil, line, box, doodle, swash, swashPath, txt, lines, tape, arrow, dog, prop, shotAt, photo, paper, defs, svgPage, rrPts, INK, PINK, PAPER, MUTED, ORANGE, PLUM, DOT, OUT, PA, inner, wordmark, frame };
   if (WHAT === 'banner' || WHAT === 'all') await require('./make_banner.js')({ render, browser, helpers });
-  if (WHAT === 'info' || WHAT === 'all') await require('./make_info.js')({ render, helpers });
+  if (WHAT === 'info' || WHAT === 'all') await require('./make_info.js')({ render, helpers, only: process.argv[4] });
   if (WHAT === 'dogs' || WHAT === 'all') await require('./make_dogs.js')({ render, browser, helpers, only: process.argv[4] });
   if (WHAT === 'soon' || WHAT === 'all') await require('./make_soon.js')({ render, browser, helpers });
   if (WHAT === 'youtube' || WHAT === 'all') await require('./make_youtube.js')({ render, browser, helpers });

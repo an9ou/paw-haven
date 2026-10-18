@@ -1,31 +1,40 @@
-# Dog introduction posts (14)
+# Dog introduction posts (21)
 
-One post per dog: the whole dog, a puppy of the same dog type, the name, a line from the game, what it loves (the game's own favourites) and four traits. Files: `brand/instagram/launch/dogs/`. Remake: `node brand/instagram/launch/make.js <shots> dogs [key]`.
+One post per dog: the whole dog, a puppy of the same dog type, the name, a line from the game, what it loves (the game's own favourites) and four traits. Files: `brand/instagram/launch/dogs/`. Remake: `node brand/instagram/launch/make.js <shots> dogs [key]` (`DOG_DOC=1` rewrites this file).
 
-**Facts from the game:** the dog type, personality, the speech bubble and the favourite food, toy and activity. **Creative:** the four trait boxes.
+**Facts from the game:** the dog type, personality, the speech bubble and the favourite food, toy and activity. **Creative:** the four trait boxes (the same as the dog profiles on doodledoggo.app, `tools/site_dogs.js`).
+
+**The game is live:** every post and caption says "play free on itch.io" (https://an9ou.itch.io/doodle-doggo, the link is in the bio).
 
 ## Order and days (2 posts a week, 20:30 JST)
 
-Noodle first (the main character), Pepper last (the shelter mutt: "Can I come home with you?" is a nice closer). These run alongside the winter posts in December.
+Noodle first (the main character), Pepper last (the shelter mutt: "Can I come home with you?" is a nice closer). The 7 dogs new in v2.11 "Tokyo Trip" (marked ✨) are mixed in early, because they are the news; Kuma the Akita goes second (Hachikō, the Tokyo Trip). These run alongside the winter posts in December and the New Year posts in January.
 
 | Day | Dog | File |
 |---|---|---|
 | Sun 1 Nov | Noodle the Dachshund | `dog-04-noodle.jpg` |
-| Wed 4 Nov | Biscuit the Corgi | `dog-02-biscuit.jpg` |
-| Sun 8 Nov | Mochi the Shiba Inu | `dog-01-mochi.jpg` |
-| Wed 11 Nov | Sunny the Golden Retriever | `dog-03-sunny.jpg` |
-| Sun 15 Nov | Frost the Husky | `dog-05-frost.jpg` |
-| Wed 18 Nov | Dumpling the Pug | `dog-08-dumpling.jpg` |
-| Sun 22 Nov | Peanut the Chihuahua | `dog-07-peanut.jpg` |
-| Wed 25 Nov | Rocket the Greyhound | `dog-09-rocket.jpg` |
-| Sun 29 Nov | Bagel the Beagle | `dog-10-bagel.jpg` |
-| Wed 2 Dec | Pretzel the Poodle | `dog-11-pretzel.jpg` |
-| Sun 6 Dec | Scout the Border Collie | `dog-12-scout.jpg` |
-| Wed 9 Dec | Cloud the Samoyed | `dog-13-cloud.jpg` |
-| Sun 13 Dec | Brioche the French Bulldog | `dog-14-brioche.jpg` |
-| Wed 16 Dec | Pepper the Shelter Mutt | `dog-06-pepper.jpg` |
+| Wed 4 Nov | Kuma the Akita ✨ | `dog-15-kuma.jpg` |
+| Sun 8 Nov | Biscuit the Corgi | `dog-02-biscuit.jpg` |
+| Wed 11 Nov | Mikan the Pomeranian ✨ | `dog-17-mikan.jpg` |
+| Sun 15 Nov | Mochi the Shiba Inu | `dog-01-mochi.jpg` |
+| Wed 18 Nov | Strudel the German Shepherd ✨ | `dog-21-strudel.jpg` |
+| Sun 22 Nov | Sunny the Golden Retriever | `dog-03-sunny.jpg` |
+| Wed 25 Nov | Daifuku the Japanese Spitz ✨ | `dog-16-daifuku.jpg` |
+| Sun 29 Nov | Frost the Husky | `dog-05-frost.jpg` |
+| Wed 2 Dec | Waffle the Great Dane ✨ | `dog-19-waffle.jpg` |
+| Sun 6 Dec | Dumpling the Pug | `dog-08-dumpling.jpg` |
+| Wed 9 Dec | Peanut the Chihuahua | `dog-07-peanut.jpg` |
+| Sun 13 Dec | Saffron the Afghan Hound ✨ | `dog-18-saffron.jpg` |
+| Wed 16 Dec | Rocket the Greyhound | `dog-09-rocket.jpg` |
+| Sun 20 Dec | Bagel the Beagle | `dog-10-bagel.jpg` |
+| Wed 23 Dec | Crumpet the English Mastiff ✨ | `dog-20-crumpet.jpg` |
+| Sun 27 Dec | Pretzel the Poodle | `dog-11-pretzel.jpg` |
+| Wed 30 Dec | Scout the Border Collie | `dog-12-scout.jpg` |
+| Sun 3 Jan | Cloud the Samoyed | `dog-13-cloud.jpg` |
+| Wed 6 Jan | Brioche the French Bulldog | `dog-14-brioche.jpg` |
+| Sun 10 Jan | Pepper the Shelter Mutt | `dog-06-pepper.jpg` |
 
-Each post below has a caption (with a Japanese line), alt text under 100 characters and seven hashtags (five English, two Japanese).
+Each post below has a caption (English first, one short Japanese line), alt text under 100 characters and seven hashtags (five English, two Japanese).
 
 ---
 
@@ -44,13 +53,40 @@ Meet Noodle, the Dachshund 🐶
 
 Loves: bone biscuit, squeaky duck, digging.
 
-Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
+Who is your favourite dog? 👇 Play Doodle Doggo free on itch.io (link in bio).
 
 ワンコ紹介：Noodle（ダックスフンド）🐶
 
 #cozygames #doggame #dachshund #doodledoggo #indiegame #ダックスフンド #doglovers
 ```
 **Alt text:** `Noodle the Dachshund with a puppy, favourite things and four traits.` (68 characters)
+
+---
+
+### Kuma the Akita ✨
+File: `dogs/dog-15-kuma.jpg`
+
+**Caption**
+```
+New in Doodle Doggo: meet Kuma, the Akita 🐶✨
+"I will wait for you. I am very good at waiting."
+
+• loyal: waits at the gate for you
+• calm: one low woof, no fuss
+• proud: likes its own space
+• gentle: meets new dogs slowly
+
+Loves: chicken & rice, tennis ball, walks.
+
+Hachikō, the dog who waited at Shibuya Station, was an Akita. Say hi to him in Shibuya on the Tokyo Trip 🚄
+
+Who is your favourite dog? 👇 Play Doodle Doggo free on itch.io (link in bio).
+
+ワンコ紹介：Kuma（秋田犬）🐶
+
+#cozygames #doggame #akitainu #doodledoggo #indiegame #秋田犬 #doglovers
+```
+**Alt text:** `Kuma the Akita with a puppy, favourite things and four traits.` (62 characters)
 
 ---
 
@@ -69,13 +105,40 @@ Meet Biscuit, the Corgi 🐶
 
 Loves: pupcake, puzzle feeder, feeding.
 
-Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
+Who is your favourite dog? 👇 Play Doodle Doggo free on itch.io (link in bio).
 
 ワンコ紹介：Biscuit（コーギー）🐶
 
 #cozygames #doggame #corgi #doodledoggo #indiegame #コーギー #doglovers
 ```
 **Alt text:** `Biscuit the Corgi with a puppy, favourite things and four traits.` (65 characters)
+
+---
+
+### Mikan the Pomeranian ✨
+File: `dogs/dog-17-mikan.jpg`
+
+**Caption**
+```
+New in Doodle Doggo: meet Mikan, the Pomeranian 🐶✨
+"Yip! That was my indoor voice."
+
+• tiny: a small dog with big opinions
+• spinner: spins when happy
+• yippy: a tiny, high yip
+• bossy: leads dogs ten times its size
+
+Loves: salmon pâté, squeaky duck, petting.
+
+Mikan is a mandarin orange (みかん). A good name for an orange fluffball 🍊
+
+Who is your favourite dog? 👇 Play Doodle Doggo free on itch.io (link in bio).
+
+ワンコ紹介：Mikan（ポメラニアン）🐶
+
+#cozygames #doggame #pomeranian #doodledoggo #indiegame #ポメラニアン #doglovers
+```
+**Alt text:** `Mikan the Pomeranian with a puppy, favourite things and four traits.` (68 characters)
 
 ---
 
@@ -94,13 +157,38 @@ Meet Mochi, the Shiba Inu 🐶
 
 Loves: salmon pâté, plush bone, tricks.
 
-Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
+Who is your favourite dog? 👇 Play Doodle Doggo free on itch.io (link in bio).
 
 ワンコ紹介：Mochi（柴犬）🐶
 
 #cozygames #doggame #shibainu #doodledoggo #indiegame #柴犬 #doglovers
 ```
 **Alt text:** `Mochi the Shiba Inu with a puppy, favourite things and four traits.` (67 characters)
+
+---
+
+### Strudel the German Shepherd ✨
+File: `dogs/dog-21-strudel.jpg`
+
+**Caption**
+```
+New in Doodle Doggo: meet Strudel, the German Shepherd 🐶✨
+"Ears up. On duty. Was that a squirrel?"
+
+• clever: learns a trick in a minute
+• alert: ears up at every sound
+• loyal: always by your side
+• needs a job: any job, even tidying
+
+Loves: chicken & rice, puzzle feeder, tricks.
+
+Who is your favourite dog? 👇 Play Doodle Doggo free on itch.io (link in bio).
+
+ワンコ紹介：Strudel（ジャーマン・シェパード）🐶
+
+#cozygames #doggame #germanshepherd #doodledoggo #indiegame #ジャーマンシェパード #doglovers
+```
+**Alt text:** `Strudel the German Shepherd with a puppy, favourite things and four traits.` (75 characters)
 
 ---
 
@@ -119,13 +207,40 @@ Meet Sunny, the Golden Retriever 🐶
 
 Loves: kibble, tennis ball, fetch.
 
-Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
+Who is your favourite dog? 👇 Play Doodle Doggo free on itch.io (link in bio).
 
 ワンコ紹介：Sunny（ゴールデンレトリバー）🐶
 
 #cozygames #doggame #goldenretriever #doodledoggo #indiegame #ゴールデンレトリバー #doglovers
 ```
 **Alt text:** `Sunny the Golden Retriever with a puppy, favourite things and four traits.` (74 characters)
+
+---
+
+### Daifuku the Japanese Spitz ✨
+File: `dogs/dog-16-daifuku.jpg`
+
+**Caption**
+```
+New in Doodle Doggo: meet Daifuku, the Japanese Spitz 🐶✨
+"Yes, I am this white on purpose. Look at me."
+
+• show-off: walks to the front and poses
+• fluffy: a white cloud with ears
+• cheerful: a bright little bark
+• shedder: a good brush keeps it soft
+
+Loves: bone biscuit, frisbee, tricks.
+
+Daifuku is a soft, round rice sweet (大福). The Japanese Spitz is always white.
+
+Who is your favourite dog? 👇 Play Doodle Doggo free on itch.io (link in bio).
+
+ワンコ紹介：Daifuku（日本スピッツ）🐶
+
+#cozygames #doggame #japanesespitz #doodledoggo #indiegame #日本スピッツ #doglovers
+```
+**Alt text:** `Daifuku the Japanese Spitz with a puppy, favourite things and four traits.` (74 characters)
 
 ---
 
@@ -144,13 +259,38 @@ Meet Frost, the Husky 🐶
 
 Loves: chicken & rice, rope tug, walks.
 
-Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
+Who is your favourite dog? 👇 Play Doodle Doggo free on itch.io (link in bio).
 
 ワンコ紹介：Frost（ハスキー）🐶
 
 #cozygames #doggame #husky #doodledoggo #indiegame #ハスキー #doglovers
 ```
 **Alt text:** `Frost the Husky with a puppy, favourite things and four traits.` (63 characters)
+
+---
+
+### Waffle the Great Dane ✨
+File: `dogs/dog-19-waffle.jpg`
+
+**Caption**
+```
+New in Doodle Doggo: meet Waffle, the Great Dane 🐶✨
+"I am a lap dog. Your lap is just too small."
+
+• gentle giant: big paws, bigger heart
+• follower: room to room, always
+• leaner: leans on you for a hug
+• slow grower: gentle walks while young
+
+Loves: chicken & rice, plush bone, petting.
+
+Who is your favourite dog? 👇 Play Doodle Doggo free on itch.io (link in bio).
+
+ワンコ紹介：Waffle（グレート・デーン）🐶
+
+#cozygames #doggame #greatdane #doodledoggo #indiegame #グレートデーン #doglovers
+```
+**Alt text:** `Waffle the Great Dane with a puppy, favourite things and four traits.` (69 characters)
 
 ---
 
@@ -169,7 +309,7 @@ Meet Dumpling, the Pug 🐶
 
 Loves: pupcake, plush bone, feeding.
 
-Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
+Who is your favourite dog? 👇 Play Doodle Doggo free on itch.io (link in bio).
 
 ワンコ紹介：Dumpling（パグ）🐶
 
@@ -194,13 +334,38 @@ Meet Peanut, the Chihuahua 🐶
 
 Loves: salmon pâté, squeaky duck, petting.
 
-Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
+Who is your favourite dog? 👇 Play Doodle Doggo free on itch.io (link in bio).
 
 ワンコ紹介：Peanut（チワワ）🐶
 
 #cozygames #doggame #chihuahua #doodledoggo #indiegame #チワワ #doglovers
 ```
 **Alt text:** `Peanut the Chihuahua with a puppy, favourite things and four traits.` (68 characters)
+
+---
+
+### Saffron the Afghan Hound ✨
+File: `dogs/dog-18-saffron.jpg`
+
+**Caption**
+```
+New in Doodle Doggo: meet Saffron, the Afghan Hound 🐶✨
+"I do not fetch. I glide."
+
+• elegant: not one hair out of place
+• aloof: admires you from a distance
+• silky: a brush a few times a week
+• fast: glides, never hurries
+
+Loves: salmon pâté, frisbee, walks.
+
+Who is your favourite dog? 👇 Play Doodle Doggo free on itch.io (link in bio).
+
+ワンコ紹介：Saffron（アフガン・ハウンド）🐶
+
+#cozygames #doggame #afghanhound #doodledoggo #indiegame #アフガンハウンド #doglovers
+```
+**Alt text:** `Saffron the Afghan Hound with a puppy, favourite things and four traits.` (72 characters)
 
 ---
 
@@ -219,7 +384,7 @@ Meet Rocket, the Greyhound 🐶
 
 Loves: chicken & rice, frisbee, fetch.
 
-Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
+Who is your favourite dog? 👇 Play Doodle Doggo free on itch.io (link in bio).
 
 ワンコ紹介：Rocket（グレイハウンド）🐶
 
@@ -244,13 +409,38 @@ Meet Bagel, the Beagle 🐶
 
 Loves: kibble, puzzle feeder, digging.
 
-Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
+Who is your favourite dog? 👇 Play Doodle Doggo free on itch.io (link in bio).
 
 ワンコ紹介：Bagel（ビーグル）🐶
 
 #cozygames #doggame #beagle #doodledoggo #indiegame #ビーグル #doglovers
 ```
 **Alt text:** `Bagel the Beagle with a puppy, favourite things and four traits.` (64 characters)
+
+---
+
+### Crumpet the English Mastiff ✨
+File: `dogs/dog-20-crumpet.jpg`
+
+**Caption**
+```
+New in Doodle Doggo: meet Crumpet, the English Mastiff 🐶✨
+"A little drool is how I say I love you."
+
+• sleepy: naps in the biggest shade
+• sweet: huge and soft as a cushion
+• drooler: a towel for that big face
+• slow: one big sigh at a time
+
+Loves: pupcake, rope tug, feeding.
+
+Who is your favourite dog? 👇 Play Doodle Doggo free on itch.io (link in bio).
+
+ワンコ紹介：Crumpet（イングリッシュ・マスティフ）🐶
+
+#cozygames #doggame #englishmastiff #doodledoggo #indiegame #マスティフ #doglovers
+```
+**Alt text:** `Crumpet the English Mastiff with a puppy, favourite things and four traits.` (75 characters)
 
 ---
 
@@ -269,7 +459,7 @@ Meet Pretzel, the Poodle 🐶
 
 Loves: salmon pâté, puzzle feeder, tricks.
 
-Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
+Who is your favourite dog? 👇 Play Doodle Doggo free on itch.io (link in bio).
 
 ワンコ紹介：Pretzel（プードル）🐶
 
@@ -294,7 +484,7 @@ Meet Scout, the Border Collie 🐶
 
 Loves: chicken & rice, frisbee, fetch.
 
-Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
+Who is your favourite dog? 👇 Play Doodle Doggo free on itch.io (link in bio).
 
 ワンコ紹介：Scout（ボーダーコリー）🐶
 
@@ -319,7 +509,7 @@ Meet Cloud, the Samoyed 🐶
 
 Loves: chicken & rice, rope tug, walks.
 
-Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
+Who is your favourite dog? 👇 Play Doodle Doggo free on itch.io (link in bio).
 
 ワンコ紹介：Cloud（サモエド）🐶
 
@@ -344,7 +534,7 @@ Meet Brioche, the French Bulldog 🐶
 
 Loves: pupcake, plush bone, petting.
 
-Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
+Who is your favourite dog? 👇 Play Doodle Doggo free on itch.io (link in bio).
 
 ワンコ紹介：Brioche（フレンチブルドッグ）🐶
 
@@ -369,7 +559,7 @@ Meet Pepper, the Shelter Mutt 🐶
 
 Loves: petting, a home, you.
 
-Who is your favourite dog? 👇 Doodle Doggo is a free browser game, coming soon.
+Who is your favourite dog? 👇 Play Doodle Doggo free on itch.io (link in bio).
 
 ワンコ紹介：Pepper（保護犬のミックス）🐶
 
