@@ -58,7 +58,10 @@ const COATS = {
   dobie: [], corso: [], pitbull: [], minpin: [], // ART A
   lab: [], malamute: [], chow: [], stdpoodle: [], // ART B
   schnauzer: [], westie: [], yorkie: [], // ART C
-  bichon: [], maltese: [], shihtzu: [], // ART D
+  bichon: [{ base: '#FBF8F1', light: '#FFFFFF', dark: '#E2D9C8' }, { base: '#F3E2C2', light: '#FFF6E4', dark: '#D6BE94' }], // ART D: White, Cream (rare)
+  maltese: [{ base: '#FCFAF4', light: '#FFFFFF', dark: '#E4DBCB' }], // ART D: White
+  shihtzu: [{ base: '#D9A35A', light: '#FFFBF2', dark: '#8A5A2A' }, { base: '#2B2628', light: '#FFFBF2', dark: '#1D1A1C' }, { base: '#8A4F33', light: '#FFFBF2', dark: '#5A2E1C' },
+    { base: '#B07A45', light: '#FFFBF2', dark: '#3A2E2E', brindle: true }, { base: '#2B2628', light: '#3A3436', dark: '#1D1A1C' }, { base: '#B8B4B0', light: '#FFFBF2', dark: '#6E6A68' }], // ART D: Gold and white, Black and white, Liver and white, Brindle and white, Black, Silver and white
 };
 NEW.forEach((k) => {
   AGES.forEach((age) => [false, true].forEach((sp) => good(PA.dogHead(k, { age: age || undefined, sparkle: sp }), '0 0 100 100', `head ${k} ${age} ${sp}`)));

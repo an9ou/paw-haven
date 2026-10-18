@@ -238,9 +238,64 @@ SP.westie={...SP.mutt,name:'Shortbread',breed:'West Highland White Terrier',pers
 SP.yorkie={...SP.chihuahua,name:'Toffee',breed:'Yorkshire Terrier',personality:'A tiny terrier with silky hair and a giant attitude.',joke:'I am in charge here. Please lift me onto the sofa.'};// PLACEHOLDER (ART C)
 /* end v2.12 ART C */
 /* v2.12 ART D: bichon, maltese, shihtzu */
-SP.bichon={...SP.samoyed,name:'Meringue',breed:'Bichon Frise',personality:'A happy cotton ball who bounces everywhere.',joke:'Is this a haircut or a cloud? Yes.'};// PLACEHOLDER (ART D)
-SP.maltese={...SP.spitz,name:'Marshmallow',breed:'Maltese',personality:'A gentle little lap dog in a long white coat.',joke:'I do not walk. I float, elegantly.'};// PLACEHOLDER (ART D)
-SP.shihtzu={...SP.pug,name:'Wonton',breed:'Shih Tzu',personality:'A relaxed lap dog with a top-knot and big opinions about naps.',joke:'Top-knot up. Nap time down.'};// PLACEHOLDER (ART D)
+/* Their extras: topknot 3 (a gathered tuft with a little bow, drawn by knotD), the cotton puffs (puffD), the floor-length coat
+   (hairD, in their own marks) and face hair. topknot 3 is a new value, so drawTopknot and dogHead take it for these three only */
+function puffD(h,M,rx,ry,a0,a1,n,z,col,ink){// cotton bumps round an ellipse (local px, mapped by M): each a filled lump that covers the old outline, then its outer arc
+  if(isNaN(M([0,0])[0]))return;
+  for(let i=0;i<n;i++){const a=(a0+(a1-a0)*(n>1?i/(n-1):.5))*D2R,k=1+(i%2?.04:-.03),c=[Math.cos(a)*rx*k,Math.sin(a)*ry*k],zz=z*(i%3===1?1.12:.94);
+   h.shape(circ(c[0],c[1],zz,zz,9).map(M),col,{noline:1,ox:0,oy:0,sc:1});
+   const arc=[];for(let j=-3;j<=3;j++){const t=a+j*.42;arc.push([c[0]+Math.cos(t)*zz,c[1]+Math.sin(t)*zz])}h.line(arc.map(M),ink||3.3,INK,.7)}}
+function hairD(h,B,s,col,o){// the floor-length coat, parted along the spine: silky hair falls from the sides of the body (o.up: how high it starts) to just above the ground (o.len: the longest it hangs, so a jump lifts it), a flared ragged hem
+  const b=s.body,c=B([0,0]);if(isNaN(c[0]))return;const n=30,R=[],ok=[],e=B([10,0]),tilt=Math.max(0,-Math.atan2(e[1]-c[1],e[0]-c[0])/D2R-12)*.5;// sitting up: the hair also falls from the chest
+  for(let i=0;i<n;i++){const a=i/n*Math.PI*2,p=B([Math.cos(a)*b.rx*.93,Math.sin(a)*b.ry*.6]);R.push(p);ok.push(p[1]>c[1]-b.ry*o.up*.6-tilt)}
+  const st=ok.findIndex((v,i)=>v&&!ok[(i+n-1)%n]);if(st<0)return;const top=[];for(let i=0;i<n&&ok[(st+i)%n];i++)top.push(R[(st+i)%n]);
+  if(top.length<3)return;
+  const fl=GY-(o.gap||4),cx=(top[0][0]+top[top.length-1][0])/2,span=Math.abs(top[top.length-1][0]-top[0][0])||1;
+  const yb=Math.min(fl,Math.max(...top.map(p=>p[1]))+b.ry*o.len),bot=top.map((p,i)=>{let y=Math.max(p[1]+4,Math.min(GY-1,yb+(i%3===1?2.5:i%3===2?-1:0)));
+   if(s.expecting){const d=(p[0]-cx)/(span*.34);if(Math.abs(d)<1)y=Math.min(GY-1,y+4*Math.sqrt(1-d*d))}
+   const f=Math.min(1,(y-p[1])/(b.ry*1.5));return[p[0]+(p[0]-cx)*.18*f+(i%2?1.6:-1.2),y]});
+  h.shape(top.concat(bot.slice().reverse()),col,{noline:1,ox:0,oy:0,sc:1});
+  h.line([top[0]].concat(bot,[top[top.length-1]]),h.LW*.9,INK,1);
+  const K=curlCol(col);top.forEach((t,i)=>{if(i%3!==1||i>top.length-3)return;const p=bot[i];if(p[1]-t[1]<10)return;h.line([[t[0],t[1]+4],[t[0]+(p[0]-t[0])*.5+(i%2?1.5:-1.5),t[1]+(p[1]-t[1])*.5],[p[0],p[1]-4]],2,K,.35)});
+  if(s.expecting){const y=Math.min(GY-8,c[1]+b.ry*.3),A=[];// the round tummy shows as a low curve through the coat
+   for(let i=0;i<=10;i++){const t=Math.PI*(.12+i/10*.76);A.push([cx+Math.cos(t)*span*.3,Math.min(GY-2,y+Math.sin(t)*b.ry*.85)])}h.line(A,h.LW*.75,INK,1)}}
+function knotD(h,s,HT){// a little tuft gathered on the crown with a pink bow, the hair fanning out above it and flopping back (behind the skull outline, so only the top shows)
+  const hx=s.head.rx,hy=s.head.ry,k=s.knotK||1,c=s.hcol,bw=Math.max(5,hx*.26),Y=-hy*(s.hfluff?1.2:1.1);
+  const F=[[-hx*.3,-hy*.6],[-hx*.13,Y],[-hx*.38,Y-hy*.16*k],[-hx*.58,Y-hy*.34*k],[-hx*.44,Y-hy*.5*k],[-hx*.24,Y-hy*.64*k],[-hx*.02,Y-hy*.68*k],[hx*.18,Y-hy*.58*k],[hx*.3,Y-hy*.38*k],[hx*.16,Y-hy*.14*k],[hx*.11,Y],[hx*.28,-hy*.6]];
+  h.shape(F.map(HT),c,{step:30,amp:.8,w:3.6});
+  const K=curlCol(c);[[-.04,-.3,-.42],[.04,-.06,-.56],[.08,.18,-.44]].forEach(q=>h.line([[hx*q[0],Y-2],[hx*(q[0]+q[1])/2,Y+hy*q[2]*k*.55],[hx*q[1],Y+hy*q[2]*k]].map(HT),2,K,.3));
+  const m=[0,Y+1],lp=sd=>[[0,0],[sd*bw*.5,-bw*.6],[sd*bw*1.2,-bw*.62],[sd*bw*1.15,bw*.52],[sd*bw*.5,bw*.42]];
+  [-1,1].forEach(sd=>h.shape(lp(sd).map(q=>HT([m[0]+q[0],m[1]+q[1]])),'#FF6FA8',{w:2.6,step:30,ox:0,oy:0,sc:1,closed:1,amp:.4}));
+  const kc=HT(m);h.shape(circ(kc[0],kc[1],bw*.36,bw*.4,7),'#E8407E',{w:2.2,ox:0,oy:0,sc:1,closed:1,amp:.3})}
+SP.bichon={name:'Meringue',breed:'Bichon Frise',personality:'A happy cotton ball who bounces everywhere.',joke:'Is this a haircut or a cloud? Yes.',
+  col:'#FDFBF6',hcol:'#FDFBF6',light:W,dark:'#E4DCCD',fluff:1,hfluff:1,body:{x:114,y:146,rx:35,ry:27},head:{x:157,y:108,rx:31,ry:29},
+  legs:{h:-20,f:19,w:7.4},ears:'flop2',earS:.78,earRound:3,tail:'plume',plumeUp:1,tsc:.78,eyes:[6.6,6.2],
+  face:{eyes:'open',mouth:'smile',e0:[-.1,-.02],e1:[.4,-.06],nose:[.74,.3],pupil:.84,sweet:1},
+  marks:(h,B,Hd,s)=>{const b=s.body,hx=s.head.rx,hy=s.head.ry,K2=mix(s.dark,s.col,.15);h.crayon(b.rx,b.ry,B,mix(s.dark,PEN,.35),7);
+   puffD(h,B,b.rx*.98,b.ry*.98,-160,-20,6,b.ry*.3,s.col);
+   [[-.6,-.3],[-.15,-.5],[.35,-.35],[-.55,.3],[.1,.38],[.6,.2]].forEach((q,i)=>h.line(spiral(b.rx*q[0],b.ry*q[1],.5,2.6,1.1,7,i*1.4).map(B),1.8,K2,.3));
+   puffD(h,Hd,hx*.98,hy*.98,-205,-15,7,hx*.27,s.hcol);
+   [[-.5,-.48],[-.12,-.7],[.3,-.6]].forEach((q,i)=>h.line(spiral(hx*q[0],hy*q[1],.5,2.4,1.1,7,i*2).map(Hd),1.6,K2,.3))}};
+SP.maltese={name:'Marshmallow',breed:'Maltese',personality:'A gentle little lap dog in a long white coat.',joke:'I do not walk. I float, elegantly.',
+  col:'#FFFDF8',hcol:'#FFFDF8',light:W,dark:'#E6DDCE',body:{x:114,y:146,rx:37,ry:19,lop:.03},head:{x:159,y:112,rx:27,ry:25},
+  legs:{h:-25,f:23,w:5.6},ears:'curtain',earS:.76,earRound:1,topknot:3,knotK:.7,tail:'plume',plumeUp:1,tsc:.74,eyes:[6.4,6],
+  face:{eyes:'open',mouth:'smile',e0:[-.1,-.08],e1:[.42,-.12],nose:[.94,.26],pupil:.8},
+  marks:(h,B,Hd,s)=>{const b=s.body,hx=s.head.rx,hy=s.head.ry,K=mix(s.dark,PEN,.35);h.crayon(b.rx,b.ry,B,mix(s.dark,PEN,.35),7);hairD(h,B,s,s.col,{up:.3,len:1.25});
+   [[-.75,-.5],[-.35,-.72],[.05,-.74],[.45,-.6]].forEach(q=>h.line([[b.rx*q[0],b.ry*q[1]],[b.rx*(q[0]-.04),b.ry*(q[1]+.5)],[b.rx*(q[0]+.01),b.ry*(q[1]+1.0)]].map(B),2,K,.4));
+   [[.62,.5,.5,.86],[.82,.42,.86,.8]].forEach(q=>h.line([[hx*q[0],hy*q[1]],[hx*(q[0]+q[2])/2-1,hy*(q[1]+q[3])/2+1],[hx*q[2],hy*q[3]]].map(Hd),1.8,K,.3));
+   h.line([[-hx*.5,-hy*.66],[-hx*.2,-hy*.86],[hx*.12,-hy*.8]].map(Hd),1.8,K,.3)}};
+SP.shihtzu={name:'Wonton',breed:'Shih Tzu',personality:'A relaxed lap dog with a top-knot and big opinions about naps.',joke:'Top-knot up. Nap time down.',
+  col:'#E0A458',hcol:'#E0A458',light:'#FFFBF2',dark:'#9A6430',hfluff:1,body:{x:114,y:147,rx:37,ry:21,lop:.03},head:{x:159,y:110,rx:29,ry:27},
+  legs:{h:-25,f:23,w:6.4},ears:'curtain',earS:.74,earRound:1,topknot:3,tail:'plume',plumeUp:1,tsc:.8,eyes:[7.8,7.6],
+  face:{eyes:'open',mouth:'smile',e0:[-.2,-.14],e1:[.38,-.18],nose:[.52,.22],pupil:.66,brow:'soft'},
+  marks:(h,B,Hd,s)=>{const b=s.body,hx=s.head.rx,hy=s.head.ry,K=curlCol(s.col),KL=curlCol(s.light);brindle(h,B,Hd,s);
+   h.shape([[b.rx*.38,-b.ry*.1],[b.rx*.88,-b.ry*.5],[b.rx*1.02,b.ry*.3],[b.rx*.7,b.ry*.95],[b.rx*.3,b.ry*.7]].map(B),s.light,{noline:1});
+   hairD(h,B,s,s.light,{up:.02,len:1.2});
+   [[-.7,-.62],[-.3,-.8],[.1,-.76]].forEach(q=>h.line([[b.rx*q[0],b.ry*q[1]],[b.rx*(q[0]-.05),b.ry*(q[1]+.45)],[b.rx*q[0],b.ry*(q[1]+.9)]].map(B),2.2,K,.4));
+   h.shape([[hx*.02,-hy*.98],[hx*.24,-hy*.98],[hx*.3,-hy*.25],[hx*.06,-hy*.25]].map(Hd),s.light,{noline:1,ox:0,oy:0});
+   h.shape([[-hx*.12,hy*.28],[hx*.1,-hy*.06],[hx*.6,-hy*.04],[hx*.98,hy*.2],[hx*.9,hy*.78],[hx*.62,hy*1.3],[hx*.3,hy*1.42],[0,hy*1.24],[-hx*.2,hy*.8]].map(Hd),s.light,{w:3.2,step:30,amp:.8});
+   [[.18,.62,.12,1.2],[.42,.7,.4,1.32],[.66,.62,.7,1.12]].forEach(q=>h.line([[hx*q[0],hy*q[1]],[hx*(q[0]+q[2])/2-1,hy*(q[1]+q[3])/2],[hx*q[2],hy*q[3]]].map(Hd),1.8,KL,.3));
+   [[-.42,-.62],[-.14,-.8]].forEach((q,i)=>h.line([[hx*q[0],hy*q[1]],[hx*(q[0]-.1),hy*(q[1]+.3)]].map(Hd),2,K,.3))}};
 /* end v2.12 ART D */
 const KEYS=['shiba','corgi','golden','dachs','husky','mutt','chihuahua','pug','greyhound','beagle','poodle','collie','samoyed','frenchie','akita','spitz','pom','afghan','dane','mastiff','gsd',
   'dobie','corso','pitbull','minpin','lab','malamute','chow','stdpoodle','schnauzer','westie','yorkie','bichon','maltese','shihtzu'];// v2.12: fourteen appended (V212.md 2)
@@ -390,6 +445,7 @@ function curlyEar(h,s,p,HT,col){// Poodle: a long drop ear with a lumpy outline 
   [[.0,-.05],[.05,.38]].forEach((o,i)=>{const x=cx+o[0]*(cx-p[0][0]),y=cy+o[1]*Math.abs(p[2][1]-p[0][1]);h.line(spiral(x,y,.5,3.6,1.25,8,i*2.1).map(HT),2,c,.3)})}
 function drawTopknot(h,s,HT){// Poodle: a round pom of hair on top of the head, behind the skull outline
   const hx=s.head.rx,hy=s.head.ry;
+  if(s.topknot===3)return knotD(h,s,HT);// v2.12 maltese, shihtzu: a gathered tuft with a bow
   if(s.topknot===2){// v2.11 afghan: a silky topknot swept back over the skull, a few long strands
     h.shape([[-hx*.92,-hy*.2],[-hx*1.05,-hy*.95],[-hx*.55,-hy*1.5],[hx*.12,-hy*1.62],[hx*.62,-hy*1.25],[hx*.5,-hy*.6]].map(HT),s.hcol,{step:30,amp:.8});
     const K=curlCol(s.hcol);[[-.1,-1.45,-.75,-.9],[.3,-1.35,-.35,-.75]].forEach(q=>h.line([[hx*q[0],hy*q[1]],[hx*(q[0]+q[2])/2+1.5,hy*(q[1]+q[3])/2],[hx*q[2],hy*q[3]]].map(HT),2,K,.3));return}
@@ -1309,7 +1365,7 @@ function dogHead(key,o={}){
   key=SP[key]?key:'shiba';const SF=specFor(key,o),s=SF.s,h=kit(rng(hashS('pahead'+key))),L=layout(s,'idle',0),HT=T(L.hT);
   if(s.ears!=='giant')L.face.eyes=s.face.eyes;if(s.pup===2){L.face.eyes='closed';L.ears='sleep';L.face.mouth='smile'}
   if(s.pup)h.setJ(s.pup===2?1.25:1.15);
-  if(s.ruff)drawRuff(h,s,L,HT);drawEars(h,s,L,HT,false);if(s.topknot===2)drawTopknot(h,s,HT);h.shape(headPts(s).map(HT),s.hcol,{step:(s.hfluff===undefined?s.fluff:s.hfluff)?30:11});if(s.headMarks)s.headMarks(h,HT,s);if(s.pat)s.pat.head(h,HT,L);drawFace(h,s,L,HT);drawEars(h,s,L,HT,true);
+  if(s.ruff)drawRuff(h,s,L,HT);drawEars(h,s,L,HT,false);if(s.topknot===2||s.topknot===3)drawTopknot(h,s,HT);h.shape(headPts(s).map(HT),s.hcol,{step:(s.hfluff===undefined?s.fluff:s.hfluff)?30:11});if(s.headMarks)s.headMarks(h,HT,s);if(s.pat)s.pat.head(h,HT,L);drawFace(h,s,L,HT);drawEars(h,s,L,HT,true);
   let b=h.bb;if(NEWK.test(s.mixHead||key)){if(s.ears==='bat'){const hd=s.head,c=HT([0,0]);b=[c[0]-hd.rx*1.4,c[1]-hd.ry*1.8,c[0]+hd.rx*1.4,c[1]+hd.ry*1.08]}}// v2.5 heads fit by what was drawn (their ears and muzzles differ from the fixed boxes below)
   else if(/^(giant|bat)$/.test(s.ears)){const hd=s.head,c=HT([0,0]);b=[c[0]-hd.rx*1.25,c[1]-hd.ry*2.1,c[0]+hd.rx*1.25,c[1]+hd.ry*1.05]}else if(s.face.snoutL){const hd=s.head,c=HT([0,0]);b=[c[0]-hd.rx*1.25,c[1]-hd.ry*1.7,c[0]+hd.rx*1.75,c[1]+hd.ry*1.25]}
   const w=b[2]-b[0],ht=b[3]-b[1],sc=Math.min(86/w,86/ht),cx=(b[0]+b[2])/2,cy=(b[1]+b[3])/2;
