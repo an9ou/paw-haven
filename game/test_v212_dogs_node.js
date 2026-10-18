@@ -60,7 +60,16 @@ const COATS = {
   corso: [{ base: '#7A7E86', light: '#8E929A', dark: '#3E424A', white: 0 }, { base: '#D2AE7A', light: '#E4C898', dark: '#2B2430', white: 0 }, { base: '#B8683A', light: '#CC8452', dark: '#2B2430', white: 0 }, { base: '#6A5240', light: '#7E6450', dark: '#1D1A22', white: 0, brindle: true }, { base: '#8A8078', light: '#9E948A', dark: '#3E424A', white: 0, brindle: true }],
   pitbull: [{ base: '#2B2628', light: '#F2EEE6', dark: '#1D1A22', white: 0 }, { base: '#D7B07E', light: '#F4E6CE', dark: '#9A7A52', white: 0 }, { base: '#B8683A', light: '#F2E2CC', dark: '#7E4224', white: 0 }, { base: '#B08A5E', light: '#F2E6D2', dark: '#3A2E2E', white: 0, brindle: true }, { base: '#FBF6EC', light: '#FFFFFF', dark: '#E8DECB', white: 0 }, { base: '#B8683A', light: '#FFFFFF', dark: '#7E4224', white: 0.6 }, { base: '#B8A08E', light: '#E8DCCE', dark: '#7E7480', white: 0 }],
   minpin: [{ base: '#2B2628', light: '#C8743A', dark: '#1D1A22', white: 0 }, { base: '#5E3424', light: '#C8743A', dark: '#3E2216', white: 0 }],
-  lab: [], malamute: [], chow: [], stdpoodle: [], // ART B
+  // ART B (section 3, starter coats left out: they draw the plain dog): lab Black, Chocolate; malamute Black, Red, Sable (all and white), White;
+  // chow Black, Blue, Cinnamon, Cream; stdpoodle White, Apricot, Chocolate, Cream, Silver, Red, Blue, Parti
+  lab: [{ base: '#2B2430', light: '#4A3F4E', dark: '#1D1A22' }, { base: '#6E4430', light: '#8E5E40', dark: '#4E2E1E' }],
+  malamute: [{ base: '#3A3440', light: '#FFFFFF', dark: '#24202A' }, { base: '#B8683A', light: '#FFFFFF', dark: '#8A4A26' }, { base: '#9A7A58', light: '#FFFFFF', dark: '#5E4632' },
+    { base: '#FBF6EC', light: '#FFFFFF', dark: '#E8DECB' }],
+  chow: [{ base: '#2B2430', light: '#4A3F4E', dark: '#1D1A22' }, { base: '#6E7F96', light: '#8C9BB0', dark: '#55657A' }, { base: '#C8945E', light: '#E2B888', dark: '#9A6A3E' },
+    { base: '#F2E2C4', light: '#FFF8EC', dark: '#D9C29E' }],
+  stdpoodle: [{ base: '#F7F1E6', light: '#FFFFFF', dark: '#E2D6C2' }, { base: '#F2C48F', light: '#FBE2C0', dark: '#D9A066' }, { base: '#6E4430', light: '#8E5E40', dark: '#4E2E1E' },
+    { base: '#EFD8B0', light: '#FAEEDA', dark: '#D2B486' }, { base: '#A3AAB5', light: '#C6CBD2', dark: '#7F8794' }, { base: '#B8582E', light: '#D47E52', dark: '#8A3E1C' },
+    { base: '#6E7F96', light: '#8C9BB0', dark: '#55657A' }, { base: '#2B2430', light: '#4A3F4E', dark: '#1D1A22', white: 0.7 }],
   schnauzer: [{ base: '#2B2430', light: '#D8D6D2', dark: '#1D1A22' }, { base: '#2B2430', light: '#3A3240', dark: '#1D1A22' }, { base: '#FBF8F2', light: '#FFFFFF', dark: '#E2D9CC' }, { base: '#8E8E98', light: '#E6E4E0', dark: '#3A3640', white: 0.25 }], // ART C: black and silver, black, white, salt and pepper with white markings
   westie: [{ base: '#F4EEDF', light: '#FFFFFF', dark: '#DCCFB8' }], // cream shade
   yorkie: [{ base: '#2B2430', light: '#C98A4E', dark: '#1D1A22' }, { base: '#617389', light: '#D9A35C', dark: '#3E4A5E', white: 0.6 }, { base: '#5A6A80', light: '#E2B270', dark: '#38445A' }], // black and tan, parti, blue and tan (lighter gold)
