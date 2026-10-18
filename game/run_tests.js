@@ -49,7 +49,7 @@ const SUITES = {
   // v2.5 (V25.md): seasons, festival art, breeds, festivals
   v25_seasons: { file: 'test_v25_seasons_node.js', group: 'all', est: 20 },
   v25_art: { file: 'test_v25_art_node.js', group: 'all', est: 10 },
-  v25_breeds: { file: 'test_v25_breeds.js', group: 'all', est: 60 },
+  v25_breeds: { file: 'test_v25_breeds.js', group: 'all', est: 150, timeout: 500 }, // v2.12: 35 heads to tap through
   v25_festival: { file: 'test_v25_festival.js', group: 'all', est: 60 },
   v25_fixes_a: { file: 'test_v25_fixes_a.js', group: 'all', est: 40 }, // the owner's v2.4 fixes (V25.md 7b)
   v25_fixes_b: { file: 'test_v25_fixes_b.js', group: 'all', est: 40 },
