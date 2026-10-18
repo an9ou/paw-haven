@@ -255,20 +255,22 @@ i{font-style:italic}
 .langs li a[lang="ja"]{font-family:var(--jp)}
 .langs li a:hover,.langs li a:focus-visible{background:var(--w-mint)}
 .langs li a[aria-current]{background:var(--w-yellow);font-weight:700}
-/* the other languages: Caveat and Patrick Hand stay for Latin letters; 'DD Local' (site/fonts/i18n, when the FONTS lane adds it) and the system's own fonts draw the rest */
-html.i18n{--loc:sans-serif;--hand:'Caveat','Patrick Hand','DD Local Title','DD Local',var(--loc),'Comic Sans MS',cursive;--read:'Patrick Hand','DD Local',var(--loc),'Trebuchet MS',sans-serif}
+/* the other languages (stacks: docs/i18n/FONTS.md section 6). 'DD Local' (site/fonts/i18n/<lang>.css, linked only on that language's pages) covers only
+   non-Latin characters, so Latin letters and digits still fall through to Patrick Hand and Caveat; 'DD Local Title' is the heading face where there is one */
+html.i18n{--loc:sans-serif;--hand:'DD Local Title','DD Local','Caveat','Patrick Hand',var(--loc),'Comic Sans MS',cursive;--read:'DD Local','Patrick Hand',var(--loc),'Trebuchet MS',sans-serif}
 html[lang="ja"],html.s-cjk.pseudo{--loc:'Hiragino Maru Gothic ProN','Hiragino Sans','Yu Gothic','YuGothic','Meiryo','Noto Sans JP','Noto Sans CJK JP',sans-serif}
-html[lang="zh-Hans"]{--loc:'Yuanti SC','PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans SC','Noto Sans CJK SC',sans-serif}
-html[lang="zh-Hant"]{--loc:'Yuanti TC','PingFang TC','PingFang HK','Microsoft JhengHei','Noto Sans TC','Noto Sans CJK TC',sans-serif}
+html[lang="zh-Hans"]{--loc:'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans SC','Noto Sans CJK SC',sans-serif}
+html[lang="zh-Hant"]{--loc:'PingFang TC','Microsoft JhengHei','Noto Sans TC','Noto Sans CJK TC',sans-serif}
 html[lang="ko"]{--loc:'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR','Noto Sans CJK KR',sans-serif}
-html[lang="th"]{--loc:'Thonburi','Leelawadee UI','Leelawadee','Noto Sans Thai Looped','Noto Sans Thai','Tahoma',sans-serif}
+html[lang="th"]{--loc:'Thonburi','Leelawadee UI','Noto Sans Thai Looped','Noto Sans Thai',sans-serif}
 html.i18n body{overflow-wrap:anywhere}
-html.s-cjk body{line-break:strict}
-html[lang="ko"] body{word-break:keep-all}
+html.s-cjk body{line-height:1.65;word-break:normal;line-break:strict}
+html[lang="ko"] body{line-height:1.6;word-break:keep-all;line-break:auto}
+html.s-th body{word-break:normal;line-break:auto}
 html.s-cjk .nav a,html.s-cjk .chip,html.s-cjk .play{line-height:1.2}
 html.s-cjk h1,html.s-cjk h2,html.s-cjk h3,html.s-cjk .dname,html.s-cjk .bubble,html.s-cjk .tag{line-height:1.25}
 html.s-th body{line-height:1.75}
-html.s-th h1,html.s-th h2,html.s-th h3,html.s-th .dname,html.s-th .bubble,html.s-th .tag,html.s-th .traits b,html.s-th .feats b{line-height:1.5}
+html.s-th h1,html.s-th h2,html.s-th h3,html.s-th .dname,html.s-th .bubble,html.s-th .tag,html.s-th .traits b,html.s-th .feats b{line-height:1.45}
 html.s-th .nav a,html.s-th .chip,html.s-th .play{line-height:1.45}
 html[lang="de"] body,html[lang="fr"] body{hyphens:auto;-webkit-hyphens:auto}
 html.i18n .bark{white-space:nowrap}

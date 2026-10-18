@@ -58,8 +58,8 @@ for (const L of I18N.LANGS.concat(PSEUDO ? I18N.PSEUDO : [])) {
 }
 // the per-language fonts
 const fontDir = path.join(site, 'fonts', 'i18n');
-const FONT_FILES = fs.existsSync(fontDir) ? fs.readdirSync(fontDir).filter((f) => /\.(woff2|css)$/.test(f)).sort() : [];
-const FONT_MODE = !FONT_FILES.length ? 'none' : (process.env.SITE_FONTS === 'inline' ? 'inline' : 'split');
+const FONT_FILES = fs.existsSync(fontDir) ? fs.readdirSync(fontDir).filter((f) => /\.(woff2|css)$/.test(f) || /-OFL\.txt$/.test(f)).sort() : [];
+const FONT_MODE = !FONT_FILES.some((f) => f.endsWith('.woff2')) ? 'none' : (process.env.SITE_FONTS === 'inline' ? 'inline' : 'split');
 if (FONT_MODE === 'inline') FONT_FILES.forEach((f) => { files['/fonts/i18n/' + f] = path.join(fontDir, f); });
 
 const CSP = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self'; font-src 'self'; connect-src https://pawhaven-api.ansonyuen0108.workers.dev; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";

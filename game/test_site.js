@@ -270,7 +270,7 @@ const req = (m) => { for (const r of [].concat((process.env.NODE_PATH || '').spl
           hreflang: JSON.stringify(alt) === JSON.stringify(want), canonical: pg.id === 'reset' || h.includes(`<link rel="canonical" href="${SITE + u}">`),
           menu: menu.length === 11 && I18N.LANGS.every((x, i) => menu[i] === pageUrl(x, pg.path)) && /<details class="langs" id="langs">/.test(h),
           script: /localStorage/.test(h) && h.includes(`H='${L.dir || 'en'}'`),
-          font: /<link rel="stylesheet" href="\/fonts\/i18n\//.test(h) === (L.code !== 'en' && fs.existsSync(path.join(ROOT, 'site', 'fonts', 'i18n', (L.pseudo === 'cjk' ? 'ja' : L.code) + '.css'))),
+          font: /<link rel="stylesheet" href="\/fonts\/i18n\//.test(h) === (L.code !== 'en' && (() => { const f = path.join(ROOT, 'site', 'fonts', 'i18n', (L.pseudo === 'cjk' ? 'ja' : L.code) + '.css'); return fs.existsSync(f) && /@font-face/.test(fs.readFileSync(f, 'utf8')); })()),
           links: L.code === 'en' || !/href="\/(dogs|privacy)?(#[^"]*)?"/.test(h.replace(/<link rel="alternate"[^>]*>|<nav aria-label="[^"]*"><ul>.*?<\/ul><\/nav>/g, ''))
         };
         Object.entries(checks).forEach(([k, v]) => { if (!v) { fine = false; why.push(pg.id + ':' + k); } });
@@ -279,7 +279,7 @@ const req = (m) => { for (const r of [].concat((process.env.NODE_PATH || '').spl
     }
     if (fmf) { // the per-language fonts live in the second Worker doodle-doggo-fonts (route doodledoggo.app/fonts/i18n/*)
       const names = fs.readFileSync(path.join(ROOT, '_cfsite_fonts', 'parts.txt'), 'utf8').trim().split('\n').map((l) => l.split(' ')[0].replace(/^fonts__i18n__/, '')); let good = true;
-      for (const n of names) { const fr = await fmf.dispatchFetch(SITE + '/fonts/i18n/' + n); good = good && fr.status === 200 && /font\/woff2|text\/css/.test(fr.headers.get('content-type')); await fr.arrayBuffer(); }
+      for (const n of names) { const fr = await fmf.dispatchFetch(SITE + '/fonts/i18n/' + n); good = good && fr.status === 200 && /font\/woff2|text\/css|text\/plain/.test(fr.headers.get('content-type')); await fr.arrayBuffer(); }
       r = await get(SITE + '/fonts/i18n/' + names[0]); await r.text();
       ok(good && r.status === 404, `the fonts Worker serves ${names.length} font files (${names.join(', ')}); the main Worker leaves /fonts/i18n/ to it`);
     }
@@ -354,7 +354,7 @@ const req = (m) => { for (const r of [].concat((process.env.NODE_PATH || '').spl
       const st = async (u) => { await page.goto(base + u, { waitUntil: 'load' }); return page.evaluate(() => { const b = getComputedStyle(document.body), h = getComputedStyle(document.querySelector('h2') || document.body); return { lh: parseFloat(b.lineHeight) / parseFloat(b.fontSize), hlh: parseFloat(h.lineHeight) / parseFloat(h.fontSize), wb: b.wordBreak, lb: b.lineBreak, hy: b.hyphens || b.webkitHyphens, ow: b.overflowWrap, read: b.fontFamily, hand: h.fontFamily }; }); };
       const th = await st('/th/'), ko = await st('/ko/'), ja = await st('/ja/'), de = await st('/de/'), en = await st('/');
       ok(th.lh >= 1.7 && th.hlh >= 1.4 && /Thonburi|Noto Sans Thai/.test(th.read), `Thai: body line-height ${th.lh.toFixed(2)}, headings ${th.hlh.toFixed(2)}, Thai system fonts`);
-      ok(ko.wb === 'keep-all' && /Apple SD Gothic Neo/.test(ko.read) && ja.lb === 'strict' && /Hiragino Maru Gothic/.test(ja.read) && /^"?Caveat/.test(ja.hand) && /DD Local/.test(ja.hand), 'Korean keep-all, Japanese strict line breaks, CJK fonts after Caveat and Patrick Hand (Caveat stays for Latin titles), then DD Local');
+      ok(ko.wb === 'keep-all' && /Apple SD Gothic Neo/.test(ko.read) && ja.lb === 'strict' && /Hiragino Maru Gothic/.test(ja.read) && /^"DD Local Title", "DD Local", Caveat, "Patrick Hand"/.test(ja.hand) && /^"DD Local", "Patrick Hand"/.test(ja.read) && ja.lh >= 1.6, 'Korean keep-all, Japanese strict line breaks and line-height 1.6+, the FONTS.md stacks: DD Local (Title) first, then Caveat / Patrick Hand for Latin, then the system CJK fonts');
       ok(de.hy === 'auto' && de.ow === 'anywhere' && en.hy !== 'auto' && en.ow !== 'anywhere', 'German hyphenates, every translated page can wrap anywhere, English is unchanged');
       await page.goto(base + '/xx/', { waitUntil: 'load' }); await page.waitForTimeout(300);
       const px = await page.evaluate(() => ({ live: document.getElementById('scene').classList.contains('live'), bark: window.__dd && window.__dd.tr('bark.shiba', 'heh.'), toss: document.getElementById('toss').textContent, tag: document.querySelector('.tag').textContent }));

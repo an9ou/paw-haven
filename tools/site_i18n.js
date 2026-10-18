@@ -7,9 +7,9 @@
 //   node tools/site_i18n.js --legacy     English only, without the v2.14 additions (language menu, hreflang, the language script): must equal the v2.12 pages byte for byte
 // Strings: site/i18n/en.json is the source (keys, _notes for translators); site/i18n/<lang>.json (lang exactly as in LANGS, e.g. zh-Hans.json, pt-BR.json)
 // holds a translation, any keys missing there show the English text. Breed names come from game/i18n/glossary/<lang>.json "breeds" when that file exists.
-// Message syntax: the ICU MessageFormat subset of the v2.14 contract ({name}, plural, select, #). Values may use <b> and <i>; nothing else is markup.
+// Message syntax: the ICU MessageFormat subset of the v2.14 contract (game/i18n/msg.js: {name}, plural, select, #, josa for ko). Values may use <b> and <i>.
 // Templates: {{t key}} text, {{a key}} attribute, {{u /path}} a link to the same page in this language, {{raw block}} a block made here, {{lang}}.
-// Fonts: a non-English page links /fonts/i18n/<lang>.css only when the FONTS lane put that file in site/fonts/i18n/.
+// Fonts: a non-English page links /fonts/i18n/<lang>.css only when tools/i18n_fonts.js put that file in site/fonts/i18n/ with an @font-face in it.
 const fs = require('fs'), path = require('path'), vm = require('vm');
 const ROOT = path.join(__dirname, '..'), SITE = path.join(ROOT, 'site'), I18N = path.join(SITE, 'i18n'), TPL = path.join(SITE, 'tpl');
 const ORIGIN = 'https://doodledoggo.app';
@@ -36,67 +36,29 @@ const PSEUDO = [
 const PAGES = [{ id: 'index', path: '/' }, { id: 'dogs', path: '/dogs' }, { id: 'privacy', path: '/privacy' }, { id: 'reset', path: '/reset' }];
 const POLICY_DATE = Date.UTC(2026, 9, 17); // the privacy policy's "Last updated" date
 
-// ---- the message formatter (ICU subset)
-function parse(src) {
-  let i = 0;
-  const fail = (m) => { throw new Error(`${m} at ${i} in: ${src}`); };
-  function msg(inPlural) {
-    const out = []; let buf = '';
-    const flush = () => { if (buf) out.push(buf); buf = ''; };
-    while (i < src.length) {
-      const c = src[i];
-      if (c === "'") {
-        const n = src[i + 1];
-        if (n === "'") { buf += "'"; i += 2; continue; }
-        if (n === '{' || n === '}' || (inPlural && n === '#')) { const j = src.indexOf("'", i + 1); if (j < 0) fail('unclosed quote'); buf += src.slice(i + 1, j).replace(/''/g, "'"); i = j + 1; continue; }
-        buf += c; i++; continue;
-      }
-      if (c === '{') { flush(); out.push(arg(inPlural)); continue; }
-      if (c === '}') break;
-      if (c === '#' && inPlural) { flush(); out.push({ hash: true }); i++; continue; }
-      buf += c; i++;
-    }
-    flush(); return out;
-  }
-  function arg(inPlural) {
-    i++;
-    const m = /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*(?:,\s*(plural|select)\s*,)?\s*/.exec(src.slice(i));
-    if (!m) fail('bad placeholder');
-    i += m[0].length;
-    if (!m[2]) { if (src[i] !== '}') fail('expected }'); i++; return { arg: m[1] }; }
-    const cases = {};
-    for (;;) {
-      while (/\s/.test(src[i] || '')) i++;
-      if (src[i] === '}') { i++; break; }
-      const s = /^(=\d+|[A-Za-z_]+)\s*\{/.exec(src.slice(i)); if (!s) fail('bad case');
-      i += s[0].length; cases[s[1]] = msg(m[2] === 'plural' || inPlural);
-      if (src[i] !== '}') fail('unclosed case'); i++;
-    }
-    if (!cases.other) fail('a plural or select needs an other case');
-    return { arg: m[1], type: m[2], cases };
-  }
-  const ast = msg(false);
-  if (i < src.length) fail('unbalanced }');
-  return ast;
-}
-const args = (ast, set) => { ast.forEach((n) => { if (n.arg) { set.add(n.arg); if (n.cases) Object.values(n.cases).forEach((c) => args(c, set)); } }); return set; };
+// ---- the message formatter: game/i18n/msg.js (the v2.14 contract) parses; the site renders its AST as HTML (escaped text, <b>/<i>, HTML parameters)
+const MSG = require('../game/i18n/msg.js');
+const parse = (src) => MSG.parse(src);
+const args = (src, set) => { Object.keys(MSG.args(src)).forEach((k) => set.add(k)); return set; };
 const escText = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&lt;(\/?)(b|i)&gt;/g, '<$1$2>');
 const escAttr = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const H = (html) => ({ html }); // a parameter that is already HTML
 function render(ast, params, rules, attr, num) {
   let s = '';
+  const str = (v) => (attr ? escAttr(v) : String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'));
   for (const n of ast) {
     if (typeof n === 'string') s += attr ? escAttr(n.replace(/<\/?(b|i)>/g, '')) : escText(n);
-    else if (n.hash) s += new Intl.NumberFormat(rules).format(num);
-    else if (!n.type) {
-      const v = params[n.arg];
-      if (v == null) s += '{' + n.arg + '}';
+    else if (n.t === 'hash') s += new Intl.NumberFormat(rules).format(num);
+    else if (n.t === 'arg' || n.t === 'josa') {
+      const v = params[n.v];
+      if (v == null) s += '{' + n.v + '}';
       else if (typeof v === 'object') s += attr ? escAttr(v.html.replace(/<[^>]+>/g, '')) : v.html;
-      else s += attr ? escAttr(v) : String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    } else if (n.type === 'plural') {
-      const v = Number(params[n.arg]); const c = n.cases['=' + v] || n.cases[new Intl.PluralRules(rules).select(v)] || n.cases.other;
+      else s += str(v);
+      if (n.t === 'josa' && v != null) s += str(MSG.josa(typeof v === 'object' ? v.html.replace(/<[^>]+>/g, '') : String(v), n.a, n.b));
+    } else if (n.t === 'plural') {
+      const v = Number(params[n.v]); const c = n.opts['=' + v] || n.opts[MSG.pluralCat(v, rules)] || n.opts.other;
       s += render(c, params, rules, attr, v);
-    } else s += render(n.cases[params[n.arg]] || n.cases.other, params, rules, attr, num);
+    } else s += render(n.opts[String(params[n.v])] || n.opts.other, params, rules, attr, num);
   }
   return s;
 }
@@ -119,7 +81,7 @@ function pseudoText(s, kind) {
 }
 function pseudoAst(ast, kind) { // only the literal text changes; placeholders, select keys and <b>/<i> stay
   return ast.map((n) => typeof n === 'string' ? n.split(/(<\/?(?:b|i)>)/).map((p, k) => k % 2 ? p : pseudoText(p, kind)).join('')
-    : n.cases ? Object.assign({}, n, { cases: Object.fromEntries(Object.entries(n.cases).map(([k, c]) => [k, pseudoAst(c, kind)])) }) : n);
+    : n.opts ? Object.assign({}, n, { opts: Object.fromEntries(Object.entries(n.opts).map(([k, c]) => [k, pseudoAst(c, kind)])) }) : n);
 }
 
 // ---- data: the dogs (PawArt.DOGS: key, name, breed) and their site profiles (tools/site_dogs.js)
@@ -166,7 +128,7 @@ function table(L, en) {
     if (L.pseudo) ast = pseudoAst(ast, L.pseudo);
     else if (own[k] != null && own[k] !== '') {
       try {
-        const a = parse(String(own[k])), want = args(parse(en[k]), new Set(GLOBAL)), bad = [...args(a, new Set())].filter((x) => !want.has(x));
+        const a = parse(String(own[k])), want = args(en[k], new Set(GLOBAL)), bad = [...args(String(own[k]), new Set())].filter((x) => !want.has(x));
         if (bad.length) rep.broken.push(`${k}: unknown placeholder {${bad.join('}, {')}}`); else { ast = a; rep.translated++; }
       } catch (e) { rep.broken.push(`${k}: ${e.message}`); }
     } else if (L.code !== 'en') rep.missing.push(k);
@@ -245,7 +207,7 @@ function build(o) {
     for (const page of PAGES) {
       const blocks = {
         htmlattrs: L.code === 'en' ? '' : ` class="i18n s-${L.script}${L.pseudo ? ' pseudo' : ''}"`,
-        fontcss: L.code !== 'en' && fs.existsSync(fontCss) ? `<link rel="stylesheet" href="/fonts/i18n/${path.basename(fontCss)}">` : '',
+        fontcss: L.code !== 'en' && fs.existsSync(fontCss) && /@font-face/.test(fs.readFileSync(fontCss, 'utf8')) ? `<link rel="stylesheet" href="/fonts/i18n/${path.basename(fontCss)}">` : '',
         canonical: ORIGIN + urlFor(L, page.path),
         alternates: o.legacy || L.pseudo ? '' : '\n' + LANGS.map((x) => `<link rel="alternate" hreflang="${x.code}" href="${ORIGIN + urlFor(x, page.path)}">`).join('') + `<link rel="alternate" hreflang="x-default" href="${ORIGIN + page.path}">`,
         oglocale: L.code === 'en' ? '' : `<meta property="og:locale" content="${L.og}">`,
