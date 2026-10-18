@@ -55,7 +55,11 @@ NEW.forEach((k) => { ok(PA.dog(k, { pose: 'walk' }) === PA.dog(k, { pose: 'walk'
 console.log('-- heads, coats, mixes');
 // coat cells for each new key (the ART lanes fill their own rows from the GENES lane's SHADES; the merle odd-eye coat below runs for all)
 const COATS = {
-  dobie: [], corso: [], pitbull: [], minpin: [], // ART A
+  // ART A (V212.md 3; the starter coat is the plain render, so each row starts at the second coat)
+  dobie: [{ base: '#7A3A22', light: '#C8743A', dark: '#4E2414', white: 0 }, { base: '#6C7484', light: '#C88250', dark: '#4A5262', white: 0 }, { base: '#B08A6A', light: '#D49A62', dark: '#7E6048', white: 0 }],
+  corso: [{ base: '#7A7E86', light: '#8E929A', dark: '#3E424A', white: 0 }, { base: '#D2AE7A', light: '#E4C898', dark: '#2B2430', white: 0 }, { base: '#B8683A', light: '#CC8452', dark: '#2B2430', white: 0 }, { base: '#6A5240', light: '#7E6450', dark: '#1D1A22', white: 0, brindle: true }, { base: '#8A8078', light: '#9E948A', dark: '#3E424A', white: 0, brindle: true }],
+  pitbull: [{ base: '#2B2628', light: '#F2EEE6', dark: '#1D1A22', white: 0 }, { base: '#D7B07E', light: '#F4E6CE', dark: '#9A7A52', white: 0 }, { base: '#B8683A', light: '#F2E2CC', dark: '#7E4224', white: 0 }, { base: '#B08A5E', light: '#F2E6D2', dark: '#3A2E2E', white: 0, brindle: true }, { base: '#FBF6EC', light: '#FFFFFF', dark: '#E8DECB', white: 0 }, { base: '#B8683A', light: '#FFFFFF', dark: '#7E4224', white: 0.6 }, { base: '#B8A08E', light: '#E8DCCE', dark: '#7E7480', white: 0 }],
+  minpin: [{ base: '#2B2628', light: '#C8743A', dark: '#1D1A22', white: 0 }, { base: '#5E3424', light: '#C8743A', dark: '#3E2216', white: 0 }],
   lab: [], malamute: [], chow: [], stdpoodle: [], // ART B
   schnauzer: [], westie: [], yorkie: [], // ART C
   bichon: [{ base: '#FBF8F1', light: '#FFFFFF', dark: '#E2D9C8' }, { base: '#F3E2C2', light: '#FFF6E4', dark: '#D6BE94' }], // ART D: White, Cream (rare)
