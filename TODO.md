@@ -141,6 +141,7 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [ ] `NOSE_DX` has no rows for the seven v2.11 breeds (`akita`, `spitz`, `pom`, `afghan`, `dane`, `mastiff`, `gsd`), so their treat lure starts at the default x. `game/src/15b_trick_games.js`
 - [ ] The training lure position comes from `dogTo(0, 0, 1)`, not from each dog's size class. `game/src/15b_trick_games.js`
 - [ ] Four big dogs together overfill Shibuya and the Pixel 7 phone crop. `game/src/39_tokyo.js`, `game/src/37_roam.js`
+- [ ] Some old breeds' heads float off the body in a few poses (as the yorkie, schnauzer, pit bull and lab did before fix/v212-neck): the collie's howl, the shiba, chihuahua and beagle in happy, speak and howl. Fixing them changes old renders (needs the owner's go-ahead and a new `check_identical` baseline). `game/v212_neck_check.js` can measure them. `dogs/pawart_dogs.js`
 - [ ] The site's Playroom animates only the first 14 dogs (`KEYS` in `site/js/site.js`); the other 21 have profiles but never walk in it.
 - [x] The Worker change (`DC_LIM` { n: 115, breed: 35, outfit: 50 }) needs `bash tools/cf_api_deploy.sh` with the release. The coordinator deploys it with v2.12.
 
