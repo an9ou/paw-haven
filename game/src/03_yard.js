@@ -431,7 +431,7 @@ function secretDig() {
   if (busy || S.secretDug || S.mapPieces.length < 4) return;
   if (S.sleeping) { nope(`${NAME()} is asleep. Treasure can wait one nap.`); return; }
   busy = true; hideBubble(); dogTo(225, 30, 1, 0.9); renderDog('walk');
-  setTimeout(() => { renderDog('dig'); SFX.crunch(); }, 950); setTimeout(SFX.crunch, 1500); setTimeout(SFX.crunch, 2000);
+  setTimeout(() => { exTrig(D(), 'dig', { pose: 'dig', draw: false }); renderDog('dig'); SFX.crunch(); }, 950); setTimeout(SFX.crunch, 1500); setTimeout(SFX.crunch, 2000); // v2.13: the guilty face while it digs
   setTimeout(() => {
     S.secretDug = true; S.title = 'Treasure Legend'; S.inv.food['Golden Bone'] = (S.inv.food['Golden Bone'] || 0) + 3;
     if (!S.found['Golden Bone']) S.found['Golden Bone'] = { day: day(), route: 'yard' };
@@ -552,7 +552,7 @@ function petTick(wx, wy) {
   if (S.place === 'woods' && !pet.woods) { pet.woods = true; addStat('happy', 2); }
   if (S.place === 'hilltop' && !pet.hill) { pet.hill = true; addStat('happy', 3); toast('Hilltop breeze petting: +3 Happiness. The view helps.', 'good'); }
   if (outdoorsNow() && weatherNow() === 'rain' && !hasRaincoat() && !pet.wet) { pet.wet = true; toast('Wet dog smell intensifies.'); }
-  setTemp('pet', 900); fxText('♥', wx + RAND(-20, 20), wy - 10);
+  exTrig(D(), 'pet', { pose: 'pet', draw: false }); setTemp('pet', 900); fxText('♥', wx + RAND(-20, 20), wy - 10);
   Math.random() < 0.7 ? SFX.squeak() : SFX.boop(RAND(500, 800));
   const bondNow = !pet.bonded && pet.gain >= 10; // v2.10 ROAM: petting pets this dog only (the v2.8.4 whole-pack rub is gone)
   rmPetted(D());

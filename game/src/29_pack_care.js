@@ -143,7 +143,7 @@ function crPetAt(d, wx, wy) {
   s.gain += g; withDog(d, () => addStat('happy', g));
   fxText('♥', wx + RAND(-20, 20), wy - 10); Math.random() < 0.7 ? SFX.squeak() : SFX.boop(RAND(500, 800));
   if (now - s.at > 900 && cur.mode === 'yard') {
-    s.at = now; crFree(d); packNext[d.id] = Math.max(packNext[d.id] || 0, now + 1100); packPose[d.id] = 'pet'; rmPaint(d);
+    s.at = now; crFree(d); packNext[d.id] = Math.max(packNext[d.id] || 0, now + 1100); packPose[d.id] = 'pet'; exTrig(d, 'pet', { pose: 'pet', draw: false }); rmPaint(d);
     setTimeout(() => { if (packPose[d.id] === 'pet') { packPose[d.id] = 'happy'; if (cur.mode === 'yard' && !d.sleeping) rmPaint(d); } }, 900);
   }
   rmPetted(d);

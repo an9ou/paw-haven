@@ -29,7 +29,7 @@ const EX_COOL = 1500; // ms after a face ends before the same dog makes the next
 // play (the default), 3 a moment that must show (the end of ball play, a new place, a paw): a higher one replaces a face that is showing.
 // ms: the event's own time. cool: the cooldown after it. fav: the weight a favourite face starts from when the event's own list leaves it out
 const EX_EV = {
-  roam: { w: { curious: 4, sleepy: 3, blep: 3, sneeze: 2, zoomies: 1.5, dreamy: 1, surprised: 0.6, pout: 0.4 }, prio: 1, fav: 1.2 },
+  roam: { w: { curious: 4, sleepy: 3, blep: 3, sneeze: 2, zoomies: 1.5, dreamy: 1, surprised: 0.6, pout: 0.6 }, prio: 1, fav: 1.2 },
   pet: { w: { hearts: 5, dreamy: 3, blep: 2, wink: 1.5, sleepy: 0.6 }, cool: 2500 },
   feed: { w: { yum: 6, hearts: 1.5, blep: 1, sleepy: 0.6 }, fav: 0.5 },
   treat: { w: { yum: 5, hearts: 2.5, wow: 2, wink: 1 }, fav: 0.5 },
@@ -45,7 +45,7 @@ const EX_EV = {
 };
 // personality, part 1: the breed's trait (BREED_PERS, 36_personality.js) multiplies some faces
 const EX_TRAIT = {
-  aloof: { pout: 2, proud: 1.6, curious: 1.3, hearts: 0.6 }, beg: { yum: 2.2, hearts: 1.3, blep: 1.3 }, ball: { zoomies: 1.8, wow: 1.4 },
+  aloof: { pout: 2, proud: 1.6, curious: 0.8, hearts: 0.6 }, beg: { yum: 2.2, hearts: 1.3, blep: 1.3 }, ball: { zoomies: 1.8, wow: 1.4 },
   needy: { hearts: 2, dreamy: 1.4, pout: 1.3 }, chatty: { surprised: 1.5, wink: 1.3, zoomies: 1.3 }, follow: { hearts: 1.5, curious: 1.2 },
   guard: { surprised: 1.6, proud: 1.4, curious: 1.3 }, lazy: { sleepy: 2.4, dreamy: 1.8, zoomies: 0.4 }, burst: { zoomies: 2.2, sleepy: 1.4 },
   sniff: { curious: 2, sneeze: 1.8 }, polite: { proud: 1.6, wink: 1.3, guilty: 0.6 }, herd: { curious: 1.5, proud: 1.3 }, smile: { hearts: 1.5, wow: 1.4, blep: 1.2 },
@@ -78,7 +78,7 @@ const exKnown = (n) => typeof n === 'string' && Object.prototype.hasOwnProperty.
 function exOk(n, pose) { const A = exArt(); try { return !!A && exKnown(n) && !!A.exprOk(n, pose || 'idle'); } catch (e) { return false; } }
 
 /* ---------------- the face a dog shows now ---------------- */
-function exPhotoFace() { return EX.ph && exKnown(prefs.phFace) ? prefs.phFace : null; }
+function exPhotoFace() { return EX.ph && exKnown(prefs.phFace) && exOn() ? prefs.phFace : null; }
 function exNow(d, pose) {
   if (!d) return null; const p = pose || 'idle';
   const ph = exPhotoFace(); if (ph) return exOk(ph, p) ? ph : null; // photo mode: the picked face on every dog in the picture
@@ -123,6 +123,8 @@ function exWeights(d, ev, pose) {
 function exPick(d, ev, pose) { const l = exWeights(d, ev, pose).sort((a, b) => b[1] - a[1]); if (!l.length) return null; let s = exRand() * l.reduce((a, x) => a + x[1], 0); for (const x of l) { s -= x[1]; if (s <= 0) return x[0]; } return l[l.length - 1][0]; }
 function exTrig(d, ev, o) {
   o = o || {}; const E = EX_EV[ev]; if (!E || !d || d.sleeping || !exOn()) return null;
+  const now = performance.now(), c = EX.cur[d.id], on = c && now < c.until;
+  if (on ? (E.prio || 2) <= c.prio : now < (EX.cool[d.id] || 0)) return null; // a face showing or a cooldown: nothing to pick (a rub calls this on every move)
   const name = exPick(d, ev, o.pose); if (!name) return null;
   return exShow(d, name, o.ms || E.ms || 0, { prio: E.prio || 2, ev, cool: E.cool, draw: o.draw }) ? name : null;
 }
@@ -147,10 +149,11 @@ function exRoamTick(now) {
 function exBusy(d) { if (d === D()) return busy || /^(eat|walk)$/.test(rmLeadPose()[0] || ''); return packPose[d.id] === 'eat' || !!rmSt(d).tw; }
 function exWhenFree(d, fn, wait) { let n = 0; const go = () => { if (!S) return; if (exBusy(d) && n++ < 14) { setTimeout(go, 300); return; } fn(); }; setTimeout(go, wait || 0); } // up to about 4 s
 on('act:feed', (a) => {
-  if (!exOn() || !a) return; const f = FOOD_ALL.find((x) => x.n === a.name), ev = f && f.snack ? 'treat' : 'feed';
+  if (!exOn() || !a) return; const f = FOOD_ALL.find((x) => x.n === a.name), ev = SNACKS.includes(a.name) || TK_SNACKS.includes(a.name) || (f && f.snack) ? 'treat' : 'feed'; // the light foods (12_popups SNACKS) and the Nakamise treats
   (a.ids && a.ids.length ? a.ids : [S.activeId]).forEach((id, i) => { const d = dogById(id); if (d) exWhenFree(d, () => exTrig(d, ev, { pose: 'idle' }), 150 + i * 250); });
 });
-on('act:trick', (a) => { if (a && (a.grade === 'Great' || a.grade === 'Good')) exTrig(D(), 'trick', { pose: 'idle', draw: false }); }); // the trick pose is drawn straight after (15b tgApply)
+function exTrickPose(n) { try { const s = trickPose(n); return (s && s.pose) || 'idle'; } catch (e) { return 'idle'; } } // the pose the trick is drawn on (15_trick_training.js)
+on('act:trick', (a) => { if (a && (a.grade === 'Great' || a.grade === 'Good')) exTrig(D(), 'trick', { pose: exTrickPose(a.name), draw: false }); }); // the trick pose is drawn straight after (15b tgApply)
 
 /* ---------------- a new place: the first arrival of the day at a Tokyo place or the Mt. Fuji Lookout ---------------- */
 // Kept in memory only (no save field): the Japan day and the places seen, and the day's visit list (S.daily.visited) so a reload does not repeat it
@@ -191,7 +194,8 @@ function exHeadSVG(d, n) {
   if (EX.heads.size > 120) EX.heads.clear(); EX.heads.set(k, s); return s;
 }
 function exPickerHTML() {
-  if (!S || !exArt()) return ''; const d = D(), now = exKnown(prefs.phFace) ? prefs.phFace : '';
+  // no faces (the harness without prefs.exTest, no face art): no picker, the v2.12 photo screen
+  if (!S || !exOn()) return ''; const d = D(), now = exKnown(prefs.phFace) ? prefs.phFace : '';
   const b = (n) => `<button type="button" class="btn ex-face" data-exface="${n}" aria-pressed="${n === now}" aria-label="${n ? EX_WORDS[n] : 'Natural'}" title="${n ? EX_WORDS[n] : 'Natural'}"><span class="ex-fhead" aria-hidden="true">${exHeadSVG(d, n)}</span><span class="ex-fword">${n ? EX_WORDS[n] : 'Natural'}</span></button>`;
   return `<div class="ex-faces" role="group" aria-label="Face for every dog in the photo"><span class="ex-flbl">Face<b class="ex-fnow">${now ? EX_WORDS[now] : 'Natural'}</b></span><div class="ex-frow">${[''].concat(EX_LIST).map(b).join('')}</div></div>`;
 }

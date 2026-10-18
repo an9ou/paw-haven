@@ -12,9 +12,12 @@ require('./test_lib').run('v213_expr', async (t) => {
   const fresh = () => X(() => { const x = window.__paw.ex; window.__paw.S.dogs.forEach((d) => x.clear(d.id)); x.cool(); x.clearLog(); x.rnd(null); });
 
   sec('1. old suites: without prefs.exTest there are no faces');
-  await t.newGame({}, { coins: 2000, bond: { level: 8, pts: 2000 } });
+  await t.newGame({ prefs: { phFace: 'hearts' } }, { coins: 2000, bond: { level: 8, pts: 2000 } });
   ok(await X(() => !!window.__paw.ex && window.__paw.ex.on() === false), 'exOn() is false under the harness without prefs.exTest');
   ok(await X(() => window.__paw.ex.show(window.__paw.S.dog.id, 'hearts', 2000) === false && !document.querySelector('#view svg[class*="pa-ex-"]')), 'exShow does nothing: no pa-ex- class in the scene');
+  await X(() => window.__paw.ph.open()); await t.until(() => window.__paw.ph.ready(), null, 15000);
+  ok(await X(() => !document.querySelector('.ex-faces') && !window.__paw.ph.svg().includes('pa-ex-') && window.__paw.ex.photo() === null), 'photo mode is the v2.12 screen: no face picker, no face in the picture');
+  await X(() => window.__paw.ph.close());
   await t.ctx.close();
 
   sec('2. the personality tables');
@@ -36,6 +39,7 @@ require('./test_lib').run('v213_expr', async (t) => {
     ok(ms > 1.5 * oS && ms >= 0.4, `${e}: the English Mastiff is sleepy: sleepy and dreamy ${(ms * 100).toFixed(0)}% (others at most ${(oS * 100).toFixed(0)}%)`);
     ok(sp > 1.5 * oW && sp >= 0.3, `${e}: the Japanese Spitz shows off: proud, wink and wow ${(sp * 100).toFixed(0)}% (others at most ${(oW * 100).toFixed(0)}%)`);
   }
+  const shr = await W('shiba', 'roam'); ok(share(shr, DRAMA) > 2 * (shr.curious || 0), `roam: the Shiba's pout, surprised and guilty lead (${(share(shr, DRAMA) * 100).toFixed(0)}%, curious ${((shr.curious || 0) * 100).toFixed(0)}%)`);
   const only = async (e, l) => { const w = await W('pitbull', e); return Object.keys(w).every((n) => l.includes(n)) && Object.keys(w).length > 0; };
   ok(await only('cardPaw', ['hearts', 'wink']) && await only('ballEnd', ['pout']) && await only('dig', ['guilty']) && await only('newPlace', ['wow']), 'fixed events: a paw = hearts or wink, the end of ball play = pout, digging = guilty, a new place = wow');
   ok(Math.abs(Object.values(await W('chow', 'feed')).reduce((a, b) => a + b, 0) - 1) < 1e-9, 'weights are shares (they add up to 1)');
