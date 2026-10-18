@@ -395,3 +395,14 @@ Never hit (the `allow` list, also used as negative tests): 「สายพัน
 - เรา for dogs and Gerald: natural, or would หนู fit some small breeds better?
 - ช่างโฮ่ง (Barkitecture), คัพเค้กหมาน้อย (Pupcake), คาเฟ่พัพปุชิโน่: check the puns.
 - ๆ spacing and the sentence-space rule in long lines on the phone.
+
+## Site
+
+doodledoggo.app in Thai (`site/i18n/th.json`, v2.14 phase 1b, 714 keys). Choices: no full stops (sentences end with a space); the UI and the privacy page are neutral, with คุณ only where "you" is needed; dogs speak with เรา and call the player เธอ. The privacy page's date line says the English version counts if the two differ. Eight long transliterated dog names carry U+200B break hints (and a U+2060 word joiner in เมอแรงค์) so the narrow name chips on /dogs break between syllables (without them the browser broke ซาลาเป|า and เมอแรง|ค์). The names read the same.
+
+- TODO(native): the dog quotes and trait lines (puns: ปุยเมฆ's 「ทุกฤดูใบไม้ผลิ ขนร่วงออกมาได้อีกหนึ่งตัว」, เกี๊ยว's 「จุกผมชี้ฟ้า ตัวนอนแผ่หลา」, เพรทเซล's 「ทรงผมเลือกได้ แต่ศักดิ์ศรีเลือกไม่ได้」): natural and funny?
+- TODO(native): the playroom barks (หึ, ฟืด, ซิ่ง!, ฟุดฟิดๆ, โธ่, แหะๆ, ของเรา!): the right sounds for Thai readers?
+- TODO(native): ผู้เยี่ยมชม for "guest" play on the privacy page, and ซ่อนการ์ดนี้ for the game button "Hide this card" (must match the game strings in phase 2).
+- TODO(native): profile.pup_alt / pup_cap 「น้อง{name} ตอนเป็นลูกหมา」 (Mochi as a puppy) for "a Mochi puppy".
+- TODO(native): the browser's Thai line breaker splits compounds in body text (ลูก|หมา, รับ|เลี้ยง, แสน|อบอุ่น) at phone width: acceptable?
+- TODO(native): สุขุม, หัวไว, แสบซ่า, เจ้ากี้เจ้าการ as one-word traits; 72 กม./ชม. for the Greyhound's 45 mph.

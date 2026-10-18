@@ -308,3 +308,13 @@ Two sentences, short, kind, true.
 | `shihtzu` | Shih Tzu |
 
 <!-- table:end -->
+
+## Site
+
+doodledoggo.app in Indonesian (`site/i18n/id.json`, v2.14 phase 1b, 714 keys), kamu everywhere including the privacy page. "wobbly" is "mencong" throughout; the dog names stay English; the privacy page's date line says the English version counts if the two differ. The profile heading reads "Mochi si Shiba Inu" (profile.title_type "si {breed}").
+
+- TODO(native): "mencong" for the wobbly crayon look (or "miring-miring", "goyang"); the tagline drops it to stay short: "Adopsi anak anjing krayon untuk disayang".
+- TODO(native): the barks and sounds: "grok." for the Pug's and Frenchie's snort, "wusss!" (Greyhound), "yaah." (aww), "Guk!" for the Pomeranian's yip.
+- TODO(native): "Kenali anjingnya" (nav chip) next to "Kenalan dengan anjing" (titles); "pupcake", "kibble" and "pate salmon" kept as loanwords in the loves lists.
+- TODO(native): "{name} versi anak anjing" for "a Mochi puppy"; "Stroller dan troli"; "Di kuil Shinto dan kuil Buddha" for shrines and temples.
+- TODO(native): puns: "Rumahku, istana saljuku" (Home, sweet snowy home), "Kuncir naik. Badan rebahan." (Shih Tzu), "Potong rambut boleh dilewati. Harga diri jangan." (Poodle).
