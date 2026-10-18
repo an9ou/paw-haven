@@ -56,7 +56,16 @@ console.log('-- heads, coats, mixes');
 // coat cells for each new key (the ART lanes fill their own rows from the GENES lane's SHADES; the merle odd-eye coat below runs for all)
 const COATS = {
   dobie: [], corso: [], pitbull: [], minpin: [], // ART A
-  lab: [], malamute: [], chow: [], stdpoodle: [], // ART B
+  // ART B (section 3, starter coats left out: they draw the plain dog): lab Black, Chocolate; malamute Black, Red, Sable (all and white), White;
+  // chow Black, Blue, Cinnamon, Cream; stdpoodle White, Apricot, Chocolate, Cream, Silver, Red, Blue, Parti
+  lab: [{ base: '#2B2430', light: '#4A3F4E', dark: '#1D1A22' }, { base: '#6E4430', light: '#8E5E40', dark: '#4E2E1E' }],
+  malamute: [{ base: '#3A3440', light: '#FFFFFF', dark: '#24202A' }, { base: '#B8683A', light: '#FFFFFF', dark: '#8A4A26' }, { base: '#9A7A58', light: '#FFFFFF', dark: '#5E4632' },
+    { base: '#FBF6EC', light: '#FFFFFF', dark: '#E8DECB' }],
+  chow: [{ base: '#2B2430', light: '#4A3F4E', dark: '#1D1A22' }, { base: '#6E7F96', light: '#8C9BB0', dark: '#55657A' }, { base: '#C8945E', light: '#E2B888', dark: '#9A6A3E' },
+    { base: '#F2E2C4', light: '#FFF8EC', dark: '#D9C29E' }],
+  stdpoodle: [{ base: '#F7F1E6', light: '#FFFFFF', dark: '#E2D6C2' }, { base: '#F2C48F', light: '#FBE2C0', dark: '#D9A066' }, { base: '#6E4430', light: '#8E5E40', dark: '#4E2E1E' },
+    { base: '#EFD8B0', light: '#FAEEDA', dark: '#D2B486' }, { base: '#A3AAB5', light: '#C6CBD2', dark: '#7F8794' }, { base: '#B8582E', light: '#D47E52', dark: '#8A3E1C' },
+    { base: '#6E7F96', light: '#8C9BB0', dark: '#55657A' }, { base: '#2B2430', light: '#4A3F4E', dark: '#1D1A22', white: 0.7 }],
   schnauzer: [], westie: [], yorkie: [], // ART C
   bichon: [], maltese: [], shihtzu: [], // ART D
 };

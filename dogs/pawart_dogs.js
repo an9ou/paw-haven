@@ -227,10 +227,64 @@ SP.pitbull={...SP.frenchie,name:'Peaches',breed:'Pit Bull',personality:'A wiggly
 SP.minpin={...SP.chihuahua,name:'Jellybean',breed:'Miniature Pinscher',personality:'A tiny, fearless bundle of energy. Prances everywhere.',joke:'I am not small. Everything else is big.'};// PLACEHOLDER (ART A)
 /* end v2.12 ART A */
 /* v2.12 ART B: lab, malamute, chow, stdpoodle */
-SP.lab={...SP.golden,name:'Butter',breed:'Labrador Retriever',personality:'Friendly, food-loving and always ready for a swim.',joke:'Is it dinner? It feels like dinner.'};// PLACEHOLDER (ART B)
-SP.malamute={...SP.husky,name:'Maple',breed:'Alaskan Malamute',personality:'A big fluffy sled dog who talks back. Loves snow and digging.',joke:'Woo-woo. That means I disagree.'};// PLACEHOLDER (ART B)
-SP.chow={...SP.samoyed,name:'Bao',breed:'Chow Chow',personality:'A dignified fluffy lion with a blue tongue. Picks friends carefully.',joke:'I am not grumpy. This is just my face.'};// PLACEHOLDER (ART B)
-SP.stdpoodle={...SP.poodle,name:'Madeleine',breed:'Standard Poodle',personality:'A tall, clever, curly athlete. Learns tricks before you teach them.',joke:'I am the big poodle. The small one is my cousin.'};// PLACEHOLDER (ART B)
+/* Their extras (tailFn: the lab's otter tail and the chow's curl; ruffFn: the chow's lion mane; faceFn: the chow's deep-set eyes and blue-black
+   tongue) are new spec fields, so no older dog takes those branches. The malamute uses the v2.11 plume, plumeUp and light ruff; the standard
+   poodle the v2.5 curls, curly ears, topknot and pom tail on a tall, leggy frame with the v2.11 neck */
+function taperB(C,w0,w1,lump){// a tapered tail outline along the centre line C (tail-local px): w0 at the root, w1 at the tip, lump = a fluffy edge
+  const n=C.length,lt=[],rt=[];C.forEach((p,i)=>{const t=i/(n-1),a=C[Math.max(0,i-1)],b=C[Math.min(n-1,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],m=Math.hypot(dx,dy)||1,w=(w0+(w1-w0)*t)*(lump?(i%2?1.16:.92):1);
+   lt.push([p[0]-dy/m*w,p[1]+dx/m*w]);rt.push([p[0]+dy/m*w,p[1]-dx/m*w])});return lt.concat(rt.reverse())}
+function otterTail(h,s,L,map,col){// lab: the otter tail, thick and round at the root, tapering to a blunt point, carried level
+  const C=dense([[0,0],[-12,-5],[-24,-7],[-35,-6],[-43,-2]],false,4);
+  h.shape(map(taperB(C,9.6,2.6)),col,{step:30,amp:.7,w:3.6});h.line(map([[-8,-1],[-19,-4],[-29,-4]]),2,curlCol(col),.3)}
+function chowTail(h,s,L,map,col){// chow: a short fat curl lying on the back, a lumpy fluffy edge, two fur strokes
+  const C=dense([[0,0],[-5,-16],[0,-30],[13,-37],[26,-34],[30,-24],[23,-18],[16,-22]],false,3.5);
+  h.shape(map(taperB(C,9.5,4.2,1)),col,{step:30,amp:.8,w:3.6});
+  const K=curlCol(col);h.line(map([[-3,-8],[-3,-20],[5,-31]]),2.2,K,.4);h.line(map([[13,-31],[22,-29],[25,-23]]),2,K,.3)}
+function chowRuff(h,s,L,HT){// chow: the lion mane, a big scalloped ring of fur round the whole head and under the chin, fur ticks on the rim
+  const hx=s.head.rx,hy=s.head.ry,col=s.hcol,cl=q=>[q[0],Math.min(q[1],GY-1)],cx=-hx*.16,cy=hy*.24,rx=hx*1.4,ry=hy*1.36;
+  h.shape(scallop(cx,cy,rx,ry,12,.16).map(HT).map(cl),col,{step:30,amp:.8,w:3.6});h.crayon(rx*.9,ry*.9,q=>HT([cx+q[0],cy+q[1]]),col,5);
+  const K=curlCol(col);[200,232,128,150,96].forEach(a=>{const t=a*D2R,x=cx+Math.cos(t)*rx*.86,y=cy+Math.sin(t)*ry*.86,u=[Math.cos(t),Math.sin(t)];
+   h.line([[x-u[1]*3-u[0]*4,y+u[0]*3-u[1]*4],[x,y],[x+u[1]*3-u[0]*4,y-u[0]*3-u[1]*4]].map(HT).map(cl),2,K,.3)})}
+const CHOW_TG='#4A4E8A',CHOW_TK='#26254A';
+function chowFace(h,s,L,HT,a0){// chow: the blue-black tongue (every coat, every mouth), then heavy fur lids over small deep-set eyes
+  for(let i=a0;i<h.acc.length;i++)if(h.acc[i].indexOf('#FF6F9A')>=0||h.acc[i].indexOf('#C9406A')>=0)h.acc[i]=h.acc[i].split('#FF6F9A').join(CHOW_TG).split('#C9406A').join(CHOW_TK);
+  const f=L.face,m=f.eyes;if(/^(happy|closed|x)$/.test(m))return;
+  const hx=s.head.rx,hy=s.head.ry,e0=f.e0||[-.1,-.04],e1=f.e1||[.42,-.1],er=s.eyes,K=curlCol(s.hcol),lo=m==='hope'?.5:m==='down'||m==='sad'?.05:.2;
+  [[e0,er[0]],[e1,er[1]]].forEach(([e,r])=>{const [x,y]=HT([hx*e[0],hy*e[1]]),ly=y-r*lo;
+   h.acc.push(`<path d="M${R1(x-r-1.8)} ${R1(ly)}L${R1(x-r-1.8)} ${R1(y-r-3.2)}L${R1(x+r+1.8)} ${R1(y-r-3.2)}L${R1(x+r+1.8)} ${R1(ly)}Z" fill="${s.hcol}"/>`);
+   h.line([[x-r-2.4,ly+.6],[x,ly-1],[x+r+2.4,ly+.6]],3.2,lum(s.hcol)<.32?'#CFC6C0':INK);h.line([[x-r*1.5,y-r*1.25],[x,y-r*1.9],[x+r*1.5,y-r*1.3]],2.2,K,.4)})}
+SP.lab={name:'Butter',breed:'Labrador Retriever',personality:'Friendly, food-loving and always ready for a swim.',joke:'Is it dinner? It feels like dinner.',
+  col:'#F0CC84',hcol:'#F0CC84',light:'#F9E6B6',dark:'#D9A458',ear:'#D9A458',body:{x:108,y:140,rx:50,ry:27,lop:.03},head:{x:163,y:102,rx:31,ry:28},
+  legs:{h:-31,f:28,w:10.6},ears:'flop2',earS:.9,tail:'otter',tailFn:otterTail,eyes:[6,5.6],
+  face:{eyes:'open',mouth:'tongue',e0:[-.14,-.18],e1:[.36,-.22],nose:[1.42,.12],snout:1,snoutL:1.42,brow:'soft',browCol:'#CFC6C0',look:[[.25,.1],[.25,.1]]},
+  marks:(h,B,Hd,s)=>{const b=s.body,hx=s.head.rx,hy=s.head.ry,K=curlCol(s.col);
+   h.shape([[b.rx*.52,-b.ry*.1],[b.rx*.88,-b.ry*.36],[b.rx*.93,b.ry*.5],[b.rx*.6,b.ry*.84],[b.rx*.4,b.ry*.42]].map(B),mix(s.light,s.col,.35),{noline:1,ox:0,oy:0});
+   [[-.62,-.55],[-.2,-.7],[.22,-.62]].forEach(q=>h.line([[b.rx*q[0],b.ry*q[1]],[b.rx*(q[0]+.07),b.ry*(q[1]+.18)]].map(B),2,K,.3));
+   h.line([[hx*.02,-hy*.62],[hx*.14,-hy*.52],[hx*.26,-hy*.62]].map(Hd),2,K,.3)}};
+SP.malamute={name:'Maple',breed:'Alaskan Malamute',personality:'A big fluffy sled dog who talks back. Loves snow and digging.',joke:'Woo-woo. That means I disagree.',
+  col:'#9C9AA4',hcol:'#9C9AA4',light:W,dark:'#5E5A68',body:{x:104,y:134,rx:56,ry:31,lop:.04},head:{x:164,y:96,rx:36,ry:31},
+  legs:{h:-33,f:30,w:12.6,sock:W},ears:'prick',earS:.6,earRound:2,tail:'plume',plumeUp:1,tsc:1.14,ruff:1.12,ruffK:'light',eyes:[5.6,5.2],
+  face:{eyes:'open',mouth:'tongue',e0:[-.16,-.14],e1:[.38,-.18],nose:[1.3,.12],snout:1,snoutL:1.3,brow:'soft',pupil:.74},
+  marks:(h,B,Hd,s)=>{const b=s.body,hx=s.head.rx,hy=s.head.ry,K=s.dark;
+   h.shape([[-b.rx*.92,-b.ry*.25],[-b.rx*.62,-b.ry*.98],[b.rx*.1,-b.ry*1.04],[b.rx*.66,-b.ry*.82],[b.rx*.5,-b.ry*.3],[-b.rx*.2,-b.ry*.4],[-b.rx*.7,-b.ry*.1]].map(B),mix(K,s.col,.45),{noline:1,ox:0,oy:-1});
+   h.shape([[-b.rx*.75,b.ry*.42],[b.rx*.2,b.ry*.5],[b.rx*.82,b.ry*.05],[b.rx*1.02,b.ry*.3],[b.rx*.85,b.ry*.95],[-b.rx*.55,b.ry*.98]].map(B),s.light,{noline:1});
+   [-.7,-.42,-.14,.14,.4].forEach((x,i)=>h.line([[b.rx*x,-b.ry*(.95-(i%2)*.04)],[b.rx*(x+.05),-b.ry*.62]].map(B),2.2,mix(K,s.col,.2),.4));
+   h.shape([[-hx*.82,-hy*.42],[-hx*.42,-hy*.88],[hx*.12,-hy*1.0],[hx*.66,-hy*.78],[hx*.82,-hy*.36],[hx*.2,-hy*.5],[-hx*.4,-hy*.38]].map(Hd),mix(K,s.hcol,.4),{noline:1,ox:0,oy:0});
+   h.shape([[-hx*.94,hy*.12],[-hx*.52,hy*.06],[-hx*.32,hy*.2],[hx*.0,hy*.06],[hx*.04,-hy*.32],[hx*.08,-hy*.9],[hx*.2,-hy*.9],[hx*.24,-hy*.32],[hx*.3,hy*.02],[hx*.6,hy*.06],[hx*.94,hy*.0],[hx*.96,hy*.5],[hx*.75,hy*.86],[hx*.1,hy*.98],[-hx*.62,hy*.82],[-hx*.9,hy*.5]].map(Hd),s.light,{noline:1,ox:0,oy:0})}};
+SP.chow={name:'Bao',breed:'Chow Chow',personality:'A dignified fluffy lion with a blue tongue. Picks friends carefully.',joke:'I am not grumpy. This is just my face.',
+  col:'#D2894A',hcol:'#D2894A',light:'#EBB477',dark:'#A9652E',fluff:1,hfluff:1,body:{x:110,y:146,rx:43,ry:27},head:{x:160,y:106,rx:30,ry:27},
+  legs:{h:-27,f:25,w:11.8},ears:'prick',earS:.72,earRound:2,tail:'chowcurl',tailFn:chowTail,ruff:1,ruffFn:chowRuff,faceFn:chowFace,eyes:[4.4,4.2],
+  face:{eyes:'open',mouth:'tongue',e0:[-.12,-.14],e1:[.38,-.18],nose:[1.2,.22],snout:2,snoutL:1.22,snoutD:.66,pupil:.8},
+  marks:(h,B,Hd,s)=>{const b=s.body,hx=s.head.rx,hy=s.head.ry,K=curlCol(s.col);h.crayon(b.rx,b.ry,B,s.dark,7);
+   [[-.6,-.42],[-.08,-.64],[.4,-.4],[-.7,.3],[.12,.45]].forEach(q=>{const x=q[0]*b.rx,y=q[1]*b.ry;h.line([[x-5,y-2],[x-2,y+3],[x+1,y-2],[x+4,y+3]].map(B),2.2,K,.4)});
+   h.shape(circ(hx*.8,hy*.36,hx*.36,hy*.26,9).map(Hd),mix(s.light,s.hcol,.3),{noline:1,ox:0,oy:0})}};
+SP.stdpoodle={name:'Madeleine',breed:'Standard Poodle',personality:'A tall, clever, curly athlete. Learns tricks before you teach them.',joke:'I am the big poodle. The small one is my cousin.',
+  col:'#2B2430',hcol:'#2B2430',light:'#4A3F4E',dark:'#1D1A22',fluff:1,hfluff:1,body:{x:106,y:118,rx:44,ry:24},head:{x:160,y:74,rx:25,ry:24},neck:1,
+  legs:{h:-28,f:25,w:7,pom:1},ears:'flopL',curlEar:1,topknot:1,tail:'pom',tsc:1.25,eyes:[5.6,5],
+  face:{eyes:'smug',mouth:'smile',e0:[-.1,-.16],e1:[.34,-.2],nose:[1.72,.12],snout:1,snoutL:1.72,tilt:-10,browCol:'#CFC6C0'},
+  marks:(h,B,Hd,s)=>{const b=s.body,hx=s.head.rx,hy=s.head.ry,c=curlCol(s.col),c2=curlCol(s.hcol);
+   [[-.66,-.34],[-.1,-.56],[.45,-.42],[.7,.05],[-.36,.28],[.24,.36],[-.84,.02],[.0,-.06]].forEach((q,i)=>h.line(spiral(b.rx*q[0],b.ry*q[1],.8,5,1.1,8,i*1.3).map(B),2.6,c,.7));
+   [[-.52,-.42],[-.08,-.66],[-.62,.12],[-.28,.42]].forEach((q,i)=>h.line(spiral(hx*q[0],hy*q[1],.5,3.8,1.25,8,i*1.7).map(Hd),2,c2,.3))}};
 /* end v2.12 ART B */
 /* v2.12 ART C: schnauzer, westie, yorkie */
 SP.schnauzer={...SP.mutt,name:'Muesli',breed:'Miniature Schnauzer',personality:'Bearded, bossy and very alert. Reports every leaf.',joke:'The beard is for wisdom. And soup.'};// PLACEHOLDER (ART C)
@@ -431,7 +485,7 @@ function drawTail(h,s,L,B){
      h.line(map([[-16,30],[-19,40],[-16,47]]),2,curlCol(col),.3);break}// v2.11 gsd: long, bushy, carried low, darker on top
    case 'low':h.tube(map([[0,0],[-8,11],[-13,24],[-12,38]]),8.4,col);break;// v2.11 mastiff: thick and hanging
   }  if(s.tailTip){const E={ring:[-1,-33],brush:[-19,52],low:[-12,38],plume:PLUME_TIP,pom:[-9,-29],spiral:[-18,-46],nub:[-8,-6],wiggle:[-28,-42],thin:[-17,-36],fluffy:[-24,-46],line:[-22,-44],sickle:[3,-27],curl:[-7,-13],whip:[-14,50]}[s.tail];if(E&&s.tail!=='fluffy'){const t=map([E])[0];h.dot(t[0],t[1],s.tail==='spiral'?6:4.5,s.tail==='spiral'?6:4.5,W)}}
-
+  if(s.tailFn)s.tailFn(h,s,L,map,col);// v2.12 ART B: a breed's own tail drawing (new spec field tailFn)
 }
 /* v2.11: the plumed tail (spitz, pom) and the neck ruff (spitz, pom, a little on the akita) */
 const PLUME=[[0,0],[-5,-12],[-3,-25],[6,-35],[20,-39],[33,-34],[40,-25]],PLUME_TIP=[40,-25];
@@ -442,6 +496,7 @@ function drawPlume(h,s,L,map,col){// a fat fluffy plume up off the rump and curl
   h.shape(map(lt.concat(rt.reverse())),col,{step:30,amp:.8,w:3.6});
   const K=curlCol(col);[[.18,.62,-2],[.4,.92,3]].forEach(q=>{const a=Math.floor(q[0]*(n-1)),b=Math.floor(q[1]*(n-1));h.line(map(C.slice(a,b).map(p=>[p[0]+q[2],p[1]+q[2]*.5])),2.2,K,.4)})}
 function drawRuff(h,s,L,HT){// a big scalloped mane round the neck, behind the head (the head is drawn over most of it)
+  if(s.ruffFn)return s.ruffFn(h,s,L,HT);// v2.12 ART B: a breed's own mane (new spec field ruffFn)
   const hx=s.head.rx,hy=s.head.ry,k=s.ruff,col=s.ruffK&&s[s.ruffK]?s[s.ruffK]:s.hcol,cl=q=>[q[0],Math.min(q[1],GY-1)];
   h.shape(scallop(-hx*.16,hy*.6,hx*.98*k,hy*.66*k,9,.2).map(HT).map(cl),col,{step:30,amp:.8,w:3.6});
   const K=curlCol(col);[[-.7,.95],[-.2,1.12],[.3,1.02]].forEach(q=>{const x=hx*q[0]*k,y=hy*q[1]*k;h.line([[x-3,y-5],[x,y],[x+3,y-5]].map(HT).map(cl),2,K,.3)})}
@@ -1173,7 +1228,7 @@ function frame(key,s,pose,outfit,k,seed){
   if(s.pat)s.pat.head(h,HT,L);
   if(s.spk)glitter(h,s,HT,k,1);
   if(L.mud){const hx=s.head.rx,hy=s.head.ry;h.shape(circ(-hx*.45,-hy*.45,hx*.18,hy*.15,7,.2).map(HT),'#7A4A22',{noline:1,ox:0,oy:0})}
-  drawFace(h,s,L,HT);
+  {const a0=h.acc.length;drawFace(h,s,L,HT);const ff=(s.mixHead?SP[s.mixHead]:s).faceFn;if(ff)ff(h,s,L,HT,a0)}// v2.12 ART B: the head breed's own face extras (new spec field faceFn)
   if(eyes&&pose!=='sleep'&&!sheet)(eyes==='Explorer Goggles'?drawGoggles:drawGlasses)(h,s,L,HT);
   if(body==='Cozy Hoodie'&&/^(cold|sleep)$/.test(pose))drawHood(h,s,L,HT);
   if(!sheet)drawEars(h,s,L,HT,true);
@@ -1309,7 +1364,7 @@ function dogHead(key,o={}){
   key=SP[key]?key:'shiba';const SF=specFor(key,o),s=SF.s,h=kit(rng(hashS('pahead'+key))),L=layout(s,'idle',0),HT=T(L.hT);
   if(s.ears!=='giant')L.face.eyes=s.face.eyes;if(s.pup===2){L.face.eyes='closed';L.ears='sleep';L.face.mouth='smile'}
   if(s.pup)h.setJ(s.pup===2?1.25:1.15);
-  if(s.ruff)drawRuff(h,s,L,HT);drawEars(h,s,L,HT,false);if(s.topknot===2)drawTopknot(h,s,HT);h.shape(headPts(s).map(HT),s.hcol,{step:(s.hfluff===undefined?s.fluff:s.hfluff)?30:11});if(s.headMarks)s.headMarks(h,HT,s);if(s.pat)s.pat.head(h,HT,L);drawFace(h,s,L,HT);drawEars(h,s,L,HT,true);
+  if(s.ruff)drawRuff(h,s,L,HT);drawEars(h,s,L,HT,false);if(s.topknot===2)drawTopknot(h,s,HT);h.shape(headPts(s).map(HT),s.hcol,{step:(s.hfluff===undefined?s.fluff:s.hfluff)?30:11});if(s.headMarks)s.headMarks(h,HT,s);if(s.pat)s.pat.head(h,HT,L);{const a0=h.acc.length,ff=(s.mixHead?SP[s.mixHead]:s).faceFn;drawFace(h,s,L,HT);if(ff)ff(h,s,L,HT,a0)}drawEars(h,s,L,HT,true);
   let b=h.bb;if(NEWK.test(s.mixHead||key)){if(s.ears==='bat'){const hd=s.head,c=HT([0,0]);b=[c[0]-hd.rx*1.4,c[1]-hd.ry*1.8,c[0]+hd.rx*1.4,c[1]+hd.ry*1.08]}}// v2.5 heads fit by what was drawn (their ears and muzzles differ from the fixed boxes below)
   else if(/^(giant|bat)$/.test(s.ears)){const hd=s.head,c=HT([0,0]);b=[c[0]-hd.rx*1.25,c[1]-hd.ry*2.1,c[0]+hd.rx*1.25,c[1]+hd.ry*1.05]}else if(s.face.snoutL){const hd=s.head,c=HT([0,0]);b=[c[0]-hd.rx*1.25,c[1]-hd.ry*1.7,c[0]+hd.rx*1.75,c[1]+hd.ry*1.25]}
   const w=b[2]-b[0],ht=b[3]-b[1],sc=Math.min(86/w,86/ht),cx=(b[0]+b[2])/2,cy=(b[1]+b[3])/2;
