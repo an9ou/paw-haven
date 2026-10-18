@@ -244,13 +244,17 @@ const req = (m) => { for (const r of [].concat((process.env.NODE_PATH || '').spl
       ok(!bad.length && keys.length > 600, `en.json: ${keys.length} keys, every one a valid message ${bad.join(' ')}`);
       ok(BREEDS.every((k) => ['name', 'quote', 'personality', 'trait1', 'trait4_line', 'play', 'love1', 'love3'].every((f) => en[`dog.${k}.${f}`])) && SCENE_KEYS.every((k) => en['play.bark.' + k]), 'en.json has every dog profile (35) and every playroom bark');
       ok(Object.keys(en._notes).every((k) => k in en) && ['home.dogs.lead', 'profile.jpline', 'card.alt', 'common.play'].every((k) => en._notes[k]), 'translator notes (_notes) for the tricky keys, each naming a real key');
+      const built = I18N.build({});
+      const hits = built.reports.filter((x) => x.bans && x.bans.length).map((x) => `${x.lang}: ${x.bans.join(', ')}`);
+      ok(!hits.length, 'the translated text keeps each language\'s word rules (game/i18n/glossary/<lang>.json bans) ' + hits.join(' | '));
+      ok(built.reports.every((x) => !x.drift || !x.drift.length), 'en.json personalities match the game (PawArt.DOGS)');
       for (const L of I18N.LANGS.concat(I18N.PSEUDO)) {
         const { rep, own } = I18N.table(L);
         if (L.code !== 'en' && !L.pseudo) console.log(`  .. ${L.code}: ${rep.translated}/${rep.total} keys translated${rep.complete ? ', marked complete' : ''}`);
         ok(!rep.broken.length && !rep.unknown.length, `${L.code}: no broken messages or unknown keys ${rep.broken.concat(rep.unknown).slice(0, 3).join(' | ')}`);
         if (rep.complete) ok(!rep.missing.length, `${L.code} is marked complete: no missing keys ${rep.missing.slice(0, 5).join(' ')}`);
-        // the dog count rule in every language: the number always comes from {count}/{countWord}, so it follows the breed list
-        const counts = I18N.COUNT_KEYS.map((k) => I18N.fmt(L.code, k)), typed = I18N.COUNT_KEYS.filter((k) => own[k] && !/\{count(Word)?\}/.test(own[k]));
+        // the dog count rule in every language: the number always comes from {count}, so it follows the breed list
+        const counts = I18N.COUNT_KEYS.map((k) => I18N.fmt(L.code, k)), typed = I18N.COUNT_KEYS.filter((k) => own[k] && !/\{count[,}]/.test(own[k]));
         ok(counts.every((c) => c.includes(String(BREEDS.length)) || c.includes('Thirty-five')) && !typed.length, `${L.code}: every dog count says ${BREEDS.length} (from {count}) ${typed.join(' ')}`);
       }
     }

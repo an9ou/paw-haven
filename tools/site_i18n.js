@@ -4,6 +4,7 @@
 //   node tools/site_i18n.js --report     the full report: every missing, unknown or broken key per language
 //   node tools/site_i18n.js --pseudo     also writes the test-only pseudo-locales site/xx/ (accented, ~40% longer) and site/xx-cjk/ (CJK-like, no spaces)
 //   node tools/site_i18n.js --check      writes nothing; exits 1 when the committed English pages differ from what the templates make
+//   node tools/site_i18n.js --title-keys prints the keys drawn in the hand face (headings, buttons, names), for tools/i18n_fonts.js --title-keys
 //   node tools/site_i18n.js --legacy     English only, without the v2.14 additions (language menu, hreflang, the language script): must equal the v2.12 pages byte for byte
 // Strings: site/i18n/en.json is the source (keys, _notes for translators); site/i18n/<lang>.json (lang exactly as in LANGS, e.g. zh-Hans.json, pt-BR.json)
 // holds a translation, any keys missing there show the English text. Breed names come from game/i18n/glossary/<lang>.json "breeds" when that file exists.
@@ -111,9 +112,15 @@ const JPW = {
   inutachi: '<span lang="ja">犬たち</span> <i>inu-tachi</i>', mame: '<span lang="ja">豆知識</span> <i>mame-chishiki</i>',
   mail: '<a class="mail" href="mailto:contact@doodledoggo.app">contact@doodledoggo.app</a>'
 };
+// the keys drawn in the hand face (var(--hand) in site/style.css: headings, .tag, .nav, .chip, .play, .feats b, .bark, .dname, .pics .cap,
+// .prof h2 .dtype, .bubble, .traits b, .loves>b): the corpus of the 'DD Local Title' subset.
+//   node tools/i18n_fonts.js --all --title-keys "$(node tools/site_i18n.js --title-keys)"
+const HAND_KEYS = /^(?:.*\.title|dogs\.h1|privacy\.h1|reset\.h1|home\.tagline|home\.nav\..*|home\.toss|home\.dogs\.all|common\.(?:play|quoted)|footer\.play_itch|notfound\..*|play\..*|soon\.(?:title|line)|profile\.(?:pup_cap|title_type|loves)|dog\.[a-z]+\.(?:name|quote|trait[1-4]))$/;
 // the placeholders every message may use (the dog count, the policy date, the Japanese words), besides its own English ones
-const GLOBAL = ['count', 'countWord', 'date'].concat(Object.keys(JPW));
-// the keys whose text carries the dog count (the count rule: it must come from {count} or {countWord}, never typed in)
+const GLOBAL = ['count', 'date'].concat(Object.keys(JPW));
+// the keys whose text carries the dog count (the count rule: it must come from {count}, never typed in). On the English page the sentences
+// that start with it get the number as a word (Thirty-five), every other language and key gets the number in figures
+const WORD_KEYS = ['home.dogs.lead', 'dogs.og_description', 'dogs.lead'];
 const COUNT_KEYS = ['home.dogs.lead', 'home.dogs.all', 'dogs.description', 'dogs.og_description', 'dogs.lead'];
 
 // ---- one language's string table, checked against English
@@ -169,17 +176,18 @@ function build(o) {
     const { T, rep, own } = table(L, en), rules = L.rules || L.code;
     const gl = L.code === 'en' || L.pseudo ? null : glossary(L.code);
     rep.glossary = !!gl;
-    const base = Object.assign({ count: String(D.length), countWord: numWord(D.length), date: new Intl.DateTimeFormat(L.code === 'en' || L.pseudo === 'long' ? 'en-GB' : rules, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(POLICY_DATE) },
+    const base = Object.assign({ count: String(D.length), date: new Intl.DateTimeFormat(L.code === 'en' || L.pseudo === 'long' ? 'en-GB' : rules, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(POLICY_DATE) },
       Object.fromEntries(Object.entries(JPW).map(([k, v]) => [k, H(v)])));
-    const t = (k, p) => { if (!T[k]) throw new Error('no key ' + k); return render(T[k], Object.assign({}, base, p), rules, false); };
-    const a = (k, p) => render(T[k], Object.assign({}, base, p), rules, true);
+    const cnt = (k) => (L.code === 'en' && WORD_KEYS.includes(k) ? { count: numWord(D.length) } : {});
+    const t = (k, p) => { if (!T[k]) throw new Error('no key ' + k); return render(T[k], Object.assign({}, base, cnt(k), p), rules, false); };
+    const a = (k, p) => render(T[k], Object.assign({}, base, cnt(k), p), rules, true);
     const u = (p) => urlFor(L, p);
     const breed = (d) => (gl && gl.breeds && gl.breeds[d.key]) || d.breed;
     const name = (d) => t(`dog.${d.key}.name`);
     // the dog cards (home), the picture menu and the profiles (/dogs)
     const card = (d) => `<li><a class="dcard" href="${u('/dogs#' + d.key)}" id="card-${d.key}">
   <img class="dimg" src="/img/art/dogs/${d.key}-still.svg" alt="${a('card.alt', { name: name(d), breed: breed(d) })}" width="240" height="200" loading="lazy">
-  <span class="dname">${name(d)}</span><span class="dtype">${t('card.type', { breed: breed(d), jp: H(`<span class="jp" lang="ja">${d.jp}</span>`) })}</span>
+  <span class="dname">${name(d)}</span><span class="dtype">${t('card.type', { breed: breed(d), jp: H(breed(d) === d.jp ? '' : `<span class="jp" lang="ja">${d.jp}</span>`) })}</span>
   <span class="dquote">${t('common.quoted', { text: H(t(`dog.${d.key}.quote`)) })}</span><span class="dmore">${t('card.more')} <span aria-hidden="true">→</span></span></a></li>`;
     const lovesHTML = (d) => d.loves.map(([n], i) => `<li><img src="/img/art/loves/${slug(n)}.svg" alt="" width="64" height="64" loading="lazy">${t(`dog.${d.key}.love${i + 1}`)}</li>`).join('');
     const profile = (d) => {
@@ -227,10 +235,11 @@ function build(o) {
       });
       out[(L.dir ? L.dir + '/' : '') + page.id + '.html'] = html;
     }
-    // the glossary's word rules (bans) on this language's visible text
+    // the glossary's word rules (bans) on this language's translated text
     rep.bans = [];
     if (gl && Array.isArray(gl.bans)) {
-      const text = PAGES.map((p) => out[(L.dir ? L.dir + '/' : '') + p.id + '.html']).join(' ').replace(/<script[\s\S]*?<\/script>|<[^>]+>/g, ' ');
+      // only the translated messages: the English fallback text keeps the English word rules (game/test_site.js WORDS)
+      const text = Object.keys(own).filter((k) => isKey(k) && T[k] && own[k]).map((k) => render(T[k], base, rules, false).replace(/<[^>]+>/g, ' ')).join(' \n ');
       let clean = text; (gl.allow || []).forEach((s) => { clean = clean.split(s).join(' '); });
       gl.bans.forEach((b) => { try { const m = clean.match(new RegExp(b.re, (b.flags || 'iu').replace('g', ''))); if (m) rep.bans.push(`"${m[0]}" (${b.why || b.re})`); } catch (e) { rep.bans.push('bad ban ' + b.re); } });
     }
@@ -245,7 +254,7 @@ function build(o) {
 function fmt(code, key, params) {
   const L = LANGS.concat(PSEUDO).find((x) => x.code === code); const { T } = table(L);
   const D = dogs();
-  return render(T[key], Object.assign({ count: String(D.length), countWord: numWord(D.length) }, Object.fromEntries(Object.entries(JPW).map(([k, v]) => [k, H(v)])), params || {}), L.rules || L.code, false);
+  return render(T[key], Object.assign({ count: code === 'en' && WORD_KEYS.includes(key) ? numWord(D.length) : String(D.length) }, Object.fromEntries(Object.entries(JPW).map(([k, v]) => [k, H(v)])), params || {}), L.rules || L.code, false);
 }
 function printReport(reports, full) {
   for (const r of reports) {
@@ -261,10 +270,11 @@ function write(pages, root) {
   root = root || SITE;
   for (const [rel, html] of Object.entries(pages)) { const p = path.join(root, rel); fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, html); }
 }
-module.exports = { LANGS, PSEUDO, PAGES, COUNT_KEYS, build, fmt, write, parse, render, urlFor, printReport, table };
+module.exports = { LANGS, PSEUDO, PAGES, COUNT_KEYS, HAND_KEYS, build, fmt, write, parse, render, urlFor, printReport, table };
 
 if (require.main === module) {
   const argv = process.argv.slice(2), has = (f) => argv.includes(f);
+  if (has('--title-keys')) { console.log(HAND_KEYS.source); process.exit(0); }
   const r = build({ pseudo: has('--pseudo'), legacy: has('--legacy') });
   if (has('--check')) {
     const bad = PAGES.map((p) => p.id + '.html').filter((f) => fs.readFileSync(path.join(SITE, f), 'utf8') !== r.pages[f]);

@@ -12,7 +12,7 @@
   <div class="sheet">
     <header class="top">
       <h1 class="h1logo"><img class="logo" src="/doodle-doggo-logo.svg" alt="{{a common.logo_alt}}" width="900" height="280"></h1>
-      <p class="tag">{{t home.tagline}}</p>
+      <p class="tag">🖍️ {{t home.tagline}}</p>
       <nav class="nav" aria-label="{{a home.nav_label}}"><a href="#dogs">{{t home.nav.dogs}}</a><a href="#japan">{{t home.nav.japan}}</a><a href="{{u /dogs}}">{{t home.nav.profiles}}</a></nav>
     </header>
 
@@ -32,7 +32,7 @@
         </div>
       </div>
       <div class="scenebar">
-        <button type="button" class="chip" id="toss" hidden>{{t home.toss}}</button>
+        <button type="button" class="chip" id="toss" hidden>🎾 {{t home.toss}}</button>
         <p class="small cap">{{t home.playroom_caption}}</p>
       </div>
     </section>
