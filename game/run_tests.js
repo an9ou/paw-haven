@@ -91,6 +91,9 @@ const SUITES = {
   v211_dogs: { file: 'test_v211_dogs_node.js', group: 'all', est: 450, timeout: 700 }, // v2.11 BREED ART (V211.md 5.2): akita, spitz, pom, afghan, dane, mastiff, gsd and the three Tokyo bandanas
   v212_dogs: { file: 'test_v212_dogs_node.js', group: 'all', est: 480, timeout: 900 }, // v2.12 ART A-D (V212.md 5): the fourteen new breeds in every pose, age, facing and outfit
   v212_lines: { file: 'test_v212_lines_node.js', group: 'all', est: 3 }, // v2.12 LINES (V212.md 4): every per-breed table has all 35 keys
+  v213_faces: { file: 'test_v213_faces_node.js', group: 'all', est: 120, timeout: 600 }, // v2.13 ART A + B (V213.md 3, 6): every expression on every breed, age, ok pose, facing and a set of outfits
+  v213_neck: { file: 'test_v213_neck_node.js', group: 'all', est: 120, timeout: 600 }, // v2.13 NECK (V213.md 5): every head on its body, 35 breeds, every pose, adult and puppy, expressions that tilt the head
+  v213_expr: { file: 'test_v213_expr.js', group: 'all', est: 60 }, // v2.13 EX (V213.md 4): expressions in play, personality, photo picker
   // v2.2 phone suites: `node game/run_tests.js phone` (not part of `all`, which stays the desktop regression set)
   phone_legacy: { file: 'test_phone.js', group: 'phone', est: 90 },
   phone_shell: { file: 'test_phone_shell.js', group: 'phone', est: 40 },
@@ -123,6 +126,7 @@ const SUITES = {
   phone_v210_ball: { file: 'test_phone_v210_ball.js', group: 'phone', est: 60 },
   phone_v210_roam: { file: 'test_phone_v210_roam.js', group: 'phone', est: 50 }, // v2.10 ROAM (V210.md)
   phone_v211_cards: { file: 'test_phone_v211_cards.js', group: 'phone', est: 50 }, // v2.11 CARDS: Dog Cards on phones (V211.md section 5.5)
+  phone_v213_expr: { file: 'test_phone_v213_expr.js', group: 'phone', est: 50 }, // v2.13 EX: expressions and the photo face picker on phones (V213.md 4)
   phone_v211_tokyo: { file: 'test_phone_v211_tokyo.js', group: 'phone', est: 90 }, // v2.11 TRAVEL (V211.md 5.3): the Japan map, the ride, the Tokyo places on phones
   phone_v29_photo: { file: 'test_phone_v29_photo.js', group: 'phone', est: 45 },
   phone_v29_polish: { file: 'test_phone_v29_polish.js', group: 'phone', est: 45 },

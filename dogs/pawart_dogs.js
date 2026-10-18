@@ -42,7 +42,7 @@ function kit(r){
   const tr=(x,y)=>{if(x<bb[0])bb[0]=x;if(y<bb[1])bb[1]=y;if(x>bb[2])bb[2]=x;if(y>bb[3])bb[3]=y};
   const pl=(P,amp)=>{let d='';for(let i=0;i<P.length;i++){const x=P[i][0]+J(amp),y=Math.min(P[i][1]+J(amp),h.cy||1e9);tr(x,y);d+=(i?'L':'M')+R1(x)+' '+R1(y)}return d};
   const st=(d,w,c,x='')=>`<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"${x}/>`;
-  const h={J,r,acc,bb,texts,LW,tr,setJ(v){jm=v},
+  const h={J,r,acc,bb,texts,LW,tr,setJ(v){jm=v},getJ(){return jm},
     // bucket fill that misses the outline, plus a jaggy outline that may not close
     shape(pts,fill,o={}){
       if(!pts.length||isNaN(pts[0][0]))return;
@@ -704,6 +704,7 @@ function drawFace(h,s,L,HT){
   const bc=f.browCol&&lum(s.hcol)<.32?f.browCol:undefined;// light lines on a dark head (v2.5 collie)
   eyes.forEach((e,i)=>{
     const [x,y]=HT([e[0],e[1]]),r=e[2],m=f.eyes;
+    if(L.ex&&L.ex.eye&&L.ex.eye(h,s,L,x,y,r,i,bc))return;// v2.13: an expression may draw its own eye (true = drawn)
     if(m==='happy'){h.line([[x-r,y+r*.35],[x,y-r*.55],[x+r,y+r*.35]],4.2,bc);return}
     if(m==='x'){h.line([[x-r*.8,y-r*.8],[x+r*.8,y+r*.8]],3.6,bc);h.line([[x+r*.8,y-r*.8],[x-r*.8,y+r*.8]],3.6,bc);return}
     if(m==='closed'){h.line([[x-r,y],[x,y+r*.5],[x+r,y]],3.8,bc);return}
@@ -727,7 +728,7 @@ function drawFace(h,s,L,HT){
   const N=noseLocal(s),[nx,ny]=HT(N);
   h.dot(nx,ny,4.6*sf,3.5*sf);if(L.blueNose)h.dot(nx+1.5*sf,ny-.5,2.6*sf,2*sf,'#7CC8FF');
   const M=p=>HT([N[0]+p[0]*sf,N[1]+p[1]*sf]);
-  const mo=f.mouth;
+  const mo=L.ex&&L.ex.mouth&&L.ex.mouth(h,s,L,M,sf,N)?'':f.mouth;// v2.13: an expression may draw its own mouth (true = drawn, the pose's mouth is skipped)
   const tongue=(len)=>{h.shape([[-9,8],[1,8],[0,8+len],[-5,11+len],[-10,8+len]].map(M),'#FF6F9A',{w:3,ox:0,oy:0,sc:1,closed:1});h.line([[-4.5,10],[-4.5,6+len]].map(M),2.2,'#C9406A')};
   if(mo==='smile'||mo==='tongue'||mo==='sleep'){if(mo==='tongue'){if(s.face.tside&&L.pose!=='happy'){h.shape([[-12,8],[-3,9],[-6,24],[-13,27],[-17,21]].map(M),'#FF6F9A',{w:3,ox:0,oy:0,sc:1,closed:1});h.line([[-9,11],[-11,21]].map(M),2.2,'#C9406A')}else tongue(L.pose==='happy'?16:11)}h.line([[-17,5],[-9,11],[0,9],[5,3]].map(M),mo==='sleep'?3:3.8)}
   if(mo==='pant'){h.shape([[-17,5],[4,4],[1,14],[-14,15]].map(M),'#7A1F2E',{w:3,ox:0,oy:0,sc:1});h.shape([[-11,10],[-1,10],[-1,30],[-6,34],[-12,30]].map(M),'#FF6F9A',{w:3,ox:0,oy:0,sc:1,closed:1});h.line([[-6,13],[-6,28]].map(M),2.2,'#C9406A')}
@@ -1351,8 +1352,32 @@ function stars(seed,bx,n0,sz){
   return `<g class="pa-d-spk">${o}</g>`}
 
 /* ---------- one complete redraw ---------- */
-function frame(key,s,pose,outfit,k,seed){
-  const h=kit(rng(seed+k*7717)),L=layout(s,pose,k);if(s.pup){h.setJ(s.pup===2?1.5:1.3);if(s.pup===2)newbornL(s,L)}if(pose==='rollover'||pose==='playdead')h.cy=GY+3;const _u=0,B=T(L.bT),HT=T(L.hT),hp=headPts(s),bp=bodyPts(s);
+/* ---------- v2.13 face expressions (V213.md section 3) ----------
+   PA.dog(key,{pose,expr}) / PA.dogHead(key,{expr}): expr is one of EXPR_LIST. No expr (or one not ok for the pose, or a newborn) = the old render, byte for byte.
+   An entry: { ok: /pose regex/ (the poses it may show on; absent = every pose),
+     pose(s,L,k)   optional: changes the frame's layout before anything is drawn (a small head tilt, chin up, ears); keep it small so the head stays on the neck,
+     pre(s,LX,k)   optional: changes LX (a copy of L with its own LX.face) for the face pass only: LX.face.eyes / mouth / brow, LX.blush, LX.tear stays 0,
+     eye(h,s,LX,x,y,r,i,bc)  optional: draws eye i (0 = far, 1 = near) itself at canvas (x,y), radius r, bc = light brow colour on dark heads; return true when drawn,
+     mouth(h,s,LX,M,sf,N)    optional: draws the mouth itself (M maps nose-local px, sf = head scale); return true when drawn,
+     face(h,s,LX,HT)          optional: extras over the face (cheeks, a puff, a drop of bath water), still under glasses, hats and the front ears,
+     fx(h,s,L,B,HT)           optional: marks round the dog on the top layer (a ?, sparkles, speed lines); not drawn by dogHead }
+   The face is drawn again on its own kit (exSub), so every other layer keeps its crayon wobble whether an expression is on or off. */
+const EXPR_LIST=['sleepy','surprised','curious','hearts','proud','guilty','sneeze','blep','zoomies','pout','dreamy','wow','wink','yum'];
+const EX_AWAKE=/^(idle|happy|pet|walk|jump|sit|crouch|shake|cold|hot|dig|beg|paw|down|dance|bow|scratch|sniff|dirty)$/;
+const EXPR={};EXPR_LIST.forEach(n=>{EXPR[n]={ok:EX_AWAKE}});// placeholders until ART A / ART B fill them in
+function exOk(n,pose,age){const X=typeof n==='string'&&Object.prototype.hasOwnProperty.call(EXPR,n)?EXPR[n]:null;return X&&age!=='newborn'&&(!X.ok||X.ok.test(pose))?n:null}
+function exSub(h,sd,fn){const g=kit(rng(sd>>>0));g.setJ(h.getJ());g.cy=h.cy;fn(g);g.acc.forEach(a=>h.acc.push(a));g.texts.forEach(t=>h.texts.push(t));for(let i=0;i<2;i++){h.bb[i]=Math.min(h.bb[i],g.bb[i]);h.bb[i+2]=Math.max(h.bb[i+2],g.bb[i+2])}}
+function exFace(h,s,L,HT,X,k,xa,seed){// drop the face just drawn (h's random stream has already moved past it), draw the expression's face on its own kit
+  h.acc.length=xa[0];h.texts.length=xa[1];for(let i=0;i<4;i++)h.bb[i]=xa[2][i];
+  const LX=Object.assign({},L,{face:{...L.face},ex:X}),ff=(s.mixHead?SP[s.mixHead]:s).faceFn;if(X.pre)X.pre(s,LX,k);
+  exSub(h,seed*5+k*977+11,g=>{drawFace(g,s,LX,HT);if(ff)ff(g,s,LX,HT,0);if(X.face)X.face(g,s,LX,HT)});
+}
+/* ---------- v2.13 expressions: ART A (sleepy, surprised, curious, hearts, proud, guilty, sneeze) ---------- */
+/* ---------- ART A end ---------- */
+/* ---------- v2.13 expressions: ART B (blep, zoomies, pout, dreamy, wow, wink, yum) ---------- */
+/* ---------- ART B end ---------- */
+function frame(key,s,pose,outfit,k,seed,ex){
+  const h=kit(rng(seed+k*7717)),L=layout(s,pose,k);if(s.pup){h.setJ(s.pup===2?1.5:1.3);if(s.pup===2)newbornL(s,L)}const X=ex?EXPR[ex]:null;if(X&&X.pose)X.pose(s,L,k);if(pose==='rollover'||pose==='playdead')h.cy=GY+3;const _u=0,B=T(L.bT),HT=T(L.hT),hp=headPts(s),bp=bodyPts(s);
   const has=(slot)=>outfit&&outfit[slot]&&OUT[slot].includes(outfit[slot])?outfit[slot]:null;
   const body=has('body'),top=body&&TOP2[body]?body:null,neck=has('neck'),hat=top?null:has('head'),eyes=has('eyes'),sheet=body==='Ghost Sheet'||body==='Trick-or-Treat Ghost';// v2.11.1: a costume with its own head piece (TOP2) drops the hat
   if(top==='Little Bat Costume')L.hood=1;// the dog's own ears stay inside the bat hood
@@ -1384,7 +1409,9 @@ function frame(key,s,pose,outfit,k,seed){
   if(s.pat)s.pat.head(h,HT,L);
   if(s.spk)glitter(h,s,HT,k,1);
   if(L.mud){const hx=s.head.rx,hy=s.head.ry;h.shape(circ(-hx*.45,-hy*.45,hx*.18,hy*.15,7,.2).map(HT),'#7A4A22',{noline:1,ox:0,oy:0})}
+  const xa=X?[h.acc.length,h.texts.length,h.bb.slice()]:0;
   {const a0=h.acc.length;drawFace(h,s,L,HT);const ff=(s.mixHead?SP[s.mixHead]:s).faceFn;if(ff)ff(h,s,L,HT,a0)}// v2.12 ART B: the head breed's own face extras (new spec field faceFn)
+  if(X)exFace(h,s,L,HT,X,k,xa,seed);
   if(eyes&&pose!=='sleep'&&!sheet)(eyes==='Explorer Goggles'?drawGoggles:drawGlasses)(h,s,L,HT);
   if(body==='Cozy Hoodie'&&/^(cold|sleep)$/.test(pose))drawHood(h,s,L,HT);
   if(!sheet)drawEars(h,s,L,HT,true);
@@ -1395,6 +1422,7 @@ function frame(key,s,pose,outfit,k,seed){
   else if(body==='Pyjamas'&&outfit.sleepwear)HAT2.Nightcap(h,s,L,HT);
   if(top){TOP2[top](h,s,L,HT);if(top==='Trick-or-Treat Ghost'&&eyes&&pose!=='sleep')(eyes==='Explorer Goggles'?drawGoggles:drawGlasses)(h,s,L,HT)}
   drawFx(h,s,L,B,HT);
+  if(X&&X.fx)exSub(h,seed*3+k*131+7,g=>X.fx(g,s,L,B,HT));
   return {h,L};
 }
 // marks draw on both body and head; run them twice, once per layer (points mapped to NaN are skipped)
@@ -1496,9 +1524,10 @@ function dog(key,o={}){
   key=SP[key]?key:'shiba';const SF=specFor(key,o),s=SF.s,lk=SF.lk;
   let pose=POSES.includes(o.pose)?o.pose:'idle';const anim=o.anim!==false,nF=anim?3:1,left=o.facing==='left';
   if(lk.age==='newborn')pose=NBSLEEP.test(pose)?'sleep':'down';
+  const ex=exOk(o.expr,pose,lk.age);// v2.13: a face expression over the pose (null = none: the render is exactly the old one)
   const seed=hashS('pa'+key+pose)*5+3;
   const fr=[];const bb=[1e9,1e9,-1e9,-1e9];
-  for(let k=0;k<nF;k++){const f=frame(key,s,pose,o.outfit,k,seed);fr.push(f);const b=f.h.bb;bb[0]=Math.min(bb[0],b[0]);bb[1]=Math.min(bb[1],b[1]);bb[2]=Math.max(bb[2],b[2]);bb[3]=Math.max(bb[3],b[3])}
+  for(let k=0;k<nF;k++){const f=frame(key,s,pose,o.outfit,k,seed,ex);fr.push(f);const b=f.h.bb;bb[0]=Math.min(bb[0],b[0]);bb[1]=Math.min(bb[1],b[1]);bb[2]=Math.max(bb[2],b[2]);bb[3]=Math.max(bb[3],b[3])}
   // keep everything inside the canvas: shrink around the feet anchor if anything pokes out (puppies: scale to size first)
   const ps=s.pupScale||1,pdr=ps===1?0:(s.pupDx||0)*ps,pdx=left?-pdr:pdr,bx=ps===1?bb:[120+(bb[0]-120)*ps+pdr,GY+(bb[1]-GY)*ps,120+(bb[2]-120)*ps+pdr,GY+(bb[3]-GY)*ps];
   const m=3,sc=Math.min(1,(GY-m)/(GY-bx[1]),(120-m)/(120-bx[0]),(240-m-120)/(bx[2]-120),bx[3]>GY?(199.5-GY)/(bx[3]-GY):1),tot=sc*ps;
@@ -1514,15 +1543,15 @@ function dog(key,o={}){
   if(s.pup){const SW=s.pup===2?1.5:1.3;frames=frames.replace(/stroke-width="([\d.]+)"/g,(q,v)=>`stroke-width="${R1(v*SW)}"`).replace(/font-size="([\d.]+)"/g,(q,v)=>`font-size="${R1(v*1.35)}"`)}
   let spk='';if(s.spk){const f=[120+(bx[0]-120)*sc,GY+(bx[1]-GY)*sc,120+(bx[2]-120)*sc,GY+(bx[3]-GY)*sc],fb=left?[240-f[2],f[1],240-f[0],f[3]]:f;spk=stars(hashS('spk'+key+pose+String(o.seed==null?'':o.seed)),fb,0,s.pup===2?6:s.pup?7:8)}
   const lab=`${s.name} the ${s.breed}, ${pose}`;
-  if(!SF.nu)return `<svg class="pa-dog pa-pose-${pose}${anim?' pa-d-anim':''}" viewBox="0 0 240 200" role="img" aria-label="${lab}"><g${fit}>${left?`<g transform="translate(240 0) scale(-1 1)">${shadow}</g>`:shadow}${frames}</g></svg>`;
+  if(!SF.nu)return `<svg class="pa-dog pa-pose-${pose}${anim?' pa-d-anim':''}${ex?' pa-ex-'+ex:''}" viewBox="0 0 240 200" role="img" aria-label="${lab}"><g${fit}>${left?`<g transform="translate(240 0) scale(-1 1)">${shadow}</g>`:shadow}${frames}</g></svg>`;
   const cls=(lk.age?' pa-d-'+lk.age:'')+(s.mixHead?' pa-d-mix':'')+(s.spk?' pa-d-sparkle':'')+(s.expecting?' pa-d-expecting':'');
-  return `<svg class="pa-dog pa-pose-${pose}${anim?' pa-d-anim':''}${cls}" viewBox="0 0 240 200" role="img" aria-label="${lab}${lk.age?', '+lk.age:''}${s.mixHead?' mix':''}"><g${fit}>${left?`<g transform="translate(240 0) scale(-1 1)">${shadow}</g>`:shadow}${frames}</g>${spk}</svg>`;
+  return `<svg class="pa-dog pa-pose-${pose}${anim?' pa-d-anim':''}${cls}${ex?' pa-ex-'+ex:''}" viewBox="0 0 240 200" role="img" aria-label="${lab}${lk.age?', '+lk.age:''}${s.mixHead?' mix':''}"><g${fit}>${left?`<g transform="translate(240 0) scale(-1 1)">${shadow}</g>`:shadow}${frames}</g>${spk}</svg>`;
 }
 function dogHead(key,o={}){
   key=SP[key]?key:'shiba';const SF=specFor(key,o),s=SF.s,h=kit(rng(hashS('pahead'+key))),L=layout(s,'idle',0),HT=T(L.hT);
   if(s.ears!=='giant')L.face.eyes=s.face.eyes;if(s.pup===2){L.face.eyes='closed';L.ears='sleep';L.face.mouth='smile'}
   if(s.pup)h.setJ(s.pup===2?1.25:1.15);
-  if(s.ruff)drawRuff(h,s,L,HT);drawEars(h,s,L,HT,false);if(s.topknot===2||s.topknot===3)drawTopknot(h,s,HT);h.shape(headPts(s).map(HT),s.hcol,{step:(s.hfluff===undefined?s.fluff:s.hfluff)?30:11});if(s.headMarks)s.headMarks(h,HT,s);if(s.pat)s.pat.head(h,HT,L);{const a0=h.acc.length,ff=(s.mixHead?SP[s.mixHead]:s).faceFn;drawFace(h,s,L,HT);if(ff)ff(h,s,L,HT,a0)}drawEars(h,s,L,HT,true);
+  if(s.ruff)drawRuff(h,s,L,HT);drawEars(h,s,L,HT,false);if(s.topknot===2||s.topknot===3)drawTopknot(h,s,HT);h.shape(headPts(s).map(HT),s.hcol,{step:(s.hfluff===undefined?s.fluff:s.hfluff)?30:11});if(s.headMarks)s.headMarks(h,HT,s);if(s.pat)s.pat.head(h,HT,L);{const a0=h.acc.length,ff=(s.mixHead?SP[s.mixHead]:s).faceFn,X=s.pup===2?null:EXPR[exOk(o.expr,'idle',SF.lk.age)],xa=X?[h.acc.length,h.texts.length,h.bb.slice()]:0;drawFace(h,s,L,HT);if(ff)ff(h,s,L,HT,a0);if(X)exFace(h,s,L,HT,X,0,xa,hashS('pahead'+key))}drawEars(h,s,L,HT,true);
   let b=h.bb;if(NEWK.test(s.mixHead||key)){if(s.ears==='bat'){const hd=s.head,c=HT([0,0]);b=[c[0]-hd.rx*1.4,c[1]-hd.ry*1.8,c[0]+hd.rx*1.4,c[1]+hd.ry*1.08]}}// v2.5 heads fit by what was drawn (their ears and muzzles differ from the fixed boxes below)
   else if(/^(giant|bat)$/.test(s.ears)){const hd=s.head,c=HT([0,0]);b=[c[0]-hd.rx*1.25,c[1]-hd.ry*2.1,c[0]+hd.rx*1.25,c[1]+hd.ry*1.05]}else if(s.face.snoutL){const hd=s.head,c=HT([0,0]);b=[c[0]-hd.rx*1.25,c[1]-hd.ry*1.7,c[0]+hd.rx*1.75,c[1]+hd.ry*1.25]}
   const w=b[2]-b[0],ht=b[3]-b[1],sc=Math.min(86/w,86/ht),cx=(b[0]+b[2])/2,cy=(b[1]+b[3])/2;
@@ -1544,6 +1573,6 @@ html[data-motion="off"] .pa-dog *,.pa-still .pa-dog *{animation-play-state:pause
 [data-motion="off"] .pa-d-tw,.pa-still .pa-d-tw{animation:none!important;opacity:1}
 @media (prefers-reduced-motion: reduce){.pa-d-tw{animation:none!important}}`;
 if(typeof document!=='undefined'&&!document.getElementById('pawart-dogs-css')){const st=document.createElement('style');st.id='pawart-dogs-css';st.textContent=css;document.head.appendChild(st)}
-PA.dog=dog;PA.dogHead=dogHead;
+PA.dog=dog;PA.dogHead=dogHead;PA.EXPR_LIST=EXPR_LIST.slice();PA.exprOk=(n,pose)=>!!exOk(n,pose||'idle',null);
 PA.DOGS=KEYS.map(k=>({key:k,name:SP[k].name,breed:SP[k].breed,personality:SP[k].personality,joke:SP[k].joke}));
 })();
