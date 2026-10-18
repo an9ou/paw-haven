@@ -49,7 +49,7 @@ const SUITES = {
   // v2.5 (V25.md): seasons, festival art, breeds, festivals
   v25_seasons: { file: 'test_v25_seasons_node.js', group: 'all', est: 20 },
   v25_art: { file: 'test_v25_art_node.js', group: 'all', est: 10 },
-  v25_breeds: { file: 'test_v25_breeds.js', group: 'all', est: 60 },
+  v25_breeds: { file: 'test_v25_breeds.js', group: 'all', est: 150, timeout: 500 }, // v2.12: 35 heads to tap through
   v25_festival: { file: 'test_v25_festival.js', group: 'all', est: 60 },
   v25_fixes_a: { file: 'test_v25_fixes_a.js', group: 'all', est: 40 }, // the owner's v2.4 fixes (V25.md 7b)
   v25_fixes_b: { file: 'test_v25_fixes_b.js', group: 'all', est: 40 },
@@ -77,7 +77,8 @@ const SUITES = {
   // v2.9 (V29.md): pack play and walks, photo mode, polish (and the combined missions + guide flow)
   v29_pack: { file: 'test_v29_pack.js', group: 'all', est: 60 },
   v210_roam: { file: 'test_v210_roam.js', group: 'all', est: 60 }, // v2.10 ROAM (V210.md)
-  v211_breeds: { file: 'test_v211_breeds.js', group: 'all', est: 220, timeout: 500 }, // v2.11 BREEDS (V211.md 5.2): akita, spitz, pom
+  v211_breeds: { file: 'test_v211_breeds.js', group: 'all', est: 300, timeout: 750 }, // v2.11 BREEDS (V211.md 5.2): akita, spitz, pom
+  v212_breeds: { file: 'test_v212_breeds.js', group: 'all', est: 260, timeout: 700 }, // v2.12 GENES (V212.md 3): the fourteen adopted, coats, litters, Labradoodle, the coat tab
   v211_cards: { file: 'test_v211_cards.js', group: 'all', est: 70 }, // v2.11 CARDS: Dog Cards (V211.md section 5.5)
   v29_photo: { file: 'test_v29_photo.js', group: 'all', est: 45 },
   v29_polish: { file: 'test_v29_polish.js', group: 'all', est: 45 },
