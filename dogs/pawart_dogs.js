@@ -233,9 +233,49 @@ SP.chow={...SP.samoyed,name:'Bao',breed:'Chow Chow',personality:'A dignified flu
 SP.stdpoodle={...SP.poodle,name:'Madeleine',breed:'Standard Poodle',personality:'A tall, clever, curly athlete. Learns tricks before you teach them.',joke:'I am the big poodle. The small one is my cousin.'};// PLACEHOLDER (ART B)
 /* end v2.12 ART B */
 /* v2.12 ART C: schnauzer, westie, yorkie */
-SP.schnauzer={...SP.mutt,name:'Muesli',breed:'Miniature Schnauzer',personality:'Bearded, bossy and very alert. Reports every leaf.',joke:'The beard is for wisdom. And soup.'};// PLACEHOLDER (ART C)
-SP.westie={...SP.mutt,name:'Shortbread',breed:'West Highland White Terrier',personality:'A cheerful little white terrier. Digs first, asks later.',joke:'I was white this morning. I promise.'};// PLACEHOLDER (ART C)
-SP.yorkie={...SP.chihuahua,name:'Toffee',breed:'Yorkshire Terrier',personality:'A tiny terrier with silky hair and a giant attitude.',joke:'I am in charge here. Please lift me onto the sofa.'};// PLACEHOLDER (ART C)
+/* Their extras: tail 'carrot' (westie) and tanHead (yorkie: head and ears in the coat's tan, see coated) are new spec fields;
+   the beard, the bushy brows, the fringe skirt, the chrysanthemum face and the topknot bow are drawn by their own marks */
+const ccl=q=>[q[0],Math.min(q[1],GY-1)];// keep hanging hair off the ground (NaN stays NaN)
+function ccFringe(h,P,col,n,amp){// a fringe of hair: P = closed outline (canvas px), filled, inked, a few strands inside
+  h.shape(P,col,{step:30,amp:amp||.9,w:3.2});const K=curlCol(col),c=P.reduce((a,q)=>[a[0]+q[0]/P.length,a[1]+q[1]/P.length],[0,0]);
+  for(let i=0;i<n;i++){const q=P[1+Math.floor(i*(P.length-2)/n)];if(q)h.line([[c[0]+(q[0]-c[0])*.2,c[1]+(q[1]-c[1])*.2],[c[0]+(q[0]-c[0])*.72,c[1]+(q[1]-c[1])*.72]],1.8,K,.3)}}
+SP.schnauzer={name:'Muesli',breed:'Miniature Schnauzer',personality:'Bearded, bossy and very alert. Reports every leaf.',joke:'The beard is for wisdom. And soup.',
+  col:'#9A9AA3',hcol:'#9A9AA3',light:'#E6E4E0',dark:'#4A4652',ear:'#4A4652',body:{x:112,y:146,rx:37,ry:19,sq:1},head:{x:160,y:108,rx:26,ry:22},sqHead:1,
+  legs:{h:-25,f:24,w:7.2,col:'#E6E4E0'},ears:'semi',earS:.78,earRound:1,tail:'sickle',tsc:.85,eyes:[5,4.6],
+  face:{eyes:'open',mouth:'smile',e0:[-.1,-.06],e1:[.36,-.1],nose:[1.5,.08],snout:1,snoutL:1.5,pupil:.72},
+  marks:(h,B,Hd,s)=>{const b=s.body,hx=s.head.rx,hy=s.head.ry,f=s.face,sl=f.snoutL||1.5,K=s.dark;
+   h.crayon(b.rx,b.ry,B,K,8);// salt and pepper: dark ticks on the back, a silver fringe skirt under the belly
+   [[-.72,-.5],[-.46,-.78],[-.18,-.56],[.1,-.8],[.36,-.58],[-.6,-.12],[-.05,-.22]].forEach(q=>h.line([[b.rx*q[0],b.ry*q[1]],[b.rx*(q[0]+.05),b.ry*(q[1]+.24)]].map(B),2.2,K,.4));
+   const sk=[[b.rx*1.02,-b.ry*.15],[b.rx*1.0,b.ry*.55]];for(let i=0;i<=10;i++)sk.push([b.rx*(.9-1.62*i/10),b.ry*(i%2?1.2:1.0)]);
+   const P=sk.concat([[-b.rx*.74,b.ry*.5],[b.rx*.1,b.ry*.42],[b.rx*.62,b.ry*.12]]).map(B).map(ccl);
+   if(!isNaN(P[0][0])){h.shape(P,s.light,{noline:1,ox:0,oy:0,sc:1});h.line(P.slice(1,13),h.LW*.85,INK,.8);[3,6,9].forEach(i=>h.line([[P[i][0],P[i][1]-7],P[i]],1.8,curlCol(s.light),.3))}
+   // the beard under the long muzzle (the muzzle box is drawn over its top) and the bushy brows
+   ccFringe(h,[[hx*.36,hy*.3],[hx*(sl+.04),hy*.24],[hx*(sl+.18),hy*.7],[hx*(sl+.08),hy*1.3],[hx*(sl-.08),hy*1.04],[hx*(sl-.24),hy*1.42],[hx*(sl-.42),hy*1.1],[hx*(sl-.6),hy*1.38],[hx*(sl-.78),hy*1.04],[hx*.42,hy*1.14],[hx*.22,hy*.66]].map(Hd).map(ccl),s.light,5);
+   const er=s.eyes;[f.e0||[-.1,-.04],f.e1||[.42,-.1]].forEach((e,i)=>{const x=hx*e[0],y=hy*e[1],r=er[i]*1.15;
+    ccFringe(h,[[x-r*1.5,y-r*1.0],[x-r*1.8,y-r*1.85],[x-r*.8,y-r*1.6],[x-r*.4,y-r*2.3],[x+r*.45,y-r*1.7],[x+r*1.2,y-r*2.2],[x+r*1.9,y-r*1.4],[x+r*3.0,y-r*1.1],[x+r*1.2,y-r*.9]].map(Hd),s.light,0,.6)})}};
+SP.westie={name:'Shortbread',breed:'West Highland White Terrier',personality:'A cheerful little white terrier. Digs first, asks later.',joke:'I was white this morning. I promise.',
+  col:'#FBF8F1',hcol:'#FBF8F1',light:W,dark:'#E3D9C8',fluff:1,hfluff:1,body:{x:114,y:147,rx:37,ry:23},head:{x:158,y:110,rx:31,ry:29},
+  legs:{h:-24,f:22,w:7.8},ears:'prick',earS:.66,earRound:1,tail:'carrot',eyes:[5.4,5],
+  face:{eyes:'open',mouth:'smile',e0:[-.12,-.12],e1:[.34,-.16],nose:[.68,.22],pupil:.8},
+  marks:(h,B,Hd,s)=>{const b=s.body,hx=s.head.rx,hy=s.head.ry,K=mix(s.dark,PEN,.3);h.crayon(b.rx,b.ry,B,mix(s.dark,PEN,.35),7);
+   [[-.6,-.36],[-.1,-.6],[.45,-.34],[-.7,.34],[.15,.46]].forEach(q=>{const x=q[0]*b.rx,y=q[1]*b.ry;h.line([[x-5,y-2],[x-2,y+3],[x+1,y-2],[x+4,y+3]].map(B),2.2,K,.4)});
+   // the chrysanthemum: little tufts all round the face, pointing out from the middle
+   [-150,-120,-90,-60,-30,0,150,120,90].forEach((a,i)=>{const c=Math.cos(a*D2R),n=Math.sin(a*D2R),r0=.62+(i%2)*.06;
+    h.line([[hx*.12+c*hx*r0,hy*.05+n*hy*r0],[hx*.12+c*hx*(r0+.24)+n*2,hy*.05+n*hy*(r0+.24)-c*2],[hx*.12+c*hx*(r0+.3),hy*.05+n*hy*(r0+.3)]].map(Hd),2,K,.3)});
+   h.line([[hx*.3,hy*.5],[hx*.5,hy*.66],[hx*.72,hy*.58]].map(Hd),2,K,.3)}};
+SP.yorkie={name:'Toffee',breed:'Yorkshire Terrier',personality:'A tiny terrier with silky hair and a giant attitude.',joke:'I am in charge here. Please lift me onto the sofa.',
+  col:'#617389',hcol:'#D9A35C',light:'#D9A35C',dark:'#3E4A5E',ear:'#D9A35C',tanHead:1,body:{x:118,y:151,rx:31,ry:16,lop:.04},head:{x:156,y:118,rx:24,ry:22},
+  legs:{h:-20,f:19,w:5.4,col:'#D9A35C'},ears:'prick',earS:.84,earRound:1,tail:'sickle',tsc:.9,eyes:[6.6,6.2],
+  face:{eyes:'open',mouth:'smile',e0:[-.16,-.12],e1:[.36,-.16],nose:[.88,.26],pupil:.74,brow:'curious'},
+  marks:(h,B,Hd,s)=>{const b=s.body,hx=s.head.rx,hy=s.head.ry,K=mix(s.col,W,.32);
+   hangHair(h,B,s,b.ry*1.4);// the long silky steel coat, parted along the back
+   h.line([[-b.rx*.88,-b.ry*.5],[-b.rx*.35,-b.ry*.86],[b.rx*.25,-b.ry*.86],[b.rx*.6,-b.ry*.62]].map(B),2,K,.3);
+   [[-.62,-.5],[-.22,-.62],[.2,-.56]].forEach(q=>h.line([[b.rx*q[0],b.ry*q[1]],[b.rx*(q[0]-.05),b.ry*(q[1]+.5)],[b.rx*(q[0]+.02),b.ry*(q[1]+.95)]].map(B),2,K,.4));
+   // silky tan strands on the cheeks, the topknot and its little bow
+   const T2=curlCol(s.hcol);[[-.5,.2,-.56,.7],[-.2,.5,-.2,.9],[.3,.62,.36,.98]].forEach(q=>h.line([[hx*q[0],hy*q[1]],[hx*(q[0]+q[2])/2+1.5,hy*(q[1]+q[3])/2],[hx*q[2],hy*q[3]]].map(Hd),2,T2,.3));
+   h.shape(scallop(-hx*.1,-hy*.88,hx*.26,hy*.2,6,.22).map(Hd),s.hcol,{step:30,amp:.6,w:3});
+   const k=[-hx*.1,-hy*1.06],BW='#E8325A';[-1,1].forEach(sd=>h.shape([k,[k[0]+sd*hx*.3,k[1]-hy*.17],[k[0]+sd*hx*.33,k[1]+hy*.13]].map(Hd),BW,{w:2.4,step:30,ox:0,oy:0,sc:1,amp:.4,closed:1}));
+   {const c=Hd(k);h.dot(c[0],c[1],2.2,2,'#B81E44')}}};
 /* end v2.12 ART C */
 /* v2.12 ART D: bichon, maltese, shihtzu */
 SP.bichon={...SP.samoyed,name:'Meringue',breed:'Bichon Frise',personality:'A happy cotton ball who bounces everywhere.',joke:'Is this a haircut or a cloud? Yes.'};// PLACEHOLDER (ART D)
@@ -423,6 +463,8 @@ function drawTail(h,s,L,B){
    case 'curl':h.tube(map(spiral(-7,-13,2,10,1.85,24,1.4).reverse().concat([[0,0]]).reverse()),6.5,col,{ow:5});break;
    case 'whip':h.tube(map([[0,0],[-14,10],[-24,26],[-24,42],[-14,50]]),3.6,col,{ow:4.6});break;
    case 'flag':h.tube(map([[0,0],[-5,-14],[-7,-30],[-5,-42]]),7.5,col);{const t=map([[-5,-42]])[0];h.dot(t[0],t[1],5.2,5.2,W)}break;
+   case 'carrot':{const C=[[0,0],[-3,-9],[-5,-19],[-4,-28],[-1,-35]],lt=[],rt=[];C.forEach((p,i)=>{const w=6.6*(1-i/4)+1.3;lt.push([p[0]-w,p[1]]);rt.push([p[0]+w,p[1]])});
+     h.shape(map(lt.concat(rt.reverse())),col,{step:30,amp:.8,w:3.6});h.line(map([[-1,-5],[-2.5,-17],[-2.5,-26]]),2,curlCol(col),.3);break}// v2.12 westie: short, thick at the root, straight up
    case 'line':h.line(map([[0,0],[-14,-10],[-10,-22],[-22,-30],[-22,-44]]),4.8);break;
    case 'pom':{h.tube(map([[0,0],[-6,-10],[-8,-22]]),4.2,col,{ow:4.6});const t=map([[-9,-29]])[0],z=9.5*Math.max(.6,ss);h.shape(scallop(t[0],t[1],z,z*.92,7,.22),col,{step:30,amp:.8,w:3.6});h.line(spiral(t[0]-1,t[1]-1,.5,3.6,1.25,8,.6),2,curlCol(col),.3);break}
    case 'plume':drawPlume(h,s,L,map,col);break;// v2.11 spitz and pom
@@ -1202,6 +1244,7 @@ function coated(key,coat,seed,S0){
     if(light){s.light=light;if(S0.legs.col)s.legs.col=light;if(S0.legs.sock)s.legs.sock=light}
     if(dark&&S0.ear&&key!=='beagle')s.ear=dark;if(dark&&S0.dark)s.dark=dark;}
   if(coat.brindle)s.brindle=1;// v2.11 dane, mastiff: the brindle look (no other dog draws it)
+  if(S0.tanHead&&light){if(S0.ear===S0.hcol)s.ear=light;s.hcol=light}// v2.12 yorkie: the head and ears are the coat's tan
   if(key==='dane'&&merle&&white>=.6){s.harl=base||'#2A2628';s.col=s.hcol='#FBF8F2';s.light=W}// v2.11 harlequin look: black merle patches on white
   const ey=coat.eyes;if(ey==='odd')s.irises=['#3FA9F5',null];else if(ey in EYE){s.iris=EYE[ey];s.irises=null}
   const R0=rng(hashS('coat'+key+String(seed==null?'':seed))),dots=[];

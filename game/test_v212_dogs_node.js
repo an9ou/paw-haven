@@ -57,7 +57,9 @@ console.log('-- heads, coats, mixes');
 const COATS = {
   dobie: [], corso: [], pitbull: [], minpin: [], // ART A
   lab: [], malamute: [], chow: [], stdpoodle: [], // ART B
-  schnauzer: [], westie: [], yorkie: [], // ART C
+  schnauzer: [{ base: '#2B2430', light: '#D8D6D2', dark: '#1D1A22' }, { base: '#2B2430', light: '#3A3240', dark: '#1D1A22' }, { base: '#FBF8F2', light: '#FFFFFF', dark: '#E2D9CC' }, { base: '#8E8E98', light: '#E6E4E0', dark: '#3A3640', white: 0.25 }], // ART C: black and silver, black, white, salt and pepper with white markings
+  westie: [{ base: '#F4EEDF', light: '#FFFFFF', dark: '#DCCFB8' }], // cream shade
+  yorkie: [{ base: '#2B2430', light: '#C98A4E', dark: '#1D1A22' }, { base: '#617389', light: '#D9A35C', dark: '#3E4A5E', white: 0.6 }, { base: '#5A6A80', light: '#E2B270', dark: '#38445A' }], // black and tan, parti, blue and tan (lighter gold)
   bichon: [], maltese: [], shihtzu: [], // ART D
 };
 NEW.forEach((k) => {
