@@ -315,3 +315,16 @@ Two sentences, short, kind, true.
 | `shihtzu` | Shih-tzu |
 
 <!-- table:end -->
+
+## Site
+
+doodledoggo.app strings: `site/i18n/pt-BR.json` (v2.14 phase 1b, all keys done).
+
+- TODO(native): "wobbly crayon pup" is "filhotinho tortinho (de giz de cera)" (tagline, alt texts). Check that it reads as cute.
+- TODO(native): the dogs' grammatical gender (and the article before the name) was picked from their names (the game gives no sex for the site dogs). Girls: Pepper, Mikan, Saffron, Peaches, Maple, Madeleine, Toffee, Meringue, Marshmallow. All others are boys.
+- TODO(native): the favourite things use these item names: patê de salmão, osso de pelúcia, cupcake canino, comedouro interativo, biscoito de ossinho, patinho de apito, cabo de guerra, ração, cafuné (petting), hora da comida. Phase 2 (game strings) must use the same names, or the site must follow the game's.
+- TODO(native): barks: "hmpf." (Shiba, smug), "ronc." (snort), "own..." (aww), "tcharam!" (ta-da), "vem, turma!" (Collie).
+- TODO(native): "manteiga derretida" (Dobermann, softie), "chuquinha" (topknot, Maltese and Shih-tzu), "rebolante" (Pit bull, wiggly), the Shih-tzu quote "Chuquinha em pé. Soneca deitada." (a new pun for "Top-knot up. Nap time down.").
+- TODO(native): the nav chips are "Conheça a turma" and "Cães no Japão" (short for the phone). The section title stays "Cachorros no Japão".
+- Site titles say "Hachiko" without the macron, like the English page: Caveat (the title face) may lack ō. Running text keeps "Hachikō".
+- The privacy page says that the English version counts if the two differ (in `privacy.updated`, the small line under the title).
