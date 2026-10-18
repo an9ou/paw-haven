@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Doodle Doggo v2.14: find every player-visible English string (V214.md section 12). Read-only: it never rewrites a source file.
+// Doodle Doggo v2.14: find every player-visible English string (V214.md section 14). Read-only: it never rewrites a source file.
 //   node tools/i18n_extract.js [--out _i18n/extract.json] [--quiet]
 // Sources: game/src/*.js (concatenated in ORDER.txt order, the way the build does, so the one shared IIFE parses; every hit is
 // mapped back to its own file and line), mods/*.js, game/shell.html (text nodes, <title>, aria-label, title, placeholder, alt,

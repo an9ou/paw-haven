@@ -1,4 +1,4 @@
-// v2.14 i18n (V214.md section 11): node only, no browser. node game/test_i18n_node.js   (the `i18n` suite in run_tests.js, in `all`)
+// v2.14 i18n (V214.md section 13): node only, no browser. node game/test_i18n_node.js   (the `i18n` suite in run_tests.js, in `all`)
 //  1. game/i18n/msg.js: format (plural per language, =N, #, select, nesting, missing vars, bad syntax), parse errors, args, pickLang, num
 //  2. every game/i18n/glossary/<lang>.json that exists: shape, all 35 breed keys, bans compile, no ban hits an `allow` phrase or a glossary term
 //  3. every game/i18n/<lang>.json and site/i18n/<lang>.json that exists: parses, keys and placeholders exist in that folder's en.json,
@@ -125,7 +125,7 @@ CODES.forEach((c) => eq(M.pickLang([c]), c, 'pickLang round trip ' + c));
 /* ---- 2. glossaries ---- */
 const G = require(path.join(ROOT, 'mods/genes.js'));
 eq(G.BREEDS.length, 35, 'BREEDS has 35 keys');
-// the franchise names in every language (V214.md 10): English plus the common local spellings
+// the franchise names in every language (V214.md section 10): English plus the common local spellings
 const FRANCHISE = /nintendo|pok[eé]mon|animal crossing|任天堂|ポケモン|ポケットモンスター|どうぶつの森|宝可梦|寶可夢|精灵宝可梦|神奇宝贝|神奇寶貝|动物森友会|動物森友會|集合啦|닌텐도|포켓몬|동물의 숲|นินเทนโด|โปเกมอน|แอนิมอล ครอสซิง/i;
 const GL = {};
 const gdir = path.join(ROOT, 'game/i18n/glossary');
