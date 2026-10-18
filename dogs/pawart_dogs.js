@@ -221,10 +221,51 @@ function hangHair(h,B,s,len){// long silky hair hanging straight down from which
 /* v2.12 Fourteen New Friends (V212.md): fourteen more crude ones, appended. Each ART lane replaces only its own block below; the
    PLACEHOLDER rows borrow an old dog's drawing until that lane lands. Their extras are new spec fields, so no older dog takes those branches */
 /* v2.12 ART A: dobie, corso, pitbull, minpin */
-SP.dobie={...SP.golden,name:'Espresso',breed:'Doberman',personality:'A big softie in a sleek coat. Keeps watch, then wants a cuddle.',joke:'I am on guard. Please guard me with a blanket.'};// PLACEHOLDER (ART A)
-SP.corso={...SP.mastiff,name:'Cannoli',breed:'Cane Corso',personality:'A calm, gentle guardian. Keeps an eye on the whole family.',joke:'I am very serious. Except when you scratch my ears.'};// PLACEHOLDER (ART A)
-SP.pitbull={...SP.frenchie,name:'Peaches',breed:'Pit Bull',personality:'A wiggly, people-loving goofball. Every stranger is a new best friend.',joke:'My whole back half wags. I cannot stop it.'};// PLACEHOLDER (ART A)
-SP.minpin={...SP.chihuahua,name:'Jellybean',breed:'Miniature Pinscher',personality:'A tiny, fearless bundle of energy. Prances everywhere.',joke:'I am not small. Everything else is big.'};// PLACEHOLDER (ART A)
+/* Natural ears and tails (no cropping, no docking). Their extras (ears 'drop' in EARS_A, face.grinA, the tan points in tanA) are new
+   spec fields or new values, so no older dog takes these branches */
+const EARS_A={drop(pr,E){// a natural drop ear: it leaves the skull at the top corner, folds over at the crease and hangs flat by the cheek, the tip down
+  E.push({pts:pr([[-.4,-.94],[-1.0,-.88],[-1.24,-.36],[-1.16,.32],[-.98,.42],[-.8,-.26]]),pivot:pr([[-.66,-.88]])[0],side:-1,flop:1,fold:[0,1]});
+  E.push({pts:pr([[.04,-1.0],[.56,-1.02],[.8,-.72],[.74,-.4],[.58,-.42],[.3,-.74]]),pivot:pr([[.3,-.98]])[0],side:1,flop:1,fold:[0,1]})},
+ rose(pr,E){// v2.12 pitbull: a half-up rose ear, the top folded over and out
+  E.push({pts:pr([[-.86,-.42],[-.8,-1.0],[-1.12,-.9],[-.4,-1.18],[-.24,-.86]]),pivot:pr([[-.56,-.74]])[0],side:-1,fold:[1,3]});
+  E.push({pts:pr([[.08,-.88],[.34,-1.18],[1.1,-.9],[.78,-1.0],[.8,-.4]]),pivot:pr([[.44,-.74]])[0],side:1,fold:[1,3]})}};
+function tanA(h,B,Hd,s,o){// black-and-tan points (dobie, minpin): eyebrow dots, cheeks, chest, under the tail; the muzzle is the light snout, the socks are legs.sock
+  const b=s.body,hx=s.head.rx,hy=s.head.ry,f=s.face,e0=f.e0||[-.1,-.04],e1=f.e1||[.42,-.1],K=s.light;
+  h.shape([[b.rx*.62,-b.ry*.1],[b.rx*.92,-b.ry*.2],[b.rx*1.02,b.ry*.35],[b.rx*.86,b.ry*.92],[b.rx*.66,b.ry*.62]].map(B),K,{noline:1,ox:0,oy:0});
+  h.shape(circ(-b.rx*.86,-b.ry*.02,b.rx*.1,b.ry*.26,7).map(B),K,{noline:1,ox:0,oy:0});
+  [e0,e1].forEach((e,i)=>h.dot(...Hd([hx*(e[0]+.04),hy*(e[1]-.36)]),o.dot*(i?.9:1),o.dot*.7,K));
+  h.shape(circ(hx*.44,hy*.5,hx*.3,hy*.24,9).map(Hd),K,{noline:1,ox:0,oy:0})}
+function grinA(h,M){// v2.12 pitbull: the big wide happy grin, mouth open, tongue out, the corners curled up into the cheeks
+  h.shape([[-25,3],[6,2],[2,15],[-7,20],[-18,17]].map(M),'#7A1F2E',{w:3.4,ox:0,oy:0,sc:1});
+  h.shape([[-16,13],[-3,12],[-4,22],[-9,25],[-15,21]].map(M),'#FF6F9A',{noline:1,ox:0,oy:0});h.line([[-9.5,14],[-9.5,21]].map(M),2,'#C9406A');
+  h.line([[-29,-3],[-25,3]].map(M),2.6,INK,.4);h.line([[9,-3],[6,2]].map(M),2.4,INK,.3)}
+SP.dobie={name:'Espresso',breed:'Doberman',personality:'A big softie in a sleek coat. Keeps watch, then wants a cuddle.',joke:'I am on guard. Please guard me with a blanket.',
+  col:'#2B2628',hcol:'#2B2628',light:'#C8743A',dark:'#1D1A22',body:{x:108,y:126,rx:47,ry:22,lop:.04},head:{x:166,y:85,rx:29,ry:25},neck:1,
+  legs:{h:-31,f:29,w:8.4,sock:'#C8743A'},ears:'drop',earS:.9,earRound:1,tail:'thin',tsc:1.1,eyes:[5.6,5.2],
+  face:{eyes:'open',mouth:'smile',e0:[-.12,-.22],e1:[.4,-.26],nose:[1.62,.12],snout:1,snoutL:1.62,brow:'soft',browCol:'#D9A27A'},
+  marks:(h,B,Hd,s)=>tanA(h,B,Hd,s,{dot:3.4})};
+SP.corso={name:'Cannoli',breed:'Cane Corso',personality:'A calm, gentle guardian. Keeps an eye on the whole family.',joke:'I am very serious. Except when you scratch my ears.',
+  col:'#363133',hcol:'#363133',light:'#57504F',dark:'#1D1A22',body:{x:106,y:132,rx:54,ry:29,sq:1},head:{x:168,y:94,rx:36,ry:31},sqHead:1,
+  legs:{h:-33,f:31,w:12.2},ears:'drop',earS:.74,earRound:1,tail:'low',tsc:1.08,eyes:[5,4.6],
+  face:{eyes:'open',mouth:'smile',e0:[-.16,-.24],e1:[.36,-.28],nose:[1.24,.14],snout:3,snoutL:1.26,snoutD:.66,jowl:1,brow:'soft',browCol:'#CFC6C0',pupil:.66},
+  marks:(h,B,Hd,s)=>{const b=s.body,hx=s.head.rx,hy=s.head.ry,M=maskCol(s);brindle(h,B,Hd,s);
+   h.shape([[b.rx*.56,b.ry*.05],[b.rx*.98,-b.ry*.15],[b.rx*.94,b.ry*.8],[b.rx*.6,b.ry*.7]].map(B),s.light,{noline:1});
+   h.shape([[-hx*.36,-hy*.4],[hx*.1,-hy*.56],[hx*.64,-hy*.5],[hx*.78,hy*.16],[hx*.12,hy*.36],[-hx*.38,hy*.08]].map(Hd),M,{noline:1,ox:0,oy:0});
+   [[-.3,-.78],[.02,-.86]].forEach(q=>h.line([[hx*(q[0]-.12),hy*q[1]],[hx*q[0],hy*(q[1]-.07)],[hx*(q[0]+.12),hy*q[1]]].map(Hd),2.2,lum(s.hcol)<.32?mix(s.hcol,W,.3):PEN,.5))}};
+SP.pitbull={name:'Peaches',breed:'Pit Bull',personality:'A wiggly, people-loving goofball. Every stranger is a new best friend.',joke:'My whole back half wags. I cannot stop it.',
+  col:'#7E8898',hcol:'#7E8898',light:'#F2EEE6',dark:'#4E5664',body:{x:110,y:142,rx:45,ry:25,lop:.04},head:{x:164,y:103,rx:36,ry:29},
+  legs:{h:-29,f:27,w:11},ears:'rose',earRound:1,tail:'whip',tsc:.72,eyes:[6.6,6.2],
+  face:{eyes:'open',mouth:'grin',grinA:1,e0:[-.22,-.16],e1:[.34,-.2],nose:[1.1,.18],snout:2,snoutL:1.12,snoutD:.66,pupil:.66,brow:'soft'},
+  marks:(h,B,Hd,s)=>{const b=s.body,hx=s.head.rx,hy=s.head.ry,K=curlCol(s.col);brindle(h,B,Hd,s);
+   h.shape([[b.rx*.5,-b.ry*.05],[b.rx*.86,-b.ry*.3],[b.rx*1.02,b.ry*.3],[b.rx*.84,b.ry*.95],[b.rx*.45,b.ry*.85]].map(B),s.light,{noline:1});
+   h.line([[b.rx*.3,-b.ry*.6],[b.rx*.44,-b.ry*.15],[b.rx*.34,b.ry*.3]].map(B),2.4,K,.4);h.line([[-b.rx*.46,-b.ry*.62],[-b.rx*.6,-b.ry*.12],[-b.rx*.48,b.ry*.32]].map(B),2.4,K,.4);
+   h.shape([[hx*.1,-hy*.96],[hx*.24,-hy*.96],[hx*.32,-hy*.1],[hx*.06,-hy*.1]].map(Hd),s.light,{noline:1});
+   h.line([[-hx*.12,-hy*.66],[hx*.02,-hy*.74],[hx*.16,-hy*.66]].map(Hd),2,K,.4)}};
+SP.minpin={name:'Jellybean',breed:'Miniature Pinscher',personality:'A tiny, fearless bundle of energy. Prances everywhere.',joke:'I am not small. Everything else is big.',
+  col:'#B5522C',hcol:'#B5522C',light:'#DC8A56',dark:'#7A3418',body:{x:117,y:146,rx:32,ry:15,lop:.04},head:{x:157,y:116,rx:24,ry:20},neck:1,
+  legs:{h:-20,f:19,w:5.6,sock:'#DC8A56'},ears:'drop',earS:.92,earRound:1,tail:'thin',tsc:.82,eyes:[6.6,6.2],
+  face:{eyes:'open',mouth:'smile',e0:[-.16,-.2],e1:[.42,-.24],nose:[1.44,.12],snout:1,snoutL:1.44,pupil:.66,brow:'eager',browCol:'#D9A27A'},
+  marks:(h,B,Hd,s)=>tanA(h,B,Hd,s,{dot:2.8})};
 /* end v2.12 ART A */
 /* v2.12 ART B: lab, malamute, chow, stdpoodle */
 SP.lab={...SP.golden,name:'Butter',breed:'Labrador Retriever',personality:'Friendly, food-loving and always ready for a swim.',joke:'Is it dinner? It feels like dinner.'};// PLACEHOLDER (ART B)
@@ -363,6 +404,7 @@ function earList(s){// the ear shapes in head-local px, before any pose rotation
   if(ty==='semi'){// upright to about two thirds, then the tip folds forward and down
     E.push({pts:pr([[-.78,-.44],[-.66,-1.18],[-.5,-1.4],[-.12,-1.2],[-.3,-1.12],[-.06,-.86]]),pivot:pr([[-.42,-.7]])[0],side:-1,fold:[1,4]});
     E.push({pts:pr([[.08,-.88],[.24,-1.3],[.42,-1.5],[.84,-1.24],[.6,-1.2],[.78,-.38]]),pivot:pr([[.43,-.7]])[0],side:1,fold:[1,4]})}
+  if(EARS_A[ty])EARS_A[ty](pr,E);// v2.12 ART A: the natural drop ear (dobie, corso, minpin)
   if(s.earW)E.forEach(e=>{const c=e.pivot;e.pts=e.pts.map(q=>[c[0]+(q[0]-c[0])*s.earW,q[1]])});// Frenchie: wider, rounder bat ears
   if(s.earTilt)E.forEach(e=>{e.pts=rotAbout(e.pts,e.flop?0:s.earTilt,e.pivot)});// v2.11 akita: small ears tipped forward
   if(s.earS)E.forEach(e=>{const c=e.pivot,k=s.earS;e.pts=e.pts.map(q=>[c[0]+(q[0]-c[0])*k,c[1]+(q[1]-c[1])*k])});
@@ -532,7 +574,8 @@ function drawFace(h,s,L,HT){
   if(mo==='sammy'){h.line([[-21,1],[-17,9],[-9,12],[-2,9],[4,7],[6,-2]].map(M),3.8,INK,1.6);h.line([[-22,-2],[-19,2]].map(M),2.2,PEN,.3);h.line([[8,-3],[8,2]].map(M),2.2,PEN,.3)}
   if(mo==='grump'){h.line([[-17,13],[-11,9],[-5,11],[1,9],[5,12]].map(M),3.6);h.line([[-20,6],[-17,13]].map(M),2.2,PEN,.4)}
   if(mo==='o')h.shape(circ(0,0,5,6.5,9).map(q=>M([q[0]-1,q[1]+16])),'#7A1F2E',{w:3.2,ox:0,oy:0,sc:1,closed:1});
-  if(mo==='grin'||mo==='open'){h.shape([[-17,5],[4,4],[0,16],[-12,18]].map(M),'#7A1F2E',{w:3.4,ox:0,oy:0,sc:1});h.shape([[-12,13],[-1,12],[-3,18],[-10,18]].map(M),'#FF6F9A',{noline:1,ox:0,oy:0})}
+  if(s.face.grinA&&(mo==='grin'||mo==='open'))grinA(h,M);// v2.12 ART A: the pitbull's wide grin
+  else if(mo==='grin'||mo==='open'){h.shape([[-17,5],[4,4],[0,16],[-12,18]].map(M),'#7A1F2E',{w:3.4,ox:0,oy:0,sc:1});h.shape([[-12,13],[-1,12],[-3,18],[-10,18]].map(M),'#FF6F9A',{noline:1,ox:0,oy:0})}
   if(mo==='chew'){h.shape(circ(0,0,5,3.5,8).map(q=>M([q[0]-6,q[1]+9])),'#7A1F2E',{w:3,ox:0,oy:0,sc:1,closed:1});[[6,16],[-16,18],[2,24]].forEach(c=>{const p=M(c);h.dot(p[0],p[1],2,1.6,'#C98A4E')});if(L.k===1)h.text('nom',HT([N[0]+16*sf,N[1]-6*sf])[0],HT([N[0]+16*sf,N[1]-6*sf])[1],14,INK,-8)}
   if(s.face.drool&&(L.pose==='idle'||L.pose==='happy'||L.pose==='eat'||L.pose==='walk')){const p=M([-15,12]);h.shape([[p[0],p[1]],[p[0]+3,p[1]+7],[p[0],p[1]+10],[p[0]-3,p[1]+7]],'#9EDCFF',{w:2,ox:0,oy:0,sc:1,closed:1})}
   if(s.face.sweet&&!L.blush&&L.pose!=='sad'){[[hx*(e0[0]-.1),hy*(e0[1]+.48)],[hx*(e1[0]+.2),hy*(e1[1]+.5)]].forEach(p=>{const [x,y]=HT(p);h.acc.push(`<ellipse cx="${R1(x)}" cy="${R1(y)}" rx="${R1(7*sf)}" ry="${R1(4*sf)}" fill="#FF8FAE" opacity=".5"/>`)})}
