@@ -49,7 +49,7 @@ require('./test_lib').run('v16b', async (t) => {
   ok(await hasWait(n, 'huff'), 'bath: grumpy huff (Mochi always)'); await p.click('#bathQuit'); await t.untilMode('yard');
 
   sec('play: toy start, rope tug');
-  n = await mark(); await reset(); await p.click('[data-act=play]'); await t.waitPop(true); await p.click('[data-play="toy:Tennis Ball"]');
+  n = await mark(); await reset(); await ev(() => window.__paw.go('toy', 'Tennis Ball')); // v2.10: the Tennis Ball card starts ball play; the room game is reached directly
   ok(await hasWait(n, 'play'), 'toy start: play bark'); await ev(() => window.__paw.go('yard')); await t.untilMode('yard');
   await ev(() => window.__paw.S.inv.toys.push('Rope Tug')); n = await mark(); await reset();
   await p.click('[data-act=play]'); await t.waitPop(true); await p.click('[data-play="tug"]');

@@ -70,6 +70,7 @@ run('account', async (t) => {
   };
   // the sheet's message and buttons are on screen and not covered by anything
   const reachable = (sels) => ev((ss) => ss.filter((s) => { const e = document.querySelector(s); if (!e) return true; const r = e.getBoundingClientRect(); if (r.bottom > innerHeight + 1 || r.top < 0) return true; const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !(hit && (hit === e || e.contains(hit))); }), sels);
+  const slid = () => t.until(() => !document.getAnimations().some((a) => a.playState === 'running' && a.effect && a.effect.target && document.getElementById('modal').contains(a.effect.target) && a.effect.target.matches('.panel')), null, 3000); // the sheet has slid in
   const panelBox = () => ev(() => { const r = document.querySelector('#modal .panel').getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom, w: r.width, cx: r.left + r.width / 2, W: innerWidth, H: innerHeight }; });
 
   /* ------------------------------------------------ desktop 1280x720 ------------------------------------------------ */
@@ -89,14 +90,19 @@ run('account', async (t) => {
   srv.offline.add(d1); await form('login', 'nobody@example.com', 'wrongpass1'); ok(/offline/.test(await msg()), 'offline: "Cloud save is offline..."'); srv.offline.delete(d1);
   ok(await ev(() => !document.getElementById('acGo').disabled), 'the Log in button works again after an error');
   await t.SH('desk_02_login_error');
-  // v2.8.2 Forgot password: an emailed link, and the same answer for every email (no account lookup leaks)
+  // Forgot password (v2.9.2): an emailed code, typed in the game, and the same answer for every email (no account lookup leaks)
   await tap('#acForgot'); await d1.waitForSelector('#modal .panel[data-ready] #fgEmail');
   ok((await ev(() => document.getElementById('fgEmail').value)) === 'nobody@example.com', 'Forgot your password? opens a form with the email already typed');
   let mails0 = srv.mails.length; await tap('#fgGo');
-  ok(await t.until(() => /If that email has an account, a link is on its way/.test(document.getElementById('fgMsg').textContent), null, 5000), 'Send the link: the same kind answer for an email with no account');
+  ok(await t.until(() => !!document.querySelector('#modal .panel[data-ready] #rcCode') && /We've sent a code to nobody@example\.com if that email has an account/.test(document.querySelector('#modal .aclead').textContent), null, 5000), 'Send the code: the same kind answer for an email with no account, and the code form');
   ok(srv.mails.length === mails0, 'and no email goes out');
-  await t.SH('desk_02b_forgot');
-  await tap('#fgBack'); await d1.waitForSelector('#modal .panel.acct[data-ready] #acPw'); ok(true, 'Done goes back to Log in');
+  ok(await ev(() => { const a = document.getElementById('rcAgain'); return a.disabled && /^Send a new code \(in \d+ s\)$/.test(a.textContent); }), '"Send a new code" waits a minute');
+  await d1.fill('#rcCode', '123456'); await d1.fill('#rcPw', 'brandnew12'); await d1.fill('#rcPw2', 'brandnew12'); await tap('#rcGo');
+  ok(await t.until(() => /That code isn't right\. Check the email and try again\. 4 tries left\./.test(document.getElementById('rcMsg').textContent), null, 5000), 'a wrong code: "That code isn\'t right... 4 tries left." (the same as for a real account)');
+  await d1.fill('#rcCode', '12'); await tap('#rcGo'); ok(/6-digit code/.test(await ev(() => document.getElementById('rcMsg').textContent)), 'a short code: "Type the 6-digit code from the email."');
+  await t.SH('desk_02b_forgot_code');
+  await tap('#rcBack'); await d1.waitForSelector('#modal .panel[data-ready] #fgEmail'); ok(true, 'Back goes to the email step');
+  await tap('#fgBack'); await d1.waitForSelector('#modal .panel.acct[data-ready] #acPw'); ok(true, 'and Back again to Log in');
   await tap('#acBack'); ok(await closed(), 'Back closes the popup'); ok((await choices()).length === 3, 'the three choices are still there');
 
   sec('desktop: make an account, kind errors');
@@ -289,10 +295,12 @@ run('account', async (t) => {
     await tap('#acForgot'); await p.waitForSelector('#modal .panel[data-ready] #fgEmail');
     pb = await panelBox(); ok(pb.b >= pb.H - 2 && pb.w >= pb.W - 2, 'Forgot your password? is a bottom sheet too');
     const fm0 = srv.mails.length; await tap('#fgGo');
-    ok(await t.until(() => /a link is on its way/.test(document.getElementById('fgMsg').textContent), null, 5000), 'Send the link: "If that email has an account, a link is on its way"');
-    ok(srv.mails.length === fm0 + 1 && srv.mails[fm0].to[0] === 'mochi@example.com', 'the account\'s email gets the link');
-    ok(!(await reachable(['#fgMsg', '#fgBack', '#fgEmail'])).length, 'the answer and Done are on screen and not covered ' + (await reachable(['#fgMsg', '#fgBack', '#fgEmail'])).join(','));
-    await audit(`${tag}_02b_forgot`);
+    ok(await t.until(() => !!document.querySelector('#modal .panel[data-ready] #rcCode') && /if that email has an account/.test(document.querySelector('#modal .aclead').textContent), null, 5000), 'Send the code: "We\'ve sent a code to ... if that email has an account"');
+    ok(srv.mails.length === fm0 + 1 && srv.mails[fm0].to[0] === 'mochi@example.com' && /^\d{6}$/.test(srv.mails[fm0].code), 'the account\'s email gets a 6-digit code');
+    await slid(); pb = await panelBox(); ok(pb.b >= pb.H - 2 && pb.w >= pb.W - 2, 'the code form is a bottom sheet too');
+    ok(!(await reachable(['#rcCode', '#rcGo', '#rcBack'])).length, 'the code field and the buttons are on screen and not covered ' + (await reachable(['#rcCode', '#rcGo', '#rcBack'])).join(','));
+    await audit(`${tag}_02b_forgot_code`);
+    await tap('#rcBack'); await p.waitForSelector('#modal .panel[data-ready] #fgEmail');
     await tap('#fgBack'); await p.waitForSelector('#modal .panel.acct[data-ready] #acPw');
     await tap('#acBack'); await closed();
     await tap('#tLogin'); await sheetOpen(); await tap('#acEmail'); await p.keyboard.type('fast@example.com'); await t.sleep(150);
@@ -328,6 +336,51 @@ run('account', async (t) => {
       ok(c2, 'Continue goes to the yard');
     }
   }
+  // ---- v2.9.2: the whole reset on a phone: code -> new password -> logged in ----
+  sec('Phone 390x844: forgot password, the emailed code, logged in at once');
+  srv.users.push({ id: 'uForgot', email: 'forgot@example.com', password: 'oldpass123' });
+  const pf = await device('Phone 390x844'); t.p = pf;
+  await tap('#tLogin'); await sheetOpen(); await form('login', 'forgot@example.com', 'whoops1234'); ok(/don't match/.test(await msg()), 'a forgotten password: kind message');
+  await tap('#acForgot'); await pf.waitForSelector('#modal .panel[data-ready] #fgEmail'); await tap('#fgGo');
+  await pf.waitForSelector('#modal .panel[data-ready] #rcCode'); const fmail = srv.mails[srv.mails.length - 1];
+  ok(fmail.to[0] === 'forgot@example.com' && /^\d{6}$/.test(fmail.code), 'the code is emailed'); await slid();
+  const attrs = await ev(() => { const c = document.getElementById('rcCode'); return [c.type, c.inputMode, c.getAttribute('autocomplete'), c.getAttribute('pattern'), c.maxLength, document.getElementById('rcPw').getAttribute('autocomplete')].join(' '); });
+  ok(attrs === 'text numeric one-time-code [0-9]* 6 new-password', 'the code field: numeric keypad, one-time-code, 6 digits; the password: new-password (' + attrs + ')');
+  ok(!(await reachable(['#rcCode', '#rcPw', '#rcPw2', '#rcAgain', '#rcGo', '#rcBack'])).length, 'every field and button is on screen and not covered ' + (await reachable(['#rcCode', '#rcPw', '#rcPw2', '#rcAgain', '#rcGo', '#rcBack'])).join(','));
+  await audit('390_844_08_reset_code');
+  await tap('#rcCode'); await pf.keyboard.type('12 34x5'); ok((await ev(() => document.getElementById('rcCode').value)) === '12345', 'only digits go in the code field');
+  // the keyboard takes the bottom of the screen (Android shrinks the page): the field in use still shows above it
+  await pf.setViewportSize({ width: 393, height: 470 }); await t.sleep(300);
+  await pf.focus('#rcPw2'); await t.sleep(500);
+  const kb = await ev(() => { const r = document.getElementById('rcPw2').getBoundingClientRect(), vv = window.visualViewport; return [Math.round(r.top), Math.round(r.bottom), Math.round(vv ? vv.height : innerHeight)]; });
+  ok(kb[0] >= 0 && kb[1] <= kb[2], 'with the keyboard up, the new password field stays in view ' + kb.join(' '));
+  await pf.setViewportSize({ width: 393, height: 852 }); await t.sleep(300);
+  const wrong = String((Number(fmail.code) + 1) % 1e6).padStart(6, '0');
+  await pf.fill('#rcCode', wrong); await pf.fill('#rcPw', 'newpass123'); await pf.fill('#rcPw2', 'newpass124'); await tap('#rcGo');
+  ok(/don't match/.test(await ev(() => document.getElementById('rcMsg').textContent)), 'two different new passwords are refused');
+  await pf.fill('#rcPw2', 'newpass123'); await tap('#rcGo');
+  ok(await t.until(() => /isn't right.*4 tries left/.test(document.getElementById('rcMsg').textContent), null, 5000), 'a wrong code: kind message, 4 tries left');
+  ok(!(await reachable(['#rcMsg', '#rcGo'])).length, 'the message is on screen'); await audit('390_844_09_reset_wrong');
+  await ev(() => { const a = document.getElementById('rcAgain'); a.disabled = false; a.click(); }); // as if the minute had passed
+  ok(await t.until(() => /A new code is on its way/.test(document.getElementById('rcMsg').textContent), null, 5000) && srv.mails[srv.mails.length - 1].code, 'Send a new code: a new code is on its way');
+  const fresh = srv.mails[srv.mails.length - 1];
+  ok(fresh.code === fmail.code || await (async () => { await pf.fill('#rcCode', fmail.code); await tap('#rcGo'); return t.until(() => /isn't right/.test(document.getElementById('rcMsg').textContent), null, 5000); })(), 'the old code no longer works');
+  await pf.fill('#rcCode', fresh.code); await pf.fill('#rcPw', 'newpass123'); await pf.fill('#rcPw2', 'newpass123'); await tap('#rcGo');
+  ok(await t.until(() => document.getElementById('modal').hidden && window.__pawCloud.CL.uid === 'uForgot' && !window.__pawCloud.CL.anon, null, 15000), 'the right code: logged in at once as that account ' + await ev(() => [document.getElementById('modal').hidden, window.__pawCloud.CL.uid, window.__pawCloud.CL.anon, window.__paw.mode].join(' ')));
+  ok(await t.untilMode('adopt', 6000), 'no game on this device or in the cloud yet: pick the first crayon dog');
+  ok(srv.pwIs('uForgot', 'newpass123') && !srv.pwIs('uForgot', 'oldpass123'), 'the new password is stored, the old one is gone');
+  // the code died after 5 wrong tries: the screen says so
+  await ev(() => window.__paw.go('title')); await pf.waitForSelector('#tSwitch');
+  await tap('#tSwitch'); await sheetOpen(); await tap('#acLogin'); await pf.waitForSelector('#modal .panel.acct[data-ready] #acEmail'); await pf.fill('#acEmail', 'forgot@example.com');
+  await tap('#acForgot'); await pf.waitForSelector('#modal .panel[data-ready] #fgEmail'); await tap('#fgGo'); await pf.waitForSelector('#modal .panel[data-ready] #rcCode');
+  const dead = srv.mails[srv.mails.length - 1], bad = String((Number(dead.code) + 1) % 1e6).padStart(6, '0');
+  await pf.fill('#rcPw', 'another123'); await pf.fill('#rcPw2', 'another123');
+  for (let i = 0; i < 5; i++) { await pf.fill('#rcCode', bad); await tap('#rcGo'); await t.until(() => !document.getElementById('rcGo').disabled, null, 5000); }
+  ok(/Too many wrong tries for that code\. Tap Send a new code\./.test(await ev(() => document.getElementById('rcMsg').textContent)), 'the 5th wrong try: "Too many wrong tries for that code. Tap Send a new code."');
+  ok(await ev(() => !document.getElementById('rcAgain').disabled && document.getElementById('rcCode').value === ''), 'and Send a new code is ready at once');
+  await pf.fill('#rcCode', dead.code); await tap('#rcGo'); ok(await t.until(() => /Too many wrong tries/.test(document.getElementById('rcMsg').textContent), null, 5000) && srv.pwIs('uForgot', 'newpass123'), 'even the right code is dead now');
+  await tap('#modal .x'); await closed();
+
   sec('phone: cloud off note');
   const p8 = await device('Phone 360x740', false); t.p = p8;
   ok((await line()) === 'Cloud save works on the web version.', 'the note shows on phones too'); await layout('phone cloud off'); await audit('360_740_07_cloud_off');

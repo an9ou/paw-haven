@@ -48,7 +48,7 @@ function brBackfill() {
 on('game:ready', () => { brBackfill(); brStoneLetter(); setTimeout(breedTick, 1200); });
 
 /* ---- v2.1 ancestry: { breedKey: fraction } (PawGenes.ancestry when present, else the same rules here) ---- */
-const BR_KEYS = ['shiba', 'corgi', 'golden', 'dachs', 'husky', 'mutt', 'chihuahua', 'pug', 'greyhound', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie'];
+const BR_KEYS = ['shiba', 'corgi', 'golden', 'dachs', 'husky', 'mutt', 'chihuahua', 'pug', 'greyhound', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie', 'akita', 'spitz', 'pom', 'afghan', 'dane', 'mastiff', 'gsd'];
 const brKeyOf = (k) => (BR_KEYS.includes(k) ? k : 'mutt');
 function brAncRound(a) { const o = {}; let t = 0; Object.keys(a).forEach((k) => { t += a[k]; }); Object.keys(a).forEach((k) => { const v = Math.round((a[k] / (t || 1)) * 64) / 64; if (v > 0) o[k] = v; }); return o; }
 function brAncLocal(rec, depth, memo) {
@@ -111,9 +111,9 @@ function brMerleX(a, b) {
 const brMetersOK = (d) => Object.values(d.stats || {}).every((v) => v >= BREEDING.RULES.welfare.minMeters);
 function brIssues(d, o) {
   o = o || {}; const R = BREEDING.RULES, P = brPR(d), out = [], npc = !!d.npc || !dogById(d.id), m = d.born ? ageMonths(d) : npc ? +(d.months || d.ageMonths || 24) : 10;
-  const add = (code, txt) => out.push({ code, txt });
+  const add = (code, txt) => out.push({ code, txt }), G = giantRules(d), AM = G ? G.adultMonths : R.adultMonths, ML = G ? G.maxLitters : R.female.maxLitters;
   if (d.fixed) add('fixed', `${d.name} is ${brFix(d)}. That was a loving choice, and it's for keeps.`);
-  if (m < R.adultMonths) add('young', `${d.name} is only ${ageText(m)} old. Puppies can't have puppies: wait until 12 months.`);
+  if (m < AM) add('young', `${d.name} is only ${ageText(m)} old. Puppies can't have puppies: wait until ${AM} months.`);
   if (d.sex === 'male' && m >= R.noBreedFromMonths) add('old', `${d.name} has retired from romance. ${P.He} has earned ${P.his} naps.`);
   if (d.sex === 'female' && m >= R.female.noLittersFromMonths) add('old', `${d.name} is past litter age. ${P.He} is retired to full-time napping, with honours.`);
   if (!npc && ((d.bond && d.bond.level) || 1) < R.welfare.minBond) add('bond', `${d.name} needs Bond ${R.welfare.minBond} first (now ${(d.bond && d.bond.level) || 1}). A well-loved dog makes a calm parent.`);
@@ -121,9 +121,10 @@ function brIssues(d, o) {
   if (d.sex === 'female') {
     if (d.preg) add('preg', `${d.name} is already expecting. ${P.He} is busy growing puppies.`);
     else if (!npc && brIsNursing(d)) add('nursing', `${d.name} is busy feeding ${P.his} puppies. Mum duty first.`);
-    if ((d.litters || 0) >= R.female.maxLitters) add('litters', `${d.name} has had ${R.female.maxLitters} litters. ${P.He} is retired from mum duty, with a medal.`);
-    if (d.lastLitter && brDaysUntil(brAddDays(d.lastLitter, R.heat.everyDays)) > 0) { const n = brDaysUntil(brAddDays(d.lastLitter, R.heat.everyDays)); add('recover', `${d.name} is resting one season after ${P.his} last litter (${n} more day${n > 1 ? 's' : ''}).`); }
-    if (!o.force && !d.fixed && m >= R.adultMonths && !(npc ? d.inSeason !== false : seasonStatus(d).inSeason)) add('season', `${d.name} isn't in season. ${seasonStatus(d).txt}.`);
+    if ((d.litters || 0) >= ML) add('litters', `${d.name} has had ${ML} litters. ${P.He} is retired from mum duty, with a medal.`);
+    const rest = G ? G.restDays : R.heat.everyDays;
+    if (d.lastLitter && brDaysUntil(brAddDays(d.lastLitter, rest)) > 0) { const n = brDaysUntil(brAddDays(d.lastLitter, rest)); add('recover', `${d.name} is resting ${G ? 'two seasons' : 'one season'} after ${P.his} last litter (${n} more day${n > 1 ? 's' : ''}).`); }
+    if (!o.force && !d.fixed && m >= AM && !(npc ? d.inSeason !== false : seasonStatus(d).inSeason)) add('season', `${d.name} isn't in season. ${seasonStatus(d).txt}.`);
   } else if (d.restUntil && brDaysUntil(d.restUntil) > 0) { const n = brDaysUntil(d.restUntil); add('rest', `${d.name} is resting after ${P.his} last playdate (${n} more day${n > 1 ? 's' : ''}).`); }
   if (!npc && d.lastPlaydate === brToday() && !o.force) add('today', `${d.name} already had a playdate today. Tomorrow!`);
   return out;
@@ -282,7 +283,7 @@ function openPlaydates(opts) {
   const spk = chk.dam && chk.sire ? sparkleNow(chk.dam, chk.sire) : null;
   const spark = spk ? `<div class="pd-sparkle" id="pdSparkle"><span class="pd-mic">${iconOr('meter', '<path d="M-9 -12h18v4h-2v18a4 4 0 0 1 -4 4h-6a4 4 0 0 1 -4 -4v-18h-2z" fill="#FFF6D6" stroke="#5B3D32" stroke-width="2"/><path d="M-2 0l2 -5l2 5l5 2l-5 2l-2 5l-2 -5l-5 -2z" fill="#FFD75A"/>')}</span><span><b>Sparkle:</b> <span id="pdOdds">${esc(spk.text)}</span>. <span class="small">Cosmetic only.</span></span><span class="pd-meter" id="pdMeter">Sparkle Meter: ${brMeter()} / ${BREEDING.RULES.sparklePity}</span></div>` : '';
   const verdict = `<div class="pd-verdict ${chk.ok ? 'ok' : 'no'}"><b>${chk.ok ? '✓' : chk.friends ? '♥' : '✗'}</b> ${esc(chk.why)}${chk.ok ? ' <span class="small">(85% chance of puppies)</span>' : ''}</div>`;
-  const rules = `<details class="pd-rules"><summary>Playdate rules (real dog logic)</summary><ul class="small"><li>A boy and a girl, both adults (12 months+), not spayed or neutered.</li><li>Both at Bond ${BREEDING.RULES.welfare.minBond}+ with every care meter at 50+.</li><li>She must be in season, under 6 years, with fewer than 4 litters, and rest one season after a litter.</li><li>He rests 2 days after puppies are on the way. No relatives, and never merle with merle.</li></ul></details>`;
+  const rules = `<details class="pd-rules"><summary>Playdate rules (real dog logic)</summary><ul class="small"><li>A boy and a girl, both adults (12 months+), not spayed or neutered.</li><li>Both at Bond ${BREEDING.RULES.welfare.minBond}+ with every care meter at 50+.</li><li>She must be in season, under 6 years, with fewer than 4 litters, and rest one season after a litter.</li><li>He rests 2 days after puppies are on the way. No relatives, and never merle with merle.</li><li>Giant breeds (Great Dane, English Mastiff) take their time: 18 months or more, at most 3 litters, and two seasons of rest after a litter.</li></ul></details>`;
   const p = openModal('Puppy Playdates', `<div class="pd-pick">${col('a', mine, brSel.a)}${col('b', brNpc ? [brNpc] : mine.filter((d) => d.id !== brSel.a), brSel.b)}</div>${verdict}${spark}${pre}${rules}<div class="pd-scene" id="pdScene" hidden></div>`,
     { cls: 'playdates', foot: `<button class="btn no" id="pdNo">Not today</button>${chk.ok ? '<button class="btn yes big" id="pdGo">Playdate!</button>' : chk.friends && !brNpc ? '<button class="btn go big" id="pdFun">Just play</button>' : ''}` });
   p.querySelectorAll('[data-pd]').forEach((el) => { el.onclick = () => { const [slot, id] = el.dataset.pd.split('|'); brSel[slot] = id; if (slot === 'a' && brSel.b === id) brSel.b = null; SFX.click(); openPlaydates({ keep: true }); }; });

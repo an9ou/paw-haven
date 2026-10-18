@@ -125,41 +125,30 @@ function crFeed(name, f) {
 // each pack dog's own petting session (the active dog keeps the v2.6 `pet` object): gain toward the 20 soft cap, its +3 Bond once a session
 let crPetS = {}, crPetSleepT = 0;
 function crPetReset() { crPetS = {}; }
-// [x, y] over a pack dog's head, from the same spot packDogSVG uses
-function crPackHead(d) {
-  const i = others().indexOf(d); if (i < 0) return null;
-  let [fx, fy, face, sc] = packSpots()[i] || packSpots()[0]; sc = sc || 0.6;
-  const hs = typeof hoPackSpot === 'function' ? hoPackSpot(d, i) : null; if (hs) [fx, fy, face, sc] = hs;
-  const w = DW * sc, h = DH * sc; return [fx - w / 2 + w * (face === 'left' ? 0.34 : 0.66), fy - h * (205 / 220) + h * 0.14];
-}
-// one pet tick for every ticked, awake pack dog present. bondNow: the active dog gets its Bond this tick, bonded: it already had it this session.
-// A pack dog's Bond comes with the active dog's (one toast for the pack), or after it at 10 gain. Returns the pack dogs whose Bond is due ([] with pack care off)
-function crPetPack(bondNow, bonded) {
-  if (!crPack()) return [];
-  const now = performance.now(), tick = crDogs().filter((d) => d !== S.dog), zz = tick.filter((d) => d.sleeping), due = [];
-  if (zz.length && now - crPetSleepT > 120000) { crPetSleepT = now; toast(`${crNames(zz)} ${crIs(zz)} asleep, so no pets for now.`); }
-  tick.filter((d) => !d.sleeping && !(typeof hmMumIn === 'function' && hmMumIn(d))).forEach((d) => {
-    const s = crPetS[d.id] || (crPetS[d.id] = { gain: 0, bonded: false, at: 0 });
-    let g = 1.5 * (withDog(d, () => favAct('petting')) ? 1.5 : 1); if (s.gain >= 20) g *= 0.25;
-    s.gain += g; withDog(d, () => addStat('happy', g));
-    if (!s.bonded && (bondNow || (bonded && s.gain >= 10))) due.push(d);
-    if (now - s.at > 900 && cur.mode === 'yard') {
-      s.at = now; crFree(d); packNext[d.id] = Math.max(packNext[d.id] || 0, now + 1100); packPose[d.id] = 'pet'; redrawPackDog(d);
-      const hd = crPackHead(d); if (hd) fxText('♥', hd[0] + RAND(-12, 12), hd[1] - 8, '#F28FA5', 30);
-      setTimeout(() => { if (packPose[d.id] === 'pet') { packPose[d.id] = 'happy'; if (cur.mode === 'yard' && !d.sleeping) redrawPackDog(d); } }, 900);
-    }
-  });
-  return due;
-}
-// v2.8.4: pet a pack dog where it stands, no switching. The dog touched is ticked back in if it was unticked. With the active dog awake this is
-// the same pet as rubbing the active dog (every ticked dog present gets it); with the active dog asleep only the awake ticked pack dogs do
+// [x, y] over a pack dog's head, where it stands now (v2.10 ROAM)
+function crPackHead(d) { if (others().indexOf(d) < 0) return null; const h = rmHead(d); return [h.x, h.y + 24 * rmK(rmSt(d))]; }
+// v2.10 ROAM: petting pets the touched dog only (V210.md section 1), so the v2.8.4 whole-pack rub is gone: the active dog's pet gives the others nothing
+function crPetPack() { return []; }
+// pet a pack dog where it stands, no switching (with or without pack care). The dog touched is ticked back in if it was unticked. Its own petting
+// session: hearts, Happiness up to the soft cap, +3 Bond once a session (one toast), and the daily care bonus on the first good petting of any dog
 function crPetAt(d, wx, wy) {
-  if (!d || busy) return;
+  if (!d) return;
+  if (d === S.dog) { petTick(wx, wy); return; }
   if (d.sleeping) { barkDog(d, 'huff', { player: true, volume: 0.6 }); if (performance.now() - crPetSleepT > 2500) { crPetSleepT = performance.now(); toast(`Shh. ${d.name} is asleep.`); } return; }
   if (S.careOff && S.careOff[d.id]) { delete S.careOff[d.id]; markDirty(); }
-  if (!S.sleeping) { petTick(wx, wy); return; }
-  const due = crPetPack(false, true); fxText('♥', wx + RAND(-20, 20), wy - 10); Math.random() < 0.7 ? SFX.squeak() : SFX.boop(RAND(500, 800));
-  if (due.length) crPetBond(due, true); else updateHUD();
+  const now = performance.now(), s = crPetS[d.id] || (crPetS[d.id] = { gain: 0, bonded: false, at: 0, start: now, capped: false });
+  if (now - (s.start || 0) > 120000) Object.assign(s, { gain: 0, bonded: false, start: now, capped: false });
+  let g = 1.5 * (withDog(d, () => favAct('petting')) ? 1.5 : 1);
+  if (s.gain >= 20) { g *= 0.25; if (!s.capped) { s.capped = true; toast(`${d.name} is 100% petted. More petting is now a luxury.`); } }
+  s.gain += g; withDog(d, () => addStat('happy', g));
+  fxText('♥', wx + RAND(-20, 20), wy - 10); Math.random() < 0.7 ? SFX.squeak() : SFX.boop(RAND(500, 800));
+  if (now - s.at > 900 && cur.mode === 'yard') {
+    s.at = now; crFree(d); packNext[d.id] = Math.max(packNext[d.id] || 0, now + 1100); packPose[d.id] = 'pet'; rmPaint(d);
+    setTimeout(() => { if (packPose[d.id] === 'pet') { packPose[d.id] = 'happy'; if (cur.mode === 'yard' && !d.sleeping) rmPaint(d); } }, 900);
+  }
+  rmPetted(d);
+  if (!s.bonded && s.gain >= 10) { s.bonded = true; crPetBond([d], true); dailyCare('pet'); markCareDay(); trackAct('pet', {}); }
+  else updateHUD();
 }
 // the rub (mouse hover-rub or touch drag) and tap on a pack dog, like the active dog's #dogHit (03_yard.js). The rub state is shared (crRub), because a
 // petted pack dog is redrawn (redrawPackDog replaces its element and binds the new one) in the middle of a touch rub

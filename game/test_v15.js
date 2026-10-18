@@ -29,14 +29,15 @@ require('./test_lib').run('v15', async (t) => {
   ok(s.dogs.length === 2 && pep.name === 'Pepper' && pep.rescue && /\d{4}-\d\d-\d\d/.test(pep.rescue.date), 'rescued Pepper: ' + JSON.stringify({ sex: pep.sex, born: pep.born, coat: pep.coat, eyes: pep.eyes }));
   const months = await ev((id) => { const d = window.__paw.S.dogs.find((x) => x.id === id); const n = new Date(); n.setHours(0, 0, 0, 0); return Math.round((n - new Date(d.born + 'T00:00:00')) / 864e5); }, pep.id);
   ok(months >= 8 && months <= 36 && ['male', 'female'].includes(pep.sex), `rescue age ${months} dog months, fixed sex ${pep.sex}`);
-  ok(s.place === 'yard' && (await p.locator('#pack [data-dog]').count()) === 1, 'both dogs shown in the yard (1 in the pack spot)');
+  ok(s.place === 'yard' && (await p.locator('#pack .packdog[data-dog]').count()) === 1 && (await p.locator('#pack .rmdog').count()) === 2, 'both dogs shown in the yard (1 pack dog, the leader in #pack too)');
   ok((await p.locator('#hudPack .dchip').count()) === 1, 'HUD chip for the other dog'); await SH('03_two_dogs_yard');
 
   sec('switching: click the dog, then the chip');
   const mochiId = s.dogs[0].id;
   await ev(() => { const S = window.__paw.S; S.dogs[0].stats.hunger = 20; S.dogs[1].stats.hunger = 85; });
   ok(await hungerIs(20, 2), 'Mochi meter shows ~20'); const h1 = +(await hunger());
-  await p.click(`#pack [data-dog="${pep.id}"]`, { force: true }); ok(await t.until((id) => window.__paw.S.activeId === id, pep.id), 'clicking Pepper in the scene makes her/him active');
+  await p.click(`#pack [data-dog="${pep.id}"] .pd-wander > rect`, { force: true }); ok((await S()).activeId === mochiId, 'v2.10 ROAM: clicking Pepper in the scene pets her/him, no switching');
+  await p.click(`#hudPack .dchip[data-dog="${pep.id}"]`); ok(await t.until((id) => window.__paw.S.activeId === id, pep.id), 'the HUD head row makes Pepper active');
   s = await S(); ok(s.dog.name === 'Pepper', 'active dog is Pepper'); ok(await hungerIs(85, 2), 'Pepper meter shows ~85'); const h2 = +(await hunger());
   ok(Math.abs(h1 - 20) <= 2 && Math.abs(h2 - 85) <= 2, `per-dog stats in the HUD: Mochi ${h1}, Pepper ${h2}`); await SH('04_switched_by_click');
   await p.click(`#hudPack .dchip[data-dog="${mochiId}"]`); ok(await t.until((id) => window.__paw.S.activeId === id, mochiId), 'chip click switches back to Mochi');
@@ -72,17 +73,17 @@ require('./test_lib').run('v15', async (t) => {
   sec('highest Bond unlocks; potty for every dog');
   await p.click(`#hudPack .dchip[data-dog="${pep.id}"]`); await t.until((id) => window.__paw.S.activeId === id, pep.id);
   await t.travel('river'); ok((await S()).place === 'river', 'unlocks use the highest Bond (Bond-1 dog active, Riverside opens)');
-  ok((await p.locator('#pack [data-dog]').count()) === 1, 'every dog travelled to the river');
+  ok((await p.locator('#pack .packdog[data-dog]').count()) === 1, 'every dog travelled to the river');
   await ev(() => { const S = window.__paw.S; S.messes.river = []; S.dogs.forEach((d) => { d.potty.poopDue = S.gameMin - 1; }); });
   ok(await t.until(() => { const m = window.__paw.S.messes.river || []; return m.length === 2 && new Set(m.map((x) => x.dog)).size === 2; }, null, 40000), 'both dogs pooped: 2 messes (cap 2 with 2 dogs)'); await SH('09_two_messes');
 
-  sec('v1.7: every breed at the shelter (14 since v2.5), adopt the new breeds as starters');
+  sec('v1.7: every breed at the shelter (14 since v2.5, 21 since v2.11), adopt the new breeds as starters');
   await t.packPin(true); // pack dogs re-pick poses every tick from here on; pinned to one pose before the layout checks
   await ev(() => { const S = window.__paw.S; ['Royal Castle Kennel'].forEach((h) => { if (!S.inv.houses.includes(h)) S.inv.houses.push(h); }); S.house = 'Royal Castle Kennel'; S.coins = 9999; S.careDays = 60; S.dogs.forEach((d) => { d.bond = { level: 10, pts: 3200 }; }); }); // v2: spots 3 + 4 need Bond 10 dogs, 60 care days, the Castle
   await t.home('yard'); ok(await t.toShelter(), 'shelter opens');
   const stK = await ev(() => [...document.querySelectorAll('.shcard.starter [data-shadopt]')].map((b) => b.dataset.shadopt.split('|')[1]));
   const NB = await ev(() => window.PawGenes.BREEDS.length);
-  ok(NB === 14 && stK.length === NB - 1 && ['chihuahua', 'pug', 'greyhound', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie'].every((k) => stK.includes(k)), `shelter: ${NB - 1} starter cards left (${NB} breeds, Mochi home): ` + stK.join(','));
+  ok(NB === 21 && stK.length === NB - 1 && ['chihuahua', 'pug', 'greyhound', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie', 'akita', 'spitz', 'pom', 'afghan', 'dane', 'mastiff', 'gsd'].every((k) => stK.includes(k)), `shelter: ${NB - 1} starter cards left (${NB} breeds, Mochi home): ` + stK.join(','));
   const labs = await ev(() => [...document.querySelectorAll('.shcard.starter .shdog svg.pa-dog')].map((x) => x.getAttribute('aria-label')));
   ok(['Chihuahua', 'Pug', 'Greyhound', 'Beagle'].every((br) => labs.some((l) => l.includes(br))), 'new starter cards draw their own breed');
   await SH('11_shelter_10_breeds'); await t.leaveShelter();

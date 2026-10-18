@@ -166,7 +166,9 @@ require('./test_lib').run('v29_pack', async (t) => {
   ok(await t.waitToast(/Pip is pooped and naps this one out/, 9000), 'the walk toast gives the kind line');
   ok(await ev(() => document.querySelectorAll('.pw-dog.pw-fol').length) === 1, 'one follower is drawn in the runner');
   const geo = await ev(() => { const l = document.querySelector('.pw-dog:not(.pw-fol)').getBoundingClientRect(), f = document.querySelector('.pw-fol').getBoundingClientRect(); return { fl: f.left, ll: l.left, fr: f.right, lr: l.right, ft: f.top, lt: l.top, fh: f.height, lh: l.height, idx: [...document.querySelector('.pw-stage').children].indexOf(document.querySelector('.pw-fol')) < [...document.querySelector('.pw-stage').children].indexOf(document.querySelector('.pw-dog:not(.pw-fol)')) }; });
-  ok(geo.fl < geo.ll && geo.idx && geo.fh < geo.lh && geo.fh > geo.lh * 0.7 && Math.abs((geo.ft + geo.fh) - (geo.lt + geo.lh)) < 8, 'the follower trails the leader on the same ground line, a little smaller, drawn behind: ' + JSON.stringify(geo));
+  // v2.11.1: the follower is drawn at 0.8 of the leader's scale times its size relative to the leader's (Bun the corgi is small, 0.72; the shiba leader medium, 0.86)
+  const rel = await ev(() => window.__opts.pack[0].size / window.__opts.dog.size);
+  ok(geo.fl < geo.ll && geo.idx && geo.fh < geo.lh && Math.abs(geo.fh / geo.lh - 0.8 * rel) < 0.03 && Math.abs((geo.ft + geo.fh) - (geo.lt + geo.lh)) < 8, `the follower trails the leader on the same ground line, smaller (0.8 x its size class: ${(geo.fh / geo.lh).toFixed(3)} of ${(0.8 * rel).toFixed(3)}), drawn behind: ` + JSON.stringify(geo));
   const rg = await ev(() => { const art = (el) => { let b = [1e9, 1e9, -1e9, -1e9]; [...el.querySelector('.pw-pose.on svg').children].forEach((c) => { const r = c.getBoundingClientRect(); if (!r.width && !r.height) return; b = [Math.min(b[0], r.left), Math.min(b[1], r.top), Math.max(b[2], r.right), Math.max(b[3], r.bottom)]; }); return b; };
     const st = document.querySelector('.pw-stage').getBoundingClientRect(), L = art(document.querySelector('.pw-dog:not(.pw-fol)')), F = [...document.querySelectorAll('.pw-fol')].map((e) => ({ box: e.getBoundingClientRect(), a: art(e) }));
     return { inStage: F.every((f) => f.box.left >= st.left - 0.5 && f.box.right <= st.right && f.box.bottom <= st.bottom + 2), cover: Math.max(...F.map((f) => Math.max(0, Math.min(f.a[2], L[2]) - Math.max(f.a[0], L[0])) / (f.a[2] - f.a[0]))), L: L.map(Math.round), F: F.map((f) => f.a.map(Math.round)) }; });
@@ -282,7 +284,7 @@ require('./test_lib').run('v29_pack', async (t) => {
   ok(JSON.stringify(await pk('play')) === JSON.stringify(lone) && JSON.stringify(await pk('walk', 'park')) === JSON.stringify(lone), 'pkDogs: the active dog only');
   await playTray(); ok(await p().locator('#dock .cr-chips').count() === 0, 'no chips in the Play tray');
   await p().click('[data-play=duck]'); await idle();
-  h = await stat('happy'); ok(h[0] > 48 && near(h[1], 40) && near(h[2], 40), 'the Duck pleases the active dog only: ' + JSON.stringify(h.map(Math.round)));
+  h = await stat('happy'); ok(h[0] > 48 && h[1] < 40.6 && h[1] > 37 && h[2] < 40.6 && h[2] > 37, 'the Duck pleases the active dog only (the others only see the hourly decay): ' + JSON.stringify(h.map(Math.round)));
   ok(await ev(() => document.querySelectorAll('#pack .packdog.pk-tug').length) === 0, 'no pile-on');
   await playTray(); await p().click('[data-play=tricks]');
   ok(await t.until(() => !!window.__paw.train, null, 4000) && await p().locator('#dock .pk-pickb').count() === 0, 'Tricks opens training directly, no picker');
@@ -294,16 +296,12 @@ require('./test_lib').run('v29_pack', async (t) => {
   ok(await ev(() => window.__opts.pack.length) === 0 && await ev(() => document.querySelectorAll('.pw-fol').length) === 0, 'the runner has no followers');
   await ev(() => window.__paw.go('yard')); await t.untilMode('yard');
   const pd2 = await ev(() => document.querySelector('#pack .packdog').dataset.dog);
-  ok(!/Press and hold/.test(await ev(() => document.querySelector('#pack .packdog').getAttribute('aria-label'))), 'no long press hint on a pack dog');
-  await t.freezeMotion(true); // the pack dogs' wander animation must not move the dog between the measure and the press
-  // a long click (0.9 s) must still switch dogs and never open the card. An idle redraw can replace the dog's element during the hold (v2.8.4 too), so the click is repeated until it lands
-  let card2 = false, tries2 = 0;
-  for (; tries2 < 4 && (await S()).activeId !== pd2; tries2++) {
-    const r2 = await ev((d) => { const r = document.querySelector(`#pack [data-dog="${d}"] .pd-wander > rect`).getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }, pd2);
-    await p().mouse.move(r2.x, r2.y); await p().mouse.down(); await p().waitForTimeout(900);
-    card2 = card2 || !!(await ev(() => document.getElementById('pkCard'))); await p().mouse.up(); await p().waitForTimeout(200);
-  }
-  ok(!card2 && (await S()).activeId === pd2, `a click (even a long one) just switches dogs, as before (${tries2} tries)`);
+  // v2.10 ROAM (V210.md section 1): a tap on any dog pets that dog only, with pack care off too; the leader changes from the HUD head row
+  ok(/rub or tap to pet/.test(await ev(() => document.querySelector('#pack .packdog').getAttribute('aria-label'))), 'a pack dog says rub or tap to pet');
+  await t.freezeMotion(true); await set('happy', 40); const act2 = (await S()).activeId;
+  for (let i = 0; i < 3; i++) { await p().click(`#pack [data-dog="${pd2}"] .pd-wander > rect`, { force: true }); await p().waitForTimeout(150); }
+  st = await S(); ok(st.activeId === act2 && st.dogs.every((d) => (d.id === pd2 ? d.stats.happy > 40 : near(d.stats.happy, 40))), 'a click pets that dog only and never switches: ' + JSON.stringify(st.dogs.map((d) => Math.round(d.stats.happy))));
+  await t.freezeMotion(false);
   await p().click('[data-act=wardrobe]'); await modalUp();
   ok(await p().locator('#modal .pk-pickb').count() === 0, 'the wardrobe has no picker');
 }, { packCare: true });

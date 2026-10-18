@@ -242,8 +242,10 @@ const AUDIT = () => {
       const pd = await rectOf('#pack .packdog');
       if (pd.x > 0 && pd.x < W) {
         ok(pd.w >= 44 && pd.h >= 44, `pack dog tap area >= 44 (${Math.round(pd.w)}x${Math.round(pd.h)})`);
-        await t.p.touchscreen.tap(pd.x, pd.y);
-        ok(await t.until((id) => window.__paw.S.dog.id !== id, first.dog.id, 4000), 'tapping a pack dog switches to it');
+        await t.p.touchscreen.tap(pd.x, pd.y); await t.sleep(400);
+        ok((await t.S()).dog.id === first.dog.id, 'v2.10 ROAM: tapping a pack dog pets it, no switching');
+        await t.p.locator('.dchip').last().tap();
+        ok(await t.until((id) => window.__paw.S.dog.id !== id, first.dog.id, 4000), 'tapping a dog chip switches to it');
       } else {
         await t.p.locator('.dchip').last().tap();
         ok(await t.until((id) => window.__paw.S.dog.id !== id, first.dog.id, 4000), 'tapping a dog chip switches to it');

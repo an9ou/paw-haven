@@ -72,7 +72,7 @@ require('./test_lib').run('v29_polish', async (t) => {
     return r.items.map((i) => ({ b: i.breed, k: i.kind, db: i.loud50msDb, pk: i.peak }));
   });
   const dbs = L.map((i) => i.db), lo = Math.min(...dbs), hi = Math.max(...dbs);
-  ok(L.length === 14 * 4, `rendered 14 breeds x 4 kinds (${L.length})`);
+  ok(L.length === 21 * 4, `rendered 21 breeds x 4 kinds (${L.length})`);
   ok(lo >= -27.5, `no newborn squeak, mew or whimper is quieter than -27.5 dB (quietest ${lo} dB; it was -31)`);
   ok(hi <= -21.5, `none is louder than -21.5 dB (loudest ${hi} dB)`);
   ok(hi - lo <= 5, `the whole spread is within 5 dB (${(hi - lo).toFixed(1)} dB; it was 11)`);

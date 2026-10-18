@@ -20,11 +20,13 @@
   ];
   var BY_ID = {};
   CROPS.forEach(function (c) { BY_ID[c.id] = c; });
-  var BUDDY = { shiba: 'inspect', corgi: 'guard', golden: 'fetch', dachs: 'dig', husky: 'snow', mutt: 'tend', chihuahua: 'guard', pug: 'tend', greyhound: 'fetch', beagle: 'inspect', poodle: 'inspect', collie: 'guard', samoyed: 'snow', frenchie: 'tend' };
+  var BUDDY = { shiba: 'inspect', corgi: 'guard', golden: 'fetch', dachs: 'dig', husky: 'snow', mutt: 'tend', chihuahua: 'guard', pug: 'tend', greyhound: 'fetch', beagle: 'inspect', poodle: 'inspect', collie: 'guard', samoyed: 'snow', frenchie: 'tend', akita: 'guard', spitz: 'snow', pom: 'inspect', afghan: 'inspect', dane: 'tend', mastiff: 'tend', gsd: 'guard' };
   // v1.7: breed-flavoured opening lines (other breeds use the perk line)
   var BREED_LINE = { chihuahua: '{n} is the security system. Captain Fluff has been warned. Loudly.', pug: '{n} lies next to the thirsty plants and snorts until someone waters them.', greyhound: '{n} fetched the basket at 45 mph. Then lay down in it.', beagle: '{n} has sniffed every leaf. Twice. Quality is guaranteed.',
     poodle: '{n} checks each leaf like a judge at a show. Only the best get through.', collie: '{n} keeps the squirrels in one corner of the garden. They look embarrassed.',
-    samoyed: '{n} keeps the plants company in the snow. The snow is the fun part.', frenchie: '{n} naps next to the dry plants. The snoring reminds you to water them.' };
+    samoyed: '{n} keeps the plants company in the snow. The snow is the fun part.', frenchie: '{n} naps next to the dry plants. The snoring reminds you to water them.',
+    akita: '{n} sits by the garden gate and watches over every row. Nothing gets past.', spitz: '{n} trots between the rows and sparkles. The plants feel very looked after.', pom: '{n} marches along the rows giving orders in a tiny voice. The carrots seem to listen.',
+    afghan: '{n} drapes across the sunniest bed and lets the plants admire {him}.', dane: '{n} watches the garden from way up high. The tomatoes feel tiny and safe.', mastiff: '{n} flops by the beans and sighs. The beans feel guarded and a little damp.', gsd: '{n} patrols the rows twice a day. Nothing gets past, not even weeds.' };
   // quality points (0-3) -> [1 star, 2 stars, 3 stars] odds
   var STAR_ODDS = [[0.70, 0.25, 0.05], [0.55, 0.35, 0.10], [0.40, 0.40, 0.20], [0.25, 0.45, 0.30]];
   var SELL_MULT = [1, 1.5, 2];

@@ -6,9 +6,9 @@ function yardWorldSVG(extra = '') {
     ${sceneG(S.place || 'yard', S.place === 'yard' ? { patch: gkOn() ? patchState() : 'empty' } : S.place === 'house' && hasBedArt() ? { bed: false } : {})}${S.place === 'yard' && !gkOn() ? '<g class="soon-tag" pointer-events="none" transform="translate(112 432) rotate(-6)"><rect x="-58" y="-17" width="116" height="30" rx="6" fill="#FFF3B8" stroke="#5B3D32" stroke-width="2"/><text y="6" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="22" fill="#5B3D32">coming soon</text></g>' : ''}${bedLayers().back}<g id="messG"></g><g id="snowmanG">${S.place === 'yard' ? snowmanSVG() : ''}</g>${S.place === 'yard' && cur.mode === 'yard' && typeof msYardSVG === 'function' ? msYardSVG() : ''}${S.place === 'yard' ? hmDecorSVG() : ''}
     ${S.place === 'yard' ? `<g id="houseG" class="hot${isNight() ? ' night' : ''}" tabindex="0" role="button" aria-label="Dog house: ${esc(S.house)}">${place(art('house', S.house), 620, 330, 240, 200)}</g>` : ''}
     <g id="bowlG" class="hot" tabindex="0" role="button" aria-label="Food bowl">${place(art('prop', 'bowl-empty'), 205, 462, 90, 90)}</g>
-    <g id="pack">${packSVG()}</g><g id="dogPos"><g id="dogFx"><g id="dogArt"></g><rect id="dogHit" x="${DX + 30}" y="${DY + 40}" width="${DW - 60}" height="${DH - 40}" fill="transparent" pointer-events="all" class="hot" tabindex="0" role="button" aria-label="Pet the dog"/></g><g id="fluffFx" pointer-events="none"></g></g>${bedLayers().front}
+    <g id="pack">${packSVG(true)}</g>${bedLayers().front}
     ${S.place === 'yard' && S.mapPieces.length >= 4 && !S.secretDug ? `<g id="secretX" class="hot" tabindex="0" role="button" aria-label="Secret dig: X marks the spot"><rect x="585" y="452" width="150" height="140" fill="transparent"/>${place(artReal('collectible', 'dig') || art('collectible', 'dig'), 615, 495, 90, 90)}<text x="660" y="488" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="26" fill="#5B3D32">X marks the spot!</text></g>` : ''}
-    <g id="zzz"></g>${extra}<g id="fx"></g></svg><div id="status"></div><div id="placeBtns"></div><button id="devBtn">dev</button>`;
+    <g id="zzz"></g><g id="ballLayer" pointer-events="none"></g>${extra}<g id="fx"></g></svg><div id="status"></div><div id="placeBtns"></div><button id="devBtn">dev</button>`;
 }
 function dogPoseNow() {
   if (tempPose && performance.now() < tempUntil) return tempPose;
@@ -68,9 +68,17 @@ function fbPackNapFit() {
   });
 }
 function setTemp(pose, ms) { tempPose = pose; tempUntil = performance.now() + ms; renderDog(pose); }
-function dogTo(tx, ty = 0, scale = 1, secs = 0.9) { // v2.8 phones: on Mt. Fuji Lookout the camera stays on the hill crop (the path, the bench and Fuji, phHomeRefit)
-  const p = $('#dogPos'); if (!p) return; phCamHome = isPhone() && S && S.place === 'fujihill' ? phHomeCx : phHomeCx + (scale === 1 ? tx : (430 * scale + tx) - phHomeCx); if (phPeekOn && typeof IDLE === 'object' && IDLE.act) { /* the player is looking around: an idle wander does not pull the view back */ } else { if (phPeekOn) { phPeekOn = false; clearTimeout(phPanT); } camTo(phCamHome, secs); } p.style.transitionDuration = secs + 's';
+// v2.10 ROAM: the leader is one of the roaming dogs (37_roam.js). The v2.9 calls still say where the dog box goes (feet at 430 * scale + tx,
+// 500 * scale + ty) and 0, 0, 1 means back where it stands now. #dogPos keeps the old transform as a record (hoAtBedNap, the old suites): inside
+// its .rmdog group the CSS keeps it flat and rmLegacyTo moves the group
+function dogTo(tx, ty = 0, scale = 1, secs = 0.9) {
+  const p = $('#dogPos'); if (!p) return; p.style.transitionDuration = secs + 's';
   p.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+  // phones: the camera follows the leader's errands as in v2.9 (back home = the scene's home crop); an idle wander while the player looks around leaves the view
+  if (isPhone() && cur.mode === 'yard') { const home = tx === 0 && ty === 0 && scale === 1; phCamHome = S.place === 'fujihill' || home ? phHomeCx : scale === 1 ? phHomeCx + tx : 430 * scale + tx; if (phPeekOn && typeof IDLE === 'object' && IDLE.act) { /* looking around */ } else { if (phPeekOn) { phPeekOn = false; clearTimeout(phPanT); } camTo(phCamHome, secs); } }
+  else if (phPeekOn && !(typeof IDLE === 'object' && IDLE.act)) { phPeekOn = false; clearTimeout(phPanT); }
+  const fol = $('#pkFol'); if (fol && fol.closest('.rmdog')) $('#pack').after(fol); // v2.9 Fetch followers are placed in world units, not with the leader
+  if (p.closest('.rmdog')) rmLegacyTo(tx, ty, scale, secs);
 }
 // v2.5: the art module draws some foods in the bowl itself (WORLD_B.bowlFoods). Every other food (the v2.4 and v2.5 foods) used to
 // show an empty bowl, so it is composed here: the empty bowl, the food's own item art, then the bowl's front wall again on top, so
@@ -125,16 +133,16 @@ function enterYard() {
   hit.addEventListener('pointerleave', () => { if (!down) last = null; });
   hit.addEventListener('pointercancel', () => { down = false; last = null; });
   hit.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); petTick(560, 380); } });
-  const bowl = $('#bowlG'); bowl.onclick = () => { popAct = 'feed'; openFeedTray(); }; bowl.onkeydown = (e) => { if (e.key === 'Enter') { popAct = 'feed'; openFeedTray(); } };
+  const bowl = $('#bowlG'); bowl.onclick = () => { if (blOn()) return; popAct = 'feed'; openFeedTray(); }; bowl.onkeydown = (e) => { if (e.key === 'Enter' && !blOn()) { popAct = 'feed'; openFeedTray(); } }; // v2.10: ball play keeps its dock
   if (S.place !== 'house' && S.place !== 'yard' && S.place !== 'market') setTimeout(() => placeAmbient(), 2500);
   const sx = $('#secretX'); if (sx) { sx.onclick = secretDig; sx.onkeydown = (e) => { if (e.key === 'Enter') secretDig(); }; }
-  const house = $('#houseG'); if (house) { house.onclick = () => { popAct = 'care'; openCareTray(); }; house.onkeydown = (e) => { if (e.key === 'Enter') { popAct = 'care'; openCareTray(); } }; }
+  const house = $('#houseG'); if (house) { house.onclick = () => { if (blOn()) return; popAct = 'care'; openCareTray(); }; house.onkeydown = (e) => { if (e.key === 'Enter' && !blOn()) { popAct = 'care'; openCareTray(); } }; }
   placeButtons();
   bindSceneHots();
   // ambient jokes
   let next = performance.now() + 6000;
   const iv = setInterval(() => {
-    if (busy || curling || TRN || !modal.hidden || cur.mode !== 'yard' || popOpen()) return;
+    if (busy || curling || TRN || !modal.hidden || cur.mode !== 'yard' || popOpen() || RM.paused.size || (typeof blOn === 'function' && blOn())) return; // v2.10: quiet during ball play
     if (performance.now() > next) { next = performance.now() + RAND(14000, 24000); if (popOpen()) return; if (S.dogs.length > 1 && Math.random() < 0.5) packAmbient(); else if (!IDLE.act) dogJoke(); }
   }, 1000);
   onCleanup(() => clearInterval(iv));
@@ -151,19 +159,29 @@ function phSvgDims() { const svg = $('#view > svg.world'); return { w: (svg && s
 function phHomeRefit() {
   if (!isPhone() || (cur.mode !== 'yard' && cur.mode !== 'market') || !$('#view > svg.world')) return;
   let L = 186, R = 530, fitMin = 0.62;
-  const vz = $('#visitorG', view);
+  const vz = $('#visitorG', view), wide = cur.mode === 'yard' && S.place !== 'market'; // v2.10 ROAM: every other place shows the whole pack (the Mt. Fuji Lookout too: at the old crop the dogs stood as tall as the torii)
   if (S.place === 'market') { L = 186; R = 592; fitMin = 0.78; } // the bowl, the dog and the "Market Street" sign together: the street zooms out a little when the screen is narrow
   else if (S.place === 'fujihill') { L = 250; R = 596; } // v2.8 FUJI HILL: the dog on the path, the bench (x 488-572) and Fuji's summit in the crop at 390 and 360 px
+  else if (wide && S.place === 'yard' && !vz) { L = 140; } // v2.10: the missions clipboard's 48 px tap rect (it grows left of the clipboard when the scene is zoomed out)
+  else if (wide && vz) { const sp = visitorSpot(), w = 264 * sp[3]; L = 306; R = Math.max(R, sp[0] + w / 2 + 6); } // a visiting dog: the dog and the visitor, as in v2.3
   else if (vz) { const sp = visitorSpot(), w = 264 * sp[3]; L = 306; R = Math.max(R, sp[0] + w / 2 + 6); }
   const vw = view.clientWidth, vh = view.clientHeight - (parseFloat(view.style.getPropertyValue('--trayH')) || 0); if (!vw || vh <= 0) return;
-  const native = 600 * vw / vh, fit = Math.max(fitMin, Math.min(1, native / (R - L)));
-  view.style.setProperty('--vfit', fit.toFixed(3));
-  if (S.place === 'market') { // the street's own layout (22_phone_town.css) ignores --vfit, so it zooms through the viewBox; the extra sky above the scene takes the sky's colour
-    phZoom = fit; view.style.background = '';
-    const sky = $('#view > svg.world #sceneG rect[width="1000"][height="452"]'), m = sky && /url\(#([^)]+)\)/.exec(sky.getAttribute('fill') || ''), gr = m && $('#view > svg.world #' + m[1]), st = gr && gr.querySelector('stop');
-    if (st) view.style.background = st.getAttribute('stop-color') || getComputedStyle(st).stopColor || '';
+  const native = 600 * vw / vh;
+  if (wide) { // v2.10 ROAM: about 700 world units wide (V210.md section 5.2): zoomed out through the viewBox like Market Street, the extra sky above the scene
+    phZoom = Math.min(1, native / rmCropFit(vw, native)); view.style.removeProperty('--vfit'); view.style.background = phZoom < 1 ? rmSky() : '';
+  } else {
+    const fit = Math.max(fitMin, Math.min(1, native / (R - L)));
+    view.style.setProperty('--vfit', fit.toFixed(3));
+    if (S.place === 'market') { // the street's own layout (22_phone_town.css) ignores --vfit, so it zooms through the viewBox; the extra sky above the scene takes the sky's colour
+      phZoom = fit; view.style.background = '';
+      const sky = $('#view > svg.world #sceneG rect[width="1000"][height="452"]'), m = sky && /url\(#([^)]+)\)/.exec(sky.getAttribute('fill') || ''), gr = m && $('#view > svg.world #' + m[1]), st = gr && gr.querySelector('stop');
+      if (st) view.style.background = st.getAttribute('stop-color') || getComputedStyle(st).stopColor || '';
+    }
   }
-  phHomeCx = (L + R) / 2; if (!S.sleeping || S.place === 'fujihill') { phCamHome = phHomeCx; camCx = phCamHome; }
+  // v2.10 ROAM: the wider crop keeps the v2.3 home span (the bowl, the dog's spot, a visitor) in view and leans towards the middle of the pack
+  const half = wide ? Math.min(500, native / phZoom / 2) : 0, pk = wide ? rmSpan() : null;
+  phHomeCx = !wide || !rmWander() || R - L >= half * 2 ? (L + R) / 2 : clamp(clamp((pk[0] + pk[1]) / 2, R - half, L + half), half, 1000 - half); // the harness keeps the v2.3 home (the older suites tap props by where they were)
+  if (!S.sleeping || S.place === 'fujihill') { phCamHome = phHomeCx; camCx = phCamHome; }
   camApply(camCx);
 }
 // v2.3 phone: a feed / care / nap tray never covers the scene. The scene shrinks into the part of the view above the tray (the whole scene stays visible).
@@ -171,7 +189,7 @@ function phTrayFit() {
   if (!isPhone()) return;
   let h = 0;
   if (cur.mode === 'yard') {
-    const pb = $('#placeBtns'); if (pb && pb.children.length) h = pb.offsetHeight + 8; // the place buttons (Garden, Go inside, Café menu...) get their own strip under the scene, so they never cover a prop
+    const pb = $('#placeBtns'); if (pb && pb.children.length) h = pb.offsetHeight + 14; // v2.10: 14 (was 8), so a prop drawn on the scene's bottom edge ends above the buttons (they sit 10 px up) // the place buttons (Garden, Go inside, Café menu...) get their own strip under the scene, so they never cover a prop
     const tr = dock.querySelector(':scope > .tray'); if (tr && !tr.classList.contains('dock-idle')) { phTrayCap(tr); h = tr.offsetHeight; const d = tr.querySelector('.napdet:not([hidden])'); if (d) h += d.offsetHeight + 8; }
   }
   const cur0 = parseFloat(view.style.getPropertyValue('--trayH')) || 0; if (Math.abs(cur0 - h) < 1) return;
@@ -262,23 +280,33 @@ const WX_LINES = {
   poodle: { rain: 'Rain flattens the curls. I need a moment.', coat: 'A raincoat. Very chic. The curls survive.', snow: 'The curls are not a coat. A sweater, please.', warm: 'Sweater on. Now I am a stylish snowball.', hot: 'Too hot for curls. I will be elegant in the shade.', night: '*yawn* Even geniuses need sleep.', dawn: 'Good morning. I have been awake for hours. Thinking.' },
   collie: { rain: 'Rain. Nobody stays together in the rain. I am stressed.', coat: 'Coat on. Now herd the puddles.', snow: 'Snow! The sheep could be anywhere. Brr. Sweater?', warm: 'Sweater on. I can work all day in this.', hot: 'Too hot to herd. I will watch everyone from the shade.', night: '*yawn* Everyone is home. I counted. Now I sleep.', dawn: 'Good morning! What is the job today? Is there a job?' },
   samoyed: { rain: 'Wet fluff is heavy fluff. I am a soggy cloud.', coat: 'A raincoat on a cloud. Very sensible.', snow: 'SNOW! This is my weather! Woo-woo!', warm: 'Sweater AND snow? I will be too toasty. Worth it.', hot: '*pant* Too much sun for this much fluff. Shade and water, please.', night: '*yawn* Smiling in my sleep. Probably.', dawn: 'Woo-woo! Good morning! I missed you all night!' },
-  frenchie: { rain: 'Rain. No. *snort* I will be under the table.', coat: 'Raincoat on. I look like a small grumpy potato. A dry one.', snow: 'Cold ears. Cold paws. Sweater, please. *snort*', warm: 'Sweater on. Now I can sit in the snow. For a minute.', hot: '*snort* Flat faces and sun do not mix. Shade, please.', night: '*SNORE* (that was a yawn)', dawn: 'Morning. *snort* I have been awake for one minute.' }
+  frenchie: { rain: 'Rain. No. *snort* I will be under the table.', coat: 'Raincoat on. I look like a small grumpy potato. A dry one.', snow: 'Cold ears. Cold paws. Sweater, please. *snort*', warm: 'Sweater on. Now I can sit in the snow. For a minute.', hot: '*snort* Flat faces and sun do not mix. Shade, please.', night: '*SNORE* (that was a yawn)', dawn: 'Morning. *snort* I have been awake for one minute.' },
+  akita: { rain: 'Rain. I will sit under the roof and watch it fall. Calmly.', coat: 'Coat on. I stay dry and I stay dignified.', snow: 'Snow is lovely. My thick coat agrees. A sweater is still very nice.', warm: 'Snow and a sweater. Now I am cosy and dignified.', hot: '*pant* A thick coat on a warm day. Shade and water, please.', night: '*yawn* All is quiet. Good night.', dawn: 'Good morning. I have been watching the door for you.' },
+  spitz: { rain: 'Wet fluff is sad fluff. I am a small damp cloud.', coat: 'Raincoat on. The fluff stays dry. We are saved.', snow: 'Snow! I match the snow! Nobody can find me!', warm: 'Sweater and snow. I am a fluffy snowball in a sweater.', hot: '*pant* All this white fluff and all this sun. Shade, please.', night: '*yawn* Sparkle off. Sleep on.', dawn: 'Good morning! Look, my fluff is already perfect!' },
+  pom: { rain: 'Each raindrop is bigger than my paw. I am staying in.', coat: 'Tiny raincoat. Big feelings. Dry fluff.', snow: 'Snow is up to my chin. Yip! Sweater, please.', warm: 'Sweater on. I am a small fluffy snowball.', hot: '*pant* Tiny dogs get hot fast. Shade and a drink, please.', night: '*yawn* Tiny yawn. Tiny snore.', dawn: 'YIP! Good morning! I am awake and in charge!' },
+  afghan: { rain: 'Rain on silk. No. Not on silk. Indoors, please.', coat: 'Raincoat on. My hair is saved. The day is saved.', snow: 'Snow in the silk! Elegant, but chilly. A sweater, please.', warm: 'Sweater and snow. A very fashionable winter.', hot: '*pant* All this hair and all this sun. Shade, please.', night: '*yawn* Beauty sleep. It is a real thing.', dawn: 'Good morning. I woke up looking like this.' },
+  dane: { rain: 'Rain. I am too tall to hide. I will lean on the house.', coat: 'Coat on. It is a tent for a Dane. Cosy.', snow: 'Long legs in deep snow. Brr. A sweater, please.', warm: 'Sweater on. Now I am a tall, cosy snowman.', hot: '*pant* A big dog in the heat. Shade and water, please.', night: '*yawn* All of me is sleepy. It takes a while to reach the tail.', dawn: 'Good morning. I stretched. It took half a minute.' },
+  mastiff: { rain: 'Rain. I will stay in. The sofa will not mind.', coat: 'Coat on. I am a very dry hill.', snow: 'Cold nose, warm heart. A sweater would make it fair.', warm: 'Sweater and snow. Gentle snow. Gentle me.', hot: '*pant drool pant* Big dogs feel the heat. Shade, water and a towel, please.', night: '*SNORE* (that was a yawn)', dawn: 'Morning. *slow blink* Breakfast is ready in my head.' },
+  gsd: { rain: 'Rain! I will patrol anyway. Someone must.', coat: 'Raincoat on. I am a neat, waterproof guard.', snow: 'Snow! A great place for a job. Brr. A sweater helps.', warm: 'Sweater and snow. Ready for duty.', hot: '*pant* Too hot for patrol. I will guard from the shade.', night: '*yawn* All quiet. Guard mode: low. Not off.', dawn: 'Good morning! What is the plan? Is there a plan?' }
 };
 /* v1.7: per-breed lines for feeding, potty, greetings and walks ({n} name, {He}/{he}/{him}/{his} pronouns) */
-const EAT_LINES = { shiba: '{n} ate it slowly. {He} wants you to know who is in charge.', corgi: '{n} finished and checked the bowl for a sequel. {He} is still checking.', golden: '{n} ate it, then thanked you with {his} whole tail. And the bum.', dachs: '{n} ate it, then tried to bury the bowl. {He} is saving it for later.', husky: '{n} ate it and sang {his} review. AWOO.', mutt: '{n} ate it and looked at you like you hung the moon. {He} means it.', chihuahua: '{n} ate three bites, growled at the bowl, then finished {his} meal.', pug: '{n} inhaled it. {His} snorts say ten out of ten.', greyhound: '{n} ate it delicately with {his} very long face, then lay down.', beagle: '{n} finished in one second. {He} is now sniffing for crumbs in the next street.', poodle: '{n} ate it neatly and checked {his} curls for crumbs. None. Of course.', collie: '{n} ate it fast, then went to check on everyone else\'s bowl.', samoyed: '{n} ate it with a smile. Somehow {he} smiled the whole time.', frenchie: '{n} ate it with a lot of snorting. {He} rates it highly.' };
-const POTTY_LINES = { shiba: '{n} did {his} business and then pretended it never happened.', corgi: '{n} finished and looked at you. Snack for good potty? Snack?', golden: '{n} went potty and is SO proud. Tell everyone.', dachs: '{n} went, then tried to dig a hole for it. Thorough.', husky: '{n} went potty and announced it to the whole street. AWOO.', mutt: '{n} went and checked you saw. Good dog? Good dog.', chihuahua: '{n} picked the exact spot after inspecting nine others. Security reasons.', pug: '{n} went potty, snorted twice and sat down for a rest.', greyhound: '{n} went potty, then did one victory lap.', beagle: '{n} sniffed for two whole minutes first. Research is important.', poodle: '{n} chose the tidiest spot in the yard. Of course {he} did.', collie: '{n} went potty, then checked everyone else was still in the yard.', samoyed: '{n} went potty and smiled about it. Every time.', frenchie: '{n} went potty, snorted once and sat down for a rest.' };
-const GREET_LINES = { shiba: 'Oh. You are back. I did not notice. (Tail: wagging.)', corgi: 'YOU ARE BACK! Did you bring snacks? You smell like snacks!', golden: 'You came back! Best day! Again!', dachs: 'You are home! I dug you a welcome hole.', husky: 'AWOO! Where were you! Tell me everything! AWOO!', mutt: 'You came back. I knew you would. Hi.', chihuahua: 'WHO GOES THERE. Oh. You. Welcome home. Still checking your ID.', pug: '*snort* You are back. Lap, please. Right now.', greyhound: '*soft roo* You are home. I will lean on you now.', beagle: 'AROOO! I smelled you coming from the corner! What did you eat?', poodle: 'You are back. I knew the time to the minute.', collie: 'You are back! Now everyone is here. I counted.', samoyed: 'Woo-woo! You are home! Look at my smile!', frenchie: '*snort* You are back. Foot, please. I am sitting on it.' };
-const WALK_LINES = { shiba: '{n} walked like the path was built for {him}. It was not.', corgi: '{n} checked every bench for dropped snacks. Two found. Zero shared.', golden: '{n} said hello to every dog, person, and one lamp post.', dachs: '{n} wanted to dig at every single X. And several non-Xs.', husky: '{n} howled at three dogs, one bus, and the concept of walking.', mutt: '{n} kept looking back to check you were still there. You were.', chihuahua: '{n} barked at a dog fourteen times bigger. The dog apologised.', pug: '{n} walked the whole way. Mostly. The last bit was a carry.', greyhound: '{n} sprinted for six seconds and strolled for the rest. Perfect walk.', beagle: '{n} sniffed the whole route. Beagle nose: the Nose-o-meter reached 25% further.', poodle: '{n} trotted the whole way like {he} was in a show. {He} was.', collie: '{n} kept everyone in a neat group. Including two pigeons.', samoyed: '{n} smiled at every person on the route. Most of them smiled back.', frenchie: '{n} took a short walk with lots of sitting. Exactly right.' };
+const EAT_LINES = { shiba: '{n} ate it slowly. {He} wants you to know who is in charge.', corgi: '{n} finished and checked the bowl for a sequel. {He} is still checking.', golden: '{n} ate it, then thanked you with {his} whole tail. And the bum.', dachs: '{n} ate it, then tried to bury the bowl. {He} is saving it for later.', husky: '{n} ate it and sang {his} review. AWOO.', mutt: '{n} ate it and looked at you like you hung the moon. {He} means it.', chihuahua: '{n} ate three bites, growled at the bowl, then finished {his} meal.', pug: '{n} inhaled it. {His} snorts say ten out of ten.', greyhound: '{n} ate it delicately with {his} very long face, then lay down.', beagle: '{n} finished in one second. {He} is now sniffing for crumbs in the next street.', poodle: '{n} ate it neatly and checked {his} curls for crumbs. None. Of course.', collie: '{n} ate it fast, then went to check on everyone else\'s bowl.', samoyed: '{n} ate it with a smile. Somehow {he} smiled the whole time.', frenchie: '{n} ate it with a lot of snorting. {He} rates it highly.', akita: '{n} ate calmly, then sat tall and looked at the door.', spitz: '{n} ate it daintily and checked {his} white fluff for crumbs. Spotless.', pom: '{n} ate it in four tiny bites and asked for more in a very tiny voice.', afghan: '{n} ate it elegantly and flicked {his} ears back. Not a crumb on the silk.', dane: '{n} ate the whole bowl in three gulps and politely licked the floor.', mastiff: '{n} ate it slowly and happily. The drool was a generous review.', gsd: '{n} ate it neatly, then sat up straight and waited for the next job.' };
+const POTTY_LINES = { shiba: '{n} did {his} business and then pretended it never happened.', corgi: '{n} finished and looked at you. Snack for good potty? Snack?', golden: '{n} went potty and is SO proud. Tell everyone.', dachs: '{n} went, then tried to dig a hole for it. Thorough.', husky: '{n} went potty and announced it to the whole street. AWOO.', mutt: '{n} went and checked you saw. Good dog? Good dog.', chihuahua: '{n} picked the exact spot after inspecting nine others. Security reasons.', pug: '{n} went potty, snorted twice and sat down for a rest.', greyhound: '{n} went potty, then did one victory lap.', beagle: '{n} sniffed for two whole minutes first. Research is important.', poodle: '{n} chose the tidiest spot in the yard. Of course {he} did.', collie: '{n} went potty, then checked everyone else was still in the yard.', samoyed: '{n} went potty and smiled about it. Every time.', frenchie: '{n} went potty, snorted once and sat down for a rest.', akita: '{n} went potty without any fuss and trotted back with great dignity.', spitz: '{n} went potty and struck a little pose. In case anyone was watching.', pom: '{n} went potty and did a little spin to celebrate. Yip!', afghan: '{n} chose a spot with a view. Even this needs elegance.', dane: '{n} went potty and then did a very long stretch. There is a lot to stretch.', mastiff: '{n} went potty slowly, sighed and flopped down for a rest.', gsd: '{n} went potty, checked the fence line and came back. Job done.' };
+const GREET_LINES = { shiba: 'Oh. You are back. I did not notice. (Tail: wagging.)', corgi: 'YOU ARE BACK! Did you bring snacks? You smell like snacks!', golden: 'You came back! Best day! Again!', dachs: 'You are home! I dug you a welcome hole.', husky: 'AWOO! Where were you! Tell me everything! AWOO!', mutt: 'You came back. I knew you would. Hi.', chihuahua: 'WHO GOES THERE. Oh. You. Welcome home. Still checking your ID.', pug: '*snort* You are back. Lap, please. Right now.', greyhound: '*soft roo* You are home. I will lean on you now.', beagle: 'AROOO! I smelled you coming from the corner! What did you eat?', poodle: 'You are back. I knew the time to the minute.', collie: 'You are back! Now everyone is here. I counted.', samoyed: 'Woo-woo! You are home! Look at my smile!', frenchie: '*snort* You are back. Foot, please. I am sitting on it.', akita: 'You are back. Good. Now everything is as it should be.', spitz: 'You are back! Look at my fluff! I fluffed it just for you!', pom: 'YIP YIP YIP! You are home! I spun three times! I will do four!', afghan: 'You are back. I have been gazing out of the window. Very beautifully.', dane: 'You are home! *the tail clears the table* Sorry! Welcome home!', mastiff: '*slow wag* You are home. I will lean on you now. All of me.', gsd: 'You are home! I checked the garden. All clear. Hello!' };
+const WALK_LINES = { shiba: '{n} walked like the path was built for {him}. It was not.', corgi: '{n} checked every bench for dropped snacks. Two found. Zero shared.', golden: '{n} said hello to every dog, person, and one lamp post.', dachs: '{n} wanted to dig at every single X. And several non-Xs.', husky: '{n} howled at three dogs, one bus, and the concept of walking.', mutt: '{n} kept looking back to check you were still there. You were.', chihuahua: '{n} barked at a dog fourteen times bigger. The dog apologised.', pug: '{n} walked the whole way. Mostly. The last bit was a carry.', greyhound: '{n} sprinted for six seconds and strolled for the rest. Perfect walk.', beagle: '{n} sniffed the whole route. Beagle nose: the Nose-o-meter reached 25% further.', poodle: '{n} trotted the whole way like {he} was in a show. {He} was.', collie: '{n} kept everyone in a neat group. Including two pigeons.', samoyed: '{n} smiled at every person on the route. Most of them smiled back.', frenchie: '{n} took a short walk with lots of sitting. Exactly right.', akita: '{n} walked beside you at a calm, steady pace. Nobody was in a hurry.', spitz: '{n} pranced the whole way with {his} tail up. Four people called {him} fluffy.', pom: '{n} took three steps for each of yours and never stopped. A small engine.', afghan: '{n} floated along with {his} hair streaming. Three people asked for a photo.', dane: '{n} took long, slow strides. Everyone looked up, and up, and then smiled.', mastiff: '{n} walked at a steady, gentle pace and stopped for every pat. It took a while and it was lovely.', gsd: '{n} kept pace beside you and checked every corner. Nothing out of order.' };
 const NOSE_MUL = { beagle: 1.25 };
 const noseMul = (d = D()) => NOSE_MUL[d && d.key] || 1;
 function breedLine(map, d) { const l = d && map[d.key]; if (!l) return ''; const p = PRd(d); return l.replace(/\{n\}/g, d.name).replace(/\{He\}/g, p.He).replace(/\{he\}/g, p.he).replace(/\{him\}/g, p.him).replace(/\{his\}/g, p.his).replace(/\{His\}/g, p.His); }
 const reacted = new Set();
 function wxLine(k) { return (WX_LINES[S.dog.key] || WX_LINES.mutt)[k]; }
 /* v2.5 (BREEDS): breed welfare tips. Flat faces get a kind heat tip on the adoption card and once as a toast the first hot day. No penalty anywhere. */
-const BD_TIPS = { frenchie: 'Flat faces breathe hard in heat. Short walks, shade and water on warm days.', pug: 'Flat faces breathe hard in heat. Short walks, shade and water on warm days.' };
+const BD_TIPS = { frenchie: 'Flat faces breathe hard in heat. Short walks, shade and water on warm days.', pug: 'Flat faces breathe hard in heat. Short walks, shade and water on warm days.',
+  akita: 'Akitas are calm and proud and like their own space. Let them meet new dogs slowly.', spitz: 'That white coat sheds in big clouds twice a year. A good brush keeps it soft, and it never needs shaving.', pom: 'Tiny dogs have delicate knees and windpipes. Use a harness, not a collar, and lift them with both hands.',
+  afghan: 'That long silky coat tangles easily. A gentle brush a few times a week keeps it flowing.', dane: 'Giant pups grow fast and their joints need care. Gentle walks while young, and no long runs until fully grown.', mastiff: 'Big dogs feel the heat and drool when warm. Shade, water and a towel for that big face.', gsd: 'Shepherds are clever and love a job to do. Games, training and walks keep them happy.' };
+const BD_HOT = { frenchie: 1, pug: 1, mastiff: 1 }; // v2.11: only these tips are about heat, so only they toast on the first hot day (the others show on the adoption card)
 function bdTip(key) { return BD_TIPS[key] || ''; }
 function bdHotTip(d) {
-  if (!S || !d) return; const tip = bdTip(d.key); if (!tip) return;
+  if (!S || !d || !BD_HOT[d.key]) return; const tip = bdTip(d.key); if (!tip) return;
   if (!S.breedTips || typeof S.breedTips !== 'object') S.breedTips = {};
   if (S.breedTips[d.key]) return; S.breedTips[d.key] = localISO(); markDirty();
   toast(tip, 'good');
@@ -396,7 +424,7 @@ function travelTo(id) {
     toast(msg, 'good');
   }, 1200);
 }
-function dogHeadWorld() { const p = $('#dogPos'); let tx = 0, ty = 0, sc = 1; const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\)\s*scale\(([\d.]+)\)/.exec(p ? p.style.transform : ''); if (m) { tx = +m[1]; ty = +m[2]; sc = +m[3]; } return { x: (DX + 175) * sc + tx, y: (DY + 30) * sc + ty }; }
+function dogHeadWorld() { return rmHead(D()); } // v2.10 ROAM: wherever the leader stands
 function dogJoke(text) {
   const n = NAME(); let line = text;
   if (!line) {
@@ -426,10 +454,9 @@ function petTick(wx, wy) {
   if (outdoorsNow() && weatherNow() === 'rain' && !hasRaincoat() && !pet.wet) { pet.wet = true; toast('Wet dog smell intensifies.'); }
   setTemp('pet', 900); fxText('♥', wx + RAND(-20, 20), wy - 10);
   Math.random() < 0.7 ? SFX.squeak() : SFX.boop(RAND(500, 800));
-  const bondNow = !pet.bonded && pet.gain >= 10, crB = crPetPack(bondNow, pet.bonded); // v2.7 PACK CARE: the ticked pack dogs get the same petting ([] with pack care off)
-  if (bondNow && crB.length) { pet.bonded = true; crPetBond(crB); }
-  else if (bondNow) { pet.bonded = true; const n = addBond(3) + (S.outfit.head === 'Wizard Hat' ? addBond(1, { raw: true }) : 0); const st = S.outfit.charm === 'Sparkle Stone'; if (st) addStat('happy', 5); toast(`+${n} Bond.${S.outfit.head === 'Wizard Hat' ? ' Magic hands: +1 Bond.' : ''}${st ? ' The Sparkle Stone hums: +5 Happiness.' : ''} ${NAME()} pretends ${PR().he} did not enjoy that.`, 'good'); dailyCare('pet'); markCareDay(); trackAct('pet', {}); }
-  else if (crB.length) crPetBond(crB, true);
+  const bondNow = !pet.bonded && pet.gain >= 10; // v2.10 ROAM: petting pets this dog only (the v2.8.4 whole-pack rub is gone)
+  rmPetted(D());
+  if (bondNow) { pet.bonded = true; const n = addBond(3) + (S.outfit.head === 'Wizard Hat' ? addBond(1, { raw: true }) : 0); const st = S.outfit.charm === 'Sparkle Stone'; if (st) addStat('happy', 5); toast(`+${n} Bond.${S.outfit.head === 'Wizard Hat' ? ' Magic hands: +1 Bond.' : ''}${st ? ' The Sparkle Stone hums: +5 Happiness.' : ''} ${NAME()} pretends ${PR().he} did not enjoy that.`, 'good'); dailyCare('pet'); markCareDay(); trackAct('pet', {}); }
   updateHUD();
 }
 function showZzz(on) { const z = $('#zzz'); if (z) z.innerHTML = on ? place(art('prop', 'zzz'), 760, 280, 90, 90) : ''; }
@@ -456,7 +483,8 @@ function moodLine() {
 }
 function closeTray() { SFX.click(); if (cur.mode === 'yard') { S.sleeping ? sleepTray() : dockIdle(); } else dock.innerHTML = ''; }
 function trayHTML(title, body) { return `<div class="tray"><div class="tray-h"><h3>${title}</h3><button class="xbtn" id="trayX" aria-label="Close">x</button></div><div class="tray-body">${body}</div></div>`; }
-function setTray(title, body, opt = {}) { if (!opt.mini && !modal.hidden) closeModal(); dock.innerHTML = trayHTML(title, body).replace('class="tray"', `class="tray${opt.mini ? ' mini' : ''}"`); $('#trayX').onclick = closeTray; if (!opt.mini) sheetSwipe($('#dock > .tray'), closeTray); }
+function setTray(title, body, opt = {}) { if (typeof blOn === 'function' && blOn()) return; // ball play keeps its own dock (38_ball.js): a scene tap (dog house, bowl, decoration) must not swap it
+  if (!opt.mini && !modal.hidden) closeModal(); dock.innerHTML = trayHTML(title, body).replace('class="tray"', `class="tray${opt.mini ? ' mini' : ''}"`); $('#trayX').onclick = closeTray; if (!opt.mini) sheetSwipe($('#dock > .tray'), closeTray); }
 
 /* ---------------- FEED ---------------- */
 function openFeedTray() {
@@ -530,14 +558,14 @@ function feed(name) {
 /* ---------------- PLAY ---------------- */
 function openPlayTray() {
   if (cur.mode !== 'yard') go('yard');
-  const fts = FETCH_TOYS.filter((t) => owns('toys', t)), sub = { 'Tennis Ball': 'Tennis Ball', Frisbee: 'Frisbee: 3 coins', 'Driftwood Stick': 'Stick: +1 coin', 'Glow Ball': 'Glow Ball: easy' };
-  const b = fts.map((t) => `<button class="card" data-play="fetch:${esc(t)}"><span class="art">${art('item', t)}</span><b>Fetch</b><span class="small">${sub[t]} (challenge)</span></button>`);
+  const fts = FETCH_TOYS.filter((t) => owns('toys', t)), sub = { 'Tennis Ball': 'Free throws, every dog races', Frisbee: 'Long throws: 3 coins', 'Driftwood Stick': 'Tumbles: 3 coins', 'Glow Ball': 'Glows after dark' };
+  const b = fts.map((t) => `<button class="card" data-play="ball:${esc(t)}"><span class="art">${art('item', t)}</span><b>Play ball</b><span class="small">${esc(t)}: ${sub[t]}</span></button>`); // v2.10: free ball play where you are (38_ball.js) replaces the timed Fetch challenge
   toysPlayable().forEach((t) => b.push(`<button class="card" data-play="toy:${esc(t)}"><span class="art">${art('item', t)}</span><b>Play</b><span class="small">${esc(t)}${hwTag(t)}</span></button>`));
   b.push(`<button class="card" data-play="tricks"><span class="art">${ICON('star')}</span><b>Tricks</b><span class="small">${learnedCount()} learned</span></button>`);
   if (owns('toys', 'Squeaky Duck')) b.push(`<button class="card" data-play="duck"><span class="art">${art('item', 'Squeaky Duck')}</span><b>Squeak</b><span class="small">+10 Happiness</span></button>`);
   if (owns('toys', 'Rope Tug')) b.push(`<button class="card" data-play="tug"><span class="art">${art('item', 'Rope Tug')}</span><b>Tug</b><span class="small">+15 Happy, -10 Energy</span></button>`);
   b.push(`<button class="card pdcard" data-play="playdates"><span class="art">${iconOr('playdate', doodle('heart', -6, 2, 0.8) + doodle('heart', 7, -3, 0.65))}</span><b>Playdates</b><span class="small">Puppy Playdates</span></button>`);
-  if (!fts.length) b.push('<p class="small">No fetch toy. Kibble Corner sells balls.</p>');
+  if (!fts.length) b.push('<p class="small">No ball toy. Kibble Corner sells balls.</p>');
   setTray('Play', `${crChipsHTML(PK_CAP_PLAY)}<div class="row">${b.join('')}</div>`); // v2.9 PACK: the chip row (ticked dogs join in), nothing with one dog
   crBindChips(dock, openPlayTray, 'Somebody has to play. Tick another dog first.');
   dock.querySelectorAll('[data-play]').forEach((el) => { el.onclick = () => playPick(el.dataset.play); });
@@ -548,7 +576,7 @@ function playPick(p) {
   if (p === 'tricks' && crPack()) { pkTricksTray(); return; } // v2.9 PACK: the dog picker inside the tray; training a dog never changes the leader
   if (S.sleeping) { nope(`${NAME()} is asleep. Even fun has to wait.`); return; }
   if (p.startsWith('toy:')) { if (S.stats.energy < 5) { nope(`${NAME()} is too tired to play. A nap would help.`); return; } go('toy', p.slice(4)); return; }
-  if (p.startsWith('fetch:')) { if (S.stats.energy < 10) { nope(`${NAME()} is too tired to fetch. A nap would help.`); return; } go('fetch', p.slice(6)); return; }
+  if (p.startsWith('ball:') || p.startsWith('fetch:')) { if (S.stats.energy < 10) { nope(`${NAME()} is too tired to play ball. A nap would help.`); return; } blStart(p.slice(p.indexOf(':') + 1)); return; } // v2.10: the journal's old 'fetch:' key lands here too
   if (p === 'tricks') { openTraining(); return; }
   if (busy) return;
   popDown(); clearCurl();
@@ -730,7 +758,9 @@ const HM_DECOR = {
   'Paper Snowflake Garland': { prop: 'wnsnowflakes', at: [620, 196, 210, 56], vb: [300, 80], price: 90, room: 'yard', zone: 'wall', kind: 'decor', fest: 'snow', v28: true, story: 'Paper snowflakes cut by the Nguyen kids, no two the same. Some of them are dogs, if you squint.' },
   'Felt Holly Wreath': { prop: 'wnwreath', at: [880, 200, 72, 72], vb: [120, 120], price: 80, room: 'yard', zone: 'wall', kind: 'decor', fest: 'snow', v28: true, story: 'A round wreath of felt leaves and red felt berries. Real holly berries make dogs ill, so these ones are felt.' },
   'Red Wooden Sled': { prop: 'wnsled', at: [24, 506, 130, 78], vb: [200, 120], price: 110, room: 'yard', zone: 'floor', kind: 'decor', fest: 'snow', v28: true, story: 'A red sled for leaning on the fence. Nobody has ever pulled it, because a dog is always sitting in it.' },
-  'Kadomatsu Pair': { prop: 'nykadomatsu', at: [866, 404, 80, 100], vb: [160, 200], price: 120, room: 'yard', zone: 'floor', kind: 'decor', fest: 'newyear', v28: true, story: 'Bamboo, pine and plum by the gate to welcome the new year\'s luck. The dogs sniff it every morning to check the luck is still there.' }
+  'Kadomatsu Pair': { prop: 'nykadomatsu', at: [866, 404, 80, 100], vb: [160, 200], price: 120, room: 'yard', zone: 'floor', kind: 'decor', fest: 'newyear', v28: true, story: 'Bamboo, pine and plum by the gate to welcome the new year\'s luck. The dogs sniff it every morning to check the luck is still there.' },
+  // v2.11 Tokyo Trip (V211.md section 5.3): the Asakusa souvenir stand only (tokyo + fest 'tokyo', never at Barkitecture), placed with the v2.7 placement mode. Prop by TOKYO ART E (0 0 80 100, o.indoor)
+  'Lucky Cat': { prop: 'luckycat', at: [470, 436, 64, 80], vb: [80, 100], price: 150, room: 'house', zone: 'floor', kind: 'decor', fest: 'tokyo', tokyo: true, v211: true, story: 'A white maneki-neko with one paw raised to wave good luck in. The dogs wave back, in their own way.' }
 };
 const HM_PHOTO = [20, 15, 120, 84]; // the documented data-photo box inside the 160x140 frame
 function hmDecorFields() { if (S && (!S.decor || typeof S.decor !== 'object')) S.decor = {}; }
@@ -764,10 +794,10 @@ function hmDecorSVG() {
 // binds the yard decorations, or in the house every bed (the Care tray), decoration (its card) and piece of furniture (its card). Long-press shows the name (phones).
 function hmDecorBind() {
   const g = $('#decorG') || $('#hoRoomG'); if (!g) return;
-  const tap = (el, fn) => { const go = () => { if (HO.pl) return; SFX.click(); fn(); }; el.onclick = go; el.onkeydown = (e) => { if (HO.pl) return; if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } }; };
+  const tap = (el, fn) => { const go = () => { if (HO.pl || blOn()) return; SFX.click(); fn(); }; el.onclick = go; el.onkeydown = (e) => { if (HO.pl || blOn()) return; if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } }; };
   g.querySelectorAll('[data-decor]').forEach((el) => { tap(el, () => hmDecorPop(el.dataset.decor)); psLongPress(el, el.dataset.decor); });
   g.querySelectorAll('[data-furn]').forEach((el) => { tap(el, () => hoFurnPop(el.dataset.furn)); psLongPress(el, el.dataset.furn); });
-  g.querySelectorAll('#bedG, [data-bed]').forEach((el) => { const go = () => { if (HO.pl) return; popAct = 'care'; openCareTray(); }; el.onclick = go; el.onkeydown = (e) => { if (!HO.pl && e.key === 'Enter') go(); }; psLongPress(el, el.id === 'bedG' ? S.bed : el.dataset.bed); });
+  g.querySelectorAll('#bedG, [data-bed]').forEach((el) => { const go = () => { if (HO.pl || blOn()) return; popAct = 'care'; openCareTray(); }; el.onclick = go; el.onkeydown = (e) => { if (!HO.pl && e.key === 'Enter') go(); }; psLongPress(el, el.id === 'bedG' ? S.bed : el.dataset.bed); });
 }
 function hmDecorRedraw() { hoRoomRedraw(); }
 function hmDecorPop(name) {

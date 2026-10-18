@@ -150,7 +150,8 @@ class T {
       const kids = (s) => (s ? [...s.children] : []);
       const pack = [...document.querySelectorAll('#pack .packdog svg.pa-dog')].map((s) => sc(kids(s)));
       const bed = document.querySelector('#bedG svg'), bowl = document.querySelector('#bowlG svg'), house = document.querySelector('#houseG svg');
-      return { pack, bed: bed ? sc(kids(bed)) : null, bowl: bowl ? sc(kids(bowl)) : null, house: house ? sc(kids(house)) : null };
+      const lead = document.querySelector('#dogArt svg.pa-dog'), act = lead ? sc(kids(lead)) : null; // v2.10 ROAM: the leader roams too, drawn the same size
+      return { pack, act, bed: bed ? sc(kids(bed)) : null, bowl: bowl ? sc(kids(bowl)) : null, house: house ? sc(kids(house)) : null };
     });
   }
   // layout once the dogs stop moving (two identical samples in a row), instead of sleeping a fixed time
@@ -171,7 +172,7 @@ class T {
   async packPin(on) {
     if (on) { await this.ev(() => window.__paw.idle.speed(0.001)); return; }
     await this.rnd(0.3);
-    await this.until(() => { const l = [...document.querySelectorAll('#pack svg.pa-dog')]; return l.length > 0 && l.every((s) => /pa-pose-(sit|down|sleep)\b/.test(s.getAttribute('class') || '')); }, null, 15000);
+    await this.until(() => { const l = [...document.querySelectorAll('#pack .packdog svg.pa-dog')]; return l.length > 0 && l.every((s) => /pa-pose-(sit|down|sleep)\b/.test(s.getAttribute('class') || '')); }, null, 15000);
     await this.ev(() => window.__paw.idle.speed(200)); await sleep(400); // one more pick may still be due: let it happen under the pin
     await this.rnd(null);
   }
@@ -181,11 +182,15 @@ class T {
     await this.ev((pl) => { const S = window.__paw.S; S.dogs.forEach((d) => { d.sleeping = false; }); S.place = pl; window.__paw.go('yard'); }, place);
     await this.until((n) => document.querySelectorAll('#pack .packdog svg.pa-dog').length === n, nPack || 3, 6000);
     await this.freezeMotion(true); const L = await this.settledLayout(); await this.freezeMotion(false);
-    const zone = place === 'yard' ? [620, 330, 860, 530] : place === 'house' ? (L.bed || [625, 450, 860, 540]) : null, ACT = [315, 300, 548, 508];
-    const pairs = []; L.pack.forEach((a, i) => L.pack.forEach((b, j) => { if (i < j && hitR(a, b)) pairs.push(i + '/' + j); }));
+    // v2.10 ROAM (V210.md section 5.2): every dog is drawn the same size and roams, so the checks are the roam rules: feet out of the dog house / bed,
+    // each dog mostly clear of the others (the leader too) and of the bowl, feet on the ground band
+    const zone = place === 'yard' ? [620, 330, 860, 530] : place === 'house' ? (L.bed || [625, 450, 860, 540]) : null;
+    const ar = (a) => (a[2] - a[0]) * (a[3] - a[1]), ov = (a, b) => Math.max(0, Math.min(a[2], b[2]) - Math.max(a[0], b[0])) * Math.max(0, Math.min(a[3], b[3]) - Math.max(a[1], b[1]));
+    const all = L.pack.concat(L.act ? [L.act] : []), pairs = []; all.forEach((a, i) => all.forEach((b, j) => { if (i < j && ov(a, b) > 0.35 * Math.min(ar(a), ar(b))) pairs.push(i + '/' + j); }));
+    const feetIn = (r, z) => { const fx = (r[0] + r[2]) / 2; return fx > z[0] && fx < z[2] && r[3] > z[1] && r[3] < z[3] - 8; };
     ok(L.pack.length === (nPack || 3), `${label}: ${nPack || 3} secondary dogs drawn`);
-    if (zone) ok(L.pack.every((r) => !hitR(r, zone)), `${label}: no secondary dog touches the ${place === 'yard' ? 'dog-house' : 'bed'} zone ${JSON.stringify(zone)}: ${JSON.stringify(L.pack)}`);
-    ok(!pairs.length && L.pack.every((r) => !hitR(r, ACT) && !hitR(r, L.bowl)), `${label}: dogs do not overlap each other, the active dog or the bowl ${pairs.join(',')} ${JSON.stringify({ pack: L.pack, bowl: L.bowl })}`);
+    if (zone) ok(L.pack.every((r) => !feetIn(r, zone)), `${label}: no secondary dog stands in the ${place === 'yard' ? 'dog-house' : 'bed'} zone ${JSON.stringify(zone)}: ${JSON.stringify(L.pack)}`);
+    ok(!pairs.length && all.every((r) => !L.bowl || ov(r, L.bowl) < 0.1 * ar(L.bowl)), `${label}: dogs do not overlap each other, the active dog or the bowl ${pairs.join(',')} ${JSON.stringify({ pack: L.pack, act: L.act, bowl: L.bowl })}`);
     ok(L.pack.every((r) => r[3] <= 604 && r[3] >= 395), `${label}: every dog's feet are on the ground band (y ${L.pack.map((r) => r[3]).join(', ')})`);
     return L;
   }

@@ -2,7 +2,7 @@
 //  2  the bowl is hidden except while feeding, and while the dog eats it shows the food given (every food, home and away, the Café, Feed all)
 //  4  napping in the house: the whole curled-up dog lies on the bed (every bed, several breeds, a puppy, a hat)
 //  6  a mouse drag never taps the prop, shop or map place it started on, and the map pans
-//  7  fetch on the desktop is unchanged (the full view, the panel at the top right)
+//  7  ball play (v2.10, replaced the Fetch challenge) from the Play tray: the full view, the panel at the top right
 require('./test_lib').run('v25_fixes_b', async (t) => {
   const { ok, sec, ev } = t;
   const FOODS = ['Fresh Water', 'Basic Kibble', 'Puppy Kibble', 'Bone-shaped Biscuit', 'Chicken & Rice Bowl', 'Salmon Pâté', 'Pupcake', 'Carrot Sticks', 'Apple Slices', 'Blueberry Bites', 'Seedless Watermelon Cubes', 'Sweet Potato Chews', 'Pumpkin Purée', 'Turkey Meatballs', 'Baked Pumpkin Wedges', 'Sweet Potato Coins', 'Warm Bone Broth', 'Ghost Biscuits', 'Candy Corn Carrots', 'Monster Meatball', 'Frozen Pupsicle', 'Wild Berries', "Duck's Picnic Sandwich", 'Golden Bone'];
@@ -116,14 +116,13 @@ require('./test_lib').run('v25_fixes_b', async (t) => {
   ok((await t.mode()) === 'map' && !(await ev(() => !!document.querySelector('.onway'))), 'the drag did not start a trip');
   await p.keyboard.press('Escape'); await t.untilMode('yard');
 
-  sec('7. fetch on the desktop is unchanged');
-  await ev(() => { window.__paw.S.inv.toys = window.__paw.S.inv.toys || {}; });
+  sec('7. ball play from the Play tray (v2.10, it replaced the Fetch challenge): the full view, the panel at the top right');
   await t.patch({ inv: { toys: { 'Tennis Ball': 1 } } });
-  await t.home('house'); await p.click('[data-act=play]'); await t.waitPop(true); await p.click('[data-play="fetch:Tennis Ball"]');
-  ok(await t.until(() => window.__paw.mode === 'fetch' && !!document.getElementById('fQuit'), null, 6000), 'fetch opens from the Play tray in the house');
+  await t.home('house'); await p.click('[data-act=play]'); await t.waitPop(true); await p.click('[data-play="ball:Tennis Ball"]');
+  ok(await t.until(() => !!window.__paw.bl && window.__paw.bl.on && !!document.getElementById('blDone'), null, 6000), 'ball play opens from the Play tray in the house');
   const L = await ev(() => { const R = (s) => { const q = document.querySelector(s).getBoundingClientRect(); return [q.left, q.top, q.width, q.height].map(Math.round); }; return { view: R('#view'), svg: R('#view svg.world'), tray: R('#dock .tray'), flex: document.getElementById('view').style.flex, trayH: document.getElementById('view').style.getPropertyValue('--trayH') }; });
-  ok(L.view[2] >= 1200 && L.view[3] >= 600 && L.svg[3] === L.view[3] && !L.flex && !L.trayH, `the scene fills the view as before ${JSON.stringify(L)}`);
-  ok(L.tray[0] > 800 && L.tray[1] < 120, 'the fetch panel sits at the top right as before');
-  await t.SH('7_fetch_desk');
-  await p.click('#fQuit'); await t.until(() => window.__paw.mode === 'yard' || !!document.getElementById('resOk') || !document.getElementById('fQuit'), null, 6000);
+  ok(L.view[2] >= 1200 && L.view[3] >= 600 && L.svg[3] === L.view[3] && !L.flex && !L.trayH, `the scene fills the view ${JSON.stringify(L)}`);
+  ok(L.tray[0] > 800 && L.tray[1] < 120, 'the ball panel sits at the top right');
+  await t.SH('7_ball_desk');
+  await p.click('#blDone'); await t.until(() => !window.__paw.bl.on, null, 6000); await t.lu();
 });

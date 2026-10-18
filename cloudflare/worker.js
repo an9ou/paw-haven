@@ -3,15 +3,23 @@
 //
 //   POST /guest                      -> { token, user }            a guest: no email, no password
 //   POST /register {email,password,fresh?}  -> { token, user, upgraded }  a guest's session (and no fresh) becomes the account.
-//                                    One email, one account: 409 email_exists for an email here or an old Supabase one (table legacy)
-//   POST /forgot   {email}           -> { ok, mail }   always the same answer (no account lookup leaks); emails a 30-minute link
-//   POST /reset    {token|sb_token, password} -> { token, user }   sets the new password, logs out every other device
-//   POST /login    {email,password}  -> { token, user, migrated? } unknown emails are tried once against Supabase (lazy move)
-//   POST /migrate  {access_token,refresh_token} -> { token, user } a Supabase login from before v2.8.1 carries over
+//                                    One email, one account: 409 email_exists for an email already here
+//   POST /forgot   {email}           -> { ok, mail }   always the same answer (no account lookup leaks); emails a 6-digit code (v2.9.2)
+//   POST /reset-code {email, code, password} -> { token, user }   the code sets the new password, logs out every other device and
+//                                    logs this one in. 400 wrong_code { left } / too_many_tries (5 wrong: the code is dead) / expired
+//   POST /reset    {token, password} -> { token, user }   v2.8.2 emailed links (no new ones since v2.9.2; kept for links already sent)
+//   POST /login    {email,password}  -> { token, user }
+//   POST /migrate  -> 410 gone (v2.9.1: Supabase is switched off, nothing carries over any more)
 //   POST /logout   GET /me   POST /password {password}
 //   GET  /save[?meta=1] -> { save: {data,rev,changed_at,device,updated_at} | null }
 //   PUT  /save {data,rev,changed_at,device} -> { rev }   409 { error:'stale', rev, changed_at } if the cloud has a newer rev
 //   GET  /backups -> { backups: [{id,data,reason,created_at}] }   POST /backups {data,reason}  (the newest 5 are kept)
+//   Dog Cards (v2.11, V211.md section 5.5). No free text anywhere: only integers and fixed tokens, checked by dcCardOf().
+//   GET    /card                     -> { id, name, dogs, paws, at } | null      my card (at: last update, ms)
+//   PUT    /card {name, dogs}        -> my card   email accounts only (403 no_account for guests), 400 bad_card, 20 an hour
+//   DELETE /card                     -> { ok }    stop sharing: the card and its paws are deleted
+//   GET    /cards/visit?n=2&not=ids  -> [{ id, name, dogs, paws }]   no session needed (120 an hour per IP); never the caller's own
+//   POST   /paw {id}                 -> { paws, given }   one paw per card per Japan day per account (guests too), never your own, 100 an hour
 //
 // Passwords: PBKDF2-SHA256, 100k iterations, 16-byte salt. Sessions: a random 32-byte bearer token, only its SHA-256 is stored.
 // Nothing here logs a password, a token or a save.
@@ -30,9 +38,10 @@ export default {
     const cors = corsFor(req.headers.get('Origin'));
     if (req.method === 'OPTIONS') return new Response(null, { status: cors ? 204 : 403, headers: cors || {} });
     let res;
-    try { res = await route(req, env); } catch (e) { console.error('pawhaven-api error', (e && e.message) || 'unknown'); res = json({ error: 'busy' }, 503); }
+    try { res = await route(req, env, ctx); } catch (e) { console.error('pawhaven-api error', (e && e.message) || 'unknown'); res = json({ error: 'busy' }, 503); }
     if (cors) for (const k in cors) res.headers.set(k, cors[k]);
-    if (Math.random() < 0.01 && ctx && ctx.waitUntil) ctx.waitUntil(tidy(env).catch(() => {}));
+    if (env.TIDY) await tidy(env); // tests: tidy after every request
+    else if (Math.random() < 0.01 && ctx && ctx.waitUntil) ctx.waitUntil(tidy(env).catch(() => {}));
     return res;
   }
 };
@@ -41,7 +50,7 @@ function corsFor(origin) {
   if (!origin || !(ORIGINS.has(origin) || LOCAL.test(origin))) return null;
   return {
     'Access-Control-Allow-Origin': origin, 'Vary': 'Origin',
-    'Access-Control-Allow-Methods': 'GET, PUT, POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, PUT, POST, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Authorization, Content-Type',
     'Access-Control-Max-Age': '86400'
   };
@@ -49,7 +58,7 @@ function corsFor(origin) {
 function json(o, status) { return new Response(JSON.stringify(o), { status: status || 200, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } }); }
 const fail = (error, status, more) => json(Object.assign({ error }, more || {}), status);
 
-async function route(req, env) {
+async function route(req, env, ctx) {
   const url = new URL(req.url), p = url.pathname.replace(/\/+$/, '') || '/', m = req.method;
   const ip = req.headers.get('CF-Connecting-IP') || 'local';
   if (p === '/' && m === 'GET') return json({ ok: true, name: 'pawhaven-api' });
@@ -64,7 +73,7 @@ async function route(req, env) {
   }
   let me = null;
   if (R.auth !== false) { me = await who(req, env); if (R.auth && !me) return fail('no_session', 401); }
-  return R.fn({ req, env, url, ip, body, me });
+  return R.fn({ req, env, ctx, url, ip, body, me });
 }
 
 /* ---------------- crypto ---------------- */
@@ -100,8 +109,23 @@ async function tidy(env) {
   const now = Date.now();
   await env.DB.batch([
     env.DB.prepare('delete from rate where reset_at < ?1').bind(now),
-    env.DB.prepare('delete from sessions where last_seen < ?1').bind(now - 400 * 864e5)
+    env.DB.prepare('delete from reset_codes where expires_at < ?1').bind(now),
+    env.DB.prepare('delete from resets where expires_at < ?1').bind(now),
+    env.DB.prepare('delete from sessions where last_seen < ?1').bind(now - 400 * 864e5),
+    env.DB.prepare('delete from paws where day < ?1').bind(dcDay(now - 3 * 864e5)) // Dog Cards: paws only matter for today (index paws_day)
   ]);
+}
+// Dog Cards: a deleted account's card and paws (both ways). Runs only from the card routes (about 1 in 50 of their requests), not on every route.
+async function dcTidy(env) {
+  await env.DB.batch([
+    env.DB.prepare('delete from cards where user_id not in (select id from users)'),
+    env.DB.prepare('delete from paws where card_id not in (select id from cards)'),
+    env.DB.prepare('delete from paws where from_id not in (select id from users)')
+  ]);
+}
+function dcTidySoon(env, ctx) {
+  if (env.TIDY) return dcTidy(env); // tests: at once
+  if (Math.random() < 0.02 && ctx && ctx.waitUntil) ctx.waitUntil(dcTidy(env).catch(() => {}));
 }
 
 async function newSession(env, uid) {
@@ -120,61 +144,24 @@ async function who(req, env) {
 }
 const pwBad = (pw) => typeof pw !== 'string' || pw.length < PW_MIN || pw.length > PW_MAX;
 
-/* ---------------- Supabase (only to move old accounts over; public publishable key) ---------------- */
-function sbOn(env) { return !!(env.SUPABASE_URL && env.SUPABASE_KEY); }
-async function sbCall(env, path, init) {
-  const f = env.SB_FETCH || fetch; // tests pass a fake
-  const o = Object.assign({}, init); o.headers = Object.assign({ apikey: env.SUPABASE_KEY }, init.headers || {});
-  return f(env.SUPABASE_URL + path, o);
-}
-// null: Supabase says no (wrong email or password, an expired login). Throws when Supabase can't be asked right now.
-async function sbAuth(env, grant, payload) {
-  const r = await sbCall(env, '/auth/v1/token?grant_type=' + grant, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-  if (r.status === 400 || r.status === 401 || r.status === 403 || r.status === 404 || r.status === 422) return null;
-  if (!r.ok) throw new Error('supabase ' + r.status);
-  const j = await r.json();
-  return j && j.access_token && j.user && j.user.id ? { token: j.access_token, user: j.user } : null;
-}
-async function sbUser(env, token) {
-  const r = await sbCall(env, '/auth/v1/user', { headers: { Authorization: 'Bearer ' + token } });
-  if (r.status === 401 || r.status === 403 || r.status === 404) return null;
-  if (!r.ok) throw new Error('supabase ' + r.status);
-  const u = await r.json(); return u && u.id ? u : null;
-}
-async function sbRows(env, token, path) {
-  const r = await sbCall(env, path, { headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' } });
-  if (!r.ok) throw new Error('supabase ' + r.status);
-  const j = await r.json(); return Array.isArray(j) ? j : [];
-}
-const asJson = (d) => (typeof d === 'string' ? d : JSON.stringify(d));
 
-/* ---------------- email (v2.8.2: Forgot password, through Resend) ---------------- */
-const RESET_MS = 30 * 60 * 1000;
-// the reset page lives on the introduction site (site/reset.html): it sets the password, then sends the player back to the game
-const RESET_PAGE = 'https://doodledoggo.app/reset';
+/* ---------------- email (v2.9.2: Forgot password sends a 6-digit code, through Resend) ---------------- */
+const RESET_MS = 30 * 60 * 1000, CODE_TRIES = 5;
 function mailOn(env) { return !!env.RESEND_API_KEY; }
-function resetMail(link) {
-  const text = `Hi from Doodle Doggo!
+// six digits, every value equally likely (4294000000 is a multiple of a million)
+function code6() { const b = new Uint32Array(1); do crypto.getRandomValues(b); while (b[0] >= 4294000000); return String(b[0] % 1e6).padStart(6, '0'); }
+function codeMail(code) {
+  const text = `Your Doodle Doggo code is ${code}. It works for 30 minutes. If you didn't ask for it, ignore this email.
 
-Someone (hopefully you) asked to set a new password for this email. Tap the link to pick a new one:
+Type it in the game, under Log in > Forgot your password?
 
-${link}
-
-The link works for 30 minutes, and only once. Then go back to the game on itch.io and log in with the new password.
-
-Didn't ask for this? Just ignore this email. Your password stays the same and your dogs are safe.
-
-Noodle the dachshund says hi. The rest of him is on his way.
 Doodle Doggo`;
   const html = `<div style="font-family:Georgia,serif;font-size:17px;line-height:1.5;color:#2b2622;max-width:520px">
-<p><b>Hi from Doodle Doggo!</b></p>
-<p>Someone (hopefully you) asked to set a new password for this email. Tap the button to pick a new one.</p>
-<p><a href="${link}" style="display:inline-block;background:#f4d35e;color:#2b2622;padding:12px 22px;border-radius:12px;text-decoration:none;font-weight:bold;border:2px solid #2b2622">Set a new password</a></p>
-<p>The link works for 30 minutes, and only once. Then go back to the game on itch.io and log in with the new password.</p>
-<p>Didn't ask for this? Just ignore this email. Your password stays the same and your dogs are safe.</p>
-<p style="color:#6b6058">Noodle the dachshund says hi. The rest of him is on his way.<br>Doodle Doggo</p>
-<p style="font-size:14px;color:#6b6058">If the button doesn't work, copy this into your browser: ${link}</p></div>`;
-  return { subject: 'Your Doodle Doggo password link', text, html };
+<p>Your Doodle Doggo code is</p>
+<p style="font-family:Menlo,Consolas,monospace;font-size:34px;font-weight:bold;letter-spacing:6px;margin:6px 0 14px">${code}</p>
+<p>It works for 30 minutes. If you didn't ask for it, ignore this email.</p>
+<p style="color:#6b6058">Type it in the game, under Log in &gt; Forgot your password?<br>Doodle Doggo</p></div>`;
+  return { subject: 'Your Doodle Doggo code', text, html };
 }
 async function sendMail(env, to, m) {
   const f = env.MAIL_FETCH || fetch; // tests pass a fake
@@ -185,29 +172,55 @@ async function sendMail(env, to, m) {
   if (!r.ok) console.error('pawhaven-api mail', r.status); // the answer to the player stays the same either way
   return r.ok;
 }
-// Makes (or completes) the Cloudflare user for a Supabase login: same user id, same email; the save and its backups come
-// over once, when Cloudflare has no save for that user yet. Everything from Supabase is read before anything is written.
-async function moveOver(env, sb, pw) {
-  const su = sb.user, id = String(su.id), email = su.email ? norm(su.email) : null;
-  if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
-  const u = await one(env, 'select * from users where id = ?1', id);
-  if (!u && email && (await one(env, 'select id from users where email = ?1', email))) return null; // the email belongs to someone else here
-  const stmts = [];
-  if (!(await one(env, 'select 1 as x from saves where user_id = ?1', id))) {
-    const q = encodeURIComponent(id);
-    const rows = await sbRows(env, sb.token, `/rest/v1/saves?select=data,rev,changed_at,device&user_id=eq.${q}`);
-    const bks = await sbRows(env, sb.token, `/rest/v1/save_backups?select=data,reason,created_at&user_id=eq.${q}&order=created_at.desc&limit=${KEEP}`);
-    const s = rows[0], now = new Date().toISOString();
-    if (s && s.data) stmts.push(env.DB.prepare('insert into saves (user_id, data, rev, changed_at, device, updated_at) values (?1, ?2, ?3, ?4, ?5, ?6)').bind(id, asJson(s.data), s.rev | 0 || 1, String(s.changed_at || now), s.device || null, now));
-    bks.slice().reverse().forEach((b) => { if (b && b.data) stmts.push(env.DB.prepare('insert into save_backups (user_id, data, reason, created_at) values (?1, ?2, ?3, ?4)').bind(id, asJson(b.data), b.reason || null, String(b.created_at || now))); });
+
+/* ---------------- Dog Cards (v2.11): no free text anywhere ---------------- */
+// The game keeps the lists (game/src/40_dogcards.js: DC_WORDS_A, DC_WORDS_B, DC_DOG_NAMES, DC_OUTFITS, and PawGenes BREEDS). They are
+// append-only, so a card is only indices into them. When a list grows, raise its count here in the same release (test_v211_cards checks).
+const DC_LIM = { a: 40, b: 40, n: 101, breed: 21, outfit: 47 };
+const DC_COAT = { B: ['B', 'b'], D: ['D', 'd'], E: ['E', 'e'], S: ['S', 'sp'], M: ['M', 'm'], Bl: ['Bl', 'bl'] }; // allele tokens (mods/genes.js LOCI)
+const DC_DOGS = 4, DC_MAX = 2048, DC_DAYS = 30, DC_ID = /^[A-Za-z0-9_-]{22}$/;
+const dcInt = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
+const dcKeys = (o, keys) => !!o && typeof o === 'object' && !Array.isArray(o) && Object.keys(o).every((k) => keys.includes(k)) && keys.every((k) => k in o);
+const dcDay = (ms) => new Date(ms + 9 * 3600e3).toISOString().slice(0, 10); // the Japan day (JST), the same day the game uses (jstISO)
+function dcCoat(c) {
+  if (c === null) return null; // a dog with no genes: its breed's own coat
+  if (typeof c === 'string') return /^#[0-9a-fA-F]{6}$/.test(c) ? c.toLowerCase() : undefined;
+  if (!c || typeof c !== 'object' || Array.isArray(c)) return undefined;
+  const ks = Object.keys(c); if (!ks.length || ks.some((k) => !Object.hasOwn(DC_COAT, k))) return undefined; // own names only (never constructor, __proto__)
+  const out = {};
+  for (const k of Object.keys(DC_COAT)) {
+    if (!Object.hasOwn(c, k)) continue; const v = c[k];
+    if (!Array.isArray(v) || v.length !== 2 || !v.every((x) => DC_COAT[k].includes(x))) return undefined;
+    out[k] = [v[0], v[1]];
   }
-  const h = pw ? await newHash(pw) : null;
-  if (!u) stmts.unshift(env.DB.prepare('insert into users (id, email, pw_hash, pw_salt, created_at, guest, migrated) values (?1, ?2, ?3, ?4, ?5, ?6, 1)').bind(id, email, h ? h.hash : null, h ? h.salt : null, Date.now(), email ? 0 : 1));
-  else if (h) stmts.push(env.DB.prepare('update users set pw_hash = ?1, pw_salt = ?2 where id = ?3').bind(h.hash, h.salt, id));
-  if (email) stmts.push(env.DB.prepare('delete from legacy where email_hash = ?1').bind(await sha256(email))); // moved: the email is an ordinary account now
-  if (stmts.length) await env.DB.batch(stmts);
-  return one(env, 'select * from users where id = ?1', id);
+  if (out.M && out.M[0] === 'M' && out.M[1] === 'M') return undefined; // never a double merle
+  return Object.keys(out).length ? out : undefined;
 }
+// the body of PUT /card -> { a, b, dogs } in the Worker's own shape, or null (400 bad_card). Anything not on the lists is refused.
+function dcCardOf(body) {
+  if (JSON.stringify(body).length > DC_MAX || !dcKeys(body, ['name', 'dogs'])) return null;
+  const nm = body.name, ds = body.dogs;
+  if (!Array.isArray(nm) || nm.length !== 2 || !dcInt(nm[0], 0, DC_LIM.a - 1) || !dcInt(nm[1], 0, DC_LIM.b - 1)) return null;
+  if (!Array.isArray(ds) || ds.length < 1 || ds.length > DC_DOGS) return null;
+  const dogs = [];
+  for (const d of ds) {
+    if (!dcKeys(d, ['b', 'c', 'o', 'a', 's', 'sp', 'n'])) return null;
+    const c = dcCoat(d.c);
+    if (c === undefined || !dcInt(d.b, 0, DC_LIM.breed - 1) || !dcInt(d.o, -1, DC_LIM.outfit - 1) || !dcInt(d.n, 0, DC_LIM.n - 1) || !dcInt(d.sp, 0, 1)) return null;
+    if (d.a !== 'pup' && d.a !== 'adult') return null;
+    if (d.s !== 'm' && d.s !== 'f') return null;
+    dogs.push({ b: d.b, c, o: d.o, a: d.a, s: d.s, sp: d.sp, n: d.n });
+  }
+  return { a: nm[0], b: nm[1], dogs };
+}
+// a stored row -> what another player sees: the card id, the two name words, the dogs, the paws. Never a user id or an email.
+function dcPub(r, mine) {
+  let dogs = []; try { dogs = JSON.parse(r.dogs); } catch (e) { dogs = []; }
+  const o = { id: r.id, name: [r.name_a | 0, r.name_b | 0], dogs, paws: r.paws | 0 };
+  if (mine) o.at = r.updated_at | 0;
+  return o;
+}
+const DC_COLS = 'c.id, c.name_a, c.name_b, c.dogs, c.paws, c.updated_at';
 
 /* ---------------- routes ---------------- */
 const ROUTES = {
@@ -224,8 +237,6 @@ const ROUTES = {
     if (pwBad(pw)) return fail('weak_password', 400);
     if (await limited(env, 'reg:' + ip, 10, 3600)) return fail('rate_limited', 429);
     if (await one(env, 'select id from users where email = ?1', email)) return fail('email_exists', 409);
-    // v2.8.2 (owner): one email, one account. An old Supabase account not moved over yet counts too: logging in moves it.
-    if (await one(env, 'select 1 as x from legacy where email_hash = ?1', await sha256(email))) return fail('email_exists', 409);
     const h = await newHash(pw);
     try {
       if (me && me.guest && !body.fresh) { // the guest becomes the account: same user id, same save
@@ -253,50 +264,59 @@ const ROUTES = {
       if (!same(await pbkdf2(pw, u.pw_salt), u.pw_hash)) return fail('invalid_credentials', 401);
       return json({ token: await newSession(env, u.id), user: pub(u) });
     }
-    // an email Cloudflare doesn't know yet (or a carried-over login with no password here yet): ask Supabase once
-    if (!sbOn(env)) return fail('invalid_credentials', 401);
-    const sb = await sbAuth(env, 'password', { email, password: pw });
-    if (!sb || (u && u.id !== String(sb.user.id))) return fail('invalid_credentials', 401);
-    const nu = await moveOver(env, sb, pw);
-    if (!nu) return fail('invalid_credentials', 401);
-    return json({ token: await newSession(env, nu.id), user: pub(nu), migrated: true });
+    return fail('invalid_credentials', 401); // an unknown email, or an old login with no password here: wrong email or password
   } },
 
-  'POST /migrate': { auth: false, async fn({ env, ip, body }) {
-    if (!sbOn(env)) return fail('gone', 401);
-    if (await limited(env, 'migrate:' + ip, 30, 3600)) return fail('rate_limited', 429);
-    const at = typeof body.access_token === 'string' ? body.access_token : '', rt = typeof body.refresh_token === 'string' ? body.refresh_token : '';
-    let sb = null;
-    if (at && at.length < 4000) { const su = await sbUser(env, at); if (su) sb = { token: at, user: su }; }
-    if (!sb && rt && rt.length < 400) sb = await sbAuth(env, 'refresh_token', { refresh_token: rt });
-    if (!sb) return fail('gone', 401);
-    const nu = await moveOver(env, sb, null);
-    if (!nu) return fail('gone', 401);
-    return json({ token: await newSession(env, nu.id), user: pub(nu) });
-  } },
+  'POST /migrate': { auth: false, async fn() { return fail('gone', 410); } }, // v2.9.1: Supabase is gone, nothing carries over any more
 
-  'POST /forgot': { auth: false, async fn({ env, ip, body }) {
+  'POST /forgot': { auth: false, async fn({ env, ctx, ip, body }) {
     const email = norm(body.email);
     if (!EMAIL.test(email) || email.length > 254) return fail('invalid_email', 400);
     if (!mailOn(env)) return json({ ok: true, mail: false }); // no email service set up yet: the game says so
     if (await limited(env, 'forgot:' + ip, 10, 3600)) return fail('rate_limited', 429);
     const answer = json({ ok: true, mail: true }); // the same answer whether or not the email has an account
-    if (await limited(env, 'forgot:' + (await sha256(email)), 3, 3600)) return answer; // quietly: at most 3 links an hour per email
+    const k = await sha256(email);
+    if (await limited(env, 'forgot:' + k, 5, 3600)) return answer; // quietly: at most 5 codes an hour per email
+    // Every email gets a code row, with or without an account, so /reset-code answers the same for both (only accounts get the mail).
+    // A new code replaces the old one. Only a salted SHA-256 of the code is kept.
+    const code = code6(), salt = hex(rnd(16)), now = Date.now();
+    await run(env, `insert into reset_codes (k, code_hash, salt, created_at, expires_at, tries) values (?1, ?2, ?3, ?4, ?5, 0)
+      on conflict(k) do update set code_hash = excluded.code_hash, salt = excluded.salt, created_at = excluded.created_at, expires_at = excluded.expires_at, tries = 0`,
+      k, await sha256(salt + ':' + code), salt, now, now + RESET_MS);
     const u = await one(env, 'select id from users where email = ?1 and guest = 0', email);
-    if (u) {
-      const tok = b64url(rnd(32)), now = Date.now();
-      await env.DB.batch([
-        env.DB.prepare('delete from resets where user_id = ?1').bind(u.id), // only the newest link works
-        env.DB.prepare('insert into resets (token_hash, user_id, created_at, expires_at) values (?1, ?2, ?3, ?4)').bind(await sha256(tok), u.id, now, now + RESET_MS)
-      ]);
-      await sendMail(env, email, resetMail(RESET_PAGE + '?token=' + tok));
-    } else if (sbOn(env) && (await one(env, 'select 1 as x from legacy where email_hash = ?1', await sha256(email)))) {
-      // an old account not moved over yet: Supabase sends its own reset email, and its link opens the reset page, which moves the
-      // account over with the new password (POST /reset with sb_token). Nothing is copied before that.
-      const r = await sbCall(env, '/auth/v1/recover?redirect_to=' + encodeURIComponent(RESET_PAGE), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
-      if (!r.ok) console.error('pawhaven-api supabase recover', r.status);
+    if (u) { // the mail goes out after the answer, so an email with an account isn't answered any slower (tests set MAIL_WAIT to see it at once)
+      const sent = sendMail(env, email, codeMail(code)).catch((e) => { console.error('pawhaven-api mail', (e && e.message) || 'failed'); });
+      if (ctx && ctx.waitUntil && !env.MAIL_WAIT) ctx.waitUntil(sent); else await sent;
     }
     return answer;
+  } },
+
+  'POST /reset-code': { auth: false, async fn({ env, ip, body }) {
+    const email = norm(body.email), code = String(body.code == null ? '' : body.code).replace(/\s+/g, ''), pw = body.password;
+    if (!EMAIL.test(email) || email.length > 254) return fail('invalid_email', 400);
+    if (pwBad(pw)) return fail('weak_password', 400); // checked first: a short password costs no try
+    if (!/^\d{6}$/.test(code)) return fail('wrong_code', 400, { left: null }); // not six digits: a typo, costs no try
+    const k = await sha256(email);
+    if ((await limited(env, 'code:' + ip, 30, 600)) || (await limited(env, 'code:' + k, 20, 3600))) return fail('rate_limited', 429);
+    const now = Date.now();
+    // every check takes a try first (atomically), so racing requests still get at most 5 between them
+    const r = await one(env, 'update reset_codes set tries = tries + 1 where k = ?1 and expires_at > ?2 and tries < ?3 returning code_hash, salt, tries', k, now, CODE_TRIES);
+    if (!r) {
+      const d = await one(env, 'select expires_at from reset_codes where k = ?1', k);
+      return fail(d && d.expires_at > now ? 'too_many_tries' : 'expired', 400);
+    }
+    if (!same(await sha256(r.salt + ':' + code), r.code_hash)) return fail(r.tries >= CODE_TRIES ? 'too_many_tries' : 'wrong_code', 400, { left: CODE_TRIES - r.tries });
+    if (!(await one(env, 'delete from reset_codes where k = ?1 and code_hash = ?2 returning k', k, r.code_hash))) return fail('expired', 400); // single use
+    const u = await one(env, 'select id from users where email = ?1 and guest = 0', email);
+    if (!u) return fail('expired', 400);
+    const h = await newHash(pw);
+    await env.DB.batch([
+      env.DB.prepare('update users set pw_hash = ?1, pw_salt = ?2 where id = ?3').bind(h.hash, h.salt, u.id),
+      env.DB.prepare('delete from sessions where user_id = ?1').bind(u.id), // a new password logs every device out
+      env.DB.prepare('delete from resets where user_id = ?1').bind(u.id)
+    ]);
+    const nu = await one(env, 'select * from users where id = ?1', u.id);
+    return json({ token: await newSession(env, u.id), user: pub(nu) }); // and this device logs straight in
   } },
 
   'POST /reset': { auth: false, async fn({ env, ip, body }) {
@@ -316,12 +336,6 @@ const ROUTES = {
         env.DB.prepare('update users set pw_hash = ?1, pw_salt = ?2, guest = 0 where id = ?3').bind(h.hash, h.salt, uid),
         env.DB.prepare('delete from resets where user_id = ?1').bind(uid)
       ]);
-    } else if (typeof body.sb_token === 'string' && body.sb_token.length < 4000 && sbOn(env)) {
-      const su = await sbUser(env, body.sb_token); // a Supabase recovery login: that old account moves over with the new password
-      if (!su || !su.email) return fail('expired', 400);
-      const nu = await moveOver(env, { token: body.sb_token, user: su }, pw); // stores a fresh PBKDF2 hash of the new password
-      if (!nu) return fail('expired', 400);
-      uid = nu.id;
     } else return fail('expired', 400);
     await run(env, 'delete from sessions where user_id = ?1', uid); // a new password logs every device out
     const u = await one(env, 'select * from users where id = ?1', uid);
@@ -378,6 +392,70 @@ const ROUTES = {
     const rows = await all(env, `select id, data, reason, created_at from save_backups where user_id = ?1 order by created_at desc, id desc limit ${KEEP}`, me.id);
     return new Response(`{"backups":[${rows.map((b) => `{"id":${b.id | 0},"data":${b.data},"reason":${JSON.stringify(b.reason || '')},"created_at":${JSON.stringify(b.created_at)}}`).join(',')}]}`,
       { headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
+  } },
+
+  /* ---------- Dog Cards (v2.11) ---------- */
+  'GET /card': { auth: true, async fn({ env, me }) {
+    const r = await one(env, `select ${DC_COLS} from cards c where c.user_id = ?1`, me.id);
+    return json(r ? dcPub(r, true) : null);
+  } },
+
+  'PUT /card': { auth: true, async fn({ env, body, me }) {
+    if (me.guest || !me.email) return fail('no_account', 403); // only email accounts share a card
+    const c = dcCardOf(body);
+    if (!c) return fail('bad_card', 400);
+    if (await limited(env, 'card:' + me.id, 20, 3600)) return fail('rate_limited', 429);
+    const r = await one(env, `insert into cards (id, user_id, name_a, name_b, dogs, paws, updated_at) values (?1, ?2, ?3, ?4, ?5, 0, ?6)
+      on conflict(user_id) do update set name_a = excluded.name_a, name_b = excluded.name_b, dogs = excluded.dogs, updated_at = excluded.updated_at
+      returning id, name_a, name_b, dogs, paws, updated_at`, b64url(rnd(16)), me.id, c.a, c.b, JSON.stringify(c.dogs), Date.now());
+    return json(dcPub(r, true));
+  } },
+
+  'DELETE /card': { auth: true, async fn({ env, ctx, me }) {
+    await dcTidySoon(env, ctx);
+    const r = await one(env, 'select id from cards where user_id = ?1', me.id);
+    if (r) await env.DB.batch([
+      env.DB.prepare('delete from paws where card_id = ?1').bind(r.id),
+      env.DB.prepare('delete from cards where id = ?1').bind(r.id)
+    ]);
+    return json({ ok: true });
+  } },
+
+  'GET /cards/visit': { async fn({ env, ctx, url, ip, me }) {
+    if (await limited(env, 'visit:' + ip, 120, 3600)) return fail('rate_limited', 429);
+    const n = Math.min(4, Math.max(1, parseInt(url.searchParams.get('n'), 10) || 2));
+    const not = String(url.searchParams.get('not') || '').split(',').filter((x) => DC_ID.test(x)).slice(0, 40);
+    const marks = not.map((x, i) => '?' + (i + 5)).join(', ');
+    // random cards without sorting the whole table: walk the id key from a random id (ids are random too), and wrap round to the start
+    const pick = (cmp, lim) => all(env, `select ${DC_COLS} from cards c join users u on u.id = c.user_id
+      where c.id ${cmp} ?4 and u.guest = 0 and c.updated_at > ?1 and c.user_id != ?2 ${not.length ? `and c.id not in (${marks})` : ''} order by c.id limit ?3`,
+      Date.now() - DC_DAYS * 864e5, me ? me.id : '', lim, start, ...not);
+    const start = b64url(rnd(16));
+    let rows = await pick('>=', n);
+    if (rows.length < n) rows = rows.concat(await pick('<', n - rows.length));
+    await dcTidySoon(env, ctx);
+    return json(rows.map((r) => dcPub(r, false)));
+  } },
+
+  'POST /paw': { auth: true, async fn({ env, ctx, ip, body, me }) {
+    const id = body.id;
+    if (typeof id !== 'string' || !DC_ID.test(id) || Object.keys(body).length !== 1) return fail('bad_card', 400);
+    const c = await one(env, 'select c.user_id, c.paws from cards c join users u on u.id = c.user_id where c.id = ?1 and u.guest = 0', id);
+    if (!c) return fail('no_card', 404);
+    if (c.user_id === me.id) return fail('own_card', 400);
+    if (await limited(env, 'paw:' + me.id, 100, 3600)) return fail('rate_limited', 429);
+    await dcTidySoon(env, ctx);
+    const day = dcDay(Date.now());
+    // at most 3 paws a day to one card from one IP (many guests on one device can't pile paws on a card): quietly, like a second paw
+    if (await limited(env, 'pawip:' + ip + ':' + id + ':' + day, 3, 86400)) return json({ paws: c.paws | 0, given: false });
+    // the paw and the count in one batch: the count goes up only when this account had no paw on this card today (changes() of the insert)
+    const out = await env.DB.batch([
+      env.DB.prepare('insert or ignore into paws (from_id, card_id, day) values (?1, ?2, ?3)').bind(me.id, id, day),
+      env.DB.prepare('update cards set paws = paws + 1 where id = ?1 and changes() = 1 returning paws').bind(id)
+    ]);
+    const r = out[1] && out[1].results && out[1].results[0];
+    if (!r) return json({ paws: c.paws | 0, given: false }); // already a paw from this account today
+    return json({ paws: r.paws | 0, given: true });
   } },
 
   'POST /backups': { auth: true, async fn({ env, body, me }) {

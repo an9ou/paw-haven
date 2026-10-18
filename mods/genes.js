@@ -1,4 +1,4 @@
-/* Doodle Doggo: PawGenes (v1.5A, breeds extended in v1.7 to 10 and in v2.5 to 14). Loosely real dog coat genetics for the crayon dogs.
+/* Doodle Doggo: PawGenes (v1.5A, breeds extended in v1.7 to 10, in v2.5 to 14 and in v2.11 to 17). Loosely real dog coat genetics for the crayon dogs.
    Plain IIFE, no DOM. Matches the v2 doc (Genetics section) and V2_GENES.md.
    API: LOCI, STARTER_GENES, SHADES, phenotype(genes, breedKey, seed?), pigment(genes),
         randomGenotype(breedKey, rng), inherit(mumGenes, dadGenes, rng),
@@ -10,10 +10,10 @@
 (function (root) {
   'use strict';
 
-  const BREEDS = ['shiba', 'corgi', 'golden', 'dachs', 'husky', 'mutt', 'chihuahua', 'pug', 'greyhound', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie'];
+  const BREEDS = ['shiba', 'corgi', 'golden', 'dachs', 'husky', 'mutt', 'chihuahua', 'pug', 'greyhound', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie', 'akita', 'spitz', 'pom', 'afghan', 'dane', 'mastiff', 'gsd'];
   // Breed size for the v2 litter rules (small 1-3, medium 1-3, large 2-3 puppies).
   const SIZE = { shiba: 'medium', corgi: 'small', golden: 'large', dachs: 'small', husky: 'large', mutt: 'medium', chihuahua: 'small', pug: 'small', greyhound: 'large', beagle: 'medium',
-    poodle: 'medium', collie: 'medium', samoyed: 'large', frenchie: 'small' };
+    poodle: 'medium', collie: 'medium', samoyed: 'large', frenchie: 'small', akita: 'large', spitz: 'medium', pom: 'small', afghan: 'large', dane: 'large', mastiff: 'large', gsd: 'large' };
 
   const LOCI = {
     B:  { name: 'Coat base (B locus, TYRP1)', alleles: ['B', 'b'], dominant: 'B', rule: 'B_ makes black pigment; b/b makes liver (chocolate) pigment, a liver nose and amber eyes.' }, // copy-ok: reference text, not shown in the game
@@ -42,7 +42,15 @@
     poodle:    { B: ['B', 'b'], D: ['D', 'd'], E: ['e', 'e'], S: ['S', 'S'],  M: ['m', 'm'], Bl: ['bl', 'bl'] }, // apricot; carries cream (b) and white (d)
     collie:    { B: ['B', 'b'], D: ['D', 'D'], E: ['E', 'E'], S: ['S', 'sp'], M: ['m', 'm'], Bl: ['bl', 'bl'] }, // black and white; carries chocolate
     samoyed:   { B: ['B', 'b'], D: ['D', 'D'], E: ['e', 'e'], S: ['S', 'S'],  M: ['m', 'm'], Bl: ['bl', 'bl'] }, // white; carries cream (b)
-    frenchie:  { B: ['B', 'B'], D: ['D', 'd'], E: ['e', 'e'], S: ['S', 'S'],  M: ['m', 'm'], Bl: ['bl', 'bl'] }  // fawn with a dark mask; carries blue fawn
+    frenchie:  { B: ['B', 'B'], D: ['D', 'd'], E: ['e', 'e'], S: ['S', 'S'],  M: ['m', 'm'], Bl: ['bl', 'bl'] }, // fawn with a dark mask; carries blue fawn
+    // v2.11 breeds
+    akita:     { B: ['B', 'b'], D: ['D', 'd'], E: ['e', 'e'], S: ['S', 'S'],  M: ['m', 'm'], Bl: ['bl', 'bl'] }, // red; carries sesame (E), dilute (white)
+    spitz:     { B: ['B', 'b'], D: ['D', 'D'], E: ['e', 'e'], S: ['S', 'S'],  M: ['m', 'm'], Bl: ['bl', 'bl'] }, // white; carries cream (b)
+    pom:       { B: ['B', 'b'], D: ['D', 'd'], E: ['e', 'e'], S: ['S', 'S'],  M: ['m', 'm'], Bl: ['bl', 'bl'] }, // orange; carries chocolate and dilute
+    afghan:    { B: ['B', 'b'], D: ['D', 'd'], E: ['e', 'e'], S: ['S', 'S'],  M: ['m', 'm'], Bl: ['bl', 'bl'] }, // red; carries chocolate and dilute (cream, silver)
+    dane:      { B: ['B', 'b'], D: ['D', 'd'], E: ['e', 'e'], S: ['S', 'S'],  M: ['m', 'm'], Bl: ['bl', 'bl'] }, // fawn; carries chocolate (brindle look) and dilute (blue)
+    mastiff:   { B: ['B', 'b'], D: ['D', 'D'], E: ['e', 'e'], S: ['S', 'S'],  M: ['m', 'm'], Bl: ['bl', 'bl'] }, // fawn with the black mask; carries apricot (b)
+    gsd:       { B: ['B', 'b'], D: ['D', 'D'], E: ['E', 'e'], S: ['S', 'S'],  M: ['m', 'm'], Bl: ['bl', 'bl'] }  // black and tan; carries sable (e) and liver
   };
 
   /* Art palette per breed and pigment: [base, light, dark].
@@ -183,6 +191,82 @@
       blue:     ['#6E7F96', '#8291A6', '#55657A'],
       lilac:    ['#A8949A', '#BBA9AF', '#8A777E']
     },
+    /* v2.11 breeds. Starter cells (*) equal dogs/pawart_dogs.js (BREED ART lane):
+       akita red*      col #D46E36, light #FFF4E2 = the white urajiro (mask, chest, belly, socks), dark #A44E1E
+       spitz white*    col #FCF8F0, light #FFFFFF, dark #E6DCCB (off-white on purpose, like the samoyed)
+       pom orange*     col #F59A3C, light #FFD9A6, dark #C9701E
+       Breed folding: akita E_ is a sesame (black-tipped red hairs; there is no K locus, so b/b E_ is "Dark sesame"), e/e d/d is "White";
+       spitz is always e/e: "White", with b/b "Cream"; pom e/e is "Orange", e/e d/d "Cream", e/e b/b "White". */
+    akita: {
+      red:    ['#D46E36', '#FFF4E2', '#A44E1E'], // * red
+      cream:  ['#FBF6EC', '#FFFFFF', '#E8DECB'], // white
+      black:  ['#C9803F', '#FFFFFF', '#3A2A22'], // sesame: red hairs with black tips
+      liver:  ['#8A5430', '#FFFFFF', '#2E2018'], // dark sesame
+      blue:   ['#A89A92', '#FFFFFF', '#5E6F86'], // ash sesame
+      lilac:  ['#C7B3A8', '#FFFFFF', '#8A777E']  // pale sesame
+    },
+    spitz: {
+      red:      ['#FCF8F0', '#FFFFFF', '#E6DCCB'], // * white
+      redliver: ['#F5E6CA', '#FFF9EE', '#DCC8A2'], // cream
+      cream:    ['#F4E8D0', '#FFFAF0', '#DCCBA8'],
+      black:    ['#2B2430', '#4A3F4E', '#1D1A22'],
+      liver:    ['#7A4A2E', '#9A6A4A', '#5A3420'],
+      blue:     ['#6E7F96', '#8C9BB0', '#55657A'],
+      lilac:    ['#A8949A', '#C2B2B7', '#8A777E']
+    },
+    pom: {
+      red:      ['#F59A3C', '#FFD9A6', '#C9701E'], // * orange
+      cream:    ['#F0D5A5', '#FFF3DC', '#CDAE78'],
+      redliver: ['#FBF6EE', '#FFFFFF', '#E6DCCB'], // white
+      black:    ['#2B2430', '#4A3F4E', '#1D1A22'],
+      liver:    ['#6E4430', '#8E5E40', '#4E2E1E'], // chocolate
+      blue:     ['#6E7F96', '#8C9BB0', '#55657A'],
+      lilac:    ['#A8949A', '#C2B2B7', '#8A777E']
+    },
+    /* v2.11 big breeds (BREEDS lane, second batch). The starter cells (*) are matched to dogs/pawart_dogs.js when the second artist's drawings land.
+       afghan red*    silky long coat (col #C9783E, light #E6A86E, dark #3A2E2E). E/E black is the 'solid' shade (Black), E/e black is Black and tan, e/e d/d is Cream, E_ d/d is Silver.
+       dane fawn*     the black mask is dark. E_ b/b is the brindle look (no K locus), merle names Merle / Blue merle, merle on white (sp/sp) is Harlequin.
+       mastiff fawn*  the black mask is always dark; e/e b/b is Apricot (like the pug), E_ is the brindle look.
+       gsd black and tan*  E/E is solid Black, e/e is Sable, e/e d/d is White. */
+    afghan: {
+      cream:  ['#EBD3A4', '#FAF0DC', '#C7AA78'],
+      red:    ['#C9783E', '#E6A86E', '#3A2E2E'], // *
+      black:  ['#2B2430', '#D49A5A', '#1D1A22'], // black and tan
+      solid:  ['#2B2430', '#4A3F4E', '#1D1A22'], // black
+      liver:  ['#6E4430', '#8E5E40', '#4E2E1E'], // chocolate
+      blue:   ['#C9C6C2', '#E8E6E2', '#55545A'], // silver
+      lilac:  ['#C9B8BC', '#E0D3D6', '#A8949A']
+    },
+    dane: {
+      red:    ['#D9A562', '#E6BA7E', '#2B2430'], // * fawn, black mask
+      cream:  ['#EAD6B0', '#F8EDD6', '#6E7F96'], // pale fawn
+      black:  ['#2A2628', '#3A3438', '#1D1A22'],
+      liver:  ['#C99A5E', '#D9AF77', '#2B2430'], // brindle look (coat.brindle)
+      blue:   ['#7E8A9C', '#909CAE', '#4A5568'],
+      lilac:  ['#C7B08C', '#D9C6A6', '#2B2430'], // pale brindle
+      mblack: ['#8C96A6', '#9EA8B6', '#2A2628'], // merle: grey base, the art adds dark patches
+      mliver: ['#C99A7E', '#E0C0A8', '#7A4A2E'],
+      mblue:  ['#B3BCC8', '#D5DBE3', '#6E7F96'],
+      mlilac: ['#C9B8BC', '#E0D3D6', '#A8949A']
+    },
+    mastiff: {
+      red:     ['#D8AE72', '#E9C994', '#2B2430'], // * fawn, black mask
+      apricot: ['#D98E4E', '#E9AE74', '#2B2430'],
+      cream:   ['#E6D3B2', '#F4E8D2', '#55657A'],
+      black:   ['#C99A5E', '#D9AF77', '#2B2430'], // brindle look (coat.brindle)
+      liver:   ['#9A7040', '#B58A58', '#2B2430'], // dark brindle
+      blue:    ['#A8A29A', '#C0BBB3', '#2B2430'], // silver brindle
+      lilac:   ['#C7B08C', '#D9C6A6', '#2B2430']  // pale brindle
+    },
+    gsd: {
+      black:  ['#C98A4A', '#E2B278', '#2B2430'], // * black and tan (the art draws the tan body, the dark = ears, mask and saddle)
+      solid:  ['#2A2628', '#3A3438', '#1D1A22'], // black
+      red:    ['#A88A5E', '#C8A878', '#3A3030'], // sable
+      cream:  ['#FBF6EC', '#FFFFFF', '#E8DECB'], // white
+      liver:  ['#B07A44', '#D9A872', '#5A3420'], // liver and tan
+      blue:   ['#C9A06A', '#E2B88A', '#55657A'], // blue and tan
+      lilac:  ['#C9A890', '#E0C8B0', '#8A777E']  // lilac and tan
+    },
     mutt: {
       black: ['#1D1A22', '#FFFFFF', '#1D1A22'], // *
       liver: ['#6E3D22', '#FFFFFF', '#4E2A16'],
@@ -208,13 +292,21 @@
     poodle:    { red: 'Apricot', cream: 'White', redliver: 'Cream', black: 'Black', liver: 'Chocolate', blue: 'Silver', lilac: 'Silver beige' },
     collie:    { red: 'Red', cream: 'Cream', black: 'Black', liver: 'Chocolate', blue: 'Blue', lilac: 'Lilac' },
     samoyed:   { red: 'White', redliver: 'Cream', cream: 'Cream', black: 'Black', liver: 'Chocolate', blue: 'Blue', lilac: 'Lilac' },
-    frenchie:  { red: 'Fawn', cream: 'Blue fawn', redliver: 'Cream', black: 'Dark fawn', liver: 'Chocolate', blue: 'Blue', lilac: 'Lilac' }
+    frenchie:  { red: 'Fawn', cream: 'Blue fawn', redliver: 'Cream', black: 'Dark fawn', liver: 'Chocolate', blue: 'Blue', lilac: 'Lilac' },
+    akita:     { red: 'Red', cream: 'White', black: 'Sesame', liver: 'Dark sesame', blue: 'Ash sesame', lilac: 'Pale sesame' },
+    spitz:     { red: 'White', redliver: 'Cream', cream: 'Cream', black: 'Black', liver: 'Chocolate', blue: 'Blue', lilac: 'Lilac' },
+    pom:       { red: 'Orange', cream: 'Cream', redliver: 'White', black: 'Black', liver: 'Chocolate', blue: 'Blue', lilac: 'Lilac' },
+    afghan:    { cream: 'Cream', red: 'Red', black: 'Black and tan', solid: 'Black', liver: 'Chocolate', blue: 'Silver', lilac: 'Lilac' },
+    dane:      { red: 'Fawn', cream: 'Pale fawn', black: 'Black', liver: 'Brindle', blue: 'Blue', lilac: 'Pale brindle' },
+    mastiff:   { red: 'Fawn', apricot: 'Apricot', cream: 'Pale fawn', black: 'Brindle', liver: 'Dark brindle', blue: 'Silver brindle', lilac: 'Pale brindle' },
+    gsd:       { black: 'Black and tan', solid: 'Black', red: 'Sable', cream: 'White', liver: 'Liver and tan', blue: 'Blue and tan', lilac: 'Lilac and tan' }
   };
   // Merle names follow the doc: named after the base pigment (dachshund merle is called "dapple").
   const MERLE_WORDS = { black: 'Black merle', liver: 'Liver merle', blue: 'Slate merle', lilac: 'Lilac merle' };
   const DAPPLE_WORDS = { black: 'Black dapple', liver: 'Chocolate dapple', blue: 'Blue dapple', lilac: 'Isabella dapple' };
   // Border Collie merles go by their show names (v2.5).
-  const MERLE_BY = { collie: { black: 'Blue merle', liver: 'Red merle', blue: 'Slate merle', lilac: 'Lilac merle' } };
+  const MERLE_BY = { collie: { black: 'Blue merle', liver: 'Red merle', blue: 'Slate merle', lilac: 'Lilac merle' },
+    dane: { black: 'Merle', liver: 'Brindle merle', blue: 'Blue merle', lilac: 'Pale merle' } }; // v2.11
   // Breeds whose art always shows white breed markings (corgi blaze/chest, husky mask/belly, collie collar and blaze).
   const WHITE_MARKED = { corgi: true, husky: true, beagle: true, collie: true };
   // Beagle tricolours already say the white; no suffix.
@@ -222,9 +314,13 @@
   // v2.5: a Border Collie with no spotting gene (S/S) shows the tricolour pattern (the tan comes through where the white would be).
   const TRI_SOLID = { collie: { black: 'Tricolour', liver: 'Chocolate tricolour', blue: 'Blue tricolour', lilac: 'Lilac tricolour' } };
   // v2.5: breeds with their own word for piebald (sp/sp). The black one is just the word, the others say the colour first.
-  const PIED = { poodle: 'parti', frenchie: 'pied' };
+  const PIED = { poodle: 'parti', frenchie: 'pied', pom: 'parti', dane: 'mantle' };
+  // v2.11: merle on white is a Harlequin Great Dane; E/E black is a solid Black for these breeds (E/e is Black and tan)
+  const HARLEQUIN = { dane: true }, SOLID_E = { afghan: true, gsd: true };
+  // v2.11: the brindle look (no K locus): the art draws wavy stripes when coat.brindle is set (dane and mastiff only)
+  const BRINDLE = { dane: { liver: 1, lilac: 1 }, mastiff: { black: 1, liver: 1, blue: 1, lilac: 1 } };
   // Breed shade key for red pigment on b/b (liver nose): pug apricot, greyhound red, v2.5 cream.
-  const RED_LIVER = { pug: 'apricot', greyhound: 'redliver', poodle: 'redliver', samoyed: 'redliver', frenchie: 'redliver' };
+  const RED_LIVER = { pug: 'apricot', greyhound: 'redliver', poodle: 'redliver', samoyed: 'redliver', frenchie: 'redliver', spitz: 'redliver', pom: 'redliver', mastiff: 'apricot' };
 
   /* ---------- helpers ---------- */
   const has = (pair, allele) => !!pair && (pair[0] === allele || pair[1] === allele);
@@ -242,6 +338,7 @@
   const genesKey = (g) => LOCUS_KEYS.map((k) => g[k].join('')).join('|');
 
   function shadeKey(g, breed, pig) {
+    if (pig === 'black' && SOLID_E[breed] && both(g.E, 'E')) return 'solid';
     return pig === 'red' && both(g.B, 'b') && RED_LIVER[breed] ? RED_LIVER[breed] : pig;
   }
 
@@ -280,7 +377,8 @@
     if (merle) name = (breed === 'dachs' ? DAPPLE_WORDS : MERLE_BY[breed] || MERLE_WORDS)[pig];
     else name = WORDS[breed][sk] || WORDS[breed][pig];
     const allWhite = !merle && name === 'White'; // v2.5: a white coat needs no white markings or patches in its name
-    if (white === 0.6 && PIED[breed]) name = (pig === 'black' || allWhite) && !merle ? PIED[breed][0].toUpperCase() + PIED[breed].slice(1) : name + ' ' + PIED[breed];
+    if (merle && white === 0.6 && HARLEQUIN[breed]) name = 'Harlequin';
+    else if (white === 0.6 && PIED[breed]) name = (pig === 'black' || allWhite) && !merle ? PIED[breed][0].toUpperCase() + PIED[breed].slice(1) : name + ' ' + PIED[breed];
     else if (allWhite) { /* "White" already says it */ }
     else if (white === 0.6) name += ' & white piebald';
     else if (TRI_SOLID[breed] && !merle && !white && TRI_SOLID[breed][pig]) name = TRI_SOLID[breed][pig];
@@ -290,10 +388,16 @@
     else if (WHITE_MARKED[breed]) name += ' and white';
     else if (white === 0.25) name += ' with white markings';
 
+    const coat = { base: shade[0], light: shade[1], dark: shade[2], white, merle, eyes };
+    // v2.11: a Great Dane's light is its chest and collar, so white markings show it white (solid coats keep a light close to the base);
+    // merle on white is the harlequin look: black patches (base and dark) on a white dog
+    if (breed === 'dane' && white > 0) coat.light = '#FFFFFF';
+    if (breed === 'dane' && merle && white >= 0.6) { coat.base = '#2A2628'; coat.dark = '#2A2628'; }
+    if (BRINDLE[breed] && BRINDLE[breed][pig] && !merle) coat.brindle = true; // only dane and mastiff ever have this key
     return {
       coatName: name,
       eyes,
-      coat: { base: shade[0], light: shade[1], dark: shade[2], white, merle, eyes },
+      coat,
       pigment: pig,
       merleHidden: merleAllele && !merle
     };
@@ -316,7 +420,15 @@
     poodle:    { b: 0.30, d: 0.25, e: 0.45, sp: 0.10, M: 0,    Bl: 0 },  // black, apricot, chocolate, silver, white, cream, parti; no merle
     collie:    { b: 0.25, d: 0.05, e: 0.10, sp: 0.50, M: 0.20, Bl: 0 },  // black and white, tricolour, chocolate, rare red; merle 20%
     samoyed:   { b: 0.15, d: 0,    e: 1.00, sp: 0,    M: 0,    Bl: 0 },  // always white, sometimes cream (b/b)
-    frenchie:  { b: 0.10, d: 0.20, e: 0.72, sp: 0.35, M: 0,    Bl: 0 }   // fawn, dark fawn, pied, blue fawn, cream; no merle
+    frenchie:  { b: 0.10, d: 0.20, e: 0.72, sp: 0.35, M: 0,    Bl: 0 },  // fawn, dark fawn, pied, blue fawn, cream; no merle
+    // v2.11 breeds
+    akita:     { b: 0.20, d: 0.20, e: 0.62, sp: 0,    M: 0,    Bl: 0 },  // red, sesame, rare dark sesame and white; no merle, no piebald
+    spitz:     { b: 0.15, d: 0,    e: 1.00, sp: 0,    M: 0,    Bl: 0 },  // always white, sometimes cream (b/b)
+    pom:       { b: 0.20, d: 0.12, e: 0.50, sp: 0.15, M: 0,    Bl: 0 },  // orange, cream, black, chocolate, white, blue, parti; no merle
+    afghan:    { b: 0.15, d: 0.25, e: 0.45, sp: 0,    M: 0,    Bl: 0 },  // cream, red, black, black and tan, silver; no merle, no piebald
+    dane:      { b: 0.35, d: 0.25, e: 0.50, sp: 0.30, M: 0.20, Bl: 0 },  // fawn, brindle look, black, blue, mantle, merle, harlequin; merle 20% (never M/M)
+    mastiff:   { b: 0.30, d: 0,    e: 0.80, sp: 0,    M: 0,    Bl: 0 },  // fawn, apricot, brindle look; no dilute, no merle
+    gsd:       { b: 0.10, d: 0.15, e: 0.55, sp: 0,    M: 0,    Bl: 0 }   // black and tan, sable, black, white; no merle, no piebald
   };
   function randomGenotype(breedKey, rng) {
     const R = rngOf(rng), f = FREQ[breedOf(breedKey)];
@@ -380,14 +492,15 @@
      MIXES, BREED_NAMES, mixKey, mixOf, predict, coatCatalog, describe.
      ===================================================================== */
   const BREED_NAMES = { shiba: 'Shiba', corgi: 'Corgi', golden: 'Golden', dachs: 'Dachshund', husky: 'Husky', mutt: 'Mutt', chihuahua: 'Chihuahua', pug: 'Pug', greyhound: 'Greyhound', beagle: 'Beagle',
-    poodle: 'Poodle', collie: 'Border Collie', samoyed: 'Samoyed', frenchie: 'French Bulldog' };
+    poodle: 'Poodle', collie: 'Border Collie', samoyed: 'Samoyed', frenchie: 'French Bulldog',
+    akita: 'Akita', spitz: 'Japanese Spitz', pom: 'Pomeranian', afghan: 'Afghan Hound', dane: 'Great Dane', mastiff: 'English Mastiff', gsd: 'German Shepherd' };
 
   /** Canonical table key for a pair: the two breed keys in BREEDS order joined by '|', e.g. 'corgi|husky'. */
   function mixKey(a, b) {
     const x = breedOf(a), y = breedOf(b);
     return BREEDS.indexOf(x) <= BREEDS.indexOf(y) ? x + '|' + y : y + '|' + x;
   }
-  /* All 91 pairs of the 14 breeds (45 of the first 10, v2.5 added 46) -> { name, head }. head = the breed with the more striking head.
+  /* All 210 pairs of the 21 breeds (45 of the first 10, v2.5 added 46, v2.11 added 45 with akita, spitz and pom, then 74 with afghan, dane, mastiff and gsd: 70 named, 4 mutt) -> { name, head }. head = the breed with the more striking head.
      Real portmanteaus where they exist; invented cute ones otherwise. Mutt pairs: "Mutt mix", head = the other breed
      (mixOf() applies the 50% mutt-head rule on top). */
   const MIX_LIST = [
@@ -432,7 +545,67 @@
     ['beagle', 'frenchie', 'French Beagle', 'beagle'],
     ['poodle', 'collie', 'Bordoodle', 'poodle'],   ['poodle', 'samoyed', 'Samoodle', 'poodle'],
     ['poodle', 'frenchie', 'Froodle', 'frenchie'], ['collie', 'samoyed', 'Border Sammy', 'collie'],
-    ['collie', 'frenchie', 'French Collie', 'frenchie'], ['samoyed', 'frenchie', 'French Sammy', 'frenchie']
+    ['collie', 'frenchie', 'French Collie', 'frenchie'], ['samoyed', 'frenchie', 'French Sammy', 'frenchie'],
+    // v2.11: the three new breeds with the 13 old non-mutt breeds (39), then among themselves (3)
+    ['shiba', 'akita', 'Shibakita', 'akita'],      ['corgi', 'akita', 'Corgikita', 'corgi'],
+    ['golden', 'akita', 'Goldkita', 'akita'],      ['dachs', 'akita', 'Doxkita', 'dachs'],
+    ['husky', 'akita', 'Huskita', 'husky'],        ['chihuahua', 'akita', 'Chikita', 'chihuahua'],
+    ['pug', 'akita', 'Pugkita', 'pug'],            ['greyhound', 'akita', 'Greykita', 'akita'],
+    ['beagle', 'akita', 'Beakita', 'beagle'],      ['poodle', 'akita', 'Akipoo', 'poodle'],
+    ['collie', 'akita', 'Border Akita', 'collie'], ['samoyed', 'akita', 'Sammy Kita', 'samoyed'],
+    ['frenchie', 'akita', 'French Akita', 'frenchie'],
+    ['shiba', 'spitz', 'Spitziba', 'spitz'],       ['corgi', 'spitz', 'Spitzgi', 'corgi'],
+    ['golden', 'spitz', 'Goldspitz', 'spitz'],     ['dachs', 'spitz', 'Spitzdox', 'dachs'],
+    ['husky', 'spitz', 'Spitzky', 'husky'],        ['chihuahua', 'spitz', 'Chispitz', 'chihuahua'],
+    ['pug', 'spitz', 'Pugspitz', 'pug'],           ['greyhound', 'spitz', 'Greyspitz', 'spitz'],
+    ['beagle', 'spitz', 'Spitzle', 'beagle'],      ['poodle', 'spitz', 'Spitzpoo', 'poodle'],
+    ['collie', 'spitz', 'Border Spitz', 'collie'], ['samoyed', 'spitz', 'Sammy Spitz', 'samoyed'],
+    ['frenchie', 'spitz', 'French Spitz', 'frenchie'],
+    ['shiba', 'pom', 'Pomiba', 'shiba'],           ['corgi', 'pom', 'Pomgi', 'corgi'],
+    ['golden', 'pom', 'Golden Pom', 'golden'],     ['dachs', 'pom', 'Pomdox', 'dachs'],
+    ['husky', 'pom', 'Pomsky', 'husky'],           ['chihuahua', 'pom', 'Pomchi', 'pom'],
+    ['pug', 'pom', 'Pugeranian', 'pug'],           ['greyhound', 'pom', 'Pomhound', 'greyhound'],
+    ['beagle', 'pom', 'Pomagle', 'beagle'],        ['poodle', 'pom', 'Pomapoo', 'poodle'],
+    ['collie', 'pom', 'Border Pom', 'collie'],     ['samoyed', 'pom', 'Sammy Pom', 'samoyed'],
+    ['frenchie', 'pom', 'French Pom', 'frenchie'],
+    ['akita', 'spitz', 'Spitzkita', 'akita'],      ['akita', 'pom', 'Pomkita', 'akita'],
+    ['spitz', 'pom', 'Pomspitz', 'spitz'],
+    // v2.11 (the owner's four more): the big breeds with the 16 older non-mutt breeds (64), then among themselves (6)
+    ['shiba', 'afghan', 'Afghan Shiba', 'shiba'], ['corgi', 'afghan', 'Afghan Corgi', 'corgi'],
+    ['golden', 'afghan', 'Golden Afghan', 'afghan'], ['dachs', 'afghan', 'Afghan Doxie', 'dachs'],
+    ['husky', 'afghan', 'Afghusky', 'husky'], ['chihuahua', 'afghan', 'Afghan Chi', 'chihuahua'],
+    ['pug', 'afghan', 'Afghan Pug', 'pug'], ['greyhound', 'afghan', 'Afghan Grey', 'afghan'],
+    ['beagle', 'afghan', 'Afghan Beagle', 'beagle'], ['poodle', 'afghan', 'Afghandoodle', 'poodle'],
+    ['collie', 'afghan', 'Afghan Collie', 'collie'], ['samoyed', 'afghan', 'Afghan Sammy', 'samoyed'],
+    ['frenchie', 'afghan', 'French Afghan', 'frenchie'], ['akita', 'afghan', 'Afghan Akita', 'afghan'],
+    ['spitz', 'afghan', 'Afghan Spitz', 'spitz'], ['pom', 'afghan', 'Afghan Pom', 'pom'],
+    ['shiba', 'dane', 'Dane Shiba', 'shiba'], ['corgi', 'dane', 'Dane Corgi', 'corgi'],
+    ['golden', 'dane', 'Golden Dane', 'dane'], ['dachs', 'dane', 'Dane Doxie', 'dachs'],
+    ['husky', 'dane', 'Dane Husky', 'husky'], ['chihuahua', 'dane', 'Dane Chi', 'chihuahua'],
+    ['pug', 'dane', 'Dane Pug', 'pug'], ['greyhound', 'dane', 'Dane Grey', 'dane'],
+    ['beagle', 'dane', 'Dane Beagle', 'beagle'], ['poodle', 'dane', 'Daneoodle', 'poodle'],
+    ['collie', 'dane', 'Border Dane', 'collie'], ['samoyed', 'dane', 'Sammy Dane', 'samoyed'],
+    ['frenchie', 'dane', 'French Dane', 'frenchie'], ['akita', 'dane', 'Akita Dane', 'dane'],
+    ['spitz', 'dane', 'Spitz Dane', 'spitz'], ['pom', 'dane', 'Pom Dane', 'pom'],
+    ['shiba', 'mastiff', 'Mastiba', 'shiba'], ['corgi', 'mastiff', 'Mastigi', 'corgi'],
+    ['golden', 'mastiff', 'Golden Mastiff', 'mastiff'], ['dachs', 'mastiff', 'Mastidox', 'dachs'],
+    ['husky', 'mastiff', 'Mastusky', 'husky'], ['chihuahua', 'mastiff', 'Mastichi', 'chihuahua'],
+    ['pug', 'mastiff', 'Mastipug', 'pug'], ['greyhound', 'mastiff', 'Greymastiff', 'mastiff'],
+    ['beagle', 'mastiff', 'Mastigle', 'beagle'], ['poodle', 'mastiff', 'Mastipoo', 'poodle'],
+    ['collie', 'mastiff', 'Border Mastiff', 'collie'], ['samoyed', 'mastiff', 'Sammy Mastiff', 'samoyed'],
+    ['frenchie', 'mastiff', 'Frenchiff', 'frenchie'], ['akita', 'mastiff', 'Akita Mastiff', 'mastiff'],
+    ['spitz', 'mastiff', 'Spitz Mastiff', 'spitz'], ['pom', 'mastiff', 'Pom Mastiff', 'pom'],
+    ['shiba', 'gsd', 'Shepiba', 'shiba'], ['corgi', 'gsd', 'Shepgi', 'corgi'],
+    ['golden', 'gsd', 'Golden Shepherd', 'gsd'], ['dachs', 'gsd', 'Shepdox', 'dachs'],
+    ['husky', 'gsd', 'Shepsky', 'husky'], ['chihuahua', 'gsd', 'Shepchi', 'chihuahua'],
+    ['pug', 'gsd', 'Pugshep', 'pug'], ['greyhound', 'gsd', 'Greyshep', 'gsd'],
+    ['beagle', 'gsd', 'Sheagle', 'beagle'], ['poodle', 'gsd', 'Shepadoodle', 'poodle'],
+    ['collie', 'gsd', 'Border Shepherd', 'collie'], ['samoyed', 'gsd', 'Sammy Shepherd', 'samoyed'],
+    ['frenchie', 'gsd', 'French Shepherd', 'frenchie'], ['akita', 'gsd', 'Akita Shepherd', 'gsd'],
+    ['spitz', 'gsd', 'Spitz Shepherd', 'spitz'], ['pom', 'gsd', 'Pom Shepherd', 'pom'],
+    ['afghan', 'dane', 'Afghan Dane', 'afghan'], ['afghan', 'mastiff', 'Afghan Mastiff', 'mastiff'],
+    ['afghan', 'gsd', 'Afghan Shepherd', 'afghan'], ['dane', 'mastiff', 'Daniff', 'mastiff'],
+    ['dane', 'gsd', 'Shepdane', 'gsd'], ['mastiff', 'gsd', 'Mastishep', 'mastiff']
   ];
   const MIXES = {};
   MIX_LIST.forEach((m) => { MIXES[mixKey(m[0], m[1])] = { name: m[2], head: m[3] }; });
@@ -563,7 +736,8 @@
     blue: 'dilute genes from both parents',
     lilac: 'chocolate and dilute genes from both parents',
     apricot: 'red and chocolate genes from both parents',
-    redliver: 'red and chocolate genes from both parents'
+    redliver: 'red and chocolate genes from both parents',
+    solid: 'dark-coat genes from both parents'
   };
   function hintFor(breed, sk, merle, whiteLvl, p, defaultSk) {
     const f = FREQ[breed], parts = [];

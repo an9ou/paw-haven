@@ -53,7 +53,7 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [x] Playdate pals' noses nearly touch in the bow pose at 390 px wide. `game/css/24_phone_puppy.css` Done in v2.9: pals 20 px further apart on phones.
 - [ ] With puppies, the nursery basket sits right of the phone view and is reached with "look right" (accepted in v2.3). `game/src/03_yard.js`
 - [x] The map zoom buttons were checked clear of the labels only in the default (unpanned) view. `game/src/08_map.js` Done in v2.9: after a drag, pinch or zoom tap on phones the map slides clear of the place names (`mapClearCtl` pattern).
-- [ ] Owner: confirm the Supabase project auto-confirms email changes (Confirm email off), so "No email is ever sent" stays true.
+- [x] Supabase is gone (v2.9.1): nothing to confirm.
 - [ ] The "look right" peek button and the nap details card are new. Check both once on a real phone.
 
 ## Shop Day (v2.4)
@@ -72,7 +72,7 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [ ] Spring and winter have no festival yet (the season art is ready for one). `game/src/26_festival.js`
 - [ ] Git tags do not reach GitHub through the build container's proxy, so `v25-base` is also a branch. Delete the branch when the tag is pushed from a machine that can. `tools/`
 - [ ] Owner: play one October day on a phone (leaf piles, the stall, the parade) and check the seasons with the Dev panel Season select.
-- [ ] Fetch on phones: the scene is full width but only about 234 px tall, with blank space under the panel. A taller scene would gain about 10% at most (the throw needs 900 of the 1000 units). `game/src/19_fetch.js`
+- [x] Fetch on phones: the scene is full width but only about 234 px tall, with blank space under the panel. Gone in v2.10: the Fetch challenge is retired, and ball play runs in the place's own scene with a 760-unit crop. `game/src/38_ball.js`
 - [ ] Market Street on phones: the first camera move re-applies a zoom about 7% tighter than the home framing (pre-existing; the town occlusion checks tune that framing). `game/src/03_yard.js`
 - [ ] Round buttons lost their hatching when the fill was fitted inside the outline (the crayon look is kept by the wash). Decide whether to draw a clipped hatch. `game/css/01_sketch_surface.css`
 - [ ] Tray-card notes clamp at 2 lines on phones. `game/css/21_phone_home.css`
@@ -131,3 +131,34 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [ ] `v27_review` ("the bath finishes from the house") and `v28_scenes` (420 s timeout) failed once under heavy load (the full run plus three reviewers), clean alone.
 - [ ] Flaky once in the final v2.9 `all` + `phone` run, clean 3 of 3 under load afterwards: `phone_home` (a tap timed out), `v2_journal` (the mailbox centre click, 4 s wait), `phone_v27_shelter` (a tap on a room dog).
 - [x] `v24_guide` lost its save across the reload about 1 in 2 runs, on v2.8.4 too (the Chromium localStorage race). Fixed in v2.9 with `t.reloadKeepingSave()` in `game/test_lib.js`; use it for any reload that must keep the save.
+
+## Free to Roam (v2.10)
+- [ ] On a narrow phone the yard home crop (about 490 units on an iPhone 15) has no free spot beside the leader for the pack dogs, so they stand outside it and the look chip shows them. The leader can roam outside the crop too. `game/src/37_roam.js`
+- [ ] `#ballLayer` is not depth-sorted with the dogs: the ball draws over the legs of dogs standing in front of it. `game/src/38_ball.js`
+- [ ] `phone_occl_play` is flaky under load (the walkfetch toast, the runner hint). Not from v2.10. `game/test_phone_occl_play.js`
+
+## Costumes & Sizes (v2.11.1)
+- [ ] The three new costumes (Pumpkin Patch Suit, Trick-or-Treat Ghost, Little Bat Costume) are not in the Dog Card list `DC_OUTFITS`: adding them changes the Worker's list counts and needs a Worker deploy in the same release. A card dog wearing one shows its next listed item. `game/src/40_dogcards.js`, `cloudflare/worker.js`
+- [ ] The new costumes have no item drawing in the art module: the pop-up, Wardrobe and Journal use the `HW_ITEM_FB` doodles in `27_halloween.js`.
+- [ ] With the bigger dogs (v2.10 size x 1.25 x class) the narrow phone yard fits fewer dogs on screen, so the look chips show more often.
+- [ ] At the Dog Park a card visitor may stand partly behind your dogs (allowed since v2.11).
+- [ ] `phone_occl_play` is still flaky under load (passes on retry).
+- [ ] `phone_v25_fixes_b` "the view eases back to the dog after the drag" (iPhone or Pixel yard) fails about half the runs, on `v2111-base` (v2.11) too: the camera does not settle within 3 units in 9 s. Pre-existing, not caused by v2.11.1. `game/test_phone_v25_fixes_b.js:77`
+- [ ] A costume hides the head-slot hat, but the hat's perk still works and the Wardrobe gives no hint that the hat is hidden.
+
+## Tokyo Trip (v2.11)
+- [ ] Pre-v2.11, found by the phone review: on phones `#mapPan` is 24 px wider than the screen. `game/src/08_map.js`
+- [ ] Pre-v2.11, phone review: the Dog Park sign measures 95 x 40 px on phones.
+- [ ] Pre-v2.11, phone review: photo mode shows a blank band on phones. `game/src/35_photo.js`
+- [ ] `v211_dogs` takes about 440 s alone (its timeout is 700 s). Split it or sample fewer renders. `game/test_v211_dogs_node.js`
+- [ ] `account` and `cloud` are slow under load (the full parallel run), clean alone.
+- [ ] The site rows for the 7 new breeds and the privacy page's Dog Cards section are committed but not deployed (owner's go-ahead: `bash tools/cf_pages_deploy.sh`). `site/`, `tools/site_dogs.js`
+- [ ] The lane screenshots from CARDS (about 8 MB) and TOKYO ART E (about 26 MB) came into the history through early merges (accepted). Later lanes keep theirs on the lane branch only.
+- [ ] Waiting (owner, V211.md section 6): the day trips (Kamakura, Hakone, Kyoto) for v2.12, Quick Chat with preset phrases and friends for v2.12, and the breeds Japanese Chin, Shih Tzu and Kai Ken.
+
+## Reset code in the game (v2.9.2)
+- [ ] Live email needs the Resend domain doodledoggo.app verified (it was still verifying on 17 Oct). Until then `/forgot` answers the same and the send fails quietly in the Worker log. Re-check with a real account once Resend says verified.
+- [ ] `site/privacy.html` still says the only emails are "a password link". The SITE lane (site/v2) should say "a password code". `site/privacy.html`
+- [ ] `POST /reset` (the v2.8.2 link) and the D1 table `resets` stay only for links sent before v2.9.2 (they all ran out 30 minutes after the deploy). Remove both in a later release. `cloudflare/worker.js`, `cloudflare/schema.sql`
+- [ ] The keyboard check runs in Chromium with a shorter screen (the Android way). Check the iPhone overlay keyboard once on a real phone (`rsKeyboard`, `game/src/22d_reset.js`).
+- [ ] `tools/cf_site.js` still describes /reset as the password form in its header comment (harmless).

@@ -599,6 +599,10 @@ function start(el, o) {
   // FOL_AHEAD: the leader keeps at least this much path in view ahead of it (1.8 s at the top speed, as the portrait strip promises)
   const fol = [], folHist = [], FOL_GAP = 8, FOL_OV = 0.28, FOL_K = 0.8, FOL_AHEAD = 450, FOL_POSES = ['walk', 'jump', 'happy', 'idle'];
   let folMoveT = 0, folCam = -1;
+  // v2.11.1 sizes: o.dog.size and each o.pack[i].size are the dogs' size factors (the game passes them; this module never reads breed tables).
+  // A follower is drawn at its size relative to the leader's (the leader keeps its own drawing and hitbox). No size given = the leader's size (as v2.9)
+  const folLead = (o.dog && +o.dog.size > 0) ? +o.dog.size : 1;
+  const folRel = (fd) => clamp((+fd.size > 0 ? +fd.size : folLead) / folLead, 0.6, 1.4);
   function folSvg(fd, p) {
     for (const q of p === 'idle' ? ['idle'] : [p, 'idle']) {
       const sv = call('dog', fd.key, { pose: q, outfit: fd.outfit || {}, facing: 'right', coat: fd.coat, seed: fd.seed });
@@ -612,7 +616,7 @@ function start(el, o) {
       const el = document.createElement('div'); el.className = 'pw-dog pw-fol'; el.setAttribute('aria-hidden', 'true'); const poses = {};
       FOL_POSES.forEach((p) => { const d = document.createElement('div'); d.className = 'pw-pose' + (p === 'idle' ? ' on' : ''); d.innerHTML = folSvg(fd, p); el.appendChild(d); poses[p] = d; });
       E.dog.parentNode.insertBefore(el, fol.length ? fol[fol.length - 1].el : E.dog); // the one farthest back is drawn first
-      fol.push({ el, poses, cur: 'idle' });
+      fol.push({ el, poses, cur: 'idle', rel: folRel(fd) });
     });
   }
   // normalise the breed size so every dog reads at the same height (the hitbox is the same for all)
@@ -636,20 +640,20 @@ function start(el, o) {
   });
   // the room the line needs: from the stage's left edge to the leader's centre (world units)
   function folNeed() {
-    const k = dogSc * FOL_K; let need = (120 - dogArt[0]) * dogSc + FOL_GAP;
-    fol.forEach((f, i) => { const w = (f.art[1] - f.art[0]) * k; need += i ? w * (1 - FOL_OV) : w; });
-    return need + fol[fol.length - 1].art[0] * k + 2;
+    const K = (f) => dogSc * FOL_K * f.rel; let need = (120 - dogArt[0]) * dogSc + FOL_GAP;
+    fol.forEach((f, i) => { const w = (f.art[1] - f.art[0]) * K(f); need += i ? w * (1 - FOL_OV) : w; });
+    const last = fol[fol.length - 1]; return need + last.art[0] * K(last) + 2;
   }
   // nose to tail behind the leader, every follower inside the strip (a tighter line when the strip is short of room)
   function folPlace() {
-    const k = dogSc * FOL_K, ws = fol.map((f) => (f.art[1] - f.art[0]) * k), tail = ws.slice(1).reduce((a, b) => a + b, 0);
-    const back = DOG.x - (120 - dogArt[0]) * dogSc, room = back - fol[fol.length - 1].art[0] * k - 2;
+    const K = (f) => dogSc * FOL_K * f.rel, ws = fol.map((f) => (f.art[1] - f.art[0]) * K(f)), tail = ws.slice(1).reduce((a, b) => a + b, 0);
+    const last = fol[fol.length - 1], back = DOG.x - (120 - dogArt[0]) * dogSc, room = back - last.art[0] * K(last) - 2;
     let gap = FOL_GAP, ov = FOL_OV;
     if (gap + ws[0] + tail * (1 - ov) > room && tail) ov = clamp(1 - (room - gap - ws[0]) / tail, FOL_OV, 0.6);
     if (gap + ws[0] + tail * (1 - ov) > room) gap = Math.max(-ws[0] * 0.3, room - ws[0] - tail * (1 - ov));
     let nose = back - gap;
     fol.forEach((f, i) => {
-      if (i) nose += ws[i] * ov;
+      if (i) nose += ws[i] * ov; const k = K(f);
       const x = Math.max(0, nose - f.art[1] * k); f.dist = DOG.x - (x + 120 * k); nose = x + f.art[0] * k;
       Object.assign(f.el.style, { left: px(x), top: px(G - 186 * k), width: px(240 * k), height: px(200 * k) }); // a little smaller, feet on the same ground line
     });

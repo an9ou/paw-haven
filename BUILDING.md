@@ -117,7 +117,7 @@ You manage Paw Haven for the owner. You don't build. Start a fresh Coordinator s
 **State after v2.4 (6 Oct 2026):**
 - v2.4 "Shop Day" is live on GitHub Pages and on the claude.ai artifact (now a multi-file artifact, see CLAUDE.md "Publishing": `tools/artifact.js`, and a subagent does the required read of the live page).
 - All build sessions are archived.
-- Supabase: the public URL and key are in `PHONE.md` and `game/src/22b_cloud_config.js`, and the tables are in `supabase/schema.sql`.
+- Cloud save runs on the Cloudflare Worker `pawhaven-api` (`docs/CLOUDFLARE_LOGIN.md`). Supabase is gone since v2.9.1.
   - Anonymous sign-ins and email are on, with Confirm email off, so no emails are ever sent.
   - 5 test users (`pawhaven-test-1…5@example.com`) may still exist.
 - The owner still has to check live sync (Realtime) once on two real phones, and open the claude.ai artifact once.
@@ -160,3 +160,28 @@ You manage Paw Haven for the owner. You don't build. Start a fresh Coordinator s
 - The art suites need the base refs locally: `git fetch origin integration/v2.4 v25-base v26-base v27-base v28-base` in a fresh clone.
 - Make `v30-base` from v2.9 `main` before the next release.
 - Open items are in `TODO.md` "All Together (v2.9)".
+
+**State after v2.10 (17 Oct 2026):**
+- v2.10 "Free to Roam" (every dog roams by its personality, petting one dog, ball play everywhere) is on `integration/v2.10`. Spec and as-built notes: `V210.md` (sections 5 and 6).
+- Built by an Opus coordinator (handed over once under rule 11) with two lanes: ROAM on Opus (handed over once) and BALL on Sonnet. Then three `paw-reviewer` reviews in parallel and the fix batches: the BALL batch on `paw-fixer`, the ROAM fixes in the lane. Lane branches `lane/v210-*`, `v210-base` is a branch at `db73f22` (v2.9).
+- Final `all` + `phone`: 89 suites (`all` + `phone --jobs 2`): 85 passed, 4 flaky (`phone_skill`, `phone_v25_fixes_b`, `v29_photo`, `v21_breed`, all passed on retry), 0 failed. New suites: `v210_roam`, `v210_ball`, `phone_v210_roam`, `phone_v210_ball`. `node dogs/check_identical.js v210-base`: 155344 renders, 0 differ.
+- Make `v211-base` from v2.10 `main` before the next release.
+- Open items are in `TODO.md` "Free to Roam (v2.10)".
+
+**State after v2.11 (17 Oct 2026):**
+- v2.11 "Tokyo Trip" (the Shinkansen to six Tokyo places with seven stamps, Dog Cards, seven new breeds for 21 in all) is on `integration/v2.11`. Spec and as-built notes: `V211.md` (sections 5 and 6).
+- Built by an Opus coordinator (handed over once under rule 11) with three lane sessions: TRAVEL and CARDS on Opus, BREEDS on Sonnet, plus five `paw-artist` subagents (TOKYO ART D, TOKYO ART E, BREED ART, BREED ART 2 for the owner's four more breeds, and the art fix batch). Then three `paw-reviewer` reviews (code, phone, art) and the fix batches in the lanes. Lane branches `lane/v211-*`, art fixes on `fix/v211-art`, `v211-base` is a branch at `97a2fc0` (v2.10).
+- Final `all` + `phone`: 97 suites (`all` 65 + `phone --jobs 2` 32): 92 passed, 2 flaky (`v27_review`, `phone_legacy`, both passed on retry), 3 failed and fixed (`v26_toys` now counts the Shinkansen Plush, `v29_photo` waits up to 30 s for the square picture under load, `phone_town`: on iPhone 15 a Dog Card visitor took the rehomed pup's tap, fixed in the game by `dcRoom()` in `40_dogcards.js`); all three pass on re-run. New suites: `v211_tokyo`, `v211_cards`, `v211_breeds`, `v211_art_d`, `v211_art_e`, `v211_dogs`, `phone_v211_tokyo`, `phone_v211_cards`. `node dogs/check_identical.js v211-base`: 155344 renders, 0 differ; outfit sweep 49329, 0 bad.
+- The Worker changed (the Dog Card routes and the `cards` and `paws` tables): deploy it with `bash tools/cf_api_deploy.sh` and check with `bash tools/cf_api_smoke.sh`. The claude.ai artifact has eight supporting files now (`world_d.js` and `world_e.js` added). The site's new dog rows are not deployed (owner's go-ahead).
+- Screenshots stay on the lane branches. CARDS and TOKYO ART E put theirs into the history through early merges (accepted); remove `game/shots_*` before a release.
+- Make `v212-base` from v2.11 `main` before the next release.
+- Open items are in `TODO.md` "Tokyo Trip (v2.11)".
+
+**State after v2.11.1 (17 Oct 2026):**
+- v2.11.1 "Costumes & Sizes" (three Halloween 2026 costumes, dog sizes by class with the owner's 1.25x growth, the gsd neck, roomier Shelter text on phones) is on `main`, GitHub Pages, itch.io (2.11.1) and the doodledoggo.app site (the gsd art). Spec and as-built notes: `V2111.md` (sections 2, 3 and 6).
+- Built by an Opus coordinator with three lane subagents in their own worktrees, all at once: ART (`paw-artist`), SIZE (Opus), UI (Sonnet). Then one `paw-reviewer` pass and three fix batches (`fix/v2111-review`, `fix/v2111-art`, `fix/v2111-roam`). `v2111-base` is a branch at `17e513b` (v2.11).
+- Final `all` + `phone --jobs 2` after the last fix: 97 suites, 95 passed, `v27_mailbox` flaky (4/4 alone), `v29_pack` failed under load (3/3 alone); `phone` 32 of 32. `phone_v25_fixes_b` (camera ease-back) fails about half the runs on `v2111-base` too (TODO). `SKIP=gsd node dogs/check_identical.js v2111-base`: 226840 renders, 0 differ; outfit sweep 71253, 0 bad.
+- The Worker is unchanged (the costumes are not in `DC_OUTFITS`, see TODO). The claude.ai artifact still needs publishing by the Game Manager (`node tools/artifact.js`).
+- Make `v212-base` from v2.11.1 `main` before the next release.
+- Open items are in `TODO.md` "Costumes & Sizes (v2.11.1)".
+

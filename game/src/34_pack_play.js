@@ -5,7 +5,7 @@
 // runtime only (V29.md 5.1: no save field). walk: the followers of the walk that is starting or running. sw: a long screen runs for another dog. skip: why the last pkDogs left a dog out
 const PKS = { walk: null, sw: null, skip: [], lp: false, fetch: null, card: null, pickX: 0 };
 const PK_BONUS = 0.1; // pack walk bonus: +10% of one walk's coins (rounded down) when 2 or more dogs walk (V29.md 5.4)
-const PK_CAP_PLAY = 'Ticked dogs join in. The leader always plays.';
+const PK_CAP_PLAY = 'Ticked dogs join in. The leader always plays. Every awake dog plays ball.';
 const PK_CAP_WALK = 'Ticked dogs come along. The leader leads.';
 
 /* ---------------- who joins in ---------------- */
@@ -133,7 +133,7 @@ function pkSlide(g, from, to) {
   g.style.transition = 'none'; g.style.transform = from; void g.getBoundingClientRect();
   g.style.transition = ''; g.classList.add('pk-slide'); g.style.transform = to;
 }
-const PK_TUG = { sc: 0.56, tuck: 10, rise: 30, step: 16, xmin: 224 }; // the pile: crouching dogs at 56%, the bottom one's nose just under the leader's tail, each one above a little higher and further back
+const PK_TUG = { sc: 0.56, tuck: 10, rise: 30, step: 16, xmin: 224 }; // the pile: crouching dogs at 56% (v2.11.1: x their size factor, sizeK), the bottom one's nose just under the leader's tail, each one above a little higher and further back
 // Tug: the pack dogs leave their spots and pile on behind the leader (its end of the rope), crouching and facing it, then go back. Toys: a happy pose where they stand
 function pkPlayStart(crew, tug) {
   const t = performance.now() + 2600; PKS.tug = null;
@@ -142,7 +142,7 @@ function pkPlayStart(crew, tug) {
   const L = pkArtBox($('#dogArt')); if (!L) { crew.forEach((d) => { const g = $(`#pack [data-dog="${d.id}"]`); if (g) g.classList.add('pk-tug'); }); return; }
   const pile = crew.map((d) => ({ d, g: $(`#pack [data-dog="${d.id}"]`) })).filter((o) => o.g);
   PKS.tug = pile.map((o, k) => {
-    const [fx, fy, face, sc] = pkSpotOf(o.d), m = PK_TUG.sc / sc, sx = face === 'right' ? m : -m, lvl = pile.length - 1 - k; // the last one drawn is the bottom of the pile
+    const [fx, fy, face, sc] = pkSpotOf(o.d), m = PK_TUG.sc * sizeK(o.d) / sc, sx = face === 'right' ? m : -m, lvl = pile.length - 1 - k; // the last one drawn is the bottom of the pile
     const A = pkArtBox(o.g) || [fx - 60 * sc, fy - 100 * sc, fx + 60 * sc, fy], hd = ((face === 'right' ? A[2] - fx : fx - A[0])) * m, tl = ((face === 'right' ? fx - A[0] : A[2] - fx)) * m;
     const X = Math.max(PK_TUG.xmin + tl, L[0] + PK_TUG.tuck - hd - lvl * PK_TUG.step), Y = L[3] + 4 - lvl * PK_TUG.rise;
     const to = `translate(${f1(X - sx * fx)}px, ${f1(Y - m * fy)}px) scale(${sx.toFixed(3)}, ${m.toFixed(3)})`, at = `translate(${f1(fx - (face === 'right' ? 1 : -1) * fx)}px, 0px) scale(${face === 'right' ? 1 : -1}, 1)`;

@@ -1,0 +1,20 @@
+/* v2.10 FREE TO ROAM: the roam engine (lane ROAM, tag rm). Phone rules under html[data-layout="phone"]. */
+/* every dog is a .rmdog group placed by the roam engine (37_roam.js): the leader's #dogPos keeps its old transform as a record only */
+.rmdog #dogPos{transform:none!important;transition:none!important}
+.rmdog.packdog{cursor:pointer}
+html[data-layout="phone"] .rm-look{position:absolute;top:calc(24% + 58px);z-index:5;width:62px;height:48px;min-width:48px;min-height:48px;padding:0 4px;display:flex;align-items:center;justify-content:center;gap:0;border-radius:24px;--wash:var(--paper)}
+html[data-layout="phone"] .rm-look[hidden]{display:none}
+html[data-layout="phone"] .rm-look.right{right:6px}
+html[data-layout="phone"] .rm-look.left{left:6px;flex-direction:row-reverse}
+html[data-layout="phone"] .rm-look .rm-head{width:36px;height:36px;display:block;flex:none}
+html[data-layout="phone"] .rm-look .rm-head svg{width:100%;height:100%;display:block}
+html[data-layout="phone"] .rm-look .rm-arrow{width:14px;height:18px;display:block;flex:none}
+html[data-layout="phone"] .rm-look.left .rm-arrow{transform:scaleX(-1)}
+html[data-layout="phone"] .rm-look .rm-n{position:absolute;top:-6px;font:700 15px/16px var(--font-read);font-style:normal;min-width:20px;height:20px;border-radius:10px;background:var(--paper);border:2px solid var(--ink);color:var(--ink);text-align:center}
+html[data-layout="phone"] .rm-look.right .rm-n{left:-6px}
+html[data-layout="phone"] .rm-look.left .rm-n{right:-6px}
+.rm-look{display:none}
+html[data-layout="phone"] .rm-look{display:flex}
+/* ball play: the missions clipboard's own 48 px tap rect (not a .hot element, so 40_ball.css misses it) opens nothing while playing */
+html.bl-on #view svg.world #msCardG, html.bl-on #view svg.world #msCardG *{pointer-events:none}
+html.bl-on .rm-look{display:none!important} /* the camera follows the ball while playing */

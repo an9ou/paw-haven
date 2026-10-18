@@ -257,9 +257,12 @@ function visitorSpot() {
   return free[0];
 }
 function visitorDog(v) { return { id: v.id, key: v.key, genes: v.genes, born: v.born, mix: v.mix || null, sparkle: !!v.sparkle }; }
+// v2.11.1: the visitor's drawing takes its size class (sizeK) round its feet, and so does its tap rect
 function visitorSVG(v) {
-  const [fx, fy, face, sc] = visitorSpot(), w = 264 * sc, h = 220 * sc, x = fx - w / 2, y = fy - h * (205 / 220);
-  return `<g id="visitorG" class="visitor hot" data-visitor="${esc(v.id)}" tabindex="0" role="button" aria-label="${esc(v.name)} is visiting with ${esc(famName(v.family))}"><rect x="${(x + 26).toFixed(1)}" y="${(y + 26).toFixed(1)}" width="${(w - 52).toFixed(1)}" height="${(h - 26).toFixed(1)}" fill="transparent"/>${place(dogSVG(visitorDog(v), { pose: 'happy', facing: face }), x, y, w, h)}<g class="vtag" pointer-events="none" transform="translate(${fx} ${fy + 4})"><rect x="-46" y="-2" width="92" height="22" rx="7" fill="#FFF3DA" stroke="#5B3D32" stroke-width="2"/><text y="15" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="17" fill="#5B3D32">${esc(v.name.length > 12 ? v.name.slice(0, 11) + '.' : v.name)}</text></g></g>`;
+  const [fx, fy, face, sc] = visitorSpot(), w = 264 * sc, h = 220 * sc, z = sizeK(v);
+  // the tap rect scales with the drawing round the feet; on phones never smaller than the spot's own rect (the 44 px one)
+  const ph = isPhone(), rw = Math.max((w - 52) * z, ph ? w - 52 : 0), up = Math.max((h * (205 / 220) - 26) * z, ph ? h * (205 / 220) - 26 : 0), dn = h * (15 / 220) * Math.max(z, ph ? 1 : 0);
+  return `<g id="visitorG" class="visitor hot" data-visitor="${esc(v.id)}" tabindex="0" role="button" aria-label="${esc(v.name)} is visiting with ${esc(famName(v.family))}"><rect x="${(fx - rw / 2).toFixed(1)}" y="${(fy - up).toFixed(1)}" width="${rw.toFixed(1)}" height="${(up + dn).toFixed(1)}" fill="transparent"/>${place(dogSVG(visitorDog(v), { pose: 'happy', facing: face }), fx - w * z / 2, fy - h * z * (205 / 220), w * z, h * z)}<g class="vtag" pointer-events="none" transform="translate(${fx} ${fy + 4})"><rect x="-46" y="-2" width="92" height="22" rx="7" fill="#FFF3DA" stroke="#5B3D32" stroke-width="2"/><text y="15" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="17" fill="#5B3D32">${esc(v.name.length > 12 ? v.name.slice(0, 11) + '.' : v.name)}</text></g></g>`;
 }
 function rollVisitor() {
   const pool = (Array.isArray(S.rehomed) ? S.rehomed : []).filter((v) => v && v.id && v.key);
@@ -274,6 +277,7 @@ function drawVisitor(v, greet) {
   host.insertAdjacentHTML('beforeend', visitorSVG(v));
   const g = $('#visitorG', view); g.onclick = () => openVisitor(v.id); g.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openVisitor(v.id); } };
   if (typeof phHomeRefit === 'function') phHomeRefit(); // v2.3 phone: dog and visitor share the crop
+  if (typeof dcRoom === 'function') dcRoom(); // v2.11: a Dog Card visitor never stands on the pup's tap area
   V2T.line = `Look who it is! ${v.name} grew up!${v.sparkle ? ' ...and still sparkly!' : ''}`;
   if (greet) setTimeout(() => { if (cur.mode === 'yard' && $('#visitorG', view) && modal.hidden) { const [fx, fy, , sc] = visitorSpot(); say(V2T.line, fx, fy - 200 * sc, 3200); SFX.bark(BARK[v.key] || 1); } }, 900);
 }

@@ -1,0 +1,71 @@
+/* v2.11 TOKYO TRIP (lane TRAVEL, tag tk, classes .tk-): the Station ticket window, the Shinkansen ride, the Japan map, the Tokyo places, the Stamp book.
+   V211.md section 5.3. The TRAVEL lane owns this file. Phone rules only under html[data-layout="phone"]. */
+/* the ticket window */
+.tk-ticket{display:flex;gap:18px;align-items:center}
+.tk-tix{flex:0 0 96px;width:96px;height:96px}
+.tk-tix svg{width:100%;height:100%;display:block}
+.tk-ticket p{margin:0 0 8px}
+
+/* the ride: over the whole stage, a tap skips it. The scenery strip scrolls behind the windows (motion off: still, Mt. Fuji in the middle) */
+.tk-ride{position:absolute;inset:0;z-index:40;background:#F4EEE2;cursor:pointer;overflow:hidden}
+.tk-ride-art{position:absolute;inset:0}
+.tk-ride-art > svg{width:100%;height:100%;display:block}
+.tk-ride .tk-skip{position:absolute;right:20px;bottom:18px;min-height:44px;font-size:17px;z-index:2}
+.tk-strip{animation:tkScroll 4s linear forwards}
+.tk-strip.home{animation-name:tkScrollHome}
+.tk-strip.still{animation:none;transform:translateX(-1000px)}
+.tk-ride .tk-head{animation:tkBob .7s ease-in-out infinite alternate}
+.tk-ride .tk-head:nth-of-type(2n){animation-delay:-.35s}
+@keyframes tkScroll{from{transform:translateX(0)}to{transform:translateX(-2000px)}}
+@keyframes tkScrollHome{from{transform:translateX(-2000px)}to{transform:translateX(0)}}
+@keyframes tkBob{from{transform:translateY(0)}to{transform:translateY(-4px)}}
+html[data-motion="off"] .tk-strip,html[data-motion="off"] .tk-ride .tk-head{animation:none}
+
+/* the Japan map */
+.tk-bookbtn{position:absolute;left:16px;bottom:16px;z-index:6;min-height:44px;display:flex;align-items:center;gap:6px;font-size:18px}
+.tk-bookbtn .ic{width:30px;height:30px;display:inline-flex}
+.tk-bookbtn .ic svg{width:30px;height:30px}
+.tk-bookbtn b{font-weight:700}
+
+/* the Stamp book */
+.tk-book{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:8px}
+.tk-stamp{display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;padding:6px 4px;border-radius:14px}
+.tk-stamp .tk-sart{width:96px;height:96px;display:block}
+.tk-stamp .tk-sart svg{width:96px;height:96px;display:block}
+.tk-stamp:not(.got) b{color:#8A7468}
+
+/* the omikuji slip */
+.tk-omi{display:flex;gap:16px;align-items:flex-start}
+.tk-omipaper{flex:0 0 60px}
+.tk-omipaper svg{width:60px;height:120px;display:block}
+.tk-fortune{font-size:22px}
+
+/* the place buttons: 44 px, today's done ones quiet */
+#placeBtns.tk-row .btn{min-height:44px}
+#placeBtns .btn.tk-done{opacity:.85}
+
+/* the Odaiba sunset walk: a warm dusk wash over the scene for a moment */
+#view > svg.world.tk-dusk #sceneG{filter:sepia(.35) saturate(1.3) hue-rotate(-12deg) brightness(.92);transition:filter 1.2s}
+html[data-motion="off"] #view > svg.world.tk-dusk #sceneG{transition:none}
+/* Ueno petals and leaves drifting down */
+.tk-petal{animation:tkPetal 3.4s ease-in forwards}
+@keyframes tkPetal{from{transform:translate(0,0);opacity:1}to{transform:translate(var(--dx,0),340px);opacity:0}}
+
+/* phones */
+html[data-layout="phone"] .tk-bookbtn{left:12px;bottom:12px;font-size:16px}
+html[data-layout="phone"] .tk-book{grid-template-columns:repeat(3,1fr);gap:8px}
+html[data-layout="phone"] .tk-stamp .tk-sart,html[data-layout="phone"] .tk-stamp .tk-sart svg{width:78px;height:78px}
+html[data-layout="phone"] .tk-ride-art > svg{height:auto;position:absolute;top:50%;left:0;transform:translateY(-50%)}
+html[data-layout="phone"] .tk-ride .tk-skip{right:12px;bottom:max(12px,env(safe-area-inset-bottom))}
+html[data-layout="phone"] .tk-ticket{flex-direction:column;align-items:flex-start;gap:8px}
+html[data-layout="phone"] .tk-tix{flex-basis:72px;width:72px;height:72px}
+
+/* review fixes (v2.11): Walk is hidden in a Tokyo place (the walk routes start at home), Care stays */
+#stage.tk-in #bar .act[data-act="walk"]{display:none}
+#stage.tk-in #bar{grid-template-columns:repeat(6,minmax(0,1fr))}
+@media (max-aspect-ratio: 4/5){html:not([data-layout="phone"]) #stage.tk-in #bar{grid-template-columns:repeat(4,1fr)}}
+/* map-mode toasts sit at the bottom, clear of the pins, beside the Stamp book button */
+#stage.tk-mapmode #toasts{top:auto;bottom:20px}
+html[data-layout="phone"] #stage.tk-mapmode #toasts{top:auto!important;bottom:calc(68px + env(safe-area-inset-bottom,0px));left:12px;transform:none;width:calc(100% - 80px)}
+/* phones: the zoom column moves to the bottom right, off the map's compass rose */
+html[data-layout="phone"] #stage.tk-mapmode #mapZoom{top:auto;bottom:calc(12px + env(safe-area-inset-bottom,0px))}

@@ -64,6 +64,12 @@ require('./test_lib').run('v2_journal', async (t) => {
 
   sec('v2.0.1: the mailbox centre is clickable through the dog box, petting still works on the dog');
   await ev(() => window.__paw.idle.speed(50)); // no idle walk-offs while we measure
+  await ev(() => { // v2.10: roaming keeps the dogs off the mailbox, so the test holds roaming and stands the leader with its hit box's top right corner over the mailbox centre
+    const P = window.__paw, id = P.S.activeId, pack = document.getElementById('pack'), r = document.querySelector('#mailboxG').getBoundingClientRect();
+    const pt = new DOMPoint(r.left + r.width / 2, r.top + r.height / 2).matrixTransform(pack.getScreenCTM().inverse());
+    P.rm.pause('test'); P.rm.calm(id, 60000); let y = 500;
+    for (let i = 0; i < 3; i++) { const k = P.rm.scale(y); y = pt.y + 150 * k; P.rm.set(id, { x: pt.x - 82 * k, y }); }
+  });
   const mbOverlap = () => t.until(() => {
     const mb = document.querySelector('#mailboxG'), hit = document.getElementById('dogHit'); if (!mb || !hit) return false;
     const r = mb.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
@@ -84,7 +90,7 @@ require('./test_lib').run('v2_journal', async (t) => {
   ok(!!dogPt, 'found a painted point on the dog');
   if (dogPt) { await p.mouse.click(dogPt[0], dogPt[1]); ok(await t.until(() => window.__paw.S.stats.happy > 50, null, 3000), 'a tap on the dog still pets (+Happiness)'); }
   ok(await ev(() => document.getElementById('modal').hidden), 'petting the dog does not open the Mailbox');
-  await ev(() => window.__paw.idle.speed(1));
+  await ev(() => { window.__paw.idle.speed(1); window.__paw.rm.resume('test'); });
 
   sec('dev: Mail deliver now');
   await t.dev(async () => { ok(await p.locator('#dvMail').count() === 1, 'dev panel has "Mail: deliver now"'); await p.click('#dvMail'); ok(await t.waitToast(/Delivered/), 'deliver now works'); });

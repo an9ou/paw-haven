@@ -1031,7 +1031,14 @@
     poodle: { f0: 430, F: [860, 1700, 3000], mouth: 3500, noise: 0.16, K: 1 },     // clear, bright yip (v2.5)
     collie: { f0: 360, F: [720, 1450, 2750], mouth: 3300, noise: 0.22, K: 1 },     // sharp, quick bark (v2.5)
     samoyed: { f0: 250, F: [560, 1150, 2400], mouth: 2500, noise: 0.2, K: 1 },     // "woo-woo" talker (v2.5)
-    frenchie: { f0: 250, F: [500, 1000, 2200], mouth: 1700, noise: 0.42, K: 1 }    // snorty little bark (v2.5)
+    frenchie: { f0: 250, F: [500, 1000, 2200], mouth: 1700, noise: 0.42, K: 1 },   // snorty little bark (v2.5)
+    akita: { f0: 190, F: [470, 980, 2250], mouth: 2000, noise: 0.26, K: 1 },       // a low, single, proud woof (v2.11)
+    spitz: { f0: 440, F: [880, 1700, 3000], mouth: 3500, noise: 0.18, K: 1 },      // a bright bark (v2.11)
+    pom: { f0: 720, F: [1200, 2250, 3500], mouth: 4000, noise: 0.18, K: 1 },       // a tiny, high yip (v2.11)
+    afghan: { f0: 255, F: [560, 1100, 2400], mouth: 2500, noise: 0.22, K: 1 },     // a soft, aloof woof (v2.11)
+    dane: { f0: 120, F: [380, 820, 1900], mouth: 1700, noise: 0.3, K: 1 },         // a very deep, single boom (v2.11)
+    mastiff: { f0: 100, F: [350, 760, 1800], mouth: 1500, noise: 0.34, K: 1 },     // deep, slow and heavy (v2.11)
+    gsd: { f0: 210, F: [520, 1050, 2350], mouth: 2600, noise: 0.2, K: 1 }          // a strong, clear double bark (v2.11)
   };
   var BARK_KINDS = ['woof', 'yip', 'alert', 'demand', 'play', 'howl', 'talk', 'scream', 'whine', 'growl-play', 'sneeze', 'yawn', 'snore', 'pant', 'huff', 'whimper'];
   // loudness trims in dB per breed, in BARK_KINDS order: measured offline so every voice sits at its target level
@@ -1053,7 +1060,15 @@
     poodle: [1.6, -3.5, -0.6, 1.3, 2.0, 0.3, 0.2, -3.6, 1.3, 5.4, 0.8, 2.9, 8.1, 3.7, 2.2],
     collie: [0.6, -3.5, 0.3, 0.6, 1.9, 2.1, 2.3, -2.8, -4.1, 5.7, 1.4, -1.2, 8.5, 4.4, 3.2],
     samoyed: [-0.2, -1.2, -1.1, -0.4, 2.4, -4.4, -4.8, -4.0, -2.1, 6.3, 2.2, -1.3, 8.7, 4.8, 4.2],
-    frenchie: [1.1, -3.6, 0.9, 1.4, 2.2, -5.5, -5.5, -2.0, 2.5, 7.1, 2.1, -1.3, 7.3, 6.1, 7.4]
+    frenchie: [1.1, -3.6, 0.9, 1.4, 2.2, -5.5, -5.5, -2.0, 2.5, 7.1, 2.1, -1.3, 7.3, 6.1, 7.4],
+    // v2.11: measured the same way (4 offline renders per breed and kind, to the median level of the 14 older breeds; the 16th number is the whimper)
+    akita: [2.4, 2, 2.1, 2.4, 2.5, -5.1, -5.2, -2.4, 2.5, 7.1, 2.8, -1.1, 10.5, 6.1, 4.7, -4.7],
+    spitz: [0.2, -3.7, -0.1, 0.1, 1, 0, 0.2, -3.3, 2.1, 5.3, 0.4, 3.4, 8.1, 3.8, 2.2, 0.4],
+    pom: [2.3, -1.6, 2.1, 2.3, 2, 0.9, 0.4, -4.2, 4, 4.5, -0.6, 1.3, 8.8, 2.8, 1.2, 1],
+    afghan: [-0.5, -1.9, -0.7, 0.4, 2.6, -5.1, -4.5, -4.1, -1.9, 6.5, 2.2, -1.4, 9.2, 4.8, 4.2, -2.7],
+    dane: [2.1, 2.9, 1.5, 1.9, 2.3, -0.5, 0.7, -2.5, -4.2, 7.8, 3.8, -1.3, 10.7, 7, 6, -0.3],
+    mastiff: [3, 1.5, 2.8, 3, 3.1, 1.7, 2.2, -2.9, -4.1, 8.1, 4.3, -1.2, 10.4, 7.4, 5.8, 2.7],
+    gsd: [1.2, 2.1, 1.3, 1.5, 0.1, -5.1, -4.9, -2.9, 0.9, 7.1, 3.4, -1.3, 8.9, 5.3, 4.2, -4.5]
   };
   function breedOf(voice) {
     var b = String((voice && voice.breed) || '').toLowerCase(), k;
@@ -1071,6 +1086,13 @@
     else if (b.indexOf('collie') >= 0) k = 'collie';
     else if (b.indexOf('samoyed') >= 0 || b.indexOf('sammy') >= 0) k = 'samoyed';
     else if (b.indexOf('frenchie') >= 0 || b.indexOf('french') >= 0) k = 'frenchie';
+    else if (b.indexOf('akita') >= 0) k = 'akita';
+    else if (b.indexOf('spitz') >= 0) k = 'spitz';
+    else if (b.indexOf('pom') >= 0) k = 'pom';
+    else if (b.indexOf('afghan') >= 0) k = 'afghan';
+    else if (b.indexOf('dane') >= 0) k = 'dane';
+    else if (b.indexOf('mastiff') >= 0) k = 'mastiff';
+    else if (b.indexOf('gsd') >= 0 || b.indexOf('shepherd') >= 0) k = 'gsd';
     var B = copy(BREEDS[k || 'mutt']);
     if (!k) B.f0 *= ({ small: 1.3, medium: 1, large: 0.68 })[voice && voice.size] || 1;   // unknown breed: size decides
     B.key = k || 'mutt';
@@ -1132,6 +1154,19 @@
     } else if (bk === 'frenchie' && loudK) {   // v2.5: a snort, then a short proper bark (snortier than a pug's rrf)
       var nf = kind === 'alert' || kind === 'play' ? 2 : 1;
       for (i2 = 0; i2 < nf; i2++) { snort(i2 * 0.26, 0.55); bark(i2 * 0.26 + 0.06, 0.15, kind === 'play' ? 1.12 : 1, 0.95, 0.85); }
+    } else if (bk === 'akita' && loudK) {   // v2.11: one low, calm woof, whatever the mood
+      bark(0, 0.24, 0.94 * rnd(0.98, 1.02), 1, 0.95);
+    } else if (bk === 'spitz' && loudK) {   // v2.11: a bright bark (alert and play = two, close together)
+      var ns = kind === 'alert' || kind === 'play' ? 2 : 1;
+      for (i2 = 0; i2 < ns; i2++) bark(i2 * 0.17 * lk, 0.11, (kind === 'play' ? 1.1 : 1.04) * rnd(0.98, 1.02), i2 ? 0.9 : 1, 1.12);
+    } else if (bk === 'pom' && loudK) {   // v2.11: tiny high yips (alert = 3, play = 2)
+      var nq = kind === 'alert' ? 3 : kind === 'play' ? 2 : 1;
+      for (i2 = 0; i2 < nq; i2++) add(i2 * 0.1, { d: 0.075, p: (kind === 'play' ? 1.15 : 1) * rnd(0.97, 1.03), g: i2 ? 0.85 : 1, a: 0.004, f: [[0, 0.92], [0.25, 1.2], [1, 0.88]], m: [[0, 0.5], [0.25, 1.15], [1, 0.5]] });
+    } else if ((bk === 'dane' || bk === 'mastiff') && loudK) {   // v2.11: one deep, heavy woof (the mastiff a little longer)
+      bark(0, bk === 'mastiff' ? 0.36 : 0.3, (bk === 'mastiff' ? 0.9 : 0.94) * rnd(0.98, 1.02), 1, 0.9);
+    } else if (bk === 'gsd' && loudK) {   // v2.11: strong, clear barks (alert and play = two)
+      var ng = kind === 'alert' || kind === 'play' ? 2 : 1;
+      for (i2 = 0; i2 < ng; i2++) bark(i2 * 0.2 * lk, 0.16, (kind === 'play' ? 1.08 : 1.02) * rnd(0.98, 1.02), i2 ? 0.92 : 1, 1.1);
     } else if (bk === 'frenchie' && (kind === 'snore' || kind === 'huff')) {   // v2.5: snorty like the pug
       if (kind === 'snore') {
         add(0, { d: 0.75, p: 0.34, g: 0.7, a: 0.25, r: 0.4, n: 0.72, am: [20, 0.8], f: [[0, 1], [1, 1]], m: [[0, 0.2], [0.5, 0.35], [1, 0.15]] });
@@ -1213,7 +1248,9 @@
   // v2.9: the newborn voices were measured per breed (offline render, loudest 50 ms window): the single squeak ran from -29.6 dB (golden, dachshund, samoyed) to -20 dB (shiba, poodle)
   // and some mews and whimpers were as quiet. NB_TRIM is the dB each breed needs to bring [squeak, whine mew, whimper] to about -24 dB (the puppy yip is about -23.5, the adult -22.8).
   var NB_TRIM = { shiba: [-4, 0, 5.5], corgi: [-0.5, -1, 1], golden: [5.5, 3, 0.5], dachshund: [4.5, 1, 0], husky: [3, -0.5, 0], mutt: [2, -1, -0.5], chihuahua: [-2.5, 1.5, 7.5],
-    pug: [0, 4.5, 1], greyhound: [2.5, 4, 1], beagle: [0.5, -1, 0], poodle: [-4, -1, 4], collie: [-1, -1, 1.5], samoyed: [4, 0.5, 0], frenchie: [0, 4.5, 1] };
+    pug: [0, 4.5, 1], greyhound: [2.5, 4, 1], beagle: [0.5, -1, 0], poodle: [-4, -1, 4], collie: [-1, -1, 1.5], samoyed: [4, 0.5, 0], frenchie: [0, 4.5, 1],
+    akita: [1.5, 4.4, 1.2], spitz: [-3, -1, 4.4], pom: [-1.3, 2.9, 6.3],
+    afghan: [2.7, 0.6, 0.1], dane: [0.9, 4.5, 3.2], mastiff: [1, 2.9, 4.1], gsd: [3.1, 1.6, 0.4] };   // v2.11: measured the same way, to -24 dB
   // newborn: tiny squeaks and mews. Only whine (mew), whimper and yip (squeak pair) are distinct; every other kind is one squeak.
   function newbornPlan(voice, kind) {
     var B = breedOf(voice), S = [], f1 = 1250 * Math.pow(B.f0 / 300, 0.25);   // a hint of breed: bigger-voiced breeds are a little lower

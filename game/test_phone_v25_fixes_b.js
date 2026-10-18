@@ -1,5 +1,5 @@
 // v2.5 FIXES B on phones (iPhone 15 and Pixel 7, portrait): the owner's v2.4 feedback, items 2, 4, 6 and 7 (V25.md 7b).
-//  7  fetch started from the Play tray (house and yard): the whole scene, the dog and the ball show, the panel sits under them
+//  7  ball play (v2.10, replaced Fetch) started from the Play tray (house and yard): the scene, the dog and the ball show, the panel sits under them
 //  6  a finger or mouse drag pans the yard, the house, the town places and the map; a drag never taps what it started on; taps still work
 //  2  the bowl is hidden, shows with the Feed tray and holds the food while the dog eats
 //  4  napping in the house: the whole dog is on the bed and in view
@@ -29,27 +29,23 @@ run('phone_v25_fixes_b', async (t) => {
     if (device === 'iPhone 15') await t.p.setViewportSize({ width: 393, height: 852 }); // the owner's phone: Safari with the bars hidden
     const p = t.p; await t.freezeMotion(true);
 
-    sec(`${tag}: 7. fetch from the Play tray shows the whole scene, the dog and the panel apart`);
+    sec(`${tag}: 7. ball play from the Play tray (v2.10, it replaced Fetch) shows the scene, the dog and the panel apart`);
     for (const pl of ['house', 'yard']) {
       await t.home(pl); await t.sleep(300);
       await p.locator('[data-act=play]').tap(); await t.waitPop(true);
-      await p.locator('[data-play="fetch:Tennis Ball"]').tap();
-      ok(await t.until(() => window.__paw.mode === 'fetch' && !!document.getElementById('fQuit'), null, 6000), `${tag} ${pl}: fetch opens`);
-      await t.sleep(400);
-      const L = await ev(() => { const R = (s) => { const q = document.querySelector(s).getBoundingClientRect(); return [q.left, q.top, q.right, q.bottom]; }; const sv = document.querySelector('#view svg.world'); return { svg: R('#view svg.world'), dog: R('#dogArt'), tray: R('#dock .tray'), vb: sv.getAttribute('viewBox'), trayH: document.getElementById('view').style.getPropertyValue('--trayH'), w: innerWidth, sw: document.documentElement.scrollWidth }; });
-      const sh = L.svg[3] - L.svg[1], sw = L.svg[2] - L.svg[0];
-      ok(!L.trayH && sh >= 0.58 * sw && sh <= 0.62 * sw && sw >= L.w - 1 && L.vb === '0 0 1000 600', `${tag} ${pl}: the scene is its full 1000 x 600 at the phone's width (${Math.round(sw)} x ${Math.round(sh)}), no leftover tray height`);
-      ok(L.dog[3] - L.dog[1] > 40 && L.dog[0] >= L.svg[0] && L.dog[2] <= L.svg[2] && L.dog[1] >= L.svg[1] && L.dog[3] <= L.svg[3], `${tag} ${pl}: the whole dog is in the scene ${JSON.stringify(L.dog.map(Math.round))}`);
-      ok(L.tray[1] >= L.svg[3] - 1, `${tag} ${pl}: the fetch panel sits under the scene, clear of the dog and the ball`);
+      await p.locator('[data-play="ball:Tennis Ball"]').tap();
+      ok(await t.until(() => !!window.__paw.bl && window.__paw.bl.on && !!document.getElementById('blDone'), null, 6000), `${tag} ${pl}: ball play opens`);
+      await ev(() => window.__paw.bl.sim(1)); await t.sleep(400);
+      const L = await ev(() => { const R = (s) => { const q = document.querySelector(s).getBoundingClientRect(); return [q.left, q.top, q.right, q.bottom]; }; const sv = document.querySelector('#view svg.world'); return { svg: R('#view svg.world'), dog: R('#dogArt'), tray: R('#dock .tray'), vb: sv.viewBox.baseVal.width, sw: document.scrollingElement.scrollWidth, w: innerWidth }; });
+      ok(L.dog[3] - L.dog[1] > 40 && L.dog[3] <= L.svg[3] + 1 && L.dog[1] >= L.svg[1] - 1, `${tag} ${pl}: the dog is in the scene ${JSON.stringify(L.dog.map(Math.round))}`);
+      ok(L.vb >= 720 && L.vb <= 800, `${tag} ${pl}: the ball crop shows about 760 units (${Math.round(L.vb)})`);
+      ok(L.tray[1] >= L.svg[3] - 1, `${tag} ${pl}: the ball panel sits under the scene, clear of the dog and the ball`);
       ok(L.sw <= L.w, `${tag} ${pl}: no sideways scroll`);
-      // a throw: the ball and the landing ring stay inside the scene for the whole flight
-      await p.touchscreen.tap(L.svg[0] + sw * 0.86, L.svg[1] + sh * 0.86);
-      let inside = true, seen = 0;
-      for (let i = 0; i < 8; i++) { await t.sleep(110); const b = await ev(() => { const g = document.getElementById('ballG'), s = document.querySelector('#view svg.world').getBoundingClientRect(); if (!g || g.getAttribute('opacity') === '0') return null; const r = g.getBoundingClientRect(); return r.width ? r.left >= s.left - 1 && r.right <= s.right + 1 && r.top >= s.top - 1 && r.bottom <= s.bottom + 1 : null; }); if (b !== null) { seen++; inside = inside && b; } }
+      await ev(() => window.__paw.bl.easy()); let inside = true, seen = 0;
+      for (let i = 0; i < 10; i++) { await ev(() => window.__paw.bl.sim(0.1)); const b = await ev(() => { const s = window.__paw.bl.state, vb = document.querySelector('#view svg.world').viewBox.baseVal; return s ? s.ball.x >= vb.x - 1 && s.ball.x <= vb.x + vb.width + 1 : null; }); if (b === null) continue; seen++; if (!b) inside = false; }
       ok(seen >= 3 && inside, `${tag} ${pl}: the ball stays in view through the throw (${seen} frames)`);
-      if (pl === 'house') await t.SH(`7_fetch_${tag}`);
-      await p.locator('#fQuit').tap(); await p.waitForSelector('#fOk'); await p.locator('#fOk').tap();
-      await t.untilMode('yard'); await t.lu();
+      if (pl === 'house') await t.SH(`7_ball_${tag}`);
+      await p.locator('#blDone').tap(); await t.until(() => !window.__paw.bl.on, null, 4000); await t.lu();
       ok(await ev(() => !document.getElementById('view').style.flex), `${tag} ${pl}: back home, the view has its usual size`);
     }
 

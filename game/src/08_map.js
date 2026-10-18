@@ -3,6 +3,7 @@ function lockedAreas() { return [...new Set(Object.keys(ROUTES).filter((k) => to
 function pickArea(k) {
   SFX.click();
   if (k === 'shelter') return go('shelter');
+  if (k === 'station') return tkStation(); // v2.11 Tokyo Trip: the ticket window (39_tokyo.js)
   if (PLACES[k]) return travelTo(k);
   const r = ROUTES[k]; if (!r) return;
   if (topBond() < r.bond) { nope(PICK([`Nope. ${r.n} opens at Bond ${r.bond}. The trees need time to warm up to you.`, `Nope. ${r.n} is Bond ${r.bond} only. There is a bouncer. He is a goose.`, `Nope nope. Bond ${r.bond} for ${r.n}. Rules are rules (we made them up).`])); return; }

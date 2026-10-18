@@ -1,4 +1,4 @@
-// WORKER (v2.8.1): the Cloudflare login and cloud save API (cloudflare/worker.js) against a local D1, with a fake Supabase.
+// WORKER (v2.8.1): the Cloudflare login and cloud save API (cloudflare/worker.js) against a local D1 (v2.9.1: no Supabase any more).
 //   NODE_PATH=$(npm root -g) node game/test_worker.js      (or: node game/run_tests.js worker)
 // Runs the same checks twice when it can: in Miniflare (workerd + a real local D1, from the global wrangler install) and
 // in-process in Node (cloudflare/d1_node.js over node:sqlite). Node-only: prints ALL OK when every check passes.
@@ -9,10 +9,10 @@ let fails = 0, passes = 0;
 const ok = (c, m) => { if (c) passes++; else { fails++; console.log('  FAIL', m); } };
 const sha = (s) => crypto.createHash('sha256').update(s).digest('hex');
 
-const { fakeSupabase, fakeMail } = require('./cloud_mock');
+const { fakeMail } = require('./cloud_mock');
 
 /* ---------------- the checks (same for both backends) ---------------- */
-async function checks(label, call, sql, sb, mail) {
+async function checks(label, call, sql, mail) {
   console.log(`--- ${label}`);
   const save = (coins, extra) => Object.assign({ v: 1, coins, dogs: [{ id: 'dog1', name: 'Mochi' }], dog: { id: 'dog1', name: 'Mochi' } }, extra || {});
 
@@ -69,9 +69,9 @@ async function checks(label, call, sql, sb, mail) {
 
   // login and logout
   r = await call('POST', '/login', { email: 'mochi@example.com', password: 'wrongpass1' }); ok(r.status === 401 && r.json.error === 'invalid_credentials', 'wrong password: invalid_credentials');
-  r = await call('POST', '/login', { email: 'nobody@example.com', password: 'whatever1' }); ok(r.status === 401 && r.json.error === 'invalid_credentials', 'unknown email (Supabase says no too): invalid_credentials');
+  r = await call('POST', '/login', { email: 'nobody@example.com', password: 'whatever1' }); ok(r.status === 401 && r.json.error === 'invalid_credentials', 'unknown email: invalid_credentials');
   ok(!(await sql('select * from users where email = ?', 'nobody@example.com')), 'a failed login makes no user');
-  r = await call('POST', '/login', { email: 'Mochi@example.com', password: 'pupper123' }); ok(r.status === 200 && r.json.user.id === a.user.id && !r.json.migrated, 'right password logs in');
+  r = await call('POST', '/login', { email: 'Mochi@example.com', password: 'pupper123' }); ok(r.status === 200 && r.json.user.id === a.user.id && r.json.migrated === undefined, 'right password logs in');
   const d2 = r.json.token;
   ok((await call('GET', '/save', null, d2)).json.save.data.coins === 100, 'a second device reads the same save');
   r = await call('PUT', '/save', { data: save(200), rev: 2, changed_at: new Date().toISOString(), device: 'Pixel Chrome' }, d2); ok(r.json.rev === 2, 'device 2 pushes rev 2');
@@ -107,67 +107,25 @@ async function checks(label, call, sql, sb, mail) {
   ok(codes[0] === 401 && codes[30] === 429, 'login is rate-limited per IP');
   ok((await call('POST', '/login', { email: 'second@example.com', password: 'biscuits9' }, null, { 'CF-Connecting-IP': '10.9.9.10' })).status === 200, 'other IPs and emails still log in');
 
-  // moving old accounts from Supabase (lazy, by password)
-  const old = sb.mkUser({ email: 'legacy@example.com', password: 'oldpass123' });
-  const oldSave = save(4242, { dogs: [{ id: 'dogL', name: 'Biscuit' }], dog: { id: 'dogL', name: 'Biscuit' } });
-  sb.saves[old.id] = { data: oldSave, rev: 17, changed_at: '2026-10-10T10:00:00+00:00', device: 'Mac Safari' };
-  sb.backups.push({ user_id: old.id, data: save(1), reason: 'before an import', created_at: '2026-08-01T00:00:00+00:00' }, { user_id: old.id, data: save(2), reason: 'older than your other device', created_at: '2026-10-02T00:00:00+00:00' });
-  await sql('insert into legacy (email_hash) values (?)', sha('legacy@example.com'), true);
-  r = await call('POST', '/register', { email: 'Legacy@example.com', password: 'newpass123' }); ok(r.status === 409 && r.json.error === 'email_exists', '"Make an account" with an old Supabase email (not moved yet) is refused: one email, one account');
-  const c0 = sb.calls;
-  r = await call('POST', '/login', { email: 'legacy@example.com', password: 'wrongpass9' }); ok(r.status === 401 && sb.calls > c0, 'a wrong password is checked with Supabase and refused');
-  ok(!(await sql('select * from users where email = ?', 'legacy@example.com')), 'no user is made for a wrong password');
-  r = await call('POST', '/login', { email: 'LEGACY@example.com', password: 'oldpass123' });
-  ok(r.status === 200 && r.json.migrated === true && r.json.user.id === old.id && r.json.user.email === 'legacy@example.com', 'the right password moves the account over, keeping the Supabase user id');
-  const mt = r.json.token;
-  r = await call('GET', '/save', null, mt);
-  ok(r.json.save && r.json.save.rev === 17 && r.json.save.data.coins === 4242 && r.json.save.data.dogs[0].name === 'Biscuit' && Date.parse(r.json.save.changed_at) === Date.parse('2026-10-10T10:00:00Z') && r.json.save.device === 'Mac Safari', 'the Supabase save came over (data, rev, changed_at, device)');
-  r = await call('GET', '/backups', null, mt); ok(r.json.backups.length === 2 && r.json.backups[0].data.coins === 2 && r.json.backups[0].reason === 'older than your other device', 'the Supabase backups came over too');
-  ok(!(await sql('select * from legacy where email_hash = ?', sha('legacy@example.com'))), 'the move drops the email\'s legacy hash');
-  const mu = await sql('select * from users where id = ?', old.id);
-  ok(mu.migrated === 1 && /^[0-9a-f]{64}$/.test(mu.pw_hash) && mu.pw_hash === crypto.pbkdf2Sync('oldpass123', Buffer.from(mu.pw_salt, 'hex'), 100000, 32, 'sha256').toString('hex'), 'a fresh PBKDF2 hash of the same password is stored');
-  const c1 = sb.calls;
-  r = await call('POST', '/login', { email: 'legacy@example.com', password: 'oldpass123' }); ok(r.status === 200 && sb.calls === c1, 'the next login is Cloudflare only (no Supabase call)');
-  ok((await call('POST', '/login', { email: 'legacy@example.com', password: 'wrongpass9' })).status === 401 && sb.calls === c1, 'a wrong password after the move never asks Supabase');
-  sb.saves[old.id].data = save(1); // Supabase changing later never overwrites the moved save
-  await call('POST', '/login', { email: 'legacy@example.com', password: 'oldpass123' });
-  ok((await call('GET', '/save', null, mt)).json.save.data.coins === 4242, 'the save moves only once');
-
-  // one email, one account (v2.8.2): an old Supabase email is refused even with its own password; nothing is asked or copied
-  const oldR = sb.mkUser({ email: 'regmove@example.com', password: 'regmove123' }); sb.saves[oldR.id] = { data: save(515), rev: 4, changed_at: '2026-10-09T00:00:00Z' };
-  await sql('insert into legacy (email_hash) values (?)', sha('regmove@example.com'), true);
-  const gR = (await call('POST', '/guest', {})).json, c2 = sb.calls;
-  r = await call('POST', '/register', { email: 'RegMove@example.com', password: 'regmove123' }, gR.token);
-  ok(r.status === 409 && r.json.error === 'email_exists' && sb.calls === c2, 'refused with its own password too, without asking Supabase');
-  ok((await call('GET', '/me', null, gR.token)).json.user.guest === true && !(await sql('select * from users where email = ?', 'regmove@example.com')), 'the guest stays a guest, no user made');
-  r = await call('POST', '/login', { email: 'regmove@example.com', password: 'regmove123' }); ok(r.status === 200 && r.json.migrated && r.json.user.id === oldR.id, 'logging in moves it over');
-  ok((await call('POST', '/register', { email: 'regmove@example.com', password: 'other-pass-1' })).status === 409, 'and the email still has one account');
-  const c3 = sb.calls; r = await call('POST', '/register', { email: 'brand-new@example.com', password: 'brandnew12' });
-  ok(r.status === 200 && sb.calls === c3, 'a new email never asks Supabase at "Make an account"');
-
-  // carrying a Supabase login over (no password typed)
-  const og = sb.mkUser({}); sb.saves[og.id] = { data: save(77), rev: 3, changed_at: '2026-10-11T00:00:00Z', device: 'iPhone Safari' };
-  let tk = sb.login(og);
-  r = await call('POST', '/migrate', { access_token: tk.at, refresh_token: tk.rt });
-  ok(r.status === 200 && r.json.user.id === og.id && r.json.user.guest === true, 'a Supabase guest login carries over as the same guest');
-  ok((await call('GET', '/save', null, r.json.token)).json.save.data.coins === 77, 'with its save');
-  const oe = sb.mkUser({ email: 'carry@example.com', password: 'carrypass1' }); sb.saves[oe.id] = { data: save(88), rev: 9, changed_at: '2026-10-12T00:00:00Z' };
-  tk = sb.login(oe); delete sb.tokens[tk.at]; // the access token expired: the refresh token still works
-  r = await call('POST', '/migrate', { access_token: tk.at, refresh_token: tk.rt });
-  ok(r.status === 200 && r.json.user.id === oe.id && r.json.user.email === 'carry@example.com' && !r.json.user.guest, 'an expired Supabase login carries over through its refresh token');
-  ok((await call('GET', '/save', null, r.json.token)).json.save.rev === 9, 'with its save and rev');
-  ok(!(await sql('select pw_hash from users where id = ?', oe.id)).pw_hash, 'no password is stored until the player types it');
-  r = await call('POST', '/login', { email: 'carry@example.com', password: 'carrypass1' }); ok(r.status === 200 && r.json.user.id === oe.id, 'logging in later on another device asks Supabase once and stores the hash');
-  ok(!!(await sql('select pw_hash from users where id = ?', oe.id)).pw_hash, 'the hash is stored now');
-  r = await call('POST', '/migrate', { access_token: 'sbat_bogus', refresh_token: 'sbrt_bogus' }); ok(r.status === 401 && r.json.error === 'gone', 'an unknown Supabase login: 401 gone');
+  // v2.9.1: Supabase is gone. An old Supabase email is just an email nobody has: it can sign up, and nothing is carried over.
+  r = await call('POST', '/login', { email: 'legacy@example.com', password: 'oldpass123' }); ok(r.status === 401 && r.json.error === 'invalid_credentials', 'an old Supabase email cannot log in (no account here): invalid_credentials');
+  ok(!(await sql('select * from users where email = ?', 'legacy@example.com')), 'and no user is made for it');
+  const gR = (await call('POST', '/guest', {})).json;
+  r = await call('POST', '/register', { email: 'Legacy@example.com', password: 'newpass123' }, gR.token);
+  ok(r.status === 200 && r.json.upgraded === true && r.json.user.email === 'legacy@example.com', 'an old Supabase email can sign up now (no more 409 from the legacy list)');
+  ok((await call('POST', '/register', { email: 'legacy@example.com', password: 'other-pass-1' })).status === 409, 'and then it has one account');
+  ok((await call('POST', '/login', { email: 'legacy@example.com', password: 'newpass123' })).status === 200, 'which logs in with the new password');
+  ok(!(await sql("select name from sqlite_master where type = 'table' and name = 'legacy'")), 'the legacy table is gone');
+  r = await call('POST', '/migrate', { access_token: 'sbat_bogus', refresh_token: 'sbrt_bogus' }); ok(r.status === 410 && r.json.error === 'gone', 'POST /migrate answers 410 gone');
   r = await call('POST', '/register', { email: 'carry2@example.com', password: 'carrypass2' }); const other = r.json;
-  const hijack = sb.mkUser({ email: 'carry2@example.com', password: 'zzzzzzzz9' });
-  r = await call('POST', '/login', { email: 'carry2@example.com', password: 'zzzzzzzz9' }); ok(r.status === 401, 'a Supabase account never takes over an email already registered here');
-  ok((await call('GET', '/me', null, other.token)).json.user.id === other.user.id && hijack.id !== other.user.id, 'that account is untouched');
+  r = await call('POST', '/login', { email: 'carry2@example.com', password: 'zzzzzzzz9' }); ok(r.status === 401, 'a wrong password on a registered email is refused');
+  ok((await call('GET', '/me', null, other.token)).json.user.id === other.user.id, 'that account is untouched');
 
-  // Forgot password (v2.8.2): an emailed 30-minute single-use link
+  // Forgot password (v2.9.2): an emailed 6-digit code, typed in the game (no website link)
   const fu = (await call('POST', '/register', { email: 'forgetful@example.com', password: 'forgetful1' }, null, { 'CF-Connecting-IP': '10.6.6.5' })).json;
   const fd2 = (await call('POST', '/login', { email: 'forgetful@example.com', password: 'forgetful1' })).json; // a second device
+  const rc = (email, code, password, ip) => call('POST', '/reset-code', { email, code, password }, null, ip ? { 'CF-Connecting-IP': ip } : undefined);
+  const other6 = (c) => String((Number(c) + 1) % 1e6).padStart(6, '0'); // a wrong code, for sure
   let m0 = mail.mails.length;
   r = await call('POST', '/forgot', { email: 'nobody-here@example.com' });
   ok(r.status === 200 && r.json.ok && r.json.mail === true && mail.mails.length === m0, 'an unknown email: the same answer, no email');
@@ -175,47 +133,164 @@ async function checks(label, call, sql, sb, mail) {
   r = await call('POST', '/forgot', { email: 'Forgetful@example.com' }, null, { Origin: 'https://an9ou.github.io' });
   const fm = mail.mails[mail.mails.length - 1];
   ok(r.status === 200 && r.json.mail === true && mail.mails.length === m0 + 1 && fm.to[0] === 'forgetful@example.com' && /noreply@doodledoggo\.app/.test(fm.from), 'a known email gets one email from noreply@doodledoggo.app, same answer');
-  ok(fm.token && fm.link === 'https://doodledoggo.app/reset?token=' + fm.token && fm.html.includes('href="' + fm.link + '"'), 'the link opens the reset page on doodledoggo.app');
-  ok(/Doodle Doggo/.test(fm.subject) && /Noodle/.test(fm.text) && /30 minutes/.test(fm.text) && /ignore this email/.test(fm.text) && /itch\.io/.test(fm.text), 'plain, friendly copy: Doodle Doggo, Noodle, 30 minutes, back to itch.io, ignore if not you');
-  ok(fm.token.length >= 40 && !(await sql('select * from resets where token_hash = ?', fm.token)) && !!(await sql('select * from resets where token_hash = ?', sha(fm.token))), 'only the SHA-256 of the reset token is stored');
-  ok((await call('POST', '/reset', { token: fm.token, password: 'short' })).json.error === 'weak_password', 'the new password needs 8 or more characters');
-  r = await call('POST', '/reset', { token: fm.token, password: 'remembered1' });
-  ok(r.status === 200 && r.json.user.id === fu.user.id && r.json.token && r.json.user.email === 'forgetful@example.com', 'the link sets the new password and logs in');
-  ok((await call('GET', '/me', null, fu.token)).status === 401 && (await call('GET', '/me', null, fd2.token)).status === 401 && (await call('GET', '/me', null, r.json.token)).status === 200, 'a reset logs every other device out');
+  ok(/^\d{6}$/.test(fm.code) && fm.html.includes(fm.code), 'the email carries a 6-digit code');
+  ok(fm.subject === 'Your Doodle Doggo code' && fm.text.startsWith(`Your Doodle Doggo code is ${fm.code}. It works for 30 minutes. If you didn't ask for it, ignore this email.`), "the owner's wording: Your Doodle Doggo code is 123456. It works for 30 minutes...");
+  ok(!/https?:\/\//.test(fm.text) && !/href=/.test(fm.html), 'no website link in the email');
+  let row = await sql('select * from reset_codes where k = ?', sha('forgetful@example.com'));
+  ok(row && row.code_hash === sha(row.salt + ':' + fm.code) && row.salt.length === 32 && !Object.values(row).includes(fm.code), 'only a salted SHA-256 of the code is stored, keyed by the email\'s SHA-256');
+  ok(row.expires_at - row.created_at === 30 * 60 * 1000 && row.tries === 0, 'the code works for 30 minutes');
+  ok((await rc('forgetful@example.com', fm.code, 'short')).json.error === 'weak_password', 'the new password needs 8 or more characters (same rule as Make an account)');
+  ok((await rc('forgetful@example.com', '12345', 'remembered1')).json.error === 'wrong_code', 'not six digits: wrong_code');
+  ok((await sql('select tries from reset_codes where k = ?', sha('forgetful@example.com'))).tries === 0, 'a short password or a code that is not 6 digits costs no try');
+  r = await rc('forgetful@example.com', other6(fm.code), 'remembered1');
+  ok(r.status === 400 && r.json.error === 'wrong_code' && r.json.left === 4, 'a wrong code: wrong_code, 4 tries left');
+  r = await rc(' Forgetful@Example.com ', ' ' + fm.code.slice(0, 3) + ' ' + fm.code.slice(3), 'remembered1');
+  ok(r.status === 200 && r.json.user.id === fu.user.id && r.json.token && r.json.user.email === 'forgetful@example.com' && !r.json.user.guest, 'the right code sets the new password and logs in (spaces and capitals are fine)');
+  ok((await call('GET', '/me', null, fu.token)).status === 401 && (await call('GET', '/me', null, fd2.token)).status === 401 && (await call('GET', '/me', null, r.json.token)).status === 200, 'a reset logs every other device out, this one stays in');
   ok((await call('POST', '/login', { email: 'forgetful@example.com', password: 'forgetful1' })).status === 401 && (await call('POST', '/login', { email: 'forgetful@example.com', password: 'remembered1' })).status === 200, 'the old password stops working, the new one works');
-  r = await call('POST', '/reset', { token: fm.token, password: 'again-again1' }); ok(r.status === 400 && r.json.error === 'expired', 'a link works only once');
-  await call('POST', '/register', { email: 'forgetful2@example.com', password: 'forgetful2' }, null, { 'CF-Connecting-IP': '10.6.6.6' }); // "make an account" allows 10 an hour per IP
-  await call('POST', '/forgot', { email: 'forgetful2@example.com' }); const f1 = mail.mails[mail.mails.length - 1];
-  await sql('update resets set expires_at = ? where token_hash = ?', Date.now() - 1, sha(f1.token), true);
-  ok((await call('POST', '/reset', { token: f1.token, password: 'late-late-1' })).json.error === 'expired', 'a link older than 30 minutes is refused');
-  await call('POST', '/forgot', { email: 'forgetful2@example.com' }); const f2 = mail.mails[mail.mails.length - 1];
-  await call('POST', '/forgot', { email: 'forgetful2@example.com' }); const f3 = mail.mails[mail.mails.length - 1];
-  ok(f2.token !== f3.token && (await call('POST', '/reset', { token: f2.token, password: 'older-link-1' })).json.error === 'expired' && (await call('POST', '/reset', { token: f3.token, password: 'newest-link1' })).status === 200, 'only the newest link works');
-  m0 = mail.mails.length; r = await call('POST', '/forgot', { email: 'forgetful2@example.com' });
-  ok(r.status === 200 && r.json.mail === true && mail.mails.length === m0, 'at most 3 links an hour per email (the answer stays the same)');
+  r = await rc('forgetful@example.com', fm.code, 'again-again1'); ok(r.status === 400 && r.json.error === 'expired', 'a code works only once');
+  // 5 wrong tries kill the code
+  await call('POST', '/forgot', { email: 'forgetful@example.com' }); const fk = mail.mails[mail.mails.length - 1];
+  const tries = [];
+  for (let i = 0; i < 5; i++) { const x = (await rc('forgetful@example.com', other6(fk.code), 'killed-code1')).json; tries.push(x.error + ':' + x.left); }
+  ok(tries.join(' ') === 'wrong_code:4 wrong_code:3 wrong_code:2 wrong_code:1 too_many_tries:0', 'wrong tries count down, the 5th says too_many_tries ' + tries.join(' '));
+  r = await rc('forgetful@example.com', fk.code, 'killed-code1');
+  ok(r.status === 400 && r.json.error === 'too_many_tries', 'after 5 wrong tries even the right code is dead');
+  ok((await call('POST', '/login', { email: 'forgetful@example.com', password: 'remembered1' })).status === 200, 'and the password did not change');
+  await call('POST', '/forgot', { email: 'forgetful@example.com' }); const fk2 = mail.mails[mail.mails.length - 1];
+  ok((await rc('forgetful@example.com', fk2.code, 'fresh-code-1')).status === 200, 'a new code works again after a dead one');
+  // expiry and replacement
+  const ip2 = { 'CF-Connecting-IP': '10.6.6.6' };
+  await call('POST', '/register', { email: 'forgetful2@example.com', password: 'forgetful2' }, null, ip2); // "make an account" allows 10 an hour per IP
+  await call('POST', '/forgot', { email: 'forgetful2@example.com' }, null, ip2); const f1 = mail.mails[mail.mails.length - 1];
+  await sql('update reset_codes set expires_at = ? where k = ?', Date.now() - 1, sha('forgetful2@example.com'), true);
+  ok((await rc('forgetful2@example.com', f1.code, 'late-late-1')).json.error === 'expired', 'a code older than 30 minutes: expired');
+  await call('POST', '/forgot', { email: 'forgetful2@example.com' }, null, ip2); const f2 = mail.mails[mail.mails.length - 1];
+  await call('POST', '/forgot', { email: 'forgetful2@example.com' }, null, ip2); const f3 = mail.mails[mail.mails.length - 1];
+  ok((await sql('select count(*) as n from reset_codes where k = ?', sha('forgetful2@example.com'))).n === 1, 'one code row per email');
+  ok(f2.code === f3.code || (await rc('forgetful2@example.com', f2.code, 'older-code-1')).json.error === 'wrong_code', 'a new code replaces the old one');
+  ok((await rc('forgetful2@example.com', f3.code, 'newest-code1')).status === 200, 'only the newest code works');
+  // per-email limit on /forgot (quiet), per-IP limit (429)
+  const ip3 = { 'CF-Connecting-IP': '10.6.6.7' };
+  await call('POST', '/register', { email: 'forgetful3@example.com', password: 'forgetful3' }, null, ip3);
+  m0 = mail.mails.length; for (let i = 0; i < 5; i++) await call('POST', '/forgot', { email: 'forgetful3@example.com' }, null, ip3);
+  const last3 = mail.mails[mail.mails.length - 1];
+  r = await call('POST', '/forgot', { email: 'forgetful3@example.com' }, null, ip3);
+  ok(mail.mails.length === m0 + 5 && r.status === 200 && r.json.mail === true, 'at most 5 codes an hour per email (the 6th: the same answer, no email)');
+  ok((await rc('forgetful3@example.com', last3.code, 'still-works1')).status === 200, 'and the quiet 6th left the last code working');
   codes = [];
   for (let i = 0; i < 11; i++) codes.push((await call('POST', '/forgot', { email: `ip${i}@example.com` }, null, { 'CF-Connecting-IP': '10.7.7.7' })).status);
   ok(codes[0] === 200 && codes[10] === 429, 'Forgot password is rate-limited per IP');
+  codes = [];
+  for (let i = 0; i < 31; i++) codes.push((await rc(`guess${i}@example.com`, '123456', 'guessing-1', '10.5.5.5')).status);
+  ok(codes[0] === 400 && codes[29] === 400 && codes[30] === 429, 'typing codes is rate-limited per IP (30 in 10 minutes)');
+  // no account leak: an email with no account answers exactly like one with an account
+  m0 = mail.mails.length; r = await call('POST', '/forgot', { email: 'NeverHadOne@example.com' });
+  ok(r.status === 200 && r.json.mail === true && mail.mails.length === m0, 'an email with no account gets the same answer and no mail');
+  const a1 = await rc('neverhadone@example.com', '000000', 'whatever-1');
+  await call('POST', '/forgot', { email: 'forgetful@example.com' });
+  const b2 = await rc('forgetful@example.com', mail.mails[mail.mails.length - 1].code === '000000' ? '000001' : '000000', 'whatever-1');
+  ok(a1.status === b2.status && a1.text === b2.text && a1.json.error === 'wrong_code' && a1.json.left === 4, 'a wrong code: the same answer with or without an account ' + a1.text + ' / ' + b2.text);
+  for (let i = 0; i < 4; i++) await rc('neverhadone@example.com', '000000', 'whatever-1');
+  ok((await rc('neverhadone@example.com', '000000', 'whatever-1')).json.error === 'too_many_tries', 'and 5 wrong tries end the same way');
+  const n1 = await rc('never-asked@example.com', '123456', 'whatever-1'), n2 = await rc('carry2@example.com', '123456', 'whatever-1');
+  ok(n1.status === 400 && n1.text === n2.text && n1.json.error === 'expired', 'no code asked for: expired, with or without an account');
+  // the v2.8.2 links already sent keep working until they run out (no new ones are made)
+  const old = 'L'.repeat(43);
+  await sql('insert into resets (token_hash, user_id, created_at, expires_at) values (?, ?, ?, ?)', sha(old), fu.user.id, Date.now(), Date.now() + 6e5, true);
+  ok((await call('POST', '/reset', { token: old, password: 'from-a-link1' })).status === 200 && (await call('POST', '/login', { email: 'forgetful@example.com', password: 'from-a-link1' })).status === 200, 'an old emailed link still sets the password');
+  ok((await call('POST', '/reset', { token: old, password: 'again-again1' })).json.error === 'expired', 'an old link works only once');
   ok((await call('POST', '/reset', { token: 'x'.repeat(43), password: 'whatever-1' })).json.error === 'expired' && (await call('POST', '/reset', { password: 'whatever-1' })).json.error === 'expired', 'a made-up or missing token: expired');
-  // an old Supabase account not moved yet: Supabase sends its own reset email, and its link moves the account over
-  const ol = sb.mkUser({ email: 'oldforgot@example.com', password: 'forgotten-old' }); sb.saves[ol.id] = { data: save(616), rev: 6, changed_at: '2026-10-08T00:00:00Z' };
-  await sql('insert into legacy (email_hash) values (?)', sha('oldforgot@example.com'), true);
-  m0 = mail.mails.length; r = await call('POST', '/forgot', { email: 'OldForgot@example.com' }); const rc = sb.recovers[sb.recovers.length - 1];
-  ok(r.status === 200 && r.json.mail === true && rc && rc.email === 'oldforgot@example.com' && rc.redirect_to === 'https://doodledoggo.app/reset' && mail.mails.length === m0, 'Supabase\'s own recover email is asked for, pointing to the reset page (no Resend email)');
-  ok(!(await sql('select * from users where email = ?', 'oldforgot@example.com')), 'nothing is made or copied before the link is used');
-  r = await call('POST', '/reset', { sb_token: rc.token, password: 'brand-new-pw1' });
-  ok(r.status === 200 && r.json.user.id === ol.id && r.json.user.email === 'oldforgot@example.com', 'the Supabase link moves the account over with the new password');
-  ok((await call('GET', '/save', null, r.json.token)).json.save.data.coins === 616 && (await call('POST', '/login', { email: 'oldforgot@example.com', password: 'brand-new-pw1' })).status === 200, 'with its save, and the new password logs in');
-  ok(!(await sql('select * from legacy where email_hash = ?', sha('oldforgot@example.com'))), 'its legacy hash is gone');
-  ok((await call('POST', '/reset', { sb_token: 'sbat_bogus', password: 'whatever-1' })).json.error === 'expired', 'a bogus Supabase link: expired');
+  ok((await call('POST', '/reset', { sb_token: 'sbat_bogus', password: 'whatever-1' })).json.error === 'expired', 'a Supabase link token is no longer accepted: expired');
 
-  // Supabase down: a kind "try again", nothing written
-  const realFetch = sb.fetch; sb.fetch = async () => new Response('down', { status: 502 });
-  sb.mkUser({ email: 'later@example.com', password: 'laterpass1' });
-  r = await call('POST', '/login', { email: 'later@example.com', password: 'laterpass1' }); ok(r.status === 503 && r.json.error === 'busy', 'Supabase down: 503 busy');
-  ok(!(await sql('select * from users where email = ?', 'later@example.com')), 'nothing written while Supabase is down');
-  sb.fetch = realFetch;
-  ok((await call('POST', '/login', { email: 'later@example.com', password: 'laterpass1' })).status === 200, 'and it works once Supabase answers again');
+  // Dog Cards (v2.11, V211.md section 5.5): only integers and fixed tokens, opt-in, email accounts only
+  {
+    const ipC = (n) => ({ 'CF-Connecting-IP': '10.11.' + n + '.1' });
+    const ca = (await call('POST', '/register', { email: 'cards-a@example.com', password: 'cardspass1' }, null, ipC(1))).json;
+    const cb = (await call('POST', '/register', { email: 'cards-b@example.com', password: 'cardspass2' }, null, ipC(1))).json;
+    const cg = (await call('POST', '/guest', {}, null, ipC(2))).json;
+    const dog = (o) => Object.assign({ b: 0, c: { B: ['B', 'b'], D: ['D', 'd'], E: ['e', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'] }, o: 0, a: 'adult', s: 'f', sp: 0, n: 0 }, o || {});
+    const card = (o) => Object.assign({ name: [3, 7], dogs: [dog(), dog({ b: 20, o: -1, a: 'pup', s: 'm', sp: 1, n: 100, c: null })] }, o || {});
+    ok((await call('PUT', '/card', card())).status === 401, 'PUT /card needs a session');
+    r = await call('PUT', '/card', card(), cg.token); ok(r.status === 403 && r.json.error === 'no_account', 'a guest cannot publish a card (403 no_account)');
+    ok(!(await sql('select * from cards where user_id = ?', cg.user.id)), 'and nothing is stored for the guest');
+    const junk = [
+      ['an extra field', card({ note: 'hi' })], ['a name as text', card({ name: ['Sunny', 'Biscuit'] })], ['a name index as a string', card({ name: ['3', 7] })],
+      ['a name word past the list', card({ name: [40, 0] })], ['a negative index', card({ name: [-1, 0] })], ['a fraction', card({ name: [1.5, 0] })], ['one name word', card({ name: [1] })],
+      ['no dogs', card({ dogs: [] })], ['5 dogs', card({ dogs: [dog(), dog(), dog(), dog(), dog()] })], ['dogs as an object', card({ dogs: { 0: dog() } })],
+      ['a dog name as text', card({ dogs: [dog({ n: 'Mochi' })] })], ['a dog name index past the list', card({ dogs: [dog({ n: 101 })] })],
+      ['a breed past the list', card({ dogs: [dog({ b: 21 })] })], ['a breed as text', card({ dogs: [dog({ b: 'shiba' })] })],
+      ['an outfit past the list', card({ dogs: [dog({ o: 47 })] })], ['an outfit as text', card({ dogs: [dog({ o: 'Red Bandana' })] })], ['an outfit under -1', card({ dogs: [dog({ o: -2 })] })],
+      ['an age that is not pup or adult', card({ dogs: [dog({ a: 'old' })] })], ['a sex that is not m or f', card({ dogs: [dog({ s: 'x' })] })], ['sparkle 2', card({ dogs: [dog({ sp: 2 })] })],
+      ['a dog with an extra key', card({ dogs: [Object.assign(dog(), { name: 'Mochi' })] })], ['a dog missing a key', card({ dogs: [(() => { const d = dog(); delete d.sp; return d; })()] })],
+      ['a coat allele not in the set', card({ dogs: [dog({ c: { B: ['B', 'x'] } })] })], ['a coat word', card({ dogs: [dog({ c: 'red' })] })], ['a coat with an unknown locus', card({ dogs: [dog({ c: { K: ['K', 'k'] } })] })],
+      ['a coat locus with 3 alleles', card({ dogs: [dog({ c: { B: ['B', 'b', 'b'] } })] })], ['a double merle', card({ dogs: [dog({ c: { M: ['M', 'M'] } })] })], ['an empty coat', card({ dogs: [dog({ c: {} })] })],
+      ['a coat locus named constructor', card({ dogs: [dog({ c: { constructor: ['B', 'b'] } })] })], ['a coat with __proto__', card({ dogs: [dog({ c: JSON.parse('{"__proto__":["B","b"]}') })] })],
+      ['a coat colour that is not #rrggbb', card({ dogs: [dog({ c: '#12345g' })] })], ['an oversized card', card({ dogs: [dog({ c: '#' + 'a'.repeat(3000) })] })], ['an array body', [card()]]
+    ];
+    const bad = [];
+    for (const [label, b] of junk) { const x = await call('PUT', '/card', b, ca.token); if (!(x.status === 400 && x.json && (x.json.error === 'bad_card' || x.json.error === 'bad_json'))) bad.push(label + ' ' + x.status); }
+    ok(!bad.length, `every junk card is refused with 400 bad_card (${junk.length} kinds) ${bad.join(', ')}`);
+    ok(!(await sql('select * from cards where user_id = ?', ca.user.id)), 'no junk card was stored');
+    r = await call('PUT', '/card', card({ dogs: [dog(), dog({ b: 20, o: -1, a: 'pup', s: 'm', sp: 1, n: 100, c: null }), dog({ c: '#AABBCC' })] }), ca.token);
+    const mine = r.json;
+    ok(r.status === 200 && /^[A-Za-z0-9_-]{22}$/.test(mine.id) && mine.name.join() === '3,7' && mine.dogs.length === 3 && mine.paws === 0, 'an email account publishes a card: a random card id, the name, the dogs, 0 paws');
+    ok(mine.dogs[1].c === null && mine.dogs[2].c === '#aabbcc' && JSON.stringify(mine.dogs[0]) === JSON.stringify(dog()) && mine.dogs[1].b === 20 && mine.dogs[1].n === 100, 'the dogs come back in the Worker\'s own shape (coat alleles, null or #rrggbb)');
+    ok(mine.id !== ca.user.id && !r.text.includes(ca.user.id) && !r.text.includes('cards-a'), 'the card id is not the user id, and neither the user id nor the email is in the answer');
+    const row = await sql('select * from cards where user_id = ?', ca.user.id);
+    ok(row && !/[a-z]{3,}@/.test(row.dogs) && JSON.parse(row.dogs).every((d) => Object.keys(d).join() === 'b,c,o,a,s,sp,n'), 'D1 keeps only the checked fields');
+    r = await call('GET', '/card', null, ca.token); ok(r.status === 200 && r.json.id === mine.id && r.json.paws === 0 && r.json.at > 0, 'GET /card: my card');
+    ok((await call('GET', '/card', null, cb.token)).json === null, 'GET /card: null with no card');
+    r = await call('PUT', '/card', card({ name: [0, 39] }), ca.token); ok(r.json.id === mine.id && r.json.name.join() === '0,39' && r.json.dogs.length === 2, 'PUT /card again replaces the card and keeps its id');
+    ok((await sql('select count(*) as n from cards where user_id = ?', ca.user.id)).n === 1, 'one card per account');
+    // visiting: anyone, never the caller's own, only fresh cards, no ids or emails
+    const cbCard = (await call('PUT', '/card', card({ name: [1, 1] }), cb.token)).json;
+    r = await call('GET', '/cards/visit?n=4', null, null, ipC(3));
+    ok(r.status === 200 && Array.isArray(r.json) && r.json.some((x) => x.id === mine.id) && r.json.some((x) => x.id === cbCard.id), 'GET /cards/visit needs no session and returns cards');
+    ok(r.json.every((x) => Object.keys(x).join() === 'id,name,dogs,paws') && !r.text.includes(ca.user.id) && !r.text.includes(cb.user.id) && !r.text.includes('@'), 'visit cards carry only id, name, dogs, paws: no user id, no email');
+    r = await call('GET', '/cards/visit?n=4', null, ca.token, ipC(3)); ok(r.json.length >= 1 && !r.json.some((x) => x.id === mine.id), 'never the caller\'s own card');
+    r = await call('GET', '/cards/visit?n=4&not=' + cbCard.id + ',junk!,' + 'x'.repeat(300), null, ca.token, ipC(3)); ok(!r.json.some((x) => x.id === cbCard.id || x.id === mine.id), 'not= leaves out hidden cards (junk ids are ignored)');
+    for (let i = 0; i < 5; i++) await call('PUT', '/card', card(), (await call('POST', '/register', { email: `cards-x${i}@example.com`, password: 'cardspass9' }, null, ipC(4))).json.token);
+    r = await call('GET', '/cards/visit?n=99', null, null, ipC(3)); ok(r.json.length === 4, 'at most 4 cards a visit');
+    r = await call('GET', '/cards/visit', null, null, ipC(3)); ok(r.json.length === 2, 'n defaults to 2');
+    await sql('update cards set updated_at = ? where id = ?', Date.now() - 31 * 864e5, cbCard.id, true);
+    let seen = false; for (let i = 0; i < 6 && !seen; i++) seen = (await call('GET', '/cards/visit?n=4', null, null, ipC(5))).json.some((x) => x.id === cbCard.id);
+    ok(!seen, 'a card not updated for 30 days does not visit');
+    await call('PUT', '/card', card({ name: [1, 1] }), cb.token);
+    const codesV = []; for (let i = 0; i < 121; i++) codesV.push((await call('GET', '/cards/visit', null, null, ipC(6))).status);
+    ok(codesV[0] === 200 && codesV[119] === 200 && codesV[120] === 429, 'visits are rate-limited per IP (120 an hour)');
+    // paws
+    ok((await call('POST', '/paw', { id: mine.id })).status === 401, 'POST /paw needs a session');
+    r = await call('POST', '/paw', { id: mine.id }, cg.token, ipC(20)); ok(r.status === 200 && r.json.paws === 1 && r.json.given === true, 'a guest gives a paw');
+    const jst = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+    ok((await sql('select day from paws where from_id = ? and card_id = ?', cg.user.id, mine.id)).day === jst, 'the paw counts on the Japan day (the game\'s jstISO)');
+    r = await call('POST', '/paw', { id: mine.id }, cg.token, ipC(21)); ok(r.status === 200 && r.json.paws === 1 && r.json.given === false, 'a second paw the same day counts nothing');
+    r = await call('POST', '/paw', { id: mine.id }, cb.token, ipC(22)); ok(r.json.paws === 2 && r.json.given, 'another account gives one more');
+    r = await call('POST', '/paw', { id: mine.id }, ca.token, ipC(23)); ok(r.status === 400 && r.json.error === 'own_card', 'never a paw to your own card');
+    await sql("update paws set day = '2000-01-01' where from_id = ? and card_id = ?", cg.user.id, mine.id, true);
+    r = await call('POST', '/paw', { id: mine.id }, cg.token, ipC(24)); ok(r.json.paws === 3 && r.json.given, 'a new day, a new paw');
+    // many guests on one IP: at most 3 paws a day to one card, then quietly nothing
+    const farm = []; for (let i = 0; i < 5; i++) { const gx = (await call('POST', '/guest', {}, null, ipC(30 + i))).json; farm.push((await call('POST', '/paw', { id: mine.id }, gx.token, ipC(25))).json.given); }
+    ok(farm.join() === 'true,true,true,false,false', 'one IP gives one card at most 3 paws a day (' + farm.join() + ')');
+    ok((await call('GET', '/card', null, ca.token)).json.paws === 6, 'and only those count');
+    ok((await call('POST', '/paw', { id: 'A'.repeat(22) }, cg.token)).json.error === 'no_card' && (await call('POST', '/paw', { id: 'nope' }, cg.token)).json.error === 'bad_card' && (await call('POST', '/paw', { id: mine.id, x: 1 }, cg.token)).json.error === 'bad_card', 'an unknown card: no_card, a bad id or extra fields: bad_card');
+    r = await call('GET', '/card', null, ca.token); ok(r.json.paws === 6, 'the owner sees the paws');
+    const cg2 = (await call('POST', '/guest', {}, null, ipC(8))).json;
+    const codesP = []; for (let i = 0; i < 101; i++) codesP.push((await call('POST', '/paw', { id: cbCard.id }, cg2.token, ipC(40))).status);
+    ok(codesP[0] === 200 && codesP[99] === 200 && codesP[100] === 429, 'paws are rate-limited per account (100 an hour)');
+    const codesU = []; for (let i = 0; i < 19; i++) codesU.push((await call('PUT', '/card', card(), ca.token)).status); // 2 PUTs above: the 21st is refused
+    ok(codesU[17] === 200 && codesU[18] === 429, 'publishing is rate-limited (20 an hour)');
+    // stop sharing: the card and its paws go
+    r = await call('DELETE', '/card', null, cb.token); ok(r.status === 200 && r.json.ok, 'DELETE /card');
+    ok(!(await sql('select * from cards where id = ?', cbCard.id)) && !(await sql('select * from paws where card_id = ?', cbCard.id)), 'the card and its paws are deleted');
+    ok((await call('GET', '/card', null, cb.token)).json === null && (await call('POST', '/paw', { id: cbCard.id }, cg.token)).json.error === 'no_card', 'it no longer exists for anyone');
+    r = await call('OPTIONS', '/card', null, null, { Origin: 'https://doodledoggo.app', 'Access-Control-Request-Method': 'DELETE' }); ok(/DELETE/.test(r.headers.get('access-control-allow-methods')), 'CORS allows DELETE');
+    // deleting the account deletes its card and its paws
+    await sql('delete from users where id = ?', ca.user.id, true);
+    r = await call('GET', '/cards/visit?n=4', null, null, ipC(7)); ok(!r.json.some((x) => x.id === mine.id), 'a deleted account\'s card never visits again');
+    ok((await call('POST', '/paw', { id: mine.id }, cg.token)).json.error === 'no_card', 'and takes no paws');
+    ok(!(await sql('select * from cards where id = ?', mine.id)) && !(await sql('select * from paws where card_id = ?', mine.id)), 'tidy deletes the card and its paws');
+  }
   ok((await call('GET', '/nope')).status === 404, 'unknown paths: 404');
 }
 
@@ -223,8 +298,8 @@ async function checks(label, call, sql, sb, mail) {
 async function inNode() {
   const { d1 } = require(path.join(ROOT, 'cloudflare', 'd1_node.js'));
   const worker = (await import(path.join(ROOT, 'cloudflare', 'worker.js'))).default;
-  const DB = d1(), sb = fakeSupabase(), mail = fakeMail();
-  const env = { DB, SUPABASE_URL: 'https://sb.test', SUPABASE_KEY: 'sb_publishable_test', SB_FETCH: (u, o) => sb.fetch(u, o), RESEND_API_KEY: 're_test', MAIL_FETCH: mail.fetch };
+  const DB = d1(), mail = fakeMail();
+  const env = { DB, RESEND_API_KEY: 're_test', MAIL_FETCH: mail.fetch, MAIL_WAIT: '1', TIDY: '1' }; // TIDY: tidy after every request (Dog Cards: a deleted account)
   const call = async (method, p, body, token, headers) => {
     const h = Object.assign({}, headers || {}); if (token) h.Authorization = 'Bearer ' + token;
     let b; if (body !== null && body !== undefined) { b = typeof body === 'string' ? body : JSON.stringify(body); h['Content-Type'] = 'application/json'; }
@@ -233,7 +308,14 @@ async function inNode() {
     return { status: res.status, headers: res.headers, text, json };
   };
   const sql = async (q, ...a) => { const write = a[a.length - 1] === true; if (write) a.pop(); const st = DB.raw.prepare(q); return write ? st.run(...a) : st.get(...a); };
-  await checks('in-process Node, D1 over node:sqlite', call, sql, sb, mail);
+  await checks('in-process Node, D1 over node:sqlite', call, sql, mail);
+  { // in production the code mail goes out through ctx.waitUntil, after the answer (an account is not answered any slower)
+    delete env.MAIL_WAIT; const pend = [], m1 = mail.mails.length;
+    const res = await worker.fetch(new Request('https://api.test/forgot', { method: 'POST', headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': '10.8.8.9' }, body: JSON.stringify({ email: 'forgetful2@example.com' }) }), env, { waitUntil(p) { pend.push(p); } });
+    ok(res.status === 200 && pend.length >= 1 && mail.mails.length === m1, 'without MAIL_WAIT the answer comes first and the mail waits in ctx.waitUntil');
+    await Promise.all(pend); ok(mail.mails.length === m1 + 1 && /^\d{6}$/.test(mail.mails[m1].code), 'and then it is sent');
+    env.MAIL_WAIT = '1';
+  }
   delete env.RESEND_API_KEY; const m0 = mail.mails.length; // no email service set up yet: the game is told, nothing is sent
   const r = await call('POST', '/forgot', { email: 'forgetful@example.com' }, null, { 'CF-Connecting-IP': '10.8.8.8' });
   ok(r.status === 200 && r.json.ok === true && r.json.mail === false && mail.mails.length === m0, 'without RESEND_API_KEY: { mail: false } and no email');
@@ -246,12 +328,12 @@ function findMiniflare() {
 async function inMiniflare() {
   const MF = findMiniflare();
   if (!MF) { console.log('--- Miniflare: not installed here (npm i -g wrangler); skipped'); return; }
-  const fs = require('fs'), sb = fakeSupabase(), mail = fakeMail();
+  const fs = require('fs'), mail = fakeMail();
   const worker = {
     name: 'pawhaven-api', modules: true, script: require('fs').readFileSync(path.join(ROOT, 'cloudflare', 'worker.js'), 'utf8'), // the code itself: workerd refuses paths above its starting directory compatibilityDate: '2026-08-01',
     d1Databases: { DB: 'pawhaven-test-' + Date.now() },
-    bindings: { SUPABASE_URL: 'https://sb.test', SUPABASE_KEY: 'sb_publishable_test', RESEND_API_KEY: 're_test' },
-    outboundService: (req) => (req.url.startsWith('https://api.resend.com/') ? mail.fetch(req) : sb.fetch(req))
+    bindings: { RESEND_API_KEY: 're_test', MAIL_WAIT: '1', TIDY: '1' },
+    outboundService: (req) => (req.url.startsWith('https://api.resend.com/') ? mail.fetch(req) : new Response('{}', { status: 404 }))
   };
   let mf; // Miniflare 4 takes the worker's options at the top; Miniflare 5 wants them in workers[]
   try { mf = new MF.Miniflare(Object.assign({ d1Persist: false }, worker)); } catch (e) { mf = new MF.Miniflare({ workers: [worker] }); }
@@ -267,7 +349,7 @@ async function inMiniflare() {
       return { status: res.status, headers: res.headers, text, json };
     };
     const sql = async (q, ...a) => { const write = a[a.length - 1] === true; if (write) a.pop(); const st = DB.prepare(q).bind(...a); return write ? st.run() : st.first(); };
-    await checks('Miniflare (workerd + local D1)', call, sql, sb, mail);
+    await checks('Miniflare (workerd + local D1)', call, sql, mail);
   } finally { await mf.dispose(); }
 }
 

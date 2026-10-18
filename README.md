@@ -14,10 +14,12 @@ Your save lives in your browser's local storage. On the web version it is also s
 
 ## What's in the game
 
-- **14 breeds**: shiba, corgi, golden retriever, dachshund, husky, mutt, chihuahua, pug, greyhound, beagle, poodle, border collie, samoyed and french bulldog. Each has its own voice, personality, size and joke.
-- **Seasons and festivals**: the town follows the real calendar (spring, summer, autumn, winter in every scene), with a leaf festival in October and November (leaf piles, a harvest stall) and a Halloween costume parade in late October. For Halloween 2026 (8 Oct to 2 Nov) the town wears pumpkins, paper ghosts and felt bats, and Mrs. Plum's Pumpkin Patch Pop-up in the Square sells 16 things made for 2026 only (decorations, dog-safe treats, toys with yard games, clothes), each with a "2026" tag and yours to keep.
+- **21 breeds**: shiba, corgi, golden retriever, dachshund, husky, mutt, chihuahua, pug, greyhound, beagle, poodle, border collie, samoyed, french bulldog, akita, japanese spitz, pomeranian, afghan hound, great dane, english mastiff and german shepherd. Each has its own voice, personality, size and joke.
+- **Seasons and festivals**: the town follows the real calendar (spring, summer, autumn, winter in every scene), with a leaf festival in October and November (leaf piles, a harvest stall) and a Halloween costume parade in late October. For Halloween 2026 (8 Oct to 2 Nov) the town wears pumpkins, paper ghosts and felt bats, and Mrs. Plum's Pumpkin Patch Pop-up in the Square sells 19 things made for 2026 only (decorations, dog-safe treats, toys with yard games, clothes and three full costumes: a Pumpkin Patch Suit, a Trick-or-Treat Ghost and a Little Bat Costume), each with a "2026" tag and yours to keep.
 - **Winter and New Year**: Snow Days from December to February (snowdrifts to dive into, a snowdog, Baker Bea's Winter Stall), Winter Lights and an Ugly Sweater Contest in December, and a Japanese New Year (kadomatsu, kites, New Year cards, a Fortune box with only good fortunes).
 - **Japan scenery**: Mt. Fuji on every outdoor skyline in every season, Japanese details around town, and Mt. Fuji Lookout, a new place to look at Fuji.
+- **Tokyo Trip**: ride the Shinkansen from the town Station to six Tokyo places (Shibuya and Hachikō, the Yoyogi Park dog run, Asakusa, Ueno Park, Tokyo Tower, Odaiba), collect seven station stamps in the Stamp Book, and bring home souvenirs sold only in Tokyo.
+- **Dog Cards**: share a card of your dogs (picked words only, no typing), and other players' dogs visit the Dog Park and the Yoyogi dog run. Tap a visitor to see its card and give a paw.
 - **Home and pack**: decorate the yard and the house (16 decorations and 5 pieces of furniture the dogs climb, nap and play on, all movable by drag or tap), a bed for every dog, and Feed, Pet, Bath and Nap that care for the whole pack at once.
 - **The Shelter Playroom**: a cozy dog-café shelter where dogs looking for a home play, nap and fetch tossed toys. Pet them, read the Adopt me board, meet each dog and adopt for free.
 - **Realistic genetics and breeding**: coats and traits are inherited through real-style gene loci. Dogs have sex, age, seasons and life stages, and breeding follows realistic rules.
@@ -104,6 +106,10 @@ Some folders (`dogs/`, `world/`, `mods/`) also hold earlier art versions and rev
 - **v2.8.1 "Cloudflare login"**: cloud save and accounts move to a Cloudflare Worker with a D1 database. Same title screen, same email and password, saves and backups come along. The game is also at https://doodledoggo.app.
 - **v2.8.2 "Account safety"**: one email, one account (old accounts included), and Forgot your password? with an emailed 30-minute link that opens a Set a new password panel.
 - **v2.9 "All Together"**: the whole pack plays, trains, dresses and walks together with no switching (the others follow the leader on walks, a pack bonus on the pay), and photo mode: a crayon postcard of your dogs to save or share, with a daily photo mission.
+- **v2.10 "Free to Roam"**: every dog is drawn at the same size and roams every scene by its breed's personality, petting pets only the dog you touch, and ball play in the place you are in with the whole pack racing for the Tennis Ball, Frisbee, Driftwood Stick or Glow Ball, with wider views on phones.
+- **v2.11 "Tokyo Trip"**: the Shinkansen to six Tokyo places with seven stamps and Tokyo-only souvenirs, Dog Cards (other players' dogs visit, give a paw, no typing), and seven new breeds (Akita, Japanese Spitz, Pomeranian, Afghan Hound, Great Dane, English Mastiff, German Shepherd).
+
+- **v2.11.1 "Costumes & Sizes"** (current): three new Halloween 2026 costumes in the Pumpkin Patch Pop-up (Pumpkin Patch Suit, Trick-or-Treat Ghost, Little Bat Costume), dogs shown at their real size in three classes (small, medium, big) and a little bigger overall, the German Shepherd's head joined to its body, and roomier text in the Shelter on phones.
 
 Full details: [CHANGELOG.md](CHANGELOG.md). Open issues: [TODO.md](TODO.md).
 

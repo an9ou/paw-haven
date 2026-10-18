@@ -12,7 +12,8 @@ const PH = { on: false, cap: null, names: null, vb: null, tok: 0, svg: '', size:
 
 const phCaps = () => PH_CAPS.map((t, i) => ({ id: 'c' + i, t })).concat([{ id: 'season', t: PH_SEASON_CAP[seasonNow()] || PH_SEASON_CAP.summer }]);
 function phCapNow() { const l = phCaps(); return l.find((c) => c.id === prefs.phCap) || l[0]; }
-function phColorNow() { const l = (window.PawArt && PawArt.POSTCARD_COLORS) || []; return l.find((c) => c.k === prefs.phFrame) || l[0] || { k: 'rose', n: 'Rose', c: '#F7B2C4' }; }
+const phFrames = () => ((window.PawArt && PawArt.POSTCARD_COLORS) || []).concat(typeof tkFrameList === 'function' ? tkFrameList() : []); // v2.11: the Tokyo stamp frame once all seven stamps are in (39_tokyo.js)
+function phColorNow() { const l = phFrames(); return l.find((c) => c.k === prefs.phFrame) || l[0] || { k: 'rose', n: 'Rose', c: '#F7B2C4' }; }
 function phPlaceName() { const p = S && S.place; return p === 'yard' ? 'Home' : p === 'house' ? 'The house' : (PLACES[p] && PLACES[p].n) || 'Doodle Town'; }
 function phDateLine() { const [y, m, d] = jstISO().split('-').map(Number); return `${d} ${FS_MONTHS[m - 1]} ${y}`; } // the Japan date, written like the festival dates
 function phNames(list) { return list.length < 2 ? list.join('') : list.slice(0, -1).join(', ') + ' and ' + list[list.length - 1]; }
@@ -141,7 +142,7 @@ function phNamesIn(c, vb) {
 function phCompose(c, o) {
   const PA = window.PawArt, L = phLayout(c, o.sq), win = PA.postcardWindow(L.size.w, L.size.h), vb = L.vb.map((n) => +n.toFixed(2)), names = phNamesIn(c, vb);
   const scene = `<svg x="${win.x.toFixed(2)}" y="${win.y.toFixed(2)}" width="${win.w.toFixed(2)}" height="${win.h.toFixed(2)}" viewBox="${vb.join(' ')}" preserveAspectRatio="xMidYMid slice" overflow="hidden"><rect x="${vb[0]}" y="${vb[1]}" width="${vb[2]}" height="${vb[3]}" fill="#FFFBF3"/>${vb[1] < c.vb[1] ? `<rect x="${vb[0]}" y="${vb[1]}" width="${vb[2]}" height="${f1(c.vb[1] - vb[1] + 2)}" fill="${c.sky}"/>` : ''}${c.inner}${phWash(c, vb)}</svg>`;
-  let svg = PA.postcard(L.size.w, L.size.h, { color: o.color, stamp: c.year, scene, caption: o.caption, place: c.place, date: c.date, dogs: phNames(names) });
+  let svg = (o.color === 'tokyo' && typeof tkPostcard === 'function' ? tkPostcard : PA.postcard)(L.size.w, L.size.h, { color: o.color, stamp: c.year, scene, caption: o.caption, place: c.place, date: c.date, dogs: phNames(names) });
   svg = svg.replace(/^(<svg[^>]*>)/, `$1<style>${PH_FONT_CSS}*{animation:none!important;transition:none!important}</style>`);
   return { svg, size: L.size, names, vb };
 }
@@ -181,7 +182,7 @@ function phDraw(delay) {
   if (delay) PH.timer = setTimeout(run, delay); else run();
 }
 function phPanel() {
-  const cols = PawArt.POSTCARD_COLORS, caps = phCaps(), col = phColorNow(), cap = phCapNow();
+  const cols = phFrames(), caps = phCaps(), col = phColorNow(), cap = phCapNow();
   return `<div class="ph-view"><img class="ph-pic" alt="Your photo, framed as a postcard" draggable="false"></div>
   <div class="ph-side">
     <h2 class="ph-h">Say cheese</h2>

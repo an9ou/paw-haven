@@ -12,7 +12,7 @@
   var W = 1240, H = 620, GY = 540, DS = 1.15, G = 2300;
   var TOYS = ['Tennis Ball', 'Rope Tug', 'Squeaky Duck', 'Frisbee', 'Plush Bone', 'Puzzle Feeder', 'Driftwood Stick', 'Rubber Chicken', 'Glow Ball',
     'Snuffle Mat', 'Treat Cone', 'Squeaky Hedgehog', 'Bubble Machine', 'Paddling Pool', 'Agility Tunnel',
-    'Squeaky Pumpkin', 'Plush Ghost', 'Bat-Wing Flyer', 'Trick-or-Treat Bucket'];
+    'Squeaky Pumpkin', 'Plush Ghost', 'Bat-Wing Flyer', 'Trick-or-Treat Bucket', 'Shinkansen Plush'];
   var CAP = { happiness: 25, bond: 2, coins: 6 };
 
   /* ---------------- helpers ---------------- */
@@ -166,6 +166,8 @@
         for (var ti = 0; ti < 6; ti++) s += pencil(R, [[10 + ti * 7.5, 22], [17.5 + ti * 7.5, 20], [17.5 + ti * 7.5, 52], [10 + ti * 7.5, 51]], 1.4, INK, 0.9, true, ti % 2 ? '#FFE07A' : '#86B3EA');
         s += pencil(R, [[10, 22], [55, 20]], 2.2, INK, 1) + pencil(R, [[10, 51], [55, 52]], 2.2, INK, 1) + pencil(R, ell(10, 36.5, 6, 15, 12), 2.2, INK, 1, true, '#86B3EA') + pencil(R, ell(10, 37, 3.4, 11, 10), 1.4, INK, 1, true, '#4A3A33') +
           pencil(R, ell(55, 36, 5, 16, 12), 2.2, INK, 1, true, '#FFE07A') + '<path d="M2 58H62" stroke="#5B3D32" stroke-width="1.4" opacity=".4"/>'; break;
+      case 'Shinkansen Plush': // v2.11: a white bullet train with a blue stripe (TOKYO ART E draws the real icon)
+        s = pencil(R, [[6, 46], [6, 30], [12, 24], [40, 22], [54, 30], [60, 42], [58, 46]], 2.4, INK, 1, true, '#FFFBF3') + '<path d="M7 38 H58" stroke="#3E6FB0" stroke-width="4"/><rect x="14" y="28" width="8" height="6" rx="1.5" fill="#BFE6FA" stroke="#5B3D32" stroke-width="1.2"/><rect x="26" y="28" width="8" height="6" rx="1.5" fill="#BFE6FA" stroke="#5B3D32" stroke-width="1.2"/><path d="M40 27 L50 30 L52 34 L40 34 Z" fill="#BFE6FA" stroke="#5B3D32" stroke-width="1.2"/><path d="M4 52 H60" stroke="#5B3D32" stroke-width="1.6" opacity=".5"/>'; break;
       case 'Squeaky Pumpkin': case 'Plush Ghost': case 'Bat-Wing Flyer': case 'Trick-or-Treat Bucket': return v26Icon(name);
       default: s = pencil(R, rect(14, 14, 36, 36), 2.4, INK, 1, true, '#E0D5F0');
     }
@@ -310,7 +312,16 @@
     poodle: { d: [-2, -18], sit: [5, -13], jump: [-15, -14], eat: [32, -13], crouch: [10, -5], sleep: [-2, 0], sniff: [6, -8] },
     collie: { d: [5, 0], sit: [17, 0], jump: [2, -10], eat: [24, 0], crouch: [19, 5], sleep: [-8, 2], sniff: [10, -4] },
     samoyed: { d: [-11, -1], sit: [2, -6], jump: [-19, -4], eat: [28, -9], crouch: [13, 0], sleep: [-6, 0], sniff: [0, -2] },
-    frenchie: { d: [-22, 10], sit: [-6, -2], jump: [-30, 5], eat: [28, -11], crouch: [0, 0], sleep: [-10, 0], sniff: [-6, 0] }
+    frenchie: { d: [-22, 10], sit: [-6, -2], jump: [-30, 5], eat: [28, -11], crouch: [0, 0], sleep: [-10, 0], sniff: [-6, 0] },
+    // v2.11 breeds, calibrated on the BREED ART drawings (mods/toys/calib)
+    akita: { d: [12, -9], sit: [14, -6], jump: [-12, -16], eat: [26, -6], crouch: [4, 0], sleep: [2, 6], sniff: [2, -4] },
+    spitz: { d: [-11, -1], sit: [2, -6], jump: [-19, -4], eat: [28, -9], crouch: [13, 0], sleep: [-6, 0], sniff: [0, -2] },
+    pom: { d: [-12, 8], sit: [0, 4], jump: [-24, 6], eat: [22, -8], crouch: [4, 0], sleep: [-10, 0], sniff: [0, -4] },
+    // v2.11 big breeds (the second artist's starting points, checked in mods/toys/calib)
+    afghan: { d: [29, -41], sit: [27, -9], jump: [-5, -26], eat: [2, 5], crouch: [20, 4], sleep: [10, 2], sniff: [27, 6] },
+    dane: { d: [22, -43], sit: [20, -23], jump: [4, -43], eat: [2, 5], crouch: [14, 0], sleep: [6, 0], sniff: [22, 6] },
+    mastiff: { d: [24, -9], sit: [21, -23], jump: [6, -9], eat: [-2, 3], crouch: [10, 0], sleep: [6, 0], sniff: [22, 5] },
+    gsd: { d: [25, -13], sit: [23, -15], jump: [8, -13], eat: [1, 6], crouch: [14, 2], sleep: [8, 0], sniff: [25, 7] }
   };
   var POSE_BASE = { walk: 'idle', happy: 'idle', pet: 'idle', shake: 'idle', dirty: 'idle', cold: 'idle', hot: 'idle', sad: 'idle', dig: 'eat' };
   function breedAdj(key, pose) {
@@ -322,7 +333,9 @@
     greyhound: { run: 1.6, carry: 0.55, flop: true },
     chihuahua: { run: 1.1, fierce: true }, pug: { run: 0.78, snort: true }, beagle: { sniff: true },
     dachs: { run: 0.85 }, corgi: { run: 0.92 },
-    frenchie: { run: 0.8, snort: true }, collie: { run: 1.15 }, samoyed: { fluff: true }, poodle: { clever: true }   // v2.5
+    frenchie: { run: 0.8, snort: true }, collie: { run: 1.15 }, samoyed: { fluff: true }, poodle: { clever: true },   // v2.5
+    akita: { run: 0.95, carry: 1.05 }, spitz: { run: 1.05, fluff: true }, pom: { run: 0.9, fierce: true },   // v2.11
+    afghan: { run: 1.4, carry: 0.9 }, dane: { run: 0.85 }, mastiff: { run: 0.6, snort: true }, gsd: { run: 1.15, carry: 1.1 }
   };
   function trait(key) { return Object.assign({ run: 1, carry: 1 }, TRAITS[key] || {}); }
   /* per-breed flavour lines; any missing slot falls back to the generic lines passed in */
@@ -385,6 +398,35 @@
       tugGrowl: ['grrf *snort*', 'rrf rrf!'], tugDogWin: ['*proud snort*'], duckListen: ['*snort*', '*huff*'], duckOk: ['*happy snort*'],
       howl: ['rrf! *snort*', 'arf-*snort*'], snuffleFind: ['*snort* FOOD'], coneLick: ['lick *snort* lick'], hogAnswer: ['*snort*!', 'rrf?'],
       poolIn: ['I do not swim. I float. With help.'], tunnelDone: ['*snort* done. sitting now.'], tap: ['*snort*?']
+    },
+    akita: {
+      fetchStart: ['one throw. I will bring it back.', 'ok. calmly.'], fetchDeliver: ['here. it is yours.', 'done. I sat down on the way back.'],
+      tugGrowl: ['grr (quietly)', 'mine. politely.'], howl: ['woof.', 'a low, proud woof'], tap: ['yes? I am listening.']
+    },
+    spitz: {
+      fetchStart: ['throw it! watch my fluff fly!', 'ready! look at me!'], fetchDeliver: ['got it! did you see?', 'ta-da! the fluff and the ball!'],
+      tugGrowl: ['grr! (bright)', 'yap! mine!'], howl: ['yap-yap!', 'a bright little bark'], bubblePop: ['the bubbles are white too!'], tap: ['hello! look at me!']
+    },
+    pom: {
+      fetchStart: ['throw it! I am tiny but fast!', 'yip! now!'], fetchDeliver: ['YIP! I won the ball!', 'it was bigger than my head!'],
+      tugStart: ['I am a TIGER.'], tugGrowl: ['yip! grr! yip!', 'I am small. I am FIERCE.'], tugDogWin: ['I am the strongest. It is science.'], howl: ['yip yip yip!', 'tiny but loud!'],
+      poolIn: ['it is deep. I am floof.'], tap: ['yip! hello!']
+    },
+    afghan: {
+      fetchStart: ['I will run. Watch the hair.', 'a very elegant run, ready'], fetchDeliver: ['here. with style.', 'I brought it back. I did not hurry.'],
+      tugGrowl: ['grr (with grace)', 'mine. please.'], howl: ['a soft, silky awoo', 'woo (poetic)'], tap: ['yes? I was posing.']
+    },
+    dane: {
+      fetchStart: ['throw it. I will be gentle.', 'oh a ball. it is tiny. I love it.'], fetchDeliver: ['here. it is a bit wet.', 'got it. my legs did most of the work.'],
+      tugStart: ['careful. I am very strong.'], tugGrowl: ['*deep rumble*', 'grr (a long way down)'], tugDogWin: ['oops. I pulled the whole yard.'], howl: ['*deep woof*', 'WOOF (the floor shook)'], tap: ['hello. down here? no, up here.']
+    },
+    mastiff: {
+      fetchStart: ['a throw? ok. slowly.', 'I will get it. eventually.'], fetchDeliver: ['*puff* here.', 'a long way. a big sigh.'],
+      tugGrowl: ['*slow rumble*', 'mmrf'], tugDogWin: ['I leaned. you moved.'], howl: ['*deep woof*', 'woof. (once)'], poolIn: ['a big splash. a big drool.'], tap: ['*slow blink*']
+    },
+    gsd: {
+      fetchStart: ['ready. throw it.', 'eyes on the ball. always.'], fetchDeliver: ['mission complete.', 'done. again?'],
+      tugStart: ['assignment accepted.'], tugGrowl: ['grr! (working)', 'mine. on duty.'], howl: ['woof! woof!', 'a strong, clear bark'], tap: ['reporting. what is the job?']
     }
   };
   var FALLBACK = { crouch: ['sit'], dig: ['eat'], shake: ['happy'], sleep: ['sit'], pet: ['happy'], sad: ['sit'], jump: ['happy'], eat: ['sit'], walk: ['idle'] };
@@ -2723,6 +2765,64 @@
   };
   IMPL['Trick-or-Treat Bucket'].cfg = { scene: 'yard' };
   IMPL['Trick-or-Treat Bucket'].phone = { vw: 720, vwMin: 700, fx: 585 };
+
+  /* ---------- v2.11 Shinkansen Plush (the Tokyo Tower souvenir, lane TRAVEL): roll the soft bullet train along the lawn, the dog chases it and brings it back ---------- */
+  IMPL['Shinkansen Plush'] = function (A) {
+    var dog = A.dog, DN = A.DN, CP = A.compact, still = v26Still(), HOME = CP ? 620 : 720, LO = CP ? 290 : 190, HI = CP ? 900 : 1070, TS = 150, LIE = GY - 30;
+    var spr = A.sprite(A.itemSVG('Shinkansen Plush'), TS, TS, A.L.actors, 0.5, 0.5);
+    var tr = { x: HOME - 150, y: LIE, rot: 0, tx: 0, carried: false, rolling: false };
+    var state = 'wait', stT = 0, rolls = 0, returns = 0, tip = A.tip('click the lawn to roll it!', CP ? 330 : 300, GY - 120);
+    dog.x = HOME; dog.face('left'); dog.setPose('sit');
+    A.say(pick(['a TRAIN! a soft one!', 'choo choo? is that how it goes?']), 1700);
+    function onDog(x, y) { var h = dog.head(); return Math.abs(x - dog.x) < A.hitR(110) && y > h.y - 60 && y < dog.y + 20; }
+    function roll(x) {
+      var tx = clamp(x, LO, HI); if (Math.abs(tx - tr.x) < 160) tx = clamp(tr.x + (tx >= tr.x ? 1 : -1) * 260, LO, HI);
+      tr.tx = tx; tr.rolling = true; tr.carried = false; rolls++; state = 'chase'; stT = 0; A.sfx('whoosh');
+      if (tip) { tip.hide(); tip = null; }
+      if (Math.random() < 0.5) A.say(pick(['zoom zoom!', 'it is so fast!', 'wait for me, train!']), 900);
+    }
+    return {
+      poses: ['sit', 'idle', 'walk', 'eat', 'happy'],
+      dur: 45,
+      hint: 'Click the lawn to roll the Shinkansen Plush, and ' + DN + ' chases it.',
+      down: function (x, y) {
+        if (state === 'wait' && !onDog(x, y) && y > 300) { roll(x); return; }
+        if (dogTap(A, x, y, ['all aboard! (that is me)', 'next stop: you!'])) return;
+        kindSniff(A, x, y, ['the train is over there!', 'one train at a time', 'sniff... smells like a station.']);
+      },
+      move: function (x, y) { A.cursor(state === 'wait' && !onDog(x, y) && y > 300 ? 'pointer' : 'default'); },
+      update: function (dt, T) {
+        stT += dt;
+        if (tr.rolling) {
+          var dx = tr.tx - tr.x, sp = Math.max(160, Math.abs(dx) * 3.2);
+          tr.x += (dx < 0 ? -1 : 1) * Math.min(Math.abs(dx), sp * dt);
+          if (Math.abs(tr.tx - tr.x) < 1) { tr.x = tr.tx; tr.rolling = false; A.sfx('land'); A.burst('dust', tr.x, GY, 3, { g: -20, sp: 60, life: 0.5, size: 4 }); }
+        }
+        if (state === 'chase') {
+          var side = dog.x >= tr.x ? 1 : -1;
+          if (dog.runTo(tr.x + side * dog.mouthOff('eat'), 320 * A.tr.run, dt) && !tr.rolling) { dog.face(side > 0 ? 'left' : 'right'); state = 'pick'; stT = 0; A.sfx('pop'); }
+        } else if (state === 'pick') {
+          dog.setPose('eat'); if (stT > 0.3) { tr.carried = true; state = 'bring'; stT = 0; dog.setPose('idle'); }
+        } else if (state === 'bring') {
+          if (dog.runTo(HOME, 300 * A.tr.run * A.tr.carry, dt)) {
+            returns++; tr.carried = false; tr.x = HOME - 150; dog.face('left'); dog.setPose('sit'); state = 'wait'; stT = 0; A.sfx('squeak');
+            A.float(pick(['next stop: you!', 'train returned!', 'right on time!']), dog.x, dog.y - 230, returns % 3 === 0 ? 'pt-gold' : '');
+            v26Pay(A, { happiness: returns % 2 ? 1 : 2, bond: returns === 2 ? 1 : 0, coins: returns % 3 === 0 ? 1 : 0, energy: returns % 2 ? -1 : 0 });
+          }
+        } else if (state === 'wait') {
+          dog.setPose('sit'); if (stT > 7) { stT = 0; A.say(pick(['roll it! roll the train!', 'I am ready. very ready.']), 1400); }
+        }
+        if (tr.carried) { var m = dog.mouth(); tr.x = m.x - dog.dir() * 10; tr.y = m.y + 18; tr.rot = dog.dir() * -8; } else { tr.y = LIE; tr.rot = 0; }
+        spr.set(tr.x, tr.y, tr.rot + (tr.rolling && !still ? Math.sin(T * 30) * 2 : 0));
+      },
+      drawFx: function (g) { if (tr.rolling) A.shadow(g, tr.x, GY + 6, 0, 40); },
+      focus: function () { return (tr.x + dog.x) / 2; },
+      finish: function () { return { happiness: 2, energy: -1 }; },
+      dbg: function () { return { state: state, rolls: rolls, returns: returns, still: still, train: { x: tr.x, y: tr.y, rolling: tr.rolling, carried: tr.carried } }; }
+    };
+  };
+  IMPL['Shinkansen Plush'].cfg = { scene: 'yard' };
+  IMPL['Shinkansen Plush'].phone = { vw: 720, vwMin: 700 };
 
   IMPL['Rope Tug'].phone = { vw: 980, fx: 640 };
   IMPL['Squeaky Duck'].phone = { vw: 700, vwMin: 660, fx: 620 };

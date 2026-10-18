@@ -11,9 +11,9 @@ function seeded(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) 
 const NAMED = G.BREEDS.filter((k) => k !== 'mutt');
 const BANNED = /nintendo|nintendogs|pok[eé]mon|animal crossing/i;
 
-/* 1. MIXES: all 91 pairs resolve (45 up to v2.4, 46 more with the v2.5 breeds) */
-ok(G.BREEDS.length === 14, '14 breeds');
-ok(Object.keys(G.MIXES).length === 91, `91 MIXES entries (got ${Object.keys(G.MIXES).length})`);
+/* 1. MIXES: all 210 pairs resolve (45 up to v2.4, 46 more with the v2.5 breeds, 45 with the first three v2.11 breeds, 74 with the owner's four more) */
+ok(G.BREEDS.length === 21, '21 breeds');
+ok(Object.keys(G.MIXES).length === 210, `210 MIXES entries (got ${Object.keys(G.MIXES).length})`);
 const names = new Set();
 let pairs = 0;
 for (let i = 0; i < G.BREEDS.length; i++) for (let j = i + 1; j < G.BREEDS.length; j++) {
@@ -42,8 +42,8 @@ for (let i = 0; i < G.BREEDS.length; i++) for (let j = i + 1; j < G.BREEDS.lengt
     }
   }
 }
-ok(pairs === 91, '91 pairs walked');
-ok(names.size === 78, `78 unique named mixes (got ${names.size})`);
+ok(pairs === 210, '210 pairs walked');
+ok(names.size === 190, `190 unique named mixes (got ${names.size})`);
 // examples from the brief
 const want = { 'beagle|pug': 'Puggle', 'chihuahua|dachs': 'Chiweenie', 'golden|husky': 'Goberian', 'corgi|husky': 'Horgi', 'chihuahua|pug': 'Chug', 'corgi|dachs': 'Dorgi', 'shiba|corgi': 'Shorgi', 'golden|beagle': 'Beago', 'greyhound|beagle': 'Greagle' };
 for (const k of Object.keys(want)) { const [a, b] = k.split('|'); ok(G.MIXES[G.mixKey(a, b)].name === want[k], `${k} = ${want[k]} (got ${G.MIXES[G.mixKey(a, b)].name})`); }
@@ -64,6 +64,46 @@ const want25 = {
 ok(Object.keys(want25).length === 42 && new Set(Object.values(want25)).size === 42, '42 new mix names listed');
 for (const k of Object.keys(want25)) { const [a, b] = k.split('|'); ok(G.MIXES[G.mixKey(a, b)].name === want25[k], `${k} = ${want25[k]} (got ${G.MIXES[G.mixKey(a, b)].name})`); }
 ['poodle', 'collie', 'samoyed', 'frenchie'].forEach((k) => ok(G.MIXES[G.mixKey('mutt', k)].name === 'Mutt mix', `mutt x ${k} is Mutt mix`));
+// v2.11: the 42 new names (V211.md 5.2), each on its pair
+const want211 = {
+  'shiba|akita': 'Shibakita', 'corgi|akita': 'Corgikita', 'golden|akita': 'Goldkita', 'dachs|akita': 'Doxkita', 'husky|akita': 'Huskita',
+  'chihuahua|akita': 'Chikita', 'pug|akita': 'Pugkita', 'greyhound|akita': 'Greykita', 'beagle|akita': 'Beakita', 'poodle|akita': 'Akipoo',
+  'collie|akita': 'Border Akita', 'samoyed|akita': 'Sammy Kita', 'frenchie|akita': 'French Akita',
+  'shiba|spitz': 'Spitziba', 'corgi|spitz': 'Spitzgi', 'golden|spitz': 'Goldspitz', 'dachs|spitz': 'Spitzdox', 'husky|spitz': 'Spitzky',
+  'chihuahua|spitz': 'Chispitz', 'pug|spitz': 'Pugspitz', 'greyhound|spitz': 'Greyspitz', 'beagle|spitz': 'Spitzle', 'poodle|spitz': 'Spitzpoo',
+  'collie|spitz': 'Border Spitz', 'samoyed|spitz': 'Sammy Spitz', 'frenchie|spitz': 'French Spitz',
+  'shiba|pom': 'Pomiba', 'corgi|pom': 'Pomgi', 'golden|pom': 'Golden Pom', 'dachs|pom': 'Pomdox', 'husky|pom': 'Pomsky',
+  'chihuahua|pom': 'Pomchi', 'pug|pom': 'Pugeranian', 'greyhound|pom': 'Pomhound', 'beagle|pom': 'Pomagle', 'poodle|pom': 'Pomapoo',
+  'collie|pom': 'Border Pom', 'samoyed|pom': 'Sammy Pom', 'frenchie|pom': 'French Pom',
+  'akita|spitz': 'Spitzkita', 'akita|pom': 'Pomkita', 'spitz|pom': 'Pomspitz'
+};
+ok(Object.keys(want211).length === 42 && new Set(Object.values(want211)).size === 42, '42 new v2.11 mix names listed');
+for (const k of Object.keys(want211)) { const [a, b] = k.split('|'); ok(G.MIXES[G.mixKey(a, b)].name === want211[k], `${k} = ${want211[k]} (got ${G.MIXES[G.mixKey(a, b)].name})`); }
+['akita', 'spitz', 'pom'].forEach((k) => ok(G.MIXES[G.mixKey('mutt', k)].name === 'Mutt mix', `mutt x ${k} is Mutt mix`));
+// v2.11 (the owner's four more): the 70 new names, each on its pair (the big breeds with the 16 older non-mutt breeds, then among themselves)
+const want211b = {
+  'shiba|afghan': 'Afghan Shiba', 'corgi|afghan': 'Afghan Corgi', 'golden|afghan': 'Golden Afghan', 'dachs|afghan': 'Afghan Doxie',
+  'husky|afghan': 'Afghusky', 'chihuahua|afghan': 'Afghan Chi', 'pug|afghan': 'Afghan Pug', 'greyhound|afghan': 'Afghan Grey',
+  'beagle|afghan': 'Afghan Beagle', 'poodle|afghan': 'Afghandoodle', 'collie|afghan': 'Afghan Collie', 'samoyed|afghan': 'Afghan Sammy',
+  'frenchie|afghan': 'French Afghan', 'akita|afghan': 'Afghan Akita', 'spitz|afghan': 'Afghan Spitz', 'pom|afghan': 'Afghan Pom',
+  'afghan|dane': 'Afghan Dane', 'afghan|mastiff': 'Afghan Mastiff', 'afghan|gsd': 'Afghan Shepherd', 'shiba|dane': 'Dane Shiba',
+  'corgi|dane': 'Dane Corgi', 'golden|dane': 'Golden Dane', 'dachs|dane': 'Dane Doxie', 'husky|dane': 'Dane Husky',
+  'chihuahua|dane': 'Dane Chi', 'pug|dane': 'Dane Pug', 'greyhound|dane': 'Dane Grey', 'beagle|dane': 'Dane Beagle',
+  'poodle|dane': 'Daneoodle', 'collie|dane': 'Border Dane', 'samoyed|dane': 'Sammy Dane', 'frenchie|dane': 'French Dane',
+  'akita|dane': 'Akita Dane', 'spitz|dane': 'Spitz Dane', 'pom|dane': 'Pom Dane', 'dane|mastiff': 'Daniff',
+  'dane|gsd': 'Shepdane', 'shiba|mastiff': 'Mastiba', 'corgi|mastiff': 'Mastigi', 'golden|mastiff': 'Golden Mastiff',
+  'dachs|mastiff': 'Mastidox', 'husky|mastiff': 'Mastusky', 'chihuahua|mastiff': 'Mastichi', 'pug|mastiff': 'Mastipug',
+  'greyhound|mastiff': 'Greymastiff', 'beagle|mastiff': 'Mastigle', 'poodle|mastiff': 'Mastipoo', 'collie|mastiff': 'Border Mastiff',
+  'samoyed|mastiff': 'Sammy Mastiff', 'frenchie|mastiff': 'Frenchiff', 'akita|mastiff': 'Akita Mastiff', 'spitz|mastiff': 'Spitz Mastiff',
+  'pom|mastiff': 'Pom Mastiff', 'mastiff|gsd': 'Mastishep', 'shiba|gsd': 'Shepiba', 'corgi|gsd': 'Shepgi',
+  'golden|gsd': 'Golden Shepherd', 'dachs|gsd': 'Shepdox', 'husky|gsd': 'Shepsky', 'chihuahua|gsd': 'Shepchi',
+  'pug|gsd': 'Pugshep', 'greyhound|gsd': 'Greyshep', 'beagle|gsd': 'Sheagle', 'poodle|gsd': 'Shepadoodle',
+  'collie|gsd': 'Border Shepherd', 'samoyed|gsd': 'Sammy Shepherd', 'frenchie|gsd': 'French Shepherd', 'akita|gsd': 'Akita Shepherd',
+  'spitz|gsd': 'Spitz Shepherd', 'pom|gsd': 'Pom Shepherd'
+};
+ok(Object.keys(want211b).length === 70 && new Set(Object.values(want211b)).size === 70, '70 new big-breed mix names listed');
+for (const k of Object.keys(want211b)) { const [a, b] = k.split('|'); ok(G.MIXES[G.mixKey(a, b)].name === want211b[k], `${k} = ${want211b[k]} (got ${G.MIXES[G.mixKey(a, b)].name})`); }
+['afghan', 'dane', 'mastiff', 'gsd'].forEach((k) => ok(G.MIXES[G.mixKey('mutt', k)].name === 'Mutt mix', `mutt x ${k} is Mutt mix`));
 // same breed -> null (purebred); unknown key counts as mutt
 G.BREEDS.forEach((k) => ok(G.mixOf(k, k, seeded(1)) === null, `same breed ${k} -> null`));
 ok(G.mixOf('wolfy', 'corgi', seeded(2)).body === 'mutt', 'unknown key -> mutt');

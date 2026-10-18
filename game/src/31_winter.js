@@ -23,7 +23,7 @@ const WN_OUTS = ['Very Ugly Sweater', 'Knit Winter Sweater', 'Reindeer Antlers',
 // the categories, the first that fits (V28.md section 7)
 const WN_CATS = [['Ugliest Sweater in Town', 'Gerald had to sit down.'], ['Loudest Bell', "Gerald's ears are still ringing."], ['Cosiest Contestant', 'Gerald asked where to get one.'], ['Most Confident Walk', 'Gerald took notes.'], ['Best Natural Look', 'No sweater, all dog. Bold.']];
 // the snowdog's ears, by breed key (prick or flop), the scarf is the dog's coat colour
-const WN_EARS = { shiba: 'prick', corgi: 'prick', husky: 'prick', chihuahua: 'prick', frenchie: 'prick', samoyed: 'prick', collie: 'prick', golden: 'flop', dachs: 'flop', mutt: 'flop', pug: 'flop', greyhound: 'flop', beagle: 'flop', poodle: 'flop' };
+const WN_EARS = { shiba: 'prick', corgi: 'prick', husky: 'prick', chihuahua: 'prick', frenchie: 'prick', samoyed: 'prick', collie: 'prick', golden: 'flop', dachs: 'flop', mutt: 'flop', pug: 'flop', greyhound: 'flop', beagle: 'flop', poodle: 'flop', akita: 'prick', spitz: 'prick', pom: 'prick', afghan: 'flop', dane: 'flop', mastiff: 'flop', gsd: 'prick' };
 const WN_LETTERS = {
   snow: { kind: 'news', from: 'Pip', title: 'Snow from the hills', text: 'It hardly ever snows down here, so I bring a cart of snow from the hills every morning. Two drifts by your fence and a heap for a snowdog. Dive in.' },
   contest: { kind: 'news', from: 'Gerald the duck', title: 'The Ugly Sweater Contest', text: 'The Ugly Sweater Contest is on in the Square until 25 December. I am the judge. I am a duck, so I am very fair.' },
@@ -230,8 +230,8 @@ function wnContestWalk(dogs) {
   ['#dogPos', '#pack', '#visitorG', '#placeBtns'].map((s) => $(s, view)).filter(Boolean).forEach((e) => { e.style.visibility = 'hidden'; });
   fsSquareDraw(); // the stall and the banner step aside while the line walks (fsActive)
   const sc = 0.56, w = 264 * sc, hgt = 220 * sc, gap = 104, feetY = 505, line = [D()].concat(dogs);
-  const [c0, c1] = fsCrop(), ph = isPhone(), lead = ph ? c0 - w / 2 : 200, dist = ph ? (c1 + w / 2 + (line.length - 1) * gap) - lead : 700;
-  const parts = line.map((d, i) => { const x = lead - i * gap - w / 2, y = feetY - hgt * (205 / 220); return `<g class="fs-pd" data-i="${i}">${place(dogSVG(d, { pose: 'walk', outfit: i ? d.outfit : outfitOf(d), facing: 'right' }), f1(x), f1(y), f1(w), f1(hgt))}</g>`; }).join('');
+  const wz = w * Math.max(...line.map((d) => sizeK(d))), [c0, c1] = fsCrop(), ph = isPhone(), lead = ph ? c0 - wz / 2 : 200, dist = ph ? (c1 + wz / 2 + (line.length - 1) * gap) - lead : 700; // v2.11.1: the widest dog in the line (wz) starts and ends past the crop edge
+  const parts = line.map((d, i) => { const z = sizeK(d), x = lead - i * gap - w * z / 2, y = feetY - hgt * z * (205 / 220); return `<g class="fs-pd" data-i="${i}">${place(dogSVG(d, { pose: 'walk', outfit: i ? d.outfit : outfitOf(d), facing: 'right' }), f1(x), f1(y), f1(w * z), f1(hgt * z))}</g>`; }).join(''); // v2.11.1: each dog at its size class, feet on the line
   fx.insertAdjacentHTML('beforebegin', `<g id="wnWalkG" pointer-events="none"><g class="fs-line" style="transform:translateX(0px)">${parts}</g><g class="wn-flakes"></g></g>`);
   const lg = $('#wnWalkG .fs-line'), fl = $('#wnWalkG .wn-flakes');
   for (let k = 0; k < 12; k++) { const el = document.createElementNS('http://www.w3.org/2000/svg', 'g'); el.setAttribute('class', 'fs-drop wn-flake'); el.style.animationDelay = (k * 0.5).toFixed(2) + 's'; el.style.setProperty('--sway', (k % 2 ? 36 : -36) + 'px'); el.innerHTML = wnFlake(120 + ((k * 89) % 800), 150 + (k % 3) * 20, 9 + (k % 3) * 2, k * 17); fl.appendChild(el); }

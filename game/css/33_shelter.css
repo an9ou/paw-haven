@@ -44,3 +44,34 @@ html[data-layout="phone"] .sr-meetinfo .small{font-size:15px}
 html[data-layout="phone"] .panel.sr-meet .foot .btn{min-height:44px}
 /* adopt mode on desktop (art review): the v2.6 adopt card sits on the left, over the window, so the whole Adopt me board and the toy shelf stay in view */
 html:not([data-layout="phone"]) #stage.flowdock.adoptmode #dock{left:14px;right:auto;width:min(410px,max(320px,calc(35vw - 36px)))}
+/* v2.11.1 (UI, owner feedback 17 Oct 2026): the adopt panel and the shelter sheets were cramped on phones. Body text 1.45 line-height, paragraph gaps 8 to 12 px.
+   Phone minimums stay: 44 px taps, 15 px text, no sideways scroll. Desktop keeps the v2.11 rules (PHONE.md: the laptop layout stays unless asked). */
+html[data-layout="phone"] #stage.flowdock #dock > .tray:has(.adopt-card){gap:12px;padding-top:14px}
+html[data-layout="phone"] #stage.flowdock #dock > .tray:has(.adopt-card) .tray-h h3{font-size:26px;line-height:1.22;margin:0}
+html[data-layout="phone"] .adopt-card{gap:10px 8px}
+html[data-layout="phone"] .adopt-card h3{line-height:1.15;margin:0 0 8px}
+html[data-layout="phone"] .adopt-card p{margin:10px 0;line-height:1.5;font-size:17px}
+html[data-layout="phone"] .adopt-card p.small{font-size:15px;line-height:1.5}
+html[data-layout="phone"] .adopt-card .sexpick{margin:14px 0 0;gap:10px 10px;line-height:1.5}
+html[data-layout="phone"] .adopt-card .sexbtn{min-height:44px}
+html[data-layout="phone"] #stage.flowdock .heads{margin-top:8px;row-gap:10px}
+html[data-layout="phone"] #stage.flowdock .adopt-card ~ .foot{margin-top:14px}
+/* the shelter sheet (Adopt me board): the dog-spots cards keep 2 columns like the Profile card (4 squeezed the unlock lines to one word per row) */
+html[data-layout="phone"] .shspots .spots{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 10px}
+html[data-layout="phone"] .shspots .spot{transform:none}
+html[data-layout="phone"] .shspots .spotreqs{font-size:15px;line-height:1.45}
+html[data-layout="phone"] .shspots .spotreqs li{margin:4px 0}
+html[data-layout="phone"] .shspots .spotreqs .ck{font-size:15px;width:20px}
+html[data-layout="phone"] .shspots .spotsum{line-height:1.5;margin:0 0 10px}
+html[data-layout="phone"] .sr-lead{line-height:1.2;margin:0 0 8px}
+html[data-layout="phone"] .shh{margin:20px 0 4px;line-height:1.25}
+html[data-layout="phone"] .shh .small{display:block;line-height:1.4;margin-top:2px}
+html[data-layout="phone"] .shcard{gap:8px}
+html[data-layout="phone"] .shcard .desc{line-height:1.4}
+html[data-layout="phone"] .shcard .sr-cardbtns{margin-top:4px}
+html[data-layout="phone"] .shcard .sr-cardbtns .btn,html[data-layout="phone"] .shcard [data-shsex]{min-height:44px}
+html[data-layout="phone"] .sr-meetbox{gap:12px}
+html[data-layout="phone"] .sr-meetinfo p{line-height:1.5;margin:10px 0}
+html[data-layout="phone"] .sr-meetinfo .sr-meetsub{margin-top:4px}
+html[data-layout="phone"] .sr-meettrait{line-height:1.3!important}
+html[data-layout="phone"] .panel.sr-meet .foot{margin-top:6px}

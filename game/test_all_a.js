@@ -41,8 +41,8 @@ require('./test_lib').run('all_a', async (t) => {
   for (let i = 0; i < 25; i++) await p.keyboard.press(' ');
   ok(await t.until(() => window.__paw.S.stats.clean >= 99 && window.__paw.mode === 'yard', null, 12000), 'bath done: clean 100'); await t.calm();
   await p.click('[data-act=play]'); await t.waitPop(true);
-  if (await p.locator('[data-play="toy:Tennis Ball"]').count()) { await p.click('[data-play="toy:Tennis Ball"]'); ok(await t.untilMode('toy'), 'PawToys opens'); await t.SH('04_toy'); await ev(() => window.__paw.go('yard')); await t.untilMode('yard'); }
-  else ok(false, 'Tennis Ball toy available');
+  ok(await p.locator('[data-play="ball:Tennis Ball"]').count() === 1, 'Tennis Ball: a Play ball card (v2.10: free ball play)');
+  await ev(() => window.__paw.go('toy', 'Tennis Ball')); ok(await t.untilMode('toy'), 'PawToys opens'); await t.SH('04_toy'); await ev(() => window.__paw.go('yard')); await t.untilMode('yard');
   await p.click('#gearBtn'); await p.waitForSelector('#vol-music'); ok(await p.locator('#vol-music').count() === 1 && await p.locator('#setMute').count() === 1, 'settings: volume sliders + mute'); await t.closeX();
 
   sec('map, places, beach dig');

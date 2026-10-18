@@ -42,14 +42,17 @@ const FOOD = [
   { n: 'Snowflake Oat Cookies', fest: 'snow', price: 9, hunger: 10, happy: 10, bond: 1, snack: true, v28: true, tip: 'Rolled oats, egg and pumpkin, baked plain. Festive cookies often hide macadamia nuts, which make dogs wobbly and ill, so these have none.', note: '+10 Hunger, +10 Happiness, a little Bond. Oat cookies cut like snowflakes.' },
   { n: 'Snow Day Stew', fest: 'snow', price: 14, hunger: 30, happy: 10, v28: true, tip: 'Lean chicken with no skin and no bones. Gravy and fatty leftovers upset a dog\'s tummy, so they stay on the people plates.', note: '+30 Hunger, +10 Happiness. Chicken, carrot and green beans, cooked soft.' },
   { n: 'Pup Kinton', fest: 'newyear', price: 10, hunger: 15, happy: 15, snack: true, v28: true, tip: 'Plain mashed sweet potato, no sugar and no chestnut syrup. Mochi never goes in a dog\'s bowl, it is far too sticky to swallow safely.', note: '+15 Hunger, +15 Happiness. Golden sweet potato mash, for a lucky year.' },
+  // v2.11 Tokyo Trip (V211.md section 5.3): the Nakamise treats in Asakusa, served there like the café (tokyo + fest 'tokyo': never in a town shop or stall)
+  { n: 'Sweet Potato Strip', fest: 'tokyo', tokyo: true, price: 15, hunger: 10, happy: 10, snack: true, v211: true, tip: 'Steamed and dried plain sweet potato, nothing added. Cut it into small strips so it is not a choking piece.', note: '+10 Hunger, +10 Happiness. A chewy Asakusa favourite, made for dogs.' },
+  { n: 'Dog Senbei', fest: 'tokyo', tokyo: true, price: 12, hunger: 5, happy: 10, snack: true, v211: true, tip: 'A plain rice cracker made for dogs, with no salt and no soy sauce. The ones people eat are far too salty.', note: '+5 Hunger, +10 Happiness. A crunchy round rice cracker.' },
   { n: 'Frozen Pupsicle', price: 22, hunger: 15, happy: 20, energy: 10, cool: 60, snack: true, v24: true, tip: 'Frozen plain yoghurt and fruit, no xylitol ever. Let it soften a little for small dogs.', note: '+15 Hunger, +20 Happiness, +10 Energy. Cools a hot dog for 1 game hour.' }
 ];
 const TOYS = [
-  { n: 'Tennis Ball', price: 40, bond: 1, note: 'Fetch: 2 coins per catch.' },
+  { n: 'Tennis Ball', price: 40, bond: 1, note: 'Ball play: 2 coins per return.' },
   { n: 'Squeaky Duck', price: 50, bond: 1, note: 'Squeeze: +10 Happiness. The neighbours love it (no).' },
   { n: 'Rope Tug', price: 60, bond: 1, note: 'Tug-of-war: +15 Happiness, -10 Energy, +5 Bond.' },
   { n: 'Plush Bone', price: 80, bond: 1, note: 'Nap buddy: +10% nap Energy. Works automatically.' },
-  { n: 'Frisbee', price: 120, bond: 3, note: 'Long fetch: 3 coins per catch, +20 Happiness.' },
+  { n: 'Frisbee', price: 120, bond: 3, note: 'Long floaty throws: 3 coins per return, +20 Happiness.' },
   { n: 'Puzzle Feeder', price: 150, bond: 4, note: 'Every meal: +10 Happiness and double Bond. Automatic.' },
   /* v2.4 Shop Day: five shop toys, each with its own yard play game in mods/toys.js (the Squeaky Hedgehog is a walk treasure) */
   { n: 'Snuffle Mat', price: 70, bond: 2, v24: true, note: 'Snuffle: hide kibble in the mat, the nose finds it. +Happiness, a little Bond.' },
@@ -61,7 +64,9 @@ const TOYS = [
   { n: 'Squeaky Pumpkin', fest: 'halloween', ed: 2026, v26: true, price: 45, bond: 1, note: 'Squeak: a soft pumpkin that squeaks when pounced. +Happiness.' },
   { n: 'Plush Ghost', fest: 'halloween', ed: 2026, v26: true, price: 55, bond: 1, note: 'Shake: a floppy ghost to shake and carry about. +Happiness, a little Bond.' },
   { n: 'Bat-Wing Flyer', fest: 'halloween', ed: 2026, v26: true, price: 65, bond: 2, note: 'Leap: a soft flyer with felt bat wings to jump for. +Happiness, -Energy.' },
-  { n: 'Trick-or-Treat Bucket', fest: 'halloween', ed: 2026, v26: true, price: 80, bond: 2, note: 'Sniff: nose out the treats hidden under the lids. +Happiness, a little Bond.' }
+  { n: 'Trick-or-Treat Bucket', fest: 'halloween', ed: 2026, v26: true, price: 80, bond: 2, note: 'Sniff: nose out the treats hidden under the lids. +Happiness, a little Bond.' },
+  /* v2.11 Tokyo Trip: the Tokyo Tower souvenir stand only (tokyo + fest 'tokyo'), with its own play game in mods/toys.js */
+  { n: 'Shinkansen Plush', fest: 'tokyo', tokyo: true, price: 80, bond: 1, v211: true, note: 'Zoom: a soft bullet train to roll along the ground and chase. +Happiness.' },
 ];
 const CLOTHES = [
   { n: 'Red Bandana', slot: 'neck', price: 50, bond: 1, perk: '+1 dog friend on every walk.' },
@@ -99,12 +104,20 @@ const CLOTHES = [
   { n: 'Vampire Cape', slot: 'body', fest: 'halloween', ed: 2026, v26: true, price: 75, bond: 1, perk: 'Swish: a high collar and a red lining. Very dramatic, not at all bitey.' },
   { n: 'Candy Corn Bandana', slot: 'neck', fest: 'halloween', ed: 2026, v26: true, price: 50, bond: 1, perk: 'Sweet look: candy-corn stripes and no actual sugar.' },
   { n: 'Bat Wings', slot: 'body', fest: 'halloween', ed: 2026, v26: true, price: 70, bond: 1, perk: 'Flap: felt wings that bounce when the tail wags.' },
+  // v2.11.1 Halloween 2026 costumes (V2111.md 3): body slot, each with its own head piece, so the hat comes off while one is worn
+  { n: 'Pumpkin Patch Suit', slot: 'body', fest: 'halloween', ed: 2026, v26: true, price: 70, bond: 1, perk: 'Round and proud: crayon pumpkin ribs, a leafy collar and a curly stem on top.' },
+  { n: 'Trick-or-Treat Ghost', slot: 'body', fest: 'halloween', ed: 2026, v26: true, price: 70, bond: 1, perk: 'Boo: a soft sheet with two eye holes and a little pumpkin bucket to carry.' },
+  { n: 'Little Bat Costume', slot: 'body', fest: 'halloween', ed: 2026, v26: true, price: 75, bond: 1, perk: 'Flutter: a purple hood with pointy ears, small wings and an orange frill.' },
   // v2.8 Winter & New Year (V28.md section 1): the Winter Stall sells the first three (fest), the Rosette is the contest reward, the Hood comes in Gerald's New Year card (ed: 2027, never sold)
   { n: 'Very Ugly Sweater', slot: 'body', fest: 'snow', price: 65, bond: 1, v28: true, perk: 'Warm: no shivering in the snow. Knitted by someone who has never seen a dog, or a snowflake.' },
   { n: 'Reindeer Antlers', slot: 'head', fest: 'snow', price: 55, bond: 1, v28: true, perk: 'Jingle: a little bell on each antler. Not warm. Very festive.' },
   { n: 'Snowflake Snood', slot: 'neck', fest: 'snow', price: 50, bond: 1, v28: true, perk: 'Warm: no shivering in the snow. A knitted tube, so no ends to trip on.' },
   { n: 'Ugly Sweater Rosette', slot: 'neck', fest: 'lights', price: 0, bond: 1, v28: true, reward: true, perk: 'Pride: won at the Ugly Sweater Contest. It is uglier than the sweater.' },
   { n: 'Year of the Sheep Hood', slot: 'head', fest: 'newyear', ed: 2027, price: 0, bond: 1, v28: true, reward: true, perk: 'Warm: no shivering in the snow. Woolly sheep ears for the Year of the Sheep. The Border Collie has been told.' },
+  // v2.11 Tokyo Trip (V211.md section 5.3): souvenir bandanas, sold only at the stands in Tokyo (tokyo + fest 'tokyo')
+  { n: 'Shibuya Bandana', slot: 'neck', fest: 'tokyo', tokyo: true, price: 60, bond: 1, v211: true, perk: 'Scramble: green, with little crossing stripes. Everyone stops to say hello.' },
+  { n: 'Asakusa Bandana', slot: 'neck', fest: 'tokyo', tokyo: true, price: 60, bond: 1, v211: true, perk: 'Lucky red: a tiny lantern in the corner, like the big one at the temple gate.' },
+  { n: 'Tokyo Tower Bandana', slot: 'neck', fest: 'tokyo', tokyo: true, price: 60, bond: 1, v211: true, perk: 'Tall look: orange and white stripes, like the tower on a sunny day.' },
   { n: 'Astronaut Helmet', slot: 'head', price: 0, bond: 1, v24: true, reward: true, perk: 'Space-proof: no soggy shake after rain, no shivering in the snow.' }
 ];
 const HOUSES = [
@@ -150,12 +163,19 @@ const SIG = {
   poodle: { n: 'The Prance', fx: 'tk-dance', pose: 'dance', say: 'Note the footwork. Note the pom-poms.' },
   collie: { n: 'The Eye', fx: 'tk-perk', pose: 'crouch', say: 'I am herding you with my eyes. Please sit.' },
   samoyed: { n: 'The Sammy Smile', fx: 'tk-bow', pose: 'happy', snd: 'talk', say: 'Woo-woo! That was the smile. Now with sound.' },
-  frenchie: { n: 'The Sploot', fx: 'tk-lie', pose: 'down', always: true, snd: 'huff', say: 'Back legs out. Belly on the cool floor. Perfect.' }
+  frenchie: { n: 'The Sploot', fx: 'tk-lie', pose: 'down', always: true, snd: 'huff', say: 'Back legs out. Belly on the cool floor. Perfect.' },
+  akita: { n: 'The Quiet Vigil', fx: 'tk-perk', pose: 'sit', say: 'I will wait here. I am very good at waiting.' },
+  spitz: { n: 'The Show-off', fx: 'tk-dance', pose: 'happy', say: 'Look at the fluff. Now look at the fluff from the side.' },
+  pom: { n: 'The Tiny Spin', fx: 'tk-spin', pose: 'happy', always: true, snd: 'alert', say: 'Spin, yip, spin. That is my whole act and it is perfect.' },
+  afghan: { n: 'The Hair Flip', fx: 'tk-dance', pose: 'happy', say: 'Note the flow. Note the shine. Do not note the knots.' },
+  dane: { n: 'The Tall Bow', fx: 'tk-bow', pose: 'happy', say: 'A bow. From very high up. Sorry about the ceiling.' },
+  mastiff: { n: 'The Great Flop', fx: 'tk-lie', pose: 'down', say: 'Down I go. Slowly. All of me. Please wait.' },
+  gsd: { n: 'The Salute', fx: 'tk-bow', pose: 'sit', say: 'Ready. Alert. Waiting for orders. Any orders. Even snacks.' }
 };
 const SIG_FB = { n: 'The Grand Finale', fx: 'tk-bow', pose: 'happy', say: 'Ta-da! (Applause, please.)' };
 const sigOf = (k) => SIG[k] || SIG_FB;
 /* v1.7: every breed key in the game, in PawArt order (unknown keys fall back to generic content) */
-const BREED_KEYS = ['shiba', 'corgi', 'golden', 'dachs', 'husky', 'mutt', 'chihuahua', 'pug', 'greyhound', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie'];
+const BREED_KEYS = ['shiba', 'corgi', 'golden', 'dachs', 'husky', 'mutt', 'chihuahua', 'pug', 'greyhound', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie', 'akita', 'spitz', 'pom', 'afghan', 'dane', 'mastiff', 'gsd'];
 const ROUTES = {
   park: { n: 'Sunny Park', bond: 1, secs: 60, energy: 15, happy: 15, clean: 5, coins: [20, 30], bp: 8, pool: ['coin', 'leaf', 'flower', 'bone'] },
   river: { n: 'Riverside Trail', bond: 2, secs: 75, energy: 25, happy: 20, clean: 10, coins: [35, 50], bp: 11, pool: ['coin', 'leaf', 'shell'] },
@@ -177,9 +197,9 @@ const TREASURES = [
   TR('Wild Berries', 'food', null, 'Common', ['park', 'woods'], 'Trail Snack', 'Feed: +15 Hunger, +10 Energy. Use on a walk (Bag): +15 seconds of walk time.'),
   TR("Duck's Picnic Sandwich", 'food', null, 'Uncommon', ['river', 'park'], 'Stolen Lunch', 'Feed: +40 Hunger, +15 Happiness. The duck wants it back.'),
   TR('Golden Bone', 'food', null, 'Rare', 'any', 'Pure Gold', 'Feed: +60 Bond points and a Glowing mood for 1 game day (Happiness stays at 80 or more).'),
-  TR('Driftwood Stick', 'toy', null, 'Common', ['beach', 'river'], 'Splinter Bonus', 'Fetch with it: +1 coin per catch.'),
+  TR('Driftwood Stick', 'toy', null, 'Common', ['beach', 'river'], 'Splinter Bonus', 'Play ball with it: +1 coin per return.'),
   TR('Rubber Chicken', 'toy', null, 'Uncommon', ['park'], 'Honk of Wisdom', 'Tricks are learned in 2 taps instead of 3. It honks. Automatic.'),
-  TR('Glow Ball', 'toy', null, 'Rare', ['woods', 'beach'], 'Easy Glow', 'Fetch with it: the catch window is 50% wider.'),
+  TR('Glow Ball', 'toy', null, 'Rare', ['woods', 'beach'], 'Easy Glow', 'Play ball with it: it glows after dark, so it never gets lost.'),
   TR('Lucky Penny', 'charm', 'charm', 'Common', ['park', 'river'], 'Pocket Luck', '+10% coins on walks while equipped.'),
   TR('Sparkle Stone', 'charm', 'charm', 'Rare', ['river', 'beach'], 'Strange Hum', 'Petting gives +5 extra Happiness while equipped. It hums. Something about it feels... important later.'),
   TR('Old Map Piece (Park)', 'quest', null, 'Uncommon', ['park'], 'Map Piece', '1 of 4 pieces of the Doodle Doggo Treasure Map.', { piece: 'park' }),
@@ -229,7 +249,14 @@ const PLACE_LINES = {
   poodle: { house: 'I have chosen the good cushion. Obviously.', park: 'The other dogs run in circles. I run in shapes.', river: 'I will admire the water. I will not enter the water. The hair.', woods: 'Twigs in my curls. This is a crisis.', beach: 'Sand gets into curls and never leaves. I am being brave.', market: 'I would like to see the Boutique. For research.' },
   collie: { house: 'Everyone is in the kitchen. I have checked. Twice.', park: 'So many dogs. None of them in a line. I can fix that.', river: 'The ducks are in a group. Good ducks.', woods: 'Every tree is accounted for. I counted.', beach: 'The waves keep leaving. I keep bringing them back.', market: 'I will keep the shoppers together. Nobody wanders off.' },
   samoyed: { house: 'The sofa is now fluffier. That is me. I am on it.', park: 'Everyone here gets a smile. Even the pigeon.', river: 'Cold water is my favourite water. Woo-woo!', woods: 'The shade is nice. The leaves stick to me. I am a leaf dog now.', beach: 'Too warm for me. I will smile from the shade.', market: 'Hello, shop. Hello, person. Hello, other person. Woo!' },
-  frenchie: { house: 'Sofa. Cushion. Your foot. All good seats.', park: 'I walked to the bench. Now I sit on the bench.', river: 'I do not swim. I sink. I will watch from here.', woods: 'Nice and shady. My kind of walk.', beach: 'Hot sand, flat face. Shade, please. *snort*', market: 'I will sit on your foot while you shop.' }
+  frenchie: { house: 'Sofa. Cushion. Your foot. All good seats.', park: 'I walked to the bench. Now I sit on the bench.', river: 'I do not swim. I sink. I will watch from here.', woods: 'Nice and shady. My kind of walk.', beach: 'Hot sand, flat face. Shade, please. *snort*', market: 'I will sit on your foot while you shop.' },
+  akita: { house: 'I will lie by the door and keep an eye on things.', park: 'Hello, park. I will meet the other dogs slowly. One at a time.', river: 'Calm water. I like calm water. I will sit and watch it.', woods: 'Quiet trees. I could sit here all day.', beach: 'Wide sand and a long sea. I will sit and look at it with you.', market: 'I will wait outside the shop. I am very good at waiting.' },
+  spitz: { house: 'The sofa is white. I am white. We match.', park: 'Look at me! Look at my fluff! Hello, everyone!', river: 'Splashy! I will go close. Not too close. The fluff.', woods: 'A sunny patch! I will stand in it and sparkle.', beach: 'Sand sticks to fluff. I am a beige dog now. Hello!', market: 'Hello, shop! Do you like my coat? Everyone does.' },
+  pom: { house: 'Tiny dog, huge sofa. I am the king of it.', park: 'Every dog here is bigger than me. I will still lead.', river: 'The water is big and I am small. Yip. I will watch from your arms.', woods: 'I am the size of a leaf. A very bossy leaf.', beach: 'The sand is deep. I am a very fluffy ship.', market: 'Carry me and I will tell the shops what to do.' },
+  afghan: { house: 'I have chosen the best cushion. I am draped on it. Please do not disturb the drape.', park: 'The wind in my hair. Everyone please notice the wind in my hair.', river: 'I admire the water. My ears may touch it. Nothing else.', woods: 'Twigs in my coat. A tragedy. A very elegant tragedy.', beach: 'Sand in the silk. I will walk like it is a runway.', market: 'I will pose by the door. Admiration is free.' },
+  dane: { house: 'The sofa fits half of me. The other half is on the floor. It is fine.', park: 'Hello, small dogs. Hello. Down there. I will be careful.', river: 'The water only reaches my knees. I feel tall. I am tall.', woods: 'Low branches again. I am sorry, trees.', beach: 'So much sand. I will lie in a long line of it.', market: 'I can see over every stall. Everything looks tasty from up here.' },
+  mastiff: { house: 'Sofa. Mine. It now has a mastiff on it. The dent stays.', park: 'I will sit here and be a friendly hill. Visitors welcome.', river: 'Drool, water, drool. Mostly drool.', woods: 'Shade and a log. The log is a pillow now.', beach: 'Warm sand and a big sigh. That is the whole plan.', market: 'I will wait here. Please step over my feet. They are big.' },
+  gsd: { house: 'I have checked every room. All is in order. Reporting.', park: 'So many dogs and so many jobs. I will start with the ball.', river: 'I will patrol the bank. Nothing is wrong. Still patrolling.', woods: 'Trails! Scents! Tasks! Everything is a task!', beach: 'The sand is flat and the ball is round. Throw it.', market: 'I will stand by you. Anyone suspicious will be sniffed.' }
 };
 const DUCK_LINES = ['A duck looks at you. You look at the duck. Nobody blinks.', 'The ducks are holding a meeting. You were not invited.', 'One duck is wearing a tiny hat. Probably.'];
 const FAV = {
@@ -246,9 +273,16 @@ const FAV = {
   poodle: { food: ['Salmon Pâté'], toy: 'Puzzle Feeder', act: 'tricks' },
   collie: { food: ['Chicken & Rice Bowl'], toy: 'Frisbee', act: 'fetch' },
   samoyed: { food: ['Chicken & Rice Bowl'], toy: 'Rope Tug', act: 'walks' },
-  frenchie: { food: ['Pupcake'], toy: 'Plush Bone', act: 'petting' }
+  frenchie: { food: ['Pupcake'], toy: 'Plush Bone', act: 'petting' },
+  akita: { food: ['Chicken & Rice Bowl'], toy: 'Tennis Ball', act: 'walks' },
+  spitz: { food: ['Bone-shaped Biscuit'], toy: 'Frisbee', act: 'tricks' },
+  pom: { food: ['Salmon Pâté'], toy: 'Squeaky Duck', act: 'petting' },
+  afghan: { food: ['Salmon Pâté'], toy: 'Frisbee', act: 'walks' },
+  dane: { food: ['Chicken & Rice Bowl'], toy: 'Plush Bone', act: 'petting' },
+  mastiff: { food: ['Pupcake'], toy: 'Rope Tug', act: 'feeding' },
+  gsd: { food: ['Chicken & Rice Bowl'], toy: 'Puzzle Feeder', act: 'tricks' }
 };
-const BARK = { shiba: 1.1, corgi: 1.35, golden: 0.9, dachs: 1.2, husky: 0.8, mutt: 1.0, chihuahua: 1.7, pug: 0.95, greyhound: 0.75, beagle: 1.0, poodle: 1.25, collie: 1.15, samoyed: 0.95, frenchie: 0.9 };
+const BARK = { shiba: 1.1, corgi: 1.35, golden: 0.9, dachs: 1.2, husky: 0.8, mutt: 1.0, chihuahua: 1.7, pug: 0.95, greyhound: 0.75, beagle: 1.0, poodle: 1.25, collie: 1.15, samoyed: 0.95, frenchie: 0.9, akita: 0.65, spitz: 1.3, pom: 1.6, afghan: 0.85, dane: 0.5, mastiff: 0.45, gsd: 0.95 };
 const FALLBACK_DOGS = [
   { key: 'shiba', name: 'Mochi', breed: 'Shiba Inu', personality: 'Proud, independent, dramatic', joke: 'heh.' },
   { key: 'corgi', name: 'Biscuit', breed: 'Corgi', personality: 'Cheerful, greedy for food', joke: 'Is that a snack? Is everything a snack?' },
@@ -263,7 +297,14 @@ const FALLBACK_DOGS = [
   { key: 'poodle', name: 'Pretzel', breed: 'Poodle', personality: 'Thinks it is the smartest one in the room. It is.', joke: 'Haircut optional. Dignity not.' },
   { key: 'collie', name: 'Scout', breed: 'Border Collie', personality: 'Has counted the sheep. There are no sheep. Has counted you.', joke: 'Will herd the puppies, the ducks and the furniture.' },
   { key: 'samoyed', name: 'Cloud', breed: 'Samoyed', personality: 'Smiles so the snow does not stick. Also just smiles.', joke: 'Sheds a second dog every spring.' },
-  { key: 'frenchie', name: 'Brioche', breed: 'French Bulldog', personality: 'Snores, snorts, sits on your foot. All three at once.', joke: 'Breathes like a tiny engine. Shade and water, please.' }
+  { key: 'frenchie', name: 'Brioche', breed: 'French Bulldog', personality: 'Snores, snorts, sits on your foot. All three at once.', joke: 'Breathes like a tiny engine. Shade and water, please.' },
+  { key: 'akita', name: 'Kuma', breed: 'Akita', personality: 'Calm, loyal, quietly proud. Waits by the gate.', joke: 'I will wait for you. I am very good at waiting.' },
+  { key: 'spitz', name: 'Daifuku', breed: 'Japanese Spitz', personality: 'A white fluffball, cheerful, a bit of a show-off.', joke: 'Yes, I am this white on purpose. Look at me.' },
+  { key: 'pom', name: 'Mikan', breed: 'Pomeranian', personality: 'A tiny fluffy loudspeaker. Spins when happy.', joke: 'Yip! That was my indoor voice.' },
+  { key: 'afghan', name: 'Saffron', breed: 'Afghan Hound', personality: 'Elegant and aloof. Not one hair out of place.', joke: 'I do not fetch. I glide.' },
+  { key: 'dane', name: 'Waffle', breed: 'Great Dane', personality: 'A gentle giant who follows you from room to room.', joke: 'I am a lap dog. Your lap is just too small.' },
+  { key: 'mastiff', name: 'Crumpet', breed: 'English Mastiff', personality: 'Huge, slow and sweet. Naps in the biggest patch of shade.', joke: 'A little drool is how I say I love you.' },
+  { key: 'gsd', name: 'Strudel', breed: 'German Shepherd', personality: 'Clever and alert. Loves a job, any job.', joke: 'Ears up. On duty. Was that a squirrel?' }
 ];
 const GENERIC_DOG = (key) => ({ key, name: 'Buddy', breed: 'Mystery Pup', personality: 'A little bit of everything', joke: 'Hi! I am a dog. Probably.' });
 const JOKES = {
@@ -280,7 +321,14 @@ const JOKES = {
   poodle: ['Haircut optional. Dignity not.', 'I learned that trick yesterday. I am bored of it today.', 'These are not curls. They are a hairstyle.', 'I have read the instructions. You have not.', 'I could open the treat jar. I am waiting for you to be polite.'],
   collie: ['Will herd the puppies, the ducks and the furniture.', 'You moved. I noticed. I notice everything.', 'Throw it again. And again. And again. Please.', 'The chairs are in a line now. You are welcome.', 'I need a job. Any job. Is the job you?'],
   samoyed: ['Sheds a second dog every spring.', 'Woo-woo! That means hello. Also everything.', 'I am not white. I am snow-coloured.', 'You look sad. I will smile at you until you stop.', 'Brush me? Brush me. Now there are two of me.'],
-  frenchie: ['Breathes like a tiny engine. Shade and water, please.', 'I am sitting on your foot. It is my foot now.', 'My ears hear everything. I ignore most of it.', '*snort* That was a compliment.', 'I am not lazy. I am low to the ground.']
+  frenchie: ['Breathes like a tiny engine. Shade and water, please.', 'I am sitting on your foot. It is my foot now.', 'My ears hear everything. I ignore most of it.', '*snort* That was a compliment.', 'I am not lazy. I am low to the ground.'],
+  akita: ['I do not bark much. I just look at you until you understand.', 'I will wait here for you. I am very good at it.', 'A true friend sits by the door. That is me. The door friend.', 'I like my space. You may sit near it.', 'I am calm. I am proud. I would like a snack.', 'My tail curls over my back because it is happy up there.'],
+  spitz: ['I am white. Pure white. Please do not look at the mud puddle.', 'A cloud on four legs. Hello.', 'Fluff check: fluffed. Smile check: smiling. Ready.', 'That was my bright bark. It means hello.', 'Someone said I look like a snowball. They said it kindly.', 'Brush me and I will shine. A bit.'],
+  pom: ['I am very small and very sure.', 'Spin, yip, spin. That is the whole plan.', 'My fluff is bigger than my dog.', 'I may be tiny. My opinions are not.', 'Pick me up! No, put me down! I run this place.', 'Yip! That was my battle cry.'],
+  afghan: ['Wind in my hair. Do not touch the hair.', 'I am not stuck up. I just sit at a better height.', 'Ten minutes of running. Two hours of brushing. Fair trade.', 'I have a very expressive face. It says not now.', 'My ears are silk. They also hold your attention.', 'Yes, I am an artwork. Please look from the left.'],
+  dane: ['I am a very big dog who thinks he is a lap dog.', 'I sat on the sofa. The sofa is now a footstool.', 'My tail is a tidy weapon. Sorry about the coffee table.', 'Everyone looks up to me. That is just the height.', 'I leaned on you. That is a hug. A big one.', 'I was a puppy last week. Look at me now. Ow, the ceiling.'],
+  mastiff: ['Big dog, bigger sigh.', 'I only run when there is food. The food is usually here.', 'I am not drooling. I am showing my love.', 'My wrinkles tell a story. The story is about naps.', 'I sat on the cat. I did not know there was a cat.', 'All that love in one big head. And big feet.'],
+  gsd: ['I have a job. The job is you.', 'Reporting for duty. Waiting for orders. Still waiting.', 'I know a trick. Also fourteen more. Ask.', 'My ears hear the fridge. My ears hear everything.', 'I will guard the garden. And the sofa. And the snacks.', 'I am not bossy. I am organised.']
 };
 const NPC_JOKES = ['Nice leash. Is that leash new?', 'I am Gary. I have never been happy.', 'Have you seen my ball? It is round. Ball-coloured.', 'WOOF. Sorry. Wrong dog.', 'I ate a bee once. Zero stars.', 'Your human walks funny. Mine too.', 'Sniff my bum? Rude not to.', 'I live here. On this exact spot.'];
 const SMELLS = ['Smells like a sandwich from 2014.', 'Smells like ANOTHER DOG. Scandalous.', 'Smells like adventure. No wait, a sock.', 'Smells like rain and old crisps.', 'Smells like... a squirrel\'s diary.', 'Sniff sniff. Interesting. Very interesting.'];
@@ -381,6 +429,7 @@ function hasRealScene(name) {
 }
 function sceneArt(name, e, extra) {
   const o = Object.assign({}, e || {}, extra || {});
+  const tk = tkSceneArt(name, o); if (tk) return tk; // v2.11: the six Tokyo places (world D / E art, else a stand-in, 39_tokyo.js)
   if (NEW_PLACES.includes(name) && !hasRealScene(name)) return place(art('scene', SCENE_FB[name], o), 0, 0, 1000, 600) + placeSign(name);
   if (HANG.includes(name) && !hasRealScene(name)) return name === 'house' ? place(art('scene', 'yard', o), 0, 0, 1000, 600) : place(art('walkStrip', name, e), -400, 0, 1800, 600);
   return place(art('scene', name, o), 0, 0, 1000, 600);
@@ -560,6 +609,8 @@ function freshState(key, name, sex) {
   v27Fields(st); // v2.7 Home & Pack: beds in the house, who naps where, pack care ticks, the shelter playroom (V27.md section 1)
   v28Fields(st); // v2.8 Winter & New Year and Mt. Fuji Lookout (V28.md sections 1 and 12.4)
   v29Fields(st); // v2.9 All Together: photo mode (V29.md section 5)
+  v210Fields(st); // v2.10 Free to Roam: ball play (V210.md section 5)
+  v211Fields(st); // v2.11 Tokyo Trip: the trip and Dog Cards (V211.md section 5)
   return linkDogs(st);
 }
 let S = null;
@@ -592,6 +643,8 @@ function migrate(s) {
   v27Fields(s); // v2.7 Home & Pack (V27.md section 1): additive, an old save keeps its one bed where it always stood
   v28Fields(s); // v2.8 Winter & New Year, Mt. Fuji Lookout (V28.md section 1): additive
   v29Fields(s); // v2.9 All Together (V29.md section 5): additive
+  v210Fields(s); // v2.10 Free to Roam (V210.md section 5): additive
+  v211Fields(s); // v2.11 Tokyo Trip (V211.md section 5.1): additive
   return s;
 }
 /* v2.7 Home & Pack save fields (V27.md section 1). Additive only: S.v stays 1, nothing is dropped.
@@ -631,6 +684,23 @@ function v28Fields(s) {
 function v29Fields(s) {
   if (!s) return s;
   if (!v28Obj(s.ph)) s.ph = {}; if (typeof s.ph.n !== 'number' || !(s.ph.n >= 0)) s.ph.n = 0; if (s.ph.first === undefined) s.ph.first = null;
+  return s;
+}
+// v2.10 (V210.md section 5): S.bl = { day: localISO() of the coin count, coins: ball-play coins that day, n: balls brought back, all time }
+function v210Fields(s) {
+  if (!s) return s;
+  if (!v28Obj(s.bl)) s.bl = {}; if (s.bl.day === undefined) s.bl.day = null; ['coins', 'n'].forEach((k) => { if (typeof s.bl[k] !== 'number' || !(s.bl[k] >= 0)) s.bl[k] = 0; });
+  return s;
+}
+function v211Fields(s) {
+  // V211.md section 5.1. S.tk: the Tokyo trip (TRAVEL), S.dc: the Dog Cards settings and paws given (CARDS)
+  if (!s) return s;
+  if (!v28Obj(s.tk)) s.tk = {}; ['day', 'hachi', 'omi', 'snack', 'hanami', 'sunset'].forEach((k) => { if (s.tk[k] === undefined) s.tk[k] = null; });
+  if (typeof s.tk.rides !== 'number' || !(s.tk.rides >= 0)) s.tk.rides = 0;
+  ['stamps', 'seen'].forEach((k) => { if (!v28Obj(s.tk[k])) s.tk[k] = {}; }); if (typeof s.tk.frame !== 'boolean') s.tk.frame = false;
+  if (!v28Obj(s.dc)) s.dc = {}; if (typeof s.dc.on !== 'boolean') s.dc.on = false; if (s.dc.name === undefined) s.dc.name = null;
+  if (!Array.isArray(s.dc.dogs)) s.dc.dogs = []; if (!Array.isArray(s.dc.hide)) s.dc.hide = []; if (!v28Obj(s.dc.given)) s.dc.given = {};
+  if (typeof s.dc.got !== 'number' || !(s.dc.got >= 0)) s.dc.got = 0; if (s.dc.uid === undefined) s.dc.uid = null; // v2.11 CARDS review: the account that switched the card on
   return s;
 }
 function migNote() { if (S && S.gkNote) { delete S.gkNote; markDirty(); setTimeout(() => toast('Pip left a packet of seeds on your doorstep. The veggie patch is yours now!', 'gold'), 2200); }
@@ -782,7 +852,9 @@ function say(text, wx, wy, ms = 3600) {
   const p = worldToStage(svg, wx, wy); const sw = stage.clientWidth, bw = bubble.offsetWidth, bh = bubble.offsetHeight;
   const vtop = view.offsetTop;
   bubble.style.left = clamp(p.x - 40, 6, sw - bw - 6) + 'px';
-  { const w2 = bubble.offsetWidth; if (parseFloat(bubble.style.left) + w2 > sw - 6) bubble.style.left = Math.max(6, sw - 6 - w2) + 'px'; } // v2.8: it re-wraps narrower when it moves right, so it is measured again and kept on screen
+  // v2.8: it re-wraps narrower when it moves right, so it is measured again and kept on screen (v2.10: at that width, or it would grow back to the edge)
+  const onScreen = () => { const w2 = bubble.offsetWidth; if (parseFloat(bubble.style.left) + w2 > sw - 6) { bubble.style.maxWidth = w2 + 'px'; bubble.style.left = Math.max(6, sw - 6 - w2) + 'px'; } };
+  onScreen();
   bubble.style.top = Math.max(vtop + 4, p.y - bubble.offsetHeight - 16) + 'px';
   if (isPhone()) { // v2.3: a bubble never sits on the location chip (top-left of the scene)
     const st = $('#status'), sr = st && !st.hidden ? st.getBoundingClientRect() : null, sg = stage.getBoundingClientRect();
@@ -790,7 +862,7 @@ function say(text, wx, wy, ms = 3600) {
       if (bt < cb && bl < sr.right - sg.left + 6 && bl + bw > sr.left - sg.left - 6) bubble.style.top = cb + 'px'; }
     const pk = $('#phPeek'), pq = pk && !pk.hidden && pk.offsetParent ? pk.getBoundingClientRect() : null; // UI/UX H9: nor under the look-right button
     if (pq) { const bt = parseFloat(bubble.style.top), bl = parseFloat(bubble.style.left), bh = bubble.offsetHeight;
-      if (bt < pq.bottom - sg.top + 4 && bt + bh > pq.top - sg.top - 4 && bl + bw > pq.left - sg.left - 8) bubble.style.left = Math.max(6, pq.left - sg.left - bw - 8) + 'px'; }
+      if (bt < pq.bottom - sg.top + 4 && bt + bh > pq.top - sg.top - 4 && bl + bw > pq.left - sg.left - 8) { bubble.style.left = Math.max(6, pq.left - sg.left - bw - 8) + 'px'; onScreen(); } } // (it re-wraps wider further left)
     // UI/UX T5: in town places the dog's own lines go under the dog, so they never cover the shop signs above its head (townBubbleBelowDog, 03_yard.js); Mt. Fuji Lookout has no signs, its line stays over the head
     if (['yard', 'market'].includes(cur.mode) && S && !['yard', 'house', 'fujihill'].includes(S.place) && typeof dogHeadWorld === 'function') { const h = dogHeadWorld(); if (Math.abs(h.x - wx) < 40 && Math.abs(h.y - wy) < 40) townBubbleBelowDog(); }
   }
@@ -858,7 +930,7 @@ function doAct(a) {
   if (pop && popAct === a) { if (!modal.hidden) closeModal(); else closeTray(); return; }
   if (!modal.hidden) closeModal();
   if (['feed', 'play', 'care', 'wardrobe', 'journal'].includes(a)) popAct = a;
-  if (a === 'map') return cur.mode === 'map' ? go('yard') : go('map');
+  if (a === 'map') return tkMapAct(); // v2.11: in a Tokyo place the Map button opens the Japan map (39_tokyo.js)
   if (a === 'walk') return go('routes');
   if (a === 'wardrobe') return openWardrobe();
   if (a === 'journal') return openJournal();
@@ -938,7 +1010,7 @@ function go(mode, arg) {
   stage.classList.toggle('flowdock', ['walk', 'fetch', 'bath', 'adopt'].includes(mode)); stage.classList.toggle('adoptmode', mode === 'adopt');
   stage.classList.toggle('slimhud', mode === 'walk' || mode === 'routes' || mode === 'garden' || mode === 'kitchen' || mode === 'map');
   stage.classList.toggle('modhud', mode === 'garden' || mode === 'kitchen');
-  ({ garden: enterGarden, kitchen: enterKitchen, title: enterTitle, adopt: enterAdopt, yard: enterYard, market: enterMarketPlace, routes: enterRoutes, map: enterMap, shelter: enterShelter, walk: enterWalk, fetch: enterFetch, bath: enterBath, toy: enterToy })[mode](arg);
+  ({ garden: enterGarden, kitchen: enterKitchen, title: enterTitle, adopt: enterAdopt, yard: enterYard, market: enterMarketPlace, routes: enterRoutes, map: enterMap, japan: enterJapan, shelter: enterShelter, walk: enterWalk, fetch: enterFetch, bath: enterBath, toy: enterToy })[mode](arg);
   refreshActs();
   updateHUD(); updateWxOverlay(); audioPlace(); setTimeout(maybeLevelUp, 300); markDirty();
 }

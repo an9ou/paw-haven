@@ -13,14 +13,22 @@ const STARTER_GENES = {
   poodle: { B: ['B', 'b'], D: ['D', 'd'], E: ['e', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Apricot', eyes: 'brown' },
   collie: { B: ['B', 'b'], D: ['D', 'D'], E: ['E', 'E'], S: ['S', 'sp'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Black and white', eyes: 'brown' },
   samoyed: { B: ['B', 'b'], D: ['D', 'D'], E: ['e', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'White', eyes: 'brown' },
-  frenchie: { B: ['B', 'B'], D: ['D', 'd'], E: ['e', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Fawn', eyes: 'brown' }
+  frenchie: { B: ['B', 'B'], D: ['D', 'd'], E: ['e', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Fawn', eyes: 'brown' },
+  akita: { B: ['B', 'b'], D: ['D', 'd'], E: ['e', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Red', eyes: 'brown' },
+  spitz: { B: ['B', 'b'], D: ['D', 'D'], E: ['e', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'White', eyes: 'brown' },
+  pom: { B: ['B', 'b'], D: ['D', 'd'], E: ['e', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Orange', eyes: 'brown' },
+  afghan: { B: ['B', 'b'], D: ['D', 'd'], E: ['e', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Red', eyes: 'brown' },
+  dane: { B: ['B', 'b'], D: ['D', 'd'], E: ['e', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Fawn', eyes: 'brown' },
+  mastiff: { B: ['B', 'b'], D: ['D', 'D'], E: ['e', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Fawn', eyes: 'brown' },
+  gsd: { B: ['B', 'b'], D: ['D', 'D'], E: ['E', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Black and tan', eyes: 'brown' }
 };
 // Breeding rules, stored now and switched on in v2 (1 real day = 1 dog month)
 const BREEDING = window.PawBreeding = window.PawBreeding || { RULES: {
   enabled: false, pair: 'male+female', adultMonths: 12, seniorMonths: 84, noBreedFromMonths: 96,
   heat: { firstMonths: 12, everyDays: 6, lastsDays: 3 }, maleRestDays: 2, pregnancyDays: 2, puppyStayDays: 2,
   female: { skipSeasons: 1, maxLitters: 4, noLittersFromMonths: 72 },
-  litters: { small: { breeds: ['dachs', 'corgi', 'chihuahua', 'pug', 'frenchie'], sizes: [1, 2, 3], weights: [40, 40, 20] }, medium: { breeds: ['shiba', 'mutt', 'beagle', 'poodle', 'collie'], sizes: [1, 2, 3], weights: [30, 50, 20] }, large: { breeds: ['golden', 'husky', 'greyhound', 'samoyed'], sizes: [2, 3], weights: [60, 40] } },
+  giant: { breeds: ['dane', 'mastiff'], adultMonths: 18, restDays: 12, maxLitters: 3 }, // v2.11: giant dogs wait until 18 months, rest two seasons between litters and have at most 3 litters
+  litters: { small: { breeds: ['dachs', 'corgi', 'chihuahua', 'pug', 'frenchie', 'pom'], sizes: [1, 2, 3], weights: [40, 40, 20] }, medium: { breeds: ['shiba', 'mutt', 'beagle', 'poodle', 'collie', 'spitz'], sizes: [1, 2, 3], weights: [30, 50, 20] }, large: { breeds: ['golden', 'husky', 'greyhound', 'samoyed', 'akita', 'afghan', 'gsd'], sizes: [2, 3], weights: [60, 40] }, giant: { breeds: ['dane', 'mastiff'], sizes: [2, 3], weights: [35, 65] } },
   puppySex: 0.5, inheritance: 'mendelian', welfare: { noMerleXMerle: true, minMeters: 50, minBond: 6, noRelatives: ['parent', 'child', 'sibling', 'half-sibling', 'grandparent', 'grandchild', 'aunt', 'uncle', 'niece', 'nephew', 'first-cousin'] },
   expecting: { hungerDecay: 1.2, walkCap: 'park', noPlaydates: true }, fixedNeverBreeds: true
 } };
@@ -31,11 +39,13 @@ function bornDaysAgo(n) { const d = new Date(); d.setDate(d.getDate() - n); retu
 function ageMonths(dog) { dog = dog || S.dog; if (!dog || !dog.born) return 10; const t = new Date(); t.setHours(0, 0, 0, 0); return Math.max(0, Math.round((t - new Date(dog.born + 'T00:00:00')) / 864e5)); }
 const lifeStage = (m) => (m < 6 ? 'puppy' : m < 12 ? 'young' : m < 84 ? 'adult' : 'senior');
 function ageText(m) { const y = Math.floor(m / 12), mo = m % 12, p = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`; return y ? (mo ? `${p(y, 'year')} ${p(mo, 'month')}` : p(y, 'year')) : p(mo, 'month'); }
+const giantRules = (dog) => { const g = BREEDING.RULES.giant; return g && dog && g.breeds.includes(dog.key) ? g : null; }; // v2.11: the Great Dane and the English Mastiff
 function seasonStatus(dog) {
   dog = dog || S.dog; const m = ageMonths(dog), H = BREEDING.RULES.heat;
   if (dog.sex !== 'female') return { txt: 'Ready for playdates in v2', inSeason: false };
   if (dog.fixed) return { txt: 'Spayed: no seasons', inSeason: false };
-  if (m < H.firstMonths) return { txt: `First season at 12 months (in ${H.firstMonths - m} days)`, inSeason: false };
+  const gr = giantRules(dog), first = gr ? gr.adultMonths : H.firstMonths;
+  if (m < first) return { txt: `First season at ${first} months (in ${first - m} days)`, inSeason: false };
   if (m >= BREEDING.RULES.noBreedFromMonths) return { txt: 'Retired from seasons (senior)', inSeason: false };
   const pos = (((m - H.firstMonths + (dog.seasonSeed || 0)) % H.everyDays) + H.everyDays) % H.everyDays;
   return pos < H.lastsDays ? { txt: `In season (${H.lastsDays - pos} more day${H.lastsDays - pos > 1 ? 's' : ''})`, inSeason: true } : { txt: `Next season in ${H.everyDays - pos} day${H.everyDays - pos > 1 ? 's' : ''}`, inSeason: false };

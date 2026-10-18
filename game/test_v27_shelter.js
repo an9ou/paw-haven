@@ -19,7 +19,7 @@ require('./test_lib').run('v27_shelter', async (t) => {
   ok(await ev(() => window.__paw.sr.total()) === 6 && await N() >= 5 && new Set(D.map((d) => d.key)).size === D.length && D.length >= 3, `6 starter dogs in the room (one may be at the meet spot), the ones that don't fit in the back room (${D.map((d) => d.key)})`);
   ok(await ev(() => { const L = window.__paw.sr.dogs(), sc = (y) => 0.5 + (y - 450) / 146 * 0.22; return L.every((a, i) => L.every((b, j) => j <= i || Math.abs(a.x - b.x) > 70 * (sc(a.y) + sc(b.y)) || Math.abs(a.y - b.y) > 46 || a.walking || b.walking)); }), 'no two room dogs stand on top of each other');
   ok(D.every((d) => d.x >= 40 && d.x <= 960 && d.y >= 450 && d.y <= 596), 'every room dog stands on the floor band');
-  ok(await p.locator('.heads button').count() === 14, 'the 14-head carousel is there');
+  ok(await p.locator('.heads button').count() === 21, 'the 21-head carousel is there');
   ok(await p.locator('#srBoardG [data-srslot]').count() === 8, 'the board shows 8 starters');
   ok(await ev(() => /pa-wc|viewBox="0 0 300 220"/.test(document.getElementById('srBoardG').innerHTML)), 'the board is the adoptboard prop');
   ok(await ev(() => (document.querySelector('#adoptDog svg.pa-dog').getAttribute('aria-label') || '').includes('Shiba')), 'the selected dog stands at the meet spot');

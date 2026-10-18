@@ -1,0 +1,242 @@
+// doodledoggo.app v2: the live Shelter Playroom on the home page, the seasonal leaves and the Mt. Fuji Lookout season.
+// Plain JS, no libraries, no requests beyond the site's own art (site/img/art, made by tools/site_art.js from the game's art).
+// World units are the game's playroom: 1000 x 600, feet y 450..596 (SR_ROOM.floor in game/src/30_shelter.js).
+// prefers-reduced-motion: no animation at all (the static scene in the HTML stays, no leaves).
+(function () {
+  'use strict';
+  var motion = !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  var phone = !!(window.matchMedia && matchMedia('(max-width: 700px)').matches);
+  var rnd = function (a, b) { return a + Math.random() * (b - a); };
+  var pick = function (a) { return a[Math.floor(Math.random() * a.length)]; };
+
+  // ---- the season by the date in Japan (JST = UTC+9)
+  var month = new Date(Date.now() + 9 * 3600e3).getUTCMonth() + 1;
+  var season = month >= 3 && month <= 5 ? 'spring' : month >= 6 && month <= 8 ? 'summer' : month >= 9 && month <= 11 ? 'autumn' : 'winter';
+  var fuji = document.getElementById('fujiImg');
+  if (fuji && season !== 'autumn') fuji.src = '/img/art/fuji-' + season + '.webp';
+
+  // ---- a few falling momiji (autumn) or sakura (spring); they fall a few times, then stop
+  var petals = document.getElementById('petals');
+  if (petals && motion && (season === 'autumn' || season === 'spring')) {
+    for (var i = 0, n = phone ? 4 : 7; i < n; i++) {
+      var p = document.createElement('img');
+      p.className = 'petal'; p.alt = ''; p.src = '/img/art/' + (season === 'autumn' ? 'momiji' : 'sakura') + '.svg';
+      var sz = rnd(16, 26);
+      p.style.cssText = 'left:' + rnd(2, 94).toFixed(1) + '%;width:' + sz.toFixed(0) + 'px;height:' + sz.toFixed(0) + 'px;animation-duration:' + rnd(13, 22).toFixed(1) + 's;animation-delay:' + rnd(0, 12).toFixed(1) + 's;animation-iteration-count:' + (2 + (i % 2));
+      petals.appendChild(p);
+    }
+  }
+
+  // ---- the live playroom
+  var scene = document.getElementById('scene'), stage = document.getElementById('stage');
+  if (!scene || !stage || !motion) return;
+  var KEYS = ['shiba', 'corgi', 'golden', 'dachs', 'husky', 'mutt', 'chihuahua', 'pug', 'greyhound', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie'];
+  // energy, zoomies and ball speed from the game's personality table (V210.md 5.1); the bark is a short line in the dog's voice
+  var P = {
+    shiba: [0.6, 0.4, 1.0, 'heh.'], corgi: [0.7, 0.5, 0.9, 'snack?'], golden: [0.8, 0.3, 1.15, 'BALL!'], dachs: [0.5, 0.2, 0.8, 'pet me?'],
+    husky: [0.9, 0.6, 1.05, 'AWOO!'], mutt: [0.6, 0.3, 1.0, '♥'], chihuahua: [0.7, 0.4, 0.85, 'ワン！'], pug: [0.2, 0.1, 0.7, 'snort.'],
+    greyhound: [0.3, 0.9, 1.4, 'zoom!'], beagle: [0.7, 0.3, 0.95, 'sniff sniff'], poodle: [0.6, 0.2, 1.0, 'ta-da!'], collie: [0.9, 0.4, 1.2, 'everyone, here!'],
+    samoyed: [0.7, 0.5, 0.95, ':)'], frenchie: [0.35, 0.5, 0.8, 'snort!']
+  };
+  var STEAL = { shiba: 0.3, corgi: 0.15, golden: 0.05, dachs: 0.2, husky: 0.3, mutt: 0.1, chihuahua: 0.3, pug: 0.1, greyhound: 0.05, beagle: 0.25, poodle: 0.05, collie: 0.1, samoyed: 0.15, frenchie: 0.3 }; // V210.md 5.1 steal
+  var POSES = ['walk', 'jump', 'sit', 'happy', 'sniff', 'sleep'];
+  var X0 = phone ? 210 : 70, X1 = phone ? 790 : 930, Y0 = 462, Y1 = 590, BASKET = [868, 404], FRONT = [500, 584];
+  var N_DOGS = phone ? 5 : 8, N_BALLS = phone ? 2 : 3, MAX_BALLS = 4;
+  var scaleAt = function (y) { return (0.5 + (y - 450) / 146 * 0.22) * (phone ? 1.25 : 1.05); }; // a little bigger than the game's playroom (srScale), more on phones
+  var clampX = function (x) { return Math.max(X0, Math.min(X1, x)); }, clampY = function (y) { return Math.max(Y0, Math.min(Y1, y)); };
+  var dist2 = function (ax, ay, bx, by) { var dx = ax - bx, dy = (ay - by) * 1.6; return Math.sqrt(dx * dx + dy * dy); };
+
+  // the static dogs and ball leave; the live ones come in (a random few of the 14 each visit)
+  Array.prototype.forEach.call(stage.querySelectorAll('.dd, .ball'), function (e) { e.remove(); });
+  var keys = KEYS.slice().sort(function () { return Math.random() - 0.5; }).slice(0, N_DOGS);
+  var balls = [], dogs = keys.map(function (key, i) {
+    var el = document.createElement('div'); el.className = 'dd'; el.dataset.key = key;
+    var imgs = {};
+    POSES.forEach(function (pose) { var im = document.createElement('img'); im.src = '/img/art/dogs/' + key + '-' + (pose === 'sleep' ? 'sleep' : pose) + '.svg'; im.alt = ''; im.width = 240; im.height = 200; im.hidden = true; el.appendChild(im); imgs[pose] = im; });
+    stage.appendChild(el);
+    var x = X0 + (X1 - X0) * (i + 0.5) / keys.length + rnd(-25, 25), y = rnd(Y0 + 10, Y1);
+    var p = P[key], d = { key: key, el: el, imgs: imgs, x: x, y: y, face: Math.random() < 0.5 ? 1 : -1, pose: '', lift: 0, task: null, p: p,
+      want: Math.min(0.95, 0.2 + 0.55 * p[0] + 0.25 * (p[2] - 0.7)), fav: i % MAX_BALLS, steal: STEAL[key] || 0.1 };
+    setPose(d, 'happy'); idle(d, 'happy', rnd(0.4, 2)); return d;
+  });
+  var k = 1, last = 0, running = false, raf = 0, catches = 0, steals = 0;
+
+  function setPose(d, pose) { if (d.pose === pose) return; if (d.pose) d.imgs[d.pose].hidden = true; d.imgs[pose].hidden = false; d.pose = pose; }
+  function idle(d, pose, dur) { d.task = { kind: 'idle', pose: pose, t: 0, dur: dur }; }
+  function walkTo(d, x, y, speed, run, then) { d.task = { kind: 'walk', x: clampX(x), y: clampY(y), speed: speed, run: run, t: 0, then: then }; }
+  function hop(d, n) { d.task = { kind: 'hop', t: 0, dur: 0.55, n: n || 1, dx: rnd(-40, 40) }; }
+  function busy(d) { return d.task && (d.task.kind === 'carry' || d.task.kind === 'chase' || d.task.kind === 'steal'); }
+  var talking = 0;
+  function bark(d, text) {
+    if (talking >= (phone ? 1 : 2)) return; // a bubble or two at a time, so they never pile up
+    talking++; setTimeout(function () { talking--; }, 1700);
+    var b = document.createElement('span'); b.className = 'bark'; b.textContent = text || d.p[3];
+    var s = scaleAt(d.y); b.style.transform = 'translate(' + (d.x * k) + 'px,' + ((d.y - 175 * s) * k) + 'px) translate(-50%,-100%)';
+    stage.appendChild(b); setTimeout(function () { b.remove(); }, 1700);
+  }
+  function heart(d) {
+    var h = document.createElement('span'); h.className = 'heart'; h.textContent = '♥';
+    var s = scaleAt(d.y); h.style.transform = 'translate(' + ((d.x + rnd(-20, 20)) * k) + 'px,' + ((d.y - 150 * s) * k) + 'px)';
+    stage.appendChild(h); setTimeout(function () { h.remove(); }, 1200);
+  }
+  // what a dog does next, weighted by its personality; a keen dog may go after a ball lying about
+  function next(d) {
+    var e = d.p[0], z = d.p[1], free = open();
+    if (free.length && Math.random() < d.want * 0.2) { chase(d, pickBall(d, free)); return; }
+    var near = dogs.filter(function (o) { return o !== d && dist2(o.x, o.y, d.x, d.y) < 110; }).length;
+    if (near >= 2) { walkTo(d, d.x < 500 ? rnd(X0, d.x - 60) : rnd(d.x + 60, X1), rnd(Y0, Y1), 90 + e * 60, false); return; } // too crowded: wander off
+    var w = [['walk', 0.35], ['zoom', z * 0.3], ['hop', 0.08 + e * 0.1], ['sit', (1 - e) * 0.45], ['nap', (1 - e) * 0.3], ['sniff', d.key === 'beagle' ? 0.45 : 0.14], ['happy', 0.14]];
+    var tot = w.reduce(function (a, b) { return a + b[1]; }, 0), r = Math.random() * tot, c = w[0][0];
+    for (var i = 0; i < w.length; i++) { r -= w[i][1]; if (r <= 0) { c = w[i][0]; break; } }
+    if (c === 'walk') walkTo(d, d.x + rnd(-240, 240), d.y + rnd(-60, 60), 80 + e * 70, false);
+    else if (c === 'zoom') walkTo(d, d.x < 500 ? rnd(650, X1) : rnd(X0, 350), rnd(Y0, Y1), 240 + z * 120, true, function () { if (Math.random() < 0.5) hop(d, 1); });
+    else if (c === 'hop') hop(d, Math.random() < 0.4 ? 2 : 1);
+    else if (c === 'sit') idle(d, 'sit', rnd(2, 5));
+    else if (c === 'nap') idle(d, 'sleep', rnd(4, 9));
+    else if (c === 'sniff') idle(d, 'sniff', rnd(1.5, 3));
+    else { idle(d, 'happy', rnd(1.2, 2.2)); if (Math.random() < 0.35) bark(d); }
+  }
+
+  // ---- the balls: where one will land, which one a dog wants, throwing
+  function landing(b) { var a = b.arcs[b.arcs.length - 1]; return a ? [a.x1, a.y1] : [b.x, b.y]; }
+  function pickBall(d, list) { // the nearest landing spot, with its favourite colour counting as a bit closer
+    var best = null, bd = 1e9;
+    list.forEach(function (b) { var l = landing(b), dd = dist2(d.x, d.y, l[0], l[1]) * (b.n === d.fav ? 0.7 : 1); if (dd < bd) { bd = dd; best = b; } });
+    return best;
+  }
+  function chase(d, b) { if (b) d.task = { kind: 'chase', ball: b, t: -rnd(0, 0.35), look: 0 }; }
+  function chasers(b) { return dogs.filter(function (d) { return d.task && (d.task.kind === 'chase' || d.task.kind === 'steal') && d.task.ball === b; }).length; }
+  function open() { return balls.filter(function (b) { return !b.holder && chasers(b) < 2; }); } // free balls with room for another chaser (two at most)
+  function newBall() {
+    var el = document.createElement('img'); el.className = 'ball b' + balls.length; el.src = '/img/art/ball.svg'; el.alt = ''; el.width = 60; el.height = 60;
+    stage.appendChild(el);
+    var b = { n: balls.length, el: el, x: BASKET[0], y: BASKET[1], h: 70, arcs: [], holder: null, rest: 0 }; balls.push(b); return b;
+  }
+  // throw ball b (from where it is, or from the toy basket) to (tx, ty); the dogs that feel like it give chase
+  function toss(b, tx, ty) {
+    if (b.holder) { idle(b.holder, 'happy', 0.6); b.holder = null; }
+    var sx = b.x, sy = b.y, h0 = Math.max(b.h, 40);
+    tx = clampX(tx == null ? rnd(X0 + 40, X1 - 120) : tx); ty = clampY(ty == null ? rnd(Y0 + 10, Y1 - 10) : ty);
+    var bx = clampX(tx + (tx - sx) * 0.18), by = clampY(ty + rnd(-8, 8));
+    b.h = h0; b.rest = rnd(7, 11);
+    b.arcs = [{ x0: sx, y0: sy, h0: h0, x1: tx, y1: ty, H: 170, T: 0.85, t: 0 }, { x0: tx, y0: ty, h0: 0, x1: bx, y1: by, H: 34, T: 0.38, t: 0 }];
+    dogs.forEach(function (d) {
+      if (busy(d) && !(d.task.kind === 'chase' && d.task.ball === b)) return;
+      if (d.pose === 'sleep' && Math.random() < 0.8) return; // a napping dog mostly naps on
+      var o = open(); if (o.length && Math.random() < d.want) chase(d, pickBall(d, o));
+      else if (Math.random() < 0.4) idle(d, 'sit', rnd(1.5, 3)); // just watches
+    });
+    return b;
+  }
+  // a tap or the button: another ball while there are fewer than MAX_BALLS, else the nearest free one goes again
+  function throwOne(tx, ty) {
+    if (balls.length < MAX_BALLS) return toss(newBall(), tx, ty);
+    var free = balls.filter(function (b) { return !b.holder; }), b = null, bd = 1e9;
+    (free.length ? free : balls).forEach(function (x) { var dd = tx == null ? Math.random() : dist2(x.x, x.y, tx, ty); if (dd < bd) { bd = dd; b = x; } });
+    return toss(b, tx, ty);
+  }
+
+  function step(d, dt) {
+    var T = d.task; T.t += dt; d.lift = 0;
+    if (T.kind === 'idle') { setPose(d, T.pose); if (T.t >= T.dur) next(d); return; }
+    if (T.kind === 'hop') {
+      setPose(d, 'jump'); var f = Math.min(1, T.t / T.dur);
+      d.lift = Math.sin(f * Math.PI) * 38; d.x = clampX(d.x + T.dx * dt / T.dur); if (T.dx) d.face = T.dx > 0 ? 1 : -1;
+      if (f >= 1) { if (--T.n > 0) { T.t = 0; T.dx = rnd(-40, 40); } else idle(d, Math.random() < 0.5 ? 'happy' : 'sit', rnd(0.6, 1.6)); }
+      return;
+    }
+    var tx, ty, speed, run = false, b = T.ball;
+    if (T.kind === 'walk') { tx = T.x; ty = T.y; speed = T.speed; run = T.run; }
+    else if (T.kind === 'chase') {
+      if (T.t < 0) return;
+      if (b.holder) { // someone got there first: try to steal it, go for another ball, or let it go
+        if (b.holder !== d && Math.random() < d.steal * 0.6 && steals * 3 < catches + 1) { d.task = { kind: 'steal', ball: b, t: 0 }; return; }
+        var others = open();
+        if (others.length && Math.random() < d.want) { chase(d, pickBall(d, others)); return; }
+        idle(d, Math.random() < 0.5 ? 'happy' : 'sit', rnd(0.8, 2)); if (Math.random() < 0.25) bark(d, pick(['aww.', 'next time!', 'ワン！'])); return;
+      }
+      if ((T.look += dt) > 0.4) { // a closer ball? switch
+        T.look = 0; var alt = pickBall(d, open());
+        if (alt && alt !== b) { var la = landing(alt), lb = landing(b); if (dist2(d.x, d.y, la[0], la[1]) < dist2(d.x, d.y, lb[0], lb[1]) * 0.6) { T.ball = b = alt; if (Math.random() < 0.3) bark(d, 'ooh!'); } }
+      }
+      var l = b.arcs.length ? landing(b) : [b.x, b.y];
+      tx = l[0] - d.face * 30 * scaleAt(d.y); ty = l[1]; speed = 230 * d.p[2] * (0.7 + 0.3 * d.p[0]); run = true;
+      if (b.h < 14 && Math.abs(b.x - d.x) < 46 && Math.abs(b.y - d.y) < 26) { // got it: trot it back to the front and drop it
+        b.holder = d; b.arcs = []; b.h = 0; catches++;
+        d.task = { kind: 'carry', ball: b, x: clampX(rnd(X0 + 40, X1 - 40)), y: clampY(FRONT[1] - rnd(0, 24)), t: 0 }; bark(d, pick(['got it!', 'mine!', d.p[3]])); // back to the front, anywhere along it
+        return;
+      }
+    } else if (T.kind === 'steal') { // run at the carrier; close enough and the ball changes mouths
+      if (b.holder === d) { d.task = { kind: 'carry', ball: b, x: clampX(rnd(X0 + 40, X1 - 40)), y: clampY(rnd(Y0 + 20, Y1)), t: 0 }; return; }
+      if (!b.holder || T.t > 4) { idle(d, 'happy', rnd(0.6, 1.4)); return; }
+      var v = b.holder; tx = v.x - d.face * 30 * scaleAt(v.y); ty = v.y; speed = 260 * d.p[2]; run = true;
+      if (Math.abs(v.x - d.x) < 50 && Math.abs(v.y - d.y) < 28) {
+        b.holder = d; steals++; idle(v, 'sit', rnd(1.2, 2.2)); bark(v, pick(['hey!', 'my ball!'])); bark(d, 'hehe.');
+        d.task = { kind: 'carry', ball: b, x: clampX(d.x < 500 ? rnd(560, X1) : rnd(X0, 440)), y: clampY(rnd(Y0 + 20, Y1)), t: 0 };
+        return;
+      }
+    } else if (T.kind === 'carry') { if (b.holder !== d) { idle(d, 'happy', 0.8); return; } tx = T.x; ty = T.y; speed = 130; }
+    var dx = tx - d.x, dy = ty - d.y, dd = Math.sqrt(dx * dx + dy * dy);
+    if (dd < 4) {
+      if (T.kind === 'walk') { if (T.then) { var fn = T.then; idle(d, 'happy', 0.5); fn(); } else idle(d, Math.random() < 0.5 ? 'sniff' : 'happy', rnd(0.6, 1.8)); }
+      else if (T.kind === 'carry') { b.holder = null; b.x = d.x + d.face * 44 * scaleAt(d.y); b.y = d.y; b.h = 0; b.rest = rnd(0.8, 1.6); idle(d, 'sit', rnd(1.2, 2.5)); if (Math.random() < 0.6) heart(d); }
+      return;
+    }
+    setPose(d, 'walk');
+    if (Math.abs(dx) > 3) d.face = dx > 0 ? 1 : -1;
+    var mv = Math.min(dd, speed * dt); d.x += dx / dd * mv; d.y += dy / dd * mv;
+    if (run) d.lift = Math.abs(Math.sin(T.t * 14)) * 7;
+  }
+  function stepBall(b, dt) {
+    if (b.holder) { var d = b.holder, s = scaleAt(d.y); b.x = d.x + d.face * 66 * s; b.y = d.y; b.h = 70 * s + d.lift; return; }
+    var a = b.arcs[0];
+    if (a) {
+      a.t += dt; var f = Math.min(1, a.t / a.T);
+      b.x = a.x0 + (a.x1 - a.x0) * f; b.y = a.y0 + (a.y1 - a.y0) * f; b.h = a.h0 * (1 - f) + 4 * a.H * f * (1 - f);
+      if (f >= 1) b.arcs.shift();
+      return;
+    }
+    b.h = 0; b.rest -= dt; if (b.rest <= 0) toss(b); // dropped at the front (or left lying): it gets thrown again
+  }
+  function render() {
+    dogs.forEach(function (d) {
+      var s = scaleAt(d.y);
+      d.el.style.transform = 'translate3d(' + (d.x * k).toFixed(1) + 'px,' + ((d.y - d.lift) * k).toFixed(1) + 'px,0) translate(-50%,-93%) scale(' + s.toFixed(3) + ')';
+      d.el.style.zIndex = Math.round(d.y);
+      var flip = d.face < 0; if (flip !== d.el.classList.contains('flip')) d.el.classList.toggle('flip', flip);
+    });
+    balls.forEach(function (b) {
+      var bs = 0.75 + (b.y - 450) / 146 * 0.35;
+      b.el.style.transform = 'translate3d(' + (b.x * k).toFixed(1) + 'px,' + ((b.y - b.h) * k).toFixed(1) + 'px,0) translate(-50%,-92%) scale(' + bs.toFixed(3) + ')';
+      b.el.style.zIndex = b.holder ? Math.round(b.holder.y) + 1 : Math.round(b.y) + (b.h > 20 ? 600 : 1);
+    });
+  }
+  function frame(t) {
+    var dt = Math.min(0.05, last ? (t - last) / 1000 : 0.016); last = t;
+    dogs.forEach(function (d) { step(d, dt); }); balls.forEach(function (b) { stepBall(b, dt); }); render();
+    raf = running ? requestAnimationFrame(frame) : 0;
+  }
+  function measure() { k = stage.clientWidth / 1000; }
+  function setRun(on) { if (on === running) return; running = on; last = 0; if (on && !raf) raf = requestAnimationFrame(frame); }
+  // where a tap lands, in world units
+  function worldAt(ev) { var r = stage.getBoundingClientRect(); return [(ev.clientX - r.left) / r.width * 1000, (ev.clientY - r.top) / r.height * 600]; }
+
+  for (var i = 0; i < N_BALLS; i++) { var b0 = newBall(); b0.x = rnd(X0 + 60, X1 - 60); b0.y = rnd(Y0 + 20, Y1); b0.h = 0; b0.rest = 1.5 + i * 2.5; }
+  measure(); render(); scene.classList.add('live');
+  window.addEventListener('resize', function () { measure(); render(); });
+  var visible = true, onScreen = true;
+  var sync = function () { setRun(visible && onScreen); };
+  document.addEventListener('visibilitychange', function () { visible = !document.hidden; sync(); });
+  if ('IntersectionObserver' in window) new IntersectionObserver(function (es) { onScreen = es[es.length - 1].isIntersecting; sync(); }).observe(scene);
+  sync();
+  // tap a dog to pet it; tap the floor to throw a ball there (another one, up to four)
+  scene.addEventListener('click', function (ev) {
+    var w = worldAt(ev), best = null, bd = 1e9;
+    dogs.forEach(function (d) { var s = scaleAt(d.y), dx = w[0] - d.x, dy = w[1] - (d.y - 70 * s); var dd = Math.sqrt(dx * dx + dy * dy); if (dd < 90 * s && dd < bd) { bd = dd; best = d; } });
+    if (best) { balls.forEach(function (b) { if (b.holder === best) { b.holder = null; b.h = 0; b.rest = rnd(1, 2); } }); idle(best, 'happy', 1.8); heart(best); if (Math.random() < 0.5) bark(best); return; }
+    throwOne(w[0], Math.max(Y0, w[1]));
+  });
+  var btn = document.getElementById('toss');
+  if (btn) { btn.hidden = false; btn.addEventListener('click', function () { throwOne(); }); }
+  window.__dd = { dogs: dogs, balls: balls, max: MAX_BALLS, throwOne: throwOne, running: function () { return running; }, stats: function () { return { catches: catches, steals: steals }; } };
+})();
