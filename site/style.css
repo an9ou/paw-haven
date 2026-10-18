@@ -232,6 +232,7 @@ i{font-style:italic}
   .small-top h1{font-size:40px}
   .jpw{display:block;margin:4px 0 0}
   .dognav{grid-template-columns:repeat(4,1fr);gap:6px}
+  .jpline .jp{white-space:normal} /* v2.12: the long katakana names (West Highland White Terrier) wrap instead of widening the page */
   .prof,.soonprof{grid-template-columns:1fr;gap:6px;padding-top:20px}
   .soonprof .sils{width:min(320px,92%);margin:0 auto}
   .pics{width:min(320px,92%);margin:0 auto}

@@ -11,9 +11,9 @@ function seeded(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) 
 const NAMED = G.BREEDS.filter((k) => k !== 'mutt');
 const BANNED = /nintendo|nintendogs|pok[eé]mon|animal crossing/i;
 
-/* 1. MIXES: all 210 pairs resolve (45 up to v2.4, 46 more with the v2.5 breeds, 45 with the first three v2.11 breeds, 74 with the owner's four more) */
-ok(G.BREEDS.length === 21, '21 breeds');
-ok(Object.keys(G.MIXES).length === 210, `210 MIXES entries (got ${Object.keys(G.MIXES).length})`);
+/* 1. MIXES: all 595 pairs resolve (45 up to v2.4, 46 more with the v2.5 breeds, 45 with the first three v2.11 breeds, 74 with the owner's four more, 385 with the v2.12 fourteen) */
+ok(G.BREEDS.length === 35, '35 breeds');
+ok(Object.keys(G.MIXES).length === 595, `595 MIXES entries (got ${Object.keys(G.MIXES).length})`);
 const names = new Set();
 let pairs = 0;
 for (let i = 0; i < G.BREEDS.length; i++) for (let j = i + 1; j < G.BREEDS.length; j++) {
@@ -42,8 +42,8 @@ for (let i = 0; i < G.BREEDS.length; i++) for (let j = i + 1; j < G.BREEDS.lengt
     }
   }
 }
-ok(pairs === 210, '210 pairs walked');
-ok(names.size === 190, `190 unique named mixes (got ${names.size})`);
+ok(pairs === 595, '595 pairs walked');
+ok(names.size === 561, `561 unique named mixes (got ${names.size})`);
 // examples from the brief
 const want = { 'beagle|pug': 'Puggle', 'chihuahua|dachs': 'Chiweenie', 'golden|husky': 'Goberian', 'corgi|husky': 'Horgi', 'chihuahua|pug': 'Chug', 'corgi|dachs': 'Dorgi', 'shiba|corgi': 'Shorgi', 'golden|beagle': 'Beago', 'greyhound|beagle': 'Greagle' };
 for (const k of Object.keys(want)) { const [a, b] = k.split('|'); ok(G.MIXES[G.mixKey(a, b)].name === want[k], `${k} = ${want[k]} (got ${G.MIXES[G.mixKey(a, b)].name})`); }
@@ -104,6 +104,110 @@ const want211b = {
 ok(Object.keys(want211b).length === 70 && new Set(Object.values(want211b)).size === 70, '70 new big-breed mix names listed');
 for (const k of Object.keys(want211b)) { const [a, b] = k.split('|'); ok(G.MIXES[G.mixKey(a, b)].name === want211b[k], `${k} = ${want211b[k]} (got ${G.MIXES[G.mixKey(a, b)].name})`); }
 ['afghan', 'dane', 'mastiff', 'gsd'].forEach((k) => ok(G.MIXES[G.mixKey('mutt', k)].name === 'Mutt mix', `mutt x ${k} is Mutt mix`));
+// v2.12: the 371 new names (V212.md 3), each on its pair: the fourteen with the 20 older non-mutt breeds, then among themselves
+const want212 = {
+  'shiba|dobie': 'Dobie Shiba', 'corgi|dobie': 'Dobie Corgi', 'golden|dobie': 'Golden Dobie', 'dachs|dobie': 'Dobie Doxie',
+  'husky|dobie': 'Dobsky', 'chihuahua|dobie': 'Dobie Chi', 'pug|dobie': 'Dobie Pug', 'greyhound|dobie': 'Greyberman',
+  'beagle|dobie': 'Dobie Beagle', 'poodle|dobie': 'Dobiepoo', 'collie|dobie': 'Border Dobie', 'samoyed|dobie': 'Sammy Dobie',
+  'frenchie|dobie': 'French Dobie', 'akita|dobie': 'Dobie Akita', 'spitz|dobie': 'Dobie Spitz', 'pom|dobie': 'Dobie Pom',
+  'afghan|dobie': 'Dobie Afghan', 'dane|dobie': 'Dobie Dane', 'mastiff|dobie': 'Dobie Mastiff', 'gsd|dobie': 'Doberman Shepherd',
+  'shiba|corso': 'Corso Shiba', 'corgi|corso': 'Corso Corgi', 'golden|corso': 'Golden Corso', 'dachs|corso': 'Corso Doxie',
+  'husky|corso': 'Corsky', 'chihuahua|corso': 'Corso Chi', 'pug|corso': 'Corso Pug', 'greyhound|corso': 'Corso Grey',
+  'beagle|corso': 'Corso Beagle', 'poodle|corso': 'Corsopoo', 'collie|corso': 'Border Corso', 'samoyed|corso': 'Sammy Corso',
+  'frenchie|corso': 'French Corso', 'akita|corso': 'Corso Akita', 'spitz|corso': 'Corso Spitz', 'pom|corso': 'Corso Pom',
+  'afghan|corso': 'Corso Afghan', 'dane|corso': 'Great Corso', 'mastiff|corso': 'Corso Mastiff', 'gsd|corso': 'Shepherd Corso',
+  'shiba|pitbull': 'Shiba Pittie', 'corgi|pitbull': 'Pitgi', 'golden|pitbull': 'Golden Pittie', 'dachs|pitbull': 'Doxie Pit',
+  'husky|pitbull': 'Pitsky', 'chihuahua|pitbull': 'Chipit', 'pug|pitbull': 'Pugbull', 'greyhound|pitbull': 'Pittie Grey',
+  'beagle|pitbull': 'Pitbeagle', 'poodle|pitbull': 'Pitpoo', 'collie|pitbull': 'Border Pittie', 'samoyed|pitbull': 'Sammy Pittie',
+  'frenchie|pitbull': 'French Pittie', 'akita|pitbull': 'Pitkita', 'spitz|pitbull': 'Pittie Spitz', 'pom|pitbull': 'Pittie Pom',
+  'afghan|pitbull': 'Pittie Afghan', 'dane|pitbull': 'Great Danebull', 'mastiff|pitbull': 'Mastibull', 'gsd|pitbull': 'Shepherd Pittie',
+  'shiba|minpin': 'Shiba Pin', 'corgi|minpin': 'Corgi Pin', 'golden|minpin': 'Golden Pinny', 'dachs|minpin': 'Doxie Pin',
+  'husky|minpin': 'Pinsky', 'chihuahua|minpin': 'Chipin', 'pug|minpin': 'Mugin', 'greyhound|minpin': 'Grey Pin',
+  'beagle|minpin': 'Meagle', 'poodle|minpin': 'Pinny-poo', 'collie|minpin': 'Border Pinny', 'samoyed|minpin': 'Sammy Pinny',
+  'frenchie|minpin': 'French Pinscher', 'akita|minpin': 'Pinny Akita', 'spitz|minpin': 'Pinny Spitz', 'pom|minpin': 'Pom-a-Pin',
+  'afghan|minpin': 'Pinny Afghan', 'dane|minpin': 'Pinny Dane', 'mastiff|minpin': 'Pinny Mastiff', 'gsd|minpin': 'Pinny Shepherd',
+  'shiba|lab': 'Shibador', 'corgi|lab': 'Corgidor', 'golden|lab': 'Goldador', 'dachs|lab': 'Dachsador',
+  'husky|lab': 'Labsky', 'chihuahua|lab': 'Labrahuahua', 'pug|lab': 'Pugador', 'greyhound|lab': 'Greyador',
+  'beagle|lab': 'Labbe', 'poodle|lab': 'Mini Labradoodle', 'collie|lab': 'Borador', 'samoyed|lab': 'Samoyador',
+  'frenchie|lab': 'French Lab', 'akita|lab': 'Labrakita', 'spitz|lab': 'Spitzador', 'pom|lab': 'Pomador',
+  'afghan|lab': 'Afghan Lab', 'dane|lab': 'Labradane', 'mastiff|lab': 'Mastador', 'gsd|lab': 'Shepador',
+  'shiba|malamute': 'Shibamute', 'corgi|malamute': 'Corgimute', 'golden|malamute': 'Golden Malamute', 'dachs|malamute': 'Doximute',
+  'husky|malamute': 'Alusky', 'chihuahua|malamute': 'Chimute', 'pug|malamute': 'Pugamute', 'greyhound|malamute': 'Greymute',
+  'beagle|malamute': 'Beaglemute', 'poodle|malamute': 'Malapoo', 'collie|malamute': 'Border Malamute', 'samoyed|malamute': 'Samamute',
+  'frenchie|malamute': 'French Malamute', 'akita|malamute': 'Alaskan Akita', 'spitz|malamute': 'Spitzamute', 'pom|malamute': 'Pomamute',
+  'afghan|malamute': 'Afghan Malamute', 'dane|malamute': 'Great Malamute', 'mastiff|malamute': 'Mastimute', 'gsd|malamute': 'Alaskan Shepherd',
+  'shiba|chow': 'Shiba Chow', 'corgi|chow': 'Chorgi', 'golden|chow': 'Golden Chow', 'dachs|chow': 'Chow Doxie',
+  'husky|chow': 'Chowsky', 'chihuahua|chow': 'Chi Chow', 'pug|chow': 'Pug Chow', 'greyhound|chow': 'Grey Chow',
+  'beagle|chow': 'Chabeagle', 'poodle|chow': 'Chow-poo', 'collie|chow': 'Border Chow', 'samoyed|chow': 'Sammy Chow',
+  'frenchie|chow': 'French Chow', 'akita|chow': 'Chakita', 'spitz|chow': 'Spitz Chow', 'pom|chow': 'Pomchow',
+  'afghan|chow': 'Afghan Chow', 'dane|chow': 'Dane Chow', 'mastiff|chow': 'Mastichow', 'gsd|chow': 'Chow Shepherd',
+  'shiba|stdpoodle': 'Shiba Doodle', 'corgi|stdpoodle': 'Corgidoodle', 'golden|stdpoodle': 'Big Goldendoodle', 'dachs|stdpoodle': 'Doxiedoodle',
+  'husky|stdpoodle': 'Huskydoodle', 'chihuahua|stdpoodle': 'Chidoodle', 'pug|stdpoodle': 'Pugadoodle', 'greyhound|stdpoodle': 'Big Greydoodle',
+  'beagle|stdpoodle': 'Beadoodle', 'poodle|stdpoodle': 'Medium Poodle', 'collie|stdpoodle': 'Big Bordoodle', 'samoyed|stdpoodle': 'Sammydoodle',
+  'frenchie|stdpoodle': 'Frenchdoodle', 'akita|stdpoodle': 'Akidoodle', 'spitz|stdpoodle': 'Spitzdoodle', 'pom|stdpoodle': 'Pomadoodle',
+  'afghan|stdpoodle': 'Big Afghandoodle', 'dane|stdpoodle': 'Great Danoodle', 'mastiff|stdpoodle': 'Mastidoodle', 'gsd|stdpoodle': 'Big Shepadoodle',
+  'shiba|schnauzer': 'Schnauzer Shiba', 'corgi|schnauzer': 'Schnorgi', 'golden|schnauzer': 'Golden Schnauzer', 'dachs|schnauzer': 'Schnauzer Doxie',
+  'husky|schnauzer': 'Schnusky', 'chihuahua|schnauzer': 'Chizer', 'pug|schnauzer': 'Schnug', 'greyhound|schnauzer': 'Schnauzer Grey',
+  'beagle|schnauzer': 'Schneagle', 'poodle|schnauzer': 'Schnoodle', 'collie|schnauzer': 'Border Schnauzer', 'samoyed|schnauzer': 'Sammy Schnauzer',
+  'frenchie|schnauzer': 'French Schnauzer', 'akita|schnauzer': 'Schnauzer Akita', 'spitz|schnauzer': 'Schnauzer Spitz', 'pom|schnauzer': 'Pom Schnauzer',
+  'afghan|schnauzer': 'Schnauzer Afghan', 'dane|schnauzer': 'Schnauzer Dane', 'mastiff|schnauzer': 'Schnauzer Mastiff', 'gsd|schnauzer': 'Schnauzer Shepherd',
+  'shiba|westie': 'Westie Shiba', 'corgi|westie': 'Corgi Westie', 'golden|westie': 'Golden Westie', 'dachs|westie': 'Westie Doxie',
+  'husky|westie': 'Westsky', 'chihuahua|westie': 'Chi Westie', 'pug|westie': 'Wug', 'greyhound|westie': 'Westie Grey',
+  'beagle|westie': 'Westeagle', 'poodle|westie': 'Westiepoo', 'collie|westie': 'Border Westie', 'samoyed|westie': 'Sammy Westie',
+  'frenchie|westie': 'French Westie', 'akita|westie': 'Westie Akita', 'spitz|westie': 'Westie Spitz', 'pom|westie': 'Westie Pom',
+  'afghan|westie': 'Westie Afghan', 'dane|westie': 'Westie Dane', 'mastiff|westie': 'Westie Mastiff', 'gsd|westie': 'Westie Shepherd',
+  'shiba|yorkie': 'Shiba Yorkie', 'corgi|yorkie': 'Corkie', 'golden|yorkie': 'Golden Yorkie', 'dachs|yorkie': 'Doxie Yorkie',
+  'husky|yorkie': 'Yorksky', 'chihuahua|yorkie': 'Chorkie', 'pug|yorkie': 'Pugshire', 'greyhound|yorkie': 'Yorkie Grey',
+  'beagle|yorkie': 'Borkie', 'poodle|yorkie': 'Yorkipoo', 'collie|yorkie': 'Border Yorkie', 'samoyed|yorkie': 'Sammy Yorkie',
+  'frenchie|yorkie': 'Frenchie Yorkie', 'akita|yorkie': 'Yorkie Akita', 'spitz|yorkie': 'Yorkie Spitz', 'pom|yorkie': 'Yoranian',
+  'afghan|yorkie': 'Yorkie Afghan', 'dane|yorkie': 'Yorkie Dane', 'mastiff|yorkie': 'Yorkie Mastiff', 'gsd|yorkie': 'Yorkie Shepherd',
+  'shiba|bichon': 'Bichon Shiba', 'corgi|bichon': 'Corgi-chon', 'golden|bichon': 'Golden Bichon', 'dachs|bichon': 'Doxie-chon',
+  'husky|bichon': 'Bichsky', 'chihuahua|bichon': 'Chi-chon', 'pug|bichon': 'Pug-a-chon', 'greyhound|bichon': 'Bichon Grey',
+  'beagle|bichon': 'Beachon', 'poodle|bichon': 'Poochon', 'collie|bichon': 'Border Bichon', 'samoyed|bichon': 'Sammy Bichon',
+  'frenchie|bichon': 'French Bichon', 'akita|bichon': 'Bichon Akita', 'spitz|bichon': 'Spitz-chon', 'pom|bichon': 'Bichonaranian',
+  'afghan|bichon': 'Bichon Afghan', 'dane|bichon': 'Bichon Dane', 'mastiff|bichon': 'Bichon Mastiff', 'gsd|bichon': 'Bichon Shepherd',
+  'shiba|maltese': 'Malti Shiba', 'corgi|maltese': 'Corgi Malti', 'golden|maltese': 'Golden Malti', 'dachs|maltese': 'Mauxie',
+  'husky|maltese': 'Maltsky', 'chihuahua|maltese': 'Malchi', 'pug|maltese': 'Malti Pug', 'greyhound|maltese': 'Malti Grey',
+  'beagle|maltese': 'Malteagle', 'poodle|maltese': 'Maltipoo', 'collie|maltese': 'Border Malti', 'samoyed|maltese': 'Sammy Malti',
+  'frenchie|maltese': 'Frenchie Malti', 'akita|maltese': 'Malti Akita', 'spitz|maltese': 'Malti Spitz', 'pom|maltese': 'Maltipom',
+  'afghan|maltese': 'Malti Afghan', 'dane|maltese': 'Malti Dane', 'mastiff|maltese': 'Malti Mastiff', 'gsd|maltese': 'Malti Shepherd',
+  'shiba|shihtzu': 'Shiba Tzu', 'corgi|shihtzu': 'Corgi Tzu', 'golden|shihtzu': 'Golden Tzu', 'dachs|shihtzu': 'Shih Doxie',
+  'husky|shihtzu': 'Shihsky', 'chihuahua|shihtzu': 'Shichi', 'pug|shihtzu': 'Pugzu', 'greyhound|shihtzu': 'Grey Tzu',
+  'beagle|shihtzu': 'Beagle Tzu', 'poodle|shihtzu': 'Shih-poo', 'collie|shihtzu': 'Border Tzu', 'samoyed|shihtzu': 'Sammy Tzu',
+  'frenchie|shihtzu': 'French Tzu', 'akita|shihtzu': 'Akita Tzu', 'spitz|shihtzu': 'Spitz Tzu', 'pom|shihtzu': 'Shiranian',
+  'afghan|shihtzu': 'Afghan Tzu', 'dane|shihtzu': 'Dane Tzu', 'mastiff|shihtzu': 'Mastiff Tzu', 'gsd|shihtzu': 'Shepherd Tzu',
+  'dobie|corso': 'Corsoberman', 'dobie|pitbull': 'Doberbull', 'dobie|minpin': 'Little Dobie', 'dobie|lab': 'Doberdor',
+  'dobie|malamute': 'Dobermute', 'dobie|chow': 'Dobie Chow', 'dobie|stdpoodle': 'Doberdoodle', 'dobie|schnauzer': 'Dobie Schnauzer',
+  'dobie|westie': 'Dobie Westie', 'dobie|yorkie': 'Dobie Yorkie', 'dobie|bichon': 'Dobie-chon', 'dobie|maltese': 'Dobie Malti',
+  'dobie|shihtzu': 'Dobie Tzu', 'corso|pitbull': 'Corso Pittie', 'corso|minpin': 'Pin Corso', 'corso|lab': 'Corsador',
+  'corso|malamute': 'Corsomute', 'corso|chow': 'Corso Chow', 'corso|stdpoodle': 'Corsodoodle', 'corso|schnauzer': 'Corso Schnauzer',
+  'corso|westie': 'Corso Westie', 'corso|yorkie': 'Corso Yorkie', 'corso|bichon': 'Corso-chon', 'corso|maltese': 'Corso Malti',
+  'corso|shihtzu': 'Corso Tzu', 'pitbull|minpin': 'Pinny Pittie', 'pitbull|lab': 'Labrabull', 'pitbull|malamute': 'Pitamute',
+  'pitbull|chow': 'Chow Pittie', 'pitbull|stdpoodle': 'Pitdoodle', 'pitbull|schnauzer': 'Schnau-bull', 'pitbull|westie': 'Westie Pittie',
+  'pitbull|yorkie': 'Yorkie Pittie', 'pitbull|bichon': 'Bichon Pittie', 'pitbull|maltese': 'Malti Pittie', 'pitbull|shihtzu': 'Pit Tzu',
+  'minpin|lab': 'Labrapin', 'minpin|malamute': 'Pinnymute', 'minpin|chow': 'Chow Pin', 'minpin|stdpoodle': 'Pinny-doodle',
+  'minpin|schnauzer': 'Schnau-pin', 'minpin|westie': 'Westie Pin', 'minpin|yorkie': 'Yorkie Pin', 'minpin|bichon': 'Pin-chon',
+  'minpin|maltese': 'Malti-pin', 'minpin|shihtzu': 'Pin Tzu', 'lab|malamute': 'Labmute', 'lab|chow': 'Chabrador',
+  'lab|stdpoodle': 'Labradoodle', 'lab|schnauzer': 'Schnauzador', 'lab|westie': 'Westador', 'lab|yorkie': 'Yorkador',
+  'lab|bichon': 'Labrachon', 'lab|maltese': 'Maltador', 'lab|shihtzu': 'Labratzu', 'malamute|chow': 'Chowmute',
+  'malamute|stdpoodle': 'Maladoodle', 'malamute|schnauzer': 'Schnaumute', 'malamute|westie': 'Westiemute', 'malamute|yorkie': 'Yorkiemute',
+  'malamute|bichon': 'Bichomute', 'malamute|maltese': 'Maltimute', 'malamute|shihtzu': 'Mally Tzu', 'chow|stdpoodle': 'Chowdoodle',
+  'chow|schnauzer': 'Schnau-chow', 'chow|westie': 'Westie Chow', 'chow|yorkie': 'Yorkie Chow', 'chow|bichon': 'Chow-chon',
+  'chow|maltese': 'Malti Chow', 'chow|shihtzu': 'Chow Tzu', 'stdpoodle|schnauzer': 'Big Schnoodle', 'stdpoodle|westie': 'Westiedoodle',
+  'stdpoodle|yorkie': 'Yorkiedoodle', 'stdpoodle|bichon': 'Big Poochon', 'stdpoodle|maltese': 'Maltidoodle', 'stdpoodle|shihtzu': 'Shih-doodle',
+  'schnauzer|westie': 'Wauzer', 'schnauzer|yorkie': 'Snorkie', 'schnauzer|bichon': 'Schnau-chon', 'schnauzer|maltese': 'Mauzer',
+  'schnauzer|shihtzu': 'Schnau-Tzu', 'westie|yorkie': 'Wee-Yorkie', 'westie|bichon': 'Wee-chon', 'westie|maltese': 'Highland Malti',
+  'westie|shihtzu': 'Wee-Tzu', 'yorkie|bichon': 'Yo-chon', 'yorkie|maltese': 'Morkie', 'yorkie|shihtzu': 'Shorkie',
+  'bichon|maltese': 'Maltichon', 'bichon|shihtzu': 'Shichon', 'maltese|shihtzu': 'Malshi'
+};
+ok(Object.keys(want212).length === 371 && new Set(Object.values(want212)).size === 371, '371 new v2.12 mix names listed');
+for (const k of Object.keys(want212)) { const [a, b] = k.split('|'); ok(G.MIXES[G.mixKey(a, b)].name === want212[k], `${k} = ${want212[k]} (got ${G.MIXES[G.mixKey(a, b)].name})`); }
+['dobie', 'corso', 'pitbull', 'minpin', 'lab', 'malamute', 'chow', 'stdpoodle', 'schnauzer', 'westie', 'yorkie', 'bichon', 'maltese', 'shihtzu'].forEach((k) => ok(G.MIXES[G.mixKey('mutt', k)].name === 'Mutt mix', `mutt x ${k} is Mutt mix`));
+// the real names the spec asks for
+{ const real = { 'lab|stdpoodle': 'Labradoodle', 'poodle|lab': 'Mini Labradoodle', 'golden|lab': 'Goldador', 'poodle|maltese': 'Maltipoo', 'poodle|shihtzu': 'Shih-poo', 'poodle|yorkie': 'Yorkipoo',
+    'poodle|schnauzer': 'Schnoodle', 'yorkie|maltese': 'Morkie', 'maltese|shihtzu': 'Malshi', 'yorkie|shihtzu': 'Shorkie', 'chihuahua|yorkie': 'Chorkie', 'poodle|westie': 'Westiepoo',
+    'poodle|bichon': 'Poochon', 'dobie|lab': 'Doberdor', 'husky|pitbull': 'Pitsky', 'husky|chow': 'Chowsky', 'husky|malamute': 'Alusky', 'chihuahua|minpin': 'Chipin', 'beagle|minpin': 'Meagle' };
+  for (const k of Object.keys(real)) { const [a, b] = k.split('|'); ok(G.MIXES[G.mixKey(a, b)].name === real[k], `real name ${k} = ${real[k]}`); } }
 // same breed -> null (purebred); unknown key counts as mutt
 G.BREEDS.forEach((k) => ok(G.mixOf(k, k, seeded(1)) === null, `same breed ${k} -> null`));
 ok(G.mixOf('wolfy', 'corgi', seeded(2)).body === 'mutt', 'unknown key -> mutt');

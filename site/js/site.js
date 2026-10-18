@@ -46,7 +46,7 @@
   var clampX = function (x) { return Math.max(X0, Math.min(X1, x)); }, clampY = function (y) { return Math.max(Y0, Math.min(Y1, y)); };
   var dist2 = function (ax, ay, bx, by) { var dx = ax - bx, dy = (ay - by) * 1.6; return Math.sqrt(dx * dx + dy * dy); };
 
-  // the static dogs and ball leave; the live ones come in (a random few of the 14 each visit)
+  // the static dogs and ball leave; the live ones come in (a random few each visit)
   Array.prototype.forEach.call(stage.querySelectorAll('.dd, .ball'), function (e) { e.remove(); });
   var keys = KEYS.slice().sort(function () { return Math.random() - 0.5; }).slice(0, N_DOGS);
   var balls = [], dogs = keys.map(function (key, i) {

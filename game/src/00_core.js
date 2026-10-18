@@ -170,12 +170,27 @@ const SIG = {
   afghan: { n: 'The Hair Flip', fx: 'tk-dance', pose: 'happy', say: 'Note the flow. Note the shine. Do not note the knots.' },
   dane: { n: 'The Tall Bow', fx: 'tk-bow', pose: 'happy', say: 'A bow. From very high up. Sorry about the ceiling.' },
   mastiff: { n: 'The Great Flop', fx: 'tk-lie', pose: 'down', say: 'Down I go. Slowly. All of me. Please wait.' },
-  gsd: { n: 'The Salute', fx: 'tk-bow', pose: 'sit', say: 'Ready. Alert. Waiting for orders. Any orders. Even snacks.' }
+  gsd: { n: 'The Salute', fx: 'tk-bow', pose: 'sit', say: 'Ready. Alert. Waiting for orders. Any orders. Even snacks.' },
+  // v2.12 Fourteen New Friends
+  dobie: { n: 'The Sentry Sit', fx: 'tk-perk', pose: 'sit', say: 'Perimeter checked. Threat level: cuddle. You may approach.' },
+  corso: { n: 'The Gentle Lean', fx: 'tk-lean', pose: 'pet', say: '*leans slowly* This is how a guardian hugs. Please do not move.' },
+  pitbull: { n: 'The Wiggle Hug', fx: 'tk-dance', pose: 'happy', say: 'The whole back half is wagging. I cannot stop it. Come here for a hug.' },
+  minpin: { n: 'The High Prance', fx: 'tk-dance', pose: 'happy', say: 'Knees up. Chin up. I am a very small horse.' },
+  lab: { n: 'The Dinner Dance', fx: 'tk-dance', pose: 'happy', say: 'Is it dinner? Is it dinner? It is dinner. I knew it.' },
+  malamute: { n: 'The Woo-Woo Speech', fx: 'tk-bow', pose: 'happy', snd: 'talk', say: 'Woo-woo-WOO! That was a speech. You may applaud.' },
+  chow: { n: 'The Lion Pose', fx: 'tk-perk', pose: 'sit', say: 'Behold the mane. Do not touch the mane. Just behold.' },
+  stdpoodle: { n: 'The Big Pirouette', fx: 'tk-spin', pose: 'happy', say: 'A full turn on long legs. The Miniature Poodle is taking notes.' },
+  schnauzer: { n: 'The Eyebrow Raise', fx: 'tk-perk', pose: 'sit', say: 'I raised my eyebrows. That means I saw you. And the leaf.' },
+  westie: { n: 'The Dig Dance', fx: 'tk-dance', pose: 'happy', say: 'Dig, dig, dance. Where did the dirt go? Everywhere. Ta-da.' },
+  yorkie: { n: 'The Tiny Diva Spin', fx: 'tk-spin', pose: 'happy', always: true, snd: 'alert', say: 'I am small and I am a star. The bow stays on. Always.' },
+  bichon: { n: 'The Powder Puff Spin', fx: 'tk-spin', pose: 'happy', say: 'Boing, boing, spin. I am a cloud with a very happy tail.' },
+  maltese: { n: 'The Silk Swish', fx: 'tk-bow', pose: 'happy', say: 'A gentle bow and a swish of silk. Applause may be quiet.' },
+  shihtzu: { n: 'The Royal Flop', fx: 'tk-lie', pose: 'down', say: 'The top-knot stays up. The rest of me is a rug. Goodnight, court.' }
 };
 const SIG_FB = { n: 'The Grand Finale', fx: 'tk-bow', pose: 'happy', say: 'Ta-da! (Applause, please.)' };
 const sigOf = (k) => SIG[k] || SIG_FB;
 /* v1.7: every breed key in the game, in PawArt order (unknown keys fall back to generic content) */
-const BREED_KEYS = ['shiba', 'corgi', 'golden', 'dachs', 'husky', 'mutt', 'chihuahua', 'pug', 'greyhound', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie', 'akita', 'spitz', 'pom', 'afghan', 'dane', 'mastiff', 'gsd'];
+const BREED_KEYS = ['shiba', 'corgi', 'golden', 'dachs', 'husky', 'mutt', 'chihuahua', 'pug', 'greyhound', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie', 'akita', 'spitz', 'pom', 'afghan', 'dane', 'mastiff', 'gsd', 'dobie', 'corso', 'pitbull', 'minpin', 'lab', 'malamute', 'chow', 'stdpoodle', 'schnauzer', 'westie', 'yorkie', 'bichon', 'maltese', 'shihtzu'];
 const ROUTES = {
   park: { n: 'Sunny Park', bond: 1, secs: 60, energy: 15, happy: 15, clean: 5, coins: [20, 30], bp: 8, pool: ['coin', 'leaf', 'flower', 'bone'] },
   river: { n: 'Riverside Trail', bond: 2, secs: 75, energy: 25, happy: 20, clean: 10, coins: [35, 50], bp: 11, pool: ['coin', 'leaf', 'shell'] },
@@ -256,7 +271,22 @@ const PLACE_LINES = {
   afghan: { house: 'I have chosen the best cushion. I am draped on it. Please do not disturb the drape.', park: 'The wind in my hair. Everyone please notice the wind in my hair.', river: 'I admire the water. My ears may touch it. Nothing else.', woods: 'Twigs in my coat. A tragedy. A very elegant tragedy.', beach: 'Sand in the silk. I will walk like it is a runway.', market: 'I will pose by the door. Admiration is free.' },
   dane: { house: 'The sofa fits half of me. The other half is on the floor. It is fine.', park: 'Hello, small dogs. Hello. Down there. I will be careful.', river: 'The water only reaches my knees. I feel tall. I am tall.', woods: 'Low branches again. I am sorry, trees.', beach: 'So much sand. I will lie in a long line of it.', market: 'I can see over every stall. Everything looks tasty from up here.' },
   mastiff: { house: 'Sofa. Mine. It now has a mastiff on it. The dent stays.', park: 'I will sit here and be a friendly hill. Visitors welcome.', river: 'Drool, water, drool. Mostly drool.', woods: 'Shade and a log. The log is a pillow now.', beach: 'Warm sand and a big sigh. That is the whole plan.', market: 'I will wait here. Please step over my feet. They are big.' },
-  gsd: { house: 'I have checked every room. All is in order. Reporting.', park: 'So many dogs and so many jobs. I will start with the ball.', river: 'I will patrol the bank. Nothing is wrong. Still patrolling.', woods: 'Trails! Scents! Tasks! Everything is a task!', beach: 'The sand is flat and the ball is round. Throw it.', market: 'I will stand by you. Anyone suspicious will be sniffed.' }
+  gsd: { house: 'I have checked every room. All is in order. Reporting.', park: 'So many dogs and so many jobs. I will start with the ball.', river: 'I will patrol the bank. Nothing is wrong. Still patrolling.', woods: 'Trails! Scents! Tasks! Everything is a task!', beach: 'The sand is flat and the ball is round. Throw it.', market: 'I will stand by you. Anyone suspicious will be sniffed.' },
+  // v2.12 Fourteen New Friends
+  dobie: { house: 'I have checked every window. Now I will lie where I can see all the doors.', park: 'I will patrol the whole park once. Then I will lean on a friend.', river: 'Water, mud, ducks. I am on watch. The ducks are on notice.', woods: 'Every rustle is under review. So far it is only squirrels.', beach: 'Wide open sand. I can see everything. I may need my coat soon.', market: 'I will stand by the door and look serious. Then I will accept a pat.' },
+  corso: { house: 'This is my house. I am its calm, large guardian. Sit anywhere. Not there.', park: 'I will stand in the middle and be a friendly wall. Visitors welcome.', river: 'Slow water, slow dog. We understand each other.', woods: 'A quiet path. I will walk in front of you. Just in case.', beach: 'The sea is big. I am bigger. We are both calm about it.', market: 'I will stay close. Anyone nice may say hello. Slowly.' },
+  pitbull: { house: 'Sofa! Blanket! You! This is the best room and I am wiggling all of it.', park: 'So many new friends! I have not met them yet but I love every one!', river: 'Splash! My whole back half is wagging in the water!', woods: 'Sticks and smells and you! My three favourite things!', beach: 'Sand zoomies! The wagging makes even more sand!', market: 'Hello, shop! Hello, shopper! Hello, other shopper! Hug?' },
+  minpin: { house: 'I have checked the sofa, the window and the sock. I found the sock.', park: 'I am prancing. Everyone please notice the prancing. High knees!', river: 'The river is long and I am quick. I will race it. I lose. I race again.', woods: 'Tiny dog, huge forest. Everything is a gap I can fit through.', beach: 'The sand is cold on my toes. I will zoom until they warm up.', market: 'Carry me in your coat and I will supervise the whole market from there.' },
+  lab: { house: 'The kitchen is that way. I am not going. I am just standing near it.', park: 'Balls! Friends! More balls! I might burst with joy.', river: 'WATER! I was born for this! Splash splash splash!', woods: 'Sticks! Puddles! Mud! A perfect day. Do you have a snack?', beach: 'Waves AND a ball AND you? Is it my birthday?', market: 'Kibble Corner smells so good. I am being very patient. Very. Patient.' },
+  malamute: { house: 'Indoors is warm. Woo. Can we go somewhere with snow? Woo-woo.', park: 'Hello, park! Woo-woo! That was a long hello. I have more.', river: 'Cold water! My favourite kind! I will dig a hole in it.', woods: 'This is the best digging ground. I will tell you all about it. Woo.', beach: 'Sun, sand and a thick coat. Shade and water, please. Woo.', market: 'Woo-woo! I am telling the whole market about my day.' },
+  chow: { house: 'I have chosen this cushion. It is mine. You may sit near it.', park: 'I will observe the park from here. Do not take it personally.', river: 'Water. Interesting. I will watch it from a dignified distance.', woods: 'A calm forest and a calm lion. We approve of each other.', beach: 'Thick coat, warm sand. Shade and water, please. Then admire me.', market: 'Many people. I will stay by your leg and look unimpressed. It suits me.' },
+  stdpoodle: { house: 'I have chosen the best chair. The Miniature Poodle may have the second best.', park: 'I will run a few elegant laps. Then I will learn a trick, for fun.', river: 'A paddle! Poodles were water dogs once. I remember. Mostly.', woods: 'Twigs in the topknot. I will be brave about it.', beach: 'Long legs, long beach. I could run to the horizon. Gracefully.', market: 'The Boutique! My cousin the Miniature Poodle recommends it. Strongly.' },
+  schnauzer: { house: 'I have checked every room. The beard approves.', park: 'Ten dogs, four leaves and a pigeon. I will report on all of them.', river: 'Ducks. I have notes. Many notes.', woods: 'A rustle! A twig! A squirrel! This is an emergency. A happy one.', beach: 'Sand in the beard. I will be a very gritty philosopher.', market: 'I will guard the door. The eyebrows will do the rest.' },
+  westie: { house: 'Sofa, cushion, dig in the cushion. Why not? It is a good cushion.', park: 'Hello, everyone! I am a very small white dog with very large plans.', river: 'A muddy bank. I will dig. Tomorrow I will be white again. Probably.', woods: 'A hole! Somebody dug a hole. I will make it bigger.', beach: 'Sand is just dry mud. I will dig it. Hello, sand.', market: 'I will march along the shops like a tiny white chrysanthemum on a mission.' },
+  yorkie: { house: 'The sofa is mine. The cushion is mine. You may sit on the floor.', park: 'Big dogs everywhere. I will stroll straight through. They will move.', river: 'Water is wet. I have decided I do not love that. Carry me, please.', woods: 'Leaves in the silk. I will allow it. Briefly.', beach: 'Sand and silk are not friends. Hold me and I will look at it.', market: 'Carry me and I will supervise. Put me down and I will still supervise.' },
+  bichon: { house: 'A fluffy cushion! We match! I will bounce on it in a circle.', park: 'Hello! Hello! Hello! I am so happy I could pop like a cloud!', river: 'The water is lovely. I will watch it. I will not get my puff wet.', woods: 'Bounce, bounce, leaf. Bounce, bounce, stick. This is a great game.', beach: 'Sand on my puff. I am a sugar cookie now. Hello!', market: 'Everyone says I look like a cotton ball. I say thank you.' },
+  maltese: { house: 'A soft cushion and a window. I will lie on both. Gracefully.', park: 'I will float around the park. Please notice the silk.', river: 'Water near my fringe. I will admire it from your arms.', woods: 'The leaves are very big. I am a small white cloud among them.', beach: 'The sand is rough on silk. I will watch it from your lap.', market: 'A small dog in a long white coat. I will wait by you and look lovely.' },
+  shihtzu: { house: 'The sofa is soft. The sun is warm. I am not moving. Goodnight.', park: 'I walked to a bench. I sat on the bench. That was the whole walk.', river: 'Water. Ducks. Shade. I will watch from the nicest spot.', woods: 'Shady and quiet. My kind of walk. Wake me if there is a snack.', beach: 'Hot sand, short nose. Shade and water, please. Then a nap.', market: 'I will ride in your arms and wave at the shops with my top-knot.' }
 };
 const DUCK_LINES = ['A duck looks at you. You look at the duck. Nobody blinks.', 'The ducks are holding a meeting. You were not invited.', 'One duck is wearing a tiny hat. Probably.'];
 const FAV = {
@@ -280,9 +310,24 @@ const FAV = {
   afghan: { food: ['Salmon Pâté'], toy: 'Frisbee', act: 'walks' },
   dane: { food: ['Chicken & Rice Bowl'], toy: 'Plush Bone', act: 'petting' },
   mastiff: { food: ['Pupcake'], toy: 'Rope Tug', act: 'feeding' },
-  gsd: { food: ['Chicken & Rice Bowl'], toy: 'Puzzle Feeder', act: 'tricks' }
+  gsd: { food: ['Chicken & Rice Bowl'], toy: 'Puzzle Feeder', act: 'tricks' },
+  // v2.12 Fourteen New Friends
+  dobie: { food: ['Chicken & Rice Bowl'], toy: 'Rope Tug', act: 'walks' },
+  corso: { food: ['Pupcake'], toy: 'Plush Bone', act: 'petting' },
+  pitbull: { food: ['Pupcake'], toy: 'Rope Tug', act: 'petting' },
+  minpin: { food: ['Salmon Pâté'], toy: 'Squeaky Duck', act: 'tricks' },
+  lab: { food: ['Basic Kibble', 'Pupcake'], toy: 'Tennis Ball', act: 'fetch' },
+  malamute: { food: ['Chicken & Rice Bowl'], toy: 'Rope Tug', act: 'digging' },
+  chow: { food: ['Salmon Pâté'], toy: 'Plush Bone', act: 'walks' },
+  stdpoodle: { food: ['Salmon Pâté'], toy: 'Frisbee', act: 'tricks' },
+  schnauzer: { food: ['Bone-shaped Biscuit'], toy: 'Puzzle Feeder', act: 'walks' },
+  westie: { food: ['Bone-shaped Biscuit'], toy: 'Squeaky Duck', act: 'digging' },
+  yorkie: { food: ['Salmon Pâté'], toy: 'Plush Bone', act: 'petting' },
+  bichon: { food: ['Pupcake'], toy: 'Squeaky Duck', act: 'tricks' },
+  maltese: { food: ['Salmon Pâté'], toy: 'Plush Bone', act: 'petting' },
+  shihtzu: { food: ['Pupcake'], toy: 'Plush Bone', act: 'feeding' }
 };
-const BARK = { shiba: 1.1, corgi: 1.35, golden: 0.9, dachs: 1.2, husky: 0.8, mutt: 1.0, chihuahua: 1.7, pug: 0.95, greyhound: 0.75, beagle: 1.0, poodle: 1.25, collie: 1.15, samoyed: 0.95, frenchie: 0.9, akita: 0.65, spitz: 1.3, pom: 1.6, afghan: 0.85, dane: 0.5, mastiff: 0.45, gsd: 0.95 };
+const BARK = { shiba: 1.1, corgi: 1.35, golden: 0.9, dachs: 1.2, husky: 0.8, mutt: 1.0, chihuahua: 1.7, pug: 0.95, greyhound: 0.75, beagle: 1.0, poodle: 1.25, collie: 1.15, samoyed: 0.95, frenchie: 0.9, akita: 0.65, spitz: 1.3, pom: 1.6, afghan: 0.85, dane: 0.5, mastiff: 0.45, gsd: 0.95, dobie: 0.85, corso: 0.5, pitbull: 1, minpin: 1.55, lab: 0.95, malamute: 0.85, chow: 0.7, stdpoodle: 1.1, schnauzer: 1.4, westie: 1.35, yorkie: 1.6, bichon: 1.2, maltese: 1.15, shihtzu: 1 };
 const FALLBACK_DOGS = [
   { key: 'shiba', name: 'Mochi', breed: 'Shiba Inu', personality: 'Proud, independent, dramatic', joke: 'heh.' },
   { key: 'corgi', name: 'Biscuit', breed: 'Corgi', personality: 'Cheerful, greedy for food', joke: 'Is that a snack? Is everything a snack?' },
@@ -294,7 +339,7 @@ const FALLBACK_DOGS = [
   { key: 'pug', name: 'Dumpling', breed: 'Pug', personality: 'Snorty, cuddly, lazy, food-loving', joke: 'snort.' },
   { key: 'greyhound', name: 'Rocket', breed: 'Greyhound', personality: 'Gentle couch potato who sprints in bursts', joke: '45 mph. Then a 20-hour nap.' },
   { key: 'beagle', name: 'Bagel', breed: 'Beagle', personality: 'Nose-led, food-obsessed, bays loudly', joke: 'Smelled that from three streets away.' },
-  { key: 'poodle', name: 'Pretzel', breed: 'Poodle', personality: 'Thinks it is the smartest one in the room. It is.', joke: 'Haircut optional. Dignity not.' },
+  { key: 'poodle', name: 'Pretzel', breed: 'Miniature Poodle', personality: 'Thinks it is the smartest one in the room. It is.', joke: 'Haircut optional. Dignity not.' },
   { key: 'collie', name: 'Scout', breed: 'Border Collie', personality: 'Has counted the sheep. There are no sheep. Has counted you.', joke: 'Will herd the puppies, the ducks and the furniture.' },
   { key: 'samoyed', name: 'Cloud', breed: 'Samoyed', personality: 'Smiles so the snow does not stick. Also just smiles.', joke: 'Sheds a second dog every spring.' },
   { key: 'frenchie', name: 'Brioche', breed: 'French Bulldog', personality: 'Snores, snorts, sits on your foot. All three at once.', joke: 'Breathes like a tiny engine. Shade and water, please.' },
@@ -304,7 +349,22 @@ const FALLBACK_DOGS = [
   { key: 'afghan', name: 'Saffron', breed: 'Afghan Hound', personality: 'Elegant and aloof. Not one hair out of place.', joke: 'I do not fetch. I glide.' },
   { key: 'dane', name: 'Waffle', breed: 'Great Dane', personality: 'A gentle giant who follows you from room to room.', joke: 'I am a lap dog. Your lap is just too small.' },
   { key: 'mastiff', name: 'Crumpet', breed: 'English Mastiff', personality: 'Huge, slow and sweet. Naps in the biggest patch of shade.', joke: 'A little drool is how I say I love you.' },
-  { key: 'gsd', name: 'Strudel', breed: 'German Shepherd', personality: 'Clever and alert. Loves a job, any job.', joke: 'Ears up. On duty. Was that a squirrel?' }
+  { key: 'gsd', name: 'Strudel', breed: 'German Shepherd', personality: 'Clever and alert. Loves a job, any job.', joke: 'Ears up. On duty. Was that a squirrel?' },
+  // v2.12 Fourteen New Friends
+  { key: 'dobie', name: 'Espresso', breed: 'Doberman', personality: 'A big softie in a sleek coat. Keeps watch, then wants a cuddle.', joke: 'I am on guard. Please guard me with a blanket.' },
+  { key: 'corso', name: 'Cannoli', breed: 'Cane Corso', personality: 'A calm, gentle guardian. Keeps an eye on the whole family.', joke: 'I am very serious. Except when you scratch my ears.' },
+  { key: 'pitbull', name: 'Peaches', breed: 'Pit Bull', personality: 'A wiggly, people-loving goofball. Every stranger is a new best friend.', joke: 'My whole back half wags. I cannot stop it.' },
+  { key: 'minpin', name: 'Jellybean', breed: 'Miniature Pinscher', personality: 'A tiny, fearless bundle of energy. Prances everywhere.', joke: 'I am not small. Everything else is big.' },
+  { key: 'lab', name: 'Butter', breed: 'Labrador Retriever', personality: 'Friendly, food-loving and always ready for a swim.', joke: 'Is it dinner? It feels like dinner.' },
+  { key: 'malamute', name: 'Maple', breed: 'Alaskan Malamute', personality: 'A big fluffy sled dog who talks back. Loves snow and digging.', joke: 'Woo-woo. That means I disagree.' },
+  { key: 'chow', name: 'Bao', breed: 'Chow Chow', personality: 'A dignified fluffy lion with a blue tongue. Picks friends carefully.', joke: 'I am not grumpy. This is just my face.' },
+  { key: 'stdpoodle', name: 'Madeleine', breed: 'Standard Poodle', personality: 'A tall, clever, curly athlete. Learns tricks before you teach them.', joke: 'I am the big poodle. The small one is my cousin.' },
+  { key: 'schnauzer', name: 'Muesli', breed: 'Miniature Schnauzer', personality: 'Bearded, bossy and very alert. Reports every leaf.', joke: 'The beard is for wisdom. And soup.' },
+  { key: 'westie', name: 'Shortbread', breed: 'West Highland White Terrier', personality: 'A cheerful little white terrier. Digs first, asks later.', joke: 'I was white this morning. I promise.' },
+  { key: 'yorkie', name: 'Toffee', breed: 'Yorkshire Terrier', personality: 'A tiny terrier with silky hair and a giant attitude.', joke: 'I am in charge here. Please lift me onto the sofa.' },
+  { key: 'bichon', name: 'Meringue', breed: 'Bichon Frise', personality: 'A happy cotton ball who bounces everywhere.', joke: 'Is this a haircut or a cloud? Yes.' },
+  { key: 'maltese', name: 'Marshmallow', breed: 'Maltese', personality: 'A gentle little lap dog in a long white coat.', joke: 'I do not walk. I float, elegantly.' },
+  { key: 'shihtzu', name: 'Wonton', breed: 'Shih Tzu', personality: 'A relaxed lap dog with a top-knot and big opinions about naps.', joke: 'Top-knot up. Nap time down.' }
 ];
 const GENERIC_DOG = (key) => ({ key, name: 'Buddy', breed: 'Mystery Pup', personality: 'A little bit of everything', joke: 'Hi! I am a dog. Probably.' });
 const JOKES = {
@@ -328,7 +388,22 @@ const JOKES = {
   afghan: ['Wind in my hair. Do not touch the hair.', 'I am not stuck up. I just sit at a better height.', 'Ten minutes of running. Two hours of brushing. Fair trade.', 'I have a very expressive face. It says not now.', 'My ears are silk. They also hold your attention.', 'Yes, I am an artwork. Please look from the left.'],
   dane: ['I am a very big dog who thinks he is a lap dog.', 'I sat on the sofa. The sofa is now a footstool.', 'My tail is a tidy weapon. Sorry about the coffee table.', 'Everyone looks up to me. That is just the height.', 'I leaned on you. That is a hug. A big one.', 'I was a puppy last week. Look at me now. Ow, the ceiling.'],
   mastiff: ['Big dog, bigger sigh.', 'I only run when there is food. The food is usually here.', 'I am not drooling. I am showing my love.', 'My wrinkles tell a story. The story is about naps.', 'I sat on the cat. I did not know there was a cat.', 'All that love in one big head. And big feet.'],
-  gsd: ['I have a job. The job is you.', 'Reporting for duty. Waiting for orders. Still waiting.', 'I know a trick. Also fourteen more. Ask.', 'My ears hear the fridge. My ears hear everything.', 'I will guard the garden. And the sofa. And the snacks.', 'I am not bossy. I am organised.']
+  gsd: ['I have a job. The job is you.', 'Reporting for duty. Waiting for orders. Still waiting.', 'I know a trick. Also fourteen more. Ask.', 'My ears hear the fridge. My ears hear everything.', 'I will guard the garden. And the sofa. And the snacks.', 'I am not bossy. I am organised.'],
+  // v2.12 Fourteen New Friends
+  dobie: ['I am on guard. Please guard me with a blanket.', 'I checked the room. It is safe. Can I sit on you now?', 'My ears are folded and my heart is not. It is marshmallow.', 'I look serious. I am practising. It is not going well.', 'It is chilly. Is there a coat? I would like the coat.'],
+  corso: ['I am very serious. Except when you scratch my ears.', 'I guard the family. The family guards the snacks. It works.', 'A little jowl, a lot of love.', 'I am big. I am calm. I am slightly damp. Sorry.', 'Slow blink means I love you. Fast blink means snack.'],
+  pitbull: ['My whole back half wags. I cannot stop it.', 'Hello! Hello! Do you want a hug? I want a hug!', 'I am a lap dog. The lap is a bit small. I will manage.', 'Smile check: smiling. Wiggle check: wiggling.', 'I leaned on you. That means we are best friends.'],
+  minpin: ['I am not small. Everything else is big.', 'Look at my knees go. Up, up, up. Like a tiny horse.', 'I fit through every gap. Every gap is mine.', 'I am very brave. Also cold. Do you have a coat?', 'Zoom. Stop. Prance. Zoom. That is my whole morning.'],
+  lab: ['Is it dinner? It feels like dinner.', 'I love you. I love the ball. I love that you have a sandwich.', 'My tail is an otter. It clears tables. Sorry about the table.', 'The bowl is measured. I counted the kibble. It is a small number.', 'I swim like a seal and I think like a snack.'],
+  malamute: ['Woo-woo. That means I disagree.', 'Woo. Woo-woo. Woo. That was a whole speech. Thank you.', 'I am not stubborn. I am just very sure.', 'I dug a hole. It is a nice hole. It is for me.', 'My coat is a winter coat all year. I regret nothing. I would like shade.'],
+  chow: ['I am not grumpy. This is just my face.', 'Check out my tongue. It is blue. It was always blue. No, you cannot touch it.', 'I am a lion. A small, fluffy, polite lion.', 'I choose my friends carefully. You are on the list.', 'Brush me and I will allow it. That is love.'],
+  stdpoodle: ['I am the big poodle. The small one is my cousin.', 'I learned that trick before you finished the sentence.', 'Long legs. Curly coat. Please clap.', 'My cousin the Miniature Poodle is very smart. I am smart too. Taller, though.', 'The topknot is not a hat. It is a hairstyle with ambition.'],
+  schnauzer: ['The beard is for wisdom. And soup.', 'My eyebrows saw that. My eyebrows see everything.', 'A leaf moved. I have written a report. It is four pages.', 'I am small but I am in charge of the mailbox.', 'Beard check: tidy. Mood check: alert.'],
+  westie: ['I was white this morning. I promise.', 'Dig first. Ask later. That is the Westie way.', 'I am not dirty. I am a gardener.', 'My ears are small and my plans are big.', 'Fluffy head, carrot tail, mud on the nose. Perfect.'],
+  yorkie: ['I am in charge here. Please lift me onto the sofa.', 'Tiny dog, long hair, enormous opinions.', 'The bow stays. I will fight for the bow.', 'I weigh as much as a loaf of bread. A very bossy loaf.', 'I bark at the big dogs. They do not know I am small. I will not tell them.'],
+  bichon: ['Is this a haircut or a cloud? Yes.', 'Boing boing boing. That is how I say hello.', 'I am a cotton ball with a heartbeat.', 'Brush me and I will be a cloud again. A bigger cloud.', 'I spin because I am happy. Also because I can.'],
+  maltese: ['I do not walk. I float, elegantly.', 'My hair is longer than my legs. I manage.', 'The topknot keeps the world out of my eyes. It also looks nice.', 'A lap is a throne. This is my throne.', 'Brush me daily and I will tell you I love you. Quietly.'],
+  shihtzu: ['Top-knot up. Nap time down.', 'My face is flat so I can reach the pillow faster.', 'I am a small lion. A sleepy one. Roar. Zzz.', 'My hair is so long I walk on a rug of me.', 'The lap is warm. The sun is warm. I am warm. Zzz.']
 };
 const NPC_JOKES = ['Nice leash. Is that leash new?', 'I am Gary. I have never been happy.', 'Have you seen my ball? It is round. Ball-coloured.', 'WOOF. Sorry. Wrong dog.', 'I ate a bee once. Zero stars.', 'Your human walks funny. Mine too.', 'Sniff my bum? Rude not to.', 'I live here. On this exact spot.'];
 const SMELLS = ['Smells like a sandwich from 2014.', 'Smells like ANOTHER DOG. Scandalous.', 'Smells like adventure. No wait, a sock.', 'Smells like rain and old crisps.', 'Smells like... a squirrel\'s diary.', 'Sniff sniff. Interesting. Very interesting.'];

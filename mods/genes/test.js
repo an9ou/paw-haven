@@ -33,12 +33,29 @@ const EXPECT = {
   afghan:    { name: 'Red',                 eyes: 'brown', base: '#C9783E', light: '#E6A86E', dark: '#3A2E2E', white: 0 },
   dane:      { name: 'Fawn',                eyes: 'brown', base: '#D9A562', light: '#E6BA7E', dark: '#2B2430', white: 0 },
   mastiff:   { name: 'Fawn',                eyes: 'brown', base: '#D8AE72', light: '#E9C994', dark: '#2B2430', white: 0 },
-  gsd:       { name: 'Black and tan',       eyes: 'brown', base: '#C98A4A', light: '#E2B278', dark: '#2B2430', white: 0 }
+  gsd:       { name: 'Black and tan',       eyes: 'brown', base: '#C98A4A', light: '#E2B278', dark: '#2B2430', white: 0 },
+  // v2.12 breeds (V212.md 3): the starter cells equal the final SP col / light / dark in dogs/pawart_dogs.js (the numbers batch)
+  dobie:     { name: 'Black and rust',      eyes: 'brown', base: '#2B2628', light: '#C8743A', dark: '#1D1A22', white: 0 },
+  corso:     { name: 'Black',               eyes: 'brown', base: '#363133', light: '#57504F', dark: '#1D1A22', white: 0 },
+  pitbull:   { name: 'Blue',                eyes: 'brown', base: '#7E8898', light: '#F2EEE6', dark: '#4E5664', white: 0 },
+  minpin:    { name: 'Red',                 eyes: 'brown', base: '#B5522C', light: '#DC8A56', dark: '#7A3418', white: 0 },
+  lab:       { name: 'Yellow',              eyes: 'brown', base: '#F0CC84', light: '#F9E6B6', dark: '#D9A458', white: 0 },
+  malamute:  { name: 'Grey and white',      eyes: 'brown', base: '#9C9AA4', light: '#FFFFFF', dark: '#5E5A68', white: 0 },
+  chow:      { name: 'Red',                 eyes: 'brown', base: '#D2894A', light: '#EBB477', dark: '#A9652E', white: 0 },
+  stdpoodle: { name: 'Black',               eyes: 'brown', base: '#2B2430', light: '#4A3F4E', dark: '#1D1A22', white: 0 },
+  schnauzer: { name: 'Salt and pepper',     eyes: 'brown', base: '#9A9AA3', light: '#E6E4E0', dark: '#4A4652', white: 0 },
+  westie:    { name: 'White',               eyes: 'brown', base: '#FBF8F1', light: '#FFFFFF', dark: '#E3D9C8', white: 0 },
+  yorkie:    { name: 'Blue and tan',        eyes: 'brown', base: '#617389', light: '#D9A35C', dark: '#3E4A5E', white: 0 },
+  bichon:    { name: 'White',               eyes: 'brown', base: '#FDFBF6', light: '#FFFFFF', dark: '#E4DCCD', white: 0 },
+  maltese:   { name: 'White',               eyes: 'brown', base: '#FFFDF8', light: '#FFFFFF', dark: '#E6DDCE', white: 0 },
+  shihtzu:   { name: 'Gold and white',      eyes: 'brown', base: '#E0A458', light: '#FFFBF2', dark: '#9A6430', white: 0.6 }
 };
-ok(Object.keys(EXPECT).length === 21 && G.BREEDS.length === 21, '21 breeds');
+const V212 = ['dobie', 'corso', 'pitbull', 'minpin', 'lab', 'malamute', 'chow', 'stdpoodle', 'schnauzer', 'westie', 'yorkie', 'bichon', 'maltese', 'shihtzu'];
+ok(Object.keys(EXPECT).length === 35 && G.BREEDS.length === 35, '35 breeds');
 ok(G.BREEDS.slice(10, 14).join() === 'poodle,collie,samoyed,frenchie', 'v2.5 keys appended after the first ten');
 ok(G.BREEDS.slice(14, 17).join() === 'akita,spitz,pom', 'v2.11 keys appended after the v2.5 ones');
-ok(G.BREEDS.slice(17).join() === 'afghan,dane,mastiff,gsd', 'the owner\'s four more appended at the end of BREEDS');
+ok(G.BREEDS.slice(17, 21).join() === 'afghan,dane,mastiff,gsd', 'the owner\'s four more appended after pom');
+ok(G.BREEDS.slice(21).join() === V212.join(), 'the fourteen v2.12 keys appended at the end of BREEDS, in order');
 console.log('Starter phenotypes:');
 for (const k of Object.keys(EXPECT)) {
   const p = G.phenotype(G.STARTER_GENES[k], k), e = EXPECT[k];
@@ -89,6 +106,8 @@ ok(G.phenotype(mk({}), 'not-a-breed').coat.base === G.SHADES.mutt.black[0], 'unk
 ok(G.SIZE.chihuahua === 'small' && G.SIZE.pug === 'small' && G.SIZE.beagle === 'medium' && G.SIZE.greyhound === 'large', 'breed sizes');
 ok(G.SIZE.poodle === 'medium' && G.SIZE.collie === 'medium' && G.SIZE.samoyed === 'large' && G.SIZE.frenchie === 'small', 'v2.5 breed sizes');
 ok(G.SIZE.akita === 'large' && G.SIZE.spitz === 'medium' && G.SIZE.pom === 'small' && ['afghan', 'dane', 'mastiff', 'gsd'].every((k) => G.SIZE[k] === 'large'), 'v2.11 breed sizes');
+ok(['dobie', 'corso', 'lab', 'malamute', 'stdpoodle'].every((k) => G.SIZE[k] === 'large') && ['pitbull', 'chow'].every((k) => G.SIZE[k] === 'medium') && ['minpin', 'schnauzer', 'westie', 'yorkie', 'bichon', 'maltese', 'shihtzu'].every((k) => G.SIZE[k] === 'small'), 'v2.12 breed sizes');
+ok(G.BREED_NAMES.poodle === 'Miniature Poodle' && G.BREED_NAMES.stdpoodle === 'Standard Poodle' && G.BREED_NAMES.pitbull === 'Pit Bull' && G.BREED_NAMES.shihtzu === 'Shih Tzu', 'breed names (the old poodle is the Miniature Poodle)');
 ok(G.BREEDS.every((k) => G.BREED_NAMES[k] && G.SHADES[k] && G.FREQ[k] && G.STARTER_GENES[k] && G.SIZE[k]), 'every breed has names, shades, frequencies, starter genes and a size');
 // v2.5 coats (V25.md 6b)
 const nm = (o, k) => G.phenotype(mk(o), k).coatName;
@@ -135,6 +154,45 @@ ok(nm({ M: ['M', 'm'] }, 'dane') === 'Merle' && nm({ M: ['M', 'm'], S: ['sp', 's
   ok(br.brindle === true && mb.brindle === true && !plain.brindle && !('brindle' in plain) && !('brindle' in G.phenotype(mk({ B: ['b', 'b'] }), 'golden').coat), 'coat.brindle is set for the brindle looks of the dane and the mastiff only'); }
 ok(G.isDoubleMerle(mk({ M: ['M', 'm'] }), mk({ M: ['M', 'm'] })) && !G.isDoubleMerle(mk({ M: ['M', 'm'] }), mk({})), 'two merle Great Danes would be a double merle, one merle is fine');
 { const a = G.STARTER_GENES.dane, m = Object.assign({}, a, { M: ['M', 'm'] }); let bad = 0, merle = 0; const r = seeded(5); for (let i = 0; i < 4000; i++) { const g = G.inherit(m, a, r); if (g.M[0] === 'M' && g.M[1] === 'M') bad++; if (g.M.includes('M')) merle++; } ok(bad === 0 && merle > 1500 && merle < 2500, 'a merle Great Dane x a plain one: about half the pups are merle and none is M/M (' + merle + ' of 4000)'); }
+
+// v2.12 coats (V212.md 3): the catalogue names, the folding into the old loci, and no merle anywhere new
+const cat = (k) => G.coatCatalog(k).map((x) => x.coat);
+ok(catHas('dobie', ['Black and rust', 'Red and rust', 'Blue and rust', 'Fawn and rust']) && cat('dobie').every((c) => !/white|merle/i.test(c)), 'dobie catalogue: four rust-pointed coats, no white');
+ok(nm({}, 'dobie') === 'Black and rust' && nm({ B: ['b', 'b'] }, 'dobie') === 'Red and rust' && nm({ D: ['d', 'd'] }, 'dobie') === 'Blue and rust' && nm({ B: ['b', 'b'], D: ['d', 'd'] }, 'dobie') === 'Fawn and rust', 'dobie black, red, blue and fawn and rust');
+ok(catHas('corso', ['Black', 'Grey', 'Fawn', 'Red', 'Black brindle', 'Grey brindle']), 'corso catalogue');
+ok(nm({}, 'corso') === 'Black' && nm({ D: ['d', 'd'] }, 'corso') === 'Grey' && nm({ E: ['e', 'e'] }, 'corso') === 'Fawn' && nm({ E: ['e', 'e'], B: ['b', 'b'] }, 'corso') === 'Red' && nm({ B: ['b', 'b'] }, 'corso') === 'Black brindle' && nm({ B: ['b', 'b'], D: ['d', 'd'] }, 'corso') === 'Grey brindle', 'corso black, grey, fawn, red, black brindle, grey brindle');
+ok(G.phenotype(mk({ E: ['e', 'e'] }), 'corso').coat.dark === '#2B2430' && G.phenotype(mk({ E: ['e', 'e'], B: ['b', 'b'] }), 'corso').coat.dark === '#2B2430', 'the corso fawn and red have the dark mask');
+ok(catHas('pitbull', ['Blue', 'Black', 'Fawn', 'Red', 'Brindle', 'White', 'Pied', 'Blue fawn']), 'pitbull catalogue');
+ok(nm({ D: ['d', 'd'] }, 'pitbull') === 'Blue' && nm({}, 'pitbull') === 'Black' && nm({ E: ['e', 'e'] }, 'pitbull') === 'Fawn' && nm({ E: ['e', 'e'], B: ['b', 'b'] }, 'pitbull') === 'Red' && nm({ B: ['b', 'b'] }, 'pitbull') === 'Brindle' && nm({ E: ['e', 'e'], D: ['d', 'd'] }, 'pitbull') === 'Blue fawn', 'pitbull blue, black, fawn, red, brindle, blue fawn');
+ok(nm({ S: ['sp', 'sp'] }, 'pitbull') === 'Pied' && nm({ S: ['sp', 'sp'], D: ['d', 'd'] }, 'pitbull') === 'Blue pied' && nm({ S: ['sp', 'sp'], E: ['e', 'e'] }, 'pitbull') === 'White' && nm({ S: ['sp', 'sp'], E: ['e', 'e'], D: ['d', 'd'] }, 'pitbull') === 'White', 'pitbull pied on a dark coat, White on a red or cream coat');
+{ const w = G.phenotype(mk({ S: ['sp', 'sp'], E: ['e', 'e'] }), 'pitbull').coat; ok(w.base === '#FBF6EC' && w.light === '#FFFFFF' && w.white === 0.6, 'a White Pit Bull is drawn off-white'); }
+{ const st = (o) => G.phenotype(mk(o), 'shihtzu').coat; // v2.12 numbers batch: a solid Shih Tzu (S/S) has no white blaze, chest or skirt; any spotting gene shows the white
+  ok(st({ E: ['E', 'e'] }).light === '#3A3436' && st({ E: ['E', 'e'], S: ['S', 'sp'] }).light === '#FFFBF2' && st({ E: ['e', 'e'] }).light === '#F2CA8E' && st({ E: ['e', 'e'], S: ['sp', 'sp'] }).light === '#FFFBF2', 'shihtzu: the solid coats keep their light close to the base, the "and white" coats show white'); }
+ok(cat('minpin').join() === 'Red,Black and rust,Chocolate and rust', 'minpin catalogue is Red, Black and rust, Chocolate and rust (' + cat('minpin').join() + ')');
+ok(nm({ E: ['e', 'e'], B: ['b', 'b'] }, 'minpin') === 'Red', 'a stag red min pin is just Red');
+ok(['Yellow', 'Black', 'Chocolate'].every((c) => cat('lab').includes(c)) && cat('lab').length === 3, 'lab catalogue is Yellow, Black, Chocolate');
+ok(nm({ E: ['e', 'e'] }, 'lab') === 'Yellow' && nm({}, 'lab') === 'Black' && nm({ B: ['b', 'b'] }, 'lab') === 'Chocolate' && nm({ E: ['e', 'e'], B: ['b', 'b'] }, 'lab') === 'Yellow', 'lab: e/e Yellow, B_ Black, b/b Chocolate');
+ok(catHas('malamute', ['Grey and white', 'Black and white', 'Red and white', 'Sable and white', 'White']), 'malamute catalogue');
+ok(nm({ E: ['E', 'e'] }, 'malamute') === 'Grey and white' && nm({}, 'malamute') === 'Black and white' && nm({ B: ['b', 'b'] }, 'malamute') === 'Red and white' && nm({ E: ['e', 'e'] }, 'malamute') === 'Sable and white' && nm({ E: ['e', 'e'], D: ['d', 'd'] }, 'malamute') === 'White', 'malamute grey, black, red, sable and white, e/e d/d White');
+ok(G.BREEDS.slice(21).every((k) => G.coatCatalog(k, { all: true }).every((c) => !/White and white|white.*white/i.test(c.coat))), 'no new coat says white twice');
+ok(catHas('chow', ['Red', 'Black', 'Blue', 'Cinnamon', 'Cream']), 'chow catalogue');
+ok(nm({ E: ['e', 'e'] }, 'chow') === 'Red' && nm({}, 'chow') === 'Black' && nm({ D: ['d', 'd'] }, 'chow') === 'Blue' && nm({ B: ['b', 'b'] }, 'chow') === 'Cinnamon' && nm({ E: ['e', 'e'], D: ['d', 'd'] }, 'chow') === 'Cream', 'chow red, black, blue, cinnamon, cream');
+ok(catHas('stdpoodle', ['Black', 'White', 'Apricot', 'Chocolate', 'Cream', 'Silver', 'Red', 'Blue', 'Parti']), 'stdpoodle catalogue');
+ok(nm({ E: ['e', 'e'] }, 'stdpoodle') === 'Red' && nm({ E: ['e', 'e'], B: ['B', 'b'] }, 'stdpoodle') === 'Apricot' && nm({ E: ['e', 'e'], B: ['b', 'b'] }, 'stdpoodle') === 'Cream' && nm({ E: ['e', 'e'], D: ['d', 'd'] }, 'stdpoodle') === 'White', 'stdpoodle red (B/B), apricot, cream, white');
+ok(nm({ D: ['d', 'd'] }, 'stdpoodle') === 'Blue' && nm({ E: ['E', 'e'], D: ['d', 'd'] }, 'stdpoodle') === 'Silver' && nm({ S: ['sp', 'sp'] }, 'stdpoodle') === 'Parti' && nm({ S: ['sp', 'sp'], E: ['e', 'e'], D: ['d', 'd'] }, 'stdpoodle') === 'Parti', 'stdpoodle blue (E/E), silver (E/e), parti');
+ok(cat('schnauzer').join() === 'Salt and pepper,Black,White,Black and silver', 'schnauzer catalogue is Salt and pepper, Black, White, Black and silver (' + cat('schnauzer').join() + ')');
+ok(nm({ E: ['E', 'e'] }, 'schnauzer') === 'Salt and pepper' && nm({}, 'schnauzer') === 'Black' && nm({ D: ['d', 'd'] }, 'schnauzer') === 'Black and silver' && nm({ E: ['e', 'e'] }, 'schnauzer') === 'White', 'schnauzer salt and pepper (E/e), black (E/E), black and silver (d/d), white (e/e)');
+ok(cat('westie').join() === 'White' && cat('maltese').join() === 'White' && cat('bichon').join() === 'White,Cream', 'westie and maltese are White, bichon White and a rare Cream');
+ok(G.coatCatalog('bichon')[1].rare && !G.coatCatalog('bichon')[0].rare, 'the bichon cream is the rare one');
+ok(catHas('yorkie', ['Blue and tan', 'Black and tan', 'Parti']), 'yorkie catalogue');
+ok(nm({ D: ['d', 'd'] }, 'yorkie') === 'Blue and tan' && nm({}, 'yorkie') === 'Black and tan' && nm({ S: ['sp', 'sp'] }, 'yorkie') === 'Parti', 'yorkie blue and tan (d/d), black and tan, parti');
+ok(catHas('shihtzu', ['Gold and white', 'Black and white', 'Liver and white', 'Brindle and white', 'Black', 'Silver and white']), 'shihtzu catalogue');
+ok(nm({ E: ['e', 'e'], S: ['S', 'sp'] }, 'shihtzu') === 'Gold and white' && nm({ E: ['E', 'e'], S: ['sp', 'sp'] }, 'shihtzu') === 'Black and white' && nm({ E: ['E', 'e'] }, 'shihtzu') === 'Black' && nm({ S: ['S', 'sp'] }, 'shihtzu') === 'Brindle and white' && nm({ E: ['E', 'e'], B: ['b', 'b'], S: ['sp', 'sp'] }, 'shihtzu') === 'Liver and white' && nm({ E: ['E', 'e'], D: ['d', 'd'], S: ['sp', 'sp'] }, 'shihtzu') === 'Silver and white', 'shihtzu gold, black, brindle (E/E), liver, silver, with and without white');
+{ const br = (o, k) => G.phenotype(mk(o), k).coat.brindle === true;
+  ok(br({ B: ['b', 'b'] }, 'corso') && br({ B: ['b', 'b'], D: ['d', 'd'] }, 'corso') && br({ B: ['b', 'b'] }, 'pitbull') && br({ B: ['b', 'b'], D: ['d', 'd'] }, 'pitbull') && br({}, 'shihtzu'), 'coat.brindle on the corso, pit bull and shih tzu brindle looks');
+  ok(!br({}, 'corso') && !br({ E: ['e', 'e'] }, 'pitbull') && !br({ E: ['E', 'e'] }, 'shihtzu') && !('brindle' in G.phenotype(mk({ B: ['b', 'b'] }), 'lab').coat), 'and on no other coat'); }
+ok(V212.every((k) => G.FREQ[k].M === 0 && G.STARTER_GENES[k].M.join() === 'm,m'), 'no v2.12 breed carries merle (M 0, starters m/m)');
+ok(V212.every((k) => G.coatCatalog(k).every((c) => !/merle|Harlequin/i.test(c.coat))), 'no merle coat in any v2.12 catalogue');
 
 /* 3. Inheritance ratios over 10,000 runs (doc: Punnett examples) */
 const N = 10000, S = G.STARTER_GENES;
@@ -210,6 +268,10 @@ for (const b of G.BREEDS) {
 ok(counts.golden.ee === 1, 'goldens are always e/e');
 ok(counts.samoyed.ee === 1 && counts.samoyed.pie === 0, 'samoyeds are always e/e and never piebald');
 ok(counts.spitz.ee === 1 && counts.spitz.pie === 0 && counts.akita.pie === 0, 'spitzes are always e/e, and neither spitz nor akita is piebald');
+ok(['dobie', 'corso', 'minpin', 'lab', 'malamute', 'chow', 'schnauzer', 'westie', 'bichon', 'maltese'].every((k) => counts[k].pie === 0), 'no piebald in the v2.12 breeds without spotting');
+ok(counts.westie.ee === 1 && counts.maltese.ee === 1 && counts.bichon.ee === 1 && counts.dobie.ee === 0 && counts.yorkie.ee === 0, 'westies, maltese and bichons are always e/e, dobermans and yorkies never');
+near(counts.pitbull.pie, 0.35 * 0.35, 0.012, 'pit bull pied or white rate');
+near(counts.yorkie.pie, 0.3 * 0.3, 0.012, 'yorkie parti rate');
 ok(counts.gsd.pie === 0 && counts.afghan.pie === 0 && counts.mastiff.pie === 0 && counts.mastiff.merle === 0, 'no piebald afghans, shepherds or mastiffs, no merle mastiffs');
 near(counts.pom.pie, 0.15 * 0.15, 0.008, 'pom parti rate');
 near(counts.frenchie.pie, 0.35 * 0.35, 0.012, 'frenchie pied rate');

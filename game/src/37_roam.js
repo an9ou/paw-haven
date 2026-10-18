@@ -62,6 +62,7 @@ function rmScan() {
   });
   [...(($('#placeBtns') || {}).children || [])].concat([$('#phPeek'), $('#rmLookL'), $('#rmLookR')]).forEach((el) => { if (!el || el.hidden) return; const b = rmWorldBox(svg, M, el); if (b && b[1] < 600) out.push(b.concat('btn')); });
   const vt = svg.querySelector('#visitorG .vtag rect'), vb = vt && rmWorldBox(svg, M, vt); if (vb) out.push(vb.concat('vtag')); // v2.11.1: the visiting pup's name tag keeps readable next to the grown dogs (a small box of its own: at most 8% covered)
+  svg.querySelectorAll('#dcVis .dcvis:not([style*="none"]) .dc-tag > rect').forEach((el) => { const b = rmWorldBox(svg, M, el); if (b && b[1] < 600) out.push(b.concat('dctag')); }); // v2.12 LAYOUT: the Dog Card visitors' "visitor" tags, the same rule (40_dogcards.js dcOk ignores them for the visitors themselves)
   if (S.place === 'yard' && !out.some((b) => b[4] === 'houseG')) out.push([620, 330, 240, 200, 'house']);
   (RM_SCENERY[S.place] || []).forEach((b) => out.push(b.slice()));
   RM.no = out;
@@ -71,7 +72,7 @@ function rmScan() {
 // above the prop's base) keeps its body off it (at most a fifth of its width), or it would be drawn in front of the prop it stands behind
 const RM_HUGE = 70000;
 function rmBoxes() { return RM.no || rmStaticNo(S.place); }
-function rmHard(x, y) { return rmBoxes().some((b) => x > b[0] - 8 && x < b[0] + b[2] + 8 && y > b[1] - 8 && y < b[1] + b[3] + 8); }
+function rmHard(x, y) { return rmBoxes().some((b) => b[4] !== 'dctag' && x > b[0] - 8 && x < b[0] + b[2] + 8 && y > b[1] - 8 && y < b[1] + b[3] + 8); } // a Dog Card visitor's tag is soft only (rmSoft: at most 8% covered)
 function rmSoft(x, y, k, flat) { // flat: no depth rule (the last fallback when nothing else is free)
   const T = rmTapBox(x, y, k), y0 = rmZoneOf(S.place).y0, Th = [T[0], T[1] - T[3] / 6, T[2], T[3] * 7 / 6]; // v2.11.1: against a tappable thing, the drawing's head and ears (up to 30 units over the tap rect at scale 1) catch taps too
   for (const b of rmBoxes()) {
@@ -108,16 +109,28 @@ function rmCandsAny(d) { for (const lv of [true, false, 'loose']) { const c = rm
 // v2.11.1: a spot whose tap rect would cover a hot spot, a place button or the bowl (rmSoft, flat) is only taken when every spot does
 function rmLeast(d, x0, y0) { return rmLeastAt(d, x0, y0, true) || rmLeastAt(d, x0, y0, false); }
 function rmLeastAt(d, x0, y0, clear) {
-  const z = rmZoneOf(S.place), L = D(); let best = null, bv = 1e9;
+  const z = rmZoneOf(S.place), L = D(), W = rmCropWin(); let best = null, bv = 1e9; // W: phones (v2.12), a spot the crop cuts costs a little (a whole tap rect off screen as much as covering 60% of a pack dog: stacking is worse)
   for (let y = z.y0; y <= z.y1; y += 14) for (let x = z.x0; x <= z.x1; x += 20) {
     if (rmHard(x, y)) continue; const k = rmKd(d, y), T = rmTapBox(x, y, k), A = T[2] * T[3]; if (T[0] < 4 || T[0] + T[2] > 996 || (clear && rmSoft(x, y, k, true))) continue; let v = 0;
     rmBoxes().forEach((b) => { const Ab = b[2] * b[3]; if (b[4] === 'scene' || Ab >= RM_HUGE) return; const o = rmOver(T, b); if (o) v += (o / Ab) * (b[4] === 'prop' || b[4] === 'decor' || b[4] === 'fest' || Ab < 15000 ? 3 : 1) + (b[4] === 'fest' ? 3 : 0); }); // a seasonal decoration costs more than standing on a pack dog
     rmDogs().forEach((o) => { if (o === d || !rmSt(o).seeded) return; const [ox, oy, ok] = rmDest(o), w = rmOver(T, rmTapBox(ox, oy, ok)) / A; if (w) v += w * (o === L ? 3 : 1); });
+    if (W) v += 0.6 * (Math.max(0, W[0] - T[0]) + Math.max(0, T[0] + T[2] - W[1])) / T[2];
     if (x0 != null) v += Math.hypot(x - x0, y - y0) / 5000; if (v < bv) { bv = v; best = [x, y]; }
   }
   return best;
 }
 function rmCands(d, strict) { const z = rmZoneOf(S.place), out = []; for (let y = z.y0; y <= z.y1; y += 14) for (let x = z.x0; x <= z.x1; x += 20) if (rmOk(d, x, y, rmKd(d, y), strict)) out.push([x, y]); return out; }
+/* v2.12 LAYOUT: phones. With ten big dogs a pack of four often stood half off the crop (the old rule only weighted the feet against an 84-unit
+   margin). Every spot a dog picks on a phone (the first placement, rmPick, the front spot, the nearest free spot, zoomies) now keeps its whole tap rect
+   inside the home crop while any level has such a spot, rmValidate moves a dog the crop cuts, and rmPick and the first placement spread the dogs apart
+   (less tap rect overlap weighs more). The look chips count a dog whose tap rect the crop cuts. Desktop is unchanged. */
+function rmCropWin() { // the home crop in world x on a phone (where the camera rests), null on desktop
+  if (!isPhone() || !S || cur.mode !== 'yard') return null; const w = Math.min(1000, rmCropW()), h = w / 2, c = clamp(typeof phHomeCx === 'number' ? phHomeCx : 358, h, 1000 - h); return [c - h, c + h];
+}
+const rmInWin = (x, k, W) => !W || (x + RM_TAP[0] * k >= W[0] + 6 && x + (RM_TAP[0] + RM_TAP[2]) * k <= W[1] - 6); // the whole tap rect (feet x, scale k) inside window W
+const rmWinOnly = (d, l, W) => (W ? l.filter((p) => rmInWin(p[0], rmKd(d, p[1]), W)) : l);
+function rmCandsCrop(d) { const W = rmCropWin(); if (W) for (const lv of [true, false, 'loose']) { const c = rmWinOnly(d, rmCands(d, lv), W); if (c.length) return c; } return rmCandsAny(d); } // phones: the strictest level with a spot inside the crop
+function rmOvFrac(d, x, y, k) { const T = rmTapBox(x, y, k), A = T[2] * T[3]; let v = 0; rmDogs().forEach((o) => { if (o === d || !rmSt(o).seeded) return; const [ox, oy, ok] = rmDest(o); v += rmOver(T, rmTapBox(ox, oy, ok)) / A; }); return v; } // how much of the other dogs this spot's tap rect covers
 // spot kinds (section 5.2): open, shade, edge, gate, bowl, dig, front, sun (bed is the nap spots, handled by the nap itself)
 function rmTags(x, y) {
   const z = rmZoneOf(S.place), out = RM_OUT.includes(S.place), t = [];
@@ -128,7 +141,7 @@ function rmTags(x, y) {
 }
 // a spot for dog d: like = spot kinds it likes, near = [x, y] to stay close to, far = keep away from the front (aloof)
 function rmPick(d, o = {}) {
-  const c = rmCandsAny(d); if (!c.length) return null;
+  const W = rmCropWin(), c = W ? rmCandsCrop(d) : rmCandsAny(d); if (!c.length) return null; // phones (v2.12): spots inside the crop
   const r = rmSt(d), like = o.like || persOf(d).spots || [], vb = isPhone() && $('#view > svg.world') ? $('#view > svg.world').viewBox.baseVal : null;
   const w = c.map(([x, y]) => {
     const tg = rmTags(x, y), dist = Math.hypot(x - r.x, y - r.y); let v = 1;
@@ -136,12 +149,13 @@ function rmPick(d, o = {}) {
     if (o.near) v *= 1 / (1 + Math.hypot(x - o.near[0], y - o.near[1]) / 60);
     if (dist < 60) v *= 0.15; else if (dist > 520) v *= 0.4;
     if (vb && vb.width && (x < vb.x + 84 || x > vb.x + vb.width - 84)) v *= 0.12; // phones: mostly inside the crop on screen (the look chips find the others)
+    if (W) v /= 1 + 5 * rmOvFrac(d, x, y, rmKd(d, y)); // phones (v2.12): the big dogs spread out (a spot covering less of the others weighs more)
     return v;
   });
   let s = Math.random() * w.reduce((a, b) => a + b, 0); for (let i = 0; i < c.length; i++) { s -= w[i]; if (s <= 0) return c[i]; } return c[c.length - 1];
 }
 // the nearest free spot to x, y (a dog that stands somewhere it should not, or the front for a petted dog)
-function rmNear(d, x, y, strict) { const c = rmCands(d, strict); if (!c.length) return null; let best = null, bd = 1e9; c.forEach((p) => { const v = Math.hypot(p[0] - x, (p[1] - y) * 1.6); if (v < bd) { bd = v; best = p; } }); return best; }
+function rmNear(d, x, y, strict, W) { const c = rmWinOnly(d, rmCands(d, strict), W); if (!c.length) return null; let best = null, bd = 1e9; c.forEach((p) => { const v = Math.hypot(p[0] - x, (p[1] - y) * 1.6); if (v < bd) { bd = v; best = p; } }); return best; } // W: only spots whose tap rect is inside that window (phones, v2.12)
 
 /* ---------------- placing (seed, legacy spots, validate) ---------------- */
 // entering a place: the leader stands where it always did (x 430, feet y 500), the others spread out over the free floor (farthest first, so a fresh
@@ -158,9 +172,12 @@ function rmSeed() {
     if (d === D() && (!rmWander() || rmOk(d, 430, 500, rmKd(d, 500), false))) { r.x = 430; r.y = 500; r.face = 'right'; } // under the harness the leader keeps its v2.9 spot
     else {
       let c = rmCandsAny(d); if (!c.length) c = [[[150, 560], [800, 560], [560, 440]][placed.length % 3]];
-      const inC = c.filter((p) => p[0] >= win[0] && p[0] <= win[1]); if (inC.length) c = inC; // phones: inside the home crop while there is room
+      if (isPhone()) { // phones: the whole tap rect inside the home crop while there is room, at the strictest level that has such a spot (v2.12: the big dogs)
+        const W = [cx - cw / 2, cx + cw / 2]; let inC = rmWinOnly(d, c, W); for (const lv of [false, 'loose']) if (!inC.length) inC = rmWinOnly(d, rmCands(d, lv), W);
+        if (!inC.length) inC = c.filter((p) => p[0] >= win[0] && p[0] <= win[1]); if (inC.length) c = inC;
+      }
       let best = c[0], bv = -1e9;
-      c.forEach(([x, y]) => { const m = placed.reduce((a, p) => Math.min(a, Math.abs(p.x - x) + Math.abs(p.y - y) * 0.6), 1e9); const v = Math.min(m, 400) - Math.abs(y - 520) * 0.7; if (v > bv) { bv = v; best = [x, y]; } });
+      c.forEach(([x, y]) => { const m = placed.reduce((a, p) => Math.min(a, Math.abs(p.x - x) + Math.abs(p.y - y) * 0.6), 1e9); const v = Math.min(m, 400) - Math.abs(y - 520) * 0.7 - (isPhone() ? 400 * rmOvFrac(d, x, y, rmKd(d, y)) : 0); if (v > bv) { bv = v; best = [x, y]; } }); // phones: and as little tap rect overlap as there can be
       r.x = best[0]; r.y = best[1]; r.face = r.x > 500 ? 'left' : 'right';
     }
     r.hx = r.x; r.hy = r.y; placed.push(r);
@@ -200,11 +217,17 @@ function rmApplyFixed(d, i) {
 function rmValidate(instant) {
   rmDogs().forEach((d) => {
     const r = rmSt(d); if (r.fix || r.tw || (d === D() && (!rmWander() || busy || IDLE.act || S.sleeping || curling || pottyBusy))) return;
-    if (rmOk(d, r.x, r.y, rmK(r))) { r.wake = false; return; }
+    const W = rmCropWin(), inW = rmInWin(r.x, rmK(r), W); // phones (v2.12): a dog whose tap rect the home crop cuts moves too (W is null on desktop: inW)
+    if (inW && rmOk(d, r.x, r.y, rmK(r))) { r.wake = false; return; }
     // v2.11.1: a petted or asking dog keeps its front spot for its moment (r.hold) while the spot stays free at the level it was picked at
     // ('least': only off the hot spots, place buttons and the bowl, rmSoft flat); the bigger dogs often only find a front spot at a looser level
     if (r.hold > performance.now() && r.holdLv != null && (r.holdLv === 'least' ? !rmHard(r.x, r.y) && !rmSoft(r.x, r.y, rmK(r), true) : rmOk(d, r.x, r.y, rmK(r), r.holdLv))) return;
-    let p = rmNear(d, r.x, r.y); for (const lv of [false, 'loose']) if (!p && !rmOk(d, r.x, r.y, rmK(r), lv)) p = rmNear(d, r.x, r.y, lv); // the nearest spot at the strictest level that has one
+    let p = null;
+    if (W) { // phones: the nearest spot inside the crop at the strictest level that has one (never looser than the dog's own spot when that is inside)
+      for (const lv of [true, false, 'loose']) { if (inW && rmOk(d, r.x, r.y, rmK(r), lv)) break; p = rmNear(d, r.x, r.y, lv, W); if (p) break; }
+      if (!p && rmOk(d, r.x, r.y, rmK(r), 'loose')) { r.wake = false; return; } // nothing better inside the crop: it stays (if cut, the look chip shows it)
+    }
+    if (!p) p = rmNear(d, r.x, r.y); for (const lv of [false, 'loose']) if (!p && !rmOk(d, r.x, r.y, rmK(r), lv)) p = rmNear(d, r.x, r.y, lv); // the nearest spot at the strictest level that has one
     if (!p && !rmOk(d, r.x, r.y, rmK(r), 'loose')) { p = rmLeast(d, r.x, r.y); if (p && Math.hypot(p[0] - r.x, p[1] - r.y) < 10) p = null; } // or the least crowded one
     if (!p) { r.wake = false; return; }
     if (instant) { r.x = p[0]; r.y = p[1]; r.hx = r.x; r.hy = r.y; rmPaint(d); } else rmTo(d, p[0], p[1], { anchor: true });
@@ -372,9 +395,9 @@ function rmPackAct(d) {
   let to = null, steps = null;
   if (kind === 'zoomies') {
     const z = rmZoneOf(S.place), y = clamp(r.y + RINT(-30, 30), z.y0 + 10, z.y1 - 10), a = clamp(r.x < 500 ? r.x + RINT(260, 380) : r.x - RINT(260, 380), 90, 910);
-    const p1 = rmNear(d, a, y, false), p2 = rmNear(d, clamp(r.x + RINT(-60, 60), 90, 910), y, false); if (!p1 || !p2) return false; // free spots, not a box
+    const W = rmCropWin(), p1 = rmNear(d, a, y, false, W), p2 = rmNear(d, clamp(r.x + RINT(-60, 60), 90, 910), y, false, W); if (!p1 || !p2) return false; // free spots, not a box (phones, v2.12: inside the crop)
     steps = [{ to: p1, run: true }, { to: p2, run: true }, { pose: 'happy', ms: 900 }];
-    const back = rmNear(d, r.x, r.y, false); if (back) steps.push({ to: back }); steps.push({ pose: p.trait === 'burst' ? 'down' : 'idle', ms: sec(2000, 4000) });
+    const back = rmNear(d, r.x, r.y, false, W); if (back) steps.push({ to: back }); steps.push({ pose: p.trait === 'burst' ? 'down' : 'idle', ms: sec(2000, 4000) });
   } else if (kind === 'follow' || kind === 'herd') {
     const os = rmDogs().filter((o) => o !== d); const o = PICK(os); if (!o) return false; const ro = rmSt(o);
     if (kind === 'herd') { const cx = os.reduce((a, b) => a + rmSt(b).x, 0) / os.length, cy = os.reduce((a, b) => a + rmSt(b).y, 0) / os.length; to = go({ near: [cx + (r.x < cx ? -150 : 150), cy] }); if (!to) return false; steps = [{ to, run: true }, { pose: 'bow', fb: 'sit', ms: 1400, bark: Math.random() < 0.3 ? 'alert' : null }, { pose: 'idle', ms: sec(2000, 4000) }]; }
@@ -416,7 +439,8 @@ function rmFrontSpot(d) {
   const z = rmZoneOf(S.place), r = rmSt(d), cx = isPhone() ? camCx : 500, tx = clamp((r.x + cx) / 2, 120, 880); const fr = (l) => l.filter((p) => p[1] >= z.y1 - 50);
   // v2.11.1: the grown dogs fill the floor sooner, so the front row is looked for at each level (the dogs a little closer) before any spot further back
   // the spot carries the level it was found at (lv), so the petted dog may stay on it for its moment (rmValidate, r.hold)
-  let c = null, cl = true, row = [], rl = true; for (const lv of [true, false, 'loose']) { const l = rmCands(d, lv); if (!c && l.length) { c = l; cl = lv; } row = fr(l); rl = lv; if (row.length) break; }
+  const W = rmCropWin(); // phones (v2.12): only spots whose tap rect is inside the crop, while any level has one
+  let c = null, cl = true, row = [], rl = true; for (const lv of [true, false, 'loose']) { const l = rmWinOnly(d, rmCands(d, lv), W); if (!c && l.length) { c = l; cl = lv; } row = fr(l); rl = lv; if (row.length) break; }
   if (!c) { c = rmCandsAny(d); row = fr(c); cl = rl = 'least'; } if (!c.length) return null; const pool = row.length ? row : c, lv = row.length ? rl : cl;
   let best = null, bv = 1e9; pool.forEach((p) => { const v = Math.abs(p[0] - tx) + (z.y1 - p[1]) * 3; if (v < bv) { bv = v; best = p; } }); return best && Object.assign(best.slice(), { lv });
 }
@@ -457,7 +481,8 @@ function rmPetted(d) {
 /* ---------------- the scene ---------------- */
 function rmTick() {
   if (!S || cur.mode !== 'yard' || !$('#pack')) return; const now = performance.now(); if (now < RM.tickAt) return; RM.tickAt = now + 200;
-  if (!RM.no || now > RM.noAt) { // held (ball play, photo mode, a modal, training): nobody is walked off its spot
+  if (!RM.no || now > RM.noAt || now > (RM.valAt || 0)) { // held (ball play, photo mode, a modal, training): nobody is walked off its spot
+    RM.valAt = now + 3000; // v2.12 LAYOUT: its own 3 s clock (the Dog Card visitors rescan every 400 ms, 40_dogcards.js dcFrame, which kept RM.noAt ahead and starved this check)
     const n0 = RM.no ? RM.no.length : -1; rmScan();
     if (rmFree()) rmValidate(false);
     else if (!rmWander() && n0 >= 0 && RM.no && RM.no.length !== n0 && rmOn() && modal.hidden && !TRN && !(typeof blOn === 'function' && blOn())) rmValidate(true); // the harness: a prop that came later (a snow drift) is stepped off at once
@@ -469,7 +494,7 @@ function rmTick() {
 }
 function rmSceneUp() {
   if (!S || !$('#pack')) return; rmAdopt(); RM.up = performance.now(); if (cur.mode === 'yard') { const lr = rmSt(D()); if (lr.nosz) { lr.nosz = false; rmPaint(D()); } } // back from the bath: the leader takes its size again
-  rmScan(); rmValidate(true); rmDepth(); // the scene is in the DOM now: read its tappable things and step anybody off them before the first frame
+  rmScan(); rmValidate(true); rmDepth(); // the scene is in the DOM now: read its tappable things and step anybody off them before the first frame (phones, v2.12: and into the crop)
   requestAnimationFrame(() => { if (cur.mode !== 'yard' && cur.mode !== 'bath') return; rmScan(); rmValidate(true); rmDepth(); if (isPhone()) rmLookSync(); });
 }
 on('yard:enter', rmSceneUp);
@@ -482,7 +507,7 @@ function rmCropFit(vw, native) {
   // the smallest side is read once per scene build, before the seasonal props come (they size their own 48 px tap rects): a later read would narrow
   // the crop after the festival stall or the Fortune box had picked their spot inside it
   const svg = $('#view > svg.world');
-  if (!RM.side || RM.side.svg !== svg) { rmScan(); const small = (RM.no || []).filter((b) => b[4] !== 'btn' && b[4] !== 'scene' && b[4] !== 'msCardG' && b[4] !== 'prop' && b[4] !== 'decor' && b[4] !== 'fest' && b[2] < 330 && b[3] < 270).map((b) => Math.min(b[2], b[3])); RM.side = { svg, v: small.length ? Math.min(...small) : 1e9 }; } // the clipboard grows its own 48 px tap rect (24_missions.js)
+  if (!RM.side || RM.side.svg !== svg) { rmScan(); const small = (RM.no || []).filter((b) => b[4] !== 'btn' && b[4] !== 'scene' && b[4] !== 'dctag' && b[4] !== 'msCardG' && b[4] !== 'prop' && b[4] !== 'decor' && b[4] !== 'fest' && b[2] < 330 && b[3] < 270).map((b) => Math.min(b[2], b[3])); RM.side = { svg, v: small.length ? Math.min(...small) : 1e9 }; } // the clipboard grows its own 48 px tap rect (24_missions.js)
   // the nursery basket comes after the read (13c_litter.js, on yard:enter): its own hit rect counts whenever a litter is drawn
   const nb = (S.place === 'yard' || S.place === 'house') && (S.litters || []).some((x) => dogById(x.mum)), side = Math.min(RM.side.v, nb ? Math.min(NURSERY_AT.hit[2], NURSERY_AT.hit[3]) : 1e9); return clamp(Math.min(RM_CROP, native * RM_WIDEN, (vw * side) / 46), native, RM_CROP);
 }
@@ -494,13 +519,15 @@ function rmSpan() {
 function rmLookSync() {
   const svg = $('#view > svg.world'); if (!svg || !isPhone() || cur.mode !== 'yard') return;
   const vb = svg.viewBox.baseVal; if (!vb || !vb.width) return; const x0 = vb.x, x1 = vb.x + vb.width;
-  const off = (side) => rmDogs().filter((d) => { const r = rmSt(d), cx = r.x; return side < 0 ? cx < x0 + 20 : cx > x1 - 20; });
+  // v2.12 LAYOUT: a dog counts when its tap rect is cut by the crop edge (more than 12 world units of it off screen), not only when its feet are off
+  // (a big dog stood half off screen with no chip)
+  const off = (side) => rmDogs().filter((d) => { const r = rmSt(d), T = rmTapBox(r.x, r.y, rmK(r)); return side < 0 ? T[0] < x0 - 12 && T[0] + T[2] / 2 < (x0 + x1) / 2 : T[0] + T[2] > x1 + 12 && T[0] + T[2] / 2 >= (x0 + x1) / 2; });
   [['rmLookL', -1], ['rmLookR', 1]].forEach(([id, side]) => {
     const l = off(side); let b = $('#' + id);
     if (!l.length || (typeof phPeekOn !== 'undefined' && phPeekOn)) { if (b) b.hidden = true; return; }
     if (!b) {
       b = document.createElement('button'); b.type = 'button'; b.id = id; b.className = 'iconbtn rm-look ' + (side < 0 ? 'left' : 'right'); view.appendChild(b);
-      b.onclick = (e) => { e.stopPropagation(); SFX.click(); const ds = off(side); if (!ds.length) return; const v = rmCropW() / 2, x = side < 0 ? Math.min(...ds.map((d) => rmSt(d).x)) : Math.max(...ds.map((d) => rmSt(d).x)); clearTimeout(phPanT); phCamHome = clamp(x + (side < 0 ? v - 160 : 160 - v), v, 1000 - v); camTo(phCamHome, 0.6); };
+      b.onclick = (e) => { e.stopPropagation(); SFX.click(); const ds = off(side); if (!ds.length) return; const v = rmCropW() / 2, tb = ds.map((d) => { const r = rmSt(d); return rmTapBox(r.x, r.y, rmK(r)); }), x = side < 0 ? Math.min(...tb.map((T) => T[0])) - 16 + v : Math.max(...tb.map((T) => T[0] + T[2])) + 16 - v; clearTimeout(phPanT); phCamHome = clamp(x, v, 1000 - v); camTo(phCamHome, 0.6); }; // v2.12: the whole tap rect comes into view
     }
     // a dog chip, not the scene's look-around arrow (#phPeek): the head of the dog out there (as in the HUD row) with a small arrow pointing to it
     const key = l.map((d) => d.id + coatNameOf(d)).join(); if (b.dataset.k !== key) { b.dataset.k = key; b.innerHTML = `<span class="rm-head">${headSVG(l[0])}</span><svg class="rm-arrow" viewBox="0 0 20 24" aria-hidden="true"><path d="M6 4 Q13 10 14 12 Q12 15 6 20" fill="none" stroke="#5B3D32" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>${l.length > 1 ? `<i class="rm-n">${l.length}</i>` : ''}`; }
@@ -528,6 +555,7 @@ function rmExpose() {
     scan: () => { rmScan(); return RM.no; }, validate: () => { rmScan(); rmValidate(true); }, act: (id) => rmPackAct(dogById(id)), ask: (id) => rmAsk(dogById(id) || D(), true), petAgo: (id) => rmPetAgo(dogById(id)), span: () => rmSpan(),
     hard: (x, y) => rmHard(x, y), soft: (x, y) => rmSoft(x, y, rmScale(y)), route: (x0, y0, x1, y1) => rmRoute(x0, y0, x1, y1), cands: (id, lv) => rmCands(dogById(id) || D(), lv == null ? true : lv).length,
     least: (id) => rmLeast(dogById(id) || D()),
+    crop: () => rmCropWin(), info: (id) => { const r = rmSt(dogById(id) || D()); return { x: r.x, y: r.y, fix: !!r.fix, walk: !!r.tw, q: !!r.q, hold: r.hold > performance.now(), inCrop: rmInWin(r.x, rmK(r), rmCropWin()) }; }, // v2.12 LAYOUT: the phone home crop
     calm: (id, ms) => { const d = dogById(id), t = performance.now() + ms; rmSt(d).askNext = t; RM.askAt = Math.max(RM.askAt, t - 25000); if (d === D()) { IDLE.nextAt = t; if (IDLE.act) idleStop(); } else packNext[d.id] = t; }, // this dog stops what it does and starts nothing of its own for ms
     tap: (id) => { const d = dogById(id), r = rmSt(d); return rmTapBox(r.x, r.y, rmK(r)); }, get moving() { return rmDogs().filter((d) => rmSt(d).tw || rmSt(d).q).map((d) => d.id); } };
 }

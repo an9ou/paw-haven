@@ -28,10 +28,16 @@ require('./test_lib').run('phone_v210_roam', async (t) => {
     // v2.11.1: the smallest dogs (the dachshund and the pug) keep a tap rect of at least 44 px, even at the back of the floor
     const tiny = await ev((l) => { const R = window.__paw.rm; R.pause('test'); const z = R.zone('yard'), v = document.querySelector('#view svg.world').viewBox.baseVal; R.set(l[2], { x: v.x + v.width * 0.5, y: z.y0 }); const r = document.querySelector(`#pack [data-dog="${l[2]}"] .pd-wander > rect`).getBoundingClientRect(); R.resume('test'); return [Math.round(r.width), Math.round(r.height)]; }, ids);
     ok(tiny[0] >= 44 && tiny[1] >= 44, `a small dog at the back line still has a tap rect of at least 44 px (${tiny.join(' x ')})`);
-    await ev(() => window.__paw.rm.validate());
+    // v2.12 LAYOUT: the dogs are held while the chips are compared with where they stand (they roam under rmTest: the old check read the spots
+    // before validate and the chips after it, and failed now and then), and a dog counts when its tap rect is cut by the crop edge (12 units of slack)
+    await ev(() => { window.__paw.rm.pause('test'); window.__paw.rm.validate(); }); await t.sleep(450);
     v = await vb();
-    const outL = g.filter((q) => q.x < v.x + 20).length, outR = g.filter((q) => q.x > v.x + v.w - 20).length;
-    const chips = await ev(() => ['rmLookL', 'rmLookR'].map((id) => { const b = document.getElementById(id); if (!b || b.hidden) return null; const r = b.getBoundingClientRect(); return { w: Math.round(r.width), h: Math.round(r.height), label: b.getAttribute('aria-label') }; }));
+    const lk = await ev((l) => { const R = window.__paw.rm, v = document.querySelector('#view svg.world').viewBox.baseVal, x0 = v.x, x1 = v.x + v.width, T = l.map((id) => R.tap(id));
+      return { T, outL: T.filter((b) => b[0] < x0 - 12 && b[0] + b[2] / 2 < (x0 + x1) / 2).length, outR: T.filter((b) => b[0] + b[2] > x1 + 12 && b[0] + b[2] / 2 >= (x0 + x1) / 2).length,
+        chips: ['rmLookL', 'rmLookR'].map((id) => { const b = document.getElementById(id); if (!b || b.hidden) return null; const r = b.getBoundingClientRect(); return { w: Math.round(r.width), h: Math.round(r.height), label: b.getAttribute('aria-label') }; }) }; }, ids);
+    await ev(() => window.__paw.rm.resume('test'));
+    const { outL, outR, chips } = lk;
+    ok(lk.T.every((b) => b[0] >= v.x - 12 && b[0] + b[2] <= v.x + v.w + 12), `every dog's whole tap rect is inside the crop after the first placement (${Math.round(v.x)}..${Math.round(v.x + v.w)}): ` + JSON.stringify(lk.T.map((b) => [Math.round(b[0]), Math.round(b[0] + b[2])])));
     ok((outL ? !!chips[0] : !chips[0]) && (outR ? !!chips[1] : !chips[1]), `a look chip for each side with a dog off the crop (left ${outL}, right ${outR}) ` + JSON.stringify(chips));
     ok(chips.filter(Boolean).every((c) => c.w >= 44 && c.h >= 44 && /Look (left|right): /.test(c.label)), 'look chips are at least 44 px and say who is there');
     // move a dog off the crop on purpose, then follow the chip

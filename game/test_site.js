@@ -1,6 +1,6 @@
 // SITE (v2.8.2, v2 redesign 17 Oct 2026): the doodledoggo.app introduction site (site/, served by the Worker tools/cf_site.js builds), in Miniflare.
 //   NODE_PATH=$(npm root -g) node game/test_site.js      (or: node game/run_tests.js site)
-// Desktop 1280x800 and iPhone 15: the home page (the live playroom, the 21 dog cards, Dogs in Japan), /dogs (every dog's profile), reduced motion, /privacy, /reset (v2.9.2: a notice, the reset is in the game) against the real cloudflare/worker.js on a
+// Desktop 1280x800 and iPhone 15: the home page (the live playroom, a card for every dog, Dogs in Japan), /dogs (every dog's profile), reduced motion, /privacy, /reset (v2.9.2: a notice, the reset is in the game) against the real cloudflare/worker.js on a
 // local D1 (game/cloud_mock.js), www -> apex, no request leaves the site (no tracking), phone minimums.
 // PAW_SITE_SHOTS=<dir> also saves screenshots there. Node-only runner contract: prints ALL OK when every check passes.
 process.removeAllListeners('warning');
@@ -37,6 +37,13 @@ const req = (m) => { for (const r of [].concat((process.env.NODE_PATH || '').spl
     let r = await get('https://doodledoggo.app/');
     ok(r.status === 200 && /text\/html/.test(r.headers.get('content-type')) && /default-src 'self'/.test(r.headers.get('content-security-policy') || ''), 'home: 200, HTML, a strict content security policy');
     const home = await r.text();
+    { // the dog count in the copy follows the breed list (v2.11.1: it said 14 long after 21 were in)
+      const NUM = ['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen','twenty'];
+      const word = (n) => n <= 20 ? NUM[n] : (['', '', 'twenty', 'thirty', 'forty'][Math.floor(n / 10)] + (n % 10 ? '-' + NUM[n % 10] : ''));
+      const dogsPage = fs.readFileSync(path.join(ROOT, 'site', 'dogs.html'), 'utf8'), n = BREEDS.length;
+      const said = (home + dogsPage).match(new RegExp('\\b(\\d+|' + NUM.slice(10).join('|') + '|(?:twenty|thirty|forty)(?:-\\w+)?) (wobbly|profiles)', 'gi')) || [];
+      ok(said.length >= 4 && said.every((m) => { const w = m.split(' ')[0].toLowerCase(); return w === String(n) || w === word(n); }), `every dog count in the copy says ${n} (${said.join('; ')})`);
+    }
     ok(home.includes('🖍️ Adopt a wobbly crayon pup to love') && /<a class="play" id="play" href="https:\/\/an9ou\.itch\.io\/doodle-doggo">PLAY AT ITCH\.IO<\/a>/.test(home), 'tagline and the PLAY AT ITCH.IO button');
     ok(/<h1 class="h1logo"><img class="logo" src="\/doodle-doggo-logo\.svg"/.test(home), 'the heading is the brand logo');
     r = await get('https://doodledoggo.app/dogs'); const dogsHtml = await r.text();
@@ -128,9 +135,9 @@ const req = (m) => { for (const r of [].concat((process.env.NODE_PATH || '').spl
       const inside = await page.evaluate(() => window.__dd.dogs.every((d) => d.x >= 60 && d.x <= 940 && d.y >= 450 && d.y <= 596));
       ok(inside, 'every dog stays on the playroom floor');
       const cards = await page.evaluate(() => [...document.querySelectorAll('.cards .dcard')].map((a) => [a.getAttribute('href'), a.querySelector('.dname').textContent, a.querySelector('.dimg').getAttribute('src')]));
-      ok(cards.length === 21 && BREEDS.every((k, i) => cards[i] && cards[i][0] === '/dogs#' + k && cards[i][2] === `/img/art/dogs/${k}-still.svg`), 'one card per dog (all 21 in BREEDS order), each linking to its profile on /dogs'.replace('BREEDS_IN', ''));
+      ok(cards.length === BREEDS.length && BREEDS.every((k, i) => cards[i] && cards[i][0] === '/dogs#' + k && cards[i][2] === `/img/art/dogs/${k}-still.svg`), 'one card per dog (all of BREEDS, in order), each linking to its profile on /dogs'.replace('BREEDS_IN', ''));
       const soon = await page.evaluate(() => { const c = document.querySelector('.cards li:last-child .soon'); return c && { t: c.textContent, sils: c.querySelectorAll('.sil img').length, q: c.querySelectorAll('.sil b').length }; });
-      ok(soon && /More dogs are coming!/.test(soon.t) && /Japanese Chin, Shih Tzu and Kai Ken are on their way/.test(soon.t) && soon.sils === 3 && soon.q === 3 && !/\b(20\d\d|soon|month|week)\b/i.test(soon.t.replace('coming', '')), 'the last card: More dogs are coming! with three "?" silhouettes (Japanese Chin, Shih Tzu, Kai Ken), no dates');
+      ok(soon && /More dogs are coming!/.test(soon.t) && /Japanese Chin and Kai Ken are on their way/.test(soon.t) && soon.sils === 2 && soon.q === 2 && !/\b(20\d\d|soon|month|week)\b/i.test(soon.t.replace('coming', '')), 'the last card: More dogs are coming! with two "?" silhouettes (Japanese Chin, Kai Ken: v2.12 brought the Shih Tzu), no dates');
       const wall = await page.evaluate(() => ({ pic: !!document.querySelector('#stage .wallpic img'), text: [...document.querySelectorAll('#stage *:not(.bark)')].filter((e) => e.children.length === 0 && e.textContent.trim()).map((e) => e.textContent.trim()) }));
       ok(wall.pic && !wall.text.some((t) => /[\u3040-\u30FF\u4E00-\u9FFF]/.test(t)), 'the playroom wall has a framed Mt. Fuji picture, no kanji');
       const contact = await page.evaluate(() => { const a = document.querySelector('footer #contact'); const b = a && a.getBoundingClientRect(); return a && { text: a.textContent.trim(), href: a.getAttribute('href'), h: b.height, w: b.width, insta: !!document.querySelector('footer #insta'), privacy: !!document.querySelector('footer a[href="/privacy"]') }; });
@@ -163,12 +170,12 @@ const req = (m) => { for (const r of [].concat((process.env.NODE_PATH || '').spl
         full: [...document.querySelectorAll('article.prof')].every((a) => a.querySelector('h2').textContent.trim() && a.querySelector('.bubble').textContent.length > 4 && a.querySelectorAll('.traits li').length === 4 && a.querySelectorAll('.loves li').length === 3 && a.querySelector('.pup') && a.querySelector('.playline') && /[\u30A0-\u30FF\u4E00-\u9FFF]/.test(a.querySelector('.jpline').textContent)),
         top: Math.round(document.getElementById('shiba').getBoundingClientRect().top), play: (document.querySelector('#play') || {}).href }));
       ok(dg.ids.join() === BREEDS.join(), 'a profile for every dog in BREEDS order, with the dog\'s key as its anchor (/dogs#shiba ...)');
-      ok(await page.evaluate(() => { const x = document.querySelector('section.soonprof#soon'); return !!x && x.previousElementSibling.id === 'gsd' && /More dogs are coming!/.test(x.textContent) && /Japanese Chin, Shih Tzu and Kai Ken are on their way/.test(x.textContent) && x.querySelectorAll('.sil').length === 3 && document.querySelector('footer #contact').getAttribute('href') === 'mailto:contact@doodledoggo.app'; }), '/dogs ends with More dogs are coming! and has CONTACT US in the footer');
+      ok(await page.evaluate(() => { const x = document.querySelector('section.soonprof#soon'); return !!x && x.previousElementSibling.id === 'shihtzu' && /More dogs are coming!/.test(x.textContent) && /Japanese Chin and Kai Ken are on their way/.test(x.textContent) && x.querySelectorAll('.sil').length === 2 && document.querySelector('footer #contact').getAttribute('href') === 'mailto:contact@doodledoggo.app'; }), '/dogs ends with More dogs are coming! and has CONTACT US in the footer');
       ok(dg.full, 'every profile: name, line, 4 traits, 3 favourites, a puppy drawing, the playroom habit and the Japanese name');
       ok(dg.nav.join() === BREEDS.map((k) => '#' + k).join(), 'the picture menu links every profile');
       ok(Math.abs(dg.top) < 40, `/dogs#shiba opens at Mochi's profile (top ${dg.top})`);
       ok(dg.play === 'https://an9ou.itch.io/doodle-doggo', 'the dogs page has the itch.io button');
-      for (let y = 0; y < 40; y++) { const end = await page.evaluate(() => { scrollBy(0, innerHeight); return innerHeight + scrollY >= document.documentElement.scrollHeight - 2; }); await page.waitForTimeout(80); if (end) break; }
+      for (let y = 0; y < 100; y++) { const end = await page.evaluate(() => { scrollBy(0, innerHeight); return innerHeight + scrollY >= document.documentElement.scrollHeight - 2; }); await page.waitForTimeout(80); if (end) break; }
       await page.waitForLoadState('networkidle'); await page.waitForTimeout(300);
       ok(await page.evaluate(() => [...document.images].every((i) => i.complete && i.naturalWidth > 0)), 'every dog, puppy and favourite drawing loads');
       const a4 = await audit(page); ok(a4.scroll <= 0 && !a4.small.length && !a4.tiny.length, 'dogs: phone minimums (no sideways scroll, 44 px taps, 15 px text) ' + a4.small.concat(a4.tiny).slice(0, 4).join(', '));
