@@ -30,10 +30,26 @@
 .heads button{width:54px;height:54px;padding:5px;overflow:hidden;--wash:var(--paper)}
 .heads button[aria-current="true"]{--wash:var(--w-yellow);transform:scale(1.12) rotate(-5deg)}
 .heads svg{width:100%;height:100%;display:block}
-/* v2.12 (GENES lane): 35 heads would push the Adopt button under the desktop screen edge; from the 22nd head on they are 46 px, 7 to a row (phones keep their own rules) */
-html:not([data-layout="phone"]) .heads:has(> button:nth-child(22)){gap:6px;max-width:364px}
-html:not([data-layout="phone"]) .heads:has(> button:nth-child(22)) button{width:46px;height:46px;padding:4px}
-html:not([data-layout="phone"]) #stage.flowdock.adoptmode #dock:has(.heads > button:nth-child(22)){max-height:calc(100% - 12px);overflow-y:auto;overscroll-behavior:contain} /* a long card (a care note, a long breed name) scrolls instead of leaving the screen */
+/* v2.12 (GENES lane): 35 heads would push the Adopt button under the desktop screen edge; from the 22nd head on they are smaller (phones keep their own rules)
+   v2.12 LAYOUT fix: a tighter desktop card that always fits the screen (1280x720 and 1024x768): the text runs the full width, the < > arrows flank the
+   Adopt button, the heads are 38 px, 9 to a row at 1280 (4 rows). The heads row is the one that gives: when a long care note leaves no room it scrolls
+   inside the card (renderAdopt keeps the picked head in view), so the heading and the Adopt button always show. */
+html:not([data-layout="phone"]) #stage.flowdock.adoptmode #dock:has(.heads > button:nth-child(22)){max-height:calc(100% - 12px)}
+html:not([data-layout="phone"]) #stage.flowdock.adoptmode #dock:has(.heads > button:nth-child(22)) > .tray{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:auto minmax(0,max-content) minmax(92px,1fr) auto;gap:6px 8px;align-items:center;min-height:0;max-height:100%;padding-top:18px;padding-bottom:12px}
+html:not([data-layout="phone"]) #stage.flowdock.adoptmode #dock:has(.heads > button:nth-child(22)) > .tray > .tray-h{grid-column:1/-1;grid-row:1}
+html:not([data-layout="phone"]) #stage.flowdock.adoptmode #dock:has(.heads > button:nth-child(22)) > .tray .tray-h h3{font-size:26px;line-height:1.08;margin:0}
+html:not([data-layout="phone"]) .tray:has(.heads > button:nth-child(22)) .adopt-card{display:contents}
+html:not([data-layout="phone"]) .tray:has(.heads > button:nth-child(22)) .adopt-card .info{grid-column:1/-1;grid-row:2;align-self:stretch;overflow-y:auto;min-height:0;padding:0 4px}
+html:not([data-layout="phone"]) .tray:has(.heads > button:nth-child(22)) .adopt-card h3{font-size:32px;margin-bottom:2px}
+html:not([data-layout="phone"]) .tray:has(.heads > button:nth-child(22)) .adopt-card p{font-size:16px;line-height:1.22}
+html:not([data-layout="phone"]) .tray:has(.heads > button:nth-child(22)) .sexpick{margin-top:4px}
+html:not([data-layout="phone"]) .tray:has(.heads > button:nth-child(22)) #aPrev{grid-column:1;grid-row:4}
+html:not([data-layout="phone"]) .tray:has(.heads > button:nth-child(22)) #aNext{grid-column:3;grid-row:4}
+html:not([data-layout="phone"]) .tray:has(.heads > button:nth-child(22)) .arrow{width:48px;height:48px;font-size:28px}
+html:not([data-layout="phone"]) .heads:has(> button:nth-child(22)){grid-column:1/-1;grid-row:3;align-self:stretch;gap:4px 3px;max-width:none;width:100%;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:4px 0;align-content:flex-start}
+html:not([data-layout="phone"]) .heads:has(> button:nth-child(22)) button{width:38px;height:38px;padding:3px}
+html:not([data-layout="phone"]) .tray:has(.heads > button:nth-child(22)) > .foot{grid-column:2;grid-row:4;margin:0!important;justify-content:center}
+html:not([data-layout="phone"]) .tray:has(.heads > button:nth-child(22)) #aAdopt{white-space:nowrap;font-size:clamp(20px,calc(3.125vw - 12px),28px);padding:8px 14px 10px;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .prog{height:20px;position:relative;flex:1}
 .prog::after{content:"";position:absolute;inset:0;background:var(--fr-tubew) 0 0/100% 100% no-repeat;pointer-events:none}
 .prog i{position:absolute;left:4px;top:4px;bottom:4px;width:0;max-width:calc(100% - 7px);border-radius:7px 3px 8px 4px;background:repeating-linear-gradient(-62deg,#9ccf8f 0 2.2px,#cde8c4 2.2px 4.4px)}

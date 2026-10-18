@@ -27,6 +27,7 @@ function renderAdopt(first) {
   $('#aAdopt').onclick = () => { if (!adoptSex) { nope(`Pick Boy or Girl first. ${d.name}'s siblings are waiting politely.`); return; } adoptName(d); };
   if (!first) SFX.bark(BARK[d.key] || 1);
   setTimeout(() => { if (cur.mode === 'adopt' && modal.hidden) (typeof srSay === 'function' ? srSay : say)(d.joke || PICK(JOKES[d.key] || JOKES.mutt), SR_MEET[0] + 30, SR_MEET[1] - 200, 6000); }, 60);
+  if (!isPhone()) { const H = dock.querySelector('.heads'), b = H && H.querySelector('button[aria-current="true"]'); if (b && H.scrollHeight > H.clientHeight + 1) { const hr = H.getBoundingClientRect(), br = b.getBoundingClientRect(); H.scrollTop = Math.max(0, br.top - hr.top - (H.clientHeight - br.height) / 2); } } // v2.12 LAYOUT: desktop, the heads row scrolls inside a full card: the picked head stays in view
   if (typeof srCam === 'function') requestAnimationFrame(srCam); // the tray's height can change with the dog's text
 }
 function favLine(k) {

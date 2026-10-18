@@ -16,7 +16,7 @@ run('v211_cards', async (t) => {
     const svg = document.querySelector('#view > svg.world'), M = svg.getScreenCTM(), out = [];
     const at = (x, y) => { const p = new DOMPoint(x, y).matrixTransform(M); return document.elementFromPoint(p.x, p.y); };
     window.__paw.rm.dogs().forEach((id) => { const b = window.__paw.rm.tap(id), e = at(b[0] + b[2] / 2, b[1] + b[3] / 2); if (e && e.closest('#dcVis')) out.push('dog ' + id); });
-    window.__paw.rm.scan().filter((b) => b[4] !== 'btn' && b[4] !== 'scene').forEach((b) => { const e = at(b[0] + b[2] / 2, b[1] + b[3] / 2); if (e && e.closest('#dcVis')) out.push(b[4]); });
+    window.__paw.rm.scan().filter((b) => b[4] !== 'btn' && b[4] !== 'scene' && b[4] !== 'dctag').forEach((b) => { const e = at(b[0] + b[2] / 2, b[1] + b[3] / 2); if (e && e.closest('#dcVis')) out.push(b[4]); });
     return out;
   });
   // a point where visitor i is on top (a player dog may stand in front of part of it), in page px
@@ -60,7 +60,7 @@ run('v211_cards', async (t) => {
   ok(await ev(() => { const g = document.getElementById('dcVis'); return !!g && g.nextElementSibling && g.nextElementSibling.id === 'pack' && g.querySelectorAll('.dcvis').length === window.__paw.dc.visitors().length; }), '#dcVis sits just behind #pack, one group per visitor');
   ok(await ev(() => [...document.querySelectorAll('#dcVis .dcvis')].every((g) => g.querySelector('.dc-tag text').textContent === 'visitor' && g.getAttribute('role') === 'button' && /Dog Card/.test(g.getAttribute('aria-label')))), 'each has a small visitor tag and a button label');
   ok(await ev(() => !window.__paw.rm.scan().some((b) => b[4] === 'hot' && b[0] > 0 && document.querySelector('#dcVis'))), 'the roam scan does not count visitors as no-go boxes');
-  const hots = await ev(() => window.__paw.rm.scan().filter((b) => b[4] !== 'scene'));
+  const hots = await ev(() => window.__paw.rm.scan().filter((b) => b[4] !== 'scene' && b[4] !== 'dctag'));
   ok(V.every((v) => hots.every((b) => ov(v.tap, b) === 0)), 'no visitor\'s tap rect covers a tappable spot, the bowl or a place button');
   ok((await tapsClear()).length === 0, 'a tap on any player dog or spot never lands on a visitor');
   await t.SH('dogpark_one');
@@ -125,6 +125,12 @@ run('v211_cards', async (t) => {
   await ev(() => window.__paw.rm.pause('test')); await t.sleep(300);
   const H0 = JSON.stringify((await vis()).map((v) => [v.x, v.y])); await t.sleep(2500);
   ok(JSON.stringify((await vis()).map((v) => [v.x, v.y])) === H0, 'rmPause holds them where they stand');
+  // v2.12 LAYOUT: the "visitor" tags are no-go boxes for the player dogs (rmScan 'dctag'): once they stepped off, no tag is more than about 8% covered
+  // (the leader first ends any idle errand, such as the legacy nap spot, and is back on its own spot)
+  await ev((id) => window.__paw.rm.calm(id, 20000), (await t.S()).activeId); await t.until(() => !window.__paw.rm.moving.length && window.__paw.rm.pos().pose !== 'sleep', null, 6000); await t.sleep(300);
+  const tagCov = await ev(() => { const R = window.__paw.rm; R.validate(); const tags = R.scan().filter((b) => b[4] === 'dctag'), ov = (a, b) => Math.max(0, Math.min(a[0] + a[2], b[0] + b[2]) - Math.max(a[0], b[0])) * Math.max(0, Math.min(a[1] + a[3], b[1] + b[3]) - Math.max(a[1], b[1]));
+    return { dbg: R.dogs().map((id, i) => Object.assign(R.info(id), { i, pose: R.pos(id).pose, ok: R.ok(id, R.pos(id).x, R.pos(id).y), cov: tags.map((b) => { const q = R.tap(id); return +(ov([q[0], q[1] - q[3] / 6, q[2], q[3] * 7 / 6], b) / (b[2] * b[3])).toFixed(2); }) })), n: tags.length, worst: Math.max(0, ...tags.map((b) => Math.max(0, ...R.dogs().map((id) => { const q = R.tap(id); return ov([q[0], q[1] - q[3] / 6, q[2], q[3] * 7 / 6], b) / (b[2] * b[3]); })))) }; });
+  ok(tagCov.n >= 1 && tagCov.worst <= 0.09, `every visitor tag is in the roam scan and no player dog covers more than 8% of one (${tagCov.n} tags, worst ${tagCov.worst.toFixed(2)}) ` + (tagCov.worst > 0.09 ? JSON.stringify(tagCov.dbg) : ""));
   await ev(() => window.__paw.rm.resume('test'));
   await ev(() => window.__paw.bl.start('Tennis Ball')); await t.until(() => window.__paw.bl.on, null, 3000); await t.sleep(300);
   const B0 = JSON.stringify((await vis()).map((v) => [v.x, v.y])); await t.sleep(2500);

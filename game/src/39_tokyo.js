@@ -604,7 +604,7 @@ function tkLeadClear(walk) {
   if (IDLE.act || r.away) { const e = r.tw ? r.tw.end || [r.tw.x1, r.tw.y1] : null; if (walk && (rmHard(r.x, r.y) || (e && rmHard(e[0], e[1])))) idleStop(); return; } // an idle errand (a nap, a sniff) heading for a hot spot ends, the dog goes back to its spot
   if (r.tw) return;
   if (walk ? !rmHard(r.x, r.y) : rmOk(d, r.x, r.y, rmK(r))) return;
-  const q = rmNear(d, r.x, r.y) || rmNear(d, r.x, r.y, false) || rmNear(d, r.x, r.y, 'loose'); if (!q) return;
+  const W = rmCropWin(), q = (W && (rmNear(d, r.x, r.y, true, W) || rmNear(d, r.x, r.y, false, W) || rmNear(d, r.x, r.y, 'loose', W))) || rmNear(d, r.x, r.y) || rmNear(d, r.x, r.y, false) || rmNear(d, r.x, r.y, 'loose'); if (!q) return; // phones (v2.12): a spot inside the crop first
   if (walk) { rmTo(d, q[0], q[1], { anchor: true }); return; }
   rmSet(d, { x: q[0], y: q[1] }); r.hx = q[0]; r.hy = q[1]; if (isPhone()) phHomeRefit();
 }
