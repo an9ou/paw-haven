@@ -218,8 +218,8 @@ function hangHair(h,B,s,len){// long silky hair hanging straight down from which
   h.shape(top.concat(bot.slice().reverse()),s.col,{noline:1,ox:0,oy:0,sc:1});
   h.line([top[0]].concat(bot,[top[top.length-1]]),h.LW*.9,INK,1);
   bot.forEach((p,i)=>{if(i%3===1&&i<bot.length-1){const t=top[i];h.line([[t[0],t[1]+3],[t[0]+(p[0]-t[0])*.5+1.5,t[1]+(p[1]-t[1])*.5],[p[0],p[1]-3]],2,K,.4)}})}
-/* v2.12 Fourteen New Friends (V212.md): fourteen more crude ones, appended. Each ART lane replaces only its own block below; the
-   PLACEHOLDER rows borrow an old dog's drawing until that lane lands. Their extras are new spec fields, so no older dog takes those branches */
+/* v2.12 Fourteen New Friends (V212.md): fourteen more crude ones, appended. Each ART lane (A to D) drew only its own block below.
+   Their extras are new spec fields, so no older dog takes those branches */
 /* v2.12 ART A: dobie, corso, pitbull, minpin */
 /* Natural ears and tails (no cropping, no docking). Their extras (ears 'drop' in EARS_A, face.grinA, the tan points in tanA) are new
    spec fields or new values, so no older dog takes these branches */
