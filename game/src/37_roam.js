@@ -238,8 +238,8 @@ function rmValidate(instant) {
 /* ---------------- drawing ---------------- */
 function rmPackPose(d) { const r = rmSt(d); if (r.tw && !r.tw.o.legacy) return 'walk'; return d.sleeping ? 'sleep' : packPose[d.id] || (Math.min(...Object.values(d.stats)) < 25 ? 'sad' : 'idle'); }
 function rmPackInner(d, i) {
-  const r = rmSt(d), pose = rmPackPose(d); r.drawn = pose + '|' + r.face;
-  return `<g class="rm-at" transform="${rmXf(r)}"><g class="pd-wander" style="animation-delay:-${i * 2.3}s"><rect x="${DX + 44}" y="${DY + 35}" width="${DW - 88}" height="180" fill="transparent"/><g class="rm-art">${place(dogSVG(d, { pose, outfit: typeof shSleepOutfit === 'function' ? shSleepOutfit(d, pose) : outfitOf(d), facing: r.face }), DX, DY, DW, DH)}</g></g></g>`;
+  const r = rmSt(d), pose = rmPackPose(d), ex = exNow(d, pose); r.drawn = pose + '|' + r.face + (ex ? '|' + ex : ''); // v2.13: the face (41_expressions.js)
+  return `<g class="rm-at" transform="${rmXf(r)}"><g class="pd-wander" style="animation-delay:-${i * 2.3}s"><rect x="${DX + 44}" y="${DY + 35}" width="${DW - 88}" height="180" fill="transparent"/><g class="rm-art">${place(dogSVG(d, exOpt(d, pose, { pose, outfit: typeof shSleepOutfit === 'function' ? shSleepOutfit(d, pose) : outfitOf(d), facing: r.face })), DX, DY, DW, DH)}</g></g></g>`;
 }
 // the leader's shell: the scene build (full) carries the #dogPos markup, a rebuild of #pack gets an empty shell and rmAdopt moves the live #dogPos in
 function rmLeadSVG(full) {
@@ -258,8 +258,8 @@ function rmAdopt() {
 function rmPaint(d) {
   const el = rmEl(d); if (!el) return; const r = rmSt(d), at = el.querySelector(':scope > .rm-at'); if (at) at.setAttribute('transform', rmXf(r));
   if (d === D()) return;
-  const pose = rmPackPose(d), key = pose + '|' + r.face; if (key === r.drawn) return; r.drawn = key;
-  const a = el.querySelector('.rm-art'); if (a) a.innerHTML = place(dogSVG(d, { pose, outfit: typeof shSleepOutfit === 'function' ? shSleepOutfit(d, pose) : outfitOf(d), facing: r.face }), DX, DY, DW, DH);
+  const pose = rmPackPose(d), ex = exNow(d, pose), key = pose + '|' + r.face + (ex ? '|' + ex : ''); if (key === r.drawn) return; r.drawn = key; // v2.13: a face change redraws this dog's art
+  const a = el.querySelector('.rm-art'); if (a) a.innerHTML = place(dogSVG(d, exOpt(d, pose, { pose, outfit: typeof shSleepOutfit === 'function' ? shSleepOutfit(d, pose) : outfitOf(d), facing: r.face })), DX, DY, DW, DH);
 }
 // back to front by feet y. Only the pack dogs' nodes move (moving the leader's node would drop a rub's pointer capture on #dogHit)
 function rmDepth() {
@@ -404,7 +404,7 @@ function rmPackAct(d) {
     else { to = go({ near: [ro.x + (ro.x > 500 ? -140 : 140), ro.y] }); if (!to) return false; steps = [{ to }, { pose: 'sit', face: ro.x < to[0] ? 'left' : 'right', ms: sec(3000, 7000) }]; }
   } else if (kind === 'sniff' || kind === 'dig') {
     to = go({ like: kind === 'dig' ? ['dig'] : ['edge', 'dig', 'shade'] }); if (!to) return false;
-    steps = [{ to }, { pose: kind === 'dig' ? 'dig' : 'sniff', fb: 'eat', ms: 1800 }, { pose: 'idle', ms: 600 }, { pose: 'sniff', fb: 'eat', ms: 1400 }, { pose: 'idle', ms: sec(1500, 3000) }];
+    steps = [{ to }, { pose: kind === 'dig' ? 'dig' : 'sniff', fb: 'eat', ms: 1800 }, { pose: 'idle', ms: kind === 'dig' && exOn() ? 1800 : 600, fn: kind === 'dig' ? () => exTrig(d, 'dig', { pose: 'idle', draw: false }) : null }, { pose: 'sniff', fb: 'eat', ms: 1400 }, { pose: 'idle', ms: sec(1500, 3000) }]; // v2.13: after digging, the guilty face
   } else if (kind === 'guard') {
     to = go({ like: ['gate', 'edge'] }); if (!to) return false; const f = to[0] < 500 ? 'left' : 'right';
     steps = [{ to }, { pose: 'idle', face: f, ms: 1200 }, { pose: 'idle', face: f, ms: sec(3000, 6000), bark: Math.random() < 0.5 ? 'alert' : null, say: Math.random() < 0.25 ? PICK(CHI_ALERT) : null }];
@@ -467,6 +467,7 @@ function rmAttention(now) {
 // about 4 s (happy), then it wanders off again
 function rmPetted(d) {
   const r = rmSt(d), now = performance.now(); RM.petT[d.id] = now; r.ask = 0; r.askNext = now + 30000;
+  exTrig(d, 'pet', { pose: 'pet' }); // v2.13: every petted dog makes a face now and then (41_expressions.js, its own cooldown)
   if (!rmWander() || cur.mode !== 'yard' || r.fix || d.sleeping) return;
   r.hold = now + 4000; if (d !== D()) packNext[d.id] = Math.max(packNext[d.id] || 0, now + 4000);
   if (RM.paused.size || (typeof blOn === 'function' && blOn())) return; // held (ball play): the pet counts, the dog stays where the game put it
@@ -488,6 +489,7 @@ function rmTick() {
     else if (!rmWander() && n0 >= 0 && RM.no && RM.no.length !== n0 && rmOn() && modal.hidden && !TRN && !(typeof blOn === 'function' && blOn())) rmValidate(true); // the harness: a prop that came later (a snow drift) is stepped off at once
   }
   if (isPhone()) rmLookSync();
+  exRoamTick(now); // v2.13: the occasional face while a dog stands or sniffs (its own gates, also with the walking pinned off)
   if (!rmFree()) return;
   rmDogs().forEach((d) => { if (d !== D()) rmQTick(d, now); });
   rmAttention(now);

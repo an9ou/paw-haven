@@ -218,18 +218,18 @@ function dcTagFs(sz) { // sz: the visitor's size class (v2.11.1: a small dog's t
   return Math.max(19, 13.6 / (rmScale(rmZoneOf(S.place).y0) * (sz || 1) * px));
 }
 function dcVisSVG(v, i) {
-  const d = v.dog, pose = v.tw ? 'walk' : v.pose; v.drawn = pose + '|' + v.face;
+  const d = v.dog, pose = v.tw ? 'walk' : v.pose, ex = exNow(d, pose); v.drawn = pose + '|' + v.face + (ex ? '|' + ex : ''); // v2.13: the face (41_expressions.js)
   const fs = isPhone() ? dcTagFs(sizeK(d)) : DC.tagFs || 19, w = 88 * fs / 19, h = 25 * fs / 19;
   const tag = `<g class="dc-tag" pointer-events="none" transform="translate(430 512)"><rect x="${f1(-w / 2)}" y="-2" width="${f1(w)}" height="${f1(h)}" rx="8" fill="#FFF3DA" stroke="#5B3D32" stroke-width="2"/><text y="${f1(h * 0.68)}" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="${f1(fs)}" fill="#5B3D32">visitor</text></g>`;
-  return `<g class="dcvis" data-dcv="${i}" data-card="${esc(v.card.id)}" tabindex="0" role="button" aria-label="${esc(d.name)}, visiting with ${esc(dcCardName(v.card))}. Tap for the Dog Card."${v.hidden ? ' style="display:none"' : ''}><g class="dc-at" transform="${dcXf(v)}"><rect class="dc-hit" x="${DX + 44}" y="${DY + 35}" width="${DW - 88}" height="180" fill="transparent"/><g class="dc-art">${place(dogSVG(d, { pose, outfit: d.outfit, facing: v.face }), DX, DY, DW, DH)}</g>${tag}</g></g>`;
+  return `<g class="dcvis" data-dcv="${i}" data-card="${esc(v.card.id)}" tabindex="0" role="button" aria-label="${esc(d.name)}, visiting with ${esc(dcCardName(v.card))}. Tap for the Dog Card."${v.hidden ? ' style="display:none"' : ''}><g class="dc-at" transform="${dcXf(v)}"><rect class="dc-hit" x="${DX + 44}" y="${DY + 35}" width="${DW - 88}" height="180" fill="transparent"/><g class="dc-art">${place(dogSVG(d, ex ? { pose, outfit: d.outfit, facing: v.face, expr: ex } : { pose, outfit: d.outfit, facing: v.face }), DX, DY, DW, DH)}</g>${tag}</g></g>`;
 }
 const dcXf = (v) => `translate(${f1(v.x)} ${f1(v.y)}) scale(${v.k.toFixed(3)}) translate(-430 -500)`;
 function dcEl(v) { return $(`#dcVis [data-dcv="${DC.vis.indexOf(v)}"]`); }
 function dcPaint(v) {
   const el = dcEl(v); if (!el) return; el.style.display = v.hidden ? 'none' : '';
   const at = el.querySelector('.dc-at'); if (at) at.setAttribute('transform', dcXf(v));
-  const pose = v.tw ? 'walk' : v.pose, key = pose + '|' + v.face; if (key === v.drawn) return; v.drawn = key;
-  const a = el.querySelector('.dc-art'); if (a) a.innerHTML = place(dogSVG(v.dog, { pose, outfit: v.dog.outfit, facing: v.face }), DX, DY, DW, DH);
+  const pose = v.tw ? 'walk' : v.pose, ex = exNow(v.dog, pose), key = pose + '|' + v.face + (ex ? '|' + ex : ''); if (key === v.drawn) return; v.drawn = key; // v2.13: a face change redraws this visitor
+  const a = el.querySelector('.dc-art'); if (a) a.innerHTML = place(dogSVG(v.dog, exOpt(v.dog, pose, { pose, outfit: v.dog.outfit, facing: v.face })), DX, DY, DW, DH);
 }
 function dcOrder() { const g = $('#dcVis'); if (!g) return; const els = DC.vis.map((v) => dcEl(v)).filter(Boolean), want = els.slice().sort((a, b) => DC.vis[+a.dataset.dcv].y - DC.vis[+b.dataset.dcv].y); if (want.some((e, i) => g.children[i] !== e)) want.forEach((e) => g.appendChild(e)); }
 // draw the picked cards' dogs in the scene: up to 2 cards, at most 3 dogs, each on a free spot

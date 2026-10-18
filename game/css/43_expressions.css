@@ -1,1 +1,24 @@
-/* v2.13 Faces & Feelings: expression picker and bits (V213.md 4, EX lane, tag ex). Stub. */
+/* v2.13 Faces & Feelings (EX lane, tag ex, classes .ex-): the photo mode face picker (V213.md section 4). The faces themselves are drawn by the dog art.
+   The picker is a strip under the picture: desktop, one row of fifteen heads (the word shows in the label and on hover), phones, heads with their
+   word in a row that scrolls sideways (44 px taps, 16 px text). The picture keeps the rest of the view. */
+.ex-faces{position:absolute;left:0;right:0;bottom:0;height:62px;display:flex;align-items:center;gap:8px;min-width:0}
+.ex-faces ~ .ph-pic{bottom:68px;max-height:calc(100% - 68px)}
+.ex-flbl{flex:none;width:88px;display:flex;flex-direction:column;font-size:16px;line-height:1.05;color:var(--muted)}
+.ex-fnow{font-family:var(--font-hand);font-weight:700;font-size:23px;line-height:1;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ex-frow{flex:1;min-width:0;align-self:stretch;display:flex;align-items:center;gap:4px;overflow-x:auto;overflow-y:hidden;padding:0 4px;scrollbar-width:thin;overscroll-behavior-x:contain}
+.ex-face{flex:none;width:46px;height:46px;min-height:44px;padding:2px;gap:0;--wash:var(--paper)}
+.ex-face[aria-pressed="true"]{--wash:var(--w-yellow);outline:2.5px solid var(--ink);outline-offset:1px}
+.ex-fhead{display:block;width:38px;height:38px;flex:none;pointer-events:none}
+.ex-fhead svg{display:block;width:100%;height:100%}
+.ex-fword{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap} /* desktop: the label and the tooltip say the word */
+
+/* phones: the picture on top, then the faces row (heads and words, scrolling sideways), then the frame, caption and save rows */
+html[data-layout="phone"] .ex-faces{height:56px;gap:0}
+html[data-layout="phone"] .ex-faces ~ .ph-pic{bottom:60px;max-height:calc(100% - 60px)}
+html[data-layout="phone"] .ex-flbl{display:none}
+html[data-layout="phone"] .ex-frow{gap:8px;padding:5px 6px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+html[data-layout="phone"] .ex-frow::-webkit-scrollbar{display:none}
+html[data-layout="phone"] .ex-face{width:auto;height:44px;padding:2px 12px 3px 6px;gap:4px;font-size:16px;line-height:1.1;white-space:nowrap}
+html[data-layout="phone"] .ex-fhead{width:34px;height:34px}
+html[data-layout="phone"] .ex-fword{position:static;width:auto;height:auto;overflow:visible;clip:auto}
+@media (prefers-reduced-motion:reduce){.ex-face:hover{animation:none}}

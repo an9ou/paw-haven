@@ -24,11 +24,12 @@ function dogPoseNow() {
 }
 const POSE_FB = { crouch: 'sit', shake: 'happy', cold: 'sad', hot: 'happy', dig: 'eat', squat: 'sit', leglift: 'sit' };
 function dogArtSafe(key, o) { let sv = art('dog', key, o); if (o.pose && POSE_FB[o.pose] && !sv.includes('pa-pose-' + o.pose)) sv = art('dog', key, Object.assign({}, o, { pose: POSE_FB[o.pose] })); return sv; }
-function renderDog(pose, facing = 'right', force) {
+function renderDog(pose, facing = 'right', force, artOnly) {
   const g = $('#dogArt'); if (!g) return;
-  const o = shSleepOutfit(D(), pose), k = pose + '|' + facing + '|' + JSON.stringify(o) + '|' + S.dog.key; // v2.4: the Pyjamas at nap time
+  const o = shSleepOutfit(D(), pose), ex = exNow(D(), pose), k = pose + '|' + facing + '|' + JSON.stringify(o) + '|' + S.dog.key + (ex ? '|' + ex : ''); // v2.4: the Pyjamas at nap time. v2.13: the face (41_expressions.js)
   if (k === dogKey && !force) return; dogKey = k;
-  g.innerHTML = place(dogSVG(D(), { pose, outfit: o, facing }), DX, DY, DW, DH);
+  g.innerHTML = place(dogSVG(D(), ex ? { pose, outfit: o, facing, expr: ex } : { pose, outfit: o, facing }), DX, DY, DW, DH);
+  if (artOnly) return; // v2.13: a face that starts or ends redraws the art only (exRedraw)
   const fx = $('#dogFx'); if (fx) { fx.classList.toggle('tk-shake', pose === 'shake'); fx.classList.toggle('tk-shiver', pose === 'cold'); }
   const bf = $('#bedFront'); if (bf) bf.style.display = pose === 'sleep' ? '' : 'none';
   fbNapFit(pose); fbPackNapFit();
@@ -496,7 +497,7 @@ function beachDig() {
   setTimeout(() => {
     if (Math.random() < 0.55) { const c = addCoins(RINT(5, 20)); toast(`Dug up ${c} coins in the sand! Pirate dog.`, 'gold'); }
     else { const j = PICK(JUNK.concat([['junk-rock', 'A shell with a smaller shell inside. Shell-ception.']])); const c = addCoins(RINT(2, 5)); toast(`${j[1]} (+${c} coins)`, 'gold'); }
-    addStat('happy', favAct('digging') ? 6 : 3); busy = false; renderDog(dogPoseNow(), 'right', true); placeButtons(); markDirty();
+    addStat('happy', favAct('digging') ? 6 : 3); busy = false; exTrig(D(), 'dig', { pose: 'idle', draw: false }); renderDog(dogPoseNow(), 'right', true); placeButtons(); markDirty(); // v2.13: the guilty face
   }, 1300);
 }
 function travelTo(id) {

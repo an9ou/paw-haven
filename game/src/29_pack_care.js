@@ -112,7 +112,7 @@ function crFeed(name, f) {
     const skip = (full.length ? ` ${crNames(full)} ${crIs(full)} full.` : '') + (asleep.length ? ` ${crNames(asleep)} ${crIs(asleep)} asleep.` : '') + (short.length ? ` Not enough ${name} for ${crNames(short)}.` : '');
     toast(`${msg}${favs.length ? ` Favourite food for ${crNames(favs)}!` : ''}${bond}${S.place === 'river' && !water ? ' Riverside picnic: +5 Happiness.' : ''}${extra}${skip}`, 'good');
     if (!water) { dailyCare('feed'); markCareDay(); }
-    trackAct(water ? 'water' : 'feed', { name, dogs: fed.length });
+    trackAct(water ? 'water' : 'feed', { name, dogs: fed.length, ids: fed.map((d) => d.id) }); // v2.13: ids, the dogs that ate (41_expressions.js)
     if (f.tip) setTimeout(() => shFoodTip(name), 900);
     if (me) { setTemp('happy', 1600); dogTo(0, 0, 1, 0.8); }
     updateHUD(); markDirty();

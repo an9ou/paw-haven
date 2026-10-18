@@ -200,7 +200,7 @@ function feedAll() {
   });
   if (S.inv.food[f.n] <= 0) delete S.inv.food[f.n];
   if (!fed.length) { nope('Everyone is full or asleep. Nobody has ever said that before.'); return; }
-  dailyCare('feed'); markCareDay(); trackAct('feed', crOn() ? { name: f.n, dogs: fed.length } : { name: f.n }); if (typeof shFoodTip === 'function') setTimeout(() => shFoodTip(f.n), 900); markDirty(); popDown(); SFX.crunch(); setTimeout(SFX.crunch, 300); setTimeout(SFX.crunch, 600);
+  dailyCare('feed'); markCareDay(); trackAct('feed', crOn() ? { name: f.n, dogs: fed.length, ids: fed.map((d) => d.id) } : { name: f.n, ids: fed.map((d) => d.id) }); // v2.13: ids, the dogs that ate (41_expressions.js) if (typeof shFoodTip === 'function') setTimeout(() => shFoodTip(f.n), 900); markDirty(); popDown(); SFX.crunch(); setTimeout(SFX.crunch, 300); setTimeout(SFX.crunch, 600);
   // v2.5: every fed dog eats from a bowl of that food: the active dog walks to the yard bowl (shown only while it eats), each pack dog gets its own bowl at its paws
   if (fed.includes(D())) { busy = true; hideBubble(); setBowl(f.n); dogTo(-125, 0, 1, 0.8); renderDog('walk', 'left'); setTimeout(() => setTemp('eat', 1400), 850); setTimeout(() => { setBowl(null); dogTo(0, 0, 1, 0.8); setTimeout(() => { busy = false; renderDog(dogPoseNow()); }, 900); }, 2300); }
   const packFed = others().filter((d) => fed.includes(d)); fbPackBowls(packFed, f.n);
