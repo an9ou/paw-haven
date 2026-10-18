@@ -90,6 +90,7 @@ const SUITES = {
   v29_review: { file: 'test_v29_review.js', group: 'all', est: 40 }, // v2.9 integration review fixes (coordinator)
   v211_dogs: { file: 'test_v211_dogs_node.js', group: 'all', est: 450, timeout: 700 }, // v2.11 BREED ART (V211.md 5.2): akita, spitz, pom, afghan, dane, mastiff, gsd and the three Tokyo bandanas
   v212_dogs: { file: 'test_v212_dogs_node.js', group: 'all', est: 480, timeout: 900 }, // v2.12 ART A-D (V212.md 5): the fourteen new breeds in every pose, age, facing and outfit
+  v212_lines: { file: 'test_v212_lines_node.js', group: 'all', est: 3 }, // v2.12 LINES (V212.md 4): every per-breed table has all 35 keys
   // v2.2 phone suites: `node game/run_tests.js phone` (not part of `all`, which stays the desktop regression set)
   phone_legacy: { file: 'test_phone.js', group: 'phone', est: 90 },
   phone_shell: { file: 'test_phone_shell.js', group: 'phone', est: 40 },

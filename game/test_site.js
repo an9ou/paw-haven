@@ -1,6 +1,6 @@
 // SITE (v2.8.2, v2 redesign 17 Oct 2026): the doodledoggo.app introduction site (site/, served by the Worker tools/cf_site.js builds), in Miniflare.
 //   NODE_PATH=$(npm root -g) node game/test_site.js      (or: node game/run_tests.js site)
-// Desktop 1280x800 and iPhone 15: the home page (the live playroom, the 21 dog cards, Dogs in Japan), /dogs (every dog's profile), reduced motion, /privacy, /reset (v2.9.2: a notice, the reset is in the game) against the real cloudflare/worker.js on a
+// Desktop 1280x800 and iPhone 15: the home page (the live playroom, a card for every dog, Dogs in Japan), /dogs (every dog's profile), reduced motion, /privacy, /reset (v2.9.2: a notice, the reset is in the game) against the real cloudflare/worker.js on a
 // local D1 (game/cloud_mock.js), www -> apex, no request leaves the site (no tracking), phone minimums.
 // PAW_SITE_SHOTS=<dir> also saves screenshots there. Node-only runner contract: prints ALL OK when every check passes.
 process.removeAllListeners('warning');
@@ -135,7 +135,7 @@ const req = (m) => { for (const r of [].concat((process.env.NODE_PATH || '').spl
       const inside = await page.evaluate(() => window.__dd.dogs.every((d) => d.x >= 60 && d.x <= 940 && d.y >= 450 && d.y <= 596));
       ok(inside, 'every dog stays on the playroom floor');
       const cards = await page.evaluate(() => [...document.querySelectorAll('.cards .dcard')].map((a) => [a.getAttribute('href'), a.querySelector('.dname').textContent, a.querySelector('.dimg').getAttribute('src')]));
-      ok(cards.length === 21 && BREEDS.every((k, i) => cards[i] && cards[i][0] === '/dogs#' + k && cards[i][2] === `/img/art/dogs/${k}-still.svg`), 'one card per dog (all 21 in BREEDS order), each linking to its profile on /dogs'.replace('BREEDS_IN', ''));
+      ok(cards.length === BREEDS.length && BREEDS.every((k, i) => cards[i] && cards[i][0] === '/dogs#' + k && cards[i][2] === `/img/art/dogs/${k}-still.svg`), 'one card per dog (all of BREEDS, in order), each linking to its profile on /dogs'.replace('BREEDS_IN', ''));
       const soon = await page.evaluate(() => { const c = document.querySelector('.cards li:last-child .soon'); return c && { t: c.textContent, sils: c.querySelectorAll('.sil img').length, q: c.querySelectorAll('.sil b').length }; });
       ok(soon && /More dogs are coming!/.test(soon.t) && /Japanese Chin, Shih Tzu and Kai Ken are on their way/.test(soon.t) && soon.sils === 3 && soon.q === 3 && !/\b(20\d\d|soon|month|week)\b/i.test(soon.t.replace('coming', '')), 'the last card: More dogs are coming! with three "?" silhouettes (Japanese Chin, Shih Tzu, Kai Ken), no dates');
       const wall = await page.evaluate(() => ({ pic: !!document.querySelector('#stage .wallpic img'), text: [...document.querySelectorAll('#stage *:not(.bark)')].filter((e) => e.children.length === 0 && e.textContent.trim()).map((e) => e.textContent.trim()) }));

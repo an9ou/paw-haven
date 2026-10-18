@@ -20,13 +20,29 @@
   ];
   var BY_ID = {};
   CROPS.forEach(function (c) { BY_ID[c.id] = c; });
-  var BUDDY = { shiba: 'inspect', corgi: 'guard', golden: 'fetch', dachs: 'dig', husky: 'snow', mutt: 'tend', chihuahua: 'guard', pug: 'tend', greyhound: 'fetch', beagle: 'inspect', poodle: 'inspect', collie: 'guard', samoyed: 'snow', frenchie: 'tend', akita: 'guard', spitz: 'snow', pom: 'inspect', afghan: 'inspect', dane: 'tend', mastiff: 'tend', gsd: 'guard' };
+  var BUDDY = { shiba: 'inspect', corgi: 'guard', golden: 'fetch', dachs: 'dig', husky: 'snow', mutt: 'tend', chihuahua: 'guard', pug: 'tend', greyhound: 'fetch', beagle: 'inspect', poodle: 'inspect', collie: 'guard', samoyed: 'snow', frenchie: 'tend', akita: 'guard', spitz: 'snow', pom: 'inspect', afghan: 'inspect', dane: 'tend', mastiff: 'tend', gsd: 'guard', dobie: 'guard', corso: 'guard', pitbull: 'tend', minpin: 'inspect', lab: 'fetch', malamute: 'dig', chow: 'tend', stdpoodle: 'inspect', schnauzer: 'guard', westie: 'dig', yorkie: 'inspect', bichon: 'inspect', maltese: 'tend', shihtzu: 'tend' };
   // v1.7: breed-flavoured opening lines (other breeds use the perk line)
   var BREED_LINE = { chihuahua: '{n} is the security system. Captain Fluff has been warned. Loudly.', pug: '{n} lies next to the thirsty plants and snorts until someone waters them.', greyhound: '{n} fetched the basket at 45 mph. Then lay down in it.', beagle: '{n} has sniffed every leaf. Twice. Quality is guaranteed.',
     poodle: '{n} checks each leaf like a judge at a show. Only the best get through.', collie: '{n} keeps the squirrels in one corner of the garden. They look embarrassed.',
     samoyed: '{n} keeps the plants company in the snow. The snow is the fun part.', frenchie: '{n} naps next to the dry plants. The snoring reminds you to water them.',
     akita: '{n} sits by the garden gate and watches over every row. Nothing gets past.', spitz: '{n} trots between the rows and sparkles. The plants feel very looked after.', pom: '{n} marches along the rows giving orders in a tiny voice. The carrots seem to listen.',
-    afghan: '{n} drapes across the sunniest bed and lets the plants admire {him}.', dane: '{n} watches the garden from way up high. The tomatoes feel tiny and safe.', mastiff: '{n} flops by the beans and sighs. The beans feel guarded and a little damp.', gsd: '{n} patrols the rows twice a day. Nothing gets past, not even weeds.' };
+    afghan: '{n} drapes across the sunniest bed and lets the plants admire {him}.', dane: '{n} watches the garden from way up high. The tomatoes feel tiny and safe.', mastiff: '{n} flops by the beans and sighs. The beans feel guarded and a little damp.', gsd: '{n} patrols the rows twice a day. Nothing gets past, not even weeds.',
+    // v2.12 Fourteen New Friends
+    dobie: '{n} walks the fence line twice, then sits among the carrots. The carrots feel very secure.',
+    corso: '{n} lies across the garden gate like a calm, furry wall. Nothing gets past. Nothing wants to.',
+    pitbull: '{n} wiggles through the rows and hugs every watering can. Wet, happy and helpful.',
+    minpin: '{n} prances between the rows with high knees. The lettuce has never been so supervised.',
+    lab: '{n} sniffs every vegetable, then sits by the carrots with great hope.',
+    malamute: '{n} digs a hole next to the rows and talks about it. Woo-woo. The hole is very nice.',
+    chow: '{n} sits in the shade of the beans like a small lion on a throne.',
+    stdpoodle: '{n} steps between the rows on long legs and sniffs each leaf like an expert.',
+    schnauzer: '{n} checks every row twice and takes notes with the eyebrows.',
+    westie: '{n} digs a tidy hole beside the beds, very close and very eager. Almost tidy.',
+    yorkie: '{n} supervises the garden from a sunny spot and gives orders in a tiny voice.',
+    bichon: '{n} bounces through the garden like a cotton ball and the bees follow. Boing.',
+    maltese: '{n} floats along the path, careful not to touch the soil. The plants admire the fringe.',
+    shihtzu: '{n} naps on the warm path between the beds. The plants are in good company.'
+};
   // quality points (0-3) -> [1 star, 2 stars, 3 stars] odds
   var STAR_ODDS = [[0.70, 0.25, 0.05], [0.55, 0.35, 0.10], [0.40, 0.40, 0.20], [0.25, 0.45, 0.30]];
   var SELL_MULT = [1, 1.5, 2];

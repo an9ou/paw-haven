@@ -92,10 +92,10 @@ require('./test_lib').run('v211_breeds', async (t) => {
   ok(await ev(() => ['akita', 'spitz', 'pom', 'afghan', 'dane', 'mastiff', 'gsd'].every((k) => !!document.querySelector(`.cbreed[data-cbreed="${k}"]`))), 'the seven new breeds have tabs');
   await t.sleep(700);
   const rows = await ev(() => new Set([...document.querySelectorAll('.cbreed')].map((e) => Math.round(e.offsetTop / 10))).size);
-  ok(rows === 1, `the breed tabs fit on one row at 1280x720 (${rows} rows)`);
+  ok(rows <= (COAT_CAP > 21 ? 3 : 1), `the breed tabs fit (one row up to 21, at most three small rows at 35) at 1280x720 (${rows} rows)`);
   await p.setViewportSize({ width: 1024, height: 720 }); await t.sleep(700);
   const r1024 = await ev(() => ({ rows: new Set([...document.querySelectorAll('.cbreed')].map((e) => Math.round(e.offsetTop / 10))).size, over: document.querySelector('.cbreeds').scrollWidth > document.querySelector('.cbreeds').clientWidth + 1, docW: document.documentElement.scrollWidth }));
-  ok(r1024.rows === 1 && !r1024.over && r1024.docW <= 1024, `at 1024x720 too: one row, nothing cut off (${JSON.stringify(r1024)})`);
+  ok(r1024.rows <= (COAT_CAP > 21 ? 4 : 1) && !r1024.over && r1024.docW <= 1024, `at 1024x720 too: no more rows than that, nothing cut off (${JSON.stringify(r1024)})`);
   await p.setViewportSize({ width: 1280, height: 720 }); await t.sleep(400);
   await p.click('[data-cbreed="akita"]'); await p.waitForSelector('.cbreed.on[data-cbreed="akita"]');
   const cat = (k) => ev((k) => window.PawGenes.coatCatalog(k).map((c) => c.coat), k);

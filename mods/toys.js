@@ -321,8 +321,23 @@
     afghan: { d: [29, -41], sit: [27, -9], jump: [-5, -26], eat: [2, 5], crouch: [20, 4], sleep: [10, 2], sniff: [27, 6] },
     dane: { d: [22, -43], sit: [20, -23], jump: [4, -43], eat: [2, 5], crouch: [14, 0], sleep: [6, 0], sniff: [22, 6] },
     mastiff: { d: [24, -9], sit: [21, -23], jump: [6, -9], eat: [-2, 3], crouch: [10, 0], sleep: [6, 0], sniff: [22, 5] },
-    gsd: { d: [25, -13], sit: [23, -15], jump: [8, -13], eat: [1, 6], crouch: [14, 2], sleep: [8, 0], sniff: [25, 7] }
-  };
+    gsd: { d: [25, -13], sit: [23, -15], jump: [8, -13], eat: [1, 6], crouch: [14, 2], sleep: [8, 0], sniff: [25, 7] },
+    // v2.12 Fourteen New Friends: re-measure on the final art (rows copied from the placeholder donors)
+    dobie: { d: [-24, -6], sit: [-24, 0], jump: [-38, 2], eat: [40, -15], crouch: [0, 0], sleep: [-12, 0], sniff: [-6, -2] },
+    corso: { d: [24, -9], sit: [21, -23], jump: [6, -9], eat: [-2, 3], crouch: [10, 0], sleep: [6, 0], sniff: [22, 5] },
+    pitbull: { d: [-22, 10], sit: [-6, -2], jump: [-30, 5], eat: [28, -11], crouch: [0, 0], sleep: [-10, 0], sniff: [-6, 0] },
+    minpin: { d: [-12, 14], sit: [0, 8], jump: [-30, 10], eat: [16, -6], crouch: [0, 0], sleep: [-12, 0], sniff: [0, -4] },
+    lab: { d: [-24, -6], sit: [-24, 0], jump: [-38, 2], eat: [40, -15], crouch: [0, 0], sleep: [-12, 0], sniff: [-6, -2] },
+    malamute: { d: [-8, 0], sniff: [-2, -8] },
+    chow: { d: [-11, -1], sit: [2, -6], jump: [-19, -4], eat: [28, -9], crouch: [13, 0], sleep: [-6, 0], sniff: [0, -2] },
+    stdpoodle: { d: [-2, -18], sit: [5, -13], jump: [-15, -14], eat: [32, -13], crouch: [10, -5], sleep: [-2, 0], sniff: [6, -8] },
+    schnauzer: { d: [-10, 4], sit: [0, 0], jump: [-8, 0], eat: [24, 0], crouch: [0, 0], sniff: [0, -4] },
+    westie: { d: [-10, 4], sit: [0, 0], jump: [-8, 0], eat: [24, 0], crouch: [0, 0], sniff: [0, -4] },
+    yorkie: { d: [-12, 14], sit: [0, 8], jump: [-30, 10], eat: [16, -6], crouch: [0, 0], sleep: [-12, 0], sniff: [0, -4] },
+    bichon: { d: [-11, -1], sit: [2, -6], jump: [-19, -4], eat: [28, -9], crouch: [13, 0], sleep: [-6, 0], sniff: [0, -2] },
+    maltese: { d: [-11, -1], sit: [2, -6], jump: [-19, -4], eat: [28, -9], crouch: [13, 0], sleep: [-6, 0], sniff: [0, -2] },
+    shihtzu: { d: [-22, 10], sit: [-6, 3], jump: [-30, 5], eat: [28, -11], crouch: [0, 0], sleep: [-10, 0], sniff: [-6, 0] }
+};
   var POSE_BASE = { walk: 'idle', happy: 'idle', pet: 'idle', shake: 'idle', dirty: 'idle', cold: 'idle', hot: 'idle', sad: 'idle', dig: 'eat' };
   function breedAdj(key, pose) {
     var b = BREED_M[key]; if (!b) return [0, 0];
@@ -335,8 +350,23 @@
     dachs: { run: 0.85 }, corgi: { run: 0.92 },
     frenchie: { run: 0.8, snort: true }, collie: { run: 1.15 }, samoyed: { fluff: true }, poodle: { clever: true },   // v2.5
     akita: { run: 0.95, carry: 1.05 }, spitz: { run: 1.05, fluff: true }, pom: { run: 0.9, fierce: true },   // v2.11
-    afghan: { run: 1.4, carry: 0.9 }, dane: { run: 0.85 }, mastiff: { run: 0.6, snort: true }, gsd: { run: 1.15, carry: 1.1 }
-  };
+    afghan: { run: 1.4, carry: 0.9 }, dane: { run: 0.85 }, mastiff: { run: 0.6, snort: true }, gsd: { run: 1.15, carry: 1.1 },
+    // v2.12 Fourteen New Friends
+    dobie: { run: 1.2, carry: 1.05 },
+    corso: { run: 0.8 },
+    pitbull: { run: 1.05, carry: 1.1 },
+    minpin: { run: 1.2, fierce: true },
+    lab: { run: 1.05, carry: 1.2 },
+    malamute: { run: 0.95, fluff: true },
+    chow: { run: 0.75, fluff: true },
+    stdpoodle: { run: 1.15, clever: true },
+    schnauzer: { run: 1, fierce: true },
+    westie: { run: 1, fierce: true },
+    yorkie: { run: 0.95, fierce: true },
+    bichon: { run: 1, fluff: true },
+    maltese: { run: 0.85, fluff: true },
+    shihtzu: { run: 0.7, snort: true }
+};
   function trait(key) { return Object.assign({ run: 1, carry: 1 }, TRAITS[key] || {}); }
   /* per-breed flavour lines; any missing slot falls back to the generic lines passed in */
   var LINES = {
@@ -427,8 +457,23 @@
     gsd: {
       fetchStart: ['ready. throw it.', 'eyes on the ball. always.'], fetchDeliver: ['mission complete.', 'done. again?'],
       tugStart: ['assignment accepted.'], tugGrowl: ['grr! (working)', 'mine. on duty.'], howl: ['woof! woof!', 'a strong, clear bark'], tap: ['reporting. what is the job?']
-    }
-  };
+    },
+    // v2.12 Fourteen New Friends
+    dobie: { fetchStart: ['ready. throw it.', 'on my mark. mark.'], fetchDeliver: ['mission done. cuddle now?', 'here. sleek and fast.'], tugGrowl: ['grr (deep and polite)', 'mine. firmly.'], howl: ['a deep, clear woof', 'woof. (once, clearly)'], tap: ['reporting. all clear.'] },
+    corso: { fetchStart: ['a throw? ok. calmly.', 'I will get it. slowly. surely.'], fetchDeliver: ['here. gently.', 'a big sigh. a good fetch.'], tugGrowl: ['mmrf (low)', 'a slow rumble'], tugDogWin: ['oops. I pulled the whole rope.'], howl: ['*low woof*', 'woof. (once)'], poolIn: ['a big, calm splash'], tap: ['*slow blink*'] },
+    pitbull: { fetchStart: ['throw it! throw it! wiggle!', 'YES! the ball! my best friend!'], fetchDeliver: ['got it! hug?', 'I brought it back! and a wiggle!'], tugStart: ['best game ever! pull!'], tugGrowl: ['grrr! (happy)', 'mine! (wiggling)'], tugDogWin: ['I won! hug time!'], howl: ['woof woof! (bouncy)', 'a happy bounce of a bark'], poolIn: ['splash! the back half is wagging!'], tap: ['hello! hug?'] },
+    minpin: { fetchStart: ['throw it! I am so fast!', 'high knees, ready!'], fetchDeliver: ['it was bigger than my head!', 'prance prance. delivered.'], tugStart: ['I am a small horse. a strong one.'], tugGrowl: ['yip! grr! yip!', 'tiny but mighty'], howl: ['yip! yip!', 'a sharp little yip'], tap: ['yip? what?'] },
+    lab: { fetchStart: ['BALL! yes! throw it!', 'I love this game. I love every game.'], fetchDeliver: ['got it! again! again!', 'back already. the tail did the walking.'], tugGrowl: ['grr-hoo (friendly)', 'mine! (wagging)'], howl: ['a friendly woof', 'woof! hello!'], snuffleFind: ['FOOD! found it! hello, food!'], poolIn: ['water! my favourite thing in the world!'], tap: ['yes? is it a snack?'] },
+    malamute: { fetchStart: ['woo. throw it. woo-woo.', 'I will bring it back. maybe. woo.'], fetchDeliver: ['woo! here. a bit damp.', 'fetch done. I will now tell you about it.'], tugStart: ['woo-woo-WOO! pull!'], tugGrowl: ['woo-grr!', 'mine. woo.'], howl: ['woo-woo-woo!', 'woo. woo-woo. (speech)'], poolIn: ['cold water! woo!'], tap: ['woo? hello!'] },
+    chow: { fetchStart: ['you throw. I will consider it.', 'a ball? I suppose.'], fetchDeliver: ['here. this was a favour.', 'fetched. do not make it a habit.'], tugGrowl: ['grr (dignified)', 'mine. regally.'], howl: ['a low, grumbly woof', 'woof. (once, grumpily)'], bubblePop: ['I do not chase bubbles. I watch them. closely.'], tap: ['one pat. maybe two.'] },
+    stdpoodle: { fetchStart: ['a throw? how lovely. watch my form.', 'ready. long legs engaged.'], fetchDeliver: ['returned, with a bow.', 'a perfect retrieve. you are welcome.'], tugStart: ['I will tug. politely.'], tugGrowl: ['grr (refined)', 'mine. thank you.'], frisbee: ['caught it. with style.', 'a leap, a twist, a catch. bow.'], howl: ['a clear, bright bark', 'woof! (crisp)'], tap: ['yes? I am learning a trick.'] },
+    schnauzer: { fetchStart: ['throw it. eyebrows on it.', 'I will track it. every inch.'], fetchDeliver: ['retrieved. report filed.', 'back. the beard is windblown.'], tugStart: ['I will guard this rope.'], tugGrowl: ['grr! (alert)', 'mine. I am guarding it.'], howl: ['yap yap yap! (alarm)', 'a quick, loud alarm bark'], tap: ['reporting! what is it?'] },
+    westie: { fetchStart: ['throw it! or I dig!', 'ready! mud optional!'], fetchDeliver: ['got it! look at my paws!', 'dug it up and brought it back'], tugStart: ['I am a terrier. I never let go.'], tugGrowl: ['grr! (muddy)', 'MINE. also the mud.'], howl: ['yap! a bright yap!', 'a cheerful terrier bark'], snuffleFind: ['dug it up! of course!'], tap: ['what? is it a hole?'] },
+    yorkie: { fetchStart: ['throw it. gently. I am a lady.', 'ready. mind the bow.'], fetchDeliver: ['delivered. I want credit.', 'it was heavy. I did it anyway.'], tugStart: ['I am tiny. I am terrifying.'], tugGrowl: ['yap! grr! yap!', 'tiny but fierce'], howl: ['yap! yap!', 'a tiny, bossy yap'], tap: ['yes? you may speak.'] },
+    bichon: { fetchStart: ['boing! throw it!', 'ready! springs on!'], fetchDeliver: ['boing boing boing! got it!', 'a cloud with a ball!'], tugGrowl: ['yip-grr! (soft)', 'mine! (bouncing)'], howl: ['a soft little yip', 'yip! (cotton ball)'], bubblePop: ['pop! boing! pop!'], poolIn: ['the puff is getting wet! ...fun!'], tap: ['boing! hello!'] },
+    maltese: { fetchStart: ['a small throw, please. mind the fringe.', 'I will float after it.'], fetchDeliver: ['delivered, gracefully.', 'a silky little retrieve'], tugGrowl: ['a soft grr (silk)', 'mine. very gently.'], howl: ['a soft, high yip', 'yip. (elegant)'], bubblePop: ['the bubbles are as pretty as me'], tap: ['yes? I was floating.'] },
+    shihtzu: { fetchStart: ['throw it. a short one. I will think about it.', 'ok. but nap after.'], fetchDeliver: ['*snort* done. nap time.', 'it was a very long five steps'], tugGrowl: ['grrf *snort*', 'mine. lazily.'], howl: ['a small, snorty yip', 'yip *snort*'], coneLick: ['lick *snort* lick'], tap: ['*snort*? five more minutes.'] }
+};
   var FALLBACK = { crouch: ['sit'], dig: ['eat'], shake: ['happy'], sleep: ['sit'], pet: ['happy'], sad: ['sit'], jump: ['happy'], eat: ['sit'], walk: ['idle'] };
 
   function makeDog(A, info, layer) {
