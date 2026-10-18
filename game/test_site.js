@@ -2,6 +2,8 @@
 //   NODE_PATH=$(npm root -g) node game/test_site.js      (or: node game/run_tests.js site)
 // Desktop 1280x800 and iPhone 15: the home page (the live playroom, a card for every dog, Dogs in Japan), /dogs (every dog's profile), reduced motion, /privacy, /reset (v2.9.2: a notice, the reset is in the game) against the real cloudflare/worker.js on a
 // local D1 (game/cloud_mock.js), www -> apex, no request leaves the site (no tracking), phone minimums.
+// v2.14: the same pages in 10 more languages (tools/site_i18n.js) and the test-only pseudo-locales /xx/ (en-XA) and /xx-cjk/ (ja-XA): html lang, hreflang,
+// the language menu (also without JavaScript), the first-visit language from navigator.languages, the dog count rule, the size budget, iPhone 15 and Pixel 7.
 // PAW_SITE_SHOTS=<dir> also saves screenshots there. Node-only runner contract: prints ALL OK when every check passes.
 process.removeAllListeners('warning');
 const path = require('path'), fs = require('fs'), zlib = require('zlib'), cp = require('child_process');
@@ -17,7 +19,10 @@ const sec = (s) => console.log('\n# ' + s);
 const req = (m) => { for (const r of [].concat((process.env.NODE_PATH || '').split(path.delimiter).filter(Boolean), module.paths)) { try { return require(path.join(r, m)); } catch (e) { /* next */ } } return require(m); };
 
 (async () => {
-  cp.execFileSync('node', [path.join(ROOT, 'tools', 'cf_site.js')], { stdio: 'ignore' });
+  cp.execFileSync('node', [path.join(ROOT, 'tools', 'cf_site.js'), '--pseudo'], { stdio: 'ignore' }); // v2.14: with the test-only pseudo-locales /xx/ and /xx-cjk/
+  const I18N = require('../tools/site_i18n');
+  const SIZES = JSON.parse(fs.readFileSync(path.join(ROOT, '_cfsite', 'sizes.json'), 'utf8'));
+  const SCENE_KEYS = JSON.parse(fs.readFileSync(path.join(ROOT, 'site', 'js', 'site.js'), 'utf8').match(/var KEYS = (\[[^\]]*\])/)[1].replace(/'/g, '"'));
   const dir = path.join(ROOT, '_cfsite');
   const parts = fs.readFileSync(path.join(dir, 'parts.txt'), 'utf8').trim().split('\n').map((l) => l.split(' '));
   const MF = req('miniflare'), { chromium, devices } = req('playwright');
@@ -27,12 +32,21 @@ const req = (m) => { for (const r of [].concat((process.env.NODE_PATH || '').spl
     .concat(parts.map(([n, t]) => ({ type: t === 'text/plain' ? 'Text' : 'Data', path: path.join(dir, n), contents: fs.readFileSync(path.join(dir, n)) })));
   const mf = new MF.Miniflare({ modules, modulesRoot: dir, compatibilityDate: '2026-08-01', port: 0 });
   const base = String(await mf.ready).replace(/\/$/, '');
+  // v2.14: the per-language fonts Worker (only when site/fonts/i18n has fonts); the browser reaches it the way the route doodledoggo.app/fonts/i18n/* does
+  let fmf = null;
+  if (SIZES.fontMode === 'split') {
+    const fdir = path.join(ROOT, '_cfsite_fonts'), fparts = fs.readFileSync(path.join(fdir, 'parts.txt'), 'utf8').trim().split('\n').map((l) => l.split(' '));
+    fmf = new MF.Miniflare({ modules: [{ type: 'ESModule', path: path.join(fdir, 'worker.js'), contents: fs.readFileSync(path.join(fdir, 'worker.js'), 'utf8') }].concat(fparts.map(([n, t]) => ({ type: t === 'text/plain' ? 'Text' : 'Data', path: path.join(fdir, n), contents: fs.readFileSync(path.join(fdir, n)) }))), modulesRoot: fdir, compatibilityDate: '2026-08-01' });
+  }
+  const routeFonts = async (ctx) => { if (fmf) await ctx.route('**/fonts/i18n/**', async (route) => { const fr = await fmf.dispatchFetch('https://doodledoggo.app' + new URL(route.request().url()).pathname); return route.fulfill({ status: fr.status, headers: { 'content-type': fr.headers.get('content-type') }, body: Buffer.from(await fr.arrayBuffer()) }); }); return ctx; };
   const browser = await chromium.launch({ args: (process.env.PAW_ARGS || '').split(' ').filter(Boolean) });
   const shots = process.env.PAW_SITE_SHOTS;
   try {
     sec('the Worker: size, routes, headers');
-    const gz = parts.reduce((n, [f]) => n + zlib.gzipSync(fs.readFileSync(path.join(dir, f))).length, zlib.gzipSync(fs.readFileSync(path.join(dir, 'worker.js'))).length);
-    ok(gz < 2.5e6, `the whole site fits a free-plan Worker (${(gz / 1e6).toFixed(2)} MB gzipped, limit 3 MB)`);
+    const gz = parts.filter(([f]) => !/^xx(-cjk)?__/.test(f)).reduce((n, [f]) => n + zlib.gzipSync(fs.readFileSync(path.join(dir, f))).length, zlib.gzipSync(fs.readFileSync(path.join(dir, 'worker.js'))).length);
+    ok(gz < 2.5e6 && Math.abs(gz - SIZES.main) < 20e3, `the whole site, 11 languages, fits a free-plan Worker (${(gz / 1e6).toFixed(2)} MB gzipped without the test-only pseudo-locales, budget 2.5 MB, limit 3 MB)`);
+    ok(SIZES.fontMode !== 'split' || SIZES.fonts < 2.5e6, `the per-language fonts (${SIZES.fontMode}${SIZES.fontMode === 'split' ? ', Worker doodle-doggo-fonts ' + (SIZES.fonts / 1e6).toFixed(2) + ' MB gzipped' : ''}) fit their Worker`);
+    console.log('  .. per language, gzipped pages: ' + Object.entries(SIZES.perLang).map(([l, n]) => `${l} ${(n / 1e3).toFixed(1)} kB`).join(', '));
     const get = (u, o) => mf.dispatchFetch(u, Object.assign({ redirect: 'manual' }, o || {}));
     let r = await get('https://doodledoggo.app/');
     ok(r.status === 200 && /text\/html/.test(r.headers.get('content-type')) && /default-src 'self'/.test(r.headers.get('content-security-policy') || ''), 'home: 200, HTML, a strict content security policy');
@@ -57,7 +71,7 @@ const req = (m) => { for (const r of [].concat((process.env.NODE_PATH || '').spl
     ok(/og:image" content="https:\/\/doodledoggo\.app\/logo-1200x630\.png/.test(home) && /rel="icon" href="\/favicon\.svg/.test(home) && /<title>Doodle Doggo/.test(home), 'title, favicon and og:image tags');
     ok(!/googleapis|gstatic|google-analytics|gtag|facebook|plausible|cdn\./i.test(home + dogsHtml + js + (await (await get('https://doodledoggo.app/style.css')).text())), 'no third-party fonts, scripts or trackers in the pages, the script or the CSS');
     for (const u of ['/favicon.svg', '/logo-1200x630.png', '/icon-180.png', '/site.webmanifest', '/doodle-doggo-logo.svg', '/fonts/caveat.woff2', '/img/screenshot-1-winter-yard.webp', '/img/noodle-happy.svg', '/privacy', '/reset', '/js/site.js', '/img/art/playroom.webp', '/img/art/ball.svg', '/img/art/fuji-spring.webp', '/img/art/fuji-summer.webp', '/img/art/fuji-autumn.webp', '/img/art/fuji-winter.webp', '/img/art/momiji.svg', '/img/art/sakura.svg', '/img/art/washi.svg']
-      .concat(...BREEDS.map((k) => ['walk', 'jump', 'sit', 'happy', 'sniff', 'still', 'pup', 'sleep'].map((p) => `/img/art/dogs/${k}-${p}.svg`)))) {
+      .concat(...BREEDS.map((k) => (SCENE_KEYS.includes(k) ? ['walk', 'jump', 'sit', 'happy', 'sniff', 'still', 'pup', 'sleep'] : ['still', 'pup']).map((p) => `/img/art/dogs/${k}-${p}.svg`)))) { // v2.14: only the playroom's dogs (KEYS in site.js) need scene poses
       r = await get('https://doodledoggo.app' + u); ok(r.status === 200, `${u}: 200 ${r.headers.get('content-type')}`); await r.arrayBuffer();
     }
     r = await get('https://www.doodledoggo.app/privacy?x=1'); ok(r.status === 301 && r.headers.get('location') === 'https://doodledoggo.app/privacy?x=1', 'www.doodledoggo.app redirects to the apex, keeping the path');
@@ -218,8 +232,142 @@ const req = (m) => { for (const r of [].concat((process.env.NODE_PATH || '').spl
       ok(!errs.length, 'no errors ' + errs.join(' | '));
       await ctx.close();
     }
+    // ===== v2.14: the site in 11 languages (tools/site_i18n.js), the language menu, the first-visit language, the pseudo-locales
+    sec('languages: the strings and the generator');
+    {
+      const out = cp.spawnSync('node', [path.join(ROOT, 'tools', 'site_i18n.js'), '--check']); ok(out.status === 0, 'the committed English pages are what site/tpl + site/i18n/en.json make ' + String(out.stdout).trim());
+      const leg = cp.spawnSync('node', [path.join(ROOT, 'tools', 'site_i18n.js'), '--legacy', '_cfsite/legacy']);
+      const legHome = leg.status === 0 && fs.readFileSync(path.join(ROOT, '_cfsite', 'legacy', 'index.html'), 'utf8');
+      ok(legHome && !/langbar|hreflang|dd_lang/.test(legHome) && /<!-- dogs:cards -->/.test(legHome), 'the generator can still make the v2.12 English pages without the v2.14 additions (--legacy)');
+      const en = JSON.parse(fs.readFileSync(path.join(ROOT, 'site', 'i18n', 'en.json'), 'utf8')), keys = Object.keys(en).filter((k) => !k.startsWith('_'));
+      let bad = []; keys.forEach((k) => { try { I18N.parse(en[k]); } catch (e) { bad.push(k); } });
+      ok(!bad.length && keys.length > 600, `en.json: ${keys.length} keys, every one a valid message ${bad.join(' ')}`);
+      ok(BREEDS.every((k) => ['name', 'quote', 'personality', 'trait1', 'trait4_line', 'play', 'love1', 'love3'].every((f) => en[`dog.${k}.${f}`])) && SCENE_KEYS.every((k) => en['play.bark.' + k]), 'en.json has every dog profile (35) and every playroom bark');
+      ok(Object.keys(en._notes).every((k) => k in en) && ['home.dogs.lead', 'profile.jpline', 'card.alt', 'common.play'].every((k) => en._notes[k]), 'translator notes (_notes) for the tricky keys, each naming a real key');
+      for (const L of I18N.LANGS.concat(I18N.PSEUDO)) {
+        const { rep, own } = I18N.table(L);
+        if (L.code !== 'en' && !L.pseudo) console.log(`  .. ${L.code}: ${rep.translated}/${rep.total} keys translated${rep.complete ? ', marked complete' : ''}`);
+        ok(!rep.broken.length && !rep.unknown.length, `${L.code}: no broken messages or unknown keys ${rep.broken.concat(rep.unknown).slice(0, 3).join(' | ')}`);
+        if (rep.complete) ok(!rep.missing.length, `${L.code} is marked complete: no missing keys ${rep.missing.slice(0, 5).join(' ')}`);
+        // the dog count rule in every language: the number always comes from {count}/{countWord}, so it follows the breed list
+        const counts = I18N.COUNT_KEYS.map((k) => I18N.fmt(L.code, k)), typed = I18N.COUNT_KEYS.filter((k) => own[k] && !/\{count(Word)?\}/.test(own[k]));
+        ok(counts.every((c) => c.includes(String(BREEDS.length)) || c.includes('Thirty-five')) && !typed.length, `${L.code}: every dog count says ${BREEDS.length} (from {count}) ${typed.join(' ')}`);
+      }
+    }
+
+    sec('languages: every page of every language (the Worker)');
+    const LALL = I18N.LANGS.concat(I18N.PSEUDO), SITE = 'https://doodledoggo.app';
+    const pageUrl = (L, p) => I18N.urlFor(L, p);
+    for (const L of LALL) {
+      let fine = true; const why = [];
+      for (const pg of I18N.PAGES) {
+        const u = pageUrl(L, pg.path); r = await get(SITE + u); const h = await r.text();
+        const alt = [...h.matchAll(/<link rel="alternate" hreflang="([^"]+)" href="([^"]+)">/g)].map((m) => [m[1], m[2]]);
+        const want = L.pseudo ? [] : I18N.LANGS.map((x) => [x.code, SITE + pageUrl(x, pg.path)]).concat([['x-default', SITE + pg.path]]);
+        const menu = [...h.matchAll(/<a href="([^"]+)" hreflang="([^"]+)" lang="[^"]+" data-lang="([^"]+)"/g)].map((m) => m[1]);
+        const checks = {
+          status: r.status === 200, lang: h.includes(`<html lang="${L.code}"`), clang: r.headers.get('content-language') === L.code,
+          hreflang: JSON.stringify(alt) === JSON.stringify(want), canonical: pg.id === 'reset' || h.includes(`<link rel="canonical" href="${SITE + u}">`),
+          menu: menu.length === 11 && I18N.LANGS.every((x, i) => menu[i] === pageUrl(x, pg.path)) && /<details class="langs" id="langs">/.test(h),
+          script: /localStorage/.test(h) && h.includes(`H='${L.dir || 'en'}'`),
+          font: /<link rel="stylesheet" href="\/fonts\/i18n\//.test(h) === (L.code !== 'en' && fs.existsSync(path.join(ROOT, 'site', 'fonts', 'i18n', (L.pseudo === 'cjk' ? 'ja' : L.code) + '.css'))),
+          links: L.code === 'en' || !/href="\/(dogs|privacy)?(#[^"]*)?"/.test(h.replace(/<link rel="alternate"[^>]*>|<nav aria-label="[^"]*"><ul>.*?<\/ul><\/nav>/g, ''))
+        };
+        Object.entries(checks).forEach(([k, v]) => { if (!v) { fine = false; why.push(pg.id + ':' + k); } });
+      }
+      ok(fine, `${L.code}: the four pages answer 200 with <html lang="${L.code}">, content-language, ${L.pseudo ? 'no hreflang (test-only)' : 'all 11 hreflang + x-default'}, canonical, the menu (11 languages, same page), links that stay in the language ${why.join(' ')}`);
+    }
+    if (fmf) { // the per-language fonts live in the second Worker doodle-doggo-fonts (route doodledoggo.app/fonts/i18n/*)
+      const names = fs.readFileSync(path.join(ROOT, '_cfsite_fonts', 'parts.txt'), 'utf8').trim().split('\n').map((l) => l.split(' ')[0].replace(/^fonts__i18n__/, '')); let good = true;
+      for (const n of names) { const fr = await fmf.dispatchFetch(SITE + '/fonts/i18n/' + n); good = good && fr.status === 200 && /font\/woff2|text\/css/.test(fr.headers.get('content-type')); await fr.arrayBuffer(); }
+      r = await get(SITE + '/fonts/i18n/' + names[0]); await r.text();
+      ok(good && r.status === 404, `the fonts Worker serves ${names.length} font files (${names.join(', ')}); the main Worker leaves /fonts/i18n/ to it`);
+    }
+    r = await get(SITE + '/ja'); ok(r.status === 301 && r.headers.get('location') === SITE + '/ja/', '/ja redirects to /ja/');
+    r = await get(SITE + '/zh-hant/dogs.html'); ok(r.status === 301 && r.headers.get('location') === SITE + '/zh-hant/dogs', '/zh-hant/dogs.html redirects to /zh-hant/dogs');
+    r = await get(SITE + '/de/index.html'); ok(r.status === 301 && r.headers.get('location') === SITE + '/de/', '/de/index.html redirects to /de/');
+    r = await get(SITE + '/ko/nope'); ok(r.status === 404 && /<html lang="ko"/.test(await r.text()) && r.headers.get('content-language') === 'ko', 'a 404 under /ko/ is in Korean (lang ko)');
+    r = await get(SITE + '/tpl/index.tpl'); ok(r.status === 404, 'the templates and string tables are not served'); await r.text();
+    r = await get(SITE + '/img/art/dogs/akita-walk.svg'); ok(r.status === 404, 'scene poses of dogs the playroom never picks stay out of the Worker (budget)'); await r.text();
+
+    sec('languages: phones (iPhone 15, Pixel 7): no errors, no sideways scroll, the phone minimums');
+    for (const [label, dev] of [['iPhone 15', devices['iPhone 15']], ['Pixel 7', devices['Pixel 7']]]) {
+      const ctx = await routeFonts(await browser.newContext(Object.assign({}, dev, { locale: 'en-US' }))); const page = await ctx.newPage();
+      const errs = []; page.on('pageerror', (e) => errs.push(e.message)); page.on('console', (m) => { if (m.type() === 'error') errs.push(m.text()); });
+      for (const L of LALL) {
+        const bad = [];
+        for (const pg of I18N.PAGES) {
+          await page.goto(base + pageUrl(L, pg.path), { waitUntil: 'load' });
+          const a = await audit(page), lang = await page.evaluate(() => document.documentElement.lang);
+          if (a.scroll > 0) bad.push(`${pg.id} scrolls sideways ${a.scroll}px`);
+          if (a.small.length) bad.push(`${pg.id} small taps ${a.small.slice(0, 2).join(', ')}`);
+          if (a.tiny.length) bad.push(`${pg.id} tiny text ${a.tiny.slice(0, 2).join(', ')}`);
+          if (lang !== L.code) bad.push(`${pg.id} lang ${lang}`);
+        }
+        ok(!bad.length && !errs.length, `${label}, ${L.code}: four pages, no console errors, no sideways scroll, 44 px taps, 15 px text ${bad.concat(errs).slice(0, 3).join(' | ')}`);
+        errs.length = 0;
+      }
+      // the language menu, opened, on a phone: every row a 44 px tap with 15 px+ text, inside the screen
+      await page.goto(base + '/dogs', { waitUntil: 'load' }); await page.click('#langs summary');
+      const m = await page.evaluate(() => [...document.querySelectorAll('#langs nav a')].map((a) => { const b = a.getBoundingClientRect(); return [a.textContent, Math.round(b.height), Math.round(b.left), Math.round(b.right), parseFloat(getComputedStyle(a).fontSize)]; }));
+      const sb = await page.locator('#langs summary').boundingBox();
+      ok(m.length === 11 && m.every((x) => x[1] >= 44 && x[2] >= 0 && x[3] <= (dev.viewport.width) && x[4] >= 15) && sb.height >= 44 && (await audit(page)).scroll <= 0, `${label}: the open language menu: 11 native names, 44 px rows, 15 px+ text, on screen (${m.map((x) => x[0]).join(', ')})`);
+      await ctx.close();
+    }
+
+    sec('languages: the menu, the saved choice and the first-visit language');
+    {
+      const ctx = await routeFonts(await browser.newContext({ viewport: { width: 1280, height: 800 }, locale: 'en-US' })); const page = await ctx.newPage();
+      await page.goto(base + '/dogs', { waitUntil: 'load' });
+      ok(!(await page.isVisible('#langs nav')), 'the menu starts closed');
+      await page.click('#langs summary'); ok(await page.isVisible('#langs nav a[data-lang="ja"]'), 'a tap opens it');
+      await Promise.all([page.waitForNavigation(), page.click('#langs nav a[data-lang="ja"]')]);
+      ok(new URL(page.url()).pathname === '/ja/dogs' && await page.evaluate(() => localStorage.getItem('dd_lang')) === 'ja', 'picking 日本語 on /dogs opens /ja/dogs and saves the choice');
+      await page.click('#langs summary'); await page.mouse.click(5, 790); ok(!(await page.isVisible('#langs nav')), 'a tap outside closes it');
+      await page.click('#langs summary'); await Promise.all([page.waitForNavigation(), page.click('#langs nav a[data-lang="en"]')]);
+      ok(new URL(page.url()).pathname === '/dogs' && await page.evaluate(() => localStorage.getItem('dd_lang')) === 'en', 'picking English goes back to /dogs and is saved too');
+      await ctx.close();
+      const nojs = await routeFonts(await browser.newContext({ viewport: { width: 1280, height: 800 }, javaScriptEnabled: false })); const p2 = await nojs.newPage();
+      await p2.goto(base + '/privacy'); await p2.click('#langs summary'); await Promise.all([p2.waitForNavigation(), p2.click('#langs nav a[data-lang="fr"]')]);
+      ok(new URL(p2.url()).pathname === '/fr/privacy', 'without JavaScript the menu still works: plain links (/privacy -> /fr/privacy)');
+      await nojs.close();
+    }
+    const detect = async (locale, url, opts) => {
+      const ctx = await routeFonts(await browser.newContext(Object.assign({ viewport: { width: 1280, height: 800 }, locale }, opts || {}))); const page = await ctx.newPage();
+      let navs = 0; page.on('framenavigated', (f) => { if (f === page.mainFrame()) navs++; });
+      if (opts && opts.saved) await ctx.addInitScript((v) => { try { if (!localStorage.getItem('dd_lang')) localStorage.setItem('dd_lang', v); } catch (e) { /* none */ } }, opts.saved);
+      await page.goto(base + url, { waitUntil: 'load' }); await page.waitForTimeout(400);
+      const res = { path: new URL(page.url()).pathname + new URL(page.url()).hash, navs, langs: await page.evaluate(() => navigator.languages.join()) };
+      await ctx.close(); return res;
+    };
+    for (const [loc, url, want] of [['zh-TW', '/', '/zh-hant/'], ['zh-HK', '/dogs#shiba', '/zh-hant/dogs#shiba'], ['zh-CN', '/', '/zh-hans/'], ['pt-PT', '/', '/pt-br/'], ['es-MX', '/privacy', '/es/privacy'], ['ja-JP', '/', '/ja/'], ['ko-KR', '/reset', '/ko/reset'], ['th-TH', '/', '/th/'], ['id-ID', '/', '/id/'], ['de-AT', '/', '/de/'], ['fr-CA', '/', '/fr/'], ['en-GB', '/', '/'], ['it-IT', '/', '/']]) {
+      const d = await detect(loc, url);
+      ok(d.path === want && d.navs <= 2, `first visit with ${loc} (${d.langs}): ${url} -> ${d.path} (${d.navs} navigations)`);
+    }
+    { const d = await detect('zh-TW', '/', { saved: 'en' }); ok(d.path === '/' && d.navs === 1, 'a saved choice wins: zh-TW with English saved stays on /'); }
+    { const d = await detect('ja-JP', '/ja/', {}); ok(d.path === '/ja/' && d.navs === 1, 'translated pages never redirect (no loop)'); }
+    { const d = await detect('ja-JP', '/', { userAgent: 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)' }); ok(d.path === '/', 'no redirect for bots'); }
+
+    sec('languages: typography, the playroom barks, the pseudo-locales');
+    {
+      const ctx = await routeFonts(await browser.newContext(Object.assign({}, devices['iPhone 15']))); const page = await ctx.newPage();
+      const st = async (u) => { await page.goto(base + u, { waitUntil: 'load' }); return page.evaluate(() => { const b = getComputedStyle(document.body), h = getComputedStyle(document.querySelector('h2') || document.body); return { lh: parseFloat(b.lineHeight) / parseFloat(b.fontSize), hlh: parseFloat(h.lineHeight) / parseFloat(h.fontSize), wb: b.wordBreak, lb: b.lineBreak, hy: b.hyphens || b.webkitHyphens, ow: b.overflowWrap, read: b.fontFamily, hand: h.fontFamily }; }); };
+      const th = await st('/th/'), ko = await st('/ko/'), ja = await st('/ja/'), de = await st('/de/'), en = await st('/');
+      ok(th.lh >= 1.7 && th.hlh >= 1.4 && /Thonburi|Noto Sans Thai/.test(th.read), `Thai: body line-height ${th.lh.toFixed(2)}, headings ${th.hlh.toFixed(2)}, Thai system fonts`);
+      ok(ko.wb === 'keep-all' && /Apple SD Gothic Neo/.test(ko.read) && ja.lb === 'strict' && /Hiragino Maru Gothic/.test(ja.read) && /^"?Caveat/.test(ja.hand) && /DD Local/.test(ja.hand), 'Korean keep-all, Japanese strict line breaks, CJK fonts after Caveat and Patrick Hand (Caveat stays for Latin titles), then DD Local');
+      ok(de.hy === 'auto' && de.ow === 'anywhere' && en.hy !== 'auto' && en.ow !== 'anywhere', 'German hyphenates, every translated page can wrap anywhere, English is unchanged');
+      await page.goto(base + '/xx/', { waitUntil: 'load' }); await page.waitForTimeout(300);
+      const px = await page.evaluate(() => ({ live: document.getElementById('scene').classList.contains('live'), bark: window.__dd && window.__dd.tr('bark.shiba', 'heh.'), toss: document.getElementById('toss').textContent, tag: document.querySelector('.tag').textContent }));
+      ok(px.live && px.bark && px.bark !== 'heh.' && /[áéíöû]/.test(px.bark + px.toss + px.tag), `the playroom reads the page's barks (/xx/: "${px.bark}", "${px.toss}")`);
+      await page.goto(base + '/', { waitUntil: 'load' });
+      ok(await page.evaluate(() => !document.getElementById('dd-i18n') && window.__dd.tr('bark.shiba', 'heh.') === 'heh.'), 'English needs no bark table: the built-in lines');
+      const len = (code) => I18N.fmt(code, 'home.intro').length;
+      ok(len('en-XA') >= len('en') * 1.35 && /[^\x00-\x7F]/.test(I18N.fmt('en-XA', 'home.intro')) && !/ /.test(I18N.fmt('ja-XA', 'home.dogs.title')), `pseudo-locales: en-XA is ${Math.round(100 * len('en-XA') / len('en') - 100)}% longer with accents, ja-XA has CJK-like text without spaces`);
+      if (shots) for (const u of ['/xx/', '/xx-cjk/dogs', '/th/', '/ja/']) { await page.goto(base + u, { waitUntil: 'load' }); await page.screenshot({ path: path.join(shots, `site_i18n_${u.replace(/\W+/g, '_')}iPhone_15.png`) }); }
+      await ctx.close();
+    }
   } catch (e) { fails++; console.log('  CRASH', e && e.stack || e); }
-  finally { await browser.close(); await mf.dispose(); }
+  finally { await browser.close(); await mf.dispose(); if (fmf) await fmf.dispose(); }
   console.log(`\n${passes} passed, ${fails} failed`);
   if (!fails) console.log('ALL OK');
   process.exit(fails ? 1 : 0);

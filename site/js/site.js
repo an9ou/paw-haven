@@ -8,6 +8,9 @@
   var phone = !!(window.matchMedia && matchMedia('(max-width: 700px)').matches);
   var rnd = function (a, b) { return a + Math.random() * (b - a); };
   var pick = function (a) { return a[Math.floor(Math.random() * a.length)]; };
+  // v2.14: a translated page carries its barks in <script type="application/json" id="dd-i18n"> (tools/site_i18n.js); English needs none
+  var T = {}; try { T = JSON.parse(document.getElementById('dd-i18n').textContent) || {}; } catch (e) { T = {}; }
+  var tr = function (k, en) { return typeof T[k] === 'string' && T[k] ? T[k] : en; };
 
   // ---- the season by the date in Japan (JST = UTC+9)
   var month = new Date(Date.now() + 9 * 3600e3).getUTCMonth() + 1;
@@ -70,7 +73,7 @@
   function bark(d, text) {
     if (talking >= (phone ? 1 : 2)) return; // a bubble or two at a time, so they never pile up
     talking++; setTimeout(function () { talking--; }, 1700);
-    var b = document.createElement('span'); b.className = 'bark'; b.textContent = text || d.p[3];
+    var b = document.createElement('span'); b.className = 'bark'; b.textContent = text || tr('bark.' + d.key, d.p[3]);
     var s = scaleAt(d.y); b.style.transform = 'translate(' + (d.x * k) + 'px,' + ((d.y - 175 * s) * k) + 'px) translate(-50%,-100%)';
     stage.appendChild(b); setTimeout(function () { b.remove(); }, 1700);
   }
@@ -153,17 +156,17 @@
         if (b.holder !== d && Math.random() < d.steal * 0.6 && steals * 3 < catches + 1) { d.task = { kind: 'steal', ball: b, t: 0 }; return; }
         var others = open();
         if (others.length && Math.random() < d.want) { chase(d, pickBall(d, others)); return; }
-        idle(d, Math.random() < 0.5 ? 'happy' : 'sit', rnd(0.8, 2)); if (Math.random() < 0.25) bark(d, pick(['aww.', 'next time!', 'ワン！'])); return;
+        idle(d, Math.random() < 0.5 ? 'happy' : 'sit', rnd(0.8, 2)); if (Math.random() < 0.25) bark(d, pick([tr('aww', 'aww.'), tr('next_time', 'next time!'), tr('woof', 'ワン！')])); return;
       }
       if ((T.look += dt) > 0.4) { // a closer ball? switch
         T.look = 0; var alt = pickBall(d, open());
-        if (alt && alt !== b) { var la = landing(alt), lb = landing(b); if (dist2(d.x, d.y, la[0], la[1]) < dist2(d.x, d.y, lb[0], lb[1]) * 0.6) { T.ball = b = alt; if (Math.random() < 0.3) bark(d, 'ooh!'); } }
+        if (alt && alt !== b) { var la = landing(alt), lb = landing(b); if (dist2(d.x, d.y, la[0], la[1]) < dist2(d.x, d.y, lb[0], lb[1]) * 0.6) { T.ball = b = alt; if (Math.random() < 0.3) bark(d, tr('ooh', 'ooh!')); } }
       }
       var l = b.arcs.length ? landing(b) : [b.x, b.y];
       tx = l[0] - d.face * 30 * scaleAt(d.y); ty = l[1]; speed = 230 * d.p[2] * (0.7 + 0.3 * d.p[0]); run = true;
       if (b.h < 14 && Math.abs(b.x - d.x) < 46 && Math.abs(b.y - d.y) < 26) { // got it: trot it back to the front and drop it
         b.holder = d; b.arcs = []; b.h = 0; catches++;
-        d.task = { kind: 'carry', ball: b, x: clampX(rnd(X0 + 40, X1 - 40)), y: clampY(FRONT[1] - rnd(0, 24)), t: 0 }; bark(d, pick(['got it!', 'mine!', d.p[3]])); // back to the front, anywhere along it
+        d.task = { kind: 'carry', ball: b, x: clampX(rnd(X0 + 40, X1 - 40)), y: clampY(FRONT[1] - rnd(0, 24)), t: 0 }; bark(d, pick([tr('got_it', 'got it!'), tr('mine', 'mine!'), tr('bark.' + d.key, d.p[3])])); // back to the front, anywhere along it
         return;
       }
     } else if (T.kind === 'steal') { // run at the carrier; close enough and the ball changes mouths
@@ -171,7 +174,7 @@
       if (!b.holder || T.t > 4) { idle(d, 'happy', rnd(0.6, 1.4)); return; }
       var v = b.holder; tx = v.x - d.face * 30 * scaleAt(v.y); ty = v.y; speed = 260 * d.p[2]; run = true;
       if (Math.abs(v.x - d.x) < 50 && Math.abs(v.y - d.y) < 28) {
-        b.holder = d; steals++; idle(v, 'sit', rnd(1.2, 2.2)); bark(v, pick(['hey!', 'my ball!'])); bark(d, 'hehe.');
+        b.holder = d; steals++; idle(v, 'sit', rnd(1.2, 2.2)); bark(v, pick([tr('hey', 'hey!'), tr('my_ball', 'my ball!')])); bark(d, tr('hehe', 'hehe.'));
         d.task = { kind: 'carry', ball: b, x: clampX(d.x < 500 ? rnd(560, X1) : rnd(X0, 440)), y: clampY(rnd(Y0 + 20, Y1)), t: 0 };
         return;
       }
@@ -238,5 +241,5 @@
   });
   var btn = document.getElementById('toss');
   if (btn) { btn.hidden = false; btn.addEventListener('click', function () { throwOne(); }); }
-  window.__dd = { dogs: dogs, balls: balls, max: MAX_BALLS, throwOne: throwOne, running: function () { return running; }, stats: function () { return { catches: catches, steals: steals }; } };
+  window.__dd = { dogs: dogs, balls: balls, max: MAX_BALLS, throwOne: throwOne, tr: tr, running: function () { return running; }, stats: function () { return { catches: catches, steals: steals }; } };
 })();

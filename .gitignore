@@ -25,3 +25,17 @@ _cfsite/
 .wrangler/
 **/.wrangler/
 .claude/worktrees/
+# v2.14: the site's other languages (and the test-only pseudo-locales) are made by tools/site_i18n.js and tools/cf_site.js
+/site/ja/
+/site/zh-hans/
+/site/zh-hant/
+/site/ko/
+/site/es/
+/site/pt-br/
+/site/fr/
+/site/de/
+/site/th/
+/site/id/
+/site/xx/
+/site/xx-cjk/
+/_cfsite_fonts/
