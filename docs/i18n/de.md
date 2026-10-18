@@ -316,3 +316,13 @@ Two sentences, short, kind, true.
 | `shihtzu` | Shih Tzu |
 
 <!-- table:end -->
+
+## 9. Site
+
+`site/i18n/de.json` (doodledoggo.app, v2.14). Decisions: the dog names stay English (Butter happens to be German too); `card.type`, `profile.title_type` and `profile.alt` show `{breed}` without an article (avoids der/die by breed); `profile.pup_alt` is "{name} als Welpe" (`{article}` unused); the PLAY button is "SPIEL AUF ITCH.IO" (du imperative), because "AUF ITCH.IO SPIELEN" wrapped to two lines at 360 px; the privacy page says the English version counts, in `privacy.updated`. No capital ẞ anywhere. Titles in the hand font write "Hachiko" without the macron, as the English does.
+- TODO(native): "krakelig" for "wobbly" and "Wachsmalhund" for "crayon dog" across the site, and the tagline "Ein krakeliger Welpe zum Liebhaben".
+- TODO(native): dogs written as "sie": Saffron (afghan), Peaches (pitbull), Madeleine (stdpoodle), Toffee (yorkie), Meringue (bichon). Others "er".
+- TODO(native): jokes rewritten: Cloud (samoyed) quote, Espresso (dobie) quote, Wonton (shihtzu) "Haarknoten hoch. Nickerchen jetzt.", Dumpling (pug) "schnorch.", the playroom barks ("och.", "nochmal!", "alle her!").
+- TODO(native): love items "Hundemuffin" (pupcake), "Futterzeit" (feeding), "Futterpuzzle", "Zerrseil", "Gassirunden", "Streicheleinheiten".
+- TODO(native): privacy wording: "erheben" / "speichern", "unkenntlich gemachte Form" for the hash, "die Zeitpunkte, an denen du dein Konto angelegt und zuletzt gespeichert hast" for "dates".
+- TODO(native): "SPIEL AUF ITCH.IO" still wraps to two lines on a 320 px phone.
