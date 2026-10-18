@@ -17,21 +17,23 @@ const DC_PET_NAMES = ['Mochi', 'Noodle', 'Biscuit', 'Bella', 'Luna', 'Max', 'Cha
   'Molly', 'Toby', 'Ruby', 'Oscar', 'Penny', 'Maple', 'Ginger', 'Pepper', 'Hazel', 'Olive', 'Winston', 'Leo', 'Ollie', 'Finn', 'Gus', 'Murphy', 'Rex', 'Rusty', 'Scout', 'Ziggy',
   'Lola', 'Nala', 'Stella', 'Zoe', 'Willow', 'Honey', 'Peanut', 'Waffles', 'Pancake', 'Muffin', 'Cookie', 'Tofu', 'Kuma', 'Hana', 'Sora', 'Yuki', 'Momo', 'Kiki', 'Taro', 'Pip',
   'Bean', 'Button', 'Sunny', 'Lucky', 'Bingo', 'Rufus', 'Benji', 'Archie', 'Frankie', 'Louie', 'Marley', 'Maggie', 'Poppy', 'Sasha', 'Tilly', 'Sammy', 'Bruno', 'Otis', 'Juno', 'Chip'];
-const DC_BREED_WORDS = ['Shiba', 'Corgi', 'Golden', 'Dachshund', 'Husky', 'Mutt', 'Chihuahua', 'Pug', 'Greyhound', 'Beagle', 'Poodle', 'Collie', 'Samoyed', 'Frenchie', 'Akita', 'Spitz', 'Pom', 'Hound', 'Dane', 'Mastiff', 'Shepherd'];
+const DC_BREED_WORDS = ['Shiba', 'Corgi', 'Golden', 'Dachshund', 'Husky', 'Mutt', 'Chihuahua', 'Pug', 'Greyhound', 'Beagle', 'Poodle', 'Collie', 'Samoyed', 'Frenchie', 'Akita', 'Spitz', 'Pom', 'Hound', 'Dane', 'Mastiff', 'Shepherd',
+  'Dobie', 'Corso', 'Pittie', 'Pinscher', 'Lab', 'Malamute', 'Chow', 'Big Poodle', 'Schnauzer', 'Westie', 'Yorkie', 'Bichon', 'Maltese', 'Shih Tzu']; // v2.12: the fourteen (V212.md 2)
 const DC_DOG_NAMES = DC_PET_NAMES.concat(DC_BREED_WORDS);
-// every wearable a card can show (one per dog): the shop clothes, the treasure wearables, the v2.11 Tokyo bandanas
+// every wearable a card can show (one per dog): the shop clothes, the treasure wearables, the v2.11 Tokyo bandanas, the v2.11.1 Halloween costumes (append only)
 const DC_OUTFITS = ['Red Bandana', 'Party Hat', 'Bow Tie', 'Flower Crown', 'Heart Sunglasses', 'Yellow Raincoat', 'Polka-dot Raincoat', 'Frog Raincoat', 'Bubble Raincoat', 'Rain Hat',
   'Pom-pom Beanie', 'Knit Winter Sweater', 'Superhero Cape', 'Sailor Collar', 'Chef Hat', 'Tutu', 'Cowboy Hat', 'Pyjamas', 'Bumblebee Suit', 'Wizard Hat',
   'Happi Coat', 'Cozy Hoodie', 'Knit Scarf', 'Leaf Beret', 'Autumn Scarf', 'Ghost Sheet', 'Pumpkin Suit', 'Parade Rosette', 'Witch Hat', 'Vampire Cape',
   'Candy Corn Bandana', 'Bat Wings', 'Very Ugly Sweater', 'Reindeer Antlers', 'Snowflake Snood', 'Ugly Sweater Rosette', 'Year of the Sheep Hood', 'Astronaut Helmet',
-  'Acorn Cap', 'Explorer Goggles', 'Seashell Necklace', 'Mossy Poncho', 'Clover Collar', 'Sun Hat', 'Shibuya Bandana', 'Asakusa Bandana', 'Tokyo Tower Bandana'];
+  'Acorn Cap', 'Explorer Goggles', 'Seashell Necklace', 'Mossy Poncho', 'Clover Collar', 'Sun Hat', 'Shibuya Bandana', 'Asakusa Bandana', 'Tokyo Tower Bandana',
+  'Pumpkin Patch Suit', 'Trick-or-Treat Ghost', 'Little Bat Costume'];
 const DC_LOCI = { B: ['B', 'b'], D: ['D', 'd'], E: ['E', 'e'], S: ['S', 'sp'], M: ['M', 'm'], Bl: ['Bl', 'bl'] }; // the Worker's DC_COAT
 const DC_PLACES = ['dogpark', 'yoyogi'];
 const DC_MAX_DOGS = 4, DC_VIS_CARDS = 2, DC_VIS_DOGS = 3;
 
-/* ---------------- the town players: 8 preset cards (fake mode, and to fill up a scene) ---------------- */
-// genes: 12 allele tokens in B D E S M Bl order. b: the PawGenes BREEDS index (14 akita, 15 spitz, 16 pom arrive with lane BREEDS:
-// until then those dogs are left out). o: an outfit name from DC_OUTFITS.
+/* ---------------- the town players: 11 preset cards (fake mode, and to fill up a scene; v2.12 appended town-9 to town-11) ---------------- */
+// genes: 12 allele tokens in B D E S M Bl order. b: the PawGenes BREEDS index (a copy of the game that does not know that breed yet
+// leaves the dog out; 17 to 20 are afghan, dane, mastiff, gsd, 21 to 34 the v2.12 fourteen). o: an outfit name from DC_OUTFITS.
 const dcGenes = (s) => { const t = s.split(' '), g = {}; Object.keys(DC_LOCI).forEach((k, i) => { g[k] = [t[2 * i], t[2 * i + 1]]; }); return g; };
 const dcFk = (b, nm, genes, o, a, s, sp) => ({ b, c: dcGenes(genes), o: o ? DC_OUTFITS.indexOf(o) : -1, a: a || 'adult', s: s || 'f', sp: sp ? 1 : 0, n: DC_DOG_NAMES.indexOf(nm) });
 const DC_FAKE = [
@@ -42,7 +44,11 @@ const DC_FAKE = [
   { id: 'town-5', fake: true, name: [8, 33], paws: 11, dogs: [dcFk(8, 'Juno', 'B B d d E e S sp m m bl bl', 'Cozy Hoodie'), dcFk(9, 'Cooper', 'B b D D E e S sp m m bl bl', null, 'adult', 'm')] },
   { id: 'town-6', fake: true, name: [9, 32], paws: 17, dogs: [dcFk(10, 'Coco', 'B b D d e e S S m m bl bl', 'Tutu'), dcFk(11, 'Scout', 'B b D D E E S sp M m bl bl', 'Red Bandana', 'adult', 'm')] },
   { id: 'town-7', fake: true, name: [36, 13], paws: 4, dogs: [dcFk(13, 'Louie', 'B B D d e e S S m m bl bl', 'Sailor Collar', 'adult', 'm')] },
-  { id: 'town-8', fake: true, name: [37, 2], paws: 8, dogs: [dcFk(15, 'Momo', 'B B D D e e S S m m bl bl', 'Happi Coat'), dcFk(16, 'Pip', 'B b D d e e S sp m m bl bl', null, 'pup', 'm')] }
+  { id: 'town-8', fake: true, name: [37, 2], paws: 8, dogs: [dcFk(15, 'Momo', 'B B D D e e S S m m bl bl', 'Happi Coat'), dcFk(16, 'Pip', 'B b D d e e S sp m m bl bl', null, 'pup', 'm')] },
+  // v2.12: three more town players, with the v2.11 big breeds and some of the fourteen
+  { id: 'town-9', fake: true, name: [12, 25], paws: 12, dogs: [dcFk(25, 'Bear', 'B b D D e e S S m m bl bl', 'Knit Scarf', 'adult', 'm'), dcFk(23, 'Rosie', 'B b d d E e S sp m m bl bl', 'Flower Crown'), dcFk(34, 'Button', 'B b D d e e sp sp m m bl bl', null, 'pup', 'f')] },
+  { id: 'town-10', fake: true, name: [20, 14], paws: 7, dogs: [dcFk(17, 'Ginger', 'B b D d e e S S m m bl bl', 'Bow Tie'), dcFk(18, 'Duke', 'B b D d e e S S m m bl bl', null, 'adult', 'm'), dcFk(30, 'Ziggy', 'B B D D e e S S m m bl bl', 'Pumpkin Patch Suit', 'adult', 'm')] },
+  { id: 'town-11', fake: true, name: [28, 6], paws: 15, dogs: [dcFk(19, 'Bruno', 'B b D D e e S S m m bl bl', null, 'adult', 'm'), dcFk(20, 'Rex', 'B b D D E e S S m m bl bl', 'Red Bandana', 'adult', 'm'), dcFk(27, 'Hana', 'B b D d e e S S m m bl bl', 'Little Bat Costume', 'pup', 'f')] }
 ];
 
 /* ---------------- mode and helpers ---------------- */
