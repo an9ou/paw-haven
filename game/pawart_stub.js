@@ -64,9 +64,9 @@ window.PawArt = window.PawArt || {};
     poodle: ['#F2C48F', '#FBE2C0'], collie: ['#2A2628', '#FFFFFF'], samoyed: ['#FBF6EC', '#E8DECB'], frenchie: ['#D9B48A', '#3A2E2E'],
     akita: ['#D46E36', '#FFF4E2'], spitz: ['#FCF8F0', '#E6DCCB'], pom: ['#F59A3C', '#FFD9A6'],
     afghan: ['#C9783E', '#E6A86E'], dane: ['#D9A562', '#2B2430'], mastiff: ['#D8AE72', '#2B2430'], gsd: ['#C98A4A', '#2B2430'],
-    dobie: ['#2B2430', '#C0642E'], corso: ['#2A2628', '#3A3438'], pitbull: ['#7E8A9C', '#A8B2C2'], minpin: ['#C8562E', '#E08A5A'], lab: ['#F2D08A', '#FBE8BE'],
-    malamute: ['#8E98A8', '#FFFFFF'], chow: ['#C8743A', '#E0A06A'], stdpoodle: ['#2B2430', '#4A3F4E'], schnauzer: ['#8E8C8A', '#D8D4CC'], westie: ['#F8F4EA', '#E4DCCB'],
-    yorkie: ['#5E6E84', '#D9A45E'], bichon: ['#FAF7F0', '#E6DED0'], maltese: ['#FCFAF4', '#E8E2D6'], shihtzu: ['#E0A65A', '#FFFFFF'] }; // v2.12: the GENES lane starter shades
+    dobie: ['#2B2628', '#C8743A'], corso: ['#363133', '#57504F'], pitbull: ['#7E8898', '#F2EEE6'], minpin: ['#B5522C', '#DC8A56'], lab: ['#F0CC84', '#F9E6B6'],
+    malamute: ['#9C9AA4', '#FFFFFF'], chow: ['#D2894A', '#EBB477'], stdpoodle: ['#2B2430', '#4A3F4E'], schnauzer: ['#9A9AA3', '#E6E4E0'], westie: ['#FBF8F1', '#E3D9C8'],
+    yorkie: ['#617389', '#D9A35C'], bichon: ['#FDFBF6', '#E4DCCD'], maltese: ['#FFFDF8', '#E6DDCE'], shihtzu: ['#E0A458', '#FFFFFF'] }; // v2.12: the starter shades (= the final art's SP colours)
 
   const ln = (d, w = 5, c = INK) => `<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
   const el = (cx, cy, rx, ry, f) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${f}" stroke="${INK}" stroke-width="5"/>`;

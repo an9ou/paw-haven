@@ -34,21 +34,21 @@ const EXPECT = {
   dane:      { name: 'Fawn',                eyes: 'brown', base: '#D9A562', light: '#E6BA7E', dark: '#2B2430', white: 0 },
   mastiff:   { name: 'Fawn',                eyes: 'brown', base: '#D8AE72', light: '#E9C994', dark: '#2B2430', white: 0 },
   gsd:       { name: 'Black and tan',       eyes: 'brown', base: '#C98A4A', light: '#E2B278', dark: '#2B2430', white: 0 },
-  // v2.12 breeds (V212.md 3): the starter cells the ART lanes draw with
-  dobie:     { name: 'Black and rust',      eyes: 'brown', base: '#2B2430', light: '#C0642E', dark: '#1D1A22', white: 0 },
-  corso:     { name: 'Black',               eyes: 'brown', base: '#2A2628', light: '#3A3438', dark: '#1D1A22', white: 0 },
-  pitbull:   { name: 'Blue',                eyes: 'brown', base: '#7E8A9C', light: '#A8B2C2', dark: '#5A6578', white: 0 },
-  minpin:    { name: 'Red',                 eyes: 'brown', base: '#C8562E', light: '#E08A5A', dark: '#94381A', white: 0 },
-  lab:       { name: 'Yellow',              eyes: 'brown', base: '#F2D08A', light: '#FBE8BE', dark: '#D9AE5E', white: 0 },
-  malamute:  { name: 'Grey and white',      eyes: 'brown', base: '#8E98A8', light: '#FFFFFF', dark: '#5E6672', white: 0 },
-  chow:      { name: 'Red',                 eyes: 'brown', base: '#C8743A', light: '#E0A06A', dark: '#94522A', white: 0 },
+  // v2.12 breeds (V212.md 3): the starter cells equal the final SP col / light / dark in dogs/pawart_dogs.js (the numbers batch)
+  dobie:     { name: 'Black and rust',      eyes: 'brown', base: '#2B2628', light: '#C8743A', dark: '#1D1A22', white: 0 },
+  corso:     { name: 'Black',               eyes: 'brown', base: '#363133', light: '#57504F', dark: '#1D1A22', white: 0 },
+  pitbull:   { name: 'Blue',                eyes: 'brown', base: '#7E8898', light: '#F2EEE6', dark: '#4E5664', white: 0 },
+  minpin:    { name: 'Red',                 eyes: 'brown', base: '#B5522C', light: '#DC8A56', dark: '#7A3418', white: 0 },
+  lab:       { name: 'Yellow',              eyes: 'brown', base: '#F0CC84', light: '#F9E6B6', dark: '#D9A458', white: 0 },
+  malamute:  { name: 'Grey and white',      eyes: 'brown', base: '#9C9AA4', light: '#FFFFFF', dark: '#5E5A68', white: 0 },
+  chow:      { name: 'Red',                 eyes: 'brown', base: '#D2894A', light: '#EBB477', dark: '#A9652E', white: 0 },
   stdpoodle: { name: 'Black',               eyes: 'brown', base: '#2B2430', light: '#4A3F4E', dark: '#1D1A22', white: 0 },
-  schnauzer: { name: 'Salt and pepper',     eyes: 'brown', base: '#8E8C8A', light: '#D8D4CC', dark: '#3A3638', white: 0 },
-  westie:    { name: 'White',               eyes: 'brown', base: '#F8F4EA', light: '#FFFFFF', dark: '#E4DCCB', white: 0 },
-  yorkie:    { name: 'Blue and tan',        eyes: 'brown', base: '#5E6E84', light: '#D9A45E', dark: '#3E4A5C', white: 0 },
-  bichon:    { name: 'White',               eyes: 'brown', base: '#FAF7F0', light: '#FFFFFF', dark: '#E6DED0', white: 0 },
-  maltese:   { name: 'White',               eyes: 'brown', base: '#FCFAF4', light: '#FFFFFF', dark: '#E8E2D6', white: 0 },
-  shihtzu:   { name: 'Gold and white',      eyes: 'brown', base: '#E0A65A', light: '#F2CA8E', dark: '#B07A36', white: 0.6 }
+  schnauzer: { name: 'Salt and pepper',     eyes: 'brown', base: '#9A9AA3', light: '#E6E4E0', dark: '#4A4652', white: 0 },
+  westie:    { name: 'White',               eyes: 'brown', base: '#FBF8F1', light: '#FFFFFF', dark: '#E3D9C8', white: 0 },
+  yorkie:    { name: 'Blue and tan',        eyes: 'brown', base: '#617389', light: '#D9A35C', dark: '#3E4A5E', white: 0 },
+  bichon:    { name: 'White',               eyes: 'brown', base: '#FDFBF6', light: '#FFFFFF', dark: '#E4DCCD', white: 0 },
+  maltese:   { name: 'White',               eyes: 'brown', base: '#FFFDF8', light: '#FFFFFF', dark: '#E6DDCE', white: 0 },
+  shihtzu:   { name: 'Gold and white',      eyes: 'brown', base: '#E0A458', light: '#FFFBF2', dark: '#9A6430', white: 0.6 }
 };
 const V212 = ['dobie', 'corso', 'pitbull', 'minpin', 'lab', 'malamute', 'chow', 'stdpoodle', 'schnauzer', 'westie', 'yorkie', 'bichon', 'maltese', 'shihtzu'];
 ok(Object.keys(EXPECT).length === 35 && G.BREEDS.length === 35, '35 breeds');
@@ -165,7 +165,9 @@ ok(G.phenotype(mk({ E: ['e', 'e'] }), 'corso').coat.dark === '#2B2430' && G.phen
 ok(catHas('pitbull', ['Blue', 'Black', 'Fawn', 'Red', 'Brindle', 'White', 'Pied', 'Blue fawn']), 'pitbull catalogue');
 ok(nm({ D: ['d', 'd'] }, 'pitbull') === 'Blue' && nm({}, 'pitbull') === 'Black' && nm({ E: ['e', 'e'] }, 'pitbull') === 'Fawn' && nm({ E: ['e', 'e'], B: ['b', 'b'] }, 'pitbull') === 'Red' && nm({ B: ['b', 'b'] }, 'pitbull') === 'Brindle' && nm({ E: ['e', 'e'], D: ['d', 'd'] }, 'pitbull') === 'Blue fawn', 'pitbull blue, black, fawn, red, brindle, blue fawn');
 ok(nm({ S: ['sp', 'sp'] }, 'pitbull') === 'Pied' && nm({ S: ['sp', 'sp'], D: ['d', 'd'] }, 'pitbull') === 'Blue pied' && nm({ S: ['sp', 'sp'], E: ['e', 'e'] }, 'pitbull') === 'White' && nm({ S: ['sp', 'sp'], E: ['e', 'e'], D: ['d', 'd'] }, 'pitbull') === 'White', 'pitbull pied on a dark coat, White on a red or cream coat');
-{ const w = G.phenotype(mk({ S: ['sp', 'sp'], E: ['e', 'e'] }), 'pitbull').coat; ok(w.base === '#F7F3EA' && w.light === '#FFFFFF' && w.white === 0.6, 'a White Pit Bull is drawn off-white'); }
+{ const w = G.phenotype(mk({ S: ['sp', 'sp'], E: ['e', 'e'] }), 'pitbull').coat; ok(w.base === '#FBF6EC' && w.light === '#FFFFFF' && w.white === 0.6, 'a White Pit Bull is drawn off-white'); }
+{ const st = (o) => G.phenotype(mk(o), 'shihtzu').coat; // v2.12 numbers batch: a solid Shih Tzu (S/S) has no white blaze, chest or skirt; any spotting gene shows the white
+  ok(st({ E: ['E', 'e'] }).light === '#3A3436' && st({ E: ['E', 'e'], S: ['S', 'sp'] }).light === '#FFFBF2' && st({ E: ['e', 'e'] }).light === '#F2CA8E' && st({ E: ['e', 'e'], S: ['sp', 'sp'] }).light === '#FFFBF2', 'shihtzu: the solid coats keep their light close to the base, the "and white" coats show white'); }
 ok(cat('minpin').join() === 'Red,Black and rust,Chocolate and rust', 'minpin catalogue is Red, Black and rust, Chocolate and rust (' + cat('minpin').join() + ')');
 ok(nm({ E: ['e', 'e'], B: ['b', 'b'] }, 'minpin') === 'Red', 'a stag red min pin is just Red');
 ok(['Yellow', 'Black', 'Chocolate'].every((c) => cat('lab').includes(c)) && cat('lab').length === 3, 'lab catalogue is Yellow, Black, Chocolate');
