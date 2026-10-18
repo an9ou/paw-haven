@@ -46,22 +46,23 @@ Adopt a wobbly crayon pup, walk around a pencil-sketch town, grow a garden, cook
 **Alt text:** `A corgi in a witch hat, a pug in a party hat and a pumpkin patch cart under bunting.`
 
 ### Middle tile
-**Caption**
+Image re-made 18 Oct for launch: the word box now says "a cozy dog game · play free on itch.io".
+**Caption (live)**
 ```
 Meet Noodle 🐶🗻
 He's a dachshund. He's very long. He drew himself and he is very proud of it.
 
-Noodle lives in Doodle Doggo, our cozy dog game coming soon: a pencil-sketch town with Mt. Fuji on every skyline, and 21 crayon dogs who are all a little wobbly on purpose.
+Noodle lives in Doodle Doggo, our cozy dog game: a pencil-sketch town with Mt. Fuji on every skyline, and 21 crayon dogs who are all a little wobbly on purpose. Hop on the Shinkansen to Tokyo with your pack, and dress up for Halloween until 2 Nov 🎃
 
-Which dog would you adopt first? 👇
+Which dog would you adopt first? 👇 Play free on itch.io (link in bio). No download, phone or computer.
 
-✨ The middle piece of a 3-part picture. Follow along so you don't miss the opening.
+✨ The middle piece of a 3-part picture. Tap our profile to see it all.
 
-どの空にも富士山🗻
+どの空にも富士山🗻 itch.ioで無料プレイ
 
-#cozygames #indiegame #handdrawn #mtfuji #doodledoggo #富士山 #comingsoon
+#cozygames #indiegame #handdrawn #mtfuji #doodledoggo #富士山 #doggame
 ```
-**Alt text:** `Noodle the dachshund under a Doodle Doggo sign: a cozy dog game, coming soon. Mt. Fuji behind.`
+**Alt text:** `Noodle the dachshund under a Doodle Doggo sign: a cozy dog game, play free on itch.io. Mt. Fuji.`
 
 ### Left tile (posted last, shows first on the grid)
 **Caption**
