@@ -260,7 +260,7 @@ SP.corso={name:'Cannoli',breed:'Cane Corso',personality:'A calm, gentle guardian
    h.shape([[-hx*.36,-hy*.4],[hx*.1,-hy*.56],[hx*.64,-hy*.5],[hx*.78,hy*.16],[hx*.12,hy*.36],[-hx*.38,hy*.08]].map(Hd),M,{noline:1,ox:0,oy:0});
    [[-.3,-.78],[.02,-.86]].forEach(q=>h.line([[hx*(q[0]-.12),hy*q[1]],[hx*q[0],hy*(q[1]-.07)],[hx*(q[0]+.12),hy*q[1]]].map(Hd),2.2,lum(s.hcol)<.32?mix(s.hcol,W,.3):PEN,.5))}};
 SP.pitbull={name:'Peaches',breed:'Pit Bull',personality:'A wiggly, people-loving goofball. Every stranger is a new best friend.',joke:'My whole back half wags. I cannot stop it.',
-  col:'#7E8898',hcol:'#7E8898',light:'#F2EEE6',dark:'#4E5664',body:{x:110,y:142,rx:45,ry:25,lop:.04},head:{x:164,y:103,rx:36,ry:29},
+  col:'#7E8898',hcol:'#7E8898',light:'#F2EEE6',dark:'#4E5664',body:{x:110,y:142,rx:45,ry:25,lop:.04},head:{x:164,y:103,rx:36,ry:29},neck:1,
   legs:{h:-29,f:27,w:11},ears:'rose',earRound:1,tail:'whip',tsc:.72,eyes:[6.6,6.2],
   face:{eyes:'open',mouth:'grin',grinA:1,e0:[-.22,-.16],e1:[.34,-.2],nose:[1.1,.18],snout:2,snoutL:1.12,snoutD:.66,pupil:.66,brow:'soft'},
   marks:(h,B,Hd,s)=>{const b=s.body,hx=s.head.rx,hy=s.head.ry,K=curlCol(s.col);brindle(h,B,Hd,s);
@@ -308,7 +308,7 @@ function spFace(h,s,L,HT,a0){// v2.12 art fix, stdpoodle on a dark coat (the Bla
   if(f.eyes==='smug'){h.acc.length=a0;drawFace(h,s,Object.assign({},L,{face:Object.assign({},f,{eyes:'open',brow:'curious'})}),HT)}
   ringA(h,s,L,HT)}
 SP.lab={name:'Butter',breed:'Labrador Retriever',personality:'Friendly, food-loving and always ready for a swim.',joke:'Is it dinner? It feels like dinner.',
-  col:'#F0CC84',hcol:'#F0CC84',light:'#F9E6B6',dark:'#D9A458',ear:'#D9A458',body:{x:108,y:140,rx:50,ry:27,lop:.03},head:{x:163,y:102,rx:31,ry:28},
+  col:'#F0CC84',hcol:'#F0CC84',light:'#F9E6B6',dark:'#D9A458',ear:'#D9A458',body:{x:108,y:140,rx:50,ry:27,lop:.03},head:{x:163,y:102,rx:31,ry:28},neck:1,
   legs:{h:-31,f:28,w:10.6},ears:'flop2',earS:.9,tail:'otter',tailFn:otterTail,eyes:[6,5.6],
   face:{eyes:'open',mouth:'tongue',e0:[-.14,-.18],e1:[.36,-.22],nose:[1.42,.12],snout:1,snoutL:1.42,brow:'soft',browCol:'#CFC6C0',look:[[.25,.1],[.25,.1]]},
   marks:(h,B,Hd,s)=>{const b=s.body,hx=s.head.rx,hy=s.head.ry,K=curlCol(s.col);
@@ -348,7 +348,7 @@ function ccFringe(h,P,col,n,amp){// a fringe of hair: P = closed outline (canvas
   h.shape(P,col,{step:30,amp:amp||.9,w:3.2});const K=curlCol(col),c=P.reduce((a,q)=>[a[0]+q[0]/P.length,a[1]+q[1]/P.length],[0,0]);
   for(let i=0;i<n;i++){const q=P[1+Math.floor(i*(P.length-2)/n)];if(q)h.line([[c[0]+(q[0]-c[0])*.2,c[1]+(q[1]-c[1])*.2],[c[0]+(q[0]-c[0])*.72,c[1]+(q[1]-c[1])*.72]],1.8,K,.3)}}
 SP.schnauzer={name:'Muesli',breed:'Miniature Schnauzer',personality:'Bearded, bossy and very alert. Reports every leaf.',joke:'The beard is for wisdom. And soup.',
-  col:'#9A9AA3',hcol:'#9A9AA3',light:'#E6E4E0',dark:'#4A4652',ear:'#4A4652',body:{x:112,y:146,rx:37,ry:19,sq:1},head:{x:160,y:108,rx:26,ry:22},sqHead:1,
+  col:'#9A9AA3',hcol:'#9A9AA3',light:'#E6E4E0',dark:'#4A4652',ear:'#4A4652',body:{x:112,y:146,rx:37,ry:19,sq:1},head:{x:160,y:108,rx:26,ry:22},neck:1,sqHead:1,
   legs:{h:-25,f:24,w:7.2,col:'#E6E4E0'},ears:'semi',earS:.78,earRound:1,tail:'sickle',tsc:.85,eyes:[5,4.6],
   face:{eyes:'open',mouth:'smile',e0:[-.1,-.06],e1:[.36,-.1],nose:[1.5,.08],snout:1,snoutL:1.5,pupil:.72},
   marks:(h,B,Hd,s)=>{const b=s.body,hx=s.head.rx,hy=s.head.ry,f=s.face,sl=f.snoutL||1.5,K=s.dark;
@@ -372,7 +372,7 @@ SP.westie={name:'Shortbread',breed:'West Highland White Terrier',personality:'A 
     h.line([[hx*.12+c*hx*r0,hy*.05+n*hy*r0],[hx*.12+c*hx*(r0+.24)+n*2,hy*.05+n*hy*(r0+.24)-c*2],[hx*.12+c*hx*(r0+.3),hy*.05+n*hy*(r0+.3)]].map(Hd),2,K,.3)});
    h.line([[hx*.3,hy*.5],[hx*.5,hy*.66],[hx*.72,hy*.58]].map(Hd),2,K,.3)}};
 SP.yorkie={name:'Toffee',breed:'Yorkshire Terrier',personality:'A tiny terrier with silky hair and a giant attitude.',joke:'I am in charge here. Please lift me onto the sofa.',
-  col:'#617389',hcol:'#D9A35C',light:'#D9A35C',dark:'#3E4A5E',ear:'#D9A35C',tanHead:1,body:{x:118,y:151,rx:31,ry:16,lop:.04},head:{x:156,y:118,rx:24,ry:22},
+  col:'#617389',hcol:'#D9A35C',light:'#D9A35C',dark:'#3E4A5E',ear:'#D9A35C',tanHead:1,body:{x:118,y:151,rx:31,ry:16,lop:.04},head:{x:156,y:118,rx:24,ry:22},neck:1,// v2.12 neck fix (owner): the neck tube in every pose, the head floated over the body (pitbull, lab, schnauzer too, in their head-up poses)
   legs:{h:-20,f:19,w:5.4,col:'#D9A35C'},ears:'prick',earS:.84,earRound:1,tail:'sickle',tsc:.9,eyes:[5,4.6],// v2.12 art fix: smaller eyes and pupils (the head looked owl-like)
   face:{eyes:'open',mouth:'smile',e0:[-.2,-.12],e1:[.38,-.16],nose:[.88,.26],pupil:.6,brow:'curious'},
   marks:(h,B,Hd,s)=>{const b=s.body,hx=s.head.rx,hy=s.head.ry,K=mix(s.col,W,.32);

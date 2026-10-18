@@ -85,6 +85,18 @@ NEW.forEach((k) => {
   POSES.forEach((p) => good(PA.dog(k, { pose: p, expecting: true }), '0 0 240 200', `${k} ${p} expecting`));
 });
 
+console.log('-- the head sits on the body (owner, 18 Oct 2026: the yorkie\'s head floated)');
+// game/v212_neck_check.js rasterises the head layer (ears, topknot, skull, beard) and the body layer (neck tube, body, coat, ruff) of each pose x age
+// and measures their overlap: at least NECK_MIN canvas px^2. Control: the yorkie as it was before the fix (no neck tube) must fail in most poses.
+{ const { neckChecker } = require('./v212_neck_check.js'), NECK_MIN = 12, contact = neckChecker(SRC); let nn = 0;
+  NEW.forEach((k) => AGES.forEach((age) => POSES.forEach((p) => { const c = contact(k, p, age); nn++;
+    ok(c >= NECK_MIN, `${k} ${p} ${age || 'adult'}: the head touches the body (overlap ${c.toFixed(1)} px^2, needs ${NECK_MIN})`); })));
+  console.log('   ' + nn + ' poses measured');
+  const YK = /(SP\.yorkie=[^\n]*\n[^\n]*head:\{x:156,y:118,rx:24,ry:22\}),neck:1,/;
+  ok(YK.test(SRC), 'the yorkie has the neck tube');
+  if (YK.test(SRC)) { const old = neckChecker(SRC.replace(YK, '$1,')), bad = POSES.filter((p) => old('yorkie', p, null) < NECK_MIN);
+    ok(bad.length >= 10 && bad.includes('idle') && bad.includes('walk'), `control: the old floating yorkie fails the check (${bad.length} adult poses: ${bad.join(' ')})`); } }
+
 console.log('-- the three Tokyo bandanas on the new breeds');
 // measure each bandana's own strokes as it draws (the same idea as check_identical's v2.8 sweep): it draws, touches the dog, stays near the neck
 const SW = IP._t; let probe = null;
