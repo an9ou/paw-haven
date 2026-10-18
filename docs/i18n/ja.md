@@ -399,3 +399,16 @@ Never hit (the `allow` list, also used as negative tests): 「犬種」 「日�
 - Gerald's voice (ぼく, …なんだ): check it sounds like a friendly know-it-all, not rude.
 - ワン築工房 (Barkitecture) and パプチーノ・カフェ (Pupuccino Café): check the puns land.
 - ダサかわセーター・コンテスト (Ugly Sweater Contest): ダサかわ is slang; check it is kid-friendly.
+
+## Site
+
+`site/i18n/ja.json` (v2.14 phase 1b, 714 keys). Choices made for Japanese readers:
+- The Japanese-word placeholders ({asobo}, {muryo}, {osanpo}, {dogrun}, {torii}, {shibainu}, {arigato}, {mame}, {inutachi}) are dropped where they only repeated the Japanese; `home.words.*` (犬 inu: …) show the English meaning, under the title 「海外の犬好きさんに教えたい日本語」.
+- "wobbly" is ふにゃふにゃ; the tagline is shortened to 「クレヨン子犬をお迎えしよう」 so it fits one line on a phone.
+- Greyhound quote: 45 mph → 時速72キロ.
+- TODO(native): ふにゃふにゃ for "wobbly" (crayon lines): alternatives へにゃへにゃ, よれよれ.
+- TODO(native): dog trait lines and quotes (casual voice, ぼく/わたし per dog), e.g. 辛口 (judgy), もってこい命 (fetch fanatic), カワウソしっぽ (otter tail).
+- TODO(native): love items (サーモンのパテ, ぬいぐるみの骨, 知育フィーダー, ピーピーアヒル) must match the game's item names once game/i18n/ja.json exists.
+- TODO(native): 「このカードを非表示」 (privacy.cards.off) must match the game's "Hide this card" button.
+- TODO(native): soon.line 狆（ちん）と甲斐犬; home.note.* facts read as natural for Japanese readers (they were written for visitors).
+- TODO(native): privacy page register and the English-prevails sentence in privacy.updated.
