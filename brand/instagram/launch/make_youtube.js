@@ -27,7 +27,7 @@ module.exports = async function ({ render, browser, helpers: h }) {
   // the word box, centred in the phone-safe area
   const CX = 1280, BW = 800, BH = 250, BY = 560;
   g += `<g transform="rotate(-0.6 ${CX} ${BY + BH / 2})"><g filter="url(#dd-shadow)"><rect x="${CX - BW / 2}" y="${BY}" width="${BW}" height="${BH}" rx="36" fill="#FFFBF2"/></g>${box(CX - BW / 2, BY, BW, BH, 36, 42, 2.8, 5)}${tape(CX - 80, BY - 22, 160, 44, -3)}`
-    + wordmark(CX, BY + 118, 112) + txt('a cozy dog game  ·  play free on itch.io', CX, BY + 208, 48, { fill: MUTED, w: 600 })
+    + wordmark(CX, BY + 118, 112) + txt('35 crayon dogs  ·  play free on itch.io', CX, BY + 208, 48, { fill: MUTED, w: 600 })
     + doodle('paw', CX - BW / 2 + 52, BY + 204, 1.1, -15) + doodle('heart', CX + BW / 2 - 52, BY + 200, 1.2, 12) + doodle('spark', CX + BW / 2 - 46, BY + 52, 1) + `</g>`;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${defs}${g}</svg>`;
   await render(svg, W, H, '../../youtube/youtube-banner-2560x1440.jpg');

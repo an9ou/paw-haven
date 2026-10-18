@@ -20,23 +20,29 @@ module.exports = async function ({ render, helpers: h, only }) {
   // ---------- 2. Meet the dogs ----------
   const D = [['shiba', 'Mochi', 'Shiba Inu', 'sit'], ['corgi', 'Biscuit', 'Corgi', 'happy'], ['golden', 'Sunny', 'Golden Retriever', 'happy'], ['dachs', 'Noodle', 'Dachshund', 'happy'],
     ['husky', 'Frost', 'Husky', 'sit'], ['mutt', 'Pepper', 'Shelter Mutt', 'idle'], ['chihuahua', 'Peanut', 'Chihuahua', 'speak'], ['pug', 'Dumpling', 'Pug', 'sit'],
-    ['greyhound', 'Rocket', 'Greyhound', 'idle'], ['beagle', 'Bagel', 'Beagle', 'sniff'], ['poodle', 'Pretzel', 'Poodle', 'dance'], ['collie', 'Scout', 'Border Collie', 'beg'],
+    ['greyhound', 'Rocket', 'Greyhound', 'idle'], ['beagle', 'Bagel', 'Beagle', 'sniff'], ['poodle', 'Pretzel', 'Mini Poodle', 'dance'], ['collie', 'Scout', 'Border Collie', 'beg'],
     ['samoyed', 'Cloud', 'Samoyed', 'happy'], ['frenchie', 'Brioche', 'French Bulldog', 'idle'],
     // v2.11 Tokyo Trip
     ['akita', 'Kuma', 'Akita', 'sit'], ['spitz', 'Daifuku', 'Japanese Spitz', 'happy'], ['pom', 'Mikan', 'Pomeranian', 'happy'], ['afghan', 'Saffron', 'Afghan Hound', 'idle'],
-    ['dane', 'Waffle', 'Great Dane', 'idle'], ['mastiff', 'Crumpet', 'English Mastiff', 'idle'], ['gsd', 'Strudel', 'German Shepherd', 'sit']];
+    ['dane', 'Waffle', 'Great Dane', 'idle'], ['mastiff', 'Crumpet', 'English Mastiff', 'idle'], ['gsd', 'Strudel', 'German Shepherd', 'sit'],
+    // v2.12 Fourteen New Friends (long names shortened to fit the cell)
+    ['dobie', 'Espresso', 'Doberman', 'sit'], ['corso', 'Cannoli', 'Cane Corso', 'sit'], ['pitbull', 'Peaches', 'Pit Bull', 'happy'], ['minpin', 'Jellybean', 'Mini Pinscher', 'happy'],
+    ['lab', 'Butter', 'Labrador', 'happy'], ['malamute', 'Maple', 'Malamute', 'sit'], ['chow', 'Bao', 'Chow Chow', 'sit'], ['stdpoodle', 'Madeleine', 'Standard Poodle', 'happy'],
+    ['schnauzer', 'Muesli', 'Mini Schnauzer', 'sit'], ['westie', 'Shortbread', 'Westie', 'happy'], ['yorkie', 'Toffee', 'Yorkie', 'sit'], ['bichon', 'Meringue', 'Bichon Frise', 'happy'],
+    ['maltese', 'Marshmallow', 'Maltese', 'sit'], ['shihtzu', 'Wonton', 'Shih Tzu', 'sit']];
   const p2 = () => {
     let g = paper(W, H) + frame(W, H, 32) + tag(2, 'the dogs') + txt(`${D.length} dog types`, 540, 206, 124, { rot: -1.5 }) + txt('each one has its own voice, size and joke', 540, 270, 50, { fill: MUTED, w: 600 });
-    const COLS = 5, CW = 186, GX = 10, X0 = (W - COLS * CW - (COLS - 1) * GX) / 2, Y0 = 298, RH = 188;
+    const COLS = 6, CW = 160, GX = 6, X0 = (W - COLS * CW - (COLS - 1) * GX) / 2, Y0 = 296, RH = 157;
     D.forEach(([k, n, b, pose], i) => {
       const c = i % COLS, r = Math.floor(i / COLS), x = X0 + c * (CW + GX), y = Y0 + r * RH, hero = k === 'dachs';
-      if (hero) g += swash(x + CW / 2, y + 112, CW * 0.95, 46, -3, PINK, 0.55);
-      g += dog(k, { pose }, f1(x + 8), f1(y + 2), 170) + txt(n, x + CW / 2, y + 152, 40, { fill: INK }) + txt(b.toLowerCase(), x + CW / 2, y + 180, 28, { fill: MUTED, w: 600 });
-      if (hero) g += doodle('heart', x + CW - 16, y + 16, 0.8, 12);
+      if (hero) g += swash(x + CW / 2, y + 92, CW * 0.95, 38, -3, PINK, 0.55);
+      g += dog(k, { pose }, f1(x + 10), f1(y), 140) + txt(n, x + CW / 2, y + 124, n.length > 9 ? 30 : 34, { fill: INK }) + txt(b.toLowerCase(), x + CW / 2, y + 148, 23, { fill: MUTED, w: 600 });
+      if (hero) g += doodle('heart', x + CW - 14, y + 14, 0.7, 12);
     });
     // the cells after the last dog: a note card about puppies
-    const ni = D.length % COLS, nx = X0 + ni * (CW + GX) + 14, ny = Y0 + Math.floor(D.length / COLS) * RH + 18, nw = (COLS - ni) * (CW + GX) - GX - 28;
-    g += `<g transform="rotate(-1.2 ${nx + nw / 2} ${ny + 70})">${box(nx, ny, nw, 140, 28, 77, 2.4, 4)}${lines(['plus puppies!', 'coats are passed down like the real thing'], nx + nw / 2, ny + 58, 46, 50, { w: 700 })}${tape(nx + nw / 2 - 60, ny - 18, 120, 36, 3)}</g>`;
+    const ni = D.length % COLS, nx = X0 + ni * (CW + GX) + 10, ny = Y0 + Math.floor(D.length / COLS) * RH + 24, nw = (COLS - ni) * (CW + GX) - GX - 20;
+    const nl = nw < 300 ? ['plus', 'puppies!', 'real coats'] : ['plus puppies!', 'coats are passed down like the real thing'], nh = nw < 300 ? 124 : 140, fs = nw < 300 ? 30 : 46;
+    g += `<g transform="rotate(-1.2 ${nx + nw / 2} ${ny + 70})">${box(nx, ny, nw, nh, 24, 77, 2.4, 4)}${lines(nl, nx + nw / 2, ny + (nw < 300 ? 38 : 58), fs, fs + 4, { w: 700 })}${tape(nx + nw / 2 - 40, ny - 16, 80, 30, 3)}</g>`;
     return svgPage(W, H, g + foot() + doodle('paw', 100, 1285, 1, -15) + doodle('paw', 980, 1285, 1, 15));
   };
 

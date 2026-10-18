@@ -10,7 +10,7 @@ Made 17 Oct 2026 from the script in `VIDEO_SCRIPT_45S.md`. **Gameplay re-recorde
 | `doodle-doggo-promo-45s-soon-male-voice.mp4`, `...-play-male-voice.mp4` | The first version, with a calm male voice. |
 | `voice-samples/noodle-voice-*.mp3` | Other voices for Noodle (four female, four male), if you want to change the narrator. |
 
-**21 dogs since v2.11 (17 Oct 2026):** Noodle still says "There are fourteen of us" (v2.9). Not re-rendered yet; ask if you want the line and the shelter shot updated.
+**35 dogs since v2.12 (18 Oct 2026):** Noodle still says "There are fourteen of us" (v2.9). Not re-rendered yet; ask if you want the line and the shelter shot updated.
 
 Both videos: 1080 x 1920 (9:16), 30 fps, 45 seconds, H.264 + AAC, about 20 MB. Good for Instagram Reels, TikTok, YouTube Shorts, and Meta ads (Reels and Stories placements).
 

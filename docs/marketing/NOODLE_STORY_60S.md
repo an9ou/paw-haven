@@ -230,7 +230,7 @@ Hi, I'm Noodle. I drew myself. It shows. 🖍️🐶
 Come see my town ✨
 🏡 my yard (and my mountain… okay, not my mountain)
 🪵 morning walks (I hop over logs. Mostly.)
-🐾 my friends Biscuit, Mochi and Frost (there are 21 of us now)
+🐾 my friends Biscuit, Mochi and Frost (there are 35 of us now)
 🦆 Gerald the duck, who knows everything
 🗻 sunsets over Mt. Fuji
 

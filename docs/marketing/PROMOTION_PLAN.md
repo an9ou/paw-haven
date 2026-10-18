@@ -36,7 +36,7 @@ The game is live on itch.io: **https://an9ou.itch.io/doodle-doggo**. From now on
 
 | Fact | Detail |
 |---|---|
-| Game | Free, cozy, plays in a browser on phone and computer. Adopt crayon dogs, walks, garden, dog-safe cooking, puppy playdates with real coat genetics. 21 dog types (7 new in v2.11 "Tokyo Trip", 17 Oct 2026), and a Shinkansen day trip to Tokyo. |
+| Game | Free, cozy, plays in a browser on phone and computer. Adopt crayon dogs, walks, garden, dog-safe cooking, puppy playdates with real coat genetics. 35 dog types (7 new in v2.11 "Tokyo Trip" and 14 in v2.12 "Fourteen New Friends", 17 and 18 Oct 2026), and a Shinkansen day trip to Tokyo. |
 | Brand dog | **Noodle the dachshund** |
 | Tagline | "Adopt a wobbly crayon pup to love" |
 | Live now (v2.8) | Winter & New Year, Mt. Fuji on every skyline, Mt. Fuji Lookout, New Year cards (nengajo), Snow Days, the Ugly Sweater Contest |
@@ -203,7 +203,7 @@ Dates in 2026. The owner chose **A, the banner**, for launch and **B, the inform
 
 ### Dog introduction series (from Sun 1 Nov)
 
-After the banner and the four informative posts, each of the 21 dogs gets its own introduction post: the whole dog, a puppy, its name, a line from the game, what it loves and four traits. Two a week (Sun and Wed, 20:30 JST), Noodle first and Pepper last. The 7 Tokyo Trip dogs are mixed in early. Dates (1 Nov to 10 Jan), captions and alt text for all 21 are in `DOG_INTRO_POSTS.md`. This is pillar 1 ("Meet the dogs"), so it keeps feeding the feed through December and early January next to the winter and New Year posts.
+After the banner and the four informative posts, each of the 35 dogs gets its own introduction post: the whole dog, a puppy, its name, a line from the game, what it loves and four traits. Two a week (Sun and Wed, 20:30 JST), Noodle first and Pepper last. The 21 newer dogs are mixed in with the first 14. Dates (Sun 1 Nov to Sun 28 Feb, Sun and Wed), captions and alt text for all 35 are in `DOG_INTRO_POSTS.md`. This is pillar 1 ("Meet the dogs"), so it keeps feeding the feed through the winter, next to the winter and New Year posts.
 
 ### Launch checklists
 

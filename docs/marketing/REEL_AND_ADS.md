@@ -7,7 +7,7 @@ Made 17 Oct 2026. Files are in `brand/instagram/launch/reel/`.
 | `doodle-doggo-reel-30s-play.mp4` | **When the game is live.** Ends on "Play free, link in bio". |
 | `doodle-doggo-reel-30s-soon.mp4` | **Now, while the game is not published.** Ends on "Coming soon, follow to be first". |
 
-**Out of date since v2.11:** the Reel is v2.8 footage and its "14 dog types" part shows 14 dogs (the game has 21). The captions below say 21. A refresh with v2.9+ footage and all 21 dogs is on offer.
+**Out of date since v2.11:** the Reel is v2.8 footage and its "14 dog types" part shows 14 dogs (the game has 35 since v2.12). The captions below say 35. A refresh with v2.9+ footage and all 35 dogs is on offer.
 | `reel-cover.jpg` | The cover picture (1080 x 1440, the part the profile grid shows). |
 
 Both are 1080 x 1920 (9:16), 30 fps, 30 seconds, H.264 video with AAC sound, about 12 MB. They are identical until second 25.5, so you can test both against each other later.
@@ -20,7 +20,7 @@ Both are 1080 x 1920 (9:16), 30 fps, 30 seconds, H.264 video with AAC sound, abo
 | 3 to 8.5 s | **Real gameplay:** the yard at dusk, Noodle gets a rub. Captions "Pencil-sketch town", "Crayon dogs" | Shows the art style and that it is a real game. |
 | 8.5 to 14.5 s | **Real gameplay:** Mt. Fuji Lookout, Noodle looks at Mt. Fuji. Caption "Mt. Fuji on every skyline" | The Japan angle, and the prettiest scene. |
 | 14.5 to 20.5 s | A walk (real footage), then the garden, the kitchen and the house with a pack of dogs. Captions say what you can do | Shows there is a lot to do. |
-| 20.5 to 25.5 s | "14 dog types": all 14 dogs run in and line up with their names (v2.8 footage; the game has 21 dogs since v2.11, so this part is out of date) | Gives a reason to come and meet them. |
+| 20.5 to 25.5 s | "14 dog types": all 14 dogs run in and line up with their names (v2.8 footage; the game has 35 dogs since v2.12, so this part is out of date) | Gives a reason to come and meet them. |
 | 25.5 to 30 s | Noodle with heart sunglasses. **Play free / link in bio ↑** (or **Coming soon / follow to be first**) | The call to action. |
 
 **Sound:** the game's own music, made by the game's music engine. It is original, so there is no licence problem, and it matches the look. It fades in and out, and the loudness is set to a normal level for social video.
@@ -39,7 +39,7 @@ Both are 1080 x 1920 (9:16), 30 fps, 30 seconds, H.264 video with AAC sound, abo
 Adopt a wobbly crayon pup 🐶🖍️
 Doodle Doggo is coming soon: a cozy dog game with walks, a garden, dog-safe cooking and puppy playdates, in a pencil-sketch town with Mt. Fuji on every skyline. Free for phone and computer.
 
-21 dog types. Which one would you adopt first? 👇
+35 dog types. Which one would you adopt first? 👇
 Follow along to be the first to play!
 
 クレヨン犬のゆるいゲーム、近日公開🗻
@@ -51,7 +51,7 @@ Follow along to be the first to play!
 Adopt a wobbly crayon pup 🐶🖍️
 Doodle Doggo is a cozy dog game: walks, a garden, dog-safe cooking and puppy playdates, in a pencil-sketch town with Mt. Fuji on every skyline. Free on phone and computer, nothing to download. Tap the link in our bio to play!
 
-21 dog types. Which one would you adopt first? 👇
+35 dog types. Which one would you adopt first? 👇
 
 無料で遊べます！🗻
 

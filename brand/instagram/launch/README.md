@@ -6,10 +6,10 @@ Made 16 Oct 2026. Plan, captions and checklist: `docs/marketing/`.
 |---|---|
 | `banner-1-left-newest.jpg`, `banner-2-middle.jpg`, `banner-3-right-post-first.jpg` | **A. The 3-tile banner** (1080 x 1350). One word box (middle tile), 9 big dogs, the cottage and decorations. Post right, middle, left, then pin all three. |
 | `banner-0-wide-preview.jpg` | The whole banner in one picture (3104 x 1350). For looking at, not for posting. |
-| `info1-japan-view.jpg`, `info2-meet-the-dogs.jpg`, `info3-what-you-can-do.jpg`, `info4-how-to-play.jpg` | **B. The informative series** (1080 x 1350): Japan view, the 21 dogs, what you can do, how to play |
+| `info1-japan-view.jpg`, `info2-meet-the-dogs.jpg`, `info3-what-you-can-do.jpg`, `info4-how-to-play.jpg` | **B. The informative series** (1080 x 1350): Japan view, the 35 dogs, what you can do, how to play |
 | `post1-meet-noodle.jpg`, `post2-pencil-town-fuji.jpg`, `post3-play-free-halloween.jpg` | Extra single posts. Post 3 is a good Halloween push. |
-| `dogs/dog-01-mochi.jpg` ... `dog-21-strudel.jpg` | **The 21 dog introduction posts** (15 to 21 are the v2.11 Tokyo Trip dogs) (1080 x 1350): whole dog, puppy, name, game quote, what it loves, four traits. Captions: `docs/marketing/DOG_INTRO_POSTS.md` |
-| `soon-more-dogs-coming.jpg` | Teaser post: "More dogs are coming! Stay tuned" (mystery dogs behind a fence) |
+| `dogs/dog-01-mochi.jpg` ... `dog-35-wonton.jpg` | **The 35 dog introduction posts** (15 to 21 are the v2.11 Tokyo Trip dogs, 22 to 35 the v2.12 dogs) (1080 x 1350): whole dog, puppy, name, game quote, what it loves, four traits. Captions: `docs/marketing/DOG_INTRO_POSTS.md` |
+| `soon-more-dogs-coming.jpg` | Teaser post: "More dogs are coming! next up" (two mystery dogs behind a fence, signed Japanese Chin and Kai Ken) |
 | `reel/doodle-doggo-reel-30s-soon.mp4`, `reel/doodle-doggo-reel-30s-play.mp4`, `reel/reel-cover.jpg` | The 30 s Reel (1080 x 1920) with the game's own music. `-soon` ends on "coming soon", `-play` on "play free, link in bio". Guide: `docs/marketing/REEL_AND_ADS.md` |
 | `video45/doodle-doggo-promo-45s-soon.mp4`, `video45/doodle-doggo-promo-45s-play.mp4`, `video45/promo-45s-cover.jpg` | The 45 s English promo video: real gameplay, Noodle narrates (Kokoro voice), burned-in subtitles, the game's music. Guide: `docs/marketing/PROMO_VIDEO_45S.md` |
 | `grid-preview.jpg` | Mockup of the profile grid, banner and informative posts, with bio and highlights |

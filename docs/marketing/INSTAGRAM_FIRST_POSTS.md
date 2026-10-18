@@ -1,6 +1,6 @@
 # Instagram posts: the banner and the informative series
 
-**The game is live on itch.io since 17 Oct** (https://an9ou.itch.io/doodle-doggo). The informative series and the dog posts say **play free on itch.io** (images re-made 18 Oct, with **21 dogs** since v2.11 "Tokyo Trip"). The banner captions below are the coming-soon ones from 16 Oct; if a tile is not up yet, swap "coming soon" for "play free on itch.io". Launch-day captions are at the end of this file.
+**The game is live on itch.io since 17 Oct** (https://an9ou.itch.io/doodle-doggo). The informative series and the dog posts say **play free on itch.io** (images re-made 18 Oct, with **35 dogs** since v2.12 "Fourteen New Friends"). The banner captions below are the coming-soon ones from 16 Oct; if a tile is not up yet, swap "coming soon" for "play free on itch.io". Launch-day captions are at the end of this file.
 
 Updated 16 Oct 2026 after the owner's feedback.
 
@@ -52,7 +52,7 @@ Image re-made 18 Oct for launch: the word box now says "a cozy dog game · play 
 Meet Noodle 🐶🗻
 He's a dachshund. He's very long. He drew himself and he is very proud of it.
 
-Noodle lives in Doodle Doggo, our cozy dog game: a pencil-sketch town with Mt. Fuji on every skyline, and 21 crayon dogs who are all a little wobbly on purpose. Hop on the Shinkansen to Tokyo with your pack, and dress up for Halloween until 2 Nov 🎃
+Noodle lives in Doodle Doggo, our cozy dog game: a pencil-sketch town with Mt. Fuji on every skyline, and 35 crayon dogs who are all a little wobbly on purpose. Hop on the Shinkansen to Tokyo with your pack, and dress up for Halloween until 2 Nov 🎃
 
 Which dog would you adopt first? 👇 Play free on itch.io (link in bio). No download, phone or computer.
 
@@ -117,21 +117,23 @@ Which view is your favourite? 👇 Play free on itch.io (link in bio).
 ### 2/4 The dogs
 **Caption**
 ```
-21 dog types, 21 tiny personalities 🐶
+35 dog types, 35 tiny personalities 🐶
 
-Mochi the shiba, Biscuit the corgi, Sunny the golden, Noodle the dachshund, Frost the husky, Pepper the shelter mutt, Peanut the chihuahua, Dumpling the pug, Rocket the greyhound, Bagel the beagle, Pretzel the poodle, Scout the border collie, Cloud the samoyed and Brioche the French bulldog.
+Mochi the shiba, Biscuit the corgi, Sunny the golden, Noodle the dachshund, Frost the husky, Pepper the shelter mutt, Peanut the chihuahua, Dumpling the pug, Rocket the greyhound, Bagel the beagle, Pretzel the miniature poodle, Scout the border collie, Cloud the samoyed and Brioche the French bulldog.
 
-✨ New with the Tokyo Trip update: Kuma the Akita, Daifuku the Japanese spitz, Mikan the Pomeranian, Saffron the Afghan hound, Waffle the Great Dane, Crumpet the English mastiff and Strudel the German shepherd.
+🚄 From the Tokyo Trip: Kuma the Akita, Daifuku the Japanese spitz, Mikan the Pomeranian, Saffron the Afghan hound, Waffle the Great Dane, Crumpet the English mastiff and Strudel the German shepherd.
+
+✨ Brand new: Espresso the Doberman, Cannoli the Cane Corso, Peaches the pit bull, Jellybean the miniature pinscher, Butter the Labrador, Maple the Alaskan malamute, Bao the chow chow, Madeleine the standard poodle, Muesli the miniature schnauzer, Shortbread the Westie, Toffee the Yorkie, Meringue the bichon frise, Marshmallow the Maltese and Wonton the shih tzu.
 
 Each one has its own voice, size and joke. And when two dogs have a playdate, the puppies inherit coats and traits like the real thing. Nothing bad ever happens here.
 
 Which one is yours? 👇 Play free on itch.io (link in bio).
 
-21匹のクレヨン犬🐶
+35匹のクレヨン犬🐶
 
 #cozygames #doggame #indiegame #dachshund #doodledoggo #犬ゲーム #wholesomegames
 ```
-**Alt text:** `A grid of 21 crayon dogs with their names, from Mochi the shiba to Strudel the German shepherd.`
+**Alt text:** `A grid of 35 crayon dogs with their names, from Mochi the shiba to Wonton the shih tzu.`
 
 ### 3/4 What you can do
 **Caption**
@@ -159,7 +161,7 @@ Which would you try first? 👇 Play free on itch.io (link in bio).
 How to play (and it's free!) 🎮
 
 1️⃣ Tap New game
-2️⃣ Pick a pup (there are 21 to meet)
+2️⃣ Pick a pup (there are 35 to meet)
 3️⃣ Feed, play and care for them
 4️⃣ Go for a walk: tap or press Space to hop, hold for a long jump, swipe down to duck, D to dig
 
@@ -175,23 +177,23 @@ Works on your phone (hold it upright) or your computer. Nothing to download. Pla
 
 ## Teaser: more dogs are coming
 
-File: `soon-more-dogs-coming.jpg`. Five mystery dogs peek over a fence ("hello?" question marks), while Noodle, Biscuit and Mochi wonder who they are (Mochi: "heh."). It shows no dog types, dates or promises. Post it only when new dogs are really planned. A good moment is after the last dog introduction post (Sun 10 Jan), or whenever the dev team confirms the next dogs.
+File: `soon-more-dogs-coming.jpg` (re-made 18 Oct for v2.12). Two mystery dogs peek over a fence with name signs, **Japanese Chin** and **Kai Ken** (the dev team's next teasers), while Noodle, Biscuit and Mochi wonder who they are (Mochi: "heh."). No dates or promises. Post it any time after the v2.12 dogs have had a few posts, for example mid-December.
 
 **Caption**
 ```
 More dogs are coming to Doodle Doggo! 🐶❓
 
-Someone is peeking over the fence... We can't say who yet (even Noodle doesn't know). Stay tuned, and follow @doodledoggo.app to meet them first.
+Two new faces are peeking over the fence: a Japanese Chin and a Kai Ken 🗻 (Noodle has already asked if they bring snacks.) Follow @doodledoggo.app to meet them first.
 
-Which dog would you like to see next? Tell us below 👇
+Which dog would you like to see after them? Tell us below 👇
 
 Play Doodle Doggo free on itch.io (link in bio).
 
-新しいワンコ、お楽しみに🐶
+次は狆と甲斐犬！お楽しみに🐶
 
-#cozygames #doggame #indiegame #doodledoggo #comingsoon #犬ゲーム #newcharacter
+#cozygames #doggame #japanesechin #kaiken #doodledoggo #甲斐犬 #犬ゲーム
 ```
-**Alt text:** `Mystery dog heads with question marks peek over a fence while Noodle, Biscuit and Mochi look on.` (96 characters)
+**Alt text:** `Mystery dogs signed Japanese Chin and Kai Ken peek over a fence at Noodle, Biscuit and Mochi.` (93 characters)
 
 ---
 
