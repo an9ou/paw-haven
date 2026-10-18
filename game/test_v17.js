@@ -41,7 +41,8 @@ require('./test_lib').run('v17', async (t) => {
   sec('rescues drawn from every breed, with coats');
   const res = await ev(() => { const out = []; const d0 = new Date(2026, 0, 1); for (let i = 0; i < 400; i++) { const d = new Date(d0); d.setDate(d.getDate() + i); const dk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; window.__paw.rescuesOn(dk).forEach((r) => { const c = window.__paw.coat({ id: r.id, key: r.key, genes: r.genes }); out.push({ key: r.key, coat: c && c.coatName, merle: !!(c && c.coat && c.coat.merle) }); }); } return out; });
   const keys = new Set(res.map((r) => r.key)); ok(keys.size === NB, `rescue pool over 400 days covers all ${NB} breeds: ` + [...keys].join(','));
-  for (const k of NEW) { const rs = res.filter((r) => r.key === k), coats = [...new Set(rs.map((r) => r.coat))]; ok(rs.length > 20 && rs.every((r) => r.coat) && coats.length >= 2, `${k} rescues have coats (${rs.length}): ${coats.join(', ')}`); }
+  // v2.12: with 35 breeds a breed gets about 20 rescues in 400 days (was > 20 with 14), so the floor is 10
+  for (const k of NEW) { const rs = res.filter((r) => r.key === k), coats = [...new Set(rs.map((r) => r.coat))]; ok(rs.length >= 10 && rs.every((r) => r.coat) && coats.length >= 2, `${k} rescues have coats (${rs.length}): ${coats.join(', ')}`); }
   ok(!res.some((r) => ['pug', 'greyhound', 'beagle'].includes(r.key) && r.merle), 'no merle pugs, greyhounds or beagles');
 
   sec('a pack of all four new breeds');
