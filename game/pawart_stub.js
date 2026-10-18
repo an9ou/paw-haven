@@ -32,7 +32,7 @@ window.PawArt = window.PawArt || {};
     { key: 'husky', name: 'Frost', breed: 'Husky', personality: 'Energetic, chatty (howls)', joke: 'AWOOOO. (That means hello. Loudly.)' },
     { key: 'mutt', name: 'Pepper', breed: 'Shelter Mutt', personality: 'Loyal, gentle', joke: 'I am a little bit of every dog. Mostly the nice bits.' },
     // v2.5 breeds
-    { key: 'poodle', name: 'Pretzel', breed: 'Poodle', personality: 'Thinks it is the smartest one in the room. It is.', joke: 'Haircut optional. Dignity not.' },
+    { key: 'poodle', name: 'Pretzel', breed: 'Miniature Poodle', personality: 'Thinks it is the smartest one in the room. It is.', joke: 'Haircut optional. Dignity not.' },
     { key: 'collie', name: 'Scout', breed: 'Border Collie', personality: 'Has counted the sheep. There are no sheep. Has counted you.', joke: 'Will herd the puppies, the ducks and the furniture.' },
     { key: 'samoyed', name: 'Cloud', breed: 'Samoyed', personality: 'Smiles so the snow does not stick. Also just smiles.', joke: 'Sheds a second dog every spring.' },
     { key: 'frenchie', name: 'Brioche', breed: 'French Bulldog', personality: 'Snores, snorts, sits on your foot. All three at once.', joke: 'Breathes like a tiny engine. Shade and water, please.' },
@@ -43,12 +43,30 @@ window.PawArt = window.PawArt || {};
     { key: 'afghan', name: 'Saffron', breed: 'Afghan Hound', personality: 'Elegant and aloof. Not one hair out of place.', joke: 'I do not fetch. I glide.' },
     { key: 'dane', name: 'Waffle', breed: 'Great Dane', personality: 'A gentle giant who follows you from room to room.', joke: 'I am a lap dog. Your lap is just too small.' },
     { key: 'mastiff', name: 'Crumpet', breed: 'English Mastiff', personality: 'Huge, slow and sweet. Naps in the biggest patch of shade.', joke: 'A little drool is how I say I love you.' },
-    { key: 'gsd', name: 'Strudel', breed: 'German Shepherd', personality: 'Clever and alert. Loves a job, any job.', joke: 'Ears up. On duty. Was that a squirrel?' }
+    { key: 'gsd', name: 'Strudel', breed: 'German Shepherd', personality: 'Clever and alert. Loves a job, any job.', joke: 'Ears up. On duty. Was that a squirrel?' },
+    // v2.12 breeds (V212.md 2)
+    { key: 'dobie', name: 'Espresso', breed: 'Doberman', personality: 'A big softie in a sleek coat. Keeps watch, then wants a cuddle.', joke: 'I am on guard. Please guard me with a blanket.' },
+    { key: 'corso', name: 'Cannoli', breed: 'Cane Corso', personality: 'A calm, gentle guardian. Keeps an eye on the whole family.', joke: 'I am very serious. Except when you scratch my ears.' },
+    { key: 'pitbull', name: 'Peaches', breed: 'Pit Bull', personality: 'A wiggly, people-loving goofball. Every stranger is a new best friend.', joke: 'My whole back half wags. I cannot stop it.' },
+    { key: 'minpin', name: 'Jellybean', breed: 'Miniature Pinscher', personality: 'A tiny, fearless bundle of energy. Prances everywhere.', joke: 'I am not small. Everything else is big.' },
+    { key: 'lab', name: 'Butter', breed: 'Labrador Retriever', personality: 'Friendly, food-loving and always ready for a swim.', joke: 'Is it dinner? It feels like dinner.' },
+    { key: 'malamute', name: 'Maple', breed: 'Alaskan Malamute', personality: 'A big fluffy sled dog who talks back. Loves snow and digging.', joke: 'Woo-woo. That means I disagree.' },
+    { key: 'chow', name: 'Bao', breed: 'Chow Chow', personality: 'A dignified fluffy lion with a blue tongue. Picks friends carefully.', joke: 'I am not grumpy. This is just my face.' },
+    { key: 'stdpoodle', name: 'Madeleine', breed: 'Standard Poodle', personality: 'A tall, clever, curly athlete. Learns tricks before you teach them.', joke: 'I am the big poodle. The small one is my cousin.' },
+    { key: 'schnauzer', name: 'Muesli', breed: 'Miniature Schnauzer', personality: 'Bearded, bossy and very alert. Reports every leaf.', joke: 'The beard is for wisdom. And soup.' },
+    { key: 'westie', name: 'Shortbread', breed: 'West Highland White Terrier', personality: 'A cheerful little white terrier. Digs first, asks later.', joke: 'I was white this morning. I promise.' },
+    { key: 'yorkie', name: 'Toffee', breed: 'Yorkshire Terrier', personality: 'A tiny terrier with silky hair and a giant attitude.', joke: 'I am in charge here. Please lift me onto the sofa.' },
+    { key: 'bichon', name: 'Meringue', breed: 'Bichon Frise', personality: 'A happy cotton ball who bounces everywhere.', joke: 'Is this a haircut or a cloud? Yes.' },
+    { key: 'maltese', name: 'Marshmallow', breed: 'Maltese', personality: 'A gentle little lap dog in a long white coat.', joke: 'I do not walk. I float, elegantly.' },
+    { key: 'shihtzu', name: 'Wonton', breed: 'Shih Tzu', personality: 'A relaxed lap dog with a top-knot and big opinions about naps.', joke: 'Top-knot up. Nap time down.' }
   ];
   const COAT = { shiba: ['#FF8A1E', '#FFE7B3'], corgi: ['#E9A35B', '#FFFFFF'], golden: ['#F6C445', '#FFE8A0'], dachs: ['#7A4A2A', '#B5774B'], husky: ['#8FA3B8', '#FFFFFF'], mutt: ['#FFFFFF', '#2a2420'],
     poodle: ['#F2C48F', '#FBE2C0'], collie: ['#2A2628', '#FFFFFF'], samoyed: ['#FBF6EC', '#E8DECB'], frenchie: ['#D9B48A', '#3A2E2E'],
     akita: ['#D46E36', '#FFF4E2'], spitz: ['#FCF8F0', '#E6DCCB'], pom: ['#F59A3C', '#FFD9A6'],
-    afghan: ['#C9783E', '#E6A86E'], dane: ['#D9A562', '#2B2430'], mastiff: ['#D8AE72', '#2B2430'], gsd: ['#C98A4A', '#2B2430'] };
+    afghan: ['#C9783E', '#E6A86E'], dane: ['#D9A562', '#2B2430'], mastiff: ['#D8AE72', '#2B2430'], gsd: ['#C98A4A', '#2B2430'],
+    dobie: ['#2B2430', '#C0642E'], corso: ['#2A2628', '#3A3438'], pitbull: ['#7E8A9C', '#A8B2C2'], minpin: ['#C8562E', '#E08A5A'], lab: ['#F2D08A', '#FBE8BE'],
+    malamute: ['#8E98A8', '#FFFFFF'], chow: ['#C8743A', '#E0A06A'], stdpoodle: ['#2B2430', '#4A3F4E'], schnauzer: ['#8E8C8A', '#D8D4CC'], westie: ['#F8F4EA', '#E4DCCB'],
+    yorkie: ['#5E6E84', '#D9A45E'], bichon: ['#FAF7F0', '#E6DED0'], maltese: ['#FCFAF4', '#E8E2D6'], shihtzu: ['#E0A65A', '#FFFFFF'] }; // v2.12: the GENES lane starter shades
 
   const ln = (d, w = 5, c = INK) => `<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
   const el = (cx, cy, rx, ry, f) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${f}" stroke="${INK}" stroke-width="5"/>`;

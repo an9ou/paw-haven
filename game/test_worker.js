@@ -218,9 +218,9 @@ async function checks(label, call, sql, mail) {
       ['an extra field', card({ note: 'hi' })], ['a name as text', card({ name: ['Sunny', 'Biscuit'] })], ['a name index as a string', card({ name: ['3', 7] })],
       ['a name word past the list', card({ name: [40, 0] })], ['a negative index', card({ name: [-1, 0] })], ['a fraction', card({ name: [1.5, 0] })], ['one name word', card({ name: [1] })],
       ['no dogs', card({ dogs: [] })], ['5 dogs', card({ dogs: [dog(), dog(), dog(), dog(), dog()] })], ['dogs as an object', card({ dogs: { 0: dog() } })],
-      ['a dog name as text', card({ dogs: [dog({ n: 'Mochi' })] })], ['a dog name index past the list', card({ dogs: [dog({ n: 101 })] })],
-      ['a breed past the list', card({ dogs: [dog({ b: 21 })] })], ['a breed as text', card({ dogs: [dog({ b: 'shiba' })] })],
-      ['an outfit past the list', card({ dogs: [dog({ o: 47 })] })], ['an outfit as text', card({ dogs: [dog({ o: 'Red Bandana' })] })], ['an outfit under -1', card({ dogs: [dog({ o: -2 })] })],
+      ['a dog name as text', card({ dogs: [dog({ n: 'Mochi' })] })], ['a dog name index past the list', card({ dogs: [dog({ n: 115 })] })],
+      ['a breed past the list', card({ dogs: [dog({ b: 35 })] })], ['a breed as text', card({ dogs: [dog({ b: 'shiba' })] })],
+      ['an outfit past the list', card({ dogs: [dog({ o: 50 })] })], ['an outfit as text', card({ dogs: [dog({ o: 'Red Bandana' })] })], ['an outfit under -1', card({ dogs: [dog({ o: -2 })] })],
       ['an age that is not pup or adult', card({ dogs: [dog({ a: 'old' })] })], ['a sex that is not m or f', card({ dogs: [dog({ s: 'x' })] })], ['sparkle 2', card({ dogs: [dog({ sp: 2 })] })],
       ['a dog with an extra key', card({ dogs: [Object.assign(dog(), { name: 'Mochi' })] })], ['a dog missing a key', card({ dogs: [(() => { const d = dog(); delete d.sp; return d; })()] })],
       ['a coat allele not in the set', card({ dogs: [dog({ c: { B: ['B', 'x'] } })] })], ['a coat word', card({ dogs: [dog({ c: 'red' })] })], ['a coat with an unknown locus', card({ dogs: [dog({ c: { K: ['K', 'k'] } })] })],
@@ -232,10 +232,10 @@ async function checks(label, call, sql, mail) {
     for (const [label, b] of junk) { const x = await call('PUT', '/card', b, ca.token); if (!(x.status === 400 && x.json && (x.json.error === 'bad_card' || x.json.error === 'bad_json'))) bad.push(label + ' ' + x.status); }
     ok(!bad.length, `every junk card is refused with 400 bad_card (${junk.length} kinds) ${bad.join(', ')}`);
     ok(!(await sql('select * from cards where user_id = ?', ca.user.id)), 'no junk card was stored');
-    r = await call('PUT', '/card', card({ dogs: [dog(), dog({ b: 20, o: -1, a: 'pup', s: 'm', sp: 1, n: 100, c: null }), dog({ c: '#AABBCC' })] }), ca.token);
+    r = await call('PUT', '/card', card({ dogs: [dog(), dog({ b: 20, o: -1, a: 'pup', s: 'm', sp: 1, n: 100, c: null }), dog({ c: '#AABBCC' }), dog({ b: 34, o: 49, n: 114 })] }), ca.token); // v2.12: the last breed, outfit and dog name are in the lists
     const mine = r.json;
-    ok(r.status === 200 && /^[A-Za-z0-9_-]{22}$/.test(mine.id) && mine.name.join() === '3,7' && mine.dogs.length === 3 && mine.paws === 0, 'an email account publishes a card: a random card id, the name, the dogs, 0 paws');
-    ok(mine.dogs[1].c === null && mine.dogs[2].c === '#aabbcc' && JSON.stringify(mine.dogs[0]) === JSON.stringify(dog()) && mine.dogs[1].b === 20 && mine.dogs[1].n === 100, 'the dogs come back in the Worker\'s own shape (coat alleles, null or #rrggbb)');
+    ok(r.status === 200 && /^[A-Za-z0-9_-]{22}$/.test(mine.id) && mine.name.join() === '3,7' && mine.dogs.length === 4 && mine.paws === 0, 'an email account publishes a card: a random card id, the name, the dogs, 0 paws');
+    ok(mine.dogs[1].c === null && mine.dogs[2].c === '#aabbcc' && JSON.stringify(mine.dogs[0]) === JSON.stringify(dog()) && mine.dogs[1].b === 20 && mine.dogs[1].n === 100 && mine.dogs[3].b === 34 && mine.dogs[3].o === 49 && mine.dogs[3].n === 114, 'the dogs come back in the Worker\'s own shape (coat alleles, null or #rrggbb)');
     ok(mine.id !== ca.user.id && !r.text.includes(ca.user.id) && !r.text.includes('cards-a'), 'the card id is not the user id, and neither the user id nor the email is in the answer');
     const row = await sql('select * from cards where user_id = ?', ca.user.id);
     ok(row && !/[a-z]{3,}@/.test(row.dogs) && JSON.parse(row.dogs).every((d) => Object.keys(d).join() === 'b,c,o,a,s,sp,n'), 'D1 keeps only the checked fields');

@@ -37,14 +37,19 @@ run('v211_cards', async (t) => {
   await t.newGame({}, { coins: 2000, bond: { level: 8, pts: 2000 }, stats: { hunger: 90, happy: 80, energy: 90, clean: 90 } });
   const L = await ev(() => { const l = window.__paw.dc.lists; return { a: l.a.length, b: l.b.length, n: l.n.length, outfit: l.outfits.length, breeds: l.breeds.length, words: l.a.concat(l.b, l.n), outfits: l.outfits }; });
   ok(L.a === lim.a && L.b === lim.b && L.n === lim.n && L.outfit === lim.outfit, `DC_WORDS_A ${L.a}, DC_WORDS_B ${L.b}, DC_DOG_NAMES ${L.n}, DC_OUTFITS ${L.outfit} match the Worker's DC_LIM`);
-  ok(L.breeds <= lim.breed && lim.breed === 21, `PawGenes BREEDS (${L.breeds}) fits the Worker's 21 breeds`);
+  ok(L.breeds === lim.breed && lim.breed === 35, `PawGenes BREEDS (${L.breeds}) is the Worker's 35 breeds (v2.12)`);
   ok(L.n - 80 === lim.breed, 'one breed name word per breed the Worker allows');
-  ok(L.words.every((w) => /^[A-Z][a-z]+$/.test(w)), 'every name word is one plain capitalised word');
-  ok(L.n === 101 && (await ev(() => window.__paw.dc.lists.n.slice(80).join())) === 'Shiba,Corgi,Golden,Dachshund,Husky,Mutt,Chihuahua,Pug,Greyhound,Beagle,Poodle,Collie,Samoyed,Frenchie,Akita,Spitz,Pom,Hound,Dane,Mastiff,Shepherd', '80 pet names, then the 21 breed name words');
+  ok(L.words.slice(0, 40 + 40 + 80 + 21).every((w) => /^[A-Z][a-z]+$/.test(w)), 'every name word up to v2.11 is one plain capitalised word');
+  ok(L.words.slice(181).every((w) => /^[A-Z][a-z]+( [A-Z][a-z]+)?$/.test(w)) && L.words.slice(181).filter((w) => / /.test(w)).join() === 'Big Poodle,Shih Tzu', 'the v2.12 breed words are plain capitalised words (two of them, Big Poodle and Shih Tzu, have two)');
+  ok(L.n === 115 && (await ev(() => window.__paw.dc.lists.n.slice(80).join())) === 'Shiba,Corgi,Golden,Dachshund,Husky,Mutt,Chihuahua,Pug,Greyhound,Beagle,Poodle,Collie,Samoyed,Frenchie,Akita,Spitz,Pom,Hound,Dane,Mastiff,Shepherd,'
+    + 'Dobie,Corso,Pittie,Pinscher,Lab,Malamute,Chow,Big Poodle,Schnauzer,Westie,Yorkie,Bichon,Maltese,Shih Tzu', '80 pet names, then the 35 breed name words (the v2.12 fourteen appended)');
+  ok(L.outfit === 50 && L.outfits.slice(44).join() === 'Shibuya Bandana,Asakusa Bandana,Tokyo Tower Bandana,Pumpkin Patch Suit,Trick-or-Treat Ghost,Little Bat Costume', 'DC_OUTFITS ends with the Tokyo bandanas and the three v2.11.1 costumes (appended)');
+  ok(L.outfits.length === new Set(L.outfits).size, 'no outfit is listed twice');
   ok(await ev(() => window.__paw.dc.lists.outfits.slice(0, 44).every((n) => typeof n === 'string' && /Bandana|Hat|Tie|Crown|Sunglasses|Raincoat|Beanie|Sweater|Cape|Collar|Tutu|Pyjamas|Suit|Coat|Hoodie|Scarf|Beret|Sheet|Rosette|Wings|Antlers|Snood|Hood|Helmet|Cap|Goggles|Necklace|Poncho/.test(n))), 'DC_OUTFITS are the game\'s wearables');
   const F = await ev(() => window.__paw.dc.fake.map((c) => ({ id: c.id, n: c.dogs.length, b: c.dogs.map((d) => d.b), ok: c.dogs.every((d) => d.n >= 0 && d.o >= -1) })));
-  ok(F.length === 8 && F.every((c) => c.n >= 1 && c.n <= 3 && c.ok), 'DC_FAKE: 8 town players with 1 to 3 dogs each');
-  ok(new Set([].concat(...F.map((c) => c.b))).size >= 17, 'the 17 v2.11 breeds appear among them (lane BREEDS adds the four after pom)');
+  ok(F.length === 11 && F.every((c) => c.n >= 1 && c.n <= 3 && c.ok) && F.map((c) => c.id).join() === 'town-1,town-2,town-3,town-4,town-5,town-6,town-7,town-8,town-9,town-10,town-11', 'DC_FAKE: 11 town players with 1 to 3 dogs each (v2.12 appended town-9 to town-11)');
+  { const B = new Set([].concat(...F.map((c) => c.b))); ok([...Array(21).keys()].every((i) => B.has(i)) && [...B].filter((i) => i >= 21).length >= 4 && [...B].every((i) => i < 35), `all 21 breeds up to v2.11 and ${[...B].filter((i) => i >= 21).length} of the v2.12 fourteen appear among them`); }
+  ok(await ev(() => window.__paw.dc.fake.every((c) => c.dogs.every((d, i) => !!window.__paw.dc.lists.breeds[d.b]))), 'every town dog has a breed this game knows');
   ok(await ev(() => window.__paw.dc.mode()) === 'fake', 'dcMode is fake under the harness');
 
   sec('2. one dog in the Dog Park: visitors from the town players');

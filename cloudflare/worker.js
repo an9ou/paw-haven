@@ -176,7 +176,7 @@ async function sendMail(env, to, m) {
 /* ---------------- Dog Cards (v2.11): no free text anywhere ---------------- */
 // The game keeps the lists (game/src/40_dogcards.js: DC_WORDS_A, DC_WORDS_B, DC_DOG_NAMES, DC_OUTFITS, and PawGenes BREEDS). They are
 // append-only, so a card is only indices into them. When a list grows, raise its count here in the same release (test_v211_cards checks).
-const DC_LIM = { a: 40, b: 40, n: 101, breed: 21, outfit: 47 };
+const DC_LIM = { a: 40, b: 40, n: 115, breed: 35, outfit: 50 }; // v2.12: 35 breeds (80 pet names + 35 breed words), 50 outfits
 const DC_COAT = { B: ['B', 'b'], D: ['D', 'd'], E: ['E', 'e'], S: ['S', 'sp'], M: ['M', 'm'], Bl: ['Bl', 'bl'] }; // allele tokens (mods/genes.js LOCI)
 const DC_DOGS = 4, DC_MAX = 2048, DC_DAYS = 30, DC_ID = /^[A-Za-z0-9_-]{22}$/;
 const dcInt = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
