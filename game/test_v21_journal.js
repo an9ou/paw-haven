@@ -1,6 +1,6 @@
 // v2.1 JOURNAL lane: reward track 10/25/40, family rewards, titles, Sparkle Meter jar, Breeds & Mixes, pen-pal schedule, postcard album, Profile ancestry.
 // PAW_ARGS=--ignore-certificate-errors NODE_PATH=$(npm root -g) node game/run_tests.js game/test_v21_journal.js --jobs 1
-const COAT_CAP = /coatBreeds = [^\n]*slice\(0, 21\)/.test(require('fs').readFileSync(require('path').join(__dirname, 'src', '07_treasure_journal.js'), 'utf8')) ? 21 : 35; // 07 coatBreeds() (lane LINES) lifts its 21 cap to 35 in v2.12
+const COAT_CAP = 35; // v2.12: the coat book shows all 35 breeds
 require('./test_lib').run('v21_journal', async (t) => {
   const { ok, sec, ev, S } = t;
   sec('new game');

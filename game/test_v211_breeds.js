@@ -3,7 +3,7 @@
 // feed, pet, walk each; the Wardrobe mannequin draws every outfit on each new breed with no console errors; an Akita x Pomeranian playdate
 // names the pups Pomkita and the family tree shows it; the roam traits loyal / show / spin; the litter rules list the new keys;
 // the Journal coat tab shows 17 breeds; the carousel on phones.
-const COAT_CAP = /coatBreeds = [^\n]*slice\(0, 21\)/.test(require('fs').readFileSync(require('path').join(__dirname, 'src', '07_treasure_journal.js'), 'utf8')) ? 21 : 35; // 07 coatBreeds() (lane LINES) lifts its 21 cap to 35 in v2.12
+const COAT_CAP = 35; // v2.12: the coat book shows all 35 breeds
 require('./test_lib').run('v211_breeds', async (t) => {
   const { ok, sec, ev, S } = t;
   const NEW = [['akita', 'Akita', 'Red'], ['spitz', 'Japanese Spitz', 'White'], ['pom', 'Pomeranian', 'Orange'], ['afghan', 'Afghan Hound', 'Red'], ['dane', 'Great Dane', 'Fawn'], ['mastiff', 'English Mastiff', 'Fawn'], ['gsd', 'German Shepherd', 'Black and tan']];

@@ -4,7 +4,7 @@
 // a Poodle x Golden playdate names the pups Goldendoodle and the family tree shows it; two merle collies cannot pair
 // (the same kind message as any merle pair), a merle x plain collie can and no pup is M/M; Horgi x Horgi = Horgi;
 // the flat-face tip shows once on the first hot day; the Journal coat tab shows 35 breeds (v2.12).
-const COAT_CAP = /coatBreeds = [^\n]*slice\(0, 21\)/.test(require('fs').readFileSync(require('path').join(__dirname, 'src', '07_treasure_journal.js'), 'utf8')) ? 21 : 35; // 07 coatBreeds() (lane LINES) lifts its 21 cap to 35 in v2.12
+const COAT_CAP = 35; // v2.12: the coat book shows all 35 breeds
 require('./test_lib').run('v25_breeds', async (t) => {
   const { ok, sec, ev, S } = t;
   const NEW = [['poodle', 'Miniature Poodle'], ['collie', 'Border Collie'], ['samoyed', 'Samoyed'], ['frenchie', 'French Bulldog']];

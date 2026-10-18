@@ -40,8 +40,8 @@ require('./test_lib').run('v212_breeds', async (t) => {
   };
   const yard = fs.readFileSync(path.join(__dirname, 'src', '03_yard.js'), 'utf8'), journal = fs.readFileSync(path.join(__dirname, 'src', '07_treasure_journal.js'), 'utf8');
   const tipsIn = KEYS.filter((k) => yard.includes(TIPS[k])), capped = /coatBreeds = [^\n]*slice\(0, 21\)/.test(journal);
-  if (tipsIn.length < KEYS.length) console.log(`   note: BD_TIPS (03_yard.js, lane LINES) has ${tipsIn.length} of the 14 care notes: the others are checked as "no tip yet"`);
-  if (capped) console.log('   note: coatBreeds() (07_treasure_journal.js, lane LINES) still stops at 21 breeds: the coat tab check expects 21 until it is lifted');
+  ok(tipsIn.length === KEYS.length, `BD_TIPS (03_yard.js) has all 14 care notes exactly as V212.md 3 (${tipsIn.length})`);
+  ok(!capped, 'coatBreeds() (07_treasure_journal.js) is not capped at 21');
   const iso = (daysAgo) => { const d = new Date(); d.setDate(d.getDate() - daysAgo); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 
   sec('adopt each new breed through the UI, then feed, pet and walk');
@@ -52,8 +52,7 @@ require('./test_lib').run('v212_breeds', async (t) => {
     await p.click(`.heads button[aria-label$=" the ${br}"]`);
     ok(await t.until((br) => (document.querySelector('.adopt-card h3') || {}).textContent.includes('the ' + br), br), `${br}: the shelter card shows ${nm} the ${br}`);
     const tip = await ev(() => { const e = document.querySelector('.adopt-card .bd-tip'); return e ? e.textContent : ''; });
-    if (tipsIn.includes(k)) ok(tip === TIPS[k], `${br}: the care note is on the card (${tip})`);
-    else ok(/function bdTip\(key\)/.test(yard) && tip === '', `${br}: bdTip is there, no care note yet (BD_TIPS not merged), and nothing breaks`);
+    ok(tip === TIPS[k], `${br}: the care note is on the card (${tip})`);
     await p.click(k === 'corso' || k === 'lab' ? '#aBoy' : '#aGirl'); await p.click('#aAdopt'); await p.waitForSelector('#nOk'); await p.click('#nOk'); await t.intro(); await t.calm();
     let s = await S();
     ok(s.dog.key === k && s.dog.name === nm && s.dog.genes && (await t.mode()) === 'yard', `${br}: adopted ${nm}, in the yard`);
@@ -99,7 +98,7 @@ require('./test_lib').run('v212_breeds', async (t) => {
   await t.ctx.close(); await t.newGame({}, { coins: 1000 }); const p = t.p;
   await p.click('[data-act=journal]'); await p.waitForSelector('.panel.journal'); await p.click('[data-jt=coats]'); await p.waitForSelector('.ctop');
   const nTabs = await p.locator('.cbreed').count();
-  ok(nTabs === (capped ? 21 : 35), `${nTabs} breed tabs on the Coats page` + (capped ? ' (coatBreeds still capped at 21 by 07_treasure_journal.js)' : ''));
+  ok(nTabs === 35, `${nTabs} breed tabs on the Coats page`);
   ok(await ev(() => document.documentElement.scrollWidth <= innerWidth + 1), 'the coat page does not scroll sideways');
   if (!capped) {
     for (const k of KEYS) {

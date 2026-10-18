@@ -1,8 +1,8 @@
 // v2.12 BREED ART test (plain node). Run: node game/test_v212_dogs_node.js   (exits 1 on any failure). ONLY=dobie,corso tests just those (the ART lanes)
-// V211.md 5.2: the seven new breeds (akita, spitz, pom, then afghan, dane, mastiff, gsd) render a valid SVG in every pose x age x facing x outfit, with sparkle,
-// coats from genes, mixes both ways and the head; the three Tokyo bandanas draw on all 21 breeds in every pose, age and facing,
-// touching the dog and staying near the neck. The full byte-identical proof for the 14 old breeds is node dogs/check_identical.js
-// v211-base; this file spot-checks it (every old breed, a few poses) when that ref is there.
+// V212.md 5: the fourteen new breeds (dobie corso pitbull minpin lab malamute chow stdpoodle schnauzer westie yorkie bichon maltese shihtzu) render a valid
+// SVG in every pose x age x facing x outfit, with sparkle, coats, mixes both ways and the head; the three Tokyo bandanas draw on them in every pose, age and facing.
+// The full byte-identical proof for the 21 old breeds is SKIP=poodle node dogs/check_identical.js v212-base; this file spot-checks it (every old breed, a
+// few poses) and checks every old poodle render apart from its new name (Miniature Poodle) when that ref is there.
 'use strict';
 const fs = require('fs'), path = require('path'), vm = require('vm'), cp = require('child_process');
 const ROOT = path.join(__dirname, '..');

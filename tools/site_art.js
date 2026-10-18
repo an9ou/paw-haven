@@ -1,7 +1,7 @@
 // doodledoggo.app v2 art and dog pages: pre-renders the game's own art for the site, so the site needs no art modules at run time.
 //   NODE_PATH=$(npm root -g) node tools/site_art.js        (needs Node and Playwright; the outputs are committed)
 // Writes site/img/art/:
-//   dogs/<key>-<pose>.svg      every dog (21 since v2.11), scene poses (walk, jump, sit, happy, sniff), 3 boiling frames (the game's 3 fps flip)
+//   dogs/<key>-<pose>.svg      every dog (35 since v2.12), scene poses (walk, jump, sit, happy, sniff), 3 boiling frames (the game's 3 fps flip)
 //   dogs/<key>-still.svg       each dog's card pose, one frame (cards, profiles, the reduced-motion scene)
 //   dogs/<key>-pup.svg         a puppy of each dog, one frame (profiles)
 //   dogs/<key>-sleep.svg       each dog napping, one frame (the playroom)
