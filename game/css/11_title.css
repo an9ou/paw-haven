@@ -30,6 +30,9 @@
 .heads button{width:54px;height:54px;padding:5px;overflow:hidden;--wash:var(--paper)}
 .heads button[aria-current="true"]{--wash:var(--w-yellow);transform:scale(1.12) rotate(-5deg)}
 .heads svg{width:100%;height:100%;display:block}
+/* v2.12 (LINES): 26+ heads (35 breeds) get smaller round heads on desktop so the card still fits above the Adopt button (phones keep 54 px heads in the scrolling sheet) */
+html:not([data-layout="phone"]) .heads:has(> button:nth-child(26)){gap:6px;max-width:338px}
+html:not([data-layout="phone"]) .heads:has(> button:nth-child(26)) button{width:40px;height:40px;padding:3px}
 .prog{height:20px;position:relative;flex:1}
 .prog::after{content:"";position:absolute;inset:0;background:var(--fr-tubew) 0 0/100% 100% no-repeat;pointer-events:none}
 .prog i{position:absolute;left:4px;top:4px;bottom:4px;width:0;max-width:calc(100% - 7px);border-radius:7px 3px 8px 4px;background:repeating-linear-gradient(-62deg,#9ccf8f 0 2.2px,#cde8c4 2.2px 4.4px)}

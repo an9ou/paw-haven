@@ -21,7 +21,7 @@ require('./test_lib').run('v211_breeds', async (t) => {
   for (const [k, br, coat] of NEW) {
     const p = await t.boot(); await p.click('#tNew'); await p.waitForSelector('.heads button');
     const nm = (await p.getAttribute(`.heads button[aria-label$=" the ${br}"]`, 'aria-label')).replace(` the ${br}`, ''); // the starter's name comes from PawArt.DOGS
-    ok(await p.locator('.heads button').count() === 21, `${br}: 21 dogs in the adoption carousel`);
+    ok(await p.locator('.heads button').count() === 35, `${br}: 35 dogs in the adoption carousel`);
     await p.click(`.heads button[aria-label$=" the ${br}"]`);
     ok(await t.until((br) => (document.querySelector('.adopt-card h3') || {}).textContent.includes('the ' + br), br), `${br}: the shelter card shows ${nm} the ${br}`);
     const tip = await ev(() => { const e = document.querySelector('.adopt-card .bd-tip'); return e ? e.textContent : ''; });
@@ -199,13 +199,13 @@ require('./test_lib').run('v211_breeds', async (t) => {
   ok((await ev(() => window.__paw.S.dogs.length)) === 3, 'three dogs roam together');
   ok(t.errors.length === 0, 'no console errors so far');
 
-  sec('phones: all 21 heads in the adoption sheet are tappable (iPhone 15, Pixel 7)');
+  sec('phones: all 35 heads in the adoption sheet are tappable (iPhone 15, Pixel 7)');
   for (const dev of ['iPhone 15', 'Pixel 7']) {
     await t.ctx.close();
     const z = await t.boot({ device: dev }); await z.click('#tNew'); await z.waitForSelector('.heads button'); await t.sleep(500);
     await ev(() => { const d = document.getElementById('dock'); d.scrollTop = d.scrollHeight; }); await t.sleep(400);
     const hit = await ev(() => [...document.querySelectorAll('.heads button')].map((b) => { const r = b.getBoundingClientRect(), e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!e && b.contains(e) && r.width >= 44 && r.height >= 44; }));
-    ok(hit.length === 21 && hit.every(Boolean), `${dev}: 21 heads, each 44 px or more and tappable with the sheet scrolled down`);
+    ok(hit.length === 35 && hit.every(Boolean), `${dev}: 35 heads, each 44 px or more and tappable with the sheet scrolled down`);
     ok(await ev(() => document.documentElement.scrollWidth <= innerWidth), `${dev}: no sideways scroll`);
     await z.locator('.heads button').last().click();
     ok(await t.until(() => /the German Shepherd/.test(document.querySelector('.adopt-card h3').textContent)), `${dev}: tapping the last head picks the German Shepherd`);

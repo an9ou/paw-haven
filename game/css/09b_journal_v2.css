@@ -80,6 +80,9 @@ html:not([data-layout="phone"]) .cbreeds:has(> .cbreed:nth-child(13)) .cbreed .i
 /* v2.11 (BREEDS): 18+ tabs (21 with the new breeds) get smaller still so they keep one row at 1024 px too */
 html:not([data-layout="phone"]) .cbreeds:has(> .cbreed:nth-child(18)) .cbreed{padding:1px 2px 1px 1px;font-size:12.5px}
 html:not([data-layout="phone"]) .cbreeds:has(> .cbreed:nth-child(18)) .cbreed .ic{width:22px;height:22px}
+/* v2.12 (LINES): 26+ tabs (35 breeds) cannot share one row, so on desktop they wrap onto a few small rows (phones keep the one scrolling row) */
+html:not([data-layout="phone"]) .cbreeds:has(> .cbreed:nth-child(26)){flex-wrap:wrap;gap:3px 4px}
+html:not([data-layout="phone"]) .cbreeds:has(> .cbreed:nth-child(26)) .cbreed{flex:0 0 auto;min-width:0;padding:1px 5px 1px 1px}
 .cspk{position:absolute;top:-8px;right:-4px;font-style:normal;color:#E0A81C;font-size:16px}
 .cbh{margin:4px 0 0;font-family:var(--font-hand);font-size:28px}
 .cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(138px,1fr));gap:12px 10px;padding:6px 2px 10px}

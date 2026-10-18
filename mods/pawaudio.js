@@ -1038,7 +1038,22 @@
     afghan: { f0: 255, F: [560, 1100, 2400], mouth: 2500, noise: 0.22, K: 1 },     // a soft, aloof woof (v2.11)
     dane: { f0: 120, F: [380, 820, 1900], mouth: 1700, noise: 0.3, K: 1 },         // a very deep, single boom (v2.11)
     mastiff: { f0: 100, F: [350, 760, 1800], mouth: 1500, noise: 0.34, K: 1 },     // deep, slow and heavy (v2.11)
-    gsd: { f0: 210, F: [520, 1050, 2350], mouth: 2600, noise: 0.2, K: 1 }          // a strong, clear double bark (v2.11)
+    gsd: { f0: 210, F: [520, 1050, 2350], mouth: 2600, noise: 0.2, K: 1 },         // a strong, clear double bark (v2.11)
+    // v2.12 Fourteen New Friends (V212.md 4)
+    dobie: { f0: 175, F: [490, 1030, 2300], mouth: 2400, noise: 0.22, K: 1 },      // a deep, clear bark
+    corso: { f0: 130, F: [400, 850, 1950], mouth: 1800, noise: 0.3, K: 1 },        // a low single woof
+    pitbull: { f0: 290, F: [610, 1220, 2550], mouth: 2800, noise: 0.24, K: 1 },    // a happy, bouncy bark
+    minpin: { f0: 600, F: [1050, 2000, 3300], mouth: 3700, noise: 0.2, K: 1 },     // a sharp little yip
+    lab: { f0: 190, F: [500, 1050, 2300], mouth: 2300, noise: 0.28, K: 1 },        // a friendly woof
+    malamute: { f0: 215, F: [520, 1080, 2300], mouth: 2300, noise: 0.22, K: 1 },   // a low "woo-woo" talker (not the husky's howl)
+    chow: { f0: 150, F: [420, 900, 2000], mouth: 1700, noise: 0.38, K: 1 },        // a low, grumbly woof
+    stdpoodle: { f0: 340, F: [700, 1400, 2700], mouth: 3200, noise: 0.16, K: 1 },  // a clear bark
+    schnauzer: { f0: 400, F: [800, 1550, 2900], mouth: 3400, noise: 0.2, K: 1 },   // a quick alarm bark
+    westie: { f0: 480, F: [920, 1750, 3100], mouth: 3600, noise: 0.18, K: 1 },     // a bright terrier bark
+    yorkie: { f0: 700, F: [1150, 2150, 3450], mouth: 3900, noise: 0.16, K: 1 },    // a tiny yap
+    bichon: { f0: 560, F: [1000, 1900, 3200], mouth: 3300, noise: 0.15, K: 1 },    // a soft yip
+    maltese: { f0: 640, F: [1100, 2050, 3350], mouth: 3500, noise: 0.14, K: 1 },   // a soft, high yip
+    shihtzu: { f0: 460, F: [880, 1700, 3000], mouth: 2700, noise: 0.34, K: 1 }     // a small, snorty yip
   };
   var BARK_KINDS = ['woof', 'yip', 'alert', 'demand', 'play', 'howl', 'talk', 'scream', 'whine', 'growl-play', 'sneeze', 'yawn', 'snore', 'pant', 'huff', 'whimper'];
   // loudness trims in dB per breed, in BARK_KINDS order: measured offline so every voice sits at its target level
@@ -1068,11 +1083,40 @@
     afghan: [-0.5, -1.9, -0.7, 0.4, 2.6, -5.1, -4.5, -4.1, -1.9, 6.5, 2.2, -1.4, 9.2, 4.8, 4.2, -2.7],
     dane: [2.1, 2.9, 1.5, 1.9, 2.3, -0.5, 0.7, -2.5, -4.2, 7.8, 3.8, -1.3, 10.7, 7, 6, -0.3],
     mastiff: [3, 1.5, 2.8, 3, 3.1, 1.7, 2.2, -2.9, -4.1, 8.1, 4.3, -1.2, 10.4, 7.4, 5.8, 2.7],
-    gsd: [1.2, 2.1, 1.3, 1.5, 0.1, -5.1, -4.9, -2.9, 0.9, 7.1, 3.4, -1.3, 8.9, 5.3, 4.2, -4.5]
+    gsd: [1.2, 2.1, 1.3, 1.5, 0.1, -5.1, -4.9, -2.9, 0.9, 7.1, 3.4, -1.3, 8.9, 5.3, 4.2, -4.5],
+    // v2.12: measured the same way (offline renders of the 16 kinds, two per breed, to the median level of eight older breeds)
+    dobie: [1.5, 2.8, 1.4, 1.9, 1.9, -4.7, -3.2, -3.7, -2.2, 6.3, 2.6, -1.6, 5.8, 5.1, 5.1, -4.3],
+    corso: [1.6, 3.3, 1.8, 1.9, 1.8, -1.5, 0.3, -3, -4.6, 7.2, 2.4, -1.4, 7.2, 7, 5.8, -1.4],
+    pitbull: [0.1, -2.4, 0, -0.5, 0.2, -2.9, -1.1, -3.5, -4.4, 7, 1.4, -1.9, 6.4, 5.5, 4.3, 0.5],
+    minpin: [-0.9, -3.3, 1.7, 1.9, 2, 0, -0.1, -3.4, 4.3, 4.6, -0.4, 2.8, 4.7, 3.9, 2.6, 0.6],
+    lab: [2.3, 2.8, 1.9, 0, 1.8, -5, -4.6, -3.8, -0.2, 6.7, 2.7, -1.3, 7.2, 4.6, 4.7, -4.6],
+    malamute: [-3.2, 1.2, 0.1, -1.1, 2.7, -4.4, -4.6, -3, 0, 6.7, 1.9, -1.4, 5.5, 5, 5, -4.5],
+    chow: [2.9, 3.4, 3.4, 3.1, 3.2, -4.6, -3.1, -3.6, -2.7, 7.3, 1.9, -1.6, 7.9, 6.9, 5.9, -4.5],
+    stdpoodle: [-0.6, -2.9, -0.6, 0.9, -0.5, 1.6, 2.6, -1.6, -4.5, 6.2, 1.8, -1.6, 4.8, 5.2, 3.6, 3.3],
+    schnauzer: [0.4, -3.5, 0.3, 0.8, 1.4, 2.1, 0.9, -4, -1.4, 5.2, 0.5, 0.4, 3.9, 3.7, 3.3, 1.9],
+    westie: [-1.1, -3.9, 1, 0.9, 1.5, -0.3, 0.3, -1.7, 3.3, 5.2, 0.1, 4.1, 4.3, 3.8, 2.6, 0.4],
+    yorkie: [0.9, -1.3, 2.4, 2.2, 1.9, 1.2, 0.9, -4, 4.1, 4.9, -0.8, 0.5, 3.8, 2.5, 2, 1.3],
+    bichon: [0.2, -3.3, 2.5, 2.9, 2.6, -0.2, 0.3, -2.9, 4.5, 4.6, -0.1, 3.5, 4.3, 3.6, 2.5, 0.8],
+    maltese: [0.7, -2.5, 3, 3.1, 1.1, 0.4, 0.3, -3.8, 4.6, 4.5, -0.8, 2.2, 3.7, 2.7, 1.6, 0.5],
+    shihtzu: [-1.3, -4, 1.4, 1.3, 1.5, -0.2, 0.3, -3.4, 1.9, 5.8, -0.2, 3.4, 5.6, 4.6, 3.3, 0.9]
   };
   function breedOf(voice) {
     var b = String((voice && voice.breed) || '').toLowerCase(), k;
-    if (b.indexOf('shiba') >= 0) k = 'shiba';
+    if (b.indexOf('stdpoodle') >= 0 || b.indexOf('standard') >= 0) k = 'stdpoodle';   // v2.12, before the older checks
+    else if (b === 'lab' || b.indexOf('labrador') >= 0) k = 'lab';
+    else if (b.indexOf('dobie') >= 0 || b.indexOf('doberman') >= 0) k = 'dobie';
+    else if (b.indexOf('corso') >= 0) k = 'corso';
+    else if (b.indexOf('pitbull') >= 0 || b.indexOf('pit bull') >= 0) k = 'pitbull';
+    else if (b.indexOf('minpin') >= 0 || b.indexOf('pinscher') >= 0) k = 'minpin';
+    else if (b.indexOf('malamute') >= 0) k = 'malamute';
+    else if (b.indexOf('chow') >= 0) k = 'chow';
+    else if (b.indexOf('schnauzer') >= 0) k = 'schnauzer';
+    else if (b.indexOf('westie') >= 0 || b.indexOf('west highland') >= 0) k = 'westie';
+    else if (b.indexOf('yorkie') >= 0 || b.indexOf('yorkshire') >= 0) k = 'yorkie';
+    else if (b.indexOf('bichon') >= 0) k = 'bichon';
+    else if (b.indexOf('maltese') >= 0) k = 'maltese';
+    else if (b.indexOf('shihtzu') >= 0 || b.indexOf('shih') >= 0) k = 'shihtzu';
+    else if (b.indexOf('shiba') >= 0) k = 'shiba';
     else if (b.indexOf('corgi') >= 0) k = 'corgi';
     else if (b.indexOf('golden') >= 0 || b.indexOf('retriever') >= 0) k = 'golden';
     else if (b.indexOf('dachs') >= 0 || b.indexOf('sausage') >= 0) k = 'dachshund';
@@ -1167,6 +1211,43 @@
     } else if (bk === 'gsd' && loudK) {   // v2.11: strong, clear barks (alert and play = two)
       var ng = kind === 'alert' || kind === 'play' ? 2 : 1;
       for (i2 = 0; i2 < ng; i2++) bark(i2 * 0.2 * lk, 0.16, (kind === 'play' ? 1.08 : 1.02) * rnd(0.98, 1.02), i2 ? 0.92 : 1, 1.1);
+    } else if (bk === 'dobie' && loudK) {   // v2.12: a deep, clear bark (alert and play = two)
+      var nd = kind === 'alert' || kind === 'play' ? 2 : 1;
+      for (i2 = 0; i2 < nd; i2++) bark(i2 * 0.2 * lk, 0.17, (kind === 'play' ? 1.06 : 0.98) * rnd(0.98, 1.02), i2 ? 0.9 : 1, 1.05);
+    } else if (bk === 'corso' && loudK) {   // v2.12: one low, slow woof
+      bark(0, 0.32, 0.92 * rnd(0.98, 1.02), 1, 0.9);
+    } else if (bk === 'pitbull' && loudK) {   // v2.12: a happy, bouncy bark, the second one a little higher
+      var nb = kind === 'alert' || kind === 'play' ? 2 : 1;
+      for (i2 = 0; i2 < nb; i2++) bark(i2 * 0.16 * lk, 0.14, (kind === 'play' ? 1.1 : 1.03) * (i2 ? 1.1 : 1) * rnd(0.98, 1.02), i2 ? 0.92 : 1, 1.1);
+    } else if (bk === 'minpin' && loudK) {   // v2.12: sharp little yips (alert = 3, play = 2)
+      var nm = kind === 'alert' ? 3 : kind === 'play' ? 2 : 1;
+      for (i2 = 0; i2 < nm; i2++) add(i2 * 0.12, { d: 0.08, p: (kind === 'play' ? 1.15 : 1) * rnd(0.97, 1.03), g: i2 ? 0.88 : 1, a: 0.004, f: [[0, 0.9], [0.22, 1.22], [1, 0.85]], m: [[0, 0.5], [0.22, 1.2], [1, 0.5]] });
+    } else if (bk === 'malamute' && (kind === 'talk' || kind === 'howl' || kind === 'woof')) {   // v2.12: a low "woo-woo" (a long third woo for the howl, one short woo for a woof)
+      var wm = kind === 'howl' ? [[0, 0.4], [0.46, 0.4], [0.92, 1.1]] : kind === 'woof' ? [[0, 0.36]] : [[0, 0.38], [0.44, 0.48]];
+      wm.forEach(function (q, j) { add(q[0], { d: q[1], p: hm * (j ? 0.94 : 0.86), g: j ? 0.85 : 0.9, a: 0.04, r: 0.35, n: 0.1, fm: 0.88, vib: [4.5, 0.012], f: [[0, 0.78], [0.35, 1.1], [0.75, 1.04], [1, 0.8]], m: [[0, 0.35], [0.35, 0.9], [1, 0.3]] }); });
+    } else if (bk === 'chow' && loudK) {   // v2.12: a low, grumbly woof
+      add(0, { d: 0.28, p: 0.9 * rnd(0.98, 1.02), g: 1, a: 0.012, n: 0.4, am: [24, 0.3], f: [[0, 0.85], [0.2, 1.08], [0.6, 1.0], [1, 0.72]], m: [[0, 0.3], [0.25, 0.85], [1, 0.35]] });
+    } else if (bk === 'stdpoodle' && (kind === 'woof' || kind === 'play')) {   // v2.12: a clear bark (play = two)
+      bark(0, 0.14, 1.08 * rnd(0.98, 1.02), 1, 1.1);
+      if (kind === 'play') bark(0.18 * lk, 0.13, 1.16, 0.9, 1.1);
+    } else if (bk === 'schnauzer' && loudK) {   // v2.12: quick alarm barks close together (alert = 4, play = 3, woof = 2)
+      var nz = kind === 'alert' ? 4 : kind === 'play' ? 3 : 2;
+      for (i2 = 0; i2 < nz; i2++) bark(i2 * 0.12 * lk, 0.1, (kind === 'play' ? 1.1 : 1.04) * rnd(0.98, 1.02), i2 ? 0.88 : 1, 1.15);
+    } else if (bk === 'westie' && loudK) {   // v2.12: a bright terrier bark (alert = 3 quick, others = 1 or 2)
+      var nw = kind === 'alert' ? 3 : kind === 'play' ? 2 : (chance(0.5) ? 2 : 1);
+      for (i2 = 0; i2 < nw; i2++) bark(i2 * 0.14 * lk, 0.1, (kind === 'play' ? 1.12 : 1.06) * rnd(0.98, 1.02), i2 ? 0.9 : 1, 1.15);
+    } else if (bk === 'yorkie' && loudK) {   // v2.12: a tiny yap-yap (alert = 3), the last yap lifts
+      var ny2 = kind === 'alert' ? 3 : 2;
+      for (i2 = 0; i2 < ny2; i2++) add(i2 * 0.13, { d: 0.07, p: (kind === 'play' ? 1.12 : 1) * (i2 === ny2 - 1 ? 1.08 : 1) * rnd(0.97, 1.03), g: i2 ? 0.85 : 1, a: 0.004, f: [[0, 0.92], [0.25, 1.2], [1, 0.9]], m: [[0, 0.5], [0.25, 1.15], [1, 0.5]] });
+    } else if (bk === 'bichon' && loudK) {   // v2.12: a soft yip (play and alert = two)
+      add(0, { d: 0.09, p: 1.12, g: 0.85, a: 0.006, n: 0.12, f: [[0, 0.95], [0.25, 1.2], [1, 0.9]], m: [[0, 0.5], [0.25, 1.1], [1, 0.5]] });
+      if (kind === 'play' || kind === 'alert') add(0.14, { d: 0.08, p: 1.22, g: 0.8, a: 0.006, n: 0.12, f: [[0, 0.95], [0.25, 1.22], [1, 0.9]], m: [[0, 0.5], [0.25, 1.1], [1, 0.5]] });
+    } else if (bk === 'maltese' && loudK) {   // v2.12: a soft, high yip
+      add(0, { d: 0.085, p: 1.18, g: 0.78, a: 0.007, n: 0.1, f: [[0, 0.95], [0.25, 1.22], [1, 0.9]], m: [[0, 0.5], [0.25, 1.05], [1, 0.5]] });
+      if (kind === 'play') add(0.14, { d: 0.075, p: 1.28, g: 0.72, a: 0.007, n: 0.1, f: [[0, 0.95], [0.25, 1.22], [1, 0.9]], m: [[0, 0.5], [0.25, 1.05], [1, 0.5]] });
+    } else if (bk === 'shihtzu' && loudK) {   // v2.12: a small snort, then a short yip (alert and play = two)
+      var nh = kind === 'alert' || kind === 'play' ? 2 : 1;
+      for (i2 = 0; i2 < nh; i2++) { snort(i2 * 0.24, 0.45); add(i2 * 0.24 + 0.05, { d: 0.11, p: kind === 'play' ? 1.15 : 1.05, g: 0.95, a: 0.008, n: 0.3, f: [[0, 0.9], [0.22, 1.18], [1, 0.82]], m: [[0, 0.4], [0.25, 0.95], [1, 0.4]] }); }
     } else if (bk === 'frenchie' && (kind === 'snore' || kind === 'huff')) {   // v2.5: snorty like the pug
       if (kind === 'snore') {
         add(0, { d: 0.75, p: 0.34, g: 0.7, a: 0.25, r: 0.4, n: 0.72, am: [20, 0.8], f: [[0, 1], [1, 1]], m: [[0, 0.2], [0.5, 0.35], [1, 0.15]] });
@@ -1250,7 +1331,10 @@
   var NB_TRIM = { shiba: [-4, 0, 5.5], corgi: [-0.5, -1, 1], golden: [5.5, 3, 0.5], dachshund: [4.5, 1, 0], husky: [3, -0.5, 0], mutt: [2, -1, -0.5], chihuahua: [-2.5, 1.5, 7.5],
     pug: [0, 4.5, 1], greyhound: [2.5, 4, 1], beagle: [0.5, -1, 0], poodle: [-4, -1, 4], collie: [-1, -1, 1.5], samoyed: [4, 0.5, 0], frenchie: [0, 4.5, 1],
     akita: [1.5, 4.4, 1.2], spitz: [-3, -1, 4.4], pom: [-1.3, 2.9, 6.3],
-    afghan: [2.7, 0.6, 0.1], dane: [0.9, 4.5, 3.2], mastiff: [1, 2.9, 4.1], gsd: [3.1, 1.6, 0.4] };   // v2.11: measured the same way, to -24 dB
+    afghan: [2.7, 0.6, 0.1], dane: [0.9, 4.5, 3.2], mastiff: [1, 2.9, 4.1], gsd: [3.1, 1.6, 0.4],
+    // v2.12: measured the same way (squeak, mew, whimper to -24 dB)
+    dobie: [5.9, 2, 0.4], corso: [0.9, 5.8, 2.6], pitbull: [3, -0.4, -0.1], minpin: [-2.5, 2, 7.6], lab: [5.5, 1.9, 0.4], malamute: [4.9, 1.6, 0.3], chow: [1.9, 6.7, 1.9], stdpoodle: [-0.4, -0.7, 1.6], schnauzer: [-3.1, -1.1, 3.6], westie: [-4, -0.6, 5.2], yorkie: [-0.9, 3.6, 7.8], bichon: [-3.4, 0.6, 6.5], maltese: [-1.6, 2.6, 8], shihtzu: [-4.1, -1.1, 4.4]
+    };   // v2.11: measured the same way, to -24 dB
   // newborn: tiny squeaks and mews. Only whine (mew), whimper and yip (squeak pair) are distinct; every other kind is one squeak.
   function newbornPlan(voice, kind) {
     var B = breedOf(voice), S = [], f1 = 1250 * Math.pow(B.f0 / 300, 0.25);   // a hint of breed: bigger-voiced breeds are a little lower

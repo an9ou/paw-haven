@@ -91,10 +91,10 @@ const fill = (file, tag, html) => {
   fs.writeFileSync(p, s.replace(re, (m, a, b) => `${a}\n${html}\n${b}`));
 };
 // the last card: the dogs on their way (owner, 17 Oct 2026: no dates), crayon silhouettes with a "?"
-const SOON_LINE = 'Japanese Chin, Shih Tzu and Kai Ken are on their way.'; // v2.11: Akita, Spitz and Pomeranian (and four more) are in the game now; these three wait (V211.md section 6)
+const SOON_LINE = 'Japanese Chin and Kai Ken are on their way.'; // v2.12: Shih Tzu and thirteen more are in the game now; these two wait (V212.md)
 const sils = ['shiba-still', 'samoyed-still', 'samoyed-pup'].map((f) => `<span class="sil"><img src="/img/art/dogs/${f}.svg" alt="" width="240" height="200" loading="lazy"><b aria-hidden="true">?</b></span>`).join('');
 const soon = (tag) => tag === 'card' ? `<li class="soonli"><div class="soon" id="soon"><div class="sils">${sils}</div><span class="dname">More dogs are coming!</span><span class="dquote">${SOON_LINE}</span></div></li>`
-  : `<section class="soonprof" id="soon" aria-labelledby="h-soon"><div class="sils">${sils}</div><div class="txt"><h2 id="h-soon">More dogs are coming!</h2><p class="bubble">${SOON_LINE}</p><p>Three new friends are getting their crayon fur drawn. We will say hello here when they are ready.</p></div></section>`;
+  : `<section class="soonprof" id="soon" aria-labelledby="h-soon"><div class="sils">${sils}</div><div class="txt"><h2 id="h-soon">More dogs are coming!</h2><p class="bubble">${SOON_LINE}</p><p>Two new friends are getting their crayon fur drawn. We will say hello here when they are ready.</p></div></section>`;
 fill('index.html', 'cards', DOGS.map(card).concat(soon('card')).join('\n'));
 fill('dogs.html', 'profiles', DOGS.map(profile).concat(soon('profile')).join('\n'));
 fill('dogs.html', 'nav', DOGS.map((d) => `<li><a href="#${d.key}"><img src="/img/art/dogs/${d.key}-still.svg" alt="" width="240" height="200">${esc(d.name)}</a></li>`).join('\n'));
