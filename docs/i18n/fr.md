@@ -315,3 +315,13 @@ Two sentences, short, kind, true.
 | `shihtzu` | Shih tzu |
 
 <!-- table:end -->
+
+## 9. Site
+
+`site/i18n/fr.json` (doodledoggo.app, v2.14). Decisions: the dog names stay English (the name puns are explained in the fun facts, e.g. "Butter veut dire « beurre » en anglais"); `card.type`, `profile.title_type` and `profile.alt` show `{breed}` without an article (avoids "le Akita"); `profile.pup_alt` is "{name}, version chiot" (`{article}` unused); the privacy page says the English version counts, in `privacy.updated`. Titles in the hand font write "Hachiko" without the macron, as the English does.
+- TODO(native): trait adjectives agree with a sex picked per dog. Feminine: Saffron (afghan), Peaches (pitbull), Madeleine (stdpoodle), Toffee (yorkie), Meringue (bichon). All others masculine (generic "le chien"). Check that this reads naturally.
+- TODO(native): the tagline "Un chiot au crayon tout bancal à aimer" and "tout bancal" for "wobbly" across the site.
+- TODO(native): jokes rewritten rather than translated: Cloud (samoyed) quote, Espresso (dobie) quote, Wonton (shihtzu) quote, Meringue (bichon) fun fact, Dumpling (pug) "grouik." for the snort.
+- TODO(native): love items "muffin toutou" (pupcake), "gamelle puzzle" (puzzle feeder), "corde à tirer" (rope tug), "rapporter la balle" (fetch).
+- TODO(native): "Carte toutou" written with a capital C in the privacy page sentences (the feature name).
+- TODO(native): "JOUER SUR ITCH.IO" wraps to two lines on a 320 px phone (fine at 360 px). A shorter label would need to drop words.
