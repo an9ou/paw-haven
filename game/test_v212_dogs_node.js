@@ -61,7 +61,9 @@ const COATS = {
   pitbull: [{ base: '#2B2628', light: '#F2EEE6', dark: '#1D1A22', white: 0 }, { base: '#D7B07E', light: '#F4E6CE', dark: '#9A7A52', white: 0 }, { base: '#B8683A', light: '#F2E2CC', dark: '#7E4224', white: 0 }, { base: '#B08A5E', light: '#F2E6D2', dark: '#3A2E2E', white: 0, brindle: true }, { base: '#FBF6EC', light: '#FFFFFF', dark: '#E8DECB', white: 0 }, { base: '#B8683A', light: '#FFFFFF', dark: '#7E4224', white: 0.6 }, { base: '#B8A08E', light: '#E8DCCE', dark: '#7E7480', white: 0 }],
   minpin: [{ base: '#2B2628', light: '#C8743A', dark: '#1D1A22', white: 0 }, { base: '#5E3424', light: '#C8743A', dark: '#3E2216', white: 0 }],
   lab: [], malamute: [], chow: [], stdpoodle: [], // ART B
-  schnauzer: [], westie: [], yorkie: [], // ART C
+  schnauzer: [{ base: '#2B2430', light: '#D8D6D2', dark: '#1D1A22' }, { base: '#2B2430', light: '#3A3240', dark: '#1D1A22' }, { base: '#FBF8F2', light: '#FFFFFF', dark: '#E2D9CC' }, { base: '#8E8E98', light: '#E6E4E0', dark: '#3A3640', white: 0.25 }], // ART C: black and silver, black, white, salt and pepper with white markings
+  westie: [{ base: '#F4EEDF', light: '#FFFFFF', dark: '#DCCFB8' }], // cream shade
+  yorkie: [{ base: '#2B2430', light: '#C98A4E', dark: '#1D1A22' }, { base: '#617389', light: '#D9A35C', dark: '#3E4A5E', white: 0.6 }, { base: '#5A6A80', light: '#E2B270', dark: '#38445A' }], // black and tan, parti, blue and tan (lighter gold)
   bichon: [{ base: '#FBF8F1', light: '#FFFFFF', dark: '#E2D9C8' }, { base: '#F3E2C2', light: '#FFF6E4', dark: '#D6BE94' }], // ART D: White, Cream (rare)
   maltese: [{ base: '#FCFAF4', light: '#FFFFFF', dark: '#E4DBCB' }], // ART D: White
   shihtzu: [{ base: '#D9A35A', light: '#FFFBF2', dark: '#8A5A2A' }, { base: '#2B2628', light: '#FFFBF2', dark: '#1D1A1C' }, { base: '#8A4F33', light: '#FFFBF2', dark: '#5A2E1C' },
