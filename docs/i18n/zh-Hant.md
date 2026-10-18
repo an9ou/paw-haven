@@ -390,3 +390,13 @@ Never hit (the `allow` list, also used as negative tests): 「品種」 「犬�
 - 玩伴聚會 / 約玩 for "playdate".
 - 格雷伊獵犬 vs 灰狗 for Greyhound; 日本狐狸犬 for the Japanese Spitz.
 - 動物之家 as "Shelter": warm in Taiwan; check it reads well to HK readers.
+
+## Site
+
+The site translation (`site/i18n/zh-Hant.json`, v2.14 phase 1b), written in Taiwan wording (not converted from zh-Hans). Item words used there, for the game lane to match: 鮭魚抹醬 (salmon pâté), 絨毛骨頭 (plush bone), 益智餵食器 (puzzle feeder), 骨頭餅乾 (bone biscuit), 啾啾小鴨 (squeaky duck), 雞肉飯 (chicken & rice), 拔河繩 (rope tug), 網球, 飛盤, 撿球 (fetch), 開飯時間 (feeding), 膝上犬 (lap dog), 沖天炮 (top-knot), 狗狗運動場 (dog run).
+
+- TODO(native): the dogs' names follow section 7 (麻糬, 餅乾, 陽光 …) on the site too, so they match the game; en.json's note says most languages keep the English names. Check this is what we want.
+- TODO(native): Taiwan slang in the dog profiles: 愛演 (Shiba, Chihuahua, Husky), 討拍 (Dachshund), 暴衝 (zoomies), 傻呼呼 (Pit Bull), 愛現 (Poodle, Spitz), 沙發馬鈴薯 (Greyhound), 沖天炮 (Maltese, Shih Tzu). Natural for Taiwan kids, and readable in Hong Kong?
+- TODO(native): jokes rewritten rather than translated: Samoyed 「每年春天，掉的毛能再拼出一隻狗。」, Shih Tzu 「沖天炮朝天，身體躺平。」, Poodle 「髮型可以隨便。氣質不能隨便。」, Greyhound 45 mph shown as 時速72公里.
+- TODO(native): 小狗版的{name} for the puppy picture caption (English "a Mochi puppy").
+- TODO(native): privacy page wording (隱私權政策, 雜湊, 打亂處理過的密碼, 電子報) and the added line in privacy.updated: 「本政策的中文版與英文版如有不同，以英文版為準。」

@@ -392,3 +392,14 @@ Never hit (the `allow` list, also used as negative tests): 「品种」 「犬�
 - Names: 扭结饼 (Pretzel), 小探 (Scout), 浓缩 (Espresso), 华夫 (Waffle) are guesses at a cute pet name.
 - 汪奇诺咖啡馆 (Pupuccino Café), 汪汪建筑 (Barkitecture): check the puns.
 - 日本尖嘴犬 vs 银狐犬 for the Japanese Spitz.
+
+## Site
+
+The site translation (`site/i18n/zh-Hans.json`, v2.14 phase 1b). Item words used there, for the game lane to match: 三文鱼肉酱 (salmon pâté), 毛绒骨头 (plush bone), 益智喂食器 (puzzle feeder), 骨头饼干 (bone biscuit), 吱吱小鸭 (squeaky duck), 鸡肉饭 (chicken & rice), 拔河绳 (rope tug), 网球, 飞盘, 捡球 (fetch), 开饭时间 (feeding), 膝上犬 (lap dog), 冲天辫 (top-knot).
+
+- TODO(native): the dogs' names follow section 7 (麻糬, 饼干, 阳光 …) on the site too, so they match the game; en.json's note says most languages keep the English names. Check this is what we want.
+- TODO(native): playful slang in the dog profiles: 戏精 (Shiba, Chihuahua, Husky), 话痨 (Husky), 憨憨 (Pit Bull), 沙发土豆 (Greyhound), 高冷 (Afghan). Fine for kids?
+- TODO(native): jokes rewritten rather than translated: Samoyed 「每年春天，掉的毛能再拼出一只狗。」, Shih Tzu 「辫子朝天，身子躺平。」, Poodle 「发型可以随便。气质不能随便。」, Greyhound 45 mph shown as 时速72公里.
+- TODO(native): 小狗版的{name} for the puppy picture caption (English "a Mochi puppy").
+- TODO(native): privacy page wording (哈希, 打乱处理过的密码, 不发订阅邮件) and the added line in privacy.updated: 「本政策的中文版与英文版如有不同，以英文版为准。」
+- TODO(native): on a 375 px phone the tagline 「领养一只歪歪扭扭的蜡笔小狗，好好爱它」 wraps inside 蜡笔; acceptable, or shorten?
