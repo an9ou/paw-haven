@@ -25,7 +25,7 @@ const good = (svg, vb, lab) => {
 };
 
 console.log('-- keys and names');
-ok(JSON.stringify(PA.DOGS.map((d) => d.key)) === JSON.stringify(ALL), 'PawArt.DOGS lists the 21 keys, akita spitz pom afghan dane mastiff gsd appended in order');
+ok(JSON.stringify(PA.DOGS.slice(0, 21).map((d) => d.key)) === JSON.stringify(ALL), 'PawArt.DOGS starts with the 21 keys, akita spitz pom afghan dane mastiff gsd appended in order (v2.12 appends more)');
 const BR = { akita: 'Akita', spitz: 'Japanese Spitz', pom: 'Pomeranian', afghan: 'Afghan Hound', dane: 'Great Dane', mastiff: 'English Mastiff', gsd: 'German Shepherd' };
 NEW.forEach((k) => { const d = PA.DOGS.find((x) => x.key === k); ok(d && d.breed === BR[k] && d.name && d.personality && d.joke, k + ': name, breed, personality and joke');
   ok(d && ![d.name, d.personality, d.joke].join(' ').match(/;|\bbreed\b|\bsell/i), k + ': copy has no semicolon, "breed" or "sell"'); });

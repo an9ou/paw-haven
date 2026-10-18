@@ -218,8 +218,33 @@ function hangHair(h,B,s,len){// long silky hair hanging straight down from which
   h.shape(top.concat(bot.slice().reverse()),s.col,{noline:1,ox:0,oy:0,sc:1});
   h.line([top[0]].concat(bot,[top[top.length-1]]),h.LW*.9,INK,1);
   bot.forEach((p,i)=>{if(i%3===1&&i<bot.length-1){const t=top[i];h.line([[t[0],t[1]+3],[t[0]+(p[0]-t[0])*.5+1.5,t[1]+(p[1]-t[1])*.5],[p[0],p[1]-3]],2,K,.4)}})}
-const KEYS=['shiba','corgi','golden','dachs','husky','mutt','chihuahua','pug','greyhound','beagle','poodle','collie','samoyed','frenchie','akita','spitz','pom','afghan','dane','mastiff','gsd'];
-const NEWK=/^(poodle|collie|samoyed|frenchie|akita|spitz|pom|afghan|dane|mastiff|gsd)$/;
+/* v2.12 Fourteen New Friends (V212.md): fourteen more crude ones, appended. Each ART lane replaces only its own block below; the
+   PLACEHOLDER rows borrow an old dog's drawing until that lane lands. Their extras are new spec fields, so no older dog takes those branches */
+/* v2.12 ART A: dobie, corso, pitbull, minpin */
+SP.dobie={...SP.golden,name:'Espresso',breed:'Doberman',personality:'A big softie in a sleek coat. Keeps watch, then wants a cuddle.',joke:'I am on guard. Please guard me with a blanket.'};// PLACEHOLDER (ART A)
+SP.corso={...SP.mastiff,name:'Cannoli',breed:'Cane Corso',personality:'A calm, gentle guardian. Keeps an eye on the whole family.',joke:'I am very serious. Except when you scratch my ears.'};// PLACEHOLDER (ART A)
+SP.pitbull={...SP.frenchie,name:'Peaches',breed:'Pit Bull',personality:'A wiggly, people-loving goofball. Every stranger is a new best friend.',joke:'My whole back half wags. I cannot stop it.'};// PLACEHOLDER (ART A)
+SP.minpin={...SP.chihuahua,name:'Jellybean',breed:'Miniature Pinscher',personality:'A tiny, fearless bundle of energy. Prances everywhere.',joke:'I am not small. Everything else is big.'};// PLACEHOLDER (ART A)
+/* end v2.12 ART A */
+/* v2.12 ART B: lab, malamute, chow, stdpoodle */
+SP.lab={...SP.golden,name:'Butter',breed:'Labrador Retriever',personality:'Friendly, food-loving and always ready for a swim.',joke:'Is it dinner? It feels like dinner.'};// PLACEHOLDER (ART B)
+SP.malamute={...SP.husky,name:'Maple',breed:'Alaskan Malamute',personality:'A big fluffy sled dog who talks back. Loves snow and digging.',joke:'Woo-woo. That means I disagree.'};// PLACEHOLDER (ART B)
+SP.chow={...SP.samoyed,name:'Bao',breed:'Chow Chow',personality:'A dignified fluffy lion with a blue tongue. Picks friends carefully.',joke:'I am not grumpy. This is just my face.'};// PLACEHOLDER (ART B)
+SP.stdpoodle={...SP.poodle,name:'Madeleine',breed:'Standard Poodle',personality:'A tall, clever, curly athlete. Learns tricks before you teach them.',joke:'I am the big poodle. The small one is my cousin.'};// PLACEHOLDER (ART B)
+/* end v2.12 ART B */
+/* v2.12 ART C: schnauzer, westie, yorkie */
+SP.schnauzer={...SP.mutt,name:'Muesli',breed:'Miniature Schnauzer',personality:'Bearded, bossy and very alert. Reports every leaf.',joke:'The beard is for wisdom. And soup.'};// PLACEHOLDER (ART C)
+SP.westie={...SP.mutt,name:'Shortbread',breed:'West Highland White Terrier',personality:'A cheerful little white terrier. Digs first, asks later.',joke:'I was white this morning. I promise.'};// PLACEHOLDER (ART C)
+SP.yorkie={...SP.chihuahua,name:'Toffee',breed:'Yorkshire Terrier',personality:'A tiny terrier with silky hair and a giant attitude.',joke:'I am in charge here. Please lift me onto the sofa.'};// PLACEHOLDER (ART C)
+/* end v2.12 ART C */
+/* v2.12 ART D: bichon, maltese, shihtzu */
+SP.bichon={...SP.samoyed,name:'Meringue',breed:'Bichon Frise',personality:'A happy cotton ball who bounces everywhere.',joke:'Is this a haircut or a cloud? Yes.'};// PLACEHOLDER (ART D)
+SP.maltese={...SP.spitz,name:'Marshmallow',breed:'Maltese',personality:'A gentle little lap dog in a long white coat.',joke:'I do not walk. I float, elegantly.'};// PLACEHOLDER (ART D)
+SP.shihtzu={...SP.pug,name:'Wonton',breed:'Shih Tzu',personality:'A relaxed lap dog with a top-knot and big opinions about naps.',joke:'Top-knot up. Nap time down.'};// PLACEHOLDER (ART D)
+/* end v2.12 ART D */
+const KEYS=['shiba','corgi','golden','dachs','husky','mutt','chihuahua','pug','greyhound','beagle','poodle','collie','samoyed','frenchie','akita','spitz','pom','afghan','dane','mastiff','gsd',
+  'dobie','corso','pitbull','minpin','lab','malamute','chow','stdpoodle','schnauzer','westie','yorkie','bichon','maltese','shihtzu'];// v2.12: fourteen appended (V212.md 2)
+const NEWK=/^(poodle|collie|samoyed|frenchie|akita|spitz|pom|afghan|dane|mastiff|gsd|dobie|corso|pitbull|minpin|lab|malamute|chow|stdpoodle|schnauzer|westie|yorkie|bichon|maltese|shihtzu)$/;
 
 /* ---------- pose -> rig layout ---------- */
 function layout(s,pose,k){
