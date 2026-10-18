@@ -33,6 +33,7 @@ const standalone = (svg, w, h, style) => svg.replace(/^<svg(?! xmlns)/, '<svg xm
 const write = (rel, s) => { const p = path.join(OUT, rel); fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, s); };
 const slug = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/^icon:/, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const aAn = (s) => (/^[aeiou]/i.test(s) ? 'an' : 'a'); // v2.12: "an Espresso puppy"
 
 fs.rmSync(OUT, { recursive: true, force: true });
 // ---- dogs
@@ -79,7 +80,7 @@ const card = (d) => `<li><a class="dcard" href="/dogs#${d.key}" id="card-${d.key
   <span class="dname">${esc(d.name)}</span><span class="dtype">the ${esc(d.breed)} <span class="jp" lang="ja">${d.jp}</span></span>
   <span class="dquote">“${esc(d.quote)}”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>`;
 const profile = (d) => `<article class="prof" id="${d.key}" aria-labelledby="h-${d.key}">
-  <div class="pics"><img class="big" src="/img/art/dogs/${d.key}-still.svg" alt="${esc(d.name)} the ${esc(d.breed)}" width="240" height="200" loading="lazy"><img class="pup" src="/img/art/dogs/${d.key}-pup.svg" alt="A ${esc(d.name)} puppy" width="240" height="200" loading="lazy"><span class="cap">a ${esc(d.name)} puppy</span></div>
+  <div class="pics"><img class="big" src="/img/art/dogs/${d.key}-still.svg" alt="${esc(d.name)} the ${esc(d.breed)}" width="240" height="200" loading="lazy"><img class="pup" src="/img/art/dogs/${d.key}-pup.svg" alt="${aAn(d.name).replace('a', 'A')} ${esc(d.name)} puppy" width="240" height="200" loading="lazy"><span class="cap">${aAn(d.name)} ${esc(d.name)} puppy</span></div>
   <div class="txt">
     <h2 id="h-${d.key}">${esc(d.name)} <span class="dtype">the ${esc(d.breed)}</span></h2>
     <p class="jpline"><span class="jp" lang="ja">${d.jp}</span> <i>${esc(d.jpRead)}</i> · ${esc(d.name)} in katakana: <span class="jp" lang="ja">${d.nameJp}</span></p>
