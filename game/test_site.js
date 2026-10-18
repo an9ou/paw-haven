@@ -37,6 +37,13 @@ const req = (m) => { for (const r of [].concat((process.env.NODE_PATH || '').spl
     let r = await get('https://doodledoggo.app/');
     ok(r.status === 200 && /text\/html/.test(r.headers.get('content-type')) && /default-src 'self'/.test(r.headers.get('content-security-policy') || ''), 'home: 200, HTML, a strict content security policy');
     const home = await r.text();
+    { // the dog count in the copy follows the breed list (v2.11.1: it said 14 long after 21 were in)
+      const NUM = ['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen','twenty'];
+      const word = (n) => n <= 20 ? NUM[n] : (['', '', 'twenty', 'thirty', 'forty'][Math.floor(n / 10)] + (n % 10 ? '-' + NUM[n % 10] : ''));
+      const dogsPage = fs.readFileSync(path.join(ROOT, 'site', 'dogs.html'), 'utf8'), n = BREEDS.length;
+      const said = (home + dogsPage).match(new RegExp('\\b(\\d+|' + NUM.slice(10).join('|') + '|(?:twenty|thirty|forty)(?:-\\w+)?) (wobbly|profiles)', 'gi')) || [];
+      ok(said.length >= 4 && said.every((m) => { const w = m.split(' ')[0].toLowerCase(); return w === String(n) || w === word(n); }), `every dog count in the copy says ${n} (${said.join('; ')})`);
+    }
     ok(home.includes('🖍️ Adopt a wobbly crayon pup to love') && /<a class="play" id="play" href="https:\/\/an9ou\.itch\.io\/doodle-doggo">PLAY AT ITCH\.IO<\/a>/.test(home), 'tagline and the PLAY AT ITCH.IO button');
     ok(/<h1 class="h1logo"><img class="logo" src="\/doodle-doggo-logo\.svg"/.test(home), 'the heading is the brand logo');
     r = await get('https://doodledoggo.app/dogs'); const dogsHtml = await r.text();
