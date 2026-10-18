@@ -448,6 +448,20 @@ SP.shihtzu={name:'Wonton',breed:'Shih Tzu',personality:'A relaxed lap dog with a
 const KEYS=['shiba','corgi','golden','dachs','husky','mutt','chihuahua','pug','greyhound','beagle','poodle','collie','samoyed','frenchie','akita','spitz','pom','afghan','dane','mastiff','gsd',
   'dobie','corso','pitbull','minpin','lab','malamute','chow','stdpoodle','schnauzer','westie','yorkie','bichon','maltese','shihtzu'];// v2.12: fourteen appended (V212.md 2)
 const NEWK=/^(poodle|collie|samoyed|frenchie|akita|spitz|pom|afghan|dane|mastiff|gsd|dobie|corso|pitbull|minpin|lab|malamute|chow|stdpoodle|schnauzer|westie|yorkie|bichon|maltese|shihtzu)$/;
+/* v2.13 neck fix (owner: "Make sure the head is stick to the body"; V213.md 5): the old breeds whose head floated off the body in a few poses.
+   Per breed, per pose: [dx, dy] moves the head (canvas px, before its tilt) and the pose draws the neck tube, as the neck:1 breeds do in every pose.
+   Adults only (spec field nfix; puppies and newborns keep their big heads on the body as they were). Every other pose of these breeds is unchanged.
+   game/v212_neck_check.js finds the list: a frame floats when the skull does not touch the body and most of the neck's place is empty paper. */
+const NECKFIX={
+  shiba:{happy:[0,0],speak:[0,0],howl:[0,0],leglift:[0,0],shake:[0,0]},
+  husky:{speak:[0,0]},
+  mutt:{speak:[0,0],leglift:[0,0]},
+  chihuahua:{happy:[0,0],speak:[0,0],howl:[-3,7],leglift:[0,0],yawn:[0,0],shake:[0,0],paw:[0,0]},
+  pug:{howl:[0,0]},
+  beagle:{happy:[0,0],speak:[0,0],howl:[0,0]},
+  collie:{howl:[-2,3]},
+  maltese:{happy:[0,0],speak:[0,0],shake:[0,0]}};
+Object.keys(NECKFIX).forEach(k=>{SP[k].nfix=NECKFIX[k]});
 
 /* ---------- pose -> rig layout ---------- */
 function layout(s,pose,k){
@@ -505,6 +519,7 @@ function layout(s,pose,k){
      const N=noseLocal(s),q=rot(N,28);L.hT.a=28;L.hT.x=hd.x+4;L.hT.y=Math.min(hd.y+30,GY-6-hd.ry);L.dirt=1;
      if(b.deep){L.gdig=1;L.bT.a=20;L.bT.y+=b.ry*1.1;L.bT.x-=4;L.hT.a=34;L.hT.x=hd.x-2;L.hT.y=GY-8-hd.ry*1.1}break}
   }
+  if(s.nfix&&!s.pup&&s.nfix[pose]){const q=s.nfix[pose];L.hT.x+=q[0];L.hT.y+=q[1];L.neckT=1}// v2.13 neck fix (NECKFIX)
   // legs: exactly four. Far legs sit a little forward, higher, darker; front pair under the chest, hind pair under the hips
   const B=T(L.bT),lg=s.legs;L.legs=[];
   const FAR=10;
@@ -1388,7 +1403,7 @@ function frame(key,s,pose,outfit,k,seed,ex){
   drawTail(h,s,L,B);
   if(body==='Tutu'){h._legSkip='NH';drawLegs(h,s,L);h._legSkip=0}else drawLegs(h,s,L);
   // neck: a short tube from the chest to the head, behind the body
-  {const nb=B([s.body.rx*.62,-s.body.ry*.3]),nh=HT([-s.head.rx*.2,s.head.ry*.35]);if(L.pose==='eat'||L.pose==='jump'||L.pose==='sit'||L.pose==='sad'||s.neck)h.tube([nb,nh],s.head.rx*.7,s.col)}
+  {const nb=B([s.body.rx*.62,-s.body.ry*.3]),nh=HT([-s.head.rx*.2,s.head.ry*.35]);if(L.pose==='eat'||L.pose==='jump'||L.pose==='sit'||L.pose==='sad'||s.neck||L.neckT)h.tube([nb,nh],s.head.rx*.7,s.col)}
   h.shape(bp.map(B),s.col,{step:s.body.long?14:11});h.crayon(s.body.rx,s.body.ry,B,s.col,s.body.long?16:12);
   if(s.expecting&&BELLY.test(pose))drawBelly(h,s,L,B);
   if(s.marks)s.marks(h,B,HT,s);

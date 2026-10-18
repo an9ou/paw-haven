@@ -4,7 +4,7 @@
    x age x sparkle, plus mixes, expecting, coats and facing left.
    Then it sweeps the v2.8 outfits and the v2.11.1 costumes (NEW_OUTS) on the working tree: every breed x pose x age x facing x sparkle renders with no
    NaN/undefined, and each outfit's own strokes touch the dog and stay within a margin of its body and head.
-   Usage: node dogs/check_identical.js [ref]   (env SWEEP_ONLY=1: the sweep alone, SWEEP_EXT=1: print the closest calls, SKIP=gsd: leave a redrawn breed out)
+   Usage: node dogs/check_identical.js [ref]   (env SWEEP_ONLY=1: the sweep alone, SWEEP_EXT=1: print the closest calls, SKIP=gsd: leave a redrawn breed out, SKIP=collie:howl: one breed's adult renders in one pose)
      (prints ALL OK on success, exits 1 on any difference)
    The breeds are split over one child process per CPU core (env SHARD=i/n runs one share). */
 'use strict';
@@ -35,8 +35,15 @@ const outfits=[null,...OUTS.map(([sl,n])=>({[sl]:n})),
  {head:'Party Hat',eyes:'Heart Sunglasses',neck:'Red Bandana',body:'Superhero Cape'},{head:'Rain Hat',body:'Frog Raincoat',neck:'Clover Collar',eyes:'Explorer Goggles'},
  {body:'Yellow Raincoat',sleepwear:true},{sleepwear:true},{body:'Pyjamas',sleepwear:true},{head:'Wizard Hat',neck:'Knit Scarf',body:'Bumblebee Suit'},{head:'Nope',body:'Banana Suit'}];
 let n=0,bad=[];
-const SKIP=(process.env.SKIP||'').split(',').filter(Boolean);// env SKIP='gsd': leave out every render whose label names a breed being redrawn on purpose
-const cmp=(lab,f)=>{if(SKIP.some(k=>lab.split(/[ |,/]/).includes(k)))return;n++;let a,b;try{a=f(OLD)}catch(e){a='ERR '+e.message}try{b=f(NEW)}catch(e){b='ERR '+e.message}if(a!==b&&bad.length<4000)bad.push(lab)};
+// env SKIP='gsd': leave out every render whose label names a breed being redrawn on purpose.
+// v2.13: SKIP='collie:howl,shiba:happy' (breed:pose) leaves out the adult renders of that breed in that pose, the ones the v2.13 neck fix
+// (NECKFIX in pawart_dogs.js) redraws: every outfit, sparkle, expecting, coat, facing, anim:false, and the mixes with that BODY breed.
+// Puppies, newborns, the head chips and the mixes with that head breed are still compared (they do not change).
+const SKIP=(process.env.SKIP||'').split(',').filter(Boolean),SKIPB=SKIP.filter(k=>!k.includes(':')),SKIPP=SKIP.filter(k=>k.includes(':')).map(k=>k.split(':'));
+const skipped=lab=>{const t=lab.split(/[ |,/]/);if(SKIPB.some(k=>t.includes(k)))return true;
+  if(!SKIPP.length||t[0]==='head'||t.includes('puppy')||t.includes('newborn')||t.includes('pup'))return false;
+  const pose=t[1]==='mix'?t[3]:t[1];return SKIPP.some(([b,p])=>t[0]===b&&pose===p)};
+const cmp=(lab,f)=>{if(skipped(lab))return;n++;let a,b;try{a=f(OLD)}catch(e){a='ERR '+e.message}try{b=f(NEW)}catch(e){b='ERR '+e.message}if(a!==b&&bad.length<4000)bad.push(lab)};
 const AGES=[null,'puppy','newborn'];
 const [SI,SN]=process.env.SHARD.split('/').map(Number);
 (process.env.SWEEP_ONLY?[]:K).filter((k,i)=>i%SN===SI).forEach(k=>{
