@@ -49,7 +49,7 @@ const SUITES = {
   // v2.5 (V25.md): seasons, festival art, breeds, festivals
   v25_seasons: { file: 'test_v25_seasons_node.js', group: 'all', est: 20 },
   v25_art: { file: 'test_v25_art_node.js', group: 'all', est: 10 },
-  v25_breeds: { file: 'test_v25_breeds.js', group: 'all', est: 60 },
+  v25_breeds: { file: 'test_v25_breeds.js', group: 'all', est: 150, timeout: 500 }, // v2.12: 35 heads to tap through
   v25_festival: { file: 'test_v25_festival.js', group: 'all', est: 60 },
   v25_fixes_a: { file: 'test_v25_fixes_a.js', group: 'all', est: 40 }, // the owner's v2.4 fixes (V25.md 7b)
   v25_fixes_b: { file: 'test_v25_fixes_b.js', group: 'all', est: 40 },
@@ -77,7 +77,8 @@ const SUITES = {
   // v2.9 (V29.md): pack play and walks, photo mode, polish (and the combined missions + guide flow)
   v29_pack: { file: 'test_v29_pack.js', group: 'all', est: 60 },
   v210_roam: { file: 'test_v210_roam.js', group: 'all', est: 60 }, // v2.10 ROAM (V210.md)
-  v211_breeds: { file: 'test_v211_breeds.js', group: 'all', est: 220, timeout: 500 }, // v2.11 BREEDS (V211.md 5.2): akita, spitz, pom
+  v211_breeds: { file: 'test_v211_breeds.js', group: 'all', est: 300, timeout: 750 }, // v2.11 BREEDS (V211.md 5.2): akita, spitz, pom
+  v212_breeds: { file: 'test_v212_breeds.js', group: 'all', est: 260, timeout: 700 }, // v2.12 GENES (V212.md 3): the fourteen adopted, coats, litters, Labradoodle, the coat tab
   v211_cards: { file: 'test_v211_cards.js', group: 'all', est: 70 }, // v2.11 CARDS: Dog Cards (V211.md section 5.5)
   v29_photo: { file: 'test_v29_photo.js', group: 'all', est: 45 },
   v29_polish: { file: 'test_v29_polish.js', group: 'all', est: 45 },
@@ -88,6 +89,8 @@ const SUITES = {
   v211_art_e: { file: 'test_v211_art_e_node.js', group: 'all', est: 15 }, // v2.11 (V211.md 5.4): world E, the Tokyo Tower, Ueno and Odaiba scenes, eki stamps, lucky cat, Tokyo frame, items (TOKYO ART E)
   v29_review: { file: 'test_v29_review.js', group: 'all', est: 40 }, // v2.9 integration review fixes (coordinator)
   v211_dogs: { file: 'test_v211_dogs_node.js', group: 'all', est: 450, timeout: 700 }, // v2.11 BREED ART (V211.md 5.2): akita, spitz, pom, afghan, dane, mastiff, gsd and the three Tokyo bandanas
+  v212_dogs: { file: 'test_v212_dogs_node.js', group: 'all', est: 480, timeout: 900 }, // v2.12 ART A-D (V212.md 5): the fourteen new breeds in every pose, age, facing and outfit
+  v212_lines: { file: 'test_v212_lines_node.js', group: 'all', est: 3 }, // v2.12 LINES (V212.md 4): every per-breed table has all 35 keys
   // v2.2 phone suites: `node game/run_tests.js phone` (not part of `all`, which stays the desktop regression set)
   phone_legacy: { file: 'test_phone.js', group: 'phone', est: 90 },
   phone_shell: { file: 'test_phone_shell.js', group: 'phone', est: 40 },

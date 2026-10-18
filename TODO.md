@@ -137,8 +137,16 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [ ] `#ballLayer` is not depth-sorted with the dogs: the ball draws over the legs of dogs standing in front of it. `game/src/38_ball.js`
 - [ ] `phone_occl_play` is flaky under load (the walkfetch toast, the runner hint). Not from v2.10. `game/test_phone_occl_play.js`
 
+## Fourteen New Friends (v2.12)
+- [ ] `NOSE_DX` has no rows for the seven v2.11 breeds (`akita`, `spitz`, `pom`, `afghan`, `dane`, `mastiff`, `gsd`), so their treat lure starts at the default x. `game/src/15b_trick_games.js`
+- [ ] The training lure position comes from `dogTo(0, 0, 1)`, not from each dog's size class. `game/src/15b_trick_games.js`
+- [ ] Four big dogs together overfill Shibuya and the Pixel 7 phone crop. `game/src/39_tokyo.js`, `game/src/37_roam.js`
+- [ ] Some old breeds' heads float off the body in a few poses (as the yorkie, schnauzer, pit bull and lab did before fix/v212-neck): the collie's howl, the shiba, chihuahua and beagle in happy, speak and howl. Fixing them changes old renders (needs the owner's go-ahead and a new `check_identical` baseline). `game/v212_neck_check.js` can measure them. `dogs/pawart_dogs.js`
+- [ ] The site's Playroom animates only the first 14 dogs (`KEYS` in `site/js/site.js`); the other 21 have profiles but never walk in it.
+- [x] The Worker change (`DC_LIM` { n: 115, breed: 35, outfit: 50 }) needs `bash tools/cf_api_deploy.sh` with the release. The coordinator deploys it with v2.12.
+
 ## Costumes & Sizes (v2.11.1)
-- [ ] The three new costumes (Pumpkin Patch Suit, Trick-or-Treat Ghost, Little Bat Costume) are not in the Dog Card list `DC_OUTFITS`: adding them changes the Worker's list counts and needs a Worker deploy in the same release. A card dog wearing one shows its next listed item. `game/src/40_dogcards.js`, `cloudflare/worker.js`
+- [x] The three new costumes (Pumpkin Patch Suit, Trick-or-Treat Ghost, Little Bat Costume) are not in the Dog Card list `DC_OUTFITS`: adding them changes the Worker's list counts and needs a Worker deploy in the same release. A card dog wearing one shows its next listed item. `game/src/40_dogcards.js`, `cloudflare/worker.js` Done in v2.12: appended to `DC_OUTFITS`, `DC_LIM.outfit` 50.
 - [ ] The new costumes have no item drawing in the art module: the pop-up, Wardrobe and Journal use the `HW_ITEM_FB` doodles in `27_halloween.js`.
 - [ ] With the bigger dogs (v2.10 size x 1.25 x class) the narrow phone yard fits fewer dogs on screen, so the look chips show more often.
 - [ ] At the Dog Park a card visitor may stand partly behind your dogs (allowed since v2.11).

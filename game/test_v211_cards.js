@@ -16,7 +16,7 @@ run('v211_cards', async (t) => {
     const svg = document.querySelector('#view > svg.world'), M = svg.getScreenCTM(), out = [];
     const at = (x, y) => { const p = new DOMPoint(x, y).matrixTransform(M); return document.elementFromPoint(p.x, p.y); };
     window.__paw.rm.dogs().forEach((id) => { const b = window.__paw.rm.tap(id), e = at(b[0] + b[2] / 2, b[1] + b[3] / 2); if (e && e.closest('#dcVis')) out.push('dog ' + id); });
-    window.__paw.rm.scan().filter((b) => b[4] !== 'btn' && b[4] !== 'scene').forEach((b) => { const e = at(b[0] + b[2] / 2, b[1] + b[3] / 2); if (e && e.closest('#dcVis')) out.push(b[4]); });
+    window.__paw.rm.scan().filter((b) => b[4] !== 'btn' && b[4] !== 'scene' && b[4] !== 'dctag').forEach((b) => { const e = at(b[0] + b[2] / 2, b[1] + b[3] / 2); if (e && e.closest('#dcVis')) out.push(b[4]); });
     return out;
   });
   // a point where visitor i is on top (a player dog may stand in front of part of it), in page px
@@ -37,14 +37,19 @@ run('v211_cards', async (t) => {
   await t.newGame({}, { coins: 2000, bond: { level: 8, pts: 2000 }, stats: { hunger: 90, happy: 80, energy: 90, clean: 90 } });
   const L = await ev(() => { const l = window.__paw.dc.lists; return { a: l.a.length, b: l.b.length, n: l.n.length, outfit: l.outfits.length, breeds: l.breeds.length, words: l.a.concat(l.b, l.n), outfits: l.outfits }; });
   ok(L.a === lim.a && L.b === lim.b && L.n === lim.n && L.outfit === lim.outfit, `DC_WORDS_A ${L.a}, DC_WORDS_B ${L.b}, DC_DOG_NAMES ${L.n}, DC_OUTFITS ${L.outfit} match the Worker's DC_LIM`);
-  ok(L.breeds <= lim.breed && lim.breed === 21, `PawGenes BREEDS (${L.breeds}) fits the Worker's 21 breeds`);
+  ok(L.breeds === lim.breed && lim.breed === 35, `PawGenes BREEDS (${L.breeds}) is the Worker's 35 breeds (v2.12)`);
   ok(L.n - 80 === lim.breed, 'one breed name word per breed the Worker allows');
-  ok(L.words.every((w) => /^[A-Z][a-z]+$/.test(w)), 'every name word is one plain capitalised word');
-  ok(L.n === 101 && (await ev(() => window.__paw.dc.lists.n.slice(80).join())) === 'Shiba,Corgi,Golden,Dachshund,Husky,Mutt,Chihuahua,Pug,Greyhound,Beagle,Poodle,Collie,Samoyed,Frenchie,Akita,Spitz,Pom,Hound,Dane,Mastiff,Shepherd', '80 pet names, then the 21 breed name words');
+  ok(L.words.slice(0, 40 + 40 + 80 + 21).every((w) => /^[A-Z][a-z]+$/.test(w)), 'every name word up to v2.11 is one plain capitalised word');
+  ok(L.words.slice(181).every((w) => /^[A-Z][a-z]+( [A-Z][a-z]+)?$/.test(w)) && L.words.slice(181).filter((w) => / /.test(w)).join() === 'Big Poodle,Shih Tzu', 'the v2.12 breed words are plain capitalised words (two of them, Big Poodle and Shih Tzu, have two)');
+  ok(L.n === 115 && (await ev(() => window.__paw.dc.lists.n.slice(80).join())) === 'Shiba,Corgi,Golden,Dachshund,Husky,Mutt,Chihuahua,Pug,Greyhound,Beagle,Poodle,Collie,Samoyed,Frenchie,Akita,Spitz,Pom,Hound,Dane,Mastiff,Shepherd,'
+    + 'Dobie,Corso,Pittie,Pinscher,Lab,Malamute,Chow,Big Poodle,Schnauzer,Westie,Yorkie,Bichon,Maltese,Shih Tzu', '80 pet names, then the 35 breed name words (the v2.12 fourteen appended)');
+  ok(L.outfit === 50 && L.outfits.slice(44).join() === 'Shibuya Bandana,Asakusa Bandana,Tokyo Tower Bandana,Pumpkin Patch Suit,Trick-or-Treat Ghost,Little Bat Costume', 'DC_OUTFITS ends with the Tokyo bandanas and the three v2.11.1 costumes (appended)');
+  ok(L.outfits.length === new Set(L.outfits).size, 'no outfit is listed twice');
   ok(await ev(() => window.__paw.dc.lists.outfits.slice(0, 44).every((n) => typeof n === 'string' && /Bandana|Hat|Tie|Crown|Sunglasses|Raincoat|Beanie|Sweater|Cape|Collar|Tutu|Pyjamas|Suit|Coat|Hoodie|Scarf|Beret|Sheet|Rosette|Wings|Antlers|Snood|Hood|Helmet|Cap|Goggles|Necklace|Poncho/.test(n))), 'DC_OUTFITS are the game\'s wearables');
   const F = await ev(() => window.__paw.dc.fake.map((c) => ({ id: c.id, n: c.dogs.length, b: c.dogs.map((d) => d.b), ok: c.dogs.every((d) => d.n >= 0 && d.o >= -1) })));
-  ok(F.length === 8 && F.every((c) => c.n >= 1 && c.n <= 3 && c.ok), 'DC_FAKE: 8 town players with 1 to 3 dogs each');
-  ok(new Set([].concat(...F.map((c) => c.b))).size >= 17, 'the 17 v2.11 breeds appear among them (lane BREEDS adds the four after pom)');
+  ok(F.length === 11 && F.every((c) => c.n >= 1 && c.n <= 3 && c.ok) && F.map((c) => c.id).join() === 'town-1,town-2,town-3,town-4,town-5,town-6,town-7,town-8,town-9,town-10,town-11', 'DC_FAKE: 11 town players with 1 to 3 dogs each (v2.12 appended town-9 to town-11)');
+  { const B = new Set([].concat(...F.map((c) => c.b))); ok([...Array(21).keys()].every((i) => B.has(i)) && [...B].filter((i) => i >= 21).length >= 4 && [...B].every((i) => i < 35), `all 21 breeds up to v2.11 and ${[...B].filter((i) => i >= 21).length} of the v2.12 fourteen appear among them`); }
+  ok(await ev(() => window.__paw.dc.fake.every((c) => c.dogs.every((d, i) => !!window.__paw.dc.lists.breeds[d.b]))), 'every town dog has a breed this game knows');
   ok(await ev(() => window.__paw.dc.mode()) === 'fake', 'dcMode is fake under the harness');
 
   sec('2. one dog in the Dog Park: visitors from the town players');
@@ -55,7 +60,7 @@ run('v211_cards', async (t) => {
   ok(await ev(() => { const g = document.getElementById('dcVis'); return !!g && g.nextElementSibling && g.nextElementSibling.id === 'pack' && g.querySelectorAll('.dcvis').length === window.__paw.dc.visitors().length; }), '#dcVis sits just behind #pack, one group per visitor');
   ok(await ev(() => [...document.querySelectorAll('#dcVis .dcvis')].every((g) => g.querySelector('.dc-tag text').textContent === 'visitor' && g.getAttribute('role') === 'button' && /Dog Card/.test(g.getAttribute('aria-label')))), 'each has a small visitor tag and a button label');
   ok(await ev(() => !window.__paw.rm.scan().some((b) => b[4] === 'hot' && b[0] > 0 && document.querySelector('#dcVis'))), 'the roam scan does not count visitors as no-go boxes');
-  const hots = await ev(() => window.__paw.rm.scan().filter((b) => b[4] !== 'scene'));
+  const hots = await ev(() => window.__paw.rm.scan().filter((b) => b[4] !== 'scene' && b[4] !== 'dctag'));
   ok(V.every((v) => hots.every((b) => ov(v.tap, b) === 0)), 'no visitor\'s tap rect covers a tappable spot, the bowl or a place button');
   ok((await tapsClear()).length === 0, 'a tap on any player dog or spot never lands on a visitor');
   await t.SH('dogpark_one');
@@ -120,6 +125,12 @@ run('v211_cards', async (t) => {
   await ev(() => window.__paw.rm.pause('test')); await t.sleep(300);
   const H0 = JSON.stringify((await vis()).map((v) => [v.x, v.y])); await t.sleep(2500);
   ok(JSON.stringify((await vis()).map((v) => [v.x, v.y])) === H0, 'rmPause holds them where they stand');
+  // v2.12 LAYOUT: the "visitor" tags are no-go boxes for the player dogs (rmScan 'dctag'): once they stepped off, no tag is more than about 8% covered
+  // (the leader first ends any idle errand, such as the legacy nap spot, and is back on its own spot)
+  await ev((id) => window.__paw.rm.calm(id, 20000), (await t.S()).activeId); await t.until(() => !window.__paw.rm.moving.length && window.__paw.rm.pos().pose !== 'sleep', null, 6000); await t.sleep(300);
+  const tagCov = await ev(() => { const R = window.__paw.rm; R.validate(); const tags = R.scan().filter((b) => b[4] === 'dctag'), ov = (a, b) => Math.max(0, Math.min(a[0] + a[2], b[0] + b[2]) - Math.max(a[0], b[0])) * Math.max(0, Math.min(a[1] + a[3], b[1] + b[3]) - Math.max(a[1], b[1]));
+    return { dbg: R.dogs().map((id, i) => Object.assign(R.info(id), { i, pose: R.pos(id).pose, ok: R.ok(id, R.pos(id).x, R.pos(id).y), cov: tags.map((b) => { const q = R.tap(id); return +(ov([q[0], q[1] - q[3] / 6, q[2], q[3] * 7 / 6], b) / (b[2] * b[3])).toFixed(2); }) })), n: tags.length, worst: Math.max(0, ...tags.map((b) => Math.max(0, ...R.dogs().map((id) => { const q = R.tap(id); return ov([q[0], q[1] - q[3] / 6, q[2], q[3] * 7 / 6], b) / (b[2] * b[3]); })))) }; });
+  ok(tagCov.n >= 1 && tagCov.worst <= 0.09, `every visitor tag is in the roam scan and no player dog covers more than 8% of one (${tagCov.n} tags, worst ${tagCov.worst.toFixed(2)}) ` + (tagCov.worst > 0.09 ? JSON.stringify(tagCov.dbg) : ""));
   await ev(() => window.__paw.rm.resume('test'));
   await ev(() => window.__paw.bl.start('Tennis Ball')); await t.until(() => window.__paw.bl.on, null, 3000); await t.sleep(300);
   const B0 = JSON.stringify((await vis()).map((v) => [v.x, v.y])); await t.sleep(2500);

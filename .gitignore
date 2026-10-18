@@ -24,3 +24,4 @@ dist/
 _cfsite/
 .wrangler/
 **/.wrangler/
+.claude/worktrees/

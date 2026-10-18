@@ -20,7 +20,22 @@ const STARTER_GENES = {
   afghan: { B: ['B', 'b'], D: ['D', 'd'], E: ['e', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Red', eyes: 'brown' },
   dane: { B: ['B', 'b'], D: ['D', 'd'], E: ['e', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Fawn', eyes: 'brown' },
   mastiff: { B: ['B', 'b'], D: ['D', 'D'], E: ['e', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Fawn', eyes: 'brown' },
-  gsd: { B: ['B', 'b'], D: ['D', 'D'], E: ['E', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Black and tan', eyes: 'brown' }
+  gsd: { B: ['B', 'b'], D: ['D', 'D'], E: ['E', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Black and tan', eyes: 'brown' },
+  // v2.12 (V212.md 3, the same as mods/genes.js)
+  dobie: { B: ['B', 'b'], D: ['D', 'd'], E: ['E', 'E'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Black and rust', eyes: 'brown' },
+  corso: { B: ['B', 'b'], D: ['D', 'd'], E: ['E', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Black', eyes: 'brown' },
+  pitbull: { B: ['B', 'b'], D: ['d', 'd'], E: ['E', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Blue', eyes: 'brown' },
+  minpin: { B: ['B', 'b'], D: ['D', 'D'], E: ['e', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Red', eyes: 'brown' },
+  lab: { B: ['B', 'b'], D: ['D', 'D'], E: ['e', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Yellow', eyes: 'brown' },
+  malamute: { B: ['B', 'b'], D: ['D', 'd'], E: ['E', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Grey and white', eyes: 'brown' },
+  chow: { B: ['B', 'b'], D: ['D', 'd'], E: ['e', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Red', eyes: 'brown' },
+  stdpoodle: { B: ['B', 'b'], D: ['D', 'd'], E: ['E', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Black', eyes: 'brown' },
+  schnauzer: { B: ['B', 'B'], D: ['D', 'd'], E: ['E', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Salt and pepper', eyes: 'brown' },
+  westie: { B: ['B', 'B'], D: ['D', 'D'], E: ['e', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'White', eyes: 'brown' },
+  yorkie: { B: ['B', 'B'], D: ['d', 'd'], E: ['E', 'E'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Blue and tan', eyes: 'brown' },
+  bichon: { B: ['B', 'b'], D: ['D', 'D'], E: ['e', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'White', eyes: 'brown' },
+  maltese: { B: ['B', 'B'], D: ['D', 'D'], E: ['e', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'White', eyes: 'brown' },
+  shihtzu: { B: ['B', 'b'], D: ['D', 'd'], E: ['e', 'e'], S: ['sp', 'sp'], M: ['m', 'm'], Bl: ['bl', 'bl'], coat: 'Gold and white', eyes: 'brown' }
 };
 // Breeding rules, stored now and switched on in v2 (1 real day = 1 dog month)
 const BREEDING = window.PawBreeding = window.PawBreeding || { RULES: {
@@ -28,7 +43,7 @@ const BREEDING = window.PawBreeding = window.PawBreeding || { RULES: {
   heat: { firstMonths: 12, everyDays: 6, lastsDays: 3 }, maleRestDays: 2, pregnancyDays: 2, puppyStayDays: 2,
   female: { skipSeasons: 1, maxLitters: 4, noLittersFromMonths: 72 },
   giant: { breeds: ['dane', 'mastiff'], adultMonths: 18, restDays: 12, maxLitters: 3 }, // v2.11: giant dogs wait until 18 months, rest two seasons between litters and have at most 3 litters
-  litters: { small: { breeds: ['dachs', 'corgi', 'chihuahua', 'pug', 'frenchie', 'pom'], sizes: [1, 2, 3], weights: [40, 40, 20] }, medium: { breeds: ['shiba', 'mutt', 'beagle', 'poodle', 'collie', 'spitz'], sizes: [1, 2, 3], weights: [30, 50, 20] }, large: { breeds: ['golden', 'husky', 'greyhound', 'samoyed', 'akita', 'afghan', 'gsd'], sizes: [2, 3], weights: [60, 40] }, giant: { breeds: ['dane', 'mastiff'], sizes: [2, 3], weights: [35, 65] } },
+  litters: { small: { breeds: ['dachs', 'corgi', 'chihuahua', 'pug', 'frenchie', 'pom', 'minpin', 'westie', 'yorkie', 'bichon', 'maltese', 'shihtzu'], sizes: [1, 2, 3], weights: [40, 40, 20] }, medium: { breeds: ['shiba', 'mutt', 'beagle', 'poodle', 'collie', 'spitz', 'pitbull', 'schnauzer'], sizes: [1, 2, 3], weights: [30, 50, 20] }, large: { breeds: ['golden', 'husky', 'greyhound', 'samoyed', 'akita', 'afghan', 'gsd', 'dobie', 'corso', 'lab', 'malamute', 'chow', 'stdpoodle'], sizes: [2, 3], weights: [60, 40] }, giant: { breeds: ['dane', 'mastiff'], sizes: [2, 3], weights: [35, 65] } },
   puppySex: 0.5, inheritance: 'mendelian', welfare: { noMerleXMerle: true, minMeters: 50, minBond: 6, noRelatives: ['parent', 'child', 'sibling', 'half-sibling', 'grandparent', 'grandchild', 'aunt', 'uncle', 'niece', 'nephew', 'first-cousin'] },
   expecting: { hungerDecay: 1.2, walkCap: 'park', noPlaydates: true }, fixedNeverBreeds: true
 } };

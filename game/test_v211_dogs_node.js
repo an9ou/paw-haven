@@ -25,7 +25,7 @@ const good = (svg, vb, lab) => {
 };
 
 console.log('-- keys and names');
-ok(JSON.stringify(PA.DOGS.map((d) => d.key)) === JSON.stringify(ALL), 'PawArt.DOGS lists the 21 keys, akita spitz pom afghan dane mastiff gsd appended in order');
+ok(JSON.stringify(PA.DOGS.slice(0, 21).map((d) => d.key)) === JSON.stringify(ALL), 'PawArt.DOGS starts with the 21 keys, akita spitz pom afghan dane mastiff gsd appended in order (v2.12 appends more)');
 const BR = { akita: 'Akita', spitz: 'Japanese Spitz', pom: 'Pomeranian', afghan: 'Afghan Hound', dane: 'Great Dane', mastiff: 'English Mastiff', gsd: 'German Shepherd' };
 NEW.forEach((k) => { const d = PA.DOGS.find((x) => x.key === k); ok(d && d.breed === BR[k] && d.name && d.personality && d.joke, k + ': name, breed, personality and joke');
   ok(d && ![d.name, d.personality, d.joke].join(' ').match(/;|\bbreed\b|\bsell/i), k + ': copy has no semicolon, "breed" or "sell"'); });
@@ -108,7 +108,9 @@ console.log('   ' + nb + ' bandana renders');
 console.log('-- old breeds unchanged (spot check; the full proof is dogs/check_identical.js v211-base)');
 let ref = null; for (const r of ['v211-base', 'origin/v211-base']) { try { cp.execSync('git rev-parse --verify -q ' + r, { cwd: ROOT, stdio: 'ignore' }); ref = r; break; } catch (e) { /* next */ } }
 if (!ref) console.log('   no v211-base ref here, skipped');
-else { const OLD = load(cp.execSync(`git show ${ref}:dogs/pawart_dogs.js`, { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 << 20 }));
+else { const OLD0 = load(cp.execSync(`git show ${ref}:dogs/pawart_dogs.js`, { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 << 20 }));
+  // v2.12 owner: the old poodle is shown as "Miniature Poodle", so its old renders are compared with that aria-label renamed (as in v212_dogs)
+  const ren = (x) => x.replace(/ the Poodle([,"])/g, ' the Miniature Poodle$1'), OLD = { dog: (k, o) => ren(OLD0.dog(k, o)), dogHead: (k, o) => ren(OLD0.dogHead(k, o)) };
   ALL.slice(0, 14).forEach((k) => { ok(OLD.dogHead(k) === PA.dogHead(k), `head ${k} identical to ${ref}`);
     ['idle', 'sleep', 'beg', 'rollover'].forEach((p, i) => { const o = { pose: p, outfit: [null, { neck: 'Red Bandana' }, { body: 'Ghost Sheet' }, { head: 'Party Hat' }][i], age: [undefined, 'puppy', undefined, 'newborn'][i], sparkle: i === 2 };
       ok(OLD.dog(k, o) === PA.dog(k, o), `${k} ${p} identical to ${ref}`); });

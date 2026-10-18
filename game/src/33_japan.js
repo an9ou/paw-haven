@@ -45,7 +45,22 @@ const jpPlaceLines = {
   afghan: 'Fuji has beautiful lines and no tangles at all. I am a little jealous.',
   dane: 'I can nearly see over the mountain. Nearly. Hello, Fuji!',
   mastiff: 'A very big hill. I like it. I will sit and look at it slowly.',
-  gsd: 'A mountain! I will keep watch from here. Fuji is safe.'
+  gsd: 'A mountain! I will keep watch from here. Fuji is safe.',
+  // v2.12 Fourteen New Friends
+  dobie: 'A great mountain. Straight and tall. I respect it. I will keep watch.',
+  corso: 'A very big mountain. A calm one. We will sit together. Slowly.',
+  pitbull: 'A mountain! With a snow hat! Hello, mountain! Do you want a hug?',
+  minpin: 'That mountain is huge. I am not scared. I am prancing. In place.',
+  lab: 'Is that a big hill? A BIG hill! Is there a ball at the top?',
+  malamute: 'Snow on the top! That mountain and I are going to be friends. Woo!',
+  chow: 'A mountain. White hat. Dignified. I am willing to be seen with it.',
+  stdpoodle: 'Fuji has the most perfect shape. Tall, slim and elegant. Like me.',
+  schnauzer: 'A mountain! I will inspect it from here. It looks well kept.',
+  westie: 'A very big hill! With snow on! I would like to dig up there. Later.',
+  yorkie: 'That mountain is bigger than everything. I am still in charge here.',
+  bichon: 'Fuji wears a white puff on top! We match! Boing!',
+  maltese: 'A graceful mountain with a white veil. I understand it completely.',
+  shihtzu: 'A nice mountain. A nice bench. I will look at one while sitting on the other.'
 };
 Object.keys(jpPlaceLines).forEach((k) => { if (PLACE_LINES[k]) PLACE_LINES[k].fujihill = jpPlaceLines[k]; });
 

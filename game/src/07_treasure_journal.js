@@ -275,7 +275,7 @@ function jrFamCheck() {
   return got;
 }
 function jrCheckAll() { try { coatSync(); coatRewardsCheck(); jrFamCheck(); } catch (e) { console.warn('journal check', e); } }
-const coatBreeds = () => { const G = window.PawGenes; const b = G && Array.isArray(G.BREEDS) && G.BREEDS.length ? G.BREEDS : dogsList().map((d) => d.key); return b.slice(0, 21); };
+const coatBreeds = () => { const G = window.PawGenes; const b = G && Array.isArray(G.BREEDS) && G.BREEDS.length ? G.BREEDS : dogsList().map((d) => d.key); return b.slice(0, 35); }; // v2.12: 35 breeds
 function coatCatalogOf(key) {
   try { const G = window.PawGenes; if (G && typeof G.coatCatalog === 'function') { const c = G.coatCatalog(key); if (Array.isArray(c) && c.length) return c; } } catch (e) { /* older genes module */ }
   return null;
@@ -371,7 +371,7 @@ function jrMixesStrip() {
   const chip = (txt, on, cls) => `<span class="mchip ${cls} ${on ? 'found' : 'unk'}" ${on ? '' : 'title="Not found yet"'}>${on ? esc(txt) : '?'}</span>`;
   const bN = breeds.filter((k) => have.breed.has(k)).length, mN = mixNames.filter((n) => have.mix.has(n)).length, gN = JR_GRAND.filter((n) => have.grand.has(n) || have.mix.has(n)).length;
   return `<div class="cmixes" aria-label="Breeds and mixes"><h4>Breeds &amp; Mixes <span class="small">${bN} of ${breeds.length} breeds, ${mN} mixes, ${gN} grand-mixes</span></h4>
-    <div class="mrow">${breeds.map((k) => chip(breedName(k), have.breed.has(k), 'breed')).join('')}${mixNames.map((n) => chip(n, have.mix.has(n), 'mix')).join('')}${JR_GRAND.map((n) => chip(n, have.grand.has(n) || have.mix.has(n), 'grand')).join('')}</div></div>`;
+    <div class="mrow">${breeds.map((k) => chip(breedName(k), have.breed.has(k), 'breed')).join('')}${mixNames.filter((n) => have.mix.has(n)).map((n) => chip(n, true, 'mix')).join('')}${mixNames.length > mN ? `<span class="mchip mix more" title="Mixes not found yet">+${mixNames.length - mN} ${mN ? 'more' : 'mixes'} still to find</span>` : ''}${JR_GRAND.map((n) => chip(n, have.grand.has(n) || have.mix.has(n), 'grand')).join('')}</div></div>`;
 }
 function jrPartnerBtn(r) {
   try {
