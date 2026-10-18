@@ -316,3 +316,16 @@ The blocks are short, kind, two-sentence lessons. Keep them exactly two sentence
 | `shihtzu` | Shih tzu |
 
 <!-- table:end -->
+
+## Site
+
+doodledoggo.app strings: `site/i18n/es.json` (v2.14 phase 1b, all keys done).
+
+- TODO(native): "wobbly crayon pup" is "perrito (de cera) garabateado" (tagline, alt texts). Check that it reads as cute and crude, not messy.
+- TODO(native): the dogs' grammatical gender was picked from their names (the game gives no sex for the site dogs). Girls: Pepper, Mikan, Saffron, Peaches, Maple, Madeleine, Toffee, Meringue, Marshmallow. All others are boys. The trait adjectives agree with that.
+- TODO(native): the favourite things use these item names: paté de salmón, hueso de peluche, cupcake perruno, comedero interactivo, galleta de hueso, patito chillón, juego de la cuerda, croquetas, frisbi. Phase 2 (game strings) must use the same names, or the site must follow the game's.
+- TODO(native): barks: "je." (Shiba, smug), "ronc." (Pug and Frenchie snort), "ay..." (aww), "¡tachán!" (ta-da).
+- TODO(native): the trait words "criticón" (judgy), "meneona" (wiggly), "abrazadora" (huggy), "un poquito de baba" (a little damp).
+- TODO(native): "en vivo" (Latin America, understood in Spain) and "nevera" (Spain and much of Latin America; Mexico says "refrigerador").
+- Site titles say "Hachiko" without the macron, like the English page: Caveat (the title face) may lack ō. Running text keeps "Hachikō".
+- The privacy page says that the English version counts if the two differ (in `privacy.updated`, the small line under the title).
