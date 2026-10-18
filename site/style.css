@@ -240,3 +240,37 @@ i{font-style:italic}
   .traits{grid-template-columns:1fr}
 }
 @media (prefers-reduced-motion:reduce){ .nav a:hover,.chip:hover,.dcard:hover{transform:none!important} .petals{display:none} .bark,.heart{animation:none} }
+
+/* ===== v2.14: the language menu (every page) and the per-language typography (tools/site_i18n.js writes the pages) ===== */
+.langbar{display:flex;justify-content:flex-end;margin:-6px 0 6px;position:relative;z-index:900}
+.langs{position:relative}
+.langs summary{list-style:none;display:inline-flex;align-items:center;gap:6px;min-height:44px;min-width:44px;padding:4px 14px;border:2px solid var(--ink);border-radius:14px 10px 15px 9px;
+  background:var(--paper);color:var(--ink);font-family:var(--read);font-size:18px;line-height:1.1;cursor:pointer;box-shadow:2px 3px 0 rgba(91,61,50,.16);user-select:none}
+.langs summary::-webkit-details-marker{display:none}
+.langs[open] summary{background:var(--w-yellow)}
+.langs nav{position:absolute;right:0;top:calc(100% + 6px);width:max-content;min-width:230px;max-width:calc(100vw - 32px);max-height:calc(100vh - 80px);overflow:auto;
+  background:var(--paper);border:2px solid var(--ink);border-radius:14px 10px 15px 9px;box-shadow:3px 4px 0 rgba(91,61,50,.18);padding:6px}
+.langs ul{list-style:none;margin:0;padding:0}
+.langs li a{display:flex;align-items:center;min-height:44px;padding:2px 14px;border-radius:9px;color:var(--ink);text-decoration:none;font-family:var(--read);font-size:19px}
+.langs li a[lang="ja"]{font-family:var(--jp)}
+.langs li a:hover,.langs li a:focus-visible{background:var(--w-mint)}
+.langs li a[aria-current]{background:var(--w-yellow);font-weight:700}
+/* the other languages (stacks: docs/i18n/FONTS.md section 6). 'DD Local' (site/fonts/i18n/<lang>.css, linked only on that language's pages) covers only
+   non-Latin characters, so Latin letters and digits still fall through to Patrick Hand and Caveat; 'DD Local Title' is the heading face where there is one */
+html.i18n{--loc:sans-serif;--hand:'DD Local Title','DD Local','Caveat','Patrick Hand',var(--loc),'Comic Sans MS',cursive;--read:'DD Local','Patrick Hand',var(--loc),'Trebuchet MS',sans-serif}
+html[lang="ja"],html.s-cjk.pseudo{--loc:'Hiragino Maru Gothic ProN','Hiragino Sans','Yu Gothic','YuGothic','Meiryo','Noto Sans JP','Noto Sans CJK JP',sans-serif}
+html[lang="zh-Hans"]{--loc:'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans SC','Noto Sans CJK SC',sans-serif}
+html[lang="zh-Hant"]{--loc:'PingFang TC','Microsoft JhengHei','Noto Sans TC','Noto Sans CJK TC',sans-serif}
+html[lang="ko"]{--loc:'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR','Noto Sans CJK KR',sans-serif}
+html[lang="th"]{--loc:'Thonburi','Leelawadee UI','Noto Sans Thai Looped','Noto Sans Thai',sans-serif}
+html.i18n body{overflow-wrap:anywhere}
+html.s-cjk body{line-height:1.65;word-break:normal;line-break:strict}
+html[lang="ko"] body{line-height:1.6;word-break:keep-all;line-break:auto}
+html.s-th body{word-break:normal;line-break:auto}
+html.s-cjk .nav a,html.s-cjk .chip,html.s-cjk .play{line-height:1.2}
+html.s-cjk h1,html.s-cjk h2,html.s-cjk h3,html.s-cjk .dname,html.s-cjk .bubble,html.s-cjk .tag{line-height:1.25}
+html.s-th body{line-height:1.75}
+html.s-th h1,html.s-th h2,html.s-th h3,html.s-th .dname,html.s-th .bubble,html.s-th .tag,html.s-th .traits b,html.s-th .feats b{line-height:1.45}
+html.s-th .nav a,html.s-th .chip,html.s-th .play{line-height:1.45}
+html[lang="de"] body,html[lang="fr"] body{hyphens:auto;-webkit-hyphens:auto}
+html.i18n .bark{white-space:nowrap}
