@@ -1,7 +1,7 @@
 // doodledoggo.app v2 art and dog pages: pre-renders the game's own art for the site, so the site needs no art modules at run time.
 //   NODE_PATH=$(npm root -g) node tools/site_art.js        (needs Node and Playwright; the outputs are committed)
 // Writes site/img/art/:
-//   dogs/<key>-<pose>.svg      every dog (35 since v2.12), scene poses (walk, jump, sit, happy, sniff), 3 boiling frames (the game's 3 fps flip)
+//   dogs/<key>-<pose>.svg      every dog (35 since v2.12), scene poses (walk, jump, sit, happy, sniff), 3 boiling frames (the game's 3 fps flip) for the playroom's dogs, one frame for the rest
 //   dogs/<key>-still.svg       each dog's card pose, one frame (cards, profiles, the reduced-motion scene)
 //   dogs/<key>-pup.svg         a puppy of each dog, one frame (profiles)
 //   dogs/<key>-sleep.svg       each dog napping, one frame (the playroom)
@@ -36,10 +36,16 @@ const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replac
 
 fs.rmSync(OUT, { recursive: true, force: true });
 // ---- dogs
+// v2.12 (35 dogs): only the dogs the playroom can pick (KEYS in site/js/site.js) run about in the scene, so only they need the 3 boiling frames;
+// the other dogs' scene poses are one frame. The scene files (drawn at about half size in the playroom) also keep whole-unit path coordinates.
+// Both keep the site inside the free-plan Worker size; the cards and profiles (still, pup) keep the art's full precision
+const SCENE_KEYS = JSON.parse(fs.readFileSync(path.join(ROOT, 'site', 'js', 'site.js'), 'utf8').match(/var KEYS = (\[[^\]]*\])/)[1].replace(/'/g, '"'));
+const whole = (svg) => svg.replace(/ d="([^"]*)"/g, (m, p) => ` d="${p.replace(/-?\d+\.\d+/g, (n) => String(Math.round(+n)))}"`);
 for (const d of DOGS) {
-  for (const pose of SCENE_POSES) write(`dogs/${d.key}-${pose}.svg`, standalone(PA.dog(d.key, { pose }), 240, 200, FLIP));
+  const live = SCENE_KEYS.includes(d.key);
+  for (const pose of SCENE_POSES) write(`dogs/${d.key}-${pose}.svg`, whole(live ? standalone(PA.dog(d.key, { pose }), 240, 200, FLIP) : standalone(PA.dog(d.key, { pose, anim: false }), 240, 200)));
   write(`dogs/${d.key}-still.svg`, standalone(PA.dog(d.key, { pose: d.pose, anim: false }), 240, 200));
-  write(`dogs/${d.key}-sleep.svg`, standalone(PA.dog(d.key, { pose: 'sleep', anim: false }), 240, 200)); // the playroom nap, one frame
+  write(`dogs/${d.key}-sleep.svg`, whole(standalone(PA.dog(d.key, { pose: 'sleep', anim: false }), 240, 200))); // the playroom nap, one frame
   write(`dogs/${d.key}-pup.svg`, standalone(PA.dog(d.key, { pose: 'happy', age: 'puppy', facing: 'left', anim: false }), 240, 200));
 }
 // ---- favourites: the game's item and icon drawings; 'dig' is the marketing posts' dirt mound with a bone
@@ -78,7 +84,7 @@ const profile = (d) => `<article class="prof" id="${d.key}" aria-labelledby="h-$
     <h2 id="h-${d.key}">${esc(d.name)} <span class="dtype">the ${esc(d.breed)}</span></h2>
     <p class="jpline"><span class="jp" lang="ja">${d.jp}</span> <i>${esc(d.jpRead)}</i> · ${esc(d.name)} in katakana: <span class="jp" lang="ja">${d.nameJp}</span></p>
     <p class="bubble">“${esc(d.quote)}”</p>
-    <p><b>Personality:</b> ${esc(d.personality)}.</p>
+    <p><b>Personality:</b> ${esc(d.personality)}${/[.!?]$/.test(d.personality) ? '' : '.'}</p>
     <ul class="traits">${d.traits.map(([t, s]) => `<li><b>${esc(t)}</b>${esc(s)}</li>`).join('')}</ul>
     <p class="playline"><b>In the playroom:</b> ${esc(d.play)}</p>
     <div class="loves"><b>Loves</b><ul>${lovesHTML(d)}</ul></div>
@@ -92,7 +98,7 @@ const fill = (file, tag, html) => {
 };
 // the last card: the dogs on their way (owner, 17 Oct 2026: no dates), crayon silhouettes with a "?"
 const SOON_LINE = 'Japanese Chin and Kai Ken are on their way.'; // v2.12: Shih Tzu and thirteen more are in the game now; these two wait (V212.md)
-const sils = ['shiba-still', 'samoyed-still', 'samoyed-pup'].map((f) => `<span class="sil"><img src="/img/art/dogs/${f}.svg" alt="" width="240" height="200" loading="lazy"><b aria-hidden="true">?</b></span>`).join('');
+const sils = ['shiba-still', 'samoyed-pup'].map((f) => `<span class="sil"><img src="/img/art/dogs/${f}.svg" alt="" width="240" height="200" loading="lazy"><b aria-hidden="true">?</b></span>`).join('');
 const soon = (tag) => tag === 'card' ? `<li class="soonli"><div class="soon" id="soon"><div class="sils">${sils}</div><span class="dname">More dogs are coming!</span><span class="dquote">${SOON_LINE}</span></div></li>`
   : `<section class="soonprof" id="soon" aria-labelledby="h-soon"><div class="sils">${sils}</div><div class="txt"><h2 id="h-soon">More dogs are coming!</h2><p class="bubble">${SOON_LINE}</p><p>Two new friends are getting their crayon fur drawn. We will say hello here when they are ready.</p></div></section>`;
 fill('index.html', 'cards', DOGS.map(card).concat(soon('card')).join('\n'));

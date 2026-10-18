@@ -322,21 +322,21 @@
     dane: { d: [22, -43], sit: [20, -23], jump: [4, -43], eat: [2, 5], crouch: [14, 0], sleep: [6, 0], sniff: [22, 6] },
     mastiff: { d: [24, -9], sit: [21, -23], jump: [6, -9], eat: [-2, 3], crouch: [10, 0], sleep: [6, 0], sniff: [22, 5] },
     gsd: { d: [25, -13], sit: [23, -15], jump: [8, -13], eat: [1, 6], crouch: [14, 2], sleep: [8, 0], sniff: [25, 7] },
-    // v2.12 Fourteen New Friends: re-measure on the final art (rows copied from the placeholder donors)
-    dobie: { d: [-24, -6], sit: [-24, 0], jump: [-38, 2], eat: [40, -15], crouch: [0, 0], sleep: [-12, 0], sniff: [-6, -2] },
-    corso: { d: [24, -9], sit: [21, -23], jump: [6, -9], eat: [-2, 3], crouch: [10, 0], sleep: [6, 0], sniff: [22, 5] },
-    pitbull: { d: [-22, 10], sit: [-6, -2], jump: [-30, 5], eat: [28, -11], crouch: [0, 0], sleep: [-10, 0], sniff: [-6, 0] },
-    minpin: { d: [-12, 14], sit: [0, 8], jump: [-30, 10], eat: [16, -6], crouch: [0, 0], sleep: [-12, 0], sniff: [0, -4] },
-    lab: { d: [-24, -6], sit: [-24, 0], jump: [-38, 2], eat: [40, -15], crouch: [0, 0], sleep: [-12, 0], sniff: [-6, -2] },
-    malamute: { d: [-8, 0], sniff: [-2, -8] },
-    chow: { d: [-11, -1], sit: [2, -6], jump: [-19, -4], eat: [28, -9], crouch: [13, 0], sleep: [-6, 0], sniff: [0, -2] },
-    stdpoodle: { d: [-2, -18], sit: [5, -13], jump: [-15, -14], eat: [32, -13], crouch: [10, -5], sleep: [-2, 0], sniff: [6, -8] },
-    schnauzer: { d: [-10, 4], sit: [0, 0], jump: [-8, 0], eat: [24, 0], crouch: [0, 0], sniff: [0, -4] },
-    westie: { d: [-10, 4], sit: [0, 0], jump: [-8, 0], eat: [24, 0], crouch: [0, 0], sniff: [0, -4] },
-    yorkie: { d: [-12, 14], sit: [0, 8], jump: [-30, 10], eat: [16, -6], crouch: [0, 0], sleep: [-12, 0], sniff: [0, -4] },
-    bichon: { d: [-11, -1], sit: [2, -6], jump: [-19, -4], eat: [28, -9], crouch: [13, 0], sleep: [-6, 0], sniff: [0, -2] },
-    maltese: { d: [-11, -1], sit: [2, -6], jump: [-19, -4], eat: [28, -9], crouch: [13, 0], sleep: [-6, 0], sniff: [0, -2] },
-    shihtzu: { d: [-22, 10], sit: [-6, 3], jump: [-30, 5], eat: [28, -11], crouch: [0, 0], sleep: [-10, 0], sniff: [-6, 0] }
+    // v2.12 Fourteen New Friends, measured on the final art: the toy sits at the front of the drawn mouth in each pose (mods/toys/calib)
+    dobie: { d: [25, -23], sit: [40, -5], jump: [17, -37], eat: [34, 7], crouch: [43, 6], sleep: [19, 13], sniff: [11, 23] },
+    corso: { d: [25, -11], sit: [39, -15], jump: [18, -25], eat: [34, 6], crouch: [43, 4], sleep: [23, 11], sniff: [9, 22] },
+    pitbull: { d: [16, -1], sit: [30, 2], jump: [9, -13], eat: [34, 7], crouch: [34, 6], sleep: [14, 13], sniff: [0, 23] },
+    minpin: { d: [3, 6], sit: [23, 19], jump: [-5, -5], eat: [35, 5], crouch: [22, 7], sleep: [0, 13], sniff: [-9, 21] },
+    lab: { d: [19, -5], sit: [34, -4], jump: [12, -19], eat: [34, 6], crouch: [37, 4], sleep: [20, 11], sniff: [5, 23] },
+    malamute: { d: [23, -9], sit: [37, -8], jump: [16, -24], eat: [34, 6], crouch: [41, 3], sleep: [26, 11], sniff: [8, 23] },
+    chow: { d: [8, 1], sit: [21, -2], jump: [1, -3], eat: [34, 6], crouch: [26, 9], sleep: [7, 13], sniff: [-7, 22] },
+    stdpoodle: { d: [16, -43], sit: [28, -10], jump: [7, -41], eat: [35, 6], crouch: [33, 8], sleep: [9, 12], sniff: [1, 21] },
+    schnauzer: { d: [11, -2], sit: [27, 0], jump: [3, -14], eat: [35, 6], crouch: [29, 6], sleep: [5, 12], sniff: [-2, 22] },
+    westie: { d: [-9, 6], sit: [6, 8], jump: [-15, 6], eat: [34, -1], crouch: [9, 6], sleep: [-9, 11], sniff: [-22, 14] },
+    yorkie: { d: [-11, 11], sit: [7, 20], jump: [-18, 3], eat: [35, 4], crouch: [7, 7], sleep: [-13, 14], sniff: [-23, 19] },
+    bichon: { d: [-8, 6], sit: [5, 8], jump: [-14, 6], eat: [34, 2], crouch: [10, 9], sleep: [-10, 13], sniff: [-23, 17] },
+    maltese: { d: [-4, 7], sit: [14, 14], jump: [-10, -2], eat: [34, 4], crouch: [14, 7], sleep: [-7, 13], sniff: [-17, 19] },
+    shihtzu: { d: [-14, 5], sit: [2, 11], jump: [-20, -2], eat: [34, -2], crouch: [4, 4], sleep: [-16, 11], sniff: [-26, 13] }
 };
   var POSE_BASE = { walk: 'idle', happy: 'idle', pet: 'idle', shake: 'idle', dirty: 'idle', cold: 'idle', hot: 'idle', sad: 'idle', dig: 'eat' };
   function breedAdj(key, pose) {

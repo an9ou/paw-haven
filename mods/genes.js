@@ -300,42 +300,42 @@
        yorkie     always E/E: D_ Black and tan, d/d Blue and tan (the adult steel and gold); sp/sp Parti
        shihtzu    e/e Gold, E/e Black, E/E the brindle look, E_ b/b Liver, E_ d/d Silver; any spotting gene says "and white" */
     dobie: {
-      black:  ['#2B2430', '#C0642E', '#1D1A22'], // * black and rust
-      liver:  ['#7A3E26', '#D08A52', '#5A2A18'], // red and rust
-      blue:   ['#5E6A7E', '#C98A5E', '#46505F'], // blue and rust
-      lilac:  ['#B49A86', '#E0B88E', '#927866'], // fawn and rust
+      black:  ['#2B2628', '#C8743A', '#1D1A22'], // * black and rust
+      liver:  ['#7A3A22', '#C8743A', '#4E2414'], // red and rust
+      blue:   ['#6C7484', '#C88250', '#4A5262'], // blue and rust
+      lilac:  ['#B08A6A', '#D49A62', '#7E6048'], // fawn and rust
       red:    ['#D9924E', '#F0C48A', '#A86A30'], // only from a mix parent
       cream:  ['#EBD3A8', '#F8EBD2', '#C9AE80']
     },
     corso: {
-      black:    ['#2A2628', '#3A3438', '#1D1A22'], // * black
-      blue:     ['#6E7480', '#828894', '#4A505C'], // grey
-      red:      ['#D9B07A', '#E9C99A', '#2B2430'], // fawn, black mask
+      black:    ['#363133', '#57504F', '#1D1A22'], // * black
+      blue:     ['#7A7E86', '#8E929A', '#3E424A'], // grey
+      red:      ['#D2AE7A', '#E4C898', '#2B2430'], // fawn, black mask
       redliver: ['#B8683A', '#CC8452', '#2B2430'], // red, black mask
       cream:    ['#C8B49A', '#DCCBB4', '#55657A'], // grey fawn, grey mask
-      liver:    ['#5A4636', '#6E5A48', '#1D1A22'], // black brindle (coat.brindle)
-      lilac:    ['#7E7A78', '#94908C', '#3A3A44']  // grey brindle (coat.brindle)
+      liver:    ['#6A5240', '#7E6450', '#1D1A22'], // black brindle (coat.brindle)
+      lilac:    ['#8A8078', '#9E948A', '#3E424A']  // grey brindle (coat.brindle)
     },
     pitbull: {
-      blue:     ['#7E8A9C', '#A8B2C2', '#5A6578'], // * blue
-      black:    ['#2B2430', '#4A3F4E', '#1D1A22'],
-      red:      ['#D9AE7E', '#EDCFA6', '#A8804E'], // fawn
-      redliver: ['#B8643A', '#D08A5E', '#8A4626'], // red (liver nose)
-      cream:    ['#C9B49E', '#E0D2C0', '#8C8A94'], // blue fawn
-      liver:    ['#8A6440', '#A07A52', '#2B2430'], // brindle (coat.brindle)
-      lilac:    ['#8E8A90', '#A8A4A8', '#4A5060'], // blue brindle (coat.brindle)
-      white:    ['#F7F3EA', '#FFFFFF', '#E2D9C8']  // white (sp/sp on a red coat)
+      blue:     ['#7E8898', '#F2EEE6', '#4E5664'], // * blue
+      black:    ['#2B2628', '#F2EEE6', '#1D1A22'],
+      red:      ['#D7B07E', '#F4E6CE', '#9A7A52'], // fawn
+      redliver: ['#B8683A', '#F2E2CC', '#7E4224'], // red (liver nose)
+      cream:    ['#B8A08E', '#E8DCCE', '#7E7480'], // blue fawn
+      liver:    ['#B08A5E', '#F2E6D2', '#3A2E2E'], // brindle (coat.brindle)
+      lilac:    ['#8E8A90', '#EEEAE4', '#4A5060'], // blue brindle (coat.brindle)
+      white:    ['#FBF6EC', '#FFFFFF', '#E8DECB']  // white (sp/sp on a red coat)
     },
     minpin: {
-      red:    ['#C8562E', '#E08A5A', '#94381A'], // * red
-      black:  ['#2B2430', '#C0642E', '#1D1A22'], // black and rust
-      liver:  ['#6E4430', '#C98A5E', '#4E2E1E'], // chocolate and rust
+      red:    ['#B5522C', '#DC8A56', '#7A3418'], // * red
+      black:  ['#2B2628', '#C8743A', '#1D1A22'], // black and rust
+      liver:  ['#5E3424', '#C8743A', '#3E2216'], // chocolate and rust
       blue:   ['#5E6A7E', '#C98A5E', '#46505F'],
       lilac:  ['#B49A86', '#E0B88E', '#927866'],
       cream:  ['#EBCB98', '#F7E3C0', '#C9A46E']
     },
     lab: {
-      red:    ['#F2D08A', '#FBE8BE', '#D9AE5E'], // * yellow
+      red:    ['#F0CC84', '#F9E6B6', '#D9A458'], // * yellow
       black:  ['#2B2430', '#4A3F4E', '#1D1A22'],
       liver:  ['#6E4430', '#8E5E40', '#4E2E1E'], // chocolate
       cream:  ['#F4E6C8', '#FFF6E2', '#DCC8A0'], // champagne (only from a mix parent)
@@ -343,52 +343,52 @@
       lilac:  ['#B0A49E', '#C8BEB8', '#8E827C']  // silver
     },
     malamute: {
-      black:  ['#8E98A8', '#FFFFFF', '#5E6672'], // * grey and white (light = the white mask, chest and belly)
-      solid:  ['#3A3438', '#FFFFFF', '#1D1A22'], // black and white
-      liver:  ['#A8643E', '#FFFFFF', '#7A4428'], // red and white
-      red:    ['#B08A60', '#FFFFFF', '#5A4430'], // sable and white
-      cream:  ['#F7F3EA', '#FFFFFF', '#E2D9C8'], // white
+      black:  ['#9C9AA4', '#FFFFFF', '#5E5A68'], // * grey and white (light = the white mask, chest and belly)
+      solid:  ['#3A3440', '#FFFFFF', '#24202A'], // black and white
+      liver:  ['#B8683A', '#FFFFFF', '#8A4A26'], // red and white
+      red:    ['#9A7A58', '#FFFFFF', '#5E4632'], // sable and white
+      cream:  ['#FBF6EC', '#FFFFFF', '#E8DECB'], // white
       blue:   ['#7E8CA2', '#FFFFFF', '#5A6680'],
       lilac:  ['#B8A8AA', '#FFFFFF', '#928286']  // silver
     },
     chow: {
-      red:    ['#C8743A', '#E0A06A', '#94522A'], // * red
+      red:    ['#D2894A', '#EBB477', '#A9652E'], // * red
       black:  ['#2B2430', '#4A3F4E', '#1D1A22'],
       blue:   ['#6E7F96', '#8C9BB0', '#55657A'],
-      liver:  ['#B88A5E', '#D0A87E', '#8A6440'], // cinnamon
-      cream:  ['#F2E2C0', '#FFF4DE', '#D6C29A'],
+      liver:  ['#C8945E', '#E2B888', '#9A6A3E'], // cinnamon
+      cream:  ['#F2E2C4', '#FFF8EC', '#D9C29E'],
       lilac:  ['#C4B0A0', '#DCCAB8', '#A08C7C']  // fawn
     },
     stdpoodle: {
       black:    ['#2B2430', '#4A3F4E', '#1D1A22'], // * black
       red:      ['#F2C48F', '#FBE2C0', '#D9A066'], // apricot (the poodle's)
-      deep:     ['#C2582E', '#D9805A', '#923E1C'], // red (e/e B/B)
+      deep:     ['#B8582E', '#D47E52', '#8A3E1C'], // red (e/e B/B)
       cream:    ['#F7F1E6', '#FFFFFF', '#E2D6C2'], // white (off-white so the curls show)
       redliver: ['#EFD8B0', '#FAEEDA', '#D2B486'], // cream
       liver:    ['#6E4430', '#8E5E40', '#4E2E1E'], // chocolate
       blue:     ['#A3AAB5', '#C6CBD2', '#7F8794'], // silver
-      dblue:    ['#5E6E88', '#7A88A0', '#46546C'], // blue (E/E d/d)
+      dblue:    ['#6E7F96', '#8C9BB0', '#55657A'], // blue (E/E d/d)
       lilac:    ['#C4A486', '#DDC4AA', '#A2846A']  // silver beige
     },
     schnauzer: {
-      black:  ['#8E8C8A', '#D8D4CC', '#3A3638'], // * salt and pepper (light = the beard and eyebrows)
-      solid:  ['#2A2628', '#4A4448', '#1D1A22'], // black
-      blue:   ['#2A2628', '#C8C6C2', '#1D1A22'], // black and silver
-      red:    ['#F7F3EA', '#FFFFFF', '#E2D9C8'], // white
-      cream:  ['#F7F3EA', '#FFFFFF', '#E2D9C8'], // white
+      black:  ['#9A9AA3', '#E6E4E0', '#4A4652'], // * salt and pepper (light = the beard and eyebrows)
+      solid:  ['#2B2430', '#3A3240', '#1D1A22'], // black
+      blue:   ['#2B2430', '#D8D6D2', '#1D1A22'], // black and silver
+      red:    ['#FBF8F2', '#FFFFFF', '#E2D9CC'], // white
+      cream:  ['#FBF8F2', '#FFFFFF', '#E2D9CC'], // white
       liver:  ['#6E4430', '#B89A80', '#4E2E1E'],
       lilac:  ['#A8949A', '#D0C4C6', '#8A777E']
     },
     westie: {
-      red:    ['#F8F4EA', '#FFFFFF', '#E4DCCB'], // * white (off-white on purpose, like the samoyed)
-      cream:  ['#F4E8D0', '#FFFAF0', '#DCCBA8'],
+      red:    ['#FBF8F1', '#FFFFFF', '#E3D9C8'], // * white (off-white on purpose, like the samoyed)
+      cream:  ['#F4EEDF', '#FFFFFF', '#DCCFB8'],
       black:  ['#2B2430', '#4A3F4E', '#1D1A22'],
       liver:  ['#7A4A2E', '#9A6A4A', '#5A3420'],
       blue:   ['#6E7F96', '#8C9BB0', '#55657A'],
       lilac:  ['#A8949A', '#C2B2B7', '#8A777E']
     },
     yorkie: {
-      blue:   ['#5E6E84', '#D9A45E', '#3E4A5C'], // * blue and tan (base = the steel body, light = the tan head and legs)
+      blue:   ['#617389', '#D9A35C', '#3E4A5E'], // * blue and tan (base = the steel body, light = the tan head and legs)
       black:  ['#2B2430', '#C98A4E', '#1D1A22'], // black and tan
       liver:  ['#6E4430', '#D9A06A', '#4E2E1E'], // chocolate and tan
       lilac:  ['#A8949A', '#E8CDB0', '#8A777E'],
@@ -396,8 +396,8 @@
       cream:  ['#F0DCB4', '#FFF2DC', '#D0B88C']
     },
     bichon: {
-      red:      ['#FAF7F0', '#FFFFFF', '#E6DED0'], // * white
-      redliver: ['#F4E6CC', '#FFF8EC', '#DCC8A4'], // cream
+      red:      ['#FDFBF6', '#FFFFFF', '#E4DCCD'], // * white
+      redliver: ['#F3E2C2', '#FFF6E4', '#D6BE94'], // cream
       cream:    ['#F4E8D0', '#FFFAF0', '#DCCBA8'],
       black:    ['#2B2430', '#4A3F4E', '#1D1A22'],
       liver:    ['#7A4A2E', '#9A6A4A', '#5A3420'],
@@ -405,21 +405,21 @@
       lilac:    ['#A8949A', '#C2B2B7', '#8A777E']
     },
     maltese: {
-      red:    ['#FCFAF4', '#FFFFFF', '#E8E2D6'], // * white
+      red:    ['#FFFDF8', '#FFFFFF', '#E6DDCE'], // * white
       cream:  ['#F4E8D0', '#FFFAF0', '#DCCBA8'],
       black:  ['#2B2430', '#4A3F4E', '#1D1A22'],
       liver:  ['#7A4A2E', '#9A6A4A', '#5A3420'],
       blue:   ['#6E7F96', '#8C9BB0', '#55657A'],
       lilac:  ['#A8949A', '#C2B2B7', '#8A777E']
     },
-    shihtzu: {
-      red:     ['#E0A65A', '#F2CA8E', '#B07A36'], // * gold (and white: coat.white 0.6)
-      black:   ['#2B2430', '#4A3F4E', '#1D1A22'],
-      brindle: ['#7A5C44', '#A8865E', '#2B2430'], // brindle look (coat.brindle)
-      liver:   ['#7A4A2E', '#9A6A4A', '#5A3420'],
-      blue:    ['#A3AAB5', '#C6CBD2', '#7F8794'], // silver
-      cream:   ['#F2E2C0', '#FFF4DE', '#D6C29A'],
-      lilac:   ['#C4B0A8', '#DCCAC2', '#A08C86']
+    shihtzu: { // light = the white (blaze, chest, coat skirt); the 4th value is the light of a solid coat (no spotting gene), so a "Black" Shih Tzu reads black
+      red:     ['#E0A458', '#FFFBF2', '#9A6430', '#F2CA8E'], // * gold (and white: coat.white 0.6)
+      black:   ['#2B2628', '#FFFBF2', '#1D1A1C', '#3A3436'],
+      brindle: ['#B07A45', '#FFFBF2', '#3A2E2E', '#C8925E'], // brindle look (coat.brindle)
+      liver:   ['#8A4F33', '#FFFBF2', '#5A2E1C', '#A0644A'],
+      blue:    ['#B8B4B0', '#FFFBF2', '#6E6A68', '#CFCBC6'], // silver
+      cream:   ['#F2E2C0', '#FFFBF2', '#D6C29A', '#FFF4DE'],
+      lilac:   ['#C4B0A8', '#FFFBF2', '#A08C86', '#DCCAC2']
     },
     mutt: {
       black: ['#1D1A22', '#FFFFFF', '#1D1A22'], // *
@@ -570,6 +570,7 @@
     else if (white === 0.25) name += ' with white markings';
 
     const coat = { base: shade[0], light: shade[1], dark: shade[2], white, merle, eyes };
+    if (AND_WHITE[breed] && !white && shade[3]) coat.light = shade[3]; // v2.12: a solid Shih Tzu (no spotting gene) has no white blaze, chest or skirt
     // v2.11: a Great Dane's light is its chest and collar, so white markings show it white (solid coats keep a light close to the base);
     // merle on white is the harlequin look: black patches (base and dark) on a white dog
     if (breed === 'dane' && white > 0) coat.light = '#FFFFFF';
