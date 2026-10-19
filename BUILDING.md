@@ -193,3 +193,10 @@ You manage Paw Haven for the owner. You don't build. Start a fresh Coordinator s
 - Make `v213-base` from v2.12 `main` before the next release.
 - Open items are in `TODO.md` "Fourteen New Friends (v2.12)".
 
+**State after v2.13 (19 Oct 2026):**
+- v2.13 "Faces & Feelings" (14 face expressions for all 35 breeds, adults and puppies, shown in play by each breed's personality, the photo face picker, heads stuck to their bodies for 23 old breed and pose renders and every mix) is on `integration/v2.13`. Spec and as-built notes: `V213.md` (sections 3 to 8).
+- Built by an Opus coordinator with subagents in worktrees: NECK, ART A and ART B (`paw-artist`), EX (Opus), then MIX NECK (`paw-artist`, `fix/v213-neck`), three `paw-reviewer` reviews (code, phone, art, plus an early EX review) and the fix batches `fix/v213-ex` (`paw-fixer`) and `fix/v213-art` (`paw-artist`). The usage limit stopped three lanes once (reset 18 Oct 20:50 UTC), and they resumed on 19 Oct. Lane branches `lane/v213-*`, `v213-base` is a branch at `b570005` (v2.12).
+- Final run: TESTS_TBD. New suites: `v213_faces`, `v213_neck`, `v213_expr`, `phone_v213_expr`. `v29_photo` fixed (Square is a switch). `SKIP_MIX=1 SKIP=shiba:happy,shiba:speak,shiba:howl,shiba:leglift,shiba:shake,husky:speak,mutt:speak,mutt:leglift,chihuahua:happy,chihuahua:speak,chihuahua:howl,chihuahua:leglift,chihuahua:yawn,chihuahua:shake,chihuahua:paw,pug:howl,beagle:happy,beagle:speak,beagle:howl,collie:howl,maltese:happy,maltese:speak,maltese:shake node dogs/check_identical.js v213-base`: RESULT_TBD.
+- The Worker and the Dog Card lists are unchanged. The site art was made again (`tools/site_art.js`: the shiba, chihuahua, beagle and maltese) and is deployed with the release. Screenshots stay on the branches `shots/v213-neck`, `shots/v213-art-a`, `shots/v213-art-b`, `shots/v213-ex`, `shots/v213-mixneck`, `shots/v213-artfix` and `shots/v213-exfix`.
+- Make `v214-base` from v2.13 `main` before the next release. It is the new `check_identical` baseline: run it with no `SKIP`.
+- Open items are in `TODO.md` "Faces & Feelings (v2.13)".
