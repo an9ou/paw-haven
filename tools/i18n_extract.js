@@ -354,6 +354,14 @@ function scanJs(code, fileOf, mode) {
       }
     }
     if (EN && ((node.type === 'Literal' && typeof node.value === 'string') || (node.type === 'TemplateLiteral' && !node.expressions.length))) tableStr(node);
+    // `@key:<field>` in TABLES.txt: a map keyed by the English name (HM_DECOR 'Giant Crayon Box': {...}) gives that name as <table>.<tid(key)>.<field>
+    if (EN && node.type === 'VariableDeclarator' && node.id.type === 'Identifier' && TABLES.has(node.id.name) && node.init && node.init.type === 'ObjectExpression') {
+      const T = TABLES.get(node.id.name), kf = T.fields.find((f) => f.startsWith('@key:')), at = fileOf(node.start);
+      if (kf && at && !(T.only && path.basename(at.file).replace(/\.js$/, '') !== T.only)) for (const q of node.init.properties) {
+        if (q.type !== 'Property' || q.computed) continue; const k = q.key.type === 'Literal' ? String(q.key.value) : q.key.name;
+        enStr.push({ key: 'data.' + node.id.name.toLowerCase() + '.' + M.id(k) + '.' + kf.slice(5), text: k, file: at.file, line: at.line, table: node.id.name });
+      }
+    }
     if (node.type === 'Literal' && typeof node.value === 'string') {
       const ctx = ctxOf(node);
       if (!ctx.deny) out(node, node.value, [], 'literal', ctx);

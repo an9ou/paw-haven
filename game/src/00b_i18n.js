@@ -56,7 +56,7 @@ function tid(s) { return PIM ? PIM.id(s) : String(s).toLowerCase().replace(/[^a-
 function tbreed(key) { const G = window.PawGenes; return tdata('breed_names.' + key, (G && G.BREED_NAMES && G.BREED_NAMES[key]) || key); }
 function tnum(n, opts) { return PIM ? PIM.num(n, I18N.intl, opts) : String(n); }
 function tdate(d, opts) { return PIM ? PIM.date(d, I18N.intl, opts) : String(d); }
-function tlist(arr) { return PIM ? PIM.list(arr, I18N.intl) : (arr || []).join(', '); }
+function tlist(arr) { return PIM ? PIM.list(arr, I18N.intl === 'en' ? 'en-GB' : I18N.intl) : (arr || []).join(', '); } // English stays "A, B and C" (no serial comma, as the game always wrote it)
 function tlang() { return I18N.lang; }
 
 /* ---- the pseudo-locales (tests and the dev panel only): the English message rewritten branch by branch, vars and ICU syntax kept ---- */

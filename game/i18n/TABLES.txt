@@ -4,7 +4,8 @@
 # the builder's parameter name: treasures.acorn_cap.txt for TR('Acorn Cap', ..., txt)).
 # One line per table: NAME, then the fields that are text, or * for every string in the table. A field is the path without its
 # row id (`note` for food.wild_berries.note, `1` for acts.feed.1, `ask.*` for breed_pers.shiba.ask.0; `*` is any one part),
-# or the whole path for a table that is one object (`from` for hw_letter.from). The display site looks each one up: tdata('food.' + tid(f.n) + '.note', f.note).
+# or the whole path for a table that is one object (`from` for hw_letter.from). `@key:n`: a map keyed by the English name
+# also gives that name as <table>.<tid(name)>.n (hm_decor.giant_crayon_box.n). The display site looks each one up: tdata('food.' + tid(f.n) + '.note', f.note).
 # Not listed on purpose: dog-name lists (SP, FALLBACK_DOGS name, PUP_NAMES, RESCUE_NAMES, SR_NAMES, DC_PET_NAMES, DC_FAKE),
 # lists of item names that are save values (RAINCOATS, WARM_WEAR, FETCH_TOYS, FAV, SNACKS, LOOT16, FS_COSTUMES, WN_OUTS,
 # TK_SNACKS, TK_SOUVENIRS, BL_BALLS, BL_TOYS, SIG_COMBO, SPOT_RULES, mods/toys.js TOYS: the item's own row gives its name),
@@ -48,7 +49,7 @@ EAT_LINES *
 POTTY_LINES *
 GREET_LINES *
 WALK_LINES *
-HM_DECOR story
+HM_DECOR story @key:n
 BD_TIPS *
 BEDS n note
 SPOT_TOAST *

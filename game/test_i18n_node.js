@@ -223,7 +223,7 @@ if (fs.existsSync(ord)) {
 }
 
 /* ---- 4. no local name shadows the i18n helpers in the shared scope ---- */
-const HELPERS = ['tt', 'tdata', 'tbreed', 'tnum', 'tdate', 'tlang', 'tsetLang'];
+const HELPERS = ['tt', 'tdata', 'tid', 'tbreed', 'tnum', 'tdate', 'tlist', 'tlang', 'tsetLang'];
 function loadAcorn() {
   try { return require('acorn'); } catch (e) { /* not on the default paths */ }
   const roots = [];
@@ -267,6 +267,13 @@ else {
 const has = (f, s) => fs.existsSync(path.join(ROOT, f)) && fs.readFileSync(path.join(ROOT, f), 'utf8').includes(s);
 if (has('game/build.js', '@@I18N@@') || has('game/shell.html', '@@I18N@@')) {
   for (const f of ['game/shell.html', 'game/build.js', 'tools/build.pl', 'tools/artifact.js', 'game/harness.js']) ok(has(f, '@@I18N@@') || has(f, 'pawi18n'), `${f} fills the @@I18N@@ slot`);
+}
+
+/* ---- 6. phase 2 (I18N CORE): en.json and packed.js are up to date with the code, TABLES.txt and the tables ---- */
+if (acorn && fs.existsSync(path.join(ROOT, 'game/i18n/TABLES.txt'))) {
+  const run = (f, a) => { const r = cp.spawnSync(process.execPath, [path.join(ROOT, f)].concat(a), { encoding: 'utf8' }); return { ok: r.status === 0, out: ((r.stdout || '') + (r.stderr || '')).trim().split('\n').slice(-3).join(' / ') }; };
+  const e = run('tools/i18n_extract.js', ['--en', '--check', '--quiet']); ok(e.ok, 'game/i18n/en.json is up to date (node tools/i18n_extract.js --en): ' + e.out);
+  const k = run('tools/i18n_pack.js', ['--check']); ok(k.ok, 'game/i18n/packed.js is up to date (node tools/i18n_pack.js): ' + k.out);
 }
 
 console.log(`\nmsg.js + ${Object.keys(GL).length} glossaries + ${nGame} game strings + ${nSite} site strings: ${pass} checks, ${fail} problem(s)`);
