@@ -8,12 +8,12 @@ function enterTitle() {
     <div class="cover"><div class="rings" aria-hidden="true">${rings}</div><div class="doodles" aria-hidden="true">${doodles}</div>
       <h1 class="logo" aria-label="Doodle Doggo"><span style="transform:rotate(-3deg)">Doodle</span> <span style="transform:rotate(2deg) translateY(4px)">Doggo</span></h1>
       <div class="tagline">a cozy dog game, sketchbook edition</div>
-      <div id="tAcct"></div>
+      <div id="tAcct"></div>${has ? '' : titleLangChip()}
       <div class="crayon-note">Everything here is lovingly sketched. Except the dogs. The dogs drew themselves, with crayons, on purpose.</div>
     </div>
     <div class="tdog2" aria-hidden="true">${art('dog', 'dachs', { pose: 'idle' })}</div>
     <div class="tdog" aria-hidden="true">${art('dog', 'corgi', { pose: 'happy', facing: 'left' })}</div>`;
-  tAcctKey = ''; titleAcctRender();
+  tAcctKey = ''; titleAcctRender(); titleLangBind(); // v2.14: the first-run language chip (I18N CORE, 20_settings_dev.js)
 }
 
 /* ---------- v2.3 title: account choice (ACCOUNT lane) ----------

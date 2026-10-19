@@ -6,14 +6,14 @@ function applyAway() {
   const fl = (v, rate, floor) => (v > floor ? Math.max(floor, v - rate * hrs) : v);
   S.dogs.forEach((d) => { const s = d.stats; s.hunger = fl(s.hunger, 3, 30); s.happy = fl(s.happy, 2, 40); s.clean = fl(s.clean, 1, 40); s.energy = clamp(s.energy + 20 * hrs, 0, 100); });
   S.lastReal = Date.now(); dailyCheck(); markDirty();
-  if (secs > 120) setTimeout(() => { if (cur.mode === 'yard') toast(`While you were away, ${NAME()} napped for ${Math.round(hrs)} game hours and missed you a normal amount.`, 'gold'); }, 800);
+  if (secs > 120) setTimeout(() => { if (cur.mode === 'yard') toast(tt('time.away', 'While you were away, {name} napped for {hrs, plural, one {# game hour} other {# game hours}} and missed you a normal amount.', { name: NAME(), hrs: Math.round(hrs) }), 'gold'); }, 800);
 }
 let lastTick = performance.now(), saveClock = 0, voiceClock = 0;
 function tick() {
   const now = performance.now(), dt = Math.min(5, (now - lastTick) / 1000); lastTick = now;
   if (!S || !['yard', 'market', 'map', 'shelter', 'walk', 'fetch', 'bath', 'toy'].includes(cur.mode)) return;
   S.gameMin += dt; const h = dt / 60;
-  const wasDay = S.daily.day; if (dailyCheck() && wasDay) { toast(`Day ${day()} begins. Daily bonuses reset.`, 'gold'); emit('day:new', { day: day() }); }
+  const wasDay = S.daily.day; if (dailyCheck() && wasDay) { toast(tt('time.day_begins', 'Day {day} begins. Daily bonuses reset.', { day: day() }), 'gold'); emit('day:new', { day: day() }); }
   checkEnv();
   addStat('hunger', -6 * h * (S.dog.key === 'corgi' ? 1.2 : 1));
   const pack = S.dogs.length > 1 ? 0.75 : 1;

@@ -24,7 +24,7 @@ function enterMarketOld() {
   updateHUD(); bindDev();
 }
 /* ---- v1.5A purchase / sale window (every shop) ---- */
-const fmtC = (n) => Math.round(n).toLocaleString('en-US');
+const fmtC = (n) => tnum(Math.round(n)); // v2.14: grouped in the current language (en: the same as en-US)
 let buyOpen = false;
 function buyWindow(panel, o) {
   // o: { art, name, desc, price, stack, owned, have, haveLabel, sell, max }  -> Promise<qty | 0>

@@ -1,0 +1,164 @@
+# v2.14 (V214.md 4.3): the data tables whose strings are shown to players. `node tools/i18n_extract.js --en` puts exactly these
+# strings into game/i18n/en.json, keyed data.<table lowercased>.<path> (the path rule of the extractor's dataPath:
+# object rows by their id / key / k / n / name, maps by property, plain arrays by index, call rows by their first argument, each argument by
+# the builder's parameter name: treasures.acorn_cap.txt for TR('Acorn Cap', ..., txt)).
+# One line per table: NAME, then the fields that are text, or * for every string in the table. A field is the path without its
+# row id (`note` for food.wild_berries.note, `1` for acts.feed.1, `ask.*` for breed_pers.shiba.ask.0; `*` is any one part),
+# or the whole path for a table that is one object (`from` for hw_letter.from). The display site looks each one up: tdata('food.' + tid(f.n) + '.note', f.note).
+# Not listed on purpose: dog-name lists (SP, FALLBACK_DOGS name, PUP_NAMES, RESCUE_NAMES, SR_NAMES, DC_PET_NAMES, DC_FAKE),
+# lists of item names that are save values (RAINCOATS, WARM_WEAR, FETCH_TOYS, FAV, SNACKS, LOOT16, FS_COSTUMES, WN_OUTS,
+# TK_SNACKS, TK_SOUVENIRS, BL_BALLS, BL_TOYS, SIG_COMBO, SPOT_RULES, mods/toys.js TOYS: the item's own row gives its name),
+# gene symbols, chord names, the painted art words and the art fallbacks (FS_FB, HW_FB). Tables of functions (CARD_LINES,
+# NY_PUP_LINES) become tt() messages in their files. NAME@file-stem limits a line to that file's table of the name.
+# A value chosen by a condition (`a ? 'Tide pool' : 'Puddle'`) gives two keys: <path> and <path>_2 (the else branch).
+
+# ---- game/src/00_core.js
+FOOD n note tip
+TFOOD n note
+TOYS n note
+CLOTHES n perk
+HOUSES n note
+SLOT_NAME *
+TRICKS n
+SIG n say
+SIG_FB n say
+ROUTES n
+RARITY *
+TREASURES n ab txt
+ROUTE_WORD *
+ROUTE_HINT *
+JUNK 1
+CLUES *
+PLACES n
+PLACE_LINES *
+DUCK_LINES *
+FALLBACK_DOGS breed personality joke
+JOKES *
+NPC_JOKES *
+SMELLS *
+MUD *
+WEATHER_TXT *
+METERS 1
+ACTS 1
+
+# ---- HOME: 01_title, 03_yard, 12_popups, 13_more_dogs, 13c_litter, 10_sex_age_genes
+AC_CH t s
+WX_LINES *
+EAT_LINES *
+POTTY_LINES *
+GREET_LINES *
+WALK_LINES *
+HM_DECOR story
+BD_TIPS *
+BEDS n note
+SPOT_TOAST *
+FAMILIES name where
+STARTER_GENES coat
+
+# ---- TOWN + SYSTEMS: 05, 07, 07b, 11, 14, 14b
+SHOP_NAME *
+JR_MILE_TXT *
+JR_GRAND *
+GIFT_NEIGHBOURS *
+GIFT_ITEM_NOTES *
+CARD_PS *
+CROPS_FB name seeditem item
+RECIPES_FB name hint
+PANTRY_FB name
+PEOPLE_FB name why swap
+BUFF_TXT *
+JP_PLACE n
+TOWN_FAMILIES *
+NPC_BOYS *
+NPC_GIRLS *
+NPC_LINES *
+GENE_FB both het hom
+PUP@14b_vet_playboard *
+
+# ---- PLAY + MISSIONS: 15, 15b, 16, 24, 25
+TPOSE say
+TCMD *
+WRONG label
+TG_MISS *
+CHI_ALERT *
+MS_POOL t s
+GD_STEPS t tp
+GD_LESSONS 2 3
+
+# ---- FEATURES A: 26 ... 33
+FS_SEASON_LINE *
+FS_LETTERS from title text
+FS_MONTHS *
+HW_LETTER from title text
+HW_CATS 1
+HO_LINES *
+SR_TRAITS *
+SR_LINES *
+WN_CATS *
+WN_LETTERS from title text
+NY_ZODIAC animal
+NY_FORTUNES *
+JP_TOASTS *
+JP_LETTER from title text
+
+# ---- FEATURES B: 34 ... 41
+PH_CAPS *
+PH_SEASON_CAP *
+BREED_PERS ask.*
+PERS_DEF ask.*
+BL_LINES *
+TK_PLACES n
+TK_STATION n
+TK_STAMP_N *
+TK_CARE *
+TK_LINES *
+TK_FB_HOTS *.4
+TK_FORTUNES *
+TK_UENO *
+TK_HOT_LABEL *
+DC_WORDS_A *
+DC_WORDS_B *
+DC_OUTFITS *
+DC_BREED_WORDS *
+EX_WORDS *
+
+# ---- MODS A: mods/genes.js, mods/garden.js, mods/kitchen.js
+BREED_NAMES *
+MIX_LIST 2
+WORDS *
+LOCI name
+PIG_NEED *
+MERLE_WORDS *
+DAPPLE_WORDS *
+MERLE_BY *
+TRI_SOLID *
+GRAND_RECIPES name
+CROPS name seeditem item
+PERK *
+PERK_LINE *
+PLANT_LINES *
+WATER_LINES *
+HARVEST_LINES *
+FLUFF_LINES *
+GUARD_LINES *
+WX_TXT *
+STAGE_TXT *
+SEASON_NAME *
+BREED_LINE *
+CROP_NAMES *
+PANTRY name
+RECIPES name hint
+PEOPLE_FOOD name why swap
+EXTRA_UNSAFE name why swap
+NOTES *
+BUFF_TEXT *
+STEP_NAME *
+LINES *
+
+# ---- MODS B: mods/walkrun.js (mods/toys.js LINES is the LINES line above)
+OBS_LABEL *
+ROUTE_NOTES *
+HINT *
+HINT_NAME *
+ROUTE_WX *
+ROUTE_NAME *

@@ -4,6 +4,8 @@
 // separate files, from the same sources as `node game/build.js publish`. The Artifact tool then publishes index.html with
 // the other files as supporting files, so no single file is anywhere near the 16 MB limit and the page itself stays small.
 // Default <out> is <src>/_artifact (not tracked). The single-file publish build (paw_haven_prototype.html) is unchanged.
+// v2.14: a ninth file i18n.js (game/i18n/msg.js + game/i18n/packed.js, the same text the single-file builds put into the pawi18n slot)
+// and the font subsets fonts/i18n/<lang>.woff2 (from game/fonts/i18n/, loaded only for the current language): publish them as files too.
 const fs = require('fs'), path = require('path');
 const args = process.argv.slice(2);
 const opt = (k, d) => { const i = args.indexOf(k); return i >= 0 && args[i + 1] ? args[i + 1] : d; };
@@ -19,22 +21,26 @@ const FILES = {
   'world_c.js': ['world/pawart_world_c.js'],
   'world_d.js': ['world/pawart_world_d.js'],
   'world_e.js': ['world/pawart_world_e.js'],
-  'mods.js': ['mods/genes.js', 'mods/pawaudio.js', 'mods/walkrun.js', 'mods/toys.js', 'mods/garden.js', 'mods/kitchen.js']
+  'mods.js': ['mods/genes.js', 'mods/pawaudio.js', 'mods/walkrun.js', 'mods/toys.js', 'mods/garden.js', 'mods/kitchen.js'],
+  'i18n.js': ['game/i18n/msg.js', 'game/i18n/packed.js']
 };
 fs.mkdirSync(OUT, { recursive: true });
 const shell = fs.readFileSync(path.join(G, 'shell.html'), 'utf8'), css = cat('css'), js = cat('src');
 let total = 0;
 const write = (name, text) => { if (banned.test(text)) throw new Error('banned word in ' + name); fs.writeFileSync(path.join(OUT, name), text); total += text.length; console.log(' ', name.padEnd(12), (text.length / 1e3).toFixed(0).padStart(5), 'KB'); };
-for (const [name, srcs] of Object.entries(FILES)) write(name, srcs.map(rd).join('\n'));
+for (const [name, srcs] of Object.entries(FILES)) write(name, srcs.filter((f) => fs.existsSync(path.join(SRC, f))).map(rd).join('\n'));
+// v2.14: the per-language font subsets, next to index.html as fonts/i18n/<file> (binary, copied as they are)
+const FD = path.join(G, 'fonts', 'i18n'), fontFiles = fs.existsSync(FD) ? fs.readdirSync(FD).filter((f) => /\.woff2$/.test(f)).sort() : [];
+if (fontFiles.length) { fs.mkdirSync(path.join(OUT, 'fonts', 'i18n'), { recursive: true }); for (const f of fontFiles) { fs.copyFileSync(path.join(FD, f), path.join(OUT, 'fonts', 'i18n', f)); total += fs.statSync(path.join(FD, f)).size; } console.log('  fonts/i18n/  ', fontFiles.length, 'files:', fontFiles.join(' ')); }
 write('game.js', js);
 // the shell keeps its three script slots; here each slot becomes src tags (same order as the single-file build: art, mods, game)
 const tags = (names) => names.map((n) => `<script src="${n}"></script>`).join('\n');
 const index = shell
-  .replace('/*@@I18N@@*/', () => fs.readFileSync(path.join(G, 'i18n', 'msg.js'), 'utf8')) // v2.14 stub: I18N CORE makes it a file
+  .replace('<script id="pawi18n">/*@@I18N@@*/</script>', () => tags(['i18n.js'])) // v2.14: msg.js + packed.js, before the art and the modules
   .replace('/*@@CSS@@*/', () => css)
   .replace('<script id="pawart">/*@@PAWART@@*/</script>', () => tags(['dogs.js', 'world_a.js', 'world_b.js', 'world_c.js', 'world_d.js', 'world_e.js']))
   .replace('<script id="pawmods">/*@@PAWMODS@@*/</script>', () => tags(['mods.js']))
   .replace(/<script>\s*\/\*@@GAME@@\*\/\s*<\/script>/, () => tags(['game.js']));
-if (/@@(CSS|PAWART|PAWMODS|GAME)@@/.test(index)) throw new Error('a shell slot was not filled');
+if (/@@(I18N|CSS|PAWART|PAWMODS|GAME)@@/.test(index)) throw new Error('a shell slot was not filled');
 write('index.html', index);
-console.log('artifact build ok', (total / 1e6).toFixed(2) + ' MB in', Object.keys(FILES).length + 2, 'files ->', OUT);
+console.log('artifact build ok', (total / 1e6).toFixed(2) + ' MB in', Object.keys(FILES).length + 2 + fontFiles.length, 'files ->', OUT);
