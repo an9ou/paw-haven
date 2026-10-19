@@ -1433,4 +1433,26 @@ PA.item=function(name,o){return ITEMS[name]?ITEMS[name](o||{}):(prevItem?prevIte
 if(prevPostcard)PA.postcard=function(w,h,o){return o&&o.frame==='tokyo'?WB.postcard(w,h,o):prevPostcard.apply(this,arguments)};
 PA.STAMP_KEYS=WB.KEYS.slice();
 PA.WORLD_E_SCENES=Object.keys(MINE);PA.WORLD_E_PROPS=['ekistamp','luckycat','postcard'];PA.WORLD_E_ITEMS=Object.keys(ITEMS);
+/* v2.14: the last layer on every world render. The game may pass { aria: 'label' } (the root svg's aria-label, translated) and/or
+   { ariaMap: { 'English label': 'translated label' } } (any other aria-label inside the render: hotspots, parts) in the options object
+   of any call (scene, walkStrip, prop, item, icon, bed, house, obstacle, collectible, postcard). Without them the result is returned
+   untouched, so every old render stays byte-identical. The caches hold the English; only the returned string is changed. */
+(function(){
+  const ea=t=>String(t).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  const over=(svg,o)=>{
+    if(typeof svg!=='string')return svg;
+    if(typeof o.aria==='string'&&o.aria)svg=svg.replace(/^(\s*<svg\b[^>]*?\baria-label=")[^"]*(")/,(m,x,y)=>x+ea(o.aria)+y);
+    const M=o.ariaMap;
+    if(M&&typeof M==='object')svg=svg.replace(/(\baria-label=")([^"]*)(")/g,(m,x,v,y)=>Object.prototype.hasOwnProperty.call(M,v)&&typeof M[v]==='string'&&M[v]?x+ea(M[v])+y:m);
+    return svg;
+  };
+  ['scene','walkStrip','prop','item','icon','bed','house','obstacle','collectible','postcard'].forEach(n=>{
+    const f=PA[n];if(typeof f!=='function')return;
+    PA[n]=function(){
+      const r=f.apply(this,arguments);let o=null;
+      for(let i=arguments.length-1;i>0;i--){const a=arguments[i];if(a&&typeof a==='object'&&(a.aria!==undefined||a.ariaMap!==undefined)){o=a;break}}
+      return o?over(r,o):r;
+    };
+  });
+})();
 })();
