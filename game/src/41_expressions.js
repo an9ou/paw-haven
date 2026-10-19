@@ -13,7 +13,7 @@
      roam    37_roam.js rmTick -> exRoamTick: a dog that stands or sniffs, now and then (the rate follows its energy and attention), at most one
              new roam face a second in the scene
      pet     37_roam.js rmPetted (the leader's petTick and a pack dog's crPetAt both land there)
-     feed / treat   the act bus (act:feed, a snack food is a treat), shown once the dog has finished eating. bath 04_bath.js finish, brush
+     feed / treat   the act bus (act:feed, a snack food is a treat), shown once the dog has finished eating. bath 04_bath.js finish -> exBath (shown back in the yard, after the bath zoomies), brush
              14_town_places.js salonGroom, dig 03_yard.js beachDig and the pack's dig walk (37_roam.js rmPackAct), trick act:trick (Great or Good)
      ball    38_ball.js blReturn (the catch) and blStop (the end of play: a short pout, then fine)
      newPlace  act:travel + yard:enter: the first arrival of the day at a Tokyo place or the Mt. Fuji Lookout (wow, the whole pack)
@@ -69,18 +69,19 @@ const EX_FAV = 2.5, EX_FAV_BASE = 1; // an event may set its own base (fav): the
 const EX_ROAM_RATE = 1 / 30; // roam faces a second for an ordinary dog (x 0.4 + 0.8 energy + 0.6 attention): a busy scene of four shows one every few seconds
 const EX_ROAM_GAP = 1000; // at most one new roam face a second in the scene
 const EX_ROAM_POSE = /^(idle|sit|sniff|down|happy)$/; // standing, sitting or sniffing (never walking, napping or busy)
-const EX = { cur: {}, tm: {}, cool: {}, rcool: {}, roam: true, roamAt: 0, rt: 0, rnd: null, ph: false, log: [], wow: { day: '', seen: {} }, arrive: null, heads: new Map() };
+const EX = { bath: [], cur: {}, tm: {}, cool: {}, rcool: {}, roam: true, roamAt: 0, rt: 0, rnd: null, ph: false, log: [], wow: { day: '', seen: {} }, arrive: null, heads: new Map() };
 
 const exRand = () => (EX.rnd ? EX.rnd() : Math.random());
 function exArt() { const A = PA(); return typeof A.exprOk === 'function' ? A : null; }
 function exOn() { return !!S && (!navigator.webdriver || !!prefs.exTest) && !!exArt(); }
 const exKnown = (n) => typeof n === 'string' && Object.prototype.hasOwnProperty.call(EX_WORDS, n);
+const exBaby = (d) => !!(d && d.born) && ageMonths(d) < 1; // a newborn: the art draws no face (its eyes are shut), so none is picked, shown or counted
 function exOk(n, pose) { const A = exArt(); try { return !!A && exKnown(n) && !!A.exprOk(n, pose || 'idle'); } catch (e) { return false; } }
 
 /* ---------------- the face a dog shows now ---------------- */
 function exPhotoFace() { return EX.ph && exKnown(prefs.phFace) && exOn() ? prefs.phFace : null; }
 function exNow(d, pose) {
-  if (!d) return null; const p = pose || 'idle';
+  if (!d || exBaby(d)) return null; const p = pose || 'idle';
   const ph = exPhotoFace(); if (ph) return exOk(ph, p) ? ph : null; // photo mode: the picked face on every dog in the picture
   const e = EX.cur[d.id]; if (!e || performance.now() >= e.until || !exOn()) return null;
   return exOk(e.name, p) ? e.name : null;
@@ -89,7 +90,7 @@ function exOpt(d, pose, o) { const e = exNow(d, pose); if (e) o.expr = e; return
 
 /* ---------------- showing a face ---------------- */
 function exShow(d, name, ms, o) {
-  o = o || {}; if (!d || d.id == null || !exKnown(name) || !exOn()) return false;
+  o = o || {}; if (!d || d.id == null || !exKnown(name) || exBaby(d) || !exOn()) return false;
   const now = performance.now(), id = d.id, c = EX.cur[id], prio = o.prio || 2;
   if (c && now < c.until && !o.force && prio <= c.prio) return false; // one at a time: a player's moment may replace an idle face
   if (!o.force && now < (EX.cool[id] || 0) && !(c && now < c.until)) return false;
@@ -122,7 +123,7 @@ function exWeights(d, ev, pose) {
 // the likeliest face first, so a roll of 0 picks it
 function exPick(d, ev, pose) { const l = exWeights(d, ev, pose).sort((a, b) => b[1] - a[1]); if (!l.length) return null; let s = exRand() * l.reduce((a, x) => a + x[1], 0); for (const x of l) { s -= x[1]; if (s <= 0) return x[0]; } return l[l.length - 1][0]; }
 function exTrig(d, ev, o) {
-  o = o || {}; const E = EX_EV[ev]; if (!E || !d || d.sleeping || !exOn()) return null;
+  o = o || {}; const E = EX_EV[ev]; if (!E || !d || d.sleeping || exBaby(d) || !exOn()) return null;
   const now = performance.now(), c = EX.cur[d.id], on = c && now < c.until;
   if (on ? (E.prio || 2) <= c.prio : now < (EX.cool[d.id] || 0)) return null; // a face showing or a cooldown: nothing to pick (a rub calls this on every move)
   const name = exPick(d, ev, o.pose); if (!name) return null;
@@ -136,7 +137,7 @@ function exRoamTick(now) {
   if (!EX.roam || now < EX.roamAt || !exOn() || !rmOn() || !modal.hidden || blOn() || phActive() || TRN || curling || (typeof FS === 'object' && FS && FS.walking)) return false;
   const ds = rmDogs().slice(); for (let i = ds.length - 1; i > 0; i--) { const j = Math.floor(exRand() * (i + 1)); [ds[i], ds[j]] = [ds[j], ds[i]]; }
   for (const d of ds) {
-    const lead = d === D(), r = rmSt(d); if (d.sleeping || r.tw || (lead && (busy || S.sleeping))) continue;
+    const lead = d === D(), r = rmSt(d); if (d.sleeping || exBaby(d) || r.tw || (lead && (busy || S.sleeping))) continue;
     const pose = lead ? rmLeadPose()[0] || 'idle' : rmPackPose(d); if (!EX_ROAM_POSE.test(pose)) continue;
     if (EX.cur[d.id] || now < (EX.rcool[d.id] || 0)) continue;
     if (exRand() >= exRoamRate(d) * dt) continue;
@@ -154,6 +155,19 @@ on('act:feed', (a) => {
 });
 function exTrickPose(n) { try { const s = trickPose(n); return (s && s.pose) || 'idle'; } catch (e) { return 'idle'; } } // the pose the trick is drawn on (15_trick_training.js)
 on('act:trick', (a) => { if (a && (a.grade === 'Great' || a.grade === 'Good')) exTrig(D(), 'trick', { pose: exTrickPose(a.name), draw: false }); }); // the trick pose is drawn straight after (15b tgApply)
+
+/* ---------------- the bath: the face once the dog is back in the yard (04_bath.js finish -> exBath) ---------------- */
+// The tub draws the shake (a pose almost no face goes on) and the yard comes back 1.7 s later, where the leader runs its bath zoomies (walk). So the
+// face waits: each bathed dog (a pack bath queues them all) makes it in the yard, once it stands again, picked for the pose it is drawn on then
+function exBath(d) { if (d && d.id != null && !EX.bath.some((b) => b.id === d.id)) EX.bath.push({ id: d.id, t: performance.now() }); }
+function exBathWait(d) { return d === D() && (bathZoomies || (typeof IDLE === 'object' && IDLE.act && IDLE.act.name === 'zoomies')); }
+on('yard:enter', () => {
+  const now = performance.now(), l = EX.bath.filter((b) => now - b.t < 30000); EX.bath = []; if (!l.length || !S) return; // a bath left for elsewhere is old news
+  l.forEach((b, i) => { const d = dogById(b.id); if (!d) return; let n = 0;
+    const go = () => { if (!S || cur.mode !== 'yard' || !dogById(b.id)) return; if ((exBathWait(d) || exBusy(d)) && n++ < 24) { setTimeout(go, 250); return; } // up to about 6 s
+      exTrig(d, 'bath', { pose: d === D() ? rmLeadPose()[0] || 'idle' : rmPackPose(d) }); };
+    setTimeout(go, 400 + i * 450); });
+});
 
 /* ---------------- a new place: the first arrival of the day at a Tokyo place or the Mt. Fuji Lookout ---------------- */
 // Kept in memory only (no save field): the Japan day and the places seen, and the day's visit list (S.daily.visited) so a reload does not repeat it
@@ -189,7 +203,7 @@ function exSrDraw(d) { if (typeof SR === 'undefined' || !SR || !SR.dogs) return;
 // keeps its own), the scene's dogs are drawn again and the photo is taken again
 function exPhoto(on) { on = !!on; if (EX.ph === on) return; EX.ph = on; if (exKnown(prefs.phFace)) exDrawAll(); }
 function exHeadSVG(d, n) {
-  const c = coatInfo(d), k = [d.id, d.key, c ? c.coatName : '', ageMonths(d) < 6 ? 'p' : '', n || ''].join('|'); if (EX.heads.has(k)) return EX.heads.get(k);
+  const c = coatInfo(d), k = [d.id, d.key, c ? c.coatName : '', JSON.stringify(dogLook(d) || ''), n || ''].join('|'); if (EX.heads.has(k)) return EX.heads.get(k);
   const o = lookOpts(d, c); if (n) o.expr = n; const s = Object.keys(o).length ? art('dogHead', d.key, o) : art('dogHead', d.key);
   if (EX.heads.size > 120) EX.heads.clear(); EX.heads.set(k, s); return s;
 }
