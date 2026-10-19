@@ -7,7 +7,7 @@ A cozy browser game: adopt crayon-drawn dogs, care for them, walk a sketchbook t
 ## Owner's standing rules (every session and every agent)
 
 - **Usage limit: always resume.** If you stop at the usage limit, continue the task right after the reset, every time, without waiting for the owner. Before you stop, or as soon as you see the reset time, `send_later` yourself a resume for 2 minutes after the reset. The Game Manager also runs an hourly watchdog that resumes any stalled session.
-- **Parallel teams are fine (owner, 17 Oct 2026, on the Max plan)**: run independent lanes, fix batches and reviews at the same time when it saves time. Push automatically once tests are green (details in `BUILDING.md`).
+- **Parallel teams are fine (owner, 17 Oct 2026, on the Max plan)**: run independent lanes, fix batches and reviews at the same time when it saves time. **3–5 subagents in parallel per session is the norm (owner, 18 Oct 2026)**: use them to speed up every task. Push automatically once tests are green (details in `BUILDING.md`).
 - **Fresh context when a session gets big (owner, 17 Oct 2026):** every session and subagent whose context passes about 300k tokens, with more than about an hour of work left, hands over to a fresh session at its next stopping point (handoff of 25 lines at most to its parent, which starts the replacement and archives the old one). Sessions can't `/compact` themselves, so this replaces it. Details: `BUILDING.md` rule 11.
 - **Reports:** don't send the owner progress updates. Report only when the whole task is finished or when the owner asks.
 - **Questions** go to the owner in the choice window with a recommendation first. With no answer in 5 minutes, take the recommendation.
