@@ -68,7 +68,9 @@ function gapOf(bm, hm) {
 // v2.13 (V213.md 5): a frame FLOATS when the skull itself does not touch the body (skull overlap under SKULL_MIN px^2) and most of the neck's
 // place is empty paper (the neck hole, at least HOLE_MAX px^2). Long ears or hair resting on the shoulders do not count as a neck here (they did
 // not stop the beagle's head floating). The old floating renders (the v2.13 NECKFIX list) scored 80 to 172; the closest dogs that read as
-// attached by eye (the chihuahua's idle and beg, the beagle's leglift) score 77 to 79; a neck tube brings the hole to 0.
+// attached by eye (the chihuahua's idle and beg, the beagle's leglift) score 77 to 79; a neck tube brings the hole to 0. The v2.13 fix lane looked
+// at them again, with the shiba, chihuahua, mutt and husky idle heads (adult and puppy, all three frames, several coats): the skull outline meets
+// the body in every frame, so the limits stay. Mixes always draw the neck tube (V213.md 5.1).
 const SKULL_MIN = 2, HOLE_MAX = 80;
 const floats = (r) => r.skull < SKULL_MIN && r.hole >= HOLE_MAX;
 function neckChecker(src) {

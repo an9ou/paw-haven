@@ -520,6 +520,9 @@ function layout(s,pose,k){
      if(b.deep){L.gdig=1;L.bT.a=20;L.bT.y+=b.ry*1.1;L.bT.x-=4;L.hT.a=34;L.hT.x=hd.x-2;L.hT.y=GY-8-hd.ry*1.1}break}
   }
   if(s.nfix&&!s.pup&&s.nfix[pose]){const q=s.nfix[pose];L.hT.x+=q[0];L.hT.y+=q[1];L.neckT=1}// v2.13 neck fix (NECKFIX)
+  if(s.mixHead&&s.pup!==2)L.neckT=1;// v2.13 mix neck: a mix (adult or puppy) always draws the neck tube. The head breed's skull sits where the body breed's
+  // head was, and a smaller or shorter head (yorkie, greyhound, pug on a collie, husky or shih tzu body) floated by up to 6.5 px; the tube bridges that
+  // gap with a short neck (the necked breeds bridge up to 20 px). Newborns keep no neck, as pupSpec drops it.
   // legs: exactly four. Far legs sit a little forward, higher, darker; front pair under the chest, hind pair under the hips
   const B=T(L.bT),lg=s.legs;L.legs=[];
   const FAR=10;
