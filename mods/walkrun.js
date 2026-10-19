@@ -60,7 +60,7 @@ const ROUTE_WX = {
 };
 
 /* ------------------------------------------------------------------ lines */
-const L = {
+const WALK_LINES = {
   bonk: ['Bonk. The log wins this round.', 'Ow. Dignity: minus one.', 'I meant to do that.', 'That came out of nowhere. (It did not.)', 'Everything is fine. Keep walking.', 'Ow! Rude object.', 'Who put THAT there?'],
   bonkName: {
     cat: ['The cat did not move. The cat never moves.', 'Sorry, cat. The cat is not sorry.'],
@@ -85,6 +85,24 @@ const rand = (a, b) => a + Math.random() * (b - a);
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const lerp = (a, b, t) => a + (b - a) * t;
 const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+/* v2.14: every visible text goes through the game's i18n service at run time only (V214.md 4.2). The English is the fallback and the source. */
+function L(key, en, vars) {
+  const I = window.PawI18n;
+  if (I && I.tt) return I.tt(key, en, vars);
+  const M = window.PawI18nMsg;
+  if (!M || !vars) return en;
+  let v = vars;
+  if (/_html$/.test(key)) { v = {}; for (const k in vars) v[k] = typeof vars[k] === 'string' ? esc(vars[k]) : vars[k]; }
+  return M.format(en, v, 'en');
+}
+function LD(path, en) { const I = window.PawI18n; return I && I.tdata ? I.tdata(path, en) : en; }
+function LE(key, en, vars) { return esc(L(key, en, vars)); } // plain message -> HTML
+function lang() { const I = window.PawI18n; return I && I.tlang ? I.tlang() : 'en'; }
+function LL(arr) { // a plain list of words (English: "a, b", as before)
+  const l = lang(); if (l === 'en' || typeof Intl === 'undefined' || !Intl.ListFormat) return arr.join(', ');
+  try { return new Intl.ListFormat(l, { type: 'unit', style: 'long' }).format(arr); } catch (e) { return arr.join(', '); }
+}
+function pickLine(path, arr) { const i = Math.floor(Math.random() * arr.length); return LD(path + '.' + i, arr[i]); }
 
 /* ------------------------------------------------------------------ art helpers */
 function PA() { return window.PawArt || {}; }
@@ -143,7 +161,7 @@ const BADGE = {
   wide: ['#E86A5C', 'long jump', '<path d="M6 13l6-6l6 6M6 20l6-6l6 6"/>'],
   high: ['#6FA0DA', 'duck', '<path d="M12 3v15M6 13l6 6l6-6"/>']
 };
-function badgeHtml(cat, style) { const b = BADGE[cat]; return `<span class="pw-badge" style="background:${b[0]};${style || ''}" title="${b[1]}"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">${b[2]}</svg></span>`; }
+function badgeHtml(cat, style) { const b = BADGE[cat]; return `<span class="pw-badge" style="background:${b[0]};${style || ''}" title="${esc(LD('badge.' + cat + '.1', b[1]))}"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">${b[2]}</svg></span>`; }
 const COL_FB = {
   coin: () => svgWrap([60, 60], '<circle cx="30" cy="30" r="20" fill="#F7D46B"/><circle cx="30" cy="30" r="13"/>'),
   sniff: () => svgWrap([60, 60], '<path d="M12 46q-6 -14 10 -14q2 -12 16 -8q14 -2 12 12q10 4 2 12z" fill="#E0D5F0"/><path d="M24 22q-4 -8 2 -14M36 22q4 -8 -2 -14" stroke="#B49AD8"/>'),
@@ -378,6 +396,8 @@ const CSS = `
 .pw-say{position:absolute;max-width:280px;padding:7px 12px;font-size:18px;line-height:1.2;z-index:4;transform:translate(-10%,-100%);pointer-events:none;transition:opacity .2s}
 .pw-say::after{content:'';position:absolute;left:22px;bottom:-12px;width:16px;height:14px;background:${PAPER};border-right:2.5px solid ${INK};border-bottom:2.5px solid ${INK};transform:skewX(-30deg) rotate(20deg)}
 .pw-say[hidden]{display:none}
+.pw-nw{white-space:nowrap}
+.pw-bj{color:#d27a35}.pw-bl{color:#d2483b}.pw-bd{color:#4D7FC0}
 .pw-hint{position:absolute;left:50%;transform:translate(-50%,-100%) rotate(-3deg);background:${PAPER};border:2px solid ${INK};border-radius:12px 14px 10px 16px;padding:0 10px;font-family:'Caveat',cursive;font-size:32px;line-height:1.15;font-weight:700;white-space:nowrap;color:#d2483b;box-shadow:2px 3px 0 rgba(91,61,50,.2);animation:pw-hb .5s ease-in-out infinite alternate}
 @keyframes pw-hb{to{transform:translate(-50%,-112%) rotate(2deg)}}
 .pw-pop{position:absolute;font-family:'Caveat',cursive;font-weight:700;font-size:28px;color:${INK};pointer-events:none;white-space:nowrap;z-index:4;animation:pw-pop 1s ease-out forwards;text-shadow:0 0 3px #fff,0 0 6px #fff}
@@ -439,7 +459,7 @@ function start(el, o) {
   const sfx = (n) => { try { (o.sfx || noop)(n); } catch (e) { /* ignore */ } };
   const sayExt = (t, ms) => { try { (o.say || noop)(t, ms); } catch (e) { /* ignore */ } };
   let D = Math.max(10, +o.durationSec || A.len || 75);
-  const bag = (Array.isArray(o.bag) ? o.bag : []).map((b) => ({ name: b && b.name, count: +(b && b.count) || 0 })).filter((b) => b.name);
+  const bag = (Array.isArray(o.bag) ? o.bag : []).map((b) => ({ name: b && b.name, label: b && b.label, count: +(b && b.count) || 0 })).filter((b) => b.name);
   const night = time === 'night', rain = weather === 'rain', snow = weather === 'snow';
   const dryCoat = !!(ab.poncho || ab.raincoat);
   const snowMul = snow && !ab.warm ? 0.92 : 1;
@@ -457,32 +477,32 @@ function start(el, o) {
   };
 
   /* ---------- DOM ---------- */
-  const root = document.createElement('div'); root.className = 'pw-root'; root.setAttribute('role', 'application'); root.setAttribute('aria-label', 'Walk mini-game');
+  const root = document.createElement('div'); root.className = 'pw-root'; root.setAttribute('role', 'application'); root.setAttribute('aria-label', L('mod.walk.aria_game', 'Walk mini-game'));
   root.innerHTML = `<div class="pw-stage">
       <div class="pw-layer pw-strip"></div><div class="pw-layer pw-far"></div><div class="pw-veil"></div>
       <div class="pw-layer pw-objs"></div><div class="pw-dog"></div><div class="pw-layer pw-fg"></div>
       <div class="pw-tint"></div><div class="pw-layer pw-lights"></div><div class="pw-ffs"></div><div class="pw-wx"></div>
       <div class="pw-fx"></div>
       <div class="pw-say pw-panel" hidden></div>
-      <div class="pw-prompt" hidden>Dig! (D)</div>
+      <div class="pw-prompt" hidden>${LE('mod.walk.dig_prompt_d', 'Dig! (D)')}</div>
     </div>
     <div class="pw-hud pw-panel">
       <div class="pw-time"><span class="pw-ic pw-clock"></span><div class="pw-bar"><i></i></div><b class="pw-secs">75</b></div>
       <span class="pw-sep"></span>
       <div class="pw-coins"><span class="pw-ic"><img alt="" src="${colUri('coin')}"></span><b class="pw-cn">0</b></div>
       <span class="pw-sep"></span>
-      <div class="pw-nose cold" title="Nose-o-meter"><span class="pw-ic pw-noseic"></span><span class="pw-nl">Cold</span><div class="pw-bar"><i></i></div><span class="pw-wl">~~</span></div>
+      <div class="pw-nose cold" title="${LE('mod.walk.nose_o_meter', 'Nose-o-meter')}"><span class="pw-ic pw-noseic"></span><span class="pw-nl">${LE('mod.walk.nose_cold', 'Cold')}</span><div class="pw-bar"><i></i></div><span class="pw-wl">~~</span></div>
       <span class="pw-sep"></span>
-      <div class="pw-digs" title="Digs left"><span>Digs</span><span class="pw-xs"></span></div>
-      <button class="pw-btn pw-bagb" tabindex="-1" aria-label="Bag (B)"><span class="pw-ic pw-bagic"></span><span class="pw-bt">Bag</span> <span class="pw-k">B</span></button>
-      <button class="pw-btn pw-pauseb" tabindex="-1" aria-label="Pause (Esc)">II <span class="pw-k">Esc</span></button>
+      <div class="pw-digs" title="${LE('mod.walk.digs_left_title', 'Digs left')}"><span>${LE('mod.walk.digs', 'Digs')}</span><span class="pw-xs"></span></div>
+      <button class="pw-btn pw-bagb" tabindex="-1" aria-label="${LE('mod.walk.bag_b', 'Bag (B)')}"><span class="pw-ic pw-bagic"></span><span class="pw-bt">${LE('mod.walk.bag', 'Bag')}</span> <span class="pw-k">B</span></button>
+      <button class="pw-btn pw-pauseb" tabindex="-1" aria-label="${LE('mod.walk.pause_esc', 'Pause (Esc)')}">${LE('mod.walk.pause_ii', 'II')} <span class="pw-k">Esc</span></button>
     </div>
     <div class="pw-ctrls">
-      <button class="pw-btn pw-big pw-duck" tabindex="-1" aria-label="Crouch">Duck<span class="pw-k" data-desk="hold &darr; or S" data-touch="hold, or swipe down">hold &darr; or S</span></button>
-      <button class="pw-btn pw-big pw-dig" tabindex="-1" hidden aria-label="Dig">Dig!<span class="pw-k" data-desk="press D" data-touch="tap here!">press D</span><span class="pw-ring"></span></button>
-      <button class="pw-btn pw-big pw-jump" tabindex="-1" aria-label="Jump">Jump<span class="pw-k" data-desk="tap = hop &middot; hold = long" data-touch="tap = hop &middot; hold = long">tap = hop &middot; hold = long</span></button>
+      <button class="pw-btn pw-big pw-duck" tabindex="-1" aria-label="${LE('mod.walk.crouch', 'Crouch')}">${LE('mod.walk.duck', 'Duck')}<span class="pw-k" data-desk="${LE('mod.walk.duck_key_desk', 'hold \u2193 or S')}" data-touch="${LE('mod.walk.duck_key_touch', 'hold, or swipe down')}">${LE('mod.walk.duck_key_desk', 'hold \u2193 or S')}</span></button>
+      <button class="pw-btn pw-big pw-dig" tabindex="-1" hidden aria-label="${LE('mod.walk.dig', 'Dig')}">${LE('mod.walk.dig_bang', 'Dig!')}<span class="pw-k" data-desk="${LE('mod.walk.dig_key_desk', 'press D')}" data-touch="${LE('mod.walk.dig_key_touch', 'tap here!')}">${LE('mod.walk.dig_key_desk', 'press D')}</span><span class="pw-ring"></span></button>
+      <button class="pw-btn pw-big pw-jump" tabindex="-1" aria-label="${LE('mod.walk.jump', 'Jump')}">${LE('mod.walk.jump', 'Jump')}<span class="pw-k" data-desk="${LE('mod.walk.jump_key', 'tap = hop \u00b7 hold = long')}" data-touch="${LE('mod.walk.jump_key', 'tap = hop \u00b7 hold = long')}">${LE('mod.walk.jump_key', 'tap = hop \u00b7 hold = long')}</span></button>
     </div>
-    <div class="pw-legend"><span class="pw-lg-desk"><b>Space/&uarr;</b> jump (hold = long jump) &middot; <b>&darr;/S</b> duck &middot; <b>D</b> dig &middot; <b>B</b> bag &middot; <b>Esc</b> pause</span><span class="pw-lg-touch"><b>Tap the scene</b> to jump &middot; <span style="white-space:nowrap"><b>hold</b> = long jump</span> &middot; <b>swipe down</b> to duck</span></div>
+    <div class="pw-legend"><span class="pw-lg-desk">${L('mod.walk.legend_desk_html', '<b>Space/&uarr;</b> jump (hold = long jump) &middot; <b>&darr;/S</b> duck &middot; <b>D</b> dig &middot; <b>B</b> bag &middot; <b>Esc</b> pause')}</span><span class="pw-lg-touch">${L('mod.walk.legend_touch_html', '<b>Tap the scene</b> to jump &middot; <span class="pw-nw"><b>hold</b> = long jump</span> &middot; <b>swipe down</b> to duck')}</span></div>
     <div class="pw-ov"></div>`;
   el.appendChild(root);
   const $ = (s) => root.querySelector(s);
@@ -703,8 +723,8 @@ function start(el, o) {
     if (fol.length) DOG.x = Math.max(DOG.x, Math.min(folNeed(), LW - FOL_AHEAD)); // v2.9 PACK: the leader steps forward for its line, keeping FOL_AHEAD of path in view
     if (mode !== prevMode || coarse !== S.coarseShown) {
       S.coarseShown = coarse; const touch = mode !== 'desk' || coarse;
-      root.querySelectorAll('[data-touch]').forEach((k) => { k.innerHTML = k.getAttribute(touch ? 'data-touch' : 'data-desk'); });
-      E.prompt.textContent = touch ? 'Dig! (tap)' : 'Dig! (D)';
+      root.querySelectorAll('[data-touch]').forEach((k) => { k.textContent = k.getAttribute(touch ? 'data-touch' : 'data-desk'); });
+      E.prompt.textContent = touch ? L('mod.walk.dig_prompt_tap', 'Dig! (tap)') : L('mod.walk.dig_prompt_d', 'Dig! (D)');
     }
     const tiles = (w, svg, layer) => { const n = Math.ceil(LW / w) + 1; let h = ''; for (let i = 0; i < n; i++) h += `<div class="pw-tile" style="left:${px(i * w)};width:${px(w)};height:${px(VIEW_H)}">${svg}</div>`; layer.innerHTML = h; };
     tiles(TW, stripSvg, E.strip); tiles(FARW, farSvg, E.far); tiles(FGW, fgSvg, E.fg);
@@ -756,7 +776,7 @@ function start(el, o) {
     else if (d.cat === 'wide') { ob.top = G - h * 0.55; }
     else { ob.top = G - HIGH_BOTTOM - h; ob.ebot = HIGH_BOTTOM + 4; }
     const firstOfType = !S.seenTypes[name]; S.seenTypes[name] = true;
-    if (S.hints[d.cat] < 3 || firstOfType) { S.hints[d.cat]++; ob.hint = (firstOfType && HINT_NAME[name]) || HINT[d.cat]; }
+    if (S.hints[d.cat] < 3 || firstOfType) { S.hints[d.cat]++; ob.hint = firstOfType && HINT_NAME[name] ? LD('hint_name.' + name, HINT_NAME[name]) : LD('hint.' + d.cat, HINT[d.cat]); }
     if (firstOfType) ob.slowmo = true;
     if (d.cat === 'wide' && !S.arcShown) { S.arcShown = true; ob.arc = true; }
     items.push(ob); return ob;
@@ -847,7 +867,7 @@ function start(el, o) {
     const ox = takeoff - ob.x0, oy = G - ob.top;
     const d = pts.filter((q, i) => i % 6 === 0).map((q, i) => `${i ? 'L' : 'M'}${(ox + q.dx).toFixed(1)} ${(oy - q.h - 8).toFixed(1)}`).join('');
     const minX = Math.min(0, ox) - 20, W2 = pts[pts.length - 1].dx + Math.abs(minX) + ob.w;
-    return `<svg class="pw-sup pw-arc" viewBox="${minX} ${oy - 190} ${W2} 200" style="left:${px(minX)};top:${px(oy - 190)};width:${px(W2)};height:${px(200)}" fill="none"><path d="${d}" stroke="${INK}" stroke-width="2.4" stroke-dasharray="2 9" stroke-linecap="round"/><text x="${ox}" y="${oy - 20}" font-family="Caveat,cursive" font-size="22" font-weight="700" fill="#d2483b">hold jump here!</text><path d="M${ox + 6} ${oy - 12}v10" stroke="#d2483b" stroke-width="2.4"/></svg>`;
+    return `<svg class="pw-sup pw-arc" viewBox="${minX} ${oy - 190} ${W2} 200" style="left:${px(minX)};top:${px(oy - 190)};width:${px(W2)};height:${px(200)}" fill="none"><path d="${d}" stroke="${INK}" stroke-width="2.4" stroke-dasharray="2 9" stroke-linecap="round"/><text x="${ox}" y="${oy - 20}" font-family="Caveat,cursive" font-size="22" font-weight="700" fill="#d2483b">${esc(L('mod.walk.hold_jump_here', 'hold jump here!'))}</text><path d="M${ox + 6} ${oy - 12}v10" stroke="#d2483b" stroke-width="2.4"/></svg>`;
   }
   function makeEl(ob) {
     const d = document.createElement('div'); d.className = 'pw-obj';
@@ -925,7 +945,7 @@ function start(el, o) {
   function updateCoinsHud() { E.cn.textContent = String(S.coins); }
   function updateDigsHud() {
     let h = ''; for (let i = 0; i < S.digsMax; i++) h += `<span class="pw-xm${i < S.digsUsed ? ' used' : ''}">X</span>`;
-    E.xs.innerHTML = S.found ? '<b style="font-size:22px">found!</b>' : h;
+    E.xs.innerHTML = S.found ? '<b style="font-size:22px">' + LE('mod.walk.found_lower', 'found!') + '</b>' : h;
   }
   updateCoinsHud(); updateDigsHud();
 
@@ -939,16 +959,16 @@ function start(el, o) {
   function updateNose() {
     const h = heat();
     let k, w;
-    if (h === null) { k = 'warm'; w = 1; E.nl.textContent = S.found ? 'Found!' : 'Dug'; }
-    else { k = h > 0.72 ? 'hot' : h > 0.38 ? 'warm' : 'cold'; w = 0.06 + h * 0.94; E.nl.textContent = k === 'hot' ? 'HOT' : k === 'warm' ? 'Warm' : 'Cold'; }
+    if (h === null) { k = 'warm'; w = 1; E.nl.textContent = S.found ? L('mod.walk.nose_found', 'Found!') : L('mod.walk.nose_dug', 'Dug'); }
+    else { k = h > 0.72 ? 'hot' : h > 0.38 ? 'warm' : 'cold'; w = 0.06 + h * 0.94; E.nl.textContent = k === 'hot' ? L('mod.walk.nose_hot', 'HOT') : k === 'warm' ? L('mod.walk.nose_warm', 'Warm') : L('mod.walk.nose_cold', 'Cold'); }
     if (k !== noseK) { E.nose.className = 'pw-nose ' + k; noseK = k; }
     E.noseBar.style.transform = `scaleX(${w.toFixed(3)})`;
   }
   function sniffClue() {
-    if (S.found || treasureDig.done) return pick(L.done);
+    if (S.found || treasureDig.done) return pickLine('walk_lines.done', WALK_LINES.done);
     S.nudge = Math.min(0.25, S.nudge + 0.18);
-    const dx = S.camX + DOG.x; if (treasureDig.x < dx - 200) return pick(L.past);
-    const h = heat(); return pick(h > 0.72 ? L.hot : h > 0.38 ? L.warm : L.far);
+    const dx = S.camX + DOG.x; if (treasureDig.x < dx - 200) return pickLine('walk_lines.past', WALK_LINES.past);
+    const h = heat(); return h > 0.72 ? pickLine('walk_lines.hot', WALK_LINES.hot) : h > 0.38 ? pickLine('walk_lines.warm', WALK_LINES.warm) : pickLine('walk_lines.far', WALK_LINES.far);
   }
 
   /* ---------- actions ---------- */
@@ -974,18 +994,18 @@ function start(el, o) {
     S.hitLog.push([ob.name, Math.round(S.played * 10) / 10, Math.round(S.h), S.crouchHeld ? 1 : 0, Math.round(S.v)]);
     S.hits++; S.invT = 1.3; S.stumbleT = 0.4; poseFor('sad', 0.45); sfx('bonk');
     const lost = Math.min(3, Math.max(0, D - S.t)); S.t += lost; S.timeLost += lost;
-    pop('Bonk!', DOG.x - 70, G - 150, '#d2483b');
+    pop(L('mod.walk.pop_bonk', 'Bonk!'), DOG.x - 70, G - 150, '#d2483b');
     timePenaltyFx();
-    say(pick(L.bonkName[ob.name] && Math.random() < 0.6 ? L.bonkName[ob.name] : ob.cat === 'high' ? L.bonkHigh : L.bonk), 1700);
+    say(WALK_LINES.bonkName[ob.name] && Math.random() < 0.6 ? pickLine('walk_lines.bonkname.' + ob.name, WALK_LINES.bonkName[ob.name]) : ob.cat === 'high' ? pickLine('walk_lines.bonkhigh', WALK_LINES.bonkHigh) : pickLine('walk_lines.bonk', WALK_LINES.bonk), 1700);
   }
   function timePenaltyFx() {
-    const t = document.createElement('span'); t.className = 'pw-tpop'; t.textContent = '\u22123s'; E.time.appendChild(t); setTimeout(() => t.remove(), 1300);
+    const t = document.createElement('span'); t.className = 'pw-tpop'; t.textContent = L('mod.walk.minus_3s', '\u22123s'); E.time.appendChild(t); setTimeout(() => t.remove(), 1300);
     E.time.classList.remove('pw-hit'); void E.time.offsetWidth; E.time.classList.add('pw-hit');
   }
   function splash(ob) {
     S.splashes++; const mud = ob.name === 'mud'; splashFx(mud); sfx('splash');
-    if (dryCoat) { pop('Dry!', DOG.x, G - 110, '#4D7FC0'); say(pick(L.dry), 1500); }
-    else { S.cleanLoss = (S.cleanLoss || 0) + (mud ? 9 : 6); pop(mud ? 'Muddy!' : 'Soggy!', DOG.x, G - 110, '#7d533a'); say(pick(L.splash), 1600); }
+    if (dryCoat) { pop(L('mod.walk.pop_dry', 'Dry!'), DOG.x, G - 110, '#4D7FC0'); say(pickLine('walk_lines.dry', WALK_LINES.dry), 1500); }
+    else { S.cleanLoss = (S.cleanLoss || 0) + (mud ? 9 : 6); pop(mud ? L('mod.walk.pop_muddy', 'Muddy!') : L('mod.walk.pop_soggy', 'Soggy!'), DOG.x, G - 110, '#7d533a'); say(pickLine('walk_lines.splash', WALK_LINES.splash), 1600); }
     poseFor('shake', 0.5); setTimeout(() => { if (!S.stopped) sfx('shake'); }, 120);
   }
   function collectCoin(ob) {
@@ -999,9 +1019,9 @@ function start(el, o) {
   function startPrompt(ob) {
     ob.prompted = true;
     if (S.found) return;
-    if (S.digsUsed >= S.digsMax) { if (!S.outOfDigsSaid) { S.outOfDigsSaid = true; say('Out of digs. The nose sighs.', 1800); } return; }
+    if (S.digsUsed >= S.digsMax) { if (!S.outOfDigsSaid) { S.outOfDigsSaid = true; say(L('mod.walk.out_of_digs', 'Out of digs. The nose sighs.'), 1800); } return; }
     S.prompt = ob; S.promptT = 1.5; E.digB.hidden = false; E.prompt.hidden = false; sfx('pop');
-    if (o.firstWalk && ob.treasure && !S.firstHintSaid) { S.firstHintSaid = true; say(mode !== 'desk' || coarse ? 'This X smells AMAZING. Tap Dig!' : 'This X smells AMAZING. Press D to dig!', 2200); }
+    if (o.firstWalk && ob.treasure && !S.firstHintSaid) { S.firstHintSaid = true; say(mode !== 'desk' || coarse ? L('mod.walk.first_x_tap', 'This X smells AMAZING. Tap Dig!') : L('mod.walk.first_x_key', 'This X smells AMAZING. Press D to dig!'), 2200); }
   }
   function skipPrompt() { if (!S.prompt) return; S.prompt.skipped = true; S.prompt = null; E.digB.hidden = true; E.prompt.hidden = true; }
   function doDig() {
@@ -1019,26 +1039,26 @@ function start(el, o) {
   function treasureHtml(r, title) {
     if (r && r.name) {
       const art = call('item', r.name);
-      return `<h2>${esc(title)}</h2><div class="pw-art">${art || ''}</div><h3>${esc(r.name)}</h3>${r.rarity ? `<span class="pw-stamp ${rarityClass(r.rarity)}">${esc(r.rarity)}</span>` : ''}<p>${esc(r.desc || '')}</p>${r.dup ? '<p><i>You already have one. A squirrel will buy it.</i></p>' : ''}<div class="pw-row"><button class="pw-btn yes" data-ok tabindex="-1">Keep walking <span class="pw-k">Space</span></button></div>`;
+      return `<h2>${esc(title)}</h2><div class="pw-art">${art || ''}</div><h3>${esc(r.label || r.name)}</h3>${r.rarity ? `<span class="pw-stamp ${rarityClass(r.rarityKey || r.rarity)}">${esc(r.rarity)}</span>` : ''}<p>${esc(r.desc || '')}</p>${r.dup ? '<p><i>' + LE('mod.walk.dup_treasure', 'You already have one. A squirrel will buy it.') + '</i></p>' : ''}<div class="pw-row"><button class="pw-btn yes" data-ok tabindex="-1">${LE('mod.walk.keep_walking', 'Keep walking')} <span class="pw-k">Space</span></button></div>`;
     }
     const c = r && r.coins ? +r.coins : 0;
-    return `<h2>${esc(title)}</h2><div class="pw-art">${colSvg('chest')}</div><p>${esc((r && r.text) || 'A pouch of coins!')}</p><h3>+${c} coins</h3><div class="pw-row"><button class="pw-btn yes" data-ok tabindex="-1">Keep walking <span class="pw-k">Space</span></button></div>`;
+    return `<h2>${esc(title)}</h2><div class="pw-art">${colSvg('chest')}</div><p>${esc((r && r.text) || L('mod.walk.pouch', 'A pouch of coins!'))}</p><h3>${LE('mod.walk.plus_coins', '{n, plural, one {+# coin} other {+# coins}}', { n: c })}</h3><div class="pw-row"><button class="pw-btn yes" data-ok tabindex="-1">${LE('mod.walk.keep_walking', 'Keep walking')} <span class="pw-k">Space</span></button></div>`;
   }
   function finishDig() {
     const ob = S.digObj; S.digObj = null; if (ob && ob.el) ob.el.classList.add('pw-dug');
     if (ob && ob.treasure) {
       let r = null; try { r = (o.rollTreasure || noop)(area); } catch (e) { r = null; }
-      if (!r) r = { coins: 40, text: 'A pouch of coins!' };
+      if (!r) r = { coins: 40, text: L('mod.walk.pouch', 'A pouch of coins!') };
       S.treasure = r; S.found = true; updateDigsHud();
       if (!r.name && r.coins) S.treasureCoins += +r.coins || 0;
       sfx('treasure'); poseFor('happy', 1.2);
-      showCard(treasureHtml(r, 'TREASURE!'), 3.2);
+      showCard(treasureHtml(r, L('mod.walk.treasure_title', 'TREASURE!')), 3.2);
     } else {
       let j = null; try { j = (o.junk || noop)(); } catch (e) { j = null; }
-      if (!j) j = { text: 'A rock shaped like a slightly different rock.', coins: 5 };
+      if (!j) j = { text: L('mod.walk.junk_rock', 'A rock shaped like a slightly different rock.'), coins: 5 };
       S.junk.push({ text: j.text, coins: +j.coins || 0 }); S.junkCoins += +j.coins || 0;
       sfx('nope'); poseFor('sad', 0.6);
-      showCard(`<h2>No treasure here...</h2><p>${esc(j.text)}</p><h3>+${+j.coins || 0} coins</h3><p style="font-size:16px;opacity:.8">${S.digsUsed >= S.digsMax ? 'That was the last dig.' : `Digs left: ${S.digsMax - S.digsUsed}. Watch the Nose-o-meter.`}</p><div class="pw-row"><button class="pw-btn yes" data-ok tabindex="-1">Onwards <span class="pw-k">Space</span></button></div>`, 2.2);
+      showCard(`<h2>${LE('mod.walk.no_treasure', 'No treasure here...')}</h2><p>${esc(j.text)}</p><h3>${LE('mod.walk.plus_coins', '{n, plural, one {+# coin} other {+# coins}}', { n: +j.coins || 0 })}</h3><p style="font-size:16px;opacity:.8">${S.digsUsed >= S.digsMax ? LE('mod.walk.last_dig', 'That was the last dig.') : LE('mod.walk.digs_left_watch', 'Digs left: {n}. Watch the Nose-o-meter.', { n: S.digsMax - S.digsUsed })}</p><div class="pw-row"><button class="pw-btn yes" data-ok tabindex="-1">${LE('mod.walk.onwards', 'Onwards')} <span class="pw-k">Space</span></button></div>`, 2.2);
     }
   }
   function collectBonus(ob) {
@@ -1046,11 +1066,11 @@ function start(el, o) {
     let r = null; try { r = (o.rollTreasure || noop)(area); } catch (e) { r = null; }
     if (!r) return;
     r.bonus = true; S.bonus = r; if (!r.name && r.coins) S.treasureCoins += +r.coins || 0;
-    sfx('treasure'); showCard(treasureHtml(r, 'Bonus sparkle!'), 2.6);
+    sfx('treasure'); showCard(treasureHtml(r, L('mod.walk.bonus_title', 'Bonus sparkle!')), 2.6);
   }
   function closeReveal() {
     if (S.mode !== 'reveal') return; E.ov.hidden = true; E.ov.innerHTML = ''; E.ov.className = 'pw-ov'; S.mode = 'run';
-    if (o.firstWalk && S.found && !S.firstDoneSaid) { S.firstDoneSaid = true; say('You found it! Every walk hides one.', 2200); }
+    if (o.firstWalk && S.found && !S.firstDoneSaid) { S.firstDoneSaid = true; say(L('mod.walk.found_it', 'You found it! Every walk hides one.'), 2200); }
   }
 
   /* ---------- pause / bag ---------- */
@@ -1059,17 +1079,17 @@ function start(el, o) {
     if (S.ended || S.mode === 'paused' || S.mode === 'bag') return;
     prevMode = S.mode; S.mode = 'paused'; sfx('click'); releaseAll();
     E.ov.className = 'pw-ov dim'; E.ov.hidden = false;
-    const TP = mode !== 'desk' || coarse, highs = esc(A.high.map((n) => OBS_LABEL[n].toLowerCase()).join(', '));
-    E.ov.innerHTML = `<div class="pw-card pw-panel"><h2>Paused</h2><ul>${TP ? `
-      <li><b>Jump</b>: tap the scene or Jump to hop, <b>hold</b> for a long jump (clears puddles).</li>
-      <li><b>Duck</b>: swipe down, or hold Duck, to crouch under ${highs}.</li>
-      <li><b>Dig!</b>: tap it when the dog stands on an X. The Nose-o-meter says HOT near the treasure.</li>
-      <li><b>Bag</b>: opens the bag. <b>II</b>: pauses.</li>` : `
-      <li><b>Space / &uarr; / Jump</b>: tap to hop, <b>hold</b> for a long jump (clears puddles).</li>
-      <li><b>&darr; / S / Duck</b>: hold to crouch under ${highs}.</li>
-      <li><b>D</b>: dig when the dog stands on an X. The Nose-o-meter says HOT near the treasure.</li>
-      <li><b>B</b>: bag. <b>Esc</b>: pause.</li>`}</ul>
-      <div class="pw-row"><button class="pw-btn yes" data-res tabindex="-1">Keep walking</button><button class="pw-btn" data-home tabindex="-1">Head home early</button></div></div>`;
+    const TP = mode !== 'desk' || coarse, highs = LL(A.high.map(obsLow));
+    E.ov.innerHTML = `<div class="pw-card pw-panel"><h2>${LE('mod.walk.paused', 'Paused')}</h2><ul>${TP ? `
+      <li>${L('mod.walk.pause_t_jump_html', '<b>Jump</b>: tap the scene or Jump to hop, <b>hold</b> for a long jump (clears puddles).')}</li>
+      <li>${L('mod.walk.pause_t_duck_html', '<b>Duck</b>: swipe down, or hold Duck, to crouch under {highs}.', { highs })}</li>
+      <li>${L('mod.walk.pause_t_dig_html', '<b>Dig!</b>: tap it when the dog stands on an X. The Nose-o-meter says HOT near the treasure.')}</li>
+      <li>${L('mod.walk.pause_t_bag_html', '<b>Bag</b>: opens the bag. <b>II</b>: pauses.')}</li>` : `
+      <li>${L('mod.walk.pause_d_jump_html', '<b>Space / &uarr; / Jump</b>: tap to hop, <b>hold</b> for a long jump (clears puddles).')}</li>
+      <li>${L('mod.walk.pause_d_duck_html', '<b>&darr; / S / Duck</b>: hold to crouch under {highs}.', { highs })}</li>
+      <li>${L('mod.walk.pause_d_dig_html', '<b>D</b>: dig when the dog stands on an X. The Nose-o-meter says HOT near the treasure.')}</li>
+      <li>${L('mod.walk.pause_d_bag_html', '<b>B</b>: bag. <b>Esc</b>: pause.')}</li>`}</ul>
+      <div class="pw-row"><button class="pw-btn yes" data-res tabindex="-1">${LE('mod.walk.keep_walking', 'Keep walking')}</button><button class="pw-btn" data-home tabindex="-1">${LE('mod.walk.head_home_early', 'Head home early')}</button></div></div>`;
     E.ov.querySelector('[data-res]').addEventListener('click', resume);
     E.ov.querySelector('[data-home]').addEventListener('click', () => { resume(); finish(true); });
   }
@@ -1077,16 +1097,16 @@ function start(el, o) {
     if (S.ended || S.mode === 'paused' || S.mode === 'bag' || S.mode === 'countdown') return;
     prevMode = S.mode; S.mode = 'bag'; sfx('click'); releaseAll();
     const usable = bag.filter((b) => b.count > 0);
-    const rows = usable.length ? usable.map((b) => `<div class="pw-bagrow"><span class="pw-ic">${call('item', b.name)}</span><span>${esc(b.name)} x${b.count}</span>${b.name === 'Wild Berries' ? `<button class="pw-btn yes" data-use="${esc(b.name)}" tabindex="-1">Eat: +15 s</button>` : '<span style="opacity:.7">not for walks</span>'}</div>`).join('')
-      : '<p>The bag is empty. Wild Berries (a treasure) add +15 seconds.</p>';
+    const rows = usable.length ? usable.map((b) => `<div class="pw-bagrow"><span class="pw-ic">${call('item', b.name)}</span><span>${LE('mod.walk.bag_row', '{name} x{count}', { name: b.label || b.name, count: b.count })}</span>${b.name === 'Wild Berries' ? `<button class="pw-btn yes" data-use="${esc(b.name)}" tabindex="-1">${LE('mod.walk.eat_berries', 'Eat: +15 s')}</button>` : '<span style="opacity:.7">' + LE('mod.walk.not_for_walks', 'not for walks') + '</span>'}</div>`).join('')
+      : '<p>' + LE('mod.walk.bag_empty', 'The bag is empty. Wild Berries (a treasure) add +15 seconds.') + '</p>';
     E.ov.className = 'pw-ov dim'; E.ov.hidden = false;
-    E.ov.innerHTML = `<div class="pw-card pw-panel"><h2>Bag</h2>${rows}<div class="pw-row"><button class="pw-btn" data-res tabindex="-1">Close <span class="pw-k">B</span></button></div></div>`;
+    E.ov.innerHTML = `<div class="pw-card pw-panel"><h2>${LE('mod.walk.bag', 'Bag')}</h2>${rows}<div class="pw-row"><button class="pw-btn" data-res tabindex="-1">${LE('mod.walk.close', 'Close')} <span class="pw-k">B</span></button></div></div>`;
     E.ov.querySelector('[data-res]').addEventListener('click', resume);
     E.ov.querySelectorAll('[data-use]').forEach((b) => b.addEventListener('click', () => {
       const name = b.getAttribute('data-use'); let ok = false; try { ok = !!(o.useBagItem || noop)(name); } catch (e) { ok = false; }
       const it = bag.find((x) => x.name === name);
-      if (ok) { if (it) it.count--; D += 15; sfx('crunch'); resume(); pop('+15 s', DOG.x, G - 130, '#4F9A5C'); say('Berries! Fuel for 15 more seconds.', 1800); }
-      else { sfx('nope'); b.disabled = true; b.textContent = 'Can\'t use that now'; }
+      if (ok) { if (it) it.count--; D += 15; sfx('crunch'); resume(); pop(L('mod.walk.plus_15_s', '+15 s'), DOG.x, G - 130, '#4F9A5C'); say(L('mod.walk.berries_fuel', 'Berries! Fuel for 15 more seconds.'), 1800); }
+      else { sfx('nope'); b.disabled = true; b.textContent = L('mod.walk.cant_use', 'Can\'t use that now'); }
     }));
   }
   function resume() { if (S.mode !== 'paused' && S.mode !== 'bag') return; E.ov.hidden = true; E.ov.innerHTML = ''; E.ov.className = 'pw-ov'; S.mode = prevMode; last = performance.now(); acc = 0; }
@@ -1113,12 +1133,15 @@ function start(el, o) {
   }
   function startEnding() {
     S.endT = 1.4; skipPrompt(); releaseAll(); sfx('bark');
-    E.ov.className = 'pw-ov'; E.ov.hidden = false; E.ov.innerHTML = `<div class="pw-cd" style="font-size:80px">What a walk!</div>`;
+    E.ov.className = 'pw-ov'; E.ov.hidden = false; E.ov.innerHTML = `<div class="pw-cd" style="font-size:80px">${LE('mod.walk.what_a_walk', 'What a walk!')}</div>`;
   }
 
   /* ---------- "How to walk" tutorial (before the countdown) ---------- */
   const ROUTE_NAME = { park: 'Sunny Park', river: 'Riverside Trail', woods: 'Maple Woods', beach: 'Seashell Beach', town: 'Town Loop', hilltop: 'Hilltop Trail', pier: 'Pier Boardwalk' };
-  const OBS_LABEL = { log: 'Log', rock: 'Rock', sprinkler: 'Sprinkler', snowdrift: 'Snowdrift', crab: 'Crab', sandcastle: 'Sandcastle', puddle: area === 'beach' ? 'Tide pool' : 'Puddle', mud: 'Mud', branch: 'Branch', bird: area === 'river' ? 'Duck' : 'Bird', sign: 'Sign', kite: 'Kite string', bunting: 'Bunting', cat: 'Cat', trashcan: 'Trash can', hydrant: 'Hydrant', bicycle: 'Bicycle', awning: 'Awning', molehill: 'Molehill', crate: 'Crate', ropecoil: 'Rope coil', seagull: 'Seagull', fishingline: 'Fishing line' };
+  const OBS_LABEL = { log: 'Log', rock: 'Rock', sprinkler: 'Sprinkler', snowdrift: 'Snowdrift', crab: 'Crab', sandcastle: 'Sandcastle', puddle: 'Puddle', mud: 'Mud', branch: 'Branch', bird: 'Bird', sign: 'Sign', kite: 'Kite string', bunting: 'Bunting', cat: 'Cat', trashcan: 'Trash can', hydrant: 'Hydrant', bicycle: 'Bicycle', awning: 'Awning', molehill: 'Molehill', crate: 'Crate', ropecoil: 'Rope coil', seagull: 'Seagull', fishingline: 'Fishing line', tide_pool: 'Tide pool', duck: 'Duck' };
+  const obsKey = (n) => (n === 'puddle' && area === 'beach' ? 'tide_pool' : n === 'bird' && area === 'river' ? 'duck' : n);
+  const obsLabel = (n) => LD('obs_label.' + obsKey(n), OBS_LABEL[obsKey(n)]);
+  const obsLow = (n) => (lang() === 'en' ? obsLabel(n).toLowerCase() : obsLabel(n));
   function routeObstacles() {
     const out = [], add = (n) => { if (!out.includes(n)) out.push(n); };
     A.low.forEach(add); if (snow) add('snowdrift'); A.wide.forEach(add); if (rain) (A.rainWide || ['puddle', 'mud']).forEach(add); A.high.forEach(add);
@@ -1129,40 +1152,40 @@ function start(el, o) {
   function tutPage(i) {
     const T = mode !== 'desk' || coarse;
     const mLow = A.low[0], mWide = A.wide.find((n) => !OBS[n].solid) || 'puddle', mHigh = A.high[0];
-    const lows = A.low.concat(snow ? ['snowdrift'] : []).map((n) => OBS_LABEL[n].toLowerCase()).join(', ');
-    const highs = A.high.map((n) => OBS_LABEL[n].toLowerCase()).join(', ');
-    if (i === 0) return `<h3>1. Your moves</h3>
+    const lows = LL(A.low.concat(snow ? ['snowdrift'] : []).map(obsLow));
+    const highs = LL(A.high.map(obsLow));
+    if (i === 0) return `<h3>${LE('mod.walk.tut_h1', '1. Your moves')}</h3>
       <div class="pw-trow"><div class="pw-mini jump"><div class="pw-mp" style="left:92px;${fitBox(mLow, 44, 24)}">${stickerImg(mLow)}</div><div class="pw-md">${poseStr.jump}</div></div>
-        <div><b>Jump</b> &mdash; ${T ? 'tap the <b>scene</b> (or Jump)' : 'tap <b>Space</b> / <b>&uarr;</b> (or the Jump button)'}.<br>Hop over low things: ${esc(lows)}.</div></div>
+        <div>${L('mod.walk.tut_jump_html', '{touch, select, yes {<b>Jump</b> &mdash; tap the <b>scene</b> (or Jump).} other {<b>Jump</b> &mdash; tap <b>Space</b> / <b>&uarr;</b> (or the Jump button).}}', { touch: T ? 'yes' : 'no' })}<br>${LE('mod.walk.tut_hop_low', 'Hop over low things: {lows}.', { lows })}</div></div>
       <div class="pw-trow"><div class="pw-mini long"><div class="pw-mp" style="left:40px;${fitBox(mWide, 76, 14)}">${stickerImg(mWide)}</div><div class="pw-md">${poseStr.jump}</div></div>
-        <div><b>Long jump</b> &mdash; <b>hold</b> ${T ? 'the scene (or Jump)' : 'Space'}.<br>${A.wide.includes('bicycle') ? 'Clears parked bicycles, and floats over puddles to keep you clean.' : 'Floats over puddles and mud, and keeps you clean.'}</div></div>
+        <div>${L('mod.walk.tut_long_html', '{touch, select, yes {<b>Long jump</b> &mdash; <b>hold</b> the scene (or Jump).} other {<b>Long jump</b> &mdash; <b>hold</b> Space.}}', { touch: T ? 'yes' : 'no' })}<br>${A.wide.includes('bicycle') ? LE('mod.walk.tut_long_bike', 'Clears parked bicycles, and floats over puddles to keep you clean.') : LE('mod.walk.tut_long_plain', 'Floats over puddles and mud, and keeps you clean.')}</div></div>
       <div class="pw-trow"><div class="pw-mini duck"><div class="pw-mp" style="left:22px;top:2px;bottom:auto;${fitBox(mHigh, 110, 38)}">${stickerImg(mHigh)}</div><div class="pw-md" style="left:34px">${poseStr.crouch}</div></div>
-        <div><b>Duck</b> &mdash; ${T ? '<b>swipe down</b>, or hold Duck' : 'hold <b>&darr;</b> / <b>S</b> (or the Duck button)'}.<br>Slide under high things: ${esc(highs)}.</div></div>`;
+        <div>${L('mod.walk.tut_duck_html', '{touch, select, yes {<b>Duck</b> &mdash; <b>swipe down</b>, or hold Duck.} other {<b>Duck</b> &mdash; hold <b>&darr;</b> / <b>S</b> (or the Duck button).}}', { touch: T ? 'yes' : 'no' })}<br>${LE('mod.walk.tut_slide_high', 'Slide under high things: {highs}.', { highs })}</div></div>`;
     if (i === 1) {
       const RN = ROUTE_NOTES[area], RW = ROUTE_WX[area] || {};
-      const cells = routeObstacles().map((n) => { const c = OBS[n].cat; return `<div class="pw-obsc"><div class="pw-oi"><div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);${fitBox(n, 62, 42)}">${stickerImg(n)}</div></div><span><b>${esc(OBS_LABEL[n])}</b>${RN && RN[n] ? `<i>${esc(RN[n])}</i>` : BADGE[c][1]}</span>${badgeHtml(c)}</div>`; }).join('');
-      const notes = [rain ? RW.rain || 'Rain: extra puddles and mud.' : '', snow ? RW.snow || 'Snow: snowdrifts and cold paws.' : '', night ? RW.night || 'Night: lamps light the path. Fewer birds.' : ''].filter(Boolean).join(' ');
-      return `<h3>2. On this route</h3><p style="text-align:center;margin:0 0 6px">Every obstacle wears a badge: <span style="color:#d27a35">&uarr; jump</span>, <span style="color:#d2483b">&uarr;&uarr; long jump</span>, <span style="color:#4D7FC0">&darr; duck</span>.</p><div class="pw-obsgrid${RN ? ' pw-notes' : ''}">${cells}</div>${notes ? `<p style="text-align:center;margin:4px 0 0">${esc(notes)}</p>` : ''}`;
+      const cells = routeObstacles().map((n) => { const c = OBS[n].cat; return `<div class="pw-obsc"><div class="pw-oi"><div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);${fitBox(n, 62, 42)}">${stickerImg(n)}</div></div><span><b>${esc(obsLabel(n))}</b>${RN && RN[n] ? `<i>${esc(LD('route_notes.' + area + '.' + n, RN[n]))}</i>` : esc(LD('badge.' + c + '.1', BADGE[c][1]))}</span>${badgeHtml(c)}</div>`; }).join('');
+      const notes = [rain ? (RW.rain ? LD('route_wx.' + area + '.rain', RW.rain) : L('mod.walk.wx_rain', 'Rain: extra puddles and mud.')) : '', snow ? (RW.snow ? LD('route_wx.' + area + '.snow', RW.snow) : L('mod.walk.wx_snow', 'Snow: snowdrifts and cold paws.')) : '', night ? (RW.night ? LD('route_wx.' + area + '.night', RW.night) : L('mod.walk.wx_night', 'Night: lamps light the path. Fewer birds.')) : ''].filter(Boolean).join(' ');
+      return `<h3>${LE('mod.walk.tut_h2', '2. On this route')}</h3><p style="text-align:center;margin:0 0 6px">${L('mod.walk.tut_badges_html', 'Every obstacle wears a badge: <span class="pw-bj">&uarr; jump</span>, <span class="pw-bl">&uarr;&uarr; long jump</span>, <span class="pw-bd">&darr; duck</span>.')}</p><div class="pw-obsgrid${RN ? ' pw-notes' : ''}">${cells}</div>${notes ? `<p style="text-align:center;margin:4px 0 0">${esc(notes)}</p>` : ''}`;
     }
-    if (i === 2) return `<h3>3. The hidden treasure</h3>
-      <div class="pw-trow"><span class="pw-tic">${$('.pw-noseic').innerHTML}</span><div><b>Nose-o-meter</b> (top bar) <span class="pw-nm"><i style="color:#5c86b8">Cold</i><i style="color:#d27a35">Warm</i><i style="color:#d2483b">HOT</i></span>It gets hotter near the treasure${ab.necklace ? ', and your Seashell Necklace smells it from twice as far' : ''}.</div></div>
-      <div class="pw-trow"><span class="pw-tic"><img alt="" src="${colUri('sniff')}"></span><div><b>Sniff spots</b> &mdash; run through them for a clue.</div></div>
-      <div class="pw-trow"><span class="pw-tic"><img alt="" src="${colUri('dig')}"></span><div><b>X marks a dig spot</b> &mdash; ${T ? 'tap <b>Dig!</b>' : 'press <b>D</b> or tap <b>Dig!</b>'} while standing on it.<br>Only ONE X hides the treasure.${ab.goggles ? ' Your Explorer Goggles make the right X sparkle.' : ''}${o.firstWalk ? ' Psst: on your first walk, try the first X.' : ''}</div></div>
-      <div class="pw-trow"><span class="pw-tic" style="display:flex;align-items:center;justify-content:center"><span class="pw-xm" style="font-size:36px">X${S.digsMax > 2 ? 'XX' : 'X'}</span></span><div><b>Digs left: ${S.digsMax}</b> (${ab.extraDig ? 'the Acorn Cap gives you an extra dig' : '3 with the Acorn Cap'}). Choose wisely!</div></div>`;
-    return `<h3>4. Bumps and coins</h3>
-      <div class="pw-trow"><span class="pw-tic pw-neg" style="font-family:Caveat,cursive;font-weight:700;font-size:44px;color:#d2483b;line-height:52px;text-align:center">&minus;3s</span><div><b>Each bump costs 3 seconds</b> off the walk clock, then a short blink where nothing can bump you.</div></div>
+    if (i === 2) return `<h3>${LE('mod.walk.tut_h3', '3. The hidden treasure')}</h3>
+      <div class="pw-trow"><span class="pw-tic">${$('.pw-noseic').innerHTML}</span><div>${L('mod.walk.tut_nose_html', '<b>Nose-o-meter</b> (top bar)')} <span class="pw-nm"><i style="color:#5c86b8">${LE('mod.walk.nose_cold', 'Cold')}</i><i style="color:#d27a35">${LE('mod.walk.nose_warm', 'Warm')}</i><i style="color:#d2483b">${LE('mod.walk.nose_hot', 'HOT')}</i></span>${LE('mod.walk.tut_hotter', '{neck, select, yes {It gets hotter near the treasure, and your Seashell Necklace smells it from twice as far.} other {It gets hotter near the treasure.}}', { neck: ab.necklace ? 'yes' : 'no' })}</div></div>
+      <div class="pw-trow"><span class="pw-tic"><img alt="" src="${colUri('sniff')}"></span><div>${L('mod.walk.tut_sniff_html', '<b>Sniff spots</b> &mdash; run through them for a clue.')}</div></div>
+      <div class="pw-trow"><span class="pw-tic"><img alt="" src="${colUri('dig')}"></span><div>${L('mod.walk.tut_x_html', '{touch, select, yes {<b>X marks a dig spot</b> &mdash; tap <b>Dig!</b> while standing on it.} other {<b>X marks a dig spot</b> &mdash; press <b>D</b> or tap <b>Dig!</b> while standing on it.}}', { touch: T ? 'yes' : 'no' })}<br>${LE('mod.walk.tut_x_one', 'Only ONE X hides the treasure.')}${ab.goggles ? ' ' + LE('mod.walk.tut_x_goggles', 'Your Explorer Goggles make the right X sparkle.') : ''}${o.firstWalk ? ' ' + LE('mod.walk.tut_x_first', 'Psst: on your first walk, try the first X.') : ''}</div></div>
+      <div class="pw-trow"><span class="pw-tic" style="display:flex;align-items:center;justify-content:center"><span class="pw-xm" style="font-size:36px">X${S.digsMax > 2 ? 'XX' : 'X'}</span></span><div>${L('mod.walk.tut_digs_html', '{extra, select, yes {<b>Digs left: {n}</b> (the Acorn Cap gives you an extra dig). Choose wisely!} other {<b>Digs left: {n}</b> (3 with the Acorn Cap). Choose wisely!}}', { extra: ab.extraDig ? 'yes' : 'no', n: S.digsMax })}</div></div>`;
+    return `<h3>${LE('mod.walk.tut_h4', '4. Bumps and coins')}</h3>
+      <div class="pw-trow"><span class="pw-tic pw-neg" style="font-family:Caveat,cursive;font-weight:700;font-size:44px;color:#d2483b;line-height:52px;text-align:center">${LE('mod.walk.minus_3s_big', '\u22123s')}</span><div>${L('mod.walk.tut_bump_html', '<b>Each bump costs 3 seconds</b> off the walk clock, then a short blink where nothing can bump you.')}</div></div>
       <div class="pw-trow"><div class="pw-mini" style="width:150px"><img alt="" src="${colUri('coin')}" style="position:absolute;left:14px;bottom:8px;width:26px"><img alt="" src="${colUri('coin')}" style="position:absolute;left:62px;bottom:34px;width:26px"><img alt="" src="${colUri('coin')}" style="position:absolute;left:110px;bottom:62px;width:26px"></div>
-        <div><b>Coins sit at 3 heights</b><br>low: just walk &middot; middle: walk or hop &middot; high: jump.</div></div>
-      <div class="pw-trow"><span class="pw-tic">${$('.pw-bagic').innerHTML}</span><div>${T ? 'The <b>bag</b> button' : '<b>B</b>'} opens the bag (Wild Berries add 15 s). ${T ? 'The <b>II</b> button' : '<b>Esc</b>'} pauses.</div></div>`;
+        <div>${L('mod.walk.tut_coins_html', '<b>Coins sit at 3 heights</b><br>low: just walk &middot; middle: walk or hop &middot; high: jump.')}</div></div>
+      <div class="pw-trow"><span class="pw-tic">${$('.pw-bagic').innerHTML}</span><div>${L('mod.walk.tut_bagkeys_html', '{touch, select, yes {The <b>bag</b> button opens the bag (Wild Berries add 15 s). The <b>II</b> button pauses.} other {<b>B</b> opens the bag (Wild Berries add 15 s). <b>Esc</b> pauses.}}', { touch: T ? 'yes' : 'no' })}</div></div>`;
   }
   function showTutorial() {
     S.mode = 'tutorial'; E.ov.className = 'pw-ov dim'; E.ov.hidden = false;
     const i = tut.i, last = i === tut.n - 1;
-    E.ov.innerHTML = `<div class="pw-card pw-panel pw-tut" role="dialog" aria-label="How to walk"><h2>${esc(ROUTE_NAME[area] || 'Walk')}</h2><p class="pw-sub">How to walk</p>${tutPage(i)}
-      <div class="pw-tfoot"><label class="pw-skip"><input type="checkbox" tabindex="-1" data-skip ${o.skipTutorial ? 'checked' : ''}> Skip next time</label>
+    E.ov.innerHTML = `<div class="pw-card pw-panel pw-tut" role="dialog" aria-label="${LE('mod.walk.how_to_walk', 'How to walk')}"><h2>${ROUTE_NAME[area] ? esc(LD('route_name.' + area, ROUTE_NAME[area])) : LE('mod.walk.walk', 'Walk')}</h2><p class="pw-sub">${LE('mod.walk.how_to_walk', 'How to walk')}</p>${tutPage(i)}
+      <div class="pw-tfoot"><label class="pw-skip"><input type="checkbox" tabindex="-1" data-skip ${o.skipTutorial ? 'checked' : ''}> ${LE('mod.walk.skip_next', 'Skip next time')}</label>
       <span class="pw-dots">${[0, 1, 2, 3].map((k) => `<i class="${k === i ? 'on' : ''}">&#9679;</i>`).join('')}</span>
-      ${i > 0 ? '<button class="pw-btn" data-back tabindex="-1">Back</button>' : ''}${last ? '' : '<button class="pw-btn" data-next tabindex="-1">Next <span class="pw-k">&rarr;</span></button>'}
-      <button class="pw-btn yes" data-go tabindex="-1" style="font-family:Caveat,cursive;font-size:24px;font-weight:700">Let's go!</button></div></div>`;
+      ${i > 0 ? `<button class="pw-btn" data-back tabindex="-1">${LE('mod.walk.back', 'Back')}</button>` : ''}${last ? '' : `<button class="pw-btn" data-next tabindex="-1">${LE('mod.walk.next', 'Next')} <span class="pw-k">&rarr;</span></button>`}
+      <button class="pw-btn yes" data-go tabindex="-1" style="font-family:Caveat,cursive;font-size:24px;font-weight:700">${LE('mod.walk.lets_go', 'Let\'s go!')}</button></div></div>`;
     const q = (a) => E.ov.querySelector(a);
     q('[data-skip]').addEventListener('change', (e) => { e.target.blur(); o.skipTutorial = !!e.target.checked; try { if (typeof o.setSkipTutorial === 'function') o.setSkipTutorial(!!e.target.checked); } catch (er) { /* ignore */ } });
     if (q('[data-back]')) q('[data-back]').addEventListener('click', () => tutGo(-1));
@@ -1177,10 +1200,10 @@ function start(el, o) {
     if (S.mode === 'countdown') {
       S.cd -= dt; const n = Math.ceil(S.cd);
       if (n !== S.cdShown) {
-        S.cdShown = n; const w = n >= 3 ? 'Ready' : n === 2 ? 'sniff' : n === 1 ? 'GO!' : '';
-        if (w) { E.ov.className = 'pw-ov'; E.ov.hidden = false; E.ov.innerHTML = `<div class="pw-cd">${w}</div>` + (S.remind ? (mode !== 'desk' || coarse ? '<div class="pw-remind pw-panel" style="padding:4px 14px"><b>Tap</b> jump &middot; <span style="white-space:nowrap"><b>hold</b> = long jump</span> &middot; <b>swipe down</b> duck &middot; <b>Dig!</b> at an X</div>' : '<div class="pw-remind pw-panel" style="padding:4px 14px"><b>Space/&uarr;</b> jump &middot; <b>hold</b> = long jump &middot; <b>&darr;/S</b> duck &middot; <b>D</b> dig at an X</div>') : ''); sfx(n === 1 ? 'bark' : 'click'); }
+        S.cdShown = n; const w = n >= 3 ? L('mod.walk.cd_ready', 'Ready') : n === 2 ? L('mod.walk.cd_sniff', 'sniff') : n === 1 ? L('mod.walk.cd_go', 'GO!') : '';
+        if (w) { E.ov.className = 'pw-ov'; E.ov.hidden = false; E.ov.innerHTML = `<div class="pw-cd">${esc(w)}</div>` + (S.remind ? (mode !== 'desk' || coarse ? '<div class="pw-remind pw-panel" style="padding:4px 14px">' + L('mod.walk.remind_touch_html', '<b>Tap</b> jump &middot; <span class="pw-nw"><b>hold</b> = long jump</span> &middot; <b>swipe down</b> duck &middot; <b>Dig!</b> at an X') + '</div>' : '<div class="pw-remind pw-panel" style="padding:4px 14px">' + L('mod.walk.remind_desk_html', '<b>Space/&uarr;</b> jump &middot; <b>hold</b> = long jump &middot; <b>&darr;/S</b> duck &middot; <b>D</b> dig at an X') + '</div>') : ''); sfx(n === 1 ? 'bark' : 'click'); }
       }
-      if (S.cd <= 0.15) { S.mode = 'run'; try { (o.onRun || noop)(); } catch (e) { /* ignore */ } E.ov.hidden = true; E.ov.innerHTML = ''; if (o.firstWalk) say('Psst: the FIRST X smells amazing. Follow your nose!', 2600); else if (rain) say(dryCoat ? 'Rain! Good thing about the coat.' : `Rain means ${(A.rainWide || ['puddle']).includes('puddle') ? 'puddles' : 'mud'}. Hold jump to leap ${(A.rainWide || ['puddle']).includes('puddle') ? 'them' : 'it'}!`, 2400); }
+      if (S.cd <= 0.15) { S.mode = 'run'; try { (o.onRun || noop)(); } catch (e) { /* ignore */ } E.ov.hidden = true; E.ov.innerHTML = ''; if (o.firstWalk) say(L('mod.walk.psst_first_x', 'Psst: the FIRST X smells amazing. Follow your nose!'), 2600); else if (rain) say(dryCoat ? L('mod.walk.rain_coat', 'Rain! Good thing about the coat.') : L('mod.walk.rain_means', '{what, select, puddle {Rain means puddles. Hold jump to leap them!} other {Rain means mud. Hold jump to leap it!}}', { what: (A.rainWide || ['puddle']).includes('puddle') ? 'puddle' : 'mud' }), 2400); }
       return;
     }
     if (S.mode === 'reveal') { S.revealT -= dt; if (S.revealT <= 0) closeReveal(); return; }
@@ -1219,7 +1242,7 @@ function start(el, o) {
     }
 
     // shiver in snow without a warm outfit (cosmetic; the 8% slowdown is in vAt)
-    if (snow && !ab.warm) { S.shiverNext -= dt; if (S.shiverNext <= 0 && S.grounded && !S.poseO) { S.shiverNext = rand(11, 16); if (!dangerAhead(1.6)) { poseFor('cold', 0.6); say(pick(L.cold), 1000); } } }
+    if (snow && !ab.warm) { S.shiverNext -= dt; if (S.shiverNext <= 0 && S.grounded && !S.poseO) { S.shiverNext = rand(11, 16); if (!dangerAhead(1.6)) { poseFor('cold', 0.6); say(pickLine('walk_lines.cold', WALK_LINES.cold), 1000); } } }
 
     // collisions (none while the walk winds down)
     if (S.endT) { S.endT -= dt; if (S.endT <= 0) finish(false); return; }
@@ -1239,7 +1262,7 @@ function start(el, o) {
       if (ob.kind === 'obs') {
         if (ob.ex1 < (ob.cat === 'wide' && !ob.solid ? fx0 : bx0)) {
           ob.done = true; S.hazards++; if (ob.touched) S.touched++;
-          if (ob.cat === 'wide' && !ob.solid && !ob.touched && !S.endT) { S.puddlesCleared++; S.squeaky++; pop(pick(L.squeaky), DOG.x, G - 150, '#4D7FC0'); sfx('kaching'); }
+          if (ob.cat === 'wide' && !ob.solid && !ob.touched && !S.endT) { S.puddlesCleared++; S.squeaky++; pop(pickLine('walk_lines.squeaky', WALK_LINES.squeaky), DOG.x, G - 150, '#4D7FC0'); sfx('kaching'); }
           continue;
         }
         if (ob.touched) continue;
@@ -1309,7 +1332,7 @@ function start(el, o) {
     // HUD
     const rem = Math.max(0, D - S.t);
     E.timeBar.style.transform = `scaleX(${(rem / D).toFixed(4)})`;
-    const sec = Math.ceil(rem); if (sec !== S.lastSec) { S.lastSec = sec; E.secs.textContent = sec + 's'; E.time.classList.toggle('pw-low', sec <= 10); }
+    const sec = Math.ceil(rem); if (sec !== S.lastSec) { S.lastSec = sec; E.secs.textContent = L('mod.walk.secs', '{n}s', { n: sec }); E.time.classList.toggle('pw-low', sec <= 10); }
     if (now - noseT > 100) { noseT = now; updateNose(); }
     // an obstacle's hint fades out as the obstacle reaches the dog, so it never sits on the dog (or its jump)
     for (let i = 0; i < live.length; i++) { const ob = live[i]; if (!ob.el) continue; if (ob.hintEl === undefined) ob.hintEl = ob.el.querySelector('.pw-hint');

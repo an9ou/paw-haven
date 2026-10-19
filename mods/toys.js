@@ -22,6 +22,18 @@
   function dist(ax, ay, bx, by) { return Math.hypot(ax - bx, ay - by); }
   function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  /* v2.14: every visible text goes through the game's i18n service at run time only (V214.md 4.2); the English is the fallback and the source.
+     (The helper is LT, not L: several toys bind a local L.) */
+  function LT(key, en, vars) {
+    var I = window.PawI18n;
+    if (I && I.tt) return I.tt(key, en, vars);
+    var M = window.PawI18nMsg;
+    return M && vars ? M.format(en, vars, 'en') : en;
+  }
+  function LTD(path, en) { var I = window.PawI18n; return I && I.tdata ? I.tdata(path, en) : en; }
+  function TOUCH() { try { return window.matchMedia && window.matchMedia('(pointer: coarse)').matches ? 'yes' : 'no'; } catch (e) { return 'no'; } }
+  function lid(s) { var M = window.PawI18nMsg; return M && M.id ? M.id(s) : String(s).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || '_'; }
+  function trLines(key, slot, arr) { return arr.map(function (t, i) { return LTD('toys_lines.' + lid(key) + '.' + lid(slot) + '.' + i, t); }); }
   function f1(n) { return Math.round(n * 10) / 10; }
   function div(cls, parent, html) { var e = document.createElement('div'); if (cls) e.className = cls; if (html != null) e.innerHTML = html; if (parent) parent.appendChild(e); return e; }
   function realArt(s) { return typeof s === 'string' && s.indexOf('<svg') >= 0 && !/>\s*\?\s*<\/text>/.test(s); }
@@ -369,7 +381,7 @@
 };
   function trait(key) { return Object.assign({ run: 1, carry: 1 }, TRAITS[key] || {}); }
   /* per-breed flavour lines; any missing slot falls back to the generic lines passed in */
-  var LINES = {
+  var TOYS_LINES = {
     chihuahua: {
       fetchStart: ['throw it. I dare you.', 'I am small but I am FAST'], fetchDeliver: ['I defeated it. you\u2019re welcome.', 'it fought back. I won.'],
       tugStart: ['GRRRR. I AM A WOLF.', 'you face the security system'], tugGrowl: ['GRRRRRR!!', 'I will NEVER let go', 'tiny but MIGHTY', 'yip! YIP! grrr!'],
@@ -612,7 +624,7 @@
           var m = dog.mouth();
           if (o.jumpCatch && o.jumpCatch(m)) break;
           if (grounded() && Math.abs(m.x - b.x) < b.r + 26 && Math.abs(b.vx) < 300) { pickUp(false); break; }
-          if (o.airCatch && b.state === 'fly' && !b.onFloor && b.vy > -150 && dist(m.x, m.y, b.x, b.y) < b.r + 24) { pickUp(true); A.float('caught it!', m.x, m.y - 60, 'pt-small'); }
+          if (o.airCatch && b.state === 'fly' && !b.onFloor && b.vy > -150 && dist(m.x, m.y, b.x, b.y) < b.r + 24) { pickUp(true); A.float(LT('mod.toys.caught_it', 'caught it!'), m.x, m.y - 60, 'pt-small'); }
           break; }
         case 'pick': dog.setPose(o.dipPose || 'eat'); attach(); if (t > 0.28) { st = 'carry'; t = 0; } break;
         case 'carry': {
@@ -632,7 +644,7 @@
     ctx = ctx || {};
     injectCSS();
     var info = Object.assign({ key: 'mutt', name: 'Pup', outfit: null }, ctx.dog || {});
-    var DN = info.name || 'Pup', time = ctx.time || 'day', weather = ctx.weather || 'sunny';
+    var DN = info.name || 'Pup', NM = (ctx.label && String(ctx.label)) || name, time = ctx.time || 'day', weather = ctx.weather || 'sunny';
     var uidp = 'pt' + Math.random().toString(36).slice(2, 7);
     var impl = IMPL[name] || IMPL['Tennis Ball'];
     var alive = true, finished = false, raf = 0, timers = [], last = performance.now(), T = 0;
@@ -661,11 +673,11 @@
     /* HUD */
     var hud = div('pt-hud', L.ui);
     div('pt-ico', hud, itemSVG(name));
-    var titles = div('pt-titles', hud); div('pt-title' + (name.length > 12 ? ' pt-long' : ''), titles, esc(name));
+    var titles = div('pt-titles', hud); div('pt-title' + (NM.length > 12 ? ' pt-long' : ''), titles, esc(NM));
     var hintEl = div('pt-hint', titles, '');
     var tally = div('pt-tally', hud, HEART + '<span>+0</span>'), tallyN = tally.querySelector('span');
-    var timer = div('pt-timer', hud, '<span>playtime</span><b><i></i></b>'), timerBar = timer.querySelector('i');
-    var done = document.createElement('button'); done.className = 'pt-btn'; done.type = 'button'; done.textContent = 'Done'; hud.appendChild(done);
+    var timer = div('pt-timer', hud, '<span>' + esc(LT('mod.toys.playtime', 'playtime')) + '</span><b><i></i></b>'), timerBar = timer.querySelector('i');
+    var done = document.createElement('button'); done.className = 'pt-btn'; done.type = 'button'; done.textContent = LT('mod.toys.done', 'Done'); hud.appendChild(done);
     done.addEventListener('click', function (e) { e.stopPropagation(); close(); });
 
     /* bubble */
@@ -676,10 +688,10 @@
 
     var A = {
       W: W, H: H, GY: GY, L: L, ctx: ctx, DN: DN, time: time, weather: weather, uidp: uidp, key: info.key, tr: trait(info.key),
-      line: function (slot, generic) { var b = LINES[info.key]; return (b && b[slot] && b[slot].length) ? b[slot] : generic; },
+      line: function (slot, generic) { var b = TOYS_LINES[info.key]; return (b && b[slot] && b[slot].length) ? trLines(info.key, slot, b[slot]) : generic; },
       mouse: { x: 400, y: 400, down: false }, samples: [],
       sfx: function (n) { try { if (ctx.sfx) ctx.sfx(n); } catch (e) { /* ignore */ } },
-      hint: function (t) { if (coarse) t = t.replace(/Click to/g, 'Tap to').replace(/click/g, 'tap').replace(/Click/g, 'Tap').replace('hold the mouse and rub', 'hold and rub').replace('drag me & let go!', 'flick me!'); hintEl.textContent = t; dHint.textContent = t; },
+      hint: function (t) { hintEl.textContent = t; dHint.textContent = t; },
       say: function (t, ms) { bub.textContent = t; bub.classList.add('pt-show'); bubT = (ms || 1700) / 1000; bubW = bub.offsetWidth || 160; bubH = bub.offsetHeight || 40; },
       float: function (t, x, y, cls) { var f = div('pt-float' + (cls ? ' ' + cls : ''), L.ui, esc(t)); f.style.left = (phone ? clamp(x, cam.x + 80, cam.x + cam.vw - 80) : clamp(x, 90, W - 90)) + 'px'; f.style.top = clamp(y, 80, H - 40) + 'px'; A.later(function () { if (f.parentNode) f.parentNode.removeChild(f); }, 1450); },
       later: function (fn, ms) { var id = setTimeout(function () { timers.splice(timers.indexOf(id), 1); if (alive) fn(); }, ms); timers.push(id); return id; },
@@ -730,7 +742,7 @@
       dockable: function (e) { dockables.push(e); if (phone) dock.appendChild(e); return e; },
       isTouch: function () { return coarse || touch; },
       hitR: function (r) { return touch ? Math.max(r, 32 / Math.max(0.2, scale)) : r; },
-      tip: function (text, x, y) { if (coarse) text = text.replace(/click/g, 'tap').replace('drag me & let go!', 'flick me!'); var t = div('pt-tip', L.ui, esc(text)); t.style.left = x + 'px'; t.style.top = y + 'px'; return { el: t, hide: function () { if (t.parentNode) t.parentNode.removeChild(t); } }; }
+      tip: function (text, x, y) { var t = div('pt-tip', L.ui, esc(text)); t.style.left = x + 'px'; t.style.top = y + 'px'; return { el: t, hide: function () { if (t.parentNode) t.parentNode.removeChild(t); } }; }
     };
 
     /* compact = the phone strip (same test as fit() below): games with fixed props pull them closer together */
@@ -855,16 +867,16 @@
       var bonus = toy.finish ? toy.finish() : null;
       if (bonus) A.reward(bonus);
       var bits = [];
-      if (totals.happiness) bits.push('+' + Math.round(totals.happiness) + ' Happiness');
-      if (totals.bond) bits.push('+' + totals.bond + ' Bond');
-      if (totals.coins) bits.push('+' + totals.coins + ' coins');
-      if (totals.energy > 0) bits.push('+' + totals.energy + ' Energy');
-      if (totals.clean > 0) bits.push('+' + totals.clean + ' Cleanliness');
+      if (totals.happiness) bits.push(LT('mod.toys.happiness', '+{n} Happiness', { n: Math.round(totals.happiness) }));
+      if (totals.bond) bits.push(LT('mod.toys.bond', '+{n} Bond', { n: totals.bond }));
+      if (totals.coins) bits.push(LT('mod.toys.plus_coins', '{n, plural, one {+# coin} other {+# coins}}', { n: totals.coins }));
+      if (totals.energy > 0) bits.push(LT('mod.toys.energy', '+{n} Energy', { n: totals.energy }));
+      if (totals.clean > 0) bits.push(LT('mod.toys.cleanliness', '+{n} Cleanliness', { n: totals.clean }));
       var card = cardEl = div('pt-card', phone ? root : L.ui,
-        '<div class="pt-card-t">' + esc(title || pick(['What a play session!', 'Best. Game. Ever.', 'Tail status: wagging'])) + '</div>' +
-        '<div class="pt-card-s">' + esc(sub || (toy.cardSub && toy.cardSub()) || (DN + ' had a wonderful time with the ' + name + '.')) + '</div>' +
-        '<div class="pt-card-r">' + esc(bits.join('  ·  ') || 'Pure fun, no stats needed') + '</div>');
-      var b2 = document.createElement('button'); b2.type = 'button'; b2.className = 'pt-btn'; b2.textContent = 'Done'; card.appendChild(b2);
+        '<div class="pt-card-t">' + esc(title || pick([LT('mod.toys.what_a_play_session', 'What a play session!'), LT('mod.toys.best_game_ever', 'Best. Game. Ever.'), LT('mod.toys.tail_status_wagging', 'Tail status: wagging')])) + '</div>' +
+        '<div class="pt-card-s">' + esc(sub || (toy.cardSub && toy.cardSub()) || (LT('mod.toys.had_a_wonderful_time_with_the', '{dn} had a wonderful time with the {toy}.', { dn: DN, toy: NM }))) + '</div>' +
+        '<div class="pt-card-r">' + esc(bits.join('  ·  ') || LT('mod.toys.pure_fun_no_stats_needed', 'Pure fun, no stats needed')) + '</div>');
+      var b2 = document.createElement('button'); b2.type = 'button'; b2.className = 'pt-btn'; b2.textContent = LT('mod.toys.done', 'Done'); card.appendChild(b2);
       b2.addEventListener('click', function (e) { e.stopPropagation(); close(); });
       A.sfx('levelup');
       try { b2.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
@@ -901,28 +913,28 @@
     var b = thrower(A, { x: 330, y: floor(), r: R, floor: floor, bounce: 0.55, g: 1900, spinK: 0.35, ceil: 104 }), ceilHits = 0;
     var spr = A.sprite(A.itemSVG(glow ? 'Glow Ball' : 'Tennis Ball'), R * 3, R * 3);
     dog.x = 800; dog.face('left'); dog.setPose('sit');
-    var lastF = 560, fetches = 0, arcs = 0, bonks = 0, bonkCD = 0, trail = [], tip = A.tip('drag me & let go!', 250, 420);
+    var lastF = 560, fetches = 0, arcs = 0, bonks = 0, bonkCD = 0, trail = [], tip = A.tip(LT('mod.toys.drag_me_let_go', '{touch, select, yes {flick me!} other {drag me & let go!}}', { touch: TOUCH() }), 250, 420);
     var brain = fetchBrain(A, b, {
       speed: (glow ? 470 : 440) * A.tr.run, carryK: A.tr.carry, carryFwd: R * 0.55, airCatch: true,
       onPick: function (air) { if (air) A.reward({ happiness: 1 }); },
       onDeliver: function () {
         fetches++;
         A.reward({ happiness: 2, coins: fetches % 2 === 0 ? 1 : 0, energy: -1 });
-        A.say(pick(A.line('fetchDeliver', glow ? ['I caught the moon!', 'it glows. I glow. we glow.', 'again! in the dark!'] : ['again! AGAIN!', 'slobber included, free', 'I am very fast. ask me.', 'it was hiding. I found it.'])), 1700);
+        A.say(pick(A.line('fetchDeliver', glow ? [LT('mod.toys.i_caught_the_moon', 'I caught the moon!'), LT('mod.toys.it_glows_i_glow_we_glow', 'it glows. I glow. we glow.'), LT('mod.toys.again_in_the_dark', 'again! in the dark!')] : [LT('mod.toys.again_again', 'again! AGAIN!'), LT('mod.toys.slobber_included_free', 'slobber included, free'), LT('mod.toys.i_am_very_fast_ask_me', 'I am very fast. ask me.'), LT('mod.toys.it_was_hiding_i_found_it', 'it was hiding. I found it.')])), 1700);
         if (A.tr.flop) brain.pause(1.5, 'sleep', 'wait');
-        A.float(pick(['good fetch!', 'what a dog!', 'fetch-tastic!']), dog.x, dog.y - 250);
+        A.float(pick([LT('mod.toys.good_fetch', 'good fetch!'), LT('mod.toys.what_a_dog', 'what a dog!'), LT('mod.toys.fetch_tastic', 'fetch-tastic!')]), dog.x, dog.y - 250);
       }
     });
-    A.say(glow ? 'ooh. spooky. throw it!' : pick(A.line('fetchStart', ['throw it! THROW IT!'])), 2000);
+    A.say(glow ? LT('mod.toys.ooh_spooky_throw_it', 'ooh. spooky. throw it!') : pick(A.line('fetchStart', [LT('mod.toys.throw_it_throw_it', 'throw it! THROW IT!')])), 2000);
     var stars = []; for (var i = 0; i < 40; i++) stars.push([Math.random() * W, 90 + Math.random() * 300, Math.random() * 6]);
     function cb() {
       return {
-        ceil: function () { A.sfx('bonk'); ceilHits++; if (ceilHits <= 2 || Math.random() < 0.3) A.float(pick(['ceiling!', 'not the ceiling!', 'bonk (ceiling)']), b.x, 140, 'pt-blue pt-small'); },
+        ceil: function () { A.sfx('bonk'); ceilHits++; if (ceilHits <= 2 || Math.random() < 0.3) A.float(pick([LT('mod.toys.ceiling', 'ceiling!'), LT('mod.toys.not_the_ceiling', 'not the ceiling!'), LT('mod.toys.bonk_ceiling', 'bonk (ceiling)')]), b.x, 140, 'pt-blue pt-small'); },
         bounce: function (v) {
           if (v > 300) A.sfx('bounce');
           if (b.bounces === 1 && b.thrown) {
             var apex = floor() - b.minY, far = Math.abs(b.x - b.relX);
-            if (b.minY > -999 && apex > 170 && apex < 420 && far > 200) { arcs++; A.float('nice arc!', b.x, b.minY + 40, 'pt-gold'); if (arcs <= 4) A.reward({ happiness: 1 }); }
+            if (b.minY > -999 && apex > 170 && apex < 420 && far > 200) { arcs++; A.float(LT('mod.toys.nice_arc', 'nice arc!'), b.x, b.minY + 40, 'pt-gold'); if (arcs <= 4) A.reward({ happiness: 1 }); }
             
           }
         }
@@ -931,7 +943,7 @@
     return {
       poses: ['idle', 'sit', 'walk', 'happy', 'eat', 'jump'],
       dur: 50,
-      hint: glow ? 'Night mode! Drag and release to throw the Glow Ball. Watch the trail.' : 'Drag the ball and release to throw it! Bounce it off ' + DN + '’s head for a laugh.',
+      hint: glow ? LT('mod.toys.night_mode_drag_and_release_to', 'Night mode! Drag and release to throw the Glow Ball. Watch the trail.') : LT('mod.toys.drag_the_ball_and_release_to', 'Drag the ball and release to throw it! Bounce it off {dn}’s head for a laugh.', { dn: DN }),
       down: function (x, y) { if (b.canGrab() && dist(x, y, b.x, b.y) < A.hitR(R + 40)) { b.grab(x, y); A.cursor('grabbing'); if (tip) { tip.hide(); tip = null; } } },
       move: function (x, y) { if (b.state === 'held') b.hold(x, y); else A.cursor(b.canGrab() && dist(x, y, b.x, b.y) < R + 40 ? 'grab' : 'default'); },
       up: function () { if (b.state === 'held') { var v = b.release(); if (v.speed > 600) A.sfx('whoosh'); A.cursor('default'); } },
@@ -942,8 +954,8 @@
           var h = dog.head();
           if (b.vy > 0 && b.y < h.y + 6 && dist(b.x, b.y, h.x, h.y) < R + 36) {
             b.vy = -Math.max(560, b.vy * 0.8); b.vx += (b.x - h.x) * 6 + (Math.random() - 0.5) * 120; b.thrown = true; bonkCD = 0.6; bonks++;
-            A.sfx('bonk'); dog.squash(0.78); A.float('BOING!', h.x, h.y - 50, 'pt-gold');
-            A.say(pick(['ow. again!', 'my head is a trampoline now', 'I meant to do that.', 'bonk!? BONK.']), 1600);
+            A.sfx('bonk'); dog.squash(0.78); A.float(LT('mod.toys.boing', 'BOING!'), h.x, h.y - 50, 'pt-gold');
+            A.say(pick([LT('mod.toys.ow_again', 'ow. again!'), LT('mod.toys.my_head_is_a_trampoline_now', 'my head is a trampoline now'), LT('mod.toys.i_meant_to_do_that', 'I meant to do that.'), LT('mod.toys.bonk_bonk', 'bonk!? BONK.')]), 1600);
             if (bonks <= 3) A.reward({ happiness: 1 });
           }
         }
@@ -986,19 +998,19 @@
   IMPL['Rope Tug'] = function (A) {
     var dog = A.dog, DN = A.DN;
     var p = 0, grab = false, T0 = 0, tension = 0, phase = 0, burst = false, round = 1, state = 'tug', stT = 0, letWin = false, slipCD = 0, wins = 0, losses = 0;
-    var meter = A.meter('pull meter: stay in the green!', 450, 92, 340, [0.45, 0.78, 0.9]);
-    var letBtn = A.button('Let ' + DN + ' win', 40, 560, 'pt-pinkb', function () { if (state === 'tug') { letWin = true; A.say('wait... really?! YES!', 1600); } });
-    var tip = A.tip('grab here & drag left!', 200, 360);
-    var rMeter = A.meter('who is winning?', 860, 92, 260, null);
+    var meter = A.meter(LT('mod.toys.pull_meter_stay_in_the_green', 'pull meter: stay in the green!'), 450, 92, 340, [0.45, 0.78, 0.9]);
+    var letBtn = A.button(LT('mod.toys.let_win', 'Let {dn} win', { dn: DN }), 40, 560, 'pt-pinkb', function () { if (state === 'tug') { letWin = true; A.say(LT('mod.toys.wait_really_yes', 'wait... really?! YES!'), 1600); } });
+    var tip = A.tip(LT('mod.toys.grab_here_drag_left', 'grab here & drag left!'), 200, 360);
+    var rMeter = A.meter(LT('mod.toys.who_is_winning', 'who is winning?'), 860, 92, 260, null);
     dog.face('left'); dog.setPose('crouch');
     function handleX() { return 380 + p * 190; }
     function dogX() { return 880 + p * 190; }
-    function reset() { p = 0; state = 'tug'; stT = 0; letWin = false; phase = 0; dog.rot = 0; dog.setPose('crouch'); dog.face('left'); A.say(round === 2 ? 'rematch. grrr.' : pick(A.line('tugStart', ['grrr (playfully)'])), 1400); }
+    function reset() { p = 0; state = 'tug'; stT = 0; letWin = false; phase = 0; dog.rot = 0; dog.setPose('crouch'); dog.face('left'); A.say(round === 2 ? LT('mod.toys.rematch_grrr', 'rematch. grrr.') : pick(A.line('tugStart', [LT('mod.toys.grrr_playfully', 'grrr (playfully)')])), 1400); }
     reset();
     return {
       poses: ['crouch', 'sit', 'happy', 'walk', 'jump', 'pet'],
       dur: 50,
-      hint: 'Grab the rope end and drag LEFT in rhythm with ' + DN + '’s pulls. Keep the needle in the green!',
+      hint: LT('mod.toys.grab_the_rope_end_and_drag', 'Grab the rope end and drag LEFT in rhythm with {dn}’s pulls. Keep the needle in the green!', { dn: DN }),
       down: function (x, y) { if (state === 'tug' && dist(x, y, handleX(), GY - 60) < A.hitR(110)) { grab = true; A.cursor('grabbing'); if (tip) { tip.hide(); tip = null; } } },
       move: function (x, y) { if (!grab) A.cursor(state === 'tug' && dist(x, y, handleX(), GY - 60) < 110 ? 'grab' : 'default'); },
       up: function () { grab = false; A.cursor('default'); },
@@ -1010,10 +1022,10 @@
         if (state === 'tug') {
           phase += dt / 1.5; if (phase >= 1) phase -= 1;
           var nb = phase < 0.38;
-          if (nb && !burst) { A.sfx('tug'); if (Math.random() < 0.35) A.sfx('squeak'); if (A.tr.fierce && Math.random() < 0.5) A.sfx('bark'); if (Math.random() < (A.tr.fierce ? 0.65 : 0.3)) A.say(pick(A.line('tugGrowl', ['grrrr!', 'GRRR (lovingly)', 'mine mine mine', 'hrrrnngh'])), 900); }
+          if (nb && !burst) { A.sfx('tug'); if (Math.random() < 0.35) A.sfx('squeak'); if (A.tr.fierce && Math.random() < 0.5) A.sfx('bark'); if (Math.random() < (A.tr.fierce ? 0.65 : 0.3)) A.say(pick(A.line('tugGrowl', [LT('mod.toys.grrrr', 'grrrr!'), LT('mod.toys.grrr_lovingly', 'GRRR (lovingly)'), LT('mod.toys.mine_mine_mine', 'mine mine mine'), LT('mod.toys.hrrrnngh', 'hrrrnngh')])), 900); }
           burst = nb;
           var dogF = burst ? 0.95 : 0.3, pf = 0, inZone = tension >= 0.45 && tension <= 0.78;
-          if (tension > 0.9) { pf = 0.15; if (slipCD <= 0) { slipCD = 1.6; A.float('too hard! slipped', handleX(), GY - 170, 'pt-blue pt-small'); A.sfx('nope'); } }
+          if (tension > 0.9) { pf = 0.15; if (slipCD <= 0) { slipCD = 1.6; A.float(LT('mod.toys.too_hard_slipped', 'too hard! slipped'), handleX(), GY - 170, 'pt-blue pt-small'); A.sfx('nope'); } }
           else if (inZone) pf = burst ? 1.45 : 1.0;
           else pf = tension * 0.8;
           if (letWin) { dogF = 2.2; pf = 0; }
@@ -1022,12 +1034,12 @@
           dog.setPose('crouch');
           if (p <= -1) {
             state = 'youwin'; stT = 0; wins++; dog.rot = 0; dog.setPose('sit'); A.sfx('levelup');
-            A.float('BOND MOMENT!', 620, 300, 'pt-gold'); A.say(pick(A.line('tugYouWin', ['you are... so strong. I love you.', 'ok ok you win. hug?'])), 2200);
+            A.float(LT('mod.toys.bond_moment', 'BOND MOMENT!'), 620, 300, 'pt-gold'); A.say(pick(A.line('tugYouWin', [LT('mod.toys.you_are_so_strong_i_love', 'you are... so strong. I love you.'), LT('mod.toys.ok_ok_you_win_hug', 'ok ok you win. hug?')])), 2200);
             A.reward({ bond: 1, happiness: 4, energy: -2 }); A.burst('heart', dog.head().x, dog.head().y, 8, { g: -60, sp: 120, life: 1.6, size: 9 });
           } else if (p >= 1) {
             state = 'dogwin'; stT = 0; losses++; dog.rot = 0; dog.setPose('happy'); A.sfx('bark');
-            if (letWin) { A.float('good sport bonus!', 620, 300, 'pt-gold'); A.reward({ happiness: 8, energy: -2 }); A.say('I AM THE CHAMPION OF ROPE', 2200); }
-            else { A.reward({ happiness: 4, energy: -2 }); A.say(pick(A.line('tugDogWin', ['VICTORY! (you can try again)'])), 2000); }
+            if (letWin) { A.float(LT('mod.toys.good_sport_bonus', 'good sport bonus!'), 620, 300, 'pt-gold'); A.reward({ happiness: 8, energy: -2 }); A.say(LT('mod.toys.i_am_the_champion_of_rope', 'I AM THE CHAMPION OF ROPE'), 2200); }
+            else { A.reward({ happiness: 4, energy: -2 }); A.say(pick(A.line('tugDogWin', [LT('mod.toys.victory_you_can_try_again', 'VICTORY! (you can try again)')])), 2000); }
           }
         } else {
           grab = false;
@@ -1052,8 +1064,8 @@
         g.fillStyle = PINK; g.strokeStyle = INK; g.lineWidth = 2; g.beginPath(); g.moveTo(kx, ky); g.lineTo(kx - 12, ky + 26); g.lineTo(kx + 12, ky + 26); g.closePath(); g.fill(); g.stroke();
         g.fillStyle = '#E8504A'; g.beginPath(); g.arc(hx, hy, 20, 0, Math.PI * 2); g.fill(); g.lineWidth = 2.6; g.stroke();
         g.strokeStyle = INK; g.lineWidth = 2; g.setLineDash([6, 8]); g.beginPath(); g.moveTo(630, GY - 30); g.lineTo(630, GY + 40); g.stroke(); g.setLineDash([]);
-        g.fillStyle = INK; g.font = '700 22px Caveat, cursive'; g.fillText('the line', 600, GY + 64);
-        if (state === 'tug' && burst) { g.font = '700 34px Caveat, cursive'; g.fillStyle = '#E8504A'; g.fillText('PULL!', dog.x - 30, dog.y - 220 - Math.sin(T * 20) * 4); }
+        g.fillStyle = INK; g.font = '700 22px Caveat, cursive'; g.fillText(LT('mod.toys.the_line', 'the line'), 600, GY + 64);
+        if (state === 'tug' && burst) { g.font = '700 34px Caveat, cursive'; g.fillStyle = '#E8504A'; g.fillText(LT('mod.toys.pull', 'PULL!'), dog.x - 30, dog.y - 220 - Math.sin(T * 20) * 4); }
       },
       finish: function () { return { happiness: 2 }; },
       cleanup: function () { },
@@ -1070,7 +1082,7 @@
     var panel = A.div('pt-panel', A.L.ui); panel.style.cssText += ';left:420px;top:92px;width:400px;height:96px;display:none'; A.dockable(panel);
     var plab = A.div('pt-lab', panel, ''), dogRow = A.div('', panel), youRow = A.div('', panel);
     dogRow.style.cssText = youRow.style.cssText = 'position:relative;height:28px';
-    var tip = A.tip('click me!', 360, 380);
+    var tip = A.tip(LT('mod.toys.click_me', '{touch, select, yes {tap me!} other {click me!}}', { touch: TOUCH() }), 360, 380);
     function squeak() { A.sfx('squeak'); sq = 1; A.burst('dust', DX + 40, DY - 50, 3, { g: -40, sp: 60, life: 0.5, size: 4 }); }
     function makePattern() { pat = [0]; for (var i = 1; i < len; i++) pat.push(pat[i - 1] + pick([0.36, 0.36, 0.72])); }
     function dots(row, times, cls) {
@@ -1078,7 +1090,7 @@
       times.forEach(function (t, i) { var d = A.div('pt-dot ' + (cls[i] || ''), row); d.style.left = (7 + (t / span) * 84) + '%'; d.style.top = '14px'; });
       return row.children;
     }
-    function startListen() { makePattern(); state = 'listen'; stT = -0.5; beat = 0; clicks = []; panel.style.display = ''; plab.textContent = DN + ' barks a rhythm... listen!'; dots(dogRow, pat, []); youRow.innerHTML = ''; A.hint('Listen to the barks, then click the duck in the same rhythm.'); }
+    function startListen() { makePattern(); state = 'listen'; stT = -0.5; beat = 0; clicks = []; panel.style.display = ''; plab.textContent = LT('mod.toys.barks_a_rhythm_listen', '{dn} barks a rhythm... listen!', { dn: DN }); dots(dogRow, pat, []); youRow.innerHTML = ''; A.hint(LT('mod.toys.listen_to_the_barks_then_click', '{touch, select, yes {Listen to the barks, then tap the duck in the same rhythm.} other {Listen to the barks, then click the duck in the same rhythm.}}', { touch: TOUCH() })); }
     function evaluate() {
       var ok = clicks.length === pat.length, cls = [];
       for (var i = 0; i < clicks.length; i++) { var good = i < pat.length && Math.abs(clicks[i] - pat[i]) <= Math.max(0.16, 0.3 * (pat[i] - (pat[i - 1] || 0)) + 0.1); cls.push(good ? 'pt-ok' : 'pt-bad'); if (!good) ok = false; }
@@ -1086,22 +1098,22 @@
       tries++;
       if (ok || tries >= 3) {
         rounds++; state = 'yay'; stT = 0; pounce = 1;
-        if (ok) { A.float(len >= 5 ? 'PERFECT DUET!' : 'perfect copy!', 620, 260, 'pt-gold'); A.reward({ happiness: 3, coins: len >= 5 ? 1 : 0 }); A.say(pick(A.line('duckOk', ['you speak duck!', 'we are a BAND now', 'squeak squeak = I love you'])), 1800); }
-        else { A.float('eh, close enough!', 620, 260, 'pt-small'); A.reward({ happiness: 1 }); A.say('that was jazz. I respect it.', 1800); }
+        if (ok) { A.float(len >= 5 ? LT('mod.toys.perfect_duet', 'PERFECT DUET!') : LT('mod.toys.perfect_copy', 'perfect copy!'), 620, 260, 'pt-gold'); A.reward({ happiness: 3, coins: len >= 5 ? 1 : 0 }); A.say(pick(A.line('duckOk', [LT('mod.toys.you_speak_duck', 'you speak duck!'), LT('mod.toys.we_are_a_band_now', 'we are a BAND now'), LT('mod.toys.squeak_squeak_i_love_you', 'squeak squeak = I love you')])), 1800); }
+        else { A.float(LT('mod.toys.eh_close_enough', 'eh, close enough!'), 620, 260, 'pt-small'); A.reward({ happiness: 1 }); A.say(LT('mod.toys.that_was_jazz_i_respect_it', 'that was jazz. I respect it.'), 1800); }
         len = Math.min(6, len + 1); tries = 0; A.sfx('bark');
-      } else { state = 'again'; stT = 0; A.say(pick(['close! again:', 'hmm, not quite. listen:']), 1400); }
+      } else { state = 'again'; stT = 0; A.say(pick([LT('mod.toys.close_again', 'close! again:'), LT('mod.toys.hmm_not_quite_listen', 'hmm, not quite. listen:')]), 1400); }
     }
     return {
       poses: ['sit', 'idle', 'jump', 'happy', 'crouch', 'walk'],
       dur: 55,
-      hint: 'Click the duck to squeak it. ' + DN + ' might have opinions.',
+      hint: LT('mod.toys.click_the_duck_to_squeak_it', '{touch, select, yes {Tap the duck to squeak it. {dn} might have opinions.} other {Click the duck to squeak it. {dn} might have opinions.}}', { touch: TOUCH(), dn: DN }),
       down: function (x, y) {
         if (dist(x, y, DX, DY) > A.hitR(95)) return;
         if (tip) { tip.hide(); tip = null; }
         squeak();
-        if (state === 'intro') { intro++; tilt = intro % 2 ? 14 : -14; if (intro === 1) A.say('?', 900); if (intro === 2) A.say('!!', 900); if (intro >= 3) { state = 'pounce'; stT = 0; pounce = 1; dog.jump(-820, -330); A.say('GOT IT. (I did not get it)', 1500); A.reward({ happiness: 2 }); } }
+        if (state === 'intro') { intro++; tilt = intro % 2 ? 14 : -14; if (intro === 1) A.say('?', 900); if (intro === 2) A.say('!!', 900); if (intro >= 3) { state = 'pounce'; stT = 0; pounce = 1; dog.jump(-820, -330); A.say(LT('mod.toys.got_it_i_did_not_get', 'GOT IT. (I did not get it)'), 1500); A.reward({ happiness: 2 }); } }
         else if (state === 'yours') { var nowS = performance.now() / 1000; if (!clicks.length) T0 = nowS; clicks.push(nowS - T0); dots(youRow, clicks.slice(0, 8), clicks.map(function () { return 'pt-you'; })); stT = 0; if (clicks.length >= pat.length) { state = 'judge'; stT = 0; } }
-        else if (state === 'listen') A.say('shh! listen!', 900);
+        else if (state === 'listen') A.say(LT('mod.toys.shh_listen', 'shh! listen!'), 900);
       },
       move: function (x, y) { A.cursor(dist(x, y, DX, DY) < 95 ? 'pointer' : 'default'); },
       update: function (dt, T) {
@@ -1114,8 +1126,8 @@
           if (state === 'listen') {
             dog.setPose('sit');
             var kids = dogRow.children;
-            while (beat < pat.length && stT >= pat[beat]) { if (A.tr.snort && beat > 0 && Math.random() < 0.6) A.later(function () { A.sfx('sniff'); A.say(pick(A.line('duckListen', ['*snort*'])), 500); A.burst('dust', A.dog.mouth().x, A.dog.mouth().y, 3, { g: -30, sp: 70, life: 0.5, size: 3 }); }, 160); A.sfx('bark'); dog.squash(0.86); if (kids[beat]) kids[beat].classList.add('pt-lit'); A.addPart({ type: 'note', x: dog.head().x, y: dog.head().y - 20, vx: -30, vy: -90, life: 0.9, size: 9 }); beat++; }
-            if (beat >= pat.length && stT > pat[pat.length - 1] + 0.6) { state = 'yours'; stT = 0; clicks = []; plab.textContent = 'Your turn! Squeak it back (' + pat.length + ' squeaks)'; A.say('your turn!', 1100); }
+            while (beat < pat.length && stT >= pat[beat]) { if (A.tr.snort && beat > 0 && Math.random() < 0.6) A.later(function () { A.sfx('sniff'); A.say(pick(A.line('duckListen', [LT('mod.toys.snort', '*snort*')])), 500); A.burst('dust', A.dog.mouth().x, A.dog.mouth().y, 3, { g: -30, sp: 70, life: 0.5, size: 3 }); }, 160); A.sfx('bark'); dog.squash(0.86); if (kids[beat]) kids[beat].classList.add('pt-lit'); A.addPart({ type: 'note', x: dog.head().x, y: dog.head().y - 20, vx: -30, vy: -90, life: 0.9, size: 9 }); beat++; }
+            if (beat >= pat.length && stT > pat[pat.length - 1] + 0.6) { state = 'yours'; stT = 0; clicks = []; plab.textContent = LT('mod.toys.your_turn_squeak_it_back_other', 'Your turn! Squeak it back ({n, plural, one {# squeak} other {# squeaks}})', { n: pat.length }); A.say(LT('mod.toys.your_turn', 'your turn!'), 1100); }
           }
         } else if (state === 'yours') { dog.setPose('sit'); dog.tilt = Math.sin(T * 3) * 6; if (clicks.length && stT > 1.8) { state = 'judge'; stT = 0; } }
         else if (state === 'judge') { if (stT > 0.25) evaluate(); }
@@ -1129,7 +1141,7 @@
 
   /* ---------- Frisbee ---------- */
   IMPL['Frisbee'] = function (A) {
-    var dog = A.dog, DN = A.DN, FL = GY - 10, catches = 0, sky = 0, tip = A.tip('flick me fast!', 200, 420);
+    var dog = A.dog, DN = A.DN, FL = GY - 10, catches = 0, sky = 0, tip = A.tip(LT('mod.toys.flick_me_fast', 'flick me fast!'), 200, 420);
     var D = thrower(A, { x: 280, y: FL, r: 30, floor: function () { return FL; }, bounce: 0.2, g: 0 });
     var lastF = 520, spr = A.sprite(A.itemSVG('Frisbee'), 96, 96), ft = 0, curve = 1, ph = 0, catchH = 0;
     dog.x = 760; dog.face('left'); dog.setPose('sit');
@@ -1164,24 +1176,24 @@
       onPick: function (air) {
         if (air) {
           catchH = GY - D.y; catches++;
-          if (catchH > 260) { sky++; A.float('SKY CATCH!', D.x, D.y - 40, 'pt-gold'); A.reward({ happiness: 3, coins: 2, energy: -1 }); A.say('I touched a cloud', 1600); }
-          else if (catchH > 170) { A.float('nice leap!', D.x, D.y - 40); A.reward({ happiness: 2, coins: 1, energy: -1 }); A.say(pick(['did you SEE that?', 'air dog!']), 1500); }
-          else { A.float('caught it!', D.x, D.y - 40, 'pt-small'); A.reward({ happiness: 2, energy: -1 }); }
-        } else { A.say(pick(['ground ball. still counts.', 'it landed. I forgive it.']), 1500); A.reward({ happiness: 1 }); }
-        if (air && LINES[A.key] && LINES[A.key].frisbee) A.say(pick(LINES[A.key].frisbee), 1600);
+          if (catchH > 260) { sky++; A.float(LT('mod.toys.sky_catch', 'SKY CATCH!'), D.x, D.y - 40, 'pt-gold'); A.reward({ happiness: 3, coins: 2, energy: -1 }); A.say(LT('mod.toys.i_touched_a_cloud', 'I touched a cloud'), 1600); }
+          else if (catchH > 170) { A.float(LT('mod.toys.nice_leap', 'nice leap!'), D.x, D.y - 40); A.reward({ happiness: 2, coins: 1, energy: -1 }); A.say(pick([LT('mod.toys.did_you_see_that', 'did you SEE that?'), LT('mod.toys.air_dog', 'air dog!')]), 1500); }
+          else { A.float(LT('mod.toys.caught_it', 'caught it!'), D.x, D.y - 40, 'pt-small'); A.reward({ happiness: 2, energy: -1 }); }
+        } else { A.say(pick([LT('mod.toys.ground_ball_still_counts', 'ground ball. still counts.'), LT('mod.toys.it_landed_i_forgive_it', 'it landed. I forgive it.')]), 1500); A.reward({ happiness: 1 }); }
+        if (air && TOYS_LINES[A.key] && TOYS_LINES[A.key].frisbee) A.say(pick(trLines(A.key, 'frisbee', TOYS_LINES[A.key].frisbee)), 1600);
       },
-      onDeliver: function () { A.say(pick(A.line('fetchDeliver', ['again but HIGHER', 'throw it to the moon', 'I am a professional'])), 1500); if (A.tr.flop) brain.pause(1.5, 'sleep', 'wait'); }
+      onDeliver: function () { A.say(pick(A.line('fetchDeliver', [LT('mod.toys.again_but_higher', 'again but HIGHER'), LT('mod.toys.throw_it_to_the_moon', 'throw it to the moon'), LT('mod.toys.i_am_a_professional', 'I am a professional')])), 1500); if (A.tr.flop) brain.pause(1.5, 'sleep', 'wait'); }
     });
     return {
       poses: ['sit', 'walk', 'jump', 'happy', 'eat', 'idle'],
       dur: 50,
-      hint: 'Flick the frisbee with a quick drag. ' + DN + ' leaps to catch it. Higher catch = bonus!',
+      hint: LT('mod.toys.flick_the_frisbee_with_a_quick', 'Flick the frisbee with a quick drag. {dn} leaps to catch it. Higher catch = bonus!', { dn: DN }),
       down: function (x, y) { if ((D.state === 'rest' || (D.state === 'fly' && D.onFloor)) && dist(x, y, D.x, D.y) < A.hitR(80)) { D.grab(x, y); A.cursor('grabbing'); if (tip) { tip.hide(); tip = null; } } },
       move: function (x, y) { if (D.state === 'held') { D.x = clamp(x, 40, W - 40); D.y = Math.min(y, FL); } else A.cursor((D.state === 'rest') && dist(x, y, D.x, D.y) < 80 ? 'grab' : 'default'); },
       up: function () {
         if (D.state !== 'held') return; A.cursor('default');
         var v = D.release(); ft = 0; ph = Math.random() * 6; curve = Math.random() < 0.5 ? -1 : 1;
-        if (v.speed < 380) { D.vx *= 0.4; D.vy = 0; D.thrown = false; A.float('flick faster!', D.x, D.y - 80, 'pt-blue pt-small'); }
+        if (v.speed < 380) { D.vx *= 0.4; D.vy = 0; D.thrown = false; A.float(LT('mod.toys.flick_faster', 'flick faster!'), D.x, D.y - 80, 'pt-blue pt-small'); }
         else { D.vx *= 0.7; D.vy = clamp(D.vy * 0.55, -700, 150); A.sfx('whoosh'); }
       },
       update: function (dt) { step(dt); brain.update(dt); spr.set(D.x, D.y, D.rot * (D.vx < 0 ? -1 : 1), 1, D.state === 'held' || D.state === 'carried' ? 0.7 : 0.5); },
@@ -1197,16 +1209,16 @@
     var dog = A.dog, DN = A.DN;
     var bone = { x: 300, y: GY - 28, held: false, home: { x: 300, y: GY - 28 }, vy: 0 }, spr = A.sprite(A.itemSVG('Plush Bone'), 120, 120);
     var blanket = A.sprite(blanketSVG(), 210, 72, A.L.front, 0.5, 1); blanket.el.style.clipPath = 'inset(100% 0 0 0)';
-    var state = 'offer', stT = 0, tuck = 0, rubSpeed = 0, lastMove = 0, wakes = 0, half = false, tip = A.tip('drag me to ' + DN + '!', 230, 400), lastP = null;
+    var state = 'offer', stT = 0, tuck = 0, rubSpeed = 0, lastMove = 0, wakes = 0, half = false, tip = A.tip(LT('mod.toys.drag_me_to', 'drag me to {dn}!', { dn: DN }), 230, 400), lastP = null;
     var dim = A.div('', A.L.tint); dim.style.cssText = 'position:absolute;inset:0;background:rgba(40,40,90,.22);opacity:0;transition:opacity 1.5s';
     dog.x = 820; dog.face('left'); dog.setPose('sit');
-    A.say('is that... for me?', 2000);
+    A.say(LT('mod.toys.is_that_for_me', 'is that... for me?'), 2000);
     function near() { return Math.abs(bone.x - dog.x) < 190 && bone.y > GY - 260; }
     function overDog(x, y) { return Math.abs(x - dog.x) < 170 && y > GY - 190 && y < GY + 30; }
     return {
       poses: ['sit', 'pet', 'sleep', 'happy', 'idle'],
       dur: 45,
-      hint: 'Drag the Plush Bone over to ' + DN + '.',
+      hint: LT('mod.toys.drag_the_plush_bone_over_to', 'Drag the Plush Bone over to {dn}.', { dn: DN }),
       down: function (x, y) {
         if (state === 'offer' && dist(x, y, bone.x, bone.y) < A.hitR(75)) { bone.held = true; A.cursor('grabbing'); if (tip) { tip.hide(); tip = null; } }
         lastP = { x: x, y: y, t: performance.now() };
@@ -1225,8 +1237,8 @@
       up: function () {
         lastP = null; rubSpeed = 0;
         if (!bone.held) return; bone.held = false; A.cursor('default');
-        if (near()) { state = 'hug'; stT = 0; A.sfx('squeak'); dog.setPose('pet'); A.say('my bone. my BEST friend.', 1800); A.reward({ happiness: 4 }); A.burst('heart', dog.head().x, dog.head().y, 7, { g: -50, sp: 110, life: 1.5, size: 9 }); A.hint('Aww. Look at those eyes getting heavy...'); }
-        else { A.say(pick(['closer! I am lazy.', 'bring it HERE please']), 1300); }
+        if (near()) { state = 'hug'; stT = 0; A.sfx('squeak'); dog.setPose('pet'); A.say(LT('mod.toys.my_bone_my_best_friend', 'my bone. my BEST friend.'), 1800); A.reward({ happiness: 4 }); A.burst('heart', dog.head().x, dog.head().y, 7, { g: -50, sp: 110, life: 1.5, size: 9 }); A.hint(LT('mod.toys.aww_look_at_those_eyes_getting', 'Aww. Look at those eyes getting heavy...')); }
+        else { A.say(pick([LT('mod.toys.closer_i_am_lazy', 'closer! I am lazy.'), LT('mod.toys.bring_it_here_please', 'bring it HERE please')]), 1300); }
       },
       update: function (dt, T) {
         stT += dt;
@@ -1236,7 +1248,7 @@
           spr.set(bone.x, bone.y, Math.sin(T * 3) * 4);
         } else {
           var m = dog.mouth();
-          if (state === 'hug') { dog.setPose('pet'); spr.set(m.x + dog.dir() * -6, m.y + 30, -20 * dog.dir()); if (stT > 1.5 && stT < 1.55) A.say(pick(A.line('plushYawn', ['*yaaaawn*'])), 1400); if (stT > 2.8) { state = 'tuck'; stT = 0; dog.setPose('sleep'); A.hint('Shh, ' + DN + ' is napping. Tuck in: hold the mouse and rub SLOWLY over ' + DN + '. Fast rubbing wakes them!'); A.sfx('pop'); } }
+          if (state === 'hug') { dog.setPose('pet'); spr.set(m.x + dog.dir() * -6, m.y + 30, -20 * dog.dir()); if (stT > 1.5 && stT < 1.55) A.say(pick(A.line('plushYawn', [LT('mod.toys.yaaaawn', '*yaaaawn*')])), 1400); if (stT > 2.8) { state = 'tuck'; stT = 0; dog.setPose('sleep'); A.hint(LT('mod.toys.shh_is_napping_tuck_in_hold', '{touch, select, yes {Shh, {dn} is napping. Tuck in: hold and rub SLOWLY over {dn}. Fast rubbing wakes them!} other {Shh, {dn} is napping. Tuck in: hold the mouse and rub SLOWLY over {dn}. Fast rubbing wakes them!}}', { touch: TOUCH(), dn: DN })); A.sfx('pop'); } }
           else {
             if (state === 'tuck' || state === 'night') dog.setPose('sleep');
             var ms = dog.mouth(); spr.set(ms.x - dog.dir() * 40, GY - 22, 10);
@@ -1245,16 +1257,16 @@
             var rubbing = A.mouse.down && performance.now() - lastMove < 140;
             if (rubbing && rubSpeed > 1500) {
               state = 'woke'; stT = 0; wakes++; tuck = Math.max(0, tuck - 0.22); dog.setPose('sit'); A.sfx('bark');
-              A.say(pick(['huh?! I’m up! ...I’m up.', 'WHO RUBS SO FAST', 'is it breakfast?']), 1500); A.float('too fast!', dog.x, GY - 260, 'pt-blue pt-small');
+              A.say(pick([LT('mod.toys.huh_i_m_up_i_m', 'huh?! I’m up! ...I’m up.'), LT('mod.toys.who_rubs_so_fast', 'WHO RUBS SO FAST'), LT('mod.toys.is_it_breakfast', 'is it breakfast?')]), 1500); A.float(LT('mod.toys.too_fast', 'too fast!'), dog.x, GY - 260, 'pt-blue pt-small');
             } else if (rubbing && rubSpeed > 20) {
               tuck = Math.min(1, tuck + dt * 0.26);
               if (Math.random() < dt * 4) A.addPart({ type: 'heart', x: A.mouse.x, y: A.mouse.y - 10, vy: -50, vx: (Math.random() - 0.5) * 30, life: 1, size: 6 });
-              if (!half && tuck > 0.5) { half = true; A.reward({ happiness: 2 }); A.float('so cozy...', dog.x, GY - 240, 'pt-small'); }
-              if (tuck >= 1) { state = 'night'; stT = 0; dim.style.opacity = '1'; A.sfx('levelup'); A.float('Tucked in!', dog.x, GY - 260, 'pt-gold'); A.say('zzz... (dreaming of you)', 2600); A.reward({ happiness: 8, energy: 8 }); A.hint('Sweet dreams, ' + DN + '.'); }
+              if (!half && tuck > 0.5) { half = true; A.reward({ happiness: 2 }); A.float(LT('mod.toys.so_cozy', 'so cozy...'), dog.x, GY - 240, 'pt-small'); }
+              if (tuck >= 1) { state = 'night'; stT = 0; dim.style.opacity = '1'; A.sfx('levelup'); A.float(LT('mod.toys.tucked_in', 'Tucked in!'), dog.x, GY - 260, 'pt-gold'); A.say(LT('mod.toys.zzz_dreaming_of_you', 'zzz... (dreaming of you)'), 2600); A.reward({ happiness: 8, energy: 8 }); A.hint(LT('mod.toys.sweet_dreams', 'Sweet dreams, {dn}.', { dn: DN })); }
             }
             if (Math.random() < dt * 0.9) A.addPart({ type: 'z', x: dog.head().x, y: dog.head().y - 10, vx: 20 * -dog.dir(), vy: -40, life: 1.8, size: 6 + Math.random() * 3 });
           } else if (state === 'woke') { dog.setPose('sit'); dog.tilt = Math.sin(T * 10) * 3; if (stT > 1.6) { dog.tilt = 0; state = 'tuck'; stT = 0; dog.setPose('sleep'); A.say('...zzz', 900); } }
-          else if (state === 'night') { if (Math.random() < dt * 1.5) A.addPart({ type: 'z', x: dog.head().x, y: dog.head().y - 10, vx: 15, vy: -35, life: 2.2, size: 7 + Math.random() * 3 }); if (stT > 3.2) A.finish('Sweet dreams!', DN + ' is snoozing with the Plush Bone. Energy restored.'); }
+          else if (state === 'night') { if (Math.random() < dt * 1.5) A.addPart({ type: 'z', x: dog.head().x, y: dog.head().y - 10, vx: 15, vy: -35, life: 2.2, size: 7 + Math.random() * 3 }); if (stT > 3.2) A.finish(LT('mod.toys.sweet_dreams_2', 'Sweet dreams!'), LT('mod.toys.is_snoozing_with_the_plush_bone', '{dn} is snoozing with the Plush Bone. Energy restored.', { dn: DN })); }
         }
         blanket.set(dog.x - dog.dir() * 22, GY + 10, 0); blanket.el.style.clipPath = 'inset(' + ((1 - tuck) * 100).toFixed(1) + '% 0 0 0)';
       },
@@ -1262,7 +1274,7 @@
         if (state === 'tuck' || state === 'woke') {
           var x = dog.x - 110, y = GY - 250;
           g.fillStyle = 'rgba(255,251,243,.92)'; g.strokeStyle = INK; g.lineWidth = 2.5; g.beginPath(); g.roundRect ? g.roundRect(x - 6, y - 24, 232, 50, 12) : g.rect(x - 6, y - 24, 232, 50); g.fill(); g.stroke();
-          g.fillStyle = INK; g.font = '700 20px Caveat, cursive'; g.fillText('tuck-in meter', x + 4, y - 6);
+          g.fillStyle = INK; g.font = '700 20px Caveat, cursive'; g.fillText(LT('mod.toys.tuck_in_meter', 'tuck-in meter'), x + 4, y - 6);
           g.fillStyle = '#FFF4DF'; g.fillRect(x + 4, y + 2, 200, 14); g.fillStyle = '#86B3EA'; g.fillRect(x + 4, y + 2, 200 * tuck, 14); g.strokeRect(x + 4, y + 2, 200, 14);
         }
       },
@@ -1284,14 +1296,14 @@
     }
     for (var j = 0; j < 3; j++) { var hh = hole(j); lids.push({ i: j, x: hh.x, y: hh.y, fx: hh.x, fy: hh.y, spr: A.sprite(lidSvg, 60 * BS, 60 * BS, A.L.front, 0.5, 29 / 60), open: false, lift: 0 }); }
     var kib = 0, round = 0, state = 'play', stT = 0, drag = null, sniffT = 0, sniffCD = 0.6, found = 0, swaps = [], swapT = 0, swapIdx = 0, wrong = 0;
-    var funny = ['a sock?', 'one (1) pea', 'dust bunny', 'nothing. rude.', 'a button', 'old leaf'];
+    var funny = [LT('mod.toys.a_sock', 'a sock?'), LT('mod.toys.one_1_pea', 'one (1) pea'), LT('mod.toys.dust_bunny', 'dust bunny'), LT('mod.toys.nothing_rude', 'nothing. rude.'), LT('mod.toys.a_button', 'a button'), LT('mod.toys.old_leaf', 'old leaf')];
     dog.ground = BY + 66; dog.y = dog.ground; dog.x = 820; dog.face('left'); dog.setPose('idle');
     function newRound() {
       round++; kib = Math.floor(Math.random() * 3); drag = null;
       for (var i = 0; i < 3; i++) { covers[i].show(i !== kib); labs[i].textContent = ''; lids[i].open = false; }
-      if (round >= 2) { swaps = []; var n = round === 2 ? 3 : 5; for (var k = 0; k < n; k++) { var a = Math.floor(Math.random() * 3), b = (a + 1 + Math.floor(Math.random() * 2)) % 3; swaps.push([a, b]); } state = 'shuffle'; swapT = 0; swapIdx = 0; A.hint('Shuffle! Watch... then follow ' + DN + '’s nose.'); A.say(round === 2 ? 'shuffle time!' : 'faster shuffle!', 1200); }
-      else { state = 'play'; A.hint('Slide the lids to find the hidden kibble. ' + DN + ' sniffs at the right one!'); }
-      if (A.tr.sniff && LINES[A.key] && LINES[A.key].puzzleStart) A.say(pick(LINES[A.key].puzzleStart), 1500);
+      if (round >= 2) { swaps = []; var n = round === 2 ? 3 : 5; for (var k = 0; k < n; k++) { var a = Math.floor(Math.random() * 3), b = (a + 1 + Math.floor(Math.random() * 2)) % 3; swaps.push([a, b]); } state = 'shuffle'; swapT = 0; swapIdx = 0; A.hint(LT('mod.toys.shuffle_watch_then_follow_s_nose', 'Shuffle! Watch... then follow {dn}’s nose.', { dn: DN })); A.say(round === 2 ? LT('mod.toys.shuffle_time', 'shuffle time!') : LT('mod.toys.faster_shuffle', 'faster shuffle!'), 1200); }
+      else { state = 'play'; A.hint(LT('mod.toys.slide_the_lids_to_find_the', 'Slide the lids to find the hidden kibble. {dn} sniffs at the right one!', { dn: DN })); }
+      if (A.tr.sniff && TOYS_LINES[A.key] && TOYS_LINES[A.key].puzzleStart) A.say(pick(trLines(A.key, 'puzzleStart', TOYS_LINES[A.key].puzzleStart)), 1500);
       stT = 0; sniffCD = 0.4;
     }
     function lidAt(i) { for (var k = 0; k < 3; k++) if (lids[k].i === i) return lids[k]; return null; }
@@ -1299,10 +1311,10 @@
       if (L.open) return; L.open = true;
       if (L.i === kib) {
         state = 'found'; stT = 0; found++; var h = hole(kib);
-        A.sfx('pop'); A.float('kibble found!', h.x, h.y - 110, 'pt-gold'); A.burst('spark', h.x, h.y, 10, { g: 0, sp: 160, life: 0.7, size: 7 });
-        A.reward({ happiness: 3, coins: round >= 2 ? 1 : 0 }); A.say(pick(A.line('puzzleFound', ['CRUNCH. genius.', 'my nose was right!', 'we did it (I did it)'])), 1600);
+        A.sfx('pop'); A.float(LT('mod.toys.kibble_found', 'kibble found!'), h.x, h.y - 110, 'pt-gold'); A.burst('spark', h.x, h.y, 10, { g: 0, sp: 160, life: 0.7, size: 7 });
+        A.reward({ happiness: 3, coins: round >= 2 ? 1 : 0 }); A.say(pick(A.line('puzzleFound', [LT('mod.toys.crunch_genius', 'CRUNCH. genius.'), LT('mod.toys.my_nose_was_right', 'my nose was right!'), LT('mod.toys.we_did_it_i_did_it', 'we did it (I did it)')])), 1600);
       } else {
-        wrong++; labs[L.i].textContent = pick(funny); A.sfx('nope'); A.say(pick(A.line('puzzleWrong', ['not that one...', 'nope. sniff again.', 'my nose says NO'])), 1200); dog.squash(0.92);
+        wrong++; labs[L.i].textContent = pick(funny); A.sfx('nope'); A.say(pick(A.line('puzzleWrong', [LT('mod.toys.not_that_one', 'not that one...'), LT('mod.toys.nope_sniff_again', 'nope. sniff again.'), LT('mod.toys.my_nose_says_no', 'my nose says NO')])), 1200); dog.squash(0.92);
       }
     }
     newRound();
@@ -1327,7 +1339,7 @@
           dog.tilt = 0; swapT += dt; var dur = round === 2 ? 0.5 : 0.32, idx = Math.min(swaps.length, Math.floor(swapT / dur));
           while (swapIdx < idx) { var sw = swaps[swapIdx], A1 = lidAt(sw[0]), B1 = lidAt(sw[1]); A1.i = sw[1]; B1.i = sw[0]; swapIdx++; A.sfx('whoosh'); }
           dog.setPose('sit'); dog.runTo(820, 300, dt); if (Math.abs(dog.x - 820) < 6) { dog.face('left'); dog.setPose('sit'); }
-          if (idx >= swaps.length) { for (var k = 0; k < 3; k++) { var hh = hole(lids[k].i); lids[k].x = hh.x; lids[k].y = hh.y; lids[k].lift = 0; } state = 'play'; stT = 0; A.hint('Slide the lids! Which one smells like kibble?'); }
+          if (idx >= swaps.length) { for (var k = 0; k < 3; k++) { var hh = hole(lids[k].i); lids[k].x = hh.x; lids[k].y = hh.y; lids[k].lift = 0; } state = 'play'; stT = 0; A.hint(LT('mod.toys.slide_the_lids_which_one_smells', 'Slide the lids! Which one smells like kibble?')); }
           else {
             var s = swaps[idx], u = (swapT % dur) / dur, ea = 0.5 - 0.5 * Math.cos(u * Math.PI);
             var La = lidAt(s[0]), Lb = lidAt(s[1]), ha = hole(s[0]), hb = hole(s[1]);
@@ -1362,7 +1374,7 @@
           for (var k = 0; k <= 12; k++) { var u = k / 12, x = lerp(sx, ex, u) + Math.sin(u * 9 + T * 8 + i) * 7, y = lerp(sy, ey, u); if (k) g.lineTo(x, y); else g.moveTo(x, y); }
           g.stroke();
         }
-        g.fillStyle = INK; g.font = '700 24px Caveat, cursive'; g.globalAlpha = a; g.fillText('sniff sniff', m.x - 40, m.y - 60); g.globalAlpha = 1;
+        g.fillStyle = INK; g.font = '700 24px Caveat, cursive'; g.globalAlpha = a; g.fillText(LT('mod.toys.sniff_sniff', 'sniff sniff'), m.x - 40, m.y - 60); g.globalAlpha = 1;
       },
       finish: function () { return { happiness: 2, energy: -1 }; },
       dbg: function () { return { state: state, round: round, kib: kib, found: found, wrong: wrong, lids: lids.map(function (L) { return { i: L.i, x: L.x, y: L.y, open: L.open }; }), holes: [hole(0), hole(1), hole(2)] }; }
@@ -1378,9 +1390,9 @@
     var floor = function (x) { return x > PX ? 9999 : GY - 4; };
     var b = thrower(A, { x: 300, y: GY - 4, r: 22, floor: floor, bounce: 0.35, g: 1800, spinK: 0.6, ceil: -40 });
     var spr = A.sprite(A.itemSVG('Driftwood Stick'), 100, 100, A.L.front);
-    var lastF = 420, wet = false, shook = false, splashes = 0, fetches = 0, tip = A.tip('throw me in the pond!', 220, 410), drift = 0;
+    var lastF = 420, wet = false, shook = false, splashes = 0, fetches = 0, tip = A.tip(LT('mod.toys.throw_me_in_the_pond', 'throw me in the pond!'), 220, 410), drift = 0;
     dog.x = 520; dog.face('right'); dog.setPose('sit');
-    A.say('the water?! ...yes. YES.', 2000);
+    A.say(LT('mod.toys.the_water_yes_yes', 'the water?! ...yes. YES.'), 2000);
     function inWater(x) { return x > PX + 40; }
     var brain = fetchBrain(A, b, {
       speedAt: function (x) { return inWater(x) ? 170 : 420 * A.tr.run; }, carryK: A.tr.carry, carryRot: 0, carryDy: 2,
@@ -1390,21 +1402,21 @@
         dog.ground = w ? SWIM_Y : GY;
         if (w && !wet) { wet = true; shook = false; A.sfx('splash'); A.burst('drop', dog.x, WATER_Y, 14, { sp: 300, g: 1100, color: '#9CC8EA', size: 4 }); }
         if (!w && wet && dog.x < PX - 10 && st !== 'hold') {
-          wet = false; if (!shook) { shook = true; A.sfx('shake'); A.say(pick(A.line('stickShake', ['brrrrrrr!', 'SHAKE SHAKE SHAKE', 'sorry about the floor'])), 1400); me.pause(1.3, 'shake', st); return false; }
+          wet = false; if (!shook) { shook = true; A.sfx('shake'); A.say(pick(A.line('stickShake', [LT('mod.toys.brrrrrrr', 'brrrrrrr!'), LT('mod.toys.shake_shake_shake', 'SHAKE SHAKE SHAKE'), LT('mod.toys.sorry_about_the_floor', 'sorry about the floor')])), 1400); me.pause(1.3, 'shake', st); return false; }
         }
         if (st === 'hold' && dog.pose === 'shake' && Math.random() < dt * (A.tr.fluff ? 60 : 30)) A.burst('drop', dog.x + (Math.random() - 0.5) * 120, dog.y - 100 - Math.random() * 60, 1, { sp: 360, g: 1000, color: '#9CC8EA', size: 3.5 });
         if (w && Math.random() < dt * 4) A.addPart({ type: 'drop', x: dog.x + (Math.random() - 0.5) * 140, y: WATER_Y + 4, vx: (Math.random() - 0.5) * 60, vy: -90, g: 500, life: 0.5, size: 2.6, color: '#BBD8EF' });
         return false;
       },
-      onPick: function () { if (inWater(dog.x)) A.say(pick(['blub. got it.', 'paddle paddle paddle']), 1200); },
-      onDeliver: function () { fetches++; var wf = splashes > 0; A.reward({ happiness: wf ? 3 : 1, coins: wf ? 1 : 0, energy: -1 }); A.float(wf ? 'soggy fetch!' : 'good stick!', dog.x, dog.y - 250); splashes = 0; if (A.tr.flop) brain.pause(1.5, 'sleep', 'wait'); }
+      onPick: function () { if (inWater(dog.x)) A.say(pick([LT('mod.toys.blub_got_it', 'blub. got it.'), LT('mod.toys.paddle_paddle_paddle', 'paddle paddle paddle')]), 1200); },
+      onDeliver: function () { fetches++; var wf = splashes > 0; A.reward({ happiness: wf ? 3 : 1, coins: wf ? 1 : 0, energy: -1 }); A.float(wf ? LT('mod.toys.soggy_fetch', 'soggy fetch!') : LT('mod.toys.good_stick', 'good stick!'), dog.x, dog.y - 250); splashes = 0; if (A.tr.flop) brain.pause(1.5, 'sleep', 'wait'); }
     });
     var cbs = {
       bounce: function (v) { if (v > 300) A.sfx('bounce'); },
       custom: function () {
         if (b.x > PX && b.y >= WATER_Y) {
           b.y = WATER_Y; b.state = 'float'; b.vx *= 0.25; b.vy = 0; splashes++; drift = 0;
-          A.sfx('splash'); A.burst('drop', b.x, WATER_Y, 18, { sp: 380, g: 1200, color: '#9CC8EA', size: 4.5 }); A.float(b.x > 900 ? 'SPLOOSH!' : 'splash!', b.x, WATER_Y - 120, 'pt-blue');
+          A.sfx('splash'); A.burst('drop', b.x, WATER_Y, 18, { sp: 380, g: 1200, color: '#9CC8EA', size: 4.5 }); A.float(b.x > 900 ? LT('mod.toys.sploosh', 'SPLOOSH!') : LT('mod.toys.splash', 'splash!'), b.x, WATER_Y - 120, 'pt-blue');
           return true;
         }
         return false;
@@ -1413,7 +1425,7 @@
     return {
       poses: ['sit', 'walk', 'eat', 'shake', 'happy', 'idle'],
       dur: 55,
-      hint: 'Drag and release to throw the stick into the pond. ' + DN + ' paddles out for it!',
+      hint: LT('mod.toys.drag_and_release_to_throw_the', 'Drag and release to throw the stick into the pond. {dn} paddles out for it!', { dn: DN }),
       down: function (x, y) { if ((b.state === 'rest' || (b.state === 'fly' && x < PX)) && dist(x, y, b.x, b.y) < A.hitR(70)) { b.grab(x, y); A.cursor('grabbing'); if (tip) { tip.hide(); tip = null; } } },
       move: function (x, y) { if (b.state === 'held') { b.x = clamp(x, 30, PX - 30); b.y = Math.min(y, GY - 4); } else A.cursor(b.state === 'rest' && dist(x, y, b.x, b.y) < 70 ? 'grab' : 'default'); },
       up: function () { if (b.state === 'held') { var v = b.release(); if (v.speed > 600) A.sfx('whoosh'); A.cursor('default'); } },
@@ -1441,15 +1453,15 @@
   IMPL['Rubber Chicken'] = function (A) {
     var dog = A.dog, DN = A.DN, CX = 420, CY = GY - 62;
     var ch = A.sprite(A.itemSVG('Rubber Chicken'), 170, 170);
-    var held = false, holdT = 0, honkCD = 0, spring = 0, springV = 0, meterV = 0, concerts = 0, howlT = 0, howlLeft = 0, howlCD = 0, pending = 0, duets = 0, harmony = 0, tip = A.tip('press & hold me!', 350, 360), finale = 0;
-    var meter = A.meter('concert meter', 470, 92, 300, null);
+    var held = false, holdT = 0, honkCD = 0, spring = 0, springV = 0, meterV = 0, concerts = 0, howlT = 0, howlLeft = 0, howlCD = 0, pending = 0, duets = 0, harmony = 0, tip = A.tip(LT('mod.toys.press_hold_me', 'press & hold me!'), 350, 360), finale = 0;
+    var meter = A.meter(LT('mod.toys.concert_meter', 'concert meter'), 470, 92, 300, null);
     dog.x = 830; dog.face('left'); dog.setPose('sit');
-    A.say('is that a... chicken?', 1800);
+    A.say(LT('mod.toys.is_that_a_chicken', 'is that a... chicken?'), 1800);
     function addMeter(v) {
       meterV = Math.min(1, meterV + v);
       if (meterV >= 1 && !finale) {
-        finale = 2.6; concerts++; A.sfx('levelup'); A.float(concerts > 1 ? 'ENCORE #' + concerts + '!' : 'ENCORE!', 620, 250, 'pt-gold');
-        A.reward({ happiness: 6, bond: concerts === 1 ? 1 : 0, coins: 1 }); A.say('thank you, thank you, we are here all week', 2200);
+        finale = 2.6; concerts++; A.sfx('levelup'); A.float(concerts > 1 ? LT('mod.toys.encore', 'ENCORE #{n}!', { n: concerts }) : LT('mod.toys.encore_2', 'ENCORE!'), 620, 250, 'pt-gold');
+        A.reward({ happiness: 6, bond: concerts === 1 ? 1 : 0, coins: 1 }); A.say(LT('mod.toys.thank_you_thank_you_we_are', 'thank you, thank you, we are here all week'), 2200);
         for (var i = 0; i < 16; i++) A.addPart({ type: i % 2 ? 'note' : 'heart', x: 300 + Math.random() * 640, y: 520, vx: (Math.random() - 0.5) * 200, vy: -300 - Math.random() * 300, g: 300, life: 1.8, size: 9 });
         if (!dog.air) dog.jump(-800, 0);
       }
@@ -1457,8 +1469,8 @@
     return {
       poses: ['sit', 'happy', 'jump', 'idle'],
       dur: 45,
-      hint: 'Click to squeeze the chicken. Hold for a LONGER honk. ' + DN + ' will join in!',
-      down: function (x, y) { if (dist(x, y, CX, CY) < A.hitR(100)) { held = true; holdT = 0; honkCD = 0.25; A.sfx('honk'); if (tip) { tip.hide(); tip = null; } if (howlT > 0) { harmony++; A.float('harmony!', CX + 120, CY - 140, 'pt-small'); addMeter(0.12); } } },
+      hint: LT('mod.toys.click_to_squeeze_the_chicken_hold', '{touch, select, yes {Tap to squeeze the chicken. Hold for a LONGER honk. {dn} will join in!} other {Click to squeeze the chicken. Hold for a LONGER honk. {dn} will join in!}}', { touch: TOUCH(), dn: DN }),
+      down: function (x, y) { if (dist(x, y, CX, CY) < A.hitR(100)) { held = true; holdT = 0; honkCD = 0.25; A.sfx('honk'); if (tip) { tip.hide(); tip = null; } if (howlT > 0) { harmony++; A.float(LT('mod.toys.harmony', 'harmony!'), CX + 120, CY - 140, 'pt-small'); addMeter(0.12); } } },
       move: function (x, y) { A.cursor(dist(x, y, CX, CY) < 100 ? 'pointer' : 'default'); },
       up: function () {
         if (!held) return; held = false;
@@ -1474,7 +1486,7 @@
         springV += (-spring * 120 - springV * 9) * dt; spring += springV * dt;
         var squeeze = held ? Math.min(1, holdT / 0.6) : 0;
         ch.set(CX, CY, Math.sin(T * 2) * 3 + (held ? Math.sin(T * 40) * 2 : 0), 1 + squeeze * 0.16 - spring * 0.05, 1 - squeeze * 0.3 + spring * 0.08);
-        if (pending > 0) { pending -= dt; if (pending <= 0) { howlT = 0.4 + howlLeft * 0.2; A.say(pick(A.line('howl', ['AWOOOO!', 'ah-WOO-woo', 'awooo (harmony)', 'WOO! WOO!'])), 1200); } }
+        if (pending > 0) { pending -= dt; if (pending <= 0) { howlT = 0.4 + howlLeft * 0.2; A.say(pick(A.line('howl', [LT('mod.toys.awoooo', 'AWOOOO!'), LT('mod.toys.ah_woo_woo', 'ah-WOO-woo'), LT('mod.toys.awooo_harmony', 'awooo (harmony)'), LT('mod.toys.woo_woo', 'WOO! WOO!')])), 1200); } }
         if (howlT > 0) {
           howlT -= dt; dog.setPose('happy'); dog.rot = -12 + Math.sin(T * 14) * 3;
           if (howlLeft > 0 && howlCD <= 0) { A.sfx('bark'); howlLeft--; howlCD = 0.19; A.addPart({ type: 'note', x: dog.head().x, y: dog.head().y - 20, vx: (Math.random() - 0.3) * 80, vy: -120, g: -20, life: 1.3, size: 10 }); }
@@ -1496,7 +1508,7 @@
     if (now - (A.tapAt || 0) < 650) return true;
     A.tapAt = now; d.squash(0.86); A.burst('heart', h.x, h.y, 3, { g: -60, sp: 90, life: 1.1, size: 7 });
     if (Math.random() < 0.4) A.sfx('bark');
-    A.say(pick(A.line('tap', generic || ['hi! yes! hello!', 'boop received', 'one pat. ok two.'])), 1100);
+    A.say(pick(A.line('tap', generic || [LT('mod.toys.hi_yes_hello', 'hi! yes! hello!'), LT('mod.toys.boop_received', 'boop received'), LT('mod.toys.one_pat_ok_two', 'one pat. ok two.')])), 1100);
     return true;
   }
   /* happy tail-end wiggle: the art wags the tail, this sways the whole dog a little */
@@ -1674,10 +1686,10 @@
       flaps.push({ i: flaps.length, x: p.x, y: p.y, k: k, has: false, open: 0, want: 0, wig: 0, kb: kb, spr: A.sprite(v24Flap(r * 3 + c + r), 120 * k, 48 * k, A.L.scene, 0.5, 0.25) });
     }
     var state = 'hide', stT = 0, hidden = 0, found = 0, rounds = 0, sniffs = 0, finds = 0, plan = [], tgt = null, hintF = null, puffT = 0, peek = 0;
-    var tip = A.tip('click a flap!', MX - 70, MT - 60);
+    var tip = A.tip(LT('mod.toys.click_a_flap', '{touch, select, yes {tap a flap!} other {click a flap!}}', { touch: TOUCH() }), MX - 70, MT - 60);
     dog.x = HOME; dog.face('right'); dog.setPose('sit');
-    A.say(pick(A.line('snuffleStart', ['hide the kibble. I will not look.', 'eyes closed. (one eye open)'])), 2200);
-    function hideHint() { A.hint('Click a flap to hide a kibble (' + (3 - hidden) + ' to go). ' + DN + ' is not looking. Probably.'); }
+    A.say(pick(A.line('snuffleStart', [LT('mod.toys.hide_the_kibble_i_will_not', 'hide the kibble. I will not look.'), LT('mod.toys.eyes_closed_one_eye_open', 'eyes closed. (one eye open)')])), 2200);
+    function hideHint() { A.hint(LT('mod.toys.click_a_flap_to_hide_a', '{touch, select, yes {Tap a flap to hide a kibble ({n} to go). {dn} is not looking. Probably.} other {Click a flap to hide a kibble ({n} to go). {dn} is not looking. Probably.}}', { touch: TOUCH(), n: 3 - hidden, dn: DN })); }
     hideHint();
     function flapAt(x, y) { var best = null, bd = 1e9; flaps.forEach(function (f) { var d = Math.hypot(x - f.x, (y - f.y) * 1.9); if (d < A.hitR(62 * f.k) && d < bd) { bd = d; best = f; } }); return best; }
     function planSearch() {
@@ -1702,16 +1714,16 @@
       hint: '',
       down: function (x, y) {
         var f = flapAt(x, y);
-        if (!f) { dogTap(A, x, y, ['I am WORKING. (pat accepted)', 'sniff break. ok.']); return; }
+        if (!f) { dogTap(A, x, y, [LT('mod.toys.i_am_working_pat_accepted', 'I am WORKING. (pat accepted)'), LT('mod.toys.sniff_break_ok', 'sniff break. ok.')]); return; }
         if (tip) { tip.hide(); tip = null; }
         if (state === 'hide') {
-          if (f.has) { f.wig = 1; A.say(pick(['that one is taken!', 'already a kibble in there']), 1100); return; }
+          if (f.has) { f.wig = 1; A.say(pick([LT('mod.toys.that_one_is_taken', 'that one is taken!'), LT('mod.toys.already_a_kibble_in_there', 'already a kibble in there')]), 1100); return; }
           f.has = true; f.want = 1; hidden++; A.sfx('click'); A.later(function () { f.want = 0; A.sfx('pop'); }, 420);
           A.burst('dust', f.x, f.y, 3, { g: -30, sp: 60, life: 0.5, size: 4 });
-          if (Math.random() < 0.6) A.say(pick(['I heard nothing.', 'was that a flap? no.', '*not looking intensifies*']), 1000);
-          if (hidden >= 3) { state = 'ready'; stT = 0; A.hint(DN + ' is sniffing it out. Click a flap to give a hint.'); } else hideHint();
+          if (Math.random() < 0.6) A.say(pick([LT('mod.toys.i_heard_nothing', 'I heard nothing.'), LT('mod.toys.was_that_a_flap_no', 'was that a flap? no.'), LT('mod.toys.not_looking_intensifies', '*not looking intensifies*')]), 1000);
+          if (hidden >= 3) { state = 'ready'; stT = 0; A.hint(LT('mod.toys.is_sniffing_it_out_click_a', '{touch, select, yes {{dn} is sniffing it out. Tap a flap to give a hint.} other {{dn} is sniffing it out. Click a flap to give a hint.}}', { touch: TOUCH(), dn: DN })); } else hideHint();
         } else if (state === 'walk' || state === 'sniff' || state === 'ready') {
-          if (f.has || f.open < 0.1) { hintF = f; f.wig = 1; A.sfx('click'); A.say(pick(['that one? ok!', 'a tip! thank you.', 'sniffing there next']), 900); }
+          if (f.has || f.open < 0.1) { hintF = f; f.wig = 1; A.sfx('click'); A.say(pick([LT('mod.toys.that_one_ok', 'that one? ok!'), LT('mod.toys.a_tip_thank_you', 'a tip! thank you.'), LT('mod.toys.sniffing_there_next', 'sniffing there next')]), 900); }
         }
       },
       move: function (x, y) { A.cursor(state === 'hide' && flapAt(x, y) ? 'pointer' : 'default'); },
@@ -1723,7 +1735,7 @@
         } else if (state === 'ready') {
           dog.setPose('happy'); wiggle(dog, T, 3);
           dog.face('left');
-          if (stT > 0.9) { dog.tilt = 0; A.say(pick(['ready or not!', 'here I come, kibble!', 'nose: ON']), 1300); A.sfx('bark'); planSearch(); choose(); }
+          if (stT > 0.9) { dog.tilt = 0; A.say(pick([LT('mod.toys.ready_or_not', 'ready or not!'), LT('mod.toys.here_i_come_kibble', 'here I come, kibble!'), LT('mod.toys.nose_on', 'nose: ON')]), 1300); A.sfx('bark'); planSearch(); choose(); }
         } else if (state === 'walk') {
           var sp = spot(); dog.tilt = 0;
           if (dog.runTo(sp.x, (A.tr.sniff ? 340 : 250) * A.tr.run, dt)) { dog.face(sp.side > 0 ? 'left' : 'right'); state = 'sniff'; stT = 0; sniffs++; A.sfx('sniff'); }
@@ -1735,11 +1747,11 @@
             dog.tilt = 0;
             if (tgt.has) {
               state = 'eat'; stT = 0; tgt.want = 1; found++; finds++; A.sfx('pop');
-              A.float(found >= 3 ? 'all found!' : 'found one!', tgt.x, tgt.y - 120, found >= 3 ? 'pt-gold' : 'pt-small');
+              A.float(found >= 3 ? LT('mod.toys.all_found', 'all found!') : LT('mod.toys.found_one', 'found one!'), tgt.x, tgt.y - 120, found >= 3 ? 'pt-gold' : 'pt-small');
               A.reward({ happiness: 1 });
-              if (Math.random() < 0.7) A.say(pick(A.line('snuffleFind', ['FOUND IT!', 'kibble located', 'my nose is a genius'])), 1200);
+              if (Math.random() < 0.7) A.say(pick(A.line('snuffleFind', [LT('mod.toys.found_it', 'FOUND IT!'), LT('mod.toys.kibble_located', 'kibble located'), LT('mod.toys.my_nose_is_a_genius', 'my nose is a genius')])), 1200);
             } else {
-              tgt.wig = 1; if (Math.random() < 0.45) A.say(pick(['hmm. not here.', 'just fleece.', 'smells like... mat.']), 900);
+              tgt.wig = 1; if (Math.random() < 0.45) A.say(pick([LT('mod.toys.hmm_not_here', 'hmm. not here.'), LT('mod.toys.just_fleece', 'just fleece.'), LT('mod.toys.smells_like_mat', 'smells like... mat.')]), 900);
               choose();
             }
           }
@@ -1752,7 +1764,7 @@
           if (stT < 0.05 && !dog.air) {
             rounds++; dog.jump(-720, 0); A.burst('heart', dog.head().x, dog.head().y, 7, { g: -50, sp: 120, life: 1.4, size: 9 });
             A.reward({ happiness: 3, bond: rounds === 1 ? 1 : 0, coins: rounds === 2 ? 1 : 0 });
-            A.say(pick(['three for three! hide them again!', 'nose of the year', 'again! hide them HARDER']), 1800);
+            A.say(pick([LT('mod.toys.three_for_three_hide_them_again', 'three for three! hide them again!'), LT('mod.toys.nose_of_the_year', 'nose of the year'), LT('mod.toys.again_hide_them_harder', 'again! hide them HARDER')]), 1800);
           }
           if (!dog.air) { dog.setPose('happy'); wiggle(dog, T, 3); }
           if (stT > 2) { dog.tilt = 0; state = 'home'; stT = 0; dog.ground = GY; }
@@ -1769,12 +1781,12 @@
       drawFx: function (g, T) {
         if (state === 'sniff' || state === 'eat') {
           var m = dog.mouth(), a = state === 'sniff' ? 1 : 0.5;
-          g.fillStyle = INK; g.globalAlpha = a; g.font = '700 24px Caveat, cursive'; if (state === 'eat') g.fillText('crunch!', m.x - 30 + dog.dir() * 20, m.y - 30 - Math.sin(T * 8) * 3);
+          g.fillStyle = INK; g.globalAlpha = a; g.font = '700 24px Caveat, cursive'; if (state === 'eat') g.fillText(LT('mod.toys.crunch', 'crunch!'), m.x - 30 + dog.dir() * 20, m.y - 30 - Math.sin(T * 8) * 3);
           g.strokeStyle = 'rgba(91,61,50,.6)'; g.lineWidth = 2; g.lineCap = 'round';
           for (var i = 0; i < 3; i++) { var ox = m.x + dog.dir() * (8 + i * 8), oy = m.y - 14 - i * 6; g.beginPath(); g.arc(ox, oy, 5 + i * 3, -2.2 + Math.sin(T * 20 + i) * 0.2, -0.9); g.stroke(); }
           g.globalAlpha = 1;
         }
-        if (state === 'hide' && peek > 0.9) { var h = dog.head(); g.fillStyle = INK; g.font = '700 24px Caveat, cursive'; g.fillText('*peek*', h.x - 30, h.y - 46); }
+        if (state === 'hide' && peek > 0.9) { var h = dog.head(); g.fillStyle = INK; g.font = '700 24px Caveat, cursive'; g.fillText(LT('mod.toys.peek', '*peek*'), h.x - 30, h.y - 46); }
       },
       focus: function () { return CP ? 630 : state === 'hide' ? 630 : (dog.x + MX) / 2; },
       finish: function () { return { happiness: 2, energy: -1 }; },
@@ -1789,30 +1801,30 @@
     var dog = A.dog, DN = A.DN, PIV = 122 * 0.62 - 17;
     var cone = { x: 520, rot: 0, vx: 0, held: false, unheld: 0, tipTo: 0, standT: 0 };
     var spr = A.sprite(v24Cone(), 100, 122, A.L.actors, 0.5, 0.62);
-    var meter = A.meter('lick meter', 470, 92, 300, null);
+    var meter = A.meter(LT('mod.toys.lick_meter', 'lick meter'), 470, 92, 300, null);
     var state = 'intro', stT = 0, lick = 0, smear = 1, cones = 0, tips = 0, licks = 0, lickPh = 0, half = false, rollT = 0, pawT = 0;
-    var tip = A.tip('press & hold me!', 430, 380);
+    var tip = A.tip(LT('mod.toys.press_hold_me', 'press & hold me!'), 430, 380);
     dog.x = 880; dog.face('left'); dog.setPose('sit');
-    A.say(pick(A.line('coneLick', ['is that... PUMPKIN?', 'a cone! with pumpkin! for ME?'])), 1800);
+    A.say(pick(A.line('coneLick', [LT('mod.toys.is_that_pumpkin', 'is that... PUMPKIN?'), LT('mod.toys.a_cone_with_pumpkin_for_me', 'a cone! with pumpkin! for ME?')])), 1800);
     function up() { return Math.abs(cone.rot) < 25; }
     function pivY() { return GY - lerp(122 * 0.38 - 2, 32, Math.min(1, Math.abs(cone.rot) / 90)); }
     function hole() { var a = cone.rot * Math.PI / 180; return { x: cone.x + Math.sin(a) * PIV, y: pivY() - Math.cos(a) * PIV }; }
     function lickPose() { return up() ? 'sit' : 'crouch'; }
     function spot() { var h = hole(), side = up() ? (dog.x >= cone.x ? 1 : -1) : (h.x >= cone.x ? 1 : -1); return { x: h.x + side * (dog.mouthOff(lickPose()) + (up() ? 34 : 22)), side: side }; }
-    function tipOver() { state = 'tip'; stT = 0; tips++; cone.tipTo = dog.x > cone.x ? -90 : 90; cone.vx = (dog.x > cone.x ? -1 : 1) * (200 + Math.random() * 80); A.sfx('bonk'); A.say(pick(['it ran away!', 'come BACK, cone', 'the cone has legs?!']), 1300); }
+    function tipOver() { state = 'tip'; stT = 0; tips++; cone.tipTo = dog.x > cone.x ? -90 : 90; cone.vx = (dog.x > cone.x ? -1 : 1) * (200 + Math.random() * 80); A.sfx('bonk'); A.say(pick([LT('mod.toys.it_ran_away', 'it ran away!'), LT('mod.toys.come_back_cone', 'come BACK, cone'), LT('mod.toys.the_cone_has_legs', 'the cone has legs?!')]), 1300); }
     return {
       poses: ['sit', 'idle', 'walk', 'crouch', 'happy', 'bow'],
       dur: 50,
-      hint: 'Hold the cone steady while ' + DN + ' licks. Let go and it might roll away!',
+      hint: LT('mod.toys.hold_the_cone_steady_while_licks', 'Hold the cone steady while {dn} licks. Let go and it might roll away!', { dn: DN }),
       down: function (x, y) {
         var c = { x: cone.x, y: pivY() - (up() ? 10 : 0) };
         if (dist(x, y, c.x, c.y) < A.hitR(up() ? 72 : 66)) {
           if (tip) { tip.hide(); tip = null; }
           cone.held = true; A.cursor('grabbing'); A.sfx('click');
-          if (!up()) { state = 'stand'; stT = 0; cone.standFrom = cone.rot; cone.vx = 0; A.say(pick(['upsy-daisy', 'stand up, cone']), 900); }
+          if (!up()) { state = 'stand'; stT = 0; cone.standFrom = cone.rot; cone.vx = 0; A.say(pick(['upsy-daisy', LT('mod.toys.stand_up_cone', 'stand up, cone')]), 900); }
           return;
         }
-        dogTap(A, x, y, ['mid-lick! hello!', 'pumpkin face. yes.']);
+        dogTap(A, x, y, [LT('mod.toys.mid_lick_hello', 'mid-lick! hello!'), LT('mod.toys.pumpkin_face_yes', 'pumpkin face. yes.')]);
       },
       move: function (x, y) { if (!cone.held) A.cursor(dist(x, y, cone.x, pivY()) < 70 ? 'grab' : 'default'); },
       up: function () { if (cone.held) { cone.held = false; A.cursor('default'); cone.unheld = 0; } },
@@ -1830,20 +1842,20 @@
             lick = Math.min(1, lick + rate * dt); smear = 1 - lick; meter.set(lick);
             if (lickPh > 0.45) {
               lickPh = 0; licks++; if (licks % 2) A.sfx('slurp');
-              if (A.tr.snort && Math.random() < 0.3) { A.sfx('sniff'); var m = dog.mouth(); A.burst('dust', m.x, m.y - 6, 4, { g: -30, sp: 90, life: 0.5, size: 4 }); if (Math.random() < 0.6) A.say(pick(A.line('coneSnort', ['*snort*', '*snort snort*', '*snerk*'])), 700); }
-              else if (Math.random() < 0.08) A.say(pick(A.line('coneLick', ['mmm. pumpkin.', 'lick lick lick', 'this is my calm place'])), 1100);
+              if (A.tr.snort && Math.random() < 0.3) { A.sfx('sniff'); var m = dog.mouth(); A.burst('dust', m.x, m.y - 6, 4, { g: -30, sp: 90, life: 0.5, size: 4 }); if (Math.random() < 0.6) A.say(pick(A.line('coneSnort', [LT('mod.toys.snort', '*snort*'), LT('mod.toys.snort_snort', '*snort snort*'), LT('mod.toys.snerk', '*snerk*')])), 700); }
+              else if (Math.random() < 0.08) A.say(pick(A.line('coneLick', [LT('mod.toys.mmm_pumpkin', 'mmm. pumpkin.'), LT('mod.toys.lick_lick_lick', 'lick lick lick'), LT('mod.toys.this_is_my_calm_place', 'this is my calm place')])), 1100);
             }
-            if (!half && lick >= 0.5) { half = true; A.reward({ happiness: 1 }); A.float('halfway!', cone.x, GY - 190, 'pt-small'); }
+            if (!half && lick >= 0.5) { half = true; A.reward({ happiness: 1 }); A.float(LT('mod.toys.halfway', 'halfway!'), cone.x, GY - 190, 'pt-small'); }
             if (up() && !cone.held) {
               cone.unheld += dt; cone.rot = Math.sin(T * 9) * Math.min(14, cone.unheld * 9);
               if (cone.unheld > 1.6) tipOver();
             } else if (up()) cone.rot *= 0.8;
-            if (!up()) { pawT += dt; if (pawT > 2.4) { pawT = 0; dog.setPose('bow'); cone.vx = (dog.x > cone.x ? -1 : 1) * 130; state = 'rollon'; stT = 0; A.say(pick(['*paw paw*', 'boop. it rolled.']), 900); } }
+            if (!up()) { pawT += dt; if (pawT > 2.4) { pawT = 0; dog.setPose('bow'); cone.vx = (dog.x > cone.x ? -1 : 1) * 130; state = 'rollon'; stT = 0; A.say(pick([LT('mod.toys.paw_paw', '*paw paw*'), LT('mod.toys.boop_it_rolled', 'boop. it rolled.')]), 900); } }
             if (lick >= 1) {
               state = 'clean'; stT = 0; cones++; half = false; var hh = hole();
-              A.float('licked clean!', hh.x, hh.y - 90, 'pt-gold'); A.burst('spark', hh.x, hh.y, 10, { g: 0, sp: 160, life: 0.7, size: 7 }); A.sfx('levelup');
+              A.float(LT('mod.toys.licked_clean', 'licked clean!'), hh.x, hh.y - 90, 'pt-gold'); A.burst('spark', hh.x, hh.y, 10, { g: 0, sp: 160, life: 0.7, size: 7 }); A.sfx('levelup');
               A.reward({ happiness: 4, coins: cones === 2 ? 1 : 0 });
-              A.say(pick(['spotless. I am a professional.', 'more? MORE?', 'that was the best five minutes']), 1700);
+              A.say(pick([LT('mod.toys.spotless_i_am_a_professional', 'spotless. I am a professional.'), LT('mod.toys.more_more', 'more? MORE?'), LT('mod.toys.that_was_the_best_five_minutes', 'that was the best five minutes')]), 1700);
             }
           }
         } else if (state === 'tip') {
@@ -1857,7 +1869,7 @@
           if (k >= 1) { cone.rot = 0; state = 'go'; stT = 0; A.sfx('pop'); }
         } else if (state === 'clean') {
           dog.setPose('happy'); wiggle(dog, T, 3);
-          if (stT > 1.6) { state = 'refill'; stT = 0; dog.tilt = 0; A.say(pick(['refill! plain pumpkin. the best kind.', 'here comes more pumpkin']), 1500); }
+          if (stT > 1.6) { state = 'refill'; stT = 0; dog.tilt = 0; A.say(pick([LT('mod.toys.refill_plain_pumpkin_the_best_kind', 'refill! plain pumpkin. the best kind.'), LT('mod.toys.here_comes_more_pumpkin', 'here comes more pumpkin')]), 1500); }
         } else if (state === 'refill') {
           dog.setPose('sit'); wiggle(dog, T, 1.5); smear = Math.min(1, stT / 0.6);
           if (stT > 0.15 && stT < 0.2) { var h2 = hole(); A.burst('drop', h2.x, h2.y, 6, { sp: 120, g: 600, life: 0.5, size: 3, color: '#F4A262' }); A.sfx('pop'); }
@@ -1892,7 +1904,7 @@
         }
         if (cone.held && up()) {
           drawHand(g, cone.x + (dog.x > cone.x ? -30 : 30), pivY() + 4, dog.x > cone.x ? 1 : -1);
-          g.fillStyle = INK; g.font = '700 22px Caveat, cursive'; g.fillText('steady...', cone.x - 40, GY - 150);
+          g.fillStyle = INK; g.font = '700 22px Caveat, cursive'; g.fillText(LT('mod.toys.steady', 'steady...'), cone.x - 40, GY - 150);
         } else if (state === 'lick' && up() && cone.unheld > 0.4) {
           g.strokeStyle = 'rgba(91,61,50,.6)'; g.lineWidth = 2; g.lineCap = 'round';
           for (var i = -1; i <= 1; i += 2) { g.beginPath(); g.arc(cone.x + i * 62, pivY() - 30, 14, i > 0 ? -0.8 : Math.PI - 0.6, i > 0 ? 0.6 : Math.PI + 0.8); g.stroke(); }
@@ -1912,23 +1924,23 @@
     var dog = A.dog, DN = A.DN;
     var hog = { x: 420, h: 0, vh: 0, vx: 0, air: false, sq: 0, ball: false, rot: 0, ballT: 0, face: 1 };
     var hs = A.sprite(v24Hog(), 150, 112, A.L.actors, 0.5, 0.95), bs = A.sprite(v24HogBall(), 104, 104, A.L.actors, 0.5, 0.5); bs.show(false);
-    var state = 'ready', stT = 0, taps = [], squeaks = 0, pounces = 0, rolls = 0, boops = 0, boopT = 0, tip = A.tip('click me!', 360, 380);
+    var state = 'ready', stT = 0, taps = [], squeaks = 0, pounces = 0, rolls = 0, boops = 0, boopT = 0, tip = A.tip(LT('mod.toys.click_me', '{touch, select, yes {tap me!} other {click me!}}', { touch: TOUCH() }), 360, 380);
     dog.x = 780; dog.face('left'); dog.setPose('sit');
-    A.say(pick(['a hedgehog?! a SQUEAKY hedgehog?!', 'it is looking at me']), 1800);
+    A.say(pick([LT('mod.toys.a_hedgehog_a_squeaky_hedgehog', 'a hedgehog?! a SQUEAKY hedgehog?!'), LT('mod.toys.it_is_looking_at_me', 'it is looking at me')]), 1800);
     function hogY() { return hog.ball ? GY - 50 - hog.h : GY + 4 - hog.h; }
     function onHog(x, y) { return hog.ball ? dist(x, y, hog.x, hogY()) < A.hitR(68) : dist(x, y, hog.x, GY - 46 - hog.h) < A.hitR(82); }
     function curl() {
       hog.ball = true; hog.ballT = 0; hs.show(false); bs.show(true); rolls++;
       hog.vx = (hog.x < dog.x ? -1 : 1) * (380 + Math.random() * 80); hog.h = 0; hog.vh = 0; hog.air = false;
-      A.float('it rolled up!', hog.x, GY - 170, 'pt-gold'); A.sfx('whoosh');
-      A.say(pick(A.line('hogRoll', ['it is a BALL now', 'where did its face go?!', 'roll! I will catch you!'])), 1500);
+      A.float(LT('mod.toys.it_rolled_up', 'it rolled up!'), hog.x, GY - 170, 'pt-gold'); A.sfx('whoosh');
+      A.say(pick(A.line('hogRoll', [LT('mod.toys.it_is_a_ball_now', 'it is a BALL now'), LT('mod.toys.where_did_its_face_go', 'where did its face go?!'), LT('mod.toys.roll_i_will_catch_you', 'roll! I will catch you!')])), 1500);
       state = 'chase'; stT = 0; dog.tilt = 0;
     }
     function squeak() {
       A.sfx('squeak'); hog.sq = 1; squeaks++;
       var now = performance.now() / 1000; taps.push(now); while (taps.length && now - taps[0] > 1.6) taps.shift();
       A.burst('note', hog.x + 30, GY - 90 - hog.h, 1, { a0: -Math.PI * 0.7, spread: 0.4, g: -30, sp: 90, life: 0.9, size: 8 });
-      if (hog.ball) { hog.vx += (hog.x < dog.x ? -1 : 1) * 150; A.float('squeak?', hog.x, GY - 130, 'pt-small'); return; }
+      if (hog.ball) { hog.vx += (hog.x < dog.x ? -1 : 1) * 150; A.float(LT('mod.toys.squeak', 'squeak?'), hog.x, GY - 130, 'pt-small'); return; }
       if (taps.length >= 3) { taps = []; curl(); return; }
       if (!hog.air) { hog.air = true; hog.vh = 520; var dx = (40 + Math.random() * 60) * (Math.random() < 0.5 ? -1 : 1); var tx = clamp(hog.x + dx, 250, 640); hog.vx = (tx - hog.x) / 0.52; A.burst('dust', hog.x, GY, 3, { g: -20, sp: 60, life: 0.5, size: 4 }); }
       if (state === 'ready' || state === 'back' || state === 'proud') { state = 'answer'; stT = 0; }
@@ -1936,10 +1948,10 @@
     return {
       poses: ['sit', 'idle', 'walk', 'happy', 'speak', 'bow', 'jump', 'sniff', 'crouch'],
       dur: 50,
-      hint: 'Click the hedgehog to squeak it. ' + DN + ' answers and pounces. Three quick squeaks and it rolls up!',
+      hint: LT('mod.toys.click_the_hedgehog_to_squeak_it', '{touch, select, yes {Tap the hedgehog to squeak it. {dn} answers and pounces. Three quick squeaks and it rolls up!} other {Click the hedgehog to squeak it. {dn} answers and pounces. Three quick squeaks and it rolls up!}}', { touch: TOUCH(), dn: DN }),
       down: function (x, y) {
         if (onHog(x, y)) { if (tip) { tip.hide(); tip = null; } squeak(); return; }
-        dogTap(A, x, y, ['did you hear that squeak?', 'hi! the hedgehog is THERE']);
+        dogTap(A, x, y, [LT('mod.toys.did_you_hear_that_squeak', 'did you hear that squeak?'), LT('mod.toys.hi_the_hedgehog_is_there', 'hi! the hedgehog is THERE')]);
       },
       move: function (x, y) { A.cursor(onHog(x, y) ? 'pointer' : 'default'); },
       update: function (dt, T) {
@@ -1962,7 +1974,7 @@
           if (dog.runTo(bx, 300 * A.tr.run, dt)) { dog.face(dog.x > hog.x ? 'left' : 'right'); state = 'ready'; stT = 0; }
         } else if (state === 'answer') {
           dog.face(side > 0 ? 'left' : 'right'); dog.setPose('speak'); dog.tilt = 0;
-          if (stT < 0.05) { A.sfx('bark'); A.say(pick(A.line('hogAnswer', ['WOOF! (squeak to you too)', 'squeak? SQUEAK!', 'arf! arf!'])), 1000); A.addPart({ type: 'note', x: dog.head().x, y: dog.head().y - 20, vx: -side * 40, vy: -100, life: 0.9, size: 9 }); }
+          if (stT < 0.05) { A.sfx('bark'); A.say(pick(A.line('hogAnswer', [LT('mod.toys.woof_squeak_to_you_too', 'WOOF! (squeak to you too)'), LT('mod.toys.squeak_squeak', 'squeak? SQUEAK!'), LT('mod.toys.arf_arf', 'arf! arf!')])), 1000); A.addPart({ type: 'note', x: dog.head().x, y: dog.head().y - 20, vx: -side * 40, vy: -100, life: 0.9, size: 9 }); }
           if (stT > 0.5) { state = 'wind'; stT = 0; }
         } else if (state === 'wind') {
           dog.setPose('bow'); dog.tilt = Math.sin(T * 26) * 4;
@@ -1973,8 +1985,8 @@
         } else if (state === 'pounce') {
           if (!dog.air && stT > 0.1) {
             pounces++; state = 'proud'; stT = 0; dog.squash(0.8);
-            if (Math.random() < 0.45 && !hog.air) { hog.air = true; hog.vh = 480; hog.vx = -side * 160; A.float('missed! (on purpose)', dog.x, GY - 230, 'pt-small'); A.sfx('squeak'); }
-            else { A.float(pick(['got it!', 'POUNCE!', 'gotcha!']), dog.x, GY - 230, 'pt-gold'); hog.sq = 1; A.burst('heart', dog.head().x, dog.head().y, 4, { g: -50, sp: 100, life: 1.2, size: 8 }); }
+            if (Math.random() < 0.45 && !hog.air) { hog.air = true; hog.vh = 480; hog.vx = -side * 160; A.float(LT('mod.toys.missed_on_purpose', 'missed! (on purpose)'), dog.x, GY - 230, 'pt-small'); A.sfx('squeak'); }
+            else { A.float(pick([LT('mod.toys.got_it', 'got it!'), LT('mod.toys.pounce', 'POUNCE!'), LT('mod.toys.gotcha', 'gotcha!')]), dog.x, GY - 230, 'pt-gold'); hog.sq = 1; A.burst('heart', dog.head().x, dog.head().y, 4, { g: -50, sp: 100, life: 1.2, size: 8 }); }
             if (pounces <= 4 || pounces % 3 === 0) A.reward({ happiness: 1, energy: -1 });
           }
         } else if (state === 'proud') {
@@ -1988,8 +2000,8 @@
           }
           if (hog.ballT > 3.6 && Math.abs(hog.vx) < 60 && Math.abs(dog.x - sx) < 40) {
             hog.ball = false; hog.rot = 0; bs.show(false); hs.show(true); hog.sq = 1; dog.tilt = 0;
-            A.float('peekaboo!', hog.x, GY - 170, 'pt-gold'); A.sfx('squeak');
-            A.reward({ happiness: 3, coins: rolls <= 2 ? 1 : 0 }); A.say(pick(['it came BACK!', 'peekaboo, spiky friend', 'best roll ever']), 1500);
+            A.float(LT('mod.toys.peekaboo', 'peekaboo!'), hog.x, GY - 170, 'pt-gold'); A.sfx('squeak');
+            A.reward({ happiness: 3, coins: rolls <= 2 ? 1 : 0 }); A.say(pick([LT('mod.toys.it_came_back', 'it came BACK!'), LT('mod.toys.peekaboo_spiky_friend', 'peekaboo, spiky friend'), LT('mod.toys.best_roll_ever', 'best roll ever')]), 1500);
             state = 'proud'; stT = 0;
           }
         }
@@ -2012,9 +2024,9 @@
     var HUB = { x: MX + 76 * MS, y: MY - 60 * MS }, RING = { x: MX + 2 * MS, y: MY - 134 * MS };
     var crank = A.sprite(v24Crank(), 80 * MS, 80 * MS, A.L.actors, 0.5, 0.5);
     var bubs = [], made = 0, pops = 0, selfPops = 0, cranking = false, crankA = 0, emitT = 0, clickT = 0, shake = 0, state = 'watch', stT = 0, tgt = null, cool = 0, idleT = 0;
-    var tip = A.tip('hold the crank!', HUB.x - 30, HUB.y + 34);
+    var tip = A.tip(LT('mod.toys.hold_the_crank', 'hold the crank!'), HUB.x - 30, HUB.y + 34);
     dog.x = CP ? 720 : 820; dog.face('left'); dog.setPose('sit');
-    A.say(pick(['what does THAT do?', 'a machine. for me?']), 1800);
+    A.say(pick([LT('mod.toys.what_does_that_do', 'what does THAT do?'), LT('mod.toys.a_machine_for_me', 'a machine. for me?')]), 1800);
     function emit() { if (bubs.length >= 18) return; made++; bubs.push({ x: RING.x + 10, y: RING.y - 6, r: 15 + Math.random() * 19, vx: 110 + Math.random() * 120, vy: -60 - Math.random() * 90, ph: Math.random() * 6, t: 0, life: 6.5 + Math.random() * 3 }); }
     function pop(b, byDog) {
       var i = bubs.indexOf(b); if (i < 0) return; bubs.splice(i, 1);
@@ -2022,10 +2034,10 @@
       A.burst('drop', b.x, b.y, byDog ? 7 : 4, { sp: 200, g: 500, life: 0.55, size: 2.6, color: '#CBE0F4' });
       A.sfx('pop');
       if (byDog) {
-        pops++; if (pops % 5 === 0) A.float(pops + ' pops!', b.x, b.y - 40, 'pt-gold'); else if (pops % 2) A.float('pop!', b.x, b.y - 40, 'pt-blue pt-small');
+        pops++; if (pops % 5 === 0) A.float(LT('mod.toys.pops', '{n, plural, one {# pop!} other {# pops!}}', { n: pops }), b.x, b.y - 40, 'pt-gold'); else if (pops % 2) A.float(LT('mod.toys.pop', 'pop!'), b.x, b.y - 40, 'pt-blue pt-small');
         if (pops % 4 === 0) A.reward({ happiness: 1, energy: pops % 8 === 0 ? -1 : 0 });
         if (pops === 5 || pops === 14) A.reward({ happiness: 1, coins: 1 });
-        if (pops % 4 === 1) A.say(pick(A.line('bubblePop', ['POP!', 'got one!', 'they taste like nothing. amazing.', 'bubble defeated'])), 1000);
+        if (pops % 4 === 1) A.say(pick(A.line('bubblePop', [LT('mod.toys.pop_2', 'POP!'), LT('mod.toys.got_one', 'got one!'), LT('mod.toys.they_taste_like_nothing_amazing', 'they taste like nothing. amazing.'), LT('mod.toys.bubble_defeated', 'bubble defeated')])), 1000);
       } else selfPops++;
     }
     function onCrank(x, y) { return dist(x, y, HUB.x + 14, HUB.y) < A.hitR(64) || (x > MX - 92 * MS && x < MX + 72 * MS && y > MY - 110 * MS && y < MY); }
@@ -2037,11 +2049,11 @@
     return {
       poses: ['sit', 'idle', 'walk', 'jump', 'happy', 'speak'],
       dur: 50,
-      hint: 'Click or hold the crank to blow bubbles. ' + DN + ' jumps to pop them. Pops earn coins!',
+      hint: LT('mod.toys.click_or_hold_the_crank_to', '{touch, select, yes {Tap or hold the crank to blow bubbles. {dn} jumps to pop them. Pops earn coins!} other {Click or hold the crank to blow bubbles. {dn} jumps to pop them. Pops earn coins!}}', { touch: TOUCH(), dn: DN }),
       down: function (x, y) {
         if (onCrank(x, y)) { if (tip) { tip.hide(); tip = null; } cranking = true; emit(); emit(); emitT = 0.2; A.sfx('click'); A.cursor('grabbing'); return; }
-        for (var i = bubs.length - 1; i >= 0; i--) { var b = bubs[i]; if (dist(x, y, b.x, b.y) < A.hitR(b.r + 10)) { pop(b, false); if (Math.random() < 0.5) A.say(pick(['HEY. that was MY bubble.', 'you popped it?! rude.']), 1000); return; } }
-        dogTap(A, x, y, ['bubbles please!', 'hi! more bubbles?']);
+        for (var i = bubs.length - 1; i >= 0; i--) { var b = bubs[i]; if (dist(x, y, b.x, b.y) < A.hitR(b.r + 10)) { pop(b, false); if (Math.random() < 0.5) A.say(pick([LT('mod.toys.hey_that_was_my_bubble', 'HEY. that was MY bubble.'), LT('mod.toys.you_popped_it_rude', 'you popped it?! rude.')]), 1000); return; } }
+        dogTap(A, x, y, [LT('mod.toys.bubbles_please', 'bubbles please!'), LT('mod.toys.hi_more_bubbles', 'hi! more bubbles?')]);
       },
       move: function (x, y) { if (!cranking) A.cursor(onCrank(x, y) ? 'pointer' : 'default'); },
       up: function () { cranking = false; A.cursor('default'); },
@@ -2058,7 +2070,7 @@
         }
         if (state === 'watch') {
           if (!dog.air) { dog.setPose('sit'); var look = bubs.length ? bubs[bubs.length - 1].x : MX; dog.faceX(look); dog.tilt = bubs.length ? Math.sin(T * 13) * 2 : 0; }
-          idleT += dt; if (!bubs.length && idleT > 6) { idleT = 0; A.say(pick(['crank it! crank the thing!', 'more bubbles please', 'I am ready. so ready.']), 1300); }
+          idleT += dt; if (!bubs.length && idleT > 6) { idleT = 0; A.say(pick([LT('mod.toys.crank_it_crank_the_thing', 'crank it! crank the thing!'), LT('mod.toys.more_bubbles_please', 'more bubbles please'), LT('mod.toys.i_am_ready_so_ready', 'I am ready. so ready.')]), 1300); }
           if (cool <= 0) { tgt = pickTarget(); if (tgt) { state = 'chase'; stT = 0; idleT = 0; dog.tilt = 0; } }
         } else if (state === 'chase') {
           if (bubs.indexOf(tgt) < 0) { state = 'watch'; cool = 0.15; }
@@ -2104,9 +2116,9 @@
     var front = A.sprite(v24Pool('front'), 540 * PS, 190 * PS, A.L.front, 0, 0); front.set(OX, OY);
     var REEL = { x: TPX - 65 + 100, y: GY + 12 - 178 + 140 }, REST = { x: TPX + (CP ? 92 : 120), y: GY + 34 };
     var noz = { x: REST.x, y: REST.y, held: false, ang: 0.5 }, fill = 0, state = 'wait', stT = 0, splashes = 0, hosed = 0, hoseCD = 0, spray = false, landX = 0, landY = 0, inPool = false, padT = 0, padTo = PX, padPose = 'walk', lowSaid = false, hot = A.weather === 'sunny' && (A.time === 'day' || A.time === 'dusk');
-    var tip = A.tip('drag the hose!', REST.x - 60, REST.y - 110);
+    var tip = A.tip(LT('mod.toys.drag_the_hose', 'drag the hose!'), REST.x - 60, REST.y - 110);
     dog.x = WAIT; dog.face('left'); dog.setPose('sit');
-    A.say(hot ? 'it is SO hot. is that a pool?' : 'is that... a tiny lake?', 2000);
+    A.say(hot ? LT('mod.toys.it_is_so_hot_is_that', 'it is SO hot. is that a pool?') : LT('mod.toys.is_that_a_tiny_lake', 'is that... a tiny lake?'), 2000);
     function tipPt() { var d = noz.x > PX + 60 ? -1 : 1; return { x: noz.x + d * Math.cos(noz.ang) * 30, y: noz.y + Math.sin(noz.ang) * 30, d: d }; }
     function waterY() { return PY + 3 * PS + (1 - fill) * 18 * PS; }
     function inside(x) { return Math.abs(x - PX) < IRX - 30; }
@@ -2114,14 +2126,14 @@
     return {
       poses: ['sit', 'idle', 'walk', 'jump', 'happy', 'shake', 'down'],
       dur: 50,
-      hint: 'Drag the hose over the pool to fill it. Then click ' + DN + ' for a big splash!',
+      hint: LT('mod.toys.drag_the_hose_over_the_pool', '{touch, select, yes {Drag the hose over the pool to fill it. Then tap {dn} for a big splash!} other {Drag the hose over the pool to fill it. Then click {dn} for a big splash!}}', { touch: TOUCH(), dn: DN }),
       down: function (x, y) {
         if (dist(x, y, noz.x, noz.y - 10) < A.hitR(60)) { noz.held = true; A.cursor('grabbing'); if (tip) { tip.hide(); tip = null; } A.sfx('click'); return; }
-        if (inPool && dogTap(A, x, y, ['SPLASH TIME', 'again!'])) {
+        if (inPool && dogTap(A, x, y, [LT('mod.toys.splash_time', 'SPLASH TIME'), LT('mod.toys.again', 'again!')])) {
           if (!dog.air) { dog.jump(-640, 0); state = 'splash'; stT = 0; }
           return;
         }
-        dogTap(A, x, y, ['is it pool time yet?', 'fill it! fill it!']);
+        dogTap(A, x, y, [LT('mod.toys.is_it_pool_time_yet', 'is it pool time yet?'), LT('mod.toys.fill_it_fill_it', 'fill it! fill it!')]);
       },
       move: function (x, y) { if (noz.held) { noz.x = clamp(x, 60, W - 60); noz.y = clamp(y, 150, GY + 6); } else A.cursor(dist(x, y, noz.x, noz.y - 10) < 60 ? 'grab' : 'default'); },
       up: function () { if (noz.held) { noz.held = false; A.cursor('default'); } },
@@ -2135,13 +2147,13 @@
           if (Math.random() < dt * 30) A.addPart({ type: 'drop', x: tp.x, y: tp.y, vx: tp.d * (80 + Math.random() * 40), vy: 40 + Math.random() * 60, g: 1100, life: Math.min(0.9, Math.sqrt(Math.max(4, landY - tp.y) / 550)), size: 3, color: '#9CC8EA' });
           if (inside(landX) && landY > tp.y) {
             var was = fill; fill = Math.min(1, fill + dt * 0.3);
-            if (was < 0.5 && fill >= 0.5 && state === 'wait') A.say('almost a lake!', 1100);
-            if (fill >= 1 && was < 1 && state === 'wait') { state = 'hopin'; stT = 0; A.float('pool ready!', PX, PY - 150, 'pt-gold'); A.sfx('levelup'); }
+            if (was < 0.5 && fill >= 0.5 && state === 'wait') A.say(LT('mod.toys.almost_a_lake', 'almost a lake!'), 1100);
+            if (fill >= 1 && was < 1 && state === 'wait') { state = 'hopin'; stT = 0; A.float(LT('mod.toys.pool_ready', 'pool ready!'), PX, PY - 150, 'pt-gold'); A.sfx('levelup'); }
             if (Math.random() < dt * 8) A.addPart({ type: 'ring', x: landX, y: landY, size: 8, life: 0.5 });
           } else if (Math.random() < dt * 10) A.burst('drop', landX, GY, 2, { sp: 120, g: 900, life: 0.4, size: 2.6, color: '#BBD8EF' });
           if (Math.abs(landX - dog.x) < 90 && hoseCD <= 0 && !dog.air) {
             hoseCD = 2.2; hosed++; dog.jump(-560, 0); A.sfx('bark');
-            A.say(pick(['the hose! my nemesis! I love it.', 'RAIN. from a SNAKE.', 'brrr! again!']), 1300);
+            A.say(pick([LT('mod.toys.the_hose_my_nemesis_i_love', 'the hose! my nemesis! I love it.'), LT('mod.toys.rain_from_a_snake', 'RAIN. from a SNAKE.'), LT('mod.toys.brrr_again', 'brrr! again!')]), 1300);
             if (hosed <= 2) A.reward({ happiness: 1 });
           }
         }
@@ -2152,9 +2164,9 @@
           if (!dog.air && dog.runTo(PX + IRX + 90, 320, dt)) { dog.face('left'); dog.ground = PY + 16 * PS; var ft = 2 * 760 / G; dog.jump(-760, (PX + 40 - dog.x) / ft); state = 'flying'; stT = 0; }
         } else if (state === 'flying') {
           if (!dog.air && stT > 0.1) {
-            inPool = true; state = 'paddle'; stT = 0; padT = 0; bigSplash(dog.x, 26); A.float('SPLASH!', dog.x, PY - 200, 'pt-blue');
-            A.reward({ happiness: 3 }); A.say(pick(A.line('poolIn', ['ahhh. so cool.', 'I am a duck now', 'best day of my LIFE'])), 1700);
-            A.hint('Click ' + DN + ' for a big splash. Top up the pool with the hose.');
+            inPool = true; state = 'paddle'; stT = 0; padT = 0; bigSplash(dog.x, 26); A.float(LT('mod.toys.splash_2', 'SPLASH!'), dog.x, PY - 200, 'pt-blue');
+            A.reward({ happiness: 3 }); A.say(pick(A.line('poolIn', [LT('mod.toys.ahhh_so_cool', 'ahhh. so cool.'), LT('mod.toys.i_am_a_duck_now', 'I am a duck now'), LT('mod.toys.best_day_of_my_life', 'best day of my LIFE')])), 1700);
+            A.hint(LT('mod.toys.click_for_a_big_splash_top', '{touch, select, yes {Tap {dn} for a big splash. Top up the pool with the hose.} other {Click {dn} for a big splash. Top up the pool with the hose.}}', { touch: TOUCH(), dn: DN }));
           }
         } else if (state === 'paddle') {
           padT -= dt;
@@ -2168,12 +2180,12 @@
           if (padPose === 'walk') { if (dog.runTo(padTo, 110, dt)) dog.setPose('idle'); if (Math.random() < dt * 6) A.addPart({ type: 'drop', x: dog.x + (Math.random() - 0.5) * 120, y: waterY() - 6, vx: (Math.random() - 0.5) * 80, vy: -140, g: 700, life: 0.5, size: 2.6, color: '#BBD8EF' }); }
           else { dog.setPose(padPose); if (padPose === 'shake' && Math.random() < dt * (A.tr.fluff ? 48 : 24)) A.burst('drop', dog.x + (Math.random() - 0.5) * 100, dog.y - 90 - Math.random() * 50, 1, { sp: 300, g: 1000, life: 0.6, size: 3, color: '#9CC8EA' }); }
           dog.tilt = padPose === 'happy' ? Math.sin(T * 13) * 2.5 : 0;
-          if (fill < 0.7 && !lowSaid) { lowSaid = true; A.say('the lake is leaking! hose please!', 1500); } if (fill > 0.9) lowSaid = false;
+          if (fill < 0.7 && !lowSaid) { lowSaid = true; A.say(LT('mod.toys.the_lake_is_leaking_hose_please', 'the lake is leaking! hose please!'), 1500); } if (fill > 0.9) lowSaid = false;
         } else if (state === 'splash') {
           if (!dog.air && stT > 0.1) {
-            splashes++; bigSplash(dog.x, 32); A.float(splashes % 3 === 0 ? 'MEGA SPLOOSH!' : 'SPLOOSH!', dog.x, PY - 210, splashes % 3 === 0 ? 'pt-gold' : 'pt-blue');
+            splashes++; bigSplash(dog.x, 32); A.float(splashes % 3 === 0 ? LT('mod.toys.mega_sploosh', 'MEGA SPLOOSH!') : LT('mod.toys.sploosh', 'SPLOOSH!'), dog.x, PY - 210, splashes % 3 === 0 ? 'pt-gold' : 'pt-blue');
             fill = Math.max(0.55, fill - 0.07); if (splashes <= 2 || splashes % 2 === 0) A.reward({ happiness: splashes <= 2 ? 2 : 1 });
-            if (Math.random() < 0.5) A.say(pick(['you are wet now. sorry. (not sorry)', 'SPLASH!', 'the pool is now the lawn']), 1200);
+            if (Math.random() < 0.5) A.say(pick([LT('mod.toys.you_are_wet_now_sorry_not', 'you are wet now. sorry. (not sorry)'), LT('mod.toys.splash_2', 'SPLASH!'), LT('mod.toys.the_pool_is_now_the_lawn', 'the pool is now the lawn')]), 1200);
             state = 'paddle'; stT = 0; padT = 0;
           }
         }
@@ -2202,7 +2214,7 @@
       focus: function () { return CP ? 660 : noz.held ? clamp((noz.x + PX) / 2, 560, 700) : inPool || state !== 'wait' ? 680 : 700; },
       cardSub: function () {
         if (!inPool) return '';
-        return A.key === 'husky' ? DN + ' refuses to leave the pool. Five more minutes, then.' : DN + ' hopped out and shook off. You are a bit wet too.';
+        return A.key === 'husky' ? LT('mod.toys.refuses_to_leave_the_pool_five', '{dn} refuses to leave the pool. Five more minutes, then.', { dn: DN }) : LT('mod.toys.hopped_out_and_shook_off_you', '{dn} hopped out and shook off. You are a bit wet too.', { dn: DN });
       },
       finish: function () { return { happiness: 2, energy: -1, clean: inPool ? 5 : 0, cool: inPool }; },
       dbg: function () { return { state: state, fill: fill, splashes: splashes, hosed: hosed, inPool: inPool, spray: spray, nozzle: { x: noz.x, y: noz.y }, pool: { x: PX, y: PY } }; }
@@ -2224,22 +2236,22 @@
     var plab = A.div('pt-lab', panel, ''), pline = A.div('', panel, '');
     var state = 'wait', side = 'R', stT = 0, runs = 0, streak = 0, best = 0, last = 0, runT = 0, lastLand = -99, cleans = 0, spd = 0, dirn = -1, jig = 0, T0 = 0;
     dog.x = SR; dog.face('left'); dog.setPose('sit');
-    A.say(pick(A.line('tunnelGo', ['a tunnel! I KNOW tunnels.', 'call me through it!'])), 1800);
-    function showPanel() { plab.textContent = runs ? 'last run: ' + last.toFixed(2) + ' s' : 'run the tunnel!'; pline.textContent = 'best: ' + (best ? best.toFixed(2) + ' s' : 'none yet') + '  \u00b7  streak: ' + streak + ' of 3'; }
+    A.say(pick(A.line('tunnelGo', [LT('mod.toys.a_tunnel_i_know_tunnels', 'a tunnel! I KNOW tunnels.'), LT('mod.toys.call_me_through_it', 'call me through it!')])), 1800);
+    function showPanel() { plab.textContent = runs ? LT('mod.toys.last_run', 'last run: {n} s', { n: last.toFixed(2) }) : LT('mod.toys.run_the_tunnel', 'run the tunnel!'); pline.textContent = LT('mod.toys.best_streak', 'best: {best}  \u00b7  streak: {streak} of 3', { best: best ? LT('mod.toys.n_seconds', '{n} s', { n: best.toFixed(2) }) : LT('mod.toys.none_yet', 'none yet'), streak: streak }); }
     showPanel();
     return {
       poses: ['sit', 'idle', 'walk', 'crouch', 'jump', 'happy', 'sleep'],
       dur: 50,
-      hint: 'Click the far side of the tunnel to call ' + DN + ' through. Call again quickly for a clean run!',
+      hint: LT('mod.toys.click_the_far_side_of_the', '{touch, select, yes {Tap the far side of the tunnel to call {dn} through. Call again quickly for a clean run!} other {Click the far side of the tunnel to call {dn} through. Call again quickly for a clean run!}}', { touch: TOUCH(), dn: DN }),
       down: function (x, y) {
-        if (dogTap(A, x, y, ['coach! hi coach!', 'pat now, zoom later'])) return;
-        if (state !== 'wait') { if (state === 'run') A.float('zoom!', dog.x, GY - 220, 'pt-small'); return; }
+        if (dogTap(A, x, y, [LT('mod.toys.coach_hi_coach', 'coach! hi coach!'), LT('mod.toys.pat_now_zoom_later', 'pat now, zoom later')])) return;
+        if (state !== 'wait') { if (state === 'run') A.float(LT('mod.toys.zoom', 'zoom!'), dog.x, GY - 220, 'pt-small'); return; }
         var to = x < (TL + TR) / 2 ? 'L' : 'R';
-        if (to === side) { if (!dog.air) dog.jump(-480, 0); A.say(pick(['I am already here!', 'the tunnel is THAT way, coach']), 1100); return; }
+        if (to === side) { if (!dog.air) dog.jump(-480, 0); A.say(pick([LT('mod.toys.i_am_already_here', 'I am already here!'), LT('mod.toys.the_tunnel_is_that_way_coach', 'the tunnel is THAT way, coach')]), 1100); return; }
         streak = runs && T0 - lastLand < 3.5 ? streak + 1 : 1; dirn = to === 'L' ? -1 : 1;
         spd = 520 * A.tr.run * (1 + 0.12 * Math.min(streak - 1, 3)); state = 'run'; stT = 0; runT = 0; dog.face(dirn < 0 ? 'left' : 'right');
-        A.sfx('whoosh'); A.float(streak > 1 ? 'again, faster!' : 'GO!', dog.x, GY - 230, 'pt-small');
-        if (Math.random() < 0.5) A.say(pick(A.line('tunnelGo', ['ZOOM!', 'here I go!', 'tunnel time!'])), 900);
+        A.sfx('whoosh'); A.float(streak > 1 ? LT('mod.toys.again_faster', 'again, faster!') : LT('mod.toys.go', 'GO!'), dog.x, GY - 230, 'pt-small');
+        if (Math.random() < 0.5) A.say(pick(A.line('tunnelGo', [LT('mod.toys.zoom_2', 'ZOOM!'), LT('mod.toys.here_i_go', 'here I go!'), LT('mod.toys.tunnel_time', 'tunnel time!')])), 900);
         showPanel();
       },
       move: function (x, y) { A.cursor(state === 'wait' ? 'pointer' : 'default'); },
@@ -2259,19 +2271,19 @@
           if (!dog.air) {
             runs++; last = runT; if (!best || runT < best) best = runT; side = dirn < 0 ? 'L' : 'R'; lastLand = T; state = 'wait'; stT = 0;
             dog.x = clamp(dog.x, 150, 1090);
-            A.float(runT.toFixed(2) + ' s' + (runT <= best && runs > 1 ? ' best!' : ''), dog.x, GY - 240, runT <= best && runs > 1 ? 'pt-gold' : '');
+            A.float(runT.toFixed(2) + ' s' + (runT <= best && runs > 1 ? LT('mod.toys.best', ' best!') : ''), dog.x, GY - 240, runT <= best && runs > 1 ? 'pt-gold' : '');
             A.reward({ happiness: runs <= 6 ? 2 : 1, energy: -1 });
             if (streak >= 3) {
-              cleans++; streak = 0; A.float('CLEAN RUN!', 620, 250, 'pt-gold'); A.sfx('levelup'); A.burst('spark', dog.x, GY - 120, 12, { g: 0, sp: 180, life: 0.8, size: 7 });
-              A.reward({ happiness: 4, bond: cleans === 1 ? 1 : 0 }); A.say(pick(A.line('tunnelDone', ['three in a row! I am a legend.', 'clean run! where is my medal?'])), 1800);
+              cleans++; streak = 0; A.float(LT('mod.toys.clean_run', 'CLEAN RUN!'), 620, 250, 'pt-gold'); A.sfx('levelup'); A.burst('spark', dog.x, GY - 120, 12, { g: 0, sp: 180, life: 0.8, size: 7 });
+              A.reward({ happiness: 4, bond: cleans === 1 ? 1 : 0 }); A.say(pick(A.line('tunnelDone', [LT('mod.toys.three_in_a_row_i_am', 'three in a row! I am a legend.'), LT('mod.toys.clean_run_where_is_my_medal', 'clean run! where is my medal?')])), 1800);
               if (A.tr.flop) { state = 'flop'; stT = 0; }
-            } else if (Math.random() < 0.5) A.say(pick(A.line('tunnelDone', ['again! again!', 'did you see me in there?', 'tunnel: conquered'])), 1200);
+            } else if (Math.random() < 0.5) A.say(pick(A.line('tunnelDone', [LT('mod.toys.again_again_2', 'again! again!'), LT('mod.toys.did_you_see_me_in_there', 'did you see me in there?'), LT('mod.toys.tunnel_conquered', 'tunnel: conquered')])), 1200);
             if (A.tr.flop && state === 'wait' && Math.random() < 0.3) { state = 'flop'; stT = 0; }
             showPanel();
           }
         } else if (state === 'flop') {
           dog.setPose('sleep'); dog.tilt = 0;
-          if (stT < 0.05) A.say('*flop*', 1200);
+          if (stT < 0.05) A.say(LT('mod.toys.flop', '*flop*'), 1200);
           if (Math.random() < dt * 1.5) A.addPart({ type: 'z', x: dog.head().x, y: dog.head().y - 10, vx: 15, vy: -35, life: 1.6, size: 6 });
           if (stT > 1.8) { state = 'wait'; stT = 0; lastLand = T; }
         }
@@ -2294,7 +2306,7 @@
           g.beginPath(); g.arc(0, 0, 46, 0, Math.PI * 2); g.stroke(); g.setLineDash([]);
           g.fillStyle = 'rgba(242,143,165,.8)'; g.beginPath(); g.ellipse(0, 8, 12, 10, 0, 0, Math.PI * 2); g.fill();
           [[-14, -8], [-5, -16], [5, -16], [14, -8]].forEach(function (q) { g.beginPath(); g.arc(q[0], q[1], 5, 0, Math.PI * 2); g.fill(); });
-          g.fillStyle = INK; g.font = '700 26px Caveat, cursive'; g.fillText(A.isTouch() ? 'tap here' : 'click here', -42, 76);
+          g.fillStyle = INK; g.font = '700 26px Caveat, cursive'; g.fillText(A.isTouch() ? LT('mod.toys.tap_here', 'tap here') : LT('mod.toys.click_here', 'click here'), -42, 76);
           g.restore();
         }
       },
@@ -2314,8 +2326,8 @@
   /* a tap that hits nothing never fails: a kind sniff in that direction */
   function kindSniff(A, x, y, lines) {
     var now = performance.now(); A.kindN = (A.kindN || 0) + 1; if (now - (A.sniffAt || 0) < 700) return; A.sniffAt = now;
-    A.sfx('sniff'); A.float(pick(['sniff?', 'sniff sniff']), x, y - 30, 'pt-small');
-    if (Math.random() < 0.5) A.say(pick(lines || ['just grass there. nice grass.', 'sniff... smells like lawn.', 'nothing there. still fun.']), 1100);
+    A.sfx('sniff'); A.float(pick([LT('mod.toys.sniff', 'sniff?'), LT('mod.toys.sniff_sniff', 'sniff sniff')]), x, y - 30, 'pt-small');
+    if (Math.random() < 0.5) A.say(pick(lines || [LT('mod.toys.just_grass_there_nice_grass', 'just grass there. nice grass.'), LT('mod.toys.sniff_smells_like_lawn', 'sniff... smells like lawn.'), LT('mod.toys.nothing_there_still_fun', 'nothing there. still fun.')]), 1100);
   }
 
   /* ---------- v2.6 art (pencil, same hand as the v2.4 toys) ---------- */
@@ -2412,9 +2424,9 @@
     var dog = A.dog, DN = A.DN, CP = A.compact, still = v26Still(), LO = CP ? 300 : 240, HI = CP ? 880 : 1000;
     var pk = { x: CP ? 430 : 420, h: 0, vh: 0, vx: 0, air: false, slide: 0, sq: 0, wob: 0, hopT: 1.4 };
     var spr = A.sprite(v26Pumpkin(), 136, 125, A.L.actors, 0.5, 104 / 110);
-    var state = 'ready', stT = 0, pounces = 0, squeaks = 0, big = 0, hops = 0, escaped = false, tip = A.tip('click the pumpkin!', pk.x - 90, GY - 200);
+    var state = 'ready', stT = 0, pounces = 0, squeaks = 0, big = 0, hops = 0, escaped = false, tip = A.tip(LT('mod.toys.click_the_pumpkin', '{touch, select, yes {tap the pumpkin!} other {click the pumpkin!}}', { touch: TOUCH() }), pk.x - 90, GY - 200);
     dog.x = CP ? 740 : 840; dog.face('left'); dog.setPose('sit');
-    A.say(pick(['a pumpkin that SQUEAKS?', 'it is smiling at me. I like it.']), 1800);
+    A.say(pick([LT('mod.toys.a_pumpkin_that_squeaks', 'a pumpkin that SQUEAKS?'), LT('mod.toys.it_is_smiling_at_me_i', 'it is smiling at me. I like it.')]), 1800);
     function pkY() { return GY + 4 - pk.h; }
     function onPk(x, y) { return dist(x, y, pk.x, pkY() - 52) < A.hitR(84); }
     function hop(tx, k) {
@@ -2427,14 +2439,14 @@
     return {
       poses: ['sit', 'idle', 'walk', 'happy', 'bow', 'jump', 'sniff'],
       dur: 45,
-      hint: 'Click the pumpkin and ' + DN + ' pounces on it. Every pounce gets a squeak!',
+      hint: LT('mod.toys.click_the_pumpkin_and_pounces_on', '{touch, select, yes {Tap the pumpkin and {dn} pounces on it. Every pounce gets a squeak!} other {Click the pumpkin and {dn} pounces on it. Every pounce gets a squeak!}}', { touch: TOUCH(), dn: DN }),
       down: function (x, y) {
         if (onPk(x, y)) {
           if (tip) { tip.hide(); tip = null; }
-          if (state === 'ready' || (state === 'proud' && escaped && stT > 0.8)) { state = 'stalk'; stT = 0; dog.tilt = 0; A.sfx('click'); if (Math.random() < 0.5) A.say(pick(['ooh. OOH.', 'wiggle wiggle...', 'I see you, pumpkin']), 900); }
+          if (state === 'ready' || (state === 'proud' && escaped && stT > 0.8)) { state = 'stalk'; stT = 0; dog.tilt = 0; A.sfx('click'); if (Math.random() < 0.5) A.say(pick([LT('mod.toys.ooh_ooh', 'ooh. OOH.'), LT('mod.toys.wiggle_wiggle', 'wiggle wiggle...'), LT('mod.toys.i_see_you_pumpkin', 'I see you, pumpkin')]), 900); }
           return;
         }
-        if (!dogTap(A, x, y, ['the pumpkin! over there!', 'hi! pounce time?'])) kindSniff(A, x, y, ['no pumpkin there. sniff.', 'just grass. the pumpkin is hiding.']);
+        if (!dogTap(A, x, y, [LT('mod.toys.the_pumpkin_over_there', 'the pumpkin! over there!'), LT('mod.toys.hi_pounce_time', 'hi! pounce time?')])) kindSniff(A, x, y, [LT('mod.toys.no_pumpkin_there_sniff', 'no pumpkin there. sniff.'), LT('mod.toys.just_grass_the_pumpkin_is_hiding', 'just grass. the pumpkin is hiding.')]);
       },
       move: function (x, y) { A.cursor(onPk(x, y) ? 'pointer' : 'default'); },
       update: function (dt, T) {
@@ -2466,9 +2478,9 @@
             pounces++; squeaks++; state = 'proud'; stT = 0; escaped = false; dog.squash(0.8);
             pk.sq = 1; pk.wob = 1; A.sfx('squeak');
             A.burst('note', pk.x + 20, pkY() - 90, 2, { a0: -Math.PI * 0.8, spread: 0.6, g: -30, sp: 90, life: 0.9, size: 8 });
-            if (pounces % 4 === 0) { big++; A.float('SUPER SQUEAK!', pk.x, pkY() - 160, 'pt-gold'); v26Pay(A, { happiness: 1, coins: big <= 2 ? 1 : 0 }); A.burst('heart', dog.head().x, dog.head().y, 6, { g: -50, sp: 110, life: 1.3, size: 9 }); }
-            else { A.float(pick(['squeak!', 'SQUEAK!', 'squeeeak!']), pk.x, pkY() - 150, 'pt-small'); if (pounces <= 6 || pounces % 3 === 0) v26Pay(A, { happiness: 1 }); }
-            if (Math.random() < 0.6) A.say(pick(A.line('hogAnswer', ['got it! it squeaked!', 'squeak? SQUEAK!', 'pumpkin caught. pumpkin released.'])), 1100);
+            if (pounces % 4 === 0) { big++; A.float(LT('mod.toys.super_squeak', 'SUPER SQUEAK!'), pk.x, pkY() - 160, 'pt-gold'); v26Pay(A, { happiness: 1, coins: big <= 2 ? 1 : 0 }); A.burst('heart', dog.head().x, dog.head().y, 6, { g: -50, sp: 110, life: 1.3, size: 9 }); }
+            else { A.float(pick([LT('mod.toys.squeak_2', 'squeak!'), LT('mod.toys.squeak_3', 'SQUEAK!'), LT('mod.toys.squeeeak', 'squeeeak!')]), pk.x, pkY() - 150, 'pt-small'); if (pounces <= 6 || pounces % 3 === 0) v26Pay(A, { happiness: 1 }); }
+            if (Math.random() < 0.6) A.say(pick(A.line('hogAnswer', [LT('mod.toys.got_it_it_squeaked', 'got it! it squeaked!'), LT('mod.toys.squeak_squeak', 'squeak? SQUEAK!'), LT('mod.toys.pumpkin_caught_pumpkin_released', 'pumpkin caught. pumpkin released.')])), 1100);
           }
         } else if (state === 'proud') {
           if (!dog.air) { dog.setPose('happy'); if (!still) wiggle(dog, T, 3); }
@@ -2495,7 +2507,7 @@
     var gh = { x: CP ? 430 : 450, y: LIE, rot: -78, prev: -78, py: LIE, vy: 0, aL: 38, aR: 38, vL: 0, vR: 0, carried: false, fly: null, sq: 0 };
     var state = 'trot', stT = 0, tosses = 0, returns = 0, shakes = 0, tip = null, tipped = false;
     dog.x = HOME; dog.face('left'); dog.setPose('idle');
-    A.say(pick(['a ghost! a SOFT ghost!', 'boo? BOO! (friendly)']), 1700);
+    A.say(pick([LT('mod.toys.a_ghost_a_soft_ghost', 'a ghost! a SOFT ghost!'), LT('mod.toys.boo_boo_friendly', 'boo? BOO! (friendly)')]), 1700);
     function hang(dt) {
       var tgt = state === 'shake' ? dog.dir() * 10 + (still ? 0 : Math.sin(stT * 17) * 34) : dog.dir() * 12 + (still ? 0 : Math.sin(stT * 2.4) * 4);
       gh.rot += (tgt - gh.rot) * Math.min(1, dt * (state === 'shake' ? 30 : 10));
@@ -2518,11 +2530,11 @@
     return {
       poses: ['idle', 'walk', 'eat', 'happy', 'sit', 'jump'],
       dur: 45,
-      hint: DN + ' shakes the ghost. Click the lawn to toss it, and ' + DN + ' brings it back.',
+      hint: LT('mod.toys.shakes_the_ghost_click_the_lawn', '{touch, select, yes {{dn} shakes the ghost. Tap the lawn to toss it, and {dn} brings it back.} other {{dn} shakes the ghost. Click the lawn to toss it, and {dn} brings it back.}}', { touch: TOUCH(), dn: DN }),
       down: function (x, y) {
         if (state === 'hold' && !onDog(x, y)) { if (tip) { tip.hide(); tip = null; } toss(x); return; }
-        if (dogTap(A, x, y, ['grrr! (a happy grrr)', 'this ghost is MINE. hi!'])) return;
-        kindSniff(A, x, y, ['wait, I am getting it!', 'one ghost at a time', 'sniff... ghost smell. over there.']);
+        if (dogTap(A, x, y, [LT('mod.toys.grrr_a_happy_grrr', 'grrr! (a happy grrr)'), LT('mod.toys.this_ghost_is_mine_hi', 'this ghost is MINE. hi!')])) return;
+        kindSniff(A, x, y, [LT('mod.toys.wait_i_am_getting_it', 'wait, I am getting it!'), LT('mod.toys.one_ghost_at_a_time', 'one ghost at a time'), LT('mod.toys.sniff_ghost_smell_over_there', 'sniff... ghost smell. over there.')]);
       },
       move: function (x, y) { A.cursor(state === 'hold' && !onDog(x, y) && y > 300 ? 'pointer' : 'default'); },
       update: function (dt, T) {
@@ -2535,27 +2547,27 @@
           dog.setPose('eat');
           if (stT > 0.28) { gh.carried = true; state = 'bring'; stT = 0; dog.setPose('idle'); }
         } else if (state === 'bring') {
-          if (dog.runTo(HOME, 300 * A.tr.run * A.tr.carry, dt)) { if (tosses) returns++; dog.face('left'); dog.setPose('idle'); state = 'shake'; stT = 0; A.sfx('shake'); A.say(pick(['shake shake SHAKE!', 'grrr! (soft grrr)', 'take THAT, ghost. (gently)']), 1100); }
+          if (dog.runTo(HOME, 300 * A.tr.run * A.tr.carry, dt)) { if (tosses) returns++; dog.face('left'); dog.setPose('idle'); state = 'shake'; stT = 0; A.sfx('shake'); A.say(pick([LT('mod.toys.shake_shake_shake_2', 'shake shake SHAKE!'), LT('mod.toys.grrr_soft_grrr', 'grrr! (soft grrr)'), LT('mod.toys.take_that_ghost_gently', 'take THAT, ghost. (gently)')]), 1100); }
         } else if (state === 'shake') {
           dog.setPose('idle'); dog.tilt = still ? 0 : Math.sin(stT * 17) * 7;
           if (stT > 1.3) {
             dog.tilt = 0; shakes++;
             if (returns) {
-              A.float(pick(['good fetch!', 'ghost returned!', 'boo-tiful!']), dog.x, dog.y - 230, returns % 3 === 0 ? 'pt-gold' : '');
+              A.float(pick([LT('mod.toys.good_fetch', 'good fetch!'), LT('mod.toys.ghost_returned', 'ghost returned!'), LT('mod.toys.boo_tiful', 'boo-tiful!')]), dog.x, dog.y - 230, returns % 3 === 0 ? 'pt-gold' : '');
               v26Pay(A, { happiness: returns % 2 ? 1 : 2, bond: returns === 2 ? 1 : 0, coins: returns % 3 === 0 ? 1 : 0, energy: returns % 2 ? -1 : 0 });
             } else v26Pay(A, { happiness: 1 });
             state = 'hold'; stT = 0;
-            if (!tipped) { tipped = true; tip = A.tip('click to toss!', CP ? 330 : 300, GY - 120); }
+            if (!tipped) { tipped = true; tip = A.tip(LT('mod.toys.click_to_toss', '{touch, select, yes {tap to toss!} other {click to toss!}}', { touch: TOUCH() }), CP ? 330 : 300, GY - 120); }
           }
         } else if (state === 'hold') {
           dog.setPose('idle'); dog.tilt = still ? 0 : Math.sin(T * 9) * 1.2;
-          if (stT > 7) { stT = 0; A.say(pick(['toss it! toss the ghost!', 'I am holding it. for you.', 'click somewhere! I will fetch!']), 1400); }
+          if (stT > 7) { stT = 0; A.say(pick([LT('mod.toys.toss_it_toss_the_ghost', 'toss it! toss the ghost!'), LT('mod.toys.i_am_holding_it_for_you', 'I am holding it. for you.'), LT('mod.toys.click_somewhere_i_will_fetch', 'click somewhere! I will fetch!')]), 1400); }
         } else if (state === 'toss') {
           dog.setPose('idle'); dog.tilt = dog.dir() * -9 * Math.min(1, stT / 0.18);
           if (stT > 0.22) {
             dog.tilt = 0; gh.carried = false; tosses++;
             var f = gh.fly; f.x0 = gh.x; f.y0 = gh.y; f.t = 0; f.dur = 0.75 + Math.abs(f.x1 - gh.x) / 900; f.H = 130 + Math.random() * 40; f.r0 = gh.rot; f.r1 = (f.x1 > gh.x ? 78 : -78); f.ph = Math.random() * 6;
-            A.sfx('whoosh'); if (Math.random() < 0.5) A.say(pick(['wheee! fly, ghost!', 'boo! (it flew)', 'I will get it!']), 900);
+            A.sfx('whoosh'); if (Math.random() < 0.5) A.say(pick([LT('mod.toys.wheee_fly_ghost', 'wheee! fly, ghost!'), LT('mod.toys.boo_it_flew', 'boo! (it flew)'), LT('mod.toys.i_will_get_it', 'I will get it!')]), 900);
             state = 'trot'; stT = 0;
           }
         }
@@ -2585,9 +2597,9 @@
     var dog = A.dog, DN = A.DN, CP = A.compact, still = v26Still(), HX = CP ? 300 : 200, HY = GY - 150, WAIT = CP ? 560 : 650, FS = 1.02;
     var frames = still ? [A.sprite(v26Flyer(2), 140 * FS, 84 * FS)] : [A.sprite(v26Flyer(1), 140 * FS, 84 * FS), A.sprite(v26Flyer(0), 140 * FS, 84 * FS)];
     var fl = { x: HX + 12, y: HY - 26, st: 'hand', t: 0, dur: 2.4, x0: 0, y0: 0, x1: 0, H: 250, rot: 0, ph: 0 };
-    var state = 'wait', stT = 0, throws = 0, catches = 0, sky = 0, ground = 0, early = 0, leapU = 0, snapped = false, lastFi = -1, tip = A.tip('click to throw!', HX - 50, HY - 130);
+    var state = 'wait', stT = 0, throws = 0, catches = 0, sky = 0, ground = 0, early = 0, leapU = 0, snapped = false, lastFi = -1, tip = A.tip(LT('mod.toys.click_to_throw', '{touch, select, yes {tap to throw!} other {click to throw!}}', { touch: TOUCH() }), HX - 50, HY - 130);
     dog.x = WAIT; dog.face('left'); dog.setPose('sit');
-    A.say(pick(['bat wings?! it can FLY?', 'throw it! I will jump SO high']), 1800);
+    A.say(pick([LT('mod.toys.bat_wings_it_can_fly', 'bat wings?! it can FLY?'), LT('mod.toys.throw_it_i_will_jump_so', 'throw it! I will jump SO high')]), 1800);
     function flyAt(u) { u = clamp(u, 0, 1); return { x: lerp(fl.x0, fl.x1, u), y: lerp(fl.y0, GY - 18, u) - fl.H * 4 * u * (1 - u) + (still ? 0 : Math.sin(u * 13 + fl.ph) * 9 * (1 - u)) }; }
     function U() { return fl.t / fl.dur; }
     function inWindow() { return fl.st === 'fly' && U() >= 0.46 && U() <= 0.97; }
@@ -2595,7 +2607,7 @@
       if (tip) { tip.hide(); tip = null; }
       fl.x0 = fl.x; fl.y0 = fl.y; fl.x1 = CP ? 610 + Math.random() * 240 : 730 + Math.random() * 320; fl.dur = 2.3 + Math.random() * 0.4; fl.H = 175 + Math.random() * 50; fl.t = 0; fl.ph = Math.random() * 6; fl.st = 'fly';
       throws++; A.sfx('whoosh'); state = 'run'; stT = 0; snapped = false; dog.tilt = 0;
-      A.hint('Click again while the flyer glows and ' + DN + ' leaps for it!');
+      A.hint(LT('mod.toys.click_again_while_the_flyer_glows', '{touch, select, yes {Tap again while the flyer glows and {dn} leaps for it!} other {Click again while the flyer glows and {dn} leaps for it!}}', { touch: TOUCH(), dn: DN }));
     }
     function leap() {
       var u = U(), tUp = 0.4, p = flyAt(u), rise = 40, vy = -400;
@@ -2608,20 +2620,20 @@
       fl.st = 'carried'; state = 'return'; stT = 0; A.sfx('pop');
       if (air) {
         catches++; var h = GY - fl.y;
-        if (h > 230) { sky++; A.float('SKY LEAP!', fl.x, fl.y - 50, 'pt-gold'); v26Pay(A, { happiness: catches <= 6 ? 2 : catches % 2, coins: sky <= 2 ? 1 : 0, energy: -1 }); A.say(pick(['I touched the moon!', 'did you SEE that?']), 1500); }
-        else { A.float(pick(['great leap!', 'caught it!', 'bat catch!']), fl.x, fl.y - 50); v26Pay(A, { happiness: catches <= 6 ? 2 : catches % 2, energy: -1 }); A.say(pick(['flap flap GOT IT', 'air dog!', 'the bat is mine']), 1400); }
+        if (h > 230) { sky++; A.float(LT('mod.toys.sky_leap', 'SKY LEAP!'), fl.x, fl.y - 50, 'pt-gold'); v26Pay(A, { happiness: catches <= 6 ? 2 : catches % 2, coins: sky <= 2 ? 1 : 0, energy: -1 }); A.say(pick([LT('mod.toys.i_touched_the_moon', 'I touched the moon!'), LT('mod.toys.did_you_see_that', 'did you SEE that?')]), 1500); }
+        else { A.float(pick([LT('mod.toys.great_leap', 'great leap!'), LT('mod.toys.caught_it', 'caught it!'), LT('mod.toys.bat_catch', 'bat catch!')]), fl.x, fl.y - 50); v26Pay(A, { happiness: catches <= 6 ? 2 : catches % 2, energy: -1 }); A.say(pick([LT('mod.toys.flap_flap_got_it', 'flap flap GOT IT'), LT('mod.toys.air_dog', 'air dog!'), LT('mod.toys.the_bat_is_mine', 'the bat is mine')]), 1400); }
         A.burst('heart', dog.head().x, dog.head().y, 4, { g: -50, sp: 100, life: 1.2, size: 8 });
-      } else { ground++; v26Pay(A, { happiness: 1 }); A.say(pick(['got it on the ground. still counts.', 'it landed. I forgive it.']), 1400); }
+      } else { ground++; v26Pay(A, { happiness: 1 }); A.say(pick([LT('mod.toys.got_it_on_the_ground_still', 'got it on the ground. still counts.'), LT('mod.toys.it_landed_i_forgive_it', 'it landed. I forgive it.')]), 1400); }
     }
     return {
       poses: ['sit', 'idle', 'walk', 'jump', 'happy', 'eat'],
       dur: 45,
-      hint: 'Click to throw the flyer. Click again while it glows and ' + DN + ' leaps for it!',
+      hint: LT('mod.toys.click_to_throw_the_flyer_click', '{touch, select, yes {Tap to throw the flyer. Tap again while it glows and {dn} leaps for it!} other {Click to throw the flyer. Click again while it glows and {dn} leaps for it!}}', { touch: TOUCH(), dn: DN }),
       down: function (x, y) {
-        if (fl.st === 'hand') { if (!dogTap(A, x, y, ['throw it! throw it!'])) launch(); return; }
+        if (fl.st === 'hand') { if (!dogTap(A, x, y, [LT('mod.toys.throw_it_throw_it_2', 'throw it! throw it!')])) launch(); return; }
         if (inWindow() && !dog.air && state === 'run') { leap(); return; }
-        if (fl.st === 'fly' && U() < 0.46) { early++; A.float('not yet...', dog.x, dog.y - 240, 'pt-blue pt-small'); A.sfx('sniff'); if (Math.random() < 0.5) A.say(pick(['sniff sniff... wait for it', 'not yet! it is still going up']), 900); return; }
-        if (!dogTap(A, x, y, ['flyer first, pats later!', 'hi! did you see me jump?'])) kindSniff(A, x, y, ['the flyer is over there!', 'sniff... bat smell. over there.']);
+        if (fl.st === 'fly' && U() < 0.46) { early++; A.float(LT('mod.toys.not_yet', 'not yet...'), dog.x, dog.y - 240, 'pt-blue pt-small'); A.sfx('sniff'); if (Math.random() < 0.5) A.say(pick([LT('mod.toys.sniff_sniff_wait_for_it', 'sniff sniff... wait for it'), LT('mod.toys.not_yet_it_is_still_going', 'not yet! it is still going up')]), 900); return; }
+        if (!dogTap(A, x, y, [LT('mod.toys.flyer_first_pats_later', 'flyer first, pats later!'), LT('mod.toys.hi_did_you_see_me_jump', 'hi! did you see me jump?')])) kindSniff(A, x, y, [LT('mod.toys.the_flyer_is_over_there', 'the flyer is over there!'), LT('mod.toys.sniff_bat_smell_over_there', 'sniff... bat smell. over there.')]);
       },
       move: function (x, y) { A.cursor(fl.st === 'hand' || inWindow() ? 'pointer' : 'default'); },
       update: function (dt, T) {
@@ -2653,7 +2665,7 @@
           if (!dog.air) { var gx = HX + 44 + dog.mouthOff('walk'); if (dog.runTo(gx, 330 * A.tr.run * A.tr.carry, dt)) { dog.face('left'); state = 'give'; stT = 0; } }
         } else if (state === 'give') {
           dog.setPose('sit');
-          if (stT > 0.4) { fl.st = 'hand'; fl.x = HX + 12; fl.y = HY - 26; fl.rot = 0; A.sfx('pop'); state = 'back'; stT = 0; if (throws === 1) A.hint('Click to throw the flyer. Click again while it glows and ' + DN + ' leaps for it!'); }
+          if (stT > 0.4) { fl.st = 'hand'; fl.x = HX + 12; fl.y = HY - 26; fl.rot = 0; A.sfx('pop'); state = 'back'; stT = 0; if (throws === 1) A.hint(LT('mod.toys.click_to_throw_the_flyer_click', '{touch, select, yes {Tap to throw the flyer. Tap again while it glows and {dn} leaps for it!} other {Click to throw the flyer. Click again while it glows and {dn} leaps for it!}}', { touch: TOUCH(), dn: DN })); }
         } else if (state === 'back') {
           dog.setPose('happy'); if (stT > 0.6 && dog.runTo(WAIT, 260, dt)) { dog.face('left'); state = 'wait'; stT = 0; }
         }
@@ -2670,7 +2682,7 @@
         if (inWindow() && state === 'run') {
           var pr = still ? 0 : Math.sin(T * 8) * 4;
           g.save(); g.strokeStyle = 'rgba(242,199,68,.9)'; g.lineWidth = 4; g.setLineDash([9, 7]); g.beginPath(); g.arc(fl.x, fl.y, 62 + pr, 0, Math.PI * 2); g.stroke(); g.setLineDash([]);
-          g.fillStyle = INK; g.font = '700 28px Caveat, cursive'; g.textAlign = 'center'; g.fillText(A.isTouch() ? 'tap now!' : 'click now!', fl.x, fl.y < 230 ? fl.y + 98 : fl.y - 76); g.restore();
+          g.fillStyle = INK; g.font = '700 28px Caveat, cursive'; g.textAlign = 'center'; g.fillText(A.isTouch() ? LT('mod.toys.tap_now', 'tap now!') : LT('mod.toys.click_now', 'click now!'), fl.x, fl.y < 230 ? fl.y + 98 : fl.y - 76); g.restore();
         }
       },
       focus: function () { return (Math.min(fl.x, dog.x - 100) + Math.max(fl.x, dog.x + 100)) / 2; },
@@ -2696,12 +2708,12 @@
     var rimDy = 44 * PK;
     var state = 'tip', stT = 0, round = 0, treat = 0, found = 0, peeks = 0, sniffs = 0, plan = [], tgt = null, puffT = 0, brot = 0, tip = null, ate = false, nosed = false;
     dog.ground = PY - rimDy - dog.mouthDy('sniff') - 4; dog.y = dog.ground; dog.x = HOME; dog.face('left'); dog.setPose('sit');
-    A.say(pick(['treats! in a PUMPKIN!', 'trick or treat? treat. always treat.']), 1800);
+    A.say(pick([LT('mod.toys.treats_in_a_pumpkin', 'treats! in a PUMPKIN!'), LT('mod.toys.trick_or_treat_treat_always_treat', 'trick or treat? treat. always treat.')]), 1800);
     function mouthOf() { var a = brot * Math.PI / 180, vx = -47 * BS, vy = -80 * BS; return { x: AX + vx * Math.cos(a) - vy * Math.sin(a), y: AY + vx * Math.sin(a) + vy * Math.cos(a) }; }
     function newRound() {
       round++; treat = Math.floor(Math.random() * 4); state = 'tip'; stT = 0; tgt = null; ate = false; A.sfx('whoosh');
       pots.forEach(function (p) { p.inB = true; p.fly = null; p.open = p.want = 0; p.close = 0; });
-      A.hint('The bucket tips out four pots. Watch ' + DN + '’s nose, then click the pot it points at.');
+      A.hint(LT('mod.toys.the_bucket_tips_out_four_pots', '{touch, select, yes {The bucket tips out four pots. Watch {dn}’s nose, then tap the pot it points at.} other {The bucket tips out four pots. Watch {dn}’s nose, then click the pot it points at.}}', { touch: TOUCH(), dn: DN }));
     }
     function planSearch() {
       plan = []; var wrong = A.tr.sniff ? (Math.random() < 0.3 ? 1 : 0) : A.tr.clever ? (Math.random() < 0.5 ? 1 : 0) : 1 + Math.floor(Math.random() * 2);
@@ -2716,11 +2728,11 @@
       p.want = 1; A.sfx('click');
       if (p.i === treat) {
         found++; nosed = state === 'point'; state = 'found'; stT = 0; tgt = p; A.sfx('pop');
-        A.float(round >= 3 && found % 2 ? 'treat found! again!' : 'treat found!', p.x, p.y - 150, 'pt-gold'); A.burst('spark', p.x, p.y - rimDy - 20, 8, { g: 0, sp: 150, life: 0.7, size: 7 });
+        A.float(round >= 3 && found % 2 ? LT('mod.toys.treat_found_again', 'treat found! again!') : LT('mod.toys.treat_found', 'treat found!'), p.x, p.y - 150, 'pt-gold'); A.burst('spark', p.x, p.y - rimDy - 20, 8, { g: 0, sp: 150, life: 0.7, size: 7 });
         if (tip) { tip.hide(); tip = null; }
       } else {
-        peeks++; p.close = 0.9; A.float(pick(['not this one', 'empty!', 'just a paper bat']), p.x, p.y - 140, 'pt-small');
-        A.say(pick(['sniff... not this one.', 'empty! sniff again.', 'just air in there. nice try.']), 1000);
+        peeks++; p.close = 0.9; A.float(pick([LT('mod.toys.not_this_one', 'not this one'), LT('mod.toys.empty', 'empty!'), LT('mod.toys.just_a_paper_bat', 'just a paper bat')]), p.x, p.y - 140, 'pt-small');
+        A.say(pick([LT('mod.toys.sniff_not_this_one', 'sniff... not this one.'), LT('mod.toys.empty_sniff_again', 'empty! sniff again.'), LT('mod.toys.just_air_in_there_nice_try', 'just air in there. nice try.')]), 1000);
         if (state === 'point' || state === 'sniff') { state = 'walk'; stT = 0; plan.unshift(pots[treat]); tgt = p; }
       }
     }
@@ -2732,7 +2744,7 @@
       down: function (x, y) {
         var p = potAt(x, y);
         if (p && (state === 'walk' || state === 'sniff' || state === 'point')) { lift(p); return; }
-        if (!dogTap(A, x, y, ['sniffing! very busy!', 'pat accepted. back to sniffing.'])) kindSniff(A, x, y, ['the treat is in a pot!', 'sniff... not out here.']);
+        if (!dogTap(A, x, y, [LT('mod.toys.sniffing_very_busy', 'sniffing! very busy!'), LT('mod.toys.pat_accepted_back_to_sniffing', 'pat accepted. back to sniffing.')])) kindSniff(A, x, y, [LT('mod.toys.the_treat_is_in_a_pot', 'the treat is in a pot!'), LT('mod.toys.sniff_not_out_here', 'sniff... not out here.')]);
       },
       move: function (x, y) { A.cursor(potAt(x, y) && (state === 'walk' || state === 'sniff' || state === 'point') ? 'pointer' : 'default'); },
       update: function (dt, T) {
@@ -2745,7 +2757,7 @@
             if (p.inB && stT > at) { p.inB = false; if (still) { p.x = p.hx; p.y = PY; } else { var mo = mouthOf(); p.fly = { x0: mo.x, y0: mo.y + 40, t: 0, d: 0.45 + k * 0.06 }; } }
             if (p.fly) { p.fly.t += dt; var u = clamp(p.fly.t / p.fly.d, 0, 1); p.x = lerp(p.fly.x0, p.hx, u); p.y = lerp(p.fly.y0, PY, u) - 120 * 4 * u * (1 - u); if (u >= 1) { p.fly = null; p.y = PY; p.wig = 1; A.sfx('land'); A.burst('dust', p.x, GY + 10, 2, { g: -20, sp: 50, life: 0.4, size: 4 }); } }
           });
-          if (stT > (still ? 1 : 1.5)) { planSearch(); nextSniff(); A.say(pick(['sniff mode: ON', 'one of these smells AMAZING', 'nose, do your thing']), 1200); if (round === 1) tip = A.tip('click the pot ' + DN + ' sniffs!', P0 - 30, PY + 14); }
+          if (stT > (still ? 1 : 1.5)) { planSearch(); nextSniff(); A.say(pick([LT('mod.toys.sniff_mode_on', 'sniff mode: ON'), LT('mod.toys.one_of_these_smells_amazing', 'one of these smells AMAZING'), LT('mod.toys.nose_do_your_thing', 'nose, do your thing')]), 1200); if (round === 1) tip = A.tip(LT('mod.toys.click_the_pot_sniffs', '{touch, select, yes {tap the pot {dn} sniffs!} other {click the pot {dn} sniffs!}}', { touch: TOUCH(), dn: DN }), P0 - 30, PY + 14); }
         } else {
           brot = state === 'pack' ? (still ? 0 : 82 * (1 - clamp((stT - 0.6) / 0.4, 0, 1))) : 82;
         }
@@ -2756,10 +2768,10 @@
           dog.setPose('sniff'); dog.tilt = still ? 0 : dog.dir() * Math.sin(T * (state === 'point' ? 20 : 34)) * 1.6;
           if (puffT <= 0) { puffT = 0.3; var m = dog.mouth(); A.burst('dust', m.x, m.y + 4, 1, { a0: -Math.PI * 0.9, spread: Math.PI * 0.8, g: -20, sp: 60, life: 0.45, size: 3.5 }); }
           if (state === 'sniff' && stT > (A.tr.sniff ? 0.55 : 0.85)) {
-            if (tgt.i === treat) { state = 'point'; stT = 0; A.say(pick(['THIS one. this one!', 'sniff sniff... HERE!', 'my nose says this pot']), 1300); A.hint(DN + ' points at a pot. Click it to lift the lid.'); }
-            else { tgt.wig = 1; if (Math.random() < 0.5) A.say(pick(['hmm. not this one.', 'smells like a pot.', 'nope, next!']), 900); nextSniff(); }
+            if (tgt.i === treat) { state = 'point'; stT = 0; A.say(pick([LT('mod.toys.this_one_this_one', 'THIS one. this one!'), LT('mod.toys.sniff_sniff_here', 'sniff sniff... HERE!'), LT('mod.toys.my_nose_says_this_pot', 'my nose says this pot')]), 1300); A.hint(LT('mod.toys.points_at_a_pot_click_it', '{touch, select, yes {{dn} points at a pot. Tap it to lift the lid.} other {{dn} points at a pot. Click it to lift the lid.}}', { touch: TOUCH(), dn: DN })); }
+            else { tgt.wig = 1; if (Math.random() < 0.5) A.say(pick([LT('mod.toys.hmm_not_this_one', 'hmm. not this one.'), LT('mod.toys.smells_like_a_pot', 'smells like a pot.'), LT('mod.toys.nope_next', 'nope, next!')]), 900); nextSniff(); }
           }
-          if (state === 'point' && stT > 6) { stT = 0; A.say(pick(['this one! the one by my nose!', 'lift the lid! please!']), 1300); }
+          if (state === 'point' && stT > 6) { stT = 0; A.say(pick([LT('mod.toys.this_one_the_one_by_my', 'this one! the one by my nose!'), LT('mod.toys.lift_the_lid_please', 'lift the lid! please!')]), 1300); }
         } else if (state === 'found') {
           var s3 = spot(tgt);
           if (!ate && dog.runTo(s3.x, 300 * A.tr.run, dt)) { dog.face(s3.side > 0 ? 'left' : 'right'); }
@@ -2769,8 +2781,8 @@
             if (Math.floor(stT * 3) !== Math.floor((stT - dt) * 3) && stT < 1.6) { A.sfx('crunch'); var mm = dog.mouth(); A.burst('crumb', mm.x, mm.y, 3, { sp: 120, g: 900, life: 0.5, size: 2.6, color: '#E8B36A' }); }
             if (stT > 1.7) {
               dog.tilt = 0; v26Pay(A, { happiness: found > 5 ? 1 : nosed ? 3 : 2, bond: round === 2 ? 1 : 0, coins: round === 3 || round === 5 ? 1 : 0 });
-              A.say(pick(['crunch! best treat ever.', 'trick or treat? TREAT.', 'nose of the year']), 1500); A.burst('heart', dog.head().x, dog.head().y, 6, { g: -50, sp: 110, life: 1.3, size: 9 });
-              state = 'pack'; stT = 0; A.hint('Back in the bucket for another round!');
+              A.say(pick([LT('mod.toys.crunch_best_treat_ever', 'crunch! best treat ever.'), LT('mod.toys.trick_or_treat_treat', 'trick or treat? TREAT.'), LT('mod.toys.nose_of_the_year', 'nose of the year')]), 1500); A.burst('heart', dog.head().x, dog.head().y, 6, { g: -50, sp: 110, life: 1.3, size: 9 });
+              state = 'pack'; stT = 0; A.hint(LT('mod.toys.back_in_the_bucket_for_another', 'Back in the bucket for another round!'));
             }
           }
         } else if (state === 'pack') {
@@ -2800,7 +2812,7 @@
           var m = dog.mouth(), a = state === 'point' ? 1 : 0.6;
           g.save(); g.strokeStyle = 'rgba(91,61,50,' + (0.7 * a).toFixed(3) + ')'; g.lineWidth = 2.2; g.lineCap = 'round';
           for (var i = 0; i < 3; i++) { var ox = m.x + dog.dir() * (8 + i * 8), oy = m.y - 14 - i * 6; g.beginPath(); g.arc(ox, oy, 5 + i * 3, -2.2 + (still ? 0 : Math.sin(T * 20 + i) * 0.2), -0.9); g.stroke(); }
-          g.fillStyle = INK; g.globalAlpha = a; g.font = '700 24px Caveat, cursive'; g.textAlign = 'center'; g.fillText(state === 'point' ? 'this one!' : 'sniff sniff', tgt.x, tgt.y - rimDy - 58 - (still ? 0 : Math.sin(T * 4) * 3)); g.restore();
+          g.fillStyle = INK; g.globalAlpha = a; g.font = '700 24px Caveat, cursive'; g.textAlign = 'center'; g.fillText(state === 'point' ? LT('mod.toys.this_one', 'this one!') : LT('mod.toys.sniff_sniff', 'sniff sniff'), tgt.x, tgt.y - rimDy - 58 - (still ? 0 : Math.sin(T * 4) * 3)); g.restore();
         }
       },
       focus: function () { return CP ? 585 : 620; },
@@ -2816,24 +2828,24 @@
     var dog = A.dog, DN = A.DN, CP = A.compact, still = v26Still(), HOME = CP ? 620 : 720, LO = CP ? 290 : 190, HI = CP ? 900 : 1070, TS = 150, LIE = GY - 30;
     var spr = A.sprite(A.itemSVG('Shinkansen Plush'), TS, TS, A.L.actors, 0.5, 0.5);
     var tr = { x: HOME - 150, y: LIE, rot: 0, tx: 0, carried: false, rolling: false };
-    var state = 'wait', stT = 0, rolls = 0, returns = 0, tip = A.tip('click the lawn to roll it!', CP ? 330 : 300, GY - 120);
+    var state = 'wait', stT = 0, rolls = 0, returns = 0, tip = A.tip(LT('mod.toys.click_the_lawn_to_roll_it', '{touch, select, yes {tap the lawn to roll it!} other {click the lawn to roll it!}}', { touch: TOUCH() }), CP ? 330 : 300, GY - 120);
     dog.x = HOME; dog.face('left'); dog.setPose('sit');
-    A.say(pick(['a TRAIN! a soft one!', 'choo choo? is that how it goes?']), 1700);
+    A.say(pick([LT('mod.toys.a_train_a_soft_one', 'a TRAIN! a soft one!'), LT('mod.toys.choo_choo_is_that_how_it', 'choo choo? is that how it goes?')]), 1700);
     function onDog(x, y) { var h = dog.head(); return Math.abs(x - dog.x) < A.hitR(110) && y > h.y - 60 && y < dog.y + 20; }
     function roll(x) {
       var tx = clamp(x, LO, HI); if (Math.abs(tx - tr.x) < 160) tx = clamp(tr.x + (tx >= tr.x ? 1 : -1) * 260, LO, HI);
       tr.tx = tx; tr.rolling = true; tr.carried = false; rolls++; state = 'chase'; stT = 0; A.sfx('whoosh');
       if (tip) { tip.hide(); tip = null; }
-      if (Math.random() < 0.5) A.say(pick(['zoom zoom!', 'it is so fast!', 'wait for me, train!']), 900);
+      if (Math.random() < 0.5) A.say(pick([LT('mod.toys.zoom_zoom', 'zoom zoom!'), LT('mod.toys.it_is_so_fast', 'it is so fast!'), LT('mod.toys.wait_for_me_train', 'wait for me, train!')]), 900);
     }
     return {
       poses: ['sit', 'idle', 'walk', 'eat', 'happy'],
       dur: 45,
-      hint: 'Click the lawn to roll the Shinkansen Plush, and ' + DN + ' chases it.',
+      hint: LT('mod.toys.click_the_lawn_to_roll_the', '{touch, select, yes {Tap the lawn to roll the Shinkansen Plush, and {dn} chases it.} other {Click the lawn to roll the Shinkansen Plush, and {dn} chases it.}}', { touch: TOUCH(), dn: DN }),
       down: function (x, y) {
         if (state === 'wait' && !onDog(x, y) && y > 300) { roll(x); return; }
-        if (dogTap(A, x, y, ['all aboard! (that is me)', 'next stop: you!'])) return;
-        kindSniff(A, x, y, ['the train is over there!', 'one train at a time', 'sniff... smells like a station.']);
+        if (dogTap(A, x, y, [LT('mod.toys.all_aboard_that_is_me', 'all aboard! (that is me)'), LT('mod.toys.next_stop_you', 'next stop: you!')])) return;
+        kindSniff(A, x, y, [LT('mod.toys.the_train_is_over_there', 'the train is over there!'), LT('mod.toys.one_train_at_a_time', 'one train at a time'), LT('mod.toys.sniff_smells_like_a_station', 'sniff... smells like a station.')]);
       },
       move: function (x, y) { A.cursor(state === 'wait' && !onDog(x, y) && y > 300 ? 'pointer' : 'default'); },
       update: function (dt, T) {
@@ -2851,11 +2863,11 @@
         } else if (state === 'bring') {
           if (dog.runTo(HOME, 300 * A.tr.run * A.tr.carry, dt)) {
             returns++; tr.carried = false; tr.x = HOME - 150; dog.face('left'); dog.setPose('sit'); state = 'wait'; stT = 0; A.sfx('squeak');
-            A.float(pick(['next stop: you!', 'train returned!', 'right on time!']), dog.x, dog.y - 230, returns % 3 === 0 ? 'pt-gold' : '');
+            A.float(pick([LT('mod.toys.next_stop_you', 'next stop: you!'), LT('mod.toys.train_returned', 'train returned!'), LT('mod.toys.right_on_time', 'right on time!')]), dog.x, dog.y - 230, returns % 3 === 0 ? 'pt-gold' : '');
             v26Pay(A, { happiness: returns % 2 ? 1 : 2, bond: returns === 2 ? 1 : 0, coins: returns % 3 === 0 ? 1 : 0, energy: returns % 2 ? -1 : 0 });
           }
         } else if (state === 'wait') {
-          dog.setPose('sit'); if (stT > 7) { stT = 0; A.say(pick(['roll it! roll the train!', 'I am ready. very ready.']), 1400); }
+          dog.setPose('sit'); if (stT > 7) { stT = 0; A.say(pick([LT('mod.toys.roll_it_roll_the_train', 'roll it! roll the train!'), LT('mod.toys.i_am_ready_very_ready', 'I am ready. very ready.')]), 1400); }
         }
         if (tr.carried) { var m = dog.mouth(); tr.x = m.x - dog.dir() * 10; tr.y = m.y + 18; tr.rot = dog.dir() * -8; } else { tr.y = LIE; tr.rot = 0; }
         spr.set(tr.x, tr.y, tr.rot + (tr.rolling && !still ? Math.sin(T * 30) * 2 : 0));
