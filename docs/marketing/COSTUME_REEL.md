@@ -5,7 +5,7 @@ Made 19 Oct 2026 (owner's request, format like the "find the one that suits you"
 | File | What |
 |---|---|
 | `doodle-doggo-costume-reel-a.mp4` | **Style A, "flash"**: 1080 x 1920, 30 fps, 36 s, seamless loop. Noodle's costume changes every 0.5 s. |
-| `doodle-doggo-costume-reel-b.mp4` | **Style B, "the drop"**: 1080 x 1920, 30 fps, 35.7 s, seamless loop. Each costume falls from the top, wobbles, lands on Noodle with a squash, a sparkle and a soft thud; the old one pops off and falls out of the bottom. One landing every 0.7 s. |
+| `doodle-doggo-costume-reel-b.mp4` | **Style B, "fall-through"** (remade 19 Oct after the owner's reference recording): 1080 x 1920, 30 fps, 36 s, seamless loop. Noodle stands still and each costume falls straight down, fast (0.8 s from the top edge to the bottom), right through him. It fits him on **one frame only**; that frame shows a small "perfect fit!" stamp. Pause a frame early or late and it misses, so it is a little game of timing. One costume every 0.9 s, with a quick crayon whoosh as it passes. |
 | `costume-reel-cover.jpg` | The cover for both (the same cover, so the test compares only the motion): six costumes under "Pick Noodle's Halloween costume". |
 | `build_costumes.js` | Remake: `NODE_PATH=/opt/node-tools/node_modules node brand/instagram/launch/costume_reel/build_costumes.js <workdir> [a\|b\|both]`. |
 
@@ -18,10 +18,11 @@ Made 19 Oct 2026 (owner's request, format like the "find the one that suits you"
   - the festival pieces: Ghost Sheet, Pumpkin Suit, Parade Rosette;
   - combinations: Witch Hat + Vampire Cape, Witch Hat + Candy Corn Bandana, Witch Hat + Bat Wings, Bat Wings + Candy Corn Bandana, Vampire Cape + Parade Rosette, Witch Hat + Pumpkin Suit, "The Full Witch" (hat, bandana and cape);
   - A also has one joke look, "No costume (he drew himself)". B leaves it out, because nothing would fall.
-- **Real art only:** `PawArt.dog('dachs', { outfit })`, `PawArt.item` (the falling costumes in B are the game's own item drawings), `PawArt.scene('yard')` with Halloween on. No game buttons or menus.
-- **Sound:** the same music for both: the game's own engine (`mods/pawaudio.js`), the Town Square at dusk, crossfaded end into start so the loop has no seam. B adds a quiet crayon whoosh and a soft thud on each landing.
+- **How B's costumes fit exactly:** each falling costume is cut out of the game's own drawing of Noodle wearing it (Noodle with the costume minus plain Noodle, pixel by pixel, with thin stray crayon lines cleaned away), so on the fitting frame it sits exactly where the game puts it.
+- **Real art only:** `PawArt.dog('dachs', { outfit })` and `PawArt.scene('yard')` with Halloween on. No game buttons or menus.
+- **Sound:** the same music for both: the game's own engine (`mods/pawaudio.js`), the Town Square at dusk, crossfaded end into start so the loop has no seam. B adds a quiet crayon whoosh as each costume passes Noodle.
 
-## Captions (nearly identical, so the motion is the only real difference)
+## Captions (nearly identical, so the motion is the only real difference; B's second line explains the timing)
 
 **A**
 ```
@@ -39,7 +40,7 @@ Play free on itch.io (link in bio) 🎮
 **B**
 ```
 Stop the video to dress Noodle! 🎃🐶
-Pause (or screenshot) when a costume lands, and that is his Halloween look. Comment what Noodle got 👇
+Pause (or screenshot) right when a costume falls onto him. It does not always fit! Comment what Noodle got (or your best near miss) 👇
 
 17 looks, all from the game: the Witch Hat, the Vampire Cape, the Pumpkin Patch Suit, the Trick-or-Treat Ghost, the Little Bat Costume and more. The 2026 pieces are at Mrs. Plum's Pumpkin Patch Pop-up in Doodle Doggo until 2 Nov (Japan time), and they are yours to keep.
 
@@ -68,7 +69,7 @@ How to post: Instagram, "+", Reel, upload the `.mp4`, cover `costume-reel-cover.
 | Plays and accounts reached | Overview | size of the audience (for the per-reach rates) |
 | Average watch time | Reel insights | does the motion hold people |
 | Replays (plays ÷ initial plays, or "watch time" ÷ 36 s) | Reel insights | the loop is the point |
-| Comments per 1,000 reached | Interactions | the "what did Noodle get" call to action |
+| Comments per 1,000 reached | Interactions | the "what did Noodle get" call to action (B may get more, because missing is part of the fun) |
 | Saves and shares per 1,000 reached | Interactions | would people show it to friends |
 | Follows from the post | Profile activity | new followers |
 

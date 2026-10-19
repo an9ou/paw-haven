@@ -1,7 +1,7 @@
 // "Stop the video to dress Noodle" Halloween Reels (1080 x 1920, about 36 s, seamless loops, no end card): two styles for an A/B test.
 //   A "flash": Noodle stands in the game's Halloween yard and his costume changes every 0.5 s.
-//   B "drop":  each costume (its item drawing) falls from the top, wobbles, lands on Noodle with a squash and a soft thud,
-//              and he wears it until the next one lands; the old one pops off and falls out of the bottom. One landing every 0.7 s.
+//   B "fall-through": each costume falls straight down, fast, right through Noodle and fits him for one frame only (pause on it,
+//              or miss). One costume every 0.9 s. Like the owner's reference Reel (19 Oct 2026).
 // Same background, header, labels and music for both, so the test compares only the motion. Real art only, no game UI.
 //   NODE_PATH=/opt/node-tools/node_modules node brand/instagram/launch/costume_reel/build_costumes.js <workdir> [a|b|both]
 //   (ONLY=frames renders the A stills and the cover without the videos)
@@ -61,12 +61,11 @@ async function music(p, T, file) {
     `[0]asplit[m][t];[m]atrim=1:${1 + T},asetpts=PTS-STARTPTS,afade=t=in:d=1:curve=qsin[a];[t]atrim=${1 + T}:${2 + T},asetpts=PTS-STARTPTS,afade=t=out:d=1:curve=qsin[b];[a][b]amix=inputs=2:duration=first:normalize=0[o]`,
     '-map', '[o]', file]);
 }
-// B's landing sounds: a soft crayon whoosh into a low thud, made here (no samples), quiet under the music
+// B's sounds: a quick crayon whoosh as each costume passes Noodle, made here (no samples), quiet under the music
 function sfx(T, lands, file) {
   const SR = 44100, n = Math.ceil(T * SR), buf = new Float32Array(n); let seed = 3; const noise = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x3fffffff - 1; };
   for (const t0 of lands) {
-    let lp = 0; for (let i = 0; i < 0.22 * SR; i++) { const t = i / SR, env2 = Math.sin(Math.PI * t / 0.22) ** 2; lp += 0.08 * (noise() - lp); const j = Math.floor((t0 - 0.22) * SR) + i; buf[((j % n) + n) % n] += 0.10 * env2 * lp * 6; }
-    for (let i = 0; i < 0.16 * SR; i++) { const t = i / SR, f = 120 - 70 * t / 0.16, j = Math.floor(t0 * SR) + i; buf[j % n] += 0.22 * Math.sin(2 * Math.PI * f * t) * Math.exp(-28 * t); }
+    let lp = 0; for (let i = 0; i < 0.3 * SR; i++) { const t = i / SR, env2 = Math.sin(Math.PI * t / 0.3) ** 3; lp += 0.12 * (noise() - lp); const j = Math.floor((t0 - 0.15) * SR) + i; buf[((j % n) + n) % n] += 0.7 * env2 * lp; }
   }
   const pcm = Buffer.alloc(44 + n * 4); pcm.write('RIFF', 0); pcm.writeUInt32LE(36 + n * 4, 4); pcm.write('WAVEfmt ', 8); pcm.writeUInt32LE(16, 16); pcm.writeUInt16LE(1, 20); pcm.writeUInt16LE(2, 22);
   pcm.writeUInt32LE(SR, 24); pcm.writeUInt32LE(SR * 4, 28); pcm.writeUInt16LE(4, 32); pcm.writeUInt16LE(16, 34); pcm.write('data', 36); pcm.writeUInt32LE(n * 4, 40);
@@ -105,37 +104,51 @@ const mux = (video, audio, T, mp4, extra = []) => cp.execFileSync('ffmpeg', ['-l
   if (process.env.ONLY === 'frames') { await b.close(); return; }
   if (process.env.BFRAMES && WHICH === 'b') { /* preview: frames only */ }
 
-  // ---- B: frames, 30 fps; one landing every 0.7 s (51 steps = 35.7 s); everything is periodic, so the last frame flows into the first ----
-  const B_STEP = 0.7, B_N = 51, B_T = +(B_STEP * B_N).toFixed(2), FALL = 0.32, POP = 0.6;
+  // ---- B "fall-through" (like the owner's reference): Noodle stands still; each costume falls straight down, fast, right through him,
+  //      and lines up on him for one frame only. Pause on that frame and he wears it; a frame early or late and it misses. ----
+  // The falling costume is cut out of the game's own drawing (Noodle wearing it minus plain Noodle, pixel by pixel), so it fits exactly.
+  const B_STEP = 0.9, B_N = 40, B_T = +(B_STEP * B_N).toFixed(2), CROSS = 0.8; // one costume every 0.9 s, 0.8 s from the top edge to the bottom edge
   const B_LOOKS = LOOKS.map((_, i) => i).filter((i) => Object.keys(LOOKS[i][1]).length), bseq = order(B_LOOKS, B_N, 11);
-  const lands = bseq.map((_, k) => k * B_STEP + FALL);
+  const align = bseq.map((_, k) => Math.round((k * B_STEP + B_STEP / 2) * FPS) / FPS); // the exact frame each costume fits
+  const lands = align;
   if (WHICH !== 'a') {
-    // the background (paper, yard, header) once; frames draw it as an image
-    await shot(page(''), path.join(WORK, 'b', 'bg.png'));
+    // the background with plain Noodle baked in, once
+    await shot(page(noodle({})), path.join(WORK, 'b', 'bg.png'));
     const bg = 'data:image/png;base64,' + fs.readFileSync(path.join(WORK, 'b', 'bg.png')).toString('base64');
-    await p.setContent(`<!doctype html><meta charset="utf-8">${FONTS}<div id="s"></div><span style="font-family:Caveat">a</span><span style="font-family:'Zen Maru Gothic'">あ</span>`); await p.waitForLoadState('networkidle'); await p.evaluate(() => document.fonts.ready);
-    // item drawings: the art module's PawArt.item, except the v2.11.1 costumes, whose icons live in the game (game/src/27_halloween.js, 100 x 100)
-    const hwSrc = fs.readFileSync(path.join(root, 'game', 'src', '27_halloween.js'), 'utf8'), HWC = { HW_O: '#E8893A', HW_OD: '#B5542F', HW_CR: '#FFFBF3', HW_W: '#C08A5A', HW_G: '#6B8A3A', INKG: INK };
-    const hwIcon = (n) => { const l = hwSrc.split('\n').find((x) => x.trim().startsWith(`'${n}':`)); return l ? vm.runInNewContext('(' + l.trim().replace(/^'[^']+':\s*/, '').replace(/,$/, '') + ')', HWC)() : null; };
-    const ITEM = Object.fromEntries([...new Set(LOOKS.flatMap((l) => Object.values(l[1])))].map((n) => { const hw = ['Pumpkin Patch Suit', 'Trick-or-Treat Ghost', 'Little Bat Costume'].includes(n) && hwIcon(n);
-      return [n, hw ? { vb: '0 0 100 100', g: hw } : { vb: '0 0 64 64', g: inner(PA.item(n)) }]; }));
-    const SPOT = { head: [790, 940], neck: [720, 1090], body: [470, 1110] }; // where each slot sits on Noodle (he faces right)
-    const icons = (li, prog, mode, t) => Object.entries(LOOKS[li][1]).map(([slot, n], j) => { const [tx, ty] = SPOT[slot]; let x, y, r, s = 230, o = 1;
-      if (mode === 'fall') { const e = prog * prog; x = tx + (j - 0.5) * 30 * (1 - prog); y = -260 + (ty + 80 + 260) * e - 80; r = Math.sin(prog * 9 + j) * 28 * (1 - prog); }
-      else { const q = prog; x = tx + (j % 2 ? 1 : -1) * (120 + 260 * q); y = ty - 380 * q + 2600 * q * q; r = (j % 2 ? 1 : -1) * 400 * q; s = 230 * (1 - 0.25 * q); o = 1; }
-      return `<g transform="translate(${f1(x)} ${f1(y)}) rotate(${f1(r)})" opacity="${o}"><svg x="${-s / 2}" y="${-s / 2}" width="${s}" height="${s}" viewBox="${ITEM[n].vb}" overflow="visible">${ITEM[n].g}</svg></g>`; }).join('');
-    const sparks = (prog) => [0, 1, 2, 3, 4, 5].map((k) => { const a = k * Math.PI / 3 + 0.3, d = 90 + 160 * prog, x = 640 + Math.cos(a) * d, y = 1060 + Math.sin(a) * d * 0.7, s = 1 - prog;
-      return `<path d="M${f1(x)} ${f1(y - 22 * s)}L${f1(x + 7 * s)} ${f1(y - 7 * s)}L${f1(x + 22 * s)} ${f1(y)}L${f1(x + 7 * s)} ${f1(y + 7 * s)}L${f1(x)} ${f1(y + 22 * s)}L${f1(x - 7 * s)} ${f1(y + 7 * s)}L${f1(x - 22 * s)} ${f1(y)}L${f1(x - 7 * s)} ${f1(y - 7 * s)}Z" fill="#FFD66B" stroke="${INK}" stroke-width="3" opacity="${f1(s)}"/>`; }).join('');
-    const NF = process.env.BFRAMES ? +process.env.BFRAMES : Math.round(B_T * FPS), noodleCache = {};
+    // costume sprites: render Noodle with and without the costume on a transparent canvas, keep the pixels that differ
+    const solo = (outfit) => `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${noodle(outfit)}</svg>`;
+    const sprite = {};
+    for (const li of B_LOOKS) sprite[li] = await p.evaluate(async ([s1, s0, W, H]) => {
+      const load = (s) => new Promise((ok) => { const im = new Image(); im.onload = () => ok(im); im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s); });
+      const [a, b] = await Promise.all([load(s1), load(s0)]), c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
+      x.drawImage(b, 0, 0); const d0 = x.getImageData(0, 0, W, H); x.clearRect(0, 0, W, H); x.drawImage(a, 0, 0); const d1 = x.getImageData(0, 0, W, H), o = d1.data, z = d0.data;
+      // the crayon lines wobble a little differently when he wears something, so a plain difference also catches thin copies of his outline:
+      // keep only the differing pixels near a solid differing area (an opening: erode by 8, grow by 14)
+      const m = new Uint8Array(W * H);
+      for (let i = 0, q = 0; i < o.length; i += 4, q++) m[q] = (Math.abs(o[i] - z[i]) + Math.abs(o[i + 1] - z[i + 1]) + Math.abs(o[i + 2] - z[i + 2]) + Math.abs(o[i + 3] - z[i + 3])) >= 40 ? 1 : 0;
+      const pass = (src, r, minMode) => { const t = new Uint8Array(W * H), u = new Uint8Array(W * H);
+        for (let y = 0; y < H; y++) { let run = 0; const row = y * W; // horizontal
+          for (let x = 0; x < W; x++) { let v = minMode ? 1 : 0; for (let k = -r; k <= r; k++) { const xx = x + k; const sv = xx < 0 || xx >= W ? 0 : src[row + xx]; if (minMode ? !sv : sv) { v = minMode ? 0 : 1; break; } } t[row + x] = v; } }
+        for (let x = 0; x < W; x++) for (let y = 0; y < H; y++) { let v = minMode ? 1 : 0; for (let k = -r; k <= r; k++) { const yy = y + k; const sv = yy < 0 || yy >= H ? 0 : t[yy * W + x]; if (minMode ? !sv : sv) { v = minMode ? 0 : 1; break; } } u[y * W + x] = v; }
+        return u; };
+      const keep = pass(pass(m, 8, true), 14, false);
+      let top = H, bot = 0;
+      for (let i = 0, q = 0; i < o.length; i += 4, q++) { if (!(m[q] && keep[q])) o[i + 3] = 0; else { const y = (q / W) | 0; if (y < top) top = y; if (y > bot) bot = y; } }
+      x.putImageData(d1, 0, 0); return { url: c.toDataURL('image/png'), top, bot };
+    }, [solo(LOOKS[li][1]), solo({}), W, H]);
+    if (process.env.SPRITES) { for (const li of B_LOOKS) { const sp = sprite[li]; await shot(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><image href="${bg}" width="${W}" height="${H}"/><image href="${sp.url}" width="${W}" height="${H}"/>${txt(LOOKS[li][0], W / 2, 1480, 60)}</svg>`, path.join(WORK, 'b', `sprite${li}.png`)); } await b.close(); return; }
+    const sparkle = `<g transform="translate(830 840) rotate(-8)"><rect x="-150" y="-44" width="300" height="88" rx="44" fill="#FFD66B" stroke="${INK}" stroke-width="5"/>${txt('perfect fit!', 0, 18, 58)}</g>`;
+    const NF = process.env.BFRAMES ? +process.env.BFRAMES : Math.round(B_T * FPS);
     for (let fi = 0; fi < NF; fi++) {
-      const t = fi / FPS, k = Math.floor((t - FALL) / B_STEP), kk = ((k % B_N) + B_N) % B_N, cur = bseq[kk], prev = bseq[(kk - 1 + B_N) % B_N];
-      const sinceLand = ((t - FALL) % B_STEP + B_STEP) % B_STEP, nextK = Math.floor(t / B_STEP) % B_N, inFall = (t % B_STEP) < FALL;
-      const sq = sinceLand < 0.16 ? Math.sin(Math.PI * sinceLand / 0.16) : 0, sx = 1 + 0.05 * sq, sy = 1 - 0.08 * sq;
-      const key = cur + ':' + f1(sx) + ':' + f1(sy); const nd = noodleCache[key] || (noodleCache[key] = noodle(LOOKS[cur][1], sx, sy));
-      let g = `<image href="${bg}" x="0" y="0" width="${W}" height="${H}"/>` + nd + label(LOOKS[cur][0]);
-      if (sinceLand < POP) g += icons(prev, sinceLand / POP, 'pop', t);
-      if (sinceLand < 0.28) g += sparks(sinceLand / 0.28);
-      if (inFall) g += icons(bseq[nextK], (t % B_STEP) / FALL, 'fall', t);
+      const t = fi / FPS; let g = `<image href="${bg}" x="0" y="0" width="${W}" height="${H}"/>`, nowLook = null, perfect = false;
+      for (let k = 0; k < B_N; k++) for (const wrap of [-B_T, 0, B_T]) {
+        const li = bseq[k], sp = sprite[li], dt = t - (align[k] + wrap), v = (H + (sp.bot - sp.top)) / CROSS, dy = v * dt; // speed: from just above the top edge to just below the bottom edge in CROSS seconds
+        if (sp.bot + dy < 0 || sp.top + dy > H) continue;
+        g += `<image href="${sp.url}" x="0" y="${f1(dy)}" width="${W}" height="${H}"/>`;
+        if (Math.abs(dt) < 1e-6) perfect = true;
+        if (nowLook === null || Math.abs(dt) < nowLook[1]) nowLook = [li, Math.abs(dt)];
+      }
+      g += header + (nowLook ? label(LOOKS[nowLook[0]][0]) : label('…')) + (perfect ? sparkle : '');
       await shot(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${g}</svg>`, path.join(WORK, 'b', `f${String(fi).padStart(5, '0')}.png`));
       if (fi % 150 === 0) console.log('B frame', fi, '/', NF);
     }
