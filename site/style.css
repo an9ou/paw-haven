@@ -430,6 +430,9 @@ html.js .dogsheet .prof{display:none}
 dialog.dogpop{max-width:min(860px,calc(100vw - 24px));width:100%;max-height:calc(100dvh - 24px);padding:0;border:2.5px solid var(--ink);border-radius:18px 13px 20px 12px;background:var(--paper);color:var(--ink);box-shadow:4px 6px 0 rgba(91,61,50,.25)}
 dialog.dogpop::backdrop{background:rgba(60,40,30,.45)}
 dialog.dogpop .prof{display:grid!important;border-top:0;padding:18px 18px 22px}
-dialog.dogpop .x{position:sticky;top:8px;float:right;margin:8px 8px 0 0;z-index:2;min-width:44px;min-height:44px}
+dialog.dogpop{position:fixed;overflow-y:auto}
+dialog.dogpop .x{position:absolute;top:8px;right:8px;z-index:2;width:36px;height:36px;min-width:36px;min-height:36px;padding:0;font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center}
+dialog.dogpop .x:focus:not(:focus-visible){outline:none}
+dialog.dogpop .prof{width:100%;box-sizing:border-box}
 @media (max-width:700px){ .dognav a{font-size:20px} dialog.dogpop .prof{grid-template-columns:1fr} }
 dialog.dogpop .prof>*,dialog.dogpop .prof .txt>*{max-width:none}
