@@ -151,7 +151,8 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
     ok(!bad.length, 'the words rules on /, /dogs, /map and /about: no "breed" as a verb, no selling dogs ' + bad.join(' '));
     ok(!MADE_JP.test(PG.map((p) => words(EN[p.id])).join(' ')), 'no claim that the game is made in Japan on any English page (a Japanese style, not an origin)');
     const js = await (await get(SITE + '/js/site.js')).text();
-    ok(!/https?:\/\//.test(js.replace(/^\s*\/\/.*$/mg, '')) && !/fetch\(|XMLHttpRequest|cookie|localStorage/.test(js), 'site.js asks no one for anything (no URLs, fetch, cookies or storage)');
+    const jsCode = js.replace(/^\s*\/\/.*$/mg, ''); // the comments may talk about itch.io's cookies
+    ok(!/https?:\/\//.test(jsCode) && !/fetch\(|XMLHttpRequest|cookie|localStorage/.test(jsCode), 'site.js asks no one for anything (no URLs, fetch, cookies or storage)');
     ok(/og:image" content="https:\/\/doodledoggo\.app\/logo-1200x630\.png/.test(home) && /rel="icon" href="\/favicon\.svg/.test(home) && /<title>Doodle Doggo/.test(home), 'title, favicon and og:image tags');
     const allEn = PG.map((p) => EN[p.id]).join('\n');
     ok(!/googleapis|gstatic|google-analytics|gtag|facebook|plausible|cdn\./i.test(allEn + js + (await (await get(SITE + '/style.css')).text())), 'no third-party fonts, scripts or trackers in the pages, the script or the CSS');
@@ -532,7 +533,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
           if (lang !== L.code) bad.push(`${pg.id} lang ${lang}`);
           const hp = headerProblems(await headerFromDom(page), L, pg); if (hp.length) bad.push(`${pg.id} header ${hp.slice(0, 2).join(', ')}`);
           if (pg.id === 'index') { await page.click('#itchload', { timeout: 3000 }).catch(() => bad.push('index: no #itchload')); await page.waitForSelector('#itchbox iframe#itch', { timeout: 3000 }).catch(() => {}); const ib = await itchBox(page); if (!(ib.left >= 0 && ib.right <= ib.vw + 0.5)) bad.push(`index itch.io widget ${Math.round(ib.left)}..${Math.round(ib.right)} of ${ib.vw}`); }
-          await openNav(page);
+          await page.evaluate(() => scrollTo({ top: 0, behavior: 'instant' })); await openNav(page);
           const np = navTapProblems(await navTaps(page)); if (np.length) bad.push(`${pg.id} nav ${np.slice(0, 2).join(', ')}`);
           const s2 = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth); if (s2 > 0) bad.push(`${pg.id} open menu scrolls sideways ${s2}px`);
         }
