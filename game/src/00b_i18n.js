@@ -172,4 +172,4 @@ const I18N_HOOK = { get lang() { return I18N.lang; }, get misses() { return I18N
   set: (code) => tsetLang(code, { pseudo: true }), clear: () => { I18N.misses.length = 0; I18N.unknown.length = 0; I18N.seen.clear(); }, fontCSS: () => tfontCSS(), wanted: () => i18nWanted() };
 
 i18nUse(i18nWanted()); i18nFonts(I18N.lang);
-window.PawI18n = { tt, tdata, tbreed, tnum, tlang };
+window.PawI18n = { tt, tdata, tbreed, tnum, tdate, tlist, tlang };

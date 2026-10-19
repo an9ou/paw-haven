@@ -79,7 +79,7 @@ function birthdayCheck() {
 function askSex() {
   if (!S || S.dog.sex) return;
   const p = openModal(tt('genes.quick_question_for_the_paperwork', 'Quick question for the paperwork'), `<p>${tt('genes.is_a_boy_or_a_girl_html', 'Is <b>{name}</b> a boy or a girl?', { name: NAME() })}</p><p class="small">${tt('genes.boys_and_girls_of_a', 'Boys and girls of a breed look alike, just like real dogs.')}</p>`, { noX: true, foot: '<button class="btn big sexbtn m" id="sxM">&#9794; ' + tt('genes.boy', 'Boy') + '</button><button class="btn big sexbtn f" id="sxF">&#9792; ' + tt('genes.girl', 'Girl') + '</button>' });
-  const pick = (sx) => { S.dog.sex = sx; markDirty(); saveNow(); modalClose = null; closeModal(); hudDogKey = ''; setHudDog(); toast(tt('genes.paperwork_done_is_a_good', '{sex, select, female {Paperwork done. {name} is a good girl, and she knows it.} other {Paperwork done. {name} is a good boy, and he knows it.}}', { sex, name: NAME() }), 'good'); };
+  const pick = (sx) => { S.dog.sex = sx; markDirty(); saveNow(); modalClose = null; closeModal(); hudDogKey = ''; setHudDog(); toast(tt('genes.paperwork_done_is_a_good', '{sex, select, female {Paperwork done. {name} is a good girl, and she knows it.} other {Paperwork done. {name} is a good boy, and he knows it.}}', { sex: sx, name: NAME() }), 'good'); };
   $('#sxM', p).onclick = () => pick('male'); $('#sxF', p).onclick = () => pick('female');
 }
 

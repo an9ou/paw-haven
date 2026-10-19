@@ -327,14 +327,14 @@ function scanJs(code, fileOf, mode) {
       return;
     }
     if (node.type === 'TaggedTemplateExpression') return; // String.raw etc.
-    if (node.type === 'CallExpression' && node.callee.type === 'Identifier' && (node.callee.name === 'tt' || node.callee.name === 'tdata' || (mode === 'mod' && node.callee.name === 'L'))) {
+    if (node.type === 'CallExpression' && node.callee.type === 'Identifier' && (node.callee.name === 'tt' || node.callee.name === 'tdata' || (mode === 'mod' && (node.callee.name === 'L' || node.callee.name === 'D')))) {
       const [k, e, v] = node.arguments, lit = (x) => x && ((x.type === 'Literal' && typeof x.value === 'string') || (x.type === 'TemplateLiteral' && !x.expressions.length));
       const val = (x) => (x.type === 'Literal' ? x.value : x.quasis[0].value.cooked);
       const at = fileOf(node.start);
       if (at) {
         wired++;
-        if (lit(k) && lit(e)) { const key = (node.callee.name === 'tdata' ? 'data.' : '') + val(k); if (KEY_RE.test(key)) enStr.push({ key, text: val(e), file: at.file, line: at.line }); else enWarn.push(`${at.file}:${at.line} bad key "${key}"`); }
-        else if (node.callee.name !== 'tdata') enWarn.push(`${at.file}:${at.line} ${node.callee.name}() with a ${lit(k) ? 'non-literal English' : 'computed key'}`);
+        if (lit(k) && lit(e)) { const key = (node.callee.name === 'tdata' || node.callee.name === 'D' ? 'data.' : '') + val(k); if (KEY_RE.test(key)) enStr.push({ key, text: val(e), file: at.file, line: at.line }); else enWarn.push(`${at.file}:${at.line} bad key "${key}"`); }
+        else if (node.callee.name !== 'tdata' && node.callee.name !== 'D') enWarn.push(`${at.file}:${at.line} ${node.callee.name}() with a ${lit(k) ? 'non-literal English' : 'computed key'}`);
       }
       parents.push(node); if (v) visit(v); node.arguments.slice(3).forEach(visit); if (k && !lit(k)) visit(k); if (e && !lit(e)) visit(e); parents.pop();
       return;
