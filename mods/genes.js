@@ -10,6 +10,32 @@
 (function (root) {
   'use strict';
 
+  /* ---------- v2.14 language service (V214.md 4.2): read-only, called at run time only, never at load ----------
+     Everything the module RETURNS as data stays English (coat names, mix names, grandMix name and kind, carriers): the game stores them on
+     dogs and uses them as journal keys (V214.md 4.3). Display goes through coatLabel(), mixLabel() and the label/how/summary/odds/text fields,
+     which are looked up in the current language at the moment they are asked for. Keys: mod.genes.* for UI text, data.<table>.<path> for tables. */
+  function fmtEn(en, vars) {
+    const M = root.PawI18nMsg;
+    if (M && typeof M.format === 'function') return M.format(en, vars || {}, 'en');
+    return vars ? String(en).replace(/\{(\w+)\}/g, (m, k) => (vars[k] != null ? String(vars[k]) : m)) : en;
+  }
+  let plain = false; // true while the canonical English text is built (coat names): L() then ignores the language
+  function L(key, en, vars) { const P = root.PawI18n; return !plain && P && typeof P.tt === 'function' ? P.tt(key, en, vars) : fmtEn(en, vars); }
+  const D = (path, en, vars) => L('data.' + path, en, vars);
+  function lang() { const P = root.PawI18n; try { return P && typeof P.tlang === 'function' ? String(P.tlang() || 'en') : 'en'; } catch (e) { return 'en'; } }
+  const isEn = () => lang() === 'en';
+  const idOf = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+  // a list in the current language: English keeps "a, b and c" exactly; others use Intl (conjunction or disjunction)
+  function listOf(arr, type) {
+    if (arr.length <= 1) return arr.join('');
+    if (!isEn()) {
+      try { return new root.Intl.ListFormat(lang(), { style: 'long', type: type || 'conjunction' }).format(arr); } catch (e) { /* fall back to English */ }
+    }
+    return arr.slice(0, -1).join(', ') + (type === 'disjunction' ? ' or ' : ' and ') + arr[arr.length - 1];
+  }
+  // a comma list with no "and" (sparkle parts, rest breeds): joined by a message so a language can use its own comma
+  function commaJoin(arr) { return arr.reduce((a, b) => L('mod.genes.comma_join', '{a}, {b}', { a, b })); }
+
   const BREEDS = ['shiba', 'corgi', 'golden', 'dachs', 'husky', 'mutt', 'chihuahua', 'pug', 'greyhound', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie', 'akita', 'spitz', 'pom', 'afghan', 'dane', 'mastiff', 'gsd',
     'dobie', 'corso', 'pitbull', 'minpin', 'lab', 'malamute', 'chow', 'stdpoodle', 'schnauzer', 'westie', 'yorkie', 'bichon', 'maltese', 'shihtzu']; // v2.12: fourteen appended (V212.md 2)
   // Breed size for the v2 litter rules (small 1-3, medium 1-3, large 2-3 puppies).
@@ -530,6 +556,49 @@
     return liver ? 'liver' : 'black';
   }
 
+  // Visible coat bits shared by phenotype() and the label builder.
+  function coatBits(g, breed) {
+    const pig = pigment(g), sk = shadeKey(g, breed, pig), merleAllele = has(g.M, 'M');
+    const merle = merleAllele && pig !== 'red' && pig !== 'cream'; // cryptic merle hides on e/e
+    const white = both(g.S, 'sp') ? 0.6 : has(g.S, 'sp') ? 0.25 : 0;
+    return { pig, sk, merleAllele, merle, white };
+  }
+  /* The coat name. loc = false builds the canonical English text (what phenotype().coatName always was); loc = true builds the
+     same coat from the same words in the current language (data.words.<breed>.<shade>, data.merle_by..., mod.genes.* sentences).
+     The rules read the English base word, so they behave the same in every language. */
+  function coatNameFor(g, breed, pig, sk, merle, white, loc) {
+    const was = plain; plain = !loc;
+    try {
+      let en, name;
+      if (merle) {
+        if (breed === 'dachs') { en = DAPPLE_WORDS[pig]; name = D('dapple_words.' + pig, en); }
+        else if (MERLE_BY[breed]) { en = MERLE_BY[breed][pig]; name = D('merle_by.' + breed + '.' + pig, en); }
+        else { en = MERLE_WORDS[pig]; name = D('merle_words.' + pig, en); }
+      } else {
+        const wk = WORDS[breed][sk] ? sk : pig;
+        en = WORDS[breed][wk]; name = D('words.' + breed + '.' + wk, en);
+      }
+      const allWhite = !merle && en === 'White'; // v2.5: a white coat needs no white markings or patches in its name
+      const pw = PIED[breed];
+      if (merle && white === 0.6 && HARLEQUIN[breed]) name = L('mod.genes.harlequin', 'Harlequin');
+      else if (sk === 'white') { /* v2.12: an all-white coat (WHITE_SP): "White" already says it */ }
+      else if (white === 0.6 && pw) {
+        if ((pig === 'black' || allWhite) && !merle) name = pw === 'parti' ? L('mod.genes.pied_parti', 'Parti') : pw === 'pied' ? L('mod.genes.pied_pied', 'Pied') : L('mod.genes.pied_mantle', 'Mantle');
+        else name = pw === 'parti' ? L('mod.genes.coat_parti', '{coat} parti', { coat: name }) : pw === 'pied' ? L('mod.genes.coat_pied', '{coat} pied', { coat: name }) : L('mod.genes.coat_mantle', '{coat} mantle', { coat: name });
+      }
+      else if (allWhite) { /* "White" already says it */ }
+      else if (AND_WHITE[breed] && white) name = L('mod.genes.coat_and_white', '{coat} and white', { coat: name }); // v2.12
+      else if (white === 0.6) name = L('mod.genes.coat_piebald', '{coat} & white piebald', { coat: name });
+      else if (TRI_SOLID[breed] && !merle && !white && TRI_SOLID[breed][pig]) name = D('tri_solid.' + breed + '.' + pig, TRI_SOLID[breed][pig]);
+      else if (MERLE_BY[breed] && merle) { /* "Blue merle" already says the white */ }
+      else if (TRI[breed] && TRI[breed][pig] && !merle) { /* "Tricolour" already includes white */ }
+      else if (breed === 'shiba' && !merle) name = white ? L('mod.genes.coat_urajiro_white', '{coat} with cream urajiro and white markings', { coat: name }) : L('mod.genes.coat_urajiro', '{coat} with cream urajiro', { coat: name });
+      else if (WHITE_MARKED[breed]) name = L('mod.genes.coat_and_white', '{coat} and white', { coat: name });
+      else if (white === 0.25) name = L('mod.genes.coat_white_markings', '{coat} with white markings', { coat: name });
+      return name;
+    } finally { plain = was; }
+  }
+
   /**
    * phenotype(genes, breedKey, seed?) -> { coatName, eyes, coat:{base, light, dark, white, merle, eyes}, pigment, merleHidden }
    * seed (optional, e.g. the dog's id) makes the per-dog eye rolls stable; without it the genotype itself is the seed.
@@ -551,23 +620,8 @@
     else if (merle) { const x = r(); eyes = x < 0.15 ? 'odd' : x < 0.25 ? 'blue' : (both(g.B, 'b') ? 'amber' : 'brown'); }
     else if (both(g.B, 'b')) eyes = 'amber';
 
-    // name
-    let name;
-    if (merle) name = (breed === 'dachs' ? DAPPLE_WORDS : MERLE_BY[breed] || MERLE_WORDS)[pig];
-    else name = WORDS[breed][sk] || WORDS[breed][pig];
-    const allWhite = !merle && name === 'White'; // v2.5: a white coat needs no white markings or patches in its name
-    if (merle && white === 0.6 && HARLEQUIN[breed]) name = 'Harlequin';
-    else if (sk === 'white') { /* v2.12: an all-white coat (WHITE_SP): "White" already says it */ }
-    else if (white === 0.6 && PIED[breed]) name = (pig === 'black' || allWhite) && !merle ? PIED[breed][0].toUpperCase() + PIED[breed].slice(1) : name + ' ' + PIED[breed];
-    else if (allWhite) { /* "White" already says it */ }
-    else if (AND_WHITE[breed] && white) name += ' and white'; // v2.12
-    else if (white === 0.6) name += ' & white piebald';
-    else if (TRI_SOLID[breed] && !merle && !white && TRI_SOLID[breed][pig]) name = TRI_SOLID[breed][pig];
-    else if (MERLE_BY[breed] && merle) { /* "Blue merle" already says the white */ }
-    else if (TRI[breed] && TRI[breed][pig] && !merle) { /* "Tricolour" already includes white */ }
-    else if (breed === 'shiba' && !merle) name += ' with cream urajiro' + (white ? ' and white markings' : '');
-    else if (WHITE_MARKED[breed]) name += ' and white';
-    else if (white === 0.25) name += ' with white markings';
+    // name (English: the stored, canonical text; coatLabel() gives the same coat in the current language)
+    const name = coatNameFor(g, breed, pig, sk, merle, white, false);
 
     const coat = { base: shade[0], light: shade[1], dark: shade[2], white, merle, eyes };
     if (AND_WHITE[breed] && !white && shade[3]) coat.light = shade[3]; // v2.12: a solid Shih Tzu (no spotting gene) has no white blaze, chest or skirt
@@ -583,6 +637,34 @@
       pigment: pig,
       merleHidden: merleAllele && !merle
     };
+  }
+
+  /* ---------- display labels (v2.14) ---------- */
+  // English coat name -> the genotype bits that make it, per body breed (162 combinations, built once per breed, only when a non-English label is asked)
+  const nameMaps = {};
+  function nameMap(breed) {
+    if (nameMaps[breed]) return nameMaps[breed];
+    const m = {}, loci = ['B', 'D', 'E', 'S', 'M'];
+    (function rec(i, g) {
+      if (i === loci.length) {
+        const gg = normGenes(Object.assign({ Bl: ['bl', 'bl'] }, g)), b = coatBits(gg, breed);
+        const en = coatNameFor(gg, breed, b.pig, b.sk, b.merle, b.white, false);
+        if (!m[en]) m[en] = { g: gg, pig: b.pig, sk: b.sk, merle: b.merle, white: b.white };
+        return;
+      }
+      ALL_PAIRS[loci[i]].forEach((pr) => { g[loci[i]] = pr; rec(i + 1, g); });
+    })(0, {});
+    return (nameMaps[breed] = m);
+  }
+  /** coatLabel(coatName, breedKey?) -> the coat name in the current language. coatName is the English text phenotype() gives (and the game
+      stores); breedKey is the body breed (d.key), which picks the right word table. Unknown text comes back unchanged; in English it is a no-op. */
+  function coatLabel(name, breedKey) {
+    name = String(name == null ? '' : name);
+    if (!name || isEn()) return name;
+    const one = (b) => { const e = nameMap(b)[name]; return e ? coatNameFor(e.g, b, e.pig, e.sk, e.merle, e.white, true) : null; };
+    let r = breedKey != null ? one(breedOf(breedKey)) : null;
+    if (r == null) for (let i = 0; i < BREEDS.length && r == null; i++) r = one(BREEDS[i]);
+    return r == null ? name : r;
   }
 
   /* ---------- random rescue genotypes (breed-appropriate allele frequencies) ---------- */
@@ -941,6 +1023,46 @@
   MIX_LIST.forEach((m) => { MIXES[mixKey(m[0], m[1])] = { name: m[2], head: m[3] }; });
   BREEDS.forEach((k) => { if (k !== 'mutt') MIXES[mixKey('mutt', k)] = { name: 'Mutt mix', head: k }; });
 
+  /* ---------- breed and mix names for display (v2.14) ---------- */
+  /** The breed name in the current language (data.breed_names.<key>). BREED_NAMES itself stays the English data. */
+  function bn(k) { return D('breed_names.' + k, BREED_NAMES[k] || String(k)); }
+  let mixRows = null, breedByName = null;
+  const PUN_PATTERN_LANG = /^(ja|zh|ko|th)/; // V214.md 4.3: these five build "A x B" for a pun that has no translated entry
+  /** mixName(mix) -> the display name of a stored mix { a, b, name } as a string (V214.md 4.3). The table name comes from mix.name, else from the
+      pair a / b; the result goes through mixLabel(). Always a string ('' without a mix). */
+  function mixName(mix) {
+    if (mix == null) return '';
+    if (typeof mix === 'string') return mixLabel(mix);
+    let name = mix.name;
+    if (!name && mix.a != null && mix.b != null) { const t = MIXES[mixKey(mix.a, mix.b)]; name = t && t.name; }
+    return name ? String(mixLabel(name)) : '';
+  }
+  /** mixLabel(name) -> a mix name in the current language. name is the English text kept on the dog (mix.name): a table mix ("Horgi"),
+      "Mutt mix", a grandMix name (the recipes, "The Everything Dog", "<Breed> family mix") or a breed name. The table entry
+      (data.mix_list.<a>_<b>.2) wins; without one, ja / zh / ko / th use the pattern mod.genes.mix_pattern and the other languages keep the pun. */
+  function mixLabel(name) {
+    name = String(name == null ? '' : name);
+    if (!name || isEn()) return name;
+    if (!mixRows) {
+      mixRows = {}; breedByName = {};
+      MIX_LIST.forEach((m) => { if (!mixRows[m[2]]) mixRows[m[2]] = m; });
+      Object.keys(BREED_NAMES).forEach((k) => { breedByName[BREED_NAMES[k]] = k; });
+    }
+    if (name === 'Mutt mix') return L('mod.genes.mutt_mix', 'Mutt mix');
+    if (name === 'The Everything Dog') return L('mod.genes.everything_dog', 'The Everything Dog');
+    const row = mixRows[name];
+    if (row) {
+      const t = D('mix_list.' + row[0] + '_' + row[1] + '.2', name);
+      if (t !== name || !PUN_PATTERN_LANG.test(lang())) return t;
+      return L('mod.genes.mix_pattern', '{a} × {b}', { a: bn(row[0]), b: bn(row[1]) });
+    }
+    for (let i = 0; i < GRAND_RECIPES.length; i++) if (GRAND_RECIPES[i].name === name) return D('grand_recipes.' + idOf(name) + '.name', name);
+    const fm = /^(.*) family mix$/.exec(name);
+    if (fm && breedByName[fm[1]]) return L('mod.genes.family_mix', '{breed} family mix', { breed: bn(breedByName[fm[1]]) });
+    if (breedByName[name]) return bn(breedByName[name]);
+    return name;
+  }
+
   /**
    * mixOf(damKey, sireKey, rng) -> { a: damKey, b: sireKey, body, head, name } | null
    * - Same breed (incl. mutt x mutt): returns null = purebred, no mix (puppy key = that breed).
@@ -973,9 +1095,9 @@
     return { [base]: 1 };
   }
   function oddsText(p) {
-    if (p >= 0.995) return 'every puppy';
-    const n = 1 / p, r = Math.round(n);
-    return (Math.abs(n - r) < 0.02 * n ? '1 in ' : 'about 1 in ') + Math.max(1, r);
+    if (p >= 0.995) return L('mod.genes.odds_every', 'every puppy');
+    const n = 1 / p, r = Math.round(n), v = String(Math.max(1, r));
+    return Math.abs(n - r) < 0.02 * n ? L('mod.genes.odds_1_in', '1 in {n}', { n: v }) : L('mod.genes.odds_about_1_in', 'about 1 in {n}', { n: v });
   }
   // all unordered genotype classes of the 6 loci with their probability for a pair of parents
   function offspringDist(ga, gb) {
@@ -1074,23 +1196,22 @@
     dblue: 'dilute and dark-coat genes from both parents',
     brindle: 'dark-coat genes from both parents'
   };
+  // The "how" hint is built from short noun phrases and joined by a list in the current language; it is made when asked for (never cached),
+  // so a language switch shows at once.
   function hintFor(breed, sk, merle, whiteLvl, p, defaultSk) {
-    const f = FREQ[breed], parts = [];
+    const f = FREQ[breed], parts = [], need = (k) => D('pig_need.' + k, PIG_NEED[k]);
     // a pigment that every dog of this breed has (golden: always e/e) needs no hint
     const fixedRed = f.e >= 1 && (sk === 'red');
-    if (sk !== defaultSk && !fixedRed) parts.push(f.e >= 1 && sk === 'cream' ? PIG_NEED.blue : f.e >= 1 && sk === 'redliver' ? PIG_NEED.liver : PIG_NEED[sk]);
-    if (merle) parts.push('one ' + (breed === 'dachs' ? 'dapple' : 'merle') + ' parent (never two)');
-    if (whiteLvl === 2) parts.push('spotting genes from both parents');
-    else if (whiteLvl === 1 && !WHITE_MARKED[breed]) parts.push('a spotting gene from one parent');
-    else if (whiteLvl === 0 && TRI_SOLID[breed] && TRI_SOLID[breed][sk] && !merle) parts.push('solid-coat genes from both parents');
+    if (sk !== defaultSk && !fixedRed) parts.push(need(f.e >= 1 && sk === 'cream' ? 'blue' : f.e >= 1 && sk === 'redliver' ? 'liver' : sk));
+    if (merle) parts.push(breed === 'dachs' ? L('mod.genes.need_dapple', 'one dapple parent (never two)') : L('mod.genes.need_merle', 'one merle parent (never two)'));
+    if (whiteLvl === 2) parts.push(L('mod.genes.need_spotting_both', 'spotting genes from both parents'));
+    else if (whiteLvl === 1 && !WHITE_MARKED[breed]) parts.push(L('mod.genes.need_spotting_one', 'a spotting gene from one parent'));
+    else if (whiteLvl === 0 && TRI_SOLID[breed] && TRI_SOLID[breed][sk] && !merle) parts.push(L('mod.genes.need_solid_both', 'solid-coat genes from both parents'));
     let s;
-    if (!parts.length) s = 'The classic ' + BREED_NAMES[breed] + ' look.';
-    else if (parts.length === 1 && sk === 'blue' && !merle) s = 'Two parents who carry dilute can make this soft blue.';
-    else {
-      const last = parts.pop();
-      s = 'Needs ' + (parts.length ? parts.join(', ') + ' and ' : '') + last + '.';
-    }
-    if (p < 0.005) s += ' Very rare!';
+    if (!parts.length) s = L('mod.genes.how_classic', 'The classic {breed} look.', { breed: bn(breed) });
+    else if (parts.length === 1 && sk === 'blue' && !merle) s = L('mod.genes.how_soft_blue', 'Two parents who carry dilute can make this soft blue.');
+    else s = L('mod.genes.how_needs', 'Needs {list}.', { list: listOf(parts) });
+    if (p < 0.005) s = L('mod.genes.how_very_rare', '{how} Very rare!', { how: s });
     return s;
   }
   const catalogCache = {};
@@ -1118,11 +1239,11 @@
         .map((e) => ({
           coat: e.coat,
           rare: e.merle || e.sk === 'lilac' || e.sk === 'cream' || e.sk === 'apricot' || e.sk === 'redliver' || e.p < 0.01,
-          how: hintFor(breed, e.sk, e.merle, e.white, e.p, defaultSk),
+          args: [breed, e.sk, e.merle, e.white, e.p, defaultSk],
           p: e.p
         }));
     }
-    return catalogCache[breed].map((e) => ({ coat: e.coat, rare: e.rare, how: e.how }));
+    return catalogCache[breed].map((e) => ({ coat: e.coat, rare: e.rare, how: hintFor.apply(null, e.args) }));
   }
 
   /* ---------- gene test text ---------- */
@@ -1135,40 +1256,55 @@
   function describe(genes) {
     const g = normGenes(genesOf(genes)), red = both(g.E, 'e');
     const fmt = (k, dom) => { const p = g[k]; return (p[0] === dom || p[1] !== dom ? p[0] + '/' + p[1] : p[1] + '/' + p[0]); };
-    const lines = [], carriers = [];
-    const hidden = red ? ' (hidden under the red coat)' : '';
+    // one whole sentence per line, so a language can order the words and punctuate (colon, brackets) its own way; {pair} is the allele pair ("B/b")
+    const lines = [], carriers = [], pr = (k, dom) => ({ pair: fmt(k, dom) });
     // B
-    if (both(g.B, 'b')) lines.push(fmt('B', 'B') + ': liver (chocolate) pigment' + hidden + ', amber eyes');
-    else if (has(g.B, 'b')) { lines.push(fmt('B', 'B') + ': black ' + (red ? 'pigment (nose and eye rims)' : 'coat') + ', carries liver'); carriers.push('liver'); }
-    else lines.push(fmt('B', 'B') + ': black ' + (red ? 'pigment (nose and eye rims)' : 'coat'));
+    if (both(g.B, 'b')) {
+      if (red) lines.push(L('mod.genes.line_b_liver_hidden', '{pair}: liver (chocolate) pigment (hidden under the red coat), amber eyes', pr('B', 'B')));
+      else lines.push(L('mod.genes.line_b_liver', '{pair}: liver (chocolate) pigment, amber eyes', pr('B', 'B')));
+    } else if (has(g.B, 'b')) {
+      if (red) lines.push(L('mod.genes.line_b_carry_red', '{pair}: black pigment (nose and eye rims), carries liver', pr('B', 'B')));
+      else lines.push(L('mod.genes.line_b_carry', '{pair}: black coat, carries liver', pr('B', 'B')));
+      carriers.push('liver');
+    } else if (red) lines.push(L('mod.genes.line_b_black_red', '{pair}: black pigment (nose and eye rims)', pr('B', 'B')));
+    else lines.push(L('mod.genes.line_b_black', '{pair}: black coat', pr('B', 'B')));
     // D
-    if (both(g.D, 'd')) lines.push(fmt('D', 'D') + ': dilute, soft colour (' + (red ? 'red becomes cream' : both(g.B, 'b') ? 'liver becomes lilac' : 'black becomes blue') + ')');
-    else if (has(g.D, 'd')) { lines.push(fmt('D', 'D') + ': full colour, carries dilute'); carriers.push('dilute'); }
-    else lines.push(fmt('D', 'D') + ': full colour');
+    if (both(g.D, 'd')) {
+      if (red) lines.push(L('mod.genes.line_d_dilute_red', '{pair}: dilute, soft colour (red becomes cream)', pr('D', 'D')));
+      else if (both(g.B, 'b')) lines.push(L('mod.genes.line_d_dilute_liver', '{pair}: dilute, soft colour (liver becomes lilac)', pr('D', 'D')));
+      else lines.push(L('mod.genes.line_d_dilute_black', '{pair}: dilute, soft colour (black becomes blue)', pr('D', 'D')));
+    }
+    else if (has(g.D, 'd')) { lines.push(L('mod.genes.line_d_carry', '{pair}: full colour, carries dilute', pr('D', 'D'))); carriers.push('dilute'); }
+    else lines.push(L('mod.genes.line_d_full', '{pair}: full colour', pr('D', 'D')));
     // E
-    if (red) lines.push(fmt('E', 'E') + ': red coat (red, gold or fawn by breed)');
-    else if (has(g.E, 'e')) { lines.push(fmt('E', 'E') + ': dark coat, carries red'); carriers.push('red'); }
-    else lines.push(fmt('E', 'E') + ': dark coat, no red gene');
+    if (red) lines.push(L('mod.genes.line_e_red', '{pair}: red coat (red, gold or fawn by breed)', pr('E', 'E')));
+    else if (has(g.E, 'e')) { lines.push(L('mod.genes.line_e_carry', '{pair}: dark coat, carries red', pr('E', 'E'))); carriers.push('red'); }
+    else lines.push(L('mod.genes.line_e_dark', '{pair}: dark coat, no red gene', pr('E', 'E')));
     // S
-    if (both(g.S, 'sp')) lines.push(fmt('S', 'S') + ': piebald, big white patches');
-    else if (has(g.S, 'sp')) { lines.push(fmt('S', 'S') + ': small white markings, carries piebald'); carriers.push('piebald'); }
-    else lines.push(fmt('S', 'S') + ': no extra white');
+    if (both(g.S, 'sp')) lines.push(L('mod.genes.line_s_pied', '{pair}: piebald, big white patches', pr('S', 'S')));
+    else if (has(g.S, 'sp')) { lines.push(L('mod.genes.line_s_carry', '{pair}: small white markings, carries piebald', pr('S', 'S'))); carriers.push('piebald'); }
+    else lines.push(L('mod.genes.line_s_none', '{pair}: no extra white', pr('S', 'S')));
     // M (M/M is never bred, but describe it honestly if handed one)
-    if (both(g.M, 'M')) lines.push('M/M: double merle');
+    if (both(g.M, 'M')) lines.push(L('mod.genes.line_m_double', 'M/M: double merle'));
     else if (has(g.M, 'M')) {
-      if (red) { lines.push(fmt('M', 'M') + ': hidden merle (the red coat hides the marbling)'); carriers.push('merle'); }
-      else lines.push(fmt('M', 'M') + ': merle marbling (never pair with another merle)');
-    } else lines.push(fmt('M', 'M') + ': no merle');
+      if (red) { lines.push(L('mod.genes.line_m_hidden', '{pair}: hidden merle (the red coat hides the marbling)', pr('M', 'M'))); carriers.push('merle'); }
+      else lines.push(L('mod.genes.line_m_merle', '{pair}: merle marbling (never pair with another merle)', pr('M', 'M')));
+    } else lines.push(L('mod.genes.line_m_none', '{pair}: no merle', pr('M', 'M')));
     // Bl
-    if (both(g.Bl, 'Bl')) lines.push(fmt('Bl', 'Bl') + ': blue eyes');
-    else if (has(g.Bl, 'Bl')) lines.push(fmt('Bl', 'Bl') + ': blue eyes (sometimes one blue, one brown)');
-    else lines.push(fmt('Bl', 'Bl') + ': no blue-eye gene');
+    if (both(g.Bl, 'Bl')) lines.push(L('mod.genes.line_bl_blue', '{pair}: blue eyes', pr('Bl', 'Bl')));
+    else if (has(g.Bl, 'Bl')) lines.push(L('mod.genes.line_bl_odd', '{pair}: blue eyes (sometimes one blue, one brown)', pr('Bl', 'Bl')));
+    else lines.push(L('mod.genes.line_bl_none', '{pair}: no blue-eye gene', pr('Bl', 'Bl')));
 
-    const PUP = { liver: 'chocolate', dilute: 'blue', red: 'red', piebald: 'piebald', merle: 'merle' };
-    const list = (a) => (a.length <= 1 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1]);
+    // the hidden genes (carriers keep their ids) and what a puppy could look like, as lists in the current language
+    const CARRY = { liver: () => L('mod.genes.carry_liver', 'liver'), dilute: () => L('mod.genes.carry_dilute', 'dilute'), red: () => L('mod.genes.carry_red', 'red'),
+      piebald: () => L('mod.genes.carry_piebald', 'piebald'), merle: () => L('mod.genes.carry_merle', 'merle') };
+    const PUP = { liver: () => L('mod.genes.pup_liver', 'chocolate'), dilute: () => L('mod.genes.pup_dilute', 'blue'), red: () => L('mod.genes.pup_red', 'red'),
+      piebald: () => L('mod.genes.pup_piebald', 'piebald'), merle: () => L('mod.genes.pup_merle', 'merle') };
+    const word = (T, c) => T[c]();
     const summary = carriers.length
-      ? 'Carries ' + list(carriers) + '. With the right partner, ' + list(carriers.map((c) => PUP[c])).replace(/ and ([^ ]+)$/, ' or $1') + ' puppies are possible.'
-      : 'No hidden surprises: this dog passes on what you see.';
+      ? L('mod.genes.summary_carries', 'Carries {list}. With the right partner, {pups} puppies are possible.',
+        { list: listOf(carriers.map((c) => word(CARRY, c))), pups: listOf(carriers.map((c) => word(PUP, c)), 'disjunction') })
+      : L('mod.genes.summary_none', 'No hidden surprises: this dog passes on what you see.');
     return { lines, carriers, summary };
   }
 
@@ -1189,7 +1325,9 @@
     if (f.M <= 0) out.M = 1;
     return out;
   }
-  const FOREIGN_WORDS = { b: 'chocolate', B: 'black', d: 'dilute', D: 'full-colour', e: 'red', E: 'dark-coat', sp: 'spotting', S: 'solid-coat', M: 'merle' };
+  const FOREIGN_WORDS = { b: () => L('mod.genes.foreign_chocolate', 'chocolate'), B: () => L('mod.genes.foreign_black', 'black'), d: () => L('mod.genes.foreign_dilute', 'dilute'),
+    D: () => L('mod.genes.foreign_full_colour', 'full-colour'), e: () => L('mod.genes.foreign_red', 'red'), E: () => L('mod.genes.foreign_dark_coat', 'dark-coat'),
+    sp: () => L('mod.genes.foreign_spotting', 'spotting'), S: () => L('mod.genes.foreign_solid_coat', 'solid-coat'), M: () => L('mod.genes.foreign_merle', 'merle') };
   const FOREIGN_ORDER = ['E', 'e', 'B', 'b', 'D', 'd', 'S', 'sp', 'M'];
   const ALL_PAIRS = { B: [['B', 'B'], ['B', 'b'], ['b', 'b']], D: [['D', 'D'], ['D', 'd'], ['d', 'd']], E: [['E', 'E'], ['E', 'e'], ['e', 'e']], S: [['S', 'S'], ['S', 'sp'], ['sp', 'sp']], M: [['m', 'm'], ['M', 'm']] };
   const allCatalogCache = {};
@@ -1212,15 +1350,9 @@
       }
       ALL_PAIRS[loci[i]].forEach((p) => { g[loci[i]] = p; rec(i + 1, g); });
     })(0, {});
-    const words = (l) => { const w = l.map((a) => FOREIGN_WORDS[a]); return w.length <= 1 ? w.join('') : w.slice(0, -1).join(', ') + ' and ' + w[w.length - 1]; };
     allCatalogCache[breed] = Object.keys(best)
       .sort((x, y) => best[x].length - best[y].length || (x < y ? -1 : 1))
-      .map((name) => {
-        const l = best[name];
-        let how = 'Only from a mix parent' + (l.length ? ' with ' + words(l) + ' genes.' : '.');
-        if (l.indexOf('M') >= 0) how += ' Never pair two merles.';
-        return { coat: name, rare: true, how, extra: true };
-      });
+      .map((name) => ({ coat: name, rare: true, need: best[name], extra: true })); // the hint text is made when asked for (hintExtra), in the current language
     return allCatalogCache[breed];
   }
   /**
@@ -1228,10 +1360,17 @@
    * phenotype() can give this body breed from ANY genotype (a mix puppy), flagged extra: true with a how hint
    * like 'Only from a mix parent with merle genes.'. Without { all: true } it is exactly the v2 coatCatalog.
    */
+  function hintExtra(l) {
+    const words = l.map((a) => FOREIGN_WORDS[a]());
+    let how = l.length ? L('mod.genes.how_mix_with', 'Only from a mix parent with {genes} genes.', { genes: listOf(words) }) : L('mod.genes.how_mix_only', 'Only from a mix parent.');
+    if (l.indexOf('M') >= 0) how = L('mod.genes.how_mix_merle', '{how} Never pair two merles.', { how });
+    return how;
+  }
   function coatCatalogV21(breedKey, opts) {
     const base = coatCatalog(breedKey);
     if (!opts || !opts.all) return base;
-    return base.concat(extraCoats(breedOf(breedKey)).map((e) => ({ coat: e.coat, rare: e.rare, how: e.how, extra: true })));
+    const breed = breedOf(breedKey);
+    return base.concat(extraCoats(breed).map((e) => ({ coat: e.coat, rare: e.rare, how: hintExtra(e.need), extra: true })));
   }
 
   /* ---------- ancestry ---------- */
@@ -1340,24 +1479,26 @@
     const breeds = Object.keys(a).map((k) => [k, a[k]]).sort((x, y) => y[1] - x[1] || BREEDS.indexOf(x[0]) - BREEDS.indexOf(y[0]));
     const nm = (k) => BREED_NAMES[k];
     const top = breeds[0], family = nm(top[0]) + ' family mix';
+    // name, kind and breeds stay English (the game keeps them); label is the line shown to the player, in the current language
     const res = (kind, name, label) => ({ kind, name, label, breeds: breeds.map((b) => [b[0], b[1]]) });
-    if (breeds.filter((b) => AT(b[1], 0.125)).length >= 4) return res('everything', 'The Everything Dog', 'The Everything Dog: yes.');
+    const familyLabel = () => L('mod.genes.label_family', '{breed} family mix', { breed: bn(top[0]) });
+    if (breeds.filter((b) => AT(b[1], 0.125)).length >= 4) return res('everything', 'The Everything Dog', L('mod.genes.label_everything', 'The Everything Dog: yes.'));
     const big = breeds.filter((b) => AT(b[1], 0.25));
     if (big.length >= 3) {
       const three = big.slice(0, 3).map((b) => b[0]);
       const r = GRAND_RECIPES.find((g) => g.breeds.every((k) => three.indexOf(k) >= 0));
-      if (r) return res('grand', r.name, r.name + ': ' + r.breeds.map(nm).join(' + '));
-      return res('family', family, family);
+      if (r) return res('grand', r.name, L('mod.genes.label_grand', '{name}: {a} + {b} + {c}', { name: D('grand_recipes.' + idOf(r.name) + '.name', r.name), a: bn(r.breeds[0]), b: bn(r.breeds[1]), c: bn(r.breeds[2]) }));
+      return res('family', family, familyLabel());
     }
     if (AT(top[1], 0.75)) {
-      const rest = breeds.slice(1).filter((b) => fracText(b[1]) !== '0').map((b) => fracText(b[1]) + ' ' + nm(b[0]));
-      return res('breed', nm(top[0]), [nm(top[0])].concat(rest).join(', '));
+      const rest = breeds.slice(1).filter((b) => fracText(b[1]) !== '0').map((b) => L('mod.genes.label_rest', '{frac} {breed}', { frac: fracText(b[1]), breed: bn(b[0]) }));
+      return res('breed', nm(top[0]), commaJoin([bn(top[0])].concat(rest)));
     }
     if (big.length >= 2) {
       const m = MIXES[mixKey(big[0][0], big[1][0])];
-      return res('mix', m.name, m.name + ': ' + nm(big[0][0]) + ' × ' + nm(big[1][0]));
+      return res('mix', m.name, L('mod.genes.label_mix', '{name}: {a} × {b}', { name: mixLabel(m.name), a: bn(big[0][0]), b: bn(big[1][0]) }));
     }
-    return res('family', family, family);
+    return res('family', family, familyLabel());
   }
 
   /* ---------- Sparkle odds ---------- */
@@ -1374,23 +1515,26 @@
     o = o || {};
     const base = typeof o.base === 'number' && o.base > 0 ? o.base : 1 / 512;
     const parts = [];
-    if (o.stone) parts.push({ label: 'Sparkle Stone', x: 4 });
+    if (o.stone) parts.push({ label: L('mod.genes.sparkle_stone', 'Sparkle Stone'), x: 4 });
     const sp = Math.max(0, Math.min(2, Math.floor(Number(o.sparkleParents) || 0)));
-    if (sp === 1) parts.push({ label: 'Sparkle parent', x: 1.5 });
-    else if (sp === 2) parts.push({ label: '2 Sparkle parents', x: 2.25 });
+    if (sp === 1) parts.push({ label: L('mod.genes.sparkle_parent', 'Sparkle parent'), x: 1.5 });
+    else if (sp === 2) parts.push({ label: L('mod.genes.sparkle_parents_2', '2 Sparkle parents'), x: 2.25 });
     const ba = bondLv(o.bondA), bb = bondLv(o.bondB);
-    if (ba >= 10 && bb >= 10) parts.push({ label: 'Bond 10', x: 2 });
-    else if (ba >= 8 && bb >= 8) parts.push({ label: 'Bond 8+', x: 1.5 });
+    if (ba >= 10 && bb >= 10) parts.push({ label: L('mod.genes.sparkle_bond_10', 'Bond 10'), x: 2 });
+    else if (ba >= 8 && bb >= 8) parts.push({ label: L('mod.genes.sparkle_bond_8', 'Bond 8+'), x: 1.5 });
     const mult = parts.reduce((m, q) => m * q.x, 1);
     const p = Math.min(1, base * mult);
-    const odds = p >= 1 ? 'Every puppy' : '1 in ' + Math.max(1, Math.round(1 / p));
-    const text = parts.length ? odds + ' today: ' + parts.map((q) => q.label + ' ×' + multText(q.x)).join(', ') : odds;
+    const odds = p >= 1 ? L('mod.genes.sparkle_every', 'Every puppy') : L('mod.genes.sparkle_1_in', '1 in {n}', { n: String(Math.max(1, Math.round(1 / p))) });
+    const text = parts.length
+      ? L('mod.genes.sparkle_today', '{odds} today: {parts}', { odds, parts: commaJoin(parts.map((q) => L('mod.genes.sparkle_part', '{label} ×{x}', { label: q.label, x: multText(q.x) }))) })
+      : odds;
     return { p, mult, parts, text };
   }
 
   const api = { LOCI, LOCUS_KEYS, BREEDS, SIZE, STARTER_GENES, SHADES, FREQ, WORDS, WHITE_MARKED, phenotype, pigment, randomGenotype, inherit, isDoubleMerle, related,
     BREED_NAMES, MIXES, mixKey, mixOf, predict, coatCatalog: coatCatalogV21, describe,
-    ancestry, grandMix, sparkleOdds, fracText, GRAND_RECIPES };
+    ancestry, grandMix, sparkleOdds, fracText, GRAND_RECIPES,
+    coatLabel, mixLabel, mixName, breedLabel: bn }; // v2.14: display helpers (the returned data stays English)
   root.PawGenes = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
