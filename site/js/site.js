@@ -1,7 +1,9 @@
 // doodledoggo.app v2: the live Shelter Playroom on the home page, the seasonal leaves and the Mt. Fuji Lookout season.
+// Site v3 (every page): falling momiji behind the paper (sakura mixed in in spring), crayon dogs peeking round the paper sheet and a few still
+// momiji in the margins (#deco), never over text; a wiggle on the /dogs pictures.
 // Plain JS, no libraries, no requests beyond the site's own art (site/img/art, made by tools/site_art.js from the game's art).
 // World units are the game's playroom: 1000 x 600, feet y 450..596 (SR_ROOM.floor in game/src/30_shelter.js).
-// prefers-reduced-motion: no animation at all (the static scene in the HTML stays, no leaves).
+// prefers-reduced-motion: no animation at all (the static scene in the HTML stays, no falling leaves, the peeking dogs just sit there).
 (function () {
   'use strict';
   var motion = !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -18,17 +20,85 @@
   var fuji = document.getElementById('fujiImg');
   if (fuji && season !== 'autumn') fuji.src = '/img/art/fuji-' + season + '.webp';
 
-  // ---- a few falling momiji (autumn) or sakura (spring); they fall a few times, then stop
+  var sheet = document.querySelector('.sheet'), root = document.documentElement;
+  // the side gutters: the desk to the left and right of the paper sheet (px); decoration lives there, behind the sheet's edge, or nowhere
+  var gutter = function () { if (!sheet) return 0; var r = sheet.getBoundingClientRect(); return Math.max(0, Math.min(r.left, root.clientWidth - r.right)); };
+
+  // ---- a few falling momiji (every season; spring mixes in sakura). They fall behind the paper (site/style.css z-index), through the gutters where
+  // there is room, a few times, then stop
   var petals = document.getElementById('petals');
-  if (petals && motion && (season === 'autumn' || season === 'spring')) {
+  if (petals && motion) {
+    var g0 = gutter(), W0 = root.clientWidth;
     for (var i = 0, n = phone ? 4 : 7; i < n; i++) {
       var p = document.createElement('img');
-      p.className = 'petal'; p.alt = ''; p.src = '/img/art/' + (season === 'autumn' ? 'momiji' : 'sakura') + '.svg';
-      var sz = rnd(16, 26);
-      p.style.cssText = 'left:' + rnd(2, 94).toFixed(1) + '%;width:' + sz.toFixed(0) + 'px;height:' + sz.toFixed(0) + 'px;animation-duration:' + rnd(13, 22).toFixed(1) + 's;animation-delay:' + rnd(0, 12).toFixed(1) + 's;animation-iteration-count:' + (2 + (i % 2));
+      p.className = 'petal'; p.alt = ''; p.src = '/img/art/' + (season === 'spring' && i % 2 ? 'sakura' : 'momiji') + '.svg';
+      var sz = rnd(16, 26), x = g0 >= 60 ? (i % 2 ? rnd(4, g0 - sz - 30) : W0 - g0 + rnd(4, g0 - sz - 30)) : rnd(0.02, 0.94) * W0;
+      p.style.cssText = 'left:' + x.toFixed(0) + 'px;width:' + sz.toFixed(0) + 'px;height:' + sz.toFixed(0) + 'px;animation-duration:' + rnd(13, 22).toFixed(1) + 's;animation-delay:' + rnd(0, 12).toFixed(1) + 's;animation-iteration-count:' + (2 + (i % 2));
       petals.appendChild(p);
     }
   }
+
+  // ---- the decoration (#deco, behind the sheet): crayon dogs peeking round the paper and still momiji in the margins.
+  // Wide gutters (desktop): heads lean out from behind the sheet's left and right edges, two to five down the page. Narrow (phones): one small head
+  // peeks up from the bottom edge of the page, under the footer, where there is no text; two leaves tucked under the sheet's edges.
+  var PEEKS = ['dachs', 'shiba', 'corgi', 'golden', 'pug', 'samoyed', 'beagle', 'husky', 'frenchie', 'chihuahua'];
+  var deco = document.getElementById('deco'), items = [], wide = null;
+  function decoBuild() {
+    deco.textContent = ''; items = []; wide = gutter() >= 84;
+    var r = sheet.getBoundingClientRect(), keys = PEEKS.slice().sort(function () { return Math.random() - 0.5; });
+    var n = wide ? Math.max(2, Math.min(5, Math.round(r.height / 650))) : 1, side = Math.random() < 0.5 ? -1 : 1;
+    for (var i = 0; i < n; i++) {
+      var im = document.createElement('img'); im.className = 'peek' + (wide ? '' : ' pb'); im.alt = ''; im.src = '/img/art/peek/' + keys[i] + '.svg'; im.width = 100; im.height = 100;
+      var it = { el: im, kind: wide ? 'side' : 'bottom', side: side, at: (i + 0.5) / n + rnd(-0.12, 0.12) / n, rot: wide ? side * rnd(10, 20) : rnd(-6, 6) };
+      im.style.setProperty('--r', it.rot.toFixed(1) + 'deg'); im.style.setProperty('--d', (0.6 + i * 0.5 + rnd(0, 0.6)).toFixed(2) + 's');
+      im.style.setProperty('--hx', wide ? (side < 0 ? '62%' : '-62%') : '0px'); im.style.setProperty('--hy', wide ? '0px' : '70%');
+      deco.appendChild(im); items.push(it); side = -side;
+    }
+    for (var j = 0, m = wide ? 4 : 2; j < m; j++) {
+      var lf = document.createElement('img'); lf.className = 'leaf'; lf.alt = ''; lf.src = '/img/art/momiji.svg'; lf.width = 32; lf.height = 32;
+      var lt = { el: lf, kind: 'leaf', side: j % 2 ? 1 : -1, at: wide ? (j + rnd(0.25, 0.75)) / m : rnd(0.15, 0.85), tuck: !wide || Math.random() < 0.5, out: rnd(0.15, 0.8), size: wide ? rnd(22, 32) : 22 };
+      lf.style.setProperty('--r', rnd(-70, 70).toFixed(0) + 'deg'); lf.style.width = lf.style.height = lt.size.toFixed(0) + 'px';
+      deco.appendChild(lf); items.push(lt);
+    }
+    decoPlace();
+  }
+  function decoPlace() {
+    var r = sheet.getBoundingClientRect(), sy = window.scrollY || 0, top = r.top + sy, H = r.height, docH = document.body.offsetHeight, foot = document.querySelector('.foot');
+    var footBottom = foot ? foot.getBoundingClientRect().bottom + sy : 0;
+    var peeks = items.filter(function (x) { return x.kind === 'side'; }).map(function (x) { return top + 140 + x.at * Math.max(0, H - 300); });
+    items.forEach(function (it) {
+      var e = it.el, x, y, s;
+      if (it.kind === 'side') {
+        s = Math.max(72, Math.min(110, gutter() * 0.9)); y = top + 140 + it.at * Math.max(0, H - 300) - s / 2;
+        x = it.side < 0 ? r.left - s * 0.62 : r.right - s * 0.38;
+      } else if (it.kind === 'bottom') { // the bottom of the page, under the footer; only when nothing is there
+        s = 64; y = docH - s * 0.6; x = root.clientWidth - s - 22;
+        e.hidden = y < footBottom + 4;
+      } else { // a leaf: tucked under the sheet's edge, or loose in a wide gutter, away from the peeking heads
+        s = it.size; y = top + 60 + it.at * Math.max(0, H - 120);
+        for (var k = 0; k < peeks.length; k++) if (Math.abs(peeks[k] - y) < 90) y = peeks[k] + (y < peeks[k] ? -95 : 95);
+        var g = gutter();
+        x = it.tuck ? (it.side < 0 ? r.left - s * 0.55 : r.right - s * 0.45) : (it.side < 0 ? r.left - s - 6 - it.out * Math.max(0, g - s - 16) : r.right + 6 + it.out * Math.max(0, g - s - 16));
+      }
+      e.style.width = e.style.height = s.toFixed(0) + 'px'; e.style.left = x.toFixed(0) + 'px'; e.style.top = y.toFixed(0) + 'px';
+    });
+  }
+  if (deco && sheet) {
+    var lastW = 0, tid = 0;
+    var relayout = function () { var w = root.clientWidth; if (w !== lastW) { lastW = w; if ((gutter() >= 84) !== wide) decoBuild(); else decoPlace(); } else decoPlace(); };
+    var start = function () { lastW = root.clientWidth; decoBuild(); };
+    if (document.readyState === 'complete') start(); else window.addEventListener('load', start);
+    window.addEventListener('resize', function () { clearTimeout(tid); tid = setTimeout(relayout, 150); });
+    if ('ResizeObserver' in window) new ResizeObserver(function () { if (items.length) decoPlace(); }).observe(document.body);
+  }
+
+  // ---- /dogs: a tap on a dog's picture makes it wiggle (hover does it too, site/style.css); not with reduced motion
+  if (motion) document.addEventListener('click', function (e) {
+    var pic = e.target.closest && e.target.closest('.pics, .dognav a img, .dcard .dimg, .abdog');
+    if (!pic) return;
+    pic.classList.remove('wig'); void pic.offsetWidth; pic.classList.add('wig');
+    setTimeout(function () { pic.classList.remove('wig'); }, 700);
+  });
 
   // ---- the live playroom
   var scene = document.getElementById('scene'), stage = document.getElementById('stage');

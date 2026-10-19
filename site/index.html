@@ -10,14 +10,14 @@
 <meta name="twitter:card" content="summary_large_image">
 <script>(function(){var H='en',P='/',K='dd_lang',L={'ja':1,'zh-hans':1,'zh-hant':1,'ko':1,'es':1,'pt-br':1,'fr':1,'de':1,'th':1,'id':1},s=null,d=document;try{s=window.localStorage;s.getItem(K)}catch(e){s=null}d.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[data-lang]');if(a){if(location.hash)a.href=a.href.split('#')[0]+location.hash;if(s)try{s.setItem(K,a.getAttribute('data-lang'))}catch(x){}}var m=d.getElementById('langs');if(m&&m.open&&!m.contains(e.target))m.open=false});if(H!=='en'||!s)return;var v=null;try{v=s.getItem(K);if(!v){s.setItem(K+'_t','1');s.removeItem(K+'_t')}}catch(e){return}if(/bot|crawl|spider|slurp|preview|lighthouse/i.test(navigator.userAgent))return;try{if(d.referrer&&new URL(d.referrer).host===location.host)return}catch(e){}if(v){if(v!=='en'&&L[v]===1)location.replace('/'+v+P+location.hash);return}var a=navigator.languages&&navigator.languages.length?navigator.languages:[navigator.language||''];for(var i=0;i<a.length;i++){var t=String(a[i]).toLowerCase().replace(/_/g,'-'),b=t.split('-')[0];if(b==='en')return;if(b==='zh')b=/^zh-(hant|tw|hk|mo)(-|$)/.test(t)?'zh-hant':'zh-hans';else if(b==='pt')b='pt-br';else if(b==='in')b='id';if(L[b]){location.replace('/'+b+P+location.hash);return}}})();</script>
 </head><body>
+<div class="deco" id="deco" aria-hidden="true"></div>
+<header class="sitehead" id="sitehead"><a class="brand" href="/"><img src="/doodle-doggo-logo.svg" alt="Doodle Doggo" width="900" height="280"></a><nav class="sitenav" id="sitenav" aria-label="Pages"><a data-page="home" href="/" aria-current="page">Home</a><a data-page="dogs" href="/dogs">Dogs</a><a data-page="map" href="/map">Map</a><a data-page="about" href="/about">About Us</a></nav><details class="langs" id="langs"><summary aria-label="Language: English"><span aria-hidden="true">🌐</span> <span lang="en">English</span></summary><nav aria-label="Choose a language"><ul><li><a href="/ja/" hreflang="ja" lang="ja" data-lang="ja">日本語</a></li><li><a href="/zh-hans/" hreflang="zh-Hans" lang="zh-Hans" data-lang="zh-hans">简体中文</a></li><li><a href="/zh-hant/" hreflang="zh-Hant" lang="zh-Hant" data-lang="zh-hant">繁體中文</a></li><li><a href="/ko/" hreflang="ko" lang="ko" data-lang="ko">한국어</a></li><li><a href="/es/" hreflang="es" lang="es" data-lang="es">Español</a></li><li><a href="/pt-br/" hreflang="pt-BR" lang="pt-BR" data-lang="pt-br">Português (Brasil)</a></li><li><a href="/fr/" hreflang="fr" lang="fr" data-lang="fr">Français</a></li><li><a href="/de/" hreflang="de" lang="de" data-lang="de">Deutsch</a></li><li><a href="/th/" hreflang="th" lang="th" data-lang="th">ไทย</a></li><li><a href="/id/" hreflang="id" lang="id" data-lang="id">Bahasa Indonesia</a></li><li><a href="/" hreflang="en" lang="en" data-lang="en" aria-current="true">English</a></li></ul></nav></details></header>
 <main class="page">
-  <div class="langbar"><details class="langs" id="langs"><summary aria-label="Language: English"><span aria-hidden="true">🌐</span> <span lang="en">English</span></summary><nav aria-label="Choose a language"><ul><li><a href="/ja/" hreflang="ja" lang="ja" data-lang="ja">日本語</a></li><li><a href="/zh-hans/" hreflang="zh-Hans" lang="zh-Hans" data-lang="zh-hans">简体中文</a></li><li><a href="/zh-hant/" hreflang="zh-Hant" lang="zh-Hant" data-lang="zh-hant">繁體中文</a></li><li><a href="/ko/" hreflang="ko" lang="ko" data-lang="ko">한국어</a></li><li><a href="/es/" hreflang="es" lang="es" data-lang="es">Español</a></li><li><a href="/pt-br/" hreflang="pt-BR" lang="pt-BR" data-lang="pt-br">Português (Brasil)</a></li><li><a href="/fr/" hreflang="fr" lang="fr" data-lang="fr">Français</a></li><li><a href="/de/" hreflang="de" lang="de" data-lang="de">Deutsch</a></li><li><a href="/th/" hreflang="th" lang="th" data-lang="th">ไทย</a></li><li><a href="/id/" hreflang="id" lang="id" data-lang="id">Bahasa Indonesia</a></li><li><a href="/" hreflang="en" lang="en" data-lang="en" aria-current="true">English</a></li></ul></nav></details></div>
   <div class="sheet">
-    <header class="top">
+    <div class="top">
       <h1 class="h1logo"><img class="logo" src="/doodle-doggo-logo.svg" alt="Doodle Doggo" width="900" height="280"></h1>
       <p class="tag">🖍️ Adopt a wobbly crayon pup to love</p>
-      <nav class="nav" aria-label="On this site"><a href="#dogs">Meet the dogs</a><a href="#japan">Dogs in Japan</a><a href="/dogs">All profiles</a></nav>
-    </header>
+    </div>
 
     <section class="playroom" aria-label="The Shelter Playroom, live">
       <div class="scene" id="scene">
@@ -40,10 +40,10 @@
       </div>
     </section>
 
-    <div class="cta big">
-      <a class="play" id="play" href="https://an9ou.itch.io/doodle-doggo">PLAY AT ITCH.IO</a>
-      <span class="hanko" lang="ja" title="muryō: free">無料</span>
-      <p class="small">Free (<span lang="ja" class="jp">無料</span> <i>muryō</i>). Plays in your browser on a computer or a phone. No ads.</p>
+    <div class="getit">
+      <div class="itchbox" id="itchbox"><iframe id="itch" src="https://itch.io/embed/5163381?bg_color=fffbf3&fg_color=5b3d32&link_color=c93a2a&border_color=5b3d32" width="552" height="167" frameborder="0" title="Doodle Doggo on itch.io" loading="lazy"><a href="https://an9ou.itch.io/doodle-doggo">Play Doodle Doggo on itch.io</a></iframe></div>
+      <p class="itchalt"><a id="itchlink" href="https://an9ou.itch.io/doodle-doggo">Play Doodle Doggo on itch.io <span aria-hidden="true">→</span></a></p>
+      <p class="free"><span class="hanko" lang="ja" title="muryō: free">無料</span><span class="small">Free (<span lang="ja" class="jp">無料</span> <i>muryō</i>). Plays in your browser on a computer or a phone. No ads.</span></p>
     </div>
 
     <p class="intro">Doodle Doggo is a cozy dog game in a pencil sketchbook. Adopt a deliberately crude crayon dog, care for them, walk them around a little town under Mt. Fuji, grow a garden, cook dog-safe treats and invite friends over for puppy playdates. Nothing bad ever happens.</p>
@@ -51,8 +51,12 @@
     <section id="dogs" class="sec">
       <h2>Meet the dogs <span class="jpw"><span lang="ja">犬</span> <i>inu</i> = dog</span></h2>
       <p>Thirty-five wobbly friends, each with a personality of their own. Tap a dog for the full profile.</p>
-      <ul class="cards">
+      <ul class="cards featured">
 <!-- dogs:cards -->
+<li><a class="dcard" href="/dogs#dachs" id="card-dachs">
+  <img class="dimg" src="/img/art/dogs/dachs-still.svg" alt="Noodle the Dachshund, a wobbly crayon dog" width="240" height="200" loading="lazy">
+  <span class="dname" style="--n:2.7">Noodle</span><span class="dtype">the Dachshund <span class="jp" lang="ja">ダックスフンド</span></span>
+  <span class="dquote">“The rest of me is on its way.”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
 <li><a class="dcard" href="/dogs#shiba" id="card-shiba">
   <img class="dimg" src="/img/art/dogs/shiba-still.svg" alt="Mochi the Shiba Inu, a wobbly crayon dog" width="240" height="200" loading="lazy">
   <span class="dname" style="--n:2.25">Mochi</span><span class="dtype">the Shiba Inu <span class="jp" lang="ja">柴犬</span></span>
@@ -65,138 +69,26 @@
   <img class="dimg" src="/img/art/dogs/golden-still.svg" alt="Sunny the Golden Retriever, a wobbly crayon dog" width="240" height="200" loading="lazy">
   <span class="dname" style="--n:2.25">Sunny</span><span class="dtype">the Golden Retriever <span class="jp" lang="ja">ゴールデンレトリバー</span></span>
   <span class="dquote">“I love you. Who are you?”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
-<li><a class="dcard" href="/dogs#dachs" id="card-dachs">
-  <img class="dimg" src="/img/art/dogs/dachs-still.svg" alt="Noodle the Dachshund, a wobbly crayon dog" width="240" height="200" loading="lazy">
-  <span class="dname" style="--n:2.7">Noodle</span><span class="dtype">the Dachshund <span class="jp" lang="ja">ダックスフンド</span></span>
-  <span class="dquote">“The rest of me is on its way.”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
-<li><a class="dcard" href="/dogs#husky" id="card-husky">
-  <img class="dimg" src="/img/art/dogs/husky-still.svg" alt="Frost the Husky, a wobbly crayon dog" width="240" height="200" loading="lazy">
-  <span class="dname" style="--n:2.25">Frost</span><span class="dtype">the Husky <span class="jp" lang="ja">ハスキー</span></span>
-  <span class="dquote">“AWOOO.”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
-<li><a class="dcard" href="/dogs#mutt" id="card-mutt">
-  <img class="dimg" src="/img/art/dogs/mutt-still.svg" alt="Pepper the Shelter Mutt, a wobbly crayon dog" width="240" height="200" loading="lazy">
-  <span class="dname" style="--n:2.7">Pepper</span><span class="dtype">the Shelter Mutt <span class="jp" lang="ja">ミックス犬</span></span>
-  <span class="dquote">“Hi. Can I come home with you?”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
-<li><a class="dcard" href="/dogs#chihuahua" id="card-chihuahua">
-  <img class="dimg" src="/img/art/dogs/chihuahua-still.svg" alt="Peanut the Chihuahua, a wobbly crayon dog" width="240" height="200" loading="lazy">
-  <span class="dname" style="--n:2.7">Peanut</span><span class="dtype">the Chihuahua <span class="jp" lang="ja">チワワ</span></span>
-  <span class="dquote">“I am the security system.”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
 <li><a class="dcard" href="/dogs#pug" id="card-pug">
   <img class="dimg" src="/img/art/dogs/pug-still.svg" alt="Dumpling the Pug, a wobbly crayon dog" width="240" height="200" loading="lazy">
   <span class="dname" style="--n:3.6">Dump&shy;ling</span><span class="dtype">the Pug <span class="jp" lang="ja">パグ</span></span>
   <span class="dquote">“snort.”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
-<li><a class="dcard" href="/dogs#greyhound" id="card-greyhound">
-  <img class="dimg" src="/img/art/dogs/greyhound-still.svg" alt="Rocket the Greyhound, a wobbly crayon dog" width="240" height="200" loading="lazy">
-  <span class="dname" style="--n:2.7">Rocket</span><span class="dtype">the Greyhound <span class="jp" lang="ja">グレイハウンド</span></span>
-  <span class="dquote">“45 mph. Then a 20-hour nap.”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
-<li><a class="dcard" href="/dogs#beagle" id="card-beagle">
-  <img class="dimg" src="/img/art/dogs/beagle-still.svg" alt="Bagel the Beagle, a wobbly crayon dog" width="240" height="200" loading="lazy">
-  <span class="dname" style="--n:2.25">Bagel</span><span class="dtype">the Beagle <span class="jp" lang="ja">ビーグル</span></span>
-  <span class="dquote">“Smelled that from three streets away.”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
-<li><a class="dcard" href="/dogs#poodle" id="card-poodle">
-  <img class="dimg" src="/img/art/dogs/poodle-still.svg" alt="Pretzel the Miniature Poodle, a wobbly crayon dog" width="240" height="200" loading="lazy">
-  <span class="dname" style="--n:3.15">Pretzel</span><span class="dtype">the Miniature Poodle <span class="jp" lang="ja">ミニチュア・プードル</span></span>
-  <span class="dquote">“Haircut optional. Dignity not.”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
-<li><a class="dcard" href="/dogs#collie" id="card-collie">
-  <img class="dimg" src="/img/art/dogs/collie-still.svg" alt="Scout the Border Collie, a wobbly crayon dog" width="240" height="200" loading="lazy">
-  <span class="dname" style="--n:2.25">Scout</span><span class="dtype">the Border Collie <span class="jp" lang="ja">ボーダーコリー</span></span>
-  <span class="dquote">“Will herd the puppies, the ducks and the furniture.”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
 <li><a class="dcard" href="/dogs#samoyed" id="card-samoyed">
   <img class="dimg" src="/img/art/dogs/samoyed-still.svg" alt="Cloud the Samoyed, a wobbly crayon dog" width="240" height="200" loading="lazy">
   <span class="dname" style="--n:2.25">Cloud</span><span class="dtype">the Samoyed <span class="jp" lang="ja">サモエド</span></span>
   <span class="dquote">“Sheds a second dog every spring.”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
-<li><a class="dcard" href="/dogs#frenchie" id="card-frenchie">
-  <img class="dimg" src="/img/art/dogs/frenchie-still.svg" alt="Brioche the French Bulldog, a wobbly crayon dog" width="240" height="200" loading="lazy">
-  <span class="dname" style="--n:3.15">Brioche</span><span class="dtype">the French Bulldog <span class="jp" lang="ja">フレンチブルドッグ</span></span>
-  <span class="dquote">“Sofa. Cushion. Your foot. All good seats.”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
-<li><a class="dcard" href="/dogs#akita" id="card-akita">
-  <img class="dimg" src="/img/art/dogs/akita-still.svg" alt="Kuma the Akita, a wobbly crayon dog" width="240" height="200" loading="lazy">
-  <span class="dname" style="--n:1.8">Kuma</span><span class="dtype">the Akita <span class="jp" lang="ja">秋田犬</span></span>
-  <span class="dquote">“I will wait for you. I am very good at waiting.”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
-<li><a class="dcard" href="/dogs#spitz" id="card-spitz">
-  <img class="dimg" src="/img/art/dogs/spitz-still.svg" alt="Daifuku the Japanese Spitz, a wobbly crayon dog" width="240" height="200" loading="lazy">
-  <span class="dname" style="--n:3.15">Daifuku</span><span class="dtype">the Japanese Spitz <span class="jp" lang="ja">日本スピッツ</span></span>
-  <span class="dquote">“Yes, I am this white on purpose. Look at me.”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
-<li><a class="dcard" href="/dogs#pom" id="card-pom">
-  <img class="dimg" src="/img/art/dogs/pom-still.svg" alt="Mikan the Pomeranian, a wobbly crayon dog" width="240" height="200" loading="lazy">
-  <span class="dname" style="--n:2.25">Mikan</span><span class="dtype">the Pomeranian <span class="jp" lang="ja">ポメラニアン</span></span>
-  <span class="dquote">“Yip! That was my indoor voice.”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
-<li><a class="dcard" href="/dogs#afghan" id="card-afghan">
-  <img class="dimg" src="/img/art/dogs/afghan-still.svg" alt="Saffron the Afghan Hound, a wobbly crayon dog" width="240" height="200" loading="lazy">
-  <span class="dname" style="--n:3.15">Saffron</span><span class="dtype">the Afghan Hound <span class="jp" lang="ja">アフガン・ハウンド</span></span>
-  <span class="dquote">“I do not fetch. I glide.”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
-<li><a class="dcard" href="/dogs#dane" id="card-dane">
-  <img class="dimg" src="/img/art/dogs/dane-still.svg" alt="Waffle the Great Dane, a wobbly crayon dog" width="240" height="200" loading="lazy">
-  <span class="dname" style="--n:2.7">Waffle</span><span class="dtype">the Great Dane <span class="jp" lang="ja">グレート・デーン</span></span>
-  <span class="dquote">“I am a lap dog. Your lap is just too small.”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
-<li><a class="dcard" href="/dogs#mastiff" id="card-mastiff">
-  <img class="dimg" src="/img/art/dogs/mastiff-still.svg" alt="Crumpet the English Mastiff, a wobbly crayon dog" width="240" height="200" loading="lazy">
-  <span class="dname" style="--n:3.15">Crumpet</span><span class="dtype">the English Mastiff <span class="jp" lang="ja">イングリッシュ・マスティフ</span></span>
-  <span class="dquote">“A little drool is how I say I love you.”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
-<li><a class="dcard" href="/dogs#gsd" id="card-gsd">
-  <img class="dimg" src="/img/art/dogs/gsd-still.svg" alt="Strudel the German Shepherd, a wobbly crayon dog" width="240" height="200" loading="lazy">
-  <span class="dname" style="--n:3.15">Strudel</span><span class="dtype">the German Shepherd <span class="jp" lang="ja">ジャーマン・シェパード</span></span>
-  <span class="dquote">“Ears up. On duty. Was that a squirrel?”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
-<li><a class="dcard" href="/dogs#dobie" id="card-dobie">
-  <img class="dimg" src="/img/art/dogs/dobie-still.svg" alt="Espresso the Doberman, a wobbly crayon dog" width="240" height="200" loading="lazy">
-  <span class="dname" style="--n:3.6">Es&shy;presso</span><span class="dtype">the Doberman <span class="jp" lang="ja">ドーベルマン</span></span>
-  <span class="dquote">“I am on guard. Please guard me with a blanket.”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
-<li><a class="dcard" href="/dogs#corso" id="card-corso">
-  <img class="dimg" src="/img/art/dogs/corso-still.svg" alt="Cannoli the Cane Corso, a wobbly crayon dog" width="240" height="200" loading="lazy">
-  <span class="dname" style="--n:3.15">Cannoli</span><span class="dtype">the Cane Corso <span class="jp" lang="ja">カネ・コルソ</span></span>
-  <span class="dquote">“I am very serious. Except when you scratch my ears.”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
-<li><a class="dcard" href="/dogs#pitbull" id="card-pitbull">
-  <img class="dimg" src="/img/art/dogs/pitbull-still.svg" alt="Peaches the Pit Bull, a wobbly crayon dog" width="240" height="200" loading="lazy">
-  <span class="dname" style="--n:3.15">Peaches</span><span class="dtype">the Pit Bull <span class="jp" lang="ja">ピット・ブル</span></span>
-  <span class="dquote">“My whole back half wags. I cannot stop it.”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
-<li><a class="dcard" href="/dogs#minpin" id="card-minpin">
-  <img class="dimg" src="/img/art/dogs/minpin-still.svg" alt="Jellybean the Miniature Pinscher, a wobbly crayon dog" width="240" height="200" loading="lazy">
-  <span class="dname" style="--n:4.05">Jelly&shy;bean</span><span class="dtype">the Miniature Pinscher <span class="jp" lang="ja">ミニチュア・ピンシャー</span></span>
-  <span class="dquote">“I am not small. Everything else is big.”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
-<li><a class="dcard" href="/dogs#lab" id="card-lab">
-  <img class="dimg" src="/img/art/dogs/lab-still.svg" alt="Butter the Labrador Retriever, a wobbly crayon dog" width="240" height="200" loading="lazy">
-  <span class="dname" style="--n:2.7">Butter</span><span class="dtype">the Labrador Retriever <span class="jp" lang="ja">ラブラドール・レトリバー</span></span>
-  <span class="dquote">“Is it dinner? It feels like dinner.”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
-<li><a class="dcard" href="/dogs#malamute" id="card-malamute">
-  <img class="dimg" src="/img/art/dogs/malamute-still.svg" alt="Maple the Alaskan Malamute, a wobbly crayon dog" width="240" height="200" loading="lazy">
-  <span class="dname" style="--n:2.25">Maple</span><span class="dtype">the Alaskan Malamute <span class="jp" lang="ja">アラスカン・マラミュート</span></span>
-  <span class="dquote">“Woo-woo. That means I disagree.”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
-<li><a class="dcard" href="/dogs#chow" id="card-chow">
-  <img class="dimg" src="/img/art/dogs/chow-still.svg" alt="Bao the Chow Chow, a wobbly crayon dog" width="240" height="200" loading="lazy">
-  <span class="dname" style="--n:1.35">Bao</span><span class="dtype">the Chow Chow <span class="jp" lang="ja">チャウチャウ</span></span>
-  <span class="dquote">“I am not grumpy. This is just my face.”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
-<li><a class="dcard" href="/dogs#stdpoodle" id="card-stdpoodle">
-  <img class="dimg" src="/img/art/dogs/stdpoodle-still.svg" alt="Madeleine the Standard Poodle, a wobbly crayon dog" width="240" height="200" loading="lazy">
-  <span class="dname" style="--n:4.05">Made&shy;leine</span><span class="dtype">the Standard Poodle <span class="jp" lang="ja">スタンダード・プードル</span></span>
-  <span class="dquote">“I am the big poodle. The small one is my cousin.”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
-<li><a class="dcard" href="/dogs#schnauzer" id="card-schnauzer">
-  <img class="dimg" src="/img/art/dogs/schnauzer-still.svg" alt="Muesli the Miniature Schnauzer, a wobbly crayon dog" width="240" height="200" loading="lazy">
-  <span class="dname" style="--n:2.7">Muesli</span><span class="dtype">the Miniature Schnauzer <span class="jp" lang="ja">ミニチュア・シュナウザー</span></span>
-  <span class="dquote">“The beard is for wisdom. And soup.”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
-<li><a class="dcard" href="/dogs#westie" id="card-westie">
-  <img class="dimg" src="/img/art/dogs/westie-still.svg" alt="Shortbread the West Highland White Terrier, a wobbly crayon dog" width="240" height="200" loading="lazy">
-  <span class="dname" style="--n:4.5">Short&shy;bread</span><span class="dtype">the West Highland White Terrier <span class="jp" lang="ja">ウエスト・ハイランド・ホワイト・テリア</span></span>
-  <span class="dquote">“I was white this morning. I promise.”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
-<li><a class="dcard" href="/dogs#yorkie" id="card-yorkie">
-  <img class="dimg" src="/img/art/dogs/yorkie-still.svg" alt="Toffee the Yorkshire Terrier, a wobbly crayon dog" width="240" height="200" loading="lazy">
-  <span class="dname" style="--n:2.7">Toffee</span><span class="dtype">the Yorkshire Terrier <span class="jp" lang="ja">ヨークシャー・テリア</span></span>
-  <span class="dquote">“I am in charge here. Please lift me onto the sofa.”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
-<li><a class="dcard" href="/dogs#bichon" id="card-bichon">
-  <img class="dimg" src="/img/art/dogs/bichon-still.svg" alt="Meringue the Bichon Frise, a wobbly crayon dog" width="240" height="200" loading="lazy">
-  <span class="dname" style="--n:3.6">Me&shy;ringue</span><span class="dtype">the Bichon Frise <span class="jp" lang="ja">ビションフリーゼ</span></span>
-  <span class="dquote">“Is this a haircut or a cloud? Yes.”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
-<li><a class="dcard" href="/dogs#maltese" id="card-maltese">
-  <img class="dimg" src="/img/art/dogs/maltese-still.svg" alt="Marshmallow the Maltese, a wobbly crayon dog" width="240" height="200" loading="lazy">
-  <span class="dname" style="--n:4.95">Marsh&shy;mallow</span><span class="dtype">the Maltese <span class="jp" lang="ja">マルチーズ</span></span>
-  <span class="dquote">“I do not walk. I float, elegantly.”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
-<li><a class="dcard" href="/dogs#shihtzu" id="card-shihtzu">
-  <img class="dimg" src="/img/art/dogs/shihtzu-still.svg" alt="Wonton the Shih Tzu, a wobbly crayon dog" width="240" height="200" loading="lazy">
-  <span class="dname" style="--n:2.7">Wonton</span><span class="dtype">the Shih Tzu <span class="jp" lang="ja">シーズー</span></span>
-  <span class="dquote">“Top-knot up. Nap time down.”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
-<li class="soonli"><div class="soon" id="soon"><div class="sils"><span class="sil"><img src="/img/art/dogs/shiba-still.svg" alt="" width="240" height="200" loading="lazy"><b aria-hidden="true">?</b></span><span class="sil"><img src="/img/art/dogs/samoyed-pup.svg" alt="" width="240" height="200" loading="lazy"><b aria-hidden="true">?</b></span></div><span class="dname">More dogs are coming!</span><span class="dquote">Japanese Chin and Kai Ken are on their way.</span></div></li>
+<li><a class="dcard" href="/dogs#beagle" id="card-beagle">
+  <img class="dimg" src="/img/art/dogs/beagle-still.svg" alt="Bagel the Beagle, a wobbly crayon dog" width="240" height="200" loading="lazy">
+  <span class="dname" style="--n:2.25">Bagel</span><span class="dtype">the Beagle <span class="jp" lang="ja">ビーグル</span></span>
+  <span class="dquote">“Smelled that from three streets away.”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
+<li><a class="dcard" href="/dogs#husky" id="card-husky">
+  <img class="dimg" src="/img/art/dogs/husky-still.svg" alt="Frost the Husky, a wobbly crayon dog" width="240" height="200" loading="lazy">
+  <span class="dname" style="--n:2.25">Frost</span><span class="dtype">the Husky <span class="jp" lang="ja">ハスキー</span></span>
+  <span class="dquote">“AWOOO.”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>
 <!-- /dogs:cards -->
       </ul>
-      <p class="center"><a class="chip" href="/dogs">See all 35 profiles</a></p>
+      <p class="center some">Here are a few of them. Meet the whole pack on the Dogs page.</p>
+      <p class="center"><a class="chip" href="/dogs">See all 35 profiles <span aria-hidden="true">→</span></a></p>
     </section>
 
     <section class="sec">
@@ -243,13 +135,23 @@
       </div>
     </section>
 
-    <section class="sec">
-      <h2>A peek inside</h2>
-      <div class="shots">
-        <figure><img src="/img/screenshot-1-winter-yard.webp" alt="The yard in winter, a crayon dog by its house" width="1280" height="720" loading="lazy"><figcaption>Home, sweet snowy home</figcaption></figure>
-        <figure><img src="/img/screenshot-3-walk-fuji.webp" alt="A walk through town with Mt. Fuji behind" width="1280" height="720" loading="lazy"><figcaption>Walks with a view</figcaption></figure>
-        <figure><img src="/img/screenshot-4-fuji-view-hill.webp" alt="The Mt. Fuji Lookout" width="1280" height="720" loading="lazy"><figcaption>Mt. Fuji Lookout</figcaption></figure>
-        <figure><img src="/img/screenshot-5-new-year.webp" alt="New Year decorations in the yard" width="1280" height="720" loading="lazy"><figcaption>A Japanese New Year</figcaption></figure>
+    <section id="mapteaser" class="sec teaser">
+      <h2>Where you can go <span class="jpw"><span lang="ja">地図</span> <i>chizu</i></span></h2>
+      <p>A little sketchbook town, a lookout with a view of Mt. Fuji, and a train ride to Tokyo.</p>
+      <ul class="tpics">
+        <li><a href="/map#townmap"><img src="/img/map/town-map.webp" alt="The town map: a pencil-drawn town with paths, a river, the woods and the sea" width="1200" height="720" loading="lazy"></a></li>
+        <li><a href="/map#place-shibuya"><img src="/img/map/shibuya.webp" alt="Shibuya Crossing in Doodle Doggo" width="960" height="576" loading="lazy"></a></li>
+        <li><a href="/map#place-fujihill"><img src="/img/map/fujihill.webp" alt="Mt. Fuji Lookout in Doodle Doggo" width="960" height="576" loading="lazy"></a></li>
+      </ul>
+      <p class="center"><a class="chip" href="/map">See the whole map <span aria-hidden="true">→</span></a></p>
+    </section>
+
+    <section id="aboutteaser" class="sec teaser abt">
+      <img class="abdog" src="/img/art/dogs/dachs-pup.svg" alt="A wobbly crayon dachshund, wagging" width="240" height="200" loading="lazy">
+      <div>
+        <h2>Why I made it</h2>
+        <p>A game for my girlfriend, who loves dachshunds, that grew into this.</p>
+        <p><a class="chip" href="/about">Read our story <span aria-hidden="true">→</span></a></p>
       </div>
     </section>
 
@@ -260,7 +162,7 @@
   </div>
   <footer class="foot">
     <a href="https://www.instagram.com/doodledoggo.app/" id="insta" rel="noopener">Instagram</a> · <a href="mailto:contact@doodledoggo.app" id="contact" class="contact">CONTACT US</a> · <a href="/privacy">Privacy</a> ·
-    <a href="/dogs">Dogs</a> ·
+    <a href="/dogs">Dogs</a> · <a href="/map">Map</a> · <a href="/about">About Us</a> ·
     <a href="https://an9ou.itch.io/doodle-doggo">itch.io</a>
     <div class="small">A game by an9ou, made with Claude. No ads, no tracking, no cookies. <span lang="ja" class="jp">ありがとう</span> <i>arigatō</i> = thank you!</div>
   </footer>

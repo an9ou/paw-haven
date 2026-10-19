@@ -4,7 +4,8 @@
 <meta name="description" content="{{a privacy.description}}">
 <link rel="canonical" href="{{raw canonical}}">{{raw alternates}}{{raw langscript}}
 </head><body>
-<main class="page">{{raw langmenu}}
+<div class="deco" id="deco" aria-hidden="true"></div>{{raw header}}
+<main class="page">
   <article class="sheet prose">
     <p><a class="back" href="{{u /}}">{{t privacy.back}}</a></p>
     <h1 style="font-size:46px">{{t privacy.h1}}</h1>
@@ -62,6 +63,8 @@
     <h2>{{t privacy.contact.title}}</h2>
     <p><a class="mail" href="mailto:contact@doodledoggo.app">contact@doodledoggo.app</a></p>
   </article>
-  <footer class="foot"><a href="{{u /}}">{{t footer.home}}</a> · <a href="https://www.instagram.com/doodledoggo.app/" rel="noopener">{{t footer.instagram}}</a> · <a href="mailto:contact@doodledoggo.app" id="contact" class="contact">{{t footer.contact}}</a> · <a href="https://an9ou.itch.io/doodle-doggo">{{t footer.play_itch}}</a></footer>
+  <footer class="foot"><a href="{{u /}}">{{t footer.home}}</a> · <a href="{{u /map}}">{{t footer.map}}</a> · <a href="{{u /about}}">{{t footer.about}}</a> · <a href="https://www.instagram.com/doodledoggo.app/" rel="noopener">{{t footer.instagram}}</a> · <a href="mailto:contact@doodledoggo.app" id="contact" class="contact">{{t footer.contact}}</a> · <a href="https://an9ou.itch.io/doodle-doggo">{{t footer.play_itch}}</a></footer>
 </main>
+<div class="petals" id="petals" aria-hidden="true"></div>
+<script src="/js/site.js" defer></script>
 </body></html>
