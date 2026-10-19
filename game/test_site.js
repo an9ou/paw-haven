@@ -32,7 +32,7 @@ const NAV = [['home', '/'], ['dogs', '/dogs'], ['map', '/map'], ['about', '/abou
 const PLACES = ['yard', 'house', 'garden', 'kitchen', 'park', 'river', 'woods', 'beach', 'market', 'square', 'cafe', 'dogpark', 'vet', 'salon', 'hilltop', 'pier', 'shelter', 'fujihill',
   'station', 'shibuya', 'yoyogi', 'asakusa', 'ueno', 'tokyotower', 'odaiba'];
 const ok = (c, m) => { if (c) { passes++; console.log('  ok  ' + m); } else { fails++; console.log('  FAIL ' + m); } };
-const sec = (s) => console.log('\n# ' + s);
+const T0 = Date.now(), sec = (s) => console.log(`\n# ${s}  [${Math.round((Date.now() - T0) / 1000)} s]`);
 const req = (m) => { for (const r of [].concat((process.env.NODE_PATH || '').split(path.delimiter).filter(Boolean), module.paths)) { try { return require(path.join(r, m)); } catch (e) { /* next */ } } return require(m); };
 // a light HTML attribute reader for the header checks on the Worker's pages
 const attrs = (s) => { const o = {}; for (const m of s.matchAll(/([\w:-]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g)) o[m[1].toLowerCase()] = m[2] != null ? m[2] : m[3] != null ? m[3] : m[4] != null ? m[4] : ''; return o; };
