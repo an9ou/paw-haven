@@ -77,7 +77,7 @@ button.play[disabled]{opacity:.6;cursor:default}
 /* ===== v2 (17 Oct 2026): the live playroom, the dog cards and profiles (/dogs), and the Japanese touches ===== */
 :root{--shu:#C93A2A; --jp:'Hiragino Maru Gothic ProN','Hiragino Sans','Yu Gothic','YuGothic','Meiryo','Noto Sans JP','Noto Sans CJK JP',sans-serif;
   --jpbrush:'Hiragino Mincho ProN','Yu Mincho','YuMincho','Noto Serif JP','Noto Serif CJK JP',serif}
-.jp,[lang="ja"]{font-family:var(--jp);font-style:normal}
+.jp,[lang="ja"]{font-family:var(--jp);font-style:normal;line-break:strict}
 .h1logo{margin:0}
 .top{text-align:center}
 .nav{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 10px;margin:4px 0 10px}
@@ -172,7 +172,7 @@ i{font-style:italic}
 .small-top h1{font-size:50px;margin-top:6px}
 .logo.sm{width:min(300px,70%)}
 .homelink{display:inline-block}
-.dognav{list-style:none;padding:0;margin:12px 0 4px;display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.dognav{list-style:none;padding:0;margin:12px 0 4px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
 .dognav a{display:flex;flex-direction:column;align-items:center;min-height:44px;padding:2px 2px 6px;border:2px solid var(--ink);border-radius:12px 9px 13px 8px;background:#fff;
   color:var(--ink);text-decoration:none;font-size:17px;line-height:1.1}
 .dognav img{width:100%;height:auto}
@@ -213,7 +213,7 @@ i{font-style:italic}
 .soonprof .sil{max-width:none}
 .soonprof .sil b{font-size:48px}
 
-@media (max-width:860px){ .cta.big .hanko{right:8px;top:-14px} .dognav{grid-template-columns:repeat(5,1fr)} }
+@media (max-width:860px){ .cta.big .hanko{right:8px;top:-14px} .dognav{grid-template-columns:repeat(5,minmax(0,1fr))} }
 @media (max-width:700px){
   .nav a{font-size:21px;padding:4px 12px}
   .scene{aspect-ratio:700/600}
@@ -221,7 +221,7 @@ i{font-style:italic}
   .scenebar .chip{width:100%}
   .cta.big .hanko{display:none}
   .intro{font-size:19px}
-  .cards{grid-template-columns:1fr 1fr;gap:10px}
+  .cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
   .soonli{grid-column:1/-1}
   .dcard{padding:6px 8px 10px}
   .dname{font-size:28px}
@@ -231,7 +231,7 @@ i{font-style:italic}
   .shrine img{width:44%}
   .small-top h1{font-size:40px}
   .jpw{display:block;margin:4px 0 0}
-  .dognav{grid-template-columns:repeat(4,1fr);gap:6px}
+  .dognav{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
   .jpline .jp{white-space:normal} /* v2.12: the long katakana names (West Highland White Terrier) wrap instead of widening the page */
   .prof,.soonprof{grid-template-columns:1fr;gap:6px;padding-top:20px}
   .soonprof .sils{width:min(320px,92%);margin:0 auto}
@@ -272,5 +272,26 @@ html.s-cjk h1,html.s-cjk h2,html.s-cjk h3,html.s-cjk .dname,html.s-cjk .bubble,h
 html.s-th body{line-height:1.75}
 html.s-th h1,html.s-th h2,html.s-th h3,html.s-th .dname,html.s-th .bubble,html.s-th .tag,html.s-th .traits b,html.s-th .feats b{line-height:1.45}
 html.s-th .nav a,html.s-th .chip,html.s-th .play{line-height:1.45}
-html[lang="de"] body,html[lang="fr"] body{hyphens:auto;-webkit-hyphens:auto}
+html[lang="de"] body,html[lang="fr"] body,html[lang="es"] body,html[lang="pt-BR"] body,html[lang="id"] body{hyphens:auto;-webkit-hyphens:auto}
 html.i18n .bark{white-space:nowrap}
+/* the /dogs picture menu: even columns; a long name first shrinks to fit its cell (down to 15px, --n: tools/site_i18n.js navEm), then wraps
+   only at the hint the page gives it (a soft hyphen in Marsh-mallow, a <wbr> in a long kana name, the Thai word breaks), never mid-word. A name that fits keeps 17px */
+.dognav li{container-type:inline-size;min-width:0}
+.dognav a{font-size:max(15px,min(17px,calc((100cqi - 9px) / var(--n,1))));text-align:center;hyphens:manual;-webkit-hyphens:manual;overflow-wrap:normal;word-break:normal}
+html.s-cjk .dognav a{line-break:strict;word-break:keep-all}
+/* Thai: room for the marks above and below the line (dog-card names under the picture, the bold trait titles) */
+html.s-th .dimg{margin-bottom:4px}
+html.s-th .traits li{padding-top:11px}
+html[lang^="zh"] .tag{word-break:keep-all;overflow-wrap:normal}
+.nw{white-space:nowrap}
+html.s-th .dognav a{line-height:1.35}
+/* home dog cards: the same fit for a long name (--n from tools/site_i18n.js; Caveat is about 0.85x as wide as the Patrick Hand estimate) */
+.cards .dcard{container-type:inline-size}
+.cards .dcard .dname{--fs:32px;font-size:max(15px,min(var(--fs),calc((100cqi - 2px) / var(--n,1) * 1.18)));hyphens:manual;-webkit-hyphens:manual;overflow-wrap:normal}
+html.s-cjk .cards .dcard .dname,html.s-th .cards .dcard .dname{font-size:max(15px,min(var(--fs),calc((100cqi - 2px) / var(--n,1))));word-break:keep-all;line-break:strict}
+html.s-th .cards .dcard .dname{word-break:normal}
+@media (max-width:700px){ .cards .dcard .dname{--fs:28px} }
+@media (max-width:340px){ .dognav{grid-template-columns:repeat(3,minmax(0,1fr))} }
+/* the puppy caption on /dogs: under the pictures in the other languages (a longer caption would cover the drawings) */
+html.i18n .pics{padding-bottom:0}
+html.i18n .pics .cap{position:static;display:block;text-align:right;margin-top:-8px;line-height:1.25}

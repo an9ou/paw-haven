@@ -267,7 +267,7 @@ const req = (m) => { for (const r of [].concat((process.env.NODE_PATH || '').spl
       for (const pg of I18N.PAGES) {
         const u = pageUrl(L, pg.path); r = await get(SITE + u); const h = await r.text();
         const alt = [...h.matchAll(/<link rel="alternate" hreflang="([^"]+)" href="([^"]+)">/g)].map((m) => [m[1], m[2]]);
-        const want = L.pseudo ? [] : I18N.LANGS.map((x) => [x.code, SITE + pageUrl(x, pg.path)]).concat([['x-default', SITE + pg.path]]);
+        const want = L.pseudo || pg.id === 'reset' ? [] : I18N.LANGS.map((x) => [x.code, SITE + pageUrl(x, pg.path)]).concat([['x-default', SITE + pg.path]]);
         const menu = [...h.matchAll(/<a href="([^"]+)" hreflang="([^"]+)" lang="[^"]+" data-lang="([^"]+)"/g)].map((m) => m[1]);
         const checks = {
           status: r.status === 200, lang: h.includes(`<html lang="${L.code}"`), clang: r.headers.get('content-language') === L.code,
@@ -351,6 +351,41 @@ const req = (m) => { for (const r of [].concat((process.env.NODE_PATH || '').spl
     { const d = await detect('zh-TW', '/', { saved: 'en' }); ok(d.path === '/' && d.navs === 1, 'a saved choice wins: zh-TW with English saved stays on /'); }
     { const d = await detect('ja-JP', '/ja/', {}); ok(d.path === '/ja/' && d.navs === 1, 'translated pages never redirect (no loop)'); }
     { const d = await detect('ja-JP', '/', { userAgent: 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)' }); ok(d.path === '/', 'no redirect for bots'); }
+    // v2.14 site fix: a saved pick of another language is followed on the English pages (keeping the #anchor), but never from a page of this site
+    { const d = await detect('en-US', '/', { saved: 'ja' }); ok(d.path === '/ja/' && d.navs <= 2, `a saved 日本語 opens /ja/ from / (${d.path})`); }
+    { const d = await detect('en-US', '/dogs#shiba', { saved: 'zh-hant' }); ok(d.path === '/zh-hant/dogs#shiba', `a saved 繁體中文 opens /zh-hant/dogs#shiba from /dogs#shiba (${d.path})`); }
+    { const d = await detect('en-US', '/', { saved: 'xx-bogus' }); ok(d.path === '/', 'an unknown saved value stays on /'); }
+    {
+      const ctx = await routeFonts(await browser.newContext({ viewport: { width: 1280, height: 800 }, locale: 'en-US' })); const page = await ctx.newPage();
+      await ctx.addInitScript(() => { try { if (!localStorage.getItem('dd_lang')) localStorage.setItem('dd_lang', 'ja'); } catch (e) { /* none */ } });
+      await page.goto(base + '/', { waitUntil: 'load', referer: base + '/ja/' }); await page.waitForTimeout(400);
+      ok(new URL(page.url()).pathname === '/', 'a saved choice is not followed when the visitor comes from a page of this site (same-host referrer)');
+      await page.goto(base + '/dogs#maltese', { waitUntil: 'load', referer: base + '/dogs' }); await page.click('#langs summary');
+      await Promise.all([page.waitForNavigation(), page.click('#langs nav a[data-lang="ko"]')]);
+      ok(new URL(page.url()).pathname + new URL(page.url()).hash === '/ko/dogs#maltese', `the menu keeps the #anchor: /dogs#maltese -> ${new URL(page.url()).pathname + new URL(page.url()).hash}`);
+      await ctx.close();
+    }
+    {
+      let r2 = await get('https://doodledoggo.app/zh-Hant/'); const a1 = r2.status === 301 && r2.headers.get('location') === 'https://doodledoggo.app/zh-hant/';
+      r2 = await get('https://doodledoggo.app/pt-BR/dogs'); const a2 = r2.status === 301 && r2.headers.get('location') === 'https://doodledoggo.app/pt-br/dogs';
+      r2 = await get('https://doodledoggo.app/zh-Hans'); const a3 = r2.status === 301 && r2.headers.get('location') === 'https://doodledoggo.app/zh-hans/';
+      ok(a1 && a2 && a3, 'the BCP 47 spellings /zh-Hant/, /pt-BR/dogs, /zh-Hans redirect (301) to the lowercase folders');
+      r2 = await get('https://doodledoggo.app/ja/nope'); const nf = await r2.text();
+      ok(r2.status === 404 && /<title>[^<]+<\/title>/.test(nf) && /href="\/fonts\/i18n\/ja\.css\?v=[0-9a-f]{8}"/.test(nf), 'the localized 404 has a <title> and the language font (with its ?v= cache key)');
+    }
+    sec('320 px phones: no sideways scroll, no name sticking out of its card');
+    {
+      const ctx = await routeFonts(await browser.newContext({ viewport: { width: 320, height: 640 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true })); const page = await ctx.newPage();
+      const bad = [];
+      for (const u of ['/', '/dogs', '/ja/', '/ja/dogs', '/zh-hant/', '/ko/dogs', '/th/', '/th/dogs', '/de/dogs', '/de/privacy']) {
+        await page.goto(base + u, { waitUntil: 'load' }); await page.evaluate(() => document.fonts.ready);
+        const o = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth - innerWidth,
+          out: [...document.querySelectorAll('.dognav a, .cards .dcard .dname')].filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => e.textContent.trim()) }));
+        if (o.scroll > 0 || o.out.length) bad.push(`${u}: scroll ${o.scroll} ${o.out.join(', ')}`);
+      }
+      ok(!bad.length, '320 px: every page fits, every dog name fits its card ' + bad.join(' | '));
+      await ctx.close();
+    }
 
     sec('languages: typography, the playroom barks, the pseudo-locales');
     {

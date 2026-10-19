@@ -120,7 +120,8 @@ Set `lang` on `<html>` (`ja`, `zh-Hans`, `zh-Hant`, `ko`, `th` and so on). It pi
 ## 7. The tool: `tools/i18n_fonts.js`
 
 ```
-node tools/i18n_fonts.js ja                      # site: corpus site/i18n/ja.json + glossary -> site/fonts/i18n/ja.woff2, ja.css
+node tools/i18n_fonts.js ja                      # site: corpus site/i18n/ja.json + glossary + the built pages site/ja/*.html (visible text, run tools/site_i18n.js first) -> site/fonts/i18n/ja.woff2, ja.css
+                                                 # the CSS and the pages link each file with ?v=<hash> (cache key)
 node tools/i18n_fonts.js --all                   # every language (Latin ones write CSS only unless something is missing)
 node tools/i18n_fonts.js ko --for game --out dist/i18n-fonts --embed 'dist/i18n-fonts/{lang}.embed.css'
 node tools/i18n_fonts.js zh-Hant extra.txt --text "麵㹴"   # more corpus files / characters

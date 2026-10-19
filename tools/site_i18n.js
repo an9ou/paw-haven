@@ -11,7 +11,7 @@
 // Message syntax: the ICU MessageFormat subset of the v2.14 contract (game/i18n/msg.js: {name}, plural, select, #, josa for ko). Values may use <b> and <i>.
 // Templates: {{t key}} text, {{a key}} attribute, {{u /path}} a link to the same page in this language, {{raw block}} a block made here, {{lang}}.
 // Fonts: a non-English page links /fonts/i18n/<lang>.css only when tools/i18n_fonts.js put that file in site/fonts/i18n/ with an @font-face in it.
-const fs = require('fs'), path = require('path'), vm = require('vm');
+const fs = require('fs'), path = require('path'), vm = require('vm'), crypto = require('crypto');
 const ROOT = path.join(__dirname, '..'), SITE = path.join(ROOT, 'site'), I18N = path.join(SITE, 'i18n'), TPL = path.join(SITE, 'tpl');
 const ORIGIN = 'https://doodledoggo.app';
 
@@ -121,6 +121,15 @@ const GLOBAL = ['count', 'date'].concat(Object.keys(JPW));
 // the keys whose text carries the dog count (the count rule: it must come from {count}, never typed in). On the English page the sentences
 // that start with it get the number as a word (Thirty-five), every other language and key gets the number in figures
 const WORD_KEYS = ['home.dogs.lead', 'dogs.og_description', 'dogs.lead'];
+// Chinese big lines that must not break inside a word (e.g. the tagline at phone width): words come from Intl.Segmenter, joined by <wbr>,
+// and site/style.css sets word-break:keep-all on them, so a line only breaks between words. Plain text only (no markup or entities).
+const KEEP_WORDS = ['home.tagline'];
+const keepWords = (s, lang) => (/[<&]/.test(s) || typeof Intl.Segmenter !== 'function' ? s
+  : [...new Intl.Segmenter(lang, { granularity: 'word' }).segment(s)].reduce((w, x) => {
+    // punctuation and the particles 的 地 得 了 stay with the word before them
+    if (!w.length || (x.isWordLike && !/^[的地得了]$/.test(x.segment))) w.push(x.segment); else w[w.length - 1] += x.segment;
+    return w;
+  }, []).join('<wbr>'));
 const COUNT_KEYS = ['home.dogs.lead', 'home.dogs.all', 'dogs.description', 'dogs.og_description', 'dogs.lead'];
 
 // ---- one language's string table, checked against English
@@ -154,11 +163,14 @@ function urlFor(L, p) { // '/', '/dogs', '/dogs#shiba' in language L
 }
 function langScript(L, page) {
   const target = page.path === '/' ? '/' : page.path, codes = LANGS.filter((x) => x.dir).map((x) => `'${x.dir}':1`).join(',');
-  // English pages only: the first visit (no saved choice) follows navigator.languages; a pick from the menu is saved (English too). No storage, no redirect.
+  // English pages only: a saved pick from the menu (dd_lang, English too) wins; with none, the first visit follows navigator.languages. Never from a
+  // page of this site (same-host referrer) or for bots, and only English pages redirect, so it can't loop. No storage, no redirect.
+  // A pick from the menu keeps the #anchor (the same dog on /dogs).
   return `\n<script>(function(){var H='${L.dir || 'en'}',P='${target}',K='dd_lang',L={${codes}},s=null,d=document;try{s=window.localStorage;s.getItem(K)}catch(e){s=null}`
-    + `d.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[data-lang]');if(a&&s)try{s.setItem(K,a.getAttribute('data-lang'))}catch(x){}var m=d.getElementById('langs');if(m&&m.open&&!m.contains(e.target))m.open=false});`
-    + `if(H!=='en'||!s)return;try{if(s.getItem(K))return;s.setItem(K+'_t','1');s.removeItem(K+'_t')}catch(e){return}`
+    + `d.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[data-lang]');if(a){if(location.hash)a.href=a.href.split('#')[0]+location.hash;if(s)try{s.setItem(K,a.getAttribute('data-lang'))}catch(x){}}var m=d.getElementById('langs');if(m&&m.open&&!m.contains(e.target))m.open=false});`
+    + `if(H!=='en'||!s)return;var v=null;try{v=s.getItem(K);if(!v){s.setItem(K+'_t','1');s.removeItem(K+'_t')}}catch(e){return}`
     + `if(/bot|crawl|spider|slurp|preview|lighthouse/i.test(navigator.userAgent))return;try{if(d.referrer&&new URL(d.referrer).host===location.host)return}catch(e){}`
+    + `if(v){if(v!=='en'&&L[v]===1)location.replace('/'+v+P+location.hash);return}`
     + `var a=navigator.languages&&navigator.languages.length?navigator.languages:[navigator.language||''];for(var i=0;i<a.length;i++){var t=String(a[i]).toLowerCase().replace(/_/g,'-'),b=t.split('-')[0];`
     + `if(b==='en')return;if(b==='zh')b=/^zh-(hant|tw|hk|mo)(-|$)/.test(t)?'zh-hant':'zh-hans';else if(b==='pt')b='pt-br';else if(b==='in')b='id';`
     + `if(L[b]){location.replace('/'+b+P+location.hash);return}}})();</script>`;
@@ -180,14 +192,32 @@ function build(o) {
       Object.fromEntries(Object.entries(JPW).map(([k, v]) => [k, H(v)])));
     const cnt = (k) => (L.code === 'en' && WORD_KEYS.includes(k) ? { count: numWord(D.length) } : {});
     const t = (k, p) => { if (!T[k]) throw new Error('no key ' + k); return render(T[k], Object.assign({}, base, cnt(k), p), rules, false); };
-    const a = (k, p) => render(T[k], Object.assign({}, base, cnt(k), p), rules, true);
+    // attributes (alt, meta description) drop the soft hyphens that some long words carry for line breaking
+    const a = (k, p) => render(T[k], Object.assign({}, base, cnt(k), p), rules, true).split(String.fromCharCode(0xad)).join('');
     const u = (p) => urlFor(L, p);
     const breed = (d) => (gl && gl.breeds && gl.breeds[d.key]) || d.breed;
     const name = (d) => t(`dog.${d.key}.name`);
+    // the /dogs picture menu: --n is the name's rough width in em (Patrick Hand Latin ~0.45, kanji/kana 1.1, Hangul 0.85, Thai 0.75, Thai marks and
+    // break hints 0), so site/style.css can shrink only a name that would not fit its cell (font-size min(17px, cell / --n)).
+    const navEm = (s) => Math.round([...s].reduce((w, ch) => w + (/[\u200b\u2060\u0e31\u0e34-\u0e3a\u0e47-\u0e4e]/.test(ch) ? 0
+      : /[\uac00-\ud7af]/.test(ch) ? 0.85 : /[\u3000-\u9fff\uf900-\ufaff\uff00-\uffef]/.test(ch) ? 1.1 : /[\u0e00-\u0e7f]/.test(ch) ? 0.75 : 0.45), 0) * 100) / 100;
+    // Latin names too long for a phone cell even at 15px get a soft hyphen at a natural point (Marsh-mallow), never a break mid-syllable
+    const NAV_SPLIT = { Marshmallow: 'Marsh|mallow', Shortbread: 'Short|bread', Jellybean: 'Jelly|bean', Madeleine: 'Made|leine', Meringue: 'Me|ringue', Dumpling: 'Dump|ling', Espresso: 'Es|presso' };
+    const navName = (d) => {
+      const nm = name(d), raw = nm.replace(/&[#a-z0-9]+;/g, 'x'), ch = [...nm];
+      if (/[\u0e00-\u0e7f]/.test(nm)) { // Thai: break only at the translator's zero-width spaces, never inside a part
+        const parts = nm.split(/[\u200b]/);
+        return { n: Math.max(...parts.map(navEm)), html: `<span>${parts.map((x) => `<span class="nw">${x}</span>`).join('<wbr>')}</span>` }; // one flex item
+      }
+      if (!/^[\u3000-\u9fff\uac00-\ud7af]+$/.test(nm) || navEm(raw) <= 4.4) return { n: navEm(raw), html: NAV_SPLIT[nm] ? NAV_SPLIT[nm].replace('|', '&shy;') : nm };
+      let at = Math.ceil(ch.length / 2);
+      while (at > 1 && /[\u30a1\u30a3\u30a5\u30a7\u30a9\u30c3\u30e3\u30e5\u30e7\u30ee\u30f5\u30f6\u3041\u3043\u3045\u3047\u3049\u3063\u3083\u3085\u3087\u30fc\u30fb]/.test(ch[at])) at--; // a small kana or ー never starts the second line
+      return { n: Math.max(navEm(ch.slice(0, at).join('')), navEm(ch.slice(at).join(''))), html: '<span>' + ch.slice(0, at).join('') + '<wbr>' + ch.slice(at).join('') + '</span>' };
+    };
     // the dog cards (home), the picture menu and the profiles (/dogs)
     const card = (d) => `<li><a class="dcard" href="${u('/dogs#' + d.key)}" id="card-${d.key}">
   <img class="dimg" src="/img/art/dogs/${d.key}-still.svg" alt="${a('card.alt', { name: name(d), breed: breed(d) })}" width="240" height="200" loading="lazy">
-  <span class="dname">${name(d)}</span><span class="dtype">${t('card.type', { breed: breed(d), jp: H(breed(d) === d.jp ? '' : `<span class="jp" lang="ja">${d.jp}</span>`) })}</span>
+  <span class="dname" style="--n:${navEm(name(d).replace(/&[#a-z0-9]+;/g, 'x'))}">${navName(d).html}</span><span class="dtype">${t('card.type', { breed: breed(d), jp: H(breed(d) === d.jp ? '' : `<span class="jp" lang="ja">${d.jp}</span>`) })}</span>
   <span class="dquote">${t('common.quoted', { text: H(t(`dog.${d.key}.quote`)) })}</span><span class="dmore">${t('card.more')} <span aria-hidden="true">→</span></span></a></li>`;
     const lovesHTML = (d) => d.loves.map(([n], i) => `<li><img src="/img/art/loves/${slug(n)}.svg" alt="" width="64" height="64" loading="lazy">${t(`dog.${d.key}.love${i + 1}`)}</li>`).join('');
     const profile = (d) => {
@@ -215,19 +245,20 @@ function build(o) {
     for (const page of PAGES) {
       const blocks = {
         htmlattrs: L.code === 'en' ? '' : ` class="i18n s-${L.script}${L.pseudo ? ' pseudo' : ''}"`,
-        fontcss: L.code !== 'en' && fs.existsSync(fontCss) && /@font-face/.test(fs.readFileSync(fontCss, 'utf8')) ? `<link rel="stylesheet" href="/fonts/i18n/${path.basename(fontCss)}">` : '',
+        fontcss: L.code !== 'en' && fs.existsSync(fontCss) && /@font-face/.test(fs.readFileSync(fontCss, 'utf8')) ? `<link rel="stylesheet" href="/fonts/i18n/${path.basename(fontCss)}?v=${crypto.createHash('sha1').update(fs.readFileSync(fontCss)).digest('hex').slice(0, 8)}">` : '',
         canonical: ORIGIN + urlFor(L, page.path),
-        alternates: o.legacy || L.pseudo ? '' : '\n' + LANGS.map((x) => `<link rel="alternate" hreflang="${x.code}" href="${ORIGIN + urlFor(x, page.path)}">`).join('') + `<link rel="alternate" hreflang="x-default" href="${ORIGIN + page.path}">`,
+        alternates: o.legacy || L.pseudo || page.id === 'reset' ? '' : '\n' + LANGS.map((x) => `<link rel="alternate" hreflang="${x.code}" href="${ORIGIN + urlFor(x, page.path)}">`).join('') + `<link rel="alternate" hreflang="x-default" href="${ORIGIN + page.path}">`,
         oglocale: L.code === 'en' ? '' : `<meta property="og:locale" content="${L.og}">`,
         langscript: o.legacy ? '' : langScript(L, page),
         langmenu: o.legacy ? '' : langMenu(L, page, render(T['lang.label'], base, rules, false), render(T['lang.menu'], base, rules, true)),
         cards: page.id === 'index' ? D.map(card).concat(soonCard).join('\n') : '',
-        dognav: page.id === 'dogs' ? D.map((d) => `<li><a href="#${d.key}"><img src="/img/art/dogs/${d.key}-still.svg" alt="" width="240" height="200">${name(d)}</a></li>`).join('\n') : '',
+        dognav: page.id === 'dogs' ? D.map((d) => { const nn = navName(d); return `<li style="--n:${nn.n}"><a href="#${d.key}"><img src="/img/art/dogs/${d.key}-still.svg" alt="" width="240" height="200">${nn.html}</a></li>`; }).join('\n') : '',
         profiles: page.id === 'dogs' ? D.map(profile).concat(soonProf).join('\n') : '',
         i18njson: page.id === 'index' && Object.keys(play).length ? `\n<script type="application/json" id="dd-i18n">${JSON.stringify(play).replace(/</g, '\\u003c')}</script>` : ''
       };
       const html = tpls[page.id].replace(/\{\{(?:(t|a|u|raw) ([^}\s]+)|(lang))\}\}/g, (m, kind, arg, lang) => {
         if (lang) return L.code;
+        if (kind === 't' && KEEP_WORDS.includes(arg) && /^zh/.test(L.code)) return keepWords(t(arg), L.code);
         if (kind === 't') return t(arg);
         if (kind === 'a') return a(arg);
         if (kind === 'u') return u(arg);

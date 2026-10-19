@@ -156,8 +156,18 @@ const EN_RULES = [
   { name: 'breed as a verb', re: /\b(to breed|breed (them|your|her|him|my|our|dogs)|breeding (your|her|him|them|dogs)|bred (by|with|from))\b/i },
   { name: 'stud', re: /\bstuds?\b/i },
   { name: 'litter price', re: /litter price/i },
-  { name: 'selling dogs', re: /\b(sell|sells|selling|sold)\b[^.!?]*\b(dog|dogs|pup|pups|puppy|puppies)\b|\b(dog|dogs|pup|pups|puppy|puppies)\b[^.!?]*\b(sell|sells|selling|sold)\b/i }
+  { name: 'selling dogs', re: /\b(sell|sells|selling|sold)\b[^.!?]*\b(dog|dogs|pup|pups|puppy|puppies)\b|\b(dog|dogs|pup|pups|puppy|puppies)\b[^.!?]*\b(sell|sells|selling|sold)\b/i },
+  { name: 'franchise name', re: /nintendo|pok[eé]mon|animal crossing/i },
+  // the site too: a dog type "was bred in Japan" is breeding talk, say "comes from Japan" (v2.14 site fix)
+  { name: 'bred in / was bred', re: /\b(bred in|(was|were|is|are|been) bred)\b/i }
 ];
+// the rules above must keep every rule of test_copy_node.js (checked here, so the two lists can't drift apart)
+{
+  const src = fs.readFileSync(path.join(ROOT, 'game/test_copy_node.js'), 'utf8');
+  const names = [...src.slice(src.indexOf('const RULES'), src.indexOf('];', src.indexOf('const RULES'))).matchAll(/name: '([^']+)'/g)].map((m) => m[1]);
+  ok(names.length > 0 && names.every((n) => EN_RULES.some((r) => r.name === n)), 'EN_RULES has every rule of game/test_copy_node.js: ' + names.join(', '));
+  ok(EN_RULES.find((r) => r.name === 'bred in / was bred').re.test('The Shiba was bred in Japan.'), 'EN_RULES catch "bred in Japan"');
+}
 const EMOJI = /\p{Emoji_Presentation}/u, SEMI = /(?<!&[#\w]{1,8});|；/;
 const flat = (o, pre, out) => { for (const [k, v] of Object.entries(o)) { const kk = pre ? pre + '.' + k : k; if (v && typeof v === 'object') flat(v, kk, out); else out[kk] = v; } return out; };
 function checkDir(dir, label, flatOnly) {
