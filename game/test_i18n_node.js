@@ -168,6 +168,8 @@ const EN_RULES = [
   ok(names.length > 0 && names.every((n) => EN_RULES.some((r) => r.name === n)), 'EN_RULES has every rule of game/test_copy_node.js: ' + names.join(', '));
   ok(EN_RULES.find((r) => r.name === 'bred in / was bred').re.test('The Shiba was bred in Japan.'), 'EN_RULES catch "bred in Japan"');
 }
+// en.json keys whose English is a reviewed exception to the semicolon and copy rules (one key per line, then # why)
+const COPY_OK = new Set(fs.existsSync(path.join(ROOT, 'game/i18n/COPY_OK.txt')) ? fs.readFileSync(path.join(ROOT, 'game/i18n/COPY_OK.txt'), 'utf8').split('\n').map((l) => l.replace(/#.*$/, '').trim()).filter(Boolean) : []);
 const EMOJI = /\p{Emoji_Presentation}/u, SEMI = /(?<!&[#\w]{1,8});|；/;
 const flat = (o, pre, out) => { for (const [k, v] of Object.entries(o)) { const kk = pre ? pre + '.' + k : k; if (v && typeof v === 'object') flat(v, kk, out); else out[kk] = v; } return out; };
 function checkDir(dir, label, flatOnly) {
@@ -205,9 +207,10 @@ function checkDir(dir, label, flatOnly) {
       const text = v.replace(/\{[A-Za-z_$][\w$]*\}/g, ' ');
       ok(!FRANCHISE.test(text), `${where} ${k}: franchise name`);
       ok(!EMOJI.test(text), `${where} ${k}: emoji`);
-      ok(!SEMI.test(text), `${where} ${k}: semicolon in player text`);
+      const okEn = lang === 'en' && label === 'game/i18n' && COPY_OK.has(k); // game/i18n/COPY_OK.txt: the English keeps a reviewed exception (its code line has // copy-ok)
+      if (!okEn) ok(!SEMI.test(text), `${where} ${k}: semicolon in player text`);
       for (const r of bans) ok(!r.test(text), `${where} ${k}: ban /${r.source}/ in "${v.slice(0, 80)}"`);
-      if (lang === 'en') for (const r of EN_RULES) ok(!r.re.test(text), `${where} ${k}: ${r.name} in "${v.slice(0, 80)}"`);
+      if (lang === 'en' && !okEn) for (const r of EN_RULES) ok(!r.re.test(text), `${where} ${k}: ${r.name} in "${v.slice(0, 80)}"`);
     }
   }
   return n;

@@ -62,9 +62,6 @@ STARTER_GENES coat
 SHOP_NAME *
 JR_MILE_TXT *
 JR_GRAND *
-GIFT_NEIGHBOURS *
-GIFT_ITEM_NOTES *
-CARD_PS *
 CROPS_FB name seeditem item
 RECIPES_FB name hint
 PANTRY_FB name
@@ -76,7 +73,6 @@ NPC_BOYS *
 NPC_GIRLS *
 NPC_LINES *
 GENE_FB both het hom
-PUP@14b_vet_playboard *
 
 # ---- PLAY + MISSIONS: 15, 15b, 16, 24, 25
 TPOSE say
