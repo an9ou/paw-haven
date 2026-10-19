@@ -183,7 +183,7 @@ function phDraw(delay) {
 }
 function phPanel() {
   const cols = phFrames(), caps = phCaps(), col = phColorNow(), cap = phCapNow();
-  return `<div class="ph-view"><img class="ph-pic" alt="Your photo, framed as a postcard" draggable="false"></div>
+  return `<div class="ph-view">${exPickerHTML()}<img class="ph-pic" alt="Your photo, framed as a postcard" draggable="false"></div>
   <div class="ph-side">
     <h2 class="ph-h">Say cheese</h2>
     <div class="ph-sec"><span class="ph-lbl">Frame</span><div class="ph-row ph-frames" role="group" aria-label="Frame colour">${cols.map((c) => `<button type="button" class="ph-swatch" data-frame="${c.k}" aria-label="${c.n} frame" title="${c.n}" aria-pressed="${c.k === col.k}" style="--sw:${c.c}"></button>`).join('')}</div></div>
@@ -194,13 +194,14 @@ function phPanel() {
 }
 function phOpen() {
   if (!phCan()) return false;
-  const cap = phCapture(); if (!cap) return false;
+  exPhoto(true); const cap = phCapture(); if (!cap) { exPhoto(false); return false; } // v2.13: the face picked for the photo goes on every dog first (41_expressions.js)
   PH.on = true; PH.cap = cap; PH.lastFocus = document.activeElement; hideBubble(); toasts.innerHTML = ''; // a clear screen: the hints that were up fold away
   let root = $('#phMode'); if (!root) { root = document.createElement('div'); root.id = 'phMode'; root.className = 'ph-mode'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-label', 'Photo mode'); stage.appendChild(root); }
   root.hidden = false; root.classList.remove('ph-busy'); root.innerHTML = phPanel(); stage.classList.add('ph-on'); phBtn.hidden = true;
   root.querySelectorAll('[data-frame]').forEach((b) => { b.onclick = () => { SFX.click(); prefs.phFrame = b.dataset.frame; savePrefs(); root.querySelectorAll('[data-frame]').forEach((x) => x.setAttribute('aria-pressed', x === b)); phDraw(30); }; });
   root.querySelectorAll('[data-cap]').forEach((b) => { b.onclick = () => { SFX.click(); prefs.phCap = b.dataset.cap; savePrefs(); root.querySelectorAll('[data-cap]').forEach((x) => x.setAttribute('aria-pressed', x === b)); phDraw(30); }; });
   root.querySelectorAll('[data-sq]').forEach((b) => { b.onclick = () => { SFX.click(); prefs.phSq = b.dataset.sq === '1' && !prefs.phSq; savePrefs(); root.querySelectorAll('[data-sq]').forEach((x) => x.setAttribute('aria-pressed', (x.dataset.sq === '1') === !!prefs.phSq)); phDraw(30); }; }); // on a phone the Square button is a switch: tapping it again goes back to the postcard
+  exPickerBind(root); // v2.13: the face picker
   $('#phSave', root).onclick = () => phSave();
   $('#phAgain', root).onclick = () => { SFX.click(); const c = phCapture(); if (c) { PH.cap = c; phDraw(); } };
   $('#phClose', root).onclick = () => { SFX.click(); phClose(); };
@@ -218,6 +219,7 @@ function phClose(quiet) {
   window.removeEventListener('keydown', PH.keyFn, true); PH.obs.forEach((o) => o.disconnect()); PH.obs = [];
   const root = $('#phMode'); if (root) { root.hidden = true; root.innerHTML = ''; }
   stage.classList.remove('ph-on'); PH.cap = null; PH.blob = null; PH.svg = '';
+  exPhoto(false); // v2.13: the dogs take their own faces back
   phSync();
   if (!quiet) { const f = PH.lastFocus; if (f && document.contains(f) && !f.hidden && f.focus) try { f.focus({ preventScroll: true }); } catch (e) { /* ignore */ } }
 }
