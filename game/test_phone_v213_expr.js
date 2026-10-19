@@ -51,6 +51,7 @@ const { run } = require('./test_lib');
       ok(g.rowSW > g.rowCW + 40 && /auto|scroll/.test(g.ox), tag + `the row scrolls sideways (${g.rowSW} in ${g.rowCW})`);
       ok(g.docW <= g.vw && g.bodyW <= g.vw && g.inView, tag + `no sideways page scroll (${g.docW} / ${g.vw})`);
       ok(g.pic.bottom <= g.faces.top + 1 && g.faces.bottom <= g.side.top + 1, tag + 'the picture, then the faces row, then the other choices');
+      ok(g.faces.top - g.pic.bottom <= 16, tag + `the picture sits on the faces row (gap ${Math.round(g.faces.top - g.pic.bottom)} px)`);
       // scroll to Wink (far right) and tap it
       await ev(() => { const b = document.querySelector('[data-exface="wink"]'); b.scrollIntoView({ inline: 'center', block: 'nearest' }); });
       ok(await ev(() => document.documentElement.scrollWidth <= innerWidth && window.scrollX === 0), tag + 'scrolling the row never scrolls the page');

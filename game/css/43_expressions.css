@@ -14,7 +14,7 @@
 
 /* phones: the picture on top, then the faces row (heads and words, scrolling sideways), then the frame, caption and save rows */
 html[data-layout="phone"] .ex-faces{height:56px;gap:0}
-html[data-layout="phone"] .ex-faces ~ .ph-pic{bottom:60px;max-height:calc(100% - 60px)}
+html[data-layout="phone"] .ex-faces ~ .ph-pic{top:auto;bottom:60px;margin:0 auto;max-height:calc(100% - 60px)} /* the picture sits on the faces row (a tall phone keeps the spare height above it, not between) */
 html[data-layout="phone"] .ex-flbl{display:none}
 html[data-layout="phone"] .ex-frow{gap:8px;padding:5px 6px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 html[data-layout="phone"] .ex-frow::-webkit-scrollbar{display:none}

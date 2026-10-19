@@ -102,8 +102,17 @@ require('./test_lib').run('v213_expr', async (t) => {
   sec('7. the bath, the groom and digging');
   await X(() => window.__paw.go('bath')); await t.untilMode('bath');
   for (let i = 0; i < 24 && (await t.mode()) === 'bath' && !(await logOf(A, 'bath')).length; i++) await t.p.keyboard.press('Space');
-  ok((await logOf(A, 'bath')).length === 1, 'a finished bath: a face (picked from ' + JSON.stringify(Object.keys(await W('shiba', 'bath'))) + ')');
-  await t.untilMode('yard', 6000); await t.lu(); await fresh();
+  ok(!(await logOf(A, 'bath')).length, 'the tub (the shake pose): no face yet');
+  await t.untilMode('yard', 6000);
+  ok(await t.until((id) => window.__paw.ex.log.some((l) => l.id === id && l.ev === 'bath'), A, 9000), 'back in the yard: the bath face (picked from ' + JSON.stringify(Object.keys(await W('shiba', 'bath'))) + ')');
+  ok(await X((id) => { const c = window.__paw.ex.cur(id), m = /pa-ex-([a-z]+)/.exec((document.querySelector('#dogArt svg.pa-dog') || { getAttribute: () => '' }).getAttribute('class') || ''); return !!c && !!m && m[1] === c.name; }, A), 'and it is drawn on the dog (' + (await leadCls()) + ')');
+  ok((await logOf(A, 'bath')).length === 1, 'one bath face');
+  await t.lu(); await fresh();
+  // a newborn: the art draws no face, so none is shown, picked, counted or answered
+  const NB = await X(() => (() => { const n = new Date(), p = (v) => String(v).padStart(2, '0'); window.__paw.addDog({ key: 'pug', sex: 'female', born: `${n.getFullYear()}-${p(n.getMonth() + 1)}-${p(n.getDate())}` }, 'Bean'); return window.__paw.S.dogs.length; })());
+  const nbId = await X(() => { const d = window.__paw.S.dogs.find((x) => x.name === 'Bean'); return d && d.id; });
+  ok(!!nbId && (await X((id) => { const x = window.__paw.ex; return x.show(id, 'hearts', 2000) === false && x.trig(id, 'pet', { pose: 'idle' }) === null && x.now(id, 'idle') === null && x.cur(id) === null && !x.log.some((l) => l.id === id); }, nbId)), 'a newborn: exShow, exTrig and exNow skip it (' + NB + ')');
+  await X((id) => { const S = window.__paw.S; S.dogs = S.dogs.filter((d) => d.id !== id); }, nbId); await fresh();
   await t.home('salon'); await t.p.click('#placeBtns [data-pb="groom"]'); await t.p.click('#slGo');
   ok(await t.until((id) => window.__paw.ex.log.some((l) => l.id === id && l.ev === 'brush'), A, 3000), 'the full groom (the brushing): a face');
   await fresh(); await t.home('beach'); await X(() => { window.__paw.S.daily.beachDig = false; }); await t.p.click('#placeBtns [data-pb="dig"]');
@@ -124,6 +133,9 @@ require('./test_lib').run('v213_expr', async (t) => {
   await X(() => { window.__paw.bl.seed(7); window.__paw.bl.throwV(800, -600); window.__paw.bl.sim(14); });
   ok(await t.until(() => window.__paw.ex.log.some((l) => l.ev === 'ballCatch'), null, 3000), 'a catch: the catcher makes a face (' + (await X(() => (window.__paw.ex.log.find((l) => l.ev === 'ballCatch') || {}).name)) + ')');
   ok(await X(() => window.__paw.bl.state && window.__paw.bl.state.ph === 'rest' && window.__paw.bl.state.n === 1), 'the ball came back');
+  const catchOn = () => X(() => { const l = window.__paw.ex.log.find((x) => x.ev === 'ballCatch'), c = l && window.__paw.ex.cur(l.id); if (!c) return 'over'; const sel = l.id === window.__paw.S.activeId ? '#dogArt svg.pa-dog' : `#pack [data-dog="${l.id}"] .rm-art svg.pa-dog`, e = document.querySelector(sel), k = e ? e.getAttribute('class') || '' : 'none'; return k.includes('pa-ex-' + c.name) || !window.PawArt.exprOk(c.name, (/pa-pose-([a-z]+)/.exec(k) || [])[1] || '') ? 'ok' : sel + ' ' + c.name + ': ' + k; });
+  let co = await catchOn(); for (let i = 0; i < 6 && co !== 'ok' && co !== 'over'; i++) { await t.sleep(150); co = await catchOn(); }
+  ok(co === 'ok' || co === 'over', 'the catch face is on the catcher (drawn by the ball play): ' + co);
   const ran = await X(() => window.__paw.bl.dogs.filter((o) => o.ran).map((o) => o.id));
   await X(() => window.__paw.ex.cool()); await X(() => window.__paw.bl.stop());
   ok(await t.until((l) => l.every((id) => window.__paw.ex.log.some((x) => x.id === id && x.ev === 'ballEnd' && x.name === 'pout')), ran, 3000), `the end of play: a short pout for every dog that ran (${ran.length})`);
