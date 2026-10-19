@@ -6,6 +6,7 @@
 //   dogs/<key>-pup.svg         a puppy of each dog, one frame (profiles)
 //   dogs/<key>-sleep.svg       each dog napping, one frame (the playroom)
 //   loves/<slug>.svg           the game's item and icon drawings for each dog's favourites
+//   peek/<key>.svg             site v3: a dog's head with a face expression (PawArt.dogHead), for the dogs that peek round the paper on every page (PEEKS in site/js/site.js)
 //   ball.svg, momiji.svg, sakura.svg   the playroom toss toy and one leaf / one blossom from the game's Japan art
 //   washi.svg                  a washi-paper fibre tile (seeded)
 //   playroom.webp              the Shelter Playroom (world C), 2000 x 1200, with the site's own Caveat for its painted sign
@@ -47,6 +48,10 @@ for (const d of DOGS) {
   write(`dogs/${d.key}-sleep.svg`, whole(standalone(PA.dog(d.key, { pose: 'sleep', anim: false }), 240, 200))); // the playroom nap, one frame
   write(`dogs/${d.key}-pup.svg`, standalone(PA.dog(d.key, { pose: 'happy', age: 'puppy', facing: 'left', anim: false }), 240, 200));
 }
+// ---- site v3: the peeking dogs (heads only, whole-unit coordinates: about 1 kB each gzipped). The keys come from PEEKS in site/js/site.js, the faces from here
+const PEEK_KEYS = JSON.parse(fs.readFileSync(path.join(ROOT, 'site', 'js', 'site.js'), 'utf8').match(/var PEEKS = (\[[^\]]*\])/)[1].replace(/'/g, '"'));
+const PEEK_FACE = { dachs: 'hearts', shiba: 'curious', corgi: 'blep', golden: 'wow', pug: 'wink', samoyed: 'dreamy', beagle: 'curious', husky: 'proud', frenchie: 'blep', chihuahua: 'surprised' };
+for (const k of PEEK_KEYS) write(`peek/${k}.svg`, whole(standalone(PA.dogHead(k, { expr: PEEK_FACE[k] || 'curious' }), 100, 100)));
 // ---- favourites: the game's item and icon drawings; 'dig' is the marketing posts' dirt mound with a bone
 const DIG = '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="digging"><ellipse cx="32" cy="54" rx="28" ry="6" fill="#5B3D32" opacity=".16"/><path d="M4 54Q8 24 32 22Q56 24 60 54Z" fill="#B98F68" stroke="#5B3D32" stroke-width="3" stroke-linejoin="round"/><path d="M14 44l8 -2M34 36l8 3M26 48l8 0" stroke="#8A6A48" stroke-width="2.4" stroke-linecap="round"/><g transform="translate(34 16) rotate(-30) scale(.55)"><path d="M-14 -4 Q-20 -10 -14 -12 Q-11 -14 -10 -8 L10 -8 Q11 -14 14 -12 Q20 -10 14 -4 Q20 2 14 4 Q11 6 10 0 L-10 0 Q-11 6 -14 4 Q-20 2 -14 -4Z" fill="#FFF4DF" stroke="#5B3D32" stroke-width="3" stroke-linejoin="round"/></g></svg>';
 const loves = new Set(); DOGS.forEach((d) => d.loves.forEach(([n]) => loves.add(n)));

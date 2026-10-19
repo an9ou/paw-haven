@@ -9,11 +9,11 @@
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;color:var(--ink);font-family:var(--read);font-size:19px;line-height:1.45;
+body{position:relative;margin:0;color:var(--ink);font-family:var(--read);font-size:19px;line-height:1.45;
   background:radial-gradient(rgba(0,0,0,.035) 1px,transparent 1.5px) 0 0/7px 7px,var(--desk)}
 a{color:var(--ink)}
 :focus-visible{outline:2.5px dashed var(--pink);outline-offset:3px}
-.page{max-width:980px;margin:0 auto;padding:18px 16px 28px}
+.page{position:relative;z-index:1;max-width:980px;margin:0 auto;padding:14px 16px 28px}
 .sheet{background:var(--paper);border:2.5px solid var(--ink);border-radius:18px 14px 20px 12px / 14px 20px 12px 18px;
   box-shadow:3px 4px 0 rgba(91,61,50,.18);padding:22px 22px 26px;
   background-image:radial-gradient(var(--dot) 1px,transparent 1.4px);background-size:22px 22px}
@@ -32,11 +32,6 @@ p{margin:.4em 0 .8em}
 .play:hover{transform:rotate(-1deg) translateY(-1px)}
 .play:active{transform:translate(2px,3px);box-shadow:1px 1px 0 var(--ink)}
 .small{font-size:17px;color:var(--muted)}
-.shots{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin:6px 0 4px}
-.shots figure{margin:0;background:#fff;border:2px solid var(--ink);border-radius:12px 9px 13px 8px;padding:6px 6px 2px;box-shadow:2px 3px 0 rgba(91,61,50,.18)}
-.shots figure:nth-child(odd){transform:rotate(-.6deg)} .shots figure:nth-child(even){transform:rotate(.5deg)}
-.shots img{display:block;width:100%;height:auto;border-radius:7px}
-.shots figcaption{font-size:17px;text-align:center;padding:4px 0}
 .feats{list-style:none;padding:0;margin:8px 0;display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .feats li{border:2px solid var(--ink);border-radius:14px 10px 15px 9px;padding:10px 12px}
 .feats b{display:block;font-family:var(--hand);font-size:28px;line-height:1.05}
@@ -67,7 +62,6 @@ button.play[disabled]{opacity:.6;cursor:default}
   .hero .dog{width:min(240px,70%);margin:0 auto;display:block}
   .tag{font-size:25px}
   h2{font-size:34px}
-  .shots{grid-template-columns:1fr}
   .feats{grid-template-columns:1fr 1fr}
   .play{width:100%;font-size:30px}
 }
@@ -80,11 +74,9 @@ button.play[disabled]{opacity:.6;cursor:default}
 .jp,[lang="ja"]{font-family:var(--jp);font-style:normal;line-break:strict}
 .h1logo{margin:0}
 .top{text-align:center}
-.nav{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 10px;margin:4px 0 10px}
-.nav a,.chip{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:4px 16px;border:2px solid var(--ink);border-radius:14px 10px 15px 9px;
+.chip{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:4px 16px;border:2px solid var(--ink);border-radius:14px 10px 15px 9px;
   background:var(--w-mint);color:var(--ink);text-decoration:none;font-family:var(--hand);font-size:24px;font-weight:700;line-height:1;cursor:pointer}
-.nav a:nth-child(2){background:var(--w-pink)} .nav a:nth-child(3){background:var(--w-blue)}
-.nav a:hover,.chip:hover{transform:rotate(-1.5deg)}
+.chip:hover{transform:rotate(-1.5deg)}
 .jpw{display:inline-block;font-family:var(--read);font-size:19px;font-weight:400;color:var(--muted);vertical-align:middle;margin-left:6px}
 .jpw [lang="ja"]{color:var(--shu);font-size:24px}
 i{font-style:italic}
@@ -120,8 +112,6 @@ i{font-style:italic}
 .scenebar .cap{margin:0;text-align:center}
 .scenebar .chip{background:var(--w-yellow)}
 
-.cta.big{position:relative;margin-top:14px}
-.cta.big .hanko{position:absolute;right:calc(50% - 250px);top:-6px;font-size:20px}
 .intro{font-size:21px;max-width:760px;margin:10px auto 6px;text-align:center}
 .sec{margin-top:26px;scroll-margin-top:10px}
 
@@ -164,14 +154,12 @@ i{font-style:italic}
 .trip h3{font-size:32px}
 
 /* falling momiji / sakura / snow (site.js, only with motion allowed) */
-.petals{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:5}
+.petals{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0} /* site v3: behind the paper (.page is z-index 1): never over text */
 .petal{position:absolute;top:-40px;width:22px;height:22px;opacity:.85;animation:fall linear infinite}
 @keyframes fall{0%{transform:translate(0,0) rotate(0)}50%{transform:translate(40px,55vh) rotate(200deg)}100%{transform:translate(-10px,112vh) rotate(420deg)}}
 
 /* /dogs */
 .small-top h1{font-size:50px;margin-top:6px}
-.logo.sm{width:min(300px,70%)}
-.homelink{display:inline-block}
 .dognav{list-style:none;padding:0;margin:12px 0 4px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
 .dognav a{display:flex;flex-direction:column;align-items:center;min-height:44px;padding:2px 2px 6px;border:2px solid var(--ink);border-radius:12px 9px 13px 8px;background:#fff;
   color:var(--ink);text-decoration:none;font-size:17px;line-height:1.1}
@@ -213,13 +201,11 @@ i{font-style:italic}
 .soonprof .sil{max-width:none}
 .soonprof .sil b{font-size:48px}
 
-@media (max-width:860px){ .cta.big .hanko{right:8px;top:-14px} .dognav{grid-template-columns:repeat(5,minmax(0,1fr))} }
+@media (max-width:860px){ .dognav{grid-template-columns:repeat(5,minmax(0,1fr))} }
 @media (max-width:700px){
-  .nav a{font-size:21px;padding:4px 12px}
   .scene{aspect-ratio:700/600}
   .stage{width:142.857%;left:-21.4286%}
   .scenebar .chip{width:100%}
-  .cta.big .hanko{display:none}
   .intro{font-size:19px}
   .cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
   .soonli{grid-column:1/-1}
@@ -239,10 +225,9 @@ i{font-style:italic}
   .prof h2{font-size:42px}
   .traits{grid-template-columns:1fr}
 }
-@media (prefers-reduced-motion:reduce){ .nav a:hover,.chip:hover,.dcard:hover{transform:none!important} .petals{display:none} .bark,.heart{animation:none} }
+@media (prefers-reduced-motion:reduce){ .sitenav a:hover,.chip:hover,.dcard:hover,.place:hover,.tpics a:hover{transform:none!important} .petals{display:none} .bark,.heart{animation:none} }
 
 /* ===== v2.14: the language menu (every page) and the per-language typography (tools/site_i18n.js writes the pages) ===== */
-.langbar{display:flex;justify-content:flex-end;margin:-6px 0 6px;position:relative;z-index:900}
 .langs{position:relative}
 .langs summary{list-style:none;display:inline-flex;align-items:center;gap:6px;min-height:44px;min-width:44px;padding:4px 14px;border:2px solid var(--ink);border-radius:14px 10px 15px 9px;
   background:var(--paper);color:var(--ink);font-family:var(--read);font-size:18px;line-height:1.1;cursor:pointer;box-shadow:2px 3px 0 rgba(91,61,50,.16);user-select:none}
@@ -267,11 +252,11 @@ html.i18n body{overflow-wrap:anywhere}
 html.s-cjk body{line-height:1.65;word-break:normal;line-break:strict}
 html[lang="ko"] body{line-height:1.6;word-break:keep-all;line-break:auto}
 html.s-th body{word-break:normal;line-break:auto}
-html.s-cjk .nav a,html.s-cjk .chip,html.s-cjk .play{line-height:1.2}
+html.s-cjk .sitenav a,html.s-cjk .chip,html.s-cjk .play{line-height:1.2}
 html.s-cjk h1,html.s-cjk h2,html.s-cjk h3,html.s-cjk .dname,html.s-cjk .bubble,html.s-cjk .tag{line-height:1.25}
 html.s-th body{line-height:1.75}
 html.s-th h1,html.s-th h2,html.s-th h3,html.s-th .dname,html.s-th .bubble,html.s-th .tag,html.s-th .traits b,html.s-th .feats b{line-height:1.45}
-html.s-th .nav a,html.s-th .chip,html.s-th .play{line-height:1.45}
+html.s-th .sitenav a,html.s-th .chip,html.s-th .play{line-height:1.45}
 html[lang="de"] body,html[lang="fr"] body,html[lang="es"] body,html[lang="pt-BR"] body,html[lang="id"] body{hyphens:auto;-webkit-hyphens:auto}
 html.i18n .bark{white-space:nowrap}
 /* the /dogs picture menu: even columns; a long name first shrinks to fit its cell (down to 15px, --n: tools/site_i18n.js navEm), then wraps
@@ -295,3 +280,130 @@ html.s-th .cards .dcard .dname{word-break:normal}
 /* the puppy caption on /dogs: under the pictures in the other languages (a longer caption would cover the drawings) */
 html.i18n .pics{padding-bottom:0}
 html.i18n .pics .cap{position:static;display:block;text-align:right;margin-top:-8px;line-height:1.25}
+
+/* ===== site v3 (19 Oct 2026): the header (every page), the itch.io widget, the map and About teasers, /map, /about, the decoration ===== */
+/* the header: logo, Home · Dogs · Map · About Us, the language menu. Desktop: one bar over the sheet; up to 860px: logo and language menu,
+   then the four links as four equal tabs (their labels may wrap to two lines) */
+.sitehead{position:relative;z-index:30;display:flex;align-items:center;gap:8px 14px;width:calc(100% - 32px);max-width:948px;margin:14px auto 0;padding:6px 10px 6px 12px;
+  background:var(--paper);border:2.5px solid var(--ink);border-radius:16px 12px 18px 11px / 12px 18px 11px 16px;box-shadow:3px 4px 0 rgba(91,61,50,.18)}
+.brand{flex:none;display:flex;align-items:center;min-height:44px;min-width:44px;border-radius:10px}
+.brand img{display:block;height:46px;width:auto;mix-blend-mode:multiply}
+.sitenav{flex:1;display:flex;justify-content:center;gap:8px}
+.sitenav a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:4px 16px;border:2px solid var(--ink);border-radius:14px 10px 15px 9px;
+  background:var(--paper);color:var(--ink);text-decoration:none;font-family:var(--hand);font-size:25px;font-weight:700;line-height:1;text-align:center;--tab:var(--w-mint)}
+.sitenav a:nth-child(2){--tab:var(--w-pink)} .sitenav a:nth-child(3){--tab:var(--w-blue)} .sitenav a:nth-child(4){--tab:var(--w-yellow)}
+.sitenav a:hover{background:var(--tab);transform:rotate(-1.5deg)}
+.sitenav a[aria-current="page"]{background:var(--tab);box-shadow:2px 3px 0 var(--ink);transform:rotate(-1deg)}
+.sitehead .langs{flex:none}
+.langs summary>span[lang]{display:inline-block;max-width:11em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
+@media (max-width:860px){
+  .sitehead{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"brand . langs" "nav nav nav";gap:6px 8px;padding:6px 8px 8px}
+  .brand{grid-area:brand} .sitehead .langs{grid-area:langs}
+  .sitenav{grid-area:nav;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+  .sitenav a{min-width:0;padding:5px 3px;font-size:22px;line-height:1.05;overflow-wrap:break-word;word-break:normal}
+}
+@media (max-width:700px){
+  .sitehead{margin-top:10px}
+  .brand img{height:38px}
+  .sitenav a{font-size:min(20px,5.4vw)} /* 17px at 320px wide: Beranda, Startseite, Accueil fit a quarter of the bar on one line */
+  html.i18n .sitenav a{overflow-wrap:break-word}
+  .langs summary{padding:4px 10px}
+  .langs summary>span[lang]{max-width:min(9em,28vw)}
+  .page{padding-top:10px;padding-bottom:56px} /* room under the footer for the dog peeking up from the bottom edge (site.js) */
+}
+html.s-th .sitenav a{line-height:1.35}
+
+/* the home page: the itch.io widget (itch's own layout drops the cover below 500px wide), a plain link under it, the free line */
+.getit{margin:18px auto 6px;max-width:600px;text-align:center}
+.itchbox{max-width:552px;margin:0 auto;overflow:hidden;background:var(--paper);border:2.5px solid var(--ink);border-radius:14px 10px 15px 9px;box-shadow:3px 4px 0 rgba(91,61,50,.18)}
+.itchbox iframe{display:block;width:100%;max-width:552px;height:167px;border:0}
+.itchalt{margin:6px 0 2px}
+.itchalt a{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 6px;font-size:19px;font-weight:700;text-decoration:underline;text-decoration-color:var(--pink);text-decoration-thickness:2px;text-underline-offset:3px}
+.free{display:flex;align-items:center;justify-content:center;gap:14px;margin:4px 0 0}
+.free .hanko{flex:none;font-size:19px}
+.free .small{text-align:left;max-width:440px}
+@media (min-width:701px){ .cards.featured{grid-template-columns:repeat(4,minmax(0,1fr))} }
+.some{color:var(--muted);margin:4px 0 2px}
+.teaser{scroll-margin-top:10px}
+.tpics{list-style:none;padding:0;margin:12px 0 8px;display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:16px;align-items:center}
+.tpics a{display:block;background:#fff;border:2px solid var(--ink);border-radius:12px 9px 13px 8px;padding:5px;box-shadow:2px 3px 0 rgba(91,61,50,.18);transition:transform .15s}
+.tpics li:nth-child(1) a{transform:rotate(-1deg)} .tpics li:nth-child(2) a{transform:rotate(1.2deg)} .tpics li:nth-child(3) a{transform:rotate(-.6deg)}
+.tpics a:hover{transform:rotate(0) translateY(-2px)}
+.tpics img{display:block;width:100%;height:auto;border-radius:7px;background:var(--w-blue)}
+.abt{display:grid;grid-template-columns:200px minmax(0,1fr);gap:8px 20px;align-items:center;padding:14px 18px;background:var(--w-peach);border:2px dashed var(--ink);border-radius:16px 12px 17px 11px}
+.abt h2{margin-top:0}
+.abt .abdog{display:block;width:100%;height:auto;transform:rotate(-3deg)}
+@media (max-width:700px){
+  .tpics{grid-template-columns:1fr 1fr;gap:12px}
+  .tpics li:first-child{grid-column:1/-1}
+  .abt{grid-template-columns:1fr;text-align:center;padding:12px 14px}
+  .abt .abdog{width:min(170px,60%);margin:0 auto}
+  .free{gap:10px}
+}
+
+/* /dogs: a friendlier page; profiles take turns left and right on wide screens, the pictures wiggle on hover or tap */
+.small-top .lead{max-width:780px;margin:.3em auto .9em;font-size:20px}
+.prof{padding:30px 8px 26px}
+@media (min-width:701px){ .prof{grid-template-columns:300px minmax(0,1fr)} .prof:nth-of-type(even){grid-template-columns:minmax(0,1fr) 300px} .prof:nth-of-type(even) .pics{order:2} }
+@media (min-width:701px) and (max-width:860px){ .prof,.prof:nth-of-type(even){grid-template-columns:240px minmax(0,1fr)} .prof:nth-of-type(even){grid-template-columns:minmax(0,1fr) 240px} .jpline .jp{white-space:normal} }
+.dognav a{transition:transform .15s}
+.dognav li:nth-child(odd) a:hover{transform:rotate(-2deg) translateY(-2px)} .dognav li:nth-child(even) a:hover{transform:rotate(2deg) translateY(-2px)}
+@keyframes wiggle{0%,100%{transform:rotate(0)}20%{transform:rotate(-5deg)}40%{transform:rotate(4deg)}60%{transform:rotate(-3deg)}80%{transform:rotate(2deg)}}
+@media (prefers-reduced-motion:no-preference){
+  .pics:hover .big,.pics.wig .big,.dcard:hover .dimg,.dimg.wig,.abdog.wig{animation:wiggle .6s ease-in-out}
+  .pics .big,.dimg,.abdog{transform-origin:50% 85%}
+}
+@media (prefers-reduced-motion:reduce){ .dognav a:hover{transform:none!important} }
+
+/* /map: the three areas, the big maps and a card for every place */
+.mapsheet .small-top h1{font-size:54px}
+.jumps{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 10px;margin:4px 0 0}
+.jumps .chip:nth-child(1){background:var(--w-mint)} .jumps .chip:nth-child(2){background:var(--w-pink)} .jumps .chip:nth-child(3){background:var(--w-blue)}
+.places{margin-top:30px;padding-top:18px;border-top:2.5px dashed var(--dot);scroll-margin-top:10px}
+.places h2{margin-top:0}
+.seclead{margin:.1em 0 .9em}
+.bigmap{margin:8px 0 22px;padding:6px;background:#fff;border:2.5px solid var(--ink);border-radius:14px 10px 15px 9px;box-shadow:3px 4px 0 rgba(91,61,50,.18);transform:rotate(-.4deg);scroll-margin-top:10px}
+.bigmap img{display:block;width:100%;height:auto;border-radius:9px 7px 10px 6px;background:var(--w-blue)}
+.placegrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px 16px}
+.place{display:flex;flex-direction:column;padding:6px 6px 12px;background:#fff;border:2px solid var(--ink);border-radius:14px 10px 15px 9px;box-shadow:2px 3px 0 rgba(91,61,50,.16);transition:transform .15s;scroll-margin-top:10px}
+.place:nth-child(6n+1){background:var(--w-mint)} .place:nth-child(6n+2){background:var(--w-pink)} .place:nth-child(6n+3){background:var(--w-peach)}
+.place:nth-child(6n+4){background:var(--w-blue)} .place:nth-child(6n+5){background:var(--w-lilac)} .place:nth-child(6n+6){background:var(--w-yellow)}
+.place:nth-child(odd):hover{transform:rotate(-.8deg) translateY(-2px)} .place:nth-child(even):hover{transform:rotate(.8deg) translateY(-2px)}
+.place:target{box-shadow:0 0 0 4px var(--pink),2px 3px 0 rgba(91,61,50,.16)}
+.place img{display:block;width:100%;height:auto;border:2px solid var(--ink);border-radius:9px 7px 10px 6px;background:var(--paper)}
+.place h3{font-size:29px;margin:10px 6px 2px}
+.place p{margin:0 6px;font-size:18px;line-height:1.4}
+@media (min-width:861px){ #home-places .placegrid{grid-template-columns:repeat(4,minmax(0,1fr))} #home-places .place h3{font-size:26px} }
+@media (max-width:860px){ .placegrid{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:700px){ .placegrid{grid-template-columns:1fr} .mapsheet .small-top h1{font-size:42px} .bigmap{padding:4px;margin-bottom:16px} }
+
+/* /about: the story, at a comfortable reading width, a crayon dachshund beside the opening, a momiji by the signature */
+.about{max-width:62ch;margin:0 auto;padding:4px 0 2px;font-size:20px;line-height:1.75}
+.about h1{font-size:52px;text-align:center;margin:8px 0 22px}
+.about p{margin:0 0 1.05em}
+.about .abdog{float:right;width:200px;height:auto;margin:-6px -14px 6px 18px;shape-outside:ellipse(48% 46%)}
+.about .closing{clear:both;font-family:var(--hand);font-size:31px;font-weight:700;line-height:1.3;text-align:center;margin:1.3em 0 .3em}
+.about .paw{font-family:sans-serif;font-size:.8em;font-weight:400;white-space:nowrap}
+.about .sign{display:flex;justify-content:flex-end;align-items:center;gap:10px;font-family:var(--hand);font-size:32px;font-weight:700;color:var(--muted);margin:0 0 .4em}
+.about .aleaf{width:30px;height:30px;transform:rotate(-24deg)}
+.about .cta{margin-top:20px}
+.about .play{line-height:1.2;text-align:center}
+.about .cta p{font-size:19px}
+html.s-cjk .about{line-height:1.85} html.s-th .about{line-height:1.9}
+@media (max-width:700px){
+  .about{font-size:18.5px;line-height:1.7}
+  .about h1{font-size:40px;margin-bottom:16px}
+  .about .abdog{width:132px;margin:-2px -6px 4px 10px}
+  .about .closing{font-size:27px}
+}
+
+/* the decoration (site.js): behind the paper (.page is z-index 1), inside the page's own box (no sideways scroll), never taking a tap */
+.deco{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+.deco img{position:absolute;display:block;max-width:none;pointer-events:none;user-select:none;-webkit-user-drag:none}
+.peek{transform:rotate(var(--r,0deg));transform-origin:50% 70%}
+.deco .leaf{transform:rotate(var(--r,0deg));opacity:.92}
+@media (prefers-reduced-motion:no-preference){
+  .peek{animation:peekin .9s cubic-bezier(.34,1.45,.55,1) var(--d,0s) both,peekbob 3.4s ease-in-out calc(var(--d,0s) + 1.6s) 3}
+}
+@keyframes peekin{from{transform:translate(var(--hx,0px),var(--hy,0px)) rotate(var(--r,0deg))}to{transform:translate(0,0) rotate(var(--r,0deg))}}
+@keyframes peekbob{0%,100%{transform:rotate(var(--r,0deg))}50%{transform:rotate(calc(var(--r,0deg) * .3))}}

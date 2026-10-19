@@ -8,13 +8,13 @@
 <meta property="og:image" content="https://doodledoggo.app/logo-1200x630.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">{{raw langscript}}
 </head><body>
-<main class="page">{{raw langmenu}}
+<div class="deco" id="deco" aria-hidden="true"></div>{{raw header}}
+<main class="page">
   <div class="sheet">
-    <header class="top">
+    <div class="top">
       <h1 class="h1logo"><img class="logo" src="/doodle-doggo-logo.svg" alt="{{a common.logo_alt}}" width="900" height="280"></h1>
       <p class="tag">🖍️ {{t home.tagline}}</p>
-      <nav class="nav" aria-label="{{a home.nav_label}}"><a href="#dogs">{{t home.nav.dogs}}</a><a href="#japan">{{t home.nav.japan}}</a><a href="{{u /dogs}}">{{t home.nav.profiles}}</a></nav>
-    </header>
+    </div>
 
     <section class="playroom" aria-label="{{a home.playroom_label}}">
       <div class="scene" id="scene">
@@ -37,10 +37,10 @@
       </div>
     </section>
 
-    <div class="cta big">
-      <a class="play" id="play" href="https://an9ou.itch.io/doodle-doggo">{{t common.play}}</a>
-      <span class="hanko" lang="ja" title="{{a home.free_title}}">無料</span>
-      <p class="small">{{t home.free_line}}</p>
+    <div class="getit">
+      <div class="itchbox" id="itchbox"><iframe id="itch" src="https://itch.io/embed/5163381?bg_color=fffbf3&fg_color=5b3d32&link_color=c93a2a&border_color=5b3d32" width="552" height="167" frameborder="0" title="{{a home.widget.title}}" loading="lazy"><a href="https://an9ou.itch.io/doodle-doggo">{{t home.widget.fallback}}</a></iframe></div>
+      <p class="itchalt"><a id="itchlink" href="https://an9ou.itch.io/doodle-doggo">{{t home.widget.fallback}} <span aria-hidden="true">→</span></a></p>
+      <p class="free"><span class="hanko" lang="ja" title="{{a home.free_title}}">無料</span><span class="small">{{t home.free_line}}</span></p>
     </div>
 
     <p class="intro">{{t home.intro}}</p>
@@ -48,12 +48,13 @@
     <section id="dogs" class="sec">
       <h2>{{t home.dogs.title}} <span class="jpw">{{t home.dogs.gloss}}</span></h2>
       <p>{{t home.dogs.lead}}</p>
-      <ul class="cards">
+      <ul class="cards featured">
 <!-- dogs:cards -->
 {{raw cards}}
 <!-- /dogs:cards -->
       </ul>
-      <p class="center"><a class="chip" href="{{u /dogs}}">{{t home.dogs.all}}</a></p>
+      <p class="center some">{{t home.dogs.some}}</p>
+      <p class="center"><a class="chip" href="{{u /dogs}}">{{t home.dogs.all}} <span aria-hidden="true">→</span></a></p>
     </section>
 
     <section class="sec">
@@ -100,13 +101,21 @@
       </div>
     </section>
 
-    <section class="sec">
-      <h2>{{t home.peek.title}}</h2>
-      <div class="shots">
-        <figure><img src="/img/screenshot-1-winter-yard.webp" alt="{{a home.peek.yard_alt}}" width="1280" height="720" loading="lazy"><figcaption>{{t home.peek.yard}}</figcaption></figure>
-        <figure><img src="/img/screenshot-3-walk-fuji.webp" alt="{{a home.peek.walk_alt}}" width="1280" height="720" loading="lazy"><figcaption>{{t home.peek.walk}}</figcaption></figure>
-        <figure><img src="/img/screenshot-4-fuji-view-hill.webp" alt="{{a home.peek.lookout_alt}}" width="1280" height="720" loading="lazy"><figcaption>{{t home.peek.lookout}}</figcaption></figure>
-        <figure><img src="/img/screenshot-5-new-year.webp" alt="{{a home.peek.newyear_alt}}" width="1280" height="720" loading="lazy"><figcaption>{{t home.peek.newyear}}</figcaption></figure>
+    <section id="mapteaser" class="sec teaser">
+      <h2>{{t home.map.title}} <span class="jpw">{{t map.h1_gloss}}</span></h2>
+      <p>{{t home.map.text}}</p>
+      <ul class="tpics">
+{{raw teaserpics}}
+      </ul>
+      <p class="center"><a class="chip" href="{{u /map}}">{{t home.map.link}} <span aria-hidden="true">→</span></a></p>
+    </section>
+
+    <section id="aboutteaser" class="sec teaser abt">
+      <img class="abdog" src="/img/art/dogs/dachs-still.svg" alt="{{a about.dog_alt}}" width="240" height="200" loading="lazy">
+      <div>
+        <h2>{{t home.about.title}}</h2>
+        <p>{{t home.about.text}}</p>
+        <p><a class="chip" href="{{u /about}}">{{t home.about.link}} <span aria-hidden="true">→</span></a></p>
       </div>
     </section>
 
@@ -117,7 +126,7 @@
   </div>
   <footer class="foot">
     <a href="https://www.instagram.com/doodledoggo.app/" id="insta" rel="noopener">{{t footer.instagram}}</a> · <a href="mailto:contact@doodledoggo.app" id="contact" class="contact">{{t footer.contact}}</a> · <a href="{{u /privacy}}">{{t footer.privacy}}</a> ·
-    <a href="{{u /dogs}}">{{t footer.dogs}}</a> ·
+    <a href="{{u /dogs}}">{{t footer.dogs}}</a> · <a href="{{u /map}}">{{t footer.map}}</a> · <a href="{{u /about}}">{{t footer.about}}</a> ·
     <a href="https://an9ou.itch.io/doodle-doggo">{{t footer.itch}}</a>
     <div class="small">{{t footer.credit}} {{t home.footer.thanks}}</div>
   </footer>

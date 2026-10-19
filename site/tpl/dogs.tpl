@@ -8,18 +8,18 @@
 <meta property="og:image" content="https://doodledoggo.app/logo-1200x630.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">{{raw langscript}}
 </head><body>
-<main class="page">{{raw langmenu}}
-  <div class="sheet">
-    <header class="top small-top">
-      <a class="homelink" href="{{u /}}"><img class="logo sm" src="/doodle-doggo-logo.svg" alt="{{a dogs.home_alt}}" width="900" height="280"></a>
+<div class="deco" id="deco" aria-hidden="true"></div>{{raw header}}
+<main class="page">
+  <div class="sheet dogsheet">
+    <div class="top small-top">
       <h1>{{t dogs.h1}} <span class="jpw">{{t dogs.h1_gloss}}</span></h1>
-      <p>{{t dogs.lead}}</p>
+      <p class="lead">{{t dogs.lead}}</p>
       <ul class="dognav">
 <!-- dogs:nav -->
 {{raw dognav}}
 <!-- /dogs:nav -->
       </ul>
-    </header>
+    </div>
 
 <!-- dogs:profiles -->
 {{raw profiles}}
@@ -32,7 +32,7 @@
   </div>
   <footer class="foot">
     <a href="https://www.instagram.com/doodledoggo.app/" id="insta" rel="noopener">{{t footer.instagram}}</a> · <a href="mailto:contact@doodledoggo.app" id="contact" class="contact">{{t footer.contact}}</a> · <a href="{{u /privacy}}">{{t footer.privacy}}</a> ·
-    <a href="{{u /}}">{{t footer.home}}</a> ·
+    <a href="{{u /}}">{{t footer.home}}</a> · <a href="{{u /map}}">{{t footer.map}}</a> · <a href="{{u /about}}">{{t footer.about}}</a> ·
     <a href="https://an9ou.itch.io/doodle-doggo">{{t footer.itch}}</a>
     <div class="small">{{t footer.credit}}</div>
   </footer>
