@@ -265,7 +265,7 @@ function brPredict(dam, sire) {
   const G = brG(); if (!G || typeof G.predict !== 'function' || !dam.genes || !sire.genes || !tested(dam) || !tested(sire)) return '';
   let rows = []; try { rows = G.predict(dam.genes, sire.genes, dam.key, sire.key) || []; } catch (e) { return ''; }
   if (!rows.length) return '';
-  return `<div class="pd-predict"><b>${tt('playdate.puppy_predictor', 'Puppy Predictor')}</b> <span class="small">${tt('playdate.from_the_gene_tests', '(from the gene tests)')}</span><ul>${rows.slice(0, 6).map((x) => `<li><span class="pd-bar" style="width:${Math.max(4, Math.round(x.pct))}%"></span>${esc(x.eyes ? tt('playdate.coat_and_eyes', '{coat}, {eyes} eyes', { coat: x.coat, eyes: x.eyes }) : x.coat)} <b>${Math.round(x.pct * 10) / 10}%</b></li>`).join('')}</ul></div>`;
+  return `<div class="pd-predict"><b>${tt('playdate.puppy_predictor', 'Puppy Predictor')}</b> <span class="small">${tt('playdate.from_the_gene_tests', '(from the gene tests)')}</span><ul>${rows.slice(0, 6).map((x) => `<li><span class="pd-bar" style="width:${Math.max(4, Math.round(x.pct))}%"></span>${esc(x.eyes ? tt('playdate.coat_and_eyes', '{coat}, {eyes} eyes', { coat: coatShown(x.coat, dam.key), eyes: x.eyes }) : coatShown(x.coat, dam.key))} <b>${Math.round(x.pct * 10) / 10}%</b></li>`).join('')}</ul></div>`;
 }
 function openPlaydates(opts) {
   opts = opts || {}; brFields();
@@ -362,7 +362,7 @@ function adoptPick(letterId, pupId) {
     if (cur.mode === 'yard') go('yard'); brRampPopup(); return d;
   };
   if (pupId) { const pp = nl.pups.find((x) => x.id === pupId); return pp ? take(pp) : false; }
-  const p = openModal(tt('playdate.pick_of_the_litter', 'Pick of the litter'), `<p>${esc(tt('playdate.s_family_lets_you_choose_one', "{npcName}'s family lets you choose one pup to bring home, free.", { npcName: nl.npcName }))}</p><div class="lt-pups">${nl.pups.map((pp) => `<button class="lt-card pick" data-pick="${pp.id}">${pp.sparkle ? '<span class="lt-spark">' + tt('playdate.sparkle', 'Sparkle!') + '</span>' : ''}<span class="lt-art">${dogSVG(Object.assign({}, pp, { born: brAddDays(brToday(), -2) }), { pose: 'sit' })}</span><b>${esc(pp.name)} ${sexSym(pp.sex)}</b><span class="small">${esc(pp.mix ? mixShown(pp.mix) : brBreed(pp.key))}<br>${esc(tt('playdate.coat_and_eyes', '{coat}, {eyes} eyes', { coat: pp.coat, eyes: pp.eyes }))}</span></button>`).join('')}</div>`, { cls: 'litter' });
+  const p = openModal(tt('playdate.pick_of_the_litter', 'Pick of the litter'), `<p>${esc(tt('playdate.s_family_lets_you_choose_one', "{npcName}'s family lets you choose one pup to bring home, free.", { npcName: nl.npcName }))}</p><div class="lt-pups">${nl.pups.map((pp) => `<button class="lt-card pick" data-pick="${pp.id}">${pp.sparkle ? '<span class="lt-spark">' + tt('playdate.sparkle', 'Sparkle!') + '</span>' : ''}<span class="lt-art">${dogSVG(Object.assign({}, pp, { born: brAddDays(brToday(), -2) }), { pose: 'sit' })}</span><b>${esc(pp.name)} ${sexSym(pp.sex)}</b><span class="small">${esc(pp.mix ? mixShown(pp.mix) : brBreed(pp.key))}<br>${esc(tt('playdate.coat_and_eyes', '{coat}, {eyes} eyes', { coat: coatShown(pp.coat, pp.key), eyes: pp.eyes }))}</span></button>`).join('')}</div>`, { cls: 'litter' });
   p.querySelectorAll('[data-pick]').forEach((b) => { b.onclick = () => take(nl.pups.find((x) => x.id === b.dataset.pick)); });
   return true;
 }

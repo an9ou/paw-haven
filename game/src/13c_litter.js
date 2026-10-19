@@ -68,7 +68,7 @@ function brStoneLetter() {
 }
 function brPupCard(pp, i, named, fresh) {
   return `<div class="lt-card ${pp.sparkle ? 'sparkly' : ''}" style="--i:${i}" data-pup="${pp.id}">${pp.sparkle ? '<span class="lt-spark">' + tt('puppies.sparkle', 'Sparkle!') + '</span>' : ''}${fresh ? '<span class="lt-new" aria-label="' + esc(tt('puppies.label_new_coat', 'New coat')) + '">' + tt('puppies.new', 'NEW') + '</span>' : ''}<span class="lt-art">${pupArt(pp, { pose: 'sleep' })}</span>
-    <span class="lt-sx">${sexSym(pp.sex)} ${pp.sex === 'female' ? tt('puppies.girl', 'Girl') : tt('puppies.boy', 'Boy')}</span><span class="small">${esc(pp.mix ? mixShown(pp.mix) : brBreed(pp.key))}<br>${esc(tt('puppies.coat_and_eyes', '{coat}, {eyes} eyes', { coat: pp.coat, eyes: pp.eyes }))}</span>
+    <span class="lt-sx">${sexSym(pp.sex)} ${pp.sex === 'female' ? tt('puppies.girl', 'Girl') : tt('puppies.boy', 'Boy')}</span><span class="small">${esc(pp.mix ? mixShown(pp.mix) : brBreed(pp.key))}<br>${esc(tt('puppies.coat_and_eyes', '{coat}, {eyes} eyes', { coat: coatShown(pp.coat, pp.key), eyes: pp.eyes }))}</span>
     ${named ? `<b>${esc(pp.name)}</b>` : `<label class="lt-name"><span class="sr">${esc(tt('puppies.name_for_pup', 'Name for pup {n}', { n: i + 1 }))}</span><input class="namebox" maxlength="16" data-pupname="${pp.id}" value="${esc(pp.name)}" aria-label="${esc(tt('puppies.name_for_the_pup', '{sex, select, female {Name for the girl pup} other {Name for the boy pup}}', { sex: homeSx(pp) }))}"></label>`}</div>`;
 }
 function openBirth(litterId) {
@@ -178,7 +178,7 @@ function openWhoStays(litterId) {
   let kept = L.pups.filter((pp) => brStay[pp.id]).length;
   if (kept > free) { L.pups.forEach((pp) => { brStay[pp.id] = false; }); kept = 0; }
   const card = (pp, i) => `<div class="lt-card ws ${brStay[pp.id] ? 'stay' : 'home'} ${pp.sparkle ? 'sparkly' : ''}" style="--i:${i}">${pp.sparkle ? '<span class="lt-spark">' + tt('puppies.sparkle', 'Sparkle!') + '</span>' : ''}<span class="lt-art">${pupArt(Object.assign({}, pp), { pose: 'sit' })}</span>
-    <b>${esc(pp.name)} ${sexSym(pp.sex)}</b><span class="small">${esc(pp.mix ? mixShown(pp.mix) : brBreed(pp.key))}<br>${esc(pp.coat)}</span>
+    <b>${esc(pp.name)} ${sexSym(pp.sex)}</b><span class="small">${esc(pp.mix ? mixShown(pp.mix) : brBreed(pp.key))}<br>${esc(coatShown(pp.coat, pp.key))}</span>
     <div class="ws-tog" role="group" aria-label="${esc(pp.name)}"><button class="btn ${brStay[pp.id] ? 'yes' : ''}" data-ws="${pp.id}|stay" aria-pressed="${!!brStay[pp.id]}">${tt('puppies.stay', 'Stay')}</button><button class="btn ${brStay[pp.id] ? '' : 'go'}" data-ws="${pp.id}|home" aria-pressed="${!brStay[pp.id]}">${tt('puppies.loving_home', 'Loving home')}</button></div></div>`;
   const p = openModal(tt('puppies.who_stays', 'Who stays?'), `<p>${esc(tt('puppies.s_pups_are_2_months_old', "{name}'s pups are 2 months old: big enough for new homes. Keep some, and the rest move in with kind families in town. They'll send postcards and visit.", { name: mum.name }))}</p>
     <p class="ws-free" id="wsFree"><b>${esc(tt('puppies.free_spots', 'Free spots: {n}', { n: free - kept }))}</b> <span class="small">${esc(tt('puppies.of_kept_pups_use_a_dog', '(of {n}. Kept pups use a dog spot.)', { n: free }))}</span></p>
