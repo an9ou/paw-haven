@@ -78,7 +78,7 @@
     "about.mail": "{mail} is the email link contact@doodledoggo.app.",
     "about.p5": "“No in-game purchases and no ads, and there never will be” is the owner's promise: keep it clearly.",
     "about.p7": "itch.io is a website name: never translate it. A donation is optional: never make it sound like paying is needed.",
-    "about.p8": "Keep the paw emoji 🐾 at the end."
+    "about.p8": "The page adds a paw print after this last line itself (no emoji in the strings)."
   },
   "common.logo_alt": "Doodle Doggo",
   "common.play": "PLAY AT ITCH.IO",
@@ -889,7 +889,7 @@
   "about.p5": "The game is completely free. There are no in-game purchases and no ads, and there never will be. It's a small project made with a lot of love, and it keeps growing. New dogs, places and little surprises arrive with every update.",
   "about.p6": "I would truly love to hear from you. Tell me what made you smile, what felt wrong, or what you wish your dog could do. Every comment helps me make the game better.",
   "about.p7": "If Doodle Doggo brightens your day and you'd like to support us, you can leave a donation on itch.io. Every bit helps us keep building, and maybe one day it brings us a little closer to a real dachshund of our own.",
-  "about.p8": "Thank you for playing, and for giving these crayon dogs a home. 🐾",
+  "about.p8": "Thank you for playing, and for giving these crayon dogs a home.",
   "about.dog_alt": "A wobbly crayon dachshund, wagging",
   "about.itch": "Leave a comment or a donation on itch.io",
   "about.mail": "Or write to us: {mail}"
