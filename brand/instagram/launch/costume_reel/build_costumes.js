@@ -143,12 +143,12 @@ const mux = (video, audio, T, mp4, extra = []) => cp.execFileSync('ffmpeg', ['-l
       const t = fi / FPS; let g = `<image href="${bg}" x="0" y="0" width="${W}" height="${H}"/>`, nowLook = null, perfect = false;
       for (let k = 0; k < B_N; k++) for (const wrap of [-B_T, 0, B_T]) {
         const li = bseq[k], sp = sprite[li], dt = t - (align[k] + wrap), v = (H + (sp.bot - sp.top)) / CROSS, dy = v * dt; // speed: from just above the top edge to just below the bottom edge in CROSS seconds
+        if (nowLook === null || Math.abs(dt) < nowLook[1]) nowLook = [li, Math.abs(dt)]; // the label names the nearest costume, on screen or not
         if (sp.bot + dy < 0 || sp.top + dy > H) continue;
         g += `<image href="${sp.url}" x="0" y="${f1(dy)}" width="${W}" height="${H}"/>`;
         if (Math.abs(dt) < 1e-6) perfect = true;
-        if (nowLook === null || Math.abs(dt) < nowLook[1]) nowLook = [li, Math.abs(dt)];
       }
-      g += header + (nowLook ? label(LOOKS[nowLook[0]][0]) : label('…')) + (perfect ? sparkle : '');
+      g += header + label(LOOKS[nowLook[0]][0]) + (perfect ? sparkle : '');
       await shot(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${g}</svg>`, path.join(WORK, 'b', `f${String(fi).padStart(5, '0')}.png`));
       if (fi % 150 === 0) console.log('B frame', fi, '/', NF);
     }
