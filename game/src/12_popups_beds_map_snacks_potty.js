@@ -187,7 +187,7 @@ function clearPotty() { pottyT.splice(0).forEach(clearTimeout); if (pottyBusy) {
 function mapTipText(k) {
   const here = (S.place === 'house' ? 'yard' : S.place) === k;
   const names = { yard: tt('popup.my_yard', 'My Yard'), market: tt('popup.market_street', 'Market Street'), shelter: tt('popup.doodle_doggo_shelter', 'Doodle Doggo Shelter'), park: tt('popup.sunny_park', 'Sunny Park'), river: tt('popup.riverside', 'Riverside'), woods: tt('popup.maple_woods', 'Maple Woods'), beach: tt('popup.seashell_beach', 'Seashell Beach') };
-  const nm = (PLACES[k] && k !== 'yard' ? tdata('places.' + k + '.n', PLACES[k].n) : names[k]) || k;
+  const nm = (PLACES[k] && k !== 'yard' ? placeName(k) : names[k]) || k;
   if (here) return tt('popup.you_are_here', '{nm}: you are here', { nm });
   if (k === 'shelter') return tt('popup.visit_the_dogs', '{nm}: visit the dogs', { nm });
   if (PLACES[k] && topBond() < PLACES[k].bond) return tt('popup.bond_needed', '{nm}: Bond {bond}', { nm, bond: PLACES[k].bond });

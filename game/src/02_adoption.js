@@ -20,6 +20,8 @@ function homeSig(k, field) { const s = sigOf(k); return SIG[k] ? tdata('sig.' + 
 function homeFam(s) { return s && typeof townFamily === 'function' ? townFamily(s) : s || ''; }
 // v2.14: a shop's name (shopTitle from 05_market_shops when present)
 function shopName(k) { return typeof shopTitle === 'function' ? shopTitle(k) : tdata('shop_name.' + k, SHOP_NAME[k]); }
+// v2.14: a place's name as shown (Tokyo places and the station come from 39_tokyo.js tkPlaceName)
+function placeName(k) { return typeof tkPlaceName === 'function' && (k === 'station' || (typeof TK_PLACES !== 'undefined' && TK_PLACES[k])) ? tkPlaceName(k) : PLACES[k] ? tdata('places.' + k + '.n', PLACES[k].n) : k; }
 function enterAdopt() {
   setChrome(false, false);
   view.innerHTML = srRoomSVG('adopt'); // v2.7: the Shelter Playroom (30_shelter.js). No S is read or written here

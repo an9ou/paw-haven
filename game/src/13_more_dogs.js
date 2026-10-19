@@ -420,7 +420,7 @@ function mapPick(k) {
   const chip = $('#mapGo'); if (!chip) return pickArea(k);
   const g = $(`#mapPan [data-area="${k}"]`); if (g) mapHighlight(g);
   const lockB = PLACES[k] && topBond() < PLACES[k].bond, here = (S.place === 'house' ? 'yard' : S.place) === k;
-  const name = k === 'shelter' ? tt('pack.the_shelter', 'the shelter') : PLACES[k] ? tdata('places.' + k + '.n', PLACES[k].n) : k;
+  const name = k === 'shelter' ? tt('pack.the_shelter', 'the shelter') : PLACES[k] ? placeName(k) : k;
   chip.hidden = false; chip.dataset.k = k;
   chip.innerHTML = lockB ? `<span>${esc(tt('pack.opens_at_bond', '{place}: opens at Bond {bond}', { place: name, bond: PLACES[k].bond }))}</span>` : here ? `<span>${esc(tt('pack.you_are_here', 'You are here: {place}', { place: name }))}</span><button class="btn" id="mapStay">${tt('pack.stay', 'Stay')}</button>` : `<button class="btn go big" id="mapGoBtn">${k === 'shelter' ? tt('pack.visit_the_shelter', 'Visit the shelter') : esc(tt('pack.go_to', 'Go to {place}', { place: name }))}</button><button class="btn" id="mapNo" aria-label="${esc(tt('pack.label_cancel', 'Cancel'))}">x</button>`;
   const gb = $('#mapGoBtn'); if (gb) gb.onclick = () => { chip.hidden = true; pickArea(k); };
