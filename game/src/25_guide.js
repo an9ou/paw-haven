@@ -66,19 +66,19 @@ function gdLayer() {
   if (gd.layer && gd.layer.isConnected) return gd.layer;
   document.documentElement.style.setProperty('--gd-paper', svgURI(gdPaper()));
   const L = document.createElement('div'); L.id = 'gdLayer';
-  L.innerHTML = '<div class="gd-ring" hidden></div><div class="gd-card" role="region" aria-label="Gerald the duck" aria-live="polite" hidden><div class="gd-duck"></div><div class="gd-main"><div class="gd-say"><p class="gd-txt"></p></div><div class="gd-row"><span class="gd-dots"></span><span class="gd-btns"><button class="btn gd-skip" type="button" aria-label="Skip the guide"><span class="gd-skl">Skip the guide</span><span class="gd-sks">Skip</span></button><button class="btn yes gd-next" type="button">Next</button></span></div></div></div>';
+  L.innerHTML = '<div class="gd-ring" hidden></div><div class="gd-card" role="region" aria-label="' + esc(tt('guide.gerald', 'Gerald the duck')) + '" aria-live="polite" hidden><div class="gd-duck"></div><div class="gd-main"><div class="gd-say"><p class="gd-txt"></p></div><div class="gd-row"><span class="gd-dots"></span><span class="gd-btns"><button class="btn gd-skip" type="button" aria-label="' + esc(tt('guide.skip_aria', 'Skip the guide')) + '"><span class="gd-skl">' + esc(tt('guide.skip_long', 'Skip the guide')) + '</span><span class="gd-sks">' + esc(tt('guide.skip_short', 'Skip')) + '</span></button><button class="btn yes gd-next" type="button">' + esc(tt('guide.next', 'Next')) + '</button></span></div></div></div>';
   stage.appendChild(L); gd.layer = L;
   $('.gd-next', L).onclick = (e) => { e.stopPropagation(); SFX.boop(640); gdNext(); };
   $('.gd-skip', L).onclick = (e) => { e.stopPropagation(); SFX.click(); gdSkip(); };
   return L;
 }
-function gdText(i) { const st = GD_STEPS[i]; return esc(isPhone() && st.tp ? st.tp : st.t).replace(/\{dog\}/g, esc(NAME())); }
+function gdText(i) { const st = GD_STEPS[i], tp = isPhone() && st.tp; return esc(tdata('gd_steps.' + st.k + (tp ? '.tp' : '.t'), tp ? st.tp : st.t, { dog: NAME() })); } // v2.14 i18n: the step text is a message with {dog}
 function gdRender() {
   const L = gdLayer(), i = S.guide.step, st = GD_STEPS[i], c = $('.gd-card', L);
   c.dataset.step = i; c.dataset.k = st.k;
   $('.gd-duck', c).innerHTML = gdDuck(st.pose); $('.gd-txt', c).innerHTML = gdText(i);
-  $('.gd-dots', c).innerHTML = gdDots(i); $('.gd-dots', c).setAttribute('aria-label', `Step ${i + 1} of ${GD_STEPS.length}`);
-  $('.gd-next', c).textContent = i === GD_STEPS.length - 1 ? 'Bye, Gerald' : 'Next'; $('.gd-skip', c).hidden = i === GD_STEPS.length - 1;
+  $('.gd-dots', c).innerHTML = gdDots(i); $('.gd-dots', c).setAttribute('aria-label', tt('guide.step_of', 'Step {i} of {n}', { i: i + 1, n: GD_STEPS.length }));
+  $('.gd-next', c).textContent = i === GD_STEPS.length - 1 ? tt('guide.bye', 'Bye, Gerald') : tt('guide.next', 'Next'); $('.gd-skip', c).hidden = i === GD_STEPS.length - 1;
   gd.shown = i; gd.place = ''; gd.ringKey = '';
   c.classList.remove('gd-in'); void c.offsetWidth; c.classList.add('gd-in');
 }
@@ -147,7 +147,7 @@ function gdBye() {
 }
 function gdSkip() {
   if (!S || !S.guide) return; S.guide.skipped = localISO(); markDirty(); gdStop();
-  toast('Gerald waddles back to the river. The guide is in your Journal, under How to play.');
+  toast(tt('guide.skipped', 'Gerald waddles back to the river. The guide is in your Journal, under How to play.'));
 }
 // while the card sits under the HUD the toasts keep clear of it. Phones: they drop below the strip (--gdToastTop).
 // Desktop: the toast column narrows to the widest free band beside the card, clear of the location chip (--gdTL, --gdTW). 28_guide.css applies both.
@@ -176,7 +176,7 @@ window.addEventListener('resize', () => { if (gd.on) { gd.force = true; gd.ringK
 /* ---------- older saves: one letter, never the walkthrough ---------- */
 function gdLetter() {
   if (!S || !S.guideSeen || S.guideLetter || typeof mailPush !== 'function') return;
-  mailPush({ kind: 'news', from: 'Gerald the duck', title: 'New: How to play guide in your Journal.', text: 'I wrote down how everything works. It is in your Journal, under How to play. I still want my sandwich back.' });
+  mailPush({ kind: 'news', from: tt('guide.gerald', 'Gerald the duck'), title: tt('guide.letter_title', 'New: How to play guide in your Journal.'), text: tt('guide.letter_text', 'I wrote down how everything works. It is in your Journal, under How to play. I still want my sandwich back.') });
   S.guideLetter = localISO(); markDirty();
 }
 on('yard:enter', () => { if (gdLive() && gdAllowed() && !gd.on) gdStart(); }); // a reloaded save mid-guide: Continue on the title screen lands here
@@ -185,13 +185,13 @@ on('game:ready', () => { gdFields(); gdLetter(); if (gdLive()) setTimeout(() => 
 /* ---------- the Journal "How to play" page ---------- */
 function gdTabHTML() {
   const ic = (n, act) => `<span class="gd-lic">${n === 'missions' ? iconOr('missions', '<path d="M-9 -12h18v24h-18z" fill="#FFF4DF" stroke="#5B3D32" stroke-width="2"/><path d="M-5 0l4 4l7 -9" fill="none" stroke="#5B3D32" stroke-width="2.4" stroke-linecap="round"/>') : n === 'garden' ? iconOr('garden', doodle('flower', 0, 0, 1)) : n === 'bond' ? iconOr('bond', doodle('heart', 0, 0, 1)) : ICON(n)}<span class="gd-lring">${gdRingSVG(64, 64, 300 + act)}</span></span>`;
-  const card = ([k, icon, title, txt], j) => `<li class="gd-lesson" data-lesson="${k}">${ic(icon, j)}<div><b>${esc(title)}</b><p>${esc(txt)}</p></div></li>`;
+  const card = ([k, icon, title, txt], j) => { const lp = j < GD_LESSONS.length && GD_LESSONS[j][0] === k ? 'gd_lessons.' + k + '_' + icon : ''; return `<li class="gd-lesson" data-lesson="${k}">${ic(icon, j)}<div><b>${esc(lp ? tdata(lp + '.2', title) : title)}</b><p>${esc(lp ? tdata(lp + '.3', txt) : txt)}</p></div></li>`; }; // v2.14 i18n: the eight lessons come from the table (two or three kind sentences each); a seasonal card from WINTER brings its own text
   // v2.8: WINTER's seasonal card (V28.md section 7). wnLesson() returns a lesson [key, icon, title, text] like GD_LESSONS, or ready <li> HTML, or '' for none
   let wl = ''; try { wl = typeof wnLesson === 'function' ? wnLesson() : ''; } catch (e) { wl = ''; }
   const cards = GD_LESSONS.map(card).join('') + (Array.isArray(wl) && wl.length === 4 ? card(wl, GD_LESSONS.length) : typeof wl === 'string' ? wl : '');
-  return `<div class="gd-page"><div class="gd-head"><div class="gd-duck">${gdDuck('sit')}</div><div class="gd-say"><p><b>Gerald's notes.</b> Everything a new dog friend needs, written down by a duck who knows everything. You are welcome.</p></div></div>
+  return `<div class="gd-page"><div class="gd-head"><div class="gd-duck">${gdDuck('sit')}</div><div class="gd-say"><p>${tt('guide.notes_html', "<b>Gerald's notes.</b> Everything a new dog friend needs, written down by a duck who knows everything. You are welcome.")}</p></div></div>
     <ol class="gd-lessons">${cards}</ol>
-    <p class="gd-replay"><button class="btn yes" id="gdReplay" type="button">Replay the guide</button></p></div>`;
+    <p class="gd-replay"><button class="btn yes" id="gdReplay" type="button">${esc(tt('guide.replay', 'Replay the guide'))}</button></p></div>`;
 }
 function gdReplay() {
   if (!S) return; S.guide = { step: 0 }; markDirty(); closeModal();

@@ -84,22 +84,23 @@ function tgTolMul(n, d, mode) {
   return m;
 }
 function tgHint(n, d, hand) {
-  if (n === 'Speak') return `Press Start, then tap Speak! each time ${d.name}'s ears perk up (3 beats).`;
-  if (n === 'Paw') return hand ? `Hand signal: tap ${d.name}'s paw twice, then hold your palm still.` : `Tap ${d.name}'s front paw twice, then hold your open palm still for a second.`;
-  if (n === 'Signature') return `A 3-part combo: ${(SIG_COMBO[d.key] || ['Sit', 'Spin', 'Bow']).join(', then ')}.`;
-  if (isPhone()) return (hand ? `Hand signal: trace the faint track (x1.3).` : `Press Start, then drag the treat from ${d.name}'s nose along the dots to the star.`) + " Can't drag? After Start, hold the blue Hold to lead button."; // v2.6 phone: the drag fallback is said where it is seen
-  return hand ? `Hand signal: trace the faint track with your hand. No treat needed now (x1.3).` : `Press Start, then drag the treat from ${d.name}'s nose along the dotted track to the star. Not too fast!`;
+  if (n === 'Speak') return tt('tricks.hint_speak', "Press Start, then tap Speak! each time {name}'s ears perk up (3 beats).", { name: d.name });
+  if (n === 'Paw') return hand ? tt('tricks.hint_paw_hand', "Hand signal: tap {name}'s paw twice, then hold your palm still.", { name: d.name }) : tt('tricks.hint_paw', "Tap {name}'s front paw twice, then hold your open palm still for a second.", { name: d.name });
+  if (n === 'Signature') { const c = SIG_COMBO[d.key] || ['Sit', 'Spin', 'Bow']; return tt('tricks.hint_combo', 'A 3-part combo: {a}, then {b}, then {c}.', { a: playTrick(c[0]), b: playTrick(c[1]), c: playTrick(c[2]) }); }
+  if (isPhone()) return tt('tricks.hint_phone', "{hand, select, yes {Hand signal: trace the faint track (x1.3).} other {Press Start, then drag the treat from {name}'s nose along the dots to the star.}} Can't drag? After Start, hold the blue Hold to lead button.", { hand: hand ? 'yes' : 'no', name: d.name }); // v2.6 phone: the drag fallback is said where it is seen
+  return hand ? tt('tricks.hint_hand', 'Hand signal: trace the faint track with your hand. No treat needed now (x1.3).') : tt('tricks.hint_lure', "Press Start, then drag the treat from {name}'s nose along the dotted track to the star. Not too fast!", { name: d.name });
 }
-const PK_LEADHINT = " Can't drag? Hold the blue Hold to lead button.";
+// the shown grade words (the grade ids Great / Good / Missed stay English: they are saved with the trick act)
+const tgGradeTxt = (g) => (g === 'Great' ? tt('tricks.grade_great', 'Great!') : g === 'Good' ? tt('tricks.grade_good', 'Good!') : tt('tricks.grade_oops', 'Oops'));
 
 /* ---------- attempt lifecycle ---------- */
 const tgG = () => (TRN && TRN.game) || null;
 const tgSvg = () => $('#view > svg.world');
 function tgBegin(n, mode) {
   if (!TRN || TRN.game || busy) return; const d = D();
-  if (S.sleeping) { nope(`${d.name} is asleep.`); return; }
+  if (S.sleeping) { nope(tt('tricks.asleep', '{name} is asleep.', { name: d.name })); return; }
   if (mode !== 'show') {
-    const f = focusNow(); if (f < trainCost(d)) { trainLine(`${d.name}'s brain is full. Session over. Try again after a break or a nap.`, 'bad'); SFX.nope(); return; }
+    const f = focusNow(); if (f < trainCost(d)) { trainLine(tt('tricks.brain_full', "{name}'s brain is full. Session over. Try again after a break or a nap.", { name: d.name }), 'bad'); SFX.nope(); return; }
     focusSet(f - trainCost(d)); mode = trickSt(n).p >= TG_FADE ? 'hand' : 'lure';
   }
   hideBubble(); idleStop(); SFX.click();
@@ -107,7 +108,8 @@ function tgBegin(n, mode) {
   const G = TRN.game = { n, mode, parts, pi: 0, segs: [], si: 0, s: 0, inside: 0, outside: 0, grabbed: false, retry: false, pos: null, samples: [], taps: 0, holdAt: 0, busy: false, t0: performance.now(), wobble: PERS[d.key] === 'nose' && mode === 'lure' };
   if (n === 'Speak') { tgSpeakStart(G); renderTraining(); return; }
   renderTraining(); tgLoadPart(G);
-  trainLine(mode === 'show' ? `Show off: trace the ${tName(n)} signal.` : mode === 'hand' ? `Hand signal: trace the faint track. ${d.name} watches your hand.` : n === 'Paw' ? 'Tap the paw twice, then hold your palm still.' + (isPhone() ? ' Or tap, tap, hold the blue button.' : '') : `Grab the treat at ${d.name}'s nose and lead the way to the star.` + (isPhone() ? PK_LEADHINT : ''), '');
+  const ph = isPhone() ? 'yes' : 'no';
+  trainLine(mode === 'show' ? tt('tricks.begin_show', 'Show off: trace the {trick} signal.', { trick: tName(n) }) : mode === 'hand' ? tt('tricks.begin_hand', 'Hand signal: trace the faint track. {name} watches your hand.', { name: d.name }) : n === 'Paw' ? tt('tricks.begin_paw', 'Tap the paw twice, then hold your palm still.{phone, select, yes { Or tap, tap, hold the blue button.} other {}}', { phone: ph }) : tt('tricks.begin_lure', "Grab the treat at {name}'s nose and lead the way to the star.{phone, select, yes { Can't drag? Hold the blue Hold to lead button.} other {}}", { name: d.name, phone: ph }), '');
   tgBind(true);
   if (!G.ticker) G.ticker = setInterval(tgTick, 50);
 }
@@ -136,10 +138,10 @@ function tgDraw(G) {
       h += `<circle class="tg-start" cx="${a[0]}" cy="${a[1]}" r="9"/><text class="tg-star" x="${b[0]}" y="${b[1] + 12}" text-anchor="middle">★</text></g>`;
       if (cur) h += `<polyline id="tgDone" class="tg-done" points="${pp(sg.pts.slice(0, 1))}"/>`;
     } else if (sg.type === 'tap') {
-      h += `<g class="tgseg tg-tap" opacity="${op}"><circle cx="${sg.at[0]}" cy="${sg.at[1]}" r="${(G.tol + 6).toFixed(1)}"/>${doodle('paw', sg.at[0], sg.at[1], 0.9)}<text x="${sg.at[0]}" y="${lblFs ? (sg.at[1] + G.tol + 6 + lblFs).toFixed(1) : sg.at[1] - G.tol - 12}" text-anchor="middle"${lblSt}>tap x${sg.n}${cur && G.taps ? ' (' + G.taps + ')' : ''}</text></g>`;
+      h += `<g class="tgseg tg-tap" opacity="${op}"><circle cx="${sg.at[0]}" cy="${sg.at[1]}" r="${(G.tol + 6).toFixed(1)}"/>${doodle('paw', sg.at[0], sg.at[1], 0.9)}<text x="${sg.at[0]}" y="${lblFs ? (sg.at[1] + G.tol + 6 + lblFs).toFixed(1) : sg.at[1] - G.tol - 12}" text-anchor="middle"${lblSt}>${esc(tt('tricks.tap_x', 'tap x{n}', { n: sg.n }))}${cur && G.taps ? ' (' + G.taps + ')' : ''}</text></g>`;
     } else if (sg.type === 'hold') {
       const r = Math.max(18, G.tol);
-      h += `<g class="tgseg tg-hold" opacity="${op}"><circle cx="${sg.at[0]}" cy="${sg.at[1]}" r="${r.toFixed(1)}"/><circle id="${cur ? 'tgRing' : ''}" class="tg-ring" cx="${sg.at[0]}" cy="${sg.at[1]}" r="${r.toFixed(1)}" pathLength="100" stroke-dasharray="0 100" transform="rotate(-90 ${sg.at[0]} ${sg.at[1]})"/><text x="${lblFs ? (sg.at[0] + r + 6).toFixed(1) : sg.at[0]}" y="${lblFs ? (sg.at[1] + lblFs * 0.3).toFixed(1) : sg.at[1] - r - 10}" text-anchor="${lblFs ? 'start' : 'middle'}"${lblSt}>hold</text></g>`;
+      h += `<g class="tgseg tg-hold" opacity="${op}"><circle cx="${sg.at[0]}" cy="${sg.at[1]}" r="${r.toFixed(1)}"/><circle id="${cur ? 'tgRing' : ''}" class="tg-ring" cx="${sg.at[0]}" cy="${sg.at[1]}" r="${r.toFixed(1)}" pathLength="100" stroke-dasharray="0 100" transform="rotate(-90 ${sg.at[0]} ${sg.at[1]})"/><text x="${lblFs ? (sg.at[0] + r + 6).toFixed(1) : sg.at[0]}" y="${lblFs ? (sg.at[1] + lblFs * 0.3).toFixed(1) : sg.at[1] - r - 10}" text-anchor="${lblFs ? 'start' : 'middle'}"${lblSt}>${esc(tt('tricks.hold', 'hold'))}</text></g>`;
     }
   });
   h += `<g id="tgCur" class="tg-cur" pointer-events="none">${hand ? `<g class="tg-hand">${place(artReal('prop', 'hand-signal', { trick: TSIG[G.parts[G.pi]] }) || SIGN_FB(G.parts[G.pi]), -30, -36, 60, 60)}</g>` : '<g class="tg-treat"><ellipse cx="0" cy="0" rx="13" ry="10" fill="#C98A54" stroke="#5B3D32" stroke-width="3"/><path d="M-6 -2 l3 2 M2 -4 l2 3 M-1 3 l3 1" stroke="#5B3D32" stroke-width="2" stroke-linecap="round"/></g>'}</g>`;
@@ -179,14 +181,14 @@ function tgDownEv(e) {
   if (sg.type === 'hold') { if (tgDist(p, sg.at) <= G.tol * 1.6) { G.grabbed = true; G.pos = p; G.holdAt = performance.now(); tgCursor(G); } return; }
   const cp = tgPointAt(sg, G.s);
   if (tgDist(p, cp) <= G.tol * 1.8) { G.grabbed = true; G.pos = p; G.samples = [{ x: p[0], y: p[1], t: performance.now() }]; G.grabT = performance.now(); G.grabS = G.s; tgCursor(G); }
-  else trainLine(G.retry || G.s > 0 ? 'Grab the treat where you let go.' : `Grab the ${G.mode === 'lure' ? 'treat' : 'hand'} at the start dot first.`, 'ok');
+  else trainLine(G.retry || G.s > 0 ? tt('tricks.regrab', 'Grab the treat where you let go.') : tt('tricks.grab_first', 'Grab the {what, select, treat {treat} other {hand}} at the start dot first.', { what: G.mode === 'lure' ? 'treat' : 'hand' }), 'ok');
 }
 function tgMoveEv(e) { const G = tgG(); if (!G || G.busy || G.rhythm) return; const p = tgPt(e); if (!G.grabbed) { const sg = G.segs[G.si]; if (sg && sg.type === 'tap') { G.pos = p; tgCursor(G); } return; } tgMoveTo(G, p, performance.now(), false); }
 function tgUpEv() {
   const G = tgG(); if (!G || !G.grabbed || G.busy || G.rhythm) return; G.grabbed = false; const sg = G.segs[G.si]; if (!sg || sg.type === 'tap') return;
   if (G.retry) { tgEnd(G, 'drop'); return; }
   G.retry = true; if (sg.type === 'path') G.pos = tgPointAt(sg, G.s); tgCursor(G);
-  trainLine(`${G.mode === 'lure' ? 'Treat' : 'Signal'} dropped! Grab it again where you let go (one retry).`, 'ok');
+  trainLine(tt('tricks.dropped', '{what, select, treat {Treat} other {Signal}} dropped! Grab it again where you let go (one retry).', { what: G.mode === 'lure' ? 'treat' : 'signal' }), 'ok');
 }
 function tgMoveTo(G, p, now, kb) {
   const sg = G.segs[G.si]; if (!sg) return; const moved = tgDist(p, G.pos || p); G.pos = p;
@@ -198,7 +200,7 @@ function tgMoveTo(G, p, now, kb) {
       G.samples.push({ x: p[0], y: p[1], t: now }); while (G.samples.length > 2 && now - G.samples[0].t > 200) G.samples.shift();
       const dt = now - G.samples[0].t; let L = 0; for (let i = 1; i < G.samples.length; i++) L += Math.hypot(G.samples[i].x - G.samples[i - 1].x, G.samples[i].y - G.samples[i - 1].y);
       const ga = now - (G.grabT || now), avg = ga >= 25 ? (G.s - (G.grabS || 0)) / ga : 0; // pointer events are coalesced per frame: also check the average since the grab
-      if ((dt >= 45 && L / dt > TG_MAXV) || avg > TG_MAXV * 1.3) { if (PERS[D().key] === 'gentle' || G.mode === 'show') { if (!G.slowSaid) { G.slowSaid = true; trainLine('Easy! A little slower.', 'ok'); } } else { tgEnd(G, 'fast'); return; } }
+      if ((dt >= 45 && L / dt > TG_MAXV) || avg > TG_MAXV * 1.3) { if (PERS[D().key] === 'gentle' || G.mode === 'show') { if (!G.slowSaid) { G.slowSaid = true; trainLine(tt('tricks.slower', 'Easy! A little slower.'), 'ok'); } } else { tgEnd(G, 'fast'); return; } }
     }
     tgLean(G, p); tgDrawProgress(G); tgCursor(G);
     if (G.s >= sg.len - 10) {
@@ -229,7 +231,7 @@ function tgNextSeg(G) {
   G.pi++;
   if (G.pi < G.parts.length) { // signature combo: the dog does this part, then the next track appears
     G.busy = true; const pn = G.parts[G.pi - 1]; tgLean(null); playPose(TPOSE[pn] || { pose: 'sit' }); fxText('♥', 470, 300);
-    const t = $('#trTrack'); if (t) t.remove(); trainLine(`Part ${G.pi} of ${G.parts.length} done! Next: ${G.parts[G.pi]}.`, 'good');
+    const t = $('#trTrack'); if (t) t.remove(); trainLine(tt('tricks.part_done', 'Part {i} of {n} done! Next: {trick}.', { i: G.pi, n: G.parts.length, trick: playTrick(G.parts[G.pi]) }), 'good');
     TRN.timers.push(setTimeout(() => { if (tgG() !== G) return; G.busy = false; tgLoadPart(G); }, 800)); return;
   }
   tgEnd(G, 'done');
@@ -247,7 +249,7 @@ function tgKey(e) {
 function tgKeyUp(e) { const G = tgG(); if (G && (e.key === ' ' || e.key === 'Enter' || e.key.startsWith('Arrow'))) { e.preventDefault(); e.stopImmediatePropagation(); } }
 /* ---------- v2.2 phone: tap and hold fallback for the track (pk) ---------- */
 let pkLeadIv = null;
-function pkLeadBtn(G) { return isPhone() && G && !G.rhythm ? '<button class="btn big pklead" id="pkLead" type="button" aria-label="Hold to lead the treat along the track. Tap for paw taps.">Hold to lead</button>' : ''; }
+function pkLeadBtn(G) { return isPhone() && G && !G.rhythm ? '<button class="btn big pklead" id="pkLead" type="button" aria-label="' + esc(tt('tricks.lead_aria', 'Hold to lead the treat along the track. Tap for paw taps.')) + '">' + esc(tt('tricks.lead', 'Hold to lead')) + '</button>' : ''; }
 function pkLeadStop() { clearInterval(pkLeadIv); pkLeadIv = null; }
 function pkLeadStep() {
   const G = tgG(); if (!G || G.busy || G.rhythm) { pkLeadStop(); return; }
@@ -268,10 +270,10 @@ function pkLeadBind(b) {
 function tgSpeakStart(G) {
   const d = D(), now = performance.now(), n = G.mode === 'show' ? 1 : 3, pers = PERS[d.key], mul = (pers === 'chatty' || pers === 'bold' ? 1.2 : 1) * (G.mode === 'show' && trickSt('Speak', d).shows >= 5 ? 1.3 : 1);
   G.rhythm = true; G.win = [120 * mul, 220 * mul]; G.beats = []; for (let i = 0; i < n; i++) G.beats.push(now + TG_BEAT * (2 + i)); G.hits = G.beats.map(() => null);
-  trainLine(G.mode === 'show' ? `Tap Speak! when ${d.name}'s ears perk up.` : `Listen... 1, 2, then tap Speak! on each ear perk (${n} beats).`, '');
+  trainLine(G.mode === 'show' ? tt('tricks.speak_show', "Tap Speak! when {name}'s ears perk up.", { name: d.name }) : tt('tricks.speak_listen', 'Listen... 1, 2, then tap Speak! on each ear perk ({n} beats).', { n }), '');
   tgBind(true); renderDog('idle', 'right', true);
   [0, 1].forEach((i) => TRN.timers.push(setTimeout(() => { if (tgG() !== G) return; SFX.click(); fxText(String(i + 1), 470, 290, '#86B3EA', 40); pkBeatFx('pkcount', String(i + 1)); }, TG_BEAT * i)));
-  G.beats.forEach((b) => TRN.timers.push(setTimeout(() => { if (tgG() !== G) return; const fx = $('#dogFx'); if (fx) { fx.classList.remove('tk-perk'); void fx.getBBox(); fx.classList.add('tk-perk'); } fxText('!', 500, 300, '#F2C744', 54); SFX.boop(880); pkBeatFx('pkbeat', 'Now!'); }, b - now)));
+  G.beats.forEach((b) => TRN.timers.push(setTimeout(() => { if (tgG() !== G) return; const fx = $('#dogFx'); if (fx) { fx.classList.remove('tk-perk'); void fx.getBBox(); fx.classList.add('tk-perk'); } fxText('!', 500, 300, '#F2C744', 54); SFX.boop(880); pkBeatFx('pkbeat', tt('tricks.now', 'Now!')); }, b - now)));
   TRN.timers.push(setTimeout(() => { if (tgG() === G) tgSpeakEnd(G); }, G.beats[G.beats.length - 1] - now + 450));
 }
 /* v2.6 phone: the count and each ear perk also flash on the Speak! button, so the beat is seen where the thumb is (the dog can be small or under a toast) */
@@ -286,7 +288,7 @@ function tgSpeakTap() {
   let bi = -1, be = 1e9; G.beats.forEach((b, i) => { const e = Math.abs(now - b); if (!G.hits[i] && e < 450 && e < be) { bi = i; be = e; } });
   if (bi < 0) { SFX.nope(); return; }
   const sc = be <= G.win[0] ? 1 : be <= G.win[1] ? 0.7 : 0; G.hits[bi] = { e: Math.round(be), sc };
-  if (sc) { barkDog(D(), speakKind(D()), { player: true }); renderDog('speak', 'right', true); fxText(sc === 1 ? 'Great!' : 'Good', 470, 270, sc === 1 ? '#3E7A47' : '#8A6A2A', 34); TRN.timers.push(setTimeout(() => { if (tgG() === G) renderDog('idle', 'right', true); }, 350)); }
+  if (sc) { barkDog(D(), speakKind(D()), { player: true }); renderDog('speak', 'right', true); fxText(sc === 1 ? tt('tricks.grade_great', 'Great!') : tt('tricks.fx_good', 'Good'), 470, 270, sc === 1 ? '#3E7A47' : '#8A6A2A', 34); TRN.timers.push(setTimeout(() => { if (tgG() === G) renderDog('idle', 'right', true); }, 350)); }
   else { SFX.nope(); fxText('?', 470, 290, '#86B3EA', 40); }
 }
 function tgSpeakEnd(G) { const acc = G.hits.reduce((a, h) => a + (h ? h.sc : 0), 0) / G.hits.length; G.inside = acc; G.outside = 1 - acc; tgEnd(G, 'done'); }
@@ -298,7 +300,7 @@ function tgEnd(G, why) {
   const acc = G.inside + G.outside > 0 ? G.inside / (G.inside + G.outside) : 0;
   const grade = why !== 'done' ? 'Missed' : acc >= 0.85 ? 'Great' : acc >= 0.6 ? 'Good' : 'Missed';
   G.result = { grade, acc: Math.round(acc * 100), why }; TRN.last = G.result; TRN.game = null;
-  if (G.mode === 'show') { trainLine(grade === 'Missed' ? 'The signal got lost...' : `${grade}!`, grade === 'Missed' ? 'bad' : 'good'); showResult(G.n, grade !== 'Missed'); return; }
+  if (G.mode === 'show') { trainLine(grade === 'Missed' ? tt('tricks.signal_lost', 'The signal got lost...') : tgGradeTxt(grade), grade === 'Missed' ? 'bad' : 'good'); showResult(G.n, grade !== 'Missed'); return; }
   tgApply(G, grade, acc, why);
 }
 function tgApply(G, grade, acc, why) {
@@ -309,21 +311,22 @@ function tgApply(G, grade, acc, why) {
   if (grade !== 'Missed') {
     busy = true; playPose(trickPose(n)); if (G.mode === 'lure') treatFly(); else { SFX.boop(880); TRN.timers.push(setTimeout(() => fxText('♥', 520, 330), 300)); }
     addStat('happy', 2); if (grade === 'Great') barkDog(d, 'play', {});
-    trainLine(`${grade}! ${G.result.acc}% on the ${G.rhythm ? 'beat' : 'track'}${G.mode === 'hand' ? ', hand signal x1.3' : ''}: +${Math.round(gain * 100)}%`, 'good');
-    if (was < TG_FADE && st.p >= TG_FADE && st.p < 1 && n !== 'Speak') toast(`${d.name} gets it! Time to fade the lure: next time you trace a hand signal (x1.3 progress).`, 'gold');
-    if (was < 1 && st.p >= 1) { SFX.fanfare(); const b = addBond(4); toast(`${d.name} learned ${tName(n)}! +${b} Bond. Try it in Show off.`, 'gold'); dailyCare('play'); }
+    trainLine(tt('tricks.result', '{grade, select, Great {Great!} other {Good!}} {acc}% on the {beat, select, yes {beat} other {track}}{hand, select, yes {, hand signal x1.3} other {}}: +{gain}%', { grade, acc: G.result.acc, beat: G.rhythm ? 'yes' : 'no', hand: G.mode === 'hand' ? 'yes' : 'no', gain: Math.round(gain * 100) }), 'good');
+    if (was < TG_FADE && st.p >= TG_FADE && st.p < 1 && n !== 'Speak') toast(tt('tricks.fade_lure', '{name} gets it! Time to fade the lure: next time you trace a hand signal (x1.3 progress).', { name: d.name }), 'gold');
+    if (was < 1 && st.p >= 1) { SFX.fanfare(); const b = addBond(4); toast(tt('tricks.learned', '{name} learned {trick}! +{bond} Bond. Try it in Show off.', { name: d.name, trick: tName(n), bond: b }), 'gold'); dailyCare('play'); }
   } else {
     busy = true; playPose(PICK(WRONG)); SFX.trombone();
-    const line = why === 'fast' ? `Too fast! ${d.name} lost the scent.` : why === 'drop' ? `The treat fell twice. ${d.name} ate it anyway. No harm done.` : why === 'stop' ? 'Stopped. No harm done.' : PICK(TG_MISS).replace('{n}', d.name) + ` (${G.result.acc}% on the ${G.rhythm ? 'beat' : 'track'})`;
-    trainLine(`Oops! ${line}`, 'bad');
+    const mi = Math.floor(Math.random() * TG_MISS.length);
+    const line = why === 'fast' ? tt('tricks.miss_fast', 'Too fast! {name} lost the scent.', { name: d.name }) : why === 'drop' ? tt('tricks.miss_drop', 'The treat fell twice. {name} ate it anyway. No harm done.', { name: d.name }) : why === 'stop' ? tt('tricks.miss_stop', 'Stopped. No harm done.') : tt('tricks.miss_acc', '{line} ({acc}% on the {beat, select, yes {beat} other {track}})', { line: tdata('tg_miss.' + mi, TG_MISS[mi], { n: d.name }), acc: G.result.acc, beat: G.rhythm ? 'yes' : 'no' });
+    trainLine(tt('tricks.oops', 'Oops! {line}', { line }), 'bad');
   }
-  TRN.timers.push(setTimeout(() => { busy = false; if (!TRN) return; TRN.held = false; endPose(); if (focusNow() < trainCost(d)) trainLine(`${d.name}'s brain is full after that one. Session over.`, 'bad'); renderTraining(); }, grade === 'Missed' ? 1300 : 1600));
+  TRN.timers.push(setTimeout(() => { busy = false; if (!TRN) return; TRN.held = false; endPose(); if (focusNow() < trainCost(d)) trainLine(tt('tricks.brain_full_after', "{name}'s brain is full after that one. Session over.", { name: d.name }), 'bad'); renderTraining(); }, grade === 'Missed' ? 1300 : 1600));
   updateHUD(); renderTraining();
 }
 function tgGrade(grade) {
   const fx = $('#fx'); if (!fx) return; const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
   t.setAttribute('x', 430); t.setAttribute('y', 250); t.setAttribute('text-anchor', 'middle'); t.setAttribute('class', 'tg-grade ' + grade.toLowerCase());
-  t.textContent = grade === 'Missed' ? 'Oops' : grade + '!'; fx.appendChild(t); setTimeout(() => t.remove(), 1500);
+  t.textContent = tgGradeTxt(grade); fx.appendChild(t); setTimeout(() => t.remove(), 1500);
 }
 function tgStop() { const G = tgG(); if (!G) return; if (G.mode === 'show') { tgAbort(); renderTraining(); return; } tgEnd(G, 'stop'); }
 function tgAbort() { const G = tgG(); if (!G) return; pkLeadStop(); clearInterval(G.ticker); tgBind(false); tgLean(null); const t = $('#trTrack'); if (t) t.remove(); TRN.game = null; }
