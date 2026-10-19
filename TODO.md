@@ -137,11 +137,21 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [ ] `#ballLayer` is not depth-sorted with the dogs: the ball draws over the legs of dogs standing in front of it. `game/src/38_ball.js`
 - [ ] `phone_occl_play` is flaky under load (the walkfetch toast, the runner hint). Not from v2.10. `game/test_phone_occl_play.js`
 
+## Faces & Feelings (v2.13)
+- [ ] The Ghost Sheet, the Trick-or-Treat Ghost and the Heart Sunglasses hide the expression's eyes (`ghostEyes` draws the pose eyes), so only the marks show. `dogs/pawart_dogs.js`
+- [ ] On phones the `fx` marks can be cut at the crop edge with no look chip (`rmLookSync`), and they pile up when several dogs show the same face. `game/src/37_roam.js`
+- [ ] The phone occlusion suites don't run with `prefs.exTest`, so nothing checks the `fx` marks against the hot spots. `game/test_phone_occl_home.js`, `game/test_phone_occl_play.js`
+- [ ] Sparkle stars shift a little when a head tilts. `dogs/pawart_dogs.js`
+- [ ] `dogHead` has no `fx`, so the wink is weak on the 40 px chip, and small-eyed breeds (dobie, corso, greyhound, chow) read weaker there. `dogs/pawart_dogs.js`
+- [ ] The face words can touch the chihuahua's tall ears when it faces down. `dogs/pawart_dogs.js`
+- [ ] 2 of 2625 face renders still change scale by less than 1%. `dogs/pawart_dogs.js`
+- [ ] The photo face picker shows the leader's head only. `game/src/41_expressions.js`
+
 ## Fourteen New Friends (v2.12)
 - [ ] `NOSE_DX` has no rows for the seven v2.11 breeds (`akita`, `spitz`, `pom`, `afghan`, `dane`, `mastiff`, `gsd`), so their treat lure starts at the default x. `game/src/15b_trick_games.js`
 - [ ] The training lure position comes from `dogTo(0, 0, 1)`, not from each dog's size class. `game/src/15b_trick_games.js`
 - [ ] Four big dogs together overfill Shibuya and the Pixel 7 phone crop. `game/src/39_tokyo.js`, `game/src/37_roam.js`
-- [ ] Some old breeds' heads float off the body in a few poses (as the yorkie, schnauzer, pit bull and lab did before fix/v212-neck): the collie's howl, the shiba, chihuahua and beagle in happy, speak and howl. Fixing them changes old renders (needs the owner's go-ahead and a new `check_identical` baseline). `game/v212_neck_check.js` can measure them. `dogs/pawart_dogs.js`
+- [x] Some old breeds' heads float off the body in a few poses (as the yorkie, schnauzer, pit bull and lab did before fix/v212-neck): the collie's howl, the shiba, chihuahua and beagle in happy, speak and howl. Fixing them changes old renders (needs the owner's go-ahead and a new `check_identical` baseline). `game/v212_neck_check.js` can measure them. `dogs/pawart_dogs.js` Done in v2.13: `NECKFIX` (23 adult breed and pose renders) and the neck tube on every mix (`V213.md` section 8).
 - [ ] The site's Playroom animates only the first 14 dogs (`KEYS` in `site/js/site.js`); the other 21 have profiles but never walk in it.
 - [x] The Worker change (`DC_LIM` { n: 115, breed: 35, outfit: 50 }) needs `bash tools/cf_api_deploy.sh` with the release. The coordinator deploys it with v2.12.
 
