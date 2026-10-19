@@ -47,7 +47,7 @@ function clOwn(uid, at) { const p = { owner: uid || null, ownerDog: uid ? clDogI
 // the owner has changes its cloud never got (a log out while offline): those must never be dropped or rolled back
 function clOwnerUnsynced() { return !!clOwner() && clMeta().changedAt > (clMeta().ownerAt || 0); }
 function clMine() { const o = clOwner(); return !o || o === CL.uid; } // may the local save go to the signed-in user's cloud?
-function clMask(e) { const m = String(e || '').match(/^(.)[^@]*@(.+)$/); return m ? `${m[1]}…@${m[2]}` : 'your account'; }
+function clMask(e) { const m = String(e || '').match(/^(.)[^@]*@(.+)$/); return m ? `${m[1]}…@${m[2]}` : tt('cloud.your_account', 'your account'); }
 
 /* ---------- start-up ---------- */
 // hook from 00_core.js, after the local save is read (it runs often: only the first call does anything)
@@ -108,7 +108,7 @@ function clStart() {
 }
 function clOffline() {
   CL.err = 'offline'; clRender();
-  if (!CL.offShown && S) { CL.offShown = true; clToast('Cloud save is offline. Your game is saved on this device.'); } // once, as soon as there is a game to keep
+  if (!CL.offShown && S) { CL.offShown = true; clToast(tt('cloud.offline_saved', 'Cloud save is offline. Your game is saved on this device.')); } // once, as soon as there is a game to keep
   clearTimeout(CL.retryT); CL.retryT = setTimeout(() => { CL.retryT = null; clStart().then((ok) => { if (ok && CL.uid) { clPull(); clPush(); } }); }, 20000);
 }
 async function clEnsureUser() {
@@ -144,6 +144,17 @@ function clFlush() {
   if (!CL.on) return; const m = clMeta();
   if (!CL.timer && m.changedAt <= m.pushedAt) return;
   clearTimeout(CL.timer); CL.timer = null; CL.flush = true; clPush().finally(() => { CL.flush = false; });
+}
+// the reasons are stored in the cloud in English; the list shows them in the player's language
+function clReasonText(r) {
+  switch (r) {
+    case 'older than your other device': return tt('cloud.reason_older', 'older than your other device');
+    case 'before a new game': return tt('cloud.reason_new_game', 'before a new game');
+    case 'guest save before sign-in': return tt('cloud.reason_guest', 'guest save before sign-in');
+    case 'before a restore': return tt('cloud.reason_restore', 'before a restore');
+    case 'before an import': return tt('cloud.reason_import', 'before an import');
+    default: return r;
+  }
 }
 async function clBackup(data, reason) {
   if (!CL.live || !CL.uid || !data) return false;
@@ -222,7 +233,7 @@ function clIdle() {
 }
 function clApplySoon() {
   if (CL.applyT) return;
-  const tryIt = () => { if (!CL.pending) { clearInterval(CL.applyT); CL.applyT = null; return; } if (clIdle()) { clearInterval(CL.applyT); CL.applyT = null; const r = CL.pending; clApply(r.data, r, 'Synced from your other device.'); } };
+  const tryIt = () => { if (!CL.pending) { clearInterval(CL.applyT); CL.applyT = null; return; } if (clIdle()) { clearInterval(CL.applyT); CL.applyT = null; const r = CL.pending; clApply(r.data, r, tt('cloud.synced_from_other', 'Synced from your other device.')); } };
   CL.applyT = setInterval(tryIt, 1000); tryIt();
 }
 // load a save into the running game. row: the cloud row it came from (null for an import or a restore)
@@ -247,16 +258,16 @@ function clApply(data, row, msg) {
 const CL_PW_MIN = 8;
 function clErrText(e) {
   const s = String((e && (e.message || e.code)) || e || '');
-  if (/too_many_tries/.test(s)) return 'Too many wrong tries for that code. Tap Send a new code.'; // v2.9.2 reset codes
-  if (/wrong_code/.test(s)) return "That code isn't right. Check the email and try again.";
-  if (/rate_limited|too many/i.test(s)) return 'Too many tries. Wait a few minutes and try again.';
-  if (/invalid.*(login|credential)|invalid_credentials/i.test(s)) return "That email and password don't match. Check them and try again.";
-  if (/already|exists|registered|taken/i.test(s)) return 'This email already has an account. Log in, or use Forgot your password.';
-  if (/expired/i.test(s)) return 'That code has run out or was replaced by a newer one. Tap Send a new code.';
-  if (/password/i.test(s) && /(short|weak|least|characters)/i.test(s)) return `Pick a password with at least ${CL_PW_MIN} characters.`;
-  if (/email/i.test(s) && /invalid|format/i.test(s)) return 'That email looks wrong. Check it and try again.';
-  if (/fetch|network|offline|timeout|blocked|load/i.test(s)) return 'Cloud save is offline. Your game is saved on this device.';
-  return "That didn't work. Try again in a moment.";
+  if (/too_many_tries/.test(s)) return tt('cloud.err_too_many_tries', 'Too many wrong tries for that code. Tap Send a new code.'); // v2.9.2 reset codes
+  if (/wrong_code/.test(s)) return tt('cloud.err_wrong_code', "That code isn't right. Check the email and try again.");
+  if (/rate_limited|too many/i.test(s)) return tt('cloud.err_rate_limited', 'Too many tries. Wait a few minutes and try again.');
+  if (/invalid.*(login|credential)|invalid_credentials/i.test(s)) return tt('cloud.err_bad_login', "That email and password don't match. Check them and try again.");
+  if (/already|exists|registered|taken/i.test(s)) return tt('cloud.err_email_taken', 'This email already has an account. Log in, or use Forgot your password.');
+  if (/expired/i.test(s)) return tt('cloud.err_code_expired', 'That code has run out or was replaced by a newer one. Tap Send a new code.');
+  if (/password/i.test(s) && /(short|weak|least|characters)/i.test(s)) return tt('cloud.pw_too_short', 'Pick a password with at least {n} characters.', { n: CL_PW_MIN });
+  if (/email/i.test(s) && /invalid|format/i.test(s)) return tt('cloud.email_wrong', 'That email looks wrong. Check it and try again.');
+  if (/fetch|network|offline|timeout|blocked|load/i.test(s)) return tt('cloud.offline_saved', 'Cloud save is offline. Your game is saved on this device.');
+  return tt('cloud.err_generic', "That didn't work. Try again in a moment.");
 }
 // v2.3 review fix: before the signed-in user changes, its last changes reach its own cloud. Waits out a push in flight (a busy push
 // only marks CL.again), then pushes what is left. Callers set CL.loggingIn first, so no other push starts meanwhile.
@@ -274,7 +285,7 @@ function clDropLocal() {
 // v2.8.1: a guest becomes the account on the Worker itself (same user id, same save). Anything else makes a new user.
 async function clRegister(email, pw, fresh) {
   try {
-    if (!(await clStart())) return { ok: false, msg: 'Cloud save is offline. Your game is saved on this device.' };
+    if (!(await clStart())) return { ok: false, msg: tt('cloud.offline_saved', 'Cloud save is offline. Your game is saved on this device.') };
     const guest = !fresh && !!CL.uid && CL.anon;
     clearTimeout(CL.timer); CL.timer = null; CL.loggingIn = true; // v2.3 fix (TODO "register fallback"): no guest push mid-switch, like clLogin
     try {
@@ -298,7 +309,7 @@ async function clRegister(email, pw, fresh) {
 }
 async function clLogin(email, pw) {
   try {
-    if (!(await clStart())) return { ok: false, msg: 'Cloud save is offline. Your game is saved on this device.' };
+    if (!(await clStart())) return { ok: false, msg: tt('cloud.offline_saved', 'Cloud save is offline. Your game is saved on this device.') };
   } catch (e) { return { ok: false, msg: clErrText(e) }; }
   clearTimeout(CL.timer); CL.timer = null; CL.loggingIn = true; // the scheduled guest push must not run after the switch
   try {
@@ -330,7 +341,7 @@ async function clSignedIn(u, local, owner) {
 // The answer never says whether the email has an account.
 async function clForgot(email) {
   try {
-    if (!(await clStart())) return { ok: false, msg: 'Cloud save is offline. Your game is saved on this device.' };
+    if (!(await clStart())) return { ok: false, msg: tt('cloud.offline_saved', 'Cloud save is offline. Your game is saved on this device.') };
     const r = await clApi('POST', '/forgot', { email }, true);
     return r.ok ? { ok: true, mail: !r.data || r.data.mail !== false } : { ok: false, msg: clErrText(r.error) };
   } catch (e) { return { ok: false, msg: clErrText(e) }; }
@@ -339,7 +350,7 @@ async function clForgot(email) {
 // Then it goes on like a log in. { ok, loaded } or { ok: false, msg, left } (left: wrong tries left for this code).
 async function clResetCode(email, code, pw) {
   try {
-    if (!(await clStart())) return { ok: false, msg: 'Cloud save is offline. Your game is saved on this device.' };
+    if (!(await clStart())) return { ok: false, msg: tt('cloud.offline_saved', 'Cloud save is offline. Your game is saved on this device.') };
   } catch (e) { return { ok: false, msg: clErrText(e) }; }
   clearTimeout(CL.timer); CL.timer = null; CL.loggingIn = true; // as in clLogin: no guest push after the switch
   try {
@@ -363,7 +374,7 @@ async function clLogout() {
   CL.out = true; titleAcctRender();
 }
 async function clChangePw(pw) {
-  if (!CL.live || !CL.uid) return { ok: false, msg: 'Log in first.' };
+  if (!CL.live || !CL.uid) return { ok: false, msg: tt('cloud.log_in_first', 'Log in first.') };
   try { const r = await clApi('POST', '/password', { password: pw }); return r.ok ? { ok: true } : { ok: false, msg: clErrText(r.error) }; } catch (e) { return { ok: false, msg: clErrText(e) }; }
 }
 async function clBackups() {
@@ -373,7 +384,7 @@ async function clBackups() {
 // restoring makes the backup the newest save (the current game becomes a backup first)
 async function clRestore(b) {
   const cur0 = clLocal(); if (cur0) { lsSet(CL_CFG.backupKey, JSON.stringify(cur0)); if (clMine()) await clBackup(cur0, 'before a restore'); }
-  if (!clApply(b.data, null, 'Backup restored.')) return false;
+  if (!clApply(b.data, null, tt('cloud.backup_restored', 'Backup restored.'))) return false;
   clMetaSet({ changedAt: Date.now() }); clPush(true); return true;
 }
 
@@ -393,12 +404,12 @@ async function clExport() {
 }
 async function clDecode(code) {
   const c = String(code || '').replace(/\s+/g, ''); const parts = c.split('.');
-  if (parts.length !== 3 || !/^PAWZ?1$/.test(parts[0])) throw new Error("That isn't a Doodle Doggo save code.");
+  if (parts.length !== 3 || !/^PAWZ?1$/.test(parts[0])) throw new Error(tt('cloud.code_not_ours', "That isn't a Doodle Doggo save code."));
   let raw;
-  try { let b = clUnB64(parts[1]); if (parts[0] === 'PAWZ1') b = await clZip(b, false); raw = new TextDecoder().decode(b); } catch (e) { throw new Error('That save code is broken. Copy all of it and try again.'); }
-  if (clSum(raw) !== parts[2]) throw new Error('That save code is broken. Copy all of it and try again.');
-  let data; try { data = JSON.parse(raw); } catch (e) { throw new Error('That save code is broken. Copy all of it and try again.'); }
-  if (!data || data.v !== 1 || !(data.dog || (data.dogs && data.dogs.length))) throw new Error("That save code has no dog in it.");
+  try { let b = clUnB64(parts[1]); if (parts[0] === 'PAWZ1') b = await clZip(b, false); raw = new TextDecoder().decode(b); } catch (e) { throw new Error(tt('cloud.code_broken_copy', 'That save code is broken. Copy all of it and try again.')); }
+  if (clSum(raw) !== parts[2]) throw new Error(tt('cloud.code_broken_copy', 'That save code is broken. Copy all of it and try again.'));
+  let data; try { data = JSON.parse(raw); } catch (e) { throw new Error(tt('cloud.code_broken_copy', 'That save code is broken. Copy all of it and try again.')); }
+  if (!data || data.v !== 1 || !(data.dog || (data.dogs && data.dogs.length))) throw new Error(tt('cloud.code_no_dog', 'That save code has no dog in it.'));
   return data;
 }
 async function clImport(code) {
@@ -414,20 +425,20 @@ async function clImport(code) {
 function clNudge() {
   if (!CL.on || !S || (S.careDays || 0) < 3 || (CL.uid && !CL.anon) || cur.mode === 'title' || !clIdle()) return;
   const m = clMeta(); if (m.nudged) return;
-  clMetaSet({ nudged: true }); setTimeout(() => clToast(`Make an account to keep ${NAME()} safe on every device. It's in Settings.`, 'gold'), 600);
+  clMetaSet({ nudged: true }); setTimeout(() => clToast(tt('cloud.nudge', "Make an account to keep {name} safe on every device. It's in Settings.", { name: NAME() }), 'gold'), 600);
 }
 
 /* ---------- status (also read by the SHELL lane's menu) ---------- */
-function clAgo(ms) { const s = Math.max(0, Math.round(ms / 1000)); return s < 60 ? `${s} s ago` : s < 3600 ? `${Math.floor(s / 60)} min ago` : `${Math.floor(s / 3600)} h ago`; }
+function clAgo(ms) { const s = Math.max(0, Math.round(ms / 1000)); return s < 60 ? tt('cloud.ago_s', '{n} s ago', { n: s }) : s < 3600 ? tt('cloud.ago_min', '{n} min ago', { n: Math.floor(s / 60) }) : tt('cloud.ago_h', '{n} h ago', { n: Math.floor(s / 3600) }); }
 function cloudStatus() {
-  if (!CL.on) return { state: 'off', text: CL.why === 'artifact' ? 'Cloud save works on the web version.' : 'Cloud save is off here.' };
-  if (CL.err) return { state: 'offline', text: 'Offline' };
+  if (!CL.on) return { state: 'off', text: CL.why === 'artifact' ? tt('cloud.web_only', 'Cloud save works on the web version.') : tt('cloud.off_here', 'Cloud save is off here.') };
+  if (CL.err) return { state: 'offline', text: tt('cloud.offline', 'Offline') };
   const m = clMeta();
-  if (!clMine()) return { state: 'guest', text: 'Saved on this device' }; // another account's game after a log out: never synced here
-  if (CL.timer || CL.busy || (CL.uid && m.changedAt > m.pushedAt)) return { state: 'syncing', text: 'Syncing' };
-  if (CL.lastSync) return { state: 'synced', text: 'Synced ' + clAgo(Date.now() - CL.lastSync) };
-  if (CL.uid && !CL.anon) return { state: 'account', text: 'Logged in as ' + clMask(CL.email) };
-  return { state: 'guest', text: 'Guest' };
+  if (!clMine()) return { state: 'guest', text: tt('cloud.saved_here', 'Saved on this device') }; // another account's game after a log out: never synced here
+  if (CL.timer || CL.busy || (CL.uid && m.changedAt > m.pushedAt)) return { state: 'syncing', text: tt('cloud.syncing', 'Syncing') };
+  if (CL.lastSync) return { state: 'synced', text: tt('cloud.synced_ago', 'Synced {ago}', { ago: clAgo(Date.now() - CL.lastSync) }) };
+  if (CL.uid && !CL.anon) return { state: 'account', text: tt('cloud.logged_in_as', 'Logged in as {email}', { email: clMask(CL.email) }) };
+  return { state: 'guest', text: tt('cloud.guest', 'Guest') };
 }
 function cloudOpen() {
   openSettings();
@@ -438,31 +449,31 @@ function cloudOpen() {
 function clStatLine() {
   const st = cloudStatus();
   if (!CL.on) return st.text;
-  if (CL.err) return 'Cloud save is offline. Your game is saved on this device.';
-  const who = CL.uid && !CL.anon ? 'Logged in as ' + clMask(CL.email) : 'Guest';
-  return st.state === 'synced' || st.state === 'syncing' ? `${who} · ${st.text}` : who;
+  if (CL.err) return tt('cloud.offline_saved', 'Cloud save is offline. Your game is saved on this device.');
+  const who = CL.uid && !CL.anon ? tt('cloud.logged_in_as', 'Logged in as {email}', { email: clMask(CL.email) }) : tt('cloud.guest', 'Guest');
+  return st.state === 'synced' || st.state === 'syncing' ? tt('cloud.status_line', '{who} · {status}', { who, status: st.text }) : who;
 }
 function clStat() { const el = document.getElementById('clStat'); if (el) el.textContent = clStatLine(); }
-function clSection() { return `<section class="clset" id="clBox" aria-label="Cloud save"><h4 class="clh">Cloud save</h4><p class="clstat" id="clStat" role="status">${esc(clStatLine())}</p><div id="clBody">${clBodyHTML()}</div>${dcSection()}<h4 class="clh">Save code</h4><div id="clCode">${clCodeHTML()}</div></section>`; }
+function clSection() { return `<section class="clset" id="clBox" aria-label="${esc(tt('cloud.title', 'Cloud save'))}"><h4 class="clh">${esc(tt('cloud.title', 'Cloud save'))}</h4><p class="clstat" id="clStat" role="status">${esc(clStatLine())}</p><div id="clBody">${clBodyHTML()}</div>${dcSection()}<h4 class="clh">${esc(tt('cloud.save_code', 'Save code'))}</h4><div id="clCode">${clCodeHTML()}</div></section>`; }
 const clIn = (id, type, label, ac) => `<label class="clfield" for="${id}"><span>${label}</span><input id="${id}" type="${type}" autocomplete="${ac}" ${type === 'email' ? 'inputmode="email" autocapitalize="off" spellcheck="false"' : ''}></label>`;
 function clBodyHTML() {
-  if (!CL.on) return CL.why === 'artifact' ? '<p class="small">This copy keeps your game on this device. Use a save code below to move it.</p>' : '';
+  if (!CL.on) return CL.why === 'artifact' ? `<p class="small">${esc(tt('cloud.artifact_note', 'This copy keeps your game on this device. Use a save code below to move it.'))}</p>` : '';
   const msg = CL.msg ? `<p class="clmsg" role="alert">${esc(CL.msg)}</p>` : '';
   const acct = CL.uid && !CL.anon;
-  if (CL.ui === 'reg') return `<div class="clform"><p>Keep my save on every device: make an account.</p>${clIn('clEmail', 'email', 'Email', 'username')}${clIn('clPw', 'password', `Password (${CL_PW_MIN} or more characters)`, 'new-password')}${clIn('clPw2', 'password', 'Password again', 'new-password')}${msg}<div class="clrow"><button class="btn" data-cl="back">Back</button><button class="btn yes" data-cl="doReg">Make account</button></div></div>`;
-  if (CL.ui === 'login') return `<div class="clform"><p>I have an account: log in.</p>${clIn('clEmail', 'email', 'Email', 'username')}${clIn('clPw', 'password', 'Password', 'current-password')}${msg}<div class="clrow"><button class="btn" data-cl="back">Back</button><button class="btn yes" data-cl="doLogin">Log in</button></div><button class="btn cllink" data-cl="forgot">Forgot your password?</button></div>`;
-  if (CL.ui === 'pw') return `<div class="clform">${clIn('clPw', 'password', `New password (${CL_PW_MIN} or more characters)`, 'new-password')}${clIn('clPw2', 'password', 'New password again', 'new-password')}${msg}<div class="clrow"><button class="btn" data-cl="back">Back</button><button class="btn yes" data-cl="doPw">Change password</button></div></div>`;
+  if (CL.ui === 'reg') return `<div class="clform"><p>${esc(tt('cloud.reg_lead', 'Keep my save on every device: make an account.'))}</p>${clIn('clEmail', 'email', esc(tt('cloud.email', 'Email')), 'username')}${clIn('clPw', 'password', esc(tt('cloud.pw_label', 'Password ({n} or more characters)', { n: CL_PW_MIN })), 'new-password')}${clIn('clPw2', 'password', esc(tt('cloud.pw_again', 'Password again')), 'new-password')}${msg}<div class="clrow"><button class="btn" data-cl="back">${esc(tt('cloud.back', 'Back'))}</button><button class="btn yes" data-cl="doReg">${esc(tt('cloud.make_account', 'Make account'))}</button></div></div>`;
+  if (CL.ui === 'login') return `<div class="clform"><p>${esc(tt('cloud.login_lead', 'I have an account: log in.'))}</p>${clIn('clEmail', 'email', esc(tt('cloud.email', 'Email')), 'username')}${clIn('clPw', 'password', esc(tt('cloud.password', 'Password')), 'current-password')}${msg}<div class="clrow"><button class="btn" data-cl="back">${esc(tt('cloud.back', 'Back'))}</button><button class="btn yes" data-cl="doLogin">${esc(tt('cloud.log_in', 'Log in'))}</button></div><button class="btn cllink" data-cl="forgot">${esc(tt('cloud.forgot', 'Forgot your password?'))}</button></div>`;
+  if (CL.ui === 'pw') return `<div class="clform">${clIn('clPw', 'password', esc(tt('cloud.new_pw_label', 'New password ({n} or more characters)', { n: CL_PW_MIN })), 'new-password')}${clIn('clPw2', 'password', esc(tt('cloud.new_pw_again', 'New password again')), 'new-password')}${msg}<div class="clrow"><button class="btn" data-cl="back">${esc(tt('cloud.back', 'Back'))}</button><button class="btn yes" data-cl="doPw">${esc(tt('cloud.change_pw', 'Change password'))}</button></div></div>`;
   if (CL.ui === 'backups') {
-    const list = CL.bk === null ? '<p class="small">Loading backups...</p>' : !CL.bk.length ? '<p class="small">No backups yet. When two devices disagree, the older save lands here.</p>' : `<ul class="clbk">${CL.bk.map((b, i) => { const d = b.data || {}, dogs = (d.dogs || (d.dog ? [d.dog] : [])).map((x) => x.name).filter(Boolean); return `<li><div class="clbk-t"><b>${esc(new Date(b.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }))}</b><span>${esc(dogs.join(', ') || 'A dog')} · ${d.coins | 0} coins</span><span class="small">${esc(b.reason || '')}</span></div><button class="btn" data-clrestore="${i}">Restore</button></li>`; }).join('')}</ul>`;
-    return `<div class="clform">${list}${msg}<div class="clrow"><button class="btn" data-cl="back">Back</button></div></div>`;
+    const list = CL.bk === null ? `<p class="small">${esc(tt('cloud.backups_loading', 'Loading backups...'))}</p>` : !CL.bk.length ? `<p class="small">${esc(tt('cloud.backups_none', 'No backups yet. When two devices disagree, the older save lands here.'))}</p>` : `<ul class="clbk">${CL.bk.map((b, i) => { const d = b.data || {}, dogs = (d.dogs || (d.dog ? [d.dog] : [])).map((x) => x.name).filter(Boolean); return `<li><div class="clbk-t"><b>${esc(tdate(b.created_at, { dateStyle: 'medium', timeStyle: 'short' }))}</b><span>${esc(tt('cloud.backup_line', '{dogs} · {n, plural, one {# coin} other {# coins}}', { dogs: dogs.length ? tlist(dogs) : tt('cloud.a_dog', 'A dog'), n: d.coins | 0 }))}</span><span class="small">${esc(clReasonText(b.reason || ''))}</span></div><button class="btn" data-clrestore="${i}">${esc(tt('cloud.restore', 'Restore'))}</button></li>`; }).join('')}</ul>`;
+    return `<div class="clform">${list}${msg}<div class="clrow"><button class="btn" data-cl="back">${esc(tt('cloud.back', 'Back'))}</button></div></div>`;
   }
-  if (acct) return `${msg}<div class="clrow"><button class="btn" data-cl="pw">Change password</button><button class="btn" data-cl="backups">Backups</button><button class="btn" data-cl="logout">Log out</button></div>`;
-  return `${msg}<div class="clrow"><button class="btn yes" data-cl="reg">Make an account</button><button class="btn" data-cl="login">Log in</button>${CL.uid ? '<button class="btn" data-cl="backups">Backups</button>' : ''}</div><p class="small">Your game saves on this device and in the cloud as a guest. An account keeps it on every device.</p>`;
+  if (acct) return `${msg}<div class="clrow"><button class="btn" data-cl="pw">${esc(tt('cloud.change_pw', 'Change password'))}</button><button class="btn" data-cl="backups">${esc(tt('cloud.backups', 'Backups'))}</button><button class="btn" data-cl="logout">${esc(tt('cloud.log_out', 'Log out'))}</button></div>`;
+  return `${msg}<div class="clrow"><button class="btn yes" data-cl="reg">${esc(tt('cloud.make_an_account', 'Make an account'))}</button><button class="btn" data-cl="login">${esc(tt('cloud.log_in', 'Log in'))}</button>${CL.uid ? `<button class="btn" data-cl="backups">${esc(tt('cloud.backups', 'Backups'))}</button>` : ''}</div><p class="small">${esc(tt('cloud.guest_note', 'Your game saves on this device and in the cloud as a guest. An account keeps it on every device.'))}</p>`;
 }
 function clCodeHTML() {
-  if (CL.ui === 'export') return `<div class="clform"><label class="clfield" for="clCodeOut"><span>Your save code</span><textarea id="clCodeOut" readonly rows="4">${esc(CL.code)}</textarea></label>${CL.msg ? `<p class="clmsg" role="status">${esc(CL.msg)}</p>` : ''}<div class="clrow"><button class="btn" data-cl="codeBack">Back</button><button class="btn yes" data-cl="copy">Copy</button></div></div>`;
-  if (CL.ui === 'import') return `<div class="clform"><label class="clfield" for="clCodeIn"><span>Paste a save code</span><textarea id="clCodeIn" rows="4" autocapitalize="off" spellcheck="false"></textarea></label><p class="small">Your current game is backed up first.</p>${CL.msg ? `<p class="clmsg" role="alert">${esc(CL.msg)}</p>` : ''}<div class="clrow"><button class="btn" data-cl="codeBack">Back</button><button class="btn yes" data-cl="doImport">Load this save</button></div></div>`;
-  return `<div class="clrow"><button class="btn" data-cl="export">Export save code</button><button class="btn" data-cl="import">Import save code</button></div>`;
+  if (CL.ui === 'export') return `<div class="clform"><label class="clfield" for="clCodeOut"><span>${esc(tt('cloud.your_code', 'Your save code'))}</span><textarea id="clCodeOut" readonly rows="4">${esc(CL.code)}</textarea></label>${CL.msg ? `<p class="clmsg" role="status">${esc(CL.msg)}</p>` : ''}<div class="clrow"><button class="btn" data-cl="codeBack">${esc(tt('cloud.back', 'Back'))}</button><button class="btn yes" data-cl="copy">${esc(tt('cloud.copy', 'Copy'))}</button></div></div>`;
+  if (CL.ui === 'import') return `<div class="clform"><label class="clfield" for="clCodeIn"><span>${esc(tt('cloud.paste_code', 'Paste a save code'))}</span><textarea id="clCodeIn" rows="4" autocapitalize="off" spellcheck="false"></textarea></label><p class="small">${esc(tt('cloud.import_note', 'Your current game is backed up first.'))}</p>${CL.msg ? `<p class="clmsg" role="alert">${esc(CL.msg)}</p>` : ''}<div class="clrow"><button class="btn" data-cl="codeBack">${esc(tt('cloud.back', 'Back'))}</button><button class="btn yes" data-cl="doImport">${esc(tt('cloud.load_save', 'Load this save'))}</button></div></div>`;
+  return `<div class="clrow"><button class="btn" data-cl="export">${esc(tt('cloud.export_code', 'Export save code'))}</button><button class="btn" data-cl="import">${esc(tt('cloud.import_code', 'Import save code'))}</button></div>`;
 }
 function clRender() {
   titleAcctRender(); // v2.3: the title's account line follows the cloud state
@@ -481,7 +492,7 @@ function clBind(p) {
     const rb = e.target.closest('[data-clrestore]');
     if (rb) {
       const b = CL.bk && CL.bk[+rb.dataset.clrestore]; if (!b) return;
-      const ok = await confirmIn(p, 'Load this backup? Your current game becomes a backup first.', 'Yes, restore', 'Not now'); if (!ok) return;
+      const ok = await confirmIn(p, tt('cloud.restore_q', 'Load this backup? Your current game becomes a backup first.'), tt('cloud.restore_yes', 'Yes, restore'), tt('cloud.not_now', 'Not now')); if (!ok) return;
       await clRestore(b); return;
     }
     const k = e.target.closest('[data-cl]'); if (!k) return; const a = k.dataset.cl; SFX.click();
@@ -489,24 +500,24 @@ function clBind(p) {
     if (a === 'forgot') return acOpenForgot(val('clEmail').trim(), cloudOpen); // an emailed code, typed in here (22d_reset.js)
     if (a === 'reg' || a === 'login' || a === 'pw') return clGo(a);
     if (a === 'backups') { CL.bk = null; clGo('backups'); CL.bk = (await clBackups()) || []; if (CL.ui === 'backups') clRender(); return; }
-    if (a === 'logout') { const ok = await confirmIn(p, 'Log out? The game stays on this device.', 'Log out', 'Stay'); if (!ok) return; await clLogout(); clGo('', 'Logged out. Your game stays on this device.'); return; }
+    if (a === 'logout') { const ok = await confirmIn(p, tt('cloud.logout_q', 'Log out? The game stays on this device.'), tt('cloud.log_out', 'Log out'), tt('cloud.stay', 'Stay')); if (!ok) return; await clLogout(); clGo('', tt('cloud.logged_out', 'Logged out. Your game stays on this device.')); return; }
     if (a === 'doReg' || a === 'doPw') {
       const em = val('clEmail').trim(), pw = val('clPw'), pw2 = val('clPw2');
-      if (a === 'doReg' && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return clGo(CL.ui, 'That email looks wrong. Check it and try again.');
-      if (pw.length < CL_PW_MIN) return clGo(CL.ui, `Pick a password with at least ${CL_PW_MIN} characters.`);
-      if (pw !== pw2) return clGo(CL.ui, "The two passwords don't match.");
+      if (a === 'doReg' && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return clGo(CL.ui, tt('cloud.email_wrong', 'That email looks wrong. Check it and try again.'));
+      if (pw.length < CL_PW_MIN) return clGo(CL.ui, tt('cloud.pw_too_short', 'Pick a password with at least {n} characters.', { n: CL_PW_MIN }));
+      if (pw !== pw2) return clGo(CL.ui, tt('cloud.pw_mismatch', "The two passwords don't match."));
       k.disabled = true; CL.msg = '';
       const r = a === 'doReg' ? await clRegister(em, pw) : await clChangePw(pw);
       if (!r.ok) { clGo(CL.ui, r.msg); return; }
       if (a === 'doReg' && !clLocal()) { if (!modal.hidden) closeModal(); go('title'); return; } // the game on this device was another account's: it stayed with that account
-      clGo('', a === 'doReg' ? `Account made. ${NAME()} is safe on every device now.` : 'Password changed.'); return;
+      clGo('', a === 'doReg' ? tt('cloud.account_made', 'Account made. {name} is safe on every device now.', { name: NAME() }) : tt('cloud.pw_changed', 'Password changed.')); return;
     }
     if (a === 'doLogin') {
-      const em = val('clEmail').trim(), pw = val('clPw'); if (!em || !pw) return clGo('login', 'Type your email and password.');
+      const em = val('clEmail').trim(), pw = val('clPw'); if (!em || !pw) return clGo('login', tt('cloud.type_both', 'Type your email and password.'));
       k.disabled = true; const r = await clLogin(em, pw);
       if (!r.ok) { clGo('login', r.msg); return; }
       if (!r.loaded && !clLocal()) { if (!modal.hidden) closeModal(); go('title'); return; } // another account's game left this device
-      if (r.loaded) { if (!modal.hidden) closeModal(); clToast('Logged in. Your saved game is here.', 'good'); } else clGo('', 'Logged in. This game is now saved to your account.');
+      if (r.loaded) { if (!modal.hidden) closeModal(); clToast(tt('cloud.logged_in_loaded', 'Logged in. Your saved game is here.'), 'good'); } else clGo('', tt('cloud.logged_in_saved', 'Logged in. This game is now saved to your account.'));
       return;
     }
     if (a === 'export') { CL.code = await clExport(); if (!CL.code) return clGo('', ''); clGo('export'); const t = document.getElementById('clCodeOut'); if (t) t.select(); return; }
@@ -515,11 +526,11 @@ function clBind(p) {
     if (a === 'copy') {
       const t = document.getElementById('clCodeOut'); let ok = false;
       try { await navigator.clipboard.writeText(CL.code); ok = true; } catch (er) { try { t.select(); ok = document.execCommand('copy'); } catch (er2) { ok = false; } }
-      CL.msg = ok ? 'Copied. Keep it somewhere safe.' : 'Select the code and copy it by hand.'; clRender(); return;
+      CL.msg = ok ? tt('cloud.copied', 'Copied. Keep it somewhere safe.') : tt('cloud.copy_by_hand', 'Select the code and copy it by hand.'); clRender(); return;
     }
     if (a === 'doImport') {
-      try { const d = await clImport(val('clCodeIn')); if (!modal.hidden) closeModal(); clToast(`Save code loaded. Welcome back, ${(d.dogs && d.dogs[0] && d.dogs[0].name) || NAME()}.`, 'good'); }
-      catch (er) { clGo('import', er.message || 'That save code is broken.'); }
+      try { const d = await clImport(val('clCodeIn')); if (!modal.hidden) closeModal(); clToast(tt('cloud.code_loaded', 'Save code loaded. Welcome back, {name}.', { name: (d.dogs && d.dogs[0] && d.dogs[0].name) || NAME() }), 'good'); }
+      catch (er) { clGo('import', er.message || tt('cloud.code_broken', 'That save code is broken.')); }
     }
   });
 }
