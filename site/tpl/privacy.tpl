@@ -29,7 +29,7 @@
     <h2>{{t privacy.dont.title}}</h2>
     <ul>
       <li>{{t privacy.dont.ads}}</li>
-      <li>{{t privacy.dont.tracking}} {{t privacy.itch}}</li>
+      <li>{{t privacy.dont.tracking}}</li>
       <li>{{t privacy.dont.share}}</li>
       <li>{{t privacy.dont.email}}</li>
     </ul>
