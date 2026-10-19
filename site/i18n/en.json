@@ -76,7 +76,7 @@
     "map.place.asakusa.name": "Sensō-ji is the temple in Asakusa (浅草寺). Use its usual name in your language.",
     "about.p1": "The owner's own story in eight paragraphs (about.p1 to about.p8), the maker, an9ou, writing in the first person to the players. Translate it warmly and naturally, keeping its feeling, as a person would tell it in your language, not word for word. Keep the eight paragraphs. Use your language's quotation marks in p1.",
     "about.mail": "{mail} is the email link contact@doodledoggo.app.",
-    "about.p5": "“No in-game purchases and no ads, and there never will be” is the owner's promise: keep it clearly.",
+    "about.p5": "Keep it in the present tense: the game is free, with no in-game purchases and no ads. No promises about the future (no never, forever or always).",
     "about.p7": "itch.io is a website name: never translate it. A donation is optional: never make it sound like paying is needed.",
     "about.p8": "The page adds a paw print after this last line itself (no emoji in the strings)."
   },
@@ -889,7 +889,7 @@
   "about.p2": "But one day isn't today. We don't live on our own yet, and a dog deserves a real home, with space, time and someone there every day. So we wait.",
   "about.p3": "I didn't want her to only wait. So I picked up a crayon and drew her a dog. It was wobbly and a little crooked, and she loved it anyway. Then it needed a yard to run in, a bowl to eat from, a town to walk through and friends to play with. Little by little, that one crayon dog grew into this whole world.",
   "about.p4": "Doodle Doggo is for her. It is also for everyone who loves dogs but can't have one right now, maybe because of a small apartment, a busy life, a landlord who says no, or simply because the time isn't right yet. Here you can adopt, feed, cuddle and walk your dogs, and nothing bad ever happens to them. Every dog you meet is waiting for someone, just like we are.",
-  "about.p5": "The game is completely free. There are no in-game purchases and no ads, and there never will be. It's a small project made with a lot of love, and it keeps growing. New dogs, places and little surprises arrive with every update.",
+  "about.p5": "The game is completely free, with no in-game purchases and no ads. It's a small project made with a lot of love, and it keeps growing. New dogs, places and little surprises arrive with every update.",
   "about.p6": "I would truly love to hear from you. Tell me what made you smile, what felt wrong, or what you wish your dog could do. Every comment helps me make the game better.",
   "about.p7": "If Doodle Doggo brightens your day and you'd like to support us, you can leave a donation on itch.io. Every bit helps us keep building, and maybe one day it brings us a little closer to a real dachshund of our own.",
   "about.p8": "Thank you for playing, and for giving these crayon dogs a home.",
