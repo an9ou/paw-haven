@@ -62,6 +62,8 @@ const jpPlaceLines = {
   maltese: 'A graceful mountain with a white veil. I understand it completely.',
   shihtzu: 'A nice mountain. A nice bench. I will look at one while sitting on the other.'
 };
+// jpLinePath(breed, place): the tdata path of a Fuji Hill line (HOME's placeAmbient in 03_yard.js uses it like tkLinePath), else null
+function jpLinePath(breed, place) { return place === 'fujihill' && jpPlaceLines[breed] ? 'jp_place_lines.' + breed : null; }
 // a getter, so the line follows the player's language (03_yard.js placeAmbient reads PLACE_LINES[breed].fujihill at run time)
 Object.keys(jpPlaceLines).forEach((k) => { if (PLACE_LINES[k]) Object.defineProperty(PLACE_LINES[k], 'fujihill', { get: () => tdata('jp_place_lines.' + k, jpPlaceLines[k]), enumerable: true, configurable: true }); });
 
