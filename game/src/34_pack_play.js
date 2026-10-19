@@ -5,8 +5,9 @@
 // runtime only (V29.md 5.1: no save field). walk: the followers of the walk that is starting or running. sw: a long screen runs for another dog. skip: why the last pkDogs left a dog out
 const PKS = { walk: null, sw: null, skip: [], lp: false, fetch: null, card: null, pickX: 0 };
 const PK_BONUS = 0.1; // pack walk bonus: +10% of one walk's coins (rounded down) when 2 or more dogs walk (V29.md 5.4)
-const PK_CAP_PLAY = 'Ticked dogs join in. The leader always plays. Every awake dog plays ball.';
-const PK_CAP_WALK = 'Ticked dogs come along. The leader leads.';
+// these two are read when a tray is drawn (esc() calls String()), so they follow the language chosen at boot, not the one at script load
+const PK_CAP_PLAY = { toString: () => tt('packplay.cap_play', 'Ticked dogs join in. The leader always plays. Every awake dog plays ball.') };
+const PK_CAP_WALK = { toString: () => tt('packplay.cap_walk', 'Ticked dogs come along. The leader leads.') };
 
 /* ---------------- who joins in ---------------- */
 // the dogs that take part, the leader first. kind 'play' (toys, duck, tug), 'fetch' or 'walk' (area: the route). A ticked dog that is asleep, too tired or
@@ -24,11 +25,10 @@ function pkDogs(kind, area) {
   });
   return out;
 }
-const pkIs = (l) => (l.length > 1 ? 'are' : 'is');
 function pkSkipLines(skip) {
   const tired = skip.filter((s) => s.why === 'tired').map((s) => s.d), zz = skip.filter((s) => s.why === 'asleep').map((s) => s.d), out = [];
-  if (tired.length) out.push(`${crNames(tired)} ${pkIs(tired)} pooped and ${tired.length > 1 ? 'nap' : 'naps'} this one out.`);
-  if (zz.length) out.push(`${crNames(zz)} ${pkIs(zz)} asleep and ${zz.length > 1 ? 'stay' : 'stays'} put.`);
+  if (tired.length) out.push(tt('packplay.skip_tired', '{names} {n, plural, one {is pooped and naps} other {are pooped and nap}} this one out.', { names: crNames(tired), n: tired.length }));
+  if (zz.length) out.push(tt('packplay.skip_asleep', '{names} {n, plural, one {is asleep and stays} other {are asleep and stay}} put.', { names: crNames(zz), n: zz.length }));
   return out;
 }
 // the kind lines for the dogs left out, as toasts a moment after the game starts (behind any "stays home" lines)
@@ -40,8 +40,8 @@ function pkSkipSay(skip, delay, mode) {
 // heads of every dog present; sel = the id that is picked now
 function pkPickHTML(sel, label) {
   if (!crPack()) return '';
-  const chips = crPresent().map((d) => `<button class="chip cr-chip on pk-pickb" data-pkdog="${d.id}" aria-pressed="${d.id === sel}" aria-label="${esc(d.name)}${d.sleeping ? ', asleep' : ''}"><span class="cr-head" aria-hidden="true">${headSVG(d)}</span><span class="cr-name">${esc(d.name)}</span>${d.sleeping ? '<span class="cr-zz" aria-hidden="true">zz</span>' : ''}</button>`).join('');
-  return `<div class="cr-wrap pk-pickwrap"><div class="pk-pick" role="group" aria-label="${esc(label || 'Pick a dog')}">${chips}</div></div>`;
+  const chips = crPresent().map((d) => `<button class="chip cr-chip on pk-pickb" data-pkdog="${d.id}" aria-pressed="${d.id === sel}" aria-label="${esc(d.sleeping ? tt('packplay.dog_asleep', '{name}, asleep', { name: d.name }) : d.name)}"><span class="cr-head" aria-hidden="true">${headSVG(d)}</span><span class="cr-name">${esc(d.name)}</span>${d.sleeping ? '<span class="cr-zz" aria-hidden="true">zz</span>' : ''}</button>`).join('');
+  return `<div class="cr-wrap pk-pickwrap"><div class="pk-pick" role="group" aria-label="${esc(label || tt('packplay.pick_dog', 'Pick a dog'))}">${chips}</div></div>`;
 }
 function pkBindPick(root, fn) {
   root = root || dock;
@@ -72,7 +72,7 @@ function pkRefresh() {
 function pkWith(id, fn) {
   const d = dogById(id); if (!d) return;
   if (id !== S.activeId) {
-    if (busy) { nope(`Hold on, ${NAME()} is busy.`); return; }
+    if (busy) { nope(tt('packplay.busy', 'Hold on, {name} is busy.', { name: NAME() })); return; }
     closeTraining(); // training another dog first ends the session that is open (its leader comes back before the swap below)
     if (!PKS.sw) PKS.sw = { orig: S.activeId, who: id }; else PKS.sw.who = id;
     S.activeId = id; markDirty(); hudDogKey = ''; dogKey = '';
@@ -91,14 +91,14 @@ function pkLead(id) { if (id !== S.activeId) switchDog(id); }
 // train one dog from the Tricks picker or the dog card. The blocks are checked first, so nothing switches for a dog that cannot train
 function pkTrain(id) {
   const d = dogById(id); if (!d) return;
-  if (d.sleeping) { nope(`${d.name} is asleep. Training can wait.`); return; }
+  if (d.sleeping) { nope(tt('packplay.train_asleep', '{name} is asleep. Training can wait.', { name: d.name })); return; }
   const tb = trainBlock(d); if (tb) { nope(tb); return; }
-  if (busy && d.id !== S.activeId) { nope(`Hold on, ${NAME()} is busy.`); return; }
+  if (busy && d.id !== S.activeId) { nope(tt('packplay.busy', 'Hold on, {name} is busy.', { name: NAME() })); return; }
   pkWith(id, () => { openTraining(); return !!TRN; });
 }
 // the Tricks card with a pack: pick the dog inside the tray
 function pkTricksTray() {
-  setTray('Tricks: who trains?', `${pkPickHTML(S.activeId, 'Who trains')}<p class="small pk-cap">Tap a dog to train. ${esc(NAME())} stays the leader.</p>`);
+  setTray(tt('packplay.tricks_title', 'Tricks: who trains?'), `${pkPickHTML(S.activeId, tt('packplay.who_trains', 'Who trains'))}<p class="small pk-cap">${esc(tt('packplay.tricks_cap', 'Tap a dog to train. {name} stays the leader.', { name: NAME() }))}</p>`);
   pkBindPick(dock, pkTrain);
 }
 
@@ -289,7 +289,7 @@ function pkWalkDoneClassic(happy, bond, clean, energy) {
   fl.forEach((d) => withDog(d, () => { pottyWalked(); addStat('happy', happy); if (bond > 0) addBond(bond); addStat('clean', -clean); addStat('energy', -energy); }));
   return fl;
 }
-const pkWalkLine = (fl) => (fl.length ? `<p class="small pk-walked">${esc(crNames(fl))} walked along and got the Happiness and Bond too. Pack bonus: +10% coins.</p>` : '');
+const pkWalkLine = (fl) => (fl.length ? `<p class="small pk-walked">${esc(tt('packplay.walked_along', '{names} walked along and got the Happiness and Bond too. Pack bonus: +10% coins.', { names: crNames(fl) }))}</p>` : '');
 
 // the route screen (17_walk_route_carousel): the chip row, then the dogs that really go, heads in a line behind the leader
 function pkRoutesHTML() { return crPack() ? `<div class="pk-walkrow" id="pkWalkRow">${crChipsHTML(PK_CAP_WALK)}<div class="pk-walkline" id="pkWalkLine"></div></div>` : ''; }
@@ -298,9 +298,9 @@ function pkRoutesLine() {
   const k = ROUTE_KEYS[routeIdx], l = pkDogs('walk', k), skip = PKS.skip.slice();
   const bDogs = crDogs().filter((d) => d !== S.dog && walkBlock(d, k) && !(typeof hmMumIn === 'function' && hmMumIn(d))), blocked = bDogs.map((d) => walkBlock(d, k));
   const fol = l.slice(1), heads = l.map((d, i) => `<span class="pk-lh${i ? ' pk-fol' : ''}" aria-hidden="true">${headSVG(d)}</span>`).join('');
-  const who = fol.length ? `${NAME()} leads. ${crNames(fol)} ${fol.length > 1 ? 'follow' : 'follows'} behind.` : `${NAME()} walks alone.`;
+  const who = fol.length ? tt('packplay.leads_behind', '{name} leads. {names} {n, plural, one {follows} other {follow}} behind.', { name: NAME(), names: crNames(fol), n: fol.length }) : tt('packplay.walks_alone', '{name} walks alone.', { name: NAME() });
   const full = who + [...blocked, ...pkSkipLines(skip)].map((t) => ' ' + t).join('');
-  el.innerHTML = `<div class="pk-heads" role="img" aria-label="${esc(crNames(l))} walk${l.length > 1 ? '' : 's'} in a line">${heads}</div><p class="small pk-who">${esc(full)}</p>`;
+  el.innerHTML = `<div class="pk-heads" role="img" aria-label="${esc(tt('packplay.walk_line', '{names} {n, plural, one {walks} other {walk}} in a line', { names: crNames(l), n: l.length }))}">${heads}</div><p class="small pk-who">${esc(full)}</p>`;
   if (isPhone()) { pkWhoFit($('.pk-who', el), full, l, bDogs.concat(skip.map((x) => x.d))); pkRoutesFit(); }
 }
 // phones with a pack: the chip row and the who line take room from the card's viewport. The text under the preview is measured, the preview takes what is left
@@ -315,16 +315,18 @@ function pkRoutesFit() {
 function pkWhoFit(p, full, l, stay) {
   if (!p) return;
   const lead = l[0].name, fol = l.slice(1), n = l.length, s = stay.length;
-  const stayA = s ? ` ${crNames(stay)} ${s > 1 ? 'stay' : 'stays'} home.` : '', stayB = s ? (s === 1 ? ` ${stay[0].name} stays home.` : ` ${s} stay home.`) : '';
-  const walk = fol.length ? (fol.length === 1 ? `${lead} and ${fol[0].name} walk.` : `${lead}, ${fol[0].name} and ${fol.length - 1} more.`) : `${lead} walks alone.`;
-  const many = n > 1 ? `${crDogsN(n)} walk.` : `${lead} walks alone.`;
-  const tries = [full, (fol.length ? `${lead} leads. ${crNames(fol)} ${fol.length > 1 ? 'follow' : 'follows'}.` : `${lead} walks alone.`) + stayA, walk + stayA, walk + stayB, many + stayB, walk, many];
+  const alone = tt('packplay.walks_alone', '{name} walks alone.', { name: lead });
+  const stayA = s ? ' ' + tt('packplay.stay_home', '{names} {n, plural, one {stays} other {stay}} home.', { names: crNames(stay), n: s }) : '';
+  const stayB = s ? ' ' + (s === 1 ? tt('packplay.stays_home', '{name} stays home.', { name: stay[0].name }) : tt('packplay.n_stay_home', '{n} stay home.', { n: s })) : '';
+  const walk = fol.length ? (fol.length === 1 ? tt('packplay.two_walk', '{lead} and {name} walk.', { lead, name: fol[0].name }) : tt('packplay.more_walk', '{lead}, {name} and {n} more.', { lead, name: fol[0].name, n: fol.length - 1 })) : alone;
+  const many = n > 1 ? tt('packplay.dogs_walk', '{n, plural, one {# dog walks.} other {# dogs walk.}}', { n }) : alone;
+  const tries = [full, (fol.length ? tt('packplay.leads_follow', '{name} leads. {names} {n, plural, one {follows} other {follow}}.', { name: lead, names: crNames(fol), n: fol.length }) : alone) + stayA, walk + stayA, walk + stayB, many + stayB, walk, many];
   p.classList.add('pk-one'); p.title = full;
   for (const t of tries) { p.textContent = t; if (p.scrollWidth <= p.clientWidth + 1) return; }
 }
 function pkRoutesBind() {
-  const redraw = () => { const row = $('#pkWalkRow', view); if (!row) return; row.innerHTML = `${crChipsHTML(PK_CAP_WALK)}<div class="pk-walkline" id="pkWalkLine"></div>`; crBindChips(row, redraw, 'Somebody has to come along. Tick another dog first.'); pkRoutesLine(); };
-  const row = $('#pkWalkRow', view); if (row) crBindChips(row, redraw, 'Somebody has to come along. Tick another dog first.');
+  const redraw = () => { const row = $('#pkWalkRow', view); if (!row) return; row.innerHTML = `${crChipsHTML(PK_CAP_WALK)}<div class="pk-walkline" id="pkWalkLine"></div>`; crBindChips(row, redraw, tt('packplay.need_walker', 'Somebody has to come along. Tick another dog first.')); pkRoutesLine(); };
+  const row = $('#pkWalkRow', view); if (row) crBindChips(row, redraw, tt('packplay.need_walker', 'Somebody has to come along. Tick another dog first.'));
 }
 
 /* ---------------- the long press: Make leader, Dress, Train ---------------- */
@@ -333,7 +335,7 @@ const pkHeld = () => PKS.lp;
 function pkHold(el, d) {
   if (!el || !d || el._pkHold) return; el._pkHold = true; // bindPack binds every pack dog again after each redraw: once per element
   let t = 0, x0 = 0, y0 = 0; const stop = () => { clearTimeout(t); t = 0; };
-  el.setAttribute('aria-label', `${el.getAttribute('aria-label') || d.name}. Press and hold for more.`);
+  el.setAttribute('aria-label', tt('packplay.hold_more', '{label}. Press and hold for more.', { label: el.getAttribute('aria-label') || d.name }));
   el.addEventListener('pointerdown', (e) => {
     PKS.lp = false; stop(); x0 = e.clientX; y0 = e.clientY;
     t = setTimeout(() => { t = 0; if (cur.mode !== 'yard') return; PKS.lp = true; pkCardOpen(d.id, x0, y0); }, PK_HOLD_MS);
@@ -350,8 +352,8 @@ function pkCardClose() {
 function pkCardOpen(id, cx, cy) {
   const d = dogById(id); if (!d || !crPack() || busy || !modal.hidden) return;
   pkCardClose(); SFX.init(); SFX.boop(600);
-  const el = document.createElement('div'); el.id = 'pkCard'; el.className = 'pk-dogcard'; el.setAttribute('role', 'menu'); el.setAttribute('aria-label', `${d.name}: choose`);
-  el.innerHTML = `<b class="pk-dogcard-n">${esc(d.name)}</b><button class="btn" role="menuitem" data-pkact="lead">Make leader</button><button class="btn" role="menuitem" data-pkact="dress">Dress</button><button class="btn" role="menuitem" data-pkact="train">Train</button>`;
+  const el = document.createElement('div'); el.id = 'pkCard'; el.className = 'pk-dogcard'; el.setAttribute('role', 'menu'); el.setAttribute('aria-label', tt('packplay.card_choose', '{name}: choose', { name: d.name }));
+  el.innerHTML = `<b class="pk-dogcard-n">${esc(d.name)}</b><button class="btn" role="menuitem" data-pkact="lead">${esc(tt('packplay.make_leader', 'Make leader'))}</button><button class="btn" role="menuitem" data-pkact="dress">${esc(tt('packplay.dress', 'Dress'))}</button><button class="btn" role="menuitem" data-pkact="train">${esc(tt('packplay.train', 'Train'))}</button>`;
   stage.appendChild(el);
   const sg = stage.getBoundingClientRect(), w = el.offsetWidth, h = el.offsetHeight;
   el.style.left = clamp(cx - sg.left - w / 2, 6, Math.max(6, sg.width - w - 6)) + 'px'; el.style.top = clamp(cy - sg.top - h - 14, 6, Math.max(6, sg.height - h - 6)) + 'px';
