@@ -197,8 +197,9 @@ function langMenu(L, page, label, menu) {
 function header(L, page, t, a, menu) {
   const cur = (NAV.find((n) => n.id === page.id) || {}).page;
   const links = NAV.map((n) => `<a data-page="${n.page}" href="${urlFor(L, n.path)}"${n.page === cur ? ' aria-current="page"' : ''}>${t('nav.' + n.page)}</a>`).join('');
-  // owner: the header sits inside the paper sheet, and one logo per page (home has the big one, so no small one there)
-  const brand = page.id === 'index' ? '' : `<a class="brand" href="${urlFor(L, '/')}"><img src="/doodle-doggo-logo.svg" alt="${a('common.logo_alt')}" width="900" height="280"></a>`;
+  // owner: the header sits inside the paper sheet; every page starts like the home page: the big logo and the slogan, then the four tabs
+  const logo = `<img class="logo" src="/doodle-doggo-logo.svg" alt="${a('common.logo_alt')}" width="900" height="280">`;
+  const brand = `<div class="top sitetop">${page.id === 'index' ? `<h1 class="h1logo">${logo}</h1>` : `<a class="brandbig" href="${urlFor(L, '/')}">${logo}</a>`}<p class="tag">🖍️ ${t('home.tagline')}</p></div>`;
   return `\n<header class="sitehead" id="sitehead">${brand}`
     + `<nav class="sitenav" id="sitenav" aria-label="${a('nav.label')}">${links}</nav>${menu}</header>`;
 }

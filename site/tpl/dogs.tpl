@@ -14,7 +14,7 @@
     <div class="top small-top">
       <h1>{{t dogs.h1}} <span class="jpw">{{t dogs.h1_gloss}}</span></h1>
       <p class="lead">{{t dogs.lead}}</p>
-      <ul class="dognav">
+      <ul class="dognav" data-close="{{a common.close}}">
 <!-- dogs:nav -->
 {{raw dognav}}
 <!-- /dogs:nav -->

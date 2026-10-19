@@ -78,7 +78,8 @@
     "about.mail": "{mail} is the email link contact@doodledoggo.app.",
     "about.p5": "Keep it in the present tense: the game is free, with no in-game purchases and no ads. No promises about the future (no never, forever or always).",
     "about.p7": "itch.io is a website name: never translate it. A donation is optional: never make it sound like paying is needed.",
-    "about.p8": "The page adds a paw print after this last line itself (no emoji in the strings)."
+    "about.p8": "The page adds a paw print after this last line itself (no emoji in the strings).",
+    "common.close": "The button that closes a dog profile pop-up."
   },
   "common.logo_alt": "Doodle Doggo",
   "common.play": "PLAY AT ITCH.IO",
@@ -895,5 +896,6 @@
   "about.p8": "Thank you for playing, and for giving these crayon dogs a home.",
   "about.dog_alt": "A wobbly crayon dachshund, wagging",
   "about.itch": "Leave a comment or a donation on itch.io",
-  "about.mail": "Or write to us: {mail}"
+  "about.mail": "Or write to us: {mail}",
+  "common.close": "Close"
 }

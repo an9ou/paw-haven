@@ -10,11 +10,7 @@
 </head><body>
 <div class="deco" id="deco" aria-hidden="true"></div>
 <main class="page">
-  <div class="sheet">
-    <div class="top">
-      <h1 class="h1logo"><img class="logo" src="/doodle-doggo-logo.svg" alt="{{a common.logo_alt}}" width="900" height="280"></h1>
-      <p class="tag">🖍️ {{t home.tagline}}</p>
-    </div>{{raw header}}
+  <div class="sheet">{{raw header}}
 
     <section class="playroom" aria-label="{{a home.playroom_label}}">
       <div class="scene" id="scene">

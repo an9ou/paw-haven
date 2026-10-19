@@ -417,3 +417,19 @@ html.s-cjk .about{line-height:1.85} html.s-th .about{line-height:1.9}
 /* owner (site v3.1): the header lives inside the paper sheet, no separate bar */
 .sheet>.sitehead{width:auto;max-width:none;margin:-4px 0 18px;padding:0 0 12px;background:none;border:0;border-bottom:2px dashed rgba(91,61,50,.25);border-radius:0;box-shadow:none}
 @media (max-width:860px){ .sheet>.sitehead{padding:0 0 10px;margin:-2px 0 14px} }
+
+/* owner (site v3.1): logo + slogan on every page; the header (logo, slogan, tabs) inside the sheet */
+.sheet>.sitehead{flex-wrap:wrap;justify-content:center}
+.sitetop{flex:1 1 100%;margin-bottom:6px}
+.brandbig{display:block;border-radius:12px}
+@media (max-width:860px){ .sheet>.sitehead{display:flex;flex-direction:column;align-items:stretch} .sheet>.sitehead .sitenav{display:grid} .sheet>.sitehead .langs{align-self:center} }
+/* owner: the Dogs page is a grid of 3 dog cards; a tap opens the dog's profile in a pop-up (the profiles list stays only without JavaScript) */
+.dognav{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important}
+.dognav a{font-family:var(--hand);font-size:26px;padding:8px 6px 10px}
+html.js .dogsheet .prof{display:none}
+dialog.dogpop{max-width:min(860px,calc(100vw - 24px));width:100%;max-height:calc(100dvh - 24px);padding:0;border:2.5px solid var(--ink);border-radius:18px 13px 20px 12px;background:var(--paper);color:var(--ink);box-shadow:4px 6px 0 rgba(91,61,50,.25)}
+dialog.dogpop::backdrop{background:rgba(60,40,30,.45)}
+dialog.dogpop .prof{display:grid!important;border-top:0;padding:18px 18px 22px}
+dialog.dogpop .x{position:sticky;top:8px;float:right;margin:8px 8px 0 0;z-index:2;min-width:44px;min-height:44px}
+@media (max-width:700px){ .dognav a{font-size:20px} dialog.dogpop .prof{grid-template-columns:1fr} }
+dialog.dogpop .prof>*,dialog.dogpop .prof .txt>*{max-width:none}
