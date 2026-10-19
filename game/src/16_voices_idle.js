@@ -59,7 +59,7 @@ function voiceTick() { // called once a second from tick()
   S.dogs.forEach((d) => {
     if ((d.stats.hunger < 25 || d.stats.happy < 25) && !d.sleeping && now - (demandAt[d.id] ?? -1e9) > 60000) { demandAt[d.id] = now; if (barkDog(d, 'demand', { ambient: true })) setTimeout(() => barkDog(d, 'whine', { player: true, ambient: true }), 900); }
     if (d.sleeping || (d.id === S.activeId && IDLE.act && IDLE.act.name === 'nap') || packPose[d.id] === 'sleep') { const flat = d.key === 'pug' || d.key === 'frenchie'; if (Math.random() < (flat ? 0.45 : 0.2)) barkDog(d, 'snore', { ambient: true, volume: flat ? 0.65 : 0.5 }); }
-    else if (d.key === 'chihuahua' && Math.random() < 0.035) { if (d.id === S.activeId) { if (alertBark() && !busy) { const h = dogHeadWorld(); say(PICK(CHI_ALERT), h.x, h.y, 2000); } } else barkDog(d, 'alert', { ambient: true }); }
+    else if (d.key === 'chihuahua' && Math.random() < 0.035) { if (d.id === S.activeId) { if (alertBark() && !busy) { const h = dogHeadWorld(); say(tdPickLine('chi_alert', CHI_ALERT), h.x, h.y, 2000); } } else barkDog(d, 'alert', { ambient: true }); }
     if (d.id === S.activeId && dogKey.startsWith('hot|') && Math.random() < 0.25) barkDog(d, 'pant', { ambient: true, volume: 0.6 });
   });
   const clearNight = timePhase() === 'night' && !['rain', 'snow'].includes(weatherNow()) && atHome();
@@ -184,7 +184,7 @@ function idleRunStep() {
   if (s.alert) barkDog(d, 'alert', { ambient: true });
   if (s.water) { setBowl('Fresh Water'); IDLE.act.watered = true; }
   if (s.dirt) addStat('clean', -2);
-  if (s.toy) toast(`${d.name} drops a ball at your feet and stares. Hard.`, '');
+  if (s.toy) toast(tt('idle.drops_ball', '{name} drops a ball at your feet and stares. Hard.', { name: d.name }), '');
   if (s.other) { packPose[s.other[0].id] = s.other[1]; redrawPackDog(s.other[0]); }
   if (s.say) { const h = dogHeadWorld(); say(s.say, h.x, h.y, 2200); }
   if (s.propOff && typeof pupPropClear === 'function') pupPropClear(); if (s.prop && typeof pupProp === 'function') pupProp(s.prop);
