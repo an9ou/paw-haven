@@ -8,7 +8,7 @@
 // Output next to this file: doodle-doggo-costume-reel-a.mp4, doodle-doggo-costume-reel-b.mp4, costume-reel-cover.jpg.
 const fs = require('fs'), path = require('path'), vm = require('vm'), cp = require('child_process');
 const { chromium } = require('playwright');
-const root = path.join(__dirname, '..', '..', '..', '..'), OUT = __dirname, WORK = path.resolve(process.argv[2] || '/tmp/costume_reel'), WHICH = process.argv[3] || 'both';
+const root = path.join(__dirname, '..', '..', '..', '..'), OUT = __dirname, WORK = path.resolve(process.argv[2] || '/tmp/costume_reel'), WHICH = process.argv[3] || 'b'; // owner, 19 Oct 2026: only style B is made (a and both still work)
 fs.mkdirSync(path.join(WORK, 'a'), { recursive: true }); fs.mkdirSync(path.join(WORK, 'b'), { recursive: true });
 const win = {}, ctx = { window: win, console }; vm.createContext(ctx);
 for (const f of ['dogs/pawart_dogs.js', 'world/pawart_world_a.js', 'world/pawart_world_b.js', 'world/pawart_world_c.js']) vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx);
