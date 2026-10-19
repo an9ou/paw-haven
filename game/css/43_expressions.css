@@ -22,3 +22,4 @@ html[data-layout="phone"] .ex-face{width:auto;height:44px;padding:2px 12px 3px 6
 html[data-layout="phone"] .ex-fhead{width:34px;height:34px}
 html[data-layout="phone"] .ex-fword{position:static;width:auto;height:auto;overflow:visible;clip:auto}
 @media (prefers-reduced-motion:reduce){.ex-face:hover{animation:none}}
+.pa-dog text{pointer-events:none} /* v2.13: words drawn by the dog art (achoo!, ta-da!, nom) never take a tap meant for a hot spot */

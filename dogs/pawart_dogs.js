@@ -1607,7 +1607,7 @@ function frame(key,s,pose,outfit,k,seed,ex){
   else if(body==='Pyjamas'&&outfit.sleepwear)HAT2.Nightcap(h,s,L,HT);
   if(top){TOP2[top](h,s,L,HT);if(top==='Trick-or-Treat Ghost'&&eyes&&pose!=='sleep')(eyes==='Explorer Goggles'?drawGoggles:drawGlasses)(h,s,L,HT)}
   drawFx(h,s,L,B,HT);
-  if(X&&X.fx)exSub(h,seed*3+k*131+7,g=>X.fx(g,s,L,B,HT));
+  if(X&&X.fx){h.acc.push('<g pointer-events="none">');exSub(h,seed*3+k*131+7,g=>X.fx(g,s,L,B,HT));h.acc.push('</g>')}// the marks round the dog never take a tap
   return {h,L};
 }
 // marks draw on both body and head; run them twice, once per layer (points mapped to NaN are skipped)
