@@ -121,7 +121,7 @@ function srBoardSVG() {
   }).join('');
   return `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" fill="transparent"/>${place(board, bx, by, bw, bh)}${heads}`;
 }
-function srDogArt(rd) { return place(dogSVG(rd.look, { pose: rd.pose, facing: rd.face }), -DW / 2, -DH * 205 / 220, DW, DH); }
+function srDogArt(rd) { return place(dogSVG(rd.look, exOpt(rd.look, rd.pose, { pose: rd.pose, facing: rd.face })), -DW / 2, -DH * 205 / 220, DW, DH); } // v2.13: with its face (41_expressions.js)
 function srXform(x, y, s) { return `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) scale(${s.toFixed(3)})`; }
 function srHitBox(rd) { // dog units: at least 52 px on a phone at the smallest room scale (0.5, times a small dog's size class)
   const svg = $('#view > svg.world'); let m = 0; if (isPhone() && svg) { const vb = svg.viewBox.baseVal, k = svg.clientWidth / vb.width; if (k > 0) m = 52 / (k * 0.5 * (rd ? sizeK(rd) : 1)); }
@@ -275,7 +275,7 @@ function srBark(rd, kind) { if (barkMode() === 'off') return; playBark(voiceOf(r
 /* ---- pet and belly rub ---- */
 function srPet(id) {
   const rd = SR && SR.dogs.find((d) => d.id === id && !d.away); if (!rd) return false;
-  srHalt(rd); rd.busy = true; rd.mate = null;
+  srHalt(rd); rd.busy = true; rd.mate = null; exTrig(rd.look, 'shelterMeet', { pose: 'pet', draw: false }); // v2.13: the dog you meet makes a face (drawn by srPose below)
   if (SR.mode === 'adopt') { // a pet, then this dog comes to the front to say hello (V27.md section 7: a tap also selects it)
     srPose(rd, 'pet'); srHearts(rd.x, rd.y - 150 * srK(rd, rd.y), 2); srBark(rd, 'play'); SFX.boop(760); SR.pets = (SR.pets || 0) + 1;
     srAfter(700, () => { if (!rd.away) srSelectKey(rd.key, rd); }); return true; // (not on rd.t: a play partner's timers must not cancel the hello)

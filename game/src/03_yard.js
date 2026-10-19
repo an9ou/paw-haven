@@ -24,11 +24,12 @@ function dogPoseNow() {
 }
 const POSE_FB = { crouch: 'sit', shake: 'happy', cold: 'sad', hot: 'happy', dig: 'eat', squat: 'sit', leglift: 'sit' };
 function dogArtSafe(key, o) { let sv = art('dog', key, o); if (o.pose && POSE_FB[o.pose] && !sv.includes('pa-pose-' + o.pose)) sv = art('dog', key, Object.assign({}, o, { pose: POSE_FB[o.pose] })); return sv; }
-function renderDog(pose, facing = 'right', force) {
+function renderDog(pose, facing = 'right', force, artOnly) {
   const g = $('#dogArt'); if (!g) return;
-  const o = shSleepOutfit(D(), pose), k = pose + '|' + facing + '|' + JSON.stringify(o) + '|' + S.dog.key; // v2.4: the Pyjamas at nap time
+  const o = shSleepOutfit(D(), pose), ex = exNow(D(), pose), k = pose + '|' + facing + '|' + JSON.stringify(o) + '|' + S.dog.key + (ex ? '|' + ex : ''); // v2.4: the Pyjamas at nap time. v2.13: the face (41_expressions.js)
   if (k === dogKey && !force) return; dogKey = k;
-  g.innerHTML = place(dogSVG(D(), { pose, outfit: o, facing }), DX, DY, DW, DH);
+  g.innerHTML = place(dogSVG(D(), ex ? { pose, outfit: o, facing, expr: ex } : { pose, outfit: o, facing }), DX, DY, DW, DH);
+  if (artOnly) return; // v2.13: a face that starts or ends redraws the art only (exRedraw)
   const fx = $('#dogFx'); if (fx) { fx.classList.toggle('tk-shake', pose === 'shake'); fx.classList.toggle('tk-shiver', pose === 'cold'); }
   const bf = $('#bedFront'); if (bf) bf.style.display = pose === 'sleep' ? '' : 'none';
   fbNapFit(pose); fbPackNapFit();
@@ -430,7 +431,7 @@ function secretDig() {
   if (busy || S.secretDug || S.mapPieces.length < 4) return;
   if (S.sleeping) { nope(`${NAME()} is asleep. Treasure can wait one nap.`); return; }
   busy = true; hideBubble(); dogTo(225, 30, 1, 0.9); renderDog('walk');
-  setTimeout(() => { renderDog('dig'); SFX.crunch(); }, 950); setTimeout(SFX.crunch, 1500); setTimeout(SFX.crunch, 2000);
+  setTimeout(() => { exTrig(D(), 'dig', { pose: 'dig', draw: false }); renderDog('dig'); SFX.crunch(); }, 950); setTimeout(SFX.crunch, 1500); setTimeout(SFX.crunch, 2000); // v2.13: the guilty face while it digs
   setTimeout(() => {
     S.secretDug = true; S.title = 'Treasure Legend'; S.inv.food['Golden Bone'] = (S.inv.food['Golden Bone'] || 0) + 3;
     if (!S.found['Golden Bone']) S.found['Golden Bone'] = { day: day(), route: 'yard' };
@@ -496,7 +497,7 @@ function beachDig() {
   setTimeout(() => {
     if (Math.random() < 0.55) { const c = addCoins(RINT(5, 20)); toast(`Dug up ${c} coins in the sand! Pirate dog.`, 'gold'); }
     else { const j = PICK(JUNK.concat([['junk-rock', 'A shell with a smaller shell inside. Shell-ception.']])); const c = addCoins(RINT(2, 5)); toast(`${j[1]} (+${c} coins)`, 'gold'); }
-    addStat('happy', favAct('digging') ? 6 : 3); busy = false; renderDog(dogPoseNow(), 'right', true); placeButtons(); markDirty();
+    addStat('happy', favAct('digging') ? 6 : 3); busy = false; exTrig(D(), 'dig', { pose: 'idle', draw: false }); renderDog(dogPoseNow(), 'right', true); placeButtons(); markDirty(); // v2.13: the guilty face
   }, 1300);
 }
 function travelTo(id) {
@@ -551,7 +552,7 @@ function petTick(wx, wy) {
   if (S.place === 'woods' && !pet.woods) { pet.woods = true; addStat('happy', 2); }
   if (S.place === 'hilltop' && !pet.hill) { pet.hill = true; addStat('happy', 3); toast('Hilltop breeze petting: +3 Happiness. The view helps.', 'good'); }
   if (outdoorsNow() && weatherNow() === 'rain' && !hasRaincoat() && !pet.wet) { pet.wet = true; toast('Wet dog smell intensifies.'); }
-  setTemp('pet', 900); fxText('♥', wx + RAND(-20, 20), wy - 10);
+  exTrig(D(), 'pet', { pose: 'pet', draw: false }); setTemp('pet', 900); fxText('♥', wx + RAND(-20, 20), wy - 10);
   Math.random() < 0.7 ? SFX.squeak() : SFX.boop(RAND(500, 800));
   const bondNow = !pet.bonded && pet.gain >= 10; // v2.10 ROAM: petting pets this dog only (the v2.8.4 whole-pack rub is gone)
   rmPetted(D());

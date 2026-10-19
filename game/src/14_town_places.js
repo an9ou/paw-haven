@@ -76,7 +76,7 @@ function salonGroom() {
   $('#slGo', p).onclick = () => {
     if (S.coins < 40) { nope('Not enough coins. The groomer gives a sad little snip of the scissors.'); return; }
     S.coins -= 40; SFX.kaching(); S.stats.clean = 100; D().fluffyUntil = S.gameMin + 1440; closeModal(); markDirty(); SFX.splash(); setTimeout(() => SFX.shake(), 300);
-    renderDog('shake', 'right', true); setTimeout(() => { renderDog(dogPoseNow(), 'right', true); drawFluff(); }, 900);
+    exTrig(D(), 'brush', { pose: 'idle', draw: false }); renderDog('shake', 'right', true); setTimeout(() => { renderDog(dogPoseNow(), 'right', true); drawFluff(); }, 900); // v2.13: a face after the groom
     toast(`${NAME()} is Fresh & Fluffy! ${PR().He} smells like a cloud that went to university.`, 'gold'); updateHUD();
   };
 }
