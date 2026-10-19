@@ -37,7 +37,7 @@ const SIDE = [
 ];
 SIDE.forEach((x) => {
   x.files = fs.existsSync(x.dir) ? fs.readdirSync(x.dir).filter(x.keep).sort() : [];
-  x.mod = !x.files.some(x.real) ? 'none' : (process.env[x.env] === 'inline' ? 'inline' : 'split');
+  x.mod = !x.files.some(x.real) || (EN_ONLY && x.key === 'fonts') ? 'none' : (process.env[x.env] === 'inline' ? 'inline' : 'split'); // English only: no other-script fonts
 });
 // url path -> source file (or generated text)
 const files = {}, gen = {};
