@@ -124,6 +124,7 @@ console.log('   ' + nb + ' bandana renders');
 NEW.slice(0, 3).forEach((k) => { const r = [...BAND, 'Red Bandana', 'Candy Corn Bandana'].map((b) => PA.dog(k, { pose: 'idle', outfit: { neck: b } })); ok(new Set(r).size === 5, k + ': five different bandanas'); });
 
 console.log('-- old breeds unchanged (spot check; the full proof is dogs/check_identical.js v212-base)');
+// v2.13 (V213.md 5.1): a mix draws the neck tube in every pose now, so its old renders are compared in sit, which drew the tube already
 let ref = null; for (const r of ['v212-base', 'origin/v212-base']) { try { cp.execSync('git rev-parse --verify -q ' + r, { cwd: ROOT, stdio: 'ignore' }); ref = r; break; } catch (e) { /* next */ } }
 if (!ref) console.log('   no v212-base ref here, skipped');
 else { const OLD0 = load(cp.execSync(`git show ${ref}:dogs/pawart_dogs.js`, { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 << 20 }));
@@ -132,13 +133,13 @@ else { const OLD0 = load(cp.execSync(`git show ${ref}:dogs/pawart_dogs.js`, { cw
   POSES.forEach((p, i) => AGES.forEach((age) => [null, { neck: 'Red Bandana' }, { body: 'Ghost Sheet' }, { head: 'Party Hat', body: 'Little Bat Costume' }, { body: 'Trick-or-Treat Ghost' }].forEach((of, oi) => {
     const o = { pose: p, age: age || undefined, sparkle: !!((i + oi) % 2), facing: (i + oi) % 3 ? 'right' : 'left' }; if (of) o.outfit = of;
     ok(OLD.dog('poodle', o) === PA.dog('poodle', o), `poodle ${p} ${age || 'adult'} outfit#${oi} identical to ${ref} apart from the name`); })));
-  ['shiba', 'golden', 'samoyed'].forEach((k) => { ok(OLD.dog('poodle', { pose: 'walk', mix: { head: k } }) === PA.dog('poodle', { pose: 'walk', mix: { head: k } }), `poodle body ${k} head identical`);
+  ['shiba', 'golden', 'samoyed'].forEach((k) => { ok(OLD.dog('poodle', { pose: 'sit', mix: { head: k } }) === PA.dog('poodle', { pose: 'sit', mix: { head: k } }), `poodle body ${k} head identical`);
     ok(OLD.dog(k, { pose: 'sit', mix: { head: 'poodle' } }) === PA.dog(k, { pose: 'sit', mix: { head: 'poodle' } }), `${k} body poodle head identical`); });
   ok(PA.DOGS.find((d) => d.key === 'poodle').breed === 'Miniature Poodle', 'the old poodle is shown as Miniature Poodle');
   OLD21.forEach((k) => { ok(OLD.dogHead(k) === PA.dogHead(k), `head ${k} identical to ${ref}`);
     ['idle', 'sleep', 'beg', 'rollover'].forEach((p, i) => { const o = { pose: p, outfit: [null, { neck: 'Red Bandana' }, { body: 'Ghost Sheet' }, { head: 'Party Hat' }][i], age: [undefined, 'puppy', undefined, 'newborn'][i], sparkle: i === 2 };
       ok(OLD.dog(k, o) === PA.dog(k, o), `${k} ${p} identical to ${ref}`); });
-    ok(OLD.dog(k, { pose: 'walk', mix: { head: 'samoyed' } }) === PA.dog(k, { pose: 'walk', mix: { head: 'samoyed' } }), `${k} mix identical to ${ref}`); }); }
+    ok(OLD.dog(k, { pose: 'sit', mix: { head: 'samoyed' } }) === PA.dog(k, { pose: 'sit', mix: { head: 'samoyed' } }), `${k} mix identical to ${ref}`); }); }
 
 console.log(`v212_dogs: ${pass} passed, ${fail} failed`);
 if (fail) { console.log(fails.join('\n')); process.exit(1); }

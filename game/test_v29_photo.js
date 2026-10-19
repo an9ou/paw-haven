@@ -181,7 +181,7 @@ run('v29_photo', async (t) => {
   await t.home(); await t.freezeMotion(true); await t.sleep(300);
   await ev(() => { const svg = document.querySelector('#view > svg.world'), inv = svg.getScreenCTM().inverse(), sx = (x) => new DOMPoint(x, 0).matrixTransform(inv).x; const ds = [...svg.querySelectorAll('#pack .packdog')].map((g) => ({ g, r: g.getBoundingClientRect() })).sort((a, b) => a.r.left - b.r.left); const lo = ds[0], hi = ds[ds.length - 1]; lo.g.style.transform = `translate(${(20 - sx(lo.r.left)).toFixed(1)}px,0)`; hi.g.style.transform = `translate(${(985 - sx(hi.r.right)).toFixed(1)}px,0)`; }); // spread the pack from edge to edge
   await p.click('#phBtn'); await t.until(() => window.__paw.ph.ready(), null, 15000);
-  await p.click('#phMode [data-sq="1"]');
+  if (await ev(() => { const z = window.__paw.ph.size(); return z.w !== z.h; })) await p.click('#phMode [data-sq="1"]'); // Square is a switch and is still on from the download above
   ok(await t.until(() => { const z = window.__paw.ph.size(); return z.w === z.h && window.__paw.ph.ready(); }, null, 30000), 'the square picture is drawn'); // a 4-dog square takes over 10 s under a 3-job run
   const sq = await ev(() => ({ crop: window.__paw.ph.crop(), boxes: window.__paw.ph.boxes(), names: window.__paw.ph.names(), inShot: window.__paw.ph.inShot(), svg: window.__paw.ph.svg() }));
   const placed = sq.boxes.filter((b) => b[1] != null), L = Math.min(...placed.map((b) => b[1])), R = Math.max(...placed.map((b) => b[2]));
