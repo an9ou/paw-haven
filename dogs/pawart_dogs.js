@@ -1388,6 +1388,89 @@ function exFace(h,s,L,HT,X,k,xa,seed){// drop the face just drawn (h's random st
   exSub(h,seed*5+k*977+11,g=>{drawFace(g,s,LX,HT);if(ff)ff(g,s,LX,HT,0);if(X.face)X.face(g,s,LX,HT)});
 }
 /* ---------- v2.13 expressions: ART A (sleepy, surprised, curious, hearts, proud, guilty, sneeze) ---------- */
+// XA: ART A helpers. Lines on the face use the light brow colour on any dark head (bc, or a pale crayon when the breed has none).
+// fx marks stay inside the canvas and leave the fit box alone (exSub would merge their bounds), so an expression never shrinks or moves the dog.
+const XA={
+  c:(s,bc)=>bc||(lum(s.hcol)<.32?'#CFC6C0':INK),
+  eyes:(s,L)=>{const f=L.face,hx=s.head.rx,hy=s.head.ry,e0=f.e0||[-.1,-.04],e1=f.e1||[.42,-.1],HT=T(L.hT);return[HT([hx*e0[0],hy*e0[1]]),HT([hx*e1[0],hy*e1[1]])]},
+  white:(h,x,y,rx,ry)=>h.shape(circ(x,y,rx,ry||rx*1.05,12),W,{ox:0,oy:0,sc:1,w:2.3,amp:.45,closed:1,famp:.25}),
+  pupil:(h,s,i,x,y,p)=>{const ir=s.irises?s.irises[i]:s.iris;if(ir){h.dot(x,y,p*1.2,p*1.26,ir);h.dot(x,y,p*.6,p*.63)}else h.dot(x,y,p,p*1.05)},
+  up:(L,a)=>a[L.k||0]||0,
+  cl:(x,y,w,ht)=>[Math.max(6,Math.min(x,234-w)),Math.max(ht+5,y)],
+  text:(h,t,x,y,z,rt,b)=>{const q=XA.cl(x,y,z*.7*t.length,z);if(!b)return h.text(t,q[0],q[1],z,INK,rt);// b: bold, the hand font laid down three times a hair apart (text stays readable when the dog faces left)
+    const x0=q[0]+h.J(1.2),y0=q[1]+h.J(1),r0=rt+h.J(3),d=Math.max(.7,z*.035);[[0,0],[d,0],[d*.5,d]].forEach(o=>h.texts.push({s:t,x:x0+o[0],y:y0+o[1],size:z,col:INK,rt:r0}));h.tr(x0-2,y0-z);h.tr(x0+z*.7*t.length,y0+4)},
+  star:(cx,cy,R)=>{const p=[];for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?R*.45:R;p.push([cx+Math.cos(a)*rr,cy+Math.sin(a)*rr])}return p},
+  fr:(s,HT,dy)=>HT([s.head.rx*1.15,-s.head.ry*dy]),// a spot in front of the face, clear of the ears and hats
+  // a crayon "!" drawn as thick marks (bolder than the hand font at game size, and it reads the same when the dog faces left); (x,y) = bottom left, z = height, kept inside the canvas
+  bang(h,x,y,z,a){const q=XA.cl(x,y,z*.62,z),o=[q[0],q[1]],m=P=>P.map(p=>{const r2=rot([p[0]*z,p[1]*z],a||0);return[o[0]+r2[0],o[1]+r2[1]]}),w=Math.max(2.6,z*.13);
+    h.shape(m([[.06,-1],[.3,-1],[.22,-.32],[.14,-.32]]),INK,{w:w*.6,ox:0,oy:0,sc:1,closed:1,amp:.4});const d=m([[.18,-.08]])[0];h.dot(d[0],d[1],z*.09,z*.09)},
+  tilt:(s,L,da)=>{const q=[-s.head.rx*.2,s.head.ry*.35],p0=T(L.hT)(q);L.hT.a+=da;const p1=T(L.hT)(q);L.hT.x+=p0[0]-p1[0];L.hT.y+=p0[1]-p1[1]},// turn the head about its neck join, so it stays on the body
+  free:g=>{g.bb[0]=g.bb[1]=1e9;g.bb[2]=g.bb[3]=-1e9},// the fx marks do not count for the fit
+  mouth:(s,keep)=>s.face.grinA||s.face.mouth==='sammy'||(keep&&s.face.mouth==='grin')
+};
+// sleepy: heavy half-lids over the lower half of each eye, a small yawn "o", a tiny "z" drifting up
+EXPR.sleepy={ok:/^(idle|sit|down|walk|crouch|dirty)$/,
+  pose(s,L){XA.tilt(s,L,4)},
+  pre(s,LX){LX.face.eyes='down'},
+  eye(h,s,L,x,y,r,i,bc){const c=XA.c(s,bc),o=i?1:-1,y0=y+r*.28,P=[];for(let j=0;j<=8;j++){const a=.28+j/8*(Math.PI-.56);P.push([x+Math.cos(a)*r,y+Math.sin(a)*r*1.05])}
+    h.shape(P,W,{ox:0,oy:0,sc:1,w:2.3,amp:.45,closed:1,famp:.25});XA.pupil(h,s,i,x+r*.05,y+r*.66,r*.33);
+    h.line([[x-o*r*1.2,y0+r*.05],[x+o*r*.1,y0-r*.2],[x+o*r*1.25,y0+r*.2]],4.6,c);h.line([[x-r*.7,y+r*1.45],[x,y+r*1.62],[x+r*.7,y+r*1.45]],1.8,c,.3);return true},
+  mouth(h,s,L,M){const z=[1,1.2,1.1][L.k||0];h.shape(circ(-4,13,4.4*z,5.6*z,9).map(q=>M(q)),'#7A1F2E',{w:2.8,ox:0,oy:0,sc:1,closed:1});const p=M([-4,13+3.6*z]);h.dot(p[0],p[1]-1,2.4*z,1.5*z,'#FF6F9A');return true},
+  fx(h,s,L,B,HT){const hx=s.head.rx,hy=s.head.ry,c=HT([hx*1.1,-hy*.6]),u=XA.up(L,[0,4,8]);XA.text(h,'z',c[0]+6,c[1]-u,17,-10,1);XA.text(h,'Z',c[0]+16,c[1]-14-u*.6,22,-14,1);XA.free(h)}};
+// surprised: big round eyes with small pupils, brows up high, a small "o" mouth, a "!"
+EXPR.surprised={ok:/^(idle|sit|walk|jump|sniff|dig|crouch|down|paw|beg|dirty|bow)$/,
+  pose(s,L){if(L.ears==='norm')L.ears='perk'},
+  pre(s,LX){LX.face.eyes='x'},// 'x': the breed's faceFn leaves the eyes alone (no chow lids, no eye rings) so the big eyes show
+  eye(h,s,L,x,y,r,i,bc){const c=XA.c(s,bc),E=XA.eyes(s,L),d=Math.hypot(E[1][0]-E[0][0],E[1][1]-E[0][1]),g=Math.min(Math.max(r*.32,2.2),Math.max(.6,(d-s.eyes[0]-s.eyes[1])/2+1.4)),R=r+g,yc=y-g*.35;
+    XA.white(h,x,yc,R,R*1.08);XA.pupil(h,s,i,x+r*.06,yc+r*.04,Math.max(1.5,r*.27));
+    h.line([[x-R*.95,yc-R-2],[x,yc-R-5.5],[x+R*.95,yc-R-2]],3.2,c);return true},
+  mouth(h,s,L,M){const z=[1,1.15,1.05][L.k||0];h.shape(circ(-3,13,4*z,5.4*z,9).map(q=>M(q)),'#7A1F2E',{w:3,ox:0,oy:0,sc:1,closed:1});return true},
+  fx(h,s,L,B,HT){const c=XA.fr(s,HT,.45),u=XA.up(L,[0,3,1]);XA.bang(h,c[0]+4,c[1]-u,26,10);XA.bang(h,c[0]+15,c[1]-4-u,19,24);XA.free(h)}};
+// curious: head tilted, the near brow up, the far eye a touch squinty, eyes up and forward, a small "hm", a crayon "?"
+EXPR.curious={ok:/^(idle|sit|walk|sniff|down|crouch|beg|paw|dig|bow|dirty)$/,
+  pose(s,L){if(/^(idle|sit|walk|down|paw|beg|dirty)$/.test(L.pose))XA.tilt(s,L,9);if(L.ears==='norm')L.ears='perk'},
+  pre(s,LX){LX.face.eyes='x'},
+  eye(h,s,L,x,y,r,i,bc){const c=XA.c(s,bc),R=r*(i?1.12:.95),pr=(s.face.pupil||.57)*r;XA.white(h,x,y,R);XA.pupil(h,s,i,x+R*.24,y-R*.2,pr);h.dot(x+R*.24-pr*.35,y-R*.2-pr*.45,pr*.35,pr*.35,W);
+    if(i)h.line([[x-R*1.15,y-R*1.5],[x,y-R*2.3],[x+R*1.2,y-R*1.7]],3.2,c);else h.line([[x-R*1.2,y-R*1.15],[x+R*1.2,y-R*1.35]],3.4,c);return true},
+  mouth(h,s,L,M){if(XA.mouth(s))return false;h.line([[-16,9],[-11,11],[-6,9],[-2,10.5]].map(M),3.4);return true},
+  fx(h,s,L,B,HT){const c=XA.fr(s,HT,.5),u=XA.up(L,[0,3,1]);XA.text(h,'?',c[0]+4,c[1]-u,36,12,1);XA.free(h)}};
+// hearts: pink heart eyes, blush, a happy open mouth, little hearts floating up
+EXPR.hearts={ok:/^(idle|pet|sit|happy|down|beg|paw|walk|dance|bow|scratch)$/,
+  pre(s,LX){LX.face.eyes='happy';LX.blush=1;if(!XA.mouth(s,1))LX.face.mouth='tongue'},
+  eye(h,s,L,x,y,r){const z=Math.max(5.8,r*1.08,s.head.rx*.2),yc=y-z*.17;
+    if(lum(s.hcol)<.32){const P=[];for(let j=0;j<16;j++){const t=j/16*Math.PI*2;P.push([x+z*1.3*Math.pow(Math.sin(t),3),yc-z*.081*(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))])}h.shape(P,'#FFE3EC',{noline:1,ox:0,oy:0,sc:1})}// a pale rim on a dark head
+    h.heart(x,yc,z,'#FF4F7B');h.dot(x-z*.42,y-z*.42,z*.16,z*.16,W);return true},
+  fx(h,s,L,B,HT){if(L.hearts||L.hope)return;const hx=s.head.rx,hy=s.head.ry,c=HT([0,0]),u=XA.up(L,[0,5,10]),a=XA.cl(c[0]-hx*1.25,c[1]-hy*1.15-u,8,8),b=XA.cl(c[0]+hx*.95,c[1]-hy*1.5-u*.6,6,8);
+    h.heart(a[0],a[1],7,'#FF4F7B');h.heart(b[0],b[1],5,'#FF8FB1');XA.free(h)}};
+// proud: chin up, eyes shut in happy arcs, a smug smile, a little "ta-da" star
+EXPR.proud={ok:/^(idle|sit|happy|paw|bow|dance|walk|beg|dirty|dig)$/,
+  pose(s,L){if(/^(idle|sit|happy|paw|walk|beg|dirty)$/.test(L.pose))XA.tilt(s,L,-8);if(L.ears==='norm')L.ears='perk'},
+  pre(s,LX){LX.face.eyes='happy';if(!XA.mouth(s,1))LX.face.mouth='smirk'},
+  eye(h,s,L,x,y,r,i,bc){const c=XA.c(s,bc);h.line([[x-r*1.05,y+r*.3],[x,y-r*.6],[x+r*1.05,y+r*.3]],4.4,c);if(i)h.line([[x-r*.9,y-r*1.75],[x+r*1.1,y-r*2.15]],3,c);return true},
+  fx(h,s,L,B,HT){const c=XA.fr(s,HT,.75),u=XA.up(L,[0,3,5]),q=XA.cl(c[0]+13,c[1]-u,20,14);
+    h.shape(XA.star(q[0],q[1],12),'#FFD23F',{w:3,ox:0,oy:0,sc:1,closed:1,amp:.5,step:6});h.shape(XA.star(q[0]+17,q[1]+9,6),'#FFE57A',{w:2.4,ox:0,oy:0,sc:1,closed:1,amp:.4,step:5});
+    [[15,-10,21,-15],[-15,-9,-21,-13],[3,-17,4,-23]].forEach(o=>h.line([[q[0]+o[0],q[1]+o[1]],[q[0]+o[2],q[1]+o[3]]],2.4,PEN));
+    XA.text(h,'ta-da!',q[0]-18,q[1]-17,18,-8,1);XA.free(h)}};
+// guilty: side-eyes under a low lid, soft worried brows, a sheepish wavy smile, a crumb of dirt on the nose, a small "oops"
+EXPR.guilty={ok:/^(idle|sit|dig|down|crouch|dirty|walk|sniff)$/,
+  pose(s,L){if(/^(norm|perk)$/.test(L.ears)&&/^(prick|tall|giant|bat|semi)$/.test(s.ears))L.ears='flat';if(/^(idle|sit|walk|dirty|down)$/.test(L.pose))XA.tilt(s,L,4)},// ears back (the standing ones; drop ears already hang)
+  pre(s,LX){LX.face.eyes='x'},
+  eye(h,s,L,x,y,r,i,bc){const c=XA.c(s,bc),pr=(s.face.pupil||.57)*r*.85,inner=i===0?1:-1,R=r*1.05;XA.white(h,x,y,R);XA.pupil(h,s,i,x-R*.42,y-R*.22,pr);h.dot(x-R*.42-pr*.3,y-R*.22-pr*.4,pr*.3,pr*.3,W);
+    h.line([[x-R*1.15,y-R*1.3-(inner<0?R*.75:0)],[x+R*1.15,y-R*1.3-(inner>0?R*.75:0)]],3,c);return true},
+  mouth(h,s,L,M){h.line([[-17,8],[-13,11],[-9,8.5],[-5,11],[-1,8.5],[3,5.5]].map(M),3.4);[[-2,-5,1.9],[3,-3,1.5],[-20,12,1.6]].forEach(q=>{const p=M([q[0],q[1]]),z=q[2]*s.head.rx/33;h.dot(p[0],p[1],z+.6,z,'#9A6A3E')});return true},
+  fx(h,s,L,B,HT){const c=XA.fr(s,HT,.6),u=XA.up(L,[0,2,1]);XA.text(h,'oops',c[0]+4,c[1]-u,19,-6,1);XA.free(h)}};
+// sneeze: eyes squeezed shut > <, a scrunched nose, an open "achoo" mouth, a puff with a flower and bubbles, "achoo!"
+EXPR.sneeze={ok:/^(idle|sit|sniff|walk|down|dig|dirty|paw|crouch)$/,
+  pose(s,L){if(/^(idle|sit|walk|down|paw|dirty)$/.test(L.pose))XA.tilt(s,L,5)},
+  pre(s,LX){LX.face.eyes='closed'},
+  eye(h,s,L,x,y,r,i,bc){const c=XA.c(s,bc),d=i?-1:1;h.line([[x-d*r*.95,y-r*.8],[x+d*r*.8,y],[x-d*r*.95,y+r*.8]],3.9,c);return true},
+  mouth(h,s,L,M){const c=XA.c(s);[0,1,2].forEach(j=>h.line([[-7-j*5,-6],[-5-j*5,-9.5],[-3-j*5,-6]].map(M),2.2,c,.3));
+    h.shape([[-16,5],[3,4],[0,15],[-12,16]].map(M),'#7A1F2E',{w:3.2,ox:0,oy:0,sc:1});h.shape([[-11,12],[-2,11.5],[-3,15],[-10,15]].map(M),'#FF6F9A',{noline:1,ox:0,oy:0});return true},
+  fx(h,s,L,B,HT){const hx=s.head.rx,hy=s.head.ry,n=HT(noseLocal(s)),z=[.9,1.1,1][L.k||0],px=Math.min(Math.max(n[0]+8,HT([hx*.98,hy*.15])[0]+2),200),py=Math.max(30,Math.min(n[1]+2,GY-16));
+    h.shape(scallop(px+11,py,14*z,10*z,6,.28),'#F2FAFF',{w:2.8,ox:0,oy:0,sc:1,closed:1,amp:.6,step:5});
+    const f=[px+24,py-13];[0,1,2,3,4].forEach(j=>{const a=j*1.2566+.3;h.dot(f[0]+Math.cos(a)*4,f[1]+Math.sin(a)*4,3,3,'#FF8FB1')});h.dot(f[0],f[1],2.2,2.2,'#FFD23F');
+    [[px+27,py+9,3.4],[px+5,py-14,2.6],[px+32,py-1,2]].forEach(b=>h.shape(circ(b[0],b[1],b[2]*z,b[2]*z,8),W,{w:1.8,ox:0,oy:0,sc:1,closed:1,amp:.3}));
+    const t=HT([hx*.25,-hy*1.25]);XA.text(h,'achoo!',t[0]-30,t[1]-XA.up(L,[0,3,1]),18,-8,1);XA.free(h)}};
 /* ---------- ART A end ---------- */
 /* ---------- v2.13 expressions: ART B (blep, zoomies, pout, dreamy, wow, wink, yum) ---------- */
 /* ---------- ART B end ---------- */
