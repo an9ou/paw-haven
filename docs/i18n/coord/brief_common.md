@@ -1,0 +1,18 @@
+## Common rules for every v2.14 phase 1 lane
+- Doodle Doggo v2.14 "Hello in Every Language": the game and the site doodledoggo.app get 10 languages besides English (the source): ja, zh-Hans, zh-Hant, ko, es, pt-BR, fr, de, th, id (BCP 47 codes, exactly these spellings in file names and data). itch.io stays English.
+- Read CLAUDE.md (loaded), then skim PIPELINE.md and BUILDING.md. Setup is done by the SessionStart hook (NODE_PATH, PAW_ARGS); if tests can't find playwright use `NODE_PATH=$(npm root -g)` and `PAW_ARGS=--ignore-certificate-errors`.
+- You are in your own git worktree. First: `git fetch origin integration/v2.14 && git checkout -B lane/v214-<NAME> origin/integration/v2.14`.
+- **v2.13 is being built in parallel on game/src, game/css, game/shell.html, dogs/ and world/, mods/.** Those are READ-ONLY for you. Never edit them.
+- Shared data contract (decided by the Coordinator, don't change names; if one is truly wrong, say so in your report):
+  - Message syntax (game and site): ICU MessageFormat subset: `{name}`, `{n, plural, =0 {..} one {# dog} other {# dogs}}`, `{x, select, a {..} other {..}}`; plural categories from `Intl.PluralRules(lang)`; `#` = the formatted number. No other syntax.
+  - `game/i18n/glossary/<lang>.json` (GLOSSARY lanes): `{"lang":"ja","breeds":{<all 35 keys of mods/genes.js BREEDS>:"standard local name"},"terms":{"<English game term>":"<local term>"},"bans":[{"re":"<JS RegExp source>","flags":"iu","why":"<rule>"}],"allow":["<phrase that a ban must not hit>"]}`.
+  - `docs/i18n/<lang>.md` (GLOSSARY lanes): the style guide and glossary in prose/tables.
+  - `game/i18n/msg.js` (SPEC lane): the formatter, UMD (`module.exports` in node, `window.PawI18nMsg` in the browser), no dependencies.
+  - `game/i18n/<lang>.json` (phase 2 only): the game string tables, flat keys.
+  - `site/i18n/<lang>.json` (SITE ENGINE writes en.json and the format; translators fill the rest in phase 1b).
+  - `site/fonts/i18n/<lang>.woff2` + `site/fonts/i18n/<lang>.css` (FONTS lane): the per-language font subset, CSS family name `'DD Local'` (and `'DD Local Title'` if a second face is used for headings).
+  - Site URLs: English stays at `/`, `/dogs`, `/privacy`, `/reset`; the others at `/<code lowercased>/...`, e.g. `/ja/`, `/zh-hans/dogs`, `/pt-br/privacy`.
+- The owner's word rules hold in every language: never "breed" as a verb, no "stud", no "litter price", never "sell" for dogs (shops selling items is fine), no "nintendo", "pokémon", "animal crossing" (and their local names); never "made in Japan" ("Japan-style" is fine). Nothing bad ever happens; cozy, kind, simple words; the crude crayon dogs are the joke.
+- Translations get a native-speaker check later (the owner may ask friends): flag anything you're unsure of with `TODO(native)` in the docs.
+- Don't deploy anything, don't open PRs, don't message other sessions. Push only your branch: `git push -u origin lane/v214-<NAME>` (retry 4x with backoff on network errors).
+- When done, commit, push, and reply with a report of 25 lines at most: files, tests run and results, decisions you took, open issues. Keep your own context lean (don't cat huge files; use grep/head).
