@@ -57,9 +57,11 @@ async function music(p, T, file) {
   const r = await p.evaluate(async (S) => { const res = await window.PawAudio._render({ seconds: S, wav: true, vols: { master: 0.85, music: 0.66, ambience: 0.08 },
     segments: [{ at: 0, ctx: { place: 'square', time: 'dusk', weather: 'sunny' } }] }); return { wav: res.wav, peakDb: res.peakDb }; }, T + 2.2);
   const raw = path.join(WORK, 'music-raw.wav'); fs.writeFileSync(raw, Buffer.from(r.wav, 'base64'));
-  cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-i', raw, '-filter_complex',
-    `[0]asplit[m][t];[m]atrim=1:${1 + T},asetpts=PTS-STARTPTS,afade=t=in:d=1:curve=qsin[a];[t]atrim=${1 + T}:${2 + T},asetpts=PTS-STARTPTS,afade=t=out:d=1:curve=qsin[b];[a][b]amix=inputs=2:duration=first:normalize=0[o]`,
+  // (two inputs, not asplit: with asplit + amix, ffmpeg 6.1 ended the mix after 0.02 s, and the first A/B renders went out silent)
+  cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-i', raw, '-i', raw, '-filter_complex',
+    `[0]atrim=1:${1 + T},asetpts=PTS-STARTPTS,afade=t=in:d=1:curve=qsin[a];[1]atrim=${1 + T}:${2 + T},asetpts=PTS-STARTPTS,afade=t=out:d=1:curve=qsin,apad=whole_dur=${T}[b];[a][b]amix=inputs=2:duration=first:normalize=0[o]`,
     '-map', '[o]', file]);
+  const d = +cp.execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', file]).toString(); if (Math.abs(d - T) > 0.1) throw new Error(`music is ${d} s, expected ${T} s`);
 }
 // B's sounds: a quick crayon whoosh as each costume passes Noodle, made here (no samples), quiet under the music
 function sfx(T, lands, file) {
@@ -166,7 +168,7 @@ const mux = (video, audio, T, mp4, extra = []) => cp.execFileSync('ffmpeg', ['-l
   }
   if (WHICH !== 'a') {
     await music(p, B_T, path.join(WORK, 'b', 'music.wav')); sfx(B_T, lands, path.join(WORK, 'b', 'sfx.wav'));
-    cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-i', path.join(WORK, 'b', 'music.wav'), '-i', path.join(WORK, 'b', 'sfx.wav'), '-filter_complex', '[0][1]amix=inputs=2:duration=first:normalize=0', path.join(WORK, 'b', 'mix.wav')]);
+    cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-i', path.join(WORK, 'b', 'music.wav'), '-i', path.join(WORK, 'b', 'sfx.wav'), '-filter_complex', '[1]volume=0.7[s];[0][s]amix=inputs=2:duration=first:normalize=0', path.join(WORK, 'b', 'mix.wav')]);
     const mp4 = path.join(OUT, 'doodle-doggo-costume-reel-b.mp4');
     mux(['-framerate', String(FPS), '-i', path.join(WORK, 'b', 'f%05d.png')], path.join(WORK, 'b', 'mix.wav'), B_T, mp4);
     console.log('wrote', mp4, B_T + ' s');
