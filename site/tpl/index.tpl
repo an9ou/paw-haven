@@ -111,7 +111,7 @@
     </section>
 
     <section id="aboutteaser" class="sec teaser abt">
-      <img class="abdog" src="/img/art/dogs/dachs-pup.svg" alt="{{a about.dog_alt}}" width="240" height="200" loading="lazy">
+      <img class="abdog" src="/img/art/dogs/dachs-still.svg" alt="{{a about.dog_alt}}" width="240" height="200" loading="lazy">
       <div>
         <h2>{{t home.about.title}}</h2>
         <p>{{t home.about.text}}</p>

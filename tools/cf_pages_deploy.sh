@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Builds the doodledoggo.app introduction site (site/, v2.8.2) and deploys it (and www, which redirects to it) to Cloudflare.
-# The game itself is played on itch.io; the site has the home page, /dogs, /privacy and /reset, since v2.14 in 11 languages (/ja/, /zh-hans/ ...).
+# The game itself is played on itch.io; the site has the home page, /dogs, /map, /about, /privacy and /reset, since v2.14 in 11 languages (/ja/, /zh-hans/ ...).
 # v2.14: when site/fonts/i18n/ has fonts, tools/cf_site.js puts them in a second Worker, doodle-doggo-fonts (_cfsite_fonts/), which goes up first
 # with the route doodledoggo.app/fonts/i18n/* (a route runs before the Custom Domain, so only those URLs reach it). No fonts: no second Worker.
+# Site v3: the same for the /map pictures (site/img/map/): the Worker doodle-doggo-img (_cfsite_img/) on doodledoggo.app/img/map/*.
 #   bash tools/cf_pages_deploy.sh
 # The site is the Worker "doodle-doggo" (see tools/cf_site.js for why a Worker and not a Pages project), with Workers Custom
 # Domains for doodledoggo.app and www.doodledoggo.app (Cloudflare adds their DNS records itself).
@@ -23,22 +24,27 @@ ok() { python3 -c "import json,sys; d=json.load(sys.stdin); sys.exit(0 if d.get(
 
 ZID=$(curl -sS "https://api.cloudflare.com/client/v4/zones?name=$ZONE" "${AUTH[@]}" | python3 -c "import json,sys; print(json.load(sys.stdin)['result'][0]['id'])")
 
-# 0. the per-language fonts Worker (only when tools/cf_site.js made one) and its route
-if [ -f _cfsite_fonts/worker.js ]; then
-  FFORM=(-F "metadata={\"main_module\":\"worker.js\",\"compatibility_date\":\"2026-08-01\"};type=application/json"
-         -F "worker.js=@_cfsite_fonts/worker.js;type=application/javascript+module")
-  while read -r name type; do [ -n "$name" ] && FFORM+=(-F "$name=@_cfsite_fonts/$name;filename=$name;type=$type"); done < _cfsite_fonts/parts.txt
-  curl -sS --fail-with-body -X PUT "$API/workers/scripts/$SCRIPT-fonts" "${AUTH[@]}" "${FFORM[@]}" | ok
-  echo "uploaded Worker $SCRIPT-fonts"
-  PATTERN="$ZONE/fonts/i18n/*"
-  RID=$(curl -sS "https://api.cloudflare.com/client/v4/zones/$ZID/workers/routes" "${AUTH[@]}" | python3 -c "import json,sys; print(next((r['id'] for r in json.load(sys.stdin)['result'] if r['pattern']=='$PATTERN'),''))")
+# 0. the side Workers tools/cf_site.js made (only when it made them) and their routes: the per-language fonts (doodle-doggo-fonts,
+#    doodledoggo.app/fonts/i18n/*) and, since site v3, the place pictures of /map (doodle-doggo-img, doodledoggo.app/img/map/*)
+side_worker() { # <folder> <script name> <route pattern>
+  local dir=$1 name=$2 pattern=$3
+  [ -f "$dir/worker.js" ] || return 0
+  local SFORM=(-F "metadata={\"main_module\":\"worker.js\",\"compatibility_date\":\"2026-08-01\"};type=application/json"
+               -F "worker.js=@$dir/worker.js;type=application/javascript+module")
+  while read -r f type; do [ -n "$f" ] && SFORM+=(-F "$f=@$dir/$f;filename=$f;type=$type"); done < "$dir/parts.txt"
+  curl -sS --fail-with-body -X PUT "$API/workers/scripts/$name" "${AUTH[@]}" "${SFORM[@]}" | ok
+  echo "uploaded Worker $name"
+  local RID
+  RID=$(curl -sS "https://api.cloudflare.com/client/v4/zones/$ZID/workers/routes" "${AUTH[@]}" | python3 -c "import json,sys; print(next((r['id'] for r in json.load(sys.stdin)['result'] if r['pattern']=='$pattern'),''))")
   if [ -n "$RID" ]; then
-    curl -sS -X PUT "https://api.cloudflare.com/client/v4/zones/$ZID/workers/routes/$RID" "${AUTH[@]}" -H 'Content-Type: application/json' -d "{\"pattern\":\"$PATTERN\",\"script\":\"$SCRIPT-fonts\"}" | ok
+    curl -sS -X PUT "https://api.cloudflare.com/client/v4/zones/$ZID/workers/routes/$RID" "${AUTH[@]}" -H 'Content-Type: application/json' -d "{\"pattern\":\"$pattern\",\"script\":\"$name\"}" | ok
   else
-    curl -sS -X POST "https://api.cloudflare.com/client/v4/zones/$ZID/workers/routes" "${AUTH[@]}" -H 'Content-Type: application/json' -d "{\"pattern\":\"$PATTERN\",\"script\":\"$SCRIPT-fonts\"}" | ok
+    curl -sS -X POST "https://api.cloudflare.com/client/v4/zones/$ZID/workers/routes" "${AUTH[@]}" -H 'Content-Type: application/json' -d "{\"pattern\":\"$pattern\",\"script\":\"$name\"}" | ok
   fi
-  echo "route $PATTERN -> $SCRIPT-fonts"
-fi
+  echo "route $pattern -> $name"
+}
+side_worker _cfsite_fonts "$SCRIPT-fonts" "$ZONE/fonts/i18n/*"
+side_worker _cfsite_img "$SCRIPT-img" "$ZONE/img/map/*"
 
 # 1. upload the Worker (metadata + module parts)
 FORM=(-F "metadata={\"main_module\":\"worker.js\",\"compatibility_date\":\"2026-08-01\"};type=application/json"
@@ -56,7 +62,7 @@ done
 
 # 3. check
 sleep 3
-for u in "https://$ZONE/" "https://$ZONE/ja/" "https://$ZONE/zh-hant/dogs" "https://$ZONE/privacy" "https://$ZONE/reset" "https://$ZONE/favicon.svg" "https://$ZONE/logo-1200x630.png"; do
+for u in "https://$ZONE/" "https://$ZONE/ja/" "https://$ZONE/zh-hant/dogs" "https://$ZONE/map" "https://$ZONE/de/about" "https://$ZONE/img/map/town-map.webp" "https://$ZONE/privacy" "https://$ZONE/reset" "https://$ZONE/favicon.svg" "https://$ZONE/logo-1200x630.png"; do
   curl -sS -o /dev/null -w "%{http_code} %{content_type} $u\n" "$u" || true
 done
 curl -sS -o /dev/null -w "%{http_code} -> %{redirect_url}  https://www.$ZONE/\n" "https://www.$ZONE/" || true

@@ -74,7 +74,7 @@ button.play[disabled]{opacity:.6;cursor:default}
 .jp,[lang="ja"]{font-family:var(--jp);font-style:normal;line-break:strict}
 .h1logo{margin:0}
 .top{text-align:center}
-.chip{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:4px 16px;border:2px solid var(--ink);border-radius:14px 10px 15px 9px;
+.chip{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:4px 16px;border:2px solid var(--ink);border-radius:14px 10px 15px 9px;
   background:var(--w-mint);color:var(--ink);text-decoration:none;font-family:var(--hand);font-size:24px;font-weight:700;line-height:1;cursor:pointer}
 .chip:hover{transform:rotate(-1.5deg)}
 .jpw{display:inline-block;font-family:var(--read);font-size:19px;font-weight:400;color:var(--muted);vertical-align:middle;margin-left:6px}
@@ -300,12 +300,13 @@ html.i18n .pics .cap{position:static;display:block;text-align:right;margin-top:-
   .sitehead{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"brand . langs" "nav nav nav";gap:6px 8px;padding:6px 8px 8px}
   .brand{grid-area:brand} .sitehead .langs{grid-area:langs}
   .sitenav{grid-area:nav;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
-  .sitenav a{min-width:0;padding:5px 4px;font-size:22px;line-height:1.05;overflow-wrap:anywhere;hyphens:auto;-webkit-hyphens:auto}
+  .sitenav a{min-width:0;padding:5px 3px;font-size:22px;line-height:1.05;overflow-wrap:break-word;word-break:normal}
 }
 @media (max-width:700px){
   .sitehead{margin-top:10px}
   .brand img{height:38px}
-  .sitenav a{font-size:20px}
+  .sitenav a{font-size:min(20px,5.4vw)} /* 17px at 320px wide: Beranda, Startseite, Accueil fit a quarter of the bar on one line */
+  html.i18n .sitenav a{overflow-wrap:break-word}
   .langs summary{padding:4px 10px}
   .langs summary>span[lang]{max-width:min(9em,28vw)}
   .page{padding-top:10px;padding-bottom:56px} /* room under the footer for the dog peeking up from the bottom edge (site.js) */
@@ -321,7 +322,7 @@ html.s-th .sitenav a{line-height:1.35}
 .free{display:flex;align-items:center;justify-content:center;gap:14px;margin:4px 0 0}
 .free .hanko{flex:none;font-size:19px}
 .free .small{text-align:left;max-width:440px}
-.cards.featured{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (min-width:701px){ .cards.featured{grid-template-columns:repeat(4,minmax(0,1fr))} }
 .some{color:var(--muted);margin:4px 0 2px}
 .teaser{scroll-margin-top:10px}
 .tpics{list-style:none;padding:0;margin:12px 0 8px;display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:16px;align-items:center}
@@ -343,7 +344,8 @@ html.s-th .sitenav a{line-height:1.35}
 /* /dogs: a friendlier page; profiles take turns left and right on wide screens, the pictures wiggle on hover or tap */
 .small-top .lead{max-width:780px;margin:.3em auto .9em;font-size:20px}
 .prof{padding:30px 8px 26px}
-@media (min-width:701px){ .prof:nth-of-type(even){grid-template-columns:1fr 300px} .prof:nth-of-type(even) .pics{order:2} }
+@media (min-width:701px){ .prof{grid-template-columns:300px minmax(0,1fr)} .prof:nth-of-type(even){grid-template-columns:minmax(0,1fr) 300px} .prof:nth-of-type(even) .pics{order:2} }
+@media (min-width:701px) and (max-width:860px){ .prof,.prof:nth-of-type(even){grid-template-columns:240px minmax(0,1fr)} .prof:nth-of-type(even){grid-template-columns:minmax(0,1fr) 240px} .jpline .jp{white-space:normal} }
 .dognav a{transition:transform .15s}
 .dognav li:nth-child(odd) a:hover{transform:rotate(-2deg) translateY(-2px)} .dognav li:nth-child(even) a:hover{transform:rotate(2deg) translateY(-2px)}
 @keyframes wiggle{0%,100%{transform:rotate(0)}20%{transform:rotate(-5deg)}40%{transform:rotate(4deg)}60%{transform:rotate(-3deg)}80%{transform:rotate(2deg)}}
@@ -371,6 +373,7 @@ html.s-th .sitenav a{line-height:1.35}
 .place img{display:block;width:100%;height:auto;border:2px solid var(--ink);border-radius:9px 7px 10px 6px;background:var(--paper)}
 .place h3{font-size:29px;margin:10px 6px 2px}
 .place p{margin:0 6px;font-size:18px;line-height:1.4}
+@media (min-width:861px){ #home-places .placegrid{grid-template-columns:repeat(4,minmax(0,1fr))} #home-places .place h3{font-size:26px} }
 @media (max-width:860px){ .placegrid{grid-template-columns:repeat(2,minmax(0,1fr))} }
 @media (max-width:700px){ .placegrid{grid-template-columns:1fr} .mapsheet .small-top h1{font-size:42px} .bigmap{padding:4px;margin-bottom:16px} }
 
@@ -384,6 +387,7 @@ html.s-th .sitenav a{line-height:1.35}
 .about .sign{display:flex;justify-content:flex-end;align-items:center;gap:10px;font-family:var(--hand);font-size:32px;font-weight:700;color:var(--muted);margin:0 0 .4em}
 .about .aleaf{width:30px;height:30px;transform:rotate(-24deg)}
 .about .cta{margin-top:20px}
+.about .play{line-height:1.2;text-align:center}
 .about .cta p{font-size:19px}
 html.s-cjk .about{line-height:1.85} html.s-th .about{line-height:1.9}
 @media (max-width:700px){
