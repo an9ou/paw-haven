@@ -11,6 +11,8 @@ if (n !== 1) throw new Error('placeholder count ' + n);
 const realMods = ['mods/genes.js', 'mods/pawaudio.js', 'mods/walkrun.js', 'mods/toys.js', 'mods/garden.js', 'mods/kitchen.js'].filter((f) => mode !== 'published' || !/garden|kitchen/.test(f)).filter((f) => fs.existsSync(path.join(dir, '..', f))).map(rd).join('\n');
 const stubMods = fs.readFileSync(path.join(dir, 'stub_mods.js'), 'utf8');
 const mods = mode === 'plain' ? '' : merged ? realMods + '\n' + stubMods : stubMods; // stub_mods only fills modules that are missing
+// v2.14: game/build.js already filled the pawi18n slot (/*@@I18N@@*/ = game/i18n/msg.js + packed.js); make sure it did
+if (html.includes('/*@@I18N@@*/') || !html.includes('<script id="pawi18n">')) throw new Error('pawi18n slot not filled by game/build.js');
 if (html.split('/*@@PAWMODS@@*/').length !== 2) throw new Error('pawmods placeholder count');
 const body = html.replace('/*@@PAWART@@*/', () => stub).replace('/*@@PAWMODS@@*/', () => mods);
 const out = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><style>:root{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style></head><body>${body}</body></html>`;

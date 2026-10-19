@@ -30,6 +30,7 @@ write('game.js', js);
 // the shell keeps its three script slots; here each slot becomes src tags (same order as the single-file build: art, mods, game)
 const tags = (names) => names.map((n) => `<script src="${n}"></script>`).join('\n');
 const index = shell
+  .replace('/*@@I18N@@*/', () => fs.readFileSync(path.join(G, 'i18n', 'msg.js'), 'utf8')) // v2.14 stub: I18N CORE makes it a file
   .replace('/*@@CSS@@*/', () => css)
   .replace('<script id="pawart">/*@@PAWART@@*/</script>', () => tags(['dogs.js', 'world_a.js', 'world_b.js', 'world_c.js', 'world_d.js', 'world_e.js']))
   .replace('<script id="pawmods">/*@@PAWMODS@@*/</script>', () => tags(['mods.js']))
