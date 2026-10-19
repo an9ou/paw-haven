@@ -25,7 +25,7 @@ function enterBath() {
     if (prog >= 100) finish();
   };
   const finish = () => {
-    done = true; bathZoomies = true; S.stats.clean = 100; if (crBath) crBath.fin++; else trackAct('bath', {}); /* a pack bath: one act when the queue ends */ SFX.splash(); renderDog('shake'); setTimeout(() => SFX.shake(), 150); markDirty(); updateHUD();
+    done = true; bathZoomies = true; S.stats.clean = 100; if (crBath) crBath.fin++; else trackAct('bath', {}); /* a pack bath: one act when the queue ends */ SFX.splash(); exTrig(D(), 'bath', { pose: 'idle', draw: false }); renderDog('shake'); /* v2.13: a face after the bath */ setTimeout(() => SFX.shake(), 150); markDirty(); updateHUD();
     const hot = isHot(); if (hot) addStat('happy', 10);
     const bp = addBond(2); toast(`${hot ? 'Refreshing! +10 Happiness on a hot day. ' : ''}Sparkling. Mostly. +${bp} Bond. ${NAME()} shakes off ON you.`, 'good');
     setTimeout(() => { if (cur.mode === 'bath') { if (crBath) crBathNext(); else go('yard'); } }, 1700);

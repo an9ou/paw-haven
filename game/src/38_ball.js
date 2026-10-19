@@ -330,7 +330,7 @@ function blSteal(t, w) { // the thief snatches the ball: it brings it home with 
 // the ball is back: the catch line, the coins, the play effects
 function blReturn(o) {
   const b = BL.ball, c = BL.cfg; b.carrier = null; b.state = 'rest'; b.x = BL.hx; b.gy = BL.hy; b.z = 0; b.vx = b.vz = b.vgy = 0; BL.ph = 'rest'; b.rot = 0;
-  BL.n++; S.bl.n = (S.bl.n || 0) + 1; o.role = 'cheer'; o.pose = 'happy'; o.until = BL.t + 1.1; o.got = (o.got || 0) + 1;
+  BL.n++; S.bl.n = (S.bl.n || 0) + 1; o.role = 'cheer'; o.pose = 'happy'; o.until = BL.t + 1.1; o.got = (o.got || 0) + 1; exTrig(o.d, 'ballCatch', { pose: 'happy' }); // v2.13: the catcher's face
   BL.dogs.forEach((x) => { if (x !== o) { x.role = 'wait'; x.pose = 'idle'; } });
   const coins = blCoins(c.coin); blSay(o, blCatchLine(o), true);
   fxText(coins ? `+${coins}` : 'Caught it!', o.x, o.y - 200 * blDK(o), coins ? '#F2C744' : '#9CCF8F', 42);
@@ -470,6 +470,7 @@ function blStop(quiet) {
     setChrome(true, true); renderDog(dogPoseNow(), 'right', true); if (S.sleeping) sleepTray(); else dockIdle();
     if (isPhone()) { phHomeRefit(); camCx = phCamHome; camApply(camCx); }
     updateHUD();
+    if (B.played) B.dogs.forEach((o, i) => { if (o.ran) setTimeout(() => { if (!BL && cur.mode === 'yard') exTrig(o.d, 'ballEnd', { pose: 'idle' }); }, 150 + i * 200); }); // v2.13: play is over, a short pout, then fine
   }
 }
 // the portrait-lock card pauses the game (v2.3 phones), as it did Fetch
