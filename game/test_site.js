@@ -65,6 +65,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
   const routeAll = async (ctx) => {
     await ctx.route((u) => !local(u), (route) => route.abort()); // the reset page's Worker calls: page.route in wire() wins over this
     await ctx.route('https://itch.io/**', (route) => route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: ITCH_STUB }));
+    await ctx.route('https://static.itch.io/**', (route) => route.fulfill({ status: 200, contentType: 'text/plain', body: '' }));
     if (fmf) await ctx.route('**/fonts/i18n/**', relay(fmf));
     if (imf) await ctx.route('**/img/map/**', relay(imf));
     return ctx;
@@ -155,7 +156,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
     const allEn = PG.map((p) => EN[p.id]).join('\n');
     ok(!/googleapis|gstatic|google-analytics|gtag|facebook|plausible|cdn\./i.test(allEn + js + (await (await get(SITE + '/style.css')).text())), 'no third-party fonts, scripts or trackers in the pages, the script or the CSS');
     { const ext = [...new Set([...allEn.matchAll(/\b(?:src|href)="(https?:\/\/[^"]+)"/g)].map((m) => m[1]))].filter((u) => !u.startsWith(SITE) && !u.startsWith(ITCH) && !/^https:\/\/www\.instagram\.com\/doodledoggo\.app\/?$/.test(u) && !u.startsWith(EMBED + '?'));
-      ok(!ext.length && /<iframe\b[^>]*\bsrc="https:\/\/itch\.io\/embed\/5163381\?/.test(home), 'the only outside src in the pages is the itch.io widget (links: itch.io and Instagram) ' + ext.join(' ')); }
+      ok(!ext.length && /<div\b[^>]*\bid="itchbox"[^>]*\bdata-src="https:\/\/itch\.io\/embed\/5163381\?/.test(home) && !/<iframe\b/i.test(allEn), 'no outside src in the pages: the itch.io widget is click-to-load (#itchbox data-src, no iframe in the HTML; links: itch.io and Instagram) ' + ext.join(' ')); }
     for (const u of ['/favicon.svg', '/logo-1200x630.png', '/icon-180.png', '/site.webmanifest', '/doodle-doggo-logo.svg', '/fonts/caveat.woff2', '/img/noodle-happy.svg', '/privacy', '/reset', '/map', '/about', '/js/site.js', '/img/art/playroom.webp', '/img/art/ball.svg', '/img/art/fuji-spring.webp', '/img/art/fuji-summer.webp', '/img/art/fuji-autumn.webp', '/img/art/fuji-winter.webp', '/img/art/momiji.svg', '/img/art/sakura.svg', '/img/art/washi.svg']
       .concat(...BREEDS.map((k) => (SCENE_KEYS.includes(k) ? ['walk', 'jump', 'sit', 'happy', 'sniff', 'still', 'pup', 'sleep'] : ['still', 'pup']).map((p) => `/img/art/dogs/${k}-${p}.svg`)))) { // v2.14: only the playroom's dogs (KEYS in site.js) need scene poses
       r = await get(SITE + u); ok(r.status === 200, `${u}: 200 ${r.headers.get('content-type')}`); await r.arrayBuffer();
@@ -185,7 +186,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
     // the reset page's calls to the Worker go to the local one (with the CORS answer the real Worker gives this origin)
     const wire = async (page) => {
       const outside = [];
-      page.on('request', (q) => { const u = q.url(); if (!local(u) && !u.startsWith(API) && !u.startsWith(EMBED + '?')) outside.push(u); });
+      page.on('request', (q) => { const u = q.url(); if (!local(u) && !u.startsWith(API)) outside.push(u); }); // the itch.io widget, once tapped, is filtered out at the end
       await page.route(API + '/**', async (route) => {
         const q = route.request(), cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': 'authorization, content-type', 'access-control-allow-methods': 'GET, PUT, POST, OPTIONS' };
         if (q.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors });
@@ -201,8 +202,8 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
       while ((n = w.nextNode())) { if (!n.textContent.trim()) continue; const el = n.parentElement; if (!el.getClientRects().length || el.closest('[hidden], script, style')) continue; const fs = parseFloat(getComputedStyle(el).fontSize); if (fs < 15) tiny.push(`${n.textContent.trim().slice(0, 20)} ${fs}px`); }
       return { small, tiny, scroll: document.documentElement.scrollWidth - innerWidth };
     });
-    const itchBox = (page) => page.evaluate(() => { const f = document.querySelector('#itchbox iframe#itch'), l = document.querySelector('a#itchlink'), b = f && f.getBoundingClientRect();
-      return { src: f && f.getAttribute('src'), w: f && f.getAttribute('width'), h: f && f.getAttribute('height'), title: f && (f.getAttribute('title') || '').trim(), left: b && b.left, right: b && b.right, top: b && b.top + scrollY, bh: b && b.height, vw: innerWidth,
+    const itchBox = (page) => page.evaluate(() => { const f = document.querySelector('#itchbox iframe#itch'), l = document.querySelector('a#itchlink'), b = f && f.getBoundingClientRect(), bx = document.getElementById('itchbox');
+      return { data: bx && bx.getAttribute('data-src'), src: f && f.getAttribute('src'), w: f && f.getAttribute('width'), h: f && f.getAttribute('height'), title: f && (f.getAttribute('title') || '').trim(), left: b && b.left, right: b && b.right, top: b && b.top + scrollY, bh: b && b.height, vw: innerWidth,
         link: l && l.getAttribute('href'), linkShown: !!l && !!l.getClientRects().length }; });
 
     for (const [label, opts] of [['desktop 1280x800', { viewport: { width: 1280, height: 800 } }], ['iPhone 15', devices['iPhone 15']]]) {
@@ -252,7 +253,12 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
       const inside = await page.evaluate(() => window.__dd.dogs.every((d) => d.x >= 60 && d.x <= 940 && d.y >= 450 && d.y <= 596));
       ok(inside, 'every dog stays on the playroom floor');
       // v3: the itch.io widget replaces the PLAY AT ITCH.IO button; a plain link is always there in case the widget is blocked
+      // v3 (click-to-load): itch.io's widget brings its own cookies and analytics, so nothing comes from itch.io until the visitor taps #itchload
+      const pre = await page.evaluate(() => { const b = document.getElementById('itchload'), c = document.getElementById('itchcard'); return { btn: !!b && !b.hidden && !!b.getClientRects().length, card: !!c && !!document.querySelector('#itchbox #itchcard'), frame: !!document.querySelector('iframe') }; });
+      ok(pre.btn && pre.card && !pre.frame && !frames.length && !outside.length, `before a tap: the itch.io card with its #itchload button, no iframe, not one request to itch.io or anywhere outside (${frames.length + outside.length}) ` + outside.slice(0, 2).join(' '));
+      await page.click('#itchload'); await page.waitForSelector('#itchbox iframe#itch', { timeout: 5000 }).catch(() => {}); await page.waitForTimeout(300);
       const ib = await itchBox(page);
+      ok(ib.data && ib.src === ib.data && !(await page.$('#itchcard')), 'a tap on #itchload puts iframe#itch in place of the card, src = data-src');
       ok(ib.src && ib.src.startsWith(EMBED + '?') && ib.w === '552' && ib.h === '167' && ib.title, `the itch.io widget: iframe#itch in #itchbox, ${EMBED}?..., 552x167, with a title (${ib.src}, ${ib.w}x${ib.h}, "${ib.title}")`);
       ok(ib.link === ITCH && ib.linkShown, 'the plain a#itchlink to the itch.io page is always there');
       ok(ib.left != null && ib.left >= 0 && ib.right <= ib.vw + 0.5 && ib.bh > 0, `the widget fits the window (${Math.round(ib.left)}..${Math.round(ib.right)} of ${ib.vw})`);
@@ -274,7 +280,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
       await scrollThrough(page, 30, 120);
       await page.waitForLoadState('networkidle'); await page.waitForTimeout(400);
       ok(await page.evaluate(() => !window.__dd.running()), 'the playroom pauses when it scrolls out of view');
-      ok(frames.length >= 1 && frames.every((u) => u.startsWith(EMBED + '?')), 'the widget loads from itch.io/embed only (a stub here) ' + frames.slice(0, 2).join(' '));
+      ok(frames.length >= 1 && frames.every((u) => u.startsWith(EMBED + '?')), 'after the tap the widget loads from itch.io/embed only (a stub here) ' + frames.slice(0, 2).join(' '));
       await page.evaluate(() => scrollTo(0, 0));
       const info = await page.evaluate(() => ({
         imgs: [...document.querySelectorAll('img')].map((i) => [i.getAttribute('src'), i.complete && i.naturalWidth > 0]),
@@ -338,7 +344,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
       sec(`${label}: privacy`);
       await page.goto(base + '/privacy', { waitUntil: 'networkidle' });
       const pt = await page.textContent('main');
-      ok(/Privacy policy/.test(pt) && /no ads and no tracking/i.test(pt) && /contact@doodledoggo\.app/.test(pt) && !/CONTACT EMAIL/.test(pt) && (await page.getAttribute('footer #contact', 'href')) === 'mailto:contact@doodledoggo.app' && /6-digit code/.test(pt) && !/password link/.test(pt), 'the privacy page: no ads, no tracking, emails only for a 6-digit reset code, the contact email filled in');
+      ok(/Privacy policy/.test(pt) && /no ads and no tracking/i.test(pt) && /contact@doodledoggo\.app/.test(pt) && !/CONTACT EMAIL/.test(pt) && (await page.getAttribute('footer #contact', 'href')) === 'mailto:contact@doodledoggo.app' && /6-digit code/.test(pt) && !/password link/.test(pt) && /itch\.io/.test(pt) && /only loads if you tap/i.test(pt), 'the privacy page: no ads, no tracking, emails only for a 6-digit reset code, the contact email filled in, the itch.io box only loads on a tap');
       const a2 = await audit(page); ok(a2.scroll <= 0 && !a2.small.length && !a2.tiny.length, 'privacy: phone minimums ' + a2.small.concat(a2.tiny).slice(0, 4).join(', '));
 
       sec(`${label}: the reset page (v2.9.2: only a notice, the reset happens in the game)`);
@@ -355,7 +361,8 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
         await page.goto('about:blank'); await page.goto(base + '/reset#access_token=sbat_old&type=recovery&expires_in=3600', { waitUntil: 'networkidle' });
         ok((await page.evaluate(() => location.hash)) === '' && await page.isVisible('#rsMoved'), 'an old Supabase link: it leaves the address bar, the same notice');
       }
-      ok(!outside.length, 'no request leaves the site except the Worker and the itch.io widget (no tracking) ' + outside.slice(0, 3).join(' '));
+      const out2 = outside.filter((u) => !u.startsWith(EMBED + '?') && !u.startsWith('https://static.itch.io/'));
+      ok(!out2.length, 'no request leaves the site except the Worker and the tapped itch.io widget (no tracking) ' + out2.slice(0, 3).join(' '));
       ok(!errs.length, 'no console errors ' + errs.slice(0, 2).join(' | '));
       await ctx.close();
     }
@@ -524,7 +531,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
           if (a.tiny.length) bad.push(`${pg.id} tiny text ${a.tiny.slice(0, 2).join(', ')}`);
           if (lang !== L.code) bad.push(`${pg.id} lang ${lang}`);
           const hp = headerProblems(await headerFromDom(page), L, pg); if (hp.length) bad.push(`${pg.id} header ${hp.slice(0, 2).join(', ')}`);
-          if (pg.id === 'index') { const ib = await itchBox(page); if (!(ib.left >= 0 && ib.right <= ib.vw + 0.5)) bad.push(`index itch.io widget ${Math.round(ib.left)}..${Math.round(ib.right)} of ${ib.vw}`); }
+          if (pg.id === 'index') { await page.click('#itchload', { timeout: 3000 }).catch(() => bad.push('index: no #itchload')); await page.waitForSelector('#itchbox iframe#itch', { timeout: 3000 }).catch(() => {}); const ib = await itchBox(page); if (!(ib.left >= 0 && ib.right <= ib.vw + 0.5)) bad.push(`index itch.io widget ${Math.round(ib.left)}..${Math.round(ib.right)} of ${ib.vw}`); }
           await openNav(page);
           const np = navTapProblems(await navTaps(page)); if (np.length) bad.push(`${pg.id} nav ${np.slice(0, 2).join(', ')}`);
           const s2 = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth); if (s2 > 0) bad.push(`${pg.id} open menu scrolls sideways ${s2}px`);
@@ -561,6 +568,10 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
       ok(new URL(p2.url()).pathname === '/fr/privacy', 'without JavaScript the menu still works: plain links (/privacy -> /fr/privacy)');
       await p2.goto(base + '/about'); await p2.click('#langs summary', { timeout: 5000 }).catch(() => {}); await follow(p2, '#langs a[data-lang="ko"]');
       ok(new URL(p2.url()).pathname === '/ko/about', 'and on /about (-> /ko/about)');
+      const itchReq = []; p2.on('request', (q) => { if (/itch\.io/.test(new URL(q.url()).hostname)) itchReq.push(q.url()); });
+      await p2.goto(base + '/', { waitUntil: 'load' });
+      const nj = await p2.evaluate(() => ({ btn: !!document.getElementById('itchload') && !document.getElementById('itchload').getClientRects().length, frame: !!document.querySelector('iframe'), link: !!document.querySelector('a#itchlink') && !!document.querySelector('a#itchlink').getClientRects().length }));
+      ok(nj.btn && !nj.frame && nj.link && !itchReq.length, 'without JavaScript: no itch.io button and no iframe, the plain itch.io link shows, nothing from itch.io');
       await nojs.close();
     }
     const detect = async (locale, url, opts) => {
