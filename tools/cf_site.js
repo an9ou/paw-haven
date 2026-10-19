@@ -21,6 +21,9 @@ const root = path.join(__dirname, '..'), site = path.join(root, 'site'), brand =
 const TYPES = { html: 'text/html; charset=utf-8', css: 'text/css; charset=utf-8', svg: 'image/svg+xml', png: 'image/png', webp: 'image/webp', jpg: 'image/jpeg', woff2: 'font/woff2', webmanifest: 'application/manifest+json', txt: 'text/plain; charset=utf-8', js: 'text/javascript; charset=utf-8' };
 const TEXT = new Set(['html', 'css', 'svg', 'webmanifest', 'txt', 'js']);
 const PSEUDO = process.argv.includes('--pseudo') || !!process.env.SITE_PSEUDO;
+// SITE_EN_ONLY=1: English only (no language menu, hreflang or other-language pages), e.g. to put the site live before the translations are final
+const EN_ONLY = !!process.env.SITE_EN_ONLY;
+const LIVE_LANGS = EN_ONLY ? I18N.LANGS.filter((l) => l.code === 'en') : I18N.LANGS;
 const ALL = I18N.LANGS.concat(I18N.PSEUDO), DIRS = new Set(ALL.map((l) => l.dir).filter(Boolean));
 // the side Workers: a folder of site/ served by its own Worker on a route of the zone (a route runs before the Custom Domain), so its files don't count
 // against the main Worker. mode: 'none' (no files: no Worker), 'split' (the default) or 'inline' (env[name] === 'inline': served by the main Worker)
@@ -56,20 +59,20 @@ UNUSED.forEach((u) => { delete files[u]; });
 ['favicon.svg', 'icon-32.png', 'icon-180.png', 'icon-192.png', 'icon-512.png', 'icon-512-maskable.png', 'site.webmanifest', 'logo-1200x630.png', 'doodle-doggo-logo.svg', 'doodle-doggo-icon.svg']
   .forEach((f) => { files['/' + f] = path.join(brand, f); });
 // every page of every language, from the templates
-const built = I18N.build({ pseudo: PSEUDO });
+const built = I18N.build({ pseudo: PSEUDO && !EN_ONLY, legacy: EN_ONLY });
 for (const [rel, html] of Object.entries(built.pages)) {
   if (!rel.includes('/')) { const p = path.join(site, rel); if (!fs.existsSync(p) || fs.readFileSync(p, 'utf8') !== html) console.warn(`warning: site/${rel} is out of date with site/tpl + site/i18n (run node tools/site_i18n.js); serving the generated page`); }
   delete files['/' + rel]; gen['/' + rel] = html;
 }
 const PRETTY = {}, LANG_OF = { '': 'en' };
-for (const L of I18N.LANGS.concat(PSEUDO ? I18N.PSEUDO : [])) {
+for (const L of LIVE_LANGS.concat(PSEUDO && !EN_ONLY ? I18N.PSEUDO : [])) {
   const pre = L.dir ? '/' + L.dir : '';
   LANG_OF[pre] = L.code;
   I18N.PAGES.forEach((pg) => { PRETTY[pg.path === '/' ? pre || '/' : pre + pg.path] = pre + '/' + pg.id + '.html'; });
 }
 // the friendly 404 in each language
 const NOTFOUND = {};
-for (const L of I18N.LANGS.concat(PSEUDO ? I18N.PSEUDO : [])) {
+for (const L of LIVE_LANGS.concat(PSEUDO && !EN_ONLY ? I18N.PSEUDO : [])) {
   // the language's font subset too (same ?v= cache key as the pages), and a <title>
   const fcss = path.join(site, 'fonts', 'i18n', (L.pseudo === 'cjk' ? 'ja' : L.code) + '.css'), fbody = L.code !== 'en' && fs.existsSync(fcss) ? fs.readFileSync(fcss) : null;
   const flink = fbody && /@font-face/.test(fbody) ? `<link rel="stylesheet" href="/fonts/i18n/${path.basename(fcss)}?v=${crypto.createHash('sha1').update(fbody).digest('hex').slice(0, 8)}">` : '';
