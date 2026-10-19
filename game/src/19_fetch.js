@@ -11,16 +11,16 @@ function enterFetch(toy) {
   $('#bowlG').remove(); dogKey = ''; busy = true; renderDog('idle'); dogTo(0, 0, 1, 0);
   F.pack = pkFetchStart(); if (F.pack.length || PKS.skip.length) pkSkipSay(PKS.skip, 900, 'fetch'); // v2.9 PACK: the ticked dogs run along behind the leader
   updateHUD(); bindDev(); fbFetchFit();
-  dock.innerHTML = `<div class="tray"><div class="tray-h"><h3>Fetch with the ${esc(toy)}</h3><button class="xbtn" id="fQuit" aria-label="Stop fetch">x</button></div>
-    <div class="walkctl"><span>Catches: <b id="fScore">0</b></span><span>Time: <b id="fTime">35</b>s</span><div class="prog"><i id="fBar" style="width:100%"></i></div></div>
-    <p class="small" style="margin:0">Tap the grass to throw. ${isPhone() ? 'Tap again when the pink ring meets the dashed one.' : 'Tap again (or Space) when the pink ring meets the dashed one.'}</p></div>`;
+  dock.innerHTML = `<div class="tray"><div class="tray-h"><h3>${esc(tt('fetch.title', 'Fetch with the {toy}', { toy: shNameAny(toy) }))}</h3><button class="xbtn" id="fQuit" aria-label="${esc(tt('fetch.stop', 'Stop fetch'))}">x</button></div>
+    <div class="walkctl"><span>${tt('fetch.catches_html', 'Catches: <b id="fScore">0</b>')}</span><span>${tt('fetch.time_html', 'Time: <b id="fTime">35</b>s')}</span><div class="prog"><i id="fBar" style="width:100%"></i></div></div>
+    <p class="small" style="margin:0">${esc(tt('fetch.hint', 'Tap the grass to throw. {phone, select, yes {Tap again when the pink ring meets the dashed one.} other {Tap again (or Space) when the pink ring meets the dashed one.}}', { phone: isPhone() ? 'yes' : 'no' }))}</p></div>`;
   $('#fQuit').onclick = () => endFetch();
   const svg = $('svg.world', view);
   svg.addEventListener('pointerdown', (e) => { SFX.init(); e.preventDefault(); if (F.fly) catchTry(); else { const w = toWorld(svg, e.clientX, e.clientY); throwTo(w.x, w.y); } });
   cur.key = (e) => { const ok = e.key === ' ' || (e.key === 'Enter' && document.activeElement === document.body); if (!ok || e.repeat) return; e.preventDefault(); if (F.fly) catchTry(); else throwTo(RAND(300, 880), RAND(430, 540)); };
   F.raf = requestAnimationFrame(fetchLoop);
   onCleanup(() => { cancelAnimationFrame(F && F.raf); cur.key = null; busy = false; });
-  if (!isPhone()) toast('Tap the grass to throw!'); // on phones the tray says it, and a toast would sit on the ball's start point
+  if (!isPhone()) toast(tt('fetch.tap_throw', 'Tap the grass to throw!')); // on phones the tray says it, and a toast would sit on the ball's start point
 }
 // v2.5 phone: the whole scene shows during fetch, indoors and outdoors. The ball starts at x 130 and lands anywhere from x 300 to 900,
 // so the view takes the scene's own shape (1000 x 600, full width) instead of the 40% strip that crops its sides. The tray height
@@ -54,11 +54,11 @@ function catchTry() {
     $('#ballG').setAttribute('opacity', '0'); ringsOff();
     renderDog('jump'); const fx = $('#dogFx'); fx.classList.remove('hop'); void fx.getBBox(); fx.classList.add('hop');
     great ? SFX.fanfare() : SFX.pop(); setTimeout(() => SFX.bark(BARK[S.dog.key]), 200);
-    fxText(great ? 'GREAT CATCH!' : 'Caught it!', f.x, f.y - 190, great ? '#F2C744' : '#9CCF8F', 44);
+    fxText(great ? tt('fetch.great', 'GREAT CATCH!') : tt('fetch.caught', 'Caught it!'), f.x, f.y - 190, great ? '#F2C744' : '#9CCF8F', 44);
     $('#fScore').textContent = F.score;
     setTimeout(() => { if (!F.ended) renderDog('happy'); }, 700); pkFetchRest('happy');
     F.fly = null;
-  } else { fxText('Too early!', f.x, f.y - 190, '#F28FA5', 38); SFX.boop(300); }
+  } else { fxText(tt('fetch.early', 'Too early!'), f.x, f.y - 190, '#F28FA5', 38); SFX.boop(300); }
 }
 function ringsOff() { $('#ringIn').setAttribute('opacity', '0'); $('#ringOut').setAttribute('opacity', '0'); }
 function fetchLoop(now) {
@@ -75,7 +75,7 @@ function fetchLoop(now) {
     if (el > f.T + (F.glow ? 0.32 : 0.22)) {
       F.fly = null; ringsOff(); SFX.thud(); setTimeout(SFX.trombone, 150);
       $('#ballG').setAttribute('transform', `translate(${f.x} ${f.y - 20})`);
-      fxText(PICK(['Missed!', 'Bonk.', 'Nope.']), f.x, f.y - 160, '#F28FA5', 38);
+      fxText(PICK([tt('fetch.miss_1', 'Missed!'), tt('fetch.miss_2', 'Bonk.'), tt('fetch.miss_3', 'Nope.')]), f.x, f.y - 160, '#F28FA5', 38);
       renderDog('sad'); pkFetchRest('idle'); setTimeout(() => { if (!F.ended) { renderDog('idle'); $('#ballG').setAttribute('opacity', '0'); } }, 900);
     }
   }
@@ -95,8 +95,8 @@ function endFetch() {
   F.pack.forEach((d) => withDog(d, () => { addStat('happy', hap()); if (F.throws) addBond((5 + F.score) * (full ? 1 : 0.25)); addStat('energy', -F.throws * (F.fris ? 1.5 : 1)); })); // v2.9 PACK: each dog that ran along gets the play effects and its own Bond, once
   if (F.throws) dailyCare('play');
   markDirty();
-  const p = openModal('Fetch results', `<p>${F.score >= 6 ? `${esc(NAME())} is a fetch legend. Statues are being considered.` : F.score >= 3 ? `Solid fetching. ${esc(NAME())} would rate you 7/10.` : `${esc(NAME())} has questions about your throwing arm.`}</p>
-    ${wfTiles([[F.score, `Catches (${F.great} great)`, F.score], [`+${coins}`, `Paw Coins${golden > 1 ? ' (Golden +25%)' : ''}`, coins], [`+${happy}`, 'Happiness', happy], [`+${bond}`, 'Bond points', bond]], 'results')}${F.pack.length ? `<p class="small pk-walked">${esc(crNames(F.pack))} ran along and got the Happiness and Bond too.</p>` : ''}${full ? '' : '<p class="small">Fetch again so soon is less exciting. Wait 10 game minutes for full rewards.</p>'}`, { cls: 'celebrate', foot: '<button class="btn yes big" id="fOk">Back home</button>', onClose: () => go('yard') });
+  const p = openModal(tt('fetch.results', 'Fetch results'), `<p>${esc(F.score >= 6 ? tt('fetch.legend', '{name} is a fetch legend. Statues are being considered.', { name: NAME() }) : F.score >= 3 ? tt('fetch.solid', 'Solid fetching. {name} would rate you 7/10.', { name: NAME() }) : tt('fetch.questions', '{name} has questions about your throwing arm.', { name: NAME() }))}</p>
+    ${wfTiles([[F.score, esc(tt('fetch.res_catches', 'Catches ({n} great)', { n: F.great })), F.score], [`+${tnum(coins)}`, esc(golden > 1 ? tt('fetch.res_coins_golden', 'Paw Coins (Golden +25%)') : tt('walk.res_coins', 'Paw Coins')), coins], [`+${happy}`, esc(tt('walk.res_happy', 'Happiness')), happy], [`+${bond}`, esc(tt('walk.res_bond', 'Bond points')), bond]], 'results')}${F.pack.length ? `<p class="small pk-walked">${esc(tt('fetch.pack_ran', '{names} ran along and got the Happiness and Bond too.', { names: crNames(F.pack) }))}</p>` : ''}${full ? '' : `<p class="small">${esc(tt('fetch.again', 'Fetch again so soon is less exciting. Wait 10 game minutes for full rewards.'))}</p>`}`, { cls: 'celebrate', foot: `<button class="btn yes big" id="fOk">${esc(tt('fetch.back_home', 'Back home'))}</button>`, onClose: () => go('yard') });
   if (isPhone()) dock.innerHTML = ''; // the results sheet is the only thing on screen: no fetch tray (and its second X) behind it
   $('#fOk', p).onclick = () => { SFX.boop(700); closeModal(); };
 }

@@ -1,6 +1,8 @@
 /* ======================= WALK (v1.1: treasure hunt) ======================= */
 let W = null;
 const SPEED = 160;
+// v2.14 i18n: one random line of a text table, shown through tdata (the path is the extractor's: data.<table>.<index>; same random call as PICK)
+function tdPickLine(path, arr) { const i = Math.floor(Math.random() * arr.length); return tdata(path + '.' + i, arr[i]); }
 function grantTreasure(t, area) {
   if (isUnique(t) && hasTreasure(t)) return { dup: true, coins: addCoins(40, { raw: true }) };
   if (t.kind === 'food') S.inv.food[t.n] = (S.inv.food[t.n] || 0) + 1;
@@ -53,12 +55,12 @@ function enterWalkClassic(area) {
   for (let i = 0; i < nDig; i++) { const o = { t: 'dig', x: len * (0.22 + 0.68 * (i + RAND(0.15, 0.85)) / nDig) }; digs.push(o); W.objs.push(o); }
   W.treasureDig = firstWalk ? digs[0] : PICK(digs); W.treasureDig.treasure = true;
   buildWalk();
-  dock.innerHTML = `<div class="tray"><div class="tray-h"><h3>${esc(R.n)}: find the hidden treasure</h3><button class="xbtn" id="walkQuit" aria-label="Go home early">x</button></div>
-    <div class="walkctl"><div class="nose cold" id="nose"><span class="ic">${iconOr('nose', '<ellipse cx="0" cy="2" rx="13" ry="9" fill="#5B3D32"/><ellipse cx="-4" cy="-1" rx="3" ry="2" fill="#FFFBF3" opacity=".7"/>')}</span><span class="lbl" id="noseLbl">Cold</span><div class="prog" aria-label="Nose-o-meter"><i id="noseBar"></i></div></div>
-      <span class="digs" id="digsLeft"></span><div class="prog" style="max-width:220px" aria-label="Walk progress"><i id="walkBar"></i></div><span id="walkTime" class="small" style="min-width:56px;text-align:right"></span></div>
-    <div class="walkctl"><button class="btn holdbtn" id="holdBtn">Hold to walk</button><button class="btn" id="hopBtn">Hop</button><button class="btn yes" id="digBtn" disabled>Dig!</button><button class="btn" id="bagBtn"><span class="ic">${iconOr('bag', '<path d="M-12 -4 Q0 -16 12 -4 L14 14 L-14 14 Z" fill="#FCD8BC" stroke="#5B3D32" stroke-width="2"/>')}</span>Bag</button><label class="tog"><input type="checkbox" id="autoWalk"> Auto-walk</label></div>
+  dock.innerHTML = `<div class="tray"><div class="tray-h"><h3>${esc(tt('walk.find_treasure', '{route}: find the hidden treasure', { route: townRouteName(area) }))}</h3><button class="xbtn" id="walkQuit" aria-label="${esc(tt('walk.home_early', 'Go home early'))}">x</button></div>
+    <div class="walkctl"><div class="nose cold" id="nose"><span class="ic">${iconOr('nose', '<ellipse cx="0" cy="2" rx="13" ry="9" fill="#5B3D32"/><ellipse cx="-4" cy="-1" rx="3" ry="2" fill="#FFFBF3" opacity=".7"/>')}</span><span class="lbl" id="noseLbl">${esc(tt('walk.nose_cold', 'Cold'))}</span><div class="prog" aria-label="${esc(tt('walk.nose_meter', 'Nose-o-meter'))}"><i id="noseBar"></i></div></div>
+      <span class="digs" id="digsLeft"></span><div class="prog" style="max-width:220px" aria-label="${esc(tt('walk.progress', 'Walk progress'))}"><i id="walkBar"></i></div><span id="walkTime" class="small" style="min-width:56px;text-align:right"></span></div>
+    <div class="walkctl"><button class="btn holdbtn" id="holdBtn">${esc(tt('walk.hold', 'Hold to walk'))}</button><button class="btn" id="hopBtn">${esc(tt('walk.hop', 'Hop'))}</button><button class="btn yes" id="digBtn" disabled>${esc(tt('walk.dig', 'Dig!'))}</button><button class="btn" id="bagBtn"><span class="ic">${iconOr('bag', '<path d="M-12 -4 Q0 -16 12 -4 L14 14 L-14 14 Z" fill="#FCD8BC" stroke="#5B3D32" stroke-width="2"/>')}</span>${esc(tt('walk.bag', 'Bag'))}</button><label class="tog"><input type="checkbox" id="autoWalk"> ${esc(tt('walk.auto', 'Auto-walk'))}</label></div>
     <div class="walkbag" id="walkBag" hidden></div>
-    <p class="small" style="margin:0">${isPhone() ? 'Hold the button, or press the scene, to walk.' : 'Hold to walk (button, scene, Space or right arrow).'} Sniff spots give clues. The Nose-o-meter gets hotter near the treasure. You have only ${W.digsLeft} digs, so choose your X wisely.</p></div>`;
+    <p class="small" style="margin:0">${esc(tt('walk.hint', '{phone, select, yes {Hold the button, or press the scene, to walk.} other {Hold to walk (button, scene, Space or right arrow).}} Sniff spots give clues. The Nose-o-meter gets hotter near the treasure. You have only {n, plural, one {# dig} other {# digs}}, so choose your X wisely.', { phone: isPhone() ? 'yes' : 'no', n: W.digsLeft }))}</p></div>`;
   const hb = $('#holdBtn');
   const down = (e) => { e.preventDefault(); SFX.init(); W.hold = true; W.holdAt = performance.now(); hb.classList.add('down'); };
   const up = () => { W.hold = false; hb.classList.remove('down'); };
@@ -80,14 +82,14 @@ function enterWalkClassic(area) {
   onCleanup(() => { cancelAnimationFrame(W && W.raf); window.removeEventListener('resize', onResize); cur.key = null; cur.keyup = null; });
   if (buffOn('walk15')) { W.len += 15 * SPEED; } if (buffOn('walk15') || buffOn('dig1')) { S.buff = null; markDirty(); }
   updateDigs();
-  toast(firstWalk ? `First treasure hunt! Sniff the clues, then dig at an X. (Psst: try the first X.)` : wx === 'rain' ? `It's raining.${hasRaincoat() ? ' Good thing about that raincoat.' : ' Expect mud.'}` : wx === 'snow' ? 'Snowy treasure hunt! Crunch crunch.' : `Off to ${R.n}. Something is buried here...`, 'gold');
+  toast(firstWalk ? tt('walk.first_hunt', 'First treasure hunt! Sniff the clues, then dig at an X. (Psst: try the first X.)') : wx === 'rain' ? tt('walk.rain', "It's raining.{coat, select, yes { Good thing about that raincoat.} other { Expect mud.}}", { coat: hasRaincoat() ? 'yes' : 'no' }) : wx === 'snow' ? tt('walk.snow', 'Snowy treasure hunt! Crunch crunch.') : tt('walk.off_to', 'Off to {route}. Something is buried here...', { route: townRouteName(area) }), 'gold');
 }
-function updateDigs() { const d = $('#digsLeft'); if (d) d.textContent = W.found ? 'Treasure found!' : `Digs left: ${W.digsLeft}`; }
+function updateDigs() { const d = $('#digsLeft'); if (d) d.textContent = W.found ? tt('walk.treasure_found_short', 'Treasure found!') : tt('walk.digs_left', 'Digs left: {n}', { n: W.digsLeft }); }
 function toggleBag() {
   const b = $('#walkBag'); if (!b) return; SFX.click(); b.hidden = !b.hidden; if (b.hidden) return;
   const n = S.inv.food['Wild Berries'] || 0;
-  b.innerHTML = n ? `<span class="ic" style="width:34px;height:34px">${art('item', 'Wild Berries')}</span><span>Wild Berries x${n}</span><button class="btn yes" id="useBerries">Use: +15 seconds</button>` : '<span class="small">Nothing usable on a walk. Wild Berries (a treasure) add +15 seconds.</span>';
-  const u = $('#useBerries'); if (u) u.onclick = () => { S.inv.food['Wild Berries']--; if (S.inv.food['Wild Berries'] <= 0) delete S.inv.food['Wild Berries']; W.len += 15 * SPEED; markDirty(); SFX.slurp(); toast(`${NAME()} ate the berries. +15 seconds of walk!`, 'good'); toggleBag(); };
+  b.innerHTML = n ? `<span class="ic" style="width:34px;height:34px">${art('item', 'Wild Berries')}</span><span>${esc(tt('walk.berries_x', '{item} x{n}', { item: shNameAny('Wild Berries'), n }))}</span><button class="btn yes" id="useBerries">${esc(tt('walk.use_berries', 'Use: +15 seconds'))}</button>` : `<span class="small">${esc(tt('walk.no_use', 'Nothing usable on a walk. {item} (a treasure) add +15 seconds.', { item: shNameAny('Wild Berries') }))}</span>`;
+  const u = $('#useBerries'); if (u) u.onclick = () => { S.inv.food['Wild Berries']--; if (S.inv.food['Wild Berries'] <= 0) delete S.inv.food['Wild Berries']; W.len += 15 * SPEED; markDirty(); SFX.slurp(); toast(tt('walk.ate_berries', '{name} ate the berries. +15 seconds of walk!', { name: NAME() }), 'good'); toggleBag(); };
 }
 function buildWalk() {
   const r = view.getBoundingClientRect(); const VW = Math.max(520, Math.round(400 * (r.width / Math.max(1, r.height))));
@@ -143,24 +145,24 @@ function updateNose(now) {
   if (now - W.noseT < 120) return; W.noseT = now; W.nudge *= 0.9;
   const el = $('#nose'); if (!el) return;
   const h = noseHeat(), bar = $('#noseBar'), lbl = $('#noseLbl');
-  if (h === null) { el.className = 'nose warm'; bar.style.width = '100%'; lbl.textContent = W.found ? 'Found!' : 'Dug'; return; }
+  if (h === null) { el.className = 'nose warm'; bar.style.width = '100%'; lbl.textContent = W.found ? tt('walk.nose_found', 'Found!') : tt('walk.nose_dug', 'Dug'); return; }
   const k = h > 0.72 ? 'hot' : h > 0.38 ? 'warm' : 'cold';
-  el.className = 'nose ' + k; bar.style.width = Math.round(6 + h * 94) + '%'; lbl.textContent = k === 'hot' ? 'HOT' : k === 'warm' ? 'Warm' : 'Cold';
+  el.className = 'nose ' + k; bar.style.width = Math.round(6 + h * 94) + '%'; lbl.textContent = k === 'hot' ? tt('walk.nose_hot', 'HOT') : k === 'warm' ? tt('walk.nose_warm', 'Warm') : tt('walk.nose_cold', 'Cold');
 }
 function sniffClue() {
   const o = W.treasureDig, dx = W.dist + W.dogX;
-  if (!o || o.done || W.found) return PICK(['Smells like... a job well done.', 'Sniff sniff. Just happy smells now.']);
+  if (!o || o.done || W.found) return PICK([tt('walk.clue_done_1', 'Smells like... a job well done.'), tt('walk.clue_done_2', 'Sniff sniff. Just happy smells now.')]);
   W.nudge = Math.min(0.25, W.nudge + 0.18);
   const h = noseHeat();
-  if (o.x < dx - 200) return PICK(CLUES.past);
-  return PICK(h > 0.72 ? CLUES.hot : h > 0.38 ? CLUES.warm : CLUES.far);
+  if (o.x < dx - 200) return tdPickLine('clues.past', CLUES.past);
+  return h > 0.72 ? tdPickLine('clues.hot', CLUES.hot) : h > 0.38 ? tdPickLine('clues.warm', CLUES.warm) : tdPickLine('clues.far', CLUES.far);
 }
 function walkLoop(now) {
   if (!W || W.ended) return;
   const dt = Math.min(0.05, (now - W.t) / 1000); W.t = now;
   const paused = now < W.pauseUntil || !!W.digWait;
   const walking = (W.hold || W.auto) && !paused;
-  if (W.digWait && W.hold && (W.holdAt || 0) > W.skipAt) { W.digWait.skipped = true; W.digWait = null; $('#digBtn').disabled = true; toast('Not this X. Onwards!'); }
+  if (W.digWait && W.hold && (W.holdAt || 0) > W.skipAt) { W.digWait.skipped = true; W.digWait = null; $('#digBtn').disabled = true; toast(tt('walk.not_this_x', 'Not this X. Onwards!')); }
   if (walking) {
     const sp = SPEED * (S.outfit.body === 'Superhero Cape' ? 1.15 : 1);
     W.dist = Math.min(W.len, W.dist + sp * dt);
@@ -176,16 +178,16 @@ function walkLoop(now) {
     if (o.x - 22 > dx) return;
     if (o.t === 'col' || o.t === 'surprise') collect(o, i);
     else if (o.t === 'sniff') { o.done = true; W.pauseUntil = now + 1700; W.happy += 2; W.bond += 1; SFX.sniff(); sayW(sniffClue(), W.dogX + 40, 160, 2200); removeObj(i); }
-    else if (o.t === 'puddle') { o.done = true; if (hopping) toast('Nice hop! Paws stay (mostly) clean.'); else if (S.outfit.body === 'Mossy Poncho') toast('Splash! The Mossy Poncho kept everything clean. Puddle-proof.', 'good'); else { W.clean += 5; addStat('clean', -5); SFX.splash(); toast(PICK(MUD), 'bad'); } }
+    else if (o.t === 'puddle') { o.done = true; if (hopping) toast(tt('walk.nice_hop', 'Nice hop! Paws stay (mostly) clean.')); else if (S.outfit.body === 'Mossy Poncho') toast(tt('walk.poncho', 'Splash! The Mossy Poncho kept everything clean. Puddle-proof.'), 'good'); else { W.clean += 5; addStat('clean', -5); SFX.splash(); toast(tdPickLine('mud', MUD), 'bad'); } }
     else if (o.t === 'dig' && !o.skipped && !o.prompted) {
       o.prompted = true;
       if (W.found) return;
-      if (W.digsLeft <= 0) { if (!W.outOfDigsSaid) { W.outOfDigsSaid = true; sayW('Out of digs. The nose sighs.', W.dogX + 40, 160, 1800); } return; }
+      if (W.digsLeft <= 0) { if (!W.outOfDigsSaid) { W.outOfDigsSaid = true; sayW(tt('walk.out_of_digs', 'Out of digs. The nose sighs.'), W.dogX + 40, 160, 1800); } return; }
       W.digWait = o; W.skipAt = now + 300; $('#digBtn').disabled = false;
-      sayW(`Dig here? ${W.digsLeft} dig${W.digsLeft > 1 ? 's' : ''} left. ${isPhone() ? '(Tap Dig! to dig, hold walk to skip.)' : '(Dig! or D to dig, hold walk to skip.)'}`, W.dogX + 40, 160, 3000); SFX.boop(440);
+      sayW(tt('walk.dig_here', 'Dig here? {n, plural, one {# dig} other {# digs}} left. {phone, select, yes {(Tap Dig! to dig, hold walk to skip.)} other {(Dig! or D to dig, hold walk to skip.)}}', { n: W.digsLeft, phone: isPhone() ? 'yes' : 'no' }), W.dogX + 40, 160, 3000); SFX.boop(440);
     }
   });
-  if (S.stats.energy <= 0 && !W.ended) { toast(`${NAME()} is out of puff. Heading home.`, 'bad'); endWalk(false); return; }
+  if (S.stats.energy <= 0 && !W.ended) { toast(tt('walk.out_of_puff', '{name} is out of puff. Heading home.', { name: NAME() }), 'bad'); endWalk(false); return; }
   updateNose(now); drawWalk(now);
   if (W.dist >= W.len) { endWalk(true); return; }
   W.raf = requestAnimationFrame(walkLoop);
@@ -199,13 +201,13 @@ function drawWalk() {
   if (nL) nL.setAttribute('transform', `translate(${-((s * 1.35) % 300)} 0)`);
   if (oL) oL.setAttribute('transform', `translate(${-s} 0)`);
   const bar = $('#walkBar'); if (bar) bar.style.width = (s / W.len * 100) + '%';
-  const tm = $('#walkTime'); if (tm) tm.textContent = Math.ceil((W.len - s) / SPEED) + 's left';
+  const tm = $('#walkTime'); if (tm) tm.textContent = tt('walk.secs_left', '{n}s left', { n: Math.ceil((W.len - s) / SPEED) });
   updateHUD();
 }
 function removeObj(i) { const el = $('#wo' + i); if (el) { el.classList.add('got'); setTimeout(() => el.remove(), 600); } }
 function collect(o, i) {
   if (o.done) return; o.done = true; SFX.pop();
-  if (o.t === 'surprise') { const g = grantTreasure(o.item, W.area); W.extra.push({ item: o.item, dup: g.dup }); SFX.treasure(); toast(g.dup ? `A sparkle on the path! Another ${o.item.n}... sold to a squirrel for 40 coins.` : `Surprise treasure on the path: ${o.item.n}! (${RARITY[o.item.r]})`, 'gold'); }
+  if (o.t === 'surprise') { const g = grantTreasure(o.item, W.area); W.extra.push({ item: o.item, dup: g.dup }); SFX.treasure(); toast(g.dup ? tt('walk.surprise_dup', 'A sparkle on the path! Another {item}... sold to a squirrel for 40 coins.', { item: jrTN(o.item) }) : tt('walk.surprise', 'Surprise treasure on the path: {item}! ({rarity})', { item: jrTN(o.item), rarity: tdata('rarity.' + o.item.r, RARITY[o.item.r]) }), 'gold'); }
   else W.coins += RINT(1, 4);
   removeObj(i);
 }
@@ -213,8 +215,8 @@ function tapObj(o) {
   if (!o || o.done || W.ended) return; const i = W.objs.indexOf(o), d = o.x - (W.dist + W.dogX);
   if ((o.t === 'col' || o.t === 'surprise') && d < W.VW) { collect(o, i); return; }
   if (o.t === 'puddle' && d < 320) { hop(); return; }
-  if (o.t === 'dig') { if (W.digWait === o || (Math.abs(d) < 200 && !W.found && W.digsLeft > 0)) dig(o); else if (d >= 200) toast('Walk up to the X to dig it.'); return; }
-  if (o.t === 'npc') { SFX.bark(BARK[o.kind]); sayW(PICK(NPC_JOKES), o.x - W.dist, 150, 2200); }
+  if (o.t === 'dig') { if (W.digWait === o || (Math.abs(d) < 200 && !W.found && W.digsLeft > 0)) dig(o); else if (d >= 200) toast(tt('walk.walk_up', 'Walk up to the X to dig it.')); return; }
+  if (o.t === 'npc') { SFX.bark(BARK[o.kind]); sayW(tdPickLine('npc_jokes', NPC_JOKES), o.x - W.dist, 150, 2200); }
 }
 function dig(o) {
   if (o.done || W.digsLeft <= 0 || W.found) return;
@@ -231,28 +233,28 @@ function dig(o) {
     setTimeout(() => {
       SFX.treasure(); setTimeout(SFX.fanfare, 300); audioCue('treasure');
       const fx = $('#fx'); if (fx) { fx.insertAdjacentHTML('beforeend', `<g class="popfx">${place(artReal('collectible', 'chest') || art('collectible', 'dig'), sx - 45, 220, 90, 90)}${L.item ? place(art('item', L.item.n), sx - 32, 150, 64, 64) : ''}</g>`); setTimeout(() => { const g = fx.lastElementChild; if (g) g.remove(); }, 1400); }
-      fxText('TREASURE!', sx, 140, '#F2C744', 48);
-      toast(L.item ? (L.dup ? `Treasure: another ${L.item.n}. A squirrel bought it for 40 coins.` : `TREASURE! ${L.item.n} (${RARITY[L.item.r]})!`) : `A treasure pouch of coins! +${L.coins * BOOST.coins} coins at the end.`, 'gold');
+      fxText(tt('walk.treasure_fx', 'TREASURE!'), sx, 140, '#F2C744', 48);
+      toast(L.item ? (L.dup ? tt('walk.treasure_dup', 'Treasure: another {item}. A squirrel bought it for 40 coins.', { item: jrTN(L.item) }) : tt('walk.treasure_get', 'TREASURE! {item} ({rarity})!', { item: jrTN(L.item), rarity: tdata('rarity.' + L.item.r, RARITY[L.item.r]) })) : tt('walk.treasure_pouch', 'A treasure pouch of coins! +{n} coins at the end.', { n: tnum(L.coins * BOOST.coins) }), 'gold');
     }, 600);
   } else {
-    if (Math.random() < 0.5) { const v = RINT(5, 15); W.coins += v / BOOST.coins; setTimeout(() => toast(`No treasure here. Just ${v} coins. Consolation coins!`), 500); }
-    else if (Math.random() < 0.1) { const f = PICK(peopleFood().filter((x) => x.where.includes('junk'))); W.coins += 5 / BOOST.coins; setTimeout(() => safetyNote(f.id, 'It went to the town compost. (+5 coins)'), 500); }
-    else { const [k, line] = PICK(JUNK); W.junk.push(k); W.coins += RINT(2, 4) / BOOST.coins; setTimeout(() => toast(`${line} (Turned into a few coins.)`), 500); }
-    if (W.digsLeft === 0) setTimeout(() => sayW('That was the last dig. The treasure keeps its secret.', W.dogX + 40, 160, 2400), 1600);
+    if (Math.random() < 0.5) { const v = RINT(5, 15); W.coins += v / BOOST.coins; setTimeout(() => toast(tt('walk.consolation', 'No treasure here. Just {n} coins. Consolation coins!', { n: v })), 500); }
+    else if (Math.random() < 0.1) { const f = PICK(peopleFood().filter((x) => x.where.includes('junk'))); W.coins += 5 / BOOST.coins; setTimeout(() => safetyNote(f.id, tt('walk.compost', 'It went to the town compost. (+5 coins)')), 500); }
+    else { const ji = Math.floor(Math.random() * JUNK.length), [k, line] = JUNK[ji]; W.junk.push(k); W.coins += RINT(2, 4) / BOOST.coins; setTimeout(() => toast(tt('walk.junk_coins', '{line} (Turned into a few coins.)', { line: tdata('junk.' + ji + '.1', line) })), 500); }
+    if (W.digsLeft === 0) setTimeout(() => sayW(tt('walk.last_dig', 'That was the last dig. The treasure keeps its secret.'), W.dogX + 40, 160, 2400), 1600);
   }
 }
 function meetNpc(o, i) {
   o.met = true; W.npcs++; const el = $('#wo' + i); if (el) el.innerHTML = place(art('dog', o.kind, { pose: 'happy', facing: 'left' }), -102, 172, 204, 170);
   SFX.bark(BARK[o.kind]); W.happy += 5; W.bond += 2; W.pauseUntil = performance.now() + 1500;
-  let line = PICK(NPC_JOKES);
+  let line = tdPickLine('npc_jokes', NPC_JOKES);
   const dressed = SLOTS.some((s) => S.outfit[s]);
-  if (dressed) { const c = 3 + (S.outfit.neck === 'Bow Tie' ? 2 : 0); W.coins += c; line = PICK(['Love the outfit. Here, have some coins.', 'Fancy! Is that designer?', 'Wow. Stylish. Take my money.']); setTimeout(() => toast(`Compliment! +${c * BOOST.coins} coins.`, 'gold'), 400); }
+  if (dressed) { const c = 3 + (S.outfit.neck === 'Bow Tie' ? 2 : 0); W.coins += c; line = PICK([tt('walk.npc_outfit_1', 'Love the outfit. Here, have some coins.'), tt('walk.npc_outfit_2', 'Fancy! Is that designer?'), tt('walk.npc_outfit_3', 'Wow. Stylish. Take my money.')]); setTimeout(() => toast(tt('walk.compliment', 'Compliment! +{n} coins.', { n: tnum(c * BOOST.coins) }), 'gold'), 400); }
   sayW(line, o.x - W.dist - 60, 150, 2600);
 }
 /* v2.3 walkfetch: results tiles. A tile whose number is zero is left out; an all-zero sheet gets one kind line instead of an empty grid. Each row is [shown, label, number]. */
 function wfTiles(rows, cls) {
   const on = rows.filter((r) => Math.round(+r[2]) !== 0);
-  return on.length ? `<div class="${cls}">${on.map((r) => `<div class="res"><div class="v">${r[0]}</div><div class="k">${r[1]}</div></div>`).join('')}</div>` : '<p class="small wf-nil">Just a stroll. Nothing to count, all good.</p>';
+  return on.length ? `<div class="${cls}">${on.map((r) => `<div class="res"><div class="v">${r[0]}</div><div class="k">${r[1]}</div></div>`).join('')}</div>` : '<p class="small wf-nil">' + esc(tt('walk.stroll', 'Just a stroll. Nothing to count, all good.')) + '</p>';
 }
 function endWalk(complete) {
   if (!W || W.ended) return; W.ended = true; pottyWalked(); cancelAnimationFrame(W.raf);
@@ -273,14 +275,15 @@ function endWalk(complete) {
   let tre;
   if (L && L.item) {
     const t = L.item;
-    tre = `<div class="tfind"><div class="tbig">${art('item', t.n)}</div><div><h3>${esc(t.n)}</h3>${stamp(t.r)}<p class="ab"><b>${esc(t.ab)}.</b> ${esc(t.txt)}</p>${L.dup ? '<p class="small">You already have one. A squirrel bought this one for 40 coins.</p>' : t.kind === 'quest' ? `<p class="small">Map pieces: ${S.mapPieces.length}/4.${S.mapPieces.length >= 4 ? ' The map is complete! Check your yard for an X.' : ''}</p>` : `<p class="small">${t.kind === 'wearable' || t.kind === 'charm' ? 'Equip it from the Journal or the Wardrobe.' : t.kind === 'food' ? 'Feed it from the Journal or the Feed tray.' : 'Find it in the Journal, Toys tab.'}</p>`}</div></div>`;
-  } else if (L) tre = `<div class="tfind"><div class="tbig">${artReal('collectible', 'chest') || art('collectible', 'coin')}</div><div><h3>A pouch of coins</h3>${stamp(L.r)}<p class="ab">You own every ${RARITY[L.r]} treasure from this route, so it was coins: +${L.coins * BOOST.coins}.</p></div></div>`;
-  else tre = `<div class="tfind"><div class="tbig" style="filter:grayscale(1) opacity(.5)">${artReal('collectible', 'chest') || art('collectible', 'dig')}</div><div><h3>The treasure stayed hidden</h3><p class="ab">${W.digsLeft > 0 && complete ? 'You walked past the right X without digging.' : 'It was under a different X.'} Watch the Nose-o-meter: dig when it says HOT.</p></div></div>`;
-  const extra = W.extra.length ? `<p class="small">Also found on the path: ${W.extra.map((e) => esc(e.item.n) + (e.dup ? ' (sold, duplicate)' : '')).join(', ')}.</p>` : '';
-  const junk = W.junk.length ? `<p class="small">Junk dug up (turned into coins): ${W.junk.map((k) => k === 'junk-sock' ? 'a sock' : 'a rock').join(', ')}.</p>` : '';
-  const p = openModal(L ? `<span class="hl">Treasure found: ${esc(R.n)}</span>` : (complete ? `Walk complete: ${esc(R.n)}` : `Walk cut short: ${esc(R.n)}`), `${tre}${extra}${junk}${pkWalkLine(pkFol)}
-    ${wfTiles([[`+${coins}`, `Paw Coins${penny > 1 ? ' (Penny +10%)' : ''}`, coins], [`+${happy}`, 'Happiness', happy], [`+${bond}`, 'Bond points', bond], [`-${energy}`, 'Energy', energy], [cleanLoss + W.clean ? '-' + (cleanLoss + W.clean) : '0', 'Cleanliness', cleanLoss + W.clean]], 'results compact')}`,
-    { cls: 'celebrate', foot: `${L && L.item && !L.dup ? '<button class="btn" id="resJournal">Open Journal</button>' : ''}<button class="btn yes big" id="resOk">${L && L.item && !L.dup ? 'Add to Journal' : 'Back to ' + esc((PLACES[S.place] || PLACES.yard).n)}</button>`, onClose: () => go('yard') });
+    tre = `<div class="tfind"><div class="tbig">${art('item', t.n)}</div><div><h3>${esc(jrTN(t))}</h3>${stamp(t.r)}<p class="ab"><b>${esc(jrTAb(t))}.</b> ${esc(jrTTxt(t))}</p>${L.dup ? `<p class="small">${esc(tt('walk.res_dup', 'You already have one. A squirrel bought this one for 40 coins.'))}</p>` : t.kind === 'quest' ? `<p class="small">${esc(tt('walk.res_map', 'Map pieces: {n}/4.{done, select, yes { The map is complete! Check your yard for an X.} other {}}', { n: S.mapPieces.length, done: S.mapPieces.length >= 4 ? 'yes' : 'no' }))}</p>` : `<p class="small">${esc(t.kind === 'wearable' || t.kind === 'charm' ? tt('walk.res_equip', 'Equip it from the Journal or the Wardrobe.') : t.kind === 'food' ? tt('walk.res_feed', 'Feed it from the Journal or the Feed tray.') : tt('walk.res_toys', 'Find it in the Journal, Toys tab.'))}</p>`}</div></div>`;
+  } else if (L) tre = `<div class="tfind"><div class="tbig">${artReal('collectible', 'chest') || art('collectible', 'coin')}</div><div><h3>${esc(tt('walk.res_pouch', 'A pouch of coins'))}</h3>${stamp(L.r)}<p class="ab">${esc(tt('walk.res_pouch_txt', 'You own every {rarity} treasure from this route, so it was coins: +{n}.', { rarity: tdata('rarity.' + L.r, RARITY[L.r]), n: tnum(L.coins * BOOST.coins) }))}</p></div></div>`;
+  else tre = `<div class="tfind"><div class="tbig" style="filter:grayscale(1) opacity(.5)">${artReal('collectible', 'chest') || art('collectible', 'dig')}</div><div><h3>${esc(tt('walk.res_hidden', 'The treasure stayed hidden'))}</h3><p class="ab">${esc(tt('walk.res_hidden_txt', '{passed, select, yes {You walked past the right X without digging.} other {It was under a different X.}} Watch the Nose-o-meter: dig when it says HOT.', { passed: W.digsLeft > 0 && complete ? 'yes' : 'no' }))}</p></div></div>`;
+  const extra = W.extra.length ? `<p class="small">${esc(tt('walk.res_extra', 'Also found on the path: {list}.', { list: tlist(W.extra.map((e) => e.dup ? tt('walk.res_extra_dup', '{item} (sold, duplicate)', { item: jrTN(e.item) }) : jrTN(e.item))) }))}</p>` : '';
+  const junk = W.junk.length ? `<p class="small">${esc(tt('walk.res_junk', 'Junk dug up (turned into coins): {list}.', { list: tlist(W.junk.map((k) => k === 'junk-sock' ? tt('walk.junk_sock', 'a sock') : tt('walk.junk_rock', 'a rock'))) }))}</p>` : '';
+  const rn = townRouteName(W.area), here = (PLACES[S.place] && S.place) || 'yard';
+  const p = openModal(L ? `<span class="hl">${esc(tt('walk.res_title_found', 'Treasure found: {route}', { route: rn }))}</span>` : esc(complete ? tt('walk.res_title_done', 'Walk complete: {route}', { route: rn }) : tt('walk.res_title_short', 'Walk cut short: {route}', { route: rn })), `${tre}${extra}${junk}${pkWalkLine(pkFol)}
+    ${wfTiles([[`+${tnum(coins)}`, esc(penny > 1 ? tt('walk.res_coins_penny', 'Paw Coins (Penny +10%)') : tt('walk.res_coins', 'Paw Coins')), coins], [`+${happy}`, esc(tt('walk.res_happy', 'Happiness')), happy], [`+${bond}`, esc(tt('walk.res_bond', 'Bond points')), bond], [`-${energy}`, esc(tt('walk.res_energy', 'Energy')), energy], [cleanLoss + W.clean ? '-' + (cleanLoss + W.clean) : '0', esc(tt('walk.res_clean', 'Cleanliness')), cleanLoss + W.clean]], 'results compact')}`,
+    { cls: 'celebrate', foot: `${L && L.item && !L.dup ? `<button class="btn" id="resJournal">${esc(tt('walk.res_journal', 'Open Journal'))}</button>` : ''}<button class="btn yes big" id="resOk">${esc(L && L.item && !L.dup ? tt('walk.res_add', 'Add to Journal') : tt('walk.back_to', 'Back to {place}', { place: townPlaceName(here) }))}</button>`, onClose: () => go('yard') });
   if (isPhone()) dock.innerHTML = ''; // no walk tray (its hint line) peeking out under the results sheet
   $('#resOk', p).onclick = () => { SFX.boop(700); closeModal(); };
   const rj = $('#resJournal', p); if (rj) rj.onclick = () => { modalClose = null; closeModal(); go('yard'); setTimeout(() => openJournal('treasures'), 300); };
