@@ -1383,9 +1383,11 @@ const EXPR={};EXPR_LIST.forEach(n=>{EXPR[n]={ok:EX_AWAKE}});// placeholders unti
 function exOk(n,pose,age){const X=typeof n==='string'&&Object.prototype.hasOwnProperty.call(EXPR,n)?EXPR[n]:null;return X&&age!=='newborn'&&(!X.ok||X.ok.test(pose))?n:null}
 function exSub(h,sd,fn){const g=kit(rng(sd>>>0));g.setJ(h.getJ());g.cy=h.cy;fn(g);g.acc.forEach(a=>h.acc.push(a));g.texts.forEach(t=>h.texts.push(t));for(let i=0;i<2;i++){h.bb[i]=Math.min(h.bb[i],g.bb[i]);h.bb[i+2]=Math.max(h.bb[i+2],g.bb[i+2])}}
 function exFace(h,s,L,HT,X,k,xa,seed){// drop the face just drawn (h's random stream has already moved past it), draw the expression's face on its own kit
+  const pb=h.bb.slice();// the plain face's box: the fit stays where it was, so a dog never changes size when a face starts
   h.acc.length=xa[0];h.texts.length=xa[1];for(let i=0;i<4;i++)h.bb[i]=xa[2][i];
   const LX=Object.assign({},L,{face:{...L.face},ex:X}),ff=(s.mixHead?SP[s.mixHead]:s).faceFn;if(X.pre)X.pre(s,LX,k);
   exSub(h,seed*5+k*977+11,g=>{drawFace(g,s,LX,HT);if(ff)ff(g,s,LX,HT,0);if(X.face)X.face(g,s,LX,HT)});
+  for(let i=0;i<4;i++)h.bb[i]=pb[i];
 }
 /* ---------- v2.13 expressions: ART A (sleepy, surprised, curious, hearts, proud, guilty, sneeze) ---------- */
 // XA: ART A helpers. Lines on the face use the light brow colour on any dark head (bc, or a pale crayon when the breed has none).
