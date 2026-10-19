@@ -11,6 +11,7 @@
 # TK_SNACKS, TK_SOUVENIRS, BL_BALLS, BL_TOYS, SIG_COMBO, SPOT_RULES, mods/toys.js TOYS: the item's own row gives its name),
 # gene symbols, chord names, the painted art words and the art fallbacks (FS_FB, HW_FB). Tables of functions (CARD_LINES,
 # NY_PUP_LINES) become tt() messages in their files. NAME@file-stem limits a line to that file's table of the name.
+# A camelCase name keys as snake case (jpPlaceLines -> data.jp_place_lines.shiba); a table that is one string (HW_PLUM) is data.<table>.
 # A value chosen by a condition (`a ? 'Tide pool' : 'Puddle'`) gives two keys: <path> and <path>_2 (the else branch).
 
 # ---- game/src/00_core.js
@@ -90,6 +91,7 @@ FS_LETTERS from title text
 FS_MONTHS *
 HW_LETTER from title text
 HW_CATS 1
+HW_PLUM *
 HO_LINES *
 SR_TRAITS *
 SR_LINES *
@@ -99,6 +101,9 @@ NY_ZODIAC animal
 NY_FORTUNES *
 JP_TOASTS *
 JP_LETTER from title text
+JP_FIRST *
+JP_MOCHI *
+jpPlaceLines *
 
 # ---- FEATURES B: 34 ... 41
 PH_CAPS *
@@ -161,3 +166,5 @@ HINT *
 HINT_NAME *
 ROUTE_WX *
 ROUTE_NAME *
+BADGE@walkrun 1
+TOYS_LINES@toys *

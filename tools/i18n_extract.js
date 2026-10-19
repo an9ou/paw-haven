@@ -32,6 +32,8 @@ if (fs.existsSync(TABLES_FILE)) for (const raw of fs.readFileSync(TABLES_FILE, '
   const [spec, ...fields] = ln.split(/\s+/), [name, only] = spec.split('@'); // NAME@file-stem: only that file's table of this name
   TABLES.set(name, { fields: fields.length ? fields : ['*'], only: only || null });
 }
+// the key part of a table: FOOD -> food, jpPlaceLines -> jp_place_lines
+const tableKey = (name) => name.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
 // a TABLES field matches the data path itself, or the path without its first part (the row id); `*` in a field is any one part
 const fieldHit = (f, pth) => { const fp = f.split('.'), a = pth.split('.'), eq = (b) => b.length === fp.length && fp.every((x, i) => x === '*' || x === b[i]); return eq(a) || eq(a.slice(1)); };
 const enStr = []; // { key, text, file, line } from tt/tdata/L calls and the TABLES strings
@@ -261,7 +263,7 @@ function scanJs(code, fileOf, mode) {
     if (mode === 'art' && !(extra.htmlRun || c.sink === 'tx' || c.sink === 'attr')) return;
     const area = areaOf(at.file);
     let key;
-    if (kind === 'data') key = 'data.' + c.table.toLowerCase() + '.' + dataPath(node, c.table);
+    if (kind === 'data') key = 'data.' + tableKey(c.table) + '.' + dataPath(node, c.table);
     else key = area + '.' + (extra.attr ? slug(extra.attr.replace(/^aria-/, ''), 1) + '_' : '') + slug(text);
     const h = { file: at.file, line: at.line, text, key, kind };
     if (extra.vars && extra.vars.length) h.vars = extra.vars;
@@ -300,23 +302,30 @@ function scanJs(code, fileOf, mode) {
   function tableStr(node) {
     const par = parents[parents.length - 1];
     if (par && par.type === 'Property' && par.key === node && !par.computed) return; // a key, not a value
-    let table = null, child = node, alt = false;
+    let table = null, child = node, alt = false, one = false;
     for (let i = parents.length - 1; i >= 0; i--) {
       const p = parents[i];
       if (p.type === 'BinaryExpression' && /^(===|!==|==|!=)$/.test(p.operator)) return; // a comparison, not text
       if (p.type === 'ConditionalExpression') { if (p.test === child) return; if (p.alternate === child) alt = true; } // the other branch: <path>_2
-      if (p.type === 'VariableDeclarator' && p.init === child && p.id.type === 'Identifier' && /^[A-Z][A-Z0-9_]+$/.test(p.id.name) && /^(ArrayExpression|ObjectExpression|CallExpression)$/.test(child.type)) { table = p.id.name; break; }
+      if (p.type === 'VariableDeclarator' && p.init === child && p.id.type === 'Identifier' && (/^[A-Z][A-Z0-9_]+$/.test(p.id.name) || TABLES.has(p.id.name)) && /^(ArrayExpression|ObjectExpression|CallExpression)$/.test(child.type)) { table = p.id.name; break; }
+      if (p.type === 'VariableDeclarator' && p.init === node && p.id.type === 'Identifier' && TABLES.has(p.id.name)) { table = p.id.name; one = true; break; } // a one-string table (HW_PLUM): data.<table>
       child = p;
     }
     if (!table || !TABLES.has(table)) return;
     const at = fileOf(node.start); if (!at) return;
     const T = TABLES.get(table); if (T.only && path.basename(at.file).replace(/\.js$/, '') !== T.only) return;
     const text = node.type === 'Literal' ? node.value : node.quasis[0].value.cooked; if (!/\p{L}/u.test(text)) return; // '' and symbols are never text
+    if (one) { enStr.push({ key: 'data.' + tableKey(table), text, file: at.file, line: at.line, table }); return; }
     const pth = dataPath(node, table), f = T.fields;
     if (!f.includes('*') && !f.some((x) => fieldHit(x, pth))) return;
-    enStr.push({ key: 'data.' + table.toLowerCase() + '.' + pth + (alt ? '_2' : ''), text, file: at.file, line: at.line, table });
+    enStr.push({ key: 'data.' + tableKey(table) + '.' + pth + (alt ? '_2' : ''), text, file: at.file, line: at.line, table });
   }
 
+  /* the i18n wrappers (V214.md 4.2): tt-like ones take a full key, data-like ones a table path under data.
+     mods bind their own local names: L (all mods; walkrun's L too), LE (walkrun: escaped L), LT (toys: its L is taken);
+     D (garden, genes, kitchen), LD (walkrun), LTD (toys) prefix data. */
+  const WRAP_TT = new Set(['tt']), WRAP_DATA = new Set(['tdata']);
+  const MOD_TT = new Set(['L', 'LE', 'LT']), MOD_DATA = new Set(['D', 'LD', 'LTD']);
   function flatPlus(n, acc) { if (n.type === 'BinaryExpression' && n.operator === '+') { flatPlus(n.left, acc); flatPlus(n.right, acc); } else acc.push(n); return acc; }
   const isStr = (n) => (n.type === 'Literal' && typeof n.value === 'string') || n.type === 'TemplateLiteral';
 
@@ -327,14 +336,15 @@ function scanJs(code, fileOf, mode) {
       return;
     }
     if (node.type === 'TaggedTemplateExpression') return; // String.raw etc.
-    if (node.type === 'CallExpression' && node.callee.type === 'Identifier' && (node.callee.name === 'tt' || node.callee.name === 'tdata' || (mode === 'mod' && (node.callee.name === 'L' || node.callee.name === 'D')))) {
+    if (node.type === 'CallExpression' && node.callee.type === 'Identifier' && (WRAP_TT.has(node.callee.name) || WRAP_DATA.has(node.callee.name) || (mode === 'mod' && (MOD_TT.has(node.callee.name) || MOD_DATA.has(node.callee.name))))) {
+      const isData = WRAP_DATA.has(node.callee.name) || (mode === 'mod' && MOD_DATA.has(node.callee.name));
       const [k, e, v] = node.arguments, lit = (x) => x && ((x.type === 'Literal' && typeof x.value === 'string') || (x.type === 'TemplateLiteral' && !x.expressions.length));
       const val = (x) => (x.type === 'Literal' ? x.value : x.quasis[0].value.cooked);
       const at = fileOf(node.start);
       if (at) {
         wired++;
-        if (lit(k) && lit(e)) { const key = (node.callee.name === 'tdata' || node.callee.name === 'D' ? 'data.' : '') + val(k); if (KEY_RE.test(key)) enStr.push({ key, text: val(e), file: at.file, line: at.line }); else enWarn.push(`${at.file}:${at.line} bad key "${key}"`); }
-        else if (node.callee.name !== 'tdata' && node.callee.name !== 'D') enWarn.push(`${at.file}:${at.line} ${node.callee.name}() with a ${lit(k) ? 'non-literal English' : 'computed key'}`);
+        if (lit(k) && lit(e)) { const key = (isData ? 'data.' : '') + val(k); if (KEY_RE.test(key)) enStr.push({ key, text: val(e), file: at.file, line: at.line }); else enWarn.push(`${at.file}:${at.line} bad key "${key}"`); }
+        else if (!isData) enWarn.push(`${at.file}:${at.line} ${node.callee.name}() with a ${lit(k) ? 'non-literal English' : 'computed key'}`);
       }
       parents.push(node); if (v) visit(v); node.arguments.slice(3).forEach(visit); if (k && !lit(k)) visit(k); if (e && !lit(e)) visit(e); parents.pop();
       return;
@@ -360,7 +370,7 @@ function scanJs(code, fileOf, mode) {
       const T = TABLES.get(node.id.name), kf = T.fields.find((f) => f.startsWith('@key:')), at = fileOf(node.start);
       if (kf && at && !(T.only && path.basename(at.file).replace(/\.js$/, '') !== T.only)) for (const q of node.init.properties) {
         if (q.type !== 'Property' || q.computed) continue; const k = q.key.type === 'Literal' ? String(q.key.value) : q.key.name;
-        enStr.push({ key: 'data.' + node.id.name.toLowerCase() + '.' + M.id(k) + '.' + kf.slice(5), text: k, file: at.file, line: at.line, table: node.id.name });
+        enStr.push({ key: 'data.' + tableKey(node.id.name) + '.' + M.id(k) + '.' + kf.slice(5), text: k, file: at.file, line: at.line, table: node.id.name });
       }
     }
     if (node.type === 'Literal' && typeof node.value === 'string') {
