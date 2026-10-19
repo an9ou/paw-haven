@@ -5,7 +5,7 @@ Made 19 Oct 2026 (owner's request, made like the owner's reference recording of 
 | File | What |
 |---|---|
 | `doodle-doggo-costume-reel-b.mp4` | 1080 x 1920, 30 fps, 44.8 s, seamless loop, with the game's music. 64 looks, each falls once per loop. |
-| `costume-reel-cover.jpg` | The cover: six costumes under "Pick Noodle's Halloween costume". |
+| `costume-reel-cover.jpg` | The cover (redesigned 19 Oct): "Stop the video to dress Noodle!" with 止めてヌードルに仮装させよう！, a "64 costumes" sticker, costumes raining down, Noodle in The Full Witch with the "perfect fit!" stamp, and "can you get a perfect fit?". Everything sits in the grid's 3:4 crop. Remake: `COVER=1` with the command below. |
 | `build_costumes.js` | Remake: `NODE_PATH=/opt/node-tools/node_modules node brand/instagram/launch/costume_reel/build_costumes.js <workdir> b` (about 10 minutes; `SPRITES=1` saves a check picture of every look fitted on Noodle, without the video). |
 
 ## What is in it

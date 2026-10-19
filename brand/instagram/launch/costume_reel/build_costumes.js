@@ -179,6 +179,23 @@ const mux = (video, audio, T, mp4, extra = []) => cp.execFileSync('ffmpeg', ['-l
     }
     if (process.env.SPRITES) { for (const li of B_LOOKS) { const sp = sprite[li]; await shot(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><image href="${bg}" width="${W}" height="${H}"/><image href="${sp.url}" width="${W}" height="${H}"/>${txt(LOOKS[li][0], W / 2, 1480, 60)}</svg>`, path.join(WORK, 'b', `sprite${li}.png`)); } await b.close(); return; }
     const sparkle = `<g transform="translate(830 840) rotate(-8)"><rect x="-150" y="-44" width="300" height="88" rx="44" fill="#FFD66B" stroke="${INK}" stroke-width="5"/>${txt('perfect fit!', 0, 18, 58)}</g>`;
+    // the cover (COVER=1 renders only this): costumes raining down, Noodle in "The Full Witch" with the perfect-fit stamp, a big title.
+    // Everything that matters sits in the grid's 3:4 crop (y 240..1680).
+    if (process.env.COVER) {
+      const icon = (n, x, y, sz, rot) => `<g transform="translate(${x} ${y}) rotate(${rot})">${[-0.28, 0, 0.28].map((d) => `<path d="M${f1(d * sz)} ${f1(-sz * 0.62)}v${f1(-sz * 0.34)}" stroke="${INK}" stroke-width="5" stroke-linecap="round" opacity=".35"/>`).join('')}<svg x="${-sz / 2}" y="${-sz / 2}" width="${sz}" height="${sz}" viewBox="0 0 64 64" overflow="visible">${inner(PA.item(n))}</svg></g>`;
+      const rain = [['Bumblebee Suit', 140, 780, 165, -14], ['Astronaut Helmet', 345, 715, 150, 9], ['Pumpkin Suit', 555, 790, 160, -6], ['Heart Sunglasses', 740, 700, 115, -10],
+        ['Bat Wings', 290, 905, 140, 6], ['Superhero Cape', 505, 955, 125, -10]];
+      const full = LOOKS.findIndex((l) => l[0] === 'The Full Witch');
+      const cv = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${paperTop}${scene}<rect x="0" y="1340" width="${W}" height="${H - 1340}" fill="#2E2235" opacity=".18"/>`
+        + noodle({}) + `<image href="${sprite[full].url}" x="0" y="0" width="${W}" height="${H}"/>` + rain.map((r) => icon(...r)).join('')
+        + `<g transform="translate(880 1250) rotate(-8)"><rect x="-150" y="-44" width="300" height="88" rx="44" fill="#FFD66B" stroke="${INK}" stroke-width="5"/>${txt('perfect fit!', 0, 18, 58)}</g>`
+        + card(70, 250, 940, 380, -1.5) + tape(470, 232, 140, -3)
+        + txt('Stop the video', W / 2, 390, 126, { rot: -1.5 }) + txt('to dress Noodle!', W / 2, 510, 112, { rot: -1.5, fill: ORANGE }) + txt('止めてヌードルに仮装させよう！', W / 2, 584, 44, { jp: true, rot: -1.5, fill: MUTED })
+        + `<g transform="translate(935 690) rotate(12)"><circle r="92" fill="${ORANGE}" stroke="${INK}" stroke-width="5"/>${txt('64', 0, 6, 82, { fill: '#FFF8EC' })}${txt('costumes', 0, 50, 36, { fill: '#FFF8EC' })}</g>`
+        + card(110, 1390, 860, 120, -1.2) + tape(470, 1370, 140, 3) + txt('can you get a perfect fit?', W / 2, 1470, 62, { rot: -1.2 })
+        + `<g transform="rotate(-1 ${W / 2} 1585)"><rect x="${W / 2 - 320}" y="1546" width="640" height="80" rx="40" fill="${PLUM}" stroke="${INK}" stroke-width="4"/>${txt('comment what Noodle got 👇', W / 2, 1600, 50, { fill: '#FFF8EC' })}</g></svg>`;
+      await shot(cv, path.join(OUT, 'costume-reel-cover.jpg'), 'jpeg'); console.log('wrote cover'); await b.close(); return;
+    }
     const NF = process.env.BFRAMES ? +process.env.BFRAMES : Math.round(B_T * FPS);
     for (let fi = 0; fi < NF; fi++) {
       const t = fi / FPS; let g = `<image href="${bg}" x="0" y="0" width="${W}" height="${H}"/>`, nowLook = null, perfect = false;
