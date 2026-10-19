@@ -4,9 +4,10 @@
 //   node tools/i18n_fonts.js <lang> [corpus files...]   one language (ja, zh-Hans, zh-Hant, ko, th, es, pt-BR, fr, de, id)
 //   node tools/i18n_fonts.js --all                       every language; corpus defaults to site/i18n/<lang>.json
 //   options:
-//     --for site|game     default corpus: site/i18n/<lang>.json (site) or game/i18n/<lang>.json (game)
-//     --out <dir>         where <lang>.woff2, <lang>-title.woff2 and <lang>.css go (default site/fonts/i18n, game: dist/i18n-fonts)
-//     --url <prefix>      URL prefix in the CSS (default /fonts/i18n/)
+//     --for site|game     default corpus: site/i18n/<lang>.json (site) or game/i18n/<lang>.json (game). --target is the same option.
+//     --out <dir>         where <lang>.woff2, <lang>-title.woff2 and <lang>.css go (default site/fonts/i18n, game: game/fonts/i18n)
+//     --url <prefix>      URL prefix in the CSS (default /fonts/i18n/, game: fonts/i18n/, next to the page)
+//                         game: then run `node tools/i18n_pack.js`, which reads game/fonts/i18n/<lang>.css into packed.js (00b_i18n.js loads the face)
 //     --embed <file.css>  also write the CSS with the fonts inlined as base64 data URIs (single-file game build, photo postcard)
 //     --text "<chars>"    add these characters to the corpus
 //     --title-keys <re>   JSON keys whose strings use the title face (default below, TITLE_KEYS)
@@ -83,15 +84,15 @@ function sha(f) { return crypto.createHash('sha256').update(fs.readFileSync(f)).
 const argv = process.argv.slice(2), opt = { files: [], text: '' };
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i], v = () => argv[++i];
-  if (a === '--all') opt.all = true; else if (a === '--for') opt.for = v(); else if (a === '--out') opt.out = v();
+  if (a === '--all') opt.all = true; else if (a === '--for' || a === '--target') opt.for = v(); else if (a === '--out') opt.out = v();
   else if (a === '--url') opt.url = v(); else if (a === '--embed') opt.embed = v(); else if (a === '--text') opt.text += v();
   else if (a === '--title-keys') opt.titleKeys = new RegExp(v(), 'i'); else if (a === '--backend') opt.backend = v();
   else if (a === '--ascii') opt.ascii = true; else if (a === '--measure') opt.measure = true; else if (a === '--no-glossary') opt.glossary = false; else if (a === '-h' || a === '--help') { console.log(fs.readFileSync(__filename, 'utf8').split("'use strict'")[0].split('\n').slice(1).join('\n')); process.exit(0); }
   else if (a.startsWith('--')) die('unknown option ' + a); else if (!opt.lang && LANGS[a]) opt.lang = a; else opt.files.push(a);
 }
-opt.for = opt.for || 'site'; opt.backend = opt.backend || 'ft'; opt.url = opt.url || '/fonts/i18n/';
+opt.for = opt.for || 'site'; opt.backend = opt.backend || 'ft'; opt.url = opt.url || (opt.for === 'game' ? 'fonts/i18n/' : '/fonts/i18n/');
 opt.titleKeys = opt.titleKeys || TITLE_KEYS;
-opt.out = path.resolve(root, opt.out || (opt.for === 'game' ? 'dist/i18n-fonts' : 'site/fonts/i18n'));
+opt.out = path.resolve(root, opt.out || (opt.for === 'game' ? 'game/fonts/i18n' : 'site/fonts/i18n'));
 if (!opt.lang && !opt.all) die('which language? one of ' + Object.keys(LANGS).join(', ') + ' (or --all). --help for usage.');
 
 // ---- source fonts (download once, verify the pin)

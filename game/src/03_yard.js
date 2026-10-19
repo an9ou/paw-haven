@@ -3,11 +3,11 @@ const DX = 298, DY = 295, DW = 264, DH = 220; // dog box: feet at y=500, centre 
 let dogKey = '', tempPose = null, tempUntil = 0, busy = false, pet = { start: 0, gain: 0, bonded: false, capped: false, dist: 0 };
 function yardWorldSVG(extra = '') {
   return `<svg class="world" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMax slice">
-    ${sceneG(S.place || 'yard', S.place === 'yard' ? { patch: gkOn() ? patchState() : 'empty' } : S.place === 'house' && hasBedArt() ? { bed: false } : {})}${S.place === 'yard' && !gkOn() ? '<g class="soon-tag" pointer-events="none" transform="translate(112 432) rotate(-6)"><rect x="-58" y="-17" width="116" height="30" rx="6" fill="#FFF3B8" stroke="#5B3D32" stroke-width="2"/><text y="6" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="22" fill="#5B3D32">coming soon</text></g>' : ''}${bedLayers().back}<g id="messG"></g><g id="snowmanG">${S.place === 'yard' ? snowmanSVG() : ''}</g>${S.place === 'yard' && cur.mode === 'yard' && typeof msYardSVG === 'function' ? msYardSVG() : ''}${S.place === 'yard' ? hmDecorSVG() : ''}
-    ${S.place === 'yard' ? `<g id="houseG" class="hot${isNight() ? ' night' : ''}" tabindex="0" role="button" aria-label="Dog house: ${esc(S.house)}">${place(art('house', S.house), 620, 330, 240, 200)}</g>` : ''}
-    <g id="bowlG" class="hot" tabindex="0" role="button" aria-label="Food bowl">${place(art('prop', 'bowl-empty'), 205, 462, 90, 90)}</g>
+    ${sceneG(S.place || 'yard', S.place === 'yard' ? { patch: gkOn() ? patchState() : 'empty' } : S.place === 'house' && hasBedArt() ? { bed: false } : {})}${S.place === 'yard' && !gkOn() ? '<g class="soon-tag" pointer-events="none" transform="translate(112 432) rotate(-6)"><rect x="-58" y="-17" width="116" height="30" rx="6" fill="#FFF3B8" stroke="#5B3D32" stroke-width="2"/><text y="6" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="22" fill="#5B3D32">' + tt('yard.coming_soon_tag', 'coming soon') + '</text></g>' : ''}${bedLayers().back}<g id="messG"></g><g id="snowmanG">${S.place === 'yard' ? snowmanSVG() : ''}</g>${S.place === 'yard' && cur.mode === 'yard' && typeof msYardSVG === 'function' ? msYardSVG() : ''}${S.place === 'yard' ? hmDecorSVG() : ''}
+    ${S.place === 'yard' ? `<g id="houseG" class="hot${isNight() ? ' night' : ''}" tabindex="0" role="button" aria-label="${esc(tt('yard.label_dog_house', 'Dog house: {house}', { house: homeName(S.house) }))}">${place(art('house', S.house), 620, 330, 240, 200)}</g>` : ''}
+    <g id="bowlG" class="hot" tabindex="0" role="button" aria-label="${esc(tt('yard.label_food_bowl', 'Food bowl'))}">${place(art('prop', 'bowl-empty'), 205, 462, 90, 90)}</g>
     <g id="pack">${packSVG(true)}</g>${bedLayers().front}
-    ${S.place === 'yard' && S.mapPieces.length >= 4 && !S.secretDug ? `<g id="secretX" class="hot" tabindex="0" role="button" aria-label="Secret dig: X marks the spot"><rect x="585" y="452" width="150" height="140" fill="transparent"/>${place(artReal('collectible', 'dig') || art('collectible', 'dig'), 615, 495, 90, 90)}<text x="660" y="488" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="26" fill="#5B3D32">X marks the spot!</text></g>` : ''}
+    ${S.place === 'yard' && S.mapPieces.length >= 4 && !S.secretDug ? `<g id="secretX" class="hot" tabindex="0" role="button" aria-label="${esc(tt('yard.label_secret_dig_x_marks_the', 'Secret dig: X marks the spot'))}"><rect x="585" y="452" width="150" height="140" fill="transparent"/>${place(artReal('collectible', 'dig') || art('collectible', 'dig'), 615, 495, 90, 90)}<text x="660" y="488" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="26" fill="#5B3D32">${tt('yard.x_marks_the_spot', 'X marks the spot!')}</text></g>` : ''}
     <g id="zzz"></g><g id="ballLayer" pointer-events="none"></g>${extra}<g id="fx"></g></svg><div id="status"></div><div id="placeBtns"></div><button id="devBtn">dev</button>`;
 }
 function dogPoseNow() {
@@ -100,7 +100,7 @@ function bowlArt(food) {
 // v2.5: the bowl shows only while feeding: from the Feed tray opening until the eating ends (also while the dog drinks).
 // Hidden with visibility, so its box (kept clear by the props, piles and pack dogs) stays where it was.
 let fbBowlFood = null;
-function setBowl(food) { fbBowlFood = food || null; const b = $('#bowlG'); if (b) { b.innerHTML = (isPhone() ? '<rect x="195" y="452" width="110" height="110" fill="transparent"/>' : '') + place(bowlArt(food), 205, 462, 90, 90); b.setAttribute('aria-label', food ? 'Food bowl with ' + food : 'Empty food bowl'); } fbBowlSync(); }
+function setBowl(food) { fbBowlFood = food || null; const b = $('#bowlG'); if (b) { b.innerHTML = (isPhone() ? '<rect x="195" y="452" width="110" height="110" fill="transparent"/>' : '') + place(bowlArt(food), 205, 462, 90, 90); b.setAttribute('aria-label', food ? tt('yard.label_food_bowl_with', 'Food bowl with {food}', { food: homeName(food) }) : tt('yard.label_empty_food_bowl', 'Empty food bowl')); } fbBowlSync(); }
 function fbFeedTrayOpen() { return cur.mode === 'yard' && !!dock.querySelector(':scope > .tray [data-food]'); }
 function fbBowlSync() { const b = $('#bowlG'); if (b) b.style.visibility = fbBowlFood || fbFeedTrayOpen() ? '' : 'hidden'; }
 function fxText(txt, x, y, color = '#F28FA5', size = 38) {
@@ -251,7 +251,7 @@ function phPeek() {
   const b = document.createElement('button'); b.type = 'button'; b.className = 'iconbtn ph-peek'; b.id = 'phPeek'; view.appendChild(b);
   b.innerHTML = '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M19 12 Q29 22 31 24 Q28 28 19 36" fill="none" stroke="#5B3D32" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 11 Q31 21 33 24" fill="none" stroke="#F28FA5" stroke-width="2" stroke-linecap="round" opacity=".7"/></svg>';
   const right = () => camCx > phCamHome + 80;
-  const sync = () => { const r = right(); b.classList.toggle('back', r); b.setAttribute('aria-label', r ? 'Look back at the dog' : 'Look right'); };
+  const sync = () => { const r = right(); b.classList.toggle('back', r); b.setAttribute('aria-label', r ? tt('yard.label_look_back_at_the_dog', 'Look back at the dog') : tt('yard.label_look_right', 'Look right')); };
   const back = () => { phPeekOn = false; clearTimeout(phPanT); camTo(phCamHome, 0.6); };
   b.onclick = () => { SFX.click(); clearTimeout(phPanT); if (right()) back(); else { phPeekOn = true; hideBubble(); camTo(phPeekCx(), 0.7); } };
   // the view stays where the player put it (they may be reading a board): it goes back on their next tap on the scene, or when the dog walks (dogTo; v2.5: not its idle wander)
@@ -376,9 +376,14 @@ const WALK_LINES = { shiba: '{n} walked like the path was built for {him}. It wa
 };
 const NOSE_MUL = { beagle: 1.25, lab: 1.2, westie: 1.1, schnauzer: 1.1, pitbull: 1.1 };
 const noseMul = (d = D()) => NOSE_MUL[d && d.key] || 1;
-function breedLine(map, d) { const l = d && map[d.key]; if (!l) return ''; const p = PRd(d); return l.replace(/\{n\}/g, d.name).replace(/\{He\}/g, p.He).replace(/\{he\}/g, p.he).replace(/\{him\}/g, p.him).replace(/\{his\}/g, p.his).replace(/\{His\}/g, p.His); }
+function breedLine(map, d) {
+  const l = d && map[d.key]; if (!l) return '';
+  const p = PRd(d), tab = map === EAT_LINES ? 'eat_lines' : map === POTTY_LINES ? 'potty_lines' : map === GREET_LINES ? 'greet_lines' : map === WALK_LINES ? 'walk_lines' : 'breed_lines';
+  // v2.14: the line in the current language. {n} and the English pronouns ({He} {he} {him} {his} {His}) are filled in here; a translation uses the sex select instead of the pronoun vars
+  return tdata(tab + '.' + d.key, l, { n: d.name, sex: d.sex === 'female' ? 'female' : 'male', He: p.He, he: p.he, him: p.him, his: p.his, His: p.His });
+}
 const reacted = new Set();
-function wxLine(k) { return (WX_LINES[S.dog.key] || WX_LINES.mutt)[k]; }
+function wxLine(k) { const dk = WX_LINES[S.dog.key] ? S.dog.key : 'mutt'; return tdata('wx_lines.' + dk + '.' + k, WX_LINES[dk][k]); }
 /* v2.5 (BREEDS): breed welfare tips. Flat faces get a kind heat tip on the adoption card and once as a toast the first hot day. No penalty anywhere. */
 const BD_TIPS = { frenchie: 'Flat faces breathe hard in heat. Short walks, shade and water on warm days.', pug: 'Flat faces breathe hard in heat. Short walks, shade and water on warm days.',
   akita: 'Akitas are calm and proud and like their own space. Let them meet new dogs slowly.', spitz: 'That white coat sheds in big clouds twice a year. A good brush keeps it soft, and it never needs shaving.', pom: 'Tiny dogs have delicate knees and windpipes. Use a harness, not a collar, and lift them with both hands.',
@@ -400,7 +405,7 @@ const BD_TIPS = { frenchie: 'Flat faces breathe hard in heat. Short walks, shade
   shihtzu: 'Shih Tzus have long hair and short noses. A daily brush, a topknot for the eyes and shade on warm days help a lot.'
 };
 const BD_HOT = { frenchie: 1, pug: 1, mastiff: 1, chow: 1, malamute: 1, shihtzu: 1 }; // v2.11: only these tips are about heat, so only they toast on the first hot day (the others show on the adoption card)
-function bdTip(key) { return BD_TIPS[key] || ''; }
+function bdTip(key) { return BD_TIPS[key] ? tdata('bd_tips.' + key, BD_TIPS[key]) : ''; }
 function bdHotTip(d) {
   if (!S || !d || !BD_HOT[d.key]) return; const tip = bdTip(d.key); if (!tip) return;
   if (!S.breedTips || typeof S.breedTips !== 'object') S.breedTips = {};
@@ -414,44 +419,44 @@ function yardReaction(force) {
   if (reacted.has(key) && !force) return; reacted.add(key);
   const h = dogHeadWorld();
   if (w === 'rain') {
-    if (hasRaincoat()) { addStat('happy', 5); setTemp('happy', 1600); SFX.splash(); say(wxLine('coat') + ' (+5 Happiness)', h.x, h.y); }
+    if (hasRaincoat()) { addStat('happy', 5); setTemp('happy', 1600); SFX.splash(); say(tt('yard.plus_5_happiness_line', '{line} (+5 Happiness)', { line: wxLine('coat') }), h.x, h.y); }
     else {
       addStat('clean', -4); say(wxLine('rain'), h.x, h.y);
-      if (!hasRainHat()) setTimeout(() => { if (cur.mode === 'yard' && !busy) { setTemp('shake', 1500); SFX.shake(); fxText('splsh!', h.x, h.y - 30, '#86B3EA', 30); } }, 1300);
+      if (!hasRainHat()) setTimeout(() => { if (cur.mode === 'yard' && !busy) { setTemp('shake', 1500); SFX.shake(); fxText(tt('yard.splsh', 'splsh!'), h.x, h.y - 30, '#86B3EA', 30); } }, 1300);
     }
   } else if (w === 'snow') {
     if (isWarm()) { setTemp('happy', 1900); const fx = $('#dogFx'); if (fx) { fx.classList.remove('tk-zoom'); void fx.getBBox(); fx.classList.add('tk-zoom'); setTimeout(() => fx.classList.remove('tk-zoom'), 1900); } SFX.snowCrunch(); say(wxLine('warm'), h.x, h.y); }
     else { renderDog('cold'); say(wxLine('snow'), h.x, h.y); }
-  } else if (isHot() && S.place !== 'woods' && S.place !== 'house') { renderDog('hot'); say(wxLine('hot') + ' (Water is extra refreshing now.)', h.x, h.y); bdHotTip(D()); }
+  } else if (isHot() && S.place !== 'woods' && S.place !== 'house') { renderDog('hot'); say(tt('yard.water_is_extra_refreshing_now', '{line} (Water is extra refreshing now.)', { line: wxLine('hot') }), h.x, h.y); bdHotTip(D()); }
   else if (t === 'night') say(wxLine('night'), h.x, h.y);
-  else if (t === 'dawn') { dailyCheck(); if (!S.daily.dawn) { S.daily.dawn = true; addStat('happy', 5); setTemp('happy', 1600); SFX.bark(BARK[S.dog.key]); say(wxLine('dawn') + ' (+5 Happiness)', h.x, h.y); } }
+  else if (t === 'dawn') { dailyCheck(); if (!S.daily.dawn) { S.daily.dawn = true; addStat('happy', 5); setTemp('happy', 1600); SFX.bark(BARK[S.dog.key]); say(tt('yard.plus_5_happiness_line', '{line} (+5 Happiness)', { line: wxLine('dawn') }), h.x, h.y); } }
   updateHUD(); markDirty();
 }
 function secretDig() {
   if (busy || S.secretDug || S.mapPieces.length < 4) return;
-  if (S.sleeping) { nope(`${NAME()} is asleep. Treasure can wait one nap.`); return; }
+  if (S.sleeping) { nope(tt('yard.is_asleep_treasure_can_wait', '{name} is asleep. Treasure can wait one nap.', { name: NAME() })); return; }
   busy = true; hideBubble(); dogTo(225, 30, 1, 0.9); renderDog('walk');
   setTimeout(() => { exTrig(D(), 'dig', { pose: 'dig', draw: false }); renderDog('dig'); SFX.crunch(); }, 950); setTimeout(SFX.crunch, 1500); setTimeout(SFX.crunch, 2000); // v2.13: the guilty face while it digs
   setTimeout(() => {
-    S.secretDug = true; S.title = 'Treasure Legend'; S.inv.food['Golden Bone'] = (S.inv.food['Golden Bone'] || 0) + 3;
+    S.secretDug = true; S.title = 'Treasure Legend'; // saved title: always English, shown through the core's title display S.inv.food['Golden Bone'] = (S.inv.food['Golden Bone'] || 0) + 3;
     if (!S.found['Golden Bone']) S.found['Golden Bone'] = { day: day(), route: 'yard' };
     const c = addCoins(1000, { raw: true }); SFX.treasure(); setTimeout(SFX.fanfare, 400); audioCue('treasure'); markDirty();
     const sx = $('#secretX'); if (sx) sx.remove(); setHudDog(); hudDogKey = ''; setHudDog();
     const chest = artReal('collectible', 'chest') || artReal('icon', 'chest') || art('collectible', 'dig');
-    const p = openModal('<span class="hl">The Grand Treasure Chest!</span>', `<div class="tfind"><div class="tbig">${chest}</div><div><p>The X was real. ${esc(NAME())} dug up the Grand Treasure Chest of Doodle Doggo.</p><ul class="unlocks"><li>+${c} Paw Coins</li><li>3 Golden Bones (in the Food tab)</li><li>New title: <b>Treasure Legend</b> (on your name tag)</li></ul><div class="jmap-art small-map">${tornMap()}</div></div></div>`, { cls: 'celebrate', foot: '<button class="btn yes big" id="sdOk">Legendary!</button>' });
+    const p = openModal('<span class="hl">' + tt('yard.the_grand_treasure_chest', 'The Grand Treasure Chest!') + '</span>', `<div class="tfind"><div class="tbig">${chest}</div><div><p>${esc(tt('yard.the_x_was_real', 'The X was real. {name} dug up the Grand Treasure Chest of Doodle Doggo.', { name: NAME() }))}</p><ul class="unlocks"><li>${esc(tt('yard.plus_paw_coins', '+{n} Paw Coins', { n: c }))}</li><li>${tt('yard.3_golden_bones_in_the', '3 Golden Bones (in the Food tab)')}</li><li>${tt('yard.new_title_treasure_legend_html', 'New title: <b>Treasure Legend</b> (on your name tag)')}</li></ul><div class="jmap-art small-map">${tornMap()}</div></div></div>`, { cls: 'celebrate', foot: '<button class="btn yes big" id="sdOk">' + tt('yard.legendary', 'Legendary!') + '</button>' });
     $('#sdOk', p).onclick = () => { SFX.boop(700); closeModal(); };
     busy = false; dogTo(0, 0, 1, 0.9); setTemp('happy', 2500);
   }, 2600);
 }
 function placeButtons() {
   const pb = $('#placeBtns'); if (!pb) return; const b = [];
-  if (S.place === 'yard') b.push(gkOn() ? `<button class="btn ${gardenUnlocked() ? 'yes' : ''}" data-pb="garden">Garden${gardenUnlocked() ? '' : ' (Bond 2)'}</button>` : '<button class="btn soon" data-pb="garden" aria-disabled="true">Garden: coming soon</button>', '<button class="btn" data-pb="house">Go inside</button>');
-  if (S.place === 'house') b.push(kOn() ? `<button class="btn ${kitchenUnlocked() ? 'yes' : ''}" data-pb="kitchen">Kitchen${kitchenUnlocked() ? '' : ' (Bond 3)'}</button>` : '<button class="btn soon" data-pb="kitchen" aria-disabled="true">Kitchen: coming soon</button>', '<button class="btn" data-pb="yard">Go outside</button>');
-  if (S.place === 'market') Object.keys(SHOP_NAME).forEach((k) => b.push(`<button class="btn" data-sh="${k}">${SHOP_NAME[k]}</button>`));
-  if (S.place === 'beach') { dailyCheck(); b.push(`<button class="btn yes" data-pb="dig" ${S.daily.beachDig ? 'aria-disabled="true"' : ''}>${S.daily.beachDig ? 'Dug today' : 'Dig in the sand'}</button>`); }
-  const placeBtn = { square: ['notice', 'Town notice'], cafe: ['cafe', 'Café menu'], dogpark: ['social', 'Socialise'], vet: ['vet', 'Check-up'], salon: ['groom', 'Full groom'], hilltop: weatherNow() === 'sunny' ? ['kites', 'Watch kites'] : null }[S.place];
+  if (S.place === 'yard') b.push(gkOn() ? `<button class="btn ${gardenUnlocked() ? 'yes' : ''}" data-pb="garden">${gardenUnlocked() ? tt('yard.garden', 'Garden') : tt('yard.garden_bond_2', 'Garden (Bond 2)')}</button>` : '<button class="btn soon" data-pb="garden" aria-disabled="true">' + tt('yard.garden_coming_soon', 'Garden: coming soon') + '</button>', '<button class="btn" data-pb="house">' + tt('yard.go_inside', 'Go inside') + '</button>');
+  if (S.place === 'house') b.push(kOn() ? `<button class="btn ${kitchenUnlocked() ? 'yes' : ''}" data-pb="kitchen">${kitchenUnlocked() ? tt('yard.kitchen', 'Kitchen') : tt('yard.kitchen_bond_3', 'Kitchen (Bond 3)')}</button>` : '<button class="btn soon" data-pb="kitchen" aria-disabled="true">' + tt('yard.kitchen_coming_soon', 'Kitchen: coming soon') + '</button>', '<button class="btn" data-pb="yard">' + tt('yard.go_outside', 'Go outside') + '</button>');
+  if (S.place === 'market') Object.keys(SHOP_NAME).forEach((k) => b.push(`<button class="btn" data-sh="${k}">${shopName(k)}</button>`));
+  if (S.place === 'beach') { dailyCheck(); b.push(`<button class="btn yes" data-pb="dig" ${S.daily.beachDig ? 'aria-disabled="true"' : ''}>${S.daily.beachDig ? tt('yard.dug_today', 'Dug today') : tt('yard.dig_in_the_sand', 'Dig in the sand')}</button>`); }
+  const placeBtn = { square: ['notice', tt('yard.town_notice', 'Town notice')], cafe: ['cafe', tt('yard.cafe_menu', 'Café menu')], dogpark: ['social', tt('yard.socialise', 'Socialise')], vet: ['vet', tt('yard.check_up', 'Check-up')], salon: ['groom', tt('yard.full_groom', 'Full groom')], hilltop: weatherNow() === 'sunny' ? ['kites', tt('yard.watch_kites', 'Watch kites')] : null }[S.place];
   if (placeBtn) b.push(`<button class="btn yes" data-pb="${placeBtn[0]}">${placeBtn[1]}</button>`);
-  if (S.place !== 'yard' && S.place !== 'house') b.push(`<button class="btn${S.place === 'market' ? ' yes' : ''}" data-pb="yard">Go home</button>`);
+  if (S.place !== 'yard' && S.place !== 'house') b.push(`<button class="btn${S.place === 'market' ? ' yes' : ''}" data-pb="yard">${tt('yard.go_home', 'Go home')}</button>`);
   pb.innerHTML = b.join('');
   pb.querySelectorAll('[data-sh]').forEach((x) => { x.onclick = () => openShop(x.dataset.sh); });
   pb.querySelectorAll('[data-pb]').forEach((x) => { x.onclick = () => { const v = x.dataset.pb, f = { dig: beachDig, garden: openGarden, kitchen: openKitchen, notice: squareNotice, cafe: cafeMenu, social: socialise, vet: vetCheck, groom: salonGroom, kites: kiteWatch }[v]; if (f) f(); else travelTo(v); }; });
@@ -484,43 +489,43 @@ function townBubbleBelowDog() {
 function placeAmbient() {
   if (cur.mode !== 'yard' || busy || S.sleeping || !modal.hidden) return;
   const h = dogHeadWorld();
-  if (S.place === 'river' && Math.random() < 0.6) { say(PICK(DUCK_LINES), h.x, h.y); SFX.honk(); return; }
-  if (S.place === 'dogpark' && Math.random() < 0.8) { const k = PICK(dogsList().filter((d) => d.key !== S.dog.key)).key; SFX.bark(BARK[k] || 1); toast(`A ${dogInfo(k).breed} zooms past: "${PICK(NPC_JOKES)}" (+2 Happiness)`, 'good'); addStat('happy', 2); alertBark(); return; }
+  if (S.place === 'river' && Math.random() < 0.6) { say(homePick('duck_lines', DUCK_LINES), h.x, h.y); SFX.honk(); return; }
+  if (S.place === 'dogpark' && Math.random() < 0.8) { const k = PICK(dogsList().filter((d) => d.key !== S.dog.key)).key; SFX.bark(BARK[k] || 1); toast(tt('yard.a_zooms_past_2_happiness', 'A {breed} zooms past: "{pick}" (+2 Happiness)', { breed: adBreed(dogInfo(k)), pick: homePick('npc_jokes', NPC_JOKES) }), 'good'); addStat('happy', 2); alertBark(); return; }
   if (S.place === 'hilltop' && weatherNow() === 'sunny' && Math.random() < 0.6) { kiteWatch(); return; }
-  if (S.place === 'pier' && Math.random() < 0.5) { say(PICK(['A seagull is staring at my snacks. I am staring back.', 'The sea is very big. I approve.', 'Boats! Floating houses for fish.']), h.x, h.y); townBubbleBelowDog(); return; }
-  if (S.place === 'park' && Math.random() < 0.5) { const k = PICK(dogsList().filter((d) => d.key !== S.dog.key)).key; SFX.bark(BARK[k] || 1); toast(`A friendly ${dogInfo(k).breed} trots by: "${PICK(NPC_JOKES)}" (+2 Happiness)`, 'good'); addStat('happy', 2); alertBark(); return; }
-  const l = (PLACE_LINES[S.dog.key] || PLACE_LINES.mutt)[S.place]; if (l) { say(l, h.x, h.y); if (S.place === 'pier') townBubbleBelowDog(); }
+  if (S.place === 'pier' && Math.random() < 0.5) { say(PICK([tt('yard.a_seagull_is_staring_at', 'A seagull is staring at my snacks. I am staring back.'), tt('yard.the_sea_is_very_big', 'The sea is very big. I approve.'), tt('yard.boats_floating_houses_for_fish', 'Boats! Floating houses for fish.')]), h.x, h.y); townBubbleBelowDog(); return; }
+  if (S.place === 'park' && Math.random() < 0.5) { const k = PICK(dogsList().filter((d) => d.key !== S.dog.key)).key; SFX.bark(BARK[k] || 1); toast(tt('yard.a_friendly_trots_by_2', 'A friendly {breed} trots by: "{pick}" (+2 Happiness)', { breed: adBreed(dogInfo(k)), pick: homePick('npc_jokes', NPC_JOKES) }), 'good'); addStat('happy', 2); alertBark(); return; }
+  const plk = PLACE_LINES[S.dog.key] ? S.dog.key : 'mutt', l = PLACE_LINES[plk][S.place]; if (l) { say(tdata(tkLinePath(plk, S.place) || 'place_lines.' + plk + '.' + S.place, l), h.x, h.y); if (S.place === 'pier') townBubbleBelowDog(); }
 }
 function beachDig() {
-  dailyCheck(); if (S.daily.beachDig) { nope('One beach dig a day. The sand needs to recover. (It does not.)'); return; }
+  dailyCheck(); if (S.daily.beachDig) { nope(tt('yard.one_beach_dig_a_day', 'One beach dig a day. The sand needs to recover. (It does not.)')); return; }
   if (busy || S.sleeping) return; S.daily.beachDig = true; busy = true; hideBubble(); renderDog('dig'); SFX.crunch(); setTimeout(SFX.crunch, 400);
   setTimeout(() => {
-    if (Math.random() < 0.55) { const c = addCoins(RINT(5, 20)); toast(`Dug up ${c} coins in the sand! Pirate dog.`, 'gold'); }
-    else { const j = PICK(JUNK.concat([['junk-rock', 'A shell with a smaller shell inside. Shell-ception.']])); const c = addCoins(RINT(2, 5)); toast(`${j[1]} (+${c} coins)`, 'gold'); }
+    if (Math.random() < 0.55) { const c = addCoins(RINT(5, 20)); toast(tt('yard.dug_up_coins_in_the_sand', 'Dug up {n, plural, one {# coin} other {# coins}} in the sand! Pirate dog.', { n: c }), 'gold'); }
+    else { const j = PICK(JUNK.concat([['junk-rock', tt('yard.a_shell_with_a_smaller', 'A shell with a smaller shell inside. Shell-ception.')]])); const c = addCoins(RINT(2, 5)), ji = JUNK.indexOf(j); toast(tt('yard.found_plus_coins', '{text} (+{n, plural, one {# coin} other {# coins}})', { text: ji >= 0 ? tdata('junk.' + ji + '.1', j[1]) : j[1], n: c }), 'gold'); }
     addStat('happy', favAct('digging') ? 6 : 3); busy = false; exTrig(D(), 'dig', { pose: 'idle', draw: false }); renderDog(dogPoseNow(), 'right', true); placeButtons(); markDirty(); // v2.13: the guilty face
   }, 1300);
 }
 function travelTo(id) {
   clearCurl();
   const P = PLACES[id]; if (!P || busy) return;
-  if (topBond() < P.bond) { nope(`Nope. ${P.n} opens at Bond ${P.bond}. ${NAME()} is not emotionally ready.`); return; }
-  if (S.sleeping) { nope(`${NAME()} is asleep. Wake up first (Care menu).`); return; }
+  if (topBond() < P.bond) { nope(tt('yard.nope_opens_at_bond', 'Nope. {place} opens at Bond {bond}. {name} is not emotionally ready.', { place: placeName(id), bond: P.bond, name: NAME() })); return; }
+  if (S.sleeping) { nope(tt('yard.is_asleep_wake_up_first', '{name} is asleep. Wake up first (Care menu).', { name: NAME() })); return; }
   if (id === S.place && cur.mode === 'yard') return;
   if (id === S.place) { go('yard'); return; }
   if (awayFromHome(id) && staysHome(D())) { nope(stayHomeLine(D())); return; } // v2.0.1: under 3 months / nursing mum: home and yard only
   const going = S.dogs.filter((d) => d === D() || !(awayFromHome(id) && staysHome(d))), stay = S.dogs.filter((d) => !going.includes(d));
   busy = true; hideBubble(); SFX.whoosh(); trackAct('travel', { place: id });
-  if (stay.length && !awayFromHome()) toast(`${stay.map((d) => d.name).join(' and ')} ${stay.length > 1 ? 'stay' : 'stays'} home ${stay.some((d) => ageMonths(d) >= 3) ? 'with the pups' : 'with a chew toy (too little for trips)'}.`, '');
+  if (stay.length && !awayFromHome()) toast(tt('yard.stay_home', '{kind, select, pups {{names} {n, plural, one {stays} other {stay}} home with the pups.} other {{names} {n, plural, one {stays} other {stay}} home with a chew toy (too little for trips).}}', { kind: stay.some((d) => ageMonths(d) >= 3) ? 'pups' : 'toy', names: tlist(stay.map((d) => d.name)), n: stay.length }), '');
   const card = document.createElement('div'); card.className = 'onway';
-  card.innerHTML = `<div class="onway-card"><span class="onway-dog">${going.map((d) => dogSVG(d, { pose: 'walk', outfit: outfitOf(d) })).join('')}</span><b>On the way to ${esc(P.n)}...</b><span class="small">${going.length > 1 ? (stay.length ? 'The pack trots along. -2 Energy each.' : 'The whole pack trots along. -2 Energy each.') : esc(NAME()) + ' trots happily. -2 Energy.'}</span></div>`;
+  card.innerHTML = `<div class="onway-card"><span class="onway-dog">${going.map((d) => dogSVG(d, { pose: 'walk', outfit: outfitOf(d) })).join('')}</span><b>${esc(tt('yard.on_the_way_to', 'On the way to {place}...', { place: placeName(id) }))}</b><span class="small">${going.length > 1 ? (stay.length ? tt('yard.the_pack_trots_along_2', 'The pack trots along. -2 Energy each.') : tt('yard.the_whole_pack_trots_along', 'The whole pack trots along. -2 Energy each.')) : esc(tt('yard.trots_happily_2_energy', '{name} trots happily. -2 Energy.', { name: NAME() }))}</span></div>`;
   stage.appendChild(card);
   setTimeout(() => {
     card.remove(); busy = false;
     S.place = id; going.forEach((d) => { d.stats.energy = clamp(d.stats.energy - 2, 0, 100); }); dailyCheck(); S.daily.visited = S.daily.visited || [];
     const first = !S.daily.visited.includes(id); if (first) { S.daily.visited.push(id); addStat('happy', 5); }
     markDirty(); go(id === 'market' ? 'market' : 'yard');
-    let msg = `${NAME()} arrived at ${P.n}.${first ? ' First visit today: +5 Happiness.' : ''}`;
-    if (id === 'river' && weatherNow() === 'rain' && !hasRaincoat() && Math.random() < 0.6) { addStat('clean', -3); msg += ' Splashed through a puddle on the way (-3 Cleanliness).'; }
+    let msg = tt('yard.arrived_at', '{first, select, yes {{name} arrived at {place}. First visit today: +5 Happiness.} other {{name} arrived at {place}.}}', { first: first ? 'yes' : 'no', name: NAME(), place: placeName(id) });
+    if (id === 'river' && weatherNow() === 'rain' && !hasRaincoat() && Math.random() < 0.6) { addStat('clean', -3); msg += ' ' + tt('yard.splashed_through_a_puddle_on', 'Splashed through a puddle on the way (-3 Cleanliness).'); }
     toast(msg, 'good');
   }, 1200);
 }
@@ -529,60 +534,60 @@ function dogJoke(text) {
   const n = NAME(); let line = text;
   if (!line) {
     const low = [];
-    if (S.stats.hunger < 30) low.push(`${n} would like to inform you that ${PR().he} is hungry. Loudly.`);
-    if (S.stats.energy < 30) low.push(`${n} is running on 3% battery.`);
-    if (S.stats.clean < 30) low.push(`${n} smells like an adventure. A bad one.`);
-    if (S.stats.happy < 30) low.push(`${n} is doing the big sad eyes. At you.`);
-    line = low.length && Math.random() < 0.6 ? PICK(low) : PICK(JOKES[S.dog.key] || JOKES.mutt);
+    if (S.stats.hunger < 30) low.push(tt('yard.would_like_to_inform_you_that', '{sex, select, female {{name} would like to inform you that she is hungry. Loudly.} other {{name} would like to inform you that he is hungry. Loudly.}}', { sex: homeSx(S.dog), name: n }));
+    if (S.stats.energy < 30) low.push(tt('yard.is_running_on_3_battery', '{name} is running on 3% battery.', { name: n }));
+    if (S.stats.clean < 30) low.push(tt('yard.smells_like_an_adventure_a', '{name} smells like an adventure. A bad one.', { name: n }));
+    if (S.stats.happy < 30) low.push(tt('yard.is_doing_the_big_sad_eyes', '{name} is doing the big sad eyes. At you.', { name: n }));
+    line = low.length && Math.random() < 0.6 ? PICK(low) : JOKES[S.dog.key] ? homePick('jokes.' + S.dog.key, JOKES[S.dog.key]) : homePick('jokes.mutt', JOKES.mutt);
   }
-  if (!text && isNight() && Math.random() < 0.4) line = PICK(['*big yawn*', wxLine('night'), 'Is it bedtime? It feels like bedtime.']);
-  if (!text && weatherNow() === 'rain' && !hasRaincoat() && Math.random() < 0.3) line = wxLine('rain') + ' A nap in the house sounds good.';
-  if (S.sleeping) line = PICK(['zzz... squirrel... zzz', 'zzz (dreaming of a bigger box)', 'mrrf. zzz.']);
+  if (!text && isNight() && Math.random() < 0.4) line = PICK([tt('yard.big_yawn', '*big yawn*'), wxLine('night'), tt('yard.is_it_bedtime_it_feels', 'Is it bedtime? It feels like bedtime.')]);
+  if (!text && weatherNow() === 'rain' && !hasRaincoat() && Math.random() < 0.3) line = tt('yard.a_nap_in_the_house_sounds', '{line} A nap in the house sounds good.', { line: wxLine('rain') });
+  if (S.sleeping) line = PICK([tt('yard.zzz_squirrel_zzz', 'zzz... squirrel... zzz'), tt('yard.zzz_dreaming_of_a_bigger', 'zzz (dreaming of a bigger box)'), tt('yard.mrrf_zzz', 'mrrf. zzz.')]);
   const h = dogHeadWorld(); say(line, h.x, h.y);
   if (!S.sleeping && Math.random() < 0.5) S.dog.key === 'husky' && Math.random() < 0.4 ? SFX.howl() : SFX.bark(BARK[S.dog.key]);
 }
 function petTick(wx, wy) {
   if (busy) return;
-  if (S.sleeping) { barkDog(D(), 'huff', { player: true, volume: 0.6 }); if (performance.now() - (pet.shh || 0) > 2500) { pet.shh = performance.now(); toast(`Shh. ${NAME()} is asleep. Wake up from the Care menu.`); } return; }
+  if (S.sleeping) { barkDog(D(), 'huff', { player: true, volume: 0.6 }); if (performance.now() - (pet.shh || 0) > 2500) { pet.shh = performance.now(); toast(tt('yard.shh_is_asleep_wake_up', 'Shh. {name} is asleep. Wake up from the Care menu.', { name: NAME() })); } return; }
   const now = performance.now();
   if (now - pet.start > 120000) { pet = { start: now, gain: 0, bonded: false, capped: false, dist: 0 }; crPetReset(); }
   let g = 1.5 * (favAct('petting') ? 1.5 : 1);
-  if (pet.gain >= 20) { g *= 0.25; if (!pet.capped) { pet.capped = true; toast(`${NAME()} is 100% petted. More petting is now a luxury.`); } }
+  if (pet.gain >= 20) { g *= 0.25; if (!pet.capped) { pet.capped = true; toast(tt('yard.is_100_petted_more_petting', '{name} is 100% petted. More petting is now a luxury.', { name: NAME() })); } }
   pet.gain += g; addStat('happy', g);
   if (S.place === 'woods' && !pet.woods) { pet.woods = true; addStat('happy', 2); }
-  if (S.place === 'hilltop' && !pet.hill) { pet.hill = true; addStat('happy', 3); toast('Hilltop breeze petting: +3 Happiness. The view helps.', 'good'); }
-  if (outdoorsNow() && weatherNow() === 'rain' && !hasRaincoat() && !pet.wet) { pet.wet = true; toast('Wet dog smell intensifies.'); }
+  if (S.place === 'hilltop' && !pet.hill) { pet.hill = true; addStat('happy', 3); toast(tt('yard.hilltop_breeze_petting_3_happiness', 'Hilltop breeze petting: +3 Happiness. The view helps.'), 'good'); }
+  if (outdoorsNow() && weatherNow() === 'rain' && !hasRaincoat() && !pet.wet) { pet.wet = true; toast(tt('yard.wet_dog_smell_intensifies', 'Wet dog smell intensifies.')); }
   exTrig(D(), 'pet', { pose: 'pet', draw: false }); setTemp('pet', 900); fxText('♥', wx + RAND(-20, 20), wy - 10);
   Math.random() < 0.7 ? SFX.squeak() : SFX.boop(RAND(500, 800));
   const bondNow = !pet.bonded && pet.gain >= 10; // v2.10 ROAM: petting pets this dog only (the v2.8.4 whole-pack rub is gone)
   rmPetted(D());
-  if (bondNow) { pet.bonded = true; const n = addBond(3) + (S.outfit.head === 'Wizard Hat' ? addBond(1, { raw: true }) : 0); const st = S.outfit.charm === 'Sparkle Stone'; if (st) addStat('happy', 5); toast(`+${n} Bond.${S.outfit.head === 'Wizard Hat' ? ' Magic hands: +1 Bond.' : ''}${st ? ' The Sparkle Stone hums: +5 Happiness.' : ''} ${NAME()} pretends ${PR().he} did not enjoy that.`, 'good'); dailyCare('pet'); markCareDay(); trackAct('pet', {}); }
+  if (bondNow) { pet.bonded = true; const n = addBond(3) + (S.outfit.head === 'Wizard Hat' ? addBond(1, { raw: true }) : 0); const st = S.outfit.charm === 'Sparkle Stone'; if (st) addStat('happy', 5); toast([tt('yard.plus_bond', '+{n} Bond.', { n }), S.outfit.head === 'Wizard Hat' ? tt('yard.magic_hands_1_bond', 'Magic hands: +1 Bond.') : '', st ? tt('yard.the_sparkle_stone_hums_5', 'The Sparkle Stone hums: +5 Happiness.') : '', tt('yard.pretends_did_not_enjoy_that', '{sex, select, female {{name} pretends she did not enjoy that.} other {{name} pretends he did not enjoy that.}}', { sex: homeSx(S.dog), name: NAME() })].filter(Boolean).join(' '), 'good'); dailyCare('pet'); markCareDay(); trackAct('pet', {}); }
   updateHUD();
 }
 function showZzz(on) { const z = $('#zzz'); if (z) z.innerHTML = on ? place(art('prop', 'zzz'), 760, 280, 90, 90) : ''; }
 function dockIdle() {
   dailyCheck();
   const L = S.bond.level, need = L >= 10 ? 0 : BOND_TH[L] - S.bond.pts;
-  const chk = (k, label) => `<li>${S.daily[k] ? '[x]' : '[ ]'} ${label}</li>`;
-  dock.innerHTML = `<div class="tray dock-idle"><div class="tray-h"><h3>${esc(NAME())} the ${esc(dogInfo(S.dog.key).breed)}</h3></div>
+  const chk = (k, label) => `<li>${S.daily[k] ? '[x]' : '[ ]'} ${esc(label)}</li>`;
+  dock.innerHTML = `<div class="tray dock-idle"><div class="tray-h"><h3>${esc(tt('yard.the_breed_heading', '{name} the {breed}', { name: NAME(), breed: adBreed(dogInfo(S.dog.key)) }))}</h3></div>
     <p style="margin:0">${esc(moodLine())}</p>
-    <p style="margin:0"><b>Today's care bonus</b> (+${10 * BOOST.coins} coins each):</p>
-    <ul style="margin:0;padding-left:4px;list-style:none;line-height:1.4">${chk('feed', 'First meal')}${chk('pet', 'First good petting session')}${chk('play', 'First play or walk')}</ul>
-    <p style="margin:0">${L >= 10 ? 'Bond 10: best friends. Maximum love achieved.' : `Next Bond level in <b>${need}</b> points.`}</p>
-    <p class="small" style="margin:0">Tip: ${esc(PICK([`rub ${NAME()} to pet ${PR().him}.`, 'tap Feed, then tap a food.', 'walks earn the most coins.', 'better houses mean faster naps.', 'Space pets the dog. Gently.', 'the Map has walk routes. Some are locked.']))}</p></div>`;
+    <p style="margin:0">${tt('yard.today_s_care_bonus_each_html', "<b>Today's care bonus</b> (+{n, plural, one {# coin} other {# coins}} each):", { n: 10 * BOOST.coins })}</p>
+    <ul style="margin:0;padding-left:4px;list-style:none;line-height:1.4">${chk('feed', tt('yard.first_meal', 'First meal'))}${chk('pet', tt('yard.first_good_petting_session', 'First good petting session'))}${chk('play', tt('yard.first_play_or_walk', 'First play or walk'))}</ul>
+    <p style="margin:0">${L >= 10 ? tt('yard.bond_10_best_friends_maximum', 'Bond 10: best friends. Maximum love achieved.') : tt('yard.next_bond_level_in_points_html', 'Next Bond level in {n, plural, one {<b>#</b> point} other {<b>#</b> points}}.', { n: need })}</p>
+    <p class="small" style="margin:0">${esc(tt('yard.tip', 'Tip: {tip}', { tip: PICK([tt('yard.tip_rub_to_pet', '{sex, select, female {rub {name} to pet her.} other {rub {name} to pet him.}}', { sex: homeSx(S.dog), name: NAME() }), tt('yard.tap_feed_then_tap_a', 'tap Feed, then tap a food.'), tt('yard.walks_earn_the_most_coins', 'walks earn the most coins.'), tt('yard.better_houses_mean_faster_naps', 'better houses mean faster naps.'), tt('yard.space_pets_the_dog_gently', 'Space pets the dog. Gently.'), tt('yard.the_map_has_walk_routes', 'the Map has walk routes. Some are locked.')]) }))}</p></div>`;
 }
 function moodLine() {
   const n = NAME(), s = S.stats;
-  if (S.sleeping) { const zz = crOn() ? others().filter((d) => d.sleeping) : []; return zz.length ? `${crNames([D()].concat(zz))} are asleep in the ${S.house}. Snoring in harmony.` : `${n} is asleep in the ${S.house}. Snoring at a medium volume.`; }
-  if (s.clean < 25) return `${n} is filthy. Like, artistically filthy. Bath time.`;
-  if (s.hunger < 25) return `${n} is staring at the bowl. And then at you. And then at the bowl.`;
-  if (s.energy < 25) return `${n} is very sleepy. A nap in the dog house would help.`;
-  if (s.happy < 25) return `${n} is a bit glum. Pets, play or a walk would fix it.`;
-  if (glowing()) return `${n} is GLOWING. All meters above 80: +20% Bond points.`;
-  return `${n} is doing fine. Suspiciously fine.`;
+  if (S.sleeping) { const zz = crOn() ? others().filter((d) => d.sleeping) : []; return zz.length ? tt('yard.are_asleep_in_the_snoring', '{names} are asleep in the {house}. Snoring in harmony.', { names: crNames([D()].concat(zz)), house: homeName(S.house) }) : tt('yard.is_asleep_in_the_snoring_at', '{name} is asleep in the {house}. Snoring at a medium volume.', { name: n, house: homeName(S.house) }); }
+  if (s.clean < 25) return tt('yard.is_filthy_like_artistically_filthy', '{name} is filthy. Like, artistically filthy. Bath time.', { name: n });
+  if (s.hunger < 25) return tt('yard.is_staring_at_the_bowl_and', '{name} is staring at the bowl. And then at you. And then at the bowl.', { name: n });
+  if (s.energy < 25) return tt('yard.is_very_sleepy_a_nap_in', '{name} is very sleepy. A nap in the dog house would help.', { name: n });
+  if (s.happy < 25) return tt('yard.is_a_bit_glum_pets_play', '{name} is a bit glum. Pets, play or a walk would fix it.', { name: n });
+  if (glowing()) return tt('yard.is_glowing_all_meters_above_80', '{name} is GLOWING. All meters above 80: +20% Bond points.', { name: n });
+  return tt('yard.is_doing_fine_suspiciously_fine', '{name} is doing fine. Suspiciously fine.', { name: n });
 }
 function closeTray() { SFX.click(); if (cur.mode === 'yard') { S.sleeping ? sleepTray() : dockIdle(); } else dock.innerHTML = ''; }
-function trayHTML(title, body) { return `<div class="tray"><div class="tray-h"><h3>${title}</h3><button class="xbtn" id="trayX" aria-label="Close">x</button></div><div class="tray-body">${body}</div></div>`; }
+function trayHTML(title, body) { return `<div class="tray"><div class="tray-h"><h3>${title}</h3><button class="xbtn" id="trayX" aria-label="${esc(tt('yard.label_close', 'Close'))}">x</button></div><div class="tray-body">${body}</div></div>`; }
 function setTray(title, body, opt = {}) { if (typeof blOn === 'function' && blOn()) return; // ball play keeps its own dock (38_ball.js): a scene tap (dog house, bowl, decoration) must not swap it
   if (!opt.mini && !modal.hidden) closeModal(); dock.innerHTML = trayHTML(title, body).replace('class="tray"', `class="tray${opt.mini ? ' mini' : ''}"`); $('#trayX').onclick = closeTray; if (!opt.mini) sheetSwipe($('#dock > .tray'), closeTray); }
 
@@ -594,10 +599,10 @@ function openFeedTray() {
   const cards = items.map((f) => {
     const cnt = f.n === 'Fresh Water' ? '' : `<span class="cnt">${S.inv.food[f.n]}</span>`;
     const wait = f.n === 'Fresh Water' && S.gameMin - S.waterAt < shWaterWait(), off = !home && isMeal(f.n);
-    return `<button class="card ${off ? 'off meal' : ''}" data-food="${esc(f.n)}" ${wait || off ? 'aria-disabled="true"' : ''} aria-label="Feed ${esc(f.n)}${off ? ' (meals are served at home)' : ''}">${cnt}<span class="art">${art('item', f.n)}</span><b>${esc(f.n)}${hwTag(f.n)}</b><span class="small">${off ? 'at home' : wait ? 'refilling...' : isFavFood(f.n) ? 'favourite!' : SNACKS.includes(f.n) ? 'snack' : ''}</span></button>`;
+    return `<button class="card ${off ? 'off meal' : ''}" data-food="${esc(f.n)}" ${wait || off ? 'aria-disabled="true"' : ''} aria-label="${esc(off ? tt('yard.label_feed_meals_home', 'Feed {food} (meals are served at home)', { food: homeName(f.n) }) : tt('yard.label_feed', 'Feed {food}', { food: homeName(f.n) }))}">${cnt}<span class="art">${art('item', f.n)}</span><b>${esc(homeName(f.n))}${hwTag(f.n)}</b><span class="small">${off ? tt('yard.at_home', 'at home') : wait ? tt('yard.refilling', 'refilling...') : isFavFood(f.n) ? tt('yard.favourite', 'favourite!') : SNACKS.includes(f.n) ? tt('yard.snack', 'snack') : ''}</span></button>`;
   }).join('');
   const dishes = kOn() ? dishRowHTML(!home) : '';
-  setTray(home ? 'Feed: tap a food' : `Feed: snacks and water at ${esc(PLACES[S.place] ? PLACES[S.place].n : 'this place')}`, `${crChipsHTML()}<div class="row">${cards}${dishes}</div>${items.length <= 1 && !dishes ? '<p class="small" style="margin:0">Pantry is empty. Kibble Corner on Market Street sells food.</p>' : ''}${home && S.dogs.length > 1 ? `<div class="awaynote"><p class="small">${feedAllFood() ? `One portion of <b>${esc(feedAllFood().n)}</b> for every ${crOn() ? 'ticked ' : ''}dog (you have ${S.inv.food[feedAllFood().n]}).` : 'No meals left for Feed all.'}</p><button class="btn go" id="feedAll" ${feedAllFood() ? '' : 'aria-disabled="true"'}>Feed all (${crOn() ? crDogsN(crDogs().length) : S.dogs.length + ' dogs'})</button></div>` : ''}${home ? '' : `<div class="awaynote"><p class="small">Meals are served at home. Out here ${esc(NAME())} has snacks and water.</p><button class="btn go" id="feedHome">Go home</button></div>`}`);
+  setTray(home ? tt('yard.feed_tap_a_food', 'Feed: tap a food') : esc(tt('yard.feed_snacks_and_water_at', 'Feed: snacks and water at {place}', { place: PLACES[S.place] ? placeName(S.place) : tt('yard.this_place', 'this place') })), `${crChipsHTML()}<div class="row">${cards}${dishes}</div>${items.length <= 1 && !dishes ? '<p class="small" style="margin:0">' + tt('yard.pantry_is_empty_kibble_corner', 'Pantry is empty. Kibble Corner on Market Street sells food.') + '</p>' : ''}${home && S.dogs.length > 1 ? `<div class="awaynote"><p class="small">${feedAllFood() ? tt('yard.one_portion_of_for_every_dog_html', '{ticked, select, yes {One portion of <b>{food}</b> for every ticked dog (you have {n}).} other {One portion of <b>{food}</b> for every dog (you have {n}).}}', { ticked: crOn() ? 'yes' : 'no', food: homeName(feedAllFood().n), n: S.inv.food[feedAllFood().n] }) : tt('yard.no_meals_left_for_feed', 'No meals left for Feed all.')}</p><button class="btn go" id="feedAll" ${feedAllFood() ? '' : 'aria-disabled="true"'}>${esc(tt('yard.feed_all_count', 'Feed all ({dogs})', { dogs: crOn() ? crDogsN(crDogs().length) : tt('yard.n_dogs', '{n, plural, one {# dog} other {# dogs}}', { n: S.dogs.length }) }))}</button></div>` : ''}${home ? '' : `<div class="awaynote"><p class="small">${esc(tt('yard.meals_are_served_at_home_out_here', 'Meals are served at home. Out here {name} has snacks and water.', { name: NAME() }))}</p><button class="btn go" id="feedHome">${tt('yard.go_home', 'Go home')}</button></div>`}`);
   fbBowlSync(); crBindChips(dock, openFeedTray); dock.querySelectorAll('[data-food]').forEach((c) => { c.onclick = () => { SFX.init(); feed(c.dataset.food); }; });
   const fh = $('#feedHome'); if (fh) fh.onclick = () => { closeTray(); travelTo('yard'); };
   const fa = $('#feedAll'); if (fa) fa.onclick = () => feedAll();
@@ -613,7 +618,7 @@ function dragFeed(card) {
   });
   const end = (e, cancel) => {
     if (!start) return; start = null;
-    if (ghost) { ghost.remove(); ghost = null; if (cancel) return; const b = $('#bowlG'); const r = b && b.getBoundingClientRect(); if (r && e.clientX > r.left - 30 && e.clientX < r.right + 30 && e.clientY > r.top - 30 && e.clientY < r.bottom + 30) feed(card.dataset.food); else toast('Missed the bowl. The grass says thanks.'); }
+    if (ghost) { ghost.remove(); ghost = null; if (cancel) return; const b = $('#bowlG'); const r = b && b.getBoundingClientRect(); if (r && e.clientX > r.left - 30 && e.clientX < r.right + 30 && e.clientY > r.top - 30 && e.clientY < r.bottom + 30) feed(card.dataset.food); else toast(tt('yard.missed_the_bowl_the_grass', 'Missed the bowl. The grass says thanks.')); }
     else if (!cancel) feed(card.dataset.food);
   };
   card.addEventListener('pointerup', (e) => end(e, false)); card.addEventListener('pointercancel', (e) => end(e, true));
@@ -624,16 +629,16 @@ function feed(name) {
   const f = FOOD_ALL.find((x) => x.n === name); if (!f || busy) return;
   if (crFeed(name, f)) return; // v2.7 PACK CARE: every ticked dog present gets a portion (false: the v2.6 path below, for the active dog only)
   const n = NAME();
-  if (S.sleeping) { nope(`${n} is asleep. Wake ${n} from the Care menu first.`); return; }
-  if (!atHome() && isMeal(name)) { nope('Meals are served at home. Snacks and water are fine out here.'); return; }
-  if (S.place === 'pier' && name !== 'Fresh Water' && Math.random() < 0.2) { popDown(); SFX.honk(); toast(`A seagull took the ${name}! Rude. (Snack refunded: Pip has a deal with the gulls.)`, 'bad'); return; }
+  if (S.sleeping) { nope(tt('yard.is_asleep_wake_from_the_care', '{name} is asleep. Wake {name} from the Care menu first.', { name: n })); return; }
+  if (!atHome() && isMeal(name)) { nope(tt('yard.meals_are_served_at_home', 'Meals are served at home. Snacks and water are fine out here.')); return; }
+  if (S.place === 'pier' && name !== 'Fresh Water' && Math.random() < 0.2) { popDown(); SFX.honk(); toast(tt('yard.a_seagull_took_the_rude', 'A seagull took the {name}! Rude. (Snack refunded: Pip has a deal with the gulls.)', { name: homeName(name) }), 'bad'); return; }
   if (name === 'Fresh Water') {
-    if (S.gameMin - S.waterAt < shWaterWait()) { nope(`The water bowl is refilling. Water takes time. That's science.`); return; }
+    if (S.gameMin - S.waterAt < shWaterWait()) { nope(tt('yard.the_water_bowl_is_refilling', `The water bowl is refilling. Water takes time. That's science.`)); return; }
     S.waterAt = S.gameMin;
   } else {
-    if ((S.inv.food[name] || 0) <= 0) { nope('You have none of that. Kibble Corner has some.'); return; }
-    if (f.hunger > 0 && S.stats.hunger > 90) { nope(['corgi', 'pug', 'beagle'].includes(S.dog.key) ? `${n} is... full? Call a scientist. (Food not used.)` : `${n} is full. ${PR().He} has never said that before. (Food not used.)`); setTemp('happy', 1200); return; }
-    if (name === 'Pupcake') { dailyCheck(); if (S.daily.pupcake) { nope('One Pupcake per day. Doctor\'s orders. The doctor is a duck.'); return; } S.daily.pupcake = true; }
+    if ((S.inv.food[name] || 0) <= 0) { nope(tt('yard.you_have_none_of_that', 'You have none of that. Kibble Corner has some.')); return; }
+    if (f.hunger > 0 && S.stats.hunger > 90) { nope(['corgi', 'pug', 'beagle'].includes(S.dog.key) ? tt('yard.is_full_call_a_scientist', '{name} is... full? Call a scientist. (Food not used.)', { name: n }) : tt('yard.is_full_has_never_said_that', '{sex, select, female {{name} is full. She has never said that before. (Food not used.)} other {{name} is full. He has never said that before. (Food not used.)}}', { sex: homeSx(S.dog), name: n })); setTemp('happy', 1200); return; }
+    if (name === 'Pupcake') { dailyCheck(); if (S.daily.pupcake) { nope(tt('yard.one_pupcake_per_day_doctor', 'One Pupcake per day. Doctor\'s orders. The doctor is a duck.')); return; } S.daily.pupcake = true; }
     S.inv.food[name]--; if (S.inv.food[name] <= 0) delete S.inv.food[name];
   }
   busy = true; hideBubble(); markDirty(); popDown(); clearCurl(); crFree(D()); if (D().key === 'corgi' && name !== 'Fresh Water') barkDog(D(), 'yip', {});
@@ -645,8 +650,8 @@ function feed(name) {
     const { got, extraMsg } = crEatFx(name, f);
     const secs = (Math.random() * 0.9 + 0.2).toFixed(1);
     const eatL = breedLine(EAT_LINES, D());
-    const msg = name === 'Fresh Water' ? `${n} drank it. Most of it went on the floor.` : eatL && Math.random() < 0.5 ? eatL : PICK([`${n} ate it in ${secs} seconds. ${PR().His} tail approves.`, `${n} inhaled that. ${PR().He} thinks chewing is for quitters.`, `Gone. ${n} is now looking at the bowl for more.`]);
-    toast(`${msg}${isFavFood(name) ? ' Favourite food!' : ''}${got ? ` +${got} Bond.` : ''}${name === 'Pupcake' ? ` Double Bond for ${shPupMins() > 60 ? '2 game hours (Happi Coat)' : '1 game hour'}!` : ''}${f.golden ? ' GLOWING for a whole game day!' : ''}${S.place === 'river' && name !== 'Fresh Water' ? ' Riverside picnic: +5 Happiness.' : ''}${extraMsg}${crSoloLine(name, f)}`, 'good');
+    const sx = homeSx(S.dog), msg = name === 'Fresh Water' ? tt('yard.drank_it_most_of_it_went', '{name} drank it. Most of it went on the floor.', { name: n }) : eatL && Math.random() < 0.5 ? eatL : PICK([tt('yard.ate_it_in_seconds_tail_approves', '{sex, select, female {{name} ate it in {secs} seconds. Her tail approves.} other {{name} ate it in {secs} seconds. His tail approves.}}', { sex: sx, name: n, secs }), tt('yard.inhaled_that_thinks_chewing_is_for', '{sex, select, female {{name} inhaled that. She thinks chewing is for quitters.} other {{name} inhaled that. He thinks chewing is for quitters.}}', { sex: sx, name: n }), tt('yard.gone_is_now_looking_at_the', 'Gone. {name} is now looking at the bowl for more.', { name: n })]);
+    toast([msg, isFavFood(name) ? tt('yard.favourite_food', 'Favourite food!') : '', got ? tt('yard.plus_bond_dot', '+{n} Bond.', { n: got }) : '', name === 'Pupcake' ? tt('yard.double_bond_for_game_hours', '{long, select, yes {Double Bond for 2 game hours (Happi Coat)!} other {Double Bond for 1 game hour!}}', { long: shPupMins() > 60 ? 'yes' : 'no' }) : '', f.golden ? tt('yard.glowing_for_a_whole_game', 'GLOWING for a whole game day!') : '', S.place === 'river' && name !== 'Fresh Water' ? tt('yard.riverside_picnic_5_happiness', 'Riverside picnic: +5 Happiness.') : ''].filter(Boolean).join(' ') + extraMsg + crSoloLine(name, f), 'good');
     if (name !== 'Fresh Water') { dailyCare('feed'); markCareDay(); }
     trackAct(name === 'Fresh Water' ? 'water' : 'feed', { name }); // v2.4 missions and guide
     if (f.tip) setTimeout(() => shFoodTip(name), 900); // v2.4: the safety tip, once per food
@@ -658,25 +663,25 @@ function feed(name) {
 /* ---------------- PLAY ---------------- */
 function openPlayTray() {
   if (cur.mode !== 'yard') go('yard');
-  const fts = FETCH_TOYS.filter((t) => owns('toys', t)), sub = { 'Tennis Ball': 'Free throws, every dog races', Frisbee: 'Long throws: 3 coins', 'Driftwood Stick': 'Tumbles: 3 coins', 'Glow Ball': 'Glows after dark' };
-  const b = fts.map((t) => `<button class="card" data-play="ball:${esc(t)}"><span class="art">${art('item', t)}</span><b>Play ball</b><span class="small">${esc(t)}: ${sub[t]}</span></button>`); // v2.10: free ball play where you are (38_ball.js) replaces the timed Fetch challenge
-  toysPlayable().forEach((t) => b.push(`<button class="card" data-play="toy:${esc(t)}"><span class="art">${art('item', t)}</span><b>Play</b><span class="small">${esc(t)}${hwTag(t)}</span></button>`));
-  b.push(`<button class="card" data-play="tricks"><span class="art">${ICON('star')}</span><b>Tricks</b><span class="small">${learnedCount()} learned</span></button>`);
-  if (owns('toys', 'Squeaky Duck')) b.push(`<button class="card" data-play="duck"><span class="art">${art('item', 'Squeaky Duck')}</span><b>Squeak</b><span class="small">+10 Happiness</span></button>`);
-  if (owns('toys', 'Rope Tug')) b.push(`<button class="card" data-play="tug"><span class="art">${art('item', 'Rope Tug')}</span><b>Tug</b><span class="small">+15 Happy, -10 Energy</span></button>`);
-  b.push(`<button class="card pdcard" data-play="playdates"><span class="art">${iconOr('playdate', doodle('heart', -6, 2, 0.8) + doodle('heart', 7, -3, 0.65))}</span><b>Playdates</b><span class="small">Puppy Playdates</span></button>`);
-  if (!fts.length) b.push('<p class="small">No ball toy. Kibble Corner sells balls.</p>');
-  setTray('Play', `${crChipsHTML(PK_CAP_PLAY)}<div class="row">${b.join('')}</div>`); // v2.9 PACK: the chip row (ticked dogs join in), nothing with one dog
-  crBindChips(dock, openPlayTray, 'Somebody has to play. Tick another dog first.');
+  const fts = FETCH_TOYS.filter((t) => owns('toys', t)), sub = { 'Tennis Ball': tt('yard.free_throws_every_dog_races', 'Free throws, every dog races'), Frisbee: tt('yard.long_throws_3_coins', 'Long throws: 3 coins'), 'Driftwood Stick': tt('yard.tumbles_3_coins', 'Tumbles: 3 coins'), 'Glow Ball': tt('yard.glows_after_dark', 'Glows after dark') };
+  const b = fts.map((t) => `<button class="card" data-play="ball:${esc(t)}"><span class="art">${art('item', t)}</span><b>${tt('yard.play_ball', 'Play ball')}</b><span class="small">${esc(tt('yard.toy_sub', '{toy}: {sub}', { toy: homeName(t), sub: sub[t] }))}</span></button>`); // v2.10: free ball play where you are (38_ball.js) replaces the timed Fetch challenge
+  toysPlayable().forEach((t) => b.push(`<button class="card" data-play="toy:${esc(t)}"><span class="art">${art('item', t)}</span><b>${tt('yard.play', 'Play')}</b><span class="small">${esc(homeName(t))}${hwTag(t)}</span></button>`));
+  b.push(`<button class="card" data-play="tricks"><span class="art">${ICON('star')}</span><b>${tt('yard.tricks', 'Tricks')}</b><span class="small">${esc(tt('yard.learned', '{n} learned', { n: learnedCount() }))}</span></button>`);
+  if (owns('toys', 'Squeaky Duck')) b.push(`<button class="card" data-play="duck"><span class="art">${art('item', 'Squeaky Duck')}</span><b>${tt('yard.squeak', 'Squeak')}</b><span class="small">${tt('yard.10_happiness', '+10 Happiness')}</span></button>`);
+  if (owns('toys', 'Rope Tug')) b.push(`<button class="card" data-play="tug"><span class="art">${art('item', 'Rope Tug')}</span><b>${tt('yard.tug', 'Tug')}</b><span class="small">${tt('yard.15_happy_10_energy', '+15 Happy, -10 Energy')}</span></button>`);
+  b.push(`<button class="card pdcard" data-play="playdates"><span class="art">${iconOr('playdate', doodle('heart', -6, 2, 0.8) + doodle('heart', 7, -3, 0.65))}</span><b>${tt('yard.playdates', 'Playdates')}</b><span class="small">${tt('yard.puppy_playdates', 'Puppy Playdates')}</span></button>`);
+  if (!fts.length) b.push('<p class="small">' + tt('yard.no_ball_toy_kibble_corner', 'No ball toy. Kibble Corner sells balls.') + '</p>');
+  setTray(tt('yard.play', 'Play'), `${crChipsHTML(PK_CAP_PLAY)}<div class="row">${b.join('')}</div>`); // v2.9 PACK: the chip row (ticked dogs join in), nothing with one dog
+  crBindChips(dock, openPlayTray, tt('yard.somebody_has_to_play_tick', 'Somebody has to play. Tick another dog first.'));
   dock.querySelectorAll('[data-play]').forEach((el) => { el.onclick = () => playPick(el.dataset.play); });
 }
 function playPick(p) {
   SFX.click();
-  if (p === 'playdates') { if (typeof openPlaydates === 'function') openPlaydates(); else nope('Puppy Playdates are almost ready.'); return; }
+  if (p === 'playdates') { if (typeof openPlaydates === 'function') openPlaydates(); else nope(tt('yard.puppy_playdates_are_almost_ready', 'Puppy Playdates are almost ready.')); return; }
   if (p === 'tricks' && crPack()) { pkTricksTray(); return; } // v2.9 PACK: the dog picker inside the tray; training a dog never changes the leader
-  if (S.sleeping) { nope(`${NAME()} is asleep. Even fun has to wait.`); return; }
-  if (p.startsWith('toy:')) { if (S.stats.energy < 5) { nope(`${NAME()} is too tired to play. A nap would help.`); return; } go('toy', p.slice(4)); return; }
-  if (p.startsWith('ball:') || p.startsWith('fetch:')) { if (S.stats.energy < 10) { nope(`${NAME()} is too tired to play ball. A nap would help.`); return; } blStart(p.slice(p.indexOf(':') + 1)); return; } // v2.10: the journal's old 'fetch:' key lands here too
+  if (S.sleeping) { nope(tt('yard.is_asleep_even_fun_has', '{name} is asleep. Even fun has to wait.', { name: NAME() })); return; }
+  if (p.startsWith('toy:')) { if (S.stats.energy < 5) { nope(tt('yard.is_too_tired_to_play', '{name} is too tired to play. A nap would help.', { name: NAME() })); return; } go('toy', p.slice(4)); return; }
+  if (p.startsWith('ball:') || p.startsWith('fetch:')) { if (S.stats.energy < 10) { nope(tt('yard.is_too_tired_to_play_2', '{name} is too tired to play ball. A nap would help.', { name: NAME() })); return; } blStart(p.slice(p.indexOf(':') + 1)); return; } // v2.10: the journal's old 'fetch:' key lands here too
   if (p === 'tricks') { openTraining(); return; }
   if (busy) return;
   popDown(); clearCurl();
@@ -690,11 +695,11 @@ function playPick(p) {
   else { $('#dogFx').classList.add('tk-tug'); renderDog('happy'); SFX.whoosh(); setTimeout(() => barkDog(D(), 'growl-play', { player: true }), 600); }
   setTimeout(() => {
     $('#dogFx').classList.remove('tk-tug'); addStat('happy', happy); trackAct('toy', { name: toy });
-    let msg = p === 'duck' ? `SQUEAK. ${NAME()} is delighted. Your ears are not.` : `${NAME()} won the tug-of-war. As always.`;
-    if (p === 'tug') { addStat('energy', -10 * k); msg += ` +${addBond(5 * k)} Bond${crew.length ? ' each' : ''}.`; }
-    if (crew.length) { pkPlayFx(crew, toy, p === 'tug', k); pkPlayEnd(crew); msg += p === 'tug' ? ` ${crNames(crew)} ${crew.length > 1 ? 'pile' : 'piles'} on at the far end of the rope.` : ` ${crNames(crew)} ${crew.length > 1 ? 'squeak' : 'squeaks'} along.`; }
+    let msg = p === 'duck' ? tt('yard.squeak_is_delighted_your_ears', 'SQUEAK. {name} is delighted. Your ears are not.', { name: NAME() }) : tt('yard.won_the_tug_of_war', '{name} won the tug-of-war. As always.', { name: NAME() });
+    if (p === 'tug') { addStat('energy', -10 * k); msg += ' ' + tt('yard.plus_bond_each', '{each, select, yes {+{n} Bond each.} other {+{n} Bond.}}', { each: crew.length ? 'yes' : 'no', n: addBond(5 * k) }); }
+    if (crew.length) { pkPlayFx(crew, toy, p === 'tug', k); pkPlayEnd(crew); msg += ' ' + (p === 'tug' ? tt('yard.pile_on_at_the_far_end', '{n, plural, one {{names} piles on at the far end of the rope.} other {{names} pile on at the far end of the rope.}}', { n: crew.length, names: crNames(crew) }) : tt('yard.squeak_along', '{n, plural, one {{names} squeaks along.} other {{names} squeak along.}}', { n: crew.length, names: crNames(crew) })); }
     if (skip.length) msg += ' ' + pkSkipLines(skip).join(' ');
-    if (S.dog.favToy === toy) msg += ' Favourite toy!'; if (!full) msg += ' (Less exciting the second time. Wait 10 game minutes.)';
+    if (S.dog.favToy === toy) msg += ' ' + tt('yard.favourite_toy', 'Favourite toy!'); if (!full) msg += ' ' + tt('yard.less_exciting_the_second_time', '(Less exciting the second time. Wait 10 game minutes.)');
     toast(msg, 'good'); dailyCare('play'); markCareDay(); busy = false; renderDog(dogPoseNow(), 'right', true); updateHUD();
   }, 1300);
 }
@@ -711,8 +716,8 @@ function openTricks() { return openTraining(); // legacy tray retired in v1.7.1;
 let trickLog = [];
 function doTrick(n) {
   const t = TRICKS.find((x) => x.n === n); if (!t || busy) return;
-  if (S.sleeping) { nope(`${NAME()} is asleep. Sleep is the only trick right now.`); return; }
-  if (S.bond.level < t.bond) { nope(`Nope. ${t.n === 'Signature' ? 'The signature trick' : t.n} unlocks at Bond ${t.bond}. ${NAME()} is not emotionally ready.`); return; }
+  if (S.sleeping) { nope(tt('yard.is_asleep_sleep_is_the', '{name} is asleep. Sleep is the only trick right now.', { name: NAME() })); return; }
+  if (S.bond.level < t.bond) { nope(tt('yard.nope_unlocks_at_bond', 'Nope. {trick} unlocks at Bond {bond}. {name} is not emotionally ready.', { trick: t.n === 'Signature' ? tt('yard.the_signature_trick', 'The signature trick') : tdata('tricks.' + tid(t.n) + '.n', t.n), bond: t.bond, name: NAME() })); return; }
   const sig = t.n === 'Signature' ? sigOf(S.dog.key) : null, fx = sig ? sig.fx : t.fx, pose = sig ? sig.pose : t.pose;
   const need = TNEED(), prog = S.tricks[n] || 0, learning = prog < need;
   if (owns('toys', 'Rubber Chicken')) setTimeout(SFX.honk, 250);
@@ -720,19 +725,19 @@ function doTrick(n) {
   const el = $('#dogFx'); renderDog(pose); if (fx.startsWith('tk-')) { el.classList.remove(fx); void el.getBBox(); el.classList.add(fx); }
   if (sig && sig.snd) barkDog(D(), sig.snd, { player: true }); else if (fx === 'speak' || (sig && S.dog.key === 'husky')) S.dog.key === 'husky' ? SFX.howl() : SFX.bark(BARK[S.dog.key]); else SFX.boop(660);
   const h = dogHeadWorld();
-  if (fx === 'speak') say(S.dog.key === 'husky' ? 'AWOOOOO!' : PICK(['BORK.', 'Woof. (Yes, that was the trick.)', 'ARF!']), h.x, h.y, 2000);
-  if (sig) say(sig.say, h.x, h.y, 2600);
+  if (fx === 'speak') say(S.dog.key === 'husky' ? tt('yard.awooooo', 'AWOOOOO!') : PICK([tt('yard.bork', 'BORK.'), tt('yard.woof_yes_that_was_the', 'Woof. (Yes, that was the trick.)'), tt('yard.arf', 'ARF!')]), h.x, h.y, 2000);
+  if (sig) say(homeSig(S.dog.key, 'say'), h.x, h.y, 2600);
   setTimeout(() => {
     el.classList.remove(fx);
     if (learning) {
       S.tricks[n] = prog + 1;
-      if (prog + 1 >= need) { SFX.fanfare(); toast(`${NAME()} learned ${sig ? sig.n : n}! +${addBond(4)} Bond.`, 'gold'); }
-      else toast(`Practice ${prog + 1}/${need}: ${PICK(['close enough!', 'that was... something.', 'getting there!', 'good effort, wrong trick.'])}`);
+      if (prog + 1 >= need) { SFX.fanfare(); toast(tt('yard.learned_bond', '{name} learned {trick}! +{bond} Bond.', { name: NAME(), trick: sig ? homeSig(S.dog.key, 'n') : tdata('tricks.' + tid(n) + '.n', n), bond: addBond(4) }), 'gold'); }
+      else toast(tt('yard.practice', 'Practice {prog}/{need}: {pick}', { prog: prog + 1, need, pick: PICK([tt('yard.close_enough', 'close enough!'), tt('yard.that_was_something', 'that was... something.'), tt('yard.getting_there', 'getting there!'), tt('yard.good_effort_wrong_trick', 'good effort, wrong trick.')]) }));
     } else {
       const now = performance.now(); trickLog = trickLog.filter((x) => now - x < 120000); trickLog.push(now);
       const k = trickLog.length > 6 ? 0.25 : 1;
       const hp = 4 * k * (favAct('tricks') ? 1.5 : 1); addStat('happy', hp);
-      toast(`${PICK(['Nailed it.', 'Flawless.', 'The crowd (you) goes wild.', 'Ten out of ten.'])} +${Math.round(hp)} Happiness, +${addBond(4 * k)} Bond.`, 'good');
+      toast(tt('yard.pick_happiness_bond', '{pick} +{hp} Happiness, +{bond} Bond.', { pick: PICK([tt('yard.nailed_it', 'Nailed it.'), tt('yard.flawless', 'Flawless.'), tt('yard.the_crowd_you_goes_wild', 'The crowd (you) goes wild.'), tt('yard.ten_out_of_ten', 'Ten out of ten.')]), hp: Math.round(hp), bond: addBond(4 * k) }), 'good');
       dailyCare('play');
     }
     busy = false; renderDog(dogPoseNow(), 'right', true); updateHUD(); markDirty();
@@ -745,65 +750,68 @@ function openCareTray() {
   if (cur.mode !== 'yard') go('yard');
   if (S.sleeping) { sleepTray(); return; }
   const home = atHome(), bedArt = artReal('item', S.bed);
-  setTray('Care', `${home ? '' : `<p style="margin:0 0 6px">Bath and naps happen at home. ${esc(NAME())} refuses to nap on a ${S.place === 'beach' ? 'beach towel. Too sandy' : 'stranger\'s bench'}.</p>`}${crChipsHTML()}<div class="row">
-    <button class="card ${home ? '' : 'off'}" data-care="bath" ${home ? '' : 'aria-disabled="true"'}><span class="art">${ICON('bath')}</span><b>Bath</b><span class="small">Clean ${Math.round(S.stats.clean)}</span></button>
-    <button class="card ${home ? '' : 'off'}" data-care="sleep" ${home ? '' : 'aria-disabled="true"'}><span class="art">${ICON('sleep')}</span><b>Nap</b><span class="small">${S.place === 'house' ? 'on the ' + esc(S.bed) : 'Energy ' + Math.round(S.stats.energy)}</span></button>
-    <button class="card" data-care="bed"><span class="art">${bedArt || ICON('sleep')}</span><b>Bed</b><span class="small">${esc(S.bed)}</span></button>
-    <button class="card" data-care="house"><span class="art">${ICON('house')}</span><b>Houses</b><span class="small">${S.inv.houses.length} owned</span></button>${hmDecorCard()}
-    ${home ? '' : `<button class="card" data-care="home"><span class="art">${ICON('house')}</span><b>Go home</b><span class="small">to the yard</span></button>`}</div>`);
-  dock.querySelectorAll('[data-care]').forEach((b) => { b.onclick = () => { SFX.click(); const c = b.dataset.care; if (!home && (c === 'bath' || c === 'sleep')) { nope(`Bath and naps happen at home. ${NAME()} insists.`); return; } if (c === 'bath') crBathGo(); if (c === 'sleep') startSleep(); if (c === 'house') openHouses(); if (c === 'decor') hmOpenDecor(); if (c === 'bed') openBeds(); if (c === 'home') { closeTray(); travelTo('yard'); } }; });
+  setTray(tt('yard.care', 'Care'), `${home ? '' : `<p style="margin:0 0 6px">${esc(tt('yard.bath_and_naps_refuses_to_nap', "{place, select, beach {Bath and naps happen at home. {name} refuses to nap on a beach towel. Too sandy.} other {Bath and naps happen at home. {name} refuses to nap on a stranger's bench.}}", { place: S.place === 'beach' ? 'beach' : 'other', name: NAME() }))}</p>`}${crChipsHTML()}<div class="row">
+    <button class="card ${home ? '' : 'off'}" data-care="bath" ${home ? '' : 'aria-disabled="true"'}><span class="art">${ICON('bath')}</span><b>${tt('yard.bath', 'Bath')}</b><span class="small">${esc(tt('yard.clean_n', 'Clean {n}', { n: Math.round(S.stats.clean) }))}</span></button>
+    <button class="card ${home ? '' : 'off'}" data-care="sleep" ${home ? '' : 'aria-disabled="true"'}><span class="art">${ICON('sleep')}</span><b>${tt('yard.nap', 'Nap')}</b><span class="small">${esc(S.place === 'house' ? tt('yard.on_the_bed', 'on the {bed}', { bed: homeName(S.bed) }) : tt('yard.energy_n', 'Energy {n}', { n: Math.round(S.stats.energy) }))}</span></button>
+    <button class="card" data-care="bed"><span class="art">${bedArt || ICON('sleep')}</span><b>${tt('yard.bed', 'Bed')}</b><span class="small">${esc(homeName(S.bed))}</span></button>
+    <button class="card" data-care="house"><span class="art">${ICON('house')}</span><b>${tt('yard.houses', 'Houses')}</b><span class="small">${esc(tt('yard.n_owned', '{n} owned', { n: S.inv.houses.length }))}</span></button>${hmDecorCard()}
+    ${home ? '' : `<button class="card" data-care="home"><span class="art">${ICON('house')}</span><b>${tt('yard.go_home', 'Go home')}</b><span class="small">${tt('yard.to_the_yard', 'to the yard')}</span></button>`}</div>`);
+  dock.querySelectorAll('[data-care]').forEach((b) => { b.onclick = () => { SFX.click(); const c = b.dataset.care; if (!home && (c === 'bath' || c === 'sleep')) { nope(tt('yard.bath_and_naps_happen_at', 'Bath and naps happen at home. {name} insists.', { name: NAME() })); return; } if (c === 'bath') crBathGo(); if (c === 'sleep') startSleep(); if (c === 'house') openHouses(); if (c === 'decor') hmOpenDecor(); if (c === 'bed') openBeds(); if (c === 'home') { closeTray(); travelTo('yard'); } }; });
   crBindChips(dock, openCareTray);
 }
 function napRate(d) { const h = houseInfo(), pb = d && typeof hoBedFor === 'function' ? hoBedFor(d) : undefined; const c = S.place === 'house' ? 0.25 + (pb === null ? 0 : bedInfo(pb).bonus) : h.comfort * (S.dog.key === 'husky' && h.n === 'Snow Igloo' ? 2 : 1); return 20 * BOOST.nap * (1 + c) * (owns('toys', 'Plush Bone') ? 1.1 : 1) * (isNight() ? 1.4 : 1) * (weatherNow() === 'rain' ? 1.2 : 1) * shNapMul() * (S.house === 'Pumpkin Cottage' && S.outfit.body === 'Pumpkin Suit' ? 1.1 : 1); } // v2.5: the Pumpkin Suit in the Pumpkin Cottage. v2.7: d = a napping pack dog, its own bed's bonus in the house (none on the rug)
 function startSleep() {
   if (busy) return; const crN = crNapPack(); if (crN && crN.done) return; // v2.7 PACK CARE: the ticked pack dogs are tucked in too (null with pack care off)
-  if (S.stats.energy >= 99) { nope(`${NAME()} is not tired. ${PR().He} is vibrating.`); return; }
+  if (S.stats.energy >= 99) { nope(tt('yard.is_not_tired_is_vibrating', '{sex, select, female {{name} is not tired. She is vibrating.} other {{name} is not tired. He is vibrating.}}', { sex: homeSx(S.dog), name: NAME() })); return; }
   clearCurl(); crFree(D()); busy = false; S.sleeping = true; markDirty(); trackAct('nap', crN ? { dogs: crN.n } : {}); hideBubble(); popDown(); dogTo(...napSpot(), 1); renderDog('walk');
   setTimeout(() => { if (S.sleeping) { renderDog('sleep'); showZzz(true); } }, 1000);
-  sleepTray(); if (crN) crNapToast(crN); else toast(S.place === 'house' ? `${NAME()} curls up on the ${S.bed}. Indoor naps: +25%${bedInfo().bonus ? `, bed +${Math.round(bedInfo().bonus * 100)}%` : ''}.` : weatherNow() === 'rain' ? `${NAME()} curls up in the ${S.house}. Rain on the roof: the best nap sound (+20% nap).` : isNight() ? `${NAME()} climbs into the ${S.house}. Night naps restore more (+40%).` : `${NAME()} climbs into the ${S.house}. Goodnight.`); if (ROACH[D().key]) setTimeout(() => toast(`${NAME()} flips upside down, legs in the air. Greyhounds call that roaching.`, ''), 900); audioPlace();
+  sleepTray(); if (crN) crNapToast(crN); else toast(S.place === 'house' ? tt('yard.curls_up_on_the_indoor_naps', '{bonus, select, yes {{name} curls up on the {bed}. Indoor naps: +25%, bed +{pct}%.} other {{name} curls up on the {bed}. Indoor naps: +25%.}}', { bonus: bedInfo().bonus ? 'yes' : 'no', name: NAME(), bed: homeName(S.bed), pct: Math.round(bedInfo().bonus * 100) }) : weatherNow() === 'rain' ? tt('yard.curls_up_in_the_rain', '{name} curls up in the {house}. Rain on the roof: the best nap sound (+20% nap).', { name: NAME(), house: homeName(S.house) }) : isNight() ? tt('yard.climbs_into_the_night_naps', '{name} climbs into the {house}. Night naps restore more (+40%).', { name: NAME(), house: homeName(S.house) }) : tt('yard.climbs_into_the_goodnight', '{name} climbs into the {house}. Goodnight.', { name: NAME(), house: homeName(S.house) })); if (ROACH[D().key]) setTimeout(() => toast(tt('yard.flips_upside_down_legs_in', '{name} flips upside down, legs in the air. Greyhounds call that roaching.', { name: NAME() }), ''), 900); audioPlace();
 }
 function sleepTray() {
   const h = houseInfo(), b = bedInfo(), indoor = S.place === 'house';
-  const info = `Energy refills at <b>${Math.round(napRate())}</b> per game hour${indoor ? ` (${esc(b.n)}: +25% indoors${b.bonus ? `, +${Math.round(b.bonus * 100)}% bed` : ''})` : h.comfort ? ` (${esc(h.n)}: +${Math.round(h.comfort * 100)}% comfort)` : ' (Cardboard Box: no comfort bonus, lots of character)'}${owns('toys', 'Plush Bone') ? ', +10% Plush Bone' : ''}${shNapNote()}${S.house === 'Pumpkin Cottage' && S.outfit.body === 'Pumpkin Suit' ? ', +10% Pumpkin Suit' : ''}${isNight() ? ', +40% night' : ''}${weatherNow() === 'rain' ? ', +20% rain on the roof' : ''}.${crNapLine()}`;
+  const more = (t) => tt('yard.nap_extra', ', {item}', { item: t });
+  const main = indoor ? (b.bonus ? tt('yard.nap_indoors_bed', '({bed}: +25% indoors, +{pct}% bed)', { bed: homeName(b.n), pct: Math.round(b.bonus * 100) }) : tt('yard.nap_indoors', '({bed}: +25% indoors)', { bed: homeName(b.n) })) : h.comfort ? tt('yard.nap_comfort', '({house}: +{pct}% comfort)', { house: homeName(h.n), pct: Math.round(h.comfort * 100) }) : tt('yard.nap_cardboard', '(Cardboard Box: no comfort bonus, lots of character)');
+  const extras = (owns('toys', 'Plush Bone') ? more(tt('yard.nap_plush_bone', '+10% Plush Bone')) : '') + shNapNote() + (S.house === 'Pumpkin Cottage' && S.outfit.body === 'Pumpkin Suit' ? more(tt('yard.nap_pumpkin_suit', '+10% Pumpkin Suit')) : '') + (isNight() ? more(tt('yard.nap_night', '+40% night')) : '') + (weatherNow() === 'rain' ? more(tt('yard.nap_rain', '+20% rain on the roof')) : '');
+  const info = tt('yard.energy_refills_html', 'Energy refills at <b>{n}</b> per game hour {main}{extras}.', { n: Math.round(napRate()), main, extras }) + crNapLine();
   if (isPhone()) {
     const wasOpen = !!$('#napDet') && !$('#napDet').hidden;
     // v2.3 phone: a one-line strip (energy bar, info, Wake up) so the sleeping dog and the house stay in view; the details open on a tap
-    setTray(`${esc(NAME())} is napping`, `<p class="napdet" id="napDet" hidden>${info}</p>
-    <div class="walkctl napstrip"><button class="btn napinfo" id="napInfo" aria-label="Nap details" aria-expanded="false">${ICON('sleep')}</button><div class="napmid"><span class="naplbl">${esc(NAME())} is napping</span><div class="prog" aria-label="Energy"><i id="napBar" style="width:${S.stats.energy}%"></i></div></div><button class="btn yes" id="wakeBtn">Wake up</button></div>`, { mini: true });
+    setTray(esc(tt('yard.is_napping', '{name} is napping', { name: NAME() })), `<p class="napdet" id="napDet" hidden>${info}</p>
+    <div class="walkctl napstrip"><button class="btn napinfo" id="napInfo" aria-label="${esc(tt('yard.label_nap_details', 'Nap details'))}" aria-expanded="false">${ICON('sleep')}</button><div class="napmid"><span class="naplbl">${esc(tt('yard.is_napping', '{name} is napping', { name: NAME() }))}</span><div class="prog" aria-label="${esc(tt('yard.label_energy', 'Energy'))}"><i id="napBar" style="width:${S.stats.energy}%"></i></div></div><button class="btn yes" id="wakeBtn">${tt('yard.wake_up', 'Wake up')}</button></div>`, { mini: true });
     $('#trayX').remove(); const t = $('#dock > .tray'); if (t) t.classList.add('nap');
     $('#napInfo').onclick = () => { const d = $('#napDet'), on = d.hidden; d.hidden = !on; $('#napInfo').setAttribute('aria-expanded', on ? 'true' : 'false'); phTrayFit(); }; // the scene shrinks above the details card, so nothing is covered
     if (wasOpen) { $('#napDet').hidden = false; $('#napInfo').setAttribute('aria-expanded', 'true'); }
     $('#wakeBtn').onclick = () => wake();
     return;
   }
-  setTray(`${esc(NAME())} is napping`, `<p style="margin:0">${info}</p>
-    <div class="walkctl" style="margin-top:6px"><div class="prog" aria-label="Energy"><i id="napBar" style="width:${S.stats.energy}%"></i></div><button class="btn yes" id="wakeBtn">Wake up</button></div>`, { mini: true });
+  setTray(esc(tt('yard.is_napping', '{name} is napping', { name: NAME() })), `<p style="margin:0">${info}</p>
+    <div class="walkctl" style="margin-top:6px"><div class="prog" aria-label="${esc(tt('yard.label_energy', 'Energy'))}"><i id="napBar" style="width:${S.stats.energy}%"></i></div><button class="btn yes" id="wakeBtn">${tt('yard.wake_up', 'Wake up')}</button></div>`, { mini: true });
   $('#trayX').remove();
   $('#wakeBtn').onclick = () => wake();
 }
 function wake(auto) {
   focusSet(100); S.sleeping = false; setTimeout(() => audioPlace(), 0); markDirty(); showZzz(false); dogTo(0, 0, 1, 0.9); setTemp('happy', 1500);
   const crW = auto ? [] : crWakePack(); // v2.7 PACK CARE: Wake up wakes every napping dog present
-  toast(auto ? 'Fully charged. Zoomies imminent.' : crW.length ? `${crNames([D()].concat(crW))} wake up, stretch, and decide they want something.` : `${NAME()} wakes up, stretches, and decides ${PR().he} wants something.`, 'good');
+  toast(auto ? tt('yard.fully_charged_zoomies_imminent', 'Fully charged. Zoomies imminent.') : crW.length ? tt('yard.wake_up_stretch_and_decide', '{names} wake up, stretch, and decide they want something.', { names: crNames([D()].concat(crW)) }) : tt('yard.wakes_up_stretches_and_decides', '{sex, select, female {{name} wakes up, stretches, and decides she wants something.} other {{name} wakes up, stretches, and decides he wants something.}}', { sex: homeSx(S.dog), name: NAME() }), 'good');
   if (cur.mode === 'yard') dockIdle();
 }
 function openHouses() {
-  const cards = HOUSES.filter((h) => owns('houses', h.n)).map((h) => `<div class="sitem"><span class="art house">${art('house', h.n)}</span><b>${esc(h.n)}</b><span class="desc">Nap Energy +${Math.round(h.comfort * 100)}%</span>${h.n === S.house ? '<span class="chip own">Living here</span>' : `<button class="btn yes" data-house="${esc(h.n)}">Move in</button>`}</div>`).join('');
-  const p = openModal('Your dog houses', `<p class="small">Switching is free. Buy more at Barkitecture on Market Street.</p><div class="shopgrid">${cards}</div>`);
+  const cards = HOUSES.filter((h) => owns('houses', h.n)).map((h) => `<div class="sitem"><span class="art house">${art('house', h.n)}</span><b>${esc(homeName(h.n))}</b><span class="desc">${esc(tt('yard.nap_energy', 'Nap Energy +{pct}%', { pct: Math.round(h.comfort * 100) }))}</span>${h.n === S.house ? '<span class="chip own">' + tt('yard.living_here', 'Living here') + '</span>' : `<button class="btn yes" data-house="${esc(h.n)}">${tt('yard.move_in', 'Move in')}</button>`}</div>`).join('');
+  const p = openModal(tt('yard.your_dog_houses', 'Your dog houses'), `<p class="small">${tt('yard.switching_is_free_buy_more', 'Switching is free. Buy more at Barkitecture on Market Street.')}</p><div class="shopgrid">${cards}</div>`);
   p.querySelectorAll('[data-house]').forEach((b) => { b.onclick = () => { switchHouse(b.dataset.house); closeModal(); }; });
 }
 function switchHouse(n) {
-  if ((HOUSE_CAP[n] || 1) < S.dogs.length) { nope(`The ${n} only fits ${HOUSE_CAP[n] || 1}. You have ${S.dogs.length} dogs, and nobody is getting left out.`); return; }
+  if ((HOUSE_CAP[n] || 1) < S.dogs.length) { nope(tt('yard.only_fits_you_have_dogs_and', 'The {house} only fits {cap}. You have {n, plural, one {# dog} other {# dogs}}, and nobody is getting left out.', { house: homeName(n), cap: HOUSE_CAP[n] || 1, n: S.dogs.length })); return; }
   S.house = n; markDirty(); trackAct('house', { name: n }); SFX.thud(); setTimeout(() => SFX.boop(700), 150);
-  toast(`${NAME()} moved into the ${n}. ${PICK(['Sniffed every corner.', 'Approves. Mostly.', 'Already shed on it.'])}`, 'good');
-  if (cur.mode === 'yard') { const g = $('#houseG'); if (g) { g.innerHTML = place(art('house', n), 620, 330, 240, 200); g.setAttribute('aria-label', 'Dog house: ' + n); shHouseNight(); } if (S.sleeping) sleepTray(); }
+  toast(tt('yard.moved_into_the', '{name} moved into the {house}. {pick}', { name: NAME(), house: homeName(n), pick: PICK([tt('yard.sniffed_every_corner', 'Sniffed every corner.'), tt('yard.approves_mostly', 'Approves. Mostly.'), tt('yard.already_shed_on_it', 'Already shed on it.')]) }), 'good');
+  if (cur.mode === 'yard') { const g = $('#houseG'); if (g) { g.innerHTML = place(art('house', n), 620, 330, 240, 200); g.setAttribute('aria-label', tt('yard.label_dog_house', 'Dog house: {house}', { house: homeName(n) })); shHouseNight(); } if (S.sleeping) sleepTray(); }
 }
 
 
 /* scene hotspots (shops, garden, kitchen, notice...). Re-bound after the core redraws the scene for time/weather changes. */
 function bindSceneHots() {
-  if (S.place === 'market') hotify($('svg.world', view), '#sceneG [data-shop]', 'data-shop', (k) => openShop(k), (k) => 'Enter ' + (SHOP_NAME[k] || k));
-  hotify($('svg.world', view), '#sceneG [data-hot]', 'data-hot', (k) => ({ garden: openGarden, kitchen: openKitchen, notice: squareNotice, 'cafe-menu': cafeMenu, 'vet-desk': vetCheck, 'salon-chair': salonGroom }[k] || (() => {}))(), (k) => 'Open the ' + k);
+  if (S.place === 'market') hotify($('svg.world', view), '#sceneG [data-shop]', 'data-shop', (k) => openShop(k), (k) => tt('yard.enter_shop', 'Enter {shop}', { shop: SHOP_NAME[k] ? shopName(k) : k }));
+  hotify($('svg.world', view), '#sceneG [data-hot]', 'data-hot', (k) => ({ garden: openGarden, kitchen: openKitchen, notice: squareNotice, 'cafe-menu': cafeMenu, 'vet-desk': vetCheck, 'salon-chair': salonGroom }[k] || (() => {}))(), (k) => tt('yard.open_the', 'Open the {thing}', { thing: { garden: tt('yard.hot_garden', 'garden'), kitchen: tt('yard.hot_kitchen', 'kitchen'), notice: tt('yard.hot_notice', 'notice board'), 'cafe-menu': tt('yard.hot_cafe_menu', 'café menu'), 'vet-desk': tt('yard.hot_vet_desk', 'vet desk'), 'salon-chair': tt('yard.hot_salon_chair', 'salon chair') }[k] || k }));
 }
 on('scene:redraw', () => { if (cur.mode === 'yard' && $('svg.world', view)) { bindSceneHots(); shHouseNight(); } });
 // v2.4: house lamps (the Lighthouse Kennel's beam, .pa-wb-glow) only shine at night
@@ -902,34 +910,34 @@ function hmDecorBind() {
 function hmDecorRedraw() { hoRoomRedraw(); }
 function hmDecorPop(name) {
   const D = HM_DECOR[name]; if (!D) return;
-  const p = openModal(esc(name) + hwTag(name), `<div class="hm-pop"><span class="art hm-art">${art('item', name)}</span><p>${esc(D.story)}</p></div>`, { cls: 'hm-decor-pop', foot: '<button class="btn" id="hoMove">Move</button><button class="btn yes" id="hmAway">Put away</button>' });
+  const p = openModal(esc(homeName(name)) + hwTag(name), `<div class="hm-pop"><span class="art hm-art">${art('item', name)}</span><p>${esc(tdata('hm_decor.' + tid(name) + '.story', D.story))}</p></div>`, { cls: 'hm-decor-pop', foot: '<button class="btn" id="hoMove">' + tt('yard.move', 'Move') + '</button><button class="btn yes" id="hmAway">' + tt('yard.put_away', 'Put away') + '</button>' });
   $('#hoMove', p).onclick = () => { SFX.click(); closeModal(); hoPlaceStart(name); };
-  $('#hmAway', p).onclick = () => { SFX.click(); if (S.decor[name]) S.decor[name].out = false; Object.keys(HO.uses).forEach((id) => { if (HO.uses[id].name === name) hoFree(dogById(id) || { id }); }); markDirty(); closeModal(); hmDecorRedraw(); toast(`${name} is tucked away. It will keep.`); };
+  $('#hmAway', p).onclick = () => { SFX.click(); if (S.decor[name]) S.decor[name].out = false; Object.keys(HO.uses).forEach((id) => { if (HO.uses[id].name === name) hoFree(dogById(id) || { id }); }); markDirty(); closeModal(); hmDecorRedraw(); toast(tt('yard.is_tucked_away_it_will', '{name} is tucked away. It will keep.', { name: homeName(name) })); };
 }
 // the Care tray card: in the yard when the player owns a yard decoration, in the house always (the house has beds to arrange)
 function hmDecorCard() {
   hmDecorFields(); const house = S.place === 'house', got = hoOwned(house ? 'house' : 'yard'); if (!house && !got.length) return '';
   const away = got.filter((n) => !hmDecorOut(n)).length + (house ? S.beds.filter((n) => !S.bedAt[n]).length : 0);
   const ic = house ? iconOr('furniture', '<rect x="-14" y="-6" width="28" height="16" rx="4" fill="#F7A1B5" stroke="#5B3D32" stroke-width="2.5"/>') : iconOr('decor', '<rect x="-14" y="-10" width="28" height="22" rx="3" fill="#F9D56E" stroke="#5B3D32" stroke-width="2.5"/>');
-  return `<button class="card" data-care="decor"><span class="art">${ic}</span><b>${house ? 'Decorate' : 'Decor'}</b><span class="small">${away ? away + ' put away' : got.length ? 'all out' : 'arrange'}</span></button>`;
+  return `<button class="card" data-care="decor"><span class="art">${ic}</span><b>${house ? tt('yard.decorate', 'Decorate') : tt('yard.decor', 'Decor')}</b><span class="small">${away ? esc(tt('yard.n_put_away', '{n} put away', { n: away })) : got.length ? tt('yard.all_out', 'all out') : tt('yard.arrange', 'arrange')}</span></button>`;
 }
 // the Decorate sheet: what is out (Move, Put away) and what is put away (Place), and the big Arrange button
 function hmOpenDecor(room) {
   hmDecorFields(); room = room === 'house' || room === 'yard' ? room : S.place === 'house' ? 'house' : 'yard';
   const got = hoOwned(room), out = got.filter(hmDecorOut), away = got.filter((n) => !hmDecorOut(n)), where = room === 'yard' ? 'yard' : 'house';
-  const card = (n, btns) => `<div class="sitem"><span class="art">${art('item', n)}</span><b>${esc(n)}${hwTag(n)}</b>${btns}</div>`;
-  const body = `<p class="small">${got.length ? `Move things around the ${where}, or tuck them away for later.` : room === 'yard' ? 'Nothing for the yard yet. Barkitecture on Market Street sells yard decorations.' : 'Nothing for the house yet. Barkitecture on Market Street sells house things and furniture. The beds can move about already.'}</p>
-    <button class="btn yes ho-arrange" id="hoArrange"><span class="art">${iconOr('arrange', '<path d="M-12 0h24M0 -12v24" stroke="#5B3D32" stroke-width="3"/>')}</span>Arrange the ${where}</button>
-    ${out.length ? `<h4 class="ho-h">Out</h4><div class="shopgrid">${out.map((n) => card(n, `<div class="ho-btns"><button class="btn" data-homove="${esc(n)}">Move</button><button class="btn" data-hoaway="${esc(n)}">Put away</button></div>`)).join('')}</div>` : ''}
-    ${away.length ? `<h4 class="ho-h">Put away</h4><p class="small">These are tucked away. Put them back out any time.</p><div class="shopgrid">${away.map((n) => card(n, `<button class="btn yes" data-back="${esc(n)}">Place</button>`)).join('')}</div>` : ''}`;
-  const p = openModal(room === 'yard' ? 'Yard decor' : 'House things', body, { cls: 'shop ho-decor' });
+  const card = (n, btns) => `<div class="sitem"><span class="art">${art('item', n)}</span><b>${esc(homeName(n))}${hwTag(n)}</b>${btns}</div>`;
+  const body = `<p class="small">${esc(got.length ? tt('yard.move_things_around_the_or', '{where, select, yard {Move things around the yard, or tuck them away for later.} other {Move things around the house, or tuck them away for later.}}', { where }) : room === 'yard' ? tt('yard.nothing_for_the_yard_yet', 'Nothing for the yard yet. Barkitecture on Market Street sells yard decorations.') : tt('yard.nothing_for_the_house_yet', 'Nothing for the house yet. Barkitecture on Market Street sells house things and furniture. The beds can move about already.'))}</p>
+    <button class="btn yes ho-arrange" id="hoArrange"><span class="art">${iconOr('arrange', '<path d="M-12 0h24M0 -12v24" stroke="#5B3D32" stroke-width="3"/>')}</span>${esc(tt('yard.arrange_the', '{where, select, yard {Arrange the yard} other {Arrange the house}}', { where }))}</button>
+    ${out.length ? `<h4 class="ho-h">${tt('yard.out', 'Out')}</h4><div class="shopgrid">${out.map((n) => card(n, `<div class="ho-btns"><button class="btn" data-homove="${esc(n)}">${tt('yard.move', 'Move')}</button><button class="btn" data-hoaway="${esc(n)}">${tt('yard.put_away', 'Put away')}</button></div>`)).join('')}</div>` : ''}
+    ${away.length ? `<h4 class="ho-h">${tt('yard.put_away', 'Put away')}</h4><p class="small">${tt('yard.these_are_tucked_away_put', 'These are tucked away. Put them back out any time.')}</p><div class="shopgrid">${away.map((n) => card(n, `<button class="btn yes" data-back="${esc(n)}">${tt('yard.place', 'Place')}</button>`)).join('')}</div>` : ''}`;
+  const p = openModal(room === 'yard' ? tt('yard.yard_decor', 'Yard decor') : tt('yard.house_things', 'House things'), body, { cls: 'shop ho-decor' });
   const atRoom = () => cur.mode === 'yard' && S.place === room;
   $('#hoArrange', p).onclick = () => { SFX.click(); closeModal(); hoPlaceStart(undefined, room); };
   p.querySelectorAll('[data-homove]').forEach((b) => { b.onclick = () => { SFX.click(); closeModal(); hoPlaceStart(b.dataset.homove); }; });
   p.querySelectorAll('[data-hoaway]').forEach((b) => { b.onclick = () => { SFX.click(); if (hoAway(b.dataset.hoaway)) { if (atRoom()) hoRoomRedraw(); hmOpenDecor(room); } }; });
   p.querySelectorAll('[data-back]').forEach((b) => {
     b.onclick = () => {
-      SFX.click(); const n = b.dataset.back; toast(`${n} is back in the ${where}.`, 'good');
+      SFX.click(); const n = b.dataset.back; toast(tt('yard.is_back_in_the', '{where, select, yard {{item} is back in the yard.} other {{item} is back in the house.}}', { where, item: homeName(n) }), 'good');
       if (atRoom()) { closeModal(); hoPlaceStart(n); return; }
       S.decor[n].at = hoFreeSpot(n); S.decor[n].out = true; markDirty(); hmOpenDecor(room); // away from home: it waits at a free spot
     };
@@ -939,4 +947,4 @@ function hmExpose() { if (window.__paw) window.__paw.home = { decorOut: hmDecorO
 on('game:ready', () => { hmDecorFields(); setTimeout(hmExpose, 0); });
 on('yard:enter', () => { hmDecorFields(); hmDecorBind(); hmExpose(); });
 on('scene:redraw', () => { const g = $('#decorG') || $('#hoRoomG'); if (g && !HO.pl && g.dataset.tod !== timePhase()) hmDecorRedraw(); }); // v2.6.1: the decor follows the scene's time tint (v2.7: the house too, not while arranging)
-on('decor:new', (o) => { hmDecorFields(); const n = o && o.name, room = n && HM_DECOR[n] ? hoRoomOf(n) : 'yard'; if (cur.mode === 'yard' && S.place === room && !HO.pl) hmDecorRedraw(); toast(`New for the ${room}: ${n}!`, 'gold'); });
+on('decor:new', (o) => { hmDecorFields(); const n = o && o.name, room = n && HM_DECOR[n] ? hoRoomOf(n) : 'yard'; if (cur.mode === 'yard' && S.place === room && !HO.pl) hmDecorRedraw(); toast(tt('yard.new_for_the', '{room, select, house {New for the house: {item}!} other {New for the yard: {item}!}}', { room, item: homeName(n) }), 'gold'); });

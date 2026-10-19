@@ -32,6 +32,9 @@ for (const f of [...want].sort()) {
   if (!fs.existsSync(path.join(brand, f))) { console.error('itch: missing brand file ' + f); process.exit(1); }
   fs.copyFileSync(path.join(brand, f), path.join(out, f)); files.push(f);
 }
+// v2.14: the per-language font subsets (pages.js copied them to _site/fonts/i18n): fonts/i18n/<file> in the zip
+const FD = path.join(root, '_site', 'fonts', 'i18n');
+if (fs.existsSync(FD)) { fs.mkdirSync(path.join(out, 'fonts', 'i18n'), { recursive: true }); for (const f of fs.readdirSync(FD).filter((x) => /\.woff2$/.test(x)).sort()) { fs.copyFileSync(path.join(FD, f), path.join(out, 'fonts', 'i18n', f)); files.push('fonts/i18n/' + f); } }
 
 fs.rmSync(zipPath, { force: true });
 let viaCmd = false;

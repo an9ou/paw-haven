@@ -23,10 +23,17 @@ function buildGame() {
 const mode = process.argv[2] || 'game';
 const game = buildGame();
 cp.execFileSync('node', ['--check', path.join(D, 'game_script.check.js')], { stdio: 'inherit' });
+// v2.14: game/i18n/packed.js must run and give keys and one array per language, no longer than the keys
+if (fs.existsSync(path.join(P, 'game/i18n/packed.js'))) {
+  const w = {}; new Function('window', fs.readFileSync(path.join(P, 'game/i18n/packed.js'), 'utf8'))(w); const pk = w.PAW_I18N;
+  if (!pk || !Array.isArray(pk.keys) || Object.keys(pk).some((k) => Array.isArray(pk[k]) && k !== 'keys' && pk[k].length > pk.keys.length)) throw new Error('game/i18n/packed.js is broken: run node tools/i18n_pack.js');
+}
+// the franchise names, in English and in the local spellings (V214.md 10)
+const BANNED = /nintendo|pok[eé]mon|animal crossing|任天堂|ポケモン|ポケットモンスター|どうぶつの森|宝可梦|寶可夢|精灵宝可梦|神奇宝贝|神奇寶貝|动物森友会|動物森友會|集合啦|닌텐도|포켓몬|동물의 숲|นินเทนโด|โปเกมอน|แอนิมอล ครอสซิง/i;
 if (mode === 'publish') {
   const rd = (f) => { const s = fs.readFileSync(path.join(P, f), 'utf8'); if (/<\/script/i.test(s)) throw new Error('</script in ' + f); return s; };
   const out = game.replace('/*@@PAWART@@*/', () => ART.map(rd).join('\n')).replace('/*@@PAWMODS@@*/', () => MODS.map(rd).join('\n'));
-  if (/nintendo|pok[eé]mon|animal crossing/i.test(out)) throw new Error('banned word in build');
+  if (BANNED.test(out)) throw new Error('banned word in build');
   fs.writeFileSync(path.join(P, 'paw_haven_prototype.html'), out);
   console.log('publish build ok', (out.length / 1e6).toFixed(2) + ' MB');
 } else console.log('game build ok', (game.length / 1e3).toFixed(0) + ' KB');

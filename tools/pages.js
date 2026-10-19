@@ -18,4 +18,7 @@ fs.writeFileSync(path.join(out, '.nojekyll'), '');
 // brand kit: served from the site root (favicons, apple-touch icon, web manifest, og:image)
 const brand = path.join(root, 'brand'), kit = fs.readdirSync(brand).filter((f) => /\.(png|svg|webmanifest)$/.test(f));
 kit.forEach((f) => fs.copyFileSync(path.join(brand, f), path.join(out, f)));
-console.log('wrote _site/index.html', ((head.length + rest.length + 14) / 1e6).toFixed(2) + ' MB', '+', kit.length, 'brand files');
+// v2.14: the per-language font subsets (game/fonts/i18n/*.woff2), served as fonts/i18n/<file> next to index.html (00b_i18n.js loads only the current one)
+const FD = path.join(root, 'game', 'fonts', 'i18n'), fonts = fs.existsSync(FD) ? fs.readdirSync(FD).filter((f) => /\.woff2$/.test(f)) : [];
+if (fonts.length) { fs.mkdirSync(path.join(out, 'fonts', 'i18n'), { recursive: true }); fonts.forEach((f) => fs.copyFileSync(path.join(FD, f), path.join(out, 'fonts', 'i18n', f))); }
+console.log('wrote _site/index.html', ((head.length + rest.length + 14) / 1e6).toFixed(2) + ' MB', '+', kit.length, 'brand files +', fonts.length, 'font files');

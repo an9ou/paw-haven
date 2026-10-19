@@ -1,0 +1,4 @@
+# v2.14: en.json keys whose English is a reviewed exception to the copy rules the i18n suite runs on en.json (no semicolons, the
+# owner's word rules). One key per line, then # why. The translations of these keys are still checked in full.
+garden.crop_card            # the crop card's stat line (v1.7): "...per bush)}; half speed out of season." Rephrase later, then drop this line
+garden.people_intro         # "never sold to dog owners": people food, not dogs (the rule's dog/sold window catches it)

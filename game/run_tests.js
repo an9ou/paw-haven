@@ -131,6 +131,10 @@ const SUITES = {
   phone_v211_tokyo: { file: 'test_phone_v211_tokyo.js', group: 'phone', est: 90 }, // v2.11 TRAVEL (V211.md 5.3): the Japan map, the ride, the Tokyo places on phones
   phone_v29_photo: { file: 'test_phone_v29_photo.js', group: 'phone', est: 45 },
   phone_v29_polish: { file: 'test_phone_v29_polish.js', group: 'phone', est: 45 },
+  // v2.14 (V214.md 13): every language and the pseudo-locales. i18n_smoke is on its own (not in `all`): node game/run_tests.js i18n_smoke
+  // (PAW_LANGS=ja,de picks languages, PAW_I18N_PARTIAL=1 lists misses instead of failing); i18n_phone is in the `phone` group (PAW_I18N_STRICT=1)
+  i18n_smoke: { file: 'test_i18n_smoke.js', group: 'i18n', est: 420, timeout: 1500 },
+  i18n_phone: { file: 'test_i18n_phone.js', group: 'phone', est: 150, timeout: 900 },
 };
 // extra aliases: `all_*` is the same as `all`; `test_all` = the four+ shards of the old test_all.js
 const ALIAS = { test_all: ['all_a', 'all_b', 'all_c', 'all_d', 'all_e'], 'test_v15': ['v15'], 'test_v16': ['v16'], 'test_v16b': ['v16b'], 'test_v17': ['v17'], 'test_v171_garden': ['v171_garden'], 'test_v171_tricks': ['v171_tricks'], 'test_v2_slots': ['v2_slots'], 'test_v2_breed': ['v2_breed'], 'test_v2_journal': ['v2_journal'], 'test_v2_town': ['v2_town'], 'test_v2_play': ['v2_play'], 'test_v21_genes_node': ['v21_genes'], 'test_copy_node': ['copy'], 'test_v21_breed': ['v21_breed'], 'test_v21_journal': ['v21_journal'], 'test_v21_town': ['v21_town'], 'test_v21_home': ['v21_home'] };

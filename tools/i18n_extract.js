@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 // Doodle Doggo v2.14: find every player-visible English string (V214.md section 14). Read-only: it never rewrites a source file.
 //   node tools/i18n_extract.js [--out _i18n/extract.json] [--quiet]
+//   node tools/i18n_extract.js --en [--check]   (phase 2, I18N CORE) writes game/i18n/en.json: every tt()/tdata() call with a literal key and a
+//                                              literal English, every L() call in mods/, plus the data strings that game/i18n/TABLES.txt names.
+//                                              One key with two different English texts is an error. --check only compares (exit 1 when stale).
+// Strings that already sit inside tt() / tdata() / L() are wired: the default report leaves them out (stats.wired counts them).
 // Sources: game/src/*.js (concatenated in ORDER.txt order, the way the build does, so the one shared IIFE parses; every hit is
 // mapped back to its own file and line), mods/*.js, game/shell.html (text nodes, <title>, aria-label, title, placeholder, alt,
 // the share meta text), and in dogs/ and world/ only aria-labels, HTML text and the painted sign words (`b.tx(x, y, 'DOG')`).
@@ -18,6 +22,21 @@ const ROOT = path.join(__dirname, '..');
 const args = process.argv.slice(2);
 const opt = (k, d) => { const i = args.indexOf(k); return i >= 0 && args[i + 1] ? args[i + 1] : d; };
 const OUT = path.resolve(ROOT, opt('--out', '_i18n/extract.json')), QUIET = args.includes('--quiet');
+const EN = args.includes('--en'), CHECK = args.includes('--check');
+const EN_FILE = path.join(ROOT, 'game/i18n/en.json'), TABLES_FILE = path.join(ROOT, 'game/i18n/TABLES.txt');
+const KEY_RE = /^[a-z0-9_]+(\.[a-z0-9_]+)+$/;
+// TABLES.txt: `NAME field field` or `NAME *` (every string); `#` comments. A field is the last part of the data path.
+const TABLES = new Map();
+if (fs.existsSync(TABLES_FILE)) for (const raw of fs.readFileSync(TABLES_FILE, 'utf8').split('\n')) {
+  const ln = raw.replace(/#.*$/, '').trim(); if (!ln) continue;
+  const [spec, ...fields] = ln.split(/\s+/), [name, only] = spec.split('@'); // NAME@file-stem: only that file's table of this name
+  TABLES.set(name, { fields: fields.length ? fields : ['*'], only: only || null });
+}
+// a TABLES field matches the data path itself, or the path without its first part (the row id); `*` in a field is any one part
+const fieldHit = (f, pth) => { const fp = f.split('.'), a = pth.split('.'), eq = (b) => b.length === fp.length && fp.every((x, i) => x === '*' || x === b[i]); return eq(a) || eq(a.slice(1)); };
+const enStr = []; // { key, text, file, line } from tt/tdata/L calls and the TABLES strings
+const enWarn = []; // calls whose key or English is not a literal
+let wired = 0;
 
 /* ---- acorn from the global node_modules (or eslint's / espree's copy) ---- */
 function loadAcorn() {
@@ -77,6 +96,7 @@ const DENY_CALLS = new Set(['$', '$$', 'querySelector', 'querySelectorAll', 'get
   'delete', 'getPropertyValue', 'setProperty', 'removeProperty', 'Error', 'TypeError', 'RegExp', 'log', 'warn', 'error', 'info', 'debug', 'insertAdjacentHTML',
   'hmDecorOut', 'jrDecor', 'brDecor', 'switchHouse', 'sigIcon', 'setBowl', 'hoPos', 'rmPause', 'rmResume', 'phIcon', 'svgIcon', 'scene', 'prop', 'dog', 'art',
   'postMessage', 'animate', 'play', 'mode', 'go', 'goto', 'showMode', 'setMode', 'travel', 'sfx', 'tone', 'beep', 'Function', 'eval', 'matchMedia', 'toLocaleString',
+  'tid', 'tbreed', 'tnum', 'tdate', 'tlist', 'tlang', 'tsetLang', 'tItem', 'tPerk', 'tPlace', 'tRoute', 'tTrick', 'tSig', 'tRarity', 'tSlot',
   'Date', 'Number', 'parseInt', 'parseFloat', 'String', 'localeCompare', 'test', 'exec', 'match', 'search', 'execCommand', 'getContext', 'Image', 'Audio', 'Event', 'CustomEvent']);
 // calls whose first argument (openModal: the first two) is shown to the player
 const SINKS = { toast: [0], nope: [0], say: [0], sayW: [0], openModal: [0, 1], clToast: [0], tkToast: [0], wnToast: [0], msSay: [0], fxText: [0], blHint: [0],
@@ -163,6 +183,14 @@ function scanJs(code, fileOf, mode) {
   try { ast = acorn.parse(code, { ecmaVersion: 'latest', sourceType: 'script', allowReturnOutsideFunction: true, allowHashBang: true }); }
   catch (e) { console.error('parse error', e.message); process.exit(3); }
   const consumed = new Set();
+  // row builders (TREASURES: const TR = (n, kind, slot, r, routes, ab, txt, extra) => ...): a call row's argument is keyed by the parameter name
+  const PARAMS = new Map();
+  (function pre(n) {
+    if (!n || typeof n.type !== 'string') return;
+    if (n.type === 'VariableDeclarator' && n.id.type === 'Identifier' && n.init && /ArrowFunctionExpression|FunctionExpression/.test(n.init.type)) PARAMS.set(n.id.name, n.init.params.map((q) => (q.type === 'Identifier' ? q.name : q.type === 'AssignmentPattern' && q.left.type === 'Identifier' ? q.left.name : null)));
+    else if (n.type === 'FunctionDeclaration' && n.id) PARAMS.set(n.id.name, n.params.map((q) => (q.type === 'Identifier' ? q.name : q.type === 'AssignmentPattern' && q.left.type === 'Identifier' ? q.left.name : null)));
+    for (const k in n) { if (k === 'type' || k === 'start' || k === 'end') continue; const v = n[k]; if (Array.isArray(v)) v.forEach(pre); else if (v && typeof v.type === 'string') pre(v); }
+  })(ast);
   const parents = [];
   const calleeName = (c) => c.type === 'Identifier' ? c.name : c.type === 'MemberExpression' && !c.computed && c.property.type === 'Identifier' ? c.property.name : null;
 
@@ -179,8 +207,8 @@ function scanJs(code, fileOf, mode) {
         const cn = calleeName(p.callee), ai = p.arguments.indexOf(child);
         if (ai >= 0 && sink == null && !deny) {
           if (cn && Object.prototype.hasOwnProperty.call(SINKS, cn) && SINKS[cn].includes(ai)) sink = cn;
+          else if (cn === 'setAttribute' && ai === 1 && p.arguments[0] && p.arguments[0].type === 'Literal' && /^(aria-label|title|placeholder|alt)$/.test(p.arguments[0].value)) sink = 'attr'; // shown text
           else if (cn && DENY_CALLS.has(cn) && !(cn === 'replace' && ai === 1)) deny = true;
-          else if (cn && /^(setAttribute)$/.test(cn) && ai === 1) { const a0 = p.arguments[0]; if (a0 && a0.type === 'Literal' && /^(aria-label|title|placeholder|alt)$/.test(a0.value)) sink = 'attr'; }
         }
         if (p.callee === child && child.type === 'MemberExpression') { /* 'a b'.split() etc.: the object of a call */ }
       } else if (p.type === 'AssignmentExpression' && p.right === child) {
@@ -207,6 +235,8 @@ function scanJs(code, fileOf, mode) {
     const idOf = (o) => {
       if (o.type === 'ObjectExpression') { const k = o.properties.find((q) => q.type === 'Property' && !q.computed && /^(id|key|k|n|name)$/.test(q.key.name || q.key.value) && q.value.type === 'Literal' && typeof q.value.value === 'string'); return k ? M.id(k.value.value) : null; }
       if (o.type === 'ArrayExpression') { const ks = []; for (const e of o.elements) { if (e && e.type === 'Literal' && typeof e.value === 'string' && /^[a-z][a-z0-9]*$/.test(e.value) && e !== node) ks.push(e.value); else break; } return ks.length ? ks.join('_') : null; }
+      // a row built by a call with a literal first argument (TREASURES: TR('Acorn Cap', ...)): that argument is the row id
+      if (o.type === 'CallExpression' || o.type === 'NewExpression') { const a0 = o.arguments[0]; return a0 && a0.type === 'Literal' && typeof a0.value === 'string' ? M.id(a0.value) : null; }
       return null;
     };
     for (let j = d + 1; j < parents.length; j++) {
@@ -215,9 +245,10 @@ function scanJs(code, fileOf, mode) {
       else if (p.type === 'ArrayExpression') { const i = p.elements.indexOf(child); seg.push(idOf(child) || String(i)); }
       else if (p.type === 'CallExpression' || p.type === 'NewExpression') {
         const ai = p.arguments.indexOf(child); if (ai < 0) continue;
-        const a0 = p.arguments[0];
-        if (a0 && a0.type === 'Literal' && typeof a0.value === 'string' && a0 !== child) seg.push(M.id(a0.value));
-        seg.push(String(ai));
+        const a0 = p.arguments[0], row = parents[j - 1] && parents[j - 1].type === 'ArrayExpression' && j - 1 >= d + 1; // a row: its id is already in
+        if (!row && a0 && a0.type === 'Literal' && typeof a0.value === 'string' && a0 !== child) seg.push(M.id(a0.value));
+        const pn = row && p.callee.type === 'Identifier' && PARAMS.has(p.callee.name) ? PARAMS.get(p.callee.name)[ai] : null;
+        seg.push(pn && /^[a-z]\w*$/i.test(pn) ? M.id(pn) : String(ai));
       }
     }
     // an object row seen through its id already: drop the bare index before it
@@ -265,6 +296,27 @@ function scanJs(code, fileOf, mode) {
     }
   }
 
+  // --en: a string inside a TABLES.txt table, at the field the file names
+  function tableStr(node) {
+    const par = parents[parents.length - 1];
+    if (par && par.type === 'Property' && par.key === node && !par.computed) return; // a key, not a value
+    let table = null, child = node, alt = false;
+    for (let i = parents.length - 1; i >= 0; i--) {
+      const p = parents[i];
+      if (p.type === 'BinaryExpression' && /^(===|!==|==|!=)$/.test(p.operator)) return; // a comparison, not text
+      if (p.type === 'ConditionalExpression') { if (p.test === child) return; if (p.alternate === child) alt = true; } // the other branch: <path>_2
+      if (p.type === 'VariableDeclarator' && p.init === child && p.id.type === 'Identifier' && /^[A-Z][A-Z0-9_]+$/.test(p.id.name) && /^(ArrayExpression|ObjectExpression|CallExpression)$/.test(child.type)) { table = p.id.name; break; }
+      child = p;
+    }
+    if (!table || !TABLES.has(table)) return;
+    const at = fileOf(node.start); if (!at) return;
+    const T = TABLES.get(table); if (T.only && path.basename(at.file).replace(/\.js$/, '') !== T.only) return;
+    const text = node.type === 'Literal' ? node.value : node.quasis[0].value.cooked; if (!/\p{L}/u.test(text)) return; // '' and symbols are never text
+    const pth = dataPath(node, table), f = T.fields;
+    if (!f.includes('*') && !f.some((x) => fieldHit(x, pth))) return;
+    enStr.push({ key: 'data.' + table.toLowerCase() + '.' + pth + (alt ? '_2' : ''), text, file: at.file, line: at.line, table });
+  }
+
   function flatPlus(n, acc) { if (n.type === 'BinaryExpression' && n.operator === '+') { flatPlus(n.left, acc); flatPlus(n.right, acc); } else acc.push(n); return acc; }
   const isStr = (n) => (n.type === 'Literal' && typeof n.value === 'string') || n.type === 'TemplateLiteral';
 
@@ -275,6 +327,18 @@ function scanJs(code, fileOf, mode) {
       return;
     }
     if (node.type === 'TaggedTemplateExpression') return; // String.raw etc.
+    if (node.type === 'CallExpression' && node.callee.type === 'Identifier' && (node.callee.name === 'tt' || node.callee.name === 'tdata' || (mode === 'mod' && (node.callee.name === 'L' || node.callee.name === 'D')))) {
+      const [k, e, v] = node.arguments, lit = (x) => x && ((x.type === 'Literal' && typeof x.value === 'string') || (x.type === 'TemplateLiteral' && !x.expressions.length));
+      const val = (x) => (x.type === 'Literal' ? x.value : x.quasis[0].value.cooked);
+      const at = fileOf(node.start);
+      if (at) {
+        wired++;
+        if (lit(k) && lit(e)) { const key = (node.callee.name === 'tdata' || node.callee.name === 'D' ? 'data.' : '') + val(k); if (KEY_RE.test(key)) enStr.push({ key, text: val(e), file: at.file, line: at.line }); else enWarn.push(`${at.file}:${at.line} bad key "${key}"`); }
+        else if (node.callee.name !== 'tdata' && node.callee.name !== 'D') enWarn.push(`${at.file}:${at.line} ${node.callee.name}() with a ${lit(k) ? 'non-literal English' : 'computed key'}`);
+      }
+      parents.push(node); if (v) visit(v); node.arguments.slice(3).forEach(visit); if (k && !lit(k)) visit(k); if (e && !lit(e)) visit(e); parents.pop();
+      return;
+    }
     if (node.type === 'BinaryExpression' && node.operator === '+') {
       const parent = parents[parents.length - 1];
       if (!(parent && parent.type === 'BinaryExpression' && parent.operator === '+')) {
@@ -288,6 +352,15 @@ function scanJs(code, fileOf, mode) {
           const ctx = ctxOf(node);
           if (!ctx.deny) out(node, raw, vars, 'concat', ctx);
         }
+      }
+    }
+    if (EN && ((node.type === 'Literal' && typeof node.value === 'string') || (node.type === 'TemplateLiteral' && !node.expressions.length))) tableStr(node);
+    // `@key:<field>` in TABLES.txt: a map keyed by the English name (HM_DECOR 'Giant Crayon Box': {...}) gives that name as <table>.<tid(key)>.<field>
+    if (EN && node.type === 'VariableDeclarator' && node.id.type === 'Identifier' && TABLES.has(node.id.name) && node.init && node.init.type === 'ObjectExpression') {
+      const T = TABLES.get(node.id.name), kf = T.fields.find((f) => f.startsWith('@key:')), at = fileOf(node.start);
+      if (kf && at && !(T.only && path.basename(at.file).replace(/\.js$/, '') !== T.only)) for (const q of node.init.properties) {
+        if (q.type !== 'Property' || q.computed) continue; const k = q.key.type === 'Literal' ? String(q.key.value) : q.key.name;
+        enStr.push({ key: 'data.' + node.id.name.toLowerCase() + '.' + M.id(k) + '.' + kf.slice(5), text: k, file: at.file, line: at.line, table: node.id.name });
       }
     }
     if (node.type === 'Literal' && typeof node.value === 'string') {
@@ -340,6 +413,32 @@ for (const [dir, re, mode] of [['mods', /^[a-z]+\.js$/, 'mod'], ['dogs', /^pawar
   for (const m of body.matchAll(/>([^<>]+)</g)) add(m[1], m.index + 1, null);
 }
 
+/* ---- --en: game/i18n/en.json (V214.md 4.1) ---- */
+if (EN) {
+  const map = new Map(); let bad = 0;
+  for (const h of enStr) {
+    const t = map.get(h.key);
+    if (t === undefined) map.set(h.key, h);
+    else if (t.text !== h.text) { bad++; console.error(`i18n_extract --en: key ${h.key} has two English texts:\n  ${t.file}:${t.line} ${JSON.stringify(t.text)}\n  ${h.file}:${h.line} ${JSON.stringify(h.text)}`); }
+  }
+  const found = new Set(enStr.filter((h) => h.table).map((h) => h.table));
+  for (const n of TABLES.keys()) if (!found.has(n)) { bad++; console.error('i18n_extract --en: TABLES.txt names ' + n + ', but no string of it was found (renamed? remove the line)'); }
+  if (!QUIET) for (const w of enWarn) console.log('  note: ' + w + ' (not in en.json: use a literal key and English)');
+  if (bad) process.exit(1);
+  const obj = {}; [...map.keys()].sort().forEach((k) => { obj[k] = map.get(k).text; });
+  const json = JSON.stringify(obj, null, 1) + '\n', n = map.size, nd = [...map.keys()].filter((k) => k.startsWith('data.')).length;
+  if (CHECK) {
+    const old = fs.existsSync(EN_FILE) ? fs.readFileSync(EN_FILE, 'utf8') : '';
+    if (old !== json) { console.error('game/i18n/en.json is out of date: run node tools/i18n_extract.js --en (then node tools/i18n_pack.js)'); process.exit(1); }
+    console.log(`game/i18n/en.json is up to date (${n} keys, ${nd} data)`); process.exit(0);
+  }
+  fs.writeFileSync(EN_FILE, json);
+  console.log(`wrote game/i18n/en.json: ${n} keys (${n - nd} tt, ${nd} data), ${(json.length / 1e3).toFixed(0)} KB`);
+  process.exit(0);
+}
+// shell.html text that the game sets again through a shell.* key (i18nShell, 00b_i18n.js) is wired too
+{ const sh = new Set(enStr.filter((h) => h.key.startsWith('shell.')).map((h) => h.text)); for (let i = hits.length - 1; i >= 0; i--) if (hits[i].file === 'game/shell.html' && sh.has(hits[i].text)) { hits.splice(i, 1); wired++; } }
+
 /* ---- key collisions: the same guessed key for different texts gets a number ---- */
 {
   const byKey = new Map();
@@ -353,7 +452,7 @@ const uniq = new Map(); for (const h of hits) if (!uniq.has(h.text)) uniq.set(h.
 const U = [...uniq.values()];
 const sum = (a, f) => a.reduce((n, x) => n + f(x), 0);
 const stats = {
-  hits: hits.length, unique: U.length, words: sum(U, (h) => words(h.text)), chars: sum(U, (h) => h.text.length),
+  hits: hits.length, wired, unique: U.length, words: sum(U, (h) => words(h.text)), chars: sum(U, (h) => h.text.length),
   enJsonBytes: Buffer.byteLength(JSON.stringify(Object.fromEntries(U.map((h) => [h.key, h.text])), null, 1)),
   kinds: {}, kindsUnique: {}, files: {}
 };
@@ -362,7 +461,7 @@ for (const h of U) stats.kindsUnique[h.kind] = (stats.kindsUnique[h.kind] || 0) 
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
 fs.writeFileSync(OUT, JSON.stringify({ made: new Date().toISOString(), stats, hits }, null, 1));
 if (!QUIET) {
-  console.log(`hits ${stats.hits}, unique strings ${stats.unique}, words ${stats.words} (unique strings), chars ${stats.chars}, en.json about ${(stats.enJsonBytes / 1e3).toFixed(0)} KB`);
+  console.log(`hits ${stats.hits} (plus ${wired} already wired in tt/tdata), unique strings ${stats.unique}, words ${stats.words} (unique strings), chars ${stats.chars}, en.json about ${(stats.enJsonBytes / 1e3).toFixed(0)} KB`);
   console.log('kinds (hits):', JSON.stringify(stats.kinds), ' unique:', JSON.stringify(stats.kindsUnique));
   for (const [f, x] of Object.entries(stats.files).sort((a, b) => b[1].words - a[1].words)) console.log('  ' + f.padEnd(40), String(x.hits).padStart(5), 'hits', String(x.words).padStart(6), 'words');
   console.log('wrote', rel(OUT));

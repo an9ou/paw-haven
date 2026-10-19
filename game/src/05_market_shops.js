@@ -1,5 +1,15 @@
 /* ======================= MARKET + SHOPS ======================= */
 const SHOP_NAME = { kibble: 'Kibble Corner', boutique: 'Bow-Wow Boutique', builder: 'Barkitecture', sprout: "Pip's Sprout Cart" };
+// v2.14 i18n: display text of the item tables (V214.md 4.3). Ids, item names and save values stay English; only what is shown is looked up.
+// cat = 'food' | 'toys' | 'clothes' | 'houses' | 'beds' | 'decor' | 'furniture' | 'pantry' | 'tools'; id = the pantry id
+const shopTitle = (k) => tdata('shop_name.' + k, SHOP_NAME[k] || k);
+const SH_TBL = { food: 'food', toys: 'toys', clothes: 'clothes', houses: 'houses', beds: 'beds', decor: 'hm_decor', furniture: 'hm_decor' };
+const shItemName = (cat, n, id) => (cat === 'pantry' ? tdata('pantry.' + tid(id) + '.name', n) : cat === 'tools' ? (n === 'Gene Sniffer' ? tt('shop.gene_sniffer', 'Gene Sniffer') : n) : tdata((SH_TBL[cat] || cat) + '.' + tid(n) + '.n', n));
+// the shown name of any item by its English name (clothes, toys, food, treasure food, treasures, houses); unknown names come back as they are
+const shNameAny = (n) => { if (n === 'Coat Collector Ribbon') return tt('journal.ribbon_name', 'Coat Collector Ribbon'); if (n === 'Rainbow Collar') return tt('journal.rainbow_name', 'Rainbow Collar'); const tb = CLOTHES.some((x) => x.n === n) ? 'clothes' : TOYS.some((x) => x.n === n) ? 'toys' : FOOD.some((x) => x.n === n) ? 'food' : TFOOD.some((x) => x.n === n) ? 'tfood' : TREASURES.some((x) => x.n === n) ? 'treasures' : HOUSES.some((x) => x.n === n) ? 'houses' : ''; return tb ? tdata(tb + '.' + tid(n) + '.n', n) : n; };
+const shSlotName = (s) => (SLOT_NAME[s] ? tdata('slot_name.' + s, SLOT_NAME[s]) : s);
+// the perk line of a wearable: a boutique row has a perk of its own; a treasure wearable is "ability: text"
+const shPerk = (c) => (c.n === 'Coat Collector Ribbon' ? tt('journal.ribbon_perk', 'Coat Collector: 15 coats found. Pure bragging rights. Other dogs can tell.') : c.n === 'Rainbow Collar' ? tt('journal.rainbow_perk', 'Rainbow Collar: 25 coats found. Every colour, all at once.') : c.treasure || c.slot === 'charm' ? (() => { const t = TREASURES.find((x) => x.n === c.n); return t ? tt('shop.treasure_perk', '{ab}: {txt}', { ab: tdata('treasures.' + tid(t.n) + '.ab', t.ab), txt: tdata('treasures.' + tid(t.n) + '.txt', t.txt) }) : c.perk; })() : tdata('clothes.' + tid(c.n) + '.perk', c.perk));
 const portrait = () => !!(window.matchMedia && matchMedia('(max-aspect-ratio: 4/5)').matches);
 const fitPA = () => (portrait() ? 'xMidYMid slice' : 'xMidYMid meet');
 function hotify(svg, sel, attr, onPick, label) {
@@ -18,13 +28,13 @@ function enterMarketPlace() {
 function enterMarketOld() {
   setChrome(true, true);
   view.innerHTML = `<svg class="world" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" style="background:#FFFBF3">${sceneG('market')}</svg><div id="status"></div><button id="devBtn">dev</button>`;
-  hotify($('svg.world', view), '[data-shop]', 'data-shop', (k) => openShop(k), (k) => 'Enter ' + (SHOP_NAME[k] || k));
-  dock.innerHTML = `<div class="tray"><div class="tray-h"><h3>Market Street: tap a shop</h3></div><div class="wrap">${Object.keys(SHOP_NAME).map((k) => `<button class="btn" data-sh="${k}">${SHOP_NAME[k]}</button>`).join('')}</div></div>`;
+  hotify($('svg.world', view), '[data-shop]', 'data-shop', (k) => openShop(k), (k) => tt('shop.enter', 'Enter {name}', { name: shopTitle(k) }));
+  dock.innerHTML = `<div class="tray"><div class="tray-h"><h3>${tt('shop.market_street', 'Market Street: tap a shop')}</h3></div><div class="wrap">${Object.keys(SHOP_NAME).map((k) => `<button class="btn" data-sh="${k}">${shopTitle(k)}</button>`).join('')}</div></div>`;
   dock.querySelectorAll('[data-sh]').forEach((b) => { b.onclick = () => openShop(b.dataset.sh); });
   updateHUD(); bindDev();
 }
 /* ---- v1.5A purchase / sale window (every shop) ---- */
-const fmtC = (n) => Math.round(n).toLocaleString('en-US');
+const fmtC = (n) => tnum(Math.round(n)); // v2.14: grouped in the current language (en: the same as en-US)
 let buyOpen = false;
 function buyWindow(panel, o) {
   // o: { art, name, desc, price, stack, owned, have, haveLabel, sell, max }  -> Promise<qty | 0>
@@ -34,12 +44,12 @@ function buyWindow(panel, o) {
     const maxQ = () => (sell ? o.max : o.stack ? Math.max(0, Math.min(999, Math.floor(S.coins / unit))) : 1);
     let q = o.stack || sell ? Math.min(1, Math.max(0, maxQ())) || 1 : 1;
     const v = document.createElement('div'); v.className = 'buyveil';
-    v.innerHTML = `<div class="buybox pop" role="dialog" aria-modal="true" aria-label="${sell ? 'Sell' : 'Buy'} ${esc(o.name)}">
-      <div class="bb-top"><span class="bb-art">${o.art}</span><div><h3>${esc(o.name)}</h3><p class="small">${esc(o.desc || '')}</p><p class="bb-unit">${priceHTML(fmtC(unit) + ' each')}</p></div></div>
-      ${o.stack || sell ? `<div class="bb-qty"><button class="btn bb-m" aria-label="One less">−</button><input class="bb-in" type="number" min="1" inputmode="numeric" aria-label="Quantity" value="${q}"><button class="btn bb-p" aria-label="One more">+</button>
-        <span class="bb-quick">${[1, 5, 10].map((n) => `<button class="btn" data-qq="${n}">×${n}</button>`).join('')}<button class="btn" data-qq="max">Max</button></span></div>` : `<p class="bb-one">${o.owned ? '<span class="chip own">Owned</span> You already have this one.' : 'One of a kind: quantity 1.'}</p>`}
+    v.innerHTML = `<div class="buybox pop" role="dialog" aria-modal="true" aria-label="${esc(sell ? tt('shop.aria_sell', 'Sell {name}', { name: o.name }) : tt('shop.aria_buy', 'Buy {name}', { name: o.name }))}">
+      <div class="bb-top"><span class="bb-art">${o.art}</span><div><h3>${esc(o.name)}</h3><p class="small">${esc(o.desc || '')}</p><p class="bb-unit">${priceHTML(tt('shop.price_each', '{price} each', { price: fmtC(unit) }))}</p></div></div>
+      ${o.stack || sell ? `<div class="bb-qty"><button class="btn bb-m" aria-label="${tt('shop.one_less', 'One less')}">−</button><input class="bb-in" type="number" min="1" inputmode="numeric" aria-label="${tt('shop.quantity', 'Quantity')}" value="${q}"><button class="btn bb-p" aria-label="${tt('shop.one_more', 'One more')}">+</button>
+        <span class="bb-quick">${[1, 5, 10].map((n) => `<button class="btn" data-qq="${n}">×${n}</button>`).join('')}<button class="btn" data-qq="max">${tt('shop.max', 'Max')}</button></span></div>` : `<p class="bb-one">${o.owned ? `<span class="chip own">${tt('shop.owned', 'Owned')}</span> ${tt('shop.already_have', 'You already have this one.')}` : tt('shop.one_of_kind', 'One of a kind: quantity 1.')}</p>`}
       <div class="bb-sum"></div>
-      <div class="foot"><button class="btn no bb-no">Cancel</button><button class="btn yes big bb-yes">${sell ? 'Sell' : 'Buy'}</button></div></div>`;
+      <div class="foot"><button class="btn no bb-no">${tt('shop.cancel', 'Cancel')}</button><button class="btn yes big bb-yes">${sell ? tt('shop.sell', 'Sell') : tt('shop.buy', 'Buy')}</button></div></div>`;
     panel.appendChild(v); buyOpen = true;
     const inp = v.querySelector('.bb-in'), yes = v.querySelector('.bb-yes'), sum = v.querySelector('.bb-sum');
     const draw = () => {
@@ -47,7 +57,7 @@ function buyWindow(panel, o) {
       const total = unit * q, after = sell ? S.coins + total : S.coins - total, bad = !sell && (after < 0 || (!o.stack && o.owned));
       if (inp && document.activeElement !== inp) inp.value = q;
       sum.className = 'bb-sum' + (bad ? ' bad' : '');
-      sum.innerHTML = `<div>You have <b>${fmtC(S.coins)}</b> coins</div><div>Total: <b>${fmtC(total)}</b> coins</div><div class="bb-after">${sell ? 'Coins after' : 'Coins left after'}: <b>${fmtC(after)}</b></div><div class="small">${esc(o.haveLabel || 'In bag')}: ${o.have || 0}${sell ? '' : o.stack ? ` · you can afford ${mx}` : ''}</div>${bad && !o.owned ? `<div class="bb-warn">Not enough coins. Have you tried being rich?</div>` : ''}`;
+      sum.innerHTML = `<div>${tt('shop.sum_have_html', '{coins, plural, one {You have <b>#</b> coin} other {You have <b>#</b> coins}}', { coins: S.coins })}</div><div>${tt('shop.sum_total_html', '{total, plural, one {Total: <b>#</b> coin} other {Total: <b>#</b> coins}}', { total })}</div><div class="bb-after">${sell ? tt('shop.coins_after_html', 'Coins after: <b>{n}</b>', { n: fmtC(after) }) : tt('shop.coins_left_html', 'Coins left after: <b>{n}</b>', { n: fmtC(after) })}</div><div class="small">${esc(tt('shop.label_n', '{label}: {n}', { label: o.haveLabel || tt('shop.in_bag', 'In bag'), n: o.have || 0 }))}${sell ? '' : o.stack ? ` · ${tt('shop.can_afford', 'you can afford {n}', { n: mx })}` : ''}</div>${bad && !o.owned ? `<div class="bb-warn">${tt('shop.not_enough', 'Not enough coins. Have you tried being rich?')}</div>` : ''}`;
       yes.disabled = bad; yes.setAttribute('aria-disabled', bad ? 'true' : 'false');
       v.querySelectorAll('[data-qq]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.qq === String(q) || (b.dataset.qq === 'max' && q === mx))));
     };
@@ -84,39 +94,39 @@ let shopTab = { kibble: 'food' };
 function openShop(k) {
   if (k === 'sprout') { openPip(); return; }
   SFX.boop(620); audioPlace('shop');
-  const title = SHOP_NAME[k];
+  const title = shopTitle(k);
   let tabs = '', items = [];
   if (k === 'kibble') {
     if (!kOn() && shopTab.kibble === 'pantry') shopTab.kibble = 'food';
     const t = shopTab.kibble;
-    tabs = `<div class="tabs" role="tablist"><button class="btn" role="tab" aria-selected="${t === 'food'}" data-tab="food">Food</button><button class="btn" role="tab" aria-selected="${t === 'toys'}" data-tab="toys">Toys</button><button class="btn" role="tab" aria-selected="${t === 'tools'}" data-tab="tools">Tools</button>${kOn() ? `<button class="btn" role="tab" aria-selected="${t === 'pantry'}" data-tab="pantry">Pantry</button>` : ''}</div>`;
-    items = t === 'pantry' ? pantryList().map((x) => ({ cat: 'pantry', id: x.id, n: x.name, price: x.price, bond: 1, desc: x.id === 'chicken' ? 'Boneless. For the kitchen.' : 'For the kitchen. Cooks into dog dishes.' })) : t === 'tools' ? twTools() : t === 'food' ? FOOD.filter((f) => f.price > 0 && !f.fest).map((f) => ({ cat: 'food', n: f.n, price: f.price, bond: 1, desc: f.note, tip: f.tip })) : TOYS.filter((x) => !x.reward && !x.fest).map((x) => ({ cat: 'toys', n: x.n, price: x.price, bond: x.bond, desc: x.note }));
-  } else if (k === 'boutique') items = CLOTHES.filter((c) => !c.reward && !c.fest).map((c) => ({ cat: 'clothes', n: c.n, price: c.price, bond: c.bond, desc: `${SLOT_NAME[c.slot]}. ${c.perk}` }));
+    tabs = `<div class="tabs" role="tablist"><button class="btn" role="tab" aria-selected="${t === 'food'}" data-tab="food">${tt('shop.tab_food', 'Food')}</button><button class="btn" role="tab" aria-selected="${t === 'toys'}" data-tab="toys">${tt('shop.tab_toys', 'Toys')}</button><button class="btn" role="tab" aria-selected="${t === 'tools'}" data-tab="tools">${tt('shop.tab_tools', 'Tools')}</button>${kOn() ? `<button class="btn" role="tab" aria-selected="${t === 'pantry'}" data-tab="pantry">${tt('shop.tab_pantry', 'Pantry')}</button>` : ''}</div>`;
+    items = t === 'pantry' ? pantryList().map((x) => ({ cat: 'pantry', id: x.id, n: x.name, price: x.price, bond: 1, desc: x.id === 'chicken' ? tt('shop.pantry_chicken', 'Boneless. For the kitchen.') : tt('shop.pantry_other', 'For the kitchen. Cooks into dog dishes.') })) : t === 'tools' ? twTools() : t === 'food' ? FOOD.filter((f) => f.price > 0 && !f.fest).map((f) => ({ cat: 'food', n: f.n, price: f.price, bond: 1, desc: tdata('food.' + tid(f.n) + '.note', f.note), tip: f.tip && tdata('food.' + tid(f.n) + '.tip', f.tip) })) : TOYS.filter((x) => !x.reward && !x.fest).map((x) => ({ cat: 'toys', n: x.n, price: x.price, bond: x.bond, desc: tdata('toys.' + tid(x.n) + '.note', x.note) }));
+  } else if (k === 'boutique') items = CLOTHES.filter((c) => !c.reward && !c.fest).map((c) => ({ cat: 'clothes', n: c.n, price: c.price, bond: c.bond, desc: tt('shop.cloth_desc', '{slot}. {perk}', { slot: shSlotName(c.slot), perk: shPerk(c) }) }));
   else {
     const t = shopTab.builder || 'houses';
-    tabs = `<div class="tabs" role="tablist"><button class="btn" role="tab" aria-selected="${t === 'houses'}" data-btab="houses">Houses</button><button class="btn" role="tab" aria-selected="${t === 'beds'}" data-btab="beds">Beds</button><button class="btn" role="tab" aria-selected="${t === 'decor'}" data-btab="decor">Decor</button><button class="btn ho-ftab" role="tab" aria-selected="${t === 'furniture'}" data-btab="furniture"><span class="ic" aria-hidden="true">${iconOr('furniture', '')}</span>Furniture</button></div>${t === 'furniture' ? '<p class="small ho-shnote">The Furniture corner: big comfy things the dogs actually use.</p>' : ''}`; // v2.7: Decor and the Furniture corner (28_home.js hoShopItems)
-    items = t === 'decor' || t === 'furniture' ? hoShopItems(t) : t === 'beds' ? BEDS.map((b) => ({ cat: 'beds', n: b.n, price: b.price, bond: b.bond, desc: `House nap +${Math.round(b.bonus * 100)}%. ${b.note}` })) : HOUSES.filter((h) => !h.reward).map((h) => ({ cat: 'houses', n: h.n, price: h.price, bond: h.bond, desc: `Nap Energy +${Math.round(h.comfort * 100)}%. ${h.note}` }));
+    tabs = `<div class="tabs" role="tablist"><button class="btn" role="tab" aria-selected="${t === 'houses'}" data-btab="houses">${tt('shop.tab_houses', 'Houses')}</button><button class="btn" role="tab" aria-selected="${t === 'beds'}" data-btab="beds">${tt('shop.tab_beds', 'Beds')}</button><button class="btn" role="tab" aria-selected="${t === 'decor'}" data-btab="decor">${tt('shop.tab_decor', 'Decor')}</button><button class="btn ho-ftab" role="tab" aria-selected="${t === 'furniture'}" data-btab="furniture"><span class="ic" aria-hidden="true">${iconOr('furniture', '')}</span>${tt('shop.tab_furniture', 'Furniture')}</button></div>${t === 'furniture' ? `<p class="small ho-shnote">${tt('shop.furniture_note', 'The Furniture corner: big comfy things the dogs actually use.')}</p>` : ''}`; // v2.7: Decor and the Furniture corner (28_home.js hoShopItems)
+    items = t === 'decor' || t === 'furniture' ? hoShopItems(t) : t === 'beds' ? BEDS.map((b) => ({ cat: 'beds', n: b.n, price: b.price, bond: b.bond, desc: tt('shop.bed_desc', 'House nap +{pct}%. {note}', { pct: Math.round(b.bonus * 100), note: tdata('beds.' + tid(b.n) + '.note', b.note) }) })) : HOUSES.filter((h) => !h.reward).map((h) => ({ cat: 'houses', n: h.n, price: h.price, bond: h.bond, desc: tt('shop.house_desc', 'Nap Energy +{pct}%. {note}', { pct: Math.round(h.comfort * 100), note: tdata('houses.' + tid(h.n) + '.note', h.note) }) }));
   }
   const hoCat = (it) => it.cat === 'decor' || it.cat === 'furniture'; // v2.7: decorations and furniture, owned once (S.decor)
   const cards = items.map((it) => {
     if (it.head) return `<h4 class="ho-shh">${esc(it.head)}</h4>`;
     if (hoCat(it)) {
       const lock = topBond() < it.bond, got = !!(S.decor && S.decor[it.n]);
-      const act = lock ? `<span class="chip lock">Bond ${it.bond}</span>` : got ? (hmDecorOut(it.n) ? '<span class="chip own">Owned</span>' : `<button class="btn" data-hoplace="${esc(it.n)}">Owned · Place</button>`) : `<button class="btn yes" data-buy="${esc(it.n)}">Buy</button>`;
-      return `<div class="sitem ${lock ? 'lockd' : ''}"><span class="art">${itemArt(it.n)}</span><b>${esc(it.n)}</b><span class="desc">${esc(it.desc)}</span>${priceHTML(it.price)}${act}</div>`;
+      const act = lock ? `<span class="chip lock">${tt('shop.bond_chip', 'Bond {bond}', { bond: it.bond })}</span>` : got ? (hmDecorOut(it.n) ? `<span class="chip own">${tt('shop.owned', 'Owned')}</span>` : `<button class="btn" data-hoplace="${esc(it.n)}">${tt('shop.owned_place', 'Owned · Place')}</button>`) : `<button class="btn yes" data-buy="${esc(it.n)}">${tt('shop.buy', 'Buy')}</button>`;
+      return `<div class="sitem ${lock ? 'lockd' : ''}"><span class="art">${itemArt(it.n)}</span><b>${esc(shItemName(it.cat, it.n))}</b><span class="desc">${esc(it.desc)}</span>${priceHTML(it.price)}${act}</div>`;
     }
     const lock = topBond() < it.bond, owned = it.cat === 'beds' ? S.beds.includes(it.n) : it.cat === 'tools' ? twOwns(it.n) : it.cat !== 'food' && it.cat !== 'pantry' && owns(it.cat, it.n), have = it.cat === 'food' ? (S.inv.food[it.n] || 0) : it.cat === 'pantry' ? (S.inv.pantry[it.id] || 0) : 0;
     const artH = it.cat === 'houses' ? `<span class="art house">${art('house', it.n)}</span>` : `<span class="art">${itemArt(it.n)}</span>`;
     let act;
-    if (lock) act = `<span class="chip lock">Bond ${it.bond}</span>${it.cat === 'tools' ? `<span class="small">${esc(twToolLock(it))}</span>` : ''}`;
-    else if (owned && it.cat === 'beds') act = S.bed === it.n ? '<span class="chip own">Owned · in use</span>' : `<button class="btn" data-usebed="${esc(it.n)}">Owned · Use this bed</button>`;
-    else if (owned) act = it.cat === 'houses' ? (S.house === it.n ? '<span class="chip own">Owned · living here</span>' : `<button class="btn" data-use="${esc(it.n)}">Owned · Move in</button>`) : '<span class="chip own">Owned</span>';
-    else if (it.price === 0) act = '<span class="chip own">Free</span>';
-    else act = `<button class="btn yes" data-buy="${esc(it.n)}">${it.cat === 'food' || it.cat === 'pantry' ? 'Buy…' : 'Buy'}</button>`;
-    return `<div class="sitem ${lock ? 'lockd' : ''}">${artH}<b>${esc(it.n)}</b><span class="desc">${esc(it.desc)}</span>${it.tip ? `<span class="small sh-tip">${esc(it.tip)}</span>` : ''}${it.price ? priceHTML(it.price + (it.cat === 'food' ? ' each' : '')) : ''}${have ? `<span class="small">You have ${have}</span>` : ''}${act}</div>`;
+    if (lock) act = `<span class="chip lock">${tt('shop.bond_chip', 'Bond {bond}', { bond: it.bond })}</span>${it.cat === 'tools' ? `<span class="small">${esc(twToolLock(it))}</span>` : ''}`;
+    else if (owned && it.cat === 'beds') act = S.bed === it.n ? `<span class="chip own">${tt('shop.owned_in_use', 'Owned · in use')}</span>` : `<button class="btn" data-usebed="${esc(it.n)}">${tt('shop.owned_use_bed', 'Owned · Use this bed')}</button>`;
+    else if (owned) act = it.cat === 'houses' ? (S.house === it.n ? `<span class="chip own">${tt('shop.owned_living', 'Owned · living here')}</span>` : `<button class="btn" data-use="${esc(it.n)}">${tt('shop.owned_move_in', 'Owned · Move in')}</button>`) : `<span class="chip own">${tt('shop.owned', 'Owned')}</span>`;
+    else if (it.price === 0) act = `<span class="chip own">${tt('shop.free', 'Free')}</span>`;
+    else act = `<button class="btn yes" data-buy="${esc(it.n)}">${it.cat === 'food' || it.cat === 'pantry' ? tt('shop.buy_more', 'Buy…') : tt('shop.buy', 'Buy')}</button>`;
+    return `<div class="sitem ${lock ? 'lockd' : ''}">${artH}<b>${esc(shItemName(it.cat, it.n, it.id))}</b><span class="desc">${esc(it.desc)}</span>${it.tip ? `<span class="small sh-tip">${esc(it.tip)}</span>` : ''}${it.price ? priceHTML(it.cat === 'food' ? tt('shop.price_each', '{price} each', { price: it.price }) : it.price) : ''}${have ? `<span class="small">${tt('shop.you_have_n', 'You have {n}', { n: have })}</span>` : ''}${act}</div>`;
   }).join('');
-  const greet = { kibble: 'Snacks, toys, and a strong smell of kibble.', boutique: 'Fashion for dogs who do not care about fashion.', builder: 'We build houses. Out of whatever. Mostly cardboard.' }[k];
-  const p = openModal(title, `<p class="small">${greet} You have ${S.coins} Paw Coins.</p>${tabs}<div class="shopgrid">${cards}</div>`, { cls: 'shop' });
+  const greet = { kibble: tt('shop.greet_kibble', 'Snacks, toys, and a strong smell of kibble.'), boutique: tt('shop.greet_boutique', 'Fashion for dogs who do not care about fashion.'), builder: tt('shop.greet_builder', 'We build houses. Out of whatever. Mostly cardboard.') }[k];
+  const p = openModal(title, `<p class="small">${esc(tt('shop.greet_coins', '{greet} {coins, plural, one {You have # Paw Coin.} other {You have # Paw Coins.}}', { greet, coins: S.coins }))}</p>${tabs}<div class="shopgrid">${cards}</div>`, { cls: 'shop' });
   p.querySelectorAll('[data-tab]').forEach((b) => { b.onclick = () => { shopTab.kibble = b.dataset.tab; openShop('kibble'); }; });
   p.querySelectorAll('[data-btab]').forEach((b) => { b.onclick = () => { SFX.click(); shopTab.builder = b.dataset.btab; openShop('builder'); }; });
   p.querySelectorAll('[data-usebed]').forEach((b) => { b.onclick = () => { useBed(b.dataset.usebed); openShop(k); }; });
@@ -127,16 +137,17 @@ function openShop(k) {
       const it = items.find((x) => x.n === b.dataset.buy); SFX.click();
       const stack = it.cat === 'food' || it.cat === 'pantry', owned = it.cat === 'beds' ? S.beds.includes(it.n) : it.cat === 'tools' ? twOwns(it.n) : hoCat(it) ? !!(S.decor && S.decor[it.n]) : !stack && owns(it.cat, it.n);
       const have = it.cat === 'food' ? (S.inv.food[it.n] || 0) : it.cat === 'pantry' ? (S.inv.pantry[it.id] || 0) : owned ? 1 : 0;
-      const q = await buyWindow(p, { art: it.cat === 'houses' ? art('house', it.n) : itemArt(it.n), name: it.n, desc: it.desc, price: it.price, stack, owned, have, haveLabel: stack ? 'In bag' : 'Owned' }); if (!q) return;
-      const cost = it.price * q; if (S.coins < cost) { nope('Not enough coins. Have you tried being rich?'); return; }
+      const nm = shItemName(it.cat, it.n, it.id);
+      const q = await buyWindow(p, { art: it.cat === 'houses' ? art('house', it.n) : itemArt(it.n), name: nm, desc: it.desc, price: it.price, stack, owned, have, haveLabel: stack ? tt('shop.in_bag', 'In bag') : tt('shop.owned', 'Owned') }); if (!q) return;
+      const cost = it.price * q; if (S.coins < cost) { nope(tt('shop.not_enough', 'Not enough coins. Have you tried being rich?')); return; }
       S.coins -= cost; SFX.kaching(); trackAct('buy', { name: it.n, cat: it.cat, qty: q, shop: k });
       if (hoCat(it)) { hmDecorFields(); S.decor[it.n] = { got: localISO(), out: false }; } else if (it.cat === 'beds') S.beds.push(it.n); else if (it.cat === 'food') S.inv.food[it.n] = (S.inv.food[it.n] || 0) + q; else if (it.cat === 'pantry') S.inv.pantry[it.id] = (S.inv.pantry[it.id] || 0) + q; else if (it.cat === 'tools') twGiveTool(it.n); else S.inv[it.cat].push(it.n);
       markDirty(); updateHUD();
-      toast(`Bought ${q} × ${it.n}. ${PICK(['The shopkeeper did a little dance.', 'Receipt drawn in crayon.', 'No refunds. Ever.', 'Wise purchase. Probably.'])}`, 'gold');
-      if (hoCat(it)) { openShop(k); const pp = $('.panel', modal); const pl = await confirmIn(pp, `Put the ${esc(it.n)} in the ${hoRoomOf(it.n)} now?`, 'Place it', 'Later'); if (pl) { closeModal(); hoPlaceStart(it.n); return; } openShop(k); return; }
-      if (it.cat === 'beds') { openShop(k); const pp = $('.panel', modal); const ub = await confirmIn(pp, `Put the ${esc(it.n)} in the house for ${esc(NAME())} now?`, 'Use it', 'Later'); if (ub) useBed(it.n); openShop(k); return; }
-      if (it.cat === 'houses') { openShop(k); const pp = $('.panel', modal); const mv = await confirmIn(pp, `Move ${esc(NAME())} into the ${esc(it.n)} now?`, 'Move in', 'Later'); if (mv) switchHouse(it.n); openShop(k); return; }
-      if (it.cat === 'clothes') { openShop(k); const pp = $('.panel', modal); const w = await confirmIn(pp, `Put the ${esc(it.n)} on ${esc(NAME())} now?`, 'Wear it', 'Later'); if (w) equip(it.n, true); openShop(k); return; }
+      toast(tt('shop.bought', 'Bought {q} × {item}. {pick}', { q, item: nm, pick: PICK([tt('shop.bought_1', 'The shopkeeper did a little dance.'), tt('shop.bought_2', 'Receipt drawn in crayon.'), tt('shop.bought_3', 'No refunds. Ever.'), tt('shop.bought_4', 'Wise purchase. Probably.')]) }), 'gold');
+      if (hoCat(it)) { openShop(k); const pp = $('.panel', modal); const pl = await confirmIn(pp, tt('shop.put_decor', 'Put the {n} in the {room} now?', { n: esc(nm), room: hoRoomOf(it.n) }), tt('shop.place_it', 'Place it'), tt('shop.later', 'Later')); if (pl) { closeModal(); hoPlaceStart(it.n); return; } openShop(k); return; }
+      if (it.cat === 'beds') { openShop(k); const pp = $('.panel', modal); const ub = await confirmIn(pp, tt('shop.put_bed', 'Put the {n} in the house for {name} now?', { n: esc(nm), name: esc(NAME()) }), tt('shop.use_it', 'Use it'), tt('shop.later', 'Later')); if (ub) useBed(it.n); openShop(k); return; }
+      if (it.cat === 'houses') { openShop(k); const pp = $('.panel', modal); const mv = await confirmIn(pp, tt('shop.move_house', 'Move {name} into the {n} now?', { name: esc(NAME()), n: esc(nm) }), tt('shop.move_in', 'Move in'), tt('shop.later', 'Later')); if (mv) switchHouse(it.n); openShop(k); return; }
+      if (it.cat === 'clothes') { openShop(k); const pp = $('.panel', modal); const w = await confirmIn(pp, tt('shop.put_on', 'Put the {n} on {name} now?', { n: esc(nm), name: esc(NAME()) }), tt('shop.wear_it', 'Wear it'), tt('shop.later', 'Later')); if (w) equip(it.n, true); openShop(k); return; }
       openShop(k);
     };
   });
@@ -144,27 +155,28 @@ function openShop(k) {
 
 
 /* ---- v2.1 TOWN: Kibble Corner tools (the Gene Sniffer) ---- */
-function twTools() { return [{ cat: 'tools', n: 'Gene Sniffer', price: 1200, bond: 6, desc: 'A pocket gadget that reads coat genes. Free sniffs at the Vet and on the Playdate Board.' }]; }
+function twTools() { return [{ cat: 'tools', n: 'Gene Sniffer', price: 1200, bond: 6, desc: tt('shop.gene_sniffer_desc', 'A pocket gadget that reads coat genes. Free sniffs at the Vet and on the Playdate Board.') }]; }
 function twOwns(n) { return n === 'Gene Sniffer' && !!(S && S.sniffer); }
 function twGiveTool(n) { if (n === 'Gene Sniffer') S.sniffer = true; }
-function twToolLock(it) { return `Locked. It unlocks when any dog reaches Bond ${it.bond}.`; }
+function twToolLock(it) { return tt('shop.tool_locked', 'Locked. It unlocks when any dog reaches Bond {bond}.', { bond: it.bond }); }
 on('game:ready', () => { if (S) { S.sniffer = !!S.sniffer; if (!S.sniffed || typeof S.sniffed !== 'object') S.sniffed = {}; } });
 
 /* ---- v2.4 SHOP: food safety tips and the feeding perks (called from feed() in 03_yard) ---- */
 // the two-sentence safety tip of a food. The first time a food is fed it shows once as a toast (S.foodTips). quiet: just return the text (the Journal Food tab)
 function shFoodTip(name, quiet) {
   const f = FOOD.find((x) => x.n === name); if (!f || !f.tip) return '';
-  if (quiet || !S) return f.tip;
+  const tip = tdata('food.' + tid(f.n) + '.tip', f.tip);
+  if (quiet || !S) return tip;
   if (!S.foodTips || typeof S.foodTips !== 'object') S.foodTips = {};
-  if (!S.foodTips[name]) { S.foodTips[name] = localISO(); markDirty(); toast(`${name}: ${f.tip}`, 'good'); }
-  return f.tip;
+  if (!S.foodTips[name]) { S.foodTips[name] = localISO(); markDirty(); toast(tt('shop.food_tip', '{name}: {tip}', { name: shItemName('food', name), tip }), 'good'); }
+  return tip;
 }
 const shWaterWait = () => (S.outfit.neck === 'Sailor Collar' ? 60 : 120); // Sailor Collar: the water bowl refills in 1 game hour
 const shPupMins = () => (S.outfit.body === 'Happi Coat' ? 120 : 60); // Happi Coat: Pupcake power for 2 game hours
 function shFeedPerk(name, f) {
   if (name === 'Fresh Water' || !f) return { happy: 0, msg: '' };
-  if (S.outfit.head === 'Chef Hat' && isMeal(name)) return { happy: 5, msg: " Chef's kiss: +5 Happiness." };
-  if (S.outfit.body === 'Bumblebee Suit' && !isMeal(name)) return { happy: 5, msg: ' Bzzz: +5 Happiness.' };
+  if (S.outfit.head === 'Chef Hat' && isMeal(name)) return { happy: 5, msg: ' ' + tt('shop.perk_chef', "Chef's kiss: +5 Happiness.") };
+  if (S.outfit.body === 'Bumblebee Suit' && !isMeal(name)) return { happy: 5, msg: ' ' + tt('shop.perk_bee', 'Bzzz: +5 Happiness.') };
   return { happy: 0, msg: '' };
 }
 on('game:ready', () => { if (S && (!S.foodTips || typeof S.foodTips !== 'object')) S.foodTips = {}; });

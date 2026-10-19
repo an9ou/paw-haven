@@ -245,7 +245,7 @@ function rmPackInner(d, i) {
 function rmLeadSVG(full) {
   const d = D(), r = rmSt(d);
   // #dogHit is 184 x 170 units, its bottom 5 units below the feet: 44 px wide with a tray open, and clear of the winter snowdog's tap rect on iPhone 15
-  const inner = full ? `<g id="dogPos"><g id="dogFx"><g id="dogArt"></g><rect id="dogHit" x="${DX + 40}" y="${DY + 40}" width="${DW - 80}" height="${DH - 50}" fill="transparent" pointer-events="all" class="hot" tabindex="0" role="button" aria-label="Pet the dog"/></g><g id="fluffFx" pointer-events="none"></g></g>` : '';
+  const inner = full ? `<g id="dogPos"><g id="dogFx"><g id="dogArt"></g><rect id="dogHit" x="${DX + 40}" y="${DY + 40}" width="${DW - 80}" height="${DH - 50}" fill="transparent" pointer-events="all" class="hot" tabindex="0" role="button" aria-label="${esc(tt('roam.pet_dog', 'Pet the dog'))}"/></g><g id="fluffFx" pointer-events="none"></g></g>` : '';
   return `<g class="rmdog rmlead" data-dog="${d.id}"><g class="rm-at" transform="${rmXf(r)}">${inner}</g></g>`;
 }
 function rmAdopt() {
@@ -533,7 +533,7 @@ function rmLookSync() {
     }
     // a dog chip, not the scene's look-around arrow (#phPeek): the head of the dog out there (as in the HUD row) with a small arrow pointing to it
     const key = l.map((d) => d.id + coatNameOf(d)).join(); if (b.dataset.k !== key) { b.dataset.k = key; b.innerHTML = `<span class="rm-head">${headSVG(l[0])}</span><svg class="rm-arrow" viewBox="0 0 20 24" aria-hidden="true"><path d="M6 4 Q13 10 14 12 Q12 15 6 20" fill="none" stroke="#5B3D32" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>${l.length > 1 ? `<i class="rm-n">${l.length}</i>` : ''}`; }
-    b.hidden = false; const n = l.map((d) => d.name); b.setAttribute('aria-label', `Look ${side < 0 ? 'left' : 'right'}: ${n.join(' and ')}`); b.title = n.join(', ');
+    b.hidden = false; const n = l.map((d) => d.name); b.setAttribute('aria-label', tt('roam.look', '{side, select, left {Look left: {names}} other {Look right: {names}}}', { side: side < 0 ? 'left' : 'right', names: tlist(n) })); b.title = n.join(', ');
   });
 }
 

@@ -48,22 +48,25 @@ const BREEDING = window.PawBreeding = window.PawBreeding || { RULES: {
   expecting: { hungerDecay: 1.2, walkCap: 'park', noPlaydates: true }, fixedNeverBreeds: true
 } };
 const PR = () => (S && S.dog && S.dog.sex === 'female' ? { he: 'she', him: 'her', his: 'her', He: 'She', His: 'Her', boy: 'girl', self: 'herself' } : { he: 'he', him: 'him', his: 'his', He: 'He', His: 'His', boy: 'boy', self: 'himself' });
-const sexSym = (sx) => (sx === 'female' ? '<span class="sex f" title="Girl" aria-label="girl">&#9792;</span>' : sx === 'male' ? '<span class="sex m" title="Boy" aria-label="boy">&#9794;</span>' : '');
+const sexSym = (sx) => (sx === 'female' ? '<span class="sex f" title="' + esc(tt('genes.title_girl', 'Girl')) + '" aria-label="' + esc(tt('genes.label_girl', 'girl')) + '">&#9792;</span>' : sx === 'male' ? '<span class="sex m" title="' + esc(tt('genes.title_boy', 'Boy')) + '" aria-label="' + esc(tt('genes.label_boy', 'boy')) + '">&#9794;</span>' : '');
 function localISO(d = new Date()) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
 function bornDaysAgo(n) { const d = new Date(); d.setDate(d.getDate() - n); return localISO(d); }
 function ageMonths(dog) { dog = dog || S.dog; if (!dog || !dog.born) return 10; const t = new Date(); t.setHours(0, 0, 0, 0); return Math.max(0, Math.round((t - new Date(dog.born + 'T00:00:00')) / 864e5)); }
 const lifeStage = (m) => (m < 6 ? 'puppy' : m < 12 ? 'young' : m < 84 ? 'adult' : 'senior');
-function ageText(m) { const y = Math.floor(m / 12), mo = m % 12, p = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`; return y ? (mo ? `${p(y, 'year')} ${p(mo, 'month')}` : p(y, 'year')) : p(mo, 'month'); }
+function ageText(m) {
+  const y = Math.floor(m / 12), mo = m % 12, ys = tt('genes.age_years', '{n, plural, one {# year} other {# years}}', { n: y }), ms = tt('genes.age_months', '{n, plural, one {# month} other {# months}}', { n: mo });
+  return y ? (mo ? tt('genes.age_years_months', '{years} {months}', { years: ys, months: ms }) : ys) : ms;
+}
 const giantRules = (dog) => { const g = BREEDING.RULES.giant; return g && dog && g.breeds.includes(dog.key) ? g : null; }; // v2.11: the Great Dane and the English Mastiff
 function seasonStatus(dog) {
   dog = dog || S.dog; const m = ageMonths(dog), H = BREEDING.RULES.heat;
-  if (dog.sex !== 'female') return { txt: 'Ready for playdates in v2', inSeason: false };
-  if (dog.fixed) return { txt: 'Spayed: no seasons', inSeason: false };
+  if (dog.sex !== 'female') return { txt: tt('genes.ready_for_playdates_in_v2', 'Ready for playdates in v2'), inSeason: false };
+  if (dog.fixed) return { txt: tt('genes.spayed_no_seasons', 'Spayed: no seasons'), inSeason: false };
   const gr = giantRules(dog), first = gr ? gr.adultMonths : H.firstMonths;
-  if (m < first) return { txt: `First season at ${first} months (in ${first - m} days)`, inSeason: false };
-  if (m >= BREEDING.RULES.noBreedFromMonths) return { txt: 'Retired from seasons (senior)', inSeason: false };
+  if (m < first) return { txt: tt('genes.first_season_at_months_in', 'First season at {first, plural, one {# month} other {# months}} (in {left, plural, one {# day} other {# days}})', { first, left: first - m }), inSeason: false };
+  if (m >= BREEDING.RULES.noBreedFromMonths) return { txt: tt('genes.retired_from_seasons_senior', 'Retired from seasons (senior)'), inSeason: false };
   const pos = (((m - H.firstMonths + (dog.seasonSeed || 0)) % H.everyDays) + H.everyDays) % H.everyDays;
-  return pos < H.lastsDays ? { txt: `In season (${H.lastsDays - pos} more day${H.lastsDays - pos > 1 ? 's' : ''})`, inSeason: true } : { txt: `Next season in ${H.everyDays - pos} day${H.everyDays - pos > 1 ? 's' : ''}`, inSeason: false };
+  return pos < H.lastsDays ? { txt: tt('genes.in_season_more_days', 'In season ({n, plural, one {# more day} other {# more days}})', { n: H.lastsDays - pos }), inSeason: true } : { txt: tt('genes.next_season_in_days', 'Next season in {n, plural, one {# day} other {# days}}', { n: H.everyDays - pos }), inSeason: false };
 }
 function newDogFields(key, sex, born) {
   const g = STARTER_GENES[key] || STARTER_GENES.mutt;
@@ -71,12 +74,12 @@ function newDogFields(key, sex, born) {
 }
 function birthdayCheck() {
   if (!S || !S.dog.born) return; const m = ageMonths();
-  if (m > 0 && m % 12 === 0 && S.lastBday !== m) { S.lastBday = m; addStat('happy', 10); markDirty(); toast(`Happy birthday, ${NAME()}! ${PR().He} is ${m / 12} dog year${m > 12 ? 's' : ''} old today. Someone baked ${PR().him} a tiny Pupcake. +10 Happiness.`, 'gold'); }
+  if (m > 0 && m % 12 === 0 && S.lastBday !== m) { S.lastBday = m; addStat('happy', 10); markDirty(); toast(tt('genes.happy_birthday_dog_years', '{sex, select, female {Happy birthday, {name}! She is {years, plural, one {# dog year} other {# dog years}} old today. Someone baked her a tiny Pupcake. +10 Happiness.} other {Happy birthday, {name}! He is {years, plural, one {# dog year} other {# dog years}} old today. Someone baked him a tiny Pupcake. +10 Happiness.}}', { sex: S.dog.sex, name: NAME(), years: m / 12 }), 'gold'); }
 }
 function askSex() {
   if (!S || S.dog.sex) return;
-  const p = openModal('Quick question for the paperwork', `<p>Is <b>${esc(NAME())}</b> a boy or a girl?</p><p class="small">Boys and girls of a breed look alike, just like real dogs.</p>`, { noX: true, foot: '<button class="btn big sexbtn m" id="sxM">&#9794; Boy</button><button class="btn big sexbtn f" id="sxF">&#9792; Girl</button>' });
-  const pick = (sx) => { S.dog.sex = sx; markDirty(); saveNow(); modalClose = null; closeModal(); hudDogKey = ''; setHudDog(); toast(`Paperwork done. ${NAME()} is a good ${PR().boy}, and ${PR().he} knows it.`, 'good'); };
+  const p = openModal(tt('genes.quick_question_for_the_paperwork', 'Quick question for the paperwork'), `<p>${tt('genes.is_a_boy_or_a_girl_html', 'Is <b>{name}</b> a boy or a girl?', { name: NAME() })}</p><p class="small">${tt('genes.boys_and_girls_of_a', 'Boys and girls of a breed look alike, just like real dogs.')}</p>`, { noX: true, foot: '<button class="btn big sexbtn m" id="sxM">&#9794; ' + tt('genes.boy', 'Boy') + '</button><button class="btn big sexbtn f" id="sxF">&#9792; ' + tt('genes.girl', 'Girl') + '</button>' });
+  const pick = (sx) => { S.dog.sex = sx; markDirty(); saveNow(); modalClose = null; closeModal(); hudDogKey = ''; setHudDog(); toast(tt('genes.paperwork_done_is_a_good', '{sex, select, female {Paperwork done. {name} is a good girl, and she knows it.} other {Paperwork done. {name} is a good boy, and he knows it.}}', { sex: sx, name: NAME() }), 'good'); };
   $('#sxM', p).onclick = () => pick('male'); $('#sxF', p).onclick = () => pick('female');
 }
 

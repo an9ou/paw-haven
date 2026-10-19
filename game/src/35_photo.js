@@ -10,13 +10,28 @@ const PH_LONG = 1080;
 const PH_SQ_MARGIN = 80; // scene units around the dogs in the square picture
 const PH = { on: false, cap: null, names: null, vb: null, tok: 0, svg: '', size: null, blob: null, blobTok: -1, blobP: null, url: '', saving: false, said: false, force: '', obs: [], keyFn: null, lastFocus: null, timer: 0, hold: null };
 
-const phCaps = () => PH_CAPS.map((t, i) => ({ id: 'c' + i, t })).concat([{ id: 'season', t: PH_SEASON_CAP[seasonNow()] || PH_SEASON_CAP.summer }]);
+const phCaps = () => PH_CAPS.map((t, i) => ({ id: 'c' + i, t: tdata('ph_caps.' + i, t) })).concat([{ id: 'season', t: (() => { const k = PH_SEASON_CAP[seasonNow()] ? seasonNow() : 'summer'; return tdata('ph_season_cap.' + k, PH_SEASON_CAP[k]); })() }]);
 function phCapNow() { const l = phCaps(); return l.find((c) => c.id === prefs.phCap) || l[0]; }
 const phFrames = () => ((window.PawArt && PawArt.POSTCARD_COLORS) || []).concat(typeof tkFrameList === 'function' ? tkFrameList() : []); // v2.11: the Tokyo stamp frame once all seven stamps are in (39_tokyo.js)
 function phColorNow() { const l = phFrames(); return l.find((c) => c.k === prefs.phFrame) || l[0] || { k: 'rose', n: 'Rose', c: '#F7B2C4' }; }
-function phPlaceName() { const p = S && S.place; return p === 'yard' ? 'Home' : p === 'house' ? 'The house' : (PLACES[p] && PLACES[p].n) || 'Doodle Town'; }
-function phDateLine() { const [y, m, d] = jstISO().split('-').map(Number); return `${d} ${FS_MONTHS[m - 1]} ${y}`; } // the Japan date, written like the festival dates
-function phNames(list) { return list.length < 2 ? list.join('') : list.slice(0, -1).join(', ') + ' and ' + list[list.length - 1]; }
+// the frame colour names come from world B (PawArt.POSTCARD_COLORS) and the Tokyo frame: shown through static keys, the table keys stay as they are
+function phFrameName(c) {
+  switch (c.k) {
+    case 'rose': return tt('photo.frame_rose', 'Rose');
+    case 'sun': return tt('photo.frame_sun', 'Sunny');
+    case 'mint': return tt('photo.frame_mint', 'Mint');
+    case 'sky': return tt('photo.frame_sky', 'Sky');
+    case 'lilac': return tt('photo.frame_lilac', 'Lilac');
+    case 'tokyo': return tt('photo.frame_tokyo', 'Tokyo stamps');
+    default: return c.n;
+  }
+}
+function phPlaceName() { const p = S && S.place; return p === 'yard' ? tt('photo.place_home', 'Home') : p === 'house' ? tt('photo.place_house', 'The house') : (PLACES[p] && tdata('places.' + p + '.n', PLACES[p].n)) || tt('photo.place_town', 'Doodle Town'); }
+// the Japan date, written like the festival dates ("19 October 2026"); the message gives the word order of each language, the month name comes from Intl
+function phDateLine() { const [y, m, d] = jstISO().split('-').map(Number); return tt('photo.date_line', '{d} {month} {y}', { d, month: tdate(new Date(2000, m - 1, 1), { month: 'long' }), y }); }
+function phNames(list) { return tlist(list); }
+// I18N CORE: the postcard's font hook. Return the extra CSS (@font-face / font-family overrides) that the current language needs inside the postcard SVG; '' keeps the Latin postcard fonts
+function phLangFontCSS() { return ''; }
 const phActive = () => PH.on;
 
 /* the camera is for the yard, the house and every town place: not on the title, walks, mini-games, the map, in a modal or while placing decorations */
@@ -26,11 +41,13 @@ function phCan() {
 
 /* ---------- the camera button (desktop), inserted next to the mute button ---------- */
 const phBtn = document.createElement('button');
-phBtn.id = 'phBtn'; phBtn.className = 'iconbtn'; phBtn.type = 'button'; phBtn.hidden = true; phBtn.setAttribute('aria-label', 'Take a photo'); phBtn.title = 'Take a photo';
-phBtn.innerHTML = ICON('camera');
+phBtn.id = 'phBtn'; phBtn.className = 'iconbtn'; phBtn.type = 'button'; phBtn.hidden = true; phBtn.innerHTML = ICON('camera');
 phBtn.onclick = () => { firstGesture(); SFX.click(); phOpen(); };
 $('#muteBtn').insertAdjacentElement('afterend', phBtn);
-function phSync() { phBtn.hidden = !phCan(); }
+function phSync() { // the label is set here, not at load: the language is known only once the game has booted
+  const l = tt('photo.take', 'Take a photo'); if (phBtn.title !== l) { phBtn.setAttribute('aria-label', l); phBtn.title = l; }
+  phBtn.hidden = !phCan();
+}
 [[modal, { attributes: true, attributeFilter: ['hidden'] }], [hud, { attributes: true, attributeFilter: ['hidden'] }], [view, { childList: true }], [stage, { attributes: true, attributeFilter: ['class'] }]].forEach(([el, o]) => new MutationObserver(phSync).observe(el, o));
 phSync();
 
@@ -143,7 +160,7 @@ function phCompose(c, o) {
   const PA = window.PawArt, L = phLayout(c, o.sq), win = PA.postcardWindow(L.size.w, L.size.h), vb = L.vb.map((n) => +n.toFixed(2)), names = phNamesIn(c, vb);
   const scene = `<svg x="${win.x.toFixed(2)}" y="${win.y.toFixed(2)}" width="${win.w.toFixed(2)}" height="${win.h.toFixed(2)}" viewBox="${vb.join(' ')}" preserveAspectRatio="xMidYMid slice" overflow="hidden"><rect x="${vb[0]}" y="${vb[1]}" width="${vb[2]}" height="${vb[3]}" fill="#FFFBF3"/>${vb[1] < c.vb[1] ? `<rect x="${vb[0]}" y="${vb[1]}" width="${vb[2]}" height="${f1(c.vb[1] - vb[1] + 2)}" fill="${c.sky}"/>` : ''}${c.inner}${phWash(c, vb)}</svg>`;
   let svg = (o.color === 'tokyo' && typeof tkPostcard === 'function' ? tkPostcard : PA.postcard)(L.size.w, L.size.h, { color: o.color, stamp: c.year, scene, caption: o.caption, place: c.place, date: c.date, dogs: phNames(names) });
-  svg = svg.replace(/^(<svg[^>]*>)/, `$1<style>${PH_FONT_CSS}*{animation:none!important;transition:none!important}</style>`);
+  svg = svg.replace(/^(<svg[^>]*>)/, `$1<style>${PH_FONT_CSS}${phLangFontCSS()}*{animation:none!important;transition:none!important}</style>`);
   return { svg, size: L.size, names, vb };
 }
 function phDataURL(svg) {
@@ -170,7 +187,7 @@ function phDraw(delay) {
     if (!PH.on || !PH.cap) return; const tok = ++PH.tok; PH.blob = null; PH.blobTok = -1;
     const o = phOpts(), r = phCompose(PH.cap, o); PH.svg = r.svg; PH.size = r.size; PH.names = r.names; PH.vb = r.vb;
     const url = phDataURL(r.svg), pic = $('.ph-pic'), root = $('#phMode'); if (root) root.classList.add('ph-busy');
-    let im; try { im = await phLoad(url); } catch (e) { if (root) root.classList.remove('ph-busy'); toast('The camera jammed. Try again.'); return; }
+    let im; try { im = await phLoad(url); } catch (e) { if (root) root.classList.remove('ph-busy'); toast(tt('photo.jammed', 'The camera jammed. Try again.')); return; }
     if (tok !== PH.tok || !PH.on) return;
     if (pic) { pic.src = url; pic.width = r.size.w; pic.height = r.size.h; }
     if (root) { root.classList.remove('ph-busy'); root.dataset.size = r.size.w + 'x' + r.size.h; root.dataset.sq = o.sq ? '1' : '0'; }
@@ -183,20 +200,20 @@ function phDraw(delay) {
 }
 function phPanel() {
   const cols = phFrames(), caps = phCaps(), col = phColorNow(), cap = phCapNow();
-  return `<div class="ph-view">${exPickerHTML()}<img class="ph-pic" alt="Your photo, framed as a postcard" draggable="false"></div>
+  return `<div class="ph-view">${exPickerHTML()}<img class="ph-pic" alt="${esc(tt('photo.pic_alt', 'Your photo, framed as a postcard'))}" draggable="false"></div>
   <div class="ph-side">
-    <h2 class="ph-h">Say cheese</h2>
-    <div class="ph-sec"><span class="ph-lbl">Frame</span><div class="ph-row ph-frames" role="group" aria-label="Frame colour">${cols.map((c) => `<button type="button" class="ph-swatch" data-frame="${c.k}" aria-label="${c.n} frame" title="${c.n}" aria-pressed="${c.k === col.k}" style="--sw:${c.c}"></button>`).join('')}</div></div>
-    <div class="ph-sec"><span class="ph-lbl">Caption</span><div class="ph-row ph-caps" role="group" aria-label="Caption">${caps.map((c) => `<button type="button" class="btn ph-cap" data-cap="${c.id}" aria-pressed="${c.id === cap.id}">${esc(c.t)}</button>`).join('')}</div></div>
-    <div class="ph-sec"><span class="ph-lbl">Shape</span><div class="ph-row ph-shapes" role="group" aria-label="Picture shape"><button type="button" class="btn ph-shape" data-sq="0" aria-pressed="${!prefs.phSq}">Postcard</button><button type="button" class="btn ph-shape" data-sq="1" aria-pressed="${!!prefs.phSq}" aria-label="Square picture">Square</button></div></div>
-    <div class="ph-acts"><button type="button" class="btn yes" id="phSave">Save photo</button><button type="button" class="btn" id="phAgain">Retake</button><button type="button" class="btn" id="phClose">Close</button></div>
+    <h2 class="ph-h">${esc(tt('photo.say_cheese', 'Say cheese'))}</h2>
+    <div class="ph-sec"><span class="ph-lbl">${esc(tt('photo.frame', 'Frame'))}</span><div class="ph-row ph-frames" role="group" aria-label="${esc(tt('photo.frame_colour', 'Frame colour'))}">${cols.map((c) => `<button type="button" class="ph-swatch" data-frame="${c.k}" aria-label="${esc(tt('photo.frame_named', '{name} frame', { name: phFrameName(c) }))}" title="${esc(phFrameName(c))}" aria-pressed="${c.k === col.k}" style="--sw:${c.c}"></button>`).join('')}</div></div>
+    <div class="ph-sec"><span class="ph-lbl">${esc(tt('photo.caption', 'Caption'))}</span><div class="ph-row ph-caps" role="group" aria-label="${esc(tt('photo.caption', 'Caption'))}">${caps.map((c) => `<button type="button" class="btn ph-cap" data-cap="${c.id}" aria-pressed="${c.id === cap.id}">${esc(c.t)}</button>`).join('')}</div></div>
+    <div class="ph-sec"><span class="ph-lbl">${esc(tt('photo.shape', 'Shape'))}</span><div class="ph-row ph-shapes" role="group" aria-label="${esc(tt('photo.picture_shape', 'Picture shape'))}"><button type="button" class="btn ph-shape" data-sq="0" aria-pressed="${!prefs.phSq}">${esc(tt('photo.postcard', 'Postcard'))}</button><button type="button" class="btn ph-shape" data-sq="1" aria-pressed="${!!prefs.phSq}" aria-label="${esc(tt('photo.square_picture', 'Square picture'))}">${esc(tt('photo.square', 'Square'))}</button></div></div>
+    <div class="ph-acts"><button type="button" class="btn yes" id="phSave">${esc(tt('photo.save', 'Save photo'))}</button><button type="button" class="btn" id="phAgain">${esc(tt('photo.retake', 'Retake'))}</button><button type="button" class="btn" id="phClose">${esc(tt('photo.close', 'Close'))}</button></div>
   </div>`;
 }
 function phOpen() {
   if (!phCan()) return false;
   exPhoto(true); const cap = phCapture(); if (!cap) { exPhoto(false); return false; } // v2.13: the face picked for the photo goes on every dog first (41_expressions.js)
   PH.on = true; PH.cap = cap; PH.lastFocus = document.activeElement; hideBubble(); toasts.innerHTML = ''; // a clear screen: the hints that were up fold away
-  let root = $('#phMode'); if (!root) { root = document.createElement('div'); root.id = 'phMode'; root.className = 'ph-mode'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-label', 'Photo mode'); stage.appendChild(root); }
+  let root = $('#phMode'); if (!root) { root = document.createElement('div'); root.id = 'phMode'; root.className = 'ph-mode'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-label', tt('photo.mode', 'Photo mode')); stage.appendChild(root); }
   root.hidden = false; root.classList.remove('ph-busy'); root.innerHTML = phPanel(); stage.classList.add('ph-on'); phBtn.hidden = true;
   root.querySelectorAll('[data-frame]').forEach((b) => { b.onclick = () => { SFX.click(); prefs.phFrame = b.dataset.frame; savePrefs(); root.querySelectorAll('[data-frame]').forEach((x) => x.setAttribute('aria-pressed', x === b)); phDraw(30); }; });
   root.querySelectorAll('[data-cap]').forEach((b) => { b.onclick = () => { SFX.click(); prefs.phCap = b.dataset.cap; savePrefs(); root.querySelectorAll('[data-cap]').forEach((x) => x.setAttribute('aria-pressed', x === b)); phDraw(30); }; });
@@ -210,7 +227,7 @@ function phOpen() {
   PH.obs = [new MutationObserver(() => { if (!modal.hidden) phClose(); })]; PH.obs[0].observe(modal, { attributes: true, attributeFilter: ['hidden'] }); // a pop-up (a level-up, a letter) ends the photo
   onCleanup(() => phClose(true)); // leaving the place (any go()) ends it too
   phDraw();
-  if (S.ph && !S.ph.first && !PH.said) { PH.said = true; setTimeout(() => { if (PH.on) toast('Gerald the duck: "Say cheese. Or kibble."', 'gold'); }, 250); }
+  if (S.ph && !S.ph.first && !PH.said) { PH.said = true; setTimeout(() => { if (PH.on) toast(tt('photo.gerald', 'Gerald the duck: "Say cheese. Or kibble."'), 'gold'); }, 250); }
   setTimeout(() => { const b = $('#phSave'); if (b && PH.on && !PH.hold) b.focus({ preventScroll: true }); }, 0);
   return true;
 }
@@ -255,9 +272,9 @@ async function phSave() {
   try {
     let blob = PH.blobTok === PH.tok ? PH.blob : null;
     if (!blob) { try { blob = await PH.blobP; } catch (e) { blob = null; } }
-    if (!blob) { toast('The camera jammed. Try again.'); return; }
+    if (!blob) { toast(tt('photo.jammed', 'The camera jammed. Try again.')); return; }
     const how = await phDeliver(blob);
-    if (how) { phCounted(how); SFX.boop(760); if (how === 'download') toast('Photo saved. Look in your downloads.', 'good'); else if (how === 'share') toast('Photo shared.', 'good'); }
+    if (how) { phCounted(how); SFX.boop(760); if (how === 'download') toast(tt('photo.saved', 'Photo saved. Look in your downloads.'), 'good'); else if (how === 'share') toast(tt('photo.shared', 'Photo shared.'), 'good'); }
   } finally { PH.saving = false; if (root) root.classList.remove('ph-saving'); }
 }
 function phHoldOpen(blob) { // no share and no download here: the picture fills the screen so it can be pressed and held
@@ -265,8 +282,8 @@ function phHoldOpen(blob) { // no share and no download here: the picture fills 
     const fr = new FileReader();
     fr.onload = () => {
       const root = $('#phMode'); if (!root) return res();
-      const h = document.createElement('div'); h.className = 'ph-hold'; h.setAttribute('role', 'dialog'); h.setAttribute('aria-label', 'Save your photo');
-      h.innerHTML = `<p class="ph-holdtxt">Press and hold to save</p><img class="ph-holdpic" alt="Your photo. Press and hold it to save." src="${fr.result}"><button type="button" class="btn yes" id="phHoldDone">Done</button>`;
+      const h = document.createElement('div'); h.className = 'ph-hold'; h.setAttribute('role', 'dialog'); h.setAttribute('aria-label', tt('photo.save_dialog', 'Save your photo'));
+      h.innerHTML = `<p class="ph-holdtxt">${esc(tt('photo.hold_save', 'Press and hold to save'))}</p><img class="ph-holdpic" alt="${esc(tt('photo.hold_alt', 'Your photo. Press and hold it to save.'))}" src="${fr.result}"><button type="button" class="btn yes" id="phHoldDone">${esc(tt('photo.done', 'Done'))}</button>`;
       root.appendChild(h); PH.hold = h; $('#phHoldDone', h).onclick = () => { SFX.click(); phHoldClose(); }; setTimeout(() => { const b = $('#phHoldDone', h); if (b) b.focus({ preventScroll: true }); }, 0); res();
     };
     fr.onerror = () => res(); fr.readAsDataURL(blob);
@@ -275,7 +292,7 @@ function phHoldOpen(blob) { // no share and no download here: the picture fills 
 function phHoldClose() { if (PH.hold) { PH.hold.remove(); PH.hold = null; const b = $('#phSave'); if (b && PH.on) b.focus({ preventScroll: true }); } }
 
 /* ---------- journal line, test hook ---------- */
-function phJournalLine() { const n = (S && S.ph && S.ph.n) || 0; return `<p class="small ph-jline">Photos taken: <b>${n}</b>${n ? '' : '. The camera button is by the sound button, or in the menu on a phone.'}</p>`; }
+function phJournalLine() { const n = (S && S.ph && S.ph.n) || 0; return `<p class="small ph-jline">${n ? tt('photo.taken_html', 'Photos taken: <b>{n}</b>', { n: tnum(n) }) : tt('photo.taken_none_html', 'Photos taken: <b>{n}</b>. The camera button is by the sound button, or in the menu on a phone.', { n: tnum(0) })}</p>`; }
 function phExpose() {
   if (!window.__paw || window.__paw.ph) return;
   window.__paw.ph = { open: () => phOpen(), close: () => phClose(), active: () => PH.on, can: () => phCan(), caps: () => phCaps(), svg: () => PH.svg, size: () => PH.size, ready: () => PH.blobTok === PH.tok && !!PH.blob, blobSize: () => PH.blob && PH.blob.size, force: (v) => { PH.force = v || ''; }, say: () => PH.said, place: () => phPlaceName(), date: () => phDateLine(), names: () => PH.cap && PH.cap.names, inShot: () => PH.names, crop: () => PH.vb, boxes: () => PH.cap && PH.cap.who };
