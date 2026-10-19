@@ -317,6 +317,12 @@ html.s-th .sitenav a{line-height:1.35}
 .getit{margin:18px auto 6px;max-width:600px;text-align:center}
 .itchbox{max-width:552px;margin:0 auto;overflow:hidden;background:var(--paper);border:2.5px solid var(--ink);border-radius:14px 10px 15px 9px;box-shadow:3px 4px 0 rgba(91,61,50,.18)}
 .itchbox iframe{display:block;width:100%;max-width:552px;height:167px;border:0}
+.itchcard{display:flex;align-items:center;gap:14px;min-height:167px;box-sizing:border-box;padding:14px 18px;text-align:left}
+.itchcard img{flex:none;width:96px;height:96px;border-radius:18px}
+.itchname{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}
+.itchname b{font-family:var(--hand);font-size:30px;line-height:1.1}
+.itchcard .chip{flex:none;min-height:44px}
+@media (max-width:500px){ .itchcard{flex-wrap:wrap;justify-content:center;text-align:center} .itchcard img{width:72px;height:72px} .itchname{flex-basis:calc(100% - 90px)} .itchcard .chip{flex-basis:100%} }
 .itchalt{margin:6px 0 2px}
 .itchalt a{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 6px;font-size:19px;font-weight:700;text-decoration:underline;text-decoration-color:var(--pink);text-decoration-thickness:2px;text-underline-offset:3px}
 .free{display:flex;align-items:center;justify-content:center;gap:14px;margin:4px 0 0}

@@ -38,7 +38,9 @@
     </section>
 
     <div class="getit">
-      <div class="itchbox" id="itchbox"><iframe id="itch" src="https://itch.io/embed/5163381?bg_color=fffbf3&fg_color=5b3d32&link_color=c93a2a&border_color=5b3d32" width="552" height="167" frameborder="0" title="{{a home.widget.title}}" loading="lazy"><a href="https://an9ou.itch.io/doodle-doggo">{{t home.widget.fallback}}</a></iframe></div>
+      <div class="itchbox" id="itchbox" data-src="https://itch.io/embed/5163381?bg_color=fffbf3&amp;fg_color=5b3d32&amp;link_color=c93a2a&amp;border_color=5b3d32" data-title="{{a home.widget.title}}">
+        <div class="itchcard" id="itchcard"><img src="/icon-192.png" alt="" width="96" height="96"><span class="itchname"><b>Doodle Doggo</b><span class="small">{{t home.widget.note}}</span></span><button type="button" class="chip" id="itchload" hidden>{{t home.widget.load}}</button></div>
+      </div>
       <p class="itchalt"><a id="itchlink" href="https://an9ou.itch.io/doodle-doggo">{{t home.widget.fallback}} <span aria-hidden="true">→</span></a></p>
       <p class="free"><span class="hanko" lang="ja" title="{{a home.free_title}}">無料</span><span class="small">{{t home.free_line}}</span></p>
     </div>

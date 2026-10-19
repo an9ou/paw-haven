@@ -4,6 +4,19 @@
 // Plain JS, no libraries, no requests beyond the site's own art (site/img/art, made by tools/site_art.js from the game's art).
 // World units are the game's playroom: 1000 x 600, feet y 450..596 (SR_ROOM.floor in game/src/30_shelter.js).
 // prefers-reduced-motion: no animation at all (the static scene in the HTML stays, no falling leaves, the peeking dogs just sit there).
+// The itch.io box (home) is click-to-load: itch.io's widget brings its own cookies and analytics, so it only loads when the visitor taps
+// "Show the itch.io box" (its address is in the page's data-src, not here). Without JavaScript the plain link under it is the way in.
+(function () {
+  var box = document.getElementById('itchbox'), btn = document.getElementById('itchload');
+  if (!box || !btn) return;
+  btn.hidden = false;
+  btn.addEventListener('click', function () {
+    var f = document.createElement('iframe');
+    f.id = 'itch'; f.title = box.getAttribute('data-title') || ''; f.width = 552; f.height = 167; f.setAttribute('frameborder', '0');
+    f.src = box.getAttribute('data-src');
+    box.textContent = ''; box.appendChild(f); box.classList.add('on');
+  });
+})();
 (function () {
   'use strict';
   var motion = !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
