@@ -20,15 +20,41 @@ const txt = (s, x, y, size, o = {}) => `<text x="${x}" y="${y}" font-family="${o
 const card = (x, y, w, h, rot = 0, fill = PAPER) => `<g transform="rotate(${rot} ${x + w / 2} ${y + h / 2})"><rect x="${x + 6}" y="${y + 10}" width="${w}" height="${h}" rx="34" fill="${INK}" opacity=".18"/><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="34" fill="${fill}" stroke="${INK}" stroke-width="5"/></g>`;
 const tape = (x, y, w, rot) => `<rect x="${x}" y="${y}" width="${w}" height="40" fill="${PINK}" opacity=".55" transform="rotate(${rot} ${x + w / 2} ${y + 20})"/>`;
 
-// ---- every Halloween costume in the game (CLOTHES with fest: 'halloween', game/src/00_core.js), then some fun combinations ----
+// ---- the looks (owner, 19 Oct 2026: "as much variation as you can"): every Halloween piece in the game (CLOTHES with fest: 'halloween',
+//      game/src/00_core.js), Halloween combinations, and classic dress-up costumes from the whole wardrobe (dogs/pawart_dogs.js OUT).
+//      Combinations avoid pieces the art hides (a hat under a v2.11.1 costume's own head piece, a neck item under a ghost sheet). ----
 const LOOKS = [
+  // the Halloween pieces on their own
   ['Witch Hat', { head: 'Witch Hat' }], ['Vampire Cape', { body: 'Vampire Cape' }], ['Candy Corn Bandana', { neck: 'Candy Corn Bandana' }], ['Bat Wings', { body: 'Bat Wings' }],
   ['Pumpkin Patch Suit', { body: 'Pumpkin Patch Suit' }], ['Trick-or-Treat Ghost', { body: 'Trick-or-Treat Ghost' }], ['Little Bat Costume', { body: 'Little Bat Costume' }],
-  ['Ghost Sheet', { body: 'Ghost Sheet' }], ['Pumpkin Suit', { body: 'Pumpkin Suit' }], ['Parade Rosette', { neck: 'Parade Rosette' }],
-  ['Witch Hat + Vampire Cape', { head: 'Witch Hat', body: 'Vampire Cape' }], ['Witch Hat + Candy Corn Bandana', { head: 'Witch Hat', neck: 'Candy Corn Bandana' }],
-  ['Witch Hat + Bat Wings', { head: 'Witch Hat', body: 'Bat Wings' }], ['Bat Wings + Candy Corn Bandana', { body: 'Bat Wings', neck: 'Candy Corn Bandana' }],
-  ['Vampire Cape + Parade Rosette', { body: 'Vampire Cape', neck: 'Parade Rosette' }], ['Witch Hat + Pumpkin Suit', { head: 'Witch Hat', body: 'Pumpkin Suit' }],
-  ['The Full Witch', { head: 'Witch Hat', neck: 'Candy Corn Bandana', body: 'Vampire Cape' }], ['No costume (he drew himself)', {}],
+  ['Ghost Sheet', { body: 'Ghost Sheet' }], ['Pumpkin Suit', { body: 'Pumpkin Suit' }], ['Parade Champion', { neck: 'Parade Rosette' }],
+  // Halloween combinations
+  ['The Full Witch', { head: 'Witch Hat', neck: 'Candy Corn Bandana', body: 'Vampire Cape' }], ['Flying Witch', { head: 'Witch Hat', body: 'Bat Wings' }],
+  ['Count Noodle', { body: 'Vampire Cape', neck: 'Parade Rosette' }], ['Pumpkin Witch', { head: 'Witch Hat', body: 'Pumpkin Suit' }],
+  ['Candy Bat', { body: 'Bat Wings', neck: 'Candy Corn Bandana' }], ['Ghost in Shades', { body: 'Ghost Sheet', eyes: 'Heart Sunglasses' }],
+  ['Cool Ghost', { body: 'Trick-or-Treat Ghost', eyes: 'Heart Sunglasses' }], ['Prize Pumpkin', { body: 'Pumpkin Patch Suit', neck: 'Parade Rosette' }],
+  ['Bat in Shades', { body: 'Little Bat Costume', eyes: 'Heart Sunglasses' }], ['Vampire Wizard', { head: 'Wizard Hat', body: 'Vampire Cape' }],
+  ['Fancy Witch', { head: 'Witch Hat', neck: 'Bow Tie' }], ['Vampire in Shades', { body: 'Vampire Cape', eyes: 'Heart Sunglasses' }],
+  ['Wizard Bat', { head: 'Wizard Hat', body: 'Bat Wings' }], ['Party Ghost', { head: 'Party Hat', body: 'Ghost Sheet' }],
+  ['Pumpkin Pie Chef', { head: 'Chef Hat', body: 'Pumpkin Suit' }], ['Vampire Cowboy', { head: 'Cowboy Hat', body: 'Vampire Cape' }],
+  ['Bumblebee Witch', { head: 'Witch Hat', body: 'Bumblebee Suit' }], ['Pumpkin Explorer', { body: 'Pumpkin Patch Suit', eyes: 'Explorer Goggles' }],
+  // classic dress-up costumes
+  ['Bumblebee', { body: 'Bumblebee Suit' }], ['Superhero', { body: 'Superhero Cape' }], ['Super Noodle', { body: 'Superhero Cape', eyes: 'Explorer Goggles' }],
+  ['Astronaut', { head: 'Astronaut Helmet' }], ['Space Bee', { head: 'Astronaut Helmet', body: 'Bumblebee Suit' }], ['Space Hero', { head: 'Astronaut Helmet', body: 'Superhero Cape' }],
+  ['Cowboy', { head: 'Cowboy Hat', neck: 'Red Bandana' }], ['Fancy Chef', { head: 'Chef Hat', neck: 'Bow Tie' }], ['Wizard', { head: 'Wizard Hat' }],
+  ['Grand Wizard', { head: 'Wizard Hat', body: 'Superhero Cape' }], ['Ballerina', { head: 'Flower Crown', body: 'Tutu' }], ['Frog', { body: 'Frog Raincoat' }],
+  ['Frog Princess', { head: 'Flower Crown', body: 'Frog Raincoat' }], ['Sleepyhead', { head: 'Pom-pom Beanie', body: 'Pyjamas' }], ['Sailor', { head: 'Rain Hat', neck: 'Sailor Collar' }],
+  ['Explorer', { eyes: 'Explorer Goggles', body: 'Mossy Poncho' }], ['Rock Star', { eyes: 'Heart Sunglasses', neck: 'Bow Tie' }],
+  ['Party Animal', { head: 'Party Hat', eyes: 'Heart Sunglasses', neck: 'Rainbow Collar' }], ['Reindeer', { head: 'Reindeer Antlers', neck: 'Red Bandana' }],
+  ['Festival Dancer', { body: 'Happi Coat' }], ['Scarecrow', { head: 'Acorn Cap', neck: 'Autumn Scarf', body: 'Mossy Poncho' }], ['Painter', { head: 'Leaf Beret', neck: 'Autumn Scarf' }],
+  ['Gardener', { head: 'Sun Hat', body: 'Mossy Poncho' }], ['Rainy Day', { head: 'Rain Hat', body: 'Yellow Raincoat' }], ['Bubble Bath', { body: 'Bubble Raincoat' }],
+  ['Ugly Sweater Champion', { body: 'Very Ugly Sweater', neck: 'Ugly Sweater Rosette' }], ['Cozy Day', { body: 'Cozy Hoodie', neck: 'Knit Scarf' }],
+  ['Polka Dot Party', { head: 'Party Hat', body: 'Polka-dot Raincoat' }], ['Tokyo Tourist', { head: 'Sun Hat', eyes: 'Heart Sunglasses', neck: 'Tokyo Tower Bandana' }],
+  ['Scramble Explorer', { eyes: 'Explorer Goggles', neck: 'Shibuya Bandana' }], ['Flower Fairy', { head: 'Flower Crown', neck: 'Clover Collar' }],
+  ['Beach Day', { head: 'Sun Hat', neck: 'Seashell Necklace' }], ['Snow Day', { head: 'Pom-pom Beanie', neck: 'Snowflake Snood' }],
+  ['Lucky Festival', { neck: 'Asakusa Bandana', body: 'Happi Coat' }], ['Ski Trip', { body: 'Knit Winter Sweater', eyes: 'Explorer Goggles' }],
+  ['Bee in Shades', { body: 'Bumblebee Suit', eyes: 'Heart Sunglasses' }],
+  ['No costume (he drew himself)', {}],
 ];
 
 // ---- the stage: the game's yard at dusk, Halloween on, Japan scenery on; a small header that stays the whole time ----
@@ -90,7 +116,7 @@ const mux = (video, audio, T, mp4, extra = []) => cp.execFileSync('ffmpeg', ['-l
 
   // ---- the cover (shared by A and B so the test compares the motion only; the grid shows the middle 1080 x 1440, y 240..1680) ----
   {
-    const pick = [4, 6, 5, 16, 1, 7], cells = pick.map((li, j) => { const cx = 200 + (j % 3) * 340, cy = 860 + Math.floor(j / 3) * 420, sv = PA.dog('dachs', { pose: 'happy', facing: 'right', anim: false, outfit: LOOKS[li][1] }), [bx, by, bw, bh] = NB, k = 300 / bw;
+    const pick = ['Bumblebee', 'Little Bat Costume', 'Astronaut', 'The Full Witch', 'Pumpkin Patch Suit', 'Trick-or-Treat Ghost'].map((n) => LOOKS.findIndex((l) => l[0] === n)), cells = pick.map((li, j) => { const cx = 200 + (j % 3) * 340, cy = 860 + Math.floor(j / 3) * 420, sv = PA.dog('dachs', { pose: 'happy', facing: 'right', anim: false, outfit: LOOKS[li][1] }), [bx, by, bw, bh] = NB, k = 300 / bw;
       return card(cx - 160, cy - 190, 320, 380, j % 2 ? 2 : -2) + `<svg x="${f1(cx - bw * k / 2)}" y="${f1(cy + 90 - bh * k)}" width="${f1(bw * k)}" height="${f1(bh * k)}" viewBox="${[bx, by, bw, bh].map(f1).join(' ')}" overflow="visible">${inner(sv)}</svg>` + txt('?', cx + 120, cy - 120, 64, { fill: ORANGE, rot: 12 }); }).join('');
     await shot(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${paperTop}<rect y="440" width="${W}" height="${H - 440}" fill="url(#dots)"/>`
       + txt('Pick Noodle’s', W / 2, 420, 120, { rot: -2 }) + txt('Halloween costume', W / 2, 545, 110, { rot: -2, fill: ORANGE }) + txt('stop the video to choose 🎃', W / 2, 630, 58, { fill: MUTED, rot: -1 })
@@ -109,8 +135,8 @@ const mux = (video, audio, T, mp4, extra = []) => cp.execFileSync('ffmpeg', ['-l
   // ---- B "fall-through" (like the owner's reference): Noodle stands still; each costume falls straight down, fast, right through him,
   //      and lines up on him for one frame only. Pause on that frame and he wears it; a frame early or late and it misses. ----
   // The falling costume is cut out of the game's own drawing (Noodle wearing it minus plain Noodle, pixel by pixel), so it fits exactly.
-  const B_STEP = 0.9, B_N = 40, B_T = +(B_STEP * B_N).toFixed(2), CROSS = 0.8; // one costume every 0.9 s, 0.8 s from the top edge to the bottom edge
-  const B_LOOKS = LOOKS.map((_, i) => i).filter((i) => Object.keys(LOOKS[i][1]).length), bseq = order(B_LOOKS, B_N, 11);
+  // every look falls once per loop (63 looks), one every 0.7 s (44.1 s), 0.65 s from the top edge to the bottom edge
+  const B_LOOKS = LOOKS.map((_, i) => i).filter((i) => Object.keys(LOOKS[i][1]).length), B_STEP = 0.7, B_N = B_LOOKS.length, B_T = +(B_STEP * B_N).toFixed(2), CROSS = 0.65, bseq = order(B_LOOKS, B_N, 11);
   const align = bseq.map((_, k) => Math.round((k * B_STEP + B_STEP / 2) * FPS) / FPS); // the exact frame each costume fits
   const lands = align;
   if (WHICH !== 'a') {
@@ -120,12 +146,15 @@ const mux = (video, audio, T, mp4, extra = []) => cp.execFileSync('ffmpeg', ['-l
     // costume sprites: render Noodle with and without the costume on a transparent canvas, keep the pixels that differ
     const solo = (outfit) => `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${noodle(outfit)}</svg>`;
     const sprite = {};
-    for (const li of B_LOOKS) sprite[li] = await p.evaluate(async ([s1, s0, W, H]) => {
+    // body pieces are drawn before the dog's outline, so they shift its crayon wobble everywhere: cut them with the strong clean-up.
+    // Head, eyes and neck pieces are drawn last and barely shift anything: cut them on their own with a light clean-up, so thin parts
+    // (glasses frames, flower crowns) survive. Then put the two cut-outs together (body first, small pieces on top).
+    const cut = (s1, s0, er, gr) => p.evaluate(async ([s1, s0, W, H, er, gr]) => {
       const load = (s) => new Promise((ok) => { const im = new Image(); im.onload = () => ok(im); im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s); });
       const [a, b] = await Promise.all([load(s1), load(s0)]), c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
       x.drawImage(b, 0, 0); const d0 = x.getImageData(0, 0, W, H); x.clearRect(0, 0, W, H); x.drawImage(a, 0, 0); const d1 = x.getImageData(0, 0, W, H), o = d1.data, z = d0.data;
       // the crayon lines wobble a little differently when he wears something, so a plain difference also catches thin copies of his outline:
-      // keep only the differing pixels near a solid differing area (an opening: erode by 8, grow by 14)
+      // keep only the differing pixels near a solid differing area (an opening: erode by er, grow by gr)
       const m = new Uint8Array(W * H);
       for (let i = 0, q = 0; i < o.length; i += 4, q++) m[q] = (Math.abs(o[i] - z[i]) + Math.abs(o[i + 1] - z[i + 1]) + Math.abs(o[i + 2] - z[i + 2]) + Math.abs(o[i + 3] - z[i + 3])) >= 40 ? 1 : 0;
       const pass = (src, r, minMode) => { const t = new Uint8Array(W * H), u = new Uint8Array(W * H);
@@ -133,11 +162,21 @@ const mux = (video, audio, T, mp4, extra = []) => cp.execFileSync('ffmpeg', ['-l
           for (let x = 0; x < W; x++) { let v = minMode ? 1 : 0; for (let k = -r; k <= r; k++) { const xx = x + k; const sv = xx < 0 || xx >= W ? 0 : src[row + xx]; if (minMode ? !sv : sv) { v = minMode ? 0 : 1; break; } } t[row + x] = v; } }
         for (let x = 0; x < W; x++) for (let y = 0; y < H; y++) { let v = minMode ? 1 : 0; for (let k = -r; k <= r; k++) { const yy = y + k; const sv = yy < 0 || yy >= H ? 0 : t[yy * W + x]; if (minMode ? !sv : sv) { v = minMode ? 0 : 1; break; } } u[y * W + x] = v; }
         return u; };
-      const keep = pass(pass(m, 8, true), 14, false);
+      const keep = pass(pass(m, er, true), gr, false);
       let top = H, bot = 0;
       for (let i = 0, q = 0; i < o.length; i += 4, q++) { if (!(m[q] && keep[q])) o[i + 3] = 0; else { const y = (q / W) | 0; if (y < top) top = y; if (y > bot) bot = y; } }
       x.putImageData(d1, 0, 0); return { url: c.toDataURL('image/png'), top, bot };
-    }, [solo(LOOKS[li][1]), solo({}), W, H]);
+    }, [s1, s0, W, H, er, gr]);
+    for (const li of B_LOOKS) {
+      const o = LOOKS[li][1], small = Object.fromEntries(Object.entries(o).filter(([k]) => k !== 'body')), parts = [];
+      if (o.body) parts.push(await cut(solo({ body: o.body }), solo({}), 8, 14));
+      if (Object.keys(small).length) parts.push(await cut(solo(small), solo({}), 2, 4));
+      sprite[li] = parts.length === 1 ? parts[0] : await p.evaluate(async ([urls, W, H]) => {
+        const load = (u) => new Promise((ok) => { const im = new Image(); im.onload = () => ok(im); im.src = u; }), c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
+        for (const im of await Promise.all(urls.map(load))) x.drawImage(im, 0, 0); return c.toDataURL('image/png');
+      }, [parts.map((q) => q.url), W, H]).then((url) => ({ url, top: Math.min(...parts.map((q) => q.top)), bot: Math.max(...parts.map((q) => q.bot)) }));
+      if (sprite[li].bot <= sprite[li].top) throw new Error('nothing to drop for ' + LOOKS[li][0]);
+    }
     if (process.env.SPRITES) { for (const li of B_LOOKS) { const sp = sprite[li]; await shot(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><image href="${bg}" width="${W}" height="${H}"/><image href="${sp.url}" width="${W}" height="${H}"/>${txt(LOOKS[li][0], W / 2, 1480, 60)}</svg>`, path.join(WORK, 'b', `sprite${li}.png`)); } await b.close(); return; }
     const sparkle = `<g transform="translate(830 840) rotate(-8)"><rect x="-150" y="-44" width="300" height="88" rx="44" fill="#FFD66B" stroke="${INK}" stroke-width="5"/>${txt('perfect fit!', 0, 18, 58)}</g>`;
     const NF = process.env.BFRAMES ? +process.env.BFRAMES : Math.round(B_T * FPS);
