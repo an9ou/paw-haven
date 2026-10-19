@@ -7,6 +7,10 @@ function homeSx(d) { return d && d.sex === 'female' ? 'female' : 'male'; }
 // v2.14: a mix as shown to the player. The saved mix.name is always English (it is compared and stored); PawGenes.mixName(mix) (mods/genes.js)
 // gives the name in the current language when it has one, else the English name.
 function mixShown(m) { if (!m) return ''; const G = window.PawGenes; if (G && typeof G.mixName === 'function') { try { const v = G.mixName(m); if (v) return v; } catch (e) { /* use the English name */ } } return m.name || ''; }
+// v2.14: a saved English coat name as shown (display only; never use it for comparing or saving)
+function coatShown(c, key) { if (!c) return c; const G = window.PawGenes; if (G && typeof G.coatLabel === "function") { try { const v = G.coatLabel(c, key); if (v) return v; } catch (e) { /* use the English name */ } } return c; }
+// v2.14: a stored English mix word (a chip name) as shown
+function mixWordShown(n) { const G = window.PawGenes; if (n && G && typeof G.mixLabel === "function") { try { const v = G.mixLabel(n); if (v) return v; } catch (e) { /* use the English name */ } } return n; }
 // v2.14: the name of an item as shown to the player (food, toys, clothes, houses, beds, decorations). The English name stays the id everywhere else.
 function homeName(n) {
   const T = [['food', FOOD], ['tfood', typeof TFOOD !== 'undefined' ? TFOOD : []], ['toys', TOYS], ['clothes', CLOTHES], ['houses', HOUSES], ['beds', typeof BEDS !== 'undefined' ? BEDS : []]];

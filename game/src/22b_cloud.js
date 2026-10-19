@@ -247,6 +247,7 @@ function clApply(data, row, msg) {
   const onTitle = cur.mode === 'title' || cur.mode === 'adopt' || !cur.mode;
   S = loadSave(); hudDogKey = ''; if (typeof coatCache !== 'undefined' && coatCache.clear) coatCache.clear();
   if (!S) return false;
+  if (typeof tlangCheck === "function") tlangCheck();
   if (!onTitle) { if (!modal.hidden) closeModal(); applyAway(); gardenAdvance(); birthdayCheck(); go('yard'); }
   else go('title');
   if (!CL.ready) emit('game:ready', { fresh: false });

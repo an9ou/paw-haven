@@ -494,7 +494,7 @@ function placeAmbient() {
   if (S.place === 'hilltop' && weatherNow() === 'sunny' && Math.random() < 0.6) { kiteWatch(); return; }
   if (S.place === 'pier' && Math.random() < 0.5) { say(PICK([tt('yard.a_seagull_is_staring_at', 'A seagull is staring at my snacks. I am staring back.'), tt('yard.the_sea_is_very_big', 'The sea is very big. I approve.'), tt('yard.boats_floating_houses_for_fish', 'Boats! Floating houses for fish.')]), h.x, h.y); townBubbleBelowDog(); return; }
   if (S.place === 'park' && Math.random() < 0.5) { const k = PICK(dogsList().filter((d) => d.key !== S.dog.key)).key; SFX.bark(BARK[k] || 1); toast(tt('yard.a_friendly_trots_by_2', 'A friendly {breed} trots by: "{pick}" (+2 Happiness)', { breed: adBreed(dogInfo(k)), pick: homePick('npc_jokes', NPC_JOKES) }), 'good'); addStat('happy', 2); alertBark(); return; }
-  const plk = PLACE_LINES[S.dog.key] ? S.dog.key : 'mutt', l = PLACE_LINES[plk][S.place]; if (l) { say(tdata(tkLinePath(plk, S.place) || 'place_lines.' + plk + '.' + S.place, l), h.x, h.y); if (S.place === 'pier') townBubbleBelowDog(); }
+  const plk = PLACE_LINES[S.dog.key] ? S.dog.key : 'mutt', l = PLACE_LINES[plk][S.place]; if (l) { say(tdata(tkLinePath(plk, S.place) || (typeof jpLinePath === "function" && jpLinePath(plk, S.place)) || 'place_lines.' + plk + '.' + S.place, l), h.x, h.y); if (S.place === 'pier') townBubbleBelowDog(); }
 }
 function beachDig() {
   dailyCheck(); if (S.daily.beachDig) { nope(tt('yard.one_beach_dig_a_day', 'One beach dig a day. The sand needs to recover. (It does not.)')); return; }
