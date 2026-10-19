@@ -2,31 +2,47 @@
 //   node tools/cf_site.js            -> _cfsite/worker.js + its modules + _cfsite/parts.txt (one "name type" line per upload part) + _cfsite/sizes.json
 //   node tools/cf_site.js --pseudo   also serves the test-only pseudo-locales /xx/ and /xx-cjk/ (game/test_site.js; never deployed)
 //   bash tools/cf_pages_deploy.sh    builds this and deploys it to doodledoggo.app (needs the owner's go-ahead)
-// Pages: / (index.html: the live playroom, the dog cards, Dogs in Japan), /dogs (the profiles), /privacy, /reset (a notice: resets happen in the game),
-// and since v2.14 the same four in 10 more languages at /<lang>/ (ja, zh-hans, zh-hant, ko, es, pt-br, fr, de, th, id). Every page is made here by
+// Pages: / (index.html: the live playroom, the itch.io widget, eight dog cards, Dogs in Japan), /dogs (the profiles), /map (every place, site v3),
+// /about (the story, site v3), /privacy, /reset (a notice: resets happen in the game), and since v2.14 the same pages in 10 more languages at /<lang>/ (ja, zh-hans, zh-hant, ko, es, pt-br, fr, de, th, id). Every page is made here by
 // tools/site_i18n.js from site/tpl/ and site/i18n/ (English is also committed as site/*.html; a warning shows when that copy is out of date).
 // No content negotiation: each URL is one language, so no Vary header; the language menu and a first-visit script (English pages only) pick the language.
 // Fonts for the other scripts (site/fonts/i18n/<lang>.woff2 + .css, the FONTS lane): when that folder has files they go to a second Worker,
 // doodle-doggo-fonts (_cfsite_fonts/, on the route doodledoggo.app/fonts/i18n/*, which runs before the Custom Domain), so the CJK fonts don't
 // count against this Worker's size. SITE_FONTS=inline keeps them in the main Worker instead. Empty folder: no second Worker at all.
+// Site v3: the same for the place pictures of /map (site/img/map/, the SHOTS lane): a third Worker, doodle-doggo-img (_cfsite_img/, route
+// doodledoggo.app/img/map/*), or SITE_IMG=inline. Both side Workers come from one table (SIDE below); sizes.json records fonts/fontMode and img/imgMode.
 // The game itself is played on itch.io (https://an9ou.itch.io/doodle-doggo); this site only introduces it.
 // Why a Worker and not Pages: Pages and Workers-assets uploads authenticate with a short-lived upload JWT, which the cloud
 // session's proxy replaces with the account API token, so those uploads fail there. A Worker script upload needs only the
 // API token. www.doodledoggo.app answers with a 301 to the apex, keeping the path.
 const fs = require('fs'), path = require('path'), zlib = require('zlib'), crypto = require('crypto');
 const I18N = require('./site_i18n');
-const root = path.join(__dirname, '..'), site = path.join(root, 'site'), brand = path.join(root, 'brand'), out = path.join(root, '_cfsite'), outFonts = path.join(root, '_cfsite_fonts');
-const TYPES = { html: 'text/html; charset=utf-8', css: 'text/css; charset=utf-8', svg: 'image/svg+xml', png: 'image/png', webp: 'image/webp', woff2: 'font/woff2', webmanifest: 'application/manifest+json', txt: 'text/plain; charset=utf-8', js: 'text/javascript; charset=utf-8' };
+const root = path.join(__dirname, '..'), site = path.join(root, 'site'), brand = path.join(root, 'brand'), out = path.join(root, '_cfsite');
+const TYPES = { html: 'text/html; charset=utf-8', css: 'text/css; charset=utf-8', svg: 'image/svg+xml', png: 'image/png', webp: 'image/webp', jpg: 'image/jpeg', woff2: 'font/woff2', webmanifest: 'application/manifest+json', txt: 'text/plain; charset=utf-8', js: 'text/javascript; charset=utf-8' };
 const TEXT = new Set(['html', 'css', 'svg', 'webmanifest', 'txt', 'js']);
 const PSEUDO = process.argv.includes('--pseudo') || !!process.env.SITE_PSEUDO;
 const ALL = I18N.LANGS.concat(I18N.PSEUDO), DIRS = new Set(ALL.map((l) => l.dir).filter(Boolean));
+// the side Workers: a folder of site/ served by its own Worker on a route of the zone (a route runs before the Custom Domain), so its files don't count
+// against the main Worker. mode: 'none' (no files: no Worker), 'split' (the default) or 'inline' (env[name] === 'inline': served by the main Worker)
+const SIDE = [
+  { key: 'fonts', mode: 'fontMode', env: 'SITE_FONTS', url: '/fonts/i18n/', dir: path.join(site, 'fonts', 'i18n'), out: path.join(root, '_cfsite_fonts'), script: 'doodle-doggo-fonts',
+    keep: (f) => /\.(woff2|css)$/.test(f) || /-OFL\.txt$/.test(f), real: (f) => f.endsWith('.woff2'), cors: true,
+    what: 'The per-language fonts: the Worker doodle-doggo-fonts on the route doodledoggo.app/fonts/i18n/*.' },
+  { key: 'img', mode: 'imgMode', env: 'SITE_IMG', url: '/img/map/', dir: path.join(site, 'img', 'map'), out: path.join(root, '_cfsite_img'), script: 'doodle-doggo-img',
+    keep: (f) => /\.(webp|png|jpg|svg)$/.test(f), real: () => true, cors: false,
+    what: 'The place pictures of /map: the Worker doodle-doggo-img on the route doodledoggo.app/img/map/*.' }
+];
+SIDE.forEach((x) => {
+  x.files = fs.existsSync(x.dir) ? fs.readdirSync(x.dir).filter(x.keep).sort() : [];
+  x.mod = !x.files.some(x.real) ? 'none' : (process.env[x.env] === 'inline' ? 'inline' : 'split');
+});
 // url path -> source file (or generated text)
 const files = {}, gen = {};
 const walk = (dir, base) => fs.readdirSync(dir).forEach((f) => {
   const p = path.join(dir, f);
   if (fs.statSync(p).isDirectory()) {
     if (!base && (DIRS.has(f) || f === 'tpl' || f === 'i18n')) return; // the language folders are made below; templates and string tables are not served
-    if (base === 'fonts/' && f === 'i18n') return; // the per-language fonts: see FONT_FILES
+    if (SIDE.some((x) => x.url === '/' + base + f + '/')) return; // the side Workers' folders: see SIDE
     return walk(p, base + f + '/');
   }
   if (TYPES[f.split('.').pop()]) files['/' + base + f] = p;
@@ -49,7 +65,7 @@ const PRETTY = {}, LANG_OF = { '': 'en' };
 for (const L of I18N.LANGS.concat(PSEUDO ? I18N.PSEUDO : [])) {
   const pre = L.dir ? '/' + L.dir : '';
   LANG_OF[pre] = L.code;
-  PRETTY[pre || '/'] = pre + '/index.html'; PRETTY[pre + '/dogs'] = pre + '/dogs.html'; PRETTY[pre + '/privacy'] = pre + '/privacy.html'; PRETTY[pre + '/reset'] = pre + '/reset.html';
+  I18N.PAGES.forEach((pg) => { PRETTY[pg.path === '/' ? pre || '/' : pre + pg.path] = pre + '/' + pg.id + '.html'; });
 }
 // the friendly 404 in each language
 const NOTFOUND = {};
@@ -59,13 +75,11 @@ for (const L of I18N.LANGS.concat(PSEUDO ? I18N.PSEUDO : [])) {
   const flink = fbody && /@font-face/.test(fbody) ? `<link rel="stylesheet" href="/fonts/i18n/${path.basename(fcss)}?v=${crypto.createHash('sha1').update(fbody).digest('hex').slice(0, 8)}">` : '';
   NOTFOUND[L.dir ? '/' + L.dir : ''] = `<!doctype html><html lang="${L.code}"${L.code === 'en' ? '' : ` class="i18n s-${L.script}"`}><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${I18N.fmt(L.code, 'notfound.title').replace(/<[^>]*>/g, '')} · Doodle Doggo</title><link rel="stylesheet" href="/style.css">${flink}<main class="page"><div class="sheet center"><h1>${I18N.fmt(L.code, 'notfound.title')}</h1><p><a class="play" href="${I18N.urlFor(L, '/')}">${I18N.fmt(L.code, 'notfound.home')}</a></p></div></main>`;
 }
-// the per-language fonts
-const fontDir = path.join(site, 'fonts', 'i18n');
-const FONT_FILES = fs.existsSync(fontDir) ? fs.readdirSync(fontDir).filter((f) => /\.(woff2|css)$/.test(f) || /-OFL\.txt$/.test(f)).sort() : [];
-const FONT_MODE = !FONT_FILES.some((f) => f.endsWith('.woff2')) ? 'none' : (process.env.SITE_FONTS === 'inline' ? 'inline' : 'split');
-if (FONT_MODE === 'inline') FONT_FILES.forEach((f) => { files['/fonts/i18n/' + f] = path.join(fontDir, f); });
+// the side Workers' files, when they stay in the main Worker
+SIDE.filter((x) => x.mod === 'inline').forEach((x) => x.files.forEach((f) => { files[x.url + f] = path.join(x.dir, f); }));
 
-const CSP = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self'; font-src 'self'; connect-src https://pawhaven-api.ansonyuen0108.workers.dev; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
+// site v3: frame-src https://itch.io for the itch.io widget on the home page (default-src 'self' would block the frame)
+const CSP = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self'; font-src 'self'; connect-src https://pawhaven-api.ansonyuen0108.workers.dev; frame-src https://itch.io; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
 const HEAD = (name) => `// Generated by tools/cf_site.js from site/ and brand/. Do not edit: run node tools/cf_site.js (or bash tools/cf_pages_deploy.sh). ${name}`;
 function emit(dir, entries, workerSrc) { // entries: [url, source path or {text}] -> modules + parts.txt; returns the gzipped size
   fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });
@@ -119,10 +133,12 @@ export default {
   }
 };
 `);
-let fontsGz = 0;
-fs.rmSync(outFonts, { recursive: true, force: true });
-if (FONT_MODE === 'split') {
-  fontsGz = emit(outFonts, FONT_FILES.map((f) => ['/fonts/i18n/' + f, path.join(fontDir, f)]), (imports, table) => `${HEAD('The per-language fonts: the Worker doodle-doggo-fonts on the route doodledoggo.app/fonts/i18n/*.')}
+const sideGz = {};
+SIDE.forEach((x) => {
+  fs.rmSync(x.out, { recursive: true, force: true }); sideGz[x.key] = 0;
+  if (x.mod !== 'split') return;
+  const extra = x.cors ? `, 'access-control-allow-origin': 'https://doodledoggo.app'` : '';
+  sideGz[x.key] = emit(x.out, x.files.map((f) => [x.url + f, path.join(x.dir, f)]), (imports, table) => `${HEAD(x.what)}
 ${imports}
 const FILES = {
 ${table}
@@ -132,16 +148,17 @@ export default {
     const url = new URL(req.url), hit = FILES[url.pathname];
     if (req.method !== 'GET' && req.method !== 'HEAD') return new Response('Method not allowed', { status: 405, headers: { allow: 'GET, HEAD' } });
     if (!hit) return new Response('Not found', { status: 404, headers: { 'content-type': 'text/plain; charset=utf-8', 'x-content-type-options': 'nosniff' } });
-    return new Response(req.method === 'HEAD' ? null : hit[0], { headers: { 'content-type': hit[1], 'cache-control': 'public, max-age=604800', 'x-content-type-options': 'nosniff', 'access-control-allow-origin': 'https://doodledoggo.app' } });
+    return new Response(req.method === 'HEAD' ? null : hit[0], { headers: { 'content-type': hit[1], 'cache-control': 'public, max-age=604800', 'x-content-type-options': 'nosniff'${extra} } });
   }
 };
 `);
-}
+});
 // per-language cost of the pages (gzipped), for the budget
 const perLang = {};
 for (const [u, html] of Object.entries(gen)) { const d = u.split('/').length > 2 ? u.split('/')[1] : 'en'; perLang[d] = (perLang[d] || 0) + zlib.gzipSync(html).length; }
-const sizes = { main: mainGz, fonts: fontsGz, fontMode: FONT_MODE, limit: 2.5e6, perLang };
+const sizes = { main: mainGz, limit: 2.5e6, perLang };
+SIDE.forEach((x) => { sizes[x.key] = sideGz[x.key]; sizes[x.mode] = x.mod; });
 fs.writeFileSync(path.join(out, 'sizes.json'), JSON.stringify(sizes, null, 1) + '\n');
 const raw = Object.values(files).reduce((n, f) => n + fs.statSync(f).size, 0) + Object.values(gen).reduce((n, h) => n + Buffer.byteLength(h), 0);
 console.log('wrote _cfsite/worker.js +', Object.keys(files).length + Object.keys(gen).length, 'files,', (raw / 1e6).toFixed(2), 'MB,', (mainGz / 1e6).toFixed(2), 'MB gzipped'
-  + (FONT_MODE === 'split' ? `; _cfsite_fonts/worker.js + ${FONT_FILES.length} font files, ${(fontsGz / 1e6).toFixed(2)} MB gzipped` : FONT_MODE === 'inline' ? `; ${FONT_FILES.length} font files inline` : ''));
+  + SIDE.map((x) => (x.mod === 'split' ? `; ${path.basename(x.out)}/worker.js + ${x.files.length} ${x.key} files, ${(sideGz[x.key] / 1e6).toFixed(2)} MB gzipped` : x.mod === 'inline' ? `; ${x.files.length} ${x.key} files inline` : '')).join(''));

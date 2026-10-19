@@ -1,15 +1,18 @@
 // doodledoggo.app in 11 languages (v2.14): writes every page of the site from the templates in site/tpl/ and the string tables in site/i18n/.
-//   node tools/site_i18n.js              writes site/index.html, dogs.html, privacy.html, reset.html (English, committed) and site/<dir>/... for the
+//   node tools/site_i18n.js              writes site/index.html, dogs.html, map.html, about.html, privacy.html, reset.html (English, committed) and site/<dir>/... for the
 //                                        other 10 languages (generated, git-ignored; tools/cf_site.js builds them itself), and prints the missing-key report
 //   node tools/site_i18n.js --report     the full report: every missing, unknown or broken key per language
 //   node tools/site_i18n.js --pseudo     also writes the test-only pseudo-locales site/xx/ (accented, ~40% longer) and site/xx-cjk/ (CJK-like, no spaces)
 //   node tools/site_i18n.js --check      writes nothing; exits 1 when the committed English pages differ from what the templates make
 //   node tools/site_i18n.js --title-keys prints the keys drawn in the hand face (headings, buttons, names), for tools/i18n_fonts.js --title-keys
-//   node tools/site_i18n.js --legacy     English only, without the v2.14 additions (language menu, hreflang, the language script): must equal the v2.12 pages byte for byte
+//   node tools/site_i18n.js --legacy     English only, without the v2.14 additions (language menu, hreflang, the language script): since site v3 (the header,
+//                                        /map, /about) it no longer equals the v2.12 pages byte for byte
 // Strings: site/i18n/en.json is the source (keys, _notes for translators); site/i18n/<lang>.json (lang exactly as in LANGS, e.g. zh-Hans.json, pt-BR.json)
 // holds a translation, any keys missing there show the English text. Breed names come from game/i18n/glossary/<lang>.json "breeds" when that file exists.
 // Message syntax: the ICU MessageFormat subset of the v2.14 contract (game/i18n/msg.js: {name}, plural, select, #, josa for ko). Values may use <b> and <i>.
 // Templates: {{t key}} text, {{a key}} attribute, {{u /path}} a link to the same page in this language, {{raw block}} a block made here, {{lang}}.
+// Site v3 (19 Oct 2026): {{raw header}} on every page (logo, the four page links Home · Dogs · Map · About Us, the language menu); the home page shows
+// the FEATURED dogs only; /map is made from MAP (the place order), /about is the owner's story (about.p1 ... about.p8).
 // Fonts: a non-English page links /fonts/i18n/<lang>.css only when tools/i18n_fonts.js put that file in site/fonts/i18n/ with an @font-face in it.
 const fs = require('fs'), path = require('path'), vm = require('vm'), crypto = require('crypto');
 const ROOT = path.join(__dirname, '..'), SITE = path.join(ROOT, 'site'), I18N = path.join(SITE, 'i18n'), TPL = path.join(SITE, 'tpl');
@@ -34,7 +37,18 @@ const PSEUDO = [
   { code: 'en-XA', dir: 'xx', name: '[Ƥšéûđö]', og: 'en_US', script: 'latin', pseudo: 'long', rules: 'en' },
   { code: 'ja-XA', dir: 'xx-cjk', name: '[犬犬犬]', og: 'ja_JP', script: 'cjk', pseudo: 'cjk', rules: 'ja' }
 ];
-const PAGES = [{ id: 'index', path: '/' }, { id: 'dogs', path: '/dogs' }, { id: 'privacy', path: '/privacy' }, { id: 'reset', path: '/reset' }];
+// site v3: six pages; the header (every page) links the first four (NAV), the footer the rest
+const PAGES = [{ id: 'index', path: '/' }, { id: 'dogs', path: '/dogs' }, { id: 'map', path: '/map' }, { id: 'about', path: '/about' }, { id: 'privacy', path: '/privacy' }, { id: 'reset', path: '/reset' }];
+const NAV = [{ page: 'home', id: 'index', path: '/' }, { page: 'dogs', id: 'dogs', path: '/dogs' }, { page: 'map', id: 'map', path: '/map' }, { page: 'about', id: 'about', path: '/about' }];
+// the home page's featured dogs (site v3: eight cards, the rest on /dogs), in this order
+const FEATURED = ['dachs', 'shiba', 'corgi', 'golden', 'pug', 'samoyed', 'beagle', 'husky'];
+// the places of /map, in order: each has map.place.<id>.name / .text in en.json and a picture /img/map/<id>.webp (960 x 576, the SHOTS lane)
+const MAP = [
+  { id: 'home-places', key: 'home', places: ['yard', 'house', 'garden', 'kitchen'] },
+  { id: 'town', key: 'town', map: { id: 'townmap', src: '/img/map/town-map.webp', alt: 'map.town.alt' },
+    places: ['park', 'river', 'woods', 'beach', 'market', 'square', 'cafe', 'dogpark', 'vet', 'salon', 'hilltop', 'pier', 'shelter', 'fujihill', 'station'] },
+  { id: 'tokyo', key: 'japan', map: { id: 'japanmap', src: '/img/map/japan-map.webp', alt: 'map.japan.alt' }, places: ['shibuya', 'yoyogi', 'asakusa', 'ueno', 'tokyotower', 'odaiba'] }
+];
 const POLICY_DATE = Date.UTC(2026, 9, 17); // the privacy policy's "Last updated" date
 
 // ---- the message formatter: game/i18n/msg.js (the v2.14 contract) parses; the site renders its AST as HTML (escaped text, <b>/<i>, HTML parameters)
@@ -109,13 +123,13 @@ const JPW = {
   asobo: '<span lang="ja" class="jp">遊ぼう</span> <i>asobō</i>', muryo: '<span lang="ja" class="jp">無料</span> <i>muryō</i>', inu: '<span lang="ja">犬</span> <i>inu</i>',
   osanpo: '<span class="jpw" lang="ja">お散歩</span> <i>osanpo</i>', fujisan: '<span lang="ja" class="jp">富士山</span> <i>Fuji-san</i>', shibainu: '<span lang="ja" class="jp">柴犬</span>',
   dogrun: '<span lang="ja" class="jp">ドッグラン</span> <i>doggu ran</i>', torii: '<span lang="ja" class="jp">鳥居</span>', arigato: '<span lang="ja" class="jp">ありがとう</span> <i>arigatō</i>',
-  inutachi: '<span lang="ja">犬たち</span> <i>inu-tachi</i>', mame: '<span lang="ja">豆知識</span> <i>mame-chishiki</i>',
+  inutachi: '<span lang="ja">犬たち</span> <i>inu-tachi</i>', chizu: '<span lang="ja">地図</span> <i>chizu</i>', mame: '<span lang="ja">豆知識</span> <i>mame-chishiki</i>',
   mail: '<a class="mail" href="mailto:contact@doodledoggo.app">contact@doodledoggo.app</a>'
 };
 // the keys drawn in the hand face (var(--hand) in site/style.css: headings, .tag, .nav, .chip, .play, .feats b, .bark, .dname, .pics .cap,
 // .prof h2 .dtype, .bubble, .traits b, .loves>b): the corpus of the 'DD Local Title' subset.
 //   node tools/i18n_fonts.js --all --title-keys "$(node tools/site_i18n.js --title-keys)"
-const HAND_KEYS = /^(?:.*\.title|dogs\.h1|privacy\.h1|reset\.h1|home\.tagline|home\.nav\..*|home\.toss|home\.dogs\.all|common\.(?:play|quoted)|footer\.play_itch|notfound\..*|play\..*|soon\.(?:title|line)|profile\.(?:pup_cap|title_type|loves)|dog\.[a-z]+\.(?:name|quote|trait[1-4]))$/;
+const HAND_KEYS = /^(?:.*\.title|dogs\.h1|privacy\.h1|reset\.h1|map\.h1|about\.h1|about\.p8|about\.itch|map\.place\.[a-z]+\.name|nav\.(?:home|dogs|map|about)|home\.(?:map|about)\.link|home\.tagline|home\.nav\..*|home\.toss|home\.dogs\.all|common\.(?:play|quoted)|footer\.play_itch|notfound\..*|play\..*|soon\.(?:title|line)|profile\.(?:pup_cap|title_type|loves)|dog\.[a-z]+\.(?:name|quote|trait[1-4]))$/;
 // the placeholders every message may use (the dog count, the policy date, the Japanese words), besides its own English ones
 const GLOBAL = ['count', 'date'].concat(Object.keys(JPW));
 // the keys whose text carries the dog count (the count rule: it must come from {count}, never typed in). On the English page the sentences
@@ -177,7 +191,14 @@ function langScript(L, page) {
 }
 function langMenu(L, page, label, menu) {
   const items = LANGS.map((x) => `<li><a href="${urlFor(x, page.path)}" hreflang="${x.code}" lang="${x.code}" data-lang="${x.dir || 'en'}"${x === L ? ' aria-current="true"' : ''}>${x.name}</a></li>`).join('');
-  return `\n  <div class="langbar"><details class="langs" id="langs"><summary aria-label="${escAttr(label + ': ' + L.name)}"><span aria-hidden="true">🌐</span> <span lang="${L.code}">${L.name}</span></summary><nav aria-label="${escAttr(menu)}"><ul>${items}</ul></nav></details></div>`;
+  return `<details class="langs" id="langs"><summary aria-label="${escAttr(label + ': ' + L.name)}"><span aria-hidden="true">🌐</span> <span lang="${L.code}">${L.name}</span></summary><nav aria-label="${escAttr(menu)}"><ul>${items}</ul></nav></details>`;
+}
+// site v3: the header of every page: the logo (home), the four page links (the current one aria-current), the language menu
+function header(L, page, t, a, menu) {
+  const cur = (NAV.find((n) => n.id === page.id) || {}).page;
+  const links = NAV.map((n) => `<a data-page="${n.page}" href="${urlFor(L, n.path)}"${n.page === cur ? ' aria-current="page"' : ''}>${t('nav.' + n.page)}</a>`).join('');
+  return `\n<header class="sitehead" id="sitehead"><a class="brand" href="${urlFor(L, '/')}"><img src="/doodle-doggo-logo.svg" alt="${a('common.logo_alt')}" width="900" height="280"></a>`
+    + `<nav class="sitenav" id="sitenav" aria-label="${a('nav.label')}">${links}</nav>${menu}</header>`;
 }
 function build(o) {
   o = Object.assign({ pseudo: false, legacy: false, langs: null }, o || {});
@@ -237,7 +258,16 @@ function build(o) {
 </article>`;
     };
     const sils = ['shiba-still', 'samoyed-pup'].map((f) => `<span class="sil"><img src="/img/art/dogs/${f}.svg" alt="" width="240" height="200" loading="lazy"><b aria-hidden="true">?</b></span>`).join('');
-    const soonCard = `<li class="soonli"><div class="soon" id="soon"><div class="sils">${sils}</div><span class="dname">${t('soon.title')}</span><span class="dquote">${t('soon.line')}</span></div></li>`;
+    const plain = (k) => t(k).replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+    // /map: one section per area, its big map (town, Tokyo) and a card per place
+    const placeSec = (sec) => `<section class="places" id="${sec.id}" aria-labelledby="h-${sec.id}">
+      <h2 id="h-${sec.id}">${t(`map.${sec.key}.title`)}</h2>
+      <p class="seclead">${t(`map.${sec.key}.lead`)}</p>${sec.map ? `
+      <figure class="bigmap" id="${sec.map.id}"><img src="${sec.map.src}" width="1200" height="720" alt="${a(sec.map.alt)}" loading="lazy"></figure>` : ''}
+      <div class="placegrid">
+${sec.places.map((id) => `        <article class="place" id="place-${id}"><img src="/img/map/${id}.webp" width="960" height="576" alt="${a('map.shot_alt', { place: plain(`map.place.${id}.name`) })}" loading="lazy"><h3>${t(`map.place.${id}.name`)}</h3><p>${t(`map.place.${id}.text`)}</p></article>`).join('\n')}
+      </div>
+    </section>`;
     const soonProf = `<section class="soonprof" id="soon" aria-labelledby="h-soon"><div class="sils">${sils}</div><div class="txt"><h2 id="h-soon">${t('soon.title')}</h2><p class="bubble">${t('soon.line')}</p><p>${t('soon.more')}</p></div></section>`;
     // the playroom's barks for site.js (only what this language has translated; English needs none)
     const play = {}; Object.keys(T).filter((k) => k.startsWith('play.') && (L.pseudo || (own[k] != null && own[k] !== ''))).forEach((k) => { play[k.slice(5)] = render(T[k], base, rules, true).replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&'); });
@@ -250,8 +280,12 @@ function build(o) {
         alternates: o.legacy || L.pseudo || page.id === 'reset' ? '' : '\n' + LANGS.map((x) => `<link rel="alternate" hreflang="${x.code}" href="${ORIGIN + urlFor(x, page.path)}">`).join('') + `<link rel="alternate" hreflang="x-default" href="${ORIGIN + page.path}">`,
         oglocale: L.code === 'en' ? '' : `<meta property="og:locale" content="${L.og}">`,
         langscript: o.legacy ? '' : langScript(L, page),
-        langmenu: o.legacy ? '' : langMenu(L, page, render(T['lang.label'], base, rules, false), render(T['lang.menu'], base, rules, true)),
-        cards: page.id === 'index' ? D.map(card).concat(soonCard).join('\n') : '',
+        header: header(L, page, t, a, o.legacy ? '' : langMenu(L, page, render(T['lang.label'], base, rules, false), render(T['lang.menu'], base, rules, true))),
+        cards: page.id === 'index' ? FEATURED.map((k) => D.find((d) => d.key === k)).map(card).join('\n') : '',
+        places: page.id === 'map' ? MAP.map(placeSec).join('\n') : '',
+        teaserpics: page.id === 'index' ? [['/map#townmap', '/img/map/town-map.webp', 1200, 720, a('map.town.alt')], ['/map#place-shibuya', '/img/map/shibuya.webp', 960, 576, a('map.shot_alt', { place: plain('map.place.shibuya.name') })],
+          ['/map#place-fujihill', '/img/map/fujihill.webp', 960, 576, a('map.shot_alt', { place: plain('map.place.fujihill.name') })]]
+          .map(([href, src, w, h, alt]) => `        <li><a href="${u(href)}"><img src="${src}" alt="${alt}" width="${w}" height="${h}" loading="lazy"></a></li>`).join('\n') : '',
         dognav: page.id === 'dogs' ? D.map((d) => { const nn = navName(d); return `<li style="--n:${nn.n}"><a href="#${d.key}"><img src="/img/art/dogs/${d.key}-still.svg" alt="" width="240" height="200">${nn.html}</a></li>`; }).join('\n') : '',
         profiles: page.id === 'dogs' ? D.map(profile).concat(soonProf).join('\n') : '',
         i18njson: page.id === 'index' && Object.keys(play).length ? `\n<script type="application/json" id="dd-i18n">${JSON.stringify(play).replace(/</g, '\\u003c')}</script>` : ''
@@ -301,7 +335,7 @@ function write(pages, root) {
   root = root || SITE;
   for (const [rel, html] of Object.entries(pages)) { const p = path.join(root, rel); fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, html); }
 }
-module.exports = { LANGS, PSEUDO, PAGES, COUNT_KEYS, HAND_KEYS, build, fmt, write, parse, render, urlFor, printReport, table };
+module.exports = { LANGS, PSEUDO, PAGES, NAV, FEATURED, MAP, COUNT_KEYS, HAND_KEYS, build, fmt, write, parse, render, urlFor, printReport, table };
 
 if (require.main === module) {
   const argv = process.argv.slice(2), has = (f) => argv.includes(f);
