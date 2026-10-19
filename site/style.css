@@ -436,3 +436,7 @@ dialog.dogpop .x:focus:not(:focus-visible){outline:none}
 dialog.dogpop .prof{width:100%;box-sizing:border-box}
 @media (max-width:700px){ .dognav a{font-size:20px} dialog.dogpop .prof{grid-template-columns:1fr} }
 dialog.dogpop .prof>*,dialog.dogpop .prof .txt>*{max-width:none}
+/* owner: the three map jumps always on one row */
+.jumps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;max-width:640px;margin-left:auto;margin-right:auto}
+.jumps .chip{justify-content:center;text-align:center;min-width:0;padding-left:6px;padding-right:6px;line-height:1.1}
+@media (max-width:700px){ .jumps .chip{font-size:min(20px,5vw)} }
