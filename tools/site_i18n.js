@@ -109,7 +109,7 @@ const JPW = {
   asobo: '<span lang="ja" class="jp">遊ぼう</span> <i>asobō</i>', muryo: '<span lang="ja" class="jp">無料</span> <i>muryō</i>', inu: '<span lang="ja">犬</span> <i>inu</i>',
   osanpo: '<span class="jpw" lang="ja">お散歩</span> <i>osanpo</i>', fujisan: '<span lang="ja" class="jp">富士山</span> <i>Fuji-san</i>', shibainu: '<span lang="ja" class="jp">柴犬</span>',
   dogrun: '<span lang="ja" class="jp">ドッグラン</span> <i>doggu ran</i>', torii: '<span lang="ja" class="jp">鳥居</span>', arigato: '<span lang="ja" class="jp">ありがとう</span> <i>arigatō</i>',
-  inutachi: '<span lang="ja">犬たち</span> <i>inu-tachi</i>', mame: '<span lang="ja">豆知識</span> <i>mame-chishiki</i>',
+  inutachi: '<span lang="ja">犬たち</span> <i>inu-tachi</i>', chizu: '<span lang="ja">地図</span> <i>chizu</i>', mame: '<span lang="ja">豆知識</span> <i>mame-chishiki</i>',
   mail: '<a class="mail" href="mailto:contact@doodledoggo.app">contact@doodledoggo.app</a>'
 };
 // the keys drawn in the hand face (var(--hand) in site/style.css: headings, .tag, .nav, .chip, .play, .feats b, .bark, .dname, .pics .cap,
