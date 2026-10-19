@@ -6,9 +6,9 @@ function pickArea(k) {
   if (k === 'station') return tkStation(); // v2.11 Tokyo Trip: the ticket window (39_tokyo.js)
   if (PLACES[k]) return travelTo(k);
   const r = ROUTES[k]; if (!r) return;
-  if (topBond() < r.bond) { nope(PICK([`Nope. ${r.n} opens at Bond ${r.bond}. The trees need time to warm up to you.`, `Nope. ${r.n} is Bond ${r.bond} only. There is a bouncer. He is a goose.`, `Nope nope. Bond ${r.bond} for ${r.n}. Rules are rules (we made them up).`])); return; }
-  if (S.sleeping) { nope(`${NAME()} is asleep. Wake up first (Care menu).`); return; }
-  if (S.stats.energy < 20) { nope(`${NAME()} lies down at the gate. Too sleepy for a walk. Try a nap first.`); return; }
+  if (topBond() < r.bond) { const rn = tdata('routes.' + k + '.n', r.n); nope(PICK([tt('map.locked_1', 'Nope. {place} opens at Bond {bond}. The trees need time to warm up to you.', { place: rn, bond: r.bond }), tt('map.locked_2', 'Nope. {place} is Bond {bond} only. There is a bouncer. He is a goose.', { place: rn, bond: r.bond }), tt('map.locked_3', 'Nope nope. Bond {bond} for {place}. Rules are rules (we made them up).', { place: rn, bond: r.bond })])); return; }
+  if (S.sleeping) { nope(tt('map.asleep', '{name} is asleep. Wake up first (Care menu).', { name: NAME() })); return; }
+  if (S.stats.energy < 20) { nope(tt('map.too_sleepy', '{name} lies down at the gate. Too sleepy for a walk. Try a nap first.', { name: NAME() })); return; }
   go('walk', k);
 }
 function enterShelter() {
@@ -16,8 +16,8 @@ function enterShelter() {
   setChrome(isPhone(), true);
   view.innerHTML = `${srRoomSVG('shelter')}<button id="devBtn">dev</button>`;
   srTray(); srEnter('shelter');
-  if (S.shelter && !S.shelter.seen) { S.shelter.seen = localISO(); markDirty(); setTimeout(() => { if (cur.mode === 'shelter') toast('The shelter has a playroom now. Tap a dog to say hello, or the board to see who is looking for a home.', 'gold'); }, 500); }
-  setTimeout(() => { if (cur.mode === 'shelter' && modal.hidden && SR && SR.dogs.length) { const rd = PICK(SR.dogs); srBark(rd, 'woof'); srLine(rd, ['Hello!', 'A visitor!', 'Did you bring biscuits?'], true); } }, 1200);
+  if (S.shelter && !S.shelter.seen) { S.shelter.seen = localISO(); markDirty(); setTimeout(() => { if (cur.mode === 'shelter') toast(tt('map.shelter_playroom', 'The shelter has a playroom now. Tap a dog to say hello, or the board to see who is looking for a home.'), 'gold'); }, 500); }
+  setTimeout(() => { if (cur.mode === 'shelter' && modal.hidden && SR && SR.dogs.length) { const rd = PICK(SR.dogs); srBark(rd, 'woof'); srLine(rd, [tt('map.shelter_hi_1', 'Hello!'), tt('map.shelter_hi_2', 'A visitor!'), tt('map.shelter_hi_3', 'Did you bring biscuits?')], true); } }, 1200);
   updateHUD(); bindDev();
 }
 
