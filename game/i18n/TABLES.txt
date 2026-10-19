@@ -7,7 +7,7 @@
 # or the whole path for a table that is one object (`from` for hw_letter.from). `@key:n`: a map keyed by the English name
 # also gives that name as <table>.<tid(name)>.n (hm_decor.giant_crayon_box.n). The display site looks each one up: tdata('food.' + tid(f.n) + '.note', f.note).
 # Not listed on purpose: dog-name lists (SP, FALLBACK_DOGS name, PUP_NAMES, RESCUE_NAMES, SR_NAMES, DC_PET_NAMES, DC_FAKE),
-# lists of item names that are save values (RAINCOATS, WARM_WEAR, FETCH_TOYS, FAV, SNACKS, LOOT16, FS_COSTUMES, WN_OUTS,
+# lists of item names that are save values (RAINCOATS, WARM_WEAR, FETCH_TOYS, SNACKS, LOOT16, FS_COSTUMES, WN_OUTS,
 # TK_SNACKS, TK_SOUVENIRS, BL_BALLS, BL_TOYS, SIG_COMBO, SPOT_RULES, mods/toys.js TOYS: the item's own row gives its name),
 # gene symbols, chord names, the painted art words and the art fallbacks (FS_FB, HW_FB). Tables of functions (CARD_LINES,
 # NY_PUP_LINES) become tt() messages in their files. NAME@file-stem limits a line to that file's table of the name.
@@ -53,6 +53,8 @@ HM_DECOR story @key:n
 BD_TIPS *
 BEDS n note
 SPOT_TOAST *
+SPOT_ORD *
+FAV *
 FAMILIES name where
 STARTER_GENES coat
 

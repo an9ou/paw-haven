@@ -9,7 +9,7 @@
 const PIM = window.PawI18nMsg || null;
 const I18N_CODES = PIM ? PIM.CODES : ['en'];
 const I18N_PSEUDO = ['xx', 'xx-cjk'];
-const I18N = { lang: 'en', map: null, known: null, misses: [], unknown: [], seen: new Set(), ps: null, intl: 'en', fontCSS: '', fontLang: '' };
+const I18N = { lang: 'en', intlDL: 'en-GB', map: null, known: null, misses: [], unknown: [], seen: new Set(), ps: null, intl: 'en', fontCSS: '', fontLang: '' };
 const i18nReal = (c) => typeof c === 'string' && I18N_CODES.includes(c);
 const i18nPin = () => (prefs && typeof prefs.lang === 'string' && (i18nReal(prefs.lang) || I18N_PSEUDO.includes(prefs.lang)) ? prefs.lang : null);
 // the save's language before S is loaded (the HUD and the bar are built before loadSave runs in start())
@@ -26,6 +26,7 @@ function i18nUse(code) {
   const P = window.PAW_I18N || null;
   I18N.lang = code; I18N.map = null; I18N.known = null; I18N.ps = I18N_PSEUDO.includes(code) ? code : null;
   I18N.intl = code === 'xx' ? 'de' : code === 'xx-cjk' ? 'ja' : code; // pseudo: German numbers and dates (long), Japanese for the CJK one
+  I18N.intlDL = I18N.intl === 'en' ? 'en-GB' : I18N.intl; // English dates and lists as the game always wrote them ("Monday 19 October", "A, B and C"); numbers stay en (1,000)
   if (code !== 'en' && P && Array.isArray(P.keys)) {
     if (P.keys.length) I18N.known = new Set(P.keys);
     const arr = !I18N.ps && Array.isArray(P[code]) ? P[code] : null;
@@ -55,8 +56,8 @@ function tid(s) { return PIM ? PIM.id(s) : String(s).toLowerCase().replace(/[^a-
 // the breed name shown: data.breed_names.<key> (the glossary `breeds` fill it in every language), English from mods/genes.js BREED_NAMES
 function tbreed(key) { const G = window.PawGenes; return tdata('breed_names.' + key, (G && G.BREED_NAMES && G.BREED_NAMES[key]) || key); }
 function tnum(n, opts) { return PIM ? PIM.num(n, I18N.intl, opts) : String(n); }
-function tdate(d, opts) { return PIM ? PIM.date(d, I18N.intl, opts) : String(d); }
-function tlist(arr) { return PIM ? PIM.list(arr, I18N.intl === 'en' ? 'en-GB' : I18N.intl) : (arr || []).join(', '); } // English stays "A, B and C" (no serial comma, as the game always wrote it)
+function tdate(d, opts) { return PIM ? PIM.date(d, I18N.intlDL, opts) : String(d); }
+function tlist(arr) { return PIM ? PIM.list(arr, I18N.intlDL) : (arr || []).join(', '); }
 function tlang() { return I18N.lang; }
 
 /* ---- the pseudo-locales (tests and the dev panel only): the English message rewritten branch by branch, vars and ICU syntax kept ---- */

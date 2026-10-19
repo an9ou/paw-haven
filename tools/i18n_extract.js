@@ -96,6 +96,7 @@ const DENY_CALLS = new Set(['$', '$$', 'querySelector', 'querySelectorAll', 'get
   'delete', 'getPropertyValue', 'setProperty', 'removeProperty', 'Error', 'TypeError', 'RegExp', 'log', 'warn', 'error', 'info', 'debug', 'insertAdjacentHTML',
   'hmDecorOut', 'jrDecor', 'brDecor', 'switchHouse', 'sigIcon', 'setBowl', 'hoPos', 'rmPause', 'rmResume', 'phIcon', 'svgIcon', 'scene', 'prop', 'dog', 'art',
   'postMessage', 'animate', 'play', 'mode', 'go', 'goto', 'showMode', 'setMode', 'travel', 'sfx', 'tone', 'beep', 'Function', 'eval', 'matchMedia', 'toLocaleString',
+  'tid', 'tbreed', 'tnum', 'tdate', 'tlist', 'tlang', 'tsetLang', 'tItem', 'tPerk', 'tPlace', 'tRoute', 'tTrick', 'tSig', 'tRarity', 'tSlot',
   'Date', 'Number', 'parseInt', 'parseFloat', 'String', 'localeCompare', 'test', 'exec', 'match', 'search', 'execCommand', 'getContext', 'Image', 'Audio', 'Event', 'CustomEvent']);
 // calls whose first argument (openModal: the first two) is shown to the player
 const SINKS = { toast: [0], nope: [0], say: [0], sayW: [0], openModal: [0, 1], clToast: [0], tkToast: [0], wnToast: [0], msSay: [0], fxText: [0], blHint: [0],
@@ -206,8 +207,8 @@ function scanJs(code, fileOf, mode) {
         const cn = calleeName(p.callee), ai = p.arguments.indexOf(child);
         if (ai >= 0 && sink == null && !deny) {
           if (cn && Object.prototype.hasOwnProperty.call(SINKS, cn) && SINKS[cn].includes(ai)) sink = cn;
+          else if (cn === 'setAttribute' && ai === 1 && p.arguments[0] && p.arguments[0].type === 'Literal' && /^(aria-label|title|placeholder|alt)$/.test(p.arguments[0].value)) sink = 'attr'; // shown text
           else if (cn && DENY_CALLS.has(cn) && !(cn === 'replace' && ai === 1)) deny = true;
-          else if (cn && /^(setAttribute)$/.test(cn) && ai === 1) { const a0 = p.arguments[0]; if (a0 && a0.type === 'Literal' && /^(aria-label|title|placeholder|alt)$/.test(a0.value)) sink = 'attr'; }
         }
         if (p.callee === child && child.type === 'MemberExpression') { /* 'a b'.split() etc.: the object of a call */ }
       } else if (p.type === 'AssignmentExpression' && p.right === child) {
