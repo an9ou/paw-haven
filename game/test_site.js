@@ -390,7 +390,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
     sec('desktop 1280x800: the crayon decorations (#deco peeks and momiji, falling leaves) stay off the text');
     {
       const ctx = await newCtx({ viewport: { width: 1280, height: 800 }, locale: 'en-US' }); const page = await ctx.newPage();
-      let peeks = 0, leaves = 0;
+      let peeks = 0, leaves = 0, seen = 0;
       for (const u of ['/', '/dogs', '/map', '/about']) {
         await page.goto(base + u, { waitUntil: 'load' }); await page.evaluate(() => document.fonts.ready); await page.waitForTimeout(1500);
         const d = await page.evaluate(async () => {
@@ -401,7 +401,11 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
           const shown = (e) => { const s = getComputedStyle(e); const b = e.getBoundingClientRect(); return s.display !== 'none' && s.visibility !== 'hidden' && parseFloat(s.opacity) > 0 && b.width > 0 && b.height > 0; };
           const texts = []; const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let n;
           while ((n = w.nextNode())) { if (!n.textContent.trim()) continue; const el = n.parentElement; if (!el || el.closest('#deco, #petals, script, style, [hidden], [aria-hidden="true"]') || !el.getClientRects().length) continue; texts.push(n); }
-          const hits = new Set(), H = document.documentElement.scrollHeight;
+          // the decorations live behind the paper sheet (z-index), so a box under the sheet is fine: a hit is a point of the overlap where the decoration is
+          // the topmost thing. elementFromPoint skips pointer-events: none, so the check lets them be hit for a moment (after the check above)
+          const st = document.createElement('style'); st.textContent = '#deco *, #petals * { pointer-events: auto !important; }'; document.head.appendChild(st);
+          const onTop = (e, x0, y0, x1, y1) => { for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) { const p = document.elementFromPoint(x0 + (x1 - x0) * (i + 0.5) / 3, y0 + (y1 - y0) * (j + 0.5) / 3); if (p && (p === e || e.contains(p))) return true; } return false; };
+          const hits = new Set(), H = document.documentElement.scrollHeight; let under = 0;
           for (let y = 0, k = 0; k < 60; y += Math.round(innerHeight * 0.8), k++) {
             scrollTo({ top: y, behavior: 'instant' }); await raf();
             const boxes = decos.filter(shown).map((e) => [e, e.getBoundingClientRect()]).filter(([, b]) => b.bottom > 0 && b.top < innerHeight);
@@ -409,7 +413,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
               const rg = document.createRange(); rg.selectNodeContents(t);
               for (const r of rg.getClientRects()) {
                 if (r.width < 2 || r.height < 2 || r.bottom < 0 || r.top > innerHeight) continue;
-                for (const [e, b] of boxes) if (r.left < b.right - 1 && r.right > b.left + 1 && r.top < b.bottom - 1 && r.bottom > b.top + 1) hits.add(`${e.className} ${e.getAttribute('src') ? e.getAttribute('src').split('/').pop() : ''} on "${t.textContent.trim().slice(0, 24)}"`);
+                for (const [e, b] of boxes) if (r.left < b.right - 1 && r.right > b.left + 1 && r.top < b.bottom - 1 && r.bottom > b.top + 1 && !(under++, !onTop(e, Math.max(r.left, b.left), Math.max(r.top, b.top, 0), Math.min(r.right, b.right), Math.min(r.bottom, b.bottom, innerHeight)))) hits.add(`${e.className} ${e.getAttribute('src') ? e.getAttribute('src').split('/').pop() : ''} on "${t.textContent.trim().slice(0, 24)}"`);
               }
             }
             if (y + innerHeight >= H) break;
@@ -423,16 +427,17 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
             const cx = r.left + r.width / 2, cy = r.top + r.height / 2; if (cx < 0 || cy < 0 || cx > innerWidth || cy > innerHeight) continue;
             const e = document.elementFromPoint(cx, cy); if (e && e.closest('#deco, #petals')) covered.push(`"${t.textContent.trim().slice(0, 20)}" under ${e.className}`);
           }
-          scrollTo({ top: 0, behavior: 'instant' });
-          return { deco: !!deco, hidden: !!deco && deco.getAttribute('aria-hidden') === 'true', peeks: document.querySelectorAll('#deco img.peek').length, leaves: document.querySelectorAll('#deco img.leaf').length, pe, hits: [...hits], covered };
+          let seen = 0; for (const e of decos.filter(shown)) { e.scrollIntoView({ block: 'center', behavior: 'instant' }); await raf(); const b = e.getBoundingClientRect(); if (onTop(e, b.left, Math.max(b.top, 0), b.right, Math.min(b.bottom, innerHeight))) seen++; }
+          st.remove(); scrollTo({ top: 0, behavior: 'instant' });
+          return { seen, under, deco: !!deco, hidden: !!deco && deco.getAttribute('aria-hidden') === 'true', peeks: document.querySelectorAll('#deco img.peek').length, leaves: document.querySelectorAll('#deco img.leaf').length, pe, hits: [...hits], covered };
         });
-        peeks += d.peeks; leaves += d.leaves;
+        peeks += d.peeks; leaves += d.leaves; seen += d.seen;
         ok(d.deco && d.hidden, `${u}: #deco is there and aria-hidden (${d.peeks} peeking dogs, ${d.leaves} momiji)`);
         ok(!d.pe.length, `${u}: every decoration lets taps through (pointer-events: none) ` + d.pe.slice(0, 4).join(', '));
-        ok(!d.hits.length, `${u}: no peeking dog or momiji over any text ` + d.hits.slice(0, 4).join(' | '));
+        ok(!d.hits.length, `${u}: no peeking dog or momiji shows over any text (${d.under} text boxes touch one behind the paper) ` + d.hits.slice(0, 4).join(' | '));
         ok(!d.covered.length, `${u}: 20 sampled bits of text are never under a decoration or a falling leaf ` + d.covered.slice(0, 4).join(' | '));
       }
-      ok(peeks > 0 && leaves > 0, `the decorations exist: img.peek dogs (${peeks}) and img.leaf momiji (${leaves})`);
+      ok(peeks > 0 && leaves > 0 && seen > 0, `the decorations exist: img.peek dogs (${peeks}) and img.leaf momiji (${leaves}), ${seen} of them in sight (so the stacking check can see them)`);
       await ctx.close();
     }
 
@@ -441,7 +446,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
       const ctx = await newCtx(Object.assign({}, devices['iPhone 15'], { reducedMotion: 'reduce' })); const page = await ctx.newPage();
       const errs = []; page.on('pageerror', (e) => errs.push(e.message));
       await page.goto(base + '/', { waitUntil: 'networkidle' }); await page.waitForTimeout(500);
-      const rm = await page.evaluate(() => ({ live: document.getElementById('scene').classList.contains('live'), dd: !!window.__dd, dogs: [...document.querySelectorAll('#scene .dd img')].map((i) => i.complete && i.naturalWidth > 0), petals: document.querySelectorAll('.petal').length, toss: document.getElementById('toss').hidden,
+      const rm = await page.evaluate(() => ({ live: document.getElementById('scene').classList.contains('live'), dd: !!window.__dd, dogs: [...document.querySelectorAll('#scene .dd img')].map((i) => i.complete && i.naturalWidth > 0), petals: document.querySelectorAll('.petal').length, toss: document.getElementById('toss').hidden && !document.getElementById('toss').getClientRects().length,
         anim: [...document.querySelectorAll('#scene .dd img')].every((i) => /-still\.svg$/.test(i.getAttribute('src'))) }));
       ok(!rm.live && !rm.dd && rm.dogs.length >= 3 && rm.dogs.every(Boolean) && rm.anim, 'the playroom stays still: the drawn dogs sit in place, one frame each, no animation');
       ok(!rm.petals && rm.toss, 'no falling leaves and no Toss button');
