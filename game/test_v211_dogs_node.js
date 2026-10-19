@@ -106,6 +106,7 @@ console.log('   ' + nb + ' bandana renders');
 ['shiba', 'pom', 'greyhound'].forEach((k) => { const r = [...BAND, 'Red Bandana', 'Candy Corn Bandana'].map((b) => PA.dog(k, { pose: 'idle', outfit: { neck: b } })); ok(new Set(r).size === 5, k + ': five different bandanas'); });
 
 console.log('-- old breeds unchanged (spot check; the full proof is dogs/check_identical.js v211-base)');
+// v2.13 (V213.md 5.1): a mix draws the neck tube in every pose now, so its old renders are compared in sit, which drew the tube already
 let ref = null; for (const r of ['v211-base', 'origin/v211-base']) { try { cp.execSync('git rev-parse --verify -q ' + r, { cwd: ROOT, stdio: 'ignore' }); ref = r; break; } catch (e) { /* next */ } }
 if (!ref) console.log('   no v211-base ref here, skipped');
 else { const OLD0 = load(cp.execSync(`git show ${ref}:dogs/pawart_dogs.js`, { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 << 20 }));
@@ -114,7 +115,7 @@ else { const OLD0 = load(cp.execSync(`git show ${ref}:dogs/pawart_dogs.js`, { cw
   ALL.slice(0, 14).forEach((k) => { ok(OLD.dogHead(k) === PA.dogHead(k), `head ${k} identical to ${ref}`);
     ['idle', 'sleep', 'beg', 'rollover'].forEach((p, i) => { const o = { pose: p, outfit: [null, { neck: 'Red Bandana' }, { body: 'Ghost Sheet' }, { head: 'Party Hat' }][i], age: [undefined, 'puppy', undefined, 'newborn'][i], sparkle: i === 2 };
       ok(OLD.dog(k, o) === PA.dog(k, o), `${k} ${p} identical to ${ref}`); });
-    ok(OLD.dog(k, { pose: 'walk', mix: { head: 'samoyed' } }) === PA.dog(k, { pose: 'walk', mix: { head: 'samoyed' } }), `${k} mix identical to ${ref}`); }); }
+    ok(OLD.dog(k, { pose: 'sit', mix: { head: 'samoyed' } }) === PA.dog(k, { pose: 'sit', mix: { head: 'samoyed' } }), `${k} mix identical to ${ref}`); }); }
 
 console.log('-- pom unchanged since the first BREED ART pass (cea93f1). Akita (smaller forward ears, broader head) and spitz (plume over the back when sitting) changed on purpose in the art review');
 let ref1 = null; try { cp.execSync('git cat-file -e cea93f1^{commit}', { cwd: ROOT, stdio: 'ignore' }); ref1 = 'cea93f1'; } catch (e) { console.log('   no cea93f1 here, skipped'); }
@@ -122,7 +123,7 @@ if (ref1) { const O1 = load(cp.execSync(`git show ${ref1}:dogs/pawart_dogs.js`, 
   ['pom'].forEach((k) => { ok(O1.dogHead(k) === PA.dogHead(k), `head ${k} identical to ${ref1}`);
     POSES.forEach((p, i) => { const o = { pose: p, outfit: [null, { neck: 'Shibuya Bandana' }, { body: 'Ghost Sheet' }, { head: 'Party Hat' }][i % 4], age: [undefined, 'puppy', undefined, 'newborn'][i % 4], sparkle: i % 3 === 0 };
       ok(O1.dog(k, o) === PA.dog(k, o), `${k} ${p} identical to ${ref1}`); });
-    ok(O1.dog(k, { pose: 'walk', mix: { head: 'samoyed' } }) === PA.dog(k, { pose: 'walk', mix: { head: 'samoyed' } }), `${k} mix identical to ${ref1}`); }); }
+    ok(O1.dog(k, { pose: 'sit', mix: { head: 'samoyed' } }) === PA.dog(k, { pose: 'sit', mix: { head: 'samoyed' } }), `${k} mix identical to ${ref1}`); }); }
 
 console.log(`v211_dogs: ${pass} passed, ${fail} failed`);
 if (fail) { console.log(fails.join('\n')); process.exit(1); }
