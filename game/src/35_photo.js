@@ -31,7 +31,7 @@ function phPlaceName() { const p = S && S.place; return p === 'yard' ? tt('photo
 function phDateLine() { const [y, m, d] = jstISO().split('-').map(Number); return tt('photo.date_line', '{d} {month} {y}', { d, month: tdate(new Date(2000, m - 1, 1), { month: 'long' }), y }); }
 function phNames(list) { return tlist(list); }
 // I18N CORE: the postcard's font hook. Return the extra CSS (@font-face / font-family overrides) that the current language needs inside the postcard SVG; '' keeps the Latin postcard fonts
-function phLangFontCSS() { return ''; }
+function phLangFontCSS() { const c = tfontCSS(); return c ? c + "text,tspan{font-family:'DD Local','Caveat',cursive}" : ''; } // CSS beats the font-family attributes of the postcard art; 'DD Local' only covers its own glyphs, Caveat takes the rest
 const phActive = () => PH.on;
 
 /* the camera is for the yard, the house and every town place: not on the title, walks, mini-games, the map, in a modal or while placing decorations */
