@@ -17,7 +17,7 @@ function enterWalkMod(area) {
     rollTreasure: (ar) => {
       const L = rollTreasure(ar || area, { common: firstWalk && rolls === 0 }); rolls++;
       // v2.14 i18n: name stays the English id (finishWalkMod looks it up); label is the shown name, rarity and desc are already shown text
-      if (L.item) { const g = grantTreasure(L.item, area); audioCue('treasure'); return { name: L.item.n, label: jrTN(L.item), rarity: tdata('rarity.' + L.item.r, RARITY[L.item.r]), kind: L.item.kind, desc: tt('toys.treasure_desc', '{ab}: {txt}', { ab: jrTAb(L.item), txt: jrTTxt(L.item) }), dup: !!g.dup }; }
+      if (L.item) { const g = grantTreasure(L.item, area); audioCue('treasure'); return { name: L.item.n, label: jrTN(L.item), rarityKey: RARITY[L.item.r], rarity: tdata('rarity.' + L.item.r, RARITY[L.item.r]), kind: L.item.kind, desc: tt('toys.treasure_desc', '{ab}: {txt}', { ab: jrTAb(L.item), txt: jrTTxt(L.item) }), dup: !!g.dup }; }
       return { coins: L.coins, text: tt('toys.pouch_text', 'A pouch of {n, plural, one {# coin} other {# coins}} (you own every {rarity} treasure from this route).', { n: L.coins, rarity: tdata('rarity.' + L.r, RARITY[L.r]) }) };
     },
     junk: () => walkJunk(),
@@ -73,7 +73,7 @@ function enterToy(name) {
   let closed = false, acted = false; // v2.4: one 'toy' act per play session
   const crew = pkDogs('play').slice(1); if (PKS.skip.length) pkSkipSay(PKS.skip, 900, 'toy'); // v2.9 PACK: every ticked dog gets the effects
   const ctx = {
-    dog: dogForMod(), time: e.time, weather: e.weather, season: e.season, halloween: e.halloween, lights: e.lights, newyear: e.newyear, jp: e.jp, sfx, say: (t) => toast(t),
+    label: tdata('toys.' + tid(name) + '.n', name), dog: dogForMod(), time: e.time, weather: e.weather, season: e.season, halloween: e.halloween, lights: e.lights, newyear: e.newyear, jp: e.jp, sfx, say: (t) => toast(t),
     reward: (r) => {
       if (!r) return; const hp = (+r.happiness || 0) * k * fav * (S.place === 'dogpark' ? 1.3 : 1); if (hp) addStat('happy', hp);
       const b = (+r.bond || 0) > 0 ? addBond(r.bond * k) : 0; const c = (+r.coins || 0) > 0 ? addCoins(r.coins * k) : 0;
