@@ -207,17 +207,18 @@ function exHeadSVG(d, n) {
   const o = lookOpts(d, c); if (n) o.expr = n; const s = Object.keys(o).length ? art('dogHead', d.key, o) : art('dogHead', d.key);
   if (EX.heads.size > 120) EX.heads.clear(); EX.heads.set(k, s); return s;
 }
+const exWord = (n) => (n ? tdata('ex_words.' + n, EX_WORDS[n]) : tt('expressions.natural', 'Natural')); // the face word as shown ('' = Natural)
 function exPickerHTML() {
   // no faces (the harness without prefs.exTest, no face art): no picker, the v2.12 photo screen
   if (!S || !exOn()) return ''; const d = D(), now = exKnown(prefs.phFace) ? prefs.phFace : '';
-  const b = (n) => `<button type="button" class="btn ex-face" data-exface="${n}" aria-pressed="${n === now}" aria-label="${n ? EX_WORDS[n] : 'Natural'}" title="${n ? EX_WORDS[n] : 'Natural'}"><span class="ex-fhead" aria-hidden="true">${exHeadSVG(d, n)}</span><span class="ex-fword">${n ? EX_WORDS[n] : 'Natural'}</span></button>`;
-  return `<div class="ex-faces" role="group" aria-label="Face for every dog in the photo"><span class="ex-flbl">Face<b class="ex-fnow">${now ? EX_WORDS[now] : 'Natural'}</b></span><div class="ex-frow">${[''].concat(EX_LIST).map(b).join('')}</div></div>`;
+  const b = (n) => `<button type="button" class="btn ex-face" data-exface="${n}" aria-pressed="${n === now}" aria-label="${esc(exWord(n))}" title="${esc(exWord(n))}"><span class="ex-fhead" aria-hidden="true">${exHeadSVG(d, n)}</span><span class="ex-fword">${esc(exWord(n))}</span></button>`;
+  return `<div class="ex-faces" role="group" aria-label="${esc(tt('expressions.face_group', 'Face for every dog in the photo'))}"><span class="ex-flbl">${esc(tt('expressions.face', 'Face'))}<b class="ex-fnow">${esc(exWord(now))}</b></span><div class="ex-frow">${[''].concat(EX_LIST).map(b).join('')}</div></div>`;
 }
 function exPickerBind(root) {
   const box = root && root.querySelector('.ex-faces'); if (!box) return;
   box.querySelectorAll('[data-exface]').forEach((el) => { el.onclick = () => {
     const n = el.dataset.exface; if ((prefs.phFace || '') === n) return; SFX.click(); prefs.phFace = n; savePrefs();
-    box.querySelectorAll('[data-exface]').forEach((x) => x.setAttribute('aria-pressed', x === el)); const w = box.querySelector('.ex-fnow'); if (w) w.textContent = n ? EX_WORDS[n] : 'Natural';
+    box.querySelectorAll('[data-exface]').forEach((x) => x.setAttribute('aria-pressed', x === el)); const w = box.querySelector('.ex-fnow'); if (w) w.textContent = exWord(n);
     exDrawAll(); if (PH.on) { const c = phCapture(); if (c) { PH.cap = c; phDraw(30); } } // the scene with the new faces, taken again
   }; });
   const on = box.querySelector('[aria-pressed="true"]'); if (on && isPhone()) requestAnimationFrame(() => { const r = box.querySelector('.ex-frow'); if (r && on.offsetLeft > r.clientWidth - 60) r.scrollLeft = on.offsetLeft - 12; }); // the picked face in view
