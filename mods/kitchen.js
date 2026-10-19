@@ -11,6 +11,23 @@
 (function () {
   'use strict';
 
+  /* ---------- v2.14 language service (V214.md 4.2): read-only, called at run time only, never at load ----------
+     The data tables below stay English (ids, names and item names key the art, the pantry and the save); everything the player READS
+     goes through L() (UI text, keys mod.kitchen.*) or D() (tables, keys data.<table>.<path>, e.g. data.recipes.carrot_crunchies.name).
+     The unsafe-food notes (why / swap) stay two short, kind sentences in every language. */
+  var GLOB = typeof window !== 'undefined' ? window : globalThis;
+  function fmtEn(en, vars, html) {
+    var M = GLOB.PawI18nMsg, v = vars;
+    if (html && vars) { v = {}; for (var k in vars) v[k] = String(vars[k]).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    if (M && typeof M.format === 'function') return M.format(en, v || {}, 'en');
+    return v ? String(en).replace(/\{(\w+)\}/g, function (m, k) { return v[k] != null ? String(v[k]) : m; }) : en;
+  }
+  /* keys ending _html may hold <b> and <i>; their var values are escaped by the language service (here too, without it) */
+  function L(key, en, vars) { var P = GLOB.PawI18n; return P && typeof P.tt === 'function' ? P.tt(key, en, vars) : fmtEn(en, vars, /_html$/.test(key)); }
+  function D(path, en, vars) { return L('data.' + path, en, vars); }
+  function idOf(s) { return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, ''); }
+  function commaJoin(a) { return a.reduce(function (x, y) { return L('mod.kitchen.comma_join', '{a}, {b}', { a: x, b: y }); }); }
+
   var W = 1240, H = 620;
   var INK = '#5B3D32', PAPER = '#FFFBF3', MUTED = '#8A7468', PINK = '#F28FA5', GOLD = '#FFD56B';
 
@@ -99,7 +116,16 @@
   function pantryById(id) { for (var i = 0; i < PANTRY.length; i++) if (PANTRY[i].id === id) return PANTRY[i]; return null; }
   function recipeById(id) { for (var i = 0; i < RECIPES.length; i++) if (RECIPES[i].id === id) return RECIPES[i]; return null; }
   function isCrop(id) { return CROP_IDS.indexOf(id) >= 0; }
-  function ingName(id) { var p = pantryById(id); return p ? p.name : CROP_NAMES[id] || String(id); }
+  function ingName(id) { var p = pantryById(id); return p ? p.name : CROP_NAMES[id] || String(id); } // English: art lookups use it
+  /* display text in the current language (tables: data.pantry.*, data.crop_names.*, data.recipes.*, data.people_food.*, data.extra_unsafe.*, ...) */
+  function ingLabel(id) { var p = pantryById(id); return p ? D('pantry.' + idOf(p.id) + '.name', p.name) : CROP_NAMES[id] ? D('crop_names.' + idOf(id), CROP_NAMES[id]) : String(id); }
+  function shortLabel(id) { return id === 'sweet-potato' ? L('mod.kitchen.short_sweet_potato', 'Sw. Potato') : ingLabel(id); } // the narrow tiles and cards
+  function recipeName(r) { return D('recipes.' + idOf(r.id) + '.name', r.name); }
+  function recipeHint(r) { return D('recipes.' + idOf(r.id) + '.hint', r.hint); }
+  function foodText(pf, field) { return D((PEOPLE_FOOD.indexOf(pf) >= 0 ? 'people_food.' : 'extra_unsafe.') + idOf(pf.id) + '.' + field, pf[field]); }
+  function stepLabel(st) { return D('step_name.' + st, STEP_NAME[st]); }
+  function noteText(k) { return D('notes.' + idOf(k), NOTES[k]); }
+  function stepsText(steps) { return !steps.length ? '' : steps.map(stepLabel).reduce(function (a, b) { return L('mod.kitchen.arrow_join', '{a} → {b}', { a: a, b: b }); }); }
   function bag(ids) { var m = {}; for (var i = 0; i < ids.length; i++) { var k = norm(ids[i]); m[k] = (m[k] || 0) + 1; } return m; }
   function overlap(a, b) { var A = bag(a), B = bag(b), n = 0; for (var k in A) if (B[k]) n += Math.min(A[k], B[k]); return n; }
 
@@ -121,7 +147,7 @@
     for (var i = 0; i < RECIPES.length; i++) {
       var r = RECIPES[i];
       if (r.id === 'mystery-mush' || known.indexOf(r.id) >= 0) continue;
-      if (overlap(ids, r.ingredients) >= 2) return 'Close! Two of those belong together.';
+      if (overlap(ids, r.ingredients) >= 2) return L('mod.kitchen.close_hint', 'Close! Two of those belong together.');
     }
     return null;
   }
@@ -144,6 +170,11 @@
     for (i = 0; i < PEOPLE_FOOD.length; i++) if (PEOPLE_FOOD[i].id === k || norm(PEOPLE_FOOD[i].name) === k) return PEOPLE_FOOD[i];
     for (i = 0; i < EXTRA_UNSAFE.length; i++) { var e = EXTRA_UNSAFE[i]; if (e.id === k || norm(e.name) === k || e.alias.indexOf(k) >= 0) return e; }
     return null;
+  }
+  /* v2.14: the same note with its words in the current language: { id, name, why, swap } (the entry from safety() stays English), or null */
+  function safetyText(id) {
+    var pf = safety(id); if (!pf) return null;
+    return { id: pf.id, name: foodText(pf, 'name'), why: foodText(pf, 'why'), swap: foodText(pf, 'swap') };
   }
   /* only the kitchen's own safe ingredients may enter the pot */
   function canCook(id) { var k = norm(id); return !safety(k) && (isCrop(k) || !!pantryById(k)); }
@@ -192,11 +223,16 @@
   }
   function effectText(eff) {
     if (!eff) return '';
-    var parts = [], L = { hunger: 'Hunger', happy: 'Happiness', energy: 'Energy', bond: 'Bond' };
-    ['hunger', 'happy', 'energy', 'bond'].forEach(function (k) { if (eff[k]) parts.push('+' + eff[k] + ' ' + L[k]); });
-    var s = parts.join(', ');
-    if (eff.buff && BUFF_TEXT[eff.buff.id]) s += (s ? '. ' : '') + BUFF_TEXT[eff.buff.id];
-    return s + '.';
+    var parts = [], stat = {
+      hunger: function () { return L('mod.kitchen.stat_hunger', 'Hunger'); }, happy: function () { return L('mod.kitchen.stat_happy', 'Happiness'); },
+      energy: function () { return L('mod.kitchen.stat_energy', 'Energy'); }, bond: function () { return L('mod.kitchen.stat_bond', 'Bond'); }
+    };
+    ['hunger', 'happy', 'energy', 'bond'].forEach(function (k) { if (eff[k]) parts.push(L('mod.kitchen.stat_gain', '+{n} {stat}', { n: eff[k], stat: stat[k]() })); });
+    var st = parts.length ? commaJoin(parts) : '', buff = eff.buff && BUFF_TEXT[eff.buff.id] ? D('buff_text.' + eff.buff.id, BUFF_TEXT[eff.buff.id]) : '';
+    if (st && buff) return L('mod.kitchen.effect_stats_buff', '{stats}. {buff}.', { stats: st, buff: buff });
+    if (st) return L('mod.kitchen.effect_stats', '{stats}.', { stats: st });
+    if (buff) return L('mod.kitchen.effect_buff', '{buff}.', { buff: buff });
+    return '.';
   }
 
   function cropArr(crops, id) {
@@ -273,7 +309,7 @@
   function doodleIng(id, grey) {
     var R = seeded(hashS('ing' + id)), c = grey ? '#D8D2CC' : DOODLE_COL[id] || '#E8D8C4';
     return svgWrap('0 0 64 64', pencil(R, ell(32, 34, 20, 18), 2.2, c, true) +
-      '<text x="32" y="42" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="24" fill="' + INK + '">' + esc(ingName(id).charAt(0)) + '</text>');
+      '<text x="32" y="42" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="24" fill="' + INK + '">' + esc(Array.from(ingLabel(id))[0] || '?') + '</text>');
   }
   function ingArt(id) { return art('item', ingName(id)) || doodleIng(id); }
   function peopleArt(pf) { return art('item', pf.name) || doodleIng(pf.id, true); }
@@ -542,8 +578,11 @@
     good0: ['That\'s... fine. I\'d still eat it.', 'A wobbly one. Wobbly is a flavour.', 'Oops! Still smells amazing.'],
     nope: ['Nope! Not for pups.', 'Sniff... no thank you.', 'That one stays on the people shelf.'],
     full: ['The pot is full!', 'Four things is plenty, chef.'],
-    add: ['Ooh, in it goes!', 'Yes. More of that.', 'I approve this ingredient.', 'Plop!']
+    add: ['Ooh, in it goes!', 'Yes. More of that.', 'I approve this ingredient.', 'Plop!'],
+    reveal: ['For ME? You shouldn\'t have. (You should.)', 'I\'m saving it for later. No I\'m not.', 'Best. Day. Ever.']
   };
+  /* one of the dog's lines in the current language (data.lines.<kind>.<index>) */
+  function lineAt(kind, i) { return D('lines.' + kind + '.' + i, LINES[kind][i]); }
 
   /* =========================== UI =========================== */
   var notesShown = {};      // prepared-safe notes: once per page session (the game owns long-term memory)
@@ -552,12 +591,14 @@
     o = o || {};
     injectCSS();
     var rng = typeof o.rng === 'function' ? o.rng : Math.random;
-    var pick = function (a) { return a[Math.floor(rng() * a.length) % a.length]; };
+    var say1 = function (kind) { var a = LINES[kind]; return lineAt(kind, Math.floor(rng() * a.length) % a.length); }; // pick + translate, one rng call like pick()
+    var bold = function (t) { return '<b>' + esc(t) + '</b>'; };
+    var fridgeFull = function () { return L('mod.kitchen.fridge_full', 'The fridge is full. Feed a dish first.'); };
     var sfx = function (n) { try { (o.sfx || noop)(n); } catch (e) { /* ignore */ } };
     var sayExt = function (t, ms) { try { (o.say || noop)(t, ms); } catch (e) { /* ignore */ } };
     var call = function (fn, a) { try { if (typeof fn === 'function') fn(a); } catch (e) { /* ignore */ } };
 
-    var dog = o.dog || {}, dogKey = dog.key || 'mutt', dogName = dog.name || 'Your pup'; _kCoat = dog.coat; _kSeed = dog.seed;
+    var dog = o.dog || {}, dogKey = dog.key || 'mutt', dogName = dog.name || L('mod.kitchen.your_pup', 'Your pup'); _kCoat = dog.coat; _kSeed = dog.seed;
     var S = {
       time: o.time || 'day', weather: o.weather || 'sunny', season: o.season || 'summer',
       known: Array.isArray(o.known) ? o.known.slice() : ['carrot-crunchies', 'chicken-veggie-rice', 'blueberry-pupsicle'],
@@ -577,7 +618,7 @@
     var PORT = !!(el && (el.clientHeight || 0) > (el.clientWidth || 1) * 1.1); W = PORT ? 420 : 1240; H = PORT ? 800 : 620;
     var TOUCH = PORT || !!(window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches); // v2.3: touch wording
     var POT_XY = PORT ? { x: 210, y: 200 } : { x: 570, y: 280 };
-    var root = document.createElement('div'); root.className = 'pk-root' + (PORT ? ' pk-portrait' : ''); root.tabIndex = 0; root.setAttribute('role', 'application'); root.setAttribute('aria-label', 'Kitchen');
+    var root = document.createElement('div'); root.className = 'pk-root' + (PORT ? ' pk-portrait' : ''); root.tabIndex = 0; root.setAttribute('role', 'application'); root.setAttribute('aria-label', L('mod.kitchen.title', 'Kitchen'));
     var stage = document.createElement('div'); stage.className = 'pk-stage'; root.appendChild(stage);
     if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
     el.appendChild(root);
@@ -640,18 +681,18 @@
     /* top bar */
     var top = div('pk-top pk-paper pk-tape');
     div('pk-ico', top, art('icon', 'kitchen') || doodleProp('pot'));
-    div('pk-title', top, 'Kitchen');
-    var subEl = div('pk-sub', top, TOUCH ? 'Tap or drag ingredients into the pot. 2 to 4 things make a dish.' : 'Drag ingredients into the pot, or tap them. 2 to 4 things make a dish.');
+    div('pk-title', top, esc(L('mod.kitchen.title', 'Kitchen')));
+    var subEl = div('pk-sub', top, esc(TOUCH ? L('mod.kitchen.sub_touch', 'Tap or drag ingredients into the pot. 2 to 4 things make a dish.') : L('mod.kitchen.sub_drag', 'Drag ingredients into the pot, or tap them. 2 to 4 things make a dish.')));
     var fridgeEl = div('pk-chip', top);
-    var bookBtn = btn((art('icon', 'recipe') || '') + 'Recipe book', 'pk-gold', top, function () { showBook(); });
+    var bookBtn = btn((art('icon', 'recipe') || '') + esc(L('mod.kitchen.recipe_book', 'Recipe book')), 'pk-gold', top, function () { showBook(); });
     var closeBtn = btn(art('icon', 'close') || '&times;', 'pk-x', top, function () { close(); });
-    closeBtn.setAttribute('aria-label', 'Close the kitchen');
+    closeBtn.setAttribute('aria-label', L('mod.kitchen.close', 'Close the kitchen'));
     // v2.5 phones: the kitchen page scrolls, so its close X leaves the header and sticks to the top-right corner of the screen instead of scrolling away
     if (PORT) { closeBtn.classList.add('pk-xstick'); root.insertBefore(closeBtn, root.firstChild); }
     function drawFridge() {
       var full = S.fridge.count >= S.fridge.max;
       fridgeEl.className = 'pk-chip' + (full ? ' pk-full' : '');
-      fridgeEl.innerHTML = (art('icon', 'fridge') || '') + 'Fridge ' + S.fridge.count + '/' + S.fridge.max;
+      fridgeEl.innerHTML = (art('icon', 'fridge') || '') + esc(L('mod.kitchen.fridge', 'Fridge {n}/{max}', { n: S.fridge.count, max: S.fridge.max }));
     }
 
     /* shelf */
@@ -664,22 +705,22 @@
     }
     function bestStarLeft(id) { var t = takeIngredients([id], S.pantry, S.crops, S.pot); return t.used.length ? t.used[0].stars : 0; }
     function drawShelf() {
-      var h = '<div class="pk-sh">Pantry <small>Kibble Corner</small></div><div class="pk-row">';
+      var h = '<div class="pk-sh">' + esc(L('mod.kitchen.pantry', 'Pantry')) + ' <small>' + esc(L('mod.kitchen.kibble_corner', 'Kibble Corner')) + '</small></div><div class="pk-row">';
       PANTRY.forEach(function (p) {
-        var n = remaining(p.id), out = n <= 0;
-        h += '<button type="button" class="pk-tile' + (out ? ' pk-out' : '') + '" data-ing="' + p.id + '" title="' + esc(p.name + (out ? ' (buy more at the Kibble Corner pantry)' : '')) + '">' +
-          '<div class="pk-art">' + ingArt(p.id) + '</div><div class="pk-nm">' + esc(p.id === 'water' ? 'Water' : p.name) + '</div><div class="pk-ct">' + (p.id === 'water' ? '&infin;' : Math.max(0, n)) + '</div></button>';
+        var n = remaining(p.id), out = n <= 0, nm = ingLabel(p.id);
+        h += '<button type="button" class="pk-tile' + (out ? ' pk-out' : '') + '" data-ing="' + p.id + '" title="' + esc(out ? L('mod.kitchen.tile_buy_more', '{name} (buy more at the Kibble Corner pantry)', { name: nm }) : nm) + '">' +
+          '<div class="pk-art">' + ingArt(p.id) + '</div><div class="pk-nm">' + esc(p.id === 'water' ? L('mod.kitchen.short_water', 'Water') : nm) + '</div><div class="pk-ct">' + (p.id === 'water' ? '&infin;' : Math.max(0, n)) + '</div></button>';
       });
-      h += '</div><div class="pk-sh">From the garden <small>best stars first</small></div><div class="pk-row">';
+      h += '</div><div class="pk-sh">' + esc(L('mod.kitchen.from_garden', 'From the garden')) + ' <small>' + esc(L('mod.kitchen.best_stars_first', 'best stars first')) + '</small></div><div class="pk-row">';
       CROP_IDS.forEach(function (id) {
-        var n = remaining(id), out = n <= 0, bs = out ? 0 : bestStarLeft(id);
-        h += '<button type="button" class="pk-tile' + (out ? ' pk-out' : '') + '" data-ing="' + id + '" title="' + esc(CROP_NAMES[id] + (out ? ' (grow it in the garden)' : '')) + '">' +
-          '<div class="pk-art">' + ingArt(id) + '</div><div class="pk-nm">' + esc(id === 'sweet-potato' ? 'Sw. Potato' : CROP_NAMES[id]) + '</div><div class="pk-ct">' + Math.max(0, n) + '</div>' +
+        var n = remaining(id), out = n <= 0, bs = out ? 0 : bestStarLeft(id), nm = ingLabel(id);
+        h += '<button type="button" class="pk-tile' + (out ? ' pk-out' : '') + '" data-ing="' + id + '" title="' + esc(out ? L('mod.kitchen.tile_grow_it', '{name} (grow it in the garden)', { name: nm }) : nm) + '">' +
+          '<div class="pk-art">' + ingArt(id) + '</div><div class="pk-nm">' + esc(shortLabel(id)) + '</div><div class="pk-ct">' + Math.max(0, n) + '</div>' +
           (bs ? '<div class="pk-st">' + starsHtml(bs, 13, bs) + '</div>' : '') + '</button>';
       });
-      h += '</div><div class="pk-sh">People pantry <small>not for pups</small></div><div class="pk-row pk-last">';
+      h += '</div><div class="pk-sh">' + esc(L('mod.kitchen.people_pantry', 'People pantry')) + ' <small>' + esc(L('mod.kitchen.not_for_pups', 'not for pups')) + '</small></div><div class="pk-row pk-last">';
       PEOPLE_FOOD.forEach(function (pf) {
-        h += '<button type="button" class="pk-tile pk-people" data-pf="' + pf.id + '" title="' + esc(pf.name + ': not for dogs') + '"><div class="pk-art">' + peopleArt(pf) + '</div><div class="pk-badge">' + pawStopArt() + '</div></button>';
+        h += '<button type="button" class="pk-tile pk-people" data-pf="' + pf.id + '" title="' + esc(L('mod.kitchen.not_for_dogs', '{name}: not for dogs', { name: foodText(pf, 'name') })) + '"><div class="pk-art">' + peopleArt(pf) + '</div><div class="pk-badge">' + pawStopArt() + '</div></button>';
       });
       shelf.innerHTML = h + '</div>';
     }
@@ -689,21 +730,21 @@
     var msgEl = div('pk-msg', tray);
     var slotsEl = div('pk-slots', tray);
     var cookBtn, emptyBtn;
-    function msg(html) { msgEl.innerHTML = html; }
+    function msg(html) { msgEl.innerHTML = html; } // html: callers pass esc()'d text or bold() pieces
     function drawTray() {
       var h = '';
       for (var i = 0; i < 4; i++) {
         var u = S.pot[i];
-        h += u ? '<div class="pk-slot pk-fullslot" data-slot="' + i + '" title="Take ' + esc(ingName(u.id)) + ' out"><div class="pk-art">' + ingArt(u.id) + '</div>' + (u.stars ? '<div class="pk-st">' + starsHtml(u.stars, 13, u.stars) + '</div>' : '') + '<div class="pk-rm">&times;</div></div>'
+        h += u ? '<div class="pk-slot pk-fullslot" data-slot="' + i + '" title="' + esc(L('mod.kitchen.take_out', 'Take {name} out', { name: ingLabel(u.id) })) + '"><div class="pk-art">' + ingArt(u.id) + '</div>' + (u.stars ? '<div class="pk-st">' + starsHtml(u.stars, 13, u.stars) + '</div>' : '') + '<div class="pk-rm">&times;</div></div>'
           : '<div class="pk-slot"></div>';
       }
       slotsEl.innerHTML = h + '<div class="pk-sp"></div>';
-      emptyBtn = btn('Empty', '', slotsEl, function () { S.pot = []; sfx('click'); refresh(); msg('The pot is empty again. Ready for a new idea!'); });
-      cookBtn = btn('Cook!', 'pk-go', slotsEl, function () { startCook(); });
+      emptyBtn = btn(esc(L('mod.kitchen.empty', 'Empty')), '', slotsEl, function () { S.pot = []; sfx('click'); refresh(); msg(esc(L('mod.kitchen.pot_empty', 'The pot is empty again. Ready for a new idea!'))); });
+      cookBtn = btn(esc(L('mod.kitchen.cook', 'Cook!')), 'pk-go', slotsEl, function () { startCook(); });
       var full = S.fridge.count >= S.fridge.max;
       cookBtn.disabled = full || S.pot.length < 2;
       emptyBtn.disabled = !S.pot.length;
-      if (full) msg('<b>The fridge is full. Feed a dish first.</b>');
+      if (full) msg(bold(fridgeFull()));
       // pot contents floating above the rim
       var ih = '';
       S.pot.forEach(function (u, k) { ih += '<div style="left:' + (k * 26) + 'px;top:' + (k % 2 ? 10 : 0) + 'px;animation-delay:' + (k * 0.3) + 's">' + ingArt(u.id) + '</div>'; });
@@ -714,7 +755,7 @@
     slotsEl.addEventListener('click', function (e) {
       var s = e.target.closest('[data-slot]'); if (!s || S.mode !== 'kitchen') return;
       var i = +s.getAttribute('data-slot'), u = S.pot[i]; if (!u) return;
-      S.pot.splice(i, 1); sfx('click'); refresh(); msg(esc(ingName(u.id)) + ' went back on the shelf.');
+      S.pot.splice(i, 1); sfx('click'); refresh(); msg(esc(L('mod.kitchen.back_on_shelf', '{name} went back on the shelf.', { name: ingLabel(u.id) })));
     });
 
     /* adding ingredients */
@@ -723,20 +764,20 @@
       var note = safety(id);
       if (note) { bounceOut(id, fromXY); return false; }
       if (!canCook(id)) return false;
-      if (S.pot.length >= 4) { sfx('nope'); msg('<b>The pot holds 4 things at most.</b> Tap one in the pot to take it out.'); dogSay(pick(LINES.full), 1800); return false; }
+      if (S.pot.length >= 4) { sfx('nope'); msg(bold(L('mod.kitchen.pot_full', 'The pot holds 4 things at most.')) + ' ' + esc(L('mod.kitchen.pot_full_tip', 'Tap one in the pot to take it out.'))); dogSay(say1('full'), 1800); return false; }
       var t = takeIngredients([id], S.pantry, S.crops, S.pot);
       if (!t.used.length) {
         sfx('nope');
-        msg(isCrop(id) ? 'No ' + esc(CROP_NAMES[id]) + ' left: grow it in the garden.' : 'No ' + esc(ingName(id)) + ' left: the Kibble Corner pantry has more.');
+        msg(esc(isCrop(id) ? L('mod.kitchen.none_left_crop', 'No {name} left: grow it in the garden.', { name: ingLabel(id) }) : L('mod.kitchen.none_left_pantry', 'No {name} left: the Kibble Corner pantry has more.', { name: ingLabel(id) })));
         return false;
       }
       S.pot.push(t.used[0]); sfx('pop');
       flyTo(id, fromXY, POT_XY, false);
       potEl.classList.add('pk-hot'); later(function () { potEl.classList.remove('pk-hot'); }, 220);
       refresh();
-      var m = S.pot.length >= 2 ? 'In the pot: ' + S.pot.map(function (u) { return esc(ingName(u.id)); }).join(', ') + '. Press <b>Cook!</b> or add more.' : esc(ingName(id)) + ' is in. Add 1 to 3 more things.';
+      var m = S.pot.length >= 2 ? L('mod.kitchen.in_pot_html', 'In the pot: {items}. Press <b>Cook!</b> or add more.', { items: commaJoin(S.pot.map(function (u) { return ingLabel(u.id); })) }) : esc(L('mod.kitchen.is_in', '{name} is in. Add 1 to 3 more things.', { name: ingLabel(id) }));
       msg(m);
-      if (rng() < 0.35) dogSay(pick(LINES.add), 1400);
+      if (rng() < 0.35) dogSay(say1('add'), 1400);
       return true;
     }
     function flyTo(id, from, to, isPeople) {
@@ -750,7 +791,7 @@
     }
     function bounceOut(id, from) {
       var pf = safety(id); if (!pf) return;
-      sfx('nope'); setPose('sit'); dogSay(pick(LINES.nope), 2200);
+      sfx('nope'); setPose('sit'); dogSay(say1('nope'), 2200);
       call(o.onSafety, pf.id);
       from = from || { x: 160, y: 520 };
       var f = div('pk-fly', null, peopleArt(pf));
@@ -801,7 +842,7 @@
       dropEl.classList.remove('pk-hot'); potEl.classList.remove('pk-hot');
       if (!d.moved) { addToPot(d.id, { x: d.sx, y: d.sy }); return; }
       if (hotPot(p.x, p.y)) addToPot(d.id, p);
-      else if (!d.people) msg('Drop it on the pot to add it.');
+      else if (!d.people) msg(esc(L('mod.kitchen.drop_on_pot', 'Drop it on the pot to add it.')));
     }
     root.addEventListener('pointermove', onMove);
     root.addEventListener('pointerup', onUp);
@@ -821,10 +862,10 @@
     function showNote(pf) {
       var ov = overlay();
       var m = div('pk-modal pk-note pk-paper pk-tape', ov);
-      m.innerHTML = '<div class="pk-mh"><div class="pk-ico">' + pawStopArt() + '</div><div class="pk-title">Paw stop: ' + esc(pf.name) + '</div><div class="pk-itm">' + peopleArt(pf) + '</div></div>' +
-        '<p>' + esc(pf.why) + '</p><p class="pk-swap">' + esc(pf.swap) + '</p>';
+      m.innerHTML = '<div class="pk-mh"><div class="pk-ico">' + pawStopArt() + '</div><div class="pk-title">' + esc(L('mod.kitchen.paw_stop', 'Paw stop: {name}', { name: foodText(pf, 'name') })) + '</div><div class="pk-itm">' + peopleArt(pf) + '</div></div>' +
+        '<p>' + esc(foodText(pf, 'why')) + '</p><p class="pk-swap">' + esc(foodText(pf, 'swap')) + '</p>';
       var row = div('', m); row.style.cssText = 'display:flex;justify-content:flex-end;margin-top:8px';
-      var b = btn('Got it', 'pk-go', row, function () { closeOverlay(); root.focus(); msg('That stays on the people shelf. ' + esc(pf.swap)); });
+      var b = btn(esc(L('mod.kitchen.got_it', 'Got it')), 'pk-go', row, function () { closeOverlay(); root.focus(); msg(esc(L('mod.kitchen.stays_on_shelf', 'That stays on the people shelf. {swap}', { swap: foodText(pf, 'swap') }))); });
       ov.addEventListener('click', function (e) { if (e.target === ov) { closeOverlay(); root.focus(); } });
       try { b.focus(); } catch (e) { /* ignore */ }
     }
@@ -840,10 +881,10 @@
       if (!bookEl) return;
       bookEl.innerHTML = '';
       // v2.5: the close X is the book's first child and sticks to its top-right corner, so it never scrolls away with the recipes
-      btn(art('icon', 'close') || '&times;', 'pk-x pk-xfix', bookEl, function () { closeOverlay(); root.focus(); }).setAttribute('aria-label', 'Close the recipe book');
+      btn(art('icon', 'close') || '&times;', 'pk-x pk-xfix', bookEl, function () { closeOverlay(); root.focus(); }).setAttribute('aria-label', L('mod.kitchen.book_close', 'Close the recipe book'));
       var mh = div('pk-mh', bookEl);
       div('pk-ico', mh, art('icon', 'recipe') || '');
-      div('pk-title', mh, 'Recipe book <span style="font-size:20px;color:#8A7468;font-family:Patrick Hand">' + S.known.filter(function (k) { return k !== 'mystery-mush'; }).length + ' of 6 found</span>');
+      div('pk-title', mh, esc(L('mod.kitchen.book_title', 'Recipe book')) + ' <span style="font-size:20px;color:#8A7468;font-family:Patrick Hand">' + esc(L('mod.kitchen.book_found', '{n} of 6 found', { n: S.known.filter(function (k) { return k !== 'mystery-mush'; }).length })) + '</span>');
       var grid = div('pk-cards', bookEl), full = S.fridge.count >= S.fridge.max;
       RECIPES.forEach(function (r) {
         if (r.id === 'mystery-mush') return;
@@ -853,51 +894,51 @@
         if (!known) {
           div('pk-sil', c, propArt('bowl', { food: r.name }));
           div('pk-cn', c, '? ? ?');
-          div('pk-h', c, esc(r.hint));
-          div('pk-cnt', c, r.ingredients.length + ' ingredients. Experiment in the pot to find it!');
+          div('pk-h', c, esc(recipeHint(r)));
+          div('pk-cnt', c, esc(L('mod.kitchen.unknown_count', '{n} ingredients. Experiment in the pot to find it!', { n: r.ingredients.length })));
           return;
         }
         var best = S.best[r.id] | 0;
-        div('pk-cn', c, esc(r.name) + (best ? starsHtml(best, 17) : ''));
+        div('pk-cn', c, esc(recipeName(r)) + (best ? starsHtml(best, 17) : ''));
         var t = takeIngredients(r.ingredients, S.pantry, S.crops, []), miss = t.missing.slice();
         var ih = '', where = [];
         r.ingredients.forEach(function (id) {
           var k = miss.indexOf(id), m = k >= 0; if (m) miss.splice(k, 1);
-          ih += '<div class="pk-ing' + (m ? ' pk-miss' : '') + '"><div class="pk-art">' + ingArt(id) + '</div>' + esc(id === 'sweet-potato' ? 'Sw. Potato' : ingName(id)) + '</div>';
-          if (m) where.push(esc(ingName(id)) + ': ' + (isCrop(id) ? 'grow it' : 'Kibble Corner pantry'));
+          ih += '<div class="pk-ing' + (m ? ' pk-miss' : '') + '"><div class="pk-art">' + ingArt(id) + '</div>' + esc(shortLabel(id)) + '</div>';
+          if (m) where.push(isCrop(id) ? L('mod.kitchen.where_grow', '{name}: grow it', { name: ingLabel(id) }) : L('mod.kitchen.where_pantry', '{name}: Kibble Corner pantry', { name: ingLabel(id) }));
         });
         div('pk-ings', c, ih);
-        div('pk-where', c, where.join(' · '));
-        div('pk-steps', c, r.steps.map(function (s) { return STEP_NAME[s]; }).join(' → '));
+        div('pk-where', c, where.length ? esc(where.reduce(function (a, b) { return L('mod.kitchen.dot_join', '{a} · {b}', { a: a, b: b }); })) : '');
+        div('pk-steps', c, esc(stepsText(r.steps)));
         div('pk-eff', c, esc(effectText(effectFor(r.id, 1))));
         var bb = div('pk-cbtns', c);
-        var put = btn('Put in pot', 'pk-go', bb, function () {
+        var put = btn(esc(L('mod.kitchen.put_in_pot', 'Put in pot')), 'pk-go', bb, function () {
           var tt = takeIngredients(r.ingredients, S.pantry, S.crops, []);
           if (tt.missing.length) return;
           S.pot = tt.used; closeOverlay(); refresh(); sfx('pop'); root.focus();
-          msg('Everything for <b>' + esc(r.name) + '</b> is in the pot. Press <b>Cook!</b>');
+          msg(L('mod.kitchen.everything_in_html', 'Everything for <b>{name}</b> is in the pot. Press <b>Cook!</b>', { name: recipeName(r) }));
         });
         put.disabled = t.missing.length > 0 || full;
         if (best >= 3) {
-          var bh = btn('Cook by heart', 'pk-gold', bb, function () {
+          var bh = btn(esc(L('mod.kitchen.cook_by_heart', 'Cook by heart')), 'pk-gold', bb, function () {
             var tt = takeIngredients(r.ingredients, S.pantry, S.crops, []);
             if (tt.missing.length || S.fridge.count >= S.fridge.max) return;
             S.pot = tt.used; closeOverlay(); finish(r.id, 2, true, false);
           });
           bh.disabled = t.missing.length > 0 || full;
-          bh.title = 'Skips the mini-game: a sure 2 stars';
+          bh.title = L('mod.kitchen.cook_by_heart_tip', 'Skips the mini-game: a sure 2 stars');
         }
       });
-      if (full) { var f = div('pk-where', bookEl, 'The fridge is full. Feed a dish first.'); f.style.cssText = 'text-align:center;margin-top:6px;font-size:18px'; }
+      if (full) { var f = div('pk-where', bookEl, esc(fridgeFull())); f.style.cssText = 'text-align:center;margin-top:6px;font-size:18px'; }
     }
 
     /* cooking */
     function startCook() {
       if (S.mode !== 'kitchen') return;
-      if (S.fridge.count >= S.fridge.max) { msg('<b>The fridge is full. Feed a dish first.</b>'); sfx('nope'); return; }
+      if (S.fridge.count >= S.fridge.max) { msg(bold(fridgeFull())); sfx('nope'); return; }
       var ids = S.pot.map(function (u) { return u.id; });
       var ex = experiment(ids, S.known);
-      if (!ex.ok) { if (ex.reason === 'few') msg('Add at least 2 things to the pot.'); sfx('nope'); return; }
+      if (!ex.ok) { if (ex.reason === 'few') msg(esc(L('mod.kitchen.add_two', 'Add at least 2 things to the pot.'))); sfx('nope'); return; }
       if (ex.recipe === 'mystery-mush') { finish('mystery-mush', 1, false, false, ex.hint); return; }
       runGame(ex.recipe, ex.discovered);
     }
@@ -906,14 +947,14 @@
       var r = recipeById(rid); S.mode = 'game'; closeOverlay();
       var ov = overlay(true);
       var m = div('pk-modal pk-game pk-paper pk-tape', ov);
-      var gh = div('pk-gh', m), gs = div('pk-gs', m, discovered ? 'Something new is happening in this pot...' : esc(r.name));
+      var gh = div('pk-gh', m), gs = div('pk-gs', m, discovered ? esc(L('mod.kitchen.something_new', 'Something new is happening in this pot...')) : esc(recipeName(r)));
       var dialW = div('pk-dialw', m);
       div('', dialW, propArt('dial'));
       var dyn = div('', dialW);
       var judge = div('pk-judge', m);
       var doo = div('pk-doo', m), dooIn = div('', doo);
-      var tapB = btn('Tap!', 'pk-gold pk-tap', m, function () { tap(); });
-      div('pk-taph', m, 'Tap when the needle is in the golden zone. Space works too.');
+      var tapB = btn(esc(L('mod.kitchen.tap', 'Tap!')), 'pk-gold pk-tap', m, function () { tap(); });
+      div('pk-taph', m, esc(L('mod.kitchen.tap_hint', 'Tap when the needle is in the golden zone. Space works too.')));
       var pips = div('pk-pips', m);
       var n = r.steps.length, w = zoneWidth(n), scores = [], idx = -1, t0 = 0, zone = null, tapped = false, running = false;
       game = { tap: tap };
@@ -936,10 +977,10 @@
         if (idx >= n) { done(); return; }
         var step = r.steps[idx]; tapped = false; running = false;
         zone = { c: w / 2 + 0.18 + rng() * (1 - w - 0.2), w: w };
-        gh.textContent = 'Step ' + (idx + 1) + ' of ' + n + ': ' + STEP_NAME[step] + '!';
+        gh.textContent = L('mod.kitchen.step_title', 'Step {i} of {n}: {step}!', { i: idx + 1, n: n, step: stepLabel(step) });
         doo.className = 'pk-doo pk-' + step; dooIn.innerHTML = stepArt(step);
         drawDial(0); drawPips(); tapB.disabled = false;
-        dogSay(pick(LINES[step]), 2400);
+        dogSay(say1(step), 2400);
         gdbg = { step: step, idx: idx, zone: zone, running: false, t0: 0 };
         later(function () { running = true; t0 = performance.now(); gdbg.running = true; gdbg.t0 = t0; raf = requestAnimationFrame(tick); }, 700);
       }
@@ -960,9 +1001,9 @@
         running = false; tapped = true; tapB.disabled = true; if (gdbg) gdbg.running = false;
         var s = stepScore(t, zone); scores.push(s);
         sfx(STEP_SFX[r.steps[idx]] || 'click');
-        judge.textContent = s === 2 ? 'Perfect!' : s === 1 ? 'Nice!' : t == null ? 'Whoosh!' : 'Close enough!';
+        judge.textContent = s === 2 ? L('mod.kitchen.judge_perfect', 'Perfect!') : s === 1 ? L('mod.kitchen.judge_nice', 'Nice!') : t == null ? L('mod.kitchen.judge_whoosh', 'Whoosh!') : L('mod.kitchen.judge_close', 'Close enough!');
         judge.classList.remove('pk-show'); void judge.offsetWidth; judge.classList.add('pk-show');
-        dogSay(pick(LINES['good' + s]), 1500);
+        dogSay(say1('good' + s), 1500);
         drawPips();
         later(nextStep, 950);
       }
@@ -987,7 +1028,7 @@
       S.mode = 'reveal';
       showReveal(r, used, mushHint);
       refresh();
-      sayExt((recipeById(rid) || {}).name + ' went in the fridge.', 2200);
+      sayExt(L('mod.kitchen.in_fridge', '{name} went in the fridge.', { name: recipeById(rid) ? recipeName(recipeById(rid)) : String(rid) }), 2200);
     }
 
     function showReveal(r, used, mushHint) {
@@ -995,39 +1036,39 @@
       var ov = overlay();
       var m = div('pk-modal pk-reveal pk-rv pk-paper pk-tape', ov);
       setPose('happy');
-      if (r.discovered) div('pk-new', m, 'NEW!');
+      if (r.discovered) div('pk-new', m, esc(L('mod.kitchen.new', 'NEW!')));
       div('pk-bowl', m, propArt('bowl', { food: rec.name }));
-      div('pk-dn', m, esc(rec.name));
+      div('pk-dn', m, esc(recipeName(rec)));
       div('', m, starsHtml(r.stars, 34));
       var line;
-      if (mush) line = 'Mystery Mush! ' + esc(dogName) + ' gives the bowl a curious sniff... and approves.';
-      else if (r.auto) line = 'Cooked by heart. ' + esc(dogName) + ' watched every second.';
-      else if (r.stars === 1) line = 'It\'s... a shape. ' + esc(dogName) + ' loves it anyway.';
-      else if (r.stars === 2) line = 'Pretty good! ' + esc(dogName) + ' is doing the happy wiggle.';
-      else line = 'Chef\'s kiss! ' + esc(dogName) + ' can hardly sit still.';
-      div('pk-line', m, line);
-      if (!mush && FAV[dogKey] === r.recipe) div('pk-line', m, '<b style="color:#E2566E">That\'s ' + esc(dogName) + '\'s favourite!</b>');
+      if (mush) line = L('mod.kitchen.reveal_mush', 'Mystery Mush! {name} gives the bowl a curious sniff... and approves.', { name: dogName });
+      else if (r.auto) line = L('mod.kitchen.reveal_heart', 'Cooked by heart. {name} watched every second.', { name: dogName });
+      else if (r.stars === 1) line = L('mod.kitchen.reveal_1', 'It\'s... a shape. {name} loves it anyway.', { name: dogName });
+      else if (r.stars === 2) line = L('mod.kitchen.reveal_2', 'Pretty good! {name} is doing the happy wiggle.', { name: dogName });
+      else line = L('mod.kitchen.reveal_3', 'Chef\'s kiss! {name} can hardly sit still.', { name: dogName });
+      div('pk-line', m, esc(line));
+      if (!mush && FAV[dogKey] === r.recipe) div('pk-line', m, '<b style="color:#E2566E">' + esc(L('mod.kitchen.favourite', 'That\'s {name}\'s favourite!', { name: dogName })) + '</b>');
       div('pk-effl', m, esc(effectText(effectFor(r.recipe, r.stars))));
       if (mush) {
-        div('pk-entry', m, mushHint ? '<b>' + esc(mushHint) + '</b>' : 'Nothing clicked this time. Try a new mix: 2 to 4 things.');
+        div('pk-entry', m, mushHint ? '<b>' + esc(mushHint) + '</b>' : esc(L('mod.kitchen.nothing_clicked', 'Nothing clicked this time. Try a new mix: 2 to 4 things.')));
       } else {
-        var ih = rec.ingredients.map(function (id) { return '<div class="pk-ing"><div class="pk-art">' + ingArt(id) + '</div>' + esc(id === 'sweet-potato' ? 'Sw. Potato' : ingName(id)) + '</div>'; }).join('');
-        div('pk-entry', m, (r.discovered ? '<b>Added to your recipe book!</b> ' : '<b>Recipe book:</b> ') + esc(rec.steps.map(function (s) { return STEP_NAME[s]; }).join(' → ')) +
-          ' · best ' + starsHtml(S.best[rec.id] | 0, 15) + '<div class="pk-ings">' + ih + '</div>');
+        var ih = rec.ingredients.map(function (id) { return '<div class="pk-ing"><div class="pk-art">' + ingArt(id) + '</div>' + esc(shortLabel(id)) + '</div>'; }).join('');
+        div('pk-entry', m, '<b>' + esc(r.discovered ? L('mod.kitchen.entry_added', 'Added to your recipe book!') : L('mod.kitchen.entry_book', 'Recipe book:')) + '</b> ' + esc(L('mod.kitchen.entry_best', '{steps} · best', { steps: stepsText(rec.steps) })) +
+          ' ' + starsHtml(S.best[rec.id] | 0, 15) + '<div class="pk-ings">' + ih + '</div>');
       }
       var notes = [];
-      used.forEach(function (u) { if (NOTES[u.id] && !notesShown[u.id]) { notesShown[u.id] = 1; if (notes.indexOf(NOTES[u.id]) < 0) notes.push(esc(ingName(u.id)) + ': ' + NOTES[u.id]); } });
-      if (notes.length) div('pk-notes', m, notes.join('<br>'));
+      used.forEach(function (u) { if (NOTES[u.id] && !notesShown[u.id]) { notesShown[u.id] = 1; var nt = L('mod.kitchen.note_line', '{name}: {note}', { name: ingLabel(u.id), note: noteText(u.id) }); if (notes.indexOf(nt) < 0) notes.push(nt); } });
+      if (notes.length) div('pk-notes', m, notes.map(esc).join('<br>'));
       var bb = div('pk-rbtns', m);
-      var again = btn('Cook more', 'pk-go', bb, function () { backToKitchen(); });
-      btn('Done', '', bb, function () { close(); });
-      if (S.fridge.count >= S.fridge.max) { again.textContent = 'Back to the kitchen'; }
+      var again = btn(esc(L('mod.kitchen.cook_more', 'Cook more')), 'pk-go', bb, function () { backToKitchen(); });
+      btn(esc(L('mod.kitchen.done', 'Done')), '', bb, function () { close(); });
+      if (S.fridge.count >= S.fridge.max) { again.textContent = L('mod.kitchen.back_to_kitchen', 'Back to the kitchen'); }
       try { again.focus(); } catch (e) { /* ignore */ }
-      dogSay(mush ? 'Mush! My favourite colour.' : pick(['For ME? You shouldn\'t have. (You should.)', 'I\'m saving it for later. No I\'m not.', 'Best. Day. Ever.']), 2600);
+      dogSay(mush ? L('mod.kitchen.mush_line', 'Mush! My favourite colour.') : say1('reveal'), 2600);
     }
     function backToKitchen() {
       closeOverlay(); S.mode = 'kitchen'; setPose('sit'); refresh(); root.focus();
-      msg(S.fridge.count >= S.fridge.max ? '<b>The fridge is full. Feed a dish first.</b>' : 'What shall we cook next? Mix 2 to 4 things.');
+      msg(S.fridge.count >= S.fridge.max ? bold(fridgeFull()) : esc(L('mod.kitchen.cook_next', 'What shall we cook next? Mix 2 to 4 things.')));
     }
 
     /* keyboard */
@@ -1048,9 +1089,9 @@
 
     /* first paint */
     refresh();
-    var firstMsg = !notesShown.kitchen ? (notesShown.kitchen = 1, '<b>' + NOTES.kitchen + '</b>') : (TOUCH ? 'Tap or drag' : 'Drag') + ' 2 to 4 ingredients into the pot, then press <b>Cook!</b>';
+    var firstMsg = !notesShown.kitchen ? (notesShown.kitchen = 1, bold(noteText('kitchen'))) : TOUCH ? L('mod.kitchen.first_tap_html', 'Tap or drag 2 to 4 ingredients into the pot, then press <b>Cook!</b>') : L('mod.kitchen.first_drag_html', 'Drag 2 to 4 ingredients into the pot, then press <b>Cook!</b>');
     if (S.fridge.count < S.fridge.max) msg(firstMsg);
-    later(function () { dogSay(pick(LINES.hello), 2600); }, 400);
+    later(function () { dogSay(say1('hello'), 2600); }, 400);
     try { root.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
 
     if (PORT) { portLayout(); if (typeof ResizeObserver !== 'undefined') { var pro = new ResizeObserver(portLayout); pro.observe(tray); pro.observe(shelf); } }
@@ -1091,7 +1132,7 @@
     RECIPES: RECIPES, PANTRY: PANTRY, PEOPLE_FOOD: PEOPLE_FOOD, FAV: FAV,
     NOTES: NOTES, CROP_NAMES: CROP_NAMES,
     match: match, hint: hint, dishStars: dishStars,
-    safety: safety, canCook: canCook, experiment: experiment,
+    safety: safety, safetyText: safetyText, canCook: canCook, experiment: experiment,
     zoneWidth: zoneWidth, stepScore: stepScore, cookStars: cookStars,
     effectFor: effectFor, effectText: effectText, takeIngredients: takeIngredients,
     open: function (el, o) {
