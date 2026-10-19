@@ -44,71 +44,6 @@
 
     <p class="intro">{{t home.intro}}</p>
 
-    <section id="dogs" class="sec">
-      <h2>{{t home.dogs.title}} <span class="jpw">{{t home.dogs.gloss}}</span></h2>
-      <p>{{t home.dogs.lead}}</p>
-      <ul class="cards featured">
-<!-- dogs:cards -->
-{{raw cards}}
-<!-- /dogs:cards -->
-      </ul>
-      <p class="center some">{{t home.dogs.some}}</p>
-      <p class="center"><a class="chip" href="{{u /dogs}}">{{t home.dogs.all}} <span aria-hidden="true">→</span></a></p>
-    </section>
-
-    <section class="sec">
-      <h2>{{t home.do.title}}</h2>
-      <ul class="feats">
-        <li><b>{{t home.feat.walks.title}}</b>{{t home.feat.walks.text}}</li>
-        <li><b>{{t home.feat.cuddles.title}}</b>{{t home.feat.cuddles.text}}</li>
-        <li><b>{{t home.feat.garden.title}}</b>{{t home.feat.garden.text}}</li>
-        <li><b>{{t home.feat.playdates.title}}</b>{{t home.feat.playdates.text}}</li>
-        <li><b>{{t home.feat.winter.title}}</b>{{t home.feat.winter.text}}</li>
-        <li><b>{{t home.feat.fuji.title}}</b>{{t home.feat.fuji.text}}</li>
-      </ul>
-    </section>
-
-    <section id="japan" class="sec washi">
-      <h2>{{t home.japan.title}} <span class="hanko" lang="ja" aria-hidden="true">犬</span></h2>
-      <p>{{t home.japan.lead}}</p>
-      <figure class="fuji"><img id="fujiImg" src="/img/art/fuji-autumn.webp" alt="{{a home.japan.fuji_alt}}" width="1280" height="768" loading="lazy"><figcaption>{{t home.japan.caption}}</figcaption></figure>
-      <ul class="notes">
-        <li><h3>{{t home.note.hachiko.title}}</h3><p>{{t home.note.hachiko.text}}</p></li>
-        <li><h3>{{t home.note.shiba.title}}</h3><p>{{t home.note.shiba.text}}</p></li>
-        <li><h3>{{t home.note.cafe.title}}</h3><p>{{t home.note.cafe.text}}</p></li>
-        <li><h3>{{t home.note.stroller.title}}</h3><p>{{t home.note.stroller.text}}</p></li>
-        <li><h3>{{t home.note.lead.title}}</h3><p>{{t home.note.lead.text}}</p></li>
-        <li class="shrine"><img src="/img/art/torii.webp" alt="{{a home.note.shrine.alt}}" width="720" height="600" loading="lazy"><h3>{{t home.note.shrine.title}}</h3><p>{{t home.note.shrine.text}}</p></li>
-      </ul>
-      <div class="words">
-        <h3>{{t home.words.title}}</h3>
-        <dl>
-          <div><dt lang="ja">犬</dt><dd><i>inu</i>: {{t home.words.inu}}</dd></div>
-          <div><dt lang="ja">子犬</dt><dd><i>koinu</i>: {{t home.words.koinu}}</dd></div>
-          <div><dt lang="ja">ワンワン</dt><dd><i>wan wan</i>: {{t home.words.wanwan}}</dd></div>
-          <div><dt lang="ja">かわいい</dt><dd><i>kawaii</i>: {{t home.words.kawaii}}</dd></div>
-          <div><dt lang="ja">お散歩</dt><dd><i>osanpo</i>: {{t home.words.osanpo}}</dd></div>
-          <div><dt lang="ja">おすわり</dt><dd><i>osuwari</i>: {{t home.words.osuwari}}</dd></div>
-          <div><dt lang="ja">お手</dt><dd><i>ote</i>: {{t home.words.ote}}</dd></div>
-          <div><dt lang="ja">いい子</dt><dd><i>ii ko</i>: {{t home.words.iiko}}</dd></div>
-        </dl>
-      </div>
-      <div class="trip">
-        <span class="hanko" lang="ja" aria-hidden="true">東京</span>
-        <h3>{{t home.trip.title}}</h3>
-        <p>{{t home.trip.text}}</p>
-      </div>
-    </section>
-
-    <section id="mapteaser" class="sec teaser">
-      <h2>{{t home.map.title}} <span class="jpw">{{t map.h1_gloss}}</span></h2>
-      <p>{{t home.map.text}}</p>
-      <ul class="tpics">
-{{raw teaserpics}}
-      </ul>
-      <p class="center"><a class="chip" href="{{u /map}}">{{t home.map.link}} <span aria-hidden="true">→</span></a></p>
-    </section>
-
     <section id="aboutteaser" class="sec teaser abt">
       <img class="abdog" src="/img/art/dogs/dachs-still.svg" alt="{{a about.dog_alt}}" width="240" height="200" loading="lazy">
       <div>
@@ -119,7 +54,6 @@
     </section>
 
     <div class="cta">
-      <a class="play" href="https://an9ou.itch.io/doodle-doggo">{{t common.play}}</a>
       <p class="small">{{t home.save_line}}</p>
     </div>
   </div>
