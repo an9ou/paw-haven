@@ -13,7 +13,7 @@
 // Why a Worker and not Pages: Pages and Workers-assets uploads authenticate with a short-lived upload JWT, which the cloud
 // session's proxy replaces with the account API token, so those uploads fail there. A Worker script upload needs only the
 // API token. www.doodledoggo.app answers with a 301 to the apex, keeping the path.
-const fs = require('fs'), path = require('path'), zlib = require('zlib');
+const fs = require('fs'), path = require('path'), zlib = require('zlib'), crypto = require('crypto');
 const I18N = require('./site_i18n');
 const root = path.join(__dirname, '..'), site = path.join(root, 'site'), brand = path.join(root, 'brand'), out = path.join(root, '_cfsite'), outFonts = path.join(root, '_cfsite_fonts');
 const TYPES = { html: 'text/html; charset=utf-8', css: 'text/css; charset=utf-8', svg: 'image/svg+xml', png: 'image/png', webp: 'image/webp', woff2: 'font/woff2', webmanifest: 'application/manifest+json', txt: 'text/plain; charset=utf-8', js: 'text/javascript; charset=utf-8' };
@@ -54,7 +54,10 @@ for (const L of I18N.LANGS.concat(PSEUDO ? I18N.PSEUDO : [])) {
 // the friendly 404 in each language
 const NOTFOUND = {};
 for (const L of I18N.LANGS.concat(PSEUDO ? I18N.PSEUDO : [])) {
-  NOTFOUND[L.dir ? '/' + L.dir : ''] = `<!doctype html><html lang="${L.code}"${L.code === 'en' ? '' : ` class="i18n s-${L.script}"`}><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/style.css"><main class="page"><div class="sheet center"><h1>${I18N.fmt(L.code, 'notfound.title')}</h1><p><a class="play" href="${I18N.urlFor(L, '/')}">${I18N.fmt(L.code, 'notfound.home')}</a></p></div></main>`;
+  // the language's font subset too (same ?v= cache key as the pages), and a <title>
+  const fcss = path.join(site, 'fonts', 'i18n', (L.pseudo === 'cjk' ? 'ja' : L.code) + '.css'), fbody = L.code !== 'en' && fs.existsSync(fcss) ? fs.readFileSync(fcss) : null;
+  const flink = fbody && /@font-face/.test(fbody) ? `<link rel="stylesheet" href="/fonts/i18n/${path.basename(fcss)}?v=${crypto.createHash('sha1').update(fbody).digest('hex').slice(0, 8)}">` : '';
+  NOTFOUND[L.dir ? '/' + L.dir : ''] = `<!doctype html><html lang="${L.code}"${L.code === 'en' ? '' : ` class="i18n s-${L.script}"`}><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${I18N.fmt(L.code, 'notfound.title').replace(/<[^>]*>/g, '')} · Doodle Doggo</title><link rel="stylesheet" href="/style.css">${flink}<main class="page"><div class="sheet center"><h1>${I18N.fmt(L.code, 'notfound.title')}</h1><p><a class="play" href="${I18N.urlFor(L, '/')}">${I18N.fmt(L.code, 'notfound.home')}</a></p></div></main>`;
 }
 // the per-language fonts
 const fontDir = path.join(site, 'fonts', 'i18n');
@@ -96,6 +99,11 @@ export default {
     if (url.hostname === 'www.' + APEX) return Response.redirect('https://' + APEX + url.pathname + url.search, 301);
     if (req.method !== 'GET' && req.method !== 'HEAD') return new Response('Method not allowed', { status: 405, headers: { allow: 'GET, HEAD' } });
     let p = url.pathname.length > 1 ? url.pathname.replace(/\\/+$/, '') : '/';
+    const anyPre = (p.match(/^\\/[A-Za-z-]+(?=\\/|$)/) || [''])[0]; // /zh-Hant/..., /pt-BR (the BCP 47 spelling) -> the lowercase folder
+    if (anyPre && anyPre !== anyPre.toLowerCase() && anyPre.toLowerCase() in LANG_OF) {
+      const rest = url.pathname.slice(anyPre.length);
+      return Response.redirect('https://' + url.host + anyPre.toLowerCase() + (rest || '/') + url.search, 301);
+    }
     const pre = (p.match(/^\\/[a-z-]+(?=\\/|$)/) || [''])[0], lpre = pre in LANG_OF ? pre : '';
     if (lpre && p === lpre && url.pathname === p) return Response.redirect('https://' + url.host + p + '/' + url.search, 301); // /ja -> /ja/
     if (p.endsWith('.html') && FILES[p]) return Response.redirect('https://' + url.host + (p.endsWith('/index.html') ? p.slice(0, -10) : p.slice(0, -5)) + url.search, 301);
