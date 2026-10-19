@@ -11,9 +11,10 @@ function crDogs() { if (!crOn()) return S ? [S.dog] : []; const l = crPresent().
 // pack care acts here: on, and at least two dogs present (a lone active dog, e.g. away from home with the puppies at home, keeps the v2.6 care)
 function crPack() { return crOn() && crPresent().length > 1; }
 // "Mochi", "Mochi and Pepper", "Mochi, Pepper and Bun"
-function crNames(l) { const n = l.map((d) => d.name); return n.length < 2 ? n.join('') : n.slice(0, -1).join(', ') + ' and ' + n[n.length - 1]; }
-const crIs = (l) => (l.length > 1 ? 'are' : 'is');
-const crDogsN = (n) => n + (n === 1 ? ' dog' : ' dogs');
+function crNames(l) { return tlist(l.map((d) => d.name)); }
+const crV = (l) => ({ n: l.length, names: crNames(l) }); // the vars of a message about a group of dogs: a plural on n, the names as a list
+const crFN = (name) => tdata('food.' + tid(name) + '.n', name); // a food's shown name (the English name stays the key)
+const crDogsN = (n) => tt('care.dogs_n', '{n, plural, one {# dog} other {# dogs}}', { n });
 function crFree(d) { if (d && typeof hoFree === 'function') hoFree(d); } // v2.7 HOME: a dog using furniture comes out for dinner, the bath or bed
 
 /* ---------------- the chip row (top of the Feed and Care trays) ---------------- */
@@ -23,9 +24,9 @@ function crChipsHTML(cap) { // v2.9: cap = the line under the chips (Play and Wa
   if (!crPack()) return '';
   const chips = crPresent().map((d) => {
     const on = !(S.careOff && S.careOff[d.id]);
-    return `<button class="chip cr-chip${on ? ' on' : ''}${d.sleeping ? ' asleep' : ''}" data-crdog="${d.id}" aria-pressed="${on}" aria-label="${esc(d.name)}${d.sleeping ? ', asleep' : ''}"><span class="cr-head" aria-hidden="true">${headSVG(d)}</span><span class="cr-name">${esc(d.name)}</span>${d.sleeping ? '<span class="cr-zz" aria-hidden="true">zz</span>' : ''}<span class="cr-box" aria-hidden="true">${on ? CR_TICK : ''}</span></button>`;
+    return `<button class="chip cr-chip${on ? ' on' : ''}${d.sleeping ? ' asleep' : ''}" data-crdog="${d.id}" aria-pressed="${on}" aria-label="${esc(d.sleeping ? tt('care.label_chip_asleep', '{name}, asleep', { name: d.name }) : d.name)}"><span class="cr-head" aria-hidden="true">${headSVG(d)}</span><span class="cr-name">${esc(d.name)}</span>${d.sleeping ? '<span class="cr-zz" aria-hidden="true">zz</span>' : ''}<span class="cr-box" aria-hidden="true">${on ? CR_TICK : ''}</span></button>`;
   }).join('');
-  return `<div class="cr-wrap"><div class="cr-chips" role="group" aria-label="Who gets this">${chips}</div><p class="small cr-cap">${cap ? esc(cap) : 'Ticked dogs get fed, petted, bathed and tucked in together.'}</p></div>`;
+  return `<div class="cr-wrap"><div class="cr-chips" role="group" aria-label="${esc(tt('care.label_who_gets', 'Who gets this'))}">${chips}</div><p class="small cr-cap">${esc(cap || tt('care.cap_default', 'Ticked dogs get fed, petted, bathed and tucked in together.'))}</p></div>`;
 }
 function crBindChips(root, redraw, line) {
   (root || dock).querySelectorAll('[data-crdog]').forEach((b) => { b.onclick = () => { SFX.init(); crToggle(b.dataset.crdog, redraw, line); }; });
@@ -35,7 +36,7 @@ function crToggle(id, redraw, line) {
   if (!S) return false; if (!S.careOff || typeof S.careOff !== 'object') S.careOff = {};
   if (!S.careOff[id]) {
     const ticked = crPresent().filter((d) => !S.careOff[d.id]);
-    if (ticked.length <= 1 && ticked.some((d) => d.id === id)) { nope(line || 'Someone has to get the treat. Tick another dog first.'); return false; }
+    if (ticked.length <= 1 && ticked.some((d) => d.id === id)) { nope(line || tt('care.last_ticked', 'Someone has to get the treat. Tick another dog first.')); return false; }
     S.careOff[id] = true;
   } else delete S.careOff[id];
   SFX.click(); markDirty();
@@ -56,38 +57,38 @@ function crEatFx(name, f, o) {
   if (feeder) happy += 10;
   if (S.place === 'river' && name !== 'Fresh Water') happy += 5;
   let extraMsg = '';
-  const pb = pupBonus(D(), f); if (pb) { happy += pb; extraMsg += ` Puppy-sized bites: +${pb} Happiness.`; }
+  const pb = pupBonus(D(), f); if (pb) { happy += pb; extraMsg += ' ' + tt('care.pup_bites', 'Puppy-sized bites: +{n} Happiness.', { n: pb }); }
   if (name !== 'Fresh Water') extraMsg += eatForLine(D());
-  if (name === 'Fresh Water' && isHot()) { happy += 5; addStat('energy', 10); extraMsg += ' So refreshing on a hot day! Extra Energy.'; }
+  if (name === 'Fresh Water' && isHot()) { happy += 5; addStat('energy', 10); extraMsg += ' ' + tt('care.hot_water', 'So refreshing on a hot day! Extra Energy.'); }
   const perk = shFeedPerk(name, f); if (perk.happy) { happy += perk.happy; extraMsg += perk.msg; } // v2.4: Chef Hat on meals, Bumblebee Suit on snacks
-  if (name !== 'Fresh Water' && timePhase() === 'dawn') { dailyCheck(); if (!S.daily.breakfast || (o && o.bfast)) { S.daily.breakfast = true; happy += 5; addBond(3); extraMsg += ' Breakfast bonus!'; } }
+  if (name !== 'Fresh Water' && timePhase() === 'dawn') { dailyCheck(); if (!S.daily.breakfast || (o && o.bfast)) { S.daily.breakfast = true; happy += 5; addBond(3); extraMsg += ' ' + tt('care.breakfast', 'Breakfast bonus!'); } }
   addStat('hunger', f.hunger || 0); addStat('happy', happy); addStat('energy', f.energy || 0); addStat('clean', f.clean || 0);
   let bp = name === 'Fresh Water' ? 0 : 2 + (f.bond || 0); if (feeder) bp *= 2;
   if (name === 'Pupcake') S.pupUntil = S.gameMin + shPupMins(); // v2.4: the Happi Coat makes it 2 game hours
-  if (f.cool) { S.coolUntil = S.gameMin + f.cool; extraMsg += ' Cool as a cucumber for 1 game hour.'; }
-  if (f.warm) { S.warmUntil = S.gameMin + f.warm; extraMsg += ' Warm paws for 1 game hour.'; } // v2.5: Warm Bone Broth (isWarm honours S.warmUntil) // v2.4: Frozen Pupsicle (isHot honours S.coolUntil)
+  if (f.cool) { S.coolUntil = S.gameMin + f.cool; extraMsg += ' ' + tt('care.cool', 'Cool as a cucumber for 1 game hour.'); }
+  if (f.warm) { S.warmUntil = S.gameMin + f.warm; extraMsg += ' ' + tt('care.warm', 'Warm paws for 1 game hour.'); } // v2.5: Warm Bone Broth (isWarm honours S.warmUntil) // v2.4: Frozen Pupsicle (isHot honours S.coolUntil)
   if (f.golden) { S.glowUntil = S.gameMin + 1440; addStat('happy', 80 - Math.min(80, S.stats.happy)); bp = 20; }
   const got = bp ? addBond(bp) : 0;
   return { got, extraMsg };
 }
 // the Pupcake (one a day) and the Golden Bone go to the active dog only: a line in its v2.6 toast says so
 const crSolo = (name, f) => name === 'Pupcake' || !!(f && f.golden);
-function crSoloLine(name, f) { return crPack() && crSolo(name, f) ? ` ${name === 'Pupcake' ? 'Pupcakes are' : 'The Golden Bone is'} for one dog at a time, so ${NAME()} got this one.` : ''; }
+function crSoloLine(name, f) { return crPack() && crSolo(name, f) ? ' ' + (name === 'Pupcake' ? tt('care.solo_pupcake', 'Pupcakes are for one dog at a time, so {name} got this one.', { name: NAME() }) : tt('care.solo_golden', 'The Golden Bone is for one dog at a time, so {name} got this one.', { name: NAME() })) : ''; }
 // a food card tap (or a drop on the bowl) with pack care: every ticked dog present gets one portion, in chip order, while portions last.
 // Returns false when the v2.6 path in feed() should run instead (pack care off, the active dog alone, a Pupcake or Golden Bone, a meal away from home)
 function crFeed(name, f) {
   if (!crPack() || crSolo(name, f) || (!atHome() && isMeal(name))) return false;
   const tick = crDogs(); if (tick.length === 1 && tick[0] === S.dog) return false;
   const water = name === 'Fresh Water', asleep = tick.filter((d) => d.sleeping), awake = tick.filter((d) => !d.sleeping);
-  if (!awake.length) { nope(`${crNames(asleep)} ${crIs(asleep)} asleep. Wake ${asleep.length > 1 ? 'them' : asleep[0].name} from the Care menu first.`); return true; }
-  if (S.place === 'pier' && !water && Math.random() < 0.2) { popDown(); SFX.honk(); toast(`A seagull took the ${name}! Rude. (Snack refunded: Pip has a deal with the gulls.)`, 'bad'); return true; }
+  if (!awake.length) { nope(tt('care.asleep_wake', '{n, plural, one {{names} is asleep. Wake {names} from the Care menu first.} other {{names} are asleep. Wake them from the Care menu first.}}', crV(asleep))); return true; }
+  if (S.place === 'pier' && !water && Math.random() < 0.2) { popDown(); SFX.honk(); toast(tt('care.seagull', 'A seagull took the {food}! Rude. (Snack refunded: Pip has a deal with the gulls.)', { food: crFN(name) }), 'bad'); return true; }
   let full = [], short = [], fed = awake;
   if (water) {
-    if (S.gameMin - S.waterAt < shWaterWait()) { nope(`The water bowl is refilling. Water takes time. That's science.`); return true; }
+    if (S.gameMin - S.waterAt < shWaterWait()) { nope(tt('care.water_wait', "The water bowl is refilling. Water takes time. That's science.")); return true; }
   } else {
-    const have = S.inv.food[name] || 0; if (have <= 0) { nope('You have none of that. Kibble Corner has some.'); return true; }
+    const have = S.inv.food[name] || 0; if (have <= 0) { nope(tt('care.none_left', 'You have none of that. Kibble Corner has some.')); return true; }
     if (f.hunger > 0) { full = awake.filter((d) => d.stats.hunger > 90); fed = awake.filter((d) => d.stats.hunger <= 90); }
-    if (!fed.length) { nope(`${crNames(full)} ${crIs(full)} full. ${full.length > 1 ? 'They have' : PRd(full[0]).He + ' has'} never said that before. (Food not used.)`); if (full.includes(S.dog)) setTemp('happy', 1200); return true; }
+    if (!fed.length) { nope(tt('care.all_full', '{n, plural, one {{names} is full. {sex, select, female {She has} other {He has}} never said that before. (Food not used.)} other {{names} are full. They have never said that before. (Food not used.)}}', Object.assign(crV(full), { sex: full[0].sex }))); if (full.includes(S.dog)) setTemp('happy', 1200); return true; }
     short = fed.slice(have); fed = fed.slice(0, have);
   }
   if (water) S.waterAt = S.gameMin; // one refill serves the pack
@@ -105,12 +106,12 @@ function crFeed(name, f) {
     fbPackBowls([], null);
     const res = fed.map((d) => ({ d, r: withDog(d, () => crEatFx(name, f, { bfast })) }));
     pack.forEach((d) => { packPose[d.id] = 'happy'; if (cur.mode === 'yard') redrawPackDog(d); });
-    const msg = water ? `${crNames(fed)} lap it up. Most of it went on the floor.` : fed.length === 1 ? PICK([`${fed[0].name} eats it up. ${PRd(fed[0]).His} tail approves.`, `Gone. ${fed[0].name} is now looking at the bowl for more.`]) : PICK([`${crNames(fed)} crunch in harmony.`, `A symphony of crunching from ${crNames(fed)}.`, `${crNames(fed)} eat side by side. Nobody checks the other bowls. Much.`]);
+    const msg = water ? tt('care.lap_it_up', '{names} lap it up. Most of it went on the floor.', { names: crNames(fed) }) : fed.length === 1 ? PICK([tt('care.eats_it_up', '{sex, select, female {{name} eats it up. Her tail approves.} other {{name} eats it up. His tail approves.}}', { name: fed[0].name, sex: fed[0].sex }), tt('care.gone', 'Gone. {name} is now looking at the bowl for more.', { name: fed[0].name })]) : PICK([tt('care.crunch_harmony', '{names} crunch in harmony.', { names: crNames(fed) }), tt('care.symphony', 'A symphony of crunching from {names}.', { names: crNames(fed) }), tt('care.side_by_side', '{names} eat side by side. Nobody checks the other bowls. Much.', { names: crNames(fed) })]);
     const favs = fed.filter((d) => d.favFood.includes(name)), gots = res.map((x) => x.r.got), same = gots.every((g) => g === gots[0]);
-    const bond = !gots[0] && same ? '' : same ? ` +${gots[0]} Bond${fed.length > 1 ? ' each' : ''}.` : ` Bond: ${res.filter((x) => x.r.got).map((x) => `${x.d.name} +${x.r.got}`).join(', ')}.`;
-    const extra = [...new Set(res.map((x) => x.r.extraMsg).join('').split(/(?<=[.!])\s+/).map((t) => t.trim()).filter(Boolean))].map((t) => ' ' + t).join('');
-    const skip = (full.length ? ` ${crNames(full)} ${crIs(full)} full.` : '') + (asleep.length ? ` ${crNames(asleep)} ${crIs(asleep)} asleep.` : '') + (short.length ? ` Not enough ${name} for ${crNames(short)}.` : '');
-    toast(`${msg}${favs.length ? ` Favourite food for ${crNames(favs)}!` : ''}${bond}${S.place === 'river' && !water ? ' Riverside picnic: +5 Happiness.' : ''}${extra}${skip}`, 'good');
+    const bond = !gots[0] && same ? '' : same ? ' ' + tt('care.bond_same', '{multi, select, yes {+{n} Bond each.} other {+{n} Bond.}}', { multi: fed.length > 1 ? 'yes' : 'no', n: gots[0] }) : ' ' + tt('care.bond_list', 'Bond: {list}.', { list: tlist(res.filter((x) => x.r.got).map((x) => tt('care.name_plus', '{name} +{n}', { name: x.d.name, n: x.r.got }))) });
+    const extra = [...new Set(res.map((x) => x.r.extraMsg).join('').split(/(?<=[.!])\s+|(?<=[。！？])\s*/).map((t) => t.trim()).filter(Boolean))].map((t) => ' ' + t).join('');
+    const skip = (full.length ? ' ' + tt('care.full', '{n, plural, one {{names} is full.} other {{names} are full.}}', crV(full)) : '') + (asleep.length ? ' ' + tt('care.asleep', '{n, plural, one {{names} is asleep.} other {{names} are asleep.}}', crV(asleep)) : '') + (short.length ? ' ' + tt('care.not_enough', 'Not enough {food} for {names}.', { food: crFN(name), names: crNames(short) }) : '');
+    toast(`${msg}${favs.length ? ' ' + tt('care.fav_food', 'Favourite food for {names}!', { names: crNames(favs) }) : ''}${bond}${S.place === 'river' && !water ? ' ' + tt('care.riverside', 'Riverside picnic: +5 Happiness.') : ''}${extra}${skip}`, 'good');
     if (!water) { dailyCare('feed'); markCareDay(); }
     trackAct(water ? 'water' : 'feed', { name, dogs: fed.length, ids: fed.map((d) => d.id) }); // v2.13: ids, the dogs that ate (41_expressions.js)
     if (f.tip) setTimeout(() => shFoodTip(name), 900);
@@ -134,12 +135,12 @@ function crPetPack() { return []; }
 function crPetAt(d, wx, wy) {
   if (!d) return;
   if (d === S.dog) { petTick(wx, wy); return; }
-  if (d.sleeping) { barkDog(d, 'huff', { player: true, volume: 0.6 }); if (performance.now() - crPetSleepT > 2500) { crPetSleepT = performance.now(); toast(`Shh. ${d.name} is asleep.`); } return; }
+  if (d.sleeping) { barkDog(d, 'huff', { player: true, volume: 0.6 }); if (performance.now() - crPetSleepT > 2500) { crPetSleepT = performance.now(); toast(tt('care.shh', 'Shh. {name} is asleep.', { name: d.name })); } return; }
   if (S.careOff && S.careOff[d.id]) { delete S.careOff[d.id]; markDirty(); }
   const now = performance.now(), s = crPetS[d.id] || (crPetS[d.id] = { gain: 0, bonded: false, at: 0, start: now, capped: false });
   if (now - (s.start || 0) > 120000) Object.assign(s, { gain: 0, bonded: false, start: now, capped: false });
   let g = 1.5 * (withDog(d, () => favAct('petting')) ? 1.5 : 1);
-  if (s.gain >= 20) { g *= 0.25; if (!s.capped) { s.capped = true; toast(`${d.name} is 100% petted. More petting is now a luxury.`); } }
+  if (s.gain >= 20) { g *= 0.25; if (!s.capped) { s.capped = true; toast(tt('care.petted_100', '{name} is 100% petted. More petting is now a luxury.', { name: d.name })); } }
   s.gain += g; withDog(d, () => addStat('happy', g));
   fxText('♥', wx + RAND(-20, 20), wy - 10); Math.random() < 0.7 ? SFX.squeak() : SFX.boop(RAND(500, 800));
   if (now - s.at > 900 && cur.mode === 'yard') {
@@ -175,8 +176,8 @@ function crPetBond(due, later) {
   if (!later) { const n = addBond(3) + (S.outfit.head === 'Wizard Hat' ? addBond(1, { raw: true }) : 0), st = S.outfit.charm === 'Sparkle Stone'; if (st) addStat('happy', 5); got.push({ d: S.dog, n, hat: S.outfit.head === 'Wizard Hat', st }); }
   due.forEach((d) => { crPetS[d.id].bonded = true; got.push(withDog(d, () => { const hat = S.outfit.head === 'Wizard Hat', n = addBond(3) + (hat ? addBond(1, { raw: true }) : 0), st = S.outfit.charm === 'Sparkle Stone'; if (st) addStat('happy', 5); return { d, n, hat, st }; })); });
   const ns = got.map((x) => x.n), same = ns.every((n) => n === ns[0]), all = got.map((x) => x.d);
-  const bond = same ? `+${ns[0]} Bond${got.length > 1 ? ' each' : ''}.` : `Bond: ${got.map((x) => `${x.d.name} +${x.n}`).join(', ')}.`;
-  toast(`${bond}${got.some((x) => x.hat) ? ' Magic hands: +1 Bond.' : ''}${got.some((x) => x.st) ? ' The Sparkle Stone hums: +5 Happiness.' : ''} ${got.length > 1 ? `${crNames(all)} pretend they did not enjoy that.` : `${all[0].name} pretends ${PRd(all[0]).he} did not enjoy that.`}`, 'good');
+  const bond = same ? tt('care.bond_same', '{multi, select, yes {+{n} Bond each.} other {+{n} Bond.}}', { multi: got.length > 1 ? 'yes' : 'no', n: ns[0] }) : tt('care.bond_list', 'Bond: {list}.', { list: tlist(got.map((x) => tt('care.name_plus', '{name} +{n}', { name: x.d.name, n: x.n }))) });
+  toast(`${bond}${got.some((x) => x.hat) ? ' ' + tt('care.magic_hands', 'Magic hands: +1 Bond.') : ''}${got.some((x) => x.st) ? ' ' + tt('care.sparkle_hums', 'The Sparkle Stone hums: +5 Happiness.') : ''} ${got.length > 1 ? tt('care.pretend_many', '{names} pretend they did not enjoy that.', { names: crNames(all) }) : tt('care.pretend_one', '{sex, select, female {{name} pretends she did not enjoy that.} other {{name} pretends he did not enjoy that.}}', { name: all[0].name, sex: all[0].sex })}`, 'good');
   if (!later) { dailyCare('pet'); markCareDay(); trackAct('pet', { dogs: got.length }); }
   updateHUD();
 }
@@ -187,7 +188,7 @@ function crPetBond(due, later) {
 function crNapPack() {
   if (!crPack()) return null;
   const tick = crDogs(), me = tick.includes(S.dog), pack = tick.filter((d) => d !== S.dog && !d.sleeping && d.stats.energy < 99);
-  if (!pack.length) { if (me) return null; nope('Nobody ticked is tired. They are all vibrating.'); return { done: true }; }
+  if (!pack.length) { if (me) return null; nope(tt('care.nobody_tired', 'Nobody ticked is tired. They are all vibrating.')); return { done: true }; }
   pack.forEach((d) => { crFree(d); d.sleeping = true; delete packPose[d.id]; redrawPackDog(d); });
   markDirty();
   if (me && S.stats.energy < 99) return { n: 1 + pack.length, pack };
@@ -195,16 +196,16 @@ function crNapPack() {
   return { done: true };
 }
 function crNapToast(c) {
-  const l = c.solo ? c.pack : [S.dog].concat(c.pack), nm = crNames(l), one = l.length === 1;
+  const l = c.solo ? c.pack : [S.dog].concat(c.pack);
   if (S.place === 'house') { // HOME puts each dog on its own bed, or on the rug when there are fewer beds than dogs
-    const b = bedInfo(), bed = typeof hoBedFor === 'function' ? l.filter((d) => hoBedFor(d)) : l, rug = l.filter((d) => !bed.includes(d)), bonus = ` Indoor naps: +25%${b.bonus ? `, bed +${Math.round(b.bonus * 100)}%` : ''}.`;
-    const onBed = bed.length ? `${crNames(bed)} ${bed.length === 1 ? `curls up on ${PRd(bed[0]).his} bed` : 'curl up on their beds'}.` : '';
-    toast(`${onBed}${rug.length ? `${onBed ? ' ' : ''}${crNames(rug)} ${rug.length === 1 ? 'naps' : 'nap'} on the rug.` : ''}${bonus}`); return;
+    const b = bedInfo(), bed = typeof hoBedFor === 'function' ? l.filter((d) => hoBedFor(d)) : l, rug = l.filter((d) => !bed.includes(d)), bonus = ' ' + (b.bonus ? tt('care.indoor_bed', 'Indoor naps: +25%, bed +{bonus}%.', { bonus: Math.round(b.bonus * 100) }) : tt('care.indoor', 'Indoor naps: +25%.'));
+    const onBed = bed.length ? (bed.length === 1 ? tt('care.curl_one', '{sex, select, female {{name} curls up on her bed.} other {{name} curls up on his bed.}}', { name: bed[0].name, sex: bed[0].sex }) : tt('care.curl_many', '{names} curl up on their beds.', { names: crNames(bed) })) : '';
+    toast(`${onBed}${rug.length ? `${onBed ? ' ' : ''}${tt('care.rug', '{n, plural, one {{names} naps on the rug.} other {{names} nap on the rug.}}', crV(rug))}` : ''}${bonus}`); return;
   }
-  toast(`${nm} ${one ? 'climbs' : 'pile'} into the ${S.house}.${weatherNow() === 'rain' ? ' Rain on the roof: the best nap sound (+20% nap).' : isNight() ? ' Night naps restore more (+40%).' : ' Goodnight.'}`);
+  toast(`${tt('care.climb_in', '{n, plural, one {{names} climbs into the {house}.} other {{names} pile into the {house}.}}', Object.assign(crV(l), { house: tdata('houses.' + tid(S.house) + '.n', S.house) }))}${weatherNow() === 'rain' ? ' ' + tt('care.rain_nap', 'Rain on the roof: the best nap sound (+20% nap).') : isNight() ? ' ' + tt('care.night_nap', 'Night naps restore more (+40%).') : ' ' + tt('care.goodnight', 'Goodnight.')}`);
 }
 // the nap tray's extra line: who else is napping
-function crNapLine() { if (!crOn()) return ''; const zz = others().filter((d) => d.sleeping); return zz.length ? ` ${crNames(zz)} ${zz.length > 1 ? 'nap' : 'naps'} too.` : ''; }
+function crNapLine() { if (!crOn()) return ''; const zz = others().filter((d) => d.sleeping); return zz.length ? ' ' + tt('care.nap_too', '{n, plural, one {{names} naps too.} other {{names} nap too.}}', crV(zz)) : ''; }
 // Wake up (the player's button) wakes every napping dog present. Returns the pack dogs woken
 function crWakePack() {
   if (!crOn()) return [];
@@ -219,8 +220,8 @@ let crBath = null;
 function crBathGo() {
   if (!crPack()) { go('bath'); return; }
   const tick = crDogs(), zz = tick.filter((d) => d.sleeping), shiny = tick.filter((d) => !d.sleeping && d.stats.clean >= 95), q = tick.filter((d) => !d.sleeping && d.stats.clean < 95);
-  const why = `${zz.length ? ` ${crNames(zz)} ${crIs(zz)} asleep.` : ''}${shiny.length ? ` ${crNames(shiny)} ${shiny.length > 1 ? 'are' : 'is'} already sparkling.` : ''}`.trim();
-  if (!q.length) { nope(`${why} Bath time can wait.`); return; }
+  const why = ((zz.length ? ' ' + tt('care.asleep', '{n, plural, one {{names} is asleep.} other {{names} are asleep.}}', crV(zz)) : '') + (shiny.length ? ' ' + tt('care.sparkling', '{n, plural, one {{names} is already sparkling.} other {{names} are already sparkling.}}', crV(shiny)) : '')).trim();
+  if (!q.length) { nope(`${why} ${tt('care.bath_wait', 'Bath time can wait.')}`); return; }
   if (why) toast(why);
   if (q.length === 1 && q[0] === S.dog) { go('bath'); return; } // just the active dog: the v2.6 bath
   q.forEach(crFree);
@@ -240,7 +241,7 @@ function crBathEnd() {
   crBathSwap(b.orig);
   if (b.fin) trackAct('bath', { dogs: b.fin });
 }
-const crBathTitle = () => (crBath ? ` <span class="cr-n">(${crBath.i + 1} of ${crBath.q.length})</span>` : '');
+const crBathTitle = () => (crBath ? ` <span class="cr-n">${esc(tt('care.bath_n', '({i} of {n})', { i: crBath.i + 1, n: crBath.q.length }))}</span>` : '');
 
 function crExpose() {
   if (!window.__paw) return;

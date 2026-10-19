@@ -26,10 +26,12 @@ const FS_LETTERS = {
 };
 // v2.6: the parade runs to the end of the year's Halloween window: 2 November in 2026 (HW_WIN), the 31st in other years
 const FS_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-function fsParadeUntil(y) { const w = typeof HW_WIN !== 'undefined' && HW_WIN[+y]; if (!w) return 'the 31st'; const [, m, d] = w[1].split('-').map(Number); return `${d} ${FS_MONTHS[m - 1]}`; }
+function fsParadeUntil(y) { const w = typeof HW_WIN !== 'undefined' && HW_WIN[+y]; if (!w) return tt('fest.the_31st', 'the 31st'); const [, m, d] = w[1].split('-').map(Number); return tt('fest.day_month', '{day} {month}', { day: d, month: tdata('fs_months.' + (m - 1), FS_MONTHS[m - 1]) }); }
+// the player-facing name of a shop item (data tables keep the English name as the key, 4.3): cat 'food' | 'clothes' | 'toys' | 'decor'
+function fsIName(cat, n) { return tdata((cat === 'food' ? 'food' : cat === 'clothes' ? 'clothes' : cat === 'toys' ? 'toys' : 'hm_decor') + '.' + tid(n) + '.n', n); }
 const FS = { walking: false, walkT: [], pileT: {}, packSq: null, pending: 0 }; // pending: letter / greeting timers still to run (tests wait on 0)
 // one kind toast instead of a stack trace if a name from another lane is missing (a tap, the stall or the parade)
-function fsTry(fn, ...a) { try { return fn(...a); } catch (e) { console.warn('festival', e); busy = false; toast('The festival hit a small snag. Try again in a moment.'); return null; } }
+function fsTry(fn, ...a) { try { return fn(...a); } catch (e) { console.warn('festival', e); busy = false; toast(tt('fest.snag', 'The festival hit a small snag. Try again in a moment.')); return null; } }
 function fsLater(fn, ms) { FS.pending++; setTimeout(() => { FS.pending--; fn(); }, ms); }
 
 /* ---- state ---- */
@@ -92,7 +94,7 @@ const FS_FB = {
 function fsArt(name, o) { return artReal('prop', name, o || {}) || FS_FB[name](o || {}); }
 const fsKind = () => (festOn('halloween') ? 'halloween' : festOn('leaf') ? 'leaf' : festOn('newyear') ? 'newyear' : festOn('snow') ? 'winter' : 'leaf'); // v2.8: the Winter Stall kinds
 const fsWinter = () => ['winter', 'newyear'].includes(fsKind()); // the stall is Baker Bea's Winter Stall
-const fsStallName = () => (fsWinter() ? 'Winter Stall' : 'Harvest Stall');
+const fsStallName = () => (fsWinter() ? tt('fest.winter_stall', 'Winter Stall') : tt('fest.harvest_stall', 'Harvest Stall'));
 // the stall picture: the v2.5 kinds take the shared time tint as before; the v2.8 kinds are night-washed by the art itself ({ night }), never tinted twice
 function fsStallArt(kind) { const k = kind || fsKind(); if (k !== 'winter' && k !== 'newyear') return propTint(fsArt('stall', { kind: k })); return isNight() ? fsArt('stall', { kind: k, night: true }) : propTint(fsArt('stall', { kind: k })); }
 // phones: the world x range the camera shows at home (a visiting dog shifts and zooms it, phHomeRefit in 03_yard.js)
@@ -148,7 +150,7 @@ function fsHitFit() {
 /* ---- drawing into the scene (yard:enter, scene:redraw, env:fest) ---- */
 function fsPileSVG(i, state) {
   const [x, y, w, h] = FS_PILES[i];
-  return `<g class="hot fs-pile" data-pile="${i}" data-state="${state}" tabindex="0" role="button" aria-label="Leaf pile: jump in">${place(propTint(fsArt('leafpile', { state, seed: i })), x, y, w, h)}${fsHit(x, y, w, h)}</g>`;
+  return `<g class="hot fs-pile" data-pile="${i}" data-state="${state}" tabindex="0" role="button" aria-label="${esc(tt('fest.label_leaf_pile', 'Leaf pile: jump in'))}">${place(propTint(fsArt('leafpile', { state, seed: i })), x, y, w, h)}${fsHit(x, y, w, h)}</g>`;
 }
 function fsYardDraw() {
   const svg = $('#view svg.world'); if (!svg) return;
@@ -177,7 +179,7 @@ function fsSquareDraw() {
   if (!fsAnyOn() || fsActive()) { fsPackSync(); fsNyDraw(); fsHwDraw(); return; } // v2.8: the contest walk hides the stall too
   const pack = $('#pack', svg); if (!pack) return;
   const [sx, sy, sw, sh] = fsStallBox(), kind = fsKind(), wint = fsWinter();
-  let html = `<g id="fsStallG" class="hot" data-kind="${kind}" tabindex="0" role="button" aria-label="Baker Bea's ${fsStallName()}">${place(fsStallArt(kind), sx, sy, sw, sh)}${fsHit(sx + 8, sy + 10, sw - 16, sh - 10)}${wint && isPhone() && typeof hwChip === 'function' ? fsChipAbove('Winter Stall', [sx, sy, sw, sh]) : ''}</g>`;
+  let html = `<g id="fsStallG" class="hot" data-kind="${kind}" tabindex="0" role="button" aria-label="${esc(tt('fest.label_bea_stall', "{k, select, winter {Baker Bea's Winter Stall} other {Baker Bea's Harvest Stall}}", { k: wint ? 'winter' : 'harvest' }))}">${place(fsStallArt(kind), sx, sy, sw, sh)}${fsHit(sx + 8, sy + 10, sw - 16, sh - 10)}${wint && isPhone() && typeof hwChip === 'function' ? fsChipAbove(tt('fest.winter_stall', 'Winter Stall'), [sx, sy, sw, sh]) : ''}</g>`;
   if (festOn('halloween')) { const [bx, by, bw, bh] = fsBannerBox(); html = `<g id="fsBannerG" pointer-events="none">${place(propTint(fsArt('paradebanner')), bx, by, bw, bh)}</g>` + html; }
   if (wint) { // v2.8 draw order (V28.md section 7): #fsStallG, #nyFortuneG (NEW YEAR, right after the stall), the sweater banner, #bowlG, #pack
     if (festOn('lights') && typeof wnBannerSVG === 'function') html += wnBannerSVG();
@@ -190,13 +192,13 @@ function fsSquareDraw() {
     const ph = isPhone(), hw = festOn('halloween'); // phones: one Festival button (a chooser at Halloween) so the Square row stays one line
     if (wint) { // v2.8: the Winter Stall, the Sweater Contest in December; phones: one Festival button when the chooser has more than one row
       const con = festOn('lights'), many = con || (typeof nyDays === 'function' && nyDays()), done = con && typeof wnJudgedToday === 'function' && wnJudgedToday();
-      if (ph && many) add('<button class="btn yes" data-fs="fest">Festival</button>');
-      else add(`<button class="btn yes" data-fs="stall" aria-label="Winter Stall">${ph ? 'Stall' : 'Winter Stall'}</button>`);
-      if (con && !ph) add(`<button class="btn yes" data-fs="contest" aria-label="${done ? 'Judged today' : 'Sweater Contest'}" ${done ? 'aria-disabled="true"' : ''}>${done ? 'Judged today' : 'Sweater Contest'}</button>`);
+      if (ph && many) add(`<button class="btn yes" data-fs="fest">${esc(tt('fest.festival', 'Festival'))}</button>`);
+      else add(`<button class="btn yes" data-fs="stall" aria-label="${esc(tt('fest.winter_stall', 'Winter Stall'))}">${esc(ph ? tt('fest.stall_short', 'Stall') : tt('fest.winter_stall', 'Winter Stall'))}</button>`);
+      if (con && !ph) add(`<button class="btn yes" data-fs="contest" aria-label="${esc(done ? tt('fest.judged_today', 'Judged today') : tt('fest.sweater_contest', 'Sweater Contest'))}" ${done ? 'aria-disabled="true"' : ''}>${esc(done ? tt('fest.judged_today', 'Judged today') : tt('fest.sweater_contest', 'Sweater Contest'))}</button>`);
     } else {
-      if (ph && hw) add('<button class="btn yes" data-fs="fest">Festival</button>');
-      else add(`<button class="btn yes" data-fs="stall" aria-label="Harvest Stall">${ph ? 'Stall' : 'Harvest Stall'}</button>`);
-      if (hw && !ph) add(`<button class="btn yes" data-fs="parade" aria-label="${fsParadedToday() ? 'Paraded today' : 'Costume parade'}" ${fsParadedToday() ? 'aria-disabled="true"' : ''}>${fsParadedToday() ? (ph ? 'Paraded' : 'Paraded today') : ph ? 'Parade' : 'Costume parade'}</button>`);
+      if (ph && hw) add(`<button class="btn yes" data-fs="fest">${esc(tt('fest.festival', 'Festival'))}</button>`);
+      else add(`<button class="btn yes" data-fs="stall" aria-label="${esc(tt('fest.harvest_stall', 'Harvest Stall'))}">${esc(ph ? tt('fest.stall_short', 'Stall') : tt('fest.harvest_stall', 'Harvest Stall'))}</button>`);
+      if (hw && !ph) add(`<button class="btn yes" data-fs="parade" aria-label="${esc(fsParadedToday() ? tt('fest.paraded_today', 'Paraded today') : tt('fest.costume_parade', 'Costume parade'))}" ${fsParadedToday() ? 'aria-disabled="true"' : ''}>${esc(fsParadedToday() ? (ph ? tt('fest.paraded', 'Paraded') : tt('fest.paraded_today', 'Paraded today')) : ph ? tt('fest.parade_short', 'Parade') : tt('fest.costume_parade', 'Costume parade'))}</button>`);
     }
     pb.querySelectorAll('[data-fs]').forEach((b) => { b.onclick = () => { SFX.click(); const k = b.dataset.fs; if (k === 'stall') fsStallOpen(); else if (k === 'fest') fsChooser(); else if (k === 'contest') { if (typeof wnContestOpen === 'function') wnContestOpen(); } else fsParadeOpen(); }; });
   }
@@ -226,7 +228,7 @@ function fsDraw() {
 /* ---- letters and the season greeting ---- */
 function fsLetters() {
   if (!S || typeof mailPush !== 'function') return; fsFields(); const y = fsYear();
-  ['leaf', 'halloween'].forEach((k) => { if (festOn(k) && S.fest.letters[k] !== y) { S.fest.letters[k] = y; markDirty(); mailPush(Object.assign({ kind: 'news', id: `fest_${k}_${y}` }, FS_LETTERS[k], k === 'halloween' ? { text: `Costume parade in the Square until ${fsParadeUntil(y)}. I am going as a duck.` } : {})); } });
+  ['leaf', 'halloween'].forEach((k) => { if (festOn(k) && S.fest.letters[k] !== y) { S.fest.letters[k] = y; markDirty(); mailPush(Object.assign({ kind: 'news', id: `fest_${k}_${y}` }, FS_LETTERS[k], { from: tdata('fs_letters.' + k + '.from', FS_LETTERS[k].from), title: tdata('fs_letters.' + k + '.title', FS_LETTERS[k].title), text: k === 'halloween' ? tt('fest.parade_letter', 'Costume parade in the Square until {until}. I am going as a duck.', { until: fsParadeUntil(y) }) : tdata('fs_letters.' + k + '.text', FS_LETTERS[k].text) })); } });
 }
 // under the test harness the greeting only shows when a suite asks (prefs.fsTest), so older suites see the toasts they measured before
 const fsGreetAllowed = () => !navigator.webdriver || !!prefs.fsTest;
@@ -235,7 +237,7 @@ function fsSeasonGreet() {
   const s = seasonNow(), y = fsSeasonYear(s); if (S.seasonSeen[s] === y || !FS_SEASON_LINE[s]) return;
   fsLater(() => {
     if (!S || cur.mode !== 'yard' || S.place !== 'yard' || S.seasonSeen[s] === y || (typeof gdActive === 'function' && gdActive())) return;
-    S.seasonSeen[s] = y; markDirty(); toast(FS_SEASON_LINE[s], 'good');
+    S.seasonSeen[s] = y; markDirty(); toast(tdata('fs_season_line.' + s, FS_SEASON_LINE[s]), 'good');
   }, 1500);
 }
 
@@ -249,9 +251,9 @@ function fsPileTap0(i) {
   if (!FS_PILES[i] || !festOn('leaf') || cur.mode !== 'yard' || S.place !== 'yard') return;
   if (busy || S.sleeping || (typeof curling !== 'undefined' && curling)) return;
   fsFields(); const last = S.fest.piles[i];
-  if (typeof last === 'number' && S.gameMin - last >= 0 && S.gameMin - last < FS_PILE_GAP) { toast('The pile needs raking first. Try the other one, or come back in a bit.'); return; }
+  if (typeof last === 'number' && S.gameMin - last >= 0 && S.gameMin - last < FS_PILE_GAP) { toast(tt('fest.pile_raking', 'The pile needs raking first. Try the other one, or come back in a bit.')); return; }
   const pup = ageMonths(D()) < 3, adult = pup ? others().find(fsJumper) : null;
-  if (pup && !adult) { const h = dogHeadWorld(); say('Sniff.', h.x, h.y, 1800); toast(`${NAME()} is too small to jump in yet. Puppies watch the leaves from the grass for now.`); return; }
+  if (pup && !adult) { const h = dogHeadWorld(); say(tt('fest.sniff', 'Sniff.'), h.x, h.y, 1800); toast(tt('fest.too_small', '{name} is too small to jump in yet. Puppies watch the leaves from the grass for now.', { name: NAME() })); return; }
   const [x, y, w, h] = FS_PILES[i], cx = x + w / 2, gy = y + h * 0.8, face = cx < 430 ? 'left' : 'right';
   busy = true; hideBubble(); SFX.click();
   const tx = pup ? cx - 430 + (face === 'left' ? 120 : -120) : cx - 430, ty = Math.max(0, gy - 500) - (pup ? 0 : 6);
@@ -264,7 +266,7 @@ function fsPileTap0(i) {
   }, 850);
   T(() => {
     addStat('happy', 6); addBond(1); S.fest.piles[i] = S.gameMin; markDirty(); updateHUD();
-    const hw = dogHeadWorld(); say(pup ? `${adult.name} did the jumping. ${NAME()} did the cheering.` : PICK(['Crunch.', 'Again.', 'Where did the leaves go.']), hw.x, hw.y, 2600);
+    const hw = dogHeadWorld(); say(pup ? tt('fest.did_the_jumping', '{other} did the jumping. {name} did the cheering.', { other: adult.name, name: NAME() }) : PICK([tt('fest.crunch', 'Crunch.'), tt('fest.again', 'Again.'), tt('fest.where_leaves', 'Where did the leaves go.')]), hw.x, hw.y, 2600);
     trackAct('leafpile', {});
   }, 1600);
   T(() => { const fx = $('#dogFx'); if (fx) fx.classList.remove('tk-pounce'); dogTo(0, 0, 1, 0.8); renderDog('walk', face === 'left' ? 'right' : 'left'); }, 2400);
@@ -294,36 +296,36 @@ function fsScatter(i) {
 /* ---- Harvest Stall (Square) ---- */
 function fsStallItems() {
   const on = (x) => festOn(x.fest);
-  return FOOD.filter((f) => f.fest && !f.ed && on(f)).map((f) => ({ cat: 'food', n: f.n, price: f.price, desc: f.note, tip: f.tip }))
-    .concat(CLOTHES.filter((c) => c.fest && !c.ed && !c.reward && on(c)).map((c) => ({ cat: 'clothes', n: c.n, price: c.price, desc: `${SLOT_NAME[c.slot]}. ${c.perk}` })))
-    .concat(Object.keys(HM_DECOR).filter((n) => HM_DECOR[n].fest && !HM_DECOR[n].ed && on(HM_DECOR[n])).map((n) => ({ cat: 'decor', n, price: HM_DECOR[n].price, desc: HM_DECOR[n].story }))); // v2.8: the winter yard decorations
+  return FOOD.filter((f) => f.fest && !f.ed && on(f)).map((f) => ({ cat: 'food', n: f.n, name: fsIName('food', f.n), price: f.price, desc: tdata('food.' + tid(f.n) + '.note', f.note), tip: f.tip ? tdata('food.' + tid(f.n) + '.tip', f.tip) : f.tip }))
+    .concat(CLOTHES.filter((c) => c.fest && !c.ed && !c.reward && on(c)).map((c) => ({ cat: 'clothes', n: c.n, name: fsIName('clothes', c.n), price: c.price, desc: tt('fest.slot_perk', '{slot}. {perk}', { slot: tdata('slot_name.' + c.slot, SLOT_NAME[c.slot]), perk: tdata('clothes.' + tid(c.n) + '.perk', c.perk) }) })))
+    .concat(Object.keys(HM_DECOR).filter((n) => HM_DECOR[n].fest && !HM_DECOR[n].ed && on(HM_DECOR[n])).map((n) => ({ cat: 'decor', n, name: fsIName('decor', n), price: HM_DECOR[n].price, desc: tdata('hm_decor.' + tid(n) + '.story', HM_DECOR[n].story) }))); // v2.8: the winter yard decorations
 }
 function fsStallOpen() { return fsTry(fsStallOpen0); }
 function fsStallClosed() {
   if (fsAnyOn()) return false; const wint = !modal.hidden && !!$('#modal .panel.fs-stall.wn-stall'); if (!modal.hidden) closeModal();
-  toast(wint ? 'Baker Bea has packed up the Winter Stall. See you in the spring, with flowers.' : 'The Harvest Stall has packed up. Baker Bea says thank you for the pumpkin business.'); return true; // v2.8: the Winter Stall closes after February
+  toast(wint ? tt('fest.winter_packed_up', 'Baker Bea has packed up the Winter Stall. See you in the spring, with flowers.') : tt('fest.harvest_packed_up', 'The Harvest Stall has packed up. Baker Bea says thank you for the pumpkin business.')); return true; // v2.8: the Winter Stall closes after February
 }
 function fsStallOpen0() {
   if (!S) return;
   const op = !modal.hidden && $('#modal .panel.fs-stall'), keep = op ? [op.scrollTop, ($('.panel-body', op) || {}).scrollTop || 0] : null; // a re-open after a buy keeps the scroll
-  if (!fsAnyOn()) { toast('The Harvest Stall is packed away. Baker Bea comes back for the leaf festival.'); return; }
+  if (!fsAnyOn()) { toast(tt('fest.harvest_packed_away', 'The Harvest Stall is packed away. Baker Bea comes back for the leaf festival.')); return; }
   fsFields(); if (S.fest.stall.seen !== localISO()) { S.fest.stall.seen = localISO(); markDirty(); }
   SFX.boop(620); if (typeof audioPlace === 'function') audioPlace('shop');
   const items = fsStallItems(), wint = fsWinter(), owned = (it) => (it.cat === 'decor' ? !!(S.decor && S.decor[it.n]) : it.cat === 'clothes' && owns('clothes', it.n));
   const card = (it) => {
     const have = it.cat === 'food' ? (S.inv.food[it.n] || 0) : 0;
-    const act = owned(it) ? '<span class="chip own">Owned</span>' : `<button class="btn yes" data-fsbuy="${esc(it.n)}">${it.cat === 'food' ? 'Buy…' : 'Buy'}</button>`;
-    return `<div class="sitem fs-card" data-cat="${it.cat}"><span class="art">${itemArt(it.n)}</span><b>${esc(it.n)}</b><span class="desc">${esc(it.desc)}</span>${it.tip ? `<span class="small sh-tip">${esc(it.tip)}</span>` : ''}${priceHTML(it.price + (it.cat === 'food' ? ' each' : ''))}${have ? `<span class="small">You have ${have}</span>` : ''}${act}</div>`;
+    const act = owned(it) ? `<span class="chip own">${esc(tt('fest.owned', 'Owned'))}</span>` : `<button class="btn yes" data-fsbuy="${esc(it.n)}">${esc(it.cat === 'food' ? tt('fest.buy_ellipsis', 'Buy…') : tt('fest.buy', 'Buy'))}</button>`;
+    return `<div class="sitem fs-card" data-cat="${it.cat}"><span class="art">${itemArt(it.n)}</span><b>${esc(it.name)}</b><span class="desc">${esc(it.desc)}</span>${it.tip ? `<span class="small sh-tip">${esc(it.tip)}</span>` : ''}${priceHTML(it.cat === 'food' ? tt('fest.price_each', '{n} each', { n: tnum(it.price) }) : tnum(it.price))}${have ? `<span class="small">${esc(tt('fest.you_have', 'You have {n}', { n: tnum(have) }))}</span>` : ''}${act}</div>`;
   };
   let p;
   if (wint) { // v2.8: Baker Bea's Winter Stall, in three sections
-    const ny = fsKind() === 'newyear', line = ny ? 'Happy New Year. Pup Kinton is in, and no mochi, I promise.' : 'Everything here is dog-safe and warm. Ask me anything, I will say carob.';
-    const secs = [['food', 'Treats'], ['clothes', 'Clothes'], ['decor', 'Decorations']].map(([k, l]) => { const its = items.filter((it) => it.cat === k); return its.length ? `<section class="wn-sec" data-sec="${k}"><h3>${l}</h3>${k === 'decor' ? '<p class="small">For the yard. Bought once, placed where you like.</p>' : ''}<div class="shopgrid">${its.map(card).join('')}</div></section>` : ''; }).join('');
+    const ny = fsKind() === 'newyear', line = ny ? tt('fest.bea_line_ny', '"Happy New Year. Pup Kinton is in, and no mochi, I promise."') : tt('fest.bea_line_winter', '"Everything here is dog-safe and warm. Ask me anything, I will say carob."');
+    const secs = [['food', tt('fest.treats', 'Treats')], ['clothes', tt('fest.clothes', 'Clothes')], ['decor', tt('fest.decorations', 'Decorations')]].map(([k, l]) => { const its = items.filter((it) => it.cat === k); return its.length ? `<section class="wn-sec" data-sec="${k}"><h3>${esc(l)}</h3>${k === 'decor' ? `<p class="small">${esc(tt('fest.decor_note', 'For the yard. Bought once, placed where you like.'))}</p>` : ''}<div class="shopgrid">${its.map(card).join('')}</div></section>` : ''; }).join('');
     const ic = `<span class="wn-bea-ic" aria-hidden="true">${typeof wnIcon === 'function' ? wnIcon('wstall') : ''}</span>`;
-    p = openModal('Winter Stall', `<div class="fs-bea wn-bea">${ic}<p><b>Baker Bea:</b> "${line}"</p></div><p class="small">Warm treats, winter clothes and yard decorations, for coins, until the end of February. You have ${fmtC(S.coins)} Paw Coins.</p>${secs}`, { cls: 'shop fs-stall wn-stall' });
+    p = openModal(tt('fest.winter_stall', 'Winter Stall'), `<div class="fs-bea wn-bea">${ic}<p><b>${esc(tt('fest.baker_bea', 'Baker Bea:'))}</b> ${esc(line)}</p></div><p class="small">${esc(tt('fest.winter_intro', 'Warm treats, winter clothes and yard decorations, for coins, until the end of February. You have {coins} Paw Coins.', { coins: fmtC(S.coins) }))}</p>${secs}`, { cls: 'shop fs-stall wn-stall' });
   } else {
     const deco = `<span class="fs-drift" aria-hidden="true">${fsArt('leafdrift')}</span>`;
-    p = openModal('Harvest Stall', `<div class="fs-bea">${deco}<p><b>Baker Bea:</b> "Everything here is dog-safe. Ask me anything, I will say pumpkin."</p></div><p class="small">Festival treats and outfits, for coins, while the festival is on. You have ${fmtC(S.coins)} Paw Coins.</p><div class="shopgrid">${items.map(card).join('')}</div>`, { cls: 'shop fs-stall' });
+    p = openModal(tt('fest.harvest_stall', 'Harvest Stall'), `<div class="fs-bea">${deco}<p><b>${esc(tt('fest.baker_bea', 'Baker Bea:'))}</b> ${esc(tt('fest.bea_line_harvest', '"Everything here is dog-safe. Ask me anything, I will say pumpkin."'))}</p></div><p class="small">${esc(tt('fest.harvest_intro', 'Festival treats and outfits, for coins, while the festival is on. You have {coins} Paw Coins.', { coins: fmtC(S.coins) }))}</p><div class="shopgrid">${items.map(card).join('')}</div>`, { cls: 'shop fs-stall' });
   }
   if (keep) { p.scrollTop = keep[0]; const bd = $('.panel-body', p); if (bd) bd.scrollTop = keep[1]; }
   p.querySelectorAll('[data-fsbuy]').forEach((b) => {
@@ -331,15 +333,15 @@ function fsStallOpen0() {
       if (fsStallClosed()) return; // the festival ended while the sheet was open (midnight)
       const it = items.find((x) => x.n === b.dataset.fsbuy); if (!it) return; SFX.click();
       const stack = it.cat === 'food', own = owned(it);
-      const q = await buyWindow(p, { art: itemArt(it.n), name: it.n, desc: it.desc, price: it.price, stack, owned: own, have: stack ? (S.inv.food[it.n] || 0) : own ? 1 : 0, haveLabel: stack ? 'In bag' : 'Owned' }); if (!q || fsStallClosed() || (!stack && owned(it))) return;
-      const cost = it.price * q; if (S.coins < cost) { nope(wint ? 'Not enough coins. Walks pay well, and the carob will stay warm.' : 'Not enough coins. Walks pay well, and the pumpkins will wait.'); return; }
+      const q = await buyWindow(p, { art: itemArt(it.n), name: it.name, desc: it.desc, price: it.price, stack, owned: own, have: stack ? (S.inv.food[it.n] || 0) : own ? 1 : 0, haveLabel: stack ? tt('fest.in_bag', 'In bag') : tt('fest.owned', 'Owned') }); if (!q || fsStallClosed() || (!stack && owned(it))) return;
+      const cost = it.price * q; if (S.coins < cost) { nope(wint ? tt('fest.poor_winter', 'Not enough coins. Walks pay well, and the carob will stay warm.') : tt('fest.poor_harvest', 'Not enough coins. Walks pay well, and the pumpkins will wait.')); return; }
       S.coins -= cost; SFX.kaching(); trackAct('buy', { name: it.n, cat: it.cat, qty: q, shop: 'stall' });
       if (stack) S.inv.food[it.n] = (S.inv.food[it.n] || 0) + q; else if (it.cat === 'decor') { hmDecorFields(); S.decor[it.n] = { got: localISO(), out: false }; } else if (!owns('clothes', it.n)) S.inv.clothes.push(it.n);
       markDirty(); updateHUD();
-      toast(`Bought ${q} × ${it.n}. ${wint ? PICK(['Baker Bea wraps it in snowflake paper.', 'It smells of oats and warm carob.', 'Bea says it suits you.']) : PICK(['Baker Bea wraps it in a paper leaf.', 'It smells of pumpkin. Everything does.', 'Bea says it suits you.'])}`, 'gold');
+      toast(tt('fest.bought', 'Bought {n} × {item}. {line}', { n: q, item: it.name, line: wint ? PICK([tt('fest.wrap_snow', 'Baker Bea wraps it in snowflake paper.'), tt('fest.smell_carob', 'It smells of oats and warm carob.'), tt('fest.suits_you', 'Bea says it suits you.')]) : PICK([tt('fest.wrap_leaf', 'Baker Bea wraps it in a paper leaf.'), tt('fest.smell_pumpkin', 'It smells of pumpkin. Everything does.'), tt('fest.suits_you', 'Bea says it suits you.')]) }), 'gold');
       fsStallOpen();
-      if (it.cat === 'decor') { const pp = $('.panel', modal); const pl = await confirmIn(pp, `Put the ${esc(it.n)} in the yard now?`, 'Place it', 'Later'); if (pl) { closeModal(); hoPlaceStart(it.n); return; } if (!modal.hidden) fsStallOpen(); return; } // v2.8: like Barkitecture (v2.7)
-      if (it.cat === 'clothes') { const pp = $('.panel', modal); const w = await confirmIn(pp, `Put the ${esc(it.n)} on ${esc(NAME())} now?`, 'Wear it', 'Later'); if (w) equip(it.n, true); if (!modal.hidden) fsStallOpen(); }
+      if (it.cat === 'decor') { const pp = $('.panel', modal); const pl = await confirmIn(pp, esc(tt('fest.place_q', 'Put the {item} in the yard now?', { item: it.name })), tt('fest.place_it', 'Place it'), tt('fest.later', 'Later')); if (pl) { closeModal(); hoPlaceStart(it.n); return; } if (!modal.hidden) fsStallOpen(); return; } // v2.8: like Barkitecture (v2.7)
+      if (it.cat === 'clothes') { const pp = $('.panel', modal); const w = await confirmIn(pp, esc(tt('fest.wear_q', 'Put the {item} on {name} now?', { item: it.name, name: NAME() })), tt('fest.wear_it', 'Wear it'), tt('fest.later', 'Later')); if (w) equip(it.n, true); if (!modal.hidden) fsStallOpen(); }
     };
   });
   return p;
@@ -350,8 +352,8 @@ function fsChooser() {
   if (fsWinter()) return fsChooserWinter(); // v2.8: the Winter Stall, the Sweater Contest (December), the Fortune box (1 to 7 January)
   if (!festOn('halloween')) { fsStallOpen(); return; }
   const done = fsParadedToday(), hw = typeof hwOn === 'function' && hwOn(); // v2.6: a third row for the Pumpkin Patch Pop-up while it is open
-  const pop = hw ? `<button class="card hw-row" data-fsgo="popup"><span class="art">${hwIcon()}</span><span class="hw-rowt"><b>Pumpkin Patch Pop-up</b><span class="small">Mrs. Plum's 2026 things, until 2 November.</span></span></button>` : '';
-  const p = openModal('Festival', `<div class="fs-choose"><button class="card" data-fsgo="stall"><span class="art">${fsArt('stall', { kind: 'halloween' })}</span><b>Harvest Stall</b><span class="small">Dog-safe treats and outfits.</span></button><button class="card" data-fsgo="parade"><span class="art">${fsArt('paradebanner')}</span><b>Costume parade</b><span class="small">${done ? 'Paraded today.' : 'Once a day, 10 coins.'}</span></button>${pop}</div>`, { cls: 'fs-choosepop' });
+  const pop = hw ? `<button class="card hw-row" data-fsgo="popup"><span class="art">${hwIcon()}</span><span class="hw-rowt"><b>${esc(tt('fest.pumpkin_popup', 'Pumpkin Patch Pop-up'))}</b><span class="small">${esc(tt('fest.popup_line', "Mrs. Plum's 2026 things, until 2 November."))}</span></span></button>` : '';
+  const p = openModal(tt('fest.festival', 'Festival'), `<div class="fs-choose"><button class="card" data-fsgo="stall"><span class="art">${fsArt('stall', { kind: 'halloween' })}</span><b>${esc(tt('fest.harvest_stall', 'Harvest Stall'))}</b><span class="small">${esc(tt('fest.harvest_blurb', 'Dog-safe treats and outfits.'))}</span></button><button class="card" data-fsgo="parade"><span class="art">${fsArt('paradebanner')}</span><b>${esc(tt('fest.costume_parade', 'Costume parade'))}</b><span class="small">${esc(done ? tt('fest.paraded_today_dot', 'Paraded today.') : tt('fest.parade_blurb', 'Once a day, 10 coins.'))}</span></button>${pop}</div>`, { cls: 'fs-choosepop' });
   p.querySelectorAll('[data-fsgo]').forEach((b) => { b.onclick = () => { SFX.click(); closeModal(); if (b.dataset.fsgo === 'stall') fsStallOpen(); else if (b.dataset.fsgo === 'popup') hwOpen(); else fsParadeOpen(); }; });
   return p;
 }
@@ -359,12 +361,12 @@ function fsChooser() {
 // The Fortune box row is NEW YEAR's (nyFortuneOpen) and shows while nyDays()
 function fsChooserWinter() {
   const ic = (n) => (typeof wnIcon === 'function' ? wnIcon(n) : iconOr(n, '<circle r="12" fill="#EDF1F5" stroke="#5B3D32" stroke-width="2"/>'));
-  const row = (k, icon, name, line) => `<button class="card wn-row" data-fsgo="${k}"><span class="art">${ic(icon)}</span><span class="wn-rowt"><b>${name}</b><span class="small">${line}</span></span></button>`;
+  const row = (k, icon, name, line) => `<button class="card wn-row" data-fsgo="${k}"><span class="art">${ic(icon)}</span><span class="wn-rowt"><b>${esc(name)}</b><span class="small">${esc(line)}</span></span></button>`;
   const judged = typeof wnJudgedToday === 'function' && wnJudgedToday();
-  const rows = [row('stall', 'wstall', 'Winter Stall', 'Warm treats, winter clothes and decorations.')]
-    .concat(festOn('lights') ? [row('contest', 'sweater', 'Sweater Contest', judged ? 'Judged today. Gerald needs a sit-down.' : 'Gerald judges. Everyone wins something.')] : [])
-    .concat(typeof nyDays === 'function' && nyDays() ? [row('fortune', 'fortune', 'Fortune box', 'Only good fortunes, until 7 January.')] : []).slice(0, 3);
-  const p = openModal('Festival', `<div class="fs-choose wn-choose">${rows.join('')}</div>`, { cls: 'fs-choosepop wn-choosepop' });
+  const rows = [row('stall', 'wstall', tt('fest.winter_stall', 'Winter Stall'), tt('fest.winter_blurb', 'Warm treats, winter clothes and decorations.'))]
+    .concat(festOn('lights') ? [row('contest', 'sweater', tt('fest.sweater_contest', 'Sweater Contest'), judged ? tt('fest.judged_blurb', 'Judged today. Gerald needs a sit-down.') : tt('fest.contest_blurb', 'Gerald judges. Everyone wins something.'))] : [])
+    .concat(typeof nyDays === 'function' && nyDays() ? [row('fortune', 'fortune', tt('fest.fortune_box', 'Fortune box'), tt('fest.fortune_blurb', 'Only good fortunes, until 7 January.'))] : []).slice(0, 3);
+  const p = openModal(tt('fest.festival', 'Festival'), `<div class="fs-choose wn-choose">${rows.join('')}</div>`, { cls: 'fs-choosepop wn-choosepop' });
   p.querySelectorAll('[data-fsgo]').forEach((b) => {
     b.onclick = () => { SFX.click(); closeModal(); const k = b.dataset.fsgo; if (k === 'stall') fsStallOpen(); else if (k === 'contest') { if (typeof wnContestOpen === 'function') wnContestOpen(); } else if (k === 'fortune' && typeof nyFortuneOpen === 'function') nyFortuneOpen(); };
   });
@@ -379,20 +381,20 @@ function fsParadeDogs(dk = localISO()) {
   const r = seeded(hashId('costume|' + dk));
   return out.map((n) => { const c = FS_COSTUMES[Math.floor(r() * FS_COSTUMES.length)], slot = (CLOTHES.find((x) => x.n === c) || {}).slot || 'body'; return Object.assign({}, n, { costume: c, outfit: { [slot]: c } }); });
 }
-function fsOutfitWords(o) { const w = SLOTS.map((k) => o[k]).filter(Boolean); return w.length ? 'Wearing ' + w.join(' and ') + '.' : 'No costume. Going as a dog. Bold.'; }
+function fsOutfitWords(o) { const w = SLOTS.map((k) => o[k]).filter(Boolean); return w.length ? tt('fest.wearing', 'Wearing {list}.', { list: tlist(w.map((x) => fsIName('clothes', x))) }) : tt('fest.no_costume', 'No costume. Going as a dog. Bold.'); }
 function fsParadeOpen() { return fsTry(fsParadeOpen0); }
 function fsParadeOpen0() {
   if (!S) return;
-  if (!festOn('halloween')) { toast('The costume parade is over for this year. Gerald is already planning the next one.'); return; }
+  if (!festOn('halloween')) { toast(tt('fest.parade_over', 'The costume parade is over for this year. Gerald is already planning the next one.')); return; }
   SFX.boop(700); const dogs = fsParadeDogs(), me = D(), done = fsParadedToday();
-  const row = dogs.map((n) => `<div class="fs-npc"><span class="fs-pdog">${dogSVG(n, { pose: 'sit', outfit: n.outfit, facing: 'right' })}</span><b>${esc(n.name)}</b><span class="small">${esc(n.costume)}</span></div>`).join('');
-  const p = openModal('Costume parade', `<div class="fs-banner" aria-hidden="true">${fsArt('paradebanner')}</div><p class="small">Gerald runs it. Five town dogs in costume, and you. Everyone gets a cheer.</p>
-    <div class="fs-row" role="list" aria-label="Today's parade dogs">${row}</div>
-    <div class="fs-you"><span class="fs-pdog">${dogSVG(me, { pose: 'sit', outfit: outfitOf(me), facing: 'right' })}</span><div><b>${esc(NAME())}</b><span class="small">${esc(fsOutfitWords(outfitOf(me)))}</span>${done ? '<span class="small">Paraded today. Come back tomorrow for another lap.</span>' : ''}</div></div>`,
-  { cls: 'fs-paradepop', foot: `<button class="btn yes big" id="fsJoin" ${done ? 'aria-disabled="true"' : ''}>${done ? 'Paraded today' : 'Join the parade'}</button>` });
+  const row = dogs.map((n) => `<div class="fs-npc"><span class="fs-pdog">${dogSVG(n, { pose: 'sit', outfit: n.outfit, facing: 'right' })}</span><b>${esc(n.name)}</b><span class="small">${esc(fsIName('clothes', n.costume))}</span></div>`).join('');
+  const p = openModal(tt('fest.costume_parade', 'Costume parade'), `<div class="fs-banner" aria-hidden="true">${fsArt('paradebanner')}</div><p class="small">${esc(tt('fest.parade_intro', 'Gerald runs it. Five town dogs in costume, and you. Everyone gets a cheer.'))}</p>
+    <div class="fs-row" role="list" aria-label="${esc(tt('fest.label_parade_dogs', "Today's parade dogs"))}">${row}</div>
+    <div class="fs-you"><span class="fs-pdog">${dogSVG(me, { pose: 'sit', outfit: outfitOf(me), facing: 'right' })}</span><div><b>${esc(NAME())}</b><span class="small">${esc(fsOutfitWords(outfitOf(me)))}</span>${done ? `<span class="small">${esc(tt('fest.paraded_lap', 'Paraded today. Come back tomorrow for another lap.'))}</span>` : ''}</div></div>`,
+  { cls: 'fs-paradepop', foot: `<button class="btn yes big" id="fsJoin" ${done ? 'aria-disabled="true"' : ''}>${esc(done ? tt('fest.paraded_today', 'Paraded today') : tt('fest.join_parade', 'Join the parade'))}</button>` });
   $('#fsJoin', p).onclick = () => {
-    if (fsParadedToday()) { nope('One parade a day is plenty. The costumes need a rest too.'); return; }
-    if (busy || S.sleeping) { nope(S.sleeping ? `${NAME()} is asleep. The parade can wait one nap.` : `Hold on, ${NAME()} is busy.`); return; }
+    if (fsParadedToday()) { nope(tt('fest.one_a_day', 'One parade a day is plenty. The costumes need a rest too.')); return; }
+    if (busy || S.sleeping) { nope(S.sleeping ? tt('fest.asleep', '{name} is asleep. The parade can wait one nap.', { name: NAME() }) : tt('fest.busy', 'Hold on, {name} is busy.', { name: NAME() })); return; }
     SFX.click(); closeModal(); fsParadeWalk(dogs);
   };
   return p;
@@ -411,7 +413,7 @@ function fsParadeWalk(dogs) {
   const lg = $('#fsParadeG .fs-line'), leaves = $('#fsParadeG .fs-leaves');
   for (let k = 0; k < 10; k++) { const el = document.createElementNS('http://www.w3.org/2000/svg', 'g'); el.setAttribute('class', 'fs-drop'); el.style.animationDelay = (k * 0.55).toFixed(2) + 's'; el.style.setProperty('--sway', (k % 2 ? 40 : -40) + 'px'); el.innerHTML = fsLeafPath(120 + ((k * 97) % 800), 150 + (k % 3) * 20, 1.4, k * 40, FS_LEAF_COLS[k % 5]); leaves.appendChild(el); }
   requestAnimationFrame(() => requestAnimationFrame(() => { if (lg) { lg.style.transition = `transform ${FS_PARADE_MS}ms linear`; lg.style.transform = `translateX(${dist}px)`; } }));
-  const sayAt = 1800; FS.walkT.push(setTimeout(() => { if (fsHere('square')) say(PICK(['Ooh.', 'Is that a duck?']), lead + dist * sayAt / FS_PARADE_MS, feetY - hgt * 0.85, 2400); }, sayAt)); // at the leader's head
+  const sayAt = 1800; FS.walkT.push(setTimeout(() => { if (fsHere('square')) say(PICK([tt('fest.ooh', 'Ooh.'), tt('fest.is_that_a_duck', 'Is that a duck?')]), lead + dist * sayAt / FS_PARADE_MS, feetY - hgt * 0.85, 2400); }, sayAt)); // at the leader's head
   FS.walkT.push(setTimeout(() => fsParadeEnd(true), FS_PARADE_MS + 200));
   onCleanup(() => { if (FS.walking) fsParadeEnd(false); });
 }
@@ -426,15 +428,15 @@ function fsParadeEnd(here) {
 function fsParadeDone() {
   fsFields(); S.fest.parade.date = localISO();
   const n = addCoins(10, { raw: true }); addStat('happy', 10); addBond(2); markDirty(); updateHUD(); SFX.kaching();
-  toast(`Best in show: ${NAME()}. +${n} coins.`, 'gold'); trackAct('parade', {});
+  toast(tt('fest.best_in_show', 'Best in show: {name}. +{n, plural, one {# coin} other {# coins}}.', { name: NAME(), n }), 'gold'); trackAct('parade', {});
   if (fsHere('square')) fsSquareDraw();
   const y = fsYear(); if (S.fest.parade.year === y) return;
   S.fest.parade.year = y; const fresh = !owns('clothes', 'Parade Rosette'); if (fresh) S.inv.clothes.push('Parade Rosette'); markDirty(); saveNow();
   const show = () => {
     SFX.fanfare();
-    const p = openModal('<span class="hl">The Parade Rosette!</span>', `<div class="ms-prize"><span class="ms-prize-art">${itemArt('Parade Rosette')}</span><div><p>${fresh ? `Gerald pins a rosette on ${esc(NAME())}. It is a little bent. So is Gerald.` : `Best in show again this year. Gerald bends the rosette a little more, for luck.`}</p><p class="small">Parade Rosette: neck. It is in the Wardrobe.</p></div></div>`, { cls: 'celebrate fs-rosette', foot: '<button class="btn no" id="fsLater">Later</button><button class="btn yes big" id="fsWear">Wear it</button>' });
+    const p = openModal(`<span class="hl">${esc(tt('fest.rosette_title', 'The Parade Rosette!'))}</span>`, `<div class="ms-prize"><span class="ms-prize-art">${itemArt('Parade Rosette')}</span><div><p>${esc(fresh ? tt('fest.rosette_new', 'Gerald pins a rosette on {name}. It is a little bent. So is Gerald.', { name: NAME() }) : tt('fest.rosette_again', 'Best in show again this year. Gerald bends the rosette a little more, for luck.'))}</p><p class="small">${esc(tt('fest.rosette_note', 'Parade Rosette: neck. It is in the Wardrobe.'))}</p></div></div>`, { cls: 'celebrate fs-rosette', foot: `<button class="btn no" id="fsLater">${esc(tt('fest.later', 'Later'))}</button><button class="btn yes big" id="fsWear">${esc(tt('fest.wear_it', 'Wear it'))}</button>` });
     $('#fsLater', p).onclick = () => { SFX.click(); closeModal(); };
-    $('#fsWear', p).onclick = () => { closeModal(); equip('Parade Rosette', true); toast(`${NAME()} is wearing the Parade Rosette. Very proud.`, 'good'); };
+    $('#fsWear', p).onclick = () => { closeModal(); equip('Parade Rosette', true); toast(tt('fest.wearing_rosette', '{name} is wearing the Parade Rosette. Very proud.', { name: NAME() }), 'good'); };
   };
   if (typeof msWhenFree === 'function') msWhenFree(show); else setTimeout(show, 600);
 }
@@ -446,10 +448,10 @@ function fsJournalLine() {
   if (!festOn('leaf') && !festOn('halloween')) { // v2.8: the Winter Stall to the end of February (29 in a leap year), then the contest and the Fortune box lines
     const y = (typeof wnYear === 'function' ? wnYear() : +localISO().slice(0, 4)) + 1, leap = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
     const ic = typeof wnIcon === 'function' ? wnIcon('wstall') : leafIc();
-    return `<p class="fs-jline wn-jline"><span class="ic" aria-hidden="true">${ic}</span><b>Festival:</b> Winter Stall in the Square until ${leap ? 29 : 28} February.</p>` + (typeof wnJournalLine === 'function' ? wnJournalLine() || '' : '') + (typeof nyJournalLine === 'function' ? nyJournalLine() || '' : '');
+    return `<p class="fs-jline wn-jline"><span class="ic" aria-hidden="true">${ic}</span><b>${esc(tt('fest.festival_label', 'Festival:'))}</b> ${esc(tt('fest.jline_winter', 'Winter Stall in the Square until {day} February.', { day: leap ? 29 : 28 }))}</p>` + (typeof wnJournalLine === 'function' ? wnJournalLine() || '' : '') + (typeof nyJournalLine === 'function' ? nyJournalLine() || '' : '');
   }
-  const until = festOn('leaf') ? '30 November' : '31 October';
-  return `<p class="fs-jline"><span class="ic" aria-hidden="true">${leafIc()}</span><b>Festival:</b> Harvest Stall in the Square until ${until}.</p>` + (typeof hwJournalLine === 'function' ? hwJournalLine() : ''); // v2.6: the pop-up line under it
+  const untilK = festOn('leaf') ? 'leaf' : 'hw';
+  return `<p class="fs-jline"><span class="ic" aria-hidden="true">${leafIc()}</span><b>${esc(tt('fest.festival_label', 'Festival:'))}</b> ${esc(tt('fest.jline_harvest', '{k, select, leaf {Harvest Stall in the Square until 30 November.} other {Harvest Stall in the Square until 31 October.}}', { k: untilK }))}</p>` + (typeof hwJournalLine === 'function' ? hwJournalLine() : ''); // v2.6: the pop-up line under it
 }
 
 /* ---- bus ---- */
