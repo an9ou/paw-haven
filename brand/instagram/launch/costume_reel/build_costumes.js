@@ -114,12 +114,16 @@ const mux = (video, audio, T, mp4, extra = []) => cp.execFileSync('ffmpeg', ['-l
     await shot(page(''), path.join(WORK, 'b', 'bg.png'));
     const bg = 'data:image/png;base64,' + fs.readFileSync(path.join(WORK, 'b', 'bg.png')).toString('base64');
     await p.setContent(`<!doctype html><meta charset="utf-8">${FONTS}<div id="s"></div><span style="font-family:Caveat">a</span><span style="font-family:'Zen Maru Gothic'">あ</span>`); await p.waitForLoadState('networkidle'); await p.evaluate(() => document.fonts.ready);
-    const ITEM = Object.fromEntries([...new Set(LOOKS.flatMap((l) => Object.values(l[1])))].map((n) => [n, inner(PA.item(n))]));
+    // item drawings: the art module's PawArt.item, except the v2.11.1 costumes, whose icons live in the game (game/src/27_halloween.js, 100 x 100)
+    const hwSrc = fs.readFileSync(path.join(root, 'game', 'src', '27_halloween.js'), 'utf8'), HWC = { HW_O: '#E8893A', HW_OD: '#B5542F', HW_CR: '#FFFBF3', HW_W: '#C08A5A', HW_G: '#6B8A3A', INKG: INK };
+    const hwIcon = (n) => { const l = hwSrc.split('\n').find((x) => x.trim().startsWith(`'${n}':`)); return l ? vm.runInNewContext('(' + l.trim().replace(/^'[^']+':\s*/, '').replace(/,$/, '') + ')', HWC)() : null; };
+    const ITEM = Object.fromEntries([...new Set(LOOKS.flatMap((l) => Object.values(l[1])))].map((n) => { const hw = ['Pumpkin Patch Suit', 'Trick-or-Treat Ghost', 'Little Bat Costume'].includes(n) && hwIcon(n);
+      return [n, hw ? { vb: '0 0 100 100', g: hw } : { vb: '0 0 64 64', g: inner(PA.item(n)) }]; }));
     const SPOT = { head: [790, 940], neck: [720, 1090], body: [470, 1110] }; // where each slot sits on Noodle (he faces right)
     const icons = (li, prog, mode, t) => Object.entries(LOOKS[li][1]).map(([slot, n], j) => { const [tx, ty] = SPOT[slot]; let x, y, r, s = 230, o = 1;
       if (mode === 'fall') { const e = prog * prog; x = tx + (j - 0.5) * 30 * (1 - prog); y = -260 + (ty + 80 + 260) * e - 80; r = Math.sin(prog * 9 + j) * 28 * (1 - prog); }
       else { const q = prog; x = tx + (j % 2 ? 1 : -1) * (120 + 260 * q); y = ty - 380 * q + 2600 * q * q; r = (j % 2 ? 1 : -1) * 400 * q; s = 230 * (1 - 0.25 * q); o = 1; }
-      return `<g transform="translate(${f1(x)} ${f1(y)}) rotate(${f1(r)})" opacity="${o}"><svg x="${-s / 2}" y="${-s / 2}" width="${s}" height="${s}" viewBox="0 0 64 64" overflow="visible">${ITEM[n]}</svg></g>`; }).join('');
+      return `<g transform="translate(${f1(x)} ${f1(y)}) rotate(${f1(r)})" opacity="${o}"><svg x="${-s / 2}" y="${-s / 2}" width="${s}" height="${s}" viewBox="${ITEM[n].vb}" overflow="visible">${ITEM[n].g}</svg></g>`; }).join('');
     const sparks = (prog) => [0, 1, 2, 3, 4, 5].map((k) => { const a = k * Math.PI / 3 + 0.3, d = 90 + 160 * prog, x = 640 + Math.cos(a) * d, y = 1060 + Math.sin(a) * d * 0.7, s = 1 - prog;
       return `<path d="M${f1(x)} ${f1(y - 22 * s)}L${f1(x + 7 * s)} ${f1(y - 7 * s)}L${f1(x + 22 * s)} ${f1(y)}L${f1(x + 7 * s)} ${f1(y + 7 * s)}L${f1(x)} ${f1(y + 22 * s)}L${f1(x - 7 * s)} ${f1(y + 7 * s)}L${f1(x - 22 * s)} ${f1(y)}L${f1(x - 7 * s)} ${f1(y - 7 * s)}Z" fill="#FFD66B" stroke="${INK}" stroke-width="3" opacity="${f1(s)}"/>`; }).join('');
     const NF = process.env.BFRAMES ? +process.env.BFRAMES : Math.round(B_T * FPS), noodleCache = {};
