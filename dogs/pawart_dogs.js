@@ -1405,7 +1405,8 @@ const XA={
   // where a word goes by the face, clear of the head, ears and hat brims: in front of the head front or the nose (whichever is further), at nose level (lv 0)
   // or above it (lv 1); when that runs off the canvas, under the nose instead. Returns the word's bottom left.
   say(s,HT,t,z,lv,u){const hx=s.head.rx,hy=s.head.ry,n=HT(noseLocal(s)),f=HT([hx*1.05,lv?-hy*.85:hy*.1]),w=z*.62*t.length,x=Math.max(f[0],n[0])+5;
-    if(x+w<=236)return[x,(lv?Math.min(f[1],n[1]-16):n[1]+z*.45)-u];const ch=Math.max(HT([hx*.3,hy*1.02])[1],n[1]+hx*.85);return[n[0]-w*.5,Math.min(GY-4,ch+z*.8)-u]},// under the chin and the tongue
+    if(x+w<=236)return[x,(lv?Math.min(f[1],n[1]-16):n[1]+z*.45)-u];const ch=Math.max(HT([hx*.3,hy*1.02])[1],n[1]+hx*.85);
+    if(ch+z*.8<=GY-4)return[n[0]-w*.5,ch+z*.8-u];return[236-w,Math.min(HT([hx*1.05,-hy*.85])[1],n[1]-16)-u]},// under the chin and the tongue; no room there (a bow): up over the muzzle
   star:(cx,cy,R)=>{const p=[];for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?R*.45:R;p.push([cx+Math.cos(a)*rr,cy+Math.sin(a)*rr])}return p},
   fr:(s,HT,dy)=>HT([s.head.rx*1.15,-s.head.ry*dy]),// a spot in front of the face, clear of the ears and hats
   // a crayon "!" drawn as thick marks (bolder than the hand font at game size, and it reads the same when the dog faces left); (x,y) = bottom left, z = height, kept inside the canvas
