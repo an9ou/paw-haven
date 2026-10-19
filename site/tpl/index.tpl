@@ -8,13 +8,13 @@
 <meta property="og:image" content="https://doodledoggo.app/logo-1200x630.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">{{raw langscript}}
 </head><body>
-<div class="deco" id="deco" aria-hidden="true"></div>{{raw header}}
+<div class="deco" id="deco" aria-hidden="true"></div>
 <main class="page">
   <div class="sheet">
     <div class="top">
       <h1 class="h1logo"><img class="logo" src="/doodle-doggo-logo.svg" alt="{{a common.logo_alt}}" width="900" height="280"></h1>
       <p class="tag">🖍️ {{t home.tagline}}</p>
-    </div>
+    </div>{{raw header}}
 
     <section class="playroom" aria-label="{{a home.playroom_label}}">
       <div class="scene" id="scene">
@@ -32,7 +32,6 @@
         </div>
       </div>
       <div class="scenebar">
-        <button type="button" class="chip" id="toss" hidden>🎾 {{t home.toss}}</button>
         <p class="small cap">{{t home.playroom_caption}}</p>
       </div>
     </section>

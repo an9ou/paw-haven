@@ -413,3 +413,7 @@ html.s-cjk .about{line-height:1.85} html.s-th .about{line-height:1.9}
 }
 @keyframes peekin{from{transform:translate(var(--hx,0px),var(--hy,0px)) rotate(var(--r,0deg))}to{transform:translate(0,0) rotate(var(--r,0deg))}}
 @keyframes peekbob{0%,100%{transform:rotate(var(--r,0deg))}50%{transform:rotate(calc(var(--r,0deg) * .3))}}
+
+/* owner (site v3.1): the header lives inside the paper sheet, no separate bar */
+.sheet>.sitehead{width:auto;max-width:none;margin:-4px 0 18px;padding:0 0 12px;background:none;border:0;border-bottom:2px dashed rgba(91,61,50,.25);border-radius:0;box-shadow:none}
+@media (max-width:860px){ .sheet>.sitehead{padding:0 0 10px;margin:-2px 0 14px} }

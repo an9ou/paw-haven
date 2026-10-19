@@ -309,7 +309,7 @@
     if (best) { balls.forEach(function (b) { if (b.holder === best) { b.holder = null; b.h = 0; b.rest = rnd(1, 2); } }); idle(best, 'happy', 1.8); heart(best); if (Math.random() < 0.5) bark(best); return; }
     throwOne(w[0], Math.max(Y0, w[1]));
   });
-  var btn = document.getElementById('toss');
-  if (btn) { btn.hidden = false; btn.addEventListener('click', function () { throwOne(); }); }
+  // owner: no button; now and then a ball flies in by itself (while the scene is on screen and running)
+  setInterval(function () { if (running && Math.random() < 0.6) throwOne(); }, 7000);
   window.__dd = { dogs: dogs, balls: balls, max: MAX_BALLS, throwOne: throwOne, tr: tr, running: function () { return running; }, stats: function () { return { catches: catches, steals: steals }; } };
 })();
