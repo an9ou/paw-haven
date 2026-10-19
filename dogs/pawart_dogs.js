@@ -1473,6 +1473,93 @@ EXPR.sneeze={ok:/^(idle|sit|sniff|walk|down|dig|dirty|paw|crouch)$/,
     const t=HT([hx*.25,-hy*1.25]);XA.text(h,'achoo!',t[0]-30,t[1]-XA.up(L,[0,3,1]),18,-8,1);XA.free(h)}};
 /* ---------- ART A end ---------- */
 /* ---------- v2.13 expressions: ART B (blep, zoomies, pout, dreamy, wow, wink, yum) ---------- */
+// Helpers are xb-prefixed. Tongues use the pose palette (#FF6F9A / #C9406A), so the chow's faceFn still turns them blue-black. An eye hook that draws
+// the whole eye sets LX.face.eyes='x' in pre: drawFace skips its brow, and the chow lids and the dark-coat eye rings (faceFn) stay off that eye.
+const XB_PK='#FF6F9A',XB_PKD='#C9406A',XB_MO='#7A1F2E',XB_DROP='#9EDCFF',XB_LIP='#F2849F',XB_YEL='#FFE14D';
+function xbSurf(s){const f=s.face,c=f.snout===1?s.light:f.snout===3?maskCol(s):s.hcol;return c||s.hcol}// the colour under the mouth
+function xbLine(s){const c=xbSurf(s);return lum(c)<.3?mix(c,W,.62):INK}// the mouth line: ink, or a pale line on a dark muzzle
+function xbEyeO(h,s,x,y,r,i,o){// an open eye drawn the way drawFace draws it, with its own size (k), pupil size (p) and look (lx, ly)
+  const R=r*(o.k||1),pk=o.p||1,px=x+(o.lx||0)*R*.4,py=y+(o.ly||0)*R*.4,ir=s.irises?s.irises[i]:s.iris,pr=(s.face.pupil||.57)*pk;
+  h.shape(circ(x,y,R,R*1.05,12),W,{ox:0,oy:0,sc:1,w:2.3,amp:.45,closed:1,famp:.25});
+  if(ir){h.dot(px,py,R*.68*pk,R*.72*pk,ir);h.dot(px,py,R*.34*pk,R*.36*pk)}else h.dot(px,py,R*pr,R*(pr+.03));
+  h.dot(px-R*.2*pk,py-R*.26*pk,R*.2*pk,R*.2*pk,W);h.dot(px+R*.2*pk,py+R*.22*pk,R*.09,R*.09,W)}
+function xbEyeH(h,s,x,y,r,i,o){// a half-shut eye: the white under a thick lid line (o.up: lid height in r, o.lx: look, o.arc: a soft droopy lid, o.bc: line colour)
+  const y0=y-r*(o.up||0),a0=Math.asin(Math.max(-.9,Math.min(.9,(y0-y)/r))),P=[];for(let j=0;j<=8;j++){const a=a0+(Math.PI-2*a0)*j/8;P.push([x+Math.cos(a)*r,y+Math.sin(a)*r*1.05])}
+  h.shape(P,W,{ox:0,oy:0,sc:1,w:2.3,amp:.4,closed:1,famp:.2});
+  const ir=s.irises?s.irises[i]:s.iris,pr=Math.min(r*.5,(y+r-y0)*.4),px=x+(o.lx||0)*r*.42,py=Math.min(y+r*.98-pr,(y0+y+r)/2+r*.08);
+  if(ir){h.dot(px,py,pr*1.2,pr*1.15,ir);h.dot(px,py,pr*.6,pr*.6)}else h.dot(px,py,pr,pr*1.05);h.dot(px-pr*.4,py-pr*.3,pr*.34,pr*.34,W);
+  if(o.arc)h.line([[x-r*1.2,y0+r*.32],[x-r*.55,y0-r*.08],[x+r*.55,y0-r*.08],[x+r*1.2,y0+r*.32]],3.8,o.bc);
+  else h.line([[x-r*1.2,y0],[x+r*1.2,y0]],4,o.bc)}
+function xbStar(h,x,y,z,n,fill,w){// a crude crayon star: n=5 a star, n=4 a sparkle
+  const P=[];for(let j=0;j<n*2;j++){const a=j/(n*2)*Math.PI*2-Math.PI/2,rr=j%2?z*(n===4?.34:.46):z;P.push([x+Math.cos(a)*rr,y+Math.sin(a)*rr])}
+  h.shape(P,fill,{w:w||2.4,ox:0,oy:0,sc:1,closed:1,amp:.45,famp:.25,step:40})}
+function xbBub(h,x,y,r){h.shape(circ(x,y,r,r,9),'#DDF3FF',{w:1.9,ox:0,oy:0,sc:1,closed:1,amp:.35,famp:.2});h.dot(x-r*.36,y-r*.36,r*.26,r*.22,W)}
+const xbCl=(v,a,b)=>Math.max(a,Math.min(b,v));
+const xbSay=(h,s,HT,w,up,k)=>{// a short crayon word by the face: up = above the front of the head, else below the nose
+  const N=noseLocal(s),sf=s.head.rx/33,n=HT(N),c=HT([s.head.rx*1.05,-s.head.ry*.85]),b=[0,3,1][k||0];
+  const x=up?Math.max(c[0],n[0]-6)+4:n[0]+4,y=up?Math.min(c[1],n[1]-16)-b:n[1]+30*sf+8-b;h.text(w,xbCl(x,8,232-w.length*8),xbCl(y,18,GY-6),14,INK,-8)};
+// blep: a blank happy stare, the mouth shut and just the tip of the tongue poking out
+EXPR.blep={ok:/^(idle|pet|walk|sit|down|paw|beg|bow|crouch|dirty)$/,
+  pre(s,LX){LX.face.eyes=LX.face.eyes==='happy'?'happy':'open';LX.face.brow=0},
+  mouth(h,s,L,M){h.shape([[-12,8],[.5,8],[1,16.5],[-5.5,22],[-11.5,16.5]].map(M),XB_PK,{w:3,ox:0,oy:0,sc:1,closed:1});h.line([[-5.6,10],[-5.6,17]].map(M),2.2,XB_PKD);
+    h.line([[-17,6],[-11,10],[-5.5,8.6],[0,10],[4.5,5.5]].map(M),3.8,xbLine(s));return true},
+  fx(h,s,L,B,HT){xbSay(h,s,HT,'blep',0,L.k)}};
+// zoomies: huge eyes, the biggest open grin with the tongue flapping back, speed lines and dust behind
+EXPR.zoomies={ok:/^(idle|happy|walk|jump|bow|dance)$/,
+  pre(s,LX){LX.face.eyes='x'},
+  eye(h,s,L,x,y,r,i,bc){xbEyeO(h,s,x,y,r,i,{k:i?1.24:1.14,p:.66,lx:.6,ly:-.2});h.line([[x-r*.95,y-r*1.7],[x,y-r*2.15],[x+r*.95,y-r*1.8]],2.8,bc);return true},
+  mouth(h,s,L,M){const w=[0,4,-3][L.k||0];
+    h.shape([[-22,3],[-8,5.5],[7,1],[3,15],[-6,21],[-18,16]].map(M),XB_MO,{w:3.6,ox:0,oy:0,sc:1});
+    h.shape([[-16,12],[-7,15],[-15,26+w],[-28,29+w],[-33,22+w],[-24,16]].map(M),XB_PK,{w:3,ox:0,oy:0,sc:1,closed:1});h.line([[-13,15],[-25,24+w]].map(M),2.2,XB_PKD);
+    h.line([[-19,4.5],[-18,9]].map(M),2.4,W);h.line([[3.5,2.5],[2.5,7]].map(M),2.4,W);return true},
+  fx(h,s,L,B,HT){const b=s.body,k=L.k||0,o=[0,7,3][k],cl=v=>Math.max(6,v);
+    [[-.6,24],[-.05,34],[.5,22]].forEach(q=>{const p=B([-b.rx*1.04,b.ry*q[0]]);h.line([[p[0]-6-o*.4,p[1]],[cl(p[0]-6-q[1]-o),p[1]+1]],3.2,PEN)});
+    const ft=B([-b.rx*.75,b.ry]);[[0,0,6.5],[-12,-5,5],[-21,1,3.8]].forEach((c,j)=>{const x=cl(ft[0]-12+c[0]-o*.7),y=Math.min(GY-5,GY-6+c[1]);h.shape(circ(x,y,c[2]+(k===j?1.2:0),c[2]*.82,11,.12),'#F4ECDA',{w:2,ox:0,oy:0,sc:1,closed:1})})}};
+// pout: chin up, sulky half-lids glancing away, a puffed cheek, the lower lip pushed out, "hmph" (a comic sulk: the toy was taken)
+EXPR.pout={ok:/^(idle|sit|down|crouch|dirty|beg)$/,
+  pose(s,L){L.hT.a-=6},
+  pre(s,LX){LX.face.eyes='x'},
+  eye(h,s,L,x,y,r,i,bc){xbEyeH(h,s,x,y,r,i,{up:.12,lx:-.65,bc});const a=i?0:2.6,b=i?2.6:0;h.line([[x-r*1.1,y-r*1.55-a],[x+r*1.1,y-r*1.55-b]],2.8,bc);return true},
+  mouth(h,s,L,M,sf){const S=xbSurf(s),c=M([-21,6]),R=9.5*sf,A=[];for(let j=0;j<=7;j++){const a=(70+j*25)*D2R;A.push([c[0]+Math.cos(a)*R,c[1]+Math.sin(a)*R*.9])}
+    h.shape(circ(c[0],c[1],R,R*.9,12),mix(S,'#FF9EB5',.3),{noline:1,ox:0,oy:0,sc:1});h.line(A,3.2,INK,.5);h.line([[c[0]-R*.45,c[1]-R*.35],[c[0]-R*.1,c[1]-R*.55]],2.2,W,.2);
+    h.shape([[-13,9.5],[-.5,9],[1.5,13.5],[-5,17.5],[-11.5,14.5]].map(M),XB_LIP,{w:3,ox:0,oy:0,sc:1,closed:1});
+    h.line([[-17,13.5],[-13,9],[-6,7.5],[1,9]].map(M),3.6,xbLine(s));return true},
+  fx(h,s,L,B,HT){const k=L.k||0,N=noseLocal(s),sf=s.head.rx/33,n=HT([N[0]+5*sf,N[1]]);
+    [[-4,-3],[4,-1]].forEach(o=>h.line([[n[0]+4+k,n[1]+o[0]],[n[0]+11+k*2,n[1]+o[0]+o[1]]],2.2,PEN));xbSay(h,s,HT,'hmph',1,k)}};
+// dreamy: bath and brushing bliss, droopy content eyes, blush, a soft smile, bubbles floating up
+EXPR.dreamy={ok:/^(idle|happy|pet|sit|down|shake|beg)$/,
+  pre(s,LX){LX.face.eyes='x';LX.face.mouth='smile';LX.blush=1},
+  eye(h,s,L,x,y,r,i,bc){const R=Math.max(r,4.6);h.line([[x-R*1.15,y-R*.15],[x-R*.55,y+R*.42],[x+R*.55,y+R*.42],[x+R*1.15,y-R*.15]],4.2,bc);
+    h.line([[x+R*1.05,y-R*.05],[x+R*1.6,y-R*.45]],2.4,bc,.3);h.line([[x+R*.75,y+R*.25],[x+R*1.25,y+R*.05]],2.2,bc,.3);return true},
+  fx(h,s,L,B,HT){const k=L.k||0,hx=s.head.rx,hy=s.head.ry,c=HT([0,0]),up=[0,5,10][k],z=Math.max(.85,Math.min(1.25,hx/30));
+    [[-1.3,-.95,8.5],[1.2,-1.25,7],[-.45,-1.75,5],[1.6,-.3,4.5],[-1.8,.2,5.5]].forEach((q,j)=>{const y=c[1]+q[1]*hy-up*(j%2?1:.6)-(j===k?3:0);xbBub(h,xbCl(c[0]+q[0]*hx,10,230),xbCl(y,10,GY-8),q[2]*z)})}};
+// wow: yellow star eyes, brows up, a big open "ooh" smile, chin up, sparkles round the head (a new place: Tokyo, Mt. Fuji)
+EXPR.wow={ok:/^(idle|happy|walk|jump|sit|beg|paw|down)$/,
+  pose(s,L){L.hT.a-=5},
+  pre(s,LX){LX.face.eyes='x'},
+  eye(h,s,L,x,y,r,i,bc){const z=Math.min(Math.max(r*1.5,7.5),s.head.rx*.38);xbStar(h,x,y,z,5,XB_YEL,2.6);h.line([[x-z*.42,y-z*.1],[x-z*.2,y-z*.4]],1.8,W,.2);
+    h.line([[x-r*1.1,y-z-r*.9],[x,y-z-r*1.4],[x+r*1.1,y-z-r*.95]],2.8,bc);return true},
+  mouth(h,s,L,M){h.shape([[-15,4],[-5,6],[4,3],[2,13],[-5,19],[-13,14.5]].map(M),XB_MO,{w:3.4,ox:0,oy:0,sc:1});h.shape([[-11,13.5],[-2,13.5],[-4,18],[-10,17.5]].map(M),XB_PK,{noline:1,ox:0,oy:0});return true},
+  fx(h,s,L,B,HT){const k=L.k||0,hx=s.head.rx,hy=s.head.ry,c=HT([0,0]);
+    [[-1.4,-.95,8],[1.3,-1.35,8.5],[0,-1.8,5.5],[1.65,.05,5.5]].forEach((q,j)=>{const z=q[2]*(j%3===k?1.25:.85);xbStar(h,xbCl(c[0]+q[0]*hx,12,228),xbCl(c[1]+q[1]*hy,12,GY-12),z,4,j%2?'#FFF3A0':XB_YEL,z<7?1.8:2.2)})}};
+// wink: the near eye shut in a squeezed arc with a lash, the far eye open under a raised brow, a cheeky grin, one glint by the wink
+EXPR.wink={ok:/^(idle|sit|happy|paw|pet|walk|beg|bow|dance|down)$/,
+  pre(s,LX){LX.face.eyes='x'},
+  eye(h,s,L,x,y,r,i,bc){
+    if(i===1){const R=Math.max(r*1.1,5.6);h.line([[x-R*1.1,y+R*.2],[x-R*.3,y-R*.5],[x+R*.6,y-R*.3],[x+R*1.1,y+R*.25]],4.8,bc);h.line([[x+R*.95,y-R*.05],[x+R*1.6,y-R*.55]],2.6,bc,.3);
+      h.line([[x-R*.8,y+R*.95],[x,y+R*1.15],[x+R*.8,y+R*.9]],2.4,bc,.3);return true}
+    xbEyeO(h,s,x,y,r,i,{k:1.12,lx:.25,ly:-.05});h.line([[x-r*1.1,y-r*1.6],[x-r*.1,y-r*2.3],[x+r*1.1,y-r*1.9]],2.8,bc);return true},
+  mouth(h,s,L,M){const c=xbLine(s);h.shape([[-16,5],[4,3.5],[1,12.5],[-5,15],[-12,12]].map(M),XB_MO,{w:3.2,ox:0,oy:0,sc:1});h.shape([[-10,11],[-1,10.5],[-2.5,14],[-8.5,14]].map(M),XB_PK,{noline:1,ox:0,oy:0});
+    h.line([[-13.5,5],[-12.5,8.5]].map(M),2.4,W);h.line([[-20,1.5],[-16,5]].map(M),2.4,c,.3);h.line([[4,3.5],[8.5,-2.5]].map(M),3,c,.3);return true},
+  fx(h,s,L,B,HT){const k=L.k||0,hx=s.head.rx,hy=s.head.ry,e=L.face.e1||[.42,-.1],r=s.eyes[1],p=HT([hx*e[0],hy*e[1]]),z=[9.5,11.5,8.5][k];
+    xbStar(h,xbCl(p[0]+r*1.5+10,14,226),xbCl(p[1]-r*1.5-9,14,GY-14),z,4,XB_YEL,2.2)}};
+// yum: happy eyes, the tongue licking up round the front of the lip toward the nose, a drop of drool, "yum!"
+EXPR.yum={ok:/^(idle|sit|beg|happy|paw|down|walk)$/,
+  pre(s,LX){LX.face.eyes='happy'},
+  mouth(h,s,L,M){const t=[0,2,-1.5][L.k||0];h.line([[-17,5],[-9,11],[0,9],[4,5]].map(M),3.8,xbLine(s));
+    h.shape([[-3,10],[5,8.5],[10.5,3.5+t],[12,-3+t],[8.5,-6.5+t],[5,-3+t*.5],[0,5]].map(M),XB_PK,{w:3,ox:0,oy:0,sc:1,closed:1});h.line([[4,6.5],[8.5,-1.5+t]].map(M),2,XB_PKD);
+    if(!s.face.drool){const p=M([-14,12]);h.shape([[p[0],p[1]],[p[0]+3,p[1]+7],[p[0],p[1]+10],[p[0]-3,p[1]+7]],XB_DROP,{w:2,ox:0,oy:0,sc:1,closed:1})}return true},
+  fx(h,s,L,B,HT){xbSay(h,s,HT,'yum!',1,L.k)}};
 /* ---------- ART B end ---------- */
 function frame(key,s,pose,outfit,k,seed,ex){
   const h=kit(rng(seed+k*7717)),L=layout(s,pose,k);if(s.pup){h.setJ(s.pup===2?1.5:1.3);if(s.pup===2)newbornL(s,L)}const X=ex?EXPR[ex]:null;if(X&&X.pose)X.pose(s,L,k);if(pose==='rollover'||pose==='playdead')h.cy=GY+3;const _u=0,B=T(L.bT),HT=T(L.hT),hp=headPts(s),bp=bodyPts(s);
