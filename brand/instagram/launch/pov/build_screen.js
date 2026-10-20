@@ -39,7 +39,7 @@ const button = (glow) => `<g><circle cx="${BTN[0]}" cy="${BTN[1]}" r="48" fill="
   await p.setContent(`<!doctype html><meta charset="utf-8"><style>html,body{margin:0;background:transparent}svg{display:block}.hide{display:none}</style><div id="s"></div>`);
   const bboxOf = (sv) => p.evaluate((sv) => { const d = document.createElement('div'); d.innerHTML = sv; document.body.appendChild(d); const e = d.querySelector('svg'); e.setAttribute('width', 240); e.setAttribute('height', 200); const r = e.getBBox(); d.remove(); return [r.x, r.y, r.width, r.height]; }, sv);
   const BB = await bboxOf(PA.dog('dachs', { pose: 'happy', anim: false, facing: 'right' }));
-  const MOUTH = [NX + NW * 0.43, FEET - 150]; // where the bone lands (his mouth, he faces right)
+  const MOUTH = [NX + NW * 0.2, FEET - 34]; // where the bone lands: his mouth in the eat pose (head down, facing right)
   const NF = T * FPS;
   for (let fi = 0; fi < NF; fi++) {
     const t = fi / FPS, wag = Math.floor(t / 0.18) % 2;
@@ -51,13 +51,13 @@ const button = (glow) => `<g><circle cx="${BTN[0]}" cy="${BTN[1]}" r="48" fill="
     const click = t >= 2.4 && t < 2.6, glow = t >= 2.4 && t < 2.9 ? seg(t, 2.4, 2.9) : 0;
     g += button(glow);
     if (t >= 2.45 && t < 3.25) { const q = eio(seg(t, 2.45, 3.2)), x = BTN[0] + (MOUTH[0] - BTN[0]) * q, y = BTN[1] + (MOUTH[1] - BTN[1]) * q - Math.sin(Math.PI * q) * 260; g += bone(x, y, 76, -20 + 380 * q); }
-    if (t >= 3.2 && t < 4.6) g += bone(MOUTH[0] + 4, MOUTH[1] + 14, 64 * (1 - seg(t, 3.2, 4.6) * 0.85), 10); // it gets smaller as he eats it
+    if (t >= 3.2 && t < 4.6) g += bone(MOUTH[0], MOUTH[1], 64 * (1 - seg(t, 3.2, 4.6) * 0.85), 10); // it gets smaller as he eats it
     // hearts: a new one every 0.45 s from 3.4 s on, each rises and fades over 1.6 s
     for (let k = 0; k < 10; k++) { const t0 = 3.4 + k * 0.45, q = seg(t, t0, t0 + 1.6); if (t < t0 || q >= 1) continue;
       g += heart(NX + NW * 0.30 + Math.sin(k * 2.1) * 60 + Math.sin(q * 6 + k) * 10, FEET - 330 - q * 220, 1.6 + (k % 3) * 0.3, q < 0.15 ? q / 0.15 : 1 - Math.max(0, q - 0.6) / 0.4); }
     // the cursor: in from the right, to the button, click, then drifts away
-    const cx = t < 0.4 ? W + 40 : t < 2.3 ? (W - 160) + (BTN[0] + 10 - (W - 160)) * eio(seg(t, 0.4, 2.3)) : t < 3.2 ? BTN[0] + 10 : BTN[0] + 10 + 300 * eio(seg(t, 3.2, 4.4));
-    const cy = t < 0.4 ? 560 : t < 2.3 ? 560 + (BTN[1] + 4 - 560) * eio(seg(t, 0.4, 2.3)) : t < 3.2 ? BTN[1] + 4 : BTN[1] + 4 - 120 * eio(seg(t, 3.2, 4.4));
+    const cx = t < 0.4 ? W + 40 : t < 2.3 ? (W - 160) + (BTN[0] + 10 - (W - 160)) * eio(seg(t, 0.4, 2.3)) : t < 3.2 ? BTN[0] + 10 : BTN[0] + 10 + 220 * eio(seg(t, 3.2, 4.4));
+    const cy = t < 0.4 ? 560 : t < 2.3 ? 560 + (BTN[1] + 4 - 560) * eio(seg(t, 0.4, 2.3)) : t < 3.2 ? BTN[1] + 4 : BTN[1] + 4 + 70 * eio(seg(t, 3.2, 4.4));
     g += cursor(cx, cy, click);
     await p.evaluate((sv) => { document.getElementById('s').innerHTML = sv; }, `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${g}</svg>`);
     await p.screenshot({ path: path.join(WORK, 'f', `f${String(fi).padStart(4, '0')}.png`), omitBackground: true });
