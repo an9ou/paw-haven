@@ -182,6 +182,7 @@ async function main() {
   if (WHAT === 'youtube' || WHAT === 'all') await require('./make_youtube.js')({ render, browser, helpers });
   if (WHAT === 'reelcover' || WHAT === 'all') await require('./make_reelcover.js')({ render, browser, helpers });
   if (WHAT === 'faces' || WHAT === 'all') await require('./make_faces.js')({ render, browser, helpers });
+  if (WHAT === 'threads' || WHAT === 'all') await require('./make_threads.js')({ render, browser, helpers });
   if (['profile', 'covers', 'grid', 'all'].includes(WHAT)) await require('./make_extra.js')({ render, helpers, what: WHAT });
   await browser.close();
 }
