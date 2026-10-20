@@ -19,8 +19,7 @@ module.exports = async function ({ render, browser, helpers: h }) {
   // Noodle in the middle of the bottom row, so the note can sit right under him
   const order = keys.filter((k) => k !== 'dachs'); order.splice(31, 0, 'dachs');
   let g = paper(W, H) + frame(W, H, 77)
-    + lines(['I made a cozy game with 35 dogs.', 'I drew every one of them myself.'], 540, 180, 70, 84, { rot: -1 })
-    + swash(540, 278, 620, 40, -1, '#FFE3A1', 0.55);
+    + lines(['I made a cozy game with 35 dogs.', 'I drew every one of them myself.'], 540, 180, 70, 84, { rot: -1 });
   const COLS = 7, CW = 140, X0 = (W - COLS * CW) / 2, Y0 = 350, RH = 150;
   for (let i = 0; i < order.length; i++) {
     const k = order[i], [pose, expr] = LOOK[k] || ['sit'], c = i % COLS, r = Math.floor(i / COLS), cx = X0 + c * CW + CW / 2, bottom = Y0 + r * RH + 130;
