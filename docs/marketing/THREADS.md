@@ -2,15 +2,15 @@
 
 Threads is text-first and conversational: a short, honest line from the dev, one picture or video, and a question people want to answer. Keep the link in the first reply (posts with links in the main text tend to get shown less), and use one topic tag. Limit: 500 characters per post.
 
-## 1. "I drew every one of them myself" (picture)
+## 1. "I made a cozy game with 35 dogs" (picture)
 
 File: `brand/threads/threads-35-dogs.jpg` (1080 x 1350, 4:5). All 35 dogs in a line-up, each pulling one of the v2.13 faces, Noodle pointed out ("this is Noodle. he drew himself."). Remake: `NODE_PATH=/opt/node-tools/node_modules node brand/instagram/launch/make.js <shots> threads` (`make_threads.js`).
 
 **When:** a weekday at 9:00 JST (8 pm the evening before in New York, 1 am in London), so it lands in the US evening scroll. Reply to every comment in the first hour.
 
-**Post** (about 280 characters)
+**Post** (about 240 characters)
 ```
-I made a cozy browser game with 35 dogs, and I drew every single one of them myself.
+I made a cozy browser game with 35 crayon dogs.
 
 They have their own voices, they make faces now (14 of them, the blep is my favourite), and they walk around a little pencil town with Mt. Fuji in the back.
 

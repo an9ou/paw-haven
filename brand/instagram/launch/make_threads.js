@@ -1,4 +1,4 @@
-// Threads post picture (1080 x 1350, 4:5, what Threads shows best): "I made a cozy game with 35 dogs. I drew every one of them myself."
+// Threads post picture (1080 x 1350, 4:5, what Threads shows best): "I made a cozy game with 35 dogs."
 // over a line-up of all 35 dogs, Noodle pointed out. The dogs are the real art (PawArt.dog). Output: brand/threads/threads-35-dogs.jpg.
 const fs = require('fs'), path = require('path');
 module.exports = async function ({ render, browser, helpers: h }) {
@@ -19,7 +19,7 @@ module.exports = async function ({ render, browser, helpers: h }) {
   // Noodle in the middle of the bottom row, so the note can sit right under him
   const order = keys.filter((k) => k !== 'dachs'); order.splice(31, 0, 'dachs');
   let g = paper(W, H) + frame(W, H, 77)
-    + lines(['I made a cozy game with 35 dogs.', 'I drew every one of them myself.'], 540, 180, 70, 84, { rot: -1 });
+    + txt('I made a cozy game with 35 dogs.', 540, 230, 76, { rot: -1 });
   const COLS = 7, CW = 140, X0 = (W - COLS * CW) / 2, Y0 = 350, RH = 150;
   for (let i = 0; i < order.length; i++) {
     const k = order[i], [pose, expr] = LOOK[k] || ['sit'], c = i % COLS, r = Math.floor(i / COLS), cx = X0 + c * CW + CW / 2, bottom = Y0 + r * RH + 130;
