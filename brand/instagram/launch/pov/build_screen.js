@@ -39,19 +39,21 @@ const button = (glow) => `<g><circle cx="${BTN[0]}" cy="${BTN[1]}" r="48" fill="
   await p.setContent(`<!doctype html><meta charset="utf-8"><style>html,body{margin:0;background:transparent}svg{display:block}.hide{display:none}</style><div id="s"></div>`);
   const bboxOf = (sv) => p.evaluate((sv) => { const d = document.createElement('div'); d.innerHTML = sv; document.body.appendChild(d); const e = d.querySelector('svg'); e.setAttribute('width', 240); e.setAttribute('height', 200); const r = e.getBBox(); d.remove(); return [r.x, r.y, r.width, r.height]; }, sv);
   const BB = await bboxOf(PA.dog('dachs', { pose: 'happy', anim: false, facing: 'right' }));
-  const MOUTH = [NX + NW * 0.2, FEET - 34]; // where the bone lands: his mouth in the eat pose (head down, facing right)
+  // where the bone lands: his mouth in the happy pose (canvas point ~220,132 of the 240 x 200 art, facing right), mapped like dogSvg does
+  const K = NW / BB[2], MOUTH = [NX - NW / 2 + (219 - BB[0]) * K, FEET - BB[3] * K + (133 - BB[1]) * K];
   const NF = T * FPS;
   for (let fi = 0; fi < NF; fi++) {
     const t = fi / FPS, wag = Math.floor(t / 0.18) % 2;
     // 0-2.4 wag and the cursor glides to the button; 2.4 click; 2.45-3.2 the bone flies; 3.2-6.4 munching + hearts; 6.4-8 heart eyes, wagging
     let pose = 'happy', expr = undefined, fr = wag;
-    if (t >= 3.2 && t < 6.4) { pose = 'eat'; fr = Math.floor(t / 0.22) % 2; }
+    // he eats it with his head up (the eat pose is made for a bowl in front of him, and there is no bowl here): his yum face, bone in his mouth
+    if (t >= 3.2 && t < 6.4) { pose = 'happy'; expr = 'yum'; }
     if (t >= 6.4) { pose = 'happy'; expr = 'hearts'; }
     let g = chrome + scene + dogSvg(pose, expr, fr, BB);
     const click = t >= 2.4 && t < 2.6, glow = t >= 2.4 && t < 2.9 ? seg(t, 2.4, 2.9) : 0;
     g += button(glow);
     if (t >= 2.45 && t < 3.25) { const q = eio(seg(t, 2.45, 3.2)), x = BTN[0] + (MOUTH[0] - BTN[0]) * q, y = BTN[1] + (MOUTH[1] - BTN[1]) * q - Math.sin(Math.PI * q) * 260; g += bone(x, y, 76, -20 + 380 * q); }
-    if (t >= 3.2 && t < 4.6) g += bone(MOUTH[0], MOUTH[1], 64 * (1 - seg(t, 3.2, 4.6) * 0.85), 10); // it gets smaller as he eats it
+    if (t >= 3.2 && t < 5.2) { const chew = Math.floor(t / 0.16) % 2; g += bone(MOUTH[0] + 6, MOUTH[1] + (chew ? 5 : 0), 60 * (1 - seg(t, 3.2, 5.2) * 0.8), chew ? -4 : 6); } // it gets smaller as he eats it
     // hearts: a new one every 0.45 s from 3.4 s on, each rises and fades over 1.6 s
     for (let k = 0; k < 10; k++) { const t0 = 3.4 + k * 0.45, q = seg(t, t0, t0 + 1.6); if (t < t0 || q >= 1) continue;
       g += heart(NX + NW * 0.30 + Math.sin(k * 2.1) * 60 + Math.sin(q * 6 + k) * 10, FEET - 330 - q * 220, 1.6 + (k % 3) * 0.3, q < 0.15 ? q / 0.15 : 1 - Math.max(0, q - 0.6) / 0.4); }
