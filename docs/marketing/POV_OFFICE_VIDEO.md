@@ -7,6 +7,14 @@ A Claude session cannot make photo-real video, and an AI video tool cannot draw 
 1. **The office shot** from an AI video tool (Sora, Veo, Kling, Runway or similar), with a **plain bright screen** on the laptop.
 2. **The screen insert**, made here from the game's real art: `brand/instagram/launch/pov/noodle-browser-insert.mp4` (1280 x 800, 16:10, 60 fps, 8 s, no sound). Noodle wags in the game's yard, the cursor glides to the bone button and clicks, the bone flies to him, he munches it with his head up and his v2.13 "yum" face (the game's eat pose is made for a food bowl, so it is not used here), hearts float up, then heart eyes. The address bar shows `an9ou.itch.io/doodle-doggo`, where the game is played (doodledoggo.app is the introduction site and has no feeding; `URL=doodledoggo.app` remakes it with that address). Remake: `NODE_PATH=/opt/node-tools/node_modules node brand/instagram/launch/pov/build_screen.js <workdir>`.
 
+## The finished video (20 Oct 2026)
+
+`brand/instagram/launch/pov/doodle-doggo-office-pov.mp4`: 720 x 1280, 30 fps, 11.8 s. The owner's Kling AI office shot (7 s, typing, then a push-in on the laptop screen) with the screen insert pinned onto the screen: `merge_pov.py` tracks the screen frame by frame (OpenCV ORB features and homographies, smoothed), places the browser window where the push-in ends (centred, lower half) and maps it back through the shot, matches it to the filmed screen (softness, contrast, a cool tint, glare, a faint drop shadow), then holds the last frame with a slow 7 % push-in while Noodle gets the bone, chews and the hearts float up. Sound: the clip's keyboard, a soft pop at the click, the game's own music, levelled to -16 LUFS.
+
+Note: the source still carries the "KlingAI 3.0" mark in the bottom-right corner.
+
+Remake: `pip install opencv-python-headless`, then `python3 brand/instagram/launch/pov/merge_pov.py <office.mp4> <insert frames dir> <workdir> <out.mp4> [music.wav]` (the insert frames come from `build_screen.js`, kept in its workdir under `f/`).
+
 ## 1. Prompt for the AI video tool
 
 ```
