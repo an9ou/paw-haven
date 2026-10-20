@@ -53,7 +53,7 @@ const button = (glow) => `<g><circle cx="${BTN[0]}" cy="${BTN[1]}" r="48" fill="
     const click = t >= 2.4 && t < 2.6, glow = t >= 2.4 && t < 2.9 ? seg(t, 2.4, 2.9) : 0;
     g += button(glow);
     if (t >= 2.45 && t < 3.25) { const q = eio(seg(t, 2.45, 3.2)), x = BTN[0] + (MOUTH[0] - BTN[0]) * q, y = BTN[1] + (MOUTH[1] - BTN[1]) * q - Math.sin(Math.PI * q) * 260; g += bone(x, y, 76, -20 + 380 * q); }
-    if (t >= 3.2 && t < 5.2) { const chew = Math.floor(t / 0.16) % 2; g += bone(MOUTH[0] + 6, MOUTH[1] + (chew ? 5 : 0), 60 * (1 - seg(t, 3.2, 5.2) * 0.8), chew ? -4 : 6); } // it gets smaller as he eats it
+    if (t >= 3.2 && t < 5.2) { const chew = Math.floor(t / 0.16) % 2; g += bone(MOUTH[0] + 4, MOUTH[1] - 8 + (chew ? 5 : 0), 78 * (1 - seg(t, 3.2, 5.2) * 0.75), chew ? -4 : 6); } // it gets smaller as he eats it
     // hearts: a new one every 0.45 s from 3.4 s on, each rises and fades over 1.6 s
     for (let k = 0; k < 10; k++) { const t0 = 3.4 + k * 0.45, q = seg(t, t0, t0 + 1.6); if (t < t0 || q >= 1) continue;
       g += heart(NX + NW * 0.30 + Math.sin(k * 2.1) * 60 + Math.sin(q * 6 + k) * 10, FEET - 330 - q * 220, 1.6 + (k % 3) * 0.3, q < 0.15 ? q / 0.15 : 1 - Math.max(0, q - 0.6) / 0.4); }
