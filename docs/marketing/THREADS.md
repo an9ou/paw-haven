@@ -8,11 +8,9 @@ File: `brand/threads/threads-35-dogs.jpg` (1080 x 1350, 4:5). All 35 dogs in a l
 
 **When:** a weekday at 9:00 JST (8 pm the evening before in New York, 1 am in London), so it lands in the US evening scroll. Reply to every comment in the first hour.
 
-**Post** (about 330 characters)
+**Post** (about 280 characters)
 ```
 I made a cozy browser game with 35 dogs, and I drew every single one of them myself.
-
-You can tell.
 
 They have their own voices, they make faces now (14 of them, the blep is my favourite), and they walk around a little pencil town with Mt. Fuji in the back.
 
