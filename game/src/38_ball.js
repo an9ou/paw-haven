@@ -97,17 +97,16 @@ function blSpeed(d) {
 function blBallSVG() {
   const c = BL.cfg, a = c.prop[0] === 'prop' ? art('prop', c.prop[1]) : art('item', c.prop[1]);
   return `<defs><radialGradient id="blGlowG"><stop offset="0" stop-color="#E6FFAA" stop-opacity=".95"/><stop offset="1" stop-color="#A0FF78" stop-opacity="0"/></radialGradient></defs>
-    <ellipse id="blSh" rx="24" ry="7" fill="#3a2a1c" opacity=".26"/><circle id="blRing" class="bl-ring" r="50" fill="none" stroke="#F28FA5" stroke-width="4" stroke-dasharray="7 6"/>
+    <circle id="blRing" class="bl-ring" r="50" fill="none" stroke="#F28FA5" stroke-width="4" stroke-dasharray="7 6"/>
     <g id="blBall" class="bl-ball">${c.glow && isNight() ? '<circle id="blHalo" r="70" fill="url(#blGlowG)"/>' : ''}<g id="blSpin">${place(a, -30, -30, 60, 60)}</g></g>`;
 }
 function blDraw() {
   const L = $('#ballLayer'); if (!L || !BL) return;
   if (!$('#blBall', L)) { L.innerHTML = blBallSVG(); BL.drawn = ''; } // the scene was redrawn under us
   const b = BL.ball, sc = blScale(b.gy), sy = b.gy - b.z, rest = BL.ph === 'rest' && b.state !== 'held';
-  const ball = $('#blBall', L), spin = $('#blSpin', L), sh = $('#blSh', L), ring = $('#blRing', L);
+  const ball = $('#blBall', L), spin = $('#blSpin', L), ring = $('#blRing', L);
   ball.setAttribute('transform', `translate(${b.x.toFixed(1)} ${(sy - BL_R * sc * 0.4).toFixed(1)}) scale(${sc.toFixed(3)})`);
   spin.setAttribute('transform', `rotate(${b.rot.toFixed(1)})`);
-  sh.setAttribute('transform', `translate(${b.x.toFixed(1)} ${(b.gy + 2).toFixed(1)}) scale(${(sc * (1 - Math.min(0.5, b.z / 700))).toFixed(3)})`);
   ring.setAttribute('transform', `translate(${b.x.toFixed(1)} ${(sy - BL_R * sc * 0.4).toFixed(1)}) scale(${sc.toFixed(3)})`); ring.style.display = rest ? '' : 'none';
 }
 function blHitR(svg) { // 32 px at least, whatever the zoom
@@ -443,7 +442,7 @@ function blStart(toy) {
   BL.ball.x = BL.hx; BL.ball.gy = BL.hy;
   try { rmPause('ball'); } catch (e) { /* none */ }
   busy = true; tempPose = null; setChrome(true, false);
-  document.documentElement.classList.add('bl-on'); view.addEventListener('keydown', blKeyBlock, true); // the scene props (notice board, stalls, mailbox, clipboard...) sleep while playing (40_ball.css); the place buttons still leave
+  document.documentElement.classList.add('bl-on'); view.addEventListener('keydown', blKeyBlock, true); // the scene props (notice board, stalls, mailbox, clipboard...) sleep while playing (40_ball.css); the place buttons hide (owner: they sat where the ball is thrown); Done leaves
   dock.innerHTML = blTrayHTML(); $('#blDone').onclick = () => { SFX.boop(700); blStop(); }; blTrayUpdate();
   $('#ballLayer').innerHTML = blBallSVG(); blBind(svg); blDraw();
   cur.key = (e) => { const ok = e.key === ' ' || (e.key === 'Enter' && document.activeElement === document.body); if (!ok || e.repeat || !BL || BL.ph !== 'rest' || BL.grab) return; e.preventDefault(); blEasyThrow(); };
