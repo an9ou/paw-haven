@@ -11,7 +11,6 @@
     <h1 class="center" style="font-size:44px">{{t reset.h1}}</h1>
     <div id="rsMoved">
       <p class="center" style="font-size:22px" role="status">{{t reset.text}}</p>
-      <p class="cta"><a class="play" href="https://an9ou.itch.io/doodle-doggo">{{t footer.play_itch}}</a></p>
     </div>
   </div>
   <footer class="foot"><a href="{{u /}}">{{t footer.home}}</a> · <a href="{{u /privacy}}">{{t footer.privacy}}</a></footer>

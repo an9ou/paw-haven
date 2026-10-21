@@ -26,7 +26,6 @@
 <!-- /dogs:profiles -->
 
     <div class="cta">
-      <a class="play" id="play" href="https://an9ou.itch.io/doodle-doggo">{{t common.play}}</a>
       <p class="small">{{t dogs.cta_line}} <a class="back" href="{{u /}}">{{t dogs.back}}</a></p>
     </div>
   </div>

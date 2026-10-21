@@ -19,9 +19,6 @@
 
 {{raw places}}
 
-    <div class="cta">
-      <a class="play" href="https://an9ou.itch.io/doodle-doggo">{{t common.play}}</a>
-    </div>
   </div>
   <footer class="foot">
     <a href="https://www.instagram.com/doodledoggo.app/" id="insta" rel="noopener">{{t footer.instagram}}</a> · <a href="mailto:contact@doodledoggo.app" id="contact" class="contact">{{t footer.contact}}</a> · <a href="{{u /privacy}}">{{t footer.privacy}}</a> ·

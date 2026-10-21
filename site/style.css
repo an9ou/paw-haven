@@ -448,7 +448,6 @@ dialog.dogpop .prof>*,dialog.dogpop .prof .txt>*{max-width:none}
 .sheet>.sitehead.stuck{box-shadow:0 4px 0 rgba(91,61,50,.12)}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:45;background:var(--paper)}
 @media (max-width:700px){ .sheet>.sitehead{margin:0 -14px 14px;padding:8px 14px 10px} }
-@media (max-width:860px){ .sheet>.sitehead.hide{transform:translateY(calc(-100% - 6px))} }
 @media (prefers-reduced-motion:reduce){ .sheet>.sitehead{transition:none} }
 
 .gamebox{margin:0 0 22px}
@@ -495,3 +494,5 @@ html.gamefs,html.gamefs body{overflow:hidden}
   .sheet>.sitehead.stuck .sitenav{gap:4px}
   .sheet>.sitehead.stuck .sitenav a{padding:3px 6px;font-size:min(18px,4.4vw);min-width:0}
 }
+/* owner: on computers the Dogs page shows 4 dogs a row, the cards a little smaller (the grid is 90% of the sheet); phones keep 3 a row */
+@media (min-width:861px){ .dognav{grid-template-columns:repeat(4,minmax(0,1fr))!important;width:90%;margin-left:auto;margin-right:auto} .dognav a{font-size:24px} }

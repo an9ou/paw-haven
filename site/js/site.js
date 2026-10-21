@@ -338,23 +338,11 @@
   if (location.hash) open(location.hash.slice(1));
 })();
 
-/* owner (site v3.2): the menu sticks to the top; on phones it slides away while you scroll down and comes back when you scroll up */
+/* owner (site v3.2): the menu sticks to the top on every screen (on phones too: it no longer slides away while scrolling); once stuck it gets the small logo (.stuck) */
 (function () {
-  var h = document.getElementById('sitehead'); if (!h) return;
-  var mq = window.matchMedia ? matchMedia('(max-width: 860px)') : { matches: false };
-  var lastY = window.scrollY, ticking = false;
-  function upd() {
-    ticking = false;
-    var y = window.scrollY, dy = y - lastY, stuck = h.getBoundingClientRect().top <= 1 && y > 0;
-    h.classList.toggle('stuck', stuck);
-    var langs = document.getElementById('langs');
-    if (!mq.matches || !stuck || (langs && langs.open) || y < 40) h.classList.remove('hide');
-    else if (dy > 6) h.classList.add('hide');
-    else if (dy < -6) h.classList.remove('hide');
-    if (Math.abs(dy) > 6) lastY = y;
-  }
+  var h = document.getElementById('sitehead'), ticking = false; if (!h) return;
+  function upd() { ticking = false; h.classList.toggle('stuck', h.getBoundingClientRect().top <= 1 && window.scrollY > 0); }
   window.addEventListener('scroll', function () { if (!ticking) { ticking = true; requestAnimationFrame(upd); } }, { passive: true });
-  h.addEventListener('focusin', function () { h.classList.remove('hide'); });
   upd();
 })();
 
