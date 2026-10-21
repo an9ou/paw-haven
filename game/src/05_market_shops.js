@@ -15,7 +15,9 @@ const fitPA = () => (portrait() ? 'xMidYMid slice' : 'xMidYMid meet');
 function hotify(svg, sel, attr, onPick, label) {
   svg.querySelectorAll(sel).forEach((g) => {
     const k = g.getAttribute(attr); g.classList.add('hot'); g.setAttribute('tabindex', '0'); g.setAttribute('role', 'button'); g.setAttribute('aria-label', label(k));
-    g.addEventListener('click', () => onPick(k)); g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPick(k); } });
+    // v2.13.3 (owner): while ball play is on, a shop or prop opens nothing, whatever part of it takes the tap
+    const pick = () => { if (typeof blOn === 'function' && blOn()) return; onPick(k); };
+    g.addEventListener('click', pick); g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
   });
 }
 // v2.8 review 3: with the Japan scenery the desktop street sits 30 units higher (the crop used to start at the roof cornices), so a strip of sky

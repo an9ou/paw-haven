@@ -24,5 +24,5 @@
    one class (:is/:where) so any later rule that places or restyles a button still wins. */
 :is(.btn):where(.yes,.go,.red){background:none;isolation:isolate}
 :where(.btn.yes,.btn.go,.btn.red):not([style*="position"]){position:relative}
-:is(.btn):where(.yes,.go,.red)::before{content:"";position:absolute;inset:3px 3px 4px 4px;z-index:-1;border-radius:7%/24%;background:var(--hatch),linear-gradient(var(--wash),var(--wash));pointer-events:none}
+:is(.btn):where(.yes,.go,.red)::before{content:"";position:absolute;inset:3px max(3px,2.2%) 4px max(4px,2.2%);z-index:-1;border-radius:7%/24%;background:var(--hatch),linear-gradient(var(--wash),var(--wash));pointer-events:none}
 :is(.btn):where(.yes,.go,.red)::after{content:"";position:absolute;inset:0;z-index:-1;background:var(--fr) 0 0/100% 100% no-repeat;pointer-events:none}
