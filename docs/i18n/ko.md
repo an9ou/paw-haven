@@ -24,7 +24,7 @@ Why: 해요체 is the friendly polite style of Korean games for all ages; 합니
 
 - Address: avoid 당신 (cold or even rude). Drop the subject, or use the dog's name: 「모찌가 기뻐해요.」 In dog lines the player is 너 only when needed.
 - Buttons: noun or noun + 하기 form, no 요: 밥 주기, 산책, 놀기, 입양하기, 뒤로, 닫기, 확인. Confirm buttons: 네 / 아니요.
-- Names + particles: the particle depends on the final consonant (모찌가 / 쿠마가 vs 구름이 / 땅콩이). Messages with `{name}` must not hard-code 이/가, 을/를, 은/는, 와/과. Use a `select` on a name flag later, or write lines that avoid the particle (「{name}, 신났어요!」). Flag for the SPEC lane.
+- Names + particles: the particle depends on the final consonant (모찌가 / 쿠마가 vs 구름이 / 땅콩이). Messages with `{name}` must not hard-code 이/가, 을/를, 은/는, 와/과. Use the josa format `{name, josa, 이/가}` (V214.md 3.2), or write lines that avoid the particle (「{name}, 신났어요!」).
 
 ## 3. UI conventions
 
@@ -391,7 +391,7 @@ Never hit (the `allow` list, also used as negative tests): 「견종」 「품�
 
 ## 11. TODO(native)
 
-- Particles after `{name}` (이/가, 을/를): needs a message-format solution; see section 2.
+- Particles after vars: solved with {name, josa, 이/가} (V214 3.2), used in every message.
 - 놀이 데이트 for "playdate": natural for kids?
 - 멍축 사무소, 멍케이크, 퍼푸치노 카페: check the puns.
 - 친밀도 vs 유대감 for "Bond".
@@ -403,8 +403,6 @@ Never hit (the `allow` list, also used as negative tests): 「견종」 「품�
 - Westie quote avoids 얬 (not in Jua): 「오늘 아침엔 새하얀 강아지였어.」
 - TODO(native): Kai Ken as 카이견 (soon.line); Japanese Chin as 재패니즈 친.
 - TODO(native): dog trait lines and quotes (반말), e.g. 깐깐함 (judgy), 공놀이 광, 수달 꼬리, 머리 묶음 (top-knot).
-- TODO(native): love items (연어 파테, 봉제 뼈다귀, 퍼즐 급식기, 삑삑 오리) must match the game's item names once game/i18n/ko.json exists.
-- TODO(native): “이 카드 숨기기” (privacy.cards.off) must match the game's "Hide this card" button.
 - TODO(native): privacy page register and the English-prevails sentence in privacy.updated.
 
 ## Game
@@ -432,7 +430,6 @@ TODO(native):
 - yard.a_shell_with_a_smaller: "Shell-ception" as 조개셉션 (Inception pun).
 - yard.the_crowd_you_goes_wild: 관중(나)이 열광해! (the player speaking to the dog in 반말).
 - data.hm_decor.garden_bench.n / data.hm_decor.bird_bath.story / missions.ready_space: English "garden" here is the Home Yard, so 마당.
-- mod.toys.bond_moment: 찐친 모먼트! is slang, and Bond is 친밀도 elsewhere. OK for children?
 - journal.title_master_breeder: "Master Breeder" as 털색 마스터 (브리더 is banned). journal.title_great_granddog: 고손주 강아지.
 - Meters: the four care meters and the Sparkle Meter are 게이지 (반짝이 게이지); the Nose-o-meter is 킁킁미터.
 - adopt.the_shelter_calls_html / shelter.name_lead_html: "…부르는 이름은 <b>{name, josa, 이에요/예요}</b>." (there is no 이라고/라고 josa pair).
