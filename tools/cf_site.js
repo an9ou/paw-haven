@@ -21,6 +21,9 @@ const root = path.join(__dirname, '..'), site = path.join(root, 'site'), brand =
 const TYPES = { html: 'text/html; charset=utf-8', css: 'text/css; charset=utf-8', svg: 'image/svg+xml', png: 'image/png', webp: 'image/webp', jpg: 'image/jpeg', woff2: 'font/woff2', webmanifest: 'application/manifest+json', txt: 'text/plain; charset=utf-8', js: 'text/javascript; charset=utf-8' };
 const TEXT = new Set(['html', 'css', 'svg', 'webmanifest', 'txt', 'js']);
 const PSEUDO = process.argv.includes('--pseudo') || !!process.env.SITE_PSEUDO;
+// SITE_EN_ONLY=1: English only (no language menu, hreflang or other-language pages), e.g. to put the site live before the translations are final
+const EN_ONLY = !!process.env.SITE_EN_ONLY;
+const LIVE_LANGS = EN_ONLY ? I18N.LANGS.filter((l) => l.code === 'en') : I18N.LANGS;
 const ALL = I18N.LANGS.concat(I18N.PSEUDO), DIRS = new Set(ALL.map((l) => l.dir).filter(Boolean));
 // the side Workers: a folder of site/ served by its own Worker on a route of the zone (a route runs before the Custom Domain), so its files don't count
 // against the main Worker. mode: 'none' (no files: no Worker), 'split' (the default) or 'inline' (env[name] === 'inline': served by the main Worker)
@@ -34,7 +37,7 @@ const SIDE = [
 ];
 SIDE.forEach((x) => {
   x.files = fs.existsSync(x.dir) ? fs.readdirSync(x.dir).filter(x.keep).sort() : [];
-  x.mod = !x.files.some(x.real) ? 'none' : (process.env[x.env] === 'inline' ? 'inline' : 'split');
+  x.mod = !x.files.some(x.real) || (EN_ONLY && x.key === 'fonts') ? 'none' : (process.env[x.env] === 'inline' ? 'inline' : 'split'); // English only: no other-script fonts
 });
 // url path -> source file (or generated text)
 const files = {}, gen = {};
@@ -56,20 +59,31 @@ UNUSED.forEach((u) => { delete files[u]; });
 ['favicon.svg', 'icon-32.png', 'icon-180.png', 'icon-192.png', 'icon-512.png', 'icon-512-maskable.png', 'site.webmanifest', 'logo-1200x630.png', 'doodle-doggo-logo.svg', 'doodle-doggo-icon.svg']
   .forEach((f) => { files['/' + f] = path.join(brand, f); });
 // every page of every language, from the templates
-const built = I18N.build({ pseudo: PSEUDO });
+const built = I18N.build({ pseudo: PSEUDO && !EN_ONLY, legacy: EN_ONLY });
 for (const [rel, html] of Object.entries(built.pages)) {
   if (!rel.includes('/')) { const p = path.join(site, rel); if (!fs.existsSync(p) || fs.readFileSync(p, 'utf8') !== html) console.warn(`warning: site/${rel} is out of date with site/tpl + site/i18n (run node tools/site_i18n.js); serving the generated page`); }
   delete files['/' + rel]; gen['/' + rel] = html;
 }
+// cache busting: a browser that kept last version's /style.css or /js/site.js for a day showed the new pages unstyled (owner's iPhone, site v3),
+// so the pages ask for /style.css?v=<hash> and /js/site.js?v=<hash>; the Worker serves by path, the query only changes the cache key
+const VER = (f) => crypto.createHash('sha1').update(fs.readFileSync(path.join(site, f))).digest('hex').slice(0, 8);
+const CSSV = VER('style.css'), JSV = VER(path.join('js', 'site.js'));
+for (const u of Object.keys(gen)) gen[u] = gen[u].replace(/href="\/style\.css"/g, `href="/style.css?v=${CSSV}"`).replace(/src="\/js\/site\.js"/g, `src="/js/site.js?v=${JSV}"`);
 const PRETTY = {}, LANG_OF = { '': 'en' };
-for (const L of I18N.LANGS.concat(PSEUDO ? I18N.PSEUDO : [])) {
+for (const L of LIVE_LANGS.concat(PSEUDO && !EN_ONLY ? I18N.PSEUDO : [])) {
   const pre = L.dir ? '/' + L.dir : '';
   LANG_OF[pre] = L.code;
   I18N.PAGES.forEach((pg) => { PRETTY[pg.path === '/' ? pre || '/' : pre + pg.path] = pre + '/' + pg.id + '.html'; });
 }
+// owner (site v3.2): the game plays on the home page, in an iframe of /play/. It is the itch.io build (node tools/itch.js: the dev button and
+// panel stripped) of the released game, so build it from main, not from a branch with unreleased work. SITE_GAME=<folder> picks another build.
+const GAME = process.env.SITE_GAME || path.join(root, 'dist', 'itch');
+if (!fs.existsSync(path.join(GAME, 'index.html'))) { console.error(`no game build in ${GAME}: run node tools/itch.js on main first (or set SITE_GAME)`); process.exit(1); }
+fs.readdirSync(GAME).filter((f) => TYPES[f.split('.').pop()]).forEach((f) => { files['/play/' + f] = path.join(GAME, f); });
+PRETTY['/play'] = '/play/index.html';
 // the friendly 404 in each language
 const NOTFOUND = {};
-for (const L of I18N.LANGS.concat(PSEUDO ? I18N.PSEUDO : [])) {
+for (const L of LIVE_LANGS.concat(PSEUDO && !EN_ONLY ? I18N.PSEUDO : [])) {
   // the language's font subset too (same ?v= cache key as the pages), and a <title>
   const fcss = path.join(site, 'fonts', 'i18n', (L.pseudo === 'cjk' ? 'ja' : L.code) + '.css'), fbody = L.code !== 'en' && fs.existsSync(fcss) ? fs.readFileSync(fcss) : null;
   const flink = fbody && /@font-face/.test(fbody) ? `<link rel="stylesheet" href="/fonts/i18n/${path.basename(fcss)}?v=${crypto.createHash('sha1').update(fbody).digest('hex').slice(0, 8)}">` : '';
@@ -78,8 +92,9 @@ for (const L of I18N.LANGS.concat(PSEUDO ? I18N.PSEUDO : [])) {
 // the side Workers' files, when they stay in the main Worker
 SIDE.filter((x) => x.mod === 'inline').forEach((x) => x.files.forEach((f) => { files[x.url + f] = path.join(x.dir, f); }));
 
-// site v3: frame-src https://itch.io for the itch.io widget on the home page (default-src 'self' would block the frame)
-const CSP = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self'; font-src 'self'; connect-src https://pawhaven-api.ansonyuen0108.workers.dev; frame-src https://itch.io; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
+const CSP = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self'; font-src 'self'; frame-src 'self'; connect-src https://pawhaven-api.ansonyuen0108.workers.dev; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
+// the game (/play/) has its own: Google Fonts, data:/blob: pictures (photos, postcards), the cloud save API, and only the site may frame it
+const GAME_CSP = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' data: https://fonts.gstatic.com; media-src 'self' data: blob:; connect-src 'self' https://pawhaven-api.ansonyuen0108.workers.dev; frame-ancestors 'self'; base-uri 'none'; form-action 'self'";
 const HEAD = (name) => `// Generated by tools/cf_site.js from site/ and brand/. Do not edit: run node tools/cf_site.js (or bash tools/cf_pages_deploy.sh). ${name}`;
 function emit(dir, entries, workerSrc) { // entries: [url, source path or {text}] -> modules + parts.txt; returns the gzipped size
   fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });
@@ -106,7 +121,7 @@ const PRETTY = ${JSON.stringify(PRETTY)};
 const LANG_OF = ${JSON.stringify(LANG_OF)};
 const NOTFOUND = ${JSON.stringify(NOTFOUND)};
 const APEX = 'doodledoggo.app';
-const CSP = ${JSON.stringify(CSP)};
+const CSP = ${JSON.stringify(CSP)}, GAME_CSP = ${JSON.stringify(GAME_CSP)};
 export default {
   async fetch(req) {
     const url = new URL(req.url);
@@ -122,7 +137,7 @@ export default {
     if (lpre && p === lpre && url.pathname === p) return Response.redirect('https://' + url.host + p + '/' + url.search, 301); // /ja -> /ja/
     if (p.endsWith('.html') && FILES[p]) return Response.redirect('https://' + url.host + (p.endsWith('/index.html') ? p.slice(0, -10) : p.slice(0, -5)) + url.search, 301);
     const hit = FILES[PRETTY[p] || p];
-    const headers = { 'x-content-type-options': 'nosniff', 'referrer-policy': 'strict-origin-when-cross-origin', 'content-security-policy': CSP };
+    const headers = { 'x-content-type-options': 'nosniff', 'referrer-policy': 'strict-origin-when-cross-origin', 'content-security-policy': p === '/play' || p.startsWith('/play/') ? GAME_CSP : CSP };
     if (!hit) return new Response(FILES['/index.html'] ? NOTFOUND[lpre] : 'Not found',
       { status: 404, headers: Object.assign(headers, { 'content-type': 'text/html; charset=utf-8', 'content-language': LANG_OF[lpre] }) });
     const html = hit[1].startsWith('text/html');

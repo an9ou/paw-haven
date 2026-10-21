@@ -4,19 +4,6 @@
 // Plain JS, no libraries, no requests beyond the site's own art (site/img/art, made by tools/site_art.js from the game's art).
 // World units are the game's playroom: 1000 x 600, feet y 450..596 (SR_ROOM.floor in game/src/30_shelter.js).
 // prefers-reduced-motion: no animation at all (the static scene in the HTML stays, no falling leaves, the peeking dogs just sit there).
-// The itch.io box (home) is click-to-load: itch.io's widget brings its own cookies and analytics, so it only loads when the visitor taps
-// "Show the itch.io box" (its address is in the page's data-src, not here). Without JavaScript the plain link under it is the way in.
-(function () {
-  var box = document.getElementById('itchbox'), btn = document.getElementById('itchload');
-  if (!box || !btn) return;
-  btn.hidden = false;
-  btn.addEventListener('click', function () {
-    var f = document.createElement('iframe');
-    f.id = 'itch'; f.title = box.getAttribute('data-title') || ''; f.width = 552; f.height = 167; f.setAttribute('frameborder', '0');
-    f.src = box.getAttribute('data-src');
-    box.textContent = ''; box.appendChild(f); box.classList.add('on');
-  });
-})();
 (function () {
   'use strict';
   var motion = !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -322,7 +309,90 @@
     if (best) { balls.forEach(function (b) { if (b.holder === best) { b.holder = null; b.h = 0; b.rest = rnd(1, 2); } }); idle(best, 'happy', 1.8); heart(best); if (Math.random() < 0.5) bark(best); return; }
     throwOne(w[0], Math.max(Y0, w[1]));
   });
-  var btn = document.getElementById('toss');
-  if (btn) { btn.hidden = false; btn.addEventListener('click', function () { throwOne(); }); }
+  // owner: no button; now and then a ball flies in by itself (while the scene is on screen and running)
+  setInterval(function () { if (running && Math.random() < 0.6) throwOne(); }, 7000);
   window.__dd = { dogs: dogs, balls: balls, max: MAX_BALLS, throwOne: throwOne, tr: tr, running: function () { return running; }, stats: function () { return { catches: catches, steals: steals }; } };
+})();
+
+// owner (site v3.1): the Dogs page opens each profile in a pop-up; the long list below is hidden when this runs
+(function () {
+  var nav = document.querySelector('.dognav'); if (!nav || !window.HTMLDialogElement) return;
+  document.documentElement.classList.add('js');
+  var dlg = document.createElement('dialog'); dlg.className = 'dogpop';
+  var x = document.createElement('button'); x.type = 'button'; x.className = 'chip x'; x.textContent = '✕'; x.setAttribute('aria-label', nav.getAttribute('data-close') || 'Close');
+  x.addEventListener('click', function () { dlg.close(); });
+  dlg.addEventListener('click', function (e) { if (e.target === dlg) dlg.close(); }); // a tap outside the card
+  dlg.addEventListener('close', function () { if (location.hash) history.replaceState(null, '', location.pathname + location.search); });
+  document.body.appendChild(dlg);
+  function open(id) {
+    var src = document.getElementById(id); if (!src || !src.classList.contains('prof')) return false;
+    var c = src.cloneNode(true); c.removeAttribute('id'); c.querySelectorAll('[id]').forEach(function (n) { n.removeAttribute('id'); });
+    var h = c.querySelector('h2'); if (h) { h.id = 'pop-h'; dlg.setAttribute('aria-labelledby', 'pop-h'); }
+    dlg.textContent = ''; dlg.appendChild(x); dlg.appendChild(c);
+    if (!dlg.open) dlg.showModal(); dlg.scrollTop = 0; return true;
+  }
+  nav.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="#"]'); if (!a) return;
+    if (open(a.getAttribute('href').slice(1))) { e.preventDefault(); history.replaceState(null, '', '#' + a.getAttribute('href').slice(1)); }
+  });
+  if (location.hash) open(location.hash.slice(1));
+})();
+
+/* owner (site v3.2): the menu sticks to the top on every screen (on phones too: it no longer slides away while scrolling); once stuck it gets the small logo (.stuck) */
+(function () {
+  var h = document.getElementById('sitehead'), ticking = false; if (!h) return;
+  function upd() { ticking = false; h.classList.toggle('stuck', h.getBoundingClientRect().top <= 1 && window.scrollY > 0); }
+  window.addEventListener('scroll', function () { if (!ticking) { ticking = true; requestAnimationFrame(upd); } }, { passive: true });
+  upd();
+})();
+
+/* owner (site v3.2): the game plays right on the home page and starts by itself; the button makes it full screen.
+   Not full screen, the game is drawn at the size it is made for and shrunk to fit the box (owner: in a small box its buttons and
+   text looked too big next to the scene): 1280 px wide on computers, at least 390 px wide on phones. The browser maps taps and
+   clicks into the shrunk frame, so the game itself never knows. */
+(function () {
+  var box = document.getElementById('gameframe'), btn = document.getElementById('fsbtn'), x = document.getElementById('fsx'),
+      src = box && box.getAttribute('data-src'), f = null;
+  if (!box) return;
+  var root = document.documentElement, DESK = 1280, PHONE = 390;
+  function fsEl() { return document.fullscreenElement || document.webkitFullscreenElement; }
+  function isOn() { return !!fsEl() || box.classList.contains('fake'); }
+  function fit() {
+    if (!f) return;
+    var w = box.clientWidth, h = box.clientHeight;
+    if (isOn() || !w || !h) { f.style.width = f.style.height = f.style.transform = ''; return; }
+    var v = w > 820 ? DESK : Math.max(w, PHONE), k = w / v; // more than 820 px: the game's computer layout, else its phone layout
+    f.style.width = v + 'px'; f.style.height = (h / k) + 'px'; f.style.transform = k === 1 ? '' : 'scale(' + k + ')';
+  }
+  function load() {
+    f = document.createElement('iframe');
+    f.src = src; f.title = box.getAttribute('data-title') || 'Doodle Doggo'; f.setAttribute('allow', 'fullscreen; autoplay'); f.setAttribute('allowfullscreen', '');
+    box.insertBefore(f, box.firstChild);
+    fit();
+  }
+  function label() { btn.setAttribute('aria-pressed', isOn() ? 'true' : 'false'); fit(); }
+  function fake(on) {
+    box.classList.toggle('fake', on); root.classList.toggle('gamefs', on); label();
+    if (on) { try { x.focus(); } catch (e) {} }
+  }
+  function enter() {
+    var rq = box.requestFullscreen || box.webkitRequestFullscreen;
+    if (!rq) return fake(true);
+    try {
+      var p = rq.call(box);
+      if (p && p.catch) p.catch(function () { fake(true); });
+    } catch (e) { fake(true); }
+  }
+  function leave() {
+    if (box.classList.contains('fake')) return fake(false);
+    var ex = document.exitFullscreen || document.webkitExitFullscreen;
+    if (fsEl() && ex) { try { var p = ex.call(document); if (p && p.catch) p.catch(function () {}); } catch (e) {} }
+  }
+  load();
+  if (window.ResizeObserver) new ResizeObserver(fit).observe(box); else window.addEventListener('resize', fit);
+  btn.addEventListener('click', function () { isOn() ? leave() : enter(); });
+  x.addEventListener('click', leave);
+  document.addEventListener('fullscreenchange', label);
+  document.addEventListener('webkitfullscreenchange', label);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && box.classList.contains('fake')) fake(false); });
 })();

@@ -4,9 +4,9 @@
 <meta name="description" content="{{a privacy.description}}">
 <link rel="canonical" href="{{raw canonical}}">{{raw alternates}}{{raw langscript}}
 </head><body>
-<div class="deco" id="deco" aria-hidden="true"></div>{{raw header}}
+<div class="deco" id="deco" aria-hidden="true"></div>
 <main class="page">
-  <article class="sheet prose">
+  <article class="sheet prose">{{raw header}}
     <p><a class="back" href="{{u /}}">{{t privacy.back}}</a></p>
     <h1 style="font-size:46px">{{t privacy.h1}}</h1>
     <p class="small">{{t privacy.updated}}</p>
@@ -29,7 +29,7 @@
     <h2>{{t privacy.dont.title}}</h2>
     <ul>
       <li>{{t privacy.dont.ads}}</li>
-      <li>{{t privacy.dont.tracking}} {{t privacy.itch}}</li>
+      <li>{{t privacy.dont.tracking}}</li>
       <li>{{t privacy.dont.share}}</li>
       <li>{{t privacy.dont.email}}</li>
     </ul>
