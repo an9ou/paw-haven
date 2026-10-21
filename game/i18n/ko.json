@@ -268,7 +268,7 @@
  "core.unlock_house": "집: {house}",
  "core.unlock_route": "{dig, select, yes {산책 코스: {route}(땅파기 가능)} other {산책 코스: {route}}}",
  "core.unlock_shop": "가게: {item}",
- "core.unlock_signature": "필살 개인기: {trick}",
+ "core.unlock_signature": "주특기: {trick}",
  "core.unlock_trick": "개인기: {trick}",
  "core.yes": "네",
  "data.ac_ch.guest.s": "이 기기에서만 플레이해요. 계정은 언제든 만들 수 있어요.",
