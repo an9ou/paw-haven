@@ -1,7 +1,7 @@
 // "Your birthday month = your dog" Reel (1080 x 1920, 30 fps, 32.8 s): a title card, then one 2.2 s scene per month (a game place in the
 // right season, a dog in an outfit: it walks in, strikes a pose with one face, hops into a second pose and face), then a grid of all 12 and an end card (follow us, play at doodledoggo.app).
 // Real art only (PawArt.dog with outfit and expr, PawArt.scene), no game UI. No Japanese text (owner, 21 Oct 2026). Music: the game's own engine (mods/pawaudio.js).
-//   NODE_PATH=/opt/node-tools/node_modules node brand/instagram/launch/birthday_reel/build_birthday.js <workdir>   (ONLY=stills: key frames only)
+//   NODE_PATH=/opt/node-tools/node_modules node brand/instagram/launch/birthday_reel/build_birthday.js <workdir>   (ONLY=stills: key frames only; FRAMES=0-60 re-renders only the opening over a workdir copied from an earlier render)
 // Output next to this file: doodle-doggo-birthday-dog-reel.mp4, birthday-reel-cover.jpg.
 const fs = require('fs'), path = require('path'), vm = require('vm'), cp = require('child_process');
 const { chromium } = require('playwright');
@@ -151,7 +151,9 @@ const FEET = 1360, SCX = 540;
     await b.close(); console.log('stills done'); return;
   }
   const NF = Math.round(T * FPS);
-  for (let fi = 0; fi < NF; fi++) { await shot(page(frameAt(fi / FPS)), path.join(WORK, 'f', `f${String(fi).padStart(4, '0')}.png`)); if (fi % 150 === 0) console.log('frame', fi, '/', NF); }
+  // FRAMES=a-b re-renders only those frames (b excluded) over a workdir that already holds the other frames from an earlier full render
+  const [FA, FB] = process.env.FRAMES ? process.env.FRAMES.split('-').map(Number) : [0, NF];
+  for (let fi = FA; fi < Math.min(FB, NF); fi++) { await shot(page(frameAt(fi / FPS)), path.join(WORK, 'f', `f${String(fi).padStart(4, '0')}.png`)); if (fi % 150 === 0) console.log('frame', fi, '/', NF); }
 
   // music: the game's own engine, the Town Square by day, with a sparkle as the months begin; a soft pop on every month change
   await p.goto('about:blank'); await p.addScriptTag({ path: path.join(root, 'mods', 'pawaudio.js') });
