@@ -438,3 +438,6 @@ TODO(native):
 - adopt.the_shelter_calls_html / shelter.name_lead_html: "…부르는 이름은 <b>{name, josa, 이에요/예요}</b>." (there is no 이라고/라고 josa pair).
 - Family and people names are transliterated (애버내시 가족, 응우옌네 아이들, 린드크비스트 아주머니, 빵집 베아 아주머니, 복슬 선장 for Captain Fluff). Check that they sound natural.
 - Mix names: only 41 well-known real mixes are in Korean (data.mix_list). Check the spellings (말티숑, 시숑, 푸숑, 퍼가푸, 셰프스키, 허스키타, 골다도르).
+- Narration uses a josa subject after a dog's name (`{name, josa, 이/가} 자고 있어요.`); 25 lines keep the comma form because they speak to the dog ("{name}, 생일 축하해!") or are labels. pack.reporting_for_duty keeps the military-style "{name}, 출동 준비 완료.".
+- vet.visit_already and wardrobe.fashion_bonus ("자기가 좀 귀엽대요") were reworded. Check the tone.
+- Coins are always "{n}코인"; 발바닥 코인 only as the name of the currency with no number. The mail carrier is 집배원 (no 아저씨).
