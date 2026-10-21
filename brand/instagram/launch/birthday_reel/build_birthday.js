@@ -110,7 +110,7 @@ const FEET = 1360, SCX = 540;
 
   // the cover: the title and the grid (the profile grid shows the middle 1080 x 1440, y 240..1680)
   await shot(page(paperBg + txt('Your birthday month', W / 2, 370, 108, { rot: -2 }) + txt('= your dog 🎂', W / 2, 500, 120, { rot: -2, fill: ORANGE })
-    + txt('誕生月でわかる、あなたのワンコ', W / 2, 590, 46, { jp: true, fill: MUTED }) + `<g transform="translate(0 60)">${grid(1)}</g>`), path.join(OUT, 'birthday-reel-cover.jpg'), 'jpeg');
+    + txt('誕生月でわかる、あなたのワンコ', W / 2, 590, 46, { jp: true, fill: MUTED }) + `<g transform="translate(540 660) scale(0.8) translate(-540 -612)">${grid(1)}</g>`), path.join(OUT, 'birthday-reel-cover.jpg'), 'jpeg');
   if (process.env.ONLY === 'stills') {
     const ts = [1.0, INTRO + 0.5, INTRO + 1.0, INTRO + 1.9, INTRO + 2.1, ...M.map((_, i) => INTRO + i * STEP + 1.8), T - 0.5];
     for (const [j, t] of ts.entries()) await shot(page(frameAt(t)), path.join(WORK, `still${String(j).padStart(2, '0')}.png`));
