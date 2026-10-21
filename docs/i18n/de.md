@@ -326,3 +326,20 @@ Two sentences, short, kind, true.
 - TODO(native): love items "Hundemuffin" (pupcake), "Futterzeit" (feeding), "Futterpuzzle", "Zerrseil", "Gassirunden", "Streicheleinheiten".
 - TODO(native): privacy wording: "erheben" / "speichern", "unkenntlich gemachte Form" for the hash, "die Zeitpunkte, an denen du dein Konto angelegt und zuletzt gespeichert hast" for "dates".
 - TODO(native): "SPIEL AUF ITCH.IO" still wraps to two lines on a 320 px phone.
+
+## 10. Game (v2.14, `game/i18n/de.json`, 7362 keys)
+
+Decisions: Walk = "Gassi" (button), "Gassirunde" (noun); Nose-o-meter = "Nasometer" (neuter, everywhere); Bond = "Bindung" / "Bindungsstufe"; Hunger / Freude / Energie / Sauberkeit; Garden (veggie) = "Gemüsebeet" (short "Beet"), Home Yard = "Garten"; Wardrobe = "Kleiderschrank" in the title, "Kleider" on the phone act bar; carrots are "Karotte" everywhere; coats: Rehbraun (fawn), Schwarz-Loh, Flieder (lilac), Schokobraun (chocolate/liver); in season = "Läufigkeit"; titles "Gen-Spürnase", "Fell-Profi", "Ururgroßhund". Dog voices avoid gendered self-nouns (Wachhund, Majestät instead of Wächter, Königin); third-person lines use `{sex, select, female {...} other {...}}`. "..." is always "…".
+- TODO(native): `vet.carry_*` / `vet.pup_*` and `mod.genes.carry_*` / `pup_*` (nouns and inflected adjectives built to fit one sentence), "Schokobraun" vs "Leberbraun".
+- TODO(native): `vet.painter_title`, `vet.painter_aria` ("Maler im Dorf" assumes a male painter), `mail.card_6` / `mail.nb_carrier` ("Briefträger").
+- TODO(native): `vet.fix_toast` ("Kragen der Würde"), `vet.fix_nursing`, `vet.fix_expecting` (reason labels inside a sentence).
+- TODO(native): `pupplay.walk_pup`, `pupplay.walk_expecting`, `care.climb_in` (colon + `{park}` / `{house}` because the names have mixed genders).
+- TODO(native): `fest.rosette_*`, `fest.paraded*` ("Paraden-Rosette", "Mitgelaufen"), `data.clothes.*` ("Laub-Baskenmütze", "Schräger-Pulli-Rosette", "Süßes-oder-Saures-Gespenst"), "Kuschel-Hoodie".
+- TODO(native): rewritten jokes: `data.tk_lines.*` (Chihuahua "Innen drin bin ich höher", Westie "winzige weiße Chrysantheme", Schnauzer), `data.jokes.*` (Chihuahua "Die Behörde bist du", Dachs "Würstchen? Wo? Ach so. Ich.", Pom "Mein Flausch ist größer als mein Hund"), `data.toys_lines.maltese.fetchstart.0` ("Achte auf den Pony"), `data.treasures.*.ab` ("Fast-Adlerauge", "Schattige Geschäfte", "Quietscher der Ehre"), `route.bouncer` ("Es ist eine Gans.").
+- TODO(native): `cards.name_pattern` is `{a} {b}` in the code and the 40 `data.dc_words_a` words are invariable stems ("Sonnen", "Kuschel") meant for a hyphen: a card reads "Sonnen Keks" unless the pattern becomes `{a}-{b}` (needs the Coordinator/code lane).
+- TODO(native): `data.dc_words_a.*` stems like "Juhu", "Sause", "Kicher"; `data.dc_words_b.*` bare nouns.
+- TODO(native): `garden.season` / `garden.boys_note` ("Läufigkeit": kid-friendly enough?), `garden.fathered` / `garden.litters` ("Würfe als Papa"), `garden.fb_*` genetics wording, `garden.plural_pumpkin` ("3 Kürbis"), `tokyo.omi_ok` ("Glückshund!"), `tokyo.btn_sunset` ("Abendrunde").
+- TODO(native): `mod.walk.*` key hints for a German keyboard ("Taste D", "Leertaste"); `walk.res_feed` ("Futtermenü"), `walk.bag` ("Beutel"), `walk.no_use`.
+- TODO(native): `pack.rescue` ("Retten"), `pack.today_s_rescues` ("Die Neuen von heute"), `pack.starter` / `pack.adopt_a_starter` ("Starter"), `mod.kitchen.pantry` ("Vorrat") vs "Vorratskammer", `mod.kitchen.cook_by_heart` ("Aus dem Kopf").
+- TODO(native): `mail.a_town_family` ("Familie aus dem Ort"), `mail.fam_kim`, `data.npc_boys.5` / `.9` (pun names translated: "Käpt’n Waffel", "Sir Gürkchen"), `town.cafe_enjoyed` ("einen {item}" assumes masculine item names), `playdate.has_retired_from_romance`, `popup.*` ("Missgeschick", "Kotbeutel", "Häufchen").
+- TODO(native): `core.lu_raise_html` ("Gehaltserhöhung in Leckerli"), `core.lu_units_html`, `data.tri_solid.collie.*` ("Tricolor"), `data.families.*.where` (in parentheses so they work in the album and in sentences).
