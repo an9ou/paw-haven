@@ -425,4 +425,16 @@ TODO(native):
 - data.tcmd.signature: 쇼타임! and data.tricks.signature.n 주특기
 - pupplay.walk_expecting / pupplay.fetch_nursing male branches: wording for a male dog in these lines is odd in English too
 - mod.toys.bond_moment: 찐친 모먼트! (slang, check for kids)
-- data.walk_lines.{afghan,maltese,poodle,shiba,spitz,westie}: en.json still uses pronoun vars ({he} {his} {him} {He}); the merge check refuses a ko line without them. Ready ko lines (no pronouns) wait in /tmp/claude-0/-home-user-paw-haven/cb806006-e774-5ab1-8a2b-ede91409d88b/scratchpad/C_pron_held.json, to merge once en.json uses a sex select or the check allows dropping pronoun vars.
+- data.wx_lines.shiba.warm: "Snow is beneath me" pun as 눈 따위 내 발밑이야. Does it read well?
+- data.wx_lines.malamute.snow: "Now we are talking! Mostly me!" as 이제 좀 얘기가 되네! 떠드는 건 주로 나지만!
+- data.wx_lines.westie.dawn: "The garden is out there" read as the Home Yard (마당), not the veggie patch.
+- yard.flips_upside_down_legs_in: "roaching" as 바퀴벌레 자세. Is there a better known Korean word?
+- yard.a_shell_with_a_smaller: "Shell-ception" as 조개셉션 (Inception pun).
+- yard.the_crowd_you_goes_wild: 관중(나)이 열광해! (the player speaking to the dog in 반말).
+- data.hm_decor.garden_bench.n / data.hm_decor.bird_bath.story / missions.ready_space: English "garden" here is the Home Yard, so 마당.
+- mod.toys.bond_moment: 찐친 모먼트! is slang, and Bond is 친밀도 elsewhere. OK for children?
+- journal.title_master_breeder: "Master Breeder" as 털색 마스터 (브리더 is banned). journal.title_great_granddog: 고손주 강아지.
+- Meters: the four care meters and the Sparkle Meter are 게이지 (반짝이 게이지); the Nose-o-meter is 킁킁미터.
+- adopt.the_shelter_calls_html / shelter.name_lead_html: "…부르는 이름은 <b>{name, josa, 이에요/예요}</b>." (there is no 이라고/라고 josa pair).
+- Family and people names are transliterated (애버내시 가족, 응우옌네 아이들, 린드크비스트 아주머니, 빵집 베아 아주머니, 복슬 선장 for Captain Fluff). Check that they sound natural.
+- Mix names: only 41 well-known real mixes are in Korean (data.mix_list). Check the spellings (말티숑, 시숑, 푸숑, 퍼가푸, 셰프스키, 허스키타, 골다도르).
