@@ -98,10 +98,8 @@ function L(key, en, vars) {
 function LD(path, en) { const I = window.PawI18n; return I && I.tdata ? I.tdata(path, en) : en; }
 function LE(key, en, vars) { return esc(L(key, en, vars)); } // plain message -> HTML
 function lang() { const I = window.PawI18n; return I && I.tlang ? I.tlang() : 'en'; }
-function LL(arr) { // a plain list of words (English: "a, b", as before)
-  const l = lang(); if (l === 'en' || typeof Intl === 'undefined' || !Intl.ListFormat) return arr.join(', ');
-  try { return new Intl.ListFormat(l, { type: 'unit', style: 'long' }).format(arr); } catch (e) { return arr.join(', '); }
-}
+const LL_SEP = { ja: '、', 'zh-Hans': '、', 'zh-Hant': '、', th: ' ' }; // Intl's unit lists join ja / zh / th words with bare spaces
+function LL(arr) { return arr.join(LL_SEP[lang()] || ', '); } // a plain list of words (English: "a, b", as before)
 function pickLine(path, arr) { const i = Math.floor(Math.random() * arr.length); return LD(path + '.' + i, arr[i]); }
 
 /* ------------------------------------------------------------------ art helpers */
