@@ -496,3 +496,71 @@ html.gamefs,html.gamefs body{overflow:hidden}
 }
 /* owner: on computers the Dogs page shows 4 dogs a row, the cards a little smaller (the grid is 90% of the sheet); phones keep 3 a row */
 @media (min-width:861px){ .dognav{grid-template-columns:repeat(4,minmax(0,1fr))!important;width:90%;margin-left:auto;margin-right:auto} .dognav a{font-size:24px} }
+/* owner (site v3.3): a livelier menu: every tab wears its own crayon colour and a little doodle, tilted like stickers; the page you are on lifts
+   up with a pink wavy underline. Five tabs since the Guide page. */
+.sitenav a{gap:7px;background:var(--tab);box-shadow:2px 3px 0 rgba(91,61,50,.32);transform:rotate(var(--r,-1deg));transition:transform .15s,box-shadow .15s}
+.sitenav a:nth-child(even){--r:1deg}
+.sitenav a:nth-child(5){--tab:var(--w-lilac)}
+.sitenav a:hover{background:var(--tab);transform:rotate(0) translateY(-2px);box-shadow:3px 5px 0 var(--ink)}
+.sitenav a[aria-current="page"]{background:var(--tab);transform:rotate(0) translateY(-2px) scale(1.06);box-shadow:3px 4px 0 var(--ink);z-index:1}
+.sitenav a[aria-current="page"] span{text-decoration:underline wavy var(--pink) 2px;text-underline-offset:6px;text-decoration-skip-ink:none}
+.nico{flex:none;width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sheet>.sitehead .sitenav{gap:12px}
+@media (prefers-reduced-motion:reduce){ .sitenav a{transition:none} }
+/* the logo is drawn on the sheet itself (site/img/logo.svg is the brand logo without its cream box) */
+.logo,.minilogo img{mix-blend-mode:normal}
+@media (max-width:860px){
+  .sheet>.sitehead .sitenav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+  .sitenav a{flex-direction:column;gap:2px;padding:5px 2px 6px;font-size:min(19px,4.6vw);line-height:1.05}
+  .nico{width:20px;height:20px}
+  .sheet>.sitehead.stuck .sitenav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;flex:1 1 auto}
+  .sheet>.sitehead.stuck .sitenav a{padding:3px 2px 4px;font-size:min(15px,3.7vw);min-height:44px}
+  .sheet>.sitehead.stuck .nico{width:17px;height:17px}
+  .sitenav a[aria-current="page"]{transform:translateY(-1px) scale(1.04)}
+}
+.minilogo .ml-icon{display:none}
+/* phones: the stuck bar shows the dog icon instead of the word logo, so the five tabs keep their names on one line */
+@media (max-width:500px){
+  .minilogo .ml-full{display:none} .minilogo .ml-icon{display:block;height:38px;width:38px}
+  .sheet>.sitehead.stuck .sitenav a{font-size:min(15px,3.9vw);white-space:nowrap;padding:3px 1px 4px}
+}
+
+/* owner (site v3.3): the How to play page */
+.guide{max-width:900px;margin:0 auto}
+.guide h1{font-size:58px;text-align:center;margin:.1em 0 .1em}
+.guide .lead{font-size:21px;text-align:center;max-width:680px;margin:0 auto 1em}
+.guide h2{text-align:center;margin-top:1em}
+.gsteps{list-style:none;counter-reset:st;padding:0;margin:8px 0 6px;display:grid;gap:14px}
+.gstep{counter-increment:st;position:relative;display:grid;grid-template-columns:150px minmax(0,1fr);gap:16px;align-items:center;padding:12px 18px 12px 14px;
+  border:2.5px solid var(--ink);border-radius:16px 11px 18px 12px / 12px 18px 11px 16px;background:var(--paper);box-shadow:3px 4px 0 rgba(91,61,50,.15)}
+.gstep:nth-child(5n+1){background:var(--w-mint)} .gstep:nth-child(5n+2){background:var(--w-pink)} .gstep:nth-child(5n+3){background:var(--w-blue)}
+.gstep:nth-child(5n+4){background:var(--w-yellow)} .gstep:nth-child(5n+5){background:var(--w-lilac)}
+.gstep:nth-child(even){transform:rotate(.4deg)} .gstep:nth-child(odd){transform:rotate(-.4deg)}
+.gstep::before{content:counter(st);position:absolute;left:-14px;top:-14px;width:44px;height:44px;display:grid;place-items:center;border:2.5px solid var(--ink);border-radius:50%;
+  background:var(--paper);font-family:var(--hand);font-size:30px;font-weight:700;line-height:1}
+.gstep img{width:100%;height:auto}
+.gstep h3{margin:0 0 .15em}
+.gstep p{margin:0}
+.gbox{margin:22px 0 6px;padding:16px 22px;border:2px dashed var(--ink);border-radius:16px 12px 18px 11px;background:rgba(255,227,161,.35)}
+.gbox h2{margin-top:0}
+.gunlock ul{margin:0;padding-left:1.2em;display:grid;gap:4px}
+.gtips{list-style:none;padding:0;margin:8px 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 18px}
+.gtips li{position:relative;padding-left:30px}
+.gtips li::before{content:"🐾";position:absolute;left:0;top:0}
+.gpups{display:grid;grid-template-columns:170px minmax(0,1fr);gap:18px;align-items:center;background:rgba(249,208,217,.35)}
+.gpups img{width:100%;height:auto}
+.gfaq{display:grid;gap:10px;max-width:760px;margin:8px auto}
+.gfaq details{border:2px solid var(--ink);border-radius:13px 9px 15px 8px;background:var(--paper);padding:4px 16px}
+.gfaq summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-family:var(--hand);font-size:26px;font-weight:700}
+.gfaq details[open] summary{color:var(--ink)}
+.gfaq p{margin:0 0 .6em}
+.gcta{margin-top:22px}
+.gcta .chip{font-size:24px}
+@media (max-width:700px){
+  .guide h1{font-size:46px}
+  .gstep{grid-template-columns:92px minmax(0,1fr);gap:10px;padding:10px 12px}
+  .gstep::before{left:-8px;top:-10px;width:36px;height:36px;font-size:24px}
+  .gtips{grid-template-columns:1fr}
+  .gpups{grid-template-columns:1fr;text-align:center}
+  .gpups img{width:150px;margin:0 auto}
+}

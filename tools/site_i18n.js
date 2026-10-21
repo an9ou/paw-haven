@@ -38,8 +38,16 @@ const PSEUDO = [
   { code: 'ja-XA', dir: 'xx-cjk', name: '[犬犬犬]', og: 'ja_JP', script: 'cjk', pseudo: 'cjk', rules: 'ja' }
 ];
 // site v3: six pages; the header (every page) links the first four (NAV), the footer the rest
-const PAGES = [{ id: 'index', path: '/' }, { id: 'dogs', path: '/dogs' }, { id: 'map', path: '/map' }, { id: 'about', path: '/about' }, { id: 'privacy', path: '/privacy' }, { id: 'reset', path: '/reset' }];
-const NAV = [{ page: 'home', id: 'index', path: '/' }, { page: 'dogs', id: 'dogs', path: '/dogs' }, { page: 'map', id: 'map', path: '/map' }, { page: 'about', id: 'about', path: '/about' }];
+const PAGES = [{ id: 'index', path: '/' }, { id: 'dogs', path: '/dogs' }, { id: 'map', path: '/map' }, { id: 'about', path: '/about' }, { id: 'guide', path: '/guide' }, { id: 'privacy', path: '/privacy' }, { id: 'reset', path: '/reset' }];
+const NAV = [{ page: 'home', id: 'index', path: '/' }, { page: 'dogs', id: 'dogs', path: '/dogs' }, { page: 'map', id: 'map', path: '/map' }, { page: 'guide', id: 'guide', path: '/guide' }, { page: 'about', id: 'about', path: '/about' }];
+// owner (site v3.3): a little crayon doodle on each menu tab (24x24, drawn in the tab's ink colour)
+const NAV_ICON = {
+  home: '<path d="M4 11.5 12 4.5l8 7M6.5 9.8V19h11V9.8M10 19v-5h4v5"/>',
+  dogs: '<ellipse cx="12" cy="15.5" rx="4.2" ry="3.4"/><ellipse cx="6.2" cy="10.2" rx="1.8" ry="2.3"/><ellipse cx="10" cy="6.6" rx="1.8" ry="2.4"/><ellipse cx="14.2" cy="6.6" rx="1.8" ry="2.4"/><ellipse cx="18" cy="10.2" rx="1.8" ry="2.3"/>',
+  map: '<path d="M3.5 6.5 9 4.5l6 2 5.5-2v13l-5.5 2-6-2-5.5 2z"/><path d="M9 4.5v13M15 6.5v13"/>',
+  guide: '<path d="M4 5.5c2.6-1 5.4-1 8 .8 2.6-1.8 5.4-1.8 8-.8v13c-2.6-1-5.4-1-8 .8-2.6-1.8-5.4-1.8-8-.8z"/><path d="M12 6.3v13"/>',
+  about: '<path d="M12 19.5S4.5 15 4.5 9.6A3.9 3.9 0 0 1 12 7.7a3.9 3.9 0 0 1 7.5 1.9C19.5 15 12 19.5 12 19.5z"/>'
+};
 // the home page's featured dogs (site v3: eight cards, the rest on /dogs), in this order
 const FEATURED = ['dachs', 'shiba', 'corgi', 'golden', 'pug', 'samoyed', 'beagle', 'husky'];
 // the places of /map, in order: each has map.place.<id>.name / .text in en.json and a picture /img/map/<id>.webp (960 x 576, the SHOTS lane)
@@ -196,13 +204,13 @@ function langMenu(L, page, label, menu) {
 // site v3: the header of every page: the logo (home), the four page links (the current one aria-current), the language menu
 function header(L, page, t, a, menu) {
   const cur = (NAV.find((n) => n.id === page.id) || {}).page;
-  const links = NAV.map((n) => `<a data-page="${n.page}" href="${urlFor(L, n.path)}"${n.page === cur ? ' aria-current="page"' : ''}>${t('nav.' + n.page)}</a>`).join('');
+  const links = NAV.map((n) => `<a data-page="${n.page}" href="${urlFor(L, n.path)}"${n.page === cur ? ' aria-current="page"' : ''}><svg class="nico" viewBox="0 0 24 24" aria-hidden="true">${NAV_ICON[n.page]}</svg><span>${t('nav.' + n.page)}</span></a>`).join('');
   // owner: the header sits inside the paper sheet; every page starts like the home page: the big logo and the slogan, then the four tabs
-  const logo = `<img class="logo" src="/doodle-doggo-logo.svg" alt="${a('common.logo_alt')}" width="900" height="280">`;
+  const logo = `<img class="logo" src="/img/logo.svg" alt="${a('common.logo_alt')}" width="900" height="280">`;
   const brand = `<div class="top sitetop">${page.id === 'index' ? `<h1 class="h1logo">${logo}</h1>` : `<a class="brandbig" href="${urlFor(L, '/')}">${logo}</a>`}<p class="tag">🖍️ ${t('home.tagline')}</p></div>`;
   // owner (site v3.2): the logo and slogan scroll away; the header is the menu bar that sticks to the top (on phones it hides while you scroll down)
   // owner: once the menu sticks to the top, a small logo shows at its left (the links move right)
-  const mini = `<a class="minilogo" href="${urlFor(L, '/')}" tabindex="-1" aria-hidden="true"><img src="/doodle-doggo-logo.svg" alt="" width="900" height="280"></a>`;
+  const mini = `<a class="minilogo" href="${urlFor(L, '/')}" tabindex="-1" aria-hidden="true"><img class="ml-full" src="/img/logo.svg" alt="" width="900" height="280"><img class="ml-icon" src="/doodle-doggo-icon.svg" alt="" width="64" height="64"></a>`;
   return `\n${brand}\n<header class="sitehead" id="sitehead">${mini}`
     + `<nav class="sitenav" id="sitenav" aria-label="${a('nav.label')}">${links}</nav>${menu}</header>`;
 }
