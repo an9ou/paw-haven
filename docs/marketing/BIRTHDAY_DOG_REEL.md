@@ -10,7 +10,7 @@ Made 21 Oct 2026 (owner's idea). English only: no Japanese text in the video, th
 
 ## What is in it
 
-- **0–2 s:** the title, "Your birthday month = your dog 🎂", "find your month, meet your dog", the 12 faces pop in, "find your month 👇".
+- **0–2 s:** the title, "Your birthday month = your dog 🎂", "find your month, meet your dog", the 12 faces pop in without month names (owner: the months are the surprise), "find your month 👇".
 - **2–28.4 s:** one 2.2-second scene per month. The scene slides in, the dog walks in, strikes a pose with one face, then hops into a second pose and face. A "born in" month card sits at the top, and a name card at the bottom: the dog's name and "you are …".
 - **28.4–30 s:** "Which one are you? comment your month 👇" over the grid of all 12.
 - **30–32.8 s, the end card (owner, 21 Oct 2026):** "follow us on Instagram & X", "@doodledoggo.app", Noodle wagging with heart eyes and one happy hop, hearts floating up, and "play at doodledoggo.app" in a yellow pill. All of it sits above the Reels caption area.
