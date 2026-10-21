@@ -1,5 +1,7 @@
 # "Office POV" video: sneaking a puppy break at work
 
+**On hold (owner, 21 Oct 2026): probably not going to be used.** Do not spend more work on it unless the owner asks. The files stay as they are.
+
 Owner's idea (20 Oct 2026): a first-person shot in an office cubicle, hands typing, the camera pushes into the corner of the laptop screen, where a small browser window shows the crayon puppy; the cursor clicks a bone, the puppy munches, hearts float up. 9:16.
 
 A Claude session cannot make photo-real video, and an AI video tool cannot draw the real Noodle (it would invent a different puppy). So it is made in two parts and put together in an editor:
