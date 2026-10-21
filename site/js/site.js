@@ -358,29 +358,36 @@
   upd();
 })();
 
-/* owner (site v3.2): the game plays right on the home page; a tap loads it, the button makes it full screen */
+/* owner (site v3.2): the game plays right on the home page and starts by itself; the button makes it full screen.
+   Not full screen, the game is drawn at the size it is made for and shrunk to fit the box (owner: in a small box its buttons and
+   text looked too big next to the scene): 1280 px wide on computers, at least 390 px wide on phones. The browser maps taps and
+   clicks into the shrunk frame, so the game itself never knows. */
 (function () {
   var box = document.getElementById('gameframe'), btn = document.getElementById('fsbtn'), x = document.getElementById('fsx'),
-      cover = document.getElementById('gamecover'), src = box && box.getAttribute('data-src');
+      src = box && box.getAttribute('data-src'), f = null;
   if (!box) return;
-  var root = document.documentElement;
-  function load() {
-    if (box.querySelector('iframe')) return;
-    var f = document.createElement('iframe');
-    f.src = src; f.title = box.getAttribute('data-title') || 'Doodle Doggo'; f.setAttribute('allow', 'fullscreen; autoplay'); f.setAttribute('allowfullscreen', '');
-    box.insertBefore(f, box.firstChild);
-    if (cover) cover.remove();
-    setTimeout(function () { try { f.focus(); } catch (e) {} }, 300);
-  }
+  var root = document.documentElement, DESK = 1280, PHONE = 390;
   function fsEl() { return document.fullscreenElement || document.webkitFullscreenElement; }
   function isOn() { return !!fsEl() || box.classList.contains('fake'); }
-  function label() { btn.setAttribute('aria-pressed', isOn() ? 'true' : 'false'); }
+  function fit() {
+    if (!f) return;
+    var w = box.clientWidth, h = box.clientHeight;
+    if (isOn() || !w || !h) { f.style.width = f.style.height = f.style.transform = ''; return; }
+    var v = w > 820 ? DESK : Math.max(w, PHONE), k = w / v; // more than 820 px: the game's computer layout, else its phone layout
+    f.style.width = v + 'px'; f.style.height = (h / k) + 'px'; f.style.transform = k === 1 ? '' : 'scale(' + k + ')';
+  }
+  function load() {
+    f = document.createElement('iframe');
+    f.src = src; f.title = box.getAttribute('data-title') || 'Doodle Doggo'; f.setAttribute('allow', 'fullscreen; autoplay'); f.setAttribute('allowfullscreen', '');
+    box.insertBefore(f, box.firstChild);
+    fit();
+  }
+  function label() { btn.setAttribute('aria-pressed', isOn() ? 'true' : 'false'); fit(); }
   function fake(on) {
     box.classList.toggle('fake', on); root.classList.toggle('gamefs', on); label();
     if (on) { try { x.focus(); } catch (e) {} }
   }
   function enter() {
-    load();
     var rq = box.requestFullscreen || box.webkitRequestFullscreen;
     if (!rq) return fake(true);
     try {
@@ -393,7 +400,8 @@
     var ex = document.exitFullscreen || document.webkitExitFullscreen;
     if (fsEl() && ex) { try { var p = ex.call(document); if (p && p.catch) p.catch(function () {}); } catch (e) {} }
   }
-  if (cover) cover.querySelector('button').addEventListener('click', load);
+  load();
+  if (window.ResizeObserver) new ResizeObserver(fit).observe(box); else window.addEventListener('resize', fit);
   btn.addEventListener('click', function () { isOn() ? leave() : enter(); });
   x.addEventListener('click', leave);
   document.addEventListener('fullscreenchange', label);

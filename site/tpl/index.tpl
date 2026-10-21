@@ -14,10 +14,6 @@
 
     <section class="gamebox" id="game" aria-label="{{a home.game_label}}">
       <div class="gameframe" id="gameframe" data-src="/play/" data-title="{{a home.game_label}}">
-        <div class="gamecover" id="gamecover">
-          <button class="play" type="button">▶ {{t home.game_play}}</button>
-          <p class="small">{{t home.game_note}}</p>
-        </div>
         <button class="fsx" id="fsx" type="button" aria-label="{{a home.fullscreen_exit}}">✕</button>
       </div>
       <div class="gamebar">
