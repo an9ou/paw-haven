@@ -38,3 +38,4 @@ Known flaky: i18n_smoke "after the reload the game is in ja", cloud, phone_v27_s
 
 ## 21 Oct 19:30 UTC: coordinator session_01WkyG6CAPq7id59dBpEKMXH took over (rule 11)
 zh-Hans lane started: T-ZH-HANS session_014CtT2LuJChWGTaaXM8iLd2 (Opus), branch lane/v214-t-zh-Hans, prompt = brief_translation.md + the checklist above. Next after it is reviewed and merged: zh-Hant.
+zh-Hans DONE: lane 514f8ec merged (f428623), 3 parallel Opus reviews (A UI/lessons/site, B lines/jokes, C mods/mixes/rest) = 68 fixes, site 0. tools/i18n_todo.js now also refuses a full-width ；. Tests: test_i18n_node, copy, i18n_smoke + smoke, i18n_phone (zh-Hans) PASS. Next: zh-Hant (Taiwan wording).

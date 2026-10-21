@@ -436,7 +436,6 @@ The site translation (`site/i18n/zh-Hans.json`, v2.14 phase 1b). Item words used
 - TODO(native): `yard.flips_upside_down_legs_in`: 蟑螂睡 for the greyhound "roaching" joke.
 - TODO(native): `data.npc_boys.*` / `data.npc_girls.*`: transliterated or translated people's names (小枫 for Maple so it differs from the Malamute's 枫糖).
 - TODO(native): `data.sig.shiba.say`: the death joke ("I have died. Bury me in pâté.") became a faint (我晕倒了。只有肉酱才能把我叫醒。), matching 戏精晕倒.
-- TODO(native): `data.jokes.shiba.3`: the "beneath me. Literally" pun is explained, not kept as wordplay.
 - TODO(native): `data.badge.high` 蹲下 / `low` 跳 / `wide` 跳远: walk obstacle badges.
 - TODO(native): `pack.boy` / `pack.girl` (and adopt, genes): 男孩 / 女孩 for a dog's sex. 公 / 母 is the more usual word. Is 男孩/女孩 cute or odd?
 - TODO(native): `mod.toys.rain_from_a_snake`: the hose-as-snake joke is literal.

@@ -57,7 +57,7 @@ for (const [k, v] of Object.entries(B)) {
   // a translation may leave out a `sex` select (ja / zh / ko / th often drop the pronoun); every other arg must match
   if (sig(v) !== sig(EN[k]) && sig(v) !== sig(EN[k]).split(' ').filter(a => a !== 'sex:select').join(' ')) bad.push(`${k}: args "${sig(v)}" vs English "${sig(EN[k])}"`);
   if (tags(v) !== tags(EN[k])) bad.push(`${k}: tags "${tags(v)}" vs English "${tags(EN[k])}"`);
-  if (/[;\u{1F300}-\u{1FAFF}☀-➿]/u.test(v) && !/[;]/.test(EN[k])) bad.push(`${k}: semicolon or emoji`);
+  if (/[;；\u{1F300}-\u{1FAFF}☀-➿]/u.test(v) && !/[;]/.test(EN[k])) bad.push(`${k}: semicolon or emoji`);
   for (const b of bans) if (b.re.test(v) && !allow.some(a => v.includes(a))) bad.push(`${k}: ban (${b.why})`);
 }
 if (bad.length) { console.error(`REFUSED ${mf}: ${bad.length} problem(s)\n` + bad.slice(0, 60).join('\n')); process.exit(1); }
