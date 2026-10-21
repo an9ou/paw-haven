@@ -409,13 +409,14 @@ doodledoggo.app in Thai (`site/i18n/th.json`, v2.14 phase 1b, 714 keys). Choices
 
 ## Game
 
-v2.14 phase 2: `game/i18n/th.json` (work in progress). Lines a native speaker should check:
+v2.14 phase 2: `game/i18n/th.json`, all 7362 keys. Notes: Thai plurals use only `other`, so where the English singular names the dog (`one {{name} …}`), Thai uses `=1 {…}`. Boy/Girl for dogs is ตัวผู้/ตัวเมีย. The phone action bar uses the short labels อาหาร (Feed) and สมุด (Journal) because ให้อาหาร and สมุดบันทึก were clipped. Lines a native speaker should check:
 
 - TODO(native): data.food.bone_shaped_biscuit.note: บิสกิตที่หน้าตาเหมือนกระดูก ลึกซึ้งมาก ("which is very meta": does ลึกซึ้งมาก land as a joke?)
 - TODO(native): garden.bonus_seed: {name} ขุดเจอ{seed}แถมมาด้วย! ภูมิใจจนเพื่อนเหนื่อยใจเลย ("She is unbearable about it": natural?)
 - TODO(native): data.grand_recipes.*: บะหมี่ลากเลื่อน / ขนมปังรุ่งอรุณ / กองหิมะ (3-breed mix pun names Sled Noodle, Sunrise Loaf, Snowdrift)
 - TODO(native): data.food.frozen_pupsicle.n: ไอติมหมาน้อย (Pupsicle pun, pup + popsicle)
 - TODO(native): mod.garden.iou: ติดไว้ก่อน (the IOU float over Captain Fluff's plot; the long lines use ใบติดหนี้)
+- TODO(native): data.dc_words_a.*: card adjectives placed after the noun ({b}{a}, e.g. บิสกิตสดใส, ก้อนเมฆขี้เซา); check a few random pairs read naturally (word-list combos)
 - TODO(native): mod.genes.everything_dog: น้องหมารวมมิตร (pun on รวมมิตร the assorted dessert for "The Everything Dog": lands?)
 - TODO(native): vet.fix_toast: ปลอกคอแห่งศักดิ์ศรี (Cone of Dignity joke: natural?)
 - TODO(native): vet.painter_broke: จิตรกรรับแต่เหรียญ ไม่รับจ่ายเป็นยอดไลก์ ("accepts coins, not exposure" adapted as likes)
@@ -424,7 +425,17 @@ v2.14 phase 2: `game/i18n/th.json` (work in progress). Lines a native speaker sh
 - TODO(native): coat terms ลายแมนเทิล, ลายพาร์ติ, ด่างขาว (pied) vs ลายด่าง (piebald), อุราจิโระ: clear to Thai dog owners?
 - TODO(native): newyear.gerald_text: ...จะได้ไม่มีใครโดนต้อนไปรวมฝูงผิดตัว (herding joke, check it lands)
 - TODO(native): yard.flips_upside_down_legs_in: พวกเกรย์ฮาวด์เรียกท่านี้ว่าท่าแมลงสาบ ("roaching" calque, check Thai owners know it)
+- TODO(native): site guide.pups.p2: "named families" as 「ส่งต่อให้ครอบครัวใหม่ฟรี ทุกบ้านมีชื่อ」: natural, or a better way to say the families have names?
+- TODO(native): site guide.tip2: "clipboard" as คลิปบอร์ด (no game string for it yet; must match the game if one appears)
+- TODO(native): site guide.step2.p / guide.faq.a4: the care meters as แถบ (แถบสีเทียน 4 แถบ): natural, or หลอด?
+- TODO(native): site guide.faq.q4: "get sick or run away" softened to 「ไม่สบายหรือหนีออกจากบ้าน」 (style guide avoids ป่วย / หลงทาง): OK?
+- TODO(native): mod.toys.boo_tiful: สวยหลอนเลย! (pun on boo-tiful; check it reads cute, not scary)
+- TODO(native): data.tricks.play_dead.n: ล้มตึง (Play Dead without ตาย; command ปัง!)
+- TODO(native): data.toys.agility_tunnel.n: อุโมงค์อจิลิตี้ (loanword "agility" may be unclear to kids)
+- TODO(native): mod.toys.best_game_ever: เกม ที่ดี ที่สุด ในโลก (spaced to mimic "Best. Game. Ever.")
+- TODO(native): data.toys_lines.greyhound.howl.0: ฮู้ววว... (greyhound "roo" sound; รู้ avoided because it means "know")
 - TODO(native): title.start_over_body_html: ...น่าจะย้ายไปอยู่ไร่ ไร่ของจริงเลยนะ (the English 'moved to a farm' euphemism joke; may not land in Thai)
+- TODO(native): data.sig.shiba.say: เราเป็นลมไปแล้ว ปลุกเราด้วยพาเต้นะ (English "I have died. Bury me in pâté" softened to fainting, no ตาย)
 - TODO(native): data.jokes.3: ฟักทองก็คือส้มที่มีความฝันยิ่งใหญ่มากๆ (orange = colour/fruit pun lost; reads as the fruit)
 - TODO(native): data.jokes.chihuahua.1: เราหนักสองกิโล แต่ความมั่นหนักสิบสี่กิโล ("ความมั่น" slang for attitude, check it lands)
 - TODO(native): data.jokes.westie.4: หัวฟู หางเหมือนแครอท จมูกเปื้อนโคลน เพอร์เฟกต์ ("carrot tail" Westie term, literal)
@@ -578,3 +589,11 @@ Recurring words chosen while translating the game (English = Thai (area)), so la
 - cook steps: Chop หั่น, Stir คน, Simmer เคี่ยว, Bake อบ, Chill แช่เย็น (ui)
 - plant stages: seed เมล็ด, sprout ต้นอ่อน, leafy ใบดก, ready! พร้อมเก็บ! (ui)
 - WOOF! = โฮ่ง! (ui)
+- roo (greyhound) = ฮู้, snort (frenchie) = ฟืด, rrf = ฮึ่บ (toys)
+- Fresh & Fluffy (salon status) = หอมฟูนุ่ม (walk/town)
+- Pupuccino (drink) = พัพปุชิโน่ (walk/town)
+- Note: Thai pluralCat is always 'other', so ICU 'one' branches never fire in th; use '=1' where the singular branch differs (japan)
+- Dog Card name order = {b}{a} (noun then adjective, no space, e.g. คุกกี้ขี้เซา); give a paw = ให้อุ้งเท้า; visitor tag = แขก (japan)
+- trick names: Sit นั่ง, Paw ยื่นมือ, Lie Down หมอบ, Roll Over กลิ้งตัว, Spin หมุนตัว, Play Dead ล้มตึง (no ตาย), Speak เห่า, Dance เต้น, Bow โค้งคำนับ, Signature ท่าประจำตัว; commands Bang! ปัง!, Showtime! โชว์ไทม์!; Show off (tab) โชว์ท่า, Focus สมาธิ, hand signal สัญญาณมือ, treat lure ล่อด้วยขนม, stages New ใหม่ / Getting it เริ่มเข้าใจ / Learned ทำได้แล้ว / Mastered เชี่ยวชาญ, Chain = ติดกัน, session = รอบฝึก (toys)
+- Riverside Trail = ทางเดินริมแม่น้ำ (walk)
+- NPC dog names: Captain Waffles กัปตันวาฟเฟิล, Sir Pickle เซอร์แตงกวาดอง, Lady Fluffington เลดี้ฟูฟ่อง, Tofu เต้าหู้ (walk)
