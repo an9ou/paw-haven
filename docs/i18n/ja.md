@@ -408,7 +408,71 @@ Never hit (the `allow` list, also used as negative tests): 「犬種」 「日�
 - Greyhound quote: 45 mph → 時速72キロ.
 - TODO(native): ふにゃふにゃ for "wobbly" (crayon lines): alternatives へにゃへにゃ, よれよれ.
 - TODO(native): dog trait lines and quotes (casual voice, ぼく/わたし per dog), e.g. 辛口 (judgy), もってこい命 (fetch fanatic), カワウソしっぽ (otter tail).
-- TODO(native): love items (サーモンのパテ, ぬいぐるみの骨, 知育フィーダー, ピーピーアヒル) must match the game's item names once game/i18n/ja.json exists.
-- TODO(native): 「このカードを非表示」 (privacy.cards.off) must match the game's "Hide this card" button.
+- Love items now match the game's item names (rope tug = 引っぱりロープ). The game's "Hide this card" button is このカードをかくす, and privacy.cards.off quotes it.
 - TODO(native): soon.line 狆（ちん）と甲斐犬; home.note.* facts read as natural for Japanese readers (they were written for visitors).
 - TODO(native): privacy page register and the English-prevails sentence in privacy.updated.
+
+## Game
+
+`game/i18n/ja.json` (v2.14 phase 2, 7362 keys, translated and reviewed 19-21 Oct 2026). Choices made for Japanese players:
+- Item, place, toy, food and trick names are fixed once and used the same way in shops, walks, the journal and every line (e.g. Snuffle Mat ノーズワークマット, Snow Igloo 雪のかまくら, Wind Chime 風鈴, Play Dead バーン, the Corgi's Loaf 食パン).
+- Dog lines work for dogs of either sex: no ぼく, no feminine endings and no 彼/彼女 unless the line has a `sex` branch. Only Gerald (a male duck) and Gary say ぼく. The player never has a gender, and あなた is never used.
+- "In season" is the heat cycle (ヒート), never 季節. Litters are births (出産3回まで). Snorts are ブヒッ. The veggie Garden is 菜園 or 畑, never the Home Yard.
+- Bar buttons on the phone are at most 3 kana wide: ごはん, あそぶ, おせわ, さんぽ, きがえ, 日記, 地図. The Wardrobe title stays クローゼット.
+- Well-known real mixes have their Japanese pet-shop names (チワプー, マルプー, ポメチワ, チワックス, ダップー, ラブラドゥードル …, 32 in all). The pun names stay English and show as 「A × B」.
+- Coat words: kennel-club katakana for Western breeds (ブラック＆タン, フォーン, セーブル), native words for Japanese breeds (赤, 黒, ごま, 白).
+- Code note for the Coordinator: walk tutorial lists (`mods/walkrun.js` `LL`, Intl.ListFormat unit style) join Japanese words with a space (丸太 スプリンクラー). A 、 joiner would read better.
+- TODO(native): photo.place_town: らくがきタウン (Doodle Town, a new name)
+- TODO(native): photo.frame_sun / photo.frame_sky: おひさま / スカイ (frame colours, avoids the dog name サニー)
+- TODO(native): map.locked_3: ブッブー。…決まりは決まりです（決めたのはわたしたちです）。 ("Nope nope" as a buzzer, not a scolding)
+- TODO(native): photo.gerald: はい、チーズ。……じゃなくて、ドッグフード。 ("Say cheese. Or kibble.")
+- TODO(native): train.chain / train.nailed: 連続 / お客さん×2 (tight training panel)
+- TODO(native): train.mode_cue / train.mode_hand: 手の合図 / ハンドサイン（1.3倍） (cue vs hand signal)
+- TODO(native): packplay.dress: 着がえ (Dress button; Wardrobe is クローゼット)
+- TODO(native): settings.lang_device: デバイスの言語を使う (デバイス, 端末 felt hard for kids)
+- TODO(native): data.dc_breed_words.28 / 13 / 16 / 21 / 23: デカプー, フレブル, ポメ, ドーベル, ピティ (nickname forms used in visiting dog names)
+- TODO(native): data.dc_words_a.*: adjective forms that join straight onto the B nouns ({a}{b}): ゆめみる, がんばりやの, かすみの
+- TODO(native): data.ex_words.proud: どや顔 (casual), data.ex_words.zoomies: ひとり運動会 (long for a phone chip)
+- TODO(native): data.gd_lessons.*.3: Gerald's 3-4 English sentences cut to two
+- TODO(native): bath.is_legally_obliged_to_look: ほうりつにしたがって、うらぎられた顔 (the deadpan "legally" joke)
+- TODO(native): data.jr_grand.3: ぜんぶのせ犬 ("The Everything Dog", from ramen ぜんぶのせ)
+- TODO(native): data.merle_words.liver: チョコレートマール (matches data.words liver = チョコレート, breeders often say レバー)
+- TODO(native): data.merle_by.dane.lilac: ペールマール (maybe うすいマール for kids)
+- TODO(native): data.ph_season_cap.spring: 春の肉球、ルンルン ("spring in my step")
+- TODO(native): data.ph_caps.7: いっしょに来られたらよかったね ("Wish you were here", no あなた/きみ)
+- TODO(native): data.npc_girls.9: レディ・フワリントン (Lady Fluffington)
+- TODO(native): data.jp_first: 初富士 (real New Year word, may be new to children)
+- TODO(native): data.mud.0: どろが30%増量中 (ad parody, 増 is a 5th-grade kanji)
+- TODO(native): data.words.shiba.black: 黒 (English "Black and tan", 黒柴 is that coat)
+- TODO(native): data.words.*.black for "X and rust": ブラック＆タン (rust written as the usual タン)
+- TODO(native): data.tcmd.speak: ワンして！ (or ほえて！)
+- TODO(native): data.smells.1: これは大事件。 ("Scandalous")
+- TODO(native): data.water_lines.2: それはナシ。 ("Denied.", avoids ダメ)
+- TODO(native): data.wrong.wander.label: ふらふら行っちゃう (display site not found)
+- TODO(native): mod.toys.boo_tiful: ばあっとステキ！ ("boo-tiful")
+- TODO(native): mail.card_2: ガツンと言ってやるワンを考え中です ("a strongly worded bark")
+- TODO(native): mod.toys.thank_you_thank_you_we_are: 今週はずっとここで演奏してます ("we're here all week")
+- TODO(native): mail.nb_reyes_text: つりのおつりです (old man's voice, つり pun)
+- TODO(native): newyear.intro_today: 結んでおくと… ("on the rail" dropped)
+- TODO(native): town.salon_done: 大学を出た雲みたいな、いいにおい ("a cloud that went to university")
+- TODO(native): yard.inhaled_that_thinks_chewing_is_for: かむなんて、あきらめた子のすること ("chewing is for quitters")
+- TODO(native): title.start_over_body_html: たぶん牧場に引っこしました。ほんものの牧場です。 (the farm euphemism is not idiomatic in Japanese)
+- TODO(native): popup.lifted_a_leg_on_the: 片足をあげて、その場をおさめました ("lifted a leg on the situation")
+- TODO(native): shop.not_enough: お金持ちになってみては？ (smug tone)
+- TODO(native): core.lu_units_html: 大好き度が{l}ワンになりました。ワンという単位は、いま考えました。 (unit pun)
+- TODO(native): adopt.bold_choice_we_respect_it: そのセンス、みとめます。 (deadpan)
+- TODO(native): data.food.bone_shaped_biscuit.note: 骨なのか、ビスケットなのか。深い。 ("very meta")
+- TODO(native): data.food.apple_slices.tip: 体によくない成分 ("cyanide" softened, should the lesson name it?)
+- TODO(native): data.lines.reveal.0: 気をつかわなくていいのに。（もっとつかって） ("You shouldn't have. (You should.)")
+- TODO(native): data.lines.reveal.2: 人生。さいこうの。一日。 ("Best. Day. Ever." rhythm)
+- TODO(native): data.sig.chihuahua.say: わたしは、ちびっこ竜巻だ！ ("WEATHER EVENT", maybe 台風だ！)
+- TODO(native): data.jokes.chihuahua.1: 体重2キロ。そのうち14キロは気合い。 (impossible-number joke)
+- TODO(native): data.place_lines.westie.market: 小さな白いきくの花みたいに (the chrysanthemum image reads oddly)
+- TODO(native): data.starter_genes.*.coat: Akita and Shiba use 赤/白, other breeds レッド/ホワイト (赤柴 is the usual word)
+- TODO(native): data.jokes.corgi.4, data.jokes.lab.3: おわん for the dog bowl (or ごはん皿)
+- TODO(native): data.toys_lines.yorkie.fetchdeliver.0: おとどけ完了。ほめてよし。 (bossy, sex-neutral)
+- TODO(native): data.wx_lines.chow.dawn: 朝か。よかろう。 (lordly old voice for children?)
+- TODO(native): data.wx_lines.shiba.coat: 見よ。ぬれない犬である。ひれふすがいい。 (smug, maybe too strong)
+- TODO(native): data.toys_lines.chihuahua.poolin.0: 水がぬれすぎてる (deadpan, literal)
+- TODO(native): garden.season: ヒート (or 発情期, the heat card title on a female dog's profile)
+- TODO(native): data.tk_lines.*: endings like 〜するぞ lean a little masculine
