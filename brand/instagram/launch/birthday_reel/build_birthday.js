@@ -105,8 +105,8 @@ const FEET = 1360, SCX = 540;
   const grid = (op, pick = -1, labels = true) => M.map((s, i) => { const c = i % 3, r = Math.floor(i / 3), cx = 230 + c * 310, cy = 720 + r * 290, on = pick < 0 || pick === i;
     return `<g opacity="${on ? op : op * 0.35}">${head(s.key, s.b[1] || s.a[1] || 'hearts', cx, cy, 108)}${labels ? txt(s.m.slice(0, 3), cx, cy + 160, 50, { fill: i % 2 ? ORANGE : INK }) : ''}</g>`; }).join('');
   const intro = (t) => { let g = paperBg + txt('Your birthday month', W / 2, 300, 108, { rot: -2 }) + txt('= your dog 🎂', W / 2, 430, 120, { rot: -2, fill: ORANGE })
-    + txt('find your month, meet your dog', W / 2, 520, 52, { fill: MUTED, w: 600 }) + grid(eo3(seg(t, 0.1, 0.6)), -1, false);
-    g += `<g opacity="${eo3(seg(t, 0.6, 0.9))}" transform="rotate(-3 540 1885)"><rect x="300" y="1830" width="480" height="80" rx="40" fill="#FFE3A1"/><rect x="300" y="1830" width="480" height="80" rx="40" fill="none" stroke="${INK}" stroke-width="4"/>${txt('find your month 👇', W / 2, 1886, 52)}</g>`;
+    + txt('find your month, meet your dog', W / 2, 520, 52, { fill: MUTED, w: 600 }) + `<g transform="translate(540 620) scale(0.9) translate(-540 -620)">${grid(eo3(seg(t, 0.1, 0.6)), -1, false)}</g>`; // a little smaller, so the pill sits right under it
+    g += `<g opacity="${eo3(seg(t, 0.6, 0.9))}" transform="rotate(-3 540 1690)"><rect x="300" y="1635" width="480" height="80" rx="40" fill="#FFE3A1"/><rect x="300" y="1635" width="480" height="80" rx="40" fill="none" stroke="${INK}" stroke-width="4"/>${txt('find your month 👇', W / 2, 1691, 52)}</g>`;
     return g; };
   const outro = (t) => paperBg + txt('Which one are you?', W / 2, 330, 112, { rot: -2 }) + txt('comment your month 👇', W / 2, 450, 70, { rot: -2, fill: ORANGE }) + grid(eo3(seg(t, 0, 0.35)));
   // the end card: follow us, Noodle wagging with heart eyes (one hop), and where to play; everything above the Reels caption area
