@@ -5563,7 +5563,7 @@
  "shop.place_it": "置く",
  "shop.price_each": "1個{price}",
  "shop.put_bed": "{n}をいま{name}のためにおうちに置きますか？",
- "shop.put_decor": "{n}をいま{room}に置きますか？",
+ "shop.put_decor": "{n}をいま{room, select, house {おうちの中} other {庭}}に置きますか？",
  "shop.put_on": "{n}をいま{name}に着せますか？",
  "shop.quantity": "数",
  "shop.sell": "売る",
