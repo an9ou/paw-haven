@@ -8,9 +8,9 @@
 <meta property="og:image" content="https://doodledoggo.app/logo-1200x630.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">{{raw langscript}}
 </head><body>
-<div class="deco" id="deco" aria-hidden="true"></div>{{raw header}}
+<div class="deco" id="deco" aria-hidden="true"></div>
 <main class="page">
-  <div class="sheet aboutsheet">
+  <div class="sheet aboutsheet">{{raw header}}
     <article class="about" id="about">
       <h1>{{t about.h1}}</h1>
       <img class="abdog" src="/img/art/dogs/dachs-still.svg" alt="{{a about.dog_alt}}" width="240" height="200">

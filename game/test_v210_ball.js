@@ -180,4 +180,14 @@ require('./test_lib').run('v210_ball', async (t) => {
   await ev(() => { ['#houseG', '#bowlG'].forEach((q) => { const el = document.querySelector(q); if (el && el.onclick) el.onclick(); }); });
   ok(await ev(() => window.__paw.bl.on && !!document.getElementById('blDone')), 'tapping the dog house and the bowl keeps the ball dock and its Done button');
   await ev(() => window.__paw.bl.stop()); await t.untilMode('yard');
+
+  sec('13. Market Street: while playing, the shops open nothing and the place buttons hide (owner, v2.13.1 and v2.13.3)');
+  await ev(() => { const S = window.__paw.S; S.place = 'market'; window.__paw.go('yard'); }); await t.calm();
+  await ev(() => window.__paw.bl.start('Tennis Ball'));
+  const shops = await ev(() => [...document.querySelectorAll('svg.world [data-shop]')].map((g) => { const r = g.getBoundingClientRect(); return { k: g.getAttribute('data-shop'), x: r.left + r.width / 2, y: r.top + r.height / 2 }; }).filter((s) => s.x > 0 && s.x < innerWidth && s.y > 0 && s.y < innerHeight));
+  for (const s of shops) await t.p.mouse.click(s.x, s.y);
+  ok(shops.length >= 3 && !(await ev(() => !!document.querySelector('#modal:not([hidden]) .panel.shop'))) && (await ev(() => window.__paw.bl.on)), `clicking the ${shops.length} shop fronts opens no shop and the game goes on`);
+  ok(await ev(() => { const pb = document.getElementById('placeBtns'); return !pb || getComputedStyle(pb).display === 'none'; }), 'the place buttons hide while playing');
+  await ev(() => window.__paw.bl.stop()); await t.untilMode('yard');
+  ok(await ev(() => { const pb = document.getElementById('placeBtns'); return !!pb && getComputedStyle(pb).display !== 'none'; }), 'Done brings the place buttons back');
 });

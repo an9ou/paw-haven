@@ -15,7 +15,9 @@ const fitPA = () => (portrait() ? 'xMidYMid slice' : 'xMidYMid meet');
 function hotify(svg, sel, attr, onPick, label) {
   svg.querySelectorAll(sel).forEach((g) => {
     const k = g.getAttribute(attr); g.classList.add('hot'); g.setAttribute('tabindex', '0'); g.setAttribute('role', 'button'); g.setAttribute('aria-label', label(k));
-    g.addEventListener('click', () => onPick(k)); g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPick(k); } });
+    // v2.13.3 (owner): while ball play is on, a shop or prop opens nothing, whatever part of it takes the tap
+    const pick = () => { if (typeof blOn === 'function' && blOn()) return; onPick(k); };
+    g.addEventListener('click', pick); g.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
   });
 }
 // v2.8 review 3: with the Japan scenery the desktop street sits 30 units higher (the crop used to start at the roof cornices), so a strip of sky
@@ -144,7 +146,7 @@ function openShop(k) {
       if (hoCat(it)) { hmDecorFields(); S.decor[it.n] = { got: localISO(), out: false }; } else if (it.cat === 'beds') S.beds.push(it.n); else if (it.cat === 'food') S.inv.food[it.n] = (S.inv.food[it.n] || 0) + q; else if (it.cat === 'pantry') S.inv.pantry[it.id] = (S.inv.pantry[it.id] || 0) + q; else if (it.cat === 'tools') twGiveTool(it.n); else S.inv[it.cat].push(it.n);
       markDirty(); updateHUD();
       toast(tt('shop.bought', 'Bought {q} × {item}. {pick}', { q, item: nm, pick: PICK([tt('shop.bought_1', 'The shopkeeper did a little dance.'), tt('shop.bought_2', 'Receipt drawn in crayon.'), tt('shop.bought_3', 'No refunds. Ever.'), tt('shop.bought_4', 'Wise purchase. Probably.')]) }), 'gold');
-      if (hoCat(it)) { openShop(k); const pp = $('.panel', modal); const pl = await confirmIn(pp, tt('shop.put_decor', 'Put the {n} in the {room} now?', { n: esc(nm), room: hoRoomOf(it.n) }), tt('shop.place_it', 'Place it'), tt('shop.later', 'Later')); if (pl) { closeModal(); hoPlaceStart(it.n); return; } openShop(k); return; }
+      if (hoCat(it)) { openShop(k); const pp = $('.panel', modal); const pl = await confirmIn(pp, tt('shop.put_decor', 'Put the {n} in the {room, select, house {house} other {yard}} now?', { n: esc(nm), room: hoRoomOf(it.n) }), tt('shop.place_it', 'Place it'), tt('shop.later', 'Later')); if (pl) { closeModal(); hoPlaceStart(it.n); return; } openShop(k); return; }
       if (it.cat === 'beds') { openShop(k); const pp = $('.panel', modal); const ub = await confirmIn(pp, tt('shop.put_bed', 'Put the {n} in the house for {name} now?', { n: esc(nm), name: esc(NAME()) }), tt('shop.use_it', 'Use it'), tt('shop.later', 'Later')); if (ub) useBed(it.n); openShop(k); return; }
       if (it.cat === 'houses') { openShop(k); const pp = $('.panel', modal); const mv = await confirmIn(pp, tt('shop.move_house', 'Move {name} into the {n} now?', { name: esc(NAME()), n: esc(nm) }), tt('shop.move_in', 'Move in'), tt('shop.later', 'Later')); if (mv) switchHouse(it.n); openShop(k); return; }
       if (it.cat === 'clothes') { openShop(k); const pp = $('.panel', modal); const w = await confirmIn(pp, tt('shop.put_on', 'Put the {n} on {name} now?', { n: esc(nm), name: esc(NAME()) }), tt('shop.wear_it', 'Wear it'), tt('shop.later', 'Later')); if (w) equip(it.n, true); openShop(k); return; }
