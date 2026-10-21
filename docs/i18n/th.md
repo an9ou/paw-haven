@@ -566,7 +566,7 @@ Recurring words chosen while translating the game (English = Thai (area)), so la
 - Golden Bone = กระดูกทองคำ / zoomies = วิ่งซูมมี่ / glowing (all meters high) = เปล่งประกาย (season/yard)
 - toy names (fav list): Frisbee จานร่อน, Tennis Ball ลูกเทนนิส, Puzzle Feeder ของเล่นปริศนาใส่อาหาร, Squeaky Duck เป็ดบีบดัง, Plush Bone กระดูกตุ๊กตา, Rope Tug เชือกชักเย่อ (garden, data.fav)
 - recipes: Carrot Crunchies แครอทกรุบกรอบ, Chicken & Veggie Rice ข้าวไก่ผักรวม, Golden Harvest Stew สตูว์เก็บเกี่ยวสีทอง, Blueberry Pupsicle ไอติมหมาน้อยบลูเบอร์รี่, Pumpkin Pupcake คัพเค้กหมาน้อยฟักทอง, Spinach Scramble ไข่คนผักโขม (garden)
-- Boy / Girl (dog sex) = ผู้ชาย / ผู้หญิง (ui, adopt)
+- Boy / Girl (dog sex) = ตัวผู้ / ตัวเมีย (ui, adopt; never ผู้ชาย / ผู้หญิง for dogs)
 - dilute = สีจาง, Blue coat = สีบลู, piebald = ลายด่าง, pied = ด่างขาว, mantle = ลายแมนเทิล, parti = ลายพาร์ติ, dapple = ลายแดปเปิล, urajiro = อุราจิโระ, white markings = แต้มขาว (pups/genes)
 - The Everything Dog = น้องหมารวมมิตร; {breed} family mix = พันผสมตระกูล{breed}; Mutt mix = พันทางผสม (pups/genes)
 - families: กัปตันอาเบเบ, คุณหมอฮัดดาด, ครอบครัวโควาลสกี, คุณยายหลิน, ครอบครัวโมเรโน, ครอบครัวเหงียน, ครอบครัวโอไบรอัน, ฝาแฝดโอคาฟอร์, คุณปาเทล, คุณลุงเรเยส, สองพี่น้องซาโต้, ครอบครัวทานากะ (pups)
