@@ -43,3 +43,15 @@
 .toast::before{width:54px;height:16px;top:-8px;left:12px}
 #status::before{width:40px;height:14px;top:-7px;left:-8px;transform:rotate(-30deg)}
 
+
+/* v2.13.2 (owner: "make sure all windows are filled with colour"): the big windows (every modal panel, the dock trays, the training panel, the buy box,
+   confirms, the on-the-way and phone turn cards) are stretched so far that their frame's wobble is several px, and any fixed inset left uncoloured strips.
+   Their wash is painted by ::after through --frm, the frame's own first pencil path as a filled mask (pencilMask in 00_core.js), so it reaches the line
+   exactly; the line itself stays the element's background. --frm must name the same frame as --fr; with no --frm the ::after paints nothing. */
+:root{--frm:linear-gradient(transparent,transparent)}
+.panel,.confirm{--frm:var(--frm-card)}
+#dock > .tray{--frm:var(--frm-tray)}
+.panel,.confirm,#dock > .tray,.buybox,.onway-card,.ps-turn-card,#trainPanel{isolation:isolate}
+.panel,.confirm,#dock > .tray{--wf:linear-gradient(transparent,transparent)}
+.panel::after,.confirm::after,#dock > .tray::after,.buybox::after,.onway-card::after,.ps-turn-card::after,#trainPanel::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:var(--hatch),linear-gradient(var(--wash),var(--wash));-webkit-mask:var(--frm) 0 0/100% 100% no-repeat;mask:var(--frm) 0 0/100% 100% no-repeat}
