@@ -30,7 +30,7 @@ html.pa-panel .panel.celebrate::before{display:none}
 .tabs .btn{font-family:var(--font-hand);font-weight:700;font-size:24px;padding:4px 20px 6px}
 .tabs .btn[aria-selected="true"]{--wash:var(--w-yellow);transform:translateY(-2px) rotate(-1deg)}
 .ward{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:18px;align-items:start}
-.ward .preview{position:relative;padding:10px;background:var(--fr-card) 0 0/100% 100% no-repeat,var(--hatch) var(--ins),linear-gradient(var(--w-blue),var(--w-blue)) var(--ins)}
+.ward .preview{position:relative;padding:10px;--wash:var(--w-blue);background:var(--fr-card) 0 0/100% 100% no-repeat,var(--wf)}
 .ward .preview svg{width:100%;display:block}
 .slot{margin-bottom:10px}
 .slot h4{margin:0 0 4px;font-family:var(--font-hand);font-weight:700;font-size:25px}

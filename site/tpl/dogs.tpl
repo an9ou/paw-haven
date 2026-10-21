@@ -8,13 +8,13 @@
 <meta property="og:image" content="https://doodledoggo.app/logo-1200x630.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">{{raw langscript}}
 </head><body>
-<div class="deco" id="deco" aria-hidden="true"></div>{{raw header}}
+<div class="deco" id="deco" aria-hidden="true"></div>
 <main class="page">
-  <div class="sheet dogsheet">
+  <div class="sheet dogsheet">{{raw header}}
     <div class="top small-top">
       <h1>{{t dogs.h1}} <span class="jpw">{{t dogs.h1_gloss}}</span></h1>
       <p class="lead">{{t dogs.lead}}</p>
-      <ul class="dognav">
+      <ul class="dognav" data-close="{{a common.close}}">
 <!-- dogs:nav -->
 {{raw dognav}}
 <!-- /dogs:nav -->
@@ -26,7 +26,6 @@
 <!-- /dogs:profiles -->
 
     <div class="cta">
-      <a class="play" id="play" href="https://an9ou.itch.io/doodle-doggo">{{t common.play}}</a>
       <p class="small">{{t dogs.cta_line}} <a class="back" href="{{u /}}">{{t dogs.back}}</a></p>
     </div>
   </div>

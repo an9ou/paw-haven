@@ -113,7 +113,7 @@ ok(rd('game/src/30_shelter.js').includes('BREED_KEYS[Math.floor(r() * BREED_KEYS
 // the modules
 const bm = table('mods/toys.js', 'var BREED_M = '); full('toys BREED_M', bm);
 NEW.forEach((k) => ok(Array.isArray(bm[k].d), 'BREED_M.' + k + ' has a default offset'));
-mustHaveNew('toys TRAITS', table('mods/toys.js', 'var TRAITS = ')); mustHaveNew('toys LINES', table('mods/toys.js', 'var LINES = '));
+mustHaveNew('toys TRAITS', table('mods/toys.js', 'var TRAITS = ')); mustHaveNew('toys LINES', table('mods/toys.js', 'var TOYS_LINES = '));
 const voices = table('mods/pawaudio.js', 'var BREEDS = '), trim = table('mods/pawaudio.js', 'var TRIM = '), nbt = table('mods/pawaudio.js', 'var NB_TRIM = ');
 const pa = (k) => (k === 'dachs' ? 'dachshund' : k);
 full('pawaudio BREEDS (voices)', voices, ALL, pa); full('pawaudio TRIM', trim, ALL, pa); full('pawaudio NB_TRIM', nbt, ALL, pa);
