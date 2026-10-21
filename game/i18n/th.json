@@ -6528,7 +6528,7 @@
  "shop.place_it": "วางเลย",
  "shop.price_each": "ชิ้นละ {price}",
  "shop.put_bed": "วาง{n}ในบ้านให้ {name} เลยไหม?",
- "shop.put_decor": "วาง{n}ใน{room}เลยไหม?",
+ "shop.put_decor": "วาง{n}ใน{room, select, house {บ้าน} other {สนาม}}เลยไหม?",
  "shop.put_on": "ใส่{n}ให้ {name} เลยไหม?",
  "shop.quantity": "จำนวน",
  "shop.sell": "ขาย",
