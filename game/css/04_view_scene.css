@@ -83,7 +83,7 @@
 #placeBtns .btn{min-height:40px;padding:4px 14px 6px;font-size:17px}
 .onway{position:absolute;inset:0;z-index:40;display:grid;place-items:center;background:rgba(91,61,50,.18)}
 .onway-card{position:relative;width:420px;padding:18px 20px 16px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;border-radius:13px 9px 15px 8px;
-  background:var(--fr-card) 0 0/100% 100% no-repeat,var(--hatch) var(--ins),linear-gradient(var(--w-cream),var(--w-cream)) var(--ins);filter:drop-shadow(0 6px 10px rgba(60,40,25,.25))}
+  --wash:var(--w-cream);background:var(--fr-card) 0 0/100% 100% no-repeat,var(--wf);filter:drop-shadow(0 6px 10px rgba(60,40,25,.25))}
 .onway-card b{font-family:var(--font-hand);font-size:32px}
 .onway-dog{width:150px;height:125px;animation:trot 1.2s linear}
 .onway-dog svg{width:100%;height:100%}
@@ -95,7 +95,7 @@
 .rt-viewport{position:relative;width:100%;flex:1;min-height:0;overflow:hidden;container-type:size;touch-action:pan-y;cursor:grab}
 .rt-track{position:absolute;top:8px;left:0;display:flex;gap:36px;transition:transform .45s cubic-bezier(.3,.7,.3,1)}
 .rt-card{width:580px;flex:none;padding:14px 16px 12px;border-radius:13px 9px 15px 8px;opacity:.55;transform:scale(.86) rotate(-1deg);transition:transform .45s,opacity .45s;--wash:var(--paper);
-  background:var(--fr-card) 0 0/100% 100% no-repeat,var(--hatch) var(--ins),linear-gradient(var(--wash),var(--wash)) var(--ins)}
+  background:var(--fr-card) 0 0/100% 100% no-repeat,var(--wf)}
 .rt-card.cur{opacity:1;transform:scale(1) rotate(0)}
 .rt-card.locked{--wash:#F3ECE1}
 .rt-card.locked .rt-prev svg{filter:grayscale(.85) opacity(.6)}
