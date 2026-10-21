@@ -24,9 +24,9 @@ const chrome = `<rect width="${W}" height="${H}" rx="18" fill="#F3EFE8"/><rect x
   + `<text x="172" y="39" font-family="Helvetica, Arial, sans-serif" font-size="19" fill="#3A3A3A">${URL}</text>`;
 const scene = `<svg x="${VX}" y="${VY}" width="${VW}" height="${VH}" viewBox="40 70 900 515" preserveAspectRatio="xMidYMid slice">${inner(PA.scene('yard', env))}</svg>`;
 const FEET = 700, NW = 520, NX = 560; // Noodle: feet line, width, centre x
-// a two-frame dog (the art's own animation frames .pa-d-f0 / .pa-d-f1), we show one of them per video frame
+// the art draws each pose three times (.pa-d-f0/1/2, the game's line boil, one at a time, three times a second): keep exactly one
 const dogSvg = (pose, expr, fr, bb) => { const sv = PA.dog('dachs', { pose, expr, anim: true, facing: 'right' }).replace('<svg ', `<svg data-fr="${fr}" `), k = NW / bb[2], w = bb[2] * k, h = bb[3] * k;
-  return `<svg x="${f1(NX - w / 2)}" y="${f1(FEET - h)}" width="${f1(w)}" height="${f1(h)}" viewBox="${bb.map(f1).join(' ')}" overflow="visible">${inner(sv).replace(fr ? /class="pa-d-f0"/ : /class="pa-d-f1"/, 'class="hide"')}</svg>`; };
+  return `<svg x="${f1(NX - w / 2)}" y="${f1(FEET - h)}" width="${f1(w)}" height="${f1(h)}" viewBox="${bb.map(f1).join(' ')}" overflow="visible">${inner(sv).replace(/class="pa-d-f(\d)"/g, (m0, d) => (+d === fr ? m0 : 'class="hide"'))}</svg>`; };
 const bone = (x, y, s, rot) => `<g transform="translate(${f1(x)} ${f1(y)}) rotate(${f1(rot)})"><svg x="${-s / 2}" y="${-s / 2}" width="${s}" height="${s}" viewBox="0 0 64 64" overflow="visible">${inner(PA.item('Bone-shaped Biscuit'))}</svg></g>`;
 const heart = (x, y, s, o) => `<path transform="translate(${f1(x)} ${f1(y)}) scale(${f1(s * 100) / 100})" d="M0 8C-14 -2 -12 -16 -3 -14C0 -13 0 -10 0 -9C0 -10 0 -13 3 -14C12 -16 14 -2 0 8Z" fill="${PINK}" stroke="${INK}" stroke-width="2.4" opacity="${f1(o * 100) / 100}"/>`;
 const cursor = (x, y, press) => `<g transform="translate(${f1(x)} ${f1(y)}) scale(${press ? 0.88 : 1})"><path d="M0 0L0 30L8 23L13 35L18 33L13 21L24 21Z" fill="#FFFFFF" stroke="#111" stroke-width="2" stroke-linejoin="round"/></g>`;
@@ -43,13 +43,14 @@ const button = (glow) => `<g><circle cx="${BTN[0]}" cy="${BTN[1]}" r="48" fill="
   const K = NW / BB[2], MOUTH = [NX - NW / 2 + (219 - BB[0]) * K, FEET - BB[3] * K + (133 - BB[1]) * K];
   const NF = T * FPS;
   for (let fi = 0; fi < NF; fi++) {
-    const t = fi / FPS, wag = Math.floor(t / 0.18) % 2;
+    const t = fi / FPS, wag = Math.floor(t * 3) % 3; // line boil, as in the game
     // 0-2.4 wag and the cursor glides to the button; 2.4 click; 2.45-3.2 the bone flies; 3.2-6.4 munching + hearts; 6.4-8 heart eyes, wagging
     let pose = 'happy', expr = undefined, fr = wag;
     // he eats it with his head up (the eat pose is made for a bowl in front of him, and there is no bowl here): his yum face, bone in his mouth
     if (t >= 3.2 && t < 6.4) { pose = 'happy'; expr = 'yum'; }
     if (t >= 6.4) { pose = 'happy'; expr = 'hearts'; }
-    let g = chrome + scene + dogSvg(pose, expr, fr, BB);
+    const breath = 1 + 0.012 * Math.sin(t * 2 * Math.PI * 1.3); // a gentle breathing bob, anchored at his feet
+    let g = chrome + scene + `<g transform="translate(${NX} ${FEET}) scale(1 ${f1(breath * 1000) / 1000}) translate(${-NX} ${-FEET})">${dogSvg(pose, expr, fr, BB)}</g>`;
     const click = t >= 2.4 && t < 2.6, glow = t >= 2.4 && t < 2.9 ? seg(t, 2.4, 2.9) : 0;
     g += button(glow);
     if (t >= 2.45 && t < 3.25) { const q = eio(seg(t, 2.45, 3.2)), x = BTN[0] + (MOUTH[0] - BTN[0]) * q, y = BTN[1] + (MOUTH[1] - BTN[1]) * q - Math.sin(Math.PI * q) * 260; g += bone(x, y, 76, -20 + 380 * q); }

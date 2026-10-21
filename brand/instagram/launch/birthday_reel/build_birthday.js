@@ -64,13 +64,18 @@ const FEET = 1360, SCX = 540;
     S.push({ ...s, bg, bbs, k });
   }
   const cache = {};
-  const dogAt = (i, pose, expr, fr, cx, lift = 0, sx = 1, sy = 1) => {
+  // the art draws each pose three times (.pa-d-f0/1/2, the game's "line boil", shown one at a time three times a second): keep exactly one
+  const dogAt = (i, pose, expr, fr, cx, lift = 0, sx = 1, sy = 1, rot = 0) => {
     const s = S[i], key = [i, pose, expr, fr].join('|');
     let inn = cache[key];
-    if (!inn) { const sv = PA.dog(s.key, { pose, expr: expr || undefined, anim: true, facing: 'right', outfit: s.outfit }); inn = cache[key] = inner(sv).replace(fr ? /class="pa-d-f0"/ : /class="pa-d-f1"/, 'class="hide"'); }
-    const bb = s.bbs[pose], w = bb[2] * s.k, h = bb[3] * s.k, x = cx - w / 2, y = FEET - h - lift;
-    return `<ellipse cx="${f1(cx)}" cy="${FEET - 4}" rx="${f1(w * 0.42 * sx)}" ry="18" fill="${INK}" opacity=".2"/><g transform="translate(${f1(cx)} ${FEET - lift}) scale(${f1(sx * 1000) / 1000} ${f1(sy * 1000) / 1000}) translate(${f1(-cx)} ${-(FEET - lift)})"><svg x="${f1(x)}" y="${f1(y)}" width="${f1(w)}" height="${f1(h)}" viewBox="${bb.map(f1).join(' ')}" overflow="visible">${inn}</svg></g>`;
+    if (!inn) { const sv = PA.dog(s.key, { pose, expr: expr || undefined, anim: true, facing: 'right', outfit: s.outfit });
+      inn = cache[key] = inner(sv).replace(/class="pa-d-f(\d)"/g, (m0, d) => (+d === fr ? m0 : 'class="hide"')); }
+    const bb = s.bbs[pose], w = bb[2] * s.k, h = bb[3] * s.k, x = cx - w / 2, y = FEET - h - lift, r3 = (v) => f1(v * 1000) / 1000;
+    return `<ellipse cx="${f1(cx)}" cy="${FEET - 4}" rx="${f1(w * 0.42 * sx * (1 - Math.min(0.35, lift / 300)))}" ry="18" fill="${INK}" opacity="${f1((0.2 - Math.min(0.08, lift / 900)) * 100) / 100}"/>`
+      + `<g transform="translate(${f1(cx)} ${f1(FEET - lift)}) rotate(${f1(rot)}) scale(${r3(sx)} ${r3(sy)}) translate(${f1(-cx)} ${f1(-(FEET - lift))})"><svg x="${f1(x)}" y="${f1(y)}" width="${f1(w)}" height="${f1(h)}" viewBox="${bb.map(f1).join(' ')}" overflow="visible">${inn}</svg></g>`;
   };
+  // squash and stretch round a pose change at time ts: a quick squash just before, then a springy settle after
+  const squash = (u, ts) => { const dt = u - ts; if (dt < -0.07) return 0; if (dt < 0) return (dt + 0.07) / 0.07; return Math.exp(-8 * dt) * Math.cos(17 * dt); };
   const head = (key, expr, cx, cy, r) => { const sv = PA.dogHead(key, { expr }); return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${PAPER}" stroke="${INK}" stroke-width="4"/><svg x="${cx - r * 0.82}" y="${cy - r * 0.86}" width="${r * 1.64}" height="${r * 1.64}" viewBox="2 6 96 96" overflow="visible">${inner(sv)}</svg>`; };
   // the month card at the top, the name card at the bottom
   const topCard = (i, op = 1) => { const s = S[i]; return `<g opacity="${op}">${card(140, 200, 800, 250, -1.5)}${tape(470, 182, 140, 3)}${txt('born in', W / 2, 270, 56, { fill: MUTED, rot: -1.5 })}${txt(s.m, W / 2, 392, 132, { rot: -1.5, fill: i % 2 ? ORANGE : INK })}</g>`; };
@@ -78,10 +83,18 @@ const FEET = 1360, SCX = 540;
   // a month scene at local time u (0..STEP), drawn at horizontal offset ox (for the slide between months)
   const scene = (i, u, ox) => {
     const s = S[i]; let g = `<g transform="translate(${f1(ox)} 0)"><image href="${s.bg}" x="0" y="0" width="${W}" height="${H}"/>`;
-    const fr = Math.floor(u / 0.14) % 2;
-    if (u < 0.75) { const q = eo3(seg(u, 0.05, 0.7)), cx = -380 + (SCX + 380) * q; g += dogAt(i, s.enter, null, fr, cx, Math.abs(Math.sin(u * 22)) * 10 * (1 - q)); }
-    else if (u < 1.35) { const q = seg(u, 0.75, 0.95), sq = q < 1 ? Math.sin(Math.PI * q) : 0; g += dogAt(i, s.a[0], s.a[1], fr, SCX, 0, 1 + 0.05 * sq, 1 - 0.07 * sq); }
-    else { const q = seg(u, 1.35, 1.65), hop = Math.sin(Math.PI * q) * 70; g += dogAt(i, s.b[0], s.b[1], fr, SCX, hop, 1, 1 + 0.04 * Math.sin(Math.PI * q)); }
+    const fr = Math.floor(u * 3) % 3; // line boil, as in the game
+    const breath = 1 + 0.012 * Math.sin(u * 2 * Math.PI * 1.3), sway = Math.sin(u * 2 * Math.PI * 0.7) * 0.8;
+    if (u < 0.8) { // trots in: a bouncy step rhythm and a little rock, easing into place
+      const q = eo3(seg(u, 0.05, 0.72)), cx = -380 + (SCX + 380) * q, step = Math.sin(u * 2 * Math.PI * 3.4), damp = 1 - seg(u, 0.55, 0.78);
+      const k = squash(u, 0.8);
+      g += dogAt(i, s.enter, null, fr, cx, Math.abs(step) * 18 * damp, 1 + 0.05 * k, (1 - 0.08 * k) * breath, step * 3.2 * damp);
+    } else { // first pose and face (springy landing, breathing), then a hop: the pose and face change at the top of it, a soft landing
+      const T0 = 1.32, T1 = 1.68, q = seg(u, T0, T1), air = u > T0 && u < T1, lift = air ? Math.sin(Math.PI * q) * 70 : 0;
+      const k = u < T0 ? squash(u, 0.8) + squash(u, T0) * (u < T0 ? 1 : 0) : air ? -0.6 * Math.sin(Math.PI * q) : squash(u, T1); // squash, stretch in the air, squash on landing
+      const [pose, face] = u < (T0 + T1) / 2 ? s.a : s.b;
+      g += dogAt(i, pose, face, fr, SCX, lift, 1 + 0.05 * k, (1 - 0.08 * k) * breath, air ? 0 : sway);
+    }
     g += topCard(i) + nameCard(i, eo3(seg(u, 0.35, 0.6))) + `</g>`;
     return g;
   };
@@ -111,7 +124,7 @@ const FEET = 1360, SCX = 540;
   await shot(page(paperBg + txt('Your birthday month', W / 2, 370, 108, { rot: -2 }) + txt('= your dog 🎂', W / 2, 500, 120, { rot: -2, fill: ORANGE })
     + txt('find your month, meet your dog', W / 2, 590, 52, { fill: MUTED, w: 600 }) + `<g transform="translate(540 660) scale(0.8) translate(-540 -612)">${grid(1)}</g>`), path.join(OUT, 'birthday-reel-cover.jpg'), 'jpeg');
   if (process.env.ONLY === 'stills') {
-    const ts = [1.0, INTRO + 0.5, INTRO + 1.0, INTRO + 1.9, INTRO + 2.1, ...M.map((_, i) => INTRO + i * STEP + 1.8), T - 0.5];
+    const ts = process.env.STRIP ? process.env.STRIP.split(',').map(Number) : [1.0, INTRO + 0.5, INTRO + 1.0, INTRO + 1.9, INTRO + 2.1, ...M.map((_, i) => INTRO + i * STEP + 1.8), T - 0.5];
     for (const [j, t] of ts.entries()) await shot(page(frameAt(t)), path.join(WORK, `still${String(j).padStart(2, '0')}.png`));
     await b.close(); console.log('stills done'); return;
   }
