@@ -6327,7 +6327,7 @@
  "shop.place_it": "놓기",
  "shop.price_each": "개당 {price}",
  "shop.put_bed": "{name}에게 {n, josa, 을/를} 지금 집 안에 놓아 줄까요?",
- "shop.put_decor": "{n, josa, 을/를} 지금 {room}에 놓을까요?",
+ "shop.put_decor": "지금 {n, josa, 을/를} {room, select, house {집 안에} other {마당에}} 놓을까요?",
  "shop.put_on": "{name}에게 지금 {n, josa, 을/를} 입혀 줄까요?",
  "shop.quantity": "수량",
  "shop.sell": "팔기",
