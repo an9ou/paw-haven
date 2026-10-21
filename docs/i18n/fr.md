@@ -328,7 +328,7 @@ Two sentences, short, kind, true.
 
 ## Game
 
-Game strings: 7335 / 7362 keys (v2.14 WIP). Held until en.json had the sex select (fixed at 8fe6748 on integration/v2.14): the 17 data.eat_lines, 6 data.walk_lines and 4 data.potty_lines keys; their French drafts are in the block at the end of this section.
+Game strings: 7362 / 7362 keys (v2.14), site strings 865 / 865 (incl. the new /guide page). The 27 pronoun-var keys (eat, walk and potty lines) are written without pronouns or with a sex select where French needs one. TODO(native) lines from the translators:
 
 - TODO(native) data.tk_lines.*: dog voice lines kept gender-neutral where possible (breed lines carry no sex); afghan/maltese stay feminine on purpose ("petite dame blanche"), check
 - TODO(native) data.tk_lines.frenchie.shibuya: "*grouik*" for the snort (same as site Dumpling), TODO(native)
@@ -374,37 +374,5 @@ Game strings: 7335 / 7362 keys (v2.14 WIP). Held until en.json had the sex selec
 - TODO(native) Captain Fluff: I used "le capitaine Houpette" (lowercase capitaine, like garden.squirrel and data.breed_line.chihuahua) in data.jokes.5 and data.fluff_lines.*; data.perk.guard (other lane) says "Capitaine Duvet" and should be "capitaine Houpette".
 - TODO(native) data.fav.<breed> (bare keys, e.g. data.fav.shiba): value is a recipe id (DISH_FAV) not display text; left identical to English on purpose.
 - TODO(native) data.dc_words_b.*: all 40 card-name nouns chosen MASCULINE (Cristal, Gland, Nuage, Croissant, Souci, Raton...) so the A-list adjectives (data.dc_words_a, another agent) can be masculine/epicene forms: "Joyeux Biscuit". Meanings loosened where the French word is feminine (Dewdrop=Cristal, Otter=Raton, Waffle=Beignet, Bubble=Ballon, Moon=Croissant, Sock=Bas, Mitten=Chausson, Fern=Lierre, Comet=Météore).
-
-### Held drafts (merge after merging origin/integration/v2.14)
-
-<details><summary>drafts</summary>
-
-```json
-{
- "data.eat_lines.afghan": "{n} a mangé avec élégance et a rejeté ses oreilles en arrière. Pas une miette sur la soie.",
- "data.eat_lines.beagle": "{n} a fini en une seconde. Maintenant, ça renifle des miettes dans la rue d'à côté.",
- "data.eat_lines.chihuahua": "{n} a mangé trois bouchées, a grogné sur la gamelle, puis a fini son repas.",
- "data.eat_lines.corgi": "{n} a fini et a cherché la suite dans la gamelle. Ça cherche encore.",
- "data.eat_lines.dachs": "{n} a mangé, puis a essayé d'enterrer la gamelle. C'est pour plus tard.",
- "data.eat_lines.dobie": "{n} a mangé proprement, a inspecté la pièce, puis a posé sa tête lisse sur ton genou.",
- "data.eat_lines.frenchie": "{n} a mangé en grouinant beaucoup. Verdict : excellent.",
- "data.eat_lines.golden": "{n} a mangé, puis t'a remercié avec toute sa queue. Et le derrière.",
- "data.eat_lines.greyhound": "{n} a mangé délicatement avec son très long museau, puis s'est couché.",
- "data.eat_lines.husky": "{n} a mangé et a chanté son avis. AHOUUU.",
- "data.eat_lines.mutt": "{n} a mangé et t'a regardé comme si tu avais décroché la lune. C'est sincère.",
- "data.eat_lines.poodle": "{n} a mangé proprement et a cherché des miettes dans ses boucles. Aucune. Évidemment.",
- "data.eat_lines.pug": "{n} a tout aspiré. Les grouiks disent dix sur dix.",
- "data.eat_lines.samoyed": "{n} a mangé en souriant. Le sourire n'a pas quitté son visage une seconde.",
- "data.eat_lines.shiba": "{n} a mangé lentement, pour que tu saches qui commande ici.",
- "data.eat_lines.spitz": "{n} a mangé délicatement et a cherché des miettes dans son duvet blanc. Impeccable.",
- "data.eat_lines.stdpoodle": "{n} a mangé poliment, s'est essuyé le museau et t'a remercié d'une petite révérence.",
- "data.walk_lines.afghan": "{n} flottait avec ses longs poils au vent. Trois personnes ont demandé une photo.",
- "data.walk_lines.maltese": "{n} glissait en balançant sa frange. Quelqu'un a demandé une photo.",
- "data.walk_lines.poodle": "{n} a trotté tout du long comme en plein concours de beauté. C'était justement le cas.",
- "data.walk_lines.shiba": "{n} marchait comme si le chemin lui appartenait. Ce n'était pas le cas.",
- "data.walk_lines.spitz": "{n} a trotté tout du long, la queue en l'air. Quatre personnes ont dit : quelle boule de poils !",
- "data.walk_lines.westie": "{sex, select, female {{n} a creusé dans trois parterres de fleurs et un sentier. Elle est très fière du sentier.} other {{n} a creusé dans trois parterres de fleurs et un sentier. Il est très fier du sentier.}}"
-}
-```
-
-</details>
+- TODO(native): the Retour : {place} form is used for every Back to {place} button because the place name arrives as a var (no article agreement possible).
+- TODO(native): mail.new_mail "Nouveau courrier : {title}" shows a capital after the colon when the title is a sentence ("Un colis de Mme Plum").
