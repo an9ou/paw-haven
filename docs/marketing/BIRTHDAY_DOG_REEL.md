@@ -50,3 +50,24 @@ All 12 (and 23 more) live in Doodle Doggo, a free cozy dog game you play in your
 #doodledoggo #birthdaymonth #whichdogareyou #cozygames #doglovers #indiegame #doggame
 ```
 **Alt text:** `Twelve crayon dogs, one per birthday month, each in an outfit and a place that fits the season.` (95 characters)
+
+## Using it as an ad (Meta Ads Manager)
+
+**Goal:** Traffic. **Website:** https://doodledoggo.app (the game now plays right on the home page, so people are one tap from playing; itch.io works too). **Button:** "Play game" (or "Learn more"). **Placements:** Reels and Stories.
+
+**Primary text, option A (the question)**
+```
+What's your birthday month? 🎂 Your dog is waiting.
+12 months, 12 crayon dogs, plus 23 more in Doodle Doggo, a free cozy dog game. Play in your browser, no download.
+```
+**Primary text, option B (the game first)**
+```
+Your birthday month = your dog 🎂🐶 Find yours, then adopt one for real in Doodle Doggo: a free cozy dog game in your browser. No download, phone or computer.
+```
+**Headline** (pick one): `Find your birthday dog 🎂` · `Free cozy dog game, no download` · `35 crayon dogs to adopt`
+**Description** (shown on some placements): `Play free in your browser.`
+
+Notes:
+- The first line is what people see before "more" (about 125 characters), so the hook is in the first sentence.
+- Run A and B as two ads in one ad set for 3–4 days, then keep the one with the lower cost per link click.
+- An ad needs the game named in the video itself, because most viewers never read the caption: add the end line "all 35 dogs live in a free game · @doodledoggo.app" before running it as an ad.
