@@ -325,3 +325,49 @@ Two sentences, short, kind, true.
 - TODO(native): love items "muffin toutou" (pupcake), "gamelle puzzle" (puzzle feeder), "corde à tirer" (rope tug), "rapporter la balle" (fetch).
 - TODO(native): "Carte toutou" written with a capital C in the privacy page sentences (the feature name).
 - TODO(native): "JOUER SUR ITCH.IO" wraps to two lines on a 320 px phone (fine at 360 px). A shorter label would need to drop words.
+
+## Game
+
+Game strings: 7362 / 7362 keys (v2.14), site strings 865 / 865 (incl. the new /guide page). The 27 pronoun-var keys (eat, walk and potty lines) are written without pronouns or with a sex select where French needs one. TODO(native) lines from the translators:
+
+- TODO(native) data.tk_lines.*: dog voice lines kept gender-neutral where possible (breed lines carry no sex); afghan/maltese stay feminine on purpose ("petite dame blanche"), check
+- TODO(native) data.tk_lines.frenchie.shibuya: "*grouik*" for the snort (same as site Dumpling), TODO(native)
+- TODO(native) vet.sum_carries / vet.pup_*: "des chiots {list2}" needs plural adjectives (bleus, roux ou dorés, bicolores, aux yeux bleus); vet.carry_* are nouns after "gènes cachés :"
+- TODO(native) vet.coat_eyes: "yeux {eyes}" depends on how the eye colour words are translated elsewhere (blue -> bleus?)
+- TODO(native) vet.fix_toast / vet.spay / vet.neuter: "collerette de dignité", "Stériliser / Castrer" button forms, check tone
+- TODO(native) vet.painter_broke: "payé en pièces, pas en visibilité" rewrites the exposure joke
+- TODO(native) data.food.*.n: names chosen here (Esquimau toutou glacé, Muffin toutou, Kinton toutou, Carottes façon candy corn); other agents' clothes/treasure names must match: Croquants de carotte, Brouillade d'épinards, casquette de gland, lunettes d'explorateur, collier de coquillages, imperméable, baies sauvages, Flairomètre
+- TODO(native) mod.walk.*: Flairomètre (Nose-o-meter), Creuser !, Fouilles restantes, Se baisser (Duck) used as button labels; "Flaque !" for Soggy pop
+- TODO(native) data.ny_zodiac.2027.animal: "Mouton" (French zodiac often says "chèvre")
+- TODO(native) data.npc_boys.*: names kept English (Capitaine Waffles), per site decision
+- TODO(native) fest.place_q / fest.wear_q / care.not_enough / care.seagull / care.climb_in: item names wrapped in « » because French articles/gender of item names are unknown
+- TODO(native) cloud.err_code_expired: names the button "Envoyer un nouveau code"; must match reset.send_new (other agent)
+- TODO(native) cloud.err_too_many_tries: same, button "Envoyer un nouveau code"
+- TODO(native) cloud.err_email_taken: names the link "Mot de passe oublié" (matches cloud.forgot)
+- TODO(native) newyear.gerald_text: "l'année du zodiaque : {animal}" kept neutral because data.ny_zodiac animal has no article/gender; check against that translation (Sheep 2027)
+- TODO(native) popup.soon_card_html: "chariot à pousses" for Pip's Sprout Cart, must match data.shop_name.sprout (other agent)
+- TODO(native) data.gd_lessons.shops_coin.3: "chariot à pousses de Pip", same as above
+- TODO(native) data.perk.guard: "Capitaine Duvet" for Captain Fluff; check it matches the name elsewhere
+- TODO(native) town.cafe_donut: "Donut toutou" (Doggy Donut); town.cafe_pupuccino kept "Pupuccino"
+- TODO(native) town.route_hilltop/pier/town and town.place_*: check vs data.route_name / data.places from other agents ("Sentier de la colline", "Promenade de la jetée", "Boucle du village")
+- TODO(native) photo.place_town: "Ville Doodle" (English "Doodle Town") vs town.map_title "Ville de Doodle Doggo"
+- TODO(native) playdate.*: "en chaleurs" used for "in season"; "Prédicteur de chiots" for Puppy Predictor; ✓ dropped from ready_for_a_playdate (emoji check refused it)
+- TODO(native) data.dc_breed_words: short French breed words used as dog names (Limier for Hound, Pit for Pittie, Dobi for Dobie)
+- TODO(native) data.jr_grand: kept in English on purpose (mix pun names)
+- TODO(native) data.words.*: coat colours built from one mapping (Foie, Sable for yellow lab, Poivre et sel, rouille for rust, feu for tan); native check
+- TODO(native) data.wx_lines.* / breed_pers.*: breed voices avoid gendered adjectives on purpose (no sex arg); check tone
+- TODO(native) cards.name_pattern: I set it to "{b} {a}" and wrote data.dc_words_a as invariable "de soleil / de coton / chic" words (so any gender of the dc_words_b noun works). data.dc_words_b owner must keep nouns without articles ("Biscuit", "Étoile"); do not change the pattern back to "{a} {b}".
+- TODO(native) data.starter_genes.*.coat and data.words: coat colour names must match (Roux, Fauve, Noir et feu, Chocolat (foie), Tricolore, Poivre et sel); I used "foie" for liver consistently (garden.fb_*, mod.genes.*).
+- TODO(native) data.houses names used in data.spot_toast: "Cabane dans l'arbre" (Treehouse Den), "Niche du château royal" (Royal Castle Kennel): check data.houses agrees.
+- TODO(native) data.extra_unsafe.raw_dough.swap: "Carrot Crunchies" written as "croquants de carotte": check data.food/recipes name.
+- Settled by the Coordinator review (21 Oct): Nose-o-meter = Flairomètre everywhere (not Nez-o-mètre, not Truffomètre); Town Loop = Boucle du village; Captain Fluff = capitaine Houpette; the eat/walk/potty lines are translated gender-neutral.
+- TODO(native) Terms invented: Nose-o-meter = Truffomètre (journal.treasures_hint); Captain Fluff = capitaine Houpette (matches an existing fr entry); Show off tab = Spectacle (train.tab_show); Master Breeder title = Maître des pelages; Friend of Doodle Doggo = Complice de Doodle Doggo; Great-Great-Granddog = Arrière-arrière-petit-chien.
+- TODO(native) mod.genes.need_dapple: "dapple" kept as is; check against data.dapple_words (Teckel arlequin?).
+- TODO(native) data.walk_lines.beagle / data.treasures: 'Nose-o-meter' translated 'Flairomètre' by D; check same word in mod.walk.nose_o_meter (other agent)
+- TODO(native) Captain Fluff = 'capitaine Houpette' (others' choice), IOU = 'reconnaissance de dette'; journal.treasures_hint uses 'Truffomètre' but mod.walk uses 'Flairomètre' (not mine, should be unified)
+- TODO(native) shop.put_decor: source passes raw English 'house'/'yard' as {room} (hoRoomOf in 28_home.js), so French shows it untranslated in parentheses; code should translate it
+- TODO(native) Captain Fluff: I used "le capitaine Houpette" (lowercase capitaine, like garden.squirrel and data.breed_line.chihuahua) in data.jokes.5 and data.fluff_lines.*; data.perk.guard (other lane) says "Capitaine Duvet" and should be "capitaine Houpette".
+- TODO(native) data.fav.<breed> (bare keys, e.g. data.fav.shiba): value is a recipe id (DISH_FAV) not display text; left identical to English on purpose.
+- TODO(native) data.dc_words_b.*: all 40 card-name nouns chosen MASCULINE (Cristal, Gland, Nuage, Croissant, Souci, Raton...) so the A-list adjectives (data.dc_words_a, another agent) can be masculine/epicene forms: "Joyeux Biscuit". Meanings loosened where the French word is feminine (Dewdrop=Cristal, Otter=Raton, Waffle=Beignet, Bubble=Ballon, Moon=Croissant, Sock=Bas, Mitten=Chausson, Fern=Lierre, Comet=Météore).
+- TODO(native): the Retour : {place} form is used for every Back to {place} button because the place name arrives as a var (no article agreement possible).
+- TODO(native): mail.new_mail "Nouveau courrier : {title}" shows a capital after the colon when the title is a sentence ("Un colis de Mme Plum").
