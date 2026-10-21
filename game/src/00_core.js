@@ -473,17 +473,23 @@ function pencilSVG(W, H, pts, seed, closed = true, amp = 1.5) {
   const a = wobble(pts, rnd, amp, rnd(), 1.03, closed), b = wobble(pts, rnd, amp * 0.9, rnd(), 0.95, closed);
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><g fill="none" stroke="${INKG}" stroke-linecap="round" stroke-linejoin="round"><path d="${a}" stroke-width="2.3" vector-effect="non-scaling-stroke"/><path d="${b}" stroke-width="1.2" opacity=".55" vector-effect="non-scaling-stroke"/></g></svg>`;
 }
+// v2.13.2: the same pencil line (same seed, same first path) as a filled shape, used as a CSS mask so a big window's crayon wash fills exactly up to its
+// line however far the frame is stretched (a fixed inset left strips at the corners and edges of the shops, the journal and the training panel)
+function pencilMask(W, H, pts, seed, closed = true, amp = 1.5) {
+  const rnd = seeded(seed), a = wobble(pts, rnd, amp, rnd(), 1.03, closed);
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><path d="${a}Z" fill="#000"/></svg>`;
+}
 function propOK(name) { try { const f = PA().prop; if (typeof f !== 'function') return ''; const v = f.call(PA(), name); return typeof v === 'string' && v.includes('<svg') ? v : ''; } catch (e) { return ''; } }
 function buildChrome() {
   const root = document.documentElement, set = (k, svg) => root.style.setProperty(k, svgURI(svg));
-  set('--fr-card', pencilSVG(300, 200, rrPts(300, 200, 9, 3, 90), 11));
+  set('--fr-card', pencilSVG(300, 200, rrPts(300, 200, 9, 3, 90), 11)); set('--frm-card', pencilMask(300, 200, rrPts(300, 200, 9, 3, 90), 11));
   set('--fr-btn', pencilSVG(200, 60, rrPts(200, 60, 12, 3, 70), 23));
   const circ = Array.from({ length: 44 }, (_, i) => [50 + Math.cos(i / 44 * 6.283) * 45, 50 + Math.sin(i / 44 * 6.283) * 45]);
   set('--fr-round', pencilSVG(100, 100, circ, 37));
   set('--fr-tube', pencilSVG(300, 24, rrPts(300, 24, 10, 2.5, 80), 41, true, 1.1));
   set('--fr-tubew', pencilSVG(1000, 24, rrPts(1000, 24, 10, 2.5, 160), 43, true, 1.2));
   set('--fr-wide', pencilSVG(800, 60, rrPts(800, 60, 12, 3, 140), 47, true, 1.6));
-  set('--fr-tray', pencilSVG(1000, 170, rrPts(1000, 170, 12, 3, 180), 59, true, 1.7));
+  set('--fr-tray', pencilSVG(1000, 170, rrPts(1000, 170, 12, 3, 180), 59, true, 1.7)); set('--frm-tray', pencilMask(1000, 170, rrPts(1000, 170, 12, 3, 180), 59, true, 1.7));
   set('--fr-stage', pencilSVG(1280, 720, rrPts(1280, 720, 14, 4, 260), 61, true, 2.2));
   set('--line', pencilSVG(600, 9, Array.from({ length: 60 }, (_, i) => [3 + i * 594 / 59, 4.5]), 53, false, 1.6));
   set('--fr-tail', `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 18"><path d="M1 1 L7 17 L21 1 Z" fill="#FFFBF3"/><path d="M1.5 2 Q5 9 7 16.5 Q13 9 20.5 2" fill="none" stroke="${INKG}" stroke-width="2" stroke-linecap="round"/></svg>`);

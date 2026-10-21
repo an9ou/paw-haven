@@ -6528,7 +6528,7 @@
  "shop.place_it": "Place it",
  "shop.price_each": "{price} each",
  "shop.put_bed": "Put the {n} in the house for {name} now?",
- "shop.put_decor": "Put the {n} in the {room} now?",
+ "shop.put_decor": "Put the {n} in the {room, select, house {house} other {yard}} now?",
  "shop.put_on": "Put the {n} on {name} now?",
  "shop.quantity": "Quantity",
  "shop.sell": "Sell",
