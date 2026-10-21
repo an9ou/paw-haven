@@ -403,3 +403,46 @@ The site translation (`site/i18n/zh-Hans.json`, v2.14 phase 1b). Item words used
 - TODO(native): 小狗版的{name} for the puppy picture caption (English "a Mochi puppy").
 - TODO(native): privacy page wording (哈希, 打乱处理过的密码, 不发订阅邮件) and the added line in privacy.updated: 「本政策的中文版与英文版如有不同，以英文版为准。」
 - TODO(native): on a 375 px phone the tagline 「领养一只歪歪扭扭的蜡笔小狗，好好爱它」 wraps inside 蜡笔; acceptable, or shorten?
+
+## Game
+
+`game/i18n/zh-Hans.json` (v2.14 phase 2, 7362 keys, translated 21 Oct 2026). Choices made for Simplified Chinese players:
+- Item, place, toy, food and trick names are fixed once and used the same way in shops, walks, the journal and every line (e.g. Snuffle Mat 嗅闻垫, Snow Igloo 冰雪小屋, Play Dead 装睡, the Corgi's Loaf 吐司趴, Nose-o-meter 嗅嗅仪, dog spot 狗狗位, snowdog 雪狗).
+- Every dog is 它 unless the line keeps a `sex` branch. The player has no gender (你, never 您). Gerald, a male duck, may be 他.
+- "In season" is the heat cycle (发情期), never a season of the year. "Fewer than 4 litters" = 最多生过3胎, and "rest one season" = 休息一个发情期. Pug snorts are 哼哧 or 呼噜, never 打喷嚏. The veggie Garden is 菜园 and the Home Yard is 院子, never mixed up.
+- Bar buttons: 喂食, 玩耍, 照顾, 散步, 衣橱, 日记, 地图. Buy = 买, Bond = 亲密度, coins = 金币.
+- Lessons are exactly two sentences. Where the English has three or four (Gerald's lessons, `winter.lesson`), they are joined into two.
+- No funeral imagery: the English "tiny white chrysanthemum" became 小白云 or 小白雪球. The Shiba's "I have died" joke became a faint.
+- TODO(native): `data.tk_lines.westie.asakusa`: English "tiny white chrysanthemum" (funeral imagery in Chinese) became 小白云. Check it still reads as a cute picture.
+- TODO(native): `winter.lesson`: the English has three sentences, merged into two for the lesson rule.
+- TODO(native): `data.ph_season_cap.autumn`: "Leaf pile pending" rewritten as 落叶堆，准备起跳.
+- TODO(native): `fest.no_costume`, `data.wn_cats.4.1`: "Bold." = 有胆量, may sound stiff.
+- TODO(native): `data.wn_cats.0.1`: 杰拉德看得得坐下来缓缓 (doubled 得 on purpose, check it reads well).
+- TODO(native): `popup.has_made_a_contribution`: 留下了一份“贡献” as the potty euphemism.
+- TODO(native): `tokyo.station_locked`: the "fast trains, fast friendship" joke may land flat.
+- TODO(native): `data.wx_lines.lab.snow`: eating snow softened to 尝一口.
+- TODO(native): Baker Bea = 面包师贝亚 (short 贝亚), Rainbow Bridge = 彩虹大桥, otoshidama = 压岁钱, shimekazari = 注连饰: check the names.
+- TODO(native): `title.start_over_body_html`: 「大概是搬去农场了。真的农场哦。」 Check the "moved to a farm" joke stays gentle in Chinese.
+- TODO(native): `data.dc_breed_words.5`: 串串 (friendly mutt slang) in Dog Card names. Do kids know it?
+- TODO(native): `journal.title_master_breeder` 毛色大师, `journal.coat_keep` 多办几次玩伴聚会: rewritten to avoid "breed" as a verb. Check the meaning holds.
+- TODO(native): `playdate.has_retired_from_romance`: 已经从玩伴聚会退休了 drops the romance joke on purpose.
+- TODO(native): `mod.genes.everything_dog` 什么都有狗, `mod.genes.coat_mantle` 披风花色, `coat_parti` 拼色, harlequin 丑角色: invented or unsettled coat words.
+- TODO(native): `data.dc_words_a.*`: some adjective + noun card names (咯咯笑 + X, 胆大 + X) may sound odd.
+- TODO(native): `vet.fix_toast`: 尊严圈 for "Cone of Dignity" (the real word is 伊丽莎白圈).
+- TODO(native): `data.families.haddad.where`: 当牙医、爱哼歌的 reads a bit heavy in front of 哈达德医生.
+- TODO(native): `data.place_lines.westie.market`: "tiny white chrysanthemum" became 小白雪球 (no funeral flowers).
+- TODO(native): `data.houses.cozy_cottage.note`: 烟囱、花箱，还有房贷 keeps the mortgage joke. Fine for kids?
+- TODO(native): `time.away`: "missed you a normal amount" may read stiffly.
+- TODO(native): `yard.flips_upside_down_legs_in`: 蟑螂睡 for the greyhound "roaching" joke.
+- TODO(native): `data.npc_boys.*` / `data.npc_girls.*`: transliterated or translated people's names (小枫 for Maple so it differs from the Malamute's 枫糖).
+- TODO(native): `data.sig.shiba.say`: the death joke ("I have died. Bury me in pâté.") became a faint (我晕倒了。只有肉酱才能把我叫醒。), matching 戏精晕倒.
+- TODO(native): `data.jokes.shiba.3`: the "beneath me. Literally" pun is explained, not kept as wordplay.
+- TODO(native): `data.badge.high` 蹲下 / `low` 跳 / `wide` 跳远: walk obstacle badges.
+- TODO(native): `pack.boy` / `pack.girl` (and adopt, genes): 男孩 / 女孩 for a dog's sex. 公 / 母 is the more usual word. Is 男孩/女孩 cute or odd?
+- TODO(native): `mod.toys.rain_from_a_snake`: the hose-as-snake joke is literal.
+- TODO(native): `data.people_*.avocado.why`: persin written as 牛油果毒素 (Chinese pet sites often say 甘油酸, a different compound).
+- TODO(native): `data.gd_lessons.*.3`: the English has 3–4 sentences, joined into two for the lesson rule.
+- TODO(native): `data.clothes.ghost_sheet` / `trick_or_treat_ghost`: "Boo" became 嘿. A better ghost sound?
+- TODO(native): `data.fav.*`: recipe ids (DISH_FAV), not shown anywhere, kept in English.
+- TODO(native): `title.a_cozy_dog_game_sketchbook`: 温馨素描本狗狗游戏 (shortened so it fits one line on a phone).
+- TODO(native): `data.mix_list.*`: 16 well-known real mixes have Chinese names in the A+B shop style (拉布拉多贵宾犬, 金毛贵宾犬, 马尔济斯贵宾犬, 博美哈士奇, 巴哥比格犬 …). Check they are the names Chinese owners use (e.g. 马尔贵宾 for Maltipoo). The pun names stay English and show as A × B.
