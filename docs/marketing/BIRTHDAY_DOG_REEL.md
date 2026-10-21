@@ -1,18 +1,18 @@
 # "Your birthday month = your dog" Reel
 
-Made 21 Oct 2026 (owner's idea). Files are in `brand/instagram/launch/birthday_reel/`.
+Made 21 Oct 2026 (owner's idea). English only: no Japanese text in the video, the cover or the caption (owner). Files are in `brand/instagram/launch/birthday_reel/`.
 
 | File | What |
 |---|---|
 | `doodle-doggo-birthday-dog-reel.mp4` | 1080 x 1920, 30 fps, 30 s, with the game's music. |
-| `birthday-reel-cover.jpg` | The cover: "Your birthday month = your dog 🎂" over a grid of the 12 dog faces with their months. Everything sits in the grid's 3:4 crop. |
+| `birthday-reel-cover.jpg` | The cover: "Your birthday month = your dog 🎂", "find your month, meet your dog", over a grid of the 12 dog faces with their months. Everything sits in the grid's 3:4 crop. |
 | `build_birthday.js` | Remake: `NODE_PATH=/opt/node-tools/node_modules node brand/instagram/launch/birthday_reel/build_birthday.js <workdir>` (about 7 minutes; `ONLY=stills` renders key frames and the cover only). |
 
 ## What is in it
 
-- **0–2 s:** the title, "Your birthday month = your dog 🎂", 誕生月でわかる、あなたのワンコ, the 12 faces pop in, "find your month 👇".
-- **2–28.4 s:** one 2.2-second scene per month. The scene slides in, the dog walks in, strikes a pose with one face, then hops into a second pose and face. A "born in" month card sits at the top (with the Japanese month), and a name card at the bottom: the dog's name and "you are …".
-- **28.4–30 s:** "Which one are you? comment your month 👇", あなたは何月生まれ？, the grid of all 12.
+- **0–2 s:** the title, "Your birthday month = your dog 🎂", "find your month, meet your dog", the 12 faces pop in, "find your month 👇".
+- **2–28.4 s:** one 2.2-second scene per month. The scene slides in, the dog walks in, strikes a pose with one face, then hops into a second pose and face. A "born in" month card sits at the top, and a name card at the bottom: the dog's name and "you are …".
+- **28.4–30 s:** "Which one are you? comment your month 👇" over the grid of all 12.
 - Real art only: `PawArt.dog` with outfits and v2.13 faces, `PawArt.scene` in the right season (snow, rain, spring, Halloween). No game buttons or menus.
 - Sound: the game's own music (`mods/pawaudio.js`, the Town Square by day), a soft pop at each month change, levelled to -16 LUFS.
 
@@ -47,8 +47,6 @@ January loyal Kuma, February softie Brioche, March mighty Mikan… and October? 
 
 All 12 (and 23 more) live in Doodle Doggo, a free cozy dog game you play in your browser. Link in bio.
 
-誕生月でわかる、あなたのワンコ🎂
-
-#doodledoggo #birthdaymonth #whichdogareyou #cozygames #doglovers #indiegame #誕生月
+#doodledoggo #birthdaymonth #whichdogareyou #cozygames #doglovers #indiegame #doggame
 ```
 **Alt text:** `Twelve crayon dogs, one per birthday month, each in an outfit and a place that fits the season.` (95 characters)
