@@ -6,7 +6,7 @@ Made 21 Oct 2026 (owner's idea). English only: no Japanese text in the video, th
 |---|---|
 | `doodle-doggo-birthday-dog-reel.mp4` | 1080 x 1920, 30 fps, 32.8 s, with the game's music. |
 | `birthday-reel-cover.jpg` | The cover: "Your birthday month = your dog 🎂", "find your month, meet your dog", over a grid of the 12 dog faces, no month names (owner, 21 Oct 2026: the months are the surprise in the video). Everything sits in the grid's 3:4 crop. |
-| `build_birthday.js` | Remake: `NODE_PATH=/opt/node-tools/node_modules node brand/instagram/launch/birthday_reel/build_birthday.js <workdir>` (about 7 minutes; `ONLY=stills` renders key frames and the cover only). |
+| `build_birthday.js` | Remake: `NODE_PATH=/opt/node-tools/node_modules node brand/instagram/launch/birthday_reel/build_birthday.js <workdir>` (about 7 minutes; `ONLY=stills` renders key frames and the cover only). For a fix to one part, copy the last render's workdir and run with `FRAMES=a-b` (frame numbers at 30 fps, b excluded; the opening is 0-60): only those frames are rendered, then the video is encoded again (about 1 minute). |
 
 ## What is in it
 
