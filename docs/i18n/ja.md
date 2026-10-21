@@ -417,7 +417,7 @@ Never hit (the `allow` list, also used as negative tests): 「犬種」 「日�
 `game/i18n/ja.json` (v2.14 phase 2, 7362 keys, translated and reviewed 19-21 Oct 2026). Choices made for Japanese players:
 - Item, place, toy, food and trick names are fixed once and used the same way in shops, walks, the journal and every line (e.g. Snuffle Mat ノーズワークマット, Snow Igloo 雪のかまくら, Wind Chime 風鈴, Play Dead バーン, the Corgi's Loaf 食パン).
 - Dog lines work for dogs of either sex: no ぼく, no feminine endings and no 彼/彼女 unless the line has a `sex` branch. Only Gerald (a male duck) and Gary say ぼく. The player never has a gender, and あなた is never used.
-- "In season" is the heat cycle (ヒート), never 季節. Litters are births (出産3回まで). Snorts are ブヒッ. The veggie Garden is 菜園 or 畑, never the Home Yard.
+- "In season" is the heat cycle (ヒート), never 季節. Litters are births (前の出産が3回以下ならOK（出産4回まで、大型犬は3回まで）). Snorts are ブヒッ. The veggie Garden is 菜園 or 畑, never the Home Yard.
 - Bar buttons on the phone are at most 3 kana wide: ごはん, あそぶ, おせわ, さんぽ, きがえ, 日記, 地図. The Wardrobe title stays クローゼット.
 - Well-known real mixes have their Japanese pet-shop names (チワプー, マルプー, ポメチワ, チワックス, ダップー, ラブラドゥードル …, 32 in all). The pun names stay English and show as 「A × B」.
 - Coat words: kennel-club katakana for Western breeds (ブラック＆タン, フォーン, セーブル), native words for Japanese breeds (赤, 黒, ごま, 白).
@@ -428,7 +428,7 @@ Never hit (the `allow` list, also used as negative tests): 「犬種」 「日�
 - TODO(native): photo.gerald: はい、チーズ。……じゃなくて、ドッグフード。 ("Say cheese. Or kibble.")
 - TODO(native): train.chain / train.nailed: 連続 / お客さん×2 (tight training panel)
 - TODO(native): train.mode_cue / train.mode_hand: 手の合図 / ハンドサイン（1.3倍） (cue vs hand signal)
-- TODO(native): packplay.dress: 着がえ (Dress button; Wardrobe is クローゼット)
+- RESOLVED (Coordinator review 21 Oct): packplay.dress: 着がえ (Dress button; Wardrobe is クローゼット)
 - TODO(native): settings.lang_device: デバイスの言語を使う (デバイス, 端末 felt hard for kids)
 - TODO(native): data.dc_breed_words.28 / 13 / 16 / 21 / 23: デカプー, フレブル, ポメ, ドーベル, ピティ (nickname forms used in visiting dog names)
 - TODO(native): data.dc_words_a.*: adjective forms that join straight onto the B nouns ({a}{b}): ゆめみる, がんばりやの, かすみの
@@ -456,7 +456,7 @@ Never hit (the `allow` list, also used as negative tests): 「犬種」 「日�
 - TODO(native): newyear.intro_today: 結んでおくと… ("on the rail" dropped)
 - TODO(native): town.salon_done: 大学を出た雲みたいな、いいにおい ("a cloud that went to university")
 - TODO(native): yard.inhaled_that_thinks_chewing_is_for: かむなんて、あきらめた子のすること ("chewing is for quitters")
-- TODO(native): title.start_over_body_html: たぶん牧場に引っこしました。ほんものの牧場です。 (the farm euphemism is not idiomatic in Japanese)
+- RESOLVED (Coordinator review 21 Oct): title.start_over_body_html: たぶん牧場に引っこしました。ほんものの牧場です。 (the farm euphemism is not idiomatic in Japanese)
 - TODO(native): popup.lifted_a_leg_on_the: 片足をあげて、その場をおさめました ("lifted a leg on the situation")
 - TODO(native): shop.not_enough: お金持ちになってみては？ (smug tone)
 - TODO(native): core.lu_units_html: 大好き度が{l}ワンになりました。ワンという単位は、いま考えました。 (unit pun)
@@ -467,7 +467,7 @@ Never hit (the `allow` list, also used as negative tests): 「犬種」 「日�
 - TODO(native): data.lines.reveal.2: 人生。さいこうの。一日。 ("Best. Day. Ever." rhythm)
 - TODO(native): data.sig.chihuahua.say: わたしは、ちびっこ竜巻だ！ ("WEATHER EVENT", maybe 台風だ！)
 - TODO(native): data.jokes.chihuahua.1: 体重2キロ。そのうち14キロは気合い。 (impossible-number joke)
-- TODO(native): data.place_lines.westie.market: 小さな白いきくの花みたいに (the chrysanthemum image reads oddly)
+- RESOLVED (Coordinator review 21 Oct): data.place_lines.westie.market: 小さな白いきくの花みたいに (the chrysanthemum image reads oddly)
 - TODO(native): data.starter_genes.*.coat: Akita and Shiba use 赤/白, other breeds レッド/ホワイト (赤柴 is the usual word)
 - TODO(native): data.jokes.corgi.4, data.jokes.lab.3: おわん for the dog bowl (or ごはん皿)
 - TODO(native): data.toys_lines.yorkie.fetchdeliver.0: おとどけ完了。ほめてよし。 (bossy, sex-neutral)
