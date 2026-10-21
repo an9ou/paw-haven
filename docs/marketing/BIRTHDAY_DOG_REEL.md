@@ -4,8 +4,8 @@ Made 21 Oct 2026 (owner's idea). English only: no Japanese text in the video, th
 
 | File | What |
 |---|---|
-| `doodle-doggo-birthday-dog-reel.mp4` | 1080 x 1920, 30 fps, 30 s, with the game's music. |
-| `birthday-reel-cover.jpg` | The cover: "Your birthday month = your dog 🎂", "find your month, meet your dog", over a grid of the 12 dog faces with their months. Everything sits in the grid's 3:4 crop. |
+| `doodle-doggo-birthday-dog-reel.mp4` | 1080 x 1920, 30 fps, 32.8 s, with the game's music. |
+| `birthday-reel-cover.jpg` | The cover: "Your birthday month = your dog 🎂", "find your month, meet your dog", over a grid of the 12 dog faces, no month names (owner, 21 Oct 2026: the months are the surprise in the video). Everything sits in the grid's 3:4 crop. |
 | `build_birthday.js` | Remake: `NODE_PATH=/opt/node-tools/node_modules node brand/instagram/launch/birthday_reel/build_birthday.js <workdir>` (about 7 minutes; `ONLY=stills` renders key frames and the cover only). |
 
 ## What is in it
@@ -13,6 +13,8 @@ Made 21 Oct 2026 (owner's idea). English only: no Japanese text in the video, th
 - **0–2 s:** the title, "Your birthday month = your dog 🎂", "find your month, meet your dog", the 12 faces pop in, "find your month 👇".
 - **2–28.4 s:** one 2.2-second scene per month. The scene slides in, the dog walks in, strikes a pose with one face, then hops into a second pose and face. A "born in" month card sits at the top, and a name card at the bottom: the dog's name and "you are …".
 - **28.4–30 s:** "Which one are you? comment your month 👇" over the grid of all 12.
+- **30–32.8 s, the end card (owner, 21 Oct 2026):** "follow us on Instagram & X", "@doodledoggo.app", Noodle wagging with heart eyes and one happy hop, hearts floating up, and "play at doodledoggo.app" in a yellow pill. All of it sits above the Reels caption area.
+- The dogs move smoothly (21 Oct 2026): one line-boil drawing at a time, a bouncy trot in, a springy squash and stretch, a hop into the second pose, gentle breathing.
 - Real art only: `PawArt.dog` with outfits and v2.13 faces, `PawArt.scene` in the right season (snow, rain, spring, Halloween). No game buttons or menus.
 - Sound: the game's own music (`mods/pawaudio.js`, the Town Square by day), a soft pop at each month change, levelled to -16 LUFS.
 
@@ -70,4 +72,4 @@ Your birthday month = your dog 🎂🐶 Find yours, then adopt one for real in D
 Notes:
 - The first line is what people see before "more" (about 125 characters), so the hook is in the first sentence.
 - Run A and B as two ads in one ad set for 3–4 days, then keep the one with the lower cost per link click.
-- An ad needs the game named in the video itself, because most viewers never read the caption: add the end line "all 35 dogs live in a free game · @doodledoggo.app" before running it as an ad.
+- The end card names the account and doodledoggo.app, so the video works as an ad as it is.
