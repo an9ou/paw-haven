@@ -12,5 +12,5 @@
 @media (prefers-reduced-motion:reduce){.bl-ring{animation:none}}
 /* while playing (html.bl-on): the scene props open nothing (the dog house, the bowl, the notice board, the shops, the stalls, the mailbox, the clipboard...),
    the place buttons hide (owner: on Market Street the shop buttons sat where the ball is thrown; Done ends the game) and so does the phone "look right" button */
-html.bl-on #view svg.world .hot{pointer-events:none}
+html.bl-on #view svg.world .hot,html.bl-on #view svg.world .hot *{pointer-events:none!important} /* v2.13.3: the shop fronts' own hit paths (.pa-wa-hit) set pointer-events themselves */
 html.bl-on #phPeek,html.bl-on #placeBtns{display:none!important}
