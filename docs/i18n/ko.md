@@ -406,3 +406,38 @@ Never hit (the `allow` list, also used as negative tests): 「견종」 「품�
 - TODO(native): love items (연어 파테, 봉제 뼈다귀, 퍼즐 급식기, 삑삑 오리) must match the game's item names once game/i18n/ko.json exists.
 - TODO(native): “이 카드 숨기기” (privacy.cards.off) must match the game's "Hide this card" button.
 - TODO(native): privacy page register and the English-prevails sentence in privacy.updated.
+
+## Game
+
+`game/i18n/ko.json` (v2.14 phase 2). Particles after vars use `{name, josa, 이/가}` (the var plus the particle; never write `{name}` before it). Mix names: 41 well-known real mixes are in Korean (래브라두들, 말티푸, 폼스키 …); the puns stay English so the game shows `{a} × {b}`.
+
+TODO(native):
+- data.ny_fortunes.* / data.tk_fortunes.*: omikuji levels as 대길 / 길 / 소길. Will children know them, or is 아주 좋은 운 / 좋은 운 / 작은 운 better?
+- newyear.plum_title: 오토시다마(세뱃돈). Is the gloss in brackets natural?
+- newyear.pup_0: 시메카자리 장식 (shimekazari). Should it be glossed as 새해 장식?
+- data.dc_words_a.* + data.dc_words_b.*: card names "{a} {b}" (e.g. 꼼지락 솜방울, 멋쟁이 양말). Check that the mixed adjective and mimetic forms read well together.
+- data.jr_grand.3: The Everything Dog as 종합선물세트 강아지. Is the pun OK?
+- tokyo.lantern / photo.say_cheese: "Say cheese" as 김치!
+- data.toys.trick_or_treat_bucket.n: 핼러윈 간식통 (not a literal "trick or treat" bucket); mod.toys.trick_or_treat_* use 장난칠까 간식 줄래?
+- data.toys.snuffle_mat.n: 노즈워크 매트 (the usual Korean pet-shop word) vs 스너플 매트
+- data.toys.frisbee.n: 원반 (avoids the trademark 프리스비)
+- data.tricks.play_dead.n / data.tcmd.play_dead: 빵야 / 빵! (the Korean "bang" trick)
+- data.tcmd.signature: 쇼타임! and data.tricks.signature.n 주특기
+- pupplay.walk_expecting / pupplay.fetch_nursing male branches: wording for a male dog in these lines is odd in English too
+- mod.toys.bond_moment: 찐친 모먼트! (slang, check for kids)
+- data.wx_lines.shiba.warm: "Snow is beneath me" pun as 눈 따위 내 발밑이야. Does it read well?
+- data.wx_lines.malamute.snow: "Now we are talking! Mostly me!" as 이제 좀 얘기가 되네! 떠드는 건 주로 나지만!
+- data.wx_lines.westie.dawn: "The garden is out there" read as the Home Yard (마당), not the veggie patch.
+- yard.flips_upside_down_legs_in: "roaching" as 바퀴벌레 자세. Is there a better known Korean word?
+- yard.a_shell_with_a_smaller: "Shell-ception" as 조개셉션 (Inception pun).
+- yard.the_crowd_you_goes_wild: 관중(나)이 열광해! (the player speaking to the dog in 반말).
+- data.hm_decor.garden_bench.n / data.hm_decor.bird_bath.story / missions.ready_space: English "garden" here is the Home Yard, so 마당.
+- mod.toys.bond_moment: 찐친 모먼트! is slang, and Bond is 친밀도 elsewhere. OK for children?
+- journal.title_master_breeder: "Master Breeder" as 털색 마스터 (브리더 is banned). journal.title_great_granddog: 고손주 강아지.
+- Meters: the four care meters and the Sparkle Meter are 게이지 (반짝이 게이지); the Nose-o-meter is 킁킁미터.
+- adopt.the_shelter_calls_html / shelter.name_lead_html: "…부르는 이름은 <b>{name, josa, 이에요/예요}</b>." (there is no 이라고/라고 josa pair).
+- Family and people names are transliterated (애버내시 가족, 응우옌네 아이들, 린드크비스트 아주머니, 빵집 베아 아주머니, 복슬 선장 for Captain Fluff). Check that they sound natural.
+- Mix names: only 41 well-known real mixes are in Korean (data.mix_list). Check the spellings (말티숑, 시숑, 푸숑, 퍼가푸, 셰프스키, 허스키타, 골다도르).
+- Narration uses a josa subject after a dog's name (`{name, josa, 이/가} 자고 있어요.`); 25 lines keep the comma form because they speak to the dog ("{name}, 생일 축하해!") or are labels. pack.reporting_for_duty keeps the military-style "{name}, 출동 준비 완료.".
+- vet.visit_already and wardrobe.fashion_bonus ("자기가 좀 귀엽대요") were reworded. Check the tone.
+- Coins are always "{n}코인"; 발바닥 코인 only as the name of the currency with no number. The mail carrier is 집배원 (no 아저씨).
