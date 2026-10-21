@@ -201,7 +201,9 @@ function header(L, page, t, a, menu) {
   const logo = `<img class="logo" src="/doodle-doggo-logo.svg" alt="${a('common.logo_alt')}" width="900" height="280">`;
   const brand = `<div class="top sitetop">${page.id === 'index' ? `<h1 class="h1logo">${logo}</h1>` : `<a class="brandbig" href="${urlFor(L, '/')}">${logo}</a>`}<p class="tag">🖍️ ${t('home.tagline')}</p></div>`;
   // owner (site v3.2): the logo and slogan scroll away; the header is the menu bar that sticks to the top (on phones it hides while you scroll down)
-  return `\n${brand}\n<header class="sitehead" id="sitehead">`
+  // owner: once the menu sticks to the top, a small logo shows at its left (the links move right)
+  const mini = `<a class="minilogo" href="${urlFor(L, '/')}" tabindex="-1" aria-hidden="true"><img src="/doodle-doggo-logo.svg" alt="" width="900" height="280"></a>`;
+  return `\n${brand}\n<header class="sitehead" id="sitehead">${mini}`
     + `<nav class="sitenav" id="sitenav" aria-label="${a('nav.label')}">${links}</nav>${menu}</header>`;
 }
 function build(o) {
