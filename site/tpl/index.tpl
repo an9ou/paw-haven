@@ -12,30 +12,19 @@
 <main class="page">
   <div class="sheet">{{raw header}}
 
-    <section class="playroom" aria-label="{{a home.playroom_label}}">
-      <div class="scene" id="scene">
-        <div class="stage" id="stage">
-          <img class="bg" src="/img/art/playroom.webp" alt="{{a home.playroom_alt}}" width="2000" height="1200">
-          <div class="wallpic" aria-hidden="true"><img src="/img/art/wall-fuji.webp" alt="" width="600" height="360"></div>
-          <div class="dd" data-key="corgi" style="left:22%;top:88%;--s:.67"><img src="/img/art/dogs/corgi-still.svg" alt="" width="240" height="200"></div>
-          <div class="dd" data-key="pug" style="left:47%;top:96%;--s:.72"><img src="/img/art/dogs/pug-still.svg" alt="" width="240" height="200"></div>
-          <div class="dd" data-key="shiba" style="left:66%;top:84%;--s:.62"><img src="/img/art/dogs/shiba-still.svg" alt="" width="240" height="200"></div>
-          <div class="dd flip" data-key="beagle" style="left:82%;top:93%;--s:.69"><img src="/img/art/dogs/beagle-still.svg" alt="" width="240" height="200"></div>
-          <div class="dd flip" data-key="golden" style="left:11%;top:80%;--s:.6"><img src="/img/art/dogs/golden-still.svg" alt="" width="240" height="200"></div>
-          <div class="dd" data-key="dachs" style="left:33%;top:79%;--s:.58"><img src="/img/art/dogs/dachs-still.svg" alt="" width="240" height="200"></div>
-          <img class="ball" src="/img/art/ball.svg" alt="" width="60" height="60" style="left:34%;top:93%">
-          <img class="ball b1" src="/img/art/ball.svg" alt="" width="60" height="60" style="left:60%;top:88%">
+    <section class="gamebox" id="game" aria-label="{{a home.game_label}}">
+      <div class="gameframe" id="gameframe" data-src="/play/" data-title="{{a home.game_label}}">
+        <div class="gamecover" id="gamecover">
+          <button class="play" type="button">▶ {{t home.game_play}}</button>
+          <p class="small">{{t home.game_note}}</p>
         </div>
+        <button class="fsx" id="fsx" type="button" aria-label="{{a home.fullscreen_exit}}">✕</button>
       </div>
-      <div class="scenebar">
-        <p class="small cap">{{t home.playroom_caption}}</p>
+      <div class="gamebar">
+        <button class="fsbtn" id="fsbtn" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>{{t home.fullscreen}}</button>
+        <span class="small">{{t home.game_saves}}</span>
       </div>
     </section>
-
-    <div class="getit">
-      <a class="play" id="play" href="https://an9ou.itch.io/doodle-doggo">{{t common.play}}</a>
-      <p class="free"><span class="hanko" lang="ja" title="{{a home.free_title}}">無料</span><span class="small">{{t home.free_line}}</span></p>
-    </div>
 
     <p class="intro">{{t home.intro}}</p>
 

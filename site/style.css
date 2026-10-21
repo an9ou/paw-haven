@@ -440,3 +440,44 @@ dialog.dogpop .prof>*,dialog.dogpop .prof .txt>*{max-width:none}
 .jumps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;max-width:640px;margin-left:auto;margin-right:auto}
 .jumps .chip{justify-content:center;text-align:center;min-width:0;padding-left:6px;padding-right:6px;line-height:1.1}
 @media (max-width:700px){ .jumps .chip{font-size:min(20px,5vw)} }
+
+/* owner (site v3.2): the game on the home page, a sticky menu, full screen */
+.sheet>.sitetop{margin:-4px 0 4px}
+.sheet>.sitehead{position:sticky;top:env(safe-area-inset-top,0px);z-index:40;margin:0 -22px 18px;padding:8px 22px 10px;background:var(--paper);
+  transition:transform .28s ease,box-shadow .2s ease}
+.sheet>.sitehead.stuck{box-shadow:0 4px 0 rgba(91,61,50,.12)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:45;background:var(--paper)}
+@media (max-width:700px){ .sheet>.sitehead{margin:0 -14px 14px;padding:8px 14px 10px} }
+@media (max-width:860px){ .sheet>.sitehead.hide{transform:translateY(calc(-100% - 6px))} }
+@media (prefers-reduced-motion:reduce){ .sheet>.sitehead{transition:none} }
+
+.gamebox{margin:0 0 22px}
+.gameframe{position:relative;width:100%;aspect-ratio:16/10;max-width:100%;background:var(--desk);border:2.5px solid var(--ink);
+  border-radius:16px 12px 18px 11px / 12px 18px 11px 16px;overflow:hidden;box-shadow:3px 4px 0 rgba(91,61,50,.18)}
+@media (max-width:860px){ .gameframe{aspect-ratio:auto;height:min(78svh,720px)} }
+.gameframe iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;background:#fff}
+.gamecover{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:16px;text-align:center;
+  background:url(/img/art/playroom.webp) center/cover}
+.gamecover::before{content:"";position:absolute;inset:0;background:rgba(255,251,243,.55)}
+.gamecover>*{position:relative}
+.gamecover .play{font-size:38px;cursor:pointer}
+.gamecover p{margin:0;background:var(--paper);border:2px solid var(--ink);border-radius:12px 9px 13px 8px;padding:2px 12px}
+.gamebar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 14px;margin-top:10px}
+.fsbtn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:4px 16px;border:2px solid var(--ink);border-radius:14px 10px 15px 9px;
+  background:var(--w-blue);color:var(--ink);font-family:var(--hand);font-size:25px;font-weight:700;line-height:1;cursor:pointer;box-shadow:2px 3px 0 var(--ink)}
+.fsbtn:hover{transform:rotate(-1deg)}
+.fsbtn:active{transform:translate(2px,3px);box-shadow:none}
+.fsbtn svg{width:22px;height:22px}
+.fsx{display:none}
+/* full screen: the real Fullscreen API where the browser has it, otherwise (iPhone) the frame covers the whole screen */
+.gameframe:fullscreen{border:0;border-radius:0;aspect-ratio:auto;width:100vw;height:100vh;box-shadow:none}
+.gameframe:-webkit-full-screen{border:0;border-radius:0;width:100vw;height:100vh}
+.gameframe.fake{position:fixed;inset:0;z-index:1000;width:auto;height:auto;aspect-ratio:auto;border:0;border-radius:0;box-shadow:none;
+  padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);background:var(--paper)}
+.gameframe.fake iframe{position:relative;inset:auto}
+html.gamefs,html.gamefs body{overflow:hidden}
+.gameframe:fullscreen .fsx,.gameframe:-webkit-full-screen .fsx,.gameframe.fake .fsx{display:flex}
+.fsx{position:absolute;z-index:5;right:calc(10px + env(safe-area-inset-right,0px));bottom:calc(10px + env(safe-area-inset-bottom,0px));
+  align-items:center;justify-content:center;width:44px;height:44px;padding:0;border:2px solid var(--ink);border-radius:12px 9px 13px 8px;
+  background:var(--paper);color:var(--ink);font-size:20px;line-height:1;cursor:pointer;opacity:.85}
+.fsx:hover{opacity:1}

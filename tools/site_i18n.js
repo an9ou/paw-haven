@@ -200,7 +200,8 @@ function header(L, page, t, a, menu) {
   // owner: the header sits inside the paper sheet; every page starts like the home page: the big logo and the slogan, then the four tabs
   const logo = `<img class="logo" src="/doodle-doggo-logo.svg" alt="${a('common.logo_alt')}" width="900" height="280">`;
   const brand = `<div class="top sitetop">${page.id === 'index' ? `<h1 class="h1logo">${logo}</h1>` : `<a class="brandbig" href="${urlFor(L, '/')}">${logo}</a>`}<p class="tag">🖍️ ${t('home.tagline')}</p></div>`;
-  return `\n<header class="sitehead" id="sitehead">${brand}`
+  // owner (site v3.2): the logo and slogan scroll away; the header is the menu bar that sticks to the top (on phones it hides while you scroll down)
+  return `\n${brand}\n<header class="sitehead" id="sitehead">`
     + `<nav class="sitenav" id="sitenav" aria-label="${a('nav.label')}">${links}</nav>${menu}</header>`;
 }
 function build(o) {

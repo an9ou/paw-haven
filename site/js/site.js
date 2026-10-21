@@ -337,3 +337,66 @@
   });
   if (location.hash) open(location.hash.slice(1));
 })();
+
+/* owner (site v3.2): the menu sticks to the top; on phones it slides away while you scroll down and comes back when you scroll up */
+(function () {
+  var h = document.getElementById('sitehead'); if (!h) return;
+  var mq = window.matchMedia ? matchMedia('(max-width: 860px)') : { matches: false };
+  var lastY = window.scrollY, ticking = false;
+  function upd() {
+    ticking = false;
+    var y = window.scrollY, dy = y - lastY, stuck = h.getBoundingClientRect().top <= 1 && y > 0;
+    h.classList.toggle('stuck', stuck);
+    var langs = document.getElementById('langs');
+    if (!mq.matches || !stuck || (langs && langs.open) || y < 40) h.classList.remove('hide');
+    else if (dy > 6) h.classList.add('hide');
+    else if (dy < -6) h.classList.remove('hide');
+    if (Math.abs(dy) > 6) lastY = y;
+  }
+  window.addEventListener('scroll', function () { if (!ticking) { ticking = true; requestAnimationFrame(upd); } }, { passive: true });
+  h.addEventListener('focusin', function () { h.classList.remove('hide'); });
+  upd();
+})();
+
+/* owner (site v3.2): the game plays right on the home page; a tap loads it, the button makes it full screen */
+(function () {
+  var box = document.getElementById('gameframe'), btn = document.getElementById('fsbtn'), x = document.getElementById('fsx'),
+      cover = document.getElementById('gamecover'), src = box && box.getAttribute('data-src');
+  if (!box) return;
+  var root = document.documentElement;
+  function load() {
+    if (box.querySelector('iframe')) return;
+    var f = document.createElement('iframe');
+    f.src = src; f.title = box.getAttribute('data-title') || 'Doodle Doggo'; f.setAttribute('allow', 'fullscreen; autoplay'); f.setAttribute('allowfullscreen', '');
+    box.insertBefore(f, box.firstChild);
+    if (cover) cover.remove();
+    setTimeout(function () { try { f.focus(); } catch (e) {} }, 300);
+  }
+  function fsEl() { return document.fullscreenElement || document.webkitFullscreenElement; }
+  function isOn() { return !!fsEl() || box.classList.contains('fake'); }
+  function label() { btn.setAttribute('aria-pressed', isOn() ? 'true' : 'false'); }
+  function fake(on) {
+    box.classList.toggle('fake', on); root.classList.toggle('gamefs', on); label();
+    if (on) { try { x.focus(); } catch (e) {} }
+  }
+  function enter() {
+    load();
+    var rq = box.requestFullscreen || box.webkitRequestFullscreen;
+    if (!rq) return fake(true);
+    try {
+      var p = rq.call(box);
+      if (p && p.catch) p.catch(function () { fake(true); });
+    } catch (e) { fake(true); }
+  }
+  function leave() {
+    if (box.classList.contains('fake')) return fake(false);
+    var ex = document.exitFullscreen || document.webkitExitFullscreen;
+    if (fsEl() && ex) { try { var p = ex.call(document); if (p && p.catch) p.catch(function () {}); } catch (e) {} }
+  }
+  if (cover) cover.querySelector('button').addEventListener('click', load);
+  btn.addEventListener('click', function () { isOn() ? leave() : enter(); });
+  x.addEventListener('click', leave);
+  document.addEventListener('fullscreenchange', label);
+  document.addEventListener('webkitfullscreenchange', label);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && box.classList.contains('fake')) fake(false); });
+})();
