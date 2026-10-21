@@ -24,6 +24,7 @@
       <p class="closing">{{t about.p8}} <span class="paw" aria-hidden="true">🐾</span></p>
       <p class="sign"><img class="aleaf" src="/img/art/momiji.svg" alt="" width="32" height="32"><span>— an9ou</span></p>
       <div class="cta">
+        <a class="play" id="itchcta" href="https://an9ou.itch.io/doodle-doggo">{{t about.itch}}</a>
         <p>{{t about.mail}}</p>
       </div>
     </article>
