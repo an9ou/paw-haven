@@ -572,3 +572,48 @@ html.gamefs,html.gamefs body{overflow:hidden}
 .gameframe:fullscreen::before,.gameframe:-webkit-full-screen::before,.gameframe.fake::before{content:"";position:absolute;left:0;right:0;top:0;
   height:calc(52px + env(safe-area-inset-top,0px));border-bottom:2px dashed rgba(91,61,50,.25);pointer-events:none}
 .gameframe:fullscreen .fsx,.gameframe:-webkit-full-screen .fsx,.gameframe.fake .fsx{top:calc(4px + env(safe-area-inset-top,0px));opacity:1}
+
+/* ===== v2.14 fit pass: every language fits the header, the language menu and the pop-up (site_fit) ===== */
+/* the little logo of the stuck bar is a 44 px tap target on every width (the dog icon sits in it) */
+.minilogo{min-width:44px;min-height:44px;align-items:center;justify-content:center}
+.sheet>.sitehead.stuck .minilogo{display:flex}
+/* the language button never cuts its name ("Português (Brasil)", "Bahasa Indonesia"): it grows with it and wraps if the bar is narrower */
+.langs summary{max-width:100%}
+.langs summary>span[lang]{max-width:none;overflow:visible;text-overflow:clip;white-space:normal;vertical-align:baseline}
+.langs summary>span[aria-hidden]{flex:none}
+.langs nav{max-width:calc(100vw - 24px)}
+@media (max-width:700px){ .langs summary>span[lang]{max-width:none} .langs nav{min-width:min(230px,calc(100vw - 24px))} }
+/* the tabs under the logo on a phone: a little less type at 360 px (15.5 px, never under 15) so the longest words (Anleitung, Cachorros, Panduan)
+   do not touch the tab's border, and a wrapped label (关于我们, เกี่ยวกับเรา) splits evenly instead of leaving one letter alone */
+@media (max-width:860px){ .sheet>.sitehead:not(.stuck) .sitenav a{font-size:min(19px,max(15px,4.3vw))} .sitenav a span{text-wrap:balance} }
+/* the dog pop-up's close button: a 44 px tap target */
+dialog.dogpop .x{width:44px;height:44px;min-width:44px;min-height:44px;font-size:20px}
+/* Chinese tagline: no break-less run on a narrow phone (keep-all let the 17 characters before the comma run out of the box) */
+@media (max-width:700px){ html[lang^="zh"] .tag{word-break:normal;overflow-wrap:anywhere;line-break:strict;text-wrap:balance} }
+/* the stuck bar between 861 and 1100 px (a tablet, a small laptop): the dog icon for the logo, tabs a little tighter and only the globe for the language
+   button (its name is in the menu), so the bar never scrolls the page sideways in any language */
+@media (min-width:861px) and (max-width:1100px){
+  .sheet>.sitehead.stuck{gap:8px}
+  .sheet>.sitehead.stuck .minilogo .ml-full{display:none}
+  .sheet>.sitehead.stuck .minilogo .ml-icon{display:block;height:38px;width:38px}
+  .sheet>.sitehead.stuck .sitenav{gap:6px;min-width:0;flex:1 1 auto}
+  .sheet>.sitehead.stuck .sitenav a{padding:4px 9px;font-size:22px;gap:5px}
+  .sheet>.sitehead.stuck .langs{flex:none}
+  .sheet>.sitehead.stuck .langs summary{padding:4px 12px}
+  .sheet>.sitehead.stuck .langs summary>span[lang]{display:none}
+}
+/* the stuck bar on phones (up to 500 px): the five tabs are one strip of 15 px labels. Where every label fits (most languages) the tabs share the width;
+   where they do not (Thai, the longest names at 360 px) the strip scrolls sideways on purpose (site.js scrolls the current page into view and shows a
+   fade at the edge that has more) instead of cutting a word or shrinking it under 15 px. */
+@media (max-width:500px){
+  .minilogo .ml-icon{height:38px;width:38px}
+  .sheet>.sitehead.stuck{gap:4px}
+  .sheet>.sitehead.stuck.nologo .minilogo{display:none}
+  .sheet>.sitehead.stuck .sitenav{display:flex;flex:1 1 0;min-width:0;justify-content:flex-start;gap:3px;margin:-3px -2px -6px;padding:3px 3px 6px;overflow-x:auto;overflow-y:hidden;
+    scrollbar-width:none;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+  .sheet>.sitehead.stuck .sitenav::-webkit-scrollbar{display:none}
+  .sheet>.sitehead.stuck .sitenav a{flex:1 0 auto;min-width:44px;padding:3px 3px 4px;font-size:15px;white-space:nowrap}
+  .sheet>.sitehead.stuck .sitenav.fade-r{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 18px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 18px),transparent)}
+  .sheet>.sitehead.stuck .sitenav.fade-l{-webkit-mask-image:linear-gradient(to left,#000 calc(100% - 18px),transparent);mask-image:linear-gradient(to left,#000 calc(100% - 18px),transparent)}
+  .sheet>.sitehead.stuck .sitenav.fade-l.fade-r{-webkit-mask-image:linear-gradient(to right,transparent,#000 18px,#000 calc(100% - 18px),transparent);mask-image:linear-gradient(to right,transparent,#000 18px,#000 calc(100% - 18px),transparent)}
+}
