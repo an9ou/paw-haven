@@ -51,5 +51,5 @@ html[data-layout="phone"] .tlang{font-size:16px}
 
 /* v2.14 review: a long speech line on phones. The bubble art (--speech, stretched to the box) keeps its tail in the bottom part of the box,
    so a tall CJK / Thai bubble (line-height 1.6) ran its last line onto the tail and the dog's head: wider bubbles (fewer lines), more room under the text */
-html[data-layout="phone"] #bubble{max-width:min(340px,calc(100vw - 32px))}
+html[data-layout="phone"]:is(:lang(ja),:lang(zh),:lang(ko),:lang(th)) #bubble{max-width:min(340px,calc(100vw - 32px))}
 html[data-layout="phone"].pa-speech:is(:lang(ja),:lang(zh),:lang(ko),:lang(th)) #bubble{padding-bottom:40px}

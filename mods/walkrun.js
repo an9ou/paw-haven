@@ -313,7 +313,7 @@ const CSS = `
 .pw-pt .pw-trow b{font-size:23px}
 .pw-trow b{padding-right:.14em}
 .pw-pt .pw-tic.pw-neg{font-size:26px!important;line-height:42px!important}
-.pw-pt .pw-card.pw-tut{height:auto;max-height:96%;display:flex;flex-direction:column;overflow-y:auto}
+.pw-pt .pw-card.pw-tut{height:min(96%,780px);display:flex;flex-direction:column;overflow-y:auto}
 .pw-pt .pw-card.pw-tut .pw-tfoot{margin-top:auto}
 .pw-pt .pw-obsgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .pw-pt .pw-obsc{flex-wrap:nowrap;justify-content:flex-start;text-align:left;font-size:15px;padding:3px 6px;gap:4px;min-height:0}
