@@ -71,3 +71,7 @@ html[data-layout="phone"] #stage:not(.flowdock) #dock > .tray:not(.nap) .row > :
 html[data-layout="phone"] .awaynote{flex-wrap:nowrap;gap:8px}
 html[data-layout="phone"] .awaynote p{flex:1 1 0;min-width:0}
 html[data-layout="phone"] .awaynote .btn{flex:0 1 auto;max-width:50%;min-height:44px;padding:5px 12px 6px;line-height:1.1}
+/* v2.14 fit: CJK tray titles stay on one line ("ごはん：食べものをタップ" wrapped and pushed the pack note out of the capped tray at 360 px), and the
+   note under the cards keeps a 1.3 line (the CJK paragraph default of 1.6 made it four lines tall) */
+html[data-layout="phone"]:is(:lang(ja),:lang(zh),:lang(ko)) #stage:not(.flowdock) #dock > .tray .tray-h h3{font-size:23px}
+html[data-layout="phone"] .awaynote p{line-height:1.3}
