@@ -1,8 +1,8 @@
 /* v2: 09b_journal_v2.css (SYSTEMS lane): Journal Profile/Family/Coats tabs, Mailbox */
 /* journal tab row: 9 tabs fit one row at 1280x720 */
-.panel.journal .jtabs{flex-wrap:wrap;gap:6px 8px}
+.panel.journal .jtabs{flex-wrap:wrap;gap:10px 8px} /* v2.14 fit: room for a second row of tabs (ja, th) and the tilted selected tab */
 .panel.journal .jtabs .btn{font-size:19px;padding:3px 10px 5px;min-height:40px} /* v2.4: 11 tabs on one row */
-.panel.journal .tabs.pdogs{margin:2px 0 8px}
+.panel.journal .tabs.pdogs{margin:12px 0 8px}
 .fhead{display:grid;place-items:center;width:58px;height:58px;border-radius:50%;background:var(--w-cream);border:2px solid #5B3D32;overflow:hidden;flex:none}
 .fhead svg{width:92%;height:92%}
 .fhead b{font-family:var(--font-hand);font-size:30px;color:var(--graph)}
@@ -42,7 +42,7 @@ button.fnode:hover .fhead{transform:rotate(-5deg) scale(1.07);box-shadow:0 0 0 3
 .fnode.spk .fhead,.fkid.spk .fhead{box-shadow:0 0 0 3px #FFE3A1,0 0 10px 3px rgba(255,214,110,.8)}
 .fname{font-family:var(--font-hand);font-weight:700;font-size:20px;line-height:1;background:rgba(255,251,243,.88);padding:0 5px;border-radius:6px;margin-top:2px;white-space:nowrap}
 .fsub{font-size:13px;line-height:1.1;background:rgba(255,251,243,.8);padding:0 4px;border-radius:5px;white-space:nowrap;max-width:118px;overflow:hidden;text-overflow:ellipsis}
-.fnode.unk .fname{color:#8C8580;font-size:18px}
+.fnode.unk .fname{color:#8C8580;font-size:18px;white-space:normal;max-width:100%;line-height:1.05;text-wrap:balance} /* v2.14 fit: "Shelter rescue" wraps inside its node in every language */
 .fside{display:flex;flex-direction:column;gap:6px;min-width:0}
 .fside h4{margin:4px 0 0;font-family:var(--font-hand);font-size:26px}
 .fam-me{display:flex;gap:12px;align-items:center}
@@ -115,9 +115,10 @@ html:not([data-layout="phone"]) .cbreeds:has(> .cbreed:nth-child(26)) .cbreed{fl
 .mb-k{width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:50%;background:var(--w-cream);border:1.5px solid #5B3D32;font-family:var(--font-hand);font-weight:700;font-size:20px;overflow:hidden}
 .mb-k svg{width:94%;height:94%}
 .mb-item.k-gift .mb-k{background:var(--w-pink)}.mb-item.k-litter .mb-k{background:var(--w-mint)}
-.mb-t{display:flex;flex-direction:column;min-width:0;line-height:1.15}
-.mb-t b{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mb-t .small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mb-t{display:flex;flex-direction:column;flex:1 1 auto;min-width:0;line-height:1.15}
+/* v2.14 fit: the title and sender wrap (no mid-word ellipsis in any language); the unread dot keeps its corner */
+.mb-t b{font-size:16px;white-space:normal;overflow-wrap:anywhere;padding-right:12px}
+.mb-t .small{white-space:normal;overflow-wrap:anywhere}
 .mb-dot{position:absolute;top:6px;right:8px;width:11px;height:11px;border-radius:50%;background:#E2453C;border:1.5px solid #5B3D32}
 .mb-read{min-width:0}
 .letter{display:flex;flex-direction:column;gap:6px;padding:12px 16px 14px;background:#FFFDF7;border:2px solid rgba(91,61,50,.5);border-radius:6px 10px 5px 12px;box-shadow:3px 4px 0 rgba(91,61,50,.12);transform:rotate(.4deg)}

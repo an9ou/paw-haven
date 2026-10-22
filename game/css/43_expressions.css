@@ -3,8 +3,8 @@
    word in a row that scrolls sideways (44 px taps, 16 px text). The picture keeps the rest of the view. */
 .ex-faces{position:absolute;left:0;right:0;bottom:0;height:62px;display:flex;align-items:center;gap:8px;min-width:0}
 .ex-faces ~ .ph-pic{bottom:68px;max-height:calc(100% - 68px)}
-.ex-flbl{flex:none;width:88px;display:flex;flex-direction:column;font-size:16px;line-height:1.05;color:var(--muted)}
-.ex-fnow{font-family:var(--font-hand);font-weight:700;font-size:23px;line-height:1;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ex-flbl{flex:none;width:118px;display:flex;flex-direction:column;font-size:16px;line-height:1.05;color:var(--muted)}
+.ex-fnow{font-family:var(--font-hand);font-weight:700;font-size:23px;line-height:1;color:var(--ink);overflow-wrap:break-word} /* v2.14 fit: the face word shows whole (a wider label that wraps a long word, instead of an ellipsis) */
 .ex-frow{flex:1;min-width:0;align-self:stretch;display:flex;align-items:center;gap:4px;overflow-x:auto;overflow-y:hidden;padding:0 4px;scrollbar-width:thin;overscroll-behavior-x:contain}
 .ex-face{flex:none;width:46px;height:46px;min-height:44px;padding:2px;gap:0;--wash:var(--paper)}
 .ex-face[aria-pressed="true"]{--wash:var(--w-yellow);outline:2.5px solid var(--ink);outline-offset:1px}

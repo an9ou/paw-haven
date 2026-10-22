@@ -6,7 +6,7 @@ html[data-layout="phone"] .journal button,html[data-layout="phone"] .mailbox but
 html[data-layout="phone"] .panel.journal .jtabs,html[data-layout="phone"] .panel.mailbox .mbtabs{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;gap:6px;padding:2px 2px 6px;margin-left:-2px;margin-right:-2px;scrollbar-width:none;touch-action:pan-x}
 html[data-layout="phone"] .panel.journal .jtabs::-webkit-scrollbar,html[data-layout="phone"] .panel.mailbox .mbtabs::-webkit-scrollbar{display:none}
 html[data-layout="phone"] .panel.journal .jtabs .btn,html[data-layout="phone"] .panel.mailbox .mbtabs .btn,html[data-layout="phone"] .panel.journal .tabs.pdogs .btn{flex:none;min-height:44px;min-width:44px;font-size:20px;padding:3px 14px 5px}
-html[data-layout="phone"] .panel.journal .tabs.pdogs{flex-wrap:nowrap;overflow-x:auto}
+html[data-layout="phone"] .panel.journal .tabs.pdogs{flex-wrap:nowrap;overflow-x:auto;margin-top:4px}
 html[data-layout="phone"] .pdogs .ic{width:30px;height:30px}
 /* treasure, food, toys, clothes cards */
 html[data-layout="phone"] .jent .btn,html[data-layout="phone"] .profile .pf-grid .jent .btn{min-height:44px;min-width:44px;font-size:17px;padding:4px 14px 5px}
@@ -38,6 +38,7 @@ html[data-layout="phone"] .ft-pan .ft{width:660px;flex:none}
 html[data-layout="phone"] .ft-pan .fnode{width:120px;min-height:64px}
 html[data-layout="phone"] .ft-pan .fnode .fhead{width:56px;height:56px}
 html[data-layout="phone"] .ft-pan .fnode.me .fhead{width:76px;height:76px}
+html[data-layout="phone"] .ft-pan .fnode.me{width:88px} /* v2.14 fit: the parents' "Shelter rescue" labels (Indonesian "Dari penampungan") clear the middle node on a narrow tree */
 html[data-layout="phone"] .ft-pan .fname{font-size:19px}
 html[data-layout="phone"] .ft-btns{display:flex;align-items:center;justify-content:space-between;gap:8px}
 html[data-layout="phone"] .ft-btns .btn{min-width:84px;min-height:48px;font-size:20px}
@@ -48,6 +49,7 @@ html[data-layout="phone"] .fam-me h3{font-size:30px}
 html[data-layout="phone"] .fkids{grid-template-columns:repeat(auto-fill,minmax(88px,1fr));max-height:none;overflow:visible}
 html[data-layout="phone"] .fkid{min-height:76px;justify-content:center}
 html[data-layout="phone"] .fkid .fname{font-size:19px}
+html[data-layout="phone"] .fchip{font-size:15px;line-height:1.35;white-space:normal;overflow-wrap:break-word} /* v2.14 fit: the status chip (Home, Away...) reads at 15 px and wraps */
 /* coats */
 html[data-layout="phone"] .ctop{grid-template-columns:minmax(0,1fr);gap:10px}
 html[data-layout="phone"] .csparkle{align-items:flex-start;max-width:100%}
