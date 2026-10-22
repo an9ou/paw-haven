@@ -46,7 +46,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
   cp.execFileSync('node', [path.join(ROOT, 'tools', 'cf_site.js'), '--pseudo'], { stdio: 'ignore', env: buildEnv }); // v2.14: with the test-only pseudo-locales /xx/ and /xx-cjk/
   const I18N = require('../tools/site_i18n');
   const SIZES = JSON.parse(fs.readFileSync(path.join(ROOT, '_cfsite', 'sizes.json'), 'utf8'));
-  const SCENE_KEYS = JSON.parse(fs.readFileSync(path.join(ROOT, 'site', 'js', 'site.js'), 'utf8').match(/var KEYS = (\[[^\]]*\])/)[1].replace(/'/g, '"'));
+  const SCENE_KEYS = [...new Set(fs.readdirSync(path.join(ROOT, 'site', 'tpl')).flatMap((f) => [...fs.readFileSync(path.join(ROOT, 'site', 'tpl', f), 'utf8').matchAll(/\/img\/art\/dogs\/(\w+)-(?:walk|jump|sit|happy|sniff|sleep)\.svg/g)].map((m) => m[1])))]; // v2.14: the playroom scene is gone; only the dogs a template draws in a scene pose (the Guide) keep those files
   const dir = path.join(ROOT, '_cfsite');
   const readParts = (d) => fs.readFileSync(path.join(d, 'parts.txt'), 'utf8').trim().split('\n').filter(Boolean).map((l) => l.split(' '));
   const parts = readParts(dir);
@@ -444,7 +444,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
       const en = JSON.parse(fs.readFileSync(path.join(ROOT, 'site', 'i18n', 'en.json'), 'utf8')), keys = Object.keys(en).filter((k) => !k.startsWith('_'));
       let bad = []; keys.forEach((k) => { try { I18N.parse(en[k]); } catch (e) { bad.push(k); } });
       ok(!bad.length && keys.length > 600, `en.json: ${keys.length} keys, every one a valid message ${bad.join(' ')}`);
-      ok(BREEDS.every((k) => ['name', 'quote', 'personality', 'trait1', 'trait4_line', 'play', 'love1', 'love3'].every((f) => en[`dog.${k}.${f}`])) && SCENE_KEYS.every((k) => en['play.bark.' + k]), 'en.json has every dog profile (35) and every playroom bark');
+      ok(BREEDS.every((k) => ['name', 'quote', 'personality', 'trait1', 'trait4_line', 'play', 'love1', 'love3'].every((f) => en[`dog.${k}.${f}`])) , 'en.json has every dog profile (35)');
       ok(PLACES.every((id) => en[`map.place.${id}.name`] && en[`map.place.${id}.text`]) && ['nav.home', 'nav.dogs', 'nav.map', 'nav.about', 'about.h1', 'about.p1', 'about.p2', 'about.p3'].every((k) => en[k]), 'en.json has the nav, the 25 places and About Us');
       ok(Object.keys(en._notes).every((k) => k in en) && ['home.dogs.lead', 'profile.jpline', 'card.alt', 'common.play'].every((k) => en._notes[k]), 'translator notes (_notes) for the tricky keys, each naming a real key');
       const built = I18N.build({});
@@ -498,7 +498,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
     r = await get(SITE + '/de/index.html'); ok(r.status === 301 && r.headers.get('location') === SITE + '/de/', '/de/index.html redirects to /de/');
     r = await get(SITE + '/ko/nope'); ok(r.status === 404 && /<html lang="ko"/.test(await r.text()) && r.headers.get('content-language') === 'ko', 'a 404 under /ko/ is in Korean (lang ko)');
     r = await get(SITE + '/tpl/index.tpl'); ok(r.status === 404, 'the templates and string tables are not served'); await r.text();
-    r = await get(SITE + '/img/art/dogs/akita-walk.svg'); ok(r.status === 404, 'scene poses of dogs the playroom never picks stay out of the Worker (budget)'); await r.text();
+    r = await get(SITE + '/img/art/dogs/akita-walk.svg'); ok(r.status === 404, 'scene poses of dogs no page draws in a scene pose stay out of the Worker (budget)'); await r.text();
 
     sec('languages: phones (iPhone 15, Pixel 7): the header, no errors, no sideways scroll, the phone minimums');
     // all seven pages in en, ja, de, th; the home page and the map in every language
@@ -573,6 +573,18 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
       await p2.goto(base + '/', { waitUntil: 'load' });
       const nj = await p2.evaluate(() => ({ frame: !!document.querySelector('iframe'), foot: !!document.querySelector('footer a[href="https://an9ou.itch.io/doodle-doggo"]') && !!document.querySelector('footer a[href="https://an9ou.itch.io/doodle-doggo"]').getClientRects().length }));
       ok(!nj.frame && nj.foot && !itchReq.length, 'without JavaScript: no iframe is made, the plain itch.io link in the footer shows, nothing from itch.io');
+      { // v2.14: the home page of every language has the <noscript> line (new key home.nojs) with the itch.io link, and the no-JS view shows it, readable on phones
+        const bad = [];
+        for (const L of LALL) { const h = await (await get(SITE + pageUrl(L, '/'))).text(); const m = h.match(/<noscript><p class="nojs">([^<]*) <a href="https:\/\/an9ou\.itch\.io\/doodle-doggo">([^<]*)<\/a><\/p><\/noscript>/); if (!m || !m[1].trim() || m[1] !== I18N.fmt(L.code, 'home.nojs') || !m[2].trim()) bad.push(L.code); if (L.code !== 'en' && !L.pseudo && !/^en/.test(L.code) && m && m[1] === I18N.fmt('en', 'home.nojs')) bad.push(L.code + ':untranslated'); if (/^(th|ja|zh)/.test(L.code) && m && /\.$/.test(m[1])) bad.push(L.code + ':english period'); }
+        ok(!bad.length, `the home page has the <noscript> line with the itch.io link in all ${LALL.length} languages${bad.length ? ' (bad: ' + bad.join(', ') + ')' : ''}`);
+        const bw = [];
+        for (const [u, w] of [['/', 1280], ['/', 360], ['/', 320], ['/th/', 320], ['/de/', 320], ['/ja/', 360], ['/xx/', 320]]) {
+          await p2.setViewportSize({ width: w, height: 700 }); await p2.goto(base + u, { waitUntil: 'load' });
+          const r = await p2.evaluate(() => { const n = document.querySelector('.gameframe .nojs'), a = n && n.querySelector('a'), f = document.querySelector('.gameframe'); if (!n) return null; const b = n.getBoundingClientRect(), fb = f.getBoundingClientRect(), ab = a.getBoundingClientRect(); return { fs: parseFloat(getComputedStyle(n).fontSize), vis: b.width > 0 && b.height > 0, inBox: b.left >= fb.left - 1 && b.right <= fb.right + 1 && ab.left >= fb.left - 1 && ab.right <= fb.right + 1, sx: document.documentElement.scrollWidth > innerWidth, link: a.getAttribute('href') }; });
+          if (!r || !r.vis || r.fs < 15 || !r.inBox || r.sx || r.link !== ITCH) bw.push(`${u}@${w}:${JSON.stringify(r)}`);
+        }
+        ok(!bw.length, 'without JavaScript the game box shows the line and the itch.io link: 15 px or more, inside the box, no sideways scroll at 1280, 360 and 320 px (en, th, de, ja, xx)' + (bw.length ? ' ' + bw.join(' ') : ''));
+      }
       await nojs.close();
     }
     const detect = async (locale, url, opts) => {

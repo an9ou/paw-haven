@@ -38,6 +38,7 @@
   "home.fullscreen": "Pantalla completa",
   "home.fullscreen_exit": "Salir de pantalla completa",
   "home.game_saves": "Tu partida se guarda en este navegador.",
+  "home.nojs": "Doodle Doggo necesita JavaScript para jugar.",
   "home.dogs.title": "Conoce a los perros",
   "home.dogs.gloss": "{inu} = perro",
   "home.dogs.lead": "{count} amigos garabateados, cada uno con su propia personalidad. Toca un perro para ver su perfil completo.",

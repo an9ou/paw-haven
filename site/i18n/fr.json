@@ -824,6 +824,7 @@
   "home.fullscreen": "Plein écran",
   "home.fullscreen_exit": "Quitter le plein écran",
   "home.game_saves": "Ta partie est enregistrée dans ce navigateur.",
+  "home.nojs": "Doodle Doggo a besoin de JavaScript pour jouer.",
   "nav.guide": "Guide",
   "common.close": "Fermer",
   "footer.guide": "Guide",

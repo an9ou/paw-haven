@@ -824,6 +824,7 @@
   "home.fullscreen": "全屏",
   "home.fullscreen_exit": "退出全屏",
   "home.game_saves": "游戏会存档在这个浏览器里。",
+  "home.nojs": "玩Doodle Doggo需要开启JavaScript。",
   "nav.guide": "玩法",
   "common.close": "关闭",
   "footer.guide": "玩法",

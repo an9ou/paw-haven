@@ -53,10 +53,11 @@ const walk = (dir, base) => fs.readdirSync(dir).forEach((f) => {
   if (TYPES[f.split('.').pop()]) files['/' + base + f] = p;
 });
 walk(site, '');
-// v2.14 budget: only the dogs the playroom can pick (KEYS in site/js/site.js) ever show their scene poses, so the other dogs' scene drawings
-// (tools/site_art.js still makes them, one frame each) stay out of the Worker. Their cards, profiles and puppies (still, pup) are all served.
-const SCENE_KEYS = JSON.parse(fs.readFileSync(path.join(site, 'js', 'site.js'), 'utf8').match(/var KEYS = (\[[^\]]*\])/)[1].replace(/'/g, '"'));
-const UNUSED = Object.keys(files).filter((u) => { const m = u.match(/^\/img\/art\/dogs\/(\w+)-(walk|jump|sit|happy|sniff|sleep)\.svg$/); return m && !SCENE_KEYS.includes(m[1]); });
+// v2.14 budget: the playroom scene is gone from the site (the home page plays the game in an iframe), so no dog needs scene poses (walk, jump, sit,
+// happy, sniff, sleep) except the ones a template names (the Guide's step pictures). Everything else stays out of the Worker (tools/site_art.js still
+// makes them). Their cards, profiles and puppies (still, pup) are all served.
+const SCENE_KEYS = new Set(); fs.readdirSync(path.join(site, 'tpl')).forEach((f) => { for (const m of fs.readFileSync(path.join(site, 'tpl', f), 'utf8').matchAll(/\/img\/art\/dogs\/(\w+)-(?:walk|jump|sit|happy|sniff|sleep)\.svg/g)) SCENE_KEYS.add(m[1]); });
+const UNUSED = Object.keys(files).filter((u) => { const m = u.match(/^\/img\/art\/dogs\/(\w+)-(walk|jump|sit|happy|sniff|sleep)\.svg$/); return m && !SCENE_KEYS.has(m[1]); });
 UNUSED.forEach((u) => { delete files[u]; });
 ['favicon.svg', 'icon-32.png', 'icon-180.png', 'icon-192.png', 'icon-512.png', 'icon-512-maskable.png', 'site.webmanifest', 'logo-1200x630.png', 'doodle-doggo-logo.svg', 'doodle-doggo-icon.svg']
   .forEach((f) => { files['/' + f] = path.join(brand, f); });

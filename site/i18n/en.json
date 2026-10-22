@@ -84,6 +84,7 @@
     "home.fullscreen": "Button under the game that makes it fill the screen. Short, about 14 characters.",
     "home.fullscreen_exit": "Label of the ✕ button that leaves full screen (read by screen readers).",
     "home.game_saves": "Small line next to the full screen button.",
+    "home.nojs": "Shown in the game box only when the browser has JavaScript off, followed by a link to the itch.io page (its text is footer.play_itch). Doodle Doggo and JavaScript are never translated.",
     "nav.guide": "The fifth page link (the How to play guide). Very short, about 10 characters.",
     "footer.guide": "Footer link to the guide page.",
     "guide.lead": "Guide page intro. Keep it warm and simple."
@@ -121,6 +122,7 @@
   "home.fullscreen": "Full screen",
   "home.fullscreen_exit": "Exit full screen",
   "home.game_saves": "Your game saves in this browser.",
+  "home.nojs": "Doodle Doggo needs JavaScript to play.",
   "home.dogs.title": "Meet the dogs",
   "home.dogs.gloss": "{inu} = dog",
   "home.dogs.lead": "{count} wobbly friends, each with a personality of their own. Tap a dog for the full profile.",

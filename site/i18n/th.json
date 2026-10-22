@@ -38,6 +38,7 @@
   "home.fullscreen": "เต็มจอ",
   "home.fullscreen_exit": "ออกจากโหมดเต็มจอ",
   "home.game_saves": "เกมจะเซฟไว้ในเบราว์เซอร์นี้",
+  "home.nojs": "ต้องเปิดใช้ JavaScript เพื่อเล่น Doodle Doggo",
   "home.dogs.title": "รู้จักน้องหมา",
   "home.dogs.gloss": "{inu} = น้องหมา",
   "home.dogs.lead": "เพื่อนเบี้ยวๆ {count} ตัว แต่ละตัวมีนิสัยเป็นของตัวเอง แตะที่น้องหมาเพื่อดูโปรไฟล์เต็ม",

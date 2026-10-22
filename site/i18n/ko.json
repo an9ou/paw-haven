@@ -824,6 +824,7 @@
   "home.fullscreen": "전체 화면",
   "home.fullscreen_exit": "전체 화면 끄기",
   "home.game_saves": "게임은 이 브라우저에 저장돼요.",
+  "home.nojs": "Doodle Doggo를 플레이하려면 JavaScript가 필요해요.",
   "nav.guide": "안내",
   "common.close": "닫기",
   "footer.guide": "안내",
