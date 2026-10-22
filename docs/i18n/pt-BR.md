@@ -328,3 +328,25 @@ doodledoggo.app strings: `site/i18n/pt-BR.json` (v2.14 phase 1b, all keys done).
 - TODO(native): the nav chips are "Conheça a turma" and "Cães no Japão" (short for the phone). The section title stays "Cachorros no Japão".
 - Site titles say "Hachiko" without the macron, like the English page: Caveat (the title face) may lack ō. Running text keeps "Hachikō".
 - The privacy page says that the English version counts if the two differ (in `privacy.updated`, the small line under the title).
+
+## Game
+
+The game table (`game/i18n/pt-BR.json`, 7,366 keys) was translated in v2.14 from the English (not from Spanish). Decisions: Bond = carinho (chip "Carinho 3"), Feed = "Alimentar", Pet = "Fazer carinho", Care = "Cuidar", Bath = "Banho", Walk = "Passear", the phone bar says "Roupas" for the Wardrobe (the full word "Guarda-roupa" clipped at 390 px; the wardrobe window keeps it), cio for a dog's heat cycle, "Horta" (veggie garden) vs "Quintal" (home yard), "petisco" for both treat and snack, the Schnauzer's "Tenho observações." Item and Dog Card names are Title Case and noun first ("{b} {a}"). The glossary still lists "Dar comida" / "Dar banho" as the long forms: the buttons and missions use "Alimentar" and "Banho" / "Dar banho".
+
+TODO(native) (lines to check with a native speaker):
+- TODO(native): core.bond_max / core.unlock_badge "Unha e carne" for "Best friends", and the title "Tatara-Au-Au" (journal.title_great_granddog).
+- TODO(native): core.generic_joke "Sou da espécie canina. Provavelmente." and shop.not_enough "Já pensou em ganhar na loteria?": do the jokes land?
+- TODO(native): adopt.the_breed is shown as "· {breed}" next to the name: check the header.
+- TODO(native): coined names: "Pede-Doce" (Trick-or-Treat), "Docinho" (candy corn), "Tanque de Areia", "Cheirinho de Nuvem", "O Grande Esparramo", "O Trote Empinado", "Esparramada Real", "Mural Me Adota", "Brilhômetro", "Narizômetro", "Capitão Fofura" (the squirrel).
+- TODO(native): data.sig.shiba.say "Desmaiei. Só acordo com patê." (softened from a death joke) and data.jokes.akita.2 "Plantão de porta." (new pun).
+- TODO(native): data.jokes.dane.3 lost the "look up to me" double meaning; data.place_lines.afghan.house "caimento" for drape.
+- TODO(native): data.fallback_dogs.*.personality use nouns ("Orgulho, independência e drama") to stay gender-neutral: check they read well.
+- TODO(native): coat and gene words: "Fulvo", "Damasco", "Zibelina", "fígado" (liver), "diluição" / "diluído", "malhado", "carrega o gene X" (vet.carry_*, vet.pup_*, garden.fb_*, data.pig_need).
+- TODO(native): newyear.gerald_text "É o Ano da {animal}" only works for a feminine animal (today only Ovelha); a masculine one needs "do".
+- TODO(native): winter.lesson was merged from three sentences to two to keep the two-sentence rule.
+- TODO(native): tokyo.snack_eaten / town.cafe_enjoyed "saboreou: {item}" (written to avoid the item's gender).
+- TODO(native): playdate.a_letter_from_html, playdate.puppies_on_the_way_for and playdate.is_home_brought_favourite_sock use a clunky "{owner}" workaround; data.families.haddad.where and data.town_families.11 avoid giving the dentists a gender and may sound stiff.
+- TODO(native): "chefia" for a dog calling the player "coach" (mod.toys.coach_hi_coach); mail.fam_bell keeps "Coach Bell"; mail.nb_carrier "Carteiro" is the masculine default.
+- TODO(native): garden.proud_mum / "Mamãe coruja", mod.garden.your_dog "Seu au-au", yard.flips_upside_down "pose de barata" (for "roaching").
+- TODO(native): Samoyed "Uhu-uhu!" may read as a cheer more than a bark; data.words.greyhound.liver "Fígado" may puzzle kids ("Marrom" is the alternative).
+- TODO(native): "Cão adulto" on the Dog Card (cards.age_line) is the generic masculine for a grown dog of either sex.
