@@ -341,8 +341,32 @@
 /* owner (site v3.2): the menu sticks to the top on every screen (on phones too: it no longer slides away while scrolling); once stuck it gets the small logo (.stuck) */
 (function () {
   var h = document.getElementById('sitehead'), ticking = false; if (!h) return;
-  function upd() { ticking = false; h.classList.toggle('stuck', h.getBoundingClientRect().top <= 1 && window.scrollY > 0); }
+  var nav = document.getElementById('sitenav'), was = false;
+  // v2.14 fit: on a phone the stuck bar's tab strip may be wider than the bar (Thai at 360 px): it scrolls, shows a fade on the side that has more,
+  // and starts with the current page in view
+  function fades() {
+    if (!nav) return;
+    var max = nav.scrollWidth - nav.clientWidth, x = Math.abs(nav.scrollLeft);
+    nav.classList.toggle('fade-r', max > 2 && x < max - 2); nav.classList.toggle('fade-l', max > 2 && x > 2);
+  }
+  // the small logo gives its room to the tabs when the labels of this language do not fit with it (class .nologo); the Home tab goes home too
+  function fit() {
+    if (!nav) return;
+    h.classList.remove('nologo');
+    if (h.classList.contains('stuck') && nav.scrollWidth > nav.clientWidth + 2) h.classList.add('nologo');
+    if (nav.scrollWidth > nav.clientWidth + 2) {
+      var cur = nav.querySelector('[aria-current]');
+      if (cur) nav.scrollLeft += (cur.getBoundingClientRect().left + cur.offsetWidth / 2) - (nav.getBoundingClientRect().left + nav.clientWidth / 2);
+    } else nav.scrollLeft = 0;
+    fades();
+  }
+  function upd() {
+    ticking = false; var on = h.getBoundingClientRect().top <= 1 && window.scrollY > 0;
+    h.classList.toggle('stuck', on);
+    if (on !== was) { was = on; fit(); }
+  }
   window.addEventListener('scroll', function () { if (!ticking) { ticking = true; requestAnimationFrame(upd); } }, { passive: true });
+  if (nav) { nav.addEventListener('scroll', fades, { passive: true }); window.addEventListener('resize', fit); }
   upd();
 })();
 
