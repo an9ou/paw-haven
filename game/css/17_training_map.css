@@ -8,6 +8,13 @@
 .trchip .ic{width:30px;height:30px}.trchip b{font-family:var(--font-hand);font-size:17px}.trchip small{color:var(--muted)}
 .trchip.on{background:#FFE3A1;box-shadow:inset 0 -4px 0 rgba(242,143,165,.55)}
 .trchip[aria-disabled="true"]{opacity:.45}
+/* v2.14 fit (desktop): a little wider panel; the two tabs stay on one line (Japanese "トレーニング" broke one letter per line) and a trick word fits its chip */
+html:not([data-layout="phone"]) #trainPanel{width:min(330px,30%)}
+html:not([data-layout="phone"]) #trainPanel .trhead .tabs{gap:6px}
+html:not([data-layout="phone"]) #trainPanel .trhead .tabs .btn{white-space:nowrap;font-size:22px;padding:4px 12px 6px}
+html:not([data-layout="phone"]):is(:lang(ja),:lang(th)) #trainPanel .trhead .tabs .btn{font-size:17px;padding:4px 8px 6px}
+html:not([data-layout="phone"]) .trchip{width:82px}
+.trchip b{max-width:100%;overflow-wrap:break-word;text-align:center}
 .trrow{display:flex;align-items:center;gap:6px;font-size:16px}.trrow .prog{flex:1}
 .trprog{flex:1;display:flex;flex-direction:column;gap:3px}
 .trfocus .ic{width:22px;height:22px}

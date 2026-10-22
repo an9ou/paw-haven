@@ -145,8 +145,35 @@ function msWhenFree(fn, tries = 0) {
 
 /* ---- art: the checklist card and the stamp card (WORLD ART props), with a pencil doodle fallback ---- */
 function msDayLabel() { return tdate(new Date(), { weekday: 'long', day: 'numeric', month: 'short' }); }
+// v2.14 fit: the card art wraps a row at its spaces and counts Latin letters, so Japanese, Chinese, Korean and Thai rows ran off the paper.
+// For those scripts the row is measured here and handed over as whole lines: inner spaces become no-break spaces and each line is padded
+// with zero-width spaces (nothing shows) so the art's own wrap keeps one line per row; the art still picks 16 px (2 lines) or 13 px (3 lines).
+const MS_WIDE = /[฀-๿ᄀ-ᇿ぀-ヿ㐀-鿿가-힯豈-﫿＀-￯]/;
+const MS_ROW_W = 86; // the art keeps a row's text between x 60 and 146
+let msCtx = null;
+function msLines(t, fs, w) {
+  if (msCtx === null) { try { msCtx = document.createElement('canvas').getContext('2d') || false; } catch (e) { msCtx = false; } }
+  if (!msCtx) return null;
+  msCtx.font = `700 ${fs}px 'Caveat', cursive`; const W = (s) => msCtx.measureText(s).width;
+  let segs; try { segs = [...new Intl.Segmenter(document.documentElement.lang || undefined, { granularity: 'word' }).segment(t)].map((s) => s.segment); } catch (e) { segs = [...t]; }
+  const out = [''];
+  for (const s0 of segs) for (const s of (W(s0) > w ? [...s0] : [s0])) { const l = out[out.length - 1]; if (l.trim() && W((l + s).trimEnd()) > w) out.push(s.trimStart()); else out[out.length - 1] = l + s; }
+  return out.map((l) => l.trim()).filter(Boolean);
+}
+function msRowText(t) {
+  if (!MS_WIDE.test(t)) return esc(t);
+  let L = msLines(t, 16, MS_ROW_W);
+  if (!L) return esc(t);
+  if (L.length > 2) {
+    const W13 = msLines(t, 13, MS_ROW_W); L = W13;
+    if (L.length < 3) { msCtx.font = "700 13px 'Caveat', cursive"; const L3 = msLines(t, 13, Math.ceil(msCtx.measureText(t).width / 3) + 13); if (L3 && L3.length === 3) L = L3; }
+    if (L.length > 3) { L = L.slice(0, 3); msCtx.font = "700 13px 'Caveat', cursive"; let l = L[2]; while (l.length > 1 && msCtx.measureText(l + '…').width > MS_ROW_W) l = l.slice(0, -1); L[2] = l + '…'; }
+  }
+  if (L.length < 2) return esc(L[0] || t).replace(/ /g, ' ');
+  return L.map((l) => esc(l).replace(/ /g, ' ') + '​'.repeat(Math.max(0, 10 - l.length))).join(' ');
+}
 function msCardArt() {
-  const list = msToday(), items = list.map((it) => ({ text: esc(msText(it)), done: !!it.done, p: it.p || 0, n: it.n })), o = { items, stamps: S.missions.stamps, day: esc(msDayLabel()) };
+  const list = msToday(), items = list.map((it) => ({ text: msRowText(msText(it)), done: !!it.done, p: it.p || 0, n: it.n })), o = { items, stamps: S.missions.stamps, day: esc(msDayLabel()) };
   return artReal('prop', 'missioncard', o) || msCardFB(o);
 }
 function msWrap(t, max) { const w = String(t).split(' '), out = ['']; w.forEach((x) => { const l = out[out.length - 1]; if (l && (l + ' ' + x).length > max && out.length < 2) out.push(x); else out[out.length - 1] = l ? l + ' ' + x : x; }); return out; }
