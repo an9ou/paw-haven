@@ -124,7 +124,7 @@ const HOUSES = [
   { n: 'Cardboard Box', price: 0, bond: 1, comfort: 0, hd: 4, note: 'Free. Has a flap. Smells like delivery.' },
   { n: 'Classic Wooden Doghouse', price: 300, bond: 2, comfort: 0.15, hd: 3.5, note: 'A name plate! Spelled almost right.' },
   { n: 'Cozy Cottage', price: 800, bond: 4, comfort: 0.30, hd: 3, note: 'Chimney, flower box, mortgage.' },
-  { n: 'Snow Igloo', price: 1500, bond: 6, comfort: 0.40, hd: 3, note: 'Cool and cozy. Frost gets double the bonus.' },
+  { n: 'Snow Igloo', price: 1500, bond: 6, comfort: 0.40, hd: 3, note: 'Cool and cozy. Huskies get double the bonus.' },
   { n: 'Treehouse Den', price: 2500, bond: 7, comfort: 0.55, hd: 2.5, note: 'Has a ladder. Dogs cannot climb ladders. Details.' },
   { n: 'Royal Castle Kennel', price: 5000, bond: 9, comfort: 0.75, hd: 2, note: 'Cardboard turrets. Fit for royalty, or a very good boy.' },
   /* v2.4 Shop Day: six houses. The Rocket Ship (`reward: true`) is the second mission-stamp reward and is never sold. */

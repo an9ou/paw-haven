@@ -81,6 +81,8 @@ html[data-layout="phone"] #bar{gap:2px;padding-left:calc(2px + env(safe-area-ins
 html[data-layout="phone"] #bar .act[data-act="wardrobe"] > span:not(.ic){letter-spacing:-.9px;transform:translateX(-1.5px) scaleX(.9)}
 /* v2.14 fit: Indonesian Feed and Walk keep their full words ("Beri makan", "Jalan-jalan") set a little narrower, like Wardrobe (50 px of text in a 49 px button at 360 px) */
 html[data-layout="phone"]:lang(id) #bar .act:is([data-act="feed"],[data-act="walk"]) > span:not(.ic){letter-spacing:-.9px;transform:translateX(-1px) scaleX(.88)}
+/* v2.14 review: Thai Walk and Wardrobe ("เดินเล่น", "ตู้เสื้อผ้า") the same way (Thai keeps letter-spacing normal, so only the scale narrows them) */
+html[data-layout="phone"]:lang(th) #bar .act:is([data-act="walk"],[data-act="wardrobe"]) > span:not(.ic){transform:translateX(-1px) scaleX(.84)}
 
 /* every openModal popup is a bottom sheet: full width, up to 88% of the screen, its own scroll */
 html[data-layout="phone"] #modal .panel{max-height:min(100%,88vh);max-height:min(100%,88dvh)}

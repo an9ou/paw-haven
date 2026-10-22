@@ -79,6 +79,8 @@ label.tog input{width:22px;height:22px;accent-color:#e07a92}
 html[data-layout="phone"] .cover.choosing{min-height:0;max-height:none;padding-top:20px;padding-bottom:18px;gap:8px}
 html[data-layout="phone"] .cover.choosing .tagline{font-size:26px;line-height:1.15;text-align:center}
 html[data-layout="phone"] .cover.choosing .crayon-note{font-size:15px;line-height:1.3}
+/* v2.14 review: the cover sized to its content leaves no room under the crayon note on phones and the 684 px embed: the low doodles and the two title dogs drew on it */
+html[data-layout="phone"] .cover.choosing .dd-low,html[data-layout="phone"] #title:has(.cover.choosing) :is(.tdog,.tdog2){display:none}
 .tchoose{position:relative;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:2px}
 .tch{width:192px;padding:10px 12px 14px;gap:4px;cursor:pointer;font:inherit;color:var(--ink)}
 .tch .tch-dog{display:block;width:100px;height:82px;pointer-events:none}
