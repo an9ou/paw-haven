@@ -41,3 +41,4 @@ zh-Hans lane started: T-ZH-HANS session_014CtT2LuJChWGTaaXM8iLd2 (Opus), branch 
 zh-Hans DONE: lane 514f8ec merged (f428623), 3 parallel Opus reviews (A UI/lessons/site, B lines/jokes, C mods/mixes/rest) = 68 fixes, site 0. tools/i18n_todo.js now also refuses a full-width ；. Tests: test_i18n_node, copy, i18n_smoke + smoke, i18n_phone (zh-Hans) PASS. Next: zh-Hant (Taiwan wording).
 
 zh-Hant lane started: T-ZH-HANT session_01XtnviRqeNjYW9J3bc7SABC (Opus), branch lane/v214-t-zh-Hant. Review prompt template: coordinator scratchpad rev/prompt.md (3 reviewers A/B/C by area; recreate from this note if lost).
+zh-Hant DONE: lane 2be72c8 merged, 3 Opus reviews = 90 fixes (incl. the 16 real mix names it had missed) + 1 site. Also: eye colours translated in every language (eyeShown, genes.eye_*; en.json 7366 keys, es/pt-BR/id lanes get the 4 new keys). Next: es (Sonnet).

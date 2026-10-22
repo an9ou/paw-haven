@@ -400,3 +400,57 @@ The site translation (`site/i18n/zh-Hant.json`, v2.14 phase 1b), written in Taiw
 - TODO(native): jokes rewritten rather than translated: Samoyed 「每年春天，掉的毛能再拼出一隻狗。」, Shih Tzu 「沖天炮朝天，身體躺平。」, Poodle 「髮型可以隨便。氣質不能隨便。」, Greyhound 45 mph shown as 時速72公里.
 - TODO(native): 小狗版的{name} for the puppy picture caption (English "a Mochi puppy").
 - TODO(native): privacy page wording (隱私權政策, 雜湊, 打亂處理過的密碼, 電子報) and the added line in privacy.updated: 「本政策的中文版與英文版如有不同，以英文版為準。」
+
+## Game
+
+`game/i18n/zh-Hant.json` (v2.14 phase 2, 7362 keys, translated 22 Oct 2026), written in Taiwan wording, not converted from zh-Hans. Choices made for Taiwan players:
+- Item, place, toy, food, outfit and trick names are fixed once and used the same way in shops, walks, the journal and every line, and they match the site (鮭魚抹醬, 絨毛骨頭, 啾啾小鴨, 益智餵食器, 拔河繩, 雞肉飯, 嗅聞墊, 冰雪小屋, 紅蘿蔔, 地瓜, 酪梨, 夏威夷豆, 尖叫雞 for the Rubber Chicken, 幸運銅板, 東京鐵塔, 代代木公園狗狗運動場). Play Dead = 裝睡, zoomies = 暴衝, Nose-o-meter = 嗅嗅儀, dig spot = 挖寶點, dog spot = 狗狗名額, charm = 護身符, top-knot = 沖天炮, care meters = 數值, perk = 加成, Captain Fluff = 蓬蓬隊長, IOU = 欠條, Cone of Dignity = 尊嚴頭套, spay/neuter = 結紮.
+- Every dog is 牠 (several dogs 牠們) unless a line keeps a `sex` branch. Things are 它, other players are 這位玩家 / 其他玩家, never 牠. The player has no gender (你, never 您). Gerald, a male duck, is 他. A dog's sex is 男生 / 女生.
+- "In season" for a dog is the heat cycle (發情期), never a season of the year (garden produce in season is 當季). "Fewer than 4 litters" = 最多生過3胎, "rest one season" = 休息一個發情期. Pug, Frenchie and Shih Tzu snorts are 哼哧; 打呼 only where the English says "snores". The veggie Garden is 菜園 and the Home Yard is 院子.
+- Bar buttons: 餵食, 玩耍, 照顧, 散步, 衣櫥, 日記, 地圖. Buy = 購買, Bond = 親密度, coins = 金幣, mission stamp = 印章, Tokyo stamp = 紀念章.
+- Lessons are exactly two sentences. Where the English has three or four (Gerald's lessons, `winter.lesson`), they are joined into two.
+- No funeral imagery: the Westie's "tiny white chrysanthemum" is 小白雲, the Shiba's "I have died" is a faint (暈倒). No return-policy jokes about dogs: adoption is 一輩子的約定.
+- Mix names (`data.mix_list.*`): only well-known real mixes have Chinese names; the pun names stay English and show as A × B.
+- `title.a_cozy_dog_game_sketchbook` is 溫馨素描狗狗遊戲 so it fits one line on a phone.
+- Code note (all languages): `{eyes}` in `vet.coat_eyes`, `playdate.coat_and_eyes`, `puppies.coat_and_eyes`, `pack.coat_and_eyes` and `garden.coatline` looks filled with the raw English eye word from `mods/genes.js` (brown, amber, blue), so it may show in English in every language.
+- TODO(native): `data.wx_lines.shiba.warm`: the "Snow is beneath me" pun rewritten as 雪？在我腳下而已。
+- TODO(native): `data.wx_lines.shiba.rain`: "the manager of the sky" became 找天空的負責人客訴.
+- TODO(native): `data.walk_lines.bonkhigh.1`: the ducking/ducks pun is lost (低頭閃過是鴨子的專長).
+- TODO(native): `data.wx_lines.malamute.snow`: 這才像話！話大多是我在講！ for "Now we are talking! Mostly me!".
+- TODO(native): `data.wx_lines.bichon.night` / `spitz.night`: "Puff off. Sleep on." as 毛球下班。睡覺上班。 (閃亮下班 for the spitz).
+- TODO(native): `data.tk_lines.stdpoodle.shibuya`: 用優雅修長的線條走過去 for "in a long, graceful line".
+- TODO(native): `title.start_over_body_html`: the English "moved to a farm. A real one." can read as a death joke, so the old dog moves to 素描本的另一頁 (another page of the sketchbook). Check it lands.
+- TODO(native): `adopt.is_now_your_dog_there_html`: "no take-backs policy" became 這是一輩子的約定 (no return-policy joke about a dog).
+- TODO(native): `shop.bought_3`: 不能退貨喔。永遠不行。 is about items bought in a shop, not dogs. Check it reads fine next to the adoption rule.
+- TODO(native): `data.dc_words_a.*`: 愛睏, 淡定, 霧霧, 衝衝 in Dog Card names, e.g. 愛笑餅乾. Natural?
+- TODO(native): `data.dc_breed_words.*`: nicknames 柴柴, 黃金, 拉拉, 法鬥, 德牧, 邊牧, 格雷伊 on the cards.
+- TODO(native): `photo.place_town`: "Doodle Town" = 塗鴉小鎮, while `town.map_title` keeps the brand (Doodle Doggo小鎮).
+- TODO(native): `data.sig.chihuahua.say`: 「我就是颱風警報！！」 rewrites "WEATHER EVENT" for Taiwan.
+- TODO(native): `data.sig.shiba.say`: the "I have died" joke became a faint, 「我暈倒了。要鮭魚抹醬才能叫醒我。」
+- TODO(native): `data.sig.shihtzu.say`: 晚安，各位臣民 for "Goodnight, court".
+- TODO(native): `newyear.gerald_text`: the Year of the Sheep and Border Collie herding joke.
+- TODO(native): `winter.lesson`: the English has three sentences, merged into two for the lesson rule.
+- TODO(native): `winter.tip_salt`: 融雪鹽 (road salt) may be unfamiliar in Taiwan.
+- TODO(native): `data.ex_words.*`: short face labels (吐舌 for blep, 心虛 for guilty, 想睡 for sleepy).
+- TODO(native): `data.npc_boys.*` / `data.npc_girls.*`: Playdate Board dog names (公爵, 豆腐, 酸黃瓜爵士, 小雛菊, 味噌, 毛毛夫人 …), kept apart from the starter names.
+- TODO(native): `mod.genes.harlequin`: 小丑花色 for the Great Dane harlequin coat. Is there a usual Taiwan word?
+- TODO(native): `data.words.dobie.*`: "and rust" as 黑鏽色 / 紅鏽色 (黑棕色 is an option). Fawn = 小鹿色 for every breed.
+- TODO(native): `mod.genes.coat_urajiro`: 裏白 is a Japanese loan word. Can kids read it?
+- TODO(native): `mod.genes.everything_dog`: 什錦狗狗 for the Everything Dog joke.
+- TODO(native): `vet.painter_broke`: the 不收曝光度 joke (painter paid in exposure). Natural?
+- TODO(native): `journal.title_master_breeder` 毛色大師 and "keep breeding" as 多辦幾次玩伴聚會: rewritten to avoid "breed" as a verb. Check the meaning holds.
+- TODO(native): `title.a_cozy_dog_game_sketchbook`: 溫馨素描狗狗遊戲 (shortened so it fits one line on a phone, "sketchbook edition" folded into 素描).
+- TODO(native): `mod.genes.mutt_mix`: 米克斯混血 repeats itself (米克斯 already means a mix).
+- TODO(native): `mod.toys.peekaboo` / `peekaboo_spiky_friend`: 躲貓貓 is hide-and-seek rather than peekaboo.
+- TODO(native): `mod.genes.need_dapple`: 斑點色 for the dachshund dapple coat has no glossary entry.
+- TODO(native): `pack.rescue`: 救援 as a button (adopt a rescue dog) may read like "do a rescue".
+- TODO(native): `newyear.gerald_text`: the herding line 「這樣才不會有誰被當成羊，不小心被趕進羊群」 could be tighter.
+- TODO(native): `core.lu_nothing`: "No refunds" became 沒有贈品 (keeps 不退 away from dogs). Check the joke still works.
+- TODO(native): `data.food.bone_shaped_biscuit.note`: "very meta" as 非常有深度.
+- TODO(native): `data.clothes.ghost_sheet.perk` / `trick_or_treat_ghost.perk`: "Boo" as 嚇一跳 (哇嗚 is an option).
+- TODO(native): `data.lines.hello.3`: "My favourite room after all the other rooms" as 除了其他所有房間以外. Does it read?
+- TODO(native): growls ("grr") are 嗚嚕 / 嗚嚕嚕 (`data.toys_lines.*.tuggrowl`, `mod.toys.grrr_*`). Natural for a playful tug growl?
+- TODO(native): `data.words.*`: "Black and tan" = 黑褐色 may read as one dark brown. Check against Taiwan kennel-club usage.
+- TODO(native): `mail.card_9`: 真是超額達成 for "overachiever". Does it land for kids?
+- TODO(native): "snack" is 點心 in some lines and 零食 (the glossary word for "treat") in others: pick one per English word.
+- TODO(native): the Nose-o-meter hot/cold hints use 超燙 / 越來越燙 (walk.nose_hot, mod.walk.*, walk_lines.hot/warm, clues.hot.2): fine for the warmer/colder game or too literal?
