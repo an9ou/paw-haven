@@ -66,3 +66,4 @@ NEXT, in order:
 7. Tag/branch v215-base; final report to the GM (languages, review fix counts, fit-pass result with fixes + accepted exceptions, tests), then wait for the owner's go. Ship per the original brief only after that.
 Open review notes for the docs/TODO: obsLow in mods/walkrun.js lowercases only in English; data.fav.<breed> raw ids "pumpkin-pupcake" are never shown; native-check TODOs in each docs/i18n/<lang>.md "## Game".
 Lane sessions to archive at ship: T-ZH-HANS session_014CtT2LuJChWGTaaXM8iLd2, T-ZH-HANT session_01XtnviRqeNjYW9J3bc7SABC, T-ES session_019HCc6s5t6wry3fnVvzYi5z, T-PT-BR session_01Lvot2qrsAGmb6XSBjHVDMC, T-ID session_01T4asBVHdxSJbM4mi6owZdz (plus th/fr/de/ko/ja from the earlier note).
+Main v2.13.4 (b9789f6, sketch-surface hosts position:relative; CHANGELOG row came with it) merged into integration (936dba2). GM site fix on integration: 666ea5f, the full-screen ✕ in its own 52 px bar above the game (keep it in the fit pass).
