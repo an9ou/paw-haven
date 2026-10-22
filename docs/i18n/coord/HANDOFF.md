@@ -49,3 +49,4 @@ es DONE: lane e36a7ab merged (de8123e), 3 Opus reviews = 239 game fixes + 9 site
 pt-BR lane started: T-PT-BR session_01Lvot2qrsAGmb6XSBjHVDMC (Sonnet), branch lane/v214-t-pt-BR.
 pt-BR DONE: lane ae9622d merged (ca0d1f0), 3 Opus reviews = 204 game + 33 site fixes (snort bufada in ~75 lines, =0 plural branches, item/toy/dog/player gender, Carinho {n}, site topete/pupcake/carinho). Glossary Feed = Alimentar (button), Bath button Banho. Next: id (Sonnet), the last language, then the END STEPS + FIT PASS.
 id lane started: T-ID session_01T4asBVHdxSJbM4mi6owZdz (Sonnet), branch lane/v214-t-id.
+FONTS DONE: lane/v214-fonts 48fa26a merged (site title keys + guide FAQ/steps/h1/cta, CJK/th site + game subsets from the final tables, 0 missing glyphs the sources have; game zh-Hant 574 KB / zh-Hans 444 / ja 202, loaded only for the active language; Latin ♥ supplements). Re-run fonts after the fit pass ONLY if CJK/th strings change.
