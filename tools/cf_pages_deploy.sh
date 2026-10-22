@@ -26,8 +26,8 @@ ZID=$(curl -sS "https://api.cloudflare.com/client/v4/zones?name=$ZONE" "${AUTH[@
 
 # 0. the side Workers tools/cf_site.js made (only when it made them) and their routes: the per-language fonts (doodle-doggo-fonts,
 #    doodledoggo.app/fonts/i18n/*) and, since site v3, the place pictures of /map (doodle-doggo-img, doodledoggo.app/img/map/*)
-side_worker() { # <folder> <script name> <route pattern>
-  local dir=$1 name=$2 pattern=$3
+side_worker() { # <folder> <script name> <route pattern>...
+  local dir=$1 name=$2 pattern; shift 2
   [ -f "$dir/worker.js" ] || return 0
   local SFORM=(-F "metadata={\"main_module\":\"worker.js\",\"compatibility_date\":\"2026-08-01\"};type=application/json"
                -F "worker.js=@$dir/worker.js;type=application/javascript+module")
@@ -35,6 +35,7 @@ side_worker() { # <folder> <script name> <route pattern>
   curl -sS --fail-with-body -X PUT "$API/workers/scripts/$name" "${AUTH[@]}" "${SFORM[@]}" | ok
   echo "uploaded Worker $name"
   local RID
+  for pattern in "$@"; do
   RID=$(curl -sS "https://api.cloudflare.com/client/v4/zones/$ZID/workers/routes" "${AUTH[@]}" | python3 -c "import json,sys; print(next((r['id'] for r in json.load(sys.stdin)['result'] if r['pattern']=='$pattern'),''))")
   if [ -n "$RID" ]; then
     curl -sS -X PUT "https://api.cloudflare.com/client/v4/zones/$ZID/workers/routes/$RID" "${AUTH[@]}" -H 'Content-Type: application/json' -d "{\"pattern\":\"$pattern\",\"script\":\"$name\"}" | ok
@@ -42,9 +43,13 @@ side_worker() { # <folder> <script name> <route pattern>
     curl -sS -X POST "https://api.cloudflare.com/client/v4/zones/$ZID/workers/routes" "${AUTH[@]}" -H 'Content-Type: application/json' -d "{\"pattern\":\"$pattern\",\"script\":\"$name\"}" | ok
   fi
   echo "route $pattern -> $name"
+  done
 }
-side_worker _cfsite_fonts "$SCRIPT-fonts" "$ZONE/fonts/i18n/*"
+# v2.14 PERF: the fonts Worker also serves the game copy's font subsets (/play/fonts/i18n/), and the game copy (/play/) is its own Worker;
+# the more specific route /play/fonts/i18n/* wins over /play/*
+side_worker _cfsite_fonts "$SCRIPT-fonts" "$ZONE/fonts/i18n/*" "$ZONE/play/fonts/i18n/*"
 side_worker _cfsite_img "$SCRIPT-img" "$ZONE/img/map/*"
+side_worker _cfsite_play "$SCRIPT-play" "$ZONE/play/*"
 
 # 1. upload the Worker (metadata + module parts)
 FORM=(-F "metadata={\"main_module\":\"worker.js\",\"compatibility_date\":\"2026-08-01\"};type=application/json"

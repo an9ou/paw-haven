@@ -9,6 +9,7 @@ game/test_logs/
 game/paw_haven_proto.html
 paw_haven_prototype.html
 _site/
+_split/
 game/test_merged.html
 game/shots*/
 shots*/
@@ -40,4 +41,5 @@ _cfsite/
 /site/xx-cjk/
 /_cfsite_fonts/
 /_cfsite_img/
+/_cfsite_play/
 _i18n/

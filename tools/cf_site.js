@@ -12,6 +12,10 @@
 // Site v3: the same for the place pictures of /map (site/img/map/, the SHOTS lane): a third Worker, doodle-doggo-img (_cfsite_img/, route
 // doodledoggo.app/img/map/*), or SITE_IMG=inline. Both side Workers come from one table (SIDE below); sizes.json records fonts/fontMode and img/imgMode.
 // The game itself is played on itch.io (https://an9ou.itch.io/doodle-doggo); this site only introduces it.
+// v2.14 PERF (PERF.md): the game copy at /play/ (dist/itch: index.html, lang/<code>.<hash>.js, photo_fonts.<hash>.js, the brand files) is a fourth
+// Worker, doodle-doggo-play (_cfsite_play/, route doodledoggo.app/play/*), or SITE_PLAY=inline; its font subsets (/play/fonts/i18n/) ride in the fonts
+// Worker on a second route, doodledoggo.app/play/fonts/i18n/*. Caching: /play/ HTML max-age=300 with stale-while-revalidate, the hashed files
+// and the versioned fonts (?v=) a year, immutable.
 // Why a Worker and not Pages: Pages and Workers-assets uploads authenticate with a short-lived upload JWT, which the cloud
 // session's proxy replaces with the account API token, so those uploads fail there. A Worker script upload needs only the
 // API token. www.doodledoggo.app answers with a 301 to the apex, keeping the path.
@@ -25,19 +29,36 @@ const PSEUDO = process.argv.includes('--pseudo') || !!process.env.SITE_PSEUDO;
 const EN_ONLY = !!process.env.SITE_EN_ONLY;
 const LIVE_LANGS = EN_ONLY ? I18N.LANGS.filter((l) => l.code === 'en') : I18N.LANGS;
 const ALL = I18N.LANGS.concat(I18N.PSEUDO), DIRS = new Set(ALL.map((l) => l.dir).filter(Boolean));
+// owner (site v3.2): the game plays on the home page, in an iframe of /play/. It is the itch.io build (node tools/itch.js: the dev button and
+// panel stripped) of the released game, so build it from main, not from a branch with unreleased work. SITE_GAME=<folder> picks another build.
+const GAME = process.env.SITE_GAME || path.join(root, 'dist', 'itch');
+if (!fs.existsSync(path.join(GAME, 'index.html'))) { console.error(`no game build in ${GAME}: run node tools/itch.js on main first (or set SITE_GAME)`); process.exit(1); }
+const gameFiles = []; // [url, path] of the game copy; its fonts/i18n/ go to the fonts Worker
+const walkGame = (dir, base) => fs.readdirSync(dir).forEach((f) => {
+  const p = path.join(dir, f);
+  if (fs.statSync(p).isDirectory()) return walkGame(p, base + f + '/');
+  if (TYPES[f.split('.').pop()]) gameFiles.push(['/play/' + base + f, p]);
+});
+walkGame(GAME, '');
+const GAME_FONTS = gameFiles.filter(([u]) => u.startsWith('/play/fonts/i18n/') && u.endsWith('.woff2'));
+const HASHED = /^\/play\/(lang\/[\w-]+|photo_fonts)\.[0-9a-f]{8}\.js$|^\/play\/fonts\/i18n\//; // hashed names, and fonts the game always asks for with ?v=<hash>
 // the side Workers: a folder of site/ served by its own Worker on a route of the zone (a route runs before the Custom Domain), so its files don't count
 // against the main Worker. mode: 'none' (no files: no Worker), 'split' (the default) or 'inline' (env[name] === 'inline': served by the main Worker)
 const SIDE = [
   { key: 'fonts', mode: 'fontMode', env: 'SITE_FONTS', url: '/fonts/i18n/', dir: path.join(site, 'fonts', 'i18n'), out: path.join(root, '_cfsite_fonts'), script: 'doodle-doggo-fonts',
     keep: (f) => /\.(woff2|css)$/.test(f) || /-OFL\.txt$/.test(f), real: (f) => f.endsWith('.woff2'), cors: true,
-    what: 'The per-language fonts: the Worker doodle-doggo-fonts on the route doodledoggo.app/fonts/i18n/*.' },
+    what: 'The per-language fonts: the Worker doodle-doggo-fonts on the routes doodledoggo.app/fonts/i18n/* and doodledoggo.app/play/fonts/i18n/* (the game copy).', more: GAME_FONTS },
   { key: 'img', mode: 'imgMode', env: 'SITE_IMG', url: '/img/map/', dir: path.join(site, 'img', 'map'), out: path.join(root, '_cfsite_img'), script: 'doodle-doggo-img',
     keep: (f) => /\.(webp|png|jpg|svg)$/.test(f), real: () => true, cors: false,
-    what: 'The place pictures of /map: the Worker doodle-doggo-img on the route doodledoggo.app/img/map/*.' }
+    what: 'The place pictures of /map: the Worker doodle-doggo-img on the route doodledoggo.app/img/map/*.' },
+  { key: 'play', mode: 'playMode', env: 'SITE_PLAY', url: '/play/', dir: GAME, out: path.join(root, '_cfsite_play'), script: 'doodle-doggo-play', play: true,
+    keep: () => false, real: () => true, more: gameFiles.filter(([u]) => !u.startsWith('/play/fonts/')),
+    what: 'The game copy (/play/, the itch.io build): the Worker doodle-doggo-play on the route doodledoggo.app/play/*.' }
 ];
 SIDE.forEach((x) => {
   x.files = fs.existsSync(x.dir) ? fs.readdirSync(x.dir).filter(x.keep).sort() : [];
-  x.mod = !x.files.some(x.real) || (EN_ONLY && x.key === 'fonts') ? 'none' : (process.env[x.env] === 'inline' ? 'inline' : 'split'); // English only: no other-script fonts
+  x.list = x.files.map((f) => [x.url + f, path.join(x.dir, f)]).concat(x.more || []); // [url, source path]
+  x.mod = !x.list.some(([u]) => x.real(u)) || (EN_ONLY && x.key === 'fonts') ? 'none' : (process.env[x.env] === 'inline' ? 'inline' : 'split'); // English only: no other-script fonts
 });
 // url path -> source file (or generated text)
 const files = {}, gen = {};
@@ -75,12 +96,8 @@ for (const L of LIVE_LANGS.concat(PSEUDO && !EN_ONLY ? I18N.PSEUDO : [])) {
   LANG_OF[pre] = L.code;
   I18N.PAGES.forEach((pg) => { PRETTY[pg.path === '/' ? pre || '/' : pre + pg.path] = pre + '/' + pg.id + '.html'; });
 }
-// owner (site v3.2): the game plays on the home page, in an iframe of /play/. It is the itch.io build (node tools/itch.js: the dev button and
-// panel stripped) of the released game, so build it from main, not from a branch with unreleased work. SITE_GAME=<folder> picks another build.
-const GAME = process.env.SITE_GAME || path.join(root, 'dist', 'itch');
-if (!fs.existsSync(path.join(GAME, 'index.html'))) { console.error(`no game build in ${GAME}: run node tools/itch.js on main first (or set SITE_GAME)`); process.exit(1); }
-fs.readdirSync(GAME).filter((f) => TYPES[f.split('.').pop()]).forEach((f) => { files['/play/' + f] = path.join(GAME, f); });
-PRETTY['/play'] = '/play/index.html';
+// the game copy (/play/): its own Worker unless SITE_PLAY=inline (SIDE above)
+PRETTY['/play/'] = '/play/index.html';
 // the friendly 404 in each language
 const NOTFOUND = {};
 for (const L of LIVE_LANGS.concat(PSEUDO && !EN_ONLY ? I18N.PSEUDO : [])) {
@@ -90,7 +107,7 @@ for (const L of LIVE_LANGS.concat(PSEUDO && !EN_ONLY ? I18N.PSEUDO : [])) {
   NOTFOUND[L.dir ? '/' + L.dir : ''] = `<!doctype html><html lang="${L.code}"${L.code === 'en' ? '' : ` class="i18n s-${L.script}"`}><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${I18N.fmt(L.code, 'notfound.title').replace(/<[^>]*>/g, '')} · Doodle Doggo</title><link rel="stylesheet" href="/style.css">${flink}<main class="page"><div class="sheet center"><h1>${I18N.fmt(L.code, 'notfound.title')}</h1><p><a class="play" href="${I18N.urlFor(L, '/')}">${I18N.fmt(L.code, 'notfound.home')}</a></p></div></main>`;
 }
 // the side Workers' files, when they stay in the main Worker
-SIDE.filter((x) => x.mod === 'inline').forEach((x) => x.files.forEach((f) => { files[x.url + f] = path.join(x.dir, f); }));
+SIDE.filter((x) => x.mod === 'inline').forEach((x) => x.list.forEach(([u, f]) => { files[u] = f; }));
 
 const CSP = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self'; font-src 'self'; frame-src 'self'; connect-src https://pawhaven-api.ansonyuen0108.workers.dev; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
 // the game (/play/) has its own: Google Fonts, data:/blob: pictures (photos, postcards), the cloud save API, and only the site may frame it
@@ -122,12 +139,15 @@ const LANG_OF = ${JSON.stringify(LANG_OF)};
 const NOTFOUND = ${JSON.stringify(NOTFOUND)};
 const APEX = 'doodledoggo.app';
 const CSP = ${JSON.stringify(CSP)}, GAME_CSP = ${JSON.stringify(GAME_CSP)};
+const HASHED = ${HASHED};
 export default {
   async fetch(req) {
     const url = new URL(req.url);
     if (url.hostname === 'www.' + APEX) return Response.redirect('https://' + APEX + url.pathname + url.search, 301);
     if (req.method !== 'GET' && req.method !== 'HEAD') return new Response('Method not allowed', { status: 405, headers: { allow: 'GET, HEAD' } });
+    if (url.pathname === '/play') return Response.redirect('https://' + url.host + '/play/' + url.search, 301); // the game's relative files need the slash
     let p = url.pathname.length > 1 ? url.pathname.replace(/\\/+$/, '') : '/';
+    if (url.pathname === '/play/') p = '/play/';
     const anyPre = (p.match(/^\\/[A-Za-z-]+(?=\\/|$)/) || [''])[0]; // /zh-Hant/..., /pt-BR (the BCP 47 spelling) -> the lowercase folder
     if (anyPre && anyPre !== anyPre.toLowerCase() && anyPre.toLowerCase() in LANG_OF) {
       const rest = url.pathname.slice(anyPre.length);
@@ -141,7 +161,7 @@ export default {
     if (!hit) return new Response(FILES['/index.html'] ? NOTFOUND[lpre] : 'Not found',
       { status: 404, headers: Object.assign(headers, { 'content-type': 'text/html; charset=utf-8', 'content-language': LANG_OF[lpre] }) });
     const html = hit[1].startsWith('text/html');
-    Object.assign(headers, { 'content-type': hit[1], 'cache-control': html ? 'public, max-age=300' : 'public, max-age=86400' });
+    Object.assign(headers, { 'content-type': hit[1], 'cache-control': HASHED.test(p) ? 'public, max-age=31536000, immutable' : html ? (p.startsWith('/play/') ? 'public, max-age=300, stale-while-revalidate=86400' : 'public, max-age=300') : 'public, max-age=86400' });
     if (html) headers['content-language'] = LANG_OF[lpre];
     if (p === '/reset' || p.endsWith('/reset')) headers['referrer-policy'] = 'no-referrer';
     return new Response(req.method === 'HEAD' ? null : hit[0], { headers });
@@ -153,17 +173,24 @@ SIDE.forEach((x) => {
   fs.rmSync(x.out, { recursive: true, force: true }); sideGz[x.key] = 0;
   if (x.mod !== 'split') return;
   const extra = x.cors ? `, 'access-control-allow-origin': 'https://doodledoggo.app'` : '';
-  sideGz[x.key] = emit(x.out, x.files.map((f) => [x.url + f, path.join(x.dir, f)]), (imports, table) => `${HEAD(x.what)}
+  // the game copy: GAME_CSP, /play -> /play/, /play/ = index.html; every side Worker: the hashed or versioned game files a year (HASHED), the rest a week
+  const head = x.play ? `'x-content-type-options': 'nosniff', 'referrer-policy': 'strict-origin-when-cross-origin', 'content-security-policy': GAME_CSP` : `'x-content-type-options': 'nosniff'${extra}`;
+  sideGz[x.key] = emit(x.out, x.list.slice(), (imports, table) => `${HEAD(x.what)}
 ${imports}
 const FILES = {
 ${table}
 };
+const HASHED = ${HASHED};${x.play ? `
+const GAME_CSP = ${JSON.stringify(GAME_CSP)};` : ''}
 export default {
   async fetch(req) {
-    const url = new URL(req.url), hit = FILES[url.pathname];
-    if (req.method !== 'GET' && req.method !== 'HEAD') return new Response('Method not allowed', { status: 405, headers: { allow: 'GET, HEAD' } });
+    const url = new URL(req.url);
+    if (req.method !== 'GET' && req.method !== 'HEAD') return new Response('Method not allowed', { status: 405, headers: { allow: 'GET, HEAD' } });${x.play ? `
+    if (url.pathname === '/play' || url.pathname === '/play/index.html') return Response.redirect('https://' + url.host + '/play/' + url.search, 301);` : ''}
+    const p = ${x.play ? "url.pathname === '/play/' ? '/play/index.html' : url.pathname" : 'url.pathname'}, hit = FILES[p];
     if (!hit) return new Response('Not found', { status: 404, headers: { 'content-type': 'text/plain; charset=utf-8', 'x-content-type-options': 'nosniff' } });
-    return new Response(req.method === 'HEAD' ? null : hit[0], { headers: { 'content-type': hit[1], 'cache-control': 'public, max-age=604800', 'x-content-type-options': 'nosniff'${extra} } });
+    const cache = HASHED.test(p) ? 'public, max-age=31536000, immutable' : hit[1].startsWith('text/html') ? 'public, max-age=300, stale-while-revalidate=86400' : 'public, max-age=604800';
+    return new Response(req.method === 'HEAD' ? null : hit[0], { headers: { 'content-type': hit[1], 'cache-control': cache, ${head} } });
   }
 };
 `);
@@ -176,4 +203,4 @@ SIDE.forEach((x) => { sizes[x.key] = sideGz[x.key]; sizes[x.mode] = x.mod; });
 fs.writeFileSync(path.join(out, 'sizes.json'), JSON.stringify(sizes, null, 1) + '\n');
 const raw = Object.values(files).reduce((n, f) => n + fs.statSync(f).size, 0) + Object.values(gen).reduce((n, h) => n + Buffer.byteLength(h), 0);
 console.log('wrote _cfsite/worker.js +', Object.keys(files).length + Object.keys(gen).length, 'files,', (raw / 1e6).toFixed(2), 'MB,', (mainGz / 1e6).toFixed(2), 'MB gzipped'
-  + SIDE.map((x) => (x.mod === 'split' ? `; ${path.basename(x.out)}/worker.js + ${x.files.length} ${x.key} files, ${(sideGz[x.key] / 1e6).toFixed(2)} MB gzipped` : x.mod === 'inline' ? `; ${x.files.length} ${x.key} files inline` : '')).join(''));
+  + SIDE.map((x) => (x.mod === 'split' ? `; ${path.basename(x.out)}/worker.js + ${x.list.length} ${x.key} files, ${(sideGz[x.key] / 1e6).toFixed(2)} MB gzipped` : x.mod === 'inline' ? `; ${x.list.length} ${x.key} files inline` : '')).join(''));

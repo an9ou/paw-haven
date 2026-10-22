@@ -1,6 +1,7 @@
 /* ======================= BOOT ======================= */
 function start(data) {
   data = data || {};
+  ['pawload', 'pawloadCss', 'pawloadJs'].forEach((id) => { const e = document.getElementById(id); if (e) e.remove(); }); // v2.14 PERF: the loading paw (game/shell.html) goes as the game starts
   if (prefs.motion) document.documentElement.dataset.motion = prefs.motion;
   else if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.dataset.motion = 'off';
   applyAudioPrefs();
@@ -8,7 +9,7 @@ function start(data) {
   buildHUD(); buildBar();
   const snap = data.S && data.S.dog ? data.S : null;
   S = snap ? linkDogs(snap) : loadSave();
-  if (S && i18nWanted() !== I18N.lang) i18nApply(i18nWanted()); // a hot-reload snapshot can carry another language than the save on disk
+  if (S && i18nTarget() !== I18N.lang) i18nApply(i18nTarget()); // a hot-reload snapshot can carry another language than the save on disk
   if (snap && ['yard', 'market', 'map', 'shelter'].includes(data.mode)) { applyAway(); go(data.mode); }
   else if (snap) { applyAway(); go('yard'); }
   else if (S && i18nReloaded()) { applyAway(); go('yard'); } // v2.14: back from a language switch in the game
