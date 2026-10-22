@@ -327,13 +327,13 @@ Term choices, one word per English term across the whole table:
 
 - Bond = Kedekatan (label "Kedekatan {n}", "Level kedekatan {l}", "poin kedekatan"); Hunger / Happiness / Energy / Cleanliness = Kenyang / Bahagia / Energi / Kebersihan; Paw Coins / coins = Koin Tapak / koin ("Koinmu belum cukup").
 - Buy = Beli, Later = Nanti, Not now = Nanti saja, Close = Tutup, Back = Kembali, Next = Lanjut.
-- Dock labels: Makan, Main, Rawat, Jalan, Lemari Baju, Jurnal, Peta (short forms keep them from clipping at 390 px).
+- Dock labels: Beri makan, Main, Rawat, Jalan-jalan, Lemari Baju, Jurnal, Peta (v2.14 fit pass: the full Feed and Walk words are back; the phone bar sets them a little narrower, like Lemari Baju, in `game/css/20_phone_shell.css`).
 - treat and snack = camilan; bowl = mangkuk; doghouse = Rumah Anjing, dog bed = kasur; charm = jimat; top-knot = kuncir; puddle = genangan; Nose-o-meter = Hidung-o-meter.
 - A dog "in season" = masa birahi (a crop "in season" = sedang musim); "fewer than 4 litters" = belum pernah melahirkan 4 kali atau lebih; Pick of the litter = Pilihan pertama; Pug and Frenchie snort = dengus / mendengus ("dengkur" only for sleep); the schnauzer's "I have notes" = "Aku punya beberapa catatan."
 - The veggie Garden is Kebun Sayur, the Home Yard is Halaman Rumah. Master Breeder = Maestro Keluarga Anjing (the loanword is banned). Puppies go to their "rumah baru". Dog Card names are "{b} {a}" (noun first).
 
 TODO(native): `title.start_over_body_html` and the other "farm" jokes: "pindah ke pertanian yang asli" (the word "peternakan" is banned).
-TODO(native): `data.acts.feed.1` = "Makan" and `data.acts.walk.1` = "Jalan" (dock short forms), and the stat names: "+10 Lapar" for a fed dog reads like more hunger ("Kenyang" may be clearer for the meter).
+TODO(native): the stat names: "+10 Lapar" for a fed dog reads like more hunger ("Kenyang" may be clearer for the meter).
 TODO(native): `journal.title_great_granddog` "Moyang Anjing" and `journal.title_master_breeder` / `journal.coat_50` "Maestro Keluarga Anjing" are stand-ins for puns and a banned word.
 TODO(native): `data.dc_words_a` Waggy = "Kibas", Wiggly = "Goyang", Toasty = "Anget", Dreamy = "Pemimpi" and `data.dc_words_b` Daisy = "Aster", Willow = "Dedalu": the adjective + noun pairs may sound odd.
 TODO(native): `newyear.gerald_text` and `data.clothes.year_of_the_sheep_hood.*`: the sheep / Border Collie joke and "Tahun Domba" / "tudung wol".

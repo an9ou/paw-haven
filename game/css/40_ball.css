@@ -1,7 +1,8 @@
 /* v2.10 BALL lane (tag bl, classes .bl-): free ball play in the current place's scene. V210.md sections 2 and 5.4. The BALL lane owns this file. */
 /* the dock while playing: the title, a 44 px Done button, one hint line and the coin line */
 .bl-tray .tray-h{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.bl-tray .tray-h h3{margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bl-tray .tray-h h3{margin:0;min-width:0;overflow-wrap:break-word} /* v2.14 fit: the title wraps to a second line ("Ball play: Tennis Ball" in ja / fr / th) instead of an ellipsis */
+html[data-layout="phone"] #stage #dock > .bl-tray .tray-h h3{font-size:24px;text-wrap:balance}
 .bl-tray .bl-done{flex:none;min-width:88px;min-height:44px;font-size:20px}
 .bl-tray .tray-body p{margin:2px 0}
 .bl-tray .bl-hint,.bl-tray .bl-coins{font-size:15px;line-height:1.25}

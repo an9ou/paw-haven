@@ -120,9 +120,11 @@ function gdPlace(force) {
 function gdRing() {
   const ring = $('.gd-ring', gd.layer), tg = gdTarget(S.guide.step);
   if (!tg) { ring.hidden = true; gd.ringKey = ''; return; }
-  const pad = tg.sel === '#dogHit' ? 10 : 8, r = tg.r, W = Math.round(r.w + pad * 2), H = Math.round(r.h + pad * 2), key = `${S.guide.step}|${W}x${H}`;
+  // v2.14 fit: the ring stays inside the stage (a target on the stage's edge, like the Walk button on phones, used to push #stage sideways)
+  const pad = tg.sel === '#dogHit' ? 10 : 8, r = tg.r, sw = stage.clientWidth, sh = stage.clientHeight;
+  const l = Math.max(1, Math.round(r.l - pad)), t = Math.max(1, Math.round(r.t - pad)), W = Math.min(sw - 1, Math.round(r.r + pad)) - l, H = Math.min(sh - 1, Math.round(r.b + pad)) - t, key = `${S.guide.step}|${W}x${H}`;
   if (key !== gd.ringKey) { ring.innerHTML = gdRingSVG(W, H, 71 + S.guide.step * 13); gd.ringKey = key; }
-  ring.dataset.for = tg.sel; ring.style.left = Math.round(r.l - pad) + 'px'; ring.style.top = Math.round(r.t - pad) + 'px'; ring.style.width = W + 'px'; ring.style.height = H + 'px'; ring.hidden = false;
+  ring.dataset.for = tg.sel; ring.style.left = l + 'px'; ring.style.top = t + 'px'; ring.style.width = W + 'px'; ring.style.height = H + 'px'; ring.hidden = false;
 }
 function gdPaused() { return cur.mode !== 'yard' || !modal.hidden || popOpen() || hud.hidden || bar.hidden || !titleEl.hidden || (typeof phPeekOn !== 'undefined' && phPeekOn); }
 function gdTick() {

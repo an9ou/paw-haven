@@ -1,5 +1,5 @@
 /* v2.4 guide (GUIDE lane): the Gerald card, the crayon ring, the How to play page. Phone rules under html[data-layout="phone"]. */
-#gdLayer{position:absolute;inset:0;z-index:5;pointer-events:none} /* above the scene, the HUD and the bar (later in the DOM), under the dog's own bubble (6), trays, toasts and popups */
+#gdLayer{position:absolute;inset:0;z-index:5;pointer-events:none;overflow:hidden;overflow:clip} /* v2.14 fit: the pulsing ring never pushes #stage sideways */ /* above the scene, the HUD and the bar (later in the DOM), under the dog's own bubble (6), trays, toasts and popups */
 /* the card: a torn sketchbook note, taped to the page, with Gerald and his speech bubble (the pencil-frame bubble with the --fr-tail, so it grows with the text) */
 .gd-card{position:absolute;left:18px;top:auto;width:520px;max-width:calc(100% - 36px);box-sizing:border-box;display:flex;align-items:flex-end;gap:6px;padding:16px 18px 12px 10px;
   background:var(--gd-paper) 0 0/100% 100% no-repeat;filter:drop-shadow(0 4px 5px rgba(60,40,25,.2));transform:rotate(-.8deg);pointer-events:none;color:var(--ink)}
