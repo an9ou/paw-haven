@@ -318,3 +318,40 @@ doodledoggo.app in Indonesian (`site/i18n/id.json`, v2.14 phase 1b, 714 keys), k
 - TODO(native): "Kenali anjingnya" (nav chip) next to "Kenalan dengan anjing" (titles); "pupcake", "kibble" and "pate salmon" kept as loanwords in the loves lists.
 - TODO(native): "{name} versi anak anjing" for "a Mochi puppy"; "Stroller dan troli"; "Di kuil Shinto dan kuil Buddha" for shrines and temples.
 - TODO(native): puns: "Rumahku, istana saljuku" (Home, sweet snowy home), "Kuncir naik. Badan rebahan." (Shih Tzu), "Potong rambut boleh dilewati. Harga diri jangan." (Poodle).
+
+## Game
+
+The game table (`game/i18n/id.json`, v2.14, 7,366 keys; the 561 mix names keep the English pun names). kamu / -mu everywhere, dogs say "aku", dogs are the name or "dia" (the `{sex, select}` branches carry the same text).
+
+Term choices, one word per English term across the whole table:
+
+- Bond = Kedekatan (label "Kedekatan {n}", "Level kedekatan {l}", "poin kedekatan"); Hunger / Happiness / Energy / Cleanliness = Lapar / Bahagia / Energi / Kebersihan; Paw Coins / coins = Koin Tapak / koin ("Koinmu belum cukup").
+- Buy = Beli, Later = Nanti, Not now = Nanti saja, Close = Tutup, Back = Kembali, Next = Lanjut.
+- Dock labels: Makan, Main, Rawat, Jalan, Lemari Baju, Jurnal, Peta (short forms keep them from clipping at 390 px).
+- treat and snack = camilan; bowl = mangkuk; doghouse = Rumah Anjing, dog bed = kasur; charm = jimat; top-knot = kuncir; puddle = genangan; Nose-o-meter = Hidung-o-meter.
+- A dog "in season" = masa birahi (a crop "in season" = sedang musim); "fewer than 4 litters" = belum pernah melahirkan 4 kali atau lebih; Pick of the litter = Pilihan pertama; Pug and Frenchie snort = dengus / mendengus ("dengkur" only for sleep); the schnauzer's "I have notes" = "Aku punya beberapa catatan."
+- The veggie Garden is Kebun Sayur, the Home Yard is Halaman Rumah. Master Breeder = Maestro Keluarga Anjing (the loanword is banned). Puppies go to their "rumah baru". Dog Card names are "{b} {a}" (noun first).
+
+TODO(native): `title.start_over_body_html` and the other "farm" jokes: "pindah ke pertanian yang asli" (the word "peternakan" is banned).
+TODO(native): `data.acts.feed.1` = "Makan" and `data.acts.walk.1` = "Jalan" (dock short forms), and the stat names: "+10 Lapar" for a fed dog reads like more hunger ("Kenyang" may be clearer for the meter).
+TODO(native): `journal.title_great_granddog` "Moyang Anjing" and `journal.title_master_breeder` / `journal.coat_50` "Maestro Keluarga Anjing" are stand-ins for puns and a banned word.
+TODO(native): `data.dc_words_a` Waggy = "Kibas", Wiggly = "Goyang", Toasty = "Anget", Dreamy = "Pemimpi" and `data.dc_words_b` Daisy = "Aster", Willow = "Dedalu": the adjective + noun pairs may sound odd.
+TODO(native): `newyear.gerald_text` and `data.clothes.year_of_the_sheep_hood.*`: the sheep / Border Collie joke and "Tahun Domba" / "tudung wol".
+TODO(native): `data.ny_fortunes.*`: "Keberuntungan besar / baik / kecil" for the great / good / small luck levels.
+TODO(native): `wx_lines.greyhound.coat` "banyak banget" (a little colloquial), `core.lu_raise_html` "minta kenaikan gaji" (the raise in treats joke), `popup.had_a_quick_squat` and `popup.lifted_a_leg_on_the` (potty jokes).
+TODO(native): `data.dc_breed_words` keep the English short forms except Mutt = Campuran, Poodle = Pudel, Shepherd = Gembala, Pittie = Pitbull; `data.jr_grand` and "The Everything Dog" / "Harlequin" stay English like the mix names.
+TODO(native): `data.place_lines.chow.woods` "singa yang tenang", `data.tk_lines.chihuahua.tokyotower` "Aku lebih tinggi di dalam", `data.tk_lines.poodle.asakusa` "Beda tipis", `data.place_lines.mastiff.river` "Ngiler, air, ngiler."
+TODO(native): `town.salon_done` "awan yang sudah lulus kuliah", `town.vet_survived` "berhasil melewati dokter hewan. Nyaris. Dengan dramatis."
+TODO(native): `data.treasures.rubber_chicken.ab` "Bunyi Kebijaksanaan", `data.treasures.clover_collar.ab` "Anjing Hoki" ("hoki" is colloquial), `data.tk_ueno.hanami.0` "Piknik hanami" and `momiji.0` "Jalan momiji" (Japanese words without a gloss in the title).
+TODO(native): `data.spot_ord.*` "ke-1" depends on the pack sentence putting "Tempat {spot_ord}" before it; `data.walk_lines.bonkname.seagull.1` "CIT CIT" as the gull sound.
+TODO(native): `vet.preg_check` / `vet.preg_go` "Cek calon anak anjing" and "USG" may sound clinical; `playdate.has_retired_from_romance` "pensiun dari urusan asmara" may be too grown-up.
+TODO(native): `data.sig.dachs.n` "Goyang Mi" (Noodle Wiggle), `data.fallback_dogs.pom.joke` "Kiik!" (Pomeranian yip), `data.ex_words.sneeze` "Hatsyi", `data.ex_words.hearts` "Mata hati".
+TODO(native): `data.merle_by.collie.blue` and `data.merle_words.blue` "Merle abu-abu" (Slate merle) next to "Merle biru"; `pack.rescue` and `shelter.kind_rescue` keep the loanword "Rescue".
+TODO(native): `puppies.trots_off_with` "berangkat ke rumah barunya bersama {family} {where}" depends on how the `where` phrases read after it.
+TODO(native): `data.toys_lines.*` barks ("kik" for small dogs, the Beagle "AUUU") and the smug lines; `data.toys.snuffle_mat.n` "Matras Endus", `data.toys.paddling_pool.n` "Kolam Cipak-Cipak", `data.toys.bat_wing_flyer.n` "Cakram Sayap Kelelawar".
+TODO(native): `mod.toys.boo_tiful`, `mod.toys.fetch_tastic`, `mod.toys.best_game_ever` (wordplay), `mod.toys.tucked_in` "Diselimuti" and `mod.toys.tuck_in_meter` "meter selimut".
+TODO(native): `data.jokes.dachs.3` "Sosis? Mana? Oh. Aku.", `data.jokes.lab.2` "Ekorku ekor berang-berang.", `train.signature` "Andalan", `data.tcmd.play_dead` "Tidur!" (the English "Bang!" read as a gunshot), `care.seagull` "Camilan diganti".
+TODO(native): `train.combo` and `train.cost` are long and may be tight at 390 px.
+TODO(native): `garden.fb_*` coat-gene wording ("membawa warna pudar", "belang") may be too technical; `data.pig_need.*` "kedua orang tua" for a dog's parents; `yard.flips_upside_down_legs_in` "pose kecoak" (Greyhound roaching).
+TODO(native): `garden.one_peas` "polong kacang polong" reads awkwardly; `data.obs_label.tide_pool` "Kolam karang"; `data.food.pup_kinton.n` kept as "Pup Kinton"; "hammock" kept as a loanword.
+TODO(native): `winter.floof` "Pufff." and `winter.lesson` (the English has three sentences, written here as two).
