@@ -68,7 +68,7 @@ function brStoneLetter() {
 }
 function brPupCard(pp, i, named, fresh) {
   return `<div class="lt-card ${pp.sparkle ? 'sparkly' : ''}" style="--i:${i}" data-pup="${pp.id}">${pp.sparkle ? '<span class="lt-spark">' + tt('puppies.sparkle', 'Sparkle!') + '</span>' : ''}${fresh ? '<span class="lt-new" aria-label="' + esc(tt('puppies.label_new_coat', 'New coat')) + '">' + tt('puppies.new', 'NEW') + '</span>' : ''}<span class="lt-art">${pupArt(pp, { pose: 'sleep' })}</span>
-    <span class="lt-sx">${sexSym(pp.sex)} ${pp.sex === 'female' ? tt('puppies.girl', 'Girl') : tt('puppies.boy', 'Boy')}</span><span class="small">${esc(pp.mix ? mixShown(pp.mix) : brBreed(pp.key))}<br>${esc(tt('puppies.coat_and_eyes', '{coat}, {eyes} eyes', { coat: coatShown(pp.coat, pp.key), eyes: pp.eyes }))}</span>
+    <span class="lt-sx">${sexSym(pp.sex)} ${pp.sex === 'female' ? tt('puppies.girl', 'Girl') : tt('puppies.boy', 'Boy')}</span><span class="small">${esc(pp.mix ? mixShown(pp.mix) : brBreed(pp.key))}<br>${esc(tt('puppies.coat_and_eyes', '{coat}, {eyes} eyes', { coat: coatShown(pp.coat, pp.key), eyes: eyeShown(pp.eyes) }))}</span>
     ${named ? `<b>${esc(pp.name)}</b>` : `<label class="lt-name"><span class="sr">${esc(tt('puppies.name_for_pup', 'Name for pup {n}', { n: i + 1 }))}</span><input class="namebox" maxlength="16" data-pupname="${pp.id}" value="${esc(pp.name)}" aria-label="${esc(tt('puppies.name_for_the_pup', '{sex, select, female {Name for the girl pup} other {Name for the boy pup}}', { sex: homeSx(pp) }))}"></label>`}</div>`;
 }
 function openBirth(litterId) {

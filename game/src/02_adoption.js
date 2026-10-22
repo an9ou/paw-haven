@@ -9,6 +9,8 @@ function homeSx(d) { return d && d.sex === 'female' ? 'female' : 'male'; }
 function mixShown(m) { if (!m) return ''; const G = window.PawGenes; if (G && typeof G.mixName === 'function') { try { const v = G.mixName(m); if (v) return v; } catch (e) { /* use the English name */ } } return m.name || ''; }
 // v2.14: a saved English coat name as shown (display only; never use it for comparing or saving)
 function coatShown(c, key) { if (!c) return c; const G = window.PawGenes; if (G && typeof G.coatLabel === "function") { try { const v = G.coatLabel(c, key); if (v) return v; } catch (e) { /* use the English name */ } } return c; }
+// Eye colour labels: phenotype() gives a fixed English word ('brown' | 'amber' | 'blue' | 'odd').
+function eyeShown(e) { const m = { brown: tt('genes.eye_brown', 'brown'), amber: tt('genes.eye_amber', 'amber'), blue: tt('genes.eye_blue', 'blue'), odd: tt('genes.eye_odd', 'odd') }; return m[e] || e; }
 // v2.14: a stored English mix word (a chip name) as shown
 function mixWordShown(n) { const G = window.PawGenes; if (n && G && typeof G.mixLabel === "function") { try { const v = G.mixLabel(n); if (v) return v; } catch (e) { /* use the English name */ } } return n; }
 // v2.14: the name of an item as shown to the player (food, toys, clothes, houses, beds, decorations). The English name stays the id everywhere else.
