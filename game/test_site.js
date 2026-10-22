@@ -627,10 +627,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
         const np = navTapProblems(await navTaps(page)), s2 = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
         if (o.scroll > 0 || o.out.length || np.length || s2 > 0) bad.push(`${u}: scroll ${o.scroll}/${s2} ${o.out.join(', ')} ${np.slice(0, 2).join(', ')}`);
       }
-      // KNOWN SITE ISSUE (reported, not fixed here): the two longest Thai dog names are 3-4 px wider than their 80 px picture tile on /th/dogs at 320 px
-      const KNOWN = ['/th/dogs: เปปเปอร์', '/th/dogs: เพรทเซล'], knownHit = bad.filter((b) => KNOWN.some((k) => b.startsWith(k.split(':')[0] + ':') && b.includes(k.split(': ')[1])));
-      if (knownHit.length) console.log('  .. KNOWN SITE ISSUE (not hidden: reported): ' + knownHit.join(' | '));
-      ok(!bad.filter((b) => !knownHit.includes(b)).length, '320 px: every page fits, every dog name, nav link and place name fits its box, the 5 nav links reachable ' + bad.filter((b) => !knownHit.includes(b)).join(' | '));
+      ok(!bad.length, '320 px: every page fits, every dog name, nav link and place name fits its box, the 5 nav links reachable ' + bad.join(' | '));
       await ctx.close();
     }
 
