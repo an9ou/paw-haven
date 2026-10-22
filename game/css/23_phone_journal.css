@@ -38,6 +38,7 @@ html[data-layout="phone"] .ft-pan .ft{width:660px;flex:none}
 html[data-layout="phone"] .ft-pan .fnode{width:120px;min-height:64px}
 html[data-layout="phone"] .ft-pan .fnode .fhead{width:56px;height:56px}
 html[data-layout="phone"] .ft-pan .fnode.me .fhead{width:76px;height:76px}
+html[data-layout="phone"] .ft-pan .fnode.me{width:88px} /* v2.14 fit: the parents' "Shelter rescue" labels (Indonesian "Dari penampungan") clear the middle node on a narrow tree */
 html[data-layout="phone"] .ft-pan .fname{font-size:19px}
 html[data-layout="phone"] .ft-btns{display:flex;align-items:center;justify-content:space-between;gap:8px}
 html[data-layout="phone"] .ft-btns .btn{min-width:84px;min-height:48px;font-size:20px}
