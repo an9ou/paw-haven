@@ -258,7 +258,7 @@ function brDogCard(d, picked, slot) {
   const sub = `${esc(d.mix && d.mix.name ? mixShown(d.mix) : brBreed(d.key))} · ${ageText(m)}${npc ? ` · ${esc(homeFam(d.owner || d.family) || tt('playdate.a_neighbour', 'a neighbour'))}` : ''}`;
   return `<button class="pd-dog ${picked ? 'on' : ''} ${is.length ? 'notready' : 'ready'}" data-pd="${slot}|${d.id}" ${npc ? 'disabled' : ''} aria-pressed="${picked}">
     <span class="pd-head">${headSVG(d)}</span><span class="pd-txt"><b>${esc(d.name)} ${sexSym(d.sex)}</b><span class="small">${sub}</span>
-    <span class="pd-st small">${is.length ? '✗ ' + esc(is[0].txt) : tt('playdate.ready_for_a_playdate', '✓ Ready for a playdate')}</span></span></button>`;
+    <span class="pd-st small">${is.length ? '✗ ' + esc(is[0].txt) : '✓ ' + tt('playdate.ready_for_a_playdate', 'Ready for a playdate')}</span></span></button>`;
 }
 function brPredict(dam, sire) {
   const tested = (d) => !!d.geneTested || (!!d.npc && typeof npcTested === 'function' && !!npcTested(d)); // v2.1: a sniffed NPC counts

@@ -6226,7 +6226,7 @@
  "playdate.puppies_on_the_way_is_expecting": "Puppies on the way! {name} is expecting. Due in {n, plural, one {# day} other {# days}}.",
  "playdate.puppy_playdates": "Puppy Playdates",
  "playdate.puppy_predictor": "Puppy Predictor",
- "playdate.ready_for_a_playdate": "✓ Ready for a playdate",
+ "playdate.ready_for_a_playdate": "Ready for a playdate",
  "playdate.s_family_lets_you_choose_one": "{npcName}'s family lets you choose one pup to bring home, free.",
  "playdate.s_family_says_thank_you": "{owner}: {title} {npcName}'s family says thank you.",
  "playdate.s_puppies_are_here": "{name}'s puppies are here!",
