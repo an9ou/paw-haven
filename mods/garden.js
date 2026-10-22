@@ -345,12 +345,13 @@
     '.pg-bubble.pg-show{opacity:1;transform:none}',
     '.pg-bubble::after{content:"";position:absolute;left:34px;bottom:-9px;width:14px;height:14px;background:#FFFBF3;border-right:2.5px solid ' + INK + ';border-bottom:2.5px solid ' + INK + ';transform:rotate(40deg) skewX(12deg)}',
     /* header */
-    '.pg-hud{position:absolute;left:14px;right:14px;top:10px;height:64px;display:flex;align-items:center;gap:12px;padding:0 10px 0 10px;' + PANEL + ';border-radius:16px 11px 18px 10px/11px 17px 10px 15px}',
+    '.pg-hud{position:absolute;left:14px;right:14px;top:10px;min-height:64px;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:2px 10px;' + PANEL + ';border-radius:16px 11px 18px 10px/11px 17px 10px 15px}',
     '.pg-hud::before{content:"";position:absolute;left:52px;top:-10px;width:92px;height:20px;background:repeating-linear-gradient(45deg,rgba(140,192,154,.55) 0 6px,rgba(200,233,207,.8) 6px 12px);transform:rotate(-4deg);pointer-events:none}',
     '.pg-ico{width:50px;height:50px;flex:none;transform:rotate(-6deg)}',
     '.pg-titles{flex:1;min-width:0;line-height:1}',
     '.pg-title{font-family:"Caveat",cursive;font-weight:700;font-size:33px;white-space:nowrap}',
-    '.pg-hint{font-size:18px;color:#8A7468;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.pg-hint{font-size:18px;color:#8A7468;margin-top:1px;line-height:1.1;overflow-wrap:anywhere}', /* v2.14: the hint wraps and the header grows (--pg-hudb moves the chips and the card down with it) */
+    'html:lang(th) .pg-title{line-height:1.3}html:lang(th) .pg-hint{line-height:1.3}',
     '.pg-tool,.pg-btn{font-family:"Caveat",cursive;font-weight:700;color:' + INK + ';border:2.5px solid ' + INK + ';border-radius:14px 9px 15px 8px/9px 14px 8px 13px;cursor:pointer;box-shadow:2px 3px 0 rgba(91,61,50,.25);white-space:nowrap;line-height:1.1;transition:transform .1s}',
     '.pg-tool{display:flex;align-items:center;gap:6px;height:48px;padding:0 13px 2px 7px;font-size:25px;background:#FFF4DF}',
     '.pg-tool i{display:block;width:36px;height:36px;flex:none}',
@@ -364,14 +365,15 @@
     '.pg-btn.pg-pink{background:#F9D0D9}.pg-btn.pg-yel{background:#FFE3A1}.pg-btn.pg-blue{background:#D7E7F8}.pg-btn.pg-sm{font-size:21px;padding:0 10px 2px}',
     '.pg-btn[disabled]{opacity:.45;cursor:default;transform:none}',
     /* chips (left column) */
-    '.pg-chips{position:absolute;left:14px;top:86px;display:flex;flex-direction:column;align-items:flex-start;gap:7px;pointer-events:none}',
+    '.pg-chips{position:absolute;left:14px;top:max(86px,calc(var(--pg-hudb,0px) + 12px));display:flex;flex-direction:column;align-items:flex-start;gap:7px;pointer-events:none}',
     '.pg-chip{display:flex;align-items:center;gap:6px;padding:2px 11px 3px 5px;font-size:17px;line-height:1.1;' + PANEL + ';max-width:330px}',
+    'html:not(:lang(en)) .pg-root:not(.pg-portrait) .pg-chip{max-width:252px}', /* v2.14: a long chip wraps instead of running over the first plot */
     '.pg-chip i{display:block;width:30px;height:30px;flex:none}',
-    '.pg-chip b{font-family:"Caveat",cursive;font-size:22px;font-weight:700;margin-right:3px}',
+    '.pg-chip b{font-family:"Caveat",cursive;font-size:22px;font-weight:700;margin-right:3px;flex:none;white-space:nowrap}',
     '.pg-chip.pg-buddy{background:#FDF0F3}',
     '.pg-head{width:38px;height:38px;flex:none;margin:-2px 0}',
     /* info card */
-    '.pg-info{position:absolute;right:14px;top:86px;width:214px;padding:8px 12px 10px;' + PANEL + ';transform:rotate(.8deg);font-size:16.5px;line-height:1.2}',
+    '.pg-info{position:absolute;right:14px;top:max(86px,calc(var(--pg-hudb,0px) + 12px));width:214px;padding:8px 12px 10px;' + PANEL + ';transform:rotate(.8deg);font-size:16.5px;line-height:1.2}',
     '.pg-info::before{content:"";position:absolute;left:70px;top:-10px;width:70px;height:18px;background:repeating-linear-gradient(45deg,rgba(242,143,165,.5) 0 6px,rgba(249,208,217,.75) 6px 12px);transform:rotate(3deg)}',
     '.pg-info h3{margin:0;font-family:"Caveat",cursive;font-weight:700;font-size:26px;line-height:1}',
     '.pg-info .pg-sub{color:#8A7468;margin:1px 0 4px}',
@@ -382,7 +384,7 @@
     '.pg-q span.pg-ok{color:' + INK + '}',
     '.pg-acts{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap}',
     /* seed pouch */
-    '.pg-pouch{position:absolute;left:300px;top:84px;width:640px;padding:10px 14px 12px;' + PANEL + ';transform:rotate(-.5deg);animation:pg-drop .22s ease-out;z-index:5}',
+    '.pg-pouch{position:absolute;left:300px;top:max(84px,calc(var(--pg-hudb,0px) + 10px));width:640px;padding:10px 14px 12px;' + PANEL + ';transform:rotate(-.5deg);animation:pg-drop .22s ease-out;z-index:5}',
     '.pg-pouch::before{content:"";position:absolute;left:46%;top:-11px;width:96px;height:20px;background:repeating-linear-gradient(45deg,rgba(242,199,68,.5) 0 6px,rgba(255,227,161,.8) 6px 12px);transform:rotate(-3deg)}',
     '@keyframes pg-drop{from{opacity:0;transform:translateY(-12px) rotate(-.5deg)}}',
     '.pg-pouch h3{margin:0 0 6px;font-family:"Caveat",cursive;font-weight:700;font-size:28px;line-height:1;display:flex;justify-content:space-between;align-items:center}',
@@ -652,7 +654,7 @@
     function q(sel2) { return root.querySelector(sel2); }
 
     try {
-      PORT = (el.clientHeight || 620) > (el.clientWidth || 1240) * 1.1; ZONES = PORT ? ZONES_P : ZONES_L; SW = PORT ? 420 : 1240; SH = PORT ? 1000 : 620;
+      PORT = (el.clientHeight || 620) > (el.clientWidth || 1240) * 1.1 || document.documentElement.getAttribute('data-layout') === 'phone' /* v2.14: the phone layout always gets the phone stage */; ZONES = PORT ? ZONES_P : ZONES_L; SW = PORT ? 420 : 1240; SH = PORT ? 1000 : 620;
       root = document.createElement('div'); root.className = 'pg-root' + (PORT ? ' pg-portrait' : ''); root.tabIndex = -1;
       root.innerHTML =
         '<div class="pg-stage">' +
@@ -693,6 +695,7 @@
       var pin = function () { if (closed || !PORT) return; var s2 = (el.clientWidth || SW) / SW; root.style.setProperty('--pg-sy', (root.scrollTop / s2).toFixed(1) + 'px'); root.style.setProperty('--pg-vh', ((el.clientHeight || 700) / s2).toFixed(1) + 'px'); };
       if (PORT) { root.addEventListener('scroll', pin, { passive: true }); root.addEventListener('scroll', function () { if (bubbleOn) bubFit(); }, { passive: true }); pin(); }
       fit();
+      try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (!closed) hudFit(); }); } catch (e) { /* ignore */ }
       if (typeof ResizeObserver === 'function') { var ro = new ResizeObserver(fit); ro.observe(el); cleanups.push(function () { ro.disconnect(); }); }
       else { window.addEventListener('resize', fit); cleanups.push(function () { window.removeEventListener('resize', fit); }); }
 
@@ -767,7 +770,8 @@
       var bot = dw.getBoundingClientRect().top + (b.offsetTop + b.offsetHeight) * s; // layout numbers: the bubble's pop transform is not counted
       if (bot > vb) b.style.top = Math.round(b.offsetTop - (bot - vb) / s) + 'px';
     }
-    function hint(t) { var h = q('.pg-hint'); if (h) h.textContent = t; }
+    function hudFit() { if (PORT || closed) return; var hd = q('.pg-hud'); if (hd) root.style.setProperty('--pg-hudb', (hd.offsetTop + hd.offsetHeight) + 'px'); } // v2.14: desktop, the chips and the card start under a header that grew
+    function hint(t) { var h = q('.pg-hint'); if (h) { h.textContent = t; hudFit(); } }
     function float(x, y, text, cls) {
       var f = document.createElement('div'); f.className = 'pg-float' + (cls ? ' ' + cls : ''); f.textContent = text; f.style.left = x + 'px'; f.style.top = y + 'px';
       anim.appendChild(f); later(function () { f.remove(); }, 1600);
