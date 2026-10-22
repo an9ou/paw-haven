@@ -332,7 +332,7 @@ doodledoggo.app strings: `site/i18n/es.json` (v2.14 phase 1b, all keys done).
 
 ## Game
 
-game/i18n/es.json (v2.14 phase 2, 7366/7366 keys). Shared choices: Bond = cariño, treat = premio, snack = golosina, Buy = Comprar, Later = Luego, Schnauzer "I have notes" = "Tengo notas.", "in season" = en celo, Pug snort = *resoplido*, "top-knot" = moño, "puddle" = charco, charm = amuleto.
+game/i18n/es.json (v2.14 phase 2, 7366/7366 keys). Shared choices: Bond = cariño, treat = premio, snack = golosina, Buy = Comprar, Later = Luego, Schnauzer "I have notes" = "Tengo observaciones.", "in season" = en celo, Pug snort = *resoplido*, "top-knot" = moño, "puddle" = charco, charm = amuleto.
 
 - TODO(native): data.sig.frenchie.n "La rana": the sploot pose (back legs out, belly flat) rendered as the known "posición de rana"; check it reads in both Spain and LatAm.
 - TODO(native): data.dc_breed_words "Bulldog" (Frenchie), "Pit", "Dobi", "Lebrel", "Danés": short dog-card name words; check they feel natural as pup names.
