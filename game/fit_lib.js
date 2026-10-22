@@ -22,6 +22,7 @@
 //   R2  scrolled or panned away: a text node whose every line box lies outside an ancestor that clips or scrolls (a carousel slide, a tab row
 //       scrolled sideways, a sheet body scrolled down, a hidden off-screen panel, a marquee) is not visible, so it is skipped; a text node
 //       partly inside an overflow auto/scroll box is fine (that box is meant to scroll). Only overflow hidden/clip cuts count as clips.
+//   R2c a control's box is cut to its clipping or scrolling ancestors before the overlap test (a button half scrolled out of a sheet body).
 //   R2b panned cards: when the text's own card is itself cut SIDEWAYS by a clipping ancestor (the peeking next card of the walk route
 //       carousel, a pup row), the card is panned, not clipped; a card cut downwards is a real clip (a box too short for its content).
 //   R3  covered: with pointer-events forced on for the measurement, document.elementsFromPoint() tells what is on top, line by line. A line
@@ -244,7 +245,16 @@ function MEASURE(cfg) {
           u.left = Math.min(u.left, q.left); u.top = Math.min(u.top, q.top); u.right = Math.max(u.right, q.right); u.bottom = Math.max(u.bottom, q.bottom);
         });
       }
-      if (a.ctl) { const r = a.el.getBoundingClientRect(); a.rect = { left: r.left, top: r.top, right: r.right, bottom: r.bottom }; a.rects = [a.rect]; if (!seen && seenAt(a, (r.left + r.right) / 2, (r.top + r.bottom) / 2)) seen = 1; }
+      if (a.ctl) { const r = a.el.getBoundingClientRect(); a.rect = { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
+        // R2c: a control is only seen inside the ancestors that clip or scroll it (a button half scrolled out of a sheet body does not reach
+        // the sheet's title or footer); a fixed control leaves its ancestors' clips behind
+        for (let x = a.el; x && x !== document.documentElement; x = x.parentElement) {
+          const c = cs(x); if (c.position === 'fixed') break; const p = x.parentElement; if (!p || p === document.body || p === document.documentElement) break;
+          const pc = cs(p), q = p.getBoundingClientRect(), L = q.left + p.clientLeft, T = q.top + p.clientTop;
+          if (pc.overflowX !== 'visible') { a.rect.left = Math.max(a.rect.left, L); a.rect.right = Math.min(a.rect.right, L + p.clientWidth); }
+          if (pc.overflowY !== 'visible') { a.rect.top = Math.max(a.rect.top, T); a.rect.bottom = Math.min(a.rect.bottom, T + p.clientHeight); }
+        }
+        a.rects = a.rect.right - a.rect.left > 1 && a.rect.bottom - a.rect.top > 1 ? [a.rect] : []; if (!seen && seenAt(a, (r.left + r.right) / 2, (r.top + r.bottom) / 2)) seen = 1; }
       else a.rect = u;
       a.covered = seen === 0 || !a.rects.length;
     }
