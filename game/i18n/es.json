@@ -6326,7 +6326,7 @@
  "tokyo.sunset_walk": "{n, plural, one {{name} paseó por la orilla mientras el sol se ponía detrás del Puente Arcoíris. +8 de felicidad.} other {La manada paseó por la orilla mientras el sol se ponía detrás del Puente Arcoíris. +8 de felicidad para la manada.}}",
  "tokyo.tap_skip": "Toca para saltar",
  "tokyo.ticket_html": "<b>Pase de un día en Shinkansen (tren bala), {price} monedas:</b> viaja a Tokio y vuelve las veces que quieras hoy.",
- "tokyo.ticket_paid": "Tu billete vale hasta medianoche. ¡Sube!",
+ "tokyo.ticket_paid": "Tu billete es válido hasta medianoche. ¡Sube!",
  "tokyo.ticket_poor": "No hay monedas suficientes. El pase de un día cuesta {price}. Con un buen paseo o dos basta.",
  "tokyo.ticket_unpaid": "{n, plural, one {{name} viaja gratis contigo.} other {Los # perros viajan con un solo billete.}} Tienes {coins} Monedas Pata.",
  "tokyo.tip_bond": "{name}: Cariño {bond}",
