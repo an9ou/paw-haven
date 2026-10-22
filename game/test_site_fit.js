@@ -1,6 +1,6 @@
 // SITE FIT (v2.14, the owner via the Game Manager: every language fits every menu and box). The measuring tool for doodledoggo.app: every page in
 // every site language at five widths, with the same checks as the game (game/fit_lib.js: clip, escape, overlap, hscroll, and on phones tap / font).
-//   node game/run_tests.js site_fit [--jobs N]        (its own group: not in `all` or `phone`; about 6 min for 11 languages x 5 widths)
+//   node game/run_tests.js site_fit [--jobs N]        (its own group `fit`: not in `all` or `phone`; about 14 min for 11 languages x 5 widths with --jobs 3)
 //   PAW_LANGS=en,de ...   PAW_FIT_SIZES=1440,390 ...   PAW_FIT_REPORT_ONLY=1 (always passes)   PAW_FIT_JOBS=N (parallel pages)
 // Output: game/test_logs/site_fit.json, game/test_logs/site_fit.md, game/test_logs/fit_shots_site/ (the 30 worst, framed in red).
 // The site is served the way game/test_site.js serves it (tools/cf_site.js, the Worker in Miniflare, the fonts and map pictures Workers relayed),
@@ -92,12 +92,12 @@ function devOf(w) {
       for (const f0 of r.findings) {
         if (taken >= 2) break; const f = byKey.get(f0.kind + '|' + f0.how + '|' + f0.sel); if (f.screen !== screen || f.shot) continue;
         const k = f.kind + '|' + f.sel; if (kept.length >= 40 && kept[kept.length - 1].sev >= f.sev) continue; if (kept.some((x) => x.k === k && x.sev >= f.sev)) continue;
-        const file = `site_${lang}_${w}_${++shotN}.png`;
+        const file = `site_${lang}_${w}_${++shotN}.jpg`;
         try {
           const sy = await page.evaluate((y) => { const d = Math.max(0, y - innerHeight / 3); scrollBy(0, d); return d; }, f.rect[1]);
           const rect = [f.rect[0], f.rect[1] - sy, f.rect[2], f.rect[3] - sy];
           await page.evaluate(FIT.HILITE, { rect, label: `${f.kind}/${f.how} ${lang} ${w} ${screen}: ${f.text.slice(0, 50)}` });
-          await page.screenshot({ path: path.join(TMP, file), scale: 'css', timeout: 8000 });
+          await page.screenshot({ path: path.join(TMP, file), scale: 'css', type: 'jpeg', quality: 72, timeout: 8000 });
           await page.evaluate((d) => scrollBy(0, -d), sy);
         } catch (e) { continue; } finally { await page.evaluate(FIT.HILITE, null).catch(() => {}); }
         f.shot = file; taken++; kept.push({ k, sev: f.sev }); kept.sort((a, b) => b.sev - a.sev); if (kept.length > 40) kept.length = 40;

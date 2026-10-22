@@ -262,9 +262,9 @@ function MEASURE(cfg) {
       let badge = false; for (let x = el; x && x !== bx; x = x.parentElement) { const c = cs(x); if (/absolute|fixed/.test(c.position)) { const q = x.getBoundingClientRect(); if (q.width <= 32 && q.height <= 32) badge = true; break; } }
       if (!badge && bx && /absolute|fixed/.test(cs(bx).position)) { const q = bx.getBoundingClientRect(); if (q.width <= 32 && q.height <= 32) badge = true; }
       if (bx && !badge && cs(bx).overflowX === 'visible' && cs(bx).overflowY === 'visible') {
-        const b = bx.getBoundingClientRect(); let worst = 0;
-        for (const r of it.rects) { const [vt, vb] = vbox(it, r); worst = Math.max(worst, b.left - r.left, r.right - b.right, b.top - vt, vb - b.bottom); }
-        if (worst > 3) push('escape', 'box', el, { by: sel(bx), px: Math.round(worst) }, worst, it.rects[0], textOf(el));
+        const b = bx.getBoundingClientRect(); let worst = 0, wr = it.rects[0];
+        for (const r of it.rects) { const [vt, vb] = vbox(it, r); const d = Math.max(b.left - r.left, r.right - b.right, b.top - vt, vb - b.bottom); if (d > worst) { worst = d; wr = r; } }
+        if (worst > 3) push('escape', 'box', el, { by: sel(bx), px: Math.round(worst) }, worst, wr, textOf(el));
       }
       // (b) leaves the viewport
       let vo = 0; for (const r of it.seen) vo = Math.max(vo, -r.left, r.right - W, docScrolls ? 0 : -r.top, docScrolls ? 0 : r.bottom - H);
@@ -413,7 +413,7 @@ function keepShots(all, tmp, dir, N) {
   fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });
   const groups = new Map(); for (const f of all) { if (!f.shot) continue; const k = f.kind + '|' + f.sel; const g = groups.get(k); if (!g || f.sev > g.sev) groups.set(k, f); }
   const pick = [...groups.values()].sort((a, b) => b.sev - a.sev).slice(0, N); let i = 0;
-  for (const f of pick) { const src = path.join(tmp, f.shot); if (!fs.existsSync(src)) continue; const nm = `${String(++i).padStart(2, '0')}_${f.kind}_${f.lang}_${f.size}_${f.screen.replace(/[^\w]+/g, '-').slice(0, 30)}.png`; fs.copyFileSync(src, path.join(dir, nm)); f.shotKept = path.basename(dir) + '/' + nm; }
+  for (const f of pick) { const src = path.join(tmp, f.shot); if (!fs.existsSync(src)) continue; const nm = `${String(++i).padStart(2, '0')}_${f.kind}_${f.lang}_${f.size}_${f.screen.replace(/[^\w]+/g, '-').slice(0, 30)}${path.extname(f.shot) || '.png'}`; fs.copyFileSync(src, path.join(dir, nm)); f.shotKept = path.basename(dir) + '/' + nm; }
   fs.rmSync(tmp, { recursive: true, force: true });
   return i;
 }

@@ -14,8 +14,8 @@ Both are in their own runner group `fit`, not in `all` or `phone` (they take a w
 ## How to run
 
 ```
-node game/run_tests.js i18n_fit --jobs 3          # the game, every language and size (about 45 min on 4 cores)
-node game/run_tests.js site_fit --jobs 3          # the site (about 15 min)
+node game/run_tests.js i18n_fit --jobs 3          # the game, every language and size (about 41 min with --jobs 3 on 4 cores)
+node game/run_tests.js site_fit --jobs 3          # the site (about 14 min with --jobs 3)
 node game/run_tests.js fit --jobs 3               # both, one after the other only if --jobs is shared: prefer running them separately
 PAW_LANGS=de,th PAW_FIT_SIZES=iphone15,small node game/run_tests.js i18n_fit     # a few languages and sizes
 PAW_FIT_REPORT_ONLY=1 node game/run_tests.js i18n_fit                             # report mode: always passes
@@ -105,3 +105,21 @@ Known classes the rules do not filter (they show in English too, so read the Eng
 
 Fix, then run the language and size you touched (`PAW_LANGS=de PAW_FIT_SIZES=small node game/run_tests.js i18n_fit`), then everything. The fix step is
 done when both suites pass without `PAW_FIT_REPORT_ONLY`.
+
+## Calibration run (22 Oct 2026, `integration/v2.14` at 8058a1c, id still partly English, report mode)
+
+Kept in `docs/i18n/coord/fit_report/` (`i18n_fit.md/.json`, `site_fit.md/.json`, `game_shots/`, `site_shots/`; shots as JPEG).
+Counts are distinct findings per session (R10), so one cut label in the action bar counts once per language and size.
+
+| Game | en | ja | zh-Hans | zh-Hant | ko | es | pt-BR | fr | de | th | id | total |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| findings | 72 | 115 | 78 | 79 | 85 | 84 | 85 | 91 | 89 | 109 | 72 | 959 |
+
+Per size: desktop 54, embed 653 (the kitchen and garden at 684 px: taps and text sizes), iphone15 65, pixel7 57, small 130.
+Per kind: clip 162, escape 58, overlap 108, hscroll 45, tap 323, font 263. Runtime 41 min (`--jobs 3`, 4 cores).
+
+| Site | en | ja | zh-Hans | zh-Hant | ko | es | pt-BR | fr | de | th | id | total |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| findings | 10 | 9 | 16 | 16 | 9 | 9 | 11 | 9 | 9 | 18 | 12 | 128 |
+
+Per width: 1440 1, 1024 2, 768 1, 390 26, 360 98. Per kind: clip 8, escape 20, overlap 0, hscroll 1, tap 44, font 55. Runtime 14 min.
