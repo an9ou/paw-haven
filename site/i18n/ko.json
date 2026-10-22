@@ -130,7 +130,7 @@
   "privacy.collect.nothing_else": "이름, 나이, 위치, 연락처를 비롯해 그 밖의 어떤 정보도 수집하지 않아요.",
   "privacy.dont.title": "하지 않는 일",
   "privacy.dont.ads": "광고는 없어요.",
-  "privacy.dont.tracking": "추적도, 분석도, 쿠키도 없어요. 다른 곳에서 불러오는 것은 게임의 손글씨 글꼴뿐이고, Google Fonts(fonts.googleapis.com와 fonts.gstatic.com)에서 와요. 다른 웹사이트와 마찬가지로, 글꼴을 불러올 때 Google이 당신의 IP 주소를 볼 수 있어요.",
+  "privacy.dont.tracking": "추적도, 분석도, 쿠키도 없어요. 게임의 글꼴은 Google Fonts에서 불러와요.",
   "privacy.dont.share": "데이터를 누구에게도 팔거나 빌려주거나 공유하지 않아요.",
   "privacy.dont.email": "뉴스레터는 없어요. 보내는 이메일은 직접 요청한 6자리 비밀번호 재설정 코드뿐이에요.",
   "privacy.cards.title": "강아지 카드",

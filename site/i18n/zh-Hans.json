@@ -130,7 +130,7 @@
   "privacy.collect.nothing_else": "我们不收集你的名字、年龄、位置、通讯录或其他任何信息。",
   "privacy.dont.title": "我们不做什么",
   "privacy.dont.ads": "没有广告。",
-  "privacy.dont.tracking": "没有追踪，没有数据分析，也没有Cookie。唯一从其他地方加载的，是游戏的手写字体，来自Google Fonts（fonts.googleapis.com和fonts.gstatic.com）。和任何网站一样，加载字体时，Google可以看到你的IP地址。",
+  "privacy.dont.tracking": "没有追踪，没有数据分析，也没有Cookie。游戏的字体从Google Fonts加载。",
   "privacy.dont.share": "我们绝不会把你的数据出售、出租或分享给任何人。",
   "privacy.dont.email": "不发订阅邮件。唯一的邮件就是你自己申请的6位数重设密码验证码。",
   "privacy.cards.title": "狗狗卡片",

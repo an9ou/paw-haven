@@ -136,7 +136,7 @@
   "privacy.collect.nothing_else": "Kami tidak mengumpulkan namamu, usiamu, lokasimu, kontakmu, atau apa pun selain itu.",
   "privacy.dont.title": "Yang tidak kami lakukan",
   "privacy.dont.ads": "Tanpa iklan.",
-  "privacy.dont.tracking": "Tanpa pelacakan, tanpa analitik, dan tanpa cookie. Satu-satunya yang dimuat dari pihak lain adalah font tulisan tangan milik game, dari Google Fonts (fonts.googleapis.com dan fonts.gstatic.com). Seperti situs web mana pun, Google dapat melihat alamat IP-mu saat font dimuat.",
+  "privacy.dont.tracking": "Tanpa pelacakan, tanpa analitik, dan tanpa cookie. Font game dimuat dari Google Fonts.",
   "privacy.dont.share": "Kami tidak pernah menjual, menyewakan, atau membagikan datamu kepada siapa pun.",
   "privacy.dont.email": "Tanpa buletin. Satu-satunya email adalah kode 6 digit untuk mengatur ulang kata sandi yang kamu minta.",
   "privacy.cards.title": "Kartu Anjing",

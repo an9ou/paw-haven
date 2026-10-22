@@ -130,7 +130,7 @@
   "privacy.collect.nothing_else": "Wir erheben weder deinen Namen noch dein Alter, deinen Standort, deine Kontakte oder sonst irgendetwas.",
   "privacy.dont.title": "Was wir nicht tun",
   "privacy.dont.ads": "Keine Werbung.",
-  "privacy.dont.tracking": "Kein Tracking, keine Analyse-Tools und keine Cookies. Das Einzige, was von anderen geladen wird, sind die handgeschriebenen Schriften des Spiels, von Google Fonts (fonts.googleapis.com und fonts.gstatic.com). Wie bei jeder Website kann Google deine IP-Adresse sehen, wenn die Schriften geladen werden.",
+  "privacy.dont.tracking": "Kein Tracking, keine Analyse-Tools und keine Cookies. Die Schriften des Spiels werden von Google Fonts geladen.",
   "privacy.dont.share": "Wir verkaufen, vermieten oder teilen deine Daten nie, mit niemandem.",
   "privacy.dont.email": "Keine Newsletter. Die einzige E-Mail ist der 6-stellige Code zum Zurücksetzen des Passworts, den du selbst anforderst.",
   "privacy.cards.title": "Hundekarten",

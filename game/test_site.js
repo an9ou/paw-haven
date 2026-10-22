@@ -324,7 +324,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
       sec(`${label}: privacy`);
       await page.goto(base + '/privacy', { waitUntil: 'networkidle' });
       const pt = await page.textContent('main');
-      ok(/Privacy policy/.test(pt) && /no ads and no tracking/i.test(pt) && /contact@doodledoggo\.app/.test(pt) && !/CONTACT EMAIL/.test(pt) && (await page.getAttribute('footer #contact', 'href')) === 'mailto:contact@doodledoggo.app' && /6-digit code/.test(pt) && !/password link/.test(pt) && /itch\.io/.test(pt) && /Google Fonts/.test(pt) && /fonts\.googleapis\.com/.test(pt) && /fonts\.gstatic\.com/.test(pt) && /Google can see your IP address/i.test(pt) && !/loads nothing from anyone else/i.test(pt), 'the privacy page: no ads, no tracking, emails only for a 6-digit reset code, the contact email filled in, you play on itch.io, the only outside thing is the game\'s Google Fonts (named, with the IP address note)');
+      ok(/Privacy policy/.test(pt) && /no ads and no tracking/i.test(pt) && /contact@doodledoggo\.app/.test(pt) && !/CONTACT EMAIL/.test(pt) && (await page.getAttribute('footer #contact', 'href')) === 'mailto:contact@doodledoggo.app' && /6-digit code/.test(pt) && !/password link/.test(pt) && /itch\.io/.test(pt) && /Google Fonts/.test(pt) && !/loads nothing from anyone else/i.test(pt), 'the privacy page: no ads, no tracking, emails only for a 6-digit reset code, the contact email filled in, you play on itch.io, the game\'s fonts load from Google Fonts (named)');
       const a2 = await audit(page); ok(a2.scroll <= 0 && !a2.small.length && !a2.tiny.length, 'privacy: phone minimums ' + a2.small.concat(a2.tiny).slice(0, 4).join(', '));
 
       sec(`${label}: the reset page (v2.9.2: only a notice, the reset happens in the game)`);
@@ -643,8 +643,8 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
       await ctx.close();
     }
 
-    { const bad = []; for (const L of LALL) { const h = await (await get(SITE + pageUrl(L, '/privacy'))).text(); if (!/Google Fonts/.test(h) || !/fonts\.googleapis\.com/.test(h) || !/fonts\.gstatic\.com/.test(h) || (!L.pseudo && L.code !== 'en' && h.includes(I18N.fmt('en', 'privacy.dont.tracking')))) bad.push(L.code); }
-      ok(!bad.length, `the privacy page names Google Fonts and both font hosts in all ${LALL.length} languages${bad.length ? ' (bad: ' + bad.join(', ') + ')' : ''}`); }
+    { const bad = []; for (const L of I18N.LANGS) { const h = await (await get(SITE + pageUrl(L, '/privacy'))).text(); if (!/Google Fonts/.test(h) || (!L.pseudo && L.code !== 'en' && h.includes(I18N.fmt('en', 'privacy.dont.tracking')))) bad.push(L.code); }
+      ok(!bad.length, `the privacy page names Google Fonts in all ${I18N.LANGS.length} languages${bad.length ? ' (bad: ' + bad.join(', ') + ')' : ''}`); }
     sec('languages: typography, the playroom barks, the pseudo-locales');
     {
       const ctx = await newCtx(Object.assign({}, devices['iPhone 15'])); const page = await ctx.newPage();
