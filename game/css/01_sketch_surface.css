@@ -52,6 +52,9 @@
 .panel,.confirm{--frm:var(--frm-card)}
 #dock > .tray{--frm:var(--frm-tray)}
 .panel,.confirm,#dock > .tray,.buybox,.onway-card,.ps-turn-card,#trainPanel{isolation:isolate}
+/* v2.13.4: the fill's ::after needs a positioned host, or it stretched over the whole stage (the phone bath tray, owner: "the bathroom is invisible").
+   :where() keeps this at zero specificity, so a window that is absolute or fixed elsewhere keeps that. */
+:where(.panel,.confirm,#dock > .tray,.buybox,.onway-card,.ps-turn-card,#trainPanel){position:relative}
 .panel,.confirm,#dock > .tray{--wf:linear-gradient(transparent,transparent)}
 .panel::after,.confirm::after,#dock > .tray::after,.buybox::after,.onway-card::after,.ps-turn-card::after,#trainPanel::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
   background:var(--hatch),linear-gradient(var(--wash),var(--wash));-webkit-mask:var(--frm) 0 0/100% 100% no-repeat;mask:var(--frm) 0 0/100% 100% no-repeat}
