@@ -35,7 +35,7 @@ function i18nLater(code) {
     i18nLaterOn = false;
     if (cur.mode === 'title' && i18nTarget() === code && I18N.lang !== code) { i18nApply(code); enterTitle(); }
   }, () => { if (++n < 6) setTimeout(again, 15000 * n); else i18nLaterOn = false; });
-  window.addEventListener('online', () => { n = 0; }, { once: true });
+  window.addEventListener('online', () => { n = 0; if (!i18nLaterOn) i18nLater(code); }, { once: true }); // back online: six fresh tries
   setTimeout(again, 3000);
 }
 // build the map for one language (and the known-key set the tests read)

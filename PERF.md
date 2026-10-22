@@ -14,7 +14,25 @@ Branch `lane/v214-perf` from `integration/v2.14` (`ba9112b`), 22 Oct 2026. The o
 - Google Fonts is faked so runs repeat: its stylesheet answers after 100 ms (fast) or 600 ms (slow 4G), its font files are refused. The language fonts (`fonts/i18n/<lang>.woff2`) load as for a player.
 - The container is a shared 4-core cloud machine: single runs vary by ±15 %; the tables give the median of 5.
 
-@@NUMBERS@@
+## 2. Results (Pixel 7, 4x CPU, median of 5)
+
+Each row adds one step to the row above. `#tNew` = the title is usable; FCP = first paint; KB = gzipped bytes on the wire (`ja` includes its 207 KB font).
+
+| Build | en fast #tNew | en slow 4G #tNew | ja fast #tNew | ja slow 4G #tNew | FCP en fast / slow 4G | KB en / ja |
+|---|---|---|---|---|---|---|
+| before (`ba9112b`, one file) | 2103 ms | 13435 ms | 2684 ms | 13635 ms | 2396 / 13648 ms | 2438 / 2641 |
+| 1. one language at a time (+ photo fonts on first use) | 1672 ms | 7638 ms | 2012 ms | 8912 ms | 1868 / 7876 ms | 1307 / 1651 |
+| 2. + minified | 1573 ms | 6100 ms | 1974 ms | 7272 ms | 1784 / 6328 ms | 1022 / 1366 |
+| 3. + the loading paw | 1875 ms | 6016 ms | 2117 ms | 7233 ms | 448 / 852 ms | 1024 / 1368 |
+| 4. + Google Fonts not blocking (**shipped**) | **1639 ms** | **6118 ms** | **2028 ms** | **7200 ms** | **160 / 248 ms** | **1024 / 1368** |
+
+**In short:** the title is usable **22 % sooner on a fast connection and 55 % sooner on slow 4G** (13.4 s → 6.1 s), something is on screen **at once** (first paint 2.4 s → 0.16 s, 13.6 s → 0.25 s on slow 4G), and an English player downloads **58 % less** (2.44 → 1.02 MB), a Japanese one 48 % less (2.64 → 1.37 MB).
+
+Notes:
+- Step 1 is the big one: 1.07 MB gzipped of other languages no longer travel with the page (a non-English player gets about 145 KB for its own: 36 KB of keys and 89–114 KB of text).
+- The loading paw changes nothing on slow 4G and costs 0–4 % of `#tNew` on a fast connection (within the noise of these runs; the row-3 fast run is the noisiest), for a first paint at about 0.2 s instead of 1.7–13.6 s. A first version animated the paw on the main thread and cost about 200 ms on fast loads; the shipped one animates the `<svg>` element itself (composited).
+- The photo fonts (108 KB gzipped) left the first load in step 1, so they are part of its numbers.
+- Measured twice for steps 2–4 (after the composited paw): the numbers above are the second round; the first round gave the same picture (step 2: 1486 / 6076 / 1974 / 7183 ms).
 
 ## 3. What was done
 
@@ -70,7 +88,21 @@ Branch `lane/v214-perf` from `integration/v2.14` (`ba9112b`), 22 Oct 2026. The o
 
 ## 4. Sizes
 
-@@SIZES@@
+| What | Before | After |
+|---|---|---|
+| Page (GitHub Pages / itch.io / `/play/` `index.html`) | 7.96 MB, 2.50 MB gzipped | 3.12 MB, 1.04 MB gzipped |
+| of which i18n (`pawi18n`) | 3.67 MB, 1.07 MB gz | 46 KB, 17 KB gz (msg.js + loader) |
+| of which art (`pawart`) | 1.53 MB, 0.51 MB gz | 1.28 MB, 0.43 MB gz |
+| of which modules (`pawmods`) | 0.81 MB, 0.24 MB gz | 0.55 MB, 0.19 MB gz |
+| of which game script | 1.71 MB, 0.62 MB gz (with the 143 KB photo fonts) | 1.05 MB, 0.37 MB gz |
+| CSS | 237 KB, 55 KB gz | 196 KB, 39 KB gz |
+| Language files (one per player, besides English) | inline | 89–114 KB gz each + 36 KB gz keys (all ten: 3.61 MB, 1.05 MB gz) |
+| Photo fonts (first photo only) | inline | 143 KB, 108 KB gz |
+| itch.io zip (everything, all languages and fonts) | 3.96 MB | 3.68 MB |
+| claude.ai artifact, first load in English | about 7.96 MB over 9 files | about 3.1 MB (`i18n.js` 3.67 MB → 47 KB, `game.js` 1.71 MB → 1.05 MB, art and modules minified) |
+| doodledoggo.app main Worker (gzipped) | 4.72 MB (over the 3 MB limit) | 2.11 MB; `/play/` Worker 2.33 MB; fonts Worker 2.30 MB |
+
+Nothing is minified across scripts (each inline script and style on its own), so the shared names (`PawArt`, `PawGenes`, `window.__paw`) are unchanged. esbuild writes UTF-8 as it is (`charset: 'utf8'`): with its default ASCII output the all-language harness grew from 6.88 to 8.55 MB.
 
 ## 5. Plan for v2.15: load scenes when they are needed
 
@@ -88,3 +120,11 @@ The v2.15 map (`V215.md`, branch `design/v2.15-map`) adds world F (the new map, 
 - Expected first load in English with all of it: about **0.7 MB gzipped** instead of 1.0 MB, and, by the v2.14 numbers (time grows with bytes to parse on a throttled phone), roughly 0.4–0.6 s less to the title on a mid phone and 1.5 s less on slow 4G.
 - Rules: a chunk is a plain script that registers into `window.PawArt` or `window.PawX` (no game state, as now); the caller shows a short paper wobble while it waits (at most a few hundred ms on 4G); after the title, idle time preloads the likely next chunks (`requestIdleCallback`), so a tap never waits on a good connection. The harness keeps everything inline (as the languages), and a `--split` test run covers the loader.
 - Art code is mostly long SVG path strings, which minify little: the next big win after chunks is `PawArt` scene caching across sessions (Cache Storage, keyed by the build hash), which only makes sense with the service worker above.
+
+## 6. Tests
+
+- Unminified (the normal harness): `smoke`, `i18n_smoke`, `phone_shell`, `v210_ball`, `v29_photo`, `phone_v29_photo`, `account`, `i18n`, `copy`, `itch_build` pass (`phone_shell` flaky once under load: "a backdrop tap closes the sheet", passed on retry).
+- `--minified`: `smoke`, `i18n_smoke`, `phone_shell`, `v210_ball`, `v29_photo`, `phone_v29_photo`, `account` pass (`v210_ball` flaky once, a click timeout under load with three jobs; it passed on retry and in the next minified run).
+- `itch_build` now also checks the split build: English loads no language file and the loading paw is gone; Japanese shows its title in Japanese with only its file and the keys; a title switch to German loads that file; a missing French file starts the game in English and the title switches to French once the file is there; the photo fonts load with the first photo, once, and the postcard carries them.
+- `site`: the size budget check now passes (2.11 MB, was 3.38 MB on the base with the itch build). Its other failures (the `/guide` page in the page list, the CSP `frame-src`, the tagline and heading checks) fail the same way on `integration/v2.14` without this branch: they come from the site lanes' newer pages, not from PERF.
+- `node tools/build.pl` still gives a byte-identical `paw_haven_prototype.html`.
