@@ -346,7 +346,7 @@ async function worker(job) {
     await step('garden', async () => { await t.home('yard'); await ev(() => window.__paw.go('garden')); await t.untilMode('garden'); await waitSel('.pg-plot'); await measure('garden'); await ev(() => { const d = document.querySelector('.pg-done'); if (d) d.click(); }); await t.untilMode('yard'); });
     await step('kitchen', async () => {
       await atPlace('house'); await ev(() => window.__paw.go('kitchen')); await t.untilMode('kitchen'); await waitSel('[data-ing]'); await measure('kitchen');
-      await ev(() => { const b = [...document.querySelectorAll('.pk-btn')].find((x) => x.offsetParent); if (b) b.click(); }); await sleep(400); await measure('kitchen: recipe book');
+      await ev(() => { const b = [...document.querySelectorAll('.pk-btn.pk-gold')].find((x) => x.offsetParent); if (b) b.click(); }); await sleep(400); await measure('kitchen: recipe book');
       await t.p.keyboard.press('Escape'); await sleep(200); await closeAll(); await ev(() => window.__paw.go('yard')); await t.home('yard');
     });
     // ---------------------------------------------------------------- Tokyo (prefs.tkTest) and Dog Cards visitors ----------------------------------------------------------------

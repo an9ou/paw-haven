@@ -23,6 +23,7 @@
 //       scrolled sideways, a sheet body scrolled down, a hidden off-screen panel, a marquee) is not visible, so it is skipped; a text node
 //       partly inside an overflow auto/scroll box is fine (that box is meant to scroll). Only overflow hidden/clip cuts count as clips.
 //   R2c a control's box is cut to its clipping or scrolling ancestors before the overlap test (a button half scrolled out of a sheet body).
+//   R2d a clipping box whose edge coincides with an inner scrolling box's edge on that axis does not clip (text at a scroller's fold).
 //   R2b panned cards: when the text's own card is itself cut SIDEWAYS by a clipping ancestor (the peeking next card of the walk route
 //       carousel, a pup row), the card is panned, not clipped; a card cut downwards is a real clip (a box too short for its content).
 //   R3  covered: with pointer-events forced on for the measurement, document.elementsFromPoint() tells what is on top, line by line. A line
@@ -179,8 +180,13 @@ function MEASURE(cfg) {
     it.thai = THAI.test(it.node.nodeValue);
     const chain = clipChain(it.el); let vis = it.rects.map((r) => ({ left: r.left, top: r.top, right: r.right, bottom: r.bottom, o: r })); let cut = null;
     const nb = nearestBox(it.el), nbr = nb ? nb.getBoundingClientRect() : null;
+    const scr = []; // inner ancestors that scroll (R2d)
     for (const cc of chain) {
       const b = box(cc.a); const hx = /hidden|clip/.test(cc.ox), hy = /hidden|clip/.test(cc.oy);
+      // R2d: a clipping box whose edge is also the edge of an inner box that scrolls on that axis cuts nothing the scroller would not:
+      // the text straddles the scroller's fold (a phone page that scrolls inside a clipped stage), it is not clipped
+      const near = (u, v) => Math.abs(u - v) <= 2, fold = { t: scr.some((s) => s.y && near(s.b.top, b.top)), b: scr.some((s) => s.y && near(s.b.bottom, b.bottom)), l: scr.some((s) => s.x && near(s.b.left, b.left)), r: scr.some((s) => s.x && near(s.b.right, b.right)) };
+      { const sx = /auto|scroll/.test(cc.ox), sy = /auto|scroll/.test(cc.oy); if (sx || sy) scr.push({ b, x: sx, y: sy }); }
       // R2b: a card cut sideways by a clipping ancestor whose content is wider than it (a carousel, a panned track: the route cards, the pup row)
       // is panned, not clipped; a vertical cut is real (a box too short for its text)
       const panned = hx && !!nbr && nb !== cc.a && cc.a.contains(nb) && (nbr.left < b.left - 1 || nbr.right > b.right + 1);
@@ -188,7 +194,7 @@ function MEASURE(cfg) {
       for (const r of vis) {
         const [vt, vb] = vbox(it, r.o);
         const ix = Math.min(r.right, b.right) - Math.max(r.left, b.left), iy = Math.min(r.bottom, b.bottom) - Math.max(r.top, b.top);
-        const dx = Math.max(0, b.left - r.left, r.right - b.right), dy = Math.max(0, b.top - vt, vb - b.bottom);
+        const dx = Math.max(0, fold.l ? 0 : b.left - r.left, fold.r ? 0 : r.right - b.right), dy = Math.max(0, fold.t ? 0 : b.top - vt, fold.b ? 0 : vb - b.bottom);
         if (ix > 0.5 && iy > 0.5) {
           if ((hx && dx > 1 && !panned) || (hy && dy > 2)) { const amt = Math.max(hx && !panned ? dx : 0, hy ? dy : 0); if (!cut || amt > cut.amt) cut = { amt, by: cc.a, dx: Math.round(dx), dy: Math.round(dy) }; }
           nv.push({ left: Math.max(r.left, b.left), top: Math.max(r.top, b.top), right: Math.min(r.right, b.right), bottom: Math.min(r.bottom, b.bottom), o: r.o });
