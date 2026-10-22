@@ -151,29 +151,50 @@ function msDayLabel() { return tdate(new Date(), { weekday: 'long', day: 'numeri
 const MS_WIDE = /[฀-๿ᄀ-ᇿ぀-ヿ㐀-鿿가-힯豈-﫿＀-￯]/;
 const MS_ROW_W = 86; // the art keeps a row's text between x 60 and 146
 let msCtx = null;
-function msLines(t, fs, w) {
+// the card art draws these rows with Caveat, then the language's 'DD Local' faces (world B FONT_L), so they are measured with the same stack
+const msFont = (fs) => `700 ${fs}px 'Caveat', 'DD Local Title', 'DD Local', cursive`;
+// v2.14 fix: line breaks inside a word. The word segmenter splits words it does not know into single characters (お|み|くじ, 水|や|り,
+// 狗狗|們), so a one-character segment never stands alone: one that may not start a line (particles, small kana, 們 / 的, closing
+// punctuation, ๆ: kinsoku) and a lone hiragana (okurigana) stick to the segment before; any other one but a no-start one (a prefix like
+// お / ご, an opening bracket, a lone hanzi, a lone hiragana) sticks to the segment after; the last segment of a row sticks to the one before.
+// Spaces always allow a break. A glued word wider than the row breaks between its segments first, then between characters.
+// No Intl.Segmenter: the old per-character wrap.
+const MS_NO_START = /^[、。，．・：；？！ー）」』】〕〉》〜…‥々ぁぃぅぇぉっゃゅょゎァィゥェォッャュョヮヵヶをにはがでとのもへ們们的了着著得地嗎吗呢吧啊麼么,.!?:;)\]ๆฯ]$/;
+function msJoin(segs) {
+  const one = (s) => [...s].length === 1 && /\S/.test(s), out = [];
+  segs.forEach((s, i) => {
+    const a = i ? segs[i - 1] : '', back = one(s) && (MS_NO_START.test(s) || /^[ぁ-ゖ]$/.test(s) && !/^[おご]$/.test(s) || i === segs.length - 1);
+    if (out.length && /\S$/.test(a) && /^\S/.test(s) && (one(a) && !MS_NO_START.test(a) || back)) out[out.length - 1].push(s); else out.push([s]);
+  });
+  return out;
+}
+function msLines(t, fs, w, whole) { // whole: null when a word would have to be cut (the balanced 3-line try below)
   if (msCtx === null) { try { msCtx = document.createElement('canvas').getContext('2d') || false; } catch (e) { msCtx = false; } }
   if (!msCtx) return null;
-  msCtx.font = `700 ${fs}px 'Caveat', cursive`; const W = (s) => msCtx.measureText(s).width;
-  let segs; try { segs = [...new Intl.Segmenter(document.documentElement.lang || undefined, { granularity: 'word' }).segment(t)].map((s) => s.segment); } catch (e) { segs = [...t]; }
+  msCtx.font = msFont(fs); const W = (s) => msCtx.measureText(s).width;
+  let units; try { units = msJoin([...new Intl.Segmenter(document.documentElement.lang || undefined, { granularity: 'word' }).segment(t)].map((s) => s.segment)); } catch (e) { units = [...t].map((c) => [c]); }
+  if (whole && units.some((u) => W(u.join('').trim()) > w)) return null;
   const out = [''];
-  for (const s0 of segs) for (const s of (W(s0) > w ? [...s0] : [s0])) { const l = out[out.length - 1]; if (l.trim() && W((l + s).trimEnd()) > w) out.push(s.trimStart()); else out[out.length - 1] = l + s; }
+  for (const u of units) for (const s of (W(u.join('')) > w ? u.flatMap((s0) => (W(s0) > w ? [...s0] : [s0])) : [u.join('')])) { const l = out[out.length - 1]; if (l.trim() && W((l + s).trimEnd()) > w) out.push(s.trimStart()); else out[out.length - 1] = l + s; }
   return out.map((l) => l.trim()).filter(Boolean);
 }
+// returns { text } or, when the row was measured at 13 px, { text, fs: 13 }: the art then draws it at 13 px even as 2 lines (v2.14 fix: rows
+// measured at 13 px but drawn at 16 px ran into the "1/3" counter)
 function msRowText(t) {
-  if (!MS_WIDE.test(t)) return esc(t);
-  let L = msLines(t, 16, MS_ROW_W);
-  if (!L) return esc(t);
-  if (L.length > 2) {
-    const W13 = msLines(t, 13, MS_ROW_W); L = W13;
-    if (L.length < 3) { msCtx.font = "700 13px 'Caveat', cursive"; const L3 = msLines(t, 13, Math.ceil(msCtx.measureText(t).width / 3) + 13); if (L3 && L3.length === 3) L = L3; }
-    if (L.length > 3) { L = L.slice(0, 3); msCtx.font = "700 13px 'Caveat', cursive"; let l = L[2]; while (l.length > 1 && msCtx.measureText(l + '…').width > MS_ROW_W) l = l.slice(0, -1); L[2] = l + '…'; }
+  if (!MS_WIDE.test(t)) return { text: esc(t) };
+  let L = msLines(t, 16, MS_ROW_W), fs = 16;
+  if (!L) return { text: esc(t) };
+  const r = (text) => (fs === 13 ? { text, fs } : { text });
+  if (L.length > 2 || !msLines(t, 16, MS_ROW_W, true)) { // 3+ lines at 16 px, or a word that only fits at 13 px
+    fs = 13; L = msLines(t, 13, MS_ROW_W);
+    if (L.length < 3) { msCtx.font = msFont(13); const L3 = msLines(t, 13, Math.ceil(msCtx.measureText(t).width / 3) + 13, true); if (L3 && L3.length === 3) L = L3; }
+    if (L.length > 3) { L = L.slice(0, 3); msCtx.font = msFont(13); let l = L[2]; while (l.length > 1 && msCtx.measureText(l + '…').width > MS_ROW_W) l = l.slice(0, -1); L[2] = l + '…'; }
   }
-  if (L.length < 2) return esc(L[0] || t).replace(/ /g, ' ');
-  return L.map((l) => esc(l).replace(/ /g, ' ') + '​'.repeat(Math.max(0, 10 - l.length))).join(' ');
+  if (L.length < 2) return r(esc(L[0] || t).replace(/ /g, ' '));
+  return r(L.map((l) => esc(l).replace(/ /g, ' ') + '​'.repeat(Math.max(0, 10 - l.length))).join(' '));
 }
 function msCardArt() {
-  const list = msToday(), items = list.map((it) => ({ text: msRowText(msText(it)), done: !!it.done, p: it.p || 0, n: it.n })), o = { items, stamps: S.missions.stamps, day: esc(msDayLabel()), title: tt('journal.tab_missions', 'Missions') };
+  const list = msToday(), items = list.map((it) => Object.assign(msRowText(msText(it)), { done: !!it.done, p: it.p || 0, n: it.n })), o = { items, stamps: S.missions.stamps, day: esc(msDayLabel()), title: tt('journal.tab_missions', 'Missions') };
   return artReal('prop', 'missioncard', o) || msCardFB(o);
 }
 function msWrap(t, max) { const w = String(t).split(' '), out = ['']; w.forEach((x) => { const l = out[out.length - 1]; if (l && (l + ' ' + x).length > max && out.length < 2) out.push(x); else out[out.length - 1] = l ? l + ' ' + x : x; }); return out; }
