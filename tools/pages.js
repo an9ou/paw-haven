@@ -18,9 +18,9 @@ const body = fs.readFileSync(src, 'utf8');
 const cut = body.indexOf('<style'), pre = cut > 0 ? body.slice(0, cut) : '', rest = cut > 0 ? body.slice(cut) : body;
 const head = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">' + pre + '</head><body>';
 const out = path.join(root, '_site');
+fs.mkdirSync(out, { recursive: true }); // a fresh checkout has no _site/ yet
 fs.rmSync(path.join(out, 'lang'), { recursive: true, force: true });
 fs.readdirSync(out, { withFileTypes: true }).filter((e) => e.isFile() && /^photo_fonts\.\w+\.js$/.test(e.name)).forEach((e) => fs.rmSync(path.join(out, e.name)));
-fs.mkdirSync(out, { recursive: true });
 let html = head + rest + '</body></html>';
 if (MINIFY) { const r = require('./minify.js').minifyHtml(html); html = r.html; if (!r.skipped) console.log(`minified index.html: ${(r.before / 1e6).toFixed(2)} -> ${(r.after / 1e6).toFixed(2)} MB (${r.blocks} blocks)`); }
 fs.writeFileSync(path.join(out, 'index.html'), html);
