@@ -313,7 +313,7 @@ const CSS = `
 .pw-pt .pw-trow b{font-size:23px}
 .pw-trow b{padding-right:.14em}
 .pw-pt .pw-tic.pw-neg{font-size:26px!important;line-height:42px!important}
-.pw-pt .pw-card.pw-tut{height:min(88%,660px);display:flex;flex-direction:column;overflow-y:auto}
+.pw-pt .pw-card.pw-tut{height:min(96%,780px);display:flex;flex-direction:column;overflow-y:auto}
 .pw-pt .pw-card.pw-tut .pw-tfoot{margin-top:auto}
 .pw-pt .pw-obsgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .pw-pt .pw-obsc{flex-wrap:nowrap;justify-content:flex-start;text-align:left;font-size:15px;padding:3px 6px;gap:4px;min-height:0}
@@ -324,7 +324,15 @@ const CSS = `
 .pw-pt .pw-notes .pw-obsc .pw-badge{left:38px;top:2px;width:22px;height:22px}
 .pw-pt .pw-mini[style*="width:150px"] img:nth-of-type(1){bottom:6px!important}.pw-pt .pw-mini[style*="width:150px"] img:nth-of-type(2){bottom:22px!important}.pw-pt .pw-mini[style*="width:150px"] img:nth-of-type(3){bottom:38px!important}
 .pw-pt .pw-tfoot,.pw-cp .pw-tfoot{flex-wrap:wrap;justify-content:center}
-.pw-pt .pw-tfoot .pw-dots{flex:1 1 100%;order:-1}
+.pw-pt .pw-tfoot .pw-dots{flex:0 0 auto;order:0;letter-spacing:2px}
+.pw-pt .pw-tfoot .pw-skip{flex:1 1 52%}
+.pw-pt .pw-tfoot .pw-btn{flex:1 1 auto;justify-content:center}
+/* v2.14: the first-walk card is tighter on phones, so a long language fits without scrolling */
+.pw-pt .pw-card.pw-tut{padding:8px 10px}
+.pw-pt .pw-card.pw-tut h2{font-size:28px;line-height:1.1;margin:0}
+.pw-pt .pw-card.pw-tut .pw-sub{font-size:20px;margin:0 0 2px;line-height:1.1}
+.pw-pt .pw-card.pw-tut h3{font-size:24px;margin:0 0 3px;line-height:1.1}
+.pw-pt .pw-card.pw-tut .pw-trow{margin:5px 0}
 .pw-touchui .pw-skip{min-height:44px}
 .pw-touchui .pw-skip input{width:22px;height:22px}
 @keyframes pw-glow{from{opacity:.55;transform:scale(.9)}to{opacity:1;transform:scale(1.1)}}
@@ -378,7 +386,10 @@ const CSS = `
 .pw-ctrls{position:absolute;left:0;right:0;bottom:12px;display:flex;justify-content:space-between;align-items:flex-end;padding:0 16px;z-index:5;pointer-events:none}
 .pw-ctrls>*{pointer-events:auto}
 .pw-big{min-width:150px;height:74px;justify-content:center;flex-direction:column;font-family:'Caveat',cursive;font-size:32px;font-weight:700;gap:0}
-.pw-big .pw-k{font-family:'Patrick Hand',sans-serif;font-size:14px;font-weight:400}
+.pw-big .pw-k{font-family:'Patrick Hand',sans-serif;font-size:14px;font-weight:400;white-space:normal;text-align:center;line-height:1.1;max-width:100%;overflow-wrap:anywhere}
+.pw-big{text-align:center;line-height:1.05;padding:4px 6px}
+html:not(:lang(en)) .pw-pt .pw-big{font-size:clamp(24px,7.4vw,34px)}
+html:lang(th) .pw-big,html:lang(th) .pw-big .pw-k{line-height:1.25}
 .pw-jump{background:#CBE0F4}
 .pw-duck{background:#E0D5F0}
 .pw-dig{background:#FFE3A1;position:relative;margin-bottom:52px}
@@ -695,7 +706,10 @@ function start(el, o) {
     E.stage.style.cssText = ''; E.ctrls.style.cssText = ''; E.legend.style.cssText = ''; root.style.removeProperty('--pw-st'); root.style.removeProperty('--pw-sh');
     if (mode === 'pt') {
       LW = fol.length ? Math.max(PT_LW, Math.max(DOG.x, folNeed()) + FOL_AHEAD) : PT_LW; s = elW / LW; // v2.9 PACK: a pack line gets room behind the leader, the view ahead stays as long
-      const hudB = E.hud.offsetTop + E.hud.offsetHeight + 8, sh = Math.round(VIEW_H * s);
+      const hudB = E.hud.offsetTop + E.hud.offsetHeight + 8;
+      // v2.14: a wide portrait box (the 684 px tablet box) would push the buttons off the bottom: the strip shrinks until the legend, the two big buttons and the Dig row fit, and the view shows more path
+      { const shMax = elH - hudB - (8 + E.legend.offsetHeight + 8) - 88 - 10 - 72 - 8; if (VIEW_H * s > shMax && shMax > 160) { s = shMax / VIEW_H; LW = elW / s; } }
+      const sh = Math.round(VIEW_H * s);
       // the strip, the legend and the controls are one group, centred in the space under the HUD; spare height makes the buttons taller (up to 150 px)
       const lgH = E.legend.offsetHeight, DIGH = 72, GAP = 10, avail = elH - hudB;
       const fixed = sh + 8 + lgH + 8, bigH = clamp(avail - fixed - DIGH - GAP - 24, 88, 150);

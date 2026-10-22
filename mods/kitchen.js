@@ -396,10 +396,11 @@
     '.pk-paper{background:#FFFBF3;border:2.5px solid #5B3D32;border-radius:16px 11px 18px 10px/11px 17px 10px 15px;box-shadow:3px 4px 0 rgba(91,61,50,.16)}',
     '.pk-tape::before{content:"";position:absolute;left:40px;top:-11px;width:86px;height:20px;background:repeating-linear-gradient(45deg,rgba(242,143,165,.55) 0 6px,rgba(249,208,217,.75) 6px 12px);transform:rotate(-4deg);pointer-events:none}',
     '.pk-tape.pk-tb::before{background:repeating-linear-gradient(45deg,rgba(134,179,234,.5) 0 6px,rgba(195,218,246,.75) 6px 12px);left:auto;right:50px;transform:rotate(3deg)}',
-    '.pk-top{position:absolute;left:14px;right:14px;top:10px;height:56px;display:flex;align-items:center;gap:12px;padding:0 10px;z-index:4}',
+    '.pk-top{position:absolute;left:14px;right:14px;top:10px;min-height:56px;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:0 10px;z-index:4}',
     '.pk-top .pk-ico{width:46px;height:46px;flex:none;transform:rotate(-6deg)}.pk-ico svg{width:100%;height:100%;display:block}',
     '.pk-title{font-family:"Caveat",cursive;font-weight:700;font-size:34px;line-height:1;white-space:nowrap}',
-    '.pk-sub{flex:1;min-width:0;font-size:18px;color:#8A7468;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.pk-sub{flex:1;min-width:0;font-size:18px;color:#8A7468;white-space:normal;line-height:1.1;overflow-wrap:anywhere}', /* v2.14: the hint wraps, the bar grows */
+    'html:lang(th) .pk-sub,html:lang(th) .pk-msg{line-height:1.3}',
     '.pk-chip{display:flex;align-items:center;gap:6px;font-family:"Caveat",cursive;font-weight:700;font-size:24px;padding:0 12px 2px 6px;height:40px;background:#DDEFFC;border:2px solid #5B3D32;border-radius:12px 9px 13px 8px;white-space:nowrap}',
     '.pk-chip.pk-full{background:#F9D0D9}.pk-chip svg{width:30px;height:30px}',
     '.pk-btn{font-family:"Caveat",cursive;font-weight:700;font-size:25px;color:#5B3D32;background:#FFFBF3;border:2.5px solid #5B3D32;border-radius:14px 9px 15px 8px/9px 14px 8px 13px;padding:0 16px 3px;cursor:pointer;box-shadow:2px 3px 0 rgba(91,61,50,.22);line-height:1.2;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}',
@@ -418,6 +419,7 @@
     '.pk-tile:hover{transform:translateY(-2px) rotate(-2deg)}',
     '.pk-tile .pk-art{position:absolute;left:8px;top:2px;width:44px;height:44px;pointer-events:none}.pk-art svg{width:100%;height:100%;display:block}',
     '.pk-tile .pk-nm{position:absolute;left:0;right:0;bottom:2px;font-size:13px;line-height:1;text-align:center;white-space:nowrap;overflow:hidden;pointer-events:none}',
+    '.pk-tile .pk-nm.pk-nm2{white-space:normal;overflow-wrap:anywhere;line-height:1.02;overflow:visible}', /* v2.14: a long name wraps to two lines (set by fitNames) */
     '.pk-tile .pk-ct{position:absolute;right:-7px;top:-7px;min-width:22px;height:22px;padding:0 4px;box-sizing:border-box;border-radius:11px;background:#FFE3A1;border:2px solid #5B3D32;font-family:"Caveat",cursive;font-weight:700;font-size:17px;line-height:17px;text-align:center;pointer-events:none}',
     '.pk-tile .pk-st{position:absolute;left:-5px;top:-8px;display:flex;pointer-events:none}',
     '.pk-tile.pk-out{opacity:.45;filter:grayscale(.85);cursor:default}.pk-tile.pk-out:hover{transform:none}',
@@ -430,8 +432,8 @@
     '.pk-drop.pk-hot{border-color:#F28FA5;background:rgba(249,208,217,.18)}',
     '.pk-inpot{position:absolute;left:510px;top:206px;width:120px;height:60px;z-index:2;pointer-events:none}',
     '.pk-inpot div{position:absolute;width:42px;height:42px;animation:pk-bob 1.8s ease-in-out infinite}',
-    '.pk-tray{position:absolute;left:322px;top:462px;width:470px;height:144px;padding:8px 12px;box-sizing:border-box;z-index:3}',
-    '.pk-msg{font-size:18px;line-height:1.15;height:42px;overflow:hidden;color:#5B3D32}',
+    '.pk-tray{position:absolute;left:322px;bottom:14px;width:470px;min-height:144px;padding:8px 12px;box-sizing:border-box;z-index:3}', /* v2.14: grows upward when the lesson line is long */
+    '.pk-msg{font-size:18px;line-height:1.15;min-height:42px;color:#5B3D32}',
     '.pk-msg b{font-family:"Caveat",cursive;font-size:22px}',
     '.pk-slots{display:flex;gap:8px;align-items:center;margin-top:4px}',
     '.pk-slot{position:relative;width:58px;height:58px;border:2px dashed rgba(91,61,50,.45);border-radius:12px 8px 12px 8px;box-sizing:border-box;background:rgba(255,255,255,.4)}',
@@ -455,19 +457,21 @@
     /* v2.5: the book's close X stays in the top-right corner while the recipes scroll under it (it takes no room in the flow); the header leaves it space */
     '.pk-xfix{position:sticky;top:0;z-index:5;display:flex;margin:0 -4px -46px auto}.pk-book .pk-mh{padding-right:58px;min-height:46px}.pk-book .pk-mh .pk-ico{width:56px;height:56px;flex:none}',
     '.pk-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 16px}',
-    '.pk-card{position:relative;height:222px;padding:16px 18px 10px 30px;box-sizing:border-box}',
+    '.pk-card{position:relative;min-height:222px;padding:16px 18px 10px 30px;box-sizing:border-box;display:flex;flex-direction:column}', /* v2.14: a card grows with its text, the buttons sit at its foot */
     '.pk-card>.pk-cardbg{position:absolute;inset:0;z-index:0;pointer-events:none}.pk-cardbg svg{width:100%;height:100%;display:block}',
     '.pk-card>*:not(.pk-cardbg){position:relative;z-index:1}',
     '.pk-cn{font-family:"Caveat",cursive;font-weight:700;font-size:26px;line-height:1;display:flex;align-items:center;gap:6px}',
     '.pk-cn .pk-stars{margin-left:auto}',
     '.pk-ings{display:flex;gap:4px;margin:6px 0 2px;flex-wrap:wrap}',
     '.pk-ing{position:relative;width:40px;text-align:center;font-size:11px;line-height:1}',
+    'html:not(:lang(en)) .pk-ing{width:58px;overflow-wrap:anywhere;line-height:1.05}',
     '.pk-ing .pk-art{width:36px;height:36px;margin:0 auto}',
     '.pk-ing.pk-miss .pk-art{filter:grayscale(1) opacity(.45)}',
     '.pk-where{font-size:14px;color:#B4545C;line-height:1.1;min-height:16px}',
     '.pk-steps{font-size:15px;color:#8A7468;line-height:1.1}',
-    '.pk-eff{font-size:15px;line-height:1.1;margin-top:2px;height:34px;overflow:hidden}',
-    '.pk-cbtns{position:absolute!important;left:30px;right:14px;bottom:10px;display:flex;gap:6px}',
+    '.pk-eff{font-size:15px;line-height:1.1;margin-top:2px;min-height:34px}',
+    'html:lang(th) .pk-eff,html:lang(th) .pk-steps,html:lang(th) .pk-where{line-height:1.3}',
+    '.pk-cbtns{margin:auto -4px 0 0;padding-top:6px;display:flex;flex-wrap:wrap;gap:6px}',
     '.pk-cbtns .pk-btn{font-size:20px;padding:0 10px 2px}',
     '.pk-card.pk-unk .pk-cardbg{filter:grayscale(1) opacity(.55)}',
     '.pk-sil{position:absolute!important;right:16px;top:56px;width:84px;height:84px;filter:brightness(0) opacity(.12)}',
@@ -536,9 +540,9 @@
     '.pk-portrait .pk-row{flex-wrap:nowrap;border-bottom:none;margin-bottom:0;padding:8px 14px 4px 4px;border-right:2px dashed rgba(91,61,50,.28)}',
     '.pk-portrait .pk-row.pk-last{border-right:none}',
     '.pk-portrait .pk-tile{flex:none}',
-    '.pk-portrait .pk-tile{width:68px;touch-action:pan-x}.pk-portrait .pk-tile .pk-art{left:12px}.pk-portrait .pk-tile .pk-nm{font-size:16px}',
-    '.pk-portrait .pk-tile.pk-people{width:52px;height:52px}',
-    '.pk-portrait .pk-tray{left:8px;top:492px;width:404px;height:auto;min-height:150px}',
+    '.pk-portrait .pk-tile{width:auto;min-width:68px;padding:0 5px;touch-action:pan-x;display:flex;align-items:flex-end;justify-content:center}.pk-portrait .pk-tile .pk-art{left:12px}.pk-portrait .pk-tile:not(.pk-people) .pk-art{left:50%;margin-left:-22px}.pk-portrait .pk-tile .pk-nm{position:static;font-size:16px;overflow:visible;padding-bottom:2px}', /* v2.14: a tile is as wide as its name */
+    '.pk-portrait .pk-tile.pk-people{width:52px;min-width:52px;padding:0;height:52px}',
+    '.pk-portrait .pk-tray{left:8px;top:492px;bottom:auto;width:404px;height:auto;min-height:150px}',
     '.pk-portrait .pk-dog{left:230px;top:648px;width:180px;height:150px}',
     '.pk-portrait .pk-bub{right:auto;left:10px;top:660px;width:max-content;max-width:250px;font-size:22px;text-wrap:balance;overflow-wrap:break-word}.pk-portrait .pk-bub::after{right:-8px;bottom:auto;top:calc(50% - 8px);transform:rotate(-45deg)}',
     '.pk-portrait .pk-ov{align-items:flex-start}',
@@ -550,7 +554,7 @@
     '.pk-portrait .pk-judge{left:77px;top:140px}',
     '.pk-portrait .pk-doo{left:87px;top:330px}',
     '.pk-portrait .pk-tap{left:50%;transform:translateX(-50%);top:486px;min-height:56px}',
-    '.pk-portrait .pk-taph{left:87px;top:550px}.pk-portrait .pk-gs{font-size:19px}.pk-portrait .pk-taph{font-size:17px}.pk-portrait .pk-ing{font-size:15px;width:52px}.pk-portrait .pk-entry{font-size:17px}',
+    '.pk-portrait .pk-taph{left:87px;top:550px}.pk-portrait .pk-gs{font-size:19px}.pk-portrait .pk-taph{font-size:17px}.pk-portrait .pk-ing{font-size:15px;width:52px}.pk-portrait .pk-where{font-size:15px}.pk-portrait .pk-entry{font-size:17px}',
     '.pk-portrait .pk-reveal{width:404px;height:740px;margin-top:10px}',
     '.pk-portrait .pk-note{width:404px;margin:40px 0 0 0}',
     /* v2.6 UI/UX phone review: Empty and Cook! get their own full-width row under the 4 slots (H3), the pantry panel is solid paper (H12) */
@@ -615,7 +619,7 @@
 
     if (!el) el = document.body;
     /* v1.5B portrait (phones): a 420-wide stage scaled to the screen width (layout only) */
-    var PORT = !!(el && (el.clientHeight || 0) > (el.clientWidth || 1) * 1.1); W = PORT ? 420 : 1240; H = PORT ? 800 : 620;
+    var PORT = !!(el && ((el.clientHeight || 0) > (el.clientWidth || 1) * 1.1 || document.documentElement.getAttribute('data-layout') === 'phone')) /* v2.14: the game's phone layout (the 684 px tablet box too) always gets the phone layout */; W = PORT ? 420 : 1240; H = PORT ? 800 : 620;
     var TOUCH = PORT || !!(window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches); // v2.3: touch wording
     var POT_XY = PORT ? { x: 210, y: 200 } : { x: 570, y: 280 };
     var root = document.createElement('div'); root.className = 'pk-root' + (PORT ? ' pk-portrait' : ''); root.tabIndex = 0; root.setAttribute('role', 'application'); root.setAttribute('aria-label', L('mod.kitchen.title', 'Kitchen'));
@@ -723,6 +727,18 @@
         h += '<button type="button" class="pk-tile pk-people" data-pf="' + pf.id + '" title="' + esc(L('mod.kitchen.not_for_dogs', '{name}: not for dogs', { name: foodText(pf, 'name') })) + '"><div class="pk-art">' + peopleArt(pf) + '</div><div class="pk-badge">' + pawStopArt() + '</div></button>';
       });
       shelf.innerHTML = h + '</div>';
+      fitNames();
+    }
+    /* v2.14 desktop tiles: a name wider than its tile shrinks (to 9 px), then wraps on two lines. Phone tiles grow to fit the name instead. */
+    function fitNames() {
+      if (PORT || closed) return;
+      shelf.querySelectorAll('.pk-nm').forEach(function (e) {
+        e.style.fontSize = ''; e.classList.remove('pk-nm2');
+        var w = e.clientWidth; if (!w || e.scrollWidth <= w) return;
+        var low = /[\u0e00-\u0e7f\u3040-\u9fff\uac00-\ud7af]/.test(e.textContent) ? 11 : 9; /* CJK and Thai keep 11 px and wrap, the Latin scripts shrink to 9 */
+        for (var f = 12; f >= low; f--) { e.style.fontSize = f + 'px'; if (e.scrollWidth <= w) return; }
+        e.style.fontSize = '11px'; e.classList.add('pk-nm2');
+      });
     }
 
     /* tray */
@@ -1089,6 +1105,7 @@
 
     /* first paint */
     refresh();
+    try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (!closed) fitNames(); }); } catch (e) { /* ignore */ }
     var firstMsg = !notesShown.kitchen ? (notesShown.kitchen = 1, bold(noteText('kitchen'))) : TOUCH ? L('mod.kitchen.first_tap_html', 'Tap or drag 2 to 4 ingredients into the pot, then press <b>Cook!</b>') : L('mod.kitchen.first_drag_html', 'Drag 2 to 4 ingredients into the pot, then press <b>Cook!</b>');
     if (S.fridge.count < S.fridge.max) msg(firstMsg);
     later(function () { dogSay(say1('hello'), 2600); }, 400);
