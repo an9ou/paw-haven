@@ -151,7 +151,7 @@ Two sentences, short, kind, true.
 | Houses (doghouses) | Rumah Anjing |  |
 | Wardrobe | Lemari Baju |  |
 | Zoomies | Zoomies | A sudden happy sprint. |
-| Hunger | Lapar | Stat bar label. |
+| Hunger | Kenyang | Stat bar label (the meter fills when fed, so "+10 Kenyang"; "lapar" only where a dog is hungry). |
 | Happiness | Bahagia | Stat bar label. |
 | Energy | Energi | Stat bar label. |
 | Cleanliness | Kebersihan | Stat bar label. |
@@ -325,7 +325,7 @@ The game table (`game/i18n/id.json`, v2.14, 7,366 keys; the 561 mix names keep t
 
 Term choices, one word per English term across the whole table:
 
-- Bond = Kedekatan (label "Kedekatan {n}", "Level kedekatan {l}", "poin kedekatan"); Hunger / Happiness / Energy / Cleanliness = Lapar / Bahagia / Energi / Kebersihan; Paw Coins / coins = Koin Tapak / koin ("Koinmu belum cukup").
+- Bond = Kedekatan (label "Kedekatan {n}", "Level kedekatan {l}", "poin kedekatan"); Hunger / Happiness / Energy / Cleanliness = Kenyang / Bahagia / Energi / Kebersihan; Paw Coins / coins = Koin Tapak / koin ("Koinmu belum cukup").
 - Buy = Beli, Later = Nanti, Not now = Nanti saja, Close = Tutup, Back = Kembali, Next = Lanjut.
 - Dock labels: Makan, Main, Rawat, Jalan, Lemari Baju, Jurnal, Peta (short forms keep them from clipping at 390 px).
 - treat and snack = camilan; bowl = mangkuk; doghouse = Rumah Anjing, dog bed = kasur; charm = jimat; top-knot = kuncir; puddle = genangan; Nose-o-meter = Hidung-o-meter.
