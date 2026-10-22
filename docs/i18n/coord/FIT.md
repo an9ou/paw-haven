@@ -114,6 +114,7 @@ Counts are distinct findings per session (R10), so one cut label in the action b
 | Game | en | ja | zh-Hans | zh-Hant | ko | es | pt-BR | fr | de | th | id | total |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | findings | 72 | 115 | 78 | 79 | 85 | 84 | 85 | 91 | 89 | 109 | 72 | 959 |
+| after the fit pass | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 
 Per size: desktop 54, embed 653 (the kitchen and garden at 684 px: taps and text sizes), iphone15 65, pixel7 57, small 130.
 Per kind: clip 162, escape 58, overlap 108, hscroll 45, tap 323, font 263. Runtime 41 min (`--jobs 3`, 4 cores).
@@ -121,5 +122,17 @@ Per kind: clip 162, escape 58, overlap 108, hscroll 45, tap 323, font 263. Runti
 | Site | en | ja | zh-Hans | zh-Hant | ko | es | pt-BR | fr | de | th | id | total |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | findings | 10 | 9 | 16 | 16 | 9 | 9 | 11 | 9 | 9 | 18 | 12 | 128 |
+| after the fit pass | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 
 Per width: 1440 1, 1024 2, 768 1, 390 26, 360 98. Per kind: clip 8, escape 20, overlap 0, hscroll 1, tap 44, font 55. Runtime 14 min.
+
+## After the fit pass (22 Oct 2026, strict runs)
+
+The "after the fit pass" rows above: both suites pass without `PAW_FIT_REPORT_ONLY` (game 0, site 0, every screen reached). The final reports are
+kept in `docs/i18n/coord/fit_report/final/` (`i18n_fit.md/.json`, `site_fit.md/.json`). The fixes are in the merges of `lane/v214-fit-{site,home,panels,mods,followup}`
+(list: `V214.md` section 17, `CHANGELOG.md` v2.14). Rules added on the way: R2c, R2d, R2e (header of `game/fit_lib.js`).
+
+Accepted exceptions (not findings, checked by eye):
+- the first-walk how-to card scrolls at 360x640 in th and ja (sticky footer; English scrolled there before too);
+- the Thai site's stuck tab strip scrolls sideways at 360 px on purpose (a shorter `nav.about` would avoid it);
+- es "Dar de comer" and pt-BR "Guarda-roupa" don't fit the 49 px dock button, so Comida and Roupas stay.

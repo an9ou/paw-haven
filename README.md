@@ -14,6 +14,7 @@ Your save lives in your browser's local storage. On the web version it is also s
 
 ## What's in the game
 
+- **11 languages**: English, 日本語, 简体中文, 繁體中文, 한국어, Español, Português (Brasil), Français, Deutsch, ไทย and Bahasa Indonesia, in the game and on doodledoggo.app. The game starts in your device's language; change it in Settings or with the chip on the title screen.
 - **35 breeds**: shiba, corgi, golden retriever, dachshund, husky, mutt, chihuahua, pug, greyhound, beagle, miniature poodle, border collie, samoyed, french bulldog, akita, japanese spitz, pomeranian, afghan hound, great dane, english mastiff, german shepherd, doberman, cane corso, pit bull, miniature pinscher, labrador retriever, alaskan malamute, chow chow, standard poodle, miniature schnauzer, west highland white terrier, yorkshire terrier, bichon frise, maltese and shih tzu. Each has its own voice, personality, size and joke, and 14 faces (sleepy, surprised, heart eyes, blep, zoomies, wink and more) that show by its personality.
 - **Seasons and festivals**: the town follows the real calendar (spring, summer, autumn, winter in every scene), with a leaf festival in October and November (leaf piles, a harvest stall) and a Halloween costume parade in late October. For Halloween 2026 (8 Oct to 2 Nov) the town wears pumpkins, paper ghosts and felt bats, and Mrs. Plum's Pumpkin Patch Pop-up in the Square sells 19 things made for 2026 only (decorations, dog-safe treats, toys with yard games, clothes and three full costumes: a Pumpkin Patch Suit, a Trick-or-Treat Ghost and a Little Bat Costume), each with a "2026" tag and yours to keep.
 - **Winter and New Year**: Snow Days from December to February (snowdrifts to dive into, a snowdog, Baker Bea's Winter Stall), Winter Lights and an Ugly Sweater Contest in December, and a Japanese New Year (kadomatsu, kites, New Year cards, a Fortune box with only good fortunes).
@@ -45,6 +46,8 @@ bash tools/cf_pages_deploy.sh # deploys the doodledoggo.app introduction site (s
 bash tools/cf_api_deploy.sh   # deploys the cloud save Worker pawhaven-api and its D1 database (cloudflare/)
 ```
 
+`node game/build.js publish` also writes the split build in `_split/` (one language file per player, see `PERF.md`); `tools/pages.js` minifies it when esbuild 0.24.0 is installed (`npm i -g esbuild@0.24.0`), else it ships it unminified. After a translation change: `node tools/i18n_extract.js --en && node tools/i18n_pack.js`.
+
 No Node? `perl tools/build.pl` makes the same `paw_haven_prototype.html`.
 
 The generated HTML files are not tracked. Run the build after cloning.
@@ -58,7 +61,12 @@ npm install -g playwright && npx playwright install chromium
 NODE_PATH=$(npm root -g) node game/run_tests.js smoke    # about 30 seconds
 NODE_PATH=$(npm root -g) node game/run_tests.js all --jobs 2     # desktop suites
 NODE_PATH=$(npm root -g) node game/run_tests.js phone --jobs 2   # phone suites (iPhone 15, Pixel 7), the mocked cloud-save suite, the title account choice (`account`) and the occlusion suites (`phone_occl_home`, `phone_occl_play`)
+NODE_PATH=$(npm root -g) node game/run_tests.js i18n_smoke       # every language: boot, adopt, popups, shops, a walk (PAW_LANGS=ja,de picks languages)
+NODE_PATH=$(npm root -g) node game/run_tests.js i18n_fit --jobs 3   # fit audit, the game: 11 languages x 5 sizes (about 45 min)
+NODE_PATH=$(npm root -g) node game/run_tests.js site_fit --jobs 3   # fit audit, doodledoggo.app: 11 languages x 5 widths (about 15 min)
 ```
+
+`i18n` (node) is in `all` and `i18n_phone` in `phone`. The two fit audits form the group `fit` (`node game/run_tests.js fit`, not in `all` or `phone`); `PAW_LANGS`, `PAW_FIT_SIZES` and `PAW_FIT_REPORT_ONLY=1` narrow them, and their reports land in `game/test_logs/`. How they measure: `docs/i18n/coord/FIT.md`. Add `--minified` to run suites on a minified build.
 
 ## Project layout
 
@@ -72,9 +80,11 @@ game/
 dogs/             dog art module (SVG strings)
 world/            scene, prop and icon art modules
 mods/             gameplay modules: genes, audio, walk runner, toys, garden, kitchen
+game/i18n/        the language tables (en.json is generated, <lang>.json are the translations), msg.js, the glossaries
+docs/i18n/        a style guide per language with its native-speaker checks, FONTS.md
 tools/            build helpers (GitHub Pages wrapper, Cloudflare deploys, worktree script)
 cloudflare/       the cloud save and login Worker (worker.js, schema.sql for D1, wrangler.toml)
-site/             the doodledoggo.app introduction site (home, privacy, the password reset page)
+site/             the doodledoggo.app introduction site (home with the game, dogs, map, guide, about, privacy, reset; 11 languages in site/i18n/)
 dashboard/        a small tooling dashboard
 *.md              design and build contracts for each version (see PIPELINE.md)
 docs/design/      game design documents (proposal, v2, garden and kitchen, v1.3 plan)
@@ -111,7 +121,9 @@ Some folders (`dogs/`, `world/`, `mods/`) also hold earlier art versions and rev
 
 - **v2.11.1 "Costumes & Sizes"**: three new Halloween 2026 costumes in the Pumpkin Patch Pop-up (Pumpkin Patch Suit, Trick-or-Treat Ghost, Little Bat Costume), dogs shown at their real size in three classes (small, medium, big) and a little bigger overall, the German Shepherd's head joined to its body, and roomier text in the Shelter on phones.
 - **v2.12 "Fourteen New Friends"**: fourteen new breeds for 35 in all (Doberman, Cane Corso, Pit Bull, Miniature Pinscher, Labrador Retriever, Alaskan Malamute, Chow Chow, Standard Poodle, Miniature Schnauzer, West Highland White Terrier, Yorkshire Terrier, Bichon Frise, Maltese, Shih Tzu) with real coats, 371 new mix names, care notes and voices, the old poodle shown as the Miniature Poodle, and all 35 dogs on the introduction site.
-- **v2.13 "Faces & Feelings"** (current): fourteen face expressions for all 35 breeds (Sleepy, Surprised, Curious, Heart eyes, Proud, Guilty, Achoo, Blep, Zoomies, Pout, Dreamy, Wow, Wink, Yum) that the dogs show in play by their personality, a face picker in photo mode, and heads that stay on their bodies in every pose.
+- **v2.13 "Faces & Feelings"**: fourteen face expressions for all 35 breeds (Sleepy, Surprised, Curious, Heart eyes, Proud, Guilty, Achoo, Blep, Zoomies, Pout, Dreamy, Wow, Wink, Yum) that the dogs show in play by their personality, a face picker in photo mode, and heads that stay on their bodies in every pose.
+
+- **v2.14 "Hello in Every Language"** (current): the game and doodledoggo.app in 11 languages with a language picker and handwritten fonts for Japanese, Chinese, Korean and Thai, a fit pass so every language fits every screen at every size, a faster first load (only your own language downloads), and site v3 with the game on its home page.
 
 Full details: [CHANGELOG.md](CHANGELOG.md). Open issues: [TODO.md](TODO.md).
 
