@@ -313,7 +313,7 @@ const CSS = `
 .pw-pt .pw-trow b{font-size:23px}
 .pw-trow b{padding-right:.14em}
 .pw-pt .pw-tic.pw-neg{font-size:26px!important;line-height:42px!important}
-.pw-pt .pw-card.pw-tut{height:min(96%,780px);display:flex;flex-direction:column;overflow-y:auto}
+.pw-pt .pw-card.pw-tut{height:auto;max-height:96%;display:flex;flex-direction:column;overflow-y:auto}
 .pw-pt .pw-card.pw-tut .pw-tfoot{margin-top:auto}
 .pw-pt .pw-obsgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .pw-pt .pw-obsc{flex-wrap:nowrap;justify-content:flex-start;text-align:left;font-size:15px;padding:3px 6px;gap:4px;min-height:0}
@@ -388,8 +388,7 @@ const CSS = `
 .pw-big{min-width:150px;height:74px;justify-content:center;flex-direction:column;font-family:'Caveat',cursive;font-size:32px;font-weight:700;gap:0}
 .pw-big .pw-k{font-family:'Patrick Hand',sans-serif;font-size:14px;font-weight:400;white-space:normal;text-align:center;line-height:1.1;max-width:100%;overflow-wrap:anywhere}
 .pw-big{text-align:center;line-height:1.05;padding:4px 6px}
-html:not(:lang(en)) .pw-pt .pw-big{font-size:clamp(24px,7.4vw,34px)}
-html:lang(th) .pw-big,html:lang(th) .pw-big .pw-k{line-height:1.25}
+:is(html:not(:lang(en)),html:lang(en-XA)) .pw-pt .pw-big{font-size:clamp(24px,7.4vw,34px)}
 .pw-jump{background:#CBE0F4}
 .pw-duck{background:#E0D5F0}
 .pw-dig{background:#FFE3A1;position:relative;margin-bottom:52px}

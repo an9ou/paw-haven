@@ -351,7 +351,6 @@
     '.pg-titles{flex:1;min-width:0;line-height:1}',
     '.pg-title{font-family:"Caveat",cursive;font-weight:700;font-size:33px;white-space:nowrap}',
     '.pg-hint{font-size:18px;color:#8A7468;margin-top:1px;line-height:1.1;overflow-wrap:anywhere}', /* v2.14: the hint wraps and the header grows (--pg-hudb moves the chips and the card down with it) */
-    'html:lang(th) .pg-title{line-height:1.3}html:lang(th) .pg-hint{line-height:1.3}',
     '.pg-tool,.pg-btn{font-family:"Caveat",cursive;font-weight:700;color:' + INK + ';border:2.5px solid ' + INK + ';border-radius:14px 9px 15px 8px/9px 14px 8px 13px;cursor:pointer;box-shadow:2px 3px 0 rgba(91,61,50,.25);white-space:nowrap;line-height:1.1;transition:transform .1s}',
     '.pg-tool{display:flex;align-items:center;gap:6px;height:48px;padding:0 13px 2px 7px;font-size:25px;background:#FFF4DF}',
     '.pg-tool i{display:block;width:36px;height:36px;flex:none}',
@@ -367,7 +366,7 @@
     /* chips (left column) */
     '.pg-chips{position:absolute;left:14px;top:max(86px,calc(var(--pg-hudb,0px) + 12px));display:flex;flex-direction:column;align-items:flex-start;gap:7px;pointer-events:none}',
     '.pg-chip{display:flex;align-items:center;gap:6px;padding:2px 11px 3px 5px;font-size:17px;line-height:1.1;' + PANEL + ';max-width:330px}',
-    'html:not(:lang(en)) .pg-root:not(.pg-portrait) .pg-chip{max-width:252px}', /* v2.14: a long chip wraps instead of running over the first plot */
+    ':is(html:not(:lang(en)),html:lang(en-XA)) .pg-root:not(.pg-portrait) .pg-chip{max-width:252px}', /* v2.14: a long chip wraps instead of running over the first plot */
     '.pg-chip i{display:block;width:30px;height:30px;flex:none}',
     '.pg-chip b{font-family:"Caveat",cursive;font-size:22px;font-weight:700;margin-right:3px;flex:none;white-space:nowrap}',
     '.pg-chip.pg-buddy{background:#FDF0F3}',
@@ -425,6 +424,9 @@
     '.pg-portrait{overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch}',
     '.pg-portrait .pg-stage,.pg-portrait .pg-scene,.pg-portrait .pg-fx,.pg-portrait .pg-anim,.pg-portrait .pg-ui{width:420px;height:1000px}',
     '.pg-portrait .pg-scene>svg{width:420px;height:1000px}',
+    /* v2.14 review: a header that wraps to more rows (th, ja at 360 px) pushes the garden down by --pg-dy (hudFit) instead of covering the first plots */
+    '.pg-portrait .pg-stage,.pg-portrait .pg-ui{height:calc(1000px + var(--pg-dy,0px))}',
+    '.pg-portrait .pg-scene,.pg-portrait .pg-plots,.pg-portrait .pg-fx,.pg-portrait .pg-anim{transform:translateY(var(--pg-dy,0px))}',
     '.pg-portrait .pg-plots::before{content:"";position:absolute;left:8px;top:140px;width:404px;height:312px;background:rgba(150,108,76,.93);border:3px solid ' + INK + ';border-radius:18px 12px 20px 14px}',
     '.pg-portrait .pg-art,.pg-portrait .pg-soil,.pg-portrait .pg-crop{height:100px}',
     '.pg-portrait .pg-hud{left:6px;right:6px;top:calc(8px + var(--pg-sy,0px));z-index:7;height:auto;flex-wrap:wrap;gap:6px 4px;padding:6px 6px 8px}',
@@ -441,14 +443,14 @@
     '.pg-portrait .pg-pouch .pg-x{width:52px;height:52px;min-width:52px;min-height:52px}',
     '.pg-portrait .pg-tool i{width:24px;height:24px}',
     '.pg-portrait .pg-btn{min-height:54px}',
-    '.pg-portrait .pg-chips{left:128px;right:8px;top:700px;flex-direction:column;flex-wrap:nowrap;gap:5px}',
+    '.pg-portrait .pg-chips{left:128px;right:8px;top:calc(700px + var(--pg-dy,0px));flex-direction:column;flex-wrap:nowrap;gap:5px}',
     '.pg-portrait .pg-chip{font-size:17px;max-width:280px}',
-    '.pg-portrait .pg-info{left:8px;right:8px;top:464px;width:auto}',
-    '.pg-portrait .pg-dogw{left:4px;top:700px;width:118px;height:98px}',
+    '.pg-portrait .pg-info{left:8px;right:8px;top:calc(464px + var(--pg-dy,0px));width:auto}',
+    '.pg-portrait .pg-dogw{left:4px;top:calc(700px + var(--pg-dy,0px));width:118px;height:98px}',
     '.pg-portrait .pg-bubble{left:124px;bottom:auto;top:0;max-width:270px}',
     '.pg-portrait .pg-drops{left:36px;right:auto;top:2px;bottom:auto;transform:none}',
     '.pg-portrait .pg-tag{top:56px;left:50%;transform:translateX(-50%) rotate(-2deg)}',
-    '.pg-portrait .pg-pouch{left:8px;right:8px;top:calc(184px + var(--pg-sy,0px));width:auto;max-height:calc(var(--pg-vh,700px) - 196px);overflow-y:auto}',
+    '.pg-portrait .pg-pouch{left:8px;right:8px;top:calc(max(184px,var(--pg-hudb,0px) + 10px) + var(--pg-sy,0px));width:auto;max-height:calc(var(--pg-vh,700px) - max(196px,var(--pg-hudb,0px) + 22px));overflow-y:auto}',
     '.pg-portrait .pg-pk{width:118px;font-size:17px}',
     '.pg-portrait .pg-card{min-width:0;width:380px;top:calc(var(--pg-vh,700px) / 2 + var(--pg-sy,0px))}'
   ].join('\n');
@@ -626,7 +628,7 @@
     o = o || {};
     var closed = false, timers = [], cleanups = [];
     var ctl = { close: close, update: update };
-    var root = null;
+    var root = null, DY = 0; // DY: phone, stage px the scene and plots move down so they clear a tall header (hudFit)
     try { injectCSS(); } catch (e) { /* ignore */ }
     var st = norm(clone(o.state) || newState());
     var env = { season: o.season || 'summer', time: o.time || 'day', weather: WEATHERS[o.weather] ? o.weather : 'sunny', month: (o.month >= 1 && o.month <= 12) ? o.month : (new Date().getMonth() + 1) };
@@ -695,7 +697,7 @@
       var pin = function () { if (closed || !PORT) return; var s2 = (el.clientWidth || SW) / SW; root.style.setProperty('--pg-sy', (root.scrollTop / s2).toFixed(1) + 'px'); root.style.setProperty('--pg-vh', ((el.clientHeight || 700) / s2).toFixed(1) + 'px'); };
       if (PORT) { root.addEventListener('scroll', pin, { passive: true }); root.addEventListener('scroll', function () { if (bubbleOn) bubFit(); }, { passive: true }); pin(); }
       fit();
-      try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (!closed) hudFit(); }); } catch (e) { /* ignore */ }
+      try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (!closed) { DY = -1; hudFit(); } }); } catch (e) { /* ignore */ }
       if (typeof ResizeObserver === 'function') { var ro = new ResizeObserver(fit); ro.observe(el); cleanups.push(function () { ro.disconnect(); }); }
       else { window.addEventListener('resize', fit); cleanups.push(function () { window.removeEventListener('resize', fit); }); }
 
@@ -770,7 +772,16 @@
       var bot = dw.getBoundingClientRect().top + (b.offsetTop + b.offsetHeight) * s; // layout numbers: the bubble's pop transform is not counted
       if (bot > vb) b.style.top = Math.round(b.offsetTop - (bot - vb) / s) + 'px';
     }
-    function hudFit() { if (PORT || closed) return; var hd = q('.pg-hud'); if (hd) root.style.setProperty('--pg-hudb', (hd.offsetTop + hd.offsetHeight) + 'px'); } // v2.14: desktop, the chips and the card start under a header that grew
+    // v2.14: the chips and the card start under a header that grew (desktop). Phone: the pinned header wraps to more rows in some languages, so the
+    // scene, plots, card, chips and dog move down by --pg-dy (stage px) until the first plots clear it; the stage grows with it (only grows while the
+    // garden is open, so the plots don't jump as hints change)
+    function hudFit() {
+      if (closed) return; var hd = q('.pg-hud'); if (!hd) return;
+      if (!PORT) { root.style.setProperty('--pg-hudb', (hd.offsetTop + hd.offsetHeight) + 'px'); return; }
+      var hb = 8 + hd.offsetHeight; root.style.setProperty('--pg-hudb', hb + 'px');
+      var dy = Math.max(0, Math.ceil(hb + 6 - ZONES_P[0].y));
+      if (dy > DY) { DY = dy; root.style.setProperty('--pg-dy', DY + 'px'); pLayout(); }
+    }
     function hint(t) { var h = q('.pg-hint'); if (h) { h.textContent = t; hudFit(); } }
     function float(x, y, text, cls) {
       var f = document.createElement('div'); f.className = 'pg-float' + (cls ? ' ' + cls : ''); f.textContent = text; f.style.left = x + 'px'; f.style.top = y + 'px';
@@ -1089,7 +1100,7 @@
     function basketPos() {
       try {
         var b = q('[data-t="basket"]').getBoundingClientRect(), s = stageEl.getBoundingClientRect(), k = s.width / SW || 1;
-        return { x: (b.left - s.left + b.width / 2) / k, y: (b.top - s.top + b.height / 2) / k };
+        return { x: (b.left - s.left + b.width / 2) / k, y: (b.top - s.top + b.height / 2) / k - (PORT ? DY : 0) }; // the anim layer sits --pg-dy lower on phones
       } catch (e) { return { x: 900, y: 40 }; }
     }
     function petDog() {

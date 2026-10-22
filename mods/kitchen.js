@@ -400,7 +400,6 @@
     '.pk-top .pk-ico{width:46px;height:46px;flex:none;transform:rotate(-6deg)}.pk-ico svg{width:100%;height:100%;display:block}',
     '.pk-title{font-family:"Caveat",cursive;font-weight:700;font-size:34px;line-height:1;white-space:nowrap}',
     '.pk-sub{flex:1;min-width:0;font-size:18px;color:#8A7468;white-space:normal;line-height:1.1;overflow-wrap:anywhere}', /* v2.14: the hint wraps, the bar grows */
-    'html:lang(th) .pk-sub,html:lang(th) .pk-msg{line-height:1.3}',
     '.pk-chip{display:flex;align-items:center;gap:6px;font-family:"Caveat",cursive;font-weight:700;font-size:24px;padding:0 12px 2px 6px;height:40px;background:#DDEFFC;border:2px solid #5B3D32;border-radius:12px 9px 13px 8px;white-space:nowrap}',
     '.pk-chip.pk-full{background:#F9D0D9}.pk-chip svg{width:30px;height:30px}',
     '.pk-btn{font-family:"Caveat",cursive;font-weight:700;font-size:25px;color:#5B3D32;background:#FFFBF3;border:2.5px solid #5B3D32;border-radius:14px 9px 15px 8px/9px 14px 8px 13px;padding:0 16px 3px;cursor:pointer;box-shadow:2px 3px 0 rgba(91,61,50,.22);line-height:1.2;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}',
@@ -456,7 +455,8 @@
     '.pk-book{width:960px;height:540px;margin-top:40px;overflow-y:auto;overscroll-behavior:contain}',
     /* v2.5: the book's close X stays in the top-right corner while the recipes scroll under it (it takes no room in the flow); the header leaves it space */
     '.pk-xfix{position:sticky;top:0;z-index:5;display:flex;margin:0 -4px -46px auto}.pk-book .pk-mh{padding-right:58px;min-height:46px}.pk-book .pk-mh .pk-ico{width:56px;height:56px;flex:none}',
-    '.pk-book .pk-title{white-space:normal;min-width:0;overflow-wrap:anywhere;line-height:1.05}html:lang(th) .pk-book .pk-title{line-height:1.3}', /* v2.14 fit: the title wraps and keeps clear of the X (the header reserves its width) */
+    '.pk-book .pk-title{white-space:normal;min-width:0;overflow-wrap:anywhere;line-height:1.05}', /* v2.14 fit: the title wraps and keeps clear of the X (the header reserves its width) */
+    '.pk-bcnt{white-space:nowrap;display:inline-block}', /* v2.14 review: "3 of 6 found" stays on one line */
     '.pk-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 16px}',
     '.pk-card{position:relative;min-height:222px;padding:16px 18px 10px 30px;box-sizing:border-box;display:flex;flex-direction:column}', /* v2.14: a card grows with its text, the buttons sit at its foot */
     '.pk-card>.pk-cardbg{position:absolute;inset:0;z-index:0;pointer-events:none}.pk-cardbg svg{width:100%;height:100%;display:block}',
@@ -464,16 +464,16 @@
     '.pk-cn{font-family:"Caveat",cursive;font-weight:700;font-size:26px;line-height:1;display:flex;align-items:center;gap:6px}',
     '.pk-cn .pk-stars{margin-left:auto;flex:none}',
     '.pk-cn{flex-wrap:wrap;min-width:0;overflow-wrap:anywhere}', /* v2.14 fit: a long recipe name wraps (stars drop to the next line), its accents are not cut */
-    'html:not(:lang(en)) .pk-cn{line-height:1.12}html:lang(th) .pk-cn{line-height:1.3}',
+    ':is(html:not(:lang(en)),html:lang(en-XA)) .pk-cn{line-height:1.12}',
     '.pk-ings{display:flex;gap:4px;margin:6px 0 2px;flex-wrap:wrap}',
     '.pk-ing{position:relative;width:40px;text-align:center;font-size:11px;line-height:1}',
-    'html:not(:lang(en)) .pk-ing{width:58px;overflow-wrap:anywhere;line-height:1.05}',
+    ':is(html:not(:lang(en)),html:lang(en-XA)) .pk-ing{width:auto;min-width:58px;max-width:96px;overflow-wrap:break-word;hyphens:auto;line-height:1.05}', /* v2.14 review: the label grows to its longest word instead of breaking mid-word */
+    'html:is(:lang(ja),:lang(zh)) .pk-ing{max-width:112px}html:is(:lang(ja),:lang(zh)) .pk-ing,html:lang(ja) .pk-unk .pk-h{word-break:keep-all;word-break:auto-phrase;overflow-wrap:anywhere}', /* CJK breaks at phrases (keep-all where auto-phrase is missing, anywhere as the last resort) */
     '.pk-ing .pk-art{width:36px;height:36px;margin:0 auto}',
     '.pk-ing.pk-miss .pk-art{filter:grayscale(1) opacity(.45)}',
     '.pk-where{font-size:14px;color:#B4545C;line-height:1.1;min-height:16px}',
     '.pk-steps{font-size:15px;color:#8A7468;line-height:1.1}',
     '.pk-eff{font-size:15px;line-height:1.1;margin-top:2px;min-height:34px}',
-    'html:lang(th) .pk-eff,html:lang(th) .pk-steps,html:lang(th) .pk-where{line-height:1.3}',
     '.pk-cbtns{margin:auto -4px 0 0;padding-top:6px;display:flex;flex-wrap:wrap;gap:6px}',
     '.pk-cbtns .pk-btn{font-size:20px;padding:0 10px 2px}',
     '.pk-card.pk-unk .pk-cardbg{filter:grayscale(1) opacity(.55)}',
@@ -905,7 +905,7 @@
       btn(art('icon', 'close') || '&times;', 'pk-x pk-xfix', bookEl, function () { closeOverlay(); root.focus(); }).setAttribute('aria-label', L('mod.kitchen.book_close', 'Close the recipe book'));
       var mh = div('pk-mh', bookEl);
       div('pk-ico', mh, art('icon', 'recipe') || '');
-      div('pk-title', mh, esc(L('mod.kitchen.book_title', 'Recipe book')) + ' <span style="font-size:20px;color:#8A7468;font-family:Patrick Hand">' + esc(L('mod.kitchen.book_found', '{n} of 6 found', { n: S.known.filter(function (k) { return k !== 'mystery-mush'; }).length })) + '</span>');
+      div('pk-title', mh, esc(L('mod.kitchen.book_title', 'Recipe book')) + ' <span class="pk-bcnt" style="font-size:20px;color:#8A7468;font-family:Patrick Hand">' + esc(L('mod.kitchen.book_found', '{n} of 6 found', { n: S.known.filter(function (k) { return k !== 'mystery-mush'; }).length })) + '</span>');
       var grid = div('pk-cards', bookEl), full = S.fridge.count >= S.fridge.max;
       RECIPES.forEach(function (r) {
         if (r.id === 'mystery-mush') return;
