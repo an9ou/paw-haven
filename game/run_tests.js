@@ -8,6 +8,7 @@
 //           --retries N  automatic retries of a failing suite (default 1; a suite that fails then passes is reported FLAKY)
 //           --strict   treat FLAKY as a failure (exit 1)
 //           --no-build skip build + harness (use the existing game/test_merged.html)
+//           --minified  minify the harness's scripts and styles (tools/minify.js, as the itch.io, Pages, /play/ and artifact copies are) before the suites
 //           --shots    write screenshots to game/shots_<suite>/ (off by default, they cost time)
 //           --list     print the suites and exit
 // Logs: game/test_logs/<suite>.log (+ <suite>.retryN.log), summary in game/test_logs/last_run.txt, timings in timings.json.
@@ -152,12 +153,13 @@ for (let i = 0; i < argv.length; i++) {
   else if (a === '--timeout') opt.timeout = parseInt(argv[++i], 10) || 420;
   else if (a === '--strict') opt.strict = true;
   else if (a === '--no-build') opt.build = false;
+  else if (a === '--minified') opt.minified = true;
   else if (a === '--shots') opt.shots = true;
   else if (a === '--list') { Object.entries(SUITES).forEach(([k, v]) => console.log(k.padEnd(8), v.group.padEnd(6), v.file)); process.exit(0); }
   else if (a === '-h' || a === '--help') { console.log(fs.readFileSync(__filename, 'utf8').split('\n').slice(1, 14).map((l) => l.replace(/^\/\/ ?/, '')).join('\n')); process.exit(0); }
   else names.push(a);
 }
-if (!names.length) { console.error('usage: node game/run_tests.js smoke | all | <suite names...> [--jobs N] [--retries N] [--strict] [--no-build] [--shots] [--list]'); process.exit(2); }
+if (!names.length) { console.error('usage: node game/run_tests.js smoke | all | <suite names...> [--jobs N] [--retries N] [--strict] [--no-build] [--minified] [--shots] [--list]'); process.exit(2); }
 let list = [];
 for (const n of names) {
   if (n === 'all') list.push(...Object.keys(SUITES).filter((k) => SUITES[k].group === 'all'));
@@ -185,7 +187,12 @@ function sh(cmd, args, label) {
 if (opt.build) {
   const s = Date.now(); const a = sh('node', ['game/build.js'], 'build'), b = sh('node', ['game/harness.js', 'merged'], 'harness merged');
   console.log(`build: ${a} | harness merged: ${b} (${sec(Date.now() - s)})`);
-} else if (!fs.existsSync(path.join(D, 'test_merged.html'))) { console.error('game/test_merged.html is missing: run without --no-build'); process.exit(1); }
+  if (opt.minified) { // v2.14 PERF: the same per-block esbuild pass as the shipped copies; a missing esbuild is a failure here, not a warning
+    const h = path.join(D, 'test_merged.html'), r = require('../tools/minify.js').minifyHtml(fs.readFileSync(h, 'utf8'));
+    if (r.skipped) { console.error('--minified: esbuild not found (npm i -g esbuild@0.24.0)'); process.exit(1); }
+    fs.writeFileSync(h, r.html); console.log(`minified game/test_merged.html: ${(r.before / 1e6).toFixed(2)} -> ${(r.after / 1e6).toFixed(2)} MB (${r.blocks} blocks)`);
+  }
+} else if (opt.minified) { console.error('--minified needs the build (drop --no-build)'); process.exit(2); } else if (!fs.existsSync(path.join(D, 'test_merged.html'))) { console.error('game/test_merged.html is missing: run without --no-build'); process.exit(1); }
 
 // longest suite first (timings from the previous run) so the parallel schedule finishes together
 let hist = {}; try { hist = JSON.parse(fs.readFileSync(path.join(LOGS, 'timings.json'), 'utf8')); } catch (e) { hist = {}; }

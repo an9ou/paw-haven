@@ -179,12 +179,31 @@ async function phLoad(url) {
   return im;
 }
 
+// v2.14 PERF (PERF.md): the split builds (tools/split.js) ship the postcard fonts as their own file, PH_FONT_FILE, loaded on the first photo;
+// phFontsSet fills PH_FONT_CSS. The single-file builds and the test harness have them inline (no PH_FONT_FILE): null, nothing to wait for.
+// Offline, the postcard is drawn with the fallback fonts after at most 6 s, and the next photo tries again.
+let phFontsP = null;
+function phFonts() {
+  if (typeof PH_FONT_FILE !== 'string' || PH_FONT_CSS) return null;
+  if (!phFontsP) {
+    const load = new Promise((res) => {
+      const s = document.createElement('script'); s.src = PH_FONT_FILE; s.async = true;
+      s.onload = () => { if (typeof window.PAW_PH_FONTS === 'string') phFontsSet(window.PAW_PH_FONTS); res(); };
+      s.onerror = () => { if (s.parentNode) s.parentNode.removeChild(s); res(); };
+      document.head.appendChild(s);
+    });
+    phFontsP = Promise.race([load, new Promise((r) => setTimeout(r, 6000))]).then(() => { phFontsP = null; });
+  }
+  return phFontsP;
+}
+
 /* ---------- the photo screen ---------- */
 function phOpts() { return { sq: !!prefs.phSq, color: phColorNow().k, caption: phCapNow().t }; }
 function phDraw(delay) {
   clearTimeout(PH.timer);
   const run = async () => {
     if (!PH.on || !PH.cap) return; const tok = ++PH.tok; PH.blob = null; PH.blobTok = -1;
+    const fw = phFonts(); if (fw) { await fw; if (tok !== PH.tok || !PH.on) return; } // split builds: the postcard fonts come with the first photo
     const o = phOpts(), r = phCompose(PH.cap, o); PH.svg = r.svg; PH.size = r.size; PH.names = r.names; PH.vb = r.vb;
     const url = phDataURL(r.svg), pic = $('.ph-pic'), root = $('#phMode'); if (root) root.classList.add('ph-busy');
     let im; try { im = await phLoad(url); } catch (e) { if (root) root.classList.remove('ph-busy'); toast(tt('photo.jammed', 'The camera jammed. Try again.')); return; }

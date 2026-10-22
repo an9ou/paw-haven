@@ -21,6 +21,23 @@ function i18nWanted() {
   if (sv) return sv.lang || i18nDevice();
   return i18nReal(prefs.langPick) ? prefs.langPick : i18nDevice();
 }
+// v2.14 PERF (PERF.md): in the split builds every language but English is its own file (game/i18n/loader.js: PAW_I18N.has / load). The game
+// script starts once the wanted language's file came, so this is true at load; when the file failed, the game plays in English (i18nTarget)
+// and i18nLater keeps trying: the title screen switches as soon as it comes, in the game it is there on the next load. The single-file
+// builds and the test harness carry every language inline: always true.
+function i18nHave(code) { const P = window.PAW_I18N; return !(P && P.has) || I18N_PSEUDO.includes(code) || P.has(code); }
+function i18nTarget() { const w = i18nWanted(); return i18nHave(w) ? w : 'en'; }
+let i18nLaterOn = false;
+function i18nLater(code) {
+  if (i18nLaterOn) return; i18nLaterOn = true;
+  const P = window.PAW_I18N; let n = 0;
+  const again = () => P.load(code).then(() => {
+    i18nLaterOn = false;
+    if (cur.mode === 'title' && i18nTarget() === code && I18N.lang !== code) { i18nApply(code); enterTitle(); }
+  }, () => { if (++n < 6) setTimeout(again, 15000 * n); else i18nLaterOn = false; });
+  window.addEventListener('online', () => { n = 0; if (!i18nLaterOn) i18nLater(code); }, { once: true }); // back online: six fresh tries
+  setTimeout(again, 3000);
+}
 // build the map for one language (and the known-key set the tests read)
 function i18nUse(code) {
   const P = window.PAW_I18N || null;
@@ -148,7 +165,11 @@ function tsetLang(code, o) {
   o = o || {};
   if (code != null && !i18nReal(code) && !(o.pseudo && I18N_PSEUDO.includes(code))) return false;
   if (tlangBusy()) { toast(tlangBusyText()); return false; }
-  const pseudo = I18N_PSEUDO.includes(code);
+  const pseudo = I18N_PSEUDO.includes(code), need = code == null ? i18nDevice() : code;
+  if (!pseudo && !i18nHave(need)) { // split builds: fetch the language's file first, then switch (nothing changes when it fails)
+    window.PAW_I18N.load(need).then(() => tsetLang(code, o), () => toast(tt('cloud.err_generic', "That didn't work. Try again in a moment.")));
+    return true;
+  }
   if (S && !pseudo) { S.lang = code; markDirty(); }
   else if (!S && !pseudo) prefs.langPick = code;
   if (pseudo || 'lang' in prefs) prefs.lang = code; // a pin (the harness, the dev panel) follows the pick, so a reload keeps it
@@ -166,10 +187,14 @@ function i18nApply(code) {
   try { buildHUD(); barLabels(); if (S) updateHUD(); } catch (e) { /* before the HUD exists */ }
 }
 // the language a cloud save brought (22b_cloud.js applies saves): when it differs from the one on screen, reload into it
-function tlangCheck() { const w = i18nWanted(); if (w === I18N.lang) return false; if (!S || cur.mode === 'title') { i18nApply(w); if (cur.mode === 'title') enterTitle(); return true; } i18nReload(); return true; }
+function tlangCheck() {
+  const w = i18nWanted();
+  if (!i18nHave(w)) { window.PAW_I18N.load(w).then(() => tlangCheck(), () => i18nLater(w)); return false; } // split builds: its file first
+  if (w === I18N.lang) return false; if (!S || cur.mode === 'title') { i18nApply(w); if (cur.mode === 'title') enterTitle(); return true; } i18nReload(); return true; }
 // the test hook, inside window.__paw (23_boot.js): { lang, misses, unknown, set(code) } (set accepts the pseudo-locales too)
 const I18N_HOOK = { get lang() { return I18N.lang; }, get misses() { return I18N.misses.slice(); }, get unknown() { return I18N.unknown.slice(); }, get codes() { return I18N_CODES.slice(); },
   set: (code) => tsetLang(code, { pseudo: true }), clear: () => { I18N.misses.length = 0; I18N.unknown.length = 0; I18N.seen.clear(); }, fontCSS: () => tfontCSS(), wanted: () => i18nWanted() };
 
-i18nUse(i18nWanted()); i18nFonts(I18N.lang);
+i18nUse(i18nTarget()); i18nFonts(I18N.lang);
+if (I18N.lang !== i18nWanted()) i18nLater(i18nWanted());
 window.PawI18n = { tt, tdata, tbreed, tnum, tdate, tlist, tlang };

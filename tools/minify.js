@@ -3,6 +3,7 @@
 // Used by tools/itch.js (the itch.io upload and the doodledoggo.app /play/ copy) and tools/artifact.js. The tests run on the unminified
 // build; `node game/run_tests.js ... --minified` runs them on a minified harness. Nothing is renamed across scripts: each script is minified
 // on its own, so the shared globals (PawArt, PawGenes ..., window.__paw) keep their names, and the game's own IIFE keeps its scope.
+// Keeps UTF-8 text as it is (charset utf8: esbuild would write every non-ASCII letter as \uXXXX, which grows the CJK and Thai text).
 // Drops `debugger` and console.log / console.debug / console.info (console.warn and console.error stay: they report real problems).
 // esbuild comes from NODE_PATH, the repo or tools/node_modules; without it the file is left as it is, with a warning (never a broken build).
 const fs = require('fs'), path = require('path');
@@ -20,16 +21,21 @@ function minifyHtml(html) {
   const out = html.replace(/(<script\b[^>]*>)([\s\S]*?)(<\/script>)|(<style\b[^>]*>)([\s\S]*?)(<\/style>)/gi, (m, so, sb, sc, co, cb, cc) => {
     if (so) {
       if (!sb.trim() || /\btype="(?:application\/(?:ld\+)?json|text\/template)"/i.test(so)) return m;
-      const r = es.transformSync(sb, { loader: 'js', minify: true, target: 'es2019', legalComments: 'none', drop: ['debugger'], pure: ['console.log', 'console.debug', 'console.info'] });
+      const r = es.transformSync(sb, { loader: 'js', minify: true, target: 'es2019', legalComments: 'none', charset: 'utf8', drop: ['debugger'], pure: ['console.log', 'console.debug', 'console.info'] });
       n++; return so + r.code.replace(/<\/script/gi, '<\\/script') + sc;
     }
     if (!cb.trim()) return m;
-    const r = es.transformSync(cb, { loader: 'css', minify: true, legalComments: 'none' });
+    const r = es.transformSync(cb, { loader: 'css', minify: true, legalComments: 'none', charset: 'utf8' });
     n++; return co + r.code + cc;
   });
   return { html: out, before, after: out.length, blocks: n };
 }
-module.exports = { minifyHtml };
+// one script's text (a separate .js file of the claude.ai artifact); returns null when esbuild is missing
+function minifyJs(code) {
+  const es = loadEsbuild(); if (!es) return null;
+  return es.transformSync(code, { loader: 'js', minify: true, target: 'es2019', legalComments: 'none', charset: 'utf8', drop: ['debugger'], pure: ['console.log', 'console.debug', 'console.info'] }).code;
+}
+module.exports = { minifyHtml, minifyJs, available: () => !!loadEsbuild() };
 if (require.main === module) {
   const f = process.argv[2]; if (!f) { console.error('usage: node tools/minify.js <file.html>'); process.exit(1); }
   const r = minifyHtml(fs.readFileSync(f, 'utf8'));
