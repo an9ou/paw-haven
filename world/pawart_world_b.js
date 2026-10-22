@@ -2800,9 +2800,9 @@ PROPS.sniffer=function(b){
 
 /* ===================================== v2.4 "Shop Day" art ===================================== */
 /* 6 houses, 32 items (12 clothes, 6 toys, 8 foods, 6 house cards), props missioncard / stampcard / gerald, icons missions / guide / stamp.
-   missioncard 200x260  o.items [{text (escaped by the caller), done, p, n}] (3 rows), o.stamps 0..7, o.day. The card is the same drawing for every
+   missioncard 200x260  o.items [{text (escaped by the caller), done, p, n}] (3 rows), o.stamps 0..7, o.day, v2.14 o.title (the translated heading, escaped here; none = "Missions"). The card is the same drawing for every
                         option set (fixed seed); only the row text, ticks, badge and stamp dots change. Cached per option set.
-   stampcard 240x140    o.stamps 0..7 stamped in pink crayon (spot 7 is the surprise). Cached per value.
+   stampcard 240x140    o.stamps 0..7 stamped in pink crayon (spot 7 is the surprise), v2.14 o.title (none = "Stamp card"). Cached per value.
    gerald 160x160       o.pose point | wave | sit | cheer. A crayon duck in the dog style (three boiling redraws like the dogs, paused by
                         [data-motion="off"]). Feet on y=150.
    Lighthouse Kennel: the lamp glow sits in <g class="pa-wb-glow"> (static, no filter) so the yard can dim it by day if it wants. */
@@ -3354,6 +3354,10 @@ const mcRows=[116,158,200];
 // word wrap by visible characters (an escaped entity counts as one); Caveat bold is about 5.7 units a character at 16
 function wrapTxt(s,max,n){const w=String(s).split(' '),L=[''];w.forEach(x=>{const c=L[L.length-1];if(c&&txLen(c+' '+x)>max)L.push(x);else L[L.length-1]=c?c+' '+x:x});return L.slice(0,n)}
 const txLen=s=>String(s).replace(/&[a-z#0-9]+;/gi,'x').length;
+// v2.14: an optional translated title (o.title, already escaped by the caller). The width is estimated per character (wide CJK / Kana / Hangul / full-width
+// forms about 1 em, Thai and Latin about .46 em, Caveat bold) and the font shrinks (down to 12) until the title fits the paper; no title = the old drawing.
+const wideRE=/[\u1100-\u11FF\u2E80-\u9FFF\uAC00-\uD7AF\uF900-\uFAFF\uFF00-\uFFEF]/;
+function titleFit(str,size,max){const t=String(str).replace(/&[a-z#0-9]+;/gi,'x');let em=0;for(const c of t)em+=wideRE.test(c)?1:.46;const w=em*size;return w>max?Math.max(12,Math.floor(size*max/w*10)/10):size}
 PROPS.missioncard=function(b,o){
   b.shadow(100,256,86,4);
   b.sh(RR(10,14,180,238,12),C.wood,{hl:0,sh:WKD,inner:b.st('M22 40q30 -4 60 2M130 230q24 -6 50 -2M24 200q10 6 26 4',WKD,1.2,.7)});
@@ -3362,7 +3366,7 @@ PROPS.missioncard=function(b,o){
   b.sh(RR(64,4,72,30,7),C.grey,{hl:0,sh:'#8E8780',lw:1});b.sh(RR(86,10,28,9,4.5),'#8E8780',{hatch:0,hl:0,lw:.8,base:'#8E8780'});
   b.dot(72,26,1.8,'#8E8780');b.dot(128,26,1.8,'#8E8780');
   tapeB(b,164,48,34,30,'#BDE7D2');
-  b.tx(100,66,'Missions',27,{col:'#B8536F'});
+  {const ti=o.title!=null&&o.title!==''?o.title:'Missions';b.tx(100,66,ti,o.title!=null&&o.title!==''?titleFit(ti,27,112):27,{col:'#B8536F'})}
   mcRows.forEach(y=>b.loop(rot(RR(32,y-10,20,20,3),(b.r()-.5)*.12,42,y),{w:2.2}));
   // dynamic part (text, ticks, badge, stamps), drawn last so the card itself never changes
   const items=o.items||[];let done=0;
@@ -3388,7 +3392,7 @@ PROPS.stampcard=function(b,o){
   b.shadow(120,136,108,3);
   b.sh(RR(8,6,224,126,12),C.cream,{hl:0,sh:'#C9A46A',ho:.35});
   b.raw(`<rect x="15" y="13" width="210" height="112" rx="8" fill="none" stroke="${C.pinkD}" stroke-width="1.6" stroke-dasharray="5 4" opacity=".75"/>`);
-  b.tx(120,38,'Stamp card',24,{col:'#B8536F'});
+  {const ti=o.title!=null&&o.title!==''?o.title:'Stamp card';b.tx(120,38,ti,o.title!=null&&o.title!==''?titleFit(ti,24,170):24,{col:'#B8536F'})}
   tapeB(b,22,14,36,-30,'#BDE7D2');tapeB(b,218,14,36,30,'#F7B9C6');
   SC_SPOTS.forEach(([x,y],i)=>{b.raw(`<circle cx="${x}" cy="${y}" r="16" fill="#FFFBF3" stroke="${GRAPH}" stroke-width="1.4" stroke-dasharray="4 3.4"/>`);
     if(i===6&&(o.stamps|0)<7){b.sh(RR(x-8,y-5,16,13,2),'#FFE59A',{hatch:0,hl:0,lw:.7,dr:.2,op:.7});b.sh(RR(x-9.4,y-9,18.8,5,1.6),C.pink,{hatch:0,hl:0,lw:.6,dr:.1,op:.7});b.raw(`<path d="M${x} ${y-9}V${y+8}" stroke="${C.pinkD}" stroke-width="2" opacity=".7"/>`)}
@@ -3930,8 +3934,8 @@ PA.prop=function(name,o){
   let opt,lbl;
   if(name==='missioncard'){
     const it=(o&&Array.isArray(o.items)?o.items:[]).slice(0,3).map(t=>({text:String(t&&t.text!=null?t.text:''),done:!!(t&&t.done),p:Math.max(0,(t&&t.p|0)||0),n:Math.max(0,(t&&t.n|0)||0)}));
-    opt={items:it,stamps:Math.max(0,Math.min(7,(o&&o.stamps|0)||0)),day:esc(o&&o.day!=null?o.day:'')};lbl='Missions card';
-  }else if(name==='stampcard'){opt={stamps:Math.max(0,Math.min(7,(o&&o.stamps|0)||0))};lbl='Stamp card, '+opt.stamps+' of 7'}
+    opt={items:it,stamps:Math.max(0,Math.min(7,(o&&o.stamps|0)||0)),day:esc(o&&o.day!=null?o.day:'')};lbl='Missions card';if(o&&o.title)opt.title=esc(o.title);
+  }else if(name==='stampcard'){opt={stamps:Math.max(0,Math.min(7,(o&&o.stamps|0)||0))};if(o&&o.title)opt.title=esc(o.title);lbl='Stamp card, '+opt.stamps+' of 7'}
   else if(name==='gerald'){opt={pose:o&&GER_POSES.includes(o.pose)?o.pose:'point'};lbl='Gerald the duck'}
   else return _prop24(name,o);
   return serve('p:'+name+':'+JSON.stringify(opt),()=>{const b=mk('prop',name);PROPS[name](b,opt);return b.svg(PROP_VB[name],name==='gerald'?` data-pose="${opt.pose}"`:'',lbl)});

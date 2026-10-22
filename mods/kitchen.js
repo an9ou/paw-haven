@@ -456,12 +456,15 @@
     '.pk-book{width:960px;height:540px;margin-top:40px;overflow-y:auto;overscroll-behavior:contain}',
     /* v2.5: the book's close X stays in the top-right corner while the recipes scroll under it (it takes no room in the flow); the header leaves it space */
     '.pk-xfix{position:sticky;top:0;z-index:5;display:flex;margin:0 -4px -46px auto}.pk-book .pk-mh{padding-right:58px;min-height:46px}.pk-book .pk-mh .pk-ico{width:56px;height:56px;flex:none}',
+    '.pk-book .pk-title{white-space:normal;min-width:0;overflow-wrap:anywhere;line-height:1.05}html:lang(th) .pk-book .pk-title{line-height:1.3}', /* v2.14 fit: the title wraps and keeps clear of the X (the header reserves its width) */
     '.pk-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 16px}',
     '.pk-card{position:relative;min-height:222px;padding:16px 18px 10px 30px;box-sizing:border-box;display:flex;flex-direction:column}', /* v2.14: a card grows with its text, the buttons sit at its foot */
     '.pk-card>.pk-cardbg{position:absolute;inset:0;z-index:0;pointer-events:none}.pk-cardbg svg{width:100%;height:100%;display:block}',
     '.pk-card>*:not(.pk-cardbg){position:relative;z-index:1}',
     '.pk-cn{font-family:"Caveat",cursive;font-weight:700;font-size:26px;line-height:1;display:flex;align-items:center;gap:6px}',
-    '.pk-cn .pk-stars{margin-left:auto}',
+    '.pk-cn .pk-stars{margin-left:auto;flex:none}',
+    '.pk-cn{flex-wrap:wrap;min-width:0;overflow-wrap:anywhere}', /* v2.14 fit: a long recipe name wraps (stars drop to the next line), its accents are not cut */
+    'html:not(:lang(en)) .pk-cn{line-height:1.12}html:lang(th) .pk-cn{line-height:1.3}',
     '.pk-ings{display:flex;gap:4px;margin:6px 0 2px;flex-wrap:wrap}',
     '.pk-ing{position:relative;width:40px;text-align:center;font-size:11px;line-height:1}',
     'html:not(:lang(en)) .pk-ing{width:58px;overflow-wrap:anywhere;line-height:1.05}',
@@ -546,7 +549,9 @@
     '.pk-portrait .pk-dog{left:230px;top:648px;width:180px;height:150px}',
     '.pk-portrait .pk-bub{right:auto;left:10px;top:660px;width:max-content;max-width:250px;font-size:22px;text-wrap:balance;overflow-wrap:break-word}.pk-portrait .pk-bub::after{right:-8px;bottom:auto;top:calc(50% - 8px);transform:rotate(-45deg)}',
     '.pk-portrait .pk-ov{align-items:flex-start}',
-    '.pk-portrait .pk-book{width:404px;height:min(780px,calc(var(--pk-vh,800px) - 20px));margin-top:10px;overflow-y:auto}.pk-portrait .pk-xfix{margin-bottom:-52px}',
+    '.pk-portrait .pk-book{width:404px;height:min(780px,calc(var(--pk-vh,800px) - 7px));margin-top:10px;overflow-y:auto}.pk-portrait .pk-xfix{margin-bottom:-52px}',
+    '.pk-portrait .pk-book{max-height:calc(var(--pk-vh,800px) - 7px)}', /* the phone book is a sheet that runs off the screen bottom (its bottom border is just past the edge), so a card cut at its fold is the scroll fold, not a clip */
+    '.pk-portrait .pk-ov:has(.pk-book){background:#E1D9D0}', /* v2.14 fit: behind the phone book the page is paper, not the half-cut tray and shelf */
     '.pk-portrait:has(.pk-book){overflow-y:hidden}', /* v2.5: while the book is open only the book scrolls, so its X never leaves the screen */
     '.pk-portrait .pk-cards{grid-template-columns:1fr}',
     '.pk-portrait .pk-game{width:404px;height:600px;margin:20px 0 0 0}',

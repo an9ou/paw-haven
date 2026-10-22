@@ -173,7 +173,7 @@ function msRowText(t) {
   return L.map((l) => esc(l).replace(/ /g, ' ') + '​'.repeat(Math.max(0, 10 - l.length))).join(' ');
 }
 function msCardArt() {
-  const list = msToday(), items = list.map((it) => ({ text: msRowText(msText(it)), done: !!it.done, p: it.p || 0, n: it.n })), o = { items, stamps: S.missions.stamps, day: esc(msDayLabel()) };
+  const list = msToday(), items = list.map((it) => ({ text: msRowText(msText(it)), done: !!it.done, p: it.p || 0, n: it.n })), o = { items, stamps: S.missions.stamps, day: esc(msDayLabel()), title: tt('journal.tab_missions', 'Missions') };
   return artReal('prop', 'missioncard', o) || msCardFB(o);
 }
 function msWrap(t, max) { const w = String(t).split(' '), out = ['']; w.forEach((x) => { const l = out[out.length - 1]; if (l && (l + ' ' + x).length > max && out.length < 2) out.push(x); else out[out.length - 1] = l ? l + ' ' + x : x; }); return out; }
@@ -182,7 +182,7 @@ function msCardFB(o) {
   const nd = o.items.filter((x) => x.done).length;
   return `<svg viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg" class="ms-fb"><rect x="8" y="16" width="184" height="236" rx="12" fill="#D9A877" stroke="${INKG}" stroke-width="3"/><path d="M14 30 q2 100 0 210" stroke="#B9875A" stroke-width="2" fill="none" opacity=".6"/><rect x="18" y="32" width="164" height="210" rx="4" fill="#FFFBF3" stroke="${INKG}" stroke-width="2" transform="rotate(-1 100 137)"/><rect x="70" y="6" width="60" height="30" rx="7" fill="#C9CED6" stroke="${INKG}" stroke-width="2.6"/><circle cx="100" cy="16" r="5" fill="#FFFBF3" stroke="${INKG}" stroke-width="2"/><text x="28" y="58" font-family="Caveat,cursive" font-weight="700" font-size="20" fill="${INKG}">${esc(tt('missions.today', 'Today'))}</text><text x="176" y="58" text-anchor="end" font-family="Caveat,cursive" font-size="14" fill="${INKG}">${o.day || ''}</text>${lines}<g transform="translate(160 232) rotate(-8)"><circle r="16" fill="#F9D56E" stroke="${INKG}" stroke-width="2.2"/><text y="6" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="17" fill="${INKG}">${nd}/3</text></g></svg>`;
 }
-function msStampArt() { const s = S.missions.stamps; return artReal('prop', 'stampcard', { stamps: s }) || msStampFB(s); }
+function msStampArt() { const s = S.missions.stamps; return artReal('prop', 'stampcard', { stamps: s, title: tt('missions.stamp_card', 'Stamp card') }) || msStampFB(s); }
 function msStampFB(s) {
   const spots = Array.from({ length: MS_CARD }, (_, i) => { const x = 34 + i * 29, y = 80 + (i % 2 ? 8 : -6); return `<circle cx="${x}" cy="${y}" r="13" fill="none" stroke="#C9B8A6" stroke-width="1.6" stroke-dasharray="3 3"/>${i < s ? doodle('paw', x, y + 1, 0.95, [-12, 8, -4, 14, -8, 5, -14][i]).replace(/#E0D5F0/g, '#F28FA5') : ''}`; }).join('');
   return `<svg viewBox="0 0 240 140" xmlns="http://www.w3.org/2000/svg" class="ms-fb"><rect x="6" y="10" width="228" height="122" rx="12" fill="#FFF3D6" stroke="${INKG}" stroke-width="3" transform="rotate(-1 120 71)"/><rect x="88" y="2" width="64" height="16" fill="rgba(242,143,165,.55)" transform="rotate(4 120 10)"/><text x="120" y="44" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="22" fill="${INKG}">${esc(tt('missions.stamp_card', 'Stamp card'))}</text>${spots}<text x="120" y="122" text-anchor="middle" font-family="Caveat,cursive" font-size="15" fill="${INKG}">${esc(tt('missions.seven_surprise', '7 stamps is a surprise'))}</text></svg>`;
