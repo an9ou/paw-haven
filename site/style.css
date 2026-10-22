@@ -564,3 +564,11 @@ html.gamefs,html.gamefs body{overflow:hidden}
   .gpups{grid-template-columns:1fr;text-align:center}
   .gpups img{width:150px;margin:0 auto}
 }
+/* owner: in full screen the ✕ covered the game's own top-right button (its menu). The ✕ now sits in its own 52 px paper bar above the game,
+   still top right; the game fills the rest of the screen under it. */
+.gameframe:fullscreen,.gameframe:-webkit-full-screen{background:var(--paper)}
+.gameframe:fullscreen iframe,.gameframe:-webkit-full-screen iframe{top:52px;height:calc(100% - 52px)}
+.gameframe.fake{padding-top:calc(52px + env(safe-area-inset-top,0px))}
+.gameframe:fullscreen::before,.gameframe:-webkit-full-screen::before,.gameframe.fake::before{content:"";position:absolute;left:0;right:0;top:0;
+  height:calc(52px + env(safe-area-inset-top,0px));border-bottom:2px dashed rgba(91,61,50,.25);pointer-events:none}
+.gameframe:fullscreen .fsx,.gameframe:-webkit-full-screen .fsx,.gameframe.fake .fsx{top:calc(4px + env(safe-area-inset-top,0px));opacity:1}
