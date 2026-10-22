@@ -15,6 +15,7 @@
     <section class="gamebox" id="game" aria-label="{{a home.game_label}}">
       <div class="gameframe" id="gameframe" data-src="/play/" data-title="{{a home.game_label}}">
         <button class="fsx" id="fsx" type="button" aria-label="{{a home.fullscreen_exit}}">✕</button>
+        <noscript><p class="nojs">{{t home.nojs}} <a href="https://an9ou.itch.io/doodle-doggo">{{t footer.play_itch}}</a></p></noscript>
       </div>
       <div class="gamebar">
         <button class="fsbtn" id="fsbtn" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>{{t home.fullscreen}}</button>
