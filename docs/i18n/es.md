@@ -329,3 +329,33 @@ doodledoggo.app strings: `site/i18n/es.json` (v2.14 phase 1b, all keys done).
 - TODO(native): "en vivo" (Latin America, understood in Spain) and "nevera" (Spain and much of Latin America; Mexico says "refrigerador").
 - Site titles say "Hachiko" without the macron, like the English page: Caveat (the title face) may lack ō. Running text keeps "Hachikō".
 - The privacy page says that the English version counts if the two differ (in `privacy.updated`, the small line under the title).
+
+## Game
+
+game/i18n/es.json (v2.14 phase 2, 7366/7366 keys). Shared choices: Bond = cariño, treat = premio, snack = golosina, Buy = Comprar, Later = Luego, Schnauzer "I have notes" = "Tengo notas.", "in season" = en celo, Pug snort = *resoplido*, "top-knot" = moño, "puddle" = charco, charm = amuleto.
+
+- TODO(native): data.sig.frenchie.n "La rana": the sploot pose (back legs out, belly flat) rendered as the known "posición de rana"; check it reads in both Spain and LatAm.
+- TODO(native): data.dc_breed_words "Bulldog" (Frenchie), "Pit", "Dobi", "Lebrel", "Danés": short dog-card name words; check they feel natural as pup names.
+- TODO(native): wx_lines.shiba.rain "gerencia del cielo" (manager of the sky) and sig.shiba "Despiértame con paté" (faint instead of "bury me").
+- TODO(native): data.toys_lines.* / mod.toys.*: sound words "pi" (squeak), "chiii" none left, "chucu-chucu" (train), "bú-nito" (boo-tiful pun), "trae-mendo" (fetch-tastic pun): check they read as cute.
+- TODO(native): data.jokes.dachs.3 "¿Un perro salchicha? ¿Dónde? Ah. Yo.": uses the LatAm/Spain-wide "perro salchicha" for the hot-dog joke (breed name stays Teckel).
+- TODO(native): data.jokes.akita.2 "La lealtad se sienta junto a la puerta. Esa soy yo. La lealtad de la puerta.": rewritten to avoid a gendered "amigo".
+- TODO(native): data.npc_boys.5/9 "Capitán Gofre", "Sir Pepinillo", data.npc_girls.9 "Lady Esponjosa": localised joke names.
+- TODO(native): data.fav.*.act "traer la pelota" / "comer" as noun phrases in "{act}, {food}, {toy}".
+- TODO(native): tokyo.buy_ticket / tokyo.ticket_*: "billete" (Spain) vs "boleto"/"pasaje" (Latin America); used "billete" and "pase de un día".
+- TODO(native): journal.title_master_breeder: "Maestría de Pelajes" (avoids the banned breeder word and any gender); journal.title_great_granddog: invented "Tataraperro"; journal.title_friend: "Cómplice de Doodle Doggo".
+- TODO(native): garden.pip_*: "Carrito de Pip" (matches the others' "Carrito de Brotes"); mail.nb_carrier: "quien reparte el correo" to avoid a gender; mail.fam_*: "los Patel", "Coach Bell", "Abuelo Joe".
+- TODO(native): garden.fb_*: coat gene lines use "chocolate (hígado)", "diluido (azul o lila)", "manchas blancas" for piebald; check the dog-world words.
+- TODO(native): playdate.ready_for_a_playdate: dropped the leading check mark (the merge refuses it); the code still adds the cross for the not-ready state.
+- TODO(native): yard.flips_upside_down_legs_in: Greyhound "roaching" -> «hacer la cucaracha» (a new Spanish joke).
+- TODO(native): percent written attached (+20%) rather than RAE "20 %".
+- TODO(native): adopt.is_now_your_dog_there_html: "no take-backs" joke rewritten as "Esto es para siempre. {name} lo comprobó." (no returns wording about a dog).
+- TODO(native): core.lu_nothing / shop.bought_3: "No se hacen devoluciones" / "No se admiten devoluciones" (about bond rewards / shop items, not dogs).
+- TODO(native): cards.name_pattern is "{b} {a}" (noun first); the data.dc_words_a adjectives must be invariable (feliz, alegre) or the card names will disagree in gender.
+- TODO(native): town.salon_intro_html "Look fresco y esponjoso" (label for Fresh & Fluffy, gender-neutral); town.salon_done keeps the sex select.
+- TODO(native): "Truco estrella" (Signature trick) in core.unlock_signature, "Estrella" in train.signature; "Presumir" = Show off tab.
+- TODO(native): puppies.send "{name} a su hogar" (button for sending a pup to a family, avoids "enviar"); puppies.stay "Quedarse", puppies.keep "Quedarme con {name}".
+- TODO(native): title.start_over_body_html: the English "moved to a farm" wink is rewritten as "de vacaciones en el campo" so it cannot read as a euphemism for dying.
+- TODO(native): tesD choices: "guisantes" (Spain) vs "arvejas", "batata" vs "camote", "pagaré" (IOU), "Isabela" (coat colour), "corbatín" vs "pajarita", invented food names "Zanahorias Caramelo", "Kinton Perruno", "Calabazar".
+- TODO(native): data.dc_words_a: the cozy/snug/warm adjectives are approximate because every card adjective must be gender-invariable.
+- TODO(native): the dogs say "el Fuji" in their lines, the place is "Mirador del monte Fuji".
