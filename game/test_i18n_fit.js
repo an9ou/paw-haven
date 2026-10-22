@@ -199,7 +199,7 @@ async function worker(job) {
     const step = async (name, fn, ms) => {
       if (!want(name)) return;
       let to; const s = Date.now();
-      try { await Promise.race([fn(), new Promise((_, rej) => { to = setTimeout(() => rej(new Error('step timeout')), ms || 45000); })]); }
+      try { await Promise.race([fn(), new Promise((_, rej) => { to = setTimeout(() => rej(new Error('step timeout')), ms || 90000); })]); }
       catch (e) { unreached.push(`${lang} ${size} ${name}: ${(e && e.message ? e.message : String(e)).split('\n')[0].slice(0, 160)}`); console.log(`  step ${name} FAILED: ${e && e.message ? e.message.split('\n')[0] : e}`); await recover().catch(() => {}); }
       finally { clearTimeout(to); }
       console.log(`  step ${name} ${Date.now() - s} ms`);

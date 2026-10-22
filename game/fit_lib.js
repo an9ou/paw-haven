@@ -24,6 +24,7 @@
 //       partly inside an overflow auto/scroll box is fine (that box is meant to scroll). Only overflow hidden/clip cuts count as clips.
 //   R2c a control's box is cut to its clipping or scrolling ancestors before the overlap test (a button half scrolled out of a sheet body).
 //   R2d a clipping box whose edge coincides with an inner scrolling box's edge on that axis does not clip (text at a scroller's fold).
+//   R2e a line leaving its box is judged on the part its clipping or scrolling ancestors show (a line half scrolled out of a sheet body).
 //   R2b panned cards: when the text's own card is itself cut SIDEWAYS by a clipping ancestor (the peeking next card of the walk route
 //       carousel, a pup row), the card is panned, not clipped; a card cut downwards is a real clip (a box too short for its content).
 //   R3  covered: with pointer-events forced on for the measurement, document.elementsFromPoint() tells what is on top, line by line. A line
@@ -279,7 +280,7 @@ function MEASURE(cfg) {
       if (!badge && bx && /absolute|fixed/.test(cs(bx).position)) { const q = bx.getBoundingClientRect(); if (q.width <= 32 && q.height <= 32) badge = true; }
       if (bx && !badge && cs(bx).overflowX === 'visible' && cs(bx).overflowY === 'visible') {
         const b = bx.getBoundingClientRect(); let worst = 0, wr = it.rects[0];
-        for (const r of it.rects) { const [vt, vb] = vbox(it, r); const d = Math.max(b.left - r.left, r.right - b.right, b.top - vt, vb - b.bottom); if (d > worst) { worst = d; wr = r; } }
+        for (const v of it.vis) { const r = v.o; let [vt, vb] = vbox(it, r); vt = Math.max(vt, v.top); vb = Math.min(vb, v.bottom); const d = Math.max(b.left - v.left, v.right - b.right, b.top - vt, vb - b.bottom); if (d > worst) { worst = d; wr = r; } } // the part of each line its clipping / scrolling ancestors show (R2e)
         if (worst > 3) push('escape', 'box', el, { by: sel(bx), px: Math.round(worst) }, worst, wr, textOf(el));
       }
       // (b) leaves the viewport
