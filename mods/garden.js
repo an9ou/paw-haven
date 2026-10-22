@@ -367,6 +367,7 @@
     /* chips (left column) */
     '.pg-chips{position:absolute;left:14px;top:max(86px,calc(var(--pg-hudb,0px) + 12px));display:flex;flex-direction:column;align-items:flex-start;gap:7px;pointer-events:none}',
     '.pg-chip{display:flex;align-items:center;gap:6px;padding:2px 11px 3px 5px;font-size:17px;line-height:1.1;' + PANEL + ';max-width:330px}',
+    'html:not(:lang(en)) .pg-root:not(.pg-portrait) .pg-chip{max-width:252px}', /* v2.14: a long chip wraps instead of running over the first plot */
     '.pg-chip i{display:block;width:30px;height:30px;flex:none}',
     '.pg-chip b{font-family:"Caveat",cursive;font-size:22px;font-weight:700;margin-right:3px;flex:none;white-space:nowrap}',
     '.pg-chip.pg-buddy{background:#FDF0F3}',
