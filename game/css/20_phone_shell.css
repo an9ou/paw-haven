@@ -57,6 +57,10 @@ html[data-layout="phone"] #hud .buffchip .ic{width:24px;height:24px}
 html[data-layout="phone"] #hud:not(.hexp):has(.buffchip:not([hidden])) .bond .track{display:none}
 html[data-layout="phone"] #hud:not(.hexp):has(.buffchip:not([hidden])) .bond .lbl{font-size:0}
 html[data-layout="phone"] #hud:not(.hexp):has(.buffchip:not([hidden])) .bond .lbl b{font-size:19px}
+/* v2.14 fit: the Thai word for Bond ("ความผูกพัน") is twice the English one: beside the meters it drops the bar (as with a buff chip) and keeps
+   the word and the level whole; the expanded HUD still shows the bar */
+html[data-layout="phone"]:lang(th) #hud:not(.hexp) .bond .track{display:none}
+html[data-layout="phone"]:lang(th) #hud:not(.hexp):not(:has(.buffchip:not([hidden]))) .bond .lbl{font-size:19px}
 html[data-layout="phone"] #hud.hexp .meters{grid-area:2/1/3/-1;justify-self:stretch;width:auto}
 html[data-layout="phone"] #hud.hexp .bond{grid-row:3;margin-left:0;max-width:none}
 html[data-layout="phone"] #hud.hexp .buffchip{grid-row:3;max-width:calc(100% - 150px)}
@@ -75,6 +79,8 @@ html[data-layout="phone"] #bar .act,html[data-layout="phone"] #bar .act > span:n
 /* ...and the longest one ("Wardrobe", 47 px wide at 15 px) clears the thick sketched frame at 360 px: 2 px gaps and edges give each button 49 px, and that one label is set a little narrower (15 px tall, 41 px wide) */
 html[data-layout="phone"] #bar{gap:2px;padding-left:calc(2px + env(safe-area-inset-left,0px));padding-right:calc(2px + env(safe-area-inset-right,0px))}
 html[data-layout="phone"] #bar .act[data-act="wardrobe"] > span:not(.ic){letter-spacing:-.9px;transform:translateX(-1.5px) scaleX(.9)}
+/* v2.14 fit: Indonesian Feed and Walk keep their full words ("Beri makan", "Jalan-jalan") set a little narrower, like Wardrobe (50 px of text in a 49 px button at 360 px) */
+html[data-layout="phone"]:lang(id) #bar .act:is([data-act="feed"],[data-act="walk"]) > span:not(.ic){letter-spacing:-.9px;transform:translateX(-1px) scaleX(.88)}
 
 /* every openModal popup is a bottom sheet: full width, up to 88% of the screen, its own scroll */
 html[data-layout="phone"] #modal .panel{max-height:min(100%,88vh);max-height:min(100%,88dvh)}

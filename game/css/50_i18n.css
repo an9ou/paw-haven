@@ -24,6 +24,8 @@ html:lang(th){word-break:normal;line-break:auto}
 html:lang(th) body :where(*){line-height:1.6!important}
 html:is(:lang(ja),:lang(zh)) :where(p,li,.small,.toast,#bubble,.panel-body){line-height:1.6}
 html:is(:lang(ja),:lang(zh),:lang(ko)) :where(h1,h2,h3,h4){line-height:1.25}
+/* v2.14 fit: Japanese headings break between phrases (BudouX in Chrome), not inside a word: "ボール遊び：/テニスボール", not "テ/ニスボール" */
+html:lang(ja) :where(h1,h2,h3,h4){word-break:auto-phrase}
 /* long languages (de, fr, es, pt-BR, id and the long pseudo-locale): narrow labels wrap, and hyphenate where the browser knows the language */
 html:is(:lang(de),:lang(fr),:lang(es),:lang(pt),:lang(id),:lang(en-XA)) :where(.btn,.act,.chip,.card,[role=tab],.tabs button,label,h2,h3,h4){overflow-wrap:anywhere;hyphens:auto}
 

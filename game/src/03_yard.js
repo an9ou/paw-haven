@@ -200,7 +200,7 @@ function phTrayFit() {
 // v2.7 phone review: a tall tray (the pack chips over two rows of cards on iPhone 13) left a 135 px scene band, so #dogHit slid under the place chip.
 // The tray is capped so the scene band above it stays at least PH_BAND_MIN px; its body scrolls inside the tray (measured from the dock, as the tray slides up).
 // The nap tray (its note floats above it) is left alone.
-const PH_BAND_MIN = 204;
+const PH_BAND_MIN = 180; // v2.14 fit: was 204; the Feed tray with the pack note (de, id, zh at 360 x 640) needs about 25 px more, and 180 still keeps #dogHit clear of the place chip
 function phTrayCap(tr) {
   if (tr.classList.contains('nap')) { tr.style.removeProperty('max-height'); return; }
   const cap = Math.round(dock.getBoundingClientRect().bottom - (parseFloat(getComputedStyle(dock).paddingBottom) || 0) - view.getBoundingClientRect().top - PH_BAND_MIN), want = cap >= 160 ? `min(88%, ${cap}px)` : '';
