@@ -25,6 +25,10 @@ html[data-layout="phone"] #trTrack,html[data-layout="phone"] #trTrack #tgHit{tou
 html[data-layout="phone"] #trainPanel .trbody > .pklead{order:0;margin:0 0 4px}
 /* v2.3 SHELL fix (review 9): compact trick panel. The status line, focus meter and Start/Stop stay in view; only the chip row and the small print scroll */
 html[data-layout="phone"] #trainPanel{max-height:42%;padding:6px 10px calc(4px + env(safe-area-inset-bottom,0px))}
+/* v2.14 review: Thai lines are 1.6 tall, so the Start button sat under the fold at 360x640: a little more room */
+html[data-layout="phone"]:lang(th) #trainPanel{max-height:47%}
+/* v2.14 review: a four-kana trick word ("おすわり", "ごろーん") is one phrase and needs about 66 px at 16 px: the chips (a sideways row) are a little wider in Japanese */
+html[data-layout="phone"]:lang(ja) #trainPanel .trchip{width:80px}
 html[data-layout="phone"] #trainPanel .trhead{gap:6px}
 html[data-layout="phone"] #trainPanel .trhead .tabs{padding-bottom:0}
 html[data-layout="phone"] #trainPanel .trhead .tabs .btn{min-height:44px;font-size:17px;padding-top:0;padding-bottom:0}
