@@ -40,15 +40,15 @@ Language code `pt-BR`. Brazilian Portuguese (not European). Data: `game/i18n/glo
 - **Numbers:** `Intl.NumberFormat('pt-BR')`: 1.000, 12.345, 1,5. Never hard-code separators.
 - **Dates:** "18 de outubro", short "18 de out.". Festival windows follow the Japan date: say "horário do Japão" when needed. The seasons follow the Japan (northern) calendar, the opposite of Brazil's: write the season the game shows ("inverno" in December) and don't explain it.
 - **Coins:** "+5 moedas", "Custa 30 moedas". The currency name "Moedas de Patinha" only as a name (HUD tooltip, shop header).
-- **Buttons:** infinitive, like most Brazilian apps: "Salvar", "Cancelar", "Comprar", "Passear", "Dar comida". Tricks are the real dog commands in the imperative on purpose ("Senta", "Deita", "Dá a pata").
+- **Buttons:** infinitive, like most Brazilian apps: "Salvar", "Cancelar", "Comprar", "Passear", "Alimentar". Tricks are the real dog commands in the imperative on purpose ("Senta", "Deita", "Dá a pata").
 - **Length:** about 20–30% longer than English. Short forms for the phone care bar, tabs and buttons:
 
 | English | Normal | Short (phone) |
 |---|---|---|
-| Feed | Dar comida | Comida |
+| Feed | Alimentar | Alimentar |
 | Pet | Fazer carinho | Carinho |
 | Bath | Dar banho | Banho |
-| Walk | Passear | Passeio |
+| Walk | Passear | Passear |
 | Play with a toy | Brincar com um brinquedo | Brincar |
 | Daily missions | Missões do dia | Missões |
 | Forgot your password? | Esqueceu a senha? | (same) |
@@ -140,7 +140,7 @@ Two sentences, short, kind, true.
 | Pip the farmer | Pip, da fazenda | Gave you the seeds. Gender is not stated: keep it neutral. |
 | Dr. Paws | Dr. Patinhas | The vet. Gender is not stated: write "Dr." and avoid gendered adjectives. |
 | Old Mr. Reyes | seu Reyes |  |
-| Feed | Dar comida | Button. Short: Comida / Comida / Manger / Futter / Makan. |
+| Feed | Alimentar | Button (the bar fits it). Short elsewhere: Comida / Comida / Manger / Futter / Makan. |
 | Pet (verb) | Fazer carinho | Button. Short: Mimos / Carinho / Câlin / Kraulen / Elus. |
 | Bath | Dar banho | Button. Short noun: Baño / Banho / Bain / Bad / Mandi. |
 | Walk | Passear | Walks are the main income. Noun: paseo / passeio / balade / Gassirunde / jalan-jalan. |
@@ -350,3 +350,4 @@ TODO(native) (lines to check with a native speaker):
 - TODO(native): garden.proud_mum / "Mamãe coruja", mod.garden.your_dog "Seu au-au", yard.flips_upside_down "pose de barata" (for "roaching").
 - TODO(native): Samoyed "Uhu-uhu!" may read as a cheer more than a bark; data.words.greyhound.liver "Fígado" may puzzle kids ("Marrom" is the alternative).
 - TODO(native): "Cão adulto" on the Dog Card (cards.age_line) is the generic masculine for a grown dog of either sex.
+- TODO(native): the Bath button is "Banho" (sentences say "dar banho"); the Wardrobe bar label is "Roupas" (the window says "Guarda-roupa").
