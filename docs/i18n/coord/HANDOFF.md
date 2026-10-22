@@ -42,3 +42,4 @@ zh-Hans DONE: lane 514f8ec merged (f428623), 3 parallel Opus reviews (A UI/lesso
 
 zh-Hant lane started: T-ZH-HANT session_01XtnviRqeNjYW9J3bc7SABC (Opus), branch lane/v214-t-zh-Hant. Review prompt template: coordinator scratchpad rev/prompt.md (3 reviewers A/B/C by area; recreate from this note if lost).
 zh-Hant DONE: lane 2be72c8 merged, 3 Opus reviews = 90 fixes (incl. the 16 real mix names it had missed) + 1 site. Also: eye colours translated in every language (eyeShown, genes.eye_*; en.json 7366 keys, es/pt-BR/id lanes get the 4 new keys). Next: es (Sonnet).
+es lane started: T-ES session_019HCc6s5t6wry3fnVvzYi5z (Sonnet), branch lane/v214-t-es.
