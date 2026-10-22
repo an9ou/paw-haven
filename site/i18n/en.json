@@ -218,7 +218,7 @@
   "privacy.collect.nothing_else": "We don't collect your name, your age, your location, your contacts or anything else.",
   "privacy.dont.title": "What we don't do",
   "privacy.dont.ads": "No ads.",
-  "privacy.dont.tracking": "No tracking, no analytics and no cookies. This website loads nothing from anyone else.",
+  "privacy.dont.tracking": "No tracking, no analytics and no cookies. The game's fonts load from Google Fonts.",
   "privacy.itch": "The home page has a box from itch.io, where the game is played. It only loads if you tap it, and then itch.io's own privacy policy applies.",
   "privacy.dont.share": "We never sell, rent or share your data with anyone.",
   "privacy.dont.email": "No newsletters. The only email is the 6-digit password reset code you ask for.",

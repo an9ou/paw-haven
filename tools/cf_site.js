@@ -6,16 +6,19 @@
 // /about (the story, site v3), /privacy, /reset (a notice: resets happen in the game), and since v2.14 the same pages in 10 more languages at /<lang>/ (ja, zh-hans, zh-hant, ko, es, pt-br, fr, de, th, id). Every page is made here by
 // tools/site_i18n.js from site/tpl/ and site/i18n/ (English is also committed as site/*.html; a warning shows when that copy is out of date).
 // No content negotiation: each URL is one language, so no Vary header; the language menu and a first-visit script (English pages only) pick the language.
-// Fonts for the other scripts (site/fonts/i18n/<lang>.woff2 + .css, the FONTS lane): when that folder has files they go to a second Worker,
-// doodle-doggo-fonts (_cfsite_fonts/, on the route doodledoggo.app/fonts/i18n/*, which runs before the Custom Domain), so the CJK fonts don't
-// count against this Worker's size. SITE_FONTS=inline keeps them in the main Worker instead. Empty folder: no second Worker at all.
-// Site v3: the same for the place pictures of /map (site/img/map/, the SHOTS lane): a third Worker, doodle-doggo-img (_cfsite_img/, route
-// doodledoggo.app/img/map/*), or SITE_IMG=inline. Both side Workers come from one table (SIDE below); sizes.json records fonts/fontMode and img/imgMode.
+// Fonts for the other scripts (site/fonts/i18n/<lang>.woff2 + .css, the FONTS lane) and the place pictures of /map (site/img/map/, the SHOTS lane).
+// The normal build (bash tools/cf_pages_deploy.sh, v2.14) is INLINE: SITE_FONTS=inline SITE_IMG=inline, the main Worker serves both at /fonts/i18n/*
+// and /img/map/* (the account's Worker limit is the paid 10 MB; the token cannot create Worker routes, so side Workers cannot get theirs). This script
+// run by hand still defaults to the split mode, which stays: without those variables the fonts go to a second Worker, doodle-doggo-fonts
+// (_cfsite_fonts/, route doodledoggo.app/fonts/i18n/*, which runs before the Custom Domain) and the pictures to a third, doodle-doggo-img
+// (_cfsite_img/, route doodledoggo.app/img/map/*), so they don't count against this Worker's size. Empty folder: no side Worker at all.
+// Both come from one table (SIDE below); sizes.json records fonts/fontMode and img/imgMode.
 // The game itself is played on itch.io (https://an9ou.itch.io/doodle-doggo); this site only introduces it.
-// v2.14 PERF (PERF.md): the game copy at /play/ (dist/itch: index.html, lang/<code>.<hash>.js, photo_fonts.<hash>.js, the brand files) is a fourth
-// Worker, doodle-doggo-play (_cfsite_play/, route doodledoggo.app/play/*), or SITE_PLAY=inline; its font subsets (/play/fonts/i18n/) ride in the fonts
-// Worker on a second route, doodledoggo.app/play/fonts/i18n/*. Caching: /play/ HTML max-age=300 with stale-while-revalidate, the hashed files
-// and the versioned fonts (?v=) a year, immutable.
+// v2.14 PERF (PERF.md): the game copy at /play/ (dist/itch: index.html, lang/<code>.<hash>.js, lang/keys.<hash>.js, photo_fonts.<hash>.js, the brand
+// files, fonts/i18n/) is served by the main Worker (SITE_PLAY=inline, the default, like the fonts and the map pictures), or with SITE_PLAY=split by a
+// fourth Worker, doodle-doggo-play (_cfsite_play/, route doodledoggo.app/play/*), its fonts then riding in the fonts Worker on a second route,
+// doodledoggo.app/play/fonts/i18n/*. Caching: /play/ HTML max-age=300 with stale-while-revalidate, the hashed files and the versioned fonts (?v=)
+// a year, immutable, the brand files a day (main Worker) or a week (side Worker). /play (no slash) redirects to /play/: the game's files are relative.
 // Why a Worker and not Pages: Pages and Workers-assets uploads authenticate with a short-lived upload JWT, which the cloud
 // session's proxy replaces with the account API token, so those uploads fail there. A Worker script upload needs only the
 // API token. www.doodledoggo.app answers with a 301 to the apex, keeping the path.
@@ -40,10 +43,12 @@ const walkGame = (dir, base) => fs.readdirSync(dir).forEach((f) => {
   if (TYPES[f.split('.').pop()]) gameFiles.push(['/play/' + base + f, p]);
 });
 walkGame(GAME, '');
-const GAME_FONTS = gameFiles.filter(([u]) => u.startsWith('/play/fonts/i18n/') && u.endsWith('.woff2'));
+// the game copy's own font subsets (about 1.36 MB gzipped): in the fonts Worker when it is split; inline only with SITE_PLAY_FONTS=1, since they would
+// take the inline main Worker past its 8 MB budget (game/test_site.js). Without them /play/ falls back to the system CJK and Thai fonts, as before v2.14 PERF.
+const GAME_FONTS = process.env.SITE_FONTS === 'inline' && !process.env.SITE_PLAY_FONTS ? [] : gameFiles.filter(([u]) => u.startsWith('/play/fonts/i18n/') && u.endsWith('.woff2'));
 const HASHED = /^\/play\/(lang\/[\w-]+|photo_fonts)\.[0-9a-f]{8}\.js$|^\/play\/fonts\/i18n\//; // hashed names, and fonts the game always asks for with ?v=<hash>
 // the side Workers: a folder of site/ served by its own Worker on a route of the zone (a route runs before the Custom Domain), so its files don't count
-// against the main Worker. mode: 'none' (no files: no Worker), 'split' (the default) or 'inline' (env[name] === 'inline': served by the main Worker)
+// against the main Worker. mode: 'none' (no files: no Worker), 'split' (this script's own default; the deploy script sets inline) or 'inline' (env[name] === 'inline': served by the main Worker)
 const SIDE = [
   { key: 'fonts', mode: 'fontMode', env: 'SITE_FONTS', url: '/fonts/i18n/', dir: path.join(site, 'fonts', 'i18n'), out: path.join(root, '_cfsite_fonts'), script: 'doodle-doggo-fonts',
     keep: (f) => /\.(woff2|css)$/.test(f) || /-OFL\.txt$/.test(f), real: (f) => f.endsWith('.woff2'), cors: true,
@@ -51,14 +56,15 @@ const SIDE = [
   { key: 'img', mode: 'imgMode', env: 'SITE_IMG', url: '/img/map/', dir: path.join(site, 'img', 'map'), out: path.join(root, '_cfsite_img'), script: 'doodle-doggo-img',
     keep: (f) => /\.(webp|png|jpg|svg)$/.test(f), real: () => true, cors: false,
     what: 'The place pictures of /map: the Worker doodle-doggo-img on the route doodledoggo.app/img/map/*.' },
-  { key: 'play', mode: 'playMode', env: 'SITE_PLAY', url: '/play/', dir: GAME, out: path.join(root, '_cfsite_play'), script: 'doodle-doggo-play', play: true,
+  { key: 'play', mode: 'playMode', env: 'SITE_PLAY', url: '/play/', dir: GAME, out: path.join(root, '_cfsite_play'), script: 'doodle-doggo-play', play: true, dflt: 'inline',
     keep: () => false, real: () => true, more: gameFiles.filter(([u]) => !u.startsWith('/play/fonts/')),
     what: 'The game copy (/play/, the itch.io build): the Worker doodle-doggo-play on the route doodledoggo.app/play/*.' }
 ];
 SIDE.forEach((x) => {
   x.files = fs.existsSync(x.dir) ? fs.readdirSync(x.dir).filter(x.keep).sort() : [];
   x.list = x.files.map((f) => [x.url + f, path.join(x.dir, f)]).concat(x.more || []); // [url, source path]
-  x.mod = !x.list.some(([u]) => x.real(u)) || (EN_ONLY && x.key === 'fonts') ? 'none' : (process.env[x.env] === 'inline' ? 'inline' : 'split'); // English only: no other-script fonts
+  const want = process.env[x.env] || x.dflt || 'split'; // the game copy defaults to inline (the token cannot create routes); SITE_PLAY=split for its own Worker
+  x.mod = !x.list.some(([u]) => x.real(u)) || (EN_ONLY && x.key === 'fonts') ? 'none' : (want === 'inline' ? 'inline' : 'split'); // English only: no other-script fonts
 });
 // url path -> source file (or generated text)
 const files = {}, gen = {};

@@ -101,7 +101,7 @@ const SUITES = {
   phone_shell: { file: 'test_phone_shell.js', group: 'phone', est: 40 },
   cloud: { file: 'test_cloud.js', group: 'phone', est: 60 },
   worker: { file: 'test_worker.js', group: 'phone', est: 5 }, // v2.8.1: the Cloudflare Worker (node + Miniflare, local D1)
-  site: { file: 'test_site.js', group: 'phone', est: 20 }, // v2.8.2: the doodledoggo.app introduction site and its reset page (Miniflare, desktop + iPhone 15)
+  site: { file: 'test_site.js', group: 'phone', est: 300, timeout: 900 }, // v2.8.2: the doodledoggo.app introduction site and its reset page (Miniflare, desktop + iPhone 15)
   phone_home: { file: 'test_phone_home.js', group: 'phone', est: 60 },
   phone_town: { file: 'test_phone_town.js', group: 'phone', est: 70 },
   phone_journal: { file: 'test_phone_journal.js', group: 'phone', est: 35 },

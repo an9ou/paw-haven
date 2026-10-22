@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # Builds the doodledoggo.app introduction site (site/, v2.8.2) and deploys it (and www, which redirects to it) to Cloudflare.
 # The game itself is played on itch.io; the site has the home page, /dogs, /map, /about, /privacy and /reset, since v2.14 in 11 languages (/ja/, /zh-hans/ ...).
-# v2.14: when site/fonts/i18n/ has fonts, tools/cf_site.js puts them in a second Worker, doodle-doggo-fonts (_cfsite_fonts/), which goes up first
-# with the route doodledoggo.app/fonts/i18n/* (a route runs before the Custom Domain, so only those URLs reach it). No fonts: no second Worker.
-# Site v3: the same for the /map pictures (site/img/map/): the Worker doodle-doggo-img (_cfsite_img/) on doodledoggo.app/img/map/*.
+# Size (v2.14, Game Manager): the account's Worker limit is the paid 10 MB, and the Cloudflare token cannot create Worker routes, so the side Workers
+# (doodle-doggo-fonts on doodledoggo.app/fonts/i18n/*, doodle-doggo-img on doodledoggo.app/img/map/*) cannot get their routes. The normal build is
+# therefore INLINE: SITE_FONTS and SITE_IMG default to inline here, tools/cf_site.js puts the per-language fonts and the /map pictures in the main
+# Worker (about 6 MB gzipped with the game, limit 10 MB) and makes no side Workers, so side_worker() below finds nothing to do. The split mode is still
+# there for an account whose token can create routes: SITE_FONTS=split SITE_IMG=split SITE_PLAY=split bash tools/cf_pages_deploy.sh (v2.14 PERF: the game copy in doodle-doggo-play).
 #   bash tools/cf_pages_deploy.sh
 # The site is the Worker "doodle-doggo" (see tools/cf_site.js for why a Worker and not a Pages project), with Workers Custom
 # Domains for doodledoggo.app and www.doodledoggo.app (Cloudflare adds their DNS records itself).
@@ -18,14 +20,15 @@ AUTH=(); if [ -n "${CLOUDFLARE_API_TOKEN:-}" ] && [ "$CLOUDFLARE_API_TOKEN" != "
 SCRIPT=doodle-doggo
 ZONE=doodledoggo.app
 
-node tools/cf_site.js
+SITE_FONTS="${SITE_FONTS:-inline}" SITE_IMG="${SITE_IMG:-inline}" SITE_PLAY="${SITE_PLAY:-inline}" node tools/cf_site.js
 
 ok() { python3 -c "import json,sys; d=json.load(sys.stdin); sys.exit(0 if d.get('success') else (print(d.get('errors'), file=sys.stderr) or 1))"; }
 
 ZID=$(curl -sS "https://api.cloudflare.com/client/v4/zones?name=$ZONE" "${AUTH[@]}" | python3 -c "import json,sys; print(json.load(sys.stdin)['result'][0]['id'])")
 
-# 0. the side Workers tools/cf_site.js made (only when it made them) and their routes: the per-language fonts (doodle-doggo-fonts,
-#    doodledoggo.app/fonts/i18n/*) and, since site v3, the place pictures of /map (doodle-doggo-img, doodledoggo.app/img/map/*)
+# 0. the side Workers tools/cf_site.js made and their routes (split mode only; the default inline build makes none, so nothing happens here): the
+#    per-language fonts (doodle-doggo-fonts, doodledoggo.app/fonts/i18n/* and, v2.14 PERF, doodledoggo.app/play/fonts/i18n/*), the place pictures
+#    of /map (doodle-doggo-img, doodledoggo.app/img/map/*) and the game copy (doodle-doggo-play, doodledoggo.app/play/*)
 side_worker() { # <folder> <script name> <route pattern>...
   local dir=$1 name=$2 pattern; shift 2
   [ -f "$dir/worker.js" ] || return 0
