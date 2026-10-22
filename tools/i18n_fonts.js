@@ -241,7 +241,14 @@ function build(lang) {
   let body, title;
   if (cfg.latin) {
     // Latin-script languages: only what the shipped latin subsets lack (e.g. Ÿ); usually nothing, then the CSS is a comment only.
-    const need = (k) => { const have = new Set(py({ op: 'cmap', src: path.join(root, SHIPPED[k]) })); return uniq(c.text).split('').filter((ch) => !have.has(ch.codePointAt(0)) && !MACRON.includes(ch)).join(''); };
+    // a character the full source font lacks too (✕, U+202F, ẞ ...) cannot be supplemented: it falls back to the next font (an empty subset has no cmap)
+    const need = (k) => {
+      const have = new Set(py({ op: 'cmap', src: path.join(root, SHIPPED[k]) })), full = new Set(py({ op: 'cmap', src: source(k === 'title' ? cfg.title : cfg.body) }));
+      const lack = uniq(c.text).split('').filter((ch) => !have.has(ch.codePointAt(0)) && !MACRON.includes(ch));
+      const none = lack.filter((ch) => !full.has(ch.codePointAt(0)) && ch.codePointAt(0) > 0x20).join('');
+      if (none) console.log(`  note: ${SRC[k === 'title' ? cfg.title : cfg.body].file} has no glyph for: ${none}  (they fall back to the next font in the stack)`);
+      return lack.filter((ch) => full.has(ch.codePointAt(0))).join('');
+    };
     body = need('body'); title = need('title');
   } else {
     const keep = (s) => [...s].filter((ch) => ch.codePointAt(0) >= 0x80 && !LATIN_LETTER.test(ch)).join(''), asc = opt.ascii ? ASCII : '';

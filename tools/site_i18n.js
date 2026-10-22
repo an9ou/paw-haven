@@ -137,7 +137,7 @@ const JPW = {
 // the keys drawn in the hand face (var(--hand) in site/style.css: headings, .tag, .nav, .chip, .play, .feats b, .bark, .dname, .pics .cap,
 // .prof h2 .dtype, .bubble, .traits b, .loves>b): the corpus of the 'DD Local Title' subset.
 //   node tools/i18n_fonts.js --all --title-keys "$(node tools/site_i18n.js --title-keys)"
-const HAND_KEYS = /^(?:.*\.title|dogs\.h1|privacy\.h1|reset\.h1|map\.h1|about\.h1|about\.p8|about\.itch|map\.place\.[a-z]+\.name|nav\.(?:home|dogs|map|about)|home\.(?:map|about)\.link|home\.tagline|home\.nav\..*|home\.toss|home\.dogs\.all|common\.(?:play|quoted)|footer\.play_itch|notfound\..*|play\..*|soon\.(?:title|line)|profile\.(?:pup_cap|title_type|loves)|dog\.[a-z]+\.(?:name|quote|trait[1-4]))$/;
+const HAND_KEYS = /^(?:.*\.title|dogs\.h1|privacy\.h1|reset\.h1|map\.h1|about\.h1|about\.p8|about\.itch|map\.place\.[a-z]+\.name|nav\.(?:home|dogs|map|guide|about)|home\.(?:map|about)\.link|home\.fullscreen|guide\.(?:h1|step[1-9]\.t|faq\.q[1-9]|cta_btn)|home\.tagline|home\.nav\..*|home\.toss|home\.dogs\.all|common\.(?:play|quoted)|footer\.play_itch|notfound\..*|play\..*|soon\.(?:title|line)|profile\.(?:pup_cap|title_type|loves)|dog\.[a-z]+\.(?:name|quote|trait[1-4]))$/;
 // the placeholders every message may use (the dog count, the policy date, the Japanese words), besides its own English ones
 const GLOBAL = ['count', 'date'].concat(Object.keys(JPW));
 // the keys whose text carries the dog count (the count rule: it must come from {count}, never typed in). On the English page the sentences
