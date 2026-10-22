@@ -6,11 +6,13 @@
 // /about (the story, site v3), /privacy, /reset (a notice: resets happen in the game), and since v2.14 the same pages in 10 more languages at /<lang>/ (ja, zh-hans, zh-hant, ko, es, pt-br, fr, de, th, id). Every page is made here by
 // tools/site_i18n.js from site/tpl/ and site/i18n/ (English is also committed as site/*.html; a warning shows when that copy is out of date).
 // No content negotiation: each URL is one language, so no Vary header; the language menu and a first-visit script (English pages only) pick the language.
-// Fonts for the other scripts (site/fonts/i18n/<lang>.woff2 + .css, the FONTS lane): when that folder has files they go to a second Worker,
-// doodle-doggo-fonts (_cfsite_fonts/, on the route doodledoggo.app/fonts/i18n/*, which runs before the Custom Domain), so the CJK fonts don't
-// count against this Worker's size. SITE_FONTS=inline keeps them in the main Worker instead. Empty folder: no second Worker at all.
-// Site v3: the same for the place pictures of /map (site/img/map/, the SHOTS lane): a third Worker, doodle-doggo-img (_cfsite_img/, route
-// doodledoggo.app/img/map/*), or SITE_IMG=inline. Both side Workers come from one table (SIDE below); sizes.json records fonts/fontMode and img/imgMode.
+// Fonts for the other scripts (site/fonts/i18n/<lang>.woff2 + .css, the FONTS lane) and the place pictures of /map (site/img/map/, the SHOTS lane).
+// The normal build (bash tools/cf_pages_deploy.sh, v2.14) is INLINE: SITE_FONTS=inline SITE_IMG=inline, the main Worker serves both at /fonts/i18n/*
+// and /img/map/* (the account's Worker limit is the paid 10 MB; the token cannot create Worker routes, so side Workers cannot get theirs). This script
+// run by hand still defaults to the split mode, which stays: without those variables the fonts go to a second Worker, doodle-doggo-fonts
+// (_cfsite_fonts/, route doodledoggo.app/fonts/i18n/*, which runs before the Custom Domain) and the pictures to a third, doodle-doggo-img
+// (_cfsite_img/, route doodledoggo.app/img/map/*), so they don't count against this Worker's size. Empty folder: no side Worker at all.
+// Both come from one table (SIDE below); sizes.json records fonts/fontMode and img/imgMode.
 // The game itself is played on itch.io (https://an9ou.itch.io/doodle-doggo); this site only introduces it.
 // Why a Worker and not Pages: Pages and Workers-assets uploads authenticate with a short-lived upload JWT, which the cloud
 // session's proxy replaces with the account API token, so those uploads fail there. A Worker script upload needs only the
@@ -26,7 +28,7 @@ const EN_ONLY = !!process.env.SITE_EN_ONLY;
 const LIVE_LANGS = EN_ONLY ? I18N.LANGS.filter((l) => l.code === 'en') : I18N.LANGS;
 const ALL = I18N.LANGS.concat(I18N.PSEUDO), DIRS = new Set(ALL.map((l) => l.dir).filter(Boolean));
 // the side Workers: a folder of site/ served by its own Worker on a route of the zone (a route runs before the Custom Domain), so its files don't count
-// against the main Worker. mode: 'none' (no files: no Worker), 'split' (the default) or 'inline' (env[name] === 'inline': served by the main Worker)
+// against the main Worker. mode: 'none' (no files: no Worker), 'split' (this script's own default; the deploy script sets inline) or 'inline' (env[name] === 'inline': served by the main Worker)
 const SIDE = [
   { key: 'fonts', mode: 'fontMode', env: 'SITE_FONTS', url: '/fonts/i18n/', dir: path.join(site, 'fonts', 'i18n'), out: path.join(root, '_cfsite_fonts'), script: 'doodle-doggo-fonts',
     keep: (f) => /\.(woff2|css)$/.test(f) || /-OFL\.txt$/.test(f), real: (f) => f.endsWith('.woff2'), cors: true,
