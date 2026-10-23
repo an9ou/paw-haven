@@ -66,7 +66,7 @@ require('./test_lib').run('phone_v215_places', async (t) => {
       ok(await noSide(), 'no sideways scroll at the Splash Pool');
       await t.SH('phone_pool_button');
     }
-    await t.p.tap('#placeBtns [data-pl]'); await t.p.waitForSelector('#plPaddle');
+    await t.p.tap('#placeBtns [data-pl]'); await t.p.waitForSelector('#plPaddle'); await t.sleep(500); /* the tray slides up for 0.2 s (sheetUp): measure it at rest */
     {
       const tt = await tapTargets(); ok(tt.length && tt.every((b) => b.h >= 44 && b.w >= 44), 'the pool tray: every button is 44 px or more ' + JSON.stringify(tt.filter((b) => b.h < 44 || b.w < 44)));
       const fs = await ev(() => Math.min(...[...document.querySelectorAll('#dock .pl-hint, #dock .pl-dn, #dock .pl-float b')].map((e) => parseFloat(getComputedStyle(e).fontSize))));
