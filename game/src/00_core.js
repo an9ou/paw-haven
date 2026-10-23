@@ -994,12 +994,12 @@ function sayPlace(p, o) {
   const D = o.dog || sayDogRect(p), H = sayHeadRect(p, D), hx = (H.l + H.r) / 2, ax = p.x >= H.l && p.x <= H.r ? p.x : hx; // ax: the anchor's x, or the head's when the anchor is off it
   sayLast = { p: { x: Math.round(p.x), y: Math.round(p.y) }, D, H }; if (window.__paw) window.__paw.bubbleLast = sayLast;
   const rel = (q) => ({ l: q.left - sg.left, t: q.top - sg.top, r: q.right - sg.left, b: q.bottom - sg.top });
-  const soft = (o.avoid || []).slice(), vis = (el) => el && !el.hidden && el.offsetParent !== null && el.getBoundingClientRect().height > 0;
-  if (isPhone()) { const st = $('#status'); if (vis(st)) { const r = rel(st.getBoundingClientRect()); soft.push({ l: r.l - 6, t: r.t, r: r.r + 6, b: r.b + 6 }); } // v2.3: never on the location chip
-    const pk = $('#phPeek'); if (vis(pk)) { const r = rel(pk.getBoundingClientRect()); soft.push({ l: r.l - 8, t: r.t - 4, r: r.r + 8, b: r.b + 4 }); } } // UI/UX H9: nor under the look-right button
+  const soft = (o.avoid || []).slice(), hard = [], vis = (el) => el && !el.hidden && el.offsetParent !== null && el.getBoundingClientRect().height > 0; // hard: kept clear on every try (v2.14.1)
+  if (isPhone()) { const st = $('#status'); if (vis(st)) { const r = rel(st.getBoundingClientRect()); hard.push({ l: r.l - 6, t: r.t, r: r.r + 6, b: r.b + 6 }); } // v2.3: never on the location chip
+    const pk = $('#phPeek'); if (vis(pk)) { const r = rel(pk.getBoundingClientRect()); hard.push({ l: r.l - 8, t: r.t - 4, r: r.r + 8, b: r.b + 4 }); } } // UI/UX H9: nor under the look-right button
   const tr = $('#dock .tray'); if (vis(tr) && getComputedStyle(dock).display !== 'none') soft.push(rel(tr.getBoundingClientRect()));
   const hit = (b, r) => b.l < r.r && b.l + b.w > r.l && b.t < r.b && b.t + b.h > r.t;
-  const ok = (b, useSoft) => b && b.t >= vtop + 4 && b.t + b.h <= sh - 4 && !hit(b, H) && !(D && hit(b, { l: D.l + 6, t: D.t + 4, r: D.r - 6, b: D.b }) && b.cls !== 'h') && !(useSoft && soft.some((r) => hit(b, r)));
+  const ok = (b, useSoft) => b && b.t >= vtop + 4 && b.t + b.h <= sh - 4 && !hit(b, H) && !(D && hit(b, { l: D.l + 6, t: D.t + 4, r: D.r - 6, b: D.b }) && b.cls !== 'h') && !hard.some((r) => hit(b, r)) && !(useSoft && soft.some((r) => hit(b, r)));
   // put the box at (l, t) with a max width, kept on screen (it re-wraps when it moves, so it is measured again at the width it has: v2.8 / v2.10)
   const put = (l, t, mw, tail) => {
     bubble.classList.toggle('tail-r', tail === 'r'); bubble.style.maxWidth = mw ? Math.round(mw) + 'px' : ''; bubble.style.left = Math.round(l) + 'px'; bubble.style.top = Math.round(t) + 'px';
@@ -1027,7 +1027,7 @@ function sayPlace(p, o) {
   const aboveClear = (mw) => {
     let b = above(mw); const bot = b.t + b.h;
     for (let i = 0; i < 2; i++) {
-      const o2 = soft.find((r) => hit(b, r)); if (!o2) break;
+      const o2 = hard.concat(soft).find((r) => hit(b, r)); if (!o2) break;
       const right = (o2.l + o2.r) / 2 > b.l + b.w / 2, room = right ? o2.l - 2 - 6 : sw - 6 - (o2.r + 2); if (room < 140) break;
       const w = Math.min(b.w, room); b = put(right ? Math.max(6, o2.l - 2 - w) : o2.r + 2, 0, w < b.w ? w : (b.mw ? parseFloat(b.mw) : mw), b.tail);
       if (right && b.l + b.w > o2.l - 2) b = put(Math.max(6, o2.l - 2 - b.w), 0, b.w, b.tail); b = again(b, bot - b.h);
@@ -1039,10 +1039,11 @@ function sayPlace(p, o) {
   const tries = [() => aboveClear(), () => aboveClear(sw - 12),
     () => D && beside(D.r + 10, 'r'), () => D && beside(D.l - 10, 'l')];
   for (const f of tries) { const b = f(); if (ok(b, true)) return b; }
-  for (const f of tries.slice(0, 2)) { const b = f(); if (ok(b, false)) return b; } // over the board or the chip: better than over the face
+  for (const f of tries.slice(0, 2)) { const b = f(); if (ok(b, false)) return b; } // over the board: better than over the face (never the chip: beside the head first)
   for (const f of [() => beside(H.r + 10, 'r', 'h'), () => beside(H.l - 10, 'l', 'h')]) { const b = f(); if (ok(b, true) || ok(b, false)) return b; } // beside the head, over the dog's back
   if (D) { bubble.classList.add('below'); const b = put(6, 0); const r = put(clamp(ax - 40, 6, sw - b.w - 6), D.b + 8); if (ok(r, true)) return r; bubble.classList.remove('below'); } // under the dog, its tail pointing up
-  const b = above(); return again(b, Math.max(vtop + 4, b.t)); // nowhere clear: over the head as before
+  let b = above(); b = again(b, Math.max(vtop + 4, b.t)); // nowhere clear: over the head as before, but under the chip it would sit on (v2.3)
+  const hb = hard.filter((r) => hit(b, r)).reduce((m, r) => Math.max(m, r.b), 0); return hb ? again(b, hb) : b;
 }
 function say(text, wx, wy, ms = 3600, o) { // o (v2.14.1): { dog: the speaking dog's drawn box in stage px (else found near the anchor), avoid: [stage boxes to keep clear when there is room] }
   const svg = $('svg.world', view); if (!svg) return;
