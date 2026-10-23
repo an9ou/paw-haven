@@ -292,7 +292,7 @@ function msYardRedraw() {
   const svg = $('#view svg.world'); if (!svg) return;
   const html = msYardSVG(), old = $('#msCardG');
   if (old) old.outerHTML = html;
-  else { const a = svg.querySelector('#decorG') || svg.querySelector('#houseG'); if (a) a.insertAdjacentHTML('beforebegin', html); else return; }
+  else { const a = svg.querySelector('#decorG') || grAt('houseG', svg); if (a) a.insertAdjacentHTML('beforebegin', html); else return; }
   msYardBind();
 }
 on('yard:enter', () => { if (window.__paw && !window.__paw.ms) msExpose(); if (S && S.place === 'yard') msYardRedraw(); });

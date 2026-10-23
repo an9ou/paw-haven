@@ -16,6 +16,7 @@ const BL_TOYS = {
   'Driftwood Stick': { prop: ['item', 'Driftwood Stick'], g: 1900, bounce: 0.28, fric: 5, spin: 1.8, vzK: 1, coin: 3, hap: 15, en: 1 },
 };
 // where a dog's feet may stand per place (V210.md 5.2), the fallback until ROAM's rmZone(place) answers
+const BL_GR_BACK = { square: 352 }; // v2.15: a grOn square's ball floor starts a little in front of its back line (the shop steps)
 const BL_FLOOR = { yard: [400, 590], house: [410, 590], market: [450, 585], river: [450, 590], beach: [450, 590], pier: [405, 590], square: [410, 592], cafe: [410, 592], vet: [410, 592], salon: [405, 592], hilltop: [405, 592], park: [405, 592], woods: [405, 592], dogpark: [405, 592] };
 const BL_R = 26; // the ball's radius in world units
 const BL_LINES = {
@@ -37,7 +38,7 @@ function blDomNoGo() { // fallback until ROAM's rmZone gives the boxes: the big 
 }
 function blZone() {
   const place = (S && S.place) || 'yard'; let z = null; try { z = typeof rmZone === 'function' ? rmZone(place) : null; } catch (e) { z = null; }
-  const gf = grOn(place) ? grFloor(place) : null, f = gf ? [gf.back, gf.front] : BL_FLOOR[place] || [420, 590], out = { x0: 60, x1: 940, y0: f[0], y1: f[1], no: [] }; // v2.15: a deep floor's back and front lines (43_ground.js)
+  const gf = grOn(place) ? grFloor(place) : null, f = gf ? [Math.max(gf.back, BL_GR_BACK[place] || 0), gf.front] : BL_FLOOR[place] || [420, 590], out = { x0: 60, x1: 940, y0: f[0], y1: f[1], no: [] }; // v2.15: a deep floor's back and front lines (43_ground.js)
   if (gf) { out.x0 = gf.x0; out.x1 = gf.x1; out.poly = gf.poly; }
   if (isPhone() && place === 'yard') { out.y0 = 420; out.y1 = 600; }
   if (z) { ['x0', 'x1', 'y0', 'y1'].forEach((k) => { if (typeof z[k] === 'number') out[k] = z[k]; }); out.no = Array.isArray(z.no) ? z.no : []; } else out.no = blDomNoGo();
@@ -432,7 +433,7 @@ function blTrayUpdate() { const c = $('#blCoins'); if (c) { const t = blCoinsTex
 /* ---------------- start and stop ---------------- */
 function blKeyBlock(e) { if (BL && (e.key === 'Enter' || e.key === ' ') && e.target.closest && e.target.closest('svg.world .hot')) { e.stopPropagation(); e.preventDefault(); } } // Enter on a focused scene prop opens nothing either
 function blStart(toy) {
-  const cfg = BL_TOYS[toy]; if (BL || !cfg || !S || cur.mode !== 'yard') return false;
+  const cfg = BL_TOYS[toy]; if (BL || !cfg || !S || !rmScene()) return false; // v2.15: also Kibble Corner's street once it has the deep floor (37_roam.js rmScene)
   const lead = D(), svg = $('svg.world', view); if (!svg || !$('#ballLayer')) return false;
   if (S.sleeping) { nope(tt('ball.asleep', '{name} is asleep. Even fun has to wait.', { name: NAME() })); return false; }
   if (typeof isNursing === 'function' && isNursing(lead)) { nope(tt('ball.nursing', '{name} is nursing the pups. No ball play for {sex, select, female {her} other {him}} right now.', { name: lead.name, sex: lead.sex === 'female' ? 'female' : 'male' })); return false; }
@@ -473,11 +474,11 @@ function blStop(quiet) {
   }
   busy = false;
   if (isPhone()) { phZoom = B.z0 || 1; view.style.background = ''; }
-  if (!quiet && cur.mode === 'yard') {
+  if (!quiet && rmScene()) {
     setChrome(true, true); renderDog(dogPoseNow(), 'right', true); if (S.sleeping) sleepTray(); else dockIdle();
     if (isPhone()) { phHomeRefit(); camCx = phCamHome; camApply(camCx); }
     updateHUD();
-    if (B.played) B.dogs.forEach((o, i) => { if (o.ran) setTimeout(() => { if (!BL && cur.mode === 'yard') exTrig(o.d, 'ballEnd', { pose: 'idle' }); }, 150 + i * 200); }); // v2.13: play is over, a short pout, then fine
+    if (B.played) B.dogs.forEach((o, i) => { if (o.ran) setTimeout(() => { if (!BL && rmScene()) exTrig(o.d, 'ballEnd', { pose: 'idle' }); }, 150 + i * 200); }); // v2.13: play is over, a short pout, then fine
   }
 }
 // the portrait-lock card pauses the game (v2.3 phones), as it did Fetch

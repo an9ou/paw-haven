@@ -21,3 +21,5 @@ html.gr-wide:not([data-layout="phone"]) .rm-look.right .rm-n{left:-6px}
 html.gr-wide:not([data-layout="phone"]) .rm-look.left .rm-n{right:-6px}
 /* phones: a wide place pans with the camera and the look chips, so the v2.3 look-right button is not needed there */
 html.gr-wide[data-layout="phone"] #phPeek{display:none}
+/* the yard's dog house, mailbox and bowl sort with the dogs in a grOn yard (43_ground.js grGame): they stay tap targets */
+#view svg.world .gr-prop.gr-game{pointer-events:visiblePainted}

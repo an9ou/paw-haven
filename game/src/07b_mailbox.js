@@ -239,7 +239,7 @@ function mailboxRefresh() {
   }
   const html = `<g id="mailboxG" class="hot${n ? ' mb-new' : ''}" tabindex="0" role="button" aria-label="${esc(lbl)}" data-unread="${n}"><rect x="${MB_BOX[0]}" y="${MB_BOX[1]}" width="${MB_BOX[2]}" height="${MB_BOX[3]}" fill="transparent"/>${place(mailboxArt(), MB_BOX[0], MB_BOX[1], MB_BOX[2], MB_BOX[3])}</g>`;
   if (old) { old.outerHTML = html; } else {
-    const anchor = svg.querySelector('#houseG') || svg.querySelector('#bowlG') || svg.querySelector('#pack');
+    const anchor = grAt('houseG', svg) || grAt('bowlG', svg) || svg.querySelector('#pack'); // v2.15: in a grOn yard the house and the bowl sort with the dogs: their old place (43_ground.js grAt)
     if (anchor) anchor.insertAdjacentHTML('beforebegin', html); else svg.insertAdjacentHTML('beforeend', html);
   }
   const g = svg.querySelector('#mailboxG'); if (!g) return;

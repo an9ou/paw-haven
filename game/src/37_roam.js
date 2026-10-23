@@ -18,7 +18,9 @@ const RM_WALK = 150, RM_RUN = 360; // world units a second
 const RM_CROP = 700, RM_WIDEN = 1.3; // the phone crop in world units (section 5.2): at most 700, and at most 1.3 x the v2.9 crop, so the props' 48 px tap rects keep clear of the dog
 const RM_OUT = ['yard', 'park', 'beach', 'hilltop', 'dogpark', 'woods', 'pier', 'river', 'fujihill', 'square', 'shibuya', 'yoyogi', 'asakusa', 'ueno', 'tokyotower', 'odaiba']; // v2.11: the six Tokyo places
 const rmWander = () => !navigator.webdriver || !!prefs.rmTest; // autonomous walking (the harness pins it off unless a suite asks)
-function rmOn() { return !!S && cur.mode === 'yard' && RM.paused.size === 0; } // roaming runs now (the scene is up and nothing holds it)
+// v2.15: the scene the roam runs in: the yard scene (cur.mode 'yard', every place) and Kibble Corner's street (cur.mode 'market') once it has the deep floor (grOn)
+function rmScene() { return cur.mode === 'yard' || (cur.mode === 'market' && grOn()); }
+function rmOn() { return !!S && rmScene() && RM.paused.size === 0; } // roaming runs now (the scene is up and nothing holds it)
 // the autonomous part may act now: walks, asks, ambient lines (never during ball play, photo mode, a modal, training or the pinned test pose)
 function rmFree() { return rmOn() && rmWander() && !!$('#pack') && modal.hidden && !(typeof blOn === 'function' && blOn()) && !(typeof phActive === 'function' && phActive()) && !idlePin && !TRN && !curling && !(typeof FS === 'object' && FS && FS.walking); }
 function rmDogs() { if (!S || !S.dogs) return []; return [D()].concat(others().slice(0, 3).filter((d) => !hmMumIn(d))); } // every dog drawn in this scene, the leader first
@@ -44,7 +46,9 @@ const rmOver = (a, b) => Math.max(0, Math.min(a[0] + a[2], b[0] + b[2]) - Math.m
 // before the scene exists: the bowl and the dog house. Once it is up, rmScan reads every tappable thing from the live DOM.
 // scenery a dog must not stand in (feet only; its tap rect may cover it): the Town Square fountain basin
 const RM_SCENERY = { square: [[20, 400, 222, 92, 'scene']] };
-function rmStaticNo(place) { const l = [[205, 462, 90, 90, 'bowl']].concat(RM_SCENERY[place] || []); if (place === 'yard') l.push([620, 330, 240, 200, 'house']); if (grOn(place)) grNo(place).forEach((b) => l.push(b)); return l; }
+const GR_SCENERY = { square: [[20, 428, 184, 64, 'scene']] }; // v2.15: a grOn square's fountain rim (the deep floor's fountain stands further back)
+const rmScenery = (place) => (grOn(place) && GR_SCENERY[place]) || RM_SCENERY[place] || [];
+function rmStaticNo(place) { const l = (grOn(place) && place === 'yard' ? [] : [[205, 462, 90, 90, 'bowl']]).concat(rmScenery(place)); if (place === 'yard' && !grOn(place)) l.push([620, 330, 240, 200, 'house']); if (grOn(place)) grNo(place).forEach((b) => l.push(b)); return l; }
 function rmWorldBox(svg, M, el) {
   const r = el.getBoundingClientRect(); if (!r.width || !r.height) return null;
   const a = new DOMPoint(r.left, r.top).matrixTransform(M), b = new DOMPoint(r.right, r.bottom).matrixTransform(M);
@@ -57,14 +61,14 @@ function rmScan() {
   const M = svg.getScreenCTM().inverse(), out = [];
   const Q = '.hot, [data-hot], [data-shop], [data-decor], [data-drift], [data-pile], [role="button"], .fs-hit, #mailboxG';
   svg.querySelectorAll(Q).forEach((el) => {
-    if (el.closest('#pack, #fx, #ballLayer, #zzz, #fbPackBowls, #dcVis') || el.parentElement.closest(Q)) return; // dogs are not no-go, and a nested hot thing is covered by its parent
+    if (el.closest('#pack, #fx, #ballLayer, #zzz, #fbPackBowls, #dcVis') || el.parentElement.closest(Q) || grGameEl(el)) return; // dogs are not no-go, and a nested hot thing is covered by its parent
     const b = rmWorldBox(svg, M, el); if (b && b[2] > 4 && b[3] > 4 && b[1] < 600 && b[1] + b[3] > 0) out.push(b.concat(el.closest('[data-decor]') ? (rmFestDecor(el) ? 'fest' : 'decor') : el.closest('[data-drift], [data-pile], #wnDogG, #hwPopG') ? 'prop' : el.id || el.dataset.hot || el.dataset.shop || 'hot'));
   });
   [...(($('#placeBtns') || {}).children || [])].concat([$('#phPeek'), $('#rmLookL'), $('#rmLookR')]).forEach((el) => { if (!el || el.hidden) return; const b = rmWorldBox(svg, M, el); if (b && b[1] < 600) out.push(b.concat('btn')); });
   const vt = svg.querySelector('#visitorG .vtag rect'), vb = vt && rmWorldBox(svg, M, vt); if (vb) out.push(vb.concat('vtag')); // v2.11.1: the visiting pup's name tag keeps readable next to the grown dogs (a small box of its own: at most 8% covered)
   svg.querySelectorAll('#dcVis .dcvis:not([style*="none"]) .dc-tag > rect').forEach((el) => { const b = rmWorldBox(svg, M, el); if (b && b[1] < 600) out.push(b.concat('dctag')); }); // v2.12 LAYOUT: the Dog Card visitors' "visitor" tags, the same rule (40_dogcards.js dcOk ignores them for the visitors themselves)
-  if (S.place === 'yard' && !out.some((b) => b[4] === 'houseG')) out.push([620, 330, 240, 200, 'house']);
-  (RM_SCENERY[S.place] || []).forEach((b) => out.push(b.slice()));
+  if (S.place === 'yard' && !grOn() && !out.some((b) => b[4] === 'houseG')) out.push([620, 330, 240, 200, 'house']);
+  rmScenery(S.place).forEach((b) => out.push(b.slice()));
   if (grOn()) grNo().forEach((b) => out.push(b)); // v2.15: the floor props' feet boxes (PawArt.FLOOR, 43_ground.js)
   RM.no = out;
 }
@@ -127,7 +131,7 @@ function rmCands(d, strict) { const z = rmZoneOf(S.place), out = []; for (let y 
    inside the home crop while any level has such a spot, rmValidate moves a dog the crop cuts, and rmPick and the first placement spread the dogs apart
    (less tap rect overlap weighs more). The look chips count a dog whose tap rect the crop cuts. Desktop is unchanged. */
 function rmCropWin() { // the home crop in world x on a phone (where the camera rests), null on desktop
-  if (!isPhone() || !S || cur.mode !== 'yard' || grWide()) return null; const w = Math.min(1000, rmCropW()), h = w / 2, c = clamp(typeof phHomeCx === 'number' ? phHomeCx : 358, h, 1000 - h); return [c - h, c + h]; // v2.15: a wide place's camera follows the pack (43_ground.js), no home crop
+  if (!isPhone() || !S || !rmScene() || grWide()) return null; const w = Math.min(1000, rmCropW()), h = w / 2, c = clamp(typeof phHomeCx === 'number' ? phHomeCx : 358, h, 1000 - h); return [c - h, c + h]; // v2.15: a wide place's camera follows the pack (43_ground.js), no home crop
 }
 const rmInWin = (x, k, W) => !W || (x + RM_TAP[0] * k >= W[0] + 6 && x + (RM_TAP[0] + RM_TAP[2]) * k <= W[1] - 6); // the whole tap rect (feet x, scale k) inside window W
 const rmWinOnly = (d, l, W) => (W ? l.filter((p) => rmInWin(p[0], rmKd(d, p[1]), W)) : l);
@@ -205,7 +209,7 @@ function rmFixed(d, i) {
 function rmApplyFixed(d, i) {
   const r = rmSt(d), f = rmFixed(d, i), held = RM.paused.size > 0 && r.seeded;
   if (held && f && !d.sleeping && !r.fix) return; // held (ball play): nobody walks off to the sofa or the chair
-  const walk = rmWander() && cur.mode === 'yard' && !!$('#pack') && r.seeded; // a dog in the scene walks over (onto the sofa, off its bed); a fresh scene just places it
+  const walk = rmWander() && rmScene() && !!$('#pack') && r.seeded; // a dog in the scene walks over (onto the sofa, off its bed); a fresh scene just places it
   if (f) {
     const far = Math.hypot(f[0] - r.x, f[1] - r.y) > 30; if (!r.fix) r.fx0 = [r.x, r.y]; r.q = null; r.fix = true; r.face = f[2];
     if (walk && far && !d.sleeping) { r.tw = { x0: r.x, y0: r.y, k0: rmKb(r), x1: f[0], y1: f[1], k1: rmPropK(f[3] || 0.6), t0: performance.now(), dur: Math.min(2600, (Math.hypot(f[0] - r.x, f[1] - r.y) / RM_WALK) * 1000), o: { pose: packPose[d.id] } }; r.face = f[0] < r.x ? 'left' : 'right'; rmLoop(); return; }
@@ -268,7 +272,7 @@ function rmPaint(d) {
 }
 // back to front by feet y. Only the pack dogs' nodes move (moving the leader's node would drop a rub's pointer capture on #dogHit)
 function rmDepth() {
-  if (grOn() && cur.mode === 'yard') return grDepth(); // v2.15: the floor props sort with the dogs
+  if (grOn() && rmScene()) return grDepth(); // v2.15: the floor props sort with the dogs
   const pk = $('#pack'); if (!pk) return; const els = [...pk.children].filter((e) => e.classList.contains('rmdog')); if (els.length < 2) return;
   const y = (e) => { const d = dogById(e.dataset.dog); return d ? rmSt(d).y : 0; };
   const want = els.slice().sort((a, b) => y(a) - y(b)), key = want.map((e) => e.dataset.dog).join(','); if (key === els.map((e) => e.dataset.dog).join(',')) return;
@@ -293,7 +297,7 @@ function rmFrame(t) {
 }
 function rmLoop() { if (!RM.raf) RM.raf = requestAnimationFrame(rmFrame); }
 function rmArrive(d, o) {
-  if (d === D() && !o.legacy && cur.mode === 'yard') { const p = o.pose || (busy || IDLE.act ? null : dogPoseNow()); if (p) renderDog(p, o.face || rmSt(d).face, true); }
+  if (d === D() && !o.legacy && rmScene()) { const p = o.pose || (busy || IDLE.act ? null : dogPoseNow()); if (p) renderDog(p, o.face || rmSt(d).face, true); }
   if (d !== D() && o.pose) { packPose[d.id] = o.pose; rmPaint(d); }
   if (typeof o.done === 'function') { try { o.done(); } catch (e) { console.error(e); } }
 }
@@ -332,8 +336,8 @@ function rmTo(d, x, y, o = {}) {
   if (d !== D() && r.fix) { if (typeof o.done === 'function') o.done(); return; }
   const spd = o.speed || (o.run ? RM_RUN : RM_WALK) * (o.legacy ? 1 : 1 / Math.max(0.05, IDLE.speed));
   if (!o.legacy) r.nosz = false; r.holdLv = null; // a new walk: its front-spot hold level (rmPetted, rmAsk) is set again on arrival
-  if (grOn() && cur.mode === 'yard' && !o.legacy && o.secs == null && !o.direct) { grWalk(d, x, y, o); return; } // v2.15: a smooth path over the deep floor, gaits (43_ground.js)
-  const path = o.legacy || o.secs != null || o.direct || cur.mode !== 'yard' ? [[x, y]] : rmRoute(r.x, r.y, x, y, rmSz(r));
+  if (grOn() && rmScene() && !o.legacy && o.secs == null && !o.direct) { grWalk(d, x, y, o); return; } // v2.15: a smooth path over the deep floor, gaits (43_ground.js)
+  const path = o.legacy || o.secs != null || o.direct || !rmScene() ? [[x, y]] : rmRoute(r.x, r.y, x, y, rmSz(r));
   const dur = rmLeg(d, path, o, spd, true); if (dur <= 0) rmFrame(now); else rmLoop();
 }
 // the next leg of a walk: path is what is left of it (its last point is where the walk ends)
@@ -342,13 +346,13 @@ function rmLeg(d, path, o, spd, first) {
   const dist = Math.hypot(x - r.x, y - r.y), dur = o.secs != null ? o.secs * 1000 : (dist / spd) * 1000, f0 = r.face;
   if (Math.abs(x - r.x) > 3 && !o.legacy) r.face = x < r.x ? 'left' : 'right';
   r.tw = { x0: r.x, y0: r.y, k0: rmKb(r), x1: x, y1: y, k1: o.k != null ? o.k : null, t0: now, dur, o, rest: path, spd, end };
-  if (d === D() && !o.legacy && cur.mode === 'yard' && dist > 3 && (first || f0 !== r.face)) renderDog('walk', r.face, true);
+  if (d === D() && !o.legacy && rmScene() && dist > 3 && (first || f0 !== r.face)) renderDog('walk', r.face, true);
   else if (d !== D()) rmPaint(d);
   return dur;
 }
 // place a dog at once: any of { x, y, face, pose }. Cheap: moves the transform, redraws the art only when the pose or facing changes
 function rmSet(d, o = {}) {
-  if (!d || !S) return; const r = rmSt(d); r.tw = null; if (cur.mode === 'yard') r.nosz = false;
+  if (!d || !S) return; const r = rmSt(d); r.tw = null; if (rmScene()) r.nosz = false;
   if (o.x != null) r.x = o.x; if (o.y != null) r.y = o.y; if (o.face) r.face = o.face; if (o.x != null || o.y != null) { r.hx = r.x; r.hy = r.y; if (!r.fix) r.k = null; }
   if (d === D()) { if (o.pose || o.face) { const lp = rmLeadPose(); renderDog(o.pose || lp[0] || 'idle', o.face || lp[1] || 'right'); } }
   else if (o.pose) packPose[d.id] = o.pose;
@@ -363,7 +367,7 @@ function rmResume(tag) { RM.paused.delete(tag); }
 function rmLegacyTo(tx, ty, s, secs) {
   const d = D(); if (!d) return; const r = rmSt(d), home = tx === 0 && ty === 0 && s === 1;
   if (!home && !r.away) { r.hx = r.x; r.hy = r.y; } r.away = !home;
-  const scene = cur.mode === 'yard', X = home ? (scene ? r.hx : 430) : 430 * s + tx, Y = home ? (scene ? r.hy : 500) : 500 * s + ty, k = !scene ? s : home || s === 1 ? null : rmPropK(s); // the bath and the old Fetch keep the v2.9 stage: home is 430, 500 at size 1
+  const scene = rmScene(), X = home ? (scene ? r.hx : 430) : 430 * s + tx, Y = home ? (scene ? r.hy : 500) : 500 * s + ty, k = !scene ? s : home || s === 1 ? null : rmPropK(s); // the bath and the old Fetch keep the v2.9 stage: home is 430, 500 at size 1
   r.nosz = !scene; // v2.11.1: in the scene the size class multiplies (a prop-fitted size too: a small dog on the bench is a small dog); the bath tub is fitted to the one dog in it
   rmTo(d, X, Y, { legacy: true, secs: Math.max(0, secs), k });
 }
@@ -478,7 +482,7 @@ function rmPetted(d) {
   const r = rmSt(d), now = performance.now(); RM.petT[d.id] = now; r.ask = 0; r.askNext = now + 30000;
   if (grWide()) grFocus(d, 4500); // v2.15: the camera keeps the petted dog in view
   exTrig(d, 'pet', { pose: 'pet' }); // v2.13: every petted dog makes a face now and then (41_expressions.js, its own cooldown)
-  if (!rmWander() || cur.mode !== 'yard' || r.fix || d.sleeping) return;
+  if (!rmWander() || !rmScene() || r.fix || d.sleeping) return;
   r.hold = now + 4000; if (d !== D()) packNext[d.id] = Math.max(packNext[d.id] || 0, now + 4000);
   if (RM.paused.size || (typeof blOn === 'function' && blOn())) return; // held (ball play): the pet counts, the dog stays where the game put it
   if (r.petFront && now - r.petFront < 9000) return; r.petFront = now;
@@ -491,7 +495,7 @@ function rmPetted(d) {
 
 /* ---------------- the scene ---------------- */
 function rmTick() {
-  if (!S || cur.mode !== 'yard' || !$('#pack')) return; const now = performance.now(); if (now < RM.tickAt) return; RM.tickAt = now + 200;
+  if (!S || !rmScene() || !$('#pack')) return; const now = performance.now(); if (now < RM.tickAt) return; RM.tickAt = now + 200;
   if (!RM.no || now > RM.noAt || now > (RM.valAt || 0)) { // held (ball play, photo mode, a modal, training): nobody is walked off its spot
     RM.valAt = now + 3000; // v2.12 LAYOUT: its own 3 s clock (the Dog Card visitors rescan every 400 ms, 40_dogcards.js dcFrame, which kept RM.noAt ahead and starved this check)
     const n0 = RM.no ? RM.no.length : -1; rmScan();
@@ -506,9 +510,9 @@ function rmTick() {
   rmAttention(now);
 }
 function rmSceneUp() {
-  if (!S || !$('#pack')) return; rmAdopt(); RM.up = performance.now(); if (cur.mode === 'yard') { const lr = rmSt(D()); if (lr.nosz) { lr.nosz = false; rmPaint(D()); } } // back from the bath: the leader takes its size again
+  if (!S || !$('#pack')) return; rmAdopt(); RM.up = performance.now(); if (rmScene()) { const lr = rmSt(D()); if (lr.nosz) { lr.nosz = false; rmPaint(D()); } } // back from the bath: the leader takes its size again
   rmScan(); rmValidate(true); rmDepth(); // the scene is in the DOM now: read its tappable things and step anybody off them before the first frame (phones, v2.12: and into the crop)
-  requestAnimationFrame(() => { if (cur.mode !== 'yard' && cur.mode !== 'bath') return; rmScan(); rmValidate(true); rmDepth(); if (isPhone()) rmLookSync(); });
+  requestAnimationFrame(() => { if (!rmScene() && cur.mode !== 'bath') return; rmScan(); rmValidate(true); rmDepth(); if (isPhone()) rmLookSync(); });
 }
 on('yard:enter', rmSceneUp);
 
@@ -530,7 +534,7 @@ function rmSpan() {
   if (L > R) { L = 186; R = 530; } return [L, R];
 }
 function rmLookSync() {
-  const svg = $('#view > svg.world'); if (!svg || (!isPhone() && !grWide()) || cur.mode !== 'yard') return;
+  const svg = $('#view > svg.world'); if (!svg || (!isPhone() && !grWide()) || !rmScene()) return;
   const vb = svg.viewBox.baseVal; if (!vb || !vb.width) return; const cw = grWide() ? grCam() : null, x0 = cw ? cw.x : vb.x, x1 = cw ? cw.x + cw.w : vb.x + vb.width; // v2.15: what shows of a wide place
   // v2.12 LAYOUT: a dog counts when its tap rect is cut by the crop edge (more than 12 world units of it off screen), not only when its feet are off
   // (a big dog stood half off screen with no chip)
