@@ -262,15 +262,27 @@ function srHearts(x, y, n) {
     setTimeout(() => g.remove(), 1500);
   }
 }
-// v2.7 phone review: on phones a room dog's line (and the meet dog's) starts below the Adopt me board's bottom edge, so it never covers the board
-function srSay(text, x, y, ms) {
-  say(text, x, y, ms); if (!isPhone() || bubble.hidden) return;
-  const svg = $('svg.world', view); if (!svg) return;
-  const b = Math.round(worldToStage(svg, 0, SR_ROOM.board[1] + SR_ROOM.board[3]).y + 4); if ((parseFloat(bubble.style.top) || 0) < b) bubble.style.top = b + 'px';
+// v2.7 phone review: on phones a room dog's line (and the meet dog's) keeps clear of the Adopt me board when there is room above the dog's head
+// v2.14.1: the board is something to avoid, no longer a floor (pushed under the board, a line covered the dog's face). rd: the speaking room dog, or
+// 'meet' for the meet dog: its drawn box where it stands when it has walked in (a line starts while it is still walking)
+function srSay(text, x, y, ms, rd) {
+  const svg = $('svg.world', view); if (!svg) return say(text, x, y, ms);
+  const o = {}; if (isPhone()) { const a = worldToStage(svg, SR_ROOM.board[0], SR_ROOM.board[1]), b = worldToStage(svg, SR_ROOM.board[0] + SR_ROOM.board[2], SR_ROOM.board[1] + SR_ROOM.board[3]); o.avoid = [{ l: a.x, t: a.y, r: b.x, b: b.y + 4 }]; }
+  const n = rd === 'meet' ? $('#adoptDog .sr-meetdog') : rd ? srNode(rd) : null, art = n && n.querySelector('svg.pa-dog'), g = art && art.firstElementChild;
+  const to = rd === 'meet' ? (SR && SR.meet ? [SR_MEET[0], SR_MEET[1], srK(SR.meet.key)] : null) : rd ? [rd.x, rd.y, srK(rd, rd.y)] : null;
+  if (g && to) { // where it stands once it has walked in, either way round (it may still be walking, and it turns to face the room when it stops)
+    const q = g.getBoundingClientRect(), sg = stage.getBoundingClientRect(), cs = getComputedStyle(n).transform, m = new DOMMatrixReadOnly(cs && cs !== 'none' ? cs : undefined), M = (n.parentNode && n.parentNode.getScreenCTM ? n.parentNode : svg).getScreenCTM();
+    if (q.width > 4 && m.a > 0) {
+      const ox = M.a * m.e + M.e - sg.left, oy = M.d * m.f + M.f - sg.top, tx = M.a * to[0] + M.e - sg.left, ty = M.d * to[1] + M.f - sg.top, k = to[2] / m.a; // origins (the feet) now and there, in stage px
+      const l = (q.left - sg.left - ox) * k, r = (q.right - sg.left - ox) * k, w = Math.max(Math.abs(l), Math.abs(r));
+      o.dog = { l: tx - w, r: tx + w, t: ty + (q.top - sg.top - oy) * k, b: ty + (q.bottom - sg.top - oy) * k, face: rd === 'meet' ? 'r' : sayFace(art) }; // (the meet dog stops facing the room: right)
+    }
+  }
+  say(text, x, y, ms, o);
 }
 function srLine(rd, list, force) {
   if (!force && (performance.now() - (SR.lineAt || 0) < 5000 || Math.random() > 0.35)) return;
-  SR.lineAt = performance.now(); srSay(tt('shelter.dog_says', '{name}: {line}', { name: rd.name, line: PICK(list) }), rd.x, rd.y - 170 * srK(rd, rd.y), 2400);
+  SR.lineAt = performance.now(); srSay(tt('shelter.dog_says', '{name}: {line}', { name: rd.name, line: PICK(list) }), rd.x, rd.y - 170 * srK(rd, rd.y), 2400, rd);
 }
 function srBark(rd, kind) { if (barkMode() === 'off') return; playBark(voiceOf(rd.look), kind, { volume: 0.8 }); const bl = window.__barkLog; bl.push({ dog: rd.name, id: rd.id, kind, t: Math.round(performance.now()), room: true }); if (bl.length > 300) bl.shift(); }
 
@@ -334,7 +346,7 @@ function srPetMeet() {
   const now = performance.now(); SR.meet.taps = (SR.meet.taps || []).filter((t) => now - t < 4000); SR.meet.taps.push(now);
   const belly = SR.meet.taps.length >= 3; if (belly) SR.meet.taps = [];
   m.innerHTML = srMeetSVG(key, belly ? 'rollover' : 'pet', 'right'); srHearts(SR_MEET[0] + 20, SR_MEET[1] - 190 * srK(key), belly ? 5 : 2); SFX.boop(belly ? 880 : 720);
-  playBark(voiceOf(srStarterLook(key)), 'play', { volume: 0.8 }); SR.pets = (SR.pets || 0) + 1; if (belly) { SR.bellies = (SR.bellies || 0) + 1; srSay(PICK(srLines('belly')), SR_MEET[0] + 40, SR_MEET[1] - 200 * srK(key), 2200); }
+  playBark(voiceOf(srStarterLook(key)), 'play', { volume: 0.8 }); SR.pets = (SR.pets || 0) + 1; if (belly) { SR.bellies = (SR.bellies || 0) + 1; srSay(PICK(srLines('belly')), SR_MEET[0] + 40, SR_MEET[1] - 200 * srK(key), 2200, 'meet'); }
   clearTimeout(SR.meet.t); SR.meet.t = srAfter(belly ? 2000 : 900, () => { if (SR.meet && SR.meet.key === key && m.isConnected) m.innerHTML = srMeetSVG(key, 'happy', 'right'); });
 }
 function srSelectKey(key, fromRd) {

@@ -70,7 +70,7 @@ function devOf(w) {
     if (fmf) await ctx.route('**/fonts/i18n/**', relay(fmf));
     if (imf) await ctx.route('**/img/map/**', relay(imf));
     const page = await ctx.newPage(); page.setDefaultTimeout(15000);
-    const cfg = { phone, docScrolls: true, skip: '', captions: CAPTIONS, layers: LAYERS };
+    const cfg = { phone, docScrolls: true, skip: '', captions: CAPTIONS, layers: LAYERS, frames: false }; // R12 crowd: the game's pencil windows only
     const byKey = new Map(), st = [];
     const settle = () => page.evaluate(async () => {
       try { await Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 2000))]); } catch (e) { /* no fonts api */ }

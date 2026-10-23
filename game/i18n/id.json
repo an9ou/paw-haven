@@ -6469,7 +6469,7 @@
  "shelter.is_home": "{name} sudah di rumah! Dia mengendus semuanya dua kali. {n, plural, other {Sekarang ada # anjing.}}",
  "shelter.kind_adult": "Tinggal di ruang bermain, menunggu keluarga yang tepat.",
  "shelter.kind_puppy": "Tinggal di ruang bermain. Kecil, cepat, dan sangat tertarik pada tali sepatu.",
- "shelter.kind_rescue": "Tiba hari ini sebagai rescue.",
+ "shelter.kind_rescue": "Baru diselamatkan, tiba hari ini.",
  "shelter.kind_senior": "Tinggal di ruang bermain. Lutut tua, hati besar, bantal empuk.",
  "shelter.label_board": "Papan Adopsi: lihat siapa yang mencari rumah",
  "shelter.label_pet": "{name} si {breed}: ketuk untuk mengelus",
