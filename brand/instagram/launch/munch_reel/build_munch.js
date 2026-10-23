@@ -1,4 +1,4 @@
-// "Snack time" ad Reel (1080 x 1920, 30 fps, 16 s): a calm, no-text close-up in the style of the cozy-game ads (one animal, one small
+// "Snack time" ad Reel (1080 x 1920, 30 fps, 11 s): a calm, no-text close-up in the style of the cozy-game ads (one animal, one small
 // action, a soft deep scene), then an end card. A dog (any of the 35, DOG=<key>) sits in the autumn yard; the player's hand (the game's
 // own crayon hand, from the trick signals) comes in from the bottom right with a bone-shaped biscuit, winds back and throws it; it spins
 // in an arc into the dog's mouth. The dog chews it bite by bite with a blissful face (crumbs, crunches), winks, hops up to beg with heart
@@ -23,7 +23,7 @@ const KEY = process.env.DOG || KEYS.filter((k) => k !== 'dachs')[Math.floor(Math
 if (!KEYS.includes(KEY)) throw new Error('unknown dog ' + KEY + '; one of: ' + KEYS.join(' '));
 const INFO = PA.DOGS.find((d) => d.key === KEY);
 console.log('dog:', KEY, '=', INFO.name, 'the', INFO.breed);
-const W = 1080, H = 1920, FPS = 30, T = 16, INK = '#5B3D32', MUTED = '#8A7468', PAPER = '#FFF8EC';
+const W = 1080, H = 1920, FPS = 30, T = 11, INK = '#5B3D32', MUTED = '#8A7468', PAPER = '#FFF8EC';
 const inner = (svg) => svg.trim().replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
 const f1 = (n) => Math.round(n * 10) / 10, r3 = (n) => Math.round(n * 1000) / 1000;
 const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x)), seg = (t, a, b) => clamp((t - a) / (b - a));
@@ -37,16 +37,16 @@ const bone = (x, y, s, rot, sx = 1, sy = 1) => `<g transform="translate(${f1(x)}
 
 const POSE = process.env.POSE || 'sit', END_POSE = process.env.END_POSE || 'beg';   // sits through the snack, sits up to beg at the end
 // ---- the story (seconds) ----
-const HAND0 = 0.5, HAND1 = 1.25, WIND = 1.6, REL = 1.8, FLICK = 1.84, CATCH = 2.6; // the hand comes in, winds back, throws; the catch
-const BITES = [4.0, 5.5, 7.0, 8.3, 9.3];                // a crunch each; the biscuit gets smaller, gone after the last
-const LICK = 9.35, HOP0 = 10.2, HOP1 = 10.56;           // a wink after the last bite, then a happy hop up to beg, heart eyes
-const SOFT0 = 11.9, SOFT1 = 12.7, LOGO = 12.55, PILL = 13.0;
+const HAND0 = 0.3, HAND1 = 0.95, WIND = 1.25, REL = 1.45, FLICK = 1.49, CATCH = 2.2, HAND_OUT = 2.45; // the hand comes in, winds back, throws; the catch
+const BITES = [3.2, 4.3, 5.4];                          // a crunch each (11 s in all: owner, 23 Oct 2026); the biscuit gets smaller, gone after the last
+const LICK = 5.45, HOP0 = 6.2, HOP1 = 6.56;           // a wink after the last bite, then a happy hop up to beg, heart eyes
+const SOFT0 = 7.6, SOFT1 = 8.3, LOGO = 8.15, PILL = 8.55;
 
 // ---- depth: light motes and falling leaves at three depths (0 far, behind the dog; 1 mid; 2 near, in front), fixed so remakes match ----
 let sd = 11; const rr = () => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; };
 const MOTES = Array.from({ length: 18 }, (_, i) => { const d = i % 3; return { d, x: rr() * W, y: rr() * H, r: [5, 10, 24][d] + rr() * [3, 5, 10][d], sp: [18, 32, 55][d] * (0.7 + rr() * 0.6), ph: rr() * 6.3, op: [0.55, 0.45, 0.3][d] }; });
-const LEAVES = [{ d: 0, x: 260, t0: -2, dur: 9, s: 0.9, c: '#F2B33D' }, { d: 2, x: 1010, t0: 0.8, dur: 8, s: 2.6, c: '#E8863A' }, { d: 0, x: 780, t0: 4.5, dur: 9.5, s: 0.8, c: '#E8863A' },
-  { d: 2, x: 70, t0: 6.2, dur: 8, s: 2.3, c: '#F2B33D' }, { d: 1, x: 520, t0: 9.5, dur: 8.5, s: 1.3, c: '#D9693A' }];
+const LEAVES = [{ d: 0, x: 260, t0: -2, dur: 9, s: 0.9, c: '#F2B33D' }, { d: 2, x: 1010, t0: 0.8, dur: 8, s: 2.6, c: '#E8863A' }, { d: 0, x: 780, t0: 3.2, dur: 9.5, s: 0.8, c: '#E8863A' },
+  { d: 2, x: 70, t0: 4.2, dur: 8, s: 2.3, c: '#F2B33D' }, { d: 1, x: 520, t0: 6.0, dur: 8.5, s: 1.3, c: '#D9693A' }];
 const leaf = (x, y, s, rot, c) => `<g transform="translate(${f1(x)} ${f1(y)}) rotate(${f1(rot)}) scale(${r3(s)})"><path d="M0 -22C13 -12 14 10 0 22C-14 10 -13 -12 0 -22Z" fill="${c}" stroke="${INK}" stroke-width="2.6" stroke-linejoin="round"/><path d="M0 -16L0 26" stroke="${INK}" stroke-width="2.2" stroke-linecap="round"/></g>`;
 const depthFx = (t, d) => { let g = '';
   for (const m of MOTES) if (m.d === d) { const y = ((m.y - m.sp * t) % (H + 100) + H + 100) % (H + 100) - 50, x = m.x + Math.sin(t * 0.5 + m.ph) * 30;
@@ -96,7 +96,7 @@ const depthFx = (t, d) => { let g = '';
   X0 = Math.min(X0, 1060 - 150 * K / 6.6 - M.tip[0] * K); // room for the biscuit in front of the muzzle
   const Y0 = FEET - GY * K, cx = (x) => X0 + x * K, cy = (y) => Y0 + y * K;
   const MOUTH = [cx(M.tip[0] - 4), cy(M.tip[1] + 3)], HEAD = [cx(HEADX), cy(M.tip[1])];
-  const SIZES = [230, 190, 152, 116, 78, 0].map((s) => s * K / 6.6);
+  const SIZES = [230, 168, 108, 0].map((s) => s * K / 6.6);
   console.log('measured', JSON.stringify(M), 'K', r3(K));
   const crumbs = [];                                      // per bite: a little burst of biscuit crumbs that fall to the grass
   for (const [bi, tb] of BITES.entries()) for (let j = 0; j < 7; j++) { const a = -2.4 + j * 0.55 + Math.sin(bi * 7 + j * 3) * 0.25, v = 380 + 160 * Math.abs(Math.sin(bi * 3 + j));
@@ -107,17 +107,17 @@ const depthFx = (t, d) => { let g = '';
   const handG = `<polygon points="55.2,111.5 86.8,100 166,330 120,350" fill="#B9D4F3" stroke="#4A332B" stroke-width="2.4" stroke-linejoin="round"/>`
     + `<line x1="70" y1="150" x2="98" y2="140" stroke="#4A332B" stroke-width="1.6" opacity=".35"/>`
     + `<defs><clipPath id="handclip"><rect x="18" y="0" width="74" height="120"/></clipPath></defs><g clip-path="url(#handclip)">${HAND}</g>`;
-  const KEYF = [[0, 1200, 2250, 6], [HAND0, 1200, 2250, 6], [HAND1, 880, 1650, 0], [WIND, 950, 1740, 16], [FLICK, 830, 1500, -30], [1.98, 815, 1485, -33], [2.8, 1200, 2250, -8]];
+  const KEYF = [[0, 1200, 2250, 6], [HAND0, 1200, 2250, 6], [HAND1, 880, 1650, 0], [WIND, 950, 1740, 16], [FLICK, 830, 1500, -30], [FLICK + 0.14, 815, 1485, -33], [HAND_OUT, 1200, 2250, -8]];
   const EASE = [null, null, eo3, eio, (x) => 1 - Math.pow(1 - x, 4), eo3, (x) => x * x];
   const handAt = (t) => { let i = 1; while (i < KEYF.length - 1 && t > KEYF[i][0]) i++; const a = KEYF[i - 1], z = KEYF[i], q = (EASE[i] || eio)(seg(t, a[0], z[0]));
     return [a[1] + (z[1] - a[1]) * q, a[2] + (z[2] - a[2]) * q, a[3] + (z[3] - a[3]) * q]; };
   const toScreen = ([hx, hy, r], [px, py]) => { const c = Math.cos(r * Math.PI / 180), sn = Math.sin(r * Math.PI / 180), dx = (px - PALM[0]) * HU, dy = (py - PALM[1]) * HU; return [hx + dx * c - dy * sn, hy + dx * sn + dy * c]; };
   const PALM_BONE = 210;                                 // the biscuit on the palm, big: it is near the camera
-  const hand = (t) => { if (t < HAND0 || t > 2.8) return ''; const [hx, hy, r] = handAt(t);
+  const hand = (t) => { if (t < HAND0 || t > HAND_OUT) return ''; const [hx, hy, r] = handAt(t);
     let g = `<g transform="translate(${f1(hx)} ${f1(hy)}) rotate(${f1(r)}) scale(${HU}) translate(${-PALM[0]} ${-PALM[1]})">${handG}`;
     if (t < REL) g += bone(PALM[0] - 2, PALM[1] - 4, PALM_BONE / HU, -28);
     g += `</g>`;
-    if (t > WIND + 0.02 && t < 2.05) { const o = r3(1 - seg(t, 1.9, 2.05)); // speed lines behind the flick
+    if (t > WIND + 0.02 && t < FLICK + 0.21) { const o = r3(1 - seg(t, FLICK + 0.06, FLICK + 0.21)); // speed lines behind the flick
       for (let j = 0; j < 3; j++) { const [ax2, ay2] = toScreen([hx, hy, r], [100 + j * 6, 40 + j * 22]); g += `<path d="M${f1(ax2)} ${f1(ay2)}q60 50 150 70" fill="none" stroke="${INK}" stroke-width="7" stroke-linecap="round" opacity="${o}"/>`; } }
     return `<g filter="url(#handsoft)">${g}</g>`; };
   const RELP = toScreen(handAt(REL), [PALM[0] - 2, PALM[1] - 4]); // where the biscuit leaves the palm
@@ -157,7 +157,7 @@ const depthFx = (t, d) => { let g = '';
   const scene = (t) => {
     const e = eio(seg(t, 0, SOFT1)), fr = Math.floor(t * 3) % 3, breath = 1 + 0.01 * Math.sin(t * 2 * Math.PI * 1.2);
     let pose = POSE, expr, lift = 0, k = 0;
-    if (t >= 0.85 && t < CATCH) expr = 'wow';              // the treat! star eyes while the hand comes in and throws
+    if (t >= 0.6 && t < CATCH) expr = 'wow';              // the treat! star eyes while the hand comes in and throws
     else if (t >= CATCH && t < LICK) expr = 'dreamy';
     else if (t >= LICK && t < (HOP0 + HOP1) / 2) expr = 'wink';
     else if (t >= (HOP0 + HOP1) / 2) { pose = END_POSE; expr = 'hearts'; }
@@ -196,9 +196,9 @@ const depthFx = (t, d) => { let g = '';
   };
 
   // the cover: the dog mid-chew with the blissful face, the logo above (the profile grid shows the middle 1080 x 1440)
-  await shot(page(scene(5.6) + `<svg x="140" y="250" width="800" height="249" viewBox="0 0 900 280">${LOGO_SVG}</svg>`), path.join(OUT, `snack-cover-${KEY}.jpg`), 'jpeg');
+  await shot(page(scene(3.8) + `<svg x="140" y="250" width="800" height="249" viewBox="0 0 900 280">${LOGO_SVG}</svg>`), path.join(OUT, `snack-cover-${KEY}.jpg`), 'jpeg');
   if (process.env.ONLY === 'stills') {
-    const ts = process.env.STRIP ? process.env.STRIP.split(',').map(Number) : [0.4, 1.0, 1.6, 1.84, 2.2, 2.62, 5.0, 9.6, 10.9, 13.7];
+    const ts = process.env.STRIP ? process.env.STRIP.split(',').map(Number) : [0.3, 0.8, 1.25, 1.5, 1.8, 2.22, 3.8, 5.7, 6.9, 9.5];
     for (const [j, t] of ts.entries()) await shot(page(frameAt(t)), path.join(WORK, `still${String(j).padStart(2, '0')}.png`));
     await b.close(); console.log('stills done'); return;
   }

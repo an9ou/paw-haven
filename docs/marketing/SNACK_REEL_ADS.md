@@ -9,7 +9,7 @@ English only. Files are in `brand/instagram/launch/munch_reel/`.
 
 | File | What |
 |---|---|
-| `doodle-doggo-snack-reel-chihuahua.mp4` | **Ad 1: Peanut the Chihuahua.** 1080 x 1920, 30 fps, 16 s, with the game's yard music and soft crunch sounds. |
+| `doodle-doggo-snack-reel-chihuahua.mp4` | **Ad 1: Peanut the Chihuahua.** 1080 x 1920, 30 fps, 11 s (owner, 23 Oct 2026: 10–12 s), with the game's yard music and soft crunch sounds. |
 | `snack-cover-chihuahua.jpg` | Its cover: Peanut mid-chew with the blissful face, the Doodle Doggo logo above, in the grid's 3:4 crop. |
 | `build_munch.js` | Makes one for any of the 35 dogs (`POSE=sit` and `END_POSE=beg` by default): `DOG=<key> NODE_PATH=/opt/node-tools/node_modules node brand/instagram/launch/munch_reel/build_munch.js <workdir>` (no `DOG`: a random dog other than Noodle; about 5 minutes; `ONLY=stills` renders key frames and the cover only). It measures each dog (its size and where its muzzle is), so the biscuit lands in the mouth and the dog fills the frame, small or big. For a fix to one part, copy the last render's workdir and run with `FRAMES=a-b` (frame numbers at 30 fps, b excluded), so only those frames are rendered again. |
 
@@ -17,7 +17,7 @@ Dog keys: `shiba corgi golden dachs husky mutt chihuahua pug greyhound beagle po
 
 ## What is in it
 
-- **0–11.7 s, no text:** a close-up of the dog in the autumn yard, with depth built round the real art:
+- **0–7.6 s, no text:** a close-up of the dog in the autumn yard, with depth built round the real art:
   - The yard behind is soft (the fence, the clothesline, Mt. Fuji), with a warm haze.
   - Light rays come from the top right.
   - Light motes and falling leaves float at three depths: small and nearly sharp behind the dog, big and very soft in front.
@@ -27,10 +27,10 @@ Dog keys: `shiba corgi golden dachs husky mutt chihuahua pug greyhound beagle po
   - The dog sits and wags.
   - The player's hand (the game's own crayon hand from the trick signals, with a blue sleeve) comes in from the bottom right with a biscuit on the palm. The dog gets star eyes.
   - The hand winds back, then flicks forward with speed lines and a whoosh. The biscuit spins in an arc away from the camera (big and a little soft near the hand, smaller and sharp at the dog), and the dog jumps a little to catch it.
-  - The dog chews with the blissful "dreamy" face: five crunches, the biscuit gets smaller each time, and crumbs fall to the grass.
+  - The dog chews with the blissful "dreamy" face: three crunches, the biscuit gets smaller each time, and crumbs fall to the grass.
   - A wink after the last bite.
   - A little happy hop up to beg (sitting up), with heart eyes.
-- **11.7–16 s, the end card:** the scene goes soft and pale, the Doodle Doggo logo pops in, "a free cozy dog game", and "play free at doodledoggo.app" in a yellow pill.
+- **7.6–11 s, the end card:** the scene goes soft and pale, the Doodle Doggo logo pops in, "a free cozy dog game", and "play free at doodledoggo.app" in a yellow pill.
 - **Real art only:** `PawArt.dog` with v2.13 faces, `PawArt.scene('yard')` and `PawArt.item('Bone-shaped Biscuit')`. No game buttons or menus. The faces with a word on them ("yum!", "blep", "ta-da!") are left out, so the clip stays wordless like the reference.
 - **Sound:** the game's own yard music, quiet. A soft plop at the catch, a crunch at each bite, little chew clicks, and a sparkle at the logo. Levelled to -16 LUFS.
 
