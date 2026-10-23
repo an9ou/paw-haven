@@ -1,6 +1,6 @@
 # v2.15 coordinator handoff (23 Oct 2026, 08:45 UTC; updated by session_015hxeEvVfJnoVFWXme4aCfc)
 
-Resumed: main (v2.14.1) merged into integration (b3dde92), lane/v215-map merged (234bda0), 10 suites green. v215-base = origin/v215-base = v2.14.1. GROUND ART B running (paw-artist, lane/v215-gart-b).
+Resumed: main (v2.14.1) merged into integration (b3dde92), lane/v215-map merged (234bda0), 10 suites green. v215-base = origin/v215-base = v2.14.1. GROUND ART B done and merged (lane/v215-gart-b 83e716d + lane/v215-gart-b-eng 2a21c4e: market mode in the engine via rmScene(), yard house/mailbox/bowl in #pack, FS_PACK_SQ_GR), 12 suites green. Next: ACTIVITIES in parts (training, pool, tracks+economy, lines). Review notes added: grOn places other than the yard keep #bowlG over the scene; ball play on Kibble Corner untested with grOn; PACK_SPOTS cafe [930,466] by the bed; Square winter all-flags render 527 KB; phone_v215_ground 'golden at the back' flaked once; minified size of world C B blocks not measured (109 KB source).
 
 Brief: build v2.15 "Around Town" per V215.md on integration/v2.15. Report to the Game Manager (session_01YWqF1YmkskA96YAshTRHg3) with send_message. Never deploy, upload, publish the artifact or merge to main.
 
