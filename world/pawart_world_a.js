@@ -1423,6 +1423,7 @@ const SCENES={yard:['Your yard',yard],market:['Market Street',market],shelter:['
 const cache={};
 const fresh=s=>{const suf='x'+(++_n);return s.replace(/pwa(\d+)/g,m=>m+suf)};
 PA.scene=function(name,o){
+  if(o&&o.v215===true&&MINE_B[name])return renderB(name,o);// v2.15 B: the deep yard, house and Kibble Corner (block at the end)
   o=o||{};const s=SCENES[name]||SCENES.yard;name=SCENES[name]?name:'yard';const env=name==='map'?(o.jp===true?MAP_JP_ENV:DEF_ENV):mkEnv(o);// the map never shows time or weather (v2.8: only the Japan flag)
   const lk=name==='map'?'|'+(Array.isArray(o.locked)?o.locked.slice().sort().join(','):'')+'|'+JSON.stringify(o.bonds||{}):'';
   const pt=(name==='yard'&&(o.patch==='empty'||o.patch==='ready')?'|'+o.patch:'')+(name==='house'&&o.bed===false?'|nobed':'');
@@ -1445,4 +1446,338 @@ const css=`.pa-wa-scene [data-shop],.pa-wa-scene [data-area],.pa-wa-scene [data-
 .pa-wa-scene [data-shop]:hover .pa-wa-hl,.pa-wa-scene [data-area]:hover .pa-wa-hl,.pa-wa-scene [data-hot]:hover .pa-wa-hl,.pa-wa-scene [data-shop]:focus-visible .pa-wa-hl,.pa-wa-scene [data-area]:focus-visible .pa-wa-hl,.pa-wa-scene [data-hot]:focus-visible .pa-wa-hl{opacity:1}
 .pa-wa-scene [data-locked="1"]{cursor:not-allowed}`;
 if(typeof document!=='undefined'&&!document.getElementById('pawart-world-a-css')){const st=document.createElement('style');st.id='pawart-world-a-css';st.textContent=css;document.head.appendChild(st)}
+/* ======================= v2.15 B: GROUND ART B (V215.md sections 2, 5, 8.2, 12, 13) =======================
+   My Yard, the Cozy House and Kibble Corner (market) redrawn deep, 1000 wide (the yard's saved decoration spots and the festival props stay in
+   1000-wide units), drawn only when the caller passes { v215: true }: no v215 = the old scene byte for byte (the one dispatch hook is the
+   first line of PawArt.scene above). The Square, the Café, the Vet, the Salon and the Mt. Fuji Lookout are the v2.15 B block of world C.
+   World G's conventions (world/pawart_world_g.js): the floor's back line at y 332 to 346, every floor prop in <g id="floorG">, one
+   <g data-fy="<base y>" data-prop="<id>"> each, sorted by base y; PawArt.FLOOR[name] = { w, back, front, kB, kF, poly, props: [{ id, base,
+   box: [x, y, w, h] | null }], spots: [{ id, x, y, tags, act }] } (box = the feet no-go box, null = a dog may stand on it).
+   Every old hot spot and game hook stays: the yard's data-hot="garden" (same box), the mailbox, the dog house and the bowl spots the game
+   draws over the scene (MB_BOX, #houseG, #bowlG), the Cozy House's data-hot="kitchen" and its { bed: false }, Kibble Corner's
+   data-shop="kibble" door. Hot spots stand in the backdrop (never in #floorG: the game finds them under #sceneG). No new text in the art
+   (the tags carry pictures). The env streams are world A's: k.ss (seasons), k.hw, k.lt, k.ny, k.jp; o.snow: true reads as snowy weather;
+   winter leaves snow on the outdoor floors. */
+const FLB={yard:{w:1000,back:334,front:594,kB:.5,kF:1.05},house:{w:1000,back:348,front:594,kB:.7,kF:1.05,in:1},market:{w:1000,back:348,front:594,kB:.5,kF:1.05}};
+const depB=(F,y)=>F.kB+(F.kF-F.kB)*Math.max(0,Math.min(1,(y-F.back)/(F.front-F.back)));
+function lightenB(k){const pen0=k.pen;k.pen=(pts,closed,o={})=>{if(!o.step){let L=0;const n=pts.length,m=closed?n:n-1;for(let i=0;i<m;i++){const a=pts[i],b=pts[(i+1)%n];L+=Math.hypot(b[0]-a[0],b[1]-a[1])}if(L>260)o=Object.assign({},o,{step:L>1200?15:L>600?12:9})}return pen0(pts,closed,o)}}
+// every floor prop in its own group; out() writes them sorted by base y inside #floorG
+function floorKitB(k){const P=[];return {add(id,base,fn){P.push([base,`<g data-fy="${R1(base)}" data-prop="${id}">`+k.cap(fn)+'</g>'])},
+  out(){P.sort((a,b)=>a[0]-b[0]);k.add('<g id="floorG">'+P.map(p=>p[1]).join('')+'</g>')}}}
+// draws fn scaled by a (matrix a 0 0 a tx ty); the lights it pushes (window glows, lamps, bulbs, Halloween and Winter Lights glows) move with it
+function scaledB(k,a,tx,ty,fn){const T=`matrix(${a} 0 0 ${a} ${R1(tx)} ${R1(ty)})`,P=(x,y)=>[a*x+tx,a*y+ty],n={glows:k.glows.length,lamps:k.lamps.length,bulbs:k.bulbs.length,hwl:k.hwl.length,top:k.top.length},sv=k.wlT;
+  k.wlT=sv?sv+' '+T:T;k.add(`<g transform="${T}">`);fn();k.add('</g>');k.wlT=sv;
+  for(let i=n.glows;i<k.glows.length;i++){const [x,y,w,h]=k.glows[i],p=P(x,y);k.glows[i]=[p[0],p[1],w*a,h*a]}
+  for(let i=n.lamps;i<k.lamps.length;i++){const l=k.lamps[i],p=P(l.x,l.y);k.lamps[i]=Object.assign({},l,{x:p[0],y:p[1],s:l.s*a,gy:l.gy==null?l.gy:a*l.gy+ty,glass:l.glass.map(q=>P(q[0],q[1]))})}
+  for(let i=n.bulbs;i<k.bulbs.length;i++){const b=k.bulbs[i],p=P(b[0],b[1]);k.bulbs[i]=[p[0],p[1]].concat(b.slice(2))}
+  ['hwl','top'].forEach(key=>{const A=k[key];for(let i=n[key];i<A.length;i++)A[i]=`<g transform="${T}">${A[i]}</g>`})}
+// snow on a top edge (thick when it snows, a dusting all winter), frost, a soft shadow, grass tufts that grow toward the viewer
+function snowOnB(k,pts,th){if(k.env.snow)k.side(()=>capLine(k,pts,th));else if(k.so==='winter')k.ss(()=>capLine(k,pts,th*.6))}
+function frostOnB(k,pts){if(k.so==='winter')k.ss(()=>frostLine(k,pts))}
+const shadeB=(k,x,y,rx,ry)=>k.add(`<ellipse cx="${R1(x)}" cy="${R1(y)}" rx="${R1(rx)}" ry="${R1(ry||rx*.18)}" fill="${C.ink}" opacity=".12"/>`);
+function tuftsB(k,x0,x1,y0,y1,n,ok,col=C.grassD){let d='';for(let i=0;i<n;i++){const x=x0+k.r()*(x1-x0),y=y0+k.r()*(y1-y0);if(ok&&!ok(x,y))continue;const s=.55+.6*(y-y0)/Math.max(1,y1-y0);
+  d+=`M${R1(x)} ${R1(y)}q${R1(s)} ${R1(-6*s)} ${R1(-s)} ${R1(-10*s)}M${R1(x+5*s)} ${R1(y)}q0 ${R1(-7*s)} ${R1(3*s)} ${R1(-12*s)}`}k.add(`<path d="${d}" fill="none" stroke="${col}" stroke-width="1.5" stroke-linecap="round"/>`)}
+// winter snow on an outdoor floor: a soft white cover with drifts (season stream), thicker when it snows
+function floorSnowB(k,poly,list){if(k.so!=='winter'&&!k.env.snow)return;const go=f=>k.env.snow?k.side(f):k.ss(f);go(()=>{
+  k.fill(poly,'#FFFFFF',{dx:0,dy:0,sc:0,op:k.env.snow?.55:.3});
+  list.forEach(([x,y,rx,ry])=>{const p=blobP(x,y,rx,ry,k.r,10,.3);k.fill(p,'#FFFFFF',{dx:0,dy:0,op:.88});k.pen(p,true,{w:1.1,amp:.5,col:'#B4C4D4',one:1})})})}
+const fujiB=(k,cx,by,w)=>{if(k.env.jp&&PA.JP&&typeof PA.JP.fuji==='function')k.jp(()=>PA.JP.fuji(k,{cx,by,w}))};
+// a paper tag on a string with a picture instead of a word (the yard's garden, the house's kitchen)
+function picTag(k,x,y,icon,rot=-8){return k.cap(()=>{const w=50;k.add(`<g transform="rotate(${rot} ${x} ${y})">`);k.line([[x-w/2-12,y-14],[x-w/2+2,y]],1.2,C.ink,{op:.8});
+  k.shape([[x-w/2,y-13],[x+w/2,y-13],[x+w/2,y+13],[x-w/2,y+13],[x-w/2-10,y]],'#FFD8E0',{w:1.6,one:1});k.add(`<circle cx="${R1(x-w/2-3)}" cy="${y}" r="2.2" fill="#FFFBF3" stroke="${C.ink}" stroke-width="1"/>`);
+  if(icon==='carrot'){k.shape([[x-2,y-6],[x+12,y-6],[x+4,y+11]],C.orange,{w:1.3,one:1});k.add(`<path d="M${x+5} ${y-6}l-4 -6M${x+5} ${y-6}l1 -7M${x+5} ${y-6}l5 -5" stroke="#6FAE5C" stroke-width="1.8" stroke-linecap="round"/>`);k.shape(E(x-10,y+2,6,5,8),'#CFEAB0',{w:1.1,one:1})}
+  else{k.shape([[x-12,y-4],[x+12,y-4],[x+9,y+9],[x-9,y+9]],'#9AA7B8',{w:1.3,one:1});k.add(`<path d="M${x-15} ${y-2}h-4M${x+15} ${y-2}h4M${x-4} ${y-8}q4 -4 8 0" fill="none" stroke="${C.ink}" stroke-width="1.5" stroke-linecap="round"/><path d="M${x-4} ${y-12}q-3 -4 0 -7M${x+3} ${y-12}q-3 -4 0 -7" fill="none" stroke="${C.graph}" stroke-width="1.2"/>`)}
+  k.add('</g>')})}
+// small round trees in a row (far away), season colours
+function farTreesB(k,x0,x1,step,y,s=1,skip){for(let x=x0;x<x1;x+=step){if(skip&&skip(x))continue;const yy=y+k.J(4),so=k.so,c=so==='autumn'?AU[hashXY(x,yy)%3][0]:so==='winter'?'#D6CABD':'#C3DFA5';
+  k.line([[x,yy+8*s],[x,yy+20*s]],1.4,C.trunkD);k.shape(E(x,yy,(15+k.r()*5)*s,(12+k.r()*3)*s,10),c,{w:1.3,lcol:C.graph,one:1});if(so==='winter')k.ss(()=>capLine(k,[[x-13*s,yy-6*s],[x,yy-12*s],[x+13*s,yy-6*s]],3*s))}}
+function bushB(k,x,gy,s,berries){shadeB(k,x,gy+2,40*s,6*s);O.bush(k,x,gy,s,C.leaf2,C.leafD,berries);snowOnB(k,[[x-36*s,gy-18*s],[x,gy-30*s],[x+36*s,gy-18*s]],4*s)}
+function bowlB(k,x,gy,s,col=C.blue){shadeB(k,x,gy+2,26*s);k.shape([[x-22*s,gy],[x+22*s,gy],[x+18*s,gy-14*s],[x-18*s,gy-14*s]],col,{w:1.7,one:1,hatch:{side:.6,gap:3.5,col:mixH(col,C.ink,.22),op:.45}});
+  k.fill(E(x,gy-14*s,17*s,4.4*s,12),k.so==='winter'?'#E6EEF5':C.water,{dx:0,dy:0});k.add(`<path d="M${R1(x-8*s)} ${R1(gy-15*s)}q4 -2 8 0" stroke="#fff" stroke-width="1.4" fill="none"/>`);O.heart(k,x,gy-7*s,3.2*s,'#FFFFFF')}
+/* ---------- My Yard (deep): the back line at y 334, the cottage and the fence further back, the same veggie patch (data-hot="garden"),
+   mailbox, clothesline and tree; the game still draws the dog house (620, 330), the bowl (205, 462) and the mailbox (MB_BOX) over it ---------- */
+function yardB(k,F,o){const e=k.env,fk=floorKitB(k),D=y=>depB(F,y);
+  k.skyD(()=>{skyBand(k,1000,300);O.sun(k,890,64,30);O.cloud(k,520,64,26);O.cloud(k,760,112,18);O.bird(k,640,54,9);O.bird(k,668,68,7)},
+    {W:1000,H:320,sun:[890,64,30],low:[770,222,30],moon:[870,68,26],clouds:[[520,64,26],[760,118,18],[360,44,18]],rainC:[[150,38,24],[660,42,28],[980,146,22]],birds:[[640,54,9],[668,68,7]],stars:40});
+  fujiB(k,432,250,290);
+  const hl=[[0,262],[120,230],[260,248],[420,222],[600,244],[780,218],[1000,240],[1000,320],[0,320]];k.fill(hl,'#DCEDC4');k.pen(hl.slice(0,7),false,{w:1.6,col:C.graph});
+  farTreesB(k,300,1000,44,236,.9);
+  // the fence across the back, a little garden gate in it, the big tree behind
+  O.fence(k,262,1000,236,338);
+  {const gx=470;k.shape(RC(gx-34,250,68,86),C.wood,{w:1.9,hatch:{side:.7,gap:4,col:C.woodD,op:.45}});k.shape([[gx-38,252],[gx,232],[gx+38,252]],C.woodD,{w:1.7,one:1});
+   k.line([[gx-30,272],[gx+30,316]],2.6,C.woodD);k.line([[gx-36,252],[gx-36,338]],4,C.ink);k.line([[gx+36,252],[gx+36,338]],4,C.ink);k.add(`<circle cx="${gx+24}" cy="294" r="3" fill="${C.ink}"/>`);O.heart(k,gx,262,5);snowOnB(k,[[gx-38,252],[gx,231],[gx+38,252]],5)}
+  k.lt(()=>{const t=[];for(let x=268;x<=1000;x+=62)t.push([x,241+k.J(1.5)]);ltString(k,scallop(t,9),23)});
+  O.tree(k,962,338,1.2,{fruit:'#F49090'});
+  // the lawn, deep: lighter mown patches, tufts that grow toward the viewer
+  const lawn=[[0,338],[262,334],[600,336],[1000,332],[1000,600],[0,600]];k.fill(lawn,C.grass,{dx:0,dy:0});k.pen([[0,338],[262,334],[600,336],[1000,332]],false,{w:2});
+  [[120,592,130,24],[470,578,110,18],[760,572,120,20],[960,446,70,14],[330,420,90,11],[700,398,80,9],[150,370,60,8]].forEach(q=>k.fill(E(q[0],q[1],q[2],q[3],12),C.grass2,{op:.7}));
+  const free=(x,y)=>!(x>8&&x<220&&y>430&&y<590)&&!(x>606&&x<872&&y>336&&y<530)&&!(x>300&&x<360&&y>330&&y<414);
+  tuftsB(k,0,1000,346,598,190,free);
+  // the dig patch: loose earth, a few pebbles, a bone half dug up
+  k.shape(blobP(520,436,54,13,k.r,10,.25),C.soil,{w:1.6,one:1,hatch:{side:.6,gap:4,col:'#B98F68',op:.45}});
+  k.add(`<g fill="#B98F68"><circle cx="498" cy="438" r="2.4"/><circle cx="540" cy="432" r="2"/><circle cx="526" cy="442" r="1.8"/><circle cx="484" cy="432" r="1.6"/></g>`);
+  k.shape([[504,430],[528,424],[531,419],[536,421],[534,426],[539,428],[536,432],[531,430],[507,436],[505,441],[500,439],[502,434],[498,431],[502,428]],'#FFFBF3',{w:1.3,one:1});
+  k.ss(()=>seasonGround(k,[0,342,1000,598],120,[[600,336,880,530],[5,430,218,594]]));
+  floorSnowB(k,lawn,[[440,570,70,12],[742,566,60,11],[120,384,40,7],[900,382,46,8],[560,420,40,7]]);
+  k.fx(()=>{const zones=[[600,336,880,530],[5,430,218,594]];
+    if(e.rain){sheen(k,0,1000,340,598,80,zones);[[440,566,48,10],[742,560,40,9],[940,420,30,7],[300,398,18,5],[560,372,24,5]].forEach(q=>puddle(k,...q))}
+    if(e.snow)[[440,568,74,14],[742,564,62,12],[944,424,50,10],[262,404,28,8],[600,596,54,9],[360,592,44,8],[560,370,40,7]].forEach(q=>snowPatch(k,...q));
+    if(e.night&&!e.rain)[[150,380],[600,420],[470,566],[880,400],[905,566],[560,280]].forEach(f=>k.flies.push(f))});
+  // the cottage (back left), the old one a little further away
+  scaledB(k,.85,4,-6,()=>{const cx=40,cy=170;
+    k.shape([[cx+170,cy+20],[cx+170,cy-30],[cx+196,cy-30],[cx+196,cy+30]],C.red,{w:2,hatch:{side:.4,gap:4,col:C.redD,op:.6}});
+    [[0,-10],[8,-28],[18,-46]].forEach(q=>k.line([[cx+183+q[0],cy-36+q[1]],[cx+176+q[0],cy-44+q[1]],[cx+186+q[0],cy-52+q[1]]],1.6,C.graph));
+    k.ss(()=>{if(k.so==='winter')smoke(k,cx+186,cy-40,1.15)});
+    const wall=RC(cx,cy+60,250,170);k.shape(wall,C.wall,{w:2.3,hatch:{side:.72,gap:5,col:'#D9B996',op:.5}});
+    for(let y=cy+80;y<cy+225;y+=18)k.line([[cx+6,y+k.J(1)],[cx+244,y+k.J(1)]],1,'#E2C29E',{op:.8});
+    const roof=[[cx-26,cy+66],[cx+125,cy-40],[cx+276,cy+66]];k.shape(roof,C.roof,{w:2.4,hatch:{side:.6,gap:5,col:C.roofD,op:.55}});
+    for(let row=0;row<5;row++){const y=cy-14+row*17,half=(y-cy+40)*1.42;let d='';for(let x=cx+125-half+10;x<cx+125+half-12;x+=16)d+=`M${R1(x)} ${R1(y)}q8 9 16 0`;k.add(`<path d="${d}" fill="none" stroke="${C.roofD}" stroke-width="1.4" stroke-linecap="round"/>`)}
+    k.fx(()=>{if(e.snow){capLine(k,[[cx-28,cy+66],[cx+125,cy-41],[cx+278,cy+66]],13);capLine(k,[[cx+168,cy-30],[cx+198,cy-30]],7)}
+      if(e.rain){let d='';for(let i=0;i<9;i++){const t=.15+i*.08,x=cx+125+(i%2?1:-1)*t*140,y=cy-40+t*100;d+=`M${R1(x)} ${R1(y)}l${i%2?14:-14} 10`}k.add(`<path d="${d}" stroke="#fff" stroke-width="2.6" stroke-linecap="round" opacity=".85"/>`)}});
+    if(k.so==='winter'&&!e.snow)k.ss(()=>capLine(k,[[cx-26,cy+66],[cx+125,cy-40],[cx+276,cy+66]],7));
+    k.lt(()=>{ltString(k,sagP(cx-20,cy+66,cx+122,cy-34,6,10),22,{skip:(x,y)=>y<cy+8});ltString(k,sagP(cx+128,cy-34,cx+270,cy+66,6,10),22,{skip:(x,y)=>y<cy+8||x<cx+200})});
+    O.window(k,cx+150,cy+0,40,40,{curtain:'#FFC9D3'});
+    O.window(k,cx+30,cy+100,62,56,{curtain:'#FFC9D3',box:1});O.window(k,cx+165,cy+100,58,52,{curtain:C.mint});
+    const door=[[cx+108,cy+230],[cx+108,cy+132],[cx+122,cy+120],[cx+138,cy+120],[cx+152,cy+132],[cx+152,cy+230]];k.shape(door,'#B9D3F2',{w:2.2,hatch:{side:.6,gap:4,col:'#8FAFD6',op:.6}});
+    k.add(`<circle cx="${cx+144}" cy="${cy+180}" r="3.2" fill="${C.ink}"/>`);O.heart(k,cx+130,cy+146,6);k.shape(RC(cx+100,cy+228,60,8),C.stone,{w:1.6});
+    k.ss(()=>{if(k.so==='spring'){bulbs(k,cx+40,cy+242,5);bulbs(k,cx+212,cy+242,4)}else if(k.so==='autumn'){pumpkin(k,cx+86,cy+246,1.15);pumpkin(k,cx+66,cy+244,.8);pumpkin(k,cx+196,cy+244,.9)}
+      else if(k.so==='winter'&&!e.snow)icicles(k,cx-20,cx+270,cy+64)});
+    k.ny(()=>nyShime(k,cx+130,cy+124,1.05))});
+  // stepping stones from the door into the yard
+  [[150,350,18,6],[174,374,20,7],[208,398,22,7],[252,420,24,8]].forEach(q=>k.shape(E(q[0],q[1],q[2],q[3],10),C.stone,{w:1.6}));
+  // the clothesline from the cottage to its pole (the pole stands at the fence)
+  k.line([[588,148],[590,340]],4,C.ink);k.line([[574,154],[604,148]],3,C.ink);
+  const cl=t=>[250+338*t,216+Math.sin(Math.PI*t)*28];{const L=[];for(let i=0;i<=16;i++)L.push(cl(i/16));k.line(L,1.4)}
+  const shirt=(t,col)=>{const p=cl(t),x=p[0],y=p[1];k.shape([[x-18,y],[x-6,y-1],[x,y+5],[x+6,y-1],[x+18,y],[x+26,y+12],[x+17,y+18],[x+14,y+12],[x+14,y+44],[x-14,y+44],[x-14,y+12],[x-17,y+18],[x-26,y+12]],col,{w:1.8});k.line([[x-6,y+3],[x-6,y-4]],2);k.line([[x+6,y+3],[x+6,y-4]],2)};
+  const sock=(t,col)=>{const p=cl(t),x=p[0],y=p[1];k.shape([[x-6,y],[x+6,y],[x+6,y+26],[x+16,y+30],[x+14,y+38],[x-6,y+36]],col,{w:1.6});k.line([[x,y+2],[x,y-4]],2);k.line([[x-6,y+8],[x+6,y+8]],1.2,C.ink,{op:.6})};
+  shirt(.18,C.blue);sock(.35,C.red);sock(.44,C.yellow);
+  {const p=cl(.62),x=p[0],y=p[1];k.shape(RC(x-26,y,52,38),C.mint,{w:1.8});k.line([[x-18,y],[x-18,y-5]],2);k.line([[x+18,y],[x+18,y-5]],2);k.add(`<path d="M${x-14} ${y+16}h10M${x-12} ${y+13}v6M${x-6} ${y+13}v6M${x+4} ${y+26}h10M${x+6} ${y+23}v6M${x+12} ${y+23}v6" stroke="${C.ink}" stroke-width="1.6" stroke-linecap="round"/>`)}
+  shirt(.84,'#FFD8E0');
+  snowOnB(k,[[572,154],[606,148]],4);
+  // the veggie patch, front left (the same box as before: the garden tag and the "coming soon" tag sit on it)
+  const bed=[[20,450],[200,446],[208,580],[16,584]];k.shape(bed,C.soil,{w:2.1,hatch:{side:.6,gap:5,col:'#B98F68',op:.5}});
+  k.shape([[12,442],[210,438],[212,452],[10,456]],C.woodD,{w:1.6,one:1});snowOnB(k,[[10,442],[212,438]],6);
+  {const vg=k.cap(()=>{for(let row=0;row<3;row++){const y=482+row*36;k.line([[30,y+8],[196,y+6]],1.2,'#B98F68');const vv=k.cap(()=>{for(let i=0;i<5;i++){const x=44+i*34+k.J(3);
+    if(row===1){k.shape(E(x,y,12,9,10),'#CFEAB0',{w:1.6});k.line([[x-6,y],[x+5,y-3]],1.1,C.leafD)}
+    else{k.shape([[x-5,y+2],[x+5,y+2],[x,y+16]],C.orange,{w:1.5,one:1});k.line([[x,y+2],[x-6,y-10]],1.8,'#6FAE5C');k.line([[x,y+2],[x+1,y-12]],1.8,'#6FAE5C');k.line([[x,y+2],[x+7,y-9]],1.8,'#6FAE5C')}}});if(o.patch!=='empty')k.add(vv)}});
+   k.add(vg);if(o.patch==='empty')k.side(()=>patchEmpty(k))}
+  if(o.patch==='ready')k.side(()=>patchReady(k));
+  // the mailbox by the path (the game's mailbox is drawn over it, MB_BOX)
+  k.line([[330,410],[330,356]],4,C.ink);k.shape([[312,336],[348,336],[348,360],[312,360]],C.red,{w:2});k.line([[350,340],[350,324],[360,324]],2.4,C.ink);
+  snowOnB(k,[[310,336],[350,336]],6);frostOnB(k,[[313,337],[347,337]]);
+  // flowers on the lawn (small at the back, bigger in front)
+  [[880,520,C.red,5],[920,540,C.yellow,5],[960,508,C.lav,5],[612,566,C.yellow,5],[640,586,C.red,5],[262,592,C.lav,5],[300,575,C.red,5],[575,588,'#FFB3C7',5],[380,360,C.yellow,3.4],[520,352,'#FFB3C7',3.2],[700,350,C.lav,3.2],[60,372,C.red,3.6],[420,392,C.lav,3.8]].forEach(f=>O.flower(k,f[0],f[1],f[3],f[2]));
+  k.line([[612,526],[870,526]],1,C.graph,{op:.45,dash:'2 7'});// faint construction marks under the dog house
+  k.side(()=>hot(k,'data-hot','garden','Garden',RC(10,430,205,160),picTag(k,176,462,'carrot',-10)));
+  // the floor props
+  fk.add('bush',356,()=>bushB(k,562,356,D(356)*.95));
+  fk.add('planter',350,()=>{const x=936,gy=350,s=D(gy);shadeB(k,x,gy+2,44*s);k.shape([[x-40*s,gy],[x+40*s,gy],[x+44*s,gy-24*s],[x-44*s,gy-24*s]],C.wood,{w:1.7,hatch:{side:.6,gap:4,col:C.woodD,op:.5}});
+    if(k.so!=='winter')[[-28,C.red],[-12,C.yellow],[4,'#FFB3C7'],[20,C.lav],[34,C.red]].forEach(([dx,c],i)=>{k.line([[x+dx*s,gy-24*s],[x+dx*s,gy-(40+(i%2)*8)*s]],1.4,'#6FAE5C');O.flower(k,x+dx*s,gy-(42+(i%2)*8)*s,4.2*s,c)});
+    else k.shape(blobP(x,gy-30*s,38*s,8*s,k.r,8,.2),'#A3B293',{w:1.2,one:1});snowOnB(k,[[x-44*s,gy-26*s],[x+44*s,gy-26*s]],4*s)});
+  fk.add('bushL',410,()=>bushB(k,250,410,.7,C.red));
+  fk.add('bushF',598,()=>bushB(k,902,598,1.2,'#F49090'));
+  fk.out();
+  O.sparkle(k,470,190,9);O.sparkle(k,820,196,6);O.heart(k,360,120,6);O.note(k,700,150,12);
+  O.tape(k,6,26,90,-24,'#F7B9C6');O.tape(k,930,566,80,-28,'#BDE7D2');
+  k.lt(()=>ltStar(k,589,196,.95));
+  k.ss(()=>{const so=k.so;if(so==='winter'&&!e.night)robin(k,700,238,1.1,1);
+    if(so==='spring'&&!e.night&&!e.rain){butterfly(k,452,212,1);butterfly(k,600,300,.8,'#F9C6D4')}
+    seasonDrift(k,[[905,250,1],[846,300,.9],[960,200,.8],[452,190,.85],[520,200,.75],[640,186,.9],[400,280,.7],[300,420,.8],[700,470,.9]])});
+  k.hw(()=>{hwSkyBats(k,[[430,84,.85],[478,62,.65],[704,50,.75]]);
+    hwJack(k,196,428,.78);pumpkin(k,282,438,.7);hwPostLantern(k,272,238,1);hwJack(k,280,344,.85);hwGhost(k,964,266,.85,18)});
+}
+/* ---------- the Cozy House (deep, indoors): the wall meets the floor at y 344, the planks run in perspective; the sofa, the floor lamp and
+   the big plant stand on the floor (floor props), the built-in dog bed and the rug stay where the beds and the rug naps expect them
+   (BED_BOX, HO_RUG_NAPS), the kitchen corner keeps data-hot="kitchen" ---------- */
+function planksB(k,y0,y1,col){const rows=[];let y=y0,h=14;while(y<y1){rows.push(y);y+=h;h*=1.11}rows.push(y1+20);let d='';
+  rows.forEach(yy=>{d+=`M0 ${R1(yy+k.J(.8))}L1000 ${R1(yy+k.J(.8))}`});
+  for(let i=0;i<rows.length-1;i++){const ya=rows[i],yb=rows[i+1],sp=(yb-ya)*7.2;for(let x=(i%2?sp*.5:sp*.15)+k.r()*sp*.3;x<1000;x+=sp*(.8+k.r()*.5))d+=`M${R1(x)} ${R1(ya)}V${R1(yb)}`}
+  k.add(`<path d="${d}" stroke="${col}" stroke-width="1.3" fill="none" stroke-linecap="round"/>`)}
+function plantB(k,x,gy,s){shadeB(k,x,gy+2,26*s);k.shape([[x-21*s,gy],[x-25*s,gy-36*s],[x+21*s,gy-36*s],[x+17*s,gy]],C.roof,{w:1.8,hatch:{side:.6,gap:4,col:C.roofD,op:.5}});
+  [[-1.9,24],[-1.4,30],[-1.1,26],[-.7,22],[-2.3,20],[-1.6,34]].forEach(([a,l])=>{const px=x+Math.cos(a)*l*1.4*s,py=gy-40*s+Math.sin(a)*l*1.6*s;k.shape(E(px,py,10*s,16*s,8,a+Math.PI/2),C.leaf2,{w:1.4,one:1});k.line([[x,gy-38*s],[px,py]],1.2,C.leafD)})}
+function houseB(k,F,o){const e=k.env,fk=floorKitB(k),W=344;
+  // wallpaper with soft stripes and tiny doodled flowers
+  k.add(`<rect width="1000" height="${W+2}" fill="#FBEBD8"/>`);
+  let st='';for(let x=10;x<1000;x+=56)st+=`<rect x="${x}" width="24" height="${W-6}" fill="#F7DFC6" opacity=".75"/>`;k.add(st);
+  let fd='';for(let y=40;y<W-30;y+=64)for(let x=50+((y/64)%2)*28;x<1000;x+=112){fd+=`<g fill="#F4BFC9" opacity=".6"><circle cx="${x}" cy="${y-3}" r="2.4"/><circle cx="${x+3}" cy="${y}" r="2.4"/><circle cx="${x}" cy="${y+3}" r="2.4"/><circle cx="${x-3}" cy="${y}" r="2.4"/></g>`}k.add(fd);
+  // the floor: planks that grow toward the viewer, a sunny patch under the window by day
+  k.fill([[0,W],[1000,W],[1000,600],[0,600]],'#EBCFA8',{dx:0,dy:0,sc:0});planksB(k,W+2,600,C.woodD);
+  if(e.time==='day'&&e.sunny)k.add(`<path d="M380 ${W+6}L556 ${W+6}L610 470L330 470Z" fill="#FFF3C2" opacity=".45"/>`);
+  k.shape(RC(0,W-14,1000,16),'#E3C49E',{w:2});
+  // the kitchen corner (right), as before, its counter against the wall
+  k.line([[866,0],[866,W-14]],1.6,C.graph);k.add(`<rect x="868" width="132" height="${W-14}" fill="#F3EEE4"/>`);
+  scaledB(k,1,0,-62,()=>{
+    k.shape(RC(874,210,126,90),'#E6F0F2',{w:1.6,one:1});let tl='';for(let x=874;x<1000;x+=21)tl+=`M${x} 210v90`;for(let y=232;y<300;y+=22)tl+=`M874 ${y}h126`;k.add(`<path d="${tl}" stroke="#C7D7DC" stroke-width="1.2"/>`);
+    k.shape(RC(878,84,122,104),C.mint,{w:2.2,hatch:{side:.8,gap:5,col:'#A6D2BD',op:.5}});k.line([[938,90],[938,182]],1.6);k.add(`<circle cx="928" cy="160" r="3" fill="${C.ink}"/><circle cx="948" cy="160" r="3" fill="${C.ink}"/>`);
+    k.shape(RC(866,296,134,16),C.wood,{w:2});k.shape(RC(872,312,128,96),C.mint,{w:2.2,hatch:{side:.8,gap:5,col:'#A6D2BD',op:.5}});k.line([[936,318],[936,402]],1.6);k.add(`<circle cx="926" cy="340" r="3" fill="${C.ink}"/><circle cx="946" cy="340" r="3" fill="${C.ink}"/>`);
+    k.shape([[892,296],[888,262],[926,262],[922,296]],C.red,{w:1.9});k.line([[888,272],[876,262]],2.4);k.add(`<path d="M896 262q11 -16 22 0" fill="none" stroke="${C.ink}" stroke-width="2.2"/>`);
+    k.shape(RC(944,252,40,44),C.glass,{w:1.7});k.shape(RC(940,244,48,10),C.orange,{w:1.5});k.shape([[952,276],[976,276],[978,270],[982,274],[978,278],[982,282],[978,284],[976,280],[952,280],[950,284],[946,282],[948,278],[946,274],[950,270]],'#FFFFFF',{w:1.1,one:1});
+    k.hw(()=>hwJack(k,962,240,.7));k.ny(()=>{k.shape(E(904,236,14,7,10),'#FFFFFF',{w:1.3,one:1});k.shape(E(904,226,10,6,10),'#FFFFFF',{w:1.2,one:1});k.shape(E(904,217,5,4,8),C.orange,{w:1,one:1})})});
+  k.side(()=>hot(k,'data-hot','kitchen','Kitchen',RC(866,30,134,W-20),picTag(k,934,52,'pot',6)));
+  k.jp(()=>{let d='';for(let i=0;i<2;i++){const x=870+i*64;d+=`<path d="M${x} 6h60v54q-30 8 -60 0z" fill="#5E86BE" stroke="${C.ink}" stroke-width="1.6"/>`}k.add(d+`<circle cx="934" cy="30" r="8" fill="#FFFFFF" opacity=".85"/>`)});
+  // the bookshelf (left), a little further away
+  scaledB(k,.86,3.4,0,()=>{
+    k.shape(RC(24,110,186,290),C.wood,{w:2.4,hatch:{side:.85,gap:5,col:C.woodD,op:.45}});k.shape(RC(36,120,162,270),'#D9B48E',{w:1.6,one:1});
+    const bc=[C.red,C.blue,C.yellow,C.mint,C.lav,'#FFB3C7',C.orange,'#9AC8E8'];
+    [180,250,320,390].forEach((sy,row)=>{k.shape(RC(30,sy-4,174,8),C.woodD,{w:1.6,one:1});if(row===3)return;let x=42;while(x<188){const w=10+k.r()*9,h=36+k.r()*20;if(row===1&&x>140){k.shape(E(170,sy-14,14,10,10),C.yellow,{w:1.6});k.add(`<path d="M160 ${sy-16}q10 6 20 0" fill="none" stroke="#fff" stroke-width="2"/>`);break}
+      k.shape(RC(x,sy-4-h,w,h),bc[Math.floor(k.r()*bc.length)],{w:1.4,one:1});k.line([[x+2,sy-h+6],[x+w-2,sy-h+6]],1,C.ink,{op:.5});x+=w+2}});
+    k.shape([[60,384],[64,344],[108,344],[112,384]],C.roof,{w:1.6});for(let i=0;i<5;i++)k.shape(E(70+i*8,336-k.r()*8,6,12,8,i*.5-1),C.leaf,{w:1.3,one:1});
+    k.shape([[140,110],[144,86],[176,86],[180,110]],C.roof,{w:1.6});[[150,84],[170,82],[160,74]].forEach(([x,y])=>k.shape(E(x,y,7,10,8),C.leaf2,{w:1.3,one:1}));k.line([[178,96],[194,128],[188,160]],1.6,'#6FAE5C');
+    k.hw(()=>{hwJack(k,120,316,.8);hwBat(k,60,96,.6,{col:HWP})})});
+  // the middle wall: the dog's portrait, the window, the stitched sampler (a heart and a house, no words)
+  scaledB(k,.86,70,0,()=>{
+    k.shape(RC(234,136,80,96),'#E1B987',{w:2.2});k.shape(RC(244,146,60,76),'#FFFFFF',{w:1.4,one:1});
+    k.add(`<g stroke="#2a2420" stroke-width="2.6" fill="none" stroke-linecap="round"><path d="M256 196q16 -12 34 -2q4 12 -6 16q-16 4 -28 -4z" fill="#F5C26B"/><circle cx="288" cy="184" r="9" fill="#F5C26B"/><path d="M262 208v8M282 208v8"/></g><circle cx="290" cy="182" r="2" fill="#2a2420"/>`);
+    O.window(k,350,80,220,170,{curtain:'#F7C5CF',frame:'#FFFFFF',noLit:1,glass:skyGrad(k,80,250),inside:()=>k.side(()=>windowView(k,350,80,220,170,{rainGlass:1,sillSnow:1}))});
+    k.shape(RC(680,118,150,84),'#FFFFFF',{w:2.2});k.add(`<rect x="690" y="128" width="130" height="64" fill="none" stroke="${C.pink}" stroke-width="1.6" stroke-dasharray="4 3"/>`);
+    k.add(`<path d="M716 172v-18l14 -12 14 12v18z" fill="#F7C5CF" stroke="${C.pink}" stroke-width="1.8" stroke-dasharray="3 2"/>`);O.heart(k,786,160,12);O.heart(k,810,178,5);O.tape(k,734,104,40,-6,'#BDE7D2');
+    k.lt(()=>{ltString(k,sagP(344,76,576,76,14,14),20);ltStar(k,460,62,.7)});
+    k.hw(()=>hwBatString(k,350,570,78,12,5,.6));k.ny(()=>nyShime(k,460,70,.9))});
+  k.lt(()=>ltString(k,scallop([[0,18],[200,18],[400,18],[600,18],[800,18],[1000,18]],12),24));
+  // the rug (flat) and the built-in dog bed (omitted with { bed: false }, where the game's beds stand)
+  k.shape(E(440,522,182,44,18),'#F7C5CF',{w:2});k.add(`<ellipse cx="440" cy="522" rx="150" ry="32" fill="none" stroke="#fff" stroke-width="2.4" stroke-dasharray="8 6"/><ellipse cx="440" cy="522" rx="96" ry="18" fill="none" stroke="#E8A0B0" stroke-width="2"/>`);
+  {const bd=k.cap(()=>{k.shape(E(742,494,108,28,16),'#E8A9B8',{w:2.3,hatch:{side:.55,gap:4.5,col:'#C9839A',op:.5}});k.shape(E(742,486,82,17,14),'#FCE6CC',{w:1.8});k.add(`<ellipse cx="742" cy="494" rx="96" ry="22" fill="none" stroke="#fff" stroke-width="1.6" stroke-dasharray="5 4"/>`);
+    k.shape([[756,480],[788,476],[792,470],[800,474],[796,482],[800,488],[792,490],[788,484],[758,488],[754,494],[746,490],[750,484],[746,478],[752,474]],'#FFFFFF',{w:1.6,one:1});
+    k.add(`<g fill="${C.pink}" opacity=".85"><ellipse cx="742" cy="514" rx="5" ry="4"/><circle cx="736" cy="507" r="2"/><circle cx="741" cy="505" r="2"/><circle cx="747" cy="506" r="2"/></g>`)});if(o.bed!==false)k.add(bd)}
+  // a ball and a chewed slipper on the floor
+  k.shape(E(120,560,12,12,12),C.red,{w:1.6,one:1,hatch:{side:.55,gap:3,col:C.redD,op:.5}});k.add(`<path d="M110 554q10 6 20 0" fill="none" stroke="#fff" stroke-width="2"/>`);
+  k.shape([[560,430],[596,426],[606,436],[598,444],[562,444]],C.lav,{w:1.5,one:1});k.add(`<path d="M590 430l4 4-4 4" fill="none" stroke="${C.ink}" stroke-width="1"/>`);
+  // the floor props: the sofa (the window over it), the floor lamp, the big plant
+  fk.add('sofa',364,()=>scaledB(k,.86,70,0,()=>{const sb='#B9D3F2',sd='#8FAFD6';shadeB(k,440,424,150,8);
+    k.shape(RC(306,286,268,74),sb,{w:2.3,hatch:{side:.8,gap:5,col:sd,op:.5}});[[372,316],[440,316],[508,316]].forEach(([x,y])=>k.add(`<circle cx="${x}" cy="${y}" r="2.6" fill="${C.ink}"/><path d="M${x-8} ${y-8}l6 6M${x+8} ${y-8}l-6 6" stroke="${sd}" stroke-width="1.4"/>`));
+    k.shape(RC(300,350,280,40),sb,{w:2.2});k.line([[440,352],[440,388]],1.6);k.line([[306,358],[574,358]],1,'#fff',{op:.7,dash:'5 5'});
+    [[286,304],[566,304]].forEach(([x,y])=>k.shape([[x,y+100],[x,y+12],[x+4,y],[x+24,y],[x+28,y+12],[x+28,y+100]],sb,{w:2.2,hatch:{side:.6,gap:5,col:sd,op:.5}}));
+    k.shape(RC(290,388,300,22),sd,{w:2});[[300,410],[574,410]].forEach(([x,y])=>k.shape(RC(x,y,10,12),C.woodD,{w:1.4,one:1}));
+    k.shape([[326,346],[330,312],[372,308],[380,344]],'#FFC9D3',{w:1.8});k.shape([[500,346],[506,312],[550,314],[552,346]],C.yellow,{w:1.8});O.heart(k,527,330,7);
+    k.hw(()=>pumpkin(k,350,350,.8));k.lt(()=>{k.shape([[390,350],[410,330],[430,350]],C.red,{w:1.4,one:1})})}));
+  fk.add('lamp',368,()=>{const x=620,gy=368,s=.92;shadeB(k,x,gy+2,24*s);k.shape(E(x,gy,22*s,6*s,10),C.woodD,{w:1.6});k.line([[x,gy],[x,gy-210*s]],3.4,C.ink);
+    const sh=[[x-34*s,gy-210*s],[x+34*s,gy-210*s],[x+20*s,gy-256*s],[x-20*s,gy-256*s]];k.shape(sh,'#FCE59A',{w:2.2,hatch:{side:.7,gap:4,col:'#E8C96A',op:.6}});
+    let fr='';for(let i=0;i<11;i++){const fx=x-30*s+i*6*s;fr+=`M${R1(fx)} ${R1(gy-210*s)}v6`}k.add(`<path d="${fr}" stroke="${C.ink}" stroke-width="1.2"/>`);if(e.lit)k.lamps.push({x,y:gy-232*s,s:1.4,glass:sh,big:1})});
+  fk.add('plant',378,()=>plantB(k,270,378,.95));
+  fk.out();
+  O.sparkle(k,330,110,6);O.note(k,640,100,12);
+  O.tape(k,6,18,90,-26,'#F7B9C6');O.tape(k,920,572,80,-24,'#B9D4F3');
+}
+/* ---------- Kibble Corner (market, deep): the yellow corner shop with a giant bowl of kibble on the roof, a red-white awning, sacks at the
+   door (data-shop="kibble"), on a deep pavement; the other three shops have their own places now ---------- */
+function paveB(k,y0,y1,vx,vy,col,tint){let d='',f='';const rows=[];let y=y0,h=12;while(y<y1){rows.push(y);y+=h;h*=1.16}rows.push(y1+20);
+  rows.forEach(yy=>{d+=`M0 ${R1(yy+k.J(1))}L1000 ${R1(yy+k.J(1))}`});
+  for(let i=0;i<rows.length-1;i++){const ya=rows[i],yb=rows[i+1],sp=(yb-ya)*3.3,off=(i%2)*sp/2;let px=null;
+    for(let x=-sp+off;x<1000+sp;x+=sp){const xb=x+k.J(sp*.08),xa=vx+(xb-vx)*(ya-vy)/(yb-vy);d+=`M${R1(xa)} ${R1(ya)}L${R1(xb)} ${R1(yb)}`;
+      if(px&&k.r()<.16)f+=`M${R1(px[0])} ${R1(ya)}L${R1(xa)} ${R1(ya)}L${R1(xb)} ${R1(yb)}L${R1(px[1])} ${R1(yb)}Z`;px=[xa,xb]}}
+  k.add(`<path d="${f}" fill="${tint}" opacity=".7"/><path d="${d}" stroke="${col}" stroke-width="1.3" fill="none" stroke-linecap="round" opacity=".85"/>`)}
+// a burlap kibble sack with a bone on it
+function sackB(k,x,gy,s,col='#E2C88E'){k.shape([[x-17*s,gy],[x-19*s,gy-30*s],[x-13*s,gy-40*s],[x-6*s,gy-36*s],[x,gy-42*s],[x+7*s,gy-36*s],[x+13*s,gy-41*s],[x+19*s,gy-30*s],[x+17*s,gy]],col,{w:1.7,one:1,hatch:{side:.55,gap:3.5,col:'#C4A462',op:.5}});
+  k.add(`<path d="M${R1(x-15*s)} ${R1(gy-32*s)}q${R1(15*s)} ${R1(5*s)} ${R1(30*s)} 0" fill="none" stroke="${C.ink}" stroke-width="1.2"/>`);
+  k.shape([[x-8*s,gy-17*s],[x+8*s,gy-17*s],[x+10*s,gy-21*s],[x+13*s,gy-18*s],[x+11*s,gy-15*s],[x+13*s,gy-12*s],[x+10*s,gy-9*s],[x+8*s,gy-13*s],[x-8*s,gy-13*s],[x-10*s,gy-9*s],[x-13*s,gy-12*s],[x-11*s,gy-15*s],[x-13*s,gy-18*s],[x-10*s,gy-21*s]],'#FFFBF3',{w:1.1,one:1})}
+// the giant bowl of kibble on the roof (the shop's roof sign)
+function kibbleBowlB(k,x,y,s){const so=k.so;
+  const mound=[];for(let i=0;i<=12;i++){const a=Math.PI+i/12*Math.PI;mound.push([x+Math.cos(a)*118*s,y+Math.sin(a)*(i%2?56:50)*s])}k.shape(mound,'#D9A066',{w:2.2,hatch:{side:.55,gap:4,col:'#B57C46',op:.5}});
+  let kb='';const r=rng(7);for(let i=0;i<34;i++){const a=Math.PI*(1.05+r()*.9),rr=Math.sqrt(r())*.9,kx=x+Math.cos(a)*112*s*rr,ky=y+Math.sin(a)*50*s*rr-2*s;kb+=`<ellipse cx="${R1(kx)}" cy="${R1(ky)}" rx="${R1(7*s)}" ry="${R1(5*s)}" transform="rotate(${Math.round(r()*180)} ${R1(kx)} ${R1(ky)})" fill="${['#C98A4E','#E0AE6E','#B9773E'][i%3]}" stroke="${C.ink}" stroke-width="1"/>`}k.add(kb);
+  const bw=[[x-132*s,y-4*s],[x+132*s,y-4*s],[x+112*s,y+58*s],[x-112*s,y+58*s]];k.shape(bw,'#F4A3A3',{w:2.6,hatch:{side:.6,gap:4,col:'#E57E83',op:.5}});
+  k.shape(RC(x-138*s,y-12*s,276*s,14*s),'#E57E83',{w:2.2,one:1});k.add(`<path d="M${R1(x-96*s)} ${R1(y+18*s)}q${R1(96*s)} ${R1(22*s)} ${R1(192*s)} 0" fill="none" stroke="#FFFFFF" stroke-width="${R1(5*s)}" stroke-linecap="round" opacity=".7"/>`);
+  O.heart(k,x,y+30*s,12*s,'#FFFFFF');[[x-80*s,y+26*s],[x+80*s,y+26*s]].forEach(([px,py])=>k.add(`<g fill="#FFFFFF" opacity=".85"><ellipse cx="${R1(px)}" cy="${R1(py+3*s)}" rx="${R1(6*s)}" ry="${R1(5*s)}"/><circle cx="${R1(px-6*s)}" cy="${R1(py-4*s)}" r="${R1(2.4*s)}"/><circle cx="${R1(px)}" cy="${R1(py-7*s)}" r="${R1(2.4*s)}"/><circle cx="${R1(px+6*s)}" cy="${R1(py-4*s)}" r="${R1(2.4*s)}"/></g>`));
+  O.sparkle(k,x+150*s,y-50*s,8*s);O.sparkle(k,x-150*s,y-30*s,6*s);
+  snowOnB(k,mound.slice(1,12),7*s)}
+function marketB(k,F,o){const e=k.env,fk=floorKitB(k),D=y=>depB(F,y),Y='#FCE59A',YD='#E8C96A';
+  k.skyD(()=>{skyBand(k,1000,384);O.sun(k,880,66,28);O.cloud(k,140,70,22);O.cloud(k,820,150,16);O.bird(k,170,130,7);O.bird(k,190,138,5)},
+    {W:1000,H:400,sun:[880,66,28],low:[900,260,32],moon:[880,70,24],clouds:[[140,70,22],[820,150,16],[180,190,16]],rainC:[[400,30,28],[700,40,26]],birds:[[170,130,7],[190,138,5]],stars:40});
+  fujiB(k,140,332,200);
+  {const hl=[[0,330],[220,308],[460,322],[700,300],[1000,318],[1000,384],[0,384]];k.fill(hl,'#DCEDC4');k.pen(hl.slice(0,5),false,{w:1.6,col:C.graph})}
+  farTreesB(k,40,1000,70,318,.8,x=>x>230&&x<780);
+  scaledB(k,.9,50,-3.6,()=>{
+    // the neighbours: a peach house on the left, a hedge and an alley on the right
+    k.shape(RC(-60,214,274,170),C.wall,{w:2,hatch:{side:.8,gap:5,col:mixH(C.wall,C.ink,.22),op:.3}});k.shape([[-66,218],[80,146],[226,218]],C.roof,{w:2,hatch:{side:.6,gap:4,col:C.roofD,op:.5}});snowOnB(k,[[-66,218],[80,146],[226,218]],7);
+    O.window(k,56,262,46,44,{curtain:'#FFC9D3',box:1});O.window(k,140,262,46,44,{curtain:C.mint});
+    {const hp=[[800,384]];for(let x=800;x<=1060;x+=34)hp.push([x+17,344-k.r()*8],[Math.min(1060,x+34),354]);hp.push([1060,384]);k.shape(hp,k.so==='winter'?'#A3B293':C.leaf2,{w:1.8,hatch:{side:.4,gap:4.5,col:C.leafD,op:.5}});snowOnB(k,hp.slice(1,-1),5)}
+    // Kibble Corner: yellow walls, the corner side in shade, a flat roof with a parapet, the giant bowl
+    k.shape([[738,150],[796,170],[796,386],[738,386]],YD,{w:2.2,hatch:{side:.3,gap:4.5,col:'#C9A84E',op:.45}});
+    k.shape(RC(262,150,476,236),Y,{w:2.4,hatch:{side:.84,gap:5,col:YD,op:.4}});
+    {let d='';for(let y=172;y<380;y+=22){for(let bx=272+((y/22)%2?0:22);bx<730;bx+=44)d+=`M${R1(bx)} ${R1(y)}h40`}k.add(`<path d="${d}" stroke="#fff" stroke-opacity=".45" stroke-width="1.4"/>`)}
+    k.shape(RC(252,134,496,20),C.wood,{w:2.2});k.shape([[748,134],[806,156],[806,170],[748,154]],C.woodD,{w:1.8,one:1});snowOnB(k,[[250,134],[750,134],[806,156]],9);frostOnB(k,[[252,135],[748,135]]);
+    kibbleBowlB(k,500,86,.95);
+    // the sign: a board with a bite out of the corner, a bone and a bowl painted on it (no words)
+    {const sx=330,sy=164,sw=340,sh=56,sp=[[sx,sy],[sx+sw-28,sy],[sx+sw-20,sy+6],[sx+sw-24,sy+16],[sx+sw-14,sy+22],[sx+sw,sy+20],[sx+sw,sy+sh],[sx,sy+sh]];k.shape(sp,'#FFFBF3',{w:2.2});
+     k.add(`<path d="M${sx+sw-16} ${sy+34}l3 3M${sx+sw-6} ${sy+32}l2 4" stroke="${C.ink}" stroke-width="1.6" stroke-linecap="round"/>`);
+     const bx=sx+120,by=sy+28;k.shape([[bx-40,by-6],[bx+40,by-6],[bx+46,by-15],[bx+58,by-10],[bx+52,by],[bx+58,by+10],[bx+46,by+15],[bx+40,by+6],[bx-40,by+6],[bx-46,by+15],[bx-58,by+10],[bx-52,by],[bx-58,by-10],[bx-46,by-15]],'#F4D9A8',{w:1.8,one:1});
+     k.shape([[sx+208,sy+20],[sx+262,sy+20],[sx+254,sy+44],[sx+216,sy+44]],'#F4A3A3',{w:1.7,one:1});[[sx+222,sy+18],[sx+234,sy+14],[sx+246,sy+18],[sx+240,sy+22],[sx+228,sy+22]].forEach(([px,py])=>k.shape(E(px,py,6,4,8),'#D9A066',{w:1,one:1}))}
+    // the display window: kibble bags and a bowl pyramid, under the red-white awning
+    O.awning(k,280,238,206,26,C.red,'#fff');
+    k.shape(RC(290,272,186,104),C.glass,{w:2.2});if(e.lit)k.glows.push([290,272,186,104]);k.add(`<path d="M306 360l40 -60M336 366l26 -36" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".8"/>`);
+    [[320,300],[372,292],[424,304]].forEach((q,i)=>{const [bx,by]=q;k.shape([[bx-20,by],[bx+20,by],[bx+22,by+70],[bx-22,by+70]],[C.orange,C.mint,C.lav][i],{w:1.8});k.shape(RC(bx-12,by+20,24,18),'#FFFFFF',{w:1.2,one:1});O.heart(k,bx,by+29,5,[C.red,C.pink,'#B9A6E8'][i])});
+    k.shape(RC(280,374,206,12),'#E9B9A0',{w:1.6,one:1});
+    // the door, its awning, the sacks beside it
+    O.awning(k,520,232,140,22,C.red,'#fff');
+    const door=()=>{k.shape(RC(536,262,108,124),'#FFFFFF',{w:2.2});k.shape(RC(546,272,88,114),'#C79A72',{w:2,hatch:{side:.7,gap:4,col:'#A97E5A',op:.45}});
+      k.shape(E(590,300,16,16,14),C.glass,{w:1.6,one:1});k.line([[574,300],[606,300]],1.4);if(e.lit)k.glows.push([578,288,24,24]);
+      k.shape([[576,334],[604,334],[607,330],[610,333],[607,336],[610,339],[607,342],[604,338],[576,338],[573,342],[570,339],[573,336],[570,333],[573,330]],'#FFFBF3',{w:1.1,one:1});k.add(`<circle cx="624" cy="342" r="3" fill="${C.ink}"/>`);
+      k.shape(RC(528,376,124,10),C.stoneD,{w:1.6,one:1});k.shape(RC(540,368,100,9),C.stone,{w:1.4,one:1});
+      k.jp(()=>{let d='';[548,592].forEach(x=>{d+=`<path d="M${x} 262h40v34q-20 6 -40 0z" fill="#5E86BE" stroke="${C.ink}" stroke-width="1.4"/>`});k.add(d)})};
+    hot(k,'data-shop','kibble','Kibble Corner',RC(522,226,136,164),k.cap(door));
+    sackB(k,672,386,1.1);sackB(k,700,386,.95,'#EBD5A2');sackB(k,686,354,.9);sackB(k,488,386,.95);
+    O.window(k,672,180,48,40,{curtain:'#FFC9D3'});
+    k.jp(()=>{k.shape([[760,386],[760,330],[764,322],[786,322],[790,330],[790,386]],'#E2563D',{w:1.8,one:1,hatch:{side:.6,gap:3,col:'#B83E2C',op:.45}});k.shape(RC(764,338,22,4),C.ink,{w:1,one:1,noline:1,dx:0,dy:0});O.heart(k,775,360,6,'#FFFFFF')});
+    k.ss(()=>{if(k.so==='winter'&&!e.ny)wreath(k,590,244,.9);else if(k.so==='autumn'){pumpkin(k,526,384,.7);pumpkin(k,650,386,.55)}else if(k.so==='spring')bulbs(k,524,384,2,.6)});
+    k.lt(()=>{const t=[];for(let i=0;i<=6;i++)t.push([262+i*79,136]);ltString(k,scallop(t,10),18);ltString(k,sagP(520,234,660,234,6,10),16)});
+    k.ny(()=>{nyShime(k,590,258,.9);nyKites(k,[[860,120,.8,0,820,320]])});
+    k.hw(()=>{hwJack(k,512,386,.8);hwJack(k,666,388,.7);hwBatString(k,280,486,244,8,4,.6);hwSkyBats(k,[[860,110,.8],[900,90,.6]])});
+    O.lamp(k,236,392,.86);O.lamp(k,800,392,.86);
+  });
+  // the pavement: perspective paving, a doormat, chalk paws, a drain, flower tubs against the wall
+  k.fill([[0,346],[1000,346],[1000,600],[0,600]],'#EDE6DC',{dx:0,dy:0,sc:0});paveB(k,348,600,500,-220,'#D3C9BC','#E2D8CB');
+  k.shape(RC(-4,340,1008,9),C.stoneD,{w:1.5,one:1});frostOnB(k,[[0,340],[1000,340]]);
+  {const x=581,y=360,w=92,h=w*.16,P=[[x-w/2,y-h/2],[x+w/2,y-h/2],[x+w/2+6,y+h/2],[x-w/2-6,y+h/2]];k.fill(P,C.red,{dx:0,dy:0});k.pen(P,true,{w:1.5,one:1});k.add(`<path d="M${x-w/2+8} ${y}h${w-16}" stroke="#FFFFFF" stroke-width="1.6" stroke-dasharray="6 5" opacity=".8"/>`)}
+  {let s='';[[560,540,1],[588,528,1],[606,512,.95],[620,494,.95],[600,470,.9],[594,450,.9],[580,430,.85]].forEach(([x,y,f],i)=>{const o2=i%2?5*f:-5*f;s+=`<ellipse cx="${R1(x)}" cy="${R1(y+o2)}" rx="${R1(3.4*f)}" ry="${R1(2.6*f)}" fill="#D6CCBE"/><circle cx="${R1(x-3*f)}" cy="${R1(y+o2-4*f)}" r="${R1(1.2*f)}" fill="#D6CCBE"/><circle cx="${R1(x)}" cy="${R1(y+o2-5*f)}" r="${R1(1.2*f)}" fill="#D6CCBE"/><circle cx="${R1(x+3*f)}" cy="${R1(y+o2-4*f)}" r="${R1(1.2*f)}" fill="#D6CCBE"/>`});k.add(s)}
+  k.shape(E(120,560,26,8,14),'#C7BCAE',{w:1.4,one:1});k.add(`<path d="M104 560h32M108 556h24M108 564h24" stroke="#A39B90" stroke-width="1.3"/>`);
+  [[256,352,C.red],[748,352,'#FFB3C7']].forEach(([x,gy,c])=>{k.shape([[x-16,gy],[x+16,gy],[x+19,gy-22],[x-19,gy-22]],'#E39A6E',{w:1.6,one:1,hatch:{side:.6,gap:3.5,col:'#C47F55',op:.5}});k.shape(blobP(x,gy-28,18,9,k.r,8,.2),k.so==='winter'?'#A3B293':C.leaf2,{w:1.2,one:1});
+    if(k.so!=='winter')for(let i=0;i<3;i++)O.flower(k,x-10+i*10,gy-31-(i%2)*4,3.2,c);snowOnB(k,[[x-19,gy-28],[x+19,gy-28]],4)});
+  winterSnowB(k,[[120,566,70,10],[880,572,64,10],[440,592,80,8]]);
+  k.ss(()=>seasonGround(k,[20,356,980,596],70,[[90,400,250,480],[640,370,760,420],[780,420,920,500]],0,1));
+  k.fx(()=>{if(e.rain){sheen(k,0,1000,354,598,70);[[300,560,40,8],[760,580,44,9]].forEach(q=>puddle(k,...q))}if(e.snow)[[260,560,70,12],[760,575,64,11],[120,440,46,8],[880,430,44,8]].forEach(q=>snowPatch(k,...q));if(e.night&&!e.rain)[[160,330],[860,320]].forEach(f=>k.flies.push(f))});
+  // the floor props
+  fk.add('bench',452,()=>{const s=D(452);shadeB(k,150,454,54*s);O.bench(k,150,452,s);frostOnB(k,[[150-49*s,452-69*s],[150+49*s,452-69*s]])});
+  fk.add('bowl',388,()=>bowlB(k,722,388,D(388),C.red));
+  fk.add('cart',476,()=>{const x=846,gy=476,s=D(gy);shadeB(k,x,gy+2,80*s,8*s);k.shape([[x-70*s,gy-20*s],[x+60*s,gy-20*s],[x+66*s,gy-70*s],[x-76*s,gy-70*s]],C.wood,{w:2,hatch:{side:.7,gap:4,col:C.woodD,op:.5}});
+    for(let i=0;i<3;i++)k.line([[x-70*s,gy-(32+i*13)*s],[x+62*s,gy-(32+i*13)*s]],1,C.woodD);k.line([[x+60*s,gy-60*s],[x+108*s,gy-86*s]],3*s,C.trunkD);
+    sackB(k,x-40*s,gy-70*s,s*.9);sackB(k,x-4*s,gy-70*s,s*.95,'#EBD5A2');sackB(k,x+32*s,gy-70*s,s*.85);
+    [[x-50*s,1],[x+40*s,1]].forEach(([wx])=>{k.shape(E(wx,gy-14*s,15*s,15*s,12),C.woodD,{w:1.8});k.add(`<circle cx="${R1(wx)}" cy="${R1(gy-14*s)}" r="${R1(3*s)}" fill="${C.ink}"/>`)});
+    snowOnB(k,[[x-60*s,gy-108*s],[x+50*s,gy-108*s]],4*s);k.hw(()=>hwJack(k,x+76*s,gy,.7*s))});
+  fk.add('planter',540,()=>{const x=330,gy=540,s=D(gy);shadeB(k,x,gy+2,26*s);k.shape([[x-22*s,gy-18*s],[x+22*s,gy-18*s],[x+18*s,gy],[x-18*s,gy]],'#E9B9A0',{w:1.6,hatch:{side:.6,gap:4,col:'#CF9479',op:.5}});
+    k.shape(RC(x-24*s,gy-23*s,48*s,6*s),'#D9A086',{w:1.4,one:1});k.shape(blobP(x,gy-30*s,20*s,10*s,k.r,8,.2),k.so==='winter'?'#A3B293':C.leaf2,{w:1.3,one:1});
+    if(k.so!=='winter')for(let i=0;i<3;i++)O.flower(k,x-12*s+i*12*s,gy-33*s-(i%2)*5*s,3.4*s,[C.red,C.yellow,C.lav][i]);snowOnB(k,[[x-24*s,gy-30*s],[x,gy-38*s],[x+24*s,gy-30*s]],4*s)});
+  fk.out();
+  k.ss(()=>{seasonDrift(k,[[820,240,1],[140,300,.9],[900,330,.85]]);if(k.so==='winter'&&!e.night)robin(k,180,220,1,1);if(k.so==='spring'&&!e.night&&!e.rain)butterfly(k,860,300,1,'#F9C6D4')});
+  O.sparkle(k,880,200,7);O.heart(k,170,110,6);
+  O.tape(k,6,26,90,-24,'#F9E19A');O.tape(k,910,566,80,-28,'#F4A3A3');
+}
+function winterSnowB(k,list){if(k.so==='winter'&&!k.env.snow)k.ss(()=>list.forEach(([x,y,rx,ry])=>{const p=blobP(x,y,rx,ry,k.r,10,.3);k.fill(p,'#FFFFFF',{dx:0,dy:0,op:.85});k.pen(p,true,{w:1.1,amp:.5,col:'#B4C4D4',one:1})}))}
+/* ---------- the v2.15 B floors (PawArt.FLOOR) and the render (its own cache; the key holds every option the scenes read) ---------- */
+const FLOOR_B={
+ yard:{poly:[[26,334],[974,334],[994,594],[6,594]],
+  props:[{id:'planter',base:350,box:[898,342,76,10]},{id:'bush',base:356,box:[532,348,60,10]},{id:'mailbox',base:408,box:[304,398,54,12]},{id:'bushL',base:410,box:[228,402,44,10]},
+   {id:'house',base:526,box:[628,510,224,18]},{id:'bowl',base:540,box:[212,526,76,16]},{id:'bushF',base:598,box:[866,586,72,10]}],// mailbox, house, bowl: drawn by the game over the scene (MB_BOX, #houseG, #bowlG), their feet boxes
+  spots:[{id:'bowl',x:250,y:570,tags:['bowl'],act:'drink'},{id:'dig',x:520,y:440,tags:['dig','sniff'],act:'sniff'},{id:'shade',x:930,y:378,tags:['shade','rest'],act:'rest'},
+   {id:'sun',x:420,y:470,tags:['sun','rest'],act:'rest'},{id:'gate',x:470,y:350,tags:['gate','patrol'],act:'look'},{id:'door',x:150,y:356,tags:['door'],act:'door'},{id:'mailbox',x:336,y:426,tags:['sniff'],act:'sniff'}]},
+ house:{poly:[[16,348],[984,348],[998,594],[2,594]],
+  props:[{id:'sofa',base:364,box:[314,350,270,14]},{id:'lamp',base:368,box:[604,360,32,10]},{id:'plant',base:378,box:[252,370,36,10]}],
+  spots:[{id:'bowl',x:250,y:570,tags:['bowl'],act:'drink'},{id:'rug',x:440,y:540,tags:['rest','rug'],act:'rest'},{id:'bed',x:742,y:500,tags:['rest','bed'],act:'rest'},
+   {id:'sun',x:470,y:420,tags:['sun','rest'],act:'rest'},{id:'sofa',x:440,y:388,tags:['bench','rest'],act:'sit'},{id:'door',x:930,y:384,tags:['door'],act:'door'}]},
+ market:{poly:[[18,348],[982,348],[998,594],[2,594]],
+  props:[{id:'bowl',base:388,box:[702,380,40,10]},{id:'bench',base:452,box:[96,438,108,16]},{id:'cart',base:476,box:[770,462,150,16]},{id:'planter',base:540,box:[306,530,48,12]}],
+  spots:[{id:'door',x:581,y:370,tags:['door','shop'],act:'door'},{id:'bowl',x:762,y:400,tags:['bowl'],act:'drink'},{id:'bench',x:150,y:472,tags:['bench','rest'],act:'sit'},{id:'cart',x:846,y:498,tags:['sniff'],act:'sniff'},{id:'sacks',x:690,y:372,tags:['sniff'],act:'sniff'}]}
+};
+const MINE_B={yard:['Your yard',yardB],house:['Cozy House living room',houseB],market:['Kibble Corner',marketB]};
+const cacheB={};
+const envB=o=>{if(o.snow===true&&!WEATHERS.includes(o.weather))o=Object.assign({},o,{weather:'snow'});return mkEnv(o)};// o.snow: the Snow Days flag reads as snowy weather
+function renderB(name,o){const env=envB(o),F=FLB[name],inn=!!F.in,vk=(name==='yard'&&(o.patch==='empty'||o.patch==='ready')?'|'+o.patch:'')+(name==='house'&&o.bed===false?'|nobed':''),
+    key=name+'|v215|'+env.time+'|'+env.weather+'|'+env.season+(env.hw?'|hw':'')+wnKey(env)+vk;if(cacheB[key])return fresh(cacheB[key]);
+  const k=kit(hashS('pwa-v215-'+name));lightenB(k);k.env=env;k.so=inn?'':env.ssn;k.rc=recolorFn(env,inn?'in':'out');const pp=paperDefs(k,1000,600);
+  MINE_B[name][1](k,F,o);
+  const ex=(env.def?'':` data-time="${env.time}" data-weather="${env.weather}"${env.ssn?` data-season="${env.ssn}"`:''}`)+(env.hw?' data-halloween="1"':'')+wnAttrs(env)+` data-w="1000" data-back="${F.back}"`;
+  const svg=assemble(k,pp,1000,`<svg class="pa-wa-scene pa-wa-${name} pa-v215" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" role="img" aria-label="${MINE_B[name][0]}${env.def?'':`, ${env.time}, ${env.weather}${env.ssn?', '+env.ssn:''}`}"${ex}>`,false);
+  cacheB[key]=svg;return svg}
+PA.FLOOR=PA.FLOOR||{};
+Object.keys(FLOOR_B).forEach(n=>{const F=FLB[n],R=FLOOR_B[n];PA.FLOOR[n]={w:F.w,back:F.back,front:F.front,kB:F.kB,kF:F.kF,poly:R.poly.map(p=>p.slice()),
+  props:R.props.map(p=>({id:p.id,base:p.base,box:p.box?p.box.slice():null})),spots:R.spots.map(s=>Object.assign({},s,{tags:s.tags.slice()}))}});
+/* ======================= end of v2.15 B ======================= */
 })();

@@ -41,7 +41,7 @@ const safe = (s) => !/<filter|filter=|<animate|<script/i.test(s) && !/\son[a-z]+
 const ids = (s) => [...s.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]);
 const dupIds = (s) => { const seen = new Set(), d = []; ids(s).forEach((i) => { if (seen.has(i)) d.push(i); seen.add(i); }); return d; };
 const badRefs = (s) => { const have = new Set(ids(s)); return [...s.matchAll(/url\(#([^)]+)\)/g)].map((m) => m[1]).filter((i) => !have.has(i)); };
-const norm = (s) => s.replace(/(?:mf-|mg-|pwc)\d+(?:x\d+)?/g, 'ID'); // world F, G and C (GROUND ART A) ids
+const norm = (s) => s.replace(/(?:mf-|mg-|pwc|pwa)\d+(?:x\d+)?/g, 'ID'); // world F, G, C (GROUND ART A and B) and A (GROUND ART B) ids
 // the <g ...> element that starts at index i, through its matching </g>
 function groupAt(s, i) { const re = /<g\b[^>]*?(\/?)>|<\/g>/g; re.lastIndex = i; let d = 0, m; while ((m = re.exec(s))) { if (m[0] === '</g>') d--; else if (!m[1]) d++; if (d === 0) return s.slice(i, re.lastIndex); } return s.slice(i); }
 const buildings = (s) => { const out = {}; let i = -1; while ((i = s.indexOf('<g class="mb" ', i + 1)) >= 0) { const g = groupAt(s, i), id = /data-area="([^"]+)"/.exec(g)[1]; out[id] = g; } return out; };
@@ -80,6 +80,8 @@ const V215_SCENES = [
   ['map', { v215: true }, (s, L) => { const B = buildings(s); ok(Object.keys(B).length === 25, `${L}: 25 buildings (got ${Object.keys(B).length})`); ok(/^<svg[^>]*data-v215="1"/.test(s), `${L}: data-v215 on the root`); }],
   // GROUND ART A (world C, the v2.15 A block): the seven big outdoor places, 1600 wide, one run gate each
   ...['park', 'dogpark', 'beach', 'hilltop', 'woods', 'river', 'pier'].map((n) => [n, { v215: true }, (s, L) => { ok(/^<svg[^>]*viewBox="0 0 1600 600"[^>]*data-w="1600"/.test(s), `${L}: 1600 wide`); ok((s.match(/data-hot="run"/g) || []).length === 1 && s.includes('id="floorG"'), `${L}: one run gate and the #floorG layer`); }]),
+  // GROUND ART B (world A and world C, the v2.15 B blocks): the deep-only places, 1000 wide; the Square has the Town Loop's run gate
+  ...['yard', 'house', 'market', 'square', 'fujihill', 'cafe', 'vet', 'salon'].map((n) => [n, { v215: true }, (s, L) => { ok(/^<svg[^>]*viewBox="0 0 1000 600"[^>]*data-w="1000"/.test(s), `${L}: 1000 wide`); ok((s.match(/data-hot="run"/g) || []).length === (n === 'square' ? 1 : 0) && s.includes('id="floorG"'), `${L}: the #floorG layer${n === 'square' ? ' and one run gate' : ''}`); }]),
 ];
 const SEASONS = ['spring', 'summer', 'autumn', 'winter'];
 const FLAGS = [['halloween', 'data-halloween'], ['lights', 'data-lights'], ['newyear', 'data-newyear'], ['jp', 'data-jp']];
