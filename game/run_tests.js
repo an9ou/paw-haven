@@ -98,6 +98,7 @@ const SUITES = {
   v213_neck: { file: 'test_v213_neck_node.js', group: 'all', est: 170, timeout: 600 }, // v2.13 NECK (V213.md 5): every head on its body, 35 breeds, every pose, adult and puppy, expressions that tilt the head, mixes (5.1)
   v213_expr: { file: 'test_v213_expr.js', group: 'all', est: 60 }, // v2.13 EX (V213.md 4): expressions in play, personality, photo picker
   v215_migrate: { file: 'test_v215_migrate.js', group: 'all', est: 115 }, // v2.15 stubs (V215.md 9, 16): old saves in every place key load with the v2.15 map off and on, v215Fields
+  v215_ground: { file: 'test_v215_ground.js', group: 'all', est: 150 }, // v2.15 GROUND (V215.md 8, 16): every grOn place, 4 dogs x 120 simulated s on the deep floor, the camera, petting, ball play, photo mode, the systems on a deep floor
   // v2.2 phone suites: `node game/run_tests.js phone` (not part of `all`, which stays the desktop regression set)
   phone_legacy: { file: 'test_phone.js', group: 'phone', est: 90 },
   phone_shell: { file: 'test_phone_shell.js', group: 'phone', est: 40 },
@@ -129,6 +130,7 @@ const SUITES = {
   phone_v29_pack: { file: 'test_phone_v29_pack.js', group: 'phone', est: 50 }, // v2.9 (V29.md)
   phone_v210_ball: { file: 'test_phone_v210_ball.js', group: 'phone', est: 60 },
   phone_v210_roam: { file: 'test_phone_v210_roam.js', group: 'phone', est: 50 }, // v2.10 ROAM (V210.md)
+  phone_v215_ground: { file: 'test_phone_v215_ground.js', group: 'phone', est: 70 }, // v2.15 GROUND (V215.md 11, 16): the wide-place camera on phones, look chips, drag vs tap, the crop, 44 px, no sideways scroll
   phone_v211_cards: { file: 'test_phone_v211_cards.js', group: 'phone', est: 50 }, // v2.11 CARDS: Dog Cards on phones (V211.md section 5.5)
   phone_v213_expr: { file: 'test_phone_v213_expr.js', group: 'phone', est: 50 }, // v2.13 EX: expressions and the photo face picker on phones (V213.md 4)
   phone_v211_tokyo: { file: 'test_phone_v211_tokyo.js', group: 'phone', est: 90 }, // v2.11 TRAVEL (V211.md 5.3): the Japan map, the ride, the Tokyo places on phones

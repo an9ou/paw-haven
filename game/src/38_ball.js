@@ -37,7 +37,8 @@ function blDomNoGo() { // fallback until ROAM's rmZone gives the boxes: the big 
 }
 function blZone() {
   const place = (S && S.place) || 'yard'; let z = null; try { z = typeof rmZone === 'function' ? rmZone(place) : null; } catch (e) { z = null; }
-  const f = BL_FLOOR[place] || [420, 590], out = { x0: 60, x1: 940, y0: f[0], y1: f[1], no: [] };
+  const gf = grOn(place) ? grFloor(place) : null, f = gf ? [gf.back, gf.front] : BL_FLOOR[place] || [420, 590], out = { x0: 60, x1: 940, y0: f[0], y1: f[1], no: [] }; // v2.15: a deep floor's back and front lines (43_ground.js)
+  if (gf) { out.x0 = gf.x0; out.x1 = gf.x1; out.poly = gf.poly; }
   if (isPhone() && place === 'yard') { out.y0 = 420; out.y1 = 600; }
   if (z) { ['x0', 'x1', 'y0', 'y1'].forEach((k) => { if (typeof z[k] === 'number') out[k] = z[k]; }); out.no = Array.isArray(z.no) ? z.no : []; } else out.no = blDomNoGo();
   return out;
@@ -53,6 +54,7 @@ function blPush(x, y, Z) {
       }
     }
     x = clamp(x, Z.x0, Z.x1); y = clamp(y, Z.y0, Z.y1);
+    if (Z.poly && !grIn(Z.poly, x, y)) [x, y] = grInside(Z.poly, x, y); // v2.15: the feet on the floor polygon
   }
   return [x, y];
 }
@@ -400,11 +402,11 @@ function blSky() { // ROAM's sky (or wall) colour of the scene, and the scene's 
   });
 }
 function blCamera(dt) {
-  if (!isPhone()) return;
+  if (!isPhone()) { if (grWide()) grBallCam(dt, BL.ph === 'rest' ? BL.hx : BL.ball.x); return; } // v2.15: a wide place's camera follows the ball on desktop too
   const dm = phSvgDims(); if (!dm.w || !dm.h) return;
   const vbW = 600 * dm.w / dm.h, zf = vbW >= BL_CROP ? 1 : vbW / BL_CROP;
   if (Math.abs(phZoom - zf) > 0.001) { phZoom = zf; blSky(); }
-  const b = BL.ball, target = BL.ph === 'rest' ? BL.hx : clamp(b.x, 0, 1000);
+  const b = BL.ball, target = BL.ph === 'rest' ? BL.hx : clamp(b.x, 0, grW());
   camCx += (target - camCx) * Math.min(1, dt * 5); cancelAnimationFrame(camRaf); clearTimeout(phPanT); camApply(camCx);
 }
 
@@ -443,7 +445,7 @@ function blStart(toy) {
     zone: blZone(), z0: typeof phZoom === 'number' ? phZoom : 1 };
   BL.dogs.forEach((o) => { try { const p = rmPos(o.d); o.x = p.x; o.y = p.y; o.face = p.face || 'right'; o.pose = p.pose || 'idle'; } catch (e) { /* default */ } const q = blPush(o.x, o.y, BL.zone); o.x = q[0]; o.y = q[1]; });
   const mx = BL.dogs.reduce((a, o) => a + o.x, 0) / BL.dogs.length, Z = BL.zone;
-  BL.hx = isPhone() ? clamp(mx, Z.x0 + 260, Z.x1 - 260) : 500; BL.hy = Z.y1 - 58; // the ring round the ball (50 units) stays inside the scene BL.camT = BL.hx;
+  BL.hx = grWide() ? clamp(camCx, Z.x0 + 260, Z.x1 - 260) : isPhone() ? clamp(mx, Z.x0 + 260, Z.x1 - 260) : 500; BL.hy = Z.y1 - 58; // the ring round the ball (50 units) stays inside the scene (v2.15: a wide place plays where the camera is) BL.camT = BL.hx;
   const hp = blPush(BL.hx, BL.hy, Z); BL.hx = hp[0]; BL.hy = hp[1]; BL.spots = blSpots();
   BL.ball.x = BL.hx; BL.ball.gy = BL.hy;
   try { rmPause('ball'); } catch (e) { /* none */ }

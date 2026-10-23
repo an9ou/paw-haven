@@ -113,7 +113,7 @@ function phCapture() {
     if (e.style && /url\(\s*['"]?(?!#|data:)/i.test(e.getAttribute('style') || '')) e.removeAttribute('style');
   };
   clean(cl); cl.querySelectorAll('*').forEach(clean); cl.querySelectorAll('script, foreignObject').forEach((e) => e.remove());
-  const lv = (svg.getAttribute('viewBox') || '0 0 1000 600').split(/\s+/).map(Number), vb = [0, lv[1], 1000, lv[3]]; // the whole scene width: the phone camera crop is not the photo
+  const lv = (svg.getAttribute('viewBox') || '0 0 1000 600').split(/\s+/).map(Number), vb = [cur.mode === 'yard' && grWide() ? grPhotoX() : 0, lv[1], 1000, lv[3]]; // the whole scene width: the phone camera crop is not the photo (v2.15: a wide place, the 1000 round the camera)
   const tint = $('.tintfx', view), wx = $('.wxfx', view);
   const db = phDogBox(svg);
   cl.removeAttribute('class'); cl.removeAttribute('style'); cl.removeAttribute('id');

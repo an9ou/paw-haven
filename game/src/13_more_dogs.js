@@ -382,17 +382,17 @@ function applyLayout(rerender) { psApplyLayout(rerender); }
 /* camera: crop the 1000x600 hub scene around the dog (x ~ 430) so the full height stays visible */
 let camCx = 430, camRaf = 0;
 function camApply(cx) {
-  if (!isPhone() || !['yard', 'bath', 'market'].includes(cur.mode)) return;
+  if (!isPhone() || !['yard', 'bath', 'market'].includes(cur.mode)) { if (cur.mode === 'yard' && grWide()) grCamApply(cx); return; } // v2.15: a wide place has a camera on desktop too (43_ground.js)
   const svg = $('#view > svg.world'); if (!svg) return;
   const vw = svg.clientWidth || view.clientWidth, vh = svg.clientHeight || view.clientHeight; if (!vw || !vh) return; // the svg can be shorter than the view (a tray is open, or Market Street zooms out)
-  const vbW = 600 * vw / vh;
-  if (vbW >= 1000) { svg.setAttribute('viewBox', '0 0 1000 600'); return; }
+  const vbW = 600 * vw / vh, W = cur.mode === 'yard' ? grW() : 1000; // v2.15: a wide place is 1600 units
+  if (vbW >= W) { svg.setAttribute('viewBox', `0 0 ${W} 600`); return; }
   const zf = typeof phZoom === 'number' && phZoom > 0 && phZoom < 1 ? phZoom : 1, w = vbW / zf, h = 600 / zf; // phZoom (03_yard.js): Market Street zooms out, the extra sky sits above the scene
-  const x = w >= 1000 ? (1000 - w) / 2 : clamp(cx - w / 2, 0, 1000 - w);
+  const x = w >= W ? (W - w) / 2 : clamp(cx - w / 2, 0, W - w);
   svg.setAttribute('viewBox', `${x.toFixed(1)} ${(600 - h).toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}`);
 }
 function camTo(cx, secs = 0.6) {
-  if (!isPhone()) return; cancelAnimationFrame(camRaf);
+  const gw = cur.mode === 'yard' && grWide(); if (!isPhone() && !gw) return; cancelAnimationFrame(camRaf); if (gw) grDragged(); // v2.15: a look in a wide place: the follow camera waits (43_ground.js)
   const from = camCx, t0 = performance.now(), dur = Math.max(1, secs * 1000);
   const stepF = (t) => { const k = Math.min(1, (t - t0) / dur), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; camCx = from + (cx - from) * e; camApply(camCx); if (k < 1) camRaf = requestAnimationFrame(stepF); };
   camRaf = requestAnimationFrame(stepF);
