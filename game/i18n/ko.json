@@ -23,6 +23,7 @@
  "adopt.petting_favourite_snack_and_toy": "쓰다듬기. 좋아하는 간식과 장난감은 입양할 때 정해지는 깜짝 선물이에요.",
  "adopt.pick_boy_or_girl_first": "먼저 남자아이나 여자아이를 골라 주세요. {name}의 형제들이 얌전히 기다리고 있어요.",
  "adopt.population_you_html": "인구: 나, <b>{name}</b>, 그리고 수상한 오리 한 마리.",
+ "adopt.random": "랜덤 선택",
  "adopt.rub_to_pet_tap_feed": "{name, josa, 을/를} 문질러서 쓰다듬어요. 밥 주기를 탭하면 밥그릇이 채워져요.",
  "adopt.that_s_the_name": "이 이름으로 할래요",
  "adopt.the_breed": "{breed}",
