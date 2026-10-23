@@ -51,3 +51,10 @@ A cozy crayon dog game, now in 11 languages 🌍 English, Japanese, Chinese, Kor
 **Description:** `Play free in your browser.`
 
 Tip: in Ads Manager, a language ad works best aimed at the countries it names (Japan, Taiwan, Korea, Thailand, Brazil, France, Germany, Indonesia, Spain and Latin America).
+
+## For future posts: v2.14.2 "Same language" (24 Oct 2026)
+
+From the Game Manager's briefing, no post made yet:
+- The game on doodledoggo.app now opens in the site's language (pick Thai on the site and the game is in Thai). This is a good line for a language ad: "pick your language once, the site and the game follow".
+- A "Random dog" button on the adoption screen picks a random dog and a random boy or girl. This fits a "let fate pick your dog" ad.
+- No new breeds or items. Screenshots: `docs/release/v2.14.2/` on main.
