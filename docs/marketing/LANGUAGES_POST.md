@@ -4,7 +4,7 @@ Made 23 Oct 2026 for the v2.14 "Hello in Every Language" release. The game and d
 
 The owner's English-only rule still holds for everything we write: the title, the labels and the caption are English. The other scripts appear only inside the real game screenshots, because they are the news. (The owner was asked about this; with no answer, the recommended way was taken.)
 
-Files are in `brand/instagram/launch/languages/`.
+**On hold until v2.14.1 ships (owner, 23 Oct 2026: "create a post for me after 2.14.1 shipped").** When the Game Manager's v2.14.1 briefing arrives, capture the screenshots from the shipped build: one per language, the same Home Yard scene with a dog's speech bubble, phone layout, built on `brand/instagram/launch/phone_ad/capture_gameplay.js` (the test harness pins the language with `opts.lang`). Then make the announcement image, the carousel (a cover, then one slide per language) and a designed cover, and update the caption with anything new in v2.14.1. Files will go in `brand/instagram/launch/languages/`.
 
 ## Caption (feed post)
 
