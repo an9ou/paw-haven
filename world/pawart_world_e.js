@@ -13,6 +13,8 @@
      postcard { frame: 'tokyo', w, h, scene, caption, place, date, dogs, stamp } (the Tokyo frame, w x h, default 300 x 200; PawArt.postcard(w, h, { frame: 'tokyo' })
      draws the same; every other postcard call goes to world B unchanged).
    Items (0 0 64 64): Shibuya Bandana, Asakusa Bandana, Tokyo Tower Bandana, Shinkansen Plush, Lucky Cat, Sweet Potato Strip, Dog Senbei, Stamp Book, Train Ticket, Paw.
+     v2.15 (PawArt.V215_ITEMS, not in WORLD_E_ITEMS): Doggy Life Vest, Sunflower Collar, Sailor Cap, Lucky Horseshoe, Bamboo Ring, Paper Lantern, Sea Glass
+     (here and not in the lazy world G, so the wardrobe, the journal and ball play always have them).
    The pencil kit, paper, palette, sky and time/weather/season helpers are copied from world C (ids prefixed pwe), the icon kit from world B (ids pwei, pwep). No filters. */
 window.PawArt = window.PawArt || {};
 (function(){
