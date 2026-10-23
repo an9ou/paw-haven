@@ -21,10 +21,10 @@ const gkOn = () => !!(PG() && typeof PG().open === 'function');
 const kOn = () => !!(PK() && typeof PK().open === 'function');
 function comingSoon(what) {
   SFX.boop(520);
-  toast(what === 'kitchen' ? `The kitchen is coming soon! ${NAME()} has already claimed the spot by the oven.` : `The veggie patch is coming soon! Pip is still sorting the seeds. ${NAME()} is supervising.`, 'gold');
+  toast(what === 'kitchen' ? tt('popup.the_kitchen_is_coming_soon', 'The kitchen is coming soon! {name} has already claimed the spot by the oven.', { name: NAME() }) : tt('popup.the_veggie_patch_is_coming', 'The veggie patch is coming soon! Pip is still sorting the seeds. {name} is supervising.', { name: NAME() }), 'gold');
 }
 function soonCard(what) {
-  return `<div class="soon-card"><span class="stamp r1">Coming soon</span><p><b>${what === 'garden' ? 'The veggie patch' : 'The kitchen and recipes'}</b> ${what === 'garden' ? 'are' : 'are'} on the way. Pip is setting up the Sprout Cart, and ${esc(NAME())} is practising ${PR().his} "patient face".</p></div>`;
+  return `<div class="soon-card"><span class="stamp r1">${tt('popup.coming_soon', 'Coming soon')}</span><p>${tt('popup.soon_card_html', '{what, select, garden {{sex, select, female {<b>The veggie patch</b> are on the way. Pip is setting up the Sprout Cart, and {name} is practising her "patient face".} other {<b>The veggie patch</b> are on the way. Pip is setting up the Sprout Cart, and {name} is practising his "patient face".}}} other {{sex, select, female {<b>The kitchen and recipes</b> are on the way. Pip is setting up the Sprout Cart, and {name} is practising her "patient face".} other {<b>The kitchen and recipes</b> are on the way. Pip is setting up the Sprout Cart, and {name} is practising his "patient face".}}}}', { what, sex: S && S.dog && S.dog.sex, name: NAME() })}</p></div>`;
 }
 
 /* ---- pet beds ---- */
@@ -53,17 +53,17 @@ function useBed(n) {
   if (!S.beds.includes(n)) return; hoSync();
   if (!S.bedAt[n]) S.bedAt[n] = hoFreeSpot(n, [BED_BOX[0], BED_BOX[1]]);
   hoGiveBed(S.activeId, n); markDirty(); SFX.pop();
-  toast(`${NAME()} inspects the ${n}, turns around three times, and approves.`, 'good');
+  toast(tt('popup.inspects_the_turns_around_three', '{name} inspects the {bed}, turns around three times, and approves.', { name: NAME(), bed: tdata('beds.' + tid(n) + '.n', n) }), 'good');
   if (cur.mode === 'yard' && S.place === 'house') { const keepSleep = S.sleeping; go('yard'); if (keepSleep) sleepTray(); }
 }
 // the beds in the house (with who naps on each) and the beds in the shed
 function openBeds() {
   hoSync(); const inH = BEDS.filter((b) => S.beds.includes(b.n) && S.bedAt[b.n]), shed = BEDS.filter((b) => S.beds.includes(b.n) && !S.bedAt[b.n]);
-  const p = openModal('Pet beds', `<p class="small">Beds live in the Cozy House. Every dog naps on its own bed. Barkitecture on Market Street sells more.</p>
-    <button class="btn yes ho-arrange" id="hoBedsArr"><span class="art">${iconOr('arrange', '<path d="M-12 0h24M0 -12v24" stroke="#5B3D32" stroke-width="3"/>')}</span>Arrange the house</button>
-    <h4 class="ho-h">In the house</h4><div class="shopgrid">${inH.map((b) => hoBedsCard(b, true)).join('')}</div>${shed.length ? `<h4 class="ho-h">In the shed</h4><div class="shopgrid">${shed.map((b) => hoBedsCard(b, false)).join('')}</div>` : ''}`, { cls: 'shop ho-beds' });
+  const p = openModal(tt('popup.pet_beds', 'Pet beds'), `<p class="small">${tt('popup.beds_live_in_the_cozy', 'Beds live in the Cozy House. Every dog naps on its own bed. Barkitecture on Market Street sells more.')}</p>
+    <button class="btn yes ho-arrange" id="hoBedsArr"><span class="art">${iconOr('arrange', '<path d="M-12 0h24M0 -12v24" stroke="#5B3D32" stroke-width="3"/>')}</span>${tt('popup.arrange_the_house', 'Arrange the house')}</button>
+    <h4 class="ho-h">${tt('popup.in_the_house', 'In the house')}</h4><div class="shopgrid">${inH.map((b) => hoBedsCard(b, true)).join('')}</div>${shed.length ? `<h4 class="ho-h">${tt('popup.in_the_shed', 'In the shed')}</h4><div class="shopgrid">${shed.map((b) => hoBedsCard(b, false)).join('')}</div>` : ''}`, { cls: 'shop ho-beds' });
   p.querySelectorAll('[data-usebed]').forEach((b) => { b.onclick = () => { useBed(b.dataset.usebed); openBeds(); }; });
-  p.querySelectorAll('[data-bedfor]').forEach((b) => { b.onclick = () => { SFX.click(); const [id, n] = b.dataset.bedfor.split('|'), d = dogById(id); if (!hoGiveBed(id, n)) return; if (d) toast(`${d.name} claims the ${n}.`, 'good'); if (cur.mode === 'yard' && S.place === 'house') { const keep = S.sleeping; go('yard'); if (keep) sleepTray(); } openBeds(); }; });
+  p.querySelectorAll('[data-bedfor]').forEach((b) => { b.onclick = () => { SFX.click(); const [id, n] = b.dataset.bedfor.split('|'), d = dogById(id); if (!hoGiveBed(id, n)) return; if (d) toast(tt('popup.claims_the', '{name} claims the {bed}.', { name: d.name, bed: tdata('beds.' + tid(n) + '.n', n) }), 'good'); if (cur.mode === 'yard' && S.place === 'house') { const keep = S.sleeping; go('yard'); if (keep) sleepTray(); } openBeds(); }; });
   $('#hoBedsArr', p).onclick = () => { SFX.click(); closeModal(); hoPlaceStart(undefined, 'house'); };
 }
 /* idle curl-up on the bed (house only) */
@@ -71,7 +71,7 @@ let curlT = [], curling = false;
 function curlUp() {
   if (busy || curling || S.sleeping || S.place !== 'house' || cur.mode !== 'yard' || popOpen() || !modal.hidden) return;
   curling = true; hideBubble(); dogTo(...napSpot(), 1.2); tempPose = 'walk'; tempUntil = performance.now() + 1250; renderDog('walk', 'right');
-  curlT.push(setTimeout(() => { setTemp('sleep', 5800); const h = dogHeadWorld(); say(PICK(['zz... (just resting my eyes)', 'zzz. Five more minutes.', 'zz... dreaming of sandwiches.']), h.x, h.y, 2600); addStat('energy', 2); }, 1250));
+  curlT.push(setTimeout(() => { setTemp('sleep', 5800); const h = dogHeadWorld(); say(PICK([tt('popup.zz_just_resting_my_eyes', 'zz... (just resting my eyes)'), tt('popup.zzz_five_more_minutes', 'zzz. Five more minutes.'), tt('popup.zz_dreaming_of_sandwiches', 'zz... dreaming of sandwiches.')]), h.x, h.y, 2600); addStat('energy', 2); }, 1250));
   curlT.push(setTimeout(() => { tempPose = null; dogTo(0, 0, 1, 1); renderDog('walk', 'left', true); }, 7000));
   curlT.push(setTimeout(() => { curling = false; renderDog(dogPoseNow(), 'right', true); }, 8000));
 }
@@ -99,7 +99,7 @@ function drawMess() {
   const g = $('#messG'); if (!g) return; const ms = messesHere();
   const k = ms.map((m) => m.type + messStale(m) + m.x).join('|'); if (g.dataset.k === k) return; g.dataset.k = k;
   g.innerHTML = ms.map((m, i) => { const stale = messStale(m); const body = m.type === 'poop' ? place(messArt('poop', !stale), m.x - 30, 506, 60, 50) : place(messArt('pee'), m.x - 55, 530, 110, 33);
-    return `<g class="hot mess" data-mi="${i}" tabindex="0" role="button" aria-label="${m.type === 'poop' ? 'Poop: click to pick it up with a poop bag' : 'Pee puddle: click to flush it with the water bottle'}"><rect x="${m.x - 60}" y="488" width="120" height="92" fill="transparent"/>${body}${stale ? `<g class="flies">${place(artReal('prop', 'flies') || FLIES_FB, m.x - 30, 456, 60, 40)}</g>` : ''}</g>`; }).join('');
+    return `<g class="hot mess" data-mi="${i}" tabindex="0" role="button" aria-label="${m.type === 'poop' ? tt('popup.poop_click_to_pick_it', 'Poop: click to pick it up with a poop bag') : tt('popup.pee_puddle_click_to_flush', 'Pee puddle: click to flush it with the water bottle')}"><rect x="${m.x - 60}" y="488" width="120" height="92" fill="transparent"/>${body}${stale ? `<g class="flies">${place(artReal('prop', 'flies') || FLIES_FB, m.x - 30, 456, 60, 40)}</g>` : ''}</g>`; }).join('');
 }
 function bindMess() {
   const g = $('#messG'); if (!g) return;
@@ -114,8 +114,8 @@ function cleanMess(i = 0) {
   m.type === 'poop' ? SFX.boop(560) : SFX.splash(); setTimeout(() => SFX.boop(820), 220);
   ms.splice(i, 1); const owner = (m.dog && dogById(m.dog)) || D(); owner.potty.scooped++; trackAct('scoop', { type: m.type });
   let msg;
-  if (pub) { const b = addBond(2), c = addCoins(3); msg = `Good citizen! ${m.type === 'poop' ? 'Scooped with a poop bag and binned.' : 'Flushed away with the water bottle.'} +${b} Bond, +${c} coins.`; }
-  else { const b = addBond(1); msg = m.type === 'poop' ? `Scooped. ${NAME()} watches you with deep respect. +${b} Bond.` : `Flushed with the water bottle. Sparkly floor! +${b} Bond.`; }
+  if (pub) { const b = addBond(2), c = addCoins(3); msg = tt('popup.good_citizen', '{type, select, poop {Good citizen! Scooped with a poop bag and binned. +{bond} Bond, +{coins, plural, one {# coin} other {# coins}}.} other {Good citizen! Flushed away with the water bottle. +{bond} Bond, +{coins, plural, one {# coin} other {# coins}}.}}', { type: m.type, bond: b, coins: c }); }
+  else { const b = addBond(1); msg = m.type === 'poop' ? tt('popup.scooped_watches_you_with_deep', 'Scooped. {name} watches you with deep respect. +{bond} Bond.', { name: NAME(), bond: b }) : tt('popup.flushed_with_the_water_bottle', 'Flushed with the water bottle. Sparkly floor! +{bond} Bond.', { bond: b }); }
   toast(msg, 'good'); drawMess(); markDirty(); updateHUD();
 }
 let pottyBusy = false, pottyT = [], lastPottyMin = -1;
@@ -136,24 +136,24 @@ function pottyTick() {
   if (cur.mode === 'yard') ms.forEach((m) => {
     if (!messStale(m)) return; drawMess();
     if (now - (m.drainAt || m.at + 15) >= 10) { m.drainAt = now; addStat('clean', -1); if (atHome()) addStat('happy', -1); markDirty(); }
-    if (!atHome() && !m.nagged && now - m.at >= 25) { m.nagged = true; toast(`A passer-by mutters: "Somebody didn't scoop!"`, 'bad'); markDirty(); }
+    if (!atHome() && !m.nagged && now - m.at >= 25) { m.nagged = true; toast(tt('popup.a_passer_by_mutters_somebody', `A passer-by mutters: "Somebody didn't scoop!"`), 'bad'); markDirty(); }
   });
   if (cur.mode !== 'yard' || busy || curling || TRN || pottyBusy || !modal.hidden || popOpen() || ms.length >= messCap()) return;
   if (!S.sleeping) { const t = pottyDue(D()); if (t) { doPotty(t); return; } }
   const o = others().find((d) => !d.sleeping && pottyDue(d)); if (o) packPotty(o, pottyDue(o));
 }
 function messLine(d, type, indoor) {
-  const n = d.name, p = PRd(d);
-  if (indoor) return `Oops. ${n} had an accident indoors. ${p.He} looks at you like it was the rug's idea. (More trips outside help.)`;
+  const n = d.name, sex = d.sex === 'female' ? 'female' : 'male';
+  if (indoor) return tt('popup.oops_had_an_accident_indoors', "{sex, select, female {Oops. {n} had an accident indoors. She looks at you like it was the rug's idea. (More trips outside help.)} other {Oops. {n} had an accident indoors. He looks at you like it was the rug's idea. (More trips outside help.)}}", { sex, n });
   const pl = breedLine(POTTY_LINES, d); if (pl && Math.random() < 0.4) return pl;
-  return type === 'poop' ? PICK([`${n} has made a contribution.`, `${n} did ${p.his} business and looks extremely proud of ${p.self}.`]) : d.sex === 'male' ? `${n} lifted a leg on the situation. ${p.He} feels much better.` : `${n} had a quick squat. ${p.He} feels much better.`;
+  return type === 'poop' ? PICK([tt('popup.has_made_a_contribution', '{n} has made a contribution.', { n }), tt('popup.did_business_and_looks_extremely', '{sex, select, female {{n} did her business and looks extremely proud of herself.} other {{n} did his business and looks extremely proud of himself.}}', { sex, n })]) : d.sex === 'male' ? tt('popup.lifted_a_leg_on_the', '{n} lifted a leg on the situation. He feels much better.', { n }) : tt('popup.had_a_quick_squat', '{sex, select, female {{n} had a quick squat. She feels much better.} other {{n} had a quick squat. He feels much better.}}', { sex, n });
 }
 function finishMess(d, type, x) {
   const P = d.potty, indoor = S.place === 'house';
   messesHere().push({ type, x, at: S.gameMin, dog: d.id });
   if (type === 'poop') P.poopDue = null; else { P.peeDue = null; P.nextPee = S.gameMin + RINT(240, 360); }
   if (indoor) { P.accidents++; d.stats.happy = clamp(d.stats.happy - 2, 0, 100); }
-  toast(messLine(d, type, indoor) + (indoor ? '' : ' Click it to clean up.'), indoor ? 'bad' : ''); drawMess(); markDirty();
+  toast(messLine(d, type, indoor) + (indoor ? '' : ' ' + tt('popup.click_it_to_clean_up', 'Click it to clean up.')), indoor ? 'bad' : ''); drawMess(); markDirty();
 }
 function freeMessX(lo, hi) { const used = messesHere().map((m) => m.x); for (let t = 0; t < 12; t++) { const x = RINT(lo, hi); if (used.every((u) => Math.abs(u - x) > 90)) return x; } return RINT(lo, hi); }
 function packPotty(d, type) {
@@ -165,7 +165,7 @@ function packPotty(d, type) {
 function doPotty(type) {
   if (cur.mode !== 'yard' || busy || pottyBusy || S.sleeping) return false;
   clearCurl();
-  if (messesHere().length >= messCap()) { nope(messCap() > 1 ? 'Two messes here already. Clean one first!' : 'One mess per place is plenty. Clean that one first!'); return false; }
+  if (messesHere().length >= messCap()) { nope(messCap() > 1 ? tt('popup.two_messes_here_already_clean', 'Two messes here already. Clean one first!') : tt('popup.one_mess_per_place_is', 'One mess per place is plenty. Clean that one first!')); return false; }
   const d = D(), indoor = S.place === 'house', male = d.sex === 'male';
   const pose = type === 'pee' && male ? 'leglift' : 'squat';
   const realPose = art('dog', d.key, { pose }).includes('pa-pose-' + pose);
@@ -175,7 +175,7 @@ function doPotty(type) {
   pottyT.push(setTimeout(() => { renderDog(pose, 'right', true); const fx = $('#dogFx'); if (fx && !realPose) fx.classList.add('tk-dip'); const h = dogHeadWorld(); say('…', h.x, h.y, 1200); }, 950));
   pottyT.push(setTimeout(() => {
     const fx = $('#dogFx'); if (fx) fx.classList.remove('tk-dip');
-    finishMess(d, type, x); const h = dogHeadWorld(); say(indoor ? 'Not me. The rug did it.' : PICK(['Ahh.', 'Much better.', 'You saw nothing.']), h.x, h.y, 1800);
+    finishMess(d, type, x); const h = dogHeadWorld(); say(indoor ? tt('popup.not_me_the_rug_did', 'Not me. The rug did it.') : PICK([tt('popup.ahh', 'Ahh.'), tt('popup.much_better', 'Much better.'), tt('popup.you_saw_nothing', 'You saw nothing.')]), h.x, h.y, 1800);
     dogTo(0, 0, 1, 0.9); renderDog('walk', 'left');
   }, 2500));
   pottyT.push(setTimeout(() => { pottyBusy = false; busy = false; renderDog(dogPoseNow(), 'right', true); }, 3400));
@@ -186,14 +186,14 @@ function clearPotty() { pottyT.splice(0).forEach(clearTimeout); if (pottyBusy) {
 /* ---- town map: just the map ---- */
 function mapTipText(k) {
   const here = (S.place === 'house' ? 'yard' : S.place) === k;
-  const names = { yard: 'My Yard', market: 'Market Street', shelter: 'Doodle Doggo Shelter', park: 'Sunny Park', river: 'Riverside', woods: 'Maple Woods', beach: 'Seashell Beach' };
-  const nm = (PLACES[k] && k !== 'yard' ? PLACES[k].n : names[k]) || k;
-  if (here) return `${nm}: you are here`;
-  if (k === 'shelter') return `${nm}: visit the dogs`;
-  if (PLACES[k] && topBond() < PLACES[k].bond) return `${nm}: Bond ${PLACES[k].bond}`;
-  if (k === 'yard') return `${nm}: go home`;
-  if (k === 'market') return `${nm}: go shopping`;
-  return `${nm}: go hang out`;
+  const names = { yard: tt('popup.my_yard', 'My Yard'), market: tt('popup.market_street', 'Market Street'), shelter: tt('popup.doodle_doggo_shelter', 'Doodle Doggo Shelter'), park: tt('popup.sunny_park', 'Sunny Park'), river: tt('popup.riverside', 'Riverside'), woods: tt('popup.maple_woods', 'Maple Woods'), beach: tt('popup.seashell_beach', 'Seashell Beach') };
+  const nm = (PLACES[k] && k !== 'yard' ? placeName(k) : names[k]) || k;
+  if (here) return tt('popup.you_are_here', '{nm}: you are here', { nm });
+  if (k === 'shelter') return tt('popup.visit_the_dogs', '{nm}: visit the dogs', { nm });
+  if (PLACES[k] && topBond() < PLACES[k].bond) return tt('popup.bond_needed', '{nm}: Bond {bond}', { nm, bond: PLACES[k].bond });
+  if (k === 'yard') return tt('popup.go_home', '{nm}: go home', { nm });
+  if (k === 'market') return tt('popup.go_shopping', '{nm}: go shopping', { nm });
+  return tt('popup.go_hang_out', '{nm}: go hang out', { nm });
 }
 const PIN_SVG = `<svg viewBox="0 0 40 56" aria-hidden="true"><path d="M20 54 L12 30 A14 14 0 1 1 28 30 Z" fill="#F28FA5" stroke="#5B3D32" stroke-width="2.6" stroke-linejoin="round"/><circle cx="20" cy="19" r="6" fill="#FFFBF3" stroke="#5B3D32" stroke-width="2"/></svg>`;
 

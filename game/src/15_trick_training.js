@@ -9,8 +9,11 @@ const PERS_TRICK = { bold: { Speak: 0.2, Bow: -0.05 }, lazy: { 'Lie Down': 0.15,
 const poseRealCache = {};
 function poseReal(key, pose) { const k = key + '|' + pose; if (!(k in poseRealCache)) { try { poseRealCache[k] = art('dog', key, { pose }).includes('pa-pose-' + pose); } catch (e) { poseRealCache[k] = false; } } return poseRealCache[k]; }
 function trickSt(n, d = D()) { let v = d.tricks[n]; if (v == null || typeof v === 'number') { v = d.tricks[n] = { p: Math.min(1, (v || 0) / 3), shows: 0 }; } return v; }
-const tStage = (st) => (st.p >= 1 ? (st.shows >= 5 ? 'Mastered' : 'Learned') : st.p >= 0.3 ? 'Getting it' : 'New');
-const tName = (n) => (n === 'Signature' ? sigOf(S.dog.key).n : n);
+// v2.14 i18n: the shown trick names come from the tricks table (data.tricks.<id>.n), the signature trick's name from the sig table; ids and save values stay English
+const tStage = (st) => (st.p >= 1 ? (st.shows >= 5 ? tt('train.stage_mastered', 'Mastered') : tt('train.stage_learned', 'Learned')) : st.p >= 0.3 ? tt('train.stage_getting', 'Getting it') : tt('train.stage_new', 'New'));
+const playTrick = (n) => tdata('tricks.' + tid(n) + '.n', n);
+const tName = (n) => (n === 'Signature' ? tdata('sig.' + S.dog.key + '.n', sigOf(S.dog.key).n) : playTrick(n));
+const tCmd = (n) => tdata('tcmd.' + tid(n), TCMD[n]);
 function focusCap(d = D()) { return 100 - (d.stats.energy < 30 ? 30 : 0) - (d.stats.happy < 30 ? 20 : 0); }
 function focusNow(d = D()) { const f = d.focus || (d.focus = { v: focusCap(d), at: S.gameMin }); const v = Math.min(focusCap(d), f.v + Math.max(0, S.gameMin - f.at)); f.v = v; f.at = S.gameMin; return v; }
 function focusSet(v, d = D()) { d.focus = { v: clamp(v, 0, 100), at: S.gameMin }; }
@@ -19,7 +22,7 @@ const sigIcon = (n) => artReal('icon', 'sig-' + TSIG[n]) || SIGN_FB(n);
 let TRN = null; // training session
 function openTraining(tab) {
   if (cur.mode !== 'yard') go('yard');
-  if (S.sleeping) { nope(`${NAME()} is asleep. Training can wait.`); return; }
+  if (S.sleeping) { nope(tt('train.asleep', '{name} is asleep. Training can wait.', { name: NAME() })); return; }
   const tb = trainBlock(D()); if (tb) { nope(tb); return; } // v2: under 2 months
   popDown(); clearCurl(); hideBubble();
   const avail = TRICKS.filter((t) => S.bond.level >= t.bond);
@@ -43,30 +46,30 @@ function closeTraining() {
 function drawAudience(on) {
   const svg = $('#view > svg.world'); if (!svg) return; let g = svg.querySelector('#audience'); if (g) g.remove(); if (!on) return;
   const ks = dogsList().filter((d) => d.key !== S.dog.key).slice(0, 2).map((d) => d.key);
-  svg.insertAdjacentHTML('beforeend', `<g id="audience" pointer-events="none">${ks.map((k, i) => place(art('dog', k, { pose: i ? 'happy' : 'sit', facing: 'right' }), i ? 150 : 20, i ? 420 : 395, 150, 125)).join('')}<text x="170" y="585" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="26" fill="#5B3D32">audience x2</text></g>`);
+  svg.insertAdjacentHTML('beforeend', `<g id="audience" pointer-events="none">${ks.map((k, i) => place(art('dog', k, { pose: i ? 'happy' : 'sit', facing: 'right' }), i ? 150 : 20, i ? 420 : 395, 150, 125)).join('')}<text x="170" y="585" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="26" fill="#5B3D32">${esc(tt('train.audience', 'audience x2'))}</text></g>`);
 }
 function trainLine(t, cls = '') { if (TRN) TRN.msg = [t, cls]; const l = $('#trLine'); if (l) { l.textContent = t; l.className = 'trline ' + cls; } }
 function renderTraining() {
   const tp = $('#trainPanel'); if (!tp || !TRN) return; const d = D(), n = TRN.trick, st = trickSt(n), f = Math.round(focusNow());
-  const chips = TRICKS.map((t) => { const lock = S.bond.level < t.bond, s2 = trickSt(t.n); return `<button class="trchip ${t.n === n ? 'on' : ''}" data-tr="${t.n}" ${lock ? 'aria-disabled="true"' : ''} title="${esc(tName(t.n))}"><span class="ic">${sigIcon(t.n)}</span><b>${esc(t.n === 'Signature' ? 'Signature' : t.n)}</b><small>${lock ? 'Bond ' + t.bond : tStage(s2)}</small></button>`; }).join('');
+  const chips = TRICKS.map((t) => { const lock = S.bond.level < t.bond, s2 = trickSt(t.n); return `<button class="trchip ${t.n === n ? 'on' : ''}" data-tr="${t.n}" ${lock ? 'aria-disabled="true"' : ''} title="${esc(tName(t.n))}"><span class="ic">${sigIcon(t.n)}</span><b>${esc(t.n === 'Signature' ? tt('train.signature', 'Signature') : playTrick(t.n))}</b><small>${esc(lock ? tt('train.bond_n', 'Bond {n}', { n: t.bond }) : tStage(s2))}</small></button>`; }).join('');
   const learned = TRICKS.filter((t) => S.bond.level >= t.bond && trickSt(t.n).p >= 1);
   const G = TRN.game, hand = st.p >= TG_FADE, rhythm = n === 'Speak';
-  const modeLbl = rhythm ? (hand ? 'hand cue' : 'rhythm') : hand ? 'hand signal (x1.3)' : 'treat lure';
-  const ctl = G ? (G.rhythm ? `<button class="btn yes big trspeak" id="trSpeak"><span class="ic">${sigIcon('Speak')}</span>Speak!</button>` : `<button class="btn big" id="trStop">Stop</button>`)
-    : `<button class="btn go big" id="trStart"><span class="ic">${sigIcon(n)}</span>Start: ${esc(TCMD[n])}</button>`;
+  const modeLbl = esc(rhythm ? (hand ? tt('train.mode_cue', 'hand cue') : tt('train.mode_rhythm', 'rhythm')) : hand ? tt('train.mode_hand', 'hand signal (x1.3)') : tt('train.mode_lure', 'treat lure'));
+  const ctl = G ? (G.rhythm ? `<button class="btn yes big trspeak" id="trSpeak"><span class="ic">${sigIcon('Speak')}</span>${esc(tt('train.speak', 'Speak!'))}</button>` : `<button class="btn big" id="trStop">${esc(tt('train.stop', 'Stop'))}</button>`)
+    : `<button class="btn go big" id="trStart"><span class="ic">${sigIcon(n)}</span>${esc(tt('train.start', 'Start: {cmd}', { cmd: tCmd(n) }))}</button>`;
   const body = TRN.tab === 'train' ? `<div class="trchips">${chips}</div>
-    <div class="trrow"><div class="trprog"><span>${esc(tName(n))} · <b>${tStage(st)}</b> · <i class="trmode">${modeLbl}</i></span><div class="prog trfade"><i style="width:${Math.round(st.p * 100)}%"></i><s style="left:${TG_FADE * 100}%" title="the treat fades into a hand signal here"></s></div></div></div>
-    <div class="trrow trfocus"><span class="ic">${iconOr('focus', doodle('spark', 0, 0, 0.9))}</span><span>Focus</span><div class="prog"><i style="width:${f}%"></i></div><b>${f}</b></div>
+    <div class="trrow"><div class="trprog"><span>${esc(tName(n))} · <b>${esc(tStage(st))}</b> · <i class="trmode">${modeLbl}</i></span><div class="prog trfade"><i style="width:${Math.round(st.p * 100)}%"></i><s style="left:${TG_FADE * 100}%" title="${esc(tt('train.fade_title', 'the treat fades into a hand signal here'))}"></s></div></div></div>
+    <div class="trrow trfocus"><span class="ic">${iconOr('focus', doodle('spark', 0, 0, 0.9))}</span><span>${esc(tt('train.focus', 'Focus'))}</span><div class="prog"><i style="width:${f}%"></i></div><b>${f}</b></div>
     <div class="trbtns one">${ctl}${pkLeadBtn(G)}</div>
     <p class="trline" id="trLine">${esc(tgHint(n, d, hand))}</p>
-    <p class="small">Each try costs ${trainCost()} Focus${isPup(D()) ? ' (short puppy attention span: 4 tries a session, but pups learn x1.2 faster)' : ''}. Treat bits: +${TRN.treats} Hunger this session (max 15). ${isPhone() ? '' : "Keys: arrows move the treat, Space taps."}</p>`
-    : `<p class="small">Learned tricks on cue. Chain 3 in a row for a combo: coins (Learned 3, Mastered 5 each${PUBLIC_AUDIENCE.includes(S.place) ? ', <b>audience x2 here</b>' : ''}). Shows for coins today: ${(S.daily.showCoins || 0)}/10.</p>
-    <div class="trshow">${learned.length ? learned.map((t) => `<button class="btn" data-show="${t.n}"><span class="ic">${sigIcon(t.n)}</span>${esc(tName(t.n))}<small>${tStage(trickSt(t.n))}</small></button>`).join('') : '<p>No learned tricks yet. Train one to 100% first!</p>'}</div>${pkLeadBtn(G)}
-    <p class="trline" id="trLine">${TRN.chain ? `Chain: ${TRN.chain}` : 'Tap a trick, then trace its hand signal (short version, no treat).'}</p>`;
-  tp.innerHTML = `<div class="trhead"><div class="tabs" role="tablist"><button class="btn" role="tab" data-trtab="train" aria-selected="${TRN.tab === 'train'}">Train</button><button class="btn" role="tab" data-trtab="show" aria-selected="${TRN.tab === 'show'}">Show off</button></div><button class="xbtn" id="trX" aria-label="Close training">x</button></div><div class="trbody">${body}</div>`;
+    <p class="small">${esc(tt('train.cost', 'Each try costs {cost} Focus{pup, select, yes { (short puppy attention span: 4 tries a session, but pups learn x1.2 faster)} other {}}. Treat bits: +{n} Hunger this session (max 15).{phone, select, yes {} other { Keys: arrows move the treat, Space taps.}}', { cost: trainCost(), pup: isPup(D()) ? 'yes' : 'no', n: TRN.treats, phone: isPhone() ? 'yes' : 'no' }))}</p>`
+    : `<p class="small">${tt('train.show_intro_html', 'Learned tricks on cue. Chain 3 in a row for a combo: coins (Learned 3, Mastered 5 each{aud, select, yes {, <b>audience x2 here</b>} other {}}). Shows for coins today: {n}/10.', { aud: PUBLIC_AUDIENCE.includes(S.place) ? 'yes' : 'no', n: (S.daily.showCoins || 0) })}</p>
+    <div class="trshow">${learned.length ? learned.map((t) => `<button class="btn" data-show="${t.n}"><span class="ic">${sigIcon(t.n)}</span>${esc(tName(t.n))}<small>${esc(tStage(trickSt(t.n)))}</small></button>`).join('') : `<p>${esc(tt('train.none_learned', 'No learned tricks yet. Train one to 100% first!'))}</p>`}</div>${pkLeadBtn(G)}
+    <p class="trline" id="trLine">${esc(TRN.chain ? tt('train.chain', 'Chain: {n}', { n: TRN.chain }) : tt('train.show_hint', 'Tap a trick, then trace its hand signal (short version, no treat).'))}</p>`;
+  tp.innerHTML = `<div class="trhead"><div class="tabs" role="tablist"><button class="btn" role="tab" data-trtab="train" aria-selected="${TRN.tab === 'train'}">${esc(tt('train.tab_train', 'Train'))}</button><button class="btn" role="tab" data-trtab="show" aria-selected="${TRN.tab === 'show'}">${esc(tt('train.tab_show', 'Show off'))}</button></div><button class="xbtn" id="trX" aria-label="${esc(tt('train.close', 'Close training'))}">x</button></div><div class="trbody">${body}</div>`;
   tp.querySelector('#trX').onclick = () => { SFX.click(); closeTraining(); };
   tp.querySelectorAll('[data-trtab]').forEach((b) => { b.onclick = () => { if (TRN.game) return; SFX.click(); TRN.tab = b.dataset.trtab; TRN.msg = null; renderTraining(); }; });
-  tp.querySelectorAll('[data-tr]').forEach((b) => { b.onclick = () => { if (TRN.game) return; const t = TRICKS.find((x) => x.n === b.dataset.tr); if (S.bond.level < t.bond) { nope(`${t.n} unlocks at Bond ${t.bond}.`); return; } SFX.click(); TRN.trick = t.n; if (t.n === 'Speak' && PERS[S.dog.key] === 'chatty' && trickSt('Speak').p < 0.6) { trickSt('Speak').p = 0.6; toast(`${NAME()} already loves to talk: Speak starts at 60%!`, 'good'); } renderTraining(); }; });
+  tp.querySelectorAll('[data-tr]').forEach((b) => { b.onclick = () => { if (TRN.game) return; const t = TRICKS.find((x) => x.n === b.dataset.tr); if (S.bond.level < t.bond) { nope(tt('train.unlocks', '{trick} unlocks at Bond {n}.', { trick: playTrick(t.n), n: t.bond })); return; } SFX.click(); TRN.trick = t.n; if (t.n === 'Speak' && PERS[S.dog.key] === 'chatty' && trickSt('Speak').p < 0.6) { trickSt('Speak').p = 0.6; toast(tt('train.loves_talk', '{name} already loves to talk: Speak starts at 60%!', { name: NAME() }), 'good'); } renderTraining(); }; });
   const go1 = tp.querySelector('#trStart'); if (go1) go1.onclick = () => tgBegin(TRN.trick);
   const pkl = tp.querySelector('#pkLead'); if (pkl) pkLeadBind(pkl);
   const stop = tp.querySelector('#trStop'); if (stop) stop.onclick = () => { SFX.click(); tgStop(); };
@@ -82,7 +85,7 @@ function playPose(spec) {
   if (spec.fx && (spec.always || !real)) { void fx.getBBox(); fx.classList.add(spec.fx); }
   if (spec.move) dogTo(RINT(-90, 90), 0, 1, 0.6);
   if (spec.snd) barkDog(D(), spec.snd, { player: true }); else if (spec.pose === 'speak') barkDog(D(), spec.say === 'AWOOO!' ? 'howl' : speakKind(D()), { player: true });
-  const h = dogHeadWorld(); if (spec.say) say(spec.say, h.x, h.y, 1300);
+  const h = dogHeadWorld(); if (spec.say) say(spec.sig ? tdata('sig.' + S.dog.key + '.say', spec.say) : spec.say === TPOSE.Speak.say ? tdata('tpose.speak.say', spec.say) : spec.say, h.x, h.y, 1300);
 }
 function endPose() { const fx = $('#dogFx'); if (fx) fx.setAttribute('class', ''); dogTo(0, 0, 1, 0.4); renderDog(dogPoseNow(), 'right', true); }
 function showSignal(n) {
@@ -107,17 +110,17 @@ function showResult(n, ok) {
     busy = false; if (TRN) TRN.held = false; endPose(); if (!TRN) return; dailyCheck(); const aud = PUBLIC_AUDIENCE.includes(S.place) ? 2 : 1;
     if (ok) {
       st.shows++; TRN.chain++; addStat('happy', 2); SFX.boop(900); fxText('★', 470, 300, '#F2C744', 46);
-      if (S.place === 'square') { S.daily.squareShows = (S.daily.squareShows || 0) + 1; if (S.daily.squareShows >= 3 && !S.daily.squareGoal) { S.daily.squareGoal = true; const c = addCoins(30, { raw: true }); toast(`Town notice goal done: 3 tricks in the Square! +${c} coins.`, 'gold'); } }
-      if (st.shows === 5) toast(`${d.name} MASTERED ${tName(n)}! Reliable 98% of the time. The other 2% is for drama.`, 'gold');
-      let msg = `${tName(n)}: nailed it! Chain ${TRN.chain}.`;
+      if (S.place === 'square') { S.daily.squareShows = (S.daily.squareShows || 0) + 1; if (S.daily.squareShows >= 3 && !S.daily.squareGoal) { S.daily.squareGoal = true; const c = addCoins(30, { raw: true }); toast(tt('train.notice_done', 'Town notice goal done: 3 tricks in the Square! +{n} coins.', { n: c }), 'gold'); } }
+      if (st.shows === 5) toast(tt('train.mastered', '{name} MASTERED {trick}! Reliable 98% of the time. The other 2% is for drama.', { name: d.name, trick: tName(n) }), 'gold');
+      let msg = tt('train.nailed', '{trick}: nailed it! Chain {n}.', { trick: tName(n), n: TRN.chain });
       if (TRN.chain >= 3) {
         const pay = TRN.chain === 3 ? TRN.chainList.concat(n) : [n]; let coins = 0;
         pay.forEach((tn) => { if ((S.daily.showCoins || 0) < 10) { S.daily.showCoins = (S.daily.showCoins || 0) + 1; coins += (trickSt(tn).shows >= 5 ? 5 : 3) * aud; } });
         const c = coins ? addCoins(coins, { raw: true }) : 0; const b = TRN.chain === 3 ? addBond(3) : 0; addStat('happy', 5);
-        msg = `COMBO x${TRN.chain}! ${c ? `+${c} coins${aud > 1 ? ' (audience x2)' : ''}` : 'No more show coins today'}${b ? `, +${b} Bond` : ''}.`; if (aud > 1) toast(PICK(['The crowd goes wild!', 'A poodle throws a tiny flower.', 'Someone films it. It will go viral (in the park).']), 'good');
+        msg = tt('train.combo', 'COMBO x{chain}! {has, select, yes {{c, plural, one {+# coin} other {+# coins}}{aud, select, yes { (audience x2)} other {}}} other {No more show coins today}}{bond, select, yes {, +{b} Bond} other {}}.', { chain: TRN.chain, has: c ? 'yes' : 'no', c, aud: aud > 1 ? 'yes' : 'no', bond: b ? 'yes' : 'no', b }); if (aud > 1) toast(PICK([tt('train.crowd_1', 'The crowd goes wild!'), tt('train.crowd_2', 'A poodle throws a tiny flower.'), tt('train.crowd_3', 'Someone films it. It will go viral (in the park).')]), 'good');
       }
       TRN.chainList = (TRN.chainList || []).concat(n).slice(-3); trainLine(msg, 'good');
-    } else { TRN.chain = 0; TRN.chainList = []; SFX.nope(); trainLine(`Oops! ${d.name} lost the signal halfway. The crowd politely coughs. Chain reset.`, 'bad'); }
+    } else { TRN.chain = 0; TRN.chainList = []; SFX.nope(); trainLine(tt('train.oops', 'Oops! {name} lost the signal halfway. The crowd politely coughs. Chain reset.', { name: d.name }), 'bad'); }
     markDirty(); updateHUD(); renderTraining();
   }, spec.sig && ok ? 2300 : 1400));
 }

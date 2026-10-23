@@ -109,6 +109,13 @@
 .rt-paw.on{opacity:1}
 .rt-card p{margin:4px 0}
 .rt-env{font-size:17px}
+/* v2.14 fit: the card never grows past the carousel's height (its text is taller in ja / zh / ko / th): the preview gives up height, down to 64 px,
+   instead of the route text being cut off at the bottom of the viewport
+   (v2.14 review: phones, the embed and the translations only; an English desktop card is a plain block as before, as a flex column it grew 3-4 px) */
+html:is([data-layout="phone"],:not([lang="en"])) .rt-card{display:flex;flex-direction:column;max-height:calc(100cqh - 16px)}
+html:is([data-layout="phone"],:not([lang="en"])) .rt-card > *{flex:none}
+html:is([data-layout="phone"],:not([lang="en"])) .rt-card > .rt-prev{flex:0 1 auto;min-height:64px}
+html[data-layout="phone"] .rt-card h3{font-size:30px}
 .rt-nav{display:flex;align-items:center;gap:16px;margin:6px 0}
 .rt-foot{display:flex;gap:16px;align-items:center}
 .wxic{display:inline-block;width:22px;height:22px;vertical-align:-5px;margin-right:5px}

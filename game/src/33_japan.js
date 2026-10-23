@@ -21,7 +21,7 @@ const jpGuideHold = () => typeof gdLive === 'function' && gdLive() && (typeof gd
 const jpGdBusy = () => typeof gdActive === 'function' && gdActive();
 // a toast that waits while Gerald's guide card is up
 function jpToast(text, kind, tries = 0) { if (jpGdBusy() && tries < 120) { setTimeout(() => jpToast(text, kind, tries + 1), 1000); return; } toast(text, kind); }
-const jpName = (s) => s.replace(/\{dog\}/g, NAME());
+const jpName = (s) => s.replace(/\{dog\}/g, NAME()); // the English line with the dog's name in (tests); the player's text goes through tdata with { dog }
 
 /* ---- the dog's line on arrival, by breed key (all 17 breeds), merged into PLACE_LINES[breed].fujihill (read by 03_yard.js placeAmbient) ---- */
 const jpPlaceLines = {
@@ -62,7 +62,10 @@ const jpPlaceLines = {
   maltese: 'A graceful mountain with a white veil. I understand it completely.',
   shihtzu: 'A nice mountain. A nice bench. I will look at one while sitting on the other.'
 };
-Object.keys(jpPlaceLines).forEach((k) => { if (PLACE_LINES[k]) PLACE_LINES[k].fujihill = jpPlaceLines[k]; });
+// jpLinePath(breed, place): the tdata path of a Fuji Hill line (HOME's placeAmbient in 03_yard.js uses it like tkLinePath), else null
+function jpLinePath(breed, place) { return place === 'fujihill' && jpPlaceLines[breed] ? 'jp_place_lines.' + breed : null; }
+// a getter, so the line follows the player's language (03_yard.js placeAmbient reads PLACE_LINES[breed].fujihill at run time)
+Object.keys(jpPlaceLines).forEach((k) => { if (PLACE_LINES[k]) Object.defineProperty(PLACE_LINES[k], 'fujihill', { get: () => tdata('jp_place_lines.' + k, jpPlaceLines[k]), enumerable: true, configurable: true }); });
 
 /* ---- the toast (V28.md section 12.4 table, checked in this order) ---- */
 const JP_TOASTS = {
@@ -90,7 +93,7 @@ function jpToastKey() {
 /* ---- the place button (44 px, before Go home) ---- */
 function jpBtnHTML() {
   const done = jpGazedToday();
-  return `<button class="btn ${done ? 'jp-done' : 'yes'} jp-gaze" data-jp="gaze" ${done || JP.gazing ? 'aria-disabled="true"' : ''}>${done ? 'Fuji says see you tomorrow.' : 'Look at Mt. Fuji'}</button>`;
+  return `<button class="btn ${done ? 'jp-done' : 'yes'} jp-gaze" data-jp="gaze" ${done || JP.gazing ? 'aria-disabled="true"' : ''}>${esc(done ? tt('japan.see_you_tomorrow', 'Fuji says see you tomorrow.') : tt('japan.look_at_fuji', 'Look at Mt. Fuji'))}</button>`;
 }
 function jpPlaceBtn() {
   const pb = $('#placeBtns'); if (!pb) return;
@@ -113,9 +116,9 @@ function jpGaze() {
   if (!S || !jpHere()) return null;
   jpFields();
   if (JP.gazing) return null;
-  if (jpGazedToday()) { SFX.click(); toast(`${NAME()} already looked at Fuji today. Fuji says see you tomorrow.`); return null; }
+  if (jpGazedToday()) { SFX.click(); toast(tt('japan.already_looked', '{name} already looked at Fuji today. Fuji says see you tomorrow.', { name: NAME() })); return null; }
   if (busy) return null;
-  if (S.sleeping) { nope(`${NAME()} is asleep. Fuji will wait.`); return null; }
+  if (S.sleeping) { nope(tt('japan.asleep', '{name} is asleep. Fuji will wait.', { name: NAME() })); return null; }
   if (typeof idleStop === 'function') idleStop();
   if (typeof clearCurl === 'function') clearCurl();
   JP.gazing = true; JP.paid = false; busy = true; hideBubble(); const tok = ++JP.tok, fast = motionOff();
@@ -138,11 +141,12 @@ function jpPay() {
   S.jp.gazed = localISO();
   if (first) {
     S.jp.first = ny; addStat('happy', 10); const b = addBond(2); SFX.fanfare();
-    jpToast(`${jpName(JP_FIRST)} +10 Happiness, +${b} Bond.`, 'gold');
-    if (S.jp.mochi !== ny) { S.jp.mochi = ny; markDirty(); setTimeout(() => jpToast(jpName(JP_MOCHI), 'good'), 2600); }
+    jpToast(tt('japan.reward_first', '{text} +10 Happiness, +{n} Bond.', { text: tdata('jp_first', JP_FIRST, { dog: NAME() }), n: b }), 'gold');
+    if (S.jp.mochi !== ny) { S.jp.mochi = ny; markDirty(); setTimeout(() => jpToast(tdata('jp_mochi', JP_MOCHI, { dog: NAME() }), 'good'), 2600); }
   } else {
     addStat('happy', 6); const b = addBond(1); SFX.boop(660);
-    jpToast(`${jpName(JP_TOASTS[jpToastKey()])} +6 Happiness, +${b} Bond.`, 'good');
+    const tk = jpToastKey();
+    jpToast(tt('japan.reward', '{text} +6 Happiness, +{n} Bond.', { text: tdata('jp_toasts.' + tk, JP_TOASTS[tk], { dog: NAME() }), n: b }), 'good');
   }
   markDirty(); updateHUD(); trackAct('gaze', { first: !!first });
 }
@@ -176,7 +180,7 @@ function jpLetter() {
   if (!S || typeof mailPush !== 'function' || !jpHillOpen() || jpGuideHold()) return null; jpFields();
   if (S.jp.letter) return null;
   S.jp.letter = localISO(); markDirty();
-  return mailPush(Object.assign({}, JP_LETTER, { id: 'jp_hill', text: jpName(JP_LETTER.text) }));
+  return mailPush(Object.assign({}, JP_LETTER, { id: 'jp_hill', from: tdata('jp_letter.from', JP_LETTER.from), title: tdata('jp_letter.title', JP_LETTER.title), text: tdata('jp_letter.text', JP_LETTER.text, { dog: NAME() }) }));
 }
 
 /* ---- bus ---- */

@@ -13,6 +13,10 @@ html.pa-panel .panel.celebrate::before{display:none}
 .panel-body{overflow:auto;min-height:0;padding:2px}
 .panel p{margin:6px 0;line-height:1.35}
 .foot{display:flex;gap:12px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px}
+/* v2.14 fit: a sheet's title and footer stay on their own paper over the scrolling body (a line scrolled half under them never shows through);
+   the paper is the panel's own wash and hatching, so nothing changes to the eye */
+#modal .panel:not(.celebrate) > h2,#modal .panel:not(.celebrate) > .foot{position:relative;z-index:1;background:var(--hatch),linear-gradient(var(--wash),var(--wash))}
+#modal .panel > .x{z-index:2}
 .confirm{position:absolute;left:16px;right:16px;bottom:14px;padding:14px 16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-end;z-index:3;--wash:var(--w-yellow)}
 .confirm p{flex:1 1 220px;margin:0;font-size:18px}
 .shopgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:18px 16px;padding:12px 4px 84px}

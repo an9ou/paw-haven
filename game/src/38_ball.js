@@ -26,7 +26,7 @@ const BL_LINES = {
   boing: ['Boing! Again!', 'My head is a trampoline now.', 'I meant to do that.'],
   throw: ['Throw it! Throw it!', 'Ball! Ball! Ball!', 'Ready, ready, ready!'],
 };
-const blPick = (a) => a[Math.floor(blRnd() * a.length)];
+const blPickT = (path, a) => { const i = Math.floor(blRnd() * a.length); return tdata('bl_lines.' + path + '.' + i, a[i]); }; // v2.14: the line is looked up by its place in BL_LINES so it can be translated
 function blRnd() { return BL && BL.rnd ? BL.rnd() : Math.random(); }
 
 /* ---------------- geometry: the place's floor, no-go boxes, the player's spot ---------------- */
@@ -120,7 +120,7 @@ function blBind(svg) {
     const w = toWorld(svg, e.clientX, e.clientY), b = BL.ball;
     if (Math.hypot(w.x - b.x, w.y - (b.gy - b.z)) > blHitR(svg)) return;
     e.stopPropagation(); e.preventDefault(); SFX.init(); try { svg.setPointerCapture(e.pointerId); } catch (er) { /* capture unsupported */ }
-    BL.grab = { id: e.pointerId, s: [{ t: performance.now(), x: w.x, y: w.y }], x0: w.x, y0: w.y, moved: 0 }; b.state = 'held'; blHint('Let go to throw!');
+    BL.grab = { id: e.pointerId, s: [{ t: performance.now(), x: w.x, y: w.y }], x0: w.x, y0: w.y, moved: 0 }; b.state = 'held'; blHint(tt('ball.let_go', 'Let go to throw!'));
   };
   const mv = (e) => {
     const g = BL && BL.grab; if (!g || e.pointerId !== g.id) return;
@@ -158,9 +158,9 @@ function blLaunch(vx, vz, vgy) {
   b.vx = vx; b.vz = vz; b.vgy = vgy; b.state = 'fly'; b.bounces = 0; b.vr = clamp(vx * c.spin, -900, 900) + (vx >= 0 ? 120 : -120); b.carrier = null;
   BL.ph = 'chase'; BL.thrown++; BL.th = { t0: BL.t, tg: 0, steal: null, lap: false, special: false, winner: null, bonk: 0 };
   BL.dogs.forEach((o) => { o.role = 'chase'; o.sp = blSpeed(o.d); o.off = [(blRnd() - 0.5) * 60, (blRnd() - 0.5) * 24]; o.until = 0; o.bonk = blRnd() < 0.3; o.bonked = false; });
-  SFX.whoosh(); blHint('They are off!');
+  SFX.whoosh(); blHint(tt('ball.off', 'They are off!'));
   const lead = BL.dogs[0]; if (lead && BL.thrown === 1) { try { barkDog(lead.d, 'play', {}); } catch (e) { /* none */ } }
-  if (BL.thrown === 1 || blRnd() < 0.3) blSay(blPickDog(), blPick(BL_LINES.throw), true);
+  if (BL.thrown === 1 || blRnd() < 0.3) blSay(blPickDog(), blPickT('throw', BL_LINES.throw), true);
 }
 const blPickDog = () => BL.dogs[Math.floor(blRnd() * BL.dogs.length)];
 function blBallStep(dt) {
@@ -190,7 +190,7 @@ function blHeadBounce() {
     const sc = blDK(o), hx = o.x + blSign(o) * 40 * sc, hy = o.y - 170 * sc, sy = b.gy - b.z;
     if (Math.abs(b.gy - o.y) < 55 && Math.abs(b.x - hx) < 55 * sc + BL_R && Math.abs(sy - hy) < 34) {
       o.bonked = true; b.vz = Math.max(560, -b.vz * 0.8); b.vx += (b.x - hx) * 6 + (blRnd() - 0.5) * 120; b.bounces = 0; BL.bonkCD = 0.6;
-      SFX.boop(300); fxText('BOING!', hx, hy - 40, '#F2C744', 40); blSay(o, blPick(BL_LINES.boing), true); return;
+      SFX.boop(300); fxText(tt('ball.boing', 'BOING!'), hx, hy - 40, '#F2C744', 40); blSay(o, blPickT('boing', BL_LINES.boing), true); return;
     }
   }
 }
@@ -258,7 +258,7 @@ function blGrab(w) {
     else if (persOf(w.d).trait !== 'ball' && blRnd() < persOf(w.d).steal * 0.5) lap = true;
   }
   if (thief) { th.steal = thief.id; th.special = true; BL.lastSp = BL.thrown; thief.role = 'thief'; thief.pose = 'walk'; }
-  else if (lap) { th.lap = true; th.special = true; BL.lastSp = BL.thrown; w.role = 'lap'; w.way = blLapWay(w); blSay(w, blPick(BL_LINES.lap), true); }
+  else if (lap) { th.lap = true; th.special = true; BL.lastSp = BL.thrown; w.role = 'lap'; w.way = blLapWay(w); blSay(w, blPickT('lap', BL_LINES.lap), true); }
   others.forEach((o) => { if (o !== thief) { o.role = 'tail'; o.pose = 'walk'; } });
 }
 // a keep-away lap: out to the far side of the floor, round the back, then home (shorter for the slow ones)
@@ -272,7 +272,7 @@ function blLapWay(w) {
 const BL_HEAD = { shiba: [164, 106, 32, 28], corgi: [166, 126, 31, 27], golden: [160, 96, 34, 30], dachs: [191, 128, 24, 22], husky: [162, 104, 36, 32], mutt: [162, 106, 33, 29], chihuahua: [158, 120, 29, 26], pug: [162, 114, 32, 28], greyhound: [172, 76, 22, 15], beagle: [164, 106, 30, 27], poodle: [157, 98, 26, 25], collie: [164, 106, 30, 26], samoyed: [162, 93, 35, 31], frenchie: [160, 116, 31, 28], akita: [168, 95, 41, 32], spitz: [160, 99, 30, 27], pom: [155, 115, 26, 24], afghan: [164, 80, 25, 21], dane: [166, 70, 25, 22], mastiff: [166, 98, 37, 32], gsd: [166, 98, 29, 25], dobie: [166, 85, 29, 25], corso: [168, 94, 36, 31], pitbull: [164, 103, 36, 29], minpin: [157, 116, 24, 20], lab: [163, 102, 31, 28], malamute: [164, 96, 36, 31], chow: [160, 106, 30, 27], stdpoodle: [160, 74, 25, 24], schnauzer: [160, 108, 26, 22], westie: [158, 110, 31, 29], yorkie: [156, 118, 24, 22], bichon: [157, 108, 31, 29], maltese: [159, 112, 27, 25], shihtzu: [159, 110, 29, 27] };
 function blMouth(d) { const h = BL_HEAD[d && d.key] || BL_HEAD.mutt; return [h[0] - 120 + h[2] * 0.7, 186 - h[1] - h[3] * 0.35]; } // [forward, up] in world units at scale 1
 function blCatchLine(o) {
-  const t = persOf(o.d).trait, tl = BL_LINES.trait[t]; return tl && blRnd() < 0.5 ? blPick(tl) : blPick(BL_LINES.catch);
+  const t = persOf(o.d).trait, tl = BL_LINES.trait[t]; return tl && blRnd() < 0.5 ? blPickT('trait.' + t, tl) : blPickT('catch', BL_LINES.catch);
 }
 function blStepDogs(dt) {
   const b = BL.ball, Z = BL.zone;
@@ -294,7 +294,7 @@ function blStepDogs(dt) {
         if (BL.t - BL.th.tg > 9 && o.way) o.way = []; // a lap never takes more than 9 s
         const wp = o.way && o.way[0];
         if (wp) { if (blMove(o, wp[0], wp[1], o.sp * 0.95, dt) < 10) o.way.shift(); o.pose = 'walk'; }
-        else if (blMove(o, BL.hx, BL.hy, o.sp * 0.95, dt) < 8) { blSay(o, blPick(BL_LINES.lapEnd), true); blReturn(o); }
+        else if (blMove(o, BL.hx, BL.hy, o.sp * 0.95, dt) < 8) { blSay(o, blPickT('lapEnd', BL_LINES.lapEnd), true); blReturn(o); }
         break;
       }
       case 'tail': { // after the carrier, never quite catching up
@@ -323,7 +323,7 @@ function blStepDogs(dt) {
 }
 function blSteal(t, w) { // the thief snatches the ball: it brings it home with everybody after it
   const b = BL.ball; b.carrier = t; t.role = 'carry'; w.role = 'tail'; t.sp *= 1.0; BL.th.steal = null; BL.th.stolen = true; BL.th.thief = t.id; SFX.squeak();
-  blSay(t, blPick(BL_LINES.steal), true); setTimeout(() => { if (BL && BL.ph === 'return') blSay(w, blPick(BL_LINES.robbed), false); }, 1100);
+  blSay(t, blPickT('steal', BL_LINES.steal), true); setTimeout(() => { if (BL && BL.ph === 'return') blSay(w, blPickT('robbed', BL_LINES.robbed), false); }, 1100);
   BL.dogs.forEach((o) => { if (o !== t) { o.role = 'tail'; o.pose = 'walk'; } });
 }
 // the ball is back: the catch line, the coins, the play effects
@@ -332,10 +332,10 @@ function blReturn(o) {
   BL.n++; S.bl.n = (S.bl.n || 0) + 1; o.role = 'cheer'; o.pose = 'happy'; o.until = BL.t + 1.1; o.got = (o.got || 0) + 1; exTrig(o.d, 'ballCatch', { pose: 'happy', draw: false }); o.key = null; // v2.13: the catcher's face, drawn once by blApplyDog on the happy pose
   BL.dogs.forEach((x) => { if (x !== o) { x.role = 'wait'; x.pose = 'idle'; } });
   const coins = blCoins(c.coin); blSay(o, blCatchLine(o), true);
-  fxText(coins ? `+${coins}` : 'Caught it!', o.x, o.y - 200 * blDK(o), coins ? '#F2C744' : '#9CCF8F', 42);
+  fxText(coins ? `+${coins}` : tt('ball.caught', 'Caught it!'), o.x, o.y - 200 * blDK(o), coins ? '#F2C744' : '#9CCF8F', 42);
   try { SFX.bark(BARK[o.d.key]); } catch (e) { /* none */ }
   BL.dogs.forEach((x) => blPlayFx(x));
-  BL.played = true; trackAct('fetch', { name: BL.toy }); markDirty(); blTrayUpdate(); blHint('Nice! Drag the ball to throw it again.'); updateHUD();
+  BL.played = true; trackAct('fetch', { name: BL.toy }); markDirty(); blTrayUpdate(); blHint(tt('ball.again', 'Nice! Drag the ball to throw it again.')); updateHUD();
 }
 function blDay() { const today = localISO(); if (S.bl.day !== today) { S.bl.day = today; S.bl.coins = 0; markDirty(); } }
 // real coins, no BOOST: capped for the session and for the day (S.bl.coins)
@@ -410,14 +410,20 @@ function blCamera(dt) {
 
 /* ---------------- the dock ---------------- */
 function blTrayHTML() {
-  return `<div class="tray mini bl-tray"><div class="tray-h"><h3>Ball play: ${esc(BL.toy)}</h3><button class="btn yes bl-done" id="blDone" aria-label="Stop ball play">Done</button></div>
-    <div class="tray-body"><p class="small bl-hint" id="blHint">${isPhone() ? 'Drag the ball and let go to throw it.' : 'Drag the ball and let go to throw it. Space is an easy throw.'}</p><p class="small bl-coins" id="blCoins"></p></div></div>`;
+  return `<div class="tray mini bl-tray"><div class="tray-h"><h3>${esc(tt('ball.title', 'Ball play: {toy}', { toy: blToyName(BL.toy) }))}</h3><button class="btn yes bl-done" id="blDone" aria-label="${esc(tt('ball.stop', 'Stop ball play'))}">${esc(tt('ball.done', 'Done'))}</button></div>
+    <div class="tray-body"><p class="small bl-hint" id="blHint">${esc(isPhone() ? tt('ball.hint_phone', 'Drag the ball and let go to throw it.') : tt('ball.hint', 'Drag the ball and let go to throw it. Space is an easy throw.'))}</p><p class="small bl-coins" id="blCoins"></p></div></div>`;
+}
+// the toy's name as shown. The two shop toys come from TOYS; the Glow Ball and the Driftwood Stick are walk treasures, so they have their own keys here
+function blToyName(toy) {
+  if (toy === 'Glow Ball') return tt('ball.toy_glow_ball', 'Glow Ball');
+  if (toy === 'Driftwood Stick') return tt('ball.toy_driftwood_stick', 'Driftwood Stick');
+  return tdata('toys.' + tid(toy) + '.n', toy);
 }
 function blHint(t) { const h = $('#blHint'); if (h && h.textContent !== t) h.textContent = t; }
 function blCoinsText() {
-  blDay(); if (S.bl.coins >= BL_COIN_DAY) return 'Ball play coins: done for today';
-  if (BL.coins >= BL_COIN_SES) return 'Ball play coins: done for this round';
-  return `Ball play coins: ${BL.coins} of ${BL_COIN_SES}`;
+  blDay(); if (S.bl.coins >= BL_COIN_DAY) return tt('ball.coins_day', 'Ball play coins: done for today');
+  if (BL.coins >= BL_COIN_SES) return tt('ball.coins_round', 'Ball play coins: done for this round');
+  return tt('ball.coins_of', 'Ball play coins: {coins} of {max}', { coins: tnum(BL.coins), max: tnum(BL_COIN_SES) });
 }
 function blTrayUpdate() { const c = $('#blCoins'); if (c) { const t = blCoinsText(); if (c.textContent !== t) c.textContent = t; } }
 
@@ -426,8 +432,8 @@ function blKeyBlock(e) { if (BL && (e.key === 'Enter' || e.key === ' ') && e.tar
 function blStart(toy) {
   const cfg = BL_TOYS[toy]; if (BL || !cfg || !S || cur.mode !== 'yard') return false;
   const lead = D(), svg = $('svg.world', view); if (!svg || !$('#ballLayer')) return false;
-  if (S.sleeping) { nope(`${NAME()} is asleep. Even fun has to wait.`); return false; }
-  if (typeof isNursing === 'function' && isNursing(lead)) { nope(`${lead.name} is nursing the pups. No ball play for ${PRd(lead).him} right now.`); return false; }
+  if (S.sleeping) { nope(tt('ball.asleep', '{name} is asleep. Even fun has to wait.', { name: NAME() })); return false; }
+  if (typeof isNursing === 'function' && isNursing(lead)) { nope(tt('ball.nursing', '{name} is nursing the pups. No ball play for {sex, select, female {her} other {him}} right now.', { name: lead.name, sex: lead.sex === 'female' ? 'female' : 'male' })); return false; }
   const dogs = (typeof rmDogs === 'function' ? rmDogs() : [lead]).filter((d) => blEligible(d, lead));
   if (!dogs.includes(lead)) dogs.unshift(lead);
   popDown(); clearCurl(); hideBubble(); toasts.innerHTML = ''; // a notice from before the game must not sit over the play area

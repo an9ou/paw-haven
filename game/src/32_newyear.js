@@ -14,10 +14,11 @@ const NY_ZODIAC = { 2027: { animal: 'Sheep', item: 'Year of the Sheep Hood' } };
 const NY_BOX_SPOT = { desk: [212, 344, 114, 105], phone: [212, 496, 100, 92] }; // the as-built pop-up spot (27_halloween.js HW_POP)
 const NY_MAX_KNOTS = 12;
 const NY_SHAKE_MS = 800;
+// (pup name, family name, the pup's sex): whole sentences, the sex picks she / he (V214.md 3.3)
 const NY_PUP_LINES = [
-  (p, f, pr) => `Happy New Year from ${p} and ${f}. ${pr.He} ate the paper on the shimekazari, but only a little.`,
-  (p) => `Happy New Year! ${p} saw a kite and is still barking at it.`,
-  (p) => `${p} wishes you a year full of sticks. Happy New Year.`
+  (p, f, sex) => tt('newyear.pup_0', '{sex, select, female {Happy New Year from {pup} and {family}. She ate the paper on the shimekazari, but only a little.} other {Happy New Year from {pup} and {family}. He ate the paper on the shimekazari, but only a little.}}', { pup: p, family: f, sex }),
+  (p) => tt('newyear.pup_1', 'Happy New Year! {pup} saw a kite and is still barking at it.', { pup: p }),
+  (p) => tt('newyear.pup_2', '{pup} wishes you a year full of sticks. Happy New Year.', { pup: p })
 ];
 // the twelve fortunes, never bad ("Small luck" is the lowest)
 const NY_FORTUNES = [
@@ -71,12 +72,12 @@ function nySquareDraw() {
   nyFields(); nyKnotsSync();
   const at = typeof fsSlot === 'function' ? fsSlot() : ($('#bowlG', svg) || $('#pack', svg)); if (!at) return;
   const [x, y, w, h] = nyFortuneBox(), night = isNight(), k = S.ny.fortune.knots;
-  at.insertAdjacentHTML('beforebegin', `<g id="nyFortuneG" class="hot" data-knots="${k}" data-night="${night ? 1 : 0}" tabindex="0" role="button" aria-label="Fortune box: shake it for a New Year fortune">${place(nyBoxArt(k, night), x, y, w, h)}${fsHit(x, y, w, h)}${isPhone() && typeof hwChip === 'function' ? fsChipAbove('Fortune box', [x, y, w, h], fsAnyOn() ? [fsStallBox()] : []) : ''}</g>`);
+  at.insertAdjacentHTML('beforebegin', `<g id="nyFortuneG" class="hot" data-knots="${k}" data-night="${night ? 1 : 0}" tabindex="0" role="button" aria-label="${esc(tt('newyear.label_box', 'Fortune box: shake it for a New Year fortune'))}">${place(nyBoxArt(k, night), x, y, w, h)}${fsHit(x, y, w, h)}${isPhone() && typeof hwChip === 'function' ? fsChipAbove(tt('newyear.fortune_box', 'Fortune box'), [x, y, w, h], fsAnyOn() ? [fsStallBox()] : []) : ''}</g>`);
   if (typeof fsHitFit === 'function') fsHitFit();
   const g = $('#nyFortuneG', svg), go = () => { SFX.click(); nyFortuneOpen(); };
   g.onclick = (e) => { e.stopPropagation(); go(); }; g.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } };
   if (pb && !isPhone()) { // phones: the Fortune box row of the Festival chooser instead, so the Square row stays one line
-    const home = pb.querySelector('[data-pb="yard"]'), btn = '<button class="btn yes" data-ny="fortune" aria-label="Fortune box">Fortune box</button>';
+    const home = pb.querySelector('[data-pb="yard"]'), btn = `<button class="btn yes" data-ny="fortune" aria-label="${esc(tt('newyear.fortune_box', 'Fortune box'))}">${esc(tt('newyear.fortune_box', 'Fortune box'))}</button>`;
     if (home) home.insertAdjacentHTML('beforebegin', btn); else pb.insertAdjacentHTML('beforeend', btn);
     const b = pb.querySelector('[data-ny]'); if (b) b.onclick = () => { SFX.click(); nyFortuneOpen(); };
   }
@@ -89,20 +90,22 @@ function nySaveKey() { return String((S.dogs && S.dogs[0] && S.dogs[0].id) || (S
 function nyFortuneIdx(day) { return Math.floor(seeded(hashId('fortune|' + (day || localISO()) + '|' + nySaveKey()))() * NY_FORTUNES.length); }
 const nyDrawnToday = () => !!(S && S.ny && S.ny.fortune && S.ny.fortune.date === localISO());
 const nyTiedToday = () => !!(S && S.ny && S.ny.fortune && S.ny.fortune.tied === localISO());
+// a fortune's luck line and its text: the first sentence is the luck (English 'Great luck.'), the rest the fortune; a translation may end it with 。
+const nyFortuneText = (i) => tdata('ny_fortunes.' + i, NY_FORTUNES[i]);
 function nySlipHTML(txt) {
-  const i = txt.indexOf('. '), head = txt.slice(0, i + 1), body = txt.slice(i + 2);
-  return `<div class="ny-slip" role="note" aria-label="Your fortune"><span class="ny-slip-bar" aria-hidden="true"></span><b class="ny-luck">${esc(head)}</b><p class="ny-ftxt">${esc(body)}</p></div>`;
+  const m = /^(.*?(?:\.\s|。))([\s\S]*)$/.exec(txt), head = m ? m[1].trim() : txt, body = m ? m[2] : '';
+  return `<div class="ny-slip" role="note" aria-label="${esc(tt('newyear.label_slip', 'Your fortune'))}"><span class="ny-slip-bar" aria-hidden="true"></span><b class="ny-luck">${esc(head)}</b><p class="ny-ftxt">${esc(body)}</p></div>`;
 }
 function nyFortuneOpen() { return fsTry(nyFortuneOpen0); }
 function nyFortuneOpen0() {
   if (!S) return null;
-  if (!nyDays()) { toast('The Fortune box has gone back to the shed until next New Year.'); return null; }
+  if (!nyDays()) { toast(tt('newyear.shed', 'The Fortune box has gone back to the shed until next New Year.')); return null; }
   nyFields(); nyKnotsSync(); SFX.boop(620); if (typeof audioPlace === 'function') audioPlace('journal');
   const drawn = nyDrawnToday(), tied = nyTiedToday(), k = S.ny.fortune.knots, fz = nyFortuneIdx();
-  const intro = !drawn ? `Shake the box and see what the new year has for ${esc(NAME())}. Every fortune in here is a good one.`
-    : tied ? 'Come back tomorrow for another.' : `${esc(NAME())}'s fortune for today. Tie it on the rail to keep the luck close.`;
-  const foot = !drawn ? '<button class="btn yes big" id="nyShake">Shake the box</button>' : tied ? '<button class="btn big" id="nyDone">Close</button>' : '<button class="btn yes big" id="nyTie">Tie it on the rail</button>';
-  const p = openModal('Fortune box', `<div class="ny-fbox"><div class="ny-boxart" aria-hidden="true">${nyBoxArt(k, false)}</div><p class="ny-intro">${intro}</p><div class="ny-slipwrap">${drawn ? nySlipHTML(NY_FORTUNES[fz]) : ''}</div></div>`, { cls: 'ny-fortunepop', foot });
+  const intro = esc(!drawn ? tt('newyear.intro_shake', 'Shake the box and see what the new year has for {name}. Every fortune in here is a good one.', { name: NAME() })
+    : tied ? tt('newyear.intro_tomorrow', 'Come back tomorrow for another.') : tt('newyear.intro_today', "{name}'s fortune for today. Tie it on the rail to keep the luck close.", { name: NAME() }));
+  const foot = !drawn ? `<button class="btn yes big" id="nyShake">${esc(tt('newyear.shake', 'Shake the box'))}</button>` : tied ? `<button class="btn big" id="nyDone">${esc(tt('newyear.close', 'Close'))}</button>` : `<button class="btn yes big" id="nyTie">${esc(tt('newyear.tie', 'Tie it on the rail'))}</button>`;
+  const p = openModal(tt('newyear.fortune_box', 'Fortune box'), `<div class="ny-fbox"><div class="ny-boxart" aria-hidden="true">${nyBoxArt(k, false)}</div><p class="ny-intro">${intro}</p><div class="ny-slipwrap">${drawn ? nySlipHTML(nyFortuneText(fz)) : ''}</div></div>`, { cls: 'ny-fortunepop', foot });
   const sh = $('#nyShake', p), tie = $('#nyTie', p), dn = $('#nyDone', p);
   if (sh) sh.onclick = () => nyShake(p);
   if (tie) tie.onclick = () => nyTie();
@@ -126,33 +129,33 @@ function nyReveal(p) {
   if (!p || modal.hidden || !$('#modal .panel.ny-fortunepop')) return; // the sheet was closed during the shake: the luck is drawn, the slip opens when the box is opened again
   const art = $('.ny-boxart', p); if (art) art.classList.remove('ny-shaking');
   const wrap = $('.ny-slipwrap', p), intro = $('.ny-intro', p), foot = $('.foot', p);
-  if (wrap) wrap.innerHTML = nySlipHTML(NY_FORTUNES[nyFortuneIdx()]);
-  if (intro) intro.textContent = `${NAME()}'s fortune for today. Tie it on the rail to keep the luck close.`;
-  if (foot) { foot.innerHTML = '<button class="btn yes big" id="nyTie">Tie it on the rail</button>'; const t = $('#nyTie', foot); t.onclick = () => nyTie(); try { t.focus({ preventScroll: true }); } catch (e) { /* no focus */ } }
+  if (wrap) wrap.innerHTML = nySlipHTML(nyFortuneText(nyFortuneIdx()));
+  if (intro) intro.textContent = tt('newyear.intro_today', "{name}'s fortune for today. Tie it on the rail to keep the luck close.", { name: NAME() });
+  if (foot) { foot.innerHTML = `<button class="btn yes big" id="nyTie">${esc(tt('newyear.tie', 'Tie it on the rail'))}</button>`; const t = $('#nyTie', foot); t.onclick = () => nyTie(); try { t.focus({ preventScroll: true }); } catch (e) { /* no focus */ } }
 }
 function nyTie() {
   if (!S) return; nyFields(); const f = S.ny.fortune;
   if (f.date !== localISO() || f.tied === localISO()) { closeModal(); return; }
   f.tied = localISO(); f.knots = Math.min(NY_MAX_KNOTS, (f.knots | 0) + 1); f.year = nyYear(); markDirty(); SFX.pop();
   closeModal(); if (nyHere()) fsSquareDraw();
-  toast(`Tied on the rail. That is ${f.knots} fortune${f.knots === 1 ? '' : 's'} of luck for the year.`, 'good');
+  toast(tt('newyear.tied', 'Tied on the rail. That is {n, plural, one {# fortune} other {# fortunes}} of luck for the year.', { n: f.knots }), 'good');
 }
 
 /* ---- the New Year cards ---- */
 function nyCardMsgs() {
   const y = nyYear(), nm = NAME(), z = NY_ZODIAC[y], animal = z ? z.animal.toLowerCase() : 'pine';
   const msgs = [];
-  msgs.push({ kind: z ? 'gift' : 'news', id: `ny_gerald_${y}`, from: 'Gerald the duck', title: 'A New Year card from Gerald', card: 'nengajo', animal, cardText: [`To ${nm}`, 'from Gerald'], duck: true,
-    text: z ? `Happy New Year. It is the Year of the ${z.animal}. The Border Collie has been told. A woolly hood for ${nm}, so nobody gets herded by mistake.` : 'Happy New Year. I hope it is a year of long walks.',
+  msgs.push({ kind: z ? 'gift' : 'news', id: `ny_gerald_${y}`, from: tt('newyear.from_gerald', 'Gerald the duck'), title: tt('newyear.gerald_title', 'A New Year card from Gerald'), card: 'nengajo', animal, cardText: [tt('newyear.card_to', 'To {name}', { name: nm }), tt('newyear.card_from_gerald', 'from Gerald')], duck: true,
+    text: z ? tt('newyear.gerald_text', 'Happy New Year. It is the Year of the {animal}. The Border Collie has been told. A woolly hood for {name}, so nobody gets herded by mistake.', { animal: tdata('ny_zodiac.' + y + '.animal', z.animal), name: nm }) : tt('newyear.gerald_text_plain', 'Happy New Year. I hope it is a year of long walks.'),
     gift: z ? { item: z.item, cat: 'clothes', n: 1 } : undefined });
-  msgs.push({ kind: 'gift', id: `ny_plum_${y}`, from: 'Mrs. Plum next door', title: 'Otoshidama from Mrs. Plum', card: 'nengajo', animal, cardText: ['For the youngest,', nm], envelope: true,
-    text: `A New Year envelope, the way my grandmother did it. The youngest in the house gets one, and that is ${nm}.`, gift: { coins: 30 } });
+  msgs.push({ kind: 'gift', id: `ny_plum_${y}`, from: tt('newyear.from_plum', 'Mrs. Plum next door'), title: tt('newyear.plum_title', 'Otoshidama from Mrs. Plum'), card: 'nengajo', animal, cardText: [tt('newyear.card_youngest', 'For the youngest,'), nm], envelope: true,
+    text: tt('newyear.plum_text', 'A New Year envelope, the way my grandmother did it. The youngest in the house gets one, and that is {name}.', { name: nm }), gift: { coins: 30 } });
   // up to three rehomed pups, the most recent first (a later move, or a later slot on the same day, is more recent)
   const pups = (S.rehomed || []).map((r, i) => [r, i]).filter(([r]) => r && r.id).sort((a, b) => String(b[0].since || '').localeCompare(String(a[0].since || '')) || b[1] - a[1]).slice(0, 3).map(([r]) => r);
   pups.forEach((r) => {
-    const pr = prOf(r), fam = shortFam(mailFamName(r.family)), i = hashId(r.id + '|' + y) % NY_PUP_LINES.length;
-    msgs.push({ kind: 'postcard', id: `ny_pup_${r.id}_${y}`, from: `${r.name} & ${fam}`, title: `Happy New Year from ${r.name}`, card: 'nengajo', animal, cardText: [`from ${r.name}`],
-      text: NY_PUP_LINES[i](r.name, fam, pr), dog: jrPupDog(r), pose: 'happy', nyPup: r.id });
+    const fam = shortFam(mailFamName(r.family)), i = hashId(r.id + '|' + y) % NY_PUP_LINES.length;
+    msgs.push({ kind: 'postcard', id: `ny_pup_${r.id}_${y}`, from: tt('newyear.pup_from', '{name} & {family}', { name: r.name, family: fam }), title: tt('newyear.pup_title', 'Happy New Year from {name}', { name: r.name }), card: 'nengajo', animal, cardText: [tt('newyear.card_from_pup', 'from {name}', { name: r.name })],
+      text: NY_PUP_LINES[i](r.name, fam, r.sex), dog: jrPupDog(r), pose: 'happy', nyPup: r.id });
   });
   return msgs;
 }
@@ -180,7 +183,7 @@ function nyCardHTML(m) {
 /* ---- the Journal line ---- */
 function nyJournalLine() {
   if (!S || !nyDays()) return '';
-  return `<p class="fs-jline ny-jline"><span class="ic" aria-hidden="true">${nyIcon()}</span><b>Fortune box:</b> Fortune box in the Square until 7 January.</p>`;
+  return `<p class="fs-jline ny-jline"><span class="ic" aria-hidden="true">${nyIcon()}</span><b>${esc(tt('newyear.jline_label', 'Fortune box:'))}</b> ${esc(tt('newyear.jline', 'Fortune box in the Square until 7 January.'))}</p>`;
 }
 
 /* ---- bus ---- */

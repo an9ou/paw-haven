@@ -7,13 +7,13 @@ function enterTitle() {
   titleEl.innerHTML = `<div class="bg">${art('scene', 'yard', envNow())}</div>
     <div class="cover"><div class="rings" aria-hidden="true">${rings}</div><div class="doodles" aria-hidden="true">${doodles}</div>
       <h1 class="logo" aria-label="Doodle Doggo"><span style="transform:rotate(-3deg)">Doodle</span> <span style="transform:rotate(2deg) translateY(4px)">Doggo</span></h1>
-      <div class="tagline">a cozy dog game, sketchbook edition</div>
-      <div id="tAcct"></div>
-      <div class="crayon-note">Everything here is lovingly sketched. Except the dogs. The dogs drew themselves, with crayons, on purpose.</div>
+      <div class="tagline">${tt('title.a_cozy_dog_game_sketchbook', 'a cozy dog game, sketchbook edition')}</div>
+      <div id="tAcct"></div>${has ? '' : titleLangChip()}
+      <div class="crayon-note">${tt('title.everything_here_is_lovingly_sketched', 'Everything here is lovingly sketched. Except the dogs. The dogs drew themselves, with crayons, on purpose.')}</div>
     </div>
     <div class="tdog2" aria-hidden="true">${art('dog', 'dachs', { pose: 'idle' })}</div>
     <div class="tdog" aria-hidden="true">${art('dog', 'corgi', { pose: 'happy', facing: 'left' })}</div>`;
-  tAcctKey = ''; titleAcctRender();
+  tAcctKey = ''; titleAcctRender(); titleLangBind(); // v2.14: the first-run language chip (I18N CORE, 20_settings_dev.js)
 }
 
 /* ---------- v2.3 title: account choice (ACCOUNT lane) ----------
@@ -37,22 +37,22 @@ const AC_CH = {
 };
 function acChoicesHTML(pre, m) {
   const txt = { login: {}, reg: {}, guest: {} };
-  if (m === 'acct') { txt.login.s = 'Use a different account.'; txt.reg.s = 'A second account, with a brand new dog.'; txt.guest.s = 'Log out. Your game stays on this device.'; }
-  if (m === 'guest') { txt.guest.t = 'Stay a guest'; txt.guest.s = 'Nothing changes. Carry on.'; }
+  if (m === 'acct') { txt.login.s = tt('title.use_a_different_account', 'Use a different account.'); txt.reg.s = tt('title.a_second_account_with_a', 'A second account, with a brand new dog.'); txt.guest.s = tt('title.log_out_your_game_stays', 'Log out. Your game stays on this device.'); }
+  if (m === 'guest') { txt.guest.t = tt('title.stay_a_guest', 'Stay a guest'); txt.guest.s = tt('title.nothing_changes_carry_on', 'Nothing changes. Carry on.'); }
   return Object.keys(AC_CH).map((k) => {
-    const c = Object.assign({}, AC_CH[k], txt[k]), id = pre + k[0].toUpperCase() + k.slice(1);
-    if (pre === 'ac' && k === 'reg') c.t = 'New account'; // in the sheet the cards are narrower: short titles keep all three on one line
+    const c = Object.assign({}, AC_CH[k], { t: tdata('ac_ch.' + k + '.t', AC_CH[k].t), s: tdata('ac_ch.' + k + '.s', AC_CH[k].s) }, txt[k]), id = pre + k[0].toUpperCase() + k.slice(1);
+    if (pre === 'ac' && k === 'reg') c.t = tt('title.new_account', 'New account'); // in the sheet the cards are narrower: short titles keep all three on one line
     return `<button class="card tch tch-${k}" id="${id}" data-ac="${k}"><span class="tch-dog" aria-hidden="true">${art('dog', c.dog, { pose: c.pose })}</span><span class="tch-t"><b>${c.t}</b><span class="tch-s">${c.s}</span></span></button>`;
   }).join('');
 }
 function acLine(m) {
   const c = acCl();
-  if (m === 'off') return { t: 'Cloud save works on the web version.' };
-  if (m === 'wait') return { t: 'Checking your cloud save...' };
-  if (m === 'acct') return { t: `Signed in as <b>${esc(clMask(c.email))}</b>`, link: 'Switch' };
-  if (!clMine()) return { t: 'Saved on this device only', link: 'Log in' }; // an account's game after a log out
-  if (c.err && !c.uid) return { t: 'Cloud save is offline. Your game is saved on this device.', link: 'Log in' };
-  return { t: 'Playing as guest', link: 'Log in' };
+  if (m === 'off') return { t: tt('title.cloud_save_works_on_the', 'Cloud save works on the web version.') };
+  if (m === 'wait') return { t: tt('title.checking_your_cloud_save', 'Checking your cloud save...') };
+  if (m === 'acct') return { t: tt('title.signed_in_as_html', 'Signed in as <b>{email}</b>', { email: clMask(c.email) }), link: tt('title.switch', 'Switch') };
+  if (!clMine()) return { t: tt('title.saved_on_this_device_only', 'Saved on this device only'), link: tt('title.log_in', 'Log in') }; // an account's game after a log out
+  if (c.err && !c.uid) return { t: tt('title.cloud_save_is_offline_your', 'Cloud save is offline. Your game is saved on this device.'), link: tt('title.log_in', 'Log in') };
+  return { t: tt('title.playing_as_guest', 'Playing as guest'), link: tt('title.log_in', 'Log in') };
 }
 // draws the buttons part of the cover. Called by enterTitle and by the cloud whenever its state changes (22b clRender).
 function titleAcctRender() {
@@ -61,18 +61,18 @@ function titleAcctRender() {
   const key = [m, has, ln && ln.t, ln && ln.link].join('|'); if (key === tAcctKey) return; tAcctKey = key;
   const cov = box.closest('.cover'); if (cov) cov.classList.toggle('choosing', m === 'choose');
   if (m === 'choose') {
-    box.innerHTML = `<div class="tchoose" role="group" aria-label="How do you want to play?">${acChoicesHTML('t', m)}</div>`;
+    box.innerHTML = `<div class="tchoose" role="group" aria-label="${esc(tt('title.label_how_do_you_want_to', 'How do you want to play?'))}">${acChoicesHTML('t', m)}</div>`;
     acBindChoices(box, false); return;
   }
   box.innerHTML = `<div class="tbtns">
-        ${has ? '<button class="btn big go" id="tContinue">Continue</button>' : ''}
-        <button class="btn big ${has ? '' : 'yes'}" id="tNew">New game</button>
+        ${has ? '<button class="btn big go" id="tContinue">' + tt('title.continue', 'Continue') + '</button>' : ''}
+        <button class="btn big ${has ? '' : 'yes'}" id="tNew">${tt('title.new_game', 'New game')}</button>
       </div>
       <p class="tacct" role="status"><span>${ln.t}</span>${ln.link ? `<button class="tlink" id="tSwitch">${ln.link}</button>` : ''}</p>`;
   const tn = $('#tNew'), tc = $('#tContinue'), sw = $('#tSwitch');
   tn.onclick = async () => {
     SFX.boop(600);
-    if (has) { const ok = await ask('Start over?', `This replaces <b>${esc((loadSave() || S || {}).dog?.name || 'your dog')}</b> with a brand new dog. The old one will be fine. Probably moved to a farm. A real one.`, 'Yes, new dog', 'Keep my dog'); if (!ok) return; lsDel(SAVE_KEY); S = null; }
+    if (has) { const ok = await ask(tt('title.start_over', 'Start over?'), tt('title.start_over_body_html', 'This replaces <b>{name}</b> with a brand new dog. The old one will be fine. Probably moved to a farm. A real one.', { name: (loadSave() || S || {}).dog?.name || tt('title.your_dog_lower', 'your dog') }), tt('title.yes_new_dog', 'Yes, new dog'), tt('title.keep_my_dog', 'Keep my dog')); if (!ok) return; lsDel(SAVE_KEY); S = null; }
     go('adopt');
   };
   if (tc) tc.onclick = () => { SFX.boop(700); if (!S) S = loadSave(); applyAway(); gardenAdvance(); birthdayCheck(); go('yard'); migNote(); setTimeout(() => greetBark(), 1200); };
@@ -83,14 +83,14 @@ function acBindChoices(root, inSheet) {
 }
 function acOpenChoices() {
   const m = acMode(), c = acCl();
-  const who = m === 'acct' ? `You're signed in as <b>${esc(clMask(c.email))}</b>.` : "You're playing as a guest. Your game is saved on this device.";
-  const p = openModal('How do you want to play?', `<p class="acwho">${who}</p><div class="tchoose insheet" role="group" aria-label="How do you want to play?">${acChoicesHTML('ac', m)}</div>`, { cls: 'acct' });
+  const who = m === 'acct' ? tt('title.you_re_signed_in_as_html', "You're signed in as <b>{email}</b>.", { email: clMask(c.email) }) : tt('title.you_re_playing_as_a', "You're playing as a guest. Your game is saved on this device.");
+  const p = openModal(tt('title.how_do_you_want_to', 'How do you want to play?'), `<p class="acwho">${who}</p><div class="tchoose insheet" role="group" aria-label="${esc(tt('title.label_how_do_you_want_to', 'How do you want to play?'))}">${acChoicesHTML('ac', m)}</div>`, { cls: 'acct' });
   acBindChoices(p, true);
 }
 async function acPlayGuest(panel) {
   const c = acCl();
   if (c && c.uid && !c.anon) {
-    if (panel) { const ok = await confirmIn(panel, 'Log out and play as guest? Your game stays on this device.', 'Log out', 'Stay'); if (!ok) return; }
+    if (panel) { const ok = await confirmIn(panel, tt('title.log_out_and_play_as', 'Log out and play as guest? Your game stays on this device.'), tt('title.log_out', 'Log out'), tt('title.stay', 'Stay')); if (!ok) return; }
     await clLogout();
   }
   if (!modal.hidden) closeModal();
@@ -98,15 +98,15 @@ async function acPlayGuest(panel) {
   if (!clOwner() && await clEnsureUser()) clPull(); // a guest with a game on this device gets it into the cloud (an account's game never does)
   titleAcctRender();
 }
-function acDogName(d) { return (d && ((d.dogs && d.dogs[0] && d.dogs[0].name) || (d.dog && d.dog.name))) || 'Your dog'; }
+function acDogName(d) { return (d && ((d.dogs && d.dogs[0] && d.dogs[0].name) || (d.dog && d.dog.name))) || tt('title.your_dog', 'Your dog'); }
 function acOpenForm(kind, inSheet) {
   const reg = kind === 'reg', c = acCl(), local = clLocal(), acct = c && c.uid && !c.anon;
   const carry = local && !acct && clMine(); // a guest game comes along; an account's game stays with that account
-  const lead = reg ? (carry ? `${esc(acDogName(local))} comes along to the new account. We only email you if you ask for a password link.` : local ? `A fresh start with a new crayon dog. ${esc(acDogName(local))} stays safe in the other account.` : 'Make one, then pick your first crayon dog. We only email you if you ask for a password link.')
-    : 'Welcome back. Type the email and password you signed up with.';
-  const fields = clIn('acEmail', 'email', 'Email', 'username') + (reg ? clIn('acPw', 'password', `Password (${CL_PW_MIN} or more characters)`, 'new-password') + clIn('acPw2', 'password', 'Password again', 'new-password') : clIn('acPw', 'password', 'Password', 'current-password'));
-  const body = `<div class="clset acform"><div class="aclead"><span class="acdog" aria-hidden="true">${art('dog', reg ? 'golden' : 'pug', { pose: reg ? 'happy' : 'paw' })}</span><p>${lead}</p></div>${fields}<p class="clmsg" id="acMsg" role="alert" hidden></p>${reg ? '' : '<button class="tlink" id="acForgot">Forgot your password?</button>'}</div>`;
-  const p = openModal(reg ? 'Make an account' : 'Log in', body, { cls: 'acct acformp', foot: `<button class="btn" id="acBack">Back</button><button class="btn yes" id="acGo">${reg ? 'Make account' : 'Log in'}</button>` });
+  const lead = reg ? (carry ? tt('title.comes_along_to_the_new_html', '{name} comes along to the new account. We only email you if you ask for a password link.', { name: acDogName(local) }) : local ? tt('title.a_fresh_start_with_a_html', 'A fresh start with a new crayon dog. {name} stays safe in the other account.', { name: acDogName(local) }) : tt('title.make_one_then_pick_your', 'Make one, then pick your first crayon dog. We only email you if you ask for a password link.'))
+    : tt('title.welcome_back_type_the_email', 'Welcome back. Type the email and password you signed up with.');
+  const fields = clIn('acEmail', 'email', tt('title.email', 'Email'), 'username') + (reg ? clIn('acPw', 'password', tt('title.password_or_more_characters', 'Password ({min} or more characters)', { min: CL_PW_MIN }), 'new-password') + clIn('acPw2', 'password', tt('title.password_again', 'Password again'), 'new-password') : clIn('acPw', 'password', tt('title.password', 'Password'), 'current-password'));
+  const body = `<div class="clset acform"><div class="aclead"><span class="acdog" aria-hidden="true">${art('dog', reg ? 'golden' : 'pug', { pose: reg ? 'happy' : 'paw' })}</span><p>${lead}</p></div>${fields}<p class="clmsg" id="acMsg" role="alert" hidden></p>${reg ? '' : '<button class="tlink" id="acForgot">' + tt('title.forgot_your_password', 'Forgot your password?') + '</button>'}</div>`;
+  const p = openModal(reg ? tt('title.make_an_account', 'Make an account') : tt('title.log_in', 'Log in'), body, { cls: 'acct acformp', foot: `<button class="btn" id="acBack">${tt('title.back', 'Back')}</button><button class="btn yes" id="acGo">${reg ? tt('title.make_account', 'Make account') : tt('title.log_in', 'Log in')}</button>` });
   const val = (id) => { const e = document.getElementById(id); return e ? e.value : ''; };
   const msgEl = $('#acMsg', p), btn = $('#acGo', p);
   const say = (t) => { msgEl.textContent = t; msgEl.hidden = !t; if (t) SFX.nope(); };
@@ -121,20 +121,20 @@ function acOpenForm(kind, inSheet) {
   p.dataset.ready = '1';
   btn.onclick = async () => {
     const em = val('acEmail').trim(), pw = val('acPw');
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return say('That email looks wrong. Check it and try again.');
-    if (reg && pw.length < CL_PW_MIN) return say(`Pick a password with at least ${CL_PW_MIN} characters.`);
-    if (reg && pw !== val('acPw2')) return say("The two passwords don't match.");
-    if (!reg && !pw) return say('Type your password too.');
-    say(''); btn.disabled = true; btn.textContent = reg ? 'Making it...' : 'Logging in...';
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return say(tt('title.that_email_looks_wrong_check', 'That email looks wrong. Check it and try again.'));
+    if (reg && pw.length < CL_PW_MIN) return say(tt('title.pick_a_password_with_at', 'Pick a password with at least {min} characters.', { min: CL_PW_MIN }));
+    if (reg && pw !== val('acPw2')) return say(tt('title.the_two_passwords_don_t', "The two passwords don't match."));
+    if (!reg && !pw) return say(tt('title.type_your_password_too', 'Type your password too.'));
+    say(''); btn.disabled = true; btn.textContent = reg ? tt('title.making_it', 'Making it...') : tt('title.logging_in', 'Logging in...');
     let r;
     try { r = reg ? await clRegister(em, pw, acct) : await clLogin(em, pw); } catch (e) { r = { ok: false, msg: clErrText(e) }; }
-    if (!r || !r.ok) { btn.disabled = false; btn.textContent = reg ? 'Make account' : 'Log in'; say((r && r.msg) || "That didn't work. Try again in a moment."); return; }
+    if (!r || !r.ok) { btn.disabled = false; btn.textContent = reg ? tt('title.make_account', 'Make account') : tt('title.log_in', 'Log in'); say((r && r.msg) || tt('title.that_didn_t_work_try', "That didn't work. Try again in a moment.")); return; }
     acGuest = false; if (!modal.hidden) closeModal();
     if (reg) clPull(); // the save on this device becomes the account's save
     const now = clLocal();
     if (!now) { go('adopt'); return; }
     tAcctKey = ''; titleAcctRender();
-    toast(reg ? `Account made. ${acDogName(now)} is safe on every device now.` : `Logged in. ${acDogName(now)} is right where you left them.`, 'good');
+    toast(reg ? tt('title.account_made_is_safe_on', 'Account made. {name} is safe on every device now.', { name: acDogName(now) }) : tt('title.logged_in_is_right_where', 'Logged in. {name} is right where you left them.', { name: acDogName(now) }), 'good');
     const tc = $('#tContinue'); if (tc) tc.focus({ preventScroll: true });
   };
 }

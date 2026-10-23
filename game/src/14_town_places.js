@@ -10,6 +10,49 @@ Object.assign(ROUTES, {
   hilltop: { n: 'Hilltop Trail', bond: 4, secs: 75, energy: 25, happy: 25, clean: 10, coins: [45, 60], bp: 12, pool: ['coin', 'flower', 'leaf'] },
   pier: { n: 'Pier Boardwalk', bond: 6, secs: 75, energy: 25, happy: 25, clean: 10, coins: [55, 70], bp: 13, pool: ['coin', 'shell'] }
 });
+// v2.14 i18n: the shown names of places and routes. The definitions above and below stay English (ids and save values); the v1.6 and v2.8 names are
+// tt() keys because they are added with Object.assign (not a table the extractor knows), the older ones come from the places / routes tables of 00_core.js.
+function townPlaceName(k) {
+  const p = PLACES[k]; if (!p) return k;
+  switch (k) {
+    case 'square': return tt('town.place_square', 'Town Square');
+    case 'cafe': return tt('town.place_cafe', 'Pupuccino Café');
+    case 'dogpark': return tt('town.place_dogpark', 'Dog Park');
+    case 'vet': return tt('town.place_vet', 'Vet Clinic');
+    case 'salon': return tt('town.place_salon', 'Grooming Salon');
+    case 'hilltop': return tt('town.place_hilltop', 'Hilltop Meadow');
+    case 'pier': return tt('town.place_pier', 'Lighthouse Pier');
+    case 'fujihill': return tt('town.place_fujihill', 'Mt. Fuji Lookout');
+    default: return tdata('places.' + k + '.n', p.n);
+  }
+}
+function townRouteName(k) {
+  const r = ROUTES[k]; if (!r) return k;
+  switch (k) {
+    case 'town': return tt('town.route_town', 'Town Loop');
+    case 'hilltop': return tt('town.route_hilltop', 'Hilltop Trail');
+    case 'pier': return tt('town.route_pier', 'Pier Boardwalk');
+    default: return tdata('routes.' + k + '.n', r.n);
+  }
+}
+// "a, b or c" for a list of shown words (tlist is the "and" list)
+function townOrList(a) { return a.length < 2 ? a.join('') : tt('town.or_join', '{head} or {last}', { head: a.slice(0, -1).join(tt('town.or_sep', ', ')), last: a[a.length - 1] }); }
+function townRouteWord(k) {
+  switch (k) {
+    case 'town': return tt('town.route_word_town', 'around town');
+    case 'hilltop': return tt('town.route_word_hilltop', 'up on the hilltop');
+    case 'pier': return tt('town.route_word_pier', 'on the pier');
+    default: return tdata('route_word.' + k, ROUTE_WORD[k] || '');
+  }
+}
+function townRouteHint(k) {
+  switch (k) {
+    case 'town': return tt('town.route_hint_town', 'Found around town...');
+    case 'hilltop': return tt('town.route_hint_hilltop', 'Found up on the hilltop...');
+    case 'pier': return tt('town.route_hint_pier', 'Found on the pier...');
+    default: return tdata('route_hint.' + k, ROUTE_HINT[k] || '');
+  }
+}
 const LOOT16 = { town: ['Lucky Penny', "Duck's Picnic Sandwich", 'Rubber Chicken', 'Wild Berries'], hilltop: ['Acorn Cap', 'Explorer Goggles', 'Glow Ball', 'Wild Berries', 'Golden Bone'], pier: ['Seashell Necklace', 'Driftwood Stick', 'Sparkle Stone', 'Golden Bone'] };
 Object.keys(LOOT16).forEach((r) => LOOT16[r].forEach((n) => { const t = TREASURES.find((x) => x.n === n); if (t && !t.routes.includes(r)) t.routes.push(r); }));
 Object.assign(ROUTE_WORD, { town: 'around town', hilltop: 'up on the hilltop', pier: 'on the pier' });
@@ -33,69 +76,69 @@ const isIndoor = () => !!(S && PLACES[S.place] && PLACES[S.place].out === false)
 /* ---- scene fallback while world C is missing: a similar existing scene + a doodle sign ---- */
 const SCENE_FB = { square: 'market', cafe: 'house', dogpark: 'park', vet: 'shelter', salon: 'house', hilltop: 'woods', pier: 'beach' };
 function placeSign(name) {
-  const t = PLACES[name] ? PLACES[name].n : name;
+  const t = townPlaceName(name);
   return `<g class="fbsign" transform="translate(820 140) rotate(3)" pointer-events="none"><path d="M0 70 V170" stroke="#5B3D32" stroke-width="6"/><rect x="-120" y="0" width="240" height="72" rx="10" fill="#FFF3DA" stroke="#5B3D32" stroke-width="4"/><text x="0" y="48" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="${t.length > 13 ? 30 : 36}" fill="#5B3D32">${esc(t)}</text></g>`;
 }
 
 /* ---- place features ---- */
 function cafeMenu() {
   const d = D(), done = d.cafeDay === todayKey();
-  const items = [{ n: 'Pupuccino', price: 12, happy: 10, hunger: 5, note: 'A tiny cup of frothed, lactose-free milk foam. Dog-safe, no coffee, no sugar.' }, { n: 'Doggy Donut', price: 18, happy: 15, hunger: 8, note: 'Oat flour, pumpkin and a yoghurt drizzle. A dog-safe recipe: no chocolate, no xylitol, no sugar glaze.' }];
-  const p = openModal('Pupuccino Café', `<p class="small">"Welcome! One café treat per pup per day." ${done ? `<b>${esc(d.name)} already had today's treat.</b>` : ''} You have ${S.coins} Paw Coins.</p><div class="shopgrid">${items.map((it) => `<div class="sitem"><span class="art">${art('item', it.n)}</span><b>${it.n}</b><span class="desc">${esc(it.note)}<br>+${it.happy} Happiness, +${it.hunger} Hunger</span>${priceHTML(it.price)}<button class="btn yes" data-cafe="${it.n}" ${done ? 'aria-disabled="true"' : ''}>Order and serve</button></div>`).join('')}</div>`, { cls: 'shop' });
+  const items = [{ n: 'Pupuccino', dn: tt('town.cafe_pupuccino', 'Pupuccino'), price: 12, happy: 10, hunger: 5, note: tt('town.cafe_pupuccino_note', 'A tiny cup of frothed, lactose-free milk foam. Dog-safe, no coffee, no sugar.') }, { n: 'Doggy Donut', dn: tt('town.cafe_donut', 'Doggy Donut'), price: 18, happy: 15, hunger: 8, note: tt('town.cafe_donut_note', 'Oat flour, pumpkin and a yoghurt drizzle. A dog-safe recipe: no chocolate, no xylitol, no sugar glaze.') }];
+  const p = openModal(townPlaceName('cafe'), `<p class="small">${tt('town.cafe_welcome_html', '"Welcome! One café treat per pup per day." {done, select, yes {<b>{name} already had today\'s treat.</b>} other {}} {coins, plural, one {You have # Paw Coin.} other {You have # Paw Coins.}}', { done: done ? 'yes' : 'no', name: d.name, coins: S.coins })}</p><div class="shopgrid">${items.map((it) => `<div class="sitem"><span class="art">${art('item', it.n)}</span><b>${esc(it.dn)}</b><span class="desc">${esc(it.note)}<br>${esc(tt('town.cafe_gain', '+{happy} Happiness, +{hunger} Hunger', { happy: it.happy, hunger: it.hunger }))}</span>${priceHTML(it.price)}<button class="btn yes" data-cafe="${it.n}" ${done ? 'aria-disabled="true"' : ''}>${tt('town.cafe_order', 'Order and serve')}</button></div>`).join('')}</div>`, { cls: 'shop' });
   p.querySelectorAll('[data-cafe]').forEach((b) => { b.onclick = () => {
-    const it = items.find((x) => x.n === b.dataset.cafe); if (D().cafeDay === todayKey()) { nope(`One café treat per dog per day. ${NAME()} is pretending not to know that.`); return; }
-    if (S.coins < it.price) { nope('Not enough coins. The barista is sympathetic but firm.'); return; }
+    const it = items.find((x) => x.n === b.dataset.cafe); if (D().cafeDay === todayKey()) { nope(tt('town.cafe_once', 'One café treat per dog per day. {name} is pretending not to know that.', { name: NAME() })); return; }
+    if (S.coins < it.price) { nope(tt('town.cafe_broke', 'Not enough coins. The barista is sympathetic but firm.')); return; }
     S.coins -= it.price; D().cafeDay = todayKey(); SFX.kaching(); closeModal(); markDirty();
     // v2.5: the treat is served in the bowl (shown only while the dog eats), like every other food
     busy = true; hideBubble(); setBowl(it.n); dogTo(-125, 0, 1, 0.8); renderDog('walk', 'left'); setTimeout(() => { renderDog('eat', 'left', true); SFX.slurp(); }, 850);
-    setTimeout(() => { setBowl(null); dogTo(0, 0, 1, 0.8); addStat('happy', it.happy); addStat('hunger', it.hunger); setTimeout(() => { busy = false; renderDog(dogPoseNow()); }, 900); setTemp('happy', 1400); updateHUD(); toast(`${NAME()} enjoyed a ${it.n}. ${it.n === 'Pupuccino' ? `${PR().He} has a foam moustache now.` : `${PR().He} ate it in one bite. Of course.`} +${it.happy} Happiness.`, 'good'); }, 2300);
+    setTimeout(() => { setBowl(null); dogTo(0, 0, 1, 0.8); addStat('happy', it.happy); addStat('hunger', it.hunger); setTimeout(() => { busy = false; renderDog(dogPoseNow()); }, 900); setTemp('happy', 1400); updateHUD(); toast(tt('town.cafe_enjoyed', '{name} enjoyed a {item}. {treat, select, pupuccino {{sex, select, female {She has a foam moustache now.} other {He has a foam moustache now.}}} other {{sex, select, female {She ate it in one bite. Of course.} other {He ate it in one bite. Of course.}}}} +{happy} Happiness.', { name: NAME(), item: it.dn, treat: it.n === 'Pupuccino' ? 'pupuccino' : 'other', sex: S.dog.sex, happy: it.happy }), 'good'); }, 2300);
   }; });
 }
 function vetCheck(id) {
   const d = (id && dogById(id)) || D(), done = d.vetDay === todayKey();
   const preg = !!(d.preg && d.preg.due);
-  const pick = S.dogs.length > 1 ? `<div class="vdogs" role="group" aria-label="Which dog?">${S.dogs.map((x) => `<button class="dchip vdog" data-vdog="${x.id}" aria-pressed="${x.id === d.id}" title="${esc(x.name)}">${headSVG(x)}<span>${esc(x.name)}</span></button>`).join('')}</div>` : '';
-  const p = openModal('Vet Clinic', `<div class="vetcard vet2">${pick}<p>Dr. Paws peers over tiny glasses. "Check-up is 30 coins, once a day per pup."</p>
-    <div class="wrap"><button class="btn yes big" id="vetGo" ${done ? 'aria-disabled="true"' : ''}>${done ? 'Checked today' : preg ? 'Expecting check-up (30)' : 'Check-up (30)'}</button></div>
+  const pick = S.dogs.length > 1 ? `<div class="vdogs" role="group" aria-label="${tt('town.vet_which', 'Which dog?')}">${S.dogs.map((x) => `<button class="dchip vdog" data-vdog="${x.id}" aria-pressed="${x.id === d.id}" title="${esc(x.name)}">${headSVG(x)}<span>${esc(x.name)}</span></button>`).join('')}</div>` : '';
+  const p = openModal(townPlaceName('vet'), `<div class="vetcard vet2">${pick}<p>${tt('town.vet_intro', 'Dr. Paws peers over tiny glasses. "Check-up is 30 coins, once a day per pup."')}</p>
+    <div class="wrap"><button class="btn yes big" id="vetGo" ${done ? 'aria-disabled="true"' : ''}>${done ? tt('town.vet_checked', 'Checked today') : preg ? tt('town.vet_check_preg', 'Expecting check-up (30)') : tt('town.vet_check', 'Check-up (30)')}</button></div>
     ${vetV2Options(d)}</div>`);
   p.querySelectorAll('[data-vdog]').forEach((b) => { b.onclick = () => { SFX.click(); vetCheck(b.dataset.vdog); }; });
   vetV2Bind(p, d);
   $('#vetGo', p).onclick = () => withDog(d, () => {
-    if (D().vetDay === todayKey()) { nope('Already checked today. The vet says go have fun.'); return; }
-    if (S.coins < 30) { nope('Not enough coins for a check-up.'); return; }
+    if (D().vetDay === todayKey()) { nope(tt('town.vet_already', 'Already checked today. The vet says go have fun.')); return; }
+    if (S.coins < 30) { nope(tt('town.vet_broke', 'Not enough coins for a check-up.')); return; }
     S.coins -= 30; D().vetDay = todayKey(); SFX.kaching(); barkDog(D(), 'huff', { player: true }); const b = addBond(5, { raw: true }); if (d.id === S.activeId) tempPose = null; markDirty(); updateHUD();
     const kg = (dogInfo(d.key).breed.length / 2 + 6).toFixed(1);
-    openModal(`Health card: ${esc(d.name)}`, `<div class="vetcard"><p><b>Weight:</b> ${kg} kg of pure opinion.</p><p><b>Coat:</b> ${esc(coatNameOf(d) || 'Shiny')}. Shiny enough to see your future in it.</p><p><b>Teeth:</b> All present. Several are suspicious of carrots.</p><p><b>Nose:</b> Cold and wet. As it should be.</p>${preg ? vetScanHTML(d) : ''}<p class="small">No sniffles. +${b} Bond (brave ${d.sex === 'female' ? 'girl' : 'boy'}).</p></div>`, { foot: '<button class="btn yes" id="vetOk">Good dog!</button>' });
-    $('#vetOk').onclick = () => closeModal(); toast(`${NAME()} survived the vet. Barely. Dramatically. +${b} Bond.`, 'good');
+    openModal(tt('town.vet_card', 'Health card: {name}', { name: esc(d.name) }), `<div class="vetcard"><p>${tt('town.vet_weight_html', '<b>Weight:</b> {kg} kg of pure opinion.', { kg: tnum(+kg, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) })}</p><p>${tt('town.vet_coat_html', '<b>Coat:</b> {coat}. Shiny enough to see your future in it.', { coat: coatShown(coatNameOf(d), d.key) || tt('town.vet_shiny', 'Shiny') })}</p><p>${tt('town.vet_teeth_html', '<b>Teeth:</b> All present. Several are suspicious of carrots.')}</p><p>${tt('town.vet_nose_html', '<b>Nose:</b> Cold and wet. As it should be.')}</p>${preg ? vetScanHTML(d) : ''}<p class="small">${tt('town.vet_sniffles', '{sex, select, female {No sniffles. +{bond} Bond (brave girl).} other {No sniffles. +{bond} Bond (brave boy).}}', { sex: d.sex, bond: b })}</p></div>`, { foot: `<button class="btn yes" id="vetOk">${tt('town.vet_ok', 'Good dog!')}</button>` });
+    $('#vetOk').onclick = () => closeModal(); toast(tt('town.vet_survived', '{name} survived the vet. Barely. Dramatically. +{bond} Bond.', { name: NAME(), bond: b }), 'good');
   });
 }
 const fluffyOn = (d = D()) => !!(d && d.fluffyUntil && S.gameMin < d.fluffyUntil);
 function salonGroom() {
-  const p = openModal('Grooming Salon', `<p>"Full groom: bath, blow-dry, a bow if they allow it. 40 coins." Cleanliness goes to 100 and ${esc(NAME())} gets <b>Fresh &amp; Fluffy</b> for a game day: Happiness drops at half speed.</p>`, { foot: '<button class="btn no" id="slNo">Not today</button><button class="btn yes big" id="slGo">Full groom (40)</button>' });
+  const p = openModal(townPlaceName('salon'), `<p>${tt('town.salon_intro_html', '"Full groom: bath, blow-dry, a bow if they allow it. 40 coins." Cleanliness goes to 100 and {name} gets <b>Fresh &amp; Fluffy</b> for a game day: Happiness drops at half speed.', { name: NAME() })}</p>`, { foot: `<button class="btn no" id="slNo">${tt('town.salon_no', 'Not today')}</button><button class="btn yes big" id="slGo">${tt('town.salon_go', 'Full groom (40)')}</button>` });
   $('#slNo', p).onclick = () => closeModal();
   $('#slGo', p).onclick = () => {
-    if (S.coins < 40) { nope('Not enough coins. The groomer gives a sad little snip of the scissors.'); return; }
+    if (S.coins < 40) { nope(tt('town.salon_broke', 'Not enough coins. The groomer gives a sad little snip of the scissors.')); return; }
     S.coins -= 40; SFX.kaching(); S.stats.clean = 100; D().fluffyUntil = S.gameMin + 1440; closeModal(); markDirty(); SFX.splash(); setTimeout(() => SFX.shake(), 300);
     exTrig(D(), 'brush', { pose: 'idle', draw: false }); renderDog('shake', 'right', true); setTimeout(() => { renderDog(dogPoseNow(), 'right', true); drawFluff(); }, 900); // v2.13: a face after the groom
-    toast(`${NAME()} is Fresh & Fluffy! ${PR().He} smells like a cloud that went to university.`, 'gold'); updateHUD();
+    toast(tt('town.salon_done', '{sex, select, female {{name} is Fresh & Fluffy! She smells like a cloud that went to university.} other {{name} is Fresh & Fluffy! He smells like a cloud that went to university.}}', { name: NAME(), sex: S.dog.sex }), 'gold'); updateHUD();
   };
 }
 function drawFluff() { const g = $('#fluffFx'); if (!g) return; g.innerHTML = fluffyOn() ? `<g class="fluffspark">${doodle('spark', 330, 330, 0.7)}${doodle('spark', 545, 300, 0.55, 20)}${doodle('spark', 470, 270, 0.45, 40)}</g>` : ''; }
 function squareNotice() {
   dailyCheck(); const n = S.daily.squareShows || 0, done = !!S.daily.squareGoal;
-  openModal('Town notice', `<div class="notice"><p><b>Today's mini-goal:</b> Show 3 tricks here in Town Square.</p><p>Reward: +30 coins. ${done ? '<b>Done! The mayor clapped (one hand).</b>' : `Progress: ${n}/3.`}</p><p class="small">Also on the board: "LOST: one tennis ball. Answers to 'ball'." · "Fountain is not a water bowl (it is a little bit)."</p></div>`);
+  openModal(tt('town.notice_title', 'Town notice'), `<div class="notice"><p>${tt('town.notice_goal_html', "<b>Today's mini-goal:</b> Show 3 tricks here in Town Square.")}</p><p>${tt('town.notice_reward_html', 'Reward: +30 coins. {done, select, yes {<b>Done! The mayor clapped (one hand).</b>} other {Progress: {n}/3.}}', { done: done ? 'yes' : 'no', n })}</p><p class="small">${tt('town.notice_board_html', "Also on the board: \"LOST: one tennis ball. Answers to 'ball'.\" · \"Fountain is not a water bowl (it is a little bit).\"")}</p></div>`);
 }
 function socialise() {
   if (busy) return; const now = S.gameMin;
-  if (now - (S.socialAt || -99) < 10) { nope('Everyone is still sniffing from last time. Give it a minute.'); return; }
+  if (now - (S.socialAt || -99) < 10) { nope(tt('town.social_wait', 'Everyone is still sniffing from last time. Give it a minute.')); return; }
   S.socialAt = now; const k = PICK(dogsList().filter((d) => d.key !== S.dog.key)).key; SFX.bark(BARK[k] || 1); addStat('happy', 8);
-  toast(`${NAME()} met a ${dogInfo(k).breed}. They sniffed, ran in circles and agreed to be best friends forever (5 minutes). +8 Happiness.`, 'good'); updateHUD();
+  toast(tt('town.social_met', '{name} met a {breed}. They sniffed, ran in circles and agreed to be best friends forever (5 minutes). +8 Happiness.', { name: NAME(), breed: tbreed(k) }), 'good'); updateHUD();
 }
 function kiteWatch() {
   const fx = $('#fx'); if (!fx) return;
   fx.insertAdjacentHTML('beforeend', `<g class="kitefx"><path d="M0 0 L24 -30 L48 0 L24 30 Z" fill="#F28FA5" stroke="#5B3D32" stroke-width="3" transform="translate(650 120)"/><path d="M674 150 Q700 220 660 300" fill="none" stroke="#5B3D32" stroke-width="2" stroke-dasharray="4 5"/></g>`);
   setTimeout(() => { const k = fx.querySelector('.kitefx'); if (k) k.remove(); }, 4200);
-  const h = dogHeadWorld(); say(PICK(['A kite! I will catch it with my mind.', 'That bird is rectangular. Suspicious.', 'I could fly too. I just choose not to.']), h.x, h.y, 2600);
+  const h = dogHeadWorld(); say(PICK([tt('town.kite_1', 'A kite! I will catch it with my mind.'), tt('town.kite_2', 'That bird is rectangular. Suspicious.'), tt('town.kite_3', 'I could fly too. I just choose not to.')]), h.x, h.y, 2600);
 }
 
 /* ---- the town map: pan + zoom ---- */
@@ -112,12 +155,12 @@ function mapArt(locked) {
   const roads = `<g fill="none" stroke="#D9C7AB" stroke-width="10" stroke-linecap="round" stroke-dasharray="2 18"><path d="M1700 700 C1800 650 1850 400 1900 330 M1700 700 C1900 640 2050 600 2180 560 M1700 760 L1880 760 M1700 820 C1900 900 2050 950 2170 980 M1700 900 C1800 1000 1880 1150 1920 1220 M760 150 C760 250 700 260 700 320 M1100 1210 C1150 1300 1250 1350 1300 1390"/></g>`;
   const deco = [[1780, 180], [2300, 260], [2300, 1350], [600, 1350], [300, 160], [1500, 160], [2050, 1400]].map(([x, y], i) => i % 2 ? `<g transform="translate(${x} ${y})" stroke="#5B3D32" stroke-width="3"><rect x="-26" y="-20" width="52" height="40" fill="#F9E3C8"/><path d="M-32 -20 L0 -46 L32 -20 Z" fill="#E8A598"/></g>` : `<g transform="translate(${x} ${y})" stroke="#5B3D32" stroke-width="3"><path d="M0 30 V8" /><circle r="26" cy="-6" fill="#BFD8A6"/></g>`).join('');
   const pins = NEW_PLACES.filter((k) => !new RegExp(`data-area="${k}"`).test(raw)).map((k) => fbPinSVG(k, FB_PINS[k], k)).join('') + jpMapPin(raw, JP_MAP_PIN.fb) + tkMapPin(raw, TK_MAP_PIN.fb);
-  return { W, H, areas: null, svg: `<rect width="${W}" height="${H}" fill="#FFFBF3"/><text x="${W / 2}" y="90" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="72" fill="#5B3D32">Doodle Doggo Town</text>${roads}${deco}<g id="sceneG" data-scene="map" data-noenv="1">${place(raw, ox, oy, 1000 * sc, 600 * sc)}</g>${pins}` };
+  return { W, H, areas: null, svg: `<rect width="${W}" height="${H}" fill="#FFFBF3"/><text x="${W / 2}" y="90" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="72" fill="#5B3D32">${esc(tt('town.map_title', 'Doodle Doggo Town'))}</text>${roads}${deco}<g id="sceneG" data-scene="map" data-noenv="1">${place(raw, ox, oy, 1000 * sc, 600 * sc)}</g>${pins}` };
 }
 // a plain doodle pin for a place the map art does not draw yet (the v1.6 town places, v2.8 Mt. Fuji Lookout). icon: the PawArt.icon name
 function fbPinSVG(k, [x, y], icon) {
-  const P = PLACES[k], lock = topBond() < P.bond;
-  return `<g data-area="${k}" class="fbpin${lock ? ' locked' : ''}" transform="translate(${x} ${y})"><circle r="78" fill="#FFFBF3" stroke="#5B3D32" stroke-width="5"/><g transform="translate(-44 -62)">${place(iconOr(icon, `<circle r="14" fill="#F28FA5" stroke="#5B3D32" stroke-width="2"/>`), 0, 0, 88, 88)}</g><text y="${lock ? 62 : 58}" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="${P.n.length > 13 ? 26 : 30}" fill="#5B3D32">${esc(P.n)}</text>${lock ? `<g transform="translate(40 -66) rotate(8)"><rect x="-44" y="-18" width="88" height="34" rx="8" fill="#F28FA5" stroke="#5B3D32" stroke-width="3"/><text y="8" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="24" fill="#fff">Bond ${P.bond}</text></g>` : ''}</g>`;
+  const P = PLACES[k], lock = topBond() < P.bond, pn = townPlaceName(k);
+  return `<g data-area="${k}" class="fbpin${lock ? ' locked' : ''}" transform="translate(${x} ${y})"><circle r="78" fill="#FFFBF3" stroke="#5B3D32" stroke-width="5"/><g transform="translate(-44 -62)">${place(iconOr(icon, `<circle r="14" fill="#F28FA5" stroke="#5B3D32" stroke-width="2"/>`), 0, 0, 88, 88)}</g><text y="${lock ? 62 : 58}" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="${pn.length > 13 ? 26 : 30}" fill="#5B3D32">${esc(pn)}</text>${lock ? `<g transform="translate(40 -66) rotate(8)"><rect x="-44" y="-18" width="88" height="34" rx="8" fill="#F28FA5" stroke="#5B3D32" stroke-width="3"/><text y="8" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="24" fill="#fff">${esc(tt('town.bond_tag', 'Bond {bond}', { bond: P.bond }))}</text></g>` : ''}</g>`;
 }
 // UI/UX T7 (phones): the location chip floats over the top of the map, so the map can be pulled down past it and the top place names (Hilltop Meadow) come clear
 function mapTopPad() { if (!isPhone()) return 40; const st = $('#status'), pan = $('#mapPan'); if (!st || st.hidden || !st.offsetParent || !pan) return 40; return Math.max(40, Math.round(st.getBoundingClientRect().bottom - pan.getBoundingClientRect().top + 10)); }
@@ -143,9 +186,9 @@ function mapClearCtl() {
 function enterMap() {
   setChrome(true, false); hideBubble(); // a yard speech bubble must not linger over the pin
   const locked = lockedAreas(), A = mapArt(locked);
-  view.innerHTML = `<div id="mapPan" class="mappan"><div id="mapInner" style="width:${A.W}px;height:${A.H}px"><svg class="world mapsvg" viewBox="0 0 ${A.W} ${A.H}" width="${A.W}" height="${A.H}" style="background:radial-gradient(#E3D2BA 1.1px,transparent 1.6px) 0 0/22px 22px,#FFFBF3">${A.svg}</svg><div id="mapHi" hidden></div><div id="mapPin" hidden>${PIN_SVG}<span>you are here</span></div></div></div>
-    <button class="xbtn" id="mapX" aria-label="Back to ${esc(PLACES[S.place] ? PLACES[S.place].n : 'your place')}">x</button>
-    <div id="mapZoom"><button class="btn" id="mapZin" aria-label="Zoom in">+</button><span id="mapZoomLbl">100%</span><button class="btn" id="mapZout" aria-label="Zoom out">−</button></div>
+  view.innerHTML = `<div id="mapPan" class="mappan"><div id="mapInner" style="width:${A.W}px;height:${A.H}px"><svg class="world mapsvg" viewBox="0 0 ${A.W} ${A.H}" width="${A.W}" height="${A.H}" style="background:radial-gradient(#E3D2BA 1.1px,transparent 1.6px) 0 0/22px 22px,#FFFBF3">${A.svg}</svg><div id="mapHi" hidden></div><div id="mapPin" hidden>${PIN_SVG}<span>${tt('town.you_are_here', 'you are here')}</span></div></div></div>
+    <button class="xbtn" id="mapX" aria-label="${esc(tt('town.back_to', 'Back to {place}', { place: PLACES[S.place] ? townPlaceName(S.place) : tt('town.your_place', 'your place') }))}">x</button>
+    <div id="mapZoom"><button class="btn" id="mapZin" aria-label="${tt('town.zoom_in', 'Zoom in')}">+</button><span id="mapZoomLbl">100%</span><button class="btn" id="mapZout" aria-label="${tt('town.zoom_out', 'Zoom out')}">−</button></div>
     <div id="mapTip" hidden role="tooltip"></div><div id="mapGo" hidden></div><div id="status"></div><button id="devBtn">dev</button>`;
   $('#mapX').onclick = () => { SFX.click(); go('yard'); };
   const pan = $('#mapPan'), inner = $('#mapInner'), svg = $('svg.world', view);
@@ -156,7 +199,7 @@ function enterMap() {
   // area centres in map units (MAP_AREAS when the art gives them, else measured)
   const measure = () => { const s = MAPV.base * MAPV.z, ir = inner.getBoundingClientRect(); svg.querySelectorAll('[data-area]').forEach((g) => { const r = g.getBoundingClientRect(); MAPV.centers[g.getAttribute('data-area')] = [(r.left + r.width / 2 - ir.left) / s, (r.top + r.height / 2 - ir.top) / s]; }); (A.areas || []).forEach((a) => { MAPV.centers[a.id] = [a.x, a.y]; }); };
   measure(); mapCenter(S.place === 'house' ? 'yard' : S.place, false); if (isPhone()) mapClearCtl();
-  const label = (k) => k === 'shelter' ? 'Visit the shelter' : PLACES[k] ? `Go to ${PLACES[k].n}${topBond() < PLACES[k].bond ? ' (locked, Bond ' + PLACES[k].bond + ')' : ''}` : k;
+  const label = (k) => k === 'shelter' ? tt('town.visit_shelter', 'Visit the shelter') : PLACES[k] ? tt('town.go_to', '{locked, select, yes {Go to {place} (locked, Bond {bond})} other {Go to {place}}}', { locked: topBond() < PLACES[k].bond ? 'yes' : 'no', place: townPlaceName(k), bond: PLACES[k].bond }) : k;
   hotify(svg, '[data-area]', 'data-area', (k) => (isPhone() ? mapPick(k) : pickArea(k)), label);
   // drag pan, pinch + wheel zoom (pointer events: mouse and touch alike)
   const pts = new Map(); let moved = 0, pinch = null, last = null;

@@ -5,6 +5,22 @@
 (function () {
   'use strict';
 
+  /* ---------- v2.14 language service (V214.md 4.2): read-only, called at run time only, never at load ----------
+     Data (crop ids, CROPS names, seed item names) stays English: the game keys its inventory and the art on them. Everything the
+     player READS goes through L() (UI text, keys mod.garden.*) or D() (tables, keys data.<table>.<path>). */
+  var GLOB = typeof window !== 'undefined' ? window : globalThis;
+  function fmtEn(en, vars) {
+    var M = GLOB.PawI18nMsg;
+    if (M && typeof M.format === 'function') return M.format(en, vars || {}, 'en');
+    return vars ? String(en).replace(/\{(\w+)\}/g, function (m, k) { return vars[k] != null ? String(vars[k]) : m; }) : en;
+  }
+  function L(key, en, vars) { var P = GLOB.PawI18n; return P && typeof P.tt === 'function' ? P.tt(key, en, vars) : fmtEn(en, vars); }
+  function D(path, en, vars) { return L('data.' + path, en, vars); }
+  function isEn() { var P = GLOB.PawI18n; try { return !(P && typeof P.tlang === 'function') || P.tlang() === 'en'; } catch (e) { return true; } }
+  function idOf(s) { return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, ''); }
+  // a comma list with no "and", joined by a message so a language can use its own comma
+  function commaJoin(a) { return a.reduce(function (x, y) { return L('mod.garden.comma_join', '{a}, {b}', { a: x, b: y }); }); }
+
   /* ======================================================================
      DATA (V13.md "Shared data": Crops; v1.7.1: real hours instead of days)
      hours  = grow time in real hours (in season, cloudy, watered)
@@ -26,7 +42,7 @@
     poodle: '{n} checks each leaf like a judge at a show. Only the best get through.', collie: '{n} keeps the squirrels in one corner of the garden. They look embarrassed.',
     samoyed: '{n} keeps the plants company in the snow. The snow is the fun part.', frenchie: '{n} naps next to the dry plants. The snoring reminds you to water them.',
     akita: '{n} sits by the garden gate and watches over every row. Nothing gets past.', spitz: '{n} trots between the rows and sparkles. The plants feel very looked after.', pom: '{n} marches along the rows giving orders in a tiny voice. The carrots seem to listen.',
-    afghan: '{n} drapes across the sunniest bed and lets the plants admire {him}.', dane: '{n} watches the garden from way up high. The tomatoes feel tiny and safe.', mastiff: '{n} flops by the beans and sighs. The beans feel guarded and a little damp.', gsd: '{n} patrols the rows twice a day. Nothing gets past, not even weeds.',
+    afghan: '{sex, select, female {{n} drapes across the sunniest bed and lets the plants admire her.} other {{n} drapes across the sunniest bed and lets the plants admire him.}}', dane: '{n} watches the garden from way up high. The tomatoes feel tiny and safe.', mastiff: '{n} flops by the beans and sighs. The beans feel guarded and a little damp.', gsd: '{n} patrols the rows twice a day. Nothing gets past, not even weeds.',
     // v2.12 Fourteen New Friends
     dobie: '{n} walks the fence line twice, then sits among the carrots. The carrots feel very secure.',
     corso: '{n} lies across the garden gate like a calm, furry wall. Nothing gets past. Nothing wants to.',
@@ -47,9 +63,26 @@
   var STAR_ODDS = [[0.70, 0.25, 0.05], [0.55, 0.35, 0.10], [0.40, 0.40, 0.20], [0.25, 0.45, 0.30]];
   var SELL_MULT = [1, 1.5, 2];
   var WEATHERS = { sunny: 1, cloudy: 1, rain: 1, snow: 1 };
-  var PLURAL = { carrot: 'carrots', peas: 'peas', spinach: 'spinach', blueberries: 'blueberries', 'sweet-potato': 'sweet potatoes', pumpkin: 'pumpkin' };
-  var ONE = { carrot: 'carrot', peas: 'pea pod', spinach: 'spinach leaf', blueberries: 'blueberry', 'sweet-potato': 'sweet potato', pumpkin: 'pumpkin' };
+  // the crop as the dogs talk about it: plural ("the carrots"), one piece ("one carrot"); looked up when asked for
+  var PLURAL_MSG = {
+    carrot: function () { return L('mod.garden.plural_carrot', 'carrots'); }, peas: function () { return L('mod.garden.plural_peas', 'peas'); },
+    spinach: function () { return L('mod.garden.plural_spinach', 'spinach'); }, blueberries: function () { return L('mod.garden.plural_blueberries', 'blueberries'); },
+    'sweet-potato': function () { return L('mod.garden.plural_sweet_potato', 'sweet potatoes'); }, pumpkin: function () { return L('mod.garden.plural_pumpkin', 'pumpkin'); }
+  };
+  var ONE_MSG = {
+    carrot: function () { return L('mod.garden.one_carrot', 'carrot'); }, peas: function () { return L('mod.garden.one_peas', 'pea pod'); },
+    spinach: function () { return L('mod.garden.one_spinach', 'spinach leaf'); }, blueberries: function () { return L('mod.garden.one_blueberries', 'blueberry'); },
+    'sweet-potato': function () { return L('mod.garden.one_sweet_potato', 'sweet potato'); }, pumpkin: function () { return L('mod.garden.one_pumpkin', 'pumpkin'); }
+  };
   var IS_ONE = { spinach: 1, pumpkin: 1 };
+  function plural(id) { return PLURAL_MSG[id] ? PLURAL_MSG[id]() : L('mod.garden.veggies', 'veggies'); }
+  function one(id) { return ONE_MSG[id] ? ONE_MSG[id]() : L('mod.garden.veggie', 'veggie'); }
+  // display names (the English name / seedItem / item stay the data: art and inventory use them)
+  function cName(c) { return D('crops.' + idOf(c.id) + '.name', c.name); }
+  function cSeed(c) { return D('crops.' + idOf(c.id) + '.seeditem', c.seedItem); }
+  function seedOne(c) { return isEn() ? c.seedItem.replace(/s$/, '') : cSeed(c); } // "Pea Seed" in English; other languages name the seeds once
+  function hoursText(h) { h = Math.max(1, Math.round(h)); return L('mod.garden.hours_n', '{n, plural, one {# hour} other {# hours}}', { n: h }); }
+  function seasonWord(sz) { return isEn() ? sz : D('season_name.' + sz, sz.charAt(0).toUpperCase() + sz.slice(1)); }
   var EPS = 1e-9;
   // v1.7.1 hourly clock (V171.md Part A)
   var SQUIRREL_HOURS = 3;                       // a ready crop left this long loses 1 item
@@ -312,12 +345,12 @@
     '.pg-bubble.pg-show{opacity:1;transform:none}',
     '.pg-bubble::after{content:"";position:absolute;left:34px;bottom:-9px;width:14px;height:14px;background:#FFFBF3;border-right:2.5px solid ' + INK + ';border-bottom:2.5px solid ' + INK + ';transform:rotate(40deg) skewX(12deg)}',
     /* header */
-    '.pg-hud{position:absolute;left:14px;right:14px;top:10px;height:64px;display:flex;align-items:center;gap:12px;padding:0 10px 0 10px;' + PANEL + ';border-radius:16px 11px 18px 10px/11px 17px 10px 15px}',
+    '.pg-hud{position:absolute;left:14px;right:14px;top:10px;min-height:64px;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:2px 10px;' + PANEL + ';border-radius:16px 11px 18px 10px/11px 17px 10px 15px}',
     '.pg-hud::before{content:"";position:absolute;left:52px;top:-10px;width:92px;height:20px;background:repeating-linear-gradient(45deg,rgba(140,192,154,.55) 0 6px,rgba(200,233,207,.8) 6px 12px);transform:rotate(-4deg);pointer-events:none}',
     '.pg-ico{width:50px;height:50px;flex:none;transform:rotate(-6deg)}',
     '.pg-titles{flex:1;min-width:0;line-height:1}',
     '.pg-title{font-family:"Caveat",cursive;font-weight:700;font-size:33px;white-space:nowrap}',
-    '.pg-hint{font-size:18px;color:#8A7468;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.pg-hint{font-size:18px;color:#8A7468;margin-top:1px;line-height:1.1;overflow-wrap:anywhere}', /* v2.14: the hint wraps and the header grows (--pg-hudb moves the chips and the card down with it) */
     '.pg-tool,.pg-btn{font-family:"Caveat",cursive;font-weight:700;color:' + INK + ';border:2.5px solid ' + INK + ';border-radius:14px 9px 15px 8px/9px 14px 8px 13px;cursor:pointer;box-shadow:2px 3px 0 rgba(91,61,50,.25);white-space:nowrap;line-height:1.1;transition:transform .1s}',
     '.pg-tool{display:flex;align-items:center;gap:6px;height:48px;padding:0 13px 2px 7px;font-size:25px;background:#FFF4DF}',
     '.pg-tool i{display:block;width:36px;height:36px;flex:none}',
@@ -331,14 +364,15 @@
     '.pg-btn.pg-pink{background:#F9D0D9}.pg-btn.pg-yel{background:#FFE3A1}.pg-btn.pg-blue{background:#D7E7F8}.pg-btn.pg-sm{font-size:21px;padding:0 10px 2px}',
     '.pg-btn[disabled]{opacity:.45;cursor:default;transform:none}',
     /* chips (left column) */
-    '.pg-chips{position:absolute;left:14px;top:86px;display:flex;flex-direction:column;align-items:flex-start;gap:7px;pointer-events:none}',
+    '.pg-chips{position:absolute;left:14px;top:max(86px,calc(var(--pg-hudb,0px) + 12px));display:flex;flex-direction:column;align-items:flex-start;gap:7px;pointer-events:none}',
     '.pg-chip{display:flex;align-items:center;gap:6px;padding:2px 11px 3px 5px;font-size:17px;line-height:1.1;' + PANEL + ';max-width:330px}',
+    ':is(html:not(:lang(en)),html:lang(en-XA)) .pg-root:not(.pg-portrait) .pg-chip{max-width:252px}', /* v2.14: a long chip wraps instead of running over the first plot */
     '.pg-chip i{display:block;width:30px;height:30px;flex:none}',
-    '.pg-chip b{font-family:"Caveat",cursive;font-size:22px;font-weight:700;margin-right:3px}',
+    '.pg-chip b{font-family:"Caveat",cursive;font-size:22px;font-weight:700;margin-right:3px;flex:none;white-space:nowrap}',
     '.pg-chip.pg-buddy{background:#FDF0F3}',
     '.pg-head{width:38px;height:38px;flex:none;margin:-2px 0}',
     /* info card */
-    '.pg-info{position:absolute;right:14px;top:86px;width:214px;padding:8px 12px 10px;' + PANEL + ';transform:rotate(.8deg);font-size:16.5px;line-height:1.2}',
+    '.pg-info{position:absolute;right:14px;top:max(86px,calc(var(--pg-hudb,0px) + 12px));width:214px;padding:8px 12px 10px;' + PANEL + ';transform:rotate(.8deg);font-size:16.5px;line-height:1.2}',
     '.pg-info::before{content:"";position:absolute;left:70px;top:-10px;width:70px;height:18px;background:repeating-linear-gradient(45deg,rgba(242,143,165,.5) 0 6px,rgba(249,208,217,.75) 6px 12px);transform:rotate(3deg)}',
     '.pg-info h3{margin:0;font-family:"Caveat",cursive;font-weight:700;font-size:26px;line-height:1}',
     '.pg-info .pg-sub{color:#8A7468;margin:1px 0 4px}',
@@ -349,7 +383,7 @@
     '.pg-q span.pg-ok{color:' + INK + '}',
     '.pg-acts{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap}',
     /* seed pouch */
-    '.pg-pouch{position:absolute;left:300px;top:84px;width:640px;padding:10px 14px 12px;' + PANEL + ';transform:rotate(-.5deg);animation:pg-drop .22s ease-out;z-index:5}',
+    '.pg-pouch{position:absolute;left:300px;top:max(84px,calc(var(--pg-hudb,0px) + 10px));width:640px;padding:10px 14px 12px;' + PANEL + ';transform:rotate(-.5deg);animation:pg-drop .22s ease-out;z-index:5}',
     '.pg-pouch::before{content:"";position:absolute;left:46%;top:-11px;width:96px;height:20px;background:repeating-linear-gradient(45deg,rgba(242,199,68,.5) 0 6px,rgba(255,227,161,.8) 6px 12px);transform:rotate(-3deg)}',
     '@keyframes pg-drop{from{opacity:0;transform:translateY(-12px) rotate(-.5deg)}}',
     '.pg-pouch h3{margin:0 0 6px;font-family:"Caveat",cursive;font-weight:700;font-size:28px;line-height:1;display:flex;justify-content:space-between;align-items:center}',
@@ -390,6 +424,9 @@
     '.pg-portrait{overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch}',
     '.pg-portrait .pg-stage,.pg-portrait .pg-scene,.pg-portrait .pg-fx,.pg-portrait .pg-anim,.pg-portrait .pg-ui{width:420px;height:1000px}',
     '.pg-portrait .pg-scene>svg{width:420px;height:1000px}',
+    /* v2.14 review: a header that wraps to more rows (th, ja at 360 px) pushes the garden down by --pg-dy (hudFit) instead of covering the first plots */
+    '.pg-portrait .pg-stage,.pg-portrait .pg-ui{height:calc(1000px + var(--pg-dy,0px))}',
+    '.pg-portrait .pg-scene,.pg-portrait .pg-plots,.pg-portrait .pg-fx,.pg-portrait .pg-anim{transform:translateY(var(--pg-dy,0px))}',
     '.pg-portrait .pg-plots::before{content:"";position:absolute;left:8px;top:140px;width:404px;height:312px;background:rgba(150,108,76,.93);border:3px solid ' + INK + ';border-radius:18px 12px 20px 14px}',
     '.pg-portrait .pg-art,.pg-portrait .pg-soil,.pg-portrait .pg-crop{height:100px}',
     '.pg-portrait .pg-hud{left:6px;right:6px;top:calc(8px + var(--pg-sy,0px));z-index:7;height:auto;flex-wrap:wrap;gap:6px 4px;padding:6px 6px 8px}',
@@ -406,14 +443,14 @@
     '.pg-portrait .pg-pouch .pg-x{width:52px;height:52px;min-width:52px;min-height:52px}',
     '.pg-portrait .pg-tool i{width:24px;height:24px}',
     '.pg-portrait .pg-btn{min-height:54px}',
-    '.pg-portrait .pg-chips{left:128px;right:8px;top:700px;flex-direction:column;flex-wrap:nowrap;gap:5px}',
+    '.pg-portrait .pg-chips{left:128px;right:8px;top:calc(700px + var(--pg-dy,0px));flex-direction:column;flex-wrap:nowrap;gap:5px}',
     '.pg-portrait .pg-chip{font-size:17px;max-width:280px}',
-    '.pg-portrait .pg-info{left:8px;right:8px;top:464px;width:auto}',
-    '.pg-portrait .pg-dogw{left:4px;top:700px;width:118px;height:98px}',
+    '.pg-portrait .pg-info{left:8px;right:8px;top:calc(464px + var(--pg-dy,0px));width:auto}',
+    '.pg-portrait .pg-dogw{left:4px;top:calc(700px + var(--pg-dy,0px));width:118px;height:98px}',
     '.pg-portrait .pg-bubble{left:124px;bottom:auto;top:0;max-width:270px}',
     '.pg-portrait .pg-drops{left:36px;right:auto;top:2px;bottom:auto;transform:none}',
     '.pg-portrait .pg-tag{top:56px;left:50%;transform:translateX(-50%) rotate(-2deg)}',
-    '.pg-portrait .pg-pouch{left:8px;right:8px;top:calc(184px + var(--pg-sy,0px));width:auto;max-height:calc(var(--pg-vh,700px) - 196px);overflow-y:auto}',
+    '.pg-portrait .pg-pouch{left:8px;right:8px;top:calc(max(184px,var(--pg-hudb,0px) + 10px) + var(--pg-sy,0px));width:auto;max-height:calc(var(--pg-vh,700px) - max(196px,var(--pg-hudb,0px) + 22px));overflow-y:auto}',
     '.pg-portrait .pg-pk{width:118px;font-size:17px}',
     '.pg-portrait .pg-card{min-width:0;width:380px;top:calc(var(--pg-vh,700px) / 2 + var(--pg-sy,0px))}'
   ].join('\n');
@@ -562,7 +599,8 @@
   var HARVEST_LINES = ['Fresh {p}! {n} approves.', '{n} sniffs the {p} with great respect.', 'Look at those {p}. {n} is impressed.'];
   var FLUFF_LINES = ['HEY! Captain Fluff took one {o} and left an IOU!', '{n} barks at Captain Fluff. Captain Fluff writes an IOU.'];
   var GUARD_LINES = ['{n} is on duty. Captain Fluff pretends to be just passing.', 'One look from {n} and Captain Fluff remembers an appointment.'];
-  var NO_SEEDS = "No seeds: Pip's Sprout Cart is on Market Street";
+  var noSeeds = function () { return L('mod.garden.no_seeds', "No seeds: Pip's Sprout Cart is on Market Street"); };
+  var noSeedsDot = function () { return L('mod.garden.no_seeds_dot', "No seeds: Pip's Sprout Cart is on Market Street."); };
   var WX_TXT = {
     sunny: ['Sunny', 'grows faster, dries faster'], night: ['Clear night', 'steady growing'], cloudy: ['Cloudy', 'steady growing'],
     rain: ['Rain', 'free watering'], snow: ['Snow', 'growth paused']
@@ -570,6 +608,7 @@
   var STAGE_TXT = ['seed', 'sprout', 'leafy', 'ready!'];
   var SEASON_NAME = { spring: 'Spring', summer: 'Summer', autumn: 'Autumn', winter: 'Winter' };
   function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  function stageWord(i) { return D('stage_txt.' + i, STAGE_TXT[i]); }
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
   // session memory (survives close/open within one page load)
@@ -589,11 +628,11 @@
     o = o || {};
     var closed = false, timers = [], cleanups = [];
     var ctl = { close: close, update: update };
-    var root = null;
+    var root = null, DY = 0; // DY: phone, stage px the scene and plots move down so they clear a tall header (hudFit)
     try { injectCSS(); } catch (e) { /* ignore */ }
     var st = norm(clone(o.state) || newState());
     var env = { season: o.season || 'summer', time: o.time || 'day', weather: WEATHERS[o.weather] ? o.weather : 'sunny', month: (o.month >= 1 && o.month <= 12) ? o.month : (new Date().getMonth() + 1) };
-    var dog = o.dog || {}; var dogKey = dog.key || 'mutt', dogName = dog.name || 'Your dog', outfit = dog.outfit || {}; var dogCoat = dog.coat, dogSeed = dog.seed;
+    var dog = o.dog || {}; var dogKey = dog.key || 'mutt', dogName = dog.name || L('mod.garden.your_dog', 'Your dog'), outfit = dog.outfit || {}; var dogCoat = dog.coat, dogSeed = dog.seed;
     var buddy = o.buddy !== undefined ? o.buddy : (BUDDY[dogKey] || null);
     var seeds = Object.assign({}, o.seeds || {});
     var sel = -1, tool = null, armed = null, dug = {}, pouchFor = -1, modal = null, pendingFluff = {}, busy = 0;
@@ -602,24 +641,34 @@
     function call(fn) { var f = o[fn]; if (typeof f !== 'function') return undefined; try { return f.apply(null, [].slice.call(arguments, 1)); } catch (e) { if (typeof console !== 'undefined') console.warn('PawGarden callback ' + fn + ' failed', e); return undefined; } }
     function sfx(n) { call('sfx', n); }
     function later(fn, ms) { var t = setTimeout(function () { timers.splice(timers.indexOf(t), 1); if (!closed) try { fn(); } catch (e) { if (typeof console !== 'undefined') console.warn('PawGarden', e); } }, ms); timers.push(t); return t; }
-    function fill(s, c) { return s.replace(/\{n\}/g, dogName).replace(/\{p\}/g, PLURAL[c] || 'veggies').replace(/\{o\}/g, ONE[c] || 'veggie'); }
-    function pick(a) { return a[Math.floor(R() * a.length)]; }
+    // a line from one of the tables above, in the current language (data.<table>.<index>); {n} the dog, {p} / {o} the crop, sex for pronouns
+    function lineVars(c) { return { n: dogName, p: plural(c), o: one(c), sex: dog.sex === 'female' ? 'female' : 'male' }; }
+    function lineOf(arr, table, c) { var i = Math.floor(R() * arr.length); return D(table + '.' + i, arr[i], lineVars(c)); }
+    function firstLine() {
+      if (buddy && buddy === BUDDY[dogKey] && BREED_LINE[dogKey]) return D('breed_line.' + dogKey, BREED_LINE[dogKey], lineVars(null));
+      if (PERK_LINE[buddy]) return D('perk_line.' + buddy, PERK_LINE[buddy], lineVars(null));
+      return L('mod.garden.all_yours', 'The veggie patch is all yours, {n}.', { n: dogName });
+    }
+    // "The carrots are thinking about it" / "The pumpkin is ...": a whole sentence per number (two messages)
+    function thinking(c) { return IS_ONE[c] ? L('mod.garden.thinking_one', 'Not yet. The {p} is thinking about it.', { p: plural(c) }) : L('mod.garden.thinking_many', 'Not yet. The {p} are thinking about it.', { p: plural(c) }); }
+    function nothingReady(c) { return IS_ONE[c] ? L('mod.garden.nothing_ready_one', 'Nothing is ready yet. The {p} is thinking about it.', { p: plural(c) }) : L('mod.garden.nothing_ready_many', 'Nothing is ready yet. The {p} are thinking about it.', { p: plural(c) }); }
+    function nowReady(c) { return IS_ONE[c] ? L('mod.garden.now_ready_one', 'The {p} is ready! {n} does a little dance.', { p: plural(c), n: dogName }) : L('mod.garden.now_ready_many', 'The {p} are ready! {n} does a little dance.', { p: plural(c), n: dogName }); }
     function q(sel2) { return root.querySelector(sel2); }
 
     try {
-      PORT = (el.clientHeight || 620) > (el.clientWidth || 1240) * 1.1; ZONES = PORT ? ZONES_P : ZONES_L; SW = PORT ? 420 : 1240; SH = PORT ? 1000 : 620;
+      PORT = (el.clientHeight || 620) > (el.clientWidth || 1240) * 1.1 || document.documentElement.getAttribute('data-layout') === 'phone' /* v2.14: the phone layout always gets the phone stage */; ZONES = PORT ? ZONES_P : ZONES_L; SW = PORT ? 420 : 1240; SH = PORT ? 1000 : 620;
       root = document.createElement('div'); root.className = 'pg-root' + (PORT ? ' pg-portrait' : ''); root.tabIndex = -1;
       root.innerHTML =
         '<div class="pg-stage">' +
         '<div class="pg-scene"></div><div class="pg-plots"></div>' +
-        '<div class="pg-dogw" title="Pet ' + esc(dogName) + '"><div class="pg-dog"></div><div class="pg-bubble"></div></div>' +
+        '<div class="pg-dogw" title="' + esc(L('mod.garden.pet_dog', 'Pet {n}', { n: dogName })) + '"><div class="pg-dog"></div><div class="pg-bubble"></div></div>' +
         '<div class="pg-fx"></div><div class="pg-anim"></div>' +
         '<div class="pg-ui">' +
-        '<div class="pg-hud"><div class="pg-ico"></div><div class="pg-titles"><div class="pg-title">Veggie Patch</div><div class="pg-hint"></div></div>' +
-        '<button type="button" class="pg-tool" data-t="seeds"><i></i>Seeds<small></small></button>' +
-        '<button type="button" class="pg-tool" data-t="water"><i></i>Watering Can</button>' +
-        '<button type="button" class="pg-tool" data-t="basket"><i></i>Basket<small></small></button>' +
-        '<button type="button" class="pg-btn pg-pink pg-done">Done</button></div>' +
+        '<div class="pg-hud"><div class="pg-ico"></div><div class="pg-titles"><div class="pg-title">' + esc(L('mod.garden.title', 'Veggie Patch')) + '</div><div class="pg-hint"></div></div>' +
+        '<button type="button" class="pg-tool" data-t="seeds"><i></i>' + esc(L('mod.garden.tool_seeds', 'Seeds')) + '<small></small></button>' +
+        '<button type="button" class="pg-tool" data-t="water"><i></i>' + esc(L('mod.garden.tool_water', 'Watering Can')) + '</button>' +
+        '<button type="button" class="pg-tool" data-t="basket"><i></i>' + esc(L('mod.garden.tool_basket', 'Basket')) + '<small></small></button>' +
+        '<button type="button" class="pg-btn pg-pink pg-done">' + esc(L('mod.garden.done', 'Done')) + '</button></div>' +
         '<div class="pg-chips"></div><div class="pg-info"></div>' +
         '</div></div>';
       el.appendChild(root);
@@ -648,6 +697,7 @@
       var pin = function () { if (closed || !PORT) return; var s2 = (el.clientWidth || SW) / SW; root.style.setProperty('--pg-sy', (root.scrollTop / s2).toFixed(1) + 'px'); root.style.setProperty('--pg-vh', ((el.clientHeight || 700) / s2).toFixed(1) + 'px'); };
       if (PORT) { root.addEventListener('scroll', pin, { passive: true }); root.addEventListener('scroll', function () { if (bubbleOn) bubFit(); }, { passive: true }); pin(); }
       fit();
+      try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (!closed) { DY = -1; hudFit(); } }); } catch (e) { /* ignore */ }
       if (typeof ResizeObserver === 'function') { var ro = new ResizeObserver(fit); ro.observe(el); cleanups.push(function () { ro.disconnect(); }); }
       else { window.addEventListener('resize', fit); cleanups.push(function () { window.removeEventListener('resize', fit); }); }
 
@@ -665,11 +715,11 @@
       if (sel < 0) sel = 0;
 
       renderScene(); renderChips(); renderAll(); renderDog();
-      later(function () { say(fill((buddy && buddy === BUDDY[dogKey] && BREED_LINE[dogKey]) || PERK_LINE[buddy] || 'The veggie patch is all yours, {n}.', null), 3400); }, 450);
+      later(function () { say(firstLine(), 3400); }, 450);
       // Captain Fluff left IOUs while we were away
       st.plots.forEach(function (p, i) { if (p.took > 0 && p.crop && !SESSION.fluffSeen[fluffKey(p, i)]) queueFluff(i); });
       if (!busy) maybeGuardBeat(1400);
-      var chat = setInterval(function () { if (!closed && !modal && !busy && !tempPose) say(fill(pick(JOKES), null), 3200); }, 17000);
+      var chat = setInterval(function () { if (!closed && !modal && !busy && !tempPose) say(lineOf(JOKES, 'jokes', null), 3200); }, 17000);
       cleanups.push(function () { clearInterval(chat); });
       try { root.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
     } catch (err) {
@@ -677,7 +727,7 @@
       try {
         if (!root) { root = document.createElement('div'); el.appendChild(root); }
         root.className = 'pg-root';
-        root.innerHTML = '<div class="pg-card"><h3>The garden is having a nap</h3><p>Try again later.</p><div class="pg-row"><button type="button" class="pg-btn pg-pink">Close</button></div></div>';
+        root.innerHTML = '<div class="pg-card"><h3>' + esc(L('mod.garden.nap_title', 'The garden is having a nap')) + '</h3><p>' + esc(L('mod.garden.nap_body', 'Try again later.')) + '</p><div class="pg-row"><button type="button" class="pg-btn pg-pink">' + esc(L('mod.garden.close', 'Close')) + '</button></div></div>';
         root.querySelector('button').onclick = function () { call('onClose'); };
       } catch (e2) { /* nothing more to do */ }
     }
@@ -722,7 +772,17 @@
       var bot = dw.getBoundingClientRect().top + (b.offsetTop + b.offsetHeight) * s; // layout numbers: the bubble's pop transform is not counted
       if (bot > vb) b.style.top = Math.round(b.offsetTop - (bot - vb) / s) + 'px';
     }
-    function hint(t) { var h = q('.pg-hint'); if (h) h.textContent = t; }
+    // v2.14: the chips and the card start under a header that grew (desktop). Phone: the pinned header wraps to more rows in some languages, so the
+    // scene, plots, card, chips and dog move down by --pg-dy (stage px) until the first plots clear it; the stage grows with it (only grows while the
+    // garden is open, so the plots don't jump as hints change)
+    function hudFit() {
+      if (closed) return; var hd = q('.pg-hud'); if (!hd) return;
+      if (!PORT) { root.style.setProperty('--pg-hudb', (hd.offsetTop + hd.offsetHeight) + 'px'); return; }
+      var hb = 8 + hd.offsetHeight; root.style.setProperty('--pg-hudb', hb + 'px');
+      var dy = Math.max(0, Math.ceil(hb + 6 - ZONES_P[0].y));
+      if (dy > DY) { DY = dy; root.style.setProperty('--pg-dy', DY + 'px'); pLayout(); }
+    }
+    function hint(t) { var h = q('.pg-hint'); if (h) { h.textContent = t; hudFit(); } }
     function float(x, y, text, cls) {
       var f = document.createElement('div'); f.className = 'pg-float' + (cls ? ' ' + cls : ''); f.textContent = text; f.style.left = x + 'px'; f.style.top = y + 'px';
       anim.appendChild(f); later(function () { f.remove(); }, 1600);
@@ -738,19 +798,19 @@
     }
     function wxKey() { return env.weather === 'sunny' && env.time === 'night' ? 'night' : env.weather; }
     function renderChips() {
-      var wk = wxKey(), wt = WX_TXT[wk].slice();
-      if (wk === 'snow' && buddy === 'snow') wt[1] = 'half speed (thanks, ' + dogName + ')';
-      else if (wk === 'snow') wt[1] = 'paused (spinach still grows)';
+      var wk = wxKey(), wt = [D('wx_txt.' + wk + '.0', WX_TXT[wk][0]), D('wx_txt.' + wk + '.1', WX_TXT[wk][1])];
+      if (wk === 'snow' && buddy === 'snow') wt[1] = L('mod.garden.wx_snow_buddy', 'half speed (thanks, {n})', { n: dogName });
+      else if (wk === 'snow') wt[1] = L('mod.garden.wx_snow_paused', 'paused (spinach still grows)');
       var wIcon = wk === 'night' ? 'w-night' : wk === 'sunny' ? (env.time === 'dawn' ? 'w-dawn' : env.time === 'dusk' ? 'w-dusk' : 'w-sunny') : 'w-' + wk;
       var sz = seasonOf(env.month);
       var head = art('dogHead', dogKey, { coat: dogCoat, seed: dogSeed }, fbHead);
       q('.pg-chips').innerHTML =
-        '<div class="pg-chip"><i>' + art('icon', wIcon, null, function () { return fbIcon('w'); }) + '</i><b>' + wt[0] + '</b>' + wt[1] + '</div>' +
-        '<div class="pg-chip"><i>' + art('icon', 'season-' + sz, null, function () { return fbIcon('s'); }) + '</i><b>' + SEASON_NAME[sz] + '</b>' + inSeasonList(sz) + '</div>' +
-        (buddy && PERK[buddy] ? '<div class="pg-chip pg-buddy"><span class="pg-head">' + head + '</span><b>' + esc(dogName) + '</b>' + PERK[buddy] + '</div>' : '');
+        '<div class="pg-chip"><i>' + art('icon', wIcon, null, function () { return fbIcon('w'); }) + '</i><b>' + esc(wt[0]) + '</b>' + esc(wt[1]) + '</div>' +
+        '<div class="pg-chip"><i>' + art('icon', 'season-' + sz, null, function () { return fbIcon('s'); }) + '</i><b>' + esc(D('season_name.' + sz, SEASON_NAME[sz])) + '</b>' + esc(inSeasonList(sz)) + '</div>' +
+        (buddy && PERK[buddy] ? '<div class="pg-chip pg-buddy"><span class="pg-head">' + head + '</span><b>' + esc(dogName) + '</b>' + esc(D('perk.' + buddy, PERK[buddy])) + '</div>' : '');
       pLayout();
     }
-    function inSeasonList(sz) { var n = CROPS.filter(function (c) { return c.seasons.indexOf(sz) >= 0; }).map(function (c) { return c.name.toLowerCase(); }); return n.length ? n.join(', ') : ''; }
+    function inSeasonList(sz) { var n = CROPS.filter(function (c) { return c.seasons.indexOf(sz) >= 0; }).map(function (c) { return isEn() ? c.name.toLowerCase() : cName(c); }); return n.length ? commaJoin(n) : ''; }
     function renderPlot(i, opts) {
       var p = st.plots[i], e = plotEl(i), c = BY_ID[p.crop], sg = stage(p), dry = p.water === 0 && sg < 3 && !!c;
       e.classList.toggle('pg-sel', i === sel);
@@ -767,15 +827,16 @@
       // extras: tag, sparkles, hole, IOU
       var ex = '';
       if (c && sg === 3) ex += '<span class="pg-spark" style="left:18%;top:-6%">&#10022;</span><span class="pg-spark" style="left:76%;top:2%;animation-delay:.5s">&#10022;</span><span class="pg-spark" style="left:52%;top:-20%;animation-delay:1s;font-size:15px">&#10022;</span>';
-      if (c && sg === 3) ex += '<div class="pg-tag pg-ready">' + c.name + ' ready!</div>';
-      else if (dry) ex += '<div class="pg-tag pg-thirsty">thirsty</div>';
+      if (c && sg === 3) ex += '<div class="pg-tag pg-ready">' + esc(L('mod.garden.tag_ready', '{crop} ready!', { crop: cName(c) })) + '</div>';
+      else if (dry) ex += '<div class="pg-tag pg-thirsty">' + esc(L('mod.garden.tag_thirsty', 'thirsty')) + '</div>';
       if (!p.crop && dug[i]) ex += '<div class="pg-hole"></div>';
       if (c && p.took > 0 && !pendingFluff[i]) ex += '<div class="pg-iou">' + art('prop', 'iou', null, fbIou) + '</div>';
       var xe = e.querySelector('.pg-extra'); if (xe.dataset.k !== ex) { xe.dataset.k = ex; xe.innerHTML = ex; }
       var dk = 'd' + p.water;
       var de = e.querySelector('.pg-drops');
       if (de.dataset.k !== dk) { de.dataset.k = dk; var dh = ''; for (var k = 0; k < 3; k++) dh += '<span class="pg-drop">' + (k < p.water ? art('icon', 'drop', null, function () { return dropSvg(true); }) : dropSvg(false)) + '</span>'; de.innerHTML = dh; }
-      e.setAttribute('aria-label', 'Plot ' + (i + 1) + ': ' + (c ? c.name + ', ' + STAGE_TXT[sg] : 'empty') + ', water ' + p.water + ' of 3');
+      e.setAttribute('aria-label', c ? L('mod.garden.plot_aria_crop', 'Plot {n}: {crop}, {stage}, water {w} of 3', { n: i + 1, crop: cName(c), stage: stageWord(sg), w: p.water })
+        : L('mod.garden.plot_aria_empty', 'Plot {n}: empty, water {w} of 3', { n: i + 1, w: p.water }));
     }
     function renderAll(opts) { for (var i = 0; i < 6; i++) renderPlot(i, opts); renderTools(); renderInfo(); renderHint(); }
     function totalSeeds() { var n = 0; CROPS.forEach(function (c) { n += Math.max(0, seeds[c.id] | 0); }); return n; }
@@ -783,25 +844,25 @@
     function renderTools() {
       root.querySelectorAll('.pg-tool').forEach(function (b) { b.classList.toggle('pg-on', tool === b.dataset.t); });
       q('[data-t="seeds"] small').textContent = '×' + totalSeeds();
-      q('[data-t="basket"] small').textContent = buddy === 'fetch' ? 'all!' : (readyCount() ? readyCount() + ' ready' : '');
+      q('[data-t="basket"] small').textContent = buddy === 'fetch' ? L('mod.garden.basket_all', 'all!') : (readyCount() ? L('mod.garden.basket_ready', '{n} ready', { n: readyCount() }) : '');
     }
     function renderHint() {
       var t;
-      if (tool === 'seeds' && armed) t = BY_ID[armed].seedItem + ' in paw: tap an empty plot' + (buddy === 'dig' || PORT ? '.' : ', dig, then tap again to drop the seed.');
-      else if (tool === 'water') t = 'Watering Can: tap a plot to fill it to 3 drops.' + (PORT ? '' : ' Esc puts it down.');
-      else if (tool === 'basket') t = 'Basket: tap a sparkly plot to pick it.';
-      else t = PORT ? 'Tap a plot, then pick Seeds, Watering Can or Basket.' : 'Pick a plot (1-6), then Seeds (P), Watering Can (W) or Basket (H).';
+      if (tool === 'seeds' && armed) t = buddy === 'dig' || PORT ? L('mod.garden.hint_seed_armed', '{seed} in paw: tap an empty plot.', { seed: cSeed(BY_ID[armed]) }) : L('mod.garden.hint_seed_armed_dig', '{seed} in paw: tap an empty plot, dig, then tap again to drop the seed.', { seed: cSeed(BY_ID[armed]) });
+      else if (tool === 'water') t = PORT ? L('mod.garden.hint_water', 'Watering Can: tap a plot to fill it to 3 drops.') : L('mod.garden.hint_water_esc', 'Watering Can: tap a plot to fill it to 3 drops. Esc puts it down.');
+      else if (tool === 'basket') t = L('mod.garden.hint_basket', 'Basket: tap a sparkly plot to pick it.');
+      else t = PORT ? L('mod.garden.hint_pick_phone', 'Tap a plot, then pick Seeds, Watering Can or Basket.') : L('mod.garden.hint_pick', 'Pick a plot (1-6), then Seeds (P), Watering Can (W) or Basket (H).');
       hint(t);
     }
-    function hoursText(h) { h = Math.max(1, Math.round(h)); return h + ' hour' + (h === 1 ? '' : 's'); }
     function etaText(p, c) {
       var h = hoursLeft(p, env.month);
-      return h < 0.75 ? 'Ready in under an hour' : 'Ready in about ' + hoursText(h);
+      return h < 0.75 ? L('mod.garden.eta_under', 'Ready in under an hour.') : L('mod.garden.eta_about', 'Ready in about {hours}.', { hours: hoursText(h) });
     }
-    function waterText(p) {
+    // "Water 2 / 3", with the hours the water lasts when it does
+    function waterLine(p, withLeft) {
       var night = env.time === 'night', h = waterHours(p, env.weather, night);
-      if (!p.water || h === Infinity) return '';
-      return ' (about ' + hoursText(h) + ' left)';
+      if (!withLeft || !p.water || h === Infinity) return L('mod.garden.water_line', 'Water {w} / 3', { w: p.water });
+      return L('mod.garden.water_line_left', 'Water {w} / 3 (about {hours} left)', { w: p.water, hours: hoursText(h) });
     }
     function kb(k) { return PORT ? '' : ' (' + k + ')'; } // keyboard hints only off phones
     function pLayout() { // v2.3 phone: the plot card, the weather chips and the dog stack in one column, whatever height the card has
@@ -811,19 +872,25 @@
     function renderInfo() {
       var box = q('.pg-info'), p = st.plots[sel], c = p && BY_ID[p.crop];
       if (!p) { box.innerHTML = ''; return; }
-      var h = '<h3>Plot ' + (sel + 1) + (c ? ': ' + c.name : '') + '</h3>';
+      var h = '<h3>' + esc(c ? L('mod.garden.plot_title_crop', 'Plot {n}: {crop}', { n: sel + 1, crop: cName(c) }) : L('mod.garden.plot_title', 'Plot {n}', { n: sel + 1 })) + '</h3>';
+      var bPlant = esc(L('mod.garden.btn_plant', 'Plant')) + kb('P'), bWater = esc(L('mod.garden.btn_water', 'Water')) + kb('W'), bHarvest = esc(L('mod.garden.btn_harvest', 'Harvest')) + kb('H');
       if (!c) {
-        h += '<div class="pg-sub">' + (p.crop ? 'Something mysterious grows here.' : 'Empty, tilled and waiting.') + '</div>';
-        h += '<div>Water ' + p.water + ' / 3</div>';
-        h += '<div class="pg-acts">' + (p.crop ? '' : '<button type="button" class="pg-btn pg-yel pg-sm" data-a="plant">Plant' + kb('P') + '</button>') + (p.water < 3 ? '<button type="button" class="pg-btn pg-blue pg-sm" data-a="water">Water' + kb('W') + '</button>' : '') + '</div>';
+        h += '<div class="pg-sub">' + esc(p.crop ? L('mod.garden.sub_mystery', 'Something mysterious grows here.') : L('mod.garden.sub_empty', 'Empty, tilled and waiting.')) + '</div>';
+        h += '<div>' + esc(waterLine(p, false)) + '</div>';
+        h += '<div class="pg-acts">' + (p.crop ? '' : '<button type="button" class="pg-btn pg-yel pg-sm" data-a="plant">' + bPlant + '</button>') + (p.water < 3 ? '<button type="button" class="pg-btn pg-blue pg-sm" data-a="water">' + bWater + '</button>' : '') + '</div>';
       } else {
         var sg = stage(p), snowStop = env.weather === 'snow' && !c.hardy && buddy !== 'snow';
-        h += '<div class="pg-sub">' + cap(STAGE_TXT[sg]) + (p.inSeason ? '' : ' · off-season, half speed') + '</div>';
+        h += '<div class="pg-sub">' + esc(p.inSeason ? cap(stageWord(sg)) : L('mod.garden.sub_off_season', '{stage} · off-season, half speed', { stage: cap(stageWord(sg)) })) + '</div>';
         h += '<div class="pg-bar"><i style="width:' + Math.round(p.g * 100) + '%"></i></div>';
-        h += '<div>' + (sg === 3 ? (p.took ? 'Ready. Captain Fluff left an IOU.' : 'Ready to pick!') : p.water === 0 ? 'Thirsty: not growing until watered.' : snowStop ? 'Snow: resting until it melts.' : etaText(p, c) + '.') + '</div>';
-        h += '<div>Water ' + p.water + ' / 3' + (sg < 3 ? waterText(p) : '') + (c.regrow ? ' · regrows in ' + hoursText(c.regrow) + (c.picks ? ', ' + Math.max(1, c.picks - (p.harvested | 0)) + ' pick' + (c.picks - (p.harvested | 0) === 1 ? '' : 's') + ' left' : '') : '') + '</div>';
-        h += '<div class="pg-q"><span class="' + (p.dry === 0 ? 'pg-ok' : '') + '">' + (p.dry === 0 ? '&#10003;' : '&#10007;') + ' never dry</span><span class="' + (p.inSeason ? 'pg-ok' : '') + '">' + (p.inSeason ? '&#10003;' : '&#10007;') + ' in season</span><span class="' + (p.inspected ? 'pg-ok' : '') + '">' + (p.inspected ? '&#10003;' : '&#10007;') + ' inspected</span></div>';
-        h += '<div class="pg-acts">' + (sg === 3 ? '<button type="button" class="pg-btn pg-sm" data-a="harvest">Harvest' + kb('H') + '</button>' : '') + (sg < 3 && p.water < 3 ? '<button type="button" class="pg-btn pg-blue pg-sm" data-a="water">Water' + kb('W') + '</button>' : '') + '</div>';
+        h += '<div>' + esc(sg === 3 ? (p.took ? L('mod.garden.ready_iou', 'Ready. Captain Fluff left an IOU.') : L('mod.garden.ready_pick', 'Ready to pick!')) : p.water === 0 ? L('mod.garden.thirsty_line', 'Thirsty: not growing until watered.') : snowStop ? L('mod.garden.snow_rest', 'Snow: resting until it melts.') : etaText(p, c)) + '</div>';
+        var wl = waterLine(p, sg < 3);
+        if (c.regrow) {
+          var left = Math.max(1, c.picks - (p.harvested | 0));
+          wl = L('mod.garden.dot_join', '{a} · {b}', { a: wl, b: c.picks ? L('mod.garden.regrows_picks', 'regrows in {hours}, {k, plural, one {# pick} other {# picks}} left', { hours: hoursText(c.regrow), k: left }) : L('mod.garden.regrows', 'regrows in {hours}', { hours: hoursText(c.regrow) }) });
+        }
+        h += '<div>' + esc(wl) + '</div>';
+        h += '<div class="pg-q"><span class="' + (p.dry === 0 ? 'pg-ok' : '') + '">' + (p.dry === 0 ? '&#10003;' : '&#10007;') + ' ' + esc(L('mod.garden.q_never_dry', 'never dry')) + '</span><span class="' + (p.inSeason ? 'pg-ok' : '') + '">' + (p.inSeason ? '&#10003;' : '&#10007;') + ' ' + esc(L('mod.garden.q_in_season', 'in season')) + '</span><span class="' + (p.inspected ? 'pg-ok' : '') + '">' + (p.inspected ? '&#10003;' : '&#10007;') + ' ' + esc(L('mod.garden.q_inspected', 'inspected')) + '</span></div>';
+        h += '<div class="pg-acts">' + (sg === 3 ? '<button type="button" class="pg-btn pg-sm" data-a="harvest">' + bHarvest + '</button>' : '') + (sg < 3 && p.water < 3 ? '<button type="button" class="pg-btn pg-blue pg-sm" data-a="water">' + bWater + '</button>' : '') + '</div>';
       }
       box.innerHTML = h; pLayout();
       box.querySelectorAll('[data-a]').forEach(function (b) {
@@ -847,7 +914,7 @@
       if (tool === 'seeds' && armed) { if (!p.crop) return tryPlant(i, armed); }
       if (isReady(p)) return doHarvest(i);
       if (!p.crop) return openPouch(i);
-      if (p.water === 0) say('Plot ' + (i + 1) + ' looks thirsty. The Watering Can helps' + (PORT ? '.' : ' (W).'), 2600);
+      if (p.water === 0) say(PORT ? L('mod.garden.looks_thirsty', 'Plot {n} looks thirsty. The Watering Can helps.', { n: i + 1 }) : L('mod.garden.looks_thirsty_key', 'Plot {n} looks thirsty. The Watering Can helps (W).', { n: i + 1 }), 2600);
     }
     function toolClick(t) {
       if (closed || modal) return;
@@ -865,11 +932,10 @@
         if (tool === 'basket') { setTool(null); return; }
         setTool('basket');
         if (isReady(st.plots[sel])) doHarvest(sel);
-        else if (!readyCount()) say('Nothing is ready yet. The ' + pickGrowingPlural() + ' ' + (IS_ONE[pickGrowingCrop()] ? 'is' : 'are') + ' thinking about it.', 2600);
+        else if (!readyCount()) say(nothingReady(pickGrowingCrop()), 2600);
       }
     }
     function pickGrowingCrop() { var p = st.plots.filter(growing)[0]; return p ? p.crop : 'peas'; }
-    function pickGrowingPlural() { return PLURAL[pickGrowingCrop()]; }
 
     function openPouch(target) {
       closePouch();
@@ -878,14 +944,14 @@
       var owned = CROPS.filter(function (c) { return (seeds[c.id] | 0) > 0; });
       owned.sort(function (a, b) { var ia = a.seasons.indexOf(sz) >= 0 ? 0 : 1, ib = b.seasons.indexOf(sz) >= 0 ? 0 : 1; return ia - ib || CROPS.indexOf(a) - CROPS.indexOf(b); });
       var box = document.createElement('div'); box.className = 'pg-pouch';
-      var h = '<h3><span>Seed pouch' + (target >= 0 ? ' · plot ' + (target + 1) : '') + '</span><button type="button" class="pg-btn pg-pink pg-x" data-x="1" aria-label="Close the seed pouch">' + art('icon', 'close', null, function () { return '&times;'; }) + '</button></h3>';
-      if (!owned.length) h += '<div class="pg-empty">' + NO_SEEDS + '.</div>';
+      var h = '<h3><span>' + esc(target >= 0 ? L('mod.garden.pouch_plot', 'Seed pouch · plot {n}', { n: target + 1 }) : L('mod.garden.pouch', 'Seed pouch')) + '</span><button type="button" class="pg-btn pg-pink pg-x" data-x="1" aria-label="' + esc(L('mod.garden.pouch_close', 'Close the seed pouch')) + '">' + art('icon', 'close', null, function () { return '&times;'; }) + '</button></h3>';
+      if (!owned.length) h += '<div class="pg-empty">' + esc(noSeedsDot()) + '</div>';
       else {
         h += '<div class="pg-pks">';
         owned.forEach(function (c) {
           var ins = c.seasons.indexOf(sz) >= 0;
-          h += '<button type="button" class="pg-pk' + (ins ? '' : ' pg-off') + '" data-c="' + c.id + '" title="' + c.seedItem + ': ready in about ' + hoursText(c.hours) + ', seasons: ' + c.seasons.join(', ') + '">' +
-            (ins ? '<span class="pg-stamp">In season</span>' : '') + '<i>' + art('item', c.seedItem, null, function () { return fbItem(c.seedItem); }) + '</i><b>' + c.name + '</b>' + c.hours + ' hours' + (ins ? '' : '<br>half speed') + '<em>' + (seeds[c.id] | 0) + '</em></button>';
+          h += '<button type="button" class="pg-pk' + (ins ? '' : ' pg-off') + '" data-c="' + c.id + '" title="' + esc(L('mod.garden.pk_title', '{seed}: ready in about {hours}, seasons: {seasons}', { seed: cSeed(c), hours: hoursText(c.hours), seasons: commaJoin(c.seasons.map(seasonWord)) })) + '">' +
+            (ins ? '<span class="pg-stamp">' + esc(L('mod.garden.in_season', 'In season')) + '</span>' : '') + '<i>' + art('item', c.seedItem, null, function () { return fbItem(c.seedItem); }) + '</i><b>' + esc(cName(c)) + '</b>' + esc(hoursText(c.hours)) + (ins ? '' : '<br>' + esc(L('mod.garden.half_speed', 'half speed'))) + '<em>' + (seeds[c.id] | 0) + '</em></button>';
         });
         h += '</div>';
       }
@@ -898,10 +964,10 @@
           var id = b.dataset.c; sfx('click');
           armed = id; tool = 'seeds'; closePouch(); renderTools(); renderHint();
           var t = target >= 0 && !st.plots[target].crop ? target : (st.plots[sel] && !st.plots[sel].crop ? sel : firstPlot(function (p) { return !p.crop; }));
-          if (t >= 0) { select(t); tryPlant(t, id); } else say('Every plot is busy. Harvest something first.', 2400);
+          if (t >= 0) { select(t); tryPlant(t, id); } else say(L('mod.garden.all_busy', 'Every plot is busy. Harvest something first.'), 2400);
         });
       });
-      if (!owned.length) { call('say', NO_SEEDS, 3000); sfx('nope'); }
+      if (!owned.length) { call('say', noSeeds(), 3000); sfx('nope'); }
     }
     /* v1.5B: drag a seed packet onto a plot (touch or mouse); a plain tap still opens the old flow */
     function seedDrag(e, id, b) {
@@ -925,7 +991,7 @@
 
     function confirmOffSeason(c, yes) {
       modal = document.createElement('div'); modal.className = 'pg-veil';
-      modal.innerHTML = '<div class="pg-card"><h3>' + c.seedItem + '</h3><p>This grows at half speed now. Plant anyway?</p><div class="pg-row"><button type="button" class="pg-btn pg-pink" data-n="1">Not now</button><button type="button" class="pg-btn" data-y="1">Plant anyway</button></div></div>';
+      modal.innerHTML = '<div class="pg-card"><h3>' + esc(cSeed(c)) + '</h3><p>' + esc(L('mod.garden.off_season_body', 'This grows at half speed now. Plant anyway?')) + '</p><div class="pg-row"><button type="button" class="pg-btn pg-pink" data-n="1">' + esc(L('mod.garden.not_now', 'Not now')) + '</button><button type="button" class="pg-btn" data-y="1">' + esc(L('mod.garden.plant_anyway', 'Plant anyway')) + '</button></div></div>';
       q('.pg-ui').appendChild(modal);
       var done = function (ok) { if (!modal) return; modal.remove(); modal = null; sfx('click'); if (ok) { SESSION.offOK = true; yes(); } };
       modal.querySelector('[data-y]').addEventListener('click', function () { done(true); });
@@ -945,30 +1011,30 @@
     function tryPlant(i, cropId) {
       var c = BY_ID[cropId], p = st.plots[i];
       if (!c || !p) return;
-      if (p.crop) { say('Plot ' + (i + 1) + ' is busy growing. One veggie per bed.', 2200); return; }
-      if ((seeds[cropId] | 0) <= 0) { armed = null; tool = null; renderTools(); renderHint(); call('say', NO_SEEDS, 3000); say(NO_SEEDS + '.', 3000); sfx('nope'); return; }
+      if (p.crop) { say(L('mod.garden.plot_busy', 'Plot {n} is busy growing. One veggie per bed.', { n: i + 1 }), 2200); return; }
+      if ((seeds[cropId] | 0) <= 0) { armed = null; tool = null; renderTools(); renderHint(); call('say', noSeeds(), 3000); say(noSeedsDot(), 3000); sfx('nope'); return; }
       if (!inSeason(cropId, env.month) && !SESSION.offOK) { confirmOffSeason(c, function () { tryPlant(i, cropId); }); return; }
       if (buddy !== 'dig' && !dug[i] && !PORT) { // v2.3 phone: no separate dig tap, the dog digs while it plants
         dug[i] = true; renderPlot(i); dirt(i); sfx('dig'); pose('dig', 900);
-        hint('Hole dug in plot ' + (i + 1) + '. Tap it again (or P) to drop the ' + c.seedItem + '.');
+        hint(L('mod.garden.hole_dug', 'Hole dug in plot {n}. Tap it again (or P) to drop the {seed}.', { n: i + 1, seed: cSeed(c) }));
         return;
       }
       var pre = plant(st, i, cropId, { month: env.month, buddy: buddy });
       if (!pre.ok) return;
       var ok = call('onPlant', i, cropId);
-      if (ok === false) { seeds[cropId] = 0; armed = null; tool = null; renderAll(); call('say', NO_SEEDS, 3000); say(NO_SEEDS + '.', 3000); sfx('nope'); return; }
+      if (ok === false) { seeds[cropId] = 0; armed = null; tool = null; renderAll(); call('say', noSeeds(), 3000); say(noSeedsDot(), 3000); sfx('nope'); return; }
       st = pre.state; seeds[cropId] = Math.max(0, (seeds[cropId] | 0) - 1); dug[i] = false;
       if (buddy === 'dig' || PORT) dirt(i);
       sfx('plant'); pose('dig', 1100);
-      if (pre.bonusSeed) { call('onBonusSeed', cropId); seeds[cropId] = (seeds[cropId] | 0) + 1; later(function () { say(dogName + ' dug up a bonus ' + c.seedItem.replace(/s$/, '') + '!', 2800); float(zc(i).x, zc(i).y - 40, '+1 seed', 'pg-pinkt'); }, 500); }
-      else say(fill(pick(PLANT_LINES), cropId), 2200);
+      if (pre.bonusSeed) { call('onBonusSeed', cropId); seeds[cropId] = (seeds[cropId] | 0) + 1; later(function () { say(L('mod.garden.bonus_seed', '{n} dug up a bonus {seed}!', { n: dogName, seed: seedOne(c) }), 2800); float(zc(i).x, zc(i).y - 40, L('mod.garden.plus_seed', '+1 seed'), 'pg-pinkt'); }, 500); }
+      else say(lineOf(PLANT_LINES, 'plant_lines', cropId), 2200);
       if ((seeds[cropId] | 0) <= 0) { armed = null; tool = null; }
       renderAll(); changed();
     }
     function doWater(i) {
       var p = st.plots[i]; if (!p) return;
-      if (p.water >= 3) { say('Plot ' + (i + 1) + ' is already soggy. Three drops is the max.', 2200); return; }
-      if (isReady(p)) { say('That one is ready to pick, no water needed.', 2000); return; }
+      if (p.water >= 3) { say(L('mod.garden.soggy', 'Plot {n} is already soggy. Three drops is the max.', { n: i + 1 }), 2200); return; }
+      if (isReady(p)) { say(L('mod.garden.no_water_needed', 'That one is ready to pick, no water needed.'), 2000); return; }
       st = water(st, i); sfx('water');
       call('onWater', i); // v2.5: the game counts watering (missions), only when a drop really went in
       var z = ZONES[i], can = document.createElement('div'); can.className = 'pg-can';
@@ -981,14 +1047,14 @@
         anim.appendChild(d); (function (dd) { later(function () { dd.remove(); }, 1300); })(d);
       }
       later(function () { renderPlot(i); renderInfo(); }, 450);
-      if (env.weather === 'rain' && R() < .6) say('It is raining, but extra love never hurts.', 2200);
-      else say(fill(pick(WATER_LINES), p.crop), 1800);
+      if (env.weather === 'rain' && R() < .6) say(L('mod.garden.rain_love', 'It is raining, but extra love never hurts.'), 2200);
+      else say(lineOf(WATER_LINES, 'water_lines', p.crop), 1800);
       changed();
     }
     function doHarvest(i, quiet) {
       var p = st.plots[i]; if (!p) return false;
       if (!isReady(p)) {
-        if (!quiet) { var c0 = BY_ID[p.crop]; say(c0 ? 'Not yet. The ' + PLURAL[c0.id] + ' ' + (IS_ONE[c0.id] ? 'is' : 'are') + ' thinking about it.' : 'Nothing to pick there yet.', 2200); }
+        if (!quiet) { var c0 = BY_ID[p.crop]; say(c0 ? thinking(c0.id) : L('mod.garden.nothing_there', 'Nothing to pick there yet.'), 2200); }
         return false;
       }
       var cid = p.crop, r = harvest(st, i, {});
@@ -1014,7 +1080,12 @@
           later(function () { f.remove(); if (k === 0) sfx('pop'); }, 760);
         }, 180 + k * 130);
       });
-      if (!quiet) say(fill(pick(HARVEST_LINES), cid) + (r.took ? ' (Minus one for Captain Fluff.)' : '') + (r.spent ? ' That bush is all picked out. Plant a new one.' : ''), 2600);
+      if (!quiet) {
+        var hl = lineOf(HARVEST_LINES, 'harvest_lines', cid);
+        if (r.took) hl = L('mod.garden.harvest_took', '{line} (Minus one for Captain Fluff.)', { line: hl });
+        if (r.spent) hl = L('mod.garden.harvest_spent', '{line} That bush is all picked out. Plant a new one.', { line: hl });
+        say(hl, 2600);
+      }
       call('onHarvest', i, r.items, r.took);
       changed();
       renderAll({ noGrow: true });
@@ -1023,20 +1094,20 @@
     function harvestAll() {
       var n = 0, last = null;
       for (var i = 0; i < 6; i++) if (isReady(st.plots[i])) { (function (k) { later(function () { doHarvest(k, true); }, n * 260); })(i); last = st.plots[i].crop; n++; }
-      if (!n) { say('Nothing is ready yet. ' + dogName + ' holds the basket anyway.', 2400); return; }
-      later(function () { say(dogName + ' fetched the whole harvest in one go. Showing off.', 2800); }, 300);
+      if (!n) { say(L('mod.garden.nothing_ready_hold', 'Nothing is ready yet. {n} holds the basket anyway.', { n: dogName }), 2400); return; }
+      later(function () { say(L('mod.garden.fetched_all', '{n} fetched the whole harvest in one go. Showing off.', { n: dogName }), 2800); }, 300);
     }
     function basketPos() {
       try {
         var b = q('[data-t="basket"]').getBoundingClientRect(), s = stageEl.getBoundingClientRect(), k = s.width / SW || 1;
-        return { x: (b.left - s.left + b.width / 2) / k, y: (b.top - s.top + b.height / 2) / k };
+        return { x: (b.left - s.left + b.width / 2) / k, y: (b.top - s.top + b.height / 2) / k - (PORT ? DY : 0) }; // the anim layer sits --pg-dy lower on phones
       } catch (e) { return { x: 900, y: 40 }; }
     }
     function petDog() {
       if (closed || modal) return;
       sfx('bark'); pose('happy', 1500);
       var p = st.plots.filter(isReady)[0];
-      say(p ? dogName + ' thinks the ' + PLURAL[p.crop] + ' look ready. ' + dogName + ' is right.' : fill(pick(JOKES), null), 2600);
+      say(p ? L('mod.garden.pet_ready', '{n} thinks the {p} look ready. {n} is right.', { n: dogName, p: plural(p.crop) }) : lineOf(JOKES, 'jokes', null), 2600);
     }
 
     /* ---------------- Captain Fluff ---------------- */
@@ -1061,15 +1132,15 @@
       sfx('squirrel');
       var finish = function () {
         sq.remove();
-        if (!guarded) { if (p && p.crop) SESSION.fluffSeen[fluffKey(p, i)] = 1; pendingFluff[i] = false; renderPlot(i); renderInfo(); float(c.x, c.y - 30, 'IOU', 'pg-pinkt'); }
+        if (!guarded) { if (p && p.crop) SESSION.fluffSeen[fluffKey(p, i)] = 1; pendingFluff[i] = false; renderPlot(i); renderInfo(); float(c.x, c.y - 30, L('mod.garden.iou', 'IOU'), 'pg-pinkt'); }
         done();
       };
       if (typeof sq.animate !== 'function') { finish(); return; }
       var a1 = sq.animate([{ transform: 'translate(' + x0 + 'px,' + y + 'px)' }, { transform: 'translate(' + (xs + (x0 - xs) * .5) + 'px,' + (y - 30) + 'px)', offset: .5 }, { transform: 'translate(' + xs + 'px,' + y + 'px)' }], { duration: 750, easing: 'ease-out', fill: 'forwards' });
       a1.onfinish = function () {
         if (closed) return;
-        if (guarded) { sfx('bark'); pose('happy', 1400); say(fill(pick(GUARD_LINES), null), 3000); }
-        else { sfx('pop'); pose('happy', 1200); say(fill(pick(FLUFF_LINES), p && p.crop), 3000); }
+        if (guarded) { sfx('bark'); pose('happy', 1400); say(lineOf(GUARD_LINES, 'guard_lines', null), 3000); }
+        else { sfx('pop'); pose('happy', 1200); say(lineOf(FLUFF_LINES, 'fluff_lines', p && p.crop), 3000); }
         sq.firstChild.style.transform = 'none';
         later(function () {
           var a2 = sq.animate([{ transform: 'translate(' + xs + 'px,' + y + 'px)' }, { transform: 'translate(' + (xs + 60) + 'px,' + (y - 40) + 'px)', offset: .3 }, { transform: 'translate(' + (x0 + 40) + 'px,' + (y - 10) + 'px)' }], { duration: 800, easing: 'ease-in', fill: 'forwards' });
@@ -1094,7 +1165,7 @@
       else if (k >= '1' && k <= '6') { closePouch(); select(+k - 1); sfx('click'); }
       else if (k === 'p' || k === 'P') {
         var p = st.plots[sel];
-        if (p && p.crop) say('Plot ' + (sel + 1) + ' is already growing something.', 2000);
+        if (p && p.crop) say(L('mod.garden.already_growing', 'Plot {n} is already growing something.', { n: sel + 1 }), 2000);
         else if (armed && (seeds[armed] | 0) > 0) tryPlant(sel, armed);
         else openPouch(sel);
       } else if (k === 'w' || k === 'W') { closePouch(); doWater(sel); }
@@ -1127,7 +1198,7 @@
             if (p.crop && p.took > 0 && !(op && op.took > 0 && op.crop === p.crop)) queueFluff(i);
             if (isReady(p) && !(op && isReady(op) && op.crop === p.crop)) newlyReady = p.crop;
           });
-          if (newlyReady && !busy) { later(function () { say('The ' + PLURAL[newlyReady] + ' ' + (IS_ONE[newlyReady] ? 'is' : 'are') + ' ready! ' + dogName + ' does a little dance.', 2800); pose('happy', 1600); }, 200); }
+          if (newlyReady && !busy) { later(function () { say(nowReady(newlyReady), 2800); pose('happy', 1600); }, 200); }
           if (newlyReady) maybeGuardBeat(1800);
         }
         if (sceneDirty) { renderScene(); lastPose = ''; renderDog(); }

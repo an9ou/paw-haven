@@ -20,6 +20,12 @@ const DC_PET_NAMES = ['Mochi', 'Noodle', 'Biscuit', 'Bella', 'Luna', 'Max', 'Cha
 const DC_BREED_WORDS = ['Shiba', 'Corgi', 'Golden', 'Dachshund', 'Husky', 'Mutt', 'Chihuahua', 'Pug', 'Greyhound', 'Beagle', 'Poodle', 'Collie', 'Samoyed', 'Frenchie', 'Akita', 'Spitz', 'Pom', 'Hound', 'Dane', 'Mastiff', 'Shepherd',
   'Dobie', 'Corso', 'Pittie', 'Pinscher', 'Lab', 'Malamute', 'Chow', 'Big Poodle', 'Schnauzer', 'Westie', 'Yorkie', 'Bichon', 'Maltese', 'Shih Tzu']; // v2.12: the fourteen (V212.md 2)
 const DC_DOG_NAMES = DC_PET_NAMES.concat(DC_BREED_WORDS);
+// v2.14 (V214.md 4.3): Dog Cards stay language-neutral. The Worker, the saves and the lists keep only indices; each viewer sees the word at an index in
+// their own language. DC_PET_NAMES are names and never change. The lists stay append only, in every language
+const dcWordA = (i) => tdata('dc_words_a.' + i, DC_WORDS_A[i]);
+const dcWordB = (i) => tdata('dc_words_b.' + i, DC_WORDS_B[i]);
+const dcBreedWord = (i) => tdata('dc_breed_words.' + i, DC_BREED_WORDS[i]);
+const dcNameShown = (i) => (i < DC_PET_NAMES.length ? DC_DOG_NAMES[i] : dcBreedWord(i - DC_PET_NAMES.length)); // a card dog name (an index into DC_DOG_NAMES) as shown
 // every wearable a card can show (one per dog): the shop clothes, the treasure wearables, the v2.11 Tokyo bandanas, the v2.11.1 Halloween costumes (append only)
 const DC_OUTFITS = ['Red Bandana', 'Party Hat', 'Bow Tie', 'Flower Crown', 'Heart Sunglasses', 'Yellow Raincoat', 'Polka-dot Raincoat', 'Frog Raincoat', 'Bubble Raincoat', 'Rain Hat',
   'Pom-pom Beanie', 'Knit Winter Sweater', 'Superhero Cape', 'Sailor Collar', 'Chef Hat', 'Tutu', 'Cowboy Hat', 'Pyjamas', 'Bumblebee Suit', 'Wizard Hat',
@@ -61,7 +67,7 @@ const dcAcct = () => dcMode() === 'on' && !CL.anon && !!CL.email; // only email 
 const dcOptIn = () => !!S && S.dc.on && !!CL.uid && S.dc.uid === CL.uid; // switched on by this account (a save that stays on a device after a log out never shares for the next account)
 const dcBreeds = () => { const G = PGN(); return (G && G.BREEDS) || []; };
 const dcDay = () => jstISO(); // one day for the paws on both sides: the Worker counts them by the Japan day too (dcDay in worker.js)
-const dcCardName = (c) => `${DC_WORDS_A[c.name[0]]} ${DC_WORDS_B[c.name[1]]}`;
+const dcCardName = (c) => tt('cards.name_pattern', '{a} {b}', { a: dcWordA(c.name[0]), b: dcWordB(c.name[1]) }); // the card name order is the translator's (fr, es, pt may write {b} {a})
 const dcGiven = (c) => S && S.dc.given[c.id] === dcDay();
 const dcPawsOf = (c) => (c.paws | 0) + (c.fake && dcGiven(c) ? 1 : 0); // a paw to a town player stays in this save
 function dcPrune() { const y = new Date(Date.now() + 9 * 3600e3 - 864e5).toISOString().slice(0, 10); Object.keys(S.dc.given).forEach((k) => { if (!(S.dc.given[k] >= y)) delete S.dc.given[k]; }); }
@@ -72,7 +78,7 @@ function dcDog(c, i) {
   const genes = x.c && typeof x.c === 'object' ? Object.assign({}, base || {}, x.c) : base;
   const wear = x.o >= 0 ? ALL_WEAR.find((w) => w.n === DC_OUTFITS[x.o]) : null, outfit = { head: null, eyes: null, neck: null, body: null };
   if (wear) outfit[wear.slot] = wear.n;
-  const d = { id: `dcv:${c.id}:${i}`, key, genes, sex: x.s === 'f' ? 'female' : 'male', sparkle: !!x.sp, name: DC_DOG_NAMES[x.n] || DC_BREED_WORDS[x.b] || 'Pup', outfit };
+  const d = { id: `dcv:${c.id}:${i}`, key, genes, sex: x.s === 'f' ? 'female' : 'male', sparkle: !!x.sp, name: DC_DOG_NAMES[x.n] ? dcNameShown(x.n) : DC_BREED_WORDS[x.b] ? dcBreedWord(x.b) : tt('cards.pup', 'Pup'), outfit };
   if (x.a === 'pup') d.born = localISO(new Date(Date.now() - 3 * 864e5)); // a puppy: about 3 dog months old
   return d;
 }
@@ -109,9 +115,9 @@ const dcSame = (a, b) => !!a && !!b && JSON.stringify({ name: a.name, dogs: a.do
 function dcDogFig(c, i, pose) {
   const d = dcDog(c, i); if (!d) return '';
   const x = c.dogs[i], coat = coatNameOf(d);
-  return `<figure class="dc-dog"><span class="dc-art">${dogSVG(d, { pose: pose || 'sit', outfit: d.outfit })}</span><figcaption><b>${esc(d.name)}</b> ${sexSym(d.sex)}<span>${esc(dogInfo(d.key).breed)}${coat ? ` · ${esc(coat)}` : ''}</span><span>${x.a === 'pup' ? 'Puppy' : 'Grown-up'}${x.sp ? ' · Sparkly' : ''}</span></figcaption></figure>`;
+  return `<figure class="dc-dog"><span class="dc-art">${dogSVG(d, { pose: pose || 'sit', outfit: d.outfit })}</span><figcaption><b>${esc(d.name)}</b> ${sexSym(d.sex)}<span>${esc(coat ? tt('cards.breed_coat', '{breed} · {coat}', { breed: dogInfo(d.key).breed, coat }) : dogInfo(d.key).breed)}</span><span>${esc(tt('cards.age_line', '{age, select, pup {Puppy} other {Grown-up}}{sparkle, select, yes { · Sparkly} other {}}', { age: x.a === 'pup' ? 'pup' : 'adult', sparkle: x.sp ? 'yes' : 'no' }))}</span></figcaption></figure>`;
 }
-const dcPawWord = (n) => `<b>${n}</b> ${n === 1 ? 'paw' : 'paws'}`;
+const dcPawWord = (n) => tt('cards.paws_html', '{n, plural, one {<b>#</b> paw} other {<b>#</b> paws}}', { n });
 function dcCardBody(c, note) {
   const n = dcPawsOf(c);
   return `<div class="dc-card"><p class="dc-paws"><span class="dc-pawic">${artReal('item', 'Paw') ? place(artReal('item', 'Paw'), 0, 0, 30, 30) : '<svg viewBox="0 0 30 30" aria-hidden="true"><g fill="#F28FA5" stroke="#5B3D32" stroke-width="1.6"><ellipse cx="15" cy="19" rx="7" ry="6"/><circle cx="7" cy="11" r="3"/><circle cx="12" cy="7" r="3"/><circle cx="18" cy="7" r="3"/><circle cx="23" cy="11" r="3"/></g></svg>'}</span><span class="dc-pawn">${dcPawWord(n)}</span></p><div class="dc-dogs">${c.dogs.map((x, i) => dcDogFig(c, i)).join('')}</div>${note ? `<p class="small">${note}</p>` : ''}</div>`;
@@ -120,37 +126,37 @@ function dcCard(c) {
   if (!c || !dcShowable(c)) return null;
   SFX.boop(700);
   const given = dcGiven(c);
-  const p = openModal(esc(dcCardName(c)), dcCardBody(c, 'A Dog Card from another player. Their dogs are visiting today.'), { cls: 'dcpop', foot: `<button class="btn" id="dcHide">Hide this card</button><button class="btn yes big" id="dcPaw" ${given ? 'aria-disabled="true"' : ''}>${given ? 'Paw given today' : 'Give a paw'}</button>` });
+  const p = openModal(esc(dcCardName(c)), dcCardBody(c, esc(tt('cards.from_player', 'A Dog Card from another player. Their dogs are visiting today.'))), { cls: 'dcpop', foot: `<button class="btn" id="dcHide">${esc(tt('cards.hide', 'Hide this card'))}</button><button class="btn yes big" id="dcPaw" ${given ? 'aria-disabled="true"' : ''}>${esc(given ? tt('cards.paw_given', 'Paw given today') : tt('cards.give_paw', 'Give a paw'))}</button>` });
   p.dataset.dcCard = c.id;
   $('#dcPaw', p).onclick = () => { if ($('#dcPaw', p).getAttribute('aria-disabled') === 'true' && !dcGiven(c)) return; dcGive(c, p); }; // a paw on its way: a second tap waits
   $('#dcHide', p).onclick = async () => {
     SFX.click();
-    const ok = await confirmIn(p, 'Hide this card? Its dogs will not visit you again.', 'Hide it', 'Keep it'); if (!ok) return;
+    const ok = await confirmIn(p, tt('cards.hide_ask', 'Hide this card? Its dogs will not visit you again.'), tt('cards.hide_it', 'Hide it'), tt('cards.keep_it', 'Keep it')); if (!ok) return;
     if (!S.dc.hide.includes(c.id)) S.dc.hide.push(c.id); if (S.dc.hide.length > 200) S.dc.hide.splice(0, S.dc.hide.length - 200);
     markDirty(); DC.cards = (DC.cards || []).filter((x) => x.id !== c.id); dcDrop(c.id); closeModal();
-    toast(`${dcCardName(c)} is hidden. Those dogs will not visit again.`, 'good');
+    toast(tt('cards.hidden', '{name} is hidden. Those dogs will not visit again.', { name: dcCardName(c) }), 'good');
   };
   return p;
 }
 async function dcGive(c, p) {
-  if (dcGiven(c)) { nope(`You already gave ${dcCardName(c)} a paw today. Come back tomorrow.`); return false; }
+  if (dcGiven(c)) { nope(tt('cards.already_gave', 'You already gave {name} a paw today. Come back tomorrow.', { name: dcCardName(c) })); return false; }
   const btn = p && $('#dcPaw', p); if (btn) btn.setAttribute('aria-disabled', 'true');
   if (!c.fake) {
-    if (dcMode() !== 'on') { if (btn) btn.removeAttribute('aria-disabled'); nope('Paws need the cloud. Try again in a moment.'); return false; }
+    if (dcMode() !== 'on') { if (btn) btn.removeAttribute('aria-disabled'); nope(tt('cards.paw_cloud', 'Paws need the cloud. Try again in a moment.')); return false; }
     let r = null; try { r = await dcApi('POST', '/paw', { id: c.id }); } catch (e) { r = null; }
-    if (!r || !r.ok || !r.data) { if (btn) btn.removeAttribute('aria-disabled'); nope(r && r.status === 404 ? 'That card is not shared any more.' : 'Paws need the cloud. Try again in a moment.'); return false; }
+    if (!r || !r.ok || !r.data) { if (btn) btn.removeAttribute('aria-disabled'); nope(r && r.status === 404 ? tt('cards.gone', 'That card is not shared any more.') : tt('cards.paw_cloud', 'Paws need the cloud. Try again in a moment.')); return false; }
     c.paws = r.data.paws | 0;
     if (r.data.given === false) { // the Worker already has a paw from this account today (another device, or a race)
       S.dc.given[c.id] = dcDay(); dcPrune(); markDirty();
-      if (p && p.dataset.dcCard === c.id) { if (btn) btn.textContent = 'Paw given today'; const pw = $('.dc-pawn', p); if (pw) pw.innerHTML = dcPawWord(dcPawsOf(c)); }
-      toast(`${dcCardName(c)} already got your paw today. Come back tomorrow.`, 'good'); return false;
+      if (p && p.dataset.dcCard === c.id) { if (btn) btn.textContent = tt('cards.paw_given', 'Paw given today'); const pw = $('.dc-pawn', p); if (pw) pw.innerHTML = dcPawWord(dcPawsOf(c)); }
+      toast(tt('cards.got_paw', '{name} already got your paw today. Come back tomorrow.', { name: dcCardName(c) }), 'good'); return false;
     }
   }
   S.dc.given[c.id] = dcDay(); dcPrune(); markDirty(); trackAct('paw', { id: c.id });
   SFX.boop(860);
-  if (p && p.dataset.dcCard === c.id) { if (btn) btn.textContent = 'Paw given today'; const pw = $('.dc-pawn', p); if (pw) pw.innerHTML = dcPawWord(dcPawsOf(c)); }
+  if (p && p.dataset.dcCard === c.id) { if (btn) btn.textContent = tt('cards.paw_given', 'Paw given today'); const pw = $('.dc-pawn', p); if (pw) pw.innerHTML = dcPawWord(dcPawsOf(c)); }
   const v = DC.vis.find((o) => o.card.id === c.id); if (v) { const k = v.k; fxText('♥', v.x, v.y - 170 * k); setTimeout(() => fxText('♥', v.x + 18, v.y - 196 * k), 200); }
-  toast(`You gave ${dcCardName(c)} a paw. Their dogs wag.`, 'good');
+  toast(tt('cards.gave', 'You gave {name} a paw. Their dogs wag.', { name: dcCardName(c) }), 'good');
   return true;
 }
 
@@ -220,8 +226,8 @@ function dcTagFs(sz) { // sz: the visitor's size class (v2.11.1: a small dog's t
 function dcVisSVG(v, i) {
   const d = v.dog, pose = v.tw ? 'walk' : v.pose, ex = exNow(d, pose); v.drawn = pose + '|' + v.face + (ex ? '|' + ex : ''); // v2.13: the face (41_expressions.js)
   const fs = isPhone() ? dcTagFs(sizeK(d)) : DC.tagFs || 19, w = 88 * fs / 19, h = 25 * fs / 19;
-  const tag = `<g class="dc-tag" pointer-events="none" transform="translate(430 512)"><rect x="${f1(-w / 2)}" y="-2" width="${f1(w)}" height="${f1(h)}" rx="8" fill="#FFF3DA" stroke="#5B3D32" stroke-width="2"/><text y="${f1(h * 0.68)}" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="${f1(fs)}" fill="#5B3D32">visitor</text></g>`;
-  return `<g class="dcvis" data-dcv="${i}" data-card="${esc(v.card.id)}" tabindex="0" role="button" aria-label="${esc(d.name)}, visiting with ${esc(dcCardName(v.card))}. Tap for the Dog Card."${v.hidden ? ' style="display:none"' : ''}><g class="dc-at" transform="${dcXf(v)}"><rect class="dc-hit" x="${DX + 44}" y="${DY + 35}" width="${DW - 88}" height="180" fill="transparent"/><g class="dc-art">${place(dogSVG(d, ex ? { pose, outfit: d.outfit, facing: v.face, expr: ex } : { pose, outfit: d.outfit, facing: v.face }), DX, DY, DW, DH)}</g>${tag}</g></g>`;
+  const tag = `<g class="dc-tag" pointer-events="none" transform="translate(430 512)"><rect x="${f1(-w / 2)}" y="-2" width="${f1(w)}" height="${f1(h)}" rx="8" fill="#FFF3DA" stroke="#5B3D32" stroke-width="2"/><text y="${f1(h * 0.68)}" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="${f1(fs)}" fill="#5B3D32">${esc(tt('cards.visitor_tag', 'visitor'))}</text></g>`;
+  return `<g class="dcvis" data-dcv="${i}" data-card="${esc(v.card.id)}" tabindex="0" role="button" aria-label="${esc(tt('cards.visitor_aria', '{dog}, visiting with {card}. Tap for the Dog Card.', { dog: d.name, card: dcCardName(v.card) }))}"${v.hidden ? ' style="display:none"' : ''}><g class="dc-at" transform="${dcXf(v)}"><rect class="dc-hit" x="${DX + 44}" y="${DY + 35}" width="${DW - 88}" height="180" fill="transparent"/><g class="dc-art">${place(dogSVG(d, ex ? { pose, outfit: d.outfit, facing: v.face, expr: ex } : { pose, outfit: d.outfit, facing: v.face }), DX, DY, DW, DH)}</g>${tag}</g></g>`;
 }
 const dcXf = (v) => `translate(${f1(v.x)} ${f1(v.y)}) scale(${v.k.toFixed(3)}) translate(-430 -500)`;
 function dcEl(v) { return $(`#dcVis [data-dcv="${DC.vis.indexOf(v)}"]`); }
@@ -320,47 +326,50 @@ on('yard:enter', (e) => { if (!S) return; if (!DC_PLACES.includes(S.place)) { DC
 
 /* ---------------- my card: settings in the account panel ---------------- */
 // the Settings hook (22b_cloud.js clSection / clRender): a short status and the Dog Card button
-function dcSection() { return `<h4 class="clh">Dog Card</h4><div id="dcBox">${dcBoxHTML()}</div>`; }
+function dcSection() { return `<h4 class="clh">${esc(tt('cards.title', 'Dog Card'))}</h4><div id="dcBox">${dcBoxHTML()}</div>`; }
+const dcNeedWeb = () => tt('cards.need_web', 'Dog Cards work on the web version, with an email account.');
+const dcNeedLogin = () => tt('cards.need_login', 'Log in with email to share a Dog Card.');
 function dcBoxHTML() {
-  if (CL.why === 'artifact') return '<p class="small">Dog Cards work on the web version, with an email account.</p>';
-  if (!dcAcct()) return '<p class="small">Log in with email to share a Dog Card.</p>';
+  if (CL.why === 'artifact') return `<p class="small">${esc(dcNeedWeb())}</p>`;
+  if (!dcAcct()) return `<p class="small">${esc(dcNeedLogin())}</p>`;
   const on = dcOptIn(), n = DC.mine ? DC.mine.paws | 0 : 0;
-  const line = !on ? 'Your Dog Card is not shared. Other players see only cards that are switched on.' : !dcPayload().dogs.length ? 'Your Dog Card has no dogs now, so it is not shared. Pick dogs to share it again.' : DC.mine ? `Your Dog Card is shared. ${n} ${n === 1 ? 'paw' : 'paws'} so far.` : 'Your Dog Card is shared.';
-  return `<p class="small" id="dcStat">${line}</p><div class="clrow"><button class="btn" data-dcs="open">Dog Card</button></div>`;
+  const line = !on ? tt('cards.stat_off', 'Your Dog Card is not shared. Other players see only cards that are switched on.') : !dcPayload().dogs.length ? tt('cards.stat_empty', 'Your Dog Card has no dogs now, so it is not shared. Pick dogs to share it again.') : DC.mine ? tt('cards.stat_paws', 'Your Dog Card is shared. {n, plural, one {# paw} other {# paws}} so far.', { n }) : tt('cards.stat_on', 'Your Dog Card is shared.');
+  return `<p class="small" id="dcStat">${esc(line)}</p><div class="clrow"><button class="btn" data-dcs="open">${esc(tt('cards.title', 'Dog Card'))}</button></div>`;
 }
 function dcRender() {
   const b = document.getElementById('dcBox'); if (b) { const h = dcBoxHTML(); if (b.dataset.h !== h) { b.dataset.h = h; b.innerHTML = h; } } // only when it changed: a tap on the button never meets a fresh copy of it
   const uid = dcMode() === 'on' && !CL.anon ? CL.uid : null; if (uid !== DC.uid) { DC.uid = uid; DC.mine = null; if (uid) dcSyncSoon(1500); }
 }
 modal.addEventListener('click', (e) => { const b = e.target.closest('[data-dcs="open"]'); if (!b) return; SFX.click(); dcSettings(); });
-const dcSel = (id, list, val, label) => `<label class="dc-sel" for="${id}"><span>${label}</span><select id="${id}">${list.map((w, i) => `<option value="${i}"${i === val ? ' selected' : ''}>${esc(w)}</option>`).join('')}</select></label>`;
+// shown(i, word): the option text for index i (the option values stay the indices)
+const dcSel = (id, list, val, label, shown) => `<label class="dc-sel" for="${id}"><span>${esc(label)}</span><select id="${id}">${list.map((w, i) => `<option value="${i}"${i === val ? ' selected' : ''}>${esc(shown(i, w))}</option>`).join('')}</select></label>`;
 function dcSettings(force) {
   if (!S) return null;
-  if (!dcAcct() && !force) { openModal('Dog Card', `<p>${CL.why === 'artifact' ? 'Dog Cards work on the web version, with an email account.' : 'Log in with email to share a Dog Card.'}</p>`, { foot: '<button class="btn yes" id="dcBack">OK</button>' }); $('#dcBack').onclick = () => { SFX.click(); closeModal(); }; return null; }
+  if (!dcAcct() && !force) { openModal(tt('cards.title', 'Dog Card'), `<p>${esc(CL.why === 'artifact' ? dcNeedWeb() : dcNeedLogin())}</p>`, { foot: `<button class="btn yes" id="dcBack">${esc(tt('cards.ok', 'OK'))}</button>` }); $('#dcBack').onclick = () => { SFX.click(); closeModal(); }; return null; }
   const ed = { on: dcOptIn(), name: Array.isArray(S.dc.name) ? S.dc.name.slice() : [RINT(0, DC_WORDS_A.length - 1), RINT(0, DC_WORDS_B.length - 1)], dogs: S.dc.dogs.filter((x) => dcCanShow(dogById(x.id))).map((x) => ({ id: x.id, nm: x.nm })) };
   if (!ed.dogs.length) ed.dogs = S.dogs.filter(dcCanShow).slice(0, DC_MAX_DOGS).map((d) => ({ id: d.id, nm: dcDefaultNm(d) }));
   const rows = S.dogs.filter(dcCanShow).map((d) => {
     const own = dcOwnNameIdx(d), sel = ed.dogs.find((x) => x.id === d.id), nm = sel && typeof sel.nm === 'number' ? sel.nm : dcDefaultNm(d);
-    return `<div class="dc-row"><label class="tog"><input type="checkbox" data-dcdog="${esc(d.id)}" ${sel ? 'checked' : ''}> ${esc(d.name)}</label>${own >= 0 ? `<span class="small">Card name: ${esc(DC_DOG_NAMES[own])}</span>` : dcSel('dcNm-' + d.id, DC_DOG_NAMES, nm, 'Card name')}</div>`;
+    return `<div class="dc-row"><label class="tog"><input type="checkbox" data-dcdog="${esc(d.id)}" ${sel ? 'checked' : ''}> ${esc(d.name)}</label>${own >= 0 ? `<span class="small">${esc(tt('cards.card_name_is', 'Card name: {name}', { name: dcNameShown(own) }))}</span>` : dcSel('dcNm-' + d.id, DC_DOG_NAMES, nm, tt('cards.card_name', 'Card name'), (i, w) => dcNameShown(i))}</div>`;
   }).join('');
-  const p = openModal('My Dog Card', `<div class="dc-set"><label class="tog dc-share"><input type="checkbox" id="dcOn" ${ed.on ? 'checked' : ''}> Share my Dog Card</label>
-    <p class="small">Other players see your card name, your dogs' drawings, breeds, coats, outfits, card names and paws. Never your email. Turning it off deletes the card.</p>
-    <div class="dc-name">${dcSel('dcA', DC_WORDS_A, ed.name[0], 'Card name')}${dcSel('dcB', DC_WORDS_B, ed.name[1], 'and')}<button class="btn" data-dcset="rand">Pick for me</button></div>
-    <p class="small">Up to ${DC_MAX_DOGS} dogs. A dog shows its own name when the list has it.</p><div class="dc-pick">${rows}</div>
-    <h4 class="clh">Preview</h4><div id="dcPrev"></div><p class="clmsg" id="dcMsg" role="status"></p></div>`,
-  { cls: 'dcpop dcsetpop', foot: '<button class="btn" id="dcSetBack">Back</button><button class="btn yes big" id="dcSave">Save</button>' });
+  const p = openModal(tt('cards.my_title', 'My Dog Card'), `<div class="dc-set"><label class="tog dc-share"><input type="checkbox" id="dcOn" ${ed.on ? 'checked' : ''}> ${esc(tt('cards.share', 'Share my Dog Card'))}</label>
+    <p class="small">${esc(tt('cards.privacy', "Other players see your card name, your dogs' drawings, breeds, coats, outfits, card names and paws. Never your email. Turning it off deletes the card."))}</p>
+    <div class="dc-name">${dcSel('dcA', DC_WORDS_A, ed.name[0], tt('cards.card_name', 'Card name'), (i) => dcWordA(i))}${dcSel('dcB', DC_WORDS_B, ed.name[1], tt('cards.and', 'and'), (i) => dcWordB(i))}<button class="btn" data-dcset="rand">${esc(tt('cards.pick_for_me', 'Pick for me'))}</button></div>
+    <p class="small">${esc(tt('cards.up_to', '{n, plural, one {Up to # dog.} other {Up to # dogs.}} A dog shows its own name when the list has it.', { n: DC_MAX_DOGS }))}</p><div class="dc-pick">${rows}</div>
+    <h4 class="clh">${esc(tt('cards.preview', 'Preview'))}</h4><div id="dcPrev"></div><p class="clmsg" id="dcMsg" role="status"></p></div>`,
+  { cls: 'dcpop dcsetpop', foot: `<button class="btn" id="dcSetBack">${esc(tt('cards.back', 'Back'))}</button><button class="btn yes big" id="dcSave">${esc(tt('cards.save', 'Save'))}</button>` });
   const msg = (t) => { const m = $('#dcMsg', p); if (m) m.textContent = t || ''; };
   const read = () => {
     ed.name = [+$('#dcA', p).value, +$('#dcB', p).value];
     ed.dogs = [...p.querySelectorAll('[data-dcdog]')].filter((c) => c.checked).map((c) => { const d = dogById(c.dataset.dcdog), s = document.getElementById('dcNm-' + c.dataset.dcdog); return { id: d.id, nm: s ? +s.value : dcOwnNameIdx(d) }; });
   };
-  const prev = () => { read(); const pl = dcPayload(ed), c = { id: 'preview', name: pl.name, dogs: pl.dogs, paws: DC.mine ? DC.mine.paws | 0 : 0 }; $('#dcPrev', p).innerHTML = pl.dogs.length ? `<div class="dc-prevcard"><h3>${esc(dcCardName(c))}</h3>${dcCardBody(c)}</div>` : '<p class="small">Pick at least one dog.</p>'; };
+  const prev = () => { read(); const pl = dcPayload(ed), c = { id: 'preview', name: pl.name, dogs: pl.dogs, paws: DC.mine ? DC.mine.paws | 0 : 0 }; $('#dcPrev', p).innerHTML = pl.dogs.length ? `<div class="dc-prevcard"><h3>${esc(dcCardName(c))}</h3>${dcCardBody(c)}</div>` : `<p class="small">${esc(tt('cards.pick_one', 'Pick at least one dog.'))}</p>`; };
   p.addEventListener('change', async (e) => {
     const t = e.target;
-    if (t.matches('[data-dcdog]') && t.checked && p.querySelectorAll('[data-dcdog]:checked').length > DC_MAX_DOGS) { t.checked = false; nope(`A Dog Card fits ${DC_MAX_DOGS} dogs.`); }
+    if (t.matches('[data-dcdog]') && t.checked && p.querySelectorAll('[data-dcdog]:checked').length > DC_MAX_DOGS) { t.checked = false; nope(tt('cards.fits', '{n, plural, one {A Dog Card fits # dog.} other {A Dog Card fits # dogs.}}', { n: DC_MAX_DOGS })); }
     if (t.id === 'dcOn' && !t.checked && S.dc.on) { // turning it off deletes the card at once
-      S.dc.on = false; S.dc.uid = null; markDirty(); saveNow(); msg('Deleting your Dog Card...');
-      const ok = await dcUnshare(); msg(ok ? 'Your Dog Card is not shared any more. It was deleted.' : 'Your Dog Card is off. It will be deleted when the cloud is back.'); dcRender(); return;
+      S.dc.on = false; S.dc.uid = null; markDirty(); saveNow(); msg(tt('cards.deleting', 'Deleting your Dog Card...'));
+      const ok = await dcUnshare(); msg(ok ? tt('cards.deleted', 'Your Dog Card is not shared any more. It was deleted.') : tt('cards.delete_later', 'Your Dog Card is off. It will be deleted when the cloud is back.')); dcRender(); return;
     }
     prev();
   });
@@ -368,24 +377,24 @@ function dcSettings(force) {
   $('#dcSetBack', p).onclick = () => { SFX.click(); cloudOpen(); };
   $('#dcSave', p).onclick = async () => {
     read(); const on = $('#dcOn', p).checked;
-    if (on && !ed.dogs.length) { msg('Pick at least one dog for your card.'); return; }
+    if (on && !ed.dogs.length) { msg(tt('cards.pick_one_card', 'Pick at least one dog for your card.')); return; }
     S.dc.name = ed.name.slice(); S.dc.dogs = ed.dogs.map((x) => ({ id: x.id, nm: x.nm })); S.dc.on = on; S.dc.uid = on ? CL.uid : null; markDirty(); saveNow();
-    if (!on) { await dcUnshare(); msg('Saved. Your Dog Card is not shared.'); dcRender(); return; }
-    const b = $('#dcSave', p); b.disabled = true; msg('Sharing your Dog Card...');
+    if (!on) { await dcUnshare(); msg(tt('cards.saved_off', 'Saved. Your Dog Card is not shared.')); dcRender(); return; }
+    const b = $('#dcSave', p); b.disabled = true; msg(tt('cards.sharing', 'Sharing your Dog Card...'));
     const r = await dcPublish(); b.disabled = false;
-    msg(r.ok ? 'Saved. Your Dog Card is shared. Other players can visit with your dogs now.' : r.msg); dcRender();
+    msg(r.ok ? tt('cards.saved_on', 'Saved. Your Dog Card is shared. Other players can visit with your dogs now.') : r.msg); dcRender();
   };
   prev(); return p;
 }
 
 /* ---------------- my card: the Worker ---------------- */
 async function dcPublish() {
-  if (!dcAcct()) return { ok: false, msg: 'Log in with email to share a Dog Card.' };
-  if (!dcOptIn()) return { ok: false, msg: 'Switch on Share my Dog Card first.' };
-  const pl = dcPayload(); if (!pl.dogs.length) return { ok: false, msg: 'Pick at least one dog for your card.' };
+  if (!dcAcct()) return { ok: false, msg: dcNeedLogin() };
+  if (!dcOptIn()) return { ok: false, msg: tt('cards.switch_on', 'Switch on Share my Dog Card first.') };
+  const pl = dcPayload(); if (!pl.dogs.length) return { ok: false, msg: tt('cards.pick_one_card', 'Pick at least one dog for your card.') };
   let r = null; try { r = await dcApi('PUT', '/card', pl); } catch (e) { r = null; }
-  if (!r) return { ok: false, msg: 'Cloud save is offline. Try again in a moment.' };
-  if (!r.ok || !r.data) return { ok: false, msg: r.status === 429 ? 'Too many saves. Wait a few minutes and try again.' : "That didn't work. Try again in a moment." };
+  if (!r) return { ok: false, msg: tt('cards.offline', 'Cloud save is offline. Try again in a moment.') };
+  if (!r.ok || !r.data) return { ok: false, msg: r.status === 429 ? tt('cards.too_many', 'Too many saves. Wait a few minutes and try again.') : tt('cards.failed', "That didn't work. Try again in a moment.") };
   DC.mine = r.data; if ((DC.mine.paws | 0) < S.dc.got) { S.dc.got = DC.mine.paws | 0; markDirty(); }
   return { ok: true };
 }
@@ -408,7 +417,7 @@ async function dcSync() {
     DC.mine = mine;
     if (mine) {
       const n = mine.paws | 0, add = n - (S.dc.got | 0);
-      if (add > 0) toast(`Your Dog Card got ${add} new ${add === 1 ? 'paw' : 'paws'}.`, 'gold');
+      if (add > 0) toast(tt('cards.new_paws', 'Your Dog Card got {n, plural, one {# new paw} other {# new paws}}.', { n: add }), 'gold');
       if (n !== S.dc.got) { S.dc.got = n; markDirty(); }
     }
     dcRender(); return mine;

@@ -9,11 +9,11 @@
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;color:var(--ink);font-family:var(--read);font-size:19px;line-height:1.45;
+body{position:relative;margin:0;color:var(--ink);font-family:var(--read);font-size:19px;line-height:1.45;
   background:radial-gradient(rgba(0,0,0,.035) 1px,transparent 1.5px) 0 0/7px 7px,var(--desk)}
 a{color:var(--ink)}
 :focus-visible{outline:2.5px dashed var(--pink);outline-offset:3px}
-.page{max-width:980px;margin:0 auto;padding:18px 16px 28px}
+.page{position:relative;z-index:1;max-width:1240px;margin:0 auto;padding:14px 16px 28px}
 .sheet{background:var(--paper);border:2.5px solid var(--ink);border-radius:18px 14px 20px 12px / 14px 20px 12px 18px;
   box-shadow:3px 4px 0 rgba(91,61,50,.18);padding:22px 22px 26px;
   background-image:radial-gradient(var(--dot) 1px,transparent 1.4px);background-size:22px 22px}
@@ -32,11 +32,6 @@ p{margin:.4em 0 .8em}
 .play:hover{transform:rotate(-1deg) translateY(-1px)}
 .play:active{transform:translate(2px,3px);box-shadow:1px 1px 0 var(--ink)}
 .small{font-size:17px;color:var(--muted)}
-.shots{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin:6px 0 4px}
-.shots figure{margin:0;background:#fff;border:2px solid var(--ink);border-radius:12px 9px 13px 8px;padding:6px 6px 2px;box-shadow:2px 3px 0 rgba(91,61,50,.18)}
-.shots figure:nth-child(odd){transform:rotate(-.6deg)} .shots figure:nth-child(even){transform:rotate(.5deg)}
-.shots img{display:block;width:100%;height:auto;border-radius:7px}
-.shots figcaption{font-size:17px;text-align:center;padding:4px 0}
 .feats{list-style:none;padding:0;margin:8px 0;display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .feats li{border:2px solid var(--ink);border-radius:14px 10px 15px 9px;padding:10px 12px}
 .feats b{display:block;font-family:var(--hand);font-size:28px;line-height:1.05}
@@ -67,7 +62,6 @@ button.play[disabled]{opacity:.6;cursor:default}
   .hero .dog{width:min(240px,70%);margin:0 auto;display:block}
   .tag{font-size:25px}
   h2{font-size:34px}
-  .shots{grid-template-columns:1fr}
   .feats{grid-template-columns:1fr 1fr}
   .play{width:100%;font-size:30px}
 }
@@ -77,14 +71,12 @@ button.play[disabled]{opacity:.6;cursor:default}
 /* ===== v2 (17 Oct 2026): the live playroom, the dog cards and profiles (/dogs), and the Japanese touches ===== */
 :root{--shu:#C93A2A; --jp:'Hiragino Maru Gothic ProN','Hiragino Sans','Yu Gothic','YuGothic','Meiryo','Noto Sans JP','Noto Sans CJK JP',sans-serif;
   --jpbrush:'Hiragino Mincho ProN','Yu Mincho','YuMincho','Noto Serif JP','Noto Serif CJK JP',serif}
-.jp,[lang="ja"]{font-family:var(--jp);font-style:normal}
+.jp,[lang="ja"]{font-family:var(--jp);font-style:normal;line-break:strict}
 .h1logo{margin:0}
 .top{text-align:center}
-.nav{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 10px;margin:4px 0 10px}
-.nav a,.chip{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:4px 16px;border:2px solid var(--ink);border-radius:14px 10px 15px 9px;
+.chip{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:4px 16px;border:2px solid var(--ink);border-radius:14px 10px 15px 9px;
   background:var(--w-mint);color:var(--ink);text-decoration:none;font-family:var(--hand);font-size:24px;font-weight:700;line-height:1;cursor:pointer}
-.nav a:nth-child(2){background:var(--w-pink)} .nav a:nth-child(3){background:var(--w-blue)}
-.nav a:hover,.chip:hover{transform:rotate(-1.5deg)}
+.chip:hover{transform:rotate(-1.5deg)}
 .jpw{display:inline-block;font-family:var(--read);font-size:19px;font-weight:400;color:var(--muted);vertical-align:middle;margin-left:6px}
 .jpw [lang="ja"]{color:var(--shu);font-size:24px}
 i{font-style:italic}
@@ -94,34 +86,8 @@ i{font-style:italic}
   color:var(--shu);border:3px solid var(--shu);outline:1.5px solid var(--shu);outline-offset:-7px;border-radius:9px 7px 10px 6px;padding:9px 7px;transform:rotate(-8deg);
   opacity:.86;mix-blend-mode:multiply;vertical-align:middle;user-select:none}
 
-/* the live scene: world units 1000 x 600 (the game's playroom); everything is placed in % of the stage */
-.playroom{margin:10px 0 4px}
-.scene{position:relative;overflow:hidden;aspect-ratio:1000/600;border:2.5px solid var(--ink);border-radius:16px 12px 18px 11px;background:#F7E7D2;box-shadow:3px 4px 0 rgba(91,61,50,.18);
-  touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-.stage{position:absolute;left:0;top:0;width:100%;aspect-ratio:1000/600;container-type:inline-size}
-.stage .bg{position:absolute;inset:0;width:100%;height:100%;display:block;user-select:none;-webkit-user-drag:none}
-.dd{position:absolute;width:24%;aspect-ratio:6/5;transform:translate(-50%,-93%) scale(var(--s,.6));transform-origin:50% 93%;pointer-events:none}
-.dd img{display:block;width:100%;height:100%}
-.dd img[hidden]{display:none}
-.dd.flip img{transform:scaleX(-1)}
-.ball{position:absolute;width:3.2%;height:auto;transform:translate(-50%,-92%);pointer-events:none}
-.ball.b1{filter:hue-rotate(190deg)} .ball.b2{filter:hue-rotate(95deg)} .ball.b3{filter:hue-rotate(40deg) saturate(1.3)} /* four ball colours, so each dog can have a favourite */
-.scene.live .dd,.scene.live .ball{left:0!important;top:0!important;will-change:transform}
-.scene.live{cursor:pointer}
-.bark{position:absolute;left:0;top:0;padding:2px 10px;background:#fff;border:2px solid var(--ink);border-radius:12px 9px 13px 8px;font-family:var(--hand);font-size:20px;font-weight:700;
-  white-space:nowrap;transform:translate(-50%,-100%);pointer-events:none;animation:bark 1.6s ease-out forwards}
-.heart{position:absolute;left:0;top:0;font-size:22px;color:var(--pink);pointer-events:none;animation:heart 1.1s ease-out forwards}
-@keyframes bark{0%{opacity:0;margin-top:6px}12%{opacity:1;margin-top:0}80%{opacity:1}100%{opacity:0}}
-@keyframes heart{0%{opacity:0;margin-top:0}20%{opacity:1}100%{opacity:0;margin-top:-50px}}
-/* a framed picture of Mt. Fuji (the game's own Lookout, in spring) on the blank wall where the game hangs the adoption board */
-.wallpic{position:absolute;left:41.5%;top:15%;width:17%;padding:.7%;background:#CFA77C;border:2px solid var(--ink);border-radius:4px;box-shadow:2px 3px 0 rgba(91,61,50,.18);transform:rotate(-1.5deg)}
-.wallpic img{display:block;width:100%;height:auto;border:1.5px solid var(--ink)}
-.scenebar{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:4px 14px;margin-top:8px}
-.scenebar .cap{margin:0;text-align:center}
-.scenebar .chip{background:var(--w-yellow)}
+[hidden]{display:none!important} /* the hidden buttons (#toss, #itchload) stay hidden without JS or with reduced motion: .chip sets display */
 
-.cta.big{position:relative;margin-top:14px}
-.cta.big .hanko{position:absolute;right:calc(50% - 250px);top:-6px;font-size:20px}
 .intro{font-size:21px;max-width:760px;margin:10px auto 6px;text-align:center}
 .sec{margin-top:26px;scroll-margin-top:10px}
 
@@ -164,15 +130,13 @@ i{font-style:italic}
 .trip h3{font-size:32px}
 
 /* falling momiji / sakura / snow (site.js, only with motion allowed) */
-.petals{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:5}
+.petals{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0} /* site v3: behind the paper (.page is z-index 1): never over text */
 .petal{position:absolute;top:-40px;width:22px;height:22px;opacity:.85;animation:fall linear infinite}
 @keyframes fall{0%{transform:translate(0,0) rotate(0)}50%{transform:translate(40px,55vh) rotate(200deg)}100%{transform:translate(-10px,112vh) rotate(420deg)}}
 
 /* /dogs */
 .small-top h1{font-size:50px;margin-top:6px}
-.logo.sm{width:min(300px,70%)}
-.homelink{display:inline-block}
-.dognav{list-style:none;padding:0;margin:12px 0 4px;display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.dognav{list-style:none;padding:0;margin:12px 0 4px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
 .dognav a{display:flex;flex-direction:column;align-items:center;min-height:44px;padding:2px 2px 6px;border:2px solid var(--ink);border-radius:12px 9px 13px 8px;background:#fff;
   color:var(--ink);text-decoration:none;font-size:17px;line-height:1.1}
 .dognav img{width:100%;height:auto}
@@ -213,15 +177,10 @@ i{font-style:italic}
 .soonprof .sil{max-width:none}
 .soonprof .sil b{font-size:48px}
 
-@media (max-width:860px){ .cta.big .hanko{right:8px;top:-14px} .dognav{grid-template-columns:repeat(5,1fr)} }
+@media (max-width:860px){ .dognav{grid-template-columns:repeat(5,minmax(0,1fr))} }
 @media (max-width:700px){
-  .nav a{font-size:21px;padding:4px 12px}
-  .scene{aspect-ratio:700/600}
-  .stage{width:142.857%;left:-21.4286%}
-  .scenebar .chip{width:100%}
-  .cta.big .hanko{display:none}
   .intro{font-size:19px}
-  .cards{grid-template-columns:1fr 1fr;gap:10px}
+  .cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
   .soonli{grid-column:1/-1}
   .dcard{padding:6px 8px 10px}
   .dname{font-size:28px}
@@ -231,7 +190,7 @@ i{font-style:italic}
   .shrine img{width:44%}
   .small-top h1{font-size:40px}
   .jpw{display:block;margin:4px 0 0}
-  .dognav{grid-template-columns:repeat(4,1fr);gap:6px}
+  .dognav{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
   .jpline .jp{white-space:normal} /* v2.12: the long katakana names (West Highland White Terrier) wrap instead of widening the page */
   .prof,.soonprof{grid-template-columns:1fr;gap:6px;padding-top:20px}
   .soonprof .sils{width:min(320px,92%);margin:0 auto}
@@ -239,4 +198,397 @@ i{font-style:italic}
   .prof h2{font-size:42px}
   .traits{grid-template-columns:1fr}
 }
-@media (prefers-reduced-motion:reduce){ .nav a:hover,.chip:hover,.dcard:hover{transform:none!important} .petals{display:none} .bark,.heart{animation:none} }
+@media (prefers-reduced-motion:reduce){ .sitenav a:hover,.chip:hover,.dcard:hover,.place:hover,.tpics a:hover{transform:none!important} .petals{display:none} .bark,.heart{animation:none} }
+
+/* ===== v2.14: the language menu (every page) and the per-language typography (tools/site_i18n.js writes the pages) ===== */
+.langs{position:relative}
+.langs summary{list-style:none;display:inline-flex;align-items:center;gap:6px;min-height:44px;min-width:44px;padding:4px 14px;border:2px solid var(--ink);border-radius:14px 10px 15px 9px;
+  background:var(--paper);color:var(--ink);font-family:var(--read);font-size:18px;line-height:1.1;cursor:pointer;box-shadow:2px 3px 0 rgba(91,61,50,.16);user-select:none}
+.langs summary::-webkit-details-marker{display:none}
+.langs[open] summary{background:var(--w-yellow)}
+.langs nav{position:absolute;right:0;top:calc(100% + 6px);width:max-content;min-width:230px;max-width:calc(100vw - 32px);max-height:calc(100vh - 80px);overflow:auto;
+  background:var(--paper);border:2px solid var(--ink);border-radius:14px 10px 15px 9px;box-shadow:3px 4px 0 rgba(91,61,50,.18);padding:6px}
+.langs ul{list-style:none;margin:0;padding:0}
+.langs li a{display:flex;align-items:center;min-height:44px;padding:2px 14px;border-radius:9px;color:var(--ink);text-decoration:none;font-family:var(--read);font-size:19px}
+.langs li a[lang="ja"]{font-family:var(--jp)}
+.langs li a:hover,.langs li a:focus-visible{background:var(--w-mint)}
+.langs li a[aria-current]{background:var(--w-yellow);font-weight:700}
+/* the other languages (stacks: docs/i18n/FONTS.md section 6). 'DD Local' (site/fonts/i18n/<lang>.css, linked only on that language's pages) covers only
+   non-Latin characters, so Latin letters and digits still fall through to Patrick Hand and Caveat; 'DD Local Title' is the heading face where there is one */
+html.i18n{--loc:sans-serif;--hand:'DD Local Title','DD Local','Caveat','Patrick Hand',var(--loc),'Comic Sans MS',cursive;--read:'DD Local','Patrick Hand',var(--loc),'Trebuchet MS',sans-serif}
+html[lang="ja"],html.s-cjk.pseudo{--loc:'Hiragino Maru Gothic ProN','Hiragino Sans','Yu Gothic','YuGothic','Meiryo','Noto Sans JP','Noto Sans CJK JP',sans-serif}
+html[lang="zh-Hans"]{--loc:'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans SC','Noto Sans CJK SC',sans-serif}
+html[lang="zh-Hant"]{--loc:'PingFang TC','Microsoft JhengHei','Noto Sans TC','Noto Sans CJK TC',sans-serif}
+html[lang="ko"]{--loc:'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR','Noto Sans CJK KR',sans-serif}
+html[lang="th"]{--loc:'Thonburi','Leelawadee UI','Noto Sans Thai Looped','Noto Sans Thai',sans-serif}
+html.i18n body{overflow-wrap:anywhere}
+html.s-cjk body{line-height:1.65;word-break:normal;line-break:strict}
+html[lang="ko"] body{line-height:1.6;word-break:keep-all;line-break:auto}
+html.s-th body{word-break:normal;line-break:auto}
+html.s-cjk .sitenav a,html.s-cjk .chip,html.s-cjk .play{line-height:1.2}
+html.s-cjk h1,html.s-cjk h2,html.s-cjk h3,html.s-cjk .dname,html.s-cjk .bubble,html.s-cjk .tag{line-height:1.25}
+html.s-th body{line-height:1.75}
+html.s-th h1,html.s-th h2,html.s-th h3,html.s-th .dname,html.s-th .bubble,html.s-th .tag,html.s-th .traits b,html.s-th .feats b{line-height:1.45}
+html.s-th .sitenav a,html.s-th .chip,html.s-th .play{line-height:1.45}
+html[lang="de"] body,html[lang="fr"] body,html[lang="es"] body,html[lang="pt-BR"] body,html[lang="id"] body{hyphens:auto;-webkit-hyphens:auto}
+/* the /dogs picture menu: even columns; a long name first shrinks to fit its cell (down to 15px, --n: tools/site_i18n.js navEm), then wraps
+   only at the hint the page gives it (a soft hyphen in Marsh-mallow, a <wbr> in a long kana name, the Thai word breaks), never mid-word. A name that fits keeps 17px */
+.dognav li{container-type:inline-size;min-width:0}
+.dognav a{font-size:max(15px,min(17px,calc((100cqi - 9px) / var(--n,1))));text-align:center;hyphens:manual;-webkit-hyphens:manual;overflow-wrap:normal;word-break:normal}
+html.s-cjk .dognav a{line-break:strict;word-break:keep-all}
+/* Thai: room for the marks above and below the line (dog-card names under the picture, the bold trait titles) */
+html.s-th .dimg{margin-bottom:4px}
+html.s-th .traits li{padding-top:11px}
+html[lang^="zh"] .tag{word-break:keep-all;overflow-wrap:normal}
+.nw{white-space:nowrap}
+html.s-th .dognav a{line-height:1.35}
+/* home dog cards: the same fit for a long name (--n from tools/site_i18n.js; Caveat is about 0.85x as wide as the Patrick Hand estimate) */
+.cards .dcard{container-type:inline-size}
+.cards .dcard .dname{--fs:32px;font-size:max(15px,min(var(--fs),calc((100cqi - 2px) / var(--n,1) * 1.18)));hyphens:manual;-webkit-hyphens:manual;overflow-wrap:normal}
+html.s-cjk .cards .dcard .dname,html.s-th .cards .dcard .dname{font-size:max(15px,min(var(--fs),calc((100cqi - 2px) / var(--n,1))));word-break:keep-all;line-break:strict}
+html.s-th .cards .dcard .dname{word-break:normal}
+@media (max-width:700px){ .cards .dcard .dname{--fs:28px} }
+@media (max-width:340px){ .dognav{grid-template-columns:repeat(3,minmax(0,1fr))} }
+/* the puppy caption on /dogs: under the pictures in the other languages (a longer caption would cover the drawings) */
+html.i18n .pics{padding-bottom:0}
+html.i18n .pics .cap{position:static;display:block;text-align:right;margin-top:-8px;line-height:1.25}
+
+/* ===== site v3 (19 Oct 2026): the header (every page), the itch.io widget, the map and About teasers, /map, /about, the decoration ===== */
+/* the header: logo, Home · Dogs · Map · About Us, the language menu. Desktop: one bar over the sheet; up to 860px: logo and language menu,
+   then the four links as four equal tabs (their labels may wrap to two lines) */
+.sitehead{position:relative;z-index:30;display:flex;align-items:center;gap:8px 14px;width:calc(100% - 32px);max-width:948px;margin:14px auto 0;padding:6px 10px 6px 12px;
+  background:var(--paper);border:2.5px solid var(--ink);border-radius:16px 12px 18px 11px / 12px 18px 11px 16px;box-shadow:3px 4px 0 rgba(91,61,50,.18)}
+.brand{flex:none;display:flex;align-items:center;min-height:44px;min-width:44px;border-radius:10px}
+.brand img{display:block;height:46px;width:auto;mix-blend-mode:multiply}
+.sitenav{flex:1;display:flex;justify-content:center;gap:8px}
+.sitenav a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:4px 16px;border:2px solid var(--ink);border-radius:14px 10px 15px 9px;
+  background:var(--paper);color:var(--ink);text-decoration:none;font-family:var(--hand);font-size:25px;font-weight:700;line-height:1;text-align:center;--tab:var(--w-mint)}
+.sitenav a:nth-child(2){--tab:var(--w-pink)} .sitenav a:nth-child(3){--tab:var(--w-blue)} .sitenav a:nth-child(4){--tab:var(--w-yellow)}
+.sitenav a:hover{background:var(--tab);transform:rotate(-1.5deg)}
+.sitenav a[aria-current="page"]{background:var(--tab);box-shadow:2px 3px 0 var(--ink);transform:rotate(-1deg)}
+.sitehead .langs{flex:none}
+.langs summary>span[lang]{display:inline-block;max-width:11em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom}
+@media (max-width:860px){
+  .sitehead{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"brand . langs" "nav nav nav";gap:6px 8px;padding:6px 8px 8px}
+  .brand{grid-area:brand} .sitehead .langs{grid-area:langs}
+  .sitenav{grid-area:nav;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+  .sitenav a{min-width:0;padding:5px 3px;font-size:22px;line-height:1.05;overflow-wrap:break-word;word-break:normal}
+}
+@media (max-width:700px){
+  .sitehead{margin-top:10px}
+  .brand img{height:38px}
+  .sitenav a{font-size:min(20px,5.4vw)} /* 17px at 320px wide: Beranda, Startseite, Accueil fit a quarter of the bar on one line */
+  html.i18n .sitenav a{overflow-wrap:break-word}
+  .langs summary{padding:4px 10px}
+  .langs summary>span[lang]{max-width:min(9em,28vw)}
+  .page{padding-top:10px;padding-bottom:56px} /* room under the footer for the dog peeking up from the bottom edge (site.js) */
+}
+html.s-th .sitenav a{line-height:1.35}
+
+/* the home page: the itch.io widget (itch's own layout drops the cover below 500px wide), a plain link under it, the free line */
+.getit{margin:18px auto 6px;max-width:600px;text-align:center}
+.itchbox{max-width:552px;margin:0 auto;overflow:hidden;background:var(--paper);border:2.5px solid var(--ink);border-radius:14px 10px 15px 9px;box-shadow:3px 4px 0 rgba(91,61,50,.18)}
+.itchbox iframe{display:block;width:100%;max-width:552px;height:167px;border:0}
+.itchcard{display:flex;align-items:center;gap:14px;min-height:167px;box-sizing:border-box;padding:14px 18px;text-align:left}
+.itchcard img{flex:none;width:96px;height:96px;border-radius:18px}
+.itchname{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}
+.itchname b{font-family:var(--hand);font-size:30px;line-height:1.1}
+.itchcard .chip{flex:none;min-height:44px}
+@media (max-width:500px){ .itchcard{flex-wrap:wrap;justify-content:center;text-align:center} .itchcard img{width:72px;height:72px} .itchname{flex-basis:calc(100% - 90px)} .itchcard .chip{flex-basis:100%} }
+.itchalt{margin:6px 0 2px}
+.itchalt a{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 6px;font-size:19px;font-weight:700;text-decoration:underline;text-decoration-color:var(--pink);text-decoration-thickness:2px;text-underline-offset:3px}
+.free{display:flex;align-items:center;justify-content:center;gap:14px;margin:4px 0 0}
+.free .hanko{flex:none;font-size:19px}
+.free .small{text-align:left;max-width:440px}
+@media (min-width:701px){ .cards.featured{grid-template-columns:repeat(4,minmax(0,1fr))} }
+.some{color:var(--muted);margin:4px 0 2px}
+.teaser{scroll-margin-top:10px}
+.tpics{list-style:none;padding:0;margin:12px 0 8px;display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:16px;align-items:center}
+.tpics a{display:block;background:#fff;border:2px solid var(--ink);border-radius:12px 9px 13px 8px;padding:5px;box-shadow:2px 3px 0 rgba(91,61,50,.18);transition:transform .15s}
+.tpics li:nth-child(1) a{transform:rotate(-1deg)} .tpics li:nth-child(2) a{transform:rotate(1.2deg)} .tpics li:nth-child(3) a{transform:rotate(-.6deg)}
+.tpics a:hover{transform:rotate(0) translateY(-2px)}
+.tpics img{display:block;width:100%;height:auto;border-radius:7px;background:var(--w-blue)}
+.abt{display:grid;grid-template-columns:200px minmax(0,1fr);gap:8px 20px;align-items:center;padding:14px 18px;background:var(--w-peach);border:2px dashed var(--ink);border-radius:16px 12px 17px 11px}
+.abt h2{margin-top:0}
+.abt .abdog{display:block;width:100%;height:auto;transform:rotate(-3deg)}
+@media (max-width:700px){
+  .tpics{grid-template-columns:1fr 1fr;gap:12px}
+  .tpics li:first-child{grid-column:1/-1}
+  .abt{grid-template-columns:1fr;text-align:center;padding:12px 14px}
+  .abt .abdog{width:min(170px,60%);margin:0 auto}
+  .free{gap:10px}
+}
+
+/* /dogs: a friendlier page; profiles take turns left and right on wide screens, the pictures wiggle on hover or tap */
+.small-top .lead{max-width:780px;margin:.3em auto .9em;font-size:20px}
+.prof{padding:30px 8px 26px}
+@media (min-width:701px){ .prof{grid-template-columns:300px minmax(0,1fr)} .prof:nth-of-type(even){grid-template-columns:minmax(0,1fr) 300px} .prof:nth-of-type(even) .pics{order:2} }
+@media (min-width:701px) and (max-width:860px){ .prof,.prof:nth-of-type(even){grid-template-columns:240px minmax(0,1fr)} .prof:nth-of-type(even){grid-template-columns:minmax(0,1fr) 240px} .jpline .jp{white-space:normal} }
+.dognav a{transition:transform .15s}
+.dognav li:nth-child(odd) a:hover{transform:rotate(-2deg) translateY(-2px)} .dognav li:nth-child(even) a:hover{transform:rotate(2deg) translateY(-2px)}
+@keyframes wiggle{0%,100%{transform:rotate(0)}20%{transform:rotate(-5deg)}40%{transform:rotate(4deg)}60%{transform:rotate(-3deg)}80%{transform:rotate(2deg)}}
+@media (prefers-reduced-motion:no-preference){
+  .pics:hover .big,.pics.wig .big,.dcard:hover .dimg,.dimg.wig,.abdog.wig{animation:wiggle .6s ease-in-out}
+  .pics .big,.dimg,.abdog{transform-origin:50% 85%}
+}
+@media (prefers-reduced-motion:reduce){ .dognav a:hover{transform:none!important} }
+
+/* /map: the three areas, the big maps and a card for every place */
+.mapsheet .small-top h1{font-size:54px}
+.jumps{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 10px;margin:4px 0 0}
+.jumps .chip:nth-child(1){background:var(--w-mint)} .jumps .chip:nth-child(2){background:var(--w-pink)} .jumps .chip:nth-child(3){background:var(--w-blue)}
+.places{margin-top:30px;padding-top:18px;border-top:2.5px dashed var(--dot);scroll-margin-top:10px}
+.places h2{margin-top:0}
+.seclead{margin:.1em 0 .9em}
+.bigmap{margin:8px 0 22px;padding:6px;background:#fff;border:2.5px solid var(--ink);border-radius:14px 10px 15px 9px;box-shadow:3px 4px 0 rgba(91,61,50,.18);transform:rotate(-.4deg);scroll-margin-top:10px}
+.bigmap img{display:block;width:100%;height:auto;border-radius:9px 7px 10px 6px;background:var(--w-blue)}
+.placegrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px 16px}
+.place{display:flex;flex-direction:column;padding:6px 6px 12px;background:#fff;border:2px solid var(--ink);border-radius:14px 10px 15px 9px;box-shadow:2px 3px 0 rgba(91,61,50,.16);transition:transform .15s;scroll-margin-top:10px}
+.place:nth-child(6n+1){background:var(--w-mint)} .place:nth-child(6n+2){background:var(--w-pink)} .place:nth-child(6n+3){background:var(--w-peach)}
+.place:nth-child(6n+4){background:var(--w-blue)} .place:nth-child(6n+5){background:var(--w-lilac)} .place:nth-child(6n+6){background:var(--w-yellow)}
+.place:nth-child(odd):hover{transform:rotate(-.8deg) translateY(-2px)} .place:nth-child(even):hover{transform:rotate(.8deg) translateY(-2px)}
+.place:target{box-shadow:0 0 0 4px var(--pink),2px 3px 0 rgba(91,61,50,.16)}
+.place img{display:block;width:100%;height:auto;border:2px solid var(--ink);border-radius:9px 7px 10px 6px;background:var(--paper)}
+.place h3{font-size:29px;margin:10px 6px 2px}
+.place p{margin:0 6px;font-size:18px;line-height:1.4}
+@media (min-width:861px){ #home-places .placegrid{grid-template-columns:repeat(4,minmax(0,1fr))} #home-places .place h3{font-size:26px} }
+@media (max-width:860px){ .placegrid{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:700px){ .placegrid{grid-template-columns:1fr} .mapsheet .small-top h1{font-size:42px} .bigmap{padding:4px;margin-bottom:16px} }
+
+/* /about: the story, at a comfortable reading width, a crayon dachshund beside the opening, a momiji by the signature */
+.about{max-width:62ch;margin:0 auto;padding:4px 0 2px;font-size:20px;line-height:1.75}
+.about h1{font-size:52px;text-align:center;margin:8px 0 22px}
+.about p{margin:0 0 1.05em}
+.about .abdog{float:right;width:200px;height:auto;margin:-6px -14px 6px 18px;shape-outside:ellipse(48% 46%)}
+.about .closing{clear:both;font-family:var(--hand);font-size:31px;font-weight:700;line-height:1.3;text-align:center;margin:1.3em 0 .3em}
+.about .paw{font-family:sans-serif;font-size:.8em;font-weight:400;white-space:nowrap}
+.about .sign{display:flex;justify-content:flex-end;align-items:center;gap:10px;font-family:var(--hand);font-size:32px;font-weight:700;color:var(--muted);margin:0 0 .4em}
+.about .aleaf{width:30px;height:30px;transform:rotate(-24deg)}
+.about .cta{margin-top:20px}
+.about .play{line-height:1.2;text-align:center}
+.about .cta p{font-size:19px}
+html.s-cjk .about{line-height:1.85} html.s-th .about{line-height:1.9}
+@media (max-width:700px){
+  .about{font-size:18.5px;line-height:1.7}
+  .about h1{font-size:40px;margin-bottom:16px}
+  .about .abdog{width:132px;margin:-2px -6px 4px 10px}
+  .about .closing{font-size:27px}
+}
+
+/* the decoration (site.js): behind the paper (.page is z-index 1), inside the page's own box (no sideways scroll), never taking a tap */
+.deco{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+.deco img{position:absolute;display:block;max-width:none;pointer-events:none;user-select:none;-webkit-user-drag:none}
+.peek{transform:rotate(var(--r,0deg));transform-origin:50% 70%}
+.deco .leaf{transform:rotate(var(--r,0deg));opacity:.92}
+@media (prefers-reduced-motion:no-preference){
+  .peek{animation:peekin .9s cubic-bezier(.34,1.45,.55,1) var(--d,0s) both,peekbob 3.4s ease-in-out calc(var(--d,0s) + 1.6s) 3}
+}
+@keyframes peekin{from{transform:translate(var(--hx,0px),var(--hy,0px)) rotate(var(--r,0deg))}to{transform:translate(0,0) rotate(var(--r,0deg))}}
+@keyframes peekbob{0%,100%{transform:rotate(var(--r,0deg))}50%{transform:rotate(calc(var(--r,0deg) * .3))}}
+
+/* owner (site v3.1): the header lives inside the paper sheet, no separate bar */
+.sheet>.sitehead{width:auto;max-width:none;margin:-4px 0 18px;padding:0 0 12px;background:none;border:0;border-bottom:2px dashed rgba(91,61,50,.25);border-radius:0;box-shadow:none}
+@media (max-width:860px){ .sheet>.sitehead{padding:0 0 10px;margin:-2px 0 14px} }
+
+/* owner (site v3.1): logo + slogan on every page; the header (logo, slogan, tabs) inside the sheet */
+.sheet>.sitehead{flex-wrap:wrap;justify-content:center}
+.sitetop{flex:1 1 100%;margin-bottom:6px}
+.brandbig{display:block;border-radius:12px}
+@media (max-width:860px){ .sheet>.sitehead{display:flex;flex-direction:column;align-items:stretch} .sheet>.sitehead .sitenav{display:grid} .sheet>.sitehead .langs{align-self:center} }
+/* owner: the Dogs page is a grid of 3 dog cards; a tap opens the dog's profile in a pop-up (the profiles list stays only without JavaScript) */
+.dognav{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important}
+.dognav a{font-family:var(--hand);font-size:26px;padding:8px 6px 10px}
+html.js .dogsheet .prof{display:none}
+dialog.dogpop{max-width:min(860px,calc(100vw - 24px));width:100%;max-height:calc(100dvh - 24px);padding:0;border:2.5px solid var(--ink);border-radius:18px 13px 20px 12px;background:var(--paper);color:var(--ink);box-shadow:4px 6px 0 rgba(91,61,50,.25)}
+dialog.dogpop::backdrop{background:rgba(60,40,30,.45)}
+dialog.dogpop .prof{display:grid!important;border-top:0;padding:18px 18px 22px}
+dialog.dogpop{position:fixed;overflow-y:auto}
+dialog.dogpop .x{position:absolute;top:8px;right:8px;z-index:2;width:36px;height:36px;min-width:36px;min-height:36px;padding:0;font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center}
+dialog.dogpop .x:focus:not(:focus-visible){outline:none}
+dialog.dogpop .prof{width:100%;box-sizing:border-box}
+@media (max-width:700px){ .dognav a{font-size:20px} dialog.dogpop .prof{grid-template-columns:1fr} }
+@media (max-width:340px){ .dognav a{font-size:18px;padding-left:4px;padding-right:4px} } /* v2.14 fit: the longest Thai names (เปปเปอร์, เพรทเซล) fit the 3-column tiles at 320 px */
+dialog.dogpop .prof>*,dialog.dogpop .prof .txt>*{max-width:none}
+/* owner: the three map jumps always on one row */
+.jumps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;max-width:640px;margin-left:auto;margin-right:auto}
+.jumps .chip{justify-content:center;text-align:center;min-width:0;padding-left:6px;padding-right:6px;line-height:1.1}
+@media (max-width:700px){ .jumps .chip{font-size:min(20px,5vw)} }
+
+/* owner (site v3.2): the game on the home page, a sticky menu, full screen */
+.sheet>.sitetop{margin:-4px 0 4px}
+.sheet>.sitehead{position:sticky;top:env(safe-area-inset-top,0px);z-index:40;margin:0 -22px 18px;padding:8px 22px 10px;background:var(--paper);
+  transition:transform .28s ease,box-shadow .2s ease}
+.sheet>.sitehead.stuck{box-shadow:0 4px 0 rgba(91,61,50,.12)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:45;background:var(--paper)}
+@media (max-width:700px){ .sheet>.sitehead{margin:0 -14px 14px;padding:8px 14px 10px} }
+@media (prefers-reduced-motion:reduce){ .sheet>.sitehead{transition:none} }
+
+.gamebox{margin:0 0 22px}
+.gameframe{position:relative;width:100%;aspect-ratio:16/9;max-width:100%;background:var(--desk);border:2.5px solid var(--ink);
+  border-radius:16px 12px 18px 11px / 12px 18px 11px 16px;overflow:hidden;box-shadow:3px 4px 0 rgba(91,61,50,.18)}
+@media (max-width:860px){ .gameframe{aspect-ratio:auto;height:min(78svh,720px)} }
+.gameframe iframe{position:absolute;left:0;top:0;width:100%;height:100%;border:0;display:block;background:var(--desk);transform-origin:0 0}
+.nojs{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;margin:0;padding:16px;text-align:center;font-size:20px;line-height:1.35;overflow-wrap:anywhere;box-sizing:border-box}
+.nojs a{font-weight:700;min-height:44px;display:inline-flex;align-items:center}
+.gamebar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 14px;margin-top:10px}
+.fsbtn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:4px 16px;border:2px solid var(--ink);border-radius:14px 10px 15px 9px;
+  background:var(--w-blue);color:var(--ink);font-family:var(--hand);font-size:25px;font-weight:700;line-height:1;cursor:pointer;box-shadow:2px 3px 0 var(--ink)}
+.fsbtn:hover{transform:rotate(-1deg)}
+.fsbtn:active{transform:translate(2px,3px);box-shadow:none}
+.fsbtn svg{width:22px;height:22px}
+.fsx{display:none}
+/* full screen: the real Fullscreen API where the browser has it, otherwise (iPhone) the frame covers the whole screen */
+.gameframe:fullscreen{border:0;border-radius:0;aspect-ratio:auto;width:100vw;height:100vh;box-shadow:none}
+.gameframe:-webkit-full-screen{border:0;border-radius:0;width:100vw;height:100vh}
+.gameframe.fake{position:fixed;inset:0;z-index:1000;width:auto;height:auto;aspect-ratio:auto;border:0;border-radius:0;box-shadow:none;
+  padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);background:var(--paper)}
+.gameframe.fake iframe{position:relative;inset:auto}
+html.gamefs,html.gamefs body{overflow:hidden}
+.gameframe:fullscreen .fsx,.gameframe:-webkit-full-screen .fsx,.gameframe.fake .fsx{display:flex}
+.fsx{position:absolute;z-index:5;right:calc(8px + env(safe-area-inset-right,0px));top:calc(8px + env(safe-area-inset-top,0px));
+  align-items:center;justify-content:center;width:44px;height:44px;padding:0;border:2px solid var(--ink);border-radius:12px 9px 13px 8px;
+  background:var(--paper);color:var(--ink);font-size:20px;line-height:1;cursor:pointer;opacity:.85}
+.fsx:hover{opacity:1}
+
+/* owner: a wider page (less empty desk either side); on phones a thinner margin round the sheet */
+@media (max-width:700px){ .page{padding:8px 8px 18px} .sheet{padding:14px 12px 18px} .sheet>.sitehead{margin:0 -12px 14px;padding:8px 12px 10px} }
+/* owner: the menu once it sticks: a small logo on the left, the links on the right */
+.minilogo{display:none;flex:none;border-radius:10px}
+.minilogo img{display:block;height:44px;width:auto;mix-blend-mode:multiply}
+.sheet>.sitehead.stuck{flex-direction:row;flex-wrap:nowrap;align-items:center;justify-content:space-between;gap:10px}
+.sheet>.sitehead.stuck .minilogo{display:block}
+.sheet>.sitehead.stuck .sitenav{flex:0 1 auto;justify-content:flex-end}
+@media (max-width:860px){
+  .sheet>.sitehead.stuck .sitenav{display:flex;gap:5px;min-width:0}
+  .sheet>.sitehead.stuck .sitenav a{min-height:40px;padding:3px 9px;font-size:min(20px,4.6vw)}
+  .sheet>.sitehead.stuck .langs{display:none}
+}
+@media (max-width:500px){
+  .minilogo img{height:30px}
+  .sheet>.sitehead.stuck{gap:6px}
+  .sheet>.sitehead.stuck .sitenav{gap:4px}
+  .sheet>.sitehead.stuck .sitenav a{padding:3px 6px;font-size:min(18px,4.4vw);min-width:0}
+}
+/* owner: on computers the Dogs page shows 4 dogs a row, the cards a little smaller (the grid is 90% of the sheet); phones keep 3 a row */
+@media (min-width:861px){ .dognav{grid-template-columns:repeat(4,minmax(0,1fr))!important;width:90%;margin-left:auto;margin-right:auto} .dognav a{font-size:24px} }
+/* owner (site v3.3): a livelier menu: every tab wears its own crayon colour and a little doodle, tilted like stickers; the page you are on lifts
+   up with a pink wavy underline. Five tabs since the Guide page. */
+.sitenav a{gap:7px;background:var(--tab);box-shadow:2px 3px 0 rgba(91,61,50,.32);transform:rotate(var(--r,-1deg));transition:transform .15s,box-shadow .15s}
+.sitenav a:nth-child(even){--r:1deg}
+.sitenav a:nth-child(5){--tab:var(--w-lilac)}
+.sitenav a:hover{background:var(--tab);transform:rotate(0) translateY(-2px);box-shadow:3px 5px 0 var(--ink)}
+.sitenav a[aria-current="page"]{background:var(--tab);transform:rotate(0) translateY(-2px) scale(1.06);box-shadow:3px 4px 0 var(--ink);z-index:1}
+.sitenav a[aria-current="page"] span{text-decoration:underline wavy var(--pink) 2px;text-underline-offset:6px;text-decoration-skip-ink:none}
+.nico{flex:none;width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sheet>.sitehead .sitenav{gap:12px}
+@media (prefers-reduced-motion:reduce){ .sitenav a{transition:none} }
+/* the logo is drawn on the sheet itself (site/img/logo.svg is the brand logo without its cream box) */
+.logo,.minilogo img{mix-blend-mode:normal}
+@media (max-width:860px){
+  .sheet>.sitehead .sitenav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+  .sitenav a{flex-direction:column;gap:2px;padding:5px 2px 6px;font-size:min(19px,4.6vw);line-height:1.05}
+  .nico{width:20px;height:20px}
+  .sheet>.sitehead.stuck .sitenav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;flex:1 1 auto}
+  .sheet>.sitehead.stuck .sitenav a{padding:3px 2px 4px;font-size:min(15px,3.7vw);min-height:44px}
+  .sheet>.sitehead.stuck .nico{width:17px;height:17px}
+  .sitenav a[aria-current="page"]{transform:translateY(-1px) scale(1.04)}
+}
+.minilogo .ml-icon{display:none}
+/* phones: the stuck bar shows the dog icon instead of the word logo, so the five tabs keep their names on one line */
+@media (max-width:500px){
+  .minilogo .ml-full{display:none} .minilogo .ml-icon{display:block;height:38px;width:38px}
+  .sheet>.sitehead.stuck .sitenav a{font-size:min(15px,3.9vw);white-space:nowrap;padding:3px 1px 4px}
+}
+
+/* owner (site v3.3): the How to play page */
+.guide{max-width:900px;margin:0 auto}
+.guide h1{font-size:58px;text-align:center;margin:.1em 0 .1em}
+.guide .lead{font-size:21px;text-align:center;max-width:680px;margin:0 auto 1em}
+.guide h2{text-align:center;margin-top:1em}
+.gsteps{list-style:none;counter-reset:st;padding:0;margin:8px 0 6px;display:grid;gap:14px}
+.gstep{counter-increment:st;position:relative;display:grid;grid-template-columns:150px minmax(0,1fr);gap:16px;align-items:center;padding:12px 18px 12px 14px;
+  border:2.5px solid var(--ink);border-radius:16px 11px 18px 12px / 12px 18px 11px 16px;background:var(--paper);box-shadow:3px 4px 0 rgba(91,61,50,.15)}
+.gstep:nth-child(5n+1){background:var(--w-mint)} .gstep:nth-child(5n+2){background:var(--w-pink)} .gstep:nth-child(5n+3){background:var(--w-blue)}
+.gstep:nth-child(5n+4){background:var(--w-yellow)} .gstep:nth-child(5n+5){background:var(--w-lilac)}
+.gstep:nth-child(even){transform:rotate(.4deg)} .gstep:nth-child(odd){transform:rotate(-.4deg)}
+.gstep::before{content:counter(st);position:absolute;left:-14px;top:-14px;width:44px;height:44px;display:grid;place-items:center;border:2.5px solid var(--ink);border-radius:50%;
+  background:var(--paper);font-family:var(--hand);font-size:30px;font-weight:700;line-height:1}
+.gstep img{width:100%;height:auto}
+.gstep h3{margin:0 0 .15em}
+.gstep p{margin:0}
+.gbox{margin:22px 0 6px;padding:16px 22px;border:2px dashed var(--ink);border-radius:16px 12px 18px 11px;background:rgba(255,227,161,.35)}
+.gbox h2{margin-top:0}
+.gunlock ul{margin:0;padding-left:1.2em;display:grid;gap:4px}
+.gtips{list-style:none;padding:0;margin:8px 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 18px}
+.gtips li{position:relative;padding-left:30px}
+.gtips li::before{content:"🐾";position:absolute;left:0;top:0}
+.gpups{display:grid;grid-template-columns:170px minmax(0,1fr);gap:18px;align-items:center;background:rgba(249,208,217,.35)}
+.gpups img{width:100%;height:auto}
+.gfaq{display:grid;gap:10px;max-width:760px;margin:8px auto}
+.gfaq details{border:2px solid var(--ink);border-radius:13px 9px 15px 8px;background:var(--paper);padding:4px 16px}
+.gfaq summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-family:var(--hand);font-size:26px;font-weight:700}
+.gfaq details[open] summary{color:var(--ink)}
+.gfaq p{margin:0 0 .6em}
+.gcta{margin-top:22px}
+.gcta .chip{font-size:24px}
+@media (max-width:700px){
+  .guide h1{font-size:46px}
+  .gstep{grid-template-columns:92px minmax(0,1fr);gap:10px;padding:10px 12px}
+  .gstep::before{left:-8px;top:-10px;width:36px;height:36px;font-size:24px}
+  .gtips{grid-template-columns:1fr}
+  .gpups{grid-template-columns:1fr;text-align:center}
+  .gpups img{width:150px;margin:0 auto}
+}
+/* owner: in full screen the ✕ covered the game's own top-right button (its menu). The ✕ now sits in its own 52 px paper bar above the game,
+   still top right; the game fills the rest of the screen under it. */
+.gameframe:fullscreen,.gameframe:-webkit-full-screen{background:var(--paper)}
+.gameframe:fullscreen iframe,.gameframe:-webkit-full-screen iframe{top:52px;height:calc(100% - 52px)}
+.gameframe.fake{padding-top:calc(52px + env(safe-area-inset-top,0px))}
+.gameframe:fullscreen::before,.gameframe:-webkit-full-screen::before,.gameframe.fake::before{content:"";position:absolute;left:0;right:0;top:0;
+  height:calc(52px + env(safe-area-inset-top,0px));border-bottom:2px dashed rgba(91,61,50,.25);pointer-events:none}
+.gameframe:fullscreen .fsx,.gameframe:-webkit-full-screen .fsx,.gameframe.fake .fsx{top:calc(4px + env(safe-area-inset-top,0px));opacity:1}
+
+/* ===== v2.14 fit pass: every language fits the header, the language menu and the pop-up (site_fit) ===== */
+/* the little logo of the stuck bar is a 44 px tap target on every width (the dog icon sits in it) */
+.minilogo{min-width:44px;min-height:44px;align-items:center;justify-content:center}
+.sheet>.sitehead.stuck .minilogo{display:flex}
+/* the language button never cuts its name ("Português (Brasil)", "Bahasa Indonesia"): it grows with it and wraps if the bar is narrower */
+.langs summary{max-width:100%}
+.langs summary>span[lang]{max-width:none;overflow:visible;text-overflow:clip;white-space:normal;vertical-align:baseline}
+.langs summary>span[aria-hidden]{flex:none}
+.langs nav{max-width:calc(100vw - 24px)}
+@media (max-width:700px){ .langs summary>span[lang]{max-width:none} .langs nav{min-width:min(230px,calc(100vw - 24px))} }
+/* the tabs under the logo on a phone: a little less type at 360 px (15.5 px, never under 15) so the longest words (Anleitung, Cachorros, Panduan)
+   do not touch the tab's border, and a wrapped label (关于我们, เกี่ยวกับเรา) splits evenly instead of leaving one letter alone */
+@media (max-width:860px){ .sheet>.sitehead:not(.stuck) .sitenav a{font-size:min(19px,max(15px,4.3vw))} .sitenav a span{text-wrap:balance} }
+/* the dog pop-up's close button: a 44 px tap target */
+dialog.dogpop .x{width:44px;height:44px;min-width:44px;min-height:44px;font-size:20px}
+/* Chinese tagline: no break-less run on a narrow phone (keep-all let the 17 characters before the comma run out of the box) */
+@media (max-width:700px){ html[lang^="zh"] .tag{word-break:normal;overflow-wrap:anywhere;line-break:strict;text-wrap:balance} }
+/* the stuck bar between 861 and 1100 px (a tablet, a small laptop): the dog icon for the logo, tabs a little tighter and only the globe for the language
+   button (its name is in the menu), so the bar never scrolls the page sideways in any language */
+@media (min-width:861px) and (max-width:1100px){
+  .sheet>.sitehead.stuck{gap:8px}
+  .sheet>.sitehead.stuck .minilogo .ml-full{display:none}
+  .sheet>.sitehead.stuck .minilogo .ml-icon{display:block;height:38px;width:38px}
+  .sheet>.sitehead.stuck .sitenav{gap:6px;min-width:0;flex:1 1 auto}
+  .sheet>.sitehead.stuck .sitenav a{padding:4px 9px;font-size:22px;gap:5px}
+  .sheet>.sitehead.stuck .langs{flex:none}
+  .sheet>.sitehead.stuck .langs summary{padding:4px 12px}
+  .sheet>.sitehead.stuck .langs summary>span[lang]{display:none}
+}
+/* the stuck bar on phones (up to 500 px): the five tabs are one strip of 15 px labels. Where every label fits (most languages) the tabs share the width;
+   where they do not (Thai, the longest names at 360 px) the strip scrolls sideways on purpose (site.js scrolls the current page into view and shows a
+   fade at the edge that has more) instead of cutting a word or shrinking it under 15 px. */
+@media (max-width:500px){
+  .minilogo .ml-icon{height:38px;width:38px}
+  .sheet>.sitehead.stuck{gap:4px}
+  .sheet>.sitehead.stuck.nologo .minilogo{display:none}
+  .sheet>.sitehead.stuck .sitenav{display:flex;flex:1 1 0;min-width:0;justify-content:flex-start;gap:3px;margin:-3px -2px -6px;padding:3px 3px 6px;overflow-x:auto;overflow-y:hidden;
+    scrollbar-width:none;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+  .sheet>.sitehead.stuck .sitenav::-webkit-scrollbar{display:none}
+  .sheet>.sitehead.stuck .sitenav a{flex:1 0 auto;min-width:44px;padding:3px 3px 4px;font-size:15px;white-space:nowrap}
+  .sheet>.sitehead.stuck .sitenav.fade-r{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 18px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 18px),transparent)}
+  .sheet>.sitehead.stuck .sitenav.fade-l{-webkit-mask-image:linear-gradient(to left,#000 calc(100% - 18px),transparent);mask-image:linear-gradient(to left,#000 calc(100% - 18px),transparent)}
+  .sheet>.sitehead.stuck .sitenav.fade-l.fade-r{-webkit-mask-image:linear-gradient(to right,transparent,#000 18px,#000 calc(100% - 18px),transparent);mask-image:linear-gradient(to right,transparent,#000 18px,#000 calc(100% - 18px),transparent)}
+}

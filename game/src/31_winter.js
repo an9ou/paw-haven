@@ -55,7 +55,7 @@ function wnIcon(n) { return artReal('icon', n) || iconOr(n, n === 'sweater' ? '<
 function wnYardBoxes() { return WN_DRIFTS.map((b) => b.slice()).concat([WN_HEAP.slice()]); }
 function wnDriftSVG(i, state) {
   const [x, y, w, h] = WN_DRIFTS[i];
-  return `<g class="hot wn-drift" data-drift="${i}" data-state="${state}" tabindex="0" role="button" aria-label="Snowdrift: dive in">${place(wnArt('snowdrift', { state, seed: i }), x, y, w, h)}${fsHit(x, y, w, h)}</g>`;
+  return `<g class="hot wn-drift" data-drift="${i}" data-state="${state}" tabindex="0" role="button" aria-label="${esc(tt('winter.label_drift', 'Snowdrift: dive in'))}">${place(wnArt('snowdrift', { state, seed: i }), x, y, w, h)}${fsHit(x, y, w, h)}</g>`;
 }
 function wnDogOpts() {
   const sd = S.wn.snowdog, o = { stage: Math.max(0, Math.min(3, sd.stage | 0)) };
@@ -63,8 +63,8 @@ function wnDogOpts() {
   return o;
 }
 function wnHeapSVG() {
-  const [x, y, w, h] = WN_HEAP, o = wnDogOpts(), lbl = ['Snow heap: build a snowdog', 'Snowball: keep building', 'Half a snowdog: keep building', 'The snowdog'][o.stage];
-  return `<g id="wnDogG" class="hot" data-stage="${o.stage}" tabindex="0" role="button" aria-label="${lbl}">${place(wnArt('snowdog', o), x, y, w, h)}${fsHit(x + 3, y + 2, w - 6, h - 6)}</g>`;
+  const [x, y, w, h] = WN_HEAP, o = wnDogOpts(), lbl = [tt('winter.heap_0', 'Snow heap: build a snowdog'), tt('winter.heap_1', 'Snowball: keep building'), tt('winter.heap_2', 'Half a snowdog: keep building'), tt('winter.heap_3', 'The snowdog')][o.stage];
+  return `<g id="wnDogG" class="hot" data-stage="${o.stage}" tabindex="0" role="button" aria-label="${esc(lbl)}">${place(wnArt('snowdog', o), x, y, w, h)}${fsHit(x + 3, y + 2, w - 6, h - 6)}</g>`;
 }
 function wnYardDraw() {
   const svg = $('#view svg.world'); if (!svg) return;
@@ -92,7 +92,7 @@ function wnSnowdogSync(show) {
   if (show === false) { WN.hills = true; return; } // drawn on the way into the yard: the toast comes from the yard:enter that follows
   wnHills();
 }
-function wnHills() { WN.hills = false; wnLater(() => { if (wnHere()) wnToast("Fresh snow from Pip. Yesterday's snowdog went up to the hills to see the others.", 'good'); }, 900); }
+function wnHills() { WN.hills = false; wnLater(() => { if (wnHere()) wnToast(tt('winter.fresh_snow', "Fresh snow from Pip. Yesterday's snowdog went up to the hills to see the others."), 'good'); }, 900); }
 
 /* ---- who plays: an awake adult (3 months or older, not nursing); for a young puppy the first such dog of the pack ---- */
 const wnAdult = (d) => !!d && ageMonths(d) >= 3 && !d.sleeping && !(typeof hmMumIn === 'function' && hmMumIn(d));
@@ -100,7 +100,7 @@ function wnCanJump() { return wnSnow() && Array.isArray(S.dogs) && S.dogs.some((
 function wnSnowdogFree() { if (!wnCanJump()) return false; const sd = S.wn && S.wn.snowdog; return !(sd && sd.date === wnToday() && sd.stage >= 3); }
 function wnPlayer() { // { pup, adult } or null when nobody can (a kind line is shown)
   const pup = ageMonths(D()) < 3, adult = pup ? others().find(wnAdult) : null;
-  if (pup && !adult) { const h = dogHeadWorld(); say('Sniff.', h.x, h.y, 1800); toast(`${NAME()} is too small for snow games yet. Puppies watch from the path for now.`); return null; }
+  if (pup && !adult) { const h = dogHeadWorld(); say(tt('winter.sniff', 'Sniff.'), h.x, h.y, 1800); toast(tt('winter.too_small', '{name} is too small for snow games yet. Puppies watch from the path for now.', { name: NAME() })); return null; }
   return { pup, adult };
 }
 const wnFree = () => !(busy || S.sleeping || (typeof curling !== 'undefined' && curling) || (typeof HO === 'object' && HO.pl));
@@ -110,7 +110,7 @@ function wnDriftTap(i) { return fsTry(wnDriftTap0, i); }
 function wnDriftTap0(i) {
   if (!WN_DRIFTS[i] || !wnSnow() || cur.mode !== 'yard' || S.place !== 'yard' || !wnFree()) return;
   wnFields(); const last = S.wn.drifts[i];
-  if (typeof last === 'number' && S.gameMin - last >= 0 && S.gameMin - last < WN_GAP) { toast('Pip is fluffing that one up again.'); return; }
+  if (typeof last === 'number' && S.gameMin - last >= 0 && S.gameMin - last < WN_GAP) { toast(tt('winter.pip_fluffing', 'Pip is fluffing that one up again.')); return; }
   const who = wnPlayer(); if (!who) return;
   const { pup, adult } = who, [x, y, w, h] = WN_DRIFTS[i], cx = x + w / 2, gy = y + h * 0.8, face = cx < 430 ? 'left' : 'right';
   busy = true; hideBubble(); SFX.click();
@@ -124,9 +124,9 @@ function wnDriftTap0(i) {
   }, 850);
   T(() => {
     addStat('happy', 6); addBond(1); S.wn.drifts[i] = S.gameMin; markDirty(); updateHUD();
-    const hw = dogHeadWorld(); say(pup ? `${adult.name} did the diving. ${NAME()} did the cheering.` : PICK(['Floof.', 'Snow in my ears. Worth it.', 'I am a snow dog now.']), hw.x, hw.y, 2600);
+    const hw = dogHeadWorld(); say(pup ? tt('winter.did_the_diving', '{other} did the diving. {name} did the cheering.', { other: adult.name, name: NAME() }) : PICK([tt('winter.floof', 'Floof.'), tt('winter.snow_in_ears', 'Snow in my ears. Worth it.'), tt('winter.snow_dog_now', 'I am a snow dog now.')]), hw.x, hw.y, 2600);
     trackAct('snowdrift', {});
-    const y = wnYear(); if (!isWarm() && S.wn.tips.cold !== y) { S.wn.tips.cold = y; markDirty(); wnLater(() => wnToast('Short coats feel the cold fast. A sweater or a snood makes snow play cosy.', 'good'), 1500); }
+    const y = wnYear(); if (!isWarm() && S.wn.tips.cold !== y) { S.wn.tips.cold = y; markDirty(); wnLater(() => wnToast(tt('winter.tip_cold', 'Short coats feel the cold fast. A sweater or a snood makes snow play cosy.'), 'good'), 1500); }
   }, 1600);
   T(() => { const fx = $('#dogFx'); if (fx) fx.classList.remove('tk-pounce'); dogTo(0, 0, 1, 0.8); renderDog('walk', face === 'left' ? 'right' : 'left'); }, 2400);
   setTimeout(() => { busy = false; if (cur.mode === 'yard') renderDog(dogPoseNow(), 'right', true); }, 3300);
@@ -150,7 +150,7 @@ function wnHeapTap() { return fsTry(wnHeapTap0); }
 function wnHeapTap0() {
   if (!wnSnow() || cur.mode !== 'yard' || S.place !== 'yard' || !wnFree()) return;
   wnFields(); wnSnowdogSync(); const sd = S.wn.snowdog;
-  if (sd.stage >= 3) { const h = dogHeadWorld(); say(PICK(['It is perfect. Do not touch it.', 'Good snowdog.']), h.x, h.y, 2200); return; }
+  if (sd.stage >= 3) { const h = dogHeadWorld(); say(PICK([tt('winter.perfect', 'It is perfect. Do not touch it.'), tt('winter.good_snowdog', 'Good snowdog.')]), h.x, h.y, 2200); return; }
   const who = wnPlayer(); if (!who) return;
   const { pup, adult } = who, builder = pup ? adult : D(), [x, y, , h] = WN_HEAP, gy = y + h * 0.92;
   busy = true; hideBubble(); SFX.click();
@@ -161,9 +161,9 @@ function wnHeapTap0() {
     wnFields(); const s = S.wn.snowdog; s.stage = Math.min(3, (s.stage | 0) + 1); s.date = wnToday(); if (s.stage === 3) s.by = builder.id; markDirty();
     wnHeapRedraw(); try { SFX.pop(); } catch (e) { /* audio off */ }
     const hw = dogHeadWorld();
-    if (s.stage < 3) { say(s.stage === 1 ? 'Roll, roll, roll.' : 'Head on.', hw.x, hw.y, 2000); trackAct('snowdog', { stage: s.stage, done: false }); return; }
+    if (s.stage < 3) { say(s.stage === 1 ? tt('winter.roll', 'Roll, roll, roll.') : tt('winter.head_on', 'Head on.'), hw.x, hw.y, 2000); trackAct('snowdog', { stage: s.stage, done: false }); return; }
     addStat('happy', 10); addBond(1); markDirty(); updateHUD();
-    toast(`Done. It looks just like ${builder.name}. Nobody can tell which is which.`, 'gold');
+    toast(tt('winter.snowdog_done', 'Done. It looks just like {name}. Nobody can tell which is which.', { name: builder.name }), 'gold');
     trackAct('snowdog', { stage: 3, done: true });
     clearTimeout(WN.carrotT); WN.carrotT = setTimeout(() => wnCarrot(), 8000);
   }, 1200);
@@ -178,7 +178,7 @@ function wnCarrot(force) {
   if (!wnHere()) return false; // away: the next yard:enter checks again
   if (busy) { if (!force) { clearTimeout(WN.carrotT); WN.carrotT = setTimeout(() => { if (wnHere()) wnCarrot(); }, 6000); } return false; }
   const d = (sd.by && dogById(sd.by)) || D(); sd.nose = false; markDirty(); wnHeapRedraw();
-  wnToast(`${d.name} ate the carrot nose. Carrots are good for dogs, so fine.`, 'good'); return true;
+  wnToast(tt('winter.ate_carrot', '{name} ate the carrot nose. Carrots are good for dogs, so fine.', { name: d.name }), 'good'); return true;
 }
 
 /* ---- the Square: the Ugly Sweater Contest banner (fsSquareDraw draws it after the stall) ---- */
@@ -196,7 +196,9 @@ function wnCategory(o) {
   const w = SLOTS.map((k) => o && o[k]).filter(Boolean);
   return w.includes('Very Ugly Sweater') ? 0 : w.includes('Reindeer Antlers') ? 1 : w.some((n) => WARM_WEAR.includes(n)) ? 2 : w.length ? 3 : 4;
 }
-const wnCatText = (c) => WN_CATS[c].join('. ');
+const wnCatText = (c) => WN_CATS[c].join('. '); // the English line (tests); the player sees wnCatShown
+const wnCatName = (c) => tdata('wn_cats.' + c + '.0', WN_CATS[c][0]);
+const wnCatNote = (c) => tdata('wn_cats.' + c + '.1', WN_CATS[c][1]);
 function wnContestDogs(dk = wnToday()) {
   const r = seeded(hashId('sweater|' + dk));
   return fsParadeDogs(dk).map((n) => { const it = WN_OUTS[Math.floor(r() * WN_OUTS.length)], slot = (CLOTHES.find((x) => x.n === it) || {}).slot || 'body', outfit = { [slot]: it }; return Object.assign({}, n, { sweater: it, outfit, cat: wnCategory(outfit) }); });
@@ -204,19 +206,19 @@ function wnContestDogs(dk = wnToday()) {
 function wnContestOpen() { return fsTry(wnContestOpen0); }
 function wnContestOpen0() {
   if (!S) return null;
-  if (!festOn('lights')) { toast('The Ugly Sweater Contest is over for this winter. Gerald is still recovering.'); return null; }
+  if (!festOn('lights')) { toast(tt('winter.contest_over', 'The Ugly Sweater Contest is over for this winter. Gerald is still recovering.')); return null; }
   SFX.boop(700); wnFields(); const dogs = wnContestDogs(), me = D(), done = wnJudgedToday(), mc = wnCategory(outfitOf(me));
-  const card = (n) => `<div class="fs-npc wn-npc" role="listitem"><span class="fs-pdog">${dogSVG(n, { pose: 'sit', outfit: n.outfit, facing: 'right' })}</span><b>${esc(n.name)}</b><span class="small">${esc(n.sweater)}</span><span class="small wn-cat">${esc(WN_CATS[n.cat][0])}</span></div>`;
+  const card = (n) => `<div class="fs-npc wn-npc" role="listitem"><span class="fs-pdog">${dogSVG(n, { pose: 'sit', outfit: n.outfit, facing: 'right' })}</span><b>${esc(n.name)}</b><span class="small">${esc(fsIName('clothes', n.sweater))}</span><span class="small wn-cat">${esc(wnCatName(n.cat))}</span></div>`;
   const duck = typeof gdDuck === 'function' ? gdDuck('sit') : '', words = SLOTS.map((k) => outfitOf(me)[k]).filter(Boolean);
-  const p = openModal('Ugly Sweater Contest', `<div class="fs-banner wn-cbanner" aria-hidden="true">${artReal('prop', 'sweaterbanner', {}) || art('prop', 'sweaterbanner', {})}</div>
-    <div class="wn-judge"><span class="wn-duck" aria-hidden="true">${duck}</span><p><b>Gerald:</b> "I am the judge. I am a duck, so I am very fair."</p></div>
-    <p class="small wn-intro">Five town dogs in their worst knits, and you. Everyone wins a category.</p>
-    <div class="wn-rowwrap"><div class="fs-row wn-line" role="list" aria-label="Today's contestants">${dogs.map(card).join('')}</div><span class="wn-cue" aria-hidden="true">Swipe for all five ›</span></div>
-    <div class="fs-you wn-you"><span class="fs-pdog">${dogSVG(me, { pose: 'sit', outfit: outfitOf(me), facing: 'right' })}</span><div><b>${esc(NAME())}</b><span class="small">${esc(words.length ? 'Wearing ' + words.join(' and ') + '.' : 'No sweater. Going as a dog.')}</span><span class="small wn-cat">Up for: ${esc(WN_CATS[mc][0])}</span>${done ? '<span class="small">Judged today. Come back tomorrow for another go.</span>' : ''}</div></div>`,
-  { cls: 'fs-paradepop wn-contest', foot: `<button class="btn yes big" id="wnEnter" ${done ? 'aria-disabled="true"' : ''}>${done ? 'Judged today' : 'Enter the contest'}</button>` });
+  const p = openModal(tt('winter.contest_title', 'Ugly Sweater Contest'), `<div class="fs-banner wn-cbanner" aria-hidden="true">${artReal('prop', 'sweaterbanner', {}) || art('prop', 'sweaterbanner', {})}</div>
+    <div class="wn-judge"><span class="wn-duck" aria-hidden="true">${duck}</span><p><b>${esc(tt('winter.gerald', 'Gerald:'))}</b> ${esc(tt('winter.judge_line', '"I am the judge. I am a duck, so I am very fair."'))}</p></div>
+    <p class="small wn-intro">${esc(tt('winter.contest_intro', 'Five town dogs in their worst knits, and you. Everyone wins a category.'))}</p>
+    <div class="wn-rowwrap"><div class="fs-row wn-line" role="list" aria-label="${esc(tt('winter.label_contestants', "Today's contestants"))}">${dogs.map(card).join('')}</div><span class="wn-cue" aria-hidden="true">${esc(tt('winter.swipe_cue', 'Swipe for all five ›'))}</span></div>
+    <div class="fs-you wn-you"><span class="fs-pdog">${dogSVG(me, { pose: 'sit', outfit: outfitOf(me), facing: 'right' })}</span><div><b>${esc(NAME())}</b><span class="small">${esc(words.length ? tt('fest.wearing', 'Wearing {list}.', { list: tlist(words.map((x) => fsIName('clothes', x))) }) : tt('winter.no_sweater', 'No sweater. Going as a dog.'))}</span><span class="small wn-cat">${esc(tt('winter.up_for', 'Up for: {cat}', { cat: wnCatName(mc) }))}</span>${done ? `<span class="small">${esc(tt('winter.judged_again', 'Judged today. Come back tomorrow for another go.'))}</span>` : ''}</div></div>`,
+  { cls: 'fs-paradepop wn-contest', foot: `<button class="btn yes big" id="wnEnter" ${done ? 'aria-disabled="true"' : ''}>${esc(done ? tt('fest.judged_today', 'Judged today') : tt('winter.enter', 'Enter the contest'))}</button>` });
   $('#wnEnter', p).onclick = () => {
-    if (wnJudgedToday()) { nope('Gerald judges once a day. He needs a long sit-down after.'); return; }
-    if (busy || S.sleeping) { nope(S.sleeping ? `${NAME()} is asleep. The contest can wait one nap.` : `Hold on, ${NAME()} is busy.`); return; }
+    if (wnJudgedToday()) { nope(tt('winter.once_a_day', 'Gerald judges once a day. He needs a long sit-down after.')); return; }
+    if (busy || S.sleeping) { nope(S.sleeping ? tt('winter.asleep', '{name} is asleep. The contest can wait one nap.', { name: NAME() }) : tt('fest.busy', 'Hold on, {name} is busy.', { name: NAME() })); return; }
     SFX.click(); closeModal(); wnContestWalk(dogs);
   };
   if (isPhone() && !done) setTimeout(() => { const y = $('.wn-you', p); if (y && !modal.hidden) try { y.scrollIntoView({ block: 'nearest' }); } catch (e) { /* no scroll */ } }, 60); // v2.8 phones: your own entry shows with the Enter button (after openModal's focus)
@@ -236,7 +238,7 @@ function wnContestWalk(dogs) {
   const lg = $('#wnWalkG .fs-line'), fl = $('#wnWalkG .wn-flakes');
   for (let k = 0; k < 12; k++) { const el = document.createElementNS('http://www.w3.org/2000/svg', 'g'); el.setAttribute('class', 'fs-drop wn-flake'); el.style.animationDelay = (k * 0.5).toFixed(2) + 's'; el.style.setProperty('--sway', (k % 2 ? 36 : -36) + 'px'); el.innerHTML = wnFlake(120 + ((k * 89) % 800), 150 + (k % 3) * 20, 9 + (k % 3) * 2, k * 17); fl.appendChild(el); }
   requestAnimationFrame(() => requestAnimationFrame(() => { if (lg) { lg.style.transition = `transform ${WN_CONTEST_MS}ms linear`; lg.style.transform = `translateX(${dist}px)`; } }));
-  const sayAt = 1800; WN.walkT.push(setTimeout(() => { if (fsHere('square')) say(PICK(['Is that a sweater or a blanket?', 'Gerald is taking notes.']), lead + dist * sayAt / WN_CONTEST_MS, feetY - hgt * 0.85, 2400); }, sayAt));
+  const sayAt = 1800; WN.walkT.push(setTimeout(() => { if (fsHere('square')) say(PICK([tt('winter.sweater_or_blanket', 'Is that a sweater or a blanket?'), tt('winter.gerald_notes', 'Gerald is taking notes.')]), lead + dist * sayAt / WN_CONTEST_MS, feetY - hgt * 0.85, 2400); }, sayAt));
   WN.walkT.push(setTimeout(() => wnContestEnd(true), WN_CONTEST_MS + 200));
   onCleanup(() => { if (WN.walking) wnContestEnd(false); });
 }
@@ -256,15 +258,15 @@ function wnContestEnd(here) {
 function wnContestDone() {
   wnFields(); S.wn.contest.date = wnToday();
   const c = wnCategory(outfitOf(D())), n = addCoins(10, { raw: true }); addStat('happy', 10); addBond(2); markDirty(); updateHUD(); SFX.kaching();
-  toast(`${NAME()} wins ${wnCatText(c)} +${n} coins.`, 'gold'); trackAct('sweater', {});
+  toast(tt('winter.wins', '{name} wins {cat}. {note} +{n, plural, one {# coin} other {# coins}}.', { name: NAME(), cat: wnCatName(c), note: wnCatNote(c), n }), 'gold'); trackAct('sweater', {});
   if (fsHere('square')) fsSquareDraw();
   const y = wnYear(); if (S.wn.contest.year === y) return;
   S.wn.contest.year = y; const fresh = !owns('clothes', 'Ugly Sweater Rosette'); if (fresh) S.inv.clothes.push('Ugly Sweater Rosette'); markDirty(); saveNow();
   const show = () => {
     SFX.fanfare();
-    const p = openModal('<span class="hl">The Ugly Sweater Rosette!</span>', `<div class="ms-prize"><span class="ms-prize-art">${itemArt('Ugly Sweater Rosette')}</span><div><p>${fresh ? `Gerald pins a rosette on ${esc(NAME())}. It is uglier than any sweater in town, and that is the point.` : 'A winner again this winter. Gerald adds one more knitted bobble to the rosette.'}</p><p class="small">Ugly Sweater Rosette: neck. It is in the Wardrobe.</p></div></div>`, { cls: 'celebrate wn-rosette', foot: '<button class="btn no" id="wnLater">Later</button><button class="btn yes big" id="wnWear">Wear it</button>' });
+    const p = openModal(`<span class="hl">${esc(tt('winter.rosette_title', 'The Ugly Sweater Rosette!'))}</span>`, `<div class="ms-prize"><span class="ms-prize-art">${itemArt('Ugly Sweater Rosette')}</span><div><p>${esc(fresh ? tt('winter.rosette_new', 'Gerald pins a rosette on {name}. It is uglier than any sweater in town, and that is the point.', { name: NAME() }) : tt('winter.rosette_again', 'A winner again this winter. Gerald adds one more knitted bobble to the rosette.'))}</p><p class="small">${esc(tt('winter.rosette_note', 'Ugly Sweater Rosette: neck. It is in the Wardrobe.'))}</p></div></div>`, { cls: 'celebrate wn-rosette', foot: `<button class="btn no" id="wnLater">${esc(tt('fest.later', 'Later'))}</button><button class="btn yes big" id="wnWear">${esc(tt('fest.wear_it', 'Wear it'))}</button>` });
     $('#wnLater', p).onclick = () => { SFX.click(); closeModal(); };
-    $('#wnWear', p).onclick = () => { closeModal(); equip('Ugly Sweater Rosette', true); toast(`${NAME()} is wearing the Ugly Sweater Rosette. Very proud, very ugly.`, 'good'); };
+    $('#wnWear', p).onclick = () => { closeModal(); equip('Ugly Sweater Rosette', true); toast(tt('winter.wearing_rosette', '{name} is wearing the Ugly Sweater Rosette. Very proud, very ugly.', { name: NAME() }), 'good'); };
   };
   if (typeof msWhenFree === 'function') msWhenFree(show); else setTimeout(show, 600);
 }
@@ -272,7 +274,7 @@ function wnContestDone() {
 /* ---- letters (once per winter year each), held while Gerald's guide runs ---- */
 function wnLetters() {
   if (!S || typeof mailPush !== 'function' || wnGuideHold()) return; wnFields();
-  const y = wnYear(), L = S.wn.letters, push = (k) => { L[k] = y; markDirty(); const m = WN_LETTERS[k]; mailPush(Object.assign({}, m, { id: `wn_${k}_${y}`, text: m.text.replace('{dog}', NAME()) }, m.gift ? { gift: Object.assign({}, m.gift) } : {})); };
+  const y = wnYear(), L = S.wn.letters, push = (k) => { L[k] = y; markDirty(); const m = WN_LETTERS[k]; mailPush(Object.assign({}, m, { id: `wn_${k}_${y}`, from: tdata('wn_letters.' + k + '.from', m.from), title: tdata('wn_letters.' + k + '.title', m.title), text: tdata('wn_letters.' + k + '.text', m.text, { dog: NAME() }) }, m.gift ? { gift: Object.assign({}, m.gift) } : {})); };
   if (festOn('snow') && L.snow !== y) push('snow');
   if (festOn('lights')) { if (L.contest !== y) push('contest'); if (L.gift !== y) push('gift'); }
 }
@@ -284,7 +286,7 @@ function wnSaltTip() {
   wnLater(() => {
     if (!WN.salt || cur.mode !== 'yard') return;
     if (!modal.hidden) return wnAfterSheet(wnSaltTip); // still on the results sheet (or a sheet after it): the tip comes when it closes
-    WN.salt = false; S.wn.tips.salt = y; markDirty(); wnToast('Wipe paws after a winter walk. Road salt stings, and nobody wants to lick it.', 'good');
+    WN.salt = false; S.wn.tips.salt = y; markDirty(); wnToast(tt('winter.tip_salt', 'Wipe paws after a winter walk. Road salt stings, and nobody wants to lick it.'), 'good');
   }, 900);
 }
 
@@ -295,10 +297,10 @@ function wnAfterSheet(fn) { // once, when the open sheet closes
 }
 
 /* ---- Gerald's How to play card and the Journal line ---- */
-function wnLesson() { return S && festOn('snow') ? ['winter', 'snowdrift', 'Winter', "Pip's snowdrifts by the fence are for diving in. Short coats like a sweater in the snow. Wipe paws after a winter walk."] : ''; }
+function wnLesson() { return S && festOn('snow') ? ['winter', 'snowdrift', tt('winter.lesson_title', 'Winter'), tt('winter.lesson', "Pip's snowdrifts by the fence are for diving in. Short coats like a sweater in the snow. Wipe paws after a winter walk.")] : ''; }
 function wnJournalLine() {
   if (!S || !festOn('lights')) return '';
-  return `<p class="fs-jline wn-jline"><span class="ic" aria-hidden="true">${wnIcon('sweater')}</span><b>Contest:</b> Ugly Sweater Contest in the Square until 25 December.</p>`;
+  return `<p class="fs-jline wn-jline"><span class="ic" aria-hidden="true">${wnIcon('sweater')}</span><b>${esc(tt('winter.contest_label', 'Contest:'))}</b> ${esc(tt('winter.jline', 'Ugly Sweater Contest in the Square until 25 December.'))}</p>`;
 }
 
 /* ---- bus ---- */

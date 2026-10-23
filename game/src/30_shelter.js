@@ -23,7 +23,9 @@ const SR_TRAITS = ['Loves belly rubs more than dinner.', 'Shy for five minutes, 
 // Monday of the week of an ISO date (residents stay a week)
 function srWeekKey(dk) { const d = new Date(dk + 'T12:00:00'); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return localISO(d); }
 // a dog's trait line, seeded by its id
-function srTrait(id) { return SR_TRAITS[hashId('trait|' + id) % SR_TRAITS.length]; }
+function srTrait(id) { const i = hashId('trait|' + id) % SR_TRAITS.length; return tdata('sr_traits.' + i, SR_TRAITS[i]); }
+// a list of a dog's room lines, shown in the player's language (SR_LINES keeps the English)
+const srLines = (k) => SR_LINES[k].map((s, i) => tdata('sr_lines.' + k + '.' + i, s));
 // The playroom roster for a date: today's 2 rescues (rescuesToday, kind 'rescue'; its seeded picks follow BREED_KEYS, so a new breed reshuffles them) then 4 residents of the week (kind 'resident'):
 // a puppy (3 to 5 months), a senior (96 to 150 months) and two adults (12 to 60 months), any of the 17 breeds, coats from PawGenes.
 // Seeded, never saved. Dogs already home (dogById) or adopted from here before (S.shelter.adopted) are left out.
@@ -129,7 +131,7 @@ function srHitBox(rd) { // dog units: at least 52 px on a phone at the smallest 
 }
 function srDogG(rd) {
   const [hx, hy, hw, hh] = srHitBox(rd);
-  return `<g class="sr-dog hot" data-srdog="${esc(rd.id)}" role="button" tabindex="0" aria-label="${esc(rd.name)} the ${esc(dogInfo(rd.key).breed)}: tap to pet" style="transform:${srXform(rd.x, rd.y, srK(rd, rd.y))}"><rect class="sr-hit" x="${hx.toFixed(1)}" y="${hy.toFixed(1)}" width="${hw.toFixed(1)}" height="${hh.toFixed(1)}" fill="transparent"/><g class="sr-art">${srDogArt(rd)}</g></g>`;
+  return `<g class="sr-dog hot" data-srdog="${esc(rd.id)}" role="button" tabindex="0" aria-label="${esc(tt('shelter.label_pet', '{name} the {breed}: tap to pet', { name: rd.name, breed: tbreed(rd.key) }))}" style="transform:${srXform(rd.x, rd.y, srK(rd, rd.y))}"><rect class="sr-hit" x="${hx.toFixed(1)}" y="${hy.toFixed(1)}" width="${hw.toFixed(1)}" height="${hh.toFixed(1)}" fill="transparent"/><g class="sr-art">${srDogArt(rd)}</g></g>`;
 }
 const srNode = (rd) => $(`#srDogs [data-srdog="${rd.id}"]`);
 function srPose(rd, pose, face) {
@@ -144,7 +146,7 @@ function srOrder(rd) {
 }
 function srRoomSVG(mode) {
   const sc = PA().WORLD_C_SCENES && PA().WORLD_C_SCENES.includes('playroom') ? 'playroom' : 'shelter';
-  return `<svg class="world" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMax slice">${sceneG(sc)}<g id="srBoardG" class="hot" role="button" tabindex="0" aria-label="Adopt me board: see who is looking for a home"></g><g id="srDogs"></g><g id="adoptDog"></g><g id="srFx" pointer-events="none"></g></svg>`;
+  return `<svg class="world" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMax slice">${sceneG(sc)}<g id="srBoardG" class="hot" role="button" tabindex="0" aria-label="${esc(tt('shelter.label_board', 'Adopt me board: see who is looking for a home'))}"></g><g id="srDogs"></g><g id="adoptDog"></g><g id="srFx" pointer-events="none"></g></svg>`;
 }
 
 /* ---- floor spots ---- */
@@ -268,7 +270,7 @@ function srSay(text, x, y, ms) {
 }
 function srLine(rd, list, force) {
   if (!force && (performance.now() - (SR.lineAt || 0) < 5000 || Math.random() > 0.35)) return;
-  SR.lineAt = performance.now(); srSay(`${rd.name}: ${PICK(list)}`, rd.x, rd.y - 170 * srK(rd, rd.y), 2400);
+  SR.lineAt = performance.now(); srSay(tt('shelter.dog_says', '{name}: {line}', { name: rd.name, line: PICK(list) }), rd.x, rd.y - 170 * srK(rd, rd.y), 2400);
 }
 function srBark(rd, kind) { if (barkMode() === 'off') return; playBark(voiceOf(rd.look), kind, { volume: 0.8 }); const bl = window.__barkLog; bl.push({ dog: rd.name, id: rd.id, kind, t: Math.round(performance.now()), room: true }); if (bl.length > 300) bl.shift(); }
 
@@ -283,10 +285,10 @@ function srPet(id) {
   const now = performance.now(); rd.taps = (rd.taps || []).filter((t) => now - t < 4000); rd.taps.push(now);
   const hy = rd.y - 150 * srK(rd, rd.y);
   if (rd.taps.length >= 3) { // the third tap within 4 s: a belly rub
-    rd.taps = []; srPose(rd, 'rollover'); srHearts(rd.x, hy + 30, 5); srBark(rd, 'play'); SFX.boop(880); srLine(rd, SR_LINES.belly, true);
+    rd.taps = []; srPose(rd, 'rollover'); srHearts(rd.x, hy + 30, 5); srBark(rd, 'play'); SFX.boop(880); srLine(rd, srLines('belly'), true);
     SR.bellies = (SR.bellies || 0) + 1; srAfter(2000, () => srRest(rd, 'happy', 1200), rd); return true;
   }
-  srPose(rd, 'pet'); srHearts(rd.x, hy, 2); srBark(rd, PICK(['play', 'woof'])); SFX.boop(700 + Math.random() * 160); srLine(rd, SR_LINES.pet);
+  srPose(rd, 'pet'); srHearts(rd.x, hy, 2); srBark(rd, PICK(['play', 'woof'])); SFX.boop(700 + Math.random() * 160); srLine(rd, srLines('pet'));
   SR.pets = (SR.pets || 0) + 1; srAfter(900, () => srRest(rd, 'happy', 1300), rd); return true;
 }
 
@@ -295,7 +297,7 @@ const SR_BASKET = [870, 396];
 function srToyArt(kind) { return propTint(srHasArt('tosstoy', '0 0 60 60') ? art('prop', 'tosstoy', { kind }) : `<svg viewBox="0 0 60 60"><circle cx="30" cy="32" r="18" fill="#F28FA5" stroke="#5B3D32" stroke-width="3"/><path d="M14 30 Q30 22 46 30" fill="none" stroke="#FFE3A1" stroke-width="5"/></svg>`, false, true); }
 function srToss() {
   if (!SR) return false; const now = performance.now();
-  if (SR.toy || now - (SR.tossAt || -1e9) < 6000) { toast('One toy at a time. The dogs are still busy with the last one.', 'good'); return false; }
+  if (SR.toy || now - (SR.tossAt || -1e9) < 6000) { toast(tt('shelter.one_toy', 'One toy at a time. The dogs are still busy with the last one.'), 'good'); return false; }
   SR.tossAt = now; const kind = PICK(SR_TOYS), [tx, ty] = srSpot(null), fx = $('#srFx'); if (!fx) return false;
   const g = document.createElementNS('http://www.w3.org/2000/svg', 'g'); g.setAttribute('class', 'sr-toy'); g.innerHTML = place(srToyArt(kind), -24, -40, 48, 48);
   fx.appendChild(g); SR.toy = { el: g, x: tx, y: ty, kind }; SFX.whoosh();
@@ -308,7 +310,7 @@ function srToss() {
 }
 function srFetch() {
   const T = SR.toy, awake = SR.dogs.filter((d) => !d.away && d.pose !== 'sleep' && d.pose !== 'rollover');
-  if (!awake.length) { srAfter(4000, () => { if (SR.toy === T) { T.el.remove(); SR.toy = null; } }); toast('Everyone is napping. The toy can wait.', 'good'); return; }
+  if (!awake.length) { srAfter(4000, () => { if (SR.toy === T) { T.el.remove(); SR.toy = null; } }); toast(tt('shelter.all_napping', 'Everyone is napping. The toy can wait.'), 'good'); return; }
   const run = awake.sort((a, b) => Math.hypot(a.x - T.x, a.y - T.y) - Math.hypot(b.x - T.x, b.y - T.y)).slice(0, Math.random() < 0.6 ? 2 : 1);
   run.forEach((rd) => { srHalt(rd); rd.busy = true; });
   const [first] = run.map((rd) => [rd, Math.hypot(rd.x - T.x, rd.y - T.y)]).sort((a, b) => a[1] - b[1])[0];
@@ -317,10 +319,10 @@ function srFetch() {
     srWalk(rd, [T.x + off - (rd.x < T.x ? 30 : -30), T.y + (rd === first ? 0 : RINT(-10, 10))], () => {
       if (rd === first) {
         if (SR.toy === T) { T.el.remove(); SR.toy = null; }
-        SR.lastFetch = { id: rd.id, at: Date.now() }; srBark(rd, 'play'); srLine(rd, SR_LINES.fetch, true);
+        SR.lastFetch = { id: rd.id, at: Date.now() }; srBark(rd, 'play'); srLine(rd, srLines('fetch'), true);
         const V = srView(), fy = Math.min(SR_ROOM.floor[3] - 8, V ? V.y1 - 8 : 590), fxp = clamp(rd.x + (500 - rd.x) * 0.3, V ? V.x0 + 90 : 90, V ? V.x1 - 90 : 910);
         srPose(rd, 'happy'); srAfter(500, () => srWalk(rd, srSpotOk(fxp, fy, rd, V) ? [fxp, fy] : srSpot(rd, [fxp, fy]), () => { srPose(rd, 'bow'); srHearts(rd.x, rd.y - 120 * srK(rd, rd.y), 3); srAfter(1600, () => srRest(rd, 'happy', 1200), rd); }, 200), rd);
-      } else { srPose(rd, PICK(['sit', 'sniff'])); srLine(rd, SR_LINES.late); srAfter(1800, () => srNext(rd), rd); }
+      } else { srPose(rd, PICK(['sit', 'sniff'])); srLine(rd, srLines('late')); srAfter(1800, () => srNext(rd), rd); }
     }, 300 + i * 40);
   });
 }
@@ -332,7 +334,7 @@ function srPetMeet() {
   const now = performance.now(); SR.meet.taps = (SR.meet.taps || []).filter((t) => now - t < 4000); SR.meet.taps.push(now);
   const belly = SR.meet.taps.length >= 3; if (belly) SR.meet.taps = [];
   m.innerHTML = srMeetSVG(key, belly ? 'rollover' : 'pet', 'right'); srHearts(SR_MEET[0] + 20, SR_MEET[1] - 190 * srK(key), belly ? 5 : 2); SFX.boop(belly ? 880 : 720);
-  playBark(voiceOf(srStarterLook(key)), 'play', { volume: 0.8 }); SR.pets = (SR.pets || 0) + 1; if (belly) { SR.bellies = (SR.bellies || 0) + 1; srSay(PICK(SR_LINES.belly), SR_MEET[0] + 40, SR_MEET[1] - 200 * srK(key), 2200); }
+  playBark(voiceOf(srStarterLook(key)), 'play', { volume: 0.8 }); SR.pets = (SR.pets || 0) + 1; if (belly) { SR.bellies = (SR.bellies || 0) + 1; srSay(PICK(srLines('belly')), SR_MEET[0] + 40, SR_MEET[1] - 200 * srK(key), 2200); }
   clearTimeout(SR.meet.t); SR.meet.t = srAfter(belly ? 2000 : 900, () => { if (SR.meet && SR.meet.key === key && m.isConnected) m.innerHTML = srMeetSVG(key, 'happy', 'right'); });
 }
 function srSelectKey(key, fromRd) {
@@ -416,9 +418,9 @@ function srClick(e) {
 }
 
 /* ---- shelter mode: the dock tray ---- */
-function srHomeLabel() { return !S || ['yard', 'house'].includes(S.place) || !PLACES[S.place] ? 'Go home' : `Back to ${PLACES[S.place].n}`; }
+function srHomeLabel() { return !S || ['yard', 'house'].includes(S.place) || !PLACES[S.place] ? tt('shelter.go_home', 'Go home') : tt('shelter.back_to', 'Back to {place}', { place: (typeof tkPlaceName === 'function' && tkPlaceName(S.place) !== S.place) ? tkPlaceName(S.place) : tdata('places.' + S.place + '.n', PLACES[S.place].n) }); }
 function srTray() {
-  dock.innerHTML = `<div class="tray sr-tray"><div class="tray-h"><h3>Doodle Doggo Shelter</h3></div><div class="sr-btns"><button class="btn go" id="srBoard">Adopt me board</button><button class="btn" id="srToss">Toss a toy</button><button class="btn" id="srHome">${esc(srHomeLabel())}</button></div></div>`;
+  dock.innerHTML = `<div class="tray sr-tray"><div class="tray-h"><h3>${esc(tt('shelter.title', 'Doodle Doggo Shelter'))}</h3></div><div class="sr-btns"><button class="btn go" id="srBoard">${esc(tt('shelter.board', 'Adopt me board'))}</button><button class="btn" id="srToss">${esc(tt('shelter.toss', 'Toss a toy'))}</button><button class="btn" id="srHome">${esc(srHomeLabel())}</button></div></div>`;
   $('#srBoard').onclick = () => { SFX.click(); openShelterList(); };
   $('#srToss').onclick = () => { SFX.click(); srToss(); };
   $('#srHome').onclick = () => { SFX.click(); go('yard'); };
@@ -429,11 +431,11 @@ function srMeet(id) {
   const x = srRoster().find((r) => r.id === id); if (!x) { openShelterList(); return; }
   const L = srLook(x), info = dogInfo(x.key), bl = adoptBlock(), tip = typeof bdTip === 'function' ? bdTip(x.key) : '';
   const p = openModal(`${esc(x.name)} ${sexSym(x.sex)}`, `<div class="sr-meetbox"><div class="sr-meetart" id="srMeetArt">${dogSVG(L, { pose: 'sit' })}</div><div class="sr-meetinfo">
-    <p class="sr-meetsub"><b>${esc(info.breed)}</b> · ${x.sex === 'female' ? 'Girl' : 'Boy'} · ${esc(ageText(x.months))}</p>
+    <p class="sr-meetsub"><b>${esc(tbreed(x.key))}</b> · ${esc(x.sex === 'female' ? tt('shelter.girl', 'Girl') : tt('shelter.boy', 'Boy'))} · ${esc(ageText(x.months))}</p>
     <p class="sr-meettrait">${esc(x.trait)}</p>
-    ${x.key !== 'mutt' ? `<p class="small">Loves: ${esc(favLine(x.key))}</p>` : ''}${tip ? `<p class="small bd-tip">${esc(tip)}</p>` : ''}
-    <p class="small sr-meetkind">${x.kind === 'rescue' ? 'Arrived today as a rescue.' : srStage(x.months) === 'senior' ? 'Lives in the playroom. Old knees, big heart, soft cushion.' : srStage(x.months) === 'puppy' ? 'Lives in the playroom. Small, fast and very interested in shoelaces.' : 'Lives in the playroom, waiting for the right family.'}</p></div></div>`,
-  { cls: 'sr-meet', foot: `<button class="btn no" id="srMeetBack">Back</button><button class="btn" id="srMeetPet">Pet</button><button class="btn yes big" id="srAdopt" ${bl ? 'aria-disabled="true"' : ''}>Adopt ${esc(x.name)}</button>` });
+    ${x.key !== 'mutt' ? `<p class="small">${esc(tt('shelter.loves', 'Loves: {fav}', { fav: favLine(x.key) }))}</p>` : ''}${tip ? `<p class="small bd-tip">${esc(tip)}</p>` : ''}
+    <p class="small sr-meetkind">${esc(x.kind === 'rescue' ? tt('shelter.kind_rescue', 'Arrived today as a rescue.') : srStage(x.months) === 'senior' ? tt('shelter.kind_senior', 'Lives in the playroom. Old knees, big heart, soft cushion.') : srStage(x.months) === 'puppy' ? tt('shelter.kind_puppy', 'Lives in the playroom. Small, fast and very interested in shoelaces.') : tt('shelter.kind_adult', 'Lives in the playroom, waiting for the right family.'))}</p></div></div>`,
+  { cls: 'sr-meet', foot: `<button class="btn no" id="srMeetBack">${esc(tt('shelter.back', 'Back'))}</button><button class="btn" id="srMeetPet">${esc(tt('shelter.pet', 'Pet'))}</button><button class="btn yes big" id="srAdopt" ${bl ? 'aria-disabled="true"' : ''}>${esc(tt('shelter.adopt', 'Adopt {name}', { name: x.name }))}</button>` });
   $('#srMeetBack', p).onclick = () => { SFX.click(); openShelterList(); };
   let petting = 0;
   $('#srMeetPet', p).onclick = () => {
@@ -453,17 +455,17 @@ function srAdoptFlow(kind, id, back) {
   let spec;
   if (kind === 'rescue') spec = rescuesToday().find((r) => r.id === id);
   else if (kind === 'resident') spec = srRoster().find((r) => r.id === id && r.kind === 'resident');
-  else { if (!shelterSex[id]) { nope('Pick Boy or Girl first. The siblings are waiting politely.'); return; } spec = { key: id, sex: shelterSex[id], months: 10 }; }
+  else { if (!shelterSex[id]) { nope(tt('shelter.pick_sex', 'Pick Boy or Girl first. The siblings are waiting politely.')); return; } spec = { key: id, sex: shelterSex[id], months: 10 }; }
   if (!spec || (spec.id && dogById(spec.id))) return;
   const def = kind === 'starter' ? dogInfo(spec.key).name : spec.name;
-  const pp = openModal(`Name your new ${spec.sex === 'female' ? 'girl' : 'boy'} ${sexSym(spec.sex)}`, `<p>${kind === 'starter' ? 'The tag says' : 'The shelter calls this one'} <b>${esc(def)}</b>. Keep it, or pick something just as silly.</p><input id="shName" class="namebox" maxlength="16" value="${esc(def)}" autofocus>`, { foot: '<button class="btn no" id="shNo">Back</button><button class="btn yes big" id="shOk">Bring home!</button>' });
+  const pp = openModal(`${esc(tt('shelter.name_new', '{sex, select, female {Name your new girl} other {Name your new boy}}', { sex: spec.sex }))} ${sexSym(spec.sex)}`, `<p>${tt('shelter.name_lead_html', '{k, select, starter {The tag says <b>{name}</b>. Keep it, or pick something just as silly.} other {The shelter calls this one <b>{name}</b>. Keep it, or pick something just as silly.}}', { k: kind === 'starter' ? 'starter' : 'other', name: def })}</p><input id="shName" class="namebox" maxlength="16" value="${esc(def)}" autofocus>`, { foot: `<button class="btn no" id="shNo">${esc(tt('shelter.back', 'Back'))}</button><button class="btn yes big" id="shOk">${esc(tt('shelter.bring_home', 'Bring home!'))}</button>` });
   const done = () => {
     const nm = ($('#shName', pp).value || def).trim().slice(0, 16) || def;
     const d = addDog(kind === 'starter' ? spec : { id: spec.id, key: spec.key, sex: spec.sex, months: spec.months, genes: spec.genes, rescue: spec.rescue }, nm);
     if (kind !== 'starter') { if (!S.shelter || !Array.isArray(S.shelter.adopted)) S.shelter = { adopted: [], seen: S.shelter && S.shelter.seen || null }; if (!S.shelter.adopted.includes(spec.id)) S.shelter.adopted.push(spec.id); }
     trackAct('adopt', { id: d.id, key: d.key, kind });
     closeModal(); audioCue('adopt'); SFX.fanfare();
-    const pd = PRd(d); toast(`${nm} is home! ${pd.He} sniffs everything twice. ${S.dogs.length} dogs now.`, 'gold');
+    toast(tt('shelter.is_home', '{name} is home! {sex, select, female {She sniffs everything twice.} other {He sniffs everything twice.}} {n, plural, one {# dog now.} other {# dogs now.}}', { name: nm, sex: d.sex, n: S.dogs.length }), 'gold');
     S.place = 'yard'; go('yard');
   };
   $('#shOk', pp).onclick = done; $('#shNo', pp).onclick = () => (back || openShelterList)();

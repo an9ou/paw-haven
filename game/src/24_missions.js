@@ -81,7 +81,7 @@ function msRoll(force) {
 function msToday() { const m = msRoll(); return m ? m.list : []; }
 function msText(it, short) {
   const d = msDef(it.id); if (!d) return it.id;
-  return (short ? d.s : d.t).replace(/\{dog\}/g, NAME()).replace(/\{arg\}/g, it.arg || '');
+  return tdata('ms_pool.' + d.id + (short ? '.s' : '.t'), short ? d.s : d.t, { dog: NAME(), arg: it.arg ? shNameAny(it.arg) : '' }); // v2.14 i18n: the pool text is a message with {dog} and {arg}
 }
 const msDoneN = () => (S && S.missions ? S.missions.list.filter((x) => x.done).length : 0);
 
@@ -100,13 +100,13 @@ function msOnAct(a) {
     let hit = false; try { hit = d.m(a, it); } catch (e) { hit = false; }
     if (!hit) return;
     it.p = Math.min(it.n, (it.p || 0) + 1); changed = true;
-    if (it.p >= it.n) { it.done = localISO(); const c = addCoins(MS_PAY, { raw: true }); msSay(`Mission done: ${msText(it, true)}. +${c} coins.`, 'gold'); }
+    if (it.p >= it.n) { it.done = localISO(); const c = addCoins(MS_PAY, { raw: true }); msSay(tt('missions.done', 'Mission done: {mission}. +{n} coins.', { mission: msText(it, true), n: c }), 'gold'); }
   });
   if (!changed) return;
   markDirty();
   if (m.list.length && m.list.every((x) => x.done) && m.stampDay !== m.date) {
     m.stampDay = m.date; m.stamps++;
-    setTimeout(() => msSay('All three done! A crayon stamp for today.', 'gold'), 800);
+    setTimeout(() => msSay(tt('missions.all_done', 'All three done! A crayon stamp for today.'), 'gold'), 800);
     if (m.stamps >= MS_CARD) { m.stamps = 0; m.cards++; msReward(); }
     else msRefresh(true);
   } else msRefresh();
@@ -125,14 +125,15 @@ function msReward() {
 function msRewardPop(kind) {
   SFX.fanfare();
   const art1 = kind === 'helmet' ? itemArt('Astronaut Helmet') : kind === 'rocket' ? (artReal('house', 'Rocket Ship') || itemArt('Rocket Ship')) : itemArt('Pupcake');
-  const txt = kind === 'helmet' ? `<p>Seven stamps! The card is full.</p><p>A prize for <b>${esc(NAME())}</b>: the <b>Astronaut Helmet</b>. No soggy shake after rain, no shivering in the snow. It is in the Wardrobe.</p>`
-    : kind === 'rocket' ? `<p>Another full card! The prize is a whole <b>Rocket Ship</b>.</p><p>Launch is cancelled, forever, for naps. Move in now?</p>`
-    : `<p>Another full card! <b>+120 coins</b> and one <b>Pupcake</b>.</p><p>A new card starts tomorrow.</p>`;
-  const foot = kind === 'rocket' ? '<button class="btn no" id="msLater">Later</button><button class="btn yes big" id="msMove">Move in</button>'
-    : kind === 'helmet' ? '<button class="btn no" id="msLater">Later</button><button class="btn yes big" id="msWear">Wear it</button>' : '<button class="btn yes big" id="msLater">Yay!</button>';
-  const p = openModal('<span class="hl">A full stamp card!</span>', `<div class="ms-prize"><span class="ms-prize-art${kind === 'rocket' ? ' house' : ''}">${art1}</span><div>${txt}</div></div>`, { cls: 'celebrate ms-reward', foot });
+  const txt = kind === 'helmet' ? tt('missions.prize_helmet_html', '<p>Seven stamps! The card is full.</p><p>A prize for <b>{name}</b>: the <b>{item}</b>. No soggy shake after rain, no shivering in the snow. It is in the Wardrobe.</p>', { name: NAME(), item: shNameAny('Astronaut Helmet') })
+    : kind === 'rocket' ? tt('missions.prize_rocket_html', '<p>Another full card! The prize is a whole <b>{item}</b>.</p><p>Launch is cancelled, forever, for naps. Move in now?</p>', { item: shNameAny('Rocket Ship') })
+    : tt('missions.prize_coins_html', '<p>Another full card! <b>+120 coins</b> and one <b>{item}</b>.</p><p>A new card starts tomorrow.</p>', { item: shNameAny('Pupcake') });
+  const later = esc(tt('missions.later', 'Later'));
+  const foot = kind === 'rocket' ? `<button class="btn no" id="msLater">${later}</button><button class="btn yes big" id="msMove">${esc(tt('missions.move_in', 'Move in'))}</button>`
+    : kind === 'helmet' ? `<button class="btn no" id="msLater">${later}</button><button class="btn yes big" id="msWear">${esc(tt('missions.wear_it', 'Wear it'))}</button>` : `<button class="btn yes big" id="msLater">${esc(tt('missions.yay', 'Yay!'))}</button>`;
+  const p = openModal(`<span class="hl">${esc(tt('missions.full_card', 'A full stamp card!'))}</span>`, `<div class="ms-prize"><span class="ms-prize-art${kind === 'rocket' ? ' house' : ''}">${art1}</span><div>${txt}</div></div>`, { cls: 'celebrate ms-reward', foot });
   const l = $('#msLater', p); if (l) l.onclick = () => { SFX.click(); closeModal(); };
-  const w = $('#msWear', p); if (w) w.onclick = () => { closeModal(); equip('Astronaut Helmet', true); toast(`${NAME()} is ready for space. Or the garden.`, 'good'); };
+  const w = $('#msWear', p); if (w) w.onclick = () => { closeModal(); equip('Astronaut Helmet', true); toast(tt('missions.ready_space', '{name} is ready for space. Or the garden.', { name: NAME() }), 'good'); };
   const mv = $('#msMove', p); if (mv) mv.onclick = () => { closeModal(); switchHouse('Rocket Ship'); };
 }
 /* run a popup when nothing else is in the way (a modal, a tray, a walk, Gerald) */
@@ -143,37 +144,85 @@ function msWhenFree(fn, tries = 0) {
 }
 
 /* ---- art: the checklist card and the stamp card (WORLD ART props), with a pencil doodle fallback ---- */
-function msDayLabel() { const d = new Date(); return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' }); }
+function msDayLabel() { return tdate(new Date(), { weekday: 'long', day: 'numeric', month: 'short' }); }
+// v2.14 fit: the card art wraps a row at its spaces and counts Latin letters, so Japanese, Chinese, Korean and Thai rows ran off the paper.
+// For those scripts the row is measured here and handed over as whole lines: inner spaces become no-break spaces and each line is padded
+// with zero-width spaces (nothing shows) so the art's own wrap keeps one line per row; the art still picks 16 px (2 lines) or 13 px (3 lines).
+const MS_WIDE = /[฀-๿ᄀ-ᇿ぀-ヿ㐀-鿿가-힯豈-﫿＀-￯]/;
+const MS_ROW_W = 86; // the art keeps a row's text between x 60 and 146
+let msCtx = null;
+// the card art draws these rows with Caveat, then the language's 'DD Local' faces (world B FONT_L), so they are measured with the same stack
+const msFont = (fs) => `700 ${fs}px 'Caveat', 'DD Local Title', 'DD Local', cursive`;
+// v2.14 fix: line breaks inside a word. The word segmenter splits words it does not know into single characters (お|み|くじ, 水|や|り,
+// 狗狗|們), so a one-character segment never stands alone: one that may not start a line (particles, small kana, 們 / 的, closing
+// punctuation, ๆ: kinsoku) and a lone hiragana (okurigana) stick to the segment before; any other one but a no-start one (a prefix like
+// お / ご, an opening bracket, a lone hanzi, a lone hiragana) sticks to the segment after; the last segment of a row sticks to the one before.
+// Spaces always allow a break. A glued word wider than the row breaks between its segments first, then between characters.
+// No Intl.Segmenter: the old per-character wrap.
+const MS_NO_START = /^[、。，．・：；？！ー）」』】〕〉》〜…‥々ぁぃぅぇぉっゃゅょゎァィゥェォッャュョヮヵヶをにはがでとのもへ們们的了着著得地嗎吗呢吧啊麼么,.!?:;)\]ๆฯ]$/;
+function msJoin(segs) {
+  const one = (s) => [...s].length === 1 && /\S/.test(s), out = [];
+  segs.forEach((s, i) => {
+    const a = i ? segs[i - 1] : '', back = one(s) && (MS_NO_START.test(s) || /^[ぁ-ゖ]$/.test(s) && !/^[おご]$/.test(s) || i === segs.length - 1);
+    if (out.length && /\S$/.test(a) && /^\S/.test(s) && (one(a) && !MS_NO_START.test(a) || back)) out[out.length - 1].push(s); else out.push([s]);
+  });
+  return out;
+}
+function msLines(t, fs, w, whole) { // whole: null when a word would have to be cut (the balanced 3-line try below)
+  if (msCtx === null) { try { msCtx = document.createElement('canvas').getContext('2d') || false; } catch (e) { msCtx = false; } }
+  if (!msCtx) return null;
+  msCtx.font = msFont(fs); const W = (s) => msCtx.measureText(s).width;
+  let units; try { units = msJoin([...new Intl.Segmenter(document.documentElement.lang || undefined, { granularity: 'word' }).segment(t)].map((s) => s.segment)); } catch (e) { units = [...t].map((c) => [c]); }
+  if (whole && units.some((u) => W(u.join('').trim()) > w)) return null;
+  const out = [''];
+  for (const u of units) for (const s of (W(u.join('')) > w ? u.flatMap((s0) => (W(s0) > w ? [...s0] : [s0])) : [u.join('')])) { const l = out[out.length - 1]; if (l.trim() && W((l + s).trimEnd()) > w) out.push(s.trimStart()); else out[out.length - 1] = l + s; }
+  return out.map((l) => l.trim()).filter(Boolean);
+}
+// returns { text } or, when the row was measured at 13 px, { text, fs: 13 }: the art then draws it at 13 px even as 2 lines (v2.14 fix: rows
+// measured at 13 px but drawn at 16 px ran into the "1/3" counter)
+function msRowText(t) {
+  if (!MS_WIDE.test(t)) return { text: esc(t) };
+  let L = msLines(t, 16, MS_ROW_W), fs = 16;
+  if (!L) return { text: esc(t) };
+  const r = (text) => (fs === 13 ? { text, fs } : { text });
+  if (L.length > 2 || !msLines(t, 16, MS_ROW_W, true)) { // 3+ lines at 16 px, or a word that only fits at 13 px
+    fs = 13; L = msLines(t, 13, MS_ROW_W);
+    if (L.length < 3) { msCtx.font = msFont(13); const L3 = msLines(t, 13, Math.ceil(msCtx.measureText(t).width / 3) + 13, true); if (L3 && L3.length === 3) L = L3; }
+    if (L.length > 3) { L = L.slice(0, 3); msCtx.font = msFont(13); let l = L[2]; while (l.length > 1 && msCtx.measureText(l + '…').width > MS_ROW_W) l = l.slice(0, -1); L[2] = l + '…'; }
+  }
+  if (L.length < 2) return r(esc(L[0] || t).replace(/ /g, ' '));
+  return r(L.map((l) => esc(l).replace(/ /g, ' ') + '​'.repeat(Math.max(0, 10 - l.length))).join(' '));
+}
 function msCardArt() {
-  const list = msToday(), items = list.map((it) => ({ text: esc(msText(it)), done: !!it.done, p: it.p || 0, n: it.n })), o = { items, stamps: S.missions.stamps, day: esc(msDayLabel()) };
+  const list = msToday(), items = list.map((it) => Object.assign(msRowText(msText(it)), { done: !!it.done, p: it.p || 0, n: it.n })), o = { items, stamps: S.missions.stamps, day: esc(msDayLabel()), title: tt('journal.tab_missions', 'Missions') };
   return artReal('prop', 'missioncard', o) || msCardFB(o);
 }
 function msWrap(t, max) { const w = String(t).split(' '), out = ['']; w.forEach((x) => { const l = out[out.length - 1]; if (l && (l + ' ' + x).length > max && out.length < 2) out.push(x); else out[out.length - 1] = l ? l + ' ' + x : x; }); return out; }
 function msCardFB(o) {
   const lines = o.items.map((it, i) => { const y = 92 + i * 54, tl = msWrap(it.text, 19); return `<rect x="22" y="${y - 16}" width="20" height="20" rx="3" fill="#FFFBF3" stroke="${INKG}" stroke-width="2.2" transform="rotate(${[-3, 2, -1][i % 3]} 32 ${y - 6})"/>${it.done ? `<path d="M25 ${y - 6} l6 7 l12 -16" fill="none" stroke="#3E9A6A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>` : ''}${tl.map((l, k) => `<text x="50" y="${y + k * 18}" font-family="Caveat,cursive" font-weight="700" font-size="17" fill="${INKG}">${l}</text>`).join('')}${it.n > 1 ? `<text x="178" y="${y}" text-anchor="end" font-family="Caveat,cursive" font-size="15" fill="${INKG}">${Math.min(it.p, it.n)}/${it.n}</text>` : ''}<path d="M48 ${y + 26} q60 3 128 -1" fill="none" stroke="#C9B8A6" stroke-width="1.2"/>`; }).join('');
   const nd = o.items.filter((x) => x.done).length;
-  return `<svg viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg" class="ms-fb"><rect x="8" y="16" width="184" height="236" rx="12" fill="#D9A877" stroke="${INKG}" stroke-width="3"/><path d="M14 30 q2 100 0 210" stroke="#B9875A" stroke-width="2" fill="none" opacity=".6"/><rect x="18" y="32" width="164" height="210" rx="4" fill="#FFFBF3" stroke="${INKG}" stroke-width="2" transform="rotate(-1 100 137)"/><rect x="70" y="6" width="60" height="30" rx="7" fill="#C9CED6" stroke="${INKG}" stroke-width="2.6"/><circle cx="100" cy="16" r="5" fill="#FFFBF3" stroke="${INKG}" stroke-width="2"/><text x="28" y="58" font-family="Caveat,cursive" font-weight="700" font-size="20" fill="${INKG}">Today</text><text x="176" y="58" text-anchor="end" font-family="Caveat,cursive" font-size="14" fill="${INKG}">${o.day || ''}</text>${lines}<g transform="translate(160 232) rotate(-8)"><circle r="16" fill="#F9D56E" stroke="${INKG}" stroke-width="2.2"/><text y="6" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="17" fill="${INKG}">${nd}/3</text></g></svg>`;
+  return `<svg viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg" class="ms-fb"><rect x="8" y="16" width="184" height="236" rx="12" fill="#D9A877" stroke="${INKG}" stroke-width="3"/><path d="M14 30 q2 100 0 210" stroke="#B9875A" stroke-width="2" fill="none" opacity=".6"/><rect x="18" y="32" width="164" height="210" rx="4" fill="#FFFBF3" stroke="${INKG}" stroke-width="2" transform="rotate(-1 100 137)"/><rect x="70" y="6" width="60" height="30" rx="7" fill="#C9CED6" stroke="${INKG}" stroke-width="2.6"/><circle cx="100" cy="16" r="5" fill="#FFFBF3" stroke="${INKG}" stroke-width="2"/><text x="28" y="58" font-family="Caveat,cursive" font-weight="700" font-size="20" fill="${INKG}">${esc(tt('missions.today', 'Today'))}</text><text x="176" y="58" text-anchor="end" font-family="Caveat,cursive" font-size="14" fill="${INKG}">${o.day || ''}</text>${lines}<g transform="translate(160 232) rotate(-8)"><circle r="16" fill="#F9D56E" stroke="${INKG}" stroke-width="2.2"/><text y="6" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="17" fill="${INKG}">${nd}/3</text></g></svg>`;
 }
-function msStampArt() { const s = S.missions.stamps; return artReal('prop', 'stampcard', { stamps: s }) || msStampFB(s); }
+function msStampArt() { const s = S.missions.stamps; return artReal('prop', 'stampcard', { stamps: s, title: tt('missions.stamp_card', 'Stamp card') }) || msStampFB(s); }
 function msStampFB(s) {
   const spots = Array.from({ length: MS_CARD }, (_, i) => { const x = 34 + i * 29, y = 80 + (i % 2 ? 8 : -6); return `<circle cx="${x}" cy="${y}" r="13" fill="none" stroke="#C9B8A6" stroke-width="1.6" stroke-dasharray="3 3"/>${i < s ? doodle('paw', x, y + 1, 0.95, [-12, 8, -4, 14, -8, 5, -14][i]).replace(/#E0D5F0/g, '#F28FA5') : ''}`; }).join('');
-  return `<svg viewBox="0 0 240 140" xmlns="http://www.w3.org/2000/svg" class="ms-fb"><rect x="6" y="10" width="228" height="122" rx="12" fill="#FFF3D6" stroke="${INKG}" stroke-width="3" transform="rotate(-1 120 71)"/><rect x="88" y="2" width="64" height="16" fill="rgba(242,143,165,.55)" transform="rotate(4 120 10)"/><text x="120" y="44" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="22" fill="${INKG}">Stamp card</text>${spots}<text x="120" y="122" text-anchor="middle" font-family="Caveat,cursive" font-size="15" fill="${INKG}">7 stamps is a surprise</text></svg>`;
+  return `<svg viewBox="0 0 240 140" xmlns="http://www.w3.org/2000/svg" class="ms-fb"><rect x="6" y="10" width="228" height="122" rx="12" fill="#FFF3D6" stroke="${INKG}" stroke-width="3" transform="rotate(-1 120 71)"/><rect x="88" y="2" width="64" height="16" fill="rgba(242,143,165,.55)" transform="rotate(4 120 10)"/><text x="120" y="44" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="22" fill="${INKG}">${esc(tt('missions.stamp_card', 'Stamp card'))}</text>${spots}<text x="120" y="122" text-anchor="middle" font-family="Caveat,cursive" font-size="15" fill="${INKG}">${esc(tt('missions.seven_surprise', '7 stamps is a surprise'))}</text></svg>`;
 }
 const MS_TICK = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="3" fill="#FFFBF3" stroke="#5B3D32" stroke-width="2.2"/><path class="ms-tk" d="M6 12 l4 5 l9 -11" fill="none" stroke="#3E9A6A" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 /* the popup / tab body: the clipboard with today's lines, the coin line, the stamp card */
 function msBodyHTML(stampNew) {
   const list = msToday(), m = S.missions, nd = list.filter((x) => x.done).length;
   const lines = list.map((it) => `<li class="${it.done ? 'done' : ''}" data-ms="${esc(it.id)}">${MS_TICK}<span class="ms-t">${esc(msText(it))}</span><span class="ms-p">${it.done ? `+${MS_PAY}` : `${Math.min(it.p || 0, it.n)}/${it.n}`}</span></li>`).join('');
-  return `<div class="ms-body"><div class="ms-cardwrap"><span class="ms-card" aria-hidden="true">${msCardArt()}</span><ul class="ms-list" aria-label="Today's missions">${lines}</ul></div>
-    <div class="ms-side"><p class="ms-coins">Each mission pays <b>${MS_PAY} coins</b>. Done today: <b>${nd} of 3</b>, ${nd * MS_PAY} of ${3 * MS_PAY} coins.</p>
-    <div class="ms-stampwrap${stampNew ? ' new' : ''}" data-stamps="${m.stamps}"><span class="ms-stampcard" aria-hidden="true">${msStampArt()}</span></div><p class="ms-sline"><b>${m.stamps} of ${MS_CARD}</b> stamps. All three missions in a day earn a stamp. Seven stamps is a surprise.${m.cards ? ` Full cards so far: ${m.cards}.` : ''}</p></div></div>`;
+  return `<div class="ms-body"><div class="ms-cardwrap"><span class="ms-card" aria-hidden="true">${msCardArt()}</span><ul class="ms-list" aria-label="${esc(tt('missions.list_aria', "Today's missions"))}">${lines}</ul></div>
+    <div class="ms-side"><p class="ms-coins">${tt('missions.coins_html', 'Each mission pays <b>{pay} coins</b>. Done today: <b>{nd} of 3</b>, {got} of {max} coins.', { pay: MS_PAY, nd, got: nd * MS_PAY, max: 3 * MS_PAY })}</p>
+    <div class="ms-stampwrap${stampNew ? ' new' : ''}" data-stamps="${m.stamps}"><span class="ms-stampcard" aria-hidden="true">${msStampArt()}</span></div><p class="ms-sline">${tt('missions.stamps_html', '<b>{n} of {total}</b> stamps. All three missions in a day earn a stamp. Seven stamps is a surprise.{cards, select, yes { Full cards so far: {c}.} other {}}', { n: m.stamps, total: MS_CARD, cards: m.cards ? 'yes' : 'no', c: m.cards })}</p></div></div>`;
 }
 function msOpen() {
   if (!S) return null; msRoll(); SFX.boop(700);
-  const p = openModal('Daily missions', msBodyHTML(false), { cls: 'ms-pop' });
+  const p = openModal(tt('missions.title', 'Daily missions'), msBodyHTML(false), { cls: 'ms-pop' });
   return p;
 }
-function msTabHTML() { if (!S) return ''; msRoll(); return `${msBodyHTML(false)}<p class="small ms-reset">Missions reset every real day at midnight. Finished or not, tomorrow brings three new ones.</p>`; }
+function msTabHTML() { if (!S) return ''; msRoll(); return `${msBodyHTML(false)}<p class="small ms-reset">${esc(tt('missions.reset', 'Missions reset every real day at midnight. Finished or not, tomorrow brings three new ones.'))}</p>`; }
 /* redraw whatever shows the missions: the popup, the Journal tab, the yard clipboard */
 function msRefresh(stampNew) {
   if (!S || !S.missions) return;
@@ -231,7 +280,7 @@ function msYardSVG() {
   if (!S || S.place !== 'yard') return '';
   msFields(); if (S.missions.date !== localISO()) msRoll();
   const [x, y, w, h] = MS_YARD, nd = msDoneN();
-  return `<g id="msCardG" class="hot" tabindex="0" role="button" aria-label="Daily missions: ${nd} of 3 done" data-done="${nd}">${place(msCardArt(), x, y, w, h)}<g class="ms-badge" pointer-events="none" transform="translate(${x + w - 8} ${y + 8}) rotate(-8)"><circle r="13" fill="${nd >= 3 ? '#BFE3C8' : '#F9D56E'}" stroke="${INKG}" stroke-width="2.4"/><text y="6" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="16" fill="${INKG}">${nd}/3</text></g>${msYardHit()}</g>`;
+  return `<g id="msCardG" class="hot" tabindex="0" role="button" aria-label="${esc(tt('missions.yard_aria', 'Daily missions: {nd} of 3 done', { nd }))}" data-done="${nd}">${place(msCardArt(), x, y, w, h)}<g class="ms-badge" pointer-events="none" transform="translate(${x + w - 8} ${y + 8}) rotate(-8)"><circle r="13" fill="${nd >= 3 ? '#BFE3C8' : '#F9D56E'}" stroke="${INKG}" stroke-width="2.4"/><text y="6" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="16" fill="${INKG}">${nd}/3</text></g>${msYardHit()}</g>`;
 }
 function msYardBind() {
   const g = $('#msCardG'); if (!g) return;

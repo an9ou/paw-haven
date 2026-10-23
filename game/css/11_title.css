@@ -56,7 +56,7 @@ html:not([data-layout="phone"]) .tray:has(.heads > button:nth-child(22)) #aAdopt
 .walkctl{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 .holdbtn{flex:1 1 200px;min-height:58px;font-family:var(--font-hand);font-weight:700;font-size:28px;--wash:var(--w-mint);touch-action:none}
 .holdbtn.down{--wash:var(--w-yellow);transform:translate(1px,2px)}
-label.tog{display:inline-flex;align-items:center;gap:8px;font-size:17px;min-height:44px}
+label.tog{display:inline-flex;align-items:center;gap:8px;font-size:17px;min-height:44px;margin:2px 0;vertical-align:middle} /* v2.14 fit: two toggles on lines of their own never touch (Thai lines are taller) */
 label.tog input{width:22px;height:22px;accent-color:#e07a92}
 #modHost{position:absolute;left:0;right:0;bottom:0;top:62px;z-index:8;overflow:hidden;background:var(--paper)}
 #devPanel{position:absolute;right:14px;bottom:calc(var(--barH) + 18px);z-index:25;padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:15px;max-height:calc(100% - var(--barH) - 40px);overflow:auto;--wash:var(--w-lilac)}
@@ -71,6 +71,16 @@ label.tog input{width:22px;height:22px;accent-color:#e07a92}
 /* ---------- v2.3 title: account choice and the log in / make an account sheets (ACCOUNT lane) ---------- */
 #tAcct{display:contents}
 .cover.choosing .dd-low{transform:translateY(34px)}
+/* v2.14 fit: the account choice (three cards) is taller than the plain title, and taller still in ja / ko / th / de: the cover grows with its content
+   (it used to keep 78% / 92% of the screen and push the logo above it and the crayon note below it) and the title page scrolls if it must */
+#title:has(.cover.choosing){overflow-x:hidden;overflow-y:auto;align-items:safe center;overscroll-behavior:contain}
+#title .bg{overflow:hidden;overflow:clip} /* the yard art past its viewBox never makes the page scroll */
+.cover.choosing{height:auto;min-height:78%;max-height:none;justify-content:safe center;gap:10px;flex:none;margin:12px 0}
+html[data-layout="phone"] .cover.choosing{min-height:0;max-height:none;padding-top:20px;padding-bottom:18px;gap:8px}
+html[data-layout="phone"] .cover.choosing .tagline{font-size:26px;line-height:1.15;text-align:center}
+html[data-layout="phone"] .cover.choosing .crayon-note{font-size:15px;line-height:1.3}
+/* v2.14 review: the cover sized to its content leaves no room under the crayon note on phones and the 684 px embed: the low doodles and the two title dogs drew on it */
+html[data-layout="phone"] .cover.choosing .dd-low,html[data-layout="phone"] #title:has(.cover.choosing) :is(.tdog,.tdog2){display:none}
 .tchoose{position:relative;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:2px}
 .tch{width:192px;padding:10px 12px 14px;gap:4px;cursor:pointer;font:inherit;color:var(--ink)}
 .tch .tch-dog{display:block;width:100px;height:82px;pointer-events:none}
@@ -121,3 +131,8 @@ html[data-layout="phone"] #modal .panel.acct .foot .btn{flex:1 1 0;min-height:48
 html[data-layout="phone"] #stage #modal .panel.pop.acct{padding-bottom:calc(22px + env(safe-area-inset-bottom,0px))} /* the last row never touches the sheet's frame */
 /* v2.11.1 (UI): the adopt card reads comfortably on phones (the card's spacing is in 33_shelter.css); desktop keeps the v2.11 card (PHONE.md) */
 html[data-layout="phone"] .heads{gap:8px;max-width:380px;margin:4px auto 0}
+/* v2.14 fit: Thai keeps its marks with a 1.4 line on the three account cards (the 1.6 floor of 50_i18n.css made the choice twice the screen tall at 360 px) */
+html[data-layout="phone"]:lang(th) .tchoose .tch :is(b,.tch-s){line-height:1.4!important}
+html[data-layout="phone"]:lang(th) .tchoose .tch b{font-size:23px}
+html[data-layout="phone"]:lang(th) .cover.choosing .tagline{font-size:23px;line-height:1.45!important}
+html[data-layout="phone"] .cover.choosing .tchoose .tch .tch-dog{width:64px;height:54px}

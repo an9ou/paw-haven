@@ -11,7 +11,8 @@ sub mod { my $s = rd(shift); die "</script in module\n" if $s =~ m{</script}i; $
 my $out = rd('game/shell.html');
 my $art  = join "\n", map { mod($_) } qw(dogs/pawart_dogs.js world/pawart_world_a.js world/pawart_world_b.js world/pawart_world_c.js world/pawart_world_d.js world/pawart_world_e.js);
 my $mods = join "\n", map { mod($_) } qw(mods/genes.js mods/pawaudio.js mods/walkrun.js mods/toys.js mods/garden.js mods/kitchen.js);
-for ([ '/*@@CSS@@*/', cat_dir('css') ], [ '/*@@GAME@@*/', cat_dir('src') ], [ '/*@@PAWART@@*/', $art ], [ '/*@@PAWMODS@@*/', $mods ]) {
+my $i18n = join "\n", map { rd($_) } grep { -e $_ } qw(game/i18n/msg.js game/i18n/packed.js); # v2.14, same as game/build.js
+for ([ '/*@@I18N@@*/', $i18n ], [ '/*@@CSS@@*/', cat_dir('css') ], [ '/*@@GAME@@*/', cat_dir('src') ], [ '/*@@PAWART@@*/', $art ], [ '/*@@PAWMODS@@*/', $mods ]) {
   my $i = index($out, $_->[0]); die "missing slot $_->[0]\n" if $i < 0; substr($out, $i, length $_->[0]) = $_->[1];
 }
 open my $w, '>:raw', 'paw_haven_prototype.html' or die $!; print $w $out; close $w;

@@ -33,9 +33,9 @@ const BR_LONG = ['dachs', 'corgi'];
 function brLongBack(d) { const a = d.anc || ancOf(d); return BR_LONG.includes(d.key) || !!(d.mix && BR_LONG.includes(d.mix.head)) || BR_LONG.some((k) => (a[k] || 0) >= 0.25); }
 let brRampTip = false;
 function brRampCheck(d) { if (S.decor && S.decor['Doggy Ramp']) return; if (!brLongBack(d)) return; brDecor('Doggy Ramp'); brRampTip = d.name; }
-const BR_RAMP_TIP = "Long backs love ramps. Jumping off sofas is hard on a dachshund's spine, so a ramp keeps them comfy.";
-function brRampHtml() { const n = brRampTip; brRampTip = false; return n ? `<div class="br-tip" id="brRampTip"><span class="br-tip-ic">${artReal('item', 'Doggy Ramp') || iconOr('decor', '<path d="M-16 10l28 -20v20z" fill="#E9C48D" stroke="#5B3D32" stroke-width="2"/>')}</span><p><b>New for the yard: a Doggy Ramp, for ${esc(n)}.</b> ${esc(BR_RAMP_TIP)}</p></div>` : ''; }
-function brRampPopup() { if (!brRampTip) return false; const p = openModal('Doggy Ramp', brRampHtml(), { cls: 'litter', foot: '<button class="btn yes big" id="brRampOk">Comfy!</button>' }); $('#brRampOk', p).onclick = () => { SFX.click(); closeModal(); }; return true; }
+const brRampTipText = () => tt('puppies.long_backs_love_ramps', "Long backs love ramps. Jumping off sofas is hard on a dachshund's spine, so a ramp keeps them comfy.");
+function brRampHtml() { const n = brRampTip; brRampTip = false; return n ? `<div class="br-tip" id="brRampTip"><span class="br-tip-ic">${artReal('item', 'Doggy Ramp') || iconOr('decor', '<path d="M-16 10l28 -20v20z" fill="#E9C48D" stroke="#5B3D32" stroke-width="2"/>')}</span><p><b>${esc(tt('puppies.new_for_the_yard_a_doggy', 'New for the yard: a Doggy Ramp, for {name}.', { name: n }))}</b> ${esc(brRampTipText())}</p></div>` : ''; }
+function brRampPopup() { if (!brRampTip) return false; const p = openModal(tt('puppies.doggy_ramp', 'Doggy Ramp'), brRampHtml(), { cls: 'litter', foot: '<button class="btn yes big" id="brRampOk">' + tt('puppies.comfy', 'Comfy!') + '</button>' }); $('#brRampOk', p).onclick = () => { SFX.click(); closeModal(); }; return true; }
 
 /* ---- birth ---- */
 let brSnooze = 0;
@@ -50,39 +50,38 @@ function brBirth(dam) {
   dam.litters = (dam.litters || 0) + 1; dam.lastLitter = today; dam.preg = null;
   L.fresh = pups.filter((pp) => pp.coat && !S.coatBook[pp.key + '|' + pp.coat]).map((pp) => pp.id); // NEW stamps (coat unseen before this birth)
   pups.forEach((pp) => { S.pupsBorn = (S.pupsBorn || 0) + 1; S.pupsSinceSparkle = pp.sparkle ? 0 : (S.pupsSinceSparkle || 0) + 1; treePut(Object.assign(brRecSpec(pp), { status: 'litter' })); coatLog(pp); });
-  if (dam.litters >= 4 && !dam.proud) { dam.proud = today; brDecor('Rocking Chair'); toast(`${dam.name} is a Proud Mum! Four litters, all loved. A Rocking Chair is waiting in the yard.`, 'gold'); }
+  if (dam.litters >= 4 && !dam.proud) { dam.proud = today; brDecor('Rocking Chair'); toast(tt('puppies.is_a_proud_mum_four', '{name} is a Proud Mum! Four litters, all loved. A Rocking Chair is waiting in the yard.', { name: dam.name }), 'gold'); }
   brStoneHint();
   treePut(brRec(dam, 'home')); markDirty(); saveNow(); return L;
 }
 
 /* ---- v2.1 the Sparkle Stone hint (10+ pups born, Stone never found) + the one-time launch letter ---- */
 const brOwnsStone = () => !!(S && S.inv && (S.inv.charms || []).includes('Sparkle Stone'));
-function brMail(title, text) { if (typeof mailPush === 'function') { try { mailPush({ kind: 'news', from: 'Doodle Doggo Post', title, text }); return; } catch (e) { /* toast instead */ } } toast(text, 'gold'); }
+function brMail(title, text) { if (typeof mailPush === 'function') { try { mailPush({ kind: 'news', from: tt('puppies.doodle_doggo_post', 'Doodle Doggo Post'), title, text }); return; } catch (e) { /* toast instead */ } } toast(text, 'gold'); }
 function brStoneHint() {
   if (!S || S.stoneHint || (S.pupsBorn || 0) < 10 || (S.found && S.found['Sparkle Stone']) || brOwnsStone()) return false;
-  S.stoneHint = brToday(); markDirty(); brMail('A curious hum', 'Psst. Something on the Riverside Trail hums whenever puppies are near.'); return true;
+  S.stoneHint = brToday(); markDirty(); brMail(tt('puppies.a_curious_hum', 'A curious hum'), tt('puppies.psst_something_on_the_riverside', 'Psst. Something on the Riverside Trail hums whenever puppies are near.')); return true;
 }
 function brStoneLetter() {
   if (!S || S.stoneLetter || !brOwnsStone()) return false;
-  S.stoneLetter = brToday(); markDirty(); brMail('The Stone hums louder', 'The Sparkle Stone is humming louder than ever. Maybe it likes puppies?'); return true;
+  S.stoneLetter = brToday(); markDirty(); brMail(tt('puppies.the_stone_hums_louder', 'The Stone hums louder'), tt('puppies.the_sparkle_stone_is_humming', 'The Sparkle Stone is humming louder than ever. Maybe it likes puppies?')); return true;
 }
 function brPupCard(pp, i, named, fresh) {
-  const P = brPR(pp);
-  return `<div class="lt-card ${pp.sparkle ? 'sparkly' : ''}" style="--i:${i}" data-pup="${pp.id}">${pp.sparkle ? '<span class="lt-spark">Sparkle!</span>' : ''}${fresh ? '<span class="lt-new" aria-label="New coat">NEW</span>' : ''}<span class="lt-art">${pupArt(pp, { pose: 'sleep' })}</span>
-    <span class="lt-sx">${sexSym(pp.sex)} ${pp.sex === 'female' ? 'Girl' : 'Boy'}</span><span class="small">${esc(pp.mix ? pp.mix.name : brBreed(pp.key))}<br>${esc(pp.coat)}, ${esc(pp.eyes)} eyes</span>
-    ${named ? `<b>${esc(pp.name)}</b>` : `<label class="lt-name"><span class="sr">Name for pup ${i + 1}</span><input class="namebox" maxlength="16" data-pupname="${pp.id}" value="${esc(pp.name)}" aria-label="Name for the ${P.boy} pup"></label>`}</div>`;
+  return `<div class="lt-card ${pp.sparkle ? 'sparkly' : ''}" style="--i:${i}" data-pup="${pp.id}">${pp.sparkle ? '<span class="lt-spark">' + tt('puppies.sparkle', 'Sparkle!') + '</span>' : ''}${fresh ? '<span class="lt-new" aria-label="' + esc(tt('puppies.label_new_coat', 'New coat')) + '">' + tt('puppies.new', 'NEW') + '</span>' : ''}<span class="lt-art">${pupArt(pp, { pose: 'sleep' })}</span>
+    <span class="lt-sx">${sexSym(pp.sex)} ${pp.sex === 'female' ? tt('puppies.girl', 'Girl') : tt('puppies.boy', 'Boy')}</span><span class="small">${esc(pp.mix ? mixShown(pp.mix) : brBreed(pp.key))}<br>${esc(tt('puppies.coat_and_eyes', '{coat}, {eyes} eyes', { coat: coatShown(pp.coat, pp.key), eyes: eyeShown(pp.eyes) }))}</span>
+    ${named ? `<b>${esc(pp.name)}</b>` : `<label class="lt-name"><span class="sr">${esc(tt('puppies.name_for_pup', 'Name for pup {n}', { n: i + 1 }))}</span><input class="namebox" maxlength="16" data-pupname="${pp.id}" value="${esc(pp.name)}" aria-label="${esc(tt('puppies.name_for_the_pup', '{sex, select, female {Name for the girl pup} other {Name for the boy pup}}', { sex: homeSx(pp) }))}"></label>`}</div>`;
 }
 function openBirth(litterId) {
   const L = S.litters.find((x) => x.id === litterId); if (!L) return;
-  const mum = dogById(L.mum) || { name: 'Mum', key: 'mutt', id: L.mum }, sp = L.pups.some((p) => p.sparkle), n = L.pups.length;
+  const mum = dogById(L.mum) || { name: tt('puppies.mum', 'Mum'), key: 'mutt', id: L.mum }, sp = L.pups.some((p) => p.sparkle), n = L.pups.length;
   const order = L.pups.filter((pp) => !pp.sparkle).concat(L.pups.filter((pp) => pp.sparkle)), fresh = L.fresh || []; // v2.1: Sparkle is revealed last
-  const gerald = L.gerald ? '' : '<p class="lt-gerald" id="ltGerald"><b>Gerald the duck:</b> "Congratulations. I still want my sandwich back."</p>'; L.gerald = true;
-  const lines = [`${mum.name} did amazingly. Everyone is warm, fed and making tiny squeaks.`, `${n === 1 ? 'One perfect pup' : n + ' wriggly pups'}! ${mum.name} counts them twice, just to be sure.`];
-  const p = openModal('<span class="hl">Puppies!</span>', `<div class="lt-birth"><div class="lt-top"><div class="lt-mum">${dogSVG(mum, { pose: 'down', facing: 'right' })}</div><div class="lt-intro"><p class="lt-mumname">${esc(mum.name)} ${sexSym('female')} <span class="small">&amp; ${esc(L.sireName || 'dad')}</span></p>
-    <p>${esc(lines[n % 2])}</p>${sp ? '<p class="lt-sparkline">One pup is <b>Sparkle</b>! A one-in-five-hundred twinkle. Purely cosmetic, purely magic.</p>' : ''}${gerald}
-    <p class="small">Name your pup${n > 1 ? 's' : ''} (press Enter to confirm). Newborns stay with mum for 2 days before anyone picks new homes.</p></div></div>
-    <div class="lt-pups">${order.map((pp, i) => brPupCard(pp, i, false, fresh.includes(pp.id))).join('')}</div></div>`, { cls: 'litter birth', foot: '<button class="btn yes big" id="ltOk">Welcome, little ones!</button>', onClose: () => brNameDone(L, p) });
-  const ok = () => { brNameDone(L, p); modalClose = null; closeModal(); toast(`Welcome, ${L.pups.map((x) => x.name).join(', ')}! The nursery basket is ready.`, 'gold'); if (cur.mode === 'yard') brDrawNursery(); };
+  const gerald = L.gerald ? '' : '<p class="lt-gerald" id="ltGerald">' + tt('puppies.gerald_congratulations_html', '<b>Gerald the duck:</b> "Congratulations. I still want my sandwich back."') + '</p>'; L.gerald = true;
+  const lines = [tt('puppies.did_amazingly_everyone_is_warm', '{name} did amazingly. Everyone is warm, fed and making tiny squeaks.', { name: mum.name }), tt('puppies.pups_counts_them_twice', '{n, plural, one {One perfect pup! {name} counts them twice, just to be sure.} other {# wriggly pups! {name} counts them twice, just to be sure.}}', { n, name: mum.name })];
+  const p = openModal('<span class="hl">' + tt('puppies.puppies', 'Puppies!') + '</span>', `<div class="lt-birth"><div class="lt-top"><div class="lt-mum">${dogSVG(mum, { pose: 'down', facing: 'right' })}</div><div class="lt-intro"><p class="lt-mumname">${esc(mum.name)} ${sexSym('female')} <span class="small">${esc(tt('puppies.and_sire', '& {name}', { name: L.sireName || tt('puppies.dad', 'dad') }))}</span></p>
+    <p>${esc(lines[n % 2])}</p>${sp ? '<p class="lt-sparkline">' + tt('puppies.one_pup_is_sparkle_html', 'One pup is <b>Sparkle</b>! A one-in-five-hundred twinkle. Purely cosmetic, purely magic.') + '</p>' : ''}${gerald}
+    <p class="small">${esc(tt('puppies.name_your_pups_press_enter', '{n, plural, one {Name your pup (press Enter to confirm). Newborns stay with mum for 2 days before anyone picks new homes.} other {Name your pups (press Enter to confirm). Newborns stay with mum for 2 days before anyone picks new homes.}}', { n }))}</p></div></div>
+    <div class="lt-pups">${order.map((pp, i) => brPupCard(pp, i, false, fresh.includes(pp.id))).join('')}</div></div>`, { cls: 'litter birth', foot: '<button class="btn yes big" id="ltOk">' + tt('puppies.welcome_little_ones', 'Welcome, little ones!') + '</button>', onClose: () => brNameDone(L, p) });
+  const ok = () => { brNameDone(L, p); modalClose = null; closeModal(); toast(tt('puppies.welcome_the_nursery_basket_is', 'Welcome, {names}! The nursery basket is ready.', { names: tlist(L.pups.map((x) => x.name)) }), 'gold'); if (cur.mode === 'yard') brDrawNursery(); };
   $('#ltOk', p).onclick = ok;
   p.querySelectorAll('[data-pupname]').forEach((inp) => inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); ok(); } }));
   if (isPhone()) ppPager(p); // v2.2: swipeable row of pup cards with Back / Next buttons
@@ -93,10 +92,10 @@ function openBirth(litterId) {
 function ppPager(p) {
   const row = p.querySelector('.lt-pups'), cards = row ? [...row.querySelectorAll('.lt-card')] : []; if (cards.length < 2) return;
   const nav = document.createElement('div'); nav.className = 'pp-nav';
-  nav.innerHTML = '<button class="btn pp-prev" type="button" aria-label="Previous pup">&lsaquo; Back</button><span class="pp-count" id="ppCount" aria-live="polite"></span><button class="btn pp-next" type="button" aria-label="Next pup">Next &rsaquo;</button>';
+  nav.innerHTML = '<button class="btn pp-prev" type="button" aria-label="' + esc(tt('puppies.label_previous_pup', 'Previous pup')) + '">&lsaquo; ' + tt('puppies.back', 'Back') + '</button><span class="pp-count" id="ppCount" aria-live="polite"></span><button class="btn pp-next" type="button" aria-label="' + esc(tt('puppies.label_next_pup', 'Next pup')) + '">' + tt('puppies.next', 'Next') + ' &rsaquo;</button>';
   row.after(nav); const prev = nav.querySelector('.pp-prev'), next = nav.querySelector('.pp-next'), count = nav.querySelector('.pp-count');
   const at = () => { const rb = row.getBoundingClientRect(), mid = rb.left + rb.width / 2; let best = 0, bd = 1e9; cards.forEach((c, i) => { const b = c.getBoundingClientRect(), dd = Math.abs(b.left + b.width / 2 - mid); if (dd < bd) { bd = dd; best = i; } }); return best; }; // the card nearest the row's centre (snap is centred)
-  const sync = () => { const i = at(); count.textContent = "Pup " + (i + 1) + " of " + cards.length; prev.disabled = i === 0; next.disabled = i === cards.length - 1; };
+  const sync = () => { const i = at(); count.textContent = tt('puppies.pup_of', 'Pup {n} of {total}', { n: i + 1, total: cards.length }); prev.disabled = i === 0; next.disabled = i === cards.length - 1; };
   const go = (d) => { const i = clamp(at() + d, 0, cards.length - 1); cards[i].scrollIntoView({ behavior: document.documentElement.dataset.motion === 'off' ? 'auto' : 'smooth', inline: 'center', block: 'nearest' }); SFX.click(); };
   prev.onclick = () => go(-1); next.onclick = () => go(1); row.addEventListener('scroll', sync, { passive: true }); sync();
 }
@@ -138,7 +137,7 @@ function brDrawNursery() {
   const [ax, ay, aw, ah] = NURSERY_AT.art, [hx, hy, hw, hh] = NURSERY_AT.hit, mum = dogById(L.mum);
   const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
   g.setAttribute('id', 'nurseryG'); g.setAttribute('class', 'hot nursery-basket' + (mumInBasket(mum) ? ' with-mum' : '')); g.setAttribute('tabindex', '0'); g.setAttribute('role', 'button');
-  g.setAttribute('aria-label', `Nursery: ${mum.name}'s ${L.pups.length === 1 ? 'puppy' : L.pups.length + ' puppies'}`); g.dataset.litter = L.id;
+  g.setAttribute('aria-label', tt('puppies.label_nursery_s_puppy', "{n, plural, one {Nursery: {name}'s puppy} other {Nursery: {name}'s # puppies}}", { n: L.pups.length, name: mum.name })); g.dataset.litter = L.id;
   g.innerHTML = `<g pointer-events="none">${place(brNurserySVG(L), ax, ay, aw, ah)}</g><rect x="${hx}" y="${hy}" width="${hw}" height="${hh}" rx="20" fill="transparent" pointer-events="all"/>`;
   anchor.parentNode.insertBefore(g, anchor); // behind every dog, so the dogs stay clickable
   const openIt = () => { SFX.click(); openNursery(L.id); };
@@ -149,23 +148,23 @@ on('scene:redraw', () => { if (cur.mode === 'yard' && !$('#nurseryG')) brDrawNur
 
 /* ---- nursery popup ---- */
 function openNursery(litterId) {
-  brFields(); const list = S.litters; const L = list.find((x) => x.id === litterId) || list[0]; if (!L) { nope('The nursery is empty. Very tidy.'); return; }
-  const mum = dogById(L.mum) || { name: 'Mum', key: 'mutt', id: L.mum, stats: null }, left = Math.max(0, brDaysUntil(L.until));
+  brFields(); const list = S.litters; const L = list.find((x) => x.id === litterId) || list[0]; if (!L) { nope(tt('puppies.the_nursery_is_empty_very', 'The nursery is empty. Very tidy.')); return; }
+  const mum = dogById(L.mum) || { name: tt('puppies.mum', 'Mum'), key: 'mutt', id: L.mum, stats: null }, left = Math.max(0, brDaysUntil(L.until));
   const today = brToday(); const pets = L.pets && L.pets.date === today ? L.pets.n : 0, idx = list.indexOf(L);
-  const p = openModal(`${esc(mum.name)}'s nursery`, `<div class="ns-wrap"><div class="ns-bed">${dogSVG(mum, { pose: 'down', facing: 'right' })}<div class="ns-pups">${L.pups.map((pp) => `<span class="ns-pup" title="${esc(pp.name)}">${pupArt(pp, { pose: 'sleep' })}<b>${esc(pp.name)} ${sexSym(pp.sex)}</b></span>`).join('')}</div><div class="ns-hearts" id="nsHearts" aria-hidden="true"></div></div>
-    <p class="ns-count" id="nsCount">${left > 0 ? `Ready for new homes in ${left} day${left > 1 ? 's' : ''}.` : 'Ready for new homes today!'}</p>
-    <p class="small">Newborns just nurse and sleep: no feeding needed. ${esc(mum.name)} eats for ${L.pups.length + 1} and stays home from walks.</p></div>`,
-    { cls: 'litter nursery', foot: `${list.length > 1 ? `<button class="btn" id="nsNext">Next litter (${idx + 1}/${list.length})</button>` : ''}<button class="btn go big" id="nsPet" ${pets >= 3 ? 'aria-disabled="true"' : ''}>Pet softly (${3 - pets} left today)</button>${left <= 0 ? '<button class="btn yes big" id="nsChoose">Choose homes</button>' : ''}` });
+  const p = openModal(tt('puppies.s_nursery', "{name}'s nursery", { name: esc(mum.name) }), `<div class="ns-wrap"><div class="ns-bed">${dogSVG(mum, { pose: 'down', facing: 'right' })}<div class="ns-pups">${L.pups.map((pp) => `<span class="ns-pup" title="${esc(pp.name)}">${pupArt(pp, { pose: 'sleep' })}<b>${esc(pp.name)} ${sexSym(pp.sex)}</b></span>`).join('')}</div><div class="ns-hearts" id="nsHearts" aria-hidden="true"></div></div>
+    <p class="ns-count" id="nsCount">${esc(left > 0 ? tt('puppies.ready_for_new_homes_in', 'Ready for new homes in {n, plural, one {# day} other {# days}}.', { n: left }) : tt('puppies.ready_for_new_homes_today', 'Ready for new homes today!'))}</p>
+    <p class="small">${esc(tt('puppies.newborns_just_nurse_and_sleep', 'Newborns just nurse and sleep: no feeding needed. {name} eats for {n} and stays home from walks.', { name: mum.name, n: L.pups.length + 1 }))}</p></div>`,
+    { cls: 'litter nursery', foot: `${list.length > 1 ? `<button class="btn" id="nsNext">${esc(tt('puppies.next_litter', 'Next litter ({n}/{total})', { n: idx + 1, total: list.length }))}</button>` : ''}<button class="btn go big" id="nsPet" ${pets >= 3 ? 'aria-disabled="true"' : ''}>${esc(tt('puppies.pet_softly_left_today', 'Pet softly ({n} left today)', { n: 3 - pets }))}</button>${left <= 0 ? '<button class="btn yes big" id="nsChoose">' + tt('puppies.choose_homes', 'Choose homes') + '</button>' : ''}` });
   if (typeof audioPlace === 'function') audioPlace('nursery'); // v2.0.1: the nursery lullaby while the popup is open (closeModal restores the place music)
   const nx = $('#nsNext', p); if (nx) nx.onclick = () => openNursery(list[(idx + 1) % list.length].id);
   const ch = $('#nsChoose', p); if (ch) ch.onclick = () => openWhoStays(L.id);
   $('#nsPet', p).onclick = () => {
     const t = brToday(); if (!L.pets || L.pets.date !== t) L.pets = { date: t, n: 0 };
-    if (L.pets.n >= 3) { nope(`Shh. The pups are asleep, and ${mum.name} has had plenty of pets today.`); return; }
+    if (L.pets.n >= 3) { nope(tt('puppies.shh_the_pups_are_asleep', 'Shh. The pups are asleep, and {name} has had plenty of pets today.', { name: mum.name })); return; }
     L.pets.n++; if (mum.stats) mum.stats.happy = clamp(mum.stats.happy + 8, 0, 100); markDirty(); updateHUD(); SFX.boop && SFX.boop(880);
     const h = $('#nsHearts', p); if (h) { h.innerHTML = '<i></i><i></i><i></i><i></i>'; h.classList.remove('go'); void h.offsetWidth; h.classList.add('go'); }
-    const b = $('#nsPet', p); b.textContent = `Pet softly (${3 - L.pets.n} left today)`; if (L.pets.n >= 3) b.setAttribute('aria-disabled', 'true');
-    toast(PICK([`${mum.name} sighs happily. A pup lets out a tiny dream-squeak. +8 Happiness.`, `Soft pets for ${mum.name}. The pups wiggle closer. +8 Happiness.`, `${mum.name} thumps ${brPR(mum).his} tail very quietly. +8 Happiness.`]), 'good');
+    const b = $('#nsPet', p); b.textContent = tt('puppies.pet_softly_left_today', 'Pet softly ({n} left today)', { n: 3 - L.pets.n }); if (L.pets.n >= 3) b.setAttribute('aria-disabled', 'true');
+    toast(PICK([tt('puppies.sighs_happily_a_pup_lets', '{name} sighs happily. A pup lets out a tiny dream-squeak. +8 Happiness.', { name: mum.name }), tt('puppies.soft_pets_for_the_pups', 'Soft pets for {name}. The pups wiggle closer. +8 Happiness.', { name: mum.name }), tt('puppies.thumps_tail_very_quietly', '{sex, select, female {{name} thumps her tail very quietly. +8 Happiness.} other {{name} thumps his tail very quietly. +8 Happiness.}}', { sex: homeSx(mum), name: mum.name })]), 'good');
   };
 }
 
@@ -173,23 +172,23 @@ function openNursery(litterId) {
 let brStay = {};
 function openWhoStays(litterId) {
   brFields(); const L = S.litters.find((x) => x.id === litterId); if (!L) return;
-  const mum = dogById(L.mum) || { name: 'Mum' }, free = brFree();
+  const mum = dogById(L.mum) || { name: tt('puppies.mum', 'Mum') }, free = brFree();
   L.pups.forEach((pp) => { if (!(pp.id in brStay)) brStay[pp.id] = false; });
   if (!L.wsSeen) { L.wsSeen = true; let f = free - L.pups.filter((pp) => brStay[pp.id]).length; L.pups.forEach((pp) => { if (pp.sparkle && !brStay[pp.id] && f > 0) { brStay[pp.id] = true; f--; } }); } // v2.1: a Sparkle pup starts on Stay
   let kept = L.pups.filter((pp) => brStay[pp.id]).length;
   if (kept > free) { L.pups.forEach((pp) => { brStay[pp.id] = false; }); kept = 0; }
-  const card = (pp, i) => `<div class="lt-card ws ${brStay[pp.id] ? 'stay' : 'home'} ${pp.sparkle ? 'sparkly' : ''}" style="--i:${i}">${pp.sparkle ? '<span class="lt-spark">Sparkle!</span>' : ''}<span class="lt-art">${pupArt(Object.assign({}, pp), { pose: 'sit' })}</span>
-    <b>${esc(pp.name)} ${sexSym(pp.sex)}</b><span class="small">${esc(pp.mix ? pp.mix.name : brBreed(pp.key))}<br>${esc(pp.coat)}</span>
-    <div class="ws-tog" role="group" aria-label="${esc(pp.name)}"><button class="btn ${brStay[pp.id] ? 'yes' : ''}" data-ws="${pp.id}|stay" aria-pressed="${!!brStay[pp.id]}">Stay</button><button class="btn ${brStay[pp.id] ? '' : 'go'}" data-ws="${pp.id}|home" aria-pressed="${!brStay[pp.id]}">Loving home</button></div></div>`;
-  const p = openModal('Who stays?', `<p>${esc(mum.name)}'s pups are 2 months old: big enough for new homes. Keep some, and the rest move in with kind families in town. They'll send postcards and visit.</p>
-    <p class="ws-free" id="wsFree"><b>Free spots: ${free - kept}</b> <span class="small">(of ${free}. Kept pups use a dog spot.)</span></p>
-    <div class="lt-pups">${L.pups.map(card).join('')}</div>`, { cls: 'litter whostays', foot: '<button class="btn yes big" id="wsOk">Done</button>', onClose: () => { brSnooze = Date.now() + 90000; } });
+  const card = (pp, i) => `<div class="lt-card ws ${brStay[pp.id] ? 'stay' : 'home'} ${pp.sparkle ? 'sparkly' : ''}" style="--i:${i}">${pp.sparkle ? '<span class="lt-spark">' + tt('puppies.sparkle', 'Sparkle!') + '</span>' : ''}<span class="lt-art">${pupArt(Object.assign({}, pp), { pose: 'sit' })}</span>
+    <b>${esc(pp.name)} ${sexSym(pp.sex)}</b><span class="small">${esc(pp.mix ? mixShown(pp.mix) : brBreed(pp.key))}<br>${esc(coatShown(pp.coat, pp.key))}</span>
+    <div class="ws-tog" role="group" aria-label="${esc(pp.name)}"><button class="btn ${brStay[pp.id] ? 'yes' : ''}" data-ws="${pp.id}|stay" aria-pressed="${!!brStay[pp.id]}">${tt('puppies.stay', 'Stay')}</button><button class="btn ${brStay[pp.id] ? '' : 'go'}" data-ws="${pp.id}|home" aria-pressed="${!brStay[pp.id]}">${tt('puppies.loving_home', 'Loving home')}</button></div></div>`;
+  const p = openModal(tt('puppies.who_stays', 'Who stays?'), `<p>${esc(tt('puppies.s_pups_are_2_months_old', "{name}'s pups are 2 months old: big enough for new homes. Keep some, and the rest move in with kind families in town. They'll send postcards and visit.", { name: mum.name }))}</p>
+    <p class="ws-free" id="wsFree"><b>${esc(tt('puppies.free_spots', 'Free spots: {n}', { n: free - kept }))}</b> <span class="small">${esc(tt('puppies.of_kept_pups_use_a_dog', '(of {n}. Kept pups use a dog spot.)', { n: free }))}</span></p>
+    <div class="lt-pups">${L.pups.map(card).join('')}</div>`, { cls: 'litter whostays', foot: '<button class="btn yes big" id="wsOk">' + tt('puppies.done', 'Done') + '</button>', onClose: () => { brSnooze = Date.now() + 90000; } });
   p.querySelectorAll('[data-ws]').forEach((b) => {
     b.onclick = () => {
       const [id, v] = b.dataset.ws.split('|');
       const pp = L.pups.find((x) => x.id === id);
       if (v === 'home' && brStay[id] && pp && pp.sparkle) { SFX.click(); modalClose = null; brSparkleConfirm(L, pp); return; }
-      if (v === 'stay' && !brStay[id] && L.pups.filter((pp) => brStay[pp.id]).length >= free) { nope(free ? `Only ${free} free dog spot${free > 1 ? 's' : ''}. The others will love their new families.` : 'No free dog spot right now. Every pup gets a loving home in town.'); return; }
+      if (v === 'stay' && !brStay[id] && L.pups.filter((pp) => brStay[pp.id]).length >= free) { nope(free ? tt('puppies.only_free_dog_spot_the_others', 'Only {n, plural, one {# free dog spot} other {# free dog spots}}. The others will love their new families.', { n: free }) : tt('puppies.no_free_dog_spot_right', 'No free dog spot right now. Every pup gets a loving home in town.')); return; }
       brStay[id] = v === 'stay'; SFX.click(); modalClose = null; openWhoStays(L.id);
     };
   });
@@ -197,9 +196,8 @@ function openWhoStays(litterId) {
 }
 // v2.1: a gentle confirm before a Sparkle pup moves to a loving home
 function brSparkleConfirm(L, pp) {
-  const n = esc(pp.name);
-  const p = openModal('A Sparkle pup', `<div class="ws-spark" id="wsSpark"><span class="lt-art">${pupArt(pp, { pose: 'sit' })}</span><p>${n} is a Sparkle pup. The family will love the glitter too. Send ${n} to them?</p></div>`,
-    { cls: 'litter', foot: `<button class="btn no" id="wsSpNo">Keep ${n}</button><button class="btn yes big" id="wsSpYes">Send ${n}</button>`, onClose: () => { setTimeout(() => { if (S.litters.includes(L) && modal.hidden) openWhoStays(L.id); }, 0); } });
+  const p = openModal(tt('puppies.a_sparkle_pup', 'A Sparkle pup'), `<div class="ws-spark" id="wsSpark"><span class="lt-art">${pupArt(pp, { pose: 'sit' })}</span><p>${esc(tt('puppies.is_a_sparkle_pup_the_family', '{name} is a Sparkle pup. The family will love the glitter too. Send {name} to them?', { name: pp.name }))}</p></div>`,
+    { cls: 'litter', foot: `<button class="btn no" id="wsSpNo">${esc(tt('puppies.keep', 'Keep {name}', { name: pp.name }))}</button><button class="btn yes big" id="wsSpYes">${esc(tt('puppies.send', 'Send {name}', { name: pp.name }))}</button>`, onClose: () => { setTimeout(() => { if (S.litters.includes(L) && modal.hidden) openWhoStays(L.id); }, 0); } });
   $('#wsSpYes', p).onclick = () => { brStay[pp.id] = false; SFX.click(); modalClose = null; openWhoStays(L.id); };
   $('#wsSpNo', p).onclick = () => { SFX.click(); modalClose = null; openWhoStays(L.id); };
 }
@@ -207,16 +205,16 @@ function brFinishLitter(L) {
   const free = brFree(), today = brToday(), keep = L.pups.filter((pp) => brStay[pp.id]).slice(0, free), lines = [];
   const r = seeded(hashId('family|' + L.id));
   const used = new Set((S.rehomed || []).map((x) => x.family && x.family.id));
-  keep.forEach((pp) => { const d = brKeepPup(pp, pp.name); lines.push(`${d.name} stays home. ${brPR(d).He} immediately claims the comfiest cushion.`); });
+  keep.forEach((pp) => { const d = brKeepPup(pp, pp.name); lines.push(tt('puppies.stays_home_immediately_claims_the', '{sex, select, female {{name} stays home. She immediately claims the comfiest cushion.} other {{name} stays home. He immediately claims the comfiest cushion.}}', { sex: homeSx(d), name: d.name })); });
   L.pups.filter((pp) => !keep.includes(pp)).forEach((pp) => {
     let fam = FAMILIES[Math.floor(r() * FAMILIES.length)]; for (let k = 0; k < 12 && used.has(fam.id); k++) fam = FAMILIES[(FAMILIES.indexOf(fam) + 1) % FAMILIES.length]; used.add(fam.id);
     const family = { id: fam.id, name: fam.name, where: fam.where };
     S.rehomed.push(Object.assign({ id: pp.id, name: pp.name, key: pp.key, mix: pp.mix || null, sex: pp.sex, coat: pp.coat, eyes: pp.eyes, sparkle: !!pp.sparkle, born: pp.born, genes: pp.genes, parents: pp.parents, gen: pp.gen || 1, family, since: today, lastVisit: null }, pp.anc ? { anc: pp.anc } : {}));
     treePut(Object.assign(brRecSpec(pp), { status: 'rehomed', family }));
-    lines.push(`${pp.name} trots off with ${fam.name} ${fam.where}. ${PICK(['They promise postcards.', 'They already bought a tiny bed.', 'They promise lots of visits.', `${brPR(pp).He} looks back once, then sniffs ${brPR(pp).his} new human's shoe.`])}`);
+    lines.push(tt('puppies.trots_off_with', '{name} trots off with {family} {where}. {extra}', { name: pp.name, family: tdata('families.' + fam.id + '.name', fam.name), where: tdata('families.' + fam.id + '.where', fam.where), extra: PICK([tt('puppies.they_promise_postcards', 'They promise postcards.'), tt('puppies.they_already_bought_a_tiny', 'They already bought a tiny bed.'), tt('puppies.they_promise_lots_of_visits', 'They promise lots of visits.'), tt('puppies.looks_back_once_then_sniffs', "{sex, select, female {She looks back once, then sniffs her new human's shoe.} other {He looks back once, then sniffs his new human's shoe.}}", { sex: homeSx(pp) })]) }));
   });
   S.litters = S.litters.filter((x) => x !== L); L.pups.forEach((pp) => delete brStay[pp.id]); markDirty(); saveNow();
-  const p = openModal('New homes', `<div class="ws-bye" id="wsBye"><ul>${lines.map((l) => `<li>${esc(l)}</li>`).join('')}</ul><p class="small">${S.rehomed.length ? 'You might bump into them around town. Wave!' : ''}</p>${brRampHtml()}</div>`, { cls: 'litter', foot: '<button class="btn yes big" id="wsBye2">Aww</button>' });
+  const p = openModal(tt('puppies.new_homes', 'New homes'), `<div class="ws-bye" id="wsBye"><ul>${lines.map((l) => `<li>${esc(l)}</li>`).join('')}</ul><p class="small">${S.rehomed.length ? tt('puppies.you_might_bump_into_them', 'You might bump into them around town. Wave!') : ''}</p>${brRampHtml()}</div>`, { cls: 'litter', foot: '<button class="btn yes big" id="wsBye2">' + tt('puppies.aww', 'Aww') + '</button>' });
   $('#wsBye2', p).onclick = () => { closeModal(); if (cur.mode === 'yard') go('yard'); };
   SFX.fanfare && SFX.fanfare();
 }

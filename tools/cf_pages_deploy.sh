@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 # Builds the doodledoggo.app introduction site (site/, v2.8.2) and deploys it (and www, which redirects to it) to Cloudflare.
-# The game itself is played on itch.io; the site has the home page, /privacy and /reset (the Forgot password link).
+# The game itself is played on itch.io; the site has the home page, /dogs, /map, /about, /privacy and /reset, since v2.14 in 11 languages (/ja/, /zh-hans/ ...).
+# Size (v2.14, Game Manager): the account's Worker limit is the paid 10 MB, and the Cloudflare token cannot create Worker routes, so the side Workers
+# (doodle-doggo-fonts on doodledoggo.app/fonts/i18n/*, doodle-doggo-img on doodledoggo.app/img/map/*) cannot get their routes. The normal build is
+# therefore INLINE: SITE_FONTS and SITE_IMG default to inline here, tools/cf_site.js puts the per-language fonts and the /map pictures in the main
+# Worker (about 6 MB gzipped with the game, limit 10 MB) and makes no side Workers, so side_worker() below finds nothing to do. The split mode is still
+# there for an account whose token can create routes: SITE_FONTS=split SITE_IMG=split SITE_PLAY=split bash tools/cf_pages_deploy.sh (v2.14 PERF: the game copy in doodle-doggo-play).
 #   bash tools/cf_pages_deploy.sh
 # The site is the Worker "doodle-doggo" (see tools/cf_site.js for why a Worker and not a Pages project), with Workers Custom
 # Domains for doodledoggo.app and www.doodledoggo.app (Cloudflare adds their DNS records itself).
@@ -15,9 +20,39 @@ AUTH=(); if [ -n "${CLOUDFLARE_API_TOKEN:-}" ] && [ "$CLOUDFLARE_API_TOKEN" != "
 SCRIPT=doodle-doggo
 ZONE=doodledoggo.app
 
-node tools/cf_site.js
+SITE_FONTS="${SITE_FONTS:-inline}" SITE_IMG="${SITE_IMG:-inline}" SITE_PLAY="${SITE_PLAY:-inline}" node tools/cf_site.js
 
 ok() { python3 -c "import json,sys; d=json.load(sys.stdin); sys.exit(0 if d.get('success') else (print(d.get('errors'), file=sys.stderr) or 1))"; }
+
+ZID=$(curl -sS "https://api.cloudflare.com/client/v4/zones?name=$ZONE" "${AUTH[@]}" | python3 -c "import json,sys; print(json.load(sys.stdin)['result'][0]['id'])")
+
+# 0. the side Workers tools/cf_site.js made and their routes (split mode only; the default inline build makes none, so nothing happens here): the
+#    per-language fonts (doodle-doggo-fonts, doodledoggo.app/fonts/i18n/* and, v2.14 PERF, doodledoggo.app/play/fonts/i18n/*), the place pictures
+#    of /map (doodle-doggo-img, doodledoggo.app/img/map/*) and the game copy (doodle-doggo-play, doodledoggo.app/play/*)
+side_worker() { # <folder> <script name> <route pattern>...
+  local dir=$1 name=$2 pattern; shift 2
+  [ -f "$dir/worker.js" ] || return 0
+  local SFORM=(-F "metadata={\"main_module\":\"worker.js\",\"compatibility_date\":\"2026-08-01\"};type=application/json"
+               -F "worker.js=@$dir/worker.js;type=application/javascript+module")
+  while read -r f type; do [ -n "$f" ] && SFORM+=(-F "$f=@$dir/$f;filename=$f;type=$type"); done < "$dir/parts.txt"
+  curl -sS --fail-with-body -X PUT "$API/workers/scripts/$name" "${AUTH[@]}" "${SFORM[@]}" | ok
+  echo "uploaded Worker $name"
+  local RID
+  for pattern in "$@"; do
+  RID=$(curl -sS "https://api.cloudflare.com/client/v4/zones/$ZID/workers/routes" "${AUTH[@]}" | python3 -c "import json,sys; print(next((r['id'] for r in json.load(sys.stdin)['result'] if r['pattern']=='$pattern'),''))")
+  if [ -n "$RID" ]; then
+    curl -sS -X PUT "https://api.cloudflare.com/client/v4/zones/$ZID/workers/routes/$RID" "${AUTH[@]}" -H 'Content-Type: application/json' -d "{\"pattern\":\"$pattern\",\"script\":\"$name\"}" | ok
+  else
+    curl -sS -X POST "https://api.cloudflare.com/client/v4/zones/$ZID/workers/routes" "${AUTH[@]}" -H 'Content-Type: application/json' -d "{\"pattern\":\"$pattern\",\"script\":\"$name\"}" | ok
+  fi
+  echo "route $pattern -> $name"
+  done
+}
+# v2.14 PERF: the fonts Worker also serves the game copy's font subsets (/play/fonts/i18n/), and the game copy (/play/) is its own Worker;
+# the more specific route /play/fonts/i18n/* wins over /play/*
+side_worker _cfsite_fonts "$SCRIPT-fonts" "$ZONE/fonts/i18n/*" "$ZONE/play/fonts/i18n/*"
+side_worker _cfsite_img "$SCRIPT-img" "$ZONE/img/map/*"
+side_worker _cfsite_play "$SCRIPT-play" "$ZONE/play/*"
 
 # 1. upload the Worker (metadata + module parts)
 FORM=(-F "metadata={\"main_module\":\"worker.js\",\"compatibility_date\":\"2026-08-01\"};type=application/json"
@@ -27,7 +62,6 @@ curl -sS --fail-with-body -X PUT "$API/workers/scripts/$SCRIPT" "${AUTH[@]}" "${
 echo "uploaded Worker $SCRIPT"
 
 # 2. custom domains (idempotent: PUT replaces the same hostname)
-ZID=$(curl -sS "https://api.cloudflare.com/client/v4/zones?name=$ZONE" "${AUTH[@]}" | python3 -c "import json,sys; print(json.load(sys.stdin)['result'][0]['id'])")
 for host in "$ZONE" "www.$ZONE"; do
   curl -sS -X PUT "$API/workers/domains" "${AUTH[@]}" -H 'Content-Type: application/json' \
     -d "{\"hostname\":\"$host\",\"zone_id\":\"$ZID\",\"service\":\"$SCRIPT\",\"environment\":\"production\"}" | ok
@@ -36,7 +70,7 @@ done
 
 # 3. check
 sleep 3
-for u in "https://$ZONE/" "https://$ZONE/privacy" "https://$ZONE/reset" "https://$ZONE/favicon.svg" "https://$ZONE/logo-1200x630.png"; do
+for u in "https://$ZONE/" "https://$ZONE/ja/" "https://$ZONE/zh-hant/dogs" "https://$ZONE/map" "https://$ZONE/de/about" "https://$ZONE/img/map/town-map.webp" "https://$ZONE/privacy" "https://$ZONE/reset" "https://$ZONE/favicon.svg" "https://$ZONE/logo-1200x630.png"; do
   curl -sS -o /dev/null -w "%{http_code} %{content_type} $u\n" "$u" || true
 done
 curl -sS -o /dev/null -w "%{http_code} -> %{redirect_url}  https://www.$ZONE/\n" "https://www.$ZONE/" || true
