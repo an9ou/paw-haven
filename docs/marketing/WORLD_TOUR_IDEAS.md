@@ -51,7 +51,7 @@ Files are in `brand/instagram/launch/world_tour/`.
 
 | File | What |
 |---|---|
-| `doodle-doggo-world-tour.mp4` | 1080 x 1920, 30 fps, about 16 s, with the game's own music, which changes with each place. |
+| `doodle-doggo-world-tour.mp4` | 1080 x 1920, 30 fps, about 18 s, with the game's own music, which changes with each place. |
 | `world-tour-cover.jpg` | The cover: Tokyo Tower at night with its title, the logo above. |
 | `build_tour.js` | Remake: `NODE_PATH=/opt/node-tools/node_modules node brand/instagram/launch/world_tour/build_tour.js <workdir>` (`SEED=n` picks another set of dogs; `ONLY=stills` renders key frames; `FRAMES=a-b` re-renders only those frames over a copied workdir). |
 
@@ -67,9 +67,20 @@ Files are in `brand/instagram/launch/world_tour/`.
   | Maple Woods | falling leaves | Bond 5 | Pretzel the Miniature Poodle |
   | Tokyo Tower | night lights and stars | Bond 5 | Noodle the Dachshund |
   | Seashell Beach | sunset | Bond 8 | Pepper the Shelter Mutt |
+  | Home Yard with the Royal Castle Kennel: "Your dog family" | dusk | | Jellybean the Miniature Pinscher, with the family |
 
   The dogs come from `SEED=23`; the Chihuahua is left out, since it was the last ad.
 - **Titles:** the place's name and "unlocks at Bond N", in the game's handwriting, rising in after each cut.
+- **The family grows on the way (owner, 23 Oct 2026: tell players when more dogs can join).**
+  - From Shibuya on, a second dog trots along, with a yellow badge "🐾 + a 2nd dog at Bond 3".
+  - At the beach a third joins: "+ a 3rd dog at Bond 8".
+  - The last place shows four dogs in front of the Royal Castle Kennel: "Your dog family · four dogs, one happy home" and "+ a 4th dog at Bond 10".
+  - A soft chime sounds with each badge.
+  - The full rules in the game (`SPOT_RULES`, `game/src/13_more_dogs.js`):
+    - 2nd dog: a dog at Bond 3 and a house that fits 2.
+    - 3rd dog: two dogs at Bond 8, 21 care days and the Treehouse Den.
+    - 4th dog: three dogs at Bond 10, 60 care days and the Royal Castle Kennel.
+  - The badges give the Bond only, the headline rule. If a commenter asks, answer with the full rule.
 - **End card:** the logo, "a whole sketchbook world to explore", and "play free at doodledoggo.app".
 - **Real art only:** `PawArt.scene` and `PawArt.dog`. The game's dashed tap-area outlines are hidden. No game UI.
 
@@ -84,6 +95,10 @@ A whole sketchbook world to explore with your dog 🐶 From your backyard to Tok
 **Primary text, option B (the bond)**
 ```
 The more you bond, the further you go 🐾 Riverside, Maple Woods, Shibuya, the beach at sunset. A free cozy dog game, no download.
+```
+**Primary text, option C (the family)**
+```
+Start with one crayon dog, grow a family of four 🐾 A 2nd dog at Bond 3, a 3rd at Bond 8, a 4th at Bond 10, and a whole sketchbook world to explore. Free, no download.
 ```
 **Headline** (pick one): `A whole sketchbook world` · `Free cozy dog game, no download` · `Explore with your dog 🐶`
 **Description:** `Play free in your browser.`

@@ -1,7 +1,8 @@
-// "Sketchbook world tour" ad Reel (1080 x 1920, 30 fps, about 16 s), after the AFK Journey world ad the owner shared (23 Oct 2026): a slow
+// "Sketchbook world tour" ad Reel (1080 x 1920, 30 fps, about 18 s), after the AFK Journey world ad the owner shared (23 Oct 2026): a slow
 // drifting camera over one place every 1.9 s, in unlock order, each in its own season, weather and time of day (spring petals, summer
 // sparkle, rain, dusk, falling leaves, night lights, sunset), a small crayon dog trotting through each (a different random dog each time),
-// the place's name and its real Bond unlock under it; then the end card. Real art only (PawArt.scene, PawArt.dog), no game UI, English.
+// the place's name and its real Bond unlock under it; the family grows on the way (a 2nd dog at Bond 3, a 3rd at Bond 8, a 4th at
+// Bond 10, with a badge each time); then the end card. Real art only (PawArt.scene, PawArt.dog), no game UI, English.
 //   NODE_PATH=/opt/node-tools/node_modules node brand/instagram/launch/world_tour/build_tour.js <workdir>
 //   SEED=n picks another set of dogs (printed). ONLY=stills: key frames only (STRIP=t1,t2,.. picks them). FRAMES=a-b: re-render only those
 //   frames over a workdir copied from an earlier full render (marketing rule: never re-render a whole video for a fix to one part).
@@ -25,12 +26,18 @@ const eoB = (x) => { x = clamp(x); const c1 = 1.7, c3 = c1 + 1; return 1 + c3 * 
 const SHOTS = [
   { scene: 'yard', name: 'Home Yard', bond: 1, env: { time: 'day', weather: 'sunny', season: 'spring' }, x0: 130, x1: 300, gy: 478, fx: 'petals', mus: { place: 'yard', time: 'day', weather: 'sunny' } },
   { scene: 'river', name: 'Riverside', bond: 2, env: { time: 'day', weather: 'sunny', season: 'summer' }, x0: 300, x1: 470, gy: 520, fx: 'sparkle', mus: { place: 'river', time: 'day', weather: 'sunny' } },
-  { scene: 'shibuya', name: 'Shibuya Crossing', bond: 3, env: { time: 'day', weather: 'rain', season: 'summer' }, x0: 90, x1: 260, gy: 505, fx: 'rain', mus: { place: 'market', time: 'day', weather: 'rain' } },
+  { scene: 'shibuya', name: 'Shibuya Crossing', bond: 3, fam: 2, chip: '+ a 2nd dog at Bond 3', env: { time: 'day', weather: 'rain', season: 'summer' }, x0: 90, x1: 260, gy: 505, fx: 'rain', mus: { place: 'market', time: 'day', weather: 'rain' } },
   { scene: 'asakusa', name: 'Asakusa', bond: 4, env: { time: 'dusk', weather: 'sunny', season: 'autumn' }, x0: 250, x1: 420, gy: 500, fx: 'glow', mus: { place: 'park', time: 'dusk', weather: 'sunny' } },
   { scene: 'woods', name: 'Maple Woods', bond: 5, env: { time: 'day', weather: 'sunny', season: 'autumn' }, x0: 140, x1: 330, gy: 478, fx: 'leaves', mus: { place: 'woods', time: 'day', weather: 'sunny' } },
   { scene: 'tokyotower', name: 'Tokyo Tower', bond: 5, env: { time: 'night', weather: 'sunny', season: 'autumn' }, x0: 380, x1: 520, gy: 520, fx: 'night', mus: { place: 'walk', time: 'night', weather: 'sunny' } },
-  { scene: 'beach', name: 'Seashell Beach', bond: 8, env: { time: 'dusk', weather: 'sunny', season: 'summer' }, x0: 360, x1: 540, gy: 505, fx: 'sunset', mus: { place: 'beach', time: 'dusk', weather: 'sunny' } },
+  { scene: 'beach', name: 'Seashell Beach', bond: 8, fam: 3, chip: '+ a 3rd dog at Bond 8', env: { time: 'dusk', weather: 'sunny', season: 'summer' }, x0: 360, x1: 540, gy: 505, fx: 'sunset', mus: { place: 'beach', time: 'dusk', weather: 'sunny' } },
+  { scene: 'yard', name: 'Your dog family', sub: 'four dogs, one happy home', fam: 4, chip: '+ a 4th dog at Bond 10', kennel: [600, 470, 170], env: { time: 'dusk', weather: 'sunny', season: 'autumn' },
+    x0: 400, x1: 540, gy: 505, fx: 'glow', mus: { place: 'yard', time: 'dusk', weather: 'sunny' } },
 ];
+// the family grows with Bond (SPOT_RULES in game/src/13_more_dogs.js, owner 23 Oct 2026: tell players when more dogs can join):
+// a 2nd dog at Bond 3 (and a house that fits 2), a 3rd at Bond 8 (two Bond 8 dogs, 21 care days, the Treehouse Den), a 4th at Bond 10
+// (three Bond 10 dogs, 60 care days, the Royal Castle Kennel). Each place shows the family so far trotting together.
+let fam = 1; for (const s of SHOTS) { fam = s.fam || fam; s.n = fam; }
 const STEP = 1.9, XF = 0.4, VH = 560, VY = 30, VW = VH * W / H;      // a shot every 1.9 s with a 0.4 s crossfade; the portrait window on the scene
 const END0 = SHOTS.length * STEP, T = END0 + XF + 2.6;              // the end card fades in over the last place
 const LOGO = END0 + 0.35, PILL = END0 + 0.8;
@@ -39,7 +46,9 @@ const LOGO = END0 + 0.35, PILL = END0 + 0.8;
 let sd = +(process.env.SEED || 23); const rr = () => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; };
 const pool = PA.DOGS.map((d) => d.key).filter((k) => k !== 'chihuahua');
 for (const s of SHOTS) s.dog = pool.splice(Math.floor(rr() * pool.length), 1)[0];
-console.log('dogs:', SHOTS.map((s) => s.dog).join(' '));
+const FAMILY = SHOTS.slice(0, 3).map((s) => s.dog);            // the family that follows along: the first places' dogs
+for (const s of SHOTS) s.pack = [s.dog, ...FAMILY.filter((k) => k !== s.dog)].slice(0, s.n);
+console.log('dogs:', SHOTS.map((s) => s.pack.join('+')).join(' '));
 
 // ---- weather and light on top of each place, in screen space, fixed so remakes match ----
 const P = Array.from({ length: 40 }, () => ({ x: rr(), y: rr(), s: rr(), ph: rr() * 6.28 }));
@@ -75,12 +84,15 @@ const weather = (fx, u) => { let g = '';
     const file = path.join(WORK, `place${i}.png`);
     if (!fs.existsSync(file)) {
       const p2 = await b.newPage({ viewport: { width: 1000, height: 600 }, deviceScaleFactor: 3.8 });
-      await p2.setContent(`<style>body{margin:0}svg{display:block}[class$="-hl"]{display:none}</style>${PA.scene(s.scene, Object.assign({ jp: true, halloween: false }, s.env)).replace('<svg', '<svg width="1000" height="600"')}`);
+      let sc = PA.scene(s.scene, Object.assign({ jp: true, halloween: false }, s.env)).replace('<svg', '<svg width="1000" height="600"');
+      if (s.kennel) { const [kx, ky, kw] = s.kennel; // the house the whole pack lives in, on the grass
+        sc = sc.replace(/<\/svg>\s*$/, `<svg x="${kx - kw / 2}" y="${ky - kw * 190 / 240}" width="${kw}" height="${kw * 200 / 240}" viewBox="0 0 240 200" overflow="visible">${inner(PA.house('Royal Castle Kennel'))}</svg></svg>`); }
+      await p2.setContent(`<style>body{margin:0}svg{display:block}[class$="-hl"]{display:none}</style>${sc}`);
       await p2.screenshot({ path: file }); await p2.close();
     }
     s.img = await p.evaluate(async (b64) => URL.createObjectURL(await (await fetch('data:image/png;base64,' + b64)).blob()), fs.readFileSync(file).toString('base64'));
   }
-  await p.evaluate(async (urls) => { await Promise.all(urls.map((u) => { const im = new Image(); im.src = u; return im.decode(); })); }, SHOTS.map((s) => s.img));
+  await p.evaluate(async (urls) => { for (const u of urls) await new Promise((ok) => { const im = new Image(); im.onload = im.onerror = ok; im.src = u; }); }, SHOTS.map((s) => s.img)); // loaded before the first frame
   const LOGO_SVG = inner(fs.readFileSync(path.join(root, 'brand', 'doodle-doggo-logo.svg'), 'utf8').replace(/<title>[^<]*<\/title>/, '').replace(/<rect width="900" height="280" fill="#FFF8EC"\/>/, ''));
   const dogCache = {};
   const dog = (key, fr) => dogCache[key + fr] || (dogCache[key + fr] = inner(PA.dog(key, { pose: 'walk', anim: true, facing: 'right' })).replace(/class="pa-d-f(\d)"/g, (m0, d) => (+d === fr ? m0 : 'class="hide"')));
@@ -91,18 +103,23 @@ const weather = (fx, u) => { let g = '';
     const vx = s.x0 + (s.x1 - s.x0) * q + (VW - vw) / 2, vy = VY + (VH - vh) * 0.6;
     const k = W / vw;                                       // screen px per scene unit
     let g = `<image href="${s.img}" x="${f1(-vx * k)}" y="${f1(-vy * k)}" width="${f1(1000 * k)}" height="${f1(600 * k)}"/>`;
-    // the dog: trots right a little faster than the camera drifts, a small bounce in its step
-    const fr = Math.floor(u * 6) % 3, dx = s.x0 + VW * 0.18 + (s.x1 - s.x0 + 70) * q, bob = Math.abs(Math.sin(u * Math.PI * 4.2)) * 3.2, DW = 92;
-    const sx = (dx - vx) * k, sy = (s.gy - vy) * k, dw = DW * k;
-    g += `<ellipse cx="${f1(sx)}" cy="${f1(sy)}" rx="${f1(dw * 0.3)}" ry="${f1(dw * 0.045)}" fill="#3A2A22" opacity=".18"/>`;
-    g += `<svg x="${f1(sx - dw / 2)}" y="${f1(sy - dw * 200 / 240 * 0.94 - bob * k)}" width="${f1(dw)}" height="${f1(dw * 200 / 240)}" viewBox="0 0 240 200" overflow="visible">${dog(s.dog, fr)}</svg>`;
+    // the family: trots right a little faster than the camera drifts, a small bounce in each step; the leader in front, the others behind
+    const fr = Math.floor(u * 6) % 3, DW = 92, dw = DW * k, lead = s.x0 + VW * (s.n > 1 ? 0.12 + 0.1 * s.n : 0.18) + (s.x1 - s.x0 + 70) * q, gap = s.n >= 4 ? 52 : 64;
+    for (let j = s.pack.length - 1; j >= 0; j--) {
+      const dx = lead - j * gap, dy = s.gy + (j % 2 ? -10 : 6) * (j ? 1 : 0), bob = Math.abs(Math.sin(u * Math.PI * 4.2 + j * 1.3)) * 3.2;
+      const sx = (dx - vx) * k, sy = (dy - vy) * k;
+      g += `<ellipse cx="${f1(sx)}" cy="${f1(sy)}" rx="${f1(dw * 0.3)}" ry="${f1(dw * 0.045)}" fill="#3A2A22" opacity=".18"/>`;
+      g += `<svg x="${f1(sx - dw / 2)}" y="${f1(sy - dw * 200 / 240 * 0.94 - bob * k)}" width="${f1(dw)}" height="${f1(dw * 200 / 240)}" viewBox="0 0 240 200" overflow="visible">${dog(s.pack[j], (fr + j) % 3)}</svg>`; }
     g += weather(s.fx, u + i * 3);
     g += `<rect width="${W}" height="${H}" fill="url(#shade)"/>`;
     // the title: the place's name and its Bond, rising in after the cut, gone before the next one (a soft dark glow behind it, for light places)
     const o = eo3(seg(u, 0.25, 0.6)) * (1 - seg(u, STEP - 0.05, STEP + 0.25)), rise = (1 - eo3(seg(u, 0.25, 0.7))) * 24;
     g += `<g opacity="${r3(o)}" transform="translate(0 ${f1(rise)})" filter="url(#ts)" fill="#FFFBF2" font-family="Caveat" font-weight="700" text-anchor="middle">`
       + `<ellipse cx="540" cy="955" rx="470" ry="115" fill="#2A1E18" opacity=".3" filter="url(#glow)"/>`
-      + `<text x="540" y="930" font-size="124">${s.name}</text><text x="540" y="1004" font-size="58" opacity=".95">unlocks at Bond ${s.bond}</text></g>`;
+      + `<text x="540" y="930" font-size="124">${s.name}</text><text x="540" y="1004" font-size="58" opacity=".95">${s.sub || `unlocks at Bond ${s.bond}`}</text></g>`;
+    if (s.chip) { const cq = eoB(seg(u, 0.6, 0.95)), co = eo3(seg(u, 0.6, 0.8)) * (1 - seg(u, STEP - 0.05, STEP + 0.25)); // the family badge pops in
+      g += `<g opacity="${r3(co)}" transform="translate(540 1100) scale(${r3(0.6 + 0.4 * cq)}) rotate(-2)"><rect x="-300" y="-46" width="600" height="92" rx="46" fill="#FFE3A1" stroke="${INK}" stroke-width="5"/>`
+        + `<text x="0" y="17" font-family="Caveat" font-weight="700" font-size="54" fill="${INK}" text-anchor="middle">🐾 ${s.chip}</text></g>`; }
     return g;
   };
   const DEFS = `<defs><linearGradient id="shade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".12"/><stop offset=".35" stop-color="#000" stop-opacity="0"/>`
@@ -129,7 +146,7 @@ const weather = (fx, u) => { let g = '';
   };
 
   // the cover: Tokyo Tower at night with its title, the logo above (the profile grid shows the middle 1080 x 1440)
-  await shot(page(DEFS + place(5, 1.0) + `<svg x="140" y="250" width="800" height="249" viewBox="0 0 900 280" filter="url(#ts)">${LOGO_SVG}</svg>`), path.join(OUT, 'world-tour-cover.jpg'), 'jpeg');
+  await shot(page(DEFS + place(5, 1.2) + `<svg x="140" y="250" width="800" height="249" viewBox="0 0 900 280" filter="url(#ts)">${LOGO_SVG}</svg>`), path.join(OUT, 'world-tour-cover.jpg'), 'jpeg');
   if (process.env.ONLY === 'stills') {
     const ts = process.env.STRIP ? process.env.STRIP.split(',').map(Number) : SHOTS.map((_, i) => i * STEP + 1.0).concat([STEP * 2 + 2.05, END0 + 1.5]);
     for (const [j, t] of ts.entries()) await shot(page(frameAt(t)), path.join(WORK, `still${String(j).padStart(2, '0')}.png`));
@@ -141,8 +158,8 @@ const weather = (fx, u) => { let g = '';
 
   // sound: the game's own music, changing with each place (its place, time and weather), and a sparkle at the logo
   await p.goto('about:blank'); await p.addScriptTag({ path: path.join(root, 'mods', 'pawaudio.js') });
-  const r = await p.evaluate(async ([T, segs, LOGO]) => { const res = await window.PawAudio._render({ seconds: T + 0.3, wav: true, vols: { master: 0.85, music: 0.7, ambience: 0.2 },
-    segments: segs, stingers: [{ at: LOGO, name: 'sparkle' }] }); return { wav: res.wav }; }, [T, SHOTS.map((s, i) => ({ at: i * STEP + (i ? XF / 2 : 0), ctx: s.mus })), LOGO]);
+  const r = await p.evaluate(async ([T, segs, LOGO, chips]) => { const res = await window.PawAudio._render({ seconds: T + 0.3, wav: true, vols: { master: 0.85, music: 0.7, ambience: 0.2 },
+    segments: segs, stingers: [{ at: LOGO, name: 'sparkle' }, ...chips.map((at) => ({ at, name: 'birth' }))] }); return { wav: res.wav }; }, [T, SHOTS.map((s, i) => ({ at: i * STEP + (i ? XF / 2 : 0), ctx: s.mus })), LOGO, SHOTS.map((s, i) => (s.chip ? i * STEP + 0.65 : -1)).filter((x) => x >= 0)]);
   fs.writeFileSync(path.join(WORK, 'music.wav'), Buffer.from(r.wav, 'base64'));
   await b.close();
   const md = +cp.execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', path.join(WORK, 'music.wav')]).toString();
