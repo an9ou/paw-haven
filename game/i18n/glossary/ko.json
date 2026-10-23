@@ -239,7 +239,17 @@
     "Toffee": "토피",
     "Meringue": "머랭",
     "Marshmallow": "마시멜로",
-    "Wonton": "완탕"
+    "Wonton": "완탕",
+    "Training Ground": "훈련장",
+    "Splash Pool": "물놀이장",
+    "Sunflower Lanes": "해바라기 길",
+    "Bamboo Grove Trail": "대나무숲 길",
+    "Seaside Cliffs Run": "바닷가 절벽길",
+    "agility course": "어질리티 코스",
+    "rosette": "리본 배지",
+    "Doggy Life Vest": "강아지 구명조끼",
+    "Float fetch": "둥둥 공놀이",
+    "paddle (pool)": "첨벙첨벙"
   },
   "bans": [
     {

@@ -239,7 +239,17 @@
     "Toffee": "太妃糖",
     "Meringue": "蛋白霜",
     "Marshmallow": "棉花糖",
-    "Wonton": "馄饨"
+    "Wonton": "馄饨",
+    "Training Ground": "训练场",
+    "Splash Pool": "戏水池",
+    "Sunflower Lanes": "向日葵小径",
+    "Bamboo Grove Trail": "竹林小径",
+    "Seaside Cliffs Run": "海崖步道",
+    "agility course": "敏捷赛道",
+    "rosette": "花章",
+    "Doggy Life Vest": "狗狗救生衣",
+    "Float fetch": "漂浮捡球",
+    "paddle (pool)": "划水"
   },
   "bans": [
     {

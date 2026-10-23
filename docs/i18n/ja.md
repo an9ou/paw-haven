@@ -476,3 +476,11 @@ Never hit (the `allow` list, also used as negative tests): 「犬種」 「日�
 - TODO(native): data.toys_lines.chihuahua.poolin.0: 水がぬれすぎてる (deadpan, literal)
 - TODO(native): garden.season: ヒート (or 発情期, the heat card title on a female dog's profile)
 - TODO(native): data.tk_lines.*: endings like 〜するぞ lean a little masculine
+
+## v2.15
+
+`game/i18n/ja.json`, 245 new keys (Around Town). New place names, also in the glossary `terms`: Training Ground トレーニング場, Splash Pool じゃぶじゃぶプール, Sunflower Lanes ひまわりの小道, Bamboo Grove Trail 竹林の小道, Seaside Cliffs Run 海辺のがけ道. Agility obstacles: スラローム, ハードル, タイヤ, トンネル, おすわり台. Rosette ロゼット (as in the festivals), Doggy Life Vest わんこライフジャケット, Float fetch ぷかぷかボール, paddle 水あそび. The Gerald lessons (`agility.lesson_text`, `pool.lesson_text`) are joined into two sentences.
+- TODO(native): じゃぶじゃぶプール for Splash Pool (from the じゃぶじゃぶ池 of Japanese parks): natural for a dog pool?
+- TODO(native): `agility.ob_weave` スラローム and `agility.ob_table` おすわり台: Japanese agility clubs say ウィーブポール and テーブル. Kid-friendly words chosen.
+- TODO(native): `data.treasures.sailor_cap.ab` へっちゃら水兵 and `sea_glass.ab` 海のカン (Steady Sailor, Sea Sense).
+- TODO(native): `map215.sticker_moved` おひっこし (a shop that moved on the map).
