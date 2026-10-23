@@ -2047,6 +2047,7 @@ function a5Dogpark(k,F){const W=1600,B=F.back,D=y=>depA(F,y),fk=floorKitA(k),yt=
   rulesBoard(k,1060,B-2,.9);
   k.jp(()=>{jpVend(k,640,B-4,.66);jpGlow(k,640,B-30,40)});
   dpFence(k,-10,730,yb,yt);dpFence(k,870,1610,yb,yt);
+  signA(k,700,B+2,.8,'bone');
   k.jp(()=>jpSparrows(k,[[100,yt+10],[400,yt+10],[1000,yt+10],[1400,yt+10]],[.1,.36,.7,.9],.9));
   k.hw(()=>hwBatString(k,980,1300,yt-4,10,3,.6));
   runGateA(k,800,B+10,.62,C.woodD,'#F28FA5');
