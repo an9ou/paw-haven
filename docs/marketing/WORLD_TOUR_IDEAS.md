@@ -52,7 +52,7 @@ Files are in `brand/instagram/launch/world_tour/`.
 | File | What |
 |---|---|
 | `doodle-doggo-world-tour.mp4` | 1080 x 1920, 30 fps, about 18 s, with the game's own music, which changes with each place. |
-| `world-tour-cover.jpg` | The cover: Tokyo Tower at night with its title, the logo above. |
+| `world-tour-cover.jpg` | The designed cover: the logo, "A whole sketchbook world to explore 🐾", four places as taped photos with their Bond (Home Yard, Shibuya, Tokyo Tower, Seashell Beach), the family of four, "grow your dog family on the way". |
 | `build_tour.js` | Remake: `NODE_PATH=/opt/node-tools/node_modules node brand/instagram/launch/world_tour/build_tour.js <workdir>` (`SEED=n` picks another set of dogs; `ONLY=stills` renders key frames; `FRAMES=a-b` re-renders only those frames over a copied workdir). |
 
 **What is in it:**
@@ -72,9 +72,9 @@ Files are in `brand/instagram/launch/world_tour/`.
   The dogs come from `SEED=23`; the Chihuahua is left out, since it was the last ad.
 - **Titles:** the place's name and "unlocks at Bond N", in the game's handwriting, rising in after each cut.
 - **The family grows on the way (owner, 23 Oct 2026: tell players when more dogs can join).**
-  - From Shibuya on, a second dog trots along, with a yellow badge "🐾 + a 2nd dog at Bond 3".
-  - At the beach a third joins: "+ a 3rd dog at Bond 8".
-  - The last place shows four dogs in front of the Royal Castle Kennel: "Your dog family · four dogs, one happy home" and "+ a 4th dog at Bond 10".
+  - From Shibuya on, a second dog trots along, with a yellow badge "🐾 Bond 3 unlocks 2 dogs" (owner: say it as "Bond X unlocks N dogs").
+  - At the beach a third joins: "Bond 8 unlocks 3 dogs".
+  - The last place shows four dogs in front of the Royal Castle Kennel: "Your dog family · four dogs, one happy home" and "Bond 10 unlocks 4 dogs".
   - A soft chime sounds with each badge.
   - The full rules in the game (`SPOT_RULES`, `game/src/13_more_dogs.js`):
     - 2nd dog: a dog at Bond 3 and a house that fits 2.

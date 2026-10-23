@@ -4,7 +4,7 @@
 // the place's name and its real Bond unlock under it; the family grows on the way (a 2nd dog at Bond 3, a 3rd at Bond 8, a 4th at
 // Bond 10, with a badge each time); then the end card. Real art only (PawArt.scene, PawArt.dog), no game UI, English.
 //   NODE_PATH=/opt/node-tools/node_modules node brand/instagram/launch/world_tour/build_tour.js <workdir>
-//   SEED=n picks another set of dogs (printed). ONLY=stills: key frames only (STRIP=t1,t2,.. picks them). FRAMES=a-b: re-render only those
+//   SEED=n picks another set of dogs (printed). ONLY=stills: key frames only (STRIP=t1,t2,.. picks them). FRAMES=a-b[,c-d]: re-render only those
 //   frames over a workdir copied from an earlier full render (marketing rule: never re-render a whole video for a fix to one part).
 // Output next to this file: doodle-doggo-world-tour.mp4, world-tour-cover.jpg.
 const fs = require('fs'), path = require('path'), vm = require('vm'), cp = require('child_process');
@@ -170,8 +170,8 @@ const weather = (fx, u) => { let g = '';
     await b.close(); console.log('stills done'); return;
   }
   const NF = Math.round(T * FPS);
-  const [FA, FB] = process.env.FRAMES ? process.env.FRAMES.split('-').map(Number) : [0, NF];
-  for (let fi = FA; fi < Math.min(FB, NF); fi++) { await shot(page(frameAt(fi / FPS)), path.join(WORK, 'f', `f${String(fi).padStart(4, '0')}.png`)); if (fi % 120 === 0) console.log('frame', fi, '/', NF); }
+  const RANGES = process.env.FRAMES ? process.env.FRAMES.split(',').map((r) => r.split('-').map(Number)) : [[0, NF]]; // FRAMES=a-b[,c-d..]
+  for (const [FA, FB] of RANGES) for (let fi = FA; fi < Math.min(FB, NF); fi++) { await shot(page(frameAt(fi / FPS)), path.join(WORK, 'f', `f${String(fi).padStart(4, '0')}.png`)); if (fi % 120 === 0) console.log('frame', fi, '/', NF); }
 
   // sound: the game's own music, changing with each place (its place, time and weather), and a sparkle at the logo
   await p.goto('about:blank'); await p.addScriptTag({ path: path.join(root, 'mods', 'pawaudio.js') });
