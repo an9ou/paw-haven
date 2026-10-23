@@ -99,6 +99,8 @@ const SUITES = {
   v213_neck: { file: 'test_v213_neck_node.js', group: 'all', est: 170, timeout: 600 }, // v2.13 NECK (V213.md 5): every head on its body, 35 breeds, every pose, adult and puppy, expressions that tilt the head, mixes (5.1)
   v213_expr: { file: 'test_v213_expr.js', group: 'all', est: 60 }, // v2.13 EX (V213.md 4): expressions in play, personality, photo picker
   v215_migrate: { file: 'test_v215_migrate.js', group: 'all', est: 115 }, // v2.15 stubs (V215.md 9, 16): old saves in every place key load with the v2.15 map off and on, v215Fields
+  v215_map: { file: 'test_v215_map.js', group: 'all', est: 120 }, // v2.15 MAP (V215.md 2-4, 16): 25 building buttons, the travel walk, stickers, the labels switch, captions in every language
+  v215_places: { file: 'test_v215_places.js', group: 'all', est: 90 }, // v2.15 (V215.md 5, 6, 16): the storefronts (MAP lane); the Training Ground, the pool and the run gates (ACTIVITIES lane)
   v215_ground: { file: 'test_v215_ground.js', group: 'all', est: 150 }, // v2.15 GROUND (V215.md 8, 16): every grOn place, 4 dogs x 120 simulated s on the deep floor, the camera, petting, ball play, photo mode, the systems on a deep floor
   // v2.2 phone suites: `node game/run_tests.js phone` (not part of `all`, which stays the desktop regression set)
   phone_legacy: { file: 'test_phone.js', group: 'phone', est: 90 },
@@ -108,6 +110,7 @@ const SUITES = {
   site: { file: 'test_site.js', group: 'phone', est: 300, timeout: 900 }, // v2.8.2: the doodledoggo.app introduction site and its reset page (Miniflare, desktop + iPhone 15)
   phone_home: { file: 'test_phone_home.js', group: 'phone', est: 60 },
   phone_town: { file: 'test_phone_town.js', group: 'phone', est: 70 },
+  phone_v215_map: { file: 'test_phone_v215_map.js', group: 'phone', est: 60 }, // v2.15 MAP (V215.md 11): 44 px taps, 15 px text, long-press names, tap travels, the sheet pan
   phone_journal: { file: 'test_phone_journal.js', group: 'phone', est: 35 },
   phone_puppy: { file: 'test_phone_puppy.js', group: 'phone', est: 35 },
   phone_walk: { file: 'test_phone_walk.js', group: 'phone', est: 110 },

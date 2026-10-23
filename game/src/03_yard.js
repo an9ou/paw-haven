@@ -3,7 +3,7 @@ const DX = 298, DY = 295, DW = 264, DH = 220; // dog box: feet at y=500, centre 
 let dogKey = '', tempPose = null, tempUntil = 0, busy = false, pet = { start: 0, gain: 0, bonded: false, capped: false, dist: 0 };
 function yardWorldSVG(extra = '') {
   return `<svg class="world" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMax slice">
-    ${sceneG(S.place || 'yard', S.place === 'yard' ? { patch: gkOn() ? patchState() : 'empty' } : S.place === 'house' && hasBedArt() ? { bed: false } : {})}${S.place === 'yard' && !gkOn() ? '<g class="soon-tag" pointer-events="none" transform="translate(112 432) rotate(-6)"><rect x="-58" y="-17" width="116" height="30" rx="6" fill="#FFF3B8" stroke="#5B3D32" stroke-width="2"/><text y="6" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="22" fill="#5B3D32">' + tt('yard.coming_soon_tag', 'coming soon') + '</text></g>' : ''}${bedLayers().back}<g id="messG"></g><g id="snowmanG">${S.place === 'yard' ? snowmanSVG() : ''}</g>${S.place === 'yard' && cur.mode === 'yard' && typeof msYardSVG === 'function' ? msYardSVG() : ''}${S.place === 'yard' ? hmDecorSVG() : ''}
+    ${sceneG(S.place || 'yard', S.place === 'yard' ? { patch: gkOn() ? patchState() : 'empty' } : S.place === 'house' && hasBedArt() ? { bed: false } : mpSceneOpts(S.place))}${S.place === 'yard' && !gkOn() ? '<g class="soon-tag" pointer-events="none" transform="translate(112 432) rotate(-6)"><rect x="-58" y="-17" width="116" height="30" rx="6" fill="#FFF3B8" stroke="#5B3D32" stroke-width="2"/><text y="6" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="22" fill="#5B3D32">' + tt('yard.coming_soon_tag', 'coming soon') + '</text></g>' : ''}${bedLayers().back}<g id="messG"></g><g id="snowmanG">${S.place === 'yard' ? snowmanSVG() : ''}</g>${S.place === 'yard' && cur.mode === 'yard' && typeof msYardSVG === 'function' ? msYardSVG() : ''}${S.place === 'yard' ? hmDecorSVG() : ''}
     ${S.place === 'yard' ? `<g id="houseG" class="hot${isNight() ? ' night' : ''}" tabindex="0" role="button" aria-label="${esc(tt('yard.label_dog_house', 'Dog house: {house}', { house: homeName(S.house) }))}">${place(art('house', S.house), 620, 330, 240, 200)}</g>` : ''}
     <g id="bowlG" class="hot" tabindex="0" role="button" aria-label="${esc(tt('yard.label_food_bowl', 'Food bowl'))}">${place(art('prop', 'bowl-empty'), 205, 462, 90, 90)}</g>
     <g id="pack">${packSVG(true)}</g>${bedLayers().front}
@@ -502,7 +502,7 @@ function placeButtons() {
   const pb = $('#placeBtns'); if (!pb) return; const b = [];
   if (S.place === 'yard') b.push(gkOn() ? `<button class="btn ${gardenUnlocked() ? 'yes' : ''}" data-pb="garden">${gardenUnlocked() ? tt('yard.garden', 'Garden') : tt('yard.garden_bond_2', 'Garden (Bond 2)')}</button>` : '<button class="btn soon" data-pb="garden" aria-disabled="true">' + tt('yard.garden_coming_soon', 'Garden: coming soon') + '</button>', '<button class="btn" data-pb="house">' + tt('yard.go_inside', 'Go inside') + '</button>');
   if (S.place === 'house') b.push(kOn() ? `<button class="btn ${kitchenUnlocked() ? 'yes' : ''}" data-pb="kitchen">${kitchenUnlocked() ? tt('yard.kitchen', 'Kitchen') : tt('yard.kitchen_bond_3', 'Kitchen (Bond 3)')}</button>` : '<button class="btn soon" data-pb="kitchen" aria-disabled="true">' + tt('yard.kitchen_coming_soon', 'Kitchen: coming soon') + '</button>', '<button class="btn" data-pb="yard">' + tt('yard.go_outside', 'Go outside') + '</button>');
-  if (S.place === 'market') Object.keys(SHOP_NAME).forEach((k) => b.push(`<button class="btn" data-sh="${k}">${shopName(k)}</button>`));
+  if (S.place === 'market' || mpShopOf(S.place)) (mpShopOf(S.place) ? [mpShopOf(S.place)] : Object.keys(SHOP_NAME)).forEach((k) => b.push(`<button class="btn" data-sh="${k}">${shopName(k)}</button>`)); // v2.15: a storefront (and Kibble Corner) has its own shop only
   if (S.place === 'beach') { dailyCheck(); b.push(`<button class="btn yes" data-pb="dig" ${S.daily.beachDig ? 'aria-disabled="true"' : ''}>${S.daily.beachDig ? tt('yard.dug_today', 'Dug today') : tt('yard.dig_in_the_sand', 'Dig in the sand')}</button>`); }
   const placeBtn = { square: ['notice', tt('yard.town_notice', 'Town notice')], cafe: ['cafe', tt('yard.cafe_menu', 'Café menu')], dogpark: ['social', tt('yard.socialise', 'Socialise')], vet: ['vet', tt('yard.check_up', 'Check-up')], salon: ['groom', tt('yard.full_groom', 'Full groom')], hilltop: weatherNow() === 'sunny' ? ['kites', tt('yard.watch_kites', 'Watch kites')] : null }[S.place];
   if (placeBtn) b.push(`<button class="btn yes" data-pb="${placeBtn[0]}">${placeBtn[1]}</button>`);
@@ -574,7 +574,7 @@ function travelTo(id) {
     card.remove(); busy = false;
     S.place = id; going.forEach((d) => { d.stats.energy = clamp(d.stats.energy - 2, 0, 100); }); dailyCheck(); S.daily.visited = S.daily.visited || [];
     const first = !S.daily.visited.includes(id); if (first) { S.daily.visited.push(id); addStat('happy', 5); }
-    markDirty(); go(id === 'market' ? 'market' : 'yard');
+    markDirty(); go(id === 'market' ? 'market' : 'yard'); mpArrive(id); // v2.15: the sticker is cleared, a storefront opens its shop window (42_map215.js)
     let msg = tt('yard.arrived_at', '{first, select, yes {{name} arrived at {place}. First visit today: +5 Happiness.} other {{name} arrived at {place}.}}', { first: first ? 'yes' : 'no', name: NAME(), place: placeName(id) });
     if (id === 'river' && weatherNow() === 'rain' && !hasRaincoat() && Math.random() < 0.6) { addStat('clean', -3); msg += ' ' + tt('yard.splashed_through_a_puddle_on', 'Splashed through a puddle on the way (-3 Cleanliness).'); }
     toast(msg, 'good');
@@ -848,7 +848,7 @@ function wake(auto) {
 }
 function openHouses() {
   const cards = HOUSES.filter((h) => owns('houses', h.n)).map((h) => `<div class="sitem"><span class="art house">${art('house', h.n)}</span><b>${esc(homeName(h.n))}</b><span class="desc">${esc(tt('yard.nap_energy', 'Nap Energy +{pct}%', { pct: Math.round(h.comfort * 100) }))}</span>${h.n === S.house ? '<span class="chip own">' + tt('yard.living_here', 'Living here') + '</span>' : `<button class="btn yes" data-house="${esc(h.n)}">${tt('yard.move_in', 'Move in')}</button>`}</div>`).join('');
-  const p = openModal(tt('yard.your_dog_houses', 'Your dog houses'), `<p class="small">${tt('yard.switching_is_free_buy_more', 'Switching is free. Buy more at Barkitecture on Market Street.')}</p><div class="shopgrid">${cards}</div>`);
+  const p = openModal(tt('yard.your_dog_houses', 'Your dog houses'), `<p class="small">${(mpOn() ? tt('map215.houses_where', 'Switching is free. Buy more at Barkitecture, the workshop by the river.') : tt('yard.switching_is_free_buy_more', 'Switching is free. Buy more at Barkitecture on Market Street.'))}</p><div class="shopgrid">${cards}</div>`);
   p.querySelectorAll('[data-house]').forEach((b) => { b.onclick = () => { switchHouse(b.dataset.house); closeModal(); }; });
 }
 function switchHouse(n) {
@@ -861,7 +861,8 @@ function switchHouse(n) {
 
 /* scene hotspots (shops, garden, kitchen, notice...). Re-bound after the core redraws the scene for time/weather changes. */
 function bindSceneHots() {
-  if (S.place === 'market') hotify($('svg.world', view), '#sceneG [data-shop]', 'data-shop', (k) => openShop(k), (k) => tt('yard.enter_shop', 'Enter {shop}', { shop: SHOP_NAME[k] ? shopName(k) : k }));
+  const mpSh = mpShopOf(S.place); // v2.15: a storefront's door (and Kibble Corner's) opens its own shop only
+  if (S.place === 'market' || mpSh) hotify($('svg.world', view), mpSh ? `#sceneG [data-shop="${mpSh}"]` : '#sceneG [data-shop]', 'data-shop', (k) => openShop(k), (k) => tt('yard.enter_shop', 'Enter {shop}', { shop: SHOP_NAME[k] ? shopName(k) : k }));
   hotify($('svg.world', view), '#sceneG [data-hot]', 'data-hot', (k) => ({ garden: openGarden, kitchen: openKitchen, notice: squareNotice, 'cafe-menu': cafeMenu, 'vet-desk': vetCheck, 'salon-chair': salonGroom }[k] || (() => {}))(), (k) => tt('yard.open_the', 'Open the {thing}', { thing: { garden: tt('yard.hot_garden', 'garden'), kitchen: tt('yard.hot_kitchen', 'kitchen'), notice: tt('yard.hot_notice', 'notice board'), 'cafe-menu': tt('yard.hot_cafe_menu', 'café menu'), 'vet-desk': tt('yard.hot_vet_desk', 'vet desk'), 'salon-chair': tt('yard.hot_salon_chair', 'salon chair') }[k] || k }));
 }
 on('scene:redraw', () => { if (cur.mode === 'yard' && $('svg.world', view)) { bindSceneHots(); shHouseNight(); } });
