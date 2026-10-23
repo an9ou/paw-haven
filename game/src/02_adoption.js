@@ -46,10 +46,14 @@ function renderAdopt(first) {
       <p class="sexpick">${esc(tt('adopt.has_a_brother_and_a', '{name} has a brother and a sister here. Which one is coming home?', { name: d.name }))} <button class="btn sexbtn m" id="aBoy" aria-pressed="${adoptSex === 'male'}">&#9794; ${tt('adopt.boy', 'Boy')}</button><button class="btn sexbtn f" id="aGirl" aria-pressed="${adoptSex === 'female'}">&#9792; ${tt('adopt.girl', 'Girl')}</button></p></div>
       <button class="arrow" id="aNext" aria-label="${esc(tt('adopt.label_next_dog', 'Next dog'))}">&gt;</button></div>
     <div class="heads">${dogs.map((x, i) => `<button data-i="${i}" aria-label="${esc(tt('adopt.label_the', '{name} the {breed}', { name: x.name, breed: adBreed(x) }))}" aria-current="${i === adoptIdx}">${art('dogHead', x.key)}</button>`).join('')}</div>
-    <div class="foot" style="margin-top:4px"><button class="btn big yes" id="aAdopt">${esc(tt('adopt.adopt', 'Adopt {name}', { name: d.name }))}</button></div></div>`;
+    <div class="foot" style="margin-top:4px"><button class="btn big" id="aRandom">&#127922; ${esc(tt('adopt.random', 'Random dog'))}</button><button class="btn big yes" id="aAdopt">${esc(tt('adopt.adopt', 'Adopt {name}', { name: d.name }))}</button></div></div>`;
   $('#aPrev').onclick = () => { adoptIdx = (adoptIdx + dogs.length - 1) % dogs.length; adoptSex = null; renderAdopt(); };
   $('#aNext').onclick = () => { adoptIdx = (adoptIdx + 1) % dogs.length; adoptSex = null; renderAdopt(); };
   dock.querySelectorAll('.heads button').forEach((b) => { b.onclick = () => { adoptIdx = +b.dataset.i; adoptSex = null; renderAdopt(); }; });
+  $('#aRandom').onclick = () => { // owner, 24 Oct 2026: a random dog and a random sibling, ready to adopt
+    adoptIdx = dogs.length > 1 ? (adoptIdx + 1 + Math.floor(Math.random() * (dogs.length - 1))) % dogs.length : 0;
+    adoptSex = Math.random() < 0.5 ? 'male' : 'female'; renderAdopt();
+  };
   $('#aBoy').onclick = () => { adoptSex = 'male'; SFX.boop(520); renderAdopt(true); };
   $('#aGirl').onclick = () => { adoptSex = 'female'; SFX.boop(700); renderAdopt(true); };
   $('#aAdopt').onclick = () => { if (!adoptSex) { nope(tt('adopt.pick_boy_or_girl_first', "Pick Boy or Girl first. {name}'s siblings are waiting politely.", { name: d.name })); return; } adoptName(d); };

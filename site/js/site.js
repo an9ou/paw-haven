@@ -173,7 +173,8 @@
   }
   function load() {
     f = document.createElement('iframe');
-    f.src = src; f.title = box.getAttribute('data-title') || 'Doodle Doggo'; f.setAttribute('allow', 'fullscreen; autoplay'); f.setAttribute('allowfullscreen', '');
+    // v2.14.2: the game follows the site's language (/play/?lang=<the page's lang>)
+    f.src = src + (src.indexOf('?') < 0 ? '?' : '&') + 'lang=' + encodeURIComponent(root.getAttribute('lang') || 'en'); f.title = box.getAttribute('data-title') || 'Doodle Doggo'; f.setAttribute('allow', 'fullscreen; autoplay'); f.setAttribute('allowfullscreen', '');
     box.insertBefore(f, box.firstChild);
     fit();
   }

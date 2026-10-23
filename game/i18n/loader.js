@@ -37,6 +37,7 @@
     try { sv = JSON.parse(localStorage.getItem('pawhaven_proto_v1') || 'null'); } catch (e) { sv = null; }
     try { dev = M.pickLang(navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language]); } catch (e) { dev = 'en'; }
     if (real(pr.lang)) return pr.lang;
+    try { var site = new URLSearchParams(location.search).get('lang'); if (real(site) && localStorage.getItem('pawhaven_site_lang') !== site) return site; } catch (e) { /* no URL or storage */ }
     if (sv && sv.v === 1 && (sv.dog || (sv.dogs && sv.dogs.length))) return real(sv.lang) ? sv.lang : dev;
     return real(pr.langPick) ? pr.langPick : dev;
   }
