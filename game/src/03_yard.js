@@ -798,7 +798,7 @@ function wake(auto) {
 }
 function openHouses() {
   const cards = HOUSES.filter((h) => owns('houses', h.n)).map((h) => `<div class="sitem"><span class="art house">${art('house', h.n)}</span><b>${esc(homeName(h.n))}</b><span class="desc">${esc(tt('yard.nap_energy', 'Nap Energy +{pct}%', { pct: Math.round(h.comfort * 100) }))}</span>${h.n === S.house ? '<span class="chip own">' + tt('yard.living_here', 'Living here') + '</span>' : `<button class="btn yes" data-house="${esc(h.n)}">${tt('yard.move_in', 'Move in')}</button>`}</div>`).join('');
-  const p = openModal(tt('yard.your_dog_houses', 'Your dog houses'), `<p class="small">${tt('yard.switching_is_free_buy_more', 'Switching is free. Buy more at Barkitecture on Market Street.')}</p><div class="shopgrid">${cards}</div>`);
+  const p = openModal(tt('yard.your_dog_houses', 'Your dog houses'), `<p class="small">${(mpOn() ? tt('map215.houses_where', 'Switching is free. Buy more at Barkitecture, the workshop by the river.') : tt('yard.switching_is_free_buy_more', 'Switching is free. Buy more at Barkitecture on Market Street.'))}</p><div class="shopgrid">${cards}</div>`);
   p.querySelectorAll('[data-house]').forEach((b) => { b.onclick = () => { switchHouse(b.dataset.house); closeModal(); }; });
 }
 function switchHouse(n) {

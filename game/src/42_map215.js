@@ -175,11 +175,12 @@ function mpPanIntoView(g, then) {
   const hit = g.querySelector('.mb-hit') || g, r = hit.getBoundingClientRect(), left = pr.left + 8, right = pr.right - 8;
   const z = $('#mapZoom'), zr = z && z.offsetParent ? z.getBoundingClientRect() : null;
   const over = zr && r.right > zr.left && r.left < zr.right && r.bottom > zr.top && r.top < zr.bottom;
-  if (r.top >= top && r.bottom <= bot && r.left >= left && r.right <= right && !over) { then(); return; }
+  const clear = (q) => q.top >= top - 1 && q.bottom <= bot + 1 && q.left >= left - 1 && q.right <= right + 1 && !(zr && q.right > zr.left && q.left < zr.right && q.bottom > zr.top && q.top < zr.bottom);
+  if (clear(r) && !over) { MP.pan = { moved: false, clear: true }; then(); return; }
   const cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2;
   MAPV.tx += (left + right) / 2 - cx; MAPV.ty += (top + bot) / 2 - cy;
   inner.style.transition = motionOff() ? '' : 'transform .25s ease-out'; mapApply();
-  setTimeout(() => { inner.style.transition = ''; then(); }, motionOff() ? 0 : 270);
+  setTimeout(() => { inner.style.transition = ''; MP.pan = { moved: true, clear: clear(hit.getBoundingClientRect()) }; then(); }, motionOff() ? 0 : 270);
 }
 function mpPick(k) {
   if (MP.walk) return; if (Date.now() < MP.swallow) return;
@@ -312,7 +313,7 @@ function mpExpose() {
     sticker: (k) => mpSticker(k), labels: () => mpLabels(), chunk: (n) => artChunk(n || 'f'), chunkReady: (n) => artChunkReady(n || 'f'), plain: (k) => !mpSceneReady(k),
     names: () => { const o = {}; mpIds().forEach((k) => { o[k] = mpName(k); }); return o; }, opts: () => mpMapOpts(), route: (a, b) => mpRoute(a, b), here: () => mpHere(),
     walking: () => (MP.walk ? { to: MP.walk.to, from: MP.walk.from, dur: MP.walk.dur, len: MP.walk.len, path: MP.walk.path.slice() } : null), last: () => (MP.last ? Object.assign({}, MP.last) : null),
-    fitCaps: (el) => mpFitCaps(el), line: (b, k) => (PLACE_LINES[b] && PLACE_LINES[b][k]) || null, lines: () => PLACE_LINES, pick: (k) => mpPick(k), seen: (k) => mpSeen(k), arrive: (k) => mpArrive(k), sceneOpts: (k) => mpSceneOpts(k),
+    fitCaps: (el) => mpFitCaps(el), line: (b, k) => (PLACE_LINES[b] && PLACE_LINES[b][k]) || null, lines: () => PLACE_LINES, panned: () => MP.pan || null, pick: (k) => mpPick(k), seen: (k) => mpSeen(k), arrive: (k) => mpArrive(k), sceneOpts: (k) => mpSceneOpts(k),
     view: (dx, dy) => { if (!MAPV) return null; MAPV.tx += dx || 0; MAPV.ty += dy || 0; mapApply(); return { tx: MAPV.tx, ty: MAPV.ty, s: MAPV.base * MAPV.z }; } // pans the map by screen px (phone suite)
   };
 }

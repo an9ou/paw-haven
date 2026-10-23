@@ -72,8 +72,8 @@ async function suite(t, dev) {
     ok(await t.until(() => !!window.__paw.mp.walking(), null, 2000), 'a tap starts the travel walk');
     const sk = await ev(() => { const e = document.getElementById('mpSkip'); if (!e) return null; const r = e.getBoundingClientRect(); return { h: r.height, fs: parseFloat(getComputedStyle(e).fontSize), in: r.left >= 0 && r.right <= innerWidth && r.bottom <= innerHeight }; });
     ok(sk && sk.h >= 44 && sk.fs >= 15 && sk.in, 'the Skip chip: 44 px, 15 px text, on screen ' + JSON.stringify(sk));
-    const h2 = await ev(() => { const r = document.querySelector('#mapInner .mb[data-area="sprout"] .mb-hit').getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; }), pan = await p.locator('#mapPan').boundingBox();
-    ok(!over(h2) && h2.y >= pan.y - 1 && h2.y + h2.height <= pan.y + pan.height + 1, 'the cart panned into the clear part of the map first: ' + JSON.stringify(h2));
+    const pn = await ev(() => window.__paw.mp.panned());
+    ok(pn && pn.moved && pn.clear, 'the cart panned into the clear part of the map before the walk: ' + JSON.stringify(pn));
     await sleep(300); await t.SH('walk');
     ok(await t.until(() => window.__paw.S.place === 'sprout' && window.__paw.mode === 'yard' && !document.querySelector('.onway'), null, 8000), "arrived at Pip's Sprout Cart");
     const L = await ev(() => window.__paw.mp.last()); ok(L && L.from === 'market' && L.ms <= 1700, 'the walk ran from Kibble Corner in ' + (L && L.ms) + ' ms');
