@@ -1888,7 +1888,7 @@ function bowlA(k,x,gy,s,col=C.blue){shadeA(k,x,gy+2,26*s);k.shape([[x-22*s,gy],[
 // a tree as a floor prop (O.tree with its shade; Winter Lights and Halloween dress on their own streams)
 function treeA(k,x,gy,s,o={}){shadeA(k,x,gy+3,62*s,9*s);O.tree(k,x,gy,s,o);if(o.lt)k.lt(()=>{ltString(k,sagP(x-52*s,gy-92*s,x+50*s,gy-86*s,14*s,10),20);ltString(k,sagP(x-40*s,gy-126*s,x+38*s,gy-120*s,10*s,8),20)});
   if(o.hw)k.hw(()=>hwGhost(k,x+36*s,gy-96*s,.8*s,16*s))}
-function pineA(k,x,gy,s,col,colD,o={}){shadeA(k,x,gy+3,46*s,8*s);O.pine(k,x,gy,s,col,colD);if(k.so==='winter'&&!k.env.snow)k.ss(()=>[[0,1],[1,.78],[2,.56]].forEach(([i,f])=>{const yb=gy-24*s-i*34*s,w=46*s*f;capLine(k,[[x-w*.32,yb-54*s*.71],[x,yb-54*s],[x+w*.32,yb-54*s*.71]],3.6*s)}));
+function pineA(k,x,gy,s,col,colD,o={}){shadeA(k,x,gy+3,46*s,8*s);O.pine(k,x,gy,s,col,colD);if(k.so==='winter'&&!k.env.snow)k.ss(()=>{const yb=gy-92*s,w=46*s*.56;capLine(k,[[x-w*.32,yb-54*s*.71],[x,yb-54*s],[x+w*.32,yb-54*s*.71]],3.6*s)});
   if(o.lt)k.lt(()=>[[gy-26*s,40],[gy-60*s,32],[gy-94*s,24]].forEach(([yb,w])=>ltString(k,sagP(x-w*s,yb-4*s,x+w*s,yb-10*s,8*s,10),19)))}
 // a wooden sign with a picture instead of words (icon: sun | bone | shell | kite | acorn | duck | anchor)
 function signA(k,x,gy,s,icon){shadeA(k,x,gy+2,20*s);k.line([[x,gy],[x+k.J(1),gy-92*s]],4*s,C.ink);const b=[[x-46*s,gy-118*s],[x+46*s,gy-116*s],[x+48*s,gy-80*s],[x-44*s,gy-82*s]];
@@ -1967,12 +1967,13 @@ function a5Park(k,F){const W=1600,B=F.back,D=y=>depA(F,y),fk=floorKitA(k),e=k.en
   // the winding path: from the front up to the bandstand, a branch to the start arch
   pathA(k,[[880,604,70],[850,550,62],[900,500,52],[980,456,44],[1050,420,38],[1080,388,32],[1080,360,28]],C.path,'#C9AE77','#D9C39C');
   pathA(k,[[870,520,40],[760,486,36],[620,450,32],[470,420,28],[330,396,24],[230,372,22],[200,356,18]],C.path,'#C9AE77','#D9C39C');
-  tuftsA(k,0,W,B+8,598,150,(x,y)=>!(Math.abs(x-880)<80&&y>470)&&!((x-360)*(x-360)/40000+(y-470)*(y-470)/3600<1));
+  tuftsA(k,0,W,B+8,598,120,(x,y)=>!(Math.abs(x-880)<80&&y>470)&&!((x-360)*(x-360)/40000+(y-470)*(y-470)/3600<1));
   fxA(k,{sheen:[350,598],puddles:[[860,560,46,9],[640,456,34,6],[1180,520,40,8]],patches:[[860,566,72,13],[1180,526,60,11],[200,560,54,8],[1500,420,50,8],[600,400,46,7]],flies:[[200,470],[640,420],[1200,380],[1460,560],[900,300]]});
   floorSnowA(k,[[0,B],[W,B-2],[W,600],[0,600]],[[300,580,120,14],[1240,560,110,13],[700,410,70,8],[1460,420,60,8],[60,430,50,8]]);
-  k.ss(()=>seasonGround(k,[20,B+10,1580,596],110,[[180,410,560,520],[820,330,1340,380],[60,500,320,598]]));
+  k.ss(()=>seasonGround(k,[20,B+10,1580,596],85,[[180,410,560,520],[820,330,1340,380],[60,500,320,598]]));
   // the back: big round trees, the bandstand at the end of the path, the start arch at the end of the branch
   O.tree(k,70,B+2,1.2);O.tree(k,640,B+4,1.05,{col:C.leaf2});O.tree(k,1560,B+6,1.25,{fruit:'#F49090'});
+  k.jp(()=>{const so=e.season;if(so==='spring')jpPuffs(k,640,250,64,46,'#F9D3DE','#E9A2B8');else if(so==='autumn'){jpPuffs(k,1560,236,72,52,'#E2583E','#B83E2C');jpMomiji(k,1560,236,66,46,20)}});
   k.lt(()=>{ltString(k,sagP(16,262,120,268,16,10),20);ltString(k,sagP(1500,258,1610,262,16,10),21)});
   bandstand(k,1080,B+16,.92);
   runGateA(k,200,B+12,.62,C.woodD,C.yellow);
@@ -1990,8 +1991,8 @@ function a5Park(k,F){const W=1600,B=F.back,D=y=>depA(F,y),fk=floorKitA(k),e=k.en
   fk.add('bush',392,()=>{shadeA(k,1250,394,52);O.bush(k,1250,392,.95,C.leaf2,C.leafD,'#FFB3C7')});
   fk.add('sign',586,()=>{signA(k,1540,586,.95,'sun');k.ny(()=>nyShime(k,1540,510,.8))});
   fk.add('bowl',512,()=>bowlA(k,640,512,D(512)));
-  fk.out();
   fl(k,[[1000,590,C.red],[1060,578,C.yellow],[1200,594,C.lav],[600,590,'#FFB3C7'],[40,480,C.yellow],[1580,500,C.red],[460,380,C.lav],[1380,380,C.yellow]],5);
+  fk.out();
   seasonBitsA(k,{drift:[[170,250,1],[480,210,.9],[860,250,1],[1200,240,.85],[1440,200,.8]],robin:[1300,420,1.1,-1],fly:[560,360]});
   O.sparkle(k,700,220,8);O.heart(k,380,160,6);O.note(k,940,190,12);
   O.tape(k,6,26,90,-24,'#F7B9C6');O.tape(k,W-90,560,80,-28,'#BDE7D2')}
@@ -2062,8 +2063,8 @@ function a5Dogpark(k,F){const W=1600,B=F.back,D=y=>depA(F,y),fk=floorKitA(k),yt=
   fk.add('fountain',520,()=>dogFountain(k,96,520,D(520)*1.15));
   fk.add('tunnel',552,()=>dpTunnel(k,1190,1420,552,D(552)));
   fk.add('tree',472,()=>treeA(k,1530,472,D(472)*1.45,{lt:1,hw:1,col:C.leaf2}));
-  fk.out();
   fl(k,[[600,592,C.red],[880,590,C.yellow],[270,560,C.lav],[1560,560,'#FFB3C7'],[40,420,C.yellow],[1100,560,C.red]],5);
+  fk.out();
   seasonBitsA(k,{drift:[[820,250,1],[700,300,.9],[960,330,.85],[420,250,.9],[1300,300,.8]],robin:[560,B-36,1.1,1],fly:[640,330]});
   O.sparkle(k,640,200,7);O.heart(k,330,170,6);O.note(k,1000,230,11);
   O.tape(k,6,26,90,-24,'#F7B9C6');O.tape(k,W-90,566,80,-28,'#BDE7D2')}
@@ -2121,7 +2122,7 @@ function a5Beach(k,F){const W=1600,B=352,D=y=>depA(F,y),fk=floorKitA(k),e=k.env;
   fxA(k,{sheen:[B+12,470],puddles:[[440,578,40,8],[600,452,30,6],[1300,480,34,7]],patches:[[440,578,66,12],[600,456,46,8],[1300,486,50,9],[90,560,50,8],[880,440,40,7],[1520,560,40,8]]});
   floorSnowA(k,[[0,B+10],[W,B+10],[W,600],[0,600]],[[380,580,110,13],[1300,580,110,13],[880,420,60,8]]);
   k.ss(()=>{const so=k.so;
-    if(so==='winter'){windbreak(k,520,430,160,40);windLines(k,[[140,150,150],[620,200,170],[400,240,130],[1000,130,150],[1300,200,120]])}
+    if(so==='winter'){windbreak(k,560,384,150,36);windLines(k,[[140,150,150],[620,200,170],[400,240,130],[1000,130,150],[1300,200,120]])}
     else if(so==='autumn'){[[236,450],[276,456],[620,430],[980,440],[1380,450],[30,522]].forEach(([x,y])=>{let d='';for(let i=0;i<7;i++)d+=`M${x+i*5-15} ${y}q${(i-3)*2} -14 ${(i-3)*4+k.J(3)} ${-22-k.r()*10}`;k.add(`<path d="${d}" fill="none" stroke="#C9A24E" stroke-width="1.7" stroke-linecap="round"/>`)})}
     else if(so==='spring'){[[236,448,1.3],[272,456,1.1],[620,430,1.2],[980,440,1.2],[1380,450,1.3],[30,520,1.2]].forEach(([x,y,z])=>thrift(k,x,y,z));if(!e.night&&!e.rain)butterfly(k,700,330,1,'#F9C6D4')}});
   runGateA(k,1460,B+16,.62,'#7FA6D9','#F7D24E');
@@ -2138,8 +2139,8 @@ function a5Beach(k,F){const W=1600,B=352,D=y=>depA(F,y),fk=floorKitA(k),e=k.env;
 
 /* ---------- Hilltop Meadow: the round green hill over the town, the lone tree with a rope swing, the pink kite, a picnic blanket ---------- */
 function swingTree(k,x,gy,s){shadeA(k,x,gy+3,74*s,10*s);k.add(`<g transform="rotate(4 ${x} ${gy})">`);O.tree(k,x,gy,s,{col:C.leaf2});k.add('</g>');
-  const b0=[x+4*s,gy-58*s],b1=[x+86*s,gy-76*s];k.line([b0,[x+44*s,gy-70*s],b1],5*s,C.ink,{amp:.4});k.line([b0,[x+44*s,gy-70*s],b1],3*s,C.trunk,{amp:.3});
-  const sx=x+60*s,sy=gy-20*s;k.line([[x+48*s,gy-70*s],[sx-12*s,sy]],1.4,C.ink);k.line([[x+72*s,gy-73*s],[sx+12*s,sy]],1.4,C.ink);
+  const b0=[x+2*s,gy-42*s],b1=[x+84*s,gy-56*s];k.line([b0,[x+44*s,gy-52*s],b1],5*s,C.ink,{amp:.4});k.line([b0,[x+44*s,gy-52*s],b1],3*s,C.trunk,{amp:.3});
+  const sx=x+60*s,sy=gy-16*s;k.line([[x+48*s,gy-53*s],[sx-12*s,sy]],1.4,C.ink);k.line([[x+72*s,gy-55*s],[sx+12*s,sy]],1.4,C.ink);
   k.shape(RC(sx-16*s,sy,32*s,6*s),C.wood,{w:1.5,one:1});k.add(`<ellipse cx="${R1(sx)}" cy="${R1(gy+2)}" rx="${R1(18*s)}" ry="${R1(3*s)}" fill="${C.ink}" opacity=".1"/>`);snowOnA(k,[[sx-16*s,sy],[sx+16*s,sy]],3*s);
   k.lt(()=>{ltString(k,sagP(x-50*s,gy-96*s,x+52*s,gy-90*s,14*s,10),20);ltString(k,sagP(x-36*s,gy-128*s,x+40*s,gy-122*s,10*s,8),20)});k.hw(()=>hwGhost(k,x-40*s,gy-90*s,.8*s,16*s))}
 function kiteStake(k,x,gy){k.line([[x,gy],[x+1,gy-16]],2.4,C.trunkD);k.add(`<circle cx="${x}" cy="${gy-12}" r="5" fill="${C.yellow}" stroke="${C.ink}" stroke-width="1.2"/>`)}
@@ -2172,17 +2173,17 @@ function a5Hilltop(k,F){const W=1600,B=F.back,D=y=>depA(F,y),fk=floorKitA(k),e=k
   fxA(k,{sheen:[B+10,598],puddles:[[450,580,44,9],[1160,560,38,8],[120,560,34,7]],patches:[[450,582,70,13],[1160,562,60,11],[120,562,50,9],[300,420,50,8],[1460,420,40,8],[960,420,50,8]],flies:[[200,470],[600,476],[1280,560],[470,584],[960,430]]});
   floorSnowA(k,crest.concat([[W,600],[0,600]]),[[300,580,120,14],[1240,580,110,13],[560,400,60,8],[1480,420,60,8]]);
   k.ss(()=>seasonGround(k,[20,B+12,1580,596],110,[[620,470,900,560],[1220,400,1440,470],[240,370,520,420]]));
+  k.hw(()=>{hwJack(k,620,560,.8);hwJack(k,900,556,.6)});
   runGateA(k,170,B+14,.62,C.woodD,'#F28FA5');
   fk.add('bench',404,()=>{benchA(k,400,404,D(404)*1.3);k.ny(()=>nyKado(k,470,404,.55,-1))});
   fk.add('jizo',380,()=>{shadeA(k,1530,382,14);k.jp(()=>jpJizo(k,1530,380,.9));k.ss(()=>{if(k.so==='autumn')pumpkin(k,1556,384,.6)});rockA(k,1500,384,.5)});
   fk.add('tree',452,()=>swingTree(k,1300,452,D(452)*1.95));
   fk.add('basket',506,()=>{basketA(k,870,506,D(506));bowlA(k,640,500,D(500)*.9,'#F7B2B2')});
   fk.add('sign',580,()=>{signA(k,110,580,.95,'kite');k.ny(()=>nyShime(k,110,504,.8))});
+  fl(k,[[40,560,C.red],[70,590,C.yellow],[180,580,C.lav],[600,588,'#FFB3C7'],[1040,560,C.yellow],[1380,590,C.red],[1560,560,C.lav],[1590,520,C.yellow],[200,448,C.red],[580,440,C.lav],[1180,520,'#FFB3C7'],[270,590,C.yellow],[1000,400,C.yellow]],5);
   fk.out();
   k.lt(()=>ltString(k,sagP(330,404-62*D(404)*1.3,470,404-62*D(404)*1.3,5,10),20));
-  k.hw(()=>{hwJack(k,620,560,.8);hwJack(k,900,556,.6)});
   k.ny(()=>nyKites(k,[[1260,190,.9,0,1300,B],[860,60,.8,1,900,B]]));
-  fl(k,[[40,560,C.red],[70,590,C.yellow],[180,580,C.lav],[600,588,'#FFB3C7'],[1040,560,C.yellow],[1380,590,C.red],[1560,560,C.lav],[1590,520,C.yellow],[200,448,C.red],[580,440,C.lav],[1180,520,'#FFB3C7'],[270,590,C.yellow],[1000,400,C.yellow]],5);
   seasonBitsA(k,{drift:[[860,260,1],[780,250,.9],[1200,330,.85],[460,270,.8],[350,300,.9]],robin:[400,404-36*D(404)*1.3,1,1],fly:[560,440]});
   k.ss(()=>{if(k.so==='spring'&&!e.night&&!e.rain)butterfly(k,1020,470,.85,'#F9C6D4')});
   O.sparkle(k,440,200,7);O.heart(k,1320,250,6);O.note(k,380,60,11);
@@ -2304,8 +2305,8 @@ function a5River(k,F){const W=1600,B=352,D=y=>depA(F,y),fk=floorKitA(k),e=k.env;
   fk.add('jizo',488,()=>{k.jp(()=>jpJizo(k,470,488,1.05));rockA(k,520,488,.75)});
   fk.add('rocks',560,()=>{rockA(k,1000,560,1);rockA(k,1046,566,.7)});
   fk.add('sign',590,()=>{signA(k,1500,590,.95,'duck');k.ny(()=>nyShime(k,1500,514,.8))});
-  fk.out();
   [[610,592,C.yellow],[280,596,C.lav],[860,594,C.red],[1340,560,C.yellow],[60,520,'#FFB3C7']].forEach(f=>O.flower(k,f[0],f[1],5,f[2]));
+  fk.out();
   O.sparkle(k,620,200,7);O.heart(k,330,170,6);
   O.tape(k,8,20,90,-26,'#F9E19A');O.tape(k,W-90,568,80,-24,'#D3C6F1');
   seasonBitsA(k,{drift:[[160,250,1],[420,200,.9],[700,230,1],[1300,220,.8]],robin:[780,414-40*D(414)*1.3,1,-1],fly:[1000,400]})}
@@ -2367,6 +2368,7 @@ function a5Pier(k,F){const W=1600,B=356,D=y=>depA(F,y),fk=floorKitA(k),e=k.env,r
   k.ss(()=>{if(k.so==='winter')windLines(k,[[200,150,140],[560,200,150],[960,240,110],[1260,120,130]]);else{seasonGround(k,[0,B+8,W,598],k.so==='autumn'?70:40,[[1100,380,1480,520]],0,1)}});
   fxA(k,{sheen:[B+8,598],puddles:[[450,580,44,9],[1060,568,38,8],[220,470,30,6]],patches:[[450,582,70,12],[1060,570,60,11],[220,470,46,8],[1220,440,40,7],[860,596,44,8]]});
   floorSnowA(k,[[0,B],[W,B],[W,600],[0,600]],[[420,580,110,13],[1080,590,110,12],[800,400,60,7]]);
+  k.ss(()=>{if(k.so==='autumn'){pumpkin(k,420,560,1.2);pumpkin(k,452,568,.9)}});
   runGateA(k,1470,B+14,.62,'#7FA6D9',C.yellow);
   fk.add('lamp1',400,()=>{lampA(k,620,400,D(400)*1.6);k.ny(()=>nyShime(k,620,400-110*D(400)*1.6,.6))});
   fk.add('lamp2',402,()=>lampA(k,1220,402,D(402)*1.6));
@@ -2376,7 +2378,6 @@ function a5Pier(k,F){const W=1600,B=356,D=y=>depA(F,y),fk=floorKitA(k),e=k.env,r
   fk.add('piling1',598,()=>piling(k,40,600,470,1.1,1));
   fk.add('piling2',596,()=>piling(k,1556,600,456,1.1,-1));
   fk.out();
-  k.ss(()=>{if(k.so==='autumn'){pumpkin(k,420,560,1.2);pumpkin(k,452,568,.9)}});
   O.sparkle(k,700,200,7);O.heart(k,1040,210,6);
   O.tape(k,8,20,90,-26,'#F9E19A');O.tape(k,W-120,540,80,-24,'#D3C6F1');
   seasonBitsA(k,{drift:[[300,250,1],[700,200,.9],[1100,240,.85],[1400,220,.8]]})}
