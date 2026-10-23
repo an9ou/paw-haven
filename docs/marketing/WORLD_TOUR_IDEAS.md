@@ -44,3 +44,58 @@ The places come from `PLACES` in `game/src/00_core.js` and `TK_PLACES` in `game/
 5. **The zoom-out.** Start close on one crayon dog in the yard. Pull back without cutting to the whole yard, then the town map, then the Japan map with Tokyo: "it starts with one dog". About 10 s.
 
 Concept frames for idea 1 (Maple Woods, Tokyo Tower at night, Seashell Beach at sunset) were sent to the owner on 23 Oct 2026.
+
+## Made: idea 1, the sketchbook world tour (23 Oct 2026)
+
+Files are in `brand/instagram/launch/world_tour/`.
+
+| File | What |
+|---|---|
+| `doodle-doggo-world-tour.mp4` | 1080 x 1920, 30 fps, about 16 s, with the game's own music, which changes with each place. |
+| `world-tour-cover.jpg` | The cover: Tokyo Tower at night with its title, the logo above. |
+| `build_tour.js` | Remake: `NODE_PATH=/opt/node-tools/node_modules node brand/instagram/launch/world_tour/build_tour.js <workdir>` (`SEED=n` picks another set of dogs; `ONLY=stills` renders key frames; `FRAMES=a-b` re-renders only those frames over a copied workdir). |
+
+**What is in it:**
+- **Seven places, 1.9 s each, in unlock order**, each in its own weather. A slow camera drift and a soft crossfade join them, and a small dog trots through each one:
+
+  | Place | Weather | Unlocks at | Dog |
+  |---|---|---|---|
+  | Home Yard | spring petals | Bond 1 | Mochi the Shiba Inu |
+  | Riverside | summer sparkle on the water | Bond 2 | Biscuit the Corgi |
+  | Shibuya Crossing | rain | Bond 3 | Daifuku the Japanese Spitz |
+  | Asakusa | dusk | Bond 4 | Espresso the Doberman |
+  | Maple Woods | falling leaves | Bond 5 | Pretzel the Miniature Poodle |
+  | Tokyo Tower | night lights and stars | Bond 5 | Noodle the Dachshund |
+  | Seashell Beach | sunset | Bond 8 | Pepper the Shelter Mutt |
+
+  The dogs come from `SEED=23`; the Chihuahua is left out, since it was the last ad.
+- **Titles:** the place's name and "unlocks at Bond N", in the game's handwriting, rising in after each cut.
+- **End card:** the logo, "a whole sketchbook world to explore", and "play free at doodledoggo.app".
+- **Real art only:** `PawArt.scene` and `PawArt.dog`. The game's dashed tap-area outlines are hidden. No game UI.
+
+### As an ad (Meta Ads Manager)
+
+**Goal:** Traffic. **Website:** https://doodledoggo.app. **Button:** "Play game". **Placements:** Reels and Stories.
+
+**Primary text, option A (the world)**
+```
+A whole sketchbook world to explore with your dog 🐶 From your backyard to Tokyo Tower at night. Free in your browser, no download.
+```
+**Primary text, option B (the bond)**
+```
+The more you bond, the further you go 🐾 Riverside, Maple Woods, Shibuya, the beach at sunset. A free cozy dog game, no download.
+```
+**Headline** (pick one): `A whole sketchbook world` · `Free cozy dog game, no download` · `Explore with your dog 🐶`
+**Description:** `Play free in your browser.`
+
+### If it is also posted on the profile
+
+```
+A whole sketchbook world, one walk at a time 🐾
+From the backyard to Tokyo Tower at night: every new Bond takes you and your dog somewhere new.
+
+Doodle Doggo is a free cozy dog game you play right in your browser. Link in bio.
+
+#doodledoggo #cozygames #cozygaming #doglovers #indiegame #relaxinggames #handdrawn
+```
+**Alt text:** `A slow tour of crayon-drawn places, from a spring yard to Tokyo Tower at night, each with a small dog trotting through.` (118 characters)
