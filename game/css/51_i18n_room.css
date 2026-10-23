@@ -1,0 +1,21 @@
+/* ======================= v2.14.1 ROOM INSIDE THE WINDOWS (owner, 23 Oct 2026, zh-Hant on an iPhone in the doodledoggo.app box) =======================
+   "the box is too close with the wordings": CJK, Hangul and Thai glyphs fill their whole em square, so text that sat 8-9 px from a window's pencil
+   line looked jammed against it, where Latin ink (smaller, with side bearings) still breathes. Phones keep at least about 12 px between the line
+   and dense-script text (the fit audit's crowd rule R12, game/fit_lib.js); English and the other Latin languages keep their v2.14 spacing, except
+   the shop items in the long Latin languages and the phone adopt card, whose title crossed the line in every language. */
+
+/* the phone adopt card (all languages): a frame drawn for a tall sheet, so its line stays at the edge instead of sinking 20 px into the card */
+html[data-layout="phone"] #stage.flowdock #dock > .tray{--fr:var(--fr-sheet);--frm:var(--frm-sheet)}
+html[data-layout="phone"] #stage.flowdock #dock > .tray:has(.adopt-card){padding:18px 18px 12px}
+
+/* dense scripts on phones: more room inside the windows (sheets, trays, the guide's notes) */
+html[data-layout="phone"]:is(:lang(ja),:lang(zh),:lang(ko),:lang(th)) .panel{padding-left:20px;padding-right:20px}
+html[data-layout="phone"]:is(:lang(ja),:lang(zh),:lang(ko),:lang(th)) #stage.flowdock #dock > .tray:has(.adopt-card){padding:20px 20px 14px}
+html[data-layout="phone"]:is(:lang(ja),:lang(zh),:lang(ko),:lang(th)) #stage:not(.flowdock) #dock > .tray{padding-left:18px;padding-right:18px;padding-bottom:18px}
+html[data-layout="phone"]:is(:lang(ja),:lang(zh),:lang(ko),:lang(th)) #stage:not(.flowdock) #dock > .tray.sr-tray{padding:14px 14px 10px}
+html[data-layout="phone"]:is(:lang(ja),:lang(zh),:lang(ko),:lang(th)) .gd-say{padding:12px 18px 13px 20px}
+html[data-layout="phone"]:is(:lang(ja),:lang(zh),:lang(ko),:lang(th)) .gd-lesson{padding:15px 18px 14px 12px}
+/* shop items: the long Latin languages fill their lines edge to edge, so they get a little room too (English keeps 6 px) */
+html[data-layout="phone"]:is(:lang(de),:lang(fr),:lang(es),:lang(pt),:lang(id)) .sitem{padding-left:10px;padding-right:10px}
+html[data-layout="phone"]:is(:lang(ja),:lang(zh),:lang(ko),:lang(th)) .sitem{padding-left:14px;padding-right:14px}
+html[data-layout="phone"]:is(:lang(ja),:lang(zh),:lang(ko),:lang(th)) .rt-card{padding:16px 24px 12px}
