@@ -529,7 +529,7 @@ function hasRealScene(name) {
 const mpSceneReady = (name) => !!(window.PawArt && Array.isArray(PawArt.WORLD_G_SCENES) && PawArt.WORLD_G_SCENES.includes(name));
 function mpPlainGround(name) {
   return `<g class="mp-plain" data-plain="${name}"><rect width="1000" height="600" fill="#FFFBF3"/><path d="M0 372 Q160 352 330 366 T660 360 T1000 368 V600 H0 Z" fill="#EEF2DC" stroke="#5B3D32" stroke-width="3" stroke-linejoin="round"/>`
-    + `<g fill="none" stroke="#B9C79A" stroke-width="3" stroke-linecap="round">${[[90, 430], [260, 470], [450, 420], [640, 480], [820, 440], [160, 540], [560, 550], [900, 530]].map(([x, y]) => `<path d="M${x} ${y} l6 -14 M${x + 8} ${y} l2 -16 M${x + 16} ${y} l-4 -12"/>`).join('')}</g></g>` + placeSign(name);
+    + `<g fill="none" stroke="#B9C79A" stroke-width="3" stroke-linecap="round">${[[90, 430], [260, 470], [450, 420], [640, 480], [820, 440], [160, 540], [560, 550], [900, 530]].map(([x, y]) => `<path d="M${x} ${y} l6 -14 M${x + 8} ${y} l2 -16 M${x + 16} ${y} l-4 -12"/>`).join('')}</g></g>` + mpPlainDoor(name) + placeSign(name); // v2.15: a storefront gets a doodle door (data-shop, 42_map215.js)
 }
 function sceneArt(name, e, extra) {
   const o = Object.assign({}, e || {}, extra || {});
@@ -716,7 +716,7 @@ function freshState(key, name, sex) {
   v29Fields(st); // v2.9 All Together: photo mode (V29.md section 5)
   v210Fields(st); // v2.10 Free to Roam: ball play (V210.md section 5)
   v211Fields(st); // v2.11 Tokyo Trip: the trip and Dog Cards (V211.md section 5)
-  v215Fields(st); // v2.15 Around Town: agility, the pool, the run tracks, the map stickers (V215.md section 9)
+  v215Fields(st); st.mapNew.fresh = true; // v2.15 Around Town: agility, the pool, the run tracks, the map stickers (V215.md section 9); fresh: a save that started on v2.15 gets no "new" / "moved" stickers
   v214Fields(st); st.lang = i18nReal(prefs.langPick) ? prefs.langPick : null; // v2.14: a language picked on the title screen before the save existed (V214.md 5)
   return linkDogs(st);
 }
@@ -822,7 +822,8 @@ function v214Fields(s) {
    S.ag      { day: localISO of the counts, runs, coins: agility coins that day, best: { dogId: rosettes 1-3 }, seen: first visit note }  (ACTIVITIES, 44_agility.js)
    S.pool    { day: { dogId: localISO of the last paddle }, vest: the Doggy Life Vest given, seen: first visit lesson }                  (ACTIVITIES, 45_pool.js)
    S.trk     { seen: { routeKey: true } } the first-run care notes of the three new tracks                                              (ACTIVITIES, 46_tracks.js)
-   S.mapNew  { since: localISO of the first v2.15 load, seen: [place keys] } the "new" / "moved" map stickers for 7 real days      (MAP, 42_map215.js) */
+   S.mapNew  { since: localISO of the first v2.15 load, seen: [place keys], fresh: true on a save started on v2.15 (no stickers) }
+             the "new" / "moved" map stickers for 7 real days                                                                        (MAP, 42_map215.js) */
 function v215Fields(s) {
   if (!s) return s;
   const num = (o, k) => { if (typeof o[k] !== 'number' || !(o[k] >= 0)) o[k] = 0; };

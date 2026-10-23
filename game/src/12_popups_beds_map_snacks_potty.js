@@ -192,7 +192,7 @@ function mapTipText(k) {
   if (k === 'shelter') return tt('popup.visit_the_dogs', '{nm}: visit the dogs', { nm });
   if (PLACES[k] && topBond() < PLACES[k].bond) return tt('popup.bond_needed', '{nm}: Bond {bond}', { nm, bond: PLACES[k].bond });
   if (k === 'yard') return tt('popup.go_home', '{nm}: go home', { nm });
-  if (k === 'market') return tt('popup.go_shopping', '{nm}: go shopping', { nm });
+  if (k === 'market' || mpShopOf(k)) return tt('popup.go_shopping', '{nm}: go shopping', { nm });
   return tt('popup.go_hang_out', '{nm}: go hang out', { nm });
 }
 const PIN_SVG = `<svg viewBox="0 0 40 56" aria-hidden="true"><path d="M20 54 L12 30 A14 14 0 1 1 28 30 Z" fill="#F28FA5" stroke="#5B3D32" stroke-width="2.6" stroke-linejoin="round"/><circle cx="20" cy="19" r="6" fill="#FFFBF3" stroke="#5B3D32" stroke-width="2"/></svg>`;

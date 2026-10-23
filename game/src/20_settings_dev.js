@@ -8,6 +8,7 @@ function openSettings() {
     ${[['master', tt('settings.vol_master', 'Master'), 'volume'], ['music', tt('settings.vol_music', 'Music'), 'music'], ['sfx', tt('settings.vol_sfx', 'Sound effects'), 'sfx'], ['ambience', tt('settings.vol_ambience', 'Ambience'), 'ambience']].map(([k, l, ic]) => `<div class="vol"><span class="ic">${iconOr(ic, '<circle r="9" fill="#FCD8BC" stroke="#5B3D32" stroke-width="2"/>')}</span><label for="vol-${k}">${esc(l)}</label><input type="range" id="vol-${k}" min="0" max="100" step="5" value="${prefs.vol[k]}"><output id="out-${k}">${prefs.vol[k]}</output></div>`).join('')}
     <label class="tog"><input type="checkbox" id="setMute" ${prefs.mute ? 'checked' : ''}> ${esc(tt('settings.mute_all', 'Mute all'))}</label>${PAU() ? '' : ` <span class="small">${esc(tt('settings.no_audio', '(Music arrives with the audio module.)'))}</span>`}<br>
     <label class="tog"><input type="checkbox" id="setMotion" ${motionOff ? '' : 'checked'}> ${esc(tt('settings.motion', 'Motion and wobble'))}</label>
+    ${mpSettingsHTML()}
     <div class="barkset"><span>${esc(tt('settings.barking', 'Barking:'))}</span>${[['normal', tt('settings.bark_normal', 'Normal')], ['fewer', tt('settings.bark_fewer', 'Fewer')], ['off', tt('settings.bark_off', 'Off')]].map(([k, l]) => `<button class="btn ${barkMode() === k ? 'yes' : ''}" data-barkm="${k}" aria-pressed="${barkMode() === k}">${esc(l)}</button>`).join('')}</div>
     <p class="small">${esc(tt('settings.economy', 'Time: 1 game hour = 1 real minute. Prototype economy: coins x{coins}, Bond x{bond}, naps x{nap}.', { coins: BOOST.coins, bond: BOOST.bond, nap: BOOST.nap }))}</p>
     <p class="small">${esc(touchOnly ? tt('settings.clock', 'Clock and weather follow your real local time (3 weather periods a day).') : tt('settings.clock_keys', 'Clock and weather follow your real local time (3 weather periods a day). Keys: 1-9 bottom buttons, Space pets / throws / walks, Esc closes things.'))}</p>
@@ -16,6 +17,7 @@ function openSettings() {
   ['master', 'music', 'sfx', 'ambience'].forEach((k) => { const r = $('#vol-' + k, p); r.oninput = () => { prefs.vol[k] = +r.value; if (k === 'ambience') prefs.ambTouched = true; $('#out-' + k, p).textContent = r.value; applyAudioPrefs(); }; r.onchange = () => { savePrefs(); if (k === 'sfx' || k === 'master') SFX.boop(660); }; });
   $('#setMute', p).onchange = (e) => { prefs.mute = e.target.checked; savePrefs(); applyAudioPrefs(); updateMute(); };
   $('#setMotion', p).onchange = (e) => setMotion(e.target.checked);
+  mpSettingsBind(p); // v2.15: Labels on the map, the shop window on arrival (42_map215.js)
   if (typeof clBind === 'function') clBind(p);
   langBind(p);
   p.querySelectorAll('[data-barkm]').forEach((b) => { b.onclick = () => { prefs.bark = b.dataset.barkm; savePrefs(); SFX.click(); p.querySelectorAll('[data-barkm]').forEach((x) => { x.classList.toggle('yes', x === b); x.setAttribute('aria-pressed', String(x === b)); }); }; });

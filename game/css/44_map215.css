@@ -1,2 +1,49 @@
 /* v2.15 Around Town: the town map (MAP lane, tag mp, classes .mp- and the building layers .mb, .mb-shadow, .mb-lift, .mb-glow, .mb-hit; V215.md sections 2 to 4).
-   Phone rules go under html[data-layout="phone"] (PHONE.md). Laid down empty by the stubs lane. */
+   Phone rules go under html[data-layout="phone"] (PHONE.md). The building is a button: hover / keyboard focus lift it (springy), a press squashes it,
+   a pick hops it, a locked one shakes. The glow (pink halo + marching dashed ring) shows on hover, focus and while picked. Motion off or
+   prefers-reduced-motion: the glow only (no lift, no march, no hop, no shake). JS classes: .mp-hov (mouse over), .mp-foc (keyboard focus),
+   .mp-press (pointer down), .mp-picked, .mp-shake (42_map215.js). */
+.pa-wf-map .mb.hot:hover, .pa-wf-map .mb.hot:focus-visible { filter: none; }
+.pa-wf-map .mb:focus { outline: none; }
+.pa-wf-map .mb .mb-lift { transition: transform .34s cubic-bezier(.34, 1.56, .64, 1); }
+.pa-wf-map .mb .mb-shadow { transition: transform .3s ease, opacity .3s ease; }
+.pa-wf-map .mb .mb-glow { transition: opacity .18s ease; }
+.pa-wf-map .mb .mb-ring { animation: mpMarch 1.1s linear infinite; animation-play-state: paused; }
+.pa-wf-map .mb.mp-hov .mb-lift, .pa-wf-map .mb.mp-foc .mb-lift, .pa-wf-map .mb:focus-visible .mb-lift { transform: translateY(-12px) scale(1.06); }
+.pa-wf-map .mb.mp-hov .mb-shadow, .pa-wf-map .mb.mp-foc .mb-shadow, .pa-wf-map .mb:focus-visible .mb-shadow { transform: scale(.8); opacity: .07; }
+.pa-wf-map .mb.mp-hov .mb-glow, .pa-wf-map .mb.mp-foc .mb-glow, .pa-wf-map .mb:focus-visible .mb-glow, .pa-wf-map .mb.mp-picked .mb-glow { opacity: 1; }
+.pa-wf-map .mb.mp-hov .mb-ring, .pa-wf-map .mb.mp-foc .mb-ring, .pa-wf-map .mb:focus-visible .mb-ring, .pa-wf-map .mb.mp-picked .mb-ring { animation-play-state: running; }
+/* keyboard focus: the dashed pink ring a bit heavier */
+.pa-wf-map .mb.mp-foc .mb-ring, .pa-wf-map .mb:focus-visible .mb-ring { stroke-width: 6; }
+.pa-wf-map .mb.mp-press .mb-lift { transform: translateY(4px) scale(.95); transition: transform 70ms ease-out; }
+.pa-wf-map .mb.mp-press .mb-shadow { transform: scale(1.12); opacity: .2; transition-duration: 70ms; }
+.pa-wf-map .mb.mp-picked .mb-lift { animation: mpHop .52s ease-out; }
+.pa-wf-map .mb.mp-shake .mb-lift { animation: mpShake .44s ease-in-out; }
+.pa-wf-map .mb[data-locked="1"].mp-hov .mb-lift, .pa-wf-map .mb[data-locked="1"].mp-foc .mb-lift { transform: translateY(-5px) scale(1.02); }
+@keyframes mpMarch { to { stroke-dashoffset: -48; } }
+@keyframes mpHop { 0% { transform: translateY(4px) scale(.95); } 40% { transform: translateY(-22px) scale(1.04, 1.08); } 70% { transform: translateY(2px) scale(1.04, .96); } 100% { transform: none; } }
+@keyframes mpShake { 0%, 100% { transform: none; } 20% { transform: translateX(-9px) rotate(-2deg); } 40% { transform: translateX(8px) rotate(2deg); } 60% { transform: translateX(-6px) rotate(-1deg); } 80% { transform: translateX(4px); } }
+/* Motion off (Settings) or the system's reduced motion: the glow only */
+html[data-motion="off"] .pa-wf-map .mb .mb-lift, html[data-motion="off"] .pa-wf-map .mb .mb-shadow { transform: none !important; transition: none !important; animation: none !important; }
+html[data-motion="off"] .pa-wf-map .mb .mb-ring { animation: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-motion="on"]) .pa-wf-map .mb .mb-lift, html:not([data-motion="on"]) .pa-wf-map .mb .mb-shadow { transform: none !important; transition: none !important; animation: none !important; }
+  html:not([data-motion="on"]) .pa-wf-map .mb .mb-ring { animation: none !important; }
+}
+/* Labels on the map off (Settings): the captions go, the buildings stay (their aria-labels too) */
+.mp-nolab .pa-wf-map .mb-cap, #mapInner.mp-nolab .mb-cap { display: none; }
+/* the travel walk: the leader's dog, the Skip chip */
+#mpWalkG, .mp-walker { pointer-events: none; }
+.mp-skip { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 7; min-height: 44px; font-size: 18px; padding: 4px 18px; animation: mpSkipIn .3s ease-out; }
+@keyframes mpSkipIn { from { opacity: 0; transform: translate(-50%, 8px); } }
+#view.mp-walking .mappan { cursor: pointer; }
+/* the wait for world F (split build): the map unfolds */
+.mp-wait { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: radial-gradient(#E3D2BA 1.1px, transparent 1.6px) 0 0/22px 22px, #FFFBF3; }
+.mp-wait-paper { display: flex; flex-direction: column; align-items: center; gap: 8px; font-family: var(--font-hand, 'Caveat', cursive); font-size: 26px; color: #5B3D32; }
+.mp-wait-paper svg { width: 150px; height: 112px; animation: mpWobble .9s ease-in-out infinite alternate; transform-origin: 50% 80%; }
+@keyframes mpWobble { from { transform: rotate(-4deg) scale(.97, 1.02); } to { transform: rotate(4deg) scale(1.03, .98); } }
+html[data-motion="off"] .mp-wait-paper svg { animation: none; }
+/* the storefront door on the plain ground (no world G scene yet) */
+.mp-door { cursor: pointer; }
+html[data-layout="phone"] .mp-skip { bottom: calc(14px + env(safe-area-inset-bottom, 0px)); font-size: 19px; min-height: 48px; }
+html[data-layout="phone"] .mp-wait-paper { font-size: 24px; }
