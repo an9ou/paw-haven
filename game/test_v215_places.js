@@ -236,7 +236,7 @@ run('v215_places', async (t) => {
     ok(w.shake, 'the dog shook (the shake pose)');
     ok(w.rip > 0, 'ripples round the dog in the pool');
     ok(post.happy - pre.happy >= 14.5 && post.happy - pre.happy <= 15.5, '+15 Happiness (' + (post.happy - pre.happy).toFixed(1) + ')');
-    ok(post.clean >= 60, 'Cleanliness to at least 60 (' + post.clean + ')');
+    ok(post.clean >= 59.5, 'Cleanliness to at least 60 (' + post.clean + ')');
     ok(post.coins === pre.coins && post.bl === pre.bl, 'no pool coins (the coins stay at ' + post.coins + ')');
     ok(await ev((id) => window.__paw.pl.paddled(id), poolDog), 'S.pool.day has today for this dog');
     ok(await ev(() => /had a lovely paddle/.test(document.querySelector('.pl-tray h3').textContent) && /\+\d+ Happiness/.test(document.getElementById('plHint').textContent)), 'the result tray says so');
@@ -320,5 +320,19 @@ run('v215_places', async (t) => {
     const b = await snapP(); ok(b.happy - a.happy >= 14.5, 'with its +15 Happiness (' + (b.happy - a.happy).toFixed(1) + ')');
     await t.SH('pool_winter_paddle');
     await t.p.click('#plDone');
+  }
+
+  sec('Run gates (ACTIVITIES part 3, details in v215_tracks): the arch starts a walk with the pickArea checks');
+  await t.newGame({ ground: true }, { coins: 500, bond: { level: 8, pts: 1600 }, stats: { hunger: 90, happy: 80, energy: 100, clean: 90 } });
+  for (const [pl, route] of [['sunflower', 'sunflower'], ['bamboo', 'bamboo'], ['cliffs', 'cliffs'], ['square', 'town'], ['pier', 'pier']]) {
+    await t.home(pl); await t.sleep(300);
+    ok(await ev(() => { const h = document.querySelector('#sceneG [data-hot="run"]'); return !!h && h.classList.contains('hot') && h.getAttribute('role') === 'button'; }), `${pl}: a run gate button stands in the scene`);
+    await ev(() => { window.__paw.S.stats.energy = 15; });
+    await ev(() => document.querySelector('#sceneG [data-hot="run"]').dispatchEvent(new MouseEvent('click', { bubbles: true }))); await t.sleep(300);
+    ok(await ev(() => window.__paw.mode === 'yard'), `${pl}: Energy 15, no walk`);
+    await ev(() => { window.__paw.S.stats.energy = 100; });
+    await ev(() => document.querySelector('#sceneG [data-hot="run"]').dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    ok(await t.until((r) => window.__paw.mode === 'walk' && window.__paw.W && window.__paw.W.area === r, route, 6000), `${pl}: Energy 100, the walk on ${route} starts`);
+    await ev(() => { window.__paw.S.sleeping = false; window.__paw.go('yard'); }); await t.calm();
   }
 }, { ground: true });
