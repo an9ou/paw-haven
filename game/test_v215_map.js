@@ -165,6 +165,19 @@ run('v215_map', async (t) => {
     await t.home('cafe'); await t.dev(async () => { await t.p.selectOption('#dvSeason', 'summer'); });
   }
 
+  sec('no mission or guide text says Market Street');
+  {
+    const r = await ev(() => {
+      const ms = window.__paw.ms, list = ms.force(ms.pool), mt = list.map((it) => ms.text(it) + ' | ' + ms.text(it, true));
+      const gt = []; for (let i = 0; i < window.__gd.steps; i++) gt.push(window.__gd.text(i));
+      return { n: list.length, mt, gt, tab: window.__gd.tab() };
+    });
+    ok(r.n > 10, `the whole mission pool was checked (${r.n})`);
+    ok(!r.mt.some((x) => /Market Street/i.test(x)), 'no mission text says Market Street: ' + r.mt.filter((x) => /Market Street/i.test(x)).join(' / '));
+    ok(r.mt.some((x) => /shop in town/.test(x)), 'the buy mission says "a shop in town"');
+    ok(!r.gt.some((x) => /Market Street/i.test(x)) && !/Market Street/i.test(r.tab), 'no guide step or lesson says Market Street');
+  }
+
   sec('captions fit in every language');
   for (const lang of LANGS) {
     await t.boot({ lang });

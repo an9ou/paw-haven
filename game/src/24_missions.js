@@ -90,6 +90,7 @@ function msRoll(force) {
 function msToday() { const m = msRoll(); return m ? m.list : []; }
 function msText(it, short) {
   const d = msDef(it.id); if (!d) return it.id;
+  if (d.id === 'buy' && typeof mpOn === 'function' && mpOn()) return short ? tt('map215.ms_buy_s', 'Shopping in town') : tt('map215.ms_buy_t', 'Buy something at a shop in town'); // v2.15: the shops have their own places, so no Market Street wording
   return tdata('ms_pool.' + d.id + (short ? '.s' : '.t'), short ? d.s : d.t, { dog: NAME(), arg: it.arg ? shNameAny(it.arg) : '' }); // v2.14 i18n: the pool text is a message with {dog} and {arg}
 }
 const msDoneN = () => (S && S.missions ? S.missions.list.filter((x) => x.done).length : 0);
@@ -313,7 +314,7 @@ function msExpose() {
   window.__paw.ms = {
     roll: (f) => msRoll(f), today: () => msToday(), open: () => msOpen(), pool: MS_POOL.map((d) => d.id), pick: (date) => msPick(date), yard: MS_YARD,
     force: (ids) => { msRoll(); S.missions.list = ids.map((id) => { const d = msDef(id); return d ? (msItem(d, Math.random) || { id, n: d.n, p: 0, done: null }) : null; }).filter(Boolean); S.missions.stampDay = ''; markDirty(); msRefresh(); return S.missions.list; },
-    act: (kind, data) => trackAct(kind, data), flush: () => msFlush(), get queue() { return msQueue.length; }
+    text: (it, s) => msText(it, s), act: (kind, data) => trackAct(kind, data), flush: () => msFlush(), get queue() { return msQueue.length; }
   };
 }
 on('game:ready', () => { msFields(); setTimeout(msExpose, 0); });
