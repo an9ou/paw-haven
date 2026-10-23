@@ -359,3 +359,10 @@ game/i18n/es.json (v2.14 phase 2, 7366/7366 keys). Shared choices: Bond = cariñ
 - TODO(native): tesD choices: "guisantes" (Spain) vs "arvejas", "batata" vs "camote", "pagaré" (IOU), "Isabela" (coat colour), "corbatín" vs "pajarita", invented food names "Zanahorias Caramelo", "Kinton Perruno", "Calabazar".
 - TODO(native): data.dc_words_a: the cozy/snug/warm adjectives are approximate because every card adjective must be gender-invariable.
 - TODO(native): the dogs say "el Fuji" in their lines, the place is "Mirador del monte Fuji".
+
+## v2.15
+
+- TODO(native): place names: "Campo de Entrenamiento" (Training Ground, long for a map caption, "Pista de agility" is the short fallback), "Piscina Chapuzón" (Splash Pool), "Camino de Girasoles", "Sendero del Bambú" (drops "Grove"), "Ruta de los Acantilados".
+- TODO(native): agility words: "escarapela" for the rosette (as in "Escarapela del Desfile"), "Eslalon" (weave poles), "Valla" (jump bar), "Rueda" (tyre), "¡Ya!" for the Go! button.
+- TODO(native): the dogs' agility and pool lines (data.ag_lines.*, data.pl_lines.*) avoid gendered adjectives ("Mido poquito", "Patas cortas, pelo blanco") because no {sex} arg reaches them, and "{name} todavía tiene que crecer" replaces "es muy pequeño".
+- TODO(native): pool.sprink_hint "¡Chipi chapa!" for "Splish splash!", pool.splsh "¡chof!".
