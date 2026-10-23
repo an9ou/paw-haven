@@ -4,8 +4,8 @@
 //   * a save standing in a new place stays there with the map on and goes to the yard with it off; an unknown place (a later build) goes to the yard
 //   * the stubs answer: PLACES rows and names only while mpOn(), market is "Kibble Corner" only then, grOn false without a floor, artChunk resolves
 //     at once in the harness, a new place without world G scene art draws the plain sketch ground (no console error)
-const { run } = require('./test_lib');
-const SAVE = 'pawhaven_proto_v1', PREFS = 'pawhaven_prefs_v1';
+const { run, URL } = require('./test_lib');
+const SAVE = 'pawhaven_proto_v1';
 const OLD = ['yard', 'house', 'park', 'river', 'woods', 'beach', 'market', 'square', 'cafe', 'dogpark', 'vet', 'salon', 'hilltop', 'pier', 'fujihill', 'shibuya', 'ueno'];
 const NEW = ['boutique', 'builder', 'sprout', 'training', 'pool', 'sunflower', 'bamboo', 'cliffs'];
 const BOND = { boutique: 1, builder: 1, sprout: 1, training: 3, pool: 2, sunflower: 2, bamboo: 4, cliffs: 7 };
@@ -18,14 +18,14 @@ run('v215_migrate', async (t) => {
   ok(base && base.v === 1 && !('ag' in base) && !('mapNew' in base), 'the base save has no v2.15 fields (a v2.14 save)');
   const today = await ev(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; });
 
-  // load `save` with prefs.mpTest = mp. The game saves on pagehide and on visibilitychange (which comes after pagehide when a page unloads);
-  // these listeners are added later, so they run after the game's and the reload reads the seeded save
+  // load `save` with prefs.mpTest = mp, the way a player opens the game on an old save: a fresh browser context with the save already on disk
+  // (the harness storage option writes it before the game boots). Seeding it in the old page's pagehide / visibilitychange listeners and then
+  // reloading was flaky: Chromium can drop localStorage writes still in flight when a page reloads (worst for a context's first page), so the
+  // reloaded title sometimes found no save at all and showed only "New game" (test_lib reloadKeepingSave has the same note)
   const load = async (save, mp) => {
-    await ev(({ K, P, s, mp }) => {
-      const put = () => { localStorage.setItem(K, s); const pr = JSON.parse(localStorage.getItem(P) || '{}'); pr.mpTest = mp; localStorage.setItem(P, JSON.stringify(pr)); };
-      window.addEventListener('pagehide', put); document.addEventListener('visibilitychange', put);
-    }, { K: SAVE, P: PREFS, s: JSON.stringify(save), mp });
-    await t.p.reload(); await t.p.waitForSelector('#tContinue'); await t.p.click('#tContinue');
+    const was = t.ctx;
+    await t.mk({ storage: { [SAVE]: JSON.stringify(save) }, prefs: Object.assign({}, t.opts.prefs, { mpTest: mp }) }); if (was) await was.close();
+    await t.p.goto(URL); await t.p.waitForSelector('#tContinue'); await t.p.click('#tContinue');
     await t.until(() => ['yard', 'market'].includes(window.__paw.mode) && !!window.__paw.S, null, 8000);
     return ev(() => { const S = window.__paw.S; return { place: S.place, mode: window.__paw.mode, keys: Object.keys(JSON.parse(JSON.stringify(S))), dogKeys: Object.keys(S.dogs[0] || {}), ag: S.ag, pool: S.pool, trk: S.trk, mapNew: S.mapNew, mp: window.__paw.mp ? window.__paw.mp.on() : null }; });
   };
