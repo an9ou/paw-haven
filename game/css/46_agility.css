@@ -1,2 +1,35 @@
 /* v2.15 Around Town: the Training Ground agility course (ACTIVITIES lane, tag ag, classes .ag-; V215.md section 6.1).
-   Phone rules go under html[data-layout="phone"] (PHONE.md): the Go! button is 64 px in the thumb zone. Laid down empty by the stubs lane. */
+   Phone rules go under html[data-layout="phone"] (PHONE.md): the Go! button is 64 px in the thumb zone, taps 44 px, text 15 px. */
+.ag-tray .tray-h{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.ag-tray .tray-h h3{margin:0;min-width:0;overflow-wrap:break-word;text-wrap:balance}
+html[data-layout="phone"] #stage #dock > .ag-tray .tray-h h3{font-size:24px}
+html[data-layout="phone"] #dock .ag-go{min-height:76px} /* the phone shell scales the dock: 76 px here is 64 px or more on the screen */
+.ag-tray .ag-done{flex:none;min-width:88px;min-height:44px;font-size:20px}
+.ag-tray .tray-body p{margin:2px 0}
+.ag-tray .ag-hint{font-size:15px;line-height:1.25;min-height:19px}
+.ag-gauge{position:relative;height:26px;margin:6px 4px 4px;border:2.5px solid #5B3D32;border-radius:14px;background:#FFFBF3;overflow:hidden}
+.ag-zone{position:absolute;top:0;bottom:0;background:#9AD7A6;border-left:2px solid #5B3D32;border-right:2px solid #5B3D32;opacity:.9}
+.ag-mark{position:absolute;top:-2px;bottom:-2px;width:10px;margin-left:-5px;border-radius:5px;background:#F28FA5;border:2px solid #5B3D32;left:0}
+.ag-go{display:block;width:100%;min-height:64px;margin-top:6px;font-size:30px}
+.ag-go[aria-disabled="true"],.ag-start[aria-disabled="true"],.ag-again[aria-disabled="true"]{opacity:.55}
+.ag-start,.ag-again{display:block;width:100%;min-height:52px;margin-top:6px;font-size:22px}
+.ag-dogs{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0}
+.ag-dog{min-height:44px;display:flex;align-items:center;gap:8px;font-size:18px}
+.ag-dog.sel{outline:3px solid #F28FA5;outline-offset:1px}
+.ag-dog .ag-best{display:inline-flex;gap:1px;align-items:center}
+.ag-ros-row{display:flex;justify-content:center;gap:10px;margin:4px 0}
+.ag-ros{display:block}
+.ag-ros.on{animation:agPop .5s ease-out both}
+.ag-ros-row .ag-ros:nth-child(2){animation-delay:.18s}
+.ag-ros-row .ag-ros:nth-child(3){animation-delay:.36s}
+@keyframes agPop{0%{transform:scale(.3) rotate(-20deg);opacity:0}70%{transform:scale(1.15) rotate(4deg)}100%{transform:scale(1);opacity:1}}
+html[data-motion="off"] .ag-ros.on{animation:none}
+.ag-grade{font-family:'Caveat',cursive;font-size:44px;font-weight:700;fill:#FFFBF3;stroke:#5B3D32;stroke-width:1.6;paint-order:stroke;animation:agGrade 1.4s ease-out both}
+.ag-grade.perfect{fill:#F7D24E}
+.ag-grade.good{fill:#9AD7A6}
+.ag-grade.slow{fill:#B9D3F2}
+@keyframes agGrade{0%{transform:translateY(10px);opacity:0}15%{opacity:1}100%{transform:translateY(-30px);opacity:0}}
+html[data-motion="off"] .ag-grade{animation:none}
+/* while running (html.ag-on): the scene props open nothing and the place buttons rest, like ball play */
+html.ag-on #view svg.world .hot,html.ag-on #view svg.world .hot *{pointer-events:none!important}
+html.ag-on #phPeek,html.ag-on #placeBtns{display:none!important}

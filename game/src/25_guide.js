@@ -190,7 +190,8 @@ function gdTabHTML() {
   const card = ([k, icon, title, txt], j) => { const lp = j < GD_LESSONS.length && GD_LESSONS[j][0] === k ? 'gd_lessons.' + k + '_' + icon : ''; return `<li class="gd-lesson" data-lesson="${k}">${ic(icon, j)}<div><b>${esc(lp ? tdata(lp + '.2', title) : title)}</b><p>${esc(lp ? tdata(lp + '.3', txt) : txt)}</p></div></li>`; }; // v2.14 i18n: the eight lessons come from the table (two or three kind sentences each); a seasonal card from WINTER brings its own text
   // v2.8: WINTER's seasonal card (V28.md section 7). wnLesson() returns a lesson [key, icon, title, text] like GD_LESSONS, or ready <li> HTML, or '' for none
   let wl = ''; try { wl = typeof wnLesson === 'function' ? wnLesson() : ''; } catch (e) { wl = ''; }
-  const cards = GD_LESSONS.map(card).join('') + (Array.isArray(wl) && wl.length === 4 ? card(wl, GD_LESSONS.length) : typeof wl === 'string' ? wl : '');
+  let al = null; try { al = typeof agLesson === 'function' ? agLesson() : null; } catch (e) { al = null; } // v2.15: the Training Ground card (44_agility.js), only while mpOn()
+  const cards = GD_LESSONS.map(card).join('') + (Array.isArray(wl) && wl.length === 4 ? card(wl, GD_LESSONS.length) : typeof wl === 'string' ? wl : '') + (Array.isArray(al) && al.length === 4 ? card(al, GD_LESSONS.length + 1) : '');
   return `<div class="gd-page"><div class="gd-head"><div class="gd-duck">${gdDuck('sit')}</div><div class="gd-say"><p>${tt('guide.notes_html', "<b>Gerald's notes.</b> Everything a new dog friend needs, written down by a duck who knows everything. You are welcome.")}</p></div></div>
     <ol class="gd-lessons">${cards}</ol>
     <p class="gd-replay"><button class="btn yes" id="gdReplay" type="button">${esc(tt('guide.replay', 'Replay the guide'))}</button></p></div>`;

@@ -71,4 +71,123 @@ run('v215_places', async (t) => {
 
   /* ======== ACTIVITIES lane: the Training Ground (agility, puppy course), the Splash Pool (paddle, vest, float fetch, winter dome), the run gates ======== */
   // (add the checks here: t.newGame({}, { bond: { level: 7 } }) with map215 on; travel(k) above walks the map like a player)
-}, { map215: true });
+
+  /* ---- Training Ground (ACTIVITIES part 1: agility, V215.md 6.1). The suite runs on the deep ground ({ ground: true }) ---- */
+  sec('Training Ground: the place, the care note, the arrival lines, the button');
+  await t.home('yard');
+  ok(await ev(() => window.__paw.gr.on('training')), 'training is a grOn place');
+  ok(await ev(() => !window.__paw.ag.on() && !document.querySelector('#placeBtns [data-ag]')), 'no agility button at the yard');
+  await t.home('training'); await t.sleep(500);
+  ok(await ev(() => window.__paw.ag.on() && !!document.querySelector('#placeBtns [data-ag]') && !!document.querySelector('#agBoard')), 'at the Training Ground: agOn, the course button, the scoreboard marks');
+  ok(await t.until(() => [...document.querySelectorAll('#toasts .toast.gold')].some((e) => /Agility is play, so keep runs short/.test(e.textContent) && /low bars keep young and old joints happy/.test(e.textContent)), null, 4000), 'the first-visit care note (gold toast, both sentences)');
+  ok(await ev(() => window.__paw.S.ag.seen === true), 'S.ag.seen is set');
+  {
+    const L = await ev(() => { const B = Object.keys(window.__paw.ag.lines); return { n: B.length, miss: B.filter((b) => !window.__paw.mp.line(b, 'training')) }; });
+    ok(L.n === 35 && !L.miss.length, `every one of the 35 breeds has a Training Ground arrival line (${L.n}, missing ${L.miss.join(' ')})`);
+    ok(await ev(() => { const l = window.__paw.ag.lesson(); return Array.isArray(l) && l.length === 4 && !/;/.test(l[3]); }), "Gerald's guide has the agility card");
+    ok(await ev(() => window.__paw.ms.pool.includes('agility') && window.__paw.ms.pool.includes('agility_ros') && window.__paw.ms.pool.includes('travel_training')), 'the agility missions are in the pool');
+  }
+
+  sec('Training Ground: a full adult run (all Perfect), the rewards');
+  const dog0 = await ev(() => window.__paw.S.dog.id);
+  const snap = () => ev(() => { const S = window.__paw.S; return { coins: S.coins, bond: S.bond.pts + S.bond.level * 1e6, en: S.stats.energy, ag: JSON.parse(JSON.stringify(S.ag)) }; });
+  // run the open course: pin the marker (0.5 = the middle of the green), tap Go! for each obstacle (or 'slow': a late tap), wait for the result
+  const course = async (pin) => {
+    for (let i = 0; i < 6; i++) {
+      if (!await t.until(() => { const s = window.__paw.ag.state; return !!s && (s.ready || s.ph === 'done'); }, null, 14000)) return false;
+      if (await ev(() => window.__paw.ag.state.ph === 'done')) break;
+      if (pin === 'slow') await ev(() => window.__paw.ag.go('slow')); else { await ev((v) => window.__paw.ag.pin(v), pin); await t.p.click('#agGo'); }
+      await t.sleep(250);
+    }
+    return t.until(() => { const s = window.__paw.ag.state; return !!s && s.ph === 'done'; }, null, 14000);
+  };
+  await ev(() => { window.__paw.S.stats.energy = 100; });
+  const b0 = await snap();
+  await t.p.click('#placeBtns [data-ag]'); await t.p.waitForSelector('#agStart');
+  ok(await ev(() => document.documentElement.classList.contains('ag-on') && !!document.querySelector('.ag-tray')), 'the pick tray opens');
+  await t.p.click('#agStart');
+  ok(await t.until(() => window.__paw.ag.state && window.__paw.ag.state.ready, null, 8000), 'the first obstacle is ready: Go! waits');
+  {
+    const st = await ev(() => window.__paw.ag.state);
+    ok(st.course.join() === 'table,weave,tunnel,jump,tyre' && !st.low && Math.abs(st.hw - 0.12) < 1e-6, 'the adult course has five obstacles: ' + st.course.join());
+    const go = await t.p.locator('#agGo').boundingBox(); ok(go.height >= 63, 'the Go! button is 64 px tall: ' + Math.round(go.height));
+    await t.SH('agility_mid_run');
+  }
+  ok(await course(0.5), 'five Perfect taps finish the course');
+  await t.sleep(300);
+  {
+    const R = await ev(() => window.__paw.ag.state), b1 = await snap();
+    ok(R.pts.join() === '2,2,2,2,2' && R.res.stars === 3, 'all Perfect: 3 rosettes ' + JSON.stringify(R.res));
+    ok(b1.coins - b0.coins === 30 && b1.ag.coins === 30 && b1.ag.runs === 1, `3 rosettes pay 30 coins (+${b1.coins - b0.coins}), the day counts 30`);
+    ok(b1.bond > b0.bond, 'Bond for the first run of the day for this dog');
+    ok(b0.en - b1.en >= 9 && b0.en - b1.en <= 13, 'Energy -10 a run (' + (b0.en - b1.en).toFixed(1) + ')');
+    ok(b1.ag.best[dog0] === 3 && await ev((id) => window.__paw.ag.best(id), dog0) === 3, 'the best rosettes are kept (S.ag.best)');
+    ok(await ev(() => document.querySelectorAll('.ag-ros-row .ag-ros.on').length === 3), 'the result shows 3 rosettes');
+    ok(await ev(() => window.__paw.ag.left() === 10), 'agility coins left today: 10');
+    await t.SH('agility_rosettes');
+  }
+
+  sec('Training Ground: a run of only late taps still clears everything (no fail state), second run of the day');
+  await ev(() => { window.__paw.S.stats.energy = 100; });
+  const c0 = await snap();
+  await t.p.click('#agAgain');
+  ok(await course('slow'), 'five slow taps finish the course');
+  {
+    const R = await ev(() => window.__paw.ag.state), c1 = await snap();
+    ok(R.pts.join() === '0,0,0,0,0' && R.res.stars === 1, 'every obstacle cleared, 1 rosette at least: ' + R.res.stars);
+    ok(c1.coins - c0.coins === 10 && c1.ag.coins === 40 && c1.ag.runs === 2, `the second run pays 10 coins (+${c1.coins - c0.coins}), the day is at 40`);
+    ok(c1.bond === c0.bond, 'no second Bond for the same dog on the same day');
+    ok(await ev(() => window.__paw.ag.left() === 0), 'the pack cap (AG_COIN_DAY 40) is reached');
+  }
+  await ev(() => { window.__paw.S.stats.energy = 100; });
+  const d0 = await snap();
+  await t.p.click('#agAgain'); ok(await course(0.5), 'a third run');
+  {
+    const d1 = await snap(); ok(d1.coins === d0.coins, 'no coins after the first two runs (' + (d1.coins - d0.coins) + ')');
+    ok(await ev(() => /two runs of the day/.test(document.getElementById('agHint').textContent)), 'the result says why: coins are for the first two runs');
+  }
+  await t.p.click('#agDone');
+  ok(await ev(() => !window.__paw.ag.running() && !document.documentElement.classList.contains('ag-on') && !!document.querySelector('#placeBtns [data-ag]')), 'Done leaves the course, the button is back');
+
+  sec('Training Ground: the cap and a new day');
+  await ev(() => { const S = window.__paw.S; S.ag.coins = 35; S.ag.runs = 0; S.stats.energy = 100; });
+  const e0 = await snap();
+  await ev(() => window.__paw.ag.open()); await t.p.click('#agStart'); ok(await course(0.5), 'run under a 35 coin day');
+  { const e1 = await snap(); ok(e1.coins - e0.coins === 5 && e1.ag.coins === 40, 'a 30 coin run pays only what the cap leaves: ' + (e1.coins - e0.coins)); }
+  await ev(() => window.__paw.ag.stop());
+  await ev(() => { window.__paw.S.ag.day = '2000-01-01'; });
+  ok(await ev(() => window.__paw.ag.left() === 40), 'a new day: 40 coins left again');
+
+  sec('Training Ground: the puppy course (and a pack dog through pkWith)');
+  const pup = await ev(() => { const P = window.__paw; const d = P.addDog({ key: 'dachs', sex: 'male', months: 4 }, 'Pip'), old = P.addDog({ key: 'corgi', sex: 'female', months: 100 }, 'Nana'); return { pup: d.id, old: old.id }; });
+  await t.home('training'); await t.sleep(400);
+  ok(await ev((p) => window.__paw.ag.low(p.pup) && window.__paw.ag.low(p.old) && !window.__paw.ag.low(window.__paw.S.dog.id), pup), 'puppies and seniors take the low course, the adult does not');
+  await ev(() => { window.__paw.S.dogs.forEach((d) => { d.stats.energy = 100; }); });
+  const lead0 = await ev(() => window.__paw.S.activeId);
+  ok(await ev((id) => window.__paw.ag.start(id), pup.pup), 'the puppy starts a run (picked from the pack)');
+  ok(await t.until(() => window.__paw.ag.state && window.__paw.ag.state.ready, null, 8000), 'the puppy course is ready');
+  {
+    const st = await ev(() => window.__paw.ag.state);
+    ok(st.low && st.course.join() === 'table,tunnel,jump' && st.hw > 0.12, `the puppy course: table, tunnel and the ground bar, a wider window (${st.course.join()} hw ${st.hw})`);
+    ok(await ev((id) => window.__paw.S.activeId === id, pup.pup), 'the picked dog leads the run (pkWith)');
+    await t.SH('agility_puppy');
+  }
+  ok(await course('slow'), 'late taps finish the puppy course too');
+  { const R = await ev(() => window.__paw.ag.state); ok(R.res.stars >= 1 && R.pts.length === 3, 'a puppy gets its rosette: ' + R.res.stars); }
+  await t.p.click('#agDone');
+  ok(await t.until((id) => window.__paw.S.activeId === id, lead0, 4000), 'the old leader is back when the run ends (pkBack)');
+  ok(await ev((id) => window.__paw.ag.best(id) >= 1, pup.pup), 'the puppy has its own best');
+  ok(await ev((id) => window.__paw.ag.start(id), pup.old) && await t.until(() => window.__paw.ag.state && window.__paw.ag.state.low, null, 8000), 'a senior runs the low course');
+  await ev(() => window.__paw.ag.stop()); await t.sleep(200);
+  ok(await ev((id) => { window.__paw.S.dogs.find((d) => d.id === id).stats.energy = 4; return window.__paw.ag.start(id) === false; }, pup.pup), 'a dog with Energy below 10 does not start (a kind note, nothing bad)');
+
+  sec('Training Ground: the trick bonus');
+  await ev(() => { window.__paw.S.dogs.forEach((d) => { d.stats.energy = 100; }); });
+  ok(await ev(() => window.__paw.ag.bonus() === false), 'no bonus without a training session');
+  await t.home('training'); await t.p.click('[data-act=play]'); await t.waitPop(true); await t.p.click('[data-play=tricks]'); await t.until(() => !!window.__paw.train, null, 4000);
+  ok(await ev(() => window.__paw.ag.bonus() === true && window.__paw.ag.bonus() === false), 'the Training Ground counts one extra step per session');
+  await ev(() => window.__paw.go('yard')); await t.calm();
+  await t.home('yard'); await t.p.click('[data-act=play]'); await t.waitPop(true); await t.p.click('[data-play=tricks]'); await t.until(() => !!window.__paw.train, null, 4000);
+  ok(await ev(() => window.__paw.ag.bonus() === false), 'no bonus at the yard');
+  await ev(() => window.__paw.go('yard')); await t.calm();
+}, { ground: true });
