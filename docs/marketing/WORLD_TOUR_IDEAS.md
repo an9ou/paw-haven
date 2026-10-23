@@ -98,7 +98,7 @@ The more you bond, the further you go 🐾 Riverside, Maple Woods, Shibuya, the 
 ```
 **Primary text, option C (the family)**
 ```
-Start with one crayon dog, grow a family of four 🐾 A 2nd dog at Bond 3, a 3rd at Bond 8, a 4th at Bond 10, and a whole sketchbook world to explore. Free, no download.
+Start with one crayon dog, grow a family of four 🐾 Bond 3 unlocks 2 dogs, Bond 8 unlocks 3, Bond 10 unlocks 4, and a whole sketchbook world to explore. Free, no download.
 ```
 **Headline** (pick one): `A whole sketchbook world` · `Free cozy dog game, no download` · `Explore with your dog 🐶`
 **Description:** `Play free in your browser.`
@@ -107,7 +107,7 @@ Start with one crayon dog, grow a family of four 🐾 A 2nd dog at Bond 3, a 3rd
 
 ```
 A whole sketchbook world, one walk at a time 🐾
-From the backyard to Tokyo Tower at night: every new Bond takes you and your dog somewhere new.
+From the backyard to Tokyo Tower at night: every new Bond takes you and your dog somewhere new. Bond 3 unlocks 2 dogs, Bond 8 unlocks 3, Bond 10 unlocks the whole pack of 4.
 
 Doodle Doggo is a free cozy dog game you play right in your browser. Link in bio.
 
