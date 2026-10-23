@@ -12,6 +12,8 @@ cd "$(dirname "$0")/.."
 : "${ITCH_USER:?Add ITCH_USER (your itch.io username) to the Claude environment}"
 GAME="${ITCH_GAME:-doodle-doggo}"
 VERSION="${1:-$(git describe --tags --always 2>/dev/null || date -u +%Y%m%d)}"
+# never upload a full-size build: itch.js minifies with esbuild from NODE_PATH, and without it the build stays unminified (v2.14 release slip)
+node -e "require('esbuild')" 2>/dev/null || { echo "itch_push: esbuild not found (npm i -g esbuild@0.24.0, or set NODE_PATH); not uploading an unminified build" >&2; exit 1; }
 node tools/itch.js
 B="${TMPDIR:-/tmp}/butler"
 if [ ! -x "$B/butler" ]; then
