@@ -1,6 +1,20 @@
 /* ======================= TREASURE JOURNAL ======================= */
 let jTab = 'treasures', jProfDog = null, jFamId = null, jCoatKey = null;
-function stamp(r) { return `<span class="stamp r${r}">${RARITY[r]}</span>`; }
+function stamp(r) { return `<span class="stamp r${r}">${tdata('rarity.' + r, RARITY[r])}</span>`; }
+// v2.14 i18n: the shown name of a title (the saved title keeps its English name, S.titles['Gene Detective']); an unknown title is shown as it is
+function jrTitleName(t) {
+  switch (t) {
+    case 'Treasure Legend': return tt('journal.title_treasure_legend', 'Treasure Legend');
+    case 'Gene Detective': return tt('journal.title_gene_detective', 'Gene Detective');
+    case 'Master Breeder': return tt('journal.title_master_breeder', 'Master Breeder');
+    case 'Great-Great-Granddog': return tt('journal.title_great_granddog', 'Great-Great-Granddog');
+    case 'Glitter Legend': return tt('journal.title_glitter_legend', 'Glitter Legend');
+    case 'Friend of Doodle Doggo': return tt('journal.title_friend', 'Friend of Doodle Doggo');
+    default: return t;
+  }
+}
+// the treasure text of a TREASURES row (name, ability, text)
+const jrTN = (t) => tdata('treasures.' + tid(t.n) + '.n', t.n), jrTAb = (t) => tdata('treasures.' + tid(t.n) + '.ab', t.ab), jrTTxt = (t) => tdata('treasures.' + tid(t.n) + '.txt', t.txt);
 function tornMap() {
   const pieces = S.mapPieces.slice();
   const real = artReal('prop', 'torn-map', { pieces });
@@ -12,51 +26,51 @@ function openJournal(tab) {
   if (tab) jTab = tab; audioPlace('journal');
   if (jTab === 'coats' || jTab === 'family' || jTab === 'profile') jrCheckAll();
   const foundN = TREASURES.filter((t) => S.found[t.n]).length;
-  const tabs = [['profile', 'Profile'], ['family', 'Family'], ['coats', 'Coats'], ['treasures', `Treasures ${foundN}/${TREASURES.length}`], ['food', 'Food'], ['toys', 'Toys'], ['clothes', 'Clothes'], ['missions', 'Missions'], ['garden', gkOn() ? 'Garden' : 'Garden (soon)'], ['recipes', kOn() ? 'Recipes' : 'Recipes (soon)'], ['howto', 'How to play']];
+  const tabs = [['profile', tt('journal.tab_profile', 'Profile')], ['family', tt('journal.tab_family', 'Family')], ['coats', tt('journal.tab_coats', 'Coats')], ['treasures', tt('journal.tab_treasures', 'Treasures {n}/{total}', { n: foundN, total: TREASURES.length })], ['food', tt('journal.tab_food', 'Food')], ['toys', tt('journal.tab_toys', 'Toys')], ['clothes', tt('journal.tab_clothes', 'Clothes')], ['missions', tt('journal.tab_missions', 'Missions')], ['garden', gkOn() ? tt('journal.tab_garden', 'Garden') : tt('journal.tab_garden_soon', 'Garden (soon)')], ['recipes', kOn() ? tt('journal.tab_recipes', 'Recipes') : tt('journal.tab_recipes_soon', 'Recipes (soon)')], ['howto', tt('journal.tab_howto', 'How to play')]];
   let body = '';
   if (jTab === 'family') body = journalFamily();
   else if (jTab === 'coats') body = journalCoats();
-  else if (jTab === 'missions') body = typeof msTabHTML === 'function' ? msTabHTML() : '<p class="small">Missions are on their way.</p>'; // v2.4 (24_missions.js)
-  else if (jTab === 'howto') body = typeof gdTabHTML === 'function' ? gdTabHTML() : '<p class="small">Gerald is still writing the guide.</p>'; // v2.4 (25_guide.js)
+  else if (jTab === 'missions') body = typeof msTabHTML === 'function' ? msTabHTML() : `<p class="small">${tt('journal.missions_soon', 'Missions are on their way.')}</p>`; // v2.4 (24_missions.js)
+  else if (jTab === 'howto') body = typeof gdTabHTML === 'function' ? gdTabHTML() : `<p class="small">${tt('journal.guide_soon', 'Gerald is still writing the guide.')}</p>`; // v2.4 (25_guide.js)
   else if (jTab === 'garden') body = gkOn() ? journalGarden() : soonCard('garden');
   else if (jTab === 'recipes') body = kOn() ? journalRecipes() : soonCard('kitchen');
   else if (jTab === 'profile') { const pd = dogById(jProfDog) || D(); body = pdogTabs(pd.id) + withDog(pd, () => journalProfile()) + (typeof phJournalLine === 'function' ? phJournalLine() : ''); } // v2.9: "Photos taken"
   else if (jTab === 'treasures') {
     const mp = S.mapPieces.length;
-    const mapMsg = S.secretDug ? `Secret dig done. ${esc(NAME())} is a Treasure Legend.` : mp >= 4 ? 'All 4 pieces! An X has appeared on your lawn at home. Go dig it!' : `Map pieces: ${mp}/4. Each route hides one piece.`;
-    body = `<div class="jtop"><div class="jprog"><b>${foundN} / ${TREASURES.length}</b><span class="small">treasures found</span><div class="prog"><i style="width:${foundN / TREASURES.length * 100}%"></i></div><p class="small" style="margin:6px 0 0">Every walk hides one treasure under one of its dig spots. Follow the Nose-o-meter.</p></div>
+    const mapMsg = S.secretDug ? esc(tt('journal.map_done', 'Secret dig done. {name} is a Treasure Legend.', { name: NAME() })) : mp >= 4 ? tt('journal.map_all', 'All 4 pieces! An X has appeared on your lawn at home. Go dig it!') : tt('journal.map_pieces', 'Map pieces: {n}/4. Each route hides one piece.', { n: mp });
+    body = `<div class="jtop"><div class="jprog"><b>${foundN} / ${TREASURES.length}</b><span class="small">${tt('journal.treasures_found', 'treasures found')}</span><div class="prog"><i style="width:${foundN / TREASURES.length * 100}%"></i></div><p class="small" style="margin:6px 0 0">${tt('journal.treasures_hint', 'Every walk hides one treasure under one of its dig spots. Follow the Nose-o-meter.')}</p></div>
       <div class="jmap"><div class="jmap-art">${tornMap()}</div><span class="small">${mapMsg}</span></div></div>
       <div class="jgrid">${TREASURES.map((t) => {
         const f = S.found[t.n];
-        if (!f) return `<div class="jent unk"><span class="art">${art('item', t.n)}</span><b>???</b><span class="small">${t.routes.length >= 6 ? 'Found anywhere, if you are lucky...' : 'Found ' + t.routes.map((r) => ROUTE_WORD[r]).join(' or ') + '...'}</span></div>`;
+        if (!f) return `<div class="jent unk"><span class="art">${art('item', t.n)}</span><b>???</b><span class="small">${t.routes.length >= 6 ? tt('journal.found_anywhere', 'Found anywhere, if you are lucky...') : esc(tt('journal.found_at', 'Found {places}...', { places: townOrList(t.routes.map((r) => townRouteWord(r))) }))}</span></div>`;
         let act = '';
-        if (t.kind === 'wearable' || t.kind === 'charm') act = hasTreasure(t) ? `<button class="btn ${wearing(t.n) ? '' : 'yes'}" data-jeq="${esc(t.n)}">${wearing(t.n) ? 'Unequip' : 'Equip'}</button>` : '';
-        if (t.kind === 'food') act = (S.inv.food[t.n] || 0) > 0 ? `<button class="btn yes" data-jfeed="${esc(t.n)}">Feed (${S.inv.food[t.n]})</button>` : '<span class="small">All eaten. Find more on walks.</span>';
-        if (t.kind === 'toy') act = FETCH_TOYS.includes(t.n) ? `<button class="btn yes" data-jplay="${esc(t.n)}">Play ball</button>` : '<span class="chip own">Works automatically</span>';
-        if (t.kind === 'quest') act = '<span class="chip own">In the map</span>';
-        return `<div class="jent"><span class="art">${art('item', t.n)}</span><b>${esc(t.n)}</b>${stamp(t.r)}<span class="ab"><b>${esc(t.ab)}.</b> ${esc(t.txt)}</span><span class="small">Found in ${esc(ROUTES[f.route] ? ROUTES[f.route].n : 'your yard')}, day ${f.day}</span>${act}</div>`;
+        if (t.kind === 'wearable' || t.kind === 'charm') act = hasTreasure(t) ? `<button class="btn ${wearing(t.n) ? '' : 'yes'}" data-jeq="${esc(t.n)}">${wearing(t.n) ? tt('journal.unequip', 'Unequip') : tt('journal.equip', 'Equip')}</button>` : '';
+        if (t.kind === 'food') act = (S.inv.food[t.n] || 0) > 0 ? `<button class="btn yes" data-jfeed="${esc(t.n)}">${tt('journal.feed_n', 'Feed ({food})', { food: S.inv.food[t.n] })}</button>` : `<span class="small">${tt('journal.all_eaten', 'All eaten. Find more on walks.')}</span>`;
+        if (t.kind === 'toy') act = FETCH_TOYS.includes(t.n) ? `<button class="btn yes" data-jplay="${esc(t.n)}">${tt('journal.play_ball', 'Play ball')}</button>` : `<span class="chip own">${tt('journal.auto', 'Works automatically')}</span>`;
+        if (t.kind === 'quest') act = `<span class="chip own">${tt('journal.in_map', 'In the map')}</span>`;
+        return `<div class="jent"><span class="art">${art('item', t.n)}</span><b>${esc(jrTN(t))}</b>${stamp(t.r)}<span class="ab"><b>${esc(jrTAb(t))}.</b> ${esc(jrTTxt(t))}</span><span class="small">${esc(tt('journal.found_in', 'Found in {place}, day {day}', { place: ROUTES[f.route] ? townRouteName(f.route) : tt('journal.your_yard', 'your yard'), day: f.day }))}</span>${act}</div>`;
       }).join('')}</div>`;
   } else if (jTab === 'food') {
     const fs = FOOD_ALL.filter((f) => f.n === 'Fresh Water' || (S.inv.food[f.n] || 0) > 0);
-    body = (typeof fsJournalLine === 'function' ? (fsJournalLine() || '') : '') + `<div class="jgrid">${fs.map((f) => `<div class="jent"><span class="art">${art('item', f.n)}</span><b>${esc(f.n)}${hwTag(f.n)}</b>${tInfo(f.n) ? stamp(tInfo(f.n).r) : ''}<span class="ab">${esc(f.note || '')}</span><span class="small">${f.n === 'Fresh Water' ? 'Always free' : 'You have ' + S.inv.food[f.n]}</span>${f.tip && typeof shFoodTip === 'function' ? `<span class="small jr-tip">${esc(shFoodTip(f.n, true) || f.tip)}</span>` : ''}<button class="btn yes" data-jfeed="${esc(f.n)}">Feed</button></div>`).join('')}</div>${fs.length <= 1 ? '<p class="small">The pantry is empty. Kibble Corner sells food, walks hide snacks.</p>' : ''}`;
+    body = (typeof fsJournalLine === 'function' ? (fsJournalLine() || '') : '') + `<div class="jgrid">${fs.map((f) => `<div class="jent"><span class="art">${art('item', f.n)}</span><b>${esc(shNameAny(f.n))}${hwTag(f.n)}</b>${tInfo(f.n) ? stamp(tInfo(f.n).r) : ''}<span class="ab">${esc(f.note ? tdata((FOOD.includes(f) ? 'food.' : 'tfood.') + tid(f.n) + '.note', f.note) : '')}</span><span class="small">${f.n === 'Fresh Water' ? tt('journal.always_free', 'Always free') : tt('journal.you_have', 'You have {n}', { n: S.inv.food[f.n] })}</span>${f.tip && typeof shFoodTip === 'function' ? `<span class="small jr-tip">${esc(shFoodTip(f.n, true))}</span>` : ''}<button class="btn yes" data-jfeed="${esc(f.n)}">${tt('journal.feed', 'Feed')}</button></div>`).join('')}</div>${fs.length <= 1 ? `<p class="small">${tt('journal.pantry_empty', 'The pantry is empty. Kibble Corner sells food, walks hide snacks.')}</p>` : ''}`;
   } else if (jTab === 'toys') {
     const ts = TOYS.map((t) => t.n).concat(TREASURES.filter((t) => t.kind === 'toy').map((t) => t.n)).filter((n) => owns('toys', n));
-    body = `<div class="jgrid">${ts.map((n) => { const t = tInfo(n), shop = TOYS.find((x) => x.n === n); const act = toySupported(n) ? `<button class="btn yes" data-jtoyplay="${esc(n)}">Play</button>${FETCH_TOYS.includes(n) ? ` <button class="btn" data-jplay="${esc(n)}">Ball</button>` : ''}` : FETCH_TOYS.includes(n) ? `<button class="btn yes" data-jplay="${esc(n)}">Play ball</button>` : n === 'Squeaky Duck' || n === 'Rope Tug' ? `<button class="btn yes" data-jtoy="${n === 'Squeaky Duck' ? 'duck' : 'tug'}">Play</button>` : '<span class="chip own">Works automatically</span>'; return `<div class="jent"><span class="art">${art('item', n)}</span><b>${esc(n)}</b>${t ? stamp(t.r) : ''}<span class="ab">${esc(t ? t.ab + '. ' + t.txt : shop.note)}</span>${act}</div>`; }).join('')}</div>${ts.length ? '' : '<p class="small">No toys yet.</p>'}`;
+    body = `<div class="jgrid">${ts.map((n) => { const t = tInfo(n), shop = TOYS.find((x) => x.n === n); const act = toySupported(n) ? `<button class="btn yes" data-jtoyplay="${esc(n)}">${tt('journal.play', 'Play')}</button>${FETCH_TOYS.includes(n) ? ` <button class="btn" data-jplay="${esc(n)}">${tt('journal.ball', 'Ball')}</button>` : ''}` : FETCH_TOYS.includes(n) ? `<button class="btn yes" data-jplay="${esc(n)}">${tt('journal.play_ball', 'Play ball')}</button>` : n === 'Squeaky Duck' || n === 'Rope Tug' ? `<button class="btn yes" data-jtoy="${n === 'Squeaky Duck' ? 'duck' : 'tug'}">${tt('journal.play', 'Play')}</button>` : `<span class="chip own">${tt('journal.auto', 'Works automatically')}</span>`; return `<div class="jent"><span class="art">${art('item', n)}</span><b>${esc(shNameAny(n))}</b>${t ? stamp(t.r) : ''}<span class="ab">${esc(t ? tt('journal.ab_txt', '{ab}. {txt}', { ab: jrTAb(t), txt: jrTTxt(t) }) : tdata('toys.' + tid(n) + '.note', shop.note))}</span>${act}</div>`; }).join('')}</div>${ts.length ? '' : `<p class="small">${tt('journal.no_toys', 'No toys yet.')}</p>`}`;
   } else {
     const ws = ALL_WEAR.filter((c) => owns('clothes', c.n)).concat(CHARMS.filter((c) => S.inv.charms.includes(c.n)));
-    body = `<div class="jgrid">${ws.map((c) => { const t = tInfo(c.n); return `<div class="jent"><span class="art">${c.ed ? hwItemArt(c.n) : art('item', c.n)}</span><b>${esc(c.n)}${hwTag(c.n)}</b>${t ? stamp(t.r) : ''}<span class="small">${c.slot === 'charm' ? 'Charm slot' : SLOT_NAME[c.slot] + ' slot'}</span><span class="ab">${esc(c.perk)}</span><button class="btn ${wearing(c.n) ? '' : 'yes'}" data-jeq="${esc(c.n)}">${wearing(c.n) ? 'Unequip' : 'Equip'}</button></div>`; }).join('')}</div>${ws.length ? '' : '<p class="small">Nothing to wear yet. Bow-Wow Boutique sells clothes, walks hide treasures.</p>'}`;
+    body = `<div class="jgrid">${ws.map((c) => { const t = tInfo(c.n); return `<div class="jent"><span class="art">${c.ed ? hwItemArt(c.n) : art('item', c.n)}</span><b>${esc(shNameAny(c.n))}${hwTag(c.n)}</b>${t ? stamp(t.r) : ''}<span class="small">${c.slot === 'charm' ? tt('journal.charm_slot', 'Charm slot') : tt('journal.slot_of', '{slot} slot', { slot: shSlotName(c.slot) })}</span><span class="ab">${esc(shPerk(c))}</span><button class="btn ${wearing(c.n) ? '' : 'yes'}" data-jeq="${esc(c.n)}">${wearing(c.n) ? tt('journal.unequip', 'Unequip') : tt('journal.equip', 'Equip')}</button></div>`; }).join('')}</div>${ws.length ? '' : `<p class="small">${tt('journal.no_clothes', 'Nothing to wear yet. Bow-Wow Boutique sells clothes, walks hide treasures.')}</p>`}`;
   }
-  const p = openModal('Treasure Journal', `<div class="tabs jtabs" role="tablist">${tabs.map(([k, l]) => `<button class="btn" role="tab" data-jt="${k}" aria-selected="${jTab === k}">${l}</button>`).join('')}</div>${body}`, { cls: 'journal j-' + jTab });
+  const p = openModal(tt('journal.title', 'Treasure Journal'), `<div class="tabs jtabs" role="tablist">${tabs.map(([k, l]) => `<button class="btn" role="tab" data-jt="${k}" aria-selected="${jTab === k}">${l}</button>`).join('')}</div>${body}`, { cls: 'journal j-' + jTab });
   p.querySelectorAll('[data-jt]').forEach((b) => { b.onclick = () => { SFX.click(); openJournal(b.dataset.jt); }; });
   p.querySelectorAll('[data-pdog]').forEach((b) => { b.onclick = () => { SFX.click(); jProfDog = b.dataset.pdog; jFamId = b.dataset.pdog; openJournal(); }; });
   p.querySelectorAll('[data-fam]').forEach((b) => { b.onclick = () => { SFX.click(); jFamId = b.dataset.fam; if (dogById(jFamId)) jProfDog = jFamId; openJournal('family'); }; });
   p.querySelectorAll('[data-cbreed]').forEach((b) => { b.onclick = () => { SFX.click(); jCoatKey = b.dataset.cbreed; openJournal('coats'); }; });
-  p.querySelectorAll('[data-spots]').forEach((b) => { b.onclick = () => { SFX.click(); if (typeof openSpots === 'function') openSpots(); else toast(`Dog spots: ${S.dogs.length} dog${S.dogs.length > 1 ? 's' : ''} at home. More spots open with Bond.`); }; });
+  p.querySelectorAll('[data-spots]').forEach((b) => { b.onclick = () => { SFX.click(); if (typeof openSpots === 'function') openSpots(); else toast(tt('journal.spots', 'Dog spots: {n, plural, one {# dog} other {# dogs}} at home. More spots open with Bond.', { n: S.dogs.length })); }; });
   if (jTab === 'family') pinFamNodes(p);
   if (isPhone()) pjJournalInit(p);
   if (isPhone() && jTab === 'coats') { const c = $('.cbreeds', p), on = c && $('.cbreed.on', c); if (on) { const a = c.getBoundingClientRect(), r = on.getBoundingClientRect(); c.scrollLeft += r.left - a.left - (a.width - r.width) / 2; } } // v2.5: 14 tabs, keep the chosen breed in view
   p.querySelectorAll('[data-jtitle]').forEach((b) => { b.onclick = () => { jrToggleTitle(b.dataset.jtitle); openJournal(); }; });
-  p.querySelectorAll('[data-fpartner]').forEach((b) => { b.onclick = () => { SFX.click(); closeModal(); if (typeof openPlaydates === 'function') openPlaydates({ with: b.dataset.fpartner }); else toast('The Playdate board is still being pinned up. Try again soon.'); }; });
+  p.querySelectorAll('[data-fpartner]').forEach((b) => { b.onclick = () => { SFX.click(); closeModal(); if (typeof openPlaydates === 'function') openPlaydates({ with: b.dataset.fpartner }); else toast(tt('journal.board_soon', 'The Playdate board is still being pinned up. Try again soon.')); }; });
   p.querySelectorAll('[data-jeq]').forEach((b) => { b.onclick = () => { equip(b.dataset.jeq); openJournal(); }; });
   const toYard = (fn) => { closeModal(); if (cur.mode !== 'yard') go('yard'); setTimeout(fn, 350); };
   p.querySelectorAll('[data-jfeed]').forEach((b) => { b.onclick = () => toYard(() => feed(b.dataset.jfeed)); });
@@ -112,17 +126,17 @@ function famDraw(r) { // something dogSVG/headSVG can draw
   return o;
 }
 function famHead(r) { const d = famDraw(r); if (!d) return ''; try { return headSVG(d); } catch (e) { return art('dogHead', d.key); } }
-const breedName = (k) => (dogInfo(k) || {}).breed || k;
+const breedName = (k) => ((dogInfo(k) || {}).breed ? tbreed(k) : k);
 function mixLine(r) {
   if (r && r.mix && r.mix.name) { const a = r.mix.a, b = r.mix.b; return a && b && a !== b ? `${r.mix.name}: ${breedName(a)} × ${breedName(b)}` : r.mix.name; }
   return r ? breedName(r.key) : '';
 }
 function famChip(r) {
   if (!r) return '';
-  if (r.status === 'home') return '<span class="fchip home">Home</span>';
-  if (r.status === 'litter') return '<span class="fchip nursery">Nursery</span>';
-  if (r.status === 'rehomed') return `<span class="fchip away">With ${esc(shortFam(r.family))}</span>`;
-  const who = r.family || r.owner; return `<span class="fchip npc">${who ? 'With ' + esc(shortFam(who)) : 'Town dog'}</span>`;
+  if (r.status === 'home') return `<span class="fchip home">${tt('journal.chip_home', 'Home')}</span>`;
+  if (r.status === 'litter') return `<span class="fchip nursery">${tt('journal.chip_nursery', 'Nursery')}</span>`;
+  if (r.status === 'rehomed') return `<span class="fchip away">${esc(tt('journal.chip_with', 'With {family}', { family: shortFam(r.family) }))}</span>`;
+  const who = r.family || r.owner; return `<span class="fchip npc">${who ? esc(tt('journal.chip_with', 'With {family}', { family: shortFam(who) })) : tt('journal.chip_town_dog', 'Town dog')}</span>`;
 }
 function pdogTabs(selId) {
   return S.dogs.length > 1 ? `<div class="tabs pdogs" role="tablist">${S.dogs.map((d) => `<button class="btn" role="tab" data-pdog="${d.id}" aria-selected="${d.id === selId}"><span class="ic">${headSVG(d)}</span>${esc(d.name)} ${d.sex === 'female' ? '♀' : '♂'}</button>`).join('')}</div>` : '';
@@ -147,26 +161,26 @@ function famNode(id, i, unknownTxt) {
 function journalFamily() {
   if (!jFamId || !famRec(jFamId)) jFamId = (dogById(jProfDog) || D()).id;
   const me = famRec(jFamId), [dam, sire] = famParents(me);
-  const shelterTxt = (r) => (r && (r.status === 'home' || r.status === 'rehomed' || r.status === 'litter') && !(r.gen > 0) ? 'Shelter rescue' : '?');
+  const shelterTxt = (r) => (r && (r.status === 'home' || r.status === 'rehomed' || r.status === 'litter') && !(r.gen > 0) ? tt('journal.shelter_rescue', 'Shelter rescue') : '?');
   const pRec = [famRec(dam), famRec(sire)];
   const gp = pRec.map((pr) => famParents(pr)).flat();
   const unkP = shelterTxt(me), unkG = pRec.map((pr) => (pr ? shelterTxt(pr) : '?'));
-  const nodes = [0, 1, 2, 3].map((i) => famNode(gp[i], i, unkG[i < 2 ? 0 : 1])).join('') + famNode(dam, 4, unkP === '?' ? 'Mum: ?' : unkP) + famNode(sire, 5, unkP === '?' ? 'Dad: ?' : unkP) + famNode(me.id, 6);
+  const nodes = [0, 1, 2, 3].map((i) => famNode(gp[i], i, unkG[i < 2 ? 0 : 1])).join('') + famNode(dam, 4, unkP === '?' ? tt('journal.mum_unknown', 'Mum: ?') : unkP) + famNode(sire, 5, unkP === '?' ? tt('journal.dad_unknown', 'Dad: ?') : unkP) + famNode(me.id, 6);
   const art0 = artReal('prop', 'familytree');
   const kids = famChildren(me.id);
   const homeSel = dogById(me.id) ? me.id : null;
   const P = prOf(me), m = me.born ? ageMonths(me) : null;
-  const about = `<div class="fam-me"><span class="portrait big">${famHead(me)}</span><div><h3>${esc(me.name)} ${sexSym(me.sex)}${me.sparkle ? ' <span class="spkbadge">Sparkle</span>' : ''}</h3>
-    <p>${esc(mixLine(me))}</p><p class="small">${m != null ? `${ageText(m)} old · ` : ''}Generation ${me.gen || (dam || sire ? 1 : 0)}</p><p>${famChip(me)}</p>${jrPartnerBtn(me)}</div></div>`;
+  const about = `<div class="fam-me"><span class="portrait big">${famHead(me)}</span><div><h3>${esc(me.name)} ${sexSym(me.sex)}${me.sparkle ? ` <span class="spkbadge">${tt('journal.sparkle', 'Sparkle')}</span>` : ''}</h3>
+    <p>${esc(mixLine(me))}</p><p class="small">${m != null ? esc(tt('journal.age_gen', '{age} old · Generation {gen}', { age: ageText(m), gen: me.gen || (dam || sire ? 1 : 0) })) : esc(tt('journal.gen', 'Generation {gen}', { gen: me.gen || (dam || sire ? 1 : 0) }))}</p><p>${famChip(me)}</p>${jrPartnerBtn(me)}</div></div>`;
   const kidsHTML = kids.length ? `<div class="fkids">${kids.map((k) => `<button class="fkid ${k.sparkle ? 'spk' : ''}" data-fam="${esc(k.id)}"><span class="fhead">${famHead(k)}</span><span class="fname">${esc(k.name || '?')} ${sexSym(k.sex)}</span>${famChip(k)}</button>`).join('')}</div>`
-    : `<p class="small fnone">No puppies yet. ${me.status === 'home' ? `When ${P.he} is grown up, a Puppy Playdate could change that.` : 'This branch is still growing.'}</p>`;
+    : `<p class="small fnone">${tt('journal.no_pups', '{kind, select, female {No puppies yet. When she is grown up, a Puppy Playdate could change that.} male {No puppies yet. When he is grown up, a Puppy Playdate could change that.} other {No puppies yet. This branch is still growing.}}', { kind: me.status === 'home' ? (me.sex === 'female' ? 'female' : 'male') : 'other' })}</p>`;
   const tree = `<div class="ft ${art0 ? 'ft-real' : ''}"><div class="ft-art">${art0 || famTreeDoodle()}</div>${nodes}</div>`;
   return `${pdogTabs(homeSel)}<div class="famwrap">${isPhone() ? pjTreeFrame(tree) : tree}
-    <div class="fside">${about}${homeSel ? '' : `<button class="btn fback" data-fam="${esc((dogById(jProfDog) || D()).id)}">Back to ${esc((dogById(jProfDog) || D()).name)}</button>`}<h4>Puppies (${kids.length})</h4>${kidsHTML}<p class="small">Tap anyone on the tree to put them at the bottom.</p></div></div>`;
+    <div class="fside">${about}${homeSel ? '' : `<button class="btn fback" data-fam="${esc((dogById(jProfDog) || D()).id)}">${esc(tt('journal.back_to', 'Back to {name}', { name: (dogById(jProfDog) || D()).name }))}</button>`}<h4>${tt('journal.puppies', 'Puppies ({n})', { n: kids.length })}</h4>${kidsHTML}<p class="small">${tt('journal.tree_tap', 'Tap anyone on the tree to put them at the bottom.')}</p></div></div>`;
 }
 // v2.2 phone: the tree is wider than the screen, so it sits in a pannable frame (touch drag scrolls it, the Left and Right buttons are the fallback)
 function pjTreeFrame(tree) {
-  return `<div class="ft-wrap"><div class="ft-pan" tabindex="0" aria-label="Family tree: drag or use the buttons to look around">${tree}</div><div class="ft-btns"><button class="btn ftb-l" data-ftpan="-1" aria-label="Pan the tree left">Left</button><span class="small">Drag the tree to look around</span><button class="btn ftb-r" data-ftpan="1" aria-label="Pan the tree right">Right</button></div></div>`;
+  return `<div class="ft-wrap"><div class="ft-pan" tabindex="0" aria-label="${tt('journal.tree_aria', 'Family tree: drag or use the buttons to look around')}">${tree}</div><div class="ft-btns"><button class="btn ftb-l" data-ftpan="-1" aria-label="${tt('journal.tree_pan_left', 'Pan the tree left')}">${tt('journal.tree_left', 'Left')}</button><span class="small">${tt('journal.tree_drag', 'Drag the tree to look around')}</span><button class="btn ftb-r" data-ftpan="1" aria-label="${tt('journal.tree_pan_right', 'Pan the tree right')}">${tt('journal.tree_right', 'Right')}</button></div></div>`;
 }
 function pjJournalInit(p) {
   try {
@@ -224,13 +238,13 @@ function titleGive(name) {
   if (S.titles[name]) return false;
   S.titles[name] = localISO();
   if (!S.title) { S.title = name; jrShowTitle(); }
-  markDirty(); toast(`New title: ${name}! Find it on the Profile.`, 'gold'); try { SFX.fanfare(); } catch (e) { /* audio off */ }
+  markDirty(); toast(tt('journal.new_title', 'New title: {name}! Find it on the Profile.', { name: jrTitleName(name) }), 'gold'); try { SFX.fanfare(); } catch (e) { /* audio off */ }
   return true;
 }
 function jrTitleList() { jrFields(); return Object.keys(S.titles).sort((a, b) => String(S.titles[a]).localeCompare(String(S.titles[b])) || a.localeCompare(b)); }
 function jrTitlesRow() {
   const ts = jrTitleList();
-  return `<div class="pf-titles"><b>Titles</b>${ts.length ? `<span class="small">Tap one to wear it on the name tag. Tap again to hide it.</span><div class="ptrow">${ts.map((t) => `<button class="ptitle ${S.title === t ? 'on' : ''}" data-jtitle="${esc(t)}" aria-pressed="${S.title === t}"><span class="ptic">${iconOr('title', '<circle r="12" fill="#FFE3A1" stroke="#5B3D32" stroke-width="2.2"/><path d="M-6 10 L-9 20 L0 15 L9 20 L6 10" fill="#E86F6F" stroke="#5B3D32" stroke-width="2"/>')}</span>${esc(t)}</button>`).join('')}</div>` : '<span class="small">None yet. Coats, family trees and postcards earn them.</span>'}</div>`;
+  return `<div class="pf-titles"><b>${tt('journal.titles', 'Titles')}</b>${ts.length ? `<span class="small">${tt('journal.titles_tap', 'Tap one to wear it on the name tag. Tap again to hide it.')}</span><div class="ptrow">${ts.map((t) => `<button class="ptitle ${S.title === t ? 'on' : ''}" data-jtitle="${esc(t)}" aria-pressed="${S.title === t}"><span class="ptic">${iconOr('title', '<circle r="12" fill="#FFE3A1" stroke="#5B3D32" stroke-width="2.2"/><path d="M-6 10 L-9 20 L0 15 L9 20 L6 10" fill="#E86F6F" stroke="#5B3D32" stroke-width="2"/>')}</span>${esc(jrTitleName(t))}</button>`).join('')}</div>` : `<span class="small">${tt('journal.titles_none', 'None yet. Coats, family trees and postcards earn them.')}</span>`}</div>`;
 }
 function jrToggleTitle(name) {
   if (!S || !S.titles || !S.titles[name]) return;
@@ -245,7 +259,7 @@ function jrAncLabel(d) {
     return es.map((e, i) => (i === 0 ? '' : fr(e[1]) + ' ') + breedName(e[0])).join(', ');
   } catch (e) { return ''; }
 }
-function jrAncLine(d) { const l = d ? jrAncLabel(d) : ''; return l ? `<p class="small ancline">Ancestry: ${esc(l)}</p>` : ''; }
+function jrAncLine(d) { const l = d ? jrAncLabel(d) : ''; return l ? `<p class="small ancline">${esc(tt('journal.ancestry', 'Ancestry: {label}', { label: l }))}</p>` : ''; }
 
 /* ---------- family rewards ---------- */
 // the longest line of known records ending at `id` (the dog itself, then parents, grandparents...): returns the ids, youngest first
@@ -266,7 +280,7 @@ function jrFamCheck() {
   if (line.length >= 3 && !F.gen3) {
     F.gen3 = localISO(); got.push('gen3'); jrDecor('Family Photo Frame');
     if (!S.portrait || !Array.isArray(S.portrait.ids) || !S.portrait.ids.length) S.portrait = { date: localISO(), ids: line.slice(0, 4) };
-    toast('Three generations in one line! The Family Photo Frame is yours.', 'gold'); markDirty();
+    toast(tt('journal.gen3', 'Three generations in one line! The Family Photo Frame is yours.'), 'gold'); markDirty();
   }
   if (line.length >= 5 && !F.gen5) { F.gen5 = localISO(); got.push('gen5'); titleGive('Great-Great-Granddog'); markDirty(); }
   const sp = S.sparkleBook && typeof S.sparkleBook === 'object' ? S.sparkleBook : {};
@@ -310,7 +324,7 @@ function coatRewardsCheck() {
     if (n === 15 && !S.inv.charms.includes(RIBBON)) S.inv.charms.push(RIBBON);
     if (n === 25 && !S.inv.clothes.includes(JR_RAINBOW)) S.inv.clothes.push(JR_RAINBOW);
     if (n === 40) jrDecor('Giant Crayon Box');
-    const msg = n === 5 ? `Coat Collection: 5 coats! +${coins} coins. A very fashionable family.` : n === 10 ? 'Coat Collection: 10 coats! You are a Gene Detective now.' : n === 15 ? `Coat Collection: 15 coats! +${coins} coins and the ${RIBBON} charm.` : n === 25 ? 'Coat Collection: 25 coats! The Rainbow Collar is in your wardrobe. Every colour, all at once.' : n === 30 ? `Coat Collection: 30 coats! +${coins} coins. Scientists are taking notes.` : n === 40 ? 'Coat Collection: 40 coats! A Giant Crayon Box for the yard.' : 'Coat Collection: 50 coats! You are now a Master Breeder. It says so on the Profile.';
+    const msg = n === 5 ? tt('journal.coat_5', 'Coat Collection: 5 coats! +{coins} coins. A very fashionable family.', { coins }) : n === 10 ? tt('journal.coat_10', 'Coat Collection: 10 coats! You are a Gene Detective now.') : n === 15 ? tt('journal.coat_15', 'Coat Collection: 15 coats! +{coins} coins and the {ribbon} charm.', { coins, ribbon: shNameAny(RIBBON) }) : n === 25 ? tt('journal.coat_25', 'Coat Collection: 25 coats! The Rainbow Collar is in your wardrobe. Every colour, all at once.') : n === 30 ? tt('journal.coat_30', 'Coat Collection: 30 coats! +{coins} coins. Scientists are taking notes.', { coins }) : n === 40 ? tt('journal.coat_40', 'Coat Collection: 40 coats! A Giant Crayon Box for the yard.') : tt('journal.coat_50', 'Coat Collection: 50 coats! You are now a Master Breeder. It says so on the Profile.');
     toast(msg, 'gold'); try { SFX.fanfare(); } catch (e) { /* audio off */ }
     if (n === 10) titleGive('Gene Detective');
     if (n === 50) titleGive('Master Breeder');
@@ -329,19 +343,19 @@ function journalCoats() {
   const book = coatBookOf(), key = jCoatKey, mine = coatsFound(key), cat = cats[key];
   const list = cat ? cat.map((c) => ({ coat: c.coat, rare: !!c.rare, how: c.how || '', found: mine.includes(c.coat) })).concat(mine.filter((n) => !cat.some((c) => c.coat === n)).map((n) => ({ coat: n, found: true, bonus: coatIsBonus(key, n) }))) : mine.map((n) => ({ coat: n, found: true }));
   const cell = (c) => {
-    if (c.found) { const g = coatGeneMap(key)[c.coat]; const d = { id: 'coat|' + key + '|' + c.coat, key, genes: g }; return `<div class="coat found ${c.rare ? 'rare' : ''} ${c.bonus ? 'bonus' : ''}" data-coat="${esc(c.coat)}">${coatFrame(true, (() => { try { return headSVG(d); } catch (e) { return art('dogHead', key); } })())}<b>${esc(c.coat)}</b><span class="small">${c.rare ? '<span class="rarechip">Rare</span> ' : ''}${c.bonus ? '<span class="bonuschip">Bonus</span> ' : ''}Found ${esc(book[key + '|' + c.coat] || '')}</span></div>`; }
-    return `<div class="coat unk ${c.rare ? 'rare' : ''}">${coatFrame(false, '<b class="q">?</b>')}<b>???</b><span class="small">${mine.length ? esc(c.how || 'Keep breeding to discover it.') : 'Find any coat of this breed for a hint.'}</span></div>`;
+    if (c.found) { const g = coatGeneMap(key)[c.coat]; const d = { id: 'coat|' + key + '|' + c.coat, key, genes: g }; return `<div class="coat found ${c.rare ? 'rare' : ''} ${c.bonus ? 'bonus' : ''}" data-coat="${esc(c.coat)}">${coatFrame(true, (() => { try { return headSVG(d); } catch (e) { return art('dogHead', key); } })())}<b>${esc(coatShown(c.coat, key))}</b><span class="small">${c.rare ? `<span class="rarechip">${tt('journal.rare', 'Rare')}</span> ` : ''}${c.bonus ? `<span class="bonuschip">${tt('journal.bonus', 'Bonus')}</span> ` : ''}${esc(tt('journal.coat_found', 'Found {date}', { date: book[key + '|' + c.coat] || '' }))}</span></div>`; }
+    return `<div class="coat unk ${c.rare ? 'rare' : ''}">${coatFrame(false, '<b class="q">?</b>')}<b>???</b><span class="small">${mine.length ? esc(c.how || tt('journal.coat_keep', 'Keep breeding to discover it.')) : tt('journal.coat_hint', 'Find any coat of this breed for a hint.')}</span></div>`;
   };
-  const tabs = `<div class="cbreeds" role="tablist">${breeds.map((k) => { const n = coatsFound(k).filter((c) => !coatIsBonus(k, c)).length, t = cats[k] ? cats[k].length : null; return `<button class="cbreed ${k === key ? 'on' : ''}" role="tab" aria-selected="${k === key}" data-cbreed="${k}" title="${esc(breedName(k))}"><span class="ic">${art('dogHead', k)}</span><span>${n}${t ? '/' + t : ''}</span>${S.sparkleBook && S.sparkleBook[k] ? '<i class="cspk" aria-label="sparkle found">&#10022;</i>' : ''}</button>`; }).join('')}</div>`;
+  const tabs = `<div class="cbreeds" role="tablist">${breeds.map((k) => { const n = coatsFound(k).filter((c) => !coatIsBonus(k, c)).length, t = cats[k] ? cats[k].length : null; return `<button class="cbreed ${k === key ? 'on' : ''}" role="tab" aria-selected="${k === key}" data-cbreed="${k}" title="${esc(breedName(k))}"><span class="ic">${art('dogHead', k)}</span><span>${n}${t ? '/' + t : ''}</span>${S.sparkleBook && S.sparkleBook[k] ? `<i class="cspk" aria-label="${tt('journal.sparkle_found', 'sparkle found')}">&#10022;</i>` : ''}</button>`; }).join('')}</div>`;
   const sp = S.sparkleBook && typeof S.sparkleBook === 'object' ? S.sparkleBook : {};
   const spN = breeds.filter((k) => sp[k]).length;
-  const miles = COAT_MILESTONES.map(([n, c]) => `<span class="cmile ${S.coatRewards && S.coatRewards[n] ? 'done' : ''}" title="${n} coats"><b>${n}</b>${JR_MILE_TXT[n] || `${c} coins`}${S.coatRewards && S.coatRewards[n] ? ' &#10003;' : ''}</span>`).join('');
-  return `<div class="ctop"><div class="ccount"><b>${found}${haveCats ? ' / ' + total : ''}</b><span class="small">coats${haveCats ? '' : ' found'}</span><div class="prog"><i style="width:${haveCats && total ? Math.min(100, found / total * 100) : Math.min(100, found * 2)}%"></i></div></div>
+  const miles = COAT_MILESTONES.map(([n, c]) => `<span class="cmile ${S.coatRewards && S.coatRewards[n] ? 'done' : ''}" title="${tt('journal.mile_title', '{n, plural, one {# coat} other {# coats}}', { n })}"><b>${n}</b>${JR_MILE_TXT[n] ? tdata('jr_mile_txt.' + n, JR_MILE_TXT[n]) : tt('journal.mile_coins', '{n, plural, one {# coin} other {# coins}}', { n: c })}${S.coatRewards && S.coatRewards[n] ? ' &#10003;' : ''}</span>`).join('');
+  return `<div class="ctop"><div class="ccount"><b>${found}${haveCats ? ' / ' + total : ''}</b><span class="small">${haveCats ? tt('journal.coats_word', 'coats') : tt('journal.coats_found_word', 'coats found')}</span><div class="prog"><i style="width:${haveCats && total ? Math.min(100, found / total * 100) : Math.min(100, found * 2)}%"></i></div></div>
     <div class="cmiles">${miles}</div>
-    <div class="csparkle" aria-label="Sparkle puppies: ${spN} of ${breeds.length}"><span class="small">Sparkle pups ${spN}/${breeds.length}</span><span class="cstars">${breeds.map((k) => `<i class="${sp[k] ? 'on' : ''}" title="${esc(breedName(k))}${sp[k] ? ': sparkle found' : ''}">&#10022;</i>`).join('')}</span></div></div>
+    <div class="csparkle" aria-label="${esc(tt('journal.sparkle_aria', 'Sparkle puppies: {n} of {total}', { n: spN, total: breeds.length }))}"><span class="small">${esc(tt('journal.sparkle_pups', 'Sparkle pups {n}/{total}', { n: spN, total: breeds.length }))}</span><span class="cstars">${breeds.map((k) => `<i class="${sp[k] ? 'on' : ''}" title="${esc(sp[k] ? tt('journal.breed_sparkle', '{breed}: sparkle found', { breed: breedName(k) }) : breedName(k))}">&#10022;</i>`).join('')}</span></div></div>
     ${jrJarCard()}${jrMixesStrip()}
-    ${tabs}<h4 class="cbh">${esc(breedName(key))} <span class="small">${mine.filter((c) => !coatIsBonus(key, c)).length}${cat ? ' of ' + cat.length : ''} found${mine.some((c) => coatIsBonus(key, c)) ? ' + bonus' : ''}</span></h4>
-    ${list.length ? `<div class="cgrid">${list.map(cell).join('')}</div>` : `<p class="small cnone">No ${esc(breedName(key))} coats yet. Every dog you raise, every puppy born and every rescue adds their coat here.</p>`}`;
+    ${tabs}<h4 class="cbh">${esc(breedName(key))} <span class="small">${esc(tt('journal.breed_found', '{tot, select, yes {{bonus, select, yes {{n} of {total} found + bonus} other {{n} of {total} found}}} other {{bonus, select, yes {{n} found + bonus} other {{n} found}}}}', { tot: cat ? 'yes' : 'no', bonus: mine.some((c) => coatIsBonus(key, c)) ? 'yes' : 'no', n: mine.filter((c) => !coatIsBonus(key, c)).length, total: cat ? cat.length : 0 }))}</span></h4>
+    ${list.length ? `<div class="cgrid">${list.map(cell).join('')}</div>` : `<p class="small cnone">${esc(tt('journal.no_coats', 'No {breed} coats yet. Every dog you raise, every puppy born and every rescue adds their coat here.', { breed: breedName(key) }))}</p>`}`;
 }
 on('game:ready', () => { jrFields(); jrCheckAll(); });
 on('dog:added', () => setTimeout(jrCheckAll, 0));
@@ -355,7 +369,7 @@ function jrJarSVG(fill) {
 function jrJarCard() {
   const fill = Math.max(0, Math.min(24, S.pupsSinceSparkle | 0));
   const real = artReal('prop', 'sparklejar', { fill });
-  return `<div class="cjar" data-fill="${fill}"><span class="cjar-art">${real || jrJarSVG(fill)}</span><div><b>Sparkle Meter: ${fill} / 24</b><p class="small">${fill} / 24: a Sparkle is guaranteed by puppy 24.</p></div></div>`;
+  return `<div class="cjar" data-fill="${fill}"><span class="cjar-art">${real || jrJarSVG(fill)}</span><div><b>${tt('journal.jar_title', 'Sparkle Meter: {n} / 24', { n: fill })}</b><p class="small">${tt('journal.jar_note', '{n} / 24: a Sparkle is guaranteed by puppy 24.', { n: fill })}</p></div></div>`;
 }
 const JR_GRAND = ['Sled Noodle', 'Sunrise Loaf', 'Snowdrift', 'The Everything Dog'];
 function jrMixesStrip() {
@@ -368,15 +382,15 @@ function jrMixesStrip() {
     try { const anc = typeof ancOf === 'function' ? ancOf(r) : r.anc || null; if (anc) { Object.keys(anc).forEach((k) => { if (anc[k] > 0) have.breed.add(k); }); if (G && typeof G.grandMix === 'function') { const g = G.grandMix(anc); if (g && g.name && g.kind !== 'breed') (g.kind === 'mix' ? have.mix : have.grand).add(g.name); } } } catch (e) { /* ancestry not ready */ }
   });
   const mixNames = []; try { Object.keys((G && G.MIXES) || {}).forEach((k) => { const n = G.MIXES[k].name; if (n && n !== 'Mutt mix' && !mixNames.includes(n)) mixNames.push(n); }); } catch (e) { /* no table */ }
-  const chip = (txt, on, cls) => `<span class="mchip ${cls} ${on ? 'found' : 'unk'}" ${on ? '' : 'title="Not found yet"'}>${on ? esc(txt) : '?'}</span>`;
+  const chip = (txt, on, cls) => `<span class="mchip ${cls} ${on ? 'found' : 'unk'}" ${on ? '' : `title="${tt('journal.not_found', 'Not found yet')}"`}>${on ? esc(txt) : '?'}</span>`;
   const bN = breeds.filter((k) => have.breed.has(k)).length, mN = mixNames.filter((n) => have.mix.has(n)).length, gN = JR_GRAND.filter((n) => have.grand.has(n) || have.mix.has(n)).length;
-  return `<div class="cmixes" aria-label="Breeds and mixes"><h4>Breeds &amp; Mixes <span class="small">${bN} of ${breeds.length} breeds, ${mN} mixes, ${gN} grand-mixes</span></h4>
-    <div class="mrow">${breeds.map((k) => chip(breedName(k), have.breed.has(k), 'breed')).join('')}${mixNames.filter((n) => have.mix.has(n)).map((n) => chip(n, true, 'mix')).join('')}${mixNames.length > mN ? `<span class="mchip mix more" title="Mixes not found yet">+${mixNames.length - mN} ${mN ? 'more' : 'mixes'} still to find</span>` : ''}${JR_GRAND.map((n) => chip(n, have.grand.has(n) || have.mix.has(n), 'grand')).join('')}</div></div>`;
+  return `<div class="cmixes" aria-label="${tt('journal.mixes_aria', 'Breeds and mixes')}"><h4>${tt('journal.mixes_title_html', 'Breeds &amp; Mixes')} <span class="small">${esc(tt('journal.mixes_count', '{b} of {total} breeds, {m, plural, one {# mix} other {# mixes}}, {g, plural, one {# grand-mix} other {# grand-mixes}}', { b: bN, total: breeds.length, m: mN, g: gN }))}</span></h4>
+    <div class="mrow">${breeds.map((k) => chip(breedName(k), have.breed.has(k), 'breed')).join('')}${mixNames.filter((n) => have.mix.has(n)).map((n) => chip(mixWordShown(n), true, 'mix')).join('')}${mixNames.length > mN ? `<span class="mchip mix more" title="${tt('journal.mixes_missing', 'Mixes not found yet')}">${esc(tt('journal.mixes_more', '{more, select, yes {+{n} more still to find} other {+{n} mixes still to find}}', { more: mN ? 'yes' : 'no', n: mixNames.length - mN }))}</span>` : ''}${JR_GRAND.map((n, gi) => chip(tdata('jr_grand.' + gi, n), have.grand.has(n) || have.mix.has(n), 'grand')).join('')}</div></div>`;
 }
 function jrPartnerBtn(r) {
   try {
     if (!r || r.status !== 'home' || !r.live) return ''; const d = r.live;
     if (d.fixed || lifeStage(ageMonths(d)) === 'puppy') return '';
-    return `<button class="btn fpartner" data-fpartner="${esc(d.id)}">Find a partner</button>`;
+    return `<button class="btn fpartner" data-fpartner="${esc(d.id)}">${tt('journal.find_partner', 'Find a partner')}</button>`;
   } catch (e) { return ''; }
 }

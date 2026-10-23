@@ -1,0 +1,1 @@
+Per-language font subsets for v2.14 (ja, zh-Hans, zh-Hant, ko, th; Latin supplements only when needed), made by tools/i18n_fonts.js from pinned OFL sources. The *-OFL.txt files are the licenses (SIL Open Font License 1.1). Choices, sizes and CSS stacks: docs/i18n/FONTS.md.

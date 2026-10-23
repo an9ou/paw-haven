@@ -124,7 +124,7 @@ const HOUSES = [
   { n: 'Cardboard Box', price: 0, bond: 1, comfort: 0, hd: 4, note: 'Free. Has a flap. Smells like delivery.' },
   { n: 'Classic Wooden Doghouse', price: 300, bond: 2, comfort: 0.15, hd: 3.5, note: 'A name plate! Spelled almost right.' },
   { n: 'Cozy Cottage', price: 800, bond: 4, comfort: 0.30, hd: 3, note: 'Chimney, flower box, mortgage.' },
-  { n: 'Snow Igloo', price: 1500, bond: 6, comfort: 0.40, hd: 3, note: 'Cool and cozy. Frost gets double the bonus.' },
+  { n: 'Snow Igloo', price: 1500, bond: 6, comfort: 0.40, hd: 3, note: 'Cool and cozy. Huskies get double the bonus.' },
   { n: 'Treehouse Den', price: 2500, bond: 7, comfort: 0.55, hd: 2.5, note: 'Has a ladder. Dogs cannot climb ladders. Details.' },
   { n: 'Royal Castle Kennel', price: 5000, bond: 9, comfort: 0.75, hd: 2, note: 'Cardboard turrets. Fit for royalty, or a very good boy.' },
   /* v2.4 Shop Day: six houses. The Rocket Ship (`reward: true`) is the second mission-stamp reward and is never sold. */
@@ -366,7 +366,7 @@ const FALLBACK_DOGS = [
   { key: 'maltese', name: 'Marshmallow', breed: 'Maltese', personality: 'A gentle little lap dog in a long white coat.', joke: 'I do not walk. I float, elegantly.' },
   { key: 'shihtzu', name: 'Wonton', breed: 'Shih Tzu', personality: 'A relaxed lap dog with a top-knot and big opinions about naps.', joke: 'Top-knot up. Nap time down.' }
 ];
-const GENERIC_DOG = (key) => ({ key, name: 'Buddy', breed: 'Mystery Pup', personality: 'A little bit of everything', joke: 'Hi! I am a dog. Probably.' });
+const GENERIC_DOG = (key) => ({ key, name: 'Buddy', breed: tt('core.generic_breed', 'Mystery Pup'), personality: tt('core.generic_personality', 'A little bit of everything'), joke: tt('core.generic_joke', 'Hi! I am a dog. Probably.') });
 const JOKES = {
   shiba: ['heh.', 'I could leave anytime. I choose not to.', 'Pet me. No. Yes. Fine.', 'This yard is beneath me. Literally.', 'I am the main character.', 'Do not look at me while I am being adorable.'],
   corgi: ['Is it snack time? It feels like snack time.', 'I have eaten twice today. Emotionally, that is zero.', 'Short legs. Big dreams. Mostly about snacks.', 'I heard a wrapper. Somewhere. In 2019.', 'Bowl status: tragically empty. Probably.'],
@@ -473,17 +473,23 @@ function pencilSVG(W, H, pts, seed, closed = true, amp = 1.5) {
   const a = wobble(pts, rnd, amp, rnd(), 1.03, closed), b = wobble(pts, rnd, amp * 0.9, rnd(), 0.95, closed);
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><g fill="none" stroke="${INKG}" stroke-linecap="round" stroke-linejoin="round"><path d="${a}" stroke-width="2.3" vector-effect="non-scaling-stroke"/><path d="${b}" stroke-width="1.2" opacity=".55" vector-effect="non-scaling-stroke"/></g></svg>`;
 }
+// v2.13.2: the same pencil line (same seed, same first path) as a filled shape, used as a CSS mask so a big window's crayon wash fills exactly up to its
+// line however far the frame is stretched (a fixed inset left strips at the corners and edges of the shops, the journal and the training panel)
+function pencilMask(W, H, pts, seed, closed = true, amp = 1.5) {
+  const rnd = seeded(seed), a = wobble(pts, rnd, amp, rnd(), 1.03, closed);
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><path d="${a}Z" fill="#000"/></svg>`;
+}
 function propOK(name) { try { const f = PA().prop; if (typeof f !== 'function') return ''; const v = f.call(PA(), name); return typeof v === 'string' && v.includes('<svg') ? v : ''; } catch (e) { return ''; } }
 function buildChrome() {
   const root = document.documentElement, set = (k, svg) => root.style.setProperty(k, svgURI(svg));
-  set('--fr-card', pencilSVG(300, 200, rrPts(300, 200, 9, 3, 90), 11));
+  set('--fr-card', pencilSVG(300, 200, rrPts(300, 200, 9, 3, 90), 11)); set('--frm-card', pencilMask(300, 200, rrPts(300, 200, 9, 3, 90), 11));
   set('--fr-btn', pencilSVG(200, 60, rrPts(200, 60, 12, 3, 70), 23));
   const circ = Array.from({ length: 44 }, (_, i) => [50 + Math.cos(i / 44 * 6.283) * 45, 50 + Math.sin(i / 44 * 6.283) * 45]);
   set('--fr-round', pencilSVG(100, 100, circ, 37));
   set('--fr-tube', pencilSVG(300, 24, rrPts(300, 24, 10, 2.5, 80), 41, true, 1.1));
   set('--fr-tubew', pencilSVG(1000, 24, rrPts(1000, 24, 10, 2.5, 160), 43, true, 1.2));
   set('--fr-wide', pencilSVG(800, 60, rrPts(800, 60, 12, 3, 140), 47, true, 1.6));
-  set('--fr-tray', pencilSVG(1000, 170, rrPts(1000, 170, 12, 3, 180), 59, true, 1.7));
+  set('--fr-tray', pencilSVG(1000, 170, rrPts(1000, 170, 12, 3, 180), 59, true, 1.7)); set('--frm-tray', pencilMask(1000, 170, rrPts(1000, 170, 12, 3, 180), 59, true, 1.7));
   set('--fr-stage', pencilSVG(1280, 720, rrPts(1280, 720, 14, 4, 260), 61, true, 2.2));
   set('--line', pencilSVG(600, 9, Array.from({ length: 60 }, (_, i) => [3 + i * 594 / 59, 4.5]), 53, false, 1.6));
   set('--fr-tail', `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 18"><path d="M1 1 L7 17 L21 1 Z" fill="#FFFBF3"/><path d="M1.5 2 Q5 9 7 16.5 Q13 9 20.5 2" fill="none" stroke="${INKG}" stroke-width="2" stroke-linecap="round"/></svg>`);
@@ -686,6 +692,7 @@ function freshState(key, name, sex) {
   v29Fields(st); // v2.9 All Together: photo mode (V29.md section 5)
   v210Fields(st); // v2.10 Free to Roam: ball play (V210.md section 5)
   v211Fields(st); // v2.11 Tokyo Trip: the trip and Dog Cards (V211.md section 5)
+  v214Fields(st); st.lang = i18nReal(prefs.langPick) ? prefs.langPick : null; // v2.14: a language picked on the title screen before the save existed (V214.md 5)
   return linkDogs(st);
 }
 let S = null;
@@ -720,6 +727,7 @@ function migrate(s) {
   v29Fields(s); // v2.9 All Together (V29.md section 5): additive
   v210Fields(s); // v2.10 Free to Roam (V210.md section 5): additive
   v211Fields(s); // v2.11 Tokyo Trip (V211.md section 5.1): additive
+  v214Fields(s); // v2.14 Hello in Every Language (V214.md section 5): additive
   return s;
 }
 /* v2.7 Home & Pack save fields (V27.md section 1). Additive only: S.v stays 1, nothing is dropped.
@@ -778,16 +786,22 @@ function v211Fields(s) {
   if (typeof s.dc.got !== 'number' || !(s.dc.got >= 0)) s.dc.got = 0; if (s.dc.uid === undefined) s.dc.uid = null; // v2.11 CARDS review: the account that switched the card on
   return s;
 }
-function migNote() { if (S && S.gkNote) { delete S.gkNote; markDirty(); setTimeout(() => toast('Pip left a packet of seeds on your doorstep. The veggie patch is yours now!', 'gold'), 2200); }
+// v2.14 (V214.md 5): S.lang = one of PawI18nMsg.CODES, or null = follow the device (old saves load with null). It goes with the cloud save.
+function v214Fields(s) {
+  if (!s) return s;
+  if (s.lang === undefined || (s.lang !== null && !i18nReal(s.lang))) s.lang = null;
+  return s;
+}
+function migNote() { if (S && S.gkNote) { delete S.gkNote; markDirty(); setTimeout(() => toast(tt('core.seed_gift', 'Pip left a packet of seeds on your doorstep. The veggie patch is yours now!'), 'gold'), 2200); }
   if (S && !S.dog.sex) setTimeout(askSex, 600);
-  if (S && S.migNote) { const n = S.migNote; delete S.migNote; markDirty(); setTimeout(() => toast(`Your ${n} old leaves, shells and acorns were bought by a very enthusiastic squirrel: +${n * 5} coins.`, 'gold'), 1200); } }
+  if (S && S.migNote) { const n = S.migNote; delete S.migNote; markDirty(); setTimeout(() => toast(tt('core.squirrel_bought', 'Your {n} old leaves, shells and acorns were bought by a very enthusiastic squirrel: +{coins, plural, one {# coin} other {# coins}}.', { n, coins: n * 5 }), 'gold'), 1200); } }
 
 /* ---------------- DOM refs ---------------- */
 const $ = (s, r = document) => r.querySelector(s);
 const stage = $('#stage'), hud = $('#hud'), view = $('#view'), dock = $('#dock'), bar = $('#bar'), titleEl = $('#title'), modal = $('#modal'), bubble = $('#bubble'), toasts = $('#toasts'), devPanel = $('#devPanel');
 
 /* ---------------- helpers: names, time, weather ---------------- */
-const NAME = () => (S ? S.dog.name : 'Dog');
+const NAME = () => (S ? S.dog.name : tt('shell.dog', 'Dog'));
 const day = () => Math.floor(S.gameMin / 1440) + 1;
 function clock() { const m = Math.floor(S.gameMin % 1440); return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); }
 /* ---- v1.2 real time + weather: clock = device time; weather seeded by date, 3 periods a day ---- */
@@ -845,9 +859,11 @@ const weather = weatherNow;
 const envNow = () => { const f = festNow(); return { time: timePhase(), weather: weatherNow(), season: seasonNow(), halloween: f.halloween, lights: f.lights, newyear: f.newyear, jp: jpOn() }; }; // v2.8: lights, newyear, jp
 const isNight = () => timePhase() === 'night';
 function isHot() { if (S && S.buff && typeof buffOn === 'function' && buffOn('cool')) return false; if (S && (S.outfit.head === 'Sun Hat' || (S.coolUntil || -1) > S.gameMin)) return false; if (weatherNow() !== 'sunny' || timePhase() !== 'day') return false; if (ENV.time !== 'auto') return true; const h = new Date().getHours(); return h >= 11 && h < 15; }
-function clockText() { if (ENV.time !== 'auto') return { dawn: '06:00', day: '13:00', dusk: '18:00', night: '23:00' }[ENV.time] + '*'; const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+function clockText() {
+  if (tlang() !== 'en') { const d = new Date(); if (ENV.time !== 'auto') d.setHours({ dawn: 6, day: 13, dusk: 18, night: 23 }[ENV.time], 0, 0, 0); return tdate(d, { hour: 'numeric', minute: '2-digit' }) + (ENV.time !== 'auto' ? '*' : ''); } // v2.14: 12 or 24 h per language (V214.md 8)
+  if (ENV.time !== 'auto') return { dawn: '06:00', day: '13:00', dusk: '18:00', night: '23:00' }[ENV.time] + '*'; const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
 const WEATHER_TXT = { sunny: 'Sunny', cloudy: 'Cloudy', rain: 'Rain', snow: 'Snow' };
-const wxLabel = () => (weatherNow() === 'sunny' && isNight() ? 'Clear night' : WEATHER_TXT[weatherNow()]);
+const wxLabel = () => (weatherNow() === 'sunny' && isNight() ? tt('core.clear_night', 'Clear night') : tdata('weather_txt.' + weatherNow(), WEATHER_TXT[weatherNow()]));
 function wxIconName() { const w = weatherNow(), t = timePhase(); if (w === 'rain' || w === 'snow' || w === 'cloudy') return 'w-' + w; return t === 'night' ? 'w-night' : t === 'dawn' ? 'w-dawn' : t === 'dusk' ? 'w-dusk' : 'w-sunny'; }
 const RAINCOATS = ['Yellow Raincoat', 'Polka-dot Raincoat', 'Frog Raincoat', 'Bubble Raincoat'];
 const hasRaincoat = () => RAINCOATS.includes(S.outfit.body);
@@ -860,6 +876,32 @@ const glowing = () => (S.gameMin < (S.glowUntil || -1)) || (S.stats.hunger > 80 
 const dogOutfit = () => ({ head: S.outfit.head, eyes: S.outfit.eyes, neck: S.outfit.neck, body: S.outfit.body });
 const wearing = (n) => SLOTS.some((k) => S.outfit[k] === n) || S.outfit.charm === n;
 const tInfo = (n) => TREASURES.find((t) => t.n === n);
+/* ---- v2.14 display text of the core tables (V214.md 4.3). The English names stay the data, the keys and the save values; only what is shown
+   is looked up. tItem(n, field): any shop, treasure or bed item by its English name; field 'n' (the name, default) or the row's text
+   field (FOOD note / tip, TFOOD note, TOYS note, CLOTHES perk, HOUSES note, BEDS note, TREASURES ab / txt). An unknown name comes back as it is. ---- */
+let tItemIx = null;
+function tItemRow(n) {
+  if (!tItemIx) {
+    tItemIx = new Map(); const add = (tab, rows) => rows.forEach((r) => { if (r && r.n && !tItemIx.has(r.n)) tItemIx.set(r.n, [tab, r]); });
+    add('food', FOOD); add('tfood', TFOOD); add('toys', TOYS); add('clothes', CLOTHES); add('houses', HOUSES); add('treasures', TREASURES);
+    if (typeof BEDS !== 'undefined' && Array.isArray(BEDS)) add('beds', BEDS);
+  }
+  return tItemIx.get(n) || null;
+}
+function tItem(n, field = 'n') {
+  if (n == null) return '';
+  const hit = tItemRow(n); if (!hit) return field === 'n' ? String(n) : '';
+  const [tab, r] = hit, en = r[field]; if (en == null || en === '') return '';
+  return tdata(tab + '.' + tid(r.n) + '.' + field, en); // treasures: TR(n, kind, slot, r, routes, ab, txt) rows are keyed by the parameter names
+}
+// a wearable's or charm's perk line: the clothes `perk`, or a treasure's "Ability: what it does"
+function tPerk(n) { const hit = tItemRow(n); if (hit && hit[0] === 'treasures') return tt('core.treasure_perk', '{ability}: {text}', { ability: tItem(n, 'ab'), text: tItem(n, 'txt') }); return tItem(n, 'perk'); }
+const tPlace = (k) => (PLACES[k] ? tdata('places.' + k + '.n', PLACES[k].n) : String(k));
+const tRoute = (k) => (ROUTES[k] ? tdata('routes.' + k + '.n', ROUTES[k].n) : String(k));
+const tTrick = (n) => tdata('tricks.' + tid(n) + '.n', n);
+const tSig = (key, field = 'n') => (SIG[key] ? tdata('sig.' + key + '.' + field, SIG[key][field]) : tdata('sig_fb.' + field, SIG_FB[field])); // the dog's signature trick name or line
+const tRarity = (i) => tdata('rarity.' + i, RARITY[i]);
+const tSlot = (k) => tdata('slot_name.' + k, SLOT_NAME[k] || k);
 function hasTreasure(t) { if (t.kind === 'wearable') return owns('clothes', t.n); if (t.kind === 'toy') return owns('toys', t.n); if (t.kind === 'charm') return S.inv.charms.includes(t.n); if (t.kind === 'quest') return S.mapPieces.includes(t.piece); return false; }
 const isUnique = (t) => t.kind !== 'food';
 const PLACEHOLDER_RE = /<text[^>]*>\s*\?\s*<\/text>/;
@@ -964,13 +1006,13 @@ function dailyCheck() {
 }
 function dailyCare(kind) {
   dailyCheck(); if (S.daily[kind]) return; S.daily[kind] = true;
-  const n = addCoins(10); toast(`Daily care bonus: +${n} coins for the first ${kind} of the day.`, 'gold');
+  const n = addCoins(10); toast(tt('core.daily_care', '{kind, select, feed {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first feed of the day.} pet {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first pet of the day.} play {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first play of the day.} outfit {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first outfit of the day.} other {Daily care bonus: +{n, plural, one {# coin} other {# coins}} for the first {kind} of the day.}}', { kind, n }), 'gold');
 }
 
 /* ---------------- HUD ---------------- */
 const METERS = [['hunger', 'Hunger'], ['happy', 'Happiness'], ['energy', 'Energy'], ['clean', 'Cleanliness']];
 function buildHUD() {
-  $('#meters').innerHTML = METERS.map(([k, label]) => `<div class="meter" data-k="${k}" title="${label}"><span class="ic">${ICON(k)}</span><span class="track" role="meter" aria-label="${label}" aria-valuemin="0" aria-valuemax="100"><span class="fill"></span></span><span class="num">0</span></div>`).join('');
+  $('#meters').innerHTML = METERS.map(([k, en]) => { const label = esc(tdata('meters.' + k + '.1', en)); return `<div class="meter" data-k="${k}" title="${label}"><span class="ic">${ICON(k)}</span><span class="track" role="meter" aria-label="${label}" aria-valuemin="0" aria-valuemax="100"><span class="fill"></span></span><span class="num">0</span></div>`; }).join('');
   $('#bondIc').innerHTML = ICON('bond'); $('#coinIc').innerHTML = ICON('coin'); $('#gearBtn').innerHTML = ICON('settings');
   updateMute();
 }
@@ -984,21 +1026,23 @@ function updateHUD() {
   const L = S.bond.level, a = BOND_TH[L - 1], b = BOND_TH[L] || BOND_TH[9];
   const pr = L >= 10 ? 100 : clamp((S.bond.pts - a) / (b - a) * 100, 0, 100);
   $('#bondLvl').textContent = L; $('#bondFill').style.width = pr + '%'; $('#bondTrack').setAttribute('aria-valuenow', Math.round(pr));
-  $('#bondTrack').title = L >= 10 ? 'Max Bond. Best friends.' : `${S.bond.pts} / ${b} Bond points`;
-  $('#coinNum').textContent = S.coins;
+  $('#bondTrack').title = L >= 10 ? tt('core.bond_max', 'Max Bond. Best friends.') : tt('core.bond_points', '{pts} / {max} Bond points', { pts: tnum(S.bond.pts), max: tnum(b) });
+  $('#coinNum').textContent = tnum(S.coins);
   if (S.dogs) setHudDog();
   const bc = $('#buffChip'); if (bc) { const k2 = S.buff ? S.buff.id + buffLabel() : ''; if (bc.dataset.k !== k2) { bc.dataset.k = k2; bc.hidden = !S.buff; if (S.buff) bc.innerHTML = `<span class="ic">${art('item', S.buff.dish || 'Carrot Crunchies')}</span>${esc(buffLabel())}`; bc.title = S.buff ? (BUFF_TXT[S.buff.id] || '') : ''; } }
   const hc = $('#hudClock'); if (hc) hc.textContent = `${clockText()} · ${wxLabel()}`;
-  const st = $('#status'); if (st) { const k = S.place + wxIconName() + clockText() + wxLabel() + (S.gameMin < S.pupUntil); if (st.dataset.k !== k) { st.dataset.k = k; st.innerHTML = `<span class="pin"><svg viewBox="-10 -12 20 24"><path d="M0 11 C-3 4 -8 0 -8 -4 a8 8 0 0 1 16 0 c0 4 -5 8 -8 15z" fill="#F28FA5" stroke="#5B3D32" stroke-width="1.8"/><circle cy="-4" r="3" fill="#FFFBF3" stroke="#5B3D32" stroke-width="1.4"/></svg></span><b class="pname">${esc((PLACES[S.place] || PLACES.yard).n)}</b> · <span class="wxic">${iconOr(wxIconName(), WX_DOODLE[wxIconName()] || '')}</span>${clockText()} · ${wxLabel()} · Day ${day()}${S.gameMin < S.pupUntil ? ' · Pupcake power' : ''}`; } }
+  const st = $('#status'); if (st) { const k = S.place + wxIconName() + clockText() + wxLabel() + (S.gameMin < S.pupUntil); if (st.dataset.k !== k) { st.dataset.k = k; st.innerHTML = `<span class="pin"><svg viewBox="-10 -12 20 24"><path d="M0 11 C-3 4 -8 0 -8 -4 a8 8 0 0 1 16 0 c0 4 -5 8 -8 15z" fill="#F28FA5" stroke="#5B3D32" stroke-width="1.8"/><circle cy="-4" r="3" fill="#FFFBF3" stroke="#5B3D32" stroke-width="1.4"/></svg></span><b class="pname">${esc(tPlace(PLACES[S.place] ? S.place : 'yard'))}</b> · <span class="wxic">${iconOr(wxIconName(), WX_DOODLE[wxIconName()] || '')}</span>${esc(clockText())} · ${esc(wxLabel())} · ${esc(tt('core.status_day', 'Day {day}', { day: day() }))}${S.gameMin < S.pupUntil ? ' · ' + esc(tt('core.pupcake_power', 'Pupcake power')) : ''}`; } }
 }
-function updateMute() { const m = !!prefs.mute; const b = $('#muteBtn'); b.innerHTML = ICON(m ? 'sound-off' : 'sound-on'); b.setAttribute('aria-label', m ? 'Sound off. Tap to unmute.' : 'Sound on. Tap to mute.'); }
+function updateMute() { const m = !!prefs.mute; const b = $('#muteBtn'); b.innerHTML = ICON(m ? 'sound-off' : 'sound-on'); b.setAttribute('aria-label', m ? tt('shell.mute_off', 'Sound off. Tap to unmute.') : tt('shell.mute_on', 'Sound on. Tap to mute.')); }
 
 /* ---------------- action bar ---------------- */
 const ACTS = [['feed', 'Feed', 'feed'], ['play', 'Play', 'play'], ['care', 'Care', 'bath'], ['walk', 'Walk', 'walk'], ['wardrobe', 'Wardrobe', 'wardrobe'], ['journal', 'Journal', 'journal'], ['map', 'Map', 'map']];
 function buildBar() {
-  bar.innerHTML = ACTS.map(([a, label, ic], i) => `<button class="act" data-act="${a}" aria-keyshortcuts="${i + 1}"><span class="ic">${a === 'journal' ? iconOr('journal', doodle('paw', 0, 2, 1.1)) : ICON(ic)}</span><span>${label}</span></button>`).join('');
+  barLabels();
   bar.addEventListener('click', (e) => { const b = e.target.closest('.act'); if (b) doAct(b.dataset.act); });
 }
+// the buttons themselves (v2.14: drawn again in the new language when the title screen switches it; the click listener stays the one above)
+function barLabels() { bar.innerHTML = ACTS.map(([a, label, ic], i) => `<button class="act" data-act="${a}" aria-keyshortcuts="${i + 1}"><span class="ic">${a === 'journal' ? iconOr('journal', doodle('paw', 0, 2, 1.1)) : ICON(ic)}</span><span>${esc(tdata('acts.' + a + '.1', label))}</span></button>`).join(''); }
 function doAct(a) {
   SFX.click(); hideBubble(); closeTraining();
   const pop = !modal.hidden || popOpen();
@@ -1019,7 +1063,7 @@ function doAct(a) {
 let modalClose = null;
 function openModal(title, bodyHTML, opts = {}) {
   if (cur.mode === 'yard' && popOpen()) S.sleeping ? sleepTray() : dockIdle();
-  modal.innerHTML = `<div class="panel pop ${opts.cls || ''}" role="dialog" aria-modal="true" aria-label="${esc(title.replace(/<[^>]+>/g, ''))}"><h2>${title}</h2>${opts.noX ? '' : '<button class="xbtn x" aria-label="Close">x</button>'}<div class="panel-body">${bodyHTML}</div>${opts.foot ? `<div class="foot">${opts.foot}</div>` : ''}</div>`;
+  modal.innerHTML = `<div class="panel pop ${opts.cls || ''}" role="dialog" aria-modal="true" aria-label="${esc(title.replace(/<[^>]+>/g, ''))}"><h2>${title}</h2>${opts.noX ? '' : `<button class="xbtn x" aria-label="${esc(tt('core.close', 'Close'))}">x</button>`}<div class="panel-body">${bodyHTML}</div>${opts.foot ? `<div class="foot">${opts.foot}</div>` : ''}</div>`;
   modal.hidden = false; modalClose = opts.onClose || null;
   const p = $('.panel', modal); p.insertAdjacentHTML('afterbegin', '<div class="sheet-grab" aria-hidden="true"></div>'); sheetSwipe(p, () => closeModal()); const x = $('.x', p); if (x) x.onclick = () => { SFX.click(); closeModal(); };
   setTimeout(() => { const f = p.querySelector('[autofocus]') || p.querySelector('.foot .btn') || x; if (f) f.focus({ preventScroll: true }); }, 30);
@@ -1030,7 +1074,7 @@ function closeModal() {
   if (modal.hidden) return; modal.hidden = true; modal.innerHTML = ''; if (isPhone()) { toastWatchSheet(null); toastPlace(); } audioPlace(); const cb = modalClose; modalClose = null; if (cb) cb(); setTimeout(maybeLevelUp, 250);
 }
 modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
-function confirmIn(panel, html, yes = 'Yes', no = 'No') {
+function confirmIn(panel, html, yes = tt('core.yes', 'Yes'), no = tt('core.no', 'No')) {
   return new Promise((res) => {
     const old = panel.querySelector('.confirm'); if (old) old.remove();
     const c = document.createElement('div'); c.className = 'confirm';
@@ -1051,19 +1095,19 @@ function ask(title, html, yes, no) {
 /* ---------------- level-up ---------------- */
 function unlocksFor(L) {
   const u = [];
-  for (const k in ROUTES) if (ROUTES[k].bond === L && L > 1) u.push(`Walk route: ${ROUTES[k].n}${ROUTES[k].dig ? ' (with digging)' : ''}`);
-  TRICKS.forEach((t) => { if (t.bond === L) u.push(t.n === 'Signature' ? `Signature trick: ${sigOf(S.dog.key).n}` : `Trick: ${t.n}`); });
-  TOYS.concat(CLOTHES).forEach((t) => { if (t.bond === L && L > 1 && !t.ed) u.push(`Shop: ${t.n}`); });
-  HOUSES.forEach((h) => { if (h.bond === L && L > 1) u.push(`House: ${h.n}`); });
-  if (L === 10) u.push('Best Friends badge (it is invisible, but it is there)');
+  for (const k in ROUTES) if (ROUTES[k].bond === L && L > 1) u.push(tt('core.unlock_route', '{dig, select, yes {Walk route: {route} (with digging)} other {Walk route: {route}}}', { dig: ROUTES[k].dig ? 'yes' : 'no', route: tRoute(k) }));
+  TRICKS.forEach((t) => { if (t.bond === L) u.push(t.n === 'Signature' ? tt('core.unlock_signature', 'Signature trick: {trick}', { trick: tSig(S.dog.key) }) : tt('core.unlock_trick', 'Trick: {trick}', { trick: tTrick(t.n) })); });
+  TOYS.concat(CLOTHES).forEach((t) => { if (t.bond === L && L > 1 && !t.ed) u.push(tt('core.unlock_shop', 'Shop: {item}', { item: tItem(t.n) })); });
+  HOUSES.forEach((h) => { if (h.bond === L && L > 1) u.push(tt('core.unlock_house', 'House: {house}', { house: tItem(h.n) })); });
+  if (L === 10) u.push(tt('core.unlock_badge', 'Best Friends badge (it is invisible, but it is there)'));
   return u;
 }
 function maybeLevelUp() {
   if (!levelQueue.length || !modal.hidden || !['yard', 'market', 'map', 'shelter'].includes(cur.mode)) return;
   const who = levelQueue[0].who, levels = levelQueue.filter((q) => q.who === who).map((q) => q.l), L = Math.max(...levels); levelQueue = levelQueue.filter((q) => q.who !== who); audioCue('levelup');
   const all = []; levels.sort((a, b) => a - b).forEach((l) => all.push(...unlocksFor(l)));
-  const lines = ['now loves you ' + L + ' units. Units are made up.', 'did a little spin about it.', 'would like a raise. In treats.', 'is writing your name in the dirt. Badly.'];
-  openModal(`<span class="hl">Bond level ${L}!</span>`, `<svg class="lu-doodle" viewBox="0 0 600 44" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${doodle('spark', 40, 22, 0.9)}${doodle('heart', 90, 22, 0.8)}${doodle('spark', 140, 20, 0.6)}${doodle('paw', 300, 24, 0.7)}${doodle('spark', 460, 22, 0.6)}${doodle('heart', 510, 20, 0.8, 10)}${doodle('spark', 560, 22, 0.9)}</svg><p><b>${esc(who)}</b> ${PICK(lines)}</p><p>${levels.length > 1 ? `(That's ${levels.length} levels at once. Show-off.)</p><p>` : ''}Unlocked:</p><ul class="unlocks">${all.map((u) => `<li>${esc(u)}</li>`).join('') || '<li>Pure friendship. No refunds.</li>'}</ul>`, { cls: 'celebrate', foot: '<button class="btn yes big" id="luOk">Yay!</button>' });
+  const lines = [tt('core.lu_units_html', '<b>{name}</b> now loves you {l} units. Units are made up.', { name: who, l: L }), tt('core.lu_spin_html', '<b>{name}</b> did a little spin about it.', { name: who }), tt('core.lu_raise_html', '<b>{name}</b> would like a raise. In treats.', { name: who }), tt('core.lu_dirt_html', '<b>{name}</b> is writing your name in the dirt. Badly.', { name: who })];
+  openModal(`<span class="hl">${esc(tt('core.lu_title', 'Bond level {l}!', { l: L }))}</span>`, `<svg class="lu-doodle" viewBox="0 0 600 44" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${doodle('spark', 40, 22, 0.9)}${doodle('heart', 90, 22, 0.8)}${doodle('spark', 140, 20, 0.6)}${doodle('paw', 300, 24, 0.7)}${doodle('spark', 460, 22, 0.6)}${doodle('heart', 510, 20, 0.8, 10)}${doodle('spark', 560, 22, 0.9)}</svg><p>${PICK(lines)}</p><p>${levels.length > 1 ? esc(tt('core.lu_many', "{n, plural, one {(That's # level at once. Show-off.)} other {(That's # levels at once. Show-off.)}}", { n: levels.length })) + '</p><p>' : ''}${esc(tt('core.lu_unlocked', 'Unlocked:'))}</p><ul class="unlocks">${all.map((u) => `<li>${esc(u)}</li>`).join('') || `<li>${esc(tt('core.lu_nothing', 'Pure friendship. No refunds.'))}</li>`}</ul>`, { cls: 'celebrate', foot: `<button class="btn yes big" id="luOk">${esc(tt('core.lu_yay', 'Yay!'))}</button>` });
   $('#luOk').onclick = () => { SFX.boop(700); closeModal(); if (levelQueue.length) setTimeout(maybeLevelUp, 400); }; // another dog levelled up too
 }
 
@@ -1072,7 +1116,7 @@ const cur = { mode: null, cleanup: [] };
 function onCleanup(fn) { cur.cleanup.push(fn); }
 function setChrome(hudOn, barOn) { hud.hidden = !hudOn; bar.hidden = !barOn; stage.classList.toggle('nobar', !barOn); if (hudOn) setHudDog(); requestAnimationFrame(() => stage.style.setProperty('--hudH', (hud.hidden ? 0 : hud.offsetHeight) + 'px')); }
 let hudDogKey = '';
-function setHudDog() { if (!S) return; const k = chipsKey(); if (k === hudDogKey) return; hudDogKey = k; renderDogChips(); const ht = $('#hudTitle'); ht.textContent = S.title || ''; ht.hidden = !S.title; $('#hudHead').innerHTML = headSVG(D()); $('#hudName').innerHTML = esc(S.dog.name) + ' ' + sexSym(S.dog.sex); }
+function setHudDog() { if (!S) return; const k = chipsKey(); if (k === hudDogKey) return; hudDogKey = k; renderDogChips(); const ht = $('#hudTitle'); ht.textContent = S.title ? (typeof jrTitleName === 'function' ? jrTitleName(S.title) : S.title) : ''; ht.hidden = !S.title; $('#hudHead').innerHTML = headSVG(D()); $('#hudName').innerHTML = esc(S.dog.name) + ' ' + sexSym(S.dog.sex); }
 function go(mode, arg) {
   const prevMode = cur.mode; idleStop(); IDLE.act = null; IDLE.steps = []; IDLE.nextAt = performance.now() + 3000 * IDLE.speed;
   if (mode === 'yard' && ['walk', 'fetch', 'toy'].includes(prevMode)) { lastActiveAt = performance.now(); if (prevMode === 'walk') setTimeout(() => greetBark(), 900); }

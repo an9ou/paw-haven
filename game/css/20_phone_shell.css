@@ -4,7 +4,7 @@
 html[data-pslock] #psTurn{display:flex;position:fixed;inset:0;z-index:100;align-items:center;justify-content:center;padding:calc(12px + env(safe-area-inset-top,0px)) calc(16px + env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) calc(16px + env(safe-area-inset-left,0px));background:rgba(91,61,50,.55);touch-action:none}
 html[data-pslock] #psTurn[hidden]{display:none}
 /* the card wears the same hand-drawn frame and washi tape as the panels (--fr-card + .taped) */
-.ps-turn-card{position:relative;max-width:420px;padding:22px 28px 20px;text-align:center;border:0;--fr:var(--fr-card);--wash:var(--paper);background:var(--fr) 0 0/100% 100% no-repeat,var(--hatch) var(--ins),linear-gradient(var(--wash),var(--wash)) var(--ins);border-radius:26px 27px 28px 26px;filter:drop-shadow(0 8px 14px rgba(60,40,25,.25))}
+.ps-turn-card{position:relative;max-width:420px;padding:22px 28px 20px;text-align:center;border:0;--fr:var(--fr-card);--wash:var(--paper);--frm:var(--frm-card);background:var(--fr) 0 0/100% 100% no-repeat;border-radius:26px 27px 28px 26px;filter:drop-shadow(0 8px 14px rgba(60,40,25,.25))}
 .ps-turn-card::before{content:"";position:absolute;width:78px;height:21px;top:-10px;left:calc(50% - 39px);background:var(--tape) center/100% 100% no-repeat;transform:rotate(-4deg);pointer-events:none;z-index:2}
 .ps-turn-card h2{margin:4px 0 6px;font-family:var(--font-hand);font-weight:700;font-size:30px;line-height:1.1}
 .ps-turn-card p{margin:0;font-size:17px;line-height:1.35}
@@ -57,6 +57,10 @@ html[data-layout="phone"] #hud .buffchip .ic{width:24px;height:24px}
 html[data-layout="phone"] #hud:not(.hexp):has(.buffchip:not([hidden])) .bond .track{display:none}
 html[data-layout="phone"] #hud:not(.hexp):has(.buffchip:not([hidden])) .bond .lbl{font-size:0}
 html[data-layout="phone"] #hud:not(.hexp):has(.buffchip:not([hidden])) .bond .lbl b{font-size:19px}
+/* v2.14 fit: the Thai word for Bond ("ความผูกพัน") is twice the English one: beside the meters it drops the bar (as with a buff chip) and keeps
+   the word and the level whole; the expanded HUD still shows the bar */
+html[data-layout="phone"]:lang(th) #hud:not(.hexp) .bond .track{display:none}
+html[data-layout="phone"]:lang(th) #hud:not(.hexp):not(:has(.buffchip:not([hidden]))) .bond .lbl{font-size:19px}
 html[data-layout="phone"] #hud.hexp .meters{grid-area:2/1/3/-1;justify-self:stretch;width:auto}
 html[data-layout="phone"] #hud.hexp .bond{grid-row:3;margin-left:0;max-width:none}
 html[data-layout="phone"] #hud.hexp .buffchip{grid-row:3;max-width:calc(100% - 150px)}
@@ -75,6 +79,10 @@ html[data-layout="phone"] #bar .act,html[data-layout="phone"] #bar .act > span:n
 /* ...and the longest one ("Wardrobe", 47 px wide at 15 px) clears the thick sketched frame at 360 px: 2 px gaps and edges give each button 49 px, and that one label is set a little narrower (15 px tall, 41 px wide) */
 html[data-layout="phone"] #bar{gap:2px;padding-left:calc(2px + env(safe-area-inset-left,0px));padding-right:calc(2px + env(safe-area-inset-right,0px))}
 html[data-layout="phone"] #bar .act[data-act="wardrobe"] > span:not(.ic){letter-spacing:-.9px;transform:translateX(-1.5px) scaleX(.9)}
+/* v2.14 fit: Indonesian Feed and Walk keep their full words ("Beri makan", "Jalan-jalan") set a little narrower, like Wardrobe (50 px of text in a 49 px button at 360 px) */
+html[data-layout="phone"]:lang(id) #bar .act:is([data-act="feed"],[data-act="walk"]) > span:not(.ic){letter-spacing:-.9px;transform:translateX(-1px) scaleX(.88)}
+/* v2.14 review: Thai Walk and Wardrobe ("เดินเล่น", "ตู้เสื้อผ้า") the same way (Thai keeps letter-spacing normal, so only the scale narrows them) */
+html[data-layout="phone"]:lang(th) #bar .act:is([data-act="walk"],[data-act="wardrobe"]) > span:not(.ic){transform:translateX(-1px) scaleX(.84)}
 
 /* every openModal popup is a bottom sheet: full width, up to 88% of the screen, its own scroll */
 html[data-layout="phone"] #modal .panel{max-height:min(100%,88vh);max-height:min(100%,88dvh)}

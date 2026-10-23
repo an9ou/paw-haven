@@ -1,5 +1,5 @@
 /* v2.4 guide (GUIDE lane): the Gerald card, the crayon ring, the How to play page. Phone rules under html[data-layout="phone"]. */
-#gdLayer{position:absolute;inset:0;z-index:5;pointer-events:none} /* above the scene, the HUD and the bar (later in the DOM), under the dog's own bubble (6), trays, toasts and popups */
+#gdLayer{position:absolute;inset:0;z-index:5;pointer-events:none;overflow:hidden;overflow:clip} /* v2.14 fit: the pulsing ring never pushes #stage sideways */ /* above the scene, the HUD and the bar (later in the DOM), under the dog's own bubble (6), trays, toasts and popups */
 /* the card: a torn sketchbook note, taped to the page, with Gerald and his speech bubble (the pencil-frame bubble with the --fr-tail, so it grows with the text) */
 .gd-card{position:absolute;left:18px;top:auto;width:520px;max-width:calc(100% - 36px);box-sizing:border-box;display:flex;align-items:flex-end;gap:6px;padding:16px 18px 12px 10px;
   background:var(--gd-paper) 0 0/100% 100% no-repeat;filter:drop-shadow(0 4px 5px rgba(60,40,25,.2));transform:rotate(-.8deg);pointer-events:none;color:var(--ink)}
@@ -13,7 +13,7 @@
 .gd-duck svg{width:100%;height:100%;overflow:visible;display:block}
 .gd-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
 .gd-say{position:relative;padding:9px 16px 12px;font-size:18px;line-height:1.22;transform:rotate(.6deg);
-  background:var(--fr-card) 0 0/100% 100% no-repeat,linear-gradient(var(--paper),var(--paper)) var(--ins);border-radius:13px 9px 15px 8px}
+  --wash:var(--paper);--hatch:linear-gradient(transparent,transparent);background:var(--fr-card) 0 0/100% 100% no-repeat,var(--wf);border-radius:13px 9px 15px 8px}
 .gd-say::after{content:"";position:absolute;left:-14px;bottom:12px;width:20px;height:16px;background:var(--fr-tail) 0 0/100% 100% no-repeat;transform:rotate(68deg)}
 .gd-txt{margin:0}
 .gd-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-left:4px}
@@ -40,7 +40,7 @@
 .gd-head .gd-say p{margin:0}
 .gd-lessons{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 14px}
 .gd-lesson{display:flex;gap:10px;align-items:flex-start;padding:10px 12px 10px 8px;font-size:16px;line-height:1.25;border-radius:13px 9px 15px 8px;
-  background:var(--fr-card) 0 0/100% 100% no-repeat,var(--hatch) var(--ins),linear-gradient(var(--w-cream),var(--w-cream)) var(--ins)}
+  --wash:var(--w-cream);background:var(--fr-card) 0 0/100% 100% no-repeat,var(--wf)}
 .gd-lesson:nth-child(4n+2){transform:rotate(.6deg)}.gd-lesson:nth-child(4n+3){transform:rotate(-.5deg)}
 .gd-lesson b{font-family:var(--font-hand);font-size:22px;line-height:1}
 .gd-lesson p{margin:2px 0 0}

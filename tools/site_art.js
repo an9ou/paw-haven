@@ -6,14 +6,15 @@
 //   dogs/<key>-pup.svg         a puppy of each dog, one frame (profiles)
 //   dogs/<key>-sleep.svg       each dog napping, one frame (the playroom)
 //   loves/<slug>.svg           the game's item and icon drawings for each dog's favourites
+//   peek/<key>.svg             site v3: a dog's head with a face expression (PawArt.dogHead), for the dogs that peek round the paper on every page (PEEKS in site/js/site.js)
 //   ball.svg, momiji.svg, sakura.svg   the playroom toss toy and one leaf / one blossom from the game's Japan art
 //   washi.svg                  a washi-paper fibre tile (seeded)
 //   playroom.webp              the Shelter Playroom (world C), 2000 x 1200, with the site's own Caveat for its painted sign
 //   fuji-<season>.webp         the Mt. Fuji Lookout (world C, Japan scenery on) for each season, 1280 x 768
 //   torii.webp                 the Lookout's torii and shrine, cropped
 //   wall-fuji.webp             Mt. Fuji from the Lookout in spring, cropped: the framed picture on the playroom wall
-// and fills the dog cards in site/index.html and the profiles in site/dogs.html between the <!-- dogs:... --> markers.
-// Profile text: tools/site_dogs.js. Dog art is never changed here: everything is drawn by dogs/ and world/ as the game draws it.
+// and then writes the pages with tools/site_i18n.js (the dog cards in site/index.html and the profiles in site/dogs.html, between the <!-- dogs:... --> markers,
+// and the same pages in the other languages). Profile data: tools/site_dogs.js; profile text: site/i18n/en.json. Dog art is never changed here: everything is drawn by dogs/ and world/ as the game draws it.
 const fs = require('fs'), path = require('path'), vm = require('vm');
 const ROOT = path.join(__dirname, '..'), OUT = path.join(ROOT, 'site', 'img', 'art');
 const req = (m) => { for (const r of [].concat((process.env.NODE_PATH || '').split(path.delimiter).filter(Boolean), module.paths)) { try { return require(path.join(r, m)); } catch (e) { /* next */ } } return require(m); };
@@ -32,8 +33,6 @@ const FLIP = '<style>.pa-d-f1,.pa-d-f2{opacity:0}.pa-d-f0{animation:b0 1s steps(
 const standalone = (svg, w, h, style) => svg.replace(/^<svg(?! xmlns)/, '<svg xmlns="http://www.w3.org/2000/svg"').replace(/^<svg /, `<svg width="${w}" height="${h}" `).replace(/(<svg[^>]*>)/, '$1' + (style || ''));
 const write = (rel, s) => { const p = path.join(OUT, rel); fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, s); };
 const slug = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/^icon:/, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-const aAn = (s) => (/^[aeiou]/i.test(s) ? 'an' : 'a'); // v2.12: "an Espresso puppy"
 
 fs.rmSync(OUT, { recursive: true, force: true });
 // ---- dogs
@@ -49,6 +48,10 @@ for (const d of DOGS) {
   write(`dogs/${d.key}-sleep.svg`, whole(standalone(PA.dog(d.key, { pose: 'sleep', anim: false }), 240, 200))); // the playroom nap, one frame
   write(`dogs/${d.key}-pup.svg`, standalone(PA.dog(d.key, { pose: 'happy', age: 'puppy', facing: 'left', anim: false }), 240, 200));
 }
+// ---- site v3: the peeking dogs (heads only, whole-unit coordinates: about 1 kB each gzipped). The keys come from PEEKS in site/js/site.js, the faces from here
+const PEEK_KEYS = JSON.parse(fs.readFileSync(path.join(ROOT, 'site', 'js', 'site.js'), 'utf8').match(/var PEEKS = (\[[^\]]*\])/)[1].replace(/'/g, '"'));
+const PEEK_FACE = { dachs: 'hearts', shiba: 'curious', corgi: 'blep', golden: 'wow', pug: 'wink', samoyed: 'dreamy', beagle: 'curious', husky: 'proud', frenchie: 'blep', chihuahua: 'surprised' };
+for (const k of PEEK_KEYS) write(`peek/${k}.svg`, whole(standalone(PA.dogHead(k, { expr: PEEK_FACE[k] || 'curious' }), 100, 100)));
 // ---- favourites: the game's item and icon drawings; 'dig' is the marketing posts' dirt mound with a bone
 const DIG = '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="digging"><ellipse cx="32" cy="54" rx="28" ry="6" fill="#5B3D32" opacity=".16"/><path d="M4 54Q8 24 32 22Q56 24 60 54Z" fill="#B98F68" stroke="#5B3D32" stroke-width="3" stroke-linejoin="round"/><path d="M14 44l8 -2M34 36l8 3M26 48l8 0" stroke="#8A6A48" stroke-width="2.4" stroke-linecap="round"/><g transform="translate(34 16) rotate(-30) scale(.55)"><path d="M-14 -4 Q-20 -10 -14 -12 Q-11 -14 -10 -8 L10 -8 Q11 -14 14 -12 Q20 -10 14 -4 Q20 2 14 4 Q11 6 10 0 L-10 0 Q-11 6 -14 4 Q-20 2 -14 -4Z" fill="#FFF4DF" stroke="#5B3D32" stroke-width="3" stroke-linejoin="round"/></g></svg>';
 const loves = new Set(); DOGS.forEach((d) => d.loves.forEach(([n]) => loves.add(n)));
@@ -73,38 +76,14 @@ write('ball.svg', standalone(PA.prop('tosstoy', { kind: 'ball' }), 60, 60));
   write('washi.svg', `<svg xmlns="http://www.w3.org/2000/svg" width="220" height="220" viewBox="0 0 220 220"><path d="${d}" fill="none" stroke="#C9B48F" stroke-width=".8" stroke-linecap="round" opacity=".45"/><g fill="#D9C7A6" opacity=".5">${dots}</g></svg>`);
 }
 
-// ---- the dog cards (home) and profiles (/dogs)
-const lovesHTML = (d) => d.loves.map(([n, l]) => `<li><img src="/img/art/loves/${slug(n)}.svg" alt="" width="64" height="64" loading="lazy">${esc(l)}</li>`).join('');
-const card = (d) => `<li><a class="dcard" href="/dogs#${d.key}" id="card-${d.key}">
-  <img class="dimg" src="/img/art/dogs/${d.key}-still.svg" alt="${esc(d.name)} the ${esc(d.breed)}, a wobbly crayon dog" width="240" height="200" loading="lazy">
-  <span class="dname">${esc(d.name)}</span><span class="dtype">the ${esc(d.breed)} <span class="jp" lang="ja">${d.jp}</span></span>
-  <span class="dquote">“${esc(d.quote)}”</span><span class="dmore">Full profile <span aria-hidden="true">→</span></span></a></li>`;
-const profile = (d) => `<article class="prof" id="${d.key}" aria-labelledby="h-${d.key}">
-  <div class="pics"><img class="big" src="/img/art/dogs/${d.key}-still.svg" alt="${esc(d.name)} the ${esc(d.breed)}" width="240" height="200" loading="lazy"><img class="pup" src="/img/art/dogs/${d.key}-pup.svg" alt="${aAn(d.name).replace('a', 'A')} ${esc(d.name)} puppy" width="240" height="200" loading="lazy"><span class="cap">${aAn(d.name)} ${esc(d.name)} puppy</span></div>
-  <div class="txt">
-    <h2 id="h-${d.key}">${esc(d.name)} <span class="dtype">the ${esc(d.breed)}</span></h2>
-    <p class="jpline"><span class="jp" lang="ja">${d.jp}</span> <i>${esc(d.jpRead)}</i> · ${esc(d.name)} in katakana: <span class="jp" lang="ja">${d.nameJp}</span></p>
-    <p class="bubble">“${esc(d.quote)}”</p>
-    <p><b>Personality:</b> ${esc(d.personality)}${/[.!?]$/.test(d.personality) ? '' : '.'}</p>
-    <ul class="traits">${d.traits.map(([t, s]) => `<li><b>${esc(t)}</b>${esc(s)}</li>`).join('')}</ul>
-    <p class="playline"><b>In the playroom:</b> ${esc(d.play)}</p>
-    <div class="loves"><b>Loves</b><ul>${lovesHTML(d)}</ul></div>
-    ${d.fun ? `<p class="fun"><span class="tip"><span lang="ja">豆知識</span> <i>mame-chishiki</i>, a fun fact:</span> ${esc(d.fun)}</p>` : ''}
-  </div>
-</article>`;
-const fill = (file, tag, html) => {
-  const p = path.join(ROOT, 'site', file), s = fs.readFileSync(p, 'utf8'), re = new RegExp(`(<!-- dogs:${tag} -->)[\\s\\S]*?(<!-- /dogs:${tag} -->)`);
-  if (!re.test(s)) throw new Error(`site/${file} has no <!-- dogs:${tag} --> markers`);
-  fs.writeFileSync(p, s.replace(re, (m, a, b) => `${a}\n${html}\n${b}`));
-};
-// the last card: the dogs on their way (owner, 17 Oct 2026: no dates), crayon silhouettes with a "?"
+// ---- the dog cards (home) and profiles (/dogs), and every page in every language: tools/site_i18n.js (v2.14), from site/tpl/ and site/i18n/
+// the last card: the dogs on their way (owner, 17 Oct 2026: no dates). The line itself is soon.line in site/i18n/en.json; this is the v2.12 contract copy
 const SOON_LINE = 'Japanese Chin and Kai Ken are on their way.'; // v2.12: Shih Tzu and thirteen more are in the game now; these two wait (V212.md)
-const sils = ['shiba-still', 'samoyed-pup'].map((f) => `<span class="sil"><img src="/img/art/dogs/${f}.svg" alt="" width="240" height="200" loading="lazy"><b aria-hidden="true">?</b></span>`).join('');
-const soon = (tag) => tag === 'card' ? `<li class="soonli"><div class="soon" id="soon"><div class="sils">${sils}</div><span class="dname">More dogs are coming!</span><span class="dquote">${SOON_LINE}</span></div></li>`
-  : `<section class="soonprof" id="soon" aria-labelledby="h-soon"><div class="sils">${sils}</div><div class="txt"><h2 id="h-soon">More dogs are coming!</h2><p class="bubble">${SOON_LINE}</p><p>Two new friends are getting their crayon fur drawn. We will say hello here when they are ready.</p></div></section>`;
-fill('index.html', 'cards', DOGS.map(card).concat(soon('card')).join('\n'));
-fill('dogs.html', 'profiles', DOGS.map(profile).concat(soon('profile')).join('\n'));
-fill('dogs.html', 'nav', DOGS.map((d) => `<li><a href="#${d.key}"><img src="/img/art/dogs/${d.key}-still.svg" alt="" width="240" height="200">${esc(d.name)}</a></li>`).join('\n'));
+{
+  const I18N = require('./site_i18n'), en = require('../site/i18n/en.json');
+  if (en['soon.line'] !== SOON_LINE) throw new Error('site/i18n/en.json soon.line is not the SOON_LINE of V212.md');
+  const r = I18N.build(); I18N.write(r.pages); I18N.printReport(r.reports);
+}
 
 // ---- rasters (Playwright): the playroom, the Mt. Fuji Lookout in four seasons, the torii crop
 (async () => {
@@ -130,5 +109,5 @@ fill('dogs.html', 'nav', DOGS.map((d) => `<li><a href="#${d.key}"><img src="/img
   await raster(PA.scene('fujihill', { season: 'spring', jp: true }), 600, 360, 'wall-fuji.webp', 0.82, '150 160 560 336');
   await browser.close();
   const size = (dir) => fs.readdirSync(dir).reduce((n, f) => { const p = path.join(dir, f); return n + (fs.statSync(p).isDirectory() ? size(p) : fs.statSync(p).size); }, 0);
-  console.log('site art:', (size(OUT) / 1e6).toFixed(2), 'MB in site/img/art; cards and profiles filled');
+  console.log('site art:', (size(OUT) / 1e6).toFixed(2), 'MB in site/img/art; pages written');
 })().catch((e) => { console.error(e); process.exit(1); });

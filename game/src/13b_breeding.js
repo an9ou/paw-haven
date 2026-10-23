@@ -8,7 +8,8 @@
 const brToday = () => localISO();
 function brAddDays(iso, n) { const d = new Date((iso || brToday()) + 'T12:00:00'); d.setDate(d.getDate() + n); return localISO(d); }
 function brDaysUntil(iso) { if (!iso) return 0; const a = new Date(brToday() + 'T12:00:00'), b = new Date(iso + 'T12:00:00'); return Math.round((b - a) / 864e5); }
-const brBreed = (k) => (dogInfo(k) || {}).breed || k;
+const brBreed = (k) => { const i = dogInfo(k); return i ? adBreed(i) : k; }; // shown to the player (the translated long form)
+const brBreedEn = (k) => (dogInfo(k) || {}).breed || k; // the English long form: saved mix names are always English
 const brG = () => window.PawGenes || null;
 const brPR = (d) => (d && d.sex === 'female' ? { he: 'she', him: 'her', his: 'her', He: 'She', His: 'Her', boy: 'girl' } : { he: 'he', him: 'him', his: 'his', He: 'He', His: 'His', boy: 'boy' });
 const brFix = (d) => (d.sex === 'female' ? 'spayed' : 'neutered');
@@ -81,13 +82,13 @@ function brAncBackfill() {
 /* ---- v2.1 Sparkle odds: Stone, Sparkle parents and Bond (PawGenes.sparkleOdds when present) ---- */
 const brStone = (d) => !!(d && d.outfit && d.outfit.charm === 'Sparkle Stone');
 const brBondOf = (d) => (d && !d.npc && d.bond && d.bond.level) || 0;
-function brOddsText(p, parts) { const n = 1 / p, v = Math.abs(n - Math.round(n)) < 0.05 ? String(Math.round(n)) : n.toFixed(1); return parts.length ? `1 in ${v} today: ${parts.map((x) => `${x.label} ×${x.x}`).join(', ')}` : `1 in ${v}`; }
+function brOddsText(p, parts) { const n = 1 / p, v = Math.abs(n - Math.round(n)) < 0.05 ? String(Math.round(n)) : n.toFixed(1); return parts.length ? tt('playdate.1_in_today', '1 in {odds} today: {parts}', { odds: v, parts: tlist(parts.map((x) => tt('playdate.odds_part', '{label} ×{x}', { label: x.label, x: x.x }))) }) : tt('playdate.1_in', '1 in {odds}', { odds: v }); }
 // sparkleNow(dam, sire): today's Sparkle odds for this pair
 function sparkleNow(dam, sire) {
   dam = brAsDog(dam); sire = brAsDog(sire);
   const o = { stone: brStone(dam) || brStone(sire), sparkleParents: (dam && dam.sparkle ? 1 : 0) + (sire && sire.sparkle ? 1 : 0), bondA: brBondOf(dam), bondB: brBondOf(sire), base: BREEDING.RULES.sparkleOdds || 1 / 512 };
   const G = brG(); if (G && typeof G.sparkleOdds === 'function') { try { const r = G.sparkleOdds(o); if (r && r.p > 0) return r; } catch (e) { /* fallback */ } }
-  const parts = o.stone ? [{ label: 'Sparkle Stone', x: 4 }] : [], p = o.base * (o.stone ? 4 : 1); // the v2 rule: Stone x4
+  const parts = o.stone ? [{ label: tdata('clothes.sparkle_stone.n', 'Sparkle Stone'), x: 4 }] : [], p = o.base * (o.stone ? 4 : 1); // the v2 rule: Stone x4
   return { p, mult: o.stone ? 4 : 1, parts, text: brOddsText(p, parts) };
 }
 const brMeter = () => Math.min(BREEDING.RULES.sparklePity, (S && S.pupsSinceSparkle) || 0);
@@ -111,37 +112,38 @@ function brMerleX(a, b) {
 /* ---- readiness: one dog's issues (kind words) ---- */
 const brMetersOK = (d) => Object.values(d.stats || {}).every((v) => v >= BREEDING.RULES.welfare.minMeters);
 function brIssues(d, o) {
-  o = o || {}; const R = BREEDING.RULES, P = brPR(d), out = [], npc = !!d.npc || !dogById(d.id), m = d.born ? ageMonths(d) : npc ? +(d.months || d.ageMonths || 24) : 10;
+  o = o || {}; const R = BREEDING.RULES, out = [], npc = !!d.npc || !dogById(d.id), m = d.born ? ageMonths(d) : npc ? +(d.months || d.ageMonths || 24) : 10;
   const add = (code, txt) => out.push({ code, txt }), G = giantRules(d), AM = G ? G.adultMonths : R.adultMonths, ML = G ? G.maxLitters : R.female.maxLitters;
-  if (d.fixed) add('fixed', `${d.name} is ${brFix(d)}. That was a loving choice, and it's for keeps.`);
-  if (m < AM) add('young', `${d.name} is only ${ageText(m)} old. Puppies can't have puppies: wait until ${AM} months.`);
-  if (d.sex === 'male' && m >= R.noBreedFromMonths) add('old', `${d.name} has retired from romance. ${P.He} has earned ${P.his} naps.`);
-  if (d.sex === 'female' && m >= R.female.noLittersFromMonths) add('old', `${d.name} is past litter age. ${P.He} is retired to full-time napping, with honours.`);
-  if (!npc && ((d.bond && d.bond.level) || 1) < R.welfare.minBond) add('bond', `${d.name} needs Bond ${R.welfare.minBond} first (now ${(d.bond && d.bond.level) || 1}). A well-loved dog makes a calm parent.`);
-  if (!npc && !brMetersOK(d)) add('meters', `${d.name} needs every care meter at ${R.welfare.minMeters}+ first. Hungry, tired dogs are not in the mood.`);
+  const sex = homeSx(d), name = d.name;
+  if (d.fixed) add('fixed', tt('playdate.is_spayed_or_neutered', "{sex, select, female {{name} is spayed. That was a loving choice, and it's for keeps.} other {{name} is neutered. That was a loving choice, and it's for keeps.}}", { sex, name }));
+  if (m < AM) add('young', tt('playdate.is_only_old_puppies_can', "{name} is only {age} old. Puppies can't have puppies: wait until {months, plural, one {# month} other {# months}}.", { name, age: ageText(m), months: AM }));
+  if (d.sex === 'male' && m >= R.noBreedFromMonths) add('old', tt('playdate.has_retired_from_romance', '{name} has retired from romance. He has earned his naps.', { name }));
+  if (d.sex === 'female' && m >= R.female.noLittersFromMonths) add('old', tt('playdate.is_past_litter_age', '{name} is past litter age. She is retired to full-time napping, with honours.', { name }));
+  if (!npc && ((d.bond && d.bond.level) || 1) < R.welfare.minBond) add('bond', tt('playdate.needs_bond_first_now', '{name} needs Bond {bond} first (now {now}). A well-loved dog makes a calm parent.', { name, bond: R.welfare.minBond, now: (d.bond && d.bond.level) || 1 }));
+  if (!npc && !brMetersOK(d)) add('meters', tt('playdate.needs_every_care_meter_at', '{name} needs every care meter at {min}+ first. Hungry, tired dogs are not in the mood.', { name, min: R.welfare.minMeters }));
   if (d.sex === 'female') {
-    if (d.preg) add('preg', `${d.name} is already expecting. ${P.He} is busy growing puppies.`);
-    else if (!npc && brIsNursing(d)) add('nursing', `${d.name} is busy feeding ${P.his} puppies. Mum duty first.`);
-    if ((d.litters || 0) >= ML) add('litters', `${d.name} has had ${ML} litters. ${P.He} is retired from mum duty, with a medal.`);
+    if (d.preg) add('preg', tt('playdate.is_already_expecting', '{name} is already expecting. She is busy growing puppies.', { name }));
+    else if (!npc && brIsNursing(d)) add('nursing', tt('playdate.is_busy_feeding_her_puppies', '{name} is busy feeding her puppies. Mum duty first.', { name }));
+    if ((d.litters || 0) >= ML) add('litters', tt('playdate.has_had_litters', '{name} has had {n, plural, one {# litter} other {# litters}}. She is retired from mum duty, with a medal.', { name, n: ML }));
     const rest = G ? G.restDays : R.heat.everyDays;
-    if (d.lastLitter && brDaysUntil(brAddDays(d.lastLitter, rest)) > 0) { const n = brDaysUntil(brAddDays(d.lastLitter, rest)); add('recover', `${d.name} is resting ${G ? 'two seasons' : 'one season'} after ${P.his} last litter (${n} more day${n > 1 ? 's' : ''}).`); }
-    if (!o.force && !d.fixed && m >= AM && !(npc ? d.inSeason !== false : seasonStatus(d).inSeason)) add('season', `${d.name} isn't in season. ${seasonStatus(d).txt}.`);
-  } else if (d.restUntil && brDaysUntil(d.restUntil) > 0) { const n = brDaysUntil(d.restUntil); add('rest', `${d.name} is resting after ${P.his} last playdate (${n} more day${n > 1 ? 's' : ''}).`); }
-  if (!npc && d.lastPlaydate === brToday() && !o.force) add('today', `${d.name} already had a playdate today. Tomorrow!`);
+    if (d.lastLitter && brDaysUntil(brAddDays(d.lastLitter, rest)) > 0) { const n = brDaysUntil(brAddDays(d.lastLitter, rest)); add('recover', tt('playdate.is_resting_after_her_last_litter', '{giant, select, yes {{name} is resting two seasons after her last litter ({n, plural, one {# more day} other {# more days}}).} other {{name} is resting one season after her last litter ({n, plural, one {# more day} other {# more days}}).}}', { giant: G ? 'yes' : 'no', name, n })); }
+    if (!o.force && !d.fixed && m >= AM && !(npc ? d.inSeason !== false : seasonStatus(d).inSeason)) add('season', tt('playdate.isn_t_in_season', "{name} isn't in season. {status}.", { name, status: seasonStatus(d).txt }));
+  } else if (d.restUntil && brDaysUntil(d.restUntil) > 0) { const n = brDaysUntil(d.restUntil); add('rest', tt('playdate.is_resting_after_his_last_playdate', '{name} is resting after his last playdate ({n, plural, one {# more day} other {# more days}}).', { name, n })); }
+  if (!npc && d.lastPlaydate === brToday() && !o.force) add('today', tt('playdate.already_had_a_playdate_today', '{name} already had a playdate today. Tomorrow!', { name }));
   return out;
 }
 const brAsDog = (x) => (typeof x === 'string' ? dogById(x) || (brNpc && brNpc.id === x ? brNpc : null) : x);
 // canPair(a, b) -> { ok, why, code, dam, sire, friends }
 function canPair(a, b, o) {
   a = brAsDog(a); b = brAsDog(b); o = o || {};
-  if (!a || !b) return { ok: false, code: 'none', why: 'Pick two dogs first.' };
-  if (a.id === b.id) return { ok: false, code: 'same', why: `That's ${a.name} twice. Even ${a.name} knows that.` };
-  if (!a.sex || !b.sex || a.sex === b.sex) return { ok: false, code: 'sex', friends: true, why: 'Best friends! Puppies need a boy and a girl.' };
+  if (!a || !b) return { ok: false, code: 'none', why: tt('playdate.pick_two_dogs_first', 'Pick two dogs first.') };
+  if (a.id === b.id) return { ok: false, code: 'same', why: tt('playdate.that_s_twice_even_knows', "That's {name} twice. Even {name2} knows that.", { name: a.name, name2: a.name }) };
+  if (!a.sex || !b.sex || a.sex === b.sex) return { ok: false, code: 'sex', friends: true, why: tt('playdate.best_friends_puppies_need_a', 'Best friends! Puppies need a boy and a girl.') };
   const dam = a.sex === 'female' ? a : b, sire = dam === a ? b : a;
   for (const d of [dam, sire]) { const is = brIssues(d, o); if (is.length) return { ok: false, code: is[0].code, why: is[0].txt, dam, sire, friends: true }; }
-  if (brRelated(dam, sire)) return { ok: false, code: 'related', why: `${dam.name} and ${sire.name} are family. Relatives never have puppies together.`, dam, sire, friends: true };
-  if (BREEDING.RULES.welfare.noMerleXMerle && brMerleX(dam, sire)) return { ok: false, code: 'merle', why: `Both carry merle. Two merles can have puppies with eye and ear trouble, so these two stay friends.`, dam, sire, friends: true };
-  return { ok: true, code: 'ok', why: `${dam.name} and ${sire.name} are a lovely match.`, dam, sire };
+  if (brRelated(dam, sire)) return { ok: false, code: 'related', why: tt('playdate.and_are_family_relatives_never', '{name} and {name2} are family. Relatives never have puppies together.', { name: dam.name, name2: sire.name }), dam, sire, friends: true };
+  if (BREEDING.RULES.welfare.noMerleXMerle && brMerleX(dam, sire)) return { ok: false, code: 'merle', why: tt('playdate.both_carry_merle_two_merles', `Both carry merle. Two merles can have puppies with eye and ear trouble, so these two stay friends.`), dam, sire, friends: true };
+  return { ok: true, code: 'ok', why: tt('playdate.and_are_a_lovely_match', '{name} and {name2} are a lovely match.', { name: dam.name, name2: sire.name }), dam, sire };
 }
 
 /* ---- litter roll (deterministic: dam id + sire id + date) ---- */
@@ -157,9 +159,9 @@ function brMix(dam, sire, r) {
     return { key: 'mutt', mix: { a: dam.key, b: sire.key, body: 'mutt', head, name: 'Mutt mix' } };
   }
   const G = brG();
-  if (G && typeof G.mixOf === 'function') { try { const m = G.mixOf(dam.key, sire.key, r); if (m && m.body) return { key: m.body, mix: { a: m.a || dam.key, b: m.b || sire.key, body: m.body, head: m.head || m.body, name: m.name || `${brBreed(dam.key)} × ${brBreed(sire.key)} mix` } }; } catch (e) { /* fallback */ } }
+  if (G && typeof G.mixOf === 'function') { try { const m = G.mixOf(dam.key, sire.key, r); if (m && m.body) return { key: m.body, mix: { a: m.a || dam.key, b: m.b || sire.key, body: m.body, head: m.head || m.body, name: m.name || `${brBreedEn(dam.key)} × ${brBreedEn(sire.key)} mix` } }; } catch (e) { /* fallback */ } }
   const body = r() < 0.5 ? dam.key : sire.key, head = body === dam.key ? sire.key : dam.key;
-  return { key: body, mix: { a: dam.key, b: sire.key, body, head, name: `${brBreed(dam.key)} × ${brBreed(sire.key)} mix` } };
+  return { key: body, mix: { a: dam.key, b: sire.key, body, head, name: `${brBreedEn(dam.key)} × ${brBreedEn(sire.key)} mix` } };
 }
 // a grand-mix pup: body and head art from mixOf on the parents' body keys, the name from grandMix
 function brGrandPup(pup, dam, sire, gm) {
@@ -225,20 +227,20 @@ function doPlaydate(a, b, o) {
   const r = seeded(hashId('playdate|' + dam.id + '|' + sire.id + '|' + today));
   const hit = o.miss ? false : o.force || o.hit ? true : r() < R.success;
   [dam, sire].forEach((d) => { if (!d.npc && d.stats) d.stats.happy = clamp(d.stats.happy + 10, 0, 100); });
-  if (!hit) { markDirty(); saveNow(); return { ok: true, pups: 0, why: `No puppies this time. ${dam.name} and ${sire.name} had a lovely day anyway.` }; }
+  if (!hit) { markDirty(); saveNow(); return { ok: true, pups: 0, why: tt('playdate.no_puppies_this_time_and', 'No puppies this time. {name} and {name2} had a lovely day anyway.', { name: dam.name, name2: sire.name }) }; }
   if (!sire.npc) sire.restUntil = brAddDays(today, R.maleRestDays);
   if (dam.npc) {
     // your boy x an NPC girl: her family keeps the litter; a letter arrives after 4 days
     const pups = rollLitter(dam, sire, { npc: true, sparkle: o.sparkle, size: o.size });
     const nl = { id: 'nl_' + hashId(dam.id + sire.id + today).toString(36), npc: dam.id, npcName: dam.name, owner: dam.owner || dam.family || 'her family', sire: sire.id, due: brAddDays(today, R.pregnancyDays), ready: brAddDays(today, R.pregnancyDays + R.puppyStayDays), pups, offered: false };
     S.npcLitters.push(nl); markDirty(); saveNow(); SFX.fanfare && SFX.fanfare();
-    return { ok: true, pups: pups.length, npcLitter: nl.id, why: `Puppies on the way for ${dam.name}! ${nl.owner.replace(/^the /, 'The ')} will send news when they arrive.` };
+    return { ok: true, pups: pups.length, npcLitter: nl.id, why: tt('playdate.puppies_on_the_way_for', 'Puppies on the way for {name}! {owner} will send news when they arrive.', { name: dam.name, owner: homeFam(nl.owner).replace(/^the /, 'The ') }) };
   }
   const pups = rollLitter(dam, sire, { sparkle: o.sparkle, size: o.size });
   dam.preg = { sire: sire.id, sireKey: sire.key, sireName: sire.name, since: today, due: brAddDays(today, R.pregnancyDays), pups, scanned: false };
   if (sire.npc) brPutNpc(sire); treePut(brRec(dam, 'home')); if (!sire.npc) treePut(brRec(sire, 'home'));
   markDirty(); saveNow();
-  return { ok: true, pups: pups.length, why: `Puppies on the way! ${dam.name} is expecting. Due in ${R.pregnancyDays} days.` };
+  return { ok: true, pups: pups.length, why: tt('playdate.puppies_on_the_way_is_expecting', 'Puppies on the way! {name} is expecting. Due in {n, plural, one {# day} other {# days}}.', { name: dam.name, n: R.pregnancyDays }) };
 }
 
 /* ---- expecting / nursing mums eat for more (x1.2 / x1.3 hunger decay; base is 6 per real minute) ---- */
@@ -253,24 +255,24 @@ let brSel = { a: null, b: null };
 function brCheck(ok, txt) { return `<li class="${ok ? 'ok' : 'no'}"><b>${ok ? '✓' : '✗'}</b> ${esc(txt)}</li>`; }
 function brDogCard(d, picked, slot) {
   const is = brIssues(d), npc = !!d.npc || !dogById(d.id), m = d.born ? ageMonths(d) : npc ? +(d.months || d.ageMonths || 24) : 10;
-  const sub = `${esc(d.mix && d.mix.name ? d.mix.name : brBreed(d.key))} · ${ageText(m)}${npc ? ` · ${esc(d.owner || d.family || 'a neighbour')}` : ''}`;
+  const sub = `${esc(d.mix && d.mix.name ? mixShown(d.mix) : brBreed(d.key))} · ${ageText(m)}${npc ? ` · ${esc(homeFam(d.owner || d.family) || tt('playdate.a_neighbour', 'a neighbour'))}` : ''}`;
   return `<button class="pd-dog ${picked ? 'on' : ''} ${is.length ? 'notready' : 'ready'}" data-pd="${slot}|${d.id}" ${npc ? 'disabled' : ''} aria-pressed="${picked}">
     <span class="pd-head">${headSVG(d)}</span><span class="pd-txt"><b>${esc(d.name)} ${sexSym(d.sex)}</b><span class="small">${sub}</span>
-    <span class="pd-st small">${is.length ? '✗ ' + esc(is[0].txt) : '✓ Ready for a playdate'}</span></span></button>`;
+    <span class="pd-st small">${is.length ? '✗ ' + esc(is[0].txt) : '✓ ' + tt('playdate.ready_for_a_playdate', 'Ready for a playdate')}</span></span></button>`;
 }
 function brPredict(dam, sire) {
   const tested = (d) => !!d.geneTested || (!!d.npc && typeof npcTested === 'function' && !!npcTested(d)); // v2.1: a sniffed NPC counts
   const G = brG(); if (!G || typeof G.predict !== 'function' || !dam.genes || !sire.genes || !tested(dam) || !tested(sire)) return '';
   let rows = []; try { rows = G.predict(dam.genes, sire.genes, dam.key, sire.key) || []; } catch (e) { return ''; }
   if (!rows.length) return '';
-  return `<div class="pd-predict"><b>Puppy Predictor</b> <span class="small">(from the gene tests)</span><ul>${rows.slice(0, 6).map((x) => `<li><span class="pd-bar" style="width:${Math.max(4, Math.round(x.pct))}%"></span>${esc(x.coat)}${x.eyes ? ', ' + esc(x.eyes) + ' eyes' : ''} <b>${Math.round(x.pct * 10) / 10}%</b></li>`).join('')}</ul></div>`;
+  return `<div class="pd-predict"><b>${tt('playdate.puppy_predictor', 'Puppy Predictor')}</b> <span class="small">${tt('playdate.from_the_gene_tests', '(from the gene tests)')}</span><ul>${rows.slice(0, 6).map((x) => `<li><span class="pd-bar" style="width:${Math.max(4, Math.round(x.pct))}%"></span>${esc(x.eyes ? tt('playdate.coat_and_eyes', '{coat}, {eyes} eyes', { coat: coatShown(x.coat, dam.key), eyes: eyeShown(x.eyes) }) : coatShown(x.coat, dam.key))} <b>${Math.round(x.pct * 10) / 10}%</b></li>`).join('')}</ul></div>`;
 }
 function openPlaydates(opts) {
   opts = opts || {}; brFields();
   if (opts.npc) { brNpc = Object.assign({ npc: true, stats: null, bond: null, fixed: false, litters: 0 }, opts.npc); brNpc.npc = true; if (!brNpc.id) brNpc.id = 'npc_' + hashId((brNpc.name || '') + (brNpc.key || '') + brToday()).toString(36); } else if (!opts.keep) brNpc = null;
   const mine = S.dogs.filter((d) => !brNpc || d.sex !== brNpc.sex);
-  if (!brNpc && S.dogs.length < 2) { openModal('Puppy Playdates', `<div class="pd-empty"><span class="pd-ic">${iconOr('playdate', '<path d="M-8 -2a6 6 0 0 1 8 -6a6 6 0 0 1 8 6c0 8 -8 12 -8 12s-8 -4 -8 -12z" fill="#F28FA5" stroke="#5B3D32" stroke-width="2"/>')}</span><p>Playdates need two dogs. Bring home another friend, or visit the playdate board at the Dog Park.</p></div>`, { cls: 'playdates' }); return; }
-  if (brNpc && !mine.length) { openModal('Puppy Playdates', `<p>${esc(brNpc.name)} would love a friend, but none of your dogs ${brNpc.sex === 'female' ? 'is a boy' : 'is a girl'}. Puppies need a boy and a girl.</p>`, { cls: 'playdates' }); return; }
+  if (!brNpc && S.dogs.length < 2) { openModal(tt('playdate.puppy_playdates', 'Puppy Playdates'), `<div class="pd-empty"><span class="pd-ic">${iconOr('playdate', '<path d="M-8 -2a6 6 0 0 1 8 -6a6 6 0 0 1 8 6c0 8 -8 12 -8 12s-8 -4 -8 -12z" fill="#F28FA5" stroke="#5B3D32" stroke-width="2"/>')}</span><p>${tt('playdate.playdates_need_two_dogs_bring', 'Playdates need two dogs. Bring home another friend, or visit the playdate board at the Dog Park.')}</p></div>`, { cls: 'playdates' }); return; }
+  if (brNpc && !mine.length) { openModal(tt('playdate.puppy_playdates', 'Puppy Playdates'), `<p>${esc(tt('playdate.would_love_a_friend_but_none', '{sex, select, female {{name} would love a friend, but none of your dogs is a boy. Puppies need a boy and a girl.} other {{name} would love a friend, but none of your dogs is a girl. Puppies need a boy and a girl.}}', { sex: brNpc.sex, name: brNpc.name }))}</p>`, { cls: 'playdates' }); return; }
   const valid = (id) => mine.some((d) => d.id === id);
   if (opts.with && valid(opts.with)) { brSel.a = opts.with; if (!brNpc) brSel.b = null; } // v2.1: preselect (Family tab "Find a partner")
   if (brNpc) { brSel.b = brNpc.id; if (!valid(brSel.a)) brSel.a = (mine.find((d) => !brIssues(d).length) || mine[0]).id; }
@@ -279,14 +281,14 @@ function openPlaydates(opts) {
     if (!valid(brSel.b) || brSel.b === brSel.a) { const a = dogById(brSel.a); brSel.b = (mine.find((d) => d.id !== a.id && d.sex !== a.sex && !brIssues(d).length) || mine.find((d) => d.id !== a.id && d.sex !== a.sex) || mine.find((d) => d.id !== a.id)).id; }
   }
   const A = dogById(brSel.a), B = brNpc || dogById(brSel.b), chk = canPair(A, B);
-  const col = (slot, list, sel) => `<div class="pd-col"><h3>${slot === 'a' ? (brNpc ? 'Your dog' : 'First friend') : brNpc ? 'Visiting friend' : 'Second friend'}</h3>${list.map((d) => brDogCard(d, d.id === sel, slot)).join('')}</div>`;
+  const col = (slot, list, sel) => `<div class="pd-col"><h3>${slot === 'a' ? (brNpc ? tt('playdate.your_dog', 'Your dog') : tt('playdate.first_friend', 'First friend')) : brNpc ? tt('playdate.visiting_friend', 'Visiting friend') : tt('playdate.second_friend', 'Second friend')}</h3>${list.map((d) => brDogCard(d, d.id === sel, slot)).join('')}</div>`;
   const pre = chk.ok ? brPredict(chk.dam, chk.sire) : '';
   const spk = chk.dam && chk.sire ? sparkleNow(chk.dam, chk.sire) : null;
-  const spark = spk ? `<div class="pd-sparkle" id="pdSparkle"><span class="pd-mic">${iconOr('meter', '<path d="M-9 -12h18v4h-2v18a4 4 0 0 1 -4 4h-6a4 4 0 0 1 -4 -4v-18h-2z" fill="#FFF6D6" stroke="#5B3D32" stroke-width="2"/><path d="M-2 0l2 -5l2 5l5 2l-5 2l-2 5l-2 -5l-5 -2z" fill="#FFD75A"/>')}</span><span><b>Sparkle:</b> <span id="pdOdds">${esc(spk.text)}</span>. <span class="small">Cosmetic only.</span></span><span class="pd-meter" id="pdMeter">Sparkle Meter: ${brMeter()} / ${BREEDING.RULES.sparklePity}</span></div>` : '';
-  const verdict = `<div class="pd-verdict ${chk.ok ? 'ok' : 'no'}"><b>${chk.ok ? '✓' : chk.friends ? '♥' : '✗'}</b> ${esc(chk.why)}${chk.ok ? ' <span class="small">(85% chance of puppies)</span>' : ''}</div>`;
-  const rules = `<details class="pd-rules"><summary>Playdate rules (real dog logic)</summary><ul class="small"><li>A boy and a girl, both adults (12 months+), not spayed or neutered.</li><li>Both at Bond ${BREEDING.RULES.welfare.minBond}+ with every care meter at 50+.</li><li>She must be in season, under 6 years, with fewer than 4 litters, and rest one season after a litter.</li><li>He rests 2 days after puppies are on the way. No relatives, and never merle with merle.</li><li>Giant breeds (Great Dane, English Mastiff) take their time: 18 months or more, at most 3 litters, and two seasons of rest after a litter.</li></ul></details>`;
-  const p = openModal('Puppy Playdates', `<div class="pd-pick">${col('a', mine, brSel.a)}${col('b', brNpc ? [brNpc] : mine.filter((d) => d.id !== brSel.a), brSel.b)}</div>${verdict}${spark}${pre}${rules}<div class="pd-scene" id="pdScene" hidden></div>`,
-    { cls: 'playdates', foot: `<button class="btn no" id="pdNo">Not today</button>${chk.ok ? '<button class="btn yes big" id="pdGo">Playdate!</button>' : chk.friends && !brNpc ? '<button class="btn go big" id="pdFun">Just play</button>' : ''}` });
+  const spark = spk ? `<div class="pd-sparkle" id="pdSparkle"><span class="pd-mic">${iconOr('meter', '<path d="M-9 -12h18v4h-2v18a4 4 0 0 1 -4 4h-6a4 4 0 0 1 -4 -4v-18h-2z" fill="#FFF6D6" stroke="#5B3D32" stroke-width="2"/><path d="M-2 0l2 -5l2 5l5 2l-5 2l-2 5l-2 -5l-5 -2z" fill="#FFD75A"/>')}</span><span>${tt('playdate.sparkle_odds_html', '<b>Sparkle:</b> <span id="pdOdds">{odds}</span>. <span class="small">Cosmetic only.</span>', { odds: spk.text })}</span><span class="pd-meter" id="pdMeter">${esc(tt('playdate.sparkle_meter', 'Sparkle Meter: {n} / {max}', { n: brMeter(), max: BREEDING.RULES.sparklePity }))}</span></div>` : '';
+  const verdict = `<div class="pd-verdict ${chk.ok ? 'ok' : 'no'}"><b>${chk.ok ? '✓' : chk.friends ? '♥' : '✗'}</b> ${esc(chk.why)}${chk.ok ? ' <span class="small">' + tt('playdate.85_chance_of_puppies', '(85% chance of puppies)') + '</span>' : ''}</div>`;
+  const rules = `<details class="pd-rules"><summary>${tt('playdate.playdate_rules_real_dog_logic', 'Playdate rules (real dog logic)')}</summary><ul class="small"><li>${tt('playdate.a_boy_and_a_girl', 'A boy and a girl, both adults (12 months+), not spayed or neutered.')}</li><li>${esc(tt('playdate.both_at_bond_with_every_care', 'Both at Bond {bond}+ with every care meter at 50+.', { bond: BREEDING.RULES.welfare.minBond }))}</li><li>${tt('playdate.she_must_be_in_season', 'She must be in season, under 6 years, with fewer than 4 litters, and rest one season after a litter.')}</li><li>${tt('playdate.he_rests_2_days_after', 'He rests 2 days after puppies are on the way. No relatives, and never merle with merle.')}</li><li>${tt('playdate.giant_breeds_great_dane_english', 'Giant breeds (Great Dane, English Mastiff) take their time: 18 months or more, at most 3 litters, and two seasons of rest after a litter.')}</li></ul></details>`;
+  const p = openModal(tt('playdate.puppy_playdates', 'Puppy Playdates'), `<div class="pd-pick">${col('a', mine, brSel.a)}${col('b', brNpc ? [brNpc] : mine.filter((d) => d.id !== brSel.a), brSel.b)}</div>${verdict}${spark}${pre}${rules}<div class="pd-scene" id="pdScene" hidden></div>`,
+    { cls: 'playdates', foot: `<button class="btn no" id="pdNo">${tt('playdate.not_today', 'Not today')}</button>${chk.ok ? '<button class="btn yes big" id="pdGo">' + tt('playdate.playdate', 'Playdate!') + '</button>' : chk.friends && !brNpc ? '<button class="btn go big" id="pdFun">' + tt('playdate.just_play', 'Just play') + '</button>' : ''}` });
   p.querySelectorAll('[data-pd]').forEach((el) => { el.onclick = () => { const [slot, id] = el.dataset.pd.split('|'); brSel[slot] = id; if (slot === 'a' && brSel.b === id) brSel.b = null; SFX.click(); openPlaydates({ keep: true }); }; });
   $('#pdNo', p).onclick = () => { SFX.click(); closeModal(); };
   const go1 = $('#pdGo', p); if (go1) go1.onclick = () => brRunScene(p, A, B, false);
@@ -307,7 +309,7 @@ function brRunScene(p, A, B, justPlay) {
     if (justPlay) {
       const k = [A.id, B.id].sort().join('|'), first = S.playFun[k] !== brToday(); S.playFun[k] = brToday();
       if (first) [A, B].forEach((d) => { if (d.stats) d.stats.happy = clamp(d.stats.happy + 5, 0, 100); });
-      res = { ok: true, pups: 0, fun: true, why: `${A.name} and ${B.name} zoomed, wrestled and flopped. Best friends!${first ? ' +5 Happiness each.' : ''}` };
+      res = { ok: true, pups: 0, fun: true, why: tt('playdate.zoomed_wrestled_and_flopped', '{bonus, select, yes {{name} and {name2} zoomed, wrestled and flopped. Best friends! +5 Happiness each.} other {{name} and {name2} zoomed, wrestled and flopped. Best friends!}}', { bonus: first ? 'yes' : 'no', name: A.name, name2: B.name }) };
       markDirty(); updateHUD();
     } else res = doPlaydate(A, B);
     brResult(res);
@@ -315,7 +317,7 @@ function brRunScene(p, A, B, justPlay) {
 }
 function brResult(res) {
   const ok = res.ok && res.pups > 0;
-  const p = openModal(ok ? '<span class="hl">Puppies on the way!</span>' : res.fun ? 'Best friends!' : 'A lovely day', `<div class="pd-result ${ok ? 'yay' : ''}" id="pdResult" data-pups="${res.pups || 0}"><p>${esc(res.why)}</p>${ok && !res.npcLitter ? '<p class="small">Expecting mums eat a bit more, skip long walks and love a vet check-up. Puppies arrive in 2 days.</p>' : ''}${!ok && !res.fun && res.ok ? '<p class="small">They may try again tomorrow while she is still in season.</p>' : ''}${!res.ok ? '<p class="small">Nothing happened. No hard feelings, just naps.</p>' : ''}</div>`, { cls: 'playdates celebrate', foot: '<button class="btn yes big" id="pdOk">Aww</button>' });
+  const p = openModal(ok ? '<span class="hl">' + tt('playdate.puppies_on_the_way', 'Puppies on the way!') + '</span>' : res.fun ? tt('playdate.best_friends', 'Best friends!') : tt('playdate.a_lovely_day', 'A lovely day'), `<div class="pd-result ${ok ? 'yay' : ''}" id="pdResult" data-pups="${res.pups || 0}"><p>${esc(res.why)}</p>${ok && !res.npcLitter ? '<p class="small">' + tt('playdate.expecting_mums_eat_a_bit', 'Expecting mums eat a bit more, skip long walks and love a vet check-up. Puppies arrive in 2 days.') + '</p>' : ''}${!ok && !res.fun && res.ok ? '<p class="small">' + tt('playdate.they_may_try_again_tomorrow', 'They may try again tomorrow while she is still in season.') + '</p>' : ''}${!res.ok ? '<p class="small">' + tt('playdate.nothing_happened_no_hard_feelings', 'Nothing happened. No hard feelings, just naps.') + '</p>' : ''}</div>`, { cls: 'playdates celebrate', foot: '<button class="btn yes big" id="pdOk">' + tt('playdate.aww', 'Aww') + '</button>' });
   $('#pdOk', p).onclick = () => { SFX.click(); closeModal(); };
   if (ok) { SFX.fanfare && SFX.fanfare(); audioCue('levelup'); }
   updateHUD();
@@ -326,21 +328,21 @@ function brNpcTick() {
   if (!S || !S.npcLitters) return; const today = brToday();
   S.npcLitters.forEach((nl) => {
     if (nl.offered || today < nl.ready) return;
-    nl.offered = true; const sire = dogById(nl.sire) || brLookup(nl.sire) || { name: 'Your dog' }, born = nl.due;
+    nl.offered = true; const sire = dogById(nl.sire) || brLookup(nl.sire) || { name: tt('playdate.your_dog', 'Your dog') }, born = nl.due;
     nl.pups.forEach((pp, i) => { if (!pp.born) pp.born = born; if (!pp.name) pp.name = brPupName(seeded(hashId(nl.id + i)), nl.pups, i); treePut(Object.assign({}, brRecSpec(pp), { status: 'npc', owner: nl.owner })); coatLog(pp); });
-    const free = brFree(), Owner = nl.owner.replace(/^the /, 'The ');
-    const msg = { kind: 'litter', from: nl.owner, title: `${sire.name}'s puppies are here!`, text: `${nl.pups.length} healthy pup${nl.pups.length > 1 ? 's' : ''}. ${nl.npcName}'s family says thank you!${free > 0 ? ' As a thank-you, you may adopt one pup: pick of the litter, free.' : ' (No free dog spot right now, so the pups stay with them. They send kisses.)'}`, dog: nl.pups[0], litter: nl.id, pick: free > 0 };
+    const free = brFree(), Owner = homeFam(nl.owner).replace(/^the /, 'The ');
+    const msg = { kind: 'litter', from: nl.owner, title: tt('playdate.s_puppies_are_here', "{name}'s puppies are here!", { name: sire.name }), text: tt('playdate.healthy_pups_family_says_thank_you', "{free, select, yes {{n, plural, one {# healthy pup} other {# healthy pups}}. {npcName}'s family says thank you! As a thank-you, you may adopt one pup: pick of the litter, free.} other {{n, plural, one {# healthy pup} other {# healthy pups}}. {npcName}'s family says thank you! (No free dog spot right now, so the pups stay with them. They send kisses.)}}", { free: free > 0 ? 'yes' : 'no', n: nl.pups.length, npcName: nl.npcName }), dog: nl.pups[0], litter: nl.id, pick: free > 0 };
     let sent = null; if (typeof mailPush === 'function') { try { sent = mailPush(msg); } catch (e) { sent = null; } }
     if (sent && sent.id) nl.mailId = sent.id;
     else if (typeof mailPush === 'function') { const last = (S.mail || []).slice(-1)[0]; if (last && last.litter === nl.id) nl.mailId = last.id; }
-    if (typeof mailPush !== 'function') { nl.letterPending = true; toast(`${Owner}: ${msg.title} ${nl.npcName}'s family says thank you.`, 'gold'); }
+    if (typeof mailPush !== 'function') { nl.letterPending = true; toast(tt('playdate.s_family_says_thank_you', "{owner}: {title} {npcName}'s family says thank you.", { owner: Owner, title: msg.title, npcName: nl.npcName }), 'gold'); }
     markDirty();
   });
 }
 function brLetterPopup() { // fallback when the mailbox lane is missing: show the letter as a popup in the yard
   const nl = (S.npcLitters || []).find((x) => x.letterPending); if (!nl) return false;
-  nl.letterPending = false; const sire = dogById(nl.sire) || { name: 'Your dog' }, free = brFree();
-  const p = openModal(`${esc(sire.name)}'s puppies are here!`, `<p>A letter from ${esc(nl.owner)}: "${nl.pups.length} healthy pup${nl.pups.length > 1 ? 's' : ''}! ${esc(nl.npcName)}'s family says thank you."</p><div class="lt-row">${nl.pups.map((pp) => `<span class="lt-mini">${dogSVG(pp, { pose: 'sleep' })}</span>`).join('')}</div>`, { cls: 'litter', foot: `<button class="btn no" id="ltNo">Lovely</button>${free > 0 && !nl.picked ? '<button class="btn yes big" id="ltPick">Adopt a pup</button>' : ''}` });
+  nl.letterPending = false; const sire = dogById(nl.sire) || { name: tt('playdate.your_dog', 'Your dog') }, free = brFree();
+  const p = openModal(tt('playdate.s_puppies_are_here', "{name}'s puppies are here!", { name: esc(sire.name) }), `<p>${tt('playdate.a_letter_from_html', 'A letter from {owner}: "{n, plural, one {# healthy pup} other {# healthy pups}}! {npcName}\'s family says thank you."', { owner: homeFam(nl.owner), n: nl.pups.length, npcName: nl.npcName })}</p><div class="lt-row">${nl.pups.map((pp) => `<span class="lt-mini">${dogSVG(pp, { pose: 'sleep' })}</span>`).join('')}</div>`, { cls: 'litter', foot: `<button class="btn no" id="ltNo">${tt('playdate.lovely', 'Lovely')}</button>${free > 0 && !nl.picked ? '<button class="btn yes big" id="ltPick">' + tt('playdate.adopt_a_pup', 'Adopt a pup') + '</button>' : ''}` });
   $('#ltNo', p).onclick = () => closeModal(); const pk = $('#ltPick', p); if (pk) pk.onclick = () => adoptPick(nl.id);
   return true;
 }
@@ -351,16 +353,16 @@ function brFindNpcLitter(letterId) {
 }
 function adoptPick(letterId, pupId) {
   brFields(); const nl = brFindNpcLitter(letterId);
-  if (!nl) { nope('That litter letter is a bit smudged. No puppies found.'); return false; }
-  if (nl.picked) { nope(`You already adopted ${nl.pickedName || 'a pup'} from this litter.`); return false; }
-  if (brFree() <= 0) { nope('No free dog spot right now. New friends need a free spot.'); return false; }
+  if (!nl) { nope(tt('playdate.that_litter_letter_is_a', 'That litter letter is a bit smudged. No puppies found.')); return false; }
+  if (nl.picked) { nope(tt('playdate.you_already_adopted_from_this', 'You already adopted {pickedName} from this litter.', { pickedName: nl.pickedName || tt('playdate.a_pup', 'a pup') })); return false; }
+  if (brFree() <= 0) { nope(tt('playdate.no_free_dog_spot_right_2', 'No free dog spot right now. New friends need a free spot.')); return false; }
   const take = (pp) => {
     const d = brKeepPup(pp, pp.name); nl.picked = pp.id; nl.pickedName = d.name; treePut(brRec(d, 'home')); markDirty(); saveNow();
-    closeModal(); SFX.fanfare && SFX.fanfare(); toast(`${d.name} is home! ${brPR(d).He} brought ${brPR(d).his} favourite sock from ${nl.owner}'s house.`, 'gold');
+    closeModal(); SFX.fanfare && SFX.fanfare(); toast(tt('playdate.is_home_brought_favourite_sock', "{sex, select, female {{name} is home! She brought her favourite sock from {owner}'s house.} other {{name} is home! He brought his favourite sock from {owner}'s house.}}", { sex: homeSx(d), name: d.name, owner: homeFam(nl.owner) }), 'gold');
     if (cur.mode === 'yard') go('yard'); brRampPopup(); return d;
   };
   if (pupId) { const pp = nl.pups.find((x) => x.id === pupId); return pp ? take(pp) : false; }
-  const p = openModal('Pick of the litter', `<p>${esc(nl.npcName)}'s family lets you choose one pup to bring home, free.</p><div class="lt-pups">${nl.pups.map((pp) => `<button class="lt-card pick" data-pick="${pp.id}">${pp.sparkle ? '<span class="lt-spark">Sparkle!</span>' : ''}<span class="lt-art">${dogSVG(Object.assign({}, pp, { born: brAddDays(brToday(), -2) }), { pose: 'sit' })}</span><b>${esc(pp.name)} ${sexSym(pp.sex)}</b><span class="small">${esc(pp.mix ? pp.mix.name : brBreed(pp.key))}<br>${esc(pp.coat)}, ${esc(pp.eyes)} eyes</span></button>`).join('')}</div>`, { cls: 'litter' });
+  const p = openModal(tt('playdate.pick_of_the_litter', 'Pick of the litter'), `<p>${esc(tt('playdate.s_family_lets_you_choose_one', "{npcName}'s family lets you choose one pup to bring home, free.", { npcName: nl.npcName }))}</p><div class="lt-pups">${nl.pups.map((pp) => `<button class="lt-card pick" data-pick="${pp.id}">${pp.sparkle ? '<span class="lt-spark">' + tt('playdate.sparkle', 'Sparkle!') + '</span>' : ''}<span class="lt-art">${dogSVG(Object.assign({}, pp, { born: brAddDays(brToday(), -2) }), { pose: 'sit' })}</span><b>${esc(pp.name)} ${sexSym(pp.sex)}</b><span class="small">${esc(pp.mix ? mixShown(pp.mix) : brBreed(pp.key))}<br>${esc(tt('playdate.coat_and_eyes', '{coat}, {eyes} eyes', { coat: coatShown(pp.coat, pp.key), eyes: eyeShown(pp.eyes) }))}</span></button>`).join('')}</div>`, { cls: 'litter' });
   p.querySelectorAll('[data-pick]').forEach((b) => { b.onclick = () => take(nl.pups.find((x) => x.id === b.dataset.pick)); });
   return true;
 }

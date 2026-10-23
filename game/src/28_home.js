@@ -35,6 +35,8 @@ on('act', (a) => { if (a && ['buy', 'decorate', 'furniture'].includes(a.kind)) {
 
 /* ---------------- items: kind, room, size, position ---------------- */
 const hoIsBed = (n) => !HM_DECOR[n] && BEDS.some((b) => b.n === n);
+// the player-facing name of a bed or a decoration (the English name stays the key everywhere else, V214.md 4.3)
+const hoName = (n) => tdata((hoIsBed(n) ? 'beds.' : 'hm_decor.') + tid(n) + '.n', n);
 function hoRoomOf(name) { if (hoIsBed(name)) return 'house'; const D = HM_DECOR[name]; return (D && D.room) || 'yard'; }
 const hoKind = (n) => (hoIsBed(n) ? 'bed' : (HM_DECOR[n] && HM_DECOR[n].kind) || 'decor');
 const hoZoneOf = (n) => (hoIsBed(n) ? 'floor' : (HM_DECOR[n] && HM_DECOR[n].zone) || HO_OLD_ZONE[n] || 'floor');
@@ -149,7 +151,7 @@ function hoZzzSync() {
 function hoGiveBed(id, b) {
   const d = dogById(id); if (!d || !S.bedAt[b]) return; hoSync();
   const prev = hoBedFor(d), o = S.dogs.find((x) => x !== d && hoBedFor(x) === b);
-  if (o && o.id === S.activeId && !prev) { nope(`${o.name} needs a bed too. A second bed from Barkitecture would suit everyone.`); return false; }
+  if (o && o.id === S.activeId && !prev) { nope(tt('home.needs_bed', '{name} needs a bed too. A second bed from Barkitecture would suit everyone.', { name: o.name })); return false; }
   if (o) { if (prev) S.bedOf[o.id] = prev; else delete S.bedOf[o.id]; if (o.id === S.activeId) S.bed = prev || S.bed; }
   S.bedOf[d.id] = b; if (d.id === S.activeId) S.bed = b; if (o && o.id === S.activeId && prev) S.bed = prev;
   hoSync(); markDirty(); return true;
@@ -160,8 +162,8 @@ function hoRugHint(d) {
   (HO.rugWho || (HO.rugWho = [])).includes(d.name) || HO.rugWho.push(d.name); if (HO.rugT) return;
   HO.rugT = setTimeout(() => {
     const who = HO.rugWho || []; HO.rugT = 0; HO.rugWho = null; if (!S || S.place !== 'house' || !who.length) return; HO.rugDay = day;
-    if (who.length === 1) toast(`${who[0]} naps on the rug tonight. A second bed from Barkitecture would suit ${who[0]}.`, '');
-    else toast(`${who.slice(0, -1).join(', ')} and ${who[who.length - 1]} nap on the rug tonight. More beds from Barkitecture would suit them.`, '');
+    if (who.length === 1) toast(tt('home.rug_one', '{name} naps on the rug tonight. A second bed from Barkitecture would suit {name}.', { name: who[0] }), '');
+    else toast(tt('home.rug_many', '{names} nap on the rug tonight. More beds from Barkitecture would suit them.', { names: tlist(who) }), '');
   }, 600);
 }
 
@@ -182,12 +184,12 @@ function hoItemSVG(n) {
   const [x, y] = hoPos(n), [w, h] = hoSize(n), k = hoKind(n), pl = HO.pl && HO.pl.room === hoRoomOf(n) ? ` data-ho-item="${esc(n)}"` : '';
   if (k === 'bed') {
     const sv = hoBedArt(n); if (!sv) return '';
-    if (n === S.bed) return `<g id="bedG" class="hot" tabindex="0" role="button" aria-label="Pet bed: ${esc(n)}"${pl}>${place(sv, x, y, w, h)}${hoPlaceBits(n, x, y, w, h)}</g>`;
+    if (n === S.bed) return `<g id="bedG" class="hot" tabindex="0" role="button" aria-label="${esc(tt('home.label_pet_bed', 'Pet bed: {bed}', { bed: hoName(n) }))}"${pl}>${place(sv, x, y, w, h)}${hoPlaceBits(n, x, y, w, h)}</g>`;
     const who = S.dogs.find((d) => hoBedFor(d) === n);
-    return `<g class="hot ho-bed" data-bed="${esc(n)}" tabindex="0" role="button" aria-label="Pet bed: ${esc(n)}${who ? ' (' + esc(who.name) + ')' : ''}"${pl}>${place(sv, x, y, w, h)}${hoPlaceBits(n, x, y, w, h)}</g>`;
+    return `<g class="hot ho-bed" data-bed="${esc(n)}" tabindex="0" role="button" aria-label="${esc(who ? tt('home.label_pet_bed_who', 'Pet bed: {bed} ({name})', { bed: hoName(n), name: who.name }) : tt('home.label_pet_bed', 'Pet bed: {bed}', { bed: hoName(n) }))}"${pl}>${place(sv, x, y, w, h)}${hoPlaceBits(n, x, y, w, h)}</g>`;
   }
-  if (k === 'furniture') return `<g class="hot ho-furn" data-furn="${esc(n)}" tabindex="0" role="button" aria-label="${esc(n)}"${pl}>${place(hoFurnArt(n), x, y, w, h)}${hmDecorHit(x, y, w, h)}${hoPlaceBits(n, x, y, w, h)}</g>`;
-  return `<g class="hot hm-decor" data-decor="${esc(n)}" tabindex="0" role="button" aria-label="${esc(n)}"${pl}>${place(hmDecorArt(n), x, y, w, h)}${hmDecorHit(x, y, w, h)}${hoPlaceBits(n, x, y, w, h)}</g>`;
+  if (k === 'furniture') return `<g class="hot ho-furn" data-furn="${esc(n)}" tabindex="0" role="button" aria-label="${esc(hoName(n))}"${pl}>${place(hoFurnArt(n), x, y, w, h)}${hmDecorHit(x, y, w, h)}${hoPlaceBits(n, x, y, w, h)}</g>`;
+  return `<g class="hot hm-decor" data-decor="${esc(n)}" tabindex="0" role="button" aria-label="${esc(hoName(n))}"${pl}>${place(hmDecorArt(n), x, y, w, h)}${hmDecorHit(x, y, w, h)}${hoPlaceBits(n, x, y, w, h)}</g>`;
 }
 function hoFrontSVG(n) {
   const [x, y] = hoPos(n), [w, h] = hoSize(n), k = hoKind(n);
@@ -267,7 +269,7 @@ function hoUseStart(d, name, spot) {
 }
 function hoUseOn(d) { const u = HO.uses[d.id]; if (!u) return; u.on = true; hoFurnRefresh(u.name); }
 function hoUseEnd(d) { const u = HO.uses[d.id]; if (!u) return; delete HO.uses[d.id]; hoFurnRefresh(u.name); hoFrontSync(); }
-function hoSayOn(d, sp, wx, wy) { const L = HO_LINES[sp.prop] && HO_LINES[sp.prop][sp.key]; if (L && Math.random() < 0.45) say(PICK(L), wx, wy, 2200); }
+function hoSayOn(d, sp, wx, wy) { const L = HO_LINES[sp.prop] && HO_LINES[sp.prop][sp.key]; if (L && Math.random() < 0.45) say(PICK(L.map((s, i) => tdata('ho_lines.' + sp.prop + '.' + sp.key + '.' + i, s))), wx, wy, 2200); }
 // the active dog's idle weights: furniture in the house (never while hot, dirty or sad, never while placing)
 function hoIdleWeights(w, d, stage) {
   if (!S || S.place !== 'house' || HO.pl || !d || d.id !== S.activeId) return;
@@ -384,9 +386,9 @@ function hoTray() {
   const pl = HO.pl; if (!pl) return; const room = pl.room, sel = pl.sel;
   const away = room === 'house' ? hoOwned('house').filter((n) => !hmDecorOut(n)).concat(S.beds.filter((n) => !S.bedAt[n])) : hoOwned('yard').filter((n) => !hmDecorOut(n));
   const icon = (n) => (hoIsBed(n) ? art('item', n) : itemArt(n));
-  setTray(room === 'yard' ? 'Arrange the yard' : 'Arrange the house', `<div class="ho-tray-in"><p class="small ho-hint">${sel ? `${esc(sel)}: ${isPhone() ? 'drag it, or tap where it should go.' : 'drag it, click where it should go, or use the arrow keys.'}` : isPhone() ? 'Tap a thing to pick it up. Then drag it, or tap where it should go.' : 'Click a thing to pick it up. Then drag it, or click where it should go.'}</p>
-    <div class="ho-trow"><button class="btn yes" id="hoDone">Done</button><button class="btn" id="hoAway"${sel ? '' : ' disabled aria-disabled="true"'}>Put away</button></div>
-    ${away.length ? `<div class="ho-put" role="group" aria-label="Put away things">${away.map((n) => `<button class="ho-putb" data-hoput="${esc(n)}" aria-label="Put out the ${esc(n)}"><span class="art">${icon(n)}</span><span class="nm">${esc(n)}</span></button>`).join('')}</div>` : ''}</div>`, { mini: true });
+  setTray(room === 'yard' ? tt('home.arrange_yard', 'Arrange the yard') : tt('home.arrange_house', 'Arrange the house'), `<div class="ho-tray-in"><p class="small ho-hint">${esc(sel ? (isPhone() ? tt('home.sel_hint_phone', '{item}: drag it, or tap where it should go.', { item: hoName(sel) }) : tt('home.sel_hint_desk', '{item}: drag it, click where it should go, or use the arrow keys.', { item: hoName(sel) })) : isPhone() ? tt('home.hint_phone', 'Tap a thing to pick it up. Then drag it, or tap where it should go.') : tt('home.hint_desk', 'Click a thing to pick it up. Then drag it, or click where it should go.'))}</p>
+    <div class="ho-trow"><button class="btn yes" id="hoDone">${esc(tt('home.done', 'Done'))}</button><button class="btn" id="hoAway"${sel ? '' : ' disabled aria-disabled="true"'}>${esc(tt('home.put_away', 'Put away'))}</button></div>
+    ${away.length ? `<div class="ho-put" role="group" aria-label="${esc(tt('home.label_put_away_things', 'Put away things'))}">${away.map((n) => `<button class="ho-putb" data-hoput="${esc(n)}" aria-label="${esc(tt('home.label_put_out', 'Put out the {item}', { item: hoName(n) }))}"><span class="art">${icon(n)}</span><span class="nm">${esc(hoName(n))}</span></button>`).join('')}</div>` : ''}</div>`, { mini: true });
   const tr = dock.querySelector(':scope > .tray'); if (tr) tr.classList.add('ho-tray');
   $('#trayX').onclick = () => { SFX.click(); hoDone(); };
   $('#hoDone').onclick = () => { SFX.click(); hoDone(); };
@@ -400,10 +402,10 @@ function hoAwaySel() {
 // put an item away (keeps its record). The last bed stays: someone has to nap somewhere
 function hoAway(n) {
   if (hoIsBed(n)) {
-    if (Object.keys(S.bedAt).length <= 1) { nope('Someone has to nap somewhere. Pop another bed in first.'); return false; }
+    if (Object.keys(S.bedAt).length <= 1) { nope(tt('home.last_bed', 'Someone has to nap somewhere. Pop another bed in first.')); return false; }
     delete S.bedAt[n]; hoSync();
   } else { if (!S.decor[n]) return false; S.decor[n].out = false; Object.keys(HO.uses).forEach((id) => { if (HO.uses[id].name === n) hoFree(dogById(id) || { id }); }); }
-  markDirty(); SFX.pop(); toast(`${n} is tucked away. It will keep.`); return true;
+  markDirty(); SFX.pop(); toast(tt('home.tucked_away', '{item} is tucked away. It will keep.', { item: hoName(n) })); return true;
 }
 // move an item to a top-left (clamped) during placement; returns the spot
 function hoMoveTo(n, x, y, redraw) {
@@ -464,32 +466,32 @@ function hoDone(fromCleanup) {
   if (S.sleeping && S.place === 'house') { dogTo(...napSpot(), 0); renderDog('sleep', 'right', true); showZzz(true); }
   hoZzzSync(); phCamHome = pl.cam; if (isPhone()) camTo(phCamHome, 0.6);
   if (dock.querySelector('.ho-tray')) S.sleeping ? sleepTray() : dockIdle();
-  if (moved.length) toast(pl.room === 'yard' ? 'The yard looks just right.' : 'The house looks just right.', 'good');
+  if (moved.length) toast(pl.room === 'yard' ? tt('home.yard_just_right', 'The yard looks just right.') : tt('home.house_just_right', 'The house looks just right.'), 'good');
 }
 
 /* ---------------- popups and sheets ---------------- */
 function hoFurnPop(name) {
   const D = HM_DECOR[name]; if (!D) return; const f = HO.fav[name] || {}, top = Object.keys(f).filter((id) => dogById(id)).sort((a, b) => f[b] - f[a]).slice(0, 2).map((id) => dogById(id).name);
-  const fav = top.length ? `Favourite of: ${top.join(' and ')}.` : 'Nobody has claimed it yet. Give it a minute.';
-  const p = openModal(esc(name), `<div class="hm-pop"><span class="art hm-art">${hoFurnArt(name)}</span><div><p>${esc(D.story)}</p><p class="small ho-fav">${esc(fav)}</p></div></div>`, { cls: 'hm-decor-pop ho-furn-pop', foot: '<button class="btn" id="hoMove">Move</button><button class="btn yes" id="hmAway">Put away</button>' });
+  const fav = top.length ? tt('home.favourite_of', 'Favourite of: {names}.', { names: tlist(top) }) : tt('home.nobody_claimed', 'Nobody has claimed it yet. Give it a minute.');
+  const p = openModal(esc(hoName(name)), `<div class="hm-pop"><span class="art hm-art">${hoFurnArt(name)}</span><div><p>${esc(tdata('hm_decor.' + tid(name) + '.story', D.story))}</p><p class="small ho-fav">${esc(fav)}</p></div></div>`, { cls: 'hm-decor-pop ho-furn-pop', foot: `<button class="btn" id="hoMove">${esc(tt('home.move', 'Move'))}</button><button class="btn yes" id="hmAway">${esc(tt('home.put_away', 'Put away'))}</button>` });
   $('#hoMove', p).onclick = () => { SFX.click(); closeModal(); hoPlaceStart(name); };
   $('#hmAway', p).onclick = () => { SFX.click(); closeModal(); if (hoAway(name)) hoRoomRedraw(); };
 }
 function hoBedsCard(b, inHouse) {
   const n = b.n, who = S.dogs.filter((d) => hoBedFor(d) === n), many = S.dogs.length > 1;
   let act;
-  if (!inHouse) act = `<button class="btn yes" data-usebed="${esc(n)}">Put in the house</button>`;
-  else if (many) act = `<span class="small">${who.length ? esc(who.map((d) => d.name).join(' and ')) + ' naps here' : 'Nobody naps here yet'}</span><div class="ho-bedchips" role="group" aria-label="Who naps on the ${esc(n)}">${S.dogs.map((d) => `<button class="ho-dchip" data-bedfor="${esc(d.id + '|' + n)}" aria-pressed="${who.includes(d)}" aria-label="${esc(d.name)} naps on the ${esc(n)}"><span class="hd">${headSVG(d)}</span><span class="nm">${esc(d.name)}</span></button>`).join('')}</div>`;
-  else act = n === S.bed ? '<span class="chip own">In use</span>' : `<button class="btn" data-bedfor="${esc(S.activeId + '|' + n)}">Nap here</button>`;
-  return `<div class="sitem"><span class="art">${art('item', n)}</span><b>${esc(n)}</b><span class="desc">House nap +${Math.round(b.bonus * 100)}% (plus +25% indoors)</span>${act}</div>`;
+  if (!inHouse) act = `<button class="btn yes" data-usebed="${esc(n)}">${esc(tt('home.put_in_house', 'Put in the house'))}</button>`;
+  else if (many) act = `<span class="small">${esc(who.length ? tt('home.naps_here', '{n, plural, one {{names} naps here} other {{names} nap here}}', { n: who.length, names: tlist(who.map((d) => d.name)) }) : tt('home.nobody_naps', 'Nobody naps here yet'))}</span><div class="ho-bedchips" role="group" aria-label="${esc(tt('home.label_who_naps', 'Who naps on the {bed}', { bed: hoName(n) }))}">${S.dogs.map((d) => `<button class="ho-dchip" data-bedfor="${esc(d.id + '|' + n)}" aria-pressed="${who.includes(d)}" aria-label="${esc(tt('home.label_naps_on', '{name} naps on the {bed}', { name: d.name, bed: hoName(n) }))}"><span class="hd">${headSVG(d)}</span><span class="nm">${esc(d.name)}</span></button>`).join('')}</div>`;
+  else act = n === S.bed ? `<span class="chip own">${esc(tt('home.in_use', 'In use'))}</span>` : `<button class="btn" data-bedfor="${esc(S.activeId + '|' + n)}">${esc(tt('home.nap_here', 'Nap here'))}</button>`;
+  return `<div class="sitem"><span class="art">${art('item', n)}</span><b>${esc(hoName(n))}</b><span class="desc">${esc(tt('home.house_nap', 'House nap +{bonus}% (plus +25% indoors)', { bonus: Math.round(b.bonus * 100) }))}</span>${act}</div>`;
 }
 
 /* ---------------- shop (Barkitecture Decor and Furniture tabs) ---------------- */
 function hoShopItems(kind) {
-  const it = (n) => { const D = HM_DECOR[n]; return { cat: kind, n, price: D.price, bond: D.bond || 1, desc: D.story }; };
+  const it = (n) => { const D = HM_DECOR[n]; return { cat: kind, n, price: D.price, bond: D.bond || 1, desc: tdata('hm_decor.' + tid(n) + '.story', D.story) }; };
   const names = Object.keys(HM_DECOR).filter((n) => HM_DECOR[n].v27 && !HM_DECOR[n].fest && HM_DECOR[n].kind === kind); // v2.8: festival decorations are sold at their stall only
   if (kind === 'furniture') return names.map(it);
-  return [{ head: 'For the yard' }].concat(names.filter((n) => hoRoomOf(n) === 'yard').map(it), [{ head: 'For the house' }], names.filter((n) => hoRoomOf(n) === 'house').map(it));
+  return [{ head: tt('home.for_yard', 'For the yard') }].concat(names.filter((n) => hoRoomOf(n) === 'yard').map(it), [{ head: tt('home.for_house', 'For the house') }], names.filter((n) => hoRoomOf(n) === 'house').map(it));
 }
 
 /* ---------------- events, watchdog, test hook ---------------- */

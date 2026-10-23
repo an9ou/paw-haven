@@ -2,26 +2,59 @@
 function openSettings() {
   const motionOff = document.documentElement.dataset.motion === 'off';
   const touchOnly = isPhone() || !!(window.matchMedia && matchMedia('(hover: none) and (pointer: coarse)').matches); // phones and tablets: no keyboard, so no keys hint
-  const p = openModal('Settings', `
-    <h4 style="margin:0;font-family:var(--font-hand);font-size:26px">Sound</h4>
-    ${[['master', 'Master', 'volume'], ['music', 'Music', 'music'], ['sfx', 'Sound effects', 'sfx'], ['ambience', 'Ambience', 'ambience']].map(([k, l, ic]) => `<div class="vol"><span class="ic">${iconOr(ic, '<circle r="9" fill="#FCD8BC" stroke="#5B3D32" stroke-width="2"/>')}</span><label for="vol-${k}">${l}</label><input type="range" id="vol-${k}" min="0" max="100" step="5" value="${prefs.vol[k]}"><output id="out-${k}">${prefs.vol[k]}</output></div>`).join('')}
-    <label class="tog"><input type="checkbox" id="setMute" ${prefs.mute ? 'checked' : ''}> Mute all</label>${PAU() ? '' : ' <span class="small">(Music arrives with the audio module.)</span>'}<br>
-    <label class="tog"><input type="checkbox" id="setMotion" ${motionOff ? '' : 'checked'}> Motion and wobble</label>
-    <div class="barkset"><span>Barking:</span>${[['normal', 'Normal'], ['fewer', 'Fewer'], ['off', 'Off']].map(([k, l]) => `<button class="btn ${barkMode() === k ? 'yes' : ''}" data-barkm="${k}" aria-pressed="${barkMode() === k}">${l}</button>`).join('')}</div>
-    <p class="small">Time: 1 game hour = 1 real minute. Prototype economy: coins x${BOOST.coins}, Bond x${BOOST.bond}, naps x${BOOST.nap}.</p>
-    <p class="small">Clock and weather follow your real local time (3 weather periods a day).${touchOnly ? '' : ' Keys: 1-9 bottom buttons, Space pets / throws / walks, Esc closes things.'}</p>
-    ${typeof clSection === 'function' ? clSection() : ''}`, { foot: `<div style="display:flex;justify-content:space-between;gap:12px;width:100%;flex-wrap:wrap"><button class="btn red" id="setReset">Reset save</button><button class="btn" id="setTitle">Title screen</button></div>` });
+  const p = openModal(esc(tt('settings.title', 'Settings')), `
+    ${langRowHTML()}
+    <h4 style="margin:0;font-family:var(--font-hand);font-size:26px">${esc(tt('settings.sound', 'Sound'))}</h4>
+    ${[['master', tt('settings.vol_master', 'Master'), 'volume'], ['music', tt('settings.vol_music', 'Music'), 'music'], ['sfx', tt('settings.vol_sfx', 'Sound effects'), 'sfx'], ['ambience', tt('settings.vol_ambience', 'Ambience'), 'ambience']].map(([k, l, ic]) => `<div class="vol"><span class="ic">${iconOr(ic, '<circle r="9" fill="#FCD8BC" stroke="#5B3D32" stroke-width="2"/>')}</span><label for="vol-${k}">${esc(l)}</label><input type="range" id="vol-${k}" min="0" max="100" step="5" value="${prefs.vol[k]}"><output id="out-${k}">${prefs.vol[k]}</output></div>`).join('')}
+    <label class="tog"><input type="checkbox" id="setMute" ${prefs.mute ? 'checked' : ''}> ${esc(tt('settings.mute_all', 'Mute all'))}</label>${PAU() ? '' : ` <span class="small">${esc(tt('settings.no_audio', '(Music arrives with the audio module.)'))}</span>`}<br>
+    <label class="tog"><input type="checkbox" id="setMotion" ${motionOff ? '' : 'checked'}> ${esc(tt('settings.motion', 'Motion and wobble'))}</label>
+    <div class="barkset"><span>${esc(tt('settings.barking', 'Barking:'))}</span>${[['normal', tt('settings.bark_normal', 'Normal')], ['fewer', tt('settings.bark_fewer', 'Fewer')], ['off', tt('settings.bark_off', 'Off')]].map(([k, l]) => `<button class="btn ${barkMode() === k ? 'yes' : ''}" data-barkm="${k}" aria-pressed="${barkMode() === k}">${esc(l)}</button>`).join('')}</div>
+    <p class="small">${esc(tt('settings.economy', 'Time: 1 game hour = 1 real minute. Prototype economy: coins x{coins}, Bond x{bond}, naps x{nap}.', { coins: BOOST.coins, bond: BOOST.bond, nap: BOOST.nap }))}</p>
+    <p class="small">${esc(touchOnly ? tt('settings.clock', 'Clock and weather follow your real local time (3 weather periods a day).') : tt('settings.clock_keys', 'Clock and weather follow your real local time (3 weather periods a day). Keys: 1-9 bottom buttons, Space pets / throws / walks, Esc closes things.'))}</p>
+    ${typeof clSection === 'function' ? clSection() : ''}`, { foot: `<div style="display:flex;justify-content:space-between;gap:12px;width:100%;flex-wrap:wrap"><button class="btn red" id="setReset">${esc(tt('settings.reset', 'Reset save'))}</button><button class="btn" id="setTitle">${esc(tt('settings.to_title', 'Title screen'))}</button></div>` });
   { const bd = p.querySelector('.panel-body'); if (bd) { const fade = 'linear-gradient(to bottom, #000 calc(100% - 26px), transparent)'; bd.style.webkitMaskImage = fade; bd.style.maskImage = fade; } } // a heading never sits half-cut at the foot of the scroll area
   ['master', 'music', 'sfx', 'ambience'].forEach((k) => { const r = $('#vol-' + k, p); r.oninput = () => { prefs.vol[k] = +r.value; if (k === 'ambience') prefs.ambTouched = true; $('#out-' + k, p).textContent = r.value; applyAudioPrefs(); }; r.onchange = () => { savePrefs(); if (k === 'sfx' || k === 'master') SFX.boop(660); }; });
   $('#setMute', p).onchange = (e) => { prefs.mute = e.target.checked; savePrefs(); applyAudioPrefs(); updateMute(); };
   $('#setMotion', p).onchange = (e) => setMotion(e.target.checked);
   if (typeof clBind === 'function') clBind(p);
+  langBind(p);
   p.querySelectorAll('[data-barkm]').forEach((b) => { b.onclick = () => { prefs.bark = b.dataset.barkm; savePrefs(); SFX.click(); p.querySelectorAll('[data-barkm]').forEach((x) => { x.classList.toggle('yes', x === b); x.setAttribute('aria-pressed', String(x === b)); }); }; });
   $('#setTitle', p).onclick = () => { saveNow(); closeModal(); go('title'); };
   $('#setReset', p).onclick = async () => {
-    const ok = await confirmIn(p, `Delete ${esc(NAME())}'s save forever? Coins, clothes, houses, Bond: all gone.`, 'Yes, reset', 'No way'); if (!ok) return;
-    lsDel(SAVE_KEY); S = null; levelQueue = []; closeModal(); toast('Save deleted. Fresh crayons.'); go('title');
+    const ok = await confirmIn(p, esc(tt('settings.reset_ask', "Delete {name}'s save forever? Coins, clothes, houses, Bond: all gone.", { name: NAME() })), esc(tt('settings.reset_yes', 'Yes, reset')), esc(tt('settings.reset_no', 'No way'))); if (!ok) return;
+    lsDel(SAVE_KEY); S = null; levelQueue = []; closeModal(); toast(tt('settings.reset_done', 'Save deleted. Fresh crayons.')); go('title');
   };
+}
+/* ---- v2.14 the language picker (V214.md 5): a "Language" row with the current language's own name; it opens the list of the 11 native
+   names (each with its English name in small text) and "Use device language". The names never translate. Shared with the title chip (01_title.js). ---- */
+function langName(c) { return (PIM && PIM.LANGS[c]) || c; }
+function langListHTML() {
+  const pick = S ? S.lang : (i18nReal(prefs.langPick) ? prefs.langPick : null), dev = i18nDevice(), en = (c) => (PIM && PIM.LANG_EN[c]) || c;
+  const row = (code, main, sub, on) => `<button class="btn langopt${on ? ' on yes' : ''}" data-lang="${code}" aria-pressed="${on}"${code !== '' ? ` lang="${code}"` : ''}><span class="lang-n">${esc(main)}</span>${sub ? `<span class="lang-e" lang="en">${esc(sub)}</span>` : ''}</button>`;
+  return `<div class="langlist" role="group" aria-label="${esc(tt('settings.language', 'Language'))}">${I18N_CODES.map((c) => row(c, langName(c), en(c) !== langName(c) ? en(c) : '', pick === c)).join('')}`
+    + `${row('', tt('settings.lang_device', 'Use device language'), langName(dev), pick == null)}</div>`;
+}
+function langRowHTML() {
+  const busy = tlangBusy();
+  return `<div class="langrow"><span class="lang-l">${esc(tt('settings.language', 'Language'))}</span><button class="btn langbtn" id="setLang" aria-expanded="false"${busy ? ' disabled' : ''}><span lang="${esc(tlang())}">${esc(langName(I18N.ps ? 'en' : tlang()))}</span></button></div>`
+    + (busy ? `<p class="small langbusy">${esc(tlangBusyText())}</p>` : '') + `<div class="langbox" id="setLangBox" hidden></div>`;
+}
+// wires the list inside `box` (a settings panel or the title's language sheet); after() runs when a language was chosen on the title screen
+function langWire(box, after) {
+  box.querySelectorAll('[data-lang]').forEach((b) => { b.onclick = () => { SFX.click(); const c = b.dataset.lang || null; if (tsetLang(c) && after) after(); }; });
+}
+function langBind(p) {
+  const b = $('#setLang', p), box = $('#setLangBox', p); if (!b || !box) return;
+  b.onclick = () => { SFX.click(); const open = box.hidden; box.innerHTML = open ? langListHTML() : ''; box.hidden = !open; b.setAttribute('aria-expanded', String(open)); if (open) langWire(box, () => { if (!S || cur.mode === 'title') closeModal(); }); };
+}
+// the first-run chip on the title screen (no save yet): a globe and the current language's own name, one tap to the list (V214.md 5)
+function titleLangChip() {
+  const c = I18N.ps ? 'en' : tlang();
+  return `<button class="btn tlang" id="tLang" aria-label="${esc(tt('settings.language', 'Language'))}: ${esc(langName(c))}"><svg class="tlang-ic" viewBox="-12 -12 24 24" aria-hidden="true"><g fill="none" stroke="#5B3D32" stroke-width="1.8" stroke-linecap="round"><circle r="9.5" fill="#CFE6F2"/><path d="M-9.5 0 H9.5 M0 -9.5 Q-6 0 0 9.5 M0 -9.5 Q6 0 0 9.5 M-8 -5 Q0 -2.5 8 -5 M-8 5 Q0 2.5 8 5"/></g></svg><span lang="${esc(c)}">${esc(langName(c))}</span></button>`;
+}
+function titleLangBind() {
+  const b = document.getElementById('tLang'); if (!b) return;
+  b.onclick = () => { SFX.click(); const p = openModal(esc(tt('settings.language', 'Language')), langListHTML(), { cls: 'langsheet' }); langWire(p, () => closeModal()); };
 }
 function setMotion(on) { document.documentElement.dataset.motion = on ? 'on' : 'off'; prefs.motion = on ? 'on' : 'off'; savePrefs(); }
 function bindDev() { const b = $('#devBtn'); if (b) b.onclick = () => { devPanel.hidden = !devPanel.hidden; renderDev(); }; }

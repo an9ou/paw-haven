@@ -22,9 +22,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Build the single-file game
+      - name: Install the minifier (tools/minify.js uses esbuild; without it the page ships unminified)
+        run: npm install --no-save --prefix tools esbuild@0.24.0
+      - name: Build the game (the one-file build and the split build in _split/)
         run: node game/build.js publish
-      - name: Wrap into a full HTML page
+      - name: Wrap into a full HTML page (split, minified)
         run: node tools/pages.js
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

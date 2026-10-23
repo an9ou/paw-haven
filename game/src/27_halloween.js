@@ -16,7 +16,8 @@ function hwTag(name) {
 // x 18-212, the bowl and #dogHit). Phones: the stall takes that spot, so the pop-up stands in the foreground in front of the stall. It is drawn
 // before the bowl, so a snack's bowl (shown only while feeding) sits in front of it. A visitor-shifted crop: the crop's left edge, else the desktop spot.
 const HW_POP = { desk: [212, 344, 114, 105], phone: [212, 496, 100, 92] };
-const HW_END = '2 November';
+const HW_END = '2 November'; // the English date; shown through hwEndText()
+const hwEndText = () => tt('hw.end_date', '2 November');
 const HW_PLUM = 'Everything here is made for 2026 only. When I pack up on 2 November, it is gone for good, but yours stays yours.';
 const HW_LETTER = { from: 'Mrs. Plum next door', title: 'The Pumpkin Patch Pop-up', text: 'The Pumpkin Patch Pop-up is open in the Square until 2 November. Everything is made for this year only, so have a look.' };
 const HW_CATS = [['decor', 'Decorations'], ['food', 'Treats'], ['toys', 'Toys'], ['clothes', 'Clothes']];
@@ -96,15 +97,15 @@ function hwSquareDraw() {
   const svg = $('#view svg.world'); if (!svg) return;
   const old = $('#hwPopG', svg); if (old) old.remove();
   const pb = $('#placeBtns'); if (pb) pb.querySelectorAll('[data-hw]').forEach((b) => b.remove());
-  if (isPhone() && S && S.place === 'square') { const st = $('#fsStallG', svg); if (st && !$('.hw-chip', st)) { const b = st.querySelector('svg'); if (b) st.insertAdjacentHTML('beforeend', hwChip('Harvest Stall', +b.getAttribute('x') + +b.getAttribute('width') / 2, +b.getAttribute('y'))); } }
+  if (isPhone() && S && S.place === 'square') { const st = $('#fsStallG', svg); if (st && !$('.hw-chip', st)) { const b = st.querySelector('svg'); if (b) st.insertAdjacentHTML('beforeend', hwChip(tt('hw.harvest_stall', 'Harvest Stall'), +b.getAttribute('x') + +b.getAttribute('width') / 2, +b.getAttribute('y'))); } }
   HW.open = hwOn(); if (!HW.open || !S || S.place !== 'square') return;
   const at = $('#bowlG', svg) || $('#pack', svg); if (!at) return;
   const [x, y, w, h] = hwPopBox(), lit = isNight();
-  at.insertAdjacentHTML('beforebegin', `<g id="hwPopG" class="hot" data-lit="${lit ? 1 : 0}" tabindex="0" role="button" aria-label="Mrs. Plum's Pumpkin Patch Pop-up">${place(lit ? hwArt({ lit }) : propTint(hwArt({ lit })), x, y, w, h)}${fsHit(x + 6, y + 8, w - 12, h - 8)}${isPhone() ? hwChip('Pumpkin Patch', x + w / 2, y) : ''}</g>`);
+  at.insertAdjacentHTML('beforebegin', `<g id="hwPopG" class="hot" data-lit="${lit ? 1 : 0}" tabindex="0" role="button" aria-label="${esc(tt('hw.label_popup', "Mrs. Plum's Pumpkin Patch Pop-up"))}">${place(lit ? hwArt({ lit }) : propTint(hwArt({ lit })), x, y, w, h)}${fsHit(x + 6, y + 8, w - 12, h - 8)}${isPhone() ? hwChip(tt('hw.pumpkin_patch', 'Pumpkin Patch'), x + w / 2, y) : ''}</g>`);
   if (typeof fsHitFit === 'function') fsHitFit();
   const g = $('#hwPopG', svg); g.onclick = (e) => { e.stopPropagation(); SFX.click(); hwOpen(); }; g.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hwOpen(); } };
   if (pb && !isPhone()) { // phones: the third row of the Festival chooser instead, so the Square row stays one line
-    const home = pb.querySelector('[data-pb="yard"]'), btn = '<button class="btn yes" data-hw="popup" aria-label="Pumpkin Patch Pop-up">Pumpkin Patch</button>';
+    const home = pb.querySelector('[data-pb="yard"]'), btn = `<button class="btn yes" data-hw="popup" aria-label="${esc(tt('hw.popup_name', 'Pumpkin Patch Pop-up'))}">${esc(tt('hw.pumpkin_patch', 'Pumpkin Patch'))}</button>`;
     if (home) home.insertAdjacentHTML('beforebegin', btn); else pb.insertAdjacentHTML('beforeend', btn);
     const b = pb.querySelector('[data-hw]'); if (b) b.onclick = () => { SFX.click(); hwOpen(); };
   }
@@ -113,29 +114,29 @@ function hwSquareDraw() {
 /* ---- the pop-up sheet ---- */
 function hwItems() {
   const ed = (x) => x.ed === HW_ED;
-  return Object.keys(HM_DECOR).filter((n) => ed(HM_DECOR[n])).map((n) => ({ cat: 'decor', n, price: HM_DECOR[n].price, desc: HM_DECOR[n].story }))
-    .concat(FOOD.filter(ed).map((f) => ({ cat: 'food', n: f.n, price: f.price, desc: f.note, tip: f.tip })))
-    .concat(TOYS.filter(ed).map((t) => ({ cat: 'toys', n: t.n, price: t.price, desc: t.note })))
-    .concat(CLOTHES.filter(ed).map((c) => ({ cat: 'clothes', n: c.n, price: c.price, desc: `${SLOT_NAME[c.slot]}. ${c.perk}` })));
+  return Object.keys(HM_DECOR).filter((n) => ed(HM_DECOR[n])).map((n) => ({ cat: 'decor', n, name: fsIName('decor', n), price: HM_DECOR[n].price, desc: tdata('hm_decor.' + tid(n) + '.story', HM_DECOR[n].story) }))
+    .concat(FOOD.filter(ed).map((f) => ({ cat: 'food', n: f.n, name: fsIName('food', f.n), price: f.price, desc: tdata('food.' + tid(f.n) + '.note', f.note), tip: f.tip ? tdata('food.' + tid(f.n) + '.tip', f.tip) : f.tip })))
+    .concat(TOYS.filter(ed).map((t) => ({ cat: 'toys', n: t.n, name: fsIName('toys', t.n), price: t.price, desc: tdata('toys.' + tid(t.n) + '.note', t.note) })))
+    .concat(CLOTHES.filter(ed).map((c) => ({ cat: 'clothes', n: c.n, name: fsIName('clothes', c.n), price: c.price, desc: tt('fest.slot_perk', '{slot}. {perk}', { slot: tdata('slot_name.' + c.slot, SLOT_NAME[c.slot]), perk: tdata('clothes.' + tid(c.n) + '.perk', c.perk) }) })));
 }
 function hwOwned(it) { return it.cat === 'decor' ? !!(S.decor && S.decor[it.n]) : it.cat === 'food' ? false : owns(it.cat, it.n); }
-function hwClosed() { if (hwOn()) return false; if (!modal.hidden && $('#modal .panel.hw-pop')) closeModal(); toast('The pop-up has packed up. Thank you for visiting.'); return true; }
+function hwClosed() { if (hwOn()) return false; if (!modal.hidden && $('#modal .panel.hw-pop')) closeModal(); toast(tt('hw.packed_up', 'The pop-up has packed up. Thank you for visiting.')); return true; }
 function hwOpen() { return fsTry(hwOpen0); }
 function hwOpen0() {
   if (!S) return null;
-  if (!hwOn()) { toast('The Pumpkin Patch Pop-up has packed up for good. The things from it are still yours.'); return null; }
+  if (!hwOn()) { toast(tt('hw.packed_for_good', 'The Pumpkin Patch Pop-up has packed up for good. The things from it are still yours.')); return null; }
   const op = !modal.hidden && $('#modal .panel.hw-pop'), keep = op ? [op.scrollTop, ($('.panel-body', op) || {}).scrollTop || 0] : null; // a re-open after a buy keeps the scroll
   hwFields(); if (!S.hw.seen) { S.hw.seen = localISO(); markDirty(); }
   SFX.boop(560); if (typeof audioPlace === 'function') audioPlace('shop');
   const items = hwItems();
   const card = (it) => {
     const owned = hwOwned(it), have = it.cat === 'food' ? (S.inv.food[it.n] || 0) : 0;
-    const act = owned ? '<span class="chip own">Owned</span>' : `<button class="btn yes" data-hwbuy="${esc(it.n)}">${it.cat === 'food' ? 'Buy…' : 'Buy'}</button>`;
-    return `<div class="sitem hw-card" data-cat="${it.cat}"><span class="art">${hwItemArt(it.n)}</span><b>${esc(it.n)}${hwTag(it.n)}</b><span class="desc">${esc(it.desc)}</span>${it.tip ? `<span class="small sh-tip">${esc(it.tip)}</span>` : ''}${priceHTML(it.price + (it.cat === 'food' ? ' each' : ''))}${have ? `<span class="small">You have ${have}</span>` : ''}${act}</div>`;
+    const act = owned ? `<span class="chip own">${esc(tt('hw.owned', 'Owned'))}</span>` : `<button class="btn yes" data-hwbuy="${esc(it.n)}">${esc(it.cat === 'food' ? tt('hw.buy_ellipsis', 'Buy…') : tt('hw.buy', 'Buy'))}</button>`;
+    return `<div class="sitem hw-card" data-cat="${it.cat}"><span class="art">${hwItemArt(it.n)}</span><b>${esc(it.name)}${hwTag(it.n)}</b><span class="desc">${esc(it.desc)}</span>${it.tip ? `<span class="small sh-tip">${esc(it.tip)}</span>` : ''}${priceHTML(it.cat === 'food' ? tt('hw.price_each', '{n} each', { n: tnum(it.price) }) : tnum(it.price))}${have ? `<span class="small">${esc(tt('hw.you_have', 'You have {n}', { n: tnum(have) }))}</span>` : ''}${act}</div>`;
   };
-  const secs = HW_CATS.map(([k, l]) => `<section class="hw-sec" data-sec="${k}"><h3>${l}</h3><div class="shopgrid">${items.filter((it) => it.cat === k).map(card).join('')}</div></section>`).join('');
-  const p = openModal('Pumpkin Patch Pop-up', `<div class="hw-plum"><span class="hw-ic" aria-hidden="true">${hwIcon()}</span><p><b>Mrs. Plum:</b> "${HW_PLUM}"</p></div><p class="small">Coins only, no Bond needed. You have ${fmtC(S.coins)} Paw Coins.</p>${secs}`,
-    { cls: 'shop hw-pop', foot: `<p class="small hw-foot">Open until ${HW_END}.</p>` });
+  const secs = HW_CATS.map(([k, l]) => `<section class="hw-sec" data-sec="${k}"><h3>${esc(tdata('hw_cats.' + k + '.1', l))}</h3><div class="shopgrid">${items.filter((it) => it.cat === k).map(card).join('')}</div></section>`).join('');
+  const p = openModal(tt('hw.popup_name', 'Pumpkin Patch Pop-up'), `<div class="hw-plum"><span class="hw-ic" aria-hidden="true">${hwIcon()}</span><p><b>${esc(tt('hw.mrs_plum', 'Mrs. Plum:'))}</b> ${esc(tt('hw.quote', '"{text}"', { text: tdata('hw_plum', HW_PLUM) }))}</p></div><p class="small">${esc(tt('hw.coins_only', 'Coins only, no Bond needed. You have {coins} Paw Coins.', { coins: fmtC(S.coins) }))}</p>${secs}`,
+    { cls: 'shop hw-pop', foot: `<p class="small hw-foot">${esc(tt('hw.open_until', 'Open until {end}.', { end: hwEndText() }))}</p>` });
   if (keep) { p.scrollTop = keep[0]; const bd = $('.panel-body', p); if (bd) bd.scrollTop = keep[1]; }
   p.querySelectorAll('[data-hwbuy]').forEach((b) => { b.onclick = () => fsTry(hwBuy, p, items.find((x) => x.n === b.dataset.hwbuy)); });
   hwWatch();
@@ -144,19 +145,19 @@ function hwOpen0() {
 async function hwBuy(p, it) {
   if (!it || hwClosed()) return; SFX.click();
   const stack = it.cat === 'food', owned = hwOwned(it);
-  const q = await buyWindow(p, { art: hwItemArt(it.n), name: it.n, desc: it.desc, price: it.price, stack, owned, have: stack ? (S.inv.food[it.n] || 0) : owned ? 1 : 0, haveLabel: stack ? 'In bag' : 'Owned' });
+  const q = await buyWindow(p, { art: hwItemArt(it.n), name: it.name, desc: it.desc, price: it.price, stack, owned, have: stack ? (S.inv.food[it.n] || 0) : owned ? 1 : 0, haveLabel: stack ? tt('hw.in_bag', 'In bag') : tt('hw.owned', 'Owned') });
   if (!q || hwClosed() || (!stack && hwOwned(it))) return;
-  const cost = it.price * q; if (S.coins < cost) { nope('Not enough coins. Walks pay well, and Mrs. Plum will hold the door.'); return; }
+  const cost = it.price * q; if (S.coins < cost) { nope(tt('hw.poor', 'Not enough coins. Walks pay well, and Mrs. Plum will hold the door.')); return; }
   S.coins -= cost; SFX.kaching(); trackAct('buy', { name: it.n, cat: it.cat, qty: q, shop: 'popup' });
   if (it.cat === 'food') S.inv.food[it.n] = (S.inv.food[it.n] || 0) + q;
   else if (it.cat === 'decor') { hmDecorFields(); S.decor[it.n] = { got: localISO(), out: true }; }
   else S.inv[it.cat].push(it.n);
   markDirty(); updateHUD();
-  const tail = { food: PICK(['Mrs. Plum wraps it in orange paper.', 'It smells of pumpkin and oats.']), toys: 'In the Play tray.', clothes: 'Mrs. Plum says it suits you.', decor: '' }[it.cat];
+  const tail = { food: PICK([tt('hw.wrap_orange', 'Mrs. Plum wraps it in orange paper.'), tt('hw.smell_pumpkin', 'It smells of pumpkin and oats.')]), toys: tt('hw.play_tray', 'In the Play tray.'), clothes: tt('hw.suits_you', 'Mrs. Plum says it suits you.'), decor: '' }[it.cat];
   if (it.cat === 'decor') emit('decor:new', { name: it.n }); // its own gold toast: "New for the yard: ...!"
-  else toast(`Bought ${q > 1 ? q + ' × ' : ''}${it.n}. ${tail}`, 'gold');
+  else toast(tt('hw.bought', '{multi, select, yes {Bought {n} × {item}. {tail}} other {Bought {item}. {tail}}}', { multi: q > 1 ? 'yes' : 'no', n: q, item: it.name, tail }), 'gold');
   hwOpen();
-  if (it.cat === 'clothes') { const pp = $('.panel', modal); const w = await confirmIn(pp, `Put the ${esc(it.n)} on ${esc(NAME())} now?`, 'Wear it', 'Later'); if (w) equip(it.n, true); if (!modal.hidden && hwOn()) hwOpen(); }
+  if (it.cat === 'clothes') { const pp = $('.panel', modal); const w = await confirmIn(pp, esc(tt('fest.wear_q', 'Put the {item} on {name} now?', { item: it.name, name: NAME() })), tt('hw.wear_it', 'Wear it'), tt('hw.later', 'Later')); if (w) equip(it.n, true); if (!modal.hidden && hwOn()) hwOpen(); }
 }
 // the event can end with the sheet open (midnight JST on 2 November): it closes kindly
 let hwWatchT = 0;
@@ -166,11 +167,11 @@ function hwWatch() { clearInterval(hwWatchT); hwWatchT = setInterval(() => { if 
 function hwLetter() {
   if (!S || !hwOn() || typeof mailPush !== 'function') return; hwFields();
   if (S.hw.letter === String(HW_ED)) return;
-  S.hw.letter = String(HW_ED); markDirty(); mailPush(Object.assign({ kind: 'news', id: 'hw_popup_' + HW_ED }, HW_LETTER));
+  S.hw.letter = String(HW_ED); markDirty(); mailPush(Object.assign({ kind: 'news', id: 'hw_popup_' + HW_ED }, HW_LETTER, { from: tdata('hw_letter.from', HW_LETTER.from), title: tdata('hw_letter.title', HW_LETTER.title), text: tdata('hw_letter.text', HW_LETTER.text) }));
 }
 function hwJournalLine() {
   if (!hwOn()) return '';
-  return `<p class="fs-jline hw-jline"><span class="ic" aria-hidden="true">${hwIcon()}</span><b>Pop-up:</b> Pumpkin Patch Pop-up in the Square until ${HW_END}.</p>`;
+  return `<p class="fs-jline hw-jline"><span class="ic" aria-hidden="true">${hwIcon()}</span><b>${esc(tt('hw.popup_label', 'Pop-up:'))}</b> ${esc(tt('hw.jline', 'Pumpkin Patch Pop-up in the Square until {end}.', { end: hwEndText() }))}</p>`;
 }
 
 /* ---- the event ending (or a Dev panel change): the Square drops the pop-up and its button, an open sheet closes kindly ---- */

@@ -3,6 +3,9 @@
 // Runs `node game/build.js publish` and `node tools/pages.js` (the brand head tags), then writes
 // dist/itch/index.html plus the brand files the page links to, and zips them to dist/doodle-doggo-itch.zip
 // with index.html at the zip root. Uses the `zip` command when installed, otherwise the small zip writer below.
+// v2.14 PERF (PERF.md): pages.js ships the split, minified build, so the zip also holds lang/<code>.<hash>.js (one per language besides English,
+// loaded only for that language) and photo_fonts.<hash>.js (loaded on the first photo). itch.io serves the zip's files from its CDN with its own
+// caching; the hashed names mean a new upload never meets an old copy of those files.
 const fs = require('fs'), path = require('path'), cp = require('child_process'), zlib = require('zlib');
 const root = path.join(__dirname, '..');
 cp.execFileSync('node', [path.join(root, 'game', 'build.js'), 'publish'], { stdio: 'inherit' });
@@ -32,6 +35,13 @@ for (const f of [...want].sort()) {
   if (!fs.existsSync(path.join(brand, f))) { console.error('itch: missing brand file ' + f); process.exit(1); }
   fs.copyFileSync(path.join(brand, f), path.join(out, f)); files.push(f);
 }
+// v2.14 PERF: the split build's side files (pages.js copied them to _site): lang/*.js and photo_fonts.<hash>.js
+const SITE = path.join(root, '_site');
+if (fs.existsSync(path.join(SITE, 'lang'))) { fs.mkdirSync(path.join(out, 'lang'), { recursive: true }); for (const f of fs.readdirSync(path.join(SITE, 'lang')).filter((x) => /\.js$/.test(x)).sort()) { fs.copyFileSync(path.join(SITE, 'lang', f), path.join(out, 'lang', f)); files.push('lang/' + f); } }
+for (const f of fs.readdirSync(SITE).filter((x) => /^photo_fonts\.\w+\.js$/.test(x))) { fs.copyFileSync(path.join(SITE, f), path.join(out, f)); files.push(f); }
+// v2.14: the per-language font subsets (pages.js copied them to _site/fonts/i18n): fonts/i18n/<file> in the zip
+const FD = path.join(root, '_site', 'fonts', 'i18n');
+if (fs.existsSync(FD)) { fs.mkdirSync(path.join(out, 'fonts', 'i18n'), { recursive: true }); for (const f of fs.readdirSync(FD).filter((x) => /\.woff2$/.test(x)).sort()) { fs.copyFileSync(path.join(FD, f), path.join(out, 'fonts', 'i18n', f)); files.push('fonts/i18n/' + f); } }
 
 fs.rmSync(zipPath, { force: true });
 let viaCmd = false;

@@ -6,11 +6,11 @@ const isPup = (d) => lifeStage(dogMonths(d)) === 'puppy';
 const isExpecting = (d) => !!d && !!d.preg;
 /* walks: null when fine, else the friendly "no" line (pronouns from the dog, not from the active dog) */
 function walkBlock(d, area) {
-  d = d || D(); if (!d) return null; const pr = PRd(d), m = dogMonths(d), parkName = (ROUTES.park && ROUTES.park.n) || 'Sunny Park';
-  if (isNursing(d)) return `${d.name} is nursing the pups and stays by the nursery. No walks for ${pr.him} right now.`;
-  if (m < 3) return `${d.name} is too little for walks. Yard play only.`;
-  if (m < 6 && area !== 'park') return `${d.name} is still a pup. ${pr.He} only does ${parkName} for now.`;
-  if (isExpecting(d) && area !== 'park') return `${d.name} is expecting, so ${pr.he} only strolls in ${parkName}.`;
+  d = d || D(); if (!d) return null; const m = dogMonths(d), parkName = ROUTES.park ? townRouteName('park') : tt('pupplay.park_fallback', 'Sunny Park');
+  if (isNursing(d)) return tt('pupplay.walk_nursing', '{sex, select, female {{name} is nursing the pups and stays by the nursery. No walks for her right now.} other {{name} is nursing the pups and stays by the nursery. No walks for him right now.}}', { name: d.name, sex: d.sex });
+  if (m < 3) return tt('pupplay.walk_little', '{name} is too little for walks. Yard play only.', { name: d.name });
+  if (m < 6 && area !== 'park') return tt('pupplay.walk_pup', '{sex, select, female {{name} is still a pup. She only does {park} for now.} other {{name} is still a pup. He only does {park} for now.}}', { name: d.name, sex: d.sex, park: parkName });
+  if (isExpecting(d) && area !== 'park') return tt('pupplay.walk_expecting', '{sex, select, female {{name} is expecting, so she only strolls in {park}.} other {{name} is expecting, so he only strolls in {park}.}}', { name: d.name, sex: d.sex, park: parkName });
   return null;
 }
 /* a dog that can go nowhere at all (used to skip the route carousel) */
@@ -20,14 +20,14 @@ const walkScale = (d) => { d = d || D(); return d && dogMonths(d) >= 3 && dogMon
 /* pack walks: dogs that can't go stay home with a friendly line */
 function walkPackNote(area) {
   if (!S || S.dogs.length < 2) return;
-  others().filter((o) => walkBlock(o, area)).slice(0, 3).forEach((o, i) => setTimeout(() => { if (S && cur.mode === 'walk') toast(isNursing(o) ? `${o.name} stays home with the pups.` : `${o.name} stays home with a chew toy.`, ''); }, 1200 + i * 1700));
+  others().filter((o) => walkBlock(o, area)).slice(0, 3).forEach((o, i) => setTimeout(() => { if (S && cur.mode === 'walk') toast(isNursing(o) ? tt('pupplay.stays_pups', '{name} stays home with the pups.', { name: o.name }) : tt('pupplay.stays_toy', '{name} stays home with a chew toy.', { name: o.name }), ''); }, 1200 + i * 1700));
 }
 /* training: blocked under 2 months; 2 to 6 months: 4 attempts per session (Focus 25 each) and progress x1.2 */
-function trainBlock(d) { d = d || D(); const pr = PRd(d); return dogMonths(d) < 2 ? `${d.name} is too little to train. Wait until ${pr.he} is 2 months old.` : null; }
+function trainBlock(d) { d = d || D(); return dogMonths(d) < 2 ? tt('pupplay.train_little', '{sex, select, female {{name} is too little to train. Wait until she is 2 months old.} other {{name} is too little to train. Wait until he is 2 months old.}}', { name: d.name, sex: d.sex }) : null; }
 const trainCost = (d) => { d = d || D(); return isPup(d) ? 25 : TG_FOCUS; };
 const trainBoost = (d) => { d = d || D(); return isPup(d) ? 1.2 : 1; };
 /* fetch: not for nursing mums */
-function fetchBlock(d) { d = d || D(); return isNursing(d) ? `${d.name} is nursing the pups. No fetch for ${PRd(d).him} right now.` : null; }
+function fetchBlock(d) { d = d || D(); return isNursing(d) ? tt('pupplay.fetch_nursing', '{sex, select, female {{name} is nursing the pups. No fetch for her right now.} other {{name} is nursing the pups. No fetch for him right now.}}', { name: d.name, sex: d.sex }) : null; }
 
 /* the map goes through pickArea(): walk-only routes (hilltop, pier) go to a walk from there, so say no there too and the player stays on the map.
    (Park, River, Woods and Beach are also places to visit: travelling there is not a walk; the walk itself starts from the route carousel.) */
@@ -83,8 +83,8 @@ function pupIdleSteps(name) {
       { move: [0, 0, 1, 0.4 * sp], pose: 'walk', facing: 'right', ms: 500 * sp },
       { pose: 'down', fx: 'tk-lie', ms: R(3500, 6000) }]; // puppies flop over afterwards
     case 'tailbark': return [{ pose: 'walk', fx: 'tk-chase', ms: 1500 * sp },
-      { pose: 'speak', fb: 'happy', fx: 'tk-tbark', facing: 'left', ms: 1500 * sp, sound: 'yip', say: PICK(['Who goes there?!', 'Yip! Yip! Stop that!', 'Intruder! At my back end!']) },
-      { pose: 'sit', facing: 'right', ms: 1000 * sp, say: PICK(['...oh. It is my tail.', 'It is attached to me. Huh.', '(It was my tail.)']) }];
+      { pose: 'speak', fb: 'happy', fx: 'tk-tbark', facing: 'left', ms: 1500 * sp, sound: 'yip', say: PICK([tt('pupplay.tail_1', 'Who goes there?!'), tt('pupplay.tail_2', 'Yip! Yip! Stop that!'), tt('pupplay.tail_3', 'Intruder! At my back end!')]) },
+      { pose: 'sit', facing: 'right', ms: 1000 * sp, say: PICK([tt('pupplay.tail_4', '...oh. It is my tail.'), tt('pupplay.tail_5', 'It is attached to me. Huh.'), tt('pupplay.tail_6', '(It was my tail.)')]) }];
   }
   return [{ pose: 'idle', ms: 3000 }];
 }

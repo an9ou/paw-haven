@@ -137,6 +137,17 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [ ] `#ballLayer` is not depth-sorted with the dogs: the ball draws over the legs of dogs standing in front of it. `game/src/38_ball.js`
 - [ ] `phone_occl_play` is flaky under load (the walkfetch toast, the runner hint). Not from v2.10. `game/test_phone_occl_play.js`
 
+## Hello in Every Language (v2.14)
+- [ ] `obsLow` in `mods/walkrun.js` lowercases the obstacle word only in English (es `obs_label` is lowercase everywhere, so it reads fine). Other languages get the word as written. `mods/walkrun.js`
+- [ ] `data.fav.<breed>` holds raw ids like "pumpkin-pupcake" that are never shown to players. No action needed; noted so nobody translates them. `game/i18n/en.json`
+- [ ] Native-speaker checks: every translation ships machine-assisted. The `TODO(native)` lists in the Game section of each `docs/i18n/<lang>.md` (ja, zh-Hans, zh-Hant, ko, es, pt-BR, fr, de, th, id) are the starting point. A fix is a table-only edit, then `i18n` + `i18n_smoke` in that language.
+- [ ] Accepted fit exception: the first-walk how-to card scrolls at 360x640 in th and ja (sticky footer; English scrolled there before too). `mods/walkrun.js`
+- [ ] Accepted fit exception: the Thai site's stuck tab strip scrolls sideways at 360 px on purpose (a shorter `nav.about` would avoid it). `site/i18n/th.json`
+- [ ] Accepted fit exception: es "Dar de comer" and pt-BR "Guarda-roupa" don't fit the 49 px dock button, so the dock keeps Comida and Roupas. Use the longer words if the dock ever gets room. `game/i18n/es.json`, `game/i18n/pt-BR.json`
+- [ ] Review leftovers (v2.14, low): `Intl.Segmenter` word boundaries can still split a mission row inside a phrase in th and zh ("พาเหรดแต่ง|ตัว", "跟麵包|師貝亞…"), `game/src/24_missions.js` `msLines`. The ko profile line puts a full -해요 personality sentence in a "·" list of nouns (a noun-phrase form would read better), `game/i18n/ko.json`. The missions sheet's last footer line sits half under the sheet's fold in ja/ko/th/zh-Hant (it scrolls). On phones the garden header push (`--pg-dy`, `mods/garden.js` `hudFit`) also moves English plots down 4-8 px when the hint wraps, and leaves a strip of bare background above the scene in ja/th. Kitchen and garden use their portrait stage in any phone layout, so a mouse in a narrow window (or the site's 684 px box) sees "Tap…" wording (`mods/kitchen.js` TOUCH).
+- [ ] The pseudo-locales `xx` and `xx-cjk` clip the dock labels in strict `i18n_phone` (`PAW_I18N_STRICT=1`); the ten real languages pass strict. Not a player issue.
+- [ ] The reset email (Resend) is still English in every language (V214.md decision 16.5). Localize later with a `lang` field on `/forgot`. `cloudflare/worker.js`
+
 ## Faces & Feelings (v2.13)
 - [ ] The Ghost Sheet, the Trick-or-Treat Ghost and the Heart Sunglasses hide the expression's eyes (`ghostEyes` draws the pose eyes), so only the marks show. `dogs/pawart_dogs.js`
 - [ ] On phones the `fx` marks can be cut at the crop edge with no look chip (`rmLookSync`), and they pile up when several dogs show the same face. `game/src/37_roam.js`
@@ -152,7 +163,7 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 - [ ] The training lure position comes from `dogTo(0, 0, 1)`, not from each dog's size class. `game/src/15b_trick_games.js`
 - [ ] Four big dogs together overfill Shibuya and the Pixel 7 phone crop. `game/src/39_tokyo.js`, `game/src/37_roam.js`
 - [x] Some old breeds' heads float off the body in a few poses (as the yorkie, schnauzer, pit bull and lab did before fix/v212-neck): the collie's howl, the shiba, chihuahua and beagle in happy, speak and howl. Fixing them changes old renders (needs the owner's go-ahead and a new `check_identical` baseline). `game/v212_neck_check.js` can measure them. `dogs/pawart_dogs.js` Done in v2.13: `NECKFIX` (23 adult breed and pose renders) and the neck tube on every mix (`V213.md` section 8).
-- [ ] The site's Playroom animates only the first 14 dogs (`KEYS` in `site/js/site.js`); the other 21 have profiles but never walk in it.
+- [x] The site's Playroom animates only the first 14 dogs (`KEYS` in `site/js/site.js`); the other 21 have profiles but never walk in it. Gone in v2.14: the site's home plays the game itself (`/play/`), and the playroom scene code is removed.
 - [x] The Worker change (`DC_LIM` { n: 115, breed: 35, outfit: 50 }) needs `bash tools/cf_api_deploy.sh` with the release. The coordinator deploys it with v2.12.
 
 ## Costumes & Sizes (v2.11.1)
@@ -176,7 +187,7 @@ Logged by the v2 build agents (Paw Haven Studio). Fixed items say which version 
 
 ## Reset code in the game (v2.9.2)
 - [ ] Live email needs the Resend domain doodledoggo.app verified (it was still verifying on 17 Oct). Until then `/forgot` answers the same and the send fails quietly in the Worker log. Re-check with a real account once Resend says verified.
-- [ ] `site/privacy.html` still says the only emails are "a password link". The SITE lane (site/v2) should say "a password code". `site/privacy.html`
+- [x] `site/privacy.html` still says the only emails are "a password link". The SITE lane (site/v2) should say "a password code". `site/privacy.html` Done in site v3 (v2.14): "the 6-digit password reset code", in 11 languages.
 - [ ] `POST /reset` (the v2.8.2 link) and the D1 table `resets` stay only for links sent before v2.9.2 (they all ran out 30 minutes after the deploy). Remove both in a later release. `cloudflare/worker.js`, `cloudflare/schema.sql`
 - [ ] The keyboard check runs in Chromium with a shorter screen (the Android way). Check the iPhone overlay keyboard once on a real phone (`rsKeyboard`, `game/src/22d_reset.js`).
-- [ ] `tools/cf_site.js` still describes /reset as the password form in its header comment (harmless).
+- [x] `tools/cf_site.js` still describes /reset as the password form in its header comment (harmless). Done in v2.14: it says /reset is a notice.

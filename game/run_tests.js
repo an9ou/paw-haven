@@ -8,6 +8,7 @@
 //           --retries N  automatic retries of a failing suite (default 1; a suite that fails then passes is reported FLAKY)
 //           --strict   treat FLAKY as a failure (exit 1)
 //           --no-build skip build + harness (use the existing game/test_merged.html)
+//           --minified  minify the harness's scripts and styles (tools/minify.js, as the itch.io, Pages, /play/ and artifact copies are) before the suites
 //           --shots    write screenshots to game/shots_<suite>/ (off by default, they cost time)
 //           --list     print the suites and exit
 // Logs: game/test_logs/<suite>.log (+ <suite>.retryN.log), summary in game/test_logs/last_run.txt, timings in timings.json.
@@ -36,6 +37,7 @@ const SUITES = {
   v2_play: { file: 'test_v2_play.js', group: 'all', est: 70 },
   v21_genes: { file: 'test_v21_genes_node.js', group: 'all', est: 15 },
   copy: { file: 'test_copy_node.js', group: 'all', est: 2 },
+  i18n: { file: 'test_i18n_node.js', group: 'all', est: 3 }, // v2.14 SPEC (V214.md 13): msg.js, glossaries, string tables, helper names
   v21_breed: { file: 'test_v21_breed.js', group: 'all', est: 15 },
   v21_journal: { file: 'test_v21_journal.js', group: 'all', est: 30 },
   v21_town: { file: 'test_v21_town.js', group: 'all', est: 20 },
@@ -99,7 +101,7 @@ const SUITES = {
   phone_shell: { file: 'test_phone_shell.js', group: 'phone', est: 40 },
   cloud: { file: 'test_cloud.js', group: 'phone', est: 60 },
   worker: { file: 'test_worker.js', group: 'phone', est: 5 }, // v2.8.1: the Cloudflare Worker (node + Miniflare, local D1)
-  site: { file: 'test_site.js', group: 'phone', est: 20 }, // v2.8.2: the doodledoggo.app introduction site and its reset page (Miniflare, desktop + iPhone 15)
+  site: { file: 'test_site.js', group: 'phone', est: 300, timeout: 900 }, // v2.8.2: the doodledoggo.app introduction site and its reset page (Miniflare, desktop + iPhone 15)
   phone_home: { file: 'test_phone_home.js', group: 'phone', est: 60 },
   phone_town: { file: 'test_phone_town.js', group: 'phone', est: 70 },
   phone_journal: { file: 'test_phone_journal.js', group: 'phone', est: 35 },
@@ -130,6 +132,14 @@ const SUITES = {
   phone_v211_tokyo: { file: 'test_phone_v211_tokyo.js', group: 'phone', est: 90 }, // v2.11 TRAVEL (V211.md 5.3): the Japan map, the ride, the Tokyo places on phones
   phone_v29_photo: { file: 'test_phone_v29_photo.js', group: 'phone', est: 45 },
   phone_v29_polish: { file: 'test_phone_v29_polish.js', group: 'phone', est: 45 },
+  // v2.14 (V214.md 13): every language and the pseudo-locales. i18n_smoke is on its own (not in `all`): node game/run_tests.js i18n_smoke
+  // (PAW_LANGS=ja,de picks languages, PAW_I18N_PARTIAL=1 lists misses instead of failing); i18n_phone is in the `phone` group (PAW_I18N_STRICT=1)
+  i18n_smoke: { file: 'test_i18n_smoke.js', group: 'i18n', est: 420, timeout: 1500 },
+  i18n_phone: { file: 'test_i18n_phone.js', group: 'phone', est: 150, timeout: 900 },
+  // v2.14 FIT AUDIT (docs/i18n/coord/FIT.md): does every language fit every menu, window and box, at every size. Own group `fit` (not in `all`/`phone`):
+  // node game/run_tests.js i18n_fit site_fit --jobs 3   (PAW_LANGS, PAW_FIT_SIZES, PAW_FIT_REPORT_ONLY=1; they run their own parallel browsers, --jobs sets how many)
+  i18n_fit: { file: 'test_i18n_fit.js', group: 'fit', est: 1500, timeout: 5400 },
+  site_fit: { file: 'test_site_fit.js', group: 'fit', est: 900, timeout: 3600 },
 };
 // extra aliases: `all_*` is the same as `all`; `test_all` = the four+ shards of the old test_all.js
 const ALIAS = { test_all: ['all_a', 'all_b', 'all_c', 'all_d', 'all_e'], 'test_v15': ['v15'], 'test_v16': ['v16'], 'test_v16b': ['v16b'], 'test_v17': ['v17'], 'test_v171_garden': ['v171_garden'], 'test_v171_tricks': ['v171_tricks'], 'test_v2_slots': ['v2_slots'], 'test_v2_breed': ['v2_breed'], 'test_v2_journal': ['v2_journal'], 'test_v2_town': ['v2_town'], 'test_v2_play': ['v2_play'], 'test_v21_genes_node': ['v21_genes'], 'test_copy_node': ['copy'], 'test_v21_breed': ['v21_breed'], 'test_v21_journal': ['v21_journal'], 'test_v21_town': ['v21_town'], 'test_v21_home': ['v21_home'] };
@@ -143,16 +153,18 @@ for (let i = 0; i < argv.length; i++) {
   else if (a === '--timeout') opt.timeout = parseInt(argv[++i], 10) || 420;
   else if (a === '--strict') opt.strict = true;
   else if (a === '--no-build') opt.build = false;
+  else if (a === '--minified') opt.minified = true;
   else if (a === '--shots') opt.shots = true;
   else if (a === '--list') { Object.entries(SUITES).forEach(([k, v]) => console.log(k.padEnd(8), v.group.padEnd(6), v.file)); process.exit(0); }
   else if (a === '-h' || a === '--help') { console.log(fs.readFileSync(__filename, 'utf8').split('\n').slice(1, 14).map((l) => l.replace(/^\/\/ ?/, '')).join('\n')); process.exit(0); }
   else names.push(a);
 }
-if (!names.length) { console.error('usage: node game/run_tests.js smoke | all | <suite names...> [--jobs N] [--retries N] [--strict] [--no-build] [--shots] [--list]'); process.exit(2); }
+if (!names.length) { console.error('usage: node game/run_tests.js smoke | all | <suite names...> [--jobs N] [--retries N] [--strict] [--no-build] [--minified] [--shots] [--list]'); process.exit(2); }
 let list = [];
 for (const n of names) {
   if (n === 'all') list.push(...Object.keys(SUITES).filter((k) => SUITES[k].group === 'all'));
   else if (n === 'phone') list.push(...Object.keys(SUITES).filter((k) => SUITES[k].group === 'phone'));
+  else if (n === 'fit') list.push(...Object.keys(SUITES).filter((k) => SUITES[k].group === 'fit'));
   else if (n === 'smoke') list.push('smoke');
   else if (ALIAS[n]) list.push(...ALIAS[n]);
   else if (SUITES[n]) list.push(n);
@@ -164,7 +176,7 @@ list = [...new Set(list)];
 
 fs.mkdirSync(LOGS, { recursive: true });
 let NODE_PATH = process.env.NODE_PATH; if (!NODE_PATH) { try { NODE_PATH = cp.execSync('npm root -g', { encoding: 'utf8' }).trim(); } catch (e) { NODE_PATH = ''; } }
-const env = Object.assign({}, process.env, { NODE_PATH }, opt.shots ? { PAW_SHOTS: '1' } : {});
+const env = Object.assign({}, process.env, { NODE_PATH, PAW_JOBS: String(opt.jobs) }, opt.shots ? { PAW_SHOTS: '1' } : {}); // PAW_JOBS: the suites that run their own parallel browsers (i18n_fit, site_fit)
 const t0 = Date.now(); const sec = (ms) => (ms / 1000).toFixed(1) + 's';
 
 function sh(cmd, args, label) {
@@ -175,7 +187,12 @@ function sh(cmd, args, label) {
 if (opt.build) {
   const s = Date.now(); const a = sh('node', ['game/build.js'], 'build'), b = sh('node', ['game/harness.js', 'merged'], 'harness merged');
   console.log(`build: ${a} | harness merged: ${b} (${sec(Date.now() - s)})`);
-} else if (!fs.existsSync(path.join(D, 'test_merged.html'))) { console.error('game/test_merged.html is missing: run without --no-build'); process.exit(1); }
+  if (opt.minified) { // v2.14 PERF: the same per-block esbuild pass as the shipped copies; a missing esbuild is a failure here, not a warning
+    const h = path.join(D, 'test_merged.html'), r = require('../tools/minify.js').minifyHtml(fs.readFileSync(h, 'utf8'));
+    if (r.skipped) { console.error('--minified: esbuild not found (npm i -g esbuild@0.24.0)'); process.exit(1); }
+    fs.writeFileSync(h, r.html); console.log(`minified game/test_merged.html: ${(r.before / 1e6).toFixed(2)} -> ${(r.after / 1e6).toFixed(2)} MB (${r.blocks} blocks)`);
+  }
+} else if (opt.minified) { console.error('--minified needs the build (drop --no-build)'); process.exit(2); } else if (!fs.existsSync(path.join(D, 'test_merged.html'))) { console.error('game/test_merged.html is missing: run without --no-build'); process.exit(1); }
 
 // longest suite first (timings from the previous run) so the parallel schedule finishes together
 let hist = {}; try { hist = JSON.parse(fs.readFileSync(path.join(LOGS, 'timings.json'), 'utf8')); } catch (e) { hist = {}; }
