@@ -515,6 +515,7 @@ function travelTo(id) {
   if (awayFromHome(id) && staysHome(D())) { nope(stayHomeLine(D())); return; } // v2.0.1: under 3 months / nursing mum: home and yard only
   const going = S.dogs.filter((d) => d === D() || !(awayFromHome(id) && staysHome(d))), stay = S.dogs.filter((d) => !going.includes(d));
   busy = true; hideBubble(); SFX.whoosh(); trackAct('travel', { place: id });
+  if (P.v215) artChunk('g'); // v2.15: world G (the new places) loads during the walk there (PERF.md 5)
   if (stay.length && !awayFromHome()) toast(tt('yard.stay_home', '{kind, select, pups {{names} {n, plural, one {stays} other {stay}} home with the pups.} other {{names} {n, plural, one {stays} other {stay}} home with a chew toy (too little for trips).}}', { kind: stay.some((d) => ageMonths(d) >= 3) ? 'pups' : 'toy', names: tlist(stay.map((d) => d.name)), n: stay.length }), '');
   const card = document.createElement('div'); card.className = 'onway';
   card.innerHTML = `<div class="onway-card"><span class="onway-dog">${going.map((d) => dogSVG(d, { pose: 'walk', outfit: outfitOf(d) })).join('')}</span><b>${esc(tt('yard.on_the_way_to', 'On the way to {place}...', { place: placeName(id) }))}</b><span class="small">${going.length > 1 ? (stay.length ? tt('yard.the_pack_trots_along_2', 'The pack trots along. -2 Energy each.') : tt('yard.the_whole_pack_trots_along', 'The whole pack trots along. -2 Energy each.')) : esc(tt('yard.trots_happily_2_energy', '{name} trots happily. -2 Energy.', { name: NAME() }))}</span></div>`;

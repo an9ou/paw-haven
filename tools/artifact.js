@@ -24,9 +24,11 @@ const FILES = {
   'world_c.js': ['world/pawart_world_c.js'],
   'world_d.js': ['world/pawart_world_d.js'],
   'world_e.js': ['world/pawart_world_e.js'],
+  'world_f.js': ['world/pawart_world_f.js'], // v2.15: the v2.15 map (MAP ART), only when the file exists
+  'world_g.js': ['world/pawart_world_g.js'], // v2.15: the new places (PLACE ART), only when the file exists
   'mods.js': ['mods/genes.js', 'mods/pawaudio.js', 'mods/walkrun.js', 'mods/toys.js', 'mods/garden.js', 'mods/kitchen.js'],
 };
-const SPLIT = require(path.join(SRC, 'tools', 'split.js')).make(SRC);
+const SPLIT = require(path.join(SRC, 'tools', 'split.js')).make(SRC, { lazy: false }); // v2.15: worlds F and G stay inline here (world_f.js, world_g.js), never lazy chunks
 const MIN = !args.includes('--no-minify'), minify = require(path.join(SRC, 'tools', 'minify.js'));
 const es = MIN && minify.available();
 if (MIN && !es) console.warn('artifact: esbuild not found (npm i -g esbuild@0.24.0); the files stay unminified');
@@ -38,9 +40,12 @@ const shell = fs.readFileSync(path.join(G, 'shell.html'), 'utf8'), css = cat('cs
 let total = 0;
 const published = [];
 const write = (name, text) => { if (banned.test(text)) throw new Error('banned word in ' + name); text = minJs(name, text); fs.writeFileSync(path.join(OUT, name), text); total += Buffer.byteLength(text); if (name !== 'index.html') published.push(name); console.log(' ', name.padEnd(12), (Buffer.byteLength(text) / 1e3).toFixed(0).padStart(5), 'KB'); };
-for (const [name, srcs] of Object.entries(FILES)) write(name, srcs.filter((f) => fs.existsSync(path.join(SRC, f))).map(rd).join('\n'));
+// v2.15: a world whose file does not exist yet (F, G) is left out of the files and the script tags
+const ARTS = ['dogs.js', 'world_a.js', 'world_b.js', 'world_c.js', 'world_d.js', 'world_e.js', 'world_f.js', 'world_g.js'].filter((n) => FILES[n].some((f) => fs.existsSync(path.join(SRC, f))));
+fs.readdirSync(OUT).filter((f) => /^world_[fg]\.js$/.test(f) && !ARTS.includes(f)).forEach((f) => fs.rmSync(path.join(OUT, f)));
+for (const [name, srcs] of Object.entries(FILES)) if (name === 'mods.js' || ARTS.includes(name)) write(name, srcs.filter((f) => fs.existsSync(path.join(SRC, f))).map(rd).join('\n'));
 write('i18n.js', SPLIT.core); // v2.14 PERF: msg.js + the small PAW_I18N + loader.js
-for (const [name, text] of Object.entries(SPLIT.files)) write(name, text); // lang/<code>.<hash>.js, photo_fonts.<hash>.js
+for (const [name, text] of Object.entries(SPLIT.files)) if (!/^world_[a-z]\./.test(name)) write(name, text); // lang/<code>.<hash>.js, photo_fonts.<hash>.js (v2.15: the art worlds are inline here: world_f.js, world_g.js)
 // v2.14: the per-language font subsets, next to index.html as fonts/i18n/<file> (binary, copied as they are)
 const FD = path.join(G, 'fonts', 'i18n'), fontFiles = fs.existsSync(FD) ? fs.readdirSync(FD).filter((f) => /\.woff2$/.test(f)).sort() : [];
 if (fontFiles.length) { fs.mkdirSync(path.join(OUT, 'fonts', 'i18n'), { recursive: true }); for (const f of fontFiles) { fs.copyFileSync(path.join(FD, f), path.join(OUT, 'fonts', 'i18n', f)); total += fs.statSync(path.join(FD, f)).size; published.push('fonts/i18n/' + f); } console.log('  fonts/i18n/  ', fontFiles.length, 'files:', fontFiles.join(' ')); }
@@ -50,7 +55,7 @@ const tags = (names) => names.map((n) => `<script src="${n}"></script>`).join('\
 let index = shell
   .replace('<script id="pawi18n">/*@@I18N@@*/</script>', () => tags(['i18n.js'])) // v2.14: msg.js + packed.js, before the art and the modules
   .replace('/*@@CSS@@*/', () => css)
-  .replace('<script id="pawart">/*@@PAWART@@*/</script>', () => tags(['dogs.js', 'world_a.js', 'world_b.js', 'world_c.js', 'world_d.js', 'world_e.js']))
+  .replace('<script id="pawart">/*@@PAWART@@*/</script>', () => tags(ARTS))
   .replace('<script id="pawmods">/*@@PAWMODS@@*/</script>', () => tags(['mods.js']))
   .replace(/<script>\s*\/\*@@GAME@@\*\/\s*<\/script>/, () => tags(['game.js']));
 if (/@@(I18N|CSS|PAWART|PAWMODS|GAME)@@/.test(index)) throw new Error('a shell slot was not filled');

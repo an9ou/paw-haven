@@ -20,17 +20,18 @@ const head = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta n
 const out = path.join(root, '_site');
 fs.mkdirSync(out, { recursive: true }); // a fresh checkout has no _site/ yet
 fs.rmSync(path.join(out, 'lang'), { recursive: true, force: true });
-fs.readdirSync(out, { withFileTypes: true }).filter((e) => e.isFile() && /^photo_fonts\.\w+\.js$/.test(e.name)).forEach((e) => fs.rmSync(path.join(out, e.name)));
+fs.readdirSync(out, { withFileTypes: true }).filter((e) => e.isFile() && /^(photo_fonts|world_[a-z])\.\w+\.js$/.test(e.name)).forEach((e) => fs.rmSync(path.join(out, e.name))); // v2.15: and the old lazy art chunks
 let html = head + rest + '</body></html>';
 if (MINIFY) { const r = require('./minify.js').minifyHtml(html); html = r.html; if (!r.skipped) console.log(`minified index.html: ${(r.before / 1e6).toFixed(2)} -> ${(r.after / 1e6).toFixed(2)} MB (${r.blocks} blocks)`); }
 fs.writeFileSync(path.join(out, 'index.html'), html);
 fs.writeFileSync(path.join(out, '.nojekyll'), '');
-// the split build's side files: lang/<code>.<hash>.js and photo_fonts.<hash>.js
+// the split build's side files: lang/<code>.<hash>.js, photo_fonts.<hash>.js and (v2.15) the lazy art chunks world_<f|g>.<hash>.js, minified like index.html
 let side = 0;
 if (!SINGLE) {
   const copy = (rel) => { fs.mkdirSync(path.dirname(path.join(out, rel)), { recursive: true }); fs.copyFileSync(path.join(SPLIT, rel), path.join(out, rel)); side++; };
   fs.readdirSync(path.join(SPLIT, 'lang')).forEach((f) => copy('lang/' + f));
   fs.readdirSync(SPLIT).filter((f) => /\.js$/.test(f)).forEach(copy);
+  if (MINIFY) fs.readdirSync(out).filter((f) => /^world_[a-z]\.\w+\.js$/.test(f)).forEach((f) => { const m = require('./minify.js').minifyJs(fs.readFileSync(path.join(out, f), 'utf8')); if (m) fs.writeFileSync(path.join(out, f), m); });
 }
 // brand kit: served from the site root (favicons, apple-touch icon, web manifest, og:image)
 const brand = path.join(root, 'brand'), kit = fs.readdirSync(brand).filter((f) => /\.(png|svg|webmanifest)$/.test(f));
