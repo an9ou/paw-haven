@@ -1,7 +1,9 @@
 // "Snack time" ad Reel (1080 x 1920, 30 fps, 16 s): a calm, no-text close-up in the style of the cozy-game ads (one animal, one small
-// action, a soft deep scene), then an end card. A dog (any of the 35, DOG=<key>) wags in the autumn yard, a bone-shaped biscuit drops and
-// they catch it, chew it bite by bite with a blissful face (crumbs, crunches), wink, a happy hop into heart eyes; the scene goes soft and
-// pale and the logo comes in with "play free at doodledoggo.app".
+// action, a soft deep scene), then an end card. A dog (any of the 35, DOG=<key>) sits in the autumn yard; the player's hand (the game's
+// own crayon hand, from the trick signals) comes in from the bottom right with a bone-shaped biscuit, winds back and throws it; it spins
+// in an arc into the dog's mouth. The dog chews it bite by bite with a blissful face (crumbs, crunches), winks, hops up to beg with heart
+// eyes; the scene goes soft and pale and the logo comes in with "play free at doodledoggo.app". (Owner, 23 Oct 2026: sitting, and thrown
+// by the player.)
 // "3D" the owner's way (23 Oct 2026): the game's real crayon dog, with depth built round it: layers that move at different speeds, depth
 // of field, a soft round contact shadow, light rays, floating light motes and falling leaves at three depths, a slow camera move.
 // Real art only (PawArt.dog with v2.13 faces, PawArt.scene, PawArt.item), no game UI, no Japanese.
@@ -33,11 +35,12 @@ const squash = (t, ts) => { const dt = t - ts; if (dt < -0.07) return 0; if (dt 
 const BONE = inner(PA.item('Bone-shaped Biscuit'));
 const bone = (x, y, s, rot, sx = 1, sy = 1) => `<g transform="translate(${f1(x)} ${f1(y)}) rotate(${f1(rot)}) scale(${r3(sx)} ${r3(sy)})"><svg x="${f1(-s / 2)}" y="${f1(-s / 2)}" width="${f1(s)}" height="${f1(s)}" viewBox="0 0 64 64" overflow="visible">${BONE}</svg></g>`;
 
+const POSE = process.env.POSE || 'sit', END_POSE = process.env.END_POSE || 'beg';   // sits through the snack, sits up to beg at the end
 // ---- the story (seconds) ----
-const DROP0 = 1.25, CATCH = 1.85;                       // the biscuit falls from above into the dog's mouth
-const BITES = [3.3, 4.9, 6.5, 7.9, 9.0];                // a crunch each; the biscuit gets smaller, gone after the last
-const LICK = 9.05, HOP0 = 10.0, HOP1 = 10.36;           // a wink after the last bite, then a happy hop into heart eyes
-const SOFT0 = 11.7, SOFT1 = 12.5, LOGO = 12.35, PILL = 12.8;
+const HAND0 = 0.5, HAND1 = 1.25, WIND = 1.6, REL = 1.8, FLICK = 1.84, CATCH = 2.6; // the hand comes in, winds back, throws; the catch
+const BITES = [4.0, 5.5, 7.0, 8.3, 9.3];                // a crunch each; the biscuit gets smaller, gone after the last
+const LICK = 9.35, HOP0 = 10.2, HOP1 = 10.56;           // a wink after the last bite, then a happy hop up to beg, heart eyes
+const SOFT0 = 11.9, SOFT1 = 12.7, LOGO = 12.55, PILL = 13.0;
 
 // ---- depth: light motes and falling leaves at three depths (0 far, behind the dog; 1 mid; 2 near, in front), fixed so remakes match ----
 let sd = 11; const rr = () => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; };
@@ -69,7 +72,7 @@ const depthFx = (t, d) => { let g = '';
   const dataUri = (file) => 'data:image/png;base64,' + fs.readFileSync(file).toString('base64');
 
   // ---- the dog, measured once: its box and its muzzle tip (the rightmost drawn point above the ground, facing right) on the 240 x 200 canvas ----
-  const plain = PA.dog(KEY, { pose: 'idle', anim: false, facing: 'right' });
+  const plain = PA.dog(KEY, { pose: POSE, anim: false, facing: 'right' });
   const M = await p.evaluate(async (sv) => {
     const d = document.createElement('div'); d.innerHTML = sv; document.body.appendChild(d); const e = d.querySelector('svg'); e.setAttribute('width', 240); e.setAttribute('height', 200);
     const r = e.getBBox(); d.remove();
@@ -77,7 +80,8 @@ const depthFx = (t, d) => { let g = '';
     const img = new Image(); img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(src.replace('<svg', '<svg width="960" height="800"')); await img.decode();
     const c = document.createElement('canvas'); c.width = 960; c.height = 800; const g = c.getContext('2d'); g.drawImage(img, 0, 0, 960, 800);
     // the right edge of each row; the muzzle is the lowest forward bump of it (pointed ears can reach further right, higher up)
-    const a = g.getImageData(0, 0, 960, 800).data, ymax = 4 * 176, R = new Float32Array(ymax).fill(-1);
+    const a = g.getImageData(0, 0, 960, 800).data, ymax = Math.round(4 * (r.y + 0.75 * (188 - r.y))), // the head's rows, not the feet
+       R = new Float32Array(ymax).fill(-1);
     for (let y = 0; y < ymax; y++) for (let x = 959; x >= 0; x--) if (a[(y * 960 + x) * 4 + 3] > 128) { R[y] = x; break; }
     const S = R.map((_, y) => { let s = 0, n = 0; for (let j = Math.max(0, y - 4); j <= Math.min(ymax - 1, y + 4); j++) if (R[j] >= 0) { s += R[j]; n++; } return n ? s / n : -1; });
     const maxR = Math.max(...S); let ty = S.indexOf(maxR);
@@ -88,7 +92,7 @@ const depthFx = (t, d) => { let g = '';
   const K = Math.min(680 / hgt, 1350 / bw);               // fills the frame like a close-up, whatever the size of the dog
   const HEADX = M.tip[0] - 28;
   let X0 = bw * K > 1000 ? 650 - HEADX * K               // a long dog: the head a little right of centre, the back runs off the left edge
-    : 540 - (bx + bw / 2) * K;                           // a short dog: the whole dog, centred
+    : 500 - (bx + bw / 2) * K;                           // a short dog: the whole dog, a little left of centre (the throw comes from the right)
   X0 = Math.min(X0, 1060 - 150 * K / 6.6 - M.tip[0] * K); // room for the biscuit in front of the muzzle
   const Y0 = FEET - GY * K, cx = (x) => X0 + x * K, cy = (y) => Y0 + y * K;
   const MOUTH = [cx(M.tip[0] - 4), cy(M.tip[1] + 3)], HEAD = [cx(HEADX), cy(M.tip[1])];
@@ -97,6 +101,26 @@ const depthFx = (t, d) => { let g = '';
   const crumbs = [];                                      // per bite: a little burst of biscuit crumbs that fall to the grass
   for (const [bi, tb] of BITES.entries()) for (let j = 0; j < 7; j++) { const a = -2.4 + j * 0.55 + Math.sin(bi * 7 + j * 3) * 0.25, v = 380 + 160 * Math.abs(Math.sin(bi * 3 + j));
     crumbs.push({ t0: tb, vx: Math.cos(a) * v * 0.55, vy: Math.sin(a) * v - 120, r: 10 + (j % 3) * 4, land: FEET - 26 + (j % 4) * 10 }); }
+  // ---- the player's hand: the game's open crayon hand (the "dance" trick signal, its wavy lines and note masked off), a sleeve to the edge ----
+  const HAND = inner(PA.prop('hand-signal', { trick: 'dance' }));
+  const PALM = [58.8, 74.4], HU = 4.2;                     // the palm centre on the 120 x 120 prop, and its scale on screen (near the camera)
+  const handG = `<polygon points="55.2,111.5 86.8,100 166,330 120,350" fill="#B9D4F3" stroke="#4A332B" stroke-width="2.4" stroke-linejoin="round"/>`
+    + `<line x1="70" y1="150" x2="98" y2="140" stroke="#4A332B" stroke-width="1.6" opacity=".35"/>`
+    + `<defs><clipPath id="handclip"><rect x="18" y="0" width="74" height="120"/></clipPath></defs><g clip-path="url(#handclip)">${HAND}</g>`;
+  const KEYF = [[0, 1200, 2250, 6], [HAND0, 1200, 2250, 6], [HAND1, 880, 1650, 0], [WIND, 950, 1740, 16], [FLICK, 830, 1500, -30], [1.98, 815, 1485, -33], [2.8, 1200, 2250, -8]];
+  const EASE = [null, null, eo3, eio, (x) => 1 - Math.pow(1 - x, 4), eo3, (x) => x * x];
+  const handAt = (t) => { let i = 1; while (i < KEYF.length - 1 && t > KEYF[i][0]) i++; const a = KEYF[i - 1], z = KEYF[i], q = (EASE[i] || eio)(seg(t, a[0], z[0]));
+    return [a[1] + (z[1] - a[1]) * q, a[2] + (z[2] - a[2]) * q, a[3] + (z[3] - a[3]) * q]; };
+  const toScreen = ([hx, hy, r], [px, py]) => { const c = Math.cos(r * Math.PI / 180), sn = Math.sin(r * Math.PI / 180), dx = (px - PALM[0]) * HU, dy = (py - PALM[1]) * HU; return [hx + dx * c - dy * sn, hy + dx * sn + dy * c]; };
+  const PALM_BONE = 210;                                 // the biscuit on the palm, big: it is near the camera
+  const hand = (t) => { if (t < HAND0 || t > 2.8) return ''; const [hx, hy, r] = handAt(t);
+    let g = `<g transform="translate(${f1(hx)} ${f1(hy)}) rotate(${f1(r)}) scale(${HU}) translate(${-PALM[0]} ${-PALM[1]})">${handG}`;
+    if (t < REL) g += bone(PALM[0] - 2, PALM[1] - 4, PALM_BONE / HU, -28);
+    g += `</g>`;
+    if (t > WIND + 0.02 && t < 2.05) { const o = r3(1 - seg(t, 1.9, 2.05)); // speed lines behind the flick
+      for (let j = 0; j < 3; j++) { const [ax2, ay2] = toScreen([hx, hy, r], [100 + j * 6, 40 + j * 22]); g += `<path d="M${f1(ax2)} ${f1(ay2)}q60 50 150 70" fill="none" stroke="${INK}" stroke-width="7" stroke-linecap="round" opacity="${o}"/>`; } }
+    return `<g filter="url(#handsoft)">${g}</g>`; };
+  const RELP = toScreen(handAt(REL), [PALM[0] - 2, PALM[1] - 4]); // where the biscuit leaves the palm
   const cache = {};
   // the art draws each pose three times (.pa-d-f0/1/2, the game's line boil, one at a time three times a second): keep exactly one
   const dog = (pose, expr, fr) => { const key = [pose, expr, fr].join('|');
@@ -119,27 +143,32 @@ const depthFx = (t, d) => { let g = '';
   await shotClear(page(`<defs><filter id="fb" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="11"/></filter></defs>`
     + `<g filter="url(#fb)" opacity=".95">${bone(130, 1800, 320, -24)}${bone(980, 1850, 280, 28)}</g>`), fgFile);
   const BG = `<image href="${dataUri(bgFile)}" x="0" y="0" width="${W}" height="${H}"/>`, RAYS = dataUri(raysFile), FG = `<image href="${dataUri(fgFile)}" x="0" y="0" width="${W}" height="${H}"/>`;
-  const DEFS = `<defs><filter id="shadow" x="-30%" y="-200%" width="160%" height="500%"><feGaussianBlur stdDeviation="12"/></filter>`
+  const DEFS = `<defs><filter id="shadow" x="-30%" y="-200%" width="160%" height="500%"><feGaussianBlur stdDeviation="12"/></filter><filter id="handsoft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.6"/></filter>`
     + [1.8, 4, 11].map((s, d) => `<filter id="dof${d}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="${s}"/></filter>`).join('') + `</defs>`;
   const LOGO_SVG = inner(fs.readFileSync(path.join(root, 'brand', 'doodle-doggo-logo.svg'), 'utf8').replace(/<title>[^<]*<\/title>/, '').replace(/<rect width="900" height="280" fill="#FFF8EC"\/>/, ''));
 
   // the layers move at their own speeds as the camera creeps in: the yard a little, the dog more, the front grass most (parallax)
   const layer = (z, ox, oy, dx, g) => `<g transform="translate(${f1(ox + dx)} ${f1(oy)}) scale(${r3(z)}) translate(${f1(-ox)} ${f1(-oy)})">${g}</g>`;
+  // the throw: from the palm (near, big, a little soft) up in an arc into the dog's mouth (smaller, sharp), spinning
+  const flight = (t) => { if (t < REL || t >= CATCH) return ''; const q = seg(t, REL, CATCH), qe = q;
+    const x = RELP[0] + (MOUTH[0] + 4 + SIZES[0] * 0.12 - RELP[0]) * qe, y = RELP[1] + (MOUTH[1] - 4 - RELP[1]) * qe - Math.sin(Math.PI * q) * 340;
+    const s = PALM_BONE + (SIZES[0] - PALM_BONE) * q, blur = f1(3 * (1 - q));
+    return `<defs><filter id="fly" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="${blur}"/></filter></defs><g filter="url(#fly)">${bone(x, y, s, -28 - 580 * q)}</g>`; };
   const scene = (t) => {
     const e = eio(seg(t, 0, SOFT1)), fr = Math.floor(t * 3) % 3, breath = 1 + 0.01 * Math.sin(t * 2 * Math.PI * 1.2);
-    let pose = 'idle', expr, lift = 0, k = 0;
-    if (t >= DROP0 && t < CATCH) expr = 'curious';
+    let pose = POSE, expr, lift = 0, k = 0;
+    if (t >= 0.85 && t < CATCH) expr = 'wow';              // the treat! star eyes while the hand comes in and throws
     else if (t >= CATCH && t < LICK) expr = 'dreamy';
     else if (t >= LICK && t < (HOP0 + HOP1) / 2) expr = 'wink';
-    else if (t >= (HOP0 + HOP1) / 2) { pose = 'happy'; expr = 'hearts'; }
-    k = squash(t, CATCH) * 0.8 + squash(t, HOP1);
+    else if (t >= (HOP0 + HOP1) / 2) { pose = END_POSE; expr = 'hearts'; }
+    k = squash(t, CATCH) * 0.8 + squash(t, HOP1) + squash(t, WIND + 0.05) * 0.4; // a little lean as the hand winds back
+    if (t > CATCH - 0.12 && t < CATCH + 0.16) lift = Math.sin(Math.PI * seg(t, CATCH - 0.12, CATCH + 0.16)) * 26; // a small jump up to catch
     for (const tb of BITES) k += squash(t, tb) * 0.35;
     if (t > HOP0 && t < HOP1) { const q = seg(t, HOP0, HOP1); lift = Math.sin(Math.PI * q) * 70; k = -0.6 * Math.sin(Math.PI * q); }
     else if (t > HOP0 - 0.07 && t <= HOP0) k = squash(t, HOP0);
     // chewing: a soft steady rhythm while the biscuit is in the mouth (a tiny nod of the whole dog and a bob of the biscuit)
     const chewing = t >= CATCH + 0.25 && t < BITES[BITES.length - 1], chew = chewing ? Math.sin((t - CATCH) * 2 * Math.PI * 2.6) : 0;
     let mid = depthFx(t, 1) + dogAt(pose, expr, fr, lift, 1 + 0.04 * k, (1 - 0.07 * k) * breath * (1 - 0.006 * chew));
-    if (t >= DROP0 && t < CATCH) { const q = seg(t, DROP0, CATCH); mid += bone(MOUTH[0] + 6, -200 + (MOUTH[1] - 4 + 200) * q * q, SIZES[0], -200 + 180 * q); }
     if (t >= CATCH) { let n = 0; while (n < BITES.length && t >= BITES[n]) n++;
       const s = SIZES[n]; if (s > 0) { const sq = Math.max(0, ...BITES.map((tb) => (t >= tb && t < tb + 0.12 ? 1 - (t - tb) / 0.12 : 0)));
         mid += bone(MOUTH[0] + 4 + s * 0.12, MOUTH[1] - 4 + chew * 8 - squash(t, CATCH) * 16, s, -20 + chew * 4, 1 + 0.12 * sq, 1 - 0.18 * sq); } }
@@ -149,7 +178,7 @@ const depthFx = (t, d) => { let g = '';
     return DEFS + layer(1 + 0.025 * e, HEAD[0], HEAD[1], -14 * e, BG + depthFx(t, 0))
       + `<image href="${RAYS}" x="0" y="0" width="${W}" height="${H}" opacity="${r3(0.75 + 0.2 * Math.sin(t * 0.9))}"/>`
       + layer(1 + 0.06 * e, HEAD[0], HEAD[1], 0, mid)
-      + layer(1 + 0.12 * e, 540, 1750, 22 * e, FG + depthFx(t, 2));
+      + layer(1 + 0.12 * e, 540, 1750, 22 * e, FG + depthFx(t, 2)) + hand(t) + flight(t);
   };
   const endCard = (t) => { // over the softened, pale scene
     const lq = eoB(seg(t, LOGO, LOGO + 0.5)), pq = eoB(seg(t, PILL, PILL + 0.45));
@@ -169,7 +198,7 @@ const depthFx = (t, d) => { let g = '';
   // the cover: the dog mid-chew with the blissful face, the logo above (the profile grid shows the middle 1080 x 1440)
   await shot(page(scene(5.6) + `<svg x="140" y="250" width="800" height="249" viewBox="0 0 900 280">${LOGO_SVG}</svg>`), path.join(OUT, `snack-cover-${KEY}.jpg`), 'jpeg');
   if (process.env.ONLY === 'stills') {
-    const ts = process.env.STRIP ? process.env.STRIP.split(',').map(Number) : [0.5, 1.6, 2.2, 3.32, 5.6, 9.2, 10.2, 11.0, 12.1, 13.5];
+    const ts = process.env.STRIP ? process.env.STRIP.split(',').map(Number) : [0.4, 1.0, 1.6, 1.84, 2.2, 2.62, 5.0, 9.6, 10.9, 13.7];
     for (const [j, t] of ts.entries()) await shot(page(frameAt(t)), path.join(WORK, `still${String(j).padStart(2, '0')}.png`));
     await b.close(); console.log('stills done'); return;
   }
@@ -186,6 +215,7 @@ const depthFx = (t, d) => { let g = '';
   const SR = 44100, n = Math.ceil(T * SR), fx = new Float32Array(n);
   let seed = 7; const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647 * 2 - 1; };
   const add = (t0, len, fn) => { for (let j = 0; j < len * SR; j++) { const i = Math.floor(t0 * SR) + j; if (i >= 0 && i < n) fx[i] += fn(j / SR); } };
+  { let lp = 0; add(WIND + 0.12, 0.3, (tt) => { lp += (0.05 + 0.5 * tt) * (rnd() - lp); return 0.4 * lp * Math.sin(Math.PI * tt / 0.3); }); } // whoosh of the throw
   add(CATCH - 0.01, 0.12, (tt) => 0.35 * Math.sin(2 * Math.PI * (520 - 2400 * tt) * tt) * Math.exp(-30 * tt));               // plop
   for (const tb of BITES) { let lp = 0; add(tb - 0.01, 0.16, (tt) => { lp += 0.45 * (rnd() - lp); return 0.55 * lp * Math.exp(-26 * tt) * (1 + 0.6 * Math.sin(tt * 900)); }); } // crunch
   for (let tc = CATCH + 0.25; tc < BITES[BITES.length - 1]; tc += 1 / 2.6) if (!BITES.some((tb) => Math.abs(tb - tc) < 0.2)) { let lp = 0; add(tc, 0.05, (tt) => { lp += 0.3 * (rnd() - lp); return 0.16 * lp * Math.exp(-70 * tt); }); }
