@@ -6986,7 +6986,7 @@
  "walk.compost": "Foi para a composteira da cidade. (+5 moedas)",
  "walk.consolation": "Nenhum tesouro aqui. Só {n} moedas. Moedas de consolação!",
  "walk.dig": "Cavar!",
- "walk.dig_here": "Cavar aqui? {n, plural, =0 {Nenhuma escavação sobrando.} one {Sobra # escavação.} other {Sobram # escavações.}} {phone, select, yes {(Toque em Cavar! para cavar, segure passear para pular.)} other {(Cavar! ou D para cavar, segure passear para pular.)}}",
+ "walk.dig_here": "Cavar aqui? {n, plural, =0 {Nenhuma escavação sobrando.} one {Sobra # escavação.} other {Sobram # escavações.}} {phone, select, yes {(Toque em Cavar! para cavar, segure passear para seguir.)} other {(Cavar! ou D para cavar, segure passear para seguir.)}}",
  "walk.digs_left": "Escavações sobrando: {n}",
  "walk.find_treasure": "{route}: encontre o tesouro escondido",
  "walk.first_hunt": "Primeira caça ao tesouro! Fareje as pistas e depois cave num X. (Psiu: tente o primeiro X.)",
