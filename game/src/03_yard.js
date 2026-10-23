@@ -157,6 +157,53 @@ let phCamHome = 430, phHomeCx = 358, phPanT = 0, phPeekOn = false, phZoom = 1; /
 // (194+) and the whole dog (332-517) fit together. With a visiting dog it spans dog + visitor, and Market Street zooms out so more than one shop shows.
 // phHomeRefit works out the span, zooms the scene out (--vfit on #view) when the span is wider than the crop, and homes the camera on its middle.
 function phSvgDims() { const svg = $('#view > svg.world'); return { w: (svg && svg.clientWidth) || view.clientWidth, h: (svg && svg.clientHeight) || view.clientHeight }; }
+// v2.14.1 (owner, iPhone, the doodledoggo.app game box: "There is a blue bar under the 2 buttons"): on phones the scene ends above the place-button
+// strip (--trayH, so no prop or dog sits under a button) and above Market Street's own button row, and the view showed its flat sky colour there.
+// #phGnd fills that strip with the scene's own ground: the scene art's full-width layers (paper, ground, floor, road, grass tufts; never a prop,
+// which is a group) cloned once per scene drawing, and their bottom PH_GND_B world units mirrored and repeated (mirror, upright, mirror...), so the
+// seam at y 600 meets itself. It is a separate <svg> under the scene: svg.world, its viewBox and every crop, hit box and roam zone stay exactly as
+// they were. It follows the camera (camApply), the scene's size (a ResizeObserver) and a redrawn scene (season, time, weather: a MutationObserver).
+// It never takes a tap. Desktop and the other modes never show it.
+const PH_GND_B = 60;
+let phGndRO = null, phGndMO = null, phGndSvg = null, phGndArt = null;
+function phGndLayers(sg) { // the scene's full-width layers that reach its bottom edge, as markup (ids dropped: the copies must not clash)
+  const root = sg.firstElementChild && sg.firstElementChild.tagName.toLowerCase() === 'svg' ? sg.firstElementChild : sg; let out = '';
+  for (const e of root.children) {
+    if (!/^(rect|path|polygon|polyline|ellipse|image)$/i.test(e.tagName)) continue;
+    let b; try { b = e.getBBox(); } catch (er) { continue; }
+    if (b.width < 900 || b.y + b.height < 590) continue;
+    const c = e.cloneNode(true); c.removeAttribute('id'); c.querySelectorAll('[id]').forEach((x) => x.removeAttribute('id')); out += c.outerHTML;
+  }
+  const tf = root !== sg && root.getAttribute('viewBox') ? root.getAttribute('viewBox').trim().split(/[\s,]+/).map(Number) : null; // the art's own svg: 0 0 1000 600 today
+  return out && tf && (tf[0] || tf[1] || tf[2] !== 1000 || tf[3] !== 600) ? '' : out;
+}
+function phGnd() {
+  const svg = $('#view > svg.world'); let g = $('#phGnd');
+  const hide = () => { if (g) g.style.display = 'none'; };
+  const sg = svg && $('#sceneG', svg);
+  if (!isPhone() || !sg || !['yard', 'bath', 'market'].includes(cur.mode)) return hide();
+  if (phGndSvg !== svg) {
+    phGndSvg = svg; phGndArt = null;
+    if (typeof ResizeObserver === 'function') { if (!phGndRO) phGndRO = new ResizeObserver(() => phGnd()); phGndRO.disconnect(); phGndRO.observe(svg); phGndRO.observe(view); }
+    if (!phGndMO) phGndMO = new MutationObserver(() => { phGndArt = null; phGnd(); }); phGndMO.disconnect(); phGndMO.observe(sg, { childList: true });
+  }
+  const vr = view.getBoundingClientRect(), sr = svg.getBoundingClientRect(), k = view.offsetHeight ? vr.height / view.offsetHeight : 1; // k: a CSS scale on the page (none in the game)
+  const top = (sr.bottom - vr.top) / k, gap = (vr.bottom - sr.bottom) / k, sw = sr.width / k, sh = sr.height / k, vb = svg.viewBox.baseVal;
+  if (gap < 1 || sw < 1 || sh < 1 || !vb || !vb.width || Math.abs(vb.y + vb.height - 600) > 0.5) return hide(); // the scene's bottom (y 600) sits on the svg's bottom edge (xMidYMax)
+  const s = Math.max(sw / vb.width, sh / vb.height), w = sw / s, x = vb.x + (vb.width - w) / 2, h = gap / s, n = Math.ceil(h / PH_GND_B) || 1;
+  if (!g || g.previousElementSibling !== svg) {
+    if (g) g.remove(); phGndArt = null;
+    g = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); g.id = 'phGnd'; g.setAttribute('aria-hidden', 'true'); g.setAttribute('focusable', 'false'); g.setAttribute('preserveAspectRatio', 'none'); svg.after(g);
+  }
+  const art = sg.firstElementChild;
+  if (phGndArt !== art || +g.dataset.n !== n) {
+    phGndArt = art; const lay = phGndLayers(sg), src = lay ? '#phGndSrc' : '#sceneG', B = PH_GND_B; let t = lay ? `<defs><g id="phGndSrc">${lay}</g></defs>` : ''; // no plain layers found: the whole scene
+    for (let i = 0; i < n; i++) t += `<svg x="-2000" y="${600 + i * B}" width="5000" height="${B}" viewBox="-2000 ${600 - B} 5000 ${B}" preserveAspectRatio="none" overflow="hidden"><use href="${src}"${i % 2 ? '' : ` transform="matrix(1 0 0 -1 0 ${1200 - B})"`}/></svg>`;
+    g.innerHTML = t; g.dataset.n = n;
+  }
+  g.setAttribute('viewBox', `${x.toFixed(2)} 600 ${w.toFixed(2)} ${h.toFixed(2)}`);
+  g.style.top = top.toFixed(2) + 'px'; g.style.height = gap.toFixed(2) + 'px'; g.style.display = '';
+}
 function phHomeRefit() {
   if (!isPhone() || (cur.mode !== 'yard' && cur.mode !== 'market') || !$('#view > svg.world')) return;
   let L = 186, R = 530, fitMin = 0.62;
@@ -468,10 +515,10 @@ function placeButtons() {
 let bubbleBelowT = 0;
 function townBubbleBelowDog() {
   const hit = $('#dogHit'); if (!hit || bubble.hidden) return; const hr = hit.getBoundingClientRect(), sg = stage.getBoundingClientRect(), W = stage.clientWidth;
-  const hl = hr.left - sg.left, hrr = hr.right - sg.left, hb = hr.bottom - sg.top, up = [bubble.style.left, bubble.style.top]; // say()'s spot over the head: the fallback
+  const hl = hr.left - sg.left, hrr = hr.right - sg.left, hb = hr.bottom - sg.top, up = [bubble.style.left, bubble.style.top, bubble.style.maxWidth, bubble.classList.contains('tail-r')]; // say()'s spot over the head: the fallback
   // the bubble shrinks to fit left of the stage edge, so it re-wraps when it moves: every move re-measures, and it stays on screen (layout numbers: the pop animation scales the rect)
   const at = (l, tp) => { bubble.style.left = l + 'px'; bubble.style.top = tp + 'px'; let w = bubble.offsetWidth; if (l + w > W - 6) { l = Math.max(6, W - 6 - w); bubble.style.left = l + 'px'; w = bubble.offsetWidth; } return { l, t: tp, w, h: bubble.offsetHeight }; };
-  bubble.classList.add('below'); let b = at(6, hb + 18); const bw0 = b.w; b = at(clamp(hl + hr.width / 2 - bw0 / 2, 6, W - bw0 - 6), hb + 18);
+  bubble.classList.remove('tail-r'); bubble.style.maxWidth = ''; bubble.classList.add('below'); let b = at(6, hb + 18); const bw0 = b.w; b = at(clamp(hl + hr.width / 2 - bw0 / 2, 6, W - bw0 - 6), hb + 18);
   const pr = isPhone() && $('#placeBtns'), prr = pr && pr.offsetParent && pr.getBoundingClientRect(); // phones: stay above the place-button row (UI/UX T5)
   if (prr && prr.height && b.t + b.h > prr.top - sg.top - 8) { // no room under the dog: beside it if a side has room, else under it slid clear of the buttons, else back over its head
     const py = prr.top - sg.top - 8;
@@ -486,7 +533,7 @@ function townBubbleBelowDog() {
   const bar = isPhone() && $('#bar'), barR = bar && !bar.hidden && bar.offsetParent ? bar.getBoundingClientRect() : null, sgH = barR && barR.height ? Math.min(stage.clientHeight, barR.top - sg.top) : stage.clientHeight;
   if (b.t + b.h > sgH - 4) { b.h = bubble.offsetHeight; const tp = sgH - 6 - b.h; if (tp >= hr.top - sg.top + hr.height / 2 && tp > view.offsetTop + 4) b = at(b.l, tp); }
   const onBtn = [...document.querySelectorAll('#placeBtns .btn')].some((x) => { const q = x.getBoundingClientRect(), ql = q.left - sg.left, qt = q.top - sg.top; return b.l < q.right - sg.left && b.l + b.w > ql && b.t < qt + q.height && b.t + b.h > qt; });
-  if (onBtn || b.t + b.h > sgH - 4 || parseFloat(bubble.style.maxWidth || 999) < 170) { bubble.classList.remove('below'); bubble.style.maxWidth = ''; bubble.style.left = up[0]; bubble.style.top = up[1]; return; } // nowhere clear: back over its head (v2.12: also when squeezed under 170 px beside the buttons, where the speech balloon's text ran over its tail)
+  if (onBtn || b.t + b.h > sgH - 4 || parseFloat(bubble.style.maxWidth || 999) < 170) { bubble.classList.remove('below'); bubble.classList.toggle('tail-r', up[3]); bubble.style.maxWidth = up[2]; bubble.style.left = up[0]; bubble.style.top = up[1]; return; } // nowhere clear: back over its head (v2.12: also when squeezed under 170 px beside the buttons, where the speech balloon's text ran over its tail)
   clearTimeout(bubbleBelowT); bubbleBelowT = setTimeout(() => bubble.classList.remove('below'), 3700);
 }
 function placeAmbient() {
@@ -947,7 +994,7 @@ function hmOpenDecor(room) {
     };
   });
 }
-function hmExpose() { if (window.__paw) window.__paw.home = { decorOut: hmDecorOut, redraw: hmDecorRedraw, ambient: () => packAmbient(), say: (t, x, y) => say(t, x, y, 4000), emit: (e, d) => emit(e, d), specs: HM_DECOR }; }
+function hmExpose() { if (window.__paw) window.__paw.home = { decorOut: hmDecorOut, redraw: hmDecorRedraw, ambient: () => packAmbient(), say: (t, x, y) => say(t, x, y, 4000), sayDog: (t, ms) => { const h = dogHeadWorld(); say(t, h.x, h.y, ms || 4000); }, emit: (e, d) => emit(e, d), specs: HM_DECOR }; }
 on('game:ready', () => { hmDecorFields(); setTimeout(hmExpose, 0); });
 on('yard:enter', () => { hmDecorFields(); hmDecorBind(); hmExpose(); });
 on('scene:redraw', () => { const g = $('#decorG') || $('#hoRoomG'); if (g && !HO.pl && g.dataset.tod !== timePhase()) hmDecorRedraw(); }); // v2.6.1: the decor follows the scene's time tint (v2.7: the house too, not while arranging)

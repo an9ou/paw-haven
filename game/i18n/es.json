@@ -5166,7 +5166,7 @@
  "map.shelter_hi_3": "¿Trajiste galletas?",
  "map.shelter_playroom": "El refugio ahora tiene una sala de juegos. Toca a un perro para saludar, o el tablón para ver quién busca un hogar.",
  "map.too_sleepy": "{name} se echa junto a la puerta. Con demasiado sueño para pasear. Prueba antes con una siesta.",
- "missions.all_done": "¡Las tres listas! Un sello de cera para hoy.",
+ "missions.all_done": "¡Las tres listas! Hoy, un sello de colores.",
  "missions.coins_html": "Cada misión paga <b>{pay} monedas</b>. Hechas hoy: <b>{nd} de 3</b>, {got} de {max} monedas.",
  "missions.done": "Misión cumplida: {mission}. +{n} monedas.",
  "missions.full_card": "¡Una tarjeta de sellos completa!",
