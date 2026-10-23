@@ -15,8 +15,18 @@ const i18nPin = () => (prefs && typeof prefs.lang === 'string' && (i18nReal(pref
 // the save's language before S is loaded (the HUD and the bar are built before loadSave runs in start())
 function i18nSaved() { try { const s = JSON.parse(lsGet(SAVE_KEY) || 'null'); return s && s.v === 1 && (s.dog || (s.dogs && s.dogs.length)) ? { lang: i18nReal(s.lang) ? s.lang : null } : null; } catch (e) { return null; } }
 function i18nDevice() { try { return PIM ? PIM.pickLang(navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language]) : 'en'; } catch (e) { return 'en'; } }
+// v2.14.2 (owner): the site's language picks the game's. doodledoggo.app opens /play/?lang=<code>; a code the site has not sent before
+// wins once (saved as the player's pick, like Settings), so a later pick in Settings keeps until the player changes the site's language.
+const I18N_SITE_KEY = 'pawhaven_site_lang';
+let i18nUrl = (() => { try { const c = new URLSearchParams(location.search).get('lang'); return i18nReal(c) && lsGet(I18N_SITE_KEY) !== c ? c : null; } catch (e) { return null; } })();
+function i18nFromSite() {
+  const c = i18nUrl; if (!c) return null;
+  if (S) { S.lang = c; markDirty(); } else if (!i18nSaved()) { prefs.langPick = c; savePrefs(); } else return c; // the save loads later: keep it until then
+  lsSet(I18N_SITE_KEY, c); i18nUrl = null; return c;
+}
 function i18nWanted() {
   const pin = i18nPin(); if (pin) return pin;
+  const site = i18nFromSite(); if (site) return site;
   const sv = S ? { lang: i18nReal(S.lang) ? S.lang : null } : i18nSaved();
   if (sv) return sv.lang || i18nDevice();
   return i18nReal(prefs.langPick) ? prefs.langPick : i18nDevice();
