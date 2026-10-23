@@ -490,6 +490,9 @@ function buildChrome() {
   set('--fr-tubew', pencilSVG(1000, 24, rrPts(1000, 24, 10, 2.5, 160), 43, true, 1.2));
   set('--fr-wide', pencilSVG(800, 60, rrPts(800, 60, 12, 3, 140), 47, true, 1.6));
   set('--fr-tray', pencilSVG(1000, 170, rrPts(1000, 170, 12, 3, 180), 59, true, 1.7)); set('--frm-tray', pencilMask(1000, 170, rrPts(1000, 170, 12, 3, 180), 59, true, 1.7));
+  // v2.14.1: a tall sheet's frame (the phone adopt card, about 370 x 870 px). --fr-tray is 170 high, so stretched that tall its line sank 20 px
+  // into the card and its wobble became waves that ran through the title (owner, 23 Oct 2026)
+  set('--fr-sheet', pencilSVG(400, 900, rrPts(400, 900, 12, 3, 240), 59, true, 1.7)); set('--frm-sheet', pencilMask(400, 900, rrPts(400, 900, 12, 3, 240), 59, true, 1.7));
   set('--fr-stage', pencilSVG(1280, 720, rrPts(1280, 720, 14, 4, 260), 61, true, 2.2));
   set('--line', pencilSVG(600, 9, Array.from({ length: 60 }, (_, i) => [3 + i * 594 / 59, 4.5]), 53, false, 1.6));
   set('--fr-tail', `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 18"><path d="M1 1 L7 17 L21 1 Z" fill="#FFFBF3"/><path d="M1.5 2 Q5 9 7 16.5 Q13 9 20.5 2" fill="none" stroke="${INKG}" stroke-width="2" stroke-linecap="round"/></svg>`);
