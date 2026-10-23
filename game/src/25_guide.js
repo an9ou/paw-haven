@@ -191,7 +191,8 @@ function gdTabHTML() {
   // v2.8: WINTER's seasonal card (V28.md section 7). wnLesson() returns a lesson [key, icon, title, text] like GD_LESSONS, or ready <li> HTML, or '' for none
   let wl = ''; try { wl = typeof wnLesson === 'function' ? wnLesson() : ''; } catch (e) { wl = ''; }
   let al = null; try { al = typeof agLesson === 'function' ? agLesson() : null; } catch (e) { al = null; } // v2.15: the Training Ground card (44_agility.js), only while mpOn()
-  const cards = GD_LESSONS.map(card).join('') + (Array.isArray(wl) && wl.length === 4 ? card(wl, GD_LESSONS.length) : typeof wl === 'string' ? wl : '') + (Array.isArray(al) && al.length === 4 ? card(al, GD_LESSONS.length + 1) : '');
+  let pl = null; try { pl = typeof plLesson === 'function' ? plLesson() : null; } catch (e) { pl = null; } // v2.15: the Splash Pool card (45_pool.js), only while mpOn()
+  const cards = GD_LESSONS.map(card).join('') + (Array.isArray(wl) && wl.length === 4 ? card(wl, GD_LESSONS.length) : typeof wl === 'string' ? wl : '') + (Array.isArray(al) && al.length === 4 ? card(al, GD_LESSONS.length + 1) : '') + (Array.isArray(pl) && pl.length === 4 ? card(pl, GD_LESSONS.length + 2) : '');
   return `<div class="gd-page"><div class="gd-head"><div class="gd-duck">${gdDuck('sit')}</div><div class="gd-say"><p>${tt('guide.notes_html', "<b>Gerald's notes.</b> Everything a new dog friend needs, written down by a duck who knows everything. You are welcome.")}</p></div></div>
     <ol class="gd-lessons">${cards}</ol>
     <p class="gd-replay"><button class="btn yes" id="gdReplay" type="button">${esc(tt('guide.replay', 'Replay the guide'))}</button></p></div>`;

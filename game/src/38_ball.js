@@ -432,8 +432,9 @@ function blTrayUpdate() { const c = $('#blCoins'); if (c) { const t = blCoinsTex
 
 /* ---------------- start and stop ---------------- */
 function blKeyBlock(e) { if (BL && (e.key === 'Enter' || e.key === ' ') && e.target.closest && e.target.closest('svg.world .hot')) { e.stopPropagation(); e.preventDefault(); } } // Enter on a focused scene prop opens nothing either
-function blStart(toy) {
-  const cfg = BL_TOYS[toy]; if (BL || !cfg || !S || !rmScene()) return false; // v2.15: also Kibble Corner's street once it has the deep floor (37_roam.js rmScene)
+function blStart(toy, o) {
+  const water = !!(o && o.water), cfg0 = BL_TOYS[toy], cfg = cfg0 && water ? Object.assign({}, cfg0, { float: true, bounce: Math.min(cfg0.bounce, 0.1), fric: Math.max(cfg0.fric, 4.5), g: Math.min(cfg0.g, 950), vzK: Math.min(cfg0.vzK, 0.62) }) : cfg0; // v2.15 float fetch (45_pool.js): the toy floats, the dogs may wade in
+  if (BL || !cfg || !S || !rmScene()) return false; // v2.15: also Kibble Corner's street once it has the deep floor (37_roam.js rmScene)
   const lead = D(), svg = $('svg.world', view); if (!svg || !$('#ballLayer')) return false;
   if (S.sleeping) { nope(tt('ball.asleep', '{name} is asleep. Even fun has to wait.', { name: NAME() })); return false; }
   if (typeof isNursing === 'function' && isNursing(lead)) { nope(tt('ball.nursing', '{name} is nursing the pups. No ball play for {sex, select, female {her} other {him}} right now.', { name: lead.name, sex: lead.sex === 'female' ? 'female' : 'male' })); return false; }
@@ -443,7 +444,8 @@ function blStart(toy) {
   const key = 'toyAt_' + toy, full = !S[key] || S.gameMin - S[key] >= 10; S[key] = S.gameMin; // the same 10-minute rule as Fetch: playing again so soon is less exciting
   BL = { toy, cfg, k: full ? 1 : 0.25, lead, dogs: dogs.map((d) => ({ d, id: d.id, x: 430, y: 500, face: 'right', pose: 'idle', role: 'wait', sp: 0, off: [0, 0], until: 0, ran: 0, hapGot: 0, got: 0 })), svg,
     ball: { x: 0, gy: 0, z: 0, vx: 0, vz: 0, vgy: 0, rot: 0, vr: 0, state: 'rest', bounces: 0, carrier: null }, ph: 'rest', thrown: 0, n: 0, coins: 0, lastSp: -9, lineAt: -9, t: 0, key0: cur.key, raf: 0, last: performance.now(), grab: null, rnd: null, force: null, lock: false, played: false,
-    zone: blZone(), z0: typeof phZoom === 'number' ? phZoom : 1 };
+    zone: blZone(), z0: typeof phZoom === 'number' ? phZoom : 1, water };
+  if (water) { BL.zone.no = BL.zone.no.filter((b) => b[5] !== 'pool'); if (typeof plVestOn === 'function') plVestOn(BL.dogs.map((o) => o.d)); } // the pool is no no-go box for float fetch; the free life vest goes on
   BL.dogs.forEach((o) => { try { const p = rmPos(o.d); o.x = p.x; o.y = p.y; o.face = p.face || 'right'; o.pose = p.pose || 'idle'; } catch (e) { /* default */ } const q = blPush(o.x, o.y, BL.zone); o.x = q[0]; o.y = q[1]; });
   const mx = BL.dogs.reduce((a, o) => a + o.x, 0) / BL.dogs.length, Z = BL.zone;
   BL.hx = grWide() ? clamp(camCx, Z.x0 + 260, Z.x1 - 260) : isPhone() ? clamp(mx, Z.x0 + 260, Z.x1 - 260) : 500; BL.hy = Z.y1 - 58; // the ring round the ball (50 units) stays inside the scene (v2.15: a wide place plays where the camera is) BL.camT = BL.hx;
@@ -468,9 +470,11 @@ function blStop(quiet) {
   try { rmResume('ball'); } catch (e) { /* none */ }
   cur.key = B.key0 || null;
   // Bond once a session for every dog that ran, and the daily play care
+  if (B.water && typeof plAfterBall === 'function') plAfterBall(); // v2.15: the vest comes off, the pool buttons come back
   if (B.played) {
     B.dogs.forEach((o) => { if (o.ran) withDog(o.d, () => addBond(8 * B.k)); });
     dailyCare('play'); markDirty();
+    if (B.water) trackAct('floatfetch', { name: B.toy });
   }
   busy = false;
   if (isPhone()) { phZoom = B.z0 || 1; view.style.background = ''; }

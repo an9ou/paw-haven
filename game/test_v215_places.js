@@ -190,4 +190,135 @@ run('v215_places', async (t) => {
   await t.home('yard'); await t.p.click('[data-act=play]'); await t.waitPop(true); await t.p.click('[data-play=tricks]'); await t.until(() => !!window.__paw.train, null, 4000);
   ok(await ev(() => window.__paw.ag.bonus() === false), 'no bonus at the yard');
   await ev(() => window.__paw.go('yard')); await t.calm();
+  /* ---- Splash Pool (ACTIVITIES part 2: paddle, flat faces, the vest, float fetch, the sprinkler, no coins, the Winter Dome; V215.md 6.2) ---- */
+  sec('Splash Pool: the place, the lesson, the free vest, the arrival lines');
+  await ev(() => { const S = window.__paw.S; S.dogs.forEach((d) => { d.stats.energy = 100; d.stats.happy = 40; d.stats.clean = 20; }); });
+  await t.home('yard');
+  ok(await ev(() => !window.__paw.pl.on() && !document.querySelector('#placeBtns [data-pl]') && !window.__paw.pl.vest()), 'no pool button at the yard, no vest yet');
+  await t.home('pool'); await t.sleep(500);
+  ok(await ev(() => window.__paw.pl.on() && !!document.querySelector('#placeBtns [data-pl]')), 'at the Splash Pool: plOn, the Splash time button');
+  ok(await t.until(() => [...document.querySelectorAll('#toasts .toast.gold')].some((e) => /Not every dog loves water, so let them wade in at their own pace/.test(e.textContent) && /A life vest and a ramp to climb out make every swim a safe one/.test(e.textContent)), null, 4000), 'the first-visit lesson (gold toast, the two sentences)');
+  ok(await ev(() => window.__paw.S.pool.seen === true && window.__paw.S.pool.vest === true && window.__paw.S.inv.clothes.includes('Doggy Life Vest')), 'S.pool.seen and S.pool.vest are set, the Doggy Life Vest is in the wardrobe');
+  {
+    const V = await ev(() => { const c = window.__paw.pl.vestRow(); return c ? { slot: c.slot, price: c.price, reward: !!c.reward, fest: c.fest || null, shop: window.__paw.pl.inShop() } : null; });
+    ok(V && V.slot === 'body' && V.price === 0 && V.reward && !V.fest && !V.shop, 'the vest is a body slot row, price 0, never in a shop: ' + JSON.stringify(V));
+    const L = await ev(() => { const B = Object.keys(window.__paw.pl.lines); return { n: B.length, miss: B.filter((b) => !window.__paw.mp.line(b, 'pool')) }; });
+    ok(L.n === 35 && !L.miss.length, `every one of the 35 breeds has a Splash Pool arrival line (${L.n}, missing ${L.miss.join(' ')})`);
+    ok(await ev(() => { const l = window.__paw.pl.lesson(); return Array.isArray(l) && l.length === 4 && !/;/.test(l[3]); }), "Gerald's guide has the pool card");
+    ok(await ev(() => window.__paw.ms.pool.includes('pool_paddle') && window.__paw.ms.pool.includes('pool_float')), 'the pool missions are in the pool');
+    await ev(() => { document.querySelector('#placeBtns [data-pl]').click(); });
+    ok(await t.until(() => window.__paw.pl.running(), null, 2000), 'the button opens the pool tray');
+    await ev(() => window.__paw.pl.stop()); await t.sleep(200);
+  }
+
+  sec('Splash Pool: a paddle (ramp, water, climb out, shake), the rewards, once a day');
+  const poolDog = await ev(() => window.__paw.S.dog.id);
+  const snapP = () => ev(() => { const S = window.__paw.S; return { coins: S.coins, happy: S.stats.happy, clean: S.stats.clean, bl: S.bl ? S.bl.coins : 0, body: S.outfit.body || null }; });
+  // sample the dog while it paddles: the x range, the shake pose, the vest, ripples
+  const watch = (id) => ev((id) => {
+    const w = window.__plW = { x0: 1e9, x1: -1e9, vest: false, shake: false, rip: 0 }; if (window.__plI) clearInterval(window.__plI);
+    window.__plI = setInterval(() => { const P = window.__paw, p = P.rm.pos(id); if (!p) return; w.x0 = Math.min(w.x0, p.x); w.x1 = Math.max(w.x1, p.x); if (p.pose === 'shake') w.shake = true; if (id in P.pl.worn()) w.vest = true; w.rip = Math.max(w.rip, document.querySelectorAll('#fx .pl-rip').length); }, 100);
+  }, id);
+  const unwatch = () => ev(() => { clearInterval(window.__plI); return window.__plW; });
+  const pre = await snapP();
+  await ev(() => { window.__paw.S.dog.outfit.body = null; });
+  await t.p.click('#placeBtns [data-pl]'); await t.p.waitForSelector('#plPaddle');
+  ok(await ev(() => document.documentElement.classList.contains('pl-on') && !!document.querySelector('.pl-tray')), 'the pool tray opens');
+  await t.SH('pool_tray');
+  await watch(poolDog);
+  await t.p.click('#plPaddle');
+  ok(await t.until(() => { const s = window.__paw.pl.state; return !!s && s.ph === 'done'; }, null, 60000), 'the paddle runs to its end');
+  {
+    const w = await unwatch(), post = await snapP();
+    ok(w.x1 > 800 && w.x0 < 1200, 'the dog went up the ramp and into the water (x ' + Math.round(w.x0) + ' to ' + Math.round(w.x1) + ')');
+    ok(w.vest, 'the Doggy Life Vest was worn in the water');
+    ok(post.body === null, 'and the dog is back to its own outfit after (' + post.body + ')');
+    ok(w.shake, 'the dog shook (the shake pose)');
+    ok(w.rip > 0, 'ripples round the dog in the pool');
+    ok(post.happy - pre.happy >= 14.5 && post.happy - pre.happy <= 15.5, '+15 Happiness (' + (post.happy - pre.happy).toFixed(1) + ')');
+    ok(post.clean >= 60, 'Cleanliness to at least 60 (' + post.clean + ')');
+    ok(post.coins === pre.coins && post.bl === pre.bl, 'no pool coins (the coins stay at ' + post.coins + ')');
+    ok(await ev((id) => window.__paw.pl.paddled(id), poolDog), 'S.pool.day has today for this dog');
+    ok(await ev(() => /had a lovely paddle/.test(document.querySelector('.pl-tray h3').textContent) && /\+\d+ Happiness/.test(document.getElementById('plHint').textContent)), 'the result tray says so');
+    await t.SH('pool_paddle_done');
+  }
+  await t.p.click('#plBack');
+  ok(await t.until(() => window.__paw.pl.state && window.__paw.pl.state.ph === 'pick', null, 2000), 'Back to the pool returns to the pick tray');
+  ok(await ev(() => document.getElementById('plPaddle').getAttribute('aria-disabled') === 'true' && /has paddled today/.test(document.getElementById('plHint').textContent)), 'a second paddle the same day is kindly refused');
+  ok(await ev((id) => window.__paw.pl.paddle(id) === false, poolDog), 'plPaddle says no for a dog that paddled today');
+  await t.p.click('#plDone');
+  ok(await ev(() => !window.__paw.pl.running() && !document.documentElement.classList.contains('pl-on') && !!document.querySelector('#placeBtns [data-pl]')), 'Done leaves, the button is back');
+  await ev(() => { window.__paw.S.pool.day = {}; });
+  ok(await ev((id) => !window.__paw.pl.paddled(id), poolDog), 'a new day (cleared) lets the dog paddle again');
+
+  sec('Splash Pool: a flat-faced dog paddles on the step only');
+  const pug = await ev(() => { const d = window.__paw.addDog({ key: 'pug', sex: 'female', months: 30 }, 'Mochi'); d.stats.energy = 100; d.stats.happy = 40; d.stats.clean = 20; return d.id; });
+  const lead1 = await ev(() => window.__paw.S.activeId);
+  await t.home('pool'); await t.sleep(400);
+  ok(await ev((id) => window.__paw.pl.flat(id) && !window.__paw.pl.flat(window.__paw.S.activeId), pug) && await ev(() => ['pug', 'frenchie', 'shihtzu'].every((k) => window.__paw.pl.flatList.includes(k))), 'the pug is flat-faced (pug, frenchie, shihtzu are on the list)');
+  await watch(pug);
+  ok(await ev((id) => window.__paw.pl.paddle(id), pug), 'the pug starts a paddle (picked from the pack)');
+  ok(await ev((id) => window.__paw.S.activeId === id, pug), 'the picked dog leads the run (pkWith)');
+  ok(await ev(() => /wide step/.test(document.getElementById('plHint').textContent)), 'the tray says it stays on the wide step');
+  ok(await t.until(() => { const s = window.__paw.pl.state; return !!s && s.ph === 'done'; }, null, 60000), 'the pug paddle finishes');
+  {
+    const w = await unwatch();
+    ok(w.x1 <= 520, 'the pug never went past the step (x ' + Math.round(w.x0) + ' to ' + Math.round(w.x1) + ')');
+    ok(w.vest && w.shake, 'it wore the vest and shook as well');
+    ok(await ev((id) => window.__paw.pl.paddled(id) && window.__paw.S.dogs.find((d) => d.id === id).stats.happy >= 54, pug), 'the pug has its +15 Happiness');
+    await t.SH('pool_flat_step');
+  }
+  await t.p.click('#plDone');
+  ok(await t.until((id) => window.__paw.S.activeId === id, lead1, 4000), 'the old leader is back (pkBack)');
+
+  sec('Splash Pool: the sprinkler gives Happiness only');
+  await ev(() => { const S = window.__paw.S; S.dogs.forEach((d) => { d.stats.energy = 100; d.stats.happy = 40; }); });
+  {
+    const a = await snapP(); const id = await ev(() => window.__paw.S.dog.id);
+    ok(await ev((id) => window.__paw.pl.sprinkle(id), id), 'the sprinkler run starts');
+    ok(await t.until(() => { const s = window.__paw.pl.state; return !!s && s.ph === 'done'; }, null, 40000), 'the sprinkler run ends');
+    const b = await snapP();
+    ok(b.happy - a.happy >= 4.5 && b.happy - a.happy <= 5.5 && b.coins === a.coins && Math.abs(b.clean - a.clean) < 1, `Happiness +5 only (+${(b.happy - a.happy).toFixed(1)}), no coins, Cleanliness the same`);
+    ok(await ev((id) => !window.__paw.pl.paddled(id), id), "the sprinkler is not the day's paddle");
+    await t.p.click('#plDone');
+  }
+
+  sec('Splash Pool: float fetch (ball play with o.water) shares the ball play coin cap');
+  await ev(() => { const S = window.__paw.S; S.dogs.forEach((d) => { d.stats.energy = 100; }); if (!S.inv.toys.includes('Tennis Ball')) S.inv.toys.push('Tennis Ball'); S.bl = { day: window.__paw.pl.today(), coins: 0, n: 0 }; });
+  await t.p.click('#placeBtns [data-pl]'); await t.p.waitForSelector('.pl-toy');
+  ok(await ev(() => !!document.querySelector('.pl-float .pl-toy[data-toy="Tennis Ball"]')), 'the tray offers float fetch with the owned fetch toys');
+  await t.p.click('.pl-toy[data-toy="Tennis Ball"]');
+  ok(await t.until(() => window.__paw.bl.on, null, 4000), 'float fetch starts ball play');
+  {
+    const st = await ev(() => ({ pool: window.__paw.bl.state.zone.no.some((b) => b[5] === 'pool'), vest: Object.keys(window.__paw.pl.worn()).length }));
+    ok(!st.pool, 'the pool is not a no-go box for float fetch');
+    ok(st.vest >= 1, 'the dogs wear the life vest in the water');
+    await t.SH('pool_float_fetch');
+  }
+  await ev(() => { window.__paw.S.bl.coins = window.__paw.bl.cap.day - 2; });
+  await ev(() => window.__paw.bl.stop()); await t.sleep(300);
+  ok(await ev(() => Object.keys(window.__paw.pl.worn()).length === 0 && !!document.querySelector('#placeBtns [data-pl]')), 'after float fetch the vest comes off and the pool button is back');
+  ok(await ev(() => window.__paw.S.bl.coins <= window.__paw.bl.cap.day), 'ball play coins stay inside BL_COIN_DAY (' + await ev(() => window.__paw.S.bl.coins) + ')');
+  ok(await ev(() => !window.__paw.bl.on && !window.__paw.pl.running()), 'both are closed');
+
+  sec('Splash Pool: a puppy under 3 months stays out');
+  {
+    const pp = await ev(() => { const d = window.__paw.addDog({ key: 'corgi', sex: 'male', months: 2 }, 'Tiny'); return d.id; });
+    ok(await ev((id) => window.__paw.pl.paddle(id) === false, pp), 'a 2 month puppy does not paddle (a kind note, nothing bad)');
+  }
+
+  sec('Splash Pool: the Winter Dome (winter, the pool stays open)');
+  await t.newGame({ season: 'winter', ground: true }, { coins: 1000, bond: { level: 7, pts: 1600 }, stats: { hunger: 80, happy: 40, energy: 100, clean: 20 } });
+  await t.home('pool'); await t.sleep(600);
+  ok(await ev(() => window.__paw.pl.on() && !!document.querySelector('#placeBtns [data-pl]')), 'in winter the pool activities are on');
+  ok(await ev(() => !!document.querySelector('#view svg.world') && document.querySelector('#view svg.world').innerHTML.length > 20000), 'the winter pool scene is drawn');
+  await t.SH('pool_winter_dome');
+  {
+    const id = await ev(() => window.__paw.S.dog.id), a = await snapP();
+    ok(await ev((id) => window.__paw.pl.paddle(id), id), 'a paddle starts under the dome');
+    ok(await t.until(() => { const s = window.__paw.pl.state; return !!s && s.ph === 'done'; }, null, 60000), 'and finishes in winter');
+    const b = await snapP(); ok(b.happy - a.happy >= 14.5, 'with its +15 Happiness (' + (b.happy - a.happy).toFixed(1) + ')');
+    await t.SH('pool_winter_paddle');
+    await t.p.click('#plDone');
+  }
 }, { ground: true });

@@ -2,6 +2,7 @@
 //   Part 1 (the Training Ground, agility): the course button in the #placeBtns row is 44 px, the one big Go! is 64 px and sits in the thumb zone (the lower
 //   half of the screen), the timing window is wider than on a desktop, every tap target in the trays is 44 px, text is 15 px or more, the dog stays in
 //   view above the tray, a run finishes with rosettes, nothing scrolls sideways.
+//   Part 2 (the Splash Pool): the Splash time button in the #placeBtns row, the tray's taps are 44 px and its text 15 px, a paddle finishes, no sideways scroll.
 // node game/run_tests.js phone_v215_places
 require('./test_lib').run('phone_v215_places', async (t) => {
   const { ok, sec } = t; const ev = (f, a) => t.ev(f, a);
@@ -55,6 +56,41 @@ require('./test_lib').run('phone_v215_places', async (t) => {
     }
     await t.p.tap('#agDone');
     ok(await ev(() => !window.__paw.ag.running() && !!document.querySelector('#placeBtns [data-ag]')), 'Done leaves the course');
+    sec(device + ': the Splash Pool');
+    await ev(() => { const S = window.__paw.S; S.dogs.forEach((d) => { d.stats.energy = 100; d.stats.happy = 40; d.stats.clean = 20; }); });
+    await t.home('pool'); await t.luWait(800); await t.lu(); await t.sleep(600);
+    ok(await ev(() => window.__paw.pl.on() && !!document.querySelector('#placeBtns [data-pl]')), 'the pool button is in the #placeBtns row');
+    {
+      const pb = await t.p.locator('#placeBtns [data-pl]').boundingBox();
+      ok(pb.height >= 44 && pb.width >= 44, `the pool button is 44 px or more (${Math.round(pb.width)} x ${Math.round(pb.height)})`);
+      ok(await noSide(), 'no sideways scroll at the Splash Pool');
+      await t.SH('phone_pool_button');
+    }
+    await t.p.tap('#placeBtns [data-pl]'); await t.p.waitForSelector('#plPaddle');
+    {
+      const tt = await tapTargets(); ok(tt.length && tt.every((b) => b.h >= 44 && b.w >= 44), 'the pool tray: every button is 44 px or more ' + JSON.stringify(tt.filter((b) => b.h < 44 || b.w < 44)));
+      const fs = await ev(() => Math.min(...[...document.querySelectorAll('#dock .pl-hint, #dock .pl-dn, #dock .pl-float b')].map((e) => parseFloat(getComputedStyle(e).fontSize))));
+      ok(fs >= 15, 'the tray text is 15 px or more (' + fs + ')');
+      ok(await noSide(), 'no sideways scroll with the pool tray open');
+      const tray = await ev(() => { const r = document.querySelector('#dock .pl-tray').getBoundingClientRect(); return { b: r.bottom, h: window.innerHeight, w: r.width, vw: window.innerWidth }; });
+      ok(tray.b <= tray.h + 1 && tray.w <= tray.vw + 1, 'the tray fits the screen ' + JSON.stringify(tray));
+      await t.SH('phone_pool_tray');
+    }
+    await t.p.tap('#plPaddle');
+    ok(await t.until(() => { const s = window.__paw.pl.state; return !!s && s.ph === 'run'; }, null, 4000), 'the paddle starts on a phone');
+    await t.sleep(5000); await t.SH('phone_pool_paddle');
+    {
+      const tt = await tapTargets(); ok(tt.every((b) => b.h >= 44 && b.w >= 44), 'the run tray: every button is 44 px or more');
+      ok(await noSide(), 'no sideways scroll during the paddle');
+    }
+    ok(await t.until(() => { const s = window.__paw.pl.state; return !!s && s.ph === 'done'; }, null, 60000), 'the paddle finishes on a phone');
+    {
+      const tt = await tapTargets(); ok(tt.every((b) => b.h >= 44 && b.w >= 44), 'the result tray: every button is 44 px or more');
+      ok(await noSide(), 'no sideways scroll at the result');
+      await t.SH('phone_pool_done');
+    }
+    await t.p.tap('#plDone');
+    ok(await ev(() => !window.__paw.pl.running() && !!document.querySelector('#placeBtns [data-pl]')), 'Done leaves the pool');
   }
   ok(!errs.length, 'no page errors ' + errs.slice(0, 2).join(' | '));
 }, { ground: true });

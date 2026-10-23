@@ -49,7 +49,10 @@ const MS_POOL = [
   // v2.15 Training Ground (V215.md 6.1, 44_agility.js): agility fires act 'agility' { rosettes, low }
   { id: 'agility', n: 1, t: 'Run the agility course at the Training Ground', s: 'Agility course', g: () => typeof mpOn === 'function' && mpOn() && topBond() >= ((PLACES.training && PLACES.training.bond) || 3), m: (a) => a.kind === 'agility' },
   { id: 'agility_ros', n: 1, t: 'Earn two or more rosettes on the agility course', s: 'Two rosettes', g: () => typeof mpOn === 'function' && mpOn() && topBond() >= ((PLACES.training && PLACES.training.bond) || 3), m: (a) => a.kind === 'agility' && a.rosettes >= 2 },
-  { id: 'travel_training', n: 1, t: 'Visit the Training Ground', s: 'Training Ground visit', g: () => typeof mpOn === 'function' && mpOn() && topBond() >= ((PLACES.training && PLACES.training.bond) || 3), m: (a) => a.kind === 'travel' && a.place === 'training' }
+  { id: 'travel_training', n: 1, t: 'Visit the Training Ground', s: 'Training Ground visit', g: () => typeof mpOn === 'function' && mpOn() && topBond() >= ((PLACES.training && PLACES.training.bond) || 3), m: (a) => a.kind === 'travel' && a.place === 'training' },
+  // v2.15 Splash Pool (V215.md 6.2, 45_pool.js): the paddle fires act 'paddle' { name, step }, float fetch fires 'floatfetch' { name }
+  { id: 'pool_paddle', n: 1, t: 'Take {dog} for a paddle at the Splash Pool', s: 'Pool paddle', g: () => typeof mpOn === 'function' && mpOn() && topBond() >= ((PLACES.pool && PLACES.pool.bond) || 2), m: (a) => a.kind === 'paddle' },
+  { id: 'pool_float', n: 1, t: 'Play float fetch at the Splash Pool', s: 'Float fetch', g: () => typeof mpOn === 'function' && mpOn() && topBond() >= ((PLACES.pool && PLACES.pool.bond) || 2), m: (a) => a.kind === 'floatfetch' }
 ];
 const msDef = (id) => MS_POOL.find((x) => x.id === id);
 function msFields() {

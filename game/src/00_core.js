@@ -118,7 +118,9 @@ const CLOTHES = [
   { n: 'Shibuya Bandana', slot: 'neck', fest: 'tokyo', tokyo: true, price: 60, bond: 1, v211: true, perk: 'Scramble: green, with little crossing stripes. Everyone stops to say hello.' },
   { n: 'Asakusa Bandana', slot: 'neck', fest: 'tokyo', tokyo: true, price: 60, bond: 1, v211: true, perk: 'Lucky red: a tiny lantern in the corner, like the big one at the temple gate.' },
   { n: 'Tokyo Tower Bandana', slot: 'neck', fest: 'tokyo', tokyo: true, price: 60, bond: 1, v211: true, perk: 'Tall look: orange and white stripes, like the tower on a sunny day.' },
-  { n: 'Astronaut Helmet', slot: 'head', price: 0, bond: 1, v24: true, reward: true, perk: 'Space-proof: no soggy shake after rain, no shivering in the snow.' }
+  { n: 'Astronaut Helmet', slot: 'head', price: 0, bond: 1, v24: true, reward: true, perk: 'Space-proof: no soggy shake after rain, no shivering in the snow.' },
+  // v2.15 Around Town (V215.md 6.2): the Splash Pool gives it free on the first visit (S.pool.vest), never sold; worn automatically in the water (45_pool.js)
+  { n: 'Doggy Life Vest', slot: 'body', price: 0, bond: 1, v215: true, reward: true, perk: 'Safe swimmer: a bright vest with two buckles. Free from the Splash Pool.' }
 ];
 const HOUSES = [
   { n: 'Cardboard Box', price: 0, bond: 1, comfort: 0, hd: 4, note: 'Free. Has a flap. Smells like delivery.' },
