@@ -72,7 +72,7 @@ function wnYardDraw() {
   if (!wnSnow() || S.place !== 'yard') return;
   wnFields(); wnSnowdogSync(false);
   const html = `<g id="wnDriftG">${WN_DRIFTS.map((b, i) => wnDriftSVG(i, WN.driftT[i] ? 'scattered' : 'full')).join('')}</g>${wnHeapSVG()}`;
-  const a = $('#decorG', svg) || $('#msCardG', svg); if (a) a.insertAdjacentHTML('afterend', html); else { const hg = $('#houseG', svg); if (hg) hg.insertAdjacentHTML('beforebegin', html); else return; }
+  const a = $('#decorG', svg) || $('#msCardG', svg); if (a) a.insertAdjacentHTML('afterend', html); else { const hg = grAt('houseG', svg); if (hg) hg.insertAdjacentHTML('beforebegin', html); else return; }
   wnBind();
 }
 function wnBind() {

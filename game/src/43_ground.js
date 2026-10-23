@@ -26,7 +26,7 @@
    Camera (wide places): the view window (1000 on desktop, the phone crop) follows the focus (the pack's centre with the leader counted twice, or a
      petted dog, grFocus) with a dead zone of 150 and a 0.8 s ease, the ends clamped. A drag looks around (6 px threshold, desktop and phones) and the
      camera then waits 2 s; a look chip tap waits 4 s. Ball play follows the ball, photo mode freezes the camera.
-   Test hook: window.__paw.gr = { on, floor, path, cam, scale, sim(place, secs, o), allow, wide, focus, zone, depthOk, area, free, inside, props }.
+   Test hook: window.__paw.gr = { on, floor, path, cam, scale, sim(place, secs, o), allow, wide, focus, zone, depthOk, area, free, inside, props, game }.
    sim runs the roam with a fixed step and a seeded random (Math.random and performance.now are swapped for the run) and reports what it saw. */
 
 const GR_K = { out: [0.5, 1.05], in: [0.7, 1.05] }; // V215.md 8.2
@@ -35,7 +35,7 @@ const GR_CELL = 20, GR_FOOT = 8, GR_STEP = 12, GR_SEP = 90, GR_DEAD = 150, GR_EA
 const GR_FLAT = ['pug', 'frenchie', 'shihtzu']; // flat-faced: no water acts of their own (the pool's step only, ACTIVITIES)
 const GR_JOINTS = ['weave', 'jump', 'tyre']; // not for puppies under 6 months (the puppy course: tunnel, table, a bar on the ground)
 const GR_ACTS = {}; // other lanes add roaming acts by name: GR_ACTS[act] = { w(d, spot) -> weight, steps(d, spot) -> rmQueue steps }
-const GR = { fl: {}, grid: null, props: [], hold: 0, focus: null, focusUntil: 0, raf: 0, last: 0, sim: null, vw: 0, vh: 0, drag: false };
+const GR = { fl: {}, grid: null, props: [], game: [], svg: null, hold: 0, focus: null, focusUntil: 0, raf: 0, last: 0, sim: null, vw: 0, vh: 0, drag: false };
 
 /* ---------------- the floor ---------------- */
 function grArea(P) { let a = 0; for (let i = 0, j = P.length - 1; i < P.length; j = i++) a += (P[j][0] + P[i][0]) * (P[j][1] - P[i][1]); return Math.abs(a / 2); }
@@ -173,7 +173,7 @@ function grWalk(d, x, y, o) {
   const ahead = P.find((p) => Math.abs(p[0] - r.x) > GR_FLIP[0]); // the first step sets the facing (a new walk)
   if (ahead && now - (r.gfAt || 0) > GR_FLIP[1]) { const fc = ahead[0] < r.x ? 'left' : 'right'; if (fc !== r.face) { r.face = fc; r.gfAt = now; } }
   r.gfAcc = 0;
-  if (d === D() && cur.mode === 'yard' && L > 3) renderDog('walk', r.face, true); else if (d !== D()) rmPaint(d);
+  if (d === D() && rmScene() && L > 3) renderDog('walk', r.face, true); else if (d !== D()) rmPaint(d);
   if (L < 0.5) rmFrame(now); else rmLoop();
 }
 // one frame of a gr walk: true while it goes on
@@ -190,7 +190,7 @@ function grAdvance(d, r, w, t) {
   const nx = a[0] + (b[0] - a[0]) * u, ny = a[1] + (b[1] - a[1]) * u, dx = nx - r.x;
   // the facing: only after 6 units of sideways travel against it and 250 ms since the last flip
   if ((r.face === 'left' ? dx > 0 : dx < 0)) r.gfAcc = (r.gfAcc || 0) + Math.abs(dx); else if (Math.abs(dx) > 0.01) r.gfAcc = 0;
-  if (r.gfAcc > GR_FLIP[0] && t - (r.gfAt || 0) > GR_FLIP[1]) { r.face = r.face === 'left' ? 'right' : 'left'; r.gfAt = t; r.gfAcc = 0; if (d === D() && cur.mode === 'yard' && !GR.sim) renderDog('walk', r.face, true); }
+  if (r.gfAcc > GR_FLIP[0] && t - (r.gfAt || 0) > GR_FLIP[1]) { r.face = r.face === 'left' ? 'right' : 'left'; r.gfAt = t; r.gfAcc = 0; if (d === D() && rmScene() && !GR.sim) renderDog('walk', r.face, true); }
   r.x = nx; r.y = ny;
   const A = w.o.act; if (A) grActFx(d, r, A, w);
   if (w.s >= w.L - 0.01) {
@@ -343,6 +343,7 @@ function grSep(dt) {
 // drawing (env change, re-entering) brings new ones, a rebuilt #pack gets the same ones back
 function grLayer(pk) {
   const svg = $('#view > svg.world'), fg = svg && svg.querySelector('#sceneG #floorG');
+  if (svg !== GR.svg) { GR.svg = svg; GR.props = []; GR.game = []; } // a new scene: the old wrappers went with it
   if (fg && fg.querySelector(':scope > [data-fy]')) {
     GR.props.forEach((e) => e.remove()); GR.props = [];
     const inner = fg.ownerSVGElement, M = inner && inner !== svg && inner.getScreenCTM() && svg.getScreenCTM() ? svg.getScreenCTM().inverse().multiply(inner.getScreenCTM()) : null;
@@ -354,16 +355,47 @@ function grLayer(pk) {
     });
   }
   GR.props.forEach((g) => { if (g.parentNode !== pk) pk.appendChild(g); });
+  if (svg) grGame(svg, pk);
 }
-const grY = (e) => (e.classList.contains('gr-prop') ? +e.dataset.fy || 0 : (() => { const d = dogById(e.dataset.dog); return d ? rmSt(d).y : 0; })());
+// the yard's own things the game draws over the scene (the dog house, the mailbox, the bowl) are floor props too in a grOn yard: each moves into #pack in a
+// <g class="gr-prop gr-game" data-fy> wrapper (its base from the FLOOR row: house 526, mailbox 408, bowl 540), and an empty <g data-gr-at> keeps its old place
+// in the drawing for the code that draws next to it (grAt). Their FLOOR feet boxes replace the whole-picture no-go boxes (rmScan skips them, grGameEl).
+// Every hook keeps its element: the same node, its id, handlers and classes (a redraw of its insides, or of itself in place, stays in the wrapper)
+const GR_GAME = { houseG: 'house', mailboxG: 'mailbox', bowlG: 'bowl' };
+const GR_GAME_WITH = { houseG: ['fsPumpkinG'] }; // drawn right after the house, in front of it (the Halloween pumpkin on the porch): it goes along
+const grGameHere = () => !!S && S.place === 'yard' && grOn('yard') && rmScene();
+function grGameEl(el) { return !!el && !!el.id && GR_GAME[el.id] != null && grGameHere(); }
+function grGame(svg, pk) {
+  GR.game = GR.game.filter((w) => { if (w.firstElementChild) { if (w.parentNode !== pk) pk.appendChild(w); return true; } w.remove(); return false; }); // a rebuilt #pack gets them back, an emptied wrapper goes
+  if (!grGameHere()) return; const f = grFloor('yard'); if (!f) return;
+  Object.keys(GR_GAME).forEach((id) => {
+    const e = svg.querySelector('#' + id), p = e && f.props.find((q) => String(q.id) === GR_GAME[id]); if (!p || !isFinite(p.base)) return;
+    const w0 = e.parentNode; if (w0 && w0.classList && w0.classList.contains('gr-game')) return; // already sorted with the dogs
+    if (!svg.querySelector(`[data-gr-at="${id}"]`)) { const a = document.createElementNS('http://www.w3.org/2000/svg', 'g'); a.dataset.grAt = id; e.before(a); }
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g'); g.setAttribute('class', 'gr-prop gr-game'); g.dataset.fy = p.base; g.dataset.prop = GR_GAME[id];
+    const withs = (GR_GAME_WITH[id] || []).map((k) => svg.querySelector('#' + k)).filter((x) => x && x.previousElementSibling === e);
+    g.appendChild(e); withs.forEach((x) => g.appendChild(x)); pk.appendChild(g); GR.game.push(g);
+  });
+}
+// where to draw next to a yard game prop (its old place in the drawing): the <g data-gr-at> it left, else the element itself (grOn off: always the element)
+function grAt(id, root) { const r = root || document; return r.querySelector(`[data-gr-at="${id}"]`) || r.querySelector('#' + id); }
+// a dog fitted onto a prop (the leader at the nap door, a bed, a bench: rmLegacyTo's r.away; a pack dog on its fixed spot, rmFixed: napping by the door)
+// draws in front of the floor prop it is on: its sort y is just past that prop's base when its feet stand over the prop's feet box, at most 40 units behind
+function grDogY(d) {
+  const r = rmSt(d); if (!r.away && !r.fix) return r.y; const f = grFloor(); let y = r.y; if (!f) return y;
+  f.props.forEach((p) => { const b = p.box; if (b && isFinite(p.base) && r.x >= b[0] && r.x <= b[0] + b[2] && p.base >= y && p.base - r.y <= 40) y = p.base + 0.5; });
+  return y;
+}
+const grY = (e) => (e.classList.contains('gr-prop') ? +e.dataset.fy || 0 : (() => { const d = dogById(e.dataset.dog); return d ? grDogY(d) : 0; })());
 // back to front by feet y, the props too (rmDepth in a grOn place). Only the other nodes move round the leader's (its rub keeps its pointer capture)
 function grDepth() {
-  const pk = $('#pack'); if (!pk) return; if (cur.mode === 'yard') grLayer(pk);
+  const pk = $('#pack'); if (!pk) return; if (rmScene()) grLayer(pk);
   const els = [...pk.children].filter((e) => e.classList.contains('rmdog') || e.classList.contains('gr-prop')); if (els.length < 2) return;
   const ys = new Map(els.map((e) => [e, grY(e)])), want = els.slice().sort((a, b) => ys.get(a) - ys.get(b) || (a.classList.contains('gr-prop') ? -1 : 0) + (b.classList.contains('gr-prop') ? 1 : 0));
   if (want.every((e, i) => e === els[i])) return;
-  const lead = els.find((e) => e.classList.contains('rmlead')), li = want.indexOf(lead);
-  want.forEach((e, i) => { if (e === lead) return; if (!lead) { pk.appendChild(e); return; } if (i < li) pk.insertBefore(e, lead); else pk.appendChild(e); });
+  const lead = els.find((e) => e.classList.contains('rmlead')), li = want.indexOf(lead), foc = document.activeElement;
+  // a focused node (the dog house or the bowl, by keyboard) stays put: moving it would drop the focus
+  want.forEach((e, i) => { if (e === lead || (foc && foc !== document.body && e.contains(foc))) return; if (!lead) { pk.appendChild(e); return; } if (i < li) pk.insertBefore(e, lead); else pk.appendChild(e); });
 }
 function grDepthOk() { const pk = $('#pack'); if (!pk) return true; const ys = [...pk.children].filter((e) => e.classList.contains('rmdog') || e.classList.contains('gr-prop')).map(grY); return ys.every((y, i) => !i || y >= ys[i - 1] - 0.01); }
 
@@ -377,7 +409,7 @@ function grCam() {
   return { x: vb.x + (vb.width - w) / 2, w, W };
 }
 function grCamApply(cx) { const svg = $('#view > svg.world'); if (!svg) return; const x = clamp(cx - 500, 0, Math.max(0, grW() - 1000)); svg.setAttribute('viewBox', `${x.toFixed(1)} 0 1000 600`); }
-const grCamLive = () => !!S && cur.mode === 'yard' && grWide() && !!$('#view > svg.world');
+const grCamLive = () => !!S && rmScene() && grWide() && !!$('#view > svg.world');
 // what the camera keeps in view: a dog it was told to follow (petting), else the pack's centre with the leader counted twice
 function grFocusX() {
   const now = performance.now(), fd = GR.focus && now < GR.focusUntil ? dogById(GR.focus) : null; if (fd && rmDogs().includes(fd)) return rmSt(fd).x;
@@ -413,17 +445,17 @@ function grPhotoX() { return clamp(camCx - 500, 0, Math.max(0, grW() - 1000)); }
 function grViewSize() { const svg = $('#view > svg.world'); GR.vw = (svg && svg.clientWidth) || view.clientWidth; GR.vh = (svg && svg.clientHeight) || view.clientHeight; }
 function grSceneUp() {
   const wide = grCamLive(); document.documentElement.classList.toggle('gr-wide', wide); GR.focus = null; GR.hold = 0; GR.drag = false;
-  if (!grOn() || cur.mode !== 'yard') return; grViewSize(); grDepth();
+  if (!grOn() || !rmScene()) return; grViewSize(); grDepth();
   if (wide) { grCamHome(); grCamStart(); }
 }
 on('yard:enter', grSceneUp);
-on('scene:redraw', () => { if (S && cur.mode === 'yard' && grOn()) grDepth(); });
-window.addEventListener('resize', () => { if (S && cur.mode === 'yard' && grOn()) { grViewSize(); if (grWide()) setTimeout(() => { if (grCamLive()) grCamHome(); }, 60); } });
+on('scene:redraw', () => { if (S && rmScene() && grOn()) grDepth(); });
+window.addEventListener('resize', () => { if (S && rmScene() && grOn()) { grViewSize(); if (grWide()) setTimeout(() => { if (grCamLive()) grCamHome(); }, 60); } });
 
 /* ---------------- the deterministic run for the tests: __paw.gr.sim(place, secs, o) ---------------- */
 function grRand(seed) { let a = seed >>> 0 || 1; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 function grSim(place, secs, o) {
-  o = o || {}; if (!S || cur.mode !== 'yard' || S.place !== place || !grOn(place)) return { error: 'not in that grOn place', place, here: S && S.place };
+  o = o || {}; if (!S || !rmScene() || S.place !== place || !grOn(place)) return { error: 'not in that grOn place', place, here: S && S.place };
   const f = grFloor(), step = o.step || 1 / 30, n = Math.max(1, Math.round(secs / step)), mr = Math.random, own = Object.prototype.hasOwnProperty.call(performance, 'now'), pn = performance.now;
   let T = pn.call(performance); const T0 = T, ds = rmDogs(), L = D(), out = { place, secs, steps: n, dogs: ds.map((d) => d.id), outside: [], inBox: [], depthBad: 0, camOut: 0, camSteps: 0, scaleBad: [], moved: {}, kinds: {}, acts: {}, by: {} };
   Math.random = grRand(o.seed || 7); performance.now = () => T; GR.sim = { T0 }; const start = ds.map((d) => [rmSt(d).x, rmSt(d).y]);
@@ -471,7 +503,7 @@ function grExpose() {
     sim: (place, secs, o) => grSim(place, secs, o), allow: (v) => { prefs.grTest = !!v; return grOn(); }, wide: (p) => grWide(p), zone: (p) => (grOn(p) ? grZone(p) : null),
     focus: (id, ms) => grFocus(dogById(id), ms), focusX: () => grFocusX(), depthOk: () => grDepthOk(), depth: () => grDepth(), area: (p) => { const f = grFloor(p); return f ? f.area : 0; },
     free: (x, y) => grFree(x, y), inside: (x, y, p) => { const f = grFloor(p); return !!f && grIn(f.poly, x, y); }, no: (p) => grNo(p), snap: (x, y) => grSnap(x, y), tags: (x, y) => grTags(x, y),
-    props: () => GR.props.map((g) => ({ id: g.dataset.prop, fy: +g.dataset.fy, inPack: !!g.closest('#pack') })), look: (x) => grLookAt(x), held: () => grCamHeld(performance.now()), home: () => grCamHome(),
+    props: () => GR.props.map((g) => ({ id: g.dataset.prop, fy: +g.dataset.fy, inPack: !!g.closest('#pack') })), game: () => GR.game.map((g) => ({ id: g.dataset.prop, fy: +g.dataset.fy, inPack: !!g.closest('#pack'), el: g.firstElementChild ? g.firstElementChild.id : '' })), look: (x) => grLookAt(x), held: () => grCamHeld(performance.now()), home: () => grCamHome(),
     get hold() { return GR.hold; }, set hold(v) { GR.hold = v; }, acts: GR_ACTS, gait: GR_GAIT
   };
 }

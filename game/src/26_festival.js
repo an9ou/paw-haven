@@ -17,6 +17,7 @@ const FS_PUMPKIN = [596, 486, 40, 40]; // the porch step, left of the dog-house 
 const FS_PUMPKIN_PH = [796, 488, 40, 40];
 const fsPumpkinBox = () => (isPhone() ? FS_PUMPKIN_PH : FS_PUMPKIN);
 const FS_PACK_SQ = [905, 470, 'left', 0.53]; // Square pack spot 3 while the stall is up (it stands where the stall is)
+const FS_PACK_SQ_GR = [800, 400, 'left', 0.55]; // v2.15: in a grOn square the stall's box (FS_STALL desk, x 858-994, y 384-510) keeps feet out: the spot stands clear of it, left of the stall, behind the bench (scale 0.88 x grScale at y 400)
 const FS_COSTUMES = ['Ghost Sheet', 'Pumpkin Suit', 'Wizard Hat', 'Bumblebee Suit', 'Astronaut Helmet', 'Happi Coat'];
 const FS_PARADE_MS = 6000;
 const FS_SEASON_LINE = { spring: 'Spring: the blossom is out.', summer: 'Summer: long days.', autumn: 'Autumn: the leaves are turning.', winter: 'Winter: frost on the fence.' };
@@ -157,7 +158,7 @@ function fsYardDraw() {
   ['#fsPilesG', '#fsPumpkinG'].forEach((s) => { const e = $(s, svg); if (e) e.remove(); });
   if (festOn('leaf')) {
     const html = `<g id="fsPilesG">${FS_PILES.map((p, i) => fsPileSVG(i, FS.pileT[i] ? 'scattered' : 'full')).join('')}</g>`;
-    const a = $('#decorG', svg) || $('#msCardG', svg); if (a) a.insertAdjacentHTML('afterend', html); else { const h = $('#houseG', svg); if (h) h.insertAdjacentHTML('beforebegin', html); }
+    const a = $('#decorG', svg) || $('#msCardG', svg); if (a) a.insertAdjacentHTML('afterend', html); else { const h = grAt('houseG', svg); if (h) h.insertAdjacentHTML('beforebegin', html); }
     fsPileBind();
   }
   if (festOn('halloween')) {
@@ -214,7 +215,7 @@ function fsHwDraw() { if (typeof hwSquareDraw === 'function') hwSquareDraw(); }
 function fsPackSync() {
   if (typeof PACK_SPOTS === 'undefined' || !PACK_SPOTS.square) return;
   if (!FS.packSq) FS.packSq = PACK_SPOTS.square[2].slice();
-  const want = fsAnyOn() ? FS_PACK_SQ : FS.packSq, now = PACK_SPOTS.square[2];
+  const want = fsAnyOn() ? (grOn('square') ? FS_PACK_SQ_GR : FS_PACK_SQ) : FS.packSq, now = PACK_SPOTS.square[2];
   if (now[0] === want[0] && now[1] === want[1]) return;
   PACK_SPOTS.square[2] = want.slice();
   if (fsHere('square') && !FS.walking) { const g = $('#pack'); if (g) { g.innerHTML = packSVG(); bindPack(); } }
