@@ -136,6 +136,7 @@ const SUITES = {
   // (PAW_LANGS=ja,de picks languages, PAW_I18N_PARTIAL=1 lists misses instead of failing); i18n_phone is in the `phone` group (PAW_I18N_STRICT=1)
   i18n_smoke: { file: 'test_i18n_smoke.js', group: 'i18n', est: 420, timeout: 1500 },
   i18n_phone: { file: 'test_i18n_phone.js', group: 'phone', est: 150, timeout: 900 },
+  i18n_bubble: { file: 'test_i18n_bubble.js', group: 'phone', est: 420, timeout: 1600 }, // v2.14.1 owner fix: a speech bubble never covers the speaking dog's head (every language, 390 / 684 px embeds, desktop)
   // v2.14 FIT AUDIT (docs/i18n/coord/FIT.md): does every language fit every menu, window and box, at every size. Own group `fit` (not in `all`/`phone`):
   // node game/run_tests.js i18n_fit site_fit --jobs 3   (PAW_LANGS, PAW_FIT_SIZES, PAW_FIT_REPORT_ONLY=1; they run their own parallel browsers, --jobs sets how many)
   i18n_fit: { file: 'test_i18n_fit.js', group: 'fit', est: 1500, timeout: 5400 },

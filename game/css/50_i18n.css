@@ -53,3 +53,4 @@ html[data-layout="phone"] .tlang{font-size:16px}
    so a tall CJK / Thai bubble (line-height 1.6) ran its last line onto the tail and the dog's head: wider bubbles (fewer lines), more room under the text */
 html[data-layout="phone"]:is(:lang(ja),:lang(zh),:lang(ko),:lang(th)) #bubble{max-width:min(340px,calc(100vw - 32px))}
 html[data-layout="phone"].pa-speech:is(:lang(ja),:lang(zh),:lang(ko),:lang(th)) #bubble{padding-bottom:40px}
+html[data-layout="phone"].pa-speech:is(:lang(ja),:lang(zh),:lang(ko),:lang(th)) #bubble.below{padding-top:40px;padding-bottom:12px} /* v2.14.1: under the dog the tail is on top */

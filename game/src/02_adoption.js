@@ -54,7 +54,7 @@ function renderAdopt(first) {
   $('#aGirl').onclick = () => { adoptSex = 'female'; SFX.boop(700); renderAdopt(true); };
   $('#aAdopt').onclick = () => { if (!adoptSex) { nope(tt('adopt.pick_boy_or_girl_first', "Pick Boy or Girl first. {name}'s siblings are waiting politely.", { name: d.name })); return; } adoptName(d); };
   if (!first) SFX.bark(BARK[d.key] || 1);
-  setTimeout(() => { if (cur.mode === 'adopt' && modal.hidden) (typeof srSay === 'function' ? srSay : say)(d.joke ? tdata('fallback_dogs.' + d.key + '.joke', d.joke) : JOKES[d.key] ? homePick('jokes.' + d.key, JOKES[d.key]) : homePick('jokes.mutt', JOKES.mutt), SR_MEET[0] + 30, SR_MEET[1] - 200, 6000); }, 60);
+  setTimeout(() => { if (cur.mode === 'adopt' && modal.hidden) (typeof srSay === 'function' ? srSay : say)(d.joke ? tdata('fallback_dogs.' + d.key + '.joke', d.joke) : JOKES[d.key] ? homePick('jokes.' + d.key, JOKES[d.key]) : homePick('jokes.mutt', JOKES.mutt), SR_MEET[0] + 30, SR_MEET[1] - 200, 6000, 'meet'); }, 60);
   if (!isPhone()) { const H = dock.querySelector('.heads'), b = H && H.querySelector('button[aria-current="true"]'); if (b && H.scrollHeight > H.clientHeight + 1) { const hr = H.getBoundingClientRect(), br = b.getBoundingClientRect(); H.scrollTop = Math.max(0, br.top - hr.top - (H.clientHeight - br.height) / 2); } } // v2.12 LAYOUT: desktop, the heads row scrolls inside a full card: the picked head stays in view
   if (typeof srCam === 'function') requestAnimationFrame(srCam); // the tray's height can change with the dog's text
 }
