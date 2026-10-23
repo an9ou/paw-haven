@@ -3,6 +3,7 @@
 .ag-tray .tray-h{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .ag-tray .tray-h h3{margin:0;min-width:0;overflow-wrap:break-word;text-wrap:balance}
 html[data-layout="phone"] #stage #dock > .ag-tray .tray-h h3{font-size:24px}
+html[data-layout="phone"] #dock .ag-go{min-height:76px} /* the phone shell scales the dock: 76 px here is 64 px or more on the screen */
 .ag-tray .ag-done{flex:none;min-width:88px;min-height:44px;font-size:20px}
 .ag-tray .tray-body p{margin:2px 0}
 .ag-tray .ag-hint{font-size:15px;line-height:1.25;min-height:19px}

@@ -287,7 +287,7 @@ function agExpose() {
     on: () => agOn(), start: (id, o) => agStart(dogById(id) || D(), o || {}), open: () => agOpen(), stop: () => agStop(), best: (id) => agBest(id), left: () => agCoinsLeft(), cap: AG_COIN_DAY,
     go: (q) => agGo(q), pin: (v) => { if (AG) AG.pin = v; }, tray: () => agTray(),
     get state() { return AG ? { ph: AG.ph, i: AG.i, n: AG.course ? AG.course.length : 0, course: AG.course ? AG.course.slice() : [], low: !!AG.low, pts: AG.pts ? AG.pts.slice() : [], hw: AG.hw, ready: !!AG.ready, res: AG.res, id: AG.id, last: AG.last, pin: AG.pin } : null; },
-    mark: () => (AG && AG.ready ? agMark(performance.now()) : null), running: () => !!AG, lines: AG_LINES, low: (id) => agLowFor(dogById(id) || D()), bonus: () => agTrickBonus()
+    mark: () => (AG && AG.ready ? agMark(performance.now()) : null), running: () => !!AG, lines: AG_LINES, low: (id) => agLowFor(dogById(id) || D()), bonus: () => agTrickBonus(), lesson: () => agLesson(), lesson: () => agLesson()
   };
 }
 on('game:ready', () => setTimeout(agExpose, 0));

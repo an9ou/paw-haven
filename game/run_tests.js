@@ -136,6 +136,7 @@ const SUITES = {
   phone_v29_pack: { file: 'test_phone_v29_pack.js', group: 'phone', est: 50 }, // v2.9 (V29.md)
   phone_v210_ball: { file: 'test_phone_v210_ball.js', group: 'phone', est: 60 },
   phone_v210_roam: { file: 'test_phone_v210_roam.js', group: 'phone', est: 50 }, // v2.10 ROAM (V210.md)
+  phone_v215_places: { file: 'test_phone_v215_places.js', group: 'phone', est: 80 }, // v2.15 ACTIVITIES (V215.md 6, 11, 16): the Training Ground on phones: the 64 px Go! button in the thumb zone, 44 px taps, 15 px text, no sideways scroll
   phone_v215_ground: { file: 'test_phone_v215_ground.js', group: 'phone', est: 70 }, // v2.15 GROUND (V215.md 11, 16): the wide-place camera on phones, look chips, drag vs tap, the crop, 44 px, no sideways scroll
   phone_v211_cards: { file: 'test_phone_v211_cards.js', group: 'phone', est: 50 }, // v2.11 CARDS: Dog Cards on phones (V211.md section 5.5)
   phone_v213_expr: { file: 'test_phone_v213_expr.js', group: 'phone', est: 50 }, // v2.13 EX: expressions and the photo face picker on phones (V213.md 4)
