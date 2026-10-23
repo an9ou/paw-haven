@@ -454,3 +454,11 @@ The site translation (`site/i18n/zh-Hant.json`, v2.14 phase 1b), written in Taiw
 - TODO(native): `mail.card_9`: 真是超額達成 for "overachiever". Does it land for kids?
 - TODO(native): "snack" is 點心 in some lines and 零食 (the glossary word for "treat") in others: pick one per English word.
 - TODO(native): the Nose-o-meter hot/cold hints use 超燙 / 越來越燙 (walk.nose_hot, mod.walk.*, walk_lines.hot/warm, clues.hot.2): fine for the warmer/colder game or too literal?
+
+## v2.15
+
+`game/i18n/zh-Hant.json`, 245 new keys (Around Town), Taiwan wording. New place names, also in the glossary `terms`: Training Ground 訓練場, Splash Pool 戲水池, Sunflower Lanes 向日葵小徑, Bamboo Grove Trail 竹林步道, Seaside Cliffs Run 海崖步道. Agility course 敏捷賽道, obstacles 繞桿, 跨欄, 輪胎圈, 隧道, 暫停台. Rosette 花章 (as in the festivals), Doggy Life Vest 狗狗救生衣, Float fetch 漂浮撿球, paddle 划水, Go! 衝！. The Gerald lessons (`agility.lesson_text`, `pool.lesson_text`) are joined into two sentences.
+- Fix: `journal.found_at` is 在{places}找到……, so the route words (`data.route_word.*`, `town.route_word_*`) no longer start with 在 (it showed 在在公園裡).
+- TODO(native): 海崖步道 for Seaside Cliffs Run (懸崖 avoided as a little scary). Natural?
+- TODO(native): `ground.herd_3` 好一群小羊 (the herding dog calls the pack its flock).
+- TODO(native): `ground.play_3` 趴低屁股翹高 for the play bow: kid-friendly?
