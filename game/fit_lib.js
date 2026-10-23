@@ -334,7 +334,7 @@ function MEASURE(cfg) {
   // and inset with it), not the box. Each seen line is judged on its em box (Thai: its whole box), against the frame points beside it.
   // Limits: cfg.crowdDense (default 10 px) for CJK, Hangul and Thai text, whose glyphs fill the whole em square; cfg.crowd (default
   // 4 px) for other scripts (Latin ink sits well inside its em box, and the English windows keep their v2.14 spacing).
-  // Not judged: text inside a nested framed card or a control (that card's own business), a line cut by a box it scrolls in, and a line
+  // Not judged: a sheet whose frame is off (--fr: none, its ::after paper covers its art), text inside a nested framed card or a control (that card's own business), a line cut by a box it scrolls in, a line box that is only a hanging space, and a line
   // within the limit of the edge of a box it scrolls in, on a side that box can still scroll to (a fold: scrolling moves the text away).
   if (cfg.frames !== false) {
     const FR = cfg.frames || '#dock > .tray, .panel, .buybox, .confirm, .onway-card, #trainPanel, .ps-turn-card, .rt-card, .gd-say, .gd-lesson, .sitem';
@@ -342,6 +342,9 @@ function MEASURE(cfg) {
     const frameOf = (w) => {
       if (frC.has(w)) return frC.get(w); let f = null;
       const bg = cs(w).backgroundImage || '';
+      // a sheet with its pencil frame switched off (--fr: none: the results sheet, whose background is the panel art) shows no line: the
+      // window's own ::after paper is painted over its background, so only the soft paper edge is seen, and there is no line to crowd
+      if (w.matches('.panel') && cs(w).getPropertyValue('--fr').trim() === 'none') { frC.set(w, null); return null; }
       if (/preserveAspectRatio/.test(bg) && /5B3D32/i.test(bg)) {
         let s = ''; try { s = decodeURIComponent((bg.match(/url\("data:image\/svg\+xml[^"]*"\)/) || [''])[0]); } catch (e) { s = ''; }
         const vb = s.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/), d = (s.match(/<path d="([^"]+)"/) || [])[1];
@@ -350,6 +353,9 @@ function MEASURE(cfg) {
       frC.set(w, f); return f;
     };
     const crowdF = new Map();
+    // a line box that is only a space hanging past the line end (an ideographic space U+3000 after a full stop wraps onto its own box at
+    // the line end) has no ink: it is not judged
+    const blank = (nd, o) => { const v = nd.nodeValue, rg = document.createRange(); for (let i = 0; i < v.length; i++) { if (!/[\s\u3000]/.test(v[i])) continue; rg.setStart(nd, i); rg.setEnd(nd, i + 1); for (const q of rg.getClientRects()) if (Math.abs(q.left - o.left) < 0.6 && Math.abs(q.right - o.right) < 0.6 && Math.abs(q.top - o.top) < 0.6) return true; } return false; };
     for (const a of live) {
       if (a.ctl) continue;
       for (const it of a.items) {
@@ -370,7 +376,7 @@ function MEASURE(cfg) {
             if (s < 2 && p[1] >= vt - 4 && p[1] <= vb2 + 4) g = Math.min(g, s === 0 ? r.left - p[0] : p[0] - r.right);
             else if (s >= 2 && p[0] >= r.left - 4 && p[0] <= r.right + 4) g = Math.min(g, s === 2 ? vt - p[1] : p[1] - vb2);
           }
-          if (g < lim) { const prev = crowdF.get(it.el); if (!prev || g < prev.g) crowdF.set(it.el, { g, r, w, lim }); }
+          if (g < lim && !blank(it.node, o)) { const prev = crowdF.get(it.el); if (!prev || g < prev.g) crowdF.set(it.el, { g, r, w, lim }); }
         }
       }
     }
