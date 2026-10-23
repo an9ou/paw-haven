@@ -91,6 +91,7 @@ const SUITES = {
   v211_art_e: { file: 'test_v211_art_e_node.js', group: 'all', est: 15 }, // v2.11 (V211.md 5.4): world E, the Tokyo Tower, Ueno and Odaiba scenes, eki stamps, lucky cat, Tokyo frame, items (TOKYO ART E)
   v215_places_art: { file: 'test_v215_places_art.js', group: 'all', est: 40 }, // v2.15 PLACE ART (V215.md 2, 6, 8.2, 12): world G, the eight new places, PawArt.FLOOR, the three walk strips
   'v215_gart-a': { file: 'test_v215_gart-a.js', group: 'all', est: 40 }, // v2.15 GROUND ART A (V215.md 8.2, 12, 13): park, dogpark, beach, hilltop, woods, river, pier 1600 wide under { v215 }, their FLOOR rows; old renders byte-identical
+  'v215_gart-b': { file: 'test_v215_gart-b.js', group: 'all', est: 30 }, // v2.15 GROUND ART B (V215.md 5, 8.2, 12, 13): yard, house, Kibble Corner, square, fujihill deep under { v215 }, their FLOOR rows; old renders byte-identical
   v29_review: { file: 'test_v29_review.js', group: 'all', est: 40 }, // v2.9 integration review fixes (coordinator)
   v211_dogs: { file: 'test_v211_dogs_node.js', group: 'all', est: 450, timeout: 700 }, // v2.11 BREED ART (V211.md 5.2): akita, spitz, pom, afghan, dane, mastiff, gsd and the three Tokyo bandanas
   v212_dogs: { file: 'test_v212_dogs_node.js', group: 'all', est: 480, timeout: 900 }, // v2.12 ART A-D (V212.md 5): the fourteen new breeds in every pose, age, facing and outfit

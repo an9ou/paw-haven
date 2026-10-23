@@ -2444,4 +2444,221 @@ Object.keys(FLOOR_A).forEach(n=>{const F=FLA[n],R=FLOOR_A[n];PA.FLOOR[n]={w:F.w,
 {const prev=PA.scene;PA.scene=function(name,o){return o&&o.v215&&MINE_A[name]?renderA(name,o):prev.apply(this,arguments)}}
 PA.WORLD_C_V215=Object.keys(MINE_A);
 /* ======================= end of v2.15 A ======================= */
+/* ======================= v2.15 B: GROUND ART B (V215.md sections 2, 8.2, 12, 13) =======================
+   The Town Square and the Mt. Fuji Lookout redrawn deep, 1000 wide (the Square's festival and Halloween props are placed in 1000-wide units),
+   drawn only when the caller passes { v215: true } (no v215 = the old scene byte for byte; the one dispatch hook is the PA.scene wrapper at the
+   end of this block). My Yard, the Cozy House and Kibble Corner are world A's "v2.15 B" block. The Café, the Vet and the Salon join MINE_B2 later.
+   Conventions as the v2.15 A block above (and world G): the floor's back line at y 346 to 356, every floor prop in <g id="floorG">, one
+   <g data-fy="<base y>" data-prop="<id>"> each, sorted by base y; PawArt.FLOOR[name] rows. Hot spots stay in the backdrop (the game finds them
+   under #sceneG): the Square's data-hot="notice" board and its data-hot="run" start arch (the Town Loop) stand on the back line, so no dog can
+   stand behind them. The fountain stays where it was (RM_SCENERY.square), Sir Splashington and all. Fuji Lookout keeps data-spot-bench on the
+   root (33_japan.js: the middle of the bench seat). No text in the art: the shop signs and the lookout sign carry pictures. */
+const FLB2={square:{w:1000,back:346,front:594,kB:.5,kF:1.05},fujihill:{w:1000,back:356,front:594,kB:.5,kF:1.05}};
+// a picture on a shop sign (in place of the old words): bakery, books, post, toys, fuji
+function signPicB2(k,pic,x,y,s=1){
+  if(pic==='bakery'){donut(k,x-14*s,y+3*s,1.05*s,'#FFB3C7');k.shape([[x+6*s,y+8*s],[x+26*s,y+8*s],[x+23*s,y-4*s],[x+9*s,y-4*s]],'#F7C5CF',{w:1.3,one:1});k.shape(E(x+16*s,y-6*s,10*s,6*s,10),'#FFFBF3',{w:1.2,one:1});k.add(`<circle cx="${R1(x+16*s)}" cy="${R1(y-12*s)}" r="${R1(2.6*s)}" fill="${C.red}"/>`)}
+  else if(pic==='books'){k.shape([[x-26*s,y-8*s],[x-1*s,y-4*s],[x-1*s,y+10*s],[x-26*s,y+6*s]],'#FFFFFF',{w:1.4,one:1});k.shape([[x+1*s,y-4*s],[x+26*s,y-8*s],[x+26*s,y+6*s],[x+1*s,y+10*s]],'#FFFFFF',{w:1.4,one:1});
+    k.add(`<path d="M${R1(x-21*s)} ${R1(y-2*s)}l${R1(15*s)} ${R1(2*s)}M${R1(x-21*s)} ${R1(y+3*s)}l${R1(15*s)} ${R1(2*s)}" stroke="${C.graph}" stroke-width="1.1"/>`);
+    k.add(`<g fill="${C.mint}" stroke="${C.ink}" stroke-width=".8"><ellipse cx="${R1(x+14*s)}" cy="${R1(y+3*s)}" rx="${R1(4*s)}" ry="${R1(3.2*s)}"/><circle cx="${R1(x+9*s)}" cy="${R1(y-2*s)}" r="${R1(1.7*s)}"/><circle cx="${R1(x+13*s)}" cy="${R1(y-4*s)}" r="${R1(1.7*s)}"/><circle cx="${R1(x+17*s)}" cy="${R1(y-4*s)}" r="${R1(1.7*s)}"/><circle cx="${R1(x+21*s)}" cy="${R1(y-2*s)}" r="${R1(1.7*s)}"/></g>`)}
+  else if(pic==='post'){k.shape(RC(x-20*s,y-10*s,40*s,24*s),'#FFFBF3',{w:1.4,one:1});k.line([[x-20*s,y-10*s],[x,y+3*s],[x+20*s,y-10*s]],1.3);O.heart(k,x,y+7*s,4*s)}
+  else if(pic==='toys'){k.shape(E(x-14*s,y+1*s,10*s,10*s,10),'#E9F59B',{w:1.4,one:1});k.add(`<path d="M${R1(x-22*s)} ${R1(y-3*s)}q${R1(8*s)} ${R1(6*s)} ${R1(16*s)} 0" fill="none" stroke="#fff" stroke-width="1.6"/>`);
+    k.shape([[x+4*s,y+11*s],[x+6*s,y-3*s],[x+24*s,y-3*s],[x+26*s,y+11*s]],C.yellow,{w:1.3,one:1});k.add(`<circle cx="${R1(x+20*s)}" cy="${R1(y-7*s)}" r="${R1(6*s)}" fill="${C.yellow}" stroke="${C.ink}" stroke-width="1.2"/><path d="M${R1(x+25*s)} ${R1(y-8*s)}l${R1(5*s)} ${R1(2*s)} ${R1(-5*s)} ${R1(2*s)}z" fill="${C.orange}"/>`)}
+  else if(pic==='fuji'){k.shape([[x-26*s,y+10*s],[x-6*s,y-9*s],[x+6*s,y-9*s],[x+26*s,y+10*s]],'#9DB7D6',{w:1.4,one:1});k.shape([[x-9*s,y-6*s],[x-6*s,y-9*s],[x+6*s,y-9*s],[x+9*s,y-6*s],[x+4*s,y-3*s],[x,y-6*s],[x-4*s,y-3*s]],'#FFFFFF',{w:1.1,one:1});
+    k.add(`<path d="M${R1(x-2*s)} ${R1(y+10*s)}v${R1(-9*s)}M${R1(x+6*s)} ${R1(y+10*s)}v${R1(-9*s)}M${R1(x-5*s)} ${R1(y+2*s)}h${R1(14*s)}" stroke="#E2563D" stroke-width="${R1(2*s)}" stroke-linecap="round"/>`)}}
+// a shopfront (shopF) whose sign carries a picture: shopF writes the sign through k.text, so it is lent a picture for that one call
+function shopB2(k,x,w,top,base,o){const t0=k.text;k.text=(pic,cx,cy)=>signPicB2(k,pic,cx,cy-9);try{shopF(k,x,w,top,base,o)}finally{k.text=t0}
+  if(!k.env.snow&&k.so==='winter')k.ss(()=>capLine(k,[[x-8,top-12],[x+w+8,top-12]],5))}
+function skyB2(k,yb,c){k.skyD(()=>{skyBand(k,1000,yb);O.sun(k,c.sun[0],c.sun[1],c.sun[2]);c.clouds.slice(0,2).forEach(q=>O.cloud(k,q[0],q[1],q[2]));(c.birds||[]).forEach(q=>O.bird(k,q[0],q[1],q[2]))},Object.assign({W:1000,H:yb+10,stars:44},c))}
+function fxB2(k,o){k.fx(()=>{const e=k.env;if(e.rain){sheen(k,0,1000,o.sheen[0],o.sheen[1],70,o.avoid||[]);(o.puddles||[]).forEach(q=>puddle(k,...q))}
+  if(e.snow)(o.patches||[]).forEach(q=>snowPatch(k,...q));if(e.night&&!e.rain&&o.flies)o.flies.forEach(f=>k.flies.push(f))})}
+
+/* ---------- Town Square (deep): the shops and the clock tower on the back line, the round paw rosette in the paving, the start arch ---------- */
+// draws fn scaled by a (matrix a 0 0 a tx ty); the lights it pushes (glows, lamps, bulbs, Halloween and Winter Lights glows) move with it (world A's scaledB)
+function scaledB2(k,a,tx,ty,fn){const T=`matrix(${a} 0 0 ${a} ${R1(tx)} ${R1(ty)})`,P=(x,y)=>[a*x+tx,a*y+ty],n={glows:k.glows.length,lamps:k.lamps.length,bulbs:k.bulbs.length,hwl:k.hwl.length,top:k.top.length},sv=k.wlT;
+  k.wlT=sv?sv+' '+T:T;k.add(`<g transform="${T}">`);fn();k.add('</g>');k.wlT=sv;
+  for(let i=n.glows;i<k.glows.length;i++){const [x,y,w,h]=k.glows[i],p=P(x,y);k.glows[i]=[p[0],p[1],w*a,h*a]}
+  for(let i=n.lamps;i<k.lamps.length;i++){const l=k.lamps[i],p=P(l.x,l.y);k.lamps[i]=Object.assign({},l,{x:p[0],y:p[1],s:l.s*a,gy:l.gy==null?l.gy:a*l.gy+ty,glass:l.glass.map(q=>P(q[0],q[1]))})}
+  for(let i=n.bulbs;i<k.bulbs.length;i++){const b=k.bulbs[i],p=P(b[0],b[1]);k.bulbs[i]=[p[0],p[1]].concat(b.slice(2))}
+  ['hwl','top'].forEach(key=>{const A=k[key];for(let i=n[key];i<A.length;i++)A[i]=`<g transform="${T}">${A[i]}</g>`})}
+function sqFountainB2(k){const fx=126;// the old fountain, drawn at .85 round its foot moved to x 110 (inside RM_SCENERY.square, clear of the stall and the pop-up), its plaque a paw instead of a name
+  shadeA(k,110,492,94,9);scaledB2(k,.85,110-fx*.85,492*.15,()=>sqFountainInB2(k,fx))}
+function sqFountainInB2(k,fx){k.shape(E(fx,450,104,26,20),C.stone,{w:2.3,hatch:{side:.6,gap:5,col:C.stoneD,op:.5}});
+  k.shape([[fx-104,450],[fx+104,450],[fx+100,482],[fx-100,482]],C.stone,{w:2.2,hatch:{side:.7,gap:5,col:C.stoneD,op:.5}});k.fill(E(fx,481,100,10,14),C.stone,{dx:0,dy:0});k.pen([[fx-100,481],[fx-50,490],[fx,492],[fx+50,490],[fx+100,481]],false,{w:2.2});
+  for(let x=fx-90;x<fx+100;x+=32)k.line([[x,456],[x+2,484]],1.1,C.stoneD);
+  k.shape(E(fx,448,88,17,18),k.so==='winter'?'#DCEAF3':C.water,{w:1.6,one:1});k.add(`<path d="M${fx-60} 446q8 -4 16 0t16 0M${fx+10} 452q8 -4 16 0t16 0M${fx-20} 442q6 -3 12 0" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>`);
+  k.shape([[fx-18,446],[fx-14,386],[fx+14,386],[fx+18,446]],C.stone,{w:2,hatch:{side:.6,gap:4,col:C.stoneD,op:.55}});k.shape(RC(fx-26,376,52,12),C.stoneD,{w:1.8});
+  k.shape(RC(fx-17,404,34,18),'#E1C47A',{w:1.3,one:1});k.add(`<g fill="${C.ink}"><ellipse cx="${fx}" cy="416" rx="4.4" ry="3.4"/><circle cx="${fx-5}" cy="410.5" r="1.7"/><circle cx="${fx-1.6}" cy="408" r="1.7"/><circle cx="${fx+1.6}" cy="408" r="1.7"/><circle cx="${fx+5}" cy="410.5" r="1.7"/></g>`);
+  k.add('<g transform="translate(0 30)">');const sc='#E3E7EA',sd='#9FAEB9';
+  k.line([[fx-24,336],[fx-42,328],[fx-48,312],[fx-38,304]],6,C.ink);k.line([[fx-24,336],[fx-42,328],[fx-48,312],[fx-38,304]],3.4,sc);
+  k.shape([[fx-28,346],[fx-30,318],[fx-20,296],[fx+2,290],[fx+18,304],[fx+22,346]],sc,{w:2.2,hatch:{side:.55,gap:4,col:sd,op:.7}});
+  k.shape([[fx-4,346],[fx-2,322],[fx+8,320],[fx+10,346]],sc,{w:1.6,one:1});k.shape([[fx+10,346],[fx+12,324],[fx+20,326],[fx+22,346]],sc,{w:1.6,one:1});
+  k.shape([[fx-2,298],[fx-6,280],[fx+4,264],[fx+24,260],[fx+42,268],[fx+50,280],[fx+44,292],[fx+28,296],[fx+10,300]],sc,{w:2.2,hatch:{side:.62,gap:4,col:sd,op:.65}});
+  k.shape([[fx+2,270],[fx-6,244],[fx+16,262]],sd,{w:1.8,one:1});k.shape([[fx+22,262],[fx+30,240],[fx+34,264]],sd,{w:1.8,one:1});
+  k.add(`<circle cx="${fx+26}" cy="272" r="3" fill="${C.ink}"/><circle cx="${fx+27}" cy="271" r="1" fill="#fff"/><path d="M${fx+19} 265l9 -3" stroke="${C.ink}" stroke-width="1.6" stroke-linecap="round"/><ellipse cx="${fx+49}" cy="279" rx="4" ry="3" fill="${C.ink}"/><path d="M${fx+50} 288q-6 4 -12 2" fill="${C.pink}" stroke="${C.ink}" stroke-width="1.4"/><ellipse cx="${fx+16}" cy="282" rx="5" ry="3" fill="${C.pink}" opacity=".6"/>`);
+  k.shape([[fx-4,300],[fx+22,296],[fx+24,303],[fx-3,307]],C.pink,{w:1.5,one:1});k.add(`<circle cx="${fx+10}" cy="308" r="3.4" fill="${C.yellow}" stroke="${C.ink}" stroke-width="1.2"/>`);
+  const arc=[];for(let i=0;i<=12;i++){const t=i/12;arc.push([fx+48+t*54,288-Math.sin(t*Math.PI*.62)*30+t*t*156])}{const wa=k.cap(()=>{k.line(arc,6,'#9CCDE8',{amp:.3});k.line(arc,2.4,'#FFFFFF',{amp:.3})});if(!k.env.lt)k.add(wa)}
+  {const px=fx+14,py=246;k.shape(E(px,py,10,7,10),'#B7B5C9',{w:1.5,one:1});k.shape(E(px+8,py-7,5,5,8),'#B7B5C9',{w:1.4,one:1});k.add(`<path d="M${px+13} ${py-7}l4 1 -4 2z" fill="${C.orange}"/><circle cx="${px+9}" cy="${py-8}" r="1.1" fill="${C.ink}"/><path d="M${px-3} ${py+6}v3M${px+3} ${py+6}v3" stroke="#E8945A" stroke-width="1.4"/>`)}
+  k.add('</g>');
+  if(!k.env.lt)k.add(`<circle cx="${fx+100}" cy="446" r="2.4" fill="#BEE0F2" stroke="#6F8FA8" stroke-width=".9"/><circle cx="${fx+112}" cy="440" r="1.8" fill="#BEE0F2" stroke="#6F8FA8" stroke-width=".9"/><path d="M${fx+84} 452q16 -8 32 0" fill="none" stroke="#fff" stroke-width="1.6"/>`);
+  snowOnA(k,E(fx,450,106,27,20).slice(10,20).concat([[fx+106,450]]),7);snowOnA(k,[[fx-27,376],[fx+27,376]],6);if(k.env.snow)k.side(()=>capLine(k,[[fx+4,324],[fx+24,320],[fx+42,328]],5));
+  k.lt(()=>ltFountain(k,fx));k.hw(()=>{hwJack(k,50,439,.72);hwJack(k,78,472,.85);hwJack(k,176,471,.7)})}
+function sqNoticeB2(k){// the town notice board at the back of the square (a picture header, picture notes), scaled from the old board round its foot
+  const cx=745,gy=392,s=.8,X=x=>R1(cx+(x-740)*s),Y=y=>R1(gy+(y-512)*s);
+  if(k.env.lit)(k.unlit=k.unlit||[]).push(`M${X(632)} ${Y(351)}L${X(740)} ${Y(315)}L${X(848)} ${Y(351)}L${X(839)} ${Y(361)}L${X(740)} ${Y(333)}L${X(641)} ${Y(361)}ZM${X(647)} ${Y(353)}H${X(833)}V${Y(477)}H${X(647)}Z`);
+  const g=k.cap(()=>{shadeA(k,cx,gy+2,80*s,6*s);k.add(`<g transform="matrix(${s} 0 0 ${s} ${R1(cx-740*s)} ${R1(gy-512*s)})">`);
+    k.line([[672,512],[672+k.J(1),410]],5,C.trunkD);k.line([[808,512],[808+k.J(1),410]],5,C.trunkD);
+    k.shape([[636,350],[740,318],[844,350],[836,358],[740,330],[644,358]],C.roof,{w:2,hatch:{side:.6,gap:4,col:C.roofD,op:.55}});
+    k.shape(RC(650,356,180,118),C.woodD,{w:2.2});k.shape(RC(660,366,160,98),'#E1B987',{w:1.6,one:1,hatch:{gap:6,col:'#C9A06E',op:.3}});
+    k.shape(RC(700,356,80,22),'#FFFBF3',{w:1.6,one:1});pawsA(k,[[724,371,1],[740,367,1],[756,371,1]],C.ink);
+    const notes=[[668,386,46,40,-6,C.yellow,'ball'],[720,384,44,44,5,'#FFD8E0','heart'],[770,388,42,36,-4,C.mint,'bone'],[680,428,40,30,4,'#FFFFFF','duck'],[730,432,52,28,-3,C.lav,'paw'],[786,428,30,30,7,C.blue,'heart']];
+    notes.forEach(([x,y,w,h,a,c,p])=>{k.add(`<g transform="rotate(${a} ${x+w/2} ${y+h/2})">`);k.shape(RC(x,y,w,h),c,{w:1.3,one:1});const mx=x+w/2,my=y+h/2+2;
+      if(p==='ball'){k.shape(E(mx,my,9,9,10),'#E9F59B',{w:1.3,one:1});k.add(`<path d="M${mx-7} ${my-3}q7 5 14 0" fill="none" stroke="#fff" stroke-width="1.4"/>`)}
+      else if(p==='bone')k.shape([[mx-12,my-2],[mx+12,my-2],[mx+15,my-6],[mx+18,my-1],[mx+15,my+4],[mx+12,my+2],[mx-12,my+2],[mx-15,my+4],[mx-18,my-1],[mx-15,my-6]],'#FFFBF3',{w:1.2,one:1});
+      else if(p==='duck')k.add(`<path d="M${x+10} ${y+20}q10 -10 20 0q-2 6 -10 6q-8 0 -10 -6z" fill="#F5C26B" stroke="#2a2420" stroke-width="1.6"/><circle cx="${x+29}" cy="${y+15}" r="4" fill="#F5C26B" stroke="#2a2420" stroke-width="1.4"/>`);
+      else if(p==='paw')pawsA(k,[[mx-10,my,.8],[mx+2,my,.8],[mx+14,my,.8]],C.ink);else O.heart(k,mx,my-2,6);
+      k.add(`<circle cx="${x+w/2}" cy="${y+3}" r="2.6" fill="#E86A7C" stroke="${C.ink}" stroke-width=".8"/></g>`)});
+    snowOnA(k,[[634,350],[740,316],[846,350]],8);frostOnA(k,[[652,357],[828,357]]);k.add('</g>')});
+  hot(k,'data-hot','notice','Town notice board',RC(645,226,200,174),g)}
+function sqrosetteB2(k,cx,cy,rx,ry){// a ring of darker cobbles round a paw in the paving (the round plaza)
+  let d='';for(let i=0;i<40;i++){const a=i/40*Math.PI*2,x=cx+Math.cos(a)*rx,y=cy+Math.sin(a)*ry,f=.7+.3*(y-cy+ry)/(2*ry);d+=`<ellipse cx="${R1(x)}" cy="${R1(y)}" rx="${R1(11*f)}" ry="${R1(4.4*f)}" fill="#CFC3B3" stroke="${C.ink}" stroke-width=".9"/>`}
+  k.fill(E(cx,cy,rx-14,ry-6,24),'#E2D9CB',{dx:0,dy:0,op:.85});k.add(d);
+  k.shape(E(cx,cy+6,30,11,14),'#D9B99A',{w:1.4,one:1});[[-32,-8],[-12,-16],[12,-16],[32,-8]].forEach(([dx,dy])=>k.shape(E(cx+dx,cy+dy,9,4,10),'#D9B99A',{w:1.2,one:1}))}
+function sqSquareB2(k,F){const B=F.back,D=y=>depA(F,y),fk=floorKitA(k),e=k.env;
+  skyB2(k,330,{sun:[880,66,28],low:[905,138,28],moon:[870,70,24],clouds:[[300,60,22],[740,50,18]],rainC:[[120,40,24],[480,28,26],[960,96,22]],birds:[[390,82,8],[412,94,6]]});
+  fujiA(k,420,232,280);
+  // the shopfronts and the clock tower stand on the back line (y 346): bakery, books, post office, toys
+  shopB2(k,-14,176,166,B,{wall:C.wall2,noGlow:1,sign:'bakery',awn:[C.red,'#fff'],door:'#E8A9B8',upper:2,disp:(x,y,w,h)=>{[[x+24,y+h-14],[x+56,y+h-14],[x+88,y+h-14]].forEach(([bx,by],i)=>{k.shape(E(bx,by,13,7,10),'#F0D9B5',{w:1.3,one:1});donut(k,bx,by-9,.9,[C.lav,'#FFB3C7',C.yellow][i])})}});
+  shopB2(k,214,206,242,B,{wall:C.wall,brick:1,sign:'books',awn:[C.mint,'#fff'],door:'#B9D3F2',upper:3,curt:C.mint,disp:(x,y,w,h)=>{let bx=x+16;const cs=[C.red,C.blue,C.yellow,C.lav,C.mint,C.orange];for(let i=0;i<9;i++){const bw=10+(i*7%6),bh=24+(i*11%12);k.shape(RC(bx,y+h-bh-4,bw,bh),cs[i%6],{w:1.2,one:1});bx+=bw+3}}});
+  shopB2(k,616,190,138,B,{wall:C.wall3,noDeco:1,sign:'post',awn:[C.blue,'#fff'],door:'#E57E83',upper:2,curt:C.yellow,signCol:'#FFFFFF',disp:(x,y,w,h)=>{k.shape(RC(x+14,y+h-30,40,22),'#FFFBF3',{w:1.3,one:1});k.line([[x+14,y+h-30],[x+34,y+h-18],[x+54,y+h-30]],1.2);O.heart(k,x+34,y+h-16,4)}});
+  shopB2(k,816,164,150,B,{wall:C.wall4,sign:'toys',awn:[C.yellow,'#fff'],door:'#B9DD92',upper:2,curt:C.lav,disp:(x,y,w,h)=>{k.shape(E(x+26,y+h-12,9,9,10),'#E9F59B',{w:1.4,one:1});k.shape([[x+48,y+h-6],[x+50,y+h-22],[x+68,y+h-22],[x+70,y+h-6]],C.yellow,{w:1.3,one:1})}});
+  k.ss(()=>{if(k.so==='winter'){chimney(k,40,118,1);chimney(k,300,148,1.05);chimney(k,700,132,.95)}});
+  k.jp(()=>{k.add('<g class="pa-jp" pointer-events="none">');jpPoleRow(k,[809,1006],B,60,1,12,[0,[.4,.47,.55]],0);jpPoleRow(k,[-18,207],B,64,1,12);jpNoren(k,138,188,B-71,26,2);jpVend(k,609,B,.86);k.add('</g>')});
+  // the clock tower (its top as before, its foot on the back line)
+  {const tx=560;k.shape(RC(tx-42,64,84,B-64),C.stone,{w:2.3,hatch:{side:.78,gap:5,col:C.stoneD,op:.55}});let d='';for(let y=84;y<B-4;y+=20)d+=`M${tx-38} ${y}h76`;k.add(`<path d="${d}" stroke="#fff" stroke-opacity=".5" stroke-width="1.3"/>`);
+   const roof=[[tx-54,68],[tx,8],[tx+54,68]];k.shape(roof,C.roof,{w:2.3,hatch:{side:.55,gap:5,col:C.roofD,op:.55}});k.line([[tx,8],[tx,-6]],2);k.shape([[tx,-6],[tx+16,-1],[tx,4]],C.pink,{w:1.3,one:1});
+   k.shape(E(tx,124,30,30,18),'#FFFBF3',{w:2.3});for(let i=0;i<12;i++){const a=i/12*Math.PI*2;k.line([[tx+Math.cos(a)*23,124+Math.sin(a)*23],[tx+Math.cos(a)*27,124+Math.sin(a)*27]],i%3?1.1:2)}
+   if(e.lit)k.glows.push([tx-21,103,42,42]);
+   k.side(()=>{const hm={dawn:[6,0],day:[1,10],dusk:[6,0],night:[10,10]}[e.time],ha=(hm[0]%12+hm[1]/60)/12*Math.PI*2-Math.PI/2,ma=hm[1]/60*Math.PI*2-Math.PI/2;
+     k.add(`<path d="M${tx} 124L${R1(tx+Math.cos(ha)*14)} ${R1(124+Math.sin(ha)*14)}M${tx} 124L${R1(tx+Math.cos(ma)*21)} ${R1(124+Math.sin(ma)*21)}" stroke="${C.ink}" stroke-width="2.4" stroke-linecap="round"/><circle cx="${tx}" cy="124" r="3" fill="${C.pink}" stroke="${C.ink}"/>`)});
+   const ar=[[tx-16,230],[tx-16,190],[tx,176],[tx+16,190],[tx+16,230]];k.shape(ar,'#9AA7B8',{w:1.9});k.shape(E(tx,198,9,9,10),C.yellow,{w:1.5});k.line([[tx,189],[tx,182]],1.4);
+   k.shape(RC(tx-22,B-60,44,60),'#C79A72',{w:2});k.add(`<path d="M${tx} ${B-60}v60" stroke="${C.ink}" stroke-width="1.4"/>`);shadeA(k,tx,B+3,52,5);
+   snowOnA(k,[[tx-56,68],[tx,7],[tx+56,68]],10);
+   k.ss(()=>{if(k.so==='winter'){const wr=k.cap(()=>wreath(k,tx,B-46,1.1));if(!e.ny)k.add(wr)}});
+   k.lt(()=>ltStar(k,tx,44,.78));k.ny(()=>nyShime(k,tx,B-62,.8))}
+  // bunting from the tower to the edges (with the Japan scenery the left string ends at the telephone pole)
+  if(e.jp)buntingL(k,0,207,150,14,[C.red,C.yellow,C.mint,C.lav,C.blue]);else buntingL(k,0,516,150,26,[C.red,C.yellow,C.mint,C.lav,C.blue]);
+  buntingL(k,604,1000,150,22,[C.yellow,C.mint,C.lav,C.blue,C.red]);
+  k.hw(()=>{[[531,90,.7],[591,94,.62],[530,170,.66]].forEach(([x,y,s])=>hwBat(k,x,y,s,{col:HWP}));hwSkyBats(k,[[250,96,.8],[300,74,.6],[700,60,.7]])});
+  // the plaza: perspective flagstones from the back line, the round cobble ring with a paw in the middle
+  k.fill([[0,B],[1000,B],[1000,600],[0,600]],'#E8E1D6',{dx:0,dy:0,sc:0});k.pen([[0,B+1],[500,B],[1000,B+1]],false,{w:2});
+  paving(k,B+1,600,500,170,'#BFB2A2','#DDD4C8');
+  sqrosetteB2(k,560,500,232,56);
+  k.ss(()=>{const so=k.so;if(so==='autumn')k.add(`<rect y="${B+2}" width="1000" height="${598-B}" fill="#F2B25C" fill-opacity=".08"/>`);
+    seasonGround(k,[0,B+8,1000,598],80,[[640,B,850,400],[20,420,236,500]],0,1);if(so==='autumn')seasonGround(k,[220,520,520,598],40,[],0,1)});
+  fxB2(k,{sheen:[B+8,598],puddles:[[450,580,48,9],[780,560,40,8],[930,476,30,6],[300,420,34,6]],patches:[[450,582,74,13],[780,564,62,11],[934,478,46,9],[60,566,50,9],[300,420,50,8],[860,400,40,7]],flies:[[300,470],[620,420],[860,560],[180,560]]});
+  floorSnowA(k,[[0,B],[1000,B],[1000,600],[0,600]],[[460,586,110,12],[860,574,90,11],[300,398,60,7],[660,410,50,7]]);
+  // the Town Loop start arch on the back line, in front of the gap by the tower
+  runGateA(k,466,B+6,.55,C.woodD,C.yellow);
+  // pigeons pecking crumbs (flat on the paving)
+  {const pg=(x,y,f)=>{k.shape(E(x,y,11,7,10),'#B7B5C9',{w:1.5,one:1});k.shape(E(x+9*f,y-8,5,5,8),'#C9C7D8',{w:1.4,one:1});k.add(`<path d="M${x+14*f} ${y-8}l${4*f} 1 ${-4*f} 2z" fill="${C.orange}"/><circle cx="${x+10*f}" cy="${y-9}" r="1.1" fill="${C.ink}"/><path d="M${x-2} ${y+6}v4M${x+3} ${y+6}v4" stroke="#E8945A" stroke-width="1.4"/>`)};pg(620,560,1);pg(660,574,-1);k.add(`<g fill="#E8C58A"><circle cx="638" cy="580" r="1.6"/><circle cx="646" cy="576" r="1.4"/><circle cx="632" cy="584" r="1.3"/></g>`)}
+  sqNoticeB2(k);
+  // the floor props
+  fk.add('lampL',400,()=>lampA(k,345,400,D(400)*1.3));
+  fk.add('lampR',400,()=>lampA(k,640,400,D(400)*1.3));
+  fk.add('fountain',492,()=>sqFountainB2(k));
+  fk.add('bench',478,()=>{benchA(k,760,478,D(478)*1.3);k.hw(()=>hwJack(k,820,480,.7));k.ss(()=>{if(k.so==='winter'&&!e.night)robin(k,722,478-36*D(478)*1.3,1,1)})});
+  fk.add('planter',560,()=>{const px=420,gy=560,s=1,so=k.so;shadeA(k,px,gy+2,38*s);k.shape([[px-30,gy],[px+30,gy],[px+34,gy-24],[px-34,gy-24]],C.stone,{w:1.8,hatch:{side:.6,gap:4,col:C.stoneD,op:.55}});k.shape(RC(px-38,gy-30,76,7),C.stoneD,{w:1.5,one:1});
+    if(!so)fl(k,[[px-20,gy-36,C.red],[px-4,gy-42,C.yellow],[px+12,gy-36,'#FFB3C7'],[px+24,gy-40,C.lav]],5);
+    k.ss(()=>{if(so==='spring')bulbs(k,px,gy-28,6,1.1);
+     else if(so==='autumn'){for(let i=0;i<6;i++)flowerDot(k,px-24+i*9.6,gy-36-(i%2)*7,4.2,['#EC9A4E','#F3BE55','#DF7556'][i%3]);pumpkin(k,px+46,gy+4,1.1);pumpkin(k,px-46,gy+5,.85)}
+     else if(so==='winter'){for(let i=0;i<5;i++)winterFlower(k,px-22+i*11,gy-40,4.5);frostLine(k,[[px-37,gy-30],[px+37,gy-30]])}});
+    snowOnA(k,[[px-38,gy-30],[px+38,gy-30]],5)});
+  fk.add('tub',582,()=>{const x=948,y=552;shadeA(k,x,584,34);k.shape(E(x,y,30,10,12),'#D9A086',{w:1.8});k.shape([[x-28,y],[x+28,y],[x+22,y+30],[x-22,y+30]],'#E9B9A0',{w:1.8,hatch:{side:.6,gap:4,col:'#CF9479',op:.5}});
+    if(k.so!=='winter')fl(k,[[x-14,y-10,C.red],[x+2,y-16,C.yellow],[x+16,y-8,C.lav]],5);else k.ss(()=>{for(let i=0;i<3;i++)winterFlower(k,x-12+i*12,y-10,4.2)});
+    k.ss(()=>{if(k.so==='spring')bulbs(k,x,y-4,4,.9);else if(k.so==='autumn')pumpkin(k,x-34,y+30,.8)});snowOnA(k,[[x-30,y-2],[x+30,y-2]],5)});
+  fk.out();
+  // up high, over the floor: Halloween lanterns and Winter Lights between the lamp posts
+  {const ty=400-140*D(400)*1.3;k.hw(()=>hwLanternString(k,345,ty+6,640,ty+6,24,6,.85));k.lt(()=>ltString(k,sagP(345,ty+10,640,ty+10,20,16),22))}
+  fl(k,[[880,590,C.red],[262,588,C.lav],[40,580,C.yellow],[70,592,C.red],[20,592,C.lav],[330,520,'#FFB3C7']]);
+  seasonBitsA(k,{drift:[[300,250,1],[500,170,.9],[760,250,1],[900,300,.85],[200,320,.8]],fly:[420,300]});
+  O.sparkle(k,700,200,7);O.heart(k,400,130,6);O.note(k,460,210,11);
+  O.tape(k,8,20,90,-26,'#F9E19A');O.tape(k,920,568,80,-24,'#D3C6F1')}
+
+/* ---------- Mt. Fuji Lookout (deep): Fuji over the lake, the meadow from the back line, the torii and the shrine, the bench facing the view ---------- */
+const FH2_BENCH=[548,418,.84],FH2_SPOT=[FH2_BENCH[0],R1(FH2_BENCH[1]-36*FH2_BENCH[2])];// the middle of the seat (data-spot-bench)
+function sqFujihillB2(k,F){const B=F.back,D=y=>depA(F,y),fk=floorKitA(k),e=k.env;
+  skyB2(k,330,{sun:[905,150,28],low:[935,280,30],moon:[900,150,24],clouds:[[215,206,20],[905,250,14]],rainC:[[300,100,26],[700,80,28],[960,160,22]],birds:[[250,236,8],[272,248,6]]});
+  k.own(rng(0x46554a49),()=>jpFujiDraw(k,{cx:400,by:306,w:520}));
+  // the far hills, the lake and a band of forest below Fuji
+  const fh=[[0,302],[130,292],[270,304],[430,298],[580,306],[720,296],[870,304],[1000,294],[1000,334],[0,334]];k.fill(fh,'#C6DBC4',{dx:0,dy:0,sc:0});k.pen(fh.slice(0,8),false,{w:1.4,col:C.graph});
+  k.add(`<rect x="0" y="318" width="1000" height="18" fill="${k.so==='winter'?'#DCEAF3':C.water}"/>`);k.line([[0,318],[1000,318]],1.2,C.graph,{op:.8});
+  let lw='';for(let i=0;i<18;i++){const x=k.r()*980,y=322+k.r()*10;lw+=`M${R1(x)} ${R1(y)}q5 -3 10 0t10 0`}k.add(`<path d="${lw}" fill="none" stroke="#86BDDE" stroke-width="1.3" stroke-linecap="round"/>`);
+  k.fx(()=>waterGlints(k,e.night?900:935,321,334));
+  const mh=x=>338+per(x*1.2,[[4,2,.6],[2.4,5,1.4]]),mp=[];for(let x=0;x<=1000;x+=25)mp.push([x,mh(x)]);k.add(`<path d="${smooth(mp,false)}L1000 ${B+6}L0 ${B+6}Z" fill="#B8D79A"/>`);k.line(mp,1.4,C.graph,{op:.9});
+  for(let x=14;x<1000;x+=30){const y=mh(x)+3+k.J(2),so=k.so,c=so==='autumn'?['#E7A35A','#D9774A','#C9B25E'][hashXY(x,y)%3]:so==='winter'?(k.r()<.5?'#C9CFC4':'#B9C2B6'):(k.r()<.5?'#A3C989':'#94BE7C');k.add(`<path d="${smooth(blobP(x,y,11+k.r()*3,8+k.r()*2,k.r,8,.2),true)}" fill="${c}" stroke="${C.graph}" stroke-width="1"/>`)}
+  // the meadow we stand on, from the back line
+  const hill=[[0,B+2],[200,B-2],[420,B+2],[640,B-3],[860,B],[1000,B-2],[1000,600],[0,600]];k.fill(hill,C.grass,{dx:0,dy:0,sc:0});k.pen(hill.slice(0,6),false,{w:2.2});
+  [[150,560,130,20],[700,592,140,18],[820,440,110,14],[420,400,120,12]].forEach(q=>k.fill(E(q[0],q[1],q[2],q[3],12),C.grass2,{op:.7}));
+  tuftsA(k,0,1000,B+10,598,130,(x,y)=>!(x>380&&x<520&&y>440));
+  k.ss(()=>seasonGround(k,[0,B+10,1000,598],110,[[480,380,640,450],[200,380,320,450]]));
+  fxB2(k,{sheen:[B+8,598],puddles:[[660,580,44,9],[880,540,38,8],[120,576,34,7]],patches:[[660,582,70,12],[880,544,58,10],[110,560,50,9],[320,400,46,8],[760,390,40,7],[980,470,40,7]],flies:[[160,470],[620,476],[880,560],[470,584],[760,400]]});
+  floorSnowA(k,hill,[[300,580,120,14],[820,574,110,13],[600,392,70,8],[120,400,60,8]]);
+  // the stepping-stone path from the front up through the torii to the shrine
+  [[470,596,36,11],[436,560,33,10],[404,526,30,9],[372,498,27,8],[338,474,24,7],[306,456,20,6],[282,440,17,5],[264,426,14,5],[256,414,12,4],[254,404,10,3.4],[254,396,9,3]].forEach(([x,y,rx,ry])=>{const p=blobP(x,y,rx,ry,k.r,9,.22);k.shape(p,'#DCD3C6',{w:1.6,one:1,hatch:{side:.6,gap:3.6,col:'#B5AC9F',op:.5}})});
+  if(e.snow)k.side(()=>[[436,556,30],[372,494,22],[306,452,16]].forEach(([x,y,r])=>capLine(k,[[x-r,y-4],[x+r,y-4]],4)));
+  k.ny(()=>nyKites(k,[[104,206,.85,1,30,B+20],[790,216,.8,0,730,B+30]]));
+  // the floor props: the shrine and the momiji at the back, the torii with its lanterns, the bench facing Fuji, the sakura in front
+  fk.add('hokora',384,()=>{shadeA(k,255,386,24);jpHokora(k,255,384,.72)});
+  fk.add('momiji',398,()=>{shadeA(k,70,400,34,6);k.own(rng(0x4d4f4d49),()=>fhMomiji(k,70,398,.9));k.jp(()=>jpJizo(k,120,400,.6));if(k.so==='winter'&&!e.snow)k.ss(()=>capLine(k,[[70-27,398-56],[70,398-41],[70+25,398-63]],2.4))});
+  fk.add('sign',394,()=>{signA(k,700,394,.66,'');signPicB2(k,'fuji',701,394-99*.66,.85)});
+  fk.add('toroL',428,()=>{shadeA(k,150,430,18);jpToro(k,150,428,.82)});
+  fk.add('toroR',430,()=>{shadeA(k,360,432,18);jpToro(k,360,430,.82)});
+  fk.add('bench',FH2_BENCH[1],()=>{const [bx,by,bs]=FH2_BENCH;benchA(k,bx,by,bs);
+    k.hw(()=>{hwJack(k,bx+62,by+2,.7);hwJack(k,bx+80,by+5,.5)});k.lt(()=>ltString(k,sagP(bx-50*bs,by-70*bs,bx+50*bs,by-70*bs,6,10),18));
+    k.ss(()=>{if(k.so==='winter'&&!e.night)robin(k,bx+30*bs,by-36*bs,1,-1)})});
+  fk.add('bowl',436,()=>bowlA(k,640,436,D(436)*1.1,'#F7B2B2'));
+  fk.add('torii',440,()=>{shadeA(k,255,442,70,6);k.add('<g class="pa-jp-torii">');jpTorii(k,255,440,1.75);k.add('</g>');
+    k.ny(()=>{nyKado(k,180,444,.75,-1);nyKado(k,330,444,.75,1);k.line([[410,444],[410,334]],2.4,'#7FA65E');k.line([[100,444],[100,334]],2.4,'#7FA65E');nyChochins(k,330,346,410,338,7,3,.7);nyChochins(k,100,338,180,346,7,3,.7)});
+    k.lt(()=>ltString(k,sagP(255-62,440-86*1.75+46,255+62,440-86*1.75+46,10,10),16))});
+  fk.add('toriiR',441,()=>{const s=1.75,xb=255+40*s*.74;k.shape(RC(xb-5.4*s,441-9*s,10.8*s,8*s),'#3E3533',{w:1,one:1})});
+  fk.add('sakura',488,()=>{shadeA(k,900,490,70,8);k.own(rng(0x53414b55),()=>fhSakura(k,900,488,1.05));
+    k.hw(()=>hwGhost(k,840,488-150,.75,16));k.lt(()=>{ltString(k,sagP(830,488-118,900,488-126,14,10),19);ltString(k,sagP(856,488-158,950,488-152,12,10),19)})});
+  fk.out();
+  fl(k,[[40,560,C.red],[90,590,C.yellow],[210,580,C.lav],[640,588,'#FFB3C7'],[700,560,C.yellow],[960,592,C.red],[560,470,C.lav],[600,520,C.yellow],[780,470,'#FFB3C7'],[420,380,C.yellow],[880,400,C.red]],5);
+  k.ss(()=>{const so=k.so;if(so==='spring')[[300,420,.4],[520,440,1.9],[680,500,.9],[760,450,2.4],[860,520,1.2],[620,560,.2],[200,520,2.9],[100,480,1.4]].forEach(([x,y,r],i)=>petalAt(k,x,y,4,r,PET[i%3]));
+    else if(so==='autumn')[[90,470,.4],[150,520,1.9],[640,520,.9],[760,470,2.4],[880,540,1.2],[300,570,.2]].forEach(([x,y,r],i)=>momijiAt(k,x,y,5.4,r,MOMI[i%4]))});
+  seasonBitsA(k,{drift:[[700,160,1],[620,210,.9],[820,260,.85],[450,200,.8]],fly:[700,400]});
+  O.tape(k,6,26,90,-24,'#F7B9C6');O.tape(k,930,566,80,-28,'#BDE7D2')}
+
+/* ---------- the floors (PawArt.FLOOR) and the v215 dispatch ---------- */
+const FLOOR_B2={
+ square:{poly:[[24,346],[976,346],[994,594],[6,594]],
+  props:[{id:'lampL',base:400,box:[337,392,16,10]},{id:'lampR',base:400,box:[632,392,16,10]},{id:'bench',base:478,box:[708,466,104,12]},{id:'fountain',base:492,box:[26,446,168,44]},
+   {id:'planter',base:560,box:[384,548,72,12]},{id:'tub',base:582,box:[920,570,56,12]}],
+  spots:[{id:'arch',x:466,y:374,tags:['arch','run','gate'],act:'arch'},{id:'fountain',x:110,y:512,tags:['bowl','water'],act:'drink'},{id:'bench',x:760,y:498,tags:['bench','rest'],act:'sit'},
+   {id:'notice',x:745,y:414,tags:['sniff','look'],act:'look'},{id:'shade',x:560,y:368,tags:['shade','rest'],act:'rest'},{id:'sun',x:330,y:540,tags:['sun','rest'],act:'rest'},
+   {id:'pigeons',x:600,y:548,tags:['look'],act:'look'},{id:'open',x:560,y:470,tags:['open','ball','zoomies'],act:'zoomies'},{id:'visit1',x:572,y:430,tags:['visitor'],act:'idle'},
+   {id:'flowers',x:900,y:580,tags:['sniff'],act:'sniff'}]},
+ fujihill:{poly:[[24,356],[976,356],[994,594],[6,594]],
+  props:[{id:'hokora',base:384,box:[232,376,46,10]},{id:'momiji',base:398,box:[60,390,22,10]},{id:'sign',base:394,box:[692,386,16,10]},{id:'toroL',base:428,box:[136,420,28,10]},
+   {id:'toroR',base:430,box:[346,422,28,10]},{id:'bench',base:418,box:[504,408,88,12]},{id:'bowl',base:436,box:[620,428,40,10]},{id:'torii',base:440,box:[192,430,24,12]},
+   {id:'toriiR',base:441,box:[295,431,24,12]},{id:'sakura',base:488,box:[886,478,28,12]}],
+  spots:[{id:'bench',x:FH2_BENCH[0],y:438,tags:['bench','rest','view'],act:'sit'},{id:'view',x:420,y:372,tags:['view','look'],act:'look'},{id:'torii',x:255,y:458,tags:['gate','sniff'],act:'sniff'},
+   {id:'shrine',x:255,y:402,tags:['sniff'],act:'sniff'},{id:'drink',x:684,y:444,tags:['bowl'],act:'drink'},{id:'shade',x:840,y:508,tags:['shade','rest'],act:'rest'},
+   {id:'sun',x:470,y:540,tags:['sun','rest'],act:'rest'},{id:'open',x:680,y:520,tags:['open','ball','zoomies'],act:'zoomies'},
+   {id:'path',x:400,y:530,tags:['sniff','trail'],act:'sniff',path:[[470,590],[420,540],[360,494],[300,462],[255,452]]}]}
+};
+const MINE_B2={square:['Town Square',sqSquareB2],fujihill:['Mt. Fuji Lookout',sqFujihillB2,` data-spot-bench="${FH2_SPOT.join(',')}"`]};
+function frameB2(name,body,env){const F=FLB2[name],W=F.w,M=MINE_B2[name];
+  const k=kit(hashS('pwc-v215b-'+name));lighten(k);k.env=env;k.so=env.ssn;k.xl=[];k.rc=recolorFn(env,'out');const pp=paperDefs(k,W,600);
+  body(k,F);
+  const ex=(env.def?'':` data-time="${env.time}" data-weather="${env.weather}"${env.ssn?` data-season="${env.ssn}"`:''}`)+(env.hw?' data-halloween="1"':'')+wnAttrs(env)+` data-w="${W}" data-back="${F.back}"`+(M[2]||'');
+  return assemble(k,pp,W,`<svg class="pa-wc-scene pa-wc-v215 pa-wc-${name}" viewBox="0 0 ${W} 600" preserveAspectRatio="xMidYMid slice" role="img" aria-label="${M[0]}${env.def?'':`, ${env.time}, ${env.weather}${env.ssn?', '+env.ssn:''}`}"${ex}>`,false)}
+function renderB2(name,o){if(o.snow===true&&!WEATHERS.includes(o.weather))o=Object.assign({},o,{weather:'snow'});const env=mkEnv(o),key='v215b|'+name+'|'+env.time+'|'+env.weather+'|'+env.season+(env.hw?'|hw':'')+wnKey(env);
+  if(cacheC[key])return freshC(cacheC[key]);const s=frameB2(name,(k,F)=>MINE_B2[name][1](k,F,o),env);cacheC[key]=s;return s}
+Object.keys(FLOOR_B2).forEach(n=>{const F=FLB2[n],R=FLOOR_B2[n];PA.FLOOR[n]={w:F.w,back:F.back,front:F.front,kB:F.kB,kF:F.kF,poly:R.poly.map(p=>p.slice()),
+  props:R.props.map(p=>({id:p.id,base:p.base,box:p.box?p.box.slice():null})),spots:R.spots.map(s=>Object.assign({},s,{tags:s.tags.slice()},s.path?{path:s.path.map(p=>p.slice())}:{}))}});
+{const prev=PA.scene;PA.scene=function(name,o){return o&&o.v215&&MINE_B2[name]?renderB2(name,o):prev.apply(this,arguments)}}
+PA.WORLD_C_V215B=Object.keys(MINE_B2);
+/* ======================= end of v2.15 B ======================= */
 })();
