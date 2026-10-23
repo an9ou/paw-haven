@@ -1,8 +1,19 @@
-# v2.15 coordinator handoff (23 Oct 2026, 08:45 UTC; updated by session_015hxeEvVfJnoVFWXme4aCfc)
+# v2.15 coordinator handoff (23 Oct 2026, late; from session_015hxeEvVfJnoVFWXme4aCfc)
 
-Resumed: main (v2.14.1) merged into integration (b3dde92), lane/v215-map merged (234bda0), 10 suites green. v215-base = origin/v215-base = v2.14.1. GROUND ART B done and merged (lane/v215-gart-b 83e716d + lane/v215-gart-b-eng 2a21c4e: market mode in the engine via rmScene(), yard house/mailbox/bowl in #pack, FS_PACK_SQ_GR), 12 suites green. ACTIVITIES part 1 Training Ground and part 2 Splash Pool merged (lane/v215-act a924106), suites green. Next: part 3 run tracks + 7-day economy sim, part 4 leftover lines + the "Market Street" rename in missions (24) and Gerald's lessons (25). Review notes: puppy course jumps the tall bar (world G could draw a low bar); #agBoard overlay hides the art scoreboard's face; Bond +10 rewards go through addBond (BOOST x3, as ball play); roaming dogs never enter the pool water on their own (GR_ACTS water acts weight 0, by design of the lane: only the player's daily paddle). Review notes added: grOn places other than the yard keep #bowlG over the scene; ball play on Kibble Corner untested with grOn; PACK_SPOTS cafe [930,466] by the bed; Square winter all-flags render 527 KB; phone_v215_ground 'golden at the back' flaked once; minified size of world C B blocks not measured (109 KB source).
+## State (integration/v2.15, pushed)
+Merged and green: main v2.14.2, MAP, GROUND ART B (+ engine: market roaming via rmScene(), yard house/mailbox/bowl in #pack), ACTIVITIES 1–4 (Training Ground, Splash Pool, run tracks + 6 treasures + gates, Market Street rename), v215_migrate test fix (harness `storage` seeding; Chromium drops reload writes). v215-base = origin/v215-base = v2.14.1.
+Left, in order: ITEM ART (Doggy Life Vest, Sunflower Collar, Sailor Cap in dogs/ OUT lists; icons for those + Lucky Horseshoe, Bamboo Ring (shows "?"), Paper Lantern, Sea Glass; optional low puppy bar in world G training) → I18N batch (~250 keys x 10 languages, fonts re-run, i18n_fit + site_fit 0) → one combined pass of the three reviews (code, phone, art) → fix batch → all + phone, check_identical → as-built notes V215.md 18 → "v2.15 ready" to the Game Manager.
 
-Brief: build v2.15 "Around Town" per V215.md on integration/v2.15. Report to the Game Manager (session_01YWqF1YmkskA96YAshTRHg3) with send_message. Never deploy, upload, publish the artifact or merge to main.
+## Review notes (for the combined review)
+- grOn places other than the yard keep #bowlG over the scene; ball play on Kibble Corner untested with grOn; PACK_SPOTS cafe [930,466] by the bed; RM_ZONES rows for cafe/vet/salon are the old bands (engine uses FLOOR).
+- Square winter all-flags render 527 KB (cap 560 in v215_gart-b); world C B blocks 109 KB source, minified size unmeasured; wide scenes 340–480 KB.
+- phone_v215_ground "golden at the back can be tapped" flaked once; phGndLayers returns '' for 1600-wide scenes (phone ground strip in wide places).
+- Puppy course jumps the tall bar; #agBoard overlay hides the art scoreboard face; Bond rewards use addBond (BOOST x3).
+- Roaming dogs never enter pool water (GR_ACTS water weight 0, only the daily paddle); Sunflower Lanes has no Common treasure (Common roll = 40 coins).
+- Square festival visitor moved to FS_PACK_SQ_GR [800,400] in a grOn square; desktop place buttons block part of the yard's front-right corner.
+- kiteWatch kite in 1000-wide #fx on the wide hilltop; Dog Card visitors always behind floor props.
+
+Screenshots from the lanes (untracked) were in the old container's scratchpad; re-take in the reviews.
 
 ## Owner rules for v2.15 (23 Oct; they replace "3 subagents per step")
 - Paused until the Game Manager says resume (v2.14.1 ships first). On resume, merge main into integration/v2.15 first.
