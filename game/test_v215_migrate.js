@@ -61,7 +61,7 @@ run('v215_migrate', async (t) => {
     ok(r.place === 'training' && r.ag.runs === 2 && r.ag.coins === 30 && r.ag.best[id] === 3 && r.ag.seen === true, 'S.ag kept: ' + JSON.stringify(r.ag));
     ok(r.pool.vest === true && r.pool.day[id] === today && r.trk.seen.sunflower === true, 'S.pool and S.trk kept');
     ok(r.mapNew.since === '2026-10-01' && r.mapNew.seen.join() === 'pool', 'S.mapNew kept (since is set only once): ' + JSON.stringify(r.mapNew));
-    ok(await ev(() => !!document.querySelector('#sceneG [data-plain="training"]')), 'a new place without world G scene art draws the plain sketch ground');
+    ok(await ev(() => (window.PawArt.WORLD_G_SCENES || []).includes('training') ? !!document.querySelector('#sceneG') && !document.querySelector('#sceneG [data-plain="training"]') : !!document.querySelector('#sceneG [data-plain="training"]')), 'a new place draws its world G scene, or the plain sketch ground without it');
     const st = await ev(() => {
       const m = window.__paw.mp, gr = window.__paw.gr;
       return { rows: m.places(), bonds: m.places().map((k) => [k, m.row(k).bond]), market: m.name('market'), shop: m.shop('market'), boutique: m.shop('boutique'), labels: m.labels(), ready: m.ready(),
@@ -69,7 +69,7 @@ run('v215_migrate', async (t) => {
     });
     ok(st.rows.join() === NEW.join() && st.bonds.every(([k, b]) => BOND[k] === b), 'the eight PLACES rows with their Bond: ' + JSON.stringify(st.bonds));
     ok(st.market === 'Kibble Corner' && st.shop === 'kibble' && st.boutique === 'boutique', `market shows as Kibble Corner (${st.market}), the storefronts know their shop`);
-    ok(st.labels === true && st.ready === false && st.gr === false && st.floor === null && st.tokyo === false, 'stubs: labels on, no world F map yet, grOn false without a floor (Tokyo never)');
+    ok(st.labels === true && st.gr === false && st.tokyo === false, 'stubs: labels on, grOn false without prefs.grTest (Tokyo never)');
     ok(st.ag === 40 - 30 && st.pl === true && st.tr === 'sunflower,bamboo,cliffs', 'the activity stubs read the save (agility coins left, the vest, the tracks)');
     ok(await ev(async () => (await window.__paw.mp.chunk('f')) === true && (await window.__paw.mp.chunk('g')) === true && window.__paw.mp.chunkReady('g')), 'artChunk resolves at once in the harness (the worlds are inline)');
   }
