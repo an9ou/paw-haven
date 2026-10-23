@@ -26,12 +26,12 @@ const eoB = (x) => { x = clamp(x); const c1 = 1.7, c3 = c1 + 1; return 1 + c3 * 
 const SHOTS = [
   { scene: 'yard', name: 'Home Yard', bond: 1, env: { time: 'day', weather: 'sunny', season: 'spring' }, x0: 130, x1: 300, gy: 478, fx: 'petals', mus: { place: 'yard', time: 'day', weather: 'sunny' } },
   { scene: 'river', name: 'Riverside', bond: 2, env: { time: 'day', weather: 'sunny', season: 'summer' }, x0: 300, x1: 470, gy: 520, fx: 'sparkle', mus: { place: 'river', time: 'day', weather: 'sunny' } },
-  { scene: 'shibuya', name: 'Shibuya Crossing', bond: 3, fam: 2, chip: '+ a 2nd dog at Bond 3', env: { time: 'day', weather: 'rain', season: 'summer' }, x0: 90, x1: 260, gy: 505, fx: 'rain', mus: { place: 'market', time: 'day', weather: 'rain' } },
+  { scene: 'shibuya', name: 'Shibuya Crossing', bond: 3, fam: 2, chip: 'Bond 3 unlocks 2 dogs', env: { time: 'day', weather: 'rain', season: 'summer' }, x0: 90, x1: 260, gy: 505, fx: 'rain', mus: { place: 'market', time: 'day', weather: 'rain' } },
   { scene: 'asakusa', name: 'Asakusa', bond: 4, env: { time: 'dusk', weather: 'sunny', season: 'autumn' }, x0: 250, x1: 420, gy: 500, fx: 'glow', mus: { place: 'park', time: 'dusk', weather: 'sunny' } },
   { scene: 'woods', name: 'Maple Woods', bond: 5, env: { time: 'day', weather: 'sunny', season: 'autumn' }, x0: 140, x1: 330, gy: 478, fx: 'leaves', mus: { place: 'woods', time: 'day', weather: 'sunny' } },
   { scene: 'tokyotower', name: 'Tokyo Tower', bond: 5, env: { time: 'night', weather: 'sunny', season: 'autumn' }, x0: 380, x1: 520, gy: 520, fx: 'night', mus: { place: 'walk', time: 'night', weather: 'sunny' } },
-  { scene: 'beach', name: 'Seashell Beach', bond: 8, fam: 3, chip: '+ a 3rd dog at Bond 8', env: { time: 'dusk', weather: 'sunny', season: 'summer' }, x0: 360, x1: 540, gy: 505, fx: 'sunset', mus: { place: 'beach', time: 'dusk', weather: 'sunny' } },
-  { scene: 'yard', name: 'Your dog family', sub: 'four dogs, one happy home', fam: 4, chip: '+ a 4th dog at Bond 10', kennel: [600, 470, 170], env: { time: 'dusk', weather: 'sunny', season: 'autumn' },
+  { scene: 'beach', name: 'Seashell Beach', bond: 8, fam: 3, chip: 'Bond 8 unlocks 3 dogs', env: { time: 'dusk', weather: 'sunny', season: 'summer' }, x0: 360, x1: 540, gy: 505, fx: 'sunset', mus: { place: 'beach', time: 'dusk', weather: 'sunny' } },
+  { scene: 'yard', name: 'Your dog family', sub: 'four dogs, one happy home', fam: 4, chip: 'Bond 10 unlocks 4 dogs', kennel: [600, 470, 170], env: { time: 'dusk', weather: 'sunny', season: 'autumn' },
     x0: 400, x1: 540, gy: 505, fx: 'glow', mus: { place: 'yard', time: 'dusk', weather: 'sunny' } },
 ];
 // the family grows with Bond (SPOT_RULES in game/src/13_more_dogs.js, owner 23 Oct 2026: tell players when more dogs can join):
@@ -118,8 +118,8 @@ const weather = (fx, u) => { let g = '';
       + `<ellipse cx="540" cy="955" rx="470" ry="115" fill="#2A1E18" opacity=".3" filter="url(#glow)"/>`
       + `<text x="540" y="930" font-size="124">${s.name}</text><text x="540" y="1004" font-size="58" opacity=".95">${s.sub || `unlocks at Bond ${s.bond}`}</text></g>`;
     if (s.chip) { const cq = eoB(seg(u, 0.6, 0.95)), co = eo3(seg(u, 0.6, 0.8)) * (1 - seg(u, STEP - 0.05, STEP + 0.25)); // the family badge pops in
-      g += `<g opacity="${r3(co)}" transform="translate(540 1100) scale(${r3(0.6 + 0.4 * cq)}) rotate(-2)"><rect x="-300" y="-46" width="600" height="92" rx="46" fill="#FFE3A1" stroke="${INK}" stroke-width="5"/>`
-        + `<text x="0" y="17" font-family="Caveat" font-weight="700" font-size="54" fill="${INK}" text-anchor="middle">🐾 ${s.chip}</text></g>`; }
+      g += `<g opacity="${r3(co)}" transform="translate(540 1100) scale(${r3(0.6 + 0.4 * cq)}) rotate(-2)"><rect x="-320" y="-48" width="640" height="96" rx="48" fill="#FFE3A1" stroke="${INK}" stroke-width="5"/>`
+        + `<text x="0" y="19" font-family="Caveat" font-weight="700" font-size="60" fill="${INK}" text-anchor="middle">🐾 ${s.chip}</text></g>`; }
     return g;
   };
   const DEFS = `<defs><linearGradient id="shade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".12"/><stop offset=".35" stop-color="#000" stop-opacity="0"/>`
@@ -145,8 +145,25 @@ const weather = (fx, u) => { let g = '';
     return g;
   };
 
-  // the cover: Tokyo Tower at night with its title, the logo above (the profile grid shows the middle 1080 x 1440)
-  await shot(page(DEFS + place(5, 1.2) + `<svg x="140" y="250" width="800" height="249" viewBox="0 0 900 280" filter="url(#ts)">${LOGO_SVG}</svg>`), path.join(OUT, 'world-tour-cover.jpg'), 'jpeg');
+  // the cover (owner, 23 Oct 2026: a designed cover for every Reel): on sketchbook paper, the title, four places as taped photos with their
+  // Bond, the family of four underneath; everything that matters inside the profile grid's middle 1080 x 1440 (y 240..1680)
+  const photo = (i, x, y, w, h, rot, vb, label) => { const s = SHOTS[i];
+    return `<g transform="rotate(${rot} ${x + w / 2} ${y + h / 2})"><rect x="${x + 8}" y="${y + 12}" width="${w}" height="${h + 70}" fill="${INK}" opacity=".16"/>`
+      + `<rect x="${x}" y="${y}" width="${w}" height="${h + 70}" fill="#FFFFFF" stroke="${INK}" stroke-width="4"/>`
+      + `<svg x="${x + 16}" y="${y + 16}" width="${w - 32}" height="${h - 16}" viewBox="${vb}" preserveAspectRatio="xMidYMid slice"><image href="${s.img}" width="1000" height="600"/></svg>`
+      + `<rect x="${x + 16}" y="${y + 16}" width="${w - 32}" height="${h - 16}" fill="none" stroke="${INK}" stroke-width="2.5"/>`
+      + `<text x="${x + w / 2}" y="${y + h + 50}" font-family="Caveat" font-weight="700" font-size="44" fill="${INK}" text-anchor="middle">${label}</text>`
+      + `<rect x="${x + w / 2 - 60}" y="${y - 18}" width="120" height="36" fill="#F28FA5" opacity=".6" transform="rotate(${-rot * 2} ${x + w / 2} ${y})"/></g>`; };
+  const paper = `<rect width="${W}" height="${H}" fill="#FFF8EC"/><defs><pattern id="dots" width="28" height="28" patternUnits="userSpaceOnUse"><circle cx="14" cy="14" r="2" fill="#E3D2BA"/></pattern></defs><rect width="${W}" height="${H}" fill="url(#dots)"/>`;
+  const famRow = SHOTS[SHOTS.length - 1].pack.map((key, j) => `<svg x="${190 + j * 180}" y="1485" width="190" height="158" viewBox="0 0 240 200" overflow="visible">${inner(PA.dog(key, { pose: 'happy', anim: false, facing: 'right' }))}</svg>`).join('');
+  await shot(page(DEFS + paper
+    + `<svg x="290" y="70" width="500" height="156" viewBox="0 0 900 280">${LOGO_SVG}</svg>`
+    + `<text x="540" y="372" font-family="Caveat" font-weight="700" font-size="104" fill="${INK}" text-anchor="middle" transform="rotate(-2 540 372)">A whole sketchbook world</text>`
+    + `<text x="540" y="486" font-family="Caveat" font-weight="700" font-size="112" fill="#E8863A" text-anchor="middle" transform="rotate(-2 540 486)">to explore 🐾</text>`
+    + photo(0, 70, 570, 450, 330, -3, '120 140 420 252', 'Home Yard · Bond 1') + photo(2, 560, 585, 450, 330, 3, '40 120 420 252', 'Shibuya · Bond 3')
+    + photo(5, 70, 1030, 450, 330, 2.5, '380 180 420 252', 'Tokyo Tower · Bond 5') + photo(6, 560, 1010, 450, 330, -2.5, '380 160 420 252', 'Seashell Beach · Bond 8')
+    + famRow + `<text x="540" y="1735" font-family="Caveat" font-weight="700" font-size="54" fill="${MUTED}" text-anchor="middle">grow your dog family on the way</text>`),
+    path.join(OUT, 'world-tour-cover.jpg'), 'jpeg');
   if (process.env.ONLY === 'stills') {
     const ts = process.env.STRIP ? process.env.STRIP.split(',').map(Number) : SHOTS.map((_, i) => i * STEP + 1.0).concat([STEP * 2 + 2.05, END0 + 1.5]);
     for (const [j, t] of ts.entries()) await shot(page(frameAt(t)), path.join(WORK, `still${String(j).padStart(2, '0')}.png`));
