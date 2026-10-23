@@ -12,6 +12,7 @@
 //   hscroll  (d) the page (or the game's #stage) scrolls sideways
 //   tap      (e) phone layouts only: a button / link / [role=button] / [role=tab] under 44 px in either dimension
 //   font     (e) phone layouts only: text under 15 px (13 px for captions, cfg.captions)
+//   crowd    (f) v2.14.1: text too close to its window's drawn pencil line (R12; cfg.frames false turns it off, as the site suite does)
 // sev: the size of the problem in CSS px (font: 3 x the missing px, so 2 px too small ranks like 6 px of clipping).
 //
 // FALSE-POSITIVE RULES (each one is a rule, never a hard-coded finding; calibrated on English, V214 fit audit 22 Oct 2026):
@@ -50,6 +51,7 @@
 //   R10 one finding per element and kind per state (the worst); the suites keep one per session (the worst, with the number of states it
 //       was seen in), so the HUD and the action bar count once, not on every screen. A box whose cut was found on one of its lines is not
 //       reported again by the box-level scrollWidth check.
+//   R12 crowd: see (f) in MEASURE (windows with a stretched pencil frame only; nested cards, controls and scroll folds are not judged).
 //   R11 small absolutely placed badges (32 x 32 px or less: a sex symbol, a count on a chip's corner) may sit over their box's border.
 'use strict';
 
@@ -326,6 +328,61 @@ function MEASURE(cfg) {
     push('overlap', A.svg || B.svg ? 'map label' : 'text', A.el, { with: sel(B.el), withText: textOf(B.el), ix: Math.round(ix), iy: Math.round(iy) }, Math.min(ix, iy), r, textOf(A.el) + ' / ' + textOf(B.el).slice(0, 30));
   }
 
+  // ---------- (f) crowd (R12): text too close to the pencil line its window draws ----------
+  // Only windows (cfg.frames) whose own background is a stretched pencil frame (an svg data URI with preserveAspectRatio none): the
+  // frame's first path is read and scaled to the box, so the measured edge is the drawn line (a tall sheet stretches its line's wobble
+  // and inset with it), not the box. Each seen line is judged on its em box (Thai: its whole box), against the frame points beside it.
+  // Limits: cfg.crowdDense (default 10 px) for CJK, Hangul and Thai text, whose glyphs fill the whole em square; cfg.crowd (default
+  // 4 px) for other scripts (Latin ink sits well inside its em box, and the English windows keep their v2.14 spacing).
+  // Not judged: a sheet whose frame is off (--fr: none, its ::after paper covers its art), text inside a nested framed card or a control (that card's own business), a line cut by a box it scrolls in, a line box that is only a hanging space, and a line
+  // within the limit of the edge of a box it scrolls in, on a side that box can still scroll to (a fold: scrolling moves the text away).
+  if (cfg.frames !== false) {
+    const FR = cfg.frames || '#dock > .tray, .panel, .buybox, .confirm, .onway-card, #trainPanel, .ps-turn-card, .rt-card, .gd-say, .gd-lesson, .sitem';
+    const LIM = cfg.crowd || 4, LIMD = cfg.crowdDense || 10, DENSE = /[\u0E00-\u0E7F\u1100-\u11FF\u3040-\u30FF\u3400-\u9FFF\uAC00-\uD7AF\uF900-\uFAFF]/, frC = new Map();
+    const frameOf = (w) => {
+      if (frC.has(w)) return frC.get(w); let f = null;
+      const bg = cs(w).backgroundImage || '';
+      // a sheet with its pencil frame switched off (--fr: none: the results sheet, whose background is the panel art) shows no line: the
+      // window's own ::after paper is painted over its background, so only the soft paper edge is seen, and there is no line to crowd
+      if (w.matches('.panel') && cs(w).getPropertyValue('--fr').trim() === 'none') { frC.set(w, null); return null; }
+      if (/preserveAspectRatio/.test(bg) && /5B3D32/i.test(bg)) {
+        let s = ''; try { s = decodeURIComponent((bg.match(/url\("data:image\/svg\+xml[^"]*"\)/) || [''])[0]); } catch (e) { s = ''; }
+        const vb = s.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/), d = (s.match(/<path d="([^"]+)"/) || [])[1];
+        if (vb && d) { const nums = d.match(/-?[\d.]+/g).map(Number), P = []; for (let i = 0; i + 1 < nums.length; i += 2) P.push([nums[i] / +vb[1], nums[i + 1] / +vb[2]]); f = P; }
+      }
+      frC.set(w, f); return f;
+    };
+    const crowdF = new Map();
+    // a line box that is only a space hanging past the line end (an ideographic space U+3000 after a full stop wraps onto its own box at
+    // the line end) has no ink: it is not judged
+    const blank = (nd, o) => { const v = nd.nodeValue, rg = document.createRange(); for (let i = 0; i < v.length; i++) { if (!/[\s\u3000]/.test(v[i])) continue; rg.setStart(nd, i); rg.setEnd(nd, i + 1); for (const q of rg.getClientRects()) if (Math.abs(q.left - o.left) < 0.6 && Math.abs(q.right - o.right) < 0.6 && Math.abs(q.top - o.top) < 0.6) return true; } return false; };
+    for (const a of live) {
+      if (a.ctl) continue;
+      for (const it of a.items) {
+        if (!it.seen || !it.seen.length) continue;
+        let w = null; for (let x = it.el; x && x !== document.body; x = x.parentElement) { if (x !== it.el && x.matches(CONTROLS)) break; if (x.matches(FR)) { w = x; break; } if (x !== it.el && frameOf(x)) break; }
+        if (!w) continue; const P0 = frameOf(w); if (!P0) continue;
+        const b = w.getBoundingClientRect(); if (b.width < 120 || b.height < 60) continue;
+        const P = P0.map((p) => [b.left + p[0] * b.width, b.top + p[1] * b.height]), lim = DENSE.test(it.node.nodeValue) ? LIMD : LIM;
+        const scrollers = []; for (let x = it.el; x && x !== w.parentElement; x = x.parentElement) { const c = cs(x); if (/auto|scroll/.test(c.overflowY) || /auto|scroll/.test(c.overflowX)) scrollers.push(box(x)); }
+        const side = (p) => { const dl = p[0] - b.left, dr = b.right - p[0], dt = p[1] - b.top, db = b.bottom - p[1], m = Math.min(dl, dr, dt, db); return m === dl ? 0 : m === dr ? 1 : m === dt ? 2 : 3; };
+        for (const r of it.seen) {
+          const o = r.o || r; if (Math.abs(r.top - o.top) > 0.5 || Math.abs(r.bottom - o.bottom) > 0.5 || Math.abs(r.left - o.left) > 0.5 || Math.abs(r.right - o.right) > 0.5) continue;
+          if (scrollers.some((q) => (q.el.scrollTop > 0 && o.top - q.top < lim) || (q.el.scrollTop + q.el.clientHeight < q.el.scrollHeight - 1 && q.bottom - o.bottom < lim) || (q.el.scrollLeft > 0 && o.left - q.left < lim) || (q.el.scrollLeft + q.el.clientWidth < q.el.scrollWidth - 1 && q.right - o.right < lim))) continue;
+          let [vt, vb2] = vbox(it, o); vt = Math.max(vt, r.top); vb2 = Math.min(vb2, r.bottom); if (vb2 - vt < 1) continue;
+          let g = 1e9;
+          for (const p of P) {
+            const s = side(p);
+            if (s < 2 && p[1] >= vt - 4 && p[1] <= vb2 + 4) g = Math.min(g, s === 0 ? r.left - p[0] : p[0] - r.right);
+            else if (s >= 2 && p[0] >= r.left - 4 && p[0] <= r.right + 4) g = Math.min(g, s === 2 ? vt - p[1] : p[1] - vb2);
+          }
+          if (g < lim && !blank(it.node, o)) { const prev = crowdF.get(it.el); if (!prev || g < prev.g) crowdF.set(it.el, { g, r, w, lim }); }
+        }
+      }
+    }
+    for (const [el, f] of crowdF) push('crowd', f.g < 0 ? 'over the line' : 'near the line', el, { by: sel(f.w), px: Math.round(f.g), min: f.lim }, f.lim - f.g, f.r, textOf(el));
+  }
+
   // ---------- (d) sideways scroll (R9) ----------
   const de = document.scrollingElement || document.documentElement;
   const stage = cfg.stage ? document.querySelector(cfg.stage) : null;
@@ -384,7 +441,7 @@ function HILITE(o) {
 
 // ---------- node: reports ----------
 const fs = require('fs'), path = require('path');
-const KINDS = ['clip', 'escape', 'overlap', 'hscroll', 'tap', 'font'];
+const KINDS = ['clip', 'escape', 'overlap', 'hscroll', 'tap', 'font', 'crowd'];
 // i18n key lookup for the report: the key whose text is exactly the finding's text (static strings only)
 function keyFinder(dir) {
   const maps = {};

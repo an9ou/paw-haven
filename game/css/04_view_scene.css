@@ -136,6 +136,12 @@ html[data-layout="phone"] .rt-card h3{font-size:30px}
 #bubble::after{content:"";position:absolute;left:30px;bottom:-15px;width:22px;height:18px;background:var(--fr-tail) 0 0/100% 100% no-repeat}
 html.pa-speech #bubble{background:var(--speech) 0 0/100% 100% no-repeat;padding:10px 18px 30px;--fr:none}
 html.pa-speech #bubble::after{display:none}
+/* v2.14.1: the tail on the right (a line left of the dog's head) or on top (a line under the dog, .below): the art is mirrored on a layer behind the text */
+#bubble.tail-r::after{left:auto;right:30px;transform:scaleX(-1)}
+html.pa-speech #bubble:is(.tail-r,.below){background:none}
+html.pa-speech #bubble:is(.tail-r,.below)::before{content:"";position:absolute;inset:0;z-index:-1;background:var(--speech) 0 0/100% 100% no-repeat;transform:scaleX(-1)}
+html.pa-speech #bubble.below::before{transform:scaleY(-1)}
+html.pa-speech #bubble.below{padding:30px 18px 10px}
 #bubble.pop{animation:bubblePop .25s ease-out}
 @keyframes bubblePop{from{transform:scale(.6) rotate(-6deg)}}
 

@@ -80,6 +80,7 @@ Checks on visible elements (kinds):
 | `hscroll` | the page (or the game's `#stage`) scrolls sideways; names the outermost culprits |
 | `tap` | phone layouts: a button, link, `[role=button]`, `[role=tab]` under 44 px either way |
 | `font` | phone layouts: text under 15 px, captions under 13 px (captions: `small`, `.small`, `.stamp`, ... plus every selector the phone CSS itself sets to 13 px) |
+| `crowd` | v2.14.1 (R12, game only): text closer than 10 px (CJK, Hangul, Thai) or 4 px (other scripts) to the pencil line its window draws (sheets, trays, the adopt card, buy windows, confirms, route cards, the guide's notes, shop items); the line is read from the window's own stretched frame svg |
 
 `sev` is the size of the problem in CSS px (font: 3 x the missing px).
 
@@ -91,7 +92,7 @@ out of a scroll box or carousel is not shown, and a box meant to scroll may scro
 R3 text under an opaque surface (the modal veil and sheet, the dock) is not seen (hit testing, with the crayon `::after` paper counted);
 R4 absolutely placed elements are judged against their containing block chain; R5 overlaps across intentional layers (sheets, toasts, speech
 bubbles, tips, the site header and dialog) are ignored; R6 glyph boxes, not font content boxes (Thai keeps its full box for its marks), and
-small tolerances; R7 inline links, disabled and hidden inputs are exempt from 44 px; R8 font sizes in CSS px before transforms; R9 hscroll
+small tolerances; R12 (crowd) skips text in nested framed cards and controls and text at a scroll fold; R7 inline links, disabled and hidden inputs are exempt from 44 px; R8 font sizes in CSS px before transforms; R9 hscroll
 culprits; R10 one finding per element and kind per session; R11 small corner badges.
 
 Known classes the rules do not filter (they show in English too, so read the English column first):
