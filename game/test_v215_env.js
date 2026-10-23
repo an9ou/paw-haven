@@ -81,7 +81,7 @@ const V215_SCENES = [
   // GROUND ART A (world C, the v2.15 A block): the seven big outdoor places, 1600 wide, one run gate each
   ...['park', 'dogpark', 'beach', 'hilltop', 'woods', 'river', 'pier'].map((n) => [n, { v215: true }, (s, L) => { ok(/^<svg[^>]*viewBox="0 0 1600 600"[^>]*data-w="1600"/.test(s), `${L}: 1600 wide`); ok((s.match(/data-hot="run"/g) || []).length === 1 && s.includes('id="floorG"'), `${L}: one run gate and the #floorG layer`); }]),
   // GROUND ART B (world A and world C, the v2.15 B blocks): the deep-only places, 1000 wide; the Square has the Town Loop's run gate
-  ...['yard', 'house', 'market', 'square', 'fujihill'].map((n) => [n, { v215: true }, (s, L) => { ok(/^<svg[^>]*viewBox="0 0 1000 600"[^>]*data-w="1000"/.test(s), `${L}: 1000 wide`); ok((s.match(/data-hot="run"/g) || []).length === (n === 'square' ? 1 : 0) && s.includes('id="floorG"'), `${L}: the #floorG layer${n === 'square' ? ' and one run gate' : ''}`); }]),
+  ...['yard', 'house', 'market', 'square', 'fujihill', 'cafe', 'vet', 'salon'].map((n) => [n, { v215: true }, (s, L) => { ok(/^<svg[^>]*viewBox="0 0 1000 600"[^>]*data-w="1000"/.test(s), `${L}: 1000 wide`); ok((s.match(/data-hot="run"/g) || []).length === (n === 'square' ? 1 : 0) && s.includes('id="floorG"'), `${L}: the #floorG layer${n === 'square' ? ' and one run gate' : ''}`); }]),
 ];
 const SEASONS = ['spring', 'summer', 'autumn', 'winter'];
 const FLAGS = [['halloween', 'data-halloween'], ['lights', 'data-lights'], ['newyear', 'data-newyear'], ['jp', 'data-jp']];

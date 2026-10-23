@@ -1,7 +1,7 @@
 // v2.15 GROUND ART B test (plain node), V215.md sections 2, 5, 8.2, 12, 13: the deep-only places redrawn 1000 wide.
 // Run: node game/test_v215_gart-b.js (or node game/run_tests.js v215_gart-b). Prints ALL OK.
-// World A's "v2.15 B" block (yard, house, market = Kibble Corner) and world C's "v2.15 B" block (square, fujihill; the Café, the Vet and the Salon
-// join it later: add them to SCENES) with { v215: true } for 4 seasons x halloween / lights / newyear / jp (and a few times and weathers) draw one
+// World A's "v2.15 B" block (yard, house, market = Kibble Corner) and world C's "v2.15 B" block (square, fujihill and the indoor cafe, vet,
+// salon) with { v215: true } for 4 seasons x halloween / lights / newyear / jp (and a few times and weathers) draw one
 // valid 1000 x 600 SVG with no NaN, undefined, filter or script, no words, unique ids and defined url(#id) refs; every floor prop is a
 // <g data-fy data-prop> inside the one #floorG, in base order (GAME_PROPS: the obstacles the game draws over the scene, listed with feet boxes
 // but drawn by the game); the hot spots stay in the backdrop; the Square has one data-hot="run" start arch (relabelled by the v2.14 ariaMap
@@ -56,7 +56,8 @@ const rootLabel = (s) => ((s.match(/^<svg[^>]*?\saria-label="([^",]*)/) || [])[1
 function groupAt(s, i) { const re = /<g\b[^>]*?(\/?)>|<\/g>/g; re.lastIndex = i; let d = 0, m; while ((m = re.exec(s))) { if (m[0] === '</g>') d--; else if (!m[1]) d++; if (d === 0) return s.slice(i, re.lastIndex); } return s.slice(i); }
 
 const PA = load(cur(NEW_FILES));
-const SCENES = ['yard', 'house', 'market', 'square', 'fujihill'];
+const SCENES = ['yard', 'house', 'market', 'square', 'fujihill', 'cafe', 'vet', 'salon'];
+const INDOOR = ['house', 'cafe', 'vet', 'salon']; // kB 0.7
 const RUN = ['square']; // the places whose start arch is data-hot="run" (the Town Loop)
 const GAME_PROPS = { yard: ['house', 'mailbox', 'bowl'] }; // drawn by the game over the scene (#houseG, #mailboxG, #bowlG): FLOOR lists their feet boxes
 const V210 = { yard: [404, 590], house: [414, 590], square: [414, 590], cafe: [414, 590], vet: [414, 590], salon: [410, 590], market: [452, 585], fujihill: [424, 588] }; // test_v215_ground.js
@@ -64,7 +65,7 @@ const SEASONS = ['spring', 'summer', 'autumn', 'winter'];
 const FLAGS = [{}, { halloween: true }, { lights: true }, { newyear: true }, { jp: true }, { jp: true, halloween: true, lights: true, newyear: true }];
 
 sec('the blocks register their names');
-ok(Array.isArray(PA.WORLD_C_V215B) && ['square', 'fujihill'].every((n) => PA.WORLD_C_V215B.includes(n)), 'WORLD_C_V215B lists the Square and the Fuji Lookout');
+ok(Array.isArray(PA.WORLD_C_V215B) && ['square', 'fujihill', 'cafe', 'vet', 'salon'].every((n) => PA.WORLD_C_V215B.includes(n)), 'WORLD_C_V215B lists the Square, the Fuji Lookout, the Café, the Vet and the Salon');
 ok(PA.FLOOR && SCENES.every((n) => PA.FLOOR[n]), 'PawArt.FLOOR has a row for each place');
 ok(Array.isArray(PA.WORLD_C_V215) && PA.WORLD_C_V215.length === 7 && !PA.WORLD_C_V215.includes('square'), 'the v2.15 A list is unchanged');
 
@@ -130,7 +131,7 @@ sec('the floors (PawArt.FLOOR)');
 SCENES.forEach((n) => {
   const F = PA.FLOOR[n], W = 1000, P = F.poly, game = GAME_PROPS[n] || [];
   ok(F.w === W && F.back >= 330 && F.back <= 372 && F.front >= 580 && F.front <= 600, n + ': w ' + F.w + ', back ' + F.back + ', front ' + F.front);
-  ok((F.kB === 0.5 || (n === 'house' && F.kB === 0.7)) && F.kF === 1.05, n + ': depth scale ' + F.kB + ' to ' + F.kF);
+  ok((INDOOR.includes(n) ? F.kB === 0.7 : F.kB === 0.5) && F.kF === 1.05, n + ': depth scale ' + F.kB + ' to ' + F.kF);
   ok(Array.isArray(P) && P.length >= 3 && P.every((p) => p.length === 2 && p.every(Number.isFinite)), n + ': poly has 3 or more points');
   ok(P.every((p) => p[0] >= 0 && p[0] <= W && p[1] >= 0 && p[1] <= 600), n + ': poly is inside the scene');
   ok(P.every((p, i) => { const q = P[(i + 1) % P.length]; return p[0] !== q[0] || p[1] !== q[1]; }), n + ': poly is closed implicitly (no repeated points)');
@@ -163,6 +164,11 @@ SCENES.forEach((n) => {
   const keep = [[858, 384, 136, 126, 'FS_STALL desk'], [196, 380, 110, 109, 'FS_STALL phone'], [548, 400, 86, 80, 'FS_STALL phone 2'], [212, 344, 114, 105, 'pop-up desk'], [212, 496, 100, 92, 'pop-up phone']];
   keep.forEach((k) => ok(!S.props.some((p) => p.box && p.base > k[1] && p.base < k[1] + k[3] + 40 && p.box[0] < k[0] + k[2] && p.box[0] + p.box[2] > k[0]), 'square: no floor prop stands in front of the ' + k[4]));
 }
+{
+  const C = PA.FLOOR.cafe; // VISIT_EXTRA.cafe (14b_vet_playboard.js): where a Dog Card visitor stands in the café
+  ok(C.spots.some((s) => s.tags.includes('visitor') && Math.abs(s.x - 568) < 20 && Math.abs(s.y - 426) < 20), 'cafe: a Dog Card visitor spot at VISIT_EXTRA.cafe (568, 426)');
+  ['house', 'cafe', 'vet', 'salon'].forEach((n) => ok(!PA.FLOOR[n].props.some((p) => p.box && p.box[0] < 295 && p.box[0] + p.box[2] > 205 && p.box[1] < 552 && p.box[1] + p.box[3] > 462), n + ': no floor prop on the game bowl (#bowlG, 205, 462, 90 x 90)'));
+}
 { PA.FLOOR.square.poly[0][0] = -999; const again = load(cur(NEW_FILES)); ok(again.FLOOR.square.poly[0][0] === 24, 'each load gets its own FLOOR rows'); }
 
 sec('without v215: byte-identical to ' + REF);
@@ -172,7 +178,7 @@ sec('without v215: byte-identical to ' + REF);
   ok(refOk, 'the ref ' + REF + ' is there (git fetch origin v215-base:v215-base)');
   if (refOk) {
     const NOW = load(cur(NEW_FILES)), calls = [];
-    SCENES.concat(['cafe', 'vet', 'salon', 'hilltop', 'park']).forEach((n) => { [{}, { jp: true }, { season: 'winter', snow: true }, { season: 'autumn', halloween: true }, { season: 'winter', lights: true, newyear: true, jp: true, time: 'dusk' }, { time: 'night', weather: 'rain' }, { v215: false, jp: true }].forEach((o) => calls.push(['scene', n, o])); });
+    SCENES.concat(['hilltop', 'park', 'dogpark']).forEach((n) => { [{}, { jp: true }, { season: 'winter', snow: true }, { season: 'autumn', halloween: true }, { season: 'winter', lights: true, newyear: true, jp: true, time: 'dusk' }, { time: 'night', weather: 'rain' }, { v215: false, jp: true }].forEach((o) => calls.push(['scene', n, o])); });
     calls.push(['scene', 'yard', { patch: 'empty' }], ['scene', 'house', { bed: false }], ['walkStrip', 'park', { jp: true }]);
     let same = 0; calls.forEach(([f, n, o]) => { const a = OLDREF[f](n, Object.assign({}, o)), b = NOW[f](n, Object.assign({}, o)); if (a === b) same++; else ok(false, f + "('" + n + "', " + JSON.stringify(o) + ') differs from ' + REF); });
     ok(same === calls.length, same + ' / ' + calls.length + ' old renders byte-identical');
