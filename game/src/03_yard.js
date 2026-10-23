@@ -76,7 +76,7 @@ function dogTo(tx, ty = 0, scale = 1, secs = 0.9) {
   const p = $('#dogPos'); if (!p) return; p.style.transitionDuration = secs + 's';
   p.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
   // phones: the camera follows the leader's errands as in v2.9 (back home = the scene's home crop); an idle wander while the player looks around leaves the view
-  if (isPhone() && cur.mode === 'yard') { const home = tx === 0 && ty === 0 && scale === 1; phCamHome = S.place === 'fujihill' || home ? phHomeCx : scale === 1 ? phHomeCx + tx : 430 * scale + tx; if (phPeekOn && typeof IDLE === 'object' && IDLE.act) { /* looking around */ } else { if (phPeekOn) { phPeekOn = false; clearTimeout(phPanT); } camTo(phCamHome, secs); } }
+  if (isPhone() && cur.mode === 'yard' && !grWide()) { const home = tx === 0 && ty === 0 && scale === 1; phCamHome = S.place === 'fujihill' || home ? phHomeCx : scale === 1 ? phHomeCx + tx : 430 * scale + tx; if (phPeekOn && typeof IDLE === 'object' && IDLE.act) { /* looking around */ } else { if (phPeekOn) { phPeekOn = false; clearTimeout(phPanT); } camTo(phCamHome, secs); } }
   else if (phPeekOn && !(typeof IDLE === 'object' && IDLE.act)) { phPeekOn = false; clearTimeout(phPanT); }
   const fol = $('#pkFol'); if (fol && fol.closest('.rmdog')) $('#pack').after(fol); // v2.9 Fetch followers are placed in world units, not with the leader
   if (p.closest('.rmdog')) rmLegacyTo(tx, ty, scale, secs);
@@ -182,6 +182,7 @@ function phHomeRefit() {
   // v2.10 ROAM: the wider crop keeps the v2.3 home span (the bowl, the dog's spot, a visitor) in view and leans towards the middle of the pack
   const half = wide ? Math.min(500, native / phZoom / 2) : 0, pk = wide ? rmSpan() : null;
   phHomeCx = !wide || !rmWander() || R - L >= half * 2 ? (L + R) / 2 : clamp(clamp((pk[0] + pk[1]) / 2, R - half, L + half), half, 1000 - half); // the harness keeps the v2.3 home (the older suites tap props by where they were)
+  if (wide && grWide()) phHomeCx = clamp(grFocusX(), Math.min(half, grW() / 2), Math.max(grW() - half, grW() / 2)); // v2.15: a wide place's camera starts on the pack (43_ground.js follows it)
   if (!S.sleeping || S.place === 'fujihill') { phCamHome = phHomeCx; camCx = phCamHome; }
   camApply(camCx);
 }
@@ -222,17 +223,19 @@ function phCamPan(svg) {
   });
   svg.addEventListener('pointermove', (e) => {
     if (x0 == null || e.pointerId !== id) return; const dx = e.clientX - x0;
-    if (!on) { if (Math.hypot(dx, e.clientY - y0) < FB_DRAG) return; on = true; clearTimeout(phPanT); cancelAnimationFrame(camRaf); try { svg.setPointerCapture(id); } catch (er) { /* none */ } }
-    if (!isPhone()) return;
+    const gw = cur.mode === 'yard' && grWide(); // v2.15: a wide place drags to look on desktop too, from 6 px (43_ground.js)
+    if (!on) { if (Math.hypot(dx, e.clientY - y0) < (gw ? 6 : FB_DRAG)) return; on = true; clearTimeout(phPanT); cancelAnimationFrame(camRaf); try { svg.setPointerCapture(id); } catch (er) { /* none */ } }
+    if (!isPhone() && !gw) return; if (gw) GR.drag = true;
     const { w: vw, h: vh } = phSvgDims(); if (!vw || !vh) return;
-    const vbW = 600 * vw / vh / phZoom; if (vbW >= 1000) return;
-    const cx = clamp(c0 - dx * vbW / vw, vbW / 2, 1000 - vbW / 2); if (Math.abs(cx - camCx) < 0.5) return;
+    const W = gw ? grW() : 1000, vbW = isPhone() ? 600 * vw / vh / phZoom : Math.min(1000, 600 * vw / vh); if (vbW >= W) return;
+    const lo = isPhone() ? vbW / 2 : 500, cx = clamp(c0 - dx * vbW / vw, lo, W - lo); if (Math.abs(cx - camCx) < 0.5) return;
     if (!phPeekOn && Math.abs(camCx - phCamHome) < 1) hideBubble(); phPeekOn = false; camCx = cx; camApply(camCx);
   });
   const end = (e) => {
     if (x0 == null || e.pointerId !== id) return; x0 = null; if (!on) return;
     on = false; swallow = true; clearTimeout(swT); swT = setTimeout(() => { swallow = false; }, 400); // the click that follows a drag is not a tap
-    clearTimeout(phPanT); if (isPhone()) phPanT = setTimeout(() => { if ((cur.mode === 'yard' || cur.mode === 'market') && !phPeekOn) camTo(phCamHome, 0.8); }, 4000);
+    clearTimeout(phPanT); if (cur.mode === 'yard' && grWide()) { GR.drag = false; grDragged(); return; } // v2.15: the follow camera waits 2 s, then goes on
+    if (isPhone()) phPanT = setTimeout(() => { if ((cur.mode === 'yard' || cur.mode === 'market') && !phPeekOn) camTo(phCamHome, 0.8); }, 4000);
   };
   svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end);
   // the scene is touch-action:none, but Safari can still take a finger drag on an SVG for its own page gesture (and cancel the pointer)

@@ -535,6 +535,7 @@ function sceneArt(name, e, extra) {
   const o = Object.assign({}, e || {}, extra || {});
   const tk = tkSceneArt(name, o); if (tk) return tk; // v2.11: the six Tokyo places (world D / E art, else a stand-in, 39_tokyo.js)
   if (MP_KEYS.includes(name) && !mpSceneReady(name)) return mpPlainGround(name); // v2.15: a new place whose world G scene is not there (yet)
+  if (grOn(name)) return place(art('scene', name, Object.assign(o, { v215: true })), 0, 0, grFloor(name).w, 600); // v2.15 GROUND: the deep (and wide) floor, at its own width (43_ground.js)
   if (NEW_PLACES.includes(name) && !hasRealScene(name)) return place(art('scene', SCENE_FB[name], o), 0, 0, 1000, 600) + placeSign(name);
   if (HANG.includes(name) && !hasRealScene(name)) return name === 'house' ? place(art('scene', 'yard', o), 0, 0, 1000, 600) : place(art('walkStrip', name, e), -400, 0, 1800, 600);
   return place(art('scene', name, o), 0, 0, 1000, 600);
