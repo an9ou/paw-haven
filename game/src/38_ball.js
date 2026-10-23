@@ -101,7 +101,7 @@ function blBallSVG() {
   const c = BL.cfg, a = c.prop[0] === 'prop' ? art('prop', c.prop[1]) : art('item', c.prop[1]);
   return `<defs><radialGradient id="blGlowG"><stop offset="0" stop-color="#E6FFAA" stop-opacity=".95"/><stop offset="1" stop-color="#A0FF78" stop-opacity="0"/></radialGradient></defs>
     <circle id="blRing" class="bl-ring" r="50" fill="none" stroke="#F28FA5" stroke-width="4" stroke-dasharray="7 6"/>
-    <g id="blBall" class="bl-ball">${c.glow && isNight() ? '<circle id="blHalo" r="70" fill="url(#blGlowG)"/>' : ''}<g id="blSpin">${place(a, -30, -30, 60, 60)}</g></g>`;
+    <g id="blBall" class="bl-ball">${(c.glow || S.outfit.charm === 'Paper Lantern') && isNight() ? '<circle id="blHalo" r="70" fill="url(#blGlowG)"/>' : ''}<g id="blSpin">${place(a, -30, -30, 60, 60)}</g></g>`;
 }
 function blDraw() {
   const L = $('#ballLayer'); if (!L || !BL) return;

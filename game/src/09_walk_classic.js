@@ -37,7 +37,7 @@ function enterWalkClassic(area) {
   const sc = walkScale(), R = sc < 1 ? Object.assign({}, ROUTES[area], { secs: Math.round(ROUTES[area].secs * sc) }) : ROUTES[area], wx = weatherNow(); // 3 to 6 months: shorter walks
   const len = R.secs * SPEED, firstWalk = !S.walks;
   W = { env: envNow(), area, R, len, dist: 0, hold: false, auto: false, objs: [], coins: 0, happy: 0, bond: 0, clean: 0, e0: S.stats.energy, pauseUntil: 0, hopUntil: 0, digWait: null, ended: false, pose: '', npcs: 0, wx, raf: 0, t: performance.now(), skipAt: 0,
-    digsLeft: 2 + (S.outfit.head === 'Acorn Cap' ? 1 : 0) + (buffOn('dig1') ? 1 : 0), loot: rollTreasure(area, { common: firstWalk }), found: null, extra: [], junk: [], nudge: 0, noseT: 0, firstWalk, outOfDigsSaid: false };
+    digsLeft: 2 + (S.outfit.head === 'Acorn Cap' || S.outfit.charm === 'Lucky Horseshoe' ? 1 : 0) + (buffOn('dig1') ? 1 : 0), loot: rollTreasure(area, { common: firstWalk }), found: null, extra: [], junk: [], nudge: 0, noseT: 0, firstWalk, outOfDigsSaid: false };
   // route layout: 4-5 sniff clues, 3-4 dig spots (one holds the treasure), few coins, 0-2 puddles, 1-2 dogs
   const spots = [], add = (type, n) => { for (let i = 0; i < n; i++) spots.push(type); };
   add('sniff', RINT(4, 5)); add('puddle', area === 'beach' ? 0 : RINT(1, 2)); add('npc', RINT(1, 2) + (S.outfit.neck === 'Red Bandana' ? 1 : 0)); add('col', Math.round(len / 1300));
@@ -138,7 +138,7 @@ function hop() {
 }
 function noseHeat() {
   const o = W.treasureDig; if (!o || o.done || W.found) return null;
-  const range = 1500 * (S.outfit.neck === 'Seashell Necklace' ? 2 : 1) * noseMul();
+  const range = 1500 * (S.outfit.neck === 'Seashell Necklace' || S.outfit.charm === 'Sea Glass' ? 2 : 1) * noseMul();
   return clamp(1 - Math.abs(o.x - (W.dist + W.dogX)) / range + W.nudge, 0, 1);
 }
 function updateNose(now) {
@@ -178,7 +178,7 @@ function walkLoop(now) {
     if (o.x - 22 > dx) return;
     if (o.t === 'col' || o.t === 'surprise') collect(o, i);
     else if (o.t === 'sniff') { o.done = true; W.pauseUntil = now + 1700; W.happy += 2; W.bond += 1; SFX.sniff(); sayW(sniffClue(), W.dogX + 40, 160, 2200); removeObj(i); }
-    else if (o.t === 'puddle') { o.done = true; if (hopping) toast(tt('walk.nice_hop', 'Nice hop! Paws stay (mostly) clean.')); else if (S.outfit.body === 'Mossy Poncho') toast(tt('walk.poncho', 'Splash! The Mossy Poncho kept everything clean. Puddle-proof.'), 'good'); else { W.clean += 5; addStat('clean', -5); SFX.splash(); toast(tdPickLine('mud', MUD), 'bad'); } }
+    else if (o.t === 'puddle') { o.done = true; if (hopping) toast(tt('walk.nice_hop', 'Nice hop! Paws stay (mostly) clean.')); else if (S.outfit.body === 'Mossy Poncho') toast(tt('walk.poncho', 'Splash! The Mossy Poncho kept everything clean. Puddle-proof.'), 'good'); else if (S.outfit.neck === 'Sunflower Collar') toast(tt('tracks.collar_clean', 'Splash! The Sunflower Collar kept everything clean. Fresh paws.'), 'good'); else { W.clean += 5; addStat('clean', -5); SFX.splash(); toast(tdPickLine('mud', MUD), 'bad'); } }
     else if (o.t === 'dig' && !o.skipped && !o.prompted) {
       o.prompted = true;
       if (W.found) return;

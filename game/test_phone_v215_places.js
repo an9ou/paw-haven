@@ -2,6 +2,7 @@
 //   Part 1 (the Training Ground, agility): the course button in the #placeBtns row is 44 px, the one big Go! is 64 px and sits in the thumb zone (the lower
 //   half of the screen), the timing window is wider than on a desktop, every tap target in the trays is 44 px, text is 15 px or more, the dog stays in
 //   view above the tray, a run finishes with rosettes, nothing scrolls sideways.
+//   Part 3 (the run tracks): the "Start the run" gate in the #placeBtns row of the new places, the old route places and the Square (44 px, 15 px text), the carousel's ten cards.
 //   Part 2 (the Splash Pool): the Splash time button in the #placeBtns row, the tray's taps are 44 px and its text 15 px, a paddle finishes, no sideways scroll.
 // node game/run_tests.js phone_v215_places
 require('./test_lib').run('phone_v215_places', async (t) => {
@@ -91,6 +92,27 @@ require('./test_lib').run('phone_v215_places', async (t) => {
     }
     await t.p.tap('#plDone');
     ok(await ev(() => !window.__paw.pl.running() && !!document.querySelector('#placeBtns [data-pl]')), 'Done leaves the pool');
+    sec(device + ': the run gates (ACTIVITIES part 3)');
+    for (const [pl, route] of [['sunflower', 'sunflower'], ['cliffs', 'cliffs'], ['park', 'park'], ['square', 'town']]) {
+      await ev(() => { window.__paw.S.stats.energy = 100; window.__paw.S.dogs.forEach((d) => { d.stats.energy = 100; }); });
+      await t.home(pl); await t.luWait(600); await t.lu(); await t.sleep(400);
+      ok(await ev(() => !!document.querySelector('#placeBtns [data-tr]')), `${pl}: the "Start the run" button is in the #placeBtns row`);
+      const g = await ev(() => { const b = document.querySelector('#placeBtns [data-tr]'), r = b.getBoundingClientRect(); return { w: Math.round(r.width), h: Math.round(r.height), fs: parseFloat(getComputedStyle(b).fontSize), inRow: !!b.closest('#placeBtns'), r: r.right, vw: window.innerWidth }; });
+      ok(g.h >= 44 && g.w >= 44 && g.fs >= 15 && g.r <= g.vw + 1, `${pl}: 44 px and 15 px text, inside the screen ${JSON.stringify(g)}`);
+      ok(await noSide(), `${pl}: no sideways scroll`);
+      if (pl === 'sunflower' || pl === 'cliffs') await t.SH('phone_gate_' + pl);
+      await t.p.tap('#placeBtns [data-tr]');
+      ok(await t.until((r) => window.__paw.mode === 'walk' && window.__paw.W && window.__paw.W.area === r, route, 7000), `${pl}: the button starts a walk on ${route}`);
+      await ev(() => { window.__paw.S.sleeping = false; window.__paw.go('yard'); }); await t.calm();
+    }
+    await ev(() => window.__paw.go('routes')); await t.p.waitForSelector('.rt-card'); await t.sleep(400);
+    {
+      const c = await ev(() => ({ n: document.querySelectorAll('.rt-card').length, nav: ['#rtPrev', '#rtNext', '#rtStart'].map((q) => { const r = document.querySelector(q).getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)]; }) }));
+      ok(c.n === 10 && c.nav.every((x) => x[0] >= 44 && x[1] >= 44), 'the carousel has ten cards and 44 px controls ' + JSON.stringify(c));
+      ok(await noSide(), 'no sideways scroll in the carousel');
+      await t.p.tap('#rtNext'); await t.p.tap('#rtNext'); await t.p.tap('#rtNext'); await t.sleep(500); await t.SH('phone_carousel_sunflower');
+    }
+    await ev(() => window.__paw.go('yard')); await t.calm();
   }
   ok(!errs.length, 'no page errors ' + errs.slice(0, 2).join(' | '));
 }, { ground: true });

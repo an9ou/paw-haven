@@ -197,7 +197,11 @@ const ROUTES = {
   park: { n: 'Sunny Park', bond: 1, secs: 60, energy: 15, happy: 15, clean: 5, coins: [20, 30], bp: 8, pool: ['coin', 'leaf', 'flower', 'bone'] },
   river: { n: 'Riverside Trail', bond: 2, secs: 75, energy: 25, happy: 20, clean: 10, coins: [35, 50], bp: 11, pool: ['coin', 'leaf', 'shell'] },
   woods: { n: 'Maple Woods', bond: 5, secs: 90, energy: 30, happy: 25, clean: 15, coins: [50, 70], bp: 13, pool: ['coin', 'acorn', 'leaf', 'flower'], dig: 3 },
-  beach: { n: 'Seashell Beach', bond: 8, secs: 90, energy: 30, happy: 30, clean: 20, coins: [60, 80], bp: 15, pool: ['coin', 'shell'], dig: 3 }
+  beach: { n: 'Seashell Beach', bond: 8, secs: 90, energy: 30, happy: 30, clean: 20, coins: [60, 80], bp: 15, pool: ['coin', 'shell'], dig: 3 },
+  /* v2.15 run tracks (V215.md 6.3, 46_tracks.js): these rows stay in ROUTES only while mpOn() (trSync). Each sits inside today's route tiers (town 25-35, woods 50-70, beach 60-80) */
+  sunflower: { n: 'Sunflower Lanes', bond: 2, secs: 60, energy: 15, happy: 15, clean: 5, coins: [25, 35], bp: 9, pool: ['coin', 'flower', 'leaf'], v215: true },
+  bamboo: { n: 'Bamboo Grove Trail', bond: 4, secs: 75, energy: 25, happy: 22, clean: 10, coins: [40, 55], bp: 12, pool: ['coin', 'leaf', 'acorn'], v215: true },
+  cliffs: { n: 'Seaside Cliffs Run', bond: 7, secs: 90, energy: 30, happy: 28, clean: 12, coins: [55, 70], bp: 14, pool: ['coin', 'shell', 'flower'], v215: true }
 };
 /* ---------- v1.1 treasure hunt: treasures are only found on walks, never sold ---------- */
 const RARITY = ['Common', 'Uncommon', 'Rare', 'Legendary'];
@@ -225,7 +229,14 @@ const TREASURES = [
   TR('Old Map Piece (Beach)', 'quest', null, 'Rare', ['beach'], 'Map Piece', '1 of 4 pieces of the Doodle Doggo Treasure Map.', { piece: 'beach' }),
   /* v2.4 Shop Day: two treasures (never sold) */
   TR('Sun Hat', 'wearable', 'head', 'Uncommon', ['beach', 'park'], 'Shady Business', 'Hot days do not bother the dog while worn.', { v24: true }),
-  TR('Squeaky Hedgehog', 'toy', null, 'Uncommon', ['woods', 'park'], 'Squeak of Honour', 'Squeeze it and the dog answers. It hops. Three squeaks and it rolls up.', { v24: true })
+  TR('Squeaky Hedgehog', 'toy', null, 'Uncommon', ['woods', 'park'], 'Squeak of Honour', 'Squeeze it and the dog answers. It hops. Three squeaks and it rolls up.', { v24: true }),
+  /* v2.15 run tracks (V215.md 6.3): six treasures, never sold; they are in TREASURES only while mpOn() (trSync in 46_tracks.js). Abilities reuse existing perks */
+  TR('Sunflower Collar', 'wearable', 'neck', 'Uncommon', ['sunflower'], 'Fresh Paws', 'Puddles do not lower Cleanliness while worn.', { v215: true }),
+  TR('Lucky Horseshoe', 'charm', 'charm', 'Rare', ['sunflower'], 'Good Fortune', '+1 dig per walk while equipped.', { v215: true }),
+  TR('Bamboo Ring', 'toy', null, 'Common', ['bamboo'], 'Ring Toss', 'Play ball with it: it floats on a gentle toss, and +1 coin per return.', { v215: true }),
+  TR('Paper Lantern', 'charm', 'charm', 'Uncommon', ['bamboo'], 'Lantern Glow', 'Ball play after dark: the ball glows, so it never gets lost.', { v215: true }),
+  TR('Sea Glass', 'charm', 'charm', 'Rare', ['cliffs'], 'Sea Sense', 'The Nose-o-meter reacts from twice as far away while equipped.', { v215: true }),
+  TR('Sailor Cap', 'wearable', 'head', 'Uncommon', ['cliffs'], 'Steady Sailor', 'Hot days do not bother the dog while worn.', { v215: true })
 ];
 const TFOOD = [
   { n: 'Wild Berries', hunger: 15, energy: 10, note: 'Treasure. +15 Hunger, +10 Energy. On a walk: +15 seconds.' },
@@ -237,8 +248,8 @@ const TWEAR = TREASURES.filter((t) => t.kind === 'wearable').map((t) => ({ n: t.
 const ALL_WEAR = CLOTHES.concat(TWEAR);
 const CHARMS = TREASURES.filter((t) => t.kind === 'charm').map((t) => ({ n: t.n, slot: 'charm', perk: `${t.ab}: ${t.txt}` }));
 const FETCH_TOYS = ['Tennis Ball', 'Frisbee', 'Driftwood Stick', 'Glow Ball'];
-const ROUTE_WORD = { park: 'in the park', river: 'near water', woods: 'under the trees', beach: 'in the sand' };
-const ROUTE_HINT = { park: 'Found in the park...', river: 'Found near water...', woods: 'Found under the trees...', beach: 'Found in the sand...' };
+const ROUTE_WORD = { park: 'in the park', river: 'near water', woods: 'under the trees', beach: 'in the sand', sunflower: 'among the sunflowers', bamboo: 'in the bamboo', cliffs: 'by the cliffs' };
+const ROUTE_HINT = { park: 'Found in the park...', river: 'Found near water...', woods: 'Found under the trees...', beach: 'Found in the sand...', sunflower: 'Found among the sunflowers...', bamboo: 'Found in the bamboo...', cliffs: 'Found by the cliffs...' };
 const JUNK = [['junk-sock', 'An old sock. Pepper is very proud.'], ['junk-rock', 'A rock shaped like a slightly different rock.'], ['junk-sock', 'Half a sandwich. The duck wants it back.'], ['junk-rock', 'A bottle cap. Shiny! Worthless! Shiny!']];
 const CLUES = {
   far: ['Smells like... nothing much. Keep walking.', 'Sniff. Grass. Just grass. Disappointing grass.', 'The nose says: not here. Not even close.'],
@@ -920,6 +931,7 @@ function mpPlaceSync() {
   MP_KEYS.forEach((k) => { if (on) { if (!PLACES[k]) PLACES[k] = Object.assign({ v215: true }, MP_PLACES[k]); } else delete PLACES[k]; });
   if (PLACES.market) { PLACES.market.n = on ? 'Kibble Corner' : 'Market Street'; if (on) PLACES.market.shop = 'kibble'; else delete PLACES.market.shop; }
   if (S && MP_KEYS.includes(S.place) && !PLACES[S.place]) S.place = 'yard';
+  try { trSync(); } catch (e) { /* 46_tracks.js is not loaded yet at the first call (it runs again at its end) */ }
   return on;
 }
 mpPlaceSync();
@@ -951,7 +963,7 @@ function weatherNow() {
 const weather = weatherNow;
 const envNow = () => { const f = festNow(); return { time: timePhase(), weather: weatherNow(), season: seasonNow(), halloween: f.halloween, lights: f.lights, newyear: f.newyear, jp: jpOn() }; }; // v2.8: lights, newyear, jp
 const isNight = () => timePhase() === 'night';
-function isHot() { if (S && S.buff && typeof buffOn === 'function' && buffOn('cool')) return false; if (S && (S.outfit.head === 'Sun Hat' || (S.coolUntil || -1) > S.gameMin)) return false; if (weatherNow() !== 'sunny' || timePhase() !== 'day') return false; if (ENV.time !== 'auto') return true; const h = new Date().getHours(); return h >= 11 && h < 15; }
+function isHot() { if (S && S.buff && typeof buffOn === 'function' && buffOn('cool')) return false; if (S && (S.outfit.head === 'Sun Hat' || S.outfit.head === 'Sailor Cap' || (S.coolUntil || -1) > S.gameMin)) return false; if (weatherNow() !== 'sunny' || timePhase() !== 'day') return false; if (ENV.time !== 'auto') return true; const h = new Date().getHours(); return h >= 11 && h < 15; }
 function clockText() {
   if (tlang() !== 'en') { const d = new Date(); if (ENV.time !== 'auto') d.setHours({ dawn: 6, day: 13, dusk: 18, night: 23 }[ENV.time], 0, 0, 0); return tdate(d, { hour: 'numeric', minute: '2-digit' }) + (ENV.time !== 'auto' ? '*' : ''); } // v2.14: 12 or 24 h per language (V214.md 8)
   if (ENV.time !== 'auto') return { dawn: '06:00', day: '13:00', dusk: '18:00', night: '23:00' }[ENV.time] + '*'; const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }

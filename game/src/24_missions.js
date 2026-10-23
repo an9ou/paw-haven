@@ -52,7 +52,9 @@ const MS_POOL = [
   { id: 'travel_training', n: 1, t: 'Visit the Training Ground', s: 'Training Ground visit', g: () => typeof mpOn === 'function' && mpOn() && topBond() >= ((PLACES.training && PLACES.training.bond) || 3), m: (a) => a.kind === 'travel' && a.place === 'training' },
   // v2.15 Splash Pool (V215.md 6.2, 45_pool.js): the paddle fires act 'paddle' { name, step }, float fetch fires 'floatfetch' { name }
   { id: 'pool_paddle', n: 1, t: 'Take {dog} for a paddle at the Splash Pool', s: 'Pool paddle', g: () => typeof mpOn === 'function' && mpOn() && topBond() >= ((PLACES.pool && PLACES.pool.bond) || 2), m: (a) => a.kind === 'paddle' },
-  { id: 'pool_float', n: 1, t: 'Play float fetch at the Splash Pool', s: 'Float fetch', g: () => typeof mpOn === 'function' && mpOn() && topBond() >= ((PLACES.pool && PLACES.pool.bond) || 2), m: (a) => a.kind === 'floatfetch' }
+  { id: 'pool_float', n: 1, t: 'Play float fetch at the Splash Pool', s: 'Float fetch', g: () => typeof mpOn === 'function' && mpOn() && topBond() >= ((PLACES.pool && PLACES.pool.bond) || 2), m: (a) => a.kind === 'floatfetch' },
+  // v2.15 run tracks (V215.md 6.3, 46_tracks.js): a walk on one of the three new routes
+  { id: 'new_trail', n: 1, t: 'Walk a new trail: Sunflower Lanes, Bamboo Grove or the Seaside Cliffs', s: 'New trail', g: () => typeof trOn === 'function' && trOn() && topBond() >= ((ROUTES.sunflower && ROUTES.sunflower.bond) || 2), m: (a) => a.kind === 'walk' && ['sunflower', 'bamboo', 'cliffs'].includes(a.area) }
 ];
 const msDef = (id) => MS_POOL.find((x) => x.id === id);
 function msFields() {
