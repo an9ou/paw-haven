@@ -32,6 +32,7 @@ function clean(svg, what, n) {
   ok(!/NaN|undefined|Infinity|\[object/.test(svg), what + ' has no NaN, undefined, Infinity or [object');
   ok(!/<script/i.test(svg) && !/\son[a-z]+=/i.test(svg), what + ' has no script or event handler');
   ok(!/<filter/i.test(svg), what + ' uses no filter');
+  ok(!/\s(?:r|rx|ry|width|height|stroke-width)="-/.test(svg), what + ' has no negative size (the browser rejects it)');
   ok((svg.match(/<text\b[^>]*>[^<]*<\/text>/g) || []).every((t) => />z<\/text>$/.test(t)), what + ' has no words (the signs carry pictures; only a sleeping cat\'s z)');
   ok(![...svg.matchAll(/\sd="([^"]*)"/g)].some((m) => /--|[^\deE.\s,MmLlHhVvCcSsQqTtAaZz-]/.test(m[1]) || /^\s*[^Mm\s]/.test(m[1])), what + ' has well-formed path data');
   const open = (svg.match(/<g[\s>]/g) || []).length, close = (svg.match(/<\/g>/g) || []).length;

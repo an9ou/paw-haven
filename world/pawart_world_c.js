@@ -2525,10 +2525,10 @@ function sqrosetteB2(k,cx,cy,rx,ry){// a ring of darker cobbles round a paw in t
   k.shape(E(cx,cy+6,30,11,14),'#D9B99A',{w:1.4,one:1});[[-32,-8],[-12,-16],[12,-16],[32,-8]].forEach(([dx,dy])=>k.shape(E(cx+dx,cy+dy,9,4,10),'#D9B99A',{w:1.2,one:1}))}
 function sqSquareB2(k,F){const B=F.back,D=y=>depA(F,y),fk=floorKitA(k),e=k.env;
   skyB2(k,330,{sun:[880,66,28],low:[905,138,28],moon:[870,70,24],clouds:[[300,60,22],[740,50,18]],rainC:[[120,40,24],[480,28,26],[960,96,22]],birds:[[390,82,8],[412,94,6]]});
-  fujiA(k,420,232,280);
+  fujiA(k,410,196,300);
   // the shopfronts and the clock tower stand on the back line (y 346): bakery, books, post office, toys
   shopB2(k,-14,176,166,B,{wall:C.wall2,noGlow:1,sign:'bakery',awn:[C.red,'#fff'],door:'#E8A9B8',upper:2,disp:(x,y,w,h)=>{[[x+24,y+h-14],[x+56,y+h-14],[x+88,y+h-14]].forEach(([bx,by],i)=>{k.shape(E(bx,by,13,7,10),'#F0D9B5',{w:1.3,one:1});donut(k,bx,by-9,.9,[C.lav,'#FFB3C7',C.yellow][i])})}});
-  shopB2(k,214,206,242,B,{wall:C.wall,brick:1,sign:'books',awn:[C.mint,'#fff'],door:'#B9D3F2',upper:3,curt:C.mint,disp:(x,y,w,h)=>{let bx=x+16;const cs=[C.red,C.blue,C.yellow,C.lav,C.mint,C.orange];for(let i=0;i<9;i++){const bw=10+(i*7%6),bh=24+(i*11%12);k.shape(RC(bx,y+h-bh-4,bw,bh),cs[i%6],{w:1.2,one:1});bx+=bw+3}}});
+  shopB2(k,214,206,156,B,{wall:C.wall,brick:1,sign:'books',awn:[C.mint,'#fff'],door:'#B9D3F2',upper:3,curt:C.mint,disp:(x,y,w,h)=>{let bx=x+16;const cs=[C.red,C.blue,C.yellow,C.lav,C.mint,C.orange];for(let i=0;i<9;i++){const bw=10+(i*7%6),bh=24+(i*11%12);k.shape(RC(bx,y+h-bh-4,bw,bh),cs[i%6],{w:1.2,one:1});bx+=bw+3}}});
   shopB2(k,616,190,138,B,{wall:C.wall3,noDeco:1,sign:'post',awn:[C.blue,'#fff'],door:'#E57E83',upper:2,curt:C.yellow,signCol:'#FFFFFF',disp:(x,y,w,h)=>{k.shape(RC(x+14,y+h-30,40,22),'#FFFBF3',{w:1.3,one:1});k.line([[x+14,y+h-30],[x+34,y+h-18],[x+54,y+h-30]],1.2);O.heart(k,x+34,y+h-16,4)}});
   shopB2(k,816,164,150,B,{wall:C.wall4,sign:'toys',awn:[C.yellow,'#fff'],door:'#B9DD92',upper:2,curt:C.lav,disp:(x,y,w,h)=>{k.shape(E(x+26,y+h-12,9,9,10),'#E9F59B',{w:1.4,one:1});k.shape([[x+48,y+h-6],[x+50,y+h-22],[x+68,y+h-22],[x+70,y+h-6]],C.yellow,{w:1.3,one:1})}});
   k.ss(()=>{if(k.so==='winter'){chimney(k,40,118,1);chimney(k,300,148,1.05);chimney(k,700,132,.95)}});

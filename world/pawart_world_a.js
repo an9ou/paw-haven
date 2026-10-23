@@ -1754,8 +1754,8 @@ function winterSnowB(k,list){if(k.so==='winter'&&!k.env.snow)k.ss(()=>list.forEa
 /* ---------- the v2.15 B floors (PawArt.FLOOR) and the render (its own cache; the key holds every option the scenes read) ---------- */
 const FLOOR_B={
  yard:{poly:[[26,334],[974,334],[994,594],[6,594]],
-  props:[{id:'planter',base:350,box:[898,342,76,10]},{id:'bush',base:356,box:[532,348,60,10]},{id:'mailbox',base:404,box:[304,394,54,12]},{id:'bushL',base:410,box:[228,402,44,10]},
-   {id:'house',base:520,box:[628,504,224,18]},{id:'bowl',base:540,box:[212,526,76,16]},{id:'bushF',base:598,box:[866,586,72,10]}],// mailbox, house, bowl: drawn by the game over the scene (MB_BOX, #houseG, #bowlG), their feet boxes
+  props:[{id:'planter',base:350,box:[898,342,76,10]},{id:'bush',base:356,box:[532,348,60,10]},{id:'mailbox',base:408,box:[304,398,54,12]},{id:'bushL',base:410,box:[228,402,44,10]},
+   {id:'house',base:526,box:[628,510,224,18]},{id:'bowl',base:540,box:[212,526,76,16]},{id:'bushF',base:598,box:[866,586,72,10]}],// mailbox, house, bowl: drawn by the game over the scene (MB_BOX, #houseG, #bowlG), their feet boxes
   spots:[{id:'bowl',x:250,y:570,tags:['bowl'],act:'drink'},{id:'dig',x:520,y:440,tags:['dig','sniff'],act:'sniff'},{id:'shade',x:930,y:378,tags:['shade','rest'],act:'rest'},
    {id:'sun',x:420,y:470,tags:['sun','rest'],act:'rest'},{id:'gate',x:470,y:350,tags:['gate','patrol'],act:'look'},{id:'door',x:150,y:356,tags:['door'],act:'door'},{id:'mailbox',x:336,y:426,tags:['sniff'],act:'sniff'}]},
  house:{poly:[[16,348],[984,348],[998,594],[2,594]],
