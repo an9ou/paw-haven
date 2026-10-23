@@ -26,7 +26,7 @@ function phFrameName(c) {
     default: return c.n;
   }
 }
-function phPlaceName() { const p = S && S.place; return p === 'yard' ? tt('photo.place_home', 'Home') : p === 'house' ? tt('photo.place_house', 'The house') : (PLACES[p] && tdata('places.' + p + '.n', PLACES[p].n)) || tt('photo.place_town', 'Doodle Town'); }
+function phPlaceName() { const p = S && S.place; return p === 'yard' ? tt('photo.place_home', 'Home') : p === 'house' ? tt('photo.place_house', 'The house') : (PLACES[p] && (mpPlaceName(p) || tdata('places.' + p + '.n', PLACES[p].n))) || tt('photo.place_town', 'Doodle Town'); }
 // the Japan date, written like the festival dates ("19 October 2026"); the message gives the word order of each language, the month name comes from Intl
 function phDateLine() { const [y, m, d] = jstISO().split('-').map(Number); return tt('photo.date_line', '{d} {month} {y}', { d, month: tdate(new Date(2000, m - 1, 1), { month: 'long' }), y }); }
 function phNames(list) { return tlist(list); }

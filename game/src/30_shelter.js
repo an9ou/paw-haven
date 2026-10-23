@@ -418,7 +418,7 @@ function srClick(e) {
 }
 
 /* ---- shelter mode: the dock tray ---- */
-function srHomeLabel() { return !S || ['yard', 'house'].includes(S.place) || !PLACES[S.place] ? tt('shelter.go_home', 'Go home') : tt('shelter.back_to', 'Back to {place}', { place: (typeof tkPlaceName === 'function' && tkPlaceName(S.place) !== S.place) ? tkPlaceName(S.place) : tdata('places.' + S.place + '.n', PLACES[S.place].n) }); }
+function srHomeLabel() { return !S || ['yard', 'house'].includes(S.place) || !PLACES[S.place] ? tt('shelter.go_home', 'Go home') : tt('shelter.back_to', 'Back to {place}', { place: (typeof tkPlaceName === 'function' && tkPlaceName(S.place) !== S.place) ? tkPlaceName(S.place) : (mpPlaceName(S.place) || tdata('places.' + S.place + '.n', PLACES[S.place].n)) }); }
 function srTray() {
   dock.innerHTML = `<div class="tray sr-tray"><div class="tray-h"><h3>${esc(tt('shelter.title', 'Doodle Doggo Shelter'))}</h3></div><div class="sr-btns"><button class="btn go" id="srBoard">${esc(tt('shelter.board', 'Adopt me board'))}</button><button class="btn" id="srToss">${esc(tt('shelter.toss', 'Toss a toy'))}</button><button class="btn" id="srHome">${esc(srHomeLabel())}</button></div></div>`;
   $('#srBoard').onclick = () => { SFX.click(); openShelterList(); };

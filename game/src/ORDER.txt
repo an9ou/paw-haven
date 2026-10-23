@@ -51,4 +51,9 @@
 39_tokyo.js
 40_dogcards.js
 41_expressions.js
+42_map215.js
+43_ground.js
+44_agility.js
+45_pool.js
+46_tracks.js
 23_boot.js

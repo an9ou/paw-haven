@@ -38,7 +38,8 @@ for (const f of [...want].sort()) {
 // v2.14 PERF: the split build's side files (pages.js copied them to _site): lang/*.js and photo_fonts.<hash>.js
 const SITE = path.join(root, '_site');
 if (fs.existsSync(path.join(SITE, 'lang'))) { fs.mkdirSync(path.join(out, 'lang'), { recursive: true }); for (const f of fs.readdirSync(path.join(SITE, 'lang')).filter((x) => /\.js$/.test(x)).sort()) { fs.copyFileSync(path.join(SITE, 'lang', f), path.join(out, 'lang', f)); files.push('lang/' + f); } }
-for (const f of fs.readdirSync(SITE).filter((x) => /^photo_fonts\.\w+\.js$/.test(x))) { fs.copyFileSync(path.join(SITE, f), path.join(out, f)); files.push(f); }
+// v2.15: and the lazy art chunks world_<f|g>.<hash>.js
+for (const f of fs.readdirSync(SITE).filter((x) => /^(photo_fonts|world_[a-z])\.\w+\.js$/.test(x))) { fs.copyFileSync(path.join(SITE, f), path.join(out, f)); files.push(f); }
 // v2.14: the per-language font subsets (pages.js copied them to _site/fonts/i18n): fonts/i18n/<file> in the zip
 const FD = path.join(root, '_site', 'fonts', 'i18n');
 if (fs.existsSync(FD)) { fs.mkdirSync(path.join(out, 'fonts', 'i18n'), { recursive: true }); for (const f of fs.readdirSync(FD).filter((x) => /\.woff2$/.test(x)).sort()) { fs.copyFileSync(path.join(FD, f), path.join(out, 'fonts', 'i18n', f)); files.push('fonts/i18n/' + f); } }

@@ -13,7 +13,7 @@ Object.assign(ROUTES, {
 // v2.14 i18n: the shown names of places and routes. The definitions above and below stay English (ids and save values); the v1.6 and v2.8 names are
 // tt() keys because they are added with Object.assign (not a table the extractor knows), the older ones come from the places / routes tables of 00_core.js.
 function townPlaceName(k) {
-  const p = PLACES[k]; if (!p) return k;
+  const p = PLACES[k]; if (!p) return k; const mp = mpPlaceName(k); if (mp) return mp; // v2.15: the new places and Kibble Corner while mpOn()
   switch (k) {
     case 'square': return tt('town.place_square', 'Town Square');
     case 'cafe': return tt('town.place_cafe', 'Pupuccino Café');

@@ -96,6 +96,7 @@ const SUITES = {
   v213_faces: { file: 'test_v213_faces_node.js', group: 'all', est: 120, timeout: 600 }, // v2.13 ART A + B (V213.md 3, 6): every expression on every breed, age, ok pose, facing and a set of outfits
   v213_neck: { file: 'test_v213_neck_node.js', group: 'all', est: 170, timeout: 600 }, // v2.13 NECK (V213.md 5): every head on its body, 35 breeds, every pose, adult and puppy, expressions that tilt the head, mixes (5.1)
   v213_expr: { file: 'test_v213_expr.js', group: 'all', est: 60 }, // v2.13 EX (V213.md 4): expressions in play, personality, photo picker
+  v215_migrate: { file: 'test_v215_migrate.js', group: 'all', est: 115 }, // v2.15 stubs (V215.md 9, 16): old saves in every place key load with the v2.15 map off and on, v215Fields
   // v2.2 phone suites: `node game/run_tests.js phone` (not part of `all`, which stays the desktop regression set)
   phone_legacy: { file: 'test_phone.js', group: 'phone', est: 90 },
   phone_shell: { file: 'test_phone_shell.js', group: 'phone', est: 40 },
