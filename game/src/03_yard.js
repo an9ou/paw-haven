@@ -512,10 +512,10 @@ function placeButtons() {
 let bubbleBelowT = 0;
 function townBubbleBelowDog() {
   const hit = $('#dogHit'); if (!hit || bubble.hidden) return; const hr = hit.getBoundingClientRect(), sg = stage.getBoundingClientRect(), W = stage.clientWidth;
-  const hl = hr.left - sg.left, hrr = hr.right - sg.left, hb = hr.bottom - sg.top, up = [bubble.style.left, bubble.style.top]; // say()'s spot over the head: the fallback
+  const hl = hr.left - sg.left, hrr = hr.right - sg.left, hb = hr.bottom - sg.top, up = [bubble.style.left, bubble.style.top, bubble.style.maxWidth, bubble.classList.contains('tail-r')]; // say()'s spot over the head: the fallback
   // the bubble shrinks to fit left of the stage edge, so it re-wraps when it moves: every move re-measures, and it stays on screen (layout numbers: the pop animation scales the rect)
   const at = (l, tp) => { bubble.style.left = l + 'px'; bubble.style.top = tp + 'px'; let w = bubble.offsetWidth; if (l + w > W - 6) { l = Math.max(6, W - 6 - w); bubble.style.left = l + 'px'; w = bubble.offsetWidth; } return { l, t: tp, w, h: bubble.offsetHeight }; };
-  bubble.classList.add('below'); let b = at(6, hb + 18); const bw0 = b.w; b = at(clamp(hl + hr.width / 2 - bw0 / 2, 6, W - bw0 - 6), hb + 18);
+  bubble.classList.remove('tail-r'); bubble.style.maxWidth = ''; bubble.classList.add('below'); let b = at(6, hb + 18); const bw0 = b.w; b = at(clamp(hl + hr.width / 2 - bw0 / 2, 6, W - bw0 - 6), hb + 18);
   const pr = isPhone() && $('#placeBtns'), prr = pr && pr.offsetParent && pr.getBoundingClientRect(); // phones: stay above the place-button row (UI/UX T5)
   if (prr && prr.height && b.t + b.h > prr.top - sg.top - 8) { // no room under the dog: beside it if a side has room, else under it slid clear of the buttons, else back over its head
     const py = prr.top - sg.top - 8;
@@ -530,7 +530,7 @@ function townBubbleBelowDog() {
   const bar = isPhone() && $('#bar'), barR = bar && !bar.hidden && bar.offsetParent ? bar.getBoundingClientRect() : null, sgH = barR && barR.height ? Math.min(stage.clientHeight, barR.top - sg.top) : stage.clientHeight;
   if (b.t + b.h > sgH - 4) { b.h = bubble.offsetHeight; const tp = sgH - 6 - b.h; if (tp >= hr.top - sg.top + hr.height / 2 && tp > view.offsetTop + 4) b = at(b.l, tp); }
   const onBtn = [...document.querySelectorAll('#placeBtns .btn')].some((x) => { const q = x.getBoundingClientRect(), ql = q.left - sg.left, qt = q.top - sg.top; return b.l < q.right - sg.left && b.l + b.w > ql && b.t < qt + q.height && b.t + b.h > qt; });
-  if (onBtn || b.t + b.h > sgH - 4 || parseFloat(bubble.style.maxWidth || 999) < 170) { bubble.classList.remove('below'); bubble.style.maxWidth = ''; bubble.style.left = up[0]; bubble.style.top = up[1]; return; } // nowhere clear: back over its head (v2.12: also when squeezed under 170 px beside the buttons, where the speech balloon's text ran over its tail)
+  if (onBtn || b.t + b.h > sgH - 4 || parseFloat(bubble.style.maxWidth || 999) < 170) { bubble.classList.remove('below'); bubble.classList.toggle('tail-r', up[3]); bubble.style.maxWidth = up[2]; bubble.style.left = up[0]; bubble.style.top = up[1]; return; } // nowhere clear: back over its head (v2.12: also when squeezed under 170 px beside the buttons, where the speech balloon's text ran over its tail)
   clearTimeout(bubbleBelowT); bubbleBelowT = setTimeout(() => bubble.classList.remove('below'), 3700);
 }
 function placeAmbient() {
@@ -990,7 +990,7 @@ function hmOpenDecor(room) {
     };
   });
 }
-function hmExpose() { if (window.__paw) window.__paw.home = { decorOut: hmDecorOut, redraw: hmDecorRedraw, ambient: () => packAmbient(), say: (t, x, y) => say(t, x, y, 4000), emit: (e, d) => emit(e, d), specs: HM_DECOR }; }
+function hmExpose() { if (window.__paw) window.__paw.home = { decorOut: hmDecorOut, redraw: hmDecorRedraw, ambient: () => packAmbient(), say: (t, x, y) => say(t, x, y, 4000), sayDog: (t, ms) => { const h = dogHeadWorld(); say(t, h.x, h.y, ms || 4000); }, emit: (e, d) => emit(e, d), specs: HM_DECOR }; }
 on('game:ready', () => { hmDecorFields(); setTimeout(hmExpose, 0); });
 on('yard:enter', () => { hmDecorFields(); hmDecorBind(); hmExpose(); });
 on('scene:redraw', () => { const g = $('#decorG') || $('#hoRoomG'); if (g && !HO.pl && g.dataset.tod !== timePhase()) hmDecorRedraw(); }); // v2.6.1: the decor follows the scene's time tint (v2.7: the house too, not while arranging)
