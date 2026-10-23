@@ -2,7 +2,7 @@
 
 Made 23 Oct 2026 for the v2.14 "Hello in Every Language" release. The game and doodledoggo.app speak 11 languages: English, Japanese, Simplified Chinese, Traditional Chinese (Taiwan wording), Korean, Thai, Spanish, Brazilian Portuguese, French, German and Indonesian. All 7,367 game texts are translated, the game starts in the device's language, and Settings has a Language row.
 
-The owner's English-only rule still holds for everything we write: the title, the labels and the caption are English. The other scripts appear only inside the real game screenshots, because they are the news. (The owner was asked about this; with no answer, the recommended way was taken.)
+The owner's English-only rule still holds for everything we write: the title, the labels and the caption are English. The other scripts appear only inside the real game screenshots, because they are the news. **Exception (owner, 23 Oct 2026):** on each language slide, Waffles's speech bubble speaks that slide's language. (The owner was asked about this; with no answer, the recommended way was taken.)
 
 **Made 23 Oct 2026 from the shipped v2.14.1 "Room to breathe" build** (the owner asked for it after v2.14.1 shipped). The dog is **Waffles the English Mastiff**, picked at random (the last ad used the Chihuahua), in a Flower Crown, saying his own line from the game in each language: "I am not drooling. I am showing my love." (the game's translation of `jokes.mastiff.2`).
 
@@ -11,7 +11,7 @@ Files are in `brand/instagram/launch/languages/`:
 | File | What |
 |---|---|
 | `languages-01-cover.jpg` | **Carousel slide 1, the designed cover** (1080 x 1350): the logo, "now in 11 languages", a fan of five real phone screens (Japanese, Thai, English, Spanish, Korean), Waffles saying "hello in every language!", the 11 language names, "swipe →". Everything that matters is inside the grid's 3:4 crop. |
-| `languages-02-en.jpg` … `languages-12-id.jpg` | **Carousel slides 2–12**, one per language in the caption's order (English, Japanese, Simplified Chinese, Traditional Chinese, Korean, Thai, Spanish, Brazilian Portuguese, French, German, Indonesian): the language's English name, "N of 11 languages in Doodle Doggo", the phone screen in that language, "Waffles says:" with the line in English, Waffles, "play free at doodledoggo.app". |
+| `languages-02-en.jpg` … `languages-12-id.jpg` | **Carousel slides 2–12**, one per language in the caption's order (English, Japanese, Simplified Chinese, Traditional Chinese, Korean, Thai, Spanish, Brazilian Portuguese, French, German, Indonesian): the language's English name, "N of 11 languages in Doodle Doggo", the phone screen in that language, "Waffles says:" with **his line in that slide's language** (the game's own translation, in the game's own fonts for Japanese, Chinese, Korean and Thai), Waffles, "play free at doodledoggo.app". |
 | `languages-announce.jpg` | **The single image** for the feed or a 4:5 ad (1080 x 1350): all 11 screens on one page, each labelled in English. |
 | `languages-announce-story.jpg` | The same for **Stories and Reels ads** (1080 x 1920); the top 250 and bottom 280 px hold nothing that matters. |
 | `capture_langs.js` | Captures the 11 screens (phone portrait, 390 x 844 at DPR 3, autumn, sunny, 1 pm on a fixed clock so the place line shows no override star): `node game/build.js && node game/harness.js merged`, then `NODE_PATH=$(npm root -g) node brand/instagram/launch/languages/capture_langs.js <shotsdir> [lang ...]` (about 2 minutes; `DOG`, `NAME`, `LINE` pick another dog and line). |
@@ -36,7 +36,7 @@ Play free at doodledoggo.app, link in bio.
 ```
 **Alt text** (one per image; Instagram lets you set it per carousel slide under Advanced settings, Accessibility):
 - Cover: `The words "Doodle Doggo, now in 11 languages" over a fan of five phone screens of the game, with a crayon mastiff in a flower crown saying "hello in every language!"`
-- Each language slide: `Doodle Doggo on a phone in <language>: a crayon mastiff in a flower crown says "I am not drooling. I am showing my love." in <language>.`
+- Each language slide: `Doodle Doggo on a phone in <language>, and a crayon mastiff in a flower crown saying "I am not drooling. I am showing my love." in <language>.`
 - Single image: `The same crayon dog scene from Doodle Doggo shown in 11 languages, each screen labelled with its language.`
 
 ## As an ad (Meta Ads Manager)
