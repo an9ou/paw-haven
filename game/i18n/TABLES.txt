@@ -168,3 +168,4 @@ ROUTE_WX *
 ROUTE_NAME *
 BADGE@walkrun 1
 TOYS_LINES@toys *
+AG_LINES *   # v2.15 Training Ground arrival lines (data.ag_lines.<breed>)

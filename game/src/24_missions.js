@@ -45,7 +45,11 @@ const MS_POOL = [
   { id: 'travel_fuji', n: 1, t: 'Visit the Mt. Fuji Lookout', s: 'Mt. Fuji Lookout visit', g: () => jpHillOpen(), m: (a) => a.kind === 'travel' && a.place === 'fujihill' },
   // v2.11 Tokyo Trip (V211.md section 5.3, 39_tokyo.js): the ride out and a new station stamp, from the Station's Bond on
   { id: 'tokyo_ride', n: 1, t: 'Ride the Shinkansen to Tokyo', s: 'Shinkansen ride', g: () => tkOn() && topBond() >= TK_STATION_BOND, m: (a) => a.kind === 'ride' && a.dir === 'out' },
-  { id: 'tokyo_stamp', n: 1, t: 'Collect a station stamp', s: 'Station stamp', g: () => tkOn() && topBond() >= TK_STATION_BOND && tkStampFree(), m: (a) => a.kind === 'stamp' }
+  { id: 'tokyo_stamp', n: 1, t: 'Collect a station stamp', s: 'Station stamp', g: () => tkOn() && topBond() >= TK_STATION_BOND && tkStampFree(), m: (a) => a.kind === 'stamp' },
+  // v2.15 Training Ground (V215.md 6.1, 44_agility.js): agility fires act 'agility' { rosettes, low }
+  { id: 'agility', n: 1, t: 'Run the agility course at the Training Ground', s: 'Agility course', g: () => typeof mpOn === 'function' && mpOn() && topBond() >= ((PLACES.training && PLACES.training.bond) || 3), m: (a) => a.kind === 'agility' },
+  { id: 'agility_ros', n: 1, t: 'Earn two or more rosettes on the agility course', s: 'Two rosettes', g: () => typeof mpOn === 'function' && mpOn() && topBond() >= ((PLACES.training && PLACES.training.bond) || 3), m: (a) => a.kind === 'agility' && a.rosettes >= 2 },
+  { id: 'travel_training', n: 1, t: 'Visit the Training Ground', s: 'Training Ground visit', g: () => typeof mpOn === 'function' && mpOn() && topBond() >= ((PLACES.training && PLACES.training.bond) || 3), m: (a) => a.kind === 'travel' && a.place === 'training' }
 ];
 const msDef = (id) => MS_POOL.find((x) => x.id === id);
 function msFields() {
