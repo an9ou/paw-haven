@@ -972,6 +972,80 @@ const ITEMS_E={
   b.ex('spark',56,12,3.4)},
  'Paw'(b){paw(b,32,36,11,'#F7A1B5',{lw:1});b.ex('heart',52,14,4,'#F9B2C2');b.ex('spark',12,14,3.6)}
 };
+/* v2.15 Around Town (V215.md 6.2, 6.3): the Doggy Life Vest and the six run-track treasures. They live here, in an art world that loads with
+   the game, because world G (the new places) is a lazy chunk and the wardrobe and the journal show these at any time. Kept out of ITEMS_E and
+   WORLD_E_ITEMS (the Tokyo list stays as it was); the treasures wear world B's golden sparkles, the Sunflower Collar the Clover Collar's gold ink. */
+const GINK215='#A5741F',NAVY215='#3E5A9A',gold215=(b,list)=>list.forEach(([x,y,s])=>b.ex('spark',x,y,s,'#FFE07A'));
+const ringD=(cx,cy,rx,ry,n,rev)=>{const p=E(cx,cy,rx,ry,n);return cr(rev?p.reverse():p,true).d};
+const ITEMS_V215={
+ 'Doggy Life Vest'(b){const OR='#F8A95E',OD='#D9772E';
+  b.sh(ribbon([[25,11],[27,4],[37,4],[39,11]],[3.4,3.4,3.4,3.4]),NAVY215,{k:.2,hatch:0,hl:0,lw:.7});
+  b.sh([[17,9],[26,8],[32,23],[38,8],[47,9],[51,17],[54,31],[54,55],[32,59],[10,55],[10,31],[13,17]],OR,{k:.08,sh:OD,
+   marks:[{pts:[[0,51],[64,51],[64,62],[0,62]],fill:'#FFE07A',k:0}],
+   inner:b.st(b.jl(20,14,19,50,.4)+b.jl(44,14,45,50,.4),OD,1,.7),det:[[[32,24],[32,58]]],dw:.9});
+  b.sh([[19,10],[26,9],[32,23]],'#FFFBF3',{k:0,hatch:0,hl:0,lw:.6});b.sh([[45,10],[38,9],[32,23]],'#FFFBF3',{k:0,hatch:0,hl:0,lw:.6});
+  [[14,25],[39,25]].forEach(([x,y])=>b.sh(RR(x,y,11,3.2,1.4),'#FFFFFF',{hatch:0,hl:0,lw:.5}));
+  [35,44].forEach(y=>{b.sh(RR(9.5,y,45,5,1.6),NAVY215,{k:.05,hatch:0,hl:0,lw:.7});b.sh(RR(27.5,y-1.6,9,8.2,1.4),'#FFE07A',{hatch:0,hl:0,lw:.7,det:[[[32,y],[32,y+5]]],dw:.5})});
+  b.ex('spark',57,10,3.4);b.ex('dots',6,12,4)},
+ 'Sunflower Collar'(b){
+  b.sh(ribbon([[7,22],[18,14],[32,12],[46,14],[57,22]],[4.5,4.5,4.5,4.5,4.5]),'#6FB06A',{hatch:0,hl:0,lw:.8,ink:GINK215});
+  b.sh(ribbon([[6,21],[13,31],[32,37],[51,31],[58,21]],[8.5,8.5,8.5,8.5,8.5]),'#94D58E',{ink:GINK215,sh:'#5E9A58'});
+  [[15,32],[49,32]].forEach(([x,y],i)=>b.sh(leafP(x,y,6.5,3.6,i?-.5:Math.PI+.5),'#6FB06A',{hatch:0,hl:0,lw:.5,ink:GINK215,dr:.1}));
+  b.sh(leafP(31,49,15,7,2.5),C.leafD,{hatch:0,hl:0,lw:.6,det:[[[30,50],[19,55]]],dw:.45});
+  b.sh(flowerP(33,46,13.5,11,.2),'#FFD84D',{sh:'#E9B44C',hl:0,lw:.8,dr:.3});
+  b.sh(E(33,46,5.4,5.2,14),'#A8683A',{hatch:0,hl:0,lw:.6,dr:.1});[[31.4,44.6],[34.6,45],[32.6,47.8],[35,47.6],[31,47.4]].forEach(([x,y])=>b.dot(x,y,.7,'#6E3F1C'));
+  gold215(b,[[55,46,4.6],[9,46,3.8],[48,6,3.2]]);b.ex('glint',27,41,3)},
+ 'Sailor Cap'(b){
+  b.sh(ribbon([[15,40],[10,49],[12,58]],[5,5,4.4]),NAVY215,{k:1/6,hatch:0,hl:0,lw:.7});b.sh(ribbon([[19,41],[18,50],[22,59]],[5,5,4.4]),NAVY215,{k:1/6,hatch:0,hl:0,lw:.7});
+  b.sh([[11,40],[10,27],[16,17],[32,12],[48,17],[54,27],[53,40]],'#FFFFFF',{k:.16,base:'#fff',sh:'#B9C3D6',ho:.4,hlo:.6,
+   inner:b.st('M18 33q3 -9 9 -15M30 33q1 -10 2 -18',GRAPH,1,.55)});
+  b.sh([[9,35],[55,35],[55,46],[9,46]],NAVY215,{k:.05,hatch:0,hl:0,lw:.8,det:[[[11,43],[53,43]]],dw:.55,dcol:'#FFFFFF'});
+  b.raw(b.st('M36 36.6v6.2M33.2 38.8h5.6M33 41q3 3 6 0',C.gold,1.4),'top');
+  b.sh(E(32,12.5,3.4,2.2,10),NAVY215,{hatch:0,hl:0,lw:.6});
+  gold215(b,[[57,14,4.4],[6,16,3.4]]);b.ex('glint',22,24,3.4)},
+ 'Lucky Horseshoe'(b){const ST='#C9CFD8',SD='#8E97A6',arc=[];for(let i=0;i<=10;i++){const a=(-18+i*21.6)*Math.PI/180;arc.push([32+Math.cos(a)*18,30+Math.sin(a)*19])}
+  b.shadow(32,57,18,2.6);
+  b.sh(ribbon(arc,arc.map(()=>9.5)),ST,{k:1/6,sh:SD,base:'#EEF1F5',ho:.5});
+  arc.forEach((p,i)=>{if(i%2===0&&i>0&&i<10&&i!==4&&i!==6)b.sh(RR(p[0]-1.6,p[1]-1.1,3.2,2.2,.6),'#6E7886',{hatch:0,hl:0,lw:.35,dr:.05})});
+  b.loop(arc.map(([x,y])=>[32+(x-32)*.82,30+(y-30)*.84]).slice(1,10),{w:.7,op:.45});
+  for(let k=0;k<3;k++)b.sh(rot(heartP(51,12.4,7,16),k*Math.PI*2/3,51,16),k%2?'#86CF7F':'#7AC373',{lw:.55,hatch:0,hl:0,dr:.2});b.ln([[51,16],[53,23]],{w:1,col:'#5E9A58'});
+  gold215(b,[[9,10,4.6],[58,40,3.6],[7,44,3]]);b.ex('glint',18,40,3.4)},
+ 'Bamboo Ring'(b){const G='#B8DE9A',GD='#7FB86A',cx=32,cy=34,ox=24,oy=21.5,ix=14.5,iy=12;
+  b.shadow(32,58,22,2.6);
+  b.raw(`<path d="${ringD(cx+1,cy+.8,ox,oy,28)}${ringD(cx+1,cy+.8,ix,iy,24,1)}" fill="${G}" fill-rule="evenodd"/>`);
+  let hs='';for(let i=0;i<14;i++){const a=(20+i*7)*Math.PI/180;hs+=b.jl(cx+Math.cos(a)*(ix+1.5),cy+Math.sin(a)*(iy+1.5),cx+Math.cos(a)*(ox-1.2),cy+Math.sin(a)*(oy-1.2),.4)}
+  b.raw(b.st(hs,GD,.9,.5));
+  b.raw(`<path d="M${R1(cx-ox*.82)} ${R1(cy-oy*.36)}Q${R1(cx-ox*.6)} ${R1(cy-oy*.86)} ${R1(cx-ox*.1)} ${R1(cy-oy*.92)}" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".55"/>`);
+  b.loop(E(cx,cy,ox,oy,28),{w:2});b.loop(E(cx,cy,ix,iy,22),{w:1.6});
+  [-70,-10,50,110,170,230].forEach(d=>{const a=d*Math.PI/180,c=Math.cos(a),s=Math.sin(a);b.ln([[cx+c*(ix-.6),cy+s*(iy-.6)],[cx+c*(ox+.8),cy+s*(oy+.8)]],{w:1.3,col:'#5E8F4E'});
+   b.ln([[cx+c*(ix+1)+s*1.6,cy+s*(iy+1)-c*1.6],[cx+c*(ox-.8)+s*1.6,cy+s*(oy-.8)-c*1.6]],{w:.7,col:'#FFFFFF',op:.7})});
+  {const a=-70*Math.PI/180,x=cx+Math.cos(a)*ox,y=cy+Math.sin(a)*oy;b.ln([[x,y],[x+5,y-6]],{w:1.1,col:'#5E8F4E'});
+   b.sh(leafP(x+4,y-5,13,5.4,-.35),C.leaf,{hatch:0,hl:0,lw:.6,det:[[[x+5,y-5.4],[x+15,y-9.6]]],dw:.4});b.sh(leafP(x+4,y-5,10,4.4,-1.35),C.leafD,{hatch:0,hl:0,lw:.6})}
+  {const a=172*Math.PI/180,x=cx+Math.cos(a)*(ox+ix)/2,y=cy+Math.sin(a)*(oy+iy)/2;b.sh(RR(x-6.4,y-3.4,12.8,6.8,2),'#E8C597',{hatch:0,hl:0,lw:.6,det:[[[x-3,y-3],[x-3,y+3]],[[x,y-3],[x,y+3]],[[x+3,y-3],[x+3,y+3]]],dw:.45})}
+  gold215(b,[[57,52,4],[7,12,3.4]]);b.ex('spark',58,14,3,'#FFFFFF')},
+ 'Paper Lantern'(b){const RD='#E8584E';
+  b.raw('<ellipse cx="32" cy="33" rx="29" ry="27" fill="#FFF1B8" opacity=".5"/><ellipse cx="32" cy="33" rx="21" ry="21" fill="#FFE9A0" opacity=".45"/>','under');
+  b.ln([[32,1.5],[32,9]],{w:1.1});
+  b.sh(RR(23.5,8,17,5,1.6),'#3E3533',{hatch:0,hl:0,lw:.6});
+  let rb='';for(let i=-3;i<=3;i++){const y=33+i*5,hw=17.4*Math.sqrt(Math.max(0,1-Math.pow((y-33)/20,2)));rb+=`M${R1(32-hw)} ${y}Q32 ${R1(y+2)} ${R1(32+hw)} ${y}`}
+  b.sh(E(32,33,17.5,20,26),'#FFF0D2',{base:'#FFFBF0',sh:'#E9B44C',ho:.35,hlo:.55,
+   marks:[{pts:[[0,28.5],[64,28.5],[64,38],[0,38]],fill:RD,k:0,op:.9}],inner:b.st(rb,'#D9B48E',.8,.85)});
+  b.raw(b.st('M27 33.6q5 -3.4 10 0',`#FFF6E0`,1.3,.9),'top');
+  b.sh(RR(23.5,52,17,5,1.6),'#3E3533',{hatch:0,hl:0,lw:.6});
+  b.ln([[32,57],[32,61]],{w:1.2,col:RD});b.sh([[29.6,60],[34.4,60],[35.2,63.4],[28.8,63.4]],RD,{k:.1,hatch:0,hl:0,lw:.5,dr:.1});
+  gold215(b,[[56,12,4.4],[8,50,3.4],[56,52,3]]);b.ex('glint',22,22,3.6)},
+ 'Sea Glass'(b){
+  b.shadow(32,55,24,3);
+  [[14,58,1],[22,60,.8],[46,60,.9],[52,57,.7]].forEach(([x,y,r])=>b.dot(x,y,r,'#D9C29A'));
+  b.sh([[8,44],[10,36],[17,33],[23,37],[22,46],[14,49]],'#E9C27E',{k:.3,hl:0,hatch:0,lw:.7,base:'#F7E3BC',op:.92,dr:.3});
+  b.sh([[18,26],[26,15],[40,12],[50,19],[51,33],[44,45],[29,47],[19,40]],'#9FD8C4',{k:.32,sh:'#5FA88E',base:'#DDF3EA',ho:.4,hlo:.6,
+   marks:[{pts:[[22,22],[30,16],[34,20],[24,27]],fill:'#E7F7F0',op:.85}]});
+  b.sh([[40,44],[46,38],[55,39],[58,47],[53,53],[43,52]],'#9CC7EE',{k:.3,hl:0,lw:.75,sh:'#6E97C4',base:'#D6E8FA'});
+  let fr='';[[28,30],[36,26],[42,34],[33,38],[25,36],[44,24],[30,22],[38,42]].forEach(([x,y])=>{fr+=`<circle cx="${x}" cy="${y}" r=".7" fill="#FFFFFF" opacity=".75"/>`});
+  [[48,46],[52,44],[15,41]].forEach(([x,y])=>{fr+=`<circle cx="${x}" cy="${y}" r=".6" fill="#FFFFFF" opacity=".7"/>`});b.raw(fr,'top');
+  b.ex('glint',27,21,4);b.ex('glint',47,43,2.6);
+  gold215(b,[[56,12,4.6],[8,16,3.4],[60,30,2.6]])}
+};
 const PC_M=14,PC_SH=60,PC_FONT_R="'Patrick Hand',cursive",TK_C={c:'#F4B183',d:'#D98A5A'};let PC_UID=0;
 // the Tokyo photo frame: world B's postcard with a torii-orange frame and the seven stamps round the edge (same window, so the photo fits)
 function tokyoPostcard(w,h,o){o=o||{};const s=Math.max(w,h)/450,lw=w/s,lh=h/s,col=TK_C;
@@ -1003,7 +1077,8 @@ function tokyoPostcard(w,h,o){o=o||{};const s=Math.max(w,h)/450,lw=w/s,lh=h/s,co
   const front=b.svg('0 0 '+R1(lw)+' '+R1(lh),` width="${w}" height="${h}" x="0" y="0" aria-hidden="true"`,'Tokyo postcard frame').split(IDT).join('pwep'+(++PC_UID).toString(36));
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="Postcard with the Tokyo stamps" data-frame="tokyo"><rect width="${w}" height="${h}" fill="#FFFBF3"/>${o.scene||''}${front}</svg>`}
 return {
-  item(name){const f=ITEMS_E[name];if(!f)return null;return serve('t:'+name,()=>{const b=mk('item',name);f(b);return b.svg('0 0 64 64','',esc(name))})},
+  item(name){const f=ITEMS_E[name]||ITEMS_V215[name];if(!f)return null;return serve('t:'+name,()=>{const b=mk('item',name);f(b);return b.svg('0 0 64 64','',esc(name))})},
+  ITEMS215:Object.keys(ITEMS_V215),
   ekistamp(o){const key=ST_KEYS.includes(o&&o.key)?o.key:'shibuya',got=!!(o&&o.got);
     return serve('p:ekistamp:'+key+':'+(got?1:0),()=>{const b=mk('prop','ekistamp:'+key);if(got)stampArt(b,key,60,60,54,hashS(key)%7*.03-.09);else stampEmpty(b,60,60,54);
       return b.svg('0 0 120 120',` data-key="${key}" data-got="${got?1:0}"`,ST_LBL[key]+' station stamp'+(got?'':', not collected yet'))})},
@@ -1433,6 +1508,8 @@ PA.item=function(name,o){return ITEMS[name]?ITEMS[name](o||{}):(prevItem?prevIte
 if(prevPostcard)PA.postcard=function(w,h,o){return o&&o.frame==='tokyo'?WB.postcard(w,h,o):prevPostcard.apply(this,arguments)};
 PA.STAMP_KEYS=WB.KEYS.slice();
 PA.WORLD_E_SCENES=Object.keys(MINE);PA.WORLD_E_PROPS=['ekistamp','luckycat','postcard'];PA.WORLD_E_ITEMS=Object.keys(ITEMS);
+// v2.15: the Doggy Life Vest and the six run-track treasures (ITEMS_V215 above); every other name goes on to the previous PawArt.item unchanged
+{const prevItem215=PA.item,V215I=WB.ITEMS215;PA.item=function(name,o){return V215I.includes(name)?WB.item(name):prevItem215.apply(this,arguments)};PA.V215_ITEMS=V215I.slice()}
 /* v2.14: the last layer on every world render. The game may pass { aria: 'label' } (the root svg's aria-label, translated) and/or
    { ariaMap: { 'English label': 'translated label' } } (any other aria-label inside the render: hotspots, parts) in the options object
    of any call (scene, walkStrip, prop, item, icon, bed, house, obstacle, collectible, postcard). Without them the result is returned

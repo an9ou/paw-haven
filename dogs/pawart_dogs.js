@@ -771,7 +771,7 @@ function drawFace(h,s,L,HT){
 }
 
 /* ---------- outfits ---------- */
-const OUT={head:['Party Hat','Flower Crown','Acorn Cap','Rain Hat','Pom-pom Beanie','Chef Hat','Wizard Hat','Sun Hat','Cowboy Hat','Astronaut Helmet','Leaf Beret','Witch Hat','Reindeer Antlers','Year of the Sheep Hood'],eyes:['Heart Sunglasses','Explorer Goggles'],neck:['Red Bandana','Bow Tie','Seashell Necklace','Clover Collar','Rainbow Collar','Sailor Collar','Knit Scarf','Autumn Scarf','Parade Rosette','Candy Corn Bandana','Snowflake Snood','Ugly Sweater Rosette','Shibuya Bandana','Asakusa Bandana','Tokyo Tower Bandana'],body:['Yellow Raincoat','Knit Winter Sweater','Superhero Cape','Mossy Poncho','Frog Raincoat','Polka-dot Raincoat','Bubble Raincoat','Happi Coat','Bumblebee Suit','Cozy Hoodie','Tutu','Pyjamas','Ghost Sheet','Pumpkin Suit','Vampire Cape','Bat Wings','Very Ugly Sweater','Pumpkin Patch Suit','Trick-or-Treat Ghost','Little Bat Costume']};
+const OUT={head:['Party Hat','Flower Crown','Acorn Cap','Rain Hat','Pom-pom Beanie','Chef Hat','Wizard Hat','Sun Hat','Cowboy Hat','Astronaut Helmet','Leaf Beret','Witch Hat','Reindeer Antlers','Year of the Sheep Hood','Sailor Cap'],eyes:['Heart Sunglasses','Explorer Goggles'],neck:['Red Bandana','Bow Tie','Seashell Necklace','Clover Collar','Rainbow Collar','Sailor Collar','Knit Scarf','Autumn Scarf','Parade Rosette','Candy Corn Bandana','Snowflake Snood','Ugly Sweater Rosette','Shibuya Bandana','Asakusa Bandana','Tokyo Tower Bandana','Sunflower Collar'],body:['Yellow Raincoat','Knit Winter Sweater','Superhero Cape','Mossy Poncho','Frog Raincoat','Polka-dot Raincoat','Bubble Raincoat','Happi Coat','Bumblebee Suit','Cozy Hoodie','Tutu','Pyjamas','Ghost Sheet','Pumpkin Suit','Vampire Cape','Bat Wings','Very Ugly Sweater','Pumpkin Patch Suit','Trick-or-Treat Ghost','Little Bat Costume','Doggy Life Vest']};
 function coatPts(s){const b=s.body,p=[],f=s.fluff?1.12:1.08;for(let a=-108;a<=108;a+=12){const t=a*D2R;p.push([Math.cos(t)*b.rx*f,Math.sin(t)*b.ry*(f+.04)])}return p}
 function drawCape(h,s,L,B){
   // billows up and back behind the body, so most of it shows above the back and past the rump
@@ -1221,6 +1221,35 @@ NECK2['Tokyo Tower Bandana']=function(h,s,L,HT){// orange and white bands like t
   tkBand(h,s,L,HT,'#F25C1E',(Q,z)=>{h.shape([Q(0,.32),Q(1,.32),Q(1,.54),Q(0,.54)],'#FFFBF2',{noline:1,ox:0,oy:0,sc:1,famp:.3});h.shape([Q(0,.76),Q(1,.76),Q(.5,1)],'#FFFBF2',{noline:1,ox:0,oy:0,sc:1,famp:.3});
    [.25,.45,.65].forEach(u=>{h.line([Q(u,.34),Q(u+.14,.52)],1.3,'#F25C1E',.15);h.line([Q(u+.14,.34),Q(u,.52)],1.3,'#F25C1E',.15)});
    h.line([Q(.02,.32),Q(.98,.32)],1.8,INK,.3);h.line([Q(.02,.54),Q(.98,.54)],1.8,INK,.3);h.line([Q(.02,.76),Q(.98,.76)],1.8,INK,.3)})};
+/* ---------- v2.15 Around Town (V215.md 6.2, 6.3): the Sunflower Collar, the Sailor Cap and the Doggy Life Vest (new names only: old renders never reach them) ---------- */
+const V215_GR='#4FA845',V215_GD='#2F7A2C',V215_YE='#FFD23A',V215_NV='#25397A',V215_OR='#FF8A24',V215_OD='#D9621A',V215_BL='#2D6CDF';
+NECK2['Sunflower Collar']=function(h,s,L,HT){// a green collar with two leaf nicks, one big crude sunflower under the chin on a leaf
+  const a=neckAnchor(s,HT),sag=t=>{const x=a.l[0]+(a.r[0]-a.l[0])*t,y=a.l[1]+(a.r[1]-a.l[1])*t+Math.sin(Math.PI*t)*8;return[x,Math.min(y,GY-18)]};
+  const pts=[];for(let i=0;i<=8;i++)pts.push(sag(i/8));h.line(pts,7,INK);h.line(pts,4.6,V215_GR,.4);
+  [2,6].forEach(i=>{const q=pts[i];h.line([[q[0]-2.4,q[1]-1.4],[q[0]+1.6,q[1]+2]],1.5,V215_GD,.1)});
+  const lie=/^(sleep|down|crouch|playdead|rollover)$/.test(L.pose),c0=sag(lie?.2:.56),R=Math.max(9,Math.min(13,s.head.rx*.4)),c=[c0[0]+(lie?-3:1),Math.min(c0[1]+(lie?2:R*.6),GY-R-1)];
+  h.shape([[c[0]-2,c[1]+2],[c[0]-R*1.1,c[1]+R*1.05],[c[0]-R*1.6,c[1]+R*.45],[c[0]-R*.8,c[1]-.5]],'#5CC461',{w:2,step:30,ox:0,oy:0,sc:1,closed:1,amp:.4});
+  h.shape(scallop(c[0],c[1],R,R*.94,9,.34),V215_YE,{w:2,step:30,ox:.6,oy:-.4,sc:1,amp:.4});
+  h.shape(circ(c[0]+.5,c[1],R*.44,R*.42,9),'#8A5426',{w:1.8,ox:0,oy:0,sc:1,closed:1,amp:.3});
+  [[-.16,-.12],[.16,.04],[-.02,.2],[.2,-.2]].forEach(o=>h.dot(c[0]+.5+o[0]*R,c[1]+o[1]*R,1,1,'#5A3418'))};
+HAT2['Sailor Cap']=function(h,s,L,HT){// a white sailor cap: a round crown, a navy band with a little gold anchor, two navy ribbon tails off the back
+  const hx=s.head.rx,hy=s.head.ry,P=hatP(s,L,HT,-.02,-5),W2=hx*.5,H=hy*.62;
+  h.tube([[-W2*.9,-3],[-W2*1.45,4],[-W2*1.7,12]].map(P),3.2,V215_NV,{ow:2.8});h.tube([[-W2*.8,-2],[-W2*1.2,7],[-W2*1.25,15]].map(P),3.2,V215_NV,{ow:2.8});
+  h.shape([[-W2,0],[-W2*1.08,-H*.55],[-W2*.75,-H*.95],[-W2*.1,-H*1.06],[W2*.6,-H*.98],[W2*1.06,-H*.6],[W2,0]].map(P),W,{w:3.8,step:8});
+  h.crayon(W2*.9,H*.36,q=>P([q[0],q[1]-H*.55]),'#E8E2D8',4);h.line([[-W2*.55,-H*.9],[W2*.45,-H*.86]].map(P),1.6,'#C9BFB0',.5);
+  h.shape([[-W2*1.12,4],[W2*1.12,4],[W2*1.1,-H*.32],[-W2*1.1,-H*.32]].map(P),V215_NV,{w:3.4,step:8});
+  h.line([[-W2*1.02,-H*.16],[W2*1.02,-H*.17]].map(P),1.4,'#FFFFFF',.3);
+  const an=P([W2*.42,-H*.14]),u=P([W2*.42,-H*.14-6]);h.line([u,an],1.8,V215_YE,.1);h.line([[an[0]-3.4,an[1]-1.6],[an[0],an[1]+1.6],[an[0]+3.4,an[1]-1.6]],1.8,V215_YE,.1);h.line([[u[0]-2.4,u[1]+1.4],[u[0]+2.4,u[1]+1.4]],1.6,V215_YE,.1)};
+BODY2['Doggy Life Vest']=function(h,s,L,B,p){// a puffy bright orange float vest: yellow trim, a white stripe, two blue straps with buckles round the tummy, a grab handle on the back
+  const b=s.body,f=s.fluff?1.12:1.08,cl=q=>[q[0],Math.min(q[1],GY-1)],vp=p.map(q=>[q[0]*1.04,q[1]*1.05]);
+  const yy=x=>b.ry*(f+.06)*.97*Math.sqrt(Math.max(0,1-Math.pow(x/(b.rx*f*1.04),2))),hx=[.3,.56];
+  {const t0=B([b.rx*hx[0],-yy(b.rx*hx[0])*.9]),t1=B([b.rx*(hx[0]+.04),-yy(b.rx*hx[0])-Math.max(9,b.ry*.48)]),t2=B([b.rx*(hx[1]-.04),-yy(b.rx*hx[1])-Math.max(9,b.ry*.48)]),t3=B([b.rx*hx[1],-yy(b.rx*hx[1])*.9]);h.tube([t0,t1,t2,t3].map(cl),3,V215_NV,{ow:3})}
+  h.shape(vp.map(B).map(cl),V215_OR,{w:4.6});h.crayon(b.rx*.7,b.ry*.7,q=>B([q[0]+b.rx*.3,q[1]]),V215_OR,6);
+  [.84,.4,-.04].forEach(xx=>{const x=b.rx*xx;h.line([[x,-yy(x)*.86],[x+b.rx*.03,0],[x,yy(x)*.86]].map(B).map(cl),1.8,V215_OD,.5)});
+  [.62,.18].forEach(xx=>{const bw=b.rx*.045,x0=b.rx*xx-bw,x1=b.rx*xx+bw;h.shape([[x0,-yy(x0)],[x1,-yy(x1)],[x1,yy(x1)],[x0,yy(x0)]].map(B).map(cl),V215_NV,{noline:1,ox:0,oy:0,step:7,famp:.7});
+   const k=B([b.rx*xx,yy(b.rx*xx)*.4]);h.shape([[k[0]-4.6,k[1]-3.4],[k[0]+4.6,k[1]-3.4],[k[0]+4.6,k[1]+3.4],[k[0]-4.6,k[1]+3.4]],V215_YE,{w:2.2,step:30,ox:0,oy:0,sc:1,closed:1,amp:.3});h.line([[k[0],k[1]-2.2],[k[0],k[1]+2.2]],1.3,INK,.1)});
+  h.line([[b.rx*.9,-b.ry*.5],[b.rx*.5,-b.ry*.62],[b.rx*.05,-b.ry*.6]].map(B).map(cl),3.4,W,.5);
+  h.line(vp.slice(0,5).map(B).map(cl),6,V215_YE,.7);h.line(vp.slice(-6).map(B).map(cl),6,V215_YE,.7)};
 /* ---------- v2.11.1 Halloween 2026 costumes (V2111.md 3): body slot, each with its own head piece ----------
    TOP2 holds the costume's head piece, drawn after the neck item in place of the hat (frame drops the head-slot hat while one is worn).
    Neck items: the Pumpkin Patch Suit's leaf collar and the Little Bat Costume's ruffle sit over the neck item (it peeks out under them);
