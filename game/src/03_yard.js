@@ -3,7 +3,7 @@ const DX = 298, DY = 295, DW = 264, DH = 220; // dog box: feet at y=500, centre 
 let dogKey = '', tempPose = null, tempUntil = 0, busy = false, pet = { start: 0, gain: 0, bonded: false, capped: false, dist: 0 };
 function yardWorldSVG(extra = '') {
   return `<svg class="world" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMax slice">
-    ${sceneG(S.place || 'yard', S.place === 'yard' ? { patch: gkOn() ? patchState() : 'empty' } : S.place === 'house' && hasBedArt() ? { bed: false } : {})}${S.place === 'yard' && !gkOn() ? '<g class="soon-tag" pointer-events="none" transform="translate(112 432) rotate(-6)"><rect x="-58" y="-17" width="116" height="30" rx="6" fill="#FFF3B8" stroke="#5B3D32" stroke-width="2"/><text y="6" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="22" fill="#5B3D32">' + tt('yard.coming_soon_tag', 'coming soon') + '</text></g>' : ''}${bedLayers().back}<g id="messG"></g><g id="snowmanG">${S.place === 'yard' ? snowmanSVG() : ''}</g>${S.place === 'yard' && cur.mode === 'yard' && typeof msYardSVG === 'function' ? msYardSVG() : ''}${S.place === 'yard' ? hmDecorSVG() : ''}
+    ${sceneG(S.place || 'yard', S.place === 'yard' ? { patch: gkOn() ? patchState() : 'empty' } : S.place === 'house' && hasBedArt() ? { bed: false } : mpSceneOpts(S.place))}${S.place === 'yard' && !gkOn() ? '<g class="soon-tag" pointer-events="none" transform="translate(112 432) rotate(-6)"><rect x="-58" y="-17" width="116" height="30" rx="6" fill="#FFF3B8" stroke="#5B3D32" stroke-width="2"/><text y="6" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="22" fill="#5B3D32">' + tt('yard.coming_soon_tag', 'coming soon') + '</text></g>' : ''}${bedLayers().back}<g id="messG"></g><g id="snowmanG">${S.place === 'yard' ? snowmanSVG() : ''}</g>${S.place === 'yard' && cur.mode === 'yard' && typeof msYardSVG === 'function' ? msYardSVG() : ''}${S.place === 'yard' ? hmDecorSVG() : ''}
     ${S.place === 'yard' ? `<g id="houseG" class="hot${isNight() ? ' night' : ''}" tabindex="0" role="button" aria-label="${esc(tt('yard.label_dog_house', 'Dog house: {house}', { house: homeName(S.house) }))}">${place(art('house', S.house), 620, 330, 240, 200)}</g>` : ''}
     <g id="bowlG" class="hot" tabindex="0" role="button" aria-label="${esc(tt('yard.label_food_bowl', 'Food bowl'))}">${place(art('prop', 'bowl-empty'), 205, 462, 90, 90)}</g>
     <g id="pack">${packSVG(true)}</g>${bedLayers().front}
@@ -157,6 +157,53 @@ let phCamHome = 430, phHomeCx = 358, phPanT = 0, phPeekOn = false, phZoom = 1; /
 // (194+) and the whole dog (332-517) fit together. With a visiting dog it spans dog + visitor, and Market Street zooms out so more than one shop shows.
 // phHomeRefit works out the span, zooms the scene out (--vfit on #view) when the span is wider than the crop, and homes the camera on its middle.
 function phSvgDims() { const svg = $('#view > svg.world'); return { w: (svg && svg.clientWidth) || view.clientWidth, h: (svg && svg.clientHeight) || view.clientHeight }; }
+// v2.14.1 (owner, iPhone, the doodledoggo.app game box: "There is a blue bar under the 2 buttons"): on phones the scene ends above the place-button
+// strip (--trayH, so no prop or dog sits under a button) and above Market Street's own button row, and the view showed its flat sky colour there.
+// #phGnd fills that strip with the scene's own ground: the scene art's full-width layers (paper, ground, floor, road, grass tufts; never a prop,
+// which is a group) cloned once per scene drawing, and their bottom PH_GND_B world units mirrored and repeated (mirror, upright, mirror...), so the
+// seam at y 600 meets itself. It is a separate <svg> under the scene: svg.world, its viewBox and every crop, hit box and roam zone stay exactly as
+// they were. It follows the camera (camApply), the scene's size (a ResizeObserver) and a redrawn scene (season, time, weather: a MutationObserver).
+// It never takes a tap. Desktop and the other modes never show it.
+const PH_GND_B = 60;
+let phGndRO = null, phGndMO = null, phGndSvg = null, phGndArt = null;
+function phGndLayers(sg) { // the scene's full-width layers that reach its bottom edge, as markup (ids dropped: the copies must not clash)
+  const root = sg.firstElementChild && sg.firstElementChild.tagName.toLowerCase() === 'svg' ? sg.firstElementChild : sg; let out = '';
+  for (const e of root.children) {
+    if (!/^(rect|path|polygon|polyline|ellipse|image)$/i.test(e.tagName)) continue;
+    let b; try { b = e.getBBox(); } catch (er) { continue; }
+    if (b.width < 900 || b.y + b.height < 590) continue;
+    const c = e.cloneNode(true); c.removeAttribute('id'); c.querySelectorAll('[id]').forEach((x) => x.removeAttribute('id')); out += c.outerHTML;
+  }
+  const tf = root !== sg && root.getAttribute('viewBox') ? root.getAttribute('viewBox').trim().split(/[\s,]+/).map(Number) : null; // the art's own svg: 0 0 1000 600 today
+  return out && tf && (tf[0] || tf[1] || tf[2] !== 1000 || tf[3] !== 600) ? '' : out;
+}
+function phGnd() {
+  const svg = $('#view > svg.world'); let g = $('#phGnd');
+  const hide = () => { if (g) g.style.display = 'none'; };
+  const sg = svg && $('#sceneG', svg);
+  if (!isPhone() || !sg || !['yard', 'bath', 'market'].includes(cur.mode)) return hide();
+  if (phGndSvg !== svg) {
+    phGndSvg = svg; phGndArt = null;
+    if (typeof ResizeObserver === 'function') { if (!phGndRO) phGndRO = new ResizeObserver(() => phGnd()); phGndRO.disconnect(); phGndRO.observe(svg); phGndRO.observe(view); }
+    if (!phGndMO) phGndMO = new MutationObserver(() => { phGndArt = null; phGnd(); }); phGndMO.disconnect(); phGndMO.observe(sg, { childList: true });
+  }
+  const vr = view.getBoundingClientRect(), sr = svg.getBoundingClientRect(), k = view.offsetHeight ? vr.height / view.offsetHeight : 1; // k: a CSS scale on the page (none in the game)
+  const top = (sr.bottom - vr.top) / k, gap = (vr.bottom - sr.bottom) / k, sw = sr.width / k, sh = sr.height / k, vb = svg.viewBox.baseVal;
+  if (gap < 1 || sw < 1 || sh < 1 || !vb || !vb.width || Math.abs(vb.y + vb.height - 600) > 0.5) return hide(); // the scene's bottom (y 600) sits on the svg's bottom edge (xMidYMax)
+  const s = Math.max(sw / vb.width, sh / vb.height), w = sw / s, x = vb.x + (vb.width - w) / 2, h = gap / s, n = Math.ceil(h / PH_GND_B) || 1;
+  if (!g || g.previousElementSibling !== svg) {
+    if (g) g.remove(); phGndArt = null;
+    g = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); g.id = 'phGnd'; g.setAttribute('aria-hidden', 'true'); g.setAttribute('focusable', 'false'); g.setAttribute('preserveAspectRatio', 'none'); svg.after(g);
+  }
+  const art = sg.firstElementChild;
+  if (phGndArt !== art || +g.dataset.n !== n) {
+    phGndArt = art; const lay = phGndLayers(sg), src = lay ? '#phGndSrc' : '#sceneG', B = PH_GND_B; let t = lay ? `<defs><g id="phGndSrc">${lay}</g></defs>` : ''; // no plain layers found: the whole scene
+    for (let i = 0; i < n; i++) t += `<svg x="-2000" y="${600 + i * B}" width="5000" height="${B}" viewBox="-2000 ${600 - B} 5000 ${B}" preserveAspectRatio="none" overflow="hidden"><use href="${src}"${i % 2 ? '' : ` transform="matrix(1 0 0 -1 0 ${1200 - B})"`}/></svg>`;
+    g.innerHTML = t; g.dataset.n = n;
+  }
+  g.setAttribute('viewBox', `${x.toFixed(2)} 600 ${w.toFixed(2)} ${h.toFixed(2)}`);
+  g.style.top = top.toFixed(2) + 'px'; g.style.height = gap.toFixed(2) + 'px'; g.style.display = '';
+}
 function phHomeRefit() {
   if (!isPhone() || (cur.mode !== 'yard' && cur.mode !== 'market') || !$('#view > svg.world')) return;
   let L = 186, R = 530, fitMin = 0.62;
@@ -455,7 +502,7 @@ function placeButtons() {
   const pb = $('#placeBtns'); if (!pb) return; const b = [];
   if (S.place === 'yard') b.push(gkOn() ? `<button class="btn ${gardenUnlocked() ? 'yes' : ''}" data-pb="garden">${gardenUnlocked() ? tt('yard.garden', 'Garden') : tt('yard.garden_bond_2', 'Garden (Bond 2)')}</button>` : '<button class="btn soon" data-pb="garden" aria-disabled="true">' + tt('yard.garden_coming_soon', 'Garden: coming soon') + '</button>', '<button class="btn" data-pb="house">' + tt('yard.go_inside', 'Go inside') + '</button>');
   if (S.place === 'house') b.push(kOn() ? `<button class="btn ${kitchenUnlocked() ? 'yes' : ''}" data-pb="kitchen">${kitchenUnlocked() ? tt('yard.kitchen', 'Kitchen') : tt('yard.kitchen_bond_3', 'Kitchen (Bond 3)')}</button>` : '<button class="btn soon" data-pb="kitchen" aria-disabled="true">' + tt('yard.kitchen_coming_soon', 'Kitchen: coming soon') + '</button>', '<button class="btn" data-pb="yard">' + tt('yard.go_outside', 'Go outside') + '</button>');
-  if (S.place === 'market') Object.keys(SHOP_NAME).forEach((k) => b.push(`<button class="btn" data-sh="${k}">${shopName(k)}</button>`));
+  if (S.place === 'market' || mpShopOf(S.place)) (mpShopOf(S.place) ? [mpShopOf(S.place)] : Object.keys(SHOP_NAME)).forEach((k) => b.push(`<button class="btn" data-sh="${k}">${shopName(k)}</button>`)); // v2.15: a storefront (and Kibble Corner) has its own shop only
   if (S.place === 'beach') { dailyCheck(); b.push(`<button class="btn yes" data-pb="dig" ${S.daily.beachDig ? 'aria-disabled="true"' : ''}>${S.daily.beachDig ? tt('yard.dug_today', 'Dug today') : tt('yard.dig_in_the_sand', 'Dig in the sand')}</button>`); }
   const placeBtn = { square: ['notice', tt('yard.town_notice', 'Town notice')], cafe: ['cafe', tt('yard.cafe_menu', 'Café menu')], dogpark: ['social', tt('yard.socialise', 'Socialise')], vet: ['vet', tt('yard.check_up', 'Check-up')], salon: ['groom', tt('yard.full_groom', 'Full groom')], hilltop: weatherNow() === 'sunny' ? ['kites', tt('yard.watch_kites', 'Watch kites')] : null }[S.place];
   if (placeBtn) b.push(`<button class="btn yes" data-pb="${placeBtn[0]}">${placeBtn[1]}</button>`);
@@ -468,10 +515,10 @@ function placeButtons() {
 let bubbleBelowT = 0;
 function townBubbleBelowDog() {
   const hit = $('#dogHit'); if (!hit || bubble.hidden) return; const hr = hit.getBoundingClientRect(), sg = stage.getBoundingClientRect(), W = stage.clientWidth;
-  const hl = hr.left - sg.left, hrr = hr.right - sg.left, hb = hr.bottom - sg.top, up = [bubble.style.left, bubble.style.top]; // say()'s spot over the head: the fallback
+  const hl = hr.left - sg.left, hrr = hr.right - sg.left, hb = hr.bottom - sg.top, up = [bubble.style.left, bubble.style.top, bubble.style.maxWidth, bubble.classList.contains('tail-r')]; // say()'s spot over the head: the fallback
   // the bubble shrinks to fit left of the stage edge, so it re-wraps when it moves: every move re-measures, and it stays on screen (layout numbers: the pop animation scales the rect)
   const at = (l, tp) => { bubble.style.left = l + 'px'; bubble.style.top = tp + 'px'; let w = bubble.offsetWidth; if (l + w > W - 6) { l = Math.max(6, W - 6 - w); bubble.style.left = l + 'px'; w = bubble.offsetWidth; } return { l, t: tp, w, h: bubble.offsetHeight }; };
-  bubble.classList.add('below'); let b = at(6, hb + 18); const bw0 = b.w; b = at(clamp(hl + hr.width / 2 - bw0 / 2, 6, W - bw0 - 6), hb + 18);
+  bubble.classList.remove('tail-r'); bubble.style.maxWidth = ''; bubble.classList.add('below'); let b = at(6, hb + 18); const bw0 = b.w; b = at(clamp(hl + hr.width / 2 - bw0 / 2, 6, W - bw0 - 6), hb + 18);
   const pr = isPhone() && $('#placeBtns'), prr = pr && pr.offsetParent && pr.getBoundingClientRect(); // phones: stay above the place-button row (UI/UX T5)
   if (prr && prr.height && b.t + b.h > prr.top - sg.top - 8) { // no room under the dog: beside it if a side has room, else under it slid clear of the buttons, else back over its head
     const py = prr.top - sg.top - 8;
@@ -486,7 +533,7 @@ function townBubbleBelowDog() {
   const bar = isPhone() && $('#bar'), barR = bar && !bar.hidden && bar.offsetParent ? bar.getBoundingClientRect() : null, sgH = barR && barR.height ? Math.min(stage.clientHeight, barR.top - sg.top) : stage.clientHeight;
   if (b.t + b.h > sgH - 4) { b.h = bubble.offsetHeight; const tp = sgH - 6 - b.h; if (tp >= hr.top - sg.top + hr.height / 2 && tp > view.offsetTop + 4) b = at(b.l, tp); }
   const onBtn = [...document.querySelectorAll('#placeBtns .btn')].some((x) => { const q = x.getBoundingClientRect(), ql = q.left - sg.left, qt = q.top - sg.top; return b.l < q.right - sg.left && b.l + b.w > ql && b.t < qt + q.height && b.t + b.h > qt; });
-  if (onBtn || b.t + b.h > sgH - 4 || parseFloat(bubble.style.maxWidth || 999) < 170) { bubble.classList.remove('below'); bubble.style.maxWidth = ''; bubble.style.left = up[0]; bubble.style.top = up[1]; return; } // nowhere clear: back over its head (v2.12: also when squeezed under 170 px beside the buttons, where the speech balloon's text ran over its tail)
+  if (onBtn || b.t + b.h > sgH - 4 || parseFloat(bubble.style.maxWidth || 999) < 170) { bubble.classList.remove('below'); bubble.classList.toggle('tail-r', up[3]); bubble.style.maxWidth = up[2]; bubble.style.left = up[0]; bubble.style.top = up[1]; return; } // nowhere clear: back over its head (v2.12: also when squeezed under 170 px beside the buttons, where the speech balloon's text ran over its tail)
   clearTimeout(bubbleBelowT); bubbleBelowT = setTimeout(() => bubble.classList.remove('below'), 3700);
 }
 function placeAmbient() {
@@ -527,7 +574,7 @@ function travelTo(id) {
     card.remove(); busy = false;
     S.place = id; going.forEach((d) => { d.stats.energy = clamp(d.stats.energy - 2, 0, 100); }); dailyCheck(); S.daily.visited = S.daily.visited || [];
     const first = !S.daily.visited.includes(id); if (first) { S.daily.visited.push(id); addStat('happy', 5); }
-    markDirty(); go(id === 'market' ? 'market' : 'yard');
+    markDirty(); go(id === 'market' ? 'market' : 'yard'); mpArrive(id); // v2.15: the sticker is cleared, a storefront opens its shop window (42_map215.js)
     let msg = tt('yard.arrived_at', '{first, select, yes {{name} arrived at {place}. First visit today: +5 Happiness.} other {{name} arrived at {place}.}}', { first: first ? 'yes' : 'no', name: NAME(), place: placeName(id) });
     if (id === 'river' && weatherNow() === 'rain' && !hasRaincoat() && Math.random() < 0.6) { addStat('clean', -3); msg += ' ' + tt('yard.splashed_through_a_puddle_on', 'Splashed through a puddle on the way (-3 Cleanliness).'); }
     toast(msg, 'good');
@@ -801,7 +848,7 @@ function wake(auto) {
 }
 function openHouses() {
   const cards = HOUSES.filter((h) => owns('houses', h.n)).map((h) => `<div class="sitem"><span class="art house">${art('house', h.n)}</span><b>${esc(homeName(h.n))}</b><span class="desc">${esc(tt('yard.nap_energy', 'Nap Energy +{pct}%', { pct: Math.round(h.comfort * 100) }))}</span>${h.n === S.house ? '<span class="chip own">' + tt('yard.living_here', 'Living here') + '</span>' : `<button class="btn yes" data-house="${esc(h.n)}">${tt('yard.move_in', 'Move in')}</button>`}</div>`).join('');
-  const p = openModal(tt('yard.your_dog_houses', 'Your dog houses'), `<p class="small">${tt('yard.switching_is_free_buy_more', 'Switching is free. Buy more at Barkitecture on Market Street.')}</p><div class="shopgrid">${cards}</div>`);
+  const p = openModal(tt('yard.your_dog_houses', 'Your dog houses'), `<p class="small">${(mpOn() ? tt('map215.houses_where', 'Switching is free. Buy more at Barkitecture, the workshop by the river.') : tt('yard.switching_is_free_buy_more', 'Switching is free. Buy more at Barkitecture on Market Street.'))}</p><div class="shopgrid">${cards}</div>`);
   p.querySelectorAll('[data-house]').forEach((b) => { b.onclick = () => { switchHouse(b.dataset.house); closeModal(); }; });
 }
 function switchHouse(n) {
@@ -814,7 +861,8 @@ function switchHouse(n) {
 
 /* scene hotspots (shops, garden, kitchen, notice...). Re-bound after the core redraws the scene for time/weather changes. */
 function bindSceneHots() {
-  if (S.place === 'market') hotify($('svg.world', view), '#sceneG [data-shop]', 'data-shop', (k) => openShop(k), (k) => tt('yard.enter_shop', 'Enter {shop}', { shop: SHOP_NAME[k] ? shopName(k) : k }));
+  const mpSh = mpShopOf(S.place); // v2.15: a storefront's door (and Kibble Corner's) opens its own shop only
+  if (S.place === 'market' || mpSh) hotify($('svg.world', view), mpSh ? `#sceneG [data-shop="${mpSh}"]` : '#sceneG [data-shop]', 'data-shop', (k) => openShop(k), (k) => tt('yard.enter_shop', 'Enter {shop}', { shop: SHOP_NAME[k] ? shopName(k) : k }));
   hotify($('svg.world', view), '#sceneG [data-hot]', 'data-hot', (k) => ({ garden: openGarden, kitchen: openKitchen, notice: squareNotice, 'cafe-menu': cafeMenu, 'vet-desk': vetCheck, 'salon-chair': salonGroom }[k] || (() => {}))(), (k) => tt('yard.open_the', 'Open the {thing}', { thing: { garden: tt('yard.hot_garden', 'garden'), kitchen: tt('yard.hot_kitchen', 'kitchen'), notice: tt('yard.hot_notice', 'notice board'), 'cafe-menu': tt('yard.hot_cafe_menu', 'café menu'), 'vet-desk': tt('yard.hot_vet_desk', 'vet desk'), 'salon-chair': tt('yard.hot_salon_chair', 'salon chair') }[k] || k }));
 }
 on('scene:redraw', () => { if (cur.mode === 'yard' && $('svg.world', view)) { bindSceneHots(); shHouseNight(); } });
@@ -947,7 +995,7 @@ function hmOpenDecor(room) {
     };
   });
 }
-function hmExpose() { if (window.__paw) window.__paw.home = { decorOut: hmDecorOut, redraw: hmDecorRedraw, ambient: () => packAmbient(), say: (t, x, y) => say(t, x, y, 4000), emit: (e, d) => emit(e, d), specs: HM_DECOR }; }
+function hmExpose() { if (window.__paw) window.__paw.home = { decorOut: hmDecorOut, redraw: hmDecorRedraw, ambient: () => packAmbient(), say: (t, x, y) => say(t, x, y, 4000), sayDog: (t, ms) => { const h = dogHeadWorld(); say(t, h.x, h.y, ms || 4000); }, emit: (e, d) => emit(e, d), specs: HM_DECOR }; }
 on('game:ready', () => { hmDecorFields(); setTimeout(hmExpose, 0); });
 on('yard:enter', () => { hmDecorFields(); hmDecorBind(); hmExpose(); });
 on('scene:redraw', () => { const g = $('#decorG') || $('#hoRoomG'); if (g && !HO.pl && g.dataset.tod !== timePhase()) hmDecorRedraw(); }); // v2.6.1: the decor follows the scene's time tint (v2.7: the house too, not while arranging)

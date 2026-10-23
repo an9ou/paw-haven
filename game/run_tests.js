@@ -99,6 +99,8 @@ const SUITES = {
   v213_neck: { file: 'test_v213_neck_node.js', group: 'all', est: 170, timeout: 600 }, // v2.13 NECK (V213.md 5): every head on its body, 35 breeds, every pose, adult and puppy, expressions that tilt the head, mixes (5.1)
   v213_expr: { file: 'test_v213_expr.js', group: 'all', est: 60 }, // v2.13 EX (V213.md 4): expressions in play, personality, photo picker
   v215_migrate: { file: 'test_v215_migrate.js', group: 'all', est: 115 }, // v2.15 stubs (V215.md 9, 16): old saves in every place key load with the v2.15 map off and on, v215Fields
+  v215_map: { file: 'test_v215_map.js', group: 'all', est: 120 }, // v2.15 MAP (V215.md 2-4, 16): 25 building buttons, the travel walk, stickers, the labels switch, captions in every language
+  v215_places: { file: 'test_v215_places.js', group: 'all', est: 90 }, // v2.15 (V215.md 5, 6, 16): the storefronts (MAP lane); the Training Ground, the pool and the run gates (ACTIVITIES lane)
   v215_ground: { file: 'test_v215_ground.js', group: 'all', est: 150 }, // v2.15 GROUND (V215.md 8, 16): every grOn place, 4 dogs x 120 simulated s on the deep floor, the camera, petting, ball play, photo mode, the systems on a deep floor
   // v2.2 phone suites: `node game/run_tests.js phone` (not part of `all`, which stays the desktop regression set)
   phone_legacy: { file: 'test_phone.js', group: 'phone', est: 90 },
@@ -108,6 +110,7 @@ const SUITES = {
   site: { file: 'test_site.js', group: 'phone', est: 300, timeout: 900 }, // v2.8.2: the doodledoggo.app introduction site and its reset page (Miniflare, desktop + iPhone 15)
   phone_home: { file: 'test_phone_home.js', group: 'phone', est: 60 },
   phone_town: { file: 'test_phone_town.js', group: 'phone', est: 70 },
+  phone_v215_map: { file: 'test_phone_v215_map.js', group: 'phone', est: 60 }, // v2.15 MAP (V215.md 11): 44 px taps, 15 px text, long-press names, tap travels, the sheet pan
   phone_journal: { file: 'test_phone_journal.js', group: 'phone', est: 35 },
   phone_puppy: { file: 'test_phone_puppy.js', group: 'phone', est: 35 },
   phone_walk: { file: 'test_phone_walk.js', group: 'phone', est: 110 },
@@ -117,6 +120,7 @@ const SUITES = {
   itch_build: { file: 'test_itch_build.js', group: 'all', est: 40 }, // the itch.io copy has no dev button or panel (tools/itch.js)
   phone_occl_home: { file: 'test_phone_occl_home.js', group: 'phone', est: 60 },
   phone_occl_play: { file: 'test_phone_occl_play.js', group: 'phone', est: 60 },
+  phone_ground: { file: 'test_phone_ground.js', group: 'phone', est: 120, timeout: 600 }, // v2.14.1: the scene's ground runs on under the place buttons to the dock (no bare band), 6 sizes
   phone_v24_shop: { file: 'test_phone_v24_shop.js', group: 'phone', est: 40 }, // v2.4
   phone_v24_guide: { file: 'test_phone_v24_guide.js', group: 'phone', est: 40 },
   phone_v25_festival: { file: 'test_phone_v25_festival.js', group: 'phone', est: 60 }, // v2.5
@@ -141,6 +145,7 @@ const SUITES = {
   // (PAW_LANGS=ja,de picks languages, PAW_I18N_PARTIAL=1 lists misses instead of failing); i18n_phone is in the `phone` group (PAW_I18N_STRICT=1)
   i18n_smoke: { file: 'test_i18n_smoke.js', group: 'i18n', est: 420, timeout: 1500 },
   i18n_phone: { file: 'test_i18n_phone.js', group: 'phone', est: 150, timeout: 900 },
+  i18n_bubble: { file: 'test_i18n_bubble.js', group: 'phone', est: 420, timeout: 1600 }, // v2.14.1 owner fix: a speech bubble never covers the speaking dog's head (every language, 390 / 684 px embeds, desktop)
   // v2.14 FIT AUDIT (docs/i18n/coord/FIT.md): does every language fit every menu, window and box, at every size. Own group `fit` (not in `all`/`phone`):
   // node game/run_tests.js i18n_fit site_fit --jobs 3   (PAW_LANGS, PAW_FIT_SIZES, PAW_FIT_REPORT_ONLY=1; they run their own parallel browsers, --jobs sets how many)
   i18n_fit: { file: 'test_i18n_fit.js', group: 'fit', est: 1500, timeout: 5400 },

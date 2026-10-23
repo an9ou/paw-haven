@@ -59,7 +59,7 @@ function useBed(n) {
 // the beds in the house (with who naps on each) and the beds in the shed
 function openBeds() {
   hoSync(); const inH = BEDS.filter((b) => S.beds.includes(b.n) && S.bedAt[b.n]), shed = BEDS.filter((b) => S.beds.includes(b.n) && !S.bedAt[b.n]);
-  const p = openModal(tt('popup.pet_beds', 'Pet beds'), `<p class="small">${tt('popup.beds_live_in_the_cozy', 'Beds live in the Cozy House. Every dog naps on its own bed. Barkitecture on Market Street sells more.')}</p>
+  const p = openModal(tt('popup.pet_beds', 'Pet beds'), `<p class="small">${(mpOn() ? tt('map215.beds_where', 'Beds live in the Cozy House. Every dog naps on its own bed. Barkitecture, the workshop by the river, sells more.') : tt('popup.beds_live_in_the_cozy', 'Beds live in the Cozy House. Every dog naps on its own bed. Barkitecture on Market Street sells more.'))}</p>
     <button class="btn yes ho-arrange" id="hoBedsArr"><span class="art">${iconOr('arrange', '<path d="M-12 0h24M0 -12v24" stroke="#5B3D32" stroke-width="3"/>')}</span>${tt('popup.arrange_the_house', 'Arrange the house')}</button>
     <h4 class="ho-h">${tt('popup.in_the_house', 'In the house')}</h4><div class="shopgrid">${inH.map((b) => hoBedsCard(b, true)).join('')}</div>${shed.length ? `<h4 class="ho-h">${tt('popup.in_the_shed', 'In the shed')}</h4><div class="shopgrid">${shed.map((b) => hoBedsCard(b, false)).join('')}</div>` : ''}`, { cls: 'shop ho-beds' });
   p.querySelectorAll('[data-usebed]').forEach((b) => { b.onclick = () => { useBed(b.dataset.usebed); openBeds(); }; });
@@ -192,7 +192,7 @@ function mapTipText(k) {
   if (k === 'shelter') return tt('popup.visit_the_dogs', '{nm}: visit the dogs', { nm });
   if (PLACES[k] && topBond() < PLACES[k].bond) return tt('popup.bond_needed', '{nm}: Bond {bond}', { nm, bond: PLACES[k].bond });
   if (k === 'yard') return tt('popup.go_home', '{nm}: go home', { nm });
-  if (k === 'market') return tt('popup.go_shopping', '{nm}: go shopping', { nm });
+  if (k === 'market' || mpShopOf(k)) return tt('popup.go_shopping', '{nm}: go shopping', { nm });
   return tt('popup.go_hang_out', '{nm}: go hang out', { nm });
 }
 const PIN_SVG = `<svg viewBox="0 0 40 56" aria-hidden="true"><path d="M20 54 L12 30 A14 14 0 1 1 28 30 Z" fill="#F28FA5" stroke="#5B3D32" stroke-width="2.6" stroke-linejoin="round"/><circle cx="20" cy="19" r="6" fill="#FFFBF3" stroke="#5B3D32" stroke-width="2"/></svg>`;

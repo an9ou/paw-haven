@@ -507,6 +507,9 @@ function buildChrome() {
   set('--fr-tubew', pencilSVG(1000, 24, rrPts(1000, 24, 10, 2.5, 160), 43, true, 1.2));
   set('--fr-wide', pencilSVG(800, 60, rrPts(800, 60, 12, 3, 140), 47, true, 1.6));
   set('--fr-tray', pencilSVG(1000, 170, rrPts(1000, 170, 12, 3, 180), 59, true, 1.7)); set('--frm-tray', pencilMask(1000, 170, rrPts(1000, 170, 12, 3, 180), 59, true, 1.7));
+  // v2.14.1: a tall sheet's frame (the phone adopt card, about 370 x 870 px). --fr-tray is 170 high, so stretched that tall its line sank 20 px
+  // into the card and its wobble became waves that ran through the title (owner, 23 Oct 2026)
+  set('--fr-sheet', pencilSVG(400, 900, rrPts(400, 900, 12, 3, 240), 59, true, 1.7)); set('--frm-sheet', pencilMask(400, 900, rrPts(400, 900, 12, 3, 240), 59, true, 1.7));
   set('--fr-stage', pencilSVG(1280, 720, rrPts(1280, 720, 14, 4, 260), 61, true, 2.2));
   set('--line', pencilSVG(600, 9, Array.from({ length: 60 }, (_, i) => [3 + i * 594 / 59, 4.5]), 53, false, 1.6));
   set('--fr-tail', `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 18"><path d="M1 1 L7 17 L21 1 Z" fill="#FFFBF3"/><path d="M1.5 2 Q5 9 7 16.5 Q13 9 20.5 2" fill="none" stroke="${INKG}" stroke-width="2" stroke-linecap="round"/></svg>`);
@@ -529,7 +532,7 @@ function hasRealScene(name) {
 const mpSceneReady = (name) => !!(window.PawArt && Array.isArray(PawArt.WORLD_G_SCENES) && PawArt.WORLD_G_SCENES.includes(name));
 function mpPlainGround(name) {
   return `<g class="mp-plain" data-plain="${name}"><rect width="1000" height="600" fill="#FFFBF3"/><path d="M0 372 Q160 352 330 366 T660 360 T1000 368 V600 H0 Z" fill="#EEF2DC" stroke="#5B3D32" stroke-width="3" stroke-linejoin="round"/>`
-    + `<g fill="none" stroke="#B9C79A" stroke-width="3" stroke-linecap="round">${[[90, 430], [260, 470], [450, 420], [640, 480], [820, 440], [160, 540], [560, 550], [900, 530]].map(([x, y]) => `<path d="M${x} ${y} l6 -14 M${x + 8} ${y} l2 -16 M${x + 16} ${y} l-4 -12"/>`).join('')}</g></g>` + placeSign(name);
+    + `<g fill="none" stroke="#B9C79A" stroke-width="3" stroke-linecap="round">${[[90, 430], [260, 470], [450, 420], [640, 480], [820, 440], [160, 540], [560, 550], [900, 530]].map(([x, y]) => `<path d="M${x} ${y} l6 -14 M${x + 8} ${y} l2 -16 M${x + 16} ${y} l-4 -12"/>`).join('')}</g></g>` + mpPlainDoor(name) + placeSign(name); // v2.15: a storefront gets a doodle door (data-shop, 42_map215.js)
 }
 function sceneArt(name, e, extra) {
   const o = Object.assign({}, e || {}, extra || {});
@@ -717,7 +720,7 @@ function freshState(key, name, sex) {
   v29Fields(st); // v2.9 All Together: photo mode (V29.md section 5)
   v210Fields(st); // v2.10 Free to Roam: ball play (V210.md section 5)
   v211Fields(st); // v2.11 Tokyo Trip: the trip and Dog Cards (V211.md section 5)
-  v215Fields(st); // v2.15 Around Town: agility, the pool, the run tracks, the map stickers (V215.md section 9)
+  v215Fields(st); st.mapNew.fresh = true; // v2.15 Around Town: agility, the pool, the run tracks, the map stickers (V215.md section 9); fresh: a save that started on v2.15 gets no "new" / "moved" stickers
   v214Fields(st); st.lang = i18nReal(prefs.langPick) ? prefs.langPick : null; // v2.14: a language picked on the title screen before the save existed (V214.md 5)
   return linkDogs(st);
 }
@@ -823,7 +826,8 @@ function v214Fields(s) {
    S.ag      { day: localISO of the counts, runs, coins: agility coins that day, best: { dogId: rosettes 1-3 }, seen: first visit note }  (ACTIVITIES, 44_agility.js)
    S.pool    { day: { dogId: localISO of the last paddle }, vest: the Doggy Life Vest given, seen: first visit lesson }                  (ACTIVITIES, 45_pool.js)
    S.trk     { seen: { routeKey: true } } the first-run care notes of the three new tracks                                              (ACTIVITIES, 46_tracks.js)
-   S.mapNew  { since: localISO of the first v2.15 load, seen: [place keys] } the "new" / "moved" map stickers for 7 real days      (MAP, 42_map215.js) */
+   S.mapNew  { since: localISO of the first v2.15 load, seen: [place keys], fresh: true on a save started on v2.15 (no stickers) }
+             the "new" / "moved" map stickers for 7 real days                                                                        (MAP, 42_map215.js) */
 function v215Fields(s) {
   if (!s) return s;
   const num = (o, k) => { if (typeof o[k] !== 'number' || !(o[k] >= 0)) o[k] = 0; };
@@ -1048,25 +1052,94 @@ function worldToStage(svg, x, y) {
   try { const pt = svg.createSVGPoint(); pt.x = x; pt.y = y; const p = pt.matrixTransform(svg.getScreenCTM()); const r = stage.getBoundingClientRect(); return { x: p.x - r.left, y: p.y - r.top }; } catch (e) { return { x: 100, y: 100 }; }
 }
 function toWorld(svg, cx, cy) { const pt = svg.createSVGPoint(); pt.x = cx; pt.y = cy; return pt.matrixTransform(svg.getScreenCTM().inverse()); }
-function say(text, wx, wy, ms = 3600) {
+// v2.14.1 (owner: "the speech bubble of the dog will cover their face"): the bubble sits above the speaking dog's drawn head, its tail pointing at it.
+// The bubble art keeps its tail in the bottom of the box, so the box's bottom edge (the tail tip) goes at the head's top; a taller box (CJK / Thai,
+// 50_i18n.css) grows upward, never down over the dog. No room above: beside the head; never on the face while any spot is clear of it.
+// sayDogRect(p): the drawn box (stage px) of the svg.pa-dog in the scene nearest the anchor p (the speaking dog's head point), or null
+function sayDogRect(p) {
+  const sg = stage.getBoundingClientRect(); let best = null, bd = 1e9;
+  view.querySelectorAll('svg.pa-dog').forEach((s) => {
+    const g = s.firstElementChild, q = g && g.getBoundingClientRect(); if (!q || q.width < 4 || q.height < 4) return;
+    const r = { l: q.left - sg.left, t: q.top - sg.top, r: q.right - sg.left, b: q.bottom - sg.top };
+    if (p.x < r.l - 40 || p.x > r.r + 40 || p.y < r.t - 160 || p.y > r.b) return;
+    const d = Math.abs(p.y - r.t) + 2 * Math.max(0, r.l - p.x, p.x - r.r) + 0.2 * Math.abs(p.x - (r.l + r.r) / 2);
+    if (d < bd) { bd = d; best = r; r.face = sayFace(s); }
+  });
+  return best;
+}
+// the way a drawn dog faces on screen: the art faces right unless mirrored (by its facing or by the scene), so the sign of a stroke's screen matrix says it
+function sayFace(s) { const q = s && s.querySelector('.pa-d-f0 path, path'); try { return q && q.getScreenCTM().a < 0 ? 'l' : 'r'; } catch (e) { return null; } }
+// the head's box (stage px): the top of the dog on the side it faces; with no drawn dog, the anchor is the head's top
+function sayHeadRect(p, D) {
+  if (!D) return { l: p.x - 30, r: p.x + 30, t: p.y - 2, b: p.y + 50 };
+  const w = D.r - D.l, h = D.b - D.t, rt = D.face ? D.face === 'r' : p.x >= (D.l + D.r) / 2;
+  return { l: rt ? D.l + w * 0.35 : D.l, r: rt ? D.r : D.r - w * 0.35, t: D.t, b: D.t + h * 0.55 };
+}
+let sayLast = null; // the last placement (anchor, dog box, head box, in stage px), for the tests (__paw.bubbleLast)
+const SAY_TIP = 0.07; // the tail tip's x in the speech art (14 of 200), from the box's left edge; tail-r mirrors it
+function sayPlace(p, o) {
+  const sg = stage.getBoundingClientRect(), sw = stage.clientWidth, sh = stage.clientHeight, vtop = view.offsetTop;
+  const D = o.dog || sayDogRect(p), H = sayHeadRect(p, D), hx = (H.l + H.r) / 2, ax = p.x >= H.l && p.x <= H.r ? p.x : hx; // ax: the anchor's x, or the head's when the anchor is off it
+  sayLast = { p: { x: Math.round(p.x), y: Math.round(p.y) }, D, H }; if (window.__paw) window.__paw.bubbleLast = sayLast;
+  const rel = (q) => ({ l: q.left - sg.left, t: q.top - sg.top, r: q.right - sg.left, b: q.bottom - sg.top });
+  const soft = (o.avoid || []).slice(), hard = [], vis = (el) => el && !el.hidden && el.offsetParent !== null && el.getBoundingClientRect().height > 0; // hard: kept clear on every try (v2.14.1)
+  if (isPhone()) { const st = $('#status'); if (vis(st)) { const r = rel(st.getBoundingClientRect()); hard.push({ l: r.l - 6, t: r.t, r: r.r + 6, b: r.b + 6 }); } // v2.3: never on the location chip
+    const pk = $('#phPeek'); if (vis(pk)) { const r = rel(pk.getBoundingClientRect()); hard.push({ l: r.l - 8, t: r.t - 4, r: r.r + 8, b: r.b + 4 }); } } // UI/UX H9: nor under the look-right button
+  const tr = $('#dock .tray'); if (vis(tr) && getComputedStyle(dock).display !== 'none') soft.push(rel(tr.getBoundingClientRect()));
+  const hit = (b, r) => b.l < r.r && b.l + b.w > r.l && b.t < r.b && b.t + b.h > r.t;
+  const ok = (b, useSoft) => b && b.t >= vtop + 4 && b.t + b.h <= sh - 4 && !hit(b, H) && !(D && hit(b, { l: D.l + 6, t: D.t + 4, r: D.r - 6, b: D.b }) && b.cls !== 'h') && !hard.some((r) => hit(b, r)) && !(useSoft && soft.some((r) => hit(b, r)));
+  // put the box at (l, t) with a max width, kept on screen (it re-wraps when it moves, so it is measured again at the width it has: v2.8 / v2.10)
+  const put = (l, t, mw, tail) => {
+    bubble.classList.toggle('tail-r', tail === 'r'); bubble.style.maxWidth = mw ? Math.round(mw) + 'px' : ''; bubble.style.left = Math.round(l) + 'px'; bubble.style.top = Math.round(t) + 'px';
+    let w = bubble.offsetWidth; if (l + w > sw - 6) { bubble.style.maxWidth = w + 'px'; l = Math.max(6, sw - 6 - w); bubble.style.left = Math.round(l) + 'px'; w = bubble.offsetWidth; }
+    return { l: Math.round(l), t: Math.round(t), w, h: bubble.offsetHeight, mw: bubble.style.maxWidth, tail };
+  };
+  const tipX = (b) => b.l + (b.tail === 'r' ? 1 - SAY_TIP : SAY_TIP) * b.w;
+  const again = (b, t) => put(b.l, t, b.mw ? parseFloat(b.mw) : 0, b.tail); // the same box at another height
+  // over the head: the bottom edge (the tail tip) at the head's top, or where it always was when that is higher (English stays where it was fine)
+  const above = (mw) => {
+    const bot = Math.min(p.y - 16, H.t - 4); let b = put(6, 0, mw); const w = b.w;
+    b = put(clamp(ax - 40, 6, sw - w - 6), 0, mw); b = again(b, bot - b.h); b = again(b, bot - b.h); // (the second time at its re-wrapped height)
+    if (Math.abs(tipX(b) - hx) > (H.r - H.l) / 2 + 24) { // the tail would point past the head (a wide box slid to an edge): the tail on the other side, if that points closer
+      let r = put(clamp(hx - (1 - SAY_TIP) * w, 6, sw - w - 6), 0, mw, 'r'); r = again(r, bot - r.h); r = again(r, bot - r.h);
+      b = Math.abs(tipX(r) - hx) < Math.abs(tipX(b) - hx) ? r : again(b, b.t); }
+    return b;
+  };
+  // beside: the box's bottom corner by the head's middle, its tail pointing in at the head; side 'r' = right of x, 'l' = left of x
+  const beside = (x, side, cls) => {
+    const mw = side === 'r' ? sw - 6 - x : x - 6; if (mw < 170) return null;
+    const tail = side === 'r' ? null : 'r', bot = H.t + (H.b - H.t) * 0.6; let b = put(side === 'r' ? x : 6, 0, Math.min(mw, 300), tail);
+    b = put(side === 'r' ? x : x - b.w, 0, Math.min(mw, 300), tail); b = again(b, clamp(bot - b.h, vtop + 4, sh)); b.cls = cls; return b;
+  };
+  // over the head, slid (and re-wrapped narrower when it must) clear of a chip or button it touches, the tail on the side that points closer to the head
+  const aboveClear = (mw) => {
+    let b = above(mw); const bot = b.t + b.h;
+    for (let i = 0; i < 2; i++) {
+      const o2 = hard.concat(soft).find((r) => hit(b, r)); if (!o2) break;
+      const right = (o2.l + o2.r) / 2 > b.l + b.w / 2, room = right ? o2.l - 2 - 6 : sw - 6 - (o2.r + 2); if (room < 140) break;
+      const w = Math.min(b.w, room); b = put(right ? Math.max(6, o2.l - 2 - w) : o2.r + 2, 0, w < b.w ? w : (b.mw ? parseFloat(b.mw) : mw), b.tail);
+      if (right && b.l + b.w > o2.l - 2) b = put(Math.max(6, o2.l - 2 - b.w), 0, b.w, b.tail); b = again(b, bot - b.h);
+    }
+    const tl = b.l + SAY_TIP * b.w, tr2 = b.l + (1 - SAY_TIP) * b.w, want = Math.abs(tr2 - hx) < Math.abs(tl - hx) ? 'r' : null; // (the tail side does not change the layout)
+    if (want !== b.tail) { bubble.classList.toggle('tail-r', want === 'r'); b.tail = want; }
+    return b;
+  };
+  const tries = [() => aboveClear(), () => aboveClear(sw - 12),
+    () => D && beside(D.r + 10, 'r'), () => D && beside(D.l - 10, 'l')];
+  for (const f of tries) { const b = f(); if (ok(b, true)) return b; }
+  for (const f of tries.slice(0, 2)) { const b = f(); if (ok(b, false)) return b; } // over the board: better than over the face (never the chip: beside the head first)
+  for (const f of [() => beside(H.r + 10, 'r', 'h'), () => beside(H.l - 10, 'l', 'h')]) { const b = f(); if (ok(b, true) || ok(b, false)) return b; } // beside the head, over the dog's back
+  if (D) { bubble.classList.add('below'); const b = put(6, 0); const r = put(clamp(ax - 40, 6, sw - b.w - 6), D.b + 8); if (ok(r, true)) return r; bubble.classList.remove('below'); } // under the dog, its tail pointing up
+  let b = above(); b = again(b, Math.max(vtop + 4, b.t)); // nowhere clear: over the head as before, but under the chip it would sit on (v2.3)
+  const hb = hard.filter((r) => hit(b, r)).reduce((m, r) => Math.max(m, r.b), 0); return hb ? again(b, hb) : b;
+}
+function say(text, wx, wy, ms = 3600, o) { // o (v2.14.1): { dog: the speaking dog's drawn box in stage px (else found near the anchor), avoid: [stage boxes to keep clear when there is room] }
   const svg = $('svg.world', view); if (!svg) return;
   if (isPhone() && typeof phPeekOn !== 'undefined' && phPeekOn) return; // v2.3: the dog is off-screen while the player looks right, so its bubble would point at nothing
-  bubble.classList.remove('below'); clearTimeout(bubbleBelowT); bubble.style.maxWidth = ''; // (03_yard.js may narrow it beside the place buttons) // a new line starts from the normal tail (the pier flips it, 03_yard.js)
+  bubble.classList.remove('below', 'tail-r'); clearTimeout(bubbleBelowT); bubble.style.maxWidth = ''; // (03_yard.js may narrow it beside the place buttons) // a new line starts from the normal tail (the pier flips it, 03_yard.js)
   bubble.textContent = text; bubble.hidden = false; bubble.classList.remove('pop'); void bubble.offsetWidth; bubble.classList.add('pop');
-  const p = worldToStage(svg, wx, wy); const sw = stage.clientWidth, bw = bubble.offsetWidth, bh = bubble.offsetHeight;
-  const vtop = view.offsetTop;
-  bubble.style.left = clamp(p.x - 40, 6, sw - bw - 6) + 'px';
-  // v2.8: it re-wraps narrower when it moves right, so it is measured again and kept on screen (v2.10: at that width, or it would grow back to the edge)
-  const onScreen = () => { const w2 = bubble.offsetWidth; if (parseFloat(bubble.style.left) + w2 > sw - 6) { bubble.style.maxWidth = w2 + 'px'; bubble.style.left = Math.max(6, sw - 6 - w2) + 'px'; } };
-  onScreen();
-  bubble.style.top = Math.max(vtop + 4, p.y - bubble.offsetHeight - 16) + 'px';
-  if (isPhone()) { // v2.3: a bubble never sits on the location chip (top-left of the scene)
-    const st = $('#status'), sr = st && !st.hidden ? st.getBoundingClientRect() : null, sg = stage.getBoundingClientRect();
-    if (sr) { const bt = parseFloat(bubble.style.top), bl = parseFloat(bubble.style.left), cb = sr.bottom - sg.top + 6;
-      if (bt < cb && bl < sr.right - sg.left + 6 && bl + bw > sr.left - sg.left - 6) bubble.style.top = cb + 'px'; }
-    const pk = $('#phPeek'), pq = pk && !pk.hidden && pk.offsetParent ? pk.getBoundingClientRect() : null; // UI/UX H9: nor under the look-right button
-    if (pq) { const bt = parseFloat(bubble.style.top), bl = parseFloat(bubble.style.left), bh = bubble.offsetHeight;
-      if (bt < pq.bottom - sg.top + 4 && bt + bh > pq.top - sg.top - 4 && bl + bw > pq.left - sg.left - 8) { bubble.style.left = Math.max(6, pq.left - sg.left - bw - 8) + 'px'; onScreen(); } } // (it re-wraps wider further left)
+  sayPlace(worldToStage(svg, wx, wy), o || {});
+  if (isPhone()) {
     // UI/UX T5: in town places the dog's own lines go under the dog, so they never cover the shop signs above its head (townBubbleBelowDog, 03_yard.js); Mt. Fuji Lookout has no signs, its line stays over the head
     if (['yard', 'market'].includes(cur.mode) && S && !['yard', 'house', 'fujihill'].includes(S.place) && typeof dogHeadWorld === 'function') { const h = dogHeadWorld(); if (Math.abs(h.x - wx) < 40 && Math.abs(h.y - wy) < 40) townBubbleBelowDog(); }
   }

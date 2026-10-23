@@ -386,10 +386,11 @@ function camApply(cx) {
   const svg = $('#view > svg.world'); if (!svg) return;
   const vw = svg.clientWidth || view.clientWidth, vh = svg.clientHeight || view.clientHeight; if (!vw || !vh) return; // the svg can be shorter than the view (a tray is open, or Market Street zooms out)
   const vbW = 600 * vw / vh, W = cur.mode === 'yard' ? grW() : 1000; // v2.15: a wide place is 1600 units
-  if (vbW >= W) { svg.setAttribute('viewBox', `0 0 ${W} 600`); return; }
+  if (vbW >= W) { svg.setAttribute('viewBox', `0 0 ${W} 600`); phGnd(); return; }
   const zf = typeof phZoom === 'number' && phZoom > 0 && phZoom < 1 ? phZoom : 1, w = vbW / zf, h = 600 / zf; // phZoom (03_yard.js): Market Street zooms out, the extra sky sits above the scene
   const x = w >= W ? (W - w) / 2 : clamp(cx - w / 2, 0, W - w);
   svg.setAttribute('viewBox', `${x.toFixed(1)} ${(600 - h).toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}`);
+  phGnd(); // v2.14.1: the ground under the scene follows the camera
 }
 function camTo(cx, secs = 0.6) {
   const gw = cur.mode === 'yard' && grWide(); if (!isPhone() && !gw) return; cancelAnimationFrame(camRaf); if (gw) grDragged(); // v2.15: a look in a wide place: the follow camera waits (43_ground.js)
