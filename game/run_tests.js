@@ -113,6 +113,7 @@ const SUITES = {
   itch_build: { file: 'test_itch_build.js', group: 'all', est: 40 }, // the itch.io copy has no dev button or panel (tools/itch.js)
   phone_occl_home: { file: 'test_phone_occl_home.js', group: 'phone', est: 60 },
   phone_occl_play: { file: 'test_phone_occl_play.js', group: 'phone', est: 60 },
+  phone_ground: { file: 'test_phone_ground.js', group: 'phone', est: 120, timeout: 600 }, // v2.14.1: the scene's ground runs on under the place buttons to the dock (no bare band), 6 sizes
   phone_v24_shop: { file: 'test_phone_v24_shop.js', group: 'phone', est: 40 }, // v2.4
   phone_v24_guide: { file: 'test_phone_v24_guide.js', group: 'phone', est: 40 },
   phone_v25_festival: { file: 'test_phone_v25_festival.js', group: 'phone', est: 60 }, // v2.5

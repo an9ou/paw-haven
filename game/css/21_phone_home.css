@@ -77,3 +77,6 @@ html[data-layout="phone"] .awaynote .btn{flex:0 1 auto;max-width:50%;min-height:
    note under the cards keeps a 1.3 line (the CJK paragraph default of 1.6 made it four lines tall) */
 html[data-layout="phone"]:is(:lang(ja),:lang(zh),:lang(ko)) #stage:not(.flowdock) #dock > .tray .tray-h h3{font-size:23px}
 html[data-layout="phone"] .awaynote p{line-height:1.3}
+/* v2.14.1 the scene's ground runs on under the place buttons, down to the dock (#phGnd, 03_yard.js) */
+#phGnd{display:none}
+html[data-layout="phone"] #phGnd{display:block;position:absolute;left:0;width:100%;pointer-events:none}
