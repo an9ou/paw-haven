@@ -40,7 +40,7 @@ Dog keys: `shiba corgi golden dachs husky mutt chihuahua pug greyhound beagle po
 
 **Primary text, option A (the calm one)**
 ```
-Adopt a crayon dog, give them a snack and let the stress melt away 🦴 No timers, no pressure. Free in your browser, no download.
+Adopt a crayon dog, toss them a treat and let the stress melt away 🦴 No timers, no pressure. Free in your browser, no download.
 ```
 **Primary text, option B (the collection one)**
 ```
