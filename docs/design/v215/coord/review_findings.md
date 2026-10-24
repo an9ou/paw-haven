@@ -13,3 +13,19 @@ Notes: phGndLayers '' for 1600-wide scenes (cosmetic; accept viewBox `0 0 grW 60
 
 ## Coordinator
 8. i18n_fit PLACES lists only the 11 v2.14 places: add Training Ground, Splash Pool, the track windows (and storefronts) and run them to 0.
+
+## Reviewer 2: art (check_identical 0 differ; style, seasons, night, rain, Halloween, New Year pass in all 23 FLOOR scenes + map)
+9. SHOULD: world G :1461 pool hard box [334,392,758,136] smaller than the drawn pool (coping to y 538, shade 545; feet allowed from 536): dogs stand on the coping over the water. Fix: [316,386,794,160], re-check paddle and ramp spots (shots art/game/act_summer_pool_paddle1.png, c_pool.png, d_pool.png).
+10. SHOULD: 44_agility.js:93-103 #agBoard sits above the night/weather tint: daytime-bright on a snowy night. Fix: draw it inside #sceneG under the tint, or an o.agBest option so world G draws the rosettes (x_training_night_board.png).
+11. SHOULD (= 3): puppy course shows only the raised bar (world G :822 jumpBar(...,40)); when A.low hide it and draw a pole on the ground (data-low variant) (act_summer_ag_pup1/2.png).
+12. SHOULD: 40_dogcards.js:260 #dcVis goes before #pack, but v2.15 floor props live in #pack: visitors in front of props draw behind them. Fix: each visitor into #pack with data-fy = v.y.
+13. NIT (= 4): #bowlG outside the yard: wrap as a gr-prop on the FLOOR 'bowl' spot (training has 1440,556) (x_feed_pool.png, x_feed_training.png).
+14. NIT: 14_town_places.js:139 kite at fixed x 650 in #fx, off screen on the 1600-wide hilltop: offset by grCam().x.
+15. NIT: world G :252 isLeafy recolour turns bamboo olive in autumn and grey-white in snow: keep culms and leaves green, only grass changes (art/png/sheet_bamboo.png).
+16. NIT (size): world C source 252 -> 400 KB, world A 186 -> 231 KB in the first load (only F and G are lazy); winter all-flags renders: map 845 KB (old 449), square 553 (cap 560), woods 536. Fix idea: move the A/C v215 blocks into the g chunk.
+17. NIT: desktop place buttons cover the cafe dog bed (PACK_SPOTS cafe [930,466]) (a_cafe.png).
+Screenshot folders: scratchpad/art/game/, scratchpad/art/png/, scratchpad/shots/ (scratchpad = /tmp/claude-0/-home-user-paw-haven/834db3c8-472e-5975-b3a8-1dd86c39be20/scratchpad).
+
+## Fix batch split
+- FIX-CODE (paw-fixer): 1, 2, 5, 6, 7, 8, 12, 14, V215.md 8.3 note.
+- FIX-ART (paw-artist): 9, 10, 3/11, 4/13, 15, 17. Item 16 is not in this batch (a chunking refactor; listed in the as-built notes and the report).
