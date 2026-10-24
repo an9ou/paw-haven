@@ -48,7 +48,7 @@ const rmOver = (a, b) => Math.max(0, Math.min(a[0] + a[2], b[0] + b[2]) - Math.m
 const RM_SCENERY = { square: [[20, 400, 222, 92, 'scene']] };
 const GR_SCENERY = { square: [[20, 428, 184, 64, 'scene']] }; // v2.15: a grOn square's fountain rim (the deep floor's fountain stands further back)
 const rmScenery = (place) => (grOn(place) && GR_SCENERY[place]) || RM_SCENERY[place] || [];
-function rmStaticNo(place) { const l = (grOn(place) && place === 'yard' ? [] : [[205, 462, 90, 90, 'bowl']]).concat(rmScenery(place)); if (place === 'yard' && !grOn(place)) l.push([620, 330, 240, 200, 'house']); if (grOn(place)) grNo(place).forEach((b) => l.push(b)); return l; }
+function rmStaticNo(place) { const l = (grOn(place) ? [] : [[205, 462, 90, 90, 'bowl']]).concat(rmScenery(place)); if (place === 'yard' && !grOn(place)) l.push([620, 330, 240, 200, 'house']); if (grOn(place)) grNo(place).forEach((b) => l.push(b)); return l; }
 function rmWorldBox(svg, M, el) {
   const r = el.getBoundingClientRect(); if (!r.width || !r.height) return null;
   const a = new DOMPoint(r.left, r.top).matrixTransform(M), b = new DOMPoint(r.right, r.bottom).matrixTransform(M);
