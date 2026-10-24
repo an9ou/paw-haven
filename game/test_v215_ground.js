@@ -108,6 +108,24 @@ require('./test_lib').run('v215_ground', async (t) => {
   }
   await shot('wide_four_depths_' + W);
 
+  sec('2b. up on the pause table, then a pause or a trip: nobody floats (review finding 2)');
+  if (places.includes('training')) {
+    await t.home('training'); await t.sleep(300); await ev(() => window.__paw.rm.resume('test'));
+    const tb = await ev(() => { const s = (window.__paw.gr.floor('training').spots || []).find((x) => x.act === 'table'); return s ? s.id : null; });
+    ok(tb != null, 'training: the floor has a pause table spot');
+    for (const how of ['pause', 'travel']) {
+      if (tb == null) break;
+      await t.home('training'); await t.sleep(300); const dog = all[1];
+      await ev((id) => window.__paw.rm.calm(id, 60000), dog);
+      const up = await t.until((a) => { const R = window.__paw.rm, g = R.gst(a[0]); if (g.lift > 1 && g.grIn != null && !R.info(a[0]).walk) return true; if (g.grSpot == null) R.spot(a[0], a[1]); return false; }, [dog, tb], 20000);
+      ok(up, `training: a pack dog hops up on the pause table and sits (${how})`);
+      if (how === 'pause') await ev(() => window.__paw.rm.pause('t2b')); else { await t.home('yard'); await t.sleep(300); }
+      const g = await ev((id) => window.__paw.rm.gst(id), dog);
+      ok(g.lift === 0 && g.grIn == null && g.grSpot == null && !g.grHid, `after the ${how}: lift 0, grIn cleared, not hidden ${JSON.stringify(g)}`);
+      await ev(() => window.__paw.rm.resume('t2b'));
+    }
+  }
+
   sec('3. ball play and photo mode in a wide and a deep place');
   for (const pl of [W, places.find((k) => !FALLBACK[k] && k !== W && !['pool'].includes(k) && true) || places[1]]) {
     await t.home(pl); await t.sleep(300);

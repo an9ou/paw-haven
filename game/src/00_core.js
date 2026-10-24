@@ -233,7 +233,7 @@ const TREASURES = [
   /* v2.15 run tracks (V215.md 6.3): six treasures, never sold; they are in TREASURES only while mpOn() (trSync in 46_tracks.js). Abilities reuse existing perks */
   TR('Sunflower Collar', 'wearable', 'neck', 'Uncommon', ['sunflower'], 'Fresh Paws', 'Puddles do not lower Cleanliness while worn.', { v215: true }),
   TR('Lucky Horseshoe', 'charm', 'charm', 'Rare', ['sunflower'], 'Good Fortune', '+1 dig per walk while equipped.', { v215: true }),
-  TR('Bamboo Ring', 'toy', null, 'Common', ['bamboo'], 'Ring Toss', 'Play ball with it: it floats on a gentle toss, and +1 coin per return.', { v215: true }),
+  TR('Bamboo Ring', 'toy', null, 'Common', ['bamboo'], 'Ring Toss', 'Play ball with it: it floats on a gentle toss, and 3 coins per return.', { v215: true }),
   TR('Paper Lantern', 'charm', 'charm', 'Uncommon', ['bamboo'], 'Lantern Glow', 'Ball play after dark: the ball glows, so it never gets lost.', { v215: true }),
   TR('Sea Glass', 'charm', 'charm', 'Rare', ['cliffs'], 'Sea Sense', 'The Nose-o-meter reacts from twice as far away while equipped.', { v215: true }),
   TR('Sailor Cap', 'wearable', 'head', 'Uncommon', ['cliffs'], 'Steady Sailor', 'Hot days do not bother the dog while worn.', { v215: true })

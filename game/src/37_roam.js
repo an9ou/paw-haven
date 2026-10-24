@@ -169,7 +169,7 @@ function rmNear(d, x, y, strict, W) { const c = rmWinOnly(d, rmCands(d, strict),
 // scene looks the same every time). Re-entering the same place keeps everybody where they were.
 function rmSeed() {
   if (!S || !S.dogs) return; const key = S.place + (isPhone() ? '|ph' : '');
-    if (RM.place !== key) { RM.place = key; RM.no = null; Object.values(RM.d).forEach((r) => { r.seeded = false; r.tw = null; r.q = null; r.fix = false; r.k = null; }); RM.t0 = performance.now(); }
+    if (RM.place !== key) { RM.place = key; RM.no = null; Object.values(RM.d).forEach((r) => { r.seeded = false; r.tw = null; r.q = null; r.fix = false; r.k = null; r.lift = 0; r.grIn = null; r.grSpot = null; r.grHid = false; }); RM.t0 = performance.now(); }
   const ds = rmDogs(), placed = [];
   // phones: the feet x where a dog's whole tap rect shows in the home crop (about the v2.3 home's middle, x 358, at most 700 units wide)
   const cw = isPhone() ? Math.min(RM_CROP, rmCropW()) : 1000, cx = clamp(358, cw / 2, 1000 - cw / 2), win = isPhone() ? [cx - cw / 2 + 84, cx + cw / 2 - 84] : [0, 1000];
@@ -360,7 +360,8 @@ function rmSet(d, o = {}) {
 }
 function rmStop(d) { const r = rmSt(d); if (r.tw) { r.tw = null; r.hx = r.x; r.hy = r.y; rmPaint(d); } r.q = null; }
 // the steps dropped here held the reset of packNext (an errand sets it 60 s ahead): a pack dog picks its next move a few seconds after the release
-function rmPause(tag) { RM.paused.add(tag); const t = performance.now() + RINT(2000, 4000); rmDogs().forEach((d) => { const r = rmSt(d); if (r.q && d !== D()) packNext[d.id] = t; r.q = null; }); }
+function rmPause(tag) { RM.paused.add(tag); const t = performance.now() + RINT(2000, 4000); rmDogs().forEach((d) => { const r = rmSt(d); if (r.q && d !== D()) packNext[d.id] = t; r.q = null;
+  if (r.lift || r.grIn || r.grSpot || r.grHid) { r.lift = 0; r.grIn = null; r.grSpot = null; if (typeof grHide === 'function') grHide(d, false); try { rmPaint(d); } catch (e) { /* not drawn */ } } }); } // v2.15: a dropped queue skips its ground act's `free` step (43_ground.js), so do it here
 function rmResume(tag) { RM.paused.delete(tag); }
 // dogTo (03_yard.js) for the leader: the v2.9 calls give the box offset (feet at 430 * s + tx, 500 * s + ty). 0, 0, 1 means "back to where it stands"
 // (its roam spot). s = 1 is the normal size (rmScale), another s is a size fitted to a prop (the nap door, a bed, the Mt. Fuji bench, a sofa)
@@ -572,6 +573,8 @@ function rmExpose() {
     scan: () => { rmScan(); return RM.no; }, validate: () => { rmScan(); rmValidate(true); }, act: (id) => rmPackAct(dogById(id)), ask: (id) => rmAsk(dogById(id) || D(), true), petAgo: (id) => rmPetAgo(dogById(id)), span: () => rmSpan(),
     hard: (x, y) => rmHard(x, y), soft: (x, y) => rmSoft(x, y, rmScale(y)), route: (x0, y0, x1, y1) => rmRoute(x0, y0, x1, y1), cands: (id, lv) => rmCands(dogById(id) || D(), lv == null ? true : lv).length,
     least: (id) => rmLeast(dogById(id) || D()),
+    gst: (id) => { const r = rmSt(dogById(id) || D()); return { lift: r.lift || 0, grIn: r.grIn == null ? null : r.grIn, grSpot: r.grSpot == null ? null : r.grSpot, grHid: !!r.grHid }; }, // v2.15: the ground act state (lift, in a prop, hidden)
+    spot: (id, sid) => { const d = dogById(id), f = typeof grFloor === 'function' ? grFloor() : null, s = f && (f.spots || []).find((x) => String(x.id) === String(sid)), st = s ? grSpotSteps(d, s) : null; if (!st) return false; rmStop(d); rmQueue(d, st); return true; }, // v2.15: run one floor spot act now
     crop: () => rmCropWin(), info: (id) => { const r = rmSt(dogById(id) || D()); return { x: r.x, y: r.y, fix: !!r.fix, walk: !!r.tw, q: !!r.q, hold: r.hold > performance.now(), inCrop: rmInWin(r.x, rmK(r), rmCropWin()) }; }, // v2.12 LAYOUT: the phone home crop
     calm: (id, ms) => { const d = dogById(id), t = performance.now() + ms; rmSt(d).askNext = t; RM.askAt = Math.max(RM.askAt, t - 25000); if (d === D()) { IDLE.nextAt = t; if (IDLE.act) idleStop(); } else packNext[d.id] = t; }, // this dog stops what it does and starts nothing of its own for ms
     tap: (id) => { const d = dogById(id), r = rmSt(d); return rmTapBox(r.x, r.y, rmK(r)); }, get moving() { return rmDogs().filter((d) => rmSt(d).tw || rmSt(d).q).map((d) => d.id); } };

@@ -5,7 +5,7 @@
    flat-faced breeds (GR_FLAT in 43_ground.js) paddle on the step only, float fetch is v2.10 ball play with o.water (38_ball.js, its coins stay inside BL_COIN_DAY),
    the sprinkler gives Happiness only, the pool itself pays no coins. The Winter Dome is art (world G), nothing here depends on the season.
    The paddle: ramp up, a lap in the water (the dog sits a little low and leaves ripples), ramp down, a shake (+15 Happiness, Cleanliness to at least 60, the shake pose,
-   a wet-dog line). The vest is worn (d.outfit.body) only in the water and put back after. The dog art does not draw it yet: an outfit name the art does not know is simply
+   a wet-dog line). The vest is worn only in the water and only drawn (outfitOf(d) via plWearing), d.outfit and the save keep the dog's own outfit. The dog art does not draw it yet: an outfit name the art does not know is simply
    not drawn (checked in the pool tests), so nothing is guarded here.
    The roaming dogs do not paddle on their own: the water acts in GR_ACTS stay out of the idle roam (the once a day paddle belongs to the player), they are registered
    with weight 0 so the engine knows them (43_ground.js drops spots tagged water that have no handler, this handler says "not on your own").
@@ -93,12 +93,14 @@ function plVestGive() {
 function plVestOn(dogs) {
   if (!plVest()) return; (dogs || []).forEach((d) => {
     if (!d || !d.outfit || d.id in PL_WORN || d.outfit.body === PL_VEST) return;
-    PL_WORN[d.id] = d.outfit.body || null; d.outfit.body = PL_VEST; try { rmPaint(d); } catch (e) { /* not in a scene */ }
+    PL_WORN[d.id] = d.outfit.body || null; try { rmPaint(d); } catch (e) { /* not in a scene */ } // draw-only: outfitOf(d) shows the vest, d.outfit (the save) keeps the dog's own
   });
 }
 function plVestOff() {
-  Object.keys(PL_WORN).forEach((id) => { const d = dogById(id); if (d && d.outfit && d.outfit.body === PL_VEST) { d.outfit.body = PL_WORN[id]; try { if (rmScene()) { if (d === D()) renderDog(dogPoseNow(), rmSt(d).face, true); else rmPaint(d); } } catch (e) { /* none */ } } delete PL_WORN[id]; });
+  Object.keys(PL_WORN).forEach((id) => { const d = dogById(id); delete PL_WORN[id]; if (d) { try { if (rmScene()) { if (d === D()) renderDog(dogPoseNow(), rmSt(d).face, true); else rmPaint(d); } } catch (e) { /* none */ } } });
 }
+// the vest is drawn, never saved: outfitOf(d) (13_more_dogs.js) asks this while the dog is in the water
+function plWearing(d) { try { return !!d && d.id in PL_WORN; } catch (e) { return false; } }
 // ball play in the water (38_ball.js o.water) puts the vest back and brings the place button back
 function plAfterBall() { plVestOff(); plPlaceBtn(); }
 

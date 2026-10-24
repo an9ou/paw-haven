@@ -227,6 +227,12 @@ run('v215_places', async (t) => {
   await t.SH('pool_tray');
   await watch(poolDog);
   await t.p.click('#plPaddle');
+  {
+    // the vest is draw-only: a save mid-paddle keeps the dog's own outfit (review finding 1)
+    ok(await t.until((id) => id in window.__paw.pl.worn(), poolDog, 20000), 'the vest goes on in the water');
+    const mid = await ev((id) => { const P = window.__paw; P.saveNow(); const s = JSON.parse(localStorage.getItem('pawhaven_proto_v1')), sd = (s.dogs || []).find((x) => x.id === id); return { live: P.S.dog.outfit.body || null, saved: sd && sd.outfit ? sd.outfit.body || null : 'missing' }; }, poolDog);
+    ok(mid.live === null && mid.saved === null, 'a save mid-paddle keeps the dog\'s own outfit, not the vest (' + JSON.stringify(mid) + ')');
+  }
   ok(await t.until(() => { const s = window.__paw.pl.state; return !!s && s.ph === 'done'; }, null, 60000), 'the paddle runs to its end');
   {
     const w = await unwatch(), post = await snapP();
