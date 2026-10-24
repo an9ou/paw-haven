@@ -136,7 +136,8 @@ function socialise() {
 }
 function kiteWatch() {
   const fx = $('#fx'); if (!fx) return;
-  fx.insertAdjacentHTML('beforeend', `<g class="kitefx"><path d="M0 0 L24 -30 L48 0 L24 30 Z" fill="#F28FA5" stroke="#5B3D32" stroke-width="3" transform="translate(650 120)"/><path d="M674 150 Q700 220 660 300" fill="none" stroke="#5B3D32" stroke-width="2" stroke-dasharray="4 5"/></g>`);
+  const c = typeof grWide === 'function' && grOn() && grWide() ? grCam() : null, dx = c ? Math.round(c.x + c.w * 0.65 - 650) : 0; // v2.15: on a wide floor (the 1600-wide hilltop) the kite flies in the camera's window
+  fx.insertAdjacentHTML('beforeend', `<g class="kitefx"${dx ? ` transform="translate(${dx} 0)"` : ''}><path d="M0 0 L24 -30 L48 0 L24 30 Z" fill="#F28FA5" stroke="#5B3D32" stroke-width="3" transform="translate(650 120)"/><path d="M674 150 Q700 220 660 300" fill="none" stroke="#5B3D32" stroke-width="2" stroke-dasharray="4 5"/></g>`);
   setTimeout(() => { const k = fx.querySelector('.kitefx'); if (k) k.remove(); }, 4200);
   const h = dogHeadWorld(); say(PICK([tt('town.kite_1', 'A kite! I will catch it with my mind.'), tt('town.kite_2', 'That bird is rectangular. Suspicious.'), tt('town.kite_3', 'I could fly too. I just choose not to.')]), h.x, h.y, 2600);
 }
@@ -184,6 +185,8 @@ function mapClearCtl() {
   for (let d = 8; d <= 200; d += 8) for (const sg of [1, -1]) { M.tx = tx0 + sg * d; mapApply(); if (Math.abs(M.tx - (tx0 + sg * d)) < 0.5 && !hits()) return; }
   M.tx = tx0; mapApply();
 }
+// v2.15 phones: the place / time pill (#status) floats over the top of the map; when the "Doodle Doggo Town" banner (map y 20 to 115, world F) shows, it opens just below the pill
+function mapClearTitle() { const M = MAPV; if (!M) return; const s = M.base * M.z, pad = mapTopPad(); if (M.ty + 115 * s > 0 && M.ty + 20 * s < pad) { M.ty = pad - 20 * s; mapApply(); } }
 function enterMap() {
   if (mpMapNeedsWait()) { mpMapWait(); return; } // v2.15: world F is a lazy chunk in the split build: a short paper wobble while it loads
   setChrome(true, false); hideBubble(); // a yard speech bubble must not linger over the pin
@@ -200,7 +203,7 @@ function enterMap() {
   mapApply();
   // area centres in map units (MAP_AREAS when the art gives them, else measured)
   const measure = () => { const s = MAPV.base * MAPV.z, ir = inner.getBoundingClientRect(); svg.querySelectorAll('[data-area]').forEach((g) => { const r = g.getBoundingClientRect(); MAPV.centers[g.getAttribute('data-area')] = [(r.left + r.width / 2 - ir.left) / s, (r.top + r.height / 2 - ir.top) / s]; }); (A.areas || []).forEach((a) => { MAPV.centers[a.id] = [a.x, a.y]; }); };
-  measure(); mapCenter(A.v215 ? mpHere() : S.place === 'house' ? 'yard' : S.place, false); if (A.v215) mpMapOpened(); if (isPhone()) mapClearCtl(); // v2.15: the house is its own building, the leader's dog stands at the pack's place
+  measure(); mapCenter(A.v215 ? mpHere() : S.place === 'house' ? 'yard' : S.place, false); if (A.v215) mpMapOpened(); if (isPhone()) { mapClearCtl(); if (A.v215) mapClearTitle(); } // v2.15: the house is its own building, the leader's dog stands at the pack's place
   const label = (k) => k === 'shelter' ? tt('town.visit_shelter', 'Visit the shelter') : PLACES[k] ? tt('town.go_to', '{locked, select, yes {Go to {place} (locked, Bond {bond})} other {Go to {place}}}', { locked: topBond() < PLACES[k].bond ? 'yes' : 'no', place: townPlaceName(k), bond: PLACES[k].bond }) : k;
   if (A.v215) mpBindMap(svg); // v2.15: the buildings are buttons (lift, squash, shake; phones: tap travels, long-press names it), the travel walk
   else hotify(svg, '[data-area]', 'data-area', (k) => (isPhone() ? mapPick(k) : pickArea(k)), label);
