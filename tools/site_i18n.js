@@ -198,7 +198,8 @@ function langScript(L, page) {
     + `if(L[b]){location.replace('/'+b+P+location.hash);return}}})();</script>`;
 }
 function langMenu(L, page, label, menu) {
-  const items = LANGS.map((x) => `<li><a href="${urlFor(x, page.path)}" hreflang="${x.code}" lang="${x.code}" data-lang="${x.dir || 'en'}"${x === L ? ' aria-current="true"' : ''}>${x.name}</a></li>`).join('');
+  // owner, 24 Oct 2026: English first in the language menu
+  const items = LANGS.filter((x) => x.code === 'en').concat(LANGS.filter((x) => x.code !== 'en')).map((x) => `<li><a href="${urlFor(x, page.path)}" hreflang="${x.code}" lang="${x.code}" data-lang="${x.dir || 'en'}"${x === L ? ' aria-current="true"' : ''}>${x.name}</a></li>`).join('');
   return `<details class="langs" id="langs"><summary aria-label="${escAttr(label + ': ' + L.name)}"><span aria-hidden="true">🌐</span> <span lang="${L.code}">${L.name}</span></summary><nav aria-label="${escAttr(menu)}"><ul>${items}</ul></nav></details>`;
 }
 // site v3: the header of every page: the logo (home), the four page links (the current one aria-current), the language menu

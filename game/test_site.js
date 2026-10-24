@@ -476,7 +476,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
         const checks = {
           status: r.status === 200, lang: h.includes(`<html lang="${L.code}"`), clang: r.headers.get('content-language') === L.code,
           hreflang: JSON.stringify(alt) === JSON.stringify(want), canonical: pg.id === 'reset' || h.includes(`<link rel="canonical" href="${SITE + u}">`),
-          menu: menu.length === 11 && I18N.LANGS.every((x, i) => menu[i] === pageUrl(x, pg.path)),
+          menu: menu.length === 11 && I18N.LANGS.filter((x) => x.code === 'en').concat(I18N.LANGS.filter((x) => x.code !== 'en')).every((x, i) => menu[i] === pageUrl(x, pg.path)), // English first (owner, 24 Oct 2026)
           script: /localStorage/.test(h) && h.includes(`H='${L.dir || 'en'}'`),
           font: /<link rel="stylesheet" href="\/fonts\/i18n\//.test(h) === (L.code !== 'en' && (() => { const f = path.join(ROOT, 'site', 'fonts', 'i18n', (L.pseudo === 'cjk' ? 'ja' : L.code) + '.css'); return fs.existsSync(f) && /@font-face/.test(fs.readFileSync(f, 'utf8')); })()),
           links: L.code === 'en' || !/href="\/(dogs|privacy|map|guide|about|reset)?(#[^"]*)?"/.test(h.replace(/<link rel="alternate"[^>]*>/g, '').replace(langsBlock, '')),
