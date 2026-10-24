@@ -73,7 +73,8 @@ function setTemp(pose, ms) { tempPose = pose; tempUntil = performance.now() + ms
 // 500 * scale + ty) and 0, 0, 1 means back where it stands now. #dogPos keeps the old transform as a record (hoAtBedNap, the old suites): inside
 // its .rmdog group the CSS keeps it flat and rmLegacyTo moves the group
 function dogTo(tx, ty = 0, scale = 1, secs = 0.9) {
-  const p = $('#dogPos'); if (!p) return; p.style.transitionDuration = secs + 's';
+  const p = $('#dogPos'); if (!p) return;
+  if (tx === -125 && !ty && scale === 1 && typeof grBowlTo === 'function') { const b = grBowlTo(); if (b) [tx, ty] = b; } // v2.15: the bowl errand goes to the bowl's spot in a grOn place (43_ground.js GR_BOWL) p.style.transitionDuration = secs + 's';
   p.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
   // phones: the camera follows the leader's errands as in v2.9 (back home = the scene's home crop); an idle wander while the player looks around leaves the view
   if (isPhone() && cur.mode === 'yard' && !grWide()) { const home = tx === 0 && ty === 0 && scale === 1; phCamHome = S.place === 'fujihill' || home ? phHomeCx : scale === 1 ? phHomeCx + tx : 430 * scale + tx; if (phPeekOn && typeof IDLE === 'object' && IDLE.act) { /* looking around */ } else { if (phPeekOn) { phPeekOn = false; clearTimeout(phPanT); } camTo(phCamHome, secs); } }

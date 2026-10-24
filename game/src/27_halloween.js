@@ -99,7 +99,7 @@ function hwSquareDraw() {
   const pb = $('#placeBtns'); if (pb) pb.querySelectorAll('[data-hw]').forEach((b) => b.remove());
   if (isPhone() && S && S.place === 'square') { const st = $('#fsStallG', svg); if (st && !$('.hw-chip', st)) { const b = st.querySelector('svg'); if (b) st.insertAdjacentHTML('beforeend', hwChip(tt('hw.harvest_stall', 'Harvest Stall'), +b.getAttribute('x') + +b.getAttribute('width') / 2, +b.getAttribute('y'))); } }
   HW.open = hwOn(); if (!HW.open || !S || S.place !== 'square') return;
-  const at = $('#bowlG', svg) || $('#pack', svg); if (!at) return;
+  const at = grAt('bowlG', svg) || $('#pack', svg); if (!at) return; // v2.15: grAt (43_ground.js)
   const [x, y, w, h] = hwPopBox(), lit = isNight();
   at.insertAdjacentHTML('beforebegin', `<g id="hwPopG" class="hot" data-lit="${lit ? 1 : 0}" tabindex="0" role="button" aria-label="${esc(tt('hw.label_popup', "Mrs. Plum's Pumpkin Patch Pop-up"))}">${place(lit ? hwArt({ lit }) : propTint(hwArt({ lit })), x, y, w, h)}${fsHit(x + 6, y + 8, w - 12, h - 8)}${isPhone() ? hwChip(tt('hw.pumpkin_patch', 'Pumpkin Patch'), x + w / 2, y) : ''}</g>`);
   if (typeof fsHitFit === 'function') fsHitFit();

@@ -20,6 +20,9 @@ const AG_COIN_DAY = 40;
 const AG_COINS = [0, 10, 20, 30]; // by rosettes, the first two runs of the day
 const AG_ORDER = ['table', 'weave', 'tunnel', 'jump', 'tyre']; // left to right along the course
 const AG_LOW = ['table', 'tunnel', 'jump']; // the puppy course: the jump spot is the bar on the ground
+// the low course's hop over the bar on the ground (world G data-ag-bar="lo": about 8 units high, crossing the path at the jump box's x - 15):
+// [centre x from the box's left edge, height x the dog's scale (a 4-month corgi: about 16 units, a big senior: 23), half width]
+const AG_LOW_HOP = [-15, 24, 56];
 const AG_SPEED = { perfect: 'run', good: 'trot', slow: 'stroll' };
 const AG_PERIOD = 1800, AG_WAIT = 10000; // the marker's sweep (ms) and how long the dog waits for Go! before it simply goes
 let AG = null; // the run in progress, or null
@@ -100,6 +103,9 @@ function agBoardDraw() {
     g += `<circle cx="${bx + 16}" cy="${y.toFixed(1)}" r="4" fill="#FFFFFF" opacity=".85"/>`;
     for (let k = 1; k <= 3; k++) g += `<circle cx="${bx + 38 + (k - 1) * 28}" cy="${y.toFixed(1)}" r="${Math.min(10, row / 2 - 1).toFixed(1)}" fill="${k <= n ? '#F7D24E' : 'none'}" stroke="${k <= n ? '#5B3D32' : '#FFFFFF'}" stroke-width="${k <= n ? 1.5 : 1.2}" stroke-dasharray="${k <= n ? 'none' : '3 3'}" opacity="${k <= n ? 1 : 0.7}"/>`;
   });
+  // the scene's own time, weather and season treatment (world G recolours its art: night, snow, autumn), so the board is not daytime-bright on a snowy night
+  const sc = svg.querySelector('svg.pa-wg-training'), ds = sc ? sc.dataset : {};
+  if (ds.time && typeof PawArt.tintG === 'function') g = PawArt.tintG(g, { time: ds.time, weather: ds.weather, season: ds.season || 'summer' });
   pk.insertAdjacentHTML('beforebegin', `<g id="agBoard" class="ag-board" pointer-events="none" aria-hidden="true">${g}</g>`);
 }
 
@@ -116,7 +122,7 @@ function agArrive() {
   agDay();
   if (!S.ag.seen) { S.ag.seen = true; markDirty(); setTimeout(() => { if (S && S.place === 'training') toast(tt('agility.care_note', 'Agility is play, so keep runs short and stop while your dog still wants more. Soft ground and low bars keep young and old joints happy.'), 'gold'); }, 900); }
 }
-on('yard:enter', agArrive); on('scene:redraw', () => { if (agOn() && !AG) { if (!$('#placeBtns [data-ag]')) agPlaceBtn(); if (!$('#agBoard')) agBoardDraw(); } });
+on('yard:enter', agArrive); on('scene:redraw', () => { if (!agOn()) return; if (!AG && !$('#placeBtns [data-ag]')) agPlaceBtn(); agBoardDraw(); }); // a new time or weather: the board takes the new treatment
 on('day:new', () => { if (agOn() && !AG) agBoardDraw(); });
 
 /* ---------------- the trays ---------------- */
@@ -187,7 +193,7 @@ function agBegin(d, o) {
   const A = AG, f = grFloor('training'), low = !!o.puppy || agLowFor(d);
   A.tok++; A.t.forEach(clearTimeout); A.t = [];
   Object.assign(A, { d, id: d.id, low, forceLow: !!o.puppy, course: (low ? AG_LOW : AG_ORDER).slice(), i: 0, pts: [], ph: 'ready', f, hw: (isPhone() ? 0.17 : 0.12) + (low ? 0.05 : 0), t0: 0, res: null, pin: A.pin == null ? null : A.pin });
-  document.documentElement.classList.add('ag-on'); agBoardDraw();
+  document.documentElement.classList.add('ag-on'); document.documentElement.classList.toggle('ag-low', low); agBoardDraw(); // ag-low: the jump's bar on the ground (46_agility.css)
   agTray(); agApproach();
 }
 const agSpot = (id) => AG.f.spots.find((s) => String(s.id) === id);
@@ -245,7 +251,7 @@ function agLeg(id, q) {
   }
   const P = s.path && s.path.length > 1 ? s.path : [[s.x, s.y], [s.x + 100, s.y]], st = agFree(P[0][0], P[0][1]), end = P[P.length - 1], out = agFree(end[0], end[1]);
   const Act = { id, allow: al, path: [st].concat(P.slice(1, -1), [out]) }, b = pr ? pr.box : null;
-  if (b && (id === 'jump' || id === 'tyre')) Act.lift = [b[0] + b[2] / 2, id === 'tyre' ? 42 : A.low ? 6 : 70, Math.max(50, b[2] / 2 + 40)];
+  if (b && (id === 'jump' || id === 'tyre')) Act.lift = id === 'jump' && A.low ? [b[0] + AG_LOW_HOP[0], AG_LOW_HOP[1], AG_LOW_HOP[2]] : [b[0] + b[2] / 2, id === 'tyre' ? 42 : 70, Math.max(50, b[2] / 2 + 40)];
   if (b && id === 'tunnel') Act.hide = [b[0] + 16, b[0] + b[2] - 16];
   return [{ fn: () => { r.grIn = id; }, ms: 0 }, { to: out, gait, act: Act }, free, { pose: q === 'slow' ? 'idle' : 'happy', fb: 'idle', ms: 350 }, { pose: 'idle', ms: 0 }];
 }
@@ -273,7 +279,7 @@ function agFinish() {
   agTray();
 }
 function agEndRun() { if (!AG) return; const A = AG; A.tok++; A.t.forEach(clearTimeout); A.t = []; cancelAnimationFrame(A.raf); A.ready = false; if (A.d) { const r = rmSt(A.d); r.tw = null; r.lift = 0; r.grIn = null; grHide(A.d, false); } }
-function agTeardown() { if (!AG) return; agEndRun(); AG = null; document.documentElement.classList.remove('ag-on'); try { rmResume('agility'); } catch (e) { /* none */ } busy = false; }
+function agTeardown() { if (!AG) return; agEndRun(); AG = null; document.documentElement.classList.remove('ag-on', 'ag-low'); try { rmResume('agility'); } catch (e) { /* none */ } busy = false; }
 function agStop(quiet) {
   if (!AG) return; agTeardown();
   if (typeof pkBack === 'function') pkBack();

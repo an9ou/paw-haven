@@ -2719,7 +2719,8 @@ function sqCafeB2(k,F){const B=F.back,D=y=>depA(F,y),fk=floorKitA(k),e=k.env;
   // the floor props: the big plant at the back, a bistro table in the middle and one in front, the pup corner (a bed a dog may lie on, the water bowl)
   fk.add('plant',362,()=>{shadeA(k,52,364,28);plant(k,52,362,1.1)});
   fk.add('table',432,()=>bistroB2(k,400,432,D(432)*1.2,tx=>{k.shape(E(tx-20,430,18,5,10),'#FFFFFF',{w:1.4,one:1});donut(k,tx-20,425,1,'#FFB3C7');mug(k,tx+24,434,C.mint);steam(k,tx+22,412);vaseB2(k,tx+2,432,1)}));
-  fk.add('bed',514,()=>{const x=920,y=532;k.shape(E(x,y,58,18,14),'#E8A9B8',{w:2.1,hatch:{side:.55,gap:4.5,col:'#C9839A',op:.5}});k.shape(E(x,y-6,42,10,12),'#FCE6CC',{w:1.6});pawB2(k,x,y+10,.8,C.pink);k.hw(()=>pumpkin(k,x-66,y+16,.9))});
+  fk.add('bed',456,()=>{const x=870,y=474;// clear of the desktop place buttons (bottom right), so a dog napping on it shows
+    k.shape(E(x,y,58,18,14),'#E8A9B8',{w:2.1,hatch:{side:.55,gap:4.5,col:'#C9839A',op:.5}});k.shape(E(x,y-6,42,10,12),'#FCE6CC',{w:1.6});pawB2(k,x,y+10,.8,C.pink);k.hw(()=>pumpkin(k,x-66,y+16,.9))});
   fk.add('table2',556,()=>bistroB2(k,640,556,D(556)*1.2,tx=>{mug(k,tx-22,434,C.red);steam(k,tx-24,412);k.shape(E(tx+20,430,18,5,10),'#FFFFFF',{w:1.4,one:1});boneB2(k,tx+20,426,.8,'#E8B57A')}));
   fk.add('water',566,()=>{bowlA(k,850,566,D(566)*1.1,C.blue);k.fill(E(850,566-14*D(566)*1.1,16,3,10),C.water,{dx:0,dy:0})});
   fk.out();
@@ -2861,8 +2862,8 @@ const FLOOR_B2={
    {id:'sun',x:470,y:540,tags:['sun','rest'],act:'rest'},{id:'open',x:680,y:520,tags:['open','ball','zoomies'],act:'zoomies'},
    {id:'path',x:400,y:530,tags:['sniff','trail'],act:'sniff',path:[[470,590],[420,540],[360,494],[300,462],[255,452]]}]},
  cafe:{poly:[[16,348],[984,348],[998,594],[2,594]],
-  props:[{id:'plant',base:362,box:[28,354,48,10]},{id:'table',base:432,box:[336,424,128,12]},{id:'bed',base:514,box:null},{id:'table2',base:556,box:[562,548,154,12]},{id:'water',base:566,box:[826,558,48,10]}],
-  spots:[{id:'bowl',x:250,y:570,tags:['bowl'],act:'drink'},{id:'water',x:850,y:588,tags:['bowl'],act:'drink'},{id:'bed',x:920,y:530,tags:['rest','bed'],act:'rest'},{id:'table',x:400,y:452,tags:['sniff'],act:'sniff'},
+  props:[{id:'plant',base:362,box:[28,354,48,10]},{id:'table',base:432,box:[336,424,128,12]},{id:'bed',base:456,box:null},{id:'table2',base:556,box:[562,548,154,12]},{id:'water',base:566,box:[826,558,48,10]}],
+  spots:[{id:'bowl',x:250,y:570,tags:['bowl'],act:'drink'},{id:'water',x:850,y:588,tags:['bowl'],act:'drink'},{id:'bed',x:870,y:472,tags:['rest','bed'],act:'rest'},{id:'table',x:400,y:452,tags:['sniff'],act:'sniff'},
    {id:'counter',x:708,y:372,tags:['look'],act:'look'},{id:'visit1',x:568,y:430,tags:['visitor'],act:'idle'},{id:'sun',x:205,y:392,tags:['sun','rest'],act:'rest'},{id:'open',x:480,y:500,tags:['open','ball','zoomies'],act:'zoomies'}]},
  vet:{poly:[[16,348],[984,348],[998,594],[2,594]],
   props:[{id:'plant',base:362,box:[26,354,48,10]},{id:'bench',base:400,box:[312,390,236,12]},{id:'water',base:470,box:[858,462,44,10]},{id:'scale',base:536,box:null},{id:'toys',base:568,box:[892,558,76,10]}],
