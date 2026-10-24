@@ -40,6 +40,26 @@ module.exports = async function ({ render, browser, helpers: h }) {
     await render(svg, 1920, 1080, 'trailer90/doodle-doggo-overview-trailer-cover-16x9.jpg');
   }
 
+  // ---------- 3:2 (900 x 600, owner 24 Oct 2026; designed at 1200 x 800) ----------
+  {
+    const TW = 1200, TH = 800;
+    let t = `<rect width="${TW}" height="${TH}" fill="#FFF8EC"/><rect width="${TW}" height="${TH}" fill="url(#dd-dots)"/>` + box(18, 18, TW - 36, TH - 36, 24, 14, 2.6, 4.4);
+    for (const [n, x, y, s, r] of [['spark', 66, 76, 1.3, 0], ['heart', 530, 110, 1.2, 12], ['paw', 70, 730, 1.2, -12], ['leaf', 548, 720, 1.2, 18], ['spark', 1140, 60, 1, 0]]) t += doodle(n, x, y, s, r);
+    t += wordmark(290, 190, 88);
+    t += swash(290, 300, 450, 74, -2, PINK, 0.45) + txt('Overview Trailer', 290, 324, 78, { rot: -2 });
+    t += txt('a cozy crayon dog game', 290, 408, 44, { fill: MUTED, w: 600 });
+    t += chip('adopt', 66, 494, 32, '#FFE3A1') + chip('care', 190, 494, 32, '#CFE0F7') + chip('walk', 295, 494, 32, '#BFE3C9') + chip('explore', 398, 494, 32, '#E0D5F0');
+    t += pill('play free in your browser', 290, 610, 450, 70, -2.5, 40);
+    t += page(600, 80, 550, 370, 1.6, '40 96 560 377');
+    t += await put(dg('husky', 'sit', 'right', { neck: 'Autumn Scarf' }), 672, 442, 110);
+    t += await put(dg('shiba', 'sit', 'left'), 1085, 442, 118);
+    t += await put(dg('corgi', 'happy', 'right'), 665, 735, 155);
+    t += await put(dg('dachs', 'happy', 'left', { head: 'Witch Hat' }), 915, 742, 240);
+    t += play(875, 255, 58);
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="900" height="600" viewBox="0 0 ${TW} ${TH}">${defs}${t}</svg>`;
+    await render(svg, 900, 600, 'trailer90/doodle-doggo-overview-trailer-cover-900x600.jpg');
+  }
+
   // ---------- 9:16 (1080 x 1920) ----------
   {
     const W = 1080, H = 1920;
