@@ -5278,7 +5278,7 @@
  "mail.fam_patels": "ครอบครัวพาเทล",
  "mail.fam_rosa": "โรซา",
  "mail.fam_where": "{name}{where}",
- "mail.foot": "{n, plural, =0 {อ่านครบหมดแล้ว} other {ยังไม่ได้อ่าน # ฉบับ}} เพื่อนบ้านแวะเอาของมาฝากทุกวัน",
+ "mail.foot": "{n, plural, =0 {อ่านครบหมดแล้ว} other {ยังไม่ได้อ่าน # ฉบับ}} เพื่อนบ้านแวะมาฝากของทุกวัน",
  "mail.free_spots": "ที่ว่างสำหรับน้องหมา: {n}",
  "mail.from_date": "จาก {from} · {date}",
  "mail.from_pair": "น้อง{name}และ{family}",
