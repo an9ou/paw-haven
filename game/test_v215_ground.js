@@ -171,6 +171,8 @@ require('./test_lib').run('v215_ground', async (t) => {
     const vis = await ev(() => window.__paw.dc.visitors().map((v) => [Math.round(v.x), Math.round(v.y), window.__paw.gr.inside(v.x, v.y)]));
     ok(vis.length > 0 && vis.every((v) => v[2]), `dogpark: the Dog Card visitors stand on the floor polygon ${JSON.stringify(vis)}`);
     const c = await ev(() => window.__paw.gr.cam()); ok(vis.every((v) => v[0] >= c.x - 40 && v[0] <= c.x + c.w + 40), `dogpark: and inside the camera's window (x ${Math.round(c.x)} to ${Math.round(c.x + c.w)})`);
+    const lay = await ev(() => { window.__paw.gr.depth(); const els = [...document.querySelectorAll('.dcvis')]; return { n: els.length, inPack: els.filter((e) => e.parentNode && e.parentNode.id === 'pack' && e.classList.contains('gr-prop') && isFinite(+e.dataset.fy)).length, depth: window.__paw.gr.depthOk(), hit: els.length ? getComputedStyle(els[0]).pointerEvents : '' }; });
+    ok(lay.n > 0 && lay.inPack === lay.n && lay.depth && lay.hit !== 'none', `dogpark: the visitors sort with the floor props in #pack, by feet y, still tappable (review finding 12) ${JSON.stringify(lay)}`);
   }
   ok(!errs.length, 'no page errors ' + JSON.stringify(errs.slice(0, 3)));
 

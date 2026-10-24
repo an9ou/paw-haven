@@ -1,9 +1,10 @@
 /* v2.11 DOG CARDS (lane CARDS, tag dc). Phone rules under html[data-layout="phone"]. */
 /* visiting dogs (#dcVis, just behind #pack): a tap opens the card */
-#dcVis .dcvis{cursor:pointer}
-#dcVis .dcvis:focus{outline:none}
-#dcVis .dcvis:focus-visible .dc-hit,#dcVis .dcvis:hover .dc-hit{stroke:#F28FA5;stroke-width:4;stroke-dasharray:10 8}
-html.bl-on #dcVis .dcvis{pointer-events:none} /* ball play: taps belong to the ball */
+#dcVis .dcvis,#pack .dcvis{cursor:pointer}
+#dcVis .dcvis:focus,#pack .dcvis:focus{outline:none}
+#dcVis .dcvis:focus-visible .dc-hit,#dcVis .dcvis:hover .dc-hit,#pack .dcvis:focus-visible .dc-hit,#pack .dcvis:hover .dc-hit{stroke:#F28FA5;stroke-width:4;stroke-dasharray:10 8}
+#view svg.world .gr-prop.dcvis{pointer-events:auto} /* v2.15: on a deep floor a visitor sorts with the props in #pack (40_dogcards.js), still tappable */
+html.bl-on #dcVis .dcvis,html.bl-on #view svg.world .gr-prop.dcvis{pointer-events:none} /* ball play: taps belong to the ball */
 /* the card sheet */
 .dcpop .dc-card p{margin:4px 0}
 .dc-paws{display:flex;align-items:center;gap:8px;font-size:18px}

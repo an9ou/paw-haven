@@ -227,17 +227,19 @@ function dcVisSVG(v, i) {
   const d = v.dog, pose = v.tw ? 'walk' : v.pose, ex = exNow(d, pose); v.drawn = pose + '|' + v.face + (ex ? '|' + ex : ''); // v2.13: the face (41_expressions.js)
   const fs = isPhone() ? dcTagFs(sizeK(d)) : DC.tagFs || 19, w = 88 * fs / 19, h = 25 * fs / 19;
   const tag = `<g class="dc-tag" pointer-events="none" transform="translate(430 512)"><rect x="${f1(-w / 2)}" y="-2" width="${f1(w)}" height="${f1(h)}" rx="8" fill="#FFF3DA" stroke="#5B3D32" stroke-width="2"/><text y="${f1(h * 0.68)}" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="${f1(fs)}" fill="#5B3D32">${esc(tt('cards.visitor_tag', 'visitor'))}</text></g>`;
-  return `<g class="dcvis" data-dcv="${i}" data-card="${esc(v.card.id)}" tabindex="0" role="button" aria-label="${esc(tt('cards.visitor_aria', '{dog}, visiting with {card}. Tap for the Dog Card.', { dog: d.name, card: dcCardName(v.card) }))}"${v.hidden ? ' style="display:none"' : ''}><g class="dc-at" transform="${dcXf(v)}"><rect class="dc-hit" x="${DX + 44}" y="${DY + 35}" width="${DW - 88}" height="180" fill="transparent"/><g class="dc-art">${place(dogSVG(d, ex ? { pose, outfit: d.outfit, facing: v.face, expr: ex } : { pose, outfit: d.outfit, facing: v.face }), DX, DY, DW, DH)}</g>${tag}</g></g>`;
+  return `<g class="dcvis${DC.inPack ? ' gr-prop' : ''}"${DC.inPack ? ` data-fy="${f1(v.y)}"` : ''} data-dcv="${i}" data-card="${esc(v.card.id)}" tabindex="0" role="button" aria-label="${esc(tt('cards.visitor_aria', '{dog}, visiting with {card}. Tap for the Dog Card.', { dog: d.name, card: dcCardName(v.card) }))}"${v.hidden ? ' style="display:none"' : ''}><g class="dc-at" transform="${dcXf(v)}"><rect class="dc-hit" x="${DX + 44}" y="${DY + 35}" width="${DW - 88}" height="180" fill="transparent"/><g class="dc-art">${place(dogSVG(d, ex ? { pose, outfit: d.outfit, facing: v.face, expr: ex } : { pose, outfit: d.outfit, facing: v.face }), DX, DY, DW, DH)}</g>${tag}</g></g>`;
 }
 const dcXf = (v) => `translate(${f1(v.x)} ${f1(v.y)}) scale(${v.k.toFixed(3)}) translate(-430 -500)`;
-function dcEl(v) { return $(`#dcVis [data-dcv="${DC.vis.indexOf(v)}"]`); }
+function dcEl(v) { return DC.inPack ? v.el || null : $(`#dcVis [data-dcv="${DC.vis.indexOf(v)}"]`); }
 function dcPaint(v) {
   const el = dcEl(v); if (!el) return; el.style.display = v.hidden ? 'none' : '';
-  const at = el.querySelector('.dc-at'); if (at) at.setAttribute('transform', dcXf(v));
+  const at = el.querySelector('.dc-at'); if (at) at.setAttribute('transform', dcXf(v)); if (DC.inPack) el.dataset.fy = f1(v.y);
   const pose = v.tw ? 'walk' : v.pose, ex = exNow(v.dog, pose), key = pose + '|' + v.face + (ex ? '|' + ex : ''); if (key === v.drawn) return; v.drawn = key; // v2.13: a face change redraws this visitor
   const a = el.querySelector('.dc-art'); if (a) a.innerHTML = place(dogSVG(v.dog, exOpt(v.dog, pose, { pose, outfit: v.dog.outfit, facing: v.face })), DX, DY, DW, DH);
 }
-function dcOrder() { const g = $('#dcVis'); if (!g) return; const els = DC.vis.map((v) => dcEl(v)).filter(Boolean), want = els.slice().sort((a, b) => DC.vis[+a.dataset.dcv].y - DC.vis[+b.dataset.dcv].y); if (want.some((e, i) => g.children[i] !== e)) want.forEach((e) => g.appendChild(e)); }
+function dcOrder() { const g = $('#dcVis'); if (!g) return;
+  if (DC.inPack) { const pk = $('#pack'); if (!pk) return; DC.vis.forEach((v) => { if (v.el && v.el.parentNode !== pk) pk.appendChild(v.el); }); if (typeof grDepth === 'function') grDepth(); return; } // a rebuilt #pack gets them back, grDepth sorts them by feet y
+  const els = DC.vis.map((v) => dcEl(v)).filter(Boolean), want = els.slice().sort((a, b) => DC.vis[+a.dataset.dcv].y - DC.vis[+b.dataset.dcv].y); if (want.some((e, i) => g.children[i] !== e)) want.forEach((e) => g.appendChild(e)); }
 // draw the picked cards' dogs in the scene: up to 2 cards, at most 3 dogs, each on a free spot
 function dcDraw(cards) {
   const svg = $('#view > svg.world'), pack = svg && $('#pack', svg); if (!pack || !S || !DC_PLACES.includes(S.place)) return;
@@ -257,14 +259,18 @@ function dcDraw(cards) {
     });
   });
   if (!DC.vis.length) return;
-  pack.insertAdjacentHTML('beforebegin', `<g id="dcVis">${DC.vis.map((v, i) => dcVisSVG(v, i)).join('')}</g>`);
-  document.querySelectorAll('#dcVis .dcvis').forEach((el) => {
+  // v2.15: on a deep floor (grOn) the floor props live in #pack, so each visitor goes into #pack too (a gr-prop with data-fy = its feet y) and sorts with them;
+  // #dcVis stays as an empty marker before #pack. Elsewhere the v2.11 layer: #dcVis just behind #pack
+  DC.inPack = typeof grOn === 'function' && grOn();
+  pack.insertAdjacentHTML('beforebegin', `<g id="dcVis">${DC.inPack ? '' : DC.vis.map((v, i) => dcVisSVG(v, i)).join('')}</g>`);
+  if (DC.inPack) DC.vis.forEach((v, i) => { pack.insertAdjacentHTML('beforeend', dcVisSVG(v, i)); v.el = pack.lastElementChild; });
+  (DC.inPack ? DC.vis.map((v) => v.el) : [...document.querySelectorAll('#dcVis .dcvis')]).forEach((el) => {
     const open = (e) => { if (e) e.stopPropagation(); const v = DC.vis[+el.dataset.dcv]; if (v && !dcTapHeld()) dcCard(v.card); };
     el.addEventListener('click', open); el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(e); } });
   });
   dcOrder(); dcLoop();
 }
-function dcClear() { dcKeep(); cancelAnimationFrame(DC.raf); DC.raf = 0; DC.vis = []; const g = $('#dcVis'); if (g) g.remove(); }
+function dcClear() { dcKeep(); cancelAnimationFrame(DC.raf); DC.raf = 0; DC.vis.forEach((v) => { if (v.el) v.el.remove(); }); DC.vis = []; DC.inPack = false; const g = $('#dcVis'); if (g) g.remove(); }
 function dcKeep() { DC.vis.forEach((v) => { const w = v.tw; DC.pos[v.card.id + ':' + v.i] = { x: w ? w.x1 : v.x, y: w ? w.y1 : v.y, face: v.face, home: v.home }; }); }
 function dcDrop(cardId) { const keep = DC.vis.filter((v) => v.card.id !== cardId); if (keep.length === DC.vis.length) return; const cards = []; keep.forEach((v) => { if (!cards.includes(v.card)) cards.push(v.card); }); const pos = keep.map((v) => [v.x, v.y, v.face]); dcDraw(cards); DC.vis.forEach((v, i) => { if (pos[i]) { v.x = pos[i][0]; v.y = pos[i][1]; v.k = dcK(v, v.y); v.face = pos[i][2]; dcPaint(v); } }); }
 // one leg of a visitor's small loop: a free spot near its home, straight there at a walk

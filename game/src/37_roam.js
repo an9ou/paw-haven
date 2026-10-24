@@ -66,7 +66,7 @@ function rmScan() {
   });
   [...(($('#placeBtns') || {}).children || [])].concat([$('#phPeek'), $('#rmLookL'), $('#rmLookR')]).forEach((el) => { if (!el || el.hidden) return; const b = rmWorldBox(svg, M, el); if (b && b[1] < 600) out.push(b.concat('btn')); });
   const vt = svg.querySelector('#visitorG .vtag rect'), vb = vt && rmWorldBox(svg, M, vt); if (vb) out.push(vb.concat('vtag')); // v2.11.1: the visiting pup's name tag keeps readable next to the grown dogs (a small box of its own: at most 8% covered)
-  svg.querySelectorAll('#dcVis .dcvis:not([style*="none"]) .dc-tag > rect').forEach((el) => { const b = rmWorldBox(svg, M, el); if (b && b[1] < 600) out.push(b.concat('dctag')); }); // v2.12 LAYOUT: the Dog Card visitors' "visitor" tags, the same rule (40_dogcards.js dcOk ignores them for the visitors themselves)
+  svg.querySelectorAll('.dcvis:not([style*="none"]) .dc-tag > rect').forEach((el) => { const b = rmWorldBox(svg, M, el); if (b && b[1] < 600) out.push(b.concat('dctag')); }); // v2.12 LAYOUT: the Dog Card visitors' "visitor" tags, the same rule (40_dogcards.js dcOk ignores them for the visitors themselves)
   if (S.place === 'yard' && !grOn() && !out.some((b) => b[4] === 'houseG')) out.push([620, 330, 240, 200, 'house']);
   rmScenery(S.place).forEach((b) => out.push(b.slice()));
   if (grOn()) grNo().forEach((b) => out.push(b)); // v2.15: the floor props' feet boxes (PawArt.FLOOR, 43_ground.js)

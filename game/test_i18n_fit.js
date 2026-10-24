@@ -303,13 +303,13 @@ async function worker(job) {
       await t.p.keyboard.press('Escape'); await sleep(200); await t.home('yard');
     });
     // ---------------------------------------------------------------- places and every place button (shops, vet, playdate board, café ...) ----------------------------------------------------------------
-    const PLACES = ['market', 'square', 'cafe', 'vet', 'salon', 'dogpark', 'pier', 'hilltop', 'park', 'fujihill', 'house'];
-    for (const k of PLACES) {
-      await step('place ' + k, async () => {
+    // v2.15 (review finding 8): the Around Town places too (the map switch on for their steps only): the Training Ground and the Splash Pool with
+    // their trays, a run track's window and the three storefronts
+    const placeStep = (k, extra) => step('place ' + k, async () => {
         await atPlace(k); await measure('place: ' + k);
         const btns = await ev(() => [...document.querySelectorAll('#placeBtns button')].filter((b) => b.offsetParent && !b.disabled).map((b, i) => { const a = [...b.attributes].find((x) => /^data-/.test(x.name)); return { i, k: a ? a.name + '=' + a.value : 'btn' + i }; }));
         for (const b of btns.slice(0, 7)) {
-          if (/home|go=yard|data-walk|data-tk/.test(b.k)) continue;
+          if (/home|go=yard|data-walk|data-tk|data-ag|data-pl/.test(b.k)) continue; // the agility and pool trays: their own extra step
           await ev((i) => { const e = [...document.querySelectorAll('#placeBtns button')].filter((x) => x.offsetParent && !x.disabled)[i]; if (e) e.click(); }, b.i);
           await sleep(500);
           const st = await ev(() => ({ modal: !document.getElementById('modal').hidden && !!document.querySelector('#modal .panel'), mode: window.__paw.mode, place: window.__paw.S.place }));
@@ -325,7 +325,18 @@ async function worker(job) {
           } else if (st.mode !== 'yard' || st.place !== k) { await measure(`place: ${k} / ${b.k} (${st.mode})`); await t.p.keyboard.press('Escape'); await sleep(300); await closeAll(); await atPlace(k); }
         }
         await closeAll();
+        if (extra) { await atPlace(k); await extra(); await closeAll(); }
       }, 90000);
+    const PLACES = ['market', 'square', 'cafe', 'vet', 'salon', 'dogpark', 'pier', 'hilltop', 'park', 'fujihill', 'house'];
+    for (const k of PLACES) await placeStep(k);
+    const PLACES215 = ['training', 'pool', 'sunflower', 'boutique', 'builder', 'sprout'];
+    if (!SCREENS || PLACES215.some((k) => want('place ' + k))) {
+      await ev(() => { const P = window.__paw; P.mp.allow(true); P.S.bond.level = Math.max(P.S.bond.level, 10); });
+      const tray = (btn, sel, nm, stop) => async () => { await jsClick(btn); await waitSel(sel); await sleep(400); await measure(nm); await ev(stop); await sleep(300); };
+      await placeStep('training', tray('#placeBtns [data-ag]', '#agGo', 'place: training / agility tray', () => window.__paw.ag.stop()));
+      await placeStep('pool', tray('#placeBtns [data-pl]', '#plPaddle', 'place: pool / pool tray', () => window.__paw.pl.stop()));
+      for (const k of PLACES215.slice(2)) await placeStep(k);
+      await ev(() => window.__paw.mp.allow(false)); await t.home('yard');
     }
     await step('playdates', async () => {
       await t.home('yard'); await ev(() => window.__paw.breed.openPlaydates()); await t.until(() => !!document.getElementById('pdGo') || !!document.querySelector('#modal .panel'), null, 4000); await measure('puppy playdates'); await closeAll();

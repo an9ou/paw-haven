@@ -213,6 +213,10 @@ function phHomeRefit() {
   else if (wide && S.place === 'yard' && !vz) { L = 140; } // v2.10: the missions clipboard's 48 px tap rect (it grows left of the clipboard when the scene is zoomed out)
   else if (wide && vz) { const sp = visitorSpot(), w = 264 * sp[3]; L = 306; R = Math.max(R, sp[0] + w / 2 + 6); } // a visiting dog: the dog and the visitor, as in v2.3
   else if (vz) { const sp = visitorSpot(), w = 264 * sp[3]; L = 306; R = Math.max(R, sp[0] + w / 2 + 6); }
+  if (!vz && typeof mpShopOf === 'function' && (mpShopOf(S.place) || (S.place === 'market' && mpOn()))) { // v2.15: a storefront's home crop keeps its whole door (the shop's hot spot) next to the dog
+    const svg = $('#view > svg.world'), de = svg && svg.querySelector('#sceneG [data-shop]'), M = svg && svg.getScreenCTM(), b = de && M ? rmWorldBox(svg, M.inverse(), de) : null;
+    if (b && b[2] < 420) { L = Math.min(L, b[0] - 8); R = Math.max(R, b[0] + b[2] + 8); }
+  }
   const vw = view.clientWidth, vh = view.clientHeight - (parseFloat(view.style.getPropertyValue('--trayH')) || 0); if (!vw || vh <= 0) return;
   const native = 600 * vw / vh;
   if (wide) { // v2.10 ROAM: about 700 world units wide (V210.md section 5.2): zoomed out through the viewBox like Market Street, the extra sky above the scene
