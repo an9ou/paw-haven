@@ -1,3 +1,6 @@
+# v2.15 coordinator state (24 Oct 2026, session_01QrEn8GuJzf6563HVWgovNg)
+**v2.15 is ready on `integration/v2.15`.** ITEM ART, I18N, the combined review, both fix lanes and the owner's `S.langShown` are merged; all, phone, check_identical, i18n_fit and site_fit are done (results in V215.md 18). Not merged to main, not deployed, not on itch.io: that is the Game Manager's call. Open for a later release: the A/C v2.15 art blocks in the first load (V215.md 18, "Known, not fixed").
+
 # v2.15 coordinator handoff (23 Oct 2026, late; from session_015hxeEvVfJnoVFWXme4aCfc)
 
 ## State (integration/v2.15, pushed)
