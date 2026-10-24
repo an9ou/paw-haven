@@ -830,9 +830,12 @@ function v211Fields(s) {
   return s;
 }
 // v2.14 (V214.md 5): S.lang = one of PawI18nMsg.CODES, or null = follow the device (old saves load with null). It goes with the cloud save.
+// v2.15 (owner): S.langShown = the language actually on screen (a CODE, never a pseudo-locale), or null before any boot recorded it; set on load and by i18nUse, read by the owner's dashboard as COALESCE(lang, langShown).
 function v214Fields(s) {
   if (!s) return s;
   if (s.lang === undefined || (s.lang !== null && !i18nReal(s.lang))) s.lang = null;
+  if (s.langShown === undefined || (s.langShown !== null && !i18nReal(s.langShown))) s.langShown = null; // v2.15 (owner): the language on screen
+  if (!I18N.ps && i18nReal(I18N.lang)) s.langShown = I18N.lang; // a loaded save records the language this boot settled on (pseudo-locales never)
   return s;
 }
 /* v2.15 Around Town (V215.md section 9). Additive only: S.v stays 1, nothing is dropped.

@@ -67,6 +67,10 @@ require('./test_lib').run('i18n_smoke', async (t) => {
   ok(await ev(() => window.PawI18n.tlang() === 'zh-Hant' && document.documentElement.lang === 'zh-Hant'), 'zh-TW picks zh-Hant (pickLang)');
   await t.ctx.close();
 
+  sec('v2.15 (owner): S.langShown records the language on screen');
+  { await t.boot({ lang: 'th' }); await t.adopt({ sex: 'girl' });
+    ok((await S()).langShown === 'th', 'after boot in th, S.langShown === th'); await t.ctx.close(); }
+
   sec('the title chip: a pick before the save exists goes into the new save');
   const p = await t.boot();
   await p.click('#tLang'); await p.waitForSelector('.langsheet [data-lang="de"]'); await p.click('.langsheet [data-lang="de"]');
@@ -79,7 +83,7 @@ require('./test_lib').run('i18n_smoke', async (t) => {
   await Promise.all([p.waitForEvent('load'), p.click('#setLangBox [data-lang="ja"]')]);
   await p.waitForSelector('#tNew, #tContinue, #bar .act', { timeout: 20000 }).catch(() => {});
   ok(await t.until(() => window.PawI18n && window.PawI18n.tlang() === 'ja' && document.documentElement.lang === 'ja', null, 15000), 'after the reload the game is in ja');
-  ok((await S()).lang === 'ja', 'S.lang = ja is saved');
+  ok((await S()).lang === 'ja' && (await S()).langShown === 'ja', 'S.lang = ja is saved, S.langShown = ja');
   if ((await t.mode()) === 'title') { await p.click('#tContinue'); await t.untilMode('yard'); }
   await t.calm(); ok(await t.startWalk(), 'a walk starts');
   await ev(() => document.getElementById('gearBtn').click()); await p.waitForSelector('#setLang');
