@@ -8,6 +8,8 @@ Made 17 Oct 2026 from `VIDEO_SCRIPT_TRAILER_90S.md`. Files are in `brand/instagr
 | `doodle-doggo-trailer-16x9-soon.mp4` | landscape 1920 x 1080 | YouTube, the doodledoggo.app site (pre-launch) |
 | `doodle-doggo-trailer-9x16-play.mp4`, `...-16x9-play.mp4` | same | **now (the game is live)**: ends on "Play free / on itch.io / an9ou.itch.io/doodle-doggo" |
 
+**Covers (24 Oct 2026, owner):** `doodle-doggo-overview-trailer-cover-16x9.jpg` (1920 x 1080, for YouTube and game portals; the bottom-right corner stays clear for the time label) and `doodle-doggo-overview-trailer-cover-9x16.jpg` (1080 x 1920; everything inside the grid's middle 1080 x 1440, checked in `...-9x16-grid-crop.jpg`). The logo, "Overview Trailer", "a cozy crayon dog game", a play button on the game's autumn yard with Mt. Fuji, the trailer's four dogs (Noodle in the Witch Hat, Biscuit, Mochi, Frost) and "play free in your browser". Remake: `NODE_PATH=$(npm root -g) node brand/instagram/launch/make.js shots trailercover` (`make_trailercover.js`).
+
 About 89 seconds, 30 fps, H.264 + AAC. The 45-second promo stays the short ad; this is the "what is this game" video.
 
 **35 dogs since v2.12 (18 Oct 2026):** the videos were made with v2.9, so the voice-over ("Fourteen dogs in all") and the chip ("14 dogs to meet") still say 14, and the shelter run shows the first 14 dogs. Not re-rendered yet (ask if you want it: new shelter footage, a new line and chip). The captions below say 35, which is true of the game today.
