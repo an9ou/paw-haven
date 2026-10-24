@@ -20,7 +20,9 @@ const AG_COIN_DAY = 40;
 const AG_COINS = [0, 10, 20, 30]; // by rosettes, the first two runs of the day
 const AG_ORDER = ['table', 'weave', 'tunnel', 'jump', 'tyre']; // left to right along the course
 const AG_LOW = ['table', 'tunnel', 'jump']; // the puppy course: the jump spot is the bar on the ground
-const AG_LOW_HOP = 24; // the low course's hop over the bar on the ground (world G data-ag-bar="lo", about 10 units high): x the dog's scale, a small hop that clears it
+// the low course's hop over the bar on the ground (world G data-ag-bar="lo": about 8 units high, crossing the path at the jump box's x - 15):
+// [centre x from the box's left edge, height x the dog's scale (a 4-month corgi: about 16 units, a big senior: 23), half width]
+const AG_LOW_HOP = [-15, 24, 56];
 const AG_SPEED = { perfect: 'run', good: 'trot', slow: 'stroll' };
 const AG_PERIOD = 1800, AG_WAIT = 10000; // the marker's sweep (ms) and how long the dog waits for Go! before it simply goes
 let AG = null; // the run in progress, or null
@@ -249,7 +251,7 @@ function agLeg(id, q) {
   }
   const P = s.path && s.path.length > 1 ? s.path : [[s.x, s.y], [s.x + 100, s.y]], st = agFree(P[0][0], P[0][1]), end = P[P.length - 1], out = agFree(end[0], end[1]);
   const Act = { id, allow: al, path: [st].concat(P.slice(1, -1), [out]) }, b = pr ? pr.box : null;
-  if (b && (id === 'jump' || id === 'tyre')) Act.lift = [b[0] + b[2] / 2, id === 'tyre' ? 42 : A.low ? AG_LOW_HOP : 70, Math.max(50, b[2] / 2 + 40)];
+  if (b && (id === 'jump' || id === 'tyre')) Act.lift = id === 'jump' && A.low ? [b[0] + AG_LOW_HOP[0], AG_LOW_HOP[1], AG_LOW_HOP[2]] : [b[0] + b[2] / 2, id === 'tyre' ? 42 : 70, Math.max(50, b[2] / 2 + 40)];
   if (b && id === 'tunnel') Act.hide = [b[0] + 16, b[0] + b[2] - 16];
   return [{ fn: () => { r.grIn = id; }, ms: 0 }, { to: out, gait, act: Act }, free, { pose: q === 'slow' ? 'idle' : 'happy', fb: 'idle', ms: 350 }, { pose: 'idle', ms: 0 }];
 }

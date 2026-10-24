@@ -753,13 +753,14 @@ function jumpBar(k,b,f,hb){const wing=([x,y,s],side)=>{const H=96*s,w=34*s,x0=si
   wing(b,1);const bs=b[2],fs=f[2],p0=[b[0]+3*bs,b[1]-hb*bs],p1=[f[0]+3*fs,f[1]-hb*fs],q0=[b[0]+3*bs,b[1]-6*bs],q1=[f[0]+3*fs,f[1]-6*fs];
   const bar=([a,c,t])=>{const w=(bs+fs)/2*t;k.line([a,c],R1(10*w),C.ink,{amp:.2});k.line([a,c],R1(7*w),'#FFFFFF',{amp:.1});k.line([a,c],R1(7*w),'#E8677A',{amp:.1,dash:`${R1(10*w)} ${R1(10*w)}`})};
   // the full course (data-ag-bar="hi"): the thin ground pole and the raised bar. The low course for puppies and seniors (data-ag-bar="lo", shown by the game's
-  // html.ag-low): the striped bar lowered onto the ground, resting on two little wooden chocks (no raised bar). Drawn after the front wing so the
-  // random stream of the full course stays as it was, then placed under the front wing.
-  k.add('<g data-ag-bar="hi">');[[q0,q1,.7],[p0,p1,1]].forEach(bar);snowOn(k,[p0,p1],3);k.add('</g>');
-  const fw=k.cap(()=>wing(f,1)),lo=k.cap(()=>{const l0=[b[0]+3*bs,b[1]-5*bs],l1=[f[0]+3*fs,f[1]-5*fs];
-    [[l0,bs],[l1,fs]].forEach(([[x,y],s])=>k.shape([[x-7*s,y+5*s],[x+7*s,y+5*s],[x+5*s,y-2*s],[x-5*s,y-2*s]],C.wood,{w:1.1,one:1}));
+  // html.ag-low): the striped bar lowered onto the sand on two little wooden chocks, just before the wings on the approach side and clear of
+  // them (no raised bar; the game's low hop is centred where the path crosses it). Drawn last so the random stream of the full course stays as it was.
+  k.add('<g data-ag-bar="hi">');[[q0,q1,.7],[p0,p1,1]].forEach(bar);snowOn(k,[p0,p1],3);k.add('</g>');wing(f,1);
+  const lo=k.cap(()=>{const u=.65,ls=fs+(bs-fs)*u,l0=[f[0]+(b[0]-f[0])*u-40*ls,f[1]+(b[1]-f[1])*u-4*ls],l1=[f[0]-40*fs,f[1]-4*fs];// the front 65% of the depth, round the dog's path
+    [[l0,ls],[l1,fs]].forEach(([[x,y],s])=>{shade(k,x,y+4*s,10*s,2.4*s);k.shape([[x-7*s,y+4*s],[x+7*s,y+4*s],[x+5*s,y-2*s],[x-5*s,y-2*s]],C.wood,{w:1.1,one:1})});
+    k.add(`<path d="M${R1(l0[0]+5*ls)} ${R1(l0[1]+5*ls)}L${R1(l1[0]+6*fs)} ${R1(l1[1]+6*fs)}" stroke="${C.ink}" stroke-width="${R1(9*(ls+fs)/2)}" stroke-linecap="round" opacity=".13"/>`);// its shadow on the sand
     bar([l0,l1,.95]);snowOn(k,[l0,l1],2.5)});
-  k.add(`<g data-ag-bar="lo" display="none">${lo}</g>`+fw)}
+  k.add(`<g data-ag-bar="lo" display="none">${lo}</g>`)}
 function tyre(k,b,f,s){const cx=(b[0]+f[0])/2,cy=(b[1]+f[1])/2,H=150;shade(k,cx,cy+3,52*s,9*s);
   const post=([x,y,q])=>{k.shape([[x-5*q,y],[x-4.4*q,y-H*q],[x+4.4*q,y-H*q],[x+5*q,y]],C.woodD,{w:1.5,one:1,hatch:{side:.6,gap:3,col:dk(C.woodD),op:.4}});k.shape(RC(x-12*q,y-7*q,24*q,7*q),C.stoneD,{w:1.2,one:1})};
   post(b);const tb=[b[0],b[1]-H*b[2]],tf=[f[0],f[1]-H*f[2]];k.shape([[tb[0]-4,tb[1]-5],[tf[0]-4,tf[1]-5],[tf[0]+4,tf[1]+4],[tb[0]+4,tb[1]+4]],C.wood,{w:1.5,one:1});
