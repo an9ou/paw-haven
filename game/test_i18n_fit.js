@@ -331,12 +331,12 @@ async function worker(job) {
     for (const k of PLACES) await placeStep(k);
     const PLACES215 = ['training', 'pool', 'sunflower', 'boutique', 'builder', 'sprout'];
     if (!SCREENS || PLACES215.some((k) => want('place ' + k))) {
-      await ev(() => { const P = window.__paw; P.mp.allow(true); P.S.bond.level = Math.max(P.S.bond.level, 10); });
+      await ev(() => { const P = window.__paw; P.mp.allow(true); P.gr.allow(true); P.S.bond.level = Math.max(P.S.bond.level, 10); }); // the map and the v2.15 ground (the trays need grOn)
       const tray = (btn, sel, nm, stop) => async () => { await jsClick(btn); await waitSel(sel); await sleep(400); await measure(nm); await ev(stop); await sleep(300); };
       await placeStep('training', tray('#placeBtns [data-ag]', '#agGo', 'place: training / agility tray', () => window.__paw.ag.stop()));
       await placeStep('pool', tray('#placeBtns [data-pl]', '#plPaddle', 'place: pool / pool tray', () => window.__paw.pl.stop()));
       for (const k of PLACES215.slice(2)) await placeStep(k);
-      await ev(() => window.__paw.mp.allow(false)); await t.home('yard');
+      await ev(() => { window.__paw.gr.allow(false); window.__paw.mp.allow(false); }); await t.home('yard');
     }
     await step('playdates', async () => {
       await t.home('yard'); await ev(() => window.__paw.breed.openPlaydates()); await t.until(() => !!document.getElementById('pdGo') || !!document.querySelector('#modal .panel'), null, 4000); await measure('puppy playdates'); await closeAll();
