@@ -1,6 +1,6 @@
 # Doodle Doggo (formerly Paw Haven)
 
-A cozy browser game: adopt crayon-drawn dogs, care for them, walk a sketchbook town, grow a garden, and have puppy playdates with real coat genetics. Current version: **v2.15 "A Bigger Town"** (new town map, Training Ground, Splash Pool, run tracks; 11 languages since v2.14) (also on claude.ai, where cloud save is off by design). History: `CHANGELOG.md`. Open issues: `TODO.md`.
+A cozy browser game: adopt crayon-drawn dogs, care for them, walk a sketchbook town, grow a garden, and have puppy playdates with real coat genetics. Current version: **v2.15.1 "Room to train"** (v2.15 "A Bigger Town" plus fixes) (new town map, Training Ground, Splash Pool, run tracks; 11 languages since v2.14) (also on claude.ai, where cloud save is off by design). History: `CHANGELOG.md`. Open issues: `TODO.md`.
 
 **Read `PIPELINE.md` and `README.md` first.** Running parallel agents? Read `BUILDING.md` (roles, models and the cost rules). They describe the layout, the shared-scope rules, the lanes and the test runner. Two things there don't apply on this Mac: the `/home/claude/...` paths (they mean this repo root), and the multi-agent worktree workflow (`tools/wt.sh`), unless you're running parallel agents.
 
