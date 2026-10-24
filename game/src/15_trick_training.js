@@ -29,6 +29,7 @@ function openTraining(tab) {
   TRN = TRN && TRN.dog === D().id ? TRN : { dog: D().id, trick: (avail.find((t) => trickSt(t.n).p < 1) || avail[0] || TRICKS[0]).n, tab: 'train', game: null, treats: 0, chain: 0, chainList: [], hinted: {}, timers: [] };
   if (tab) TRN.tab = tab;
   const tp = $('#trainPanel'); tp.hidden = false; stage.classList.add('training');
+  if (isPhone()) toasts.replaceChildren(); // v2.15.1 (owner): older notes (new mail, hints) leave the scene so the dog shows; training's own toasts still come
   if (!isPhone()) { tp.style.top = (hud.offsetHeight + 10) + 'px'; const w = $('#view > svg.world'); if (w) w.classList.add('trainzoom'); }
   else setTimeout(() => { camApply(camCx); pkHotsRefit(); }, 30);
   if (PUBLIC_AUDIENCE.includes(S.place)) drawAudience(true);
