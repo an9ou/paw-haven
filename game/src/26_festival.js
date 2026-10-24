@@ -184,7 +184,7 @@ function fsSquareDraw() {
   if (festOn('halloween')) { const [bx, by, bw, bh] = fsBannerBox(); html = `<g id="fsBannerG" pointer-events="none">${place(propTint(fsArt('paradebanner')), bx, by, bw, bh)}</g>` + html; }
   if (wint) { // v2.8 draw order (V28.md section 7): #fsStallG, #nyFortuneG (NEW YEAR, right after the stall), the sweater banner, #bowlG, #pack
     if (festOn('lights') && typeof wnBannerSVG === 'function') html += wnBannerSVG();
-    const at = $('#bowlG', svg) || pack; at.insertAdjacentHTML('beforebegin', html);
+    const at = grAt('bowlG', svg) || pack; at.insertAdjacentHTML('beforebegin', html); // v2.15: grAt, the bowl's old place when it sorts with the dogs (43_ground.js)
   } else pack.insertAdjacentHTML('beforebegin', html);
   fsHitFit();
   const st = $('#fsStallG', svg); st.onclick = (e) => { e.stopPropagation(); SFX.click(); fsStallOpen(); }; st.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fsStallOpen(); } };
@@ -208,7 +208,7 @@ function fsSquareDraw() {
 // v2.8: NEW YEAR's Fortune box (32_newyear.js) draws right after the stall (fsSlot), and its desktop place button lands before Go home
 function fsNyDraw() { if (typeof nySquareDraw === 'function') { try { nySquareDraw(); } catch (e) { console.warn('newyear', e); } } }
 // where a prop that stands right after the stall goes: insert it before this element (the banner, the bowl or the pack)
-function fsSlot() { const svg = $('#view svg.world'); if (!svg) return null; const st = $('#fsStallG', svg); return (st && st.nextElementSibling) || $('#bowlG', svg) || $('#pack', svg); }
+function fsSlot() { const svg = $('#view svg.world'); if (!svg) return null; const st = $('#fsStallG', svg); return (st && st.nextElementSibling) || grAt('bowlG', svg) || $('#pack', svg); }
 // v2.6: the Pumpkin Patch Pop-up (27_halloween.js) draws after the stall, so it sits in front of it and its button lands between the parade and Go home
 function fsHwDraw() { if (typeof hwSquareDraw === 'function') hwSquareDraw(); }
 // Square pack spot 3 stands where the stall is: it moves to the front while the stall is up and comes back when the festival packs up

@@ -67,7 +67,11 @@ function grInside(P, x, y) {
   const l = Math.hypot(cx - best[0], cy - best[1]) || 1; return [best[0] + (cx - best[0]) / l * 2, best[1] + (cy - best[1]) / l * 2];
 }
 // the FLOOR.props boxes as no-go boxes for rmScan / rmStaticNo: [x, y, w, h, 'floor', prop id]
-function grNo(place) { const f = grFloor(place); return f ? f.props.filter((p) => Array.isArray(p.box)).map((p) => p.box.slice(0, 4).concat('floor', String(p.id))) : []; }
+function grNo(place) {
+  const f = grFloor(place); if (!f) return []; const out = f.props.filter((p) => Array.isArray(p.box)).map((p) => p.box.slice(0, 4).concat('floor', String(p.id)));
+  const b = grBowlAt(place === undefined ? S && S.place : place); if (b) out.push([b[0] - 38, b[1] - 14, 76, 16, 'floor', 'gamebowl']); // the food bowl's feet box (GR_BOWL)
+  return out;
+}
 // a hard box for the feet (rmHard's rule: 8 units round it), the boxes whose prop id is in al excepted (a spot act through its own obstacle)
 function grHard(x, y, al) { return rmBoxes().some((b) => b[4] !== 'dctag' && !(al && b[5] != null && al.includes(b[5])) && x > b[0] - GR_FOOT && x < b[0] + b[2] + GR_FOOT && y > b[1] - GR_FOOT && y < b[1] + b[3] + GR_FOOT); }
 function grFree(x, y, al) { const f = grFloor(); return !!f && grIn(f.poly, x, y) && !grHard(x, y, al); }
@@ -364,15 +368,30 @@ function grLayer(pk) {
 const GR_GAME = { houseG: 'house', mailboxG: 'mailbox', bowlG: 'bowl' };
 const GR_GAME_WITH = { houseG: ['fsPumpkinG'] }; // drawn right after the house, in front of it (the Halloween pumpkin on the porch): it goes along
 const grGameHere = () => !!S && S.place === 'yard' && grOn('yard') && rmScene();
-function grGameEl(el) { return !!el && !!el.id && GR_GAME[el.id] != null && grGameHere(); }
+// the food bowl (#bowlG, drawn at 205, 462, 90 x 90 in every place: its centre x 250, its base y 540) in every other grOn place: a floor prop too, sorted with
+// the dogs, at the place's own bowl spot (GR_BOWL: [centre x, base y], clear of the place's props and in the first view; not listed = where it always was).
+// Its wrapper moves it there (translate), its feet box is the yard's ([212, 526, 76, 16] about 250, 540: grNo), and the leader's bowl errands
+// (dogTo(-125, 0): feed, the idle bowl visit) walk to its side (grBowlTo, the same 55 right and 40 behind as at 250, 540)
+const GR_BOWL = {
+  pool: [190, 480], training: [330, 580], sunflower: [640, 576], bamboo: [560, 572], cliffs: [460, 572],
+  park: [700, 574], dogpark: [380, 566], beach: [300, 520], hilltop: [430, 572], woods: [640, 582], river: [560, 584], pier: [470, 580],
+  boutique: [436, 576], builder: [420, 576], sprout: [600, 584]
+}; // the Square (its festival stalls are placed round the old bowl), Kibble Corner, the Mt. Fuji Lookout and the indoor rooms keep 250, 540
+function grBowlAt(place) { const p = place === undefined ? S && S.place : place; if (!p || p === 'yard' || !grOn(p)) return null; return GR_BOWL[p] || [250, 540]; }
+function grBowlTo() { const b = grBowlAt(); return b && rmScene() ? [b[0] + 55 - 430, b[1] - 40 - 500] : null; } // dogTo's tx, ty for the leader's bowl errand here
+const grBowlHere = () => !!grBowlAt() && rmScene();
+function grGameEl(el) { return !!el && !!el.id && GR_GAME[el.id] != null && (grGameHere() || (el.id === 'bowlG' && grBowlHere())); }
 function grGame(svg, pk) {
   GR.game = GR.game.filter((w) => { if (w.firstElementChild) { if (w.parentNode !== pk) pk.appendChild(w); return true; } w.remove(); return false; }); // a rebuilt #pack gets them back, an emptied wrapper goes
-  if (!grGameHere()) return; const f = grFloor('yard'); if (!f) return;
+  const yard = grGameHere(), bw = !yard && grBowlHere() ? grBowlAt() : null; if (!yard && !bw) return;
+  const f = yard ? grFloor('yard') : null; if (yard && !f) return;
   Object.keys(GR_GAME).forEach((id) => {
-    const e = svg.querySelector('#' + id), p = e && f.props.find((q) => String(q.id) === GR_GAME[id]); if (!p || !isFinite(p.base)) return;
+    if (bw && id !== 'bowlG') return;
+    const e = svg.querySelector('#' + id), p = !e ? null : bw ? { base: bw[1] } : f.props.find((q) => String(q.id) === GR_GAME[id]); if (!p || !isFinite(p.base)) return;
     const w0 = e.parentNode; if (w0 && w0.classList && w0.classList.contains('gr-game')) return; // already sorted with the dogs
     if (!svg.querySelector(`[data-gr-at="${id}"]`)) { const a = document.createElementNS('http://www.w3.org/2000/svg', 'g'); a.dataset.grAt = id; e.before(a); }
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g'); g.setAttribute('class', 'gr-prop gr-game'); g.dataset.fy = p.base; g.dataset.prop = GR_GAME[id];
+    if (bw && (bw[0] !== 250 || bw[1] !== 540)) g.setAttribute('transform', `translate(${bw[0] - 250} ${bw[1] - 540})`);
     const withs = (GR_GAME_WITH[id] || []).map((k) => svg.querySelector('#' + k)).filter((x) => x && x.previousElementSibling === e);
     g.appendChild(e); withs.forEach((x) => g.appendChild(x)); pk.appendChild(g); GR.game.push(g);
   });

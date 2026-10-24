@@ -33,3 +33,6 @@ html[data-motion="off"] .ag-grade{animation:none}
 /* while running (html.ag-on): the scene props open nothing and the place buttons rest, like ball play */
 html.ag-on #view svg.world .hot,html.ag-on #view svg.world .hot *{pointer-events:none!important}
 html.ag-on #phPeek,html.ag-on #placeBtns{display:none!important}
+/* the low course (html.ag-low, puppies and seniors): the jump's bar lies on the ground (world G jumpBar draws both, data-ag-bar hi | lo) */
+html.ag-low #view svg.world [data-ag-bar="hi"]{display:none}
+html.ag-low #view svg.world [data-ag-bar="lo"]{display:inline}
