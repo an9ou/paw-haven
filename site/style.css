@@ -592,3 +592,6 @@ dialog.dogpop .x{width:44px;height:44px;min-width:44px;min-height:44px;font-size
   .sheet>.sitehead.stuck .sitenav.fade-l{-webkit-mask-image:linear-gradient(to left,#000 calc(100% - 18px),transparent);mask-image:linear-gradient(to left,#000 calc(100% - 18px),transparent)}
   .sheet>.sitehead.stuck .sitenav.fade-l.fade-r{-webkit-mask-image:linear-gradient(to right,transparent,#000 18px,#000 calc(100% - 18px),transparent);mask-image:linear-gradient(to right,transparent,#000 18px,#000 calc(100% - 18px),transparent)}
 }
+
+/* Ko-fi (owner, 24 Oct 2026): the second support button on About Us */
+.play.kofi{background:#CBE0F4}

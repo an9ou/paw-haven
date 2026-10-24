@@ -868,5 +868,7 @@
   "guide.faq.q4": "Mon chien peut-il tomber malade ou s’enfuir ?",
   "guide.faq.a4": "Jamais. Au pire, les jauges baissent : ton chien a juste un peu sommeil ou un petit creux, et un câlin suffit pour que ça aille mieux.",
   "guide.cta": "On y va ? Le jeu t’attend sur la page d’accueil.",
-  "guide.cta_btn": "Jouer maintenant"
+  "guide.cta_btn": "Jouer maintenant",
+  "about.kofi": "Soutenez-nous sur Ko-fi",
+  "footer.kofi": "Ko-fi"
 }

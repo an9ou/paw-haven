@@ -23,7 +23,7 @@
   <footer class="foot">
     <a href="https://www.instagram.com/doodledoggo.app/" id="insta" rel="noopener">{{t footer.instagram}}</a> · <a href="mailto:contact@doodledoggo.app" id="contact" class="contact">{{t footer.contact}}</a> · <a href="{{u /privacy}}">{{t footer.privacy}}</a> ·
     <a href="{{u /}}">{{t footer.home}}</a> · <a href="{{u /dogs}}">{{t footer.dogs}}</a> · <a href="{{u /about}}">{{t footer.about}}</a> ·
-    <a href="https://an9ou.itch.io/doodle-doggo">{{t footer.itch}}</a>
+    <a href="https://an9ou.itch.io/doodle-doggo">{{t footer.itch}}</a> · <a href="https://ko-fi.com/doodledoggoapp" id="kofilink" rel="noopener">{{t footer.kofi}}</a>
     <div class="small">{{t footer.credit}}</div>
   </footer>
 </main>
