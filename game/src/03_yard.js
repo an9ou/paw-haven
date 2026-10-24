@@ -3,7 +3,7 @@ const DX = 298, DY = 295, DW = 264, DH = 220; // dog box: feet at y=500, centre 
 let dogKey = '', tempPose = null, tempUntil = 0, busy = false, pet = { start: 0, gain: 0, bonded: false, capped: false, dist: 0 };
 function yardWorldSVG(extra = '') {
   return `<svg class="world" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMax slice">
-    ${sceneG(S.place || 'yard', S.place === 'yard' ? { patch: gkOn() ? patchState() : 'empty' } : S.place === 'house' && hasBedArt() ? { bed: false } : {})}${S.place === 'yard' && !gkOn() ? '<g class="soon-tag" pointer-events="none" transform="translate(112 432) rotate(-6)"><rect x="-58" y="-17" width="116" height="30" rx="6" fill="#FFF3B8" stroke="#5B3D32" stroke-width="2"/><text y="6" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="22" fill="#5B3D32">' + tt('yard.coming_soon_tag', 'coming soon') + '</text></g>' : ''}${bedLayers().back}<g id="messG"></g><g id="snowmanG">${S.place === 'yard' ? snowmanSVG() : ''}</g>${S.place === 'yard' && cur.mode === 'yard' && typeof msYardSVG === 'function' ? msYardSVG() : ''}${S.place === 'yard' ? hmDecorSVG() : ''}
+    ${sceneG(S.place || 'yard', S.place === 'yard' ? { patch: gkOn() ? patchState() : 'empty' } : S.place === 'house' && hasBedArt() ? { bed: false } : mpSceneOpts(S.place))}${S.place === 'yard' && !gkOn() ? '<g class="soon-tag" pointer-events="none" transform="translate(112 432) rotate(-6)"><rect x="-58" y="-17" width="116" height="30" rx="6" fill="#FFF3B8" stroke="#5B3D32" stroke-width="2"/><text y="6" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="22" fill="#5B3D32">' + tt('yard.coming_soon_tag', 'coming soon') + '</text></g>' : ''}${bedLayers().back}<g id="messG"></g><g id="snowmanG">${S.place === 'yard' ? snowmanSVG() : ''}</g>${S.place === 'yard' && cur.mode === 'yard' && typeof msYardSVG === 'function' ? msYardSVG() : ''}${S.place === 'yard' ? hmDecorSVG() : ''}
     ${S.place === 'yard' ? `<g id="houseG" class="hot${isNight() ? ' night' : ''}" tabindex="0" role="button" aria-label="${esc(tt('yard.label_dog_house', 'Dog house: {house}', { house: homeName(S.house) }))}">${place(art('house', S.house), 620, 330, 240, 200)}</g>` : ''}
     <g id="bowlG" class="hot" tabindex="0" role="button" aria-label="${esc(tt('yard.label_food_bowl', 'Food bowl'))}">${place(art('prop', 'bowl-empty'), 205, 462, 90, 90)}</g>
     <g id="pack">${packSVG(true)}</g>${bedLayers().front}
@@ -73,10 +73,11 @@ function setTemp(pose, ms) { tempPose = pose; tempUntil = performance.now() + ms
 // 500 * scale + ty) and 0, 0, 1 means back where it stands now. #dogPos keeps the old transform as a record (hoAtBedNap, the old suites): inside
 // its .rmdog group the CSS keeps it flat and rmLegacyTo moves the group
 function dogTo(tx, ty = 0, scale = 1, secs = 0.9) {
-  const p = $('#dogPos'); if (!p) return; p.style.transitionDuration = secs + 's';
+  const p = $('#dogPos'); if (!p) return;
+  if (tx === -125 && !ty && scale === 1 && typeof grBowlTo === 'function') { const b = grBowlTo(); if (b) [tx, ty] = b; } // v2.15: the bowl errand goes to the bowl's spot in a grOn place (43_ground.js GR_BOWL) p.style.transitionDuration = secs + 's';
   p.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
   // phones: the camera follows the leader's errands as in v2.9 (back home = the scene's home crop); an idle wander while the player looks around leaves the view
-  if (isPhone() && cur.mode === 'yard') { const home = tx === 0 && ty === 0 && scale === 1; phCamHome = S.place === 'fujihill' || home ? phHomeCx : scale === 1 ? phHomeCx + tx : 430 * scale + tx; if (phPeekOn && typeof IDLE === 'object' && IDLE.act) { /* looking around */ } else { if (phPeekOn) { phPeekOn = false; clearTimeout(phPanT); } camTo(phCamHome, secs); } }
+  if (isPhone() && cur.mode === 'yard' && !grWide()) { const home = tx === 0 && ty === 0 && scale === 1; phCamHome = S.place === 'fujihill' || home ? phHomeCx : scale === 1 ? phHomeCx + tx : 430 * scale + tx; if (phPeekOn && typeof IDLE === 'object' && IDLE.act) { /* looking around */ } else { if (phPeekOn) { phPeekOn = false; clearTimeout(phPanT); } camTo(phCamHome, secs); } }
   else if (phPeekOn && !(typeof IDLE === 'object' && IDLE.act)) { phPeekOn = false; clearTimeout(phPanT); }
   const fol = $('#pkFol'); if (fol && fol.closest('.rmdog')) $('#pack').after(fol); // v2.9 Fetch followers are placed in world units, not with the leader
   if (p.closest('.rmdog')) rmLegacyTo(tx, ty, scale, secs);
@@ -213,6 +214,10 @@ function phHomeRefit() {
   else if (wide && S.place === 'yard' && !vz) { L = 140; } // v2.10: the missions clipboard's 48 px tap rect (it grows left of the clipboard when the scene is zoomed out)
   else if (wide && vz) { const sp = visitorSpot(), w = 264 * sp[3]; L = 306; R = Math.max(R, sp[0] + w / 2 + 6); } // a visiting dog: the dog and the visitor, as in v2.3
   else if (vz) { const sp = visitorSpot(), w = 264 * sp[3]; L = 306; R = Math.max(R, sp[0] + w / 2 + 6); }
+  if (!vz && typeof mpShopOf === 'function' && (mpShopOf(S.place) || (S.place === 'market' && mpOn()))) { // v2.15: a storefront's home crop keeps its whole door (the shop's hot spot) next to the dog
+    const svg = $('#view > svg.world'), de = svg && svg.querySelector('#sceneG [data-shop]'), M = svg && svg.getScreenCTM(), b = de && M ? rmWorldBox(svg, M.inverse(), de) : null;
+    if (b && b[2] < 420) { L = Math.min(L, b[0] - 8); R = Math.max(R, b[0] + b[2] + 8); }
+  }
   const vw = view.clientWidth, vh = view.clientHeight - (parseFloat(view.style.getPropertyValue('--trayH')) || 0); if (!vw || vh <= 0) return;
   const native = 600 * vw / vh;
   if (wide) { // v2.10 ROAM: about 700 world units wide (V210.md section 5.2): zoomed out through the viewBox like Market Street, the extra sky above the scene
@@ -229,6 +234,7 @@ function phHomeRefit() {
   // v2.10 ROAM: the wider crop keeps the v2.3 home span (the bowl, the dog's spot, a visitor) in view and leans towards the middle of the pack
   const half = wide ? Math.min(500, native / phZoom / 2) : 0, pk = wide ? rmSpan() : null;
   phHomeCx = !wide || !rmWander() || R - L >= half * 2 ? (L + R) / 2 : clamp(clamp((pk[0] + pk[1]) / 2, R - half, L + half), half, 1000 - half); // the harness keeps the v2.3 home (the older suites tap props by where they were)
+  if (wide && grWide()) phHomeCx = clamp(grFocusX(), Math.min(half, grW() / 2), Math.max(grW() - half, grW() / 2)); // v2.15: a wide place's camera starts on the pack (43_ground.js follows it)
   if (!S.sleeping || S.place === 'fujihill') { phCamHome = phHomeCx; camCx = phCamHome; }
   camApply(camCx);
 }
@@ -269,17 +275,19 @@ function phCamPan(svg) {
   });
   svg.addEventListener('pointermove', (e) => {
     if (x0 == null || e.pointerId !== id) return; const dx = e.clientX - x0;
-    if (!on) { if (Math.hypot(dx, e.clientY - y0) < FB_DRAG) return; on = true; clearTimeout(phPanT); cancelAnimationFrame(camRaf); try { svg.setPointerCapture(id); } catch (er) { /* none */ } }
-    if (!isPhone()) return;
+    const gw = cur.mode === 'yard' && grWide(); // v2.15: a wide place drags to look on desktop too, from 6 px (43_ground.js)
+    if (!on) { if (Math.hypot(dx, e.clientY - y0) < (gw ? 6 : FB_DRAG)) return; on = true; clearTimeout(phPanT); cancelAnimationFrame(camRaf); try { svg.setPointerCapture(id); } catch (er) { /* none */ } }
+    if (!isPhone() && !gw) return; if (gw) GR.drag = true;
     const { w: vw, h: vh } = phSvgDims(); if (!vw || !vh) return;
-    const vbW = 600 * vw / vh / phZoom; if (vbW >= 1000) return;
-    const cx = clamp(c0 - dx * vbW / vw, vbW / 2, 1000 - vbW / 2); if (Math.abs(cx - camCx) < 0.5) return;
+    const W = gw ? grW() : 1000, vbW = isPhone() ? 600 * vw / vh / phZoom : Math.min(1000, 600 * vw / vh); if (vbW >= W) return;
+    const lo = isPhone() ? vbW / 2 : 500, cx = clamp(c0 - dx * vbW / vw, lo, W - lo); if (Math.abs(cx - camCx) < 0.5) return;
     if (!phPeekOn && Math.abs(camCx - phCamHome) < 1) hideBubble(); phPeekOn = false; camCx = cx; camApply(camCx);
   });
   const end = (e) => {
     if (x0 == null || e.pointerId !== id) return; x0 = null; if (!on) return;
     on = false; swallow = true; clearTimeout(swT); swT = setTimeout(() => { swallow = false; }, 400); // the click that follows a drag is not a tap
-    clearTimeout(phPanT); if (isPhone()) phPanT = setTimeout(() => { if ((cur.mode === 'yard' || cur.mode === 'market') && !phPeekOn) camTo(phCamHome, 0.8); }, 4000);
+    clearTimeout(phPanT); if (cur.mode === 'yard' && grWide()) { GR.drag = false; grDragged(); return; } // v2.15: the follow camera waits 2 s, then goes on
+    if (isPhone()) phPanT = setTimeout(() => { if ((cur.mode === 'yard' || cur.mode === 'market') && !phPeekOn) camTo(phCamHome, 0.8); }, 4000);
   };
   svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end);
   // the scene is touch-action:none, but Safari can still take a finger drag on an SVG for its own page gesture (and cancel the pointer)
@@ -499,7 +507,7 @@ function placeButtons() {
   const pb = $('#placeBtns'); if (!pb) return; const b = [];
   if (S.place === 'yard') b.push(gkOn() ? `<button class="btn ${gardenUnlocked() ? 'yes' : ''}" data-pb="garden">${gardenUnlocked() ? tt('yard.garden', 'Garden') : tt('yard.garden_bond_2', 'Garden (Bond 2)')}</button>` : '<button class="btn soon" data-pb="garden" aria-disabled="true">' + tt('yard.garden_coming_soon', 'Garden: coming soon') + '</button>', '<button class="btn" data-pb="house">' + tt('yard.go_inside', 'Go inside') + '</button>');
   if (S.place === 'house') b.push(kOn() ? `<button class="btn ${kitchenUnlocked() ? 'yes' : ''}" data-pb="kitchen">${kitchenUnlocked() ? tt('yard.kitchen', 'Kitchen') : tt('yard.kitchen_bond_3', 'Kitchen (Bond 3)')}</button>` : '<button class="btn soon" data-pb="kitchen" aria-disabled="true">' + tt('yard.kitchen_coming_soon', 'Kitchen: coming soon') + '</button>', '<button class="btn" data-pb="yard">' + tt('yard.go_outside', 'Go outside') + '</button>');
-  if (S.place === 'market') Object.keys(SHOP_NAME).forEach((k) => b.push(`<button class="btn" data-sh="${k}">${shopName(k)}</button>`));
+  if (S.place === 'market' || mpShopOf(S.place)) (mpShopOf(S.place) ? [mpShopOf(S.place)] : Object.keys(SHOP_NAME)).forEach((k) => b.push(`<button class="btn" data-sh="${k}">${shopName(k)}</button>`)); // v2.15: a storefront (and Kibble Corner) has its own shop only
   if (S.place === 'beach') { dailyCheck(); b.push(`<button class="btn yes" data-pb="dig" ${S.daily.beachDig ? 'aria-disabled="true"' : ''}>${S.daily.beachDig ? tt('yard.dug_today', 'Dug today') : tt('yard.dig_in_the_sand', 'Dig in the sand')}</button>`); }
   const placeBtn = { square: ['notice', tt('yard.town_notice', 'Town notice')], cafe: ['cafe', tt('yard.cafe_menu', 'Café menu')], dogpark: ['social', tt('yard.socialise', 'Socialise')], vet: ['vet', tt('yard.check_up', 'Check-up')], salon: ['groom', tt('yard.full_groom', 'Full groom')], hilltop: weatherNow() === 'sunny' ? ['kites', tt('yard.watch_kites', 'Watch kites')] : null }[S.place];
   if (placeBtn) b.push(`<button class="btn yes" data-pb="${placeBtn[0]}">${placeBtn[1]}</button>`);
@@ -562,6 +570,7 @@ function travelTo(id) {
   if (awayFromHome(id) && staysHome(D())) { nope(stayHomeLine(D())); return; } // v2.0.1: under 3 months / nursing mum: home and yard only
   const going = S.dogs.filter((d) => d === D() || !(awayFromHome(id) && staysHome(d))), stay = S.dogs.filter((d) => !going.includes(d));
   busy = true; hideBubble(); SFX.whoosh(); trackAct('travel', { place: id });
+  if (P.v215) artChunk('g'); // v2.15: world G (the new places) loads during the walk there (PERF.md 5)
   if (stay.length && !awayFromHome()) toast(tt('yard.stay_home', '{kind, select, pups {{names} {n, plural, one {stays} other {stay}} home with the pups.} other {{names} {n, plural, one {stays} other {stay}} home with a chew toy (too little for trips).}}', { kind: stay.some((d) => ageMonths(d) >= 3) ? 'pups' : 'toy', names: tlist(stay.map((d) => d.name)), n: stay.length }), '');
   const card = document.createElement('div'); card.className = 'onway';
   card.innerHTML = `<div class="onway-card"><span class="onway-dog">${going.map((d) => dogSVG(d, { pose: 'walk', outfit: outfitOf(d) })).join('')}</span><b>${esc(tt('yard.on_the_way_to', 'On the way to {place}...', { place: placeName(id) }))}</b><span class="small">${going.length > 1 ? (stay.length ? tt('yard.the_pack_trots_along_2', 'The pack trots along. -2 Energy each.') : tt('yard.the_whole_pack_trots_along', 'The whole pack trots along. -2 Energy each.')) : esc(tt('yard.trots_happily_2_energy', '{name} trots happily. -2 Energy.', { name: NAME() }))}</span></div>`;
@@ -570,7 +579,7 @@ function travelTo(id) {
     card.remove(); busy = false;
     S.place = id; going.forEach((d) => { d.stats.energy = clamp(d.stats.energy - 2, 0, 100); }); dailyCheck(); S.daily.visited = S.daily.visited || [];
     const first = !S.daily.visited.includes(id); if (first) { S.daily.visited.push(id); addStat('happy', 5); }
-    markDirty(); go(id === 'market' ? 'market' : 'yard');
+    markDirty(); go(id === 'market' ? 'market' : 'yard'); mpArrive(id); // v2.15: the sticker is cleared, a storefront opens its shop window (42_map215.js)
     let msg = tt('yard.arrived_at', '{first, select, yes {{name} arrived at {place}. First visit today: +5 Happiness.} other {{name} arrived at {place}.}}', { first: first ? 'yes' : 'no', name: NAME(), place: placeName(id) });
     if (id === 'river' && weatherNow() === 'rain' && !hasRaincoat() && Math.random() < 0.6) { addStat('clean', -3); msg += ' ' + tt('yard.splashed_through_a_puddle_on', 'Splashed through a puddle on the way (-3 Cleanliness).'); }
     toast(msg, 'good');
@@ -649,7 +658,7 @@ function openFeedTray() {
     return `<button class="card ${off ? 'off meal' : ''}" data-food="${esc(f.n)}" ${wait || off ? 'aria-disabled="true"' : ''} aria-label="${esc(off ? tt('yard.label_feed_meals_home', 'Feed {food} (meals are served at home)', { food: homeName(f.n) }) : tt('yard.label_feed', 'Feed {food}', { food: homeName(f.n) }))}">${cnt}<span class="art">${art('item', f.n)}</span><b>${esc(homeName(f.n))}${hwTag(f.n)}</b><span class="small">${off ? tt('yard.at_home', 'at home') : wait ? tt('yard.refilling', 'refilling...') : isFavFood(f.n) ? tt('yard.favourite', 'favourite!') : SNACKS.includes(f.n) ? tt('yard.snack', 'snack') : ''}</span></button>`;
   }).join('');
   const dishes = kOn() ? dishRowHTML(!home) : '';
-  setTray(home ? tt('yard.feed_tap_a_food', 'Feed: tap a food') : esc(tt('yard.feed_snacks_and_water_at', 'Feed: snacks and water at {place}', { place: PLACES[S.place] ? placeName(S.place) : tt('yard.this_place', 'this place') })), `${crChipsHTML()}<div class="row">${cards}${dishes}</div>${items.length <= 1 && !dishes ? '<p class="small" style="margin:0">' + tt('yard.pantry_is_empty_kibble_corner', 'Pantry is empty. Kibble Corner on Market Street sells food.') + '</p>' : ''}${home && S.dogs.length > 1 ? `<div class="awaynote"><p class="small">${feedAllFood() ? tt('yard.one_portion_of_for_every_dog_html', '{ticked, select, yes {One portion of <b>{food}</b> for every ticked dog (you have {n}).} other {One portion of <b>{food}</b> for every dog (you have {n}).}}', { ticked: crOn() ? 'yes' : 'no', food: homeName(feedAllFood().n), n: S.inv.food[feedAllFood().n] }) : tt('yard.no_meals_left_for_feed', 'No meals left for Feed all.')}</p><button class="btn go" id="feedAll" ${feedAllFood() ? '' : 'aria-disabled="true"'}>${esc(tt('yard.feed_all_count', 'Feed all ({dogs})', { dogs: crOn() ? crDogsN(crDogs().length) : tt('yard.n_dogs', '{n, plural, one {# dog} other {# dogs}}', { n: S.dogs.length }) }))}</button></div>` : ''}${home ? '' : `<div class="awaynote"><p class="small">${esc(tt('yard.meals_are_served_at_home_out_here', 'Meals are served at home. Out here {name} has snacks and water.', { name: NAME() }))}</p><button class="btn go" id="feedHome">${tt('yard.go_home', 'Go home')}</button></div>`}`);
+  setTray(home ? tt('yard.feed_tap_a_food', 'Feed: tap a food') : esc(tt('yard.feed_snacks_and_water_at', 'Feed: snacks and water at {place}', { place: PLACES[S.place] ? placeName(S.place) : tt('yard.this_place', 'this place') })), `${crChipsHTML()}<div class="row">${cards}${dishes}</div>${items.length <= 1 && !dishes ? '<p class="small" style="margin:0">' + (mpOn() ? tt('map215.pantry_empty', 'Pantry is empty. Kibble Corner sells food.') : tt('yard.pantry_is_empty_kibble_corner', 'Pantry is empty. Kibble Corner on Market Street sells food.')) + '</p>' : ''}${home && S.dogs.length > 1 ? `<div class="awaynote"><p class="small">${feedAllFood() ? tt('yard.one_portion_of_for_every_dog_html', '{ticked, select, yes {One portion of <b>{food}</b> for every ticked dog (you have {n}).} other {One portion of <b>{food}</b> for every dog (you have {n}).}}', { ticked: crOn() ? 'yes' : 'no', food: homeName(feedAllFood().n), n: S.inv.food[feedAllFood().n] }) : tt('yard.no_meals_left_for_feed', 'No meals left for Feed all.')}</p><button class="btn go" id="feedAll" ${feedAllFood() ? '' : 'aria-disabled="true"'}>${esc(tt('yard.feed_all_count', 'Feed all ({dogs})', { dogs: crOn() ? crDogsN(crDogs().length) : tt('yard.n_dogs', '{n, plural, one {# dog} other {# dogs}}', { n: S.dogs.length }) }))}</button></div>` : ''}${home ? '' : `<div class="awaynote"><p class="small">${esc(tt('yard.meals_are_served_at_home_out_here', 'Meals are served at home. Out here {name} has snacks and water.', { name: NAME() }))}</p><button class="btn go" id="feedHome">${tt('yard.go_home', 'Go home')}</button></div>`}`);
   fbBowlSync(); crBindChips(dock, openFeedTray); dock.querySelectorAll('[data-food]').forEach((c) => { c.onclick = () => { SFX.init(); feed(c.dataset.food); }; });
   const fh = $('#feedHome'); if (fh) fh.onclick = () => { closeTray(); travelTo('yard'); };
   const fa = $('#feedAll'); if (fa) fa.onclick = () => feedAll();
@@ -710,7 +719,7 @@ function feed(name) {
 /* ---------------- PLAY ---------------- */
 function openPlayTray() {
   if (cur.mode !== 'yard') go('yard');
-  const fts = FETCH_TOYS.filter((t) => owns('toys', t)), sub = { 'Tennis Ball': tt('yard.free_throws_every_dog_races', 'Free throws, every dog races'), Frisbee: tt('yard.long_throws_3_coins', 'Long throws: 3 coins'), 'Driftwood Stick': tt('yard.tumbles_3_coins', 'Tumbles: 3 coins'), 'Glow Ball': tt('yard.glows_after_dark', 'Glows after dark') };
+  const fts = FETCH_TOYS.filter((t) => owns('toys', t)), sub = { 'Tennis Ball': tt('yard.free_throws_every_dog_races', 'Free throws, every dog races'), Frisbee: tt('yard.long_throws_3_coins', 'Long throws: 3 coins'), 'Driftwood Stick': tt('yard.tumbles_3_coins', 'Tumbles: 3 coins'), 'Glow Ball': tt('yard.glows_after_dark', 'Glows after dark'), 'Bamboo Ring': tt('tracks.ring_sub', 'Floats, 3 coins') };
   const b = fts.map((t) => `<button class="card" data-play="ball:${esc(t)}"><span class="art">${art('item', t)}</span><b>${tt('yard.play_ball', 'Play ball')}</b><span class="small">${esc(tt('yard.toy_sub', '{toy}: {sub}', { toy: homeName(t), sub: sub[t] }))}</span></button>`); // v2.10: free ball play where you are (38_ball.js) replaces the timed Fetch challenge
   toysPlayable().forEach((t) => b.push(`<button class="card" data-play="toy:${esc(t)}"><span class="art">${art('item', t)}</span><b>${tt('yard.play', 'Play')}</b><span class="small">${esc(homeName(t))}${hwTag(t)}</span></button>`));
   b.push(`<button class="card" data-play="tricks"><span class="art">${ICON('star')}</span><b>${tt('yard.tricks', 'Tricks')}</b><span class="small">${esc(tt('yard.learned', '{n} learned', { n: learnedCount() }))}</span></button>`);
@@ -844,7 +853,7 @@ function wake(auto) {
 }
 function openHouses() {
   const cards = HOUSES.filter((h) => owns('houses', h.n)).map((h) => `<div class="sitem"><span class="art house">${art('house', h.n)}</span><b>${esc(homeName(h.n))}</b><span class="desc">${esc(tt('yard.nap_energy', 'Nap Energy +{pct}%', { pct: Math.round(h.comfort * 100) }))}</span>${h.n === S.house ? '<span class="chip own">' + tt('yard.living_here', 'Living here') + '</span>' : `<button class="btn yes" data-house="${esc(h.n)}">${tt('yard.move_in', 'Move in')}</button>`}</div>`).join('');
-  const p = openModal(tt('yard.your_dog_houses', 'Your dog houses'), `<p class="small">${tt('yard.switching_is_free_buy_more', 'Switching is free. Buy more at Barkitecture on Market Street.')}</p><div class="shopgrid">${cards}</div>`);
+  const p = openModal(tt('yard.your_dog_houses', 'Your dog houses'), `<p class="small">${(mpOn() ? tt('map215.houses_where', 'Switching is free. Buy more at Barkitecture, the workshop by the river.') : tt('yard.switching_is_free_buy_more', 'Switching is free. Buy more at Barkitecture on Market Street.'))}</p><div class="shopgrid">${cards}</div>`);
   p.querySelectorAll('[data-house]').forEach((b) => { b.onclick = () => { switchHouse(b.dataset.house); closeModal(); }; });
 }
 function switchHouse(n) {
@@ -857,8 +866,9 @@ function switchHouse(n) {
 
 /* scene hotspots (shops, garden, kitchen, notice...). Re-bound after the core redraws the scene for time/weather changes. */
 function bindSceneHots() {
-  if (S.place === 'market') hotify($('svg.world', view), '#sceneG [data-shop]', 'data-shop', (k) => openShop(k), (k) => tt('yard.enter_shop', 'Enter {shop}', { shop: SHOP_NAME[k] ? shopName(k) : k }));
-  hotify($('svg.world', view), '#sceneG [data-hot]', 'data-hot', (k) => ({ garden: openGarden, kitchen: openKitchen, notice: squareNotice, 'cafe-menu': cafeMenu, 'vet-desk': vetCheck, 'salon-chair': salonGroom }[k] || (() => {}))(), (k) => tt('yard.open_the', 'Open the {thing}', { thing: { garden: tt('yard.hot_garden', 'garden'), kitchen: tt('yard.hot_kitchen', 'kitchen'), notice: tt('yard.hot_notice', 'notice board'), 'cafe-menu': tt('yard.hot_cafe_menu', 'café menu'), 'vet-desk': tt('yard.hot_vet_desk', 'vet desk'), 'salon-chair': tt('yard.hot_salon_chair', 'salon chair') }[k] || k }));
+  const mpSh = mpShopOf(S.place); // v2.15: a storefront's door (and Kibble Corner's) opens its own shop only
+  if (S.place === 'market' || mpSh) hotify($('svg.world', view), mpSh ? `#sceneG [data-shop="${mpSh}"]` : '#sceneG [data-shop]', 'data-shop', (k) => openShop(k), (k) => tt('yard.enter_shop', 'Enter {shop}', { shop: SHOP_NAME[k] ? shopName(k) : k }));
+  hotify($('svg.world', view), '#sceneG [data-hot]', 'data-hot', (k) => ({ garden: openGarden, kitchen: openKitchen, notice: squareNotice, 'cafe-menu': cafeMenu, 'vet-desk': vetCheck, 'salon-chair': salonGroom, run: () => trGate(S.place) }[k] || (() => {}))(), (k) => k === 'run' ? tt('tracks.gate_label', 'Start the run') : tt('yard.open_the', 'Open the {thing}', { thing: { garden: tt('yard.hot_garden', 'garden'), kitchen: tt('yard.hot_kitchen', 'kitchen'), notice: tt('yard.hot_notice', 'notice board'), 'cafe-menu': tt('yard.hot_cafe_menu', 'café menu'), 'vet-desk': tt('yard.hot_vet_desk', 'vet desk'), 'salon-chair': tt('yard.hot_salon_chair', 'salon chair') }[k] || k }));
 }
 on('scene:redraw', () => { if (cur.mode === 'yard' && $('svg.world', view)) { bindSceneHots(); shHouseNight(); } });
 // v2.4: house lamps (the Lighthouse Kennel's beam, .pa-wb-glow) only shine at night
@@ -973,7 +983,7 @@ function hmOpenDecor(room) {
   hmDecorFields(); room = room === 'house' || room === 'yard' ? room : S.place === 'house' ? 'house' : 'yard';
   const got = hoOwned(room), out = got.filter(hmDecorOut), away = got.filter((n) => !hmDecorOut(n)), where = room === 'yard' ? 'yard' : 'house';
   const card = (n, btns) => `<div class="sitem"><span class="art">${art('item', n)}</span><b>${esc(homeName(n))}${hwTag(n)}</b>${btns}</div>`;
-  const body = `<p class="small">${esc(got.length ? tt('yard.move_things_around_the_or', '{where, select, yard {Move things around the yard, or tuck them away for later.} other {Move things around the house, or tuck them away for later.}}', { where }) : room === 'yard' ? tt('yard.nothing_for_the_yard_yet', 'Nothing for the yard yet. Barkitecture on Market Street sells yard decorations.') : tt('yard.nothing_for_the_house_yet', 'Nothing for the house yet. Barkitecture on Market Street sells house things and furniture. The beds can move about already.'))}</p>
+  const body = `<p class="small">${esc(got.length ? tt('yard.move_things_around_the_or', '{where, select, yard {Move things around the yard, or tuck them away for later.} other {Move things around the house, or tuck them away for later.}}', { where }) : room === 'yard' ? (mpOn() ? tt('map215.nothing_yard', 'Nothing for the yard yet. Barkitecture sells yard decorations.') : tt('yard.nothing_for_the_yard_yet', 'Nothing for the yard yet. Barkitecture on Market Street sells yard decorations.')) : (mpOn() ? tt('map215.nothing_house', 'Nothing for the house yet. Barkitecture sells house things and furniture. The beds can move about already.') : tt('yard.nothing_for_the_house_yet', 'Nothing for the house yet. Barkitecture on Market Street sells house things and furniture. The beds can move about already.')))}</p>
     <button class="btn yes ho-arrange" id="hoArrange"><span class="art">${iconOr('arrange', '<path d="M-12 0h24M0 -12v24" stroke="#5B3D32" stroke-width="3"/>')}</span>${esc(tt('yard.arrange_the', '{where, select, yard {Arrange the yard} other {Arrange the house}}', { where }))}</button>
     ${out.length ? `<h4 class="ho-h">${tt('yard.out', 'Out')}</h4><div class="shopgrid">${out.map((n) => card(n, `<div class="ho-btns"><button class="btn" data-homove="${esc(n)}">${tt('yard.move', 'Move')}</button><button class="btn" data-hoaway="${esc(n)}">${tt('yard.put_away', 'Put away')}</button></div>`)).join('')}</div>` : ''}
     ${away.length ? `<h4 class="ho-h">${tt('yard.put_away', 'Put away')}</h4><p class="small">${tt('yard.these_are_tucked_away_put', 'These are tucked away. Put them back out any time.')}</p><div class="shopgrid">${away.map((n) => card(n, `<button class="btn yes" data-back="${esc(n)}">${tt('yard.place', 'Place')}</button>`)).join('')}</div>` : ''}`;

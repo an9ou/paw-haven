@@ -9,7 +9,8 @@ sub rd { my $f = shift; open my $h, '<:raw', $f or die "$f: $!"; local $/; my $s
 sub cat_dir { my $d = shift; join '', map { rd("game/$d/$_") } grep { length } map { s/^\s+|\s+$//gr } split /\n/, rd("game/$d/ORDER.txt") }
 sub mod { my $s = rd(shift); die "</script in module\n" if $s =~ m{</script}i; $s }
 my $out = rd('game/shell.html');
-my $art  = join "\n", map { mod($_) } qw(dogs/pawart_dogs.js world/pawart_world_a.js world/pawart_world_b.js world/pawart_world_c.js world/pawart_world_d.js world/pawart_world_e.js);
+# v2.15: worlds F and G join when their files exist (same as game/build.js)
+my $art  = join "\n", map { mod($_) } (qw(dogs/pawart_dogs.js world/pawart_world_a.js world/pawart_world_b.js world/pawart_world_c.js world/pawart_world_d.js world/pawart_world_e.js), grep { -e $_ } qw(world/pawart_world_f.js world/pawart_world_g.js));
 my $mods = join "\n", map { mod($_) } qw(mods/genes.js mods/pawaudio.js mods/walkrun.js mods/toys.js mods/garden.js mods/kitchen.js);
 my $i18n = join "\n", map { rd($_) } grep { -e $_ } qw(game/i18n/msg.js game/i18n/packed.js); # v2.14, same as game/build.js
 for ([ '/*@@I18N@@*/', $i18n ], [ '/*@@CSS@@*/', cat_dir('css') ], [ '/*@@GAME@@*/', cat_dir('src') ], [ '/*@@PAWART@@*/', $art ], [ '/*@@PAWMODS@@*/', $mods ]) {

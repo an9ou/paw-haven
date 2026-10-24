@@ -239,7 +239,17 @@
     "Toffee": "トフィー",
     "Meringue": "メレンゲ",
     "Marshmallow": "マシュマロ",
-    "Wonton": "ワンタン"
+    "Wonton": "ワンタン",
+    "Training Ground": "トレーニング場",
+    "Splash Pool": "じゃぶじゃぶプール",
+    "Sunflower Lanes": "ひまわりの小道",
+    "Bamboo Grove Trail": "竹林の小道",
+    "Seaside Cliffs Run": "海辺のがけ道",
+    "agility course": "アジリティコース",
+    "rosette": "ロゼット",
+    "Doggy Life Vest": "わんこライフジャケット",
+    "Float fetch": "ぷかぷかボール",
+    "paddle (pool)": "水あそび"
   },
   "bans": [
     {

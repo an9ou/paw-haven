@@ -89,6 +89,9 @@ const SUITES = {
   v211_tokyo: { file: 'test_v211_tokyo.js', group: 'all', est: 150, timeout: 420 }, // v2.11 TRAVEL (V211.md 5.3): the Station, the ride, the Japan map, the Tokyo places
   v211_art_d: { file: 'test_v211_art_d_node.js', group: 'all', est: 30 }, // v2.11 TOKYO ART D (V211.md 5.4): Japan map, Shinkansen, Shibuya, Yoyogi, Asakusa, the town map's Station pin
   v211_art_e: { file: 'test_v211_art_e_node.js', group: 'all', est: 15 }, // v2.11 (V211.md 5.4): world E, the Tokyo Tower, Ueno and Odaiba scenes, eki stamps, lucky cat, Tokyo frame, items (TOKYO ART E)
+  v215_places_art: { file: 'test_v215_places_art.js', group: 'all', est: 40 }, // v2.15 PLACE ART (V215.md 2, 6, 8.2, 12): world G, the eight new places, PawArt.FLOOR, the three walk strips
+  'v215_gart-a': { file: 'test_v215_gart-a.js', group: 'all', est: 40 }, // v2.15 GROUND ART A (V215.md 8.2, 12, 13): park, dogpark, beach, hilltop, woods, river, pier 1600 wide under { v215 }, their FLOOR rows; old renders byte-identical
+  'v215_gart-b': { file: 'test_v215_gart-b.js', group: 'all', est: 30 }, // v2.15 GROUND ART B (V215.md 5, 8.2, 12, 13): yard, house, Kibble Corner, square, fujihill deep under { v215 }, their FLOOR rows; old renders byte-identical
   v29_review: { file: 'test_v29_review.js', group: 'all', est: 40 }, // v2.9 integration review fixes (coordinator)
   v211_dogs: { file: 'test_v211_dogs_node.js', group: 'all', est: 450, timeout: 700 }, // v2.11 BREED ART (V211.md 5.2): akita, spitz, pom, afghan, dane, mastiff, gsd and the three Tokyo bandanas
   v212_dogs: { file: 'test_v212_dogs_node.js', group: 'all', est: 480, timeout: 900 }, // v2.12 ART A-D (V212.md 5): the fourteen new breeds in every pose, age, facing and outfit
@@ -96,6 +99,12 @@ const SUITES = {
   v213_faces: { file: 'test_v213_faces_node.js', group: 'all', est: 120, timeout: 600 }, // v2.13 ART A + B (V213.md 3, 6): every expression on every breed, age, ok pose, facing and a set of outfits
   v213_neck: { file: 'test_v213_neck_node.js', group: 'all', est: 170, timeout: 600 }, // v2.13 NECK (V213.md 5): every head on its body, 35 breeds, every pose, adult and puppy, expressions that tilt the head, mixes (5.1)
   v213_expr: { file: 'test_v213_expr.js', group: 'all', est: 60 }, // v2.13 EX (V213.md 4): expressions in play, personality, photo picker
+  v215_migrate: { file: 'test_v215_migrate.js', group: 'all', est: 115 }, // v2.15 stubs (V215.md 9, 16): old saves in every place key load with the v2.15 map off and on, v215Fields
+  v215_map: { file: 'test_v215_map.js', group: 'all', est: 120 }, // v2.15 MAP (V215.md 2-4, 16): 25 building buttons, the travel walk, stickers, the labels switch, captions in every language
+  v215_places: { file: 'test_v215_places.js', group: 'all', est: 90 }, // v2.15 (V215.md 5, 6, 16): the storefronts (MAP lane); the Training Ground, the pool and the run gates (ACTIVITIES lane)
+  v215_tracks: { file: 'test_v215_tracks.js', group: 'all', est: 120 }, // v2.15 ACTIVITIES (V215.md 6.3, 7, 16): the three run tracks as routes and places, the carousel, the run gates, the six treasures, the care notes, the 7-day income sim
+  v215_ground: { file: 'test_v215_ground.js', group: 'all', est: 150 }, // v2.15 GROUND (V215.md 8, 16): every grOn place, 4 dogs x 120 simulated s on the deep floor, the camera, petting, ball play, photo mode, the systems on a deep floor
+  v215_items: { file: 'test_v215_items_node.js', group: 'all', est: 30 }, // v2.15 ITEM ART (V215.md 6.2, 6.3): the seven item icons (Doggy Life Vest, six treasures) are real art; the Sunflower Collar, Sailor Cap and Life Vest on the dogs
   // v2.2 phone suites: `node game/run_tests.js phone` (not part of `all`, which stays the desktop regression set)
   phone_legacy: { file: 'test_phone.js', group: 'phone', est: 90 },
   phone_shell: { file: 'test_phone_shell.js', group: 'phone', est: 40 },
@@ -104,6 +113,7 @@ const SUITES = {
   site: { file: 'test_site.js', group: 'phone', est: 300, timeout: 900 }, // v2.8.2: the doodledoggo.app introduction site and its reset page (Miniflare, desktop + iPhone 15)
   phone_home: { file: 'test_phone_home.js', group: 'phone', est: 60 },
   phone_town: { file: 'test_phone_town.js', group: 'phone', est: 70 },
+  phone_v215_map: { file: 'test_phone_v215_map.js', group: 'phone', est: 60 }, // v2.15 MAP (V215.md 11): 44 px taps, 15 px text, long-press names, tap travels, the sheet pan
   phone_journal: { file: 'test_phone_journal.js', group: 'phone', est: 35 },
   phone_puppy: { file: 'test_phone_puppy.js', group: 'phone', est: 35 },
   phone_walk: { file: 'test_phone_walk.js', group: 'phone', est: 110 },
@@ -128,6 +138,8 @@ const SUITES = {
   phone_v29_pack: { file: 'test_phone_v29_pack.js', group: 'phone', est: 50 }, // v2.9 (V29.md)
   phone_v210_ball: { file: 'test_phone_v210_ball.js', group: 'phone', est: 60 },
   phone_v210_roam: { file: 'test_phone_v210_roam.js', group: 'phone', est: 50 }, // v2.10 ROAM (V210.md)
+  phone_v215_places: { file: 'test_phone_v215_places.js', group: 'phone', est: 80 }, // v2.15 ACTIVITIES (V215.md 6, 11, 16): the Training Ground on phones: the 64 px Go! button in the thumb zone, 44 px taps, 15 px text, no sideways scroll
+  phone_v215_ground: { file: 'test_phone_v215_ground.js', group: 'phone', est: 70 }, // v2.15 GROUND (V215.md 11, 16): the wide-place camera on phones, look chips, drag vs tap, the crop, 44 px, no sideways scroll
   phone_v211_cards: { file: 'test_phone_v211_cards.js', group: 'phone', est: 50 }, // v2.11 CARDS: Dog Cards on phones (V211.md section 5.5)
   phone_v213_expr: { file: 'test_phone_v213_expr.js', group: 'phone', est: 50 }, // v2.13 EX: expressions and the photo face picker on phones (V213.md 4)
   phone_v211_tokyo: { file: 'test_phone_v211_tokyo.js', group: 'phone', est: 90 }, // v2.11 TRAVEL (V211.md 5.3): the Japan map, the ride, the Tokyo places on phones
@@ -142,6 +154,7 @@ const SUITES = {
   // node game/run_tests.js i18n_fit site_fit --jobs 3   (PAW_LANGS, PAW_FIT_SIZES, PAW_FIT_REPORT_ONLY=1; they run their own parallel browsers, --jobs sets how many)
   i18n_fit: { file: 'test_i18n_fit.js', group: 'fit', est: 1500, timeout: 5400 },
   site_fit: { file: 'test_site_fit.js', group: 'fit', est: 900, timeout: 3600 },
+  v215_env: { file: 'test_v215_env.js', group: 'all', est: 25 }, // v2.15 MAP ART (V215.md 16): the map and the v2.15 scenes x seasons x festivals, old renders byte for byte
 };
 // extra aliases: `all_*` is the same as `all`; `test_all` = the four+ shards of the old test_all.js
 const ALIAS = { test_all: ['all_a', 'all_b', 'all_c', 'all_d', 'all_e'], 'test_v15': ['v15'], 'test_v16': ['v16'], 'test_v16b': ['v16b'], 'test_v17': ['v17'], 'test_v171_garden': ['v171_garden'], 'test_v171_tricks': ['v171_tricks'], 'test_v2_slots': ['v2_slots'], 'test_v2_breed': ['v2_breed'], 'test_v2_journal': ['v2_journal'], 'test_v2_town': ['v2_town'], 'test_v2_play': ['v2_play'], 'test_v21_genes_node': ['v21_genes'], 'test_copy_node': ['copy'], 'test_v21_breed': ['v21_breed'], 'test_v21_journal': ['v21_journal'], 'test_v21_town': ['v21_town'], 'test_v21_home': ['v21_home'] };

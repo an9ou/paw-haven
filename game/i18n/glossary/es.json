@@ -214,7 +214,18 @@
     "Yes / No": "Sí / No",
     "Pupuccino Café": "Café Pupuccino",
     "Hilltop Meadow": "Pradera de la Colina",
-    "Lighthouse Pier": "Muelle del Faro"
+    "Lighthouse Pier": "Muelle del Faro",
+    "Pip's Sprout Cart": "Carrito de Brotes de Pip",
+    "Training Ground": "Campo de Entrenamiento",
+    "Splash Pool": "Piscina Chapuzón",
+    "Sunflower Lanes": "Camino de Girasoles",
+    "Bamboo Grove Trail": "Sendero del Bambú",
+    "Seaside Cliffs Run": "Ruta de los Acantilados",
+    "agility course": "circuito de agility",
+    "rosette": "escarapela",
+    "Doggy Life Vest": "Chaleco salvavidas perruno",
+    "Float fetch": "Pelota flotante",
+    "Paddle": "Chapotear"
   },
   "bans": [
     {

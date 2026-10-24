@@ -17,6 +17,7 @@ const FS_PUMPKIN = [596, 486, 40, 40]; // the porch step, left of the dog-house 
 const FS_PUMPKIN_PH = [796, 488, 40, 40];
 const fsPumpkinBox = () => (isPhone() ? FS_PUMPKIN_PH : FS_PUMPKIN);
 const FS_PACK_SQ = [905, 470, 'left', 0.53]; // Square pack spot 3 while the stall is up (it stands where the stall is)
+const FS_PACK_SQ_GR = [800, 400, 'left', 0.55]; // v2.15: in a grOn square the stall's box (FS_STALL desk, x 858-994, y 384-510) keeps feet out: the spot stands clear of it, left of the stall, behind the bench (scale 0.88 x grScale at y 400)
 const FS_COSTUMES = ['Ghost Sheet', 'Pumpkin Suit', 'Wizard Hat', 'Bumblebee Suit', 'Astronaut Helmet', 'Happi Coat'];
 const FS_PARADE_MS = 6000;
 const FS_SEASON_LINE = { spring: 'Spring: the blossom is out.', summer: 'Summer: long days.', autumn: 'Autumn: the leaves are turning.', winter: 'Winter: frost on the fence.' };
@@ -157,7 +158,7 @@ function fsYardDraw() {
   ['#fsPilesG', '#fsPumpkinG'].forEach((s) => { const e = $(s, svg); if (e) e.remove(); });
   if (festOn('leaf')) {
     const html = `<g id="fsPilesG">${FS_PILES.map((p, i) => fsPileSVG(i, FS.pileT[i] ? 'scattered' : 'full')).join('')}</g>`;
-    const a = $('#decorG', svg) || $('#msCardG', svg); if (a) a.insertAdjacentHTML('afterend', html); else { const h = $('#houseG', svg); if (h) h.insertAdjacentHTML('beforebegin', html); }
+    const a = $('#decorG', svg) || $('#msCardG', svg); if (a) a.insertAdjacentHTML('afterend', html); else { const h = grAt('houseG', svg); if (h) h.insertAdjacentHTML('beforebegin', html); }
     fsPileBind();
   }
   if (festOn('halloween')) {
@@ -183,7 +184,7 @@ function fsSquareDraw() {
   if (festOn('halloween')) { const [bx, by, bw, bh] = fsBannerBox(); html = `<g id="fsBannerG" pointer-events="none">${place(propTint(fsArt('paradebanner')), bx, by, bw, bh)}</g>` + html; }
   if (wint) { // v2.8 draw order (V28.md section 7): #fsStallG, #nyFortuneG (NEW YEAR, right after the stall), the sweater banner, #bowlG, #pack
     if (festOn('lights') && typeof wnBannerSVG === 'function') html += wnBannerSVG();
-    const at = $('#bowlG', svg) || pack; at.insertAdjacentHTML('beforebegin', html);
+    const at = grAt('bowlG', svg) || pack; at.insertAdjacentHTML('beforebegin', html); // v2.15: grAt, the bowl's old place when it sorts with the dogs (43_ground.js)
   } else pack.insertAdjacentHTML('beforebegin', html);
   fsHitFit();
   const st = $('#fsStallG', svg); st.onclick = (e) => { e.stopPropagation(); SFX.click(); fsStallOpen(); }; st.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fsStallOpen(); } };
@@ -207,14 +208,14 @@ function fsSquareDraw() {
 // v2.8: NEW YEAR's Fortune box (32_newyear.js) draws right after the stall (fsSlot), and its desktop place button lands before Go home
 function fsNyDraw() { if (typeof nySquareDraw === 'function') { try { nySquareDraw(); } catch (e) { console.warn('newyear', e); } } }
 // where a prop that stands right after the stall goes: insert it before this element (the banner, the bowl or the pack)
-function fsSlot() { const svg = $('#view svg.world'); if (!svg) return null; const st = $('#fsStallG', svg); return (st && st.nextElementSibling) || $('#bowlG', svg) || $('#pack', svg); }
+function fsSlot() { const svg = $('#view svg.world'); if (!svg) return null; const st = $('#fsStallG', svg); return (st && st.nextElementSibling) || grAt('bowlG', svg) || $('#pack', svg); }
 // v2.6: the Pumpkin Patch Pop-up (27_halloween.js) draws after the stall, so it sits in front of it and its button lands between the parade and Go home
 function fsHwDraw() { if (typeof hwSquareDraw === 'function') hwSquareDraw(); }
 // Square pack spot 3 stands where the stall is: it moves to the front while the stall is up and comes back when the festival packs up
 function fsPackSync() {
   if (typeof PACK_SPOTS === 'undefined' || !PACK_SPOTS.square) return;
   if (!FS.packSq) FS.packSq = PACK_SPOTS.square[2].slice();
-  const want = fsAnyOn() ? FS_PACK_SQ : FS.packSq, now = PACK_SPOTS.square[2];
+  const want = fsAnyOn() ? (grOn('square') ? FS_PACK_SQ_GR : FS_PACK_SQ) : FS.packSq, now = PACK_SPOTS.square[2];
   if (now[0] === want[0] && now[1] === want[1]) return;
   PACK_SPOTS.square[2] = want.slice();
   if (fsHere('square') && !FS.walking) { const g = $('#pack'); if (g) { g.innerHTML = packSVG(); bindPack(); } }

@@ -214,7 +214,18 @@
     "Yes / No": "Ja / Nein",
     "Pupuccino Café": "Café Pupuccino",
     "Hilltop Meadow": "Hügelwiese",
-    "Lighthouse Pier": "Leuchtturmsteg"
+    "Lighthouse Pier": "Leuchtturmsteg",
+    "Pip's Sprout Cart": "Pips Sprossenwagen",
+    "Training Ground": "Hundeplatz",
+    "Splash Pool": "Planschbecken",
+    "Sunflower Lanes": "Sonnenblumenweg",
+    "Bamboo Grove Trail": "Bambuspfad",
+    "Seaside Cliffs Run": "Klippenpfad",
+    "agility course": "Agility-Parcours",
+    "rosette": "Rosette",
+    "Doggy Life Vest": "Hunde-Schwimmweste",
+    "Float fetch": "Schwimmball",
+    "Paddle": "Planschen"
   },
   "bans": [
     {

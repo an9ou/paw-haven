@@ -45,7 +45,16 @@ const MS_POOL = [
   { id: 'travel_fuji', n: 1, t: 'Visit the Mt. Fuji Lookout', s: 'Mt. Fuji Lookout visit', g: () => jpHillOpen(), m: (a) => a.kind === 'travel' && a.place === 'fujihill' },
   // v2.11 Tokyo Trip (V211.md section 5.3, 39_tokyo.js): the ride out and a new station stamp, from the Station's Bond on
   { id: 'tokyo_ride', n: 1, t: 'Ride the Shinkansen to Tokyo', s: 'Shinkansen ride', g: () => tkOn() && topBond() >= TK_STATION_BOND, m: (a) => a.kind === 'ride' && a.dir === 'out' },
-  { id: 'tokyo_stamp', n: 1, t: 'Collect a station stamp', s: 'Station stamp', g: () => tkOn() && topBond() >= TK_STATION_BOND && tkStampFree(), m: (a) => a.kind === 'stamp' }
+  { id: 'tokyo_stamp', n: 1, t: 'Collect a station stamp', s: 'Station stamp', g: () => tkOn() && topBond() >= TK_STATION_BOND && tkStampFree(), m: (a) => a.kind === 'stamp' },
+  // v2.15 Training Ground (V215.md 6.1, 44_agility.js): agility fires act 'agility' { rosettes, low }
+  { id: 'agility', n: 1, t: 'Run the agility course at the Training Ground', s: 'Agility course', g: () => typeof mpOn === 'function' && mpOn() && topBond() >= ((PLACES.training && PLACES.training.bond) || 3), m: (a) => a.kind === 'agility' },
+  { id: 'agility_ros', n: 1, t: 'Earn two or more rosettes on the agility course', s: 'Two rosettes', g: () => typeof mpOn === 'function' && mpOn() && topBond() >= ((PLACES.training && PLACES.training.bond) || 3), m: (a) => a.kind === 'agility' && a.rosettes >= 2 },
+  { id: 'travel_training', n: 1, t: 'Visit the Training Ground', s: 'Training Ground visit', g: () => typeof mpOn === 'function' && mpOn() && topBond() >= ((PLACES.training && PLACES.training.bond) || 3), m: (a) => a.kind === 'travel' && a.place === 'training' },
+  // v2.15 Splash Pool (V215.md 6.2, 45_pool.js): the paddle fires act 'paddle' { name, step }, float fetch fires 'floatfetch' { name }
+  { id: 'pool_paddle', n: 1, t: 'Take {dog} for a paddle at the Splash Pool', s: 'Pool paddle', g: () => typeof mpOn === 'function' && mpOn() && topBond() >= ((PLACES.pool && PLACES.pool.bond) || 2), m: (a) => a.kind === 'paddle' },
+  { id: 'pool_float', n: 1, t: 'Play float fetch at the Splash Pool', s: 'Float fetch', g: () => typeof mpOn === 'function' && mpOn() && topBond() >= ((PLACES.pool && PLACES.pool.bond) || 2), m: (a) => a.kind === 'floatfetch' },
+  // v2.15 run tracks (V215.md 6.3, 46_tracks.js): a walk on one of the three new routes
+  { id: 'new_trail', n: 1, t: 'Walk a new trail: Sunflower Lanes, Bamboo Grove or the Seaside Cliffs', s: 'New trail', g: () => typeof trOn === 'function' && trOn() && topBond() >= ((ROUTES.sunflower && ROUTES.sunflower.bond) || 2), m: (a) => a.kind === 'walk' && ['sunflower', 'bamboo', 'cliffs'].includes(a.area) }
 ];
 const msDef = (id) => MS_POOL.find((x) => x.id === id);
 function msFields() {
@@ -81,6 +90,7 @@ function msRoll(force) {
 function msToday() { const m = msRoll(); return m ? m.list : []; }
 function msText(it, short) {
   const d = msDef(it.id); if (!d) return it.id;
+  if (d.id === 'buy' && typeof mpOn === 'function' && mpOn()) return short ? tt('map215.ms_buy_s', 'Shopping in town') : tt('map215.ms_buy_t', 'Buy something at a shop in town'); // v2.15: the shops have their own places, so no Market Street wording
   return tdata('ms_pool.' + d.id + (short ? '.s' : '.t'), short ? d.s : d.t, { dog: NAME(), arg: it.arg ? shNameAny(it.arg) : '' }); // v2.14 i18n: the pool text is a message with {dog} and {arg}
 }
 const msDoneN = () => (S && S.missions ? S.missions.list.filter((x) => x.done).length : 0);
@@ -292,7 +302,7 @@ function msYardRedraw() {
   const svg = $('#view svg.world'); if (!svg) return;
   const html = msYardSVG(), old = $('#msCardG');
   if (old) old.outerHTML = html;
-  else { const a = svg.querySelector('#decorG') || svg.querySelector('#houseG'); if (a) a.insertAdjacentHTML('beforebegin', html); else return; }
+  else { const a = svg.querySelector('#decorG') || grAt('houseG', svg); if (a) a.insertAdjacentHTML('beforebegin', html); else return; }
   msYardBind();
 }
 on('yard:enter', () => { if (window.__paw && !window.__paw.ms) msExpose(); if (S && S.place === 'yard') msYardRedraw(); });
@@ -304,7 +314,7 @@ function msExpose() {
   window.__paw.ms = {
     roll: (f) => msRoll(f), today: () => msToday(), open: () => msOpen(), pool: MS_POOL.map((d) => d.id), pick: (date) => msPick(date), yard: MS_YARD,
     force: (ids) => { msRoll(); S.missions.list = ids.map((id) => { const d = msDef(id); return d ? (msItem(d, Math.random) || { id, n: d.n, p: 0, done: null }) : null; }).filter(Boolean); S.missions.stampDay = ''; markDirty(); msRefresh(); return S.missions.list; },
-    act: (kind, data) => trackAct(kind, data), flush: () => msFlush(), get queue() { return msQueue.length; }
+    text: (it, s) => msText(it, s), act: (kind, data) => trackAct(kind, data), flush: () => msFlush(), get queue() { return msQueue.length; }
   };
 }
 on('game:ready', () => { msFields(); setTimeout(msExpose, 0); });

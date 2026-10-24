@@ -239,7 +239,17 @@
     "Toffee": "ท็อฟฟี่",
     "Meringue": "เมอแรงค์",
     "Marshmallow": "มาร์ชเมลโล่",
-    "Wonton": "เกี๊ยว"
+    "Wonton": "เกี๊ยว",
+    "Training Ground": "ลานฝึก",
+    "Splash Pool": "สระเล่นน้ำ",
+    "Sunflower Lanes": "ทางทุ่งทานตะวัน",
+    "Bamboo Grove Trail": "ทางป่าไผ่",
+    "Seaside Cliffs Run": "ทางผาริมทะเล",
+    "agility course": "สนามอจิลิตี้",
+    "rosette": "โบว์รางวัล",
+    "Doggy Life Vest": "เสื้อชูชีพน้องหมา",
+    "Float fetch": "บอลลอยน้ำ",
+    "paddle (pool)": "ตีน้ำ"
   },
   "bans": [
     {

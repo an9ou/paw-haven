@@ -118,7 +118,9 @@ const CLOTHES = [
   { n: 'Shibuya Bandana', slot: 'neck', fest: 'tokyo', tokyo: true, price: 60, bond: 1, v211: true, perk: 'Scramble: green, with little crossing stripes. Everyone stops to say hello.' },
   { n: 'Asakusa Bandana', slot: 'neck', fest: 'tokyo', tokyo: true, price: 60, bond: 1, v211: true, perk: 'Lucky red: a tiny lantern in the corner, like the big one at the temple gate.' },
   { n: 'Tokyo Tower Bandana', slot: 'neck', fest: 'tokyo', tokyo: true, price: 60, bond: 1, v211: true, perk: 'Tall look: orange and white stripes, like the tower on a sunny day.' },
-  { n: 'Astronaut Helmet', slot: 'head', price: 0, bond: 1, v24: true, reward: true, perk: 'Space-proof: no soggy shake after rain, no shivering in the snow.' }
+  { n: 'Astronaut Helmet', slot: 'head', price: 0, bond: 1, v24: true, reward: true, perk: 'Space-proof: no soggy shake after rain, no shivering in the snow.' },
+  // v2.15 Around Town (V215.md 6.2): the Splash Pool gives it free on the first visit (S.pool.vest), never sold; worn automatically in the water (45_pool.js)
+  { n: 'Doggy Life Vest', slot: 'body', price: 0, bond: 1, v215: true, reward: true, perk: 'Safe swimmer: a bright vest with two buckles. Free from the Splash Pool.' }
 ];
 const HOUSES = [
   { n: 'Cardboard Box', price: 0, bond: 1, comfort: 0, hd: 4, note: 'Free. Has a flap. Smells like delivery.' },
@@ -195,7 +197,11 @@ const ROUTES = {
   park: { n: 'Sunny Park', bond: 1, secs: 60, energy: 15, happy: 15, clean: 5, coins: [20, 30], bp: 8, pool: ['coin', 'leaf', 'flower', 'bone'] },
   river: { n: 'Riverside Trail', bond: 2, secs: 75, energy: 25, happy: 20, clean: 10, coins: [35, 50], bp: 11, pool: ['coin', 'leaf', 'shell'] },
   woods: { n: 'Maple Woods', bond: 5, secs: 90, energy: 30, happy: 25, clean: 15, coins: [50, 70], bp: 13, pool: ['coin', 'acorn', 'leaf', 'flower'], dig: 3 },
-  beach: { n: 'Seashell Beach', bond: 8, secs: 90, energy: 30, happy: 30, clean: 20, coins: [60, 80], bp: 15, pool: ['coin', 'shell'], dig: 3 }
+  beach: { n: 'Seashell Beach', bond: 8, secs: 90, energy: 30, happy: 30, clean: 20, coins: [60, 80], bp: 15, pool: ['coin', 'shell'], dig: 3 },
+  /* v2.15 run tracks (V215.md 6.3, 46_tracks.js): these rows stay in ROUTES only while mpOn() (trSync). Each sits inside today's route tiers (town 25-35, woods 50-70, beach 60-80) */
+  sunflower: { n: 'Sunflower Lanes', bond: 2, secs: 60, energy: 15, happy: 15, clean: 5, coins: [25, 35], bp: 9, pool: ['coin', 'flower', 'leaf'], v215: true },
+  bamboo: { n: 'Bamboo Grove Trail', bond: 4, secs: 75, energy: 25, happy: 22, clean: 10, coins: [40, 55], bp: 12, pool: ['coin', 'leaf', 'acorn'], v215: true },
+  cliffs: { n: 'Seaside Cliffs Run', bond: 7, secs: 90, energy: 30, happy: 28, clean: 12, coins: [55, 70], bp: 14, pool: ['coin', 'shell', 'flower'], v215: true }
 };
 /* ---------- v1.1 treasure hunt: treasures are only found on walks, never sold ---------- */
 const RARITY = ['Common', 'Uncommon', 'Rare', 'Legendary'];
@@ -223,7 +229,14 @@ const TREASURES = [
   TR('Old Map Piece (Beach)', 'quest', null, 'Rare', ['beach'], 'Map Piece', '1 of 4 pieces of the Doodle Doggo Treasure Map.', { piece: 'beach' }),
   /* v2.4 Shop Day: two treasures (never sold) */
   TR('Sun Hat', 'wearable', 'head', 'Uncommon', ['beach', 'park'], 'Shady Business', 'Hot days do not bother the dog while worn.', { v24: true }),
-  TR('Squeaky Hedgehog', 'toy', null, 'Uncommon', ['woods', 'park'], 'Squeak of Honour', 'Squeeze it and the dog answers. It hops. Three squeaks and it rolls up.', { v24: true })
+  TR('Squeaky Hedgehog', 'toy', null, 'Uncommon', ['woods', 'park'], 'Squeak of Honour', 'Squeeze it and the dog answers. It hops. Three squeaks and it rolls up.', { v24: true }),
+  /* v2.15 run tracks (V215.md 6.3): six treasures, never sold; they are in TREASURES only while mpOn() (trSync in 46_tracks.js). Abilities reuse existing perks */
+  TR('Sunflower Collar', 'wearable', 'neck', 'Uncommon', ['sunflower'], 'Fresh Paws', 'Puddles do not lower Cleanliness while worn.', { v215: true }),
+  TR('Lucky Horseshoe', 'charm', 'charm', 'Rare', ['sunflower'], 'Good Fortune', '+1 dig per walk while equipped.', { v215: true }),
+  TR('Bamboo Ring', 'toy', null, 'Common', ['bamboo'], 'Ring Toss', 'Play ball with it: it floats on a gentle toss, and 3 coins per return.', { v215: true }),
+  TR('Paper Lantern', 'charm', 'charm', 'Uncommon', ['bamboo'], 'Lantern Glow', 'Ball play after dark: the ball glows, so it never gets lost.', { v215: true }),
+  TR('Sea Glass', 'charm', 'charm', 'Rare', ['cliffs'], 'Sea Sense', 'The Nose-o-meter reacts from twice as far away while equipped.', { v215: true }),
+  TR('Sailor Cap', 'wearable', 'head', 'Uncommon', ['cliffs'], 'Steady Sailor', 'Hot days do not bother the dog while worn.', { v215: true })
 ];
 const TFOOD = [
   { n: 'Wild Berries', hunger: 15, energy: 10, note: 'Treasure. +15 Hunger, +10 Energy. On a walk: +15 seconds.' },
@@ -235,8 +248,8 @@ const TWEAR = TREASURES.filter((t) => t.kind === 'wearable').map((t) => ({ n: t.
 const ALL_WEAR = CLOTHES.concat(TWEAR);
 const CHARMS = TREASURES.filter((t) => t.kind === 'charm').map((t) => ({ n: t.n, slot: 'charm', perk: `${t.ab}: ${t.txt}` }));
 const FETCH_TOYS = ['Tennis Ball', 'Frisbee', 'Driftwood Stick', 'Glow Ball'];
-const ROUTE_WORD = { park: 'in the park', river: 'near water', woods: 'under the trees', beach: 'in the sand' };
-const ROUTE_HINT = { park: 'Found in the park...', river: 'Found near water...', woods: 'Found under the trees...', beach: 'Found in the sand...' };
+const ROUTE_WORD = { park: 'in the park', river: 'near water', woods: 'under the trees', beach: 'in the sand', sunflower: 'among the sunflowers', bamboo: 'in the bamboo', cliffs: 'by the cliffs' };
+const ROUTE_HINT = { park: 'Found in the park...', river: 'Found near water...', woods: 'Found under the trees...', beach: 'Found in the sand...', sunflower: 'Found among the sunflowers...', bamboo: 'Found in the bamboo...', cliffs: 'Found by the cliffs...' };
 const JUNK = [['junk-sock', 'An old sock. Pepper is very proud.'], ['junk-rock', 'A rock shaped like a slightly different rock.'], ['junk-sock', 'Half a sandwich. The duck wants it back.'], ['junk-rock', 'A bottle cap. Shiny! Worthless! Shiny!']];
 const CLUES = {
   far: ['Smells like... nothing much. Keep walking.', 'Sniff. Grass. Just grass. Disappointing grass.', 'The nose says: not here. Not even close.'],
@@ -425,6 +438,23 @@ function art(fn, ...a) {
   const vb = FB_VB[fn] || '0 0 100 100';
   return `<svg viewBox="${vb}"><text x="50%" y="55%" text-anchor="middle" font-size="20" fill="#2a2420">?</text></svg>`;
 }
+/* v2.15 lazy art chunks (PERF.md section 5, V215.md 13b). 'f' = world F (the v2.15 map), 'g' = world G (the new places, strips, PawArt.FLOOR rows).
+   artChunk(name) -> a Promise of true once that world is loaded (at once in the one-file builds, the artifact and the harness, where the worlds
+   are inline, and when the build has no such world), false when its file failed to load (a later call tries again).
+   artChunkReady(name) -> the same answer, now (no loading). The split build (tools/split.js) sets window.PAW_CHUNKS = { f: 'world_f.<hash>.js', ... } */
+const ART_CHUNK = {};
+const artChunkReady = (name) => { const C = window.PAW_CHUNKS; return !(C && C[name]) || ART_CHUNK[name] === true; };
+function artChunk(name) {
+  if (artChunkReady(name)) return Promise.resolve(true);
+  if (ART_CHUNK[name]) return ART_CHUNK[name];
+  ART_CHUNK[name] = new Promise((res) => {
+    const s = document.createElement('script'); s.src = window.PAW_CHUNKS[name]; s.async = true;
+    s.onload = () => { ART_CHUNK[name] = true; Object.keys(sceneReal).forEach((k) => { delete sceneReal[k]; }); emit('art:chunk', { name }); res(true); };
+    s.onerror = () => { ART_CHUNK[name] = null; if (s.parentNode) s.parentNode.removeChild(s); res(false); };
+    (document.head || document.documentElement).appendChild(s);
+  });
+  return ART_CHUNK[name];
+}
 let dogsMemo = null;
 function dogsList() {
   const d = PA().DOGS; if (!Array.isArray(d) || !d.length) return FALLBACK_DOGS;
@@ -511,9 +541,17 @@ function hasRealScene(name) {
   sceneReal[name] = !!a && norm(a) !== norm(art('scene', 'yard', { time: 'day', weather: 'sunny' }));
   return sceneReal[name];
 }
+// v2.15: world G lists the scenes it draws in PawArt.WORLD_G_SCENES (as world C does). Until then (or while its chunk loads) a new place is a plain sketch ground with its sign
+const mpSceneReady = (name) => !!(window.PawArt && Array.isArray(PawArt.WORLD_G_SCENES) && PawArt.WORLD_G_SCENES.includes(name));
+function mpPlainGround(name) {
+  return `<g class="mp-plain" data-plain="${name}"><rect width="1000" height="600" fill="#FFFBF3"/><path d="M0 372 Q160 352 330 366 T660 360 T1000 368 V600 H0 Z" fill="#EEF2DC" stroke="#5B3D32" stroke-width="3" stroke-linejoin="round"/>`
+    + `<g fill="none" stroke="#B9C79A" stroke-width="3" stroke-linecap="round">${[[90, 430], [260, 470], [450, 420], [640, 480], [820, 440], [160, 540], [560, 550], [900, 530]].map(([x, y]) => `<path d="M${x} ${y} l6 -14 M${x + 8} ${y} l2 -16 M${x + 16} ${y} l-4 -12"/>`).join('')}</g></g>` + mpPlainDoor(name) + placeSign(name); // v2.15: a storefront gets a doodle door (data-shop, 42_map215.js)
+}
 function sceneArt(name, e, extra) {
   const o = Object.assign({}, e || {}, extra || {});
   const tk = tkSceneArt(name, o); if (tk) return tk; // v2.11: the six Tokyo places (world D / E art, else a stand-in, 39_tokyo.js)
+  if (MP_KEYS.includes(name) && !mpSceneReady(name)) return mpPlainGround(name); // v2.15: a new place whose world G scene is not there (yet)
+  if (grOn(name)) return place(art('scene', name, Object.assign(o, { v215: true })), 0, 0, grFloor(name).w, 600); // v2.15 GROUND: the deep (and wide) floor, at its own width (43_ground.js)
   if (NEW_PLACES.includes(name) && !hasRealScene(name)) return place(art('scene', SCENE_FB[name], o), 0, 0, 1000, 600) + placeSign(name);
   if (HANG.includes(name) && !hasRealScene(name)) return name === 'house' ? place(art('scene', 'yard', o), 0, 0, 1000, 600) : place(art('walkStrip', name, e), -400, 0, 1800, 600);
   return place(art('scene', name, o), 0, 0, 1000, 600);
@@ -646,7 +684,7 @@ const SFX = (() => {
 function lsGet(k) { try { return window.localStorage.getItem(k); } catch (e) { return null; } }
 function lsSet(k, v) { try { window.localStorage.setItem(k, v); return true; } catch (e) { return false; } }
 function lsDel(k) { try { window.localStorage.removeItem(k); } catch (e) { /* storage blocked */ } }
-let prefs = { mute: false, motion: null };
+let prefs = { mute: false, motion: null, mapLabels: true, shopOpen: true }; // v2.15: mapLabels (the map captions), shopOpen (a storefront opens its shop window on arrival)
 try { prefs = Object.assign(prefs, JSON.parse(lsGet(PREF_KEY) || '{}')); } catch (e) { /* bad prefs */ }
 function savePrefs() { lsSet(PREF_KEY, JSON.stringify(prefs)); }
 prefs.vol = Object.assign({ master: 80, music: 50, sfx: 80, ambience: 25 }, prefs.vol || {});
@@ -695,6 +733,7 @@ function freshState(key, name, sex) {
   v29Fields(st); // v2.9 All Together: photo mode (V29.md section 5)
   v210Fields(st); // v2.10 Free to Roam: ball play (V210.md section 5)
   v211Fields(st); // v2.11 Tokyo Trip: the trip and Dog Cards (V211.md section 5)
+  v215Fields(st); st.mapNew.fresh = true; // v2.15 Around Town: agility, the pool, the run tracks, the map stickers (V215.md section 9); fresh: a save that started on v2.15 gets no "new" / "moved" stickers
   v214Fields(st); st.lang = i18nReal(prefs.langPick) ? prefs.langPick : null; // v2.14: a language picked on the title screen before the save existed (V214.md 5)
   return linkDogs(st);
 }
@@ -731,6 +770,7 @@ function migrate(s) {
   v210Fields(s); // v2.10 Free to Roam (V210.md section 5): additive
   v211Fields(s); // v2.11 Tokyo Trip (V211.md section 5.1): additive
   v214Fields(s); // v2.14 Hello in Every Language (V214.md section 5): additive
+  v215Fields(s); // v2.15 Around Town (V215.md section 9): additive
   return s;
 }
 /* v2.7 Home & Pack save fields (V27.md section 1). Additive only: S.v stays 1, nothing is dropped.
@@ -790,9 +830,27 @@ function v211Fields(s) {
   return s;
 }
 // v2.14 (V214.md 5): S.lang = one of PawI18nMsg.CODES, or null = follow the device (old saves load with null). It goes with the cloud save.
+// v2.15 (owner): S.langShown = the language actually on screen (a CODE, never a pseudo-locale), or null before any boot recorded it; set on load and by i18nUse, read by the owner's dashboard as COALESCE(lang, langShown).
 function v214Fields(s) {
   if (!s) return s;
   if (s.lang === undefined || (s.lang !== null && !i18nReal(s.lang))) s.lang = null;
+  if (s.langShown === undefined || (s.langShown !== null && !i18nReal(s.langShown))) s.langShown = null; // v2.15 (owner): the language on screen
+  if (!I18N.ps && i18nReal(I18N.lang)) s.langShown = I18N.lang; // a loaded save records the language this boot settled on (pseudo-locales never)
+  return s;
+}
+/* v2.15 Around Town (V215.md section 9). Additive only: S.v stays 1, nothing is dropped.
+   S.ag      { day: localISO of the counts, runs, coins: agility coins that day, best: { dogId: rosettes 1-3 }, seen: first visit note }  (ACTIVITIES, 44_agility.js)
+   S.pool    { day: { dogId: localISO of the last paddle }, vest: the Doggy Life Vest given, seen: first visit lesson }                  (ACTIVITIES, 45_pool.js)
+   S.trk     { seen: { routeKey: true } } the first-run care notes of the three new tracks                                              (ACTIVITIES, 46_tracks.js)
+   S.mapNew  { since: localISO of the first v2.15 load, seen: [place keys], fresh: true on a save started on v2.15 (no stickers) }
+             the "new" / "moved" map stickers for 7 real days                                                                        (MAP, 42_map215.js) */
+function v215Fields(s) {
+  if (!s) return s;
+  const num = (o, k) => { if (typeof o[k] !== 'number' || !(o[k] >= 0)) o[k] = 0; };
+  if (!v28Obj(s.ag)) s.ag = {}; if (typeof s.ag.day !== 'string') s.ag.day = ''; num(s.ag, 'runs'); num(s.ag, 'coins'); if (!v28Obj(s.ag.best)) s.ag.best = {}; if (typeof s.ag.seen !== 'boolean') s.ag.seen = false;
+  if (!v28Obj(s.pool)) s.pool = {}; if (!v28Obj(s.pool.day)) s.pool.day = {}; ['vest', 'seen'].forEach((k) => { if (typeof s.pool[k] !== 'boolean') s.pool[k] = false; });
+  if (!v28Obj(s.trk)) s.trk = {}; if (!v28Obj(s.trk.seen)) s.trk.seen = {};
+  if (!v28Obj(s.mapNew)) s.mapNew = {}; if (typeof s.mapNew.since !== 'string' || !s.mapNew.since) s.mapNew.since = localISO(); if (!Array.isArray(s.mapNew.seen)) s.mapNew.seen = [];
   return s;
 }
 function migNote() { if (S && S.gkNote) { delete S.gkNote; markDirty(); setTimeout(() => toast(tt('core.seed_gift', 'Pip left a packet of seeds on your doorstep. The veggie patch is yours now!'), 'gold'), 2200); }
@@ -848,6 +906,53 @@ function nyDays() { const md = jstISO().slice(5); return festOn('newyear') && (E
 function nyEve() { const md = jstISO().slice(5); return festOn('newyear') && md >= '12-26' && md <= '12-31'; }
 /* v2.8 Japan scenery (V28.md section 12.1): env.jp is on in the game, off under the test harness unless the suite sets prefs.jpTest */
 function jpOn() { return !navigator.webdriver || !!prefs.jpTest; }
+/* v2.15 "Around Town" switches (V215.md 2, 5, 8.3; the stubs lane, section 13b).
+   mpOn()         the v2.15 map and the eight new places are on: in the game always, under the test harness only with prefs.mpTest. Off = v2.14 exactly
+                  (the old map, Market Street with its four shops, the old routes; the new places are not in PLACES, so nothing lists or reaches them)
+   grOn(place)    the place has a v2.15 floor (PawArt.FLOOR[place], drawn under o.v215) and mpOn(); under the harness also prefs.grTest.
+                  Never for a Tokyo place (V215.md 17, decision 1). No place = S.place
+   MP_PLACES      the PLACES rows of the new keys, added by mpPlaceSync() while mpOn() (as jpPlaceSync / tkPlaceSync do). shop: the openShop key of a
+                  storefront, run: a run-track place (its gate starts go('walk', k), 46_tracks.js)
+   mpPlaceName(k) the shown name of a v2.15 place (and of market, "Kibble Corner") while mpOn(), else null: placeName / townPlaceName / tPlace use it first */
+function mpOn() { return !navigator.webdriver || !!prefs.mpTest; }
+const GR_NO = ['shibuya', 'hachiko', 'yoyogi', 'asakusa', 'tokyotower', 'ueno', 'odaiba', 'station', 'shelter']; // Tokyo keeps the v2.10 floor in v2.15
+function grOn(place) {
+  const k = place === undefined ? (S && S.place) : place; if (!k || GR_NO.includes(k) || (PLACES[k] && PLACES[k].tokyo)) return false;
+  if (!mpOn() || (navigator.webdriver && !prefs.grTest)) return false;
+  const F = window.PawArt && PawArt.FLOOR; return !!(F && typeof F === 'object' && F[k]);
+}
+const MP_PLACES = {
+  boutique: { n: 'Bow-Wow Boutique', bond: 1, out: true, shop: 'boutique' }, builder: { n: 'Barkitecture', bond: 1, out: true, shop: 'builder' },
+  sprout: { n: "Pip's Sprout Cart", bond: 1, out: true, shop: 'sprout' }, training: { n: 'Training Ground', bond: 3, out: true },
+  pool: { n: 'Splash Pool', bond: 2, out: true }, sunflower: { n: 'Sunflower Lanes', bond: 2, out: true, run: true },
+  bamboo: { n: 'Bamboo Grove Trail', bond: 4, out: true, run: true }, cliffs: { n: 'Seaside Cliffs Run', bond: 7, out: true, run: true }
+};
+const MP_KEYS = Object.keys(MP_PLACES);
+// adds or removes the new rows; call it again after changing prefs.mpTest at run time (a save standing in a new place goes home when it is off)
+function mpPlaceSync() {
+  const on = mpOn();
+  MP_KEYS.forEach((k) => { if (on) { if (!PLACES[k]) PLACES[k] = Object.assign({ v215: true }, MP_PLACES[k]); } else delete PLACES[k]; });
+  if (PLACES.market) { PLACES.market.n = on ? 'Kibble Corner' : 'Market Street'; if (on) PLACES.market.shop = 'kibble'; else delete PLACES.market.shop; }
+  if (S && MP_KEYS.includes(S.place) && !PLACES[S.place]) S.place = 'yard';
+  try { trSync(); } catch (e) { /* 46_tracks.js is not loaded yet at the first call (it runs again at its end) */ }
+  return on;
+}
+mpPlaceSync();
+function mpPlaceName(k) {
+  if (!mpOn() || !PLACES[k]) return null;
+  switch (k) {
+    case 'market': return tdata('shop_name.kibble', 'Kibble Corner'); // the storefronts share their shop's name (already in every language)
+    case 'boutique': return tdata('shop_name.boutique', 'Bow-Wow Boutique');
+    case 'builder': return tdata('shop_name.builder', 'Barkitecture');
+    case 'sprout': return tdata('shop_name.sprout', "Pip's Sprout Cart");
+    case 'training': return tt('map215.place_training', 'Training Ground');
+    case 'pool': return tt('map215.place_pool', 'Splash Pool');
+    case 'sunflower': return tt('map215.place_sunflower', 'Sunflower Lanes');
+    case 'bamboo': return tt('map215.place_bamboo', 'Bamboo Grove Trail');
+    case 'cliffs': return tt('map215.place_cliffs', 'Seaside Cliffs Run');
+    default: return null;
+  }
+}
 function hwShopOpen() { const j = jstISO(), w = HW_WIN[HW_ED]; return festOn('halloween') && j >= w[0] && j <= w[1]; } // a Dev panel override outside the dates never reopens the pop-up
 function timePhase() { if (ENV.time !== 'auto') return ENV.time; const h = new Date().getHours(); return h >= 5 && h < 7 ? 'dawn' : h >= 7 && h < 17 ? 'day' : h >= 17 && h < 19 ? 'dusk' : 'night'; }
 function weatherPeriodKey() { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}-${Math.floor(d.getHours() / 8)}`; }
@@ -861,7 +966,7 @@ function weatherNow() {
 const weather = weatherNow;
 const envNow = () => { const f = festNow(); return { time: timePhase(), weather: weatherNow(), season: seasonNow(), halloween: f.halloween, lights: f.lights, newyear: f.newyear, jp: jpOn() }; }; // v2.8: lights, newyear, jp
 const isNight = () => timePhase() === 'night';
-function isHot() { if (S && S.buff && typeof buffOn === 'function' && buffOn('cool')) return false; if (S && (S.outfit.head === 'Sun Hat' || (S.coolUntil || -1) > S.gameMin)) return false; if (weatherNow() !== 'sunny' || timePhase() !== 'day') return false; if (ENV.time !== 'auto') return true; const h = new Date().getHours(); return h >= 11 && h < 15; }
+function isHot() { if (S && S.buff && typeof buffOn === 'function' && buffOn('cool')) return false; if (S && (S.outfit.head === 'Sun Hat' || S.outfit.head === 'Sailor Cap' || (S.coolUntil || -1) > S.gameMin)) return false; if (weatherNow() !== 'sunny' || timePhase() !== 'day') return false; if (ENV.time !== 'auto') return true; const h = new Date().getHours(); return h >= 11 && h < 15; }
 function clockText() {
   if (tlang() !== 'en') { const d = new Date(); if (ENV.time !== 'auto') d.setHours({ dawn: 6, day: 13, dusk: 18, night: 23 }[ENV.time], 0, 0, 0); return tdate(d, { hour: 'numeric', minute: '2-digit' }) + (ENV.time !== 'auto' ? '*' : ''); } // v2.14: 12 or 24 h per language (V214.md 8)
   if (ENV.time !== 'auto') return { dawn: '06:00', day: '13:00', dusk: '18:00', night: '23:00' }[ENV.time] + '*'; const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
@@ -899,7 +1004,7 @@ function tItem(n, field = 'n') {
 }
 // a wearable's or charm's perk line: the clothes `perk`, or a treasure's "Ability: what it does"
 function tPerk(n) { const hit = tItemRow(n); if (hit && hit[0] === 'treasures') return tt('core.treasure_perk', '{ability}: {text}', { ability: tItem(n, 'ab'), text: tItem(n, 'txt') }); return tItem(n, 'perk'); }
-const tPlace = (k) => (PLACES[k] ? tdata('places.' + k + '.n', PLACES[k].n) : String(k));
+const tPlace = (k) => mpPlaceName(k) || (PLACES[k] ? tdata('places.' + k + '.n', PLACES[k].n) : String(k));
 const tRoute = (k) => (ROUTES[k] ? tdata('routes.' + k + '.n', ROUTES[k].n) : String(k));
 const tTrick = (n) => tdata('tricks.' + tid(n) + '.n', n);
 const tSig = (key, field = 'n') => (SIG[key] ? tdata('sig.' + key + '.' + field, SIG[key][field]) : tdata('sig_fb.' + field, SIG_FB[field])); // the dog's signature trick name or line

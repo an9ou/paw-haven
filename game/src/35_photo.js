@@ -26,7 +26,7 @@ function phFrameName(c) {
     default: return c.n;
   }
 }
-function phPlaceName() { const p = S && S.place; return p === 'yard' ? tt('photo.place_home', 'Home') : p === 'house' ? tt('photo.place_house', 'The house') : (PLACES[p] && tdata('places.' + p + '.n', PLACES[p].n)) || tt('photo.place_town', 'Doodle Town'); }
+function phPlaceName() { const p = S && S.place; return p === 'yard' ? tt('photo.place_home', 'Home') : p === 'house' ? tt('photo.place_house', 'The house') : (PLACES[p] && (mpPlaceName(p) || tdata('places.' + p + '.n', PLACES[p].n))) || tt('photo.place_town', 'Doodle Town'); }
 // the Japan date, written like the festival dates ("19 October 2026"); the message gives the word order of each language, the month name comes from Intl
 function phDateLine() { const [y, m, d] = jstISO().split('-').map(Number); return tt('photo.date_line', '{d} {month} {y}', { d, month: tdate(new Date(2000, m - 1, 1), { month: 'long' }), y }); }
 function phNames(list) { return tlist(list); }
@@ -113,7 +113,7 @@ function phCapture() {
     if (e.style && /url\(\s*['"]?(?!#|data:)/i.test(e.getAttribute('style') || '')) e.removeAttribute('style');
   };
   clean(cl); cl.querySelectorAll('*').forEach(clean); cl.querySelectorAll('script, foreignObject').forEach((e) => e.remove());
-  const lv = (svg.getAttribute('viewBox') || '0 0 1000 600').split(/\s+/).map(Number), vb = [0, lv[1], 1000, lv[3]]; // the whole scene width: the phone camera crop is not the photo
+  const lv = (svg.getAttribute('viewBox') || '0 0 1000 600').split(/\s+/).map(Number), vb = [cur.mode === 'yard' && grWide() ? grPhotoX() : 0, lv[1], 1000, lv[3]]; // the whole scene width: the phone camera crop is not the photo (v2.15: a wide place, the 1000 round the camera)
   const tint = $('.tintfx', view), wx = $('.wxfx', view);
   const db = phDogBox(svg);
   cl.removeAttribute('class'); cl.removeAttribute('style'); cl.removeAttribute('id');

@@ -1,0 +1,24 @@
+# v2.15 coordinator notes
+- integration/v2.15 = origin/main 4740a68 + merge of design/v2.15-map (b885246), pushed.
+- Local main was stale at session start; fixed (main = origin/main).
+- Common lane rules: scratchpad/v215_common.md
+- Step 1 (launched): STUBS (general-purpose), MAP ART, PLACE ART (paw-artist), all worktree-isolated subagents.
+- Decided names: mpOn() (harness prefs.mpTest), grOn(place) (prefs.grTest), artChunk('f'|'g'), PawArt.MAP215_AREAS, MAP_ROADS, mapBuilding, FLOOR, walkStrip. world_f/g created by art lanes, wired by STUBS when present.
+- Plan: step 2 = GROUND (code, Opus), GROUND ART A, MAP (code); step 3 = GROUND ART B, ACTIVITIES (Sonnet), ITEM ART (vest/collar/cap wearables in dogs/, 6 treasure + vest icons); step 4 = I18N; then 3 reviews, fixes, all+phone (one at a time), fit audits, check_identical, report to GM session_01YWqF1YmkskA96YAshTRHg3.
+- GM 03:35Z: v2.14.1 patch in progress on main (css 33_shelter, 50_i18n, phone css, speech bubble, yard place-button row, i18n/*.json, packed.js, fonts). Merge main into integration/v2.15 when GM says. Lanes touching the bubble or #placeBtns row (ACTIVITIES gates) wait for the patch. New strings: new keys only.
+- 04:0xZ: STUBS merged (330139d) + packed.js commit; MAP ART merged (12f04d5, world F 61 KB min, suite v215_env). Integration smoke/i18n/v215_migrate green. Pushed 484d230.
+- STUBS notes: mpOn() true in game already; WORLD_G_SCENES convention (told PLACE ART); MP_PLACES shop keys boutique/builder/sprout, market shop 'kibble'. MAP ART: MAP215_AREAS, MAP215_RUNS, MAP215_NAMES, root svg role=group.
+- Step 2 running: PLACE ART (afe2611d0478a3074), GROUND (ac1f2a1e90620bb42, brief_ground.md), MAP (a9c4b5d31e1623059, brief_map.md).
+- Remaining: GROUND ART A, GROUND ART B, ACTIVITIES (also all 118 PLACE_LINES for new places except storefront lines, missions, guide; extends v215_places; wait for v2.14.1 if touching #placeBtns), ITEM ART, I18N, PERF check of chunks, reviews.
+- PLACE ART merged (8c9158d; world G 166 KB min, suite v215_places_art). Told GROUND its FLOOR notes. Pushed.
+- GROUND ART A launched (a35798f80b7b181e4, brief_gart_a.md). GROUND ART B brief ready (brief_gart_b.md), launch when a slot frees.
+- 04:30Z container restart: GROUND, MAP, GART-A stopped; worktrees survived; resumed all three via SendMessage. Pushed lane/v215-map, lane/v215-gart-a backups. Added WIP-push rule to common.
+- 04:56Z second container restart (load?). All 3 lanes had committed+pushed. Added flock test.lock rule. Resuming.
+- GROUND merged (b1a5be4). GROUND decisions: dogs don't enter water until ACTIVITIES registers GR_ACTS; dcVis behind floor props; desktop place-button boxes can close front corners (review). Launching GROUND ART B.
+- GART A merged (fd86efa, world C +70 KB min; renders 340-480 KB SVG in winter/all flags: review perf; kiteWatch draws kite in 1000-wide #fx on wide hilltop: review). Tell GART B: test_v215_env V215_SCENES list edited by A.
+- 08:37 resumed after limit (reset 08:10): MAP, GART B resumed. Launching ACTIVITIES (brief_act.md, Sonnet). Item names fixed: Doggy Life Vest, Sunflower Collar, Sailor Cap, Lucky Horseshoe, Bamboo Ring, Paper Lantern, Sea Glass.
+- 08:38 GM: owner says finish v2.14.1 first: PAUSE. Told MAP, GART B, ACT to push WIP and stop. No scheduled triggers left. Reply to GM with one line when lanes report; then idle until GM resumes (merge main then).
+- GART B paused at 5cff84b (world A block: yard, house, market done untested; left: square/cafe/vet/salon/fujihill in world C, suite v215_gart-b, env list, shots, old suites; fragments in scratchpad/gart_b). Note for GROUND: mailbox MB_BOX + dog house outside #floorG on deep yard. ACT paused with no commits (branch = integration 6469412).
+- OWNER RULE for v2.15 (23 Oct, via GM 08:41, replaces "3 per step"): when resumed, finish parts ONE AT A TIME in order, no parallel lanes; at most 2 subagents at a time in total; prefer Sonnet paw-fixers for routine work; one test suite at a time. Stay paused until GM says resume (then merge main first).
+- Resume order: MAP (finish, a9c4b5d31e1623059) -> GART B (a5e7534e8f9a76eb8) -> ACT (af0003083eaa5ccdd, Sonnet) -> ITEM ART -> I18N -> reviews -> fixes -> suites, fit audits, check_identical -> report to GM.
+- MAP paused at edc801c (pushed, essentially done: v215_map/v215_places/phone_v215_map/migrate/smoke green, check_identical 0). On resume: merge lane/v215-map first, re-run old town suites (v2_town v21_town phone_town all_a v211_tokyo v28_jp) one at a time. Decisions: phone default map slightly taller than screen (captions ≥15px); no 'moved' sticker on Kibble Corner; ACT must rename Market Street in missions (24) and guide (25).

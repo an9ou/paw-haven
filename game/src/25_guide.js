@@ -72,7 +72,9 @@ function gdLayer() {
   $('.gd-skip', L).onclick = (e) => { e.stopPropagation(); SFX.click(); gdSkip(); };
   return L;
 }
-function gdText(i) { const st = GD_STEPS[i], tp = isPhone() && st.tp; return esc(tdata('gd_steps.' + st.k + (tp ? '.tp' : '.t'), tp ? st.tp : st.t, { dog: NAME() })); } // v2.14 i18n: the step text is a message with {dog}
+// v2.15: with the map on, the two lines that named Market Street (the Map step and the Shops step, and their Journal lessons) say it by the new places
+function gdMp(k) { if (!mpOn()) return ''; return k === 'map' ? tt('map215.gd_map', 'The Map goes everywhere: the park, the river, the shops. Some places unlock with Bond.') : k === 'shops' ? tt('map215.gd_shops', "Every shop has its own place on the Map. Food at Kibble Corner, clothes at the Boutique, houses at Barkitecture, seeds at Pip's Sprout Cart.") : ''; }
+function gdText(i) { const st = GD_STEPS[i], tp = isPhone() && st.tp; if (!tp && gdMp(st.k)) return esc(gdMp(st.k)); return esc(tdata('gd_steps.' + st.k + (tp ? '.tp' : '.t'), tp ? st.tp : st.t, { dog: NAME() })); } // v2.14 i18n: the step text is a message with {dog}
 function gdRender() {
   const L = gdLayer(), i = S.guide.step, st = GD_STEPS[i], c = $('.gd-card', L);
   c.dataset.step = i; c.dataset.k = st.k;
@@ -187,10 +189,12 @@ on('game:ready', () => { gdFields(); gdLetter(); if (gdLive()) setTimeout(() => 
 /* ---------- the Journal "How to play" page ---------- */
 function gdTabHTML() {
   const ic = (n, act) => `<span class="gd-lic">${n === 'missions' ? iconOr('missions', '<path d="M-9 -12h18v24h-18z" fill="#FFF4DF" stroke="#5B3D32" stroke-width="2"/><path d="M-5 0l4 4l7 -9" fill="none" stroke="#5B3D32" stroke-width="2.4" stroke-linecap="round"/>') : n === 'garden' ? iconOr('garden', doodle('flower', 0, 0, 1)) : n === 'bond' ? iconOr('bond', doodle('heart', 0, 0, 1)) : ICON(n)}<span class="gd-lring">${gdRingSVG(64, 64, 300 + act)}</span></span>`;
-  const card = ([k, icon, title, txt], j) => { const lp = j < GD_LESSONS.length && GD_LESSONS[j][0] === k ? 'gd_lessons.' + k + '_' + icon : ''; return `<li class="gd-lesson" data-lesson="${k}">${ic(icon, j)}<div><b>${esc(lp ? tdata(lp + '.2', title) : title)}</b><p>${esc(lp ? tdata(lp + '.3', txt) : txt)}</p></div></li>`; }; // v2.14 i18n: the eight lessons come from the table (two or three kind sentences each); a seasonal card from WINTER brings its own text
+  const card = ([k, icon, title, txt], j) => { const lp = j < GD_LESSONS.length && GD_LESSONS[j][0] === k ? 'gd_lessons.' + k + '_' + icon : '', t2 = lp ? gdMp(k) : ''; return `<li class="gd-lesson" data-lesson="${k}">${ic(icon, j)}<div><b>${esc(lp ? tdata(lp + '.2', title) : title)}</b><p>${esc(t2 ? t2 : lp ? tdata(lp + '.3', txt) : txt)}</p></div></li>`; }; // v2.14 i18n: the eight lessons come from the table (two or three kind sentences each); a seasonal card from WINTER brings its own text
   // v2.8: WINTER's seasonal card (V28.md section 7). wnLesson() returns a lesson [key, icon, title, text] like GD_LESSONS, or ready <li> HTML, or '' for none
   let wl = ''; try { wl = typeof wnLesson === 'function' ? wnLesson() : ''; } catch (e) { wl = ''; }
-  const cards = GD_LESSONS.map(card).join('') + (Array.isArray(wl) && wl.length === 4 ? card(wl, GD_LESSONS.length) : typeof wl === 'string' ? wl : '');
+  let al = null; try { al = typeof agLesson === 'function' ? agLesson() : null; } catch (e) { al = null; } // v2.15: the Training Ground card (44_agility.js), only while mpOn()
+  let pl = null; try { pl = typeof plLesson === 'function' ? plLesson() : null; } catch (e) { pl = null; } // v2.15: the Splash Pool card (45_pool.js), only while mpOn()
+  const cards = GD_LESSONS.map(card).join('') + (Array.isArray(wl) && wl.length === 4 ? card(wl, GD_LESSONS.length) : typeof wl === 'string' ? wl : '') + (Array.isArray(al) && al.length === 4 ? card(al, GD_LESSONS.length + 1) : '') + (Array.isArray(pl) && pl.length === 4 ? card(pl, GD_LESSONS.length + 2) : '');
   return `<div class="gd-page"><div class="gd-head"><div class="gd-duck">${gdDuck('sit')}</div><div class="gd-say"><p>${tt('guide.notes_html', "<b>Gerald's notes.</b> Everything a new dog friend needs, written down by a duck who knows everything. You are welcome.")}</p></div></div>
     <ol class="gd-lessons">${cards}</ol>
     <p class="gd-replay"><button class="btn yes" id="gdReplay" type="button">${esc(tt('guide.replay', 'Replay the guide'))}</button></p></div>`;
@@ -201,4 +205,4 @@ function gdReplay() {
   setTimeout(gdStart, 300);
 }
 modal.addEventListener('click', (e) => { if (e.target.closest && e.target.closest('#gdReplay')) { SFX.boop(600); gdReplay(); } });
-window.__gd = { active: gdActive, start: gdStart, tab: gdTabHTML, steps: GD_STEPS.length }; // for the guide suites
+window.__gd = { active: gdActive, start: gdStart, tab: gdTabHTML, steps: GD_STEPS.length, text: (i) => gdText(i) }; // for the guide suites

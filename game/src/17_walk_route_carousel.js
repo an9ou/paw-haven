@@ -1,6 +1,6 @@
 /* ======================= WALK ROUTE CAROUSEL ======================= */
 const ROUTE_KEYS = ['park', 'town', 'river', 'hilltop', 'woods', 'pier', 'beach'];
-const ROUTE_DIFF = { park: 1, town: 1, river: 2, hilltop: 3, woods: 3, pier: 3, beach: 4 };
+const ROUTE_DIFF = { park: 1, town: 1, river: 2, hilltop: 3, woods: 3, pier: 3, beach: 4, sunflower: 2, bamboo: 3, cliffs: 4 };
 let routeIdx = 0;
 function enterRoutes(startKey) {
   if (walkNever(D())) { nope(walkBlock(D(), 'park')); go('yard'); return; } // v2: under 3 months / nursing mums

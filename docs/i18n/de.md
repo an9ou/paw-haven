@@ -343,3 +343,10 @@ Decisions: Walk = "Gassi" (button), "Gassirunde" (noun); Nose-o-meter = "Nasomet
 - TODO(native): `pack.rescue` ("Retten"), `pack.today_s_rescues` ("Die Neuen von heute"), `pack.starter` / `pack.adopt_a_starter` ("Starter"), `mod.kitchen.pantry` ("Vorrat") vs "Vorratskammer", `mod.kitchen.cook_by_heart` ("Aus dem Kopf").
 - TODO(native): `mail.a_town_family` ("Familie aus dem Ort"), `mail.fam_kim`, `data.npc_boys.5` / `.9` (pun names translated: "Käpt’n Waffel", "Sir Gürkchen"), `town.cafe_enjoyed` ("einen {item}" assumes masculine item names), `playdate.has_retired_from_romance`, `popup.*` ("Missgeschick", "Kotbeutel", "Häufchen").
 - TODO(native): `core.lu_raise_html` ("Gehaltserhöhung in Leckerli"), `core.lu_units_html`, `data.tri_solid.collie.*` ("Tricolor"), `data.families.*.where` (in parentheses so they work in the album and in sentences).
+
+## v2.15
+
+- TODO(native): place names: "Hundeplatz" (Training Ground, the usual German word for a dog training ground), "Planschbecken" (Splash Pool), "Sonnenblumenweg", "Bambuspfad", "Klippenpfad" (short on purpose for the map captions; "Grove" and "Run" are dropped).
+- TODO(native): agility words: "Agility-Parcours", "Rosette" (as in "Paraden-Rosette"), "Slalom", "Hürde", "Reifen", "Tisch", "Los!" for the Go! button.
+- TODO(native): "paddeln" for the dog paddle, "Planschen" for the mission and button, "Schwimmball" for float fetch, "Hunde-Schwimmweste" for the Doggy Life Vest.
+- TODO(native): `agility.trick_bonus` "Übungsrunde" for a trick-training session.

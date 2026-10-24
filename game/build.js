@@ -12,7 +12,9 @@
 const fs = require('fs'), path = require('path'), cp = require('child_process');
 const D = __dirname, P = path.join(D, '..');
 const cat = (dir) => fs.readFileSync(path.join(D, dir, 'ORDER.txt'), 'utf8').split('\n').map((s) => s.trim()).filter(Boolean).map((f) => fs.readFileSync(path.join(D, dir, f), 'utf8')).join('');
-const ART = ['dogs/pawart_dogs.js', 'world/pawart_world_a.js', 'world/pawart_world_b.js', 'world/pawart_world_c.js', 'world/pawart_world_d.js', 'world/pawart_world_e.js'];
+// v2.15: worlds F (the v2.15 map) and G (the new places) join when their files exist (the art lanes add them). In the split build they are lazy
+// chunks (tools/split.js make().lazy, artChunk in 00_core.js), so the split art leaves them out; every one-file build keeps them inline
+const ART = ['dogs/pawart_dogs.js', 'world/pawart_world_a.js', 'world/pawart_world_b.js', 'world/pawart_world_c.js', 'world/pawart_world_d.js', 'world/pawart_world_e.js', 'world/pawart_world_f.js', 'world/pawart_world_g.js'].filter((f) => f.startsWith('dogs/') || /_[a-e]\.js$/.test(f) || fs.existsSync(path.join(P, f)));
 // v2.14: the i18n slot = game/i18n/msg.js (+ the generated game/i18n/packed.js once it exists), raw text, before the art and modules
 const I18N = () => ['game/i18n/msg.js', 'game/i18n/packed.js'].filter((f) => fs.existsSync(path.join(P, f))).map((f) => fs.readFileSync(path.join(P, f), 'utf8')).join('\n');
 const MODS = ['mods/genes.js', 'mods/pawaudio.js', 'mods/walkrun.js', 'mods/toys.js', 'mods/garden.js', 'mods/kitchen.js'];
@@ -37,12 +39,13 @@ const BANNED = /nintendo|pok[eé]mon|animal crossing|任天堂|ポケモン|ポ�
 if (mode === 'publish') {
   const rd = (f) => { const s = fs.readFileSync(path.join(P, f), 'utf8'); if (/<\/script/i.test(s)) throw new Error('</script in ' + f); return s; };
   const art = ART.map(rd).join('\n'), mods = MODS.map(rd).join('\n');
-  const merge = (html) => html.replace('/*@@PAWART@@*/', () => art).replace('/*@@PAWMODS@@*/', () => mods);
+  const merge = (html, a) => html.replace('/*@@PAWART@@*/', () => a || art).replace('/*@@PAWMODS@@*/', () => mods);
   const out = merge(game);
   if (BANNED.test(out)) throw new Error('banned word in build');
   fs.writeFileSync(path.join(P, 'paw_haven_prototype.html'), out);
   // the split build -> _split/ (index.html is the same kind of body fragment as paw_haven_prototype.html; tools/pages.js wraps it)
-  const SP = require('../tools/split.js').make(P), splitOut = SP.fontsLink(merge(fill(SP.core, cat('css'), SP.game(cat('src')))));
+  const SP = require('../tools/split.js').make(P), splitArt = ART.filter((f) => !SP.lazy.includes(f)).map(rd).join('\n'); // v2.15: worlds F and G as lazy chunks
+  const splitOut = SP.fontsLink(merge(fill(SP.core, cat('css'), SP.game(cat('src'))), splitArt));
   if (BANNED.test(splitOut) || Object.values(SP.files).some((t) => BANNED.test(t))) throw new Error('banned word in the split build');
   const SD = path.join(P, '_split'); fs.rmSync(SD, { recursive: true, force: true }); fs.mkdirSync(path.join(SD, 'lang'), { recursive: true });
   fs.writeFileSync(path.join(SD, 'index.html'), splitOut);

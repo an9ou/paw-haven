@@ -13,7 +13,7 @@ Object.assign(ROUTES, {
 // v2.14 i18n: the shown names of places and routes. The definitions above and below stay English (ids and save values); the v1.6 and v2.8 names are
 // tt() keys because they are added with Object.assign (not a table the extractor knows), the older ones come from the places / routes tables of 00_core.js.
 function townPlaceName(k) {
-  const p = PLACES[k]; if (!p) return k;
+  const p = PLACES[k]; if (!p) return k; const mp = mpPlaceName(k); if (mp) return mp; // v2.15: the new places and Kibble Corner while mpOn()
   switch (k) {
     case 'square': return tt('town.place_square', 'Town Square');
     case 'cafe': return tt('town.place_cafe', 'Pupuccino Café');
@@ -136,7 +136,8 @@ function socialise() {
 }
 function kiteWatch() {
   const fx = $('#fx'); if (!fx) return;
-  fx.insertAdjacentHTML('beforeend', `<g class="kitefx"><path d="M0 0 L24 -30 L48 0 L24 30 Z" fill="#F28FA5" stroke="#5B3D32" stroke-width="3" transform="translate(650 120)"/><path d="M674 150 Q700 220 660 300" fill="none" stroke="#5B3D32" stroke-width="2" stroke-dasharray="4 5"/></g>`);
+  const c = typeof grWide === 'function' && grOn() && grWide() ? grCam() : null, dx = c ? Math.round(c.x + c.w * 0.65 - 650) : 0; // v2.15: on a wide floor (the 1600-wide hilltop) the kite flies in the camera's window
+  fx.insertAdjacentHTML('beforeend', `<g class="kitefx"${dx ? ` transform="translate(${dx} 0)"` : ''}><path d="M0 0 L24 -30 L48 0 L24 30 Z" fill="#F28FA5" stroke="#5B3D32" stroke-width="3" transform="translate(650 120)"/><path d="M674 150 Q700 220 660 300" fill="none" stroke="#5B3D32" stroke-width="2" stroke-dasharray="4 5"/></g>`);
   setTimeout(() => { const k = fx.querySelector('.kitefx'); if (k) k.remove(); }, 4200);
   const h = dogHeadWorld(); say(PICK([tt('town.kite_1', 'A kite! I will catch it with my mind.'), tt('town.kite_2', 'That bird is rectangular. Suspicious.'), tt('town.kite_3', 'I could fly too. I just choose not to.')]), h.x, h.y, 2600);
 }
@@ -145,6 +146,7 @@ function kiteWatch() {
 const FB_PINS = { square: [1900, 330], cafe: [2180, 560], vet: [1880, 760], salon: [2170, 980], dogpark: [1920, 1220], hilltop: [760, 150], pier: [1300, 1390] };
 let MAPV = null;
 function mapArt(locked) {
+  if (mpMapReady()) return mpMapArt(); // v2.15: the new town map (world F, 42_map215.js)
   const bonds = {}; Object.keys(PLACES).forEach((k) => { bonds[k] = PLACES[k].bond; });
   const raw = art('scene', 'map', Object.assign({ locked, bonds }, jpOn() ? { jp: true } : {}, PLACES.fujihill ? { fujiPin: JP_MAP_PIN.big } : {}, tkMapOpts())); // v2.11: station = the Station pin (TOKYO ART D) // v2.8: jp = the Fuji landmark, fujiPin = where SCENE ART draws <g data-area="fujihill">
   const m = /viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(raw || ''), W0 = m ? +m[1] : 1000, H0 = m ? +m[2] : 600;
@@ -183,7 +185,10 @@ function mapClearCtl() {
   for (let d = 8; d <= 200; d += 8) for (const sg of [1, -1]) { M.tx = tx0 + sg * d; mapApply(); if (Math.abs(M.tx - (tx0 + sg * d)) < 0.5 && !hits()) return; }
   M.tx = tx0; mapApply();
 }
+// v2.15 phones: the place / time pill (#status) floats over the top of the map; when the "Doodle Doggo Town" banner (map y 20 to 115, world F) shows, it opens just below the pill
+function mapClearTitle() { const M = MAPV; if (!M) return; const s = M.base * M.z, pad = mapTopPad(); if (M.ty + 115 * s > 0 && M.ty + 20 * s < pad) { M.ty = pad - 20 * s; mapApply(); } }
 function enterMap() {
+  if (mpMapNeedsWait()) { mpMapWait(); return; } // v2.15: world F is a lazy chunk in the split build: a short paper wobble while it loads
   setChrome(true, false); hideBubble(); // a yard speech bubble must not linger over the pin
   const locked = lockedAreas(), A = mapArt(locked);
   view.innerHTML = `<div id="mapPan" class="mappan"><div id="mapInner" style="width:${A.W}px;height:${A.H}px"><svg class="world mapsvg" viewBox="0 0 ${A.W} ${A.H}" width="${A.W}" height="${A.H}" style="background:radial-gradient(#E3D2BA 1.1px,transparent 1.6px) 0 0/22px 22px,#FFFBF3">${A.svg}</svg><div id="mapHi" hidden></div><div id="mapPin" hidden>${PIN_SVG}<span>${tt('town.you_are_here', 'you are here')}</span></div></div></div>
@@ -193,14 +198,15 @@ function enterMap() {
   $('#mapX').onclick = () => { SFX.click(); go('yard'); };
   const pan = $('#mapPan'), inner = $('#mapInner'), svg = $('svg.world', view);
   const vw = pan.clientWidth || view.clientWidth, vh = pan.clientHeight || view.clientHeight;
-  const base = isPhone() ? Math.max(vh / A.H, vw / (0.6 * A.W)) : vw / (0.6 * A.W);
+  const base = isPhone() ? Math.max(vh / A.H, vw / (0.6 * A.W), A.v215 ? MP_CAP_PX / 31 : 0) : vw / (0.6 * A.W); // v2.15: on a short phone the map is a little taller than the pane, so a caption (31 units) is 15 px
   MAPV = { W: A.W, H: A.H, vw, vh, base, z: 1, tx: 0, ty: 0, centers: {} };
   mapApply();
   // area centres in map units (MAP_AREAS when the art gives them, else measured)
   const measure = () => { const s = MAPV.base * MAPV.z, ir = inner.getBoundingClientRect(); svg.querySelectorAll('[data-area]').forEach((g) => { const r = g.getBoundingClientRect(); MAPV.centers[g.getAttribute('data-area')] = [(r.left + r.width / 2 - ir.left) / s, (r.top + r.height / 2 - ir.top) / s]; }); (A.areas || []).forEach((a) => { MAPV.centers[a.id] = [a.x, a.y]; }); };
-  measure(); mapCenter(S.place === 'house' ? 'yard' : S.place, false); if (isPhone()) mapClearCtl();
+  measure(); mapCenter(A.v215 ? mpHere() : S.place === 'house' ? 'yard' : S.place, false); if (A.v215) mpMapOpened(); if (isPhone()) { mapClearCtl(); if (A.v215) mapClearTitle(); } // v2.15: the house is its own building, the leader's dog stands at the pack's place
   const label = (k) => k === 'shelter' ? tt('town.visit_shelter', 'Visit the shelter') : PLACES[k] ? tt('town.go_to', '{locked, select, yes {Go to {place} (locked, Bond {bond})} other {Go to {place}}}', { locked: topBond() < PLACES[k].bond ? 'yes' : 'no', place: townPlaceName(k), bond: PLACES[k].bond }) : k;
-  hotify(svg, '[data-area]', 'data-area', (k) => (isPhone() ? mapPick(k) : pickArea(k)), label);
+  if (A.v215) mpBindMap(svg); // v2.15: the buildings are buttons (lift, squash, shake; phones: tap travels, long-press names it), the travel walk
+  else hotify(svg, '[data-area]', 'data-area', (k) => (isPhone() ? mapPick(k) : pickArea(k)), label);
   // drag pan, pinch + wheel zoom (pointer events: mouse and touch alike)
   const pts = new Map(); let moved = 0, pinch = null, last = null;
   pan.addEventListener('pointerdown', (e) => { pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (pts.size === 1) { moved = 0; last = { x: e.clientX, y: e.clientY }; } if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), z: MAPV.z }; } });
@@ -222,12 +228,13 @@ function mapOverlay() {
   const svg = $('svg.world', view); if (!svg) return;
   const tip = $('#mapTip'), hi = $('#mapHi'), pin = $('#mapPin'), inner = $('#mapInner');
   const rel = (g) => { const s = MAPV.base * MAPV.z, ir = inner.getBoundingClientRect(), r = g.getBoundingClientRect(); return { x: (r.left - ir.left) / s, y: (r.top - ir.top) / s, w: r.width / s, h: r.height / s }; };
-  mapHighlight = (g) => { const r = rel(g); hi.hidden = false; Object.assign(hi.style, { left: r.x - 8 + 'px', top: r.y - 8 + 'px', width: r.w + 16 + 'px', height: r.h + 16 + 'px' }); };
+  const v215 = !!svg.querySelector('.pa-wf-map'); // v2.15: the buildings glow and lift themselves, so no highlight box and no pin (the leader's dog stands there)
+  mapHighlight = (g) => { if (v215) return; const r = rel(g); hi.hidden = false; Object.assign(hi.style, { left: r.x - 8 + 'px', top: r.y - 8 + 'px', width: r.w + 16 + 'px', height: r.h + 16 + 'px' }); };
   const show = (g) => { if ($('#mapPan').classList.contains('dragging')) return; mapHighlight(g); const k = g.getAttribute('data-area'), vr = view.getBoundingClientRect(), r = g.getBoundingClientRect(); tip.textContent = k === 'station' ? tkTownTip() : mapTipText(k); tip.hidden = false; const tw = tip.offsetWidth; tip.style.left = clamp(r.left - vr.left + r.width / 2 - tw / 2, 8, vr.width - tw - 8) + 'px'; tip.style.top = Math.max(8, r.top - vr.top - 46) + 'px'; };
   const hide = () => { hi.hidden = true; tip.hidden = true; };
   svg.querySelectorAll('[data-area]').forEach((g) => { g.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse' && !isPhone()) show(g); }); g.addEventListener('focus', () => { if (!isPhone()) show(g); }); g.addEventListener('pointerleave', hide); g.addEventListener('blur', hide); });
   const k = S.place === 'house' ? 'yard' : S.place, c = MAPV.centers[k];
-  if (c && pin) {
+  if (c && pin && !v215) {
     pin.hidden = false; pin.style.left = c[0] + 'px'; pin.style.top = (c[1] - 30) + 'px';
     // phones: the pin stands beside its place (on the open side), so neither the place's art nor the name above it is covered
     const here = svg.querySelector(`[data-area="${k}"]`);

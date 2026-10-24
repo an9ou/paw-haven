@@ -597,3 +597,12 @@ Recurring words chosen while translating the game (English = Thai (area)), so la
 - trick names: Sit นั่ง, Paw ยื่นมือ, Lie Down หมอบ, Roll Over กลิ้งตัว, Spin หมุนตัว, Play Dead ล้มตึง (no ตาย), Speak เห่า, Dance เต้น, Bow โค้งคำนับ, Signature ท่าประจำตัว; commands Bang! ปัง!, Showtime! โชว์ไทม์!; Show off (tab) โชว์ท่า, Focus สมาธิ, hand signal สัญญาณมือ, treat lure ล่อด้วยขนม, stages New ใหม่ / Getting it เริ่มเข้าใจ / Learned ทำได้แล้ว / Mastered เชี่ยวชาญ, Chain = ติดกัน, session = รอบฝึก (toys)
 - Riverside Trail = ทางเดินริมแม่น้ำ (walk)
 - NPC dog names: Captain Waffles กัปตันวาฟเฟิล, Sir Pickle เซอร์แตงกวาดอง, Lady Fluffington เลดี้ฟูฟ่อง, Tofu เต้าหู้ (walk)
+
+## v2.15
+
+`game/i18n/th.json`, 245 new keys (Around Town). New place names, also in the glossary `terms`: Training Ground ลานฝึก, Splash Pool สระเล่นน้ำ, Sunflower Lanes ทางทุ่งทานตะวัน, Bamboo Grove Trail ทางป่าไผ่, Seaside Cliffs Run ทางผาริมทะเล (short for the map captions). Agility course สนามอจิลิตี้ (as the Agility Tunnel toy), obstacles เสาซิกแซก, ราวกระโดด, ห่วงยาง, อุโมงค์, โต๊ะหยุดพัก. Rosette โบว์รางวัล (as in the festivals), Doggy Life Vest เสื้อชูชีพน้องหมา, Float fetch บอลลอยน้ำ, paddle ตีน้ำ, Go! ไป!. Care notes are two clauses each.
+
+- TODO(native): สนามอจิลิตี้ (loanword "agility", as the v2.14 tunnel toy): clear to kids?
+- TODO(native): `agility.go` ไป! and the hints that quote it without quote marks (แตะ ไป! ตอนที่...): reads clearly?
+- TODO(native): `ground.play_3` ท่าโค้งชวนเล่น for the play bow.
+- TODO(native): `data.treasures.sailor_cap.ab` กะลาสีใจนิ่ง and `lucky_horseshoe.ab` โชคดีมีชัย (ability names).
