@@ -66,8 +66,9 @@ require('./test_lib').run('phone_v215_ground', async (t) => {
       const front = await t.until((g) => { const f = window.__paw.gr.floor(), q = window.__paw.rm.pos(g); return q.y >= f.front - 52 && !window.__paw.rm.moving.includes(g); }, G, 9000);
       const q = await ev((g) => ({ p: window.__paw.rm.pos(g), cam: window.__paw.gr.cam(), happy: window.__paw.S.dogs.map((d) => [d.id, d.stats.happy]) }), G);
       ok(front && q.p.x >= q.cam.x && q.p.x <= q.cam.x + q.cam.w, `the petted dog comes to the front (y ${Math.round(q.p.y)}) and stays in the crop`);
-      const up = q.happy.filter((h, i) => h[1] > before[i][1]).map((h) => h[0]);
-      ok(up.length >= 1 && up.every((id) => id === G), `only the touched dog was petted (${up.join(', ') || 'none'})`);
+      // a shared tick (the game clock, an arrival line's +2 Happiness) can lift every dog a little: the touched dog must gain clearly the most
+      const gain = q.happy.map((h, i) => [h[0], h[1] - before[i][1]]), mine = (gain.find((g) => g[0] === G) || [G, 0])[1], other = Math.max(0, ...gain.filter((g) => g[0] !== G).map((g) => g[1]));
+      ok(mine > 0 && mine > other + 0.5, `only the touched dog was petted (gains ${gain.map((g) => g[0] + ' ' + g[1].toFixed(1)).join(', ')})`);
     }
     ok(await noSide(), 'no sideways scroll');
 
