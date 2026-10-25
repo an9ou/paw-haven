@@ -65,6 +65,8 @@ const TOYS = [
   { n: 'Plush Ghost', fest: 'halloween', ed: 2026, v26: true, price: 55, bond: 1, note: 'Shake: a floppy ghost to shake and carry about. +Happiness, a little Bond.' },
   { n: 'Bat-Wing Flyer', fest: 'halloween', ed: 2026, v26: true, price: 65, bond: 2, note: 'Leap: a soft flyer with felt bat wings to jump for. +Happiness, -Energy.' },
   { n: 'Trick-or-Treat Bucket', fest: 'halloween', ed: 2026, v26: true, price: 80, bond: 2, note: 'Sniff: nose out the treats hidden under the lids. +Happiness, a little Bond.' },
+  /* v2.17.1 Festive Market (V2171.md): sold only at the Festive Market (fm), a ball-play toy (BL_TOYS in 49_market.js) */
+  { n: 'Squeaky Ghost', fest: 'halloween', ed: 2026, fm: true, price: 50, bond: 1, note: 'Fetch: a soft little ghost that squeaks when it lands. Ball play, 2 coins a return.' },
   /* v2.11 Tokyo Trip: the Tokyo Tower souvenir stand only (tokyo + fest 'tokyo'), with its own play game in mods/toys.js */
   { n: 'Shinkansen Plush', fest: 'tokyo', tokyo: true, price: 80, bond: 1, v211: true, note: 'Zoom: a soft bullet train to roll along the ground and chase. +Happiness.' },
 ];
@@ -551,6 +553,7 @@ function mpPlainGround(name) {
     + `<g fill="none" stroke="#B9C79A" stroke-width="3" stroke-linecap="round">${[[90, 430], [260, 470], [450, 420], [640, 480], [820, 440], [160, 540], [560, 550], [900, 530]].map(([x, y]) => `<path d="M${x} ${y} l6 -14 M${x + 8} ${y} l2 -16 M${x + 16} ${y} l-4 -12"/>`).join('')}</g></g>` + mpPlainDoor(name) + placeSign(name); // v2.15: a storefront gets a doodle door (data-shop, 42_map215.js)
 }
 function sceneArt(name, e, extra) {
+  if (name === 'fmarket' && typeof fmSceneArt === 'function') return fmSceneArt(); // v2.17.1: the Festive Market (49_market.js)
   const o = Object.assign({}, e || {}, extra || {});
   const tk = tkSceneArt(name, o); if (tk) return tk; // v2.11: the six Tokyo places (world D / E art, else a stand-in, 39_tokyo.js)
   if (MP_KEYS.includes(name) && !mpSceneReady(name)) return mpPlainGround(name); // v2.15: a new place whose world G scene is not there (yet)
@@ -740,6 +743,7 @@ function freshState(key, name, sex) {
   v214Fields(st); st.lang = i18nReal(prefs.langPick) ? prefs.langPick : null; // v2.14: a language picked on the title screen before the save existed (V214.md 5)
   v216Fields(st); Object.assign(st.fw, { fresh: true, wel: { days: [], got: [] }, dock: 1, dockNew: { wardrobe: 1, journal: 1 } }); if (typeof fwOn === 'function' && fwOn()) st.guide.fw = 1; // v2.16 First Week (V216.md 2): a new save gets Puppy's first day, the welcome week and the lighter phone dock
   v217Fields(st); // v2.17 Dog Days (V217.md 6): wishes, the diary, stickers, letters, the Bond track gifts
+  v2171Fields(st); // v2.17.1 Festive Market (V2171.md 7)
   return linkDogs(st);
 }
 let S = null;
@@ -778,6 +782,7 @@ function migrate(s) {
   v215Fields(s); // v2.15 Around Town (V215.md section 9): additive
   fwBondFix(s); v216Fields(s); // v2.16 First Week (V216.md section 2): additive; the new Bond thresholds level old dogs up quietly
   v217Fields(s); // v2.17 Dog Days (V217.md section 6): additive
+  v2171Fields(s); // v2.17.1 Festive Market (V2171.md section 7): additive
   return s;
 }
 /* v2.7 Home & Pack save fields (V27.md section 1). Additive only: S.v stays 1, nothing is dropped.
@@ -902,6 +907,12 @@ function v217Fields(s) {
   if (d.diary.length > 60) d.diary.splice(0, d.diary.length - 60);
   return s;
 }
+/* v2.17.1 Festive Market save fields (V2171.md 7). Additive: S.fm = { seen: { marketId_year: ISO }, letters: { marketId_year: ISO }, bought } */
+function v2171Fields(s) {
+  if (!s) return s; if (!v28Obj(s.fm)) s.fm = {};
+  ['seen', 'letters'].forEach((k) => { if (!v28Obj(s.fm[k])) s.fm[k] = {}; }); if (typeof s.fm.bought !== 'number' || !(s.fm.bought >= 0)) s.fm.bought = 0;
+  return s;
+}
 // v2.16: BOND_TH moved Bond 2 and 3 closer. A loaded dog whose points already pass a threshold levels up here, quietly (no fanfare, no level-up queue);
 // migNote shows one kind toast. Levels never go down.
 function fwBondFix(s) {
@@ -996,6 +1007,7 @@ function mpPlaceSync() {
 }
 mpPlaceSync();
 function mpPlaceName(k) {
+  if (k === 'fmarket' && PLACES[k] && typeof fmPlaceName === 'function') return fmPlaceName(); // v2.17.1: the Festive Market takes its market's name
   if (!mpOn() || !PLACES[k]) return null;
   switch (k) {
     case 'market': return tdata('shop_name.kibble', 'Kibble Corner'); // the storefronts share their shop's name (already in every language)

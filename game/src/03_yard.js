@@ -729,7 +729,7 @@ function feed(name) {
 /* ---------------- PLAY ---------------- */
 function openPlayTray() {
   if (cur.mode !== 'yard') go('yard');
-  const fts = FETCH_TOYS.filter((t) => owns('toys', t)), sub = { 'Tennis Ball': tt('yard.free_throws_every_dog_races', 'Free throws, every dog races'), Frisbee: tt('yard.long_throws_3_coins', 'Long throws: 3 coins'), 'Driftwood Stick': tt('yard.tumbles_3_coins', 'Tumbles: 3 coins'), 'Glow Ball': tt('yard.glows_after_dark', 'Glows after dark'), 'Bamboo Ring': tt('tracks.ring_sub', 'Floats, 3 coins') };
+  const fts = FETCH_TOYS.filter((t) => owns('toys', t)), sub = { 'Tennis Ball': tt('yard.free_throws_every_dog_races', 'Free throws, every dog races'), Frisbee: tt('yard.long_throws_3_coins', 'Long throws: 3 coins'), 'Driftwood Stick': tt('yard.tumbles_3_coins', 'Tumbles: 3 coins'), 'Glow Ball': tt('yard.glows_after_dark', 'Glows after dark'), 'Bamboo Ring': tt('tracks.ring_sub', 'Floats, 3 coins'), 'Squeaky Ghost': tt('fm.ghost_sub', 'Squeaks, 2 coins') };
   const b = fts.map((t) => `<button class="card" data-play="ball:${esc(t)}"><span class="art">${art('item', t)}</span><b>${tt('yard.play_ball', 'Play ball')}</b><span class="small">${esc(tt('yard.toy_sub', '{toy}: {sub}', { toy: homeName(t), sub: sub[t] }))}</span></button>`); // v2.10: free ball play where you are (38_ball.js) replaces the timed Fetch challenge
   toysPlayable().forEach((t) => b.push(`<button class="card" data-play="toy:${esc(t)}"><span class="art">${art('item', t)}</span><b>${tt('yard.play', 'Play')}</b><span class="small">${esc(homeName(t))}${hwTag(t)}</span></button>`));
   b.push(`<button class="card" data-play="tricks"><span class="art">${ICON('star')}</span><b>${tt('yard.tricks', 'Tricks')}</b><span class="small">${esc(tt('yard.learned', '{n} learned', { n: learnedCount() }))}</span></button>`);
@@ -895,6 +895,7 @@ const HM_DECOR = {
   'Jack-o-Lantern Trio': { prop: 'hwlanterns', at: [440, 528, 112, 67], vb: [200, 120], price: 120, fest: 'halloween', ed: 2026, v26: true, story: 'Three pumpkins, three faces, all of them smiling. They glow a little after dark.' },
   'Paper Bat Bunting': { prop: 'hwbunting', at: [650, 298, 160, 43], vb: [300, 80], price: 90, fest: 'halloween', ed: 2026, v26: true, story: 'Paper bats on a string, cut a bit wonky. They flutter whenever a dog runs past.' },
   'Friendly Scarecrow': { prop: 'hwscarecrow', at: [762, 262, 92, 130], vb: [140, 200], price: 140, fest: 'halloween', ed: 2026, v26: true, story: 'A pumpkin head and a big grin. The crows sit on his arms to chat.' },
+  'Pumpkin Lantern': { prop: 'fmlantern', at: [566, 446, 60, 80], vb: [120, 160], price: 80, fest: 'halloween', ed: 2026, fm: true, lit: true, story: 'A round pumpkin lantern on a little post. It glows softly after dark.' }, // v2.17.1 Festive Market
   'Ghost Garland': { prop: 'hwgarland', at: [100, 220, 200, 60], vb: [300, 90], price: 100, fest: 'halloween', ed: 2026, v26: true, story: 'Little cloth ghosts holding hands. They say boo very quietly.' },
   // v2.7 Home & Pack (V27.md section 1): everyday decorations for the yard and the house, and five pieces of dog furniture, all sold at Barkitecture.
   // room: 'yard' | 'house' (missing = 'yard'). zone: 'floor' (bottom edge on the ground band) | 'wall' (hung up, the whole box on the wall band). flat: drawn under everything else on the floor.
