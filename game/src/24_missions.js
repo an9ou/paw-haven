@@ -110,7 +110,7 @@ function msOnAct(a) {
     let hit = false; try { hit = d.m(a, it); } catch (e) { hit = false; }
     if (!hit) return;
     it.p = Math.min(it.n, (it.p || 0) + 1); changed = true;
-    if (it.p >= it.n) { it.done = localISO(); const c = addCoins(MS_PAY, { raw: true }); msSay(tt('missions.done', 'Mission done: {mission}. +{n} coins.', { mission: msText(it, true), n: c }), 'gold'); }
+    if (it.p >= it.n) { it.done = localISO(); const c = addCoins(MS_PAY, { raw: true }); msSay(tt('missions.done', 'Mission done: {mission}. +{n} coins.', { mission: msText(it, true), n: c }), 'gold'); setTimeout(() => msHudSync(true), 0); } // v2.16.1: the top-bar clipboard hops
   });
   if (!changed) return;
   markDirty();
@@ -297,25 +297,41 @@ function msYardBind() {
   const go = (e) => { if (e) e.stopPropagation(); SFX.click(); msOpen(); };
   g.onclick = go; g.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } };
 }
-function msYardRedraw() {
-  if (cur.mode !== 'yard' || !S || S.place !== 'yard') return;
-  const svg = $('#view svg.world'); if (!svg) return;
-  const html = msYardSVG(), old = $('#msCardG');
-  if (old) old.outerHTML = html;
-  else { const a = svg.querySelector('#decorG') || grAt('houseG', svg); if (a) a.insertAdjacentHTML('beforebegin', html); else return; }
-  msYardBind();
+// v2.16.1 (owner: the yard was cluttered): the clipboard left the yard. The missions live in a small crayon clipboard with the done count (1/3) in the top bar
+// next to the coins on desktop (#msBtn), and in the "..." menu on phones (msMenuBtn, 22c_phone_shell.js). Both open the same Missions sheet (msOpen).
+// msYardSVG and the tap-rect helpers above stay for the old tests' sake only; nothing draws them now.
+function msYardRedraw() { const old = $('#msCardG'); if (old) old.remove(); msHudSync(); }
+function msHudIcon() { return iconOr('missions', '<path d="M-9 -12h18v24h-18z" fill="#FFF4DF" stroke="#5B3D32" stroke-width="2"/><path d="M-5 0l4 4l7 -9" fill="none" stroke="#5B3D32" stroke-width="2.4" stroke-linecap="round"/>'); }
+const msHudLabel = (nd) => tt('missions.yard_aria', 'Daily missions: {nd} of 3 done', { nd });
+function msHudSync(ping) {
+  const coins = $('#coins'); if (!coins) return; let b = $('#msBtn');
+  if (!b) {
+    coins.insertAdjacentHTML('afterend', `<button id="msBtn" class="ms-btn" type="button" hidden><span class="ms-ic" aria-hidden="true">${msHudIcon()}</span><b class="ms-n"></b></button>`);
+    b = $('#msBtn'); b.onclick = (e) => { e.stopPropagation(); SFX.click(); msOpen(); };
+  }
+  const on = !!S && !!S.missions && cur.mode !== 'title';
+  if (on) { msFields(); if (S.missions.date !== localISO()) msRoll(); }
+  const nd = on ? msDoneN() : 0, txt = nd + '/3';
+  if (b.hidden === on) b.hidden = !on; if (!on) return;
+  const n = b.querySelector('.ms-n'); if (n.textContent !== txt) n.textContent = txt;
+  const lbl = msHudLabel(nd); if (b.getAttribute('aria-label') !== lbl) { b.setAttribute('aria-label', lbl); b.title = lbl; }
+  b.dataset.done = String(nd); b.classList.toggle('all', nd >= 3);
+  if (ping && !motionOff()) { b.classList.remove('ms-ping'); void b.offsetWidth; b.classList.add('ms-ping'); }
 }
+// the "..." menu on phones: the missions with their count
+function msMenuBtn() { if (!S || !S.missions) return ''; const nd = msDoneN(); return `<button class="btn big" id="mmMs" aria-label="${esc(msHudLabel(nd))}"><span class="ic">${msHudIcon()}</span>${esc(tt('missions.title', 'Daily missions'))} <b class="ms-cnt">${nd}/3</b></button>`; }
 on('yard:enter', () => { if (window.__paw && !window.__paw.ms) msExpose(); if (S && S.place === 'yard') msYardRedraw(); });
 on('scene:redraw', () => { if (S && S.place === 'yard') msYardRedraw(); });
+on('game:ready', () => setTimeout(msHudSync, 0));
 
 /* ---- tests ---- */
 function msExpose() {
   if (!window.__paw) return;
   window.__paw.ms = {
-    roll: (f) => msRoll(f), today: () => msToday(), open: () => msOpen(), pool: MS_POOL.map((d) => d.id), pick: (date) => msPick(date), yard: MS_YARD,
+    roll: (f) => msRoll(f), today: () => msToday(), open: () => msOpen(), hud: () => msHudSync(), pool: MS_POOL.map((d) => d.id), pick: (date) => msPick(date), yard: MS_YARD,
     force: (ids) => { msRoll(); S.missions.list = ids.map((id) => { const d = msDef(id); return d ? (msItem(d, Math.random) || { id, n: d.n, p: 0, done: null }) : null; }).filter(Boolean); S.missions.stampDay = ''; markDirty(); msRefresh(); return S.missions.list; },
     text: (it, s) => msText(it, s), act: (kind, data) => trackAct(kind, data), flush: () => msFlush(), get queue() { return msQueue.length; }
   };
 }
 on('game:ready', () => { msFields(); setTimeout(msExpose, 0); });
-setInterval(() => { if (S && cur.mode !== 'title') { msFlush(); if (S.missions && S.missions.date && S.missions.date !== localISO()) msRoll(); } }, 1000);
+setInterval(() => { if (S && cur.mode !== 'title') { msFlush(); if (S.missions && S.missions.date && S.missions.date !== localISO()) msRoll(); } msHudSync(); }, 1000);

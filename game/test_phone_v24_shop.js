@@ -87,20 +87,15 @@ async function suite(t, dev) {
   await shopScroll(t, 'Barkitecture', 11); await audit(t, 'barkitecture');
   await closeSheet(t);
 
-  t.sec(dev + ': the yard clipboard');
+  t.sec(dev + ': the missions (v2.16.1: the clipboard left the yard for the "..." menu)');
   await ev(() => { const S = window.__paw.S; S.sleeping = false; S.place = 'yard'; window.__paw.go('yard'); });
-  await t.until(() => !!document.querySelector('#msCardG > rect'), null, 8000); await t.calm(); await t.lu(); await t.freezeMotion(true); await settled(t, '#msCardG > rect');
-  const g = await ev(() => { const q = (s) => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); return [b.left, b.top, b.right, b.bottom]; }; return { hit: q('#msCardG > rect'), art: q('#msCardG > svg'), dog: q('#dogHit'), mail: q('#mailboxG > rect') || q('#sceneG [data-hot=mailbox]'), iw: innerWidth, ih: innerHeight }; });
-  const ov = (a, b) => !!a && !!b && a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];
-  ok(g.hit && g.hit[2] - g.hit[0] >= 47.5 && g.hit[3] - g.hit[1] >= 47.5, `tap rect >= 48 px (${g.hit && Math.round(g.hit[2] - g.hit[0])}x${g.hit && Math.round(g.hit[3] - g.hit[1])})`);
-  ok(g.hit[0] >= 0 && g.hit[2] <= g.iw, 'the clipboard is on screen');
-  ok(!ov(g.hit, g.dog) && !ov(g.art, g.dog), 'the clipboard does not cover #dogHit');
-  ok(!ov(g.hit, g.mail), 'the clipboard does not cover the mailbox');
-  await t.SH('yard_clipboard');
-  const cx = (g.hit[0] + g.hit[2]) / 2, cy = (g.hit[1] + g.hit[3]) / 2;
-  const top = await ev(([x, y]) => { const e = document.elementFromPoint(x, y); return !!e && !!e.closest('#msCardG'); }, [cx, cy]);
-  ok(top, 'nothing sits on top of the clipboard');
-  await p.touchscreen.tap(cx, cy);
+  await t.untilMode('yard'); await t.calm(); await t.lu(); await t.freezeMotion(true);
+  ok(await ev(() => !document.querySelector('#msCardG')), 'no clipboard in the yard');
+  await p.locator('#moreBtn').tap(); await t.until(() => !!document.querySelector('#modal:not([hidden]) #mmMs'), null, 5000); await settled(t, '#modal .panel');
+  const g = await ev(() => { const b = document.querySelector('#mmMs').getBoundingClientRect(); return { w: b.width, h: b.height, l: b.left, r: b.right, iw: innerWidth }; });
+  ok(g.h >= 47.5 && g.w >= 47.5 && g.l >= 0 && g.r <= g.iw, `the Missions button in the menu: 48 px, on screen (${Math.round(g.w)}x${Math.round(g.h)})`);
+  await t.SH('menu_missions');
+  await p.locator('#mmMs').tap();
   ok(await t.until(() => !!document.querySelector('#modal:not([hidden]) .panel.ms-pop'), null, 5000), 'a tap opens the Missions sheet');
 
   t.sec(dev + ': the Missions sheet');
