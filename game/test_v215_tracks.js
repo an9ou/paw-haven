@@ -194,6 +194,10 @@ run('v215_tracks', async (t) => {
       ok(boosted, 'with the prototype BOOST (x2 on walk coins) a walking day beats a day spent on ball play, agility and the pool (they spend the Energy walks would use)');
     }
     ok(S0.ballCap === 40 && S0.agCap === 40, 'the caps are 40 and 40');
+    // v2.16 (V216.md 6): the monthly calendar pays at most 80 coins a month (3 days 30, 12 days 50), the welcome week and the Bond 2 party pay items, never coins
+    const cal = await ev(() => { const F = window.__paw.fw, r = [3, 7, 12, 18, 24].map((n) => F.reward('cal', n, '2026-10')), w = [1, 3, 5, 7].map((n) => F.reward('wel', n)); return { coins: r.filter((x) => x.t === 'coins').reduce((a, x) => a + x.c, 0), welCoins: w.filter((x) => x.t === 'coins').length }; });
+    ok(cal.coins === 80 && cal.welCoins === 0, `calendar coins: ${cal.coins} a month, none from the welcome week`);
+    ok(avgWalk >= 100 && avgWalk / (cal.coins / 30) > 20, `walks stay the main income: about ${Math.round(avgWalk)} route coins a day from walks against about ${(cal.coins / 30).toFixed(1)} a day from the calendar`);
     // the real game's own accounting for the two capped sources: agility coins left, ball coins left, the pool's paddle pays nothing
     const real = await ev(() => { const P = window.__paw, S = P.S; S.ag.day = P.pl.today(); S.ag.coins = 40; const l1 = P.ag.left(); S.ag.coins = 10; const l2 = P.ag.left(); S.ag.coins = 0; return { l1, l2 }; });
     ok(real.l1 === 0 && real.l2 === 30, 'agCoinsLeft follows S.ag.coins (cap 40): ' + JSON.stringify(real));

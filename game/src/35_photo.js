@@ -12,7 +12,7 @@ const PH = { on: false, cap: null, names: null, vb: null, tok: 0, svg: '', size:
 
 const phCaps = () => PH_CAPS.map((t, i) => ({ id: 'c' + i, t: tdata('ph_caps.' + i, t) })).concat([{ id: 'season', t: (() => { const k = PH_SEASON_CAP[seasonNow()] ? seasonNow() : 'summer'; return tdata('ph_season_cap.' + k, PH_SEASON_CAP[k]); })() }]);
 function phCapNow() { const l = phCaps(); return l.find((c) => c.id === prefs.phCap) || l[0]; }
-const phFrames = () => ((window.PawArt && PawArt.POSTCARD_COLORS) || []).concat(typeof tkFrameList === 'function' ? tkFrameList() : []); // v2.11: the Tokyo stamp frame once all seven stamps are in (39_tokyo.js)
+const phFrames = () => ((window.PawArt && PawArt.POSTCARD_COLORS) || []).concat(typeof tkFrameList === 'function' ? tkFrameList() : [], typeof fwFrameList === 'function' ? fwFrameList() : []); // v2.16: the calendar frames (47_firstweek.js) // v2.11: the Tokyo stamp frame once all seven stamps are in (39_tokyo.js)
 function phColorNow() { const l = phFrames(); return l.find((c) => c.k === prefs.phFrame) || l[0] || { k: 'rose', n: 'Rose', c: '#F7B2C4' }; }
 // the frame colour names come from world B (PawArt.POSTCARD_COLORS) and the Tokyo frame: shown through static keys, the table keys stay as they are
 function phFrameName(c) {
@@ -159,7 +159,7 @@ function phNamesIn(c, vb) {
 function phCompose(c, o) {
   const PA = window.PawArt, L = phLayout(c, o.sq), win = PA.postcardWindow(L.size.w, L.size.h), vb = L.vb.map((n) => +n.toFixed(2)), names = phNamesIn(c, vb);
   const scene = `<svg x="${win.x.toFixed(2)}" y="${win.y.toFixed(2)}" width="${win.w.toFixed(2)}" height="${win.h.toFixed(2)}" viewBox="${vb.join(' ')}" preserveAspectRatio="xMidYMid slice" overflow="hidden"><rect x="${vb[0]}" y="${vb[1]}" width="${vb[2]}" height="${vb[3]}" fill="#FFFBF3"/>${vb[1] < c.vb[1] ? `<rect x="${vb[0]}" y="${vb[1]}" width="${vb[2]}" height="${f1(c.vb[1] - vb[1] + 2)}" fill="${c.sky}"/>` : ''}${c.inner}${phWash(c, vb)}</svg>`;
-  let svg = (o.color === 'tokyo' && typeof tkPostcard === 'function' ? tkPostcard : PA.postcard)(L.size.w, L.size.h, { color: o.color, stamp: c.year, scene, caption: o.caption, place: c.place, date: c.date, dogs: phNames(names) });
+  let svg = (o.color === 'tokyo' && typeof tkPostcard === 'function' ? tkPostcard : /^fw/.test(o.color || '') && typeof fwPostcard === 'function' ? fwPostcard : PA.postcard)(L.size.w, L.size.h, { color: o.color, stamp: c.year, scene, caption: o.caption, place: c.place, date: c.date, dogs: phNames(names) });
   svg = svg.replace(/^(<svg[^>]*>)/, `$1<style>${PH_FONT_CSS}${phLangFontCSS()}*{animation:none!important;transition:none!important}</style>`);
   return { svg, size: L.size, names, vb };
 }

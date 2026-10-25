@@ -256,6 +256,18 @@ async function worker(job) {
 
     // ---------------------------------------------------------------- yard, HUD, trays, toasts and bubbles ----------------------------------------------------------------
     await step('yard', async () => { await measure('yard'); });
+    // v2.16 First Week (V216.md): the new screens, switched on for this part only (prefs.fwTest through the test hook)
+    await step('fw', async () => {
+      await ev(() => { const P = window.__paw; P.fw.test(true); P.S.dogs[0].bond = { level: 1, pts: 0 }; P.S.fw.shown = P.S.fw.morning; P.S.guide = { step: 0, fw: 1 }; P.saveNow(); window.__gd.start(); });
+      await t.until(() => { const c = document.querySelector('#gdLayer .gd-card'); return !!c && !c.hidden; }, null, 5000); await sleep(1200); await measure('fw: first-day guide and next unlock');
+      await jsClick('#gdLayer .gd-skip'); await sleep(300); await closeAll();
+      await ev(() => window.__paw.fw.tag()); await modalUp(); await measure('fw: name tag'); await closeAll();
+      await ev(() => { const P = window.__paw; P.S.fw.wel = { days: ['2026-10-01', '2026-10-03', '2026-10-05'], got: [] }; P.S.fw.cal.days = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]; P.S.fw.wish = { k: 'walk', id: P.S.dog.id, for: '2026-01-01', shown: false, done: false }; P.fw.open(true); });
+      await modalUp(); await measure('fw: calendars'); await closeAll();
+      await ev(() => { const P = window.__paw; P.S.fw.b2 = {}; P.S.dogs[0].bond = { level: 1, pts: 59 }; P.fw.bond(5); });
+      await waitSel('#luOk', 6000); await measure('fw: Bond 2 party'); await closeAll();
+      await ev(() => { const P = window.__paw; P.S.dogs[0].bond = { level: 10, pts: 3300 }; P.S.fw.wish = null; P.fw.test(false); P.saveNow(); });
+    }, 60000);
     if (phone) await step('yard HUD expanded', async () => { await jsClick('#meters'); await sleep(300); await measure('yard: HUD meters expanded'); await jsClick('#view').catch(() => {}); await ev(() => document.getElementById('hud').classList.remove('hexp')); });
     for (const a of ['feed', 'play', 'care']) await step(a + ' tray', async () => { await jsClick(`[data-act=${a}]`); if (!(await t.waitPop(true))) throw new Error('no tray'); await measure(a + ' tray'); await jsClick(`[data-act=${a}]`); await t.waitPop(false); });
     await step('toasts and bubble', async () => {

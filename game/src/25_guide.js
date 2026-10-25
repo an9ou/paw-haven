@@ -27,11 +27,14 @@ const GD_LESSONS = [
   ['garden', 'garden', 'Garden', 'At Bond 2 the veggie patch opens. Grow carrots and feed them to your dog. Nothing toxic can be planted. Ever.'],
   ['missions', 'missions', 'Daily missions', 'Three little missions a day, about 15 coins each. Three done is a stamp. Seven stamps is a surprise.']
 ];
+// v2.16 First Week: a save started on v2.16 (S.guide.fw) walks Puppy's first day instead (FW_STEPS in 47_firstweek.js); everything else here is shared
+const gdSteps = () => (S && S.guide && S.guide.fw && typeof FW_STEPS !== 'undefined' ? FW_STEPS : GD_STEPS);
+const gdFw = () => !!(S && S.guide && S.guide.fw && typeof FW_STEPS !== 'undefined');
 const gd = { on: false, timer: 0, shown: -1, place: '', ringKey: '', layer: null, force: false };
 function gdFields() { if (!S) return; if (!S.guide || typeof S.guide !== 'object') S.guide = S.guideSeen ? { step: -1, done: localISO() } : { step: 0 }; if (typeof S.guide.step !== 'number') S.guide.step = 0; }
-function gdLive() { return !!(S && S.guide && S.guide.step >= 0 && S.guide.step < GD_STEPS.length && !S.guide.done && !S.guide.skipped); }
+function gdLive() { return !!(S && S.guide && S.guide.step >= 0 && S.guide.step < gdSteps().length && !S.guide.done && !S.guide.skipped); }
 // under the test harness the walkthrough only runs when a suite asks for it (prefs.gdTest), so the other suites' clicks are never in its way
-function gdAllowed() { return !navigator.webdriver || !!prefs.gdTest; }
+function gdAllowed() { return !navigator.webdriver || !!prefs.gdTest || (gdFw() && !!prefs.fwTest); }
 function gdActive() { return !!(gd.layer && gd.on && !gd.layer.querySelector('.gd-card').hidden); }
 
 /* ---------- art: Gerald (WORLD ART) or a crude crayon duck doodle, the crayon ring ---------- */
@@ -59,7 +62,7 @@ function gdPaper() {
   const lines = [52, 84, 116, 148].map((y) => `<path d="M14 ${y} L${W - 14} ${y + 1}" stroke="#CBE0F4" stroke-width="1.4"/>`).join('');
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><path d="${d}" fill="#FFFBF3"/>${lines}<path d="M44 14 L46 ${H - 14}" stroke="#F9D0D9" stroke-width="1.6"/><path d="${d}" fill="none" stroke="${INKG}" stroke-width="2.2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/><path d="${d}" fill="none" stroke="${INKG}" stroke-width="1" opacity=".45" transform="translate(1.5 1)" vector-effect="non-scaling-stroke"/></svg>`;
 }
-function gdDots(i) { return GD_STEPS.map((_, j) => `<svg viewBox="-8 -8 16 16" class="gd-dot${j === i ? ' on' : ''}" aria-hidden="true"><circle r="${j === i ? 5.6 : 4.2}" fill="${j < i ? '#C8E9CF' : j === i ? '#F2C744' : '#FFFBF3'}" stroke="${INKG}" stroke-width="1.6"/></svg>`).join(''); }
+function gdDots(i) { return gdSteps().map((_, j) => `<svg viewBox="-8 -8 16 16" class="gd-dot${j === i ? ' on' : ''}" aria-hidden="true"><circle r="${j === i ? 5.6 : 4.2}" fill="${j < i ? '#C8E9CF' : j === i ? '#F2C744' : '#FFFBF3'}" stroke="${INKG}" stroke-width="1.6"/></svg>`).join(''); }
 
 /* ---------- the card ---------- */
 function gdLayer() {
@@ -74,33 +77,34 @@ function gdLayer() {
 }
 // v2.15: with the map on, the two lines that named Market Street (the Map step and the Shops step, and their Journal lessons) say it by the new places
 function gdMp(k) { if (!mpOn()) return ''; return k === 'map' ? tt('map215.gd_map', 'The Map goes everywhere: the park, the river, the shops. Some places unlock with Bond.') : k === 'shops' ? tt('map215.gd_shops', "Every shop has its own place on the Map. Food at Kibble Corner, clothes at the Boutique, houses at Barkitecture, seeds at Pip's Sprout Cart.") : ''; }
-function gdText(i) { const st = GD_STEPS[i], tp = isPhone() && st.tp; if (!tp && gdMp(st.k)) return esc(gdMp(st.k)); return esc(tdata('gd_steps.' + st.k + (tp ? '.tp' : '.t'), tp ? st.tp : st.t, { dog: NAME() })); } // v2.14 i18n: the step text is a message with {dog}
+function gdText(i) { if (gdFw()) return esc(fwStepText(i)); const st = GD_STEPS[i], tp = isPhone() && st.tp; if (!tp && gdMp(st.k)) return esc(gdMp(st.k)); return esc(tdata('gd_steps.' + st.k + (tp ? '.tp' : '.t'), tp ? st.tp : st.t, { dog: NAME() })); } // v2.14 i18n: the step text is a message with {dog}
 function gdRender() {
-  const L = gdLayer(), i = S.guide.step, st = GD_STEPS[i], c = $('.gd-card', L);
+  const L = gdLayer(), i = S.guide.step, st = gdSteps()[i], c = $('.gd-card', L), n = gdSteps().length;
   c.dataset.step = i; c.dataset.k = st.k;
   $('.gd-duck', c).innerHTML = gdDuck(st.pose); $('.gd-txt', c).innerHTML = gdText(i);
-  $('.gd-dots', c).innerHTML = gdDots(i); $('.gd-dots', c).setAttribute('aria-label', tt('guide.step_of', 'Step {i} of {n}', { i: i + 1, n: GD_STEPS.length }));
-  $('.gd-next', c).textContent = i === GD_STEPS.length - 1 ? tt('guide.bye', 'Bye, Gerald') : tt('guide.next', 'Next'); $('.gd-skip', c).hidden = i === GD_STEPS.length - 1;
+  $('.gd-dots', c).innerHTML = gdDots(i); $('.gd-dots', c).setAttribute('aria-label', tt('guide.step_of', 'Step {i} of {n}', { i: i + 1, n }));
+  $('.gd-next', c).textContent = st.btn ? st.btn() : i === n - 1 && !gdFw() ? tt('guide.bye', 'Bye, Gerald') : tt('guide.next', 'Next'); $('.gd-skip', c).hidden = i === n - 1 && !gdFw();
   gd.shown = i; gd.place = ''; gd.ringKey = '';
   c.classList.remove('gd-in'); void c.offsetWidth; c.classList.add('gd-in');
 }
 const gdR = (e) => { const r = e.getBoundingClientRect(), s = stage.getBoundingClientRect(); return { l: r.left - s.left, t: r.top - s.top, r: r.right - s.left, b: r.bottom - s.top, w: r.width, h: r.height }; };
 const gdHit = (a, b, m = 0) => !!a && !!b && a.l < b.r + m && a.r > b.l - m && a.t < b.b + m && a.b > b.t - m;
 const gdArea = (a, b) => (!a || !b) ? 0 : Math.max(0, Math.min(a.r, b.r) - Math.max(a.l, b.l)) * Math.max(0, Math.min(a.b, b.b) - Math.max(a.t, b.t));
-function gdTarget(i) {
-  for (const sel of GD_STEPS[i].ring || []) {
+function gdTarget(i, tray) {
+  const st = gdSteps()[i]; if (!st) return null;
+  for (const sel of (tray ? st.tray : st.ring) || []) {
     const e = $(sel); if (!e) continue; const r = gdR(e), v = gdR(view);
     if (r.w < 2 || r.h < 2) continue;
-    if (!sel.startsWith('#bar') && (r.r < v.l + 4 || r.l > v.r - 4 || r.b < v.t + 4 || r.t > v.b - 4)) continue; // a scene prop panned out of the crop
+    if (!sel.startsWith('#bar') && !sel.startsWith('#dock') && !sel.startsWith('#gdLayer') && (r.r < v.l + 4 || r.l > v.r - 4 || r.b < v.t + 4 || r.t > v.b - 4)) continue; // a scene prop panned out of the crop
     return { e, r, sel };
   }
   return null;
 }
 // spots for the card: above the dock (bottom of the scene) first, then under the HUD. Hard rules: never on #dogHit, the ringed target or the place buttons.
 // Soft: stay off the location chip, the bowl, the mailbox and the missions clipboard. Re-measured every tick, moved only when its spot stops being clear.
-const GD_HARD = ['#placeBtns .btn', '#devBtn'], GD_SOFT = ['#status', '#bowlG', '#mailboxG', '#msCardG'];
+const GD_HARD = ['#placeBtns .btn', '#devBtn', '#fwNext'], GD_SOFT = ['#status', '#bowlG', '#mailboxG', '#msCardG'];
 function gdPlace(force) {
-  const c = $('.gd-card', gd.layer); const v = gdR(view), dh = $('#dogHit'), dog = dh ? gdR(dh) : null, tg = gdTarget(S.guide.step), tr = tg && tg.sel !== '#dogHit' ? tg.r : null;
+  const c = $('.gd-card', gd.layer); const v = gdR(view), dh = $('#dogHit'), dog = dh ? gdR(dh) : null, tg = gdTarget(S.guide.step), tr = tg && tg.sel !== '#dogHit' && !tg.sel.startsWith('#gdLayer') ? tg.r : null; // v2.16: a ring on the card's own button is not a spot to avoid
   const cw = c.offsetWidth, ch = c.offsetHeight, ph = isPhone();
   const rects = (sels) => sels.flatMap((s) => [...document.querySelectorAll(s)]).filter((e) => e.getClientRects().length).map(gdR);
   const hard = rects(GD_HARD), soft = rects(GD_SOFT);
@@ -119,8 +123,8 @@ function gdPlace(force) {
   });
   c.style.left = Math.round(best.l) + 'px'; c.style.top = Math.round(best.t) + 'px'; c.dataset.at = best.at; gd.place = `${v.w}x${v.h}`;
 }
-function gdRing() {
-  const ring = $('.gd-ring', gd.layer), tg = gdTarget(S.guide.step);
+function gdRing(tray) {
+  const ring = $('.gd-ring', gd.layer), tg = gdTarget(S.guide.step, tray);
   if (!tg) { ring.hidden = true; gd.ringKey = ''; return; }
   // v2.14 fit: the ring stays inside the stage (a target on the stage's edge, like the Walk button on phones, used to push #stage sideways)
   const pad = tg.sel === '#dogHit' ? 10 : 8, r = tg.r, sw = stage.clientWidth, sh = stage.clientHeight;
@@ -131,11 +135,12 @@ function gdRing() {
 function gdPaused() { return cur.mode !== 'yard' || !modal.hidden || popOpen() || hud.hidden || bar.hidden || !titleEl.hidden || (typeof phPeekOn !== 'undefined' && phPeekOn); }
 function gdTick() {
   if (!S || !gdLive() || !gdAllowed()) { gdStop(); return; }
-  const i = S.guide.step;
-  if (i === 4 && (cur.mode === 'map' || cur.mode === 'routes' || cur.mode === 'walk')) return gdGo(5, true); // entering the map (or going straight to a walk) counts
-  if (i === 5 && cur.mode === 'walk') return gdGo(6, true); // a walk started: the card waits for the yard
+  const i = S.guide.step, fw = gdFw();
+  if (!fw && i === 4 && (cur.mode === 'map' || cur.mode === 'routes' || cur.mode === 'walk')) return gdGo(5, true); // entering the map (or going straight to a walk) counts
+  if (!fw && i === 5 && cur.mode === 'walk') return gdGo(6, true); // a walk started: the card waits for the yard
   const L = gdLayer(), c = $('.gd-card', L), ring = $('.gd-ring', L);
-  if (gdPaused()) { c.hidden = true; ring.hidden = true; gdToasts(false); return; }
+  const trayRing = fw && cur.mode === 'yard' && modal.hidden && popOpen() && !!gdSteps()[i].tray; L.classList.toggle('gd-tray', trayRing); // over the tray popup (z 15) while it rings a button in it
+  if (gdPaused()) { c.hidden = true; gdToasts(false); if (trayRing) gdRing(true); else { ring.hidden = true; gd.ringKey = ''; } return; } // v2.16: with the step's tray open, the ring moves onto the button in the tray
   const was = c.hidden; if (gd.shown !== i) gdRender();
   c.hidden = false; gdPlace(was || gd.force); gd.force = false; gdRing(); gdToasts(c.dataset.at === 'top');
 }
@@ -143,15 +148,17 @@ function gdGo(i, quiet) {
   if (!gdLive()) return; S.guide.step = i; markDirty();
   if (!quiet) gdTick();
 }
-function gdNext() { if (!S || !S.guide) return; const i = S.guide.step; if (i >= GD_STEPS.length - 1) { gdBye(); return; } gdGo(i + 1); }
+function gdNext() { if (!S || !S.guide) return; const i = S.guide.step, st = gdSteps()[i]; if (st && st.act) { st.act(); return; } if (i >= gdSteps().length - 1) { gdBye(); return; } gdGo(i + 1); }
 function gdBye() {
   if (S && S.guide) { S.guide.done = localISO(); markDirty(); }
   const L = gd.layer; if (L) { $('.gd-duck', L).innerHTML = gdDuck('wave'); $('.gd-ring', L).hidden = true; $('.gd-card', L).classList.add('gd-out'); }
   gd.on = false; clearInterval(gd.timer); gd.timer = 0; gdToasts(false); setTimeout(gdStop, 600);
+  if (gdFw()) fwGuideEnd(false); // v2.16: Puppy's first day is done
 }
 function gdSkip() {
   if (!S || !S.guide) return; S.guide.skipped = localISO(); markDirty(); gdStop();
   toast(tt('guide.skipped', 'Gerald waddles back to the river. The guide is in your Journal, under How to play.'));
+  if (gdFw()) fwGuideEnd(true); // v2.16
 }
 // while the card sits under the HUD the toasts keep clear of it. Phones: they drop below the strip (--gdToastTop).
 // Desktop: the toast column narrows to the widest free band beside the card, clear of the location chip (--gdTL, --gdTW). 28_guide.css applies both.
@@ -172,8 +179,8 @@ function gdStart() {
   gdTick();
 }
 on('act', (d) => {
-  if (!gd.on || !gdLive() || !d) return; const st = GD_STEPS[S.guide.step];
-  if (st.on && st.on.includes(d.kind)) gdGo(S.guide.step + 1, true); // the tick shows the next step once the tray or popup is gone
+  if (!gd.on || !gdLive() || !d) return; const st = gdSteps()[S.guide.step];
+  if (st.on && st.on.includes(d.kind)) { if (gdFw()) fwStepDone(S.guide.step); else gdGo(S.guide.step + 1, true); } // v2.16: each first-day step gives Bond // the tick shows the next step once the tray or popup is gone
 });
 window.addEventListener('resize', () => { if (gd.on) { gd.force = true; gd.ringKey = ''; } });
 
@@ -205,4 +212,4 @@ function gdReplay() {
   setTimeout(gdStart, 300);
 }
 modal.addEventListener('click', (e) => { if (e.target.closest && e.target.closest('#gdReplay')) { SFX.boop(600); gdReplay(); } });
-window.__gd = { active: gdActive, start: gdStart, tab: gdTabHTML, steps: GD_STEPS.length, text: (i) => gdText(i) }; // for the guide suites
+window.__gd = { active: gdActive, start: gdStart, tab: gdTabHTML, get steps() { return gdSteps().length; }, text: (i) => gdText(i) }; // for the guide suites

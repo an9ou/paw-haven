@@ -7,7 +7,7 @@
    ========================================================================= */
 const BOOST = { coins: 2, bond: 3, nap: 6 };
 const SAVE_KEY = 'pawhaven_proto_v1', PREF_KEY = 'pawhaven_prefs_v1';
-const BOND_TH = [0, 100, 250, 450, 700, 1000, 1400, 1900, 2500, 3200];
+const BOND_TH = [0, 60, 180, 450, 700, 1000, 1400, 1900, 2500, 3200]; // v2.16 First Week: Bond 2 at 60 (was 100) and Bond 3 at 180 (was 250); the rest as before. Old saves level up quietly on load (fwBondFix)
 
 const FOOD = [
   { n: 'Fresh Water', price: 0, hunger: 0, happy: 5, energy: 10, note: 'Free. Refills every 2 game hours.' },
@@ -735,6 +735,7 @@ function freshState(key, name, sex) {
   v211Fields(st); // v2.11 Tokyo Trip: the trip and Dog Cards (V211.md section 5)
   v215Fields(st); st.mapNew.fresh = true; // v2.15 Around Town: agility, the pool, the run tracks, the map stickers (V215.md section 9); fresh: a save that started on v2.15 gets no "new" / "moved" stickers
   v214Fields(st); st.lang = i18nReal(prefs.langPick) ? prefs.langPick : null; // v2.14: a language picked on the title screen before the save existed (V214.md 5)
+  v216Fields(st); Object.assign(st.fw, { fresh: true, wel: { days: [], got: [] }, dock: 1 }); if (typeof fwOn === 'function' && fwOn()) st.guide.fw = 1; // v2.16 First Week (V216.md 2): a new save gets Puppy's first day, the welcome week and the lighter phone dock
   return linkDogs(st);
 }
 let S = null;
@@ -771,6 +772,7 @@ function migrate(s) {
   v211Fields(s); // v2.11 Tokyo Trip (V211.md section 5.1): additive
   v214Fields(s); // v2.14 Hello in Every Language (V214.md section 5): additive
   v215Fields(s); // v2.15 Around Town (V215.md section 9): additive
+  fwBondFix(s); v216Fields(s); // v2.16 First Week (V216.md section 2): additive; the new Bond thresholds level old dogs up quietly
   return s;
 }
 /* v2.7 Home & Pack save fields (V27.md section 1). Additive only: S.v stays 1, nothing is dropped.
@@ -853,8 +855,37 @@ function v215Fields(s) {
   if (!v28Obj(s.mapNew)) s.mapNew = {}; if (typeof s.mapNew.since !== 'string' || !s.mapNew.since) s.mapNew.since = localISO(); if (!Array.isArray(s.mapNew.seen)) s.mapNew.seen = [];
   return s;
 }
+/* v2.16 First Week (V216.md section 2). Additive only: S.v stays 1, nothing is dropped. A save from before v2.16 gets fresh: false (no first-day guide,
+   no welcome week, the full phone dock) and every dog already at Bond 2 or more marked in b2 (no party for them).
+   S.fw { fresh: started on v2.16, b2: { dogId: 1 } the Bond 2 party was had, wel: { days: [localISO x7], got: [1, 3, 5, 7] } | null (the welcome week, new saves),
+          cal: { ym: 'YYYY-MM', days: [day of month], got: [3, 7, 12, 18, 24], coins: calendar coins this month (cap 80) }, frames: { name: dog name | null, months: ['YYYY-MM'] },
+          wish: { k, id, name, for: localISO, shown: bool, done: bool } | null, named: localISO of the last wish, dock: highest Bond seen (phone dock tiers), dockNew: { act: 1 },
+          morning: localISO of the last new stamp, shown: localISO of the last morning page } */
+function v216Fields(s) {
+  if (!s) return s;
+  if (!v28Obj(s.fw)) s.fw = { fresh: false };
+  const f = s.fw, arr = (o, k) => { if (!Array.isArray(o[k])) o[k] = []; };
+  if (typeof f.fresh !== 'boolean') f.fresh = false;
+  if (!v28Obj(f.b2)) { f.b2 = {}; (s.dogs || []).forEach((d) => { if (d && d.id && d.bond && d.bond.level >= 2) f.b2[d.id] = 1; }); }
+  if (f.wel !== null && !v28Obj(f.wel)) f.wel = f.fresh ? { days: [], got: [] } : null;
+  if (f.wel) { arr(f.wel, 'days'); arr(f.wel, 'got'); }
+  if (!v28Obj(f.cal)) f.cal = {}; if (typeof f.cal.ym !== 'string') f.cal.ym = ''; arr(f.cal, 'days'); arr(f.cal, 'got'); if (typeof f.cal.coins !== 'number' || !(f.cal.coins >= 0)) f.cal.coins = 0;
+  if (!v28Obj(f.frames)) f.frames = {}; if (f.frames.name === undefined) f.frames.name = null; arr(f.frames, 'months');
+  if (f.wish !== null && !v28Obj(f.wish)) f.wish = null;
+  if (typeof f.dock !== 'number') f.dock = f.fresh ? 1 : 10; if (!v28Obj(f.dockNew)) f.dockNew = {};
+  ['morning', 'shown', 'named'].forEach((k) => { if (typeof f[k] !== 'string') f[k] = ''; });
+  return s;
+}
+// v2.16: BOND_TH moved Bond 2 and 3 closer. A loaded dog whose points already pass a threshold levels up here, quietly (no fanfare, no level-up queue);
+// migNote shows one kind toast. Levels never go down.
+function fwBondFix(s) {
+  const up = [];
+  (s.dogs || []).forEach((d) => { const b = d && d.bond; if (!b || typeof b.pts !== 'number') return; const was = b.level || 1; let l = was; while (l < 10 && b.pts >= BOND_TH[l]) l++; if (l > was) { b.level = l; up.push([d.name, l]); } });
+  if (up.length) s.bondUpNote = up;
+}
 function migNote() { if (S && S.gkNote) { delete S.gkNote; markDirty(); setTimeout(() => toast(tt('core.seed_gift', 'Pip left a packet of seeds on your doorstep. The veggie patch is yours now!'), 'gold'), 2200); }
   if (S && !S.dog.sex) setTimeout(askSex, 600);
+  if (S && S.bondUpNote) { const u = S.bondUpNote; delete S.bondUpNote; markDirty(); setTimeout(() => toast(u.length === 1 ? tt('fw.bond_up_one', 'Good news: Bond levels are a little closer now. {name} is Bond {l} already.', { name: u[0][0], l: u[0][1] }) : tt('fw.bond_up_many', 'Good news: Bond levels are a little closer now. {n} of your dogs moved up a level.', { n: u.length }), 'gold'), 1600); } // v2.16
   if (S && S.migNote) { const n = S.migNote; delete S.migNote; markDirty(); setTimeout(() => toast(tt('core.squirrel_bought', 'Your {n} old leaves, shells and acorns were bought by a very enthusiastic squirrel: +{coins, plural, one {# coin} other {# coins}}.', { n, coins: n * 5 }), 'gold'), 1200); } }
 
 /* ---------------- DOM refs ---------------- */
@@ -1175,7 +1206,7 @@ let levelQueue = [];
 function bondMult() { return BOOST.bond * (S.dog.key === 'mutt' ? 1.1 : 1) * (glowing() ? 1.2 : 1) * (S.gameMin < S.pupUntil ? 2 : 1); }
 function addBond(base, opts = {}) {
   const n = Math.max(1, Math.round(base * (opts.raw ? 1 : bondMult()))); S.bond.pts += n; markDirty();
-  while (S.bond.level < 10 && S.bond.pts >= BOND_TH[S.bond.level]) { S.bond.level++; levelQueue.push({ l: S.bond.level, who: NAME() }); SFX.fanfare(); } // v2.7: who levelled up (pack care gives a pack dog its Bond)
+  while (S.bond.level < 10 && S.bond.pts >= BOND_TH[S.bond.level]) { S.bond.level++; levelQueue.push({ l: S.bond.level, who: NAME(), id: S.dog.id }); SFX.fanfare(); } // v2.7: who levelled up (pack care gives a pack dog its Bond)
   updateHUD(); setTimeout(maybeLevelUp, 400); return n;
 }
 function dailyCheck() {
@@ -1219,7 +1250,7 @@ function buildBar() {
   bar.addEventListener('click', (e) => { const b = e.target.closest('.act'); if (b) doAct(b.dataset.act); });
 }
 // the buttons themselves (v2.14: drawn again in the new language when the title screen switches it; the click listener stays the one above)
-function barLabels() { bar.innerHTML = ACTS.map(([a, label, ic], i) => `<button class="act" data-act="${a}" aria-keyshortcuts="${i + 1}"><span class="ic">${a === 'journal' ? iconOr('journal', doodle('paw', 0, 2, 1.1)) : ICON(ic)}</span><span>${esc(tdata('acts.' + a + '.1', label))}</span></button>`).join(''); }
+function barLabels() { bar.innerHTML = ACTS.map(([a, label, ic], i) => `<button class="act" data-act="${a}" aria-keyshortcuts="${i + 1}"><span class="ic">${a === 'journal' ? iconOr('journal', doodle('paw', 0, 2, 1.1)) : ICON(ic)}</span><span>${esc(tdata('acts.' + a + '.1', label))}</span></button>`).join(''); if (typeof fwDockApply === 'function') fwDockApply(); } // v2.16: the lighter phone dock
 function doAct(a) {
   SFX.click(); hideBubble(); closeTraining();
   const pop = !modal.hidden || popOpen();
@@ -1281,10 +1312,12 @@ function unlocksFor(L) {
 }
 function maybeLevelUp() {
   if (!levelQueue.length || !modal.hidden || !['yard', 'market', 'map', 'shelter'].includes(cur.mode)) return;
-  const who = levelQueue[0].who, levels = levelQueue.filter((q) => q.who === who).map((q) => q.l), L = Math.max(...levels); levelQueue = levelQueue.filter((q) => q.who !== who); audioCue('levelup');
+  const who = levelQueue[0].who, wid = levelQueue[0].id, levels = levelQueue.filter((q) => q.who === who).map((q) => q.l), L = Math.max(...levels); levelQueue = levelQueue.filter((q) => q.who !== who); audioCue('levelup');
+  const party = levels.includes(2) && typeof fwParty === 'function' ? fwParty(wid) : null; // v2.16: the Bond 2 party (47_firstweek.js): confetti, a gift, then the dog does Paw
   const all = []; levels.sort((a, b) => a - b).forEach((l) => all.push(...unlocksFor(l)));
   const lines = [tt('core.lu_units_html', '<b>{name}</b> now loves you {l} units. Units are made up.', { name: who, l: L }), tt('core.lu_spin_html', '<b>{name}</b> did a little spin about it.', { name: who }), tt('core.lu_raise_html', '<b>{name}</b> would like a raise. In treats.', { name: who }), tt('core.lu_dirt_html', '<b>{name}</b> is writing your name in the dirt. Badly.', { name: who })];
-  openModal(`<span class="hl">${esc(tt('core.lu_title', 'Bond level {l}!', { l: L }))}</span>`, `<svg class="lu-doodle" viewBox="0 0 600 44" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${doodle('spark', 40, 22, 0.9)}${doodle('heart', 90, 22, 0.8)}${doodle('spark', 140, 20, 0.6)}${doodle('paw', 300, 24, 0.7)}${doodle('spark', 460, 22, 0.6)}${doodle('heart', 510, 20, 0.8, 10)}${doodle('spark', 560, 22, 0.9)}</svg><p>${PICK(lines)}</p><p>${levels.length > 1 ? esc(tt('core.lu_many', "{n, plural, one {(That's # level at once. Show-off.)} other {(That's # levels at once. Show-off.)}}", { n: levels.length })) + '</p><p>' : ''}${esc(tt('core.lu_unlocked', 'Unlocked:'))}</p><ul class="unlocks">${all.map((u) => `<li>${esc(u)}</li>`).join('') || `<li>${esc(tt('core.lu_nothing', 'Pure friendship. No refunds.'))}</li>`}</ul>`, { cls: 'celebrate', foot: `<button class="btn yes big" id="luOk">${esc(tt('core.lu_yay', 'Yay!'))}</button>` });
+  openModal(`<span class="hl">${esc(tt('core.lu_title', 'Bond level {l}!', { l: L }))}</span>`, `<svg class="lu-doodle" viewBox="0 0 600 44" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${doodle('spark', 40, 22, 0.9)}${doodle('heart', 90, 22, 0.8)}${doodle('spark', 140, 20, 0.6)}${doodle('paw', 300, 24, 0.7)}${doodle('spark', 460, 22, 0.6)}${doodle('heart', 510, 20, 0.8, 10)}${doodle('spark', 560, 22, 0.9)}</svg><p>${PICK(lines)}</p><p>${levels.length > 1 ? esc(tt('core.lu_many', "{n, plural, one {(That's # level at once. Show-off.)} other {(That's # levels at once. Show-off.)}}", { n: levels.length })) + '</p><p>' : ''}${esc(tt('core.lu_unlocked', 'Unlocked:'))}</p><ul class="unlocks">${party ? party.html : ''}${all.map((u) => `<li>${esc(u)}</li>`).join('') || `<li>${esc(tt('core.lu_nothing', 'Pure friendship. No refunds.'))}</li>`}</ul>`, { cls: 'celebrate' + (party ? ' fw-party' : ''), foot: `<button class="btn yes big" id="luOk">${esc(tt('core.lu_yay', 'Yay!'))}</button>`, onClose: party ? party.after : null });
+  if (party) party.open($('#modal .panel'));
   $('#luOk').onclick = () => { SFX.boop(700); closeModal(); if (levelQueue.length) setTimeout(maybeLevelUp, 400); }; // another dog levelled up too
 }
 
@@ -1293,7 +1326,7 @@ const cur = { mode: null, cleanup: [] };
 function onCleanup(fn) { cur.cleanup.push(fn); }
 function setChrome(hudOn, barOn) { hud.hidden = !hudOn; bar.hidden = !barOn; stage.classList.toggle('nobar', !barOn); if (hudOn) setHudDog(); requestAnimationFrame(() => stage.style.setProperty('--hudH', (hud.hidden ? 0 : hud.offsetHeight) + 'px')); }
 let hudDogKey = '';
-function setHudDog() { if (!S) return; const k = chipsKey(); if (k === hudDogKey) return; hudDogKey = k; renderDogChips(); const ht = $('#hudTitle'); ht.textContent = S.title ? (typeof jrTitleName === 'function' ? jrTitleName(S.title) : S.title) : ''; ht.hidden = !S.title; $('#hudHead').innerHTML = headSVG(D()); $('#hudName').innerHTML = esc(S.dog.name) + ' ' + sexSym(S.dog.sex); }
+function setHudDog() { if (!S) return; const k = chipsKey(); if (k === hudDogKey) return; hudDogKey = k; renderDogChips(); const ht = $('#hudTitle'); ht.textContent = S.title ? (typeof jrTitleName === 'function' ? jrTitleName(S.title) : S.title) : ''; ht.hidden = !S.title; $('#hudHead').innerHTML = headSVG(D()); $('#hudName').innerHTML = esc(S.dog.name) + ' ' + sexSym(S.dog.sex); if (typeof fwHudTag === 'function') fwHudTag(); }
 function go(mode, arg) {
   const prevMode = cur.mode; idleStop(); IDLE.act = null; IDLE.steps = []; IDLE.nextAt = performance.now() + 3000 * IDLE.speed;
   if (mode === 'yard' && ['walk', 'fetch', 'toy'].includes(prevMode)) { lastActiveAt = performance.now(); if (prevMode === 'walk') setTimeout(() => greetBark(), 900); }
