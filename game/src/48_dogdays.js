@@ -13,7 +13,7 @@
    Under the test harness all of it needs prefs.ddTest. Nothing is ever taken away and a missed day costs nothing. */
 function ddOn() { return !navigator.webdriver || !!prefs.ddTest; }
 const DD = { bond: [], chip: '', dpg: -1, spg: -1, n: 0, defs: null };
-const ddReady = () => !!(S && S.dd && S.dogs && ddOn());
+const ddReady = () => !!(S && S.dd && S.dogs && S.dogs.length && D() && ddOn());
 const DD_COIN = 10, DD_COIN_DAY = 20, DD_DIARY_MAX = 60;
 const ddArr = (a) => (Array.isArray(a) ? a : []);
 
@@ -54,7 +54,7 @@ function ddWish(d) { if (!d || !S || !S.dd) return null; const W = ddWishes(); i
 function ddFwTook(w) { if (!ddReady() || !w || w.for !== localISO() || !DD_FW[w.k]) return false; const W = ddWishes(); return !!(W.w[w.id] ? W.w[w.id].fw : true); }
 function ddWishText(k, a) {
   switch (k) {
-    case 'walk': return a ? tt('dd.wish_walk_at', 'a sniff around {route}', { route: tRoute(a) }) : tt('dd.wish_walk', 'a walk together');
+    case 'walk': return a ? tt('dd.wish_walk_at', 'a sniffy walk: {route}', { route: ddRouteName(a) }) : tt('dd.wish_walk', 'a walk together');
     case 'ball': return tt('dd.wish_ball', 'a game of ball');
     case 'pet': return tt('dd.wish_pet', 'scratches behind my ears');
     case 'snack': return a ? tt('dd.wish_snack_n', '{food}, please', { food: shNameAny(a) }) : tt('dd.wish_snack', 'a crunchy snack');
@@ -62,14 +62,15 @@ function ddWishText(k, a) {
     case 'nap': return tt('dd.wish_nap', 'a nap in the sun');
     case 'trick': return tt('dd.wish_trick', 'practising a trick together');
     case 'toy': return a ? tt('dd.wish_toy_n', 'playing with the {toy}', { toy: shNameAny(a) }) : tt('dd.wish_toy', 'playing with a toy');
-    case 'place': return tt('dd.wish_place', 'a trip to {place}', { place: ddPlaceName(a) });
+    case 'place': return tt('dd.wish_place', 'a trip out: {place}', { place: ddPlaceName(a) });
     case 'paddle': return tt('dd.wish_paddle', 'a paddle in the Splash Pool');
     case 'garden': return tt('dd.wish_garden', 'digging in the veggie patch with you');
     case 'photo': return tt('dd.wish_photo', 'a photo of us together');
     default: return tt('dd.wish_wear', 'wearing something fancy');
   }
 }
-const ddPlaceName = (k) => (typeof TK_PLACES !== 'undefined' && (TK_PLACES[k] || k === 'station') && typeof tkPlaceName === 'function' ? tkPlaceName(k) : tPlace(k));
+const ddPlaceName = (k) => (typeof TK_PLACES !== 'undefined' && (TK_PLACES[k] || k === 'station') && typeof tkPlaceName === 'function' ? tkPlaceName(k) : typeof townPlaceName === 'function' ? townPlaceName(k) : tPlace(k)); // the town names live in 14_town_places.js
+const ddRouteName = (k) => (typeof townRouteName === 'function' ? townRouteName(k) : tRoute(k));
 function ddWishMatch(w, e, d) {
   if (DD_WACT[w.k] !== e.kind) return false;
   if (w.k === 'walk') return !w.a || e.area === w.a;
@@ -88,7 +89,7 @@ function ddWishDone(d, w) {
   const W = S.dd.wish, t0 = Date.now(); w.done = 1; S.dd.wn++; S.dd.wk[w.k] = (S.dd.wk[w.k] || 0) + 1;
   let coins = 0; if (W.coins < DD_COIN_DAY) { coins = Math.min(DD_COIN, DD_COIN_DAY - W.coins); W.coins += coins; addCoins(coins, { raw: true }); }
   if (w.fw && S.fw && S.fw.wish && S.fw.wish.id === d.id) { S.fw.wish.done = true; withDog(d, () => addStat('happy', 10)); }
-  const p = ddToday(); if (p && p.id === d.id) p.wi = w.k; else if (p && !p.wi) p.wi = w.k;
+  const p = ddToday(); if (p && p.id === d.id) p.wi = w.k; // only the writer's own wish goes on its page
   markDirty(); DD.chip = ''; ddChipSync();
   setTimeout(() => {
     if (!S || !dogById(d.id)) return;
@@ -113,7 +114,7 @@ const DD_WACT_KINDS = Object.values(DD_WACT);
 function ddChipShown() { return ddReady() && (cur.mode === 'yard' || cur.mode === 'market') && !!$('#status', view) && !(typeof blOn === 'function' && blOn()) && !(typeof phActive === 'function' && phActive()) && !$('#trainPanel:not([hidden])'); }
 function ddChipSync() {
   let el = $('#ddWish', view);
-  if (!ddChipShown()) { if (el) el.hidden = true; return; }
+  if (!ddChipShown()) { if (el && !el.hidden) { el.hidden = true; DD.ct = ''; toastPlace(); } return; }
   const d = D(), w = ddWish(d); if (!w) return;
   if (!el) { el = document.createElement('button'); el.id = 'ddWish'; el.type = 'button'; el.className = 'dd-wish'; el.onclick = (ev) => { ev.stopPropagation(); ddChipTap(); }; view.appendChild(el); DD.chip = ''; }
   const key = [d.id, w.k, w.a, w.done, I18N.lang].join('|');
@@ -125,7 +126,7 @@ function ddChipSync() {
   }
   const st = $('#status', view), vr = view.getBoundingClientRect(), r = st.getBoundingClientRect();
   el.style.top = Math.round(r.bottom - vr.top + 8) + 'px'; el.style.left = Math.round(Math.max(8, r.left - vr.left + 4)) + 'px';
-  el.hidden = false;
+  el.hidden = false; const pos = el.style.top + '|' + el.offsetHeight; if (DD.ct !== pos) { DD.ct = pos; toastPlace(); } // phones: toasts start under the chip (phChipClear)
 }
 function ddChipTap() {
   if (!ddReady()) return; SFX.click(); const d = D(), w = ddWish(d); if (!w) return;
@@ -161,7 +162,7 @@ function ddTrackRows(L, d) {
   const u = [], add = (ic, t) => u.push([ic, t]), notShop = (x) => !x.ed && !x.fest && !x.reward && !x.tokyo && !x.treasure;
   TRICKS.forEach((t) => { if (t.bond === L) add('star', t.n === 'Signature' ? tt('core.unlock_signature', 'Signature trick: {trick}', { trick: tSig(d.key) }) : tt('core.unlock_trick', 'Trick: {trick}', { trick: tTrick(t.n) })); });
   if (L > 1) {
-    Object.keys(ROUTES).forEach((k) => { if (ROUTES[k].bond === L) add('walk', tt('core.unlock_route', '{dig, select, yes {Walk route: {route} (with digging)} other {Walk route: {route}}}', { dig: ROUTES[k].dig ? 'yes' : 'no', route: tRoute(k) })); });
+    Object.keys(ROUTES).forEach((k) => { if (ROUTES[k].bond === L) add('walk', tt('core.unlock_route', '{dig, select, yes {Walk route: {route} (with digging)} other {Walk route: {route}}}', { dig: ROUTES[k].dig ? 'yes' : 'no', route: ddRouteName(k) })); });
     const pl = Object.keys(PLACES).filter((k) => PLACES[k].bond === L && !ROUTES[k] && !PLACES[k].run && !PLACES[k].tokyo && k !== 'station');
     if (pl.length) add('map', tt('dd.tr_places', 'Places: {list}', { list: tlist(pl.map(ddPlaceName)) }));
     if (typeof TK_PLACES !== 'undefined' && typeof tkOn === 'function' && tkOn()) { const tk = Object.keys(TK_PLACES).filter((k) => TK_PLACES[k].bond === L).map(ddPlaceName); if (L === TK_STATION_BOND) tk.unshift(ddPlaceName('station')); if (tk.length) add('map', tt('dd.tr_tokyo', 'Tokyo: {list}', { list: tlist(tk) })); }
@@ -289,8 +290,8 @@ const ddTrickName = (n, key) => (n === 'Signature' ? tSig(key) : tTrick(n));
 function ddPageLines(p) {
   const v = ddVoice(p.k), r = seeded(hashId('dd|' + p.g + '|' + p.id)), L = [ddOpener(v, Math.floor(r() * 2) % 2)], ev = [];
   if (p.wi) ev.push(tt('dd.d_wish', 'My wish came true: {wish}!', { wish: ddWishText(p.wi, null) }));
-  if (ddArr(p.w).length) ev.push(tt('dd.d_walk', 'We walked {list}. I sniffed every single thing.', { list: tlist(p.w.map(tRoute)) }));
-  if (ddArr(p.p).length) ev.push(tt('dd.d_place', 'We went to {list}.', { list: tlist(p.p.map(ddPlaceName)) }));
+  if (ddArr(p.w).length) ev.push(tt('dd.d_walk', 'Walks today: {list}. I sniffed every single thing.', { list: tlist(p.w.map(ddRouteName)) }));
+  if (ddArr(p.p).length) ev.push(tt('dd.d_place', "Today's outings: {list}.", { list: tlist(p.p.map(ddPlaceName)) }));
   if (ddArr(p.f).length) ev.push(tt('dd.d_food', 'I ate {list}. Delicious.', { list: tlist(p.f.map((n) => shNameAny(n))) }));
   if (ddArr(p.t).length) ev.push(p.x.includes('L') ? tt('dd.d_learned', 'I learned {list}! I am a genius.', { list: tlist(p.t.map((n) => ddTrickName(n, p.k))) }) : tt('dd.d_trick', 'I practised {list}.', { list: tlist(p.t.map((n) => ddTrickName(n, p.k))) }));
   for (const c of DD_XORDER) if (p.x.includes(c)) ev.push(ddXLine(c));
@@ -372,8 +373,8 @@ function ddStickerDefs() {
   [1, 3, 7, 15, 30, 50].forEach((n, i) => add('w' + n, 0, ['i:heart', 'i:star', 'i:hearts', 'i:bond', 'i:sparkle-spot', 't:Golden Bone'][i], () => tt('dd.st_wishes', '{n, plural, one {# wish come true} other {# wishes come true}}', { n }), () => S.dd.wn >= n));
   ['walk', 'ball', 'pet', 'snack', 'bath', 'nap'].forEach((k, i) => add('k_' + k, 1, ['i:walk', 'i:ball', 'i:pet', 'i:Bone-shaped Biscuit', 'i:tub', 'i:zzz'][i], () => ddWishText(k, null), () => (S.dd.wk[k] || 0) > 0));
   ['park', 'square', 'cafe', 'market', 'dogpark', 'vet'].forEach((k, i) => add('v_' + k, 2, ['i:flower', 'i:square', 'i:cafe', 'i:shop', 'i:dogpark', 'i:vet'][i], () => ddPlaceName(k), () => v(k)));
-  ['river', 'woods', 'beach', 'hilltop', 'pier', 'salon'].forEach((k, i) => add('v_' + k, 3, ['i:drop', 'i:acorn', 'i:shell', 'i:hilltop', 'i:pier', 'i:salon'][i], () => (PLACES[k] ? ddPlaceName(k) : tRoute(k)), () => v(k)));
-  ['training', 'pool', 'sunflower', 'bamboo', 'cliffs', 'fujihill'].forEach((k, i) => add('v_' + k, 4, ['t:Agility Tunnel', 't:Doggy Life Vest', 't:Sunflower Collar', 't:Bamboo Ring', 't:Sea Glass', 'i:w-dawn'][i], () => (k === 'fujihill' ? tt('town.place_fujihill', 'Mt. Fuji Lookout') : PLACES[k] ? ddPlaceName(k) : tRoute(k)), () => v(k)));
+  ['river', 'woods', 'beach', 'hilltop', 'pier', 'salon'].forEach((k, i) => add('v_' + k, 3, ['i:drop', 'i:acorn', 'i:shell', 'i:hilltop', 'i:pier', 'i:salon'][i], () => (PLACES[k] ? ddPlaceName(k) : ddRouteName(k)), () => v(k)));
+  ['training', 'pool', 'sunflower', 'bamboo', 'cliffs', 'fujihill'].forEach((k, i) => add('v_' + k, 4, ['t:Agility Tunnel', 't:Doggy Life Vest', 't:Sunflower Collar', 't:Bamboo Ring', 't:Sea Glass', 'i:w-dawn'][i], () => (k === 'fujihill' ? tt('town.place_fujihill', 'Mt. Fuji Lookout') : PLACES[k] ? ddPlaceName(k) : ddRouteName(k)), () => v(k)));
   ['shibuya', 'yoyogi', 'asakusa', 'ueno', 'tokyotower', 'odaiba'].forEach((k) => add('v_' + k, 5, 's:' + k, () => ddPlaceName(k), () => v(k) || !!(S.tk && S.tk.stamps && S.tk.stamps[k])));
   ['leafpile', 'parade', 'sweater', 'snowdog', 'snowdrift', 'fortune'].forEach((k, i) => add('f_' + k, 6, ['i:leaf', 't:Parade Rosette', 't:Ugly Sweater Rosette', 'i:w-snow', 'i:snowdrift', 't:Lucky Cat'][i], () => ddStLabel(k), () => c(k) > 0));
   ['spring', 'summer', 'autumn', 'winter'].forEach((k) => add('s_' + k, 7, 'i:season-' + k, () => capFirst(gkSeason(k)), () => c('s_' + k) > 0));

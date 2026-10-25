@@ -201,6 +201,10 @@ run('v215_tracks', async (t) => {
     // v2.17 (V217.md 1, 7): a daily wish pays 10 coins, at most 20 a day; the letters, the stickers and the Bond track give items and frames, never coins
     const ddc = await ev(() => ({ cap: window.__paw.dd.coinCap, one: window.__paw.dd.coin }));
     ok(ddc.one === 10 && ddc.cap === 20 && avgWalk / ddc.cap > 4, `walks stay the main income: about ${Math.round(avgWalk)} route coins a day from walks against at most ${ddc.cap} wish coins a day`);
+    // v2.17 review: every capped source that costs no Energy, all at once, in real coins (each pays raw): Pip's cart 60 (PIP_CAP), the Town Square
+    // goal 30, 3 missions x 15 (MS_PAY), wishes 20, the calendar 80 a month. Walks (route coins, doubled by the prototype BOOST in addCoins) stay the largest.
+    const capped = { garden: 60, square: 30, missions: 3 * 15, wishes: ddc.cap, calendar: cal.coins / 30 }, capSum = Object.values(capped).reduce((a, b) => a + b, 0);
+    ok(Object.values(capped).every((v) => avgWalk > v) && avgWalk * 2 > capSum, `walks stay the largest source: ${Math.round(avgWalk * 2)} real coins a day from walks against ${Math.round(capSum)} from every capped no-Energy source together (${Object.entries(capped).map(([k, v]) => k + ' ' + Math.round(v)).join(', ')})`);
     // the real game's own accounting for the two capped sources: agility coins left, ball coins left, the pool's paddle pays nothing
     const real = await ev(() => { const P = window.__paw, S = P.S; S.ag.day = P.pl.today(); S.ag.coins = 40; const l1 = P.ag.left(); S.ag.coins = 10; const l2 = P.ag.left(); S.ag.coins = 0; return { l1, l2 }; });
     ok(real.l1 === 0 && real.l2 === 30, 'agCoinsLeft follows S.ag.coins (cap 40): ' + JSON.stringify(real));

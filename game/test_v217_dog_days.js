@@ -70,8 +70,15 @@ run('v217_dog_days', async (t) => {
   ok(Object.values(s.dd.wish.w).every((w) => w.done) && s.coins - cc0 === 20 && s.dd.wish.coins === 20, `a pack meal makes all three snack wishes come true, coins stop at 20 a day (+${s.coins - cc0})`);
   // matching: a walk wish for one route is not made true by another route; a place wish needs that place
   await setWish({ k: 'walk', a: 'park' }); await ev(() => window.__paw.ms.act('walk', { area: 'town' })); await t.sleep(300);
-  ok(!(await ev(() => window.__paw.dd.wish().done)), 'a walk on another route leaves "a sniff around Sunny Park" open');
+  ok(!(await ev(() => window.__paw.dd.wish().done)), 'a walk on another route leaves "a sniffy walk: Sunny Park" open');
   await ev(() => window.__paw.ms.act('walk', { area: 'park' })); ok(await t.until(() => window.__paw.dd.wish().done === 1, null, 2000), 'the Sunny Park walk makes it true');
+
+  sec('2b2. pack care: petting a pack dog makes that dog\'s wish come true, with its own double Bond');
+  await ev(() => { const P = window.__paw, S = P.S; S.dd.wish = { day: '', w: {}, coins: 0 }; P.dd.wish(); S.dogs.forEach((d) => { S.dd.wish.w[d.id] = { k: 'pet', a: null, done: 0 }; }); });
+  const pip = await ev(() => window.__paw.S.dogs.find((d) => d.name === 'Pip').id), pipB0 = await ev((id) => window.__paw.S.dogs.find((d) => d.id === id).bond.pts, pip);
+  await ev((id) => window.__paw.ms.act('pet', { ids: [id] }), pip); await t.sleep(1600);
+  s = await t.S(); ok(s.dd.wish.w[pip].done === 1 && !s.dd.wish.w[s.dog.id].done, 'only Pip\'s pet wish came true (the active dog\'s waits)');
+  ok((await ev((id) => window.__paw.S.dogs.find((d) => d.id === id).bond.pts, pip)) > pipB0, 'and Pip got the Bond');
 
   sec('2c. yesterday\'s "see you tomorrow" wish becomes today\'s daily wish (one reward, +10 Happiness)');
   const today = await ev(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; });
@@ -130,7 +137,7 @@ run('v217_dog_days', async (t) => {
   await ev(() => { window.__paw.S.gameMin += 1440; window.__paw.dd.close(); });
   d = await dd(); ok(d.diary.length === 1 && d.today === null, 'a new game day closes the page into the diary');
   const lines = await ev(() => window.__paw.dd.lines(window.__paw.S.dd.diary[0]));
-  ok(/^Dear diary/.test(lines[0]) && lines.some((l) => /We walked Sunny Park/.test(l)) && lines.some((l) => /I ate Basic Kibble/.test(l)) && lines.some((l) => /I learned Sit/.test(l)) && lines.some((l) => /We played ball/.test(l)) && lines.some((l) => /We went to Town Square/.test(l)), 'the page reads in the dog\'s voice: ' + lines.join(' / '));
+  ok(/^Dear diary/.test(lines[0]) && lines.some((l) => /Walks today: Sunny Park\./.test(l)) && lines.some((l) => /I ate Basic Kibble/.test(l)) && lines.some((l) => /I learned Sit/.test(l)) && lines.some((l) => /We played ball/.test(l)) && lines.some((l) => /Today's outings: Town Square\./.test(l)), 'the page reads in the dog\'s voice: ' + lines.join(' / '));
   const voices = await ev(() => ['shiba', 'golden', 'corgi', 'dachs', 'pug', 'husky', 'mutt'].map((k) => window.__paw.dd.voice(k)));
   ok(new Set(voices).size >= 5, 'voices follow the breed personality: ' + voices.join(', '));
   await ev(() => { const P = window.__paw; P.ms.act('pet', {}); });
@@ -208,6 +215,9 @@ run('v217_dog_days', async (t) => {
     ok(Object.values(r).every(Boolean), `${w} x ${h}: the chip fits, clear of the dev and look buttons ` + JSON.stringify(r));
   }
   await t.p.setViewportSize({ width: 393, height: 852 }); await t.sleep(500); await ev(() => window.__paw.dd.chip());
+  await ev(() => window.__paw.toast('A toast to test where it sits.'));
+  ok(await t.until(() => { const c = document.getElementById('ddWish').getBoundingClientRect(), q = [...document.querySelectorAll('#toasts .toast')].pop(); return !!q && q.getBoundingClientRect().top >= c.bottom - 1; }, null, 3000), 'phones: a toast starts under the wish chip, never on it');
+  await t.until(() => !document.querySelector('#toasts .toast'), null, 5000);
   await shot('wish_chip_phone');
   await t.p.locator('#bar [data-act=more]').tap();
   ok(await ev(() => [...document.querySelectorAll('#bar .barpop[data-pop=more] .act')].map((b) => b.dataset.act).join(',') === 'wardrobe,journal,stickers'), 'the More tray: Wardrobe, Journal, Stickers');
@@ -229,10 +239,12 @@ run('v217_dog_days', async (t) => {
   await t.ctx.close();
 
   sec('8. other languages: the chip and the sticker page fit in Thai and Traditional Chinese');
-  for (const lang of ['th', 'zh-Hant']) {
+  for (const lang of ['th', 'zh-Hant', 'ja']) {
     await fresh({ device: 'iPhone 15', lang }); await ev(() => window.__paw.dd.chip());
     ok(await ev(() => { const c = document.getElementById('ddWish'); if (!c || c.hidden) return false; const r = c.getBoundingClientRect(); return r.right <= window.innerWidth && c.scrollWidth <= c.clientWidth + 2; }), lang + ': the wish chip fits');
-    await shot('wish_chip_phone_' + lang);
+    await t.until(() => !document.querySelector('#toasts .toast'), null, 9000); await shot('wish_chip_phone_' + lang);
+    const names = await ev(() => { const P = window.__paw; return ['square', 'cafe', 'dogpark', 'vet', 'salon', 'hilltop', 'pier'].map((k) => P.dd.text('place', k)).concat(P.dd.defs().filter((d) => ['v_square', 'v_dogpark', 'v_hilltop', 'v_pier'].includes(d.id)).map((d) => d.label)); });
+    ok(names.every((n) => !/Town Square|Pupuccino|Dog Park|Vet Clinic|Grooming Salon|Hilltop|Lighthouse Pier/.test(n)), lang + ': town place names are translated in wishes and stickers: ' + names.join(' | '));
     await t.ctx.close();
   }
 }, { timeout: 420000 });

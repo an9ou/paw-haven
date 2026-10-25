@@ -1078,7 +1078,7 @@ const favAct = (a) => (FAV[S.dog.key] || {}).act === a;
 
 /* ---------------- toasts, bubbles ---------------- */
 // v2.3 phone: toasts start just under the location chip (top-left of the scene), never on it
-function phChipClear() { if (!isPhone()) return 0; const st = $('#status'); return st && !st.hidden && st.offsetParent === view ? st.offsetTop + st.offsetHeight + 4 - 8 : 0; }
+function phChipClear() { if (!isPhone()) return 0; const st = $('#status'), w = $('#ddWish:not([hidden])'); const a = st && !st.hidden && st.offsetParent === view ? st.offsetTop + st.offsetHeight + 4 - 8 : 0, b = w && w.offsetParent === view ? w.offsetTop + w.offsetHeight + 14 - 8 : 0; return Math.max(a, b); } // v2.17: also under the wish chip (48_dogdays.js)
 // toast(text, kind, o): o.group + o.many(n) (phones): a toast of the same group still on screen is replaced by one note with a count ("3 new letters").
 // Phones also re-place live toasts when a sheet opens, closes or changes height (toastPlace): above the sheet when there is room, else under its tabs
 // or its title, never on them. Returns the toast element.

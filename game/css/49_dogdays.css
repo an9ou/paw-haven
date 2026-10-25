@@ -96,3 +96,4 @@ html[data-layout="phone"] .dd-ptext p{font-size:19px;line-height:28px}
 html[data-layout="phone"] .dd-sa{width:64px;height:64px}
 @media (max-width:380px){.dd-sgrid{gap:6px}.dd-sa{width:58px!important;height:58px!important}}
 .dd-bic{width:100%;height:100%;display:block}
+#bar .act[data-act="stickers"]{--wash:var(--w-pink)} /* the phone More tray: pastel like Wardrobe and Journal */
