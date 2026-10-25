@@ -34,6 +34,7 @@ run('v217_dog_days', async (t) => {
   await fresh();
   ok(await t.until(() => { const c = document.getElementById('ddWish'); return !!c && !c.hidden && /Today I wish for/.test(c.textContent); }, null, 5000), 'the wish chip shows in the yard: ' + (await ev(() => document.getElementById('ddWish').textContent)));
   ok(await ev(() => { const c = document.getElementById('ddWish').getBoundingClientRect(), st = document.getElementById('status').getBoundingClientRect(), v = document.getElementById('view').getBoundingClientRect(); return c.top >= st.bottom - 1 && c.right <= v.right && c.left >= v.left && c.height >= 44; }), 'it sits under the place chip, inside the scene, 44 px tall');
+  ok(await ev(() => { const c = document.getElementById('ddWish').getBoundingClientRect(), m = document.getElementById('msBtn'); if (!m || !m.getClientRects().length) return true; const r = m.getBoundingClientRect(); return !(c.left < r.right && c.right > r.left && c.top < r.bottom && c.bottom > r.top); }), 'desktop: clear of the missions clipboard in the top bar');
   const w1 = await ev(() => window.__paw.dd.wish());
   ok(w1 && w1.k && !w1.done, 'one wish for the dog today: ' + JSON.stringify(w1));
   const opts1 = await ev(() => window.__paw.dd.opts());
@@ -54,8 +55,8 @@ run('v217_dog_days', async (t) => {
   const c0 = (await t.S()).coins, p0 = (await t.S()).bond.pts;
   await t.pet((p0) => window.__paw.S.bond.pts > p0, p0); const p1 = (await t.S()).bond.pts;
   ok(await t.waitToast(/Wish come true! Mochi is so happy: \+\d+ Bond \(double\)\. \+10 coins\. A new sticker: 1 wish come true!/, 6000), 'a wish come true: Bond, coins and a sticker in one toast');
-  s = await t.S(); const gain = p1 - p0, extra = s.bond.pts - p1;
-  ok(extra === gain && gain > 0, `double Bond: the pet gave ${gain}, the wish gave ${extra} more`);
+  s = await t.S(); const wb = +(await ev(() => ((window.__toasts.find((x) => /Wish come true!/.test(x)) || '').match(/\+(\d+) Bond \(double\)/) || [0, 0])[1])), total = s.bond.pts - p0;
+  ok(wb > 0 && total === 2 * wb && p1 > p0, `double Bond: the pet and the wish gave ${total} in all, ${wb} from the wish`); // timing-proof: the wish's half lands 1.2 s after the pet
   ok(s.coins - c0 === 10 && s.dd.wish.coins === 10 && s.dd.wn === 1 && s.dd.wk.pet === 1, '+10 coins, counted');
   ok(s.dd.st.w1 && s.dd.st.k_pet, 'stickers: 1 wish come true, and the pet wish');
   ok(await t.until(() => { const c = document.getElementById('ddWish'); return c && c.classList.contains('done') && /Wish come true/.test(c.textContent); }, null, 3000), 'the chip says the wish came true');
@@ -211,7 +212,8 @@ run('v217_dog_days', async (t) => {
   for (const [w, h] of [[393, 852], [360, 640], [684, 716]]) {
     await t.p.setViewportSize({ width: w, height: h }); await t.sleep(700); await ev(() => window.__paw.dd.chip());
     const r = await ev(() => { const c = document.getElementById('ddWish').getBoundingClientRect(), v = document.getElementById('view').getBoundingClientRect(), dev = document.getElementById('devBtn'), dr = dev && dev.getBoundingClientRect(), hit = (a, b) => !!b && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top, look = [...document.querySelectorAll('#rmLookL,#rmLookR')].filter((x) => x.getClientRects().length && getComputedStyle(x).visibility !== 'hidden').map((x) => x.getBoundingClientRect());
-      return { inside: c.left >= v.left - 1 && c.right <= v.right + 1, tall: c.height >= 44, clearDev: !hit(c, dr), clearLook: look.every((l) => !hit(c, l)), sw: document.documentElement.scrollWidth <= window.innerWidth + 1 }; });
+      const ms = document.getElementById('msBtn'), mr = ms && ms.getClientRects().length ? ms.getBoundingClientRect() : null;
+      return { inside: c.left >= v.left - 1 && c.right <= v.right + 1, tall: c.height >= 44, clearDev: !hit(c, dr), clearMissions: !hit(c, mr), clearLook: look.every((l) => !hit(c, l)), sw: document.documentElement.scrollWidth <= window.innerWidth + 1 }; });
     ok(Object.values(r).every(Boolean), `${w} x ${h}: the chip fits, clear of the dev and look buttons ` + JSON.stringify(r));
   }
   await t.p.setViewportSize({ width: 393, height: 852 }); await t.sleep(500); await ev(() => window.__paw.dd.chip());

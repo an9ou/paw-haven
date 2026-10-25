@@ -110,7 +110,8 @@ function bowlArt(food) {
 // v2.5: the bowl shows only while feeding: from the Feed tray opening until the eating ends (also while the dog drinks).
 // Hidden with visibility, so its box (kept clear by the props, piles and pack dogs) stays where it was.
 let fbBowlFood = null;
-function setBowl(food) { fbBowlFood = food || null; const b = $('#bowlG'); if (b) { b.innerHTML = (isPhone() ? '<rect x="195" y="452" width="110" height="110" fill="transparent"/>' : '') + place(bowlArt(food), 205, 462, 90, 90); b.setAttribute('aria-label', food ? tt('yard.label_food_bowl_with', 'Food bowl with {food}', { food: homeName(food) }) : tt('yard.label_empty_food_bowl', 'Empty food bowl')); } fbBowlSync(); }
+// v2.17: the phone tap area is 128 world px, at least 44 px on an iPhone 15 under the v2.16 four-button bar (it was 110: 43 px)
+function setBowl(food) { fbBowlFood = food || null; const b = $('#bowlG'); if (b) { b.innerHTML = (isPhone() ? '<rect x="186" y="443" width="128" height="128" fill="transparent"/>' : '') + place(bowlArt(food), 205, 462, 90, 90); b.setAttribute('aria-label', food ? tt('yard.label_food_bowl_with', 'Food bowl with {food}', { food: homeName(food) }) : tt('yard.label_empty_food_bowl', 'Empty food bowl')); } fbBowlSync(); }
 function fbFeedTrayOpen() { return cur.mode === 'yard' && !!dock.querySelector(':scope > .tray [data-food]'); }
 function fbBowlSync() { const b = $('#bowlG'); if (b) b.style.visibility = fbBowlFood || fbFeedTrayOpen() ? '' : 'hidden'; }
 function fxText(txt, x, y, color = '#F28FA5', size = 38) {
