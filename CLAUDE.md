@@ -45,7 +45,7 @@ A cozy browser game: adopt crayon-drawn dogs, care for them, walk a sketchbook t
 - **Nothing bad ever happens.** No fail states, no sickness, death or running away.
 - **No selling dogs, ever.** Puppies are adopted out free to named families. Sparkle is cosmetic only, never paid.
 - **Real welfare and food safety.** No double merle, no relatives, age and season limits, rest between litters. Nothing toxic to dogs can be planted, cooked or fed. Blocks are short, kind, two-sentence lessons.
-- **Look.** A detailed pencil-sketchbook world with **deliberately crude crayon dogs**. The ugly dogs are the joke.
+- **Look.** A detailed pencil-sketchbook world with **deliberately crude crayon dogs**. The ugly dogs are the joke. Every colour fill stays inside its own outline, in all art and every update (owner, 25 Oct 2026; v2.15.2).
 - **Words.** Never "breed" as a verb, "stud", "litter price", "sell" (for dogs). The build rejects "nintendo", "pokémon" and "animal crossing".
 - **Economy.** Walks are the main income (~100 a day); the garden stays below it.
 
