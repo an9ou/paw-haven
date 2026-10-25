@@ -41,8 +41,8 @@ function kit(r){
   let jm=1;const J=a=>(r()-.5)*2*a*jm,acc=[],bb=[1e9,1e9,-1e9,-1e9],texts=[],LW=3.7;
   const tr=(x,y)=>{if(x<bb[0])bb[0]=x;if(y<bb[1])bb[1]=y;if(x>bb[2])bb[2]=x;if(y>bb[3])bb[3]=y};
   const pl=(P,amp,out)=>{let d='';for(let i=0;i<P.length;i++){const x=P[i][0]+J(amp),y=Math.min(P[i][1]+J(amp),h.cy||1e9);tr(x,y);if(out)out.push([x,y]);d+=(i?'L':'M')+R1(x)+' '+R1(y)}return d};
-  // 25 Oct 2026 (owner: every colour fill stays inside its outline): skip(n) draws the random numbers a drifting fill used to take, so every later wobble stays put
-  const skip=n=>{for(let i=0;i<n;i++)r()},pd=Q=>Q.map((q,i)=>(i?'L':'M')+R1(q[0])+' '+R1(q[1])).join('');
+  // 25 Oct 2026 (owner: every colour fill stays inside its outline). pd: a closed polygon's path data
+  const pd=Q=>Q.map((q,i)=>(i?'L':'M')+R1(q[0])+' '+R1(q[1])).join('');
   let lastQ=null,lastW=LW,part=null;
   // the outline Q pulled in by half its line width (each point along its corner's inward normal), so a kept-in mark stops at the inside of the ink
   const inset=(Q,dd)=>{const n=Q.length;let a=0;Q.forEach((p,i)=>{const q=Q[(i+1)%n];a+=p[0]*q[1]-q[0]*p[1]});const sg=a>0?1:-1;
@@ -60,18 +60,18 @@ function kit(r){
     // o.own marks a fill that hangs past the part on purpose (long hair, the schnauzer skirt) and has its own ink line.
     shape(pts,fill,o={}){
       if(!pts.length||isNaN(pts[0][0]))return;
-      const P=dense(pts,true,o.step||11),n=P.length;
-      if(o.ox===undefined)skip(1);if(o.oy===undefined)skip(1);
-      const fo=o.fop?` fill-opacity="${o.fop}"`:'';
-      if(o.noline){if(fill){const Q=[],d=pl(P,o.famp??1.1,Q);acc.push(`<path d="${part&&!o.own?pd(dense(Q,true,3).map(q=>pin(q,part))):d}Z" fill="${fill}"${fo}/>`)}return}
-      if(fill)skip(2*n);
+      const P=dense(pts,true,o.step||11),n=P.length;let cx=0,cy=0;P.forEach(q=>{cx+=q[0]/n;cy+=q[1]/n});
+      const ox=o.ox??2.4+J(1),oy=o.oy??-1.6+J(1),sc=o.sc??.97,fa=o.famp??1.1,fo=o.fop?` fill-opacity="${o.fop}"`:'';
+      // the old drifted fill is still measured for the fit (not drawn), so every dog keeps its size and place; its wobble is the fill's own wobble
+      const jw=fill?P.map(q=>{const j=[J(fa),J(fa)];tr(cx+(q[0]-cx)*sc+ox+j[0],Math.min(cy+(q[1]-cy)*sc+oy+j[1],h.cy||1e9));return j}):null;
+      if(o.noline){if(fill){const Q=P.map((q,i)=>[q[0]+jw[i][0],Math.min(q[1]+jw[i][1],h.cy||1e9)]);acc.push(`<path d="${pd(part&&!o.own?dense(Q,true,3).map(q=>pin(q,part)):Q)}Z" fill="${fill}"${fo}/>`)}return}
       const s0=Math.floor(r()*n),cnt=n+(o.closed?1:(r()<.55?0:-1)),L=[],Q=[];for(let i=0;i<=cnt;i++)L.push(P[(s0+i)%n]);const d=pl(L,o.amp??1.2,Q);
       if(fill)acc.push(`<path d="${pd(Q.slice(0,n))}Z" fill="${fill}"${fo}/>`);
       acc.push(st(d,o.w||LW,INK));lastQ=Q.slice(0,n);lastW=o.w||LW
     },
     // part(true): keep the marks that follow inside the outline just drawn; part(false): stop
     part(on){part=on&&lastQ?inset(lastQ,lastW*.5):null},
-    tube(pts,w,fill,o={}){const P=dense(pts,false,8),d=pl(P,.9);acc.push(st(d,w+(o.ow??LW*1.45),INK));if(fill){skip(2*P.length);acc.push(st(d,w,fill))}},// the fill runs down the middle of its own ink (it used to be nudged off it)
+    tube(pts,w,fill,o={}){const P=dense(pts,false,8),d=pl(P,.9);acc.push(st(d,w+(o.ow??LW*1.45),INK));if(fill){pl(P,.8);acc.push(st(d,w,fill))}},// the fill runs down the middle of its own ink (it used to be nudged off it)
     line(pts,w,col,amp=1){if(!pts.length||isNaN(pts[0][0]))return;acc.push(st(pl(dense(pts,false,7),amp),w,col||INK))},
     dot(x,y,rx,ry,fill){if(isNaN(x))return;x+=J(.5);y+=J(.5);tr(x-rx,y-(ry??rx));tr(x+rx,y+(ry??rx));acc.push(`<ellipse cx="${R1(x)}" cy="${R1(y)}" rx="${R1(rx)}" ry="${R1(ry??rx)}" fill="${fill||INK}"/>`)},
     heart(x,y,s,fill){const p=[];for(let i=0;i<16;i++){const t=i/16*Math.PI*2;p.push([x+s*.062*16*Math.pow(Math.sin(t),3),y-s*.062*(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))])}h.shape(p,fill||'#FF4F7B',{w:3.4,step:30,ox:1.5,oy:-1,amp:.8})},

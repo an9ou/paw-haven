@@ -1,7 +1,7 @@
 /* Doodle Doggo world art, module A: scenes + walk strips, style G "Doodle sketch".
    PawArt.scene(name, o)  name: yard | market | shelter | map   (viewBox 0 0 1000 600, xMidYMid slice)
    PawArt.walkStrip(area) area: park | river | woods | beach  (viewBox 0 0 1200 400, ground y=330, seamless)
-   Everything is drawn on warm sketchbook paper: coloured-pencil fills that drift off the lines,
+   Everything is drawn on warm sketchbook paper: coloured-pencil fills inside the lines (25 Oct 2026: they used to drift off),
    two-stroke tapered pencil outlines, hatching, Caveat labels, washi tape, sparkles.
    No filters at all: the paper grain is a seeded speck <pattern>, so scenes stay cheap to composite. */
 window.PawArt = window.PawArt || {};
@@ -48,6 +48,11 @@ function smooth(P,closed){
 }
 
 /* ---------- the pencil kit ---------- */
+// 25 Oct 2026: a closed outline P pulled in by dd (each point along its corner's inward normal; small shapes are pulled in less, so they never turn inside out)
+function fillIn(P,dd,G){const n=P.length;if(n<3)return P;let a=0,x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;P.forEach(p=>{x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);y0=Math.min(y0,p[1]);y1=Math.max(y1,p[1])});
+  G=G&&G.length>2?G:P;G.forEach((p,i)=>{const q=G[(i+1)%G.length];a+=p[0]*q[1]-q[0]*p[1]});const sg=a>0?1:-1;dd=Math.min(dd,Math.min(x1-x0,y1-y0)/4);// which way is in: from the drawn points G (a smooth curve can loop past a thin shape's ends)
+  return P.map((p,i)=>{const A=P[(i+n-1)%n],C=P[(i+1)%n],l1=Math.hypot(p[0]-A[0],p[1]-A[1])||1,l2=Math.hypot(C[0]-p[0],C[1]-p[1])||1;
+    const nx=-((p[1]-A[1])/l1+(C[1]-p[1])/l2)*sg,ny=((p[0]-A[0])/l1+(C[0]-p[0])/l2)*sg,m=Math.hypot(nx,ny)||1;return[p[0]+nx/m*dd,p[1]+ny/m*dd]})}
 function kit(seed){
   // two seeded streams: the main one draws the base scene, the side one draws time/weather extras,
   // so every variant keeps exactly the same base layout (and day+sunny is byte-identical to before)
@@ -92,14 +97,15 @@ function kit(seed){
       });
       out.push(`<path d="${d}" fill="${col}"${o.op?` opacity="${o.op}"`:''}/>`);
     },
-    // coloured-pencil fill that drifts off the outline
-    fill(pts,col,o={}){
-      const P=dense(pts,true,o.step||14),n=P.length;let cx=0,cy=0;P.forEach(q=>{cx+=q[0]/n;cy+=q[1]/n});
-      const dx=o.dx??1+r()*1.6,dy=o.dy??.5+r()*1.4,sc=1+(o.sc??(r()-.4)*.03),amp=o.amp??1.3;let vx=0,vy=0;
-      const W=P.map(q=>{vx=vx*.7+J(amp*.6);vy=vy*.7+J(amp*.6);return[cx+(q[0]-cx)*sc+dx+vx,cy+(q[1]-cy)*sc+dy+vy]});
+    // coloured-pencil fill. 25 Oct 2026 (owner: every colour fill stays inside its outline): it no longer drifts off (dx, dy, sc are still drawn
+    // from the stream, so nothing else moves). Under a pencil outline (ins: half the line width, from shape()) it is pulled in to the line's inner edge
+    // and keeps still; a fill with no outline keeps its little wobble, on the spot.
+    fill(pts,col,o={},ins=0){
+      const P=dense(pts,true,o.step||14);if(o.dx==null)r();if(o.dy==null)r();if(o.sc==null)r();const amp=o.amp??1.3,In=ins?fillIn(P,ins):null;let vx=0,vy=0;
+      const W=P.map((q,i)=>{vx=vx*.7+J(amp*.6);vy=vy*.7+J(amp*.6);return In?In[i]:[q[0]+vx,q[1]+vy]});
       const d=smooth(W,true);out.push(`<path d="${d}" fill="${col}"${o.op!=null?` fill-opacity="${o.op}"`:''}/>`);return d;
     },
-    shape(pts,col,o={}){let d=null;if(col)d=k.fill(pts,col,o);if(o.hatch)k.hatch(pts,o.hatch);if(!o.noline)k.pen(pts,true,{w:o.w,wk:o.wk,amp:o.pamp,col:o.lcol,one:o.one,op:o.lop});return d},
+    shape(pts,col,o={}){let d=null;if(col)d=k.fill(pts,col,o,o.noline?0:(o.w||2.2)*.5);if(o.hatch)k.hatch(pts,o.hatch);if(!o.noline)k.pen(pts,true,{w:o.w,wk:o.wk,amp:o.pamp,col:o.lcol,one:o.one,op:o.lop});return d},
     // cheap wobbly stroke for details
     line(pts,w=1.4,col=C.ink,o={}){const P=dense(pts,false,o.step||8).map((q,i,a)=>i===0||i===a.length-1?[q[0]+J(.4),q[1]+J(.4)]:[q[0]+J(o.amp??.7),q[1]+J(o.amp??.7)]);out.push(`<path d="${smooth(P,false)}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"${o.op?` opacity="${o.op}"`:''}${o.dash?` stroke-dasharray="${o.dash}"`:''}/>`)},
     // diagonal hatching clipped to a region, only in the lower-right ("shadow") part when o.side
