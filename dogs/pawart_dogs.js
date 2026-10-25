@@ -1133,7 +1133,7 @@ function hwWing(h,B,root,ang,z,cl,far,pal){// one felt bat wing: root on the bac
   h.shape(pts.map(M),far?pal[0]:pal[1],{w:far?3.4:3.8,step:6,amp:.7});
   if(!far){[T2,T3].forEach(t=>h.line([Wr,[(Wr[0]+t[0])/2+z*.06,(Wr[1]+t[1])/2+z*.08],t].map(M),1.8,pal[2],.4));h.line([[z*.1,-z*.14],[z*.18,-z*.42],[z*.1,-z*.7]].map(M),2.8,pal[2],.4);h.line([[-z*.12,-z*.82],[-z*.42,-z*.86]].map(M),2.4,pal[2],.4)}}
 function hwWingSet(s,L){const b=s.body,lie=/^(sleep|down|crouch|playdead)$/.test(L.pose),roll=L.pose==='rollover',fl=Math.max(-8,Math.min(8,(L.tailA||0)*.2)),z=Math.max(34,Math.min(52,b.ry*2))*(lie?.78:roll?.62:1);
-  return{z,root:[b.rx*.1,-b.ry*(s.fluff?.98:.84)],ang:roll?-112:lie?-22:4-fl,far:[b.rx*.26,-b.ry*(s.fluff?1.0:.88)],fang:roll?-84:lie?6:34-fl*.6}}
+  return{z,root:[b.rx*.1,-b.ry*(s.fluff?(s.wet?.84:.98):.84)],ang:roll?-112:lie?-22:4-fl,far:[b.rx*.26,-b.ry*(s.fluff?(s.wet?.86:1.0):.88)],fang:roll?-84:lie?6:34-fl*.6}}
 BACK2['Bat Wings']=function(h,s,L,B){const w=hwWingSet(s,L);hwWing(h,B,w.far,w.fang,w.z*.94,q=>[q[0],Math.min(q[1],GY)],1)};
 BODY2['Bat Wings']=function(h,s,L,B){// the harness strap round the chest, then the near wing over the back
   const b=s.body,w=hwWingSet(s,L),cl=q=>[q[0],Math.min(q[1],GY)];
