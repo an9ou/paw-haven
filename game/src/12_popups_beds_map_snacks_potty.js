@@ -36,7 +36,12 @@ const BEDS = [
   { n: 'Hammock Cot', price: 450, bond: 3, bonus: 0.15, note: 'A wooden cot with a striped canvas hammock.' },
   { n: 'Cloud Bed', price: 900, bond: 6, bonus: 0.30, note: 'A puffy cloud with a little rainbow pillow.' },
   { n: 'Royal Canopy Bed', price: 2000, bond: 8, bonus: 0.45, note: 'Velvet, gold trim, curtains and a crown.' },
-  { n: 'Knitted Nest', price: 150, bond: 1, bonus: 0.05, v27: true, note: 'A chunky knitted ring with a dip in the middle. Room for one dog, or two puppies.' } // v2.7: a cheap second bed for a growing pack (V27.md)
+  { n: 'Knitted Nest', price: 150, bond: 1, bonus: 0.05, v27: true, note: 'A chunky knitted ring with a dip in the middle. Room for one dog, or two puppies.' }, // v2.7: a cheap second bed for a growing pack (V27.md)
+  // v2.17.1 Halloween Market beds (fest 'hwmarket', hm: 2026): not in the Barkitecture bed tab, the market lists them
+  { n: 'Cauldron Bed', price: 300, bond: 2, bonus: 0.10, fest: 'hwmarket', hm: 2026, note: 'A round black pot with a lilac cushion inside. The only thing brewing is a nap.' },
+  { n: 'Bat-Cave Cushion', price: 250, bond: 1, bonus: 0.05, fest: 'hwmarket', hm: 2026, note: 'A cosy dark cave with a purple cushion and one sleepy felt bat on the roof.' },
+  { n: 'Pumpkin Patch Bed', price: 350, bond: 2, bonus: 0.10, fest: 'hwmarket', hm: 2026, note: 'A hollow orange pumpkin with a cream cushion and a curly stem. Smells of nothing at all.' },
+  { n: 'Moon and Stars Tent', price: 450, bond: 3, bonus: 0.15, fest: 'hwmarket', hm: 2026, note: 'A navy tent with crayon stars and a crescent moon. Dark inside, perfect for long naps.' }
 ];
 const BED_BOX = [610, 360, 260, 160]; // x, y, w, h in the house scene (floor contact y = 360 + 152)
 const bedInfo = (n) => BEDS.find((b) => b.n === (n || S.bed)) || BEDS[0];

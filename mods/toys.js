@@ -2887,6 +2887,13 @@
   IMPL['Plush Bone'].phone = { vw: 760, vwMin: 660, fx: 580 };
   IMPL['Rubber Chicken'].phone = { vw: 700, vwMin: 660, fx: 625 };
 
+  /* v2.17.1 Halloween Market toys: each plays an older toy's game with its own look (the game asks A.itemSVG for the old toy's picture and gets the new one) */
+  var HM_TOY_GAME = { 'Squeaky Bat': 'Squeaky Duck', 'Pumpkin Ball': 'Tennis Ball', 'Rope Mummy': 'Rubber Chicken', 'Glow-in-the-Dark Bone': 'Glow Ball', 'Soft Spider Plush': 'Plush Bone' };
+  Object.keys(HM_TOY_GAME).forEach(function (n) {
+    var base = HM_TOY_GAME[n], f = function (A) { var A2 = Object.create(A); A2.itemSVG = function (x) { return A.itemSVG(x === base ? n : x); }; return IMPL[base](A2); };
+    if (IMPL[base].cfg) f.cfg = IMPL[base].cfg; if (IMPL[base].phone) f.phone = IMPL[base].phone; IMPL[n] = f; TOYS.push(n);
+  });
+
   /* ==================== public ==================== */
   window.PawToys = {
     supports: function (name) { return TOYS.indexOf(name) >= 0; },

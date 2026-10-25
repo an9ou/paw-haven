@@ -6179,6 +6179,211 @@ PA.postcard=function(w,h,o){
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="Postcard"><rect width="${w}" height="${h}" fill="#FFFBF3"/>${o.scene||''}${front}</svg>`;
 };
 
+/* ===================================== v2.17.1 Halloween Market (art/halloween-market) =====================================
+   Five decorations (props, wall ones carry their own string or nail):
+     hmghostlights {lit} 300x80   'Ghost Lantern String': little paper ghost lanterns on a string (they glow after dark)
+     hmpumpkinlights {lit} 300x80 'Pumpkin Fairy Lights': tiny round pumpkin bulbs on a green wire
+     hmfenceweb 160x140           'Friendly Fence Web': a wobbly crayon web for the fence, a round smiling spider with a bow on a thread
+     hmcatcutout 120x160          'Cardboard Black Cat': a cardboard cut-out cat painted black, a big smile, a wooden stand. Ground y=154
+     hmcauldron 140x120           'Cauldron Planter': a black pot on three stubby legs full of sunflowers and pansies (both safe for dogs). Ground y=114
+   One house 'Friendly Haunted Kennel' (240x200), four beds 'Cauldron Bed', 'Bat-Cave Cushion', 'Pumpkin Patch Bed', 'Moon and Stars Tent' (260x160),
+   and 25 item cards (64): 10 costumes, 5 toys, the 5 decorations (their props), the house and the 4 beds. Cute, not scary; every fill inside its line. */
+const HMP='#7B4FC9',HMPD='#55339A',HMPL='#C9B6E4',HMB='#3B3346',HMBL='#6A5E7E',HMO='#F29150',HMOD='#C96E2A',HMY='#FFE07A',HMG='#8CC86E',HMGD='#5E9E3A',HMN='#34407E',HMNL='#6E7CC0',HMC='#FFF4E4',HMCD='#D9CDB8';
+// a small round smiling face (two dot eyes, a smile, pink cheeks) on top
+function hmFace(b,x,y,s,eyeCol){b.dot(x-s*.9,y,Math.max(.7,s*.32),eyeCol||INK,'top');b.dot(x+s*.9,y,Math.max(.7,s*.32),eyeCol||INK,'top');
+  b.raw(b.st(`M${R1(x-s*.6)} ${R1(y+s*.7)}q${R1(s*.6)} ${R1(s*.6)} ${R1(s*1.2)} 0`,eyeCol||INK,Math.max(.7,s*.28)),'top');
+  b.raw(`<ellipse cx="${R1(x-s*1.6)}" cy="${R1(y+s*.6)}" rx="${R1(s*.5)}" ry="${R1(s*.3)}" fill="${PINK}" opacity=".55"/><ellipse cx="${R1(x+s*1.6)}" cy="${R1(y+s*.6)}" rx="${R1(s*.5)}" ry="${R1(s*.3)}" fill="${PINK}" opacity=".55"/>`,'top')}
+// a soft lantern ghost (a ghostP with a little ring on top)
+function hmLantern(b,x,y,s,lit,i){const g=ghostP(x,y,24*s,30*s,[.06,-.05,.07,-.06,.05][i%5]);
+  if(lit)b.raw(`<g class="pa-wb-glow"><ellipse cx="${R1(x)}" cy="${R1(y+2*s)}" rx="${R1(18*s)}" ry="${R1(20*s)}" fill="#FFF3C2" opacity=".5"/></g>`,'under');
+  b.sh(g,lit?'#FFF6D8':'#FFFFFF',{k:.16,hatch:0,hl:0,lw:.9,base:lit?'#FFFBEA':'#fff',marks:[{pts:E(x+4*s,y+6*s,6*s,6*s,8),fill:lit?'#FFE9A8':'#E9EFF7',op:.85}]});
+  hmFace(b,x,y-2*s,2.2*s)}
+PROPS.hmghostlights=function(b,o){const lit=!!(o&&o.lit),sy=x=>8+12*(1-Math.pow((x-150)/146,2));
+  const str=[];for(let x=4;x<=296;x+=12)str.push([x,sy(x)]);str.push([296,sy(296)]);b.ln(str,{w:1.3,col:'#8E6446'});
+  b.sh(E(4,8,3,3,8),C.woodD,{hatch:0,hl:0,lw:.7});b.sh(E(296,8,3,3,8),C.woodD,{hatch:0,hl:0,lw:.7});
+  [40,95,150,205,260].forEach((x,i)=>{const y=sy(x);b.ln([[x,y],[x,y+12]],{w:.9,col:'#8E6446'});hmLantern(b,x,y+30,1,lit,i)})};
+PROPS.hmpumpkinlights=function(b,o){const lit=!!(o&&o.lit),sy=x=>10+14*(1-Math.pow((x-150)/146,2));
+  const str=[];for(let x=4;x<=296;x+=10)str.push([x,sy(x)+Math.sin(x/9)*1.5]);str.push([296,sy(296)]);b.ln(str,{w:1.5,col:HMGD});
+  b.sh(E(4,10,3,3,8),C.woodD,{hatch:0,hl:0,lw:.7});b.sh(E(296,10,3,3,8),C.woodD,{hatch:0,hl:0,lw:.7});
+  for(let i=0;i<9;i++){const x=24+i*31,y=sy(x)+12+(i%2)*4;
+   if(lit)b.raw(`<g class="pa-wb-glow"><circle cx="${x}" cy="${y}" r="13" fill="#FFE3A1" opacity=".55"/></g>`,'under');
+   b.ln([[x,sy(x)],[x,y-7]],{w:1,col:HMGD});
+   b.sh(cloudP(x,y,8.5,7.5,6,.12,24),lit?'#FFB45E':HMO,{k:.2,hatch:0,hl:0,lw:.8,base:lit?'#FFE2B8':'#FBC59A',inner:b.st(b.jl(x-3,y-6,x-3.4,y+6,.3)+b.jl(x+3,y-6,x+3.4,y+6,.3),HMOD,.9,.6)});
+   b.sh(RR(x-2,y-10,4,4,1),'#8E8A4A',{hatch:0,hl:0,lw:.6,top:1})}};
+PROPS.hmfenceweb=function(b){const cx=74,cy=56,sp=[[8,0],[16,-6],[24,-14]];
+  b.sh(E(8,6,3,3,8),C.woodD,{hatch:0,hl:0,lw:.7});b.sh(E(146,10,3,3,8),C.woodD,{hatch:0,hl:0,lw:.7});
+  const sp8=[];for(let i=0;i<8;i++){const a=i/8*Math.PI*2+.2;sp8.push([cx+Math.cos(a)*66,cy+Math.sin(a)*50])}
+  sp8.forEach(p=>b.ln([[cx,cy],[p[0],Math.max(6,Math.min(118,p[1]))]],{w:1,col:GRAPH}));
+  [14,28,42,56].forEach((r,j)=>{const ring=[];for(let i=0;i<=8;i++){const a=i/8*Math.PI*2+.2;ring.push([cx+Math.cos(a)*r*1.15,cy+Math.sin(a)*r*.9+(i%2?2:0)])}b.ln(ring,{w:.9,col:GRAPH})});
+  b.ln([[cx,cy],[8,6]],{w:1,col:GRAPH});b.ln([[cx+40,cy-30],[146,10]],{w:1,col:GRAPH});
+  const sx=118,syy=104;b.ln([[sx,cy+20],[sx,syy-12]],{w:.9,col:INK});
+  [-1,1].forEach(d=>[[-6,-2],[-8,3],[-7,8],[-4,11]].forEach(([dx,dy])=>b.ln([[sx+d*5,syy+dy*.5],[sx+d*(10+Math.abs(dx)*.4),syy+dy],[sx+d*(13+Math.abs(dx)*.3),syy+dy+4]],{w:1.4,col:HMB})));
+  b.sh(E(sx,syy,10,9.5,16),HMB,{hatch:0,hl:0,lw:.9,base:HMBL,marks:[{pts:E(sx-3,syy-3,4,3,8),fill:'#8E84A0',op:.8}]});
+  b.dot(sx-3.4,syy-1,2.2,'#fff','top');b.dot(sx+3.4,syy-1,2.2,'#fff','top');b.dot(sx-3,syy-.6,1.1,INK,'top');b.dot(sx+3.8,syy-.6,1.1,INK,'top');
+  b.raw(b.st(`M${sx-3} ${syy+4}q3 2.6 6 0`,'#fff',1.1),'top');
+  [-1,1].forEach(d=>b.sh([[sx,syy-9],[sx+d*6,syy-15],[sx+d*7,syy-8]],HMO,{k:.1,hatch:0,hl:0,lw:.7,top:1}));
+  b.ex('spark',30,108,4);b.ex('heart',140,60,3.6);
+  void sp};
+PROPS.hmcatcutout=function(b){b.shadow(60,155,34,4);
+  b.sh([[40,154],[44,140],[52,140],[50,154]],C.woodD,{k:0,hatch:0,hl:0,lw:.8});b.sh([[70,154],[68,140],[76,140],[80,154]],C.woodD,{k:0,hatch:0,hl:0,lw:.8});
+  const cat=[[30,142],[28,112],[34,84],[30,58],[26,30],[38,44],[50,40],[62,44],[74,30],[72,58],[66,84],[78,96],[96,104],[106,86],[104,66],[112,62],[116,80],[110,104],[94,120],[86,142]];
+  b.sh(cat,C.card,{k:.12,hatch:0,hl:0,lw:1,base:'#E8C79A'});
+  b.sh(fillIn(cat,5),HMB,{k:.12,hl:0,lw:.6,sh:'#251F2A',base:HMBL,marks:[{pts:E(42,100,10,22,10),fill:'#4F4658',op:.8}]});
+  b.dot(42,64,4.2,HMY,'top');b.dot(58,64,4.2,HMY,'top');b.dot(43,65,1.8,INK,'top');b.dot(57,65,1.8,INK,'top');
+  b.sh([[47,72],[53,72],[50,75.5]],'#F7A1B5',{k:0,hatch:0,hl:0,lw:.5,top:1});
+  b.raw(b.st('M44 78q6 5 12 0M38 74l-10 -2M38 77l-10 2M62 74l10 -2M62 77l10 2','#fff',1.2),'top');
+  b.sh(RR(34,92,32,8,3),HMO,{k:0,hatch:0,hl:0,lw:.7,top:1});b.sh(E(50,103,4,4,10),HMY,{hatch:0,hl:0,lw:.6,top:1});
+  b.ex('spark',100,40,4);};
+PROPS.hmcauldron=function(b){b.shadow(70,114,46,4);
+  [[40,114],[70,116],[100,114]].forEach(([x,y])=>b.sh([[x-4,y-14],[x+4,y-14],[x+2,y],[x-2,y]],HMB,{k:.1,hatch:0,hl:0,lw:.8}));
+  // flowers first (behind the rim): sunflowers and pansies, leaves
+  [[38,30,9],[70,18,11],[102,32,9]].forEach(([x,y,r],i)=>{b.ln([[x,y+r],[x+(i-1)*2,62]],{w:1.8,col:HMGD});
+   b.sh(leafP(x+(i-1)*2,52,14,7,i===0?2.6:.5),C.leaf,{hatch:0,hl:0,lw:.6,dr:.2});
+   b.sh(flowerP(x,y,r,12,.1),'#FFD23A',{k:.2,hatch:0,hl:0,lw:.8,base:'#FFE88A'});b.sh(E(x,y,r*.42,r*.42,12),C.brown,{hatch:0,hl:0,lw:.6,base:'#D9AE80'})});
+  [[54,40,'#B9A6E8'],[86,42,'#F7A1B5'],[24,48,'#B9A6E8'],[116,48,'#F7A1B5']].forEach(([x,y,c])=>{b.ln([[x,y+5],[x,62]],{w:1.4,col:HMGD});
+   b.sh(flowerP(x,y,7,5,.3),c,{k:.2,hatch:0,hl:0,lw:.7});b.dot(x,y,1.6,'#FFD23A')});
+  const pot=[[16,62],[124,62],[122,74],[116,90],[102,102],[70,106],[38,102],[24,90],[18,74]];
+  b.sh(pot,HMB,{k:.18,sh:'#251F2A',base:HMBL,marks:[{pts:E(48,80,12,7,10,-.3),fill:'#6A5E7E',op:.6}]});
+  b.sh(E(70,62,56,8,24),HMBL,{hatch:0,hl:0,lw:1,base:'#8E84A0',marks:[{pts:E(70,63,50,5,20),fill:'#5C4A3A',op:.9}]});
+  hmFace(b,70,84,3.4,'#fff');
+  b.ex('spark',124,26,4)};
+Object.assign(PROP_VB,{hmghostlights:'0 0 300 80',hmpumpkinlights:'0 0 300 80',hmfenceweb:'0 0 160 140',hmcatcutout:'0 0 120 160',hmcauldron:'0 0 140 120'});
+const HM_LBL={hmghostlights:'Ghost Lantern String',hmpumpkinlights:'Pumpkin Fairy Lights',hmfenceweb:'Friendly Fence Web',hmcatcutout:'Cardboard Black Cat',hmcauldron:'Cauldron Planter'};
+{const _propHM=PA.prop;
+ PA.prop=function(name,o){if(!HM_LBL[name])return _propHM.apply(this,arguments);
+  const lt=name==='hmghostlights'||name==='hmpumpkinlights',opt=lt?{lit:!!(o&&o.lit)}:{};
+  return serve('p:'+name+':'+JSON.stringify(opt),()=>{const b=mk('prop',name);PROPS[name](b,opt);return b.svg(PROP_VB[name],lt?` data-lit="${opt.lit?1:0}"`:'',(lt&&opt.lit?'Lit ':'')+HM_LBL[name])})}}
+
+/* the house: a friendly haunted kennel. A crooked little purple house, a pointy roof with a bat weathervane, round windows with smiling
+   ghost curtains, a pumpkin on the step, cobweb corners drawn as crayon doodles. The door opening is centred at x=120 like every house */
+HOUSES['Friendly Haunted Kennel']=function(b){
+  ground(b,104);
+  b.sh([[40,190],[44,96],[120,84],[196,98],[200,190]],HMPL,{k:.04,hl:0,sh:HMPD,ho:.35,base:'#E8DDF6',
+   inner:b.st([[52,120,188,124],[50,150,190,152],[52,176,188,178]].map(([a,c,d,e])=>b.jl(a,c,d,e,.6)).join(''),HMP,1.1,.35)});
+  b.sh([[28,104],[64,40],[96,22],[118,8],[132,20],[176,40],[212,106],[190,100],[120,86],[50,98]],HMB,{k:.06,hl:0,sh:'#251F2A',base:HMBL,
+   inner:b.st(b.jl(60,80,116,24,.5)+b.jl(150,40,190,92,.5),'#6A5E7E',1.2,.7)});
+  b.ln([[120,10],[120,-2]],{w:1.4});hwBat(b,120,-2,26,{col:HMB,lw:.7});
+  [[78,128],[162,128]].forEach(([x,y],i)=>{b.sh(E(x,y,17,17,20),'#FFE9A8',{hatch:0,hl:0,lw:1,base:'#FFF4CC'});
+   b.sh(ghostP(x,y+3,20,22,i?.05:-.05),'#FFFFFF',{k:.16,hatch:0,hl:0,lw:.7,base:'#fff'});hmFace(b,x,y+1,1.6)});
+  b.sh(arch(94,146,190,118),'#FFE9A8',{hatch:0,hl:0,lw:.9});b.sh(arch(100,140,190,125),C.door,DOOR_O);
+  b.raw(b.st('M44 98q8 2 10 10M44 104q4 0 6 5M196 100q-8 2 -10 10M196 106q-4 0 -6 5',GRAPH,1.1),'top');
+  pumpkinV(b,170,182,.36,{noleaf:1});b.sh(heartP(120,112,9),C.pinkD,{lw:.5,hl:0,hatch:0});
+  b.ex('spark',22,60,6);b.ex('heart',214,58,5);tuft(b,52,190,3.4);tuft(b,196,190,3)};
+
+/* the four beds (260x160, floor y 152, sleep area about (130,95), front lip in <g class="pa-bed-front">) */
+BEDS['Cauldron Bed']=function(b){b.shadow(130,151,104,3.5);
+  b.sh(E(130,82,100,20,30),HMBL,{hatch:0,hl:0,lw:1,base:'#8E84A0'});
+  b.sh(E(130,86,90,15,28),'#B9A6E8',{hl:0,base:'#E4DAF6',marks:[{pts:E(110,84,36,6,14),fill:'#fff',op:.7}]});
+  b.sh(E(70,74,12,9,12),HMP,{hatch:0,hl:0,lw:.8});b.sh(E(194,76,10,8,12),HMO,{hatch:0,hl:0,lw:.8});
+  FRONT0(b);
+  const fr=[[30,84],[230,84],[226,104],[214,124],[190,140],[130,148],[70,140],[46,124],[34,104]];
+  b.sh(fr,HMB,{k:.18,sh:'#251F2A',base:HMBL,marks:[{pts:E(84,112,22,10,12,-.2),fill:'#6A5E7E',op:.6}]});
+  b.sh(ribbon([[30,86],[130,96],[230,86]],[9,10,9]),HMBL,{k:1/6,hatch:0,hl:0,lw:.9,base:'#8E84A0'});
+  [[84,148],[176,148]].forEach(([x,y])=>b.sh([[x-6,y-8],[x+6,y-8],[x+4,y+3],[x-4,y+3]],HMB,{k:.1,hatch:0,hl:0,lw:.8}));
+  hmFace(b,130,122,4,'#fff');
+  FRONT1(b);b.ex('spark',22,60,3.6,'#FFE07A')};
+BEDS['Bat-Cave Cushion']=function(b){b.shadow(130,151,110,3.5);
+  b.sh([[24,140],[30,70],[60,40],[100,26],[130,24],[160,26],[200,40],[230,70],[236,140]],HMB,{k:.2,hl:0,sh:'#251F2A',base:HMBL});
+  b.sh([[56,140],[60,92],[84,66],[130,56],[176,66],[200,92],[204,140]],'#5C4A6E',{k:.2,hatch:0,hl:0,lw:.8,base:'#7A6A8E'});
+  hwBat(b,130,40,40,{col:HMBL,lw:.7});[[70,60],[190,62]].forEach(([x,y])=>b.ex('spark',x,y,3.4,HMY));
+  FRONT0(b);
+  b.sh(cloudP(130,128,104,22,10,.06,60),HMP,{hl:0,sh:HMPD,base:HMPL,marks:[{pts:E(110,122,50,7,16),fill:'#fff',op:.5}]});
+  b.raw(b.st(b.jl(40,132,220,132,.6),HMPD,1.2,.6));
+  FRONT1(b)};
+BEDS['Pumpkin Patch Bed']=function(b){b.shadow(130,151,112,3.5);
+  b.sh(E(130,92,110,40,30),HMO,{hl:0,sh:HMOD,ho:.4,base:'#FBC59A',inner:b.st(b.jl(70,58,66,128,.6)+b.jl(190,58,194,128,.6),HMOD,1.2,.5)});
+  b.sh(E(130,94,80,20,28),'#C96E2A',{hatch:0,hl:0,lw:.9,base:'#E39A5E'});
+  b.sh(E(130,98,74,15,28),C.cream,{hl:0,base:'#FFF8EC',marks:[{pts:E(116,94,36,6,14),fill:'#fff',op:.8}]});
+  b.sh(ribbon([[130,54],[132,42],[140,34]],[10,8,6]),'#8E8A4A',{k:1/6,hatch:0,hl:0,lw:.9});
+  b.sh(leafP(210,60,26,13,-.6),C.leaf,{hatch:0,hl:0,lw:.8});b.ln([[160,40],[176,34],[184,40],[178,46]],{w:1.4,col:'#6FA35A'});
+  FRONT0(b);
+  const fr=[];for(let i=0;i<=40;i++){const a=i/40*Math.PI;fr.push([130+Math.cos(a)*112,104+Math.sin(a)*40])}for(let i=40;i>=0;i--){const a=i/40*Math.PI;fr.push([130+Math.cos(a)*80,104+Math.sin(a)*12])}
+  b.sh(fr,HMO,{k:.12,hatch:0,hl:0,base:'#FBC59A'});b.raw(b.st(b.jl(60,112,58,138,.5)+b.jl(200,112,202,138,.5)+b.jl(130,118,130,144,.5),HMOD,1.3,.6));
+  hmFace(b,130,130,3.6);
+  FRONT1(b);b.ex('spark',26,64,3.6,'#FFE07A')};
+BEDS['Moon and Stars Tent']=function(b){b.shadow(130,151,104,3.5);
+  b.sh([[34,148],[130,20],[226,148]],HMN,{k:.02,hl:0,sh:HMNL,ho:.3,base:'#8E9AD8'});
+  b.sh([[86,148],[130,62],[174,148]],'#232C5E',{k:.02,hatch:0,hl:0,lw:.9,base:'#4A548C'});
+  [[78,92,6],[176,98,5],[120,44,4],[150,120,4]].forEach(([x,y,r])=>b.sh(starP(x,y,r,r*.45),HMY,{k:0,hatch:0,hl:0,lw:.6,top:1}));
+  const m=[];for(let a=-130;a<=130;a+=16)m.push([196+Math.cos(a*D2R2)*17,58+Math.sin(a*D2R2)*17]);for(let a=110;a>=-110;a-=16)m.push([204+Math.cos(a*D2R2)*13,58+Math.sin(a*D2R2)*14]);
+  b.sh(m,'#FFF3B0',{k:.1,hatch:0,hl:0,lw:.7,top:1});
+  b.ln([[130,20],[130,8]],{w:1.4});b.sh([[130,8],[146,12],[130,16]],HMO,{k:0,hatch:0,hl:0,lw:.7});
+  FRONT0(b);
+  b.sh(RR(70,132,120,16,6),'#B9A6E8',{hatch:0,hl:0,lw:.9,base:'#E4DAF6'});
+  FRONT1(b)};
+const D2R2=Math.PI/180;
+Object.assign(BED_CROP,{'Cauldron Bed':[22,56,216,100],'Bat-Cave Cushion':[18,18,224,138],'Pumpkin Patch Bed':[14,28,232,126],'Moon and Stars Tent':[28,2,206,154]});
+Object.assign(BED_ICON_H,{'Cauldron Bed':34,'Bat-Cave Cushion':44,'Pumpkin Patch Bed':40,'Moon and Stars Tent':56});
+['Cauldron Bed','Bat-Cave Cushion','Pumpkin Patch Bed','Moon and Stars Tent'].forEach(name=>{ITEMS[name]=function(b){
+  const [x,y,w,h]=BED_CROP[name],H=BED_ICON_H[name],W=Math.min(62,H*w/h);
+  const t=bedTpl(name,true).split(IDT).join(IDT+'n'+(BEDN++).toString(36)).replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'');
+  b.raw(`<g transform="translate(${R1(32-W/2)} ${R1(35-H/2)}) scale(${R1(W/w*1000)/1000} ${R1(H/h*1000)/1000}) translate(${-x} ${-y})">${t}</g>`);b.ex('spark',56,12,3.4,'#FFE07A')}});
+// a decoration's card: its prop, fitted into the 64 box
+function hmPropCard(b,name,lit,crop){const vb=crop||PROP_VB[name].split(' ').map(Number),w=vb[2],h=vb[3],k=Math.min(60/w,54/h),W=w*k,H=h*k;// crop: [x,y,w,h] of the prop to show (the long strings show their middle)
+  const t=PA.prop(name,lit?{lit:true}:{}).replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'');
+  b.raw(`<svg x="${R1(32-W/2)}" y="${R1(34-H/2)}" width="${R1(W)}" height="${R1(H)}" viewBox="${vb.join(' ')}" overflow="hidden">${t}</svg>`)}
+Object.assign(ITEMS,{
+ 'Ghost Lantern String'(b){hmPropCard(b,'hmghostlights',false,[70,10,160,66])},'Pumpkin Fairy Lights'(b){hmPropCard(b,'hmpumpkinlights',false,[80,12,140,40])},
+ 'Friendly Fence Web'(b){hmPropCard(b,'hmfenceweb')},'Cardboard Black Cat'(b){hmPropCard(b,'hmcatcutout')},'Cauldron Planter'(b){hmPropCard(b,'hmcauldron')},
+ 'Friendly Haunted Kennel'(b){const t=PA.house('Friendly Haunted Kennel').replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'');b.raw(`<g transform="translate(4 4) scale(.233)">${t}</g>`)},
+ /* costumes */
+ 'Little Witch Hat & Cape'(b){
+  b.sh([[14,30],[50,30],[58,58],[40,52],[32,60],[22,52],[6,58]],HMP,{sh:HMPD,base:HMPL});[[22,44],[42,46]].forEach(([x,y])=>b.sh(starP(x,y,4,1.8),HMY,{k:0,hatch:0,hl:0,lw:.5,top:1}));
+  b.sh(E(32,29,18,4,18),HMPD,{hatch:0,hl:0,lw:.8});b.sh([[20,28],[26,16],[34,6],[40,4],[42,10],[38,12],[42,28]],HMP,{k:.08,hatch:0,hl:0,lw:.9,marks:[{pts:[[0,22],[64,22],[64,26],[0,26]],fill:HMG,k:0}]});
+  b.ex('spark',54,12,3.6)},
+ 'Scarecrow Overalls'(b){
+  b.sh([[14,24],[50,24],[54,58],[36,58],[32,44],[28,58],[10,58]],'#6F8FCB',{sh:'#4A69A6',base:'#B9CBEA',marks:[{pts:RR(16,30,9,8,1),fill:HMO,k:0}]});
+  b.ln([[18,24],[16,8]],{w:2.4,col:'#4A69A6'});b.ln([[46,24],[48,8]],{w:2.4,col:'#4A69A6'});b.dot(18,26,2,HMY);b.dot(46,26,2,HMY);
+  b.raw(b.st('M12 58l-3 4M16 58l0 5M50 58l3 4M44 58l0 5','#D9AE4E',1.4),'top');b.ex('spark',56,10,3.4)},
+ 'Mummy Wraps'(b){
+  b.sh([[10,18],[54,18],[56,46],[46,58],[18,58],[8,46]],HMC,{sh:HMCD,base:'#FFFFFF',inner:b.st(b.jl(10,26,54,22,.3)+b.jl(9,36,55,30,.3)+b.jl(9,46,55,40,.3)+b.jl(14,54,52,50,.3),HMCD,1.3,.9)});
+  b.sh([[50,50],[58,56],[60,62],[54,62],[48,56]],HMC,{k:.1,hatch:0,hl:0,lw:.7});hmFace(b,32,34,2.6);b.ex('spark',8,10,3.4)},
+ 'Skeleton Suit'(b){
+  b.sh([[10,18],[54,18],[56,46],[46,58],[18,58],[8,46]],HMB,{sh:'#251F2A',base:HMBL});
+  b.raw(b.st('M32 22V50M22 26q10 4 20 0M20 33q12 5 24 0M21 40q11 4 22 0','#FFFFFF',2.4),'top');b.sh(E(32,53,6,3.6,10),HMC,{hatch:0,hl:0,lw:.6,top:1});b.ex('spark',56,10,3.4)},
+ 'Black Cat Ears & Bow'(b){
+  b.ln([[10,36],[22,26],[42,26],[54,36]],{w:3,col:HMB});
+  [[20,26,-.3],[44,26,.3]].forEach(([x,y,a])=>{const e=rot([[x-9,y+2],[x-2,y-18],[x+9,y+2]],a,x,y);b.sh(e,HMB,{k:.06,hatch:0,hl:0,lw:.9});b.sh(rot([[x-4,y],[x-1,y-10],[x+4,y]],a,x,y),'#F7A1B5',{k:.06,hatch:0,hl:0,lw:.5,top:1})});
+  [-1,1].forEach(d=>b.sh([[32,50],[32+d*12,43],[32+d*13,57]],HMO,{k:.12,hatch:0,hl:0,lw:.8}));b.sh(E(32,50,3.4,3.6,10),'#C25E12',{hatch:0,hl:0,lw:.7,top:1});
+  b.ex('spark',56,54,3.2)},
+ 'Pirate Hat & Sash'(b){
+  b.sh([[4,36],[12,20],[24,14],[32,10],[40,14],[52,20],[60,36],[44,30],[32,28],[20,30]],HMB,{k:.08,sh:'#251F2A',base:HMBL});
+  b.raw(b.st('M8 34Q20 28 32 27Q44 28 56 34','#FFD84A',1.6),'top');paw(b,32,20,2.4,'#FFFFFF',{noline:1});
+  b.sh(ribbon([[6,48],[32,54],[58,48]],[7,7,7]),C.redD,{k:1/6,hatch:0,hl:0,lw:.8});b.sh([[40,52],[44,62],[48,61],[44,52]],C.redD,{k:.1,hatch:0,hl:0,lw:.6})},
+ 'Dinosaur Hood'(b){
+  [[18,14],[32,6],[46,14]].forEach(([x,y])=>b.sh([[x-5,y+8],[x,y-2],[x+5,y+8]],'#FFB04A',{k:.05,hatch:0,hl:0,lw:.7}));
+  b.sh([[8,58],[6,34],[14,18],[32,12],[50,18],[58,34],[56,58],[46,58],[46,40],[40,30],[24,30],[18,40],[18,58]],HMG,{k:.12,sh:HMGD,base:'#D3EDC2'});
+  [[22,34],[28,31],[34,30],[40,31]].forEach(([x,y])=>b.sh([[x-2.4,y],[x,y+4],[x+2.4,y]],'#FFFFFF',{k:0,hatch:0,hl:0,lw:.5,top:1}));b.ex('spark',58,8,3.4)},
+ 'Little Owl Wings'(b){
+  [[-1,20],[1,44]].forEach(([d,x])=>{const w=[[x,36],[x+d*6,22],[x+d*16,16],[x+d*20,24],[x+d*18,34],[x+d*20,42],[x+d*14,50],[x+d*6,48]];
+   b.sh(w,'#9A6A44',{k:.14,sh:'#6E4A2E',base:'#D6AE7E',inner:b.st(b.jl(x+d*4,34,x+d*16,22,.3)+b.jl(x+d*5,40,x+d*17,36,.3)+b.jl(x+d*5,45,x+d*14,48,.3),'#D6AE7E',1.2,.9)})});
+  b.sh(E(32,40,6,5,10),'#6E4A2E',{hatch:0,hl:0,lw:.8});b.ex('spark',32,10,3.6)},
+ 'Wizard Robe & Star Hat'(b){
+  b.sh([[14,30],[50,30],[56,60],[8,60]],HMN,{sh:'#232C5E',base:HMNL,marks:[{pts:[[0,56],[64,56],[64,60],[0,60]],fill:'#FFD84A',k:0}]});
+  b.sh(E(32,30,17,4,16),'#232C5E',{hatch:0,hl:0,lw:.8});b.sh([[20,29],[32,4],[44,29]],HMN,{k:.04,hatch:0,hl:0,lw:.9});
+  b.sh(starP(32,4,5,2.2),HMY,{k:0,hatch:0,hl:0,lw:.6,top:1});[[22,44],[40,48]].forEach(([x,y])=>b.sh(starP(x,y,4,1.8),HMY,{k:0,hatch:0,hl:0,lw:.5,top:1}))},
+ 'Lion Mane'(b){
+  b.sh(cloudP(32,34,28,26,13,.2,52),'#E8A33A',{sh:'#B8751E',base:'#F6C25E'});b.sh(E(32,35,15,14,18),'#FFE3A6',{hatch:0,hl:0,lw:.8,base:'#FFF2D2'});
+  hmFace(b,32,34,2.4);b.ex('spark',58,8,3.4)},
+ /* toys */
+ 'Squeaky Bat'(b){hwBat(b,32,36,58,{col:HMP,lw:.9});b.raw(b.st('M50 12l4 -4M54 18l6 -2',INK,1.2),'top');b.ex('heart',10,54,3.6)},
+ 'Pumpkin Ball'(b){b.sh(E(32,36,22,21,22),HMO,{sh:HMOD,ho:.4,base:'#FBC59A',inner:b.st(b.jl(24,17,22,55,.3)+b.jl(40,17,42,55,.3)+b.jl(32,15,32,57,.3),HMOD,1.1,.6)});
+  b.sh(ribbon([[32,16],[33,10],[37,7]],[5,4,3]),'#8E8A4A',{k:1/6,hatch:0,hl:0,lw:.8,dr:.1});b.raw(b.st('M18 44q14 6 28 0','#fff',1.4,.8),'top');b.ex('spark',56,12,3.4)},
+ 'Rope Mummy'(b){b.ln([[8,50],[18,44],[22,36]],{w:5,col:'#E2B07E'});b.ln([[56,50],[46,44],[42,36]],{w:5,col:'#E2B07E'});
+  b.sh(E(32,30,14,18,16),HMC,{sh:HMCD,base:'#FFFFFF',inner:b.st(b.jl(18,22,46,18,.3)+b.jl(18,30,46,26,.3)+b.jl(18,38,46,34,.3),HMCD,1.3,.9)});
+  b.sh(RR(24,24,16,7,3),'#5C4A3A',{hatch:0,hl:0,lw:.6,top:1});b.dot(28,27.5,1.4,'#fff','top');b.dot(36,27.5,1.4,'#fff','top');
+  [[6,52],[58,52]].forEach(([x,y])=>b.raw(b.st(`M${x-3} ${y-2}l3 4l3 -4`,'#C58F5E',1.2),'top'))},
+ 'Glow-in-the-Dark Bone'(b){b.raw('<ellipse cx="32" cy="34" rx="28" ry="16" fill="#E6FFB8" opacity=".6"/>','under');
+  b.sh(rot(boneP(32,34,48,16),-.3,32,34),'#D8F5A2',{k:.1,hatch:0,hl:0,lw:.9,base:'#F2FFD8'});[[22,30],[34,36],[42,30]].forEach(([x,y])=>b.dot(x,y,1.4,'#B6E36A','top'));
+  b.ex('spark',54,12,3.6,'#F2FFB8');b.ex('spark',10,52,3,'#F2FFB8')},
+ 'Soft Spider Plush'(b){[-1,1].forEach(d=>[[-6,0],[-2,6],[2,10],[6,12]].forEach(([dy,k])=>b.ln([[32+d*10,34+dy*.6],[32+d*(20+k*.3),30+dy],[32+d*(26+k*.2),36+dy*1.2]],{w:2.6,col:HMB})));
+  b.sh(cloudP(32,34,14,13,10,.1,40),HMB,{k:.2,hatch:0,hl:0,lw:.9,base:HMBL});
+  b.dot(27,31,3.4,'#fff','top');b.dot(37,31,3.4,'#fff','top');b.dot(27.6,31.6,1.6,INK,'top');b.dot(37.6,31.6,1.6,INK,'top');
+  b.raw(b.st('M28 38q4 3 8 0','#fff',1.2),'top');[-1,1].forEach(d=>b.sh([[32,22],[32+d*6,17],[32+d*7,24]],HMO,{k:.1,hatch:0,hl:0,lw:.6,top:1}));b.ex('heart',56,54,3.4)}
+});
+PA.HALLOWEEN_MARKET={costumes:['Little Witch Hat & Cape','Scarecrow Overalls','Mummy Wraps','Skeleton Suit','Black Cat Ears & Bow','Pirate Hat & Sash','Dinosaur Hood','Little Owl Wings','Wizard Robe & Star Hat','Lion Mane'],
+  toys:['Squeaky Bat','Pumpkin Ball','Rope Mummy','Glow-in-the-Dark Bone','Soft Spider Plush'],decor:Object.assign({},HM_LBL),house:'Friendly Haunted Kennel',beds:['Cauldron Bed','Bat-Cave Cushion','Pumpkin Patch Bed','Moon and Stars Tent']};
+
 PA._wbFlush=()=>{for(const k in CACHE)delete CACHE[k]};
 PA.WORLD_B={beds:Object.keys(BEDS),obstacles:Object.keys(OBS),bowlFoods:BOWL_FOODS.slice(),icons:Object.keys(ICONS),items:Object.keys(ITEMS),houses:Object.keys(HOUSES),collectibles:Object.keys(COLS),props:Object.keys(PROPS),furniture:V27_FURN.slice(),
   winter:{props:Object.keys(WN_LBL),stallKinds:['winter','newyear'],items:['Warm Carob Cup','Snowflake Oat Cookies','Snow Day Stew','Pup Kinton','Very Ugly Sweater','Reindeer Antlers','Snowflake Snood','Ugly Sweater Rosette','Year of the Sheep Hood','Paper Snowflake Garland','Felt Holly Wreath','Red Wooden Sled','Kadomatsu Pair'],icons:['snowdrift','snowdog','sweater','fortune','wstall','fuji'],bowlFoods:BOWL28.slice()}};
