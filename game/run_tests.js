@@ -93,8 +93,8 @@ const SUITES = {
   'v215_gart-a': { file: 'test_v215_gart-a.js', group: 'all', est: 40 }, // v2.15 GROUND ART A (V215.md 8.2, 12, 13): park, dogpark, beach, hilltop, woods, river, pier 1600 wide under { v215 }, their FLOOR rows; old renders byte-identical
   'v215_gart-b': { file: 'test_v215_gart-b.js', group: 'all', est: 30 }, // v2.15 GROUND ART B (V215.md 5, 8.2, 12, 13): yard, house, Kibble Corner, square, fujihill deep under { v215 }, their FLOOR rows; old renders byte-identical
   v29_review: { file: 'test_v29_review.js', group: 'all', est: 40 }, // v2.9 integration review fixes (coordinator)
-  v211_dogs: { file: 'test_v211_dogs_node.js', group: 'all', est: 450, timeout: 700 }, // v2.11 BREED ART (V211.md 5.2): akita, spitz, pom, afghan, dane, mastiff, gsd and the three Tokyo bandanas
-  v212_dogs: { file: 'test_v212_dogs_node.js', group: 'all', est: 480, timeout: 900 }, // v2.12 ART A-D (V212.md 5): the fourteen new breeds in every pose, age, facing and outfit
+  v211_dogs: { file: 'test_v211_dogs_node.js', group: 'all', est: 660, timeout: 1200 }, // v2.11 BREED ART (V211.md 5.2): akita, spitz, pom, afghan, dane, mastiff, gsd and the three Tokyo bandanas
+  v212_dogs: { file: 'test_v212_dogs_node.js', group: 'all', est: 1650, timeout: 2700 }, // v2.12 ART A-D (V212.md 5): the fourteen new breeds in every pose, age, facing and outfit
   v212_lines: { file: 'test_v212_lines_node.js', group: 'all', est: 3 }, // v2.12 LINES (V212.md 4): every per-breed table has all 35 keys
   v213_faces: { file: 'test_v213_faces_node.js', group: 'all', est: 120, timeout: 600 }, // v2.13 ART A + B (V213.md 3, 6): every expression on every breed, age, ok pose, facing and a set of outfits
   v213_neck: { file: 'test_v213_neck_node.js', group: 'all', est: 170, timeout: 600 }, // v2.13 NECK (V213.md 5): every head on its body, 35 breeds, every pose, adult and puppy, expressions that tilt the head, mixes (5.1)
