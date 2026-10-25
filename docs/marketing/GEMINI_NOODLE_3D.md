@@ -17,3 +17,7 @@ No text, no logos, no watermark, no other characters.
 ```
 
 **If the result drifts from Noodle's look:** add "match the reference image's proportions and colours exactly" at the start, or try the `-dance.png` reference. **For a loop:** add "make the last frame match the first so it loops".
+
+## Free test made here instead (25 Oct 2026)
+
+TRELLIS on Hugging Face refused the anonymous request (its free GPU allowance needs a free Hugging Face token), so Noodle was built from simple shapes in **Blender 4.5** on the session's own computer (no graphics card; Cycles on the CPU) from his game design: the long sausage body on a five-bone spine, the light chest and socks, the floppy dark ear, big eyes, the tongue out, game colours, dark ink outlines, every colour inside its line. 5 s, 1080 x 1920 (rendered at 720 x 1280 and scaled up), with the game's own "play" music: `brand/instagram/launch/noodle3d/noodle-3d-dance.mp4`. Remake: install Blender (download.blender.org, about a minute), then `blender -b -P brand/instagram/launch/noodle3d/noodle3d.py -- <dir> anim 67` (about 25 minutes; `still` renders 4 test frames) and `NODE_PATH=$(npm root -g) node brand/instagram/launch/noodle3d/encode.js <dir> <out.mp4>`.
