@@ -37,3 +37,7 @@ html:not([data-layout="phone"]):is(:lang(ja),:lang(zh),:lang(ko),:lang(th)) .sit
 html:not([data-layout="phone"]):is(:lang(ja),:lang(zh),:lang(ko),:lang(th)) .rt-card{padding:16px 22px 12px}
 /* the desktop adopt card: its tray is stretched tall, so the line sits 12 px in at the top (section#dock and div.tray outrank 11_title.css) */
 html:not([data-layout="phone"]):is(:lang(ja),:lang(zh),:lang(ko),:lang(th)) #stage.flowdock.adoptmode section#dock > div.tray:has(.adopt-card){padding-top:24px}
+/* v2.16 First Week, the next-unlock line inside the phone Bond meter: the translated lines ("Amitié 2 : apprend La patte") are longer than the
+   meter is wide, so outside English they drop the "Next" chip and may wrap to a second line instead of ending in an ellipsis */
+html[data-layout="phone"]:not(:lang(en)) .fw-next .fw-nl{display:none}
+html[data-layout="phone"]:not(:lang(en)) .fw-next{white-space:normal;text-overflow:clip;font-size:13.5px;line-height:1.05;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
