@@ -91,3 +91,7 @@ Run each test for about a week, with one change at a time.
 - profile visits, follows and link taps.
 
 Instagram app → Professional dashboard → each Reel → View insights. Screenshots are fine.
+
+## Connecting the Instagram API
+
+`brand/instagram/insights/ig_insights.js` pulls every post and its insights (views, reach, likes, comments, shares, saves, average watch time for Reels, profile visits and follows where Instagram gives them) into a JSON and a CSV, read-only. It reads a long-lived token from the environment variable `IG_ACCESS_TOKEN` (permissions `instagram_business_basic` and `instagram_business_manage_insights`, from a Meta app with "Instagram API with Instagram Login" on the Professional account). The owner adds the token in the cloud environment settings (never in chat); a new session picks it up. graph.instagram.com is reachable from the sessions.
