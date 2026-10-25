@@ -41,7 +41,7 @@ run('v2171_market', async (t) => {
     const bad = await ev((all) => all.filter((n) => !window.__paw.fm.row(n)), all);
     ok(all.length >= 35 && !bad.length, `every listed item is in the game's tables (${all.length}) ${bad.join(', ')}`);
     const hw = M.find((m) => m.id === 'halloween');
-    ok(['decor', 'clothes', 'homes', 'toys'].every((c) => (hw.items[c] || []).length >= 2 && hw.items[c].length <= 12), 'Halloween: 2 to 12 items in each of the four stalls: ' + ['decor', 'clothes', 'homes', 'toys'].map((c) => c + ' ' + hw.items[c].length).join(', '));
+    ok(['decor', 'clothes', 'homes', 'toys'].every((c) => (hw.items[c] || []).length >= 2 && hw.items[c].length <= 20), 'Halloween: 2 to 20 items in each of the four stalls (v2.17.2: the sheet grid scrolls): ' + ['decor', 'clothes', 'homes', 'toys'].map((c) => c + ' ' + hw.items[c].length).join(', '));
     ok(['Pumpkin Lantern', 'Paper Bat Bunting', 'Pumpkin Patch Suit', 'Little Bat Costume', 'Witch-Hat Bed', 'Pumpkin Cottage', 'Squeaky Ghost'].every((n) => all.includes(n)), 'the lantern, the bunting, the costumes, the pumpkin house, the witch-hat bed, the squeaky ghost');
     ok(M.find((m) => m.id === 'sakura').todo, 'the sakura market waits for its art (todo, never opens)');
   }
@@ -70,7 +70,7 @@ run('v2171_market', async (t) => {
   {
     await t.calm();
     ok(await ev(() => /Halloween Market · open until 2 Nov/.test((document.querySelector('#sceneG .fm-sign') || {}).textContent || '')), 'the sign is written on the scene');
-    ok(await ev(() => document.querySelectorAll('#sceneG [data-fmstall].hot').length === 3 && !!document.querySelector('#placeBtns [data-fmb]')), 'three stalls to tap, and "Browse the stalls"');
+    ok(await ev(() => document.querySelectorAll('#sceneG [data-fmstall].hot').length === 5 && !!document.querySelector('#placeBtns [data-fmb]')), 'five stalls to tap (v2.17.2: the three stalls, the homes stand and the treats cart), and "Browse the stalls"');
     ok(await t.waitToast(/Welcome to the Halloween Market!/, 4000), 'a gentle welcome toast');
     ok(await t.until(() => (window.__paw.S.mail || []).some((m) => m.id === 'fm_halloween_2026'), null, 6000), 'Gerald\'s letter: the market is open');
     ok(await ev(() => /beside the Town Square/.test(window.__paw.S.mail.find((m) => m.id === 'fm_halloween_2026').text)), 'it says where to find it');
