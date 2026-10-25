@@ -39,7 +39,9 @@ fs.rmSync(OUT, { recursive: true, force: true });
 // v2.12 (35 dogs): only the dogs the playroom can pick (KEYS in site/js/site.js) run about in the scene, so only they need the 3 boiling frames;
 // the other dogs' scene poses are one frame. The scene files (drawn at about half size in the playroom) also keep whole-unit path coordinates.
 // Both keep the site inside the free-plan Worker size; the cards and profiles (still, pup) keep the art's full precision
-const SCENE_KEYS = JSON.parse(fs.readFileSync(path.join(ROOT, 'site', 'js', 'site.js'), 'utf8').match(/var KEYS = (\[[^\]]*\])/)[1].replace(/'/g, '"'));
+// site.js lost its playroom KEYS when the scene code went (4efefac); the animated poses keep that list
+const SCENE_M = fs.readFileSync(path.join(ROOT, 'site', 'js', 'site.js'), 'utf8').match(/var KEYS = (\[[^\]]*\])/);
+const SCENE_KEYS = SCENE_M ? JSON.parse(SCENE_M[1].replace(/'/g, '"')) : ['shiba', 'corgi', 'golden', 'dachs', 'husky', 'mutt', 'chihuahua', 'pug', 'greyhound', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie'];
 const whole = (svg) => svg.replace(/ d="([^"]*)"/g, (m, p) => ` d="${p.replace(/-?\d+\.\d+/g, (n) => String(Math.round(+n)))}"`);
 for (const d of DOGS) {
   const live = SCENE_KEYS.includes(d.key);

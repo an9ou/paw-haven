@@ -4,7 +4,7 @@
    x age x sparkle, plus mixes, expecting, coats and facing left.
    Then it sweeps the v2.8 outfits and the v2.11.1 costumes (NEW_OUTS) on the working tree: every breed x pose x age x facing x sparkle renders with no
    NaN/undefined, and each outfit's own strokes touch the dog and stay within a margin of its body and head.
-   Usage: node dogs/check_identical.js [ref]   (env SWEEP_ONLY=1: the sweep alone, SWEEP_EXT=1: print the closest calls, SKIP=gsd: leave a redrawn breed out, SKIP=collie:howl: one breed's adult renders in one pose, SKIP_MIX=1: no mix body renders)
+   Usage: node dogs/check_identical.js [ref]   (env SWEEP_ONLY=1: the sweep alone, SWEEP_EXT=1: print the closest calls, SKIP=gsd: leave a redrawn breed out, SKIP=collie:howl: one breed's adult renders in one pose, SKIP_MIX=1: no mix body renders, INK=1: the ink only, see below)
      (prints ALL OK on success, exits 1 on any difference)
    The breeds are split over one child process per CPU core (env SHARD=i/n runs one share). */
 'use strict';
@@ -46,7 +46,11 @@ const SKIPMIX=!!process.env.SKIP_MIX;
 const skipped=lab=>{const t=lab.split(/[ |,/]/);if(SKIPMIX&&t[0]!=='head'&&t[1]==='mix')return true;if(SKIPB.some(k=>t.includes(k)))return true;
   if(!SKIPP.length||t[0]==='head'||t.includes('puppy')||t.includes('newborn')||t.includes('pup'))return false;
   const pose=t[1]==='mix'?t[3]:t[1];return SKIPP.some(([b,p])=>t[0]===b&&pose===p)};
-const cmp=(lab,f)=>{if(skipped(lab))return;n++;let a,b;try{a=f(OLD)}catch(e){a='ERR '+e.message}try{b=f(NEW)}catch(e){b='ERR '+e.message}if(a!==b&&bad.length<4000)bad.push(lab)};
+// v2.15.2 (owner, 25 Oct 2026: every colour fill stays inside its outline): env INK=1 compares the ink only, without the colour fills (fill paths
+// with no stroke), the crayon streaks and the coloured strokes (tube fills, socks, fur strokes), so it proves the fill change moved nothing else.
+const INKONLY=!!process.env.INK,ink=s=>s.replace(/<path d="[^"]*"( fill="[^"]*")( fill-opacity="[^"]*")?\/>/g,'').replace(/<path d="[^"]*" stroke="[^"]*" stroke-width="[\d.]+" stroke-linecap="round" opacity="\.(42|32)"\/>/g,'')
+  .replace(/<path d="[^"]*"( fill="none")? stroke="(?!#2E2320)#[0-9A-Fa-f]{6}" stroke-width="[\d.]+" stroke-linecap="round"( stroke-linejoin="round")?( transform="[^"]*")?\/>/g,'');
+const cmp=(lab,f)=>{if(skipped(lab))return;n++;let a,b;try{a=f(OLD)}catch(e){a='ERR '+e.message}try{b=f(NEW)}catch(e){b='ERR '+e.message}if(INKONLY){a=ink(a);b=ink(b)}if(a!==b&&bad.length<4000)bad.push(lab)};
 const AGES=[null,'puppy','newborn'];
 const [SI,SN]=process.env.SHARD.split('/').map(Number);
 (process.env.SWEEP_ONLY?[]:K).filter((k,i)=>i%SN===SI).forEach(k=>{

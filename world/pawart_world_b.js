@@ -1,5 +1,5 @@
 /* Doodle Doggo world art, module B: icons, shop items, dog houses, collectibles, props + UI chrome.
-   Style G "Doodle sketch": coloured-pencil washes that drift off two-stroke tapered pencil outlines,
+   Style G "Doodle sketch": coloured-pencil washes inside two-stroke tapered pencil outlines (25 Oct 2026: they used to drift off),
    light diagonal hatching on shadow sides, Caveat labels, washi tape, sparkles.
    PawArt.icon(name)        viewBox 0 0 64 64
    PawArt.item(name)        viewBox 0 0 64 64   (20 shop names + 17 treasure names)
@@ -29,6 +29,14 @@
 window.PawArt = window.PawArt || {};
 (function(){
 'use strict';
+// 25 Oct 2026: a closed outline P pulled in by dd (each point along its corner's inward normal; small shapes are pulled in less, so they never turn inside out)
+// keep q inside the closed outline P: a point outside moves to the nearest point of P (the middle of its pencil line)
+function pinIn(q,P){let c=false;for(let i=0,j=P.length-1;i<P.length;j=i++){const a=P[i],b=P[j];if((a[1]>q[1])!==(b[1]>q[1])&&q[0]<(b[0]-a[0])*(q[1]-a[1])/(b[1]-a[1])+a[0])c=!c}if(c)return q;
+  let best=q,bd=1e18;for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length],ex=b[0]-a[0],ey=b[1]-a[1],L2=ex*ex+ey*ey||1,t=Math.max(0,Math.min(1,((q[0]-a[0])*ex+(q[1]-a[1])*ey)/L2)),x=a[0]+ex*t,y=a[1]+ey*t,d=(x-q[0])**2+(y-q[1])**2;if(d<bd){bd=d;best=[x,y]}}return best}
+function fillIn(P,dd,G){const n=P.length;if(n<3)return P;let a=0,x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;P.forEach(p=>{x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);y0=Math.min(y0,p[1]);y1=Math.max(y1,p[1])});
+  G=G&&G.length>2?G:P;G.forEach((p,i)=>{const q=G[(i+1)%G.length];a+=p[0]*q[1]-q[0]*p[1]});const sg=a>0?1:-1;dd=Math.min(dd,Math.min(x1-x0,y1-y0)/4);// which way is in: from the drawn points G (a smooth curve can loop past a thin shape's ends)
+  return P.map((p,i)=>{const A=P[(i+n-1)%n],C=P[(i+1)%n],l1=Math.hypot(p[0]-A[0],p[1]-A[1])||1,l2=Math.hypot(C[0]-p[0],C[1]-p[1])||1;
+    const nx=-((p[1]-A[1])/l1+(C[1]-p[1])/l2)*sg,ny=((p[0]-A[0])/l1+(C[0]-p[0])/l2)*sg,m=Math.hypot(nx,ny)||1;return[p[0]+nx/m*dd,p[1]+ny/m*dd]})}
 const PA=window.PawArt;
 const INK='#5B3D32',GRAPH='#A8968A',PAPER='#FFFBF3',DOTC='#E3D2BA',PINK='#F28FA5',SHADOW='#EADDCB';
 const C={pink:'#F7B2C4',pinkD:'#F28FA5',rose:'#F7A1B5',peach:'#FFD0A8',yel:'#FFE08A',gold:'#FFD56B',goldD:'#E9B44C',
@@ -143,10 +151,11 @@ function mk(kind,name){
     if(fill&&!o.nofill){
       const base=o.base||mix(fill,'#FFFFFF',.55);
       if(!o.nobase)s+=`<path d="${c.d}" fill="${base}"${o.op?` opacity="${o.op}"`:''}/>`;
-      // the coloured-pencil wash, nudged off the line and gently warped
-      const dr=cfg.drift*(o.dr??1),dx=dr*(.45+r()*.7),dy=dr*(.25+r()*.6),cx=(bb[0]+bb[2])/2,cy=(bb[1]+bb[3])/2,sc=1+(r()-.45)*.03;
-      let vx=0,vy=0;const wp=[];for(let k=0;k<P.length;k+=2){vx=vx*.72+jt(dr*.7);vy=vy*.72+jt(dr*.7);wp.push([cx+(P[k][0]-cx)*sc+dx+vx,cy+(P[k][1]-cy)*sc+dy+vy])}
-      s+=`<path d="${wp.length>2?qd(wp):c.d}" fill="${fill}"${o.op?` opacity="${o.op}"`:''}/>`;
+      // the coloured-pencil wash. 25 Oct 2026 (owner: every colour fill stays inside its outline): no longer nudged off the line (the nudge and the
+      // warp are still drawn from the stream, so nothing else moves): under a pencil line it is pulled in to the line's inner edge, else it sits on the shape
+      const dr=cfg.drift*(o.dr??1);r();r();r();const In=o.noline?P:fillIn(P,cfg.W*(o.lw||1)*.5,c.pts);
+      for(let k=0;k<P.length;k+=2){jt(1);jt(1)}const wp=o.noline?null:In.map(q=>pinIn(q,P));// every point, as straight steps (a smoothed corner would cut across a notch); where a smooth corner loops, the point is put back inside
+      s+=`<path d="${wp&&wp.length>2?'M'+wp.map(q=>R1(q[0])+' '+R1(q[1])).join('L')+'Z':c.d}" fill="${fill}"${o.op?` opacity="${o.op}"`:''}/>`;
       let inner='';
       (o.marks||[]).forEach(m=>{const mc=m.c||cr(m.pts,true,m.k??1/6);inner+=`<path d="${mc.d}" fill="${m.fill}"${m.op?` opacity="${m.op}"`:''}/>`});
       if(o.inner)inner+=o.inner;
@@ -3416,15 +3425,19 @@ function crude(r){
   const pl=(P,amp)=>P.map((p,i)=>(i?'L':'M')+R1(p[0]+J(amp))+' '+R1(p[1]+J(amp))).join('');
   const st=(d,w,c,x='')=>`<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"${x}/>`;
   const k={acc,
+    // 25 Oct 2026 (owner: every colour fill stays inside its outline, as the dogs' kit now does): the fill lies on the outline's own wobbly points
+    // (the old nudge and its wobble are still drawn from the stream); a fill with no line keeps its wobble, on the spot
     shape(pts,fill,o={}){const P=dense(pts,true,o.step||9),n=P.length;let cx=0,cy=0;P.forEach(q=>{cx+=q[0]/n;cy+=q[1]/n});
-      const ox=(o.ox??2)+J(.8),oy=(o.oy??-1.4)+J(.8),sc=o.sc??.97;
-      if(fill)acc.push(`<path d="${pl(P.map(q=>[cx+(q[0]-cx)*sc+ox,cy+(q[1]-cy)*sc+oy]),o.famp??1)}Z" fill="${fill}"/>`);
+      J(.8);J(.8);const fa=o.famp??1,fi=fill?acc.push('')-1:-1;if(fill)(o.noline?acc[fi]=`<path d="${pl(P,fa)}Z" fill="${fill}"/>`:P.forEach(()=>{J(fa);J(fa)}));
       if(o.streak)k.streak(cx,cy,o.streak[0],o.streak[1],fill,o.streak[2]||6);
-      if(!o.noline){const s0=Math.floor(r()*n),cnt=n+(o.closed?1:(r()<.55?0:-1)),L=[];for(let i=0;i<=cnt;i++)L.push(P[(s0+i)%n]);acc.push(st(pl(L,o.amp??1.1),o.w||3.3,DINK))}},
+      if(!o.noline){const s0=Math.floor(r()*n),cnt=n+(o.closed?1:(r()<.55?0:-1)),L=[];for(let i=0;i<=cnt;i++)L.push(P[(s0+i)%n]);const Q=L.map(p=>[p[0]+J(o.amp??1.1),p[1]+J(o.amp??1.1)]);
+        if(fill)acc[fi]=`<path d="${Q.slice(0,n).map((p,i)=>(i?'L':'M')+R1(p[0])+' '+R1(p[1])).join('')}Z" fill="${fill}"/>`;acc.push(st(Q.map((p,i)=>(i?'L':'M')+R1(p[0])+' '+R1(p[1])).join(''),o.w||3.3,DINK))}},
     line(pts,w,col,amp=.9){acc.push(st(pl(dense(pts,false,6),amp),w,col||DINK))},
     dot(x,y,rx,ry,fill){acc.push(`<ellipse cx="${R1(x+J(.4))}" cy="${R1(y+J(.4))}" rx="${R1(rx)}" ry="${R1(ry??rx)}" fill="${fill||DINK}"/>`)},
     streak(cx,cy,rx,ry,col,n){let d1='',d2='';for(let i=0;i<n;i++){const a=r()*Math.PI*2,rr=Math.sqrt(r())*.7,x=cx+Math.cos(a)*rx*rr,y=cy+Math.sin(a)*ry*rr,l=6+r()*8;
-      if(i%3)d1+=`M${R1(x)} ${R1(y)}L${R1(x+l*.55)} ${R1(y-l*.8)}`;else d2+=`M${R1(x)} ${R1(y)}L${R1(x+l*.55)} ${R1(y-l*.8)}`}
+      const u=x-cx,v=y-cy,ux=l*.55,uy=-l*.8,E=.64,ins=t=>((u+ux*t)/rx)**2+((v+uy*t)/ry)**2<=E,A=(ux/rx)**2+(uy/ry)**2,Bq=2*(u*ux/rx/rx+v*uy/ry/ry),Cq=(u/rx)**2+(v/ry)**2-E,
+        t=ins(1)?1:ins(-1)?-1:(-Bq+Math.sqrt(Math.max(0,Bq*Bq-4*A*Cq)))/(2*A);// 25 Oct 2026: the streak stays inside its ellipse
+      if(i%3)d1+=`M${R1(x)} ${R1(y)}L${R1(x+ux*t)} ${R1(y+uy*t)}`;else d2+=`M${R1(x)} ${R1(y)}L${R1(x+ux*t)} ${R1(y+uy*t)}`}
       acc.push(`<path d="${d1}" stroke="${mix(col,INK,.22)}" stroke-width="2" stroke-linecap="round" opacity=".42"/><path d="${d2}" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".32"/>`)}
   };
   return k;

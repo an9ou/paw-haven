@@ -1,6 +1,6 @@
 # Doodle Doggo (formerly Paw Haven)
 
-A cozy browser game: adopt crayon-drawn dogs, care for them, walk a sketchbook town, grow a garden, and have puppy playdates with real coat genetics. Current version: **v2.15.1 "Room to train"** (v2.15 "A Bigger Town" plus fixes) (new town map, Training Ground, Splash Pool, run tracks; 11 languages since v2.14) (also on claude.ai, where cloud save is off by design). History: `CHANGELOG.md`. Open issues: `TODO.md`.
+A cozy browser game: adopt crayon-drawn dogs, care for them, walk a sketchbook town, grow a garden, and have puppy playdates with real coat genetics. Current version: **v2.16 "First Week"** (Bond 2 at 60 and Bond 3 at 180, Puppy's first day with Gerald, welcome and monthly calendars, the Bond 2 party, the option C phone bar Care / Walk / Map / More; contract `V216.md`), on top of v2.15.2 "Inside the lines" (every colour fill stays inside its outline, owner's rule for all art) and v2.15 "A Bigger Town" (new town map, Training Ground, Splash Pool, run tracks; 11 languages since v2.14) (also on claude.ai, where cloud save is off by design). History: `CHANGELOG.md`. Open issues: `TODO.md`.
 
 **Read `PIPELINE.md` and `README.md` first.** Running parallel agents? Read `BUILDING.md` (roles, models and the cost rules). They describe the layout, the shared-scope rules, the lanes and the test runner. Two things there don't apply on this Mac: the `/home/claude/...` paths (they mean this repo root), and the multi-agent worktree workflow (`tools/wt.sh`), unless you're running parallel agents.
 
@@ -45,7 +45,7 @@ A cozy browser game: adopt crayon-drawn dogs, care for them, walk a sketchbook t
 - **Nothing bad ever happens.** No fail states, no sickness, death or running away.
 - **No selling dogs, ever.** Puppies are adopted out free to named families. Sparkle is cosmetic only, never paid.
 - **Real welfare and food safety.** No double merle, no relatives, age and season limits, rest between litters. Nothing toxic to dogs can be planted, cooked or fed. Blocks are short, kind, two-sentence lessons.
-- **Look.** A detailed pencil-sketchbook world with **deliberately crude crayon dogs**. The ugly dogs are the joke.
+- **Look.** A detailed pencil-sketchbook world with **deliberately crude crayon dogs**. The ugly dogs are the joke. Every colour fill stays inside its own outline, in all art and every update (owner, 25 Oct 2026; v2.15.2).
 - **Words.** Never "breed" as a verb, "stud", "litter price", "sell" (for dogs). The build rejects "nintendo", "pokémon" and "animal crossing".
 - **Economy.** Walks are the main income (~100 a day); the garden stays below it.
 

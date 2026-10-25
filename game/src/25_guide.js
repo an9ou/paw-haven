@@ -40,8 +40,8 @@ function gdActive() { return !!(gd.layer && gd.on && !gd.layer.querySelector('.g
 /* ---------- art: Gerald (WORLD ART) or a crude crayon duck doodle, the crayon ring ---------- */
 function gdDuck(pose) {
   const real = artReal('prop', 'gerald', { pose }); if (real) return real;
-  // fallback: flat yellow crayon fill drifting off a two-stroke pencil outline (the doodle() hand)
-  const two = (d, fill, w = 2.4) => `<path d="${d}" fill="${fill}" stroke="none" transform="translate(3 2)"/><path d="${d}" fill="none" stroke="${INKG}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="${INKG}" stroke-width="1.1" opacity=".5" transform="translate(-1.2 .8)" stroke-linecap="round"/>`;
+  // fallback: flat yellow crayon fill inside a two-stroke pencil outline (the doodle() hand; 25 Oct 2026: the fill used to drift off by 3 2)
+  const two = (d, fill, w = 2.4) => `<path d="${d}" fill="${fill}" stroke="none"/><path d="${d}" fill="none" stroke="${INKG}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="${INKG}" stroke-width="1.1" opacity=".5" transform="translate(-1.2 .8)" stroke-linecap="round"/>`;
   const body = 'M38 112 Q30 84 58 78 Q80 74 104 82 Q132 86 138 74 Q144 98 128 116 Q110 136 72 134 Q44 132 38 112Z';
   const head = 'M56 80 Q42 56 54 38 Q68 22 86 32 Q98 42 92 62 Q88 74 80 82Z';
   const beak = 'M50 46 Q36 46 26 52 Q36 58 52 56Z';

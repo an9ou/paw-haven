@@ -40,23 +40,47 @@ function hull(P){const p=P.filter(q=>!isNaN(q[0])).slice().sort((a,b)=>a[0]-b[0]
 function kit(r){
   let jm=1;const J=a=>(r()-.5)*2*a*jm,acc=[],bb=[1e9,1e9,-1e9,-1e9],texts=[],LW=3.7;
   const tr=(x,y)=>{if(x<bb[0])bb[0]=x;if(y<bb[1])bb[1]=y;if(x>bb[2])bb[2]=x;if(y>bb[3])bb[3]=y};
-  const pl=(P,amp)=>{let d='';for(let i=0;i<P.length;i++){const x=P[i][0]+J(amp),y=Math.min(P[i][1]+J(amp),h.cy||1e9);tr(x,y);d+=(i?'L':'M')+R1(x)+' '+R1(y)}return d};
+  const pl=(P,amp,out)=>{let d='';for(let i=0;i<P.length;i++){const x=P[i][0]+J(amp),y=Math.min(P[i][1]+J(amp),h.cy||1e9);tr(x,y);if(out)out.push([x,y]);d+=(i?'L':'M')+R1(x)+' '+R1(y)}return d};
+  // 25 Oct 2026 (owner: every colour fill stays inside its outline). pd: a closed polygon's path data
+  const pd=Q=>Q.map((q,i)=>(i?'L':'M')+R1(q[0])+' '+R1(q[1])).join('');
+  let lastQ=null,lastW=LW,part=null;
+  // the outline Q pulled in by half its line width (each point along its corner's inward normal), so a kept-in mark stops at the inside of the ink
+  const inset=(Q,dd)=>{const n=Q.length;let a=0;Q.forEach((p,i)=>{const q=Q[(i+1)%n];a+=p[0]*q[1]-q[0]*p[1]});const sg=a>0?1:-1;
+    return Q.map((p,i)=>{const A=Q[(i+n-1)%n],C=Q[(i+1)%n],e1=[p[0]-A[0],p[1]-A[1]],e2=[C[0]-p[0],C[1]-p[1]],l1=Math.hypot(e1[0],e1[1])||1,l2=Math.hypot(e2[0],e2[1])||1;
+      let nx=-(e1[1]/l1+e2[1]/l2)*sg,ny=(e1[0]/l1+e2[0]/l2)*sg;const m=Math.hypot(nx,ny)||1;return[p[0]+nx/m*dd,p[1]+ny/m*dd]})};
+  // keep a point inside the open part: a point outside moves to the nearest point of the part's (inset) outline. No clipPath: an SVG id would clash when the
+  // game shows the same dog twice and one copy is hidden. A mark is first made dense (3 px), so the moved points follow the outline closely.
+  const pin=(p,Q)=>{let c=false;for(let i=0,j=Q.length-1;i<Q.length;j=i++){const a=Q[i],b=Q[j];if((a[1]>p[1])!==(b[1]>p[1])&&p[0]<(b[0]-a[0])*(p[1]-a[1])/(b[1]-a[1])+a[0])c=!c}if(c)return p;
+    let best=p,bd=1e18;for(let i=0;i<Q.length;i++){const a=Q[i],b=Q[(i+1)%Q.length],ex=b[0]-a[0],ey=b[1]-a[1],L2=ex*ex+ey*ey||1,t=Math.max(0,Math.min(1,((p[0]-a[0])*ex+(p[1]-a[1])*ey)/L2)),x=a[0]+ex*t,y=a[1]+ey*t,d=(x-p[0])**2+(y-p[1])**2;if(d<bd){bd=d;best=[x,y]}}return best};
   const st=(d,w,c,x='')=>`<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"${x}/>`;
   const h={J,r,acc,bb,texts,LW,tr,setJ(v){jm=v},getJ(){return jm},
-    // bucket fill that misses the outline, plus a jaggy outline that may not close
+    // a jaggy outline that may not close, over a crayon fill laid on the outline's own wobbly points: the fill never pokes past the line
+    // (25 Oct 2026, owner: every colour fill stays inside its outline; it used to drift off by ox, oy, sc). A fill with no line keeps its own wobble, undrifted.
+    // While a part is open (h.part(), after the body or head outline), a fill with no line of its own (a coat mark, a patch) is kept inside that outline;
+    // o.own marks a fill that hangs past the part on purpose (long hair, the schnauzer skirt) and has its own ink line.
     shape(pts,fill,o={}){
       if(!pts.length||isNaN(pts[0][0]))return;
       const P=dense(pts,true,o.step||11),n=P.length;let cx=0,cy=0;P.forEach(q=>{cx+=q[0]/n;cy+=q[1]/n});
-      const ox=o.ox??2.4+J(1),oy=o.oy??-1.6+J(1),sc=o.sc??.97;
-      if(fill)acc.push(`<path d="${pl(P.map(q=>[cx+(q[0]-cx)*sc+ox,cy+(q[1]-cy)*sc+oy]),o.famp??1.1)}Z" fill="${fill}"${o.fop?` fill-opacity="${o.fop}"`:''}/>`);
-      if(!o.noline){const s0=Math.floor(r()*n),cnt=n+(o.closed?1:(r()<.55?0:-1)),L=[];for(let i=0;i<=cnt;i++)L.push(P[(s0+i)%n]);acc.push(st(pl(L,o.amp??1.2),o.w||LW,INK))}
+      const ox=o.ox??2.4+J(1),oy=o.oy??-1.6+J(1),sc=o.sc??.97,fa=o.famp??1.1,fo=o.fop?` fill-opacity="${o.fop}"`:'';
+      // the old drifted fill is still measured for the fit (not drawn), so every dog keeps its size and place; its wobble is the fill's own wobble
+      const jw=fill?P.map(q=>{const j=[J(fa),J(fa)];tr(cx+(q[0]-cx)*sc+ox+j[0],Math.min(cy+(q[1]-cy)*sc+oy+j[1],h.cy||1e9));return j}):null;
+      if(o.noline){if(fill){const Q=P.map((q,i)=>[q[0]+jw[i][0],Math.min(q[1]+jw[i][1],h.cy||1e9)]);acc.push(`<path d="${pd(part&&!o.own?dense(Q,true,3).map(q=>pin(q,part)):Q)}Z" fill="${fill}"${fo}/>`)}return}
+      const s0=Math.floor(r()*n),cnt=n+(o.closed?1:(r()<.55?0:-1)),L=[],Q=[];for(let i=0;i<=cnt;i++)L.push(P[(s0+i)%n]);const d=pl(L,o.amp??1.2,Q);
+      if(fill)acc.push(`<path d="${pd(Q.slice(0,n))}Z" fill="${fill}"${fo}/>`);
+      acc.push(st(d,o.w||LW,INK));lastQ=Q.slice(0,n);lastW=o.w||LW
     },
-    tube(pts,w,fill,o={}){const P=dense(pts,false,8);acc.push(st(pl(P,.9),w+(o.ow??LW*1.45),INK));if(fill)acc.push(st(pl(P,.8),w,fill,` transform="translate(${o.ox??1.2} ${o.oy??-.8})"`))},
+    // part(true): keep the marks that follow inside the outline just drawn; part(false): stop
+    part(on){part=on&&lastQ?inset(lastQ,lastW*.5):null},
+    tube(pts,w,fill,o={}){const P=dense(pts,false,8),d=pl(P,.9);acc.push(st(d,w+(o.ow??LW*1.45),INK));if(fill){pl(P,.8);acc.push(st(d,w,fill))}},// the fill runs down the middle of its own ink (it used to be nudged off it)
     line(pts,w,col,amp=1){if(!pts.length||isNaN(pts[0][0]))return;acc.push(st(pl(dense(pts,false,7),amp),w,col||INK))},
     dot(x,y,rx,ry,fill){if(isNaN(x))return;x+=J(.5);y+=J(.5);tr(x-rx,y-(ry??rx));tr(x+rx,y+(ry??rx));acc.push(`<ellipse cx="${R1(x)}" cy="${R1(y)}" rx="${R1(rx)}" ry="${R1(ry??rx)}" fill="${fill||INK}"/>`)},
     heart(x,y,s,fill){const p=[];for(let i=0;i<16;i++){const t=i/16*Math.PI*2;p.push([x+s*.062*16*Math.pow(Math.sin(t),3),y-s*.062*(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))])}h.shape(p,fill||'#FF4F7B',{w:3.4,step:30,ox:1.5,oy:-1,amp:.8})},
     // waxy crayon streaks inside an ellipse (local rx,ry) mapped by M: a few seeded diagonal strokes, darker + lighter
-    crayon(rx,ry,M,col,n){if(isNaN(M([0,0])[0]))return;let d1='',d2='';for(let i=0;i<n;i++){const a=r()*Math.PI*2,rr=Math.sqrt(r())*.74,x=Math.cos(a)*rx*rr,y=Math.sin(a)*ry*rr,l=7+r()*10,p=M([x,y]),q=M([x+l*.55,y-l*.8]);(i%3?d1+=`M${R1(p[0])} ${R1(p[1])}L${R1(q[0])} ${R1(q[1])}`:d2+=`M${R1(p[0])} ${R1(p[1])}L${R1(q[0])} ${R1(q[1])}`)}
+    // (25 Oct 2026: both ends of every streak stay inside 80% of the ellipse, so a streak never crosses the outline: one that would is turned round, else cut short;
+    // while a part is open, both ends are also kept inside its outline)
+    crayon(rx,ry,M,col,n){if(isNaN(M([0,0])[0]))return;let d1='',d2='';for(let i=0;i<n;i++){const a=r()*Math.PI*2,rr=Math.sqrt(r())*.74,x=Math.cos(a)*rx*rr,y=Math.sin(a)*ry*rr,l=7+r()*10,ux=l*.55,uy=-l*.8,E=.64,
+      ins=(t)=>((x+ux*t)/rx)**2+((y+uy*t)/ry)**2<=E,A=(ux/rx)**2+(uy/ry)**2,Bq=2*(x*ux/rx/rx+y*uy/ry/ry),Cq=(x/rx)**2+(y/ry)**2-E,
+      t=ins(1)?1:ins(-1)?-1:(-Bq+Math.sqrt(Math.max(0,Bq*Bq-4*A*Cq)))/(2*A),p0=M([x,y]),q0=M([x+ux*t,y+uy*t]),p=part?pin(p0,part):p0,q=part?pin(q0,part):q0;(i%3?d1+=`M${R1(p[0])} ${R1(p[1])}L${R1(q[0])} ${R1(q[1])}`:d2+=`M${R1(p[0])} ${R1(p[1])}L${R1(q[0])} ${R1(q[1])}`)}
       acc.push(`<path d="${d1}" stroke="${mix(col,PEN,col===W?.12:.22)}" stroke-width="2.2" stroke-linecap="round" opacity=".42"/><path d="${d2}" stroke="#fff" stroke-width="2.6" stroke-linecap="round" opacity=".32"/>`)},
     text(s,x,y,size,col,rt=0){texts.push({s,x:x+J(1.5),y:y+J(1.2),size,col,rt:rt+J(3)});tr(x-2,y-size);tr(x+size*.7*s.length,y+4)}
   };
@@ -125,7 +149,7 @@ SP.poodle={name:'Pretzel',breed:'Miniature Poodle',personality:'Thinks it is the
    [[-.6,-.32],[.1,-.5],[.6,-.1],[-.3,.3],[.3,.42],[-.8,.05]].forEach((q,i)=>h.line(spiral(b.rx*q[0],b.ry*q[1],.8,5,1.1,8,i*1.3).map(B),2.6,c,.7));
    [[-.52,-.42],[-.08,-.66],[-.62,.12],[-.28,.42]].forEach((q,i)=>h.line(spiral(hx*q[0],hy*q[1],.5,3.8,1.25,8,i*1.7).map(Hd),2,c2,.3))}};
 SP.collie={name:'Scout',breed:'Border Collie',personality:'Has counted the sheep. There are no sheep. Has counted you.',joke:'Will herd the puppies, the ducks and the furniture.',
-  col:'#2A2628',hcol:'#2A2628',light:W,body:{x:110,y:144,rx:44,ry:23,lop:.04},head:{x:164,y:106,rx:30,ry:26},
+  col:'#2A2628',hcol:'#2A2628',light:W,body:{x:110,y:144,rx:44,ry:23,lop:.04},head:{x:164,y:106,rx:30,ry:26},neck:1,neckCol:W,// 25 Oct 2026: the white chest between body and head is a white neck tube with its own line (the white bib used to spill off the body and head to join them)
   legs:{h:-28,f:25,w:8.6,sock:W},ears:'semi',tail:'fluffy',eyes:[7,6.6],
   face:{eyes:'open',mouth:'smile',e0:[-.14,-.16],e1:[.38,-.2],nose:[1.42,.1],snout:1,snoutL:1.4,brow:'curious',browCol:'#CFC6C0',look:[[-.3,.18],[-.3,.18]]},
   marks:(h,B,Hd,s)=>{const b=s.body,K=s.light;h.shape([[b.rx*.5,-b.ry*.95],[b.rx*.82,-b.ry*.78],[b.rx*1.03,b.ry*.05],[b.rx*.88,b.ry*.95],[b.rx*.2,b.ry*1.0],[b.rx*.35,b.ry*.55],[b.rx*.62,b.ry*.1]].map(B),K,{noline:1});
@@ -215,7 +239,7 @@ function hangHair(h,B,s,len){// long silky hair hanging straight down from which
   for(let i=0;i<24;i++){const a=i/24*Math.PI*2,p=B([Math.cos(a)*b.rx*.9,Math.sin(a)*b.ry*.72]);if(p[1]>c[1]+b.ry*.12)top.push(p)}
   if(top.length<3)return;top.sort((p,q)=>p[0]-q[0]);
   const bot=top.map((p,i)=>[p[0]+(i%2?1.6:-1.2),Math.min(GY-3,p[1]+len*(i%2?1:.8))]),K=curlCol(s.col);
-  h.shape(top.concat(bot.slice().reverse()),s.col,{noline:1,ox:0,oy:0,sc:1});
+  h.shape(top.concat(bot.slice().reverse()),s.col,{noline:1,ox:0,oy:0,sc:1,own:1});
   h.line([top[0]].concat(bot,[top[top.length-1]]),h.LW*.9,INK,1);
   bot.forEach((p,i)=>{if(i%3===1&&i<bot.length-1){const t=top[i];h.line([[t[0],t[1]+3],[t[0]+(p[0]-t[0])*.5+1.5,t[1]+(p[1]-t[1])*.5],[p[0],p[1]-3]],2,K,.4)}})}
 /* v2.12 Fourteen New Friends (V212.md): fourteen more crude ones, appended. Each ART lane (A to D) drew only its own block below.
@@ -237,7 +261,7 @@ function tanA(h,B,Hd,s,o){// black-and-tan points (dobie, minpin): eyebrow dots,
   h.shape(circ(hx*.44,hy*.5,hx*.3,hy*.24,9).map(Hd),K,{noline:1,ox:0,oy:0})}
 function grinA(h,M){// v2.12 pitbull: the big wide happy grin, mouth open, tongue out, the corners curled up into the cheeks
   h.shape([[-25,3],[6,2],[2,15],[-7,20],[-18,17]].map(M),'#7A1F2E',{w:3.4,ox:0,oy:0,sc:1});
-  h.shape([[-16,13],[-3,12],[-4,22],[-9,25],[-15,21]].map(M),'#FF6F9A',{noline:1,ox:0,oy:0});h.line([[-9.5,14],[-9.5,21]].map(M),2,'#C9406A');
+  h.shape([[-16,13],[-3,12],[-4,22],[-9,25],[-15,21]].map(M),'#FF6F9A',{w:2.4,ox:0,oy:0,sc:1,amp:.4});// the tongue that hangs out of the mouth gets its own line (25 Oct 2026)h.line([[-9.5,14],[-9.5,21]].map(M),2,'#C9406A');
   h.line([[-29,-3],[-25,3]].map(M),2.6,INK,.4);h.line([[9,-3],[6,2]].map(M),2.4,INK,.3)}
 function ringA(h,s,L,HT,w){// v2.12 art fix: a pale crayon crease under each open eye on a dark head, so the face reads even at chip size (corso, stdpoodle)
   const f=L.face,m=f.eyes;if(/^(happy|closed|x)$/.test(m))return;const hx=s.head.rx,hy=s.head.ry,e0=f.e0||[-.1,-.04],e1=f.e1||[.42,-.1],c=mix(s.hcol,W,.55);
@@ -356,7 +380,7 @@ SP.schnauzer={name:'Muesli',breed:'Miniature Schnauzer',personality:'Bearded, bo
    [[-.72,-.5],[-.46,-.78],[-.18,-.56],[.1,-.8],[.36,-.58],[-.6,-.12],[-.05,-.22]].forEach(q=>h.line([[b.rx*q[0],b.ry*q[1]],[b.rx*(q[0]+.05),b.ry*(q[1]+.24)]].map(B),2.2,K,.4));
    const sk=[[b.rx*1.02,-b.ry*.15],[b.rx*1.0,b.ry*.55]];for(let i=0;i<=10;i++)sk.push([b.rx*(.9-1.62*i/10),b.ry*(i%2?1.2:1.0)]);
    const P=sk.concat([[-b.rx*.74,b.ry*.5],[b.rx*.1,b.ry*.42],[b.rx*.62,b.ry*.12]]).map(B).map(ccl);
-   if(!isNaN(P[0][0])){h.shape(P,s.light,{noline:1,ox:0,oy:0,sc:1});h.line(P.slice(1,13),h.LW*.85,INK,.8);[3,6,9].forEach(i=>h.line([[P[i][0],P[i][1]-7],P[i]],1.8,curlCol(s.light),.3))}
+   if(!isNaN(P[0][0])){h.shape(P,s.light,{noline:1,ox:0,oy:0,sc:1,own:1});h.line(P.slice(1,13),h.LW*.85,INK,.8);[3,6,9].forEach(i=>h.line([[P[i][0],P[i][1]-7],P[i]],1.8,curlCol(s.light),.3))}
    // the beard under the long muzzle (the muzzle box is drawn over its top) and the bushy brows
    ccFringe(h,[[hx*.36,hy*.3],[hx*(sl+.04),hy*.24],[hx*(sl+.18),hy*.7],[hx*(sl+.08),hy*1.3],[hx*(sl-.08),hy*1.04],[hx*(sl-.24),hy*1.42],[hx*(sl-.42),hy*1.1],[hx*(sl-.6),hy*1.38],[hx*(sl-.78),hy*1.04],[hx*.42,hy*1.14],[hx*.22,hy*.66]].map(Hd).map(ccl),s.light,5);
    const er=s.eyes;[f.e0||[-.1,-.04],f.e1||[.42,-.1]].forEach((e,i)=>{const x=hx*e[0],y=hy*e[1],r=er[i]*1.15;
@@ -391,7 +415,7 @@ SP.yorkie={name:'Toffee',breed:'Yorkshire Terrier',personality:'A tiny terrier w
 function puffD(h,M,rx,ry,a0,a1,n,z,col,ink){// cotton bumps round an ellipse (local px, mapped by M): each a filled lump that covers the old outline, then its outer arc
   if(isNaN(M([0,0])[0]))return;
   for(let i=0;i<n;i++){const a=(a0+(a1-a0)*(n>1?i/(n-1):.5))*D2R,k=1+(i%2?.04:-.03),c=[Math.cos(a)*rx*k,Math.sin(a)*ry*k],zz=z*(i%3===1?1.12:.94);
-   h.shape(circ(c[0],c[1],zz,zz,9).map(M),col,{noline:1,ox:0,oy:0,sc:1});
+   h.shape(circ(c[0],c[1],zz,zz,9).map(M),col,{noline:1,ox:0,oy:0,sc:1,own:1});
    const arc=[];for(let j=-3;j<=3;j++){const t=a+j*.42;arc.push([c[0]+Math.cos(t)*zz,c[1]+Math.sin(t)*zz])}h.line(arc.map(M),ink||3.3,INK,.7)}}
 function hairD(h,B,s,col,o){// the floor-length coat, parted along the spine: silky hair falls from the sides of the body (o.up: how high it starts) to just above the ground (o.len: the longest it hangs, so a jump lifts it), a flared ragged hem
   const b=s.body,c=B([0,0]);if(isNaN(c[0]))return;const n=30,R=[],ok=[],e=B([10,0]),tilt=Math.max(0,-Math.atan2(e[1]-c[1],e[0]-c[0])/D2R-12)*.5;// sitting up: the hair also falls from the chest
@@ -402,7 +426,7 @@ function hairD(h,B,s,col,o){// the floor-length coat, parted along the spine: si
   const yb=Math.min(fl,Math.max(...top.map(p=>p[1]))+b.ry*o.len),bot=top.map((p,i)=>{let y=Math.max(p[1]+4,Math.min(GY-1,yb+(i%3===1?2.5:i%3===2?-1:0)));
    if(s.expecting){const d=(p[0]-cx)/(span*.34);if(Math.abs(d)<1)y=Math.min(GY-1,y+4*Math.sqrt(1-d*d))}
    const f=Math.min(1,(y-p[1])/(b.ry*1.5));return[p[0]+(p[0]-cx)*.18*f+(i%2?1.6:-1.2),y]});
-  h.shape(top.concat(bot.slice().reverse()),col,{noline:1,ox:0,oy:0,sc:1});
+  h.shape(top.concat(bot.slice().reverse()),col,{noline:1,ox:0,oy:0,sc:1,own:1});
   h.line([top[0]].concat(bot,[top[top.length-1]]),h.LW*.9,INK,1);
   const K=curlCol(col);top.forEach((t,i)=>{if(i%3!==1||i>top.length-3)return;const p=bot[i];if(p[1]-t[1]<10)return;h.line([[t[0],t[1]+4],[t[0]+(p[0]-t[0])*.5+(i%2?1.5:-1.5),t[1]+(p[1]-t[1])*.5],[p[0],p[1]-4]],2,K,.35)});
   if(s.expecting){const y=Math.min(GY-8,c[1]+b.ry*.3),A=[];// the round tummy shows as a low curve through the coat
@@ -680,7 +704,10 @@ function drawLegs(h,s,L){
     else if(l.sitfoot){const hp=T(L.bT)([-s.body.rx*.45,s.body.ry*.25]);h.shape(circ(hp[0]+s.body.ry*.9+9,GY-6,s.body.ry*.5+3,4,8),l.col,{w:3.4})}
     else{h.tube([l.hip,l.mid||[(l.hip[0]+l.foot[0])/2+1,(l.hip[1]+l.foot[1])/2],l.foot],l.w,l.col);
       if(L.paw&&l.foot&&(l.id==='NF'||l.id==='FF'))h.shape(circ(l.foot[0]+2,l.foot[1],l.w*.75,l.w*.6,7),l.sock||l.col,{w:2.8,ox:0,oy:0,sc:1,closed:1});
-      if(l.sock&&!l.raised){const t=.62,sx=l.hip[0]+(l.foot[0]-l.hip[0])*t,sy=l.hip[1]+(l.foot[1]-l.hip[1])*t;h.acc.push(`<path d="M${R1(sx+1)} ${R1(sy)}L${R1(l.foot[0]+1)} ${R1(l.foot[1]-1)}" stroke="${l.sock}" stroke-width="${R1(l.w)}" stroke-linecap="round"/>`)}
+      if(l.sock&&!l.raised){// the sock: the last 38% of the leg, along the leg's own bend and down the middle of its ink (25 Oct 2026: it used to cut the knee corner and poke out)
+        const C=[l.hip,l.mid||[(l.hip[0]+l.foot[0])/2+1,(l.hip[1]+l.foot[1])/2],l.foot],d1=Math.hypot(C[1][0]-C[0][0],C[1][1]-C[0][1]),d2=Math.hypot(C[2][0]-C[1][0],C[2][1]-C[1][1]),g=(d1+d2)*.62,
+          sp=g<=d1?[C[0][0]+(C[1][0]-C[0][0])*g/(d1||1),C[0][1]+(C[1][1]-C[0][1])*g/(d1||1)]:[C[1][0]+(C[2][0]-C[1][0])*(g-d1)/(d2||1),C[1][1]+(C[2][1]-C[1][1])*(g-d1)/(d2||1)],SP=g<d1?[sp,C[1],C[2]]:[sp,C[2]];
+        h.acc.push(`<path d="${SP.map((q,i)=>(i?'L':'M')+R1(q[0])+' '+R1(q[1])).join('')}" fill="none" stroke="${l.sock}" stroke-width="${R1(l.w)}" stroke-linecap="round" stroke-linejoin="round"/>`)}
       if(s.pup&&!(L.paw&&(l.id==='NF'||l.id==='FF')))h.shape(circ(l.foot[0]+2.5,l.foot[1]-l.w*.42,l.w*1.0,l.w*.66,8),l.sock||l.col,{w:3,ox:0,oy:0,sc:1,closed:1});
       if(s.legs.pom){const m=l.mid||l.hip,t=.7,x=m[0]+(l.foot[0]-m[0])*t,y=m[1]+(l.foot[1]-m[1])*t;h.shape(scallop(x,y,l.w*1.05,l.w*.9,6,.25),l.sock||l.col,{step:30,amp:.6,w:3,ox:0,oy:0,sc:1})}
       if(s.legs.hair)legHair(h,l)}
@@ -1615,12 +1642,13 @@ function frame(key,s,pose,outfit,k,seed,ex){
   drawTail(h,s,L,B);
   if(body==='Tutu'){h._legSkip='NH';drawLegs(h,s,L);h._legSkip=0}else drawLegs(h,s,L);
   // neck: a short tube from the chest to the head, behind the body
-  {const nb=B([s.body.rx*.62,-s.body.ry*.3]),nh=HT([-s.head.rx*.2,s.head.ry*.35]);if(L.pose==='eat'||L.pose==='jump'||L.pose==='sit'||L.pose==='sad'||s.neck||L.neckT)h.tube([nb,nh],s.head.rx*.7,s.col)}
-  h.shape(bp.map(B),s.col,{step:s.body.long?14:11});h.crayon(s.body.rx,s.body.ry,B,s.col,s.body.long?16:12);
-  if(s.expecting&&BELLY.test(pose))drawBelly(h,s,L,B);
+  {const nb=B([s.body.rx*.62,-s.body.ry*.3]),nh=HT([-s.head.rx*.2,s.head.ry*.35]);if(L.pose==='eat'||L.pose==='jump'||L.pose==='sit'||L.pose==='sad'||s.neck||L.neckT)h.tube([nb,nh],s.head.rx*.7,s.neckCol||s.col)}
+  h.shape(bp.map(B),s.col,{step:s.body.long?14:11});h.part(1);h.crayon(s.body.rx,s.body.ry,B,s.col,s.body.long?16:12);
+  if(s.expecting&&BELLY.test(pose)){h.part(0);drawBelly(h,s,L,B)}// the belly bulges past the body on purpose; the marks still keep to the body
   if(s.marks)s.marks(h,B,HT,s);
   if(s.pat)s.pat.body(h,B,L);
   if(s.spk)glitter(h,s,B,k,0);
+  h.part(0);
   if(L.scrunch)[-.45,-.1,.25].forEach(x=>h.line([[s.body.rx*x,-s.body.ry*.85],[s.body.rx*(x+.06),0],[s.body.rx*x,s.body.ry*.85]].map(B),2.6));
   if(L.mud)drawMud(h,s,L,B,HT);
   if(body&&body!=='Superhero Cape'&&body!=='Tutu'&&!sheet)drawCoat(h,s,L,B,body);
@@ -1631,10 +1659,11 @@ function frame(key,s,pose,outfit,k,seed,ex){
   if(s.ruff&&!sheet)drawRuff(h,s,L,HT);
   if(!sheet)drawEars(h,s,L,HT,false);
   if(s.topknot&&!hat&&(!top||top==='Pumpkin Patch Suit')&&!(sheet&&s.topknot===3))drawTopknot(h,s,HT);// v2.12: the maltese and shihtzu tuft stays under the Ghost Sheet
-  {const hf=s.hfluff===undefined?s.fluff:s.hfluff;h.shape(hp.map(HT),s.hcol,{step:hf?30:11,amp:hf?.8:1.2})};h.crayon(s.head.rx,s.head.ry*.6,p=>HT([p[0],p[1]-s.head.ry*.3]),s.hcol,6);
+  {const hf=s.hfluff===undefined?s.fluff:s.hfluff;h.shape(hp.map(HT),s.hcol,{step:hf?30:11,amp:hf?.8:1.2})};h.part(1);h.crayon(s.head.rx,s.head.ry*.6,p=>HT([p[0],p[1]-s.head.ry*.3]),s.hcol,6);
   if(s.headMarks)s.headMarks(h,HT,s);
   if(s.pat)s.pat.head(h,HT,L);
   if(s.spk)glitter(h,s,HT,k,1);
+  h.part(0);
   if(L.mud){const hx=s.head.rx,hy=s.head.ry;h.shape(circ(-hx*.45,-hy*.45,hx*.18,hy*.15,7,.2).map(HT),'#7A4A22',{noline:1,ox:0,oy:0})}
   const xa=X?[h.acc.length,h.texts.length,h.bb.slice()]:0;
   {const a0=h.acc.length;drawFace(h,s,L,HT);const ff=(s.mixHead?SP[s.mixHead]:s).faceFn;if(ff)ff(h,s,L,HT,a0)}// v2.12 ART B: the head breed's own face extras (new spec field faceFn)
@@ -1779,7 +1808,7 @@ function dogHead(key,o={}){
   key=SP[key]?key:'shiba';const SF=specFor(key,o),s=SF.s,h=kit(rng(hashS('pahead'+key))),L=layout(s,'idle',0),HT=T(L.hT);
   if(s.ears!=='giant')L.face.eyes=s.face.eyes;if(s.pup===2){L.face.eyes='closed';L.ears='sleep';L.face.mouth='smile'}
   if(s.pup)h.setJ(s.pup===2?1.25:1.15);
-  if(s.ruff)drawRuff(h,s,L,HT);drawEars(h,s,L,HT,false);if(s.topknot===2||s.topknot===3)drawTopknot(h,s,HT);h.shape(headPts(s).map(HT),s.hcol,{step:(s.hfluff===undefined?s.fluff:s.hfluff)?30:11});if(s.headMarks)s.headMarks(h,HT,s);if(s.pat)s.pat.head(h,HT,L);{const a0=h.acc.length,ff=(s.mixHead?SP[s.mixHead]:s).faceFn,X=s.pup===2?null:EXPR[exOk(o.expr,'idle',SF.lk.age)],xa=X?[h.acc.length,h.texts.length,h.bb.slice()]:0;drawFace(h,s,L,HT);if(ff)ff(h,s,L,HT,a0);if(X)exFace(h,s,L,HT,X,0,xa,hashS('pahead'+key))}drawEars(h,s,L,HT,true);
+  if(s.ruff)drawRuff(h,s,L,HT);drawEars(h,s,L,HT,false);if(s.topknot===2||s.topknot===3)drawTopknot(h,s,HT);h.shape(headPts(s).map(HT),s.hcol,{step:(s.hfluff===undefined?s.fluff:s.hfluff)?30:11});h.part(1);if(s.headMarks)s.headMarks(h,HT,s);if(s.pat)s.pat.head(h,HT,L);h.part(0);{const a0=h.acc.length,ff=(s.mixHead?SP[s.mixHead]:s).faceFn,X=s.pup===2?null:EXPR[exOk(o.expr,'idle',SF.lk.age)],xa=X?[h.acc.length,h.texts.length,h.bb.slice()]:0;drawFace(h,s,L,HT);if(ff)ff(h,s,L,HT,a0);if(X)exFace(h,s,L,HT,X,0,xa,hashS('pahead'+key))}drawEars(h,s,L,HT,true);
   let b=h.bb;if(NEWK.test(s.mixHead||key)){if(s.ears==='bat'){const hd=s.head,c=HT([0,0]);b=[c[0]-hd.rx*1.4,c[1]-hd.ry*1.8,c[0]+hd.rx*1.4,c[1]+hd.ry*1.08]}}// v2.5 heads fit by what was drawn (their ears and muzzles differ from the fixed boxes below)
   else if(/^(giant|bat)$/.test(s.ears)){const hd=s.head,c=HT([0,0]);b=[c[0]-hd.rx*1.25,c[1]-hd.ry*2.1,c[0]+hd.rx*1.25,c[1]+hd.ry*1.05]}else if(s.face.snoutL){const hd=s.head,c=HT([0,0]);b=[c[0]-hd.rx*1.25,c[1]-hd.ry*1.7,c[0]+hd.rx*1.75,c[1]+hd.ry*1.25]}
   const HL=typeof o.aria==='string'&&o.aria?o.aria.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'):`${s.name} the ${s.breed}`;// v2.14: o.aria from the game
