@@ -55,3 +55,16 @@ Play free at doodledoggo.app, link in bio.
 #doodledoggo #cozygames #indiegame #crayon #handdrawn #doglovers
 ```
 **Alt text:** `Before and after close-ups of a crayon Border Collie: before, its white fill spills past the outline; now, the colour stays inside the lines.`
+
+## All three as one carousel (owner, 25 Oct 2026)
+
+**Slide order (9 slides):** `first-week-1-cover`, `first-week-2-calendar`, `first-week-3-bond2-party`, `first-week-4-phone-menu`, `bigger-town-1-cover`, `bigger-town-2-splash-pool`, `bigger-town-3-training-ground`, `bigger-town-4-map`, `inside-the-lines`.
+
+```
+New in Doodle Doggo 🐾
+A guided first day, a monthly calendar where missing a day costs nothing, a Splash Pool, a Training Ground and a bigger town. Oh, and we learned to colour inside the lines 🖍️
+
+Play free at doodledoggo.app, link in bio.
+
+#doodledoggo #cozygames #indiegame #doglovers #gameupdate
+```
