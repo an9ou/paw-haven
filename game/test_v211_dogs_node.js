@@ -105,25 +105,30 @@ console.log('   ' + nb + ' bandana renders');
 // the three look different from each other and from the Red Bandana
 ['shiba', 'pom', 'greyhound'].forEach((k) => { const r = [...BAND, 'Red Bandana', 'Candy Corn Bandana'].map((b) => PA.dog(k, { pose: 'idle', outfit: { neck: b } })); ok(new Set(r).size === 5, k + ': five different bandanas'); });
 
+// v2.15.2 (owner, 25 Oct 2026: every colour fill stays inside its outline): every render moved on purpose, so the old renders below are compared by their ink (same normaliser as v212_dogs and INK=1 in dogs/check_identical.js)
+// the collie draws its white neck tube now (v2.15.2), so its ink changed too and it is left out of the old-base comparison below
+const ink = (x) => x.replace(/<path d="[^"]*"( fill="[^"]*")( fill-opacity="[^"]*")?\/>/g, '').replace(/<path d="[^"]*" stroke="[^"]*" stroke-width="[\d.]+" stroke-linecap="round" opacity="\.(42|32)"\/>/g, '')
+  .replace(/<path d="[^"]*"( fill="none")? stroke="(?!#2E2320)#[0-9A-Fa-f]{6}" stroke-width="[\d.]+" stroke-linecap="round"( stroke-linejoin="round")?( transform="[^"]*")?\/>/g, '');
+const PAI = { dog: (k, o) => ink(PA.dog(k, o)), dogHead: (k, o) => ink(PA.dogHead(k, o)) };
 console.log('-- old breeds unchanged (spot check; the full proof is dogs/check_identical.js v211-base)');
 // v2.13 (V213.md 5.1): a mix draws the neck tube in every pose now, so its old renders are compared in sit, which drew the tube already
 let ref = null; for (const r of ['v211-base', 'origin/v211-base']) { try { cp.execSync('git rev-parse --verify -q ' + r, { cwd: ROOT, stdio: 'ignore' }); ref = r; break; } catch (e) { /* next */ } }
 if (!ref) console.log('   no v211-base ref here, skipped');
 else { const OLD0 = load(cp.execSync(`git show ${ref}:dogs/pawart_dogs.js`, { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 << 20 }));
   // v2.12 owner: the old poodle is shown as "Miniature Poodle", so its old renders are compared with that aria-label renamed (as in v212_dogs)
-  const ren = (x) => x.replace(/ the Poodle([,"])/g, ' the Miniature Poodle$1'), OLD = { dog: (k, o) => ren(OLD0.dog(k, o)), dogHead: (k, o) => ren(OLD0.dogHead(k, o)) };
-  ALL.slice(0, 14).forEach((k) => { ok(OLD.dogHead(k) === PA.dogHead(k), `head ${k} identical to ${ref}`);
+  const ren = (x) => ink(x.replace(/ the Poodle([,"])/g, ' the Miniature Poodle$1')), OLD = { dog: (k, o) => ren(OLD0.dog(k, o)), dogHead: (k, o) => ren(OLD0.dogHead(k, o)) };
+  ALL.slice(0, 14).filter((k) => k !== 'collie').forEach((k) => { ok(OLD.dogHead(k) === PAI.dogHead(k), `head ${k} ink identical to ${ref}`);
     ['idle', 'sleep', 'beg', 'rollover'].forEach((p, i) => { const o = { pose: p, outfit: [null, { neck: 'Red Bandana' }, { body: 'Ghost Sheet' }, { head: 'Party Hat' }][i], age: [undefined, 'puppy', undefined, 'newborn'][i], sparkle: i === 2 };
-      ok(OLD.dog(k, o) === PA.dog(k, o), `${k} ${p} identical to ${ref}`); });
-    ok(OLD.dog(k, { pose: 'sit', mix: { head: 'samoyed' } }) === PA.dog(k, { pose: 'sit', mix: { head: 'samoyed' } }), `${k} mix identical to ${ref}`); }); }
+      ok(OLD.dog(k, o) === PAI.dog(k, o), `${k} ${p} ink identical to ${ref}`); });
+    ok(OLD.dog(k, { pose: 'sit', mix: { head: 'samoyed' } }) === PAI.dog(k, { pose: 'sit', mix: { head: 'samoyed' } }), `${k} mix ink identical to ${ref}`); }); }
 
 console.log('-- pom unchanged since the first BREED ART pass (cea93f1). Akita (smaller forward ears, broader head) and spitz (plume over the back when sitting) changed on purpose in the art review');
 let ref1 = null; try { cp.execSync('git cat-file -e cea93f1^{commit}', { cwd: ROOT, stdio: 'ignore' }); ref1 = 'cea93f1'; } catch (e) { console.log('   no cea93f1 here, skipped'); }
 if (ref1) { const O1 = load(cp.execSync(`git show ${ref1}:dogs/pawart_dogs.js`, { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 << 20 }));
-  ['pom'].forEach((k) => { ok(O1.dogHead(k) === PA.dogHead(k), `head ${k} identical to ${ref1}`);
+  ['pom'].forEach((k) => { ok(ink(O1.dogHead(k)) === PAI.dogHead(k), `head ${k} ink identical to ${ref1}`);
     POSES.forEach((p, i) => { const o = { pose: p, outfit: [null, { neck: 'Shibuya Bandana' }, { body: 'Ghost Sheet' }, { head: 'Party Hat' }][i % 4], age: [undefined, 'puppy', undefined, 'newborn'][i % 4], sparkle: i % 3 === 0 };
-      ok(O1.dog(k, o) === PA.dog(k, o), `${k} ${p} identical to ${ref1}`); });
-    ok(O1.dog(k, { pose: 'sit', mix: { head: 'samoyed' } }) === PA.dog(k, { pose: 'sit', mix: { head: 'samoyed' } }), `${k} mix identical to ${ref1}`); }); }
+      ok(ink(O1.dog(k, o)) === PAI.dog(k, o), `${k} ${p} ink identical to ${ref1}`); });
+    ok(ink(O1.dog(k, { pose: 'sit', mix: { head: 'samoyed' } })) === PAI.dog(k, { pose: 'sit', mix: { head: 'samoyed' } }), `${k} mix ink identical to ${ref1}`); }); }
 
 console.log(`v211_dogs: ${pass} passed, ${fail} failed`);
 if (fail) { console.log(fails.join('\n')); process.exit(1); }
