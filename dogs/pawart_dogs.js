@@ -28,6 +28,13 @@ function dense(pts,closed,step){
 }
 const circ=(cx,cy,rx,ry,n=14,lop=0)=>{const p=[];for(let i=0;i<n;i++){const a=i/n*Math.PI*2;p.push([cx+Math.cos(a)*rx*(1+lop*Math.sin(a*2)),cy+Math.sin(a)*ry*(1+lop*Math.cos(a))*(Math.sin(a)>0?.94:1)])}return p};
 const scallop=(cx,cy,rx,ry,nb,amp)=>{const p=[];for(let j=0;j<nb;j++)for(let t=0;t<1;t+=.25){const a=(j+t)/nb*Math.PI*2,k=1+amp*Math.sin(Math.PI*t)+Math.sin(j*2.3)*.03;p.push([cx+Math.cos(a)*rx*k,cy+Math.sin(a)*ry*k])}return p};
+// rain (preview, art/rain-wet): wet fur. The fluff lies flatter and gathers into nb pointed locks; a lock hangs down under its own weight
+// (long under the belly and chin, nearly flat on the back). a0 turns the ring of locks so a point never sits where an ear or leg joins.
+const wetPts=(cx,cy,rx,ry,nb,amp,a0=0)=>{const p=[],E=(a,k)=>[cx+Math.cos(a)*rx*k,cy+Math.sin(a)*ry*k],hw=Math.PI/nb*.4;
+  for(let j=0;j<nb;j++){const b=(j+a0)/nb*Math.PI*2,a1=(j+a0+1)/nb*Math.PI*2,g=Math.max(0,Math.sin(b)+.3)/1.3,v=1+Math.sin(j*2.3)*.22;
+    if(g>.15){const t=E(b,1+amp*g*v);p.push(E(b-hw,.95),[t[0],t[1]+amp*ry*g*v*.6],E(b+hw,.95))}else p.push(E(b,.95));
+    for(let q=1;q<3;q++)p.push(E(b+(a1-b)*q/3,.96))}// the smooth flat wet fur between two locks
+  return p};
 const spiral=(cx,cy,r0,r1,turns,n,a0)=>{const p=[];for(let i=0;i<=n;i++){const t=i/n,a=a0+t*turns*Math.PI*2,rr=r1+(r0-r1)*t;p.push([cx+Math.cos(a)*rr,cy+Math.sin(a)*rr])}return p};
 // v2.5 helpers: corner rounding (closed polygon) and a convex hull (canvas points)
 const chaikin=(p,it)=>{for(let k=0;k<it;k++){const o=[];p.forEach((a,i)=>{const b=p[(i+1)%p.length];o.push([a[0]*.75+b[0]*.25,a[1]*.75+b[1]*.25],[a[0]*.25+b[0]*.75,a[1]*.25+b[1]*.75])});p=o}return p};
@@ -688,14 +695,14 @@ function drawTail(h,s,L,B){
 const PLUME=[[0,0],[-5,-12],[-3,-25],[6,-35],[20,-39],[33,-34],[40,-25]],PLUME_TIP=[40,-25];
 function drawPlume(h,s,L,map,col){// a fat fluffy plume up off the rump and curled forward over the back, lumpy edge, two fur strokes
   const C=dense(PLUME,false,4),n=C.length,lt=[],rt=[];
-  C.forEach((p,i)=>{const t=i/(n-1),a=C[Math.max(0,i-1)],b=C[Math.min(n-1,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],m=Math.hypot(dx,dy)||1,w=(3.5+11*Math.sin(Math.PI*Math.min(1,t*1.15)))*(i%2?1.16:.94);
+  C.forEach((p,i)=>{const t=i/(n-1),a=C[Math.max(0,i-1)],b=C[Math.min(n-1,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],m=Math.hypot(dx,dy)||1,w=s.wet?(3+8*Math.sin(Math.PI*Math.min(1,t*1.15)))*(i%3===1?1.32:.8):(3.5+11*Math.sin(Math.PI*Math.min(1,t*1.15)))*(i%2?1.16:.94);
    lt.push([p[0]-dy/m*w,p[1]+dx/m*w]);rt.push([p[0]+dy/m*w*.9,p[1]-dx/m*w*.9])});
   h.shape(map(lt.concat(rt.reverse())),col,{step:30,amp:.8,w:3.6});
   const K=curlCol(col);[[.18,.62,-2],[.4,.92,3]].forEach(q=>{const a=Math.floor(q[0]*(n-1)),b=Math.floor(q[1]*(n-1));h.line(map(C.slice(a,b).map(p=>[p[0]+q[2],p[1]+q[2]*.5])),2.2,K,.4)})}
 function drawRuff(h,s,L,HT){// a big scalloped mane round the neck, behind the head (the head is drawn over most of it)
   if(s.ruffFn)return s.ruffFn(h,s,L,HT);// v2.12 ART B: a breed's own mane (new spec field ruffFn)
   const hx=s.head.rx,hy=s.head.ry,k=s.ruff,col=s.ruffK&&s[s.ruffK]?s[s.ruffK]:s.hcol,cl=q=>[q[0],Math.min(q[1],GY-1)];
-  h.shape(scallop(-hx*.16,hy*.6,hx*.98*k,hy*.66*k,9,.2).map(HT).map(cl),col,{step:30,amp:.8,w:3.6});
+  h.shape((s.wet?wetPts(-hx*.16,hy*.6,hx*.9*k,hy*.6*k,7,.36,.2):scallop(-hx*.16,hy*.6,hx*.98*k,hy*.66*k,9,.2)).map(HT).map(cl),col,{step:30,amp:.8,w:3.6});
   const K=curlCol(col);[[-.7,.95],[-.2,1.12],[.3,1.02]].forEach(q=>{const x=hx*q[0]*k,y=hy*q[1]*k;h.line([[x-3,y-5],[x,y],[x+3,y-5]].map(HT).map(cl),2,K,.3)})}
 function drawLegs(h,s,L){
   const one=l=>{
@@ -734,9 +741,9 @@ function drawHaunch(h,s,L,B){
   });
 }
 function bodyPts(s){const b=s.body;if(b.sq){const x=b.rx,y=b.ry;return chaikin([[x*1.02,-y*.86],[x*1.06,y*.5],[x*.8,y*1.0],[-x*.1,y*.9],[-x*.82,y*1.0],[-x*1.04,y*.45],[-x*1.0,-y*.78],[-x*.3,-y*1.04],[x*.5,-y*1.0]],1)}// v2.11 dane, mastiff: a squarer box
-  if(b.deep){const x=b.rx,y=b.ry;return [[x*1.02,-y*.45],[x*.95,y*.35],[x*.75,y*1.25],[x*.35,y*1.35],[0,y*.7],[-x*.4,y*.25],[-x*.78,y*.45],[-x*1.0,y*.1],[-x*.98,-y*.55],[-x*.55,-y*.95],[x*.1,-y*.92],[x*.7,-y*1.0]]}return s.fluff?scallop(0,0,b.rx,b.ry,13,.13):circ(0,0,b.rx,b.ry,b.long?18:15,b.lop||0)}
+  if(b.deep){const x=b.rx,y=b.ry;return [[x*1.02,-y*.45],[x*.95,y*.35],[x*.75,y*1.25],[x*.35,y*1.35],[0,y*.7],[-x*.4,y*.25],[-x*.78,y*.45],[-x*1.0,y*.1],[-x*.98,-y*.55],[-x*.55,-y*.95],[x*.1,-y*.92],[x*.7,-y*1.0]]}return s.fluff?(s.wet?wetPts(0,0,b.rx,b.ry,9,.24,.3):scallop(0,0,b.rx,b.ry,13,.13)):circ(0,0,b.rx,b.ry,b.long?18:15,b.lop||0)}
 function headPts(s){const hd=s.head;if(s.sqHead){const x=hd.rx,y=hd.ry;return chaikin([[-x*.96,-y*.88],[x*.2,-y*1.02],[x*.98,-y*.84],[x*1.04,y*.7],[x*.52,y*1.0],[-x*.6,y*.98],[-x*1.02,y*.6]],2)}// v2.11 dane, mastiff
-  return(s.hfluff===undefined?s.fluff:s.hfluff)?scallop(0,0,hd.rx,hd.ry,10,.12):circ(0,0,hd.rx,hd.ry,13,.04)}
+  return(s.hfluff===undefined?s.fluff:s.hfluff)?(s.wet?wetPts(0,0,hd.rx,hd.ry,8,.16,.15):scallop(0,0,hd.rx,hd.ry,10,.12)):circ(0,0,hd.rx,hd.ry,13,.04)}
 function drawFace(h,s,L,HT){
   const f=L.face,hx=s.head.rx,hy=s.head.ry,sf=hx/33;
   const e0=f.e0||[-.1,-.04],e1=f.e1||[.42,-.1],er=s.eyes;
@@ -1630,6 +1637,39 @@ EXPR.yum={ok:/^(idle|sit|beg|happy|paw|down|walk)$/,
     if(!s.face.drool){const p=M([-14,12]);h.shape([[p[0],p[1]],[p[0]+3,p[1]+7],[p[0],p[1]+10],[p[0]-3,p[1]+7]],XB_DROP,{w:2,ox:0,oy:0,sc:1,closed:1})}return true},
   fx(h,s,L,B,HT){xbSay(h,s,HT,'yum!',1,L.k);XA.free(h)}};
 /* ---------- ART B end ---------- */
+/* ---------- rain (preview, art/rain-wet): PA.dog(key,{wet:true}) = the same dog, wet. No wet = the old render, byte for byte. ----------
+   wetSpec: the coat a shade darker (every coat colour mixed a little toward a cool slate). bodyPts/headPts/drawRuff/drawPlume: fluff -> wetPts locks.
+   wetFur: a few wet streaks down the fur and a pale shine on the back, inside the body or head outline. wetDrops: crayon raindrops sitting on the back
+   and head, two falling off (they move down over the three frames and splash on the ground). dog(): a little puddle shine under the feet.
+   Not wired yet. Wiring: dogOpts(d,o) (game/src/13_more_dogs.js) adds wet = outdoorsNow() && weatherNow()==='rain' && !hasRaincoat() (00_core.js);
+   renderDog's cache key (03_yard.js) and the pack renders take it in; checkEnv (00_core.js) already redraws on a weather change. Preview shots: game/rain_yard_shot.js. */
+const WET_C='#5A7A9A',WET_DROP='#9EDCFF',WET_RIM='#7FB3E0';
+function wetSpec(S0){const s=Object.assign({},S0),d=c=>typeof c==='string'&&/^#[0-9a-fA-F]{6}$/.test(c)?mix(c,WET_C,.13):c;
+  ['col','hcol','light','dark','ear','neckCol','tailTip','harl'].forEach(k=>{if(s[k])s[k]=d(s[k])});
+  s.legs=Object.assign({},S0.legs);['col','sock'].forEach(k=>{if(s.legs[k])s.legs[k]=d(s.legs[k])});
+  if(S0.legs.cols){s.legs.cols={};Object.keys(S0.legs.cols).forEach(k=>{s.legs.cols[k]=d(S0.legs.cols[k])})}
+  s.wet=1;return s}
+function wetFur(h,s,M,head){// streaks that follow the fur down and back, and a wet shine; all well inside the outline (the part is open)
+  const r=rng(hashS('wetf'+(s.name||'')+head)),rx=head?s.head.rx:s.body.rx,ry=head?s.head.ry:s.body.ry,c=head?s.hcol:s.col,lt=lum(c)>.45,
+    K=lt?mix(c,'#35506E',.42):mix(c,W,.42),Sh=lt?W:mix(c,W,.62),y0=head?-.55:0,n=head?1:3;
+  for(let i=0;i<n;i++){const x=head?-.42:-.5+i*.36+(r()-.5)*.08,y=head?-.5:-.6+(i%2)*.08,l=head?.3:.42+r()*.1,
+    P=[[x,y],[x-.03,y+l*.35],[x+.02,y+l*.7],[x-.04,y+l]].map(q=>M([q[0]*rx,q[1]*ry]));h.line(P,head?1.9:2.2,K,.35)}
+  const A=head?[-150,-118]:[-128,-82],sp=[];for(let a=A[0];a<=A[1];a+=8){const t=a*D2R;sp.push(M([Math.cos(t)*rx*.66,Math.sin(t)*ry*.62]))}
+  h.line(sp,head?2:2.6,Sh,.3)}
+function wetDrop(h,x,y,z,tilt){// one crayon raindrop: a round bottom and a point on top, inked, with a white glint inside
+  const P=[];for(let i=0;i<=8;i++){const a=(-.12+i/8*1.24)*Math.PI;P.push([x+Math.cos(a)*z,y+Math.sin(a)*z])}P.push([x+(tilt||0)*z,y-z*1.95]);
+  h.shape(P,WET_DROP,{w:2.1,step:30,ox:0,oy:0,sc:1,closed:1,amp:.35,famp:.2});h.dot(x-z*.32,y-z*.08,z*.26,z*.3,W)}
+function wetDrops(h,s,L,B,HT,bp,hp,k){
+  const z=s.pup?4.2:4.8,hc=HT([0,0]),hR=Math.max(s.head.rx,s.head.ry)*1.12,BP=dense(bp,true,3).map(B),HP=dense(hp,true,3).map(HT);
+  const tops=(P,f,away)=>{const ys=P.map(p=>p[1]),y0=Math.min(...ys),y1=Math.max(...ys),c=P.filter(p=>p[1]<y0+(y1-y0)*f&&(!away||Math.hypot(p[0]-hc[0],p[1]-hc[1])>hR)).sort((a,b)=>a[0]-b[0]);return c};
+  // sitting on the back (two, away from the head) and on the crown (one, toward the back of the skull)
+  const bt=tops(BP,.24,1);[.18,.62].forEach((f,i)=>{const p=bt[Math.floor(f*(bt.length-1))];if(p)wetDrop(h,p[0],p[1]-z*.45,z*(i?.86:1),i?.15:-.1)});
+  const ht=tops(HP,.16,0);{const p=ht[Math.floor(.5*(ht.length-1))];if(p)wetDrop(h,p[0],p[1]-z*.4,z*.82,.1)}
+  // falling off: one from the chin (front, bottom of the head), one off the rump; frame k moves them down, the ground makes a little splash
+  const chin=HP.reduce((a,p)=>p[0]+p[1]*1.4>a[0]+a[1]*1.4?p:a,HP[0]),rump=BP.reduce((a,p)=>p[0]-p[1]*.35<a[0]-a[1]*.35?p:a,BP[0]);
+  [[chin,3,1],[rump,-4,0]].forEach(([p,dx,j])=>{if(!p)return;const kk=(k+j)%3,x=p[0]+dx*(1+kk*.5),y=p[1]+z*2.6+kk*9;
+    if(y+z>GY-1){h.line([[x-7,GY-5],[x-3,GY-1]],1.9,WET_RIM,.2);h.line([[x+7,GY-5],[x+3,GY-1]],1.9,WET_RIM,.2);h.line([[x,GY-8],[x,GY-4]],1.9,WET_RIM,.2);return}
+    wetDrop(h,x,y,z*.78,0);h.line([[x-1,y-z*2.6],[x-1,y-z*3.7]],1.7,WET_RIM,.2);h.line([[x+2.5,y-z*2.9],[x+2.5,y-z*3.6]],1.7,WET_RIM,.2)})}
 function frame(key,s,pose,outfit,k,seed,ex){
   const h=kit(rng(seed+k*7717)),L=layout(s,pose,k);if(s.pup){h.setJ(s.pup===2?1.5:1.3);if(s.pup===2)newbornL(s,L)}const X=ex?EXPR[ex]:null;if(X&&X.pose)X.pose(s,L,k);if(pose==='rollover'||pose==='playdead')h.cy=GY+3;const _u=0,B=T(L.bT),HT=T(L.hT),hp=headPts(s),bp=bodyPts(s);
   const has=(slot)=>outfit&&outfit[slot]&&OUT[slot].includes(outfit[slot])?outfit[slot]:null;
@@ -1648,6 +1688,7 @@ function frame(key,s,pose,outfit,k,seed,ex){
   if(s.marks)s.marks(h,B,HT,s);
   if(s.pat)s.pat.body(h,B,L);
   if(s.spk)glitter(h,s,B,k,0);
+  if(s.wet)wetFur(h,s,B,0);
   h.part(0);
   if(L.scrunch)[-.45,-.1,.25].forEach(x=>h.line([[s.body.rx*x,-s.body.ry*.85],[s.body.rx*(x+.06),0],[s.body.rx*x,s.body.ry*.85]].map(B),2.6));
   if(L.mud)drawMud(h,s,L,B,HT);
@@ -1663,6 +1704,7 @@ function frame(key,s,pose,outfit,k,seed,ex){
   if(s.headMarks)s.headMarks(h,HT,s);
   if(s.pat)s.pat.head(h,HT,L);
   if(s.spk)glitter(h,s,HT,k,1);
+  if(s.wet)wetFur(h,s,HT,1);
   h.part(0);
   if(L.mud){const hx=s.head.rx,hy=s.head.ry;h.shape(circ(-hx*.45,-hy*.45,hx*.18,hy*.15,7,.2).map(HT),'#7A4A22',{noline:1,ox:0,oy:0})}
   const xa=X?[h.acc.length,h.texts.length,h.bb.slice()]:0;
@@ -1677,6 +1719,7 @@ function frame(key,s,pose,outfit,k,seed,ex){
   else if(body==='Bumblebee Suit')HAT2.Antennae(h,s,L,HT);
   else if(body==='Pyjamas'&&outfit.sleepwear)HAT2.Nightcap(h,s,L,HT);
   if(top){TOP2[top](h,s,L,HT);if(top==='Trick-or-Treat Ghost'&&eyes&&pose!=='sleep')(eyes==='Explorer Goggles'?drawGoggles:drawGlasses)(h,s,L,HT)}
+  if(s.wet)wetDrops(h,s,L,B,HT,bp,hp,k);
   drawFx(h,s,L,B,HT);
   if(X&&X.fx){h.acc.push('<g pointer-events="none">');exSub(h,seed*3+k*131+7,g=>X.fx(g,s,L,B,HT));h.acc.push('</g>')}// the marks round the dog never take a tap
   return {h,L};
@@ -1777,7 +1820,7 @@ function specFor(key,o){// the breed spec plus any v2 look; with no look this is
   return{s,lk,nu};
 }
 function dog(key,o={}){
-  key=SP[key]?key:'shiba';const SF=specFor(key,o),s=SF.s,lk=SF.lk;
+  key=SP[key]?key:'shiba';const SF=specFor(key,o),lk=SF.lk,s=o&&o.wet?wetSpec(SF.s):SF.s;
   let pose=POSES.includes(o.pose)?o.pose:'idle';const anim=o.anim!==false,nF=anim?3:1,left=o.facing==='left';
   if(lk.age==='newborn')pose=NBSLEEP.test(pose)?'sleep':'down';
   const ex=exOk(o.expr,pose,lk.age);// v2.13: a face expression over the pose (null = none: the render is exactly the old one)
@@ -1790,7 +1833,7 @@ function dog(key,o={}){
   const fit=tot<.999?` transform="translate(${pdx?R1(120+pdx*sc):120} ${GY}) scale(${tot.toFixed(3)}) translate(-120 -${GY})"`:'';
   const L0=fr[0].L,shx=pose==='sleep'?L0.bT.x+12:L0.bT.x+8,shw=(s.body.rx*(pose==='jump'?.7:1.15)+(pose==='sleep'?20:0));
   const shy=pose==='jump'?3.5:6;let hd='';for(let x=-shw+3;x<shw-2;x+=5.5){const t=x/shw,half=shy*Math.sqrt(Math.max(0,1-t*t));if(half<1)continue;hd+=`M${R1(shx+x)} ${R1(GY+1.5+half*.9)}l4 ${R1(-half*1.8)}`}
-  const shadow=`<ellipse cx="${R1(shx)}" cy="${GY+1.5}" rx="${R1(shw)}" ry="${shy}" fill="${PEN}" opacity="${pose==='jump'?.06:.1}"/><path d="${hd}" stroke="${PEN}" stroke-width="1.3" stroke-linecap="round" opacity="${pose==='jump'?.25:.4}" fill="none"/>`;
+  const shadow=(s.wet&&pose!=='jump'?wetPuddle(shx,shw):'')+`<ellipse cx="${R1(shx)}" cy="${GY+1.5}" rx="${R1(shw)}" ry="${shy}" fill="${PEN}" opacity="${pose==='jump'?.06:.1}"/><path d="${hd}" stroke="${PEN}" stroke-width="1.3" stroke-linecap="round" opacity="${pose==='jump'?.25:.4}" fill="none"/>`;
   let frames='';
   fr.forEach((f,k)=>{
     const tx=f.h.texts.map(t=>{const x=left?240-t.x-t.size*.6*t.s.length:t.x;return `<text x="${R1(x)}" y="${R1(t.y)}" transform="rotate(${R1(left?-t.rt:t.rt)} ${R1(x)} ${R1(t.y)})" font-family="'Gloria Hallelujah',cursive" font-size="${t.size}" fill="${t.col}">${t.s}</text>`}).join('');
@@ -1800,10 +1843,14 @@ function dog(key,o={}){
   let spk='';if(s.spk){const f=[120+(bx[0]-120)*sc,GY+(bx[1]-GY)*sc,120+(bx[2]-120)*sc,GY+(bx[3]-GY)*sc],fb=left?[240-f[2],f[1],240-f[0],f[3]]:f;spk=stars(hashS('spk'+key+pose+String(o.seed==null?'':o.seed)),fb,0,s.pup===2?6:s.pup?7:8)}
   const AR=typeof o.aria==='string'&&o.aria?o.aria.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'):null;// v2.14: the game's own (translated) label; without o.aria the old label, byte for byte
   const lab=AR!==null?AR:`${s.name} the ${s.breed}, ${pose}`;
-  if(!SF.nu)return `<svg class="pa-dog pa-pose-${pose}${anim?' pa-d-anim':''}${ex?' pa-ex-'+ex:''}" viewBox="0 0 240 200" role="img" aria-label="${lab}"><g${fit}>${left?`<g transform="translate(240 0) scale(-1 1)">${shadow}</g>`:shadow}${frames}</g></svg>`;
-  const cls=(lk.age?' pa-d-'+lk.age:'')+(s.mixHead?' pa-d-mix':'')+(s.spk?' pa-d-sparkle':'')+(s.expecting?' pa-d-expecting':'');
+  if(!SF.nu)return `<svg class="pa-dog pa-pose-${pose}${anim?' pa-d-anim':''}${ex?' pa-ex-'+ex:''}${s.wet?' pa-d-wet':''}" viewBox="0 0 240 200" role="img" aria-label="${lab}"><g${fit}>${left?`<g transform="translate(240 0) scale(-1 1)">${shadow}</g>`:shadow}${frames}</g></svg>`;
+  const cls=(lk.age?' pa-d-'+lk.age:'')+(s.mixHead?' pa-d-mix':'')+(s.spk?' pa-d-sparkle':'')+(s.expecting?' pa-d-expecting':'')+(s.wet?' pa-d-wet':'');
   return `<svg class="pa-dog pa-pose-${pose}${anim?' pa-d-anim':''}${cls}${ex?' pa-ex-'+ex:''}" viewBox="0 0 240 200" role="img" aria-label="${lab}${AR!==null?'':(lk.age?', '+lk.age:'')+(s.mixHead?' mix':'')}"><g${fit}>${left?`<g transform="translate(240 0) scale(-1 1)">${shadow}</g>`:shadow}${frames}</g>${spk}</svg>`;
 }
+function wetPuddle(x,w){// a flat crayon puddle under the feet (wider than the shadow), a blue rim, two white shine dashes
+  const r=rng(hashS('pud'+R1(x)+R1(w))),pw=w*1.18+10,ph=6.5,P=[];for(let i=0;i<18;i++){const a=i/18*Math.PI*2;P.push([x+Math.cos(a)*pw*(1+(r()-.5)*.06),GY+2+Math.sin(a)*ph*(1+(r()-.5)*.2)])}
+  const d=P.map((q,i)=>(i?'L':'M')+R1(q[0])+' '+R1(q[1])).join('')+'Z';
+  return `<path d="${d}" fill="#D4EEFB" opacity=".85"/><path d="${d}" fill="none" stroke="${WET_RIM}" stroke-width="1.8" stroke-linejoin="round" opacity=".9"/><path d="M${R1(x-pw*.62)} ${GY+3.2}l${R1(pw*.2)} -1.6M${R1(x+pw*.42)} ${GY+4}l${R1(pw*.12)} -1" stroke="#fff" stroke-width="2.2" stroke-linecap="round" fill="none"/>`}
 function dogHead(key,o={}){
   key=SP[key]?key:'shiba';const SF=specFor(key,o),s=SF.s,h=kit(rng(hashS('pahead'+key))),L=layout(s,'idle',0),HT=T(L.hT);
   if(s.ears!=='giant')L.face.eyes=s.face.eyes;if(s.pup===2){L.face.eyes='closed';L.ears='sleep';L.face.mouth='smile'}
