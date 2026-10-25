@@ -9,7 +9,7 @@
 .dd-wish .dd-wh{flex:none;width:38px;height:38px;border-radius:50%;background:var(--w-cream);border:2px solid var(--ink);overflow:hidden;display:block}
 .dd-wish .dd-wh svg{width:100%;height:100%;display:block}
 .dd-wish .dd-wt{min-width:0}
-.dd-wish .dd-wt b{font-size:15px;color:#C9475E;margin-right:2px}
+.dd-wish .dd-wt b{color:#C9475E;margin-right:2px}
 .dd-wish .dd-ww{font-weight:700}
 .dd-wish .dd-wok{flex:none;width:24px;height:24px}
 .dd-wish .dd-wok svg{width:100%;height:100%;display:block}
@@ -19,12 +19,13 @@
 .dd-wish.done .dd-tail,.dd-wish.done .dd-tail::after{background:var(--w-mint)}
 html[data-layout="phone"] .dd-wish{font-size:16px;max-width:calc(100% - 92px);padding:4px 12px 5px 5px;gap:6px}
 html[data-layout="phone"] .dd-wish .dd-wh{width:34px;height:34px}
-html[data-layout="phone"] .dd-wish .dd-wt b{font-size:14px}
 #stage.slimhud .dd-wish{display:none}
 
 /* ---- the Bond meter opens the Bond track ---- */
 #hud .bond.dd-tap{cursor:pointer}
-#hud .bond.dd-tap:focus-visible{outline:3px solid var(--ink);outline-offset:3px;border-radius:10px}
+.dd-trbtn{position:absolute;left:-4px;right:-4px;top:50%;height:calc(100% + 8px);min-height:44px;transform:translateY(-50%);margin:0;padding:0;border:0;border-radius:10px;background:transparent;cursor:pointer;z-index:2;--fr:none;box-shadow:none}
+.dd-trbtn::before,.dd-trbtn::after{content:none!important}
+.dd-trbtn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 
 /* ---- the Bond track: a crayon ladder, Bond 1 at the top ---- */
 .dd-trsub{margin:0 0 8px}

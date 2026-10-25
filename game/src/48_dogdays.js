@@ -201,13 +201,12 @@ function ddTrackOpen(id) {
 (function ddBondMeter() {
   const b = $('#hud .bond'); if (!b) return;
   b.addEventListener('click', (e) => { if (!ddReady() || cur.mode === 'title' || cur.mode === 'adopt') return; e.stopPropagation(); ddTrackOpen(); });
-  b.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && ddReady()) { e.preventDefault(); ddTrackOpen(); } });
 })();
-function ddMeterSync() {
-  const b = $('#hud .bond'); if (!b) return; const on = ddReady();
-  if (on && b.getAttribute('role') !== 'button') { b.setAttribute('role', 'button'); b.setAttribute('tabindex', '0'); b.classList.add('dd-tap'); }
-  if (on) b.setAttribute('aria-label', tt('dd.tr_open', 'Bond {l}. Open the Bond track.', { l: S.bond.level }));
-  if (!on && b.getAttribute('role') === 'button') { b.removeAttribute('role'); b.removeAttribute('tabindex'); b.removeAttribute('aria-label'); b.classList.remove('dd-tap'); }
+function ddMeterSync() { // a see-through button over the Bond meter (at least 44 px tall, so phones get a big enough tap)
+  const b = $('#hud .bond'); if (!b) return; const on = ddReady(); let btn = b.querySelector('.dd-trbtn');
+  if (on && !btn) { btn = document.createElement('button'); btn.type = 'button'; btn.className = 'dd-trbtn'; b.appendChild(btn); b.classList.add('dd-tap'); }
+  if (on) { const l = tt('dd.tr_open', 'Bond {l}. Open the Bond track.', { l: S.bond.level }); if (btn.getAttribute('aria-label') !== l) btn.setAttribute('aria-label', l); }
+  if (!on && btn) { btn.remove(); b.classList.remove('dd-tap'); }
 }
 
 /* ---------------- 3. the dog diary ---------------- */

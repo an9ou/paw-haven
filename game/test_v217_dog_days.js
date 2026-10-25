@@ -21,7 +21,7 @@ run('v217_dog_days', async (t) => {
   sec('1. the save: an old save loads with empty Dog Days fields, S.v stays 1; under the harness nothing shows without prefs.ddTest');
   await t.boot(); await t.adopt({ sex: 'girl' });
   ok(await t.until(() => !!(window.__paw && window.__paw.dd), null, 4000) && !(await ev(() => window.__paw.dd.on())), 'the hook exists, the feature is off for the older suites');
-  ok(!(await ev(() => !!document.querySelector('#ddWish:not([hidden])'))) && !(await ev(() => document.querySelector('#hud .bond').getAttribute('role'))), 'no wish chip, the Bond meter is not a button');
+  ok(!(await ev(() => !!document.querySelector('#ddWish:not([hidden])'))) && !(await ev(() => !!document.querySelector('#hud .bond .dd-trbtn'))), 'no wish chip, the Bond meter is not a button');
   const oldJson = await ev(() => { const P = window.__paw; P.saveNow(); const s = JSON.parse(localStorage.getItem('pawhaven_proto_v1')); delete s.dd; return JSON.stringify(s); });
   await t.ctx.close(); await t.mk({ prefs: { fwTest: true, ddTest: true }, storage: { pawhaven_proto_v1: oldJson } }); await t.p.goto(URL); await t.p.waitForSelector('#tContinue'); await t.p.click('#tContinue'); await t.untilMode('yard');
   let s = await t.S();
@@ -87,7 +87,7 @@ run('v217_dog_days', async (t) => {
 
   sec('3. the Bond track: tap the Bond meter; the real gates from the tables; gifts at 3, 5, 7 and 10');
   await fresh();
-  ok(await ev(() => { const b = document.querySelector('#hud .bond'); return b.getAttribute('role') === 'button' && b.tabIndex === 0; }), 'the Bond meter is a button');
+  ok(await ev(() => { const b = document.querySelector('#hud .bond .dd-trbtn'); return !!b && b.getBoundingClientRect().height >= 44 && /Open the Bond track/.test(b.getAttribute('aria-label')); }), 'the Bond meter is a button, 44 px tall');
   await t.p.click('#hud .bond'); ok(await t.until(() => !!document.querySelector('#modal .dd-trackpop'), null, 3000), 'a tap opens the Bond track');
   ok(await ev(() => document.querySelectorAll('.dd-rung').length === 10 && document.querySelector('.dd-rung.now').dataset.l === '1'), 'ten rungs, Bond 1 marked "here"');
   const rows = await ev(() => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((L) => window.__paw.dd.rows(L)));
