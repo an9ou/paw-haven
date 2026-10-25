@@ -351,3 +351,10 @@ TODO(native) (lines to check with a native speaker):
 - TODO(native): Samoyed "Uhu-uhu!" may read as a cheer more than a bark; data.words.greyhound.liver "Fígado" may puzzle kids ("Marrom" is the alternative).
 - TODO(native): "Cão adulto" on the Dog Card (cards.age_line) is the generic masculine for a grown dog of either sex.
 - TODO(native): the Bath button is "Banho" (sentences say "dar banho"); the Wardrobe bar label is "Roupas" (the window says "Guarda-roupa").
+
+## v2.15
+
+- TODO(native): place names: "Campo de Treino" (Training Ground), "Piscina Tchibum" (Splash Pool, "tchibum" is the splash sound), "Trilha dos Girassóis", "Trilha do Bambuzal", "Trilha das Falésias" (all three runs are "Trilha", so the mission line shortens them to "Girassóis, Bambuzal ou Falésias").
+- TODO(native): agility words: "roseta" (as in "Roseta do Desfile"), "Slalom", "Barra de salto", "Pneu", "Vai!" for the Go! button.
+- TODO(native): the dogs' agility and pool lines avoid gendered adjectives ("Patinhas curtas, pelo branco", "Tenho altura demais") because no {sex} arg reaches them, and "ainda é filhote demais" replaces "too little".
+- TODO(native): "nadadinha" / "Nadar" for paddle (a dog paddle in shallow water), pool.sprink_hint "Chuá, chuá!".

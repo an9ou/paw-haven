@@ -20,11 +20,12 @@ module.exports = {
     const lay = () => ev(() => {
       const tp = document.querySelector('#trainPanel'), P = tp.getBoundingClientRect(), bar = document.querySelector('#bar').getBoundingClientRect(), vh = innerHeight;
       const R = (s) => { const e = document.querySelector(s); if (!e) return null; const r = e.getBoundingClientRect(); return { t: r.top, b: r.bottom }; };
-      return { st: tp.scrollTop, P: { t: P.top, b: P.bottom }, barT: bar.top, vh, line: R('#trLine'), focus: R('#trainPanel .trfocus'), btn: R('#trainPanel .trbtns') };
+      return { st: tp.scrollTop, P: { t: P.top, b: P.bottom }, barT: bar.height ? bar.top : Infinity, barShown: bar.height > 0, vh, line: R('#trLine'), focus: R('#trainPanel .trfocus'), btn: R('#trainPanel .trbtns') };
     });
     const inside = (r, L) => !!r && r.t >= L.P.t - 0.5 && r.b <= Math.min(L.P.b, L.barT, L.vh) + 0.5;
     let L = await lay();
     ok(L.st === 0, `${tag}training panel starts scrolled to the top (${L.st})`);
+    ok(!L.barShown, `${tag}v2.15.1: the action bar is hidden while training (the panel's Stop / x is the way out)`);
     ok(inside(L.focus, L), `${tag}the Focus meter is fully in view without scrolling (${JSON.stringify(L.focus)} in panel ${JSON.stringify(L.P)}, bar ${Math.round(L.barT)})`);
     ok(inside(L.line, L), `${tag}the status/hint line is not clipped by the panel or the bar (${JSON.stringify(L.line)})`);
     ok(inside(L.btn, L), `${tag}the Start button row is in view (${JSON.stringify(L.btn)})`);

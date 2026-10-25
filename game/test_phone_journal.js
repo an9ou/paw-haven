@@ -55,11 +55,11 @@ async function suite(t, device) {
       return out; });
     ok(bad.length === 0, `${device} ${where}: text >= 15 px (captions 13)${bad.length ? ' -> ' + bad.slice(0, 8).join(' | ') : ''}`); };
   const all = async (where) => { await noH(where); await targets(where); await texts(where); await t.SH(device.replace(/\s/g, '') + '_' + where.replace(/\W+/g, '_')); };
-  const openJ = async (tab) => { if (await ev(() => !document.getElementById("modal").hidden)) await closeAll(); await p().locator('[data-act=journal]').first().tap(); await p().waitForSelector('.panel.journal'); if (tab) { await p().locator(`[data-jt=${tab}]`).first().tap(); await p().waitForSelector(`.panel.journal.j-${tab}`); } await sleep(150); };
+  const openJ = async (tab) => { if (await ev(() => !document.getElementById("modal").hidden)) await closeAll(); await t.dock('journal'); await p().locator('[data-act=journal]').first().tap(); await p().waitForSelector('.panel.journal'); if (tab) { await p().locator(`[data-jt=${tab}]`).first().tap(); await p().waitForSelector(`.panel.journal.j-${tab}`); } await sleep(150); };
   const closeAll = async () => { await ev(() => window.__paw.closeModal ? window.__paw.closeModal() : document.querySelector('#modal .x') && document.querySelector('#modal .x').click()); await t.modalGone(); };
 
   sec(device + ': journal tabs');
-  await p().locator('[data-act=journal]').first().tap(); await p().waitForSelector('.panel.journal');
+  await t.dock('journal'); await p().locator('[data-act=journal]').first().tap(); await p().waitForSelector('.panel.journal');
   for (const tab of ['profile', 'family', 'coats', 'treasures', 'food', 'toys', 'clothes', 'garden', 'recipes']) {
     const b = p().locator(`[data-jt=${tab}]`).first(); await b.scrollIntoViewIfNeeded(); await b.tap(); await p().waitForSelector(`.panel.journal.j-${tab}`);
     ok(true, `${device}: ${tab} opens`); await all('journal ' + tab);

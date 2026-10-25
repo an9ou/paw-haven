@@ -3,7 +3,7 @@
 // node game/run_tests.js v27_review
 require('./test_lib').run('v27_review', async (t) => {
   const { ok, sec } = t; const ev = (f, a) => t.ev(f, a), p = () => t.p;
-  const scrub = async () => { for (let i = 0; i < 40 && (await t.mode()) === 'bath' && !(await ev(() => window.__paw.S.stats.clean >= 100)); i++) await p().keyboard.press('Space'); };
+  const scrub = async () => { for (let i = 0; i < 40 && (await t.mode()) === 'bath' && !(await ev(() => window.__paw.S.stats.clean >= 99.5)); i++) await p().keyboard.press('Space'); }; // 99.5: the game clock ticks Cleanliness a hair below 100 right after the bath sets it
 
   sec('1. a bath ends with the shake again (one dog)');
   await t.newGame({}, { coins: 500 }); await t.home('yard');

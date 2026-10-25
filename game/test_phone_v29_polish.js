@@ -67,7 +67,7 @@ async function suite(t, W, H) {
     await t.until(() => { const r = document.querySelector('#msCardG > rect'); if (!r) return false; const b = r.getBoundingClientRect(); return b.width >= 47.5; }, null, 4000);
   }
   // v2.9 review: the camera slides the clipboard to the edge (the leader by the dog house with the Feed tray open). The tap box stays fully on screen over the clipboard, or switches off
-  await p.locator('#bar [data-act=feed]').tap(); ok(await t.waitPop(true), `${tag}: feed tray again`); await settle();
+  await t.dock('feed'); await p.locator('#bar [data-act=feed]').tap(); ok(await t.waitPop(true), `${tag}: feed tray again`); await settle();
   const slide = await ev(() => new Promise((res) => {
     const svg = document.querySelector('#view > svg.world'), v0 = svg.getAttribute('viewBox'), out = [];
     const xs = [0, 60, 120, 160, 180, 190, 200, 210, 220, 240, 260, 300]; let i = 0;

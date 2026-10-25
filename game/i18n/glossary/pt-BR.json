@@ -214,7 +214,18 @@
     "Yes / No": "Sim / Não",
     "Pupuccino Café": "Café Pupuccino",
     "Hilltop Meadow": "Campina do Morro",
-    "Lighthouse Pier": "Píer do Farol"
+    "Lighthouse Pier": "Píer do Farol",
+    "Pip's Sprout Cart": "Carrinho de Mudas de Pip",
+    "Training Ground": "Campo de Treino",
+    "Splash Pool": "Piscina Tchibum",
+    "Sunflower Lanes": "Trilha dos Girassóis",
+    "Bamboo Grove Trail": "Trilha do Bambuzal",
+    "Seaside Cliffs Run": "Trilha das Falésias",
+    "agility course": "circuito de agility",
+    "rosette": "roseta",
+    "Doggy Life Vest": "Colete Salva-Vidas Canino",
+    "Float fetch": "Bola na água",
+    "Paddle": "Nadar"
   },
   "bans": [
     {

@@ -1,0 +1,122 @@
+/* v2.16 First Week (tag fw, 47_firstweek.js): the next-unlock line, the name tag, the Bond 2 party, the calendars, the lighter phone dock. Phone rules under html[data-layout="phone"]. */
+
+/* ---- the next unlock line: a little taped tag hanging under the HUD Bond meter (desktop), a second line inside the Bond meter (phones) ---- */
+#hud .bond{position:relative}
+.fw-next{position:absolute;top:calc(100% + 13px);right:-190px;z-index:6;white-space:nowrap;font-family:var(--font-hand);font-weight:700;font-size:19px;line-height:1.1;color:var(--ink);
+  padding:4px 12px 5px;background:var(--paper);border:2px solid var(--ink);border-radius:9px 13px 8px 12px;box-shadow:2px 3px 0 rgba(91,61,50,.15);transform:rotate(-1.2deg);pointer-events:auto}
+.fw-next::before{content:"";position:absolute;width:42px;height:13px;top:-9px;left:calc(50% - 21px);background:var(--tape) center/100% 100% no-repeat;transform:rotate(-5deg)}
+.fw-next[hidden]{display:none}
+.fw-nl{display:inline-block;font-size:15px;padding:0 5px;margin-right:2px;border-radius:6px;background:var(--w-yellow);border:1.5px solid var(--ink);transform:rotate(-3deg)}
+#stage.slimhud .fw-next{display:none}
+.fw-nshort{display:none}
+html[data-layout="phone"] .fw-nlong{display:none}
+html[data-layout="phone"] .fw-nshort{display:inline}
+#gdLayer.gd-tray{z-index:17}
+html[data-layout="phone"] #hud .bond{flex-wrap:wrap;row-gap:0;align-content:center}
+html[data-layout="phone"] .fw-next{position:static;flex-basis:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:15px;line-height:1.15;padding:0;border:0;background:none;box-shadow:none;transform:none;margin-top:1px}
+html[data-layout="phone"] .fw-next::before{display:none}
+html[data-layout="phone"] .fw-nl{font-size:13px;padding:0 3px;border-width:1px;transform:none}
+html[data-layout="phone"] #hud.hexp .fw-next,html[data-layout="phone"] #hud:has(.buffchip:not([hidden])) .fw-next{display:none}
+
+/* ---- the name tag ---- */
+.portrait{position:relative}
+.fw-htag{position:absolute;left:-7px;bottom:-5px;width:20px;height:13px;border:2px solid var(--ink);border-radius:4px 8px 8px 4px;background:var(--c,#F2C744);transform:rotate(-14deg);pointer-events:none}
+.fw-htag::after{content:"";position:absolute;left:2px;top:3px;width:3px;height:3px;border-radius:50%;background:var(--paper);border:1px solid var(--ink)}
+.fw-tagsheet{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.fw-tagart{flex:1 1 220px;min-width:0;max-width:320px}
+.fw-tagart svg{width:100%;height:auto;display:block;overflow:visible}
+.fw-tagform{flex:1 1 220px;display:flex;flex-direction:column;gap:6px}
+.fw-tagcols{display:flex;gap:10px;flex-wrap:wrap}
+.fw-tagcol{width:44px;height:44px;border-radius:50% 46% 52% 48%;border:2.5px solid var(--ink);background:var(--c);padding:0;cursor:pointer;--fr:none}
+.fw-tagcol[aria-pressed="true"]{outline:3px solid var(--ink);outline-offset:3px}
+
+/* ---- the Bond 2 party ---- */
+#fwConfetti{position:absolute;inset:0;z-index:25;pointer-events:none;overflow:hidden}
+.fw-cf{position:absolute;top:-24px;width:18px;height:18px;animation:fwFall 2.4s cubic-bezier(.3,.6,.5,1) var(--dl) both}
+@keyframes fwFall{0%{transform:translate(0,var(--y0)) rotate(0)}100%{transform:translate(var(--dx),110vh) rotate(var(--r));opacity:.4}}
+[data-motion="off"] .fw-cf{animation:none;top:auto;transform:translateY(calc(var(--y0) * 2)) rotate(var(--r))}
+.fw-partyhead{margin:0 0 2px;padding:0 46px;text-align:center;font-family:var(--font-hand);font-weight:700;font-size:26px;color:#C9475E}
+.unlocks .fw-gift{display:flex;align-items:center;gap:10px;padding:4px 8px;margin:2px 0 6px;border:2px dashed var(--ink);border-radius:12px 8px 14px 9px;background:var(--w-yellow)}
+.unlocks .fw-gift::before{content:none}
+.fw-gart{width:56px;height:56px;flex:none}
+.fw-gart svg{width:100%;height:100%;display:block}
+
+/* ---- the phone bar, option C: Care, Walk, Map, More (big), with a crayon tray above Care and More (47_firstweek.js) ---- */
+#bar .act{position:relative}
+html[data-layout="phone"]{--barH:calc(92px + env(safe-area-inset-bottom,0px))}
+html[data-layout="phone"] #bar.optc{position:relative;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:5px calc(6px + env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) calc(6px + env(safe-area-inset-left,0px));min-height:var(--barH);overflow:visible}
+html[data-layout="phone"] #stage.tk-in #bar.optc{grid-template-columns:repeat(3,minmax(0,1fr))}
+html[data-layout="phone"] #bar.optc > .act{min-height:80px;gap:4px;padding:6px 2px 4px}
+html[data-layout="phone"] #bar.optc .act .ic{width:38px;height:38px}
+html[data-layout="phone"] #bar.optc .act > span:not(.ic){font-size:19px;letter-spacing:0;transform:none;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+#bar .act[data-act="caremenu"]{--wash:var(--w-blue)} #bar .act[data-act="more"]{--wash:var(--w-lilac)}
+#bar .act.pop{transform:translateY(-3px) rotate(-1deg)!important;box-shadow:inset 0 -5px 0 -1px rgba(242,143,165,.55)}
+.barpop{position:absolute;bottom:calc(100% + 10px);z-index:8;display:flex;gap:8px;padding:10px 10px 12px;max-width:calc(100% - 12px);box-sizing:border-box;
+  background:radial-gradient(var(--dot,#E8DCCB) 1px,transparent 1.5px) 0 0/16px 16px,var(--paper);border:2.5px solid var(--ink);border-radius:14px 10px 16px 11px;box-shadow:3px 5px 0 rgba(91,61,50,.18);transform:rotate(-.6deg)}
+.barpop[hidden]{display:none}
+#bar.popon{z-index:16}
+.barpop::after{content:"";position:absolute;bottom:-11px;width:18px;height:18px;background:var(--paper);border-right:2.5px solid var(--ink);border-bottom:2.5px solid var(--ink);transform:rotate(45deg)}
+.barpop[data-pop="caremenu"]{left:6px} .barpop[data-pop="caremenu"]::after{left:calc(12.5% - 12px)}
+.barpop[data-pop="more"]{right:6px} .barpop[data-pop="more"]::after{right:calc(12.5% - 12px)}
+html[data-layout="phone"] #bar .barpop .act{flex:1 1 0;min-width:96px;max-width:124px;min-height:76px;gap:4px;padding:6px 4px;transform:none!important}
+html[data-layout="phone"] #bar .barpop .act .ic{width:34px;height:34px}
+html[data-layout="phone"] #bar .barpop .act > span:not(.ic){font-size:17px;white-space:normal;text-align:center;line-height:1.05;letter-spacing:0;transform:none;overflow:visible;padding:0 2px}
+.fw-newtag{position:absolute;top:1px;right:1px;z-index:2;font-family:var(--font-hand);font-weight:700;font-size:15px;line-height:1;padding:2px 6px 3px;background:#F28FA5;color:var(--ink);border:1.5px solid var(--ink);border-radius:8px 10px 7px 9px;transform:rotate(8deg);pointer-events:none}
+.fw-newtag.inl{position:static;display:inline-block;margin-left:6px;transform:rotate(4deg)}
+#bar .act.fw-new .ic{animation:fwWig 1.6s ease-in-out 3}
+@keyframes fwWig{0%,100%{transform:none}50%{transform:rotate(-8deg) translateY(-2px)}}
+[data-motion="off"] #bar .act.fw-new .ic{animation:none}
+
+/* ---- the calendars ---- */
+.fw-calpop{max-width:min(980px,calc(100% - 20px))}
+.fw-cal{display:flex;flex-direction:column;gap:10px}
+.fw-hello{margin:0;font-family:var(--font-hand);font-weight:700;font-size:24px;text-align:center}
+.fw-wish{display:flex;align-items:center;gap:10px;padding:6px 10px;border:2px solid var(--ink);border-radius:14px 9px 12px 10px;background:var(--w-pink);transform:rotate(-.4deg)}
+.fw-whead{width:58px;height:58px;flex:none}
+.fw-whead svg{width:100%;height:100%;display:block}
+.fw-wsay p{margin:0}
+.fw-pages{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start}
+.fw-page{flex:1 1 300px;min-width:0;position:relative;padding:10px 14px 12px;border:2px solid var(--ink);border-radius:10px 14px 9px 13px;background:radial-gradient(var(--dot,#E8DCCB) 1px,transparent 1.5px) 0 0/18px 18px,var(--paper);box-shadow:3px 4px 0 rgba(91,61,50,.12)}
+.fw-page h3{margin:0;font-family:var(--font-hand);font-weight:700;font-size:28px;line-height:1.1}
+.fw-page > .small{margin:2px 0 6px}
+.fw-monp{background:radial-gradient(rgba(91,61,50,.12) 1px,transparent 1.5px) 0 0/18px 18px,var(--fwc,var(--paper));padding-top:4px}
+.fw-border{display:block;width:100%;height:34px;margin:0 0 -4px}
+.fw-theme{margin:0 0 6px;font-family:var(--font-hand);font-size:21px}
+.fw-wdays{list-style:none;margin:6px 0;padding:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.fw-wd,.fw-md{position:relative;aspect-ratio:1;display:flex;align-items:center;justify-content:center;border:2px solid var(--ink);border-radius:50% 46% 52% 48%;background:var(--paper);font-family:var(--font-read);font-size:15px;color:var(--muted)}
+.fw-wd b,.fw-md b{font-weight:400}
+.fw-wd.on,.fw-md.on{background:#FFF4DF}
+.fw-wd.today,.fw-md.today{outline:3px solid #F28FA5;outline-offset:1px}
+.fw-pc{display:flex;width:80%;height:80%;align-items:center;justify-content:center}
+.fw-paw{width:100%;height:100%;display:block;overflow:visible}
+.fw-dot{position:absolute;right:-3px;top:-3px;width:11px;height:11px;border-radius:50%;background:#F2C744;border:1.5px solid var(--ink)}
+.fw-mgrid{list-style:none;margin:6px 0;padding:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;max-width:360px}
+.fw-md{border-width:1.5px;font-size:13px}
+.fw-md .fw-paw{width:78%;height:78%}
+.fw-rews{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:5px}
+.fw-rew{display:grid;grid-template-columns:auto 46px minmax(0,1fr) auto;align-items:center;gap:8px;padding:3px 6px;border-radius:10px;min-height:48px}
+.fw-rew.can{background:var(--w-yellow);border:2px dashed var(--ink)}
+.fw-rew.got{opacity:.62}
+.fw-when{font-family:var(--font-hand);font-weight:700;font-size:20px;min-width:62px}
+.fw-rart{width:46px;height:46px;display:block}
+.fw-rart svg{width:100%;height:100%;display:block}
+.fw-two{display:flex;width:100%;height:100%}
+.fw-two svg{width:50%;height:100%}
+.fw-rname{font-size:16px;line-height:1.2;min-width:0;overflow-wrap:anywhere}
+.fw-claim{min-height:44px;font-size:17px;padding:6px 14px 7px}
+.fw-got{font-family:var(--font-hand);font-weight:700;font-size:19px;color:#3E8A55}
+.fw-wait{white-space:nowrap}
+.fw-cap{margin:8px 0 0}
+.fw-ic{width:100%;height:100%;display:block}
+html[data-layout="phone"] .fw-page{flex-basis:100%;padding:8px 10px 10px}
+html[data-layout="phone"] .fw-page h3{font-size:25px}
+html[data-layout="phone"] .fw-rew{grid-template-columns:auto 40px minmax(0,1fr) auto;gap:6px}
+html[data-layout="phone"] .fw-rart{width:40px;height:40px}
+html[data-layout="phone"] .fw-when{min-width:50px;font-size:18px}
+html[data-layout="phone"] .fw-rname{font-size:15px}
+html[data-layout="phone"] .fw-wait{font-size:13px}
+html[data-layout="phone"] .fw-md{font-size:13px}
+html[data-layout="phone"] .fw-mgrid{max-width:300px;gap:3px;margin:4px auto}
+html[data-layout="phone"] .fw-wdays{gap:4px;max-width:340px}
+/* narrow phones (360 px): the next-unlock line drops the Next chip and may take two lines, as the translations do (51_i18n_room.css) */
+@media (max-width:380px){html[data-layout="phone"] .fw-next .fw-nl{display:none}html[data-layout="phone"] .fw-next{white-space:normal;text-overflow:clip;font-size:15px;line-height:1.02;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}}

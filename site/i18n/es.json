@@ -904,5 +904,7 @@
   "guide.faq.q4": "¿Mi perro puede enfermar o escaparse?",
   "guide.faq.a4": "Nunca. Los medidores solo bajan: tu perro tiene un poco de sueño o de hambre, y un mimo empieza a arreglarlo.",
   "guide.cta": "¿Todo listo? El juego te espera en la página de inicio.",
-  "guide.cta_btn": "Jugar ahora"
+  "guide.cta_btn": "Jugar ahora",
+  "about.kofi": "Apóyanos en Ko-fi",
+  "footer.kofi": "Ko-fi"
 }

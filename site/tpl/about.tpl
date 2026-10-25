@@ -25,6 +25,7 @@
       <p class="sign"><img class="aleaf" src="/img/art/momiji.svg" alt="" width="32" height="32"><span>— an9ou</span></p>
       <div class="cta">
         <a class="play" id="itchcta" href="https://an9ou.itch.io/doodle-doggo">{{t about.itch}}</a>
+        <a class="play kofi" id="kofi" href="https://ko-fi.com/doodledoggoapp" rel="noopener">&#9749; {{t about.kofi}}</a>
         <p>{{t about.mail}}</p>
       </div>
     </article>
@@ -32,7 +33,7 @@
   <footer class="foot">
     <a href="https://www.instagram.com/doodledoggo.app/" id="insta" rel="noopener">{{t footer.instagram}}</a> · <a href="mailto:contact@doodledoggo.app" id="contact" class="contact">{{t footer.contact}}</a> · <a href="{{u /privacy}}">{{t footer.privacy}}</a> ·
     <a href="{{u /}}">{{t footer.home}}</a> · <a href="{{u /dogs}}">{{t footer.dogs}}</a> · <a href="{{u /map}}">{{t footer.map}}</a> ·
-    <a href="https://an9ou.itch.io/doodle-doggo">{{t footer.itch}}</a>
+    <a href="https://an9ou.itch.io/doodle-doggo">{{t footer.itch}}</a> · <a href="https://ko-fi.com/doodledoggoapp" id="kofilink" rel="noopener">{{t footer.kofi}}</a>
     <div class="small">{{t footer.credit}}</div>
   </footer>
 </main>

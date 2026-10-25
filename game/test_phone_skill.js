@@ -53,7 +53,7 @@ require('./test_lib').run('phone_skill', async (t) => {
     const refill = () => ev(() => { window.__paw.S.dog.focus = { v: 100, at: window.__paw.S.gameMin }; });
 
     sec(tag + 'trick training');
-    await t.home(); await p.locator('[data-act=play]').tap(); await t.waitPop(true); await p.locator('[data-play=tricks]').tap(); await settle(t);
+    await t.home(); await t.dock('play'); await p.locator('[data-act=play]').tap(); await t.waitPop(true); await p.locator('[data-play=tricks]').tap(); await settle(t);
     ok(await p.locator('#trainPanel:not([hidden])').count() === 1, tag + 'the training panel opens');
     const pb = await p.locator('#trainPanel').boundingBox(), vw = await ev(() => innerWidth), vh = await ev(() => innerHeight);
     ok(pb.width >= vw - 2 && pb.y + pb.height <= vh + 1, `${tag}the panel is full width and on screen (${Math.round(pb.width)}x${Math.round(pb.height)})`);

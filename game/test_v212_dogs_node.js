@@ -129,17 +129,22 @@ let ref = null; for (const r of ['v212-base', 'origin/v212-base']) { try { cp.ex
 if (!ref) console.log('   no v212-base ref here, skipped');
 else { const OLD0 = load(cp.execSync(`git show ${ref}:dogs/pawart_dogs.js`, { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 << 20 }));
   // v2.12 owner: the old poodle is shown as "Miniature Poodle" (key unchanged). Only its aria-label text changes, so the old renders are compared with that label renamed
-  const ren = (x) => x.replace(/ the Poodle([,"])/g, ' the Miniature Poodle$1'), OLD = { dog: (k, o) => ren(OLD0.dog(k, o)), dogHead: (k, o) => ren(OLD0.dogHead(k, o)) };
+  // v2.15.2 (owner, 25 Oct 2026: every colour fill stays inside its outline): every render's fills moved on purpose, so the old renders are compared by
+  // their ink (the same normaliser as INK=1 in dogs/check_identical.js); the collie draws its white neck tube now, so its ink changed too and it is left out
+  const ink = (x) => x.replace(/<path d="[^"]*"( fill="[^"]*")( fill-opacity="[^"]*")?\/>/g, '').replace(/<path d="[^"]*" stroke="[^"]*" stroke-width="[\d.]+" stroke-linecap="round" opacity="\.(42|32)"\/>/g, '')
+    .replace(/<path d="[^"]*"( fill="none")? stroke="(?!#2E2320)#[0-9A-Fa-f]{6}" stroke-width="[\d.]+" stroke-linecap="round"( stroke-linejoin="round")?( transform="[^"]*")?\/>/g, '');
+  const ren = (x) => ink(x.replace(/ the Poodle([,"])/g, ' the Miniature Poodle$1')), OLD = { dog: (k, o) => ren(OLD0.dog(k, o)), dogHead: (k, o) => ren(OLD0.dogHead(k, o)) };
+  const PA0 = PA, PAI = { dog: (k, o) => ink(PA0.dog(k, o)), dogHead: (k, o) => ink(PA0.dogHead(k, o)) };
   POSES.forEach((p, i) => AGES.forEach((age) => [null, { neck: 'Red Bandana' }, { body: 'Ghost Sheet' }, { head: 'Party Hat', body: 'Little Bat Costume' }, { body: 'Trick-or-Treat Ghost' }].forEach((of, oi) => {
     const o = { pose: p, age: age || undefined, sparkle: !!((i + oi) % 2), facing: (i + oi) % 3 ? 'right' : 'left' }; if (of) o.outfit = of;
-    ok(OLD.dog('poodle', o) === PA.dog('poodle', o), `poodle ${p} ${age || 'adult'} outfit#${oi} identical to ${ref} apart from the name`); })));
-  ['shiba', 'golden', 'samoyed'].forEach((k) => { ok(OLD.dog('poodle', { pose: 'sit', mix: { head: k } }) === PA.dog('poodle', { pose: 'sit', mix: { head: k } }), `poodle body ${k} head identical`);
-    ok(OLD.dog(k, { pose: 'sit', mix: { head: 'poodle' } }) === PA.dog(k, { pose: 'sit', mix: { head: 'poodle' } }), `${k} body poodle head identical`); });
+    ok(OLD.dog('poodle', o) === PAI.dog('poodle', o), `poodle ${p} ${age || 'adult'} outfit#${oi} ink identical to ${ref} apart from the name`); })));
+  ['shiba', 'golden', 'samoyed'].forEach((k) => { ok(OLD.dog('poodle', { pose: 'sit', mix: { head: k } }) === PAI.dog('poodle', { pose: 'sit', mix: { head: k } }), `poodle body ${k} head identical`);
+    ok(OLD.dog(k, { pose: 'sit', mix: { head: 'poodle' } }) === PAI.dog(k, { pose: 'sit', mix: { head: 'poodle' } }), `${k} body poodle head identical`); });
   ok(PA.DOGS.find((d) => d.key === 'poodle').breed === 'Miniature Poodle', 'the old poodle is shown as Miniature Poodle');
-  OLD21.forEach((k) => { ok(OLD.dogHead(k) === PA.dogHead(k), `head ${k} identical to ${ref}`);
+  OLD21.filter((k) => k !== 'collie').forEach((k) => { ok(OLD.dogHead(k) === PAI.dogHead(k), `head ${k} ink identical to ${ref}`);
     ['idle', 'sleep', 'beg', 'rollover'].forEach((p, i) => { const o = { pose: p, outfit: [null, { neck: 'Red Bandana' }, { body: 'Ghost Sheet' }, { head: 'Party Hat' }][i], age: [undefined, 'puppy', undefined, 'newborn'][i], sparkle: i === 2 };
-      ok(OLD.dog(k, o) === PA.dog(k, o), `${k} ${p} identical to ${ref}`); });
-    ok(OLD.dog(k, { pose: 'sit', mix: { head: 'samoyed' } }) === PA.dog(k, { pose: 'sit', mix: { head: 'samoyed' } }), `${k} mix identical to ${ref}`); }); }
+      ok(OLD.dog(k, o) === PAI.dog(k, o), `${k} ${p} ink identical to ${ref}`); });
+    ok(OLD.dog(k, { pose: 'sit', mix: { head: 'samoyed' } }) === PAI.dog(k, { pose: 'sit', mix: { head: 'samoyed' } }), `${k} mix ink identical to ${ref}`); }); }
 
 console.log(`v212_dogs: ${pass} passed, ${fail} failed`);
 if (fail) { console.log(fails.join('\n')); process.exit(1); }

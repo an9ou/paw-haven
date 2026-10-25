@@ -20,7 +20,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 class T {
   constructor(name, opts) {
-    this.name = name; this.opts = Object.assign({ time: 'day', weather: 'cloudy', season: 'summer', fest: 'off', date: null, clock: true, timeout: 240000, packCare: false, lang: 'en' }, opts || {}); // v2.5: season / festival pins (summer, off) and opts.date 'YYYY-MM-DD' for the fake clock. v2.7: packCare false pins prefs.crOne (care acts on the active dog only, as before v2.7)
+    this.name = name; this.opts = Object.assign({ time: 'day', weather: 'cloudy', season: 'summer', fest: 'off', date: null, clock: true, timeout: 240000, packCare: false, lang: 'en', map215: false, ground: false }, opts || {}); // v2.5: season / festival pins (summer, off) and opts.date 'YYYY-MM-DD' for the fake clock. v2.7: packCare false pins prefs.crOne (care acts on the active dog only, as before v2.7)
     this.fails = []; this.errors = []; this.p = null; this.ctx = null; this.b = null; this.checks = 0; this.t0 = Date.now();
     // the page clock: "today 10:00" local, ticking. Computed once per suite so reloads and new pages agree.
     const base = this.opts.date ? new Date(this.opts.date + 'T10:00:00') : new Date(); base.setHours(10, 0, 0, 0); this.clockOffset = base.getTime() - Date.now();
@@ -57,6 +57,9 @@ class T {
         if (!cfg.packCare && !('crOne' in pr)) { pr.crOne = true; ch = true; }
         if (!('lang' in pr)) { pr.lang = cfg.lang == null ? null : cfg.lang; ch = true; } // v2.14: the language pin (a pick in the game moves it, so a reload keeps the pick) // v2.7: pack care pinned off for the older suites (V27.md section 1)
         for (const k in cfg.prefs || {}) if (!(k in pr)) { pr[k] = cfg.prefs[k]; ch = true; }
+        // v2.15 (V215.md 13b): the new map and places (prefs.mpTest) and the v2.15 ground (prefs.grTest) are pinned off unless the suite passes
+        // map215: true / ground: true (ground: true also turns the map on, since grOn needs mpOn), or sets the prefs itself
+        if (!('mpTest' in pr)) { pr.mpTest = !!(cfg.map215 || cfg.ground); ch = true; } if (!('grTest' in pr)) { pr.grTest = !!cfg.ground; ch = true; }
         if (ch) localStorage.setItem(PK, JSON.stringify(pr));
         // 3) one-time storage seeding (old-save tests)
         if (cfg.storage && !sessionStorage.getItem('__pawSeeded')) { sessionStorage.setItem('__pawSeeded', '1'); for (const k in cfg.storage) localStorage.setItem(k, cfg.storage[k]); }
@@ -65,7 +68,7 @@ class T {
       window.__toasts = [];
       const arm = () => { const el = document.getElementById('toasts'); if (!el) return; new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((n) => { if (n.classList && n.classList.contains('toast')) window.__toasts.push(n.textContent); }))).observe(el, { childList: true }); };
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arm); else arm();
-    }, { clock: !!o.clock, offset: this.clockOffset, time: o.time, weather: o.weather, season: o.season, fest: o.fest, packCare: !!o.packCare, lang: o.lang === undefined ? 'en' : o.lang, prefs: o.prefs || {}, storage: o.storage || null });
+    }, { clock: !!o.clock, offset: this.clockOffset, time: o.time, weather: o.weather, season: o.season, fest: o.fest, packCare: !!o.packCare, lang: o.lang === undefined ? 'en' : o.lang, prefs: o.prefs || {}, storage: o.storage || null, map215: !!o.map215, ground: !!o.ground });
     const p = await ctx.newPage();
     p.on('console', (m) => { if (m.type() === 'error') this.errors.push(m.text()); }); p.on('pageerror', (e) => this.errors.push(e.message));
     this.p = p; return p;
@@ -106,6 +109,13 @@ class T {
   // wait for the level-up modal (after something that crosses a Bond level) then dismiss it
   async luWait(ms) { if (await this.until(() => !!document.getElementById('luOk'), null, ms || 1500)) await this.lu(); }
   rnd(v) { return this.p.evaluate((v) => { if (!window.__rnd0) window.__rnd0 = Math.random; Math.random = v == null ? window.__rnd0 : () => v; }, v); }
+  // v2.16 option C phone bar: Feed, Play and Bath & nap sit in the Care tray, Wardrobe and Journal in the More tray. Before a test taps one of
+  // those buttons on a phone, dock(act) opens its tray (no-op on desktop or when the button is already on show)
+  async dock(a) {
+    const pop = await this.p.evaluate((a) => { const b = document.querySelector(`#bar [data-act="${a}"]`), pp = b && b.closest('.barpop'); return pp && pp.hidden ? pp.dataset.pop : null; }, a);
+    if (!pop) return false; await this.p.evaluate((k) => document.querySelector(`#bar .act[data-act="${k}"]`).click(), pop);
+    return this.until((k) => { const q = document.querySelector(`#bar .barpop[data-pop="${k}"]`); return !!q && !q.hidden; }, pop, 3000);
+  }
   // ---------- UI flows (all condition-based) ----------
   // adoption through the real UI, then wait for the yard. o: { sex:'girl'|'boy', head: 'aria-label' of a carousel head, name:true -> accept the default name }
   async adopt(o) {

@@ -371,3 +371,10 @@ Game strings: 7362 / 7362 keys (v2.14), site strings 865 / 865 (incl. the new /g
 - TODO(native) data.dc_words_b.*: all 40 card-name nouns chosen MASCULINE (Cristal, Gland, Nuage, Croissant, Souci, Raton...) so the A-list adjectives (data.dc_words_a, another agent) can be masculine/epicene forms: "Joyeux Biscuit". Meanings loosened where the French word is feminine (Dewdrop=Cristal, Otter=Raton, Waffle=Beignet, Bubble=Ballon, Moon=Croissant, Sock=Bas, Mitten=Chausson, Fern=Lierre, Comet=Météore).
 - TODO(native): the Retour : {place} form is used for every Back to {place} button because the place name arrives as a var (no article agreement possible).
 - TODO(native): mail.new_mail "Nouveau courrier : {title}" shows a capital after the colon when the title is a sentence ("Un colis de Mme Plum").
+
+## v2.15
+
+- TODO(native): place names: "Terrain d'entraînement" (Training Ground, long for a map caption), "Piscine Plouf" (Splash Pool), "Allées des tournesols", "Sentier des bambous", "Sentier des falaises" (Grove and Run dropped). In running text they stay lowercase like "rue du marché" and "parc canin" ("au terrain d'entraînement", "à la piscine Plouf").
+- TODO(native): agility words: "cocarde" for the rosette (as in "Cocarde du défilé"; French agility says "flot"), "Haie" (jump bar), "Slalom", "Pneu", "Hop !" for the Go! button.
+- TODO(native): "barboter" for paddle and "ébrouade" for the wet-dog shake; pool.btn "Plouf !" for "Splash time".
+- TODO(native): the dogs' agility and pool lines avoid gendered participles and adjectives ("n'a rien vu venir", "Petites pattes et poil blanc") because no {sex} arg reaches them, and pool.sprink_done is "{name} a pris une bonne douche !".

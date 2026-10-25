@@ -11,7 +11,7 @@ require('./test_lib').run('phone_v210_ball', async (t) => {
       const tag = `${device} ${place}`;
       sec(`${tag}: start from the Play tray`);
       await t.home(place); await ev(() => { document.querySelectorAll('#toasts .toast').forEach((e) => e.remove()); });
-      await p().click('[data-act=play]'); await t.waitPop(true); await settled();
+      await t.dock('play'); await p().click('[data-act=play]'); await t.waitPop(true); await settled();
       const card = p().locator('[data-play="ball:Tennis Ball"]'); ok((await card.count()) === 1, `${tag}: the Play ball card is in the tray`);
       const cb = await card.boundingBox(); ok(cb && cb.height >= 44 && cb.width >= 44, `${tag}: the card is a 44 px tap target (${Math.round(cb.width)}x${Math.round(cb.height)})`);
       await card.tap();
@@ -75,7 +75,7 @@ require('./test_lib').run('phone_v210_ball', async (t) => {
       ok(E.vbW <= L.vbW + 1, `${tag}: the camera is the normal home crop again, not wider than the ball crop (${Math.round(E.vbW)} <= ${Math.round(L.vbW)})`);
     }
     sec(`${device}: the portrait-lock card pauses the game`);
-    await t.home('yard'); await p().click('[data-act=play]'); await t.waitPop(true); await settled(); await p().locator('[data-play="ball:Tennis Ball"]').tap(); await t.until(() => window.__paw.bl && window.__paw.bl.on, null, 5000);
+    await t.home('yard'); await t.dock('play'); await p().click('[data-act=play]'); await t.waitPop(true); await settled(); await p().locator('[data-play="ball:Tennis Ball"]').tap(); await t.until(() => window.__paw.bl && window.__paw.bl.on, null, 5000);
     await ev(() => window.__paw.bl.easy()); await t.sleep(150);
     const vp0 = p().viewportSize();
     await p().setViewportSize({ width: 800, height: 390 }); ok(await t.until(() => document.documentElement.hasAttribute('data-pslock'), null, 5000), `${device}: the lock card shows when the phone is held sideways`);

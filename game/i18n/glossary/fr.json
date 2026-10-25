@@ -214,7 +214,18 @@
     "Yes / No": "Oui / Non",
     "Pupuccino Café": "Café Pupuccino",
     "Hilltop Meadow": "Prairie de la colline",
-    "Lighthouse Pier": "Jetée du phare"
+    "Lighthouse Pier": "Jetée du phare",
+    "Pip's Sprout Cart": "chariot à pousses de Pip",
+    "Training Ground": "Terrain d'entraînement",
+    "Splash Pool": "Piscine Plouf",
+    "Sunflower Lanes": "Allées des tournesols",
+    "Bamboo Grove Trail": "Sentier des bambous",
+    "Seaside Cliffs Run": "Sentier des falaises",
+    "agility course": "parcours d'agility",
+    "rosette": "cocarde",
+    "Doggy Life Vest": "Gilet de sauvetage toutou",
+    "Float fetch": "Balle flottante",
+    "Paddle": "Barboter"
   },
   "bans": [
     {

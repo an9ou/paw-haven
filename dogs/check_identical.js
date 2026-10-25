@@ -4,7 +4,7 @@
    x age x sparkle, plus mixes, expecting, coats and facing left.
    Then it sweeps the v2.8 outfits and the v2.11.1 costumes (NEW_OUTS) on the working tree: every breed x pose x age x facing x sparkle renders with no
    NaN/undefined, and each outfit's own strokes touch the dog and stay within a margin of its body and head.
-   Usage: node dogs/check_identical.js [ref]   (env SWEEP_ONLY=1: the sweep alone, SWEEP_EXT=1: print the closest calls, SKIP=gsd: leave a redrawn breed out, SKIP=collie:howl: one breed's adult renders in one pose, SKIP_MIX=1: no mix body renders)
+   Usage: node dogs/check_identical.js [ref]   (env SWEEP_ONLY=1: the sweep alone, SWEEP_EXT=1: print the closest calls, SKIP=gsd: leave a redrawn breed out, SKIP=collie:howl: one breed's adult renders in one pose, SKIP_MIX=1: no mix body renders, INK=1: the ink only, see below)
      (prints ALL OK on success, exits 1 on any difference)
    The breeds are split over one child process per CPU core (env SHARD=i/n runs one share). */
 'use strict';
@@ -46,7 +46,11 @@ const SKIPMIX=!!process.env.SKIP_MIX;
 const skipped=lab=>{const t=lab.split(/[ |,/]/);if(SKIPMIX&&t[0]!=='head'&&t[1]==='mix')return true;if(SKIPB.some(k=>t.includes(k)))return true;
   if(!SKIPP.length||t[0]==='head'||t.includes('puppy')||t.includes('newborn')||t.includes('pup'))return false;
   const pose=t[1]==='mix'?t[3]:t[1];return SKIPP.some(([b,p])=>t[0]===b&&pose===p)};
-const cmp=(lab,f)=>{if(skipped(lab))return;n++;let a,b;try{a=f(OLD)}catch(e){a='ERR '+e.message}try{b=f(NEW)}catch(e){b='ERR '+e.message}if(a!==b&&bad.length<4000)bad.push(lab)};
+// v2.15.2 (owner, 25 Oct 2026: every colour fill stays inside its outline): env INK=1 compares the ink only, without the colour fills (fill paths
+// with no stroke), the crayon streaks and the coloured strokes (tube fills, socks, fur strokes), so it proves the fill change moved nothing else.
+const INKONLY=!!process.env.INK,ink=s=>s.replace(/<path d="[^"]*"( fill="[^"]*")( fill-opacity="[^"]*")?\/>/g,'').replace(/<path d="[^"]*" stroke="[^"]*" stroke-width="[\d.]+" stroke-linecap="round" opacity="\.(42|32)"\/>/g,'')
+  .replace(/<path d="[^"]*"( fill="none")? stroke="(?!#2E2320)#[0-9A-Fa-f]{6}" stroke-width="[\d.]+" stroke-linecap="round"( stroke-linejoin="round")?( transform="[^"]*")?\/>/g,'');
+const cmp=(lab,f)=>{if(skipped(lab))return;n++;let a,b;try{a=f(OLD)}catch(e){a='ERR '+e.message}try{b=f(NEW)}catch(e){b='ERR '+e.message}if(INKONLY){a=ink(a);b=ink(b)}if(a!==b&&bad.length<4000)bad.push(lab)};
 const AGES=[null,'puppy','newborn'];
 const [SI,SN]=process.env.SHARD.split('/').map(Number);
 (process.env.SWEEP_ONLY?[]:K).filter((k,i)=>i%SN===SI).forEach(k=>{
@@ -70,7 +74,7 @@ console.log(`check_identical vs ${ref}: ${n} renders compared, ${bad.length} dif
 if(bad.length)console.log(bad.slice(0,30).join('\n'));
 /* ---- v2.8 outfit sweep: the same file with its outfit tables exposed, each new outfit's strokes measured as it draws ---- */
 const NEW_OUTS=[['body','Very Ugly Sweater'],['head','Reindeer Antlers'],['neck','Snowflake Snood'],['neck','Ugly Sweater Rosette'],['head','Year of the Sheep Hood'],
-  ['body','Pumpkin Patch Suit'],['body','Trick-or-Treat Ghost'],['body','Little Bat Costume']];// v2.11.1 Halloween 2026 costumes: their head pieces (TOP2) are measured against the whole dog
+  ['body','Pumpkin Patch Suit'],['body','Trick-or-Treat Ghost'],['body','Little Bat Costume'],['neck','Sunflower Collar'],['head','Sailor Cap'],['body','Doggy Life Vest']];// v2.11.1 Halloween 2026 costumes: their head pieces (TOP2) are measured against the whole dog
 const ISRC=SRC.replace('PA.dog=dog;','PA.dog=dog;PA._sw={HAT2,BODY2,BACK2,NECK2,TOP2,bodyPts,headPts,T,earList,earPose};');
 if(ISRC.split('PA._sw').length!==2)throw new Error('sweep: the hook point moved, update ISRC');
 const IP=load(ISRC),SW=IP._sw;let probe=null;
@@ -98,7 +102,7 @@ NK.filter((k,i)=>i%SN===SI).forEach((k,ki)=>{
     const o={pose:p,outfit:{[sl]:nm},facing:f};if(age)o.age=age;if(sp)o.sparkle=true;sweep(`${k} ${p} ${nm} ${age||'adult'} ${f} spk=${sp}`,k,o)})))));
   // together, with older outfits, on mixes, expecting, a coat, anim:false
   const CMB=[{head:'Reindeer Antlers',neck:'Snowflake Snood',body:'Very Ugly Sweater'},{head:'Year of the Sheep Hood',neck:'Ugly Sweater Rosette',body:'Very Ugly Sweater',eyes:'Heart Sunglasses'},{head:'Year of the Sheep Hood',body:'Ghost Sheet',neck:'Snowflake Snood'},{head:'Reindeer Antlers',body:'Bat Wings',neck:'Ugly Sweater Rosette'},{head:'Pom-pom Beanie',body:'Very Ugly Sweater',neck:'Knit Scarf'},{head:'Year of the Sheep Hood',eyes:'Explorer Goggles',body:'Vampire Cape'},{head:'Reindeer Antlers',body:'Tutu',neck:'Snowflake Snood'},{head:'Year of the Sheep Hood',body:'Pyjamas',sleepwear:true},
-   {head:'Witch Hat',neck:'Candy Corn Bandana',body:'Pumpkin Patch Suit',eyes:'Heart Sunglasses'},{head:'Year of the Sheep Hood',neck:'Snowflake Snood',body:'Trick-or-Treat Ghost',eyes:'Explorer Goggles'},{head:'Astronaut Helmet',neck:'Shibuya Bandana',body:'Little Bat Costume',eyes:'Heart Sunglasses'},{head:'Party Hat',neck:'Autumn Scarf',body:'Little Bat Costume',sleepwear:true}];
+   {head:'Witch Hat',neck:'Candy Corn Bandana',body:'Pumpkin Patch Suit',eyes:'Heart Sunglasses'},{head:'Year of the Sheep Hood',neck:'Snowflake Snood',body:'Trick-or-Treat Ghost',eyes:'Explorer Goggles'},{head:'Astronaut Helmet',neck:'Shibuya Bandana',body:'Little Bat Costume',eyes:'Heart Sunglasses'},{head:'Party Hat',neck:'Autumn Scarf',body:'Little Bat Costume',sleepwear:true},{head:'Sailor Cap',neck:'Sunflower Collar',body:'Doggy Life Vest',eyes:'Heart Sunglasses'},{head:'Sailor Cap',body:'Ghost Sheet',neck:'Sunflower Collar'}];
   NK.forEach((hk,hi)=>POSES.forEach((p,pi)=>{const of=CMB[(pi+hi)%CMB.length];
     sweep(`${k} mix ${hk} ${p} combo#${(pi+hi)%CMB.length}`,k,{pose:p,outfit:of,mix:hk===k?undefined:{head:hk},age:pi%4===1?'puppy':undefined,expecting:pi%3===0,sparkle:pi%2===0,facing:pi%2?'left':'right',anim:pi%5!==0,coat:pi%6===0?{base:'#2B2430',light:'#FFE7B3',dark:'#1D1A22',white:.6,merle:true,eyes:'odd'}:undefined})}));
 });

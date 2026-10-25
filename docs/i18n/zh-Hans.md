@@ -445,3 +445,11 @@ The site translation (`site/i18n/zh-Hans.json`, v2.14 phase 1b). Item words used
 - TODO(native): `data.fav.*`: recipe ids (DISH_FAV), not shown anywhere, kept in English.
 - TODO(native): `title.a_cozy_dog_game_sketchbook`: 温馨素描本狗狗游戏 (shortened so it fits one line on a phone).
 - TODO(native): `data.mix_list.*`: 16 well-known real mixes have Chinese names in the A+B shop style (拉布拉多贵宾犬, 金毛贵宾犬, 马尔济斯贵宾犬, 博美哈士奇, 巴哥比格犬 …). Check they are the names Chinese owners use (e.g. 马尔贵宾 for Maltipoo). The pun names stay English and show as A × B.
+
+## v2.15
+
+`game/i18n/zh-Hans.json`, 245 new keys (Around Town). New place names, also in the glossary `terms`: Training Ground 训练场, Splash Pool 戏水池, Sunflower Lanes 向日葵小径, Bamboo Grove Trail 竹林小径, Seaside Cliffs Run 海崖步道. Agility course 敏捷赛道, obstacles 绕杆, 跨栏, 轮胎圈, 隧道, 暂停台. Rosette 花章 (as in the festivals), Doggy Life Vest 狗狗救生衣, Float fetch 漂浮捡球, paddle 划水, Go! 冲！. The Gerald lessons (`agility.lesson_text`, `pool.lesson_text`) are joined into two sentences.
+- Fix: `journal.found_at` is 在{places}找到……, so the route words (`data.route_word.*`, `town.route_word_*`) no longer start with 在 (it showed 在在公园里).
+- TODO(native): 海崖步道 for Seaside Cliffs Run (悬崖 avoided as a little scary). Natural?
+- TODO(native): `ground.herd_3` 好一群小羊 (the herding dog calls the pack its flock).
+- TODO(native): `ground.play_3` 趴下翘屁股 for the play bow: kid-friendly?

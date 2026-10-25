@@ -107,7 +107,7 @@ async function suite(t, dev) {
 
   sec(dev + ': 3. every tray card is reachable');
   await ev((F) => { const S = window.__paw.S; F.forEach((n) => { S.inv.food[n] = 2; }); }, FOODS);
-  await p.locator('#bar [data-act=feed]').tap(); await p.waitForSelector('#dock .tray [data-food]'); await t.sleep(350);
+  await t.dock('feed'); await p.locator('#bar [data-act=feed]').tap(); await p.waitForSelector('#dock .tray [data-food]'); await t.sleep(350);
   const fr = await trayReach(t, 'Feed tray', FOODS.length + 1);
   ok(fr && fr.out.filter((c) => c.n !== 'Fresh Water').length === FOODS.length, `all ${FOODS.length} owned foods have a card (the 8 v2.4 and 6 festival foods included)`);
   const tb = await ev(() => { const t = document.querySelector('#dock > .tray').getBoundingClientRect(), d = document.querySelector('#dogHit'); const dr = d && d.getBoundingClientRect(); return { top: Math.round(t.top), dogBottom: dr ? Math.round(dr.bottom) : 0, ih: innerHeight }; });
@@ -123,19 +123,19 @@ async function suite(t, dev) {
   await p.locator('#dock [data-food="Frozen Pupsicle"]').tap();
   ok(await t.until((n) => window.__paw.S.inv.food['Frozen Pupsicle'] === n - 1, fed0, 5000), 'a tap on the last food (after scrolling to it) feeds it');
   await t.home();
-  await p.locator('#bar [data-act=play]').tap(); await p.waitForSelector('#dock .tray [data-play]'); await t.sleep(300);
+  await t.dock('play'); await p.locator('#bar [data-act=play]').tap(); await p.waitForSelector('#dock .tray [data-play]'); await t.sleep(300);
   await trayReach(t, 'Play tray', 3); await t.SH('3_play_' + tag); await t.home();
-  await p.locator('#bar [data-act=care]').tap(); await p.waitForSelector('#dock .tray [data-care]'); await t.sleep(300);
+  await t.dock('care'); await p.locator('#bar [data-act=care]').tap(); await p.waitForSelector('#dock .tray [data-care]'); await t.sleep(300);
   await trayReach(t, 'Care tray', 4); await t.SH('3_care_' + tag); await t.home();
   await t.home('park'); await t.until(() => window.__paw.S.place === 'park' && window.__paw.mode === 'yard', null, 5000);
   {
-    await p.locator('#bar [data-act=feed]').tap(); await p.waitForSelector('#dock .tray [data-food]'); await t.sleep(300);
+    await t.dock('feed'); await p.locator('#bar [data-act=feed]').tap(); await p.waitForSelector('#dock .tray [data-food]'); await t.sleep(300);
     await trayReach(t, 'Snacks tray (away from home)', 5); await t.SH('3_snacks_' + tag);
     const gh = await ev(() => { const b = document.querySelector('#feedHome'); if (!b) return null; b.scrollIntoView({ block: 'nearest' }); const r = b.getBoundingClientRect(); return r.bottom <= innerHeight && r.height >= 44; });
     ok(gh !== false, 'the snacks tray "Go home" button is reachable');
   }
   await t.home('yard');
-  await ev(() => { window.__paw.S.stats.energy = 30; }); await p.locator('#bar [data-act=care]').tap(); await p.waitForSelector('[data-care=sleep]'); await p.locator('[data-care=sleep]').tap();
+  await ev(() => { window.__paw.S.stats.energy = 30; }); await t.dock('care'); await p.locator('#bar [data-act=care]').tap(); await p.waitForSelector('[data-care=sleep]'); await p.locator('[data-care=sleep]').tap();
   ok(await t.until(() => !!document.querySelector('#wakeBtn'), null, 6000), 'the sleep tray opens');
   const wk = await ev(() => { const b = document.querySelector('#wakeBtn').getBoundingClientRect(), i = document.querySelector('#napInfo'); const ir = i && i.getBoundingClientRect(); return [b.height >= 44 && b.bottom <= innerHeight && b.right <= innerWidth, !ir || (ir.height >= 44 && ir.bottom <= innerHeight)]; });
   ok(wk[0] && wk[1], 'sleep tray: Wake up and the details button are on screen and 44 px');
@@ -155,7 +155,7 @@ async function suite(t, dev) {
   await xFixed(t, '.pg-pouch .pg-x', '.pg-pouch', 'Seed pouch'); await t.SH('5_pouch_' + tag);
   await p.locator('.pg-pouch .pg-x').tap(); ok(await t.until(() => !document.querySelector('.pg-pouch'), null, 3000), 'the X closes the seed pouch');
   await p.locator('.pg-done').tap(); await t.untilMode('yard'); await t.home();
-  await p.locator('#bar [data-act=play]').tap(); await p.locator('[data-play=tricks]').tap(); await p.waitForSelector('#trX');
+  await t.dock('play'); await p.locator('#bar [data-act=play]').tap(); await p.locator('[data-play=tricks]').tap(); await p.waitForSelector('#trX');
   await xFixed(t, '#trX', '#trainPanel', 'Training panel');
   await p.locator('#trX').tap(); await t.until(() => !document.querySelector('#trX'), null, 3000); await t.home();
   for (const [act, lab] of [['journal', 'Journal sheet'], ['wardrobe', 'Wardrobe sheet']]) {
@@ -165,8 +165,8 @@ async function suite(t, dev) {
 
   sec(dev + ': 8. fills stay inside the outlines (day)');
   await t.home(); await fillCheck(t, 'yard (day)');
-  await p.locator('#bar [data-act=feed]').tap(); await p.waitForSelector('#dock .tray [data-food]'); await t.sleep(300); await fillCheck(t, 'Feed tray (day)'); await t.home();
-  await p.locator('#bar [data-act=journal]').tap(); await t.until(() => !!document.querySelector('#modal:not([hidden]) .panel .x'), null, 5000); await t.sleep(400); await fillCheck(t, 'Journal sheet, tabs (day)');
+  await t.dock('feed'); await p.locator('#bar [data-act=feed]').tap(); await p.waitForSelector('#dock .tray [data-food]'); await t.sleep(300); await fillCheck(t, 'Feed tray (day)'); await t.home();
+  await t.dock('journal'); await p.locator('#bar [data-act=journal]').tap(); await t.until(() => !!document.querySelector('#modal:not([hidden]) .panel .x'), null, 5000); await t.sleep(400); await fillCheck(t, 'Journal sheet, tabs (day)');
   await p.locator('#modal .panel .x').tap(); await t.modalGone(); await t.home();
   await ev(() => window.__paw.go('map')); await p.waitForSelector('#mapZoom'); await t.sleep(300); await fillCheck(t, 'map controls (day)'); await ev(() => window.__paw.go('yard')); await t.untilMode('yard');
   const errs = t.errors.filter((e) => !/ERR_CERT|Failed to load resource/.test(e));
@@ -180,7 +180,7 @@ async function night(t, dev) { // the owner's case: a round ">" on a dark night 
   await p.addStyleTag({ content: '#bubble{display:none!important}' }); await t.sleep(400);
   ok(await t.ev(() => !!document.querySelector('#phPeek')), 'the round look-right button is there');
   await fillCheck(t, 'yard at night (round ">" included)'); await t.SH('8_night_' + tag);
-  await p.locator('#bar [data-act=care]').tap(); await p.waitForSelector('#dock .tray [data-care]'); await t.sleep(300); await fillCheck(t, 'Care tray at night'); await t.home();
+  await t.dock('care'); await p.locator('#bar [data-act=care]').tap(); await p.waitForSelector('#dock .tray [data-care]'); await t.sleep(300); await fillCheck(t, 'Care tray at night'); await t.home();
   await t.ev(() => { window.__paw.S.place = 'market'; window.__paw.go('yard'); }); await t.until(() => !!document.querySelector('#placeBtns [data-sh=kibble]'), null, 8000); await t.calm(); await t.lu();
   await fillCheck(t, 'Market Street buttons at night');
   await p.locator('#placeBtns [data-sh=kibble]').tap(); await t.until(() => !!document.querySelector('#modal .panel.shop'), null, 5000); await t.sleep(500);

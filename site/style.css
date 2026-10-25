@@ -592,3 +592,14 @@ dialog.dogpop .x{width:44px;height:44px;min-width:44px;min-height:44px;font-size
   .sheet>.sitehead.stuck .sitenav.fade-l{-webkit-mask-image:linear-gradient(to left,#000 calc(100% - 18px),transparent);mask-image:linear-gradient(to left,#000 calc(100% - 18px),transparent)}
   .sheet>.sitehead.stuck .sitenav.fade-l.fade-r{-webkit-mask-image:linear-gradient(to right,transparent,#000 18px,#000 calc(100% - 18px),transparent);mask-image:linear-gradient(to right,transparent,#000 18px,#000 calc(100% - 18px),transparent)}
 }
+
+/* Ko-fi (owner, 24 Oct 2026): the second support button on About Us */
+.play.kofi{background:#CBE0F4}
+
+/* v2.15.1 (owner): the full-screen ✕ and its bar at half size, so the game gets more of the screen. The ✕ draws at 26 px;
+   its tap area stays 44 px (the ::after), reaching a little into the game's top edge. */
+.gameframe:fullscreen iframe,.gameframe:-webkit-full-screen iframe{top:26px;height:calc(100% - 26px)}
+.gameframe.fake{padding-top:calc(26px + env(safe-area-inset-top,0px))}
+.gameframe:fullscreen::before,.gameframe:-webkit-full-screen::before,.gameframe.fake::before{height:calc(26px + env(safe-area-inset-top,0px));border-bottom-width:1.5px}
+.gameframe:fullscreen .fsx,.gameframe:-webkit-full-screen .fsx,.gameframe.fake .fsx{top:calc(1px + env(safe-area-inset-top,0px));width:24px;height:24px;font-size:13px;border-width:1.5px;border-radius:7px 5px 8px 5px}
+.gameframe:fullscreen .fsx::after,.gameframe:-webkit-full-screen .fsx::after,.gameframe.fake .fsx::after{content:"";position:absolute;inset:-10px}

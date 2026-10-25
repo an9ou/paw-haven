@@ -1,0 +1,40 @@
+/* v2.15 Around Town: the Splash Pool (ACTIVITIES lane, tag pl, classes .pl-; V215.md section 6.2).
+   Phone rules go under html[data-layout="phone"] (PHONE.md): taps 44 px, text 15 px, no sideways scroll. */
+.pl-tray .tray-h{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.pl-tray .tray-h h3{margin:0;min-width:0;overflow-wrap:break-word;text-wrap:balance}
+html[data-layout="phone"] #stage #dock > .pl-tray .tray-h h3{font-size:24px}
+.pl-tray .pl-done{flex:none;min-width:88px;min-height:44px;font-size:20px}
+.pl-tray .tray-body p{margin:2px 0}
+.pl-tray .pl-hint{font-size:15px;line-height:1.25;min-height:19px}
+.pl-dogs{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0}
+.pl-dog{min-height:44px;display:flex;align-items:center;gap:8px;font-size:18px}
+.pl-dog.sel{outline:3px solid #7FD0D2;outline-offset:1px}
+.pl-chk{color:#3F8F5E;font-weight:700}
+.pl-act{display:block;width:100%;min-height:48px;margin-top:6px;font-size:22px}
+.pl-act[aria-disabled="true"]{opacity:.55}
+.pl-float{margin-top:8px}
+.pl-float b{display:block;font-size:15px}
+.pl-toys{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.pl-toy{min-height:44px;font-size:18px}
+/* water: ripples round a dog in the pool, the sprinkler spray */
+.pl-rip{fill:none;stroke:#FFFFFF;stroke-width:2.4;opacity:.85;transform-box:fill-box;transform-origin:center;animation:plRip 1.5s ease-out both;pointer-events:none}
+@keyframes plRip{0%{transform:scale(.5);opacity:.9}100%{transform:scale(1.35);opacity:0}}
+.pl-spray circle{opacity:0;animation:plDrop 1s ease-out infinite both}
+@keyframes plDrop{0%{transform:translate(0,0);opacity:0}15%{opacity:.95}100%{transform:translate(var(--dx),calc(var(--dy) * -1 + 70px));opacity:0}}
+html[data-motion="off"] .pl-rip{animation:none;opacity:.5}
+html[data-motion="off"] .pl-spray circle{animation:none;opacity:.8}
+/* while the tray is open or a run goes on (html.pl-on): the scene props open nothing and the place buttons rest, like agility */
+html.pl-on #view svg.world .hot,html.pl-on #view svg.world .hot *{pointer-events:none!important}
+html.pl-on #phPeek,html.pl-on #placeBtns{display:none!important}
+/* phone: a compact pick tray so it stays on the screen (chips and toys in one scrolling row each, the two actions side by side, the body scrolls inside the tray if it still runs long) */
+html[data-layout="phone"] #stage #dock > .pl-tray{display:flex;flex-direction:column;overflow:hidden;padding-top:8px;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px))}
+html[data-layout="phone"] #stage #dock > .pl-tray .tray-h{flex:none}
+html[data-layout="phone"] #dock .pl-tray .tray-body{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;align-content:start}
+html[data-layout="phone"] #dock .pl-tray .tray-body > *{grid-column:1 / -1;min-width:0}
+html[data-layout="phone"] #dock .pl-tray .pl-act{margin-top:2px;min-height:48px;font-size:20px;grid-column:auto;padding-left:6px;padding-right:6px}
+html[data-layout="phone"] #dock .pl-tray .pl-act:only-of-type{grid-column:1 / -1}
+html[data-layout="phone"] #dock .pl-tray .pl-dogs,html[data-layout="phone"] #dock .pl-tray .pl-toys{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:none;touch-action:pan-x pan-y;margin:2px 0;padding:2px 2px 4px}
+html[data-layout="phone"] #dock .pl-tray .pl-dogs::-webkit-scrollbar,html[data-layout="phone"] #dock .pl-tray .pl-toys::-webkit-scrollbar{display:none}
+html[data-layout="phone"] #dock .pl-tray .pl-dog,html[data-layout="phone"] #dock .pl-tray .pl-toy{flex:none;white-space:nowrap}
+html[data-layout="phone"] #dock .pl-tray .pl-float{margin-top:2px}
+html[data-layout="phone"] #dock .pl-tray .pl-float .small:not(b){display:block}

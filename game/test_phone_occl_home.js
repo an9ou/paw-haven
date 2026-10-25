@@ -99,7 +99,7 @@ const SCAN = (sels) => {
 
       // ---------- yard with the nap strip ----------
       t.sec(tag + ': nap strip');
-      await t.p.tap('#bar [data-act=care]'); await t.until(() => !!document.querySelector('[data-care=sleep]'));
+      await t.dock('care'); await t.p.tap('#bar [data-act=care]'); await t.until(() => !!document.querySelector('[data-care=sleep]'));
       await t.p.tap('[data-care=sleep]'); await t.until(() => !!document.getElementById('wakeBtn'));
       ok(await t.until(() => !!document.querySelector('#toasts .toast'), null, 3000), `${tag} nap: a toast shows`);
       await t.sleep(450); // the toast pops in
@@ -129,7 +129,7 @@ const SCAN = (sels) => {
       await trayCheck('care', 'house care tray');
       await toastsGone();
       // asleep in the house
-      await t.p.tap('#bar [data-act=care]'); await t.until(() => !!document.querySelector('[data-care=sleep]'));
+      await t.dock('care'); await t.p.tap('#bar [data-act=care]'); await t.until(() => !!document.querySelector('[data-care=sleep]'));
       await t.p.tap('[data-care=sleep]'); await t.until(() => !!document.getElementById('wakeBtn')); await t.sleep(1400);
       await check('house nap', ['#dogHit']);
       await t.p.tap('#wakeBtn'); await t.until(() => !document.getElementById('wakeBtn'));

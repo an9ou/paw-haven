@@ -47,7 +47,7 @@ walkGame(GAME, '');
 // Worker (Game Manager, 22 Oct 2026: about 8.2 MB gzipped of the 10 MB limit, test budget 9 MB). SITE_PLAY_FONTS=0 leaves them out (/play/ then uses
 // the system CJK and Thai fonts, as before v2.14 PERF).
 const GAME_FONTS = process.env.SITE_PLAY_FONTS === '0' ? [] : gameFiles.filter(([u]) => u.startsWith('/play/fonts/i18n/') && u.endsWith('.woff2'));
-const HASHED = /^\/play\/(lang\/[\w-]+|photo_fonts)\.[0-9a-f]{8}\.js$|^\/play\/fonts\/i18n\//; // hashed names, and fonts the game always asks for with ?v=<hash>
+const HASHED = /^\/play\/(lang\/[\w-]+|photo_fonts|world_[a-z])\.[0-9a-f]{8}\.js$|^\/play\/fonts\/i18n\//; // hashed names (v2.15: the lazy art chunks world_<f|g> too), and fonts the game always asks for with ?v=<hash>
 // the side Workers: a folder of site/ served by its own Worker on a route of the zone (a route runs before the Custom Domain), so its files don't count
 // against the main Worker. mode: 'none' (no files: no Worker), 'split' (this script's own default; the deploy script sets inline) or 'inline' (env[name] === 'inline': served by the main Worker)
 const SIDE = [

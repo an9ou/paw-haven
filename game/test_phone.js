@@ -21,6 +21,8 @@ async function run(b, devName, full) {
   const ev = (f, a) => p.evaluate(f, a);
   const mode = () => ev(() => window.__paw.mode);
   const tap = async (sel, o = {}) => { await p.locator(sel).first().tap(o); await sleep(o.wait ?? 300); };
+  // v2.16 option C phone bar: open the Care or More tray before tapping a button that lives in it
+  const dockT = async (a) => { const k = await p.evaluate((a) => { const b = document.querySelector(`#bar [data-act="${a}"]`), pp = b && b.closest('.barpop'); return pp && pp.hidden ? pp.dataset.pop : null; }, a); if (k) { await p.evaluate((k) => document.querySelector(`#bar .act[data-act="${k}"]`).click(), k); await p.waitForSelector(`#bar .barpop[data-pop="${k}"]:not([hidden])`); } };
   const center = async (sel) => { const bb = await p.locator(sel).first().boundingBox(); return [bb.x + bb.width / 2, bb.y + bb.height / 2]; };
   const touchDrag = async (pts, ms = 30) => {
     const tp = (x, y) => [{ x, y, radiusX: 4, radiusY: 4, force: 1, id: 1 }];
@@ -71,12 +73,12 @@ async function run(b, devName, full) {
 
   // feed: bottom sheet, swipe down closes, tap feeds
   await ev(() => { window.__paw.S.stats.hunger = 30; });
-  await tap('[data-act=feed]', { wait: 400 }); await SH('04_feed_sheet'); await targets('feed sheet');
+  await dockT('feed'); await tap('[data-act=feed]', { wait: 400 }); await SH('04_feed_sheet'); await targets('feed sheet');
   const sheet = await p.locator('#dock > .tray').boundingBox();
   ok(Math.abs(sheet.width - (await ev(() => innerWidth))) < 2 && sheet.y + sheet.height > (await ev(() => innerHeight)) - 120, 'Feed popup is a full-width bottom sheet');
   await touchDrag(line([sheet.x + sheet.width / 2, sheet.y + 12], [sheet.x + sheet.width / 2, sheet.y + 260], 8)); await sleep(400);
   ok(!(await ev(() => !!document.querySelector('#dock > .tray:not(.dock-idle):not(.mini)') && getComputedStyle(document.getElementById('dock')).display !== 'none')), 'swipe down closes the sheet');
-  await tap('[data-act=feed]', { wait: 400 }); await tap('[data-food="Basic Kibble"]', { wait: 2900 }); ok((await S()).stats.hunger > 30, 'tap-to-feed');
+  await dockT('feed'); await tap('[data-act=feed]', { wait: 400 }); await tap('[data-food="Basic Kibble"]', { wait: 2900 }); ok((await S()).stats.hunger > 30, 'tap-to-feed');
 
   if (full) {
     await dev(['#dvBond', '#dvBond', '#dvBond', '#dvCoins', '#dvCoins']); await calm();
@@ -105,12 +107,12 @@ async function run(b, devName, full) {
     await tap('#placeBtns [data-sh=boutique]', { wait: 400 }); const cl = await p.locator('[data-buy]').first().getAttribute('data-buy'); await tap('[data-buy]', { wait: 400 }); await tap('.bb-yes', { wait: 400 }); if (await p.locator('.confirm .no').count()) await tap('.confirm .no'); await tap('.panel .x');
 
     // wardrobe: sheet, 1-column layout
-    await tap('[data-act=wardrobe]', { wait: 400 }); await SH('11_wardrobe'); await targets('wardrobe'); ok(await p.locator('.ward').count() === 1, 'wardrobe sheet');
+    await dockT('wardrobe'); await tap('[data-act=wardrobe]', { wait: 400 }); await SH('11_wardrobe'); await targets('wardrobe'); ok(await p.locator('.ward').count() === 1, 'wardrobe sheet');
     if (await p.locator(`[data-eq="${cl}"]`).count()) await tap(`[data-eq="${cl}"]`);
     ok(Object.values((await S()).outfit).includes(cl), 'wardrobe: equipped ' + cl + ' by tap'); await tap('.panel .x');
 
     // journal sheet with scrolling tabs
-    await tap('[data-act=journal]', { wait: 400 }); await SH('12_journal'); await targets('journal'); await tap('[data-jt=profile]'); await SH('13_profile'); await tap('.panel .x');
+    await dockT('journal'); await tap('[data-act=journal]', { wait: 400 }); await SH('12_journal'); await targets('journal'); await tap('[data-jt=profile]'); await SH('13_profile'); await tap('.panel .x');
 
     // walk with touch
     await travel('yard'); await calm();
@@ -127,7 +129,7 @@ async function run(b, devName, full) {
     if (await p.locator('#resOk').count()) await tap('#resOk', { wait: 900 }); await lu(); ok((await mode()) === 'yard', 'walk finished, back home');
 
     // toy with touch
-    await calm(); await tap('[data-act=play]', { wait: 400 });
+    await calm(); await dockT('play'); await tap('[data-act=play]', { wait: 400 });
     if (await p.locator('[data-play="ball:Tennis Ball"]').count()) {
       await ev(() => window.__paw.go('toy', 'Tennis Ball')); await sleep(1500); ok((await mode()) === 'toy', 'toy opened'); // v2.10: the Tennis Ball card starts free ball play; the room game is still there
       const hc = await center('#modHost'); await touchDrag(line([hc[0], hc[1] + 120], [hc[0] + 40, hc[1] - 160], 6), 16); await sleep(800); await SH('16_toy'); await noHScroll('toy');
@@ -164,7 +166,7 @@ async function run(b, devName, full) {
 
     // bed nap in the house
     await calm(); await ev(() => { window.__paw.S.stats.energy = 40; });
-    await tap('[data-act=care]', { wait: 400 }); await tap('[data-care=sleep]', { wait: 1500 });
+    await dockT('care'); await tap('[data-act=care]', { wait: 400 }); await tap('[data-care=sleep]', { wait: 1500 });
     ok((await S()).sleeping, 'nap on the bed'); await SH('23_nap'); await targets('nap'); await tap('#wakeBtn', { wait: 1600 });
 
     // potty clean by tap
@@ -181,7 +183,7 @@ async function run(b, devName, full) {
     ok(scooped, 'tapped to scoop');
   } else {
     await tap('[data-act=map]', { wait: 800 }); await SH('05_map'); await noHScroll('map'); await targets('map'); await tap('#mapX', { wait: 500 });
-    await tap('[data-act=journal]', { wait: 400 }); await SH('06_journal'); await targets('journal'); await tap('.panel .x');
+    await dockT('journal'); await tap('[data-act=journal]', { wait: 400 }); await SH('06_journal'); await targets('journal'); await tap('.panel .x');
     await ev(() => { window.__paw.S.bond.level = 4; window.__paw.go('garden'); }); await sleep(1300); await SH('07_garden'); await noHScroll('garden'); await targets('garden'); await ev(() => window.__paw.go('yard')); await sleep(500);
   }
   ok(errors.length === 0, `${devName}: no console errors${errors.length ? ' -> ' + errors.slice(0, 3).join(' | ') : ''}`);

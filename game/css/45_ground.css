@@ -1,0 +1,25 @@
+/* v2.15 Around Town: the deep, wide ground, the floor props and the camera (GROUND lane, tag gr, classes .gr-; V215.md section 8).
+   Phone rules go under html[data-layout="phone"] (PHONE.md). Laid down empty by the stubs lane. */
+/* the floor props sort with the dogs inside #pack: they are scenery, never a tap target */
+#view svg.world .gr-prop{pointer-events:none}
+/* a dog inside the agility tunnel */
+#view svg.world .rmdog.gr-hide{opacity:0;transition:opacity .12s linear}
+/* a wide place (1600 units, the camera follows the pack): drag to look on desktop too */
+html.gr-wide:not([data-layout="phone"]) #view svg.world{cursor:grab;touch-action:none}
+html.gr-wide:not([data-layout="phone"]) #view svg.world:active{cursor:grabbing}
+/* the look chips on desktop (phones keep 39_roam.css): the head of the dog out of view and an arrow, 48 px */
+html.gr-wide:not([data-layout="phone"]) .rm-look{display:flex;position:absolute;top:38%;z-index:5;width:66px;height:52px;min-width:48px;min-height:48px;padding:0 4px;align-items:center;justify-content:center;gap:0;border-radius:26px;--wash:var(--paper)}
+html.gr-wide:not([data-layout="phone"]) .rm-look[hidden]{display:none}
+html.gr-wide:not([data-layout="phone"]) .rm-look.right{right:10px}
+html.gr-wide:not([data-layout="phone"]) .rm-look.left{left:10px;flex-direction:row-reverse}
+html.gr-wide:not([data-layout="phone"]) .rm-look .rm-head{width:38px;height:38px;display:block;flex:none}
+html.gr-wide:not([data-layout="phone"]) .rm-look .rm-head svg{width:100%;height:100%;display:block}
+html.gr-wide:not([data-layout="phone"]) .rm-look .rm-arrow{width:14px;height:18px;display:block;flex:none}
+html.gr-wide:not([data-layout="phone"]) .rm-look.left .rm-arrow{transform:scaleX(-1)}
+html.gr-wide:not([data-layout="phone"]) .rm-look .rm-n{position:absolute;top:-6px;font:700 15px/16px var(--font-read);font-style:normal;min-width:20px;height:20px;border-radius:10px;background:var(--paper);border:2px solid var(--ink);color:var(--ink);text-align:center}
+html.gr-wide:not([data-layout="phone"]) .rm-look.right .rm-n{left:-6px}
+html.gr-wide:not([data-layout="phone"]) .rm-look.left .rm-n{right:-6px}
+/* phones: a wide place pans with the camera and the look chips, so the v2.3 look-right button is not needed there */
+html.gr-wide[data-layout="phone"] #phPeek{display:none}
+/* the yard's dog house, mailbox and bowl sort with the dogs in a grOn yard (43_ground.js grGame): they stay tap targets */
+#view svg.world .gr-prop.gr-game{pointer-events:visiblePainted}

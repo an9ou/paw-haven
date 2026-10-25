@@ -32,7 +32,7 @@ run('phone_v25_fixes_b', async (t) => {
     sec(`${tag}: 7. ball play from the Play tray (v2.10, it replaced Fetch) shows the scene, the dog and the panel apart`);
     for (const pl of ['house', 'yard']) {
       await t.home(pl); await t.sleep(300);
-      await p.locator('[data-act=play]').tap(); await t.waitPop(true);
+      await t.dock('play'); await p.locator('[data-act=play]').tap(); await t.waitPop(true);
       await p.locator('[data-play="ball:Tennis Ball"]').tap();
       ok(await t.until(() => !!window.__paw.bl && window.__paw.bl.on && !!document.getElementById('blDone'), null, 6000), `${tag} ${pl}: ball play opens`);
       await ev(() => window.__paw.bl.sim(1)); await t.sleep(400);
@@ -96,7 +96,7 @@ run('phone_v25_fixes_b', async (t) => {
     sec(`${tag}: 2. the bowl only while feeding`);
     await t.home('yard'); await camSteady();
     ok(await ev(() => getComputedStyle(document.getElementById('bowlG')).visibility === 'hidden'), `${tag}: no bowl in the yard`);
-    await p.locator('[data-act=feed]').tap(); await t.waitPop(true);
+    await t.dock('feed'); await p.locator('[data-act=feed]').tap(); await t.waitPop(true);
     const bw = await ev(() => { const b = document.getElementById('bowlG'), r = b.getBoundingClientRect(); return { shown: getComputedStyle(b).visibility !== 'hidden', w: r.width, h: r.height, on: r.left >= 0 && r.right <= innerWidth }; });
     ok(bw.shown && bw.w >= 44 && bw.h >= 44 && bw.on, `${tag}: the Feed tray shows the bowl on screen (${Math.round(bw.w)} x ${Math.round(bw.h)})`);
     await ev(() => { window.__paw.S.stats.hunger = 10; });
@@ -105,7 +105,7 @@ run('phone_v25_fixes_b', async (t) => {
     await t.sleep(900); await t.SH(`2_feed_${tag}`);
     ok(await t.until(() => window.__paw.S.bowl == null && getComputedStyle(document.getElementById('bowlG')).visibility === 'hidden', null, 5000), `${tag}: the bowl goes after the meal`);
     await t.home('square'); await ev(() => { window.__paw.S.stats.hunger = 10; });
-    await p.locator('[data-act=feed]').tap(); await t.waitPop(true); await p.locator('[data-food="Carrot Sticks"]').tap();
+    await t.dock('feed'); await p.locator('[data-act=feed]').tap(); await t.waitPop(true); await p.locator('[data-food="Carrot Sticks"]').tap();
     ok(await t.until(() => /Carrot Sticks/.test(document.getElementById('bowlG').getAttribute('aria-label')) && getComputedStyle(document.getElementById('bowlG')).visibility !== 'hidden', null, 3000), `${tag}: away in the Square, the snack is in the bowl too`);
     await t.until(() => window.__paw.S.bowl == null, null, 5000);
 

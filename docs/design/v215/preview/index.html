@@ -1,0 +1,688 @@
+<title>Doodle Doggo Town v2.15</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Patrick+Hand&display=swap">
+<style>
+/* Layout: one sketchbook page. A header, two tabs (the town map, free roaming), each a framed sheet of paper with a side card;
+   a phone view puts the same sheet in a 390 px frame. One look on purpose: the game's pencil-on-paper world, light only. */
+:root{
+  --desk:#F1E6D6; --paper:#FFFBF3; --card:#FFFDF8; --ink:#5B3D32; --graph:#A8968A; --line:#E3D2BA;
+  --pink:#F28FA5; --pinkS:#FBE1E7; --mint:#C9EBDA; --mintD:#5E9C7E; --sky:#D3E9F6; --gold:#F3C969;
+  --f-hand:'Caveat','Patrick Hand','Comic Sans MS',cursive; --f-read:'Patrick Hand','Comic Sans MS','Trebuchet MS',system-ui,sans-serif;
+  color-scheme:light;
+}
+html,body{background:var(--desk);color:var(--ink)}
+body{font-family:var(--f-read);font-size:17px;line-height:1.4;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 40px;
+  background-image:radial-gradient(var(--line) 1px,transparent 1.4px);background-size:22px 22px}
+.wrap{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px 20px}
+header.top h1{font-family:var(--f-hand);font-weight:700;font-size:44px;line-height:1;margin:0;text-wrap:balance}
+header.top h1 small{display:block;font-size:22px;font-weight:600;color:var(--graph);margin-top:2px}
+header.top p{margin:0;max-width:62ch;flex:1 1 320px}
+.bar{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+.tabs{display:flex;gap:6px}
+.chip{font:inherit;font-size:17px;color:var(--ink);background:var(--card);border:2px solid var(--ink);border-radius:999px;padding:6px 14px;min-height:40px;cursor:pointer;box-shadow:0 2px 0 var(--ink);transition:transform .12s,box-shadow .12s}
+.chip:hover{transform:translateY(-1px);box-shadow:0 3px 0 var(--ink)}
+.chip:active{transform:translateY(2px);box-shadow:0 0 0 var(--ink)}
+.chip[aria-pressed="true"],.chip[aria-selected="true"]{background:var(--pinkS);border-color:var(--ink)}
+.chip:focus-visible,select:focus-visible,.bld:focus-visible{outline:3px dashed var(--pink);outline-offset:3px}
+.tabs .chip{font-family:var(--f-hand);font-size:24px;font-weight:700;padding:2px 18px}
+label.sel{display:flex;gap:6px;align-items:center}
+select{font:inherit;color:var(--ink);background:var(--card);border:2px solid var(--ink);border-radius:10px;padding:5px 8px;min-height:40px}
+.sp{flex:1}
+.sheet{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px;align-items:start}
+.stage{position:relative;background:var(--paper);border:2px solid var(--ink);border-radius:16px;overflow:hidden;aspect-ratio:16/10;box-shadow:0 4px 0 rgba(91,61,50,.18);touch-action:none}
+#vp{position:absolute;inset:0;overflow:hidden;cursor:grab}
+#vp.drag{cursor:grabbing}
+#map{position:absolute;left:0;top:0;width:2400px;height:1500px;transform-origin:0 0;user-select:none;-webkit-user-select:none}
+.zoom{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:6px;z-index:3}
+.zoom button{width:44px;height:44px;border-radius:12px;border:2px solid var(--ink);background:var(--card);font:700 24px var(--f-hand);color:var(--ink);cursor:pointer;box-shadow:0 2px 0 var(--ink)}
+.zoom button:active{transform:translateY(2px);box-shadow:none}
+.hint{position:absolute;left:10px;bottom:10px;z-index:3;background:rgba(255,251,243,.92);border:1.5px solid var(--line);border-radius:10px;padding:4px 10px;font-size:15px;pointer-events:none}
+aside.card{background:var(--card);border:2px solid var(--ink);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-width:0;box-shadow:0 4px 0 rgba(91,61,50,.18)}
+aside.card h2{font-family:var(--f-hand);font-size:34px;line-height:1;margin:0;text-wrap:balance}
+aside.card .thumb{background:var(--paper);border:1.5px dashed var(--line);border-radius:12px;height:150px;display:flex;align-items:center;justify-content:center}
+aside.card .thumb > svg{height:100%;width:100%}
+aside.card dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 10px}
+aside.card dt{font-weight:700;color:var(--mintD);font-size:15px;letter-spacing:.04em;text-transform:uppercase;padding-top:2px}
+aside.card dd{margin:0}
+.pill{display:inline-block;font-size:15px;border:1.5px solid var(--ink);border-radius:999px;padding:0 10px;background:var(--mint)}
+.pill.new{background:var(--pinkS)} .pill.moved{background:#FFF1C4} .pill.track{background:#E1ECFA}
+.closeX{display:none}
+.notes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.notes section{background:var(--card);border:2px solid var(--ink);border-radius:16px;padding:12px 16px;min-width:0}
+.notes h3{font-family:var(--f-hand);font-size:28px;margin:0 0 4px}
+.notes ul{margin:0;padding-left:20px}
+.notes li{margin:2px 0}
+.foot{font-size:15px;color:#7B6458}
+/* buildings: they read as buttons you can press */
+.bld{cursor:pointer;outline:none}
+.bld .lift{transform-box:fill-box;transform-origin:50% 92%;transition:transform .24s cubic-bezier(.3,1.7,.5,1);pointer-events:none}
+.bld .shadow{transform-box:fill-box;transform-origin:50% 50%;transition:transform .24s,opacity .24s}
+.bld .glow{opacity:0;transition:opacity .2s}
+.bld:hover .lift,.bld:focus-visible .lift,.bld.hov .lift{transform:translateY(-12px) scale(1.06)}
+.bld:hover .shadow,.bld:focus-visible .shadow,.bld.hov .shadow{transform:scale(.8);opacity:.06}
+.bld:hover .glow,.bld:focus-visible .glow,.bld.sel .glow,.bld.hov .glow{opacity:1}
+.bld.press .lift{transform:translateY(4px) scale(.95);transition-duration:.07s}
+.bld.press .shadow{transform:scale(1.08);opacity:.2}
+.bld .ring{animation:march 1.4s linear infinite}
+.bld.sel .ring{stroke:#E5677F}
+@keyframes march{to{stroke-dashoffset:-48}}
+.bld.shake .lift{animation:shake .42s}
+@keyframes shake{20%{transform:translateX(-7px) rotate(-2deg)}50%{transform:translateX(6px) rotate(2deg)}80%{transform:translateX(-3px)}}
+.bld.arrive .lift{animation:hop .5s}
+@keyframes hop{40%{transform:translateY(-16px) scale(1.07)}}
+#map.nolabels .lbl{display:none}
+#map.notags .tag{display:none}
+.snowcap,.bloom,#snowfx,#petals{display:none}
+#map{--leaf:#B9DD92;--leaf2:#9ACD7C;--maple:#F2B66D;--fld:#E9DFA0}
+#map .lf{fill:var(--leaf)} #map .lf2{fill:var(--leaf2)} #map .mp{fill:var(--maple)}
+#map.autumn{--leaf:#F4C27A;--leaf2:#E9A06A;--maple:#E5794F}
+#map.winter{--leaf:#DDE9E2;--leaf2:#CFDCD4;--maple:#E6DCD2}
+#map.winter .snowcap,#map.winter #snowfx,#map.spring .bloom,#map.spring #petals{display:inline}
+#map.spring{--leaf:#C9E8A2;--leaf2:#B3DD8E}
+.dogfast .pa-dog.pa-d-anim *{animation-duration:.45s!important}
+/* phone view: the same sheet in a 390 px frame, the card becomes a bottom sheet */
+body.ph .sheet,body.ph .rsheet{grid-template-columns:minmax(0,1fr)}
+#info{display:none} body.ph #info{display:flex} body.ph #infoSide{display:none} #infoSide .closeX{display:none!important}
+#map.pan{transition:transform .45s ease-out}
+body.phone .stage{aspect-ratio:auto;height:min(760px,78vh);width:min(390px,100%);margin:0 auto;border-radius:34px;border-width:3px;box-shadow:0 0 0 7px #3C2A22,0 10px 0 7px rgba(60,42,34,.25)}
+body.ph #info{position:absolute;left:10px;right:10px;bottom:10px;max-height:52%;overflow:auto;z-index:4;padding:10px 14px;gap:6px}
+body.ph #info .thumb{height:96px}
+body.ph #info.off{display:none}
+body.ph #info .closeX{display:block;position:absolute;right:8px;top:8px;width:44px;height:44px;border-radius:12px;border:2px solid var(--ink);background:var(--card);font:700 22px var(--f-hand);color:var(--ink)}
+body.phone .stagebox{position:relative;width:min(390px,100%);margin:0 auto}
+.stagebox{position:relative;min-width:0}
+/* roaming tab */
+.rsheet{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:14px;align-items:start}
+.rpanel{background:var(--card);border:2px solid var(--ink);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0;box-shadow:0 4px 0 rgba(91,61,50,.18)}
+.rpanel h2{font-family:var(--f-hand);font-size:30px;margin:0;line-height:1}
+.rpanel p{margin:0}
+.rstage{position:relative;border:2px solid var(--ink);border-radius:12px;overflow:hidden;background:var(--sky)}
+.rstage > svg{display:block;width:100%;height:auto}
+body.phone .rstage{width:min(366px,100%);margin:0 auto}
+.mini{position:relative;height:16px;border:1.5px solid var(--ink);border-radius:8px;background:linear-gradient(#D3E9F6 0 45%,#CBE5A6 45%);overflow:hidden}
+.mini .win{position:absolute;top:0;bottom:0;border:2.5px solid #E5677F;border-radius:6px;background:rgba(242,143,165,.14)}
+.mini i{position:absolute;top:5px;width:6px;height:6px;border-radius:50%;background:var(--ink)}
+.stats{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:15px}
+.stats b{font-family:var(--f-hand);font-size:24px}
+.rs .zone{transition:opacity .2s} .rs.nozones .zone{opacity:0}
+.rdog{cursor:pointer}
+@media (max-width:900px){.sheet,.rsheet{grid-template-columns:minmax(0,1fr)} .notes{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:640px){header.top h1{font-size:36px} header.top p{font-size:15px} #bPhone{display:none} .stage{aspect-ratio:auto;height:72vh;min-height:420px}}
+@media (prefers-reduced-motion:reduce){.bld .lift,.bld .shadow,.chip{transition:none}.bld .ring,.bld.shake .lift,.bld.arrive .lift{animation:none}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1>Doodle Doggo Town<small>v2.15 map preview · design only</small></h1>
+    <p>Winding roads, every building its own pressable button, shops spread round town, five new places, and dogs that roam the whole ground. Tap a building: the corgi runs there along the roads.</p>
+  </header>
+  <div class="bar">
+    <div class="tabs" role="tablist">
+      <button class="chip" role="tab" id="tMap" aria-selected="true" aria-controls="pMap">Town map</button>
+      <button class="chip" role="tab" id="tRoam" aria-selected="false" aria-controls="pRoam">Free roaming</button>
+    </div>
+    <span class="sp"></span>
+    <button class="chip" id="bPhone" aria-pressed="false">Phone view</button>
+    <button class="chip" id="bLabels" aria-pressed="true">Labels</button>
+    <button class="chip" id="bTags" aria-pressed="true">New and moved tags</button>
+    <label class="sel" for="sSeason">Season <select id="sSeason"><option value="summer">Summer</option><option value="autumn">Autumn</option><option value="winter">Winter</option><option value="spring">Spring</option></select></label>
+  </div>
+
+  <div id="pMap" role="tabpanel" aria-labelledby="tMap">
+    <div class="sheet">
+      <div class="stagebox">
+        <div class="stage" id="stage">
+          <div id="vp"></div>
+          <div class="zoom"><button id="zIn" aria-label="Zoom in">+</button><button id="zOut" aria-label="Zoom out">−</button><button id="zFit" aria-label="Fit the map" style="font-size:17px">fit</button></div>
+          <div class="hint" id="hint">Drag to look around. Hover or tap a building.</div>
+          <aside class="card" id="info" aria-live="polite"></aside>
+        </div>
+      </div>
+      <aside class="card" id="infoSide" aria-live="polite"></aside>
+    </div>
+  </div>
+
+  <div id="pRoam" role="tabpanel" aria-labelledby="tRoam" hidden>
+    <div class="bar" style="margin-bottom:10px"><button class="chip" id="bZones" aria-pressed="true">Show walkable ground</button><span class="foot">Tap a dog on the right to pet it: it trots to the front.</span></div>
+    <div class="rsheet">
+      <div class="rpanel">
+        <h2>Today (v2.10): the Dog Park</h2>
+        <p>Feet stay in one strip at the front of the scene, y 410 to 590, so the dogs pace left and right.</p>
+        <div class="rstage"><svg id="rsA" class="rs" viewBox="0 0 1000 600" aria-label="Dog Park today, with the walkable strip"></svg></div>
+        <div class="stats"><span>Floor <b>880 × 180</b></span><span>Depth scale <b>0.97 to 1.1</b></span><span>Scene <b>1000 wide</b></span></div>
+      </div>
+      <div class="rpanel">
+        <h2>v2.15: the new Training Ground</h2>
+        <p>The whole floor, from the back fence to the front, in a place 1600 wide. The camera follows the pack. Dogs choose things to do: weave, jump, tunnel, table, water, shade, zoomies, follow a friend.</p>
+        <div class="rstage"><svg id="rsB" class="rs" viewBox="0 0 1000 600" aria-label="Training Ground, v2.15 roaming"></svg></div>
+        <div class="mini" id="mini" aria-hidden="true"><div class="win" id="miniWin"></div></div>
+        <div class="stats"><span>Floor <b>1560 × 257</b> (2.5×)</span><span>Depth scale <b>0.5 to 1.05</b></span><span>Doing now: <b id="doing">…</b></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <section><h3>New places</h3><ul><li>Training Ground: agility course and trick stage</li><li>Splash Pool: a shallow dog pool with a ramp and life vests</li><li>Three run tracks, each its own place: Sunflower Lanes, Bamboo Grove Trail, Seaside Cliffs Run</li></ul></section>
+    <section><h3>Shops, spread out</h3><ul><li>Kibble Corner: by the home side of the river (the old Market Street key)</li><li>Bow-Wow Boutique: uptown, past the café</li><li>Barkitecture: the riverside workshop</li><li>Pip's Sprout Cart: halfway up the hill</li></ul></section>
+    <section><h3>Every building, redrawn</h3><ul><li>Its own shape, colour and roof sign, so it reads with the labels off</li><li>Lifts, glows and squashes like a button</li><li>A checkered flag marks every place where a run starts</li></ul></section>
+  </div>
+  <p class="foot">The map and the Training Ground are design mock-ups drawn for this page in the game's pencil style. The dogs and the Dog Park scene are the game's own art (dogs/pawart_dogs.js, world A to C), loaded unchanged.</p>
+</div>
+
+<script src="dogs.js"></script>
+<script src="world_a.js"></script>
+<script src="world_b.js"></script>
+<script src="world_c.js"></script>
+<script>
+'use strict';
+/* ================= crayon kit (pencil on paper, no filters) ================= */
+const C={ink:'#5B3D32',graph:'#A8968A',paper:'#FFFBF3',pink:'#F28FA5',sky:'#D3E9F6',grass:'#CBE5A6',grass2:'#B4D98E',grassD:'#93C276',
+  leaf:'#B9DD92',leaf2:'#9ACD7C',pine:'#8CC09A',pineD:'#6FA483',trunk:'#C9A07A',trunkD:'#A97E5A',wood:'#EBCDA4',woodD:'#CFA77C',
+  roof:'#EBA48C',roofD:'#D88870',wall:'#FCE6CC',wall2:'#F9D9DE',wall3:'#D9E9F7',wall4:'#DDEFD8',stone:'#DED6CC',stoneD:'#C7BCAE',
+  path:'#EFDDBA',soil:'#D9B48E',water:'#BEE0F2',waterD:'#9CCDE8',sand:'#F7E4B5',sandD:'#EBCF95',red:'#F4A3A3',redD:'#E57E83',
+  yellow:'#FCE59A',orange:'#F8C08A',lav:'#DCCBF2',mint:'#C9EBDA',blue:'#B9D3F2',white:'#FFFFFF',glass:'#E4F2FA',teal:'#8FD6E1'};
+let SEED=1;const srand=s=>{SEED=(s>>>0)||1};const rnd=()=>{SEED=(SEED*1664525+1013904223)>>>0;return SEED/4294967296};
+const J=a=>(rnd()*2-1)*a;const f=n=>Math.round(n*10)/10;
+const hash=s=>{let h=2166136261;for(const c of s)h=Math.imul(h^c.charCodeAt(0),16777619);return h>>>0};
+const lp=(P,z)=>'M'+P.map(p=>f(p[0])+' '+f(p[1])).join('L')+(z?'Z':'');
+function smooth(P,z){const n=P.length,g=i=>z?P[(i+n)%n]:P[Math.max(0,Math.min(n-1,i))];let d=`M${f(P[0][0])} ${f(P[0][1])}`;
+  for(let i=0;i<(z?n:n-1);i++){const a=g(i-1),b=g(i),c=g(i+1),e=g(i+2);d+=`C${f(b[0]+(c[0]-a[0])/6)} ${f(b[1]+(c[1]-a[1])/6)} ${f(c[0]-(e[0]-b[0])/6)} ${f(c[1]-(e[1]-b[1])/6)} ${f(c[0])} ${f(c[1])}`}return d+(z?'Z':'')}
+function dense(P,z,st){const o=[],n=P.length;for(let i=0;i<(z?n:n-1);i++){const a=P[i],b=P[(i+1)%n],k=Math.max(1,Math.round(Math.hypot(b[0]-a[0],b[1]-a[1])/st));for(let j=0;j<k;j++)o.push([a[0]+(b[0]-a[0])*j/k,a[1]+(b[1]-a[1])*j/k])}if(!z)o.push(P[n-1]);return o}
+const wob=(P,z,a,st)=>dense(P,z,st).map(p=>[p[0]+J(a),p[1]+J(a)]);
+// Catmull-Rom samples through P (roads, the river, dog paths)
+function crs(P,seg){const o=[],n=P.length,g=i=>P[Math.max(0,Math.min(n-1,i))];for(let i=0;i<n-1;i++){const a=g(i-1),b=g(i),c=g(i+1),e=g(i+2);
+  for(let t=0;t<seg;t++){const u=t/seg,u2=u*u,u3=u2*u;o.push([0,1].map(k=>.5*(2*b[k]+(-a[k]+c[k])*u+(2*a[k]-5*b[k]+4*c[k]-e[k])*u2+(-a[k]+3*b[k]-3*c[k]+e[k])*u3)))}}o.push(P[n-1]);return o}
+function shape(P,fill,o={}){const r=o.round,st=o.step||(r?14:16),A=o.amp==null?(r?1:.8):o.amp,d1=r?smooth(wob(P,true,A,st),true):lp(wob(P,true,A,st),true);
+  let s=`<path d="${d1}" fill="${fill}"${o.cls?` class="${o.cls}"`:''}${o.op?` opacity="${o.op}"`:''}/>`;
+  if(o.hatch)s+=`<path d="${d1}" fill="url(#hat)" opacity="${o.hop||.45}" pointer-events="none"/>`;
+  if(!o.noline){const d2=r?smooth(wob(P,true,A*1.6,st),true):lp(wob(P,true,A*1.6,st),true);
+    s+=`<path d="${d2}" fill="none" stroke="${C.graph}" stroke-width="1" opacity=".6"/><path d="${d1}" fill="none" stroke="${o.col||C.ink}" stroke-width="${o.w||2.2}" stroke-linejoin="round" stroke-linecap="round"/>`}
+  return s}
+const RC=(x,y,w,h)=>[[x,y],[x+w,y],[x+w,y+h],[x,y+h]];
+const EL=(x,y,rx,ry,n=18)=>Array.from({length:n},(_,i)=>[x+rx*Math.cos(i/n*Math.PI*2),y+ry*Math.sin(i/n*Math.PI*2)]);
+const circ=(x,y,r,fill,o={})=>shape(EL(x,y,r,r,o.n||Math.max(8,Math.round(r*1.2))),fill,Object.assign({round:true,step:6,amp:.5},o));
+const ell=(x,y,rx,ry,fill,o={})=>shape(EL(x,y,rx,ry,o.n||20),fill,Object.assign({round:true,step:12},o));
+function line(P,w=2,col=C.ink,o={}){const d=o.smooth?smooth(wob(P,false,o.amp==null?.6:o.amp,o.step||18),false):lp(wob(P,false,o.amp==null?.6:o.amp,o.step||18),false);
+  return `<path d="${d}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"${o.dash?` stroke-dasharray="${o.dash}"`:''}${o.op?` opacity="${o.op}"`:''}${o.cls?` class="${o.cls}"`:''}/>`}
+const txt=(s,x,y,sz,o={})=>`<text x="${x}" y="${y}" text-anchor="middle" font-family="Caveat, 'Patrick Hand', cursive" font-weight="700" font-size="${sz}" fill="${o.col||C.ink}"${o.halo===false?'':` stroke="#FFF8EC" stroke-width="7" stroke-linejoin="round" paint-order="stroke"`}${o.rot?` transform="rotate(${o.rot} ${x} ${y})"`:''}>${s}</text>`;
+const heart=(x,y,r,col=C.pink)=>`<path d="M${x} ${y+r}C${x-r*1.6} ${y-r*.2} ${x-r*.8} ${y-r*1.4} ${x} ${y-r*.5}C${x+r*.8} ${y-r*1.4} ${x+r*1.6} ${y-r*.2} ${x} ${y+r}Z" fill="${col}" stroke="${C.ink}" stroke-width="1.4"/>`;
+const win=(x,y,w,h,o={})=>shape(RC(x,y,w,h),o.col||C.glass,{w:1.6,amp:.4})+line([[x+w/2,y],[x+w/2,y+h]],1.2)+line([[x,y+h/2],[x+w,y+h/2]],1.2);
+function awn(x,y,w,h,c1,c2,n){let s='';const sw=w/n;for(let i=0;i<n;i++)s+=`<rect x="${f(x+i*sw)}" y="${y}" width="${f(sw+.4)}" height="${h}" fill="${i%2?c2:c1}"/>`;
+  let sc=`M${x} ${y+h}`;for(let i=0;i<n;i++)sc+=`q${f(sw/2)} ${f(h*.55)} ${f(sw)} 0`;s+=`<path d="${sc}V${y+h}" fill="${c1}"/>`;
+  return s+line([[x,y],[x+w,y]],2)+`<path d="${sc}" fill="none" stroke="${C.ink}" stroke-width="1.8"/>`+line([[x,y],[x,y+h]],1.8)+line([[x+w,y],[x+w,y+h]],1.8)}
+const flag=(x,y,s=1)=>line([[x,y],[x,y-38*s]],2.2)+shape(RC(x,y-38*s,24*s,15*s),'url(#chk)',{w:1.6,amp:.3});
+function tree(x,y,s=1,cls='lf'){return line([[x,y+10*s],[x,y-4*s]],3*s,C.trunkD)+`<path d="${smooth(wob(EL(x,y-14*s,17*s,15*s,10),true,1.4*s,8),true)}" class="${cls}" fill="${C.leaf}" stroke="${C.ink}" stroke-width="1.6"/>`
+  +`<ellipse class="snowcap" cx="${x}" cy="${f(y-25*s)}" rx="${f(11*s)}" ry="${f(4*s)}" fill="#fff" stroke="${C.ink}" stroke-width="1"/>`
+  +`<g class="bloom">${[[-6,-18],[5,-12],[2,-23]].map(([a,b])=>`<circle cx="${f(x+a*s)}" cy="${f(y+b*s)}" r="${f(2.4*s)}" fill="#F7B6C8"/>`).join('')}</g>`}
+function pine(x,y,s=1,col=C.pine){return line([[x,y],[x,y+7*s]],2.6,C.trunkD)+shape([[x-15*s,y],[x+J(1),y-36*s],[x+15*s,y]],col,{w:1.5,amp:.6,step:12})+`<path class="snowcap" d="M${f(x-6*s)} ${f(y-22*s)}L${x} ${f(y-36*s)}L${f(x+6*s)} ${f(y-22*s)}Z" fill="#fff" stroke="${C.ink}" stroke-width="1"/>`}
+function hut(x,y,s,wall,roof){return shape(RC(x-15*s,y-12*s,30*s,24*s),wall,{w:1.5,amp:.6})+shape([[x-19*s,y-11*s],[x,y-28*s],[x+19*s,y-11*s]],roof,{w:1.5,amp:.6})
+  +`<path class="snowcap" d="M${f(x-17*s)} ${f(y-13*s)}L${x} ${f(y-27*s)}L${f(x+17*s)} ${f(y-13*s)}L${f(x+11*s)} ${f(y-16*s)}L${x} ${f(y-22*s)}L${f(x-11*s)} ${f(y-16*s)}Z" fill="#fff" stroke="${C.ink}" stroke-width=".9"/>`
+  +`<rect x="${f(x-4*s)}" y="${f(y)}" width="${f(7*s)}" height="${f(12*s)}" fill="${C.ink}" opacity=".5"/>`}
+function duck(x,y,s=1){return ell(x,y,9*s,6*s,C.yellow,{w:1.3})+circ(x+7*s,y-6*s,4*s,C.yellow,{w:1.2})+`<path d="M${f(x+10*s)} ${f(y-6*s)}l${f(5*s)} 1.5l${f(-5*s)} 1.5z" fill="${C.orange}"/>`}
+function arch(x,y,s=1){return line([[x-30*s,y],[x-30*s,y-50*s]],4.5,C.woodD)+line([[x+30*s,y],[x+30*s,y-50*s]],4.5,C.woodD)
+  +shape([[x-38*s,y-46*s],[x-20*s,y-58*s],[x,y-62*s],[x+20*s,y-58*s],[x+38*s,y-46*s],[x+38*s,y-34*s],[x+20*s,y-45*s],[x,y-49*s],[x-20*s,y-45*s],[x-38*s,y-34*s]],'url(#chk)',{w:2,amp:.4})
+  +shape([[x-30*s,y-50*s],[x-30*s,y-66*s],[x-18*s,y-58*s]],C.pink,{w:1.3,amp:.3})+shape([[x+30*s,y-50*s],[x+30*s,y-66*s],[x+42*s,y-58*s]],C.mint,{w:1.3,amp:.3})}
+const bunt=(P,cols)=>{const S=crs(P,6);let s=line(P,1.4,C.ink,{smooth:true});for(let i=1;i<S.length-1;i+=2){const [x,y]=S[i];s+=`<path d="M${f(x-6)} ${f(y)}L${f(x+6)} ${f(y)}L${f(x)} ${f(y+12)}Z" fill="${cols[i%cols.length]}" stroke="${C.ink}" stroke-width="1.1"/>`}return s};
+
+/* ================= the places (one line each: V215.md section 2) ================= */
+const B=[
+ {id:'yard',n:'My Yard',x:270,y:690,st:'same',bond:1,look:'A white picket fence, the red-roofed dog house with its dark arched door, a bowl and a ball.',tell:'The only red dog house on the map.',do:'Home: feed, bath, nap, decorate, the mailbox and missions.'},
+ {id:'house',n:'Cozy House',x:440,y:550,st:'same',bond:1,look:'A tall peach cottage, chimney smoke, a round attic window with a heart.',tell:'The smoking chimney and the heart window.',do:'Indoors with the beds and furniture you placed.'},
+ {id:'market',n:'Kibble Corner',x:600,y:790,st:'moved',bond:1,look:'A yellow corner shop with a giant bowl of kibble on the roof, red and white awning, sacks at the door.',tell:'The huge food bowl on the roof.',do:'Food and treats. Keeps the old Market Street key, so old saves land here.'},
+ {id:'shelter',n:'Doodle Doggo Shelter',x:1030,y:440,st:'redrawn',bond:1,look:'A big red barn with white X doors, a heart in the gable, puppies in the round windows and a paw weathervane.',tell:'The only barn, with pups at the windows.',do:'Adopt, the Playroom and the Adopt-me board.'},
+ {id:'square',n:'Town Square',x:1240,y:780,st:'redrawn',bond:1,look:'A round cobbled plaza with a fountain, a stone clock tower and bunting.',tell:'The clock tower in the middle of town.',do:'The town hub, the Halloween pop-up and festivals. Town Loop runs start here.',run:true},
+ {id:'cafe',n:'Pupuccino Café',x:1470,y:630,st:'redrawn',bond:1,look:'A cream café with a giant steaming cup on the roof and two parasol tables outside.',tell:'The giant cup.',do:'One dog-safe café treat per dog a day.'},
+ {id:'boutique',n:'Bow-Wow Boutique',x:1650,y:440,st:'moved',bond:1,look:'A tall lilac shop with a scalloped pink roof, a huge bow on top and a dog mannequin in the window.',tell:'The big pink bow.',do:'Clothes and costumes. Its own storefront place now.'},
+ {id:'salon',n:'Grooming Salon',x:1850,y:640,st:'redrawn',bond:3,look:'A pink salon whose roof is a cloud of soap bubbles, a striped barber pole and a little bathtub.',tell:'The bubble roof.',do:'The full groom: Fresh and Fluffy.'},
+ {id:'vet',n:'Vet Clinic',x:1130,y:1000,st:'redrawn',bond:1,look:'A white clinic, a sky-blue roof, a red cross in the gable and a stethoscope over the door.',tell:'The red cross on white.',do:'Check-ups, health cards, expecting check-ups.'},
+ {id:'builder',n:'Barkitecture',x:650,y:1170,st:'moved',bond:1,look:'A wooden workshop with a saw-tooth roof, a giant hammer on top, planks and a half-built dog house.',tell:'The giant hammer and the jagged roof.',do:'Furniture and decorations. A riverside storefront place now.'},
+ {id:'sprout',n:"Pip's Sprout Cart",x:1400,y:320,st:'moved',bond:1,look:'A mint cart on two big wheels under a green striped canopy, seed packets, a sunflower pot and a watering can.',tell:'The only thing on wheels.',do:'Seeds and garden tools, halfway up the hill.'},
+ {id:'park',n:'Sunny Park',x:400,y:1000,st:'redrawn',bond:1,look:'A duck pond with lily pads, a mint bandstand and big round trees.',tell:'The bandstand by the pond.',do:'Roam, ball play. Sunny Park runs start here.',run:true},
+ {id:'dogpark',n:'Dog Park',x:1420,y:1010,st:'redrawn',bond:2,look:'A bone-shaped fenced lawn with a red hydrant, a little A-frame and tennis balls.',tell:'The lawn is shaped like a bone.',do:'Dog Card visitors, ball play.'},
+ {id:'training',n:'Training Ground',x:1720,y:890,st:'new',bond:3,look:'A sandy oval arena with a rope fence, weave poles, a jump bar, a tyre, a blue tunnel, a scoreboard and a rosette flag.',tell:'Red and white weave poles and blue bunting.',do:'The agility course (rosettes, small coins, Bond) and a trick stage that speeds up trick training.'},
+ {id:'pool',n:'Splash Pool',x:1630,y:1200,st:'new',bond:2,look:'A turquoise kidney-shaped pool on white tiles, a wooden ramp, a ring float, a lifeguard chair and a life vest on a hook.',tell:'Turquoise water on tiles, nothing else is.',do:'Paddle, float-toy fetch, the sprinkler. Shallow, with a ramp and a free life vest.'},
+ {id:'river',n:'Riverside Trail',x:955,y:1180,st:'redrawn',bond:2,look:'An arched wooden footbridge over the river, ducks and cattails.',tell:'The humped bridge on the water.',do:'Roam by the water. Riverside runs start here.',run:true},
+ {id:'woods',n:'Maple Woods',x:2150,y:550,st:'redrawn',bond:5,look:'A carved wooden gate with an acorn on top, pines and orange maples, a red mushroom.',tell:'The acorn gate in the forest.',do:'Roam, dig spots. Maple Woods runs start here.',run:true},
+ {id:'hilltop',n:'Hilltop Meadow',x:1160,y:140,st:'redrawn',bond:4,look:'A round green hill, a lone tree with a rope swing, a pink kite and a picnic blanket.',tell:'The kite over the hill.',do:'Roam, picnics. Hilltop runs start here.',run:true},
+ {id:'beach',n:'Seashell Beach',x:1890,y:1350,st:'redrawn',bond:8,look:'A red and white umbrella, a sandcastle with a flag, a beach ball and a starfish.',tell:'The sandcastle on the sand.',do:'Roam, ball play, digging. Beach runs start here.',run:true},
+ {id:'pier',n:'Lighthouse Pier',x:2170,y:1330,st:'redrawn',bond:6,look:'A wooden pier into the sea and a red and white lighthouse.',tell:'The lighthouse.',do:'Roam on the boards. Pier runs start here.',run:true},
+ {id:'station',n:'Station',x:250,y:1290,st:'same',bond:3,look:'A station house with a clock, a mint canopy and the Shinkansen nose at the platform.',tell:'The white bullet train.',do:'The day ticket to Tokyo (unchanged).'},
+ {id:'fujihill',n:'Mt. Fuji Lookout',x:300,y:370,st:'same',bond:2,look:'A grassy clearing under Mt. Fuji with a vermilion torii and a bench facing the mountain.',tell:'The torii under Fuji.',do:'The view, the Fuji missions (unchanged).'},
+ {id:'sunflower',n:'Sunflower Lanes',x:610,y:300,st:'track',bond:2,look:'Rows of sunflowers, a scarecrow in a straw hat, hay bales and a checkered start arch.',tell:'Yellow flower rows and the scarecrow.',do:'A new run track (easy, 60 s), and a trailhead to roam.'},
+ {id:'bamboo',n:'Bamboo Grove Trail',x:1910,y:250,st:'track',bond:4,look:'Tall green bamboo, a stone lantern, stepping stones and a checkered start arch.',tell:'The only bamboo on the map.',do:'A new run track (medium, 75 s), and a trailhead to roam.'},
+ {id:'cliffs',n:'Seaside Cliffs Run',x:2290,y:1040,st:'track',bond:7,locked:true,look:'A grey cliff top over the sea with a rope fence, wildflowers, a gull and a checkered start arch.',tell:'The rock face above the waves.',do:'A new run track (long, 90 s), and a trailhead to roam. The fence keeps everyone well back from the edge.'}
+];
+const BI=Object.fromEntries(B.map(b=>[b.id,b]));
+const ST={same:['Same place','pill'],redrawn:['Redrawn','pill'],moved:['Moved shop','pill moved'],new:['New place','pill new'],track:['New run track','pill track']};
+
+/* ---- building art, local units (0 0 = the building's centre, base at about y 46) ---- */
+const ART={
+ yard(){let s=ell(0,30,96,26,C.grass,{noline:true});for(let i=-86;i<=86;i+=14){const yy=-4+Math.abs(i)*.06;s+=shape([[i-5,yy+12],[i-5,yy-10],[i,yy-16],[i+5,yy-10],[i+5,yy+12]],'#FFFFFF',{w:1.3,amp:.4,step:40})}
+  s+=line([[-92,-4],[92,-4]],1.6)+line([[-92,6],[92,6]],1.6);
+  s+=shape([[-62,42],[-62,8],[-30,-16],[2,8],[2,42]],C.wood,{w:2,hatch:1});s+=shape([[-72,12],[-30,-26],[12,12]],C.redD,{w:2.2,hatch:1});
+  s+=`<path class="snowcap" d="M-68 9L-30 -24L8 9L-2 5L-30 -15L-58 5Z" fill="#fff" stroke="${C.ink}" stroke-width="1"/>`;
+  s+=`<path d="M-42 42v-16a12 12 0 0 1 24 0v16z" fill="${C.ink}" opacity=".78"/>`+shape([[-40,-2],[-20,-2]],C.white,{w:4,col:'#fff',noline:true});
+  s+=line([[-38,-4],[-22,-4]],4.5,'#fff')+circ(-39,-4,2.8,'#fff',{w:1})+circ(-21,-4,2.8,'#fff',{w:1});
+  s+=tree(62,14,.95)+ell(28,42,13,5,C.redD,{w:1.6})+circ(24,38,2.4,'#C98F5A',{w:.8,noline:true})+circ(30,37,2.4,'#C98F5A',{noline:true})+circ(56,46,6,'#E3F07A',{w:1.4});return s},
+ house(){let s=shape(RC(-48,-12,96,58),C.wall,{w:2.2,hatch:1});s+=shape(RC(22,-60,14,30),C.roofD,{w:1.8});
+  s+=shape([[-60,-8],[0,-64],[60,-8]],C.roof,{w:2.2,hatch:1})+`<path class="snowcap" d="M-56 -10L0 -62L56 -10L44 -14L0 -52L-44 -14Z" fill="#fff" stroke="${C.ink}" stroke-width="1"/>`;
+  s+=line([[29,-64],[22,-76],[32,-86],[25,-98]],2,C.graph,{smooth:true})+circ(0,-30,10,C.glass,{w:1.8})+heart(0,-30,4.5);
+  s+=shape(RC(-10,14,20,32),'#9FD3B5',{w:1.8})+circ(5,30,1.8,C.ink,{noline:true})+win(-40,2,20,17)+win(20,2,20,17);
+  s+=shape(RC(-42,20,28,6),C.woodD,{w:1.2})+shape(RC(16,20,28,6),C.woodD,{w:1.2})+[-36,-28,-20,22,30,38].map(x=>circ(x,18,2.6,C.pink,{w:.9})).join('');
+  s+=[[-6,52],[4,58],[-2,66]].map(([x,y])=>ell(x,y,7,3,C.stone,{w:1})).join('');return s},
+ market(){let s=shape(RC(-58,-18,116,64),C.yellow,{w:2.2,hatch:1});s+=shape(RC(-62,-28,124,11),C.woodD,{w:2});
+  s+=shape([[-40,-62],[40,-62],[30,-30],[-30,-30]],C.redD,{w:2.2});s+=line([[-42,-62],[42,-62]],3.2);
+  for(let r=0;r<3;r++)for(let i=0;i<7-r*2;i++)s+=circ(-24+r*8+i*8+J(1),-66-r*6,4.6,'#C98F5A',{w:1.1});
+  s+=circ(0,-46,4,'#fff',{w:1})+[[-6,-52],[0,-54],[6,-52]].map(([x,y])=>circ(x,y,1.8,'#fff',{noline:true})).join('');
+  s+=awn(-58,-16,116,13,C.red,'#FFFFFF',9)+shape(RC(-48,8,44,30),C.glass,{w:1.8})+ell(-36,32,7,6,'#E9D3AE',{w:1})+ell(-22,32,7,6,'#E9D3AE',{w:1});
+  s+=shape(RC(12,6,24,40),C.woodD,{w:1.8})+circ(31,26,1.8,C.ink,{noline:true});
+  const sack=(x,y)=>shape([[x-12,y+10],[x-14,y-6],[x-8,y-14],[x+8,y-14],[x+14,y-6],[x+12,y+10]],'#E9D3AE',{round:true,w:1.6,step:8})+line([[x-6,y-12],[x+6,y-12]],1.6)+circ(x,y-1,3,'#C98F5A',{w:.8});
+  return s+sack(-74,34)+sack(-56,38)+sack(74,36)},
+ shelter(){let s=shape([[-68,46],[-68,-8],[-46,-34],[0,-50],[46,-34],[68,-8],[68,46]],'#EE9A92',{w:2.4,hatch:1});
+  s+=line([[-66,-8],[-45,-32],[0,-48],[45,-32],[66,-8]],5,'#FFFFFF')+line([[-68,-8],[-46,-34],[0,-50],[46,-34],[68,-8]],2.2);
+  s+=`<path class="snowcap" d="M-64 -10L-45 -31L0 -47L45 -31L64 -10L50 -14L0 -38L-50 -14Z" fill="#fff" stroke="${C.ink}" stroke-width="1"/>`;
+  s+=shape(RC(-20,6,40,40),'#FFFFFF',{w:2})+line([[-18,8],[18,44]],2.4,C.redD)+line([[18,8],[-18,44]],2.4,C.redD)+line([[0,6],[0,46]],1.6);
+  s+=heart(0,-24,9);const pup=(x,y)=>circ(x,y,12,C.glass,{w:1.8})+ell(x-7,y-3,3,6,'#C9A07A',{w:1})+ell(x+7,y-3,3,6,'#C9A07A',{w:1})+circ(x,y+1,6.5,'#F1D7B5',{w:1.2})+circ(x-2.4,y,1.1,C.ink,{noline:true})+circ(x+2.4,y,1.1,C.ink,{noline:true})+circ(x,y+3,1.4,C.ink,{noline:true});
+  s+=pup(-44,6)+pup(44,6)+line([[0,-50],[0,-78]],2)+line([[-12,-70],[12,-70]],2)+`<path d="M12 -70l-6 -4v8z" fill="${C.ink}"/>`;
+  s+=circ(0,-84,4.5,C.ink,{noline:true})+[[-5,-90],[0,-92],[5,-90]].map(([x,y])=>circ(x,y,2,C.ink,{noline:true})).join('');
+  return s+shape(RC(-92,24,22,20),'#F3D98B',{w:1.5,hatch:1})},
+ square(){let s=ell(4,26,96,40,'#EDE6DC',{w:2.2})+`<ellipse cx="4" cy="26" rx="76" ry="31" fill="none" stroke="${C.stoneD}" stroke-width="1.5" stroke-dasharray="8 7"/>`;
+  s+=ell(12,30,30,12,C.stone,{w:2})+ell(12,28,23,8,C.water,{w:1.3,noline:true})+line([[12,26],[12,-4]],4,C.stoneD)+`<path d="M12 -4q-16 2 -20 24M12 -4q16 2 20 24" fill="none" stroke="#86BDDE" stroke-width="2.4" stroke-linecap="round"/>`;
+  s+=shape(RC(-74,-78,28,104),'#E6DDD0',{w:2.2,hatch:1})+shape([[-79,-76],[-60,-104],[-41,-76]],C.redD,{w:2})+circ(-60,-56,9,'#FFFFFF',{w:1.8});
+  s+=line([[-60,-56],[-60,-62]],1.6)+line([[-60,-56],[-55,-54]],1.6)+shape(RC(-66,6,12,20),C.woodD,{w:1.4});
+  s+=bunt([[-46,-62],[20,-40],[84,-30]],[C.pink,C.yellow,C.mint,C.lav]);
+  return s+line([[84,40],[84,-30]],2.2)+circ(84,-34,5,C.yellow,{w:1.4})+tree(-96,28,.6)+flag(64,40)},
+ cafe(){let s=shape(RC(-52,-12,104,58),C.wall,{w:2.2,hatch:1})+shape(RC(-56,-20,112,10),C.woodD,{w:2});
+  s+=ell(0,-21,36,5,'#FFFFFF',{w:1.8})+shape([[-26,-60],[26,-60],[20,-24],[-20,-24]],'#FFFFFF',{w:2.2})+shape([[-24,-50],[24,-50],[22,-42],[-22,-42]],'#C9A07A',{w:1.2,noline:false});
+  s+=ell(0,-60,26,5,'#F3E1C7',{w:1.6})+line([[24,-52],[38,-48],[36,-34],[21,-31]],3,C.ink,{smooth:true});
+  s+=[-10,2,14].map(x=>line([[x,-68],[x-5,-78],[x+3,-88],[x-3,-98]],2,C.graph,{smooth:true})).join('');
+  s+=awn(-52,-8,104,12,'#C9A07A','#FFFFFF',8)+shape(RC(-44,10,32,26),C.glass,{w:1.8})+shape(RC(4,8,20,38),C.woodD,{w:1.8})+shape(RC(30,10,16,24),C.glass,{w:1.6});
+  const tb=(x,c)=>line([[x,10],[x,44]],2)+shape([[x-18,12],[x,-2],[x+18,12]],c,{w:1.6,amp:.5})+ell(x,42,12,4,C.wood,{w:1.3});
+  return s+tb(-74,C.mint)+tb(76,C.pink)},
+ boutique(){let s=shape(RC(-40,-46,80,92),C.lav,{w:2.2,hatch:1});s+=shape([[-48,-44],[-36,-70],[36,-70],[48,-44]],C.pink,{w:2.2,hatch:1});
+  let sc='M-48 -44';for(let i=0;i<8;i++)sc+='q6 7 12 0';s+=`<path d="${sc}" fill="none" stroke="${C.ink}" stroke-width="1.6"/>`;
+  s+=`<path class="snowcap" d="M-44 -48L-34 -69L34 -69L44 -48L30 -56L-30 -56Z" fill="#fff" stroke="${C.ink}" stroke-width="1"/>`;
+  s+=shape([[-2,-80],[-30,-96],[-32,-66]],C.redD,{round:true,w:2,step:8})+shape([[2,-80],[30,-96],[32,-66]],C.redD,{round:true,w:2,step:8})+circ(0,-80,6.5,C.redD,{w:1.8});
+  s+=line([[-3,-76],[-12,-60]],3,C.redD)+line([[3,-76],[12,-60]],3,C.redD);
+  s+=[-24,8].map(x=>shape([[x,-20],[x,-34],[x+8,-40],[x+16,-34],[x+16,-20]],C.glass,{w:1.5,amp:.4})).join('');
+  s+=awn(-36,-16,72,10,C.pink,'#FFFFFF',7)+shape(RC(-32,-4,64,42),C.glass,{w:2});
+  s+=line([[0,36],[0,26]],1.6)+shape([[-13,26],[13,26],[0,4]],C.pink,{w:1.5,amp:.3})+circ(0,2,6,'#FFFFFF',{w:1.3})+ell(-5,-2,2.4,4,'#FFFFFF',{w:1})+ell(5,-2,2.4,4,'#FFFFFF',{w:1});
+  return s+line([[40,-30],[58,-30]],2)+line([[56,-30],[56,-24]],1.4)+circ(56,-14,10,'#FFFFFF',{w:1.8})+`<path d="M56 -14l-7 -5v10zM56 -14l7 -5v10z" fill="${C.pink}" stroke="${C.ink}" stroke-width="1"/>`},
+ salon(){let s=shape(RC(-50,-16,100,62),'#FDE3EA',{w:2.2,hatch:1});
+  [[-40,-22,13],[-17,-31,16],[8,-29,15],[31,-30,13],[48,-20,10]].forEach(([x,y,r])=>s+=circ(x,y,r,'#FFFFFF',{w:1.8,col:'#5C8FB8'}));
+  s+=shape(RC(-70,-8,11,54),'#FFFFFF',{w:1.6})+[-2,10,22,34].map(y=>line([[-70,y+6],[-59,y-2]],3,C.pink)).join('')+circ(-64.5,-11,6,C.pink,{w:1.4});
+  s+=`<g fill="none" stroke="${C.ink}" stroke-width="2.4"><circle cx="-8" cy="4" r="5.5"/><circle cx="8" cy="4" r="5.5"/><path d="M-4 0l18 -18M4 0l-18 -18"/></g>`;
+  s+=shape(RC(-10,16,22,30),C.lav,{w:1.8})+win(22,2,22,18)+win(-42,2,22,18);
+  s+=[[60,-44,6],[72,-58,4.5],[58,-68,3.5]].map(([x,y,r])=>circ(x,y,r,'#FFFFFF',{w:1.2,col:'#5C8FB8'})).join('');
+  return s+shape([[52,30],[90,30],[86,44],[56,44]],'#FFFFFF',{round:false,w:1.8})+line([[58,44],[56,50]],2)+line([[84,44],[86,50]],2)+circ(62,26,4,'#FFFFFF',{w:1,col:'#5C8FB8'})+circ(72,24,5,'#FFFFFF',{w:1,col:'#5C8FB8'})+circ(82,27,3.5,'#FFFFFF',{w:1,col:'#5C8FB8'})},
+ vet(){let s=shape(RC(-56,-14,112,60),'#FFFFFF',{w:2.2,hatch:1,hop:.3});s+=shape([[-64,-10],[0,-46],[64,-10]],C.blue,{w:2.2,hatch:1});
+  s+=`<path class="snowcap" d="M-60 -12L0 -44L60 -12L46 -15L0 -36L-46 -15Z" fill="#fff" stroke="${C.ink}" stroke-width="1"/>`;
+  s+=circ(0,-24,11,'#FFFFFF',{w:1.6})+`<path d="M-3.5 -32h7v5h5v7h-5v5h-7v-5h-5v-7h5z" fill="${C.redD}" stroke="${C.ink}" stroke-width="1.2"/>`;
+  s+=shape(RC(-11,14,22,32),C.mint,{w:1.8})+win(-46,0,22,18)+win(24,0,22,18)+line([[-14,10],[-6,20],[6,20],[14,10]],2,C.ink,{smooth:true})+circ(14,8,3,C.stoneD,{w:1.2});
+  return s+line([[78,46],[78,8]],2.2)+shape([[62,-4],[94,-4],[94,10],[62,10]],'#FFFFFF',{w:1.6})+line([[64,3],[72,3],[75,-1],[79,8],[82,3],[92,3]],1.6,C.redD,{amp:.1})},
+ builder(){let s=shape(RC(-64,-12,128,58),C.wood,{w:2.2});for(let x=-54;x<64;x+=12)s+=line([[x,-10],[x,44]],1,C.woodD);
+  s+=shape([[-68,-10],[-68,-46],[-4,-10],[-4,-46],[66,-10]],'#9AA7B8',{w:2.2,hatch:1});
+  s+=`<path class="snowcap" d="M-66 -44L-8 -13L-20 -13L-66 -38ZM-2 -44L60 -12L46 -12L-2 -38Z" fill="#fff" stroke="${C.ink}" stroke-width="1"/>`;
+  s+=line([[20,-74],[52,-34]],7.5,C.ink)+line([[20,-74],[52,-34]],4.5,C.woodD)+shape([[4,-86],[36,-66],[29,-56],[-3,-76]],C.stoneD,{w:2});
+  s+=shape(RC(-36,4,46,42),'#8A6B5A',{w:2})+line([[-36,16],[10,16]],1,'#6E5446');
+  s+=line([[56,46],[56,22]],3,C.woodD)+line([[86,46],[86,22]],3,C.woodD)+line([[52,24],[71,8],[90,24]],3,C.woodD)+line([[56,34],[86,34]],2,C.woodD);
+  return s+[0,1,2].map(i=>shape(RC(-98,28+i*6,34,6),i%2?C.wood:C.woodD,{w:1.3,amp:.3})).join('')+[[-30,50],[-20,52],[0,50],[14,53]].map(([x,y])=>circ(x,y,1.6,C.woodD,{noline:true})).join('')},
+ sprout(){let s=line([[-48,-24],[-48,-2]],2.6)+line([[48,-24],[48,-2]],2.6);
+  s+=awn(-56,-44,112,16,'#9ACD7C','#FFFFFF',8)+shape(RC(-50,-6,100,32),'#BFE3C9',{w:2.2,hatch:1})+line([[-50,-6],[50,-6]],3,C.woodD);
+  s+=['#F28FA5','#FCE59A','#B9D3F2','#F8C08A','#DCCBF2'].map((c,i)=>shape(RC(-42+i*17,0,13,17),c,{w:1.2,amp:.3})+line([[-35.5+i*17,10],[-35.5+i*17,5]],1.4,C.leafD||'#7FB86A')).join('');
+  const wh=(x)=>circ(x,32,15,C.wood,{w:2})+line([[x-13,32],[x+13,32]],1.4)+line([[x,19],[x,45]],1.4)+line([[x-9,23],[x+9,41]],1.2)+line([[x+9,23],[x-9,41]],1.2)+circ(x,32,3,C.woodD,{w:1});
+  s+=wh(-28)+wh(28)+line([[-50,4],[-76,-8]],3.2,C.woodD);
+  s+=shape([[62,30],[80,30],[76,46],[66,46]],C.roofD,{w:1.6})+line([[71,30],[71,4]],2,'#7FB86A')+circ(71,-4,11,C.yellow,{w:1.6})+circ(71,-4,4.5,'#A97E5A',{w:1});
+  s+=shape([[-90,34],[-70,34],[-72,50],[-88,50]],C.blue,{w:1.6})+line([[-70,38],[-60,30]],2.4);
+  return s+[-60,-44,-28,28,44,60].map(x=>line([[x-4,58],[x,52],[x+4,58]],1.8,'#7FB86A')).join('')},
+ park(){let s=ell(0,26,98,34,C.grass,{noline:true})+ell(18,30,44,15,C.water,{w:2})+circ(4,34,4,'#9ACD7C',{w:1})+circ(36,26,3.4,'#9ACD7C',{w:1})+duck(24,26);
+  s+=ell(-54,26,30,8,C.stone,{w:1.8})+[-78,-64,-44,-30].map(x=>line([[x,24],[x,-10]],2.4,C.woodD)).join('');
+  s+=shape([[-88,-8],[-70,-28],[-54,-36],[-38,-28],[-20,-8]],C.mint,{round:true,w:2,step:10})+line([[-54,-36],[-54,-48]],1.8)+circ(-54,-50,3.2,C.pink,{w:1});
+  return s+tree(62,-8,1.25)+tree(-96,16,.7,'lf2')+[[-20,48,C.red],[70,44,C.yellow],[-84,44,C.lav]].map(([x,y,c])=>circ(x,y,3.6,c,{w:1})).join('')+flag(92,40)},
+ dogpark(){let s='';[[-62,6],[-62,38],[62,6],[62,38]].forEach(([x,y])=>s+=circ(x,y,20,C.grass,{w:2.2,n:22}));
+  s+=shape(RC(-64,6,128,32),C.grass,{noline:true,amp:.2})+line([[-62,-14],[62,-14]],2.2)+line([[-62,58],[62,58]],2.2)+line([[-62,6],[-62,-14]],0);
+  s+=`<path d="M-62 -14H62M-62 58H62" stroke="${C.ink}" stroke-width="2.2" stroke-dasharray="3 6" fill="none" transform="translate(0 -6)" opacity=".5"/>`;
+  s+=shape([[-40,32],[-40,6],[-36,-2],[-26,-2],[-22,6],[-22,32]],C.redD,{w:2,round:false})+ell(-31,-4,8,4,C.redD,{w:1.6})+shape(RC(-46,12,30,6),C.redD,{w:1.4});
+  s+=shape([[20,36],[36,8],[52,36]],C.yellow,{w:1.8})+line([[28,22],[44,22]],2,C.redD)+circ(4,30,5,'#E3F07A',{w:1.3})+circ(70,22,5,'#E3F07A',{w:1.3});
+  return s+line([[0,-14],[0,-40]],2.4,C.woodD)+shape(RC(-20,-58,40,22),C.wood,{w:1.8})+circ(0,-46,4.2,C.ink,{noline:true})+[[-5,-53],[0,-55],[5,-53]].map(([x,y])=>circ(x,y,2,C.ink,{noline:true})).join('')},
+ training(){let s=ell(0,22,100,42,C.sand,{w:2.2,hatch:1,hop:.25});
+  for(let a=Math.PI*1.05;a<Math.PI*1.96;a+=Math.PI/8){const x=Math.cos(a)*100,y=22+Math.sin(a)*42;s+=line([[x,y],[x,y-14]],2.4,C.woodD)}
+  s+=line(crs([[-98,6],[-70,-12],[-30,-20],[30,-20],[70,-12],[98,6]],4),1.4,C.woodD,{amp:.3});
+  s+=bunt([[-80,-30],[0,-44],[80,-30]],['#7FA6D9','#FFFFFF']);
+  for(let i=0;i<6;i++){const x=-74+i*10,y=8+i*3.5;s+=line([[x,y],[x,y-26]],4.5,'#FFFFFF')+line([[x,y],[x,y-26]],4.5,C.redD,{dash:'5 5',amp:.1})+line([[x,y],[x,y-26]],1,C.ink,{op:.5})}
+  s+=line([[10,30],[10,2]],2.4)+line([[40,30],[40,2]],2.4)+line([[8,10],[42,10]],5,'#7FA6D9')+line([[8,10],[42,10]],5,'#FFFFFF',{dash:'6 6',amp:.1});
+  s+=line([[58,34],[58,-10]],2.4)+line([[86,34],[86,-10]],2.4)+line([[56,-10],[88,-10]],2.4)+circ(72,10,11,C.orange,{w:2})+circ(72,10,5,C.sand,{w:1.4});
+  s+=`<path d="M-42 50Q-42 28 -8 28Q26 28 26 50Z" fill="${C.blue}" stroke="${C.ink}" stroke-width="2"/>`+[-30,-18,-6,6,16].map(x=>line([[x,30],[x,50]],1.2,'#7FA6D9')).join('');
+  s+=line([[-86,-34],[-86,-16]],2.2)+line([[-58,-34],[-58,-16]],2.2)+shape(RC(-96,-62,48,28),C.pineD,{w:2})+circ(-72,-48,7,C.yellow,{w:1.4})+line([[-72,-42],[-76,-34]],2,C.yellow)+line([[-72,-42],[-68,-34]],2,C.yellow);
+  return s+line([[90,-18],[90,-64]],2.2)+circ(90,-66,8,'#7FA6D9',{w:1.6})+circ(90,-66,3.4,C.yellow,{w:1})+shape([[86,-60],[84,-48],[89,-52]],'#7FA6D9',{w:1,amp:.2})+shape([[94,-60],[96,-48],[91,-52]],'#7FA6D9',{w:1,amp:.2})},
+ pool(){let s=shape(RC(-92,-16,184,66),'#EEF6F8',{w:2.2});for(let x=-76;x<92;x+=16)s+=line([[x,-16],[x,50]],.8,C.stoneD,{op:.7});for(let y=0;y<50;y+=16)s+=line([[-92,y],[92,y]],.8,C.stoneD,{op:.7});
+  s+=shape([[-72,6],[-44,-6],[-4,0],[40,-8],[74,6],[72,30],[34,40],[-8,32],[-48,40],[-76,28]],C.teal,{round:true,w:2.2,step:10});
+  s+=line([[-50,14],[-36,12],[-22,16]],1.6,'#FFFFFF',{smooth:true})+line([[10,22],[24,19],[40,23]],1.6,'#FFFFFF',{smooth:true})+line([[-30,28],[-16,26]],1.4,'#FFFFFF');
+  s+=shape([[50,40],[78,46],[70,22],[44,18]],C.wood,{w:1.8})+[0,1,2].map(i=>line([[48+i*8,22+i*1],[54+i*8,42+i*1.5]],1,C.woodD)).join('');
+  s+=circ(-22,14,10,'#FFFFFF',{w:1.8})+`<path d="M-22 4a10 10 0 0 1 10 10M-32 14a10 10 0 0 1 10 -10M-22 24a10 10 0 0 1 -10 -10M-12 14a10 10 0 0 1 -10 10" fill="none" stroke="${C.redD}" stroke-width="5"/>`+circ(-22,14,4,C.teal,{w:1.2});
+  s+=duck(22,10,.8)+line([[-88,26],[-82,-24]],2.4)+line([[-66,26],[-72,-24]],2.4)+[0,12].map(y=>line([[-86,y],[-68,y]],1.6)).join('');
+  s+=shape(RC(-94,-38,32,12),C.red,{w:1.8})+line([[-86,-38],[-86,-26]],3,'#FFFFFF')+line([[-74,-38],[-74,-26]],3,'#FFFFFF');
+  s+=line([[44,-14],[44,-54]],2)+line([[92,-10],[92,-40]],2)+shape([[44,-54],[94,-42],[64,-28]],C.yellow,{w:1.8});
+  return s+line([[86,10],[86,-6]],2.2)+shape([[78,-4],[94,-4],[96,14],[76,14]],'#F8A55E',{w:1.8,round:false})+line([[80,4],[92,4]],1.6,'#fff')},
+ river(){let s=shape([[-68,16],[-40,0],[0,-10],[40,0],[68,16],[68,26],[40,10],[0,2],[-40,10],[-68,26]],C.wood,{w:2.2});
+  for(let x=-56;x<60;x+=10){const y=Math.abs(x)*.2;s+=line([[x,y-6+4],[x,y+12-2]],1,C.woodD)}
+  s+=line(crs([[-66,4],[-40,-12],[0,-22],[40,-12],[66,4]],4),2.2)+[-56,-28,0,28,56].map(x=>line([[x,Math.abs(x)*.22-18],[x,Math.abs(x)*.22-4]],1.8)).join('');
+  s+=duck(-34,44)+duck(-12,52,.8);for(let i=0;i<5;i++)s+=line([[56+i*6,58],[54+i*6+J(2),26]],1.8,'#6FA05C');
+  return s+[0,2,4].map(i=>ell(55+i*6,30+J(2),2.6,6,'#A97E5A',{w:1})).join('')+flag(-84,6)},
+ woods(){let s=pine(-62,34,1.1)+pine(56,26,1.25,C.pineD)+tree(84,40,.85,'mp')+tree(-90,44,.7,'mp');
+  s+=line([[-24,44],[-24,-26]],6.5,C.ink)+line([[-24,44],[-24,-26]],4,C.woodD)+line([[24,44],[24,-26]],6.5,C.ink)+line([[24,44],[24,-26]],4,C.woodD);
+  s+=shape(RC(-36,-38,72,14),C.wood,{w:2})+circ(0,-46,7.5,'#C98F5A',{w:1.6})+shape([[-9,-50],[9,-50],[6,-56],[-6,-56]],'#A97E5A',{w:1.4})+line([[0,-56],[0,-60]],1.6);
+  return s+ell(-36,54,8,5,C.redD,{w:1.4})+line([[-36,54],[-36,62]],2.4,'#F3E1C7')+circ(-38,52,1.4,'#fff',{noline:true})+flag(40,58)},
+ hilltop(){let s=shape([[-100,52],[-56,10],[0,-6],[54,6],[100,52]],'#B9DD92',{round:true,w:2.2,step:16});
+  s+=tree(34,-8,1.35)+line([[18,-24],[18,12]],1.3)+line([[30,-24],[30,12]],1.3)+line([[15,12],[33,12]],2.6,C.woodD);
+  s+=shape([[-52,-76],[-38,-60],[-52,-42],[-66,-60]],C.pink,{w:1.8})+line([[-52,-76],[-52,-42]],1)+line([[-66,-60],[-38,-60]],1);
+  s+=line([[-52,-42],[-46,-24],[-56,-8],[-48,8],[-30,22]],1.2,C.ink,{smooth:true,op:.8})+shape([[-50,-28],[-44,-26],[-48,-22]],C.yellow,{w:1,amp:.2});
+  s+=shape([[-66,30],[-28,30],[-36,44],[-74,44]],C.redD,{w:1.6})+[[-60,33],[-48,33],[-36,33],[-64,39],[-52,39],[-40,39]].map(([x,y])=>`<rect x="${x}" y="${y}" width="5" height="4" fill="#fff" opacity=".85"/>`).join('');
+  return s+flag(74,42)},
+ beach(){let s=ell(0,30,96,30,C.sand,{noline:true});s+=line([[8,42],[16,-20]],2.6)+shape([[-32,-12],[14,-44],[60,-10]],C.redD,{round:true,w:2,step:10})+line([[-6,-26],[14,-44]],4,'#fff')+line([[36,-24],[14,-44]],4,'#fff');
+  s+=shape(RC(-64,18,30,22),C.sandD,{w:1.8})+shape([[-66,18],[-66,8],[-60,8],[-60,13],[-54,13],[-54,8],[-48,8],[-48,13],[-42,13],[-42,8],[-36,8],[-36,18]],C.sandD,{w:1.4,amp:.3})+line([[-50,8],[-50,-6]],1.4)+shape([[-50,-6],[-40,-3],[-50,0]],C.pink,{w:1,amp:.2});
+  s+=shape([[-20,42],[24,42],[20,54],[-24,54]],C.mint,{w:1.6})+line([[-10,42],[-14,54]],2.4,'#fff')+line([[6,42],[2,54]],2.4,'#fff');
+  s+=circ(44,30,8.5,'#FFFFFF',{w:1.6})+`<path d="M35.5 30h17M44 21.5v17" stroke="${C.redD}" stroke-width="3"/>`;
+  return s+`<path d="M62 52l3 -7l3 7l7 1l-6 4l2 7l-6 -4l-6 4l2 -7l-6 -4z" fill="${C.orange}" stroke="${C.ink}" stroke-width="1.1"/>`+flag(-86,26)},
+ pier(){let s=shape([[-96,-26],[40,30],[30,44],[-104,-12]],C.wood,{w:2.2});for(let t=.08;t<1;t+=.09)s+=line([[-100+136*t,-19+56*t],[-96+136*t,-26+56*t+14]],1,C.woodD);
+  s+=[[-70,0],[-30,18],[10,34]].map(([x,y])=>line([[x,y],[x,y+14]],3,C.woodD)).join('');
+  s+=shape([[46,34],[54,-46],[74,-46],[82,34]],'#FFFFFF',{w:2.2});[[-30],[-6],[16]].forEach(([y])=>s+=shape([[51,y],[78,y],[79,y+12],[50,y+12]],C.redD,{w:1,noline:true}));
+  s+=shape([[46,34],[54,-46],[74,-46],[82,34]],'none',{w:2.2})+shape(RC(50,-62,28,16),C.yellow,{w:1.8})+shape([[46,-62],[64,-80],[82,-62]],C.redD,{w:1.8});
+  s+=`<path d="M82 -56l38 -12M82 -56l38 8" stroke="#FFE7A0" stroke-width="3.5" stroke-linecap="round"/>`;
+  s+=shape([[-60,44],[-20,44],[-28,54],[-54,54]],C.redD,{w:1.6})+line([[-40,44],[-40,14]],1.5)+shape([[-38,16],[-22,42],[-38,42]],'#FFFFFF',{w:1.3});
+  return s+`<path d="M-80 -62q6 -6 12 0q6 -6 12 0" fill="none" stroke="${C.ink}" stroke-width="2"/>`+flag(-100,-24)},
+ station(){let s=shape(RC(-92,30,184,16),C.stone,{w:2,hatch:1});
+  s+=shape(RC(-54,-24,64,54),C.wall3,{w:2.2,hatch:1})+shape([[-64,-20],[-22,-50],[20,-20]],C.roof,{w:2.2,hatch:1})+circ(-22,-28,7,'#FFFFFF',{w:1.4})+line([[-22,-28],[-22,-33]],1.3)+line([[-22,-28],[-18,-28]],1.3);
+  s+=shape(RC(-30,4,16,26),C.woodD,{w:1.6})+win(-48,-10,13,12)+win(-6,-10,13,12)+line([[24,30],[24,-14]],2.2)+line([[82,30],[82,-14]],2.2)+shape([[16,-14],[90,-14],[94,-22],[12,-22]],C.mint,{w:1.8});
+  s+=shape([[-98,28],[44,28],[76,24],[94,14],[70,6],[44,4],[-98,4]],'#FFFFFF',{w:2,round:false})+line([[-98,20],[66,20]],3.4,'#4E7FC4',{amp:.2});
+  let wd='';for(let wx=-88;wx<30;wx+=20)wd+=`M${wx} 9h11v6h-11Z`;return s+`<path d="${wd}" fill="#B9D3F2" stroke="${C.ink}" stroke-width="1"/>`+`<path d="M46 9l14 1l-4 6h-12z" fill="#B9D3F2" stroke="${C.ink}" stroke-width="1.1"/>`},
+ fujihill(){let s=shape([[-90,48],[-52,4],[4,-12],[54,-2],[92,46]],'#B9DD92',{round:true,w:2.2,step:16});
+  s+=line([[-56,16],[-56,-22]],3.4,'#D9573F')+line([[-32,10],[-32,-26]],3.4,'#D9573F')+shape([[-68,-30],[-22,-35],[-20,-28],[-66,-24]],'#E8664F',{w:1.7,amp:.3})+line([[-62,-18],[-26,-21]],2.4,'#D9573F');
+  s+=line([[24,10],[60,10]],4,C.woodD)+line([[28,10],[28,22]],2.4)+line([[56,10],[56,22]],2.4)+line([[26,0],[58,0]],3,C.woodD);
+  return s+[[-8,30],[8,40],[-4,52]].map(([x,y])=>ell(x,y,8,4,C.stone,{w:1.2})).join('')+circ(-74,44,3.6,C.red,{w:1})+circ(72,40,3.6,C.yellow,{w:1})},
+ sunflower(){let s=shape([[-98,-6],[64,-14],[96,46],[-86,52]],'#EADFA2',{w:2,hatch:1,hop:.3});for(let r=0;r<4;r++)s+=line([[-92+r*4,6+r*12],[74+r*6,-4+r*13]],1,'#C9B56E');
+  for(let r=0;r<3;r++)for(let i=0;i<6;i++){const x=-70+i*22+r*8+J(2),y=-4+r*16;s+=line([[x,y+16],[x,y]],1.8,'#7FB86A')+circ(x,y-2,6.5,C.yellow,{w:1.3})+circ(x,y-2,2.6,'#A97E5A',{noline:true})}
+  s+=line([[-78,30],[-78,-30]],3,C.woodD)+line([[-94,-14],[-62,-14]],3,C.woodD)+shape(RC(-88,-18,20,22),C.blue,{w:1.6})+circ(-78,-26,6.5,'#F1D7B5',{w:1.4})+shape([[-92,-30],[-64,-30],[-72,-38],[-84,-38]],C.yellow,{w:1.4});
+  const hb=(x,y)=>shape(RC(x-14,y-10,28,20),'#E9C97A',{w:1.6,hatch:1})+line([[x-8,y-10],[x-8,y+10]],1,'#B9964E')+line([[x+6,y-10],[x+6,y+10]],1,'#B9964E');
+  return s+hb(78,38)+hb(60,46)+arch(4,50,.9)},
+ bamboo(){let s=ell(0,40,92,16,C.grass,{noline:true});for(let i=0;i<8;i++){const x=-84+i*20+J(4),top=-74+J(10)+(i%2)*12;s+=line([[x,46],[x+J(2),top]],6.4,C.ink)+line([[x,46],[x,top]],4,'#9BCB8C');for(let y=40;y>top+8;y-=17)s+=line([[x-3,y],[x+3,y]],1.6,C.ink);
+    s+=shape([[x,top+6],[x+16,top-2],[x+4,top+10]],'#7FB86A',{w:1,amp:.3})+shape([[x,top+16],[x-14,top+8],[x-4,top+20]],'#7FB86A',{w:1,amp:.3})}
+  s+=shape(RC(-54,30,24,8),C.stoneD,{w:1.6})+shape(RC(-48,6,12,24),C.stone,{w:1.6})+shape(RC(-54,-6,24,14),'#FFF3C4',{w:1.6})+shape([[-60,-6],[-42,-18],[-24,-6]],C.stoneD,{w:1.6});
+  return s+[[-6,56],[10,60],[26,56]].map(([x,y])=>ell(x,y,7,3.4,C.stone,{w:1})).join('')+arch(40,52,.85)},
+ cliffs(){let s=shape([[0,40],[100,30],[100,60],[-10,60]],C.water,{noline:true})+`<path d="M10 50q8 -6 16 0t16 0M50 44q8 -6 16 0t16 0" fill="none" stroke="#86BDDE" stroke-width="2"/>`;
+  s+=shape([[-100,-2],[30,-8],[52,8],[46,30],[28,58],[-100,58]],'#CFC3B5',{w:2.2,hatch:1})+shape([[-100,-2],[30,-8],[40,-2],[-100,8]],'#B9DD92',{w:1.6});
+  s+=line([[30,8],[36,22],[28,34]],1.4,C.ink,{op:.6})+line([[0,20],[8,34],[2,48]],1.4,C.ink,{op:.6});
+  for(let x=-86;x<30;x+=20)s+=line([[x,-2],[x,-18]],2.4,C.woodD);s+=line(crs([[-86,-14],[-76,-10],[-66,-14],[-56,-10],[-46,-14],[-36,-10],[-26,-14],[-16,-10],[-6,-14],[4,-10],[14,-14]],2),1.3,C.woodD,{amp:.2});
+  return s+[[-90,4,C.pink],[-60,2,C.yellow],[-20,4,C.lav],[10,0,C.pink]].map(([x,y,c])=>circ(x,y,3,c,{w:.9})).join('')+`<path d="M54 -52q7 -7 14 0q7 -7 14 0" fill="none" stroke="${C.ink}" stroke-width="2"/>`+arch(-46,-4,.8)}
+};
+
+/* ================= roads: a graph of winding edges (the dog runs along them) ================= */
+const NODE={jHome:[400,700],jE:[1650,720]};B.forEach(b=>NODE[b.id]=[b.x,b.y+(b.id==='river'?24:b.id==='square'?50:52)]);NODE.pier=[2110,1350];NODE.cliffs=[2270,1090];
+const EDGES=[
+ ['yard','jHome',[[330,735]],'road'],['house','jHome',[],'lane'],['jHome','market',[[470,760],[540,830]],'road'],
+ ['market','square',[[700,850],[800,805],[920,800],[1060,850],[1150,860]],'road'],['square','cafe',[[1330,790],[1400,720]],'road'],['cafe','jE',[[1560,700]],'road'],
+ ['jE','salon',[[1750,740]],'road'],['salon','woods',[[1960,690],[2060,630]],'road'],['cafe','boutique',[[1530,600],[1600,540]],'lane'],
+ ['square','shelter',[[1180,730],[1100,640],[1050,560]],'lane'],['shelter','sprout',[[1100,430],[1200,465],[1300,415]],'trail'],['sprout','hilltop',[[1330,300],[1240,240]],'trail'],
+ ['house','sunflower',[[500,520],[560,420]],'lane'],['jHome','fujihill',[[330,620],[270,520]],'trail'],['sunflower','shelter',[[680,380],[790,420],[900,450],[980,480]],'lane'],
+ ['market','park',[[520,930],[450,1000]],'lane'],['park','station',[[330,1150],[260,1250]],'lane'],['park','builder',[[500,1120],[580,1190]],'lane'],
+ ['builder','river',[[760,1250],[870,1222]],'trail'],['river','vet',[[1030,1150],[1090,1110]],'trail'],['square','vet',[[1220,920],[1150,990]],'lane'],
+ ['square','dogpark',[[1310,920],[1380,1000]],'lane'],['dogpark','pool',[[1500,1140],[1560,1220]],'lane'],['pool','beach',[[1720,1320],[1800,1400]],'lane'],
+ ['beach','pier',[[1990,1400]],'trail'],['pier','cliffs',[[2190,1270],[2250,1180]],'trail'],['cliffs','woods',[[2320,960],[2260,780],[2190,660]],'trail'],
+ ['dogpark','training',[[1530,1010],[1620,975]],'lane'],['training','jE',[[1730,860],[1680,790]],'lane'],['woods','bamboo',[[2100,480],[2010,380]],'trail'],
+ ['bamboo','sprout',[[1770,330],[1600,300],[1480,350]],'trail']
+].map(([a,b,via,t])=>({a,b,t,pts:crs([NODE[a],...via,NODE[b]],8)}));
+EDGES.forEach(e=>{let L=0;for(let i=1;i<e.pts.length;i++)L+=Math.hypot(e.pts[i][0]-e.pts[i-1][0],e.pts[i][1]-e.pts[i-1][1]);e.len=L});
+const ADJ={};EDGES.forEach((e,i)=>{(ADJ[e.a]=ADJ[e.a]||[]).push(i);(ADJ[e.b]=ADJ[e.b]||[]).push(i)});
+const RIV=crs([[820,-20],[790,140],[860,300],[770,460],[700,620],[780,780],[900,900],[870,1040],[950,1180],[1110,1300],[1280,1420],[1360,1520]],10);
+const COAST=crs([[1250,1520],[1500,1470],[1760,1440],[1980,1400],[2150,1330],[2260,1220],[2330,1080],[2420,1000]],8);
+const coastY=x=>{for(let i=1;i<COAST.length;i++){const a=COAST[i-1],b=COAST[i];if((x-a[0])*(x-b[0])<=0){const t=(x-a[0])/((b[0]-a[0])||1);return a[1]+(b[1]-a[1])*t}}return x<1250?9999:900};
+const rivX=y=>{for(let i=1;i<RIV.length;i++){const a=RIV[i-1],b=RIV[i];if((y-a[1])*(y-b[1])<=0){const t=(y-a[1])/((b[1]-a[1])||1);return a[0]+(b[0]-a[0])*t}}return -999};
+const ROADPTS=EDGES.flatMap(e=>e.pts);
+
+/* ================= the map ================= */
+function buildMap(){
+  srand(215);let s=`<defs><pattern id="hat" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(38)"><line x1="0" y1="0" x2="0" y2="6" stroke="${C.ink}" stroke-width="1" opacity=".35"/></pattern>
+   <pattern id="chk" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#fff"/><rect width="4" height="4" fill="${C.ink}"/><rect x="4" y="4" width="4" height="4" fill="${C.ink}"/></pattern>
+   <pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.3" fill="#E3D2BA"/></pattern>
+   <radialGradient id="glowG"><stop offset="0" stop-color="#FFE3EA" stop-opacity=".95"/><stop offset=".6" stop-color="#FBC9D5" stop-opacity=".55"/><stop offset="1" stop-color="#F28FA5" stop-opacity="0"/></radialGradient></defs>`;
+  s+=`<rect width="2400" height="1500" fill="#FDF6E8"/><rect width="2400" height="1500" fill="url(#dots)"/>`;
+  // hills, Fuji, the second row of hills
+  const h1=[[0,170],[240,130],[480,170],[720,110],[980,150],[1250,80],[1500,70],[1760,120],[2000,90],[2240,140],[2400,110]];
+  s+=`<path d="${smooth(h1,false)}L2400 0L0 0Z" fill="#EAF3DD"/><path d="${smooth(h1,false)}L2400 330L0 330Z" fill="#DCEDC4"/>`+line(crs(h1,6),1.8,C.graph,{amp:.8});
+  const fx=400,fb=300,fw=300,fh=fw/2.4;s+=shape([[fx-fw/2,fb],[fx-fw*.3,fb-fh*.3],[fx-fw*.16,fb-fh*.66],[fx-fw*.06,fb-fh],[fx+fw*.06,fb-fh*.98],[fx+fw*.17,fb-fh*.64],[fx+fw*.32,fb-fh*.26],[fx+fw/2,fb]],'#AFC3D6',{w:1.8,col:'#7D8FA6',hatch:1,amp:.6});
+  s+=shape([[fx-fw*.11,fb-fh*.84],[fx-fw*.06,fb-fh],[fx+fw*.06,fb-fh*.98],[fx+fw*.12,fb-fh*.82],[fx+fw*.06,fb-fh*.72],[fx+fw*.02,fb-fh*.8],[fx-fw*.03,fb-fh*.68],[fx-fw*.07,fb-fh*.78]],'#FFFFFF',{w:1.3,col:'#7D8FA6',amp:.4});
+  const h2=[[0,270],[300,232],[620,268],[900,236],[1200,262],[1500,222],[1800,258],[2100,226],[2400,262]];s+=`<path d="${smooth(h2,false)}L2400 340L0 340Z" fill="#D3E9B9"/>`+line(crs(h2,6),1.6,C.graph);
+  [[120,210],[380,190],[860,215],[1040,200],[1660,190],[2150,200],[2330,222],[650,236],[1420,200]].forEach(([x,y])=>s+=tree(x,y,.9,'lf2'));
+  // fields north-west (Sunflower Lanes country)
+  [[[440,300],[540,286],[560,350],[452,362]],[[700,286],[800,296],[790,356],[690,350]],[[420,380],[520,372],[530,430],[430,440]]].forEach((P,i)=>{s+=shape(P,i===1?'#E9E3B0':'#DCEBB8',{w:1.6,cls:'fld'});for(let k=1;k<5;k++)s+=line([[P[0][0]+(P[3][0]-P[0][0])*k/5,P[0][1]+(P[3][1]-P[0][1])*k/5],[P[1][0]+(P[2][0]-P[1][0])*k/5,P[1][1]+(P[2][1]-P[1][1])*k/5]],1,'#B9C98A')});
+  // the sea, the sand, waves
+  s+=`<path d="${lp(COAST,false)}" fill="none" stroke="${C.sand}" stroke-width="130" stroke-linecap="round"/>`;
+  s+=`<path d="${lp(COAST,false)}L2420 1520Z" fill="${C.water}"/>`+line(COAST,2.4);
+  let wv='';for(let i=0;i<70;i++){const x=1300+rnd()*1100,y=1000+rnd()*520;if(y<coastY(x)+22)continue;wv+=`M${f(x)} ${f(y)}q8 -6 16 0t16 0`}s+=`<path d="${wv}" fill="none" stroke="#86BDDE" stroke-width="1.8" stroke-linecap="round"/>`;
+  // the river: a wide winding band
+  s+=`<path d="${lp(RIV,false)}" fill="none" stroke="${C.ink}" stroke-width="76" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/><path d="${lp(RIV,false)}" fill="none" stroke="${C.water}" stroke-width="70" stroke-linecap="round" stroke-linejoin="round"/>`;
+  let rw='';for(let i=6;i<RIV.length-6;i+=7)rw+=`M${f(RIV[i][0]-10)} ${f(RIV[i][1]+6)}q5 -5 10 0t10 0`;s+=`<path d="${rw}" fill="none" stroke="#7FB6D8" stroke-width="1.8"/>`;
+  // winter: a cold wash over the ground (under the roads)
+  s+=`<rect class="snowcap" width="2400" height="1500" fill="#EEF4F7" opacity=".55"/>`;
+  // the rail line from the station off to the west
+  const rail=crs([[180,1340],[90,1330],[-20,1350]],6);s+=`<path d="${lp(rail)}" fill="none" stroke="${C.ink}" stroke-width="9" stroke-linecap="round"/><path d="${lp(rail)}" fill="none" stroke="#fff" stroke-width="4.6" stroke-dasharray="14 10"/>`;
+  // roads: ink edges first, then the fill, then the dashes (junctions stay clean)
+  const W={road:[40,34],lane:[28,23]};let ed='',fl='',da='',tr='';
+  EDGES.forEach(e=>{const d=lp(e.pts.map(p=>[p[0]+J(.6),p[1]+J(.6)]));if(W[e.t]){ed+=`<path d="${d}" stroke-width="${W[e.t][0]}"/>`;fl+=`<path d="${d}" stroke-width="${W[e.t][1]}"/>`;if(e.t==='road')da+=`<path d="${d}"/>`}
+    else tr+=`<path d="${d}"/>`});
+  s+=`<g fill="none" stroke="${C.ink}" stroke-linecap="round" stroke-linejoin="round" opacity=".55">${ed}</g><g fill="none" stroke="#F4E8CF" stroke-linecap="round" stroke-linejoin="round">${fl}</g>`;
+  s+=`<g fill="none" stroke="#E2CFAA" stroke-width="1.8" stroke-dasharray="12 12">${da}</g><g fill="none" stroke="#C9A27A" stroke-width="7" stroke-linecap="round" stroke-dasharray="1 13">${tr}</g>`;
+  // bridges where the roads cross the river
+  [[800,805],[790,420]].forEach(([x,y])=>{s+=`<g transform="translate(${x} ${y}) rotate(${x===800?-6:14})">`+shape(RC(-58,-20,116,40),C.wood,{w:2.2})+[-46,-34,-22,-10,2,14,26,38,50].map(bx=>line([[bx,-18],[bx,18]],1,C.woodD)).join('')+line([[-58,-22],[58,-22]],2.4)+line([[-58,22],[58,22]],2.4)+`</g>`});
+  // the forest east of town
+  for(let y=330;y<980;y+=44)for(let x=1990+((y/44)%2)*22;x<2390;x+=44){const jx=x+J(10),jy=y+J(8);if(jx<1990+50*Math.sin(jy/110))continue;if(near(jx,jy,60)||nearB(jx,jy,1.05)||rnd()<.22)continue;s+=rnd()<.68?pine(jx,jy,.85+rnd()*.35,rnd()<.5?C.pine:C.pineD):tree(jx,jy+6,.9,'mp')}
+  // filler: little houses and trees wherever nothing else is
+  const pal=[[C.wall,C.roof],[C.wall2,C.lav],[C.wall3,'#9AA7B8'],[C.wall4,C.redD],['#FFF3DC',C.orange]];
+  for(let y=150;y<1480;y+=62)for(let x=40+((y/62)%2)*34;x<2380;x+=68){const jx=x+J(14),jy=y+J(10);if(!free(jx,jy)||rnd()<.5)continue;
+    if(rnd()<.6){const c=pal[Math.floor(rnd()*pal.length)];s+=hut(jx,jy,.9+rnd()*.25,c[0],c[1])}else s+=tree(jx,jy,.85+rnd()*.35,rnd()<.5?'lf':'lf2')}
+  // the buildings (each a button)
+  B.forEach(b=>s+=bldSVG(b));
+  // compass, title, tape, season overlays
+  s+=circ(2290,110,50,'#FFFFFF',{w:2})+`<path d="M2290 62l10 40 -10 10 -10 -10zM2290 158l10 -40 -10 -10 -10 10z" fill="${C.pink}" stroke="${C.ink}" stroke-width="1.8" stroke-linejoin="round"/>`+txt('N',2290,54,28);
+  s+=txt('Doodle Doggo Town',330,92,72,{rot:-2})+line([[120,112],[540,104]],3,C.pink);
+  s+=`<rect x="10" y="14" width="120" height="26" fill="#F7B9C6" opacity=".7" transform="rotate(-8 70 27)"/><rect x="2260" y="1450" width="120" height="24" fill="#BDE7D2" opacity=".7" transform="rotate(-6 2320 1462)"/>`;
+  let sn='';for(let i=0;i<260;i++)sn+=`<circle cx="${f(rnd()*2400)}" cy="${f(rnd()*1500)}" r="${f(1.6+rnd()*2.2)}" fill="#fff" stroke="#C9D3DD" stroke-width=".6"/>`;s+=`<g id="snowfx" pointer-events="none">${sn}</g>`;
+  let pe='';for(let i=0;i<120;i++){const x=rnd()*2400,y=rnd()*1500;pe+=`<ellipse cx="${f(x)}" cy="${f(y)}" rx="3.2" ry="1.8" fill="#F7B6C8" transform="rotate(${f(rnd()*180)} ${f(x)} ${f(y)})"/>`}s+=`<g id="petals" pointer-events="none">${pe}</g>`;
+  s+=`<g id="mapDog" pointer-events="none"><g id="mdT"><g id="mdF"></g></g></g>`;
+  return s}
+function near(x,y,d){for(let i=0;i<ROADPTS.length;i+=2){const p=ROADPTS[i];if(Math.abs(p[0]-x)<d&&Math.abs(p[1]-y)<d&&Math.hypot(p[0]-x,p[1]-y)<d)return true}return false}
+function nearB(x,y,k){return B.some(b=>((x-b.x)/(135*k))**2+((y-b.y-26)/(118*k))**2<1)}
+function free(x,y){if(y<150||(x<640&&y<130))return false;if(nearB(x,y,1.02)||near(x,y,40))return false;if(Math.abs(x-rivX(y))<82)return false;if(y>coastY(x)-110)return false;
+  if(x>1980&&y>300&&y<990)return false;if(x>420&&x<820&&y>270&&y<450)return false;if(Math.hypot(x-2290,y-110)<80)return false;if(y<300&&Math.abs(x-400)<170)return false;return true}
+const ARTC={};
+function bldSVG(b){srand(hash(b.id));const art=ARTC[b.id]=ART[b.id]();const L=b.n,fs=Math.min(34,Math.round(34*17/Math.max(17,L.length)));
+  const lock=b.locked?`<g pointer-events="none"><ellipse cx="0" cy="8" rx="100" ry="66" fill="url(#hat)" opacity=".9"/><ellipse cx="0" cy="8" rx="100" ry="66" fill="#EFE9E0" opacity=".5"/>`
+    +`<path d="M-42 -10v-12a14 14 0 0 1 28 0v12" fill="none" stroke="${C.ink}" stroke-width="5" stroke-linecap="round"/>`+shape(RC(-50,-12,44,36),C.yellow,{w:2.4})+circ(-28,2,4,C.ink,{noline:true})
+    +shape(RC(2,-6,84,30),C.pink,{w:1.8})+txt('Bond '+b.bond,44,17,26,{col:'#fff',halo:false})+`</g>`:'';
+  const tg=b.st==='new'||b.st==='track'?['new',C.pink]:b.st==='moved'?['moved','#F3C969']:null;
+  const tag=tg?`<g class="tag" pointer-events="none" transform="translate(70 -78) rotate(8)"><rect x="-34" y="-15" width="68" height="28" rx="8" fill="${tg[1]}" stroke="${C.ink}" stroke-width="2"/>${txt(tg[0],0,7,24,{halo:false})}</g>`:'';
+  return `<g class="bld${b.locked?' locked':''}" data-id="${b.id}" tabindex="0" role="button" aria-label="${L}${b.locked?', opens at Bond '+b.bond:''}" transform="translate(${b.x} ${b.y})">
+<ellipse class="shadow" cx="0" cy="52" rx="92" ry="15" fill="${C.ink}" opacity=".13"/><g class="lift"><g class="glow"><ellipse cx="0" cy="6" rx="128" ry="98" fill="url(#glowG)"/><ellipse class="ring" cx="0" cy="8" rx="112" ry="82" fill="none" stroke="${C.pink}" stroke-width="4.5" stroke-dasharray="14 10" stroke-linecap="round"/></g>
+${art}${lock}<g class="lbl">${txt(L,0,104,fs)}</g>${tag}</g><ellipse cx="0" cy="22" rx="112" ry="100" fill="transparent"/></g>`}
+
+/* ================= pan and zoom ================= */
+const vp=document.getElementById('vp'),stage=document.getElementById('stage');
+vp.innerHTML=`<svg id="map" viewBox="0 0 2400 1500" xmlns="http://www.w3.org/2000/svg">${buildMap()}</svg>`;
+const MAP=document.getElementById('map');const V={s:.5,tx:0,ty:0};
+const phoneOn=()=>document.body.classList.contains('phone')||matchMedia('(max-width:640px)').matches;const setPh=()=>document.body.classList.toggle('ph',phoneOn());
+function clampV(){const w=vp.clientWidth,h=vp.clientHeight,mw=2400*V.s,mh=1500*V.s,ib=document.getElementById('info'),pb=document.body.classList.contains('ph')&&ib&&!ib.classList.contains('off')?ib.offsetHeight+16:0;V.tx=mw<=w?(w-mw)/2:Math.min(0,Math.max(w-mw,V.tx));V.ty=mh<=h?(h-mh)/2:Math.min(0,Math.max(h-mh-pb,V.ty))}
+function applyV(){clampV();MAP.style.transform=`translate(${f(V.tx)}px,${f(V.ty)}px) scale(${V.s.toFixed(4)})`}
+function fit(){const w=vp.clientWidth,h=vp.clientHeight;if(phoneOn()){V.s=h/1500*1.02;V.tx=w/2-1240*V.s;V.ty=0}else{V.s=Math.min(w/2400,h/1500);V.tx=0;V.ty=0}applyV()}
+function zoomAt(k,cx,cy){const s0=V.s,lo=phoneOn()?vp.clientHeight/1500:Math.min(vp.clientWidth/2400,vp.clientHeight/1500);V.s=Math.max(lo,Math.min(1.6,V.s*k));V.tx=cx-(cx-V.tx)*V.s/s0;V.ty=cy-(cy-V.ty)*V.s/s0;applyV()}
+document.getElementById('zIn').onclick=()=>zoomAt(1.3,vp.clientWidth/2,vp.clientHeight/2);
+document.getElementById('zOut').onclick=()=>zoomAt(1/1.3,vp.clientWidth/2,vp.clientHeight/2);
+document.getElementById('zFit').onclick=fit;
+vp.addEventListener('wheel',e=>{e.preventDefault();const r=vp.getBoundingClientRect();zoomAt(e.deltaY<0?1.12:1/1.12,e.clientX-r.left,e.clientY-r.top)},{passive:false});
+let PD=null,pressEl=null;
+vp.addEventListener('pointerdown',e=>{PD={x:e.clientX,y:e.clientY,tx:V.tx,ty:V.ty,moved:false,id:e.pointerId};const b=e.target.closest('.bld');if(b){pressEl=b;b.classList.add('press')}});
+window.addEventListener('pointermove',e=>{if(!PD||e.pointerId!==PD.id)return;const dx=e.clientX-PD.x,dy=e.clientY-PD.y;if(!PD.moved&&Math.hypot(dx,dy)>6){PD.moved=true;vp.classList.add('drag');if(pressEl){pressEl.classList.remove('press');pressEl=null}}
+  if(PD.moved){V.tx=PD.tx+dx;V.ty=PD.ty+dy;applyV()}});
+window.addEventListener('pointerup',e=>{if(!PD||e.pointerId!==PD.id)return;const was=PD.moved;PD=null;vp.classList.remove('drag');const b=pressEl;if(b)b.classList.remove('press');pressEl=null;if(!was&&b)pick(b.dataset.id)});
+window.addEventListener('pointercancel',()=>{PD=null;vp.classList.remove('drag');if(pressEl)pressEl.classList.remove('press');pressEl=null});
+MAP.addEventListener('keydown',e=>{const b=e.target.closest&&e.target.closest('.bld');if(b&&(e.key==='Enter'||e.key===' ')){e.preventDefault();b.classList.add('press');setTimeout(()=>b.classList.remove('press'),120);pick(b.dataset.id)}});
+
+/* ================= the info card ================= */
+const infoIn=document.getElementById('info'),infoSide=document.getElementById('infoSide');
+function card(b){if(!b)return `<h2>Tap a building</h2><p>Every building is a button: it lifts and glows under the pointer, and squashes when you press it. Turn the labels off and see if you can still find the shops.</p>
+  <dl><dt>Places</dt><dd>25 (was 17 with the Station and the Fuji Lookout)</dd><dt>New</dt><dd>Training Ground, Splash Pool, three run tracks</dd><dt>Moved</dt><dd>The four shops, each on its own street</dd><dt>Roads</dt><dd>Winding roads, lanes and footpaths with loops, three river crossings</dd></dl>`;
+  const st=ST[b.st];return `<button class="closeX" aria-label="Close">×</button><div class="thumb"><svg viewBox="-112 -108 224 170" aria-hidden="true">${ARTC[b.id]}</svg></div>
+  <h2>${b.n}</h2><div><span class="${st[1]}">${st[0]}</span> <span class="pill" style="background:#fff">Bond ${b.bond}</span>${b.run?' <span class="pill track">Run starts here</span>':''}${b.locked?' <span class="pill" style="background:#EFE9E0">Locked in this preview</span>':''}</div>
+  <dl><dt>Looks</dt><dd>${b.look}</dd><dt>Known by</dt><dd>${b.tell}</dd><dt>Do</dt><dd>${b.do}</dd></dl>`}
+function showCard(b){const h=card(b);infoSide.innerHTML=h;infoIn.innerHTML=h;infoIn.classList.toggle('off',!b);const x=infoIn.querySelector('.closeX');if(x)x.onclick=()=>{infoIn.classList.add('off');MAP.querySelectorAll('.bld.sel').forEach(g=>g.classList.remove('sel'))}}
+function pick(id){const b=BI[id];const g=MAP.querySelector(`.bld[data-id="${id}"]`);MAP.querySelectorAll('.bld.sel').forEach(x=>x.classList.remove('sel'));g.classList.add('sel');showCard(b);
+  if(phoneOn()){V.s=Math.max(V.s,vp.clientHeight/1500*1.8);if(!motionOff())MAP.classList.add('pan');V.tx=vp.clientWidth/2-b.x*V.s;V.ty=vp.clientHeight*.26-b.y*V.s;applyV();setTimeout(()=>MAP.classList.remove('pan'),480)}
+  if(b.locked){g.classList.remove('shake');void g.getBBox();g.classList.add('shake');setTimeout(()=>g.classList.remove('shake'),450);return}
+  dogGo(id)}
+
+/* ================= the map dog: wanders the roads, runs to the building you pick ================= */
+const PA=window.PawArt,DOGPOSE={};const dogSVG=(key,pose,o={})=>{const k=key+'|'+pose+'|'+(o.expr||'');if(!DOGPOSE[k]){let s='';try{s=PA.dog(key,Object.assign({pose},o.expr&&PA.exprOk(o.expr,pose)?{expr:o.expr}:{}))}catch(e){s=PA.dog(key,{pose:'idle'})}
+  DOGPOSE[k]=s.replace('<svg ','<svg x="-120" y="-190" width="240" height="200" overflow="visible" ')}return DOGPOSE[k]};
+const MD={at:'yard',e:null,i:0,dir:1,pts:null,q:[],face:'right',pose:'',speed:110,wait:1,goal:null};const mdT=document.getElementById('mdT'),mdF=document.getElementById('mdF');
+const motionOff=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+function mdPose(p){if(MD.pose===p)return;MD.pose=p;mdF.innerHTML=dogSVG('corgi',p)}
+function mdPlace(x,y){mdT.setAttribute('transform',`translate(${f(x)} ${f(y)}) scale(.5)`);mdF.setAttribute('transform',MD.face==='left'?'scale(-1 1)':'')}
+function dijkstra(from,to){const D={[from]:0},P={},Q=new Set(Object.keys(NODE));while(Q.size){let u=null,best=1e18;Q.forEach(k=>{if((D[k]??1e18)<best){best=D[k];u=k}});if(u==null||u===to)break;Q.delete(u);
+  (ADJ[u]||[]).forEach(i=>{const e=EDGES[i],v=e.a===u?e.b:e.a,nd=D[u]+e.len;if(nd<(D[v]??1e18)){D[v]=nd;P[v]=[u,i]}})}const out=[];let c=to;while(c!==from){if(!P[c])return null;out.unshift(P[c][1]);c=P[c][0]}return {list:out,len:D[to]}}
+function edgePts(i,from){const e=EDGES[i];return e.a===from?e.pts.slice():e.pts.slice().reverse()}
+function dogGo(id){let start=MD.at,pre=[];
+  if(MD.pts){const rest=MD.pts.slice(MD.i),back=MD.pts.slice(0,MD.i+1).reverse(),endN=MD.toN,startN=MD.fromN;const len=P=>P.reduce((a,p,k)=>k?a+Math.hypot(p[0]-P[k-1][0],p[1]-P[k-1][1]):0,0);
+    const a=dijkstra(endN,id),b=dijkstra(startN,id),la=len(rest)+(a?a.len:1e9),lb=len(back)+(b?b.len:1e9);if(la<=lb){pre=rest;start=endN}else{pre=back;start=startN}}
+  const r=start===id?{list:[]}:dijkstra(start,id);if(!r)return;let pts=pre.slice(),n=start;r.list.forEach(i=>{const P=edgePts(i,n);pts=pts.concat(P.slice(pts.length?1:0));const e=EDGES[i];n=e.a===n?e.b:e.a});
+  if(!pts.length)pts=[NODE[id]];MD.goal=id;MD.fromN=start;MD.toN=id;
+  if(motionOff()){const p=NODE[id];MD.pts=null;MD.at=id;mdPose('sit');mdPlace(p[0],p[1]);arrive(id);return}
+  MD.pts=pts;MD.i=0;MD.frac=0;MD.speed=Math.max(420,r.len/1.6||420);document.getElementById('mapDog').classList.add('dogfast');mdPose('walk')}
+function arrive(id){const g=MAP.querySelector(`.bld[data-id="${id}"]`);if(g){g.classList.remove('arrive');void g.getBBox();g.classList.add('arrive');setTimeout(()=>g.classList.remove('arrive'),520)}}
+function wanderNext(){const opts=ADJ[MD.at]||[];const i=opts[Math.floor(Math.random()*opts.length)];const e=EDGES[i];MD.fromN=MD.at;MD.toN=e.a===MD.at?e.b:e.a;MD.pts=edgePts(i,MD.at);MD.i=0;MD.frac=0;MD.speed=95;MD.goal=null;document.getElementById('mapDog').classList.remove('dogfast');mdPose('walk')}
+let mdLast=performance.now();
+function mdTick(t){const dt=Math.min(.05,(t-mdLast)/1000);mdLast=t;
+  if(MD.pts){let d=MD.speed*dt;while(d>0&&MD.i<MD.pts.length-1){const a=MD.pts[MD.i],b=MD.pts[MD.i+1],L=Math.hypot(b[0]-a[0],b[1]-a[1])||1e-6,left=L*(1-MD.frac);if(d<left){MD.frac+=d/L;d=0}else{d-=left;MD.i++;MD.frac=0}}
+    const a=MD.pts[MD.i],b=MD.pts[Math.min(MD.i+1,MD.pts.length-1)],x=a[0]+(b[0]-a[0])*MD.frac,y=a[1]+(b[1]-a[1])*MD.frac;if(Math.abs(b[0]-a[0])>.5)MD.face=b[0]<a[0]?'left':'right';mdPlace(x,y);
+    if(MD.i>=MD.pts.length-1){MD.pts=null;MD.at=MD.toN;document.getElementById('mapDog').classList.remove('dogfast');if(MD.goal){arrive(MD.goal);mdPose('sit');MD.wait=6+Math.random()*4}else{mdPose(Math.random()<.5?'sniff':'idle');MD.wait=1.5+Math.random()*2.5}}}
+  else{MD.wait-=dt;if(MD.wait<=0&&!tabRoam)wanderNext()}
+  requestAnimationFrame(mdTick)}
+
+/* ================= toggles, tabs, phone view, seasons ================= */
+const tog=(id,fn)=>{const b=document.getElementById(id);b.onclick=()=>{const v=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',v);fn(v)}};
+tog('bLabels',v=>MAP.classList.toggle('nolabels',!v));tog('bTags',v=>MAP.classList.toggle('notags',!v));
+tog('bPhone',v=>{document.body.classList.toggle('phone',v);setPh();requestAnimationFrame(()=>{fit();rsSize()})});
+tog('bZones',v=>document.querySelectorAll('.rs').forEach(s=>s.classList.toggle('nozones',!v)));
+document.getElementById('sSeason').onchange=e=>{MAP.classList.remove('autumn','winter','spring');if(e.target.value!=='summer')MAP.classList.add(e.target.value)};
+let tabRoam=false;const tM=document.getElementById('tMap'),tR=document.getElementById('tRoam');
+function setTab(r){tabRoam=r;tM.setAttribute('aria-selected',!r);tR.setAttribute('aria-selected',r);document.getElementById('pMap').hidden=r;document.getElementById('pRoam').hidden=!r;if(!r)requestAnimationFrame(fit);else rsSize()}
+tM.onclick=()=>setTab(false);tR.onclick=()=>setTab(true);
+window.addEventListener('resize',()=>{setPh();fit();rsSize()});
+
+/* ================= free roaming: today vs v2.15 ================= */
+const SZ={golden:1,husky:.86,beagle:.86,dachs:.72};const KEYS=['golden','husky','dachs','beagle'];
+const ns='http://www.w3.org/2000/svg';const mk=(tag,a={})=>{const e=document.createElementNS(ns,tag);for(const k in a)e.setAttribute(k,a[k]);return e};
+// --- panel A: the real Dog Park scene and the v2.10 strip
+const A={svg:document.getElementById('rsA'),dogs:[]};
+(function(){let sc='';try{sc=PA.scene('dogpark',{jp:true})}catch(e){sc=''}A.svg.innerHTML=`<g>${sc.replace('<svg ','<svg x="0" y="0" width="1000" height="600" ')}</g>
+  <g class="zone" pointer-events="none"><rect x="60" y="410" width="880" height="180" fill="${C.pink}" opacity=".2"/><rect x="60" y="410" width="880" height="180" fill="none" stroke="#E5677F" stroke-width="4" stroke-dasharray="14 9"/>${txt('v2.10 strip: y 410 to 590',500,402,30,{col:'#B84C62'})}</g><g id="aDogs"></g>`;
+  const g=A.svg.querySelector('#aDogs');KEYS.forEach((k,i)=>{const el=mk('g',{class:'rdog'}),fl=mk('g');el.appendChild(fl);g.appendChild(el);A.dogs.push({k,el,fl,x:160+i*220,y:440+(i%2)*110,tx:0,ty:0,wait:Math.random()*2,face:'right',pose:''})})})();
+const kA=(d)=>.88*Math.max(.86,Math.min(1.12,1+(d.y-500)*.0012))*1.25*SZ[d.k]*.82;
+function setPose(d,p,expr){if(d.pose===p+(expr||''))return;d.pose=p+(expr||'');d.fl.innerHTML=dogSVG(d.k,p,{expr})}
+function stepA(dt){A.dogs.forEach(d=>{if(d.wait>0){d.wait-=dt;if(d.wait<=0){d.tx=60+Math.random()*880;d.ty=410+Math.random()*180;setPose(d,'walk')}}
+  else{const dx=d.tx-d.x,dy=d.ty-d.y,L=Math.hypot(dx,dy),v=150*dt;if(L<=v){d.x=d.tx;d.y=d.ty;d.wait=1.2+Math.random()*2.6;setPose(d,['idle','sit','sniff','down'][Math.floor(Math.random()*4)])}else{d.x+=dx/L*v;d.y+=dy/L*v;if(Math.abs(dx)>4)d.face=dx<0?'left':'right'}}
+  d.el.setAttribute('transform',`translate(${f(d.x)} ${f(d.y)}) scale(${kA(d).toFixed(3)})`);d.fl.setAttribute('transform',d.face==='left'?'scale(-1 1)':'')});
+  const g=A.svg.querySelector('#aDogs');A.dogs.slice().sort((a,b)=>a.y-b.y).forEach(d=>g.appendChild(d.el))}
+// --- panel B: the Training Ground mock (1600 x 600), deep floor, camera follow, things to do
+const Bs={svg:document.getElementById('rsB'),dogs:[],cam:300,W:1000};
+const GB={y0:335,y1:592,k0:.5,k1:1.05};const kB=y=>GB.k0+(GB.k1-GB.k0)*Math.max(0,Math.min(1,(y-GB.y0)/(GB.y1-GB.y0)));
+const POLY=[[30,335],[1570,335],[1592,592],[8,592]];
+const BOX=[[400,370,252,26,'weave'],[700,468,192,44,'tunnel'],[196,438,74,24,'table'],[1484,470,30,18,'tree'],[1378,534,38,20,'bowl'],[970,486,20,14,'jump'],[970,554,20,14,'jump'],[1232,402,16,14,'tire'],[1232,452,16,14,'tire']];
+const inPoly=(x,y)=>{let c=false;for(let i=0,j=POLY.length-1;i<POLY.length;j=i++){const a=POLY[i],b=POLY[j];if((a[1]>y)!==(b[1]>y)&&x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])c=!c}return c};
+const inBox=(x,y,skip)=>BOX.some(b=>b[4]!==skip&&x>b[0]-10&&x<b[0]+b[2]+10&&y>b[1]-8&&y<b[1]+b[3]+8);
+const okPt=(x,y,skip)=>inPoly(x,y)&&!inBox(x,y,skip);
+function drawB(){srand(1600);let s=`<defs><pattern id="hat" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(38)"><line x1="0" y1="0" x2="0" y2="6" stroke="${C.ink}" stroke-width="1" opacity=".35"/></pattern><pattern id="chk" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#fff"/><rect width="4" height="4" fill="${C.ink}"/><rect x="4" y="4" width="4" height="4" fill="${C.ink}"/></pattern></defs>`;
+  s+=`<rect width="1600" height="340" fill="${C.sky}"/>`+circ(1320,90,34,'#FDE49A',{w:2})+[[220,80,1],[760,60,.8],[1080,110,.9]].map(([x,y,k])=>ell(x,y,48*k,16*k,'#FFFFFF',{w:1.8})).join('');
+  s+=shape([[180,262],[290,190],[318,178],[346,190],[460,262]],'#AFC3D6',{w:1.8,col:'#7D8FA6',hatch:1})+shape([[290,190],[318,178],[346,190],[332,200],[318,192],[304,200]],'#fff',{w:1.2,col:'#7D8FA6'});
+  const hz=[[0,262],[260,236],[520,256],[820,228],[1120,250],[1380,232],[1600,250]];s+=`<path d="${smooth(hz,false)}L1600 340L0 340Z" fill="#DCEDC4"/>`+line(crs(hz,6),1.6,C.graph);
+  [[90,256],[420,250],[640,246],[980,244],[1260,242],[1520,246]].forEach(([x,y])=>s+=tree(x,y,.6,'lf2'));
+  s+=`<rect y="318" width="1600" height="282" fill="${C.grass}"/>`;for(let i=0;i<14;i++){const x0=i*130-200;s+=`<path d="M${x0} 600L${x0+70} 600L${x0+40+ (i*130-800)*.12} 320L${x0+10+(i*130-800)*.12} 320Z" fill="${C.grass2}" opacity=".45"/>`}
+  s+=`<ellipse cx="800" cy="470" rx="720" ry="104" fill="none" stroke="${C.sand}" stroke-width="30" opacity=".9"/><ellipse cx="800" cy="470" rx="720" ry="104" fill="none" stroke="${C.sandD}" stroke-width="1.4" stroke-dasharray="10 12"/>`;
+  for(let x=20;x<1600;x+=70)s+=line([[x,326],[x,292]],4,C.woodD);s+=line(crs(Array.from({length:24},(_,i)=>[20+i*70,i%2?306:300]),3),1.8,C.woodD,{amp:.3});
+  s+=bunt([[20,290],[400,300],[800,286],[1200,300],[1580,288]],['#7FA6D9','#FFFFFF']);
+  s+=line([[1350,326],[1350,250]],3)+line([[1470,326],[1470,250]],3)+shape(RC(1330,210,160,64),C.pineD,{w:2.2})+[1370,1410,1450].map(x=>circ(x,242,12,C.yellow,{w:1.6})).join('');
+  s+=line([[1110,326],[1110,270]],2.4)+circ(1110,262,12,'#7FA6D9',{w:1.8})+circ(1110,262,5,C.yellow,{w:1});
+  let tf='';for(let i=0;i<120;i++){const x=rnd()*1600,y=340+rnd()*255;tf+=`M${f(x)} ${f(y)}q1 -6 -1 -10M${f(x+4)} ${f(y)}q0 -7 3 -11`}s+=`<path d="${tf}" fill="none" stroke="${C.grassD}" stroke-width="1.4" stroke-linecap="round" opacity=".8"/>`;
+  return s}
+// floor props, each with a base y so dogs sort in front of or behind them
+function propsB(){const P=[];const add=(y,s)=>P.push({y,s});
+  for(let i=0;i<6;i++){const x=410+i*46,k=kB(382),h=78*k;add(383,line([[x,383],[x,383-h]],6*k+1,'#FFFFFF')+line([[x,383],[x,383-h]],6*k,C.redD,{dash:`${f(9*k)} ${f(9*k)}`,amp:.1})+line([[x-1,383],[x-1,383-h]],1,C.ink,{op:.6}))}
+  add(381,line([[400,384],[656,384]],3,C.woodD));
+  add(490,`<path d="M700 510Q700 455 760 452L840 458Q894 462 894 512Z" fill="${C.blue}" stroke="${C.ink}" stroke-width="2.4"/>`+[720,742,764,786,808,830,852,874].map(x=>line([[x,455+Math.abs(x-800)*.02],[x,510]],1.6,'#7FA6D9')).join('')+ell(700,486,10,26,'#5E7FAE',{w:2})+ell(892,488,10,26,'#5E7FAE',{w:2}));
+  add(460,shape(RC(196,420,74,12),C.wood,{w:2})+line([[204,432],[204,460]],3,C.woodD)+line([[262,432],[262,460]],3,C.woodD));
+  add(492,line([[1000,492],[1000,424]],4.5)+line([[1000,492],[1000,424]],2.6,'#FFFFFF'));add(568,line([[962,568],[962,470]],5)+line([[962,568],[962,470]],3,'#FFFFFF'));
+  add(530,`<path d="M980 430L980 488" stroke="${C.ink}" stroke-width="0"/><path d="M1000 438L962 484" stroke="${C.ink}" stroke-width="9" stroke-linecap="round"/><path d="M1000 438L962 484" stroke="#7FA6D9" stroke-width="6" stroke-linecap="round"/><path d="M1000 438L962 484" stroke="#fff" stroke-width="6" stroke-dasharray="8 8"/>`);
+  add(416,line([[1240,416],[1240,330]],4)+line([[1220,330],[1262,330]],3)); add(466,line([[1240,466],[1240,330]],4.5)+circ(1240,392,32,C.orange,{w:3})+circ(1240,392,17,C.grass,{w:2}));
+  add(488,tree(1499,470,2.2));add(552,ell(1397,548,22,8,'#7FA6D9',{w:2})+ell(1397,546,15,4,C.water,{noline:true}));
+  add(560,shape([[440,560],[680,560],[700,596],[420,596]],C.wood,{w:2.2,hatch:1})+line([[430,566],[690,566]],1.2,C.woodD));
+  add(350,line([[1180,350],[1180,334]],3,C.woodD)+line([[1260,350],[1260,334]],3,C.woodD)+shape(RC(1170,326,100,10),C.wood,{w:1.8}));
+  return P}
+(function(){Bs.svg.innerHTML=`<g>${drawB()}</g><g class="zone" pointer-events="none"><path d="${lp(POLY,true)}" fill="#7FB86A" opacity=".18"/><path d="${lp(POLY,true)}" fill="none" stroke="#4F8A52" stroke-width="4" stroke-dasharray="14 9"/>`
+  +BOX.map(b=>`<rect x="${b[0]}" y="${b[1]}" width="${b[2]}" height="${b[3]}" fill="#E5677F" opacity=".35" stroke="#B84C62" stroke-width="2"/>`).join('')
+  +`<rect x="0" y="410" width="1600" height="180" fill="none" stroke="#E5677F" stroke-width="2.5" stroke-dasharray="4 8" opacity=".9"/>${txt('walkable ground: the whole floor',300,360,30,{col:'#3F7A45'})}${txt('old strip',1500,404,24,{col:'#B84C62'})}</g><g id="bWorld"></g>`;
+  const W=Bs.svg.querySelector('#bWorld');propsB().forEach(p=>{const g=mk('g');g.innerHTML=p.s;g.__y=p.y;W.appendChild(g);Bs.props=(Bs.props||[]).concat(g)});
+  KEYS.forEach((k,i)=>{const el=mk('g',{class:'rdog'}),fl=mk('g');el.appendChild(fl);W.appendChild(el);const d={k,el,fl,x:300+i*260,y:470+(i%2)*80,face:'right',pose:'',path:null,pi:0,act:null,wait:.5+i*.7,lift:0,hide:false,v:150};el.addEventListener('click',()=>petB(d));Bs.dogs.push(d)})})();
+// what each dog likes (the breed personality, V210 section 5.1)
+const LIKE={golden:{jump:5,tire:4,stage:2,bowl:1,wander:2,zoom:2,follow:1,weave:2},husky:{zoom:6,wander:3,jump:2,tire:2,follow:2,shade:1},dachs:{tunnel:6,sniff:4,table:2,follow:3,front:3,bowl:1},beagle:{sniff:6,weave:3,wander:2,bowl:2,follow:2,tunnel:1}};
+const ACT={
+ weave:{to:[388,392],build:()=>{const P=[[388,392]];for(let i=0;i<6;i++)P.push([410+i*46+23,i%2?370:398]);P.push([680,392]);return P},v:210,label:'weaving the poles'},
+ jump:{to:[880,528],build:()=>[[880,528],[1090,522]],v:300,jumpX:980,label:'over the jump'},
+ tire:{to:[1140,436],build:()=>[[1140,436],[1340,432]],v:290,jumpX:1240,label:'through the tyre'},
+ tunnel:{to:[676,488],build:()=>[[676,488],[916,494]],v:200,hide:[704,890],label:'through the tunnel'},
+ table:{to:[233,436],end:'sit',lift:20,t:2.4,label:'on the pause table',skip:'table'},
+ bowl:{to:[1430,548],end:'eat',t:2.2,face:'left',label:'a drink of water'},
+ shade:{to:[1520,500],end:'down',t:4,label:'resting in the shade',skip:'tree'},
+ stage:{to:[560,578],end:'dance',t:2.4,label:'a trick on the stage'},
+ front:{to:null,end:'happy',t:2,label:'asking for pets',expr:'hearts'}
+};
+function wobblePath(x0,y0,x1,y1,skip){for(let t=0;t<14;t++){const mx=(x0+x1)/2+(Math.random()*2-1)*160,my=(y0+y1)/2+(Math.random()*2-1)*80;if(!okPt(mx,my,skip))continue;const P=crs([[x0,y0],[mx,my],[x1,y1]],8);if(P.every(p=>okPt(p[0],p[1],skip)||Math.hypot(p[0]-x0,p[1]-y0)<14))return P}
+  const lane=Math.abs(y0-350)<Math.abs(y0-585)?350:585;const P=[[x0,y0],[x0,lane],[x1,lane],[x1,y1]];return dense(P,false,10)}
+function randPt(){for(let t=0;t<40;t++){const x=40+Math.random()*1520,y=GB.y0+8+Math.random()*(GB.y1-GB.y0-12);if(okPt(x,y))return [x,y]}return [800,585]}
+function plan(d){const L=LIKE[d.k],keys=Object.keys(L);let s=Math.random()*keys.reduce((a,k)=>a+L[k],0),pick=keys[0];for(const k of keys){s-=L[k];if(s<=0){pick=k;break}}
+  d.act=pick;let P;
+  if(pick==='wander'){const [x,y]=randPt();P=wobblePath(d.x,d.y,x,y);d.v=140;d.after={pose:Math.random()<.5?'idle':'sit',t:1.5+Math.random()*2};d.label='wandering'}
+  else if(pick==='sniff'){const [x,y]=randPt();const Q=wobblePath(d.x,d.y,x,y);P=Q.map((p,i)=>[p[0],p[1]+Math.sin(i/2.2)*16]).filter(p=>okPt(p[0],p[1])||true);d.v=90;d.after={pose:'sniff',t:2};d.label='following a smell';d.sniff=true}
+  else if(pick==='zoom'){const cx=800,cy=470;P=[];for(let i=0;i<=64;i++){const a=i/64*Math.PI*2;P.push([cx+Math.sin(a)*620,cy+Math.sin(a*2)*92])}P=P.filter(p=>okPt(p[0],p[1]));P=wobblePath(d.x,d.y,P[0][0],P[0][1]).concat(P);d.v=380;d.after={pose:'happy',t:1.2};d.label='ZOOMIES';d.expr='zoomies'}
+  else if(pick==='follow'){const o=Bs.dogs.filter(x=>x!==d)[Math.floor(Math.random()*3)];d.follow=o;d.ft=4+Math.random()*2;P=null;d.v=190;d.label='following '+o.k;d.after={pose:'sit',t:1.4}}
+  else{const A=ACT[pick];const to=A.to||[Math.max(80,Math.min(1520,d.x)),586];P=wobblePath(d.x,d.y,to[0],to[1],A.skip);if(A.build)P=P.concat(A.build().slice(1));d.v=A.v||170;d.a=A;d.label=A.label;d.after={pose:A.end||'happy',t:A.t||1,lift:A.lift||0,face:A.face,expr:A.expr}}
+  d.path=P;d.pi=0;if(P)setPose(d,'walk',d.expr)}
+function petB(d){d.path=wobblePath(d.x,d.y,Math.max(120,Math.min(1480,d.x)),586);d.pi=0;d.v=230;d.follow=null;d.act='front';d.a=null;d.label='coming for a pet';d.after={pose:'happy',t:2.4,expr:'hearts'};setPose(d,'walk')}
+function stepB(dt){const D=Bs.dogs;D.forEach(d=>{
+  if(d.follow){d.ft-=dt;const o=d.follow,tx=o.x-(o.face==='left'?-70:70)*kB(o.y),ty=o.y+(d.k==='dachs'?14:-10);const dx=tx-d.x,dy=ty-d.y,L=Math.hypot(dx,dy),v=d.v*dt*(.55+.45*kB(d.y));
+    if(L>8){const nx=d.x+dx/L*Math.min(v,L),ny=d.y+dy/L*Math.min(v,L);if(okPt(nx,ny)){d.x=nx;d.y=ny}if(Math.abs(dx)>6)d.face=dx<0?'left':'right';setPose(d,'walk')}else setPose(d,'idle');if(d.ft<=0){d.follow=null;d.wait=d.after.t;setPose(d,d.after.pose)}}
+  else if(d.path){let v=d.v*dt*(.55+.45*kB(d.y));while(v>0&&d.pi<d.path.length-1){const a=[d.x,d.y],b=d.path[d.pi+1],L=Math.hypot(b[0]-a[0],b[1]-a[1]);if(L<=v){d.x=b[0];d.y=b[1];d.pi++;v-=L}else{d.x+=(b[0]-a[0])/L*v;d.y+=(b[1]-a[1])/L*v;if(Math.abs(b[0]-a[0])>2)d.face=b[0]<a[0]?'left':'right';v=0}}
+    const A=d.a;d.lift=0;d.hide=false;
+    if(A&&A.jumpX!=null&&Math.abs(d.x-A.jumpX)<70){const u=1-Math.abs(d.x-A.jumpX)/70;d.lift=Math.sin(u*Math.PI/2)*70*kB(d.y);setPose(d,'jump')}else if(d.path)setPose(d,d.sniff&&d.pi%9>6?'sniff':'walk',d.expr);
+    if(A&&A.hide&&d.x>A.hide[0]&&d.x<A.hide[1]&&d.pi>d.path.length-30)d.hide=true;
+    if(d.pi>=d.path.length-1){d.path=null;d.sniff=false;d.expr=null;const af=d.after||{pose:'idle',t:1};if(af.face)d.face=af.face;d.lift=af.lift?af.lift*kB(d.y):0;setPose(d,af.pose,af.expr);d.wait=af.t;d.a=null}}
+  else{d.wait-=dt;if(d.wait<=0){d.lift=0;plan(d)}}
+  d.el.style.opacity=d.hide?0:1;d.el.setAttribute('transform',`translate(${f(d.x)} ${f(d.y-d.lift)}) scale(${(kB(d.y)*SZ[d.k]*1.02).toFixed(3)})`);d.fl.setAttribute('transform',d.face==='left'?'scale(-1 1)':'')});
+  // soft separation: dogs never stand inside each other
+  for(let i=0;i<D.length;i++)for(let j=i+1;j<D.length;j++){const a=D[i],b=D[j];if(a.path&&a.v>250||b.path&&b.v>250)continue;const dx=b.x-a.x,dy=(b.y-a.y)*2.2,L=Math.hypot(dx,dy),m=90*(kB(a.y)+kB(b.y))/2;if(L<m&&L>.01){const p=(m-L)/m*40*dt,ux=dx/L,uy=dy/L/2.2;
+    if(!a.path&&okPt(a.x-ux*p,a.y-uy*p))a.x-=ux*p,a.y-=uy*p;if(!b.path&&okPt(b.x+ux*p,b.y+uy*p))b.x+=ux*p,b.y+=uy*p}}
+  // depth sort: props and dogs by the feet line
+  const W=Bs.svg.querySelector('#bWorld');const items=Bs.props.map(g=>[g.__y,g]).concat(D.map(d=>[d.y-(d.a&&d.a.lift?0:0),d.el]));items.sort((a,b)=>a[0]-b[0]);const key=items.map(i=>i[1].__id||(i[1].__id=Math.random())).join();if(key!==Bs.key){Bs.key=key;items.forEach(i=>W.appendChild(i[1]))}
+  // camera: follows the pack, eases, never past the ends
+  const vis=D.filter(d=>!d.hide),fx=vis.reduce((a,d)=>a+d.x,0)/Math.max(1,vis.length),tgt=Math.max(0,Math.min(1600-Bs.W,fx-Bs.W/2));Bs.cam+=(tgt-Bs.cam)*Math.min(1,dt*1.3);
+  Bs.svg.setAttribute('viewBox',`${f(Bs.cam)} 0 ${Bs.W} 600`);const mw=document.getElementById('miniWin');mw.style.left=(Bs.cam/16)+'%';mw.style.width=(Bs.W/16)+'%';
+  const mini=document.getElementById('mini');D.forEach((d,i)=>{let e=mini.querySelector('i[data-i="'+i+'"]');if(!e){e=document.createElement('i');e.dataset.i=i;mini.appendChild(e)}e.style.left=`calc(${d.x/16}% - 3px)`});
+  const lead=D[0];document.getElementById('doing').textContent=D.map(d=>d.k+': '+(d.path||d.follow?d.label:(d.after&&d.after.pose==='down'?'resting':d.label||'looking around'))).join(' · ')}
+function rsSize(){const ph=phoneOn();Bs.W=ph?700:1000;A.svg.setAttribute('viewBox',ph?'8 0 700 600':'0 0 1000 600')}
+let rLast=performance.now();function rTick(t){const dt=Math.min(.05,(t-rLast)/1000);rLast=t;if(tabRoam){stepA(dt);stepB(dt)}requestAnimationFrame(rTick)}
+
+/* ================= start ================= */
+setPh();showCard(null);fit();rsSize();const p0=NODE.yard;mdPose('idle');mdPlace(p0[0],p0[1]);requestAnimationFrame(mdTick);
+stepA(0);stepB(0);requestAnimationFrame(rTick);
+if(location.hash==='#roam')setTab(true);
+window.__v215={pick,setTab,MAP,B,EDGES,stepB,Bs,fit,V,applyV};
+</script>

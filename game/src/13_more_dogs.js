@@ -64,7 +64,7 @@ function dogLook(d) {
 }
 function lookOpts(d, c) { const L = dogLook(d), o = {}; if (c) { o.coat = L ? Object.assign({}, c.coat, { look: L }) : c.coat; o.seed = hashId(d.id); } if (L) { if (L.age) o.age = L.age; if (L.mixHead) o.mix = { head: L.mixHead }; if (L.sparkle) o.sparkle = true; if (L.expecting) o.expecting = true; } return o; }
 function dogOpts(d, o) { return Object.assign({}, o || {}, lookOpts(d, coatInfo(d))); }
-const outfitOf = (d) => ({ head: d.outfit.head, eyes: d.outfit.eyes, neck: d.outfit.neck, body: d.outfit.body });
+const outfitOf = (d) => ({ head: d.outfit.head, eyes: d.outfit.eyes, neck: d.outfit.neck, body: typeof plWearing === 'function' && plWearing(d) ? PL_VEST : d.outfit.body }); // v2.15: the pool's life vest is draw-only (45_pool.js)
 const ROACH = { greyhound: true }; // v1.7: greyhounds sleep upside down ("roaching")
 function dogSVG(d, o) { if (o && o.pose === 'sleep' && ROACH[d.key] && poseReal(d.key, 'rollover')) o = Object.assign({}, o, { pose: 'rollover', roach: true }); return dogArtSafe(d.key, dogOpts(d, o)); }
 function headSVG(d) { const o = lookOpts(d, coatInfo(d)); return Object.keys(o).length ? art('dogHead', d.key, o) : art('dogHead', d.key); }
@@ -80,7 +80,7 @@ function switchDog(id, opts = {}) {
   if (awayFromHome() && staysHome(d)) { nope(tt('pack.is_at_home', '{name} is at home. {stayHomeLine}', { name: d.name, stayHomeLine: stayHomeLine(d) })); return; }
   S.activeId = id; markDirty(); hudDogKey = ''; dogKey = ''; SFX.boop(760);
   // v2.10 ROAM: the stats switch to that dog where it stands. Nobody moves and the camera stays (every dog is drawn the same; the leader is data)
-  if (cur.mode === 'yard' && $('#pack') && !TRN) { if (IDLE.act) { IDLE.steps = []; idleEnd(); } const pk = $('#pack'); pk.innerHTML = packSVG(); bindPack(); renderDog(dogPoseNow(), rmSt(d).face, true); setHudDog(); updateHUD(); setTimeout(() => { const fx = $('#dogFx'); if (fx) { fx.classList.remove('tk-bounce'); void fx.getBBox(); fx.classList.add('tk-bounce'); } const h = dogHeadWorld(); say(PICK([tt('pack.reporting_for_duty', '{name} reporting for duty.', { name: d.name }), tt('pack.s_turn_has_been_waiting', "{sex, select, female {{name}'s turn! She has been waiting politely. Ish.} other {{name}'s turn! He has been waiting politely. Ish.}}", { sex: homeSx(d), name: d.name }), tt('pack.steps_up', '{name} steps up.', { name: d.name })]), h.x, h.y, 1800); }, 60); }
+  if (rmScene() && $('#pack') && !TRN) { if (IDLE.act) { IDLE.steps = []; idleEnd(); } const pk = $('#pack'); pk.innerHTML = packSVG(); bindPack(); renderDog(dogPoseNow(), rmSt(d).face, true); setHudDog(); updateHUD(); setTimeout(() => { const fx = $('#dogFx'); if (fx) { fx.classList.remove('tk-bounce'); void fx.getBBox(); fx.classList.add('tk-bounce'); } const h = dogHeadWorld(); say(PICK([tt('pack.reporting_for_duty', '{name} reporting for duty.', { name: d.name }), tt('pack.s_turn_has_been_waiting', "{sex, select, female {{name}'s turn! She has been waiting politely. Ish.} other {{name}'s turn! He has been waiting politely. Ish.}}", { sex: homeSx(d), name: d.name }), tt('pack.steps_up', '{name} steps up.', { name: d.name })]), h.x, h.y, 1800); }, 60); }
   else if (cur.mode === 'yard') go('yard');
   else { setHudDog(); updateHUD(); }
 }
@@ -115,7 +115,7 @@ function packSVG(full) {
   return items.sort((a, b) => a.y - b.y).map((o) => o.s).join('');
 }
 function bindPack() {
-  const g = $('#pack'); if (!g) return; rmAdopt();
+  const g = $('#pack'); if (!g) return; rmAdopt(); if (grOn() && rmScene()) grLayer(g); // v2.15: a rebuilt #pack gets the floor props (and the yard's house, mailbox and bowl) back at once
   // v2.10 ROAM: a rub or tap on any dog pets that dog only (crPetBind), with or without pack care; a long press opens its card (Make leader, Dress, Train)
   g.querySelectorAll('.packdog[data-dog]').forEach((el) => { if (el.dataset.rmb) return; el.dataset.rmb = '1'; crPetBind(el); });
   if (typeof fbPackNapFit === 'function') fbPackNapFit(); // v2.5: a pack dog napping on the house bed lies on it, over the bed's front lip
@@ -382,18 +382,18 @@ function applyLayout(rerender) { psApplyLayout(rerender); }
 /* camera: crop the 1000x600 hub scene around the dog (x ~ 430) so the full height stays visible */
 let camCx = 430, camRaf = 0;
 function camApply(cx) {
-  if (!isPhone() || !['yard', 'bath', 'market'].includes(cur.mode)) return;
+  if (!isPhone() || !['yard', 'bath', 'market'].includes(cur.mode)) { if (rmScene() && grWide()) grCamApply(cx); return; } // v2.15: a wide place has a camera on desktop too (43_ground.js)
   const svg = $('#view > svg.world'); if (!svg) return;
   const vw = svg.clientWidth || view.clientWidth, vh = svg.clientHeight || view.clientHeight; if (!vw || !vh) return; // the svg can be shorter than the view (a tray is open, or Market Street zooms out)
-  const vbW = 600 * vw / vh;
-  if (vbW >= 1000) { svg.setAttribute('viewBox', '0 0 1000 600'); phGnd(); return; }
+  const vbW = 600 * vw / vh, W = cur.mode === 'yard' ? grW() : 1000; // v2.15: a wide place is 1600 units
+  if (vbW >= W) { svg.setAttribute('viewBox', `0 0 ${W} 600`); phGnd(); return; }
   const zf = typeof phZoom === 'number' && phZoom > 0 && phZoom < 1 ? phZoom : 1, w = vbW / zf, h = 600 / zf; // phZoom (03_yard.js): Market Street zooms out, the extra sky sits above the scene
-  const x = w >= 1000 ? (1000 - w) / 2 : clamp(cx - w / 2, 0, 1000 - w);
+  const x = w >= W ? (W - w) / 2 : clamp(cx - w / 2, 0, W - w);
   svg.setAttribute('viewBox', `${x.toFixed(1)} ${(600 - h).toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}`);
   phGnd(); // v2.14.1: the ground under the scene follows the camera
 }
 function camTo(cx, secs = 0.6) {
-  if (!isPhone()) return; cancelAnimationFrame(camRaf);
+  const gw = rmScene() && grWide(); if (!isPhone() && !gw) return; cancelAnimationFrame(camRaf); if (gw) grDragged(); // v2.15: a look in a wide place: the follow camera waits (43_ground.js)
   const from = camCx, t0 = performance.now(), dur = Math.max(1, secs * 1000);
   const stepF = (t) => { const k = Math.min(1, (t - t0) / dur), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; camCx = from + (cx - from) * e; camApply(camCx); if (k < 1) camRaf = requestAnimationFrame(stepF); };
   camRaf = requestAnimationFrame(stepF);

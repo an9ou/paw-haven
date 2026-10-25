@@ -27,7 +27,7 @@ function homeFam(s) { return s && typeof townFamily === 'function' ? townFamily(
 // v2.14: a shop's name (shopTitle from 05_market_shops when present)
 function shopName(k) { return typeof shopTitle === 'function' ? shopTitle(k) : tdata('shop_name.' + k, SHOP_NAME[k]); }
 // v2.14: a place's name as shown (Tokyo places and the station come from 39_tokyo.js tkPlaceName)
-function placeName(k) { return typeof tkPlaceName === 'function' && (k === 'station' || (typeof TK_PLACES !== 'undefined' && TK_PLACES[k])) ? tkPlaceName(k) : PLACES[k] ? tdata('places.' + k + '.n', PLACES[k].n) : k; }
+function placeName(k) { const mp = mpPlaceName(k); if (mp) return mp; return typeof tkPlaceName === 'function' && (k === 'station' || (typeof TK_PLACES !== 'undefined' && TK_PLACES[k])) ? tkPlaceName(k) : PLACES[k] ? tdata('places.' + k + '.n', PLACES[k].n) : k; }
 function enterAdopt() {
   setChrome(false, false);
   view.innerHTML = srRoomSVG('adopt'); // v2.7: the Shelter Playroom (30_shelter.js). No S is read or written here
@@ -93,7 +93,7 @@ function intro() {
   const show = () => {
     const [t, b] = pages[i];
     const p = openModal(t, b, { noX: true, foot: `<button class="btn yes big" id="iNext">${i < pages.length - 1 ? tt('adopt.next', 'Next') : tt('adopt.let_s_go_home', 'Let\'s go home')}</button>` });
-    $('#iNext', p).onclick = () => { SFX.boop(600 + i * 80); i++; if (i < pages.length) { modal.hidden = true; show(); } else { closeModal(); go('yard'); if (typeof gdStart === 'function') setTimeout(gdStart, 900); /* v2.4: Gerald's walkthrough for new saves */ setTimeout(() => { if (cur.mode === 'yard') toast(tt('adopt.rub_to_pet_tap_feed', 'Rub {name} to pet. Tap Feed to fill the bowl.', { name: NAME() }), 'gold'); }, 900); } };
+    $('#iNext', p).onclick = () => { SFX.boop(600 + i * 80); i++; if (i < pages.length) { modal.hidden = true; show(); } else { closeModal(); go('yard'); if (typeof gdStart === 'function') setTimeout(gdStart, 900); /* v2.4: Gerald's walkthrough for new saves */ setTimeout(() => { if (cur.mode === 'yard') toast((isPhone() ? tt('adopt.rub_to_pet_tap_care_feed', 'Rub {name} to pet. Tap Care, then Feed to fill the bowl.', { name: NAME() }) : tt('adopt.rub_to_pet_tap_feed', 'Rub {name} to pet. Tap Feed to fill the bowl.', { name: NAME() })), 'gold'); }, 900); } };
   };
   show();
 }

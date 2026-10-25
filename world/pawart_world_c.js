@@ -50,6 +50,11 @@ function smooth(P,closed){
 }
 
 /* ---------- the pencil kit ---------- */
+// 25 Oct 2026: a closed outline P pulled in by dd (each point along its corner's inward normal; small shapes are pulled in less, so they never turn inside out)
+function fillIn(P,dd,G){const n=P.length;if(n<3)return P;let a=0,x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;P.forEach(p=>{x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);y0=Math.min(y0,p[1]);y1=Math.max(y1,p[1])});
+  G=G&&G.length>2?G:P;G.forEach((p,i)=>{const q=G[(i+1)%G.length];a+=p[0]*q[1]-q[0]*p[1]});const sg=a>0?1:-1;dd=Math.min(dd,Math.min(x1-x0,y1-y0)/4);// which way is in: from the drawn points G (a smooth curve can loop past a thin shape's ends)
+  return P.map((p,i)=>{const A=P[(i+n-1)%n],C=P[(i+1)%n],l1=Math.hypot(p[0]-A[0],p[1]-A[1])||1,l2=Math.hypot(C[0]-p[0],C[1]-p[1])||1;
+    const nx=-((p[1]-A[1])/l1+(C[1]-p[1])/l2)*sg,ny=((p[0]-A[0])/l1+(C[0]-p[0])/l2)*sg,m=Math.hypot(nx,ny)||1;return[p[0]+nx/m*dd,p[1]+ny/m*dd]})}
 function kit(seed){
   // two seeded streams: the main one draws the base scene, the side one draws time/weather extras,
   // so every variant keeps exactly the same base layout (and day+sunny is byte-identical to before)
@@ -94,14 +99,15 @@ function kit(seed){
       });
       out.push(`<path d="${d}" fill="${col}"${o.op?` opacity="${o.op}"`:''}/>`);
     },
-    // coloured-pencil fill that drifts off the outline
-    fill(pts,col,o={}){
-      const P=dense(pts,true,o.step||14),n=P.length;let cx=0,cy=0;P.forEach(q=>{cx+=q[0]/n;cy+=q[1]/n});
-      const dx=o.dx??1+r()*1.6,dy=o.dy??.5+r()*1.4,sc=1+(o.sc??(r()-.4)*.03),amp=o.amp??1.3;let vx=0,vy=0;
-      const W=P.map(q=>{vx=vx*.7+J(amp*.6);vy=vy*.7+J(amp*.6);return[cx+(q[0]-cx)*sc+dx+vx,cy+(q[1]-cy)*sc+dy+vy]});
+    // coloured-pencil fill. 25 Oct 2026 (owner: every colour fill stays inside its outline): it no longer drifts off (dx, dy, sc are still drawn
+    // from the stream, so nothing else moves). Under a pencil outline (ins: half the line width, from shape()) it is pulled in to the line's inner edge
+    // and keeps still; a fill with no outline keeps its little wobble, on the spot.
+    fill(pts,col,o={},ins=0){
+      const P=dense(pts,true,o.step||14);if(o.dx==null)r();if(o.dy==null)r();if(o.sc==null)r();const amp=o.amp??1.3,In=ins?fillIn(P,ins):null;let vx=0,vy=0;
+      const W=P.map((q,i)=>{vx=vx*.7+J(amp*.6);vy=vy*.7+J(amp*.6);return In?In[i]:[q[0]+vx,q[1]+vy]});
       const d=smooth(W,true);out.push(`<path d="${d}" fill="${col}"${o.op!=null?` fill-opacity="${o.op}"`:''}/>`);return d;
     },
-    shape(pts,col,o={}){let d=null;if(col)d=k.fill(pts,col,o);if(o.hatch)k.hatch(pts,o.hatch);if(!o.noline)k.pen(pts,true,{w:o.w,wk:o.wk,amp:o.pamp,col:o.lcol,one:o.one,op:o.lop});return d},
+    shape(pts,col,o={}){let d=null;if(col)d=k.fill(pts,col,o,o.noline?0:(o.w||2.2)*.5);if(o.hatch)k.hatch(pts,o.hatch);if(!o.noline)k.pen(pts,true,{w:o.w,wk:o.wk,amp:o.pamp,col:o.lcol,one:o.one,op:o.lop});return d},
     // cheap wobbly stroke for details
     line(pts,w=1.4,col=C.ink,o={}){const P=dense(pts,false,o.step||8).map((q,i,a)=>i===0||i===a.length-1?[q[0]+J(.4),q[1]+J(.4)]:[q[0]+J(o.amp??.7),q[1]+J(o.amp??.7)]);out.push(`<path d="${smooth(P,false)}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"${o.op?` opacity="${o.op}"`:''}${o.dash?` stroke-dasharray="${o.dash}"`:''}/>`)},
     // diagonal hatching clipped to a region, only in the lower-right ("shadow") part when o.side
@@ -1839,4 +1845,1052 @@ const cssC=`.pa-wc-scene [data-hot]{cursor:pointer;outline:none}
 .pa-wc-scene .pa-wc-hl{opacity:0;pointer-events:none;transition:opacity .15s}
 .pa-wc-scene [data-hot]:hover .pa-wc-hl,.pa-wc-scene [data-hot]:focus-visible .pa-wc-hl{opacity:1}`;
 if(typeof document!=='undefined'&&!document.getElementById('pawart-world-c-css')){const st=document.createElement('style');st.id='pawart-world-c-css';st.textContent=cssC;document.head.appendChild(st)}
+/* ======================= v2.15 A: GROUND ART A (V215.md sections 2, 8.2, 12, 13) =======================
+   The seven big outdoor places redrawn 1600 wide and deep, drawn only when the caller passes { v215: true } (no v215 = the old scene byte for
+   byte): park, dogpark, beach, hilltop, woods, river, pier (park, river, woods and beach are world A hubs, the other three world C scenes; the
+   one dispatch hook is the PA.scene wrapper at the end of this block, so no old scene function changes).
+   The conventions are world G's (world/pawart_world_g.js): viewBox 0 0 1600 600, the floor's back line at y 342 to 356, every floor prop in
+   <g id="floorG">, one <g data-fy="<base y>" data-prop="<id>"> each, sorted by base y; PawArt.FLOOR[name] = { w, back, front, kB, kF, poly,
+   props: [{ id, base, box: [x, y, w, h] | null }], spots: [{ id, x, y, tags, act, path? }] } (box null = a dog may stand on it).
+   Each place has a checkered start arch whose gate is data-hot="run" (aria "Start the run": the game relabels it through the v2.14 ariaMap).
+   No text in the art (the signs carry pictures). The env streams are world C's: k.ss (seasons), k.hw, k.lt, k.ny, k.jp; o.snow: true reads as
+   snowy weather; winter leaves snow on the floors. */
+const FLA={park:{w:1600,back:342,front:592,kB:.5,kF:1.05},dogpark:{w:1600,back:346,front:592,kB:.5,kF:1.05},beach:{w:1600,back:366,front:592,kB:.5,kF:1.05},
+  hilltop:{w:1600,back:346,front:592,kB:.5,kF:1.05},woods:{w:1600,back:346,front:592,kB:.5,kF:1.05},river:{w:1600,back:366,front:592,kB:.5,kF:1.05},pier:{w:1600,back:370,front:592,kB:.5,kF:1.05}};
+const clampA=(v,a,b)=>Math.max(a,Math.min(b,v)),liteA=c=>mixH(c,'#FFFFFF',.42);
+const depA=(F,y)=>F.kB+(F.kF-F.kB)*clampA((y-F.back)/(F.front-F.back),0,1);
+// snow on a top edge: thick when it snows, a dusting all winter (season stream: summer stays the same)
+function snowOnA(k,pts,th){if(k.env.snow)k.side(()=>capLine(k,pts,th));else if(k.so==='winter')k.ss(()=>capLine(k,pts,th*.6))}
+function frostOnA(k,pts){if(k.so==='winter')k.ss(()=>frostLine(k,pts))}
+function shadeA(k,x,y,rx,ry){k.add(`<ellipse cx="${R1(x)}" cy="${R1(y)}" rx="${R1(rx)}" ry="${R1(ry||rx*.18)}" fill="${C.ink}" opacity=".12"/>`)}
+function tuftsA(k,x0,x1,y0,y1,n,ok,col=C.grassD){let d='';for(let i=0;i<n;i++){const x=x0+k.r()*(x1-x0),y=y0+k.r()*(y1-y0);if(ok&&!ok(x,y))continue;const s=.55+.6*(y-y0)/Math.max(1,y1-y0);
+  d+=`M${R1(x)} ${R1(y)}q${R1(s)} ${R1(-6*s)} ${R1(-s)} ${R1(-10*s)}M${R1(x+5*s)} ${R1(y)}q0 ${R1(-7*s)} ${R1(3*s)} ${R1(-12*s)}`}k.add(`<path d="${d}" fill="none" stroke="${col}" stroke-width="1.5" stroke-linecap="round"/>`)}
+function dotsA(k,x0,x1,y0,y1,n,col,ok){let s='';for(let i=0;i<n;i++){const x=x0+k.r()*(x1-x0),y=y0+k.r()*(y1-y0),f=.6+.6*(y-y0)/Math.max(1,y1-y0);if(ok&&!ok(x,y))continue;s+=`<ellipse cx="${R1(x)}" cy="${R1(y)}" rx="${R1((1.6+k.r()*1.8)*f)}" ry="${R1(1.2*f)}" fill="${col}"/>`}k.add(s)}
+function pawsA(k,list,col){let s='';list.forEach(([x,y,f],i)=>{const o=i%2?5*f:-5*f;s+=`<ellipse cx="${R1(x)}" cy="${R1(y+o)}" rx="${R1(3.4*f)}" ry="${R1(2.6*f)}" fill="${col}"/><circle cx="${R1(x-3*f)}" cy="${R1(y+o-4*f)}" r="${R1(1.2*f)}" fill="${col}"/><circle cx="${R1(x)}" cy="${R1(y+o-5*f)}" r="${R1(1.2*f)}" fill="${col}"/><circle cx="${R1(x+3*f)}" cy="${R1(y+o-4*f)}" r="${R1(1.2*f)}" fill="${col}"/>`});k.add(s)}
+// rain sheen and puddles, snowy-weather patches, fireflies (side stream: only in a variant)
+function fxA(k,o){k.fx(()=>{const e=k.env;
+  if(e.rain){if(o.sheen)sheen(k,0,1600,o.sheen[0],o.sheen[1],100,o.avoid||[]);(o.puddles||[]).forEach(q=>puddle(k,...q))}
+  if(e.snow)(o.patches||[]).forEach(q=>snowPatch(k,...q));
+  if(e.night&&!e.rain&&o.flies)o.flies.forEach(f=>k.flies.push(f))})}
+// winter snow on the floor: a soft white cover over the floor polygon with drifts (season stream), thicker when it snows
+function floorSnowA(k,poly,list){if(k.so!=='winter'&&!k.env.snow)return;const go=f=>k.env.snow?k.side(f):k.ss(f);go(()=>{
+  k.fill(poly,'#FFFFFF',{dx:0,dy:0,sc:0,op:k.env.snow?.55:.32});
+  list.forEach(([x,y,rx,ry])=>{const p=blobP(x,y,rx,ry,k.r,10,.3);k.fill(p,'#FFFFFF',{dx:0,dy:0,op:.88});k.pen(p,true,{w:1.1,amp:.5,col:'#B4C4D4',one:1})})})}
+function skyA(k,yb,c){k.skyD(()=>{skyBand(k,1600,yb);O.sun(k,c.sun[0],c.sun[1],c.sun[2]);c.clouds.slice(0,3).forEach(q=>O.cloud(k,q[0],q[1],q[2]));(c.birds||[]).forEach(q=>O.bird(k,q[0],q[1],q[2]))},
+  Object.assign({W:1600,H:yb+10,stars:66},c))}
+const fujiA=(k,cx,by,w)=>k.jp(()=>jpFujiDraw(k,{cx,by,w}));
+function hillsA(k,pts,yb,col){k.fill(pts.concat([[1600,yb],[0,yb]]),col,{dx:0,dy:0,sc:0});k.pen(pts,false,{w:1.6,col:C.graph})}
+function farTreesA(k,x0,x1,step,y,s=1,skip){for(let x=x0;x<x1;x+=step){if(skip&&skip(x))continue;const yy=y+k.J(5),so=k.so,c=so==='autumn'?AU[hashXY(x,yy)%3][0]:so==='winter'?'#D6CABD':'#C3DFA5';
+  k.line([[x,yy+8*s],[x,yy+22*s]],1.4,C.trunkD);k.shape(E(x,yy,(16+k.r()*5)*s,(13+k.r()*3)*s,10),c,{w:1.3,lcol:C.graph,one:1});if(so==='winter')k.ss(()=>capLine(k,[[x-14*s,yy-6*s],[x,yy-13*s],[x+14*s,yy-6*s]],3*s))}}
+function farHouseA(k,x,y,s,wall,roof){mOut(k,RC(x-15*s,y-12*s,30*s,24*s),wall);mOut(k,[[x-19*s,y-11*s],[x,y-28*s],[x+19*s,y-11*s]],roof);k.add(`<rect x="${R1(x-4*s)}" y="${R1(y)}" width="${R1(7*s)}" height="${R1(12*s)}" fill="${C.ink}" opacity=".55"/>`);tinyLit(k,x+7*s,y-4*s);snowOnA(k,[[x-19*s,y-11*s],[x,y-28*s],[x+19*s,y-11*s]],3*s)}
+// a path on the ground through [x, y, half width] points, its edges offset across the path's direction
+function pathA(k,pts,col,edge,dots){const n=pts.length,L=[],Rr=[];pts.forEach(([x,y,w],i)=>{const a=pts[Math.max(0,i-1)],b=pts[Math.min(n-1,i+1)];let tx=b[0]-a[0],ty=b[1]-a[1];const l=Math.hypot(tx,ty)||1;tx/=l;ty/=l;
+  L.push([x+ty*w,y-tx*w*.55]);Rr.push([x-ty*w,y+tx*w*.55])});k.fill(L.concat(Rr.slice().reverse()),col,{dx:0,dy:0,sc:0});k.line(L,1.5,edge,{amp:.5});k.line(Rr,1.5,edge,{amp:.5});
+  if(dots){let d='';for(let i=0;i<n*5;i++){const t=k.r()*(n-1),j=Math.floor(t),f=t-j,p=pts[j],q=pts[Math.min(n-1,j+1)],x=p[0]+(q[0]-p[0])*f,y=p[1]+(q[1]-p[1])*f,w=(p[2]+(q[2]-p[2])*f)*.7,u=k.J(1);
+    d+=`<ellipse cx="${R1(x+u*w)}" cy="${R1(y+k.J(w*.25))}" rx="${R1(1.4+w*.03)}" ry="${R1(1+w*.015)}" fill="${dots}"/>`}k.add(d)}}
+function benchA(k,x,gy,s){shadeA(k,x,gy+2,54*s);O.bench(k,x,gy,s);frostOnA(k,[[x-49*s,gy-69*s],[x+49*s,gy-69*s]]);snowOnA(k,[[x-50*s,gy-70*s],[x+50*s,gy-70*s]],4*s)}
+function bowlA(k,x,gy,s,col=C.blue){shadeA(k,x,gy+2,26*s);k.shape([[x-22*s,gy],[x+22*s,gy],[x+18*s,gy-14*s],[x-18*s,gy-14*s]],col,{w:1.7,one:1,hatch:{side:.6,gap:3.5,col:dk(col),op:.45}});
+  k.fill(E(x,gy-14*s,17*s,4.4*s,12),k.so==='winter'?'#E6EEF5':C.water,{dx:0,dy:0});k.add(`<path d="M${R1(x-8*s)} ${R1(gy-15*s)}q4 -2 8 0" stroke="#fff" stroke-width="1.4" fill="none"/>`);O.heart(k,x,gy-7*s,3.2*s,'#FFFFFF')}
+// a tree as a floor prop (O.tree with its shade; Winter Lights and Halloween dress on their own streams)
+function treeA(k,x,gy,s,o={}){shadeA(k,x,gy+3,62*s,9*s);O.tree(k,x,gy,s,o);if(o.lt)k.lt(()=>{ltString(k,sagP(x-52*s,gy-92*s,x+50*s,gy-86*s,14*s,10),20);ltString(k,sagP(x-40*s,gy-126*s,x+38*s,gy-120*s,10*s,8),20)});
+  if(o.hw)k.hw(()=>hwGhost(k,x+36*s,gy-96*s,.8*s,16*s))}
+function pineA(k,x,gy,s,col,colD,o={}){shadeA(k,x,gy+3,46*s,8*s);O.pine(k,x,gy,s,col,colD);if(k.so==='winter'&&!k.env.snow)k.ss(()=>{const yb=gy-92*s,w=46*s*.56;capLine(k,[[x-w*.32,yb-54*s*.71],[x,yb-54*s],[x+w*.32,yb-54*s*.71]],3.6*s)});
+  if(o.lt)k.lt(()=>[[gy-26*s,40],[gy-60*s,32],[gy-94*s,24]].forEach(([yb,w])=>ltString(k,sagP(x-w*s,yb-4*s,x+w*s,yb-10*s,8*s,10),19)))}
+// a wooden sign with a picture instead of words (icon: sun | bone | shell | kite | acorn | duck | anchor)
+function signA(k,x,gy,s,icon){shadeA(k,x,gy+2,20*s);k.line([[x,gy],[x+k.J(1),gy-92*s]],4*s,C.ink);const b=[[x-46*s,gy-118*s],[x+46*s,gy-116*s],[x+48*s,gy-80*s],[x-44*s,gy-82*s]];
+  k.shape(b,C.wood,{w:2,hatch:{side:.8,gap:4,col:C.woodD,op:.4}});const cx=x+1*s,cy=gy-99*s;
+  if(icon==='sun'){O.sun(k,cx,cy,9*s)}
+  else if(icon==='bone')k.shape([[cx-18*s,cy-3*s],[cx+18*s,cy-3*s],[cx+22*s,cy-9*s],[cx+28*s,cy-5*s],[cx+24*s,cy],[cx+28*s,cy+5*s],[cx+22*s,cy+9*s],[cx+18*s,cy+3*s],[cx-18*s,cy+3*s],[cx-22*s,cy+9*s],[cx-28*s,cy+5*s],[cx-24*s,cy],[cx-28*s,cy-5*s],[cx-22*s,cy-9*s]],'#FFFBF3',{w:1.4,one:1});
+  else if(icon==='shell'){const p=[];for(let i=0;i<=8;i++){const a=Math.PI+i/8*Math.PI;p.push([cx+Math.cos(a)*14*s,cy+6*s+Math.sin(a)*14*s])}k.shape(p,'#FFC9B0',{w:1.3,one:1});let d='';for(let i=1;i<8;i+=2){const a=Math.PI+i/8*Math.PI;d+=`M${R1(cx)} ${R1(cy+6*s)}L${R1(cx+Math.cos(a)*13*s)} ${R1(cy+6*s+Math.sin(a)*13*s)}`}k.add(`<path d="${d}" stroke="${C.ink}" stroke-width="1"/>`)}
+  else if(icon==='kite'){k.shape([[cx,cy-13*s],[cx+10*s,cy-1*s],[cx,cy+13*s],[cx-10*s,cy-1*s]],'#F28FA5',{w:1.3,one:1});k.line([[cx,cy+13*s],[cx+6*s,cy+16*s],[cx+2*s,cy+19*s]],1,C.ink)}
+  else if(icon==='acorn')acorn(k,cx,cy-4*s,2.6*s);
+  else if(icon==='duck')k.shape([[cx-12*s,cy+2*s],[cx-14*s,cy-5*s],[cx-6*s,cy-3*s],[cx+3*s,cy-5*s],[cx+5*s,cy-12*s],[cx+11*s,cy-12*s],[cx+16*s,cy-9*s],[cx+11*s,cy-7*s],[cx+11*s,cy+2*s],[cx+4*s,cy+7*s],[cx-8*s,cy+7*s]],C.yellow,{w:1.3,one:1});
+  else if(icon==='anchor'){k.add(`<path d="M${R1(cx)} ${R1(cy-12*s)}v${R1(24*s)}M${R1(cx-8*s)} ${R1(cy-6*s)}h${R1(16*s)}M${R1(cx-12*s)} ${R1(cy+4*s)}q${R1(12*s)} ${R1(14*s)} ${R1(24*s)} 0" fill="none" stroke="#6F96C6" stroke-width="${R1(3*s)}" stroke-linecap="round"/><circle cx="${R1(cx)}" cy="${R1(cy-14*s)}" r="${R1(3*s)}" fill="none" stroke="#6F96C6" stroke-width="${R1(2*s)}"/>`)}
+  snowOnA(k,[[x-46*s,gy-118*s],[x+46*s,gy-116*s]],5*s);frostOnA(k,[[x-44*s,gy-117*s],[x+44*s,gy-115*s]])}
+// the checkered start arch (as world G's): two posts, a checkered banner, pennants and a paw disc; runGateA makes it the data-hot="run" gate
+function startArchA(k,x,gy,s,col,disc=C.yellow){const w=170*s,h=176*s,x0=x-w/2,x1=x+w/2,bw=w+34*s,bx=x-bw/2,by=gy-h-8*s,bh=36*s;
+  shadeA(k,x,gy+2,w*.6,6*s);
+  [x0,x1].forEach(px=>{k.shape([[px-7*s,gy],[px-6*s,gy-h],[px+6*s,gy-h],[px+7*s,gy]],col,{w:1.9,hatch:{side:.6,gap:3.5,col:dk(col),op:.5}});
+    for(let y=gy-h+22*s;y<gy-8*s;y+=30*s)k.line([[px-6*s,y],[px+6*s,y+6*s]],1.2,C.ink,{op:.45});
+    k.shape(RC(px-11*s,gy-10*s,22*s,10*s),C.stoneD,{w:1.4,one:1})});
+  const n=12,cw=bw/n;let d='';for(let i=0;i<n;i++)for(let j=0;j<2;j++)if((i+j)%2===0){const qx=bx+i*cw,qy=by+j*bh/2;d+=`M${R1(qx+k.J(.5))} ${R1(qy+k.J(.5))}h${R1(cw)}v${R1(bh/2)}h${R1(-cw)}z`}
+  k.fill(RC(bx,by,bw,bh),'#FFFFFF',{dx:0,dy:0});k.add(`<path d="${d}" fill="${C.ink}" opacity=".82"/>`);k.pen(RC(bx,by,bw,bh),true,{w:2});
+  [[bx+4*s,1],[bx+bw-4*s,-1]].forEach(([px,f],i)=>{k.line([[px,by],[px,by-34*s]],2,C.ink);k.shape([[px,by-34*s],[px+f*30*s,by-27*s],[px,by-20*s]],i?C.pink:C.yellow,{w:1.4,one:1})});
+  k.shape(E(x,by-10*s,20*s,20*s,14),disc,{w:1.8,hatch:{side:.6,gap:3,col:dk(disc),op:.4}});
+  k.add(`<g fill="${C.ink}"><ellipse cx="${R1(x)}" cy="${R1(by-6*s)}" rx="${R1(6*s)}" ry="${R1(5*s)}"/><circle cx="${R1(x-7*s)}" cy="${R1(by-14*s)}" r="${R1(2.4*s)}"/><circle cx="${R1(x-2.4*s)}" cy="${R1(by-18*s)}" r="${R1(2.4*s)}"/><circle cx="${R1(x+2.4*s)}" cy="${R1(by-18*s)}" r="${R1(2.4*s)}"/><circle cx="${R1(x+7*s)}" cy="${R1(by-14*s)}" r="${R1(2.4*s)}"/></g>`);
+  snowOnA(k,[[bx-2,by],[bx+bw+2,by]],7*s);frostOnA(k,[[bx,by+1],[bx+bw,by+1]]);
+  k.lt(()=>ltString(k,sagP(bx,by+bh+2,bx+bw,by+bh+2,10*s,12),18));
+  k.ny(()=>{nyShime(k,x,by+bh+4*s,.8*s);nyKado(k,x0-26*s,gy,.7*s,1);nyKado(k,x1+26*s,gy,.7*s,-1)});
+  k.hw(()=>{hwJack(k,x0-24*s,gy,.9*s);hwJack(k,x1+22*s,gy,.75*s);hwBatString(k,bx,bx+bw,by+bh+6*s,10*s,5,.7*s)})}
+function runGateA(k,x,gy,s,col,disc){hot(k,'data-hot','run','Start the run',RC(x-110*s,gy-250*s,220*s,256*s),k.cap(()=>startArchA(k,x,gy,s,col,disc)))}
+// every floor prop in its own group; out() writes them sorted by base y inside #floorG
+function floorKitA(k){const P=[];return {add(id,base,fn){P.push([base,`<g data-fy="${R1(base)}" data-prop="${id}">`+k.cap(fn)+'</g>'])},
+  out(){P.sort((a,b)=>a[0]-b[0]);k.add('<g id="floorG">'+P.map(p=>p[1]).join('')+'</g>')}}}
+function seasonBitsA(k,o){k.ss(()=>{if(o.drift)seasonDrift(k,o.drift);const e=k.env;if(k.so==='winter'&&!e.night&&o.robin)robin(k,o.robin[0],o.robin[1],o.robin[2]||1,o.robin[3]||1);
+  if(k.so==='spring'&&!e.night&&!e.rain&&o.fly)butterfly(k,o.fly[0],o.fly[1],1,'#F9C6D4')})}
+// a sitting picnic: a checked blanket (flat: a dog may lie on it) and, separately, a basket
+function blanketA(k,x,y,w,h,c1,c2){const p=[[x-w/2+w*.08,y-h/2],[x+w/2,y-h/2+2],[x+w/2-w*.06,y+h/2],[x-w/2,y+h/2-2]];k.fill(p,c1,{dx:0,dy:0});
+  let d='';for(let i=1;i<6;i++){const t=i/6;d+=`M${R1(p[0][0]+(p[1][0]-p[0][0])*t)} ${R1(p[0][1]+(p[1][1]-p[0][1])*t)}L${R1(p[3][0]+(p[2][0]-p[3][0])*t)} ${R1(p[3][1]+(p[2][1]-p[3][1])*t)}`}
+  for(let i=1;i<4;i++){const t=i/4;d+=`M${R1(p[0][0]+(p[3][0]-p[0][0])*t)} ${R1(p[0][1]+(p[3][1]-p[0][1])*t)}L${R1(p[1][0]+(p[2][0]-p[1][0])*t)} ${R1(p[1][1]+(p[2][1]-p[1][1])*t)}`}
+  k.add(`<path d="${d}" stroke="${c2}" stroke-width="${R1(Math.max(3,w/34))}" opacity=".7"/>`);k.pen(p,true,{w:1.8,one:1});snowOnA(k,[p[0],p[1]],4)}
+function basketA(k,x,gy,s){shadeA(k,x,gy+2,26*s);k.shape(RC(x-22*s,gy-26*s,44*s,26*s),'#E1B987',{w:1.6,hatch:{gap:4,col:'#BF9767',op:.5}});k.add(`<path d="M${R1(x-18*s)} ${R1(gy-26*s)}q${R1(18*s)} ${R1(-22*s)} ${R1(36*s)} 0" fill="none" stroke="${C.ink}" stroke-width="1.8"/>`);
+  k.shape([[x-16*s,gy-26*s],[x+16*s,gy-26*s],[x+12*s,gy-32*s],[x-12*s,gy-32*s]],'#F7B2B2',{w:1,one:1,noline:1})}
+function ballA(k,x,y,r,col='#E9F59B'){k.shape(E(x,y-r,r,r,10),col,{w:1.5,one:1});k.add(`<path d="M${R1(x-r*.8)} ${R1(y-r*1.3)}q${R1(r*.8)} ${R1(r*.6)} ${R1(r*1.6)} 0" fill="none" stroke="#fff" stroke-width="1.5"/>`)}
+function rockA(k,x,gy,s){shadeA(k,x,gy+2,30*s);O.rock(k,x,gy-6*s,1.8*s);snowOnA(k,[[x-20*s,gy-14*s],[x,gy-20*s],[x+20*s,gy-14*s]],4*s)}
+function lampA(k,x,gy,s){shadeA(k,x,gy+2,16*s);O.lamp(k,x,gy,s);snowOnA(k,[[x-14*s,gy-140*s],[x,gy-152*s],[x+14*s,gy-140*s]],4*s);k.hw(()=>hwJack(k,x+14*s,gy,.6*s))}
+
+/* ---------- Sunny Park: the duck pond with lily pads, the mint bandstand, big round trees ---------- */
+function bandstand(k,x,gy,s){const w=230*s,h=96*s,x0=x-w/2,x1=x+w/2,top=gy-26*s-h;shadeA(k,x,gy+3,w*.6,8*s);
+  // the round deck with its steps, white posts, the mint roof with a scalloped valance and a flag
+  k.shape([[x0-8*s,gy],[x1+8*s,gy],[x1+4*s,gy-26*s],[x0-4*s,gy-26*s]],'#F2E3C8',{w:2,hatch:{side:.7,gap:4,col:'#D8C3A0',op:.5}});
+  k.shape(RC(x-34*s,gy-14*s,68*s,14*s),C.wood,{w:1.6,one:1});k.line([[x-34*s,gy-7*s],[x+34*s,gy-7*s]],1.2,C.woodD);
+  let rl='';for(let px=x0+10*s;px<x1-8*s;px+=13*s)if(Math.abs(px-x)>36*s)rl+=`M${R1(px)} ${R1(gy-26*s)}v${R1(-22*s)}`;k.add(`<path d="${rl}" stroke="${C.ink}" stroke-width="1.6"/>`);
+  k.line([[x0,gy-48*s],[x-36*s,gy-48*s]],2.2);k.line([[x+36*s,gy-48*s],[x1,gy-48*s]],2.2);
+  [x0+6*s,x0+w*.36,x0+w*.64,x1-6*s].forEach(px=>k.shape(RC(px-5*s,top,10*s,h),'#FFFFFF',{w:1.7,one:1}));
+  const rf=[[x0-26*s,top+4*s],[x,top-62*s],[x1+26*s,top+4*s]];k.shape(rf,'#BDE7D2',{w:2.2,hatch:{side:.6,gap:4.5,col:'#8FCCB0',op:.55}});
+  const sc=[[x0-26*s,top+4*s]];for(let px=x0-26*s;px<x1+26*s;px+=24*s)sc.push([px+12*s,top+16*s],[Math.min(x1+26*s,px+24*s),top+4*s]);k.shape(sc,'#FFFFFF',{w:1.4,one:1});
+  k.line([[x,top-62*s],[x,top-96*s]],2);k.shape([[x,top-96*s],[x+26*s,top-89*s],[x,top-82*s]],C.pink,{w:1.3,one:1});O.note(k,x-60*s,top-40*s,12*s);
+  snowOnA(k,rf,10*s);frostOnA(k,[[x0,gy-49*s],[x1,gy-49*s]]);
+  k.lt(()=>{ltString(k,sagP(x0-24*s,top+16*s,x,top+26*s,8*s,10),20);ltString(k,sagP(x,top+26*s,x1+24*s,top+16*s,8*s,10),20)});
+  k.ny(()=>nyShime(k,x,top+20*s,.9*s));k.hw(()=>{hwLanternString(k,x0-20*s,top+14*s,x1+20*s,top+14*s,14*s,5,.8*s);hwJack(k,x-46*s,gy-26*s,.8*s)})}
+function pondA(k,cx,cy,rx,ry){const w=E(cx,cy,rx,ry,22).map(q=>[q[0]+k.J(3),q[1]+k.J(1.5)]);const win=k.so==='winter';
+  k.fill(w.map(q=>[q[0],q[1]+4]),'#C9B79A',{dx:0,dy:0});k.fill(w,win?'#DCEAF3':C.water,{dx:0,dy:0});k.pen(w,true,{w:2});
+  let wv='';for(let i=0;i<14;i++){const a=k.r()*Math.PI*2,r=Math.sqrt(k.r())*.75,x=cx+Math.cos(a)*rx*r,y=cy+Math.sin(a)*ry*r;wv+=`M${R1(x)} ${R1(y)}q6 -4 12 0t12 0`}if(!win)k.add(`<path d="${wv}" fill="none" stroke="#86BDDE" stroke-width="1.5" stroke-linecap="round"/>`);
+  // stones round the rim
+  let st='';for(let i=0;i<26;i++){const a=i/26*Math.PI*2,x=cx+Math.cos(a)*(rx+6),y=cy+Math.sin(a)*(ry+3);if(Math.sin(a)<-.2&&i%2)continue;st+=`<ellipse cx="${R1(x)}" cy="${R1(y)}" rx="${R1(9+k.r()*5)}" ry="${R1(4+k.r()*2)}" fill="${C.stone}" stroke="${C.ink}" stroke-width="1.1"/>`}k.add(st);
+  if(win)k.ss(()=>{let d='';for(let i=0;i<6;i++){const x=cx-rx*.6+k.r()*rx*1.2,y=cy-ry*.4+k.r()*ry*.8;d+=`M${R1(x)} ${R1(y)}l${R1(18+k.r()*20)} ${R1(k.J(4))}`}k.add(`<path d="${d}" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" opacity=".9"/>`)});
+  else[[cx-rx*.55,cy-ry*.1],[cx+rx*.3,cy+ry*.35],[cx-rx*.1,cy+ry*.5],[cx+rx*.62,cy-ry*.2]].forEach(([x,y],i)=>{k.shape(E(x,y,14,5,10),'#A9D08A',{w:1.3,one:1});k.line([[x,y],[x+9,y-3]],1,C.leafD);if(i%2)k.add(`<circle cx="${R1(x+5)}" cy="${R1(y-3)}" r="3.4" fill="#F7B6C8" stroke="${C.ink}" stroke-width=".9"/>`)});
+  k.fx(()=>{if(k.env.rain)ripples(k,cx-rx*.8,cx+rx*.8,cy-ry*.6,cy+ry*.6,10);waterGlints(k,cx+rx*.2,cy-ry*.6,cy+ry*.6)})}
+function a5Park(k,F){const W=1600,B=F.back,D=y=>depA(F,y),fk=floorKitA(k),e=k.env;
+  skyA(k,330,{sun:[1400,86,34],low:[1340,300,34],moon:[1380,86,30],clouds:[[300,70,26],[760,124,20],[1120,60,24],[140,160,18]],rainC:[[480,50,30],[960,170,24],[1460,40,26]],birds:[[620,80,9],[644,94,7]]});
+  fujiA(k,520,318,230);
+  k.ny(()=>nyKites(k,[[300,150,1.1,0,260,330],[1060,96,.9,1,1110,330]]));
+  hillsA(k,[[0,320],[160,300],[360,316],[560,292],[800,312],[1040,296],[1300,316],[1600,300]],350,'#DCEDC4');
+  farTreesA(k,24,1600,64,328,1,x=>x>950&&x<1180);
+  farHouseA(k,1380,330,.7,C.wall2,C.roofD);farHouseA(k,1430,334,.6,C.wall3,C.roof);
+  const lawn=[[0,B-2],[W,B-4],[W,600],[0,600]];k.fill(lawn,C.grass,{dx:0,dy:0,sc:0});k.pen([[0,B-2],[800,B-4],[W,B-4]],false,{w:2});
+  [[300,580,170,22],[1000,560,150,20],[1460,450,90,14],[700,420,110,12]].forEach(q=>k.fill(E(q[0],q[1],q[2],q[3],12),C.grass2,{op:.7}));
+  // the winding path: from the front up to the bandstand, a branch to the start arch
+  pathA(k,[[880,604,70],[850,550,62],[900,500,52],[980,456,44],[1050,420,38],[1080,388,32],[1080,360,28]],C.path,'#C9AE77','#D9C39C');
+  pathA(k,[[870,520,40],[760,486,36],[620,450,32],[470,420,28],[330,396,24],[230,372,22],[200,356,18]],C.path,'#C9AE77','#D9C39C');
+  tuftsA(k,0,W,B+8,598,120,(x,y)=>!(Math.abs(x-880)<80&&y>470)&&!((x-360)*(x-360)/40000+(y-470)*(y-470)/3600<1));
+  fxA(k,{sheen:[350,598],puddles:[[860,560,46,9],[640,456,34,6],[1180,520,40,8]],patches:[[860,566,72,13],[1180,526,60,11],[200,560,54,8],[1500,420,50,8],[600,400,46,7]],flies:[[200,470],[640,420],[1200,380],[1460,560],[900,300]]});
+  floorSnowA(k,[[0,B],[W,B-2],[W,600],[0,600]],[[300,580,120,14],[1240,560,110,13],[700,410,70,8],[1460,420,60,8],[60,430,50,8]]);
+  k.ss(()=>seasonGround(k,[20,B+10,1580,596],85,[[180,410,560,520],[820,330,1340,380],[60,500,320,598]]));
+  // the back: big round trees, the bandstand at the end of the path, the start arch at the end of the branch
+  O.tree(k,70,B+2,1.2);O.tree(k,640,B+4,1.05,{col:C.leaf2});O.tree(k,1560,B+6,1.25,{fruit:'#F49090'});
+  k.jp(()=>{const so=e.season;if(so==='spring')jpPuffs(k,640,250,64,46,'#F9D3DE','#E9A2B8');else if(so==='autumn'){jpPuffs(k,1560,236,72,52,'#E2583E','#B83E2C');jpMomiji(k,1560,236,66,46,20)}});
+  k.lt(()=>{ltString(k,sagP(16,262,120,268,16,10),20);ltString(k,sagP(1500,258,1610,262,16,10),21)});
+  bandstand(k,1080,B+16,.92);
+  runGateA(k,200,B+12,.62,C.woodD,C.yellow);
+  // the floor props
+  fk.add('pond',428,()=>{pondA(k,360,468,190,40);
+    k.jp(()=>{jpToro(k,150,470,.9);jpToro(k,574,474,.82);if(k.so!=='winter')[[290,470,0],[400,478,2.4],[470,462,1.2]].forEach(([x,y,a],i)=>jpKoi(k,x,y,18,a,i))});
+    if(k.so!=='winter'){duck(k,250,462,1.2,'#FFF8EC');duck(k,300,474,.75,C.yellow);duck(k,326,478,.7,C.yellow)}else k.ss(()=>{duck(k,210,436,1,'#FFF8EC')})});
+  fk.add('flowerbed',548,()=>{const bed=E(150,560,110,34,16);k.shape(bed,C.soil,{w:2,hatch:{side:.6,gap:5,col:'#B98F68',op:.5}});
+    k.add(`<ellipse cx="150" cy="560" rx="110" ry="34" fill="none" stroke="#D9897A" stroke-width="5" stroke-dasharray="14 4" opacity=".75"/>`);
+    const fc=[C.red,C.yellow,C.lav,'#FFB3C7',C.orange];for(let r=0;r<3;r++)for(let i=0;i<6-(r===1?0:1);i++)O.flower(k,70+i*32+(r===1?-8:7)+k.J(3),542+r*16,5,fc[(i+r)%5]);
+    snowOnA(k,E(150,560,112,36,16).slice(8,16),6);k.ss(()=>{if(k.so==='spring')bulbs(k,150,588,5,.9)})});
+  fk.add('bench',476,()=>{benchA(k,1300,476,D(476)*1.3);k.hw(()=>hwJack(k,1238,476,.7));k.ny(()=>nyKado(k,1370,476,.6,-1))});
+  fk.add('lamp',418,()=>lampA(k,760,418,D(418)*1.15));
+  fk.add('tree',452,()=>treeA(k,1470,452,D(452)*1.5,{lt:1,hw:1}));
+  fk.add('bush',392,()=>{shadeA(k,1250,394,52);O.bush(k,1250,392,.95,C.leaf2,C.leafD,'#FFB3C7')});
+  fk.add('sign',586,()=>{signA(k,1540,586,.95,'sun');k.ny(()=>nyShime(k,1540,510,.8))});
+  fk.add('bowl',512,()=>bowlA(k,640,512,D(512)));
+  fl(k,[[1000,590,C.red],[1060,578,C.yellow],[1200,594,C.lav],[600,590,'#FFB3C7'],[40,480,C.yellow],[1580,500,C.red],[460,380,C.lav],[1380,380,C.yellow]],5);
+  fk.out();
+  seasonBitsA(k,{drift:[[170,250,1],[480,210,.9],[860,250,1],[1200,240,.85],[1440,200,.8]],robin:[1300,420,1.1,-1],fly:[560,360]});
+  O.sparkle(k,700,220,8);O.heart(k,380,160,6);O.note(k,940,190,12);
+  O.tape(k,6,26,90,-24,'#F7B9C6');O.tape(k,W-90,560,80,-28,'#BDE7D2')}
+/* ---------- Dog Park: the fenced lawn with a bone mown into it, the red hydrant, a small A-frame, tennis balls ---------- */
+function dpFence(k,x0,x1,yb,yt){k.shape(RC(x0,yt+12,x1-x0,7),C.woodD,{w:1.6,one:1});k.shape(RC(x0,yb-24,x1-x0,7),C.woodD,{w:1.6,one:1});
+  let d='';for(let x=x0+6;x<x1-2;x+=20)d+=`M${x} ${yb}V${R1(yt+4+k.J(1))}`;k.add(`<path d="${d}" stroke="${C.ink}" stroke-width="5" stroke-linecap="round"/><path d="${d}" stroke="${C.wood}" stroke-width="3" stroke-linecap="round"/>`);
+  for(let x=x0+60;x<x1-20;x+=120){k.shape(RC(x-5,yt-6,10,yb-yt+6),C.woodD,{w:1.6,one:1});k.add(`<circle cx="${x}" cy="${yt-8}" r="4" fill="${C.woodD}" stroke="${C.ink}" stroke-width="1.2"/>`)}
+  snowOnA(k,[[x0,yt+4],[x1,yt+4]],5);frostOnA(k,[[x0,yt+12],[x1,yt+12]]);
+  k.lt(()=>{const t=[];for(let x=x0+60;x<x1;x+=120)t.push([x,yt-6]);if(t.length>1)ltString(k,scallop(t,8),22)})}
+function hydrant(k,x,gy,s){shadeA(k,x,gy+2,24*s);const R='#E8584E',RD='#B83E36';
+  k.shape([[x-11*s,gy-8*s],[x-10*s,gy-46*s],[x+10*s,gy-46*s],[x+11*s,gy-8*s]],R,{w:1.8,hatch:{side:.6,gap:3,col:RD,op:.5}});
+  [[-19,-36],[11,-36]].forEach(([dx,dy])=>k.shape(RC(x+dx*s,gy+dy*s,8*s,11*s),R,{w:1.4,one:1}));k.add(`<circle cx="${R1(x)}" cy="${R1(gy-28*s)}" r="${R1(5*s)}" fill="${RD}" stroke="${C.ink}" stroke-width="1.2"/>`);
+  k.shape(RC(x-15*s,gy-8*s,30*s,8*s),R,{w:1.5,one:1});k.shape(RC(x-14*s,gy-52*s,28*s,7*s),R,{w:1.5,one:1});
+  const dm=[[x-11*s,gy-52*s],[x-9*s,gy-60*s],[x,gy-64*s],[x+9*s,gy-60*s],[x+11*s,gy-52*s]];k.shape(dm,R,{w:1.6,one:1});k.shape(RC(x-3*s,gy-70*s,6*s,6*s),R,{w:1.2,one:1});
+  k.line([[x-6*s,gy-42*s],[x-6*s,gy-14*s]],1.6*s,'#FFFFFF',{op:.6});snowOnA(k,dm,4*s);k.ny(()=>nyShime(k,x,gy-48*s,.5*s));k.hw(()=>hwBat(k,x+16*s,gy-70*s,.6*s))}
+function aFrame(k,x,gy,s){const w=80*s,h=94*s;shadeA(k,x,gy+2,w*1.05,6*s);const a=[[x-w,gy],[x,gy-h],[x+w,gy]];k.shape(a,C.red,{w:2.2,hatch:{side:.55,gap:5,col:C.redD,op:.5}});
+  k.fill([[x-w*.65,gy-h*.36],[x+w*.65,gy-h*.36],[x+w*.42,gy-h*.58],[x-w*.42,gy-h*.58]],C.yellow,{op:.95,dx:0,dy:0});k.pen(a,true,{w:2.2});
+  for(let t=.2;t<.95;t+=.15){const y=gy-h*t;k.line([[x-w+w*t,y],[x-w+w*t+6*s,y+2*s]],1.4,C.ink,{op:.7});k.line([[x+w-w*t,y],[x+w-w*t-6*s,y+2*s]],1.4,C.ink,{op:.7})}
+  snowOnA(k,a,6*s);k.hw(()=>hwJack(k,x+w+10*s,gy,.7*s))}
+function dpTunnel(k,x0,x1,gy,s){const h=78*s;shadeA(k,(x0+x1)/2,gy+3,(x1-x0)*.56,8*s);
+  const p=[[x0,gy],[x0+2*s,gy-h*.74],[x0+28*s,gy-h*.98],[x0+80*s,gy-h],[x1-60*s,gy-h*.92],[x1-14*s,gy-h*.66],[x1,gy-h*.1],[x1-4*s,gy]];k.shape(p,C.blue,{w:2.3,hatch:{side:.5,gap:5,col:'#8FAFD6',op:.6}});
+  for(let x=x0+26*s;x<x1-12*s;x+=30*s){k.line([[x,gy-h*.98+Math.abs((x-x0)/(x1-x0)-.4)*h*.4],[x+4*s,gy-2]],2.2,'#FFFFFF',{op:.85});k.line([[x+2*s,gy-h*.96+Math.abs((x-x0)/(x1-x0)-.4)*h*.4],[x+6*s,gy-2]],1,C.ink,{op:.55})}
+  k.shape(E(x0+2*s,gy-h*.4,18*s,h*.42,12),'#4A5874',{w:2.2});k.add(`<ellipse cx="${R1(x0+2*s)}" cy="${R1(gy-h*.4)}" rx="${R1(18*s)}" ry="${R1(h*.42)}" fill="none" stroke="${C.red}" stroke-width="${R1(4*s)}"/>`);
+  snowOnA(k,p.slice(1,7),8*s);k.lt(()=>ltString(k,sagP(x0+20*s,gy-h+4,x1-20*s,gy-h*.8,6,10),18));k.hw(()=>hwGhost(k,x1-50*s,gy-h-30*s,.7*s,0,1))}
+function dogFountain(k,x,gy,s){shadeA(k,x+20*s,gy+2,46*s);k.shape([[x-12*s,gy],[x-10*s,gy-70*s],[x+10*s,gy-70*s],[x+12*s,gy]],'#B9D3F2',{w:2,hatch:{side:.6,gap:4,col:'#8FAFD6',op:.6}});
+  k.shape(E(x,gy-72*s,26*s,7*s,12),'#9AA7B8',{w:1.8});if(k.so!=='winter')k.add(`<path d="M${R1(x+4*s)} ${R1(gy-78*s)}q${R1(10*s)} ${R1(-14*s)} ${R1(18*s)} -2" fill="none" stroke="#9CCDE8" stroke-width="3" stroke-linecap="round"/>`);
+  k.shape([[x+10*s,gy],[x+56*s,gy],[x+50*s,gy-14*s],[x+16*s,gy-14*s]],'#9AA7B8',{w:1.8});k.fill(E(x+33*s,gy-13*s,15*s,3*s,10),k.so==='winter'?'#E6EEF5':C.water,{dx:0,dy:0});O.heart(k,x,gy-40*s,4*s,'#FFFFFF');
+  snowOnA(k,[[x-26*s,gy-73*s],[x+26*s,gy-73*s]],4*s)}
+function ballBucket(k,x,gy,s){shadeA(k,x,gy+2,26*s);[[-10,-30],[3,-34],[13,-29],[-2,-39]].forEach(([dx,dy])=>ballA(k,x+dx*s,gy+(dy+7)*s,7*s));
+  k.shape([[x-20*s,gy],[x+20*s,gy],[x+24*s,gy-30*s],[x-24*s,gy-30*s]],'#F7B2B2',{w:1.8,hatch:{side:.6,gap:3.5,col:'#E58C8C',op:.5}});k.add(`<path d="M${R1(x-23*s)} ${R1(gy-30*s)}q${R1(23*s)} ${R1(-30*s)} ${R1(46*s)} 0" fill="none" stroke="${C.ink}" stroke-width="1.6"/>`);snowOnA(k,[[x-24*s,gy-31*s],[x+24*s,gy-31*s]],4*s)}
+// the bone mown into the middle of the lawn, outlined in white dashes
+function lawnBone(k,cx,cy,hl,hh,rl){const P=[],arc=(x,y,a0,a1)=>{for(let i=0;i<=6;i++){const a=a0+(a1-a0)*i/6;P.push([x+Math.cos(a)*rl,y+Math.sin(a)*rl*.5])}};
+  P.push([cx-hl,cy-hh],[cx+hl,cy-hh]);arc(cx+hl+rl*.6,cy-hh-rl*.12,Math.PI*1.05,Math.PI*2.55);arc(cx+hl+rl*.6,cy+hh+rl*.12,Math.PI*1.45,Math.PI*2.95);P.push([cx+hl,cy+hh],[cx-hl,cy+hh]);
+  arc(cx-hl-rl*.6,cy+hh+rl*.12,Math.PI*.05,Math.PI*1.55);arc(cx-hl-rl*.6,cy-hh-rl*.12,Math.PI*.45,Math.PI*1.95);
+  k.fill(P,k.so==='winter'?'#EEF3EA':'#DCEFC2',{dx:0,dy:0,sc:0});k.add(`<path d="${smooth(P,true)}" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-dasharray="12 9" stroke-linecap="round" opacity=".85"/>`)}
+function rulesBoard(k,x,gy,s){k.line([[x-30*s,gy],[x-30*s,gy-60*s]],3,C.ink);k.line([[x+30*s,gy],[x+30*s,gy-60*s]],3,C.ink);const b=RC(x-50*s,gy-110*s,100*s,54*s);k.shape(b,'#FFFFFF',{w:1.9});
+  // the rules in pictures: a sniffing nose, then a heart
+  k.add(`<ellipse cx="${R1(x-22*s)}" cy="${R1(gy-84*s)}" rx="${R1(9*s)}" ry="${R1(6.5*s)}" fill="${C.ink}"/><path d="M${R1(x-12*s)} ${R1(gy-92*s)}q${R1(6*s)} -3 ${R1(10*s)} 0M${R1(x-12*s)} ${R1(gy-84*s)}h${R1(11*s)}M${R1(x-12*s)} ${R1(gy-76*s)}q${R1(6*s)} 3 ${R1(10*s)} 0" fill="none" stroke="${C.ink}" stroke-width="1.4" stroke-linecap="round"/>`);
+  O.heart(k,x+24*s,gy-86*s,9*s);snowOnA(k,[[x-52*s,gy-110*s],[x+52*s,gy-110*s]],5*s)}
+function a5Dogpark(k,F){const W=1600,B=F.back,D=y=>depA(F,y),fk=floorKitA(k),yt=B-58,yb=B+4;
+  skyA(k,330,{sun:[160,78,30],low:[180,290,34],moon:[180,80,26],clouds:[[460,66,24],[900,100,20],[1300,70,24],[300,150,16]],rainC:[[640,40,28],[1060,60,24],[80,140,22]],birds:[[620,74,8],[644,86,6]]});
+  fujiA(k,420,318,240);
+  k.ny(()=>nyKites(k,[[760,140,.9,0,700,320],[1180,180,.8,1,1130,320]]));
+  hillsA(k,[[0,312],[200,296],[420,310],[640,292],[900,308],[1150,294],[1400,310],[1600,298]],350,'#DCEDC4');
+  farTreesA(k,30,1600,74,324,1,x=>x>1220&&x<1360);
+  k.fill([[0,B-26],[W,B-28],[W,600],[0,600]],C.grass,{dx:0,dy:0,sc:0});
+  {let d='';for(let i=0;i<20;i++){const x0=i*110-300;d+=`M${R1(x0)} 600L${R1(800+(x0-800)*.32)} ${B}`}k.add(`<path d="${d}" stroke="${C.grass2}" stroke-width="26" opacity=".4"/>`)}
+  lawnBone(k,800,474,250,24,46);
+  tuftsA(k,0,W,B+10,598,150,(x,y)=>!(Math.abs(x-800)<330&&Math.abs(y-474)<40));
+  // behind the fence: the big fruit tree, the rules board, with Japan a vending machine and sparrows on the rail
+  O.tree(k,1290,B-6,1.3,{fruit:'#F49090'});k.lt(()=>{ltString(k,sagP(1230,206,1350,214,16,10),20);ltString(k,sagP(1250,170,1330,176,10,8),20)});
+  rulesBoard(k,1060,B-2,.9);
+  k.jp(()=>{jpVend(k,640,B-4,.66);jpGlow(k,640,B-30,40)});
+  dpFence(k,-10,730,yb,yt);dpFence(k,870,1610,yb,yt);
+  signA(k,700,B+2,.8,'bone');
+  k.jp(()=>jpSparrows(k,[[100,yt+10],[400,yt+10],[1000,yt+10],[1400,yt+10]],[.1,.36,.7,.9],.9));
+  k.hw(()=>hwBatString(k,980,1300,yt-4,10,3,.6));
+  runGateA(k,800,B+10,.62,C.woodD,'#F28FA5');
+  fxA(k,{sheen:[360,598],puddles:[[620,566,46,9],[1060,580,40,8],[1340,420,30,6]],patches:[[620,570,72,13],[1060,584,60,11],[260,460,50,8],[1400,440,46,8],[900,400,44,7],[60,580,40,8]],flies:[[200,470],[640,420],[1100,380],[1460,560],[900,300]]});
+  floorSnowA(k,[[0,B],[W,B],[W,600],[0,600]],[[380,580,120,14],[1300,580,120,13],[600,400,70,8],[1500,400,60,8]]);
+  k.ss(()=>seasonGround(k,[20,B+12,1580,596],110,[[540,430,1060,520],[200,380,420,440],[1180,500,1440,560]]));
+  // tennis balls and a frisbee on the grass
+  ballA(k,700,560,9);ballA(k,1290,470,7);ballA(k,240,500,8);k.shape(E(980,578,22,6,12),C.pink,{w:1.6,one:1});
+  fk.add('bench1',372,()=>benchA(k,470,372,D(372)*1.3));
+  fk.add('bench2',374,()=>{benchA(k,1450,374,D(374)*1.3);k.ny(()=>nyKado(k,1520,374,.55,-1))});
+  fk.add('bucket',398,()=>ballBucket(k,960,398,D(398)*1.1));
+  fk.add('hydrant',414,()=>hydrant(k,1130,414,D(414)*1.25));
+  fk.add('aframe',436,()=>aFrame(k,300,436,D(436)));
+  fk.add('fountain',520,()=>dogFountain(k,96,520,D(520)*1.15));
+  fk.add('tunnel',552,()=>dpTunnel(k,1190,1420,552,D(552)));
+  fk.add('tree',472,()=>treeA(k,1530,472,D(472)*1.45,{lt:1,hw:1,col:C.leaf2}));
+  fl(k,[[600,592,C.red],[880,590,C.yellow],[270,560,C.lav],[1560,560,'#FFB3C7'],[40,420,C.yellow],[1100,560,C.red]],5);
+  fk.out();
+  seasonBitsA(k,{drift:[[820,250,1],[700,300,.9],[960,330,.85],[420,250,.9],[1300,300,.8]],robin:[560,B-36,1.1,1],fly:[640,330]});
+  O.sparkle(k,640,200,7);O.heart(k,330,170,6);O.note(k,1000,230,11);
+  O.tape(k,6,26,90,-24,'#F7B9C6');O.tape(k,W-90,566,80,-28,'#BDE7D2')}
+
+/* ---------- Seashell Beach: the red-white umbrella, the sandcastle with a flag, a beach ball, starfish, the lifeguard hut ---------- */
+function lifeHut(k,x,gy,s){shadeA(k,x+10*s,gy+3,96*s,10*s);const X=v=>x+v*s,Y=v=>gy+v*s;
+  [[-60,0,-46,-140],[58,0,44,-140]].forEach(([a,b,c,d])=>k.line([[X(a),Y(b)],[X(c),Y(d)]],4,C.ink));k.line([[X(-52),Y(-30)],[X(48),Y(-110)]],2,C.ink);k.line([[X(50),Y(-30)],[X(-54),Y(-110)]],2,C.ink);
+  k.shape(RC(X(-86),Y(-150),172*s,12*s),C.wood,{w:2});k.shape(RC(X(-70),Y(-218),140*s,70*s),'#FFFFFF',{w:2.2});for(let v=-62;v<70;v+=28)k.fill(RC(X(v),Y(-216),13*s,66*s),'#F7B2B2',{op:.85,dx:0,dy:0});k.pen(RC(X(-70),Y(-218),140*s,70*s),true,{w:2});
+  O.window(k,X(-22),Y(-204),44*s,32*s,{});const rf=[[X(-88),Y(-214)],[X(0),Y(-264)],[X(88),Y(-214)]];k.shape(rf,C.red,{w:2.2,hatch:{side:.6,gap:5,col:C.redD,op:.55}});
+  k.line([[X(0),Y(-264)],[X(0),Y(-290)]],1.6);k.shape([[X(0),Y(-290)],[X(22),Y(-284)],[X(0),Y(-276)]],C.yellow,{w:1.4,one:1});
+  // the board under the cabin: a red cross and a life ring instead of words
+  k.shape(RC(X(-78),Y(-138),156*s,22*s),'#FFFFFF',{w:1.8,one:1});k.add(`<path d="M${R1(X(-30))} ${R1(Y(-127))}h${R1(16*s)}M${R1(X(-22))} ${R1(Y(-135))}v${R1(16*s)}" stroke="#E8584E" stroke-width="${R1(5*s)}"/><circle cx="${R1(X(24))}" cy="${R1(Y(-127))}" r="${R1(7*s)}" fill="none" stroke="#E8584E" stroke-width="${R1(4*s)}" stroke-dasharray="${R1(5.5*s)} ${R1(5.5*s)}"/>`);
+  k.line([[X(74),Y(-138)],[X(106),Y(0)]],2.6);k.line([[X(88),Y(-138)],[X(120),Y(0)]],2.6);for(let t=.15;t<1;t+=.17)k.line([[X(74+32*t),Y(-138+138*t)],[X(88+32*t),Y(-138+138*t)]],2);
+  snowOnA(k,[[X(-90),Y(-214)],[X(0),Y(-265)],[X(90),Y(-214)]],10*s);snowOnA(k,[[X(-86),Y(-150)],[X(86),Y(-150)]],5*s);
+  k.lt(()=>{ltString(k,sagP(X(-84),Y(-212),X(-4),Y(-256),4,8),19);ltString(k,sagP(X(4),Y(-256),X(84),Y(-212),4,8),19)});k.ny(()=>nyShime(k,X(46),Y(-204),.85*s));k.hw(()=>{hwJack(k,X(-70),gy,.9*s);hwBat(k,X(70),Y(-250),.7*s)})}
+function umbrellaA(k,x,gy,s){shadeA(k,x-10*s,gy+3,80*s,12*s);k.line([[x+12*s,gy],[x-2*s,gy-146*s]],3.2,C.ink);const cy=gy-138*s,u=[];for(let i=0;i<=12;i++){const a=Math.PI+i/12*Math.PI;u.push([x+Math.cos(a)*92*s,cy+Math.sin(a)*42*s])}
+  k.shape(u,C.red,{w:2.2});for(let i=0;i<4;i++){const a0=Math.PI+(i*2+1)/8*Math.PI,a1=Math.PI+(i*2+2)/8*Math.PI;k.fill([[x,cy-40*s],[x+Math.cos(a0)*92*s,cy+Math.sin(a0)*42*s+2],[x+Math.cos(a1)*92*s,cy+Math.sin(a1)*42*s+2]],'#FFFFFF',{dx:0,dy:0,op:.9})}
+  k.pen(u,true,{w:2.2});snowOnA(k,u.slice(1,12),8*s);k.lt(()=>ltString(k,sagP(x-90*s,cy+2,x+90*s,cy+2,8*s,12),18));k.hw(()=>hwGhost(k,x+70*s,cy+20*s,.7*s,14))}
+function sandcastle(k,x,gy,s){shadeA(k,x,gy+2,54*s);const S='#EBCF95',SD='#D2B26E';k.shape([[x-50*s,gy],[x+50*s,gy],[x+44*s,gy-22*s],[x-44*s,gy-22*s]],S,{w:1.8,hatch:{side:.6,gap:3.5,col:SD,op:.5}});
+  [[-30,20,40],[30,20,40],[0,24,60]].forEach(([dx,w,h])=>{const tx=x+dx*s,t=gy-22*s-h*s;k.shape(RC(tx-w/2*s,t,w*s,h*s),S,{w:1.7,one:1,hatch:{side:.6,gap:3.5,col:SD,op:.5}});
+    for(let i=0;i<3;i++)k.shape(RC(tx-w/2*s+i*w/3*s+1,t-6*s,w/3*s-3,6*s),S,{w:1.2,one:1});k.add(`<ellipse cx="${R1(tx)}" cy="${R1(t+h*s*.45)}" rx="${R1(3*s)}" ry="${R1(4*s)}" fill="${SD}"/>`);snowOnA(k,[[tx-w/2*s,t-6*s],[tx+w/2*s,t-6*s]],3*s)});
+  const fx=x,ft=gy-22*s-60*s-6*s;k.line([[fx,ft],[fx,ft-36*s]],1.6);k.shape([[fx,ft-36*s],[fx+24*s,ft-30*s],[fx,ft-24*s]],C.pink,{w:1.3,one:1});
+  [[-40,-6],[38,-4]].forEach(([dx,dy])=>{const sx=x+dx*s,sy=gy+dy*s;k.shape(E(sx,sy,6*s,4.6*s,10),'#FFC9B0',{w:1.1,one:1})});k.hw(()=>hwJack(k,x+62*s,gy,.75*s));k.ny(()=>nyKado(k,x-64*s,gy,.5*s,1))}
+function beachBall(k,x,gy,s){shadeA(k,x,gy+2,18*s);const r=17*s,cy=gy-r;k.add(`<circle cx="${R1(x)}" cy="${R1(cy)}" r="${R1(r)}" fill="#FFFFFF"/><path d="M${R1(x)} ${R1(cy-r)}Q${R1(x-r*.9)} ${R1(cy)} ${R1(x)} ${R1(cy+r)}Q${R1(x-r*1.3)} ${R1(cy)} ${R1(x)} ${R1(cy-r)}Z" fill="#E8584E"/><path d="M${R1(x)} ${R1(cy-r)}Q${R1(x+r*.9)} ${R1(cy)} ${R1(x)} ${R1(cy+r)}Q${R1(x+r*1.3)} ${R1(cy)} ${R1(x)} ${R1(cy-r)}Z" fill="#6F96C6"/><path d="M${R1(x-r)} ${R1(cy)}Q${R1(x)} ${R1(cy+r*.5)} ${R1(x+r)} ${R1(cy)}" fill="none" stroke="#F7D24E" stroke-width="${R1(3*s)}"/>`);
+  k.pen(E(x,cy,r,r,14),true,{w:1.8,one:1});k.add(`<path d="M${R1(x-r*.5)} ${R1(cy-r*.6)}q4 -3 8 -2" stroke="#fff" stroke-width="2" fill="none"/>`)}
+function bucketA(k,x,gy,s){shadeA(k,x,gy+2,22*s);k.line([[x+24*s,gy],[x+30*s,gy-44*s]],2.4,C.trunkD);k.shape([[x+24*s,gy-40*s],[x+38*s,gy-42*s],[x+36*s,gy-58*s],[x+26*s,gy-56*s]],'#F7D24E',{w:1.3,one:1});
+  k.shape([[x-16*s,gy],[x+16*s,gy],[x+19*s,gy-30*s],[x-19*s,gy-30*s]],C.blue,{w:1.8,hatch:{side:.6,gap:3.5,col:'#8FAFD6',op:.5}});k.add(`<path d="M${R1(x-18*s)} ${R1(gy-30*s)}q${R1(18*s)} ${R1(-24*s)} ${R1(36*s)} 0" fill="none" stroke="${C.ink}" stroke-width="1.6"/>`);snowOnA(k,[[x-19*s,gy-30*s],[x+19*s,gy-30*s]],3*s)}
+function starfish(k,x,y,s,col='#F59A6A'){const p=[];for(let j=0;j<10;j++){const a=-Math.PI/2+j*Math.PI/5,rr=(j%2?5:13)*s;p.push([x+Math.cos(a)*rr,y+Math.sin(a)*rr*.6])}k.shape(p,col,{w:1.3,one:1})}
+function shells(k,list){list.forEach(([x,y],i)=>{if(i%2)k.shape([[x-8,y+4],[x,y-7],[x+8,y+4]],'#FFD2C2',{w:1.3,one:1});else{k.shape(E(x,y,8,6,10),'#FFC9B0',{w:1.3,one:1});k.line([[x,y-5],[x,y+5]],1)}})}
+function driftLog(k,x,gy,s){shadeA(k,x,gy+3,90*s,9*s);const L=[[x-86*s,gy],[x-80*s,gy-26*s],[x+70*s,gy-30*s],[x+84*s,gy-4*s]];k.shape(L,'#D9C3A3',{w:2,hatch:{side:.5,gap:4,col:'#B59C7A',op:.55}});
+  k.shape(E(x+80*s,gy-16*s,9*s,14*s,10),'#EADBC2',{w:1.6,one:1});let d='';for(let i=0;i<5;i++){const lx=x-70*s+i*30*s;d+=`M${R1(lx)} ${R1(gy-18*s)}q${R1(12*s)} -3 ${R1(22*s)} 1`}k.add(`<path d="${d}" stroke="#B59C7A" stroke-width="1.2" fill="none"/>`);snowOnA(k,[[x-80*s,gy-26*s],[x+70*s,gy-30*s]],5*s)}
+function a5Beach(k,F){const W=1600,B=352,D=y=>depA(F,y),fk=floorKitA(k),e=k.env;
+  skyA(k,264,{sun:[1340,76,32],low:[900,256,38],moon:[900,80,28],clouds:[[300,70,24],[700,108,18],[1100,60,22],[1480,170,16]],rainC:[[160,46,26],[580,40,28],[1260,60,26]],birds:[[480,90,9],[504,104,7],[1000,150,8]]});
+  fujiA(k,780,262,260);
+  k.add(`<rect y="260" width="${W}" height="${B-250}" fill="${C.water}"/><rect y="260" width="${W}" height="26" fill="#A9D3EC" opacity=".7"/>`);k.pen([[0,261],[800,260],[W,261]],false,{w:1.6,col:C.graph});
+  k.jp(()=>jpFujiReflect(k,{cx:780,by:262,w:260},262));
+  k.ny(()=>nyKites(k,[[560,120,1.1,0,620,420],[860,70,.85,1,800,420]]));
+  {let wv='';for(let i=0;i<60;i++){const x=k.r()*1580,y=272+k.r()*(B-292);wv+=`M${R1(x)} ${R1(y)}q7 -6 14 0t14 0`}k.add(`<path d="${wv}" fill="none" stroke="#86BDDE" stroke-width="1.6" stroke-linecap="round"/>`)}
+  k.fx(()=>{if(e.rain)ripples(k,0,W,272,B-20,30);waterGlints(k,900,272,B-16)});
+  // a sailboat, a buoy and, with Japan, a little torii on a rock out in the bay
+  {const bx=1180,by=292;k.shape([[bx-30,by],[bx+30,by],[bx+22,by+10],[bx-22,by+10]],C.red,{w:1.6});k.line([[bx,by],[bx,by-52]],1.6);k.shape([[bx+2,by-48],[bx+28,by-4],[bx+2,by-4]],'#FFFFFF',{w:1.5,one:1});k.shape([[bx-2,by-42],[bx-22,by-4],[bx-2,by-4]],'#FFD8E0',{w:1.5,one:1})}
+  k.shape(E(520,318,8,9,10),'#FFFFFF',{w:1.5});k.add(`<path d="M512 318h16" stroke="${C.redD}" stroke-width="5"/>`);
+  k.jp(()=>{k.shape(blobP(300,312,40,10,k.r,9,.25).map(p=>[p[0],Math.min(p[1],316)]),C.stone,{w:1.6,hatch:{side:.5,gap:4,col:C.stoneD,op:.6}});jpTorii(k,300,308,.62)});
+  // the shoreline, the foam and the sand
+  const sh=x=>B+4+6*Math.sin(x/150)+3*Math.sin(x/53+1.3),sp=[];for(let x=0;x<=W;x+=20)sp.push([x,sh(x)]);
+  k.add(`<path d="${smooth(sp,false)}L${W} 600L0 600Z" fill="${C.sand}"/><path d="${smooth(sp,false)}L${W} ${R1(sh(W)+26)}L0 ${R1(sh(0)+26)}Z" fill="#EBD39C" opacity=".8"/>`);k.pen(sp,false,{w:2});
+  {let fo='';for(let x=0;x<W;x+=40)fo+=`M${x} ${R1(sh(x)-6)}q10 -6 20 0`;k.add(`<path d="${fo}" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>`)}
+  dotsA(k,0,W,B+30,598,150,'#D9BF84');
+  pawsA(k,[[300,560,1],[340,548,1],[380,538,.95],[420,530,.95],[460,524,.9],[500,518,.9],[540,514,.85]],'#E2C68C');
+  // the towel under the umbrella (flat: a dog may lie on it) and the dig patch
+  {const tx=1120,ty=496;k.shape([[tx-96,ty-14],[tx+80,ty-18],[tx+90,ty+8],[tx-104,ty+12]],C.mint,{w:1.9,one:1});k.line([[tx-88,ty-6],[tx+82,ty-10]],1.6,'#fff');k.line([[tx-96,ty+4],[tx+86,ty]],1.6,'#fff');
+   k.add(`<path d="M${tx-50} ${ty-2}c4 -6 14 -6 18 0M${tx-28} ${ty-2}c4 -6 14 -6 18 0M${tx-32} ${ty-5}h4" fill="none" stroke="${C.ink}" stroke-width="2.2"/>`);snowOnA(k,[[tx-96,ty-14],[tx+80,ty-18]],4)}
+  {const dx=760,dy=566;k.fill(blobP(dx,dy,58,13,k.r,9,.3),'#E2C68C',{dx:0,dy:0});[[dx-24,dy-2],[dx+20,dy+3]].forEach(([x,y])=>k.add(`<ellipse cx="${x}" cy="${y}" rx="11" ry="4" fill="#B99C66"/>`))}
+  starfish(k,250,470,1.2);starfish(k,1500,520,1,'#F28FA5');shells(k,[[430,590],[620,470],[938,556],[1370,580],[160,420],[1030,420]]);
+  fxA(k,{sheen:[B+12,470],puddles:[[440,578,40,8],[600,452,30,6],[1300,480,34,7]],patches:[[440,578,66,12],[600,456,46,8],[1300,486,50,9],[90,560,50,8],[880,440,40,7],[1520,560,40,8]]});
+  floorSnowA(k,[[0,B+10],[W,B+10],[W,600],[0,600]],[[380,580,110,13],[1300,580,110,13],[880,420,60,8]]);
+  k.ss(()=>{const so=k.so;
+    if(so==='winter'){windbreak(k,560,384,150,36);windLines(k,[[140,150,150],[620,200,170],[400,240,130],[1000,130,150],[1300,200,120]])}
+    else if(so==='autumn'){[[236,450],[276,456],[620,430],[980,440],[1380,450],[30,522]].forEach(([x,y])=>{let d='';for(let i=0;i<7;i++)d+=`M${x+i*5-15} ${y}q${(i-3)*2} -14 ${(i-3)*4+k.J(3)} ${-22-k.r()*10}`;k.add(`<path d="${d}" fill="none" stroke="#C9A24E" stroke-width="1.7" stroke-linecap="round"/>`)})}
+    else if(so==='spring'){[[236,448,1.3],[272,456,1.1],[620,430,1.2],[980,440,1.2],[1380,450,1.3],[30,520,1.2]].forEach(([x,y,z])=>thrift(k,x,y,z));if(!e.night&&!e.rain)butterfly(k,700,330,1,'#F9C6D4')}});
+  runGateA(k,1460,B+16,.62,'#7FA6D9','#F7D24E');
+  fk.add('hut',398,()=>lifeHut(k,190,398,D(398)*1.6));
+  fk.add('log',430,()=>{driftLog(k,1300,430,D(430)*1.1);if(!e.night&&!e.rain)gull(k,1330,430-30*D(430),.8*D(430)/.6)});
+  fk.add('umbrella',492,()=>umbrellaA(k,1130,492,D(492)*1.75));
+  fk.add('ball',448,()=>beachBall(k,860,448,D(448)*1.1));
+  fk.add('castle',542,()=>sandcastle(k,440,542,D(542)*1.1));
+  fk.add('bucket',578,()=>bucketA(k,620,578,D(578)));
+  fk.add('rocks',584,()=>{rockA(k,1500,584,1.05);rockA(k,1556,574,.7);k.ss(()=>{if(k.so==='autumn')pumpkin(k,1440,590,.9)})});
+  fk.out();
+  O.sparkle(k,640,200,7);O.heart(k,330,170,6);
+  O.tape(k,8,20,90,-26,'#F9E19A');O.tape(k,W-90,568,80,-24,'#D3C6F1')}
+
+/* ---------- Hilltop Meadow: the round green hill over the town, the lone tree with a rope swing, the pink kite, a picnic blanket ---------- */
+function swingTree(k,x,gy,s){shadeA(k,x,gy+3,74*s,10*s);k.add(`<g transform="rotate(4 ${x} ${gy})">`);O.tree(k,x,gy,s,{col:C.leaf2});k.add('</g>');
+  const b0=[x+2*s,gy-42*s],b1=[x+84*s,gy-56*s];k.line([b0,[x+44*s,gy-52*s],b1],5*s,C.ink,{amp:.4});k.line([b0,[x+44*s,gy-52*s],b1],3*s,C.trunk,{amp:.3});
+  const sx=x+60*s,sy=gy-16*s;k.line([[x+48*s,gy-53*s],[sx-12*s,sy]],1.4,C.ink);k.line([[x+72*s,gy-55*s],[sx+12*s,sy]],1.4,C.ink);
+  k.shape(RC(sx-16*s,sy,32*s,6*s),C.wood,{w:1.5,one:1});k.add(`<ellipse cx="${R1(sx)}" cy="${R1(gy+2)}" rx="${R1(18*s)}" ry="${R1(3*s)}" fill="${C.ink}" opacity=".1"/>`);snowOnA(k,[[sx-16*s,sy],[sx+16*s,sy]],3*s);
+  k.lt(()=>{ltString(k,sagP(x-50*s,gy-96*s,x+52*s,gy-90*s,14*s,10),20);ltString(k,sagP(x-36*s,gy-128*s,x+40*s,gy-122*s,10*s,8),20)});k.hw(()=>hwGhost(k,x-40*s,gy-90*s,.8*s,16*s))}
+function kiteStake(k,x,gy){k.line([[x,gy],[x+1,gy-16]],2.4,C.trunkD);k.add(`<circle cx="${x}" cy="${gy-12}" r="5" fill="${C.yellow}" stroke="${C.ink}" stroke-width="1.2"/>`)}
+function a5Hilltop(k,F){const W=1600,B=F.back,D=y=>depA(F,y),fk=floorKitA(k),e=k.env;
+  skyA(k,240,{sun:[1380,70,30],low:[1000,214,34],moon:[1380,72,26],clouds:[[860,70,24],[1300,170,16],[160,170,16],[500,40,20]],rainC:[[380,40,26],[1100,30,28],[1500,90,22]],birds:[[1120,96,8],[1142,108,6]]});
+  fujiA(k,640,232,250);
+  k.fill([[0,232],[W,226],[W,258],[0,258]],'#CFE4EC',{dx:0,dy:0,sc:0});k.pen([[0,232],[800,229],[W,226]],false,{w:1.3,col:C.graph});
+  hillsA(k,[[0,246],[200,236],[420,248],[640,240],[860,250],[1100,238],[1340,248],[1600,240]],350,'#D8EAC2');
+  // patchwork fields, the river to the sea, the tiny town with the clock tower, the far lighthouse
+  [[[40,262],[200,254],[220,282],[60,290]],[[240,282],[380,274],[392,300],[250,306]],[[1080,266],[1240,258],[1258,286],[1096,294]],[[1270,280],[1440,272],[1456,302],[1282,308]],[[1460,262],[1600,256],[1600,288],[1470,292]],[[90,300],[230,292],[244,320],[100,326]]].forEach((p,i)=>{k.fill(p,['#C9E3A6','#E8E2B0','#BFDDA0','#E6D7A8','#CFE8B4','#E8E2B0'][i],{dx:0,dy:0,op:.9});k.line(p.concat([p[0]]),1,C.graph,{op:.6})});
+  {const rv=[[0,306],[160,312],[320,326],[500,320],[700,330],[900,322],[1100,312],[1300,300],[1500,290],[1600,286]];const top=rv.map(p=>[p[0],p[1]-5]),bot=rv.map(p=>[p[0],p[1]+5]).reverse();k.fill(top.concat(bot),C.water,{dx:0,dy:0});k.line(top,1.3,C.ink,{op:.7});k.line(bot.slice().reverse(),1.3,C.ink,{op:.7})}
+  {const hs=[[560,288,.62,C.wall,C.roof],[592,280,.56,C.wall2,C.roofD],[620,292,.66,C.wall3,C.roof],[652,284,.54,C.wall4,C.red],[740,290,.64,C.wall,C.roofD],[772,280,.54,C.wall2,C.roof],[804,292,.62,C.wall3,C.red],[836,284,.56,C.wall,C.roof],[866,294,.6,C.wall4,C.roofD],[540,302,.54,C.wall3,C.roof],[890,304,.54,C.wall2,C.roof],[606,306,.6,C.wall,C.red],[780,308,.58,C.wall4,C.roofD]];
+   hs.forEach(([x,y,s,w,r])=>{mHouse(k,x,y,s,w,r);tinyLit(k,x+4*s,y-4*s)});
+   mOut(k,RC(694,252,14,36),C.stone);mOut(k,[[690,254],[701,240],[712,254]],C.roof);k.add(`<circle cx="701" cy="261" r="3.6" fill="#FFFBF3" stroke="${C.ink}" stroke-width="1"/>`);tinyLit(k,701,261);
+   [[520,290],[700,302],[930,290],[580,316],[850,318]].forEach(([x,y])=>mTree(k,x,y,.5,C.leaf2));
+   mOut(k,[[1520,240],[1527,206],[1535,206],[1542,240]],'#FFFFFF');k.add(`<path d="M1521 231h20M1524 219h14" stroke="${C.red}" stroke-width="3"/>`);mOut(k,RC(1524,198,14,9),C.yellow);
+   if(e.lit)k.xl.push(`<circle cx="1531" cy="202" r="15" fill="#FFE27A" opacity="${R1(.35*e.lit)}"/><path d="M1531 202L1590 186L1590 214Z" fill="#FFE9A0" opacity="${R1(.3*e.lit)}"/>`);
+   if(e.snow)k.side(()=>{let d='';hs.forEach(([x,y,s])=>{d+=`M${R1(x-17*s)} ${R1(y-12*s)}L${R1(x)} ${R1(y-27*s)}L${R1(x+17*s)} ${R1(y-12*s)}`});k.add(`<path d="${d}" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`)})}
+  // the meadow crest we stand on
+  const crest=[[0,B+8],[240,B-2],[520,B-6],[800,B-4],[1080,B-8],[1360,B-2],[W,B+6]];k.fill(crest.concat([[W,600],[0,600]]),C.grass,{dx:0,dy:0,sc:0});k.pen(crest,false,{w:2.2});
+  [[260,470,170,20],[760,590,170,20],[1300,560,130,18]].forEach(q=>k.fill(E(q[0],q[1],q[2],q[3],12),C.grass2,{op:.7}));
+  {let d='';[[90,440],[560,420],[1000,450],[300,580],[1180,570],[1440,420]].forEach(([x,y])=>{d+=`M${x} ${y}q20 -10 40 0t40 0`});k.add(`<path d="${d}" fill="none" stroke="${C.grassD}" stroke-width="1.6" stroke-linecap="round" opacity=".8"/>`);
+   let s='';[[140,110],[380,190],[1040,150],[280,60],[1240,120]].forEach(([x,y])=>{s+=`M${x} ${y}q30 -12 60 0q14 6 4 14q-8 4 -10 -4`});k.add(`<path d="${s}" fill="none" stroke="${C.graph}" stroke-width="1.5" stroke-linecap="round" opacity=".8"/>`)}
+  tuftsA(k,0,W,B+8,598,150,(x,y)=>!(Math.abs(x-760)<130&&Math.abs(y-520)<44));
+  // the kites, their lines down to stakes on the crest
+  kite(k,520,112,1.3,'#F28FA5','#FFD8E0',-12,[600,B+2]);boneKite(k,1040,96,1,[1100,B]);kite(k,240,196,.8,C.mint,C.lav,8,[300,B+4]);
+  [[600,B+2],[1100,B],[300,B+4]].forEach(([x,y])=>kiteStake(k,x,y+6));
+  // the picnic blanket (flat: a dog may lie on it)
+  blanketA(k,760,522,250,72,'#F4A3A3','#FFFFFF');
+  fxA(k,{sheen:[B+10,598],puddles:[[450,580,44,9],[1160,560,38,8],[120,560,34,7]],patches:[[450,582,70,13],[1160,562,60,11],[120,562,50,9],[300,420,50,8],[1460,420,40,8],[960,420,50,8]],flies:[[200,470],[600,476],[1280,560],[470,584],[960,430]]});
+  floorSnowA(k,crest.concat([[W,600],[0,600]]),[[300,580,120,14],[1240,580,110,13],[560,400,60,8],[1480,420,60,8]]);
+  k.ss(()=>seasonGround(k,[20,B+12,1580,596],110,[[620,470,900,560],[1220,400,1440,470],[240,370,520,420]]));
+  k.hw(()=>{hwJack(k,620,560,.8);hwJack(k,900,556,.6)});
+  runGateA(k,170,B+14,.62,C.woodD,'#F28FA5');
+  fk.add('bench',404,()=>{benchA(k,400,404,D(404)*1.3);k.ny(()=>nyKado(k,470,404,.55,-1))});
+  fk.add('jizo',380,()=>{shadeA(k,1530,382,14);k.jp(()=>jpJizo(k,1530,380,.9));k.ss(()=>{if(k.so==='autumn')pumpkin(k,1556,384,.6)});rockA(k,1500,384,.5)});
+  fk.add('tree',452,()=>swingTree(k,1300,452,D(452)*1.95));
+  fk.add('basket',506,()=>{basketA(k,870,506,D(506));bowlA(k,640,500,D(500)*.9,'#F7B2B2')});
+  fk.add('sign',580,()=>{signA(k,110,580,.95,'kite');k.ny(()=>nyShime(k,110,504,.8))});
+  fl(k,[[40,560,C.red],[70,590,C.yellow],[180,580,C.lav],[600,588,'#FFB3C7'],[1040,560,C.yellow],[1380,590,C.red],[1560,560,C.lav],[1590,520,C.yellow],[200,448,C.red],[580,440,C.lav],[1180,520,'#FFB3C7'],[270,590,C.yellow],[1000,400,C.yellow]],5);
+  fk.out();
+  k.lt(()=>ltString(k,sagP(330,404-62*D(404)*1.3,470,404-62*D(404)*1.3,5,10),20));
+  k.ny(()=>nyKites(k,[[1260,190,.9,0,1300,B],[860,60,.8,1,900,B]]));
+  seasonBitsA(k,{drift:[[860,260,1],[780,250,.9],[1200,330,.85],[460,270,.8],[350,300,.9]],robin:[400,404-36*D(404)*1.3,1,1],fly:[560,440]});
+  k.ss(()=>{if(k.so==='spring'&&!e.night&&!e.rain)butterfly(k,1020,470,.85,'#F9C6D4')});
+  O.sparkle(k,440,200,7);O.heart(k,1320,250,6);O.note(k,380,60,11);
+  O.tape(k,6,26,90,-24,'#F7B9C6');O.tape(k,W-90,566,80,-28,'#BDE7D2')}
+
+/* ---------- Maple Woods: the carved gate with an acorn on top, pines and orange maples, red mushrooms ---------- */
+function acornGate(k,x,gy,s){shadeA(k,x,gy+2,90*s,6*s);const w=150*s,h=170*s,x0=x-w/2,x1=x+w/2;
+  [x0,x1].forEach(px=>{k.shape([[px-10*s,gy],[px-9*s,gy-h],[px+9*s,gy-h],[px+10*s,gy]],C.trunk,{w:2,hatch:{side:.55,gap:3.5,col:C.trunkD,op:.6}});k.add(`<ellipse cx="${R1(px)}" cy="${R1(gy-h)}" rx="${R1(9*s)}" ry="${R1(3.5*s)}" fill="#E7C79E" stroke="${C.ink}" stroke-width="1.2"/>`);
+    for(let y=gy-h+20*s;y<gy-10*s;y+=26*s)k.line([[px-6*s,y],[px+5*s,y+5*s]],1.2,C.trunkD)});
+  const bm=[[x0-24*s,gy-h+4*s],[x1+24*s,gy-h+4*s],[x1+18*s,gy-h-22*s],[x0-18*s,gy-h-22*s]];k.shape(bm,C.trunk,{w:2.2,hatch:{side:.6,gap:4,col:C.trunkD,op:.55}});
+  // carved leaves along the beam, the big acorn on top
+  [-.3,0,.3].forEach((t,i)=>leafAt(k,x+t*w,gy-h-9*s,7*s,i===1?0:t*2,'#E9A86A','#C98A4E'));
+  const ay=gy-h-22*s;k.shape(E(x,ay-26*s,20*s,24*s,14),'#D9A866',{w:2,hatch:{side:.55,gap:3.5,col:'#B98A4E',op:.5}});k.shape([[x-26*s,ay-30*s],[x+26*s,ay-30*s],[x+20*s,ay-50*s],[x,ay-56*s],[x-20*s,ay-50*s]],'#A97E5A',{w:2,hatch:{side:.6,gap:3,col:'#8A6244',op:.5}});
+  k.line([[x,ay-56*s],[x+4*s,ay-66*s]],2.4,C.ink);snowOnA(k,[[x0-24*s,gy-h-22*s],[x1+24*s,gy-h-22*s]],7*s);snowOnA(k,[[x-24*s,ay-32*s],[x,ay-56*s],[x+24*s,ay-32*s]],5*s);
+  k.lt(()=>ltString(k,sagP(x0-18*s,gy-h+8*s,x1+18*s,gy-h+8*s,10*s,12),18));k.ny(()=>{nyShime(k,x,gy-h+8*s,.85*s);nyKado(k,x0-26*s,gy,.6*s,1);nyKado(k,x1+26*s,gy,.6*s,-1)});k.hw(()=>{hwJack(k,x0-20*s,gy,.8*s);hwLanternString(k,x0,gy-h+10*s,x1,gy-h+10*s,12*s,3,.7*s)})}
+function stumpA(k,x,gy,s){shadeA(k,x,gy+2,44*s);k.shape([[x-37*s,gy],[x-33*s,gy-40*s],[x+33*s,gy-40*s],[x+37*s,gy]],C.trunk,{w:2,hatch:{side:.5,gap:4,col:C.trunkD,op:.6}});k.shape(E(x,gy-40*s,37*s,11*s,14),'#E7C79E',{w:2});
+  k.add(`<ellipse cx="${R1(x)}" cy="${R1(gy-40*s)}" rx="${R1(24*s)}" ry="${R1(7*s)}" fill="none" stroke="${C.trunkD}" stroke-width="1.2"/><ellipse cx="${R1(x)}" cy="${R1(gy-40*s)}" rx="${R1(11*s)}" ry="${R1(3.5*s)}" fill="none" stroke="${C.trunkD}" stroke-width="1.2"/>`);
+  O.mushroom(k,x+44*s,gy,.7*s);O.mushroom(k,x+58*s,gy+2,.5*s);snowOnA(k,[[x-38*s,gy-40*s],[x+38*s,gy-40*s]],7*s);k.hw(()=>hwJack(k,x,gy-48*s,.75*s))}
+function logSeat(k,x,gy,s){shadeA(k,x,gy+3,104*s,9*s);k.shape(RC(x-96*s,gy-38*s,192*s,38*s),C.trunk,{w:2.2,hatch:{side:.4,gap:4,col:C.trunkD,op:.6}});for(let lx=x-82*s;lx<x+80*s;lx+=22*s)k.line([[lx,gy-30*s],[lx+16*s,gy-30*s+k.J(2)]],1,C.trunkD);
+  k.shape(E(x+96*s,gy-19*s,13*s,19*s,10),'#E7C79E',{w:2});k.add(`<ellipse cx="${R1(x+96*s)}" cy="${R1(gy-19*s)}" rx="${R1(6*s)}" ry="${R1(10*s)}" fill="none" stroke="${C.trunkD}" stroke-width="1.2"/>`);
+  k.fill([[x-82*s,gy-36*s],[x-26*s,gy-42*s],[x+24*s,gy-38*s],[x-6*s,gy-32*s],[x-56*s,gy-31*s]],'#9CC67E',{op:.9});O.mushroom(k,x+56*s,gy-38*s,.7*s);snowOnA(k,[[x-98*s,gy-38*s],[x+98*s,gy-38*s]],8*s)}
+function fern(k,x,gy,s){for(let i=-2;i<=2;i++){const a=-Math.PI/2+i*.38;const tip=[x+Math.cos(a)*40*s,gy+Math.sin(a)*38*s];k.line([[x,gy],[(x+tip[0])/2+i*3*s,(gy+tip[1])/2-4*s],tip],1.8,k.so==='autumn'?'#B7A35C':'#6FA05C');for(let j=1;j<5;j++){const t=j/5,px=x+(tip[0]-x)*t,py=gy+(tip[1]-gy)*t;k.line([[px,py],[px-6*s,py-3*s]],1.2,'#6FA05C');k.line([[px,py],[px+6*s,py-3*s]],1.2,'#6FA05C')}}}
+function a5Woods(k,F){const W=1600,B=F.back,D=y=>depA(F,y),fk=floorKitA(k),e=k.env;
+  skyA(k,340,{sun:[900,62,28],low:[900,320,32],moon:[900,62,26],clouds:[[420,60,20],[1180,40,22],[200,110,18]],rainC:[[140,40,24],[1340,60,24],[700,130,22]],birds:[[1040,96,8]]});
+  // two rows of pines: far and pale, then the wood's edge on the back line
+  for(let x=-20;x<W+40;x+=58){const s=2.1+((x*7)%5)*.18;mPine(k,x,B-24-((x*3)%4)*3,s,(x/58)%2?'#CFE3D1':'#C3DDC6')}
+  [[40,1.05],[150,.9],[250,1.15],[370,.95],[700,1.1],[810,.9],[930,1.15],[1040,.95],[1150,1.05],[1420,.95],[1530,1.15]].forEach(([x,s],i)=>O.pine(k,x,B-2,s,i%2?'#BBD8BF':'#A9CDB0','#86AE92'));
+  k.ny(()=>nyKites(k,[[1000,110,.9,0,1040,B-60]]));
+  const fl0=[[0,B-6],[W,B-8],[W,600],[0,600]];k.fill(fl0,'#CFE3B4',{dx:0,dy:0,sc:0});k.pen([[0,B-6],[W,B-8]],false,{w:1.8,col:C.graph});
+  [[300,470,140,18],[1100,580,160,20],[80,596,90,16],[1440,430,100,14]].forEach(q=>k.fill(E(q[0],q[1],q[2],q[3],12),'#BCD69E',{op:.8}));
+  pathA(k,[[820,606,84],[800,550,70],[740,500,56],[640,452,44],[580,410,34],[560,380,28],[560,356,22]],'#E6D3AE','#BFA780','#D2BC94');
+  pathA(k,[[760,520,40],[900,480,34],[1060,440,30],[1180,410,26],[1250,380,22],[1270,360,18]],'#E6D3AE','#BFA780','#D2BC94');
+  // the soft dig patch
+  k.fill(blobP(990,560,62,14,k.r,9,.3),'#B98F68',{dx:0,dy:0,op:.8});k.add(`<ellipse cx="972" cy="560" rx="14" ry="4" fill="#8E6A4C"/><ellipse cx="1012" cy="564" rx="10" ry="3" fill="#8E6A4C"/>`);
+  tuftsA(k,0,W,B+6,598,140,(x,y)=>Math.abs(x-(820-(600-y)*.6))>90,'#86AE6E');
+  k.ss(()=>seasonGround(k,[0,B+8,W,598],110,[[500,340,900,600],[120,430,260,500],[1000,480,1220,540]]));
+  {let lv='';for(let i=0;i<60;i++){const x=k.r()*W,y=B+20+k.r()*(596-B-20);lv+=`<path d="M${R1(x)} ${R1(y)}q5 -6 10 0q-5 6 -10 0z" fill="${['#E9A86A','#F2C46D','#D98B5F'][i%3]}" opacity=".85"/>`}k.add(lv)}
+  // dappled light through the canopy (not at night, softer when overcast)
+  k.side(()=>{if(e.night||e.rain)return;const op=e.sunny?1:.5,lc=e.time==='dusk'?'#FFD9A8':e.time==='dawn'?'#FFE6D0':'#FFF6C8';
+    [[[560,0],[620,0],[800,480],[720,480]],[[880,0],[910,0],[1060,460],[1010,460]],[[300,0],[330,0],[420,440],[380,440]],[[1260,0],[1290,0],[1360,440],[1320,440]]].forEach(p=>k.add(`<path d="M${p.map(q=>q.join(' ')).join('L')}Z" fill="${lc}" opacity="${R1(.2*op)}"/>`));
+    [[720,470,34,7],[800,500,26,6],[640,532,28,6],[1000,450,30,6],[1340,440,24,5],[420,450,26,5]].forEach(q=>k.fill(blobP(q[0],q[1],q[2],q[3],k.r,9,.3),lc,{dx:0,dy:0,op:R1(.55*op)}))});
+  fxA(k,{sheen:[B+10,598],puddles:[[760,566,40,8],[600,420,26,5],[1240,566,40,8]],patches:[[760,568,70,12],[1240,566,62,11],[300,420,50,8],[1100,420,54,8],[1500,570,40,8],[200,590,50,8]],flies:[[250,440],[600,420],[1180,380],[760,560],[160,330],[1460,300]]});
+  floorSnowA(k,fl0,[[300,580,110,13],[1300,580,120,14],[1000,420,70,8],[180,420,60,8]]);
+  // the back: the carved acorn gate where the trail goes in, the start arch at the end of the side trail; with Japan a small shrine
+  acornGate(k,560,B+10,.92);
+  k.jp(()=>{jpHokora(k,380,B+10,.75);jpShimenawa(k,358,402,B-30,.6,3)});
+  runGateA(k,1270,B+12,.62,C.trunkD,'#E9A86A');
+  fk.add('maple',470,()=>treeA(k,180,470,D(470)*1.6,{col:'#E9A86A',colD:'#C98A4E',hw:1}));
+  fk.add('oak',402,()=>{treeA(k,940,402,D(402)*1.55,{col:'#F2C46D',colD:'#D3A04A'});k.ny(()=>nyShime(k,942,402-60*D(402)*1.55,.8))});
+  fk.add('pine',488,()=>{pineA(k,1500,488,D(488)*2.1,C.pineD,'#557F66',{lt:1});k.jp(()=>jpShimenawa(k,1500-14*D(488)*2.1,1500+14*D(488)*2.1,488-14*D(488)*2.1,.7,4))});
+  fk.add('stump',548,()=>stumpA(k,420,548,D(548)*1.1));
+  fk.add('log',524,()=>logSeat(k,1180,524,D(524)*1.05));
+  fk.add('ferns',590,()=>{fern(k,40,590,1);fern(k,1580,592,1.05);[[1340,598,1],[1366,590,.7]].forEach(([x,y,s])=>O.mushroom(k,x,y,s))});
+  fk.add('shrooms',430,()=>{[[1360,430,.9],[1384,436,.6],[300,424,.8]].forEach(([x,y,s])=>O.mushroom(k,x,y,s*D(430)/.6))});
+  fk.out();
+  k.ss(()=>{const so=k.so;
+    if(so==='autumn')[[120,480,0],[150,486,40],[240,476,-30],[260,490,70],[900,410,10],[980,414,-20],[960,420,50]].forEach(([x,y,r])=>acorn(k,x,y,1.1,r));
+    if(so==='spring')[[220,520],[250,566],[300,600],[880,520],[960,540],[60,478],[1400,592],[1460,520]].forEach(([x,y])=>{bluebells(k,x,y,1);bluebells(k,x+10,y+4,.8)})});
+  O.sparkle(k,260,200,7);O.heart(k,700,170,6);
+  O.tape(k,6,18,90,-26,'#F7B9C6');O.tape(k,W-90,572,80,-24,'#B9D4F3');
+  seasonBitsA(k,{drift:[[200,280,1],[330,200,.9],[620,240,1],[1000,320,.85],[1300,200,.8]],robin:[420,548-48*D(548)*1.1,1.1,1]})}
+
+/* ---------- Riverside Trail: the river with the humped footbridge, ducks, cattails, a willow on the near bank ---------- */
+function footbridge(k,bx,by,hw,rise){const arc=[];for(let i=0;i<=14;i++){const t=i/14;arc.push([bx-hw+2*hw*t,by-Math.sin(Math.PI*t)*rise])}
+  k.shape(arc.concat(arc.slice().reverse().map(p=>[p[0],p[1]+14])),C.wood,{w:2});for(let i=1;i<14;i+=2){const p=arc[i];k.line([[p[0]-3,p[1]+2],[p[0]+5,p[1]+12]],1,C.woodD)}
+  for(let i=1;i<14;i++){const p=arc[i];k.line([[p[0],p[1]],[p[0],p[1]-24]],1.6)}const rail=arc.map(p=>[p[0],p[1]-24]);k.line(rail,2.2);
+  // its reflection
+  k.add(`<path d="${smooth(arc.map(p=>[p[0],2*by+14-p[1]]),false)}" fill="none" stroke="#9CCDE8" stroke-width="5" opacity=".6"/>`);
+  if(k.env.snow)k.side(()=>{capLine(k,rail,4);capLine(k,arc.slice(1,-1),4)});else if(k.so==='winter')k.ss(()=>capLine(k,arc.slice(1,-1),3));
+  k.lt(()=>ltString(k,rail.map(p=>[p[0],p[1]+1]),19));k.ny(()=>nyShime(k,bx,rail[7][1]+4,.9));k.hw(()=>hwLanternString(k,rail[2][0],rail[2][1]+2,rail[12][0],rail[12][1]+2,10,4,.7))}
+function rowboat(k,x,y){const hull=[[x-84,y-2],[x+84,y-4],[x+66,y+26],[x-66,y+28]];k.shape(hull,'#E8A07E',{w:2.2,hatch:{side:.6,gap:4,col:'#C97D5E',op:.5}});k.line([[x-72,y+4],[x+76,y+2]],1.4,C.ink,{op:.7});
+  k.add(`<g fill="${C.ink}" opacity=".7"><ellipse cx="${x}" cy="${y+16}" rx="5" ry="4"/><circle cx="${x-6}" cy="${y+10}" r="1.8"/><circle cx="${x-2}" cy="${y+8}" r="1.8"/><circle cx="${x+2}" cy="${y+8}" r="1.8"/><circle cx="${x+6}" cy="${y+10}" r="1.8"/></g>`);
+  k.line([[x+38,y-2],[x+64,y-32]],3,C.trunkD);k.add(`<ellipse cx="${x}" cy="${y+30}" rx="96" ry="5" fill="none" stroke="#fff" stroke-width="1.6" opacity=".7"/>`);if(k.env.snow)k.side(()=>capLine(k,[[x-82,y-3],[x+82,y-5]],5))}
+function cattails(k,x,gy,s){for(let i=0;i<6;i++){const rx=x+(i*7-18)*s;k.line([[rx,gy],[rx+k.J(4),gy-(42+k.r()*28)*s]],1.8,k.so==='autumn'?'#A9A05C':k.so==='winter'?'#B8B09A':'#6FA05C')}
+  [[-6,64],[6,72],[14,58]].forEach(([dx,h])=>{k.shape(E(x+dx*s,gy-h*s,3.6*s,10*s,8),'#A97E5A',{w:1.2,one:1});snowOnA(k,[[x+dx*s-4*s,gy-h*s-10*s],[x+dx*s+4*s,gy-h*s-10*s]],3*s)})}
+function willow(k,x,gy,s){shadeA(k,x,gy+3,90*s,11*s);const so=k.so,cs=crownCols(k,C.leaf2,C.leafD,x,gy)[0],X=v=>x+v*s,Y=v=>gy+v*s;
+  k.shape([[X(-12),gy],[X(-8),Y(-96)],[X(8),Y(-100)],[X(13),gy]],C.trunk,{w:2,hatch:{side:.5,gap:3.5,col:C.trunkD,op:.6}});k.line([[X(-2),Y(-20)],[X(-1),Y(-60)]],1.2,C.trunkD);
+  k.line([[X(0),Y(-90)],[X(-46),Y(-132)]],5*s,C.trunk);k.line([[X(2),Y(-94)],[X(44),Y(-138)]],5*s,C.trunk);
+  // the weeping crown: a dome whose fringe hangs in long ragged locks, hatched, with strands drawn down it
+  const P=[[X(-98),Y(-52)],[X(-104),Y(-100)],[X(-82),Y(-148)],[X(-40),Y(-176)],[X(4),Y(-184)],[X(48),Y(-172)],[X(88),Y(-142)],[X(106),Y(-96)],[X(100),Y(-52)]];
+  for(let i=0;i<=12;i++){const t=i/12,fx=X(100-200*t);P.push([fx+k.J(3*s),Y(i%2?-74-k.r()*10:-40-k.r()*12)])}
+  if(so==='winter'){let d='';for(let i=0;i<20;i++){const fx=X(-90+i*9.5),L=(80+k.r()*30)*s;d+=`M${R1(fx)} ${R1(Y(-150)+Math.abs(i-9.5)*3*s)}q${R1(k.J(6)*s)} ${R1(L*.5)} ${R1(-3*s)} ${R1(L)}`}k.add(`<path d="${d}" fill="none" stroke="${C.trunkD}" stroke-width="1.4" stroke-linecap="round"/>`);k.ss(()=>bareCrown(k,x,gy-20*s,s*.8))}
+  else{k.shape(P,cs[0],{w:2.2,hatch:{side:.5,gap:4.5,col:cs[1],op:.55}});let d='';for(let i=0;i<14;i++){const fx=X(-86+i*13),y0=Y(-150+Math.abs(i-6.5)*4);d+=`M${R1(fx)} ${R1(y0)}q${R1(k.J(5)*s)} ${R1(40*s)} ${R1(-2*s)} ${R1(80*s-Math.abs(i-6.5)*4*s)}`}
+    k.add(`<path d="${d}" fill="none" stroke="${cs[1]}" stroke-width="1.6" stroke-linecap="round" opacity=".9"/>`);if(so==='spring')k.ss(()=>{for(let i=0;i<9;i++)flowerDot(k,x+(k.r()-.5)*160*s,gy-130*s+k.r()*70*s,2.2*s,i%2?'#FFFFFF':'#F7B6C8')})}
+  if(so!=='winter')snowOnA(k,P.slice(1,8),5*s);
+  k.lt(()=>ltString(k,sagP(X(-86),Y(-112),X(88),Y(-116),20*s,12),20));k.hw(()=>hwGhost(k,X(60),Y(-60),.8*s,18*s))}
+function a5River(k,F){const W=1600,B=352,D=y=>depA(F,y),fk=floorKitA(k),e=k.env;
+  skyA(k,252,{sun:[1380,80,32],low:[420,236,34],moon:[1000,82,28],clouds:[[300,80,24],[860,60,20],[1240,150,18]],rainC:[[120,50,26],[640,130,24],[1100,46,28]],birds:[[640,90,8],[662,100,6]]});
+  fujiA(k,1040,250,240);
+  const fb=[[0,236],[220,226],[460,238],[700,224],[960,236],[1200,226],[1420,238],[W,230],[W,268],[0,268]];k.fill(fb,'#D5EBC0',{dx:0,dy:0,sc:0});k.pen(fb.slice(0,8),false,{w:1.6,col:C.graph});
+  k.jp(()=>{if(e.season==='spring')[[180,.5],[230,.56],[280,.48],[1260,.5],[1310,.54]].forEach(([x,s])=>jpSakuraTree(k,x,258,s))});
+  k.ny(()=>nyKites(k,[[440,140,1,1,400,250],[1240,110,.9,0,1200,250]]));
+  O.tree(k,90,258,.7);O.pine(k,210,262,.6);O.tree(k,520,256,.62,{col:C.leaf2});O.pine(k,640,260,.66);O.tree(k,1360,256,.66,{col:C.leaf2});O.pine(k,1480,262,.74);O.tree(k,1570,258,.6);
+  farHouseA(k,380,260,.6,C.wall3,C.roof);
+  // the river: wide and slow, ripples, lily pads
+  const wat=[[0,262],[W,260],[W,B+8],[0,B+8]];k.fill(wat,C.water,{dx:0,dy:0,sc:0});k.pen([[0,262],[800,261],[W,260]],false,{w:1.8});
+  {let wv='';for(let i=0;i<54;i++){const x=k.r()*1580,y=272+k.r()*(B-282);wv+=`M${R1(x)} ${R1(y)}q6 -5 12 0t12 0`}k.add(`<path d="${wv}" fill="none" stroke="#86BDDE" stroke-width="1.6" stroke-linecap="round"/>`)}
+  k.fx(()=>{if(e.rain)ripples(k,0,W,272,B,30);waterGlints(k,e.night?1000:420,274,B-4)});
+  k.ss(()=>{if(k.so==='winter')iceEdge(k,0,W,x=>262-x*.002,1);else[[300,300],[600,330],[1160,310],[1450,330],[900,290]].forEach(([x,y],i)=>floater(k,x,y,i))});
+  footbridge(k,820,300,200,40);
+  [[480,330],[1000,318],[700,338],[1280,334]].forEach(([x,y])=>{k.shape(E(x,y,15,5,10),'#A9D08A',{w:1.4,one:1});k.line([[x,y],[x+10,y-3]],1,C.leafD)});
+  rowboat(k,470,316);k.line([[550,320],[590,B-2]],1.3,C.ink,{op:.8});
+  // the duck family on the water by the bank
+  duck(k,1140,334,1.5,'#FFF8EC');duck(k,1196,342,.9,C.yellow);duck(k,1234,346,.85,C.yellow);
+  // the near bank and the trail along it
+  const nb=x=>B+4*Math.sin(x/120)+3*Math.sin(x/47+.8),bank=[];for(let x=0;x<=W;x+=25)bank.push([x,nb(x)]);
+  k.fill(bank.concat([[W,600],[0,600]]),C.grass,{dx:0,dy:0,sc:0});k.add(`<path d="${smooth(bank,false)}L${W} ${R1(nb(W)+14)}L0 ${R1(nb(0)+14)}Z" fill="#E3D3A6"/>`);k.pen(bank,false,{w:2.2});
+  k.ss(()=>{if(k.so==='winter')iceEdge(k,200,1400,nb,-1)});
+  pathA(k,[[-20,470,30],[200,452,32],[420,446,34],[640,458,36],[860,452,36],[1060,430,32],[1240,404,28],[1380,382,24],[1440,366,20]],C.path,'#C9AE77','#D9C39C');
+  tuftsA(k,0,W,B+20,598,170,(x,y)=>Math.abs(y-(450-Math.max(0,x-900)*.12))>40);
+  k.ss(()=>seasonGround(k,[0,B+22,W,598],110,[[0,420,1500,480],[120,470,360,560]]));
+  fxA(k,{sheen:[B+20,598],puddles:[[440,578,44,9],[1044,568,38,8],[700,452,34,7]],patches:[[438,578,70,12],[1042,570,60,11],[100,560,50,9],[1430,540,46,9],[700,452,40,6],[1300,420,46,6]],flies:[[150,500],[600,476],[1180,560],[460,590],[900,300]]});
+  floorSnowA(k,bank.concat([[W,600],[0,600]]),[[440,580,110,13],[1260,580,110,13],[760,400,70,8]]);
+  runGateA(k,1450,B+16,.62,C.woodD,C.mint);
+  fk.add('reeds1',374,()=>{cattails(k,90,374,1.1);cattails(k,150,376,.9)});
+  fk.add('reeds2',376,()=>{cattails(k,1090,376,1);cattails(k,1560,378,1.1)});
+  fk.add('willow',536,()=>willow(k,250,536,D(536)*1.45));
+  fk.add('bench',414,()=>{benchA(k,780,414,D(414)*1.3);k.hw(()=>hwJack(k,720,414,.7))});
+  fk.add('jizo',488,()=>{k.jp(()=>jpJizo(k,470,488,1.05));rockA(k,520,488,.75)});
+  fk.add('rocks',560,()=>{rockA(k,1000,560,1);rockA(k,1046,566,.7)});
+  fk.add('sign',590,()=>{signA(k,1500,590,.95,'duck');k.ny(()=>nyShime(k,1500,514,.8))});
+  [[610,592,C.yellow],[280,596,C.lav],[860,594,C.red],[1340,560,C.yellow],[60,520,'#FFB3C7']].forEach(f=>O.flower(k,f[0],f[1],5,f[2]));
+  fk.out();
+  O.sparkle(k,620,200,7);O.heart(k,330,170,6);
+  O.tape(k,8,20,90,-26,'#F9E19A');O.tape(k,W-90,568,80,-24,'#D3C6F1');
+  seasonBitsA(k,{drift:[[160,250,1],[420,200,.9],[700,230,1],[1300,220,.8]],robin:[780,414-40*D(414)*1.3,1,-1],fly:[1000,400]})}
+
+/* ---------- Lighthouse Pier: the boardwalk into the sea, the red-white lighthouse ---------- */
+function lighthouse(k,x){k.shape(blobP(x,330,88,24,k.r,10,.25).map(p=>[p[0],Math.min(p[1],342)]),C.stone,{w:2,hatch:{side:.5,gap:4,col:C.stoneD,op:.6}});
+  k.shape(blobP(x+70,338,30,12,k.r,8,.3).map(p=>[p[0],Math.min(p[1],344)]),C.stoneD,{w:1.8});
+  const tw=[[x-34,322],[x-22,104],[x+22,104],[x+34,322]];k.fill(tw,'#FFFFFF');
+  [[150,186],[234,270]].forEach(([a,b])=>{const wa=34-(322-a)/218*12,wb=34-(322-b)/218*12;k.fill([[x-wb,b],[x-wa,a],[x+wa,a],[x+wb,b]],C.red,{dx:0,dy:0,op:.95})});
+  k.hatch(tw,{side:.62,gap:4.5,col:'#C9A9A9',op:.5});k.pen(tw,true,{w:2.3});
+  O.window(k,x-8,210,16,20,{noLit:1});k.shape(RC(x-12,288,24,34),'#C79A72',{w:1.8});
+  k.shape(RC(x-34,96,68,10),C.ink,{w:1.6,one:1,noline:1,dx:0,dy:0});k.line([[x-34,96],[x+34,96]],2.2);for(let i=0;i<=6;i++)k.line([[x-32+i*10.6,96],[x-32+i*10.6,82]],1.4);k.line([[x-34,82],[x+34,82]],1.8);
+  const lg=[[x-18,82],[x+18,82],[x+18,52],[x-18,52]];k.shape(lg,C.yellow,{w:2});k.line([[x,52],[x,82]],1.2);k.shape([[x-26,54],[x,26],[x+26,54]],C.red,{w:2.1});k.add(`<circle cx="${x}" cy="24" r="4" fill="${C.ink}"/>`);
+  if(k.env.lit){k.lamps.push({x,y:67,s:1.1,glass:lg});const b1=beamGrad(k,x+18,x+330),b2=beamGrad(k,x-18,x-200);k.xl.push(`<path d="M${x+18} 60L${x+330} 22L${x+330} 116Z" fill="url(#${b1})" opacity="${R1(k.env.lit)}"/><path d="M${x-18} 60L${x-200} 34L${x-200} 96Z" fill="url(#${b2})" opacity="${R1(.7*k.env.lit)}"/>`)}
+  snowOnA(k,[[x-28,54],[x,25],[x+28,54]],7);snowOnA(k,[[x-36,96],[x+36,96]],4);k.lt(()=>ltString(k,sagP(x-30,98,x+30,98,6,8),16));k.hw(()=>hwBat(k,x+46,70,.8))}
+function piling(k,x,gy,top,s,gl){k.shape([[x-14*s,gy],[x-14*s,top],[x+14*s,top],[x+14*s,gy]],C.trunk,{w:2,hatch:{side:.55,gap:4,col:C.trunkD,op:.6}});k.shape(E(x,top,14*s,4*s,10),'#E7C79E',{w:1.6});k.line([[x-14*s,top+30*s],[x+14*s,top+34*s]],2.4,'#C9B48C');
+  snowOnA(k,[[x-15*s,top-1],[x+15*s,top-1]],5*s);if(gl&&!(k.env.night&&k.so==='winter'))gull(k,x,top,s,gl<0)}
+function crateStack(k,x,gy,s){shadeA(k,x+10*s,gy+3,100*s,10*s);const cr=(cx,cy,w,h,ic)=>{crate(k,cx,cy,w,h);const mx=cx+w/2,my=cy+h/2;k.shape(RC(mx-18*s,my-11*s,36*s,22*s),'#FFFBF3',{w:1.2,one:1});
+    if(ic==='fish')k.shape([[mx-12*s,my],[mx-4*s,my-6*s],[mx+6*s,my-5*s],[mx+10*s,my],[mx+6*s,my+5*s],[mx-4*s,my+6*s],[mx-12*s,my],[mx-16*s,my-6*s],[mx-16*s,my+6*s]],'#9CCDE8',{w:1,one:1});
+    else k.add(`<circle cx="${R1(mx)}" cy="${R1(my)}" r="${R1(7*s)}" fill="none" stroke="#C9A24E" stroke-width="${R1(2.4*s)}"/><circle cx="${R1(mx)}" cy="${R1(my)}" r="${R1(3*s)}" fill="none" stroke="#C9A24E" stroke-width="${R1(2*s)}"/>`)};
+  cr(x-96*s,gy-76*s,96*s,76*s,'fish');cr(x+6*s,gy-60*s,86*s,60*s,'rope');cr(x-80*s,gy-140*s,72*s,64*s,'fish');
+  k.jp(()=>jpCat(k,x-44*s,gy-140*s,1.1*s));k.hw(()=>hwJack(k,x+50*s,gy-60*s,.8*s));k.ny(()=>nyKado(k,x+108*s,gy,.55*s,-1))}
+function rodBucket(k,x,gy,s){shadeA(k,x,gy+2,24*s);const tip=[x+60*s,gy-216*s];k.line([[x+4*s,gy],tip],3,C.trunkD,{amp:.3});k.shape(E(x+10*s,gy-30*s,8*s,8*s,10),'#9AA7B8',{w:1.4,one:1});
+  k.line([tip,[x+80*s,gy-180*s],[x+96*s,gy-130*s],[x+110*s,gy-100*s]],1,C.graph,{op:.9});k.add(`<circle cx="${R1(x+110*s)}" cy="${R1(gy-100*s)}" r="${R1(3.4*s)}" fill="${C.red}" stroke="${C.ink}" stroke-width="1"/>`);
+  const bx=x+40*s;k.shape([[bx-16*s,gy],[bx-18*s,gy-30*s],[bx+18*s,gy-30*s],[bx+16*s,gy]],C.blue,{w:1.8});k.add(`<path d="M${R1(bx-18*s)} ${R1(gy-30*s)}q${R1(18*s)} ${R1(-20*s)} ${R1(36*s)} 0" fill="none" stroke="${C.ink}" stroke-width="1.6"/>`);
+  k.shape([[bx-8*s,gy-14*s],[bx,gy-19*s],[bx+8*s,gy-14*s],[bx,gy-9*s]],'#9CCDE8',{w:1,one:1});snowOnA(k,[[bx-18*s,gy-30*s],[bx+18*s,gy-30*s]],3*s)}
+function a5Pier(k,F){const W=1600,B=356,D=y=>depA(F,y),fk=floorKitA(k),e=k.env,rt=B-56;
+  skyA(k,264,{sun:[1380,70,30],low:[1000,250,36],moon:[1380,74,26],clouds:[[620,64,24],[960,112,18],[1460,170,16],[1200,60,20]],rainC:[[460,40,28],[880,30,26],[1300,60,24]],birds:[]});
+  fujiA(k,800,263,300);
+  k.add(`<rect y="262" width="${W}" height="${B-250}" fill="${C.water}"/><rect y="262" width="${W}" height="24" fill="#A9D3EC" opacity=".7"/>`);k.pen([[0,263],[800,262],[W,263]],false,{w:1.6,col:C.graph});
+  {let wv='';for(let i=0;i<60;i++){const x=k.r()*1580,y=276+k.r()*(B-286);wv+=`M${R1(x)} ${R1(y)}q7 -6 14 0t14 0`}k.add(`<path d="${wv}" fill="none" stroke="#86BDDE" stroke-width="1.6" stroke-linecap="round"/>`)}
+  k.jp(()=>jpFujiReflect(k,{cx:800,by:263,w:300},263));
+  k.fx(()=>{if(e.rain)ripples(k,0,W,272,B-20,30);waterGlints(k,e.night?1380:1000,274,B-24)});
+  {const gs=k.cap(()=>{[[460,120,10],[490,104,8],[1160,170,9]].forEach(([x,y,s])=>O.bird(k,x,y,s))});if(!e.night&&!e.rain)k.add(gs)}
+  lighthouse(k,190);
+  // boats and the buoy
+  {const bx=1060,by=300;k.shape([[bx-40,by],[bx+40,by],[bx+30,by+14],[bx-30,by+14]],C.red,{w:1.9});k.line([[bx,by],[bx,by-70]],1.8);k.shape([[bx+2,by-66],[bx+36,by-6],[bx+2,by-6]],'#FFFFFF',{w:1.6,one:1});k.shape([[bx-2,by-56],[bx-30,by-6],[bx-2,by-6]],'#FFD8E0',{w:1.6,one:1});k.shape([[bx,by-70],[bx+14,by-66],[bx,by-62]],C.yellow,{w:1,one:1})}
+  {const bx=520,by=318;k.shape([[bx-56,by],[bx+60,by-4],[bx+44,by+22],[bx-46,by+22]],'#B9D3F2',{w:2,hatch:{side:.6,gap:4,col:'#8FAFD6',op:.6}});k.shape(RC(bx-30,by-30,40,28),'#FFFFFF',{w:1.8});O.window(k,bx-22,by-24,14,12,{noLit:1});k.line([[bx+24,by-4],[bx+30,by-56],[bx+60,by-30]],1.6);
+   if(e.lit)k.glows.push([bx-22,by-24,14,12]);snowOnA(k,[[bx-32,by-30],[bx+12,by-30]],5)}
+  {const x=760,y=326;k.shape([[x-12,y+6],[x-8,y-22],[x+8,y-22],[x+12,y+6]],'#FFFFFF',{w:1.8});k.fill(RC(x-10,y-14,20,8),C.red,{dx:0,dy:0});k.shape(E(x,y+6,18,5,10),C.red,{w:1.6});k.line([[x,y-22],[x,y-34]],1.6);k.add(`<circle cx="${x}" cy="${y-36}" r="4" fill="${C.yellow}" stroke="${C.ink}" stroke-width="1.2"/>`)}
+  k.ny(()=>nyKites(k,[[1200,96,.9,1,1140,rt],[1420,146,.8,0,1380,rt]]));
+  // the railing along the back of the boardwalk (the life ring hangs on it)
+  {k.shape(RC(0,B-12,W,14),C.woodD,{w:1.8,one:1});for(let x=40;x<W;x+=120)k.shape(RC(x-6,rt-8,12,B-rt+8),C.wood,{w:1.8,one:1,hatch:{gap:4,col:C.woodD,op:.5}});
+   k.shape(RC(0,rt,W,9),C.wood,{w:1.9,one:1});k.shape(RC(0,rt+24,W,7),C.wood,{w:1.7,one:1});
+   let d='';for(let x=20;x<W;x+=40)d+=`M${x} ${rt+10}v14`;k.add(`<path d="${d}" stroke="${C.woodD}" stroke-width="1.4"/>`);
+   frostOnA(k,[[0,rt+1],[W,rt+1]]);k.ss(()=>{if(k.so==='spring')[160,520,900,1260].forEach(x=>railBox(k,x,rt+10,46))});snowOnA(k,[[0,rt],[W,rt]],6);
+   k.lt(()=>ltString(k,scallop([40,160,280,400,520,640,760,880,1000,1120,1240,1360,1480,1600].map(x=>[x,rt-7]),9),22));
+   k.hw(()=>hwBatString(k,600,1000,rt-4,10,5,.6));
+   const lx=380,ly=rt+18;k.add(`<circle cx="${lx}" cy="${ly}" r="22" fill="none" stroke="${C.ink}" stroke-width="13"/><circle cx="${lx}" cy="${ly}" r="22" fill="none" stroke="#FFFFFF" stroke-width="10"/><circle cx="${lx}" cy="${ly}" r="22" fill="none" stroke="${C.red}" stroke-width="10" stroke-dasharray="17.3 17.3"/>`);
+   if(!e.night&&!e.rain)gull(k,880,rt,.8)}
+  // the boardwalk deck in perspective
+  {k.fill([[0,B],[W,B],[W,600],[0,600]],'#EBCDA4',{dx:0,dy:0,sc:0});const rows=[];let y=B,h=12;while(y<600){rows.push(y);y+=h;h*=1.12}
+   let d='',f='';rows.forEach((yy,i)=>{d+=`M0 ${R1(yy+k.J(.8))}L${W} ${R1(yy+k.J(.8))}`;const nh=(rows[i+1]||600)-yy,sp=nh*9;for(let x=(i*137)%sp-sp;x<W;x+=sp)d+=`M${R1(x)} ${R1(yy)}v${R1(nh)}`;if(i%2)f+=`<rect x="0" y="${R1(yy)}" width="${W}" height="${R1(nh)}" fill="#E2BE90" opacity=".45"/>`;
+     let nl='';for(let x=(i*61)%90+20;x<W;x+=150)nl+=`<circle cx="${R1(x)}" cy="${R1(yy+nh/2)}" r="1.4" fill="${C.ink}" opacity=".55"/>`;f+=nl});
+   k.add(f+`<path d="${d}" stroke="${C.woodD}" stroke-width="1.4" fill="none"/>`);k.pen([[0,B+1],[800,B],[W,B+1]],false,{w:2})}
+  // a coiled rope (flat: a dog may lie on it)
+  {const cx=640,cy=566;let d='';for(let i=0;i<4;i++)d+=`<ellipse cx="${cx}" cy="${cy}" rx="${46-i*10}" ry="${12-i*2.6}" fill="none" stroke="#D9C39C" stroke-width="5"/><ellipse cx="${cx}" cy="${cy}" rx="${46-i*10}" ry="${12-i*2.6}" fill="none" stroke="${C.ink}" stroke-width="1" opacity=".6"/>`;k.add(d);k.line([[cx+46,cy],[cx+96,cy+10],[cx+120,cy+4]],3,'#D9C39C')}
+  pawsA(k,[[900,580,1],[940,568,1],[980,558,.95],[1020,550,.95],[1060,542,.9]],'#D2B080');
+  k.ss(()=>{if(k.so==='winter')windLines(k,[[200,150,140],[560,200,150],[960,240,110],[1260,120,130]]);else{seasonGround(k,[0,B+8,W,598],k.so==='autumn'?70:40,[[1100,380,1480,520]],0,1)}});
+  fxA(k,{sheen:[B+8,598],puddles:[[450,580,44,9],[1060,568,38,8],[220,470,30,6]],patches:[[450,582,70,12],[1060,570,60,11],[220,470,46,8],[1220,440,40,7],[860,596,44,8]]});
+  floorSnowA(k,[[0,B],[W,B],[W,600],[0,600]],[[420,580,110,13],[1080,590,110,12],[800,400,60,7]]);
+  k.ss(()=>{if(k.so==='autumn'){pumpkin(k,420,560,1.2);pumpkin(k,452,568,.9)}});
+  runGateA(k,1470,B+14,.62,'#7FA6D9',C.yellow);
+  fk.add('lamp1',400,()=>{lampA(k,620,400,D(400)*1.6);k.ny(()=>nyShime(k,620,400-110*D(400)*1.6,.6))});
+  fk.add('lamp2',402,()=>lampA(k,1220,402,D(402)*1.6));
+  fk.add('bench',392,()=>benchA(k,900,392,D(392)*1.55));
+  fk.add('crates',484,()=>crateStack(k,1180,484,D(484)*1.05));
+  fk.add('rod',438,()=>rodBucket(k,300,438,D(438)*1.1));
+  fk.add('piling1',598,()=>piling(k,40,600,470,1.1,1));
+  fk.add('piling2',596,()=>piling(k,1556,600,456,1.1,-1));
+  fk.out();
+  O.sparkle(k,700,200,7);O.heart(k,1040,210,6);
+  O.tape(k,8,20,90,-26,'#F9E19A');O.tape(k,W-120,540,80,-24,'#D3C6F1');
+  seasonBitsA(k,{drift:[[300,250,1],[700,200,.9],[1100,240,.85],[1400,220,.8]]})}
+
+const FLOOR_A={
+ dogpark:{poly:[[22,346],[1578,346],[1596,594],[4,594]],
+  props:[{id:'bench1',base:372,box:[400,360,140,14]},{id:'bench2',base:374,box:[1380,362,140,14]},{id:'bucket',base:398,box:[934,388,52,12]},{id:'hydrant',base:414,box:[1110,404,40,12]},
+   {id:'aframe',base:436,box:[226,424,148,14]},{id:'tree',base:472,box:[1508,460,44,14]},{id:'fountain',base:520,box:[72,506,100,16]},{id:'tunnel',base:552,box:[1176,532,248,22]}],
+  spots:[{id:'arch',x:800,y:364,tags:['arch','run','gate'],act:'arch'},{id:'drink',x:136,y:536,tags:['bowl'],act:'drink'},{id:'hydrant',x:1090,y:426,tags:['sniff'],act:'sniff'},
+   {id:'aframe',x:200,y:446,tags:['agility'],act:'aframe',path:[[200,446],[300,440],[400,446]]},{id:'tunnel',x:1160,y:560,tags:['agility'],act:'tunnel',path:[[1160,560],[1190,556],[1420,556],[1450,560]]},
+   {id:'bench',x:470,y:392,tags:['bench','rest'],act:'sit'},{id:'shade',x:1480,y:490,tags:['shade','rest'],act:'rest'},{id:'balls',x:960,y:414,tags:['toy','ball'],act:'sniff'},
+   {id:'open',x:800,y:474,tags:['open','ball','zoomies'],act:'zoomies'},{id:'visit1',x:520,y:520,tags:['visitor'],act:'idle'},{id:'visit2',x:1020,y:530,tags:['visitor'],act:'idle'}]},
+ beach:{poly:[[22,366],[1578,366],[1596,594],[4,594]],
+  props:[{id:'hut',base:398,box:[128,386,176,14]},{id:'log',base:430,box:[1204,416,190,16]},{id:'ball',base:448,box:[840,438,40,12]},{id:'umbrella',base:492,box:[1132,482,30,12]},
+   {id:'castle',base:542,box:[384,526,112,18]},{id:'bucket',base:578,box:[600,566,60,14]},{id:'rocks',base:584,box:[1470,568,110,18]}],
+  spots:[{id:'arch',x:1460,y:384,tags:['arch','run','gate'],act:'arch'},{id:'towel',x:1080,y:500,tags:['rest','sun'],act:'rest'},{id:'shade',x:1180,y:520,tags:['shade','rest'],act:'rest'},
+   {id:'dig',x:760,y:566,tags:['dig'],act:'dig'},{id:'castle',x:520,y:556,tags:['sniff'],act:'sniff'},{id:'log',x:1300,y:448,tags:['bench','rest'],act:'sit'},
+   {id:'waves',x:700,y:382,tags:['water','look'],act:'look'},{id:'open',x:640,y:470,tags:['open','ball','zoomies'],act:'zoomies'}]},
+ hilltop:{poly:[[22,346],[1578,346],[1596,594],[4,594]],
+  props:[{id:'jizo',base:380,box:[1482,372,66,10]},{id:'bench',base:404,box:[330,392,140,14]},{id:'tree',base:452,box:[1282,440,40,14]},{id:'basket',base:506,box:[614,490,280,18]},
+   {id:'sign',base:580,box:[98,570,24,12]}],
+  spots:[{id:'arch',x:170,y:366,tags:['arch','run','gate'],act:'arch'},{id:'picnic',x:740,y:530,tags:['rest','sun'],act:'rest'},{id:'bowl',x:690,y:514,tags:['bowl'],act:'drink'},
+   {id:'swing',x:1400,y:470,tags:['shade','rest'],act:'rest'},{id:'bench',x:400,y:422,tags:['bench','rest'],act:'sit'},{id:'view',x:900,y:372,tags:['view','look'],act:'look'},
+   {id:'kite',x:600,y:372,tags:['look'],act:'look'},{id:'open',x:1040,y:460,tags:['open','ball','zoomies'],act:'zoomies'}]},
+ woods:{poly:[[22,346],[1578,346],[1596,594],[4,594]],
+  props:[{id:'oak',base:402,box:[924,392,34,12]},{id:'shrooms',base:430,box:[290,420,24,10]},{id:'maple',base:470,box:[160,458,40,14]},{id:'pine',base:488,box:[1480,476,40,14]},
+   {id:'log',base:524,box:[1076,506,228,20]},{id:'stump',base:548,box:[374,532,96,18]},{id:'ferns',base:590,box:[18,580,44,12]}],
+  spots:[{id:'gate',x:560,y:366,tags:['gate','sniff'],act:'sniff'},{id:'arch',x:1270,y:366,tags:['arch','run','gate'],act:'arch'},{id:'dig',x:990,y:560,tags:['dig'],act:'dig'},
+   {id:'log',x:1160,y:546,tags:['bench','rest'],act:'sit'},{id:'stump',x:500,y:556,tags:['sniff'],act:'sniff'},{id:'shade',x:240,y:490,tags:['shade','rest'],act:'rest'},
+   {id:'sun',x:760,y:480,tags:['sun','rest'],act:'rest'},{id:'open',x:880,y:440,tags:['open','ball','zoomies'],act:'zoomies'},{id:'trail',x:700,y:470,tags:['sniff','trail'],act:'sniff',path:[[800,560],[760,512],[680,466],[600,420],[566,380]]}]},
+ river:{poly:[[24,366],[1576,366],[1596,594],[4,594]],
+  props:[{id:'reeds1',base:374,box:[60,366,120,10]},{id:'reeds2',base:376,box:[1060,368,60,10]},{id:'bench',base:414,box:[710,402,140,14]},{id:'jizo',base:488,box:[450,478,96,12]},
+   {id:'willow',base:536,box:[230,522,44,16]},{id:'rocks',base:560,box:[972,550,96,12]},{id:'sign',base:590,box:[1488,580,24,12]}],
+  spots:[{id:'arch',x:1450,y:384,tags:['arch','run','gate'],act:'arch'},{id:'bank',x:640,y:380,tags:['water','look'],act:'look'},{id:'ducks',x:1180,y:380,tags:['water','look'],act:'look'},
+   {id:'bench',x:780,y:434,tags:['bench','rest'],act:'sit'},{id:'shade',x:330,y:556,tags:['shade','rest'],act:'rest'},{id:'reeds',x:210,y:384,tags:['sniff'],act:'sniff'},
+   {id:'trail',x:640,y:460,tags:['trail','sniff'],act:'sniff',path:[[40,470],[200,454],[420,448],[640,458],[860,452],[1060,432],[1240,406]]},{id:'open',x:1100,y:520,tags:['open','ball','zoomies'],act:'zoomies'}]},
+ pier:{poly:[[16,370],[1584,370],[1596,594],[4,594]],
+  props:[{id:'bench',base:392,box:[830,380,140,14]},{id:'lamp1',base:400,box:[610,392,20,10]},{id:'lamp2',base:402,box:[1210,394,20,10]},{id:'rod',base:438,box:[288,428,82,12]},
+   {id:'crates',base:484,box:[1074,466,206,20]},{id:'piling2',base:596,box:[1536,584,40,14]},{id:'piling1',base:598,box:[20,586,40,14]}],
+  spots:[{id:'arch',x:1470,y:388,tags:['arch','run','gate'],act:'arch'},{id:'rail',x:700,y:382,tags:['water','look'],act:'look'},{id:'bench',x:900,y:412,tags:['bench','rest'],act:'sit'},
+   {id:'crates',x:1050,y:500,tags:['sniff'],act:'sniff'},{id:'rope',x:640,y:572,tags:['rest'],act:'rest'},{id:'bucket',x:330,y:456,tags:['sniff'],act:'sniff'},
+   {id:'open',x:800,y:500,tags:['open','ball','zoomies'],act:'zoomies'},{id:'sun',x:400,y:520,tags:['sun','rest'],act:'rest'}]},
+ park:{poly:[[22,342],[1578,342],[1596,594],[4,594]],
+  props:[{id:'bush',base:392,box:[1214,382,72,12]},{id:'lamp',base:418,box:[750,410,20,10]},{id:'pond',base:428,box:[160,428,400,82]},{id:'tree',base:452,box:[1452,442,36,14]},
+   {id:'bench',base:476,box:[1232,462,136,16]},{id:'bowl',base:512,box:[620,502,40,12]},{id:'flowerbed',base:548,box:[40,528,220,62]},{id:'sign',base:586,box:[1528,576,24,14]}],
+  spots:[{id:'arch',x:200,y:368,tags:['arch','run','gate'],act:'arch'},{id:'pond',x:596,y:470,tags:['water','look'],act:'look'},{id:'bench',x:1300,y:500,tags:['bench','rest'],act:'sit'},
+   {id:'bowl',x:690,y:520,tags:['bowl'],act:'drink'},{id:'shade',x:1440,y:480,tags:['shade','rest'],act:'rest'},{id:'sun',x:980,y:540,tags:['sun','rest'],act:'rest'},
+   {id:'stage',x:1080,y:372,tags:['bandstand','look'],act:'sit'},{id:'open',x:820,y:470,tags:['open','ball'],act:'zoomies'}]}
+};
+
+/* ---------- the API: FLOOR rows and the v215 dispatch ---------- */
+const MINE_A={park:['Sunny Park',a5Park],dogpark:['Dog Park',a5Dogpark],beach:['Seashell Beach',a5Beach],hilltop:['Hilltop Meadow',a5Hilltop],woods:['Maple Woods',a5Woods],river:['Riverside',a5River],pier:['Lighthouse Pier',a5Pier]};
+function frameA(name,label,body,env){const F=FLA[name],W=F.w;
+  const k=kit(hashS('pwc-v215-'+name));lighten(k);k.env=env;k.so=env.ssn;k.xl=[];k.rc=recolorFn(env,'out');const pp=paperDefs(k,W,600);
+  body(k,F);
+  const ex=(env.def?'':` data-time="${env.time}" data-weather="${env.weather}"${env.ssn?` data-season="${env.ssn}"`:''}`)+(env.hw?' data-halloween="1"':'')+wnAttrs(env)+` data-w="${W}" data-back="${F.back}"`;
+  return assemble(k,pp,W,`<svg class="pa-wc-scene pa-wc-v215 pa-wc-${name}" viewBox="0 0 ${W} 600" preserveAspectRatio="xMidYMid slice" role="img" aria-label="${label}${env.def?'':`, ${env.time}, ${env.weather}${env.ssn?', '+env.ssn:''}`}"${ex}>`,false)}
+function renderA(name,o){if(o.snow===true&&!WEATHERS.includes(o.weather))o=Object.assign({},o,{weather:'snow'});const env=mkEnv(o),key='v215|'+name+'|'+env.time+'|'+env.weather+'|'+env.season+(env.hw?'|hw':'')+wnKey(env);
+  if(cacheC[key])return freshC(cacheC[key]);const s=frameA(name,MINE_A[name][0],(k,F)=>MINE_A[name][1](k,F,o),env);cacheC[key]=s;return s}
+PA.FLOOR=PA.FLOOR||{};
+Object.keys(FLOOR_A).forEach(n=>{const F=FLA[n],R=FLOOR_A[n];PA.FLOOR[n]={w:F.w,back:F.back,front:F.front,kB:F.kB,kF:F.kF,poly:R.poly.map(p=>p.slice()),
+  props:R.props.map(p=>({id:p.id,base:p.base,box:p.box?p.box.slice():null})),spots:R.spots.map(s=>Object.assign({},s,{tags:s.tags.slice()},s.path?{path:s.path.map(p=>p.slice())}:{}))}});
+{const prev=PA.scene;PA.scene=function(name,o){return o&&o.v215&&MINE_A[name]?renderA(name,o):prev.apply(this,arguments)}}
+PA.WORLD_C_V215=Object.keys(MINE_A);
+/* ======================= end of v2.15 A ======================= */
+/* ======================= v2.15 B: GROUND ART B (V215.md sections 2, 8.2, 12, 13) =======================
+   The Town Square and the Mt. Fuji Lookout redrawn deep, 1000 wide (the Square's festival and Halloween props are placed in 1000-wide units),
+   drawn only when the caller passes { v215: true } (no v215 = the old scene byte for byte; the one dispatch hook is the PA.scene wrapper at the
+   end of this block). My Yard, the Cozy House and Kibble Corner are world A's "v2.15 B" block. The Café, the Vet and the Salon are the indoor rooms below.
+   Conventions as the v2.15 A block above (and world G): the floor's back line at y 346 to 356, every floor prop in <g id="floorG">, one
+   <g data-fy="<base y>" data-prop="<id>"> each, sorted by base y; PawArt.FLOOR[name] rows. Hot spots stay in the backdrop (the game finds them
+   under #sceneG): the Square's data-hot="notice" board and its data-hot="run" start arch (the Town Loop) stand on the back line, so no dog can
+   stand behind them. The fountain stays where it was (RM_SCENERY.square), Sir Splashington and all. Fuji Lookout keeps data-spot-bench on the
+   root (33_japan.js: the middle of the bench seat). No text in the art: the shop signs and the lookout sign carry pictures. */
+const FLB2={square:{w:1000,back:346,front:594,kB:.5,kF:1.05},fujihill:{w:1000,back:356,front:594,kB:.5,kF:1.05},
+  cafe:{w:1000,back:348,front:594,kB:.7,kF:1.05,in:1},vet:{w:1000,back:348,front:594,kB:.7,kF:1.05,in:1},salon:{w:1000,back:348,front:594,kB:.7,kF:1.05,in:1}};// indoors: kB .7 (in: the indoor recolour, no outdoor season)
+// a picture on a shop sign (in place of the old words): bakery, books, post, toys, fuji
+function signPicB2(k,pic,x,y,s=1){
+  if(pic==='bakery'){donut(k,x-14*s,y+3*s,1.05*s,'#FFB3C7');k.shape([[x+6*s,y+8*s],[x+26*s,y+8*s],[x+23*s,y-4*s],[x+9*s,y-4*s]],'#F7C5CF',{w:1.3,one:1});k.shape(E(x+16*s,y-6*s,10*s,6*s,10),'#FFFBF3',{w:1.2,one:1});k.add(`<circle cx="${R1(x+16*s)}" cy="${R1(y-12*s)}" r="${R1(2.6*s)}" fill="${C.red}"/>`)}
+  else if(pic==='books'){k.shape([[x-26*s,y-8*s],[x-1*s,y-4*s],[x-1*s,y+10*s],[x-26*s,y+6*s]],'#FFFFFF',{w:1.4,one:1});k.shape([[x+1*s,y-4*s],[x+26*s,y-8*s],[x+26*s,y+6*s],[x+1*s,y+10*s]],'#FFFFFF',{w:1.4,one:1});
+    k.add(`<path d="M${R1(x-21*s)} ${R1(y-2*s)}l${R1(15*s)} ${R1(2*s)}M${R1(x-21*s)} ${R1(y+3*s)}l${R1(15*s)} ${R1(2*s)}" stroke="${C.graph}" stroke-width="1.1"/>`);
+    k.add(`<g fill="${C.mint}" stroke="${C.ink}" stroke-width=".8"><ellipse cx="${R1(x+14*s)}" cy="${R1(y+3*s)}" rx="${R1(4*s)}" ry="${R1(3.2*s)}"/><circle cx="${R1(x+9*s)}" cy="${R1(y-2*s)}" r="${R1(1.7*s)}"/><circle cx="${R1(x+13*s)}" cy="${R1(y-4*s)}" r="${R1(1.7*s)}"/><circle cx="${R1(x+17*s)}" cy="${R1(y-4*s)}" r="${R1(1.7*s)}"/><circle cx="${R1(x+21*s)}" cy="${R1(y-2*s)}" r="${R1(1.7*s)}"/></g>`)}
+  else if(pic==='post'){k.shape(RC(x-20*s,y-10*s,40*s,24*s),'#FFFBF3',{w:1.4,one:1});k.line([[x-20*s,y-10*s],[x,y+3*s],[x+20*s,y-10*s]],1.3);O.heart(k,x,y+7*s,4*s)}
+  else if(pic==='toys'){k.shape(E(x-14*s,y+1*s,10*s,10*s,10),'#E9F59B',{w:1.4,one:1});k.add(`<path d="M${R1(x-22*s)} ${R1(y-3*s)}q${R1(8*s)} ${R1(6*s)} ${R1(16*s)} 0" fill="none" stroke="#fff" stroke-width="1.6"/>`);
+    k.shape([[x+4*s,y+11*s],[x+6*s,y-3*s],[x+24*s,y-3*s],[x+26*s,y+11*s]],C.yellow,{w:1.3,one:1});k.add(`<circle cx="${R1(x+20*s)}" cy="${R1(y-7*s)}" r="${R1(6*s)}" fill="${C.yellow}" stroke="${C.ink}" stroke-width="1.2"/><path d="M${R1(x+25*s)} ${R1(y-8*s)}l${R1(5*s)} ${R1(2*s)} ${R1(-5*s)} ${R1(2*s)}z" fill="${C.orange}"/>`)}
+  else if(pic==='fuji'){k.shape([[x-26*s,y+10*s],[x-6*s,y-9*s],[x+6*s,y-9*s],[x+26*s,y+10*s]],'#9DB7D6',{w:1.4,one:1});k.shape([[x-9*s,y-6*s],[x-6*s,y-9*s],[x+6*s,y-9*s],[x+9*s,y-6*s],[x+4*s,y-3*s],[x,y-6*s],[x-4*s,y-3*s]],'#FFFFFF',{w:1.1,one:1});
+    k.add(`<path d="M${R1(x-2*s)} ${R1(y+10*s)}v${R1(-9*s)}M${R1(x+6*s)} ${R1(y+10*s)}v${R1(-9*s)}M${R1(x-5*s)} ${R1(y+2*s)}h${R1(14*s)}" stroke="#E2563D" stroke-width="${R1(2*s)}" stroke-linecap="round"/>`)}}
+// a shopfront (shopF) whose sign carries a picture: shopF writes the sign through k.text, so it is lent a picture for that one call
+function shopB2(k,x,w,top,base,o){const t0=k.text;k.text=(pic,cx,cy)=>signPicB2(k,pic,cx,cy-9);try{shopF(k,x,w,top,base,o)}finally{k.text=t0}
+  if(!k.env.snow&&k.so==='winter')k.ss(()=>capLine(k,[[x-8,top-12],[x+w+8,top-12]],5))}
+function skyB2(k,yb,c){k.skyD(()=>{skyBand(k,1000,yb);O.sun(k,c.sun[0],c.sun[1],c.sun[2]);c.clouds.slice(0,2).forEach(q=>O.cloud(k,q[0],q[1],q[2]));(c.birds||[]).forEach(q=>O.bird(k,q[0],q[1],q[2]))},Object.assign({W:1000,H:yb+10,stars:44},c))}
+function fxB2(k,o){k.fx(()=>{const e=k.env;if(e.rain){sheen(k,0,1000,o.sheen[0],o.sheen[1],70,o.avoid||[]);(o.puddles||[]).forEach(q=>puddle(k,...q))}
+  if(e.snow)(o.patches||[]).forEach(q=>snowPatch(k,...q));if(e.night&&!e.rain&&o.flies)o.flies.forEach(f=>k.flies.push(f))})}
+
+/* ---------- Town Square (deep): the shops and the clock tower on the back line, the round paw rosette in the paving, the start arch ---------- */
+// draws fn scaled by a (matrix a 0 0 a tx ty); the lights it pushes (glows, lamps, bulbs, Halloween and Winter Lights glows) move with it (world A's scaledB)
+function scaledB2(k,a,tx,ty,fn){const T=`matrix(${a} 0 0 ${a} ${R1(tx)} ${R1(ty)})`,P=(x,y)=>[a*x+tx,a*y+ty],n={glows:k.glows.length,lamps:k.lamps.length,bulbs:k.bulbs.length,hwl:k.hwl.length,top:k.top.length},sv=k.wlT;
+  k.wlT=sv?sv+' '+T:T;k.add(`<g transform="${T}">`);fn();k.add('</g>');k.wlT=sv;
+  for(let i=n.glows;i<k.glows.length;i++){const [x,y,w,h]=k.glows[i],p=P(x,y);k.glows[i]=[p[0],p[1],w*a,h*a]}
+  for(let i=n.lamps;i<k.lamps.length;i++){const l=k.lamps[i],p=P(l.x,l.y);k.lamps[i]=Object.assign({},l,{x:p[0],y:p[1],s:l.s*a,gy:l.gy==null?l.gy:a*l.gy+ty,glass:l.glass.map(q=>P(q[0],q[1]))})}
+  for(let i=n.bulbs;i<k.bulbs.length;i++){const b=k.bulbs[i],p=P(b[0],b[1]);k.bulbs[i]=[p[0],p[1]].concat(b.slice(2))}
+  ['hwl','top'].forEach(key=>{const A=k[key];for(let i=n[key];i<A.length;i++)A[i]=`<g transform="${T}">${A[i]}</g>`})}
+function sqFountainB2(k){const fx=126;// the old fountain, drawn at .85 round its foot moved to x 110 (inside RM_SCENERY.square, clear of the stall and the pop-up), its plaque a paw instead of a name
+  shadeA(k,110,492,94,9);scaledB2(k,.85,110-fx*.85,492*.15,()=>sqFountainInB2(k,fx))}
+function sqFountainInB2(k,fx){k.shape(E(fx,450,104,26,20),C.stone,{w:2.3,hatch:{side:.6,gap:5,col:C.stoneD,op:.5}});
+  k.shape([[fx-104,450],[fx+104,450],[fx+100,482],[fx-100,482]],C.stone,{w:2.2,hatch:{side:.7,gap:5,col:C.stoneD,op:.5}});k.fill(E(fx,481,100,10,14),C.stone,{dx:0,dy:0});k.pen([[fx-100,481],[fx-50,490],[fx,492],[fx+50,490],[fx+100,481]],false,{w:2.2});
+  for(let x=fx-90;x<fx+100;x+=32)k.line([[x,456],[x+2,484]],1.1,C.stoneD);
+  k.shape(E(fx,448,88,17,18),k.so==='winter'?'#DCEAF3':C.water,{w:1.6,one:1});k.add(`<path d="M${fx-60} 446q8 -4 16 0t16 0M${fx+10} 452q8 -4 16 0t16 0M${fx-20} 442q6 -3 12 0" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>`);
+  k.shape([[fx-18,446],[fx-14,386],[fx+14,386],[fx+18,446]],C.stone,{w:2,hatch:{side:.6,gap:4,col:C.stoneD,op:.55}});k.shape(RC(fx-26,376,52,12),C.stoneD,{w:1.8});
+  k.shape(RC(fx-17,404,34,18),'#E1C47A',{w:1.3,one:1});k.add(`<g fill="${C.ink}"><ellipse cx="${fx}" cy="416" rx="4.4" ry="3.4"/><circle cx="${fx-5}" cy="410.5" r="1.7"/><circle cx="${fx-1.6}" cy="408" r="1.7"/><circle cx="${fx+1.6}" cy="408" r="1.7"/><circle cx="${fx+5}" cy="410.5" r="1.7"/></g>`);
+  k.add('<g transform="translate(0 30)">');const sc='#E3E7EA',sd='#9FAEB9';
+  k.line([[fx-24,336],[fx-42,328],[fx-48,312],[fx-38,304]],6,C.ink);k.line([[fx-24,336],[fx-42,328],[fx-48,312],[fx-38,304]],3.4,sc);
+  k.shape([[fx-28,346],[fx-30,318],[fx-20,296],[fx+2,290],[fx+18,304],[fx+22,346]],sc,{w:2.2,hatch:{side:.55,gap:4,col:sd,op:.7}});
+  k.shape([[fx-4,346],[fx-2,322],[fx+8,320],[fx+10,346]],sc,{w:1.6,one:1});k.shape([[fx+10,346],[fx+12,324],[fx+20,326],[fx+22,346]],sc,{w:1.6,one:1});
+  k.shape([[fx-2,298],[fx-6,280],[fx+4,264],[fx+24,260],[fx+42,268],[fx+50,280],[fx+44,292],[fx+28,296],[fx+10,300]],sc,{w:2.2,hatch:{side:.62,gap:4,col:sd,op:.65}});
+  k.shape([[fx+2,270],[fx-6,244],[fx+16,262]],sd,{w:1.8,one:1});k.shape([[fx+22,262],[fx+30,240],[fx+34,264]],sd,{w:1.8,one:1});
+  k.add(`<circle cx="${fx+26}" cy="272" r="3" fill="${C.ink}"/><circle cx="${fx+27}" cy="271" r="1" fill="#fff"/><path d="M${fx+19} 265l9 -3" stroke="${C.ink}" stroke-width="1.6" stroke-linecap="round"/><ellipse cx="${fx+49}" cy="279" rx="4" ry="3" fill="${C.ink}"/><path d="M${fx+50} 288q-6 4 -12 2" fill="${C.pink}" stroke="${C.ink}" stroke-width="1.4"/><ellipse cx="${fx+16}" cy="282" rx="5" ry="3" fill="${C.pink}" opacity=".6"/>`);
+  k.shape([[fx-4,300],[fx+22,296],[fx+24,303],[fx-3,307]],C.pink,{w:1.5,one:1});k.add(`<circle cx="${fx+10}" cy="308" r="3.4" fill="${C.yellow}" stroke="${C.ink}" stroke-width="1.2"/>`);
+  const arc=[];for(let i=0;i<=12;i++){const t=i/12;arc.push([fx+48+t*54,288-Math.sin(t*Math.PI*.62)*30+t*t*156])}{const wa=k.cap(()=>{k.line(arc,6,'#9CCDE8',{amp:.3});k.line(arc,2.4,'#FFFFFF',{amp:.3})});if(!k.env.lt)k.add(wa)}
+  {const px=fx+14,py=246;k.shape(E(px,py,10,7,10),'#B7B5C9',{w:1.5,one:1});k.shape(E(px+8,py-7,5,5,8),'#B7B5C9',{w:1.4,one:1});k.add(`<path d="M${px+13} ${py-7}l4 1 -4 2z" fill="${C.orange}"/><circle cx="${px+9}" cy="${py-8}" r="1.1" fill="${C.ink}"/><path d="M${px-3} ${py+6}v3M${px+3} ${py+6}v3" stroke="#E8945A" stroke-width="1.4"/>`)}
+  k.add('</g>');
+  if(!k.env.lt)k.add(`<circle cx="${fx+100}" cy="446" r="2.4" fill="#BEE0F2" stroke="#6F8FA8" stroke-width=".9"/><circle cx="${fx+112}" cy="440" r="1.8" fill="#BEE0F2" stroke="#6F8FA8" stroke-width=".9"/><path d="M${fx+84} 452q16 -8 32 0" fill="none" stroke="#fff" stroke-width="1.6"/>`);
+  snowOnA(k,E(fx,450,106,27,20).slice(10,20).concat([[fx+106,450]]),7);snowOnA(k,[[fx-27,376],[fx+27,376]],6);if(k.env.snow)k.side(()=>capLine(k,[[fx+4,324],[fx+24,320],[fx+42,328]],5));
+  k.lt(()=>ltFountain(k,fx));k.hw(()=>{hwJack(k,50,439,.72);hwJack(k,78,472,.85);hwJack(k,176,471,.7)})}
+function sqNoticeB2(k){// the town notice board at the back of the square (a picture header, picture notes), scaled from the old board round its foot
+  const cx=745,gy=392,s=.8,X=x=>R1(cx+(x-740)*s),Y=y=>R1(gy+(y-512)*s);
+  if(k.env.lit)(k.unlit=k.unlit||[]).push(`M${X(632)} ${Y(351)}L${X(740)} ${Y(315)}L${X(848)} ${Y(351)}L${X(839)} ${Y(361)}L${X(740)} ${Y(333)}L${X(641)} ${Y(361)}ZM${X(647)} ${Y(353)}H${X(833)}V${Y(477)}H${X(647)}Z`);
+  const g=k.cap(()=>{shadeA(k,cx,gy+2,80*s,6*s);k.add(`<g transform="matrix(${s} 0 0 ${s} ${R1(cx-740*s)} ${R1(gy-512*s)})">`);
+    k.line([[672,512],[672+k.J(1),410]],5,C.trunkD);k.line([[808,512],[808+k.J(1),410]],5,C.trunkD);
+    k.shape([[636,350],[740,318],[844,350],[836,358],[740,330],[644,358]],C.roof,{w:2,hatch:{side:.6,gap:4,col:C.roofD,op:.55}});
+    k.shape(RC(650,356,180,118),C.woodD,{w:2.2});k.shape(RC(660,366,160,98),'#E1B987',{w:1.6,one:1,hatch:{gap:6,col:'#C9A06E',op:.3}});
+    k.shape(RC(700,356,80,22),'#FFFBF3',{w:1.6,one:1});pawsA(k,[[724,371,1],[740,367,1],[756,371,1]],C.ink);
+    const notes=[[668,386,46,40,-6,C.yellow,'ball'],[720,384,44,44,5,'#FFD8E0','heart'],[770,388,42,36,-4,C.mint,'bone'],[680,428,40,30,4,'#FFFFFF','duck'],[730,432,52,28,-3,C.lav,'paw'],[786,428,30,30,7,C.blue,'heart']];
+    notes.forEach(([x,y,w,h,a,c,p])=>{k.add(`<g transform="rotate(${a} ${x+w/2} ${y+h/2})">`);k.shape(RC(x,y,w,h),c,{w:1.3,one:1});const mx=x+w/2,my=y+h/2+2;
+      if(p==='ball'){k.shape(E(mx,my,9,9,10),'#E9F59B',{w:1.3,one:1});k.add(`<path d="M${mx-7} ${my-3}q7 5 14 0" fill="none" stroke="#fff" stroke-width="1.4"/>`)}
+      else if(p==='bone')k.shape([[mx-12,my-2],[mx+12,my-2],[mx+15,my-6],[mx+18,my-1],[mx+15,my+4],[mx+12,my+2],[mx-12,my+2],[mx-15,my+4],[mx-18,my-1],[mx-15,my-6]],'#FFFBF3',{w:1.2,one:1});
+      else if(p==='duck')k.add(`<path d="M${x+10} ${y+20}q10 -10 20 0q-2 6 -10 6q-8 0 -10 -6z" fill="#F5C26B" stroke="#2a2420" stroke-width="1.6"/><circle cx="${x+29}" cy="${y+15}" r="4" fill="#F5C26B" stroke="#2a2420" stroke-width="1.4"/>`);
+      else if(p==='paw')pawsA(k,[[mx-10,my,.8],[mx+2,my,.8],[mx+14,my,.8]],C.ink);else O.heart(k,mx,my-2,6);
+      k.add(`<circle cx="${x+w/2}" cy="${y+3}" r="2.6" fill="#E86A7C" stroke="${C.ink}" stroke-width=".8"/></g>`)});
+    snowOnA(k,[[634,350],[740,316],[846,350]],8);frostOnA(k,[[652,357],[828,357]]);k.add('</g>')});
+  hot(k,'data-hot','notice','Town notice board',RC(645,226,200,174),g)}
+function sqrosetteB2(k,cx,cy,rx,ry){// a ring of darker cobbles round a paw in the paving (the round plaza)
+  let d='';for(let i=0;i<40;i++){const a=i/40*Math.PI*2,x=cx+Math.cos(a)*rx,y=cy+Math.sin(a)*ry,f=.7+.3*(y-cy+ry)/(2*ry);d+=`<ellipse cx="${R1(x)}" cy="${R1(y)}" rx="${R1(11*f)}" ry="${R1(4.4*f)}" fill="#CFC3B3" stroke="${C.ink}" stroke-width=".9"/>`}
+  k.fill(E(cx,cy,rx-14,ry-6,24),'#E2D9CB',{dx:0,dy:0,op:.85});k.add(d);
+  k.shape(E(cx,cy+6,30,11,14),'#D9B99A',{w:1.4,one:1});[[-32,-8],[-12,-16],[12,-16],[32,-8]].forEach(([dx,dy])=>k.shape(E(cx+dx,cy+dy,9,4,10),'#D9B99A',{w:1.2,one:1}))}
+function sqSquareB2(k,F){const B=F.back,D=y=>depA(F,y),fk=floorKitA(k),e=k.env;
+  skyB2(k,330,{sun:[880,66,28],low:[905,138,28],moon:[870,70,24],clouds:[[300,60,22],[740,50,18]],rainC:[[120,40,24],[480,28,26],[960,96,22]],birds:[[390,82,8],[412,94,6]]});
+  fujiA(k,410,196,300);
+  // the shopfronts and the clock tower stand on the back line (y 346): bakery, books, post office, toys
+  shopB2(k,-14,176,166,B,{wall:C.wall2,noGlow:1,sign:'bakery',awn:[C.red,'#fff'],door:'#E8A9B8',upper:2,disp:(x,y,w,h)=>{[[x+24,y+h-14],[x+56,y+h-14],[x+88,y+h-14]].forEach(([bx,by],i)=>{k.shape(E(bx,by,13,7,10),'#F0D9B5',{w:1.3,one:1});donut(k,bx,by-9,.9,[C.lav,'#FFB3C7',C.yellow][i])})}});
+  shopB2(k,214,206,156,B,{wall:C.wall,brick:1,sign:'books',awn:[C.mint,'#fff'],door:'#B9D3F2',upper:3,curt:C.mint,disp:(x,y,w,h)=>{let bx=x+16;const cs=[C.red,C.blue,C.yellow,C.lav,C.mint,C.orange];for(let i=0;i<9;i++){const bw=10+(i*7%6),bh=24+(i*11%12);k.shape(RC(bx,y+h-bh-4,bw,bh),cs[i%6],{w:1.2,one:1});bx+=bw+3}}});
+  shopB2(k,616,190,138,B,{wall:C.wall3,noDeco:1,sign:'post',awn:[C.blue,'#fff'],door:'#E57E83',upper:2,curt:C.yellow,signCol:'#FFFFFF',disp:(x,y,w,h)=>{k.shape(RC(x+14,y+h-30,40,22),'#FFFBF3',{w:1.3,one:1});k.line([[x+14,y+h-30],[x+34,y+h-18],[x+54,y+h-30]],1.2);O.heart(k,x+34,y+h-16,4)}});
+  shopB2(k,816,164,150,B,{wall:C.wall4,sign:'toys',awn:[C.yellow,'#fff'],door:'#B9DD92',upper:2,curt:C.lav,disp:(x,y,w,h)=>{k.shape(E(x+26,y+h-12,9,9,10),'#E9F59B',{w:1.4,one:1});k.shape([[x+48,y+h-6],[x+50,y+h-22],[x+68,y+h-22],[x+70,y+h-6]],C.yellow,{w:1.3,one:1})}});
+  k.ss(()=>{if(k.so==='winter'){chimney(k,40,118,1);chimney(k,300,148,1.05);chimney(k,700,132,.95)}});
+  k.jp(()=>{k.add('<g class="pa-jp" pointer-events="none">');jpPoleRow(k,[809,1006],B,60,1,12,[0,[.4,.47,.55]],0);jpPoleRow(k,[-18,207],B,64,1,12);jpNoren(k,138,188,B-71,26,2);jpVend(k,609,B,.86);k.add('</g>')});
+  // the clock tower (its top as before, its foot on the back line)
+  {const tx=560;k.shape(RC(tx-42,64,84,B-64),C.stone,{w:2.3,hatch:{side:.78,gap:5,col:C.stoneD,op:.55}});let d='';for(let y=84;y<B-4;y+=20)d+=`M${tx-38} ${y}h76`;k.add(`<path d="${d}" stroke="#fff" stroke-opacity=".5" stroke-width="1.3"/>`);
+   const roof=[[tx-54,68],[tx,8],[tx+54,68]];k.shape(roof,C.roof,{w:2.3,hatch:{side:.55,gap:5,col:C.roofD,op:.55}});k.line([[tx,8],[tx,-6]],2);k.shape([[tx,-6],[tx+16,-1],[tx,4]],C.pink,{w:1.3,one:1});
+   k.shape(E(tx,124,30,30,18),'#FFFBF3',{w:2.3});for(let i=0;i<12;i++){const a=i/12*Math.PI*2;k.line([[tx+Math.cos(a)*23,124+Math.sin(a)*23],[tx+Math.cos(a)*27,124+Math.sin(a)*27]],i%3?1.1:2)}
+   if(e.lit)k.glows.push([tx-21,103,42,42]);
+   k.side(()=>{const hm={dawn:[6,0],day:[1,10],dusk:[6,0],night:[10,10]}[e.time],ha=(hm[0]%12+hm[1]/60)/12*Math.PI*2-Math.PI/2,ma=hm[1]/60*Math.PI*2-Math.PI/2;
+     k.add(`<path d="M${tx} 124L${R1(tx+Math.cos(ha)*14)} ${R1(124+Math.sin(ha)*14)}M${tx} 124L${R1(tx+Math.cos(ma)*21)} ${R1(124+Math.sin(ma)*21)}" stroke="${C.ink}" stroke-width="2.4" stroke-linecap="round"/><circle cx="${tx}" cy="124" r="3" fill="${C.pink}" stroke="${C.ink}"/>`)});
+   const ar=[[tx-16,230],[tx-16,190],[tx,176],[tx+16,190],[tx+16,230]];k.shape(ar,'#9AA7B8',{w:1.9});k.shape(E(tx,198,9,9,10),C.yellow,{w:1.5});k.line([[tx,189],[tx,182]],1.4);
+   k.shape(RC(tx-22,B-60,44,60),'#C79A72',{w:2});k.add(`<path d="M${tx} ${B-60}v60" stroke="${C.ink}" stroke-width="1.4"/>`);shadeA(k,tx,B+3,52,5);
+   snowOnA(k,[[tx-56,68],[tx,7],[tx+56,68]],10);
+   k.ss(()=>{if(k.so==='winter'){const wr=k.cap(()=>wreath(k,tx,B-46,1.1));if(!e.ny)k.add(wr)}});
+   k.lt(()=>ltStar(k,tx,44,.78));k.ny(()=>nyShime(k,tx,B-62,.8))}
+  // bunting from the tower to the edges (with the Japan scenery the left string ends at the telephone pole)
+  if(e.jp)buntingL(k,0,207,150,14,[C.red,C.yellow,C.mint,C.lav,C.blue]);else buntingL(k,0,516,150,26,[C.red,C.yellow,C.mint,C.lav,C.blue]);
+  buntingL(k,604,1000,150,22,[C.yellow,C.mint,C.lav,C.blue,C.red]);
+  k.hw(()=>{[[531,90,.7],[591,94,.62],[530,170,.66]].forEach(([x,y,s])=>hwBat(k,x,y,s,{col:HWP}));hwSkyBats(k,[[250,96,.8],[300,74,.6],[700,60,.7]])});
+  // the plaza: perspective flagstones from the back line, the round cobble ring with a paw in the middle
+  k.fill([[0,B],[1000,B],[1000,600],[0,600]],'#E8E1D6',{dx:0,dy:0,sc:0});k.pen([[0,B+1],[500,B],[1000,B+1]],false,{w:2});
+  paving(k,B+1,600,500,170,'#BFB2A2','#DDD4C8');
+  sqrosetteB2(k,560,500,232,56);
+  k.ss(()=>{const so=k.so;if(so==='autumn')k.add(`<rect y="${B+2}" width="1000" height="${598-B}" fill="#F2B25C" fill-opacity=".08"/>`);
+    seasonGround(k,[0,B+8,1000,598],80,[[640,B,850,400],[20,420,236,500]],0,1);if(so==='autumn')seasonGround(k,[220,520,520,598],40,[],0,1)});
+  fxB2(k,{sheen:[B+8,598],puddles:[[450,580,48,9],[780,560,40,8],[930,476,30,6],[300,420,34,6]],patches:[[450,582,74,13],[780,564,62,11],[934,478,46,9],[60,566,50,9],[300,420,50,8],[860,400,40,7]],flies:[[300,470],[620,420],[860,560],[180,560]]});
+  floorSnowA(k,[[0,B],[1000,B],[1000,600],[0,600]],[[460,586,110,12],[860,574,90,11],[300,398,60,7],[660,410,50,7]]);
+  // the Town Loop start arch on the back line, in front of the gap by the tower
+  runGateA(k,466,B+6,.55,C.woodD,C.yellow);
+  // pigeons pecking crumbs (flat on the paving)
+  {const pg=(x,y,f)=>{k.shape(E(x,y,11,7,10),'#B7B5C9',{w:1.5,one:1});k.shape(E(x+9*f,y-8,5,5,8),'#C9C7D8',{w:1.4,one:1});k.add(`<path d="M${x+14*f} ${y-8}l${4*f} 1 ${-4*f} 2z" fill="${C.orange}"/><circle cx="${x+10*f}" cy="${y-9}" r="1.1" fill="${C.ink}"/><path d="M${x-2} ${y+6}v4M${x+3} ${y+6}v4" stroke="#E8945A" stroke-width="1.4"/>`)};pg(620,560,1);pg(660,574,-1);k.add(`<g fill="#E8C58A"><circle cx="638" cy="580" r="1.6"/><circle cx="646" cy="576" r="1.4"/><circle cx="632" cy="584" r="1.3"/></g>`)}
+  sqNoticeB2(k);
+  // the floor props
+  fk.add('lampL',400,()=>lampA(k,345,400,D(400)*1.3));
+  fk.add('lampR',400,()=>lampA(k,640,400,D(400)*1.3));
+  fk.add('fountain',492,()=>sqFountainB2(k));
+  fk.add('bench',478,()=>{benchA(k,760,478,D(478)*1.3);k.hw(()=>hwJack(k,820,480,.7));k.ss(()=>{if(k.so==='winter'&&!e.night)robin(k,722,478-36*D(478)*1.3,1,1)})});
+  fk.add('planter',560,()=>{const px=420,gy=560,s=1,so=k.so;shadeA(k,px,gy+2,38*s);k.shape([[px-30,gy],[px+30,gy],[px+34,gy-24],[px-34,gy-24]],C.stone,{w:1.8,hatch:{side:.6,gap:4,col:C.stoneD,op:.55}});k.shape(RC(px-38,gy-30,76,7),C.stoneD,{w:1.5,one:1});
+    if(!so)fl(k,[[px-20,gy-36,C.red],[px-4,gy-42,C.yellow],[px+12,gy-36,'#FFB3C7'],[px+24,gy-40,C.lav]],5);
+    k.ss(()=>{if(so==='spring')bulbs(k,px,gy-28,6,1.1);
+     else if(so==='autumn'){for(let i=0;i<6;i++)flowerDot(k,px-24+i*9.6,gy-36-(i%2)*7,4.2,['#EC9A4E','#F3BE55','#DF7556'][i%3]);pumpkin(k,px+46,gy+4,1.1);pumpkin(k,px-46,gy+5,.85)}
+     else if(so==='winter'){for(let i=0;i<5;i++)winterFlower(k,px-22+i*11,gy-40,4.5);frostLine(k,[[px-37,gy-30],[px+37,gy-30]])}});
+    snowOnA(k,[[px-38,gy-30],[px+38,gy-30]],5)});
+  fk.add('tub',582,()=>{const x=948,y=552;shadeA(k,x,584,34);k.shape(E(x,y,30,10,12),'#D9A086',{w:1.8});k.shape([[x-28,y],[x+28,y],[x+22,y+30],[x-22,y+30]],'#E9B9A0',{w:1.8,hatch:{side:.6,gap:4,col:'#CF9479',op:.5}});
+    if(k.so!=='winter')fl(k,[[x-14,y-10,C.red],[x+2,y-16,C.yellow],[x+16,y-8,C.lav]],5);else k.ss(()=>{for(let i=0;i<3;i++)winterFlower(k,x-12+i*12,y-10,4.2)});
+    k.ss(()=>{if(k.so==='spring')bulbs(k,x,y-4,4,.9);else if(k.so==='autumn')pumpkin(k,x-34,y+30,.8)});snowOnA(k,[[x-30,y-2],[x+30,y-2]],5)});
+  fk.out();
+  // up high, over the floor: Halloween lanterns and Winter Lights between the lamp posts
+  {const ty=400-140*D(400)*1.3;k.hw(()=>hwLanternString(k,345,ty+6,640,ty+6,24,6,.85));k.lt(()=>ltString(k,sagP(345,ty+10,640,ty+10,20,16),22))}
+  fl(k,[[880,590,C.red],[262,588,C.lav],[40,580,C.yellow],[70,592,C.red],[20,592,C.lav],[330,520,'#FFB3C7']]);
+  seasonBitsA(k,{drift:[[300,250,1],[500,170,.9],[760,250,1],[900,300,.85],[200,320,.8]],fly:[420,300]});
+  O.sparkle(k,700,200,7);O.heart(k,400,130,6);O.note(k,460,210,11);
+  O.tape(k,8,20,90,-26,'#F9E19A');O.tape(k,920,568,80,-24,'#D3C6F1')}
+
+/* ---------- Mt. Fuji Lookout (deep): Fuji over the lake, the meadow from the back line, the torii and the shrine, the bench facing the view ---------- */
+const FH2_BENCH=[548,418,.84],FH2_SPOT=[FH2_BENCH[0],R1(FH2_BENCH[1]-36*FH2_BENCH[2])];// the middle of the seat (data-spot-bench)
+function sqFujihillB2(k,F){const B=F.back,D=y=>depA(F,y),fk=floorKitA(k),e=k.env;
+  skyB2(k,330,{sun:[905,150,28],low:[935,280,30],moon:[900,150,24],clouds:[[215,206,20],[905,250,14]],rainC:[[300,100,26],[700,80,28],[960,160,22]],birds:[[250,236,8],[272,248,6]]});
+  k.own(rng(0x46554a49),()=>jpFujiDraw(k,{cx:400,by:306,w:520}));
+  // the far hills, the lake and a band of forest below Fuji
+  const fh=[[0,302],[130,292],[270,304],[430,298],[580,306],[720,296],[870,304],[1000,294],[1000,334],[0,334]];k.fill(fh,'#C6DBC4',{dx:0,dy:0,sc:0});k.pen(fh.slice(0,8),false,{w:1.4,col:C.graph});
+  k.add(`<rect x="0" y="318" width="1000" height="18" fill="${k.so==='winter'?'#DCEAF3':C.water}"/>`);k.line([[0,318],[1000,318]],1.2,C.graph,{op:.8});
+  let lw='';for(let i=0;i<18;i++){const x=k.r()*980,y=322+k.r()*10;lw+=`M${R1(x)} ${R1(y)}q5 -3 10 0t10 0`}k.add(`<path d="${lw}" fill="none" stroke="#86BDDE" stroke-width="1.3" stroke-linecap="round"/>`);
+  k.fx(()=>waterGlints(k,e.night?900:935,321,334));
+  const mh=x=>338+per(x*1.2,[[4,2,.6],[2.4,5,1.4]]),mp=[];for(let x=0;x<=1000;x+=25)mp.push([x,mh(x)]);k.add(`<path d="${smooth(mp,false)}L1000 ${B+6}L0 ${B+6}Z" fill="#B8D79A"/>`);k.line(mp,1.4,C.graph,{op:.9});
+  for(let x=14;x<1000;x+=30){const y=mh(x)+3+k.J(2),so=k.so,c=so==='autumn'?['#E7A35A','#D9774A','#C9B25E'][hashXY(x,y)%3]:so==='winter'?(k.r()<.5?'#C9CFC4':'#B9C2B6'):(k.r()<.5?'#A3C989':'#94BE7C');k.add(`<path d="${smooth(blobP(x,y,11+k.r()*3,8+k.r()*2,k.r,8,.2),true)}" fill="${c}" stroke="${C.graph}" stroke-width="1"/>`)}
+  // the meadow we stand on, from the back line
+  const hill=[[0,B+2],[200,B-2],[420,B+2],[640,B-3],[860,B],[1000,B-2],[1000,600],[0,600]];k.fill(hill,C.grass,{dx:0,dy:0,sc:0});k.pen(hill.slice(0,6),false,{w:2.2});
+  [[150,560,130,20],[700,592,140,18],[820,440,110,14],[420,400,120,12]].forEach(q=>k.fill(E(q[0],q[1],q[2],q[3],12),C.grass2,{op:.7}));
+  tuftsA(k,0,1000,B+10,598,130,(x,y)=>!(x>380&&x<520&&y>440));
+  k.ss(()=>seasonGround(k,[0,B+10,1000,598],110,[[480,380,640,450],[200,380,320,450]]));
+  fxB2(k,{sheen:[B+8,598],puddles:[[660,580,44,9],[880,540,38,8],[120,576,34,7]],patches:[[660,582,70,12],[880,544,58,10],[110,560,50,9],[320,400,46,8],[760,390,40,7],[980,470,40,7]],flies:[[160,470],[620,476],[880,560],[470,584],[760,400]]});
+  floorSnowA(k,hill,[[300,580,120,14],[820,574,110,13],[600,392,70,8],[120,400,60,8]]);
+  // the stepping-stone path from the front up through the torii to the shrine
+  [[470,596,36,11],[436,560,33,10],[404,526,30,9],[372,498,27,8],[338,474,24,7],[306,456,20,6],[282,440,17,5],[264,426,14,5],[256,414,12,4],[254,404,10,3.4],[254,396,9,3]].forEach(([x,y,rx,ry])=>{const p=blobP(x,y,rx,ry,k.r,9,.22);k.shape(p,'#DCD3C6',{w:1.6,one:1,hatch:{side:.6,gap:3.6,col:'#B5AC9F',op:.5}})});
+  if(e.snow)k.side(()=>[[436,556,30],[372,494,22],[306,452,16]].forEach(([x,y,r])=>capLine(k,[[x-r,y-4],[x+r,y-4]],4)));
+  k.ny(()=>nyKites(k,[[104,206,.85,1,30,B+20],[790,216,.8,0,730,B+30]]));
+  // the floor props: the shrine and the momiji at the back, the torii with its lanterns, the bench facing Fuji, the sakura in front
+  fk.add('hokora',384,()=>{shadeA(k,255,386,24);jpHokora(k,255,384,.72)});
+  fk.add('momiji',398,()=>{shadeA(k,70,400,34,6);k.own(rng(0x4d4f4d49),()=>fhMomiji(k,70,398,.9));k.jp(()=>jpJizo(k,120,400,.6));if(k.so==='winter'&&!e.snow)k.ss(()=>capLine(k,[[70-27,398-56],[70,398-41],[70+25,398-63]],2.4))});
+  fk.add('sign',394,()=>{signA(k,700,394,.66,'');signPicB2(k,'fuji',701,394-99*.66,.85)});
+  fk.add('toroL',428,()=>{shadeA(k,150,430,18);jpToro(k,150,428,.82)});
+  fk.add('toroR',430,()=>{shadeA(k,360,432,18);jpToro(k,360,430,.82)});
+  fk.add('bench',FH2_BENCH[1],()=>{const [bx,by,bs]=FH2_BENCH;benchA(k,bx,by,bs);
+    k.hw(()=>{hwJack(k,bx+62,by+2,.7);hwJack(k,bx+80,by+5,.5)});k.lt(()=>ltString(k,sagP(bx-50*bs,by-70*bs,bx+50*bs,by-70*bs,6,10),18));
+    k.ss(()=>{if(k.so==='winter'&&!e.night)robin(k,bx+30*bs,by-36*bs,1,-1)})});
+  fk.add('bowl',436,()=>bowlA(k,640,436,D(436)*1.1,'#F7B2B2'));
+  fk.add('torii',440,()=>{shadeA(k,255,442,70,6);k.add('<g class="pa-jp-torii">');jpTorii(k,255,440,1.75);k.add('</g>');
+    k.ny(()=>{nyKado(k,180,444,.75,-1);nyKado(k,330,444,.75,1);k.line([[410,444],[410,334]],2.4,'#7FA65E');k.line([[100,444],[100,334]],2.4,'#7FA65E');nyChochins(k,330,346,410,338,7,3,.7);nyChochins(k,100,338,180,346,7,3,.7)});
+    k.lt(()=>ltString(k,sagP(255-62,440-86*1.75+46,255+62,440-86*1.75+46,10,10),16))});
+  fk.add('toriiR',441,()=>{const s=1.75,xb=255+40*s*.74;k.shape(RC(xb-5.4*s,441-9*s,10.8*s,8*s),'#3E3533',{w:1,one:1})});
+  fk.add('sakura',488,()=>{shadeA(k,900,490,70,8);k.own(rng(0x53414b55),()=>fhSakura(k,900,488,1.05));
+    k.hw(()=>hwGhost(k,840,488-150,.75,16));k.lt(()=>{ltString(k,sagP(830,488-118,900,488-126,14,10),19);ltString(k,sagP(856,488-158,950,488-152,12,10),19)})});
+  fk.out();
+  fl(k,[[40,560,C.red],[90,590,C.yellow],[210,580,C.lav],[640,588,'#FFB3C7'],[700,560,C.yellow],[960,592,C.red],[560,470,C.lav],[600,520,C.yellow],[780,470,'#FFB3C7'],[420,380,C.yellow],[880,400,C.red]],5);
+  k.ss(()=>{const so=k.so;if(so==='spring')[[300,420,.4],[520,440,1.9],[680,500,.9],[760,450,2.4],[860,520,1.2],[620,560,.2],[200,520,2.9],[100,480,1.4]].forEach(([x,y,r],i)=>petalAt(k,x,y,4,r,PET[i%3]));
+    else if(so==='autumn')[[90,470,.4],[150,520,1.9],[640,520,.9],[760,470,2.4],[880,540,1.2],[300,570,.2]].forEach(([x,y,r],i)=>momijiAt(k,x,y,5.4,r,MOMI[i%4]))});
+  seasonBitsA(k,{drift:[[700,160,1],[620,210,.9],[820,260,.85],[450,200,.8]],fly:[700,400]});
+  O.tape(k,6,26,90,-24,'#F7B9C6');O.tape(k,930,566,80,-28,'#BDE7D2')}
+
+/* ---------- the indoor rooms (deep): Pupuccino Café, the Vet Clinic, the Grooming Salon ----------
+   The wall comes down to the back line (y 348): its old things drawn at .86 (as world A's Cozy House), the counter, the desk and the grooming
+   table (the hot spots) moved up so their feet stand on the back line (no dog behind them); the floor tiles in perspective (vanishing point
+   500, 170); the tables, the bench, the scale, the trolley and the dryer at several depths. No words: the menu, the posters, the jars and the
+   signs are pictures. Seasons through the window and a vase on the k.ss stream; Halloween, the Winter Lights, New Year and the Japan noren. */
+const RW2=.86;// the wall's scale
+// a tiled floor in perspective from the back line: o.cell fills every other tile (a checkerboard), o.line draws the joints
+function tilesB2(k,B,o){const vy=170,H=600-vy,ys=[];for(let n=0;;n++){const y=vy+H/(1+n*(o.dz||.075));if(y<=B+1)break;ys.push(y)}ys.push(B+1);ys.reverse();
+  const X=(j,y)=>R1(500+j*o.sp*(y-vy)/H);let f='',d='';
+  for(let i=0;i<ys.length-1;i++){const a=ys[i],b=ys[i+1];if(i)d+=`M0 ${R1(a+k.J(.6))}H1000`;if(o.cell)for(let j=-17;j<17;j++){if((i+j)%2)continue;const x0=X(j,b),x1=X(j+1,b);if(x1<-10||x0>1010)continue;f+=`M${X(j,a)} ${R1(a)}L${X(j+1,a)} ${R1(a)}L${x1} ${R1(b)}L${x0} ${R1(b)}Z`}}
+  for(let j=-17;j<=17;j++){const a=X(j,B+1),b=X(j,600);if(Math.max(a,b)<0||Math.min(a,b)>1000)continue;d+=`M${a} ${B+1}L${R1(b+k.J(1.4))} 600`}
+  if(f)k.add(`<path d="${f}" fill="${o.cell}" opacity="${o.op||.55}"/>`);k.add(`<path d="${d}" stroke="${o.line}" stroke-width="1.2" fill="none" opacity=".75"/>`)}
+// the room: the wall down to the back line, the wainscot from y 262, the floor; then the skirting board (skirtB2) once the floor is drawn
+function roomB2(k,B,wall,wain,floor){k.add(`<rect width="1000" height="${B+4}" fill="${wall}"/><rect y="262" width="1000" height="${B-260}" fill="${wain}"/>`);k.fill([[0,B],[1000,B],[1000,600],[0,600]],floor,{dx:0,dy:0,sc:0})}
+function skirtB2(k,B,col){k.shape(RC(0,B-9,1000,11),col,{w:2})}
+function sunB2(k,B,x0,x1){const e=k.env;if(e.time==='day'&&e.sunny)k.add(`<path d="M${x0} ${B+3}L${x1} ${B+3}L${x1+70} 470L${x0-30} 470Z" fill="#FFF3C2" opacity=".45"/>`)}
+// a little vase of the season's flowers (summer daisies, spring tulips, autumn maple leaves, winter holly)
+function vaseB2(k,x,gy,s,col=C.blue){const so=k.env.ssn,top=gy-20*s,st=[[x-8*s,top-15*s],[x,top-22*s],[x+8*s,top-14*s]];
+  st.forEach(p=>k.line([[x,top+2*s],p],1.2,'#6FAE5C'));
+  k.shape([[x-6*s,gy],[x+6*s,gy],[x+8*s,gy-12*s],[x+4*s,top],[x-4*s,top],[x-8*s,gy-12*s]],col,{w:1.4,one:1});
+  if(!so)st.forEach((p,i)=>O.flower(k,p[0],p[1],4.2*s,i===1?C.yellow:'#FFFFFF'));
+  else k.ss(()=>st.forEach(([px,py],i)=>{if(so==='spring')k.shape([[px-4*s,py+3*s],[px-4.4*s,py-4*s],[px-1.8*s,py-1.4*s],[px,py-5*s],[px+1.8*s,py-1.4*s],[px+4.4*s,py-4*s],[px+4*s,py+3*s]],['#F7A8C0','#FFFFFF','#F48FA8'][i],{w:1.1,one:1});
+    else if(so==='autumn')momijiAt(k,px,py,5.2*s,i*.9,MOMI[i]);
+    else{k.shape(E(px-3.4*s,py,4.6*s,2.2*s,8,.5),'#4E8A55',{w:1,one:1});k.shape(E(px+3.4*s,py,4.6*s,2.2*s,8,-.5),'#4E8A55',{w:1,one:1});k.add(`<circle cx="${R1(px)}" cy="${R1(py-2*s)}" r="${R1(2.2*s)}" fill="#E2453C" stroke="${C.ink}" stroke-width=".8"/>`)}}))}
+// a coin, a chalk paw and a tiny bone: the pictures that stand in for the old words
+function coinB2(k,x,y,r=5){k.add(`<circle cx="${R1(x)}" cy="${R1(y)}" r="${r}" fill="#F7C65E" stroke="${C.ink}" stroke-width="1.2"/><path d="M${R1(x-r*.4)} ${R1(y-r*.3)}q${R1(r*.3)} ${R1(-r*.3)} ${R1(r*.6)} 0" stroke="#fff" stroke-width="1" fill="none"/>`)}
+function pawB2(k,x,y,s,col){k.add(`<g fill="${col}"><ellipse cx="${R1(x)}" cy="${R1(y+3*s)}" rx="${R1(5*s)}" ry="${R1(4*s)}"/><circle cx="${R1(x-5.5*s)}" cy="${R1(y-3*s)}" r="${R1(2*s)}"/><circle cx="${R1(x-1.8*s)}" cy="${R1(y-5.6*s)}" r="${R1(2*s)}"/><circle cx="${R1(x+1.8*s)}" cy="${R1(y-5.6*s)}" r="${R1(2*s)}"/><circle cx="${R1(x+5.5*s)}" cy="${R1(y-3*s)}" r="${R1(2*s)}"/></g>`)}
+function boneB2(k,x,y,s,col='#FFFBF3'){k.shape([[x-9*s,y-2*s],[x+9*s,y-2*s],[x+11*s,y-5*s],[x+14*s,y-1*s],[x+11*s,y+3*s],[x+9*s,y+2*s],[x-9*s,y+2*s],[x-11*s,y+3*s],[x-14*s,y-1*s],[x-11*s,y-5*s]],col,{w:1.1,one:1})}
+// a white beckoning cat on a shelf or a desk (the Japan scenery)
+function manekiB2(k,x,gy,s){const X=v=>R1(x+v*s),Y=v=>R1(gy+v*s);k.add('<g class="pa-jp" pointer-events="none">');k.shape(E(x,gy-12*s,9*s,10*s,10),'#FFFFFF',{w:1.3,one:1});k.shape(E(x,gy-26*s,8*s,7*s,10),'#FFFFFF',{w:1.3,one:1});
+  k.add(`<path d="M${X(-5)} ${Y(-34)}l${R1(2*s)} ${R1(-6*s)} ${R1(3*s)} ${R1(5*s)}M${X(2)} ${Y(-35)}l${R1(3*s)} ${R1(-5*s)} ${R1(2*s)} ${R1(6*s)}" fill="#FFFFFF" stroke="${C.ink}" stroke-width="1"/><path d="M${X(8)} ${Y(-20)}l${R1(6*s)} ${R1(-10*s)}" stroke="${C.ink}" stroke-width="${R1(4.4*s)}" stroke-linecap="round"/><path d="M${X(8)} ${Y(-20)}l${R1(6*s)} ${R1(-10*s)}" stroke="#FFFFFF" stroke-width="${R1(2.6*s)}" stroke-linecap="round"/><circle cx="${X(-3)}" cy="${Y(-27)}" r="1" fill="${C.ink}"/><circle cx="${X(3)}" cy="${Y(-27)}" r="1" fill="${C.ink}"/><path d="M${X(-6)} ${Y(-19)}h${R1(12*s)}" stroke="#E2453C" stroke-width="1.6"/><circle cx="${x}" cy="${Y(-16)}" r="${R1(2*s)}" fill="#F7C65E" stroke="${C.ink}" stroke-width=".7"/>`);k.add('</g>')}
+
+/* the café: the window and its awning, a picture sign (a big mug between two hearts), the mug shelf, the chalkboard of pictures, the counter on the
+   back line (data-hot="cafe-menu"), the employee of the month (a dog), the bistro tables at two depths, the pup corner bed and water bowl */
+function bistroB2(k,x,gy,s,top){shadeA(k,x,gy+2,92*s,8*s);scaledB2(k,s,x-118*s,gy-520*s,()=>{const tx=118;
+  [[tx-64,1],[tx+62,-1]].forEach(([cx,sd])=>{k.line([[cx,520],[cx+sd*2,452]],3,C.ink);k.line([[cx+sd*14,520],[cx+sd*12,470]],3,C.ink);k.shape(E(cx+sd*7,468,20,6,10),'#E9A86A',{w:1.8});k.line([[cx,452],[cx-sd*4,404],[cx+sd*14,404],[cx+sd*14,468]],2.4,C.ink)});
+  k.line([[tx,438],[tx,516]],4,C.ink);k.shape(E(tx,520,26,6,10),C.ink,{noline:1,dx:0,dy:0});k.shape(E(tx,436,62,12,16),'#FFFBF3',{w:2.1});top(tx)})}
+function sqCafeB2(k,F){const B=F.back,D=y=>depA(F,y),fk=floorKitA(k),e=k.env;
+  roomB2(k,B,'#FBE8D6','#E9C9A2','#F6E7D3');
+  let wp='';for(let r=0,y=30;y<240;y+=52,r++)for(let x=30+(r%2)*40;x<1000;x+=80)wp+=(x+r)%3?`<path d="M${x-6} ${y}h12l-2 9h-8z" fill="#F2CFB4"/><path d="M${x+6} ${y+2}q4 0 3 4" fill="none" stroke="#F2CFB4" stroke-width="1.6"/>`:`<ellipse cx="${x}" cy="${y+4}" rx="4" ry="5.4" fill="#EDC5A4" transform="rotate(30 ${x} ${y+4})"/>`;k.add(wp);
+  let ws='';for(let x=18;x<1000;x+=34)ws+=`M${x} 268v${B-276}`;k.add(`<path d="${ws}" stroke="#D2AA7E" stroke-width="1.4"/>`);k.shape(RC(0,256,1000,9),C.woodD,{w:1.8,one:1});
+  tilesB2(k,B,{cell:'#D9B79A',line:'#CFAE90',sp:84});sunB2(k,B,130,280);skirtB2(k,B,'#D9B48E');
+  k.lt(()=>ltString(k,scallop([[0,12],[250,12],[500,12],[750,12],[1000,12]],12),24));
+  // the wall, as before at .86: the window, the sign, the mug shelf, the kitchen doorway (jp), the pendant lamps
+  scaledB2(k,RW2,70,0,()=>{
+    winIn(k,56,98,196,170,{curtain:'#F7C5CF'});O.awning(k,46,80,216,20,C.red,'#fff');k.hw(()=>hwBatString(k,60,248,104,12,5,.6));k.lt(()=>ltString(k,sagP(52,94,256,94,10,12),18));
+    {const sx=430,sy=82;k.line([[sx-50,0],[sx-50,sy-26]],1.4);k.line([[sx+50,0],[sx+50,sy-26]],1.4);k.shape(E(sx,sy,96,32,18),'#FFFBF3',{w:2.2});k.add(`<ellipse cx="${sx}" cy="${sy}" rx="86" ry="24" fill="none" stroke="${C.pink}" stroke-width="1.6" stroke-dasharray="5 4"/>`);
+     k.shape([[sx-16,sy+14],[sx-18,sy-12],[sx+18,sy-12],[sx+16,sy+14]],C.pink,{w:1.8,one:1});k.add(`<path d="M${sx+18} ${sy-6}q12 0 10 9q-2 7 -12 6" fill="none" stroke="${C.ink}" stroke-width="2"/>`);k.shape(E(sx,sy-12,18,4,10),'#C98F5E',{w:1.2,one:1});steam(k,sx-4,sy-18);
+     O.heart(k,sx-54,sy,9);O.heart(k,sx+56,sy,9);pawB2(k,sx,sy+3,.9,'#FFFFFF')}
+    k.shape(RC(296,214,268,10),C.woodD,{w:1.8});k.line([[316,224],[322,240]],2,C.woodD);k.line([[544,224],[538,240]],2,C.woodD);
+    [[318,C.red],[344,C.yellow],[370,C.blue],[396,C.mint]].forEach(([x,c])=>mug(k,x,214,c));
+    k.shape(RC(426,166,40,48),C.glass,{w:1.6});k.shape(RC(422,158,48,10),C.orange,{w:1.4,one:1});[[436,204],[446,196],[456,206],[440,186],[452,184],[446,176]].forEach(([x,y],i)=>k.add(`<ellipse cx="${x}" cy="${y}" rx="4.4" ry="3" fill="#8A5A3C" transform="rotate(${i*40} ${x} ${y})"/>`));
+    k.shape(RC(478,174,40,40),C.glass,{w:1.6});k.shape(RC(474,166,48,10),C.lav,{w:1.4,one:1});boneB2(k,498,206,.85);boneB2(k,496,194,.8);boneB2(k,500,183,.75);
+    plant(k,542,214,.55,C.mint);vaseB2(k,226,272,1.1,C.lav);
+    k.jp(()=>jpDressDraw(k,'cafe','mid'));
+    k.ny(()=>nyShime(k,599,150,.62));
+    pendant(k,330,96,'#F7C5CF');pendant(k,520,120,C.yellow,.9)});
+  // the chalkboard menu in pictures (a pupuccino and a donut, their coins; one paw, one treat) and the employee of the month
+  scaledB2(k,RW2,70,-70,()=>{k.shape(RC(632,112,236,170),C.woodD,{w:2.3});k.shape(RC(642,122,216,150),'#56655F',{w:1.6,one:1});const ck='#FFFBF3';
+    let sm='';for(let i=0;i<10;i++)sm+=`M${R1(650+k.r()*196)} ${R1(130+k.r()*130)}l${R1(10+k.r()*16)} ${R1(-3+k.r()*2)}`;k.add(`<path d="${sm}" stroke="#7F8F88" stroke-width="3" stroke-linecap="round" opacity=".5"/>`);
+    k.add(`<path d="M668 156h28l-4 20h-20zM696 160q8 0 7 8q-1 6 -9 5M674 150q-3 -5 0 -10M684 150q-3 -5 0 -10" fill="none" stroke="${ck}" stroke-width="1.8" stroke-linecap="round"/><ellipse cx="682" cy="211" rx="15" ry="9" fill="none" stroke="${ck}" stroke-width="1.8"/><ellipse cx="682" cy="211" rx="4" ry="2.6" fill="none" stroke="${ck}" stroke-width="1.3"/><path d="M670 206q12 -6 24 0" fill="none" stroke="#FFC9D3" stroke-width="2"/><path d="M716 166h56M716 211h56" stroke="${ck}" stroke-width="1.3" stroke-dasharray="2 5"/>`);
+    [[792,166],[808,166],[792,211],[808,211],[824,211]].forEach(([x,y])=>coinB2(k,x,y,6));
+    pawB2(k,700,250,1.3,ck);k.add(`<path d="M722 250h14m-5 -5l5 5 -5 5" fill="none" stroke="${ck}" stroke-width="1.6" stroke-linecap="round"/>`);k.add(`<ellipse cx="764" cy="252" rx="11" ry="7" fill="none" stroke="#FFC9D3" stroke-width="1.8"/><ellipse cx="764" cy="252" rx="3" ry="2" fill="none" stroke="#FFC9D3" stroke-width="1.2"/>`);O.heart(k,820,250,7);
+    k.lt(()=>ltStar(k,750,108,.6));
+    k.shape(RC(892,112,88,104),'#E1B987',{w:2.1});k.shape(RC(900,120,72,70),'#FFFFFF',{w:1.3,one:1});
+    k.add(`<g stroke="#2a2420" stroke-width="2.2" fill="none" stroke-linecap="round"><path d="M912 172q14 -12 30 -2q4 10 -6 14q-14 3 -24 -4z" fill="#F7E1A8"/><circle cx="946" cy="158" r="9" fill="#F7E1A8"/><path d="M940 150l-3 -8M952 150l3 -8"/></g><circle cx="948" cy="157" r="1.8" fill="#2a2420"/>`);O.sparkle(k,964,132,5);
+    k.add(`<path d="M930 202l-6 16 6 -4 4 6M942 202l6 16 -6 -4 -4 6" fill="${C.red}" stroke="${C.ink}" stroke-width="1.2"/><circle cx="936" cy="200" r="8" fill="#F7C65E" stroke="${C.ink}" stroke-width="1.4"/>`);O.sparkle(k,936,200,3.4);
+    // the pups-welcome sign: a paw and a heart
+    k.shape(RC(892,250,82,28),'#FFFFFF',{w:1.5,one:1});pawB2(k,918,264,1,C.pink);O.heart(k,948,264,7)});
+  // a hanging plant and the leash hooks by the door (right)
+  k.line([[962,0],[962,40]],1.4);k.shape([[946,40],[978,40],[973,60],[951,60]],C.roof,{w:1.7});[[938,72],[950,84],[974,80],[986,66],[962,90]].forEach(([x,y],i)=>{k.line([[962,54],[x,y]],1.2,'#6FAE5C');k.shape(E(x,y,5,9,8,i),C.leaf,{w:1.2,one:1})});
+  k.shape(RC(926,150,66,8),C.woodD,{w:1.6,one:1});[[940,C.red],[960,C.blue],[980,C.mint]].forEach(([x,c])=>{k.add(`<circle cx="${x}" cy="158" r="2.6" fill="${C.ink}"/>`);k.line([[x,160],[x-6,200],[x+2,236],[x+6,214],[x,160]],2.4,c,{amp:.4})});
+  // the counter (data-hot="cafe-menu"), its feet on the back line: espresso machine, the donut dome, a bone card, the coin jar
+  scaledB2(k,RW2,70,B+2-516*RW2,()=>{const g=k.cap(()=>{
+    k.shape(RC(626,388,234,128),'#D9A77C',{w:2.3,hatch:{side:.8,gap:5,col:'#BF8B60',op:.45}});for(let x=646;x<850;x+=26)k.line([[x,394],[x+k.J(1),512]],1.2,'#BF8B60');
+    k.shape(RC(616,374,254,16),'#F3E2C8',{w:2.1});
+    k.shape(RC(684,420,118,40),'#FFFBF3',{w:1.6,one:1});pawB2(k,716,440,1.4,C.pink);k.add(`<path d="M744 440h14m-5 -5l5 5 -5 5" fill="none" stroke="${C.ink}" stroke-width="1.6" stroke-linecap="round"/>`);donut(k,780,442,1,'#FFB3C7');
+    k.shape(RC(636,316,64,58),'#C9D3DD',{w:2.1,hatch:{side:.7,gap:4,col:'#9AA7B8',op:.5}});k.shape(RC(630,308,76,10),'#9AA7B8',{w:1.7});k.add(`<circle cx="668" cy="332" r="8" fill="#FFFBF3" stroke="${C.ink}" stroke-width="1.4"/><path d="M668 332l4 -5" stroke="${C.ink}" stroke-width="1.3"/><path d="M660 350h16v6h-16z" fill="${C.ink}"/>`);mug(k,668,372,'#FFFFFF');steam(k,664,352);
+    k.shape(E(792,372,34,6,12),'#FFFFFF',{w:1.5});donut(k,780,364,.9,'#FFB3C7');donut(k,804,366,.9,C.lav);donut(k,792,354,.9,'#F7E1A8');
+    k.add(`<path d="M758 370q2 -44 34 -46q32 2 34 46" fill="#E4F2FA" fill-opacity=".35" stroke="${C.ink}" stroke-width="1.8"/><circle cx="792" cy="322" r="4" fill="#FFFFFF" stroke="${C.ink}" stroke-width="1.3"/><path d="M770 360q2 -20 14 -28" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round"/>`);
+    k.shape([[722,374],[732,344],[756,344],[766,374]],C.yellow,{w:1.6,one:1});boneB2(k,744,360,.8);
+    k.shape([[838,374],[836,342],[862,342],[860,374]],C.glass,{w:1.5,one:1});coinB2(k,845,368,3.4);coinB2(k,853,366,3.4);coinB2(k,849,360,3.4);
+    k.hw(()=>hwJack(k,640,388,.8));k.ny(()=>{k.shape(E(712,370,15,7,10),'#FFFFFF',{w:1.3,one:1});k.shape(E(712,360,11,6,10),'#FFFFFF',{w:1.2,one:1});k.shape(E(712,351,5,4,8),C.orange,{w:1,one:1})});
+    k.lt(()=>ltString(k,sagP(616,378,870,378,8,12),20))});
+   hot(k,'data-hot','cafe-menu','Café counter and menu',RC(610,300,264,222),g)});
+  // the floor props: the big plant at the back, a bistro table in the middle and one in front, the pup corner (a bed a dog may lie on, the water bowl)
+  fk.add('plant',362,()=>{shadeA(k,52,364,28);plant(k,52,362,1.1)});
+  fk.add('table',432,()=>bistroB2(k,400,432,D(432)*1.2,tx=>{k.shape(E(tx-20,430,18,5,10),'#FFFFFF',{w:1.4,one:1});donut(k,tx-20,425,1,'#FFB3C7');mug(k,tx+24,434,C.mint);steam(k,tx+22,412);vaseB2(k,tx+2,432,1)}));
+  fk.add('bed',456,()=>{const x=870,y=474;// clear of the desktop place buttons (bottom right), so a dog napping on it shows
+    k.shape(E(x,y,58,18,14),'#E8A9B8',{w:2.1,hatch:{side:.55,gap:4.5,col:'#C9839A',op:.5}});k.shape(E(x,y-6,42,10,12),'#FCE6CC',{w:1.6});pawB2(k,x,y+10,.8,C.pink);k.hw(()=>pumpkin(k,x-66,y+16,.9))});
+  fk.add('table2',556,()=>bistroB2(k,640,556,D(556)*1.2,tx=>{mug(k,tx-22,434,C.red);steam(k,tx-24,412);k.shape(E(tx+20,430,18,5,10),'#FFFFFF',{w:1.4,one:1});boneB2(k,tx+20,426,.8,'#E8B57A')}));
+  fk.add('water',566,()=>{bowlA(k,850,566,D(566)*1.1,C.blue);k.fill(E(850,566-14*D(566)*1.1,16,3,10),C.water,{dx:0,dy:0})});
+  fk.out();
+  O.sparkle(k,610,40,6);O.note(k,240,46,11);
+  O.tape(k,6,18,90,-26,'#F7B9C6');O.tape(k,920,576,80,-24,'#B9D4F3')}
+
+/* the vet: the window with its blinds, the clock (a bone for a hand), two picture posters (brush the teeth, drink water), the reception desk on the
+   back line (data-hot="vet-desk") under its heart sign, the exam room door (a paw and a cross), the waiting bench, the weigh-in scale (a dog may
+   stand on it), the water bowl and the toy box */
+function sqVetB2(k,F){const B=F.back,D=y=>depA(F,y),fk=floorKitA(k),e=k.env;
+  roomB2(k,B,'#E6F3EF','#CFE7E0','#EEF2F4');
+  let wp='';for(let r=0,y=40;y<250;y+=56,r++)for(let x=40+(r%2)*50;x<1000;x+=100)wp+=`M${x-5} ${y}h10M${x} ${y-5}v10`;k.add(`<path d="${wp}" stroke="#CDE6DE" stroke-width="3" stroke-linecap="round"/>`);
+  k.shape(RC(0,256,1000,8),'#FFFFFF',{w:1.7,one:1});k.add(`<path d="M0 290h1000" stroke="#B7D8CE" stroke-width="2" stroke-dasharray="1 12" stroke-linecap="round"/>`);
+  tilesB2(k,B,{line:'#C9D3DD',sp:72,dz:.085});sunB2(k,B,110,250);skirtB2(k,B,'#BCD9CF');
+  k.add(`<ellipse cx="900" cy="${B+22}" rx="70" ry="10" fill="#B9DD92" opacity=".7"/>`);pawB2(k,900,B+22,.8,'#FFFFFF');
+  [[420,1],[770,1]].forEach(([x])=>{k.line([[x,0],[x,34]],1.4);const sh=[[x-30,60],[x+30,60],[x+20,34],[x-20,34]];k.shape(sh,'#FFFBF3',{w:2});k.add(`<path d="M${x-26} 60q26 9 52 0" fill="none" stroke="${C.ink}" stroke-width="1.6"/>`);if(e.lit)k.lamps.push({x,y:66,s:1.1,glass:sh,big:1})});
+  k.lt(()=>ltString(k,scallop([[0,12],[250,12],[500,12],[750,12],[1000,12]],12),24));
+  scaledB2(k,RW2,70,0,()=>{
+    winIn(k,44,96,180,160,{curtain:C.mint});{let d='';for(let y=100;y<150;y+=8)d+=`M44 ${y}h180`;k.add(`<rect x="44" y="96" width="180" height="56" fill="#F3EEE4" opacity=".92"/><path d="${d}" stroke="#D8CDBD" stroke-width="1.4"/>`);k.line([[44,152],[224,152]],2.4);k.line([[200,152],[204,190]],1.2)}
+    k.hw(()=>hwBatString(k,48,220,92,10,5,.6));vaseB2(k,190,256,1.1,'#FFD8E0');
+    k.shape(E(560,74,24,24,16),'#FFFFFF',{w:2.2});for(let i=0;i<4;i++){const a=i*Math.PI/2;k.line([[560+Math.cos(a)*17,74+Math.sin(a)*17],[560+Math.cos(a)*21,74+Math.sin(a)*21]],1.6)}boneB2(k,566,70,.55,C.ink);k.add(`<path d="M560 74v-14" stroke="${C.ink}" stroke-width="2" stroke-linecap="round"/>`);
+    k.ny(()=>nyShime(k,560,40,.6));
+    poster(k,286,120,170,128,-2,(x,y,w,h)=>{const tx=x+52,ty=y+70;k.shape([[tx-18,ty-22],[tx+18,ty-22],[tx+20,ty-6],[tx+14,ty+22],[tx+6,ty+22],[tx+2,ty+6],[tx-2,ty+6],[tx-6,ty+22],[tx-14,ty+22],[tx-20,ty-6]],'#FFFFFF',{w:1.9});
+      k.add(`<circle cx="${tx-7}" cy="${ty-10}" r="1.8" fill="${C.ink}"/><circle cx="${tx+7}" cy="${ty-10}" r="1.8" fill="${C.ink}"/><path d="M${tx-5} ${ty-3}q5 5 10 0" fill="none" stroke="${C.ink}" stroke-width="1.4"/>`);O.sparkle(k,tx+26,ty-24,6);O.sparkle(k,tx-28,ty+10,4);
+      k.line([[x+92,y+110],[x+150,y+68]],4,C.blue);k.shape(RC(x+142,y+58,14,12),'#FFFFFF',{w:1.2,one:1});k.add(`<path d="M${x+144} ${y+58}v-6M${x+149} ${y+58}v-7M${x+154} ${y+58}v-6" stroke="${C.ink}" stroke-width="1.2"/>`);O.heart(k,x+130,y+28,8)});
+    poster(k,478,132,100,104,3,(x,y,w,h)=>{k.shape([[x+50,y+16],[x+66,y+44],[x+62,y+58],[x+38,y+58],[x+34,y+44]],C.water,{w:1.6,one:1});k.add(`<path d="M${x+42} ${y+46}q2 6 8 7" stroke="#fff" stroke-width="2" fill="none"/>`);
+      k.shape([[x+26,y+92],[x+74,y+92],[x+68,y+74],[x+32,y+74]],C.blue,{w:1.6,one:1});k.fill(E(x+50,y+75,17,3,10),C.water,{dx:0,dy:0});O.heart(k,x+82,y+22,5)});
+    k.hw(()=>hwBat(k,600,120,.6,{col:HWP}))});
+  // the exam room door: a window, a paw and a cross where the words were
+  scaledB2(k,RW2,880-890*RW2,0,()=>{k.shape(RC(890,150,94,254),'#FFFFFF',{w:2.3,hatch:{side:.8,gap:5,col:'#D3DCE2',op:.6}});k.shape(RC(906,170,62,46),C.glass,{w:1.6});k.add(`<circle cx="972" cy="296" r="3.4" fill="${C.ink}"/>`);
+    k.shape(RC(906,232,62,30),C.mint,{w:1.5,one:1});k.add(`<path d="M926 247h12M932 241v12" stroke="#E2453C" stroke-width="3.4" stroke-linecap="round"/>`);pawB2(k,953,248,.8,C.ink);
+    k.ss(()=>{if(e.ssn==='winter')wreath(k,937,196,1)});k.lt(()=>ltString(k,sagP(890,152,984,152,8,10),16))});
+  // the reception desk (data-hot="vet-desk"), its feet on the back line, under a sign of a heart and a cross
+  scaledB2(k,RW2,70,B+2-516*RW2,()=>{const g=k.cap(()=>{
+    k.add(`<path d="M690 250L700 300M830 250L820 300" stroke="${C.ink}" stroke-width="1.2"/>`);k.shape(RC(676,276,168,32),'#FFFFFF',{w:2});{const hx=742,hy=294;k.shape([[hx,hy+12],[hx-15,hy-1],[hx-13,hy-9],[hx-6,hy-11],[hx,hy-6],[hx+6,hy-11],[hx+13,hy-9],[hx+15,hy-1]],'#F7B2B2',{w:1.5,one:1});k.add(`<path d="M${hx-5} ${hy-1}h10M${hx} ${hy-6}v10" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>`);pawB2(k,700,292,.8,C.mint);pawB2(k,786,292,.8,C.mint)}
+    k.shape(RC(630,394,228,122),C.wall3,{w:2.3,hatch:{side:.8,gap:5,col:'#A9C7E8',op:.5}});k.shape(RC(620,380,248,16),'#F3EEE4',{w:2.1});
+    {const hx=744,hy=446;k.shape([[hx,hy+22],[hx-26,hy-2],[hx-22,hy-16],[hx-10,hy-20],[hx,hy-10],[hx+10,hy-20],[hx+22,hy-16],[hx+26,hy-2]],'#F7B2B2',{w:1.9});k.add(`<path d="M${hx-8} ${hy-2}h16M${hx} ${hy-10}v16" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round"/>`)}
+    k.shape(RC(646,322,66,50),'#E4E9EE',{w:2});k.shape(RC(652,328,54,36),'#4A5874',{w:1.4,one:1});k.add(`<path d="M655 348h12l4 -10 5 18 4 -8h18" fill="none" stroke="#9CE6B4" stroke-width="2" stroke-linejoin="round"/>`);k.shape(RC(672,372,14,8),'#C9D3DD',{w:1.2,one:1});
+    k.shape([[730,380],[732,368],[748,364],[764,368],[766,380]],'#F7C65E',{w:1.6,one:1});k.add(`<circle cx="748" cy="361" r="3" fill="#F7C65E" stroke="${C.ink}" stroke-width="1.2"/><path d="M768 356q6 -4 10 -10M770 364q8 -2 12 -6" fill="none" stroke="${C.graph}" stroke-width="1.3" stroke-linecap="round"/>`);
+    k.shape([[788,380],[786,338],[826,338],[824,380]],C.glass,{w:1.6});k.shape(RC(784,330,44,10),C.pink,{w:1.4,one:1});boneB2(k,806,370,.8,'#E8B57A');boneB2(k,804,358,.75,'#F3D9B8');boneB2(k,808,348,.7,'#E8B57A');O.heart(k,806,334,4);
+    k.shape(RC(836,352,24,30),'#E1B987',{w:1.4,one:1});k.shape(RC(839,358,18,22),'#FFFFFF',{noline:1,dx:0,dy:0});k.add(`<path d="M842 364h12M842 370h10M842 376h8" stroke="${C.graph}" stroke-width="1"/>`);
+    k.hw(()=>hwJack(k,642,380,.7));k.ny(()=>{k.shape(E(852,348,13,6,10),'#FFFFFF',{w:1.3,one:1});k.shape(E(852,339,9,5,10),'#FFFFFF',{w:1.2,one:1});k.shape(E(852,331,4.4,3.4,8),C.orange,{w:1,one:1})});
+    k.jp(()=>manekiB2(k,632,380,1))});
+   hot(k,'data-hot','vet-desk','Vet reception desk',RC(612,250,262,272),g)});
+  // the floor props: the tall plant, the waiting bench, the water bowl, the weigh-in scale (a dog may stand on it), the toy box
+  fk.add('plant',362,()=>{shadeA(k,50,364,28);plant(k,50,362,1.15,C.blue)});
+  fk.add('bench',400,()=>{const s=D(400)*1.2;shadeA(k,430,402,120*s,7*s);scaledB2(k,s,430-425*s,400-400*s,()=>{[312,538].forEach(x=>{k.line([[x,360],[x,400]],3.2,C.ink);k.line([[x,330],[x,352]],3.2,C.ink)});
+    k.shape(RC(300,312,250,30),C.wood,{w:1.9,hatch:{side:.8,gap:4,col:C.woodD,op:.4}});k.shape(RC(296,350,258,12),C.wood,{w:1.9});
+    k.shape([[340,350],[344,338],[372,336],[376,348]],C.yellow,{w:1.4,one:1});k.shape(RC(474,334,40,16),'#FFD8E0',{w:1.2,one:1});pawB2(k,494,342,.7,C.ink);
+    k.hw(()=>pumpkin(k,520,350,.7));k.ss(()=>{if(e.ssn==='winter')k.shape(RC(410,340,40,10),'#E2453C',{w:1.2,one:1})})})});
+  fk.add('water',470,()=>{bowlA(k,880,470,D(470)*1.1,C.blue);k.fill(E(880,470-14*D(470)*1.1,15,3,10),C.water,{dx:0,dy:0})});
+  fk.add('scale',536,()=>{const s=1.05;scaledB2(k,s,110-115*s,536-510*s,()=>{k.shape(RC(40,520,150,16),'#C9D3DD',{w:2});k.shape(RC(48,510,134,12),'#E4E9EE',{w:1.6,one:1});pawB2(k,100,516,.8,'#B9C5D2');
+    k.line([[176,512],[176,452]],3.4,C.ink);k.shape(E(176,438,24,24,16),'#FFFFFF',{w:2.1});for(let i=0;i<7;i++){const a=Math.PI*(1.1+i*.13);k.line([[176+Math.cos(a)*16,438+Math.sin(a)*16],[176+Math.cos(a)*20,438+Math.sin(a)*20]],1.2)}
+    k.add(`<path d="M176 438l13 -9" stroke="${C.red}" stroke-width="2.2" stroke-linecap="round"/><circle cx="176" cy="438" r="2.6" fill="${C.ink}"/>`);O.heart(k,176,448,3.4)})});
+  fk.add('toys',568,()=>{const x=930,gy=568,s=D(568)*1.1;shadeA(k,x,gy+2,40*s);k.shape(RC(x-34*s,gy-36*s,68*s,36*s),'#B9DD92',{w:1.8,hatch:{side:.7,gap:4.5,col:'#93C276',op:.5}});
+    k.shape(E(x-12*s,gy-40*s,10*s,10*s,10),C.red,{w:1.5,one:1});boneB2(k,x+12*s,gy-40*s,s*1.05);k.add(`<path d="M${R1(x-30*s)} ${R1(gy-24*s)}h${R1(60*s)}" stroke="#fff" stroke-width="1.6" opacity=".7"/>`);k.hw(()=>hwGhost(k,x+4*s,gy-62*s,.5,0))});
+  fk.out();
+  O.sparkle(k,240,60,6);O.heart(k,640,90,6);
+  O.tape(k,6,18,90,-26,'#BDE7D2');O.tape(k,920,576,80,-24,'#F7B9C6')}
+
+/* the salon: the garland of bows, the tub station (back left), the vanity mirror with its bulbs, a picture sign (a bow in bubbles), the shelf of
+   bottles and the jar of bows, the grooming table on the back line (data-hot="salon-chair"), the window, the grooming trolley, the bonnet dryer
+   and the towel basket on the floor */
+function sqSalonB2(k,F){const B=F.back,D=y=>depA(F,y),fk=floorKitA(k),e=k.env;
+  roomB2(k,B,'#FBE3EA','#FFFFFF','#FBF4FF');
+  let bb='';for(let i=0;i<30;i++){const x=k.r()*1000,y=20+k.r()*220,r=4+k.r()*9;bb+=`<circle cx="${R1(x)}" cy="${R1(y)}" r="${R1(r)}" fill="none" stroke="#F4C3D2" stroke-width="1.6"/>`}k.add(bb);
+  let tl='';for(let x=0;x<=1000;x+=22)tl+=`M${x} 262v${B-262}`;for(let y=284;y<B;y+=22)tl+=`M0 ${y}h1000`;k.add(`<path d="${tl}" stroke="#E7D6E8" stroke-width="1.2"/>`);k.shape(RC(0,256,1000,8),'#F3D3E3',{w:1.6,one:1});
+  tilesB2(k,B,{cell:'#DCCBF2',line:'#D2C0E8',sp:84,op:.7});sunB2(k,B,830,910);skirtB2(k,B,'#D9B7E6');
+  k.add(`<ellipse cx="190" cy="${B+26}" rx="96" ry="13" fill="#FFD8E0" opacity=".9"/><ellipse cx="190" cy="${B+26}" rx="80" ry="9" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="6 5"/>`);
+  {const pt=t=>[t*1000,24+Math.sin(Math.PI*t*4)*10],L=[];for(let i=0;i<=40;i++)L.push(pt(i/40));k.line(L,1.3);for(let i=1;i<14;i++){const p=pt(i/14);bow(k,p[0],p[1]+6,.75,BOWC[i%6])}}
+  k.lt(()=>ltString(k,scallop([[0,40],[250,40],[500,40],[750,40],[1000,40]],10),22));k.hw(()=>hwBatString(k,120,880,46,10,7,.55));
+  // the tub station, the vanity mirror and the picture sign, as before at .86
+  scaledB2(k,RW2,70,0,()=>{
+    k.add(`<rect x="22" y="160" width="236" height="140" fill="#D9EEF7"/>`);let t2='';for(let x=22;x<=258;x+=20)t2+=`M${x} 160v140`;for(let y=160;y<=300;y+=20)t2+=`M22 ${y}h236`;k.add(`<path d="${t2}" stroke="#B9D6E6" stroke-width="1.2"/>`);
+    k.shape(RC(30,206,220,10),'#FFFFFF',{w:1.6,one:1});[[52,C.mint],[78,C.pink],[104,C.yellow],[214,C.lav]].forEach(([x,c])=>bottle(k,x,206,.8,c,1));
+    k.line([[150,160],[150,196],[178,214]],3.4,'#9AA7B8');k.shape(E(182,218,9,5,10,.6),'#C9D3DD',{w:1.6,one:1});k.line([[150,196],[136,280]],2.6,'#9AA7B8');
+    const tub=[[30,322],[250,322],[240,376],[220,392],[60,392],[40,376]];k.shape(tub,'#FFFFFF',{w:2.4,hatch:{side:.72,gap:5,col:'#C9D3DD',op:.6}});k.shape(RC(22,314,236,12),'#EEF2F4',{w:2,one:1});
+    [[62,392],[218,392]].forEach(([x,y])=>{k.line([[x,y],[x-4,y+8]],4,'#F7C65E');k.add(`<circle cx="${x-5}" cy="${y+8}" r="4" fill="#F7C65E" stroke="${C.ink}" stroke-width="1.2"/>`)});
+    let bs='';[[54,306,14],[80,300,18],[110,304,15],[140,298,19],[172,304,14],[200,306,12],[228,308,10],[96,288,11],[156,284,12],[124,282,9]].forEach(([x,y,r])=>bs+=`<circle cx="${x}" cy="${y}" r="${r}" fill="#FFFFFF" stroke="${C.ink}" stroke-width="1.5"/><path d="M${x-r*.45} ${y-r*.3}q${R1(r*.2)} ${R1(-r*.3)} ${R1(r*.5)} ${R1(-r*.3)}" stroke="#B9D6E6" stroke-width="1.4" fill="none"/>`);k.add(bs);
+    {const dx=222,dy=290;k.shape(E(dx,dy,12,8,10),C.yellow,{w:1.5,one:1});k.shape(E(dx+9,dy-9,6,6,8),C.yellow,{w:1.4,one:1});k.add(`<path d="M${dx+14} ${dy-9}l6 1 -6 2z" fill="${C.orange}" stroke="${C.ink}" stroke-width=".8"/><circle cx="${dx+10}" cy="${dy-10}" r="1.1" fill="${C.ink}"/>`)}
+    [[70,352,8],[110,360,6],[176,356,9],[204,364,5]].forEach(([x,y,r])=>k.add(`<circle cx="${x}" cy="${y}" r="${r}" fill="#FFFFFF" stroke="#9FC3D9" stroke-width="1.3"/>`));
+    {const mx=420,my=190;k.shape(E(mx,my,96,78,22),'#E1B987',{w:2.4,hatch:{side:.7,gap:5,col:'#BF9767',op:.4}});k.shape(E(mx,my,80,64,20),'#E4F2FA',{w:1.8});
+     k.add(`<path d="M${mx-40} ${my+30}l40 -60M${mx-20} ${my+40}l26 -40" stroke="#fff" stroke-width="6" stroke-linecap="round" opacity=".85"/>`);O.heart(k,mx+28,my+14,12);O.sparkle(k,mx+50,my-16,7);O.sparkle(k,mx+8,my+38,4);
+     for(let i=0;i<10;i++){const a=Math.PI*(1.05+i*.1),bx=mx+Math.cos(a)*92,by=my+Math.sin(a)*74;k.add(`<circle cx="${R1(bx)}" cy="${R1(by)}" r="6" fill="#FFF3C2" stroke="${C.ink}" stroke-width="1.3"/>`);if(e.lit)k.bulbs.push([bx,by,'#FFF3C2'])}
+     k.shape(RC(mx-80,my+80,160,10),'#E1B987',{w:1.8});bottle(k,mx-50,my+80,.7,C.mint,1);bottle(k,mx-30,my+80,.6,C.pink,1);vaseB2(k,mx-4,my+80,1,'#FFD8E0');
+     k.add(`<path d="M${mx+20} ${my+78}h40" stroke="${C.ink}" stroke-width="3" stroke-linecap="round"/><path d="M${mx+24} ${my+78}v-6M${mx+30} ${my+78}v-6M${mx+36} ${my+78}v-6M${mx+42} ${my+78}v-6M${mx+48} ${my+78}v-6M${mx+54} ${my+78}v-6" stroke="${C.ink}" stroke-width="1.4"/>`);
+     k.jp(()=>manekiB2(k,mx+72,my+80,.9));k.ny(()=>nyShime(k,mx,my-84,.8));k.lt(()=>ltStar(k,mx,my-92,.6))}
+    k.shape(RC(330,66,180,32),'#FFFFFF',{w:1.8,one:1});bow(k,420,82,1,C.pink);[[372,82,7],[392,76,4],[452,80,6],[470,86,4],[352,78,3.4],[488,76,3]].forEach(([x,y,r])=>k.add(`<circle cx="${x}" cy="${y}" r="${r}" fill="#E4F2FA" stroke="${C.ink}" stroke-width="1.1"/>`));O.sparkle(k,322,66,6);O.sparkle(k,518,96,5,C.pink);
+    winIn(k,880,96,96,110,{curtain:'#FFC9D3'});k.ss(()=>{if(e.ssn==='winter')wreath(k,928,90,.8)})});
+  // the shelf of bottles (pictures on the labels), the jar of bows and the rolled towels, high over the grooming table
+  scaledB2(k,RW2,70,-80,()=>{k.shape(RC(632,234,232,10),C.woodD,{w:1.8});[[C.mint,'leaf'],[C.yellow,'star'],[C.blue,'bubble'],[C.lav,'moon']].forEach(([c,p],i)=>{const x=656+i*36;bottle(k,x,234,.95,c,1);
+      if(p==='leaf')k.shape(E(x,218,3.4,2,8,.6),'#6FAE5C',{w:.8,one:1});else if(p==='star')O.sparkle(k,x,218,3.4);else if(p==='bubble')k.add(`<circle cx="${x}" cy="218" r="3" fill="#fff" stroke="${C.ink}" stroke-width=".8"/>`);else k.add(`<path d="M${x+1} 214a4 4 0 1 0 2 7a3.4 3.4 0 0 1 -2 -7z" fill="#F7C65E" stroke="${C.ink}" stroke-width=".8"/>`)});
+    k.shape([[804,234],[802,192],[846,192],[844,234]],C.glass,{w:1.6});k.shape(RC(800,186,48,8),C.pink,{w:1.3,one:1});[[812,212,C.pink],[832,206,C.yellow],[822,224,C.mint]].forEach(([x,y,c])=>bow(k,x,y,.5,c));
+    [[644,276],[676,276],[708,276]].forEach(([x,y],i)=>{k.shape(E(x,y,14,12,12),[C.mint,'#FFD8E0',C.lav][i],{w:1.5,one:1});k.add(`<path d="M${x} ${y}m-5 0a5 4 0 1 0 10 0a5 4 0 1 0 -10 0" fill="none" stroke="${C.ink}" stroke-width="1.2"/>`)});
+    k.shape(RC(626,290,100,8),C.woodD,{w:1.6,one:1});k.hw(()=>hwJack(k,770,234,.75))});
+  // the grooming table (data-hot="salon-chair"), its feet on the back line: the lilac top, the arm with its pink loop, a comb, a brush and scissors
+  scaledB2(k,RW2,730-740*RW2,B+1-516*RW2,()=>{const g=k.cap(()=>{
+    k.line([[660,516],[820,446]],3.4,'#9AA7B8');k.line([[820,516],[660,446]],3.4,'#9AA7B8');k.add(`<circle cx="740" cy="481" r="4" fill="#C9D3DD" stroke="${C.ink}" stroke-width="1.4"/>`);
+    [[656,516],[824,516]].forEach(([x,y])=>k.shape(E(x,y,12,4,8),C.ink,{noline:1,dx:0,dy:0}));
+    k.shape(RC(632,428,216,18),'#C9D3DD',{w:2.2});k.shape(RC(640,418,200,12),C.lav,{w:1.8,hatch:{gap:5,col:'#B9A6DA',op:.6}});
+    k.line([[830,420],[830,312],[748,312]],4,'#9AA7B8');k.add(`<circle cx="830" cy="312" r="4" fill="#C9D3DD" stroke="${C.ink}" stroke-width="1.3"/>`);k.line([[756,312],[752,340],[744,354],[758,360],[766,346],[760,320]],2,C.pink);
+    k.shape(RC(654,404,40,8),'#FFFFFF',{w:1.4,one:1});k.add(`<path d="M658 404v-6M664 404v-6M670 404v-6M676 404v-6M682 404v-6M688 404v-6" stroke="${C.ink}" stroke-width="1.2"/>`);
+    k.shape(E(784,410,18,7,10),C.pink,{w:1.5,one:1});k.line([[800,410],[818,404]],3,C.ink);k.add(`<path d="M772 404v-5M778 404v-6M784 404v-6M790 404v-5" stroke="${C.ink}" stroke-width="1.1"/>`);
+    k.add(`<g transform="rotate(-18 724 404)"><circle cx="712" cy="408" r="5" fill="none" stroke="${C.ink}" stroke-width="2"/><circle cx="712" cy="398" r="5" fill="none" stroke="${C.ink}" stroke-width="2"/><path d="M716 405l22 -6M716 400l22 6" stroke="${C.ink}" stroke-width="2"/></g>`);
+    k.ny(()=>k.add(`<path d="M640 420l-14 -30M840 420l14 -30" stroke="#7FA65E" stroke-width="2.4"/>`));k.lt(()=>ltString(k,sagP(640,418,840,418,6,12),18));
+    });
+   hot(k,'data-hot','salon-chair','Grooming table',RC(620,296,252,256),g)});
+  // the floor props: the plant at the back, the grooming trolley, the bonnet dryer puffing fluff, the towel basket in front
+  fk.add('plant',362,()=>{shadeA(k,330,364,26);plant(k,330,362,1,C.mint)});
+  fk.add('cart',436,()=>{const x=540,gy=436,s=D(436)*1.2;shadeA(k,x,gy+2,38*s);[[-26,1],[26,-1]].forEach(([dx])=>k.line([[x+dx*s,gy-6*s],[x+dx*s,gy-78*s]],3,'#9AA7B8'));
+    [[gy-6*s,C.lav],[gy-40*s,C.mint],[gy-74*s,'#FFD8E0']].forEach(([y,c])=>k.shape(RC(x-32*s,y-6*s,64*s,8*s),c,{w:1.6,one:1}));[[x-24*s,gy],[x+24*s,gy]].forEach(([wx,wy])=>k.add(`<circle cx="${R1(wx)}" cy="${R1(wy-3*s)}" r="${R1(4*s)}" fill="${C.ink}"/>`));
+    bottle(k,x-18*s,gy-80*s,.6*s,C.blue,1);bottle(k,x-4*s,gy-80*s,.5*s,C.yellow,1);k.shape(E(x+16*s,gy-86*s,10*s,5*s,10),C.pink,{w:1.3,one:1});k.line([[x+26*s,gy-86*s],[x+36*s,gy-90*s]],2.4,C.ink);
+    k.shape(E(x-10*s,gy-52*s,12*s,8*s,10),'#FFFFFF',{w:1.3,one:1});k.shape(E(x+14*s,gy-52*s,10*s,8*s,10),C.lav,{w:1.3,one:1});k.hw(()=>pumpkin(k,x+4*s,gy-12*s,.6*s))});
+  fk.add('dryer',532,()=>{const x=900,gy=532,s=D(532)*1.05;scaledB2(k,s,x-930*s,gy-560*s,()=>{const X=930,G=560;shadeA(k,X,G+2,40);k.shape(E(X,G,34,9,12),'#9AA7B8',{w:1.9});k.line([[X,G],[X,G-200]],4,'#9AA7B8');
+    const hood=[[X-50,G-206],[X-46,G-246],[X-18,G-268],[X+18,G-268],[X+42,G-246],[X+44,G-206]];k.shape(hood,C.lav,{w:2.3,hatch:{side:.6,gap:5,col:'#B9A6DA',op:.6}});k.shape(E(X-3,G-206,48,10,14),'#B9A6DA',{w:1.8});
+    k.add(`<circle cx="${X+30}" cy="${G-232}" r="4" fill="${C.red}" stroke="${C.ink}" stroke-width="1.2"/><path d="M${X-20} ${G-184}q20 -10 40 0" fill="none" stroke="#fff" stroke-width="2.4"/>`);
+    [[X-62,G-220,10],[X-76,G-236,7],[X+56,G-222,9],[X+64,G-244,6],[X-58,G-198,6]].forEach(([fx,fy,r])=>k.shape(blobP(fx,fy,r,r*.8,k.r,7,.35),'#FFFFFF',{w:1.3,one:1}));
+    k.add(`<path d="M${X-70} ${G-210}q-8 -4 -14 0M${X+62} ${G-206}q8 -4 14 0" fill="none" stroke="${C.graph}" stroke-width="1.4"/>`);k.lt(()=>ltString(k,sagP(X-46,G-246,X+42,G-246,6,10),14))})});
+  fk.add('basket',566,()=>{const s=D(566)*1.1;shadeA(k,80,568,48*s);scaledB2(k,s,80-72*s,566-560*s,()=>{k.shape([[30,560],[34,520],[110,520],[114,560]],'#E1B987',{w:1.9,hatch:{gap:5,col:'#BF9767',op:.5}});k.shape(E(72,516,40,10,12),'#FFD8E0',{w:1.6,one:1});k.shape(E(64,508,24,8,10),C.mint,{w:1.4,one:1});k.shape(E(88,506,16,6,10),C.lav,{w:1.2,one:1})})});
+  fk.out();
+  O.sparkle(k,600,140,7);O.heart(k,560,250,6);
+  O.tape(k,6,18,90,-26,'#F7B9C6');O.tape(k,920,576,80,-24,'#B9D4F3')}
+
+/* ---------- the floors (PawArt.FLOOR) and the v215 dispatch ---------- */
+const FLOOR_B2={
+ square:{poly:[[24,346],[976,346],[994,594],[6,594]],
+  props:[{id:'lampL',base:400,box:[337,392,16,10]},{id:'lampR',base:400,box:[632,392,16,10]},{id:'bench',base:478,box:[708,466,104,12]},{id:'fountain',base:492,box:[26,446,168,44]},
+   {id:'planter',base:560,box:[384,548,72,12]},{id:'tub',base:582,box:[920,570,56,12]}],
+  spots:[{id:'arch',x:466,y:374,tags:['arch','run','gate'],act:'arch'},{id:'fountain',x:110,y:512,tags:['bowl','water'],act:'drink'},{id:'bench',x:760,y:498,tags:['bench','rest'],act:'sit'},
+   {id:'notice',x:745,y:414,tags:['sniff','look'],act:'look'},{id:'shade',x:560,y:368,tags:['shade','rest'],act:'rest'},{id:'sun',x:330,y:540,tags:['sun','rest'],act:'rest'},
+   {id:'pigeons',x:600,y:548,tags:['look'],act:'look'},{id:'open',x:560,y:470,tags:['open','ball','zoomies'],act:'zoomies'},{id:'visit1',x:572,y:430,tags:['visitor'],act:'idle'},
+   {id:'flowers',x:900,y:580,tags:['sniff'],act:'sniff'}]},
+ fujihill:{poly:[[24,356],[976,356],[994,594],[6,594]],
+  props:[{id:'hokora',base:384,box:[232,376,46,10]},{id:'momiji',base:398,box:[60,390,22,10]},{id:'sign',base:394,box:[692,386,16,10]},{id:'toroL',base:428,box:[136,420,28,10]},
+   {id:'toroR',base:430,box:[346,422,28,10]},{id:'bench',base:418,box:[504,408,88,12]},{id:'bowl',base:436,box:[620,428,40,10]},{id:'torii',base:440,box:[192,430,24,12]},
+   {id:'toriiR',base:441,box:[295,431,24,12]},{id:'sakura',base:488,box:[886,478,28,12]}],
+  spots:[{id:'bench',x:FH2_BENCH[0],y:438,tags:['bench','rest','view'],act:'sit'},{id:'view',x:420,y:372,tags:['view','look'],act:'look'},{id:'torii',x:255,y:458,tags:['gate','sniff'],act:'sniff'},
+   {id:'shrine',x:255,y:402,tags:['sniff'],act:'sniff'},{id:'drink',x:684,y:444,tags:['bowl'],act:'drink'},{id:'shade',x:840,y:508,tags:['shade','rest'],act:'rest'},
+   {id:'sun',x:470,y:540,tags:['sun','rest'],act:'rest'},{id:'open',x:680,y:520,tags:['open','ball','zoomies'],act:'zoomies'},
+   {id:'path',x:400,y:530,tags:['sniff','trail'],act:'sniff',path:[[470,590],[420,540],[360,494],[300,462],[255,452]]}]},
+ cafe:{poly:[[16,348],[984,348],[998,594],[2,594]],
+  props:[{id:'plant',base:362,box:[28,354,48,10]},{id:'table',base:432,box:[336,424,128,12]},{id:'bed',base:456,box:null},{id:'table2',base:556,box:[562,548,154,12]},{id:'water',base:566,box:[826,558,48,10]}],
+  spots:[{id:'bowl',x:250,y:570,tags:['bowl'],act:'drink'},{id:'water',x:850,y:588,tags:['bowl'],act:'drink'},{id:'bed',x:870,y:472,tags:['rest','bed'],act:'rest'},{id:'table',x:400,y:452,tags:['sniff'],act:'sniff'},
+   {id:'counter',x:708,y:372,tags:['look'],act:'look'},{id:'visit1',x:568,y:430,tags:['visitor'],act:'idle'},{id:'sun',x:205,y:392,tags:['sun','rest'],act:'rest'},{id:'open',x:480,y:500,tags:['open','ball','zoomies'],act:'zoomies'}]},
+ vet:{poly:[[16,348],[984,348],[998,594],[2,594]],
+  props:[{id:'plant',base:362,box:[26,354,48,10]},{id:'bench',base:400,box:[312,390,236,12]},{id:'water',base:470,box:[858,462,44,10]},{id:'scale',base:536,box:null},{id:'toys',base:568,box:[892,558,76,10]}],
+  spots:[{id:'bowl',x:250,y:570,tags:['bowl'],act:'drink'},{id:'bench',x:430,y:416,tags:['bench','rest'],act:'sit'},{id:'scale',x:104,y:552,tags:['scale'],act:'sit'},{id:'desk',x:710,y:372,tags:['look'],act:'look'},
+   {id:'door',x:920,y:374,tags:['door'],act:'door'},{id:'sun',x:186,y:392,tags:['sun','rest'],act:'rest'},{id:'water',x:880,y:488,tags:['bowl'],act:'drink'},{id:'toys',x:930,y:588,tags:['sniff'],act:'sniff'},{id:'open',x:560,y:500,tags:['open','ball','zoomies'],act:'zoomies'}]},
+ salon:{poly:[[16,348],[984,348],[998,594],[2,594]],
+  props:[{id:'plant',base:362,box:[306,354,48,10]},{id:'cart',base:436,box:[506,428,68,10]},{id:'dryer',base:532,box:[866,524,68,10]},{id:'basket',base:566,box:[34,556,92,10]}],
+  spots:[{id:'bowl',x:250,y:570,tags:['bowl'],act:'drink'},{id:'tub',x:190,y:378,tags:['sniff'],act:'sniff'},{id:'mirror',x:430,y:372,tags:['look'],act:'look'},{id:'table',x:730,y:372,tags:['look'],act:'look'},
+   {id:'cart',x:540,y:456,tags:['sniff'],act:'sniff'},{id:'dryer',x:848,y:552,tags:['look'],act:'look'},{id:'towels',x:90,y:538,tags:['rest'],act:'rest'},{id:'sun',x:868,y:392,tags:['sun','rest'],act:'rest'},{id:'open',x:440,y:500,tags:['open','ball','zoomies'],act:'zoomies'}]}
+};
+const MINE_B2={square:['Town Square',sqSquareB2],cafe:['Pupuccino Café',sqCafeB2],vet:['Vet Clinic',sqVetB2],salon:['Grooming Salon',sqSalonB2],fujihill:['Mt. Fuji Lookout',sqFujihillB2,` data-spot-bench="${FH2_SPOT.join(',')}"`]};
+function frameB2(name,body,env){const F=FLB2[name],W=F.w,M=MINE_B2[name];
+  const k=kit(hashS('pwc-v215b-'+name));lighten(k);k.env=env;k.so=F.in?'':env.ssn;k.xl=[];k.rc=recolorFn(env,F.in?'in':'out');const pp=paperDefs(k,W,600);
+  body(k,F);
+  const ex=(env.def?'':` data-time="${env.time}" data-weather="${env.weather}"${env.ssn?` data-season="${env.ssn}"`:''}`)+(env.hw?' data-halloween="1"':'')+wnAttrs(env)+` data-w="${W}" data-back="${F.back}"`+(M[2]||'');
+  return assemble(k,pp,W,`<svg class="pa-wc-scene pa-wc-v215 pa-wc-${name}" viewBox="0 0 ${W} 600" preserveAspectRatio="xMidYMid slice" role="img" aria-label="${M[0]}${env.def?'':`, ${env.time}, ${env.weather}${env.ssn?', '+env.ssn:''}`}"${ex}>`,false)}
+function renderB2(name,o){if(o.snow===true&&!WEATHERS.includes(o.weather))o=Object.assign({},o,{weather:'snow'});const env=mkEnv(o),key='v215b|'+name+'|'+env.time+'|'+env.weather+'|'+env.season+(env.hw?'|hw':'')+wnKey(env);
+  if(cacheC[key])return freshC(cacheC[key]);const s=frameB2(name,(k,F)=>MINE_B2[name][1](k,F,o),env);cacheC[key]=s;return s}
+Object.keys(FLOOR_B2).forEach(n=>{const F=FLB2[n],R=FLOOR_B2[n];PA.FLOOR[n]={w:F.w,back:F.back,front:F.front,kB:F.kB,kF:F.kF,poly:R.poly.map(p=>p.slice()),
+  props:R.props.map(p=>({id:p.id,base:p.base,box:p.box?p.box.slice():null})),spots:R.spots.map(s=>Object.assign({},s,{tags:s.tags.slice()},s.path?{path:s.path.map(p=>p.slice())}:{}))}});
+{const prev=PA.scene;PA.scene=function(name,o){return o&&o.v215&&MINE_B2[name]?renderB2(name,o):prev.apply(this,arguments)}}
+PA.WORLD_C_V215B=Object.keys(MINE_B2);
+/* ======================= end of v2.15 B ======================= */
 })();

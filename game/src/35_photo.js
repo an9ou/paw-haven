@@ -12,7 +12,7 @@ const PH = { on: false, cap: null, names: null, vb: null, tok: 0, svg: '', size:
 
 const phCaps = () => PH_CAPS.map((t, i) => ({ id: 'c' + i, t: tdata('ph_caps.' + i, t) })).concat([{ id: 'season', t: (() => { const k = PH_SEASON_CAP[seasonNow()] ? seasonNow() : 'summer'; return tdata('ph_season_cap.' + k, PH_SEASON_CAP[k]); })() }]);
 function phCapNow() { const l = phCaps(); return l.find((c) => c.id === prefs.phCap) || l[0]; }
-const phFrames = () => ((window.PawArt && PawArt.POSTCARD_COLORS) || []).concat(typeof tkFrameList === 'function' ? tkFrameList() : []); // v2.11: the Tokyo stamp frame once all seven stamps are in (39_tokyo.js)
+const phFrames = () => ((window.PawArt && PawArt.POSTCARD_COLORS) || []).concat(typeof tkFrameList === 'function' ? tkFrameList() : [], typeof fwFrameList === 'function' ? fwFrameList() : []); // v2.16: the calendar frames (47_firstweek.js) // v2.11: the Tokyo stamp frame once all seven stamps are in (39_tokyo.js)
 function phColorNow() { const l = phFrames(); return l.find((c) => c.k === prefs.phFrame) || l[0] || { k: 'rose', n: 'Rose', c: '#F7B2C4' }; }
 // the frame colour names come from world B (PawArt.POSTCARD_COLORS) and the Tokyo frame: shown through static keys, the table keys stay as they are
 function phFrameName(c) {
@@ -26,7 +26,7 @@ function phFrameName(c) {
     default: return c.n;
   }
 }
-function phPlaceName() { const p = S && S.place; return p === 'yard' ? tt('photo.place_home', 'Home') : p === 'house' ? tt('photo.place_house', 'The house') : (PLACES[p] && tdata('places.' + p + '.n', PLACES[p].n)) || tt('photo.place_town', 'Doodle Town'); }
+function phPlaceName() { const p = S && S.place; return p === 'yard' ? tt('photo.place_home', 'Home') : p === 'house' ? tt('photo.place_house', 'The house') : (PLACES[p] && (mpPlaceName(p) || tdata('places.' + p + '.n', PLACES[p].n))) || tt('photo.place_town', 'Doodle Town'); }
 // the Japan date, written like the festival dates ("19 October 2026"); the message gives the word order of each language, the month name comes from Intl
 function phDateLine() { const [y, m, d] = jstISO().split('-').map(Number); return tt('photo.date_line', '{d} {month} {y}', { d, month: tdate(new Date(2000, m - 1, 1), { month: 'long' }), y }); }
 function phNames(list) { return tlist(list); }
@@ -113,7 +113,7 @@ function phCapture() {
     if (e.style && /url\(\s*['"]?(?!#|data:)/i.test(e.getAttribute('style') || '')) e.removeAttribute('style');
   };
   clean(cl); cl.querySelectorAll('*').forEach(clean); cl.querySelectorAll('script, foreignObject').forEach((e) => e.remove());
-  const lv = (svg.getAttribute('viewBox') || '0 0 1000 600').split(/\s+/).map(Number), vb = [0, lv[1], 1000, lv[3]]; // the whole scene width: the phone camera crop is not the photo
+  const lv = (svg.getAttribute('viewBox') || '0 0 1000 600').split(/\s+/).map(Number), vb = [cur.mode === 'yard' && grWide() ? grPhotoX() : 0, lv[1], 1000, lv[3]]; // the whole scene width: the phone camera crop is not the photo (v2.15: a wide place, the 1000 round the camera)
   const tint = $('.tintfx', view), wx = $('.wxfx', view);
   const db = phDogBox(svg);
   cl.removeAttribute('class'); cl.removeAttribute('style'); cl.removeAttribute('id');
@@ -159,7 +159,7 @@ function phNamesIn(c, vb) {
 function phCompose(c, o) {
   const PA = window.PawArt, L = phLayout(c, o.sq), win = PA.postcardWindow(L.size.w, L.size.h), vb = L.vb.map((n) => +n.toFixed(2)), names = phNamesIn(c, vb);
   const scene = `<svg x="${win.x.toFixed(2)}" y="${win.y.toFixed(2)}" width="${win.w.toFixed(2)}" height="${win.h.toFixed(2)}" viewBox="${vb.join(' ')}" preserveAspectRatio="xMidYMid slice" overflow="hidden"><rect x="${vb[0]}" y="${vb[1]}" width="${vb[2]}" height="${vb[3]}" fill="#FFFBF3"/>${vb[1] < c.vb[1] ? `<rect x="${vb[0]}" y="${vb[1]}" width="${vb[2]}" height="${f1(c.vb[1] - vb[1] + 2)}" fill="${c.sky}"/>` : ''}${c.inner}${phWash(c, vb)}</svg>`;
-  let svg = (o.color === 'tokyo' && typeof tkPostcard === 'function' ? tkPostcard : PA.postcard)(L.size.w, L.size.h, { color: o.color, stamp: c.year, scene, caption: o.caption, place: c.place, date: c.date, dogs: phNames(names) });
+  let svg = (o.color === 'tokyo' && typeof tkPostcard === 'function' ? tkPostcard : /^fw/.test(o.color || '') && typeof fwPostcard === 'function' ? fwPostcard : PA.postcard)(L.size.w, L.size.h, { color: o.color, stamp: c.year, scene, caption: o.caption, place: c.place, date: c.date, dogs: phNames(names) });
   svg = svg.replace(/^(<svg[^>]*>)/, `$1<style>${PH_FONT_CSS}${phLangFontCSS()}*{animation:none!important;transition:none!important}</style>`);
   return { svg, size: L.size, names, vb };
 }

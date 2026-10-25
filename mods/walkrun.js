@@ -27,7 +27,11 @@ const AREAS = {
   // fg = foreground strip style; rainWide = what rain adds (default puddle + mud)
   town:    { v: [185, 220], gap: [1.6, 2.3, 1.1, 1.7], combo: 0.55, low: ['cat', 'trashcan', 'hydrant'], wide: ['bicycle'], high: ['awning', 'sign'], w: [0.5, 0.14, 0.36], rainWide: ['puddle'], len: 60, fg: 'town', happy: 15, energy: 15, clean: 5, bond: 8 },
   hilltop: { v: [200, 240], gap: [1.35, 2.0, 0.95, 1.5], combo: 0.4, low: ['rock', 'log', 'molehill'], wide: [], high: ['kite', 'bird'], w: [0.55, 0, 0.45], rainWide: ['mud'], len: 75, lamps: false, happy: 22, energy: 28, clean: 10, bond: 12 },
-  pier:    { v: [205, 245], gap: [1.3, 1.9, 0.9, 1.45], combo: 0.38, low: ['crate', 'ropecoil'], wide: ['puddle'], high: ['seagull', 'fishingline'], w: [0.45, 0.2, 0.35], rainWide: ['puddle'], len: 75, fg: 'pier', happy: 26, energy: 28, clean: 12, bond: 14 }
+  pier:    { v: [205, 245], gap: [1.3, 1.9, 0.9, 1.45], combo: 0.38, low: ['crate', 'ropecoil'], wide: ['puddle'], high: ['seagull', 'fishingline'], w: [0.45, 0.2, 0.35], rainWide: ['puddle'], len: 75, fg: 'pier', happy: 26, energy: 28, clean: 12, bond: 14 },
+  // v2.15 run tracks (V215.md 6.3): the strips come from world G (PawArt.walkStrip), the obstacles are the old ones
+  sunflower: { v: [185, 220], gap: [1.55, 2.25, 1.05, 1.65], combo: 0.5, low: ['log', 'rock'], wide: ['puddle'], high: ['bird', 'kite'], w: [0.5, 0.14, 0.36], rainWide: ['puddle', 'mud'], len: 60, lamps: false, happy: 15, energy: 15, clean: 5, bond: 9 },
+  bamboo: { v: [195, 235], gap: [1.4, 2.1, 1.0, 1.55], combo: 0.42, low: ['log', 'rock'], wide: ['puddle', 'mud'], high: ['bird', 'branch'], w: [0.42, 0.24, 0.34], rainWide: ['puddle', 'mud'], len: 75, lamps: false, happy: 22, energy: 25, clean: 10, bond: 12 },
+  cliffs: { v: [205, 245], gap: [1.3, 1.9, 0.9, 1.45], combo: 0.38, low: ['rock', 'molehill'], wide: [], high: ['seagull', 'kite'], w: [0.55, 0, 0.45], rainWide: ['mud'], len: 90, lamps: false, happy: 28, energy: 30, clean: 12, bond: 14 }
 };
 // obstacle art: viewBox (per V12.md) and draw scale k (world units = vb * k)
 const OBS = {
@@ -56,7 +60,10 @@ const ROUTE_NOTES = {
 const ROUTE_WX = {
   town: { rain: 'Rain: puddles on the sidewalk.', night: 'Night: street lamps light the way.' },
   hilltop: { rain: 'Rain: muddy patches on the trail.', snow: 'Snow: snowdrifts and cold paws.', night: 'Night: no lamps up here, just fireflies. Fewer birds.' },
-  pier: { rain: 'Rain: more puddles on the boards.', night: 'Night: lamps and the lighthouse. Fewer seagulls.' }
+  pier: { rain: 'Rain: more puddles on the boards.', night: 'Night: lamps and the lighthouse. Fewer seagulls.' },
+  sunflower: { rain: 'Rain: puddles between the rows.', night: 'Night: no lamps here, just fireflies over the fields.' },
+  bamboo: { rain: 'Rain: wet stones and muddy patches.', night: 'Night: stone lanterns glow along the path.' },
+  cliffs: { rain: 'Rain: muddy patches on the cliff path.', night: 'Night: no lamps up here, just the stars. Fewer gulls.' }
 };
 
 /* ------------------------------------------------------------------ lines */
@@ -1148,7 +1155,7 @@ function start(el, o) {
   }
 
   /* ---------- "How to walk" tutorial (before the countdown) ---------- */
-  const ROUTE_NAME = { park: 'Sunny Park', river: 'Riverside Trail', woods: 'Maple Woods', beach: 'Seashell Beach', town: 'Town Loop', hilltop: 'Hilltop Trail', pier: 'Pier Boardwalk' };
+  const ROUTE_NAME = { park: 'Sunny Park', river: 'Riverside Trail', woods: 'Maple Woods', beach: 'Seashell Beach', town: 'Town Loop', hilltop: 'Hilltop Trail', pier: 'Pier Boardwalk', sunflower: 'Sunflower Lanes', bamboo: 'Bamboo Grove Trail', cliffs: 'Seaside Cliffs Run' };
   const OBS_LABEL = { log: 'Log', rock: 'Rock', sprinkler: 'Sprinkler', snowdrift: 'Snowdrift', crab: 'Crab', sandcastle: 'Sandcastle', puddle: 'Puddle', mud: 'Mud', branch: 'Branch', bird: 'Bird', sign: 'Sign', kite: 'Kite string', bunting: 'Bunting', cat: 'Cat', trashcan: 'Trash can', hydrant: 'Hydrant', bicycle: 'Bicycle', awning: 'Awning', molehill: 'Molehill', crate: 'Crate', ropecoil: 'Rope coil', seagull: 'Seagull', fishingline: 'Fishing line', tide_pool: 'Tide pool', duck: 'Duck' };
   const obsKey = (n) => (n === 'puddle' && area === 'beach' ? 'tide_pool' : n === 'bird' && area === 'river' ? 'duck' : n);
   const obsLabel = (n) => LD('obs_label.' + obsKey(n), OBS_LABEL[obsKey(n)]);

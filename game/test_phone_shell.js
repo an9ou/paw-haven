@@ -75,16 +75,16 @@ require('./test_lib').run('phone_shell', async (t) => {
     ok(await t.until(() => !document.getElementById('hud').classList.contains('hexp')), `${dev}: a tap elsewhere folds the meters`);
 
     sec(dev + ': action bar');
-    const bar = await ev(() => { const b = document.getElementById('bar').getBoundingClientRect(); return { b: b.bottom, t: b.top, ih: innerHeight, acts: [...document.querySelectorAll('#bar .act')].map((a) => { const r = a.getBoundingClientRect(); return { h: r.height, w: r.width, l: r.left, r: r.right, lbl: a.textContent.trim() }; }) }; });
-    ok(bar.acts.length === 7 && bar.acts.every((a) => a.h >= 48 && a.w >= 44 && a.lbl), `${dev}: 7 labelled action buttons, each >= 48 px tall: ${bar.acts.map((a) => Math.round(a.h)).join(',')}`);
+    const bar = await ev(() => { const b = document.getElementById('bar').getBoundingClientRect(); return { b: b.bottom, t: b.top, ih: innerHeight, acts: [...document.querySelectorAll('#bar > .act')].map((a) => { const r = a.getBoundingClientRect(); return { h: r.height, w: r.width, l: r.left, r: r.right, lbl: a.textContent.trim() }; }) }; });
+    ok(bar.acts.length === 4 && bar.acts.every((a) => a.h >= 48 && a.w >= 44 && a.lbl), `${dev}: 4 labelled action buttons (v2.16 option C: Care, Walk, Map, More), each >= 48 px tall: ${bar.acts.map((a) => Math.round(a.h)).join(',')}`);
     ok(Math.abs(bar.b - bar.ih) < 1.5 && bar.acts.every((a) => a.l >= 0 && a.r <= innerWidthOf(dev)), `${dev}: action bar fixed at the bottom of the screen`);
     ok(await ev(() => /env\(safe-area-inset-bottom|px/.test(getComputedStyle(document.getElementById('bar')).paddingBottom)), `${dev}: action bar keeps the safe-area padding`);
     await targets('action bar', '#bar'); await textSizes('action bar', '#bar');
     const clip = await ev(() => [...document.querySelectorAll('#bar .act span:last-child')].filter((sp) => sp.scrollWidth > sp.parentElement.clientWidth + 1).map((sp) => sp.textContent));
     ok(clip.length === 0, `${dev}: action-bar labels fit their buttons at 15 px${clip.length ? ' -> ' + clip.join(', ') : ''}`);
-    await p.locator('[data-act=feed]').tap(); ok(await t.waitPop(true), `${dev}: a tap on Feed opens the feed sheet`);
+    await t.dock('feed'); await p.locator('[data-act=feed]').tap(); ok(await t.waitPop(true), `${dev}: a tap on Feed opens the feed sheet`);
     ok(await ev(() => window.__pawShell.sheetOpen()), `${dev}: psSheetOpen() is true while the feed sheet is open`);
-    await p.locator('[data-act=feed]').tap(); ok(await t.waitPop(false), `${dev}: a second tap closes it`);
+    await t.dock('feed'); await p.locator('[data-act=feed]').tap(); ok(await t.waitPop(false), `${dev}: a second tap closes it`);
 
     sec(dev + ': ... menu');
     await p.locator('#moreBtn').tap(); await p.waitForSelector('#mmSet');
@@ -123,7 +123,7 @@ require('./test_lib').run('phone_shell', async (t) => {
     ok(await ev(() => !window.__pawShell.sheetOpen()), `${dev}: psSheetOpen() is false once it is closed`);
 
     // Journal: tabs scroll sideways, 44 px tall; a backdrop tap closes it
-    await p.locator('[data-act=journal]').tap(); await p.waitForSelector('.panel.journal');
+    await t.dock('journal'); await p.locator('[data-act=journal]').tap(); await p.waitForSelector('.panel.journal');
     await sheetCheck('Journal sheet'); await t.SH(dev + '_journal');
     const tabs = await ev(() => { const r = document.querySelector('#modal .jtabs'); const bs = [...r.querySelectorAll('.btn')].map((b) => b.getBoundingClientRect()); return { wrap: getComputedStyle(r).flexWrap, sw: r.scrollWidth, cw: r.clientWidth, oneRow: bs.every((b) => Math.abs(b.top - bs[0].top) < 6), minH: Math.min(...bs.map((b) => b.height)) }; });
     ok(tabs.wrap === 'nowrap' && tabs.oneRow && tabs.minH >= 44, `${dev}: journal tabs are one row of 44 px buttons (min ${Math.round(tabs.minH)} px)`);
@@ -139,7 +139,7 @@ require('./test_lib').run('phone_shell', async (t) => {
     await p.touchscreen.tap(20, 20); ok(await t.until(() => document.getElementById('modal').hidden), `${dev}: a backdrop tap closes the sheet`);
 
     // Wardrobe and a shop: grids, options
-    await p.locator('[data-act=wardrobe]').tap(); await p.waitForSelector('.ward'); await sheetCheck('Wardrobe sheet'); await t.SH(dev + '_wardrobe');
+    await t.dock('wardrobe'); await p.locator('[data-act=wardrobe]').tap(); await p.waitForSelector('.ward'); await sheetCheck('Wardrobe sheet'); await t.SH(dev + '_wardrobe');
     await p.locator('.panel .x').tap(); await t.modalGone();
     await t.home('market'); await p.locator('#placeBtns [data-sh=kibble]').tap(); await p.waitForSelector('.shopgrid');
     await sheetCheck('Shop sheet'); await t.SH(dev + '_shop');

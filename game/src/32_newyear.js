@@ -70,7 +70,7 @@ function nySquareDraw() {
   const pb = $('#placeBtns'); if (pb) pb.querySelectorAll('[data-ny]').forEach((b) => b.remove());
   if (!S || S.place !== 'square' || !nyDays() || (typeof fsActive === 'function' && fsActive())) return;
   nyFields(); nyKnotsSync();
-  const at = typeof fsSlot === 'function' ? fsSlot() : ($('#bowlG', svg) || $('#pack', svg)); if (!at) return;
+  const at = typeof fsSlot === 'function' ? fsSlot() : (grAt('bowlG', svg) || $('#pack', svg)); if (!at) return;
   const [x, y, w, h] = nyFortuneBox(), night = isNight(), k = S.ny.fortune.knots;
   at.insertAdjacentHTML('beforebegin', `<g id="nyFortuneG" class="hot" data-knots="${k}" data-night="${night ? 1 : 0}" tabindex="0" role="button" aria-label="${esc(tt('newyear.label_box', 'Fortune box: shake it for a New Year fortune'))}">${place(nyBoxArt(k, night), x, y, w, h)}${fsHit(x, y, w, h)}${isPhone() && typeof hwChip === 'function' ? fsChipAbove(tt('newyear.fortune_box', 'Fortune box'), [x, y, w, h], fsAnyOn() ? [fsStallBox()] : []) : ''}</g>`);
   if (typeof fsHitFit === 'function') fsHitFit();

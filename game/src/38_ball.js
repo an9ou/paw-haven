@@ -16,6 +16,7 @@ const BL_TOYS = {
   'Driftwood Stick': { prop: ['item', 'Driftwood Stick'], g: 1900, bounce: 0.28, fric: 5, spin: 1.8, vzK: 1, coin: 3, hap: 15, en: 1 },
 };
 // where a dog's feet may stand per place (V210.md 5.2), the fallback until ROAM's rmZone(place) answers
+const BL_GR_BACK = { square: 352 }; // v2.15: a grOn square's ball floor starts a little in front of its back line (the shop steps)
 const BL_FLOOR = { yard: [400, 590], house: [410, 590], market: [450, 585], river: [450, 590], beach: [450, 590], pier: [405, 590], square: [410, 592], cafe: [410, 592], vet: [410, 592], salon: [405, 592], hilltop: [405, 592], park: [405, 592], woods: [405, 592], dogpark: [405, 592] };
 const BL_R = 26; // the ball's radius in world units
 const BL_LINES = {
@@ -37,7 +38,8 @@ function blDomNoGo() { // fallback until ROAM's rmZone gives the boxes: the big 
 }
 function blZone() {
   const place = (S && S.place) || 'yard'; let z = null; try { z = typeof rmZone === 'function' ? rmZone(place) : null; } catch (e) { z = null; }
-  const f = BL_FLOOR[place] || [420, 590], out = { x0: 60, x1: 940, y0: f[0], y1: f[1], no: [] };
+  const gf = grOn(place) ? grFloor(place) : null, f = gf ? [Math.max(gf.back, BL_GR_BACK[place] || 0), gf.front] : BL_FLOOR[place] || [420, 590], out = { x0: 60, x1: 940, y0: f[0], y1: f[1], no: [] }; // v2.15: a deep floor's back and front lines (43_ground.js)
+  if (gf) { out.x0 = gf.x0; out.x1 = gf.x1; out.poly = gf.poly; }
   if (isPhone() && place === 'yard') { out.y0 = 420; out.y1 = 600; }
   if (z) { ['x0', 'x1', 'y0', 'y1'].forEach((k) => { if (typeof z[k] === 'number') out[k] = z[k]; }); out.no = Array.isArray(z.no) ? z.no : []; } else out.no = blDomNoGo();
   return out;
@@ -53,6 +55,7 @@ function blPush(x, y, Z) {
       }
     }
     x = clamp(x, Z.x0, Z.x1); y = clamp(y, Z.y0, Z.y1);
+    if (Z.poly && !grIn(Z.poly, x, y)) [x, y] = grInside(Z.poly, x, y); // v2.15: the feet on the floor polygon
   }
   return [x, y];
 }
@@ -98,7 +101,7 @@ function blBallSVG() {
   const c = BL.cfg, a = c.prop[0] === 'prop' ? art('prop', c.prop[1]) : art('item', c.prop[1]);
   return `<defs><radialGradient id="blGlowG"><stop offset="0" stop-color="#E6FFAA" stop-opacity=".95"/><stop offset="1" stop-color="#A0FF78" stop-opacity="0"/></radialGradient></defs>
     <circle id="blRing" class="bl-ring" r="50" fill="none" stroke="#F28FA5" stroke-width="4" stroke-dasharray="7 6"/>
-    <g id="blBall" class="bl-ball">${c.glow && isNight() ? '<circle id="blHalo" r="70" fill="url(#blGlowG)"/>' : ''}<g id="blSpin">${place(a, -30, -30, 60, 60)}</g></g>`;
+    <g id="blBall" class="bl-ball">${(c.glow || S.outfit.charm === 'Paper Lantern') && isNight() ? '<circle id="blHalo" r="70" fill="url(#blGlowG)"/>' : ''}<g id="blSpin">${place(a, -30, -30, 60, 60)}</g></g>`;
 }
 function blDraw() {
   const L = $('#ballLayer'); if (!L || !BL) return;
@@ -400,11 +403,11 @@ function blSky() { // ROAM's sky (or wall) colour of the scene, and the scene's 
   });
 }
 function blCamera(dt) {
-  if (!isPhone()) return;
+  if (!isPhone()) { if (grWide()) grBallCam(dt, BL.ph === 'rest' ? BL.hx : BL.ball.x); return; } // v2.15: a wide place's camera follows the ball on desktop too
   const dm = phSvgDims(); if (!dm.w || !dm.h) return;
   const vbW = 600 * dm.w / dm.h, zf = vbW >= BL_CROP ? 1 : vbW / BL_CROP;
   if (Math.abs(phZoom - zf) > 0.001) { phZoom = zf; blSky(); }
-  const b = BL.ball, target = BL.ph === 'rest' ? BL.hx : clamp(b.x, 0, 1000);
+  const b = BL.ball, target = BL.ph === 'rest' ? BL.hx : clamp(b.x, 0, grW());
   camCx += (target - camCx) * Math.min(1, dt * 5); cancelAnimationFrame(camRaf); clearTimeout(phPanT); camApply(camCx);
 }
 
@@ -429,8 +432,9 @@ function blTrayUpdate() { const c = $('#blCoins'); if (c) { const t = blCoinsTex
 
 /* ---------------- start and stop ---------------- */
 function blKeyBlock(e) { if (BL && (e.key === 'Enter' || e.key === ' ') && e.target.closest && e.target.closest('svg.world .hot')) { e.stopPropagation(); e.preventDefault(); } } // Enter on a focused scene prop opens nothing either
-function blStart(toy) {
-  const cfg = BL_TOYS[toy]; if (BL || !cfg || !S || cur.mode !== 'yard') return false;
+function blStart(toy, o) {
+  const water = !!(o && o.water), cfg0 = BL_TOYS[toy], cfg = cfg0 && water ? Object.assign({}, cfg0, { float: true, bounce: Math.min(cfg0.bounce, 0.1), fric: Math.max(cfg0.fric, 4.5), g: Math.min(cfg0.g, 950), vzK: Math.min(cfg0.vzK, 0.62) }) : cfg0; // v2.15 float fetch (45_pool.js): the toy floats, the dogs may wade in
+  if (BL || !cfg || !S || !rmScene()) return false; // v2.15: also Kibble Corner's street once it has the deep floor (37_roam.js rmScene)
   const lead = D(), svg = $('svg.world', view); if (!svg || !$('#ballLayer')) return false;
   if (S.sleeping) { nope(tt('ball.asleep', '{name} is asleep. Even fun has to wait.', { name: NAME() })); return false; }
   if (typeof isNursing === 'function' && isNursing(lead)) { nope(tt('ball.nursing', '{name} is nursing the pups. No ball play for {sex, select, female {her} other {him}} right now.', { name: lead.name, sex: lead.sex === 'female' ? 'female' : 'male' })); return false; }
@@ -440,10 +444,11 @@ function blStart(toy) {
   const key = 'toyAt_' + toy, full = !S[key] || S.gameMin - S[key] >= 10; S[key] = S.gameMin; // the same 10-minute rule as Fetch: playing again so soon is less exciting
   BL = { toy, cfg, k: full ? 1 : 0.25, lead, dogs: dogs.map((d) => ({ d, id: d.id, x: 430, y: 500, face: 'right', pose: 'idle', role: 'wait', sp: 0, off: [0, 0], until: 0, ran: 0, hapGot: 0, got: 0 })), svg,
     ball: { x: 0, gy: 0, z: 0, vx: 0, vz: 0, vgy: 0, rot: 0, vr: 0, state: 'rest', bounces: 0, carrier: null }, ph: 'rest', thrown: 0, n: 0, coins: 0, lastSp: -9, lineAt: -9, t: 0, key0: cur.key, raf: 0, last: performance.now(), grab: null, rnd: null, force: null, lock: false, played: false,
-    zone: blZone(), z0: typeof phZoom === 'number' ? phZoom : 1 };
+    zone: blZone(), z0: typeof phZoom === 'number' ? phZoom : 1, water };
+  if (water) { BL.zone.no = BL.zone.no.filter((b) => b[5] !== 'pool'); if (typeof plVestOn === 'function') plVestOn(BL.dogs.map((o) => o.d)); } // the pool is no no-go box for float fetch; the free life vest goes on
   BL.dogs.forEach((o) => { try { const p = rmPos(o.d); o.x = p.x; o.y = p.y; o.face = p.face || 'right'; o.pose = p.pose || 'idle'; } catch (e) { /* default */ } const q = blPush(o.x, o.y, BL.zone); o.x = q[0]; o.y = q[1]; });
   const mx = BL.dogs.reduce((a, o) => a + o.x, 0) / BL.dogs.length, Z = BL.zone;
-  BL.hx = isPhone() ? clamp(mx, Z.x0 + 260, Z.x1 - 260) : 500; BL.hy = Z.y1 - 58; // the ring round the ball (50 units) stays inside the scene BL.camT = BL.hx;
+  BL.hx = grWide() ? clamp(camCx, Z.x0 + 260, Z.x1 - 260) : isPhone() ? clamp(mx, Z.x0 + 260, Z.x1 - 260) : 500; BL.hy = Z.y1 - 58; // the ring round the ball (50 units) stays inside the scene (v2.15: a wide place plays where the camera is) BL.camT = BL.hx;
   const hp = blPush(BL.hx, BL.hy, Z); BL.hx = hp[0]; BL.hy = hp[1]; BL.spots = blSpots();
   BL.ball.x = BL.hx; BL.ball.gy = BL.hy;
   try { rmPause('ball'); } catch (e) { /* none */ }
@@ -465,17 +470,19 @@ function blStop(quiet) {
   try { rmResume('ball'); } catch (e) { /* none */ }
   cur.key = B.key0 || null;
   // Bond once a session for every dog that ran, and the daily play care
+  if (B.water && typeof plAfterBall === 'function') plAfterBall(); // v2.15: the vest comes off, the pool buttons come back
   if (B.played) {
     B.dogs.forEach((o) => { if (o.ran) withDog(o.d, () => addBond(8 * B.k)); });
     dailyCare('play'); markDirty();
+    if (B.water) trackAct('floatfetch', { name: B.toy });
   }
   busy = false;
   if (isPhone()) { phZoom = B.z0 || 1; view.style.background = ''; }
-  if (!quiet && cur.mode === 'yard') {
+  if (!quiet && rmScene()) {
     setChrome(true, true); renderDog(dogPoseNow(), 'right', true); if (S.sleeping) sleepTray(); else dockIdle();
     if (isPhone()) { phHomeRefit(); camCx = phCamHome; camApply(camCx); }
     updateHUD();
-    if (B.played) B.dogs.forEach((o, i) => { if (o.ran) setTimeout(() => { if (!BL && cur.mode === 'yard') exTrig(o.d, 'ballEnd', { pose: 'idle' }); }, 150 + i * 200); }); // v2.13: play is over, a short pout, then fine
+    if (B.played) B.dogs.forEach((o, i) => { if (o.ran) setTimeout(() => { if (!BL && rmScene()) exTrig(o.d, 'ballEnd', { pose: 'idle' }); }, 150 + i * 200); }); // v2.13: play is over, a short pout, then fine
   }
 }
 // the portrait-lock card pauses the game (v2.3 phones), as it did Fetch

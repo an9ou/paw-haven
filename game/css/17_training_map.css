@@ -59,3 +59,7 @@ html[data-layout="phone"] .trhead .tabs .btn{min-height:44px;font-size:17px}
 html[data-layout="phone"] .trchip{width:70px;min-height:64px}
 html[data-layout="phone"] #mapZoom{bottom:auto;top:64px;right:10px}
 html[data-layout="phone"] #stage.training #placeBtns{display:none}
+/* v2.15.1 (owner): while training on a phone (and the doodledoggo.app game box, phone layout) the place/time chip, the look arrows and the
+   action bar covered the dogs. Hide them; the panel's Stop / x is the way out, and #view (flex:1) takes the bar's room. Desktop is unchanged:
+   there the chip and the bar never reach the dog. */
+html[data-layout="phone"] #stage.training :is(#status,#phPeek,#rmLookL,#rmLookR,#bar,#gdLayer){display:none!important}

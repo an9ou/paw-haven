@@ -22,7 +22,7 @@ require('./test_lib').run('phone_v29_pack', async (t) => {
     await ev(() => { const P = window.__paw; P.addDog({ key: 'corgi', sex: 'male', months: 14 }, 'Bun'); P.addDog({ key: 'samoyed', sex: 'female', months: 30 }, 'Clementine'); P.S.inv.toys.push('Squeaky Duck', 'Rope Tug'); P.S.dogs.forEach((d) => { d.stats.energy = 90; d.stats.happy = 40; }); });
     await t.calm(); await t.home('yard'); await quiet();
     const [A, B, C] = (await S()).dogs.map((d) => d.id);
-    await p().click('[data-act=play]'); await t.waitPop(true); await settled(); await t.SH(device.replace(' ', '') + '_play');
+    await t.dock('play'); await p().click('[data-act=play]'); await t.waitPop(true); await settled(); await t.SH(device.replace(' ', '') + '_play');
     let c = await chipCheck('#dock .cr-chips', '#dock > .tray');
     ok(chipsOk(c) && c.n === 3, 'Play tray chips: 3, each at least 44 px tall, names at least 15 px, a head each, inside the tray ' + JSON.stringify(c));
     ok(await noSide(), 'no sideways scroll with the Play tray open');
@@ -36,7 +36,7 @@ require('./test_lib').run('phone_v29_pack', async (t) => {
     await ev(() => { window.__paw.S.careOff = {}; });
 
     sec(device + ': the Tricks picker');
-    await t.home('yard'); await quiet(); await p().click('[data-act=play]'); await t.waitPop(true); await p().click('[data-play=tricks]');
+    await t.home('yard'); await quiet(); await t.dock('play'); await p().click('[data-act=play]'); await t.waitPop(true); await p().click('[data-play=tricks]');
     await t.until(() => document.querySelectorAll('#dock .pk-pickb').length === 3, null, 3000); await settled(); await t.SH(device.replace(' ', '') + '_tricks');
     c = await ev(() => { const row = document.querySelector('#dock .pk-pick'), cont = document.querySelector('#dock > .tray'); const cr = cont.getBoundingClientRect(), rr = row.getBoundingClientRect(); return { inside: rr.left >= cr.left - 1 && rr.right <= cr.right + 1, chips: [...row.querySelectorAll('.pk-pickb')].map((b) => ({ h: Math.round(b.getBoundingClientRect().height), f: parseFloat(getComputedStyle(b.querySelector('.cr-name')).fontSize), head: !!b.querySelector('.cr-head svg') })) }; });
     ok(c.inside && c.chips.length === 3 && c.chips.every((x) => x.h >= 44 && x.f >= 15 && x.head), 'picker chips: 44 px, 15 px, heads, inside the tray ' + JSON.stringify(c));
@@ -48,7 +48,7 @@ require('./test_lib').run('phone_v29_pack', async (t) => {
 
     sec(device + ': Tug and Fetch: the pack piles on by the rope, the followers stay in view');
     await t.home('yard'); await quiet(); await ev(() => { const P = window.__paw; delete P.S['toyAt_Rope Tug']; P.S.dogs.forEach((d) => { d.stats.energy = 90; }); });
-    await p().click('[data-act=play]'); await t.waitPop(true); await p().click('[data-play=tug]');
+    await t.dock('play'); await p().click('[data-act=play]'); await t.waitPop(true); await p().click('[data-play=tug]');
     await t.until(() => document.querySelectorAll('#pack .packdog.pk-tug').length === 2, null, 2000); await p().waitForTimeout(550); await t.SH(device.replace(' ', '') + '_tug');
     const ART = () => { const svg = document.querySelector('#view svg.world'), M = svg.getScreenCTM().inverse(); return (el) => { const s = el.querySelector('svg.pa-dog') || el.querySelector('svg'); let b = [1e9, 1e9, -1e9, -1e9]; [...s.children].forEach((c) => { const r = c.getBoundingClientRect(); if (!r.width && !r.height) return; const a = new DOMPoint(r.left, r.top).matrixTransform(M), z = new DOMPoint(r.right, r.bottom).matrixTransform(M); b = [Math.min(b[0], a.x), Math.min(b[1], a.y), Math.max(b[2], z.x), Math.max(b[3], z.y)]; }); return b.map(Math.round); }; };
     const tg = await ev((src) => { const box = eval(src)(), L = box(document.getElementById('dogArt')); return { L, D: [...document.querySelectorAll('#pack .packdog.pk-tug')].map(box) }; }, ART.toString());
@@ -102,7 +102,7 @@ require('./test_lib').run('phone_v29_pack', async (t) => {
 
     sec(device + ': the Wardrobe picker');
     await quiet(); await ev(() => { window.__paw.S.inv.clothes.push('Party Hat'); });
-    await p().click('[data-act=wardrobe]'); await modalUp(); await t.SH(device.replace(' ', '') + '_wardrobe');
+    await t.dock('wardrobe'); await p().click('[data-act=wardrobe]'); await modalUp(); await t.SH(device.replace(' ', '') + '_wardrobe');
     c = await ev(() => { const row = document.querySelector('#modal .pk-pick'), cont = document.querySelector('#modal .panel'); const cr = cont.getBoundingClientRect(), rr = row.getBoundingClientRect(); return { inside: rr.left >= cr.left - 1 && rr.right <= cr.right + 1, chips: [...row.querySelectorAll('.pk-pickb')].map((b) => ({ h: Math.round(b.getBoundingClientRect().height), f: parseFloat(getComputedStyle(b.querySelector('.cr-name')).fontSize), head: !!b.querySelector('.cr-head svg') })) }; });
     ok(c.inside && c.chips.length === 3 && c.chips.every((x) => x.h >= 44 && x.f >= 15 && x.head), 'wardrobe picker chips: 44 px, 15 px, heads, inside the sheet ' + JSON.stringify(c));
     await p().click(`#modal [data-pkdog="${C}"]`); await t.until((x) => document.querySelector(`#modal .pk-pickb[data-pkdog="${x}"]`).getAttribute('aria-pressed') === 'true', C, 2000);
@@ -169,7 +169,7 @@ require('./test_lib').run('phone_v29_pack', async (t) => {
     for (const vp of device === 'Pixel 7' ? [null, [360, 740]] : [null]) {
       const vp0 = p().viewportSize(); if (vp) { await p().setViewportSize({ width: vp[0], height: vp[1] }); await p().waitForTimeout(300); }
       const tg = vp ? vp[0] + 'px' : device;
-      await p().click('[data-act=wardrobe]'); await modalUp(); await p().waitForTimeout(200);
+      await t.dock('wardrobe'); await p().click('[data-act=wardrobe]'); await modalUp(); await p().waitForTimeout(200);
       ok(await ev(() => /^Wardrobe: Mochi$/.test(document.querySelector('#modal .panel h2').textContent.trim())), `${tg}: the title names the leader: Wardrobe: Mochi`);
       const over = await ev(() => { const r = document.querySelector('#modal .pk-pick'); return r.scrollWidth > r.clientWidth + 4; });
       ok(over, `${tg}: five dogs: the picker row scrolls sideways`);
@@ -184,7 +184,7 @@ require('./test_lib').run('phone_v29_pack', async (t) => {
       await t.SH((vp ? vp[0] : device.replace(' ', '')) + '_wardrobe_pick5');
       await p().click('#modal .x'); await t.modalGone();
       // the Tricks tray: every render shows the picked chip
-      await p().click('[data-act=play]'); await t.waitPop(true); await p().click('[data-play=tricks]'); await t.until(() => document.querySelectorAll('#dock .pk-pickb').length === 5, null, 3000);
+      await t.dock('play'); await p().click('[data-act=play]'); await t.waitPop(true); await p().click('[data-play=tricks]'); await t.until(() => document.querySelectorAll('#dock .pk-pickb').length === 5, null, 3000);
       await ev(() => { const r = document.querySelector('#dock .pk-pick'); r.scrollLeft = r.scrollWidth; }); await ev(() => window.__paw.pk.tricks()); await p().waitForTimeout(150);
       ok(await ev(() => { const r = document.querySelector('#dock .pk-pick'), b = r.querySelector('.pk-pickb[aria-pressed="true"]'), rr = r.getBoundingClientRect(), bb = b.getBoundingClientRect(); return bb.left >= rr.left - 0.5 && bb.right <= rr.right + 0.5; }), `${tg}: Tricks: a re-render keeps the picked dog in view`);
       await ev(() => document.getElementById('trayX').click()); await t.waitPop(false);

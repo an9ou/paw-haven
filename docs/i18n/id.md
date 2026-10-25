@@ -355,3 +355,10 @@ TODO(native): `train.combo` and `train.cost` are long and may be tight at 390 px
 TODO(native): `garden.fb_*` coat-gene wording ("membawa warna pudar", "belang") may be too technical; `data.pig_need.*` "kedua orang tua" for a dog's parents; `yard.flips_upside_down_legs_in` "pose kecoak" (Greyhound roaching).
 TODO(native): `garden.one_peas` "polong kacang polong" reads awkwardly; `data.obs_label.tide_pool` "Kolam karang"; `data.food.pup_kinton.n` kept as "Pup Kinton"; "hammock" kept as a loanword.
 TODO(native): `winter.floof` "Pufff." and `winter.lesson` (the English has three sentences, written here as two).
+
+## v2.15
+
+TODO(native): place names: "Lapangan Latihan" (Training Ground), "Kolam Ciprat" (Splash Pool), "Jalur Bunga Matahari", "Jalur Hutan Bambu", "Jalur Tebing Laut" (the mission line shortens them to "Bunga Matahari, Hutan Bambu atau Tebing Laut").
+TODO(native): agility words: "lintasan agility", "roset" (as in "Roset Parade"), "Tiang slalom", "Palang lompat", "Ban", "Meja jeda", "Ayo!" for the Go! button.
+TODO(native): "berendam" for the dog paddle (Paddle button and mission), "Bola apung" for float fetch, "Rompi Pelampung Anjing" for the Doggy Life Vest, "anak tangga" for the pool step and "tanjakan" for the ramp.
+TODO(native): `pool.splsh` and the pool lines use "byur" for the splash sound, `pool.sprink_hint` "Ciprat, ciprat!".

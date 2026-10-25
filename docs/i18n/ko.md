@@ -438,3 +438,13 @@ TODO(native):
 - Narration uses a josa subject after a dog's name (`{name, josa, 이/가} 자고 있어요.`); 25 lines keep the comma form because they speak to the dog ("{name}, 생일 축하해!") or are labels. pack.reporting_for_duty keeps the military-style "{name}, 출동 준비 완료.".
 - vet.visit_already and wardrobe.fashion_bonus ("자기가 좀 귀엽대요") were reworded. Check the tone.
 - Coins are always "{n}코인"; 발바닥 코인 only as the name of the currency with no number. The mail carrier is 집배원 (no 아저씨).
+
+## v2.15
+
+`game/i18n/ko.json`, 245 new keys (Around Town). New place names, also in the glossary `terms`: Training Ground 훈련장, Splash Pool 물놀이장, Sunflower Lanes 해바라기 길, Bamboo Grove Trail 대나무숲 길, Seaside Cliffs Run 바닷가 절벽길. Agility course 어질리티 코스 (as the Agility Tunnel toy), obstacles 지그재그 폴, 허들, 타이어, 터널, 멈춤 테이블. Rosette 리본 배지 (as in the festivals), Doggy Life Vest 강아지 구명조끼, Float fetch 둥둥 공놀이, paddle 첨벙첨벙, Go! 고!. The Gerald lessons (`agility.lesson_text`, `pool.lesson_text`) are joined into two sentences.
+
+TODO(native):
+- agility.go: 고! for the Go! button (alternatives 출발!, 지금!).
+- map215.place_pool: 물놀이장 for Splash Pool (short for the map caption).
+- ground.play_3: 플레이 바우 (the play bow as a loanword): known to kids?
+- map215.sticker_new / sticker_moved: 새로 생김 / 이사함 on the map stickers.

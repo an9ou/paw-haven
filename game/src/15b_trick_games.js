@@ -306,6 +306,7 @@ function tgEnd(G, why) {
 function tgApply(G, grade, acc, why) {
   const d = D(), n = G.n, st = trickSt(n), pers = PERS[d.key];
   let gain = TG_GAIN[grade] * (pers === 'stubborn' ? 1.25 : 1) * (G.mode === 'hand' ? 1.3 : 1) * (owns('toys', 'Rubber Chicken') ? 1.25 : 1) * trainBoost(d); // v2: puppies learn x1.2
+  if (grade !== 'Missed' && typeof agTrickBonus === 'function' && agTrickBonus()) { gain *= 2; toast(tt('agility.trick_bonus', 'Training Ground bonus: one extra step of progress this session.'), 'good'); } // v2.15: the Training Ground counts one extra step per session, no coins (V215.md 6.1)
   const was = st.p; st.p = Math.min(1, st.p + gain); gain = st.p - was; markDirty();
   tgGrade(grade); TRN.held = true; if (grade !== 'Missed') trackAct('trick', { name: n, grade, learned: was < 1 && st.p >= 1 });
   if (grade !== 'Missed') {

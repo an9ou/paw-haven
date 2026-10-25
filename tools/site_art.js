@@ -21,7 +21,7 @@ const req = (m) => { for (const r of [].concat((process.env.NODE_PATH || '').spl
 const PROFILES = require('./site_dogs');
 
 const ctx = { window: {}, console }; ctx.window.window = ctx.window; vm.createContext(ctx);
-for (const f of ['dogs/pawart_dogs.js', 'world/pawart_world_a.js', 'world/pawart_world_b.js', 'world/pawart_world_c.js', 'world/pawart_world_d.js', 'world/pawart_world_e.js']) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f });
+for (const f of ['dogs/pawart_dogs.js', 'world/pawart_world_a.js', 'world/pawart_world_b.js', 'world/pawart_world_c.js', 'world/pawart_world_d.js', 'world/pawart_world_e.js', 'world/pawart_world_f.js', 'world/pawart_world_g.js'].filter((x) => !/_[fg]\.js$/.test(x) || fs.existsSync(path.join(ROOT, x)))) vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f });
 const PA = ctx.window.PawArt;
 const DOGS = PA.DOGS.map((d) => Object.assign({}, d, PROFILES.find((p) => p.key === d.key)));
 if (DOGS.length !== PROFILES.length || DOGS.some((d) => !d.quote)) throw new Error('every dog needs a profile in tools/site_dogs.js');
@@ -39,7 +39,9 @@ fs.rmSync(OUT, { recursive: true, force: true });
 // v2.12 (35 dogs): only the dogs the playroom can pick (KEYS in site/js/site.js) run about in the scene, so only they need the 3 boiling frames;
 // the other dogs' scene poses are one frame. The scene files (drawn at about half size in the playroom) also keep whole-unit path coordinates.
 // Both keep the site inside the free-plan Worker size; the cards and profiles (still, pup) keep the art's full precision
-const SCENE_KEYS = JSON.parse(fs.readFileSync(path.join(ROOT, 'site', 'js', 'site.js'), 'utf8').match(/var KEYS = (\[[^\]]*\])/)[1].replace(/'/g, '"'));
+// site.js lost its playroom KEYS when the scene code went (4efefac); the animated poses keep that list
+const SCENE_M = fs.readFileSync(path.join(ROOT, 'site', 'js', 'site.js'), 'utf8').match(/var KEYS = (\[[^\]]*\])/);
+const SCENE_KEYS = SCENE_M ? JSON.parse(SCENE_M[1].replace(/'/g, '"')) : ['shiba', 'corgi', 'golden', 'dachs', 'husky', 'mutt', 'chihuahua', 'pug', 'greyhound', 'beagle', 'poodle', 'collie', 'samoyed', 'frenchie'];
 const whole = (svg) => svg.replace(/ d="([^"]*)"/g, (m, p) => ` d="${p.replace(/-?\d+\.\d+/g, (n) => String(Math.round(+n)))}"`);
 for (const d of DOGS) {
   const live = SCENE_KEYS.includes(d.key);
