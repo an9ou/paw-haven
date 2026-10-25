@@ -41,15 +41,31 @@ html[data-layout="phone"] #hud.hexp .fw-next,html[data-layout="phone"] #hud:has(
 .fw-gart{width:56px;height:56px;flex:none}
 .fw-gart svg{width:100%;height:100%;display:block}
 
-/* ---- the lighter phone dock ---- */
-#bar .act[hidden]{display:none}
-html[data-layout="phone"] #bar.fw-lite{grid-template-columns:repeat(var(--acts,7),minmax(0,1fr))}
+/* ---- the phone bar, option C: Care, Walk, Map, More (big), with a crayon tray above Care and More (47_firstweek.js) ---- */
 #bar .act{position:relative}
+html[data-layout="phone"]{--barH:calc(92px + env(safe-area-inset-bottom,0px))}
+html[data-layout="phone"] #bar.optc{position:relative;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:5px calc(6px + env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) calc(6px + env(safe-area-inset-left,0px));min-height:var(--barH);overflow:visible}
+html[data-layout="phone"] #stage.tk-in #bar.optc{grid-template-columns:repeat(3,minmax(0,1fr))}
+html[data-layout="phone"] #bar.optc > .act{min-height:80px;gap:4px;padding:6px 2px 4px}
+html[data-layout="phone"] #bar.optc .act .ic{width:38px;height:38px}
+html[data-layout="phone"] #bar.optc .act > span:not(.ic){font-size:19px;letter-spacing:0;transform:none;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+#bar .act[data-act="caremenu"]{--wash:var(--w-blue)} #bar .act[data-act="more"]{--wash:var(--w-lilac)}
+#bar .act.pop{transform:translateY(-3px) rotate(-1deg)!important;box-shadow:inset 0 -5px 0 -1px rgba(242,143,165,.55)}
+.barpop{position:absolute;bottom:calc(100% + 10px);z-index:8;display:flex;gap:8px;padding:10px 10px 12px;max-width:calc(100% - 12px);box-sizing:border-box;
+  background:radial-gradient(var(--dot,#E8DCCB) 1px,transparent 1.5px) 0 0/16px 16px,var(--paper);border:2.5px solid var(--ink);border-radius:14px 10px 16px 11px;box-shadow:3px 5px 0 rgba(91,61,50,.18);transform:rotate(-.6deg)}
+.barpop[hidden]{display:none}
+#bar.popon{z-index:16}
+.barpop::after{content:"";position:absolute;bottom:-11px;width:18px;height:18px;background:var(--paper);border-right:2.5px solid var(--ink);border-bottom:2.5px solid var(--ink);transform:rotate(45deg)}
+.barpop[data-pop="caremenu"]{left:6px} .barpop[data-pop="caremenu"]::after{left:calc(12.5% - 12px)}
+.barpop[data-pop="more"]{right:6px} .barpop[data-pop="more"]::after{right:calc(12.5% - 12px)}
+html[data-layout="phone"] #bar .barpop .act{flex:1 1 0;min-width:96px;max-width:124px;min-height:76px;gap:4px;padding:6px 4px;transform:none!important}
+html[data-layout="phone"] #bar .barpop .act .ic{width:34px;height:34px}
+html[data-layout="phone"] #bar .barpop .act > span:not(.ic){font-size:17px;white-space:normal;text-align:center;line-height:1.05;letter-spacing:0;transform:none;overflow:visible;padding:0 2px}
 .fw-newtag{position:absolute;top:1px;right:1px;z-index:2;font-family:var(--font-hand);font-weight:700;font-size:15px;line-height:1;padding:2px 6px 3px;background:#F28FA5;color:var(--ink);border:1.5px solid var(--ink);border-radius:8px 10px 7px 9px;transform:rotate(8deg);pointer-events:none}
 .fw-newtag.inl{position:static;display:inline-block;margin-left:6px;transform:rotate(4deg)}
-#bar .act.fw-new{animation:fwWig 1.6s ease-in-out 3}
-@keyframes fwWig{0%,100%{transform:none}50%{transform:rotate(-2deg) translateY(-2px)}}
-[data-motion="off"] #bar .act.fw-new{animation:none}
+#bar .act.fw-new .ic{animation:fwWig 1.6s ease-in-out 3}
+@keyframes fwWig{0%,100%{transform:none}50%{transform:rotate(-8deg) translateY(-2px)}}
+[data-motion="off"] #bar .act.fw-new .ic{animation:none}
 
 /* ---- the calendars ---- */
 .fw-calpop{max-width:min(980px,calc(100% - 20px))}
@@ -100,4 +116,7 @@ html[data-layout="phone"] .fw-when{min-width:50px;font-size:18px}
 html[data-layout="phone"] .fw-rname{font-size:15px}
 html[data-layout="phone"] .fw-wait{font-size:13px}
 html[data-layout="phone"] .fw-md{font-size:13px}
-html[data-layout="phone"] .fw-mgrid{max-width:none}
+html[data-layout="phone"] .fw-mgrid{max-width:300px;gap:3px;margin:4px auto}
+html[data-layout="phone"] .fw-wdays{gap:4px;max-width:340px}
+/* narrow phones (360 px): the next-unlock line drops the Next chip and may take two lines, as the translations do (51_i18n_room.css) */
+@media (max-width:380px){html[data-layout="phone"] .fw-next .fw-nl{display:none}html[data-layout="phone"] .fw-next{white-space:normal;text-overflow:clip;font-size:13.5px;line-height:1.05;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}}

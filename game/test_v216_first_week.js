@@ -7,7 +7,8 @@ const TH = [0, 60, 180, 450, 700, 1000, 1400, 1900, 2500, 3200];
 
 run('v216_first_week', async (t) => {
   const { ok, sec, ev } = t;
-  const shot = async (name) => { if (!SHOTS) return; fs.mkdirSync(SHOTS, { recursive: true }); await t.sleep(350); await t.p.screenshot({ path: path.join(SHOTS, name + '.png') }); };
+  // release screenshots: wait until the finite animations (the card's fade-in, sheets sliding up) are over
+  const shot = async (name) => { if (!SHOTS) return; fs.mkdirSync(SHOTS, { recursive: true }); await t.sleep(350); await t.until(() => !document.getAnimations().some((a) => a.playState === 'running' && a.effect && a.effect.getComputedTiming().iterations !== Infinity && !(a.effect.target && a.effect.target.closest && a.effect.target.closest('#fwConfetti'))), null, 2500); await t.p.screenshot({ path: path.join(SHOTS, name + '.png') }); };
   const card = () => ev(() => { const c = document.querySelector('#gdLayer .gd-card'); return c && !c.hidden ? { step: +c.dataset.step, k: c.dataset.k, txt: c.querySelector('.gd-txt').textContent, next: c.querySelector('.gd-next').textContent } : null; });
   const cardAt = (k) => t.until((k) => { const c = document.querySelector('#gdLayer .gd-card'); return !!c && !c.hidden && c.dataset.k === k; }, k, 8000);
   const ringFor = () => ev(() => { const r = document.querySelector('#gdLayer .gd-ring'); return r && !r.hidden ? r.dataset.for : null; });
@@ -61,7 +62,7 @@ run('v216_first_week', async (t) => {
   c = await card(); ok(c.next === 'Make the tag' && (await ringFor()) === '#gdLayer .gd-next', 'its button says Make the tag and the ring is on it');
 
   sec('3b. the guide resumes after a reload');
-  await t.reloadKeepingSave(); await t.p.waitForSelector('#tContinue'); await t.p.click('#tContinue'); await t.untilMode('yard');
+  await ev(() => window.__paw.saveNow()); await t.reloadKeepingSave(); await t.p.waitForSelector('#tContinue'); await t.p.click('#tContinue'); await t.untilMode('yard');
   ok(await cardAt('tag'), 'after a reload Gerald is back on the same step');
 
   await t.p.click('#gdLayer .gd-next'); await t.p.waitForSelector('#fwTagName');
@@ -164,46 +165,95 @@ run('v216_first_week', async (t) => {
   ok(await t.waitToast(/Wish come true! Mochi is so happy: \+10 Happiness/, 4000), 'doing it makes the wish come true (+10 Happiness, a little Bond)');
   await t.ctx.close();
 
-  sec('9. phones: the lighter dock, new! tags, the guide and the next-unlock line at 393, 390 and 684 px');
+  sec('9. phones: the option C bar (Care, Walk, Map, More), its trays, the guide and the next-unlock line at 393, 390 and 684 px');
   await fresh({ device: 'iPhone 15' });
-  const acts = () => ev(() => [...document.querySelectorAll('#bar .act')].filter((b) => !b.hidden && b.getClientRects().length).map((b) => b.dataset.act).join(','));
-  ok((await acts()) === 'feed,play,care,walk,map', 'Bond 1 on a new save: Feed, Play, Care, Walk, Map (' + (await acts()) + ')');
-  ok(await ev(() => { const b = [...document.querySelectorAll('#bar .act')].filter((x) => !x.hidden).map((x) => x.getBoundingClientRect()); return b.every((r) => r.width > 60 && r.height >= 48) && b[b.length - 1].right <= window.innerWidth + 1; }), 'the five buttons share the bar, each 48 px or taller');
+  const acts = () => ev(() => [...document.querySelectorAll('#bar .act')].filter((b) => b.getClientRects().length).map((b) => b.dataset.act).join(','));
+  const popOpen = (k) => ev((k) => { const q = document.querySelector(`#bar .barpop[data-pop="${k}"]`); return !!q && !q.hidden; }, k);
+  ok((await acts()) === 'caremenu,walk,map,more', 'phone bar: Care, Walk, Map, More (' + (await acts()) + ')');
+  ok(await ev(() => { const bar = document.getElementById('bar').getBoundingClientRect(), b = [...document.querySelectorAll('#bar > .act')].map((x) => x.getBoundingClientRect()), w = b.map((r) => Math.round(r.width)); return b.length === 4 && Math.max(...w) - Math.min(...w) <= 2 && b.every((r) => r.height >= 76) && bar.height >= 90 && b[3].right <= window.innerWidth + 1; }), 'four equal big buttons, the bar about 92 px tall');
+  ok(await ev(() => document.querySelector('#bar [data-act=caremenu] .ic svg') && /Care/.test(document.querySelector('#bar [data-act=caremenu]').textContent) && /More/.test(document.querySelector('#bar [data-act=more]').textContent)), 'Care (bath icon) and More (crayon dots) are labelled');
   ok(await cardAt('pet'), 'the first-day card shows on the phone');
   const fitCheck = async (label) => {
-    const r = await ev(() => { const st = document.getElementById('stage').getBoundingClientRect(), c = document.querySelector('#gdLayer .gd-card').getBoundingClientRect(), ring = document.querySelector('#gdLayer .gd-ring'), rr = ring && !ring.hidden ? ring.getBoundingClientRect() : null, bt = [...document.querySelectorAll('#gdLayer .gd-card .btn')].filter((b) => !b.hidden).map((b) => b.getBoundingClientRect());
-      return { inX: c.left >= st.left - 1 && c.right <= st.right + 1, inY: c.top >= st.top - 1 && c.bottom <= st.bottom + 1, btn: bt.every((b) => b.height >= 44), sw: document.documentElement.scrollWidth <= window.innerWidth + 1, ring: !!rr }; });
-    ok(r.inX && r.inY && r.btn && r.sw && r.ring, `${label}: the card sits inside the stage, its buttons are 44 px or taller, no sideways scroll, the ring is up ` + JSON.stringify(r));
+    const r = await ev(() => { const st = document.getElementById('stage').getBoundingClientRect(), cd = document.querySelector('#gdLayer .gd-card'), c = cd.getBoundingClientRect(), ring = document.querySelector('#gdLayer .gd-ring'), rr = ring && !ring.hidden ? ring.getBoundingClientRect() : null, bar = document.getElementById('bar').getBoundingClientRect(), bt = [...document.querySelectorAll('#gdLayer .gd-card .btn')].filter((b) => !b.hidden).map((b) => b.getBoundingClientRect());
+      const hit = (a, b) => !!a && !!b && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top, tgt = document.querySelector(ring && ring.dataset.for), tr = tgt ? tgt.getBoundingClientRect() : null;
+      return { inX: c.left >= st.left - 1 && c.right <= st.right + 1, inY: c.top >= st.top - 1 && c.bottom <= st.bottom + 1, btn: bt.every((b) => b.height >= 44), sw: document.documentElement.scrollWidth <= window.innerWidth + 1, ring: !!rr, clearDock: c.bottom <= bar.top + 1, clearTarget: !hit(c, tr), shown: getComputedStyle(cd).visibility === 'visible' && !cd.hidden && /Rub|hello|Feed|Play|Walk/.test(cd.textContent) }; });
+    ok(Object.values(r).every(Boolean), `${label}: Gerald's card shows its text inside the stage, clear of the ringed target and the bar, 44 px buttons, no sideways scroll ` + JSON.stringify(r));
   };
   await fitCheck('iPhone 15 (393 px)');
   ok(await ev(() => { const n = document.getElementById('fwNext'), h = document.getElementById('hud').getBoundingClientRect(), r = n.getBoundingClientRect(); return !n.hidden && r.top >= h.top && r.bottom <= h.bottom + 1 && /Bond 2: learns Paw/.test(n.textContent); }), 'phone: the next-unlock line sits inside the HUD, under the Bond meter');
   ok(await ev(() => document.getElementById('hud').getBoundingClientRect().height <= 104), 'the phone HUD stays about 100 px tall');
-  await shot('guided_start_phone'); await shot('next_unlock_phone');
-  for (const [w, h] of [[390, 844], [684, 716]]) { await t.p.setViewportSize({ width: w, height: h }); await t.sleep(600); await fitCheck(`site game box ${w} px`); }
-  await t.p.setViewportSize({ width: 393, height: 852 }); await t.sleep(400);
-  // Bond 2 on the phone: the party, then Wardrobe and Journal join with a new! tag
+  await shot('guided_start_phone'); await shot('next_unlock_phone'); await shot('dock_c_yard');
+  for (const [w, h] of [[390, 844], [684, 716], [360, 640]]) { await t.p.setViewportSize({ width: w, height: h }); await t.sleep(700); await fitCheck(`${w} x ${h}`); ok((await acts()) === 'caremenu,walk,map,more', `${w} px: the same four buttons`); }
+  await t.p.setViewportSize({ width: 393, height: 852 }); await t.sleep(500);
+  // the guide on the phone: pet, then Care is ringed, then Feed inside the Care tray, then the food
+  await t.pet(() => window.__paw.S.guide.step >= 1); await cardAt('feed');
+  ok(await t.until(() => { const r = document.querySelector('#gdLayer .gd-ring'), b = document.querySelector('#bar [data-act=caremenu]').getBoundingClientRect(); if (!r || r.hidden) return false; const q = r.getBoundingClientRect(); return q.left <= b.left + 2 && q.right >= b.right - 2 && q.top <= b.top + 2; }, null, 4000), 'the feed step rings Care first');
+  await shot('dock_c_guide_care');
+  await t.p.locator('#bar [data-act=caremenu]').tap(); ok(await popOpen('caremenu'), 'Care opens its tray');
+  ok(await ev(() => [...document.querySelectorAll('#bar .barpop[data-pop=caremenu] .act')].map((b) => b.dataset.act + ':' + b.textContent.trim()).join(',') === 'feed:Feed,play:Play,care:Bath & nap'), 'the Care tray: Feed, Play, Bath & nap');
+  ok(await t.until(() => { const r = document.querySelector('#gdLayer .gd-ring'), b = document.querySelector('#bar [data-act=feed]').getBoundingClientRect(); if (!r || r.hidden) return false; const q = r.getBoundingClientRect(); return q.left <= b.left + 2 && q.right >= b.right - 2 && q.bottom >= b.bottom - 2; }, null, 4000), 'with the tray open the ring moves onto Feed');
+  ok(await ev(() => { const p = document.querySelector('#bar .barpop[data-pop=caremenu]').getBoundingClientRect(), bar = document.getElementById('bar').getBoundingClientRect(); return p.bottom <= bar.top + 1 && p.left >= 0 && p.right <= window.innerWidth && [...document.querySelectorAll('#bar .barpop[data-pop=caremenu] .act')].every((b) => b.getBoundingClientRect().height >= 44); }), 'the tray sits above the bar, on screen, 44 px buttons');
+  await shot('dock_c_care');
+  await t.p.locator('#bar [data-act=caremenu]').tap(); ok(!(await popOpen('caremenu')), 'Care again closes it');
+  await t.p.locator('#bar [data-act=caremenu]').tap(); await t.p.touchscreen.tap(200, 300); ok(await t.until(() => document.querySelector('#bar .barpop[data-pop=caremenu]').hidden, null, 2000), 'a tap outside closes it');
+  await t.dock('feed'); await t.p.locator('#bar [data-act=feed]').tap(); ok(await t.waitPop(true) && !(await popOpen('caremenu')), 'Feed opens the feed tray (and the Care tray folds away)');
+  ok(await t.until(() => { const r = document.querySelector('#gdLayer .gd-ring'); return r && !r.hidden && /^#dock/.test(r.dataset.for); }, null, 3000), 'then the ring is on a food');
+  await t.retryUntil(() => ev(() => { const b = document.querySelector('[data-food="Basic Kibble"]'); if (b) b.click(); }), () => window.__paw.S.guide.step >= 2); await t.waitPop(false); await t.calm();
+  ok(await cardAt('ball'), 'the ball step');
+  await t.dock('play'); await t.p.locator('#bar [data-act=play]').tap(); await t.waitPop(true);
+  await t.p.locator('[data-play="ball:Tennis Ball"]').tap(); await t.until(() => !!(window.__paw.bl && window.__paw.bl.on), null, 4000);
+  await ev(() => window.__paw.bl.throwV(800, -600)); await ev(() => window.__paw.bl.sim(14));
+  ok(await t.until(() => window.__paw.S.guide.step >= 3, null, 6000), 'ball play still works from the Care tray');
+  await ev(() => window.__paw.bl.stop()); await t.untilMode('yard'); await t.calm(); await t.lu();
+  await t.dock('care'); await t.p.locator('#bar [data-act=care]').tap(); ok(await t.until(() => !!document.querySelector('[data-care]'), null, 3000), 'Bath & nap opens the care tray'); await t.p.locator('#trayX').tap(); await t.waitPop(false);
+  // Bond 2 on the phone: the party; More holds Wardrobe and Journal with new! tags until seen
   await t.p.click('#gdLayer .gd-skip'); await quiet();
-  await ev(() => window.__paw.S.dogs[0].bond.pts = 55); await t.pet(() => window.__paw.S.bond.level >= 2);
+  await ev(() => { const S = window.__paw.S; S.dogs[0].bond = { level: 1, pts: 55 }; S.fw.b2 = {}; S.inv.clothes = S.inv.clothes.filter((n) => n !== 'Bow Tie'); window.__paw.fw.bond(6); }); // petting gives Bond once per 2 minutes, and the first-day pet was just now // (ball play may have reached Bond 2 already: start the party over)
   ok(await t.until(() => !!document.querySelector('#modal .panel.fw-party #luOk'), null, 8000), 'phone: the Bond 2 party');
   await shot('bond2_party_phone');
-  await t.p.click('#luOk'); await t.modalGone();
-  ok(await t.until(() => [...document.querySelectorAll('#bar .act')].filter((b) => !b.hidden).length === 7, null, 4000), 'at Bond 2 all seven buttons show');
-  ok(await ev(() => ['wardrobe', 'journal'].every((a) => !!document.querySelector(`#bar [data-act=${a}] .fw-newtag`)) && !document.querySelector('#bar [data-act=feed] .fw-newtag')), 'Wardrobe and Journal wear a new! tag');
-  await t.p.click('#bar [data-act=wardrobe]'); await t.until(() => !document.getElementById('modal').hidden, null, 4000);
-  ok(await ev(() => !document.querySelector('#bar [data-act=wardrobe] .fw-newtag') && !!document.querySelector('#bar [data-act=journal] .fw-newtag') && !window.__paw.S.fw.dockNew.wardrobe), 'a tap takes the tag off that button only');
+  await t.p.click('#luOk'); await t.modalGone(); await quiet();
+  ok(await ev(() => !!document.querySelector('#bar [data-act=more] .fw-newtag') && !document.querySelector('#bar [data-act=caremenu] .fw-newtag')), 'More wears a new! tag while something in it is unseen');
+  await t.p.locator('#bar [data-act=more]').tap(); ok(await popOpen('more'), 'More opens its tray');
+  ok(await ev(() => [...document.querySelectorAll('#bar .barpop[data-pop=more] .act')].map((b) => b.dataset.act).join(',') === 'wardrobe,journal' && ['wardrobe', 'journal'].every((a) => !!document.querySelector(`#bar [data-act=${a}] .fw-newtag`))), 'the More tray: Wardrobe and Journal, both new!');
+  await shot('dock_c_more');
+  await t.p.locator('#bar [data-act=wardrobe]').tap(); await t.until(() => !document.getElementById('modal').hidden, null, 4000);
+  ok(await ev(() => !document.querySelector('#bar [data-act=wardrobe] .fw-newtag') && !!document.querySelector('#bar [data-act=journal] .fw-newtag') && !!document.querySelector('#bar [data-act=more] .fw-newtag') && !window.__paw.S.fw.dockNew.wardrobe), 'a tap takes the tag off that button only');
   await t.closeX();
-  await ev(() => window.__paw.fw.open(false)); await t.p.waitForSelector('#modal .fw-calpop');
-  ok(await ev(() => { const p = document.querySelector('#modal .panel'), r = p.getBoundingClientRect(); return r.left >= -1 && r.right <= window.innerWidth + 1 && [...p.querySelectorAll('.fw-claim, #fwCalOk')].every((b) => b.getBoundingClientRect().height >= 44); }), 'phone: the calendar sheet fits, its buttons are 44 px or taller');
-  await shot('calendars_phone');
-  await t.closeX();
-  // the "..." menu reaches the calendar at any Bond (the Journal button may still be hidden)
+  await t.dock('journal'); await t.p.locator('#bar [data-act=journal]').tap(); await t.p.waitForSelector('.panel.journal'); await t.closeX();
+  ok(await ev(() => !document.querySelector('#bar .fw-newtag')), 'all seen: no tags left');
+  // the calendar sheet scrolls to the whole month and its rewards; the footer button never covers them (393 x 852 and 360 x 640)
+  for (const [w, h] of [[393, 852], [360, 640]]) {
+    await t.p.setViewportSize({ width: w, height: h }); await t.sleep(400);
+    await ev(() => window.__paw.fw.open(false)); await t.p.waitForSelector('#modal .fw-calpop');
+    const r = await ev(() => { const p = document.querySelector('#modal .panel'), body = p.querySelector('.panel-body'), foot = p.querySelector('.foot').getBoundingClientRect(), pr = p.getBoundingClientRect();
+      body.scrollTop = body.scrollHeight; const last = [...p.querySelectorAll('.fw-monp .fw-rew')].pop().getBoundingClientRect(), cap = p.querySelector('.fw-cap').getBoundingClientRect(), br = body.getBoundingClientRect();
+      const mid = p.querySelector('.fw-mgrid li:last-child'); mid.scrollIntoView({ block: 'nearest' }); const mr = mid.getBoundingClientRect();
+      return { fits: pr.left >= -1 && pr.right <= window.innerWidth + 1, scrolls: body.scrollHeight > body.clientHeight ? getComputedStyle(body).overflowY !== 'visible' : true, lastVisible: last.bottom <= foot.top + 1 && last.top >= br.top - 1, capVisible: cap.bottom <= foot.top + 1, gridEnd: mr.bottom <= foot.top + 1 && mr.top >= br.top - 1, bodyAboveFoot: br.bottom <= foot.top + 1, btns: [...p.querySelectorAll('.fw-claim, #fwCalOk')].every((b) => b.getBoundingClientRect().height >= 44) }; });
+    ok(Object.values(r).every(Boolean), `${w} x ${h}: the calendar sheet scrolls to the last day and the last reward, the footer stays below them ` + JSON.stringify(r));
+    if (w === 393) { await ev(() => { document.querySelector('#modal .panel .panel-body').scrollTop = 0; }); await shot('calendars_phone'); }
+    await t.closeX();
+  }
+  await t.p.setViewportSize({ width: 393, height: 852 }); await t.sleep(300);
+  // the "..." menu reaches the calendar
   await ev(() => document.getElementById('moreBtn').click()); ok(await t.until(() => !!document.getElementById('mmCal'), null, 3000), 'the phone menu has a Calendar button');
   await t.p.click('#mmCal'); ok(await t.until(() => !!document.querySelector('#modal .fw-calpop'), null, 3000), 'which opens the calendar'); await t.closeX();
   await t.ctx.close();
 
-  sec('10. phones: an old save at Bond 1 keeps every button');
+  sec('10. phones: an old save gets the same bar, desktop keeps seven buttons, other languages fit');
   await t.boot({ device: 'iPhone 15' }); await t.adopt({ sex: 'girl' });
   const j1 = await ev(() => { const s = JSON.parse(localStorage.getItem('pawhaven_proto_v1')); delete s.fw; return JSON.stringify(s); });
   await t.ctx.close(); await t.mk({ device: 'iPhone 15', prefs: { fwTest: true }, storage: { pawhaven_proto_v1: j1 } }); await t.p.goto(URL); await t.p.waitForSelector('#tContinue'); await t.p.click('#tContinue'); await t.untilMode('yard');
-  ok((await acts()) === 'feed,play,care,walk,wardrobe,journal,map', 'all seven buttons for a save from before v2.16 (' + (await acts()) + ')');
+  ok((await acts()) === 'caremenu,walk,map,more' && !(await ev(() => !!document.querySelector('#bar .fw-newtag'))), 'a save from before v2.16: the same four buttons, no new! tags (' + (await acts()) + ')');
+  await t.p.setViewportSize({ width: 1280, height: 720 }); await t.sleep(600);
+  ok((await acts()) === 'feed,play,care,walk,wardrobe,journal,map', 'wider than a phone the seven buttons come back (' + (await acts()) + ')');
+  await t.ctx.close();
+  for (const lang of ['zh-Hant', 'th']) {
+    await t.boot({ device: 'iPhone 15', lang }); await t.adopt({ sex: 'girl' }); await t.sleep(800);
+    const f = await ev(() => [...document.querySelectorAll('#bar .act')].filter((b) => b.getClientRects().length).every((b) => { const l = b.querySelector('span:not(.ic)'); return l.scrollWidth <= l.clientWidth + 1; }));
+    ok(f, lang + ': the bar labels fit');
+    await shot('dock_c_yard_' + lang);
+    await ev(() => document.querySelector('#bar .act[data-act=caremenu]').click()); await t.sleep(300);
+    ok(await ev(() => [...document.querySelectorAll('#bar .barpop[data-pop=caremenu] .act')].every((b) => { const r = b.getBoundingClientRect(); return r.right <= window.innerWidth && r.left >= 0; })), lang + ': the Care tray fits on screen');
+    await t.ctx.close();
+  }
 }, { timeout: 420000 });

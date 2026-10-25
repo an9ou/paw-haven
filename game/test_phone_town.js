@@ -131,7 +131,7 @@ async function suite(t, dev) {
   // ---------- wardrobe ----------
   t.sec(dev + ': wardrobe');
   await atPlace(t, 'yard');
-  await tapSel(t, '[data-act=wardrobe]', 400); ok(await openModalUp(t) && await p.locator('.ward').count() === 1, 'wardrobe opens');
+  await t.dock('wardrobe'); await tapSel(t, '[data-act=wardrobe]', 400); ok(await openModalUp(t) && await p.locator('.ward').count() === 1, 'wardrobe opens');
   await sheetFits(t, 'wardrobe'); await audit(t, 'wardrobe');
   await tapSel(t, `[data-eq="${cl}"]`, 300); ok(Object.values((await t.S()).outfit).includes(cl), 'wardrobe: equipped ' + cl + ' by tap');
   await audit(t, 'wardrobe (worn)'); await closeSheet(t);

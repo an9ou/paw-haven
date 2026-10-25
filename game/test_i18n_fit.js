@@ -266,6 +266,8 @@ async function worker(job) {
       await modalUp(); await measure('fw: calendars'); await closeAll();
       await ev(() => { const P = window.__paw; P.S.fw.b2 = {}; P.S.dogs[0].bond = { level: 1, pts: 59 }; P.fw.bond(5); });
       await waitSel('#luOk', 6000); await measure('fw: Bond 2 party'); await closeAll();
+      await ev(() => { const f = window.__paw.S.fw; f.shown = f.morning; }); await closeAll(); await t.until(() => document.getElementById('modal').hidden, null, 4000);
+      if (phone) for (const k of ['caremenu', 'more']) { await ev((k) => document.querySelector(`#bar .act[data-act="${k}"]`).click(), k); await waitSel(`#bar .barpop[data-pop="${k}"]`, 3000); await measure('fw: phone bar ' + k + ' tray'); await ev((k) => document.querySelector(`#bar .act[data-act="${k}"]`).click(), k); }
       await ev(() => { const P = window.__paw; P.S.dogs[0].bond = { level: 10, pts: 3300 }; P.S.fw.wish = null; P.fw.test(false); P.saveNow(); });
     }, 60000);
     if (phone) await step('yard HUD expanded', async () => { await jsClick('#meters'); await sleep(300); await measure('yard: HUD meters expanded'); await jsClick('#view').catch(() => {}); await ev(() => document.getElementById('hud').classList.remove('hexp')); });

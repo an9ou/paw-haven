@@ -215,7 +215,7 @@ run('phone_occl_play', async (t) => {
     // ===================== trick mini-games =====================
     t.sec(`${tag}: trick games`);
     const refill = () => ev(() => { window.__paw.S.dog.focus = { v: 100, at: window.__paw.S.gameMin }; });
-    await at('yard'); await p.locator('[data-act=play]').first().tap(); await t.waitPop(true); await p.locator('[data-play=tricks]').tap(); await t.until(() => !!document.querySelector('#trainPanel:not([hidden])'), null, 4000); await settle(['#trainPanel']);
+    await at('yard'); await t.dock('play'); await p.locator('[data-act=play]').first().tap(); await t.waitPop(true); await p.locator('[data-play=tricks]').tap(); await t.until(() => !!document.querySelector('#trainPanel:not([hidden])'), null, 4000); await settle(['#trainPanel']);
     await refill(); await p.locator('[data-tr="Sit"]').tap(); await t.until(() => window.__paw.train && window.__paw.train.trick === 'Sit', null, 3000);
     await p.locator('#trStart').tap(); ok(await t.until(() => !!document.querySelector('#trTrack .tg-dots'), null, 5000), `${tag} tricks: the lure track is drawn`); await settle(['#trTrack']); await t.SH(tag + '_trick_lure');
     await check(`${tag} lure`, '#dogHit', COVER);
@@ -224,7 +224,7 @@ run('phone_occl_play', async (t) => {
     await toast(); await check(`${tag} lure + toast`, '#trTrack', '#toasts .toast', [[0.5, 0.5], [0.3, 0.5], [0.7, 0.5]]); await check(`${tag} lure + toast`, '#pkLead', '#toasts .toast', [[0.5, 0.5]]); await unToast();
     await p.locator('#trX').tap(); await t.until(() => !window.__paw.train, null, 3000);
 
-    await at('yard'); await p.locator('[data-act=play]').first().tap(); await t.waitPop(true); await p.locator('[data-play=tricks]').tap(); await t.until(() => !!document.querySelector('#trainPanel:not([hidden])'), null, 4000); await settle(['#trainPanel']);
+    await at('yard'); await t.dock('play'); await p.locator('[data-act=play]').first().tap(); await t.waitPop(true); await p.locator('[data-play=tricks]').tap(); await t.until(() => !!document.querySelector('#trainPanel:not([hidden])'), null, 4000); await settle(['#trainPanel']);
     await ev(() => { window.__paw.S.dog.tricks.Speak = { p: 0.1, shows: 0 }; }); await refill();
     if (await p.locator('[data-tr="Speak"]').count()) {
       await p.locator('[data-tr="Speak"]').tap(); await t.until(() => window.__paw.train && window.__paw.train.trick === 'Speak', null, 3000); await p.locator('#trStart').tap();
@@ -251,7 +251,7 @@ run('phone_occl_play', async (t) => {
   const f2 = await ev(() => ({ t: window.__paw.F.t, miss: window.__paw.F.throws, ended: window.__paw.F.ended }));
   ok(f2.t < f1.t && !f2.ended, `fetch resumes on rotate back (clock ${f1.t.toFixed(2)} -> ${f2.t.toFixed(2)}, ${f2.miss} throw(s))`);
   await p.locator('#fQuit').tap(); await p.waitForSelector('#fOk'); await p.locator('#fOk').tap(); await t.untilMode('yard');
-  await at('yard'); await p.locator('[data-act=play]').first().tap(); await t.waitPop(true); await p.locator('[data-play=tricks]').tap(); await t.until(() => !!document.querySelector('#trainPanel:not([hidden])'), null, 4000); await settle(['#trainPanel']);
+  await at('yard'); await t.dock('play'); await p.locator('[data-act=play]').first().tap(); await t.waitPop(true); await p.locator('[data-play=tricks]').tap(); await t.until(() => !!document.querySelector('#trainPanel:not([hidden])'), null, 4000); await settle(['#trainPanel']);
   await ev(() => { window.__paw.S.dog.focus = { v: 100, at: window.__paw.S.gameMin }; }); await p.locator('[data-tr="Sit"]').tap(); await t.until(() => window.__paw.train && window.__paw.train.trick === 'Sit', null, 3000);
   await p.locator('#trStart').tap(); ok(await t.until(() => !!window.__pawTG && !!window.__pawTG.game, null, 5000), 'a trick round is running before the lock');
   await lock(true); const g1 = await ev(() => ({ paused: !!window.__paw.train.game.paused, tick: !!window.__paw.train.game.ticker }));

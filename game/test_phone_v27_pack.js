@@ -19,7 +19,7 @@ require('./test_lib').run('phone_v27_pack', async (t) => {
     await ev(() => { const P = window.__paw; P.addDog({ key: 'corgi', sex: 'male', months: 14 }, 'Bun'); P.addDog({ key: 'samoyed', sex: 'female', months: 30 }, 'Clementine'); P.S.inv.food['Basic Kibble'] = 9; P.S.dogs.forEach((d) => { d.stats.hunger = 30; d.stats.clean = 40; }); });
     await t.calm(); await t.home('yard');
     const ids = await ev(() => window.__paw.S.dogs.map((d) => d.id));
-    await p().click('[data-act=feed]'); await t.waitPop(true); await settled();
+    await t.dock('feed'); await p().click('[data-act=feed]'); await t.waitPop(true); await settled();
     let R = await rowCheck();
     ok(!R.miss && R.n === 3 && R.chips.every((c) => c.h >= 44 && c.f >= 15 && c.head), `${device}: three chips, 44 px tall, 15 px names: ` + JSON.stringify(R.chips));
     ok(R.inside && /auto|scroll/.test(R.scrollX) && R.cap >= 13, `${device}: the row sits inside the tray and scrolls sideways itself (caption ${R.cap} px)`);
@@ -41,7 +41,7 @@ require('./test_lib').run('phone_v27_pack', async (t) => {
     ok(await ev(() => window.__paw.S.inv.food['Basic Kibble'] === 6), `${device}: three portions used`);
 
     sec(device + ': the Care tray and the bath queue');
-    await p().click('[data-act=care]'); await t.waitPop(true); await settled();
+    await t.dock('care'); await p().click('[data-act=care]'); await t.waitPop(true); await settled();
     R = await rowCheck();
     ok(!R.miss && R.n === 3 && R.chips.every((c) => c.h >= 44 && c.f >= 15) && R.inside, `${device}: the chip row tops the Care tray`);
     ok(await noSide(), `${device}: no sideways scroll with the Care tray open`);

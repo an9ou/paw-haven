@@ -41,8 +41,8 @@ require('./test_lib').run('i18n_phone', async (t) => {
     await t.adopt({ sex: 'girl' }); await t.patch({ coins: 500, bond: { level: 4, pts: 500 } });
     await look(tag + ' yard');
     for (const a of ['feed', 'play', 'care']) { await p.click(`[data-act=${a}]`); await t.waitPop(true); await look(`${tag} ${a} tray`); await p.click(`[data-act=${a}]`); await t.waitPop(false); }
-    await p.click('[data-act=wardrobe]'); await p.waitForSelector('.ward'); await look(tag + ' wardrobe'); await t.closeX(); await t.modalGone();
-    await p.click('[data-act=journal]'); await p.waitForSelector('.panel.journal'); await look(tag + ' journal'); await t.closeX(); await t.modalGone();
+    await t.dock('wardrobe'); await p.click('[data-act=wardrobe]'); await p.waitForSelector('.ward'); await look(tag + ' wardrobe'); await t.closeX(); await t.modalGone();
+    await t.dock('journal'); await p.click('[data-act=journal]'); await p.waitForSelector('.panel.journal'); await look(tag + ' journal'); await t.closeX(); await t.modalGone();
     await ev(() => (document.getElementById('moreBtn').offsetParent ? document.getElementById('moreBtn') : document.getElementById('gearBtn')).click());
     if (await t.until(() => !!document.getElementById('mmSet'), null, 2000)) await p.click('#mmSet');
     await p.waitForSelector('#setLang'); await p.click('#setLang'); await p.waitForSelector('#setLangBox [data-lang]');

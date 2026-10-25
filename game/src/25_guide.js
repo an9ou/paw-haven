@@ -93,7 +93,9 @@ const gdArea = (a, b) => (!a || !b) ? 0 : Math.max(0, Math.min(a.r, b.r) - Math.
 function gdTarget(i, tray) {
   const st = gdSteps()[i]; if (!st) return null;
   for (const sel of (tray ? st.tray : st.ring) || []) {
-    const e = $(sel); if (!e) continue; const r = gdR(e), v = gdR(view);
+    let e = $(sel); if (!e) continue;
+    const pop = e.closest && e.closest('#bar .barpop[hidden]'); if (pop) e = bar.querySelector(`.act[data-act="${pop.dataset.pop}"]`) || e; // v2.16 phone bar: a button in a closed tray rings its opener (Care or More) first
+    const r = gdR(e), v = gdR(view);
     if (r.w < 2 || r.h < 2) continue;
     if (!sel.startsWith('#bar') && !sel.startsWith('#dock') && !sel.startsWith('#gdLayer') && (r.r < v.l + 4 || r.l > v.r - 4 || r.b < v.t + 4 || r.t > v.b - 4)) continue; // a scene prop panned out of the crop
     return { e, r, sel };

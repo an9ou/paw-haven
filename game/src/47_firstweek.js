@@ -139,27 +139,38 @@ function fwPaw(d) {
   try { playPose(trickPose('Paw')); const h = dogHeadWorld(); say(tt('fw.paw_say', '*offers a paw* Party!'), h.x, h.y, 2600); setTimeout(() => { if (cur.mode === 'yard' && !busy) endPose(); }, 1900); } catch (e) { /* the yard changed */ }
 }
 
-/* ---------------- 6. the lighter phone dock ---------------- */
-const FW_DOCK = { wardrobe: 2, journal: 2 }; // Bond that shows the button on a v2.16 save's phone dock (Feed, Play, Care, Walk, Map from the start)
-const fwLite = () => !!(S && S.fw && S.fw.fresh && fwOn() && isPhone());
-function fwDockApply() {
-  const lite = fwLite(); let n = 0;
-  bar.querySelectorAll('.act').forEach((b) => {
-    const a = b.dataset.act, hide = lite && S.fw.dock < (FW_DOCK[a] || 1); b.hidden = hide; if (!hide) n++;
-    const isNew = lite && !hide && !!S.fw.dockNew[a]; b.classList.toggle('fw-new', isNew);
-    let t = b.querySelector('.fw-newtag'); if (isNew && !t) b.insertAdjacentHTML('beforeend', `<span class="fw-newtag" aria-hidden="true">${esc(tt('fw.new_tag', 'new!'))}</span>`); else if (!isNew && t) t.remove();
-  });
-  bar.classList.toggle('fw-lite', lite && n < bar.querySelectorAll('.act').length); bar.style.setProperty('--acts', n || 7);
+/* ---------------- 6. the phone bar, option C (owner, 25 Oct 2026): Care, Walk, Map, More for every phone player ----------------
+   Care opens a small crayon tray above it (Feed, Play, Bath & nap: the old trays), More opens Wardrobe and Journal. The inner buttons are the
+   same .act[data-act] buttons as on desktop, inside #bar, so doAct, the guide rings and the shortcuts keep working. Desktop keeps the 7 buttons. */
+const FW_POPS = { caremenu: ['feed', 'play', 'care'], more: ['wardrobe', 'journal'] };
+function fwMoreIcon() { return `<svg viewBox="-20 -20 40 40" aria-hidden="true">${[-11, 0, 11].map((x, i) => `<path d="M${x - 3.6} ${i % 2 ? 0.6 : -0.4} q0 -4 3.8 -4 q4 0 3.8 4 q0 4 -3.9 3.9 q-3.7 0 -3.7 -3.9z" fill="${['#F28FA5', '#F2C744', '#8EC0EA'][i]}" stroke="${INKG}" stroke-width="2" stroke-linejoin="round"/>`).join('')}</svg>`; }
+function fwActLabel(a) { return a === 'caremenu' ? tdata('acts.care.1', 'Care') : a === 'more' ? tt('fw.more', 'More') : a === 'care' ? tt('fw.bath_nap', 'Bath & nap') : tdata('acts.' + a + '.1', (ACTS.find((x) => x[0] === a) || [a, a])[1]); }
+function fwActIcon(a) { const r = ACTS.find((x) => x[0] === a); return a === 'more' ? fwMoreIcon() : a === 'caremenu' ? ICON('bath') : a === 'journal' ? iconOr('journal', doodle('paw', 0, 2, 1.1)) : ICON(r ? r[2] : a); }
+function fwActBtn(a, extra) { return `<button class="act" type="button" data-act="${a}"${extra || ''}><span class="ic">${fwActIcon(a)}</span><span>${esc(fwActLabel(a))}</span></button>`; }
+function fwPhoneBar() {
+  const pop = (k) => `<div class="barpop" data-pop="${k}" role="group" aria-label="${esc(fwActLabel(k))}" hidden>${FW_POPS[k].map((a) => fwActBtn(a)).join('')}</div>`;
+  return fwActBtn('caremenu', ' aria-haspopup="true" aria-expanded="false"') + fwActBtn('walk') + fwActBtn('map') + fwActBtn('more', ' aria-haspopup="true" aria-expanded="false"') + pop('caremenu') + pop('more');
 }
-function fwDockSync() {
-  if (!S || !S.fw || !S.fw.fresh) return; const top = Math.max(...S.dogs.map((d) => (d.bond && d.bond.level) || 1));
-  if (top <= S.fw.dock) return;
-  Object.keys(FW_DOCK).forEach((a) => { if (S.fw.dock < FW_DOCK[a] && top >= FW_DOCK[a]) S.fw.dockNew[a] = 1; });
-  S.fw.dock = top; markDirty(); fwDockApply();
+const fwPopOf = (a) => Object.keys(FW_POPS).find((k) => FW_POPS[k].includes(a)) || null;
+function fwBarPop(k) { // open the tray k (or none), close the other
+  bar.querySelectorAll('.barpop').forEach((p) => { const on = p.dataset.pop === k; p.hidden = !on; const b = bar.querySelector(`.act[data-act="${p.dataset.pop}"]`); if (b) { b.setAttribute('aria-expanded', on); b.classList.toggle('pop', on); } });
+  bar.classList.toggle('popon', !!k); // over an open tray sheet (z 15) while a bar tray is up
+  if (k === 'more') fwDockApply();
+}
+const fwBarOpen = () => { const p = bar.querySelector('.barpop:not([hidden])'); return p ? p.dataset.pop : null; };
+// "new!" on the More tray's buttons until first opened (S.fw.dockNew: wardrobe, journal on a v2.16 save), and on More while any waits
+function fwDockApply() {
+  if (!bar) return; const nw = (a) => !!(S && S.fw && S.fw.dockNew && S.fw.dockNew[a] && isPhone());
+  bar.querySelectorAll('.act').forEach((b) => {
+    const a = b.dataset.act, isNew = a === 'more' ? FW_POPS.more.some(nw) : FW_POPS.more.includes(a) && nw(a), t = b.querySelector('.fw-newtag');
+    b.classList.toggle('fw-new', isNew);
+    if (isNew && !t) b.insertAdjacentHTML('beforeend', `<span class="fw-newtag" aria-hidden="true">${esc(tt('fw.new_tag', 'new!'))}</span>`); else if (!isNew && t) t.remove();
+  });
 }
 bar.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('.act'); if (!b || !S || !S.fw || !S.fw.dockNew[b.dataset.act]) return; delete S.fw.dockNew[b.dataset.act]; markDirty(); fwDockApply(); }, true);
-on('phone:layout', () => fwDockApply());
-
+// a tap anywhere outside the bar closes an open tray
+window.addEventListener('pointerdown', (e) => { if (fwBarOpen() && !(e.target.closest && e.target.closest('#bar'))) fwBarPop(null); }, { capture: true });
+on('phone:layout', () => { if (S || bar.childElementCount) barLabels(); });
 /* ---------------- 4. the calendars ---------------- */
 const FW_BAG = [['Bone-shaped Biscuit', 3], ['Carrot Sticks', 2], ['Blueberry Bites', 2]]; // the treat bag: dog-safe snacks only
 const FW_WEL_DAYS = [1, 3, 5, 7], FW_CAL_DAYS = [3, 7, 12, 18, 24], FW_CAL_COIN_CAP = 80;
@@ -377,7 +388,7 @@ function fwTick() {
   fwExpose();
   if (!S || !S.fw || !fwOn()) { const el = $('#fwNext'); if (el) el.hidden = true; return; }
   if (['title', 'adopt'].includes(cur.mode) || !titleEl.hidden) return;
-  fwStamp(); fwDockSync(); fwNextSync();
+  fwStamp(); fwNextSync();
   if (document.visibilityState !== 'hidden' && ['walk', 'fetch', 'toy', 'bath', 'yard', 'market', 'map', 'shelter', 'japan', 'garden', 'kitchen', 'routes'].includes(cur.mode)) FW.play++; // seconds of real play this session
   if (FW.play >= 600 && S.fw.named !== localISO()) fwWishName(true);
   fwMorningTry();

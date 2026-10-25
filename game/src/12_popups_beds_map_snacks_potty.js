@@ -5,7 +5,7 @@ const popOpen = () => !!dock.querySelector('.tray:not(.dock-idle):not(.mini)') &
 function popDown() { if (cur.mode === 'yard' && popOpen()) { S.sleeping ? sleepTray() : dockIdle(); } }
 function refreshActs() {
   const pop = !modal.hidden || popOpen(); if (!pop) popAct = null;
-  [...bar.querySelectorAll('.act')].forEach((b) => { const a = b.dataset.act; b.classList.toggle('on', (a === 'walk' && (cur.mode === 'routes' || cur.mode === 'walk')) || (a === 'map' && cur.mode === 'map') || (pop && popAct === a)); });
+  [...bar.querySelectorAll('.act')].forEach((b) => { const a = b.dataset.act; b.classList.toggle('on', (a === 'walk' && (cur.mode === 'routes' || cur.mode === 'walk')) || (a === 'map' && cur.mode === 'map') || (pop && (popAct === a || (typeof FW_POPS === 'object' && FW_POPS[a] && FW_POPS[a].includes(popAct))))); }); // v2.16: Care / More light up for their trays
 }
 new MutationObserver(refreshActs).observe(dock, { childList: true });
 new MutationObserver(refreshActs).observe(modal, { childList: true, attributes: true, attributeFilter: ['hidden'] });

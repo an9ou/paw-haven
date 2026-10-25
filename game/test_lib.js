@@ -109,6 +109,13 @@ class T {
   // wait for the level-up modal (after something that crosses a Bond level) then dismiss it
   async luWait(ms) { if (await this.until(() => !!document.getElementById('luOk'), null, ms || 1500)) await this.lu(); }
   rnd(v) { return this.p.evaluate((v) => { if (!window.__rnd0) window.__rnd0 = Math.random; Math.random = v == null ? window.__rnd0 : () => v; }, v); }
+  // v2.16 option C phone bar: Feed, Play and Bath & nap sit in the Care tray, Wardrobe and Journal in the More tray. Before a test taps one of
+  // those buttons on a phone, dock(act) opens its tray (no-op on desktop or when the button is already on show)
+  async dock(a) {
+    const pop = await this.p.evaluate((a) => { const b = document.querySelector(`#bar [data-act="${a}"]`), pp = b && b.closest('.barpop'); return pp && pp.hidden ? pp.dataset.pop : null; }, a);
+    if (!pop) return false; await this.p.evaluate((k) => document.querySelector(`#bar .act[data-act="${k}"]`).click(), pop);
+    return this.until((k) => { const q = document.querySelector(`#bar .barpop[data-pop="${k}"]`); return !!q && !q.hidden; }, pop, 3000);
+  }
   // ---------- UI flows (all condition-based) ----------
   // adoption through the real UI, then wait for the yard. o: { sex:'girl'|'boy', head: 'aria-label' of a carousel head, name:true -> accept the default name }
   async adopt(o) {

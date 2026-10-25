@@ -735,7 +735,7 @@ function freshState(key, name, sex) {
   v211Fields(st); // v2.11 Tokyo Trip: the trip and Dog Cards (V211.md section 5)
   v215Fields(st); st.mapNew.fresh = true; // v2.15 Around Town: agility, the pool, the run tracks, the map stickers (V215.md section 9); fresh: a save that started on v2.15 gets no "new" / "moved" stickers
   v214Fields(st); st.lang = i18nReal(prefs.langPick) ? prefs.langPick : null; // v2.14: a language picked on the title screen before the save existed (V214.md 5)
-  v216Fields(st); Object.assign(st.fw, { fresh: true, wel: { days: [], got: [] }, dock: 1 }); if (typeof fwOn === 'function' && fwOn()) st.guide.fw = 1; // v2.16 First Week (V216.md 2): a new save gets Puppy's first day, the welcome week and the lighter phone dock
+  v216Fields(st); Object.assign(st.fw, { fresh: true, wel: { days: [], got: [] }, dock: 1, dockNew: { wardrobe: 1, journal: 1 } }); if (typeof fwOn === 'function' && fwOn()) st.guide.fw = 1; // v2.16 First Week (V216.md 2): a new save gets Puppy's first day, the welcome week and the lighter phone dock
   return linkDogs(st);
 }
 let S = null;
@@ -859,7 +859,7 @@ function v215Fields(s) {
    no welcome week, the full phone dock) and every dog already at Bond 2 or more marked in b2 (no party for them).
    S.fw { fresh: started on v2.16, b2: { dogId: 1 } the Bond 2 party was had, wel: { days: [localISO x7], got: [1, 3, 5, 7] } | null (the welcome week, new saves),
           cal: { ym: 'YYYY-MM', days: [day of month], got: [3, 7, 12, 18, 24], coins: calendar coins this month (cap 80) }, frames: { name: dog name | null, months: ['YYYY-MM'] },
-          wish: { k, id, name, for: localISO, shown: bool, done: bool } | null, named: localISO of the last wish, dock: highest Bond seen (phone dock tiers), dockNew: { act: 1 },
+          wish: { k, id, name, for: localISO, shown: bool, done: bool } | null, named: localISO of the last wish, dock: unused since option C (kept), dockNew: { wardrobe, journal: 1 } not yet opened from the phone More tray,
           morning: localISO of the last new stamp, shown: localISO of the last morning page } */
 function v216Fields(s) {
   if (!s) return s;
@@ -1250,8 +1250,10 @@ function buildBar() {
   bar.addEventListener('click', (e) => { const b = e.target.closest('.act'); if (b) doAct(b.dataset.act); });
 }
 // the buttons themselves (v2.14: drawn again in the new language when the title screen switches it; the click listener stays the one above)
-function barLabels() { bar.innerHTML = ACTS.map(([a, label, ic], i) => `<button class="act" data-act="${a}" aria-keyshortcuts="${i + 1}"><span class="ic">${a === 'journal' ? iconOr('journal', doodle('paw', 0, 2, 1.1)) : ICON(ic)}</span><span>${esc(tdata('acts.' + a + '.1', label))}</span></button>`).join(''); if (typeof fwDockApply === 'function') fwDockApply(); } // v2.16: the lighter phone dock
+function barLabels() { if (isPhone() && typeof fwPhoneBar === 'function') { bar.innerHTML = fwPhoneBar(); bar.classList.add('optc'); fwDockApply(); return; } bar.classList.remove('optc'); bar.innerHTML = ACTS.map(([a, label, ic], i) => `<button class="act" data-act="${a}" aria-keyshortcuts="${i + 1}"><span class="ic">${a === 'journal' ? iconOr('journal', doodle('paw', 0, 2, 1.1)) : ICON(ic)}</span><span>${esc(tdata('acts.' + a + '.1', label))}</span></button>`).join(''); if (typeof fwDockApply === 'function') fwDockApply(); } // v2.16: the lighter phone dock
 function doAct(a) {
+  if (a === 'caremenu' || a === 'more') { SFX.click(); fwBarPop(fwBarOpen() === a ? null : a); return; } // v2.16 phone bar (47_firstweek.js): Care and More open a small tray above the bar
+  if (typeof fwBarPop === 'function') fwBarPop(null);
   SFX.click(); hideBubble(); closeTraining();
   const pop = !modal.hidden || popOpen();
   if (pop && popAct === a) { if (!modal.hidden) closeModal(); else closeTray(); return; }

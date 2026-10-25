@@ -51,7 +51,7 @@ const { run } = require('./test_lib');
       await toastCheck(1);
       await t.SH(`${tag}_step1_toast`);
       await check(1, 'feed');
-      await p.tap('#bar [data-act=feed]'); await t.waitPop(true);
+      await t.dock('feed'); await p.tap('#bar [data-act=feed]'); await t.waitPop(true);
       ok(await t.until(() => document.querySelector('#gdLayer .gd-card').hidden), `${tag}: the strip hides while the Feed sheet is open`);
       await t.retryUntil(() => p.tap('[data-food="Basic Kibble"]'), () => window.__paw.S.guide.step === 2); await t.waitPop(false); await t.calm();
       for (let i = 2; i < 10; i++) { await check(i, labels[i]); if (i < 9) await next(); }
@@ -59,7 +59,7 @@ const { run } = require('./test_lib');
       ok(!!(await t.S()).guide.done, `${tag}: S.guide.done is set`);
 
       sec(`${dev}: How to play`);
-      await p.tap('#bar [data-act=journal]'); await p.waitForSelector('[data-jt=howto]'); await p.locator('[data-jt=howto]').scrollIntoViewIfNeeded(); await p.tap('[data-jt=howto]');
+      await t.dock('journal'); await p.tap('#bar [data-act=journal]'); await p.waitForSelector('[data-jt=howto]'); await p.locator('[data-jt=howto]').scrollIntoViewIfNeeded(); await p.tap('[data-jt=howto]');
       ok(await t.until(() => document.querySelectorAll('.gd-lesson').length === 8), `${tag}: 8 lessons`);
       const tab = await t.ev(() => { const fs = [...document.querySelectorAll('.gd-lesson p')].map((e) => parseFloat(getComputedStyle(e).fontSize)); const b = document.getElementById('gdReplay').getBoundingClientRect(); return { fs: Math.min(...fs), bh: b.height, sw: document.documentElement.scrollWidth, iw: innerWidth }; });
       ok(tab.fs >= 15 && tab.bh >= 44 && tab.sw <= tab.iw, `${tag}: lesson text ${tab.fs} px, Replay ${Math.round(tab.bh)} px, no sideways scroll`);

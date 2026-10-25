@@ -96,7 +96,7 @@ const AUDIT = () => {
 
       // ---------- feeding ----------
       t.sec(dev + ': feeding');
-      await t.retryUntil(() => tapSel('[data-act=feed]'), () => !!document.querySelector('#dock .tray:not(.dock-idle):not(.mini)'));
+      await t.retryUntil(async () => { await t.dock('feed'); return tapSel('[data-act=feed]'); }, () => !!document.querySelector('#dock .tray:not(.dock-idle):not(.mini)'));
       ok(await t.waitPop(true), 'feed tray opens');
       await audit('feed_tray');
       const food = t.p.locator('#dock .tray [data-food]:not(.off):not([data-food="Fresh Water"])').first();
@@ -108,7 +108,7 @@ const AUDIT = () => {
       const bowlOn = () => t.ev(() => { const b = document.getElementById('bowlG'); return !!b && getComputedStyle(b).visibility !== 'hidden'; });
       await t.until(() => window.__paw.S.bowl == null, null, 6000); await t.home(); // the meal above ends first (the bowl shows while the dog eats)
       ok(!(await bowlOn()), 'no bowl in the yard at rest');
-      await t.retryUntil(() => tapSel('[data-act=feed]'), () => !!document.querySelector('#dock .tray:not(.dock-idle):not(.mini)'));
+      await t.retryUntil(async () => { await t.dock('feed'); return tapSel('[data-act=feed]'); }, () => !!document.querySelector('#dock .tray:not(.dock-idle):not(.mini)'));
       const bw = await rectOf('#bowlG'); ok(await bowlOn() && bw.w >= 44 && bw.h >= 44, `the Feed tray shows the bowl, >= 44 px (${Math.round(bw.w)}x${Math.round(bw.h)})`);
       await t.p.keyboard.press('Escape'); await t.waitPop(false); ok(await t.until(() => getComputedStyle(document.getElementById('bowlG')).visibility === 'hidden', null, 3000), 'closing the tray hides the bowl');
       await t.home();
@@ -117,7 +117,7 @@ const AUDIT = () => {
       t.sec(dev + ': care, decor, beds, houses');
       await t.patch({ decor: { 'Giant Crayon Box': { got: '2026-01-01', out: true }, 'Doggy Ramp': { got: '2026-01-01', out: false }, 'Family Photo Frame': { got: '2026-01-01', out: true } } });
       await t.ev(() => window.__paw.go('yard')); await t.until(() => !!document.querySelector('[data-decor]'));
-      await t.retryUntil(() => tapSel('[data-act=care]'), () => !!document.querySelector('[data-care]'));
+      await t.retryUntil(async () => { await t.dock('care'); return tapSel('[data-act=care]'); }, () => !!document.querySelector('[data-care]'));
       ok(await t.waitPop(true), 'care tray opens');
       ok(await t.p.locator('[data-care=decor]').count() === 1, 'Decor card is in the care tray');
       await audit('care_tray');
@@ -138,11 +138,11 @@ const AUDIT = () => {
       await audit('decor_card');
       await t.p.locator('#hmAway').tap(); await t.modalGone();
 
-      await t.retryUntil(() => tapSel('[data-act=care]'), () => !!document.querySelector('[data-care=bed]'));
+      await t.retryUntil(async () => { await t.dock('care'); return tapSel('[data-act=care]'); }, () => !!document.querySelector('[data-care=bed]'));
       await tapSel('[data-care=bed]'); ok(await modalOpen(), 'beds popup opens');
       await audit('beds');
       await t.closeX(); await t.home();
-      await t.retryUntil(() => tapSel('[data-act=care]'), () => !!document.querySelector('[data-care=house]'));
+      await t.retryUntil(async () => { await t.dock('care'); return tapSel('[data-act=care]'); }, () => !!document.querySelector('[data-care=house]'));
       await tapSel('[data-care=house]'); ok(await modalOpen(), 'houses popup opens');
       await audit('houses');
       await t.closeX(); await t.home();
@@ -177,7 +177,7 @@ const AUDIT = () => {
 
       // ---------- bath ----------
       t.sec(dev + ': bath');
-      await t.retryUntil(() => tapSel('[data-act=care]'), () => !!document.querySelector('[data-care=bath]'));
+      await t.retryUntil(async () => { await t.dock('care'); return tapSel('[data-act=care]'); }, () => !!document.querySelector('[data-care=bath]'));
       await tapSel('[data-care=bath]');
       ok(await t.untilMode('bath'), 'bath opens');
       await audit('bath');

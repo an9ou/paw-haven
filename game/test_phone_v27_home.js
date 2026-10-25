@@ -22,7 +22,7 @@ require('./test_lib').run('phone_v27_home', async (t) => {
     const all = await V27();
     await ev((all) => { const S = window.__paw.S; all.forEach((n) => { S.decor[n] = { got: '2026-10-13', out: false }; }); S.beds.push('Knitted Nest'); }, all);
     await t.home('house');
-    await t.retryUntil(() => tap('[data-act=care]'), () => !!document.querySelector('[data-care=decor]'));
+    await t.retryUntil(async () => { await t.dock('care'); return tap('[data-act=care]'); }, () => !!document.querySelector('[data-care=decor]'));
     await tap('[data-care=decor]'); ok(await t.waitH2(/House things/), 'the House things sheet opens');
     let a = await audit('#modal .panel', 44); ok(!a.miss && !a.small.length && !a.tiny.length && !a.hs, 'House things sheet: buttons >= 44 px, text >= 15 px, no sideways scroll ' + show(a));
     await tap('#hoArrange');
