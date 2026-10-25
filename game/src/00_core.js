@@ -740,6 +740,7 @@ function freshState(key, name, sex) {
   v214Fields(st); st.lang = i18nReal(prefs.langPick) ? prefs.langPick : null; // v2.14: a language picked on the title screen before the save existed (V214.md 5)
   v216Fields(st); Object.assign(st.fw, { fresh: true, wel: { days: [], got: [] }, dock: 1, dockNew: { wardrobe: 1, journal: 1 } }); if (typeof fwOn === 'function' && fwOn()) st.guide.fw = 1; // v2.16 First Week (V216.md 2): a new save gets Puppy's first day, the welcome week and the lighter phone dock
   v217Fields(st); // v2.17 Dog Days (V217.md 6): wishes, the diary, stickers, letters, the Bond track gifts
+  v218Fields(st); // v2.18 Fun Fair (V218.md 8): the games' coins today, plays, ribbons, the stall, the photo contest
   return linkDogs(st);
 }
 let S = null;
@@ -778,6 +779,7 @@ function migrate(s) {
   v215Fields(s); // v2.15 Around Town (V215.md section 9): additive
   fwBondFix(s); v216Fields(s); // v2.16 First Week (V216.md section 2): additive; the new Bond thresholds level old dogs up quietly
   v217Fields(s); // v2.17 Dog Days (V217.md section 6): additive
+  v218Fields(s); // v2.18 Fun Fair (V218.md section 8): additive
   return s;
 }
 /* v2.7 Home & Pack save fields (V27.md section 1). Additive only: S.v stays 1, nothing is dropped.
@@ -900,6 +902,22 @@ function v217Fields(s) {
   if (d.today !== null && !v28Obj(d.today)) d.today = null;
   ['day', 'wk', 'fam'].forEach((k) => { if (typeof d.lt[k] !== 'string') d.lt[k] = ''; }); ['gi', 'fi'].forEach((k) => { if (typeof d.lt[k] !== 'number') d.lt[k] = 0; });
   if (d.diary.length > 60) d.diary.splice(0, d.diary.length - 60);
+  return s;
+}
+/* v2.18 Fun Fair save fields (V218.md 8). Additive only: S.v stays 1.
+   S.ff = { day, c: { game: coins today }, n: { game: rounds played }, best: { game: best score }, rib: { b, r, g } (show ribbons),
+            mk: { day, coins, n } (the Saturday stall), pc: { wk, e: [{ p, c, o, n, d, dog }], judged, won, rib } (the photo contest), wash: { day, n } } */
+function v218Fields(s) {
+  if (!s) return s;
+  if (!v28Obj(s.ff)) s.ff = {};
+  const f = s.ff, obj = (o, k) => { if (!v28Obj(o[k])) o[k] = {}; };
+  if (typeof f.day !== 'string') f.day = '';
+  ['c', 'n', 'best', 'rib', 'mk', 'pc', 'wash'].forEach((k) => obj(f, k));
+  if (typeof f.mk.day !== 'string') f.mk.day = ''; ['coins', 'n'].forEach((k) => { if (typeof f.mk[k] !== 'number' || !(f.mk[k] >= 0)) f.mk[k] = 0; });
+  if (typeof f.pc.wk !== 'string') f.pc.wk = ''; if (!Array.isArray(f.pc.e)) f.pc.e = []; if (f.pc.e.length > 3) f.pc.e.length = 3; if (typeof f.pc.judged !== 'string') f.pc.judged = '';
+  ['won', 'rib'].forEach((k) => { if (typeof f.pc[k] !== 'number' || !(f.pc[k] >= 0)) f.pc[k] = 0; });
+  if (typeof f.wash.day !== 'string') f.wash.day = ''; if (typeof f.wash.n !== 'number') f.wash.n = 0;
+  ['c', 'n', 'best', 'rib'].forEach((k) => Object.keys(f[k]).forEach((x) => { if (typeof f[k][x] !== 'number' || !(f[k][x] >= 0)) delete f[k][x]; }));
   return s;
 }
 // v2.16: BOND_TH moved Bond 2 and 3 closer. A loaded dog whose points already pass a threshold levels up here, quietly (no fanfare, no level-up queue);
@@ -1338,6 +1356,7 @@ function unlocksFor(L) {
   HOUSES.forEach((h) => { if (h.bond === L && L > 1) u.push(tt('core.unlock_house', 'House: {house}', { house: tItem(h.n) })); });
   if (L === 10) u.push(tt('core.unlock_badge', 'Best Friends badge (it is invisible, but it is there)'));
   if (typeof ddUnlocks === 'function') u.push(...ddUnlocks(L)); // v2.17: the Bond track gifts (48_dogdays.js)
+  if (typeof ffUnlocks === 'function') u.push(...ffUnlocks(L)); // v2.18: the Fun Fair games (49_funfair.js)
   return u;
 }
 function maybeLevelUp() {
@@ -1369,7 +1388,7 @@ function go(mode, arg) {
   stage.classList.toggle('flowdock', ['walk', 'fetch', 'bath', 'adopt'].includes(mode)); stage.classList.toggle('adoptmode', mode === 'adopt');
   stage.classList.toggle('slimhud', mode === 'walk' || mode === 'routes' || mode === 'garden' || mode === 'kitchen' || mode === 'map');
   stage.classList.toggle('modhud', mode === 'garden' || mode === 'kitchen');
-  ({ garden: enterGarden, kitchen: enterKitchen, title: enterTitle, adopt: enterAdopt, yard: enterYard, market: enterMarketPlace, routes: enterRoutes, map: enterMap, japan: enterJapan, shelter: enterShelter, walk: enterWalk, fetch: enterFetch, bath: enterBath, toy: enterToy })[mode](arg);
+  ({ garden: enterGarden, kitchen: enterKitchen, title: enterTitle, adopt: enterAdopt, yard: enterYard, market: enterMarketPlace, routes: enterRoutes, map: enterMap, japan: enterJapan, shelter: enterShelter, walk: enterWalk, fetch: enterFetch, bath: enterBath, toy: enterToy, fair: enterFair })[mode](arg); // v2.18: the Fun Fair games (49_funfair.js)
   refreshActs();
   updateHUD(); updateWxOverlay(); audioPlace(); setTimeout(maybeLevelUp, 300); markDirty();
 }

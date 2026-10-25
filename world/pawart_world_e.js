@@ -1106,9 +1106,103 @@ function tokyoPostcard(w,h,o){o=o||{};const s=Math.max(w,h)/450,lw=w/s,lh=h/s,co
   if(o.dogs){const sz=fit(o.dogs,11.5,.5);b.raw(`<text x="${tx}" y="${R1(ty+47)}" font-size="${sz}" fill="#7A6358" style="font-family:${PC_FONT_R}">${esc(o.dogs)}</text>`,'top')}
   const front=b.svg('0 0 '+R1(lw)+' '+R1(lh),` width="${w}" height="${h}" x="0" y="0" aria-hidden="true"`,'Tokyo postcard frame').split(IDT).join('pwep'+(++PC_UID).toString(36));
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="Postcard with the Tokyo stamps" data-frame="tokyo"><rect width="${w}" height="${h}" fill="#FFFBF3"/>${o.scene||''}${front}</svg>`}
+/* v2.18 Fun Fair (V218.md 9): the minigame props (PawArt.ffArt(name, o)) and the sticker items (ITEMS_V218). The crayon kit above: every fill
+   sits inside its own pencil outline (b.sh pulls the wash in to the line's inner edge), details are clipped to their shape. No text in the art. */
+const FF_COLS=[['#F08A86','#E46F6B'],['#B9D4F3','#8FB3E0'],['#FFE08A','#E9B44C'],['#BDE7D2','#86C9A8'],['#D3C6F1','#B9A6E8']];
+const FF_LEAF={spring:['#F7C6D4','#F28FA5'],summer:['#9CCB86','#7FB86A'],autumn:['#F7B267','#E9883B'],winter:['#E6EEF3','#B9C9D6']};
+function ffBiscuit(b,s,cx,cy,k,col){
+  col=col||'#E9C08A';const sh={hatch:0,hl:0,base:'#F8E3C0',lw:.8};
+  if(s==='bone')b.sh(boneFF(cx,cy,40*k,15*k),col,sh);
+  else if(s==='heart')b.sh(heartFF(cx,cy+2*k,36*k),col,sh);
+  else if(s==='star')b.sh(starFF(cx,cy+1*k,20*k,9.5*k),col,sh);
+  else b.sh(E(cx,cy,17*k,17*k,18),col,sh);
+  [[-6,-3],[5,2],[-1,5],[7,-5]].forEach(([dx,dy])=>b.dot(cx+dx*k,cy+dy*k,1.1*k,'#C99A62'));
+}
+const boneFF=(cx,cy,len,th)=>boneP(cx,cy,len,th);
+function heartFF(cx,cy,s){const p=[];for(let i=0;i<24;i++){const t=i/24*Math.PI*2;p.push([cx+16*Math.pow(Math.sin(t),3)*s/32,cy-(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))*s/32])}return p}
+function starFF(cx,cy,R,r){const p=[];for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,q=i%2?r:R;p.push([cx+Math.cos(a)*q,cy+Math.sin(a)*q])}return p}
+function cloudFF(cx,cy,rx,ry){const p=[];for(let i=0;i<40;i++){const a=i/40*Math.PI*2,f=1+.14*(Math.abs(Math.sin(a*3.5))-.6);p.push([cx+Math.cos(a)*rx*f,cy+Math.sin(a)*ry*f])}return p}
+function ffRosette(b,cx,cy,R,c,d){
+  b.sh([[cx-R*.55,cy+R*.5],[cx-R*.85,cy+R*2.2],[cx-R*.45,cy+R*1.9],[cx-R*.2,cy+R*2.3],[cx,cy+R*.7]],d,{k:0,hatch:0,hl:0,lw:.8});
+  b.sh([[cx+R*.55,cy+R*.5],[cx+R*.85,cy+R*2.2],[cx+R*.45,cy+R*1.9],[cx+R*.2,cy+R*2.3],[cx,cy+R*.7]],c,{k:0,hatch:0,hl:0,lw:.8});
+  const pet=[];for(let i=0;i<32;i++){const a=i/32*Math.PI*2,f=1+.13*Math.cos(a*8);pet.push([cx+Math.cos(a)*R*f,cy+Math.sin(a)*R*f])}
+  b.sh(pet,c,{hatch:0,sh:d,hl:0,lw:.9});b.sh(E(cx,cy,R*.55,R*.55,16),'#FFF6DC',{hatch:0,hl:0,lw:.7});
+}
+const FF_ART={
+ canopy:[ '0 0 1000 300','prop',(b,o)=>{const L=FF_LEAF[o.season]||FF_LEAF.summer;
+  [[60,300,96,120],[940,300,904,120]].forEach(([x0,y0,x1,y1])=>b.sh([[x0-22,y0],[x0-14,y1+60],[x1-12,y1],[x1+14,y1+6],[x0+16,y1+70],[x0+22,y0]],'#C9A07A',{k:.15,sh:'#A97E5A',hl:0}));
+  const blobs=[[90,120,120,80],[250,90,140,80],[420,70,150,72],[590,74,150,74],[760,92,140,80],[910,122,110,80],[170,180,110,52],[500,150,170,52],[830,178,120,52]];
+  blobs.forEach(([x,y,rx,ry],i)=>b.sh(cloudFF(x,y,rx,ry),i%2?L[0]:mix(L[0],L[1],.35),{sh:L[1],hlo:.3}));
+  if(o.season==='spring')[[200,150],[380,120],[640,130],[880,150]].forEach(([x,y])=>b.ex('heart',x,y,5,'#F7B2C4'));
+  if(o.season==='winter')[[240,52],[430,30],[600,36],[780,58]].forEach(([x,y])=>b.sh(E(x,y,46,12,14),'#FFFFFF',{hatch:0,hl:0,lw:.7}));
+ }],
+ trunk:['0 0 90 520','prop',(b)=>{b.sh([[18,0],[16,180],[12,400],[6,516],[84,516],[76,400],[72,180],[70,0]],'#C9A07A',{k:.1,sh:'#A97E5A',hl:0,inner:b.st(b.jl(34,60,30,160)+b.jl(52,240,56,330)+b.jl(36,400,32,480),'#A97E5A',1.4,.8)})}],
+ pinecone:['0 0 64 64','item',(b)=>{b.sh(E(32,34,15,22,18),'#B9875A',{sh:'#8A5E3B',hl:0,inner:b.st(b.jl(20,24,44,24)+b.jl(18,32,46,32)+b.jl(19,40,45,40)+b.jl(22,48,42,48)+b.jl(26,16,38,16),'#7A5136',1.3,.8)});
+  b.sh([[30,13],[31,5],[35,6],[34,13]],'#7FB86A',{k:.1,hatch:0,hl:0,lw:.6})}],
+ bubble:['0 0 80 80','item',(b,o)=>{const g=!!o.gold;b.sh(E(40,40,30,30,24),g?'#FFE08A':'#DDF1FB',{hatch:0,base:g?'#FFF3C4':'#F2FAFE',op:g?.95:.75,hl:0,lw:.8,
+   marks:[{pts:E(34,34,19,19,16),fill:g?'#FFF6D6':'#FFFFFF',op:.45},{pts:E(52,54,8,5,10,.6),fill:g?'#F7C548':'#C5E6F5',op:.6}]});
+  b.sh(E(28,26,7,4,10,-.7),'#FFFFFF',{hatch:0,hl:0,lw:.5});if(g){b.ex('spark',60,18,5);b.ex('spark',16,62,3.4)}}],
+ kite:['0 0 120 170','prop',(b,o)=>{const c=FF_COLS[(o.c||0)%5];b.sh([[60,6],[100,52],[60,110],[20,52]],c[0],{k:0,sh:c[1],marks:[{pts:[[60,6],[100,52],[60,52]],fill:'#FFFFFF',op:.35,k:0},{pts:[[20,52],[60,52],[60,110]],fill:'#FFFFFF',op:.35,k:0}]});
+  b.ln([[60,10],[60,106]],{w:1.4});b.ln([[24,52],[96,52]],{w:1.4});b.ln([[60,110],[52,124],[66,138],[54,152],[62,166]],{w:1.2});
+  [[52,124],[66,138],[54,152]].forEach(([x,y],i)=>{const cc=FF_COLS[(i+1+(o.c||0))%5][0];b.sh([[x,y],[x-9,y-6],[x-9,y+6]],cc,{k:0,hatch:0,hl:0,lw:.6});b.sh([[x,y],[x+9,y-6],[x+9,y+6]],cc,{k:0,hatch:0,hl:0,lw:.6})})}],
+ box:['0 0 160 150','prop',(b,o)=>{const c=FF_COLS[(o.c||0)%5];b.shadow(80,142,66,6);
+  b.sh([[18,44],[142,44],[136,140],[24,140]],c[0],{k:0,sh:c[1],marks:[{pts:[[30,70],[130,70],[128,108],[32,108]],fill:'#FFF6DC',op:.95,k:0}]});
+  b.sh([[14,30],[146,30],[142,48],[18,48]],mix(c[0],'#FFFFFF',.2),{k:0,hatch:0,hl:0});
+  [[46,'#E46F6B'],[66,'#6DBE5A'],[86,'#4F8FD6'],[106,'#F9B97A']].forEach(([x,col])=>{b.sh([[x-5,104],[x-5,80],[x,72],[x+5,80],[x+5,104]],col,{k:0,hatch:0,hl:0,lw:.6})});
+  b.ln([[36,58],[124,58]],{w:1,op:.5})}],
+ judgecard:['0 0 320 220','prop',(b)=>{b.shadow(160,212,140,7);b.sh(RR(10,10,300,196,14),'#FFF6DC',{k:0,sh:'#E8C597',hl:0});
+  b.loop(RR(24,24,272,168,10),{w:1.2,col:'#C99A72',op:.7});ffRosette(b,280,40,18,'#8FB3E0','#5E86C0')}],
+ stall:['0 0 640 420','prop',(b)=>{b.shadow(320,410,290,10);
+  [[60,402],[580,402]].forEach(([x,y])=>b.sh([[x-9,y],[x-9,110],[x+9,110],[x+9,y]],'#E2B07E',{k:0,sh:'#C58F5E',hl:0}));
+  b.sh([[40,250],[600,250],[590,404],[50,404]],'#E2B07E',{k:0,sh:'#C58F5E',marks:[{pts:[[40,250],[600,250],[600,290],[40,290]],fill:'#FFF2DA',k:0}]});
+  b.sh([[30,236],[610,236],[610,262],[30,262]],'#F7E3BC',{k:0,hatch:0,hl:0});
+  for(let i=0;i<10;i++){const x0=20+i*60,x1=x0+60,col=i%2?'#FFF6DC':'#F28FA5';b.sh([[x0,40],[x1,40],[x1,110],[x1-8,128],[(x0+x1)/2,136],[x0+8,128],[x0,110]],col,{k:.05,hatch:i%2?0:1,hl:0,sh:'#E46F6B',lw:.9})}
+  b.sh([[14,20],[626,20],[626,44],[14,44]],'#E46F6B',{k:0,hatch:0,hl:0});
+  b.sh([[230,150],[410,150],[404,214],[236,214]],'#FFF6DC',{k:0,hatch:0,hl:0})}],
+ paper:['0 0 64 64','item',(b)=>{b.sh(rot(RR(10,22,44,20,9),-.3,32,32),'#F4F1EA',{hatch:0,sh:'#C9C2BA',inner:b.st(b.jl(16,30,44,22)+b.jl(18,36,48,28),'#A8968A',1,.8)});
+  b.sh(rot([[28,20],[34,20],[34,44],[28,44]],-.3,32,32),'#F08A86',{k:0,hatch:0,hl:0,lw:.6})}],
+ door:['0 0 200 280','prop',(b,o)=>{const c=FF_COLS[(o.c||0)%5];b.shadow(100,274,92,6);
+  b.sh([[8,60],[192,60],[192,270],[8,270]],'#FCE6CC',{k:0,sh:'#E8C597'});b.sh([[0,66],[100,8],[200,66]],'#EBA48C',{k:0,sh:'#D88870',hl:0});
+  b.sh(RR(64,128,72,142,10),c[0],{k:0,sh:c[1]});b.dot(122,204,3.2,'#5B3D32');
+  b.sh(RR(80,146,40,8,2),'#FFF6DC',{k:0,hatch:0,hl:0,lw:.6});
+  b.sh(RR(20,98,34,34,4),'#BFE6FA',{k:0,hatch:0,lw:.8});b.sh(RR(146,98,34,34,4),'#BFE6FA',{k:0,hatch:0,lw:.8});
+  b.sh([[56,262],[144,262],[150,276],[50,276]],'#E3DCD3',{k:0,hatch:0,hl:0})}],
+ biscuit:['0 0 64 64','item',(b,o)=>ffBiscuit(b,o.s,32,32,1)],
+ tin:['0 0 150 120','prop',(b,o)=>{const c=FF_COLS[{bone:0,heart:2,star:1,round:3}[o.s]||0];b.shadow(75,114,64,5);
+  b.sh([[12,30],[138,30],[132,112],[18,112]],c[0],{k:0,sh:c[1],marks:[{pts:E(75,72,30,26,18),fill:'#FFF6DC',op:.95}]});
+  b.sh(E(75,30,64,10,22),mix(c[1],'#5B3D32',.25),{hatch:0,hl:0});ffBiscuit(b,o.s,75,72,.9)}],
+ cloud:['0 0 120 70','item',(b)=>{b.sh(cloudFF(60,36,52,26),'#FFFFFF',{hatch:0,base:'#FFFFFF',sh:'#C9D9E6',hlo:.2})}],
+ leaf:['0 0 48 48','item',(b,o)=>{const s=o.season||'summer';
+  if(s==='spring')b.sh(heartFF(24,26,28),'#F7C6D4',{hatch:0,hl:0,sh:'#F28FA5'});
+  else if(s==='winter'){[0,1,2].forEach(i=>{const a=i*Math.PI/3;b.ln([[24-Math.cos(a)*16,24-Math.sin(a)*16],[24+Math.cos(a)*16,24+Math.sin(a)*16]],{w:2,col:'#7FA6C6'})});b.sh(E(24,24,4,4,10),'#FFFFFF',{hatch:0,hl:0,lw:.6})}
+  else if(s==='autumn')b.sh(starFF(24,25,18,9),'#F2A65A',{hatch:0,hl:0,sh:'#E9883B'});
+  else b.sh(rot([[8,24],[18,14],[32,12],[42,24],[32,36],[18,34]],-.4,24,24),'#9CCB86',{hatch:0,hl:0,sh:'#7FB86A',inner:b.st(b.jl(10,28,40,20),'#6FA05A',1,.8)})}],
+ sponge:['0 0 64 64','item',(b)=>{b.sh(rot(RR(12,20,40,26,7),-.2,32,32),'#FFE08A',{sh:'#E9B44C',inner:'<circle cx="24" cy="30" r="2" fill="#E9B44C"/><circle cx="36" cy="27" r="1.6" fill="#E9B44C"/><circle cx="40" cy="38" r="2" fill="#E9B44C"/>'})}],
+ jug:['0 0 64 64','item',(b)=>{b.sh([[16,22],[44,22],[46,54],[14,54]],'#B9D4F3',{k:.1,sh:'#8FB3E0'});b.sh([[44,28],[56,20],[58,24],[46,34]],'#B9D4F3',{k:.1,hatch:0,hl:0,lw:.7});
+  b.sh(E(30,22,14,4,14),'#DDF1FB',{hatch:0,hl:0,lw:.6})}],
+ towel:['0 0 64 64','item',(b)=>{b.sh([[10,14],[54,14],[52,52],[12,52]],'#F7B2C4',{k:.1,sh:'#F28FA5',marks:[{pts:[[10,40],[54,40],[54,45],[10,45]],fill:'#FFFFFF',op:.8,k:0}]})}]
+};
+const ITEMS_V218={
+ 'Show Ribbon'(b){ffRosette(b,32,24,15,'#8FB3E0','#5E86C0')},
+ 'Red Show Ribbon'(b){ffRosette(b,32,24,15,'#F08A86','#E46F6B')},
+ 'Gold Show Rosette'(b){ffRosette(b,32,24,15,'#FFD56B','#E9B44C');b.ex('spark',56,12,4)},
+ 'Photo Contest Ribbon'(b){ffRosette(b,32,24,15,'#D3C6F1','#B9A6E8');b.ex('heart',54,48,3.6)},
+ 'Treat Jar'(b){b.shadow(32,58,20,3);b.sh([[16,22],[48,22],[50,56],[14,56]],'#DDF1FB',{k:.15,op:.85,sh:'#9CCDE8'});b.sh(RR(14,12,36,10,3),'#F08A86',{k:0,hatch:0,hl:0});
+  ffBiscuit(b,'bone',32,44,.5);ffBiscuit(b,'heart',24,34,.38);ffBiscuit(b,'star',40,32,.38)},
+ 'Golden Bubble'(b){b.sh(E(32,32,22,22,22),'#FFE08A',{hatch:0,base:'#FFF3C4',hl:0,lw:.8});b.sh(E(24,24,5,3,10,-.7),'#FFFFFF',{hatch:0,hl:0,lw:.5});b.ex('spark',54,12,4.4)},
+ 'Paper Kite'(b){b.sh([[32,6],[52,26],[32,50],[12,26]],'#F08A86',{k:0,sh:'#E46F6B'});b.ln([[32,8],[32,48]],{w:1});b.ln([[14,26],[50,26]],{w:1});b.ln([[32,50],[28,56],[36,62]],{w:1})},
+ 'Crayon Box'(b){b.sh([[10,22],[54,22],[52,58],[12,58]],'#B9D4F3',{k:0,sh:'#8FB3E0'});[[20,'#E46F6B'],[29,'#6DBE5A'],[38,'#FFD23A'],[47,'#8E63C7']].forEach(([x,c])=>b.sh([[x-3,24],[x-3,10],[x,5],[x+3,10],[x+3,24]],c,{k:0,hatch:0,hl:0,lw:.55}))},
+ 'Market Basket'(b){b.sh([[8,30],[56,30],[50,56],[14,56]],'#E2B07E',{k:.1,sh:'#C58F5E',inner:b.st(b.jl(12,40,52,40)+b.jl(14,48,50,48),'#C58F5E',1,.8)});
+  b.sh(E(22,28,7,6,12),'#F9B97A',{hatch:0,hl:0,lw:.6});b.sh(E(36,26,8,7,12),'#9CCB86',{hatch:0,hl:0,lw:.6});b.ln([[12,30],[20,10],[44,10],[52,30]],{w:1.4})},
+ 'Rolled Newspaper'(b){FF_ART.paper[2](b,{})},
+ 'Biscuit Tin'(b){b.sh([[10,24],[54,24],[52,56],[12,56]],'#F08A86',{k:0,sh:'#E46F6B',marks:[{pts:E(32,40,12,10,14),fill:'#FFF6DC'}]});b.sh(E(32,24,22,5,16),'#E46F6B',{hatch:0,hl:0,lw:.6});ffBiscuit(b,'bone',32,40,.42)},
+ 'Wash Sponge'(b){FF_ART.sponge[2](b,{})}
+};
 return {
-  item(name){const f=ITEMS_E[name]||ITEMS_V215[name]||ITEMS_V217[name];if(!f)return null;return serve('t:'+name,()=>{const b=mk('item',name);f(b);return b.svg('0 0 64 64','',esc(name))})},
-  ITEMS215:Object.keys(ITEMS_V215),ITEMS217:Object.keys(ITEMS_V217),
+  item(name){const f=ITEMS_E[name]||ITEMS_V215[name]||ITEMS_V217[name]||ITEMS_V218[name];if(!f)return null;return serve('t:'+name,()=>{const b=mk('item',name);f(b);return b.svg('0 0 64 64','',esc(name))})},
+  ITEMS215:Object.keys(ITEMS_V215),ITEMS217:Object.keys(ITEMS_V217),ITEMS218:Object.keys(ITEMS_V218),FF_NAMES:Object.keys(FF_ART),
+  ff(name,o){const A=FF_ART[name];if(!A)return null;o=o||{};const key=['c','s','season','gold'].map(k=>o[k]==null?'':String(o[k])).join(',');
+    return serve('ff:'+name+':'+key,()=>{const b=mk(A[1],'ff-'+name+':'+key);A[2](b,o);return b.svg(A[0],' data-ff="'+name+'"','')})},
   ekistamp(o){const key=ST_KEYS.includes(o&&o.key)?o.key:'shibuya',got=!!(o&&o.got);
     return serve('p:ekistamp:'+key+':'+(got?1:0),()=>{const b=mk('prop','ekistamp:'+key);if(got)stampArt(b,key,60,60,54,hashS(key)%7*.03-.09);else stampEmpty(b,60,60,54);
       return b.svg('0 0 120 120',` data-key="${key}" data-got="${got?1:0}"`,ST_LBL[key]+' station stamp'+(got?'':', not collected yet'))})},
@@ -1542,6 +1636,8 @@ PA.WORLD_E_SCENES=Object.keys(MINE);PA.WORLD_E_PROPS=['ekistamp','luckycat','pos
 {const prevItem215=PA.item,V215I=WB.ITEMS215;PA.item=function(name,o){return V215I.includes(name)?WB.item(name):prevItem215.apply(this,arguments)};PA.V215_ITEMS=V215I.slice()}
 // v2.17: the Crayon Crown and the Golden Collar (ITEMS_V217); every other name goes on unchanged
 {const prevItem217=PA.item,V217I=WB.ITEMS217;PA.item=function(name,o){return V217I.includes(name)?WB.item(name):prevItem217.apply(this,arguments)};PA.V217_ITEMS=V217I.slice()}
+// v2.18 Fun Fair (V218.md 9): the sticker items (ITEMS_V218) and the minigame props, PawArt.ffArt(name, o) (names in PawArt.FF_NAMES; o.c colour index, o.s shape, o.season, o.gold)
+{const prevItem218=PA.item,V218I=WB.ITEMS218;PA.item=function(name,o){return V218I.includes(name)?WB.item(name):prevItem218.apply(this,arguments)};PA.V218_ITEMS=V218I.slice();PA.FF_NAMES=WB.FF_NAMES.slice();PA.ffArt=function(name,o){return WB.ff(name,o)||''}}
 /* v2.14: the last layer on every world render. The game may pass { aria: 'label' } (the root svg's aria-label, translated) and/or
    { ariaMap: { 'English label': 'translated label' } } (any other aria-label inside the render: hotspots, parts) in the options object
    of any call (scene, walkStrip, prop, item, icon, bed, house, obstacle, collectible, postcard). Without them the result is returned

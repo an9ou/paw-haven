@@ -342,6 +342,7 @@ function ddPageTitle(i) {
     case 'ag': return tt('dd.pg_ag', 'Training Ground');
     case 'pool': return tt('dd.pg_pool', 'Splash Pool');
     case 'cal': return tt('dd.pg_cal', 'Calendar days');
+    case 'fair': case 'ribbons': return ffPageTitle(DD_PAGES[i]); // v2.18 (49_funfair.js)
     default: return tt('dd.pg_year', 'A year of paws');
   }
 }
@@ -395,6 +396,7 @@ function ddStickerDefs() {
   [3, 7, 12, 18, 24].forEach((n) => add('c' + n, 10, 'c:' + n, () => tt('dd.st_calday', 'The {n}-day calendar gift', { n }), () => c('c' + n) > 0));
   add('d30', 10, 'p:#F28FA5', () => tt('dd.st_paws', '{n, plural, one {# paw stamped} other {# paws stamped}}', { n: 30 }), () => c('days') >= 30);
   [2, 3, 4, 6, 9, 12].forEach((n, i) => add('m' + n, 11, 'p:' + ['#C8E9CF', '#FFE3A1', '#F9C99E', '#CBE0F4', '#E0D5F0', '#F28FA5'][i], () => tt('dd.st_months', '{n, plural, one {Paws in # month} other {Paws in # months}}', { n }), () => ddArr(S.dd.mo).length >= n));
+  if (typeof ffStickerAdd === 'function') ffStickerAdd(add); // v2.18: the Fun Fair and Ribbons pages (49_funfair.js), only while ffOn()
   DD.defs = L; return L;
 }
 function ddStArt(a) {

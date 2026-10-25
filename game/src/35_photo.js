@@ -225,7 +225,7 @@ function phPanel() {
     <div class="ph-sec"><span class="ph-lbl">${esc(tt('photo.frame', 'Frame'))}</span><div class="ph-row ph-frames" role="group" aria-label="${esc(tt('photo.frame_colour', 'Frame colour'))}">${cols.map((c) => `<button type="button" class="ph-swatch" data-frame="${c.k}" aria-label="${esc(tt('photo.frame_named', '{name} frame', { name: phFrameName(c) }))}" title="${esc(phFrameName(c))}" aria-pressed="${c.k === col.k}" style="--sw:${c.c}"></button>`).join('')}</div></div>
     <div class="ph-sec"><span class="ph-lbl">${esc(tt('photo.caption', 'Caption'))}</span><div class="ph-row ph-caps" role="group" aria-label="${esc(tt('photo.caption', 'Caption'))}">${caps.map((c) => `<button type="button" class="btn ph-cap" data-cap="${c.id}" aria-pressed="${c.id === cap.id}">${esc(c.t)}</button>`).join('')}</div></div>
     <div class="ph-sec"><span class="ph-lbl">${esc(tt('photo.shape', 'Shape'))}</span><div class="ph-row ph-shapes" role="group" aria-label="${esc(tt('photo.picture_shape', 'Picture shape'))}"><button type="button" class="btn ph-shape" data-sq="0" aria-pressed="${!prefs.phSq}">${esc(tt('photo.postcard', 'Postcard'))}</button><button type="button" class="btn ph-shape" data-sq="1" aria-pressed="${!!prefs.phSq}" aria-label="${esc(tt('photo.square_picture', 'Square picture'))}">${esc(tt('photo.square', 'Square'))}</button></div></div>
-    <div class="ph-acts"><button type="button" class="btn yes" id="phSave">${esc(tt('photo.save', 'Save photo'))}</button><button type="button" class="btn" id="phAgain">${esc(tt('photo.retake', 'Retake'))}</button><button type="button" class="btn" id="phClose">${esc(tt('photo.close', 'Close'))}</button></div>
+    <div class="ph-acts"><button type="button" class="btn yes" id="phSave">${esc(tt('photo.save', 'Save photo'))}</button><button type="button" class="btn" id="phAgain">${esc(tt('photo.retake', 'Retake'))}</button><button type="button" class="btn" id="phClose">${esc(tt('photo.close', 'Close'))}</button>${typeof ffPhotoBtn === 'function' ? ffPhotoBtn() : ''}</div>
   </div>`;
 }
 function phOpen() {
@@ -241,6 +241,7 @@ function phOpen() {
   $('#phSave', root).onclick = () => phSave();
   $('#phAgain', root).onclick = () => { SFX.click(); const c = phCapture(); if (c) { PH.cap = c; phDraw(); } };
   $('#phClose', root).onclick = () => { SFX.click(); phClose(); };
+  if (typeof ffPhotoBind === 'function') ffPhotoBind(root, () => (PH.cap ? { who: PH.cap.who, vb: phLayout(PH.cap, !!prefs.phSq).vb } : null)); // v2.18: the weekly photo contest (49_funfair.js)
   PH.keyFn = (e) => { if (e.key !== 'Escape' || !PH.on) return; e.preventDefault(); e.stopPropagation(); if (PH.hold) phHoldClose(); else phClose(); };
   window.addEventListener('keydown', PH.keyFn, true);
   PH.obs = [new MutationObserver(() => { if (!modal.hidden) phClose(); })]; PH.obs[0].observe(modal, { attributes: true, attributeFilter: ['hidden'] }); // a pop-up (a level-up, a letter) ends the photo
