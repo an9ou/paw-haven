@@ -184,6 +184,7 @@ async function main() {
   if (WHAT === 'faces' || WHAT === 'all') await require('./make_faces.js')({ render, browser, helpers });
   if (WHAT === 'threads' || WHAT === 'all') await require('./make_threads.js')({ render, browser, helpers });
   if (WHAT === 'trailercover') await require('./make_trailercover.js')({ render, browser, helpers });
+  if (WHAT === 'updates') await require('./make_updates.js')({ render, browser, helpers });
   if (WHAT === 'languages') await require('./make_languages.js')({ render, browser, helpers }); // needs the languages/capture_langs.js shots, not shots.js
   if (['profile', 'covers', 'grid', 'all'].includes(WHAT)) await require('./make_extra.js')({ render, helpers, what: WHAT });
   await browser.close();
