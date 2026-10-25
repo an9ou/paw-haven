@@ -270,6 +270,20 @@ async function worker(job) {
       if (phone) for (const k of ['caremenu', 'more']) { await ev((k) => document.querySelector(`#bar .act[data-act="${k}"]`).click(), k); await waitSel(`#bar .barpop[data-pop="${k}"]`, 3000); await measure('fw: phone bar ' + k + ' tray'); await ev((k) => document.querySelector(`#bar .act[data-act="${k}"]`).click(), k); }
       await ev(() => { const P = window.__paw; P.S.dogs[0].bond = { level: 10, pts: 3300 }; P.S.fw.wish = null; P.fw.test(false); P.saveNow(); });
     }, 60000);
+    // v2.17 Dog Days (V217.md): the wish chip, the Bond track, the diary, the sticker book, a letter, the phone More tray (prefs.ddTest through the test hook)
+    await step('dd', async () => {
+      await ev(() => { const P = window.__paw, S = P.S; P.dd.test(true); S.dogs[0].bond = { level: 4, pts: 500 }; S.dd.wish = { day: '', w: {}, coins: 0 }; P.dd.wish(); S.dd.wish.w[S.dog.id] = { k: 'walk', a: 'cliffs', done: 0 }; P.dd.chip(); });
+      await sleep(700); await measure('dd: wish chip');
+      await ev(() => { const P = window.__paw, S = P.S; S.dd.wish.w[S.dog.id] = { k: 'garden', a: null, done: 1 }; P.dd.chip(); }); await sleep(300); await measure('dd: wish chip, done');
+      await ev(() => window.__paw.dd.track()); await modalUp(); await measure('dd: Bond track'); await closeAll();
+      await ev(() => { const P = window.__paw, S = P.S; S.dd.today = null; S.dd.diary = [{ g: 3, d: '2026-10-24', id: S.dog.id, n: S.dog.name, k: S.dog.key, w: ['park', 'cliffs'], p: ['training', 'pool'], f: ['Chicken & Rice Bowl', 'Blueberry Bites'], t: ['Roll Over'], x: 'Llasbz', wi: 'garden', fr: ['Pip', 'Bun'] }]; P.dd.journal('diary'); });
+      await modalUp(); await measure('dd: diary'); await closeAll();
+      await ev(() => { const S = window.__paw.S; S.dd.st = { w1: 1, k_walk: 1, k_ball: 1, v_park: 1 }; window.__paw.dd.book(); }); await modalUp(); await measure('dd: sticker book');
+      await ev(() => { const b = document.querySelector('[data-ddsp="1"]'); if (b) b.click(); }); await sleep(300); await measure('dd: sticker book page 2'); await closeAll();
+      await ev(() => { const S = window.__paw.S; S.dd.lt = { day: '', wk: '', fam: '', gi: 5, fi: 0 }; window.__paw.dd.letters(); window.__paw.dd.mail(); }); await modalUp(); await measure('dd: Gerald\'s letter'); await closeAll();
+      if (phone) { await ev(() => document.querySelector('#bar .act[data-act="more"]').click()); await waitSel('#bar .barpop[data-pop="more"]', 3000); await measure('dd: phone More tray with Stickers'); await ev(() => document.querySelector('#bar .act[data-act="more"]').click()); }
+      await ev(() => { const P = window.__paw; P.S.dogs[0].bond = { level: 10, pts: 3300 }; P.dd.test(false); P.saveNow(); });
+    }, 60000);
     if (phone) await step('yard HUD expanded', async () => { await jsClick('#meters'); await sleep(300); await measure('yard: HUD meters expanded'); await jsClick('#view').catch(() => {}); await ev(() => document.getElementById('hud').classList.remove('hexp')); });
     for (const a of ['feed', 'play', 'care']) await step(a + ' tray', async () => { await jsClick(`[data-act=${a}]`); if (!(await t.waitPop(true))) throw new Error('no tray'); await measure(a + ' tray'); await jsClick(`[data-act=${a}]`); await t.waitPop(false); });
     await step('toasts and bubble', async () => {

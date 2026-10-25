@@ -104,7 +104,7 @@ function gdTarget(i, tray) {
 }
 // spots for the card: above the dock (bottom of the scene) first, then under the HUD. Hard rules: never on #dogHit, the ringed target or the place buttons.
 // Soft: stay off the location chip, the bowl, the mailbox and the missions clipboard. Re-measured every tick, moved only when its spot stops being clear.
-const GD_HARD = ['#placeBtns .btn', '#devBtn', '#fwNext'], GD_SOFT = ['#status', '#bowlG', '#mailboxG', '#msCardG'];
+const GD_HARD = ['#placeBtns .btn', '#devBtn', '#fwNext'], GD_SOFT = ['#status', '#bowlG', '#mailboxG', '#msCardG', '#ddWish:not([hidden])']; // v2.17: the wish chip (48_dogdays.js)
 function gdPlace(force) {
   const c = $('.gd-card', gd.layer); const v = gdR(view), dh = $('#dogHit'), dog = dh ? gdR(dh) : null, tg = gdTarget(S.guide.step), tr = tg && tg.sel !== '#dogHit' && !tg.sel.startsWith('#gdLayer') ? tg.r : null; // v2.16: a ring on the card's own button is not a spot to avoid
   const cw = c.offsetWidth, ch = c.offsetHeight, ph = isPhone();

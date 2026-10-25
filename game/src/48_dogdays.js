@@ -538,7 +538,7 @@ function ddExpose() {
     on: () => ddOn(), state: () => S && S.dd, wish: (id) => ddWish(id ? dogById(id) : D()), opts: () => ddWishOpts(D()).map((o) => o[0]), text: (k, a) => ddWishText(k, a), make: (day) => ddWishMake(D(), day),
     track: (id) => ddTrackOpen(id), rows: (L) => ddTrackRows(L, D()).map((r) => r[1]), give: () => ddTrackGive(), diary: () => ddDiaryPages(), lines: (p) => ddPageLines(p), close: () => ddDiaryClose(),
     book: () => ddBookOpen(), defs: () => ddStickerDefs().map((s) => ({ id: s.id, pg: s.pg, label: s.label() })), stickers: () => ddStickers(false), reward: (pg) => ddPageReward(pg), pages: DD_PAGES.length,
-    letters: () => ddLetters(), mail: () => openMailbox(), frames: () => ddFrameList(), postcard: (w, h, o) => ddPostcard(w, h, o), voice: (k) => ddVoice(k), chip: () => ddChipSync(), tick: () => ddTick(),
+    letters: () => ddLetters(), mail: () => openMailbox(), journal: (tab) => openJournal(tab), frames: () => ddFrameList(), postcard: (w, h, o) => ddPostcard(w, h, o), voice: (k) => ddVoice(k), chip: () => ddChipSync(), tick: () => ddTick(),
     test: (v) => { prefs.ddTest = !!v; if (typeof barLabels === 'function') barLabels(); ddTick(); }, coinCap: DD_COIN_DAY, coin: DD_COIN, wear: DD_PAGE_WEAR.slice(), b10: DD_B10.slice()
   };
 }
