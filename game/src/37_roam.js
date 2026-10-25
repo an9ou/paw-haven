@@ -247,8 +247,8 @@ function rmValidate(instant) {
 /* ---------------- drawing ---------------- */
 function rmPackPose(d) { const r = rmSt(d); if (r.tw && !r.tw.o.legacy) return 'walk'; return d.sleeping ? 'sleep' : packPose[d.id] || (Math.min(...Object.values(d.stats)) < 25 ? 'sad' : 'idle'); }
 function rmPackInner(d, i) {
-  const r = rmSt(d), pose = rmPackPose(d), ex = exNow(d, pose); r.drawn = pose + '|' + r.face + (ex ? '|' + ex : ''); // v2.13: the face (41_expressions.js)
-  return `<g class="rm-at" transform="${rmXf(r)}"><g class="pd-wander" style="animation-delay:-${i * 2.3}s"><rect x="${DX + 44}" y="${DY + 35}" width="${DW - 88}" height="180" fill="transparent"/><g class="rm-art">${place(dogSVG(d, exOpt(d, pose, { pose, outfit: typeof shSleepOutfit === 'function' ? shSleepOutfit(d, pose) : outfitOf(d), facing: r.face })), DX, DY, DW, DH)}</g></g></g>`;
+  const r = rmSt(d), pose = rmPackPose(d), ex = exNow(d, pose), wet = wetDog(d); r.drawn = pose + '|' + r.face + (ex ? '|' + ex : '') + (wet ? '|wet' : ''); // v2.13: the face (41_expressions.js)
+  return `<g class="rm-at" transform="${rmXf(r)}"><g class="pd-wander" style="animation-delay:-${i * 2.3}s"><rect x="${DX + 44}" y="${DY + 35}" width="${DW - 88}" height="180" fill="transparent"/><g class="rm-art">${place(dogSVG(d, wetOpt(d, exOpt(d, pose, { pose, outfit: typeof shSleepOutfit === 'function' ? shSleepOutfit(d, pose) : outfitOf(d), facing: r.face }))), DX, DY, DW, DH)}</g></g></g>`;
 }
 // the leader's shell: the scene build (full) carries the #dogPos markup, a rebuild of #pack gets an empty shell and rmAdopt moves the live #dogPos in
 function rmLeadSVG(full) {
@@ -267,8 +267,8 @@ function rmAdopt() {
 function rmPaint(d) {
   const el = rmEl(d); if (!el) return; const r = rmSt(d), at = el.querySelector(':scope > .rm-at'); if (at) at.setAttribute('transform', rmXf(r));
   if (d === D()) return;
-  const pose = rmPackPose(d), ex = exNow(d, pose), key = pose + '|' + r.face + (ex ? '|' + ex : ''); if (key === r.drawn) return; r.drawn = key; // v2.13: a face change redraws this dog's art
-  const a = el.querySelector('.rm-art'); if (a) a.innerHTML = place(dogSVG(d, exOpt(d, pose, { pose, outfit: typeof shSleepOutfit === 'function' ? shSleepOutfit(d, pose) : outfitOf(d), facing: r.face })), DX, DY, DW, DH);
+  const pose = rmPackPose(d), ex = exNow(d, pose), wet = wetDog(d), key = pose + '|' + r.face + (ex ? '|' + ex : '') + (wet ? '|wet' : ''); if (key === r.drawn) return; r.drawn = key; // v2.13: a face change redraws this dog's art
+  const a = el.querySelector('.rm-art'); if (a) a.innerHTML = place(dogSVG(d, wetOpt(d, exOpt(d, pose, { pose, outfit: typeof shSleepOutfit === 'function' ? shSleepOutfit(d, pose) : outfitOf(d), facing: r.face }))), DX, DY, DW, DH);
 }
 // back to front by feet y. Only the pack dogs' nodes move (moving the leader's node would drop a rub's pointer capture on #dogHit)
 function rmDepth() {
@@ -582,3 +582,5 @@ function rmExpose() {
 on('game:ready', () => setTimeout(rmExpose, 0));
 on('yard:enter', () => { if (!window.__paw || !window.__paw.rm) rmExpose(); });
 setTimeout(rmExpose, 0);
+// rainy days: a weather change redraws the pack dogs and the Dog Card visitors, wet or dry (rmPaint and dcPaint redraw only a dog whose look changed)
+on('scene:redraw', () => { if (!S || !rmScene()) return; rmDogs().forEach((d) => { if (d !== D()) rmPaint(d); }); if (typeof DC === 'object' && DC && Array.isArray(DC.vis) && typeof dcPaint === 'function') DC.vis.forEach((v) => dcPaint(v)); });

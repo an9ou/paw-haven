@@ -26,9 +26,9 @@ const POSE_FB = { crouch: 'sit', shake: 'happy', cold: 'sad', hot: 'happy', dig:
 function dogArtSafe(key, o) { let sv = art('dog', key, o); if (o.pose && POSE_FB[o.pose] && !sv.includes('pa-pose-' + o.pose)) sv = art('dog', key, Object.assign({}, o, { pose: POSE_FB[o.pose] })); return sv; }
 function renderDog(pose, facing = 'right', force, artOnly) {
   const g = $('#dogArt'); if (!g) return;
-  const o = shSleepOutfit(D(), pose), ex = exNow(D(), pose), k = pose + '|' + facing + '|' + JSON.stringify(o) + '|' + S.dog.key + (ex ? '|' + ex : ''); // v2.4: the Pyjamas at nap time. v2.13: the face (41_expressions.js)
+  const o = shSleepOutfit(D(), pose), ex = exNow(D(), pose), wet = wetDog(D()), k = pose + '|' + facing + '|' + JSON.stringify(o) + '|' + S.dog.key + (ex ? '|' + ex : '') + (wet ? '|wet' : ''); // v2.4: the Pyjamas at nap time. v2.13: the face (41_expressions.js)
   if (k === dogKey && !force) return; dogKey = k;
-  g.innerHTML = place(dogSVG(D(), ex ? { pose, outfit: o, facing, expr: ex } : { pose, outfit: o, facing }), DX, DY, DW, DH);
+  g.innerHTML = place(dogSVG(D(), Object.assign(ex ? { pose, outfit: o, facing, expr: ex } : { pose, outfit: o, facing }, wet ? { wet } : {})), DX, DY, DW, DH); // rainy days: wet in the rain (13_more_dogs.js wetDog)
   if (artOnly) return; // v2.13: a face that starts or ends redraws the art only (exRedraw)
   const fx = $('#dogFx'); if (fx) { fx.classList.toggle('tk-shake', pose === 'shake'); fx.classList.toggle('tk-shiver', pose === 'cold'); }
   const bf = $('#bedFront'); if (bf) bf.style.display = pose === 'sleep' ? '' : 'none';
