@@ -6,7 +6,7 @@
 // step: key, Gerald's pose, text ({dog} = the dog's name), ring target(s) (first one on screen wins), act kinds that advance it
 const GD_STEPS = [
   { k: 'hello', pose: 'wave', t: 'I am Gerald. I live by the river and I know everything. Let me show you around.' },
-  { k: 'feed', pose: 'point', t: 'Tap Feed, then tap a food. {dog} is always a little bit hungry.', ring: ['#bar [data-act=feed]'], on: ['feed'] },
+  { k: 'feed', pose: 'point', t: 'Tap Feed, then tap a food. {dog} is always a little bit hungry.', tp: 'Tap Care, then Feed, then a food. {dog} is always a little bit hungry.', ring: ['#bar [data-act=feed]'], on: ['feed'] },
   { k: 'pet', pose: 'point', t: 'Rub {dog} with your finger or mouse. The tail will tell you when it is enough.', ring: ['#dogHit'], on: ['pet'] },
   { k: 'nap', pose: 'point', t: 'Care has the bath and the nap. Naps refill Energy. Better houses mean faster naps.', ring: ['#bar [data-act=care]'], on: ['nap'] },
   { k: 'map', pose: 'point', t: 'The Map goes everywhere: the park, the river, Market Street. Some places unlock with Bond.', ring: ['#bar [data-act=map]'] },
@@ -141,7 +141,7 @@ function gdTick() {
   if (!fw && i === 4 && (cur.mode === 'map' || cur.mode === 'routes' || cur.mode === 'walk')) return gdGo(5, true); // entering the map (or going straight to a walk) counts
   if (!fw && i === 5 && cur.mode === 'walk') return gdGo(6, true); // a walk started: the card waits for the yard
   const L = gdLayer(), c = $('.gd-card', L), ring = $('.gd-ring', L);
-  const trayRing = fw && cur.mode === 'yard' && modal.hidden && popOpen() && !!gdSteps()[i].tray; L.classList.toggle('gd-tray', trayRing); // over the tray popup (z 15) while it rings a button in it
+  const trayRing = fw && cur.mode === 'yard' && modal.hidden && popOpen() && !!gdSteps()[i].tray; L.classList.toggle('gd-tray', trayRing || (typeof fwBarOpen === 'function' && !!fwBarOpen())); // v2.16: also over the phone bar's Care / More tray (#bar.popon) // over the tray popup (z 15) while it rings a button in it
   if (gdPaused()) { c.hidden = true; gdToasts(false); if (trayRing) gdRing(true); else { ring.hidden = true; gd.ringKey = ''; } return; } // v2.16: with the step's tray open, the ring moves onto the button in the tray
   const was = c.hidden; if (gd.shown !== i) gdRender();
   c.hidden = false; gdPlace(was || gd.force); gd.force = false; gdRing(); gdToasts(c.dataset.at === 'top');

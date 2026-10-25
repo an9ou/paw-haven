@@ -7,7 +7,8 @@
    4. The welcome week (new saves) and the monthly calendar (everyone): a paw stamp for every real day played, rewards claimed with a tap.
       Days never need to be in a row and a missed day never takes anything away. Calendar coins: at most 80 a month.
    5. "See you tomorrow": after 10 minutes of play, or when the page is hidden, the dog names a wish for tomorrow; the next day's first open shows it.
-   6. The lighter phone dock: a save started on v2.16 shows Feed, Play, Care, Walk and Map at Bond 1; Wardrobe and Journal join at Bond 2 with a "new!" tag.
+   6. The phone bar, option C (every phone player): Care, Walk, Map, More; Care opens Feed, Play, Bath & nap above it, More opens Wardrobe and Journal
+      (a "new!" tag until first opened on a v2.16 save). Desktop keeps the seven buttons.
    Under the test harness all of it needs prefs.fwTest (the older suites never see it). The Bond thresholds (BOND_TH) are for everyone. */
 function fwOn() { return !navigator.webdriver || !!prefs.fwTest; }
 const FW = { play: 0, enterAt: 0, nextKey: '', confT: 0 };
@@ -25,8 +26,8 @@ function fwStepText(i) {
   const dog = NAME();
   switch ((FW_STEPS[i] || {}).k) {
     case 'pet': return tt('fw.step_pet', 'Hello, I am Gerald. {dog} is new here and a little shy. Rub {dog} with your finger or the mouse to say hello.', { dog });
-    case 'feed': return tt('fw.step_feed', 'Lovely. Now tap Feed, then a food. {dog} is always a little bit hungry.', { dog });
-    case 'ball': return tt('fw.step_ball', 'Play time! Tap Play, then the Tennis Ball. Drag the ball and let go to throw it.', { dog });
+    case 'feed': return isPhone() ? tt('fw.step_feed_ph', 'Lovely. Now tap Care, then Feed, then a food. {dog} is always a little bit hungry.', { dog }) : tt('fw.step_feed', 'Lovely. Now tap Feed, then a food. {dog} is always a little bit hungry.', { dog });
+    case 'ball': return isPhone() ? tt('fw.step_ball_ph', 'Play time! Tap Care, then Play, then the Tennis Ball. Drag the ball and let go to throw it.', { dog }) : tt('fw.step_ball', 'Play time! Tap Play, then the Tennis Ball. Drag the ball and let go to throw it.', { dog });
     case 'tag': return tt('fw.step_tag', 'Every good dog needs a name tag. Let us make one for {dog}.', { dog });
     case 'walk': return tt('fw.step_walk', 'Last one: a short walk. Tap Walk and try the Sunny Park. Walks earn the most coins.', { dog });
     default: return '';
@@ -114,7 +115,7 @@ function fwNextSync() {
 const FW_GIFTS = [['clothes', 'Bow Tie'], ['clothes', 'Red Bandana'], ['clothes', 'Sailor Collar'], ['toys', 'Squeaky Duck'], ['toys', 'Plush Bone']];
 function fwParty(id) {
   if (!S || !fwOn() || !S.fw) return null; const d = (id && dogById(id)) || null; if (!d || S.fw.b2[d.id]) return null;
-  S.fw.b2[d.id] = 1;
+  S.fw.b2[d.id] = 1; delete S.fw.b2pending[d.id];
   const g = FW_GIFTS.find(([cat, n]) => !owns(cat, n)), gift = g ? g[1] : 'Bone-shaped Biscuit';
   if (g) S.inv[g[0]].push(gift); else S.inv.food[gift] = (S.inv.food[gift] || 0) + 3;
   markDirty();
@@ -122,7 +123,7 @@ function fwParty(id) {
   return {
     html,
     open: (panel) => { fwConfetti(); if (panel) panel.insertAdjacentHTML('afterbegin', `<p class="fw-partyhead">${esc(tt('fw.party_title', 'Bond 2 party for {name}!', { name: d.name }))}</p>`); },
-    after: () => { FW.enterAt = Date.now() + 1200; setTimeout(() => fwPaw(d), 350); } // the morning page waits for the Paw
+    after: () => { FW.enterAt = Date.now() + 3600; setTimeout(() => fwPaw(d), 350); } // the morning page waits for the Paw
   };
 }
 // crayon confetti over the whole stage for about 2.5 s (still bits with Motion off)
@@ -134,9 +135,24 @@ function fwConfetti() {
     h += `<svg class="fw-cf" viewBox="-9 -9 18 18" style="left:${(rnd() * 100).toFixed(1)}%;--dl:${(rnd() * 0.9).toFixed(2)}s;--dx:${(rnd() * 80 - 40).toFixed(0)}px;--r:${(rnd() * 720 - 360).toFixed(0)}deg;--y0:${(rnd() * 30).toFixed(0)}%"><path d="${shape}" fill="${line ? 'none' : c}" stroke="${line ? c : INKG}" stroke-width="${line ? 3.4 : 1.4}" stroke-linecap="round" stroke-linejoin="round"/></svg>`; }
   L.innerHTML = h; stage.appendChild(L); FW.confT = setTimeout(() => L.remove(), 3200);
 }
-function fwPaw(d) {
-  if (!S || cur.mode !== 'yard' || !d || S.dog !== d || busy || S.sleeping || !modal.hidden) return;
-  try { playPose(trickPose('Paw')); const h = dogHeadWorld(); say(tt('fw.paw_say', '*offers a paw* Party!'), h.x, h.y, 2600); setTimeout(() => { if (cur.mode === 'yard' && !busy) endPose(); }, 1900); } catch (e) { /* the yard changed */ }
+// the dog does Paw once the yard is calm (tries every 250 ms for 3 s), and holds it for about 1.9 s: busy keeps the idle loop and the tick off the pose
+function fwPaw(d, tries = 12) {
+  if (!S || !d || S.dog !== d || S.sleeping) return;
+  if (cur.mode !== 'yard' || busy || !modal.hidden || popOpen()) { if (tries > 0) setTimeout(() => fwPaw(d, tries - 1), 250); return; }
+  try {
+    busy = true; if (typeof idleStop === 'function') idleStop(); IDLE.act = null; IDLE.nextAt = performance.now() + 4000; if (typeof rmPause === 'function') rmPause('fwpaw');
+    playPose(trickPose('Paw')); FW.pawAt = Date.now(); const h = dogHeadWorld(); say(tt('fw.paw_say', '*offers a paw* Party!'), h.x, h.y, 2600);
+  } catch (e) { /* the yard changed */ }
+  setTimeout(() => { busy = false; if (typeof rmResume === 'function') rmResume('fwpaw'); if (cur.mode === 'yard') { try { endPose(); } catch (e) { /* gone */ } } }, 1900);
+}
+// a Bond 2 party lost to a reload (S.fw.b2pending): shown on its own on the next calm yard
+function fwPartyPending() {
+  const ids = Object.keys(S.fw.b2pending || {}); if (!ids.length) return;
+  if (cur.mode !== 'yard' || !modal.hidden || popOpen() || busy || Date.now() - FW.enterAt < 1500 || (gdLive() && gdAllowed())) return;
+  const id = ids.find((x) => !levelQueue.some((q) => q.id === x)); if (!id) return;
+  const party = fwParty(id); if (!party) { delete S.fw.b2pending[id]; markDirty(); return; }
+  const p = openModal(`<span class="hl">${esc(tt('core.lu_title', 'Bond level {l}!', { l: 2 }))}</span>`, `<ul class="unlocks">${party.html}</ul>`, { cls: 'celebrate fw-party', foot: `<button class="btn yes big" id="luOk">${esc(tt('core.lu_yay', 'Yay!'))}</button>`, onClose: party.after });
+  party.open(p); audioCue('levelup'); $('#luOk', p).onclick = () => { SFX.boop(700); closeModal(); };
 }
 
 /* ---------------- 6. the phone bar, option C (owner, 25 Oct 2026): Care, Walk, Map, More for every phone player ----------------
@@ -175,14 +191,14 @@ on('phone:layout', () => { if (S || bar.childElementCount) barLabels(); });
 const FW_BAG = [['Bone-shaped Biscuit', 3], ['Carrot Sticks', 2], ['Blueberry Bites', 2]]; // the treat bag: dog-safe snacks only
 const FW_WEL_DAYS = [1, 3, 5, 7], FW_CAL_DAYS = [3, 7, 12, 18, 24], FW_CAL_COIN_CAP = 80;
 const FW_WEL_TOYS = ['Squeaky Duck', 'Rope Tug', 'Plush Bone', 'Snuffle Mat'];
-const FW_WEL_WEAR = ['Flower Crown', 'Rain Hat', 'Chef Hat', 'Sailor Collar', 'Red Bandana'];
-const FW_SEASON_TOYS = { spring: ['Bubble Machine', 'Squeaky Duck', 'Snuffle Mat'], summer: ['Frisbee', 'Paddling Pool', 'Bubble Machine'], autumn: ['Snuffle Mat', 'Rope Tug', 'Treat Cone'], winter: ['Plush Bone', 'Treat Cone', 'Rope Tug'] };
+const FW_WEL_WEAR = ['Chef Hat', 'Rain Hat', 'Tutu', 'Sailor Collar', 'Red Bandana']; // calendar gifts stay at Bond 2 or below, so the Bond unlocks keep their meaning
+const FW_SEASON_TOYS = { spring: ['Squeaky Duck', 'Snuffle Mat', 'Plush Bone'], summer: ['Rope Tug', 'Treat Cone', 'Squeaky Duck'], autumn: ['Snuffle Mat', 'Rope Tug', 'Treat Cone'], winter: ['Plush Bone', 'Treat Cone', 'Rope Tug'] }; // Bond 1-2 toys only
 // the month's outfit (all existing items, one a month, collectable) and the page theme: colour, doodle, postcard base colour
 const FW_MONTHS = [null,
-  { wear: 'Pom-pom Beanie', c: '#CBE0F4', d: 'snow', pc: 'sky' }, { wear: 'Knit Scarf', c: '#F9D0D9', d: 'heart', pc: 'rose' }, { wear: 'Flower Crown', c: '#DDEFD3', d: 'flower', pc: 'mint' },
-  { wear: 'Polka-dot Raincoat', c: '#D3E4F4', d: 'rain', pc: 'sky' }, { wear: 'Bumblebee Suit', c: '#FFF0C2', d: 'flower', pc: 'sun' }, { wear: 'Frog Raincoat', c: '#E3DAF2', d: 'rain', pc: 'lilac' },
-  { wear: 'Sailor Collar', c: '#FFE3A1', d: 'sun', pc: 'sun' }, { wear: 'Heart Sunglasses', c: '#D4ECEE', d: 'sun', pc: 'sky' }, { wear: 'Leaf Beret', c: '#FCD8BC', d: 'leaf', pc: 'rose' },
-  { wear: 'Autumn Scarf', c: '#F9C99E', d: 'leaf', pc: 'sun' }, { wear: 'Cozy Hoodie', c: '#EBDCCB', d: 'leaf', pc: 'lilac' }, { wear: 'Snowflake Snood', c: '#D6E8D2', d: 'snow', pc: 'mint' }];
+  { wear: 'Knit Scarf', c: '#CBE0F4', d: 'snow', pc: 'sky' }, { wear: 'Cozy Hoodie', c: '#F9D0D9', d: 'heart', pc: 'rose' }, { wear: 'Tutu', c: '#DDEFD3', d: 'flower', pc: 'mint' },
+  { wear: 'Polka-dot Raincoat', c: '#D3E4F4', d: 'rain', pc: 'sky' }, { wear: 'Chef Hat', c: '#FFF0C2', d: 'flower', pc: 'sun' }, { wear: 'Yellow Raincoat', c: '#E3DAF2', d: 'rain', pc: 'lilac' },
+  { wear: 'Sailor Collar', c: '#FFE3A1', d: 'sun', pc: 'sun' }, { wear: 'Cowboy Hat', c: '#D4ECEE', d: 'sun', pc: 'sky' }, { wear: 'Leaf Beret', c: '#FCD8BC', d: 'leaf', pc: 'rose' },
+  { wear: 'Autumn Scarf', c: '#F9C99E', d: 'leaf', pc: 'sun' }, { wear: 'Pyjamas', c: '#EBDCCB', d: 'leaf', pc: 'lilac' }, { wear: 'Snowflake Snood', c: '#D6E8D2', d: 'snow', pc: 'mint' }];
 function fwTheme(m) {
   switch (m) {
     case 1: return tt('fw.theme_1', 'Snow and mittens');
@@ -214,22 +230,22 @@ function fwReward(page, n, ym) {
   }
   const M = FW_MONTHS[fwMonthOf(ym)];
   if (n === 3) return { t: 'coins', c: 30 };
-  if (n === 7) { const x = fwPick('toys', FW_SEASON_TOYS[seasonOf(fwMonthOf(ym))] || []); return x ? { t: 'toy', n: x } : { t: 'bag' }; }
+  if (n === 7) { const x = fwPick('toys', FW_SEASON_TOYS[seasonOf(fwMonthOf(ym))] || []); return x ? { t: 'toy', n: x } : { t: 'bag', c: 20 }; } // nothing left to give: a treat bag and coins (inside the cap)
   if (n === 12) return { t: 'coins', c: 50, bag: true };
   if (n === 18) return { t: 'frame', f: ym };
-  return owns('clothes', M.wear) ? { t: 'bag' } : { t: 'cloth', n: M.wear };
+  return owns('clothes', M.wear) ? { t: 'bag', c: 20 } : { t: 'cloth', n: M.wear };
 }
 function fwRewLabel(r) {
   if (r.t === 'food') return tt('fw.rew_food', '{item} x{q}', { item: tItem(r.n), q: r.q });
   if (r.t === 'toy' || r.t === 'cloth') return tItem(r.n);
-  if (r.t === 'bag') return tt('fw.rew_bag', 'A treat bag');
+  if (r.t === 'bag') return r.c ? tt('fw.rew_bag_coins', 'A treat bag and {n, plural, one {# coin} other {# coins}}', { n: r.c }) : tt('fw.rew_bag', 'A treat bag');
   if (r.t === 'coins') return r.bag ? tt('fw.rew_coins_bag', '{n, plural, one {# coin} other {# coins}} and a treat bag', { n: r.c }) : tt('fw.rew_coins', '{n, plural, one {# coin} other {# coins}}', { n: r.c });
-  return r.f === 'name' ? tt('fw.rew_frame_name', 'A photo frame with {name} on it', { name: (S.fw.frames.name || NAME()) }) : tt('fw.rew_frame_month', 'A {month} photo frame', { month: fwMonthName(r.f) });
+  return r.f === 'name' ? tt('fw.rew_frame_name', 'A photo frame with {name} on it', { name: (S.fw.frames.name || NAME()) }) : tt('fw.rew_frame_month', 'Photo frame: {month}', { month: fwMonthName(r.f) });
 }
 function fwRewArt(r) {
   if (r.t === 'food' || r.t === 'toy' || r.t === 'cloth') return art('item', r.n);
   if (r.t === 'coins') return r.bag ? `<span class="fw-two">${ICON('coin')}${fwBagSVG()}</span>` : ICON('coin');
-  if (r.t === 'bag') return fwBagSVG();
+  if (r.t === 'bag') return r.c ? `<span class="fw-two">${fwBagSVG()}${ICON('coin')}</span>` : fwBagSVG();
   return fwFrameSVG(r.f === 'name' ? '#F2C744' : FW_MONTHS[fwMonthOf(r.f)].c);
 }
 // give a reward; returns the toast text. Calendar coins stop at 80 a month (S.fw.cal.coins)
@@ -238,10 +254,10 @@ function fwGive(r, cal) {
   if (r.t === 'toy' && !owns('toys', r.n)) S.inv.toys.push(r.n);
   if (r.t === 'cloth' && !owns('clothes', r.n)) S.inv.clothes.push(r.n);
   if (r.t === 'bag' || r.bag) FW_BAG.forEach(([n, q]) => { S.inv.food[n] = (S.inv.food[n] || 0) + q; });
-  let coins = 0; if (r.t === 'coins' && cal) { coins = Math.max(0, Math.min(r.c, FW_CAL_COIN_CAP - cal.coins)); if (coins) { cal.coins += coins; addCoins(coins, { raw: true }); } }
+  let coins = 0; if ((r.t === 'coins' || (r.t === 'bag' && r.c)) && cal) { coins = Math.max(0, Math.min(r.c, FW_CAL_COIN_CAP - cal.coins)); if (coins) { cal.coins += coins; addCoins(coins, { raw: true }); } }
   if (r.t === 'frame') { if (r.f === 'name') S.fw.frames.name = S.fw.frames.name || NAME(); else if (!S.fw.frames.months.includes(r.f)) S.fw.frames.months.push(r.f); }
   markDirty(); updateHUD();
-  return r.t === 'coins' ? (r.bag ? tt('fw.got_coins_bag', 'Calendar gift: +{n} coins and a treat bag.', { n: coins }) : tt('fw.got_coins', 'Calendar gift: +{n} coins.', { n: coins })) : r.t === 'frame' ? tt('fw.got_frame', 'Calendar gift: {what}. Find it in photo mode.', { what: fwRewLabel(r) }) : tt('fw.got_item', 'Calendar gift: {what}. It is in your bag.', { what: fwRewLabel(r) });
+  return r.t === 'coins' || (r.t === 'bag' && r.c) ? (r.bag || r.t === 'bag' ? tt('fw.got_coins_bag', 'Calendar gift: +{n} coins and a treat bag.', { n: coins }) : tt('fw.got_coins', 'Calendar gift: +{n} coins.', { n: coins })) : r.t === 'frame' ? tt('fw.got_frame', 'Calendar gift: {what}. Find it in photo mode.', { what: fwRewLabel(r) }) : tt('fw.got_item', 'Calendar gift: {what}. It is in your bag.', { what: fwRewLabel(r) });
 }
 function fwClaim(page, n) {
   if (!S || !S.fw) return false;
@@ -388,7 +404,7 @@ function fwTick() {
   fwExpose();
   if (!S || !S.fw || !fwOn()) { const el = $('#fwNext'); if (el) el.hidden = true; return; }
   if (['title', 'adopt'].includes(cur.mode) || !titleEl.hidden) return;
-  fwStamp(); fwNextSync();
+  fwStamp(); fwNextSync(); fwPartyPending();
   if (document.visibilityState !== 'hidden' && ['walk', 'fetch', 'toy', 'bath', 'yard', 'market', 'map', 'shelter', 'japan', 'garden', 'kitchen', 'routes'].includes(cur.mode)) FW.play++; // seconds of real play this session
   if (FW.play >= 600 && S.fw.named !== localISO()) fwWishName(true);
   fwMorningTry();
@@ -399,7 +415,7 @@ on('game:ready', () => { FW.enterAt = Date.now(); FW.play = 0; fwDockApply(); })
 function fwExpose() {
   if (!window.__paw || window.__paw.fw) return;
   window.__paw.fw = {
-    on: () => fwOn(), state: () => S && S.fw, steps: FW_STEPS.length, stepText: (i) => fwStepText(i), stamp: () => fwStamp(), claim: (pg, n) => fwClaim(pg, n),
+    items: () => { const o = {}; TOYS.concat(CLOTHES).forEach((x) => { o[x.n] = x.bond; }); FOOD.forEach((x) => { o[x.n] = 1; }); return o; }, on: () => fwOn(), pawAt: () => FW.pawAt || 0, state: () => S && S.fw, steps: FW_STEPS.length, stepText: (i) => fwStepText(i), stamp: () => fwStamp(), claim: (pg, n) => fwClaim(pg, n),
     reward: (pg, n, ym) => fwReward(pg, n, ym), open: (m) => fwCalOpen(!!m), html: (m) => fwCalHTML(!!m), next: (L) => fwNextText(L), dock: () => fwDockApply(),
     wish: (loud) => fwWishName(!!loud), tag: () => fwTagOpen(), confetti: () => fwConfetti(), frames: () => fwFrameList(), postcard: (w, h, o) => fwPostcard(w, h, o),
     test: (v) => { prefs.fwTest = !!v; fwDockApply(); fwNextSync(); }, bond: (n) => addBond(n, { raw: true }),

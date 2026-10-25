@@ -40,6 +40,7 @@ run('v216_first_week', async (t) => {
   await fresh();
   ok(await cardAt('pet'), 'Gerald starts with the pet step on a new save');
   let c = await card(); ok(/Rub .* to say hello/.test(c.txt) && (await ringFor()) === '#dogHit', 'step 1: pet, the crayon ring on the dog: ' + c.txt);
+  await t.until(() => { const w = window.__paw.S.fw.wel; return !!w && w.days.length === 1; }, null, 4000); // the stamp comes from the 1 s tick
   s = await t.S(); ok(s.guide.fw === 1 && s.fw.fresh && s.fw.dock === 1 && s.fw.wel && s.fw.wel.days.length === 1, 'the save is marked fresh with a welcome week (day 1 stamped)');
   await shot('guided_start_desktop');
   const b0 = (await t.S()).bond.pts;
@@ -83,7 +84,9 @@ run('v216_first_week', async (t) => {
   s = await t.S(); ok(s.inv.clothes.includes('Bow Tie') && s.fw.b2[s.dog.id] === 1 && await ev(() => /A party gift: Bow Tie!/.test(document.querySelector('.fw-gift').textContent)), 'a free Bow Tie from the Boutique list, once for this dog');
   await shot('bond2_party_desktop');
   await t.p.click('#luOk');
-  ok(await t.until(() => { const fx = document.getElementById('dogFx'), a = document.querySelector('#dogArt svg'); return (fx && fx.classList.contains('tk-paw')) || (a && /pa-pose-paw/.test(a.getAttribute('class') || '')); }, null, 4000), 'then the dog does Paw');
+  ok(await t.until(() => window.__paw.fw.pawAt() > 0, null, 5000), 'then the dog does Paw (once the yard is calm)');
+  ok(await t.until(() => { const fx = document.getElementById('dogFx'), a = document.querySelector('#dogArt svg'); return (fx && fx.classList.contains('tk-paw')) || (a && /pa-pose-paw/.test(a.getAttribute('class') || '')); }, null, 1500), 'and the Paw pose is on screen');
+  await t.sleep(900); ok(await ev(() => { const fx = document.getElementById('dogFx'), a = document.querySelector('#dogArt svg'); return (fx && fx.classList.contains('tk-paw')) || (a && /pa-pose-paw/.test(a.getAttribute('class') || '')); }), 'and still held after about a second');
   ok(await t.waitToast(/That was Biscuit's first day!/, 6000), 'the first-day toast');
 
   sec('5. the morning page after the first day: the welcome week and the month, side by side');
@@ -111,6 +114,7 @@ run('v216_first_week', async (t) => {
   const nx = await ev(() => [1, 2, 3, 4, 9].map((L) => window.__paw.fw.next(L)));
   ok(/^Bond 2: learns Paw \+ \d+ new outfits$/.test(nx[0]) && /^Bond 3: learns Lie Down/.test(nx[1]) && /Roll Over/.test(nx[2]) && /Spin/.test(nx[3]) && /^Bond 10: a signature trick/.test(nx[4]), 'next unlocks come from TRICKS and the shop: ' + nx.join(' | '));
   ok(await ev(() => window.__paw.fw.next(10) === ''), 'nothing after Bond 10');
+  ok(await ev(() => { const P = window.__paw, T = P.fw.items(); const bondOf = (r) => r.n ? (T[r.n] || 9) : 0; const all = []; for (let m = 1; m <= 12; m++) { const ym = '2026-' + String(m).padStart(2, '0'); [7, 24].forEach((n) => all.push(P.fw.reward('cal', n, ym))); } [3, 5].forEach((n) => all.push(P.fw.reward('wel', n))); return all.every((r) => bondOf(r) <= 2); }), 'every calendar and welcome gift is a Bond 1-2 item (Bond unlocks keep their meaning)');
 
   sec('7. the calendars: rewards, the 80-coin cap, a new month, days need not be in a row');
   await quiet();
@@ -120,7 +124,7 @@ run('v216_first_week', async (t) => {
   await ev(() => window.__paw.fw.open(false)); await t.p.waitForSelector('[data-fwclaim="cal:3"]');
   for (const n of [3, 7, 12, 18, 24]) { await t.p.click(`[data-fwclaim="cal:${n}"]`); await t.until((n) => !document.querySelector(`[data-fwclaim="cal:${n}"]`), n, 3000); }
   s = await t.S();
-  const outfit = ['Pom-pom Beanie', 'Knit Scarf', 'Flower Crown', 'Polka-dot Raincoat', 'Bumblebee Suit', 'Frog Raincoat', 'Sailor Collar', 'Heart Sunglasses', 'Leaf Beret', 'Autumn Scarf', 'Cozy Hoodie', 'Snowflake Snood'][mo - 1];
+  const outfit = ['Knit Scarf', 'Cozy Hoodie', 'Tutu', 'Polka-dot Raincoat', 'Chef Hat', 'Yellow Raincoat', 'Sailor Collar', 'Cowboy Hat', 'Leaf Beret', 'Autumn Scarf', 'Pyjamas', 'Snowflake Snood'][mo - 1];
   ok(s.coins - coins0 === 80 && s.fw.cal.coins === 80, `3 days 30 + 12 days 50 coins = 80 (${s.coins - coins0})`);
   ok(s.fw.cal.got.length === 5 && s.fw.frames.months.includes(ym) && s.inv.clothes.includes(outfit) && (s.inv.food['Carrot Sticks'] || 0) >= 2, `7 days a seasonal toy, 12 a treat bag, 18 the ${ym} frame, 24 the month's outfit (${outfit})`);
   ok(await ev(() => document.querySelectorAll('.fw-monp .fw-rew.got').length === 5), 'all five show Got it');
@@ -139,7 +143,7 @@ run('v216_first_week', async (t) => {
   ok(s.fw.wel.days.length === 4 && s.fw.wel.days[0] === '2026-10-01', 'days with gaps all count, today is added (4 of 7)');
   await t.patch({ fw: { wel: { days: ['2026-10-01', '2026-10-04', '2026-10-09', '2026-10-12', '2026-10-15', '2026-10-20', '2026-10-25'], got: [1] } } });
   for (const n of [3, 5, 7]) ok(await ev((n) => window.__paw.fw.claim('wel', n), n), 'welcome day ' + n + ' claimed');
-  s = await t.S(); ok(s.inv.toys.includes('Squeaky Duck') && s.inv.clothes.includes('Flower Crown') && s.fw.frames.name === 'Mochi', 'day 3 a toy (Squeaky Duck), day 5 an outfit (Flower Crown), day 7 a photo frame with the dog\'s name');
+  s = await t.S(); ok(s.inv.toys.includes('Squeaky Duck') && s.inv.clothes.includes('Chef Hat') && s.fw.frames.name === 'Mochi', 'day 3 a toy (Squeaky Duck), day 5 an outfit (Chef Hat, Bond 2), day 7 a photo frame with the dog\'s name');
   const frames = await ev(() => window.__paw.fw.frames().map((f) => f.k));
   ok(frames.includes('fwname') && frames.includes('fwm202609'), 'photo mode lists the new frames: ' + frames.join(', '));
   ok(await ev(() => { const s = window.__paw.fw.postcard(900, 600, { color: 'fwname', dogs: ['Mochi'] }); return /fw-frame/.test(s) && /Mochi/.test(s); }), 'the name frame draws the name on the postcard');
@@ -187,12 +191,14 @@ run('v216_first_week', async (t) => {
   await t.p.setViewportSize({ width: 393, height: 852 }); await t.sleep(500);
   // the guide on the phone: pet, then Care is ringed, then Feed inside the Care tray, then the food
   await t.pet(() => window.__paw.S.guide.step >= 1); await cardAt('feed');
+  ok(/tap Care, then Feed, then a food/i.test((await card()).txt), 'phone wording: Tap Care, then Feed, then a food');
   ok(await t.until(() => { const r = document.querySelector('#gdLayer .gd-ring'), b = document.querySelector('#bar [data-act=caremenu]').getBoundingClientRect(); if (!r || r.hidden) return false; const q = r.getBoundingClientRect(); return q.left <= b.left + 2 && q.right >= b.right - 2 && q.top <= b.top + 2; }, null, 4000), 'the feed step rings Care first');
   await shot('dock_c_guide_care');
   await t.p.locator('#bar [data-act=caremenu]').tap(); ok(await popOpen('caremenu'), 'Care opens its tray');
   ok(await ev(() => [...document.querySelectorAll('#bar .barpop[data-pop=caremenu] .act')].map((b) => b.dataset.act + ':' + b.textContent.trim()).join(',') === 'feed:Feed,play:Play,care:Bath & nap'), 'the Care tray: Feed, Play, Bath & nap');
   ok(await t.until(() => { const r = document.querySelector('#gdLayer .gd-ring'), b = document.querySelector('#bar [data-act=feed]').getBoundingClientRect(); if (!r || r.hidden) return false; const q = r.getBoundingClientRect(); return q.left <= b.left + 2 && q.right >= b.right - 2 && q.bottom >= b.bottom - 2; }, null, 4000), 'with the tray open the ring moves onto Feed');
   ok(await ev(() => { const p = document.querySelector('#bar .barpop[data-pop=caremenu]').getBoundingClientRect(), bar = document.getElementById('bar').getBoundingClientRect(); return p.bottom <= bar.top + 1 && p.left >= 0 && p.right <= window.innerWidth && [...document.querySelectorAll('#bar .barpop[data-pop=caremenu] .act')].every((b) => b.getBoundingClientRect().height >= 44); }), 'the tray sits above the bar, on screen, 44 px buttons');
+  ok(await ev(() => +getComputedStyle(document.getElementById('gdLayer')).zIndex > +getComputedStyle(document.getElementById('bar')).zIndex), 'the guide layer sits over the open Care tray');
   await shot('dock_c_care');
   await t.p.locator('#bar [data-act=caremenu]').tap(); ok(!(await popOpen('caremenu')), 'Care again closes it');
   await t.p.locator('#bar [data-act=caremenu]').tap(); await t.p.touchscreen.tap(200, 300); ok(await t.until(() => document.querySelector('#bar .barpop[data-pop=caremenu]').hidden, null, 2000), 'a tap outside closes it');
@@ -200,6 +206,7 @@ run('v216_first_week', async (t) => {
   ok(await t.until(() => { const r = document.querySelector('#gdLayer .gd-ring'); return r && !r.hidden && /^#dock/.test(r.dataset.for); }, null, 3000), 'then the ring is on a food');
   await t.retryUntil(() => ev(() => { const b = document.querySelector('[data-food="Basic Kibble"]'); if (b) b.click(); }), () => window.__paw.S.guide.step >= 2); await t.waitPop(false); await t.calm();
   ok(await cardAt('ball'), 'the ball step');
+  ok(/tap Care, then Play, then the Tennis Ball/i.test((await card()).txt), 'the phone wording follows the ring (Care, then Play)');
   await t.dock('play'); await t.p.locator('#bar [data-act=play]').tap(); await t.waitPop(true);
   await t.p.locator('[data-play="ball:Tennis Ball"]').tap(); await t.until(() => !!(window.__paw.bl && window.__paw.bl.on), null, 4000);
   await ev(() => window.__paw.bl.throwV(800, -600)); await ev(() => window.__paw.bl.sim(14));
@@ -237,6 +244,16 @@ run('v216_first_week', async (t) => {
   // the "..." menu reaches the calendar
   await ev(() => document.getElementById('moreBtn').click()); ok(await t.until(() => !!document.getElementById('mmCal'), null, 3000), 'the phone menu has a Calendar button');
   await t.p.click('#mmCal'); ok(await t.until(() => !!document.querySelector('#modal .fw-calpop'), null, 3000), 'which opens the calendar'); await t.closeX();
+  await t.ctx.close();
+
+  sec('9b. a reload between the Bond 2 level-up and its card keeps the party');
+  await fresh(); await t.p.click('#gdLayer .gd-skip'); await quiet(); await t.until(() => !!document.querySelector('#modal .fw-calpop'), null, 6000); await t.closeX(); await t.modalGone();
+  await ev(() => { const P = window.__paw; P.S.dogs[0].bond = { level: 1, pts: 55 }; P.fw.open(false); }); await t.p.waitForSelector('#modal .fw-calpop'); // an open sheet: the level-up card waits
+  await ev(() => { window.__paw.fw.bond(6); window.__paw.saveNow(); });
+  ok(await ev(() => window.__paw.S.fw.b2pending[window.__paw.S.dog.id] === 1), 'the pending party is saved');
+  await t.reloadKeepingSave(); await t.p.waitForSelector('#tContinue'); await t.p.click('#tContinue'); await t.untilMode('yard');
+  ok(await t.until(() => !!document.querySelector('#modal .panel.fw-party #luOk'), null, 9000), 'after the reload the party shows on the calm yard');
+  await t.p.click('#luOk'); ok(await t.until(() => window.__paw.fw.pawAt() > 0, null, 5000) && !(await ev(() => Object.keys(window.__paw.S.fw.b2pending).length)), 'with its Paw, and the flag is cleared');
   await t.ctx.close();
 
   sec('10. phones: an old save gets the same bar, desktop keeps seven buttons, other languages fit');

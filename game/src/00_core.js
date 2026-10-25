@@ -866,6 +866,7 @@ function v216Fields(s) {
   if (!v28Obj(s.fw)) s.fw = { fresh: false };
   const f = s.fw, arr = (o, k) => { if (!Array.isArray(o[k])) o[k] = []; };
   if (typeof f.fresh !== 'boolean') f.fresh = false;
+  if (!v28Obj(f.b2pending)) f.b2pending = {}; // dogs whose Bond 2 party is still to come (a reload between the level-up and its card)
   if (!v28Obj(f.b2)) { f.b2 = {}; (s.dogs || []).forEach((d) => { if (d && d.id && d.bond && d.bond.level >= 2) f.b2[d.id] = 1; }); }
   if (f.wel !== null && !v28Obj(f.wel)) f.wel = f.fresh ? { days: [], got: [] } : null;
   if (f.wel) { arr(f.wel, 'days'); arr(f.wel, 'got'); }
@@ -1206,7 +1207,7 @@ let levelQueue = [];
 function bondMult() { return BOOST.bond * (S.dog.key === 'mutt' ? 1.1 : 1) * (glowing() ? 1.2 : 1) * (S.gameMin < S.pupUntil ? 2 : 1); }
 function addBond(base, opts = {}) {
   const n = Math.max(1, Math.round(base * (opts.raw ? 1 : bondMult()))); S.bond.pts += n; markDirty();
-  while (S.bond.level < 10 && S.bond.pts >= BOND_TH[S.bond.level]) { S.bond.level++; levelQueue.push({ l: S.bond.level, who: NAME(), id: S.dog.id }); SFX.fanfare(); } // v2.7: who levelled up (pack care gives a pack dog its Bond)
+  while (S.bond.level < 10 && S.bond.pts >= BOND_TH[S.bond.level]) { S.bond.level++; levelQueue.push({ l: S.bond.level, who: NAME(), id: S.dog.id }); SFX.fanfare(); if (S.bond.level === 2 && S.fw && S.fw.b2pending && !S.fw.b2[S.dog.id]) S.fw.b2pending[S.dog.id] = 1; } // v2.16: the Bond 2 party survives a reload (b2pending) // v2.7: who levelled up (pack care gives a pack dog its Bond)
   updateHUD(); setTimeout(maybeLevelUp, 400); return n;
 }
 function dailyCheck() {
