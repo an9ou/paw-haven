@@ -23,7 +23,16 @@ function dogPoseNow() {
   return 'idle';
 }
 const POSE_FB = { crouch: 'sit', shake: 'happy', cold: 'sad', hot: 'happy', dig: 'eat', squat: 'sit', leglift: 'sit' };
-function dogArtSafe(key, o) { let sv = art('dog', key, o); if (o.pose && POSE_FB[o.pose] && !sv.includes('pa-pose-' + o.pose)) sv = art('dog', key, Object.assign({}, o, { pose: POSE_FB[o.pose] })); return sv; }
+// v2.16.1: the finished dog drawings are kept (key + every option: breed, coat, pose, outfit, facing, face, age, sparkle...), so a pose a dog had before
+// is not drawn again. PawArt.dog is a pure function of its arguments (no random, no ids), so the string is the same one it would draw.
+const DOG_ART_MEMO = new Map(), DOG_ART_MEMO_MAX = 240;
+function dogArtSafe(key, o) {
+  let k = null; try { k = key + '|' + JSON.stringify(o); } catch (e) { k = null; }
+  if (k && DOG_ART_MEMO.has(k)) { const v = DOG_ART_MEMO.get(k); DOG_ART_MEMO.delete(k); DOG_ART_MEMO.set(k, v); return v; }
+  let sv = art('dog', key, o); if (o.pose && POSE_FB[o.pose] && !sv.includes('pa-pose-' + o.pose)) sv = art('dog', key, Object.assign({}, o, { pose: POSE_FB[o.pose] }));
+  if (k && !/>\?<\/text>/.test(sv)) { DOG_ART_MEMO.set(k, sv); if (DOG_ART_MEMO.size > DOG_ART_MEMO_MAX) DOG_ART_MEMO.delete(DOG_ART_MEMO.keys().next().value); } // never keep the "?" placeholder (art not loaded yet)
+  return sv;
+}
 function renderDog(pose, facing = 'right', force, artOnly) {
   const g = $('#dogArt'); if (!g) return;
   const o = shSleepOutfit(D(), pose), ex = exNow(D(), pose), k = pose + '|' + facing + '|' + JSON.stringify(o) + '|' + S.dog.key + (ex ? '|' + ex : ''); // v2.4: the Pyjamas at nap time. v2.13: the face (41_expressions.js)

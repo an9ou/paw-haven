@@ -48,11 +48,11 @@ require('./test_lib').run('v29_polish', async (t) => {
   ok(await ev(() => document.getElementById('twPickNote').textContent) === '3 of 4 picked.', 'and the note counts: 3 of 4 picked.');
   await t.closeX(); await t.modalGone();
 
-  sec('3: desktop yard clipboard stays visible with a tray open');
+  sec('3: the desktop missions clipboard (top bar since v2.16.1) stays visible with a tray open');
   await t.home('yard'); await t.calm();
   for (const a of ['feed', 'play', 'care']) {
     await p().click(`[data-act=${a}]`); ok(await t.waitPop(true), `${a} tray is open`);
-    ok(await ev(() => { const g = document.getElementById('msCardG'); return !!g && getComputedStyle(g).visibility !== 'hidden'; }), `${a} tray: the clipboard is still there`);
+    ok(await ev(() => { const g = document.getElementById('msBtn'); return !!g && !g.hidden && getComputedStyle(g).visibility !== 'hidden' && g.getBoundingClientRect().width >= 44; }), `${a} tray: the clipboard is still there`);
     await p().click(`[data-act=${a}]`); await t.waitPop(false);
   }
 

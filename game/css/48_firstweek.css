@@ -120,6 +120,29 @@ html[data-layout="phone"] .fw-mgrid{max-width:300px;gap:3px;margin:4px auto}
 html[data-layout="phone"] .fw-wdays{gap:4px;max-width:340px}
 /* narrow phones (360 px): the next-unlock line drops the Next chip and may take two lines, as the translations do (51_i18n_room.css) */
 @media (max-width:380px){html[data-layout="phone"] .fw-next .fw-nl{display:none}html[data-layout="phone"] .fw-next{white-space:normal;text-overflow:clip;font-size:15px;line-height:1.02;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}}
+/* v2.16.1 owner fix: on desktop the calendar fills the sheet. The sheet grows (up to 1240 px) and the month's days are big crayon circles (up to 96 px)
+   spread across the page. With the welcome week: the week is a card on the left (its seven days in two rows of big circles, the gifts below) and the month
+   fills the rest, its gifts in two columns under the grid. Without it: the month's gifts sit in a column beside the grid. Phones keep the v2.16 sizes;
+   a wide phone-layout box (the 684 px site box, a tablet) gets a wider grid, centred. */
+html:not([data-layout="phone"]) .panel.fw-calpop{width:min(1240px,100%);max-width:none}
+html:not([data-layout="phone"]) .fw-calpop .fw-pages{flex-wrap:nowrap;align-items:flex-start;gap:16px}
+html:not([data-layout="phone"]) .fw-calpop .fw-page{box-sizing:border-box;padding:12px 22px 16px}
+html:not([data-layout="phone"]) .fw-calpop .fw-welp{flex:0 0 416px}
+html:not([data-layout="phone"]) .fw-calpop .fw-monp{flex:1 1 0;min-width:0}
+html:not([data-layout="phone"]) .fw-calpop .fw-page h3{font-size:32px}
+html:not([data-layout="phone"]) .fw-calpop .fw-wdays{grid-template-columns:repeat(4,minmax(0,84px));justify-content:space-between;max-width:none;gap:12px;margin:10px 0 12px}
+html:not([data-layout="phone"]) .fw-calpop .fw-mgrid{grid-template-columns:repeat(7,minmax(0,96px));justify-content:space-between;max-width:none;gap:10px;margin:10px 0}
+html:not([data-layout="phone"]) .fw-calpop .fw-wd,
+html:not([data-layout="phone"]) .fw-calpop .fw-md{font-size:26px;border-width:2.5px;color:var(--ink)}
+html:not([data-layout="phone"]) .fw-calpop .fw-dot{width:16px;height:16px;right:-2px;top:-2px;border-width:2px}
+html:not([data-layout="phone"]) .fw-calpop .fw-border{height:40px}
+html:not([data-layout="phone"]) .fw-calpop .fw-theme{font-size:23px}
+html:not([data-layout="phone"]) .fw-calpop .fw-welp ~ .fw-monp > .fw-rews{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:14px}
+html:not([data-layout="phone"]) .fw-calpop .fw-monp:only-child{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,34%);column-gap:26px;align-items:start}
+html:not([data-layout="phone"]) .fw-calpop .fw-monp:only-child > :not(.fw-mgrid):not(.fw-rews){grid-column:1/-1}
+html:not([data-layout="phone"]) .fw-calpop .fw-monp:only-child > .fw-mgrid{grid-column:1}
+html:not([data-layout="phone"]) .fw-calpop .fw-monp:only-child > .fw-rews{grid-column:2;margin-top:10px}
+@media (min-width:600px){html[data-layout="phone"] .fw-calpop .fw-mgrid{max-width:470px;gap:6px}html[data-layout="phone"] .fw-calpop .fw-wdays{max-width:470px;gap:8px}html[data-layout="phone"] .fw-calpop .fw-md,html[data-layout="phone"] .fw-calpop .fw-wd{font-size:17px}}
 
 /* ---- v2.17 the daily gift (47_firstweek.js fwDgHTML): today's gift first on the sheet, a tiny gift icon on each day circle, the special-day circles ---- */
 .fw-dg{display:grid;grid-template-columns:56px minmax(0,1fr) auto;align-items:center;gap:10px;padding:8px 12px;border:2.5px dashed var(--ink);border-radius:14px 10px 16px 11px;background:var(--w-yellow)}

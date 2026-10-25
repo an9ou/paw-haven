@@ -44,45 +44,16 @@ async function suite(t, W, H) {
   ok(ch.c.every((c) => c.fs >= 15 && c.b[3] - c.b[1] >= 43.5 && c.b[2] - c.b[0] >= 43.5) && ch.sw === ch.iw, `${tag}: 15 px labels, 44 px chips, no sideways scroll`);
   await t.SH('painter_' + tag); await t.closeX(); await t.modalGone();
 
-  sec(`${tag}: 3 the clipboard stays tappable under a tray`);
+  sec(`${tag}: 3 the missions: no clipboard in the yard, a Missions button with the count in the "..." menu (v2.16.1)`);
   await t.home('yard'); await t.calm(); await t.freezeMotion(true);
-  await t.until(() => !!document.querySelector('#msCardG > rect'), null, 8000);
-  const clip = () => ev(() => { const g = document.getElementById('msCardG'), r = g && g.querySelector(':scope > rect'); if (!r) return null; const q = (s) => { const e = document.querySelector(s); return e ? R(e) : null; };
-    const b = R(r), cx = (b[0] + b[2]) / 2, cy = (b[1] + b[3]) / 2, top = document.elementFromPoint(cx, cy); return { vis: getComputedStyle(g).visibility, b, w: b[2] - b[0], h: b[3] - b[1], dog: q('#dogHit'), mail: q('#mailboxG > rect') || q('#sceneG [data-hot=mailbox]'), on: !!top && !!top.closest('#msCardG'), topEl: top ? (top.tagName + '#' + top.id + '.' + String(top.className.baseVal != null ? top.className.baseVal : top.className).slice(0, 30) + ' in ' + ((top.closest('[id]') || {}).id || '')) : null, iw: innerWidth, cx, cy }; });
-  const settle = async () => { let last = ''; for (let i = 0; i < 40; i++) { const cur = JSON.stringify(await ev(() => { const r = document.querySelector('#msCardG > rect'); return r ? R(r).map(Math.round) : null; })); if (cur === last) return; last = cur; await t.sleep(80); } }; // the scene stops resizing: two equal reads in a row
-  const idle = await clip(); ok(idle && idle.w >= 47.5 && idle.h >= 47.5, `${tag}: no tray: the tap rect is 48 px (${idle && Math.round(idle.w)}x${idle && Math.round(idle.h)})`);
-  for (const a of ['feed', 'play', 'care']) {
-    await p.locator(`#bar [data-act=${a}]`).tap(); ok(await t.waitPop(true), `${tag}: ${a} tray opens`);
-    ok(await t.until(() => { const r = document.querySelector('#msCardG > rect'); if (!r) return false; const b = r.getBoundingClientRect(); return b.width >= 43.5 && b.height >= 43.5; }, null, 4000), `${tag}: ${a} tray: the tap rect grows back to 44 px as the scene shrinks`);
-    await settle(); const c = await clip();
-    ok(c && c.vis !== 'hidden', `${tag}: ${a} tray: the clipboard is not hidden`);
-    ok(c && c.w >= 43.5 && c.h >= 43.5, `${tag}: ${a} tray: tap rect ${c && Math.round(c.w)}x${c && Math.round(c.h)} >= 44`);
-    ok(c && c.b[0] >= 0 && c.b[2] <= c.iw && !t.hitR(c.b, c.dog) && !t.hitR(c.b, c.mail), `${tag}: ${a} tray: on screen, clear of #dogHit and the mailbox`);
-    ok(c && (c.on || /^SECTION#dock/.test(c.topEl)), `${tag}: ${a} tray: only the tray's own backdrop sits on it (${c && c.topEl})`);
-    if (a === 'feed') await t.SH('clipboard_tray_' + tag);
-    await p.touchscreen.tap(c.cx, c.cy);
-    ok(await t.until(() => !!document.querySelector('#modal:not([hidden]) .panel.ms-pop'), null, 5000), `${tag}: ${a} tray: a tap opens the Missions sheet`);
-    ok(await t.waitPop(false), `${tag}: ${a} tray: and the tray closes (like any tap outside it)`);
-    await t.closeX(); await t.modalGone();
-    await t.until(() => { const r = document.querySelector('#msCardG > rect'); if (!r) return false; const b = r.getBoundingClientRect(); return b.width >= 47.5; }, null, 4000);
-  }
-  // v2.9 review: the camera slides the clipboard to the edge (the leader by the dog house with the Feed tray open). The tap box stays fully on screen over the clipboard, or switches off
-  await t.dock('feed'); await p.locator('#bar [data-act=feed]').tap(); ok(await t.waitPop(true), `${tag}: feed tray again`); await settle();
-  const slide = await ev(() => new Promise((res) => {
-    const svg = document.querySelector('#view > svg.world'), v0 = svg.getAttribute('viewBox'), out = [];
-    const xs = [0, 60, 120, 160, 180, 190, 200, 210, 220, 240, 260, 300]; let i = 0;
-    const step = () => {
-      if (i) { const b = document.querySelector('#msCardG > rect').getBoundingClientRect(), a = document.querySelector('#msCardG').getBoundingClientRect(), vr = document.getElementById('view').getBoundingClientRect(); out.push({ x: xs[i - 1], l: Math.round(b.left), r: Math.round(b.right), w: Math.round(b.width), h: Math.round(b.height), art: [Math.round(a.left), Math.round(a.right)], vl: Math.max(0, vr.left), vr: Math.min(innerWidth, vr.right) }); }
-      if (i === xs.length) { svg.setAttribute('viewBox', v0); return res(out); }
-      const v = v0.split(' ').map(Number); v[0] = xs[i++]; svg.setAttribute('viewBox', v.join(' ')); requestAnimationFrame(() => requestAnimationFrame(step));
-    };
-    step();
-  }));
-  const badSlide = slide.filter((o) => !(o.w === 0 || (o.l >= o.vl - 0.5 && o.r <= o.vr + 0.5 && o.w >= 43.5 && o.h >= 43.5 && o.r > o.art[0] && o.l < o.art[1])));
-  ok(badSlide.length === 0, `${tag}: as the camera slides, the clipboard tap box is either fully on screen (44 px, over the clipboard) or off ${badSlide.length ? JSON.stringify(badSlide) : slide.map((o) => o.x + ':' + o.l + '-' + o.r).join(' ')}`);
-  ok(slide.some((o) => o.w === 0) && slide.some((o) => o.w >= 43.5 && o.x >= 120), `${tag}: it moves with the camera and switches off only at the edge`);
-  await p.locator('#trayX').tap().catch(() => {}); await t.waitPop(false);
-  const after = await clip(); ok(after && after.w >= 47.5 && after.h >= 47.5, `${tag}: tray closed: the 48 px rect is back`);
+  ok(await ev(() => !document.querySelector('#msCardG') && (!document.querySelector('#msBtn') || getComputedStyle(document.querySelector('#msBtn')).display === 'none')), `${tag}: no clipboard in the scene, no top-bar clipboard on a phone`);
+  await p.locator('#moreBtn').tap(); ok(await t.until(() => !!document.querySelector('#modal:not([hidden]) #mmMs'), null, 4000), `${tag}: the "..." menu lists the missions`);
+  const mm = await ev(() => { const b = document.getElementById('mmMs'), r = b.getBoundingClientRect(); return { w: r.width, h: r.height, txt: b.textContent.replace(/\s+/g, ' ').trim(), n: window.__paw.S.missions.list.filter((x) => x.done).length }; });
+  ok(mm.h >= 43.5 && mm.w >= 43.5 && mm.txt.includes(mm.n + '/3') && /Daily missions/.test(mm.txt), `${tag}: the Missions button, 44 px, with its count: ${mm.txt} (${Math.round(mm.w)}x${Math.round(mm.h)})`);
+  await t.SH('missions_menu_' + tag);
+  await p.locator('#mmMs').tap();
+  ok(await t.until(() => !!document.querySelector('#modal:not([hidden]) .panel.ms-pop'), null, 5000), `${tag}: a tap opens the Missions sheet`);
+  await t.closeX(); await t.modalGone();
 
   sec(`${tag}: 4 the bow pose`);
   await t.freezeMotion(false); // with Motion off the scene runs its three phases in 60 / 120 / 200 ms

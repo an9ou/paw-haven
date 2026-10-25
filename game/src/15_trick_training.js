@@ -30,7 +30,7 @@ function openTraining(tab) {
   if (tab) TRN.tab = tab;
   const tp = $('#trainPanel'); tp.hidden = false; stage.classList.add('training');
   if (isPhone()) toasts.replaceChildren(); // v2.15.1 (owner): older notes (new mail, hints) leave the scene so the dog shows; training's own toasts still come
-  if (!isPhone()) { tp.style.top = (hud.offsetHeight + 10) + 'px'; const w = $('#view > svg.world'); if (w) w.classList.add('trainzoom'); }
+  if (!isPhone()) { tp.style.top = (hud.offsetHeight + 10) + 'px'; const w = $('#view > svg.world'); if (w) { w.classList.add('trainzoom'); if (typeof grPanVars === 'function') grPanVars(w); } }
   else setTimeout(() => { camApply(camCx); pkHotsRefit(); }, 30);
   if (PUBLIC_AUDIENCE.includes(S.place)) drawAudience(true);
   renderTraining();
