@@ -27,12 +27,16 @@ function openJournal(tab) {
   if (jTab === 'coats' || jTab === 'family' || jTab === 'profile') jrCheckAll();
   const foundN = TREASURES.filter((t) => S.found[t.n]).length;
   const tabs = [['profile', tt('journal.tab_profile', 'Profile')], ['family', tt('journal.tab_family', 'Family')], ['coats', tt('journal.tab_coats', 'Coats')], ['treasures', tt('journal.tab_treasures', 'Treasures {n}/{total}', { n: foundN, total: TREASURES.length })], ['food', tt('journal.tab_food', 'Food')], ['toys', tt('journal.tab_toys', 'Toys')], ['clothes', tt('journal.tab_clothes', 'Clothes')], ['missions', tt('journal.tab_missions', 'Missions')], ['garden', gkOn() ? tt('journal.tab_garden', 'Garden') : tt('journal.tab_garden_soon', 'Garden (soon)')], ['recipes', kOn() ? tt('journal.tab_recipes', 'Recipes') : tt('journal.tab_recipes_soon', 'Recipes (soon)')], ['howto', tt('journal.tab_howto', 'How to play')]].concat(typeof fwOn === 'function' && fwOn() ? [['calendar', tt('fw.tab_calendar', 'Calendar')]] : []); // v2.16: the calendars (47_firstweek.js)
+  const ddJ = typeof ddOn === 'function' && ddOn(); if (ddJ) tabs.push(['diary', tt('dd.tab_diary', 'Diary')], ['stickers', tt('dd.tab_stickers', 'Stickers')]); // v2.17 (48_dogdays.js)
   if (jTab === 'calendar' && !(typeof fwOn === 'function' && fwOn())) jTab = 'profile';
+  if ((jTab === 'diary' || jTab === 'stickers') && !ddJ) jTab = 'profile';
   let body = '';
   if (jTab === 'family') body = journalFamily();
   else if (jTab === 'coats') body = journalCoats();
   else if (jTab === 'missions') body = typeof msTabHTML === 'function' ? msTabHTML() : `<p class="small">${tt('journal.missions_soon', 'Missions are on their way.')}</p>`; // v2.4 (24_missions.js)
   else if (jTab === 'calendar') body = fwCalHTML(); // v2.16 (47_firstweek.js)
+  else if (jTab === 'diary') body = ddDiaryHTML(); // v2.17 (48_dogdays.js)
+  else if (jTab === 'stickers') body = ddBookHTML();
   else if (jTab === 'howto') body = typeof gdTabHTML === 'function' ? gdTabHTML() : `<p class="small">${tt('journal.guide_soon', 'Gerald is still writing the guide.')}</p>`; // v2.4 (25_guide.js)
   else if (jTab === 'garden') body = gkOn() ? journalGarden() : soonCard('garden');
   else if (jTab === 'recipes') body = kOn() ? journalRecipes() : soonCard('kitchen');
@@ -65,6 +69,7 @@ function openJournal(tab) {
   const p = openModal(tt('journal.title', 'Treasure Journal'), `<div class="tabs jtabs" role="tablist">${tabs.map(([k, l]) => `<button class="btn" role="tab" data-jt="${k}" aria-selected="${jTab === k}">${l}</button>`).join('')}</div>${body}`, { cls: 'journal j-' + jTab });
   p.querySelectorAll('[data-jt]').forEach((b) => { b.onclick = () => { SFX.click(); openJournal(b.dataset.jt); }; });
   if (jTab === 'calendar') fwCalBind(p, () => openJournal('calendar')); // v2.16: the claim buttons
+  if (jTab === 'diary' || jTab === 'stickers') ddBind(p, () => openJournal(jTab)); // v2.17: flip the diary and the sticker pages
   p.querySelectorAll('[data-pdog]').forEach((b) => { b.onclick = () => { SFX.click(); jProfDog = b.dataset.pdog; jFamId = b.dataset.pdog; openJournal(); }; });
   p.querySelectorAll('[data-fam]').forEach((b) => { b.onclick = () => { SFX.click(); jFamId = b.dataset.fam; if (dogById(jFamId)) jProfDog = jFamId; openJournal('family'); }; });
   p.querySelectorAll('[data-cbreed]').forEach((b) => { b.onclick = () => { SFX.click(); jCoatKey = b.dataset.cbreed; openJournal('coats'); }; });

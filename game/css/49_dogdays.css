@@ -1,0 +1,97 @@
+/* v2.17 Dog Days (tag dd, 48_dogdays.js): the wish chip, the Bond track, the diary, the sticker book. Phone rules under html[data-layout="phone"]. */
+
+/* ---- the daily wish: a crayon thought bubble under the place chip ---- */
+.dd-wish{position:absolute;z-index:3;display:flex;align-items:center;gap:8px;max-width:min(430px,calc(100% - 96px));min-height:48px;padding:5px 14px 6px 6px;margin:0;
+  font-family:var(--font-hand);font-size:17px;line-height:1.15;color:var(--ink);text-align:left;cursor:pointer;
+  background:var(--paper);border:2.5px solid var(--ink);border-radius:26px 22px 24px 20px;box-shadow:2px 3px 0 rgba(91,61,50,.16);transform:rotate(-1deg);--fr:none}
+.dd-wish[hidden]{display:none}
+.dd-wish:hover{transform:rotate(-1deg) translateY(-1px)}
+.dd-wish .dd-wh{flex:none;width:38px;height:38px;border-radius:50%;background:var(--w-cream);border:2px solid var(--ink);overflow:hidden;display:block}
+.dd-wish .dd-wh svg{width:100%;height:100%;display:block}
+.dd-wish .dd-wt{min-width:0}
+.dd-wish .dd-wt b{font-size:15px;color:#C9475E;margin-right:2px}
+.dd-wish .dd-ww{font-weight:700}
+.dd-wish .dd-wok{flex:none;width:24px;height:24px}
+.dd-wish .dd-wok svg{width:100%;height:100%;display:block}
+.dd-wish .dd-tail{position:absolute;left:44px;bottom:-12px;width:13px;height:10px;border-radius:50%;background:var(--paper);border:2px solid var(--ink);pointer-events:none}
+.dd-wish .dd-tail::after{content:"";position:absolute;left:12px;top:9px;width:7px;height:6px;border-radius:50%;background:var(--paper);border:2px solid var(--ink)}
+.dd-wish.done{background:var(--w-mint)}
+.dd-wish.done .dd-tail,.dd-wish.done .dd-tail::after{background:var(--w-mint)}
+html[data-layout="phone"] .dd-wish{font-size:16px;max-width:calc(100% - 92px);padding:4px 12px 5px 5px;gap:6px}
+html[data-layout="phone"] .dd-wish .dd-wh{width:34px;height:34px}
+html[data-layout="phone"] .dd-wish .dd-wt b{font-size:14px}
+#stage.slimhud .dd-wish{display:none}
+
+/* ---- the Bond meter opens the Bond track ---- */
+#hud .bond.dd-tap{cursor:pointer}
+#hud .bond.dd-tap:focus-visible{outline:3px solid var(--ink);outline-offset:3px;border-radius:10px}
+
+/* ---- the Bond track: a crayon ladder, Bond 1 at the top ---- */
+.dd-trsub{margin:0 0 8px}
+.dd-ladder{list-style:none;margin:0;padding:0 0 0 4px;position:relative}
+.dd-ladder::before{content:"";position:absolute;left:27px;top:20px;bottom:24px;width:6px;border-left:2.5px solid var(--ink);border-right:2.5px solid var(--ink);opacity:.35}
+.dd-rung{position:relative;display:flex;gap:12px;align-items:flex-start;padding:6px 0 10px}
+.dd-rn{flex:none;position:relative;z-index:1;width:46px;height:46px;border-radius:50% 46% 52% 48%;border:2.5px solid var(--ink);background:var(--paper);display:flex;align-items:center;justify-content:center;font-family:var(--font-hand);font-size:24px}
+.dd-rung.got .dd-rn{background:var(--w-pink)}
+.dd-rung.now .dd-rn{background:var(--w-yellow);box-shadow:0 0 0 4px rgba(242,143,165,.45)}
+.dd-rung.next .dd-rn{color:#8E7F74;border-style:dashed}
+.dd-rb{flex:1 1 auto;min-width:0;padding:6px 10px 8px;border:2px solid var(--ink);border-radius:12px 9px 14px 10px;background:var(--paper)}
+.dd-rung.now .dd-rb{background:var(--w-yellow)}
+.dd-rung.next .dd-rb{border-style:dashed;background:transparent}
+.dd-rh{margin:0 0 4px;font-family:var(--font-hand);font-weight:700;font-size:20px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.dd-here{font-size:15px;padding:0 8px;border-radius:8px;border:1.5px solid var(--ink);background:var(--w-pink);transform:rotate(-2deg)}
+.dd-ok{display:inline-block;width:22px;height:22px}
+.dd-ok svg{width:100%;height:100%;display:block}
+.dd-rb ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px}
+.dd-rb ul li{display:flex;gap:8px;align-items:flex-start;line-height:1.3}
+.dd-ri{flex:none;width:28px;height:28px}
+.dd-ri svg{width:100%;height:100%;display:block}
+
+/* ---- the diary: a lined notebook page ---- */
+.dd-book{display:flex;flex-direction:column;gap:10px}
+.dd-empty p{margin:8px 0;font-family:var(--font-hand);font-size:20px}
+.dd-page{position:relative;padding:12px 16px 14px 44px;border:2.5px solid var(--ink);border-radius:6px 14px 12px 8px;box-shadow:3px 4px 0 rgba(91,61,50,.14);
+  background:linear-gradient(90deg,transparent 30px,rgba(232,71,61,.45) 30px,rgba(232,71,61,.45) 32px,transparent 32px),repeating-linear-gradient(180deg,#FFFDF7 0 29px,rgba(120,150,190,.28) 29px 30px);transform:rotate(-.4deg)}
+.dd-phead{display:flex;gap:10px;align-items:center;margin-bottom:4px}
+.dd-dhead{flex:none;width:50px;height:50px;border-radius:50%;border:2px solid var(--ink);background:var(--w-cream);overflow:hidden}
+.dd-dhead svg{width:100%;height:100%;display:block}
+.dd-pt{display:flex;flex-direction:column;min-width:0}
+.dd-pt b{font-family:var(--font-hand);font-size:24px;line-height:1.1}
+.dd-ptext p{margin:0;font-family:var(--font-hand);font-size:21px;line-height:30px}
+.dd-doodle{display:flex;gap:6px;align-items:flex-end;justify-content:flex-end;margin-top:4px;min-height:52px}
+.dd-dic{width:50px;height:50px;transform:rotate(var(--r))}
+.dd-dic svg,.dd-dpaw{width:100%;height:100%;display:block}
+.dd-dpaw{width:30px;height:30px;opacity:.8}
+.dd-flip{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.dd-flip .btn{min-height:44px;min-width:96px}
+.dd-pgn{font-family:var(--font-hand);font-size:18px;text-align:center;flex:1 1 auto}
+html[data-layout="phone"] .dd-page{padding:10px 12px 12px 38px;background:linear-gradient(90deg,transparent 26px,rgba(232,71,61,.45) 26px,rgba(232,71,61,.45) 28px,transparent 28px),repeating-linear-gradient(180deg,#FFFDF7 0 27px,rgba(120,150,190,.28) 27px 28px)}
+html[data-layout="phone"] .dd-ptext p{font-size:19px;line-height:28px}
+
+/* ---- the sticker book ---- */
+.dd-sbook{display:flex;flex-direction:column;gap:10px}
+.dd-scount{margin:0}
+.dd-spage{padding:10px 12px 12px;border:2.5px solid var(--ink);border-radius:12px 8px 14px 10px;background:radial-gradient(var(--dot,#E8DCCB) 1px,transparent 1.5px) 0 0/16px 16px,#FFF9EC}
+.dd-spage h3{margin:0 0 8px;font-family:var(--font-hand);font-size:24px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.dd-sgrid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.dd-st{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;min-width:0}
+.dd-sa{width:72px;height:72px;border-radius:50% 46% 52% 48%;border:2.5px dashed #A8968A;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.55)}
+.dd-sa b{font-family:var(--font-hand);font-size:30px;color:#A8968A}
+.dd-st.on .dd-sa{border:2.5px solid var(--ink);background:#fff;box-shadow:2px 3px 0 rgba(91,61,50,.16);transform:rotate(-4deg)}
+.dd-st.on:nth-child(2n) .dd-sa{transform:rotate(5deg)}
+.dd-sa svg{width:78%;height:78%;display:block}
+.dd-sa .dd-cal{position:relative;width:78%;height:78%;display:block}
+.dd-sa .dd-cal svg{width:100%;height:100%}
+.dd-sa .dd-cal b{position:absolute;left:0;right:0;bottom:16%;font-size:17px;color:var(--ink);text-align:center;background:none}
+.dd-sl{font-size:15px;line-height:1.2;overflow-wrap:anywhere}
+.dd-st:not(.on) .dd-sl{color:#7A6A60}
+.dd-sgift{display:flex;align-items:center;gap:8px;margin:10px 0 0}
+.dd-gi{flex:none;width:40px;height:40px}
+.dd-gi svg{width:100%;height:100%;display:block}
+.dd-sdots{display:flex;justify-content:center;gap:6px;flex-wrap:wrap}
+.dd-sdots i{width:10px;height:10px;border-radius:50%;border:1.5px solid var(--ink);background:var(--paper)}
+.dd-sdots i.full{background:var(--w-pink)}
+.dd-sdots i.on{background:var(--ink)}
+html[data-layout="phone"] .dd-sa{width:64px;height:64px}
+@media (max-width:380px){.dd-sgrid{gap:6px}.dd-sa{width:58px!important;height:58px!important}}
+.dd-bic{width:100%;height:100%;display:block}

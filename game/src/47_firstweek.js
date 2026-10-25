@@ -160,11 +160,12 @@ function fwPartyPending() {
    same .act[data-act] buttons as on desktop, inside #bar, so doAct, the guide rings and the shortcuts keep working. Desktop keeps the 7 buttons. */
 const FW_POPS = { caremenu: ['feed', 'play', 'care'], more: ['wardrobe', 'journal'] };
 function fwMoreIcon() { return `<svg viewBox="-20 -20 40 40" aria-hidden="true">${[-11, 0, 11].map((x, i) => `<path d="M${x - 3.6} ${i % 2 ? 0.6 : -0.4} q0 -4 3.8 -4 q4 0 3.8 4 q0 4 -3.9 3.9 q-3.7 0 -3.7 -3.9z" fill="${['#F28FA5', '#F2C744', '#8EC0EA'][i]}" stroke="${INKG}" stroke-width="2" stroke-linejoin="round"/>`).join('')}</svg>`; }
-function fwActLabel(a) { return a === 'caremenu' ? tdata('acts.care.1', 'Care') : a === 'more' ? tt('fw.more', 'More') : a === 'care' ? tt('fw.bath_nap', 'Bath & nap') : tdata('acts.' + a + '.1', (ACTS.find((x) => x[0] === a) || [a, a])[1]); }
-function fwActIcon(a) { const r = ACTS.find((x) => x[0] === a); return a === 'more' ? fwMoreIcon() : a === 'caremenu' ? ICON('bath') : a === 'journal' ? iconOr('journal', doodle('paw', 0, 2, 1.1)) : ICON(r ? r[2] : a); }
+const fwPopList = (k) => FW_POPS[k].concat(k === 'more' && typeof ddOn === 'function' && ddOn() ? ['stickers'] : []); // v2.17: the sticker book in the More tray (48_dogdays.js)
+function fwActLabel(a) { return a === 'stickers' ? tt('dd.st_title', 'Sticker book') : a === 'caremenu' ? tdata('acts.care.1', 'Care') : a === 'more' ? tt('fw.more', 'More') : a === 'care' ? tt('fw.bath_nap', 'Bath & nap') : tdata('acts.' + a + '.1', (ACTS.find((x) => x[0] === a) || [a, a])[1]); }
+function fwActIcon(a) { const r = ACTS.find((x) => x[0] === a); return a === 'stickers' && typeof ddBookIcon === 'function' ? ddBookIcon() : a === 'more' ? fwMoreIcon() : a === 'caremenu' ? ICON('bath') : a === 'journal' ? iconOr('journal', doodle('paw', 0, 2, 1.1)) : ICON(r ? r[2] : a); }
 function fwActBtn(a, extra) { return `<button class="act" type="button" data-act="${a}"${extra || ''}><span class="ic">${fwActIcon(a)}</span><span>${esc(fwActLabel(a))}</span></button>`; }
 function fwPhoneBar() {
-  const pop = (k) => `<div class="barpop" data-pop="${k}" role="group" aria-label="${esc(fwActLabel(k))}" hidden>${FW_POPS[k].map((a) => fwActBtn(a)).join('')}</div>`;
+  const pop = (k) => `<div class="barpop" data-pop="${k}" role="group" aria-label="${esc(fwActLabel(k))}" hidden>${fwPopList(k).map((a) => fwActBtn(a)).join('')}</div>`;
   return fwActBtn('caremenu', ' aria-haspopup="true" aria-expanded="false"') + fwActBtn('walk') + fwActBtn('map') + fwActBtn('more', ' aria-haspopup="true" aria-expanded="false"') + pop('caremenu') + pop('more');
 }
 const fwPopOf = (a) => Object.keys(FW_POPS).find((k) => FW_POPS[k].includes(a)) || null;
@@ -178,7 +179,7 @@ const fwBarOpen = () => { const p = bar.querySelector('.barpop:not([hidden])'); 
 function fwDockApply() {
   if (!bar) return; const nw = (a) => !!(S && S.fw && S.fw.dockNew && S.fw.dockNew[a] && isPhone());
   bar.querySelectorAll('.act').forEach((b) => {
-    const a = b.dataset.act, isNew = a === 'more' ? FW_POPS.more.some(nw) : FW_POPS.more.includes(a) && nw(a), t = b.querySelector('.fw-newtag');
+    const a = b.dataset.act, isNew = a === 'more' ? fwPopList('more').some(nw) : fwPopList('more').includes(a) && nw(a), t = b.querySelector('.fw-newtag');
     b.classList.toggle('fw-new', isNew);
     if (isNew && !t) b.insertAdjacentHTML('beforeend', `<span class="fw-newtag" aria-hidden="true">${esc(tt('fw.new_tag', 'new!'))}</span>`); else if (!isNew && t) t.remove();
   });
@@ -393,6 +394,7 @@ function fwWishName(loud) {
 on('act', (d) => {
   if (!S || !S.fw || !fwOn() || !d) return; const w = S.fw.wish;
   if (!w || w.done || w.for > localISO() || FW_WISH[w.k] !== d.kind) return;
+  if (typeof ddFwTook === 'function' && ddFwTook(w)) return; // v2.17: today it is the dog's daily wish (48_dogdays.js), which gives this Happiness too
   const dog = dogById(w.id) || D(); w.done = true; markDirty();
   const b = withDog(dog, () => { addStat('happy', 10); return addBond(2); });
   setTimeout(() => toast(tt('fw.wish_done', 'Wish come true! {name} is so happy: +10 Happiness, +{b} Bond.', { name: dog.name, b }), 'gold'), 900);

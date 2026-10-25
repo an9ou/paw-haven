@@ -120,7 +120,10 @@ const CLOTHES = [
   { n: 'Tokyo Tower Bandana', slot: 'neck', fest: 'tokyo', tokyo: true, price: 60, bond: 1, v211: true, perk: 'Tall look: orange and white stripes, like the tower on a sunny day.' },
   { n: 'Astronaut Helmet', slot: 'head', price: 0, bond: 1, v24: true, reward: true, perk: 'Space-proof: no soggy shake after rain, no shivering in the snow.' },
   // v2.15 Around Town (V215.md 6.2): the Splash Pool gives it free on the first visit (S.pool.vest), never sold; worn automatically in the water (45_pool.js)
-  { n: 'Doggy Life Vest', slot: 'body', price: 0, bond: 1, v215: true, reward: true, perk: 'Safe swimmer: a bright vest with two buckles. Free from the Splash Pool.' }
+  { n: 'Doggy Life Vest', slot: 'body', price: 0, bond: 1, v215: true, reward: true, perk: 'Safe swimmer: a bright vest with two buckles. Free from the Splash Pool.' },
+  // v2.17 Dog Days (V217.md 2): the Bond 10 gifts on the Bond track (48_dogdays.js), never sold; bond 1 so no level-up card lists them as a shop unlock
+  { n: 'Crayon Crown', slot: 'head', price: 0, bond: 1, v217: true, reward: true, perk: 'Best friends: a wobbly paper crown, coloured in with every crayon in the box. A Bond 10 gift.' },
+  { n: 'Golden Collar', slot: 'neck', price: 0, bond: 1, v217: true, reward: true, perk: 'Best friends: a shiny gold collar with a little heart tag. A Bond 10 gift.' }
 ];
 const HOUSES = [
   { n: 'Cardboard Box', price: 0, bond: 1, comfort: 0, hd: 4, note: 'Free. Has a flap. Smells like delivery.' },
@@ -736,6 +739,7 @@ function freshState(key, name, sex) {
   v215Fields(st); st.mapNew.fresh = true; // v2.15 Around Town: agility, the pool, the run tracks, the map stickers (V215.md section 9); fresh: a save that started on v2.15 gets no "new" / "moved" stickers
   v214Fields(st); st.lang = i18nReal(prefs.langPick) ? prefs.langPick : null; // v2.14: a language picked on the title screen before the save existed (V214.md 5)
   v216Fields(st); Object.assign(st.fw, { fresh: true, wel: { days: [], got: [] }, dock: 1, dockNew: { wardrobe: 1, journal: 1 } }); if (typeof fwOn === 'function' && fwOn()) st.guide.fw = 1; // v2.16 First Week (V216.md 2): a new save gets Puppy's first day, the welcome week and the lighter phone dock
+  v217Fields(st); // v2.17 Dog Days (V217.md 6): wishes, the diary, stickers, letters, the Bond track gifts
   return linkDogs(st);
 }
 let S = null;
@@ -773,6 +777,7 @@ function migrate(s) {
   v214Fields(s); // v2.14 Hello in Every Language (V214.md section 5): additive
   v215Fields(s); // v2.15 Around Town (V215.md section 9): additive
   fwBondFix(s); v216Fields(s); // v2.16 First Week (V216.md section 2): additive; the new Bond thresholds level old dogs up quietly
+  v217Fields(s); // v2.17 Dog Days (V217.md section 6): additive
   return s;
 }
 /* v2.7 Home & Pack save fields (V27.md section 1). Additive only: S.v stays 1, nothing is dropped.
@@ -875,6 +880,26 @@ function v216Fields(s) {
   if (f.wish !== null && !v28Obj(f.wish)) f.wish = null;
   if (typeof f.dock !== 'number') f.dock = f.fresh ? 1 : 10; if (!v28Obj(f.dockNew)) f.dockNew = {};
   ['morning', 'shown', 'named'].forEach((k) => { if (typeof f[k] !== 'string') f[k] = ''; });
+  return s;
+}
+/* v2.17 Dog Days (V217.md section 6). Additive only: S.v stays 1, nothing is dropped. Summaries only (the diary text is written at display time).
+   S.dd { wish: { day: localISO, w: { dogId: { k: wish kind, a: its place / route / food / toy or null, done: 0|1, fw: 1 when it came from v2.16's "see you tomorrow" } }, coins: wish coins today (cap 20) },
+          wn: wishes come true (all time), wk: { kind: count },
+          today: the diary page being written ({ g: game day, d: localISO, id, n: name, k: breed key, w: [routes], p: [places], f: [foods], t: [tricks], x: flag letters, wi: wish kind, fr: [pack names] }) | null,
+          diary: [the last 60 finished pages, same shape], st: { stickerId: 1 }, pg: { page: gift given }, fr: [frame ids: b3 b5 b7 p0..p11],
+          bt: { 3|5|7|10: 1 } the Bond track gifts given, pv: { place or route key: 1 } places visited since v2.17, cnt: { counters for the stickers }, mo: ['YYYY-MM'] months with a paw,
+          lt: { day: localISO of the last Dog Days letter, wk: the Monday of Gerald's last weekly news, fam: localISO of the last family letter, gi, fi: template turns } } */
+function v217Fields(s) {
+  if (!s) return s;
+  if (!v28Obj(s.dd)) s.dd = {};
+  const d = s.dd, obj = (k) => { if (!v28Obj(d[k])) d[k] = {}; }, arr = (k) => { if (!Array.isArray(d[k])) d[k] = []; };
+  if (!v28Obj(d.wish) || !v28Obj(d.wish.w)) d.wish = { day: '', w: {}, coins: 0 };
+  if (typeof d.wish.day !== 'string') d.wish.day = ''; if (typeof d.wish.coins !== 'number' || !(d.wish.coins >= 0)) d.wish.coins = 0;
+  if (typeof d.wn !== 'number' || !(d.wn >= 0)) d.wn = 0;
+  ['wk', 'st', 'pg', 'bt', 'pv', 'cnt', 'lt'].forEach(obj); ['diary', 'fr', 'mo'].forEach(arr);
+  if (d.today !== null && !v28Obj(d.today)) d.today = null;
+  ['day', 'wk', 'fam'].forEach((k) => { if (typeof d.lt[k] !== 'string') d.lt[k] = ''; }); ['gi', 'fi'].forEach((k) => { if (typeof d.lt[k] !== 'number') d.lt[k] = 0; });
+  if (d.diary.length > 60) d.diary.splice(0, d.diary.length - 60);
   return s;
 }
 // v2.16: BOND_TH moved Bond 2 and 3 closer. A loaded dog whose points already pass a threshold levels up here, quietly (no fanfare, no level-up queue);
@@ -1206,7 +1231,7 @@ function addCoins(base, opts = {}) {
 let levelQueue = [];
 function bondMult() { return BOOST.bond * (S.dog.key === 'mutt' ? 1.1 : 1) * (glowing() ? 1.2 : 1) * (S.gameMin < S.pupUntil ? 2 : 1); }
 function addBond(base, opts = {}) {
-  const n = Math.max(1, Math.round(base * (opts.raw ? 1 : bondMult()))); S.bond.pts += n; markDirty();
+  const n = Math.max(1, Math.round(base * (opts.raw ? 1 : bondMult()))); S.bond.pts += n; markDirty(); if (typeof ddBondSeen === 'function') ddBondSeen(n); // v2.17: a wish doubles the Bond its action gave
   while (S.bond.level < 10 && S.bond.pts >= BOND_TH[S.bond.level]) { S.bond.level++; levelQueue.push({ l: S.bond.level, who: NAME(), id: S.dog.id }); SFX.fanfare(); if (S.bond.level === 2 && S.fw && S.fw.b2pending && !S.fw.b2[S.dog.id]) S.fw.b2pending[S.dog.id] = 1; } // v2.16: the Bond 2 party survives a reload (b2pending) // v2.7: who levelled up (pack care gives a pack dog its Bond)
   updateHUD(); setTimeout(maybeLevelUp, 400); return n;
 }
@@ -1255,6 +1280,7 @@ function barLabels() { if (isPhone() && typeof fwPhoneBar === 'function') { bar.
 function doAct(a) {
   if (a === 'caremenu' || a === 'more') { SFX.click(); fwBarPop(fwBarOpen() === a ? null : a); return; } // v2.16 phone bar (47_firstweek.js): Care and More open a small tray above the bar
   if (typeof fwBarPop === 'function') fwBarPop(null);
+  if (a === 'stickers') { SFX.click(); if (!modal.hidden) closeModal(); if (typeof ddBookOpen === 'function') ddBookOpen(); return; } // v2.17: the sticker book in the phone More tray (48_dogdays.js)
   SFX.click(); hideBubble(); closeTraining();
   const pop = !modal.hidden || popOpen();
   if (pop && popAct === a) { if (!modal.hidden) closeModal(); else closeTray(); return; }
@@ -1311,6 +1337,7 @@ function unlocksFor(L) {
   TOYS.concat(CLOTHES).forEach((t) => { if (t.bond === L && L > 1 && !t.ed) u.push(tt('core.unlock_shop', 'Shop: {item}', { item: tItem(t.n) })); });
   HOUSES.forEach((h) => { if (h.bond === L && L > 1) u.push(tt('core.unlock_house', 'House: {house}', { house: tItem(h.n) })); });
   if (L === 10) u.push(tt('core.unlock_badge', 'Best Friends badge (it is invisible, but it is there)'));
+  if (typeof ddUnlocks === 'function') u.push(...ddUnlocks(L)); // v2.17: the Bond track gifts (48_dogdays.js)
   return u;
 }
 function maybeLevelUp() {

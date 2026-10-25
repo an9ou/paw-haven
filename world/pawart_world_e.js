@@ -1058,6 +1058,24 @@ const ITEMS_V215={
   b.ex('glint',27,21,4);b.ex('glint',47,43,2.6);
   gold215(b,[[56,12,4.6],[8,16,3.4],[60,30,2.6]])}
 };
+/* v2.17 Dog Days (V217.md 2): the Bond 10 gifts, the Crayon Crown and the Golden Collar (wardrobe and journal icons; kept out of the lists above) */
+const ITEMS_V217={
+ 'Crayon Crown'(b){
+  b.shadow(32,57,22,2.6);
+  b.sh([[10,50],[8,34],[6,14],[19,28],[24,8],[32,26],[41,9],[46,28],[58,15],[56,34],[54,50]],'#FFD23A',{k:.12,sh:'#E9A93B',base:'#FFF0A8',
+   inner:b.st(b.jl(14,40,22,32,.5)+b.jl(26,42,34,34,.5)+b.jl(40,42,48,34,.5),'#F2A93B',1.4,.7)});
+  b.sh([[9,52],[55,52],[55,42],[9,42]],'#E8473D',{k:.06,hatch:0,hl:0,lw:.8});
+  [[18,47,'#4F8FD6'],[32,47,'#6DBE5A'],[46,47,'#8E63C7']].forEach(([x,y,c])=>b.sh(E(x,y,3.4,3,10),c,{hatch:0,hl:0,lw:.6}));
+  [[6,14],[24,8],[41,9],[58,15]].forEach(([x,y])=>b.sh(E(x,y,3,2.8,10),'#F28FA5',{hatch:0,hl:0,lw:.55}));
+  b.ex('spark',58,40,3.6);b.ex('glint',20,24,3)},
+ 'Golden Collar'(b){
+  b.sh(ribbon([[7,20],[18,12],[32,10],[46,12],[57,20]],[4.4,4.4,4.4,4.4,4.4]),'#E9A93B',{hatch:0,hl:0,lw:.8,ink:GINK215});
+  b.sh(ribbon([[6,19],[13,29],[32,35],[51,29],[58,19]],[8,8,8,8,8]),'#FFD23A',{ink:GINK215,sh:'#E9A93B'});
+  b.raw(b.st('M15 27q8 5 15 6',  '#FFF6C8',1.6,.8));
+  b.sh(E(32,49,9,9,14),'#FFD23A',{ink:GINK215,sh:'#E9A93B',hl:0});
+  b.ex('heart',32,49,4,'#F28FA5');
+  gold215(b,[[56,44,4.2],[8,44,3.4],[48,6,3]]);b.ex('glint',25,45,2.6)}
+};
 const PC_M=14,PC_SH=60,PC_FONT_R="'Patrick Hand',cursive",TK_C={c:'#F4B183',d:'#D98A5A'};let PC_UID=0;
 // the Tokyo photo frame: world B's postcard with a torii-orange frame and the seven stamps round the edge (same window, so the photo fits)
 function tokyoPostcard(w,h,o){o=o||{};const s=Math.max(w,h)/450,lw=w/s,lh=h/s,col=TK_C;
@@ -1089,8 +1107,8 @@ function tokyoPostcard(w,h,o){o=o||{};const s=Math.max(w,h)/450,lw=w/s,lh=h/s,co
   const front=b.svg('0 0 '+R1(lw)+' '+R1(lh),` width="${w}" height="${h}" x="0" y="0" aria-hidden="true"`,'Tokyo postcard frame').split(IDT).join('pwep'+(++PC_UID).toString(36));
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="Postcard with the Tokyo stamps" data-frame="tokyo"><rect width="${w}" height="${h}" fill="#FFFBF3"/>${o.scene||''}${front}</svg>`}
 return {
-  item(name){const f=ITEMS_E[name]||ITEMS_V215[name];if(!f)return null;return serve('t:'+name,()=>{const b=mk('item',name);f(b);return b.svg('0 0 64 64','',esc(name))})},
-  ITEMS215:Object.keys(ITEMS_V215),
+  item(name){const f=ITEMS_E[name]||ITEMS_V215[name]||ITEMS_V217[name];if(!f)return null;return serve('t:'+name,()=>{const b=mk('item',name);f(b);return b.svg('0 0 64 64','',esc(name))})},
+  ITEMS215:Object.keys(ITEMS_V215),ITEMS217:Object.keys(ITEMS_V217),
   ekistamp(o){const key=ST_KEYS.includes(o&&o.key)?o.key:'shibuya',got=!!(o&&o.got);
     return serve('p:ekistamp:'+key+':'+(got?1:0),()=>{const b=mk('prop','ekistamp:'+key);if(got)stampArt(b,key,60,60,54,hashS(key)%7*.03-.09);else stampEmpty(b,60,60,54);
       return b.svg('0 0 120 120',` data-key="${key}" data-got="${got?1:0}"`,ST_LBL[key]+' station stamp'+(got?'':', not collected yet'))})},
@@ -1522,6 +1540,8 @@ PA.STAMP_KEYS=WB.KEYS.slice();
 PA.WORLD_E_SCENES=Object.keys(MINE);PA.WORLD_E_PROPS=['ekistamp','luckycat','postcard'];PA.WORLD_E_ITEMS=Object.keys(ITEMS);
 // v2.15: the Doggy Life Vest and the six run-track treasures (ITEMS_V215 above); every other name goes on to the previous PawArt.item unchanged
 {const prevItem215=PA.item,V215I=WB.ITEMS215;PA.item=function(name,o){return V215I.includes(name)?WB.item(name):prevItem215.apply(this,arguments)};PA.V215_ITEMS=V215I.slice()}
+// v2.17: the Crayon Crown and the Golden Collar (ITEMS_V217); every other name goes on unchanged
+{const prevItem217=PA.item,V217I=WB.ITEMS217;PA.item=function(name,o){return V217I.includes(name)?WB.item(name):prevItem217.apply(this,arguments)};PA.V217_ITEMS=V217I.slice()}
 /* v2.14: the last layer on every world render. The game may pass { aria: 'label' } (the root svg's aria-label, translated) and/or
    { ariaMap: { 'English label': 'translated label' } } (any other aria-label inside the render: hotspots, parts) in the options object
    of any call (scene, walkStrip, prop, item, icon, bed, house, obstacle, collectible, postcard). Without them the result is returned
