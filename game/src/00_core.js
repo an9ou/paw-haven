@@ -875,7 +875,7 @@ function v216Fields(s) {
   if (!v28Obj(f.b2)) { f.b2 = {}; (s.dogs || []).forEach((d) => { if (d && d.id && d.bond && d.bond.level >= 2) f.b2[d.id] = 1; }); }
   if (f.wel !== null && !v28Obj(f.wel)) f.wel = f.fresh ? { days: [], got: [] } : null;
   if (f.wel) { arr(f.wel, 'days'); arr(f.wel, 'got'); }
-  if (!v28Obj(f.cal)) f.cal = {}; if (typeof f.cal.ym !== 'string') f.cal.ym = ''; arr(f.cal, 'days'); arr(f.cal, 'got'); if (typeof f.cal.coins !== 'number' || !(f.cal.coins >= 0)) f.cal.coins = 0;
+  if (!v28Obj(f.cal)) f.cal = {}; if (typeof f.cal.ym !== 'string') f.cal.ym = ''; arr(f.cal, 'days'); arr(f.cal, 'got'); arr(f.cal, 'dg'); if (typeof f.cal.dgc !== 'number' || !(f.cal.dgc >= 0)) f.cal.dgc = 0; // v2.17: the daily gifts claimed this month (an old save starts with none: only today's can be claimed) if (typeof f.cal.coins !== 'number' || !(f.cal.coins >= 0)) f.cal.coins = 0;
   if (!v28Obj(f.frames)) f.frames = {}; if (f.frames.name === undefined) f.frames.name = null; arr(f.frames, 'months');
   if (f.wish !== null && !v28Obj(f.wish)) f.wish = null;
   if (typeof f.dock !== 'number') f.dock = f.fresh ? 1 : 10; if (!v28Obj(f.dockNew)) f.dockNew = {};

@@ -247,4 +247,63 @@ run('v217_dog_days', async (t) => {
     ok(names.every((n) => !/Town Square|Pupuccino|Dog Park|Vet Clinic|Grooming Salon|Hilltop|Lighthouse Pier/.test(n)), lang + ': town place names are translated in wishes and stickers: ' + names.join(' | '));
     await t.ctx.close();
   }
-}, { timeout: 420000 });
+
+  sec('9. the daily gift in the monthly calendar: today\'s gift first, one tap, never twice, the same for everyone, festival dates, the cap');
+  const calDay = async () => { await ev(() => window.__paw.fw.open(false)); await t.p.waitForSelector('#modal .fw-calpop'); };
+  await fresh(); await calDay();
+  ok(await ev(() => { const b = document.querySelector('#modal .fw-cal'), first = b.querySelector('.fw-dg'); return !!first && [...b.children].filter((e) => !e.classList.contains('fw-hello')).indexOf(first) === 0 && !!first.querySelector('#fwDgClaim'); }), 'the calendar sheet leads with Today\'s gift and a Claim button');
+  ok(await ev(() => { const n = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate(); return document.querySelectorAll('.fw-mgrid .fw-md .fw-dgi svg').length === n; }), 'every day circle of the month shows its gift as a tiny icon');
+  ok(await ev(() => document.querySelectorAll('.fw-spec li').length === 5), 'the 3, 7, 12, 18 and 24-day gifts show as bigger special circles');
+  await shot('daily_gift_desktop');
+  const g0 = await ev(() => { const P = window.__paw, t = new Date(), ym = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}`; return { r: P.fw.daily(ym, t.getDate()), ym, d: t.getDate() }; });
+  const before0 = await t.S();
+  await t.p.click('#fwDgClaim');
+  ok(await t.waitToast(/Today's gift: /, 4000), 'a tap claims it: ' + JSON.stringify(g0.r));
+  let s9 = await t.S();
+  const gave = g0.r.t === 'coins' ? s9.coins - before0.coins === 10 : g0.r.t === 'seeds' ? (s9.inv.seeds.carrot || 0) === (before0.inv.seeds.carrot || 0) + 2 : (s9.inv.food[g0.r.n] || 0) === (before0.inv.food[g0.r.n] || 0) + g0.r.q;
+  ok(gave && s9.fw.cal.dg.includes(g0.d), 'the gift is in the bag and the day is marked claimed');
+  ok(await ev(() => !document.querySelector('#fwDgClaim') && /Claimed/.test(document.querySelector('.fw-dg').textContent) && document.querySelector('.fw-md.today.dgot')), 'the sheet says Claimed, today\'s circle shows its gift dimmed');
+  ok(!(await ev(() => window.__paw.fw.dgClaim())), 'no second claim the same day');
+  await t.closeX(); await ev(() => window.__paw.saveNow()); await t.reloadKeepingSave(); await t.p.waitForSelector('#tContinue'); await t.p.click('#tContinue'); await t.untilMode('yard'); await t.until(() => !!(window.__paw && window.__paw.fw), null, 5000);
+  ok(!(await ev(() => window.__paw.fw.dgCan())) && (await t.S()).fw.cal.dg.length === 1, 'after a reload (or a cloud restore of the same save) it stays claimed');
+  // an old save: no dg, earlier days this month stamped: only today's gift, no back-pay
+  const oldCal = await ev(() => { const P = window.__paw, s = JSON.parse(localStorage.getItem('pawhaven_proto_v1')); delete s.fw.cal.dg; delete s.fw.cal.dgc; const d = new Date().getDate(); s.fw.cal.days = [...new Set([1, 2, d])]; return JSON.stringify(s); });
+  await t.ctx.close(); await t.mk({ prefs: { fwTest: true, ddTest: true }, storage: { pawhaven_proto_v1: oldCal } }); await t.p.goto(URL); await t.p.waitForSelector('#tContinue'); await t.p.click('#tContinue'); await t.untilMode('yard'); await t.until(() => !!(window.__paw && window.__paw.fw), null, 5000);
+  s9 = await t.S(); ok(Array.isArray(s9.fw.cal.dg) && s9.fw.cal.dg.length === 0 && s9.fw.cal.dgc === 0, 'an old save gets an empty claimed list');
+  ok(await ev(() => window.__paw.fw.dgClaim()) && !(await ev(() => window.__paw.fw.dgClaim())) && (await t.S()).fw.cal.dg.length === 1, 'it can claim today\'s gift once, and nothing for the earlier days');
+  // the same gift for everyone, about 5 coins a day, the cap, festival dates with Bond 1-2 treats
+  const yr = await ev(() => { const P = window.__paw, T = P.fw.items(), out = { coins: 0, days: 0, maxMonth: 0, fest: [], same: true, bond: true }; for (let m = 1; m <= 12; m++) { const ym = '2026-' + String(m).padStart(2, '0'), n = new Date(2026, m, 0).getDate(); let mc = 0; for (let d = 1; d <= n; d++) { const r = P.fw.daily(ym, d); if (JSON.stringify(r) !== JSON.stringify(P.fw.daily(ym, d))) out.same = false; if (r.t === 'coins') mc += r.c; if (r.fest) out.fest.push(ym + '-' + d + ' ' + r.n); if (r.n && (T[r.n] || 1) > 2) out.bond = false; out.days++; } out.coins += mc; out.maxMonth = Math.max(out.maxMonth, mc); } return out; });
+  ok(yr.same, 'gifts are seeded by the date: the same for everyone');
+  ok(yr.coins / yr.days >= 4 && yr.coins / yr.days <= 6, `about 5 coins a day from daily gifts (${(yr.coins / yr.days).toFixed(2)})`);
+  ok(yr.maxMonth <= (await ev(() => window.__paw.fw.dgCap)), `the busiest month (${yr.maxMonth} coins) fits the daily cap (${await ev(() => window.__paw.fw.dgCap)})`);
+  ok(yr.fest.length >= 3 && yr.fest.some((x) => /10-31 Apple Monster Biscuits/.test(x)) && yr.bond, 'festival dates bring Bond 1-2 festival treats: ' + yr.fest.join(', '));
+  await t.ctx.close();
+  // a coin day near the cap, then the festival day itself (Halloween)
+  const coinDay = await (async () => { await t.boot({ prefs: { fwTest: true } }); const d = await t.until(() => !!(window.__paw && window.__paw.fw), null, 5000).then(() => ev(() => { for (let d = 1; d <= 8; d++) if (window.__paw.fw.daily('2026-11', d).t === 'coins') return d; return 0; })); await t.ctx.close(); return d; })();
+  const atDate = async (iso) => { t.clockOffset = new Date(iso + 'T10:00:00').getTime() - Date.now(); await fresh(); };
+  await atDate('2026-11-' + String(coinDay).padStart(2, '0'));
+  await ev(() => { window.__paw.S.fw.cal.dgc = 155; }); const c9 = (await t.S()).coins;
+  ok(await ev(() => window.__paw.fw.dgClaim()) && (await t.S()).coins - c9 === 5 && (await t.S()).fw.cal.dgc === 160, 'the cap: with 155 daily-gift coins this month a 10-coin gift pays 5');
+  await t.ctx.close();
+  await atDate('2026-10-31'); await calDay();
+  ok(await ev(() => document.querySelector('.fw-dg').classList.contains('fest') && /Apple Monster Biscuits/.test(document.querySelector('.fw-dg').textContent)), 'Halloween: a festival treat, shown on the sheet');
+  const ab = (await t.S()).inv.food['Apple Monster Biscuits'] || 0; await t.p.click('#fwDgClaim');
+  ok(await t.waitToast(/A festival treat!/, 4000) && ((await t.S()).inv.food['Apple Monster Biscuits'] || 0) === ab + 2, 'claimed: 2 Apple Monster Biscuits');
+  await t.ctx.close();
+  // phones and desktop sizes: the sheet fits with the gift first
+  { const n0 = new Date(); n0.setHours(10, 0, 0, 0); t.clockOffset = n0.getTime() - Date.now(); }
+  await fresh({ device: 'iPhone 15' });
+  for (const [w, h] of [[393, 852], [360, 640]]) {
+    await t.p.setViewportSize({ width: w, height: h }); await t.sleep(400); await calDay();
+    const r = await ev(() => { const p = document.querySelector('#modal .panel'), g = p.querySelector('.fw-dg').getBoundingClientRect(), b = p.querySelector('#fwDgClaim'), br = b ? b.getBoundingClientRect() : null, body = p.querySelector('.panel-body').getBoundingClientRect(); return { inside: g.left >= body.left - 1 && g.right <= body.right + 1, top: g.top < body.top + 120, btn: !br || (br.height >= 44 && br.bottom <= body.bottom + 1), sw: document.documentElement.scrollWidth <= window.innerWidth + 1 }; });
+    ok(Object.values(r).every(Boolean), `${w} x ${h}: Today's gift sits at the top of the sheet, its Claim button 44 px, no sideways scroll ` + JSON.stringify(r));
+    if (w === 393) await shot('daily_gift_phone');
+    await t.closeX(); await t.modalGone();
+  }
+  await t.p.setViewportSize({ width: 393, height: 852 }); await calDay(); await t.p.click('#fwDgClaim'); await t.sleep(500); await shot('daily_gift_claimed_phone'); await t.closeX();
+  await t.ctx.close();
+  await fresh(); await t.p.setViewportSize({ width: 1440, height: 900 }); await t.sleep(500); await calDay();
+  ok(await ev(() => { const g = document.querySelector('.fw-dg').getBoundingClientRect(); return g.width > 200 && g.right <= window.innerWidth; }), '1440 x 900: the sheet shows the gift first');
+  await shot('daily_gift_desktop_1440'); await t.closeX();
+  await t.ctx.close();
+}, { timeout: 720000 });
