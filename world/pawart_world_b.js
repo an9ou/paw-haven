@@ -5351,6 +5351,33 @@ ITEMS['Knitted Nest']=function(b){
   const [x,y,w,h]=BED_CROP['Knitted Nest'],W=62,H=BED_ICON_H['Knitted Nest'];
   const t=bedTpl('Knitted Nest',true).split(IDT).join(IDT+'n'+(BEDN++).toString(36)).replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'');
   b.raw(`<g transform="translate(${R1(32-W/2)} ${R1(35-H/2)}) scale(${R1(W/w*1000)/1000} ${R1(H/h*1000)/1000}) translate(${-x} ${-y})">${t}</g>`);b.ex('spark',56,12,3.4,'#FFE07A')};
+/* v2.17.1 Festive Market (V2171.md): the Witch-Hat Bed, 260x160 like every bed (floor y 152, the sleep area about (130,100), the front lip in .pa-bed-front).
+   A purple cushion under a floppy crooked hat roof with an orange band; crude crayon, every fill on its own outline. Sold only at the Halloween Market. */
+BEDS['Witch-Hat Bed']=function(b){
+  const PU='#9C7CC4',PUL='#E6DCF5',PUD='#6E5296',OR='#F2A65A';
+  b.shadow(130,151,112,3.5);
+  // the hat roof behind: a wide floppy cone leaning right, the tip curling over
+  b.sh([[30,104],[60,70],[96,38],[124,14],[150,6],[176,14],[168,24],[150,24],[160,52],[200,84],[232,104]],PU,{k:.18,sh:PUD,base:PUL});
+  b.sh([[40,102],[220,102],[214,86],[48,86]],OR,{k:.08,hatch:0,hl:0,base:'#FCD9B0'});
+  b.sh(starP(118,58,9,4),'#FFE08A',{hatch:0,hl:0,lw:.8});b.sh(starP(160,40,6,3),'#FFE08A',{hatch:0,hl:0,lw:.7});
+  // the cushion in the hollow
+  b.sh(E(130,112,98,26,30),PUD,{hatch:0,hl:0,lw:.9,base:PU,dr:.3});
+  b.sh(E(130,114,92,20,30),PUL,{hl:0,sh:'#C9B6E6',ho:.35,base:'#F6F1FC',marks:[{pts:E(114,110,44,7,16),fill:'#FFFFFF',op:.85}]});
+  FRONT0(b);
+  // the brim in front: a fat round roll, plain strokes, then a little pumpkin patch sewn on
+  const fr=[];for(let i=0;i<=40;i++){const a=i/40*Math.PI;fr.push([130+Math.cos(a)*120,116+Math.sin(a)*34])}
+  for(let i=40;i>=0;i--){const a=i/40*Math.PI;fr.push([130+Math.cos(a)*92,116+Math.sin(a)*12])}
+  b.sh(fr,PU,{k:.12,hatch:0,hl:0,base:PUL});
+  b.sh(E(130,138,12,9,14),OR,{hatch:0,hl:0,lw:.8,base:'#FCD9B0'});b.ln([[130,129],[131,125]],{w:sw(b,1.6),col:'#7FB86A'});
+  FRONT1(b);
+  b.ex('spark',22,70,3.6,'#FFE07A');
+};
+BED_CROP['Witch-Hat Bed']=[6,2,248,152];BED_ICON_H['Witch-Hat Bed']=54;
+ITEMS['Witch-Hat Bed']=function(b){
+  const [x,y,w,h]=BED_CROP['Witch-Hat Bed'],W=62,H=BED_ICON_H['Witch-Hat Bed'];
+  const t=bedTpl('Witch-Hat Bed',true).split(IDT).join(IDT+'n'+(BEDN++).toString(36)).replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'');
+  b.raw(`<g transform="translate(${R1(32-W/2)} ${R1(35-H/2)}) scale(${R1(W/w*1000)/1000} ${R1(H/h*1000)/1000}) translate(${-x} ${-y})">${t}</g>`);b.ex('spark',56,12,3.4,'#FFE07A')};
+
 
 Object.assign(ICONS,{
  // a little armchair with a paw cushion (the Furniture corner)

@@ -113,7 +113,7 @@ function hwSquareDraw() {
 
 /* ---- the pop-up sheet ---- */
 function hwItems() {
-  const ed = (x) => x.ed === HW_ED;
+  const ed = (x) => x.ed === HW_ED && !x.fm; // v2.17.1: the Festive Market's own items (fm) are sold at the market only
   return Object.keys(HM_DECOR).filter((n) => ed(HM_DECOR[n])).map((n) => ({ cat: 'decor', n, name: fsIName('decor', n), price: HM_DECOR[n].price, desc: tdata('hm_decor.' + tid(n) + '.story', HM_DECOR[n].story) }))
     .concat(FOOD.filter(ed).map((f) => ({ cat: 'food', n: f.n, name: fsIName('food', f.n), price: f.price, desc: tdata('food.' + tid(f.n) + '.note', f.note), tip: f.tip ? tdata('food.' + tid(f.n) + '.tip', f.tip) : f.tip })))
     .concat(TOYS.filter(ed).map((t) => ({ cat: 'toys', n: t.n, name: fsIName('toys', t.n), price: t.price, desc: tdata('toys.' + tid(t.n) + '.note', t.note) })))
@@ -194,7 +194,7 @@ on('env:fest', () => { hwTick(); if (cur.mode === 'yard') setTimeout(hwLetter, 6
 function hwExpose() {
   if (!window.__paw) return;
   window.__paw.hw = {
-    open: () => hwOpen(), items: () => hwItems().map((x) => x.n), on: () => hwOn(), spot: () => ({ desk: HW_POP.desk, phone: HW_POP.phone, decor: Object.fromEntries(Object.keys(HM_DECOR).filter((n) => HM_DECOR[n].ed).map((n) => [n, HM_DECOR[n].at])) }),
+    open: () => hwOpen(), items: () => hwItems().map((x) => x.n), on: () => hwOn(), spot: () => ({ desk: HW_POP.desk, phone: HW_POP.phone, decor: Object.fromEntries(Object.keys(HM_DECOR).filter((n) => HM_DECOR[n].ed && !HM_DECOR[n].fm).map((n) => [n, HM_DECOR[n].at])) }),
     popupBox: () => hwPopBox(), letter: () => hwLetter(), journal: () => hwJournalLine(), tick: () => hwTick(), tag: (n) => hwTag(n), get pending() { return HW.pending; }, get buys() { return HW.buys.slice(); },
     allow: (v) => { prefs.hwTest = !!v; hwTick(); } // the harness gate (hwAllowed) for suites that cannot pass prefs.hwTest at load (the occlusion hooks)
   };

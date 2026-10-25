@@ -65,12 +65,14 @@ const TOYS = [
   { n: 'Plush Ghost', fest: 'halloween', ed: 2026, v26: true, price: 55, bond: 1, note: 'Shake: a floppy ghost to shake and carry about. +Happiness, a little Bond.' },
   { n: 'Bat-Wing Flyer', fest: 'halloween', ed: 2026, v26: true, price: 65, bond: 2, note: 'Leap: a soft flyer with felt bat wings to jump for. +Happiness, -Energy.' },
   { n: 'Trick-or-Treat Bucket', fest: 'halloween', ed: 2026, v26: true, price: 80, bond: 2, note: 'Sniff: nose out the treats hidden under the lids. +Happiness, a little Bond.' },
-  /* v2.17.1 Halloween Market toys (fest 'hwmarket', hm: 2026): each plays one of the older toy games with its own look (mods/toys.js HM_TOY_GAME) */
-  { n: 'Squeaky Bat', fest: 'hwmarket', hm: 2026, price: 50, bond: 1, note: 'Squeeze: a soft purple bat that squeaks. +Happiness.' },
-  { n: 'Pumpkin Ball', fest: 'hwmarket', hm: 2026, price: 45, bond: 1, note: 'Fetch: a squishy pumpkin ball that bounces a bit wonky. 2 coins per return.' },
-  { n: 'Rope Mummy', fest: 'hwmarket', hm: 2026, price: 60, bond: 1, note: 'Shake: a rope toy wrapped in soft cream cloth. +Happiness, a little Bond.' },
-  { n: 'Glow-in-the-Dark Bone', fest: 'hwmarket', hm: 2026, price: 70, bond: 2, note: 'Night fetch: a rubber bone that glows after dark. +Happiness, -Energy.' },
-  { n: 'Soft Spider Plush', fest: 'hwmarket', hm: 2026, price: 65, bond: 2, note: 'Nap buddy: a round fuzzy spider with a bow. +10% nap Energy.' },
+  /* v2.17.2 Spooky Stalls: Festive Market toys (fm), each plays an older toy game with its own look (mods/toys.js HM_TOY_GAME) */
+  { n: 'Squeaky Bat', fest: 'halloween', ed: 2026, fm: true, price: 50, bond: 1, note: 'Squeeze: a soft purple bat that squeaks. +Happiness.' },
+  { n: 'Pumpkin Ball', fest: 'halloween', ed: 2026, fm: true, price: 45, bond: 1, note: 'Fetch: a squishy pumpkin ball that bounces a bit wonky. 2 coins per return.' },
+  { n: 'Rope Mummy', fest: 'halloween', ed: 2026, fm: true, price: 60, bond: 1, note: 'Shake: a rope toy wrapped in soft cream cloth. +Happiness, a little Bond.' },
+  { n: 'Glow-in-the-Dark Bone', fest: 'halloween', ed: 2026, fm: true, price: 70, bond: 2, note: 'Night fetch: a rubber bone that glows after dark. +Happiness, -Energy.' },
+  { n: 'Soft Spider Plush', fest: 'halloween', ed: 2026, fm: true, price: 65, bond: 2, note: 'Nap buddy: a round fuzzy spider with a bow. +10% nap Energy.' },
+  /* v2.17.1 Festive Market (V2171.md): sold only at the Festive Market (fm), a ball-play toy (BL_TOYS in 49_market.js) */
+  { n: 'Squeaky Ghost', fest: 'halloween', ed: 2026, fm: true, price: 50, bond: 1, note: 'Fetch: a soft little ghost that squeaks when it lands. Ball play, 2 coins a return.' },
   /* v2.11 Tokyo Trip: the Tokyo Tower souvenir stand only (tokyo + fest 'tokyo'), with its own play game in mods/toys.js */
   { n: 'Shinkansen Plush', fest: 'tokyo', tokyo: true, price: 80, bond: 1, v211: true, note: 'Zoom: a soft bullet train to roll along the ground and chase. +Happiness.' },
 ];
@@ -114,17 +116,17 @@ const CLOTHES = [
   { n: 'Pumpkin Patch Suit', slot: 'body', fest: 'halloween', ed: 2026, v26: true, price: 70, bond: 1, perk: 'Round and proud: crayon pumpkin ribs, a leafy collar and a curly stem on top.' },
   { n: 'Trick-or-Treat Ghost', slot: 'body', fest: 'halloween', ed: 2026, v26: true, price: 70, bond: 1, perk: 'Boo: a soft sheet with two eye holes and a little pumpkin bucket to carry.' },
   { n: 'Little Bat Costume', slot: 'body', fest: 'halloween', ed: 2026, v26: true, price: 75, bond: 1, perk: 'Flutter: a purple hood with pointy ears, small wings and an orange frill.' },
-  /* v2.17.1 Halloween Market (art/halloween-market): fest 'hwmarket' keeps them out of every shop and stall until the market lists them; hm: 2026 marks the set */
-  { n: 'Little Witch Hat & Cape', slot: 'body', fest: 'hwmarket', hm: 2026, price: 75, bond: 1, perk: 'Spellbound: a short purple cape with yellow stars and a small crooked hat. No spells, only cuddles.' },
-  { n: 'Scarecrow Overalls', slot: 'body', fest: 'hwmarket', hm: 2026, price: 70, bond: 1, perk: 'Harvest look: patched denim dungarees and a floppy straw hat. The crows want to be friends.' },
-  { n: 'Mummy Wraps', slot: 'body', fest: 'hwmarket', hm: 2026, price: 70, bond: 1, perk: 'Wrapped up: soft cream bandages and a band above the eyes. One loose end, on purpose.' },
-  { n: 'Skeleton Suit', slot: 'body', fest: 'hwmarket', hm: 2026, price: 75, bond: 2, perk: 'Glow bones: a soft black suit with friendly white crayon bones and a little bone hair clip.' },
-  { n: 'Black Cat Ears & Bow', slot: 'body', fest: 'hwmarket', hm: 2026, price: 60, bond: 1, perk: 'Meow?: black felt cat ears and a big orange bow on the tail. Nobody is fooled. Everybody approves.' },
-  { n: 'Pirate Hat & Sash', slot: 'body', fest: 'hwmarket', hm: 2026, price: 75, bond: 2, perk: 'Ahoy: a black tricorn with a paw print and a red sash. No eyepatch, both eyes on the snacks.' },
-  { n: 'Dinosaur Hood', slot: 'body', fest: 'hwmarket', hm: 2026, price: 85, bond: 2, perk: 'Rawr: a green suit with soft spikes and a hood with felt teeth. The face stays open for kisses.' },
-  { n: 'Little Owl Wings', slot: 'body', fest: 'hwmarket', hm: 2026, price: 70, bond: 2, perk: 'Hoo: soft brown feathered wings and a band with two ear tufts. Wise-looking, at least.' },
-  { n: 'Wizard Robe & Star Hat', slot: 'body', fest: 'hwmarket', hm: 2026, price: 85, bond: 3, perk: 'Starlight: a navy robe with stars and a moon, and a tall star-tipped hat.' },
-  { n: 'Lion Mane', slot: 'neck', fest: 'hwmarket', hm: 2026, price: 60, bond: 1, perk: 'Roar (quietly): a big golden mane round the face. Every dog is the king of the yard.' },
+  /* v2.17.2 Spooky Stalls: ten Halloween Market costumes (fm: sold only at the Festive Market, 49_market.js) */
+  { n: 'Little Witch Hat & Cape', slot: 'body', fest: 'halloween', ed: 2026, fm: true, price: 75, bond: 1, perk: 'Spellbound: a short purple cape with yellow stars and a small crooked hat. No spells, only cuddles.' },
+  { n: 'Scarecrow Overalls', slot: 'body', fest: 'halloween', ed: 2026, fm: true, price: 70, bond: 1, perk: 'Harvest look: patched denim dungarees and a floppy straw hat. The crows want to be friends.' },
+  { n: 'Mummy Wraps', slot: 'body', fest: 'halloween', ed: 2026, fm: true, price: 70, bond: 1, perk: 'Wrapped up: soft cream bandages and a band above the eyes. One loose end, on purpose.' },
+  { n: 'Skeleton Suit', slot: 'body', fest: 'halloween', ed: 2026, fm: true, price: 75, bond: 2, perk: 'Glow bones: a soft black suit with friendly white crayon bones and a little bone hair clip.' },
+  { n: 'Black Cat Ears & Bow', slot: 'body', fest: 'halloween', ed: 2026, fm: true, price: 60, bond: 1, perk: 'Meow?: black felt cat ears and a big orange bow on the tail. Nobody is fooled. Everybody approves.' },
+  { n: 'Pirate Hat & Sash', slot: 'body', fest: 'halloween', ed: 2026, fm: true, price: 75, bond: 2, perk: 'Ahoy: a black tricorn with a paw print and a red sash. No eyepatch, both eyes on the snacks.' },
+  { n: 'Dinosaur Hood', slot: 'body', fest: 'halloween', ed: 2026, fm: true, price: 85, bond: 2, perk: 'Rawr: a green suit with soft spikes and a hood with felt teeth. The face stays open for kisses.' },
+  { n: 'Little Owl Wings', slot: 'body', fest: 'halloween', ed: 2026, fm: true, price: 70, bond: 2, perk: 'Hoo: soft brown feathered wings and a band with two ear tufts. Wise-looking, at least.' },
+  { n: 'Wizard Robe & Star Hat', slot: 'body', fest: 'halloween', ed: 2026, fm: true, price: 85, bond: 3, perk: 'Starlight: a navy robe with stars and a moon, and a tall star-tipped hat.' },
+  { n: 'Lion Mane', slot: 'neck', fest: 'halloween', ed: 2026, fm: true, price: 60, bond: 1, perk: 'Roar (quietly): a big golden mane round the face. Every dog is the king of the yard.' },
   // v2.8 Winter & New Year (V28.md section 1): the Winter Stall sells the first three (fest), the Rosette is the contest reward, the Hood comes in Gerald's New Year card (ed: 2027, never sold)
   { n: 'Very Ugly Sweater', slot: 'body', fest: 'snow', price: 65, bond: 1, v28: true, perk: 'Warm: no shivering in the snow. Knitted by someone who has never seen a dog, or a snowflake.' },
   { n: 'Reindeer Antlers', slot: 'head', fest: 'snow', price: 55, bond: 1, v28: true, perk: 'Jingle: a little bell on each antler. Not warm. Very festive.' },
@@ -155,7 +157,7 @@ const HOUSES = [
   { n: 'Camper Van', price: 1200, bond: 5, comfort: 0.35, hd: 2.5, v24: true, note: 'The wheels are painted on. It has never moved. It has been everywhere.' },
   { n: 'Pumpkin Cottage', price: 1800, bond: 6, comfort: 0.45, hd: 2.5, v24: true, note: 'Round orange walls and a leaf for a roof. Smells faintly of pie.' },
   { n: 'Lighthouse Kennel', price: 3000, bond: 8, comfort: 0.60, hd: 2, v24: true, note: 'The lamp turns at night. Ships are confused.' },
-  { n: 'Friendly Haunted Kennel', price: 900, bond: 3, comfort: 0.25, hd: 3, fest: 'hwmarket', hm: 2026, note: 'A crooked purple house with smiling ghost curtains. The only thing it haunts is the food bowl.' }, // v2.17.1 Halloween Market
+  { n: 'Friendly Haunted Kennel', price: 900, bond: 3, comfort: 0.25, hd: 3, fest: 'halloween', ed: 2026, fm: true, note: 'A crooked purple house with smiling ghost curtains. The only thing it haunts is the food bowl.' }, // v2.17.2 Spooky Stalls (Festive Market)
   { n: 'Rocket Ship', price: 0, bond: 1, comfort: 0.55, hd: 2, v24: true, reward: true, note: 'Countdown painted on the side. Launch is cancelled, forever, for naps.' }
 ];
 const SLOTS = ['head', 'eyes', 'neck', 'body'];
@@ -569,6 +571,7 @@ function mpPlainGround(name) {
     + `<g fill="none" stroke="#B9C79A" stroke-width="3" stroke-linecap="round">${[[90, 430], [260, 470], [450, 420], [640, 480], [820, 440], [160, 540], [560, 550], [900, 530]].map(([x, y]) => `<path d="M${x} ${y} l6 -14 M${x + 8} ${y} l2 -16 M${x + 16} ${y} l-4 -12"/>`).join('')}</g></g>` + mpPlainDoor(name) + placeSign(name); // v2.15: a storefront gets a doodle door (data-shop, 42_map215.js)
 }
 function sceneArt(name, e, extra) {
+  if (name === 'fmarket' && typeof fmSceneArt === 'function') return fmSceneArt(); // v2.17.1: the Festive Market (49_market.js)
   const o = Object.assign({}, e || {}, extra || {});
   const tk = tkSceneArt(name, o); if (tk) return tk; // v2.11: the six Tokyo places (world D / E art, else a stand-in, 39_tokyo.js)
   if (MP_KEYS.includes(name) && !mpSceneReady(name)) return mpPlainGround(name); // v2.15: a new place whose world G scene is not there (yet)
@@ -758,6 +761,7 @@ function freshState(key, name, sex) {
   v214Fields(st); st.lang = i18nReal(prefs.langPick) ? prefs.langPick : null; // v2.14: a language picked on the title screen before the save existed (V214.md 5)
   v216Fields(st); Object.assign(st.fw, { fresh: true, wel: { days: [], got: [] }, dock: 1, dockNew: { wardrobe: 1, journal: 1 } }); if (typeof fwOn === 'function' && fwOn()) st.guide.fw = 1; // v2.16 First Week (V216.md 2): a new save gets Puppy's first day, the welcome week and the lighter phone dock
   v217Fields(st); // v2.17 Dog Days (V217.md 6): wishes, the diary, stickers, letters, the Bond track gifts
+  v2171Fields(st); // v2.17.1 Festive Market (V2171.md 7)
   return linkDogs(st);
 }
 let S = null;
@@ -796,6 +800,7 @@ function migrate(s) {
   v215Fields(s); // v2.15 Around Town (V215.md section 9): additive
   fwBondFix(s); v216Fields(s); // v2.16 First Week (V216.md section 2): additive; the new Bond thresholds level old dogs up quietly
   v217Fields(s); // v2.17 Dog Days (V217.md section 6): additive
+  v2171Fields(s); // v2.17.1 Festive Market (V2171.md section 7): additive
   return s;
 }
 /* v2.7 Home & Pack save fields (V27.md section 1). Additive only: S.v stays 1, nothing is dropped.
@@ -920,6 +925,12 @@ function v217Fields(s) {
   if (d.diary.length > 60) d.diary.splice(0, d.diary.length - 60);
   return s;
 }
+/* v2.17.1 Festive Market save fields (V2171.md 7). Additive: S.fm = { seen: { marketId_year: ISO }, letters: { marketId_year: ISO }, bought } */
+function v2171Fields(s) {
+  if (!s) return s; if (!v28Obj(s.fm)) s.fm = {};
+  ['seen', 'letters'].forEach((k) => { if (!v28Obj(s.fm[k])) s.fm[k] = {}; }); if (typeof s.fm.bought !== 'number' || !(s.fm.bought >= 0)) s.fm.bought = 0;
+  return s;
+}
 // v2.16: BOND_TH moved Bond 2 and 3 closer. A loaded dog whose points already pass a threshold levels up here, quietly (no fanfare, no level-up queue);
 // migNote shows one kind toast. Levels never go down.
 function fwBondFix(s) {
@@ -1014,6 +1025,7 @@ function mpPlaceSync() {
 }
 mpPlaceSync();
 function mpPlaceName(k) {
+  if (k === 'fmarket' && PLACES[k] && typeof fmPlaceName === 'function') return fmPlaceName(); // v2.17.1: the Festive Market takes its market's name
   if (!mpOn() || !PLACES[k]) return null;
   switch (k) {
     case 'market': return tdata('shop_name.kibble', 'Kibble Corner'); // the storefronts share their shop's name (already in every language)
@@ -1352,7 +1364,7 @@ function unlocksFor(L) {
   const u = [];
   for (const k in ROUTES) if (ROUTES[k].bond === L && L > 1) u.push(tt('core.unlock_route', '{dig, select, yes {Walk route: {route} (with digging)} other {Walk route: {route}}}', { dig: ROUTES[k].dig ? 'yes' : 'no', route: tRoute(k) }));
   TRICKS.forEach((t) => { if (t.bond === L) u.push(t.n === 'Signature' ? tt('core.unlock_signature', 'Signature trick: {trick}', { trick: tSig(S.dog.key) }) : tt('core.unlock_trick', 'Trick: {trick}', { trick: tTrick(t.n) })); });
-  TOYS.concat(CLOTHES).forEach((t) => { if (t.bond === L && L > 1 && !t.ed && !t.hm) u.push(tt('core.unlock_shop', 'Shop: {item}', { item: tItem(t.n) })); });
+  TOYS.concat(CLOTHES).forEach((t) => { if (t.bond === L && L > 1 && !t.ed) u.push(tt('core.unlock_shop', 'Shop: {item}', { item: tItem(t.n) })); });
   HOUSES.forEach((h) => { if (h.bond === L && L > 1) u.push(tt('core.unlock_house', 'House: {house}', { house: tItem(h.n) })); });
   if (L === 10) u.push(tt('core.unlock_badge', 'Best Friends badge (it is invisible, but it is there)'));
   if (typeof ddUnlocks === 'function') u.push(...ddUnlocks(L)); // v2.17: the Bond track gifts (48_dogdays.js)
