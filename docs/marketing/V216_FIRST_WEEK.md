@@ -20,3 +20,14 @@ Live on https://doodledoggo.app and itch.io (build #2209159). Screenshots: `docs
 - "Your first day with your crayon puppy" (the 5 guided steps ending in the Bond 2 party, the dog's first Paw and confetti).
 
 **Next:** v2.17 "Dog Days" (daily dog wishes, a Bond reward ladder, a crayon dog diary, a sticker book, letters).
+
+## v2.16.1 "Smooth moves" (26 Oct 2026)
+
+From the Game Manager's briefing; no post made. A quick fix release from the owner's desktop feedback (itch.io build #2211374):
+- Smoother dogs on computers: they glide instead of jumping, most of all on the agility course (about 50–67 ms a frame down to a steady 60 fps).
+- A bigger calendar on computers (day circles about 90 px, big numbers). Phones unchanged.
+- A tidier yard: the mailbox stands by the house door, and the mission board left the garden (missions are a small clipboard with the count next to the coins, or "Daily missions" in the "..." menu on phones).
+- Screenshots: `docs/release/v2.16.1/` on main (`calendar_before/after_*`, `yard_before/after_*`). No new breeds or items.
+- Angle: "smoother dogs and a cleaner garden" (a yard before/after would suit it).
+
+Coming soon: v2.17 "Dog Days" (daily wishes, a Bond reward ladder with a crayon crown, a dog diary, a sticker book, letters, a daily login gift) and rainy days (wet dogs in the rain, being drawn for all 35 breeds).
