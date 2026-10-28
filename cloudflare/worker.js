@@ -217,7 +217,7 @@ function dcCardOf(body) {
 function dcPub(r, mine) {
   let dogs = []; try { dogs = JSON.parse(r.dogs); } catch (e) { dogs = []; }
   const o = { id: r.id, name: [r.name_a | 0, r.name_b | 0], dogs, paws: r.paws | 0 };
-  if (mine) o.at = r.updated_at | 0;
+  if (mine) o.at = Number(r.updated_at) || 0; // a millisecond time. `| 0` keeps only 32 bits, so `at` was never a real clock and the game republished the card on every sync.
   return o;
 }
 const DC_COLS = 'c.id, c.name_a, c.name_b, c.dogs, c.paws, c.updated_at';
@@ -354,7 +354,10 @@ const ROUTES = {
     if (pwBad(body.password)) return fail('weak_password', 400);
     if (await limited(env, 'pw:' + me.id, 10, 3600)) return fail('rate_limited', 429);
     const h = await newHash(body.password);
-    await run(env, 'update users set pw_hash = ?1, pw_salt = ?2 where id = ?3', h.hash, h.salt, me.id);
+    await env.DB.batch([
+      env.DB.prepare('update users set pw_hash = ?1, pw_salt = ?2 where id = ?3').bind(h.hash, h.salt, me.id),
+      env.DB.prepare('delete from sessions where user_id = ?1 and token_hash != ?2').bind(me.id, me.th) // same as a reset: other devices lose the old password's sessions. This device keeps its token.
+    ]);
     return json({ ok: true });
   } },
 

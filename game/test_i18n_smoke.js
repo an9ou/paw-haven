@@ -93,4 +93,11 @@ require('./test_lib').run('i18n_smoke', async (t) => {
   await Promise.all([p.waitForEvent('load'), p.click('#setLangBox [data-lang=""]')]);
   ok(await t.until(() => window.PawI18n && window.PawI18n.tlang() === 'en', null, 15000), '"Use device language" goes back to the device (en here)');
   ok((await S()).lang === null, 'S.lang = null');
+
+  sec('title with a save loaded: switching language applies (it used to throw)');
+  await t.reloadKeepingSave(); await p.waitForSelector('#tContinue', { timeout: 20000 });
+  ok(await ev(() => window.__paw.mode === 'title' && !!window.__paw.S), 'a reload with a save sits on the title with S loaded');
+  ok(await ev(() => window.__paw.i18n.set('fr') === true), 'tsetLang(fr) on that title returns true');
+  ok(await t.until(() => window.PawI18n.tlang() === 'fr' && document.documentElement.lang === 'fr' && !!document.getElementById('tContinue'), null, 8000), 'the title re-renders in French');
+  ok((await S()).lang === 'fr' && (await S()).langShown === 'fr', 'S.lang and S.langShown are fr');
 }, { timeout: 1500000 });
