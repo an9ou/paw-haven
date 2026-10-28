@@ -29,7 +29,7 @@ function tick() {
     if (S.stats.energy >= 100) wake(true);
   } else if (cur.mode !== 'walk' && cur.mode !== 'toy') addStat('energy', -2 * h);
   idleTick(); packIdleTick(); if ((voiceClock += dt) >= 1) { voiceClock = 0; voiceTick(); }
-  if (cur.mode === 'yard' && !busy && $('#dogArt')) renderDog(dogPoseNow(), IDLE.act ? IDLE.act.facing : 'right');
+  if (cur.mode === 'yard' && !busy) { const pose = dogPoseNow(), face = IDLE.act ? IDLE.act.facing : 'right'; if (!dogKey || pose !== dogPoseDrawn || face !== dogFaceDrawn) renderDog(pose, face); }
   updateHUD();
   saveClock += dt; if (saveClock > 3 && dirty) { saveClock = 0; saveNow(); }
 }

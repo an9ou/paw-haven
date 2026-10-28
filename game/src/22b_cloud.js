@@ -12,7 +12,7 @@ const CL = {
   uid: null, email: '', anon: true,
   timer: null, retryT: null, applyT: null, busy: false, again: false, againForce: false, flush: false,
   err: '', lastSync: 0, lastPull: 0, inputAt: 0, savedAt: 0,
-  pending: null, ready: false, offShown: false, regPath: '', ui: '', msg: '', bk: null, code: '',
+  pending: null, pulling: false, ready: false, offShown: false, regPath: '', ui: '', msg: '', bk: null, code: '',
   started: false, out: false // v2.3 title: the first start finished / logged out on this page
 };
 function clMeta() { let m = null; try { m = JSON.parse(lsGet(CL_CFG.metaKey) || 'null'); } catch (e) { m = null; } return Object.assign({ rev: 0, changedAt: 0, pushedAt: 0, uid: null, dogId: null, nudged: false }, m || {}); }
@@ -156,9 +156,31 @@ function clReasonText(r) {
     default: return r;
   }
 }
-async function clBackup(data, reason) {
-  if (!CL.live || !CL.uid || !data) return false;
-  try { return (await clApi('POST', '/backups', { data, reason })).ok; } catch (e) { return false; }
+async function clBackupTry(data, reason) {
+  if (!CL.live || !CL.uid || !data) return { ok: false, hard: true };
+  try {
+    const r = await clApi('POST', '/backups', { data, reason });
+    if (r.ok) return { ok: true };
+    const hard = r.status === 400 || r.status === 401 || r.status === 403 || r.status === 413;
+    return { ok: false, hard, status: r.status };
+  } catch (e) { return { ok: false, hard: false }; }
+}
+async function clBackup(data, reason) { return (await clBackupTry(data, reason)).ok; }
+// a conflict backup must land before the older save is replaced. Transient failures are tried again here; a hard refusal is not.
+async function clBackupHold(data, reason) {
+  for (let i = 0; i < 3; i++) {
+    const r = await clBackupTry(data, reason);
+    if (r.ok) return true;
+    if (r.hard || r.status === 429) return false;
+    if (i < 2) await new Promise((res) => setTimeout(res, 400 * (i + 1)));
+  }
+  return false;
+}
+// the overwrite waits. The older progress stays where it is until a later try can back it up.
+function clHoldSync(again) {
+  CL.err = 'offline'; clearTimeout(CL.retryT);
+  CL.retryT = setTimeout(() => { CL.retryT = null; CL.err = ''; again(); }, 15000);
+  clStat();
 }
 const clRow = (q) => (q && q.ok && q.data && q.data.save) || null;
 async function clPush(force) {
@@ -180,19 +202,30 @@ async function clPush(force) {
     const live = clLocal(); m = clMeta(); changedAt = m.changedAt || changedAt;
     if (!live) return;
     if (row && row.rev > (m.rev || 0)) { // another device saved since we last looked
-      if (Date.parse(row.changed_at) > changedAt && !force) { // theirs is newer: ours loses
-        await clBackup(live, 'older than your other device'); clMetaSet({ pushedAt: changedAt });
+      if (Date.parse(row.changed_at) > changedAt && !force) { // theirs is newer: ours loses, but only after ours is backed up
+        if (!(await clBackupHold(live, 'older than your other device'))) { clHoldSync(() => clPush()); return; }
+        clMetaSet({ pushedAt: changedAt });
         CL.busy = false; await clPull(); return;
       }
-      const full = clRow(await clApi('GET', '/save'));
-      if (full && full.data && !clSame(full.data, live)) await clBackup(full.data, 'older than your other device');
+      const fullQ = await clApi('GET', '/save'), full = clRow(fullQ);
+      if (!fullQ.ok || !full || !full.data) { clHoldSync(() => clPush()); return; } // can't read what we would overwrite
+      if (!clSame(full.data, live) && !(await clBackupHold(full.data, 'older than your other device'))) { clHoldSync(() => clPush()); return; }
     } else if (row && m.dogId && clDogId(live) !== m.dogId) { // "New dog" or "Reset save" on this device: keep the old dog's cloud save
-      const full = clRow(await clApi('GET', '/save'));
-      if (full && full.data) await clBackup(full.data, 'before a new game');
+      const fullQ = await clApi('GET', '/save'), full = clRow(fullQ);
+      if (!fullQ.ok || !full || !full.data) { clHoldSync(() => clPush()); return; }
+      if (!(await clBackupHold(full.data, 'before a new game'))) { clHoldSync(() => clPush()); return; }
     }
     const rev = Math.max(row ? row.rev : 0, m.rev || 0) + 1;
     const up = await clApi('PUT', '/save', { data: live, rev, changed_at: new Date(changedAt).toISOString(), device: clDevice() });
-    if (up.status === 409) { CL.again = true; CL.againForce = CL.againForce || !!force; return; } // another device saved in between: look again
+    if (up.status === 409) { // another device saved in between, or the server refused an older changed_at
+      const staleAt = up.data && Date.parse(up.data.changed_at);
+      if (staleAt > changedAt) { // newer time wins: keep ours only after it is backed up, then take theirs
+        if (!(await clBackupHold(live, 'older than your other device'))) { clHoldSync(() => clPush()); return; }
+        clMetaSet({ pushedAt: changedAt });
+        CL.busy = false; await clPull(); return;
+      }
+      CL.again = true; CL.againForce = CL.againForce || !!force; return;
+    }
     if (!up.ok) throw up.error;
     if (uid === CL.uid) { clMetaSet({ rev, pushedAt: changedAt, dogId: clDogId(live) }); CL.lastSync = Date.now(); CL.err = ''; if (!CL.anon) clOwn(uid, changedAt); }
   } catch (e) {
@@ -207,23 +240,30 @@ async function clPush(force) {
 function clPullSoon() { if (!CL.on || Date.now() - CL.lastPull < CL_CFG.pullGapMs) return; clPull(); }
 async function clPull() {
   if (!CL.on || !CL.live || !CL.uid) return;
-  CL.lastPull = Date.now();
+  if (CL.pulling) { CL.pullAgain = true; return; } // a push inside this pull may ask for another look; do it when this one finishes
+  CL.pulling = true; CL.lastPull = Date.now();
   try {
     const q = await clApi('GET', '/save');
     if (!q.ok) throw q.error;
     const row = clRow(q);
     if (!row) { if (clLocal()) { const m = clMeta(); clMetaSet({ changedAt: m.changedAt || Date.now(), rev: 0 }); clPush(true); } return; }
-    CL.err = ''; clRemote(row);
+    CL.err = ''; await clRemote(row);
   } catch (e) { CL.err = 'offline'; clStat(); }
+  finally {
+    CL.pulling = false;
+    if (CL.pullAgain) { CL.pullAgain = false; clPull(); }
+  }
 }
 // a cloud row arrived (a pull: game open, focus, back online). The newer changed_at wins, every time, with no question asked.
-function clRemote(row) {
+async function clRemote(row) {
   const m = clMeta(); if (!row || !row.data) return;
   if (row.rev <= (m.rev || 0)) { CL.lastSync = CL.lastSync || Date.now(); clStat(); return; } // our own save coming back, or one we already have
   const rt = Date.parse(row.changed_at) || 0, local = clLocal();
   if (local && clSame(local, row.data)) { clMetaSet({ rev: row.rev, changedAt: Math.max(m.changedAt, rt), pushedAt: Math.max(m.changedAt, rt) }); CL.lastSync = Date.now(); clStat(); return; }
   if (!local || rt > (m.changedAt || 0)) {
-    if (local && m.changedAt > (m.pushedAt || 0) && clMine()) clBackup(local, 'older than your other device'); // changes that never reached the cloud
+    if (local && m.changedAt > (m.pushedAt || 0) && clMine()) {
+      if (!(await clBackupHold(local, 'older than your other device'))) { clHoldSync(() => clPull()); return; } // changes that never reached the cloud stay on this device until the backup lands
+    }
     CL.pending = row; clApplySoon(); return;
   }
   clPush(true); // ours is newer: the push backs theirs up first
@@ -239,17 +279,26 @@ function clApplySoon() {
   const tryIt = () => { if (!CL.pending) { clearInterval(CL.applyT); CL.applyT = null; return; } if (clIdle()) { clearInterval(CL.applyT); CL.applyT = null; const r = CL.pending; clApply(r.data, r, tt('cloud.synced_from_other', 'Synced from your other device.')); } };
   CL.applyT = setInterval(tryIt, 1000); tryIt();
 }
+// migrate a copy first. The cloud blob is written only when that copy would load; a later reject puts the previous disk JSON back.
+function clAccept(data) {
+  if (!data || data.v !== 1 || !(data.dog || (data.dogs && data.dogs.length))) return false;
+  let copy; try { copy = JSON.parse(JSON.stringify(data)); } catch (e) { return false; }
+  try { const m = migrate(copy); return !!(m && m.v === 1 && (m.dog || (m.dogs && m.dogs.length))); } catch (e) { return false; }
+}
 // load a save into the running game. row: the cloud row it came from (null for an import or a restore)
 function clApply(data, row, msg) {
   CL.pending = null;
-  if (!data || data.v !== 1 || !(data.dog || (data.dogs && data.dogs.length))) return false;
-  lsSet(SAVE_KEY, JSON.stringify(data)); CL.fp = clFp(data);
+  if (!clAccept(data)) return false;
+  const prev = lsGet(SAVE_KEY), json = JSON.stringify(data);
+  if (!lsSet(SAVE_KEY, json)) return false;
+  const onTitle = cur.mode === 'title' || cur.mode === 'adopt' || !cur.mode;
+  S = loadSave();
+  if (!S) { if (prev == null) lsDel(SAVE_KEY); else lsSet(SAVE_KEY, prev); S = loadSave(); return false; }
+  CL.fp = clFp(data);
   if (row) { const t = Date.parse(row.changed_at) || Date.now(); clMetaSet({ rev: row.rev, changedAt: t, pushedAt: t, dogId: clDogId(data) }); CL.lastSync = Date.now(); }
   clOwn(row && CL.uid && !CL.anon ? CL.uid : null, row ? Date.parse(row.changed_at) || 0 : 0); // an import or restore is the player's own pick: it goes to whoever is signed in
   CL.savedAt = Date.now();
-  const onTitle = cur.mode === 'title' || cur.mode === 'adopt' || !cur.mode;
-  S = loadSave(); hudDogKey = ''; if (typeof coatCache !== 'undefined' && coatCache.clear) coatCache.clear();
-  if (!S) return false;
+  hudDogKey = ''; if (typeof coatCache !== 'undefined' && coatCache.clear) coatCache.clear();
   if (typeof tlangCheck === "function") tlangCheck();
   if (!onTitle) { if (!modal.hidden) closeModal(); applyAway(); gardenAdvance(); birthdayCheck(); go('yard'); }
   else go('title');
@@ -334,7 +383,9 @@ async function clSignedIn(u, local, owner) {
   if (row && row.data) {
     if (local && owner === CL.uid && clMeta().changedAt > (Date.parse(row.changed_at) || 0)) { await clPush(true); return { ok: true, loaded: false }; } // back on the owning account with newer changes from this device: they win, no roll-back
     if (local && other && clOwnerUnsynced()) lsSet(CL_CFG.backupKey, JSON.stringify(local)); // the other account's unsynced game: kept on this device
-    if (local && !other && !clSame(local, row.data)) await clBackup(local, 'guest save before sign-in');
+    if (local && !other && !clSame(local, row.data) && !(await clBackupHold(local, 'guest save before sign-in'))) {
+      clHoldSync(() => clPull()); return { ok: false, msg: tt('cloud.offline_saved', 'Cloud save is offline. Your game is saved on this device.') };
+    }
     clApply(row.data, row, null); return { ok: true, loaded: true };
   }
   if (other) { clDropLocal(); return { ok: true, loaded: false }; } // no save here: the other account's dogs leave this device (they are safe in its cloud)
@@ -386,8 +437,16 @@ async function clBackups() {
   try { const q = await clApi('GET', '/backups'); return q.ok && q.data ? q.data.backups || [] : null; } catch (e) { return null; }
 }
 // restoring makes the backup the newest save (the current game becomes a backup first)
+// the current game is kept (local backup, and the cloud copy when this save may go there) before a restore or an import replaces it
+async function clKeepFirst(data, reason) {
+  if (!data) return true;
+  const kept = lsSet(CL_CFG.backupKey, JSON.stringify(data));
+  const mine = CL.on && CL.uid && clMine();
+  if (mine && !(await clBackupHold(data, reason)) && !kept) return false;
+  return true;
+}
 async function clRestore(b) {
-  const cur0 = clLocal(); if (cur0) { lsSet(CL_CFG.backupKey, JSON.stringify(cur0)); if (clMine()) await clBackup(cur0, 'before a restore'); }
+  const cur0 = clLocal(); if (!(await clKeepFirst(cur0, 'before a restore'))) return false;
   if (!clApply(b.data, null, tt('cloud.backup_restored', 'Backup restored.'))) return false;
   clMetaSet({ changedAt: Date.now() }); clPush(true); return true;
 }
@@ -419,8 +478,8 @@ async function clDecode(code) {
 async function clImport(code) {
   const data = await clDecode(code);
   const cur0 = clLocal();
-  if (cur0) { lsSet(CL_CFG.backupKey, JSON.stringify(cur0)); if (CL.on && CL.uid && clMine()) await clBackup(cur0, 'before an import'); }
-  clApply(data, null, null);
+  if (!(await clKeepFirst(cur0, 'before an import'))) throw new Error(tt('cloud.offline_saved', 'Cloud save is offline. Your game is saved on this device.'));
+  if (!clApply(data, null, null)) throw new Error(tt('cloud.code_broken', 'That save code is broken.'));
   if (CL.on) { clMetaSet({ changedAt: Date.now(), dogId: clDogId(data) }); clPush(true); } // dogId: the push must not back the old game up a second time
   return data;
 }
@@ -538,4 +597,4 @@ function clBind(p) {
     }
   });
 }
-window.__pawCloud = { get CL() { return CL; }, meta: clMeta, status: cloudStatus, push: clPush, pull: clPull, encode: clExport, decode: clDecode, open: cloudOpen };
+window.__pawCloud = { get CL() { return CL; }, meta: clMeta, status: cloudStatus, push: clPush, pull: clPull, apply: clApply, encode: clExport, decode: clDecode, open: cloudOpen };

@@ -7,6 +7,7 @@
    ========================================================================= */
 const BOOST = { coins: 2, bond: 3, nap: 6 };
 const SAVE_KEY = 'pawhaven_proto_v1', PREF_KEY = 'pawhaven_prefs_v1';
+const SAVE_BACKUP_KEY = 'pawhaven_proto_v1_backup'; // same string as CL_CFG.backupKey (22b_cloud_config.js): the import/restore copy
 const BOND_TH = [0, 60, 180, 450, 700, 1000, 1400, 1900, 2500, 3200]; // v2.16 First Week: Bond 2 at 60 (was 100) and Bond 3 at 180 (was 250); the rest as before. Old saves level up quietly on load (fwBondFix)
 
 const FOOD = [
@@ -757,8 +758,26 @@ function saveNow() {
   dirty = false;
   if (typeof clOnSaved === 'function') clOnSaved();
 }
-function loadSave() { try { const s = JSON.parse(lsGet(SAVE_KEY) || 'null'); return s && (s.dog || (s.dogs && s.dogs.length)) && s.v === 1 ? migrate(s) : null; } catch (e) { return null; }
-  finally { if (typeof clOnLoaded === 'function') clOnLoaded(); } }
+function saveUsable(s) { return !!(s && s.v === 1 && (s.dog || (s.dogs && s.dogs.length))); }
+// a missing key is a new game. Bad JSON (the key is there but will not parse) tries the import/restore backup before giving up.
+function loadSave() {
+  try {
+    const raw = lsGet(SAVE_KEY);
+    if (raw == null) return null;
+    let s;
+    try { s = JSON.parse(raw); }
+    catch (e) {
+      const b = lsGet(SAVE_BACKUP_KEY);
+      if (b == null) return null;
+      s = JSON.parse(b);
+      const out = saveUsable(s) ? migrate(s) : null;
+      if (out) lsSet(SAVE_KEY, b); // heal the corrupt key so the next boot does not depend on the backup still being there
+      return out;
+    }
+    return saveUsable(s) ? migrate(s) : null;
+  } catch (e) { return null; }
+  finally { if (typeof clOnLoaded === 'function') clOnLoaded(); }
+}
 // v1 -> v1.1: add treasure fields; old collect-10 items are sold to a squirrel for 5 coins each
 function migrate(s) {
   if (!s || !s.inv) return s;

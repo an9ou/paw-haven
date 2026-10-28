@@ -1,6 +1,6 @@
 /* ======================= YARD ======================= */
 const DX = 298, DY = 295, DW = 264, DH = 220; // dog box: feet at y=500, centre x=430
-let dogKey = '', tempPose = null, tempUntil = 0, busy = false, pet = { start: 0, gain: 0, bonded: false, capped: false, dist: 0 };
+let dogKey = '', dogPoseDrawn = '', dogFaceDrawn = '', dogArtKeys = 0, tempPose = null, tempUntil = 0, busy = false, pet = { start: 0, gain: 0, bonded: false, capped: false, dist: 0 };
 function yardWorldSVG(extra = '') {
   return `<svg class="world" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMax slice">
     ${sceneG(S.place || 'yard', S.place === 'yard' ? { patch: gkOn() ? patchState() : 'empty' } : S.place === 'house' && hasBedArt() ? { bed: false } : mpSceneOpts(S.place))}${S.place === 'yard' && !gkOn() ? '<g class="soon-tag" pointer-events="none" transform="translate(112 432) rotate(-6)"><rect x="-58" y="-17" width="116" height="30" rx="6" fill="#FFF3B8" stroke="#5B3D32" stroke-width="2"/><text y="6" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="22" fill="#5B3D32">' + tt('yard.coming_soon_tag', 'coming soon') + '</text></g>' : ''}${bedLayers().back}<g id="messG"></g><g id="snowmanG">${S.place === 'yard' ? snowmanSVG() : ''}</g>${S.place === 'yard' && cur.mode === 'yard' && typeof msYardSVG === 'function' ? msYardSVG() : ''}${S.place === 'yard' ? hmDecorSVG() : ''}
@@ -33,9 +33,14 @@ function dogArtSafe(key, o) {
   if (k && !/>\?<\/text>/.test(sv)) { DOG_ART_MEMO.set(k, sv); if (DOG_ART_MEMO.size > DOG_ART_MEMO_MAX) DOG_ART_MEMO.delete(DOG_ART_MEMO.keys().next().value); } // never keep the "?" placeholder (art not loaded yet)
   return sv;
 }
+// outfit identity without JSON.stringify: null and false do not change the drawing, and the keys stay in insertion order
+function outfitStamp(o) { if (!o) return ''; let s = ''; for (const n in o) { const v = o[n]; if (v) s += n + '=' + v + '\n'; } return s; }
 function renderDog(pose, facing = 'right', force, artOnly) {
   const g = $('#dogArt'); if (!g) return;
-  const o = shSleepOutfit(D(), pose), ex = exNow(D(), pose), k = pose + '|' + facing + '|' + JSON.stringify(o) + '|' + S.dog.key + (ex ? '|' + ex : ''); // v2.4: the Pyjamas at nap time. v2.13: the face (41_expressions.js)
+  const o = shSleepOutfit(D(), pose), ex = exNow(D(), pose); // v2.4: the Pyjamas at nap time. v2.13: the face (41_expressions.js)
+  dogArtKeys++;
+  const k = pose + '|' + facing + '|' + outfitStamp(o) + '|' + S.dog.key + (ex ? '|' + ex : '');
+  dogPoseDrawn = pose; dogFaceDrawn = facing;
   if (k === dogKey && !force) return; dogKey = k;
   g.innerHTML = place(dogSVG(D(), ex ? { pose, outfit: o, facing, expr: ex } : { pose, outfit: o, facing }), DX, DY, DW, DH);
   if (artOnly) return; // v2.13: a face that starts or ends redraws the art only (exRedraw)
