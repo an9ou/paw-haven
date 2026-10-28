@@ -168,7 +168,7 @@ function i18nShell() {
   set('#bar', 'aria-label', tt('shell.actions', 'Actions'));
   const lb = document.querySelector('#hud .bond .lbl'); if (lb && lb.firstChild && lb.firstChild.nodeType === 3) lb.firstChild.nodeValue = tt('shell.bond', 'Bond') + ' ';
   if (I18N.lang !== 'en') document.title = tt('shell.title', 'Doodle Doggo');
-  if (S && !I18N.ps && i18nReal(code) && S.langShown !== code) { S.langShown = code; markDirty(); } // v2.15 (owner): S.langShown = the language on screen
+  if (S && !I18N.ps && i18nReal(I18N.lang) && S.langShown !== I18N.lang) { S.langShown = I18N.lang; markDirty(); } // v2.15 (owner): S.langShown = the language on screen. i18nApply has already called i18nUse, so the language is I18N.lang (`code` is not in this function).
 }
 // tsetLang(code): code is one of the 11 CODES, or null = follow the device. Returns false when it cannot switch now.
 // On the title screen it re-renders live; in the game it saves and reloads (every screen rebuilds from S, nothing stale stays).

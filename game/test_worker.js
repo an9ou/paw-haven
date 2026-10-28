@@ -77,6 +77,7 @@ async function checks(label, call, sql, mail) {
   r = await call('PUT', '/save', { data: save(200), rev: 2, changed_at: new Date().toISOString(), device: 'Pixel Chrome' }, d2); ok(r.json.rev === 2, 'device 2 pushes rev 2');
   ok((await call('GET', '/save', null, a.token)).json.save.data.coins === 200, 'device 1 pulls rev 2');
   r = await call('POST', '/password', { password: 'pupper456' }, a.token); ok(r.status === 200, 'change password');
+  ok((await call('GET', '/me', null, d2)).status === 401 && (await call('GET', '/me', null, a.token)).status === 200, 'a password change logs out every other device; this one stays logged in');
   ok((await call('POST', '/login', { email: 'mochi@example.com', password: 'pupper123' })).status === 401 && (await call('POST', '/login', { email: 'mochi@example.com', password: 'pupper456' })).status === 200, 'the old password stops working, the new one works');
   ok((await call('POST', '/password', { password: 'pupper789' }, (await call('POST', '/guest', {})).json.token)).status === 403, 'a guest has no password to change');
   r = await call('POST', '/logout', {}, d2); ok(r.status === 200 && (await call('GET', '/me', null, d2)).status === 401, 'log out ends that session');

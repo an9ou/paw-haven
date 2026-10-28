@@ -750,8 +750,13 @@ let S = null;
 let dirty = false;
 function markDirty() { dirty = true; }
 const ALIAS_KEYS = new Set(['dog', 'stats', 'bond', 'outfit', 'potty', 'sleeping', 'dishLog', 'buff', 'glowUntil', 'pupUntil', 'tricks']);
-function saveNow() { if (!S) return; S.lastReal = Date.now(); const root = S; lsSet(SAVE_KEY, JSON.stringify(S, function (k, v) { if (this === root && k === 'activeId' && typeof PKS === 'object' && PKS && PKS.sw && PKS.sw.who === v) return PKS.sw.orig; return this === root && ALIAS_KEYS.has(k) ? undefined : v; })); dirty = false;
-  if (typeof clOnSaved === 'function') clOnSaved(); }
+function saveNow() {
+  if (!S) return; S.lastReal = Date.now(); const root = S;
+  const json = JSON.stringify(S, function (k, v) { if (this === root && k === 'activeId' && typeof PKS === 'object' && PKS && PKS.sw && PKS.sw.who === v) return PKS.sw.orig; return this === root && ALIAS_KEYS.has(k) ? undefined : v; });
+  if (!lsSet(SAVE_KEY, json)) { dirty = true; return; } // quota or private mode: the in-memory game is still unsaved, and cloud save must not treat the older disk copy as current
+  dirty = false;
+  if (typeof clOnSaved === 'function') clOnSaved();
+}
 function loadSave() { try { const s = JSON.parse(lsGet(SAVE_KEY) || 'null'); return s && (s.dog || (s.dogs && s.dogs.length)) && s.v === 1 ? migrate(s) : null; } catch (e) { return null; }
   finally { if (typeof clOnLoaded === 'function') clOnLoaded(); } }
 // v1 -> v1.1: add treasure fields; old collect-10 items are sold to a squirrel for 5 coins each
@@ -880,7 +885,8 @@ function v216Fields(s) {
   if (!v28Obj(f.b2)) { f.b2 = {}; (s.dogs || []).forEach((d) => { if (d && d.id && d.bond && d.bond.level >= 2) f.b2[d.id] = 1; }); }
   if (f.wel !== null && !v28Obj(f.wel)) f.wel = f.fresh ? { days: [], got: [] } : null;
   if (f.wel) { arr(f.wel, 'days'); arr(f.wel, 'got'); }
-  if (!v28Obj(f.cal)) f.cal = {}; if (typeof f.cal.ym !== 'string') f.cal.ym = ''; arr(f.cal, 'days'); arr(f.cal, 'got'); arr(f.cal, 'dg'); if (typeof f.cal.dgc !== 'number' || !(f.cal.dgc >= 0)) f.cal.dgc = 0; // v2.17: the daily gifts claimed this month (an old save starts with none: only today's can be claimed) if (typeof f.cal.coins !== 'number' || !(f.cal.coins >= 0)) f.cal.coins = 0;
+  if (!v28Obj(f.cal)) f.cal = {}; if (typeof f.cal.ym !== 'string') f.cal.ym = ''; arr(f.cal, 'days'); arr(f.cal, 'got'); arr(f.cal, 'dg'); if (typeof f.cal.dgc !== 'number' || !(f.cal.dgc >= 0)) f.cal.dgc = 0; // v2.17: the daily gifts claimed this month (an old save starts with none: only today's can be claimed)
+  if (typeof f.cal.coins !== 'number' || !(f.cal.coins >= 0)) f.cal.coins = 0;
   if (!v28Obj(f.frames)) f.frames = {}; if (f.frames.name === undefined) f.frames.name = null; arr(f.frames, 'months');
   if (f.wish !== null && !v28Obj(f.wish)) f.wish = null;
   if (typeof f.dock !== 'number') f.dock = f.fresh ? 1 : 10; if (!v28Obj(f.dockNew)) f.dockNew = {};

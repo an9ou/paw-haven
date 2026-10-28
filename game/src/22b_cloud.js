@@ -172,26 +172,29 @@ async function clPush(force) {
   CL.busy = true; clStat();
   try {
     if (!(await clEnsureUser())) return;
-    m = clMeta(); const changedAt = m.changedAt || Date.now(), uid = CL.uid;
+    m = clMeta(); let changedAt = m.changedAt || Date.now(), uid = CL.uid;
     const q = await clApi('GET', '/save?meta=1');
     if (!q.ok) throw q.error;
     const row = clRow(q);
+    // The snapshot above is from before the round trip. Play can saveNow() while that GET is in flight; upload what is on disk now.
+    const live = clLocal(); m = clMeta(); changedAt = m.changedAt || changedAt;
+    if (!live) return;
     if (row && row.rev > (m.rev || 0)) { // another device saved since we last looked
       if (Date.parse(row.changed_at) > changedAt && !force) { // theirs is newer: ours loses
-        await clBackup(data, 'older than your other device'); clMetaSet({ pushedAt: changedAt });
+        await clBackup(live, 'older than your other device'); clMetaSet({ pushedAt: changedAt });
         CL.busy = false; await clPull(); return;
       }
       const full = clRow(await clApi('GET', '/save'));
-      if (full && full.data && !clSame(full.data, data)) await clBackup(full.data, 'older than your other device');
-    } else if (row && m.dogId && clDogId(data) !== m.dogId) { // "New dog" or "Reset save" on this device: keep the old dog's cloud save
+      if (full && full.data && !clSame(full.data, live)) await clBackup(full.data, 'older than your other device');
+    } else if (row && m.dogId && clDogId(live) !== m.dogId) { // "New dog" or "Reset save" on this device: keep the old dog's cloud save
       const full = clRow(await clApi('GET', '/save'));
       if (full && full.data) await clBackup(full.data, 'before a new game');
     }
     const rev = Math.max(row ? row.rev : 0, m.rev || 0) + 1;
-    const up = await clApi('PUT', '/save', { data, rev, changed_at: new Date(changedAt).toISOString(), device: clDevice() });
+    const up = await clApi('PUT', '/save', { data: live, rev, changed_at: new Date(changedAt).toISOString(), device: clDevice() });
     if (up.status === 409) { CL.again = true; CL.againForce = CL.againForce || !!force; return; } // another device saved in between: look again
     if (!up.ok) throw up.error;
-    if (uid === CL.uid) { clMetaSet({ rev, pushedAt: changedAt, dogId: clDogId(data) }); CL.lastSync = Date.now(); CL.err = ''; if (!CL.anon) clOwn(uid, changedAt); }
+    if (uid === CL.uid) { clMetaSet({ rev, pushedAt: changedAt, dogId: clDogId(live) }); CL.lastSync = Date.now(); CL.err = ''; if (!CL.anon) clOwn(uid, changedAt); }
   } catch (e) {
     CL.err = 'offline'; clearTimeout(CL.retryT); CL.retryT = setTimeout(() => { CL.retryT = null; CL.err = ''; clPush(); }, 15000);
   } finally {
