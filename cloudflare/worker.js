@@ -12,7 +12,7 @@
 //   POST /migrate  -> 410 gone (v2.9.1: Supabase is switched off, nothing carries over any more)
 //   POST /logout   GET /me   POST /password {password}
 //   GET  /save[?meta=1] -> { save: {data,rev,changed_at,device,updated_at} | null }
-//   PUT  /save {data,rev,changed_at,device} -> { rev }   409 { error:'stale', rev, changed_at } if the cloud has a newer rev
+//   PUT  /save {data,rev,changed_at,device} -> { rev }   409 { error:'stale', rev, changed_at } if the cloud has a newer rev, or a higher rev whose changed_at is older
 //   GET  /backups -> { backups: [{id,data,reason,created_at}] }   POST /backups {data,reason}  (the newest 5 are kept)
 //   Dog Cards (v2.11, V211.md section 5.5). No free text anywhere: only integers and fixed tokens, checked by dcCardOf().
 //   GET    /card                     -> { id, name, dogs, paws, at } | null      my card (at: last update, ms)
@@ -383,8 +383,8 @@ const ROUTES = {
     const dev = typeof body.device === 'string' ? body.device.slice(0, 60) : null, now = new Date().toISOString();
     const r = await one(env, `insert into saves (user_id, data, rev, changed_at, device, updated_at) values (?1, ?2, ?3, ?4, ?5, ?6)
       on conflict(user_id) do update set data = excluded.data, rev = excluded.rev, changed_at = excluded.changed_at, device = excluded.device, updated_at = excluded.updated_at
-      where saves.rev < excluded.rev returning rev`, me.id, data, rev, new Date(at).toISOString(), dev, now);
-    if (!r) { // another device saved a newer rev first: the game looks again and decides
+      where saves.rev < excluded.rev and saves.changed_at <= excluded.changed_at returning rev`, me.id, data, rev, new Date(at).toISOString(), dev, now);
+    if (!r) { // a newer rev already stored, or this rev is higher but its changed_at is older: the game looks again and decides
       const c = await one(env, 'select rev, changed_at from saves where user_id = ?1', me.id);
       return fail('stale', 409, c ? { rev: c.rev, changed_at: c.changed_at } : {});
     }
