@@ -5,6 +5,7 @@ From the owner's brief (`PROMPT-PACK-CLAUDE.md`, a remake of an Instagram Reel's
 | File | What |
 |---|---|
 | `doodle-doggo-freestyle.mp4` | 1080 x 1920, 30 fps, 13.0 s, full-bleed pure white. The last frame matches the first (loop-safe). No text in the video. |
+| `doodle-doggo-freestyle-no-music.mp4` | The same video with no sound, for adding a sound inside Instagram (see below). |
 | `freestyle-cover.jpg` | The designed cover: the same scene, "bluetooth died. / the freestyle did not." at the top and the logo, inside the grid's 3:4. |
 | `build_freestyle.js` | Remake: `NODE_PATH=$(npm root -g) node brand/instagram/launch/freestyle_reel/build_freestyle.js <workdir>` (about 1 minute; `ONLY=stills` for key frames and the cover). |
 
@@ -34,3 +35,9 @@ quiet haven nonsense → doodledoggo.app
 **X:** `dropped the brick. kept the freestyle. ⋆⁺₊ doodledoggo.app`
 
 **Alt text:** `Two crayon dogs stand on their hind legs on a white background: a golden Labrador with his eyes closed and a paw by his head, and a dachshund with his paws at his chest looking at him. A small brick phone lies on the floor.`
+
+## Matched to the reference Reel (owner, 29 Oct 2026: "follow this reel")
+
+Only the reference's preview frame could be read (Instagram blocks downloading the video), so the layout follows that frame: the pair stands in the middle of the screen (feet about 64% down), close and face to face with a small gap, each about a quarter of the frame tall, and the brick phone lies just below-left of Butter, tilted down to the right. The timing stays the brief's near-still one.
+
+**Sound:** the reference uses a licensed song ("crazy b!tch" by Yanka and King Doudou). We can't put it in the file, but Instagram can: post `doodle-doggo-freestyle-no-music.mp4`, then add that song from Instagram's own music library (or tap "Use audio" on the reference Reel). Otherwise post the main file with the game's own music.

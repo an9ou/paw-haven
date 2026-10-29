@@ -10,7 +10,7 @@ const path = require('path'), fs = require('fs'), vm = require('vm'), cp = requi
 const { chromium } = require('playwright');
 const ROOT = path.join(__dirname, '..', '..', '..', '..');
 const WORK = path.resolve(process.argv[2] || 'freestyle_work'); fs.mkdirSync(path.join(WORK, 'f'), { recursive: true });
-const FPS = 30, T = 13, N = T * FPS, W = 1080, H = 1920, FEET = 1600;
+const FPS = 30, T = 13, N = T * FPS, W = 1080, H = 1920, FEET = 1225; // the pair stands in the middle of the screen, as in the reference
 
 // ---- the real art, without the floating extras ----
 const win = {}, ctx = { window: win, console }; vm.createContext(ctx);
@@ -44,7 +44,7 @@ const html = `<!doctype html><meta charset="utf-8"><style>html,body{margin:0;bac
 <svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
 <defs><symbol id="butter" overflow="visible">${butter}</symbol><symbol id="noodle" overflow="visible">${noodle}</symbol></defs>
 <rect width="${W}" height="${H}" fill="#FFFFFF"/>
-<g id="ph" transform="translate(70 ${FEET + 92}) rotate(-76) scale(0.62)">${phone()}</g>
+<g id="ph" transform="translate(170 ${FEET + 128}) rotate(-68) scale(0.74)">${phone()}</g>
 <g id="B"></g><g id="Nd"></g><g id="cover" opacity="0"></g>
 </svg>
 <script>
@@ -54,7 +54,7 @@ function box(id){ if(BOX[id]) return BOX[id]; const u=document.createElementNS(N
 function dog(id, cx, feet, hh, sx, sy, rot, px, py){ const b=box(id), k=hh/b[3], w=b[2]*k;
   return '<g transform="rotate('+rot+' '+px+' '+py+') translate('+cx+' '+feet+') scale('+sx+' '+sy+') translate('+(-cx)+' '+(-feet)+')"><g transform="translate('+(cx-w/2)+' '+(feet-hh)+') scale('+k+') translate('+(-b[0])+' '+(-b[1])+')"><use href="#'+id+'"/></g></g>'; }
 const ease=(x)=>0.5-0.5*Math.cos(Math.PI*Math.max(0,Math.min(1,x)));
-window.L={ bx:285, nx:790, bh:640, nh:585 };
+window.L={ bx:392, nx:748, bh:470, nh:440 };
 window.frame=function(t){
   // Butter: one slow breath, 3 to 8 s (a soft rise and settle, about the feet)
   const br = t>=3 && t<8 ? Math.sin(Math.PI*(t-3)/5) : 0, sy=1+0.028*br, sx=1-0.01*br;
@@ -99,5 +99,6 @@ window.frame=function(t){
   cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-framerate', String(FPS), '-i', path.join(WORK, 'f', 'f%04d.png'), '-i', path.join(WORK, 'music.wav'), '-i', path.join(WORK, 'clack.wav'),
     '-filter_complex', `[1:a]volume=0.55,afade=t=in:d=0.6,afade=t=out:st=${T - 1}:d=1[m];[m][2:a]amix=inputs=2:normalize=0,atrim=0:${T}[a]`, '-map', '0:v', '-map', '[a]',
     '-c:v', 'libx264', '-preset', 'slow', '-crf', '17', '-pix_fmt', 'yuv420p', '-r', String(FPS), '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', '-t', String(T), path.join(WORK, 'doodle-doggo-freestyle.mp4')]);
+  cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-i', path.join(WORK, 'doodle-doggo-freestyle.mp4'), '-c:v', 'copy', '-an', path.join(WORK, 'doodle-doggo-freestyle-no-music.mp4')]); // for a sound picked in Instagram
   console.log('wrote', path.join(WORK, 'doodle-doggo-freestyle.mp4'));
 })().catch((e) => { console.error(e); process.exit(1); });
