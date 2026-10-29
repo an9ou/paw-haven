@@ -23,6 +23,8 @@ Profile picture: the Halloween Noodle icon, `brand/instagram/doodle-doggo-instag
 
 Profile background (背景图): `brand/rednote/rednote-profile-background.jpg` (1080 x 1080). The game's Mt. Fuji Lookout in spring (torii, Fuji, cherry petals, the sign in the game's Chinese name 富士山观景台) with Mochi, Noodle and Sunny on the grass. No words, because RedNote puts the name and bio over it; the square crops cleanly to whatever shape the app shows. Made by the same `make.js shots rednote` run.
 
+**English first, RedNote after approval (owner, 30 Oct 2026).** For every new Reel or post, render only the English version first. Make the RedNote version only after the owner approves the English one.
+
 **No game link on RedNote (owner, 29 Oct 2026).** The bio, posters, captions and videos for RedNote never show doodledoggo.app or any other link; they say "搜索 Doodle Doggo" (search Doodle Doggo) instead. RedNote also holds back posts that send people to outside sites.
 
 ## First post: the hello poster
