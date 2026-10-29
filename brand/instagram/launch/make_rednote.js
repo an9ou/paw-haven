@@ -2,9 +2,12 @@
 // The dogs are the real art (Mochi, Noodle and Sunny in the banner's outfits). Chinese is LXGW WenKai, the font the game itself
 // uses for zh-Hans (game/fonts/i18n/zh-Hans.css), loaded whole from jsdelivr because the game's copy is subset to the game's text.
 // The words follow the reviewed zh-Hans text in docs/marketing/TAPTAP_INTRO.md. Output: brand/rednote/rednote-01-hello.jpg
+// Also the profile background (1080 x 1080): the game's Mt. Fuji Lookout in spring, its sign in the game's own Chinese name
+// (data.jp_place.n), cropped to the torii, Fuji and the sign, with the three dogs on the grass. No words: RedNote lays the name and bio over it.
+// Output: brand/rednote/rednote-profile-background.jpg
 //   NODE_PATH=$(npm root -g) node brand/instagram/launch/make.js shots rednote
 module.exports = async function ({ render, helpers: h }) {
-  const { f1, box, doodle, swash, txt, arrow, dog, paper, svgPage, frame, wordmark, INK, PINK, MUTED, ORANGE } = h;
+  const { f1, inner, box, doodle, swash, txt, arrow, dog, paper, svgPage, frame, wordmark, INK, PINK, MUTED, ORANGE } = h;
   const fs = require('fs'), path = require('path');
   fs.mkdirSync(path.join(h.OUT, '..', '..', 'rednote'), { recursive: true });
   const W = 1080, H = 1440, ZH = "'LXGW WenKai', Caveat";
@@ -34,4 +37,21 @@ module.exports = async function ({ render, helpers: h }) {
     + `<text x="540" y="1382" font-family="Caveat" font-weight="700" font-size="48" fill="${ORANGE}" text-anchor="middle">doodledoggo.app</text>`
     + doodle('paw', 96, 1350, 1.2, -15) + doodle('bone', 984, 1352, 1.2, 18) + doodle('spark', 1000, 560, 1) + doodle('heart', 96, 640, 1, -12);
   await render(svgPage(W, H, font + body), W, H, '../../rednote/rednote-01-hello.jpg');
+
+  // ---------- the profile background ----------
+  const vm = require('vm'), root = path.join(h.OUT, '..', '..', '..'), win = {}, ctx = { window: win, console }; vm.createContext(ctx);
+  for (const f of ['dogs/pawart_dogs.js', ...'abcdefg'.split('').map((c) => `world/pawart_world_${c}.js`)]) {
+    const fp = path.join(root, f); if (fs.existsSync(fp)) vm.runInContext(fs.readFileSync(fp, 'utf8'), ctx);
+  }
+  const SIGN = '>Mt. Fuji Lookout</text>';
+  let scene = win.PawArt.scene('fujihill', { time: 'day', weather: 'sunny', season: 'spring', jp: true });
+  if (!scene.includes(SIGN)) throw new Error('fujihill sign changed');
+  scene = scene.replace(/font-family="'Caveat',cursive" font-size="18"([^>]*)>Mt\. Fuji Lookout<\/text>/, `font-family="${ZH}" font-size="17"$1>富士山观景台</text>`);
+  const S = 1.8, B = 1080;                           // the scene at 1800 x 1080, showing scene x 100..700
+  const bg = `<svg x="-180" y="0" width="${1000 * S}" height="${600 * S}" viewBox="0 0 1000 600">${inner(scene)}</svg>`
+    + doodle('heart', 160, 130, 1, -12) + doodle('spark', 900, 110, 1.1) + doodle('spark', 440, 80, 0.8) + doodle('heart', 760, 220, 0.8, 10)
+    + at('shiba', { pose: 'happy', facing: 'right', outfit: { body: 'Happi Coat' } }, 240, 1010, 260)
+    + at('dachs', { pose: 'happy', facing: 'right', outfit: { eyes: 'Heart Sunglasses', neck: 'Red Bandana' } }, 570, 1025, 360)
+    + at('golden', { pose: 'happy', facing: 'left', outfit: { head: 'Flower Crown' } }, 900, 1010, 260);
+  await render(svgPage(B, B, font + bg), B, B, '../../rednote/rednote-profile-background.jpg');
 };

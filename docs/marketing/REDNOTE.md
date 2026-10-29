@@ -20,6 +20,8 @@ Bio (80 characters; RedNote allows 100):
 
 Profile picture: the Halloween Noodle icon, `brand/instagram/doodle-doggo-instagram-halloween-512.png`, works here too.
 
+Profile background (背景图): `brand/rednote/rednote-profile-background.jpg` (1080 x 1080). The game's Mt. Fuji Lookout in spring (torii, Fuji, cherry petals, the sign in the game's Chinese name 富士山观景台) with Mochi, Noodle and Sunny on the grass. No words, because RedNote puts the name and bio over it; the square crops cleanly to whatever shape the app shows. Made by the same `make.js shots rednote` run.
+
 RedNote can refuse website addresses in a new account's bio. If it does, drop the last line; the posts carry the address as plain text.
 
 ## First post: the hello poster
