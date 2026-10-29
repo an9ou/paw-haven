@@ -432,5 +432,25 @@ run('v218_fun_fair', async (t) => {
   ok(await start('wash'), 'wash starts on a dry day');
   const soak = await ev(() => { const g = window.__paw.ff.g, D2 = g.data, a = D2.dog.wet; g.def.bump(g, 100); const b = D2.dog.wet; g.def.bump(g, 100); const c = D2.dog.wet; g.def.bump(g, 100); return [a, b, c, D2.dog.wet]; });
   ok(soak[0] === false && soak[1] === true && soak[2] === true && soak[3] === false, `the bath dog: dry, wet for the rinse and the towel, dry at the end (${soak.join(', ')})`);
+  await t.ctx.close();
+
+  sec('20. v2.18.2: Sniff & Seek in the rain at night in the 390 px site box: the dog walks to the sniffed box and is not redrawn every frame');
+  await fresh({ weather: 'rain', time: 'night' }, { bond: { level: 2, pts: 120 } });
+  await t.p.setViewportSize({ width: 390, height: 700 });
+  ok(await start('seek'), 'Sniff & Seek starts at 390 px in the rain at night');
+  ok(await t.until(() => window.__paw.ff.g.data.ph === 'sniff', null, 12000), 'the sniffing starts');
+  {
+    const r = await ev(() => new Promise((res) => {
+      const g = window.__paw.ff.g, D2 = g.data, tb = D2.boxes[D2.toyBox]; let muts = 0, near = 1e9, flips = 0, last = D2.dog.face; const mo = new MutationObserver((m) => { muts += m.length; }); mo.observe(D2.dog.el, { childList: true });
+      const w0 = performance.now(), stop = Math.max(D2.dog.w * 0.4, g.def.slotX(g, tb.slot) - 70), x0 = D2.x;
+      const f = () => { if (D2.dog.face !== last) { flips++; last = D2.dog.face; } if (D2.ph === 'sniff') near = Math.min(near, Math.abs(D2.x - stop));
+        if (D2.ph === 'sniff' && performance.now() - w0 < 10000) requestAnimationFrame(f); else { mo.disconnect(); res({ secs: (performance.now() - w0) / 1000, muts, near, flips, x0, wet: D2.dog.wet, W: g.W, ph: D2.ph }); } };
+      requestAnimationFrame(f);
+    }));
+    ok(r.W === 560 && r.wet === true, `the phone field (${r.W} wide) and a wet dog`);
+    ok(r.ph === 'pick' && r.near <= 6, `the dog walks along the row to the sniffed box (closest ${r.near.toFixed(1)} units from its stop) and the player's turn comes (${r.ph}, ${r.secs.toFixed(1)} s)`);
+    ok(r.muts / r.secs < 5 && r.flips <= 6, `the dog is redrawn ${(r.muts / r.secs).toFixed(1)} times a second (under 5), ${r.flips} turns`);
+  }
+  await back();
   ok(!errs.length, 'no page errors ' + errs.slice(0, 3).join(' | '));
 }, { timeout: 900000 });
