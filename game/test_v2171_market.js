@@ -80,7 +80,7 @@ run('v2171_market', async (t) => {
   sec('5. the stall sheets: five stalls, scrollable, Bond gates, buying with coins');
   {
     await t.dev(async () => { await t.p.selectOption('#dvTime', 'night'); });
-    ok(await ev(() => document.querySelectorAll('#sceneG [data-fmstall].hot').length === 3), 'a time-of-day redraw keeps the three stalls tappable');
+    ok(await ev(() => document.querySelectorAll('#sceneG [data-fmstall].hot').length === 5), 'a time-of-day redraw keeps the five stalls tappable (v2.17.2: the homes stand and the treats cart too)');
     await ev(() => document.querySelector('#sceneG [data-fmstall="decor"]').dispatchEvent(new MouseEvent('click', { bubbles: true })));
     ok(await t.until(() => !!document.querySelector('#modal .fm-pop .fm-grid'), null, 4000), 'a stall tap still opens its sheet after the redraw');
     await t.closeX(); await t.modalGone();
