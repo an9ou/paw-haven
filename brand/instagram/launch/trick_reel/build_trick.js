@@ -135,9 +135,8 @@ window.frame=function(t, D){
   $('bats').innerHTML=bt;
   $('hook').setAttribute('opacity', ending ? 0 : Math.min(1,t/0.2));
   const eo = ending ? Math.min(1,(t-${END})/0.3) : 0; $('end').setAttribute('opacity', eo);
-  // the ending page: Noodle and Butter (still a dinosaur) side by side with the bucket, friends again
-  $('endDogs').innerHTML = eo>0 ? dog('en', 300, 1130, 280, D.en, Math.sin(t*5)*3, -Math.abs(Math.sin(t*5))*10) + dog('eb', 800, 1130, 330, D.eb, Math.sin(t*5+1)*3, -Math.abs(Math.sin(t*5+1))*8)
-    + '<use href="#jack" x="485" y="1000" width="130" height="130"/><use href="#t_bone" transform="translate(522 1010) rotate(-20)"/><use href="#t_carrot" transform="translate(552 1000) rotate(10)"/><use href="#t_cookie" transform="translate(580 1015)"/>' : '';
+  // the ending page: Noodle and Butter (still a dinosaur) side by side, friends again (no bucket: owner, 30 Oct 2026)
+  $('endDogs').innerHTML = eo>0 ? dog('en', 330, 1130, 280, D.en, Math.sin(t*5)*3, -Math.abs(Math.sin(t*5))*10) + dog('eb', 770, 1130, 330, D.eb, Math.sin(t*5+1)*3, -Math.abs(Math.sin(t*5+1))*8) : '';
 };
 </script>`;
 

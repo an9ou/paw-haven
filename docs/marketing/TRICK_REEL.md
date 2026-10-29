@@ -15,7 +15,7 @@ Owner, 30 Oct 2026: idea 1 from the Reel ideas list. Files in `brand/instagram/l
 3. the Royal Castle Kennel in the yard at night: a pug in the Mummy Wraps;
 4. the Rocket Ship on the hilltop at dusk: Butter in the Dinosaur Hood says WOOF, Noodle runs off, "...he left the treats."
 
-A sticker names each costume. The ending page: Noodle and Butter (still a dinosaur) with the full bucket, the game's own line "trick or treat? treat. always treat.", "play free at doodledoggo.app", "the Halloween Market is open until 15 Nov". Sound: the game's "play" music at 120 bpm, two knocks per door, each host's own puppy bark (the game's bark engine), a startled yip from Noodle, a sparkle on the ending page.
+A sticker names each costume. The ending page: Noodle and Butter (still a dinosaur) side by side, no bucket (owner, 30 Oct 2026), the game's own line "trick or treat? treat. always treat.", "play free at doodledoggo.app", "the Halloween Market is open until 15 Nov". Sound: the game's "play" music at 120 bpm, two knocks per door, each host's own puppy bark (the game's bark engine), a startled yip from Noodle, a sparkle on the ending page.
 
 ## Instagram
 ```
@@ -53,7 +53,7 @@ Doodle Doggo is a cozy, free dog game in a pencil sketchbook. Adopt one of 35 de
 trick or treat, but make it crayon 🎃 four doors, three dog-safe treats, one dinosaur. the Halloween Market is open until 15 Nov. free in your browser: https://doodledoggo.app #DoodleDoggo #Halloween #CozyGames
 ```
 
-**Alt text:** `A crayon dachshund in a little witch hat and cape knocks on four dog houses: a pumpkin cottage, a purple haunted kennel, a castle and a rocket ship. A corgi scarecrow, a husky skeleton and a pug mummy each toss a treat into his pumpkin bucket; a Labrador in a dinosaur hood barks and the dachshund runs off. It ends on the Doodle Doggo logo with both dogs and the full bucket.`
+**Alt text:** `A crayon dachshund in a little witch hat and cape knocks on four dog houses: a pumpkin cottage, a purple haunted kennel, a castle and a rocket ship. A corgi scarecrow, a husky skeleton and a pug mummy each toss a treat into his pumpkin bucket; a Labrador in a dinosaur hood barks and the dachshund runs off. It ends on the Doodle Doggo logo with both dogs.`
 
 ## RedNote / 小红书 (Simplified Chinese, no link)
 
