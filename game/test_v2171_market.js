@@ -79,6 +79,12 @@ run('v2171_market', async (t) => {
 
   sec('5. the stall sheets: five stalls, scrollable, Bond gates, buying with coins');
   {
+    await t.dev(async () => { await t.p.selectOption('#dvTime', 'night'); });
+    ok(await ev(() => document.querySelectorAll('#sceneG [data-fmstall].hot').length === 3), 'a time-of-day redraw keeps the three stalls tappable');
+    await ev(() => document.querySelector('#sceneG [data-fmstall="decor"]').dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    ok(await t.until(() => !!document.querySelector('#modal .fm-pop .fm-grid'), null, 4000), 'a stall tap still opens its sheet after the redraw');
+    await t.closeX(); await t.modalGone();
+    await t.dev(async () => { await t.p.selectOption('#dvTime', 'day'); });
     await t.p.click('#placeBtns [data-fmb]'); await t.p.waitForSelector('#modal .fm-pop .fm-grid');
     ok(await ev(() => [...document.querySelectorAll('#modal [data-fmtab]')].map((b) => b.dataset.fmtab).join() === 'decor,clothes,homes,toys,treats'), 'five stall tabs');
     for (const c of ['decor', 'clothes', 'homes', 'toys', 'treats']) {

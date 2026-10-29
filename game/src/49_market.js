@@ -136,7 +136,27 @@ function fmPlaceBtn() {
   const html = `<button class="btn yes" data-fmb="stalls">${esc(tt('fm.browse', 'Browse the stalls'))}</button>`, home = pb.querySelector('[data-pb="yard"]');
   if (home) home.insertAdjacentHTML('beforebegin', html); else pb.insertAdjacentHTML('beforeend', html);
   pb.querySelector('[data-fmb]').onclick = () => fmSheet();
-  const svg = $('svg.world', view); if (svg) hotify(svg, '#sceneG [data-fmstall]', 'data-fmstall', (c) => fmSheet(c), (c) => tt('fm.stall_label', 'Stall: {stall}', { stall: fmCatName(c) }));
+  fmStallBind();
+}
+// Stall hit boxes live inside #sceneG. checkEnv replaces that group's HTML on a time or weather change and drops any listeners hotify hung on the old nodes.
+// One listener on the svg (it survives the redraw) plus a class refresh keeps the stalls tappable. The .hot class is what the suite counts.
+function fmStallBind() {
+  const svg = $('svg.world', view); if (!svg) return;
+  svg.querySelectorAll('#sceneG [data-fmstall]').forEach((g) => {
+    const k = g.getAttribute('data-fmstall');
+    g.classList.add('hot'); g.setAttribute('tabindex', '0'); g.setAttribute('role', 'button');
+    g.setAttribute('aria-label', tt('fm.stall_label', 'Stall: {stall}', { stall: fmCatName(k) }));
+  });
+  if (svg.dataset.fmstalls) return;
+  svg.dataset.fmstalls = '1';
+  const pick = (g) => { if (!g || (typeof blOn === 'function' && blOn())) return; fmSheet(g.getAttribute('data-fmstall')); };
+  svg.addEventListener('click', (e) => { const g = e.target.closest && e.target.closest('[data-fmstall]'); if (g && svg.contains(g)) pick(g); });
+  svg.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const g = e.target.closest && e.target.closest('[data-fmstall]');
+    if (!g || !svg.contains(g)) return;
+    e.preventDefault(); pick(g);
+  });
 }
 function fmArrive() {
   if (!fmOn() || !S || S.place !== 'fmarket') return; fmPlaceBtn();
@@ -144,7 +164,7 @@ function fmArrive() {
   if (!S.fm.seen[key]) { S.fm.seen[key] = localISO(); markDirty(); setTimeout(() => { if (S.place === 'fmarket') toast(tt('fm.hello', 'Welcome to the {market}! Things you get here stay yours forever, even after the market packs up.', { market: fmMarketName(o.m) }), 'gold'); }, 800); }
 }
 on('yard:enter', () => { fmSync(); fmArrive(); });
-on('scene:redraw', () => { if (fmOn() && S && S.place === 'fmarket' && !$('#placeBtns [data-fmb]')) fmPlaceBtn(); });
+on('scene:redraw', () => { if (!(fmOn() && S && S.place === 'fmarket')) return; if (!$('#placeBtns [data-fmb]')) fmPlaceBtn(); else fmStallBind(); });
 
 /* ---------------- the stall sheet (the shop sheet pattern: tabs, a scrollable grid, the purchase window) ---------------- */
 let fmTab = 'decor';
@@ -166,7 +186,7 @@ function fmSheet(cat) {
     { cls: 'shop fm-pop', foot: `<p class="small fm-foot">${esc(fmSign(o))}</p>` });
   const bd = $('.panel-body', p); if (bd && keep) bd.scrollTop = keep;
   p.querySelectorAll('[data-fmtab]').forEach((b) => { b.onclick = () => { fmTab = b.dataset.fmtab; SFX.click(); fmSheet(); }; });
-  p.querySelectorAll('[data-fmbuy]').forEach((b) => { b.onclick = () => { const it = items.find((x) => x.n === b.dataset.fmbuy); if (b.getAttribute('aria-disabled') === 'true') { nope(tt('fm.locked', '{item} opens at Bond {bond}.', { item: it.name, bond: it.bond })); return; } fmBuy(p, it); }; });
+  p.querySelectorAll('[data-fmbuy]').forEach((b) => { b.onclick = () => { const it = items.find((x) => x.n === b.dataset.fmbuy); if (!it) return; if (b.getAttribute('aria-disabled') === 'true') { nope(tt('fm.locked', '{item} opens at Bond {bond}.', { item: it.name, bond: it.bond })); return; } fmBuy(p, it); }; });
   return p;
 }
 async function fmBuy(p, it) {

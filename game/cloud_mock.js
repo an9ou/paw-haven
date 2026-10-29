@@ -53,6 +53,7 @@ function makeServer() {
   srv.handle = async (page, method, p, body, auth) => {
     srv.calls.push({ page, op: method + ' ' + p.replace(/\?.*$/, '') });
     if (srv.offline.has(page)) return { netError: 'Failed to fetch' };
+    if (srv.blockBackups && method === 'POST' && p.replace(/\?.*$/, '') === '/backups') return { status: 503, text: '{"error":"busy"}' };
     if (!worker) worker = (await import(WORKER)).default;
     if (!ips.has(page)) ips.set(page, '10.0.' + (ips.size >> 8) + '.' + (ips.size & 255));
     const h = { 'CF-Connecting-IP': ips.get(page) };
