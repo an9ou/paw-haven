@@ -38,3 +38,18 @@ html[data-layout="phone"] .ms-prize p{font-size:15px}
 .sitem .sh-tip{color:var(--ink,#5B3D32)}
 /* v2.4 SHOP: the Lighthouse Kennel's lamp beam and glow shine only at night (03_yard toggles #houseG.night from isNight()) */
 #houseG:not(.night) .pa-wb-glow{display:none}
+/* v2.16.1: the missions left the yard. A small crayon clipboard with the done count sits in the top bar next to the coins (desktop, #msBtn, 24_missions.js);
+   phones have it in the "..." menu (#mmMs) */
+.ms-btn{flex:none;display:inline-flex;align-items:center;gap:2px;min-height:44px;min-width:64px;padding:2px 9px 2px 4px;--wash:var(--w-cream);cursor:pointer;
+  font-family:var(--font-hand);font-weight:700;font-size:21px;line-height:1;color:var(--ink);transform:rotate(-1.5deg)}
+.ms-btn[hidden]{display:none}
+.ms-btn .ms-ic{width:34px;height:34px;flex:none;display:block}
+.ms-btn .ms-ic svg{width:100%;height:100%;display:block;overflow:visible}
+.ms-btn .ms-n{font-weight:700;padding:1px 6px 2px;border:1.8px solid var(--ink);border-radius:9px 11px 8px 12px;background:#F9D56E;font-variant-numeric:tabular-nums}
+.ms-btn.all .ms-n{background:#BFE3C8}
+.ms-btn.ms-ping{animation:msPing .7s ease-out}
+@keyframes msPing{30%{transform:translateY(-5px) rotate(-6deg) scale(1.12)}60%{transform:rotate(3deg)}}
+html[data-motion="off"] .ms-btn.ms-ping{animation:none}
+html[data-layout="phone"] .ms-btn{display:none}
+#stage.slimhud .ms-btn{display:none}
+.moremenu #mmMs .ms-cnt{margin-left:6px;font-family:var(--font-read);font-size:17px;padding:1px 7px 2px;border:1.6px solid var(--ink);border-radius:9px 11px 8px 12px;background:#F9D56E}

@@ -74,7 +74,8 @@ function mpMapOpts() {
 }
 function mpMapArt() {
   const raw = art('scene', 'map', mpMapOpts());
-  return { W: 2400, H: 1500, v215: true, areas: PA().MAP215_AREAS, svg: `<g id="sceneG" data-scene="map" data-noenv="1" class="${mpLabels() ? '' : 'mp-nolab'}">${place(raw, 0, 0, 2400, 1500)}</g><g id="mpWalkG"></g>` };
+  const tent = typeof fmMapTent === 'function' ? fmMapTent() : ''; // v2.17.1: the Festive Market's tent (49_market.js), only while a market is open
+  return { W: 2400, H: 1500, v215: true, areas: tent ? PA().MAP215_AREAS.concat([{ id: 'fmarket', x: 1010, y: 720 }]) : PA().MAP215_AREAS, svg: `<g id="sceneG" data-scene="map" data-noenv="1" class="${mpLabels() ? '' : 'mp-nolab'}">${place(tent ? raw.replace('<g class="mf-buildings">', '<g class="mf-buildings">' + tent) : raw, 0, 0, 2400, 1500)}</g><g id="mpWalkG"></g>` };
 }
 
 /* ---- the wait for world F (split build): a short paper wobble, then the map. A failed load draws the old map once (the next visit tries again) ---- */
@@ -130,7 +131,7 @@ function mpAt(pts, cum, s) {
 // the walk itself: then(k) runs once, at the end or when the walk is skipped (a tap anywhere, the Skip chip, Escape). Motion off: no walk at all
 function mpTravel(k, then) {
   const fin = then || (() => pickArea(k));
-  const g = $('#mpWalkG .mp-walker', view), from = mpHere(), r = from !== k ? mpRoute(from, k) : null;
+  const g = $('#mpWalkG .mp-walker', view), from = mpHere(), r = from !== k ? (from === 'fmarket' || k === 'fmarket' ? (typeof fmRoute === 'function' ? fmRoute(from, k) : null) : mpRoute(from, k)) : null; // v2.17.1: the market's leg goes through the Square
   if (motionOff() || !g || !r || r.pts.length < 2) { fin(); return false; }
   const R = PawArt.MAP_ROADS, n0 = R.nodes[from], pts = [[n0[0] + MP_STAND_DX, n0[1]]].concat(r.pts), cum = [0];
   for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));

@@ -1058,6 +1058,24 @@ const ITEMS_V215={
   b.ex('glint',27,21,4);b.ex('glint',47,43,2.6);
   gold215(b,[[56,12,4.6],[8,16,3.4],[60,30,2.6]])}
 };
+/* v2.17 Dog Days (V217.md 2): the Bond 10 gifts, the Crayon Crown and the Golden Collar (wardrobe and journal icons; kept out of the lists above) */
+const ITEMS_V217={
+ 'Crayon Crown'(b){
+  b.shadow(32,57,22,2.6);
+  b.sh([[10,50],[8,34],[6,14],[19,28],[24,8],[32,26],[41,9],[46,28],[58,15],[56,34],[54,50]],'#FFD23A',{k:.12,sh:'#E9A93B',base:'#FFF0A8',
+   inner:b.st(b.jl(14,40,22,32,.5)+b.jl(26,42,34,34,.5)+b.jl(40,42,48,34,.5),'#F2A93B',1.4,.7)});
+  b.sh([[9,52],[55,52],[55,42],[9,42]],'#E8473D',{k:.06,hatch:0,hl:0,lw:.8});
+  [[18,47,'#4F8FD6'],[32,47,'#6DBE5A'],[46,47,'#8E63C7']].forEach(([x,y,c])=>b.sh(E(x,y,3.4,3,10),c,{hatch:0,hl:0,lw:.6}));
+  [[6,14],[24,8],[41,9],[58,15]].forEach(([x,y])=>b.sh(E(x,y,3,2.8,10),'#F28FA5',{hatch:0,hl:0,lw:.55}));
+  b.ex('spark',58,40,3.6);b.ex('glint',20,24,3)},
+ 'Golden Collar'(b){
+  b.sh(ribbon([[7,20],[18,12],[32,10],[46,12],[57,20]],[4.4,4.4,4.4,4.4,4.4]),'#E9A93B',{hatch:0,hl:0,lw:.8,ink:GINK215});
+  b.sh(ribbon([[6,19],[13,29],[32,35],[51,29],[58,19]],[8,8,8,8,8]),'#FFD23A',{ink:GINK215,sh:'#E9A93B'});
+  b.raw(b.st('M15 27q8 5 15 6',  '#FFF6C8',1.6,.8));
+  b.sh(E(32,49,9,9,14),'#FFD23A',{ink:GINK215,sh:'#E9A93B',hl:0});
+  b.ex('heart',32,49,4,'#F28FA5');
+  gold215(b,[[56,44,4.2],[8,44,3.4],[48,6,3]]);b.ex('glint',25,45,2.6)}
+};
 const PC_M=14,PC_SH=60,PC_FONT_R="'Patrick Hand',cursive",TK_C={c:'#F4B183',d:'#D98A5A'};let PC_UID=0;
 // the Tokyo photo frame: world B's postcard with a torii-orange frame and the seven stamps round the edge (same window, so the photo fits)
 function tokyoPostcard(w,h,o){o=o||{};const s=Math.max(w,h)/450,lw=w/s,lh=h/s,col=TK_C;
@@ -1088,9 +1106,68 @@ function tokyoPostcard(w,h,o){o=o||{};const s=Math.max(w,h)/450,lw=w/s,lh=h/s,co
   if(o.dogs){const sz=fit(o.dogs,11.5,.5);b.raw(`<text x="${tx}" y="${R1(ty+47)}" font-size="${sz}" fill="#7A6358" style="font-family:${PC_FONT_R}">${esc(o.dogs)}</text>`,'top')}
   const front=b.svg('0 0 '+R1(lw)+' '+R1(lh),` width="${w}" height="${h}" x="0" y="0" aria-hidden="true"`,'Tokyo postcard frame').split(IDT).join('pwep'+(++PC_UID).toString(36));
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="Postcard with the Tokyo stamps" data-frame="tokyo"><rect width="${w}" height="${h}" fill="#FFFBF3"/>${o.scene||''}${front}</svg>`}
+/* v2.17.1 Festive Market (V2171.md 6): the market scene (fmscene 1000x600), its map tent (fmtent, the map building box -130 -130 260 230),
+   the Pumpkin Lantern decoration (fmlantern 120x160, o.lit) and the Squeaky Ghost (ITEMS_V2171). o.theme: halloween | winter | newyear | sakura.
+   Crude crayon, every fill on its own outline (b.sh pulls the wash in to the line), no words in the art: the game writes the sign. */
+const FM_TH={halloween:{a:'#F2A65A',b:'#9C7CC4',c:'#FFF6DC',sky:'#F3E6F5',lamp:'#F7B267',flag:['#F2A65A','#9C7CC4','#7FB86A','#FFE08A']},
+  winter:{a:'#E46F6B',b:'#7FB86A',c:'#FFFFFF',sky:'#E4EEF6',lamp:'#FFE08A',flag:['#E46F6B','#7FB86A','#FFFFFF','#FFD56B']},
+  newyear:{a:'#E04A3C',b:'#FFD56B',c:'#FFF6DC',sky:'#F8EADF',lamp:'#F08A86',flag:['#E04A3C','#FFD56B','#FFFFFF','#F7B2C4']},
+  sakura:{a:'#F7B2C4',b:'#9CCB86',c:'#FFFFFF',sky:'#F6EAF0',lamp:'#FDE0E8',flag:['#F7B2C4','#FFFFFF','#9CCB86','#FFE08A']}};
+const fmTh=o=>FM_TH[o&&o.theme]||FM_TH.halloween;
+function fmPumpkin(b,x,y,r){b.sh(E(x,y,r,r*.8,18),'#F2A65A',{sh:'#E9883B',hl:0,inner:b.st(b.jl(x-r*.35,y-r*.7,x-r*.4,y+r*.7)+b.jl(x+r*.35,y-r*.7,x+r*.4,y+r*.7),'#D9762E',1.2,.8)});b.ln([[x,y-r*.78],[x+2,y-r*1.1]],{w:2,col:'#7FB86A'})}
+function fmGoods(b,th,x,y,i,theme){
+  if(theme==='halloween'){fmPumpkin(b,x,y,16);fmPumpkin(b,x+34,y+4,12);b.sh(RR(x+56,y-14,30,22,4),th.b,{k:0,hatch:0,hl:0,lw:.8})}
+  else if(theme==='winter'){b.sh(RR(x-14,y-18,30,26,3),th.a,{k:0,hatch:0,hl:0,lw:.8,marks:[{pts:RR(x-1,y-18,4,26,0),fill:'#FFD56B',k:0}]});b.sh(RR(x+24,y-12,26,20,3),th.b,{k:0,hatch:0,hl:0,lw:.8});b.sh(E(x+66,y-4,10,10,14),'#FFFFFF',{hatch:0,hl:0,lw:.8})}
+  else if(theme==='newyear'){b.sh(E(x,y-8,16,18,18),th.a,{hatch:0,hl:0,marks:[{pts:E(x,y-12,8,7,12),fill:'#FFF6DC'}]});b.sh(E(x+38,y-4,12,12,16),th.b,{hatch:0,hl:0,lw:.8});b.sh(RR(x+58,y-16,26,22,3),'#FFF6DC',{k:0,hatch:0,hl:0,lw:.8})}
+  else{b.sh(RR(x-12,y-10,28,20,4),'#E2B07E',{k:0,hatch:0,hl:0,lw:.8});b.sh(cloudP(x+2,y-18,16,10,6,.2,40),th.a,{hatch:0,hl:0,lw:.8});b.sh(RR(x+30,y-10,28,20,4),'#E2B07E',{k:0,hatch:0,hl:0,lw:.8});b.sh(cloudP(x+44,y-18,16,10,6,.2,40),'#FFFFFF',{hatch:0,hl:0,lw:.8})}
+}
+function fmStall(b,th,x0,w,theme,i){
+  const y0=262,top=y0-70;
+  [[x0+14],[x0+w-14]].forEach(([x])=>b.sh([[x-6,y0+150],[x-6,top+40],[x+6,top+40],[x+6,y0+150]],'#E2B07E',{k:0,sh:'#C58F5E',hl:0}));
+  const n=6,sw2=w/n;for(let k=0;k<n;k++){const a=x0+k*sw2,c=k%2?th.c:th.a;b.sh([[a,top],[a+sw2,top],[a+sw2,top+44],[a+sw2/2,top+58],[a,top+44]],c,{k:.05,hatch:k%2?0:1,hl:0,sh:th.b,lw:.9})}
+  b.sh([[x0-8,top-14],[x0+w+8,top-14],[x0+w+8,top+4],[x0-8,top+4]],th.b,{k:0,hatch:0,hl:0});
+  b.sh([[x0,y0+90],[x0+w,y0+90],[x0+w-6,y0+160],[x0+6,y0+160]],'#E2B07E',{k:0,sh:'#C58F5E',marks:[{pts:[[x0,y0+90],[x0+w,y0+90],[x0+w,y0+108],[x0,y0+108]],fill:th.c,k:0}]});
+  fmGoods(b,th,x0+36,y0+84,i,theme);
+}
+function fmLantern(b,x,y,col,lit){b.ln([[x,y-30],[x,y-14]],{w:1.4});b.sh(E(x,y,13,16,16),col,{hatch:0,hl:0,lw:.9,marks:lit?[{pts:E(x,y,7,9,12),fill:'#FFF6C8',op:.9}]:[],inner:b.st(b.jl(x-12,y,x+12,y),'#5B3D32',.8,.5)});b.sh(RR(x-6,y+14,12,5,1),'#5B3D32',{k:0,hatch:0,hl:0,lw:.5})}
+const FM_ART={
+ fmscene:['0 0 1000 600','house',(b,o)=>{const th=fmTh(o),theme=o.theme&&FM_TH[o.theme]?o.theme:'halloween';
+  b.raw(`<rect x="0" y="0" width="1000" height="600" fill="#FFFBF3"/><rect x="0" y="0" width="1000" height="380" fill="${th.sky}"/>`,'under');
+  b.sh([[0,330],[180,300],[400,320],[620,296],[820,316],[1000,300],[1000,392],[0,392]],theme==='winter'?'#EEF2F6':'#CBE5A6',{k:.2,hatch:0,hl:0,sh:'#B4D98E'});
+  b.sh([[0,384],[1000,384],[1000,600],[0,600]],theme==='winter'?'#F4F7FA':'#EFDDBA',{k:0,hatch:0,hl:0,lw:.6});
+  [[40,470],[260,520],[520,560],[760,500],[930,560],[150,580],[640,470]].forEach(([x,y])=>b.ln([[x,y],[x+26,y-3]],{w:1.2,col:'#C9B08A',op:.7}));
+  fmStall(b,th,40,250,theme,0);fmStall(b,th,375,250,theme,1);fmStall(b,th,710,250,theme,2);
+  // the bunting: two swags of flags over the market, round paper lanterns between them
+  [[0,150,500,128],[500,128,1000,150]].forEach(([x0,y0,x1,y1],s)=>{const P=[];for(let i=0;i<=12;i++){const t=i/12;P.push([x0+(x1-x0)*t,y0+(y1-y0)*t+Math.sin(t*Math.PI)*30])}b.ln(P,{w:1.6});
+    for(let i=1;i<12;i+=1){const [x,y]=P[i];b.sh([[x-11,y],[x+11,y],[x,y+22]],th.flag[(i+s)%4],{k:0,hatch:0,hl:0,lw:.7})}});
+  [[250,190],[750,190]].forEach(([x,y])=>fmLantern(b,x,y,th.lamp,true));
+  // the sign board over the middle stall (the game writes the market's name on it: FM_SIGN)
+  b.ln([[392,170],[400,150]],{w:1.4});b.ln([[608,170],[600,150]],{w:1.4});b.sh([[352,170],[648,170],[642,214],[358,214]],'#FFF6DC',{k:0,hatch:0,hl:0,lw:1.1});
+  if(theme==='halloween'){[[150,420,1],[880,430,.9]].forEach(([x,y,s])=>fmPumpkin(b,x,y,20*s))}
+  if(theme==='sakura'){[[90,200],[930,200]].forEach(([x,y])=>b.sh(cloudP(x,y,60,34,7,.18,48),'#F7C6D4',{hatch:0,hl:0,sh:'#F28FA5'}))}
+  if(theme==='winter'){[[120,170],[880,172]].forEach(([x,y])=>b.sh(E(x,y,40,9,14),'#FFFFFF',{hatch:0,hl:0,lw:.6}))}
+ }],
+ fmtent:['-130 -130 260 230','prop',(b,o)=>{const th=fmTh(o);
+  b.sh([[-96,40],[-96,-30],[96,-30],[96,40]],th.c,{k:0,hatch:0,hl:0,sh:'#E8C597'});
+  const n=6;for(let k=0;k<n;k++){const a=-104+k*208/n,w=208/n;b.sh([[0,-104],[a+w,-34],[a+w/2,-22],[a,-34]],k%2?th.c:th.a,{k:0,hatch:0,hl:0,lw:.8})}
+  b.sh([[-30,40],[-30,-6],[30,-6],[30,40]],th.b,{k:0,hatch:0,hl:0});b.ln([[0,-104],[0,-124]],{w:2});b.sh([[0,-124],[24,-117],[0,-110]],th.a,{k:0,hatch:0,hl:0,lw:.7});
+  fmLantern(b,-64,-2,th.lamp,true);fmLantern(b,64,-2,th.lamp,true);
+ }],
+ fmlantern:['0 0 120 160','prop',(b,o)=>{const lit=!!o.lit;if(lit)b.raw('<ellipse cx="60" cy="70" rx="54" ry="48" fill="#FFE59A" opacity=".35"/>','under');
+  b.shadow(60,154,30,4);b.sh([[56,150],[56,96],[64,96],[64,150]],'#C9A07A',{k:0,hatch:0,hl:0});b.sh(RR(36,146,48,8,3),'#A97E5A',{k:0,hatch:0,hl:0,lw:.7});
+  b.sh(E(60,70,34,28,22),'#F2A65A',{sh:'#E9883B',hl:0,marks:lit?[{pts:[[44,64],[52,56],[56,66]],fill:'#FFF6C8',k:0},{pts:[[64,66],[68,56],[76,64]],fill:'#FFF6C8',k:0},{pts:[[46,80],[74,80],[66,88],[54,88]],fill:'#FFF6C8',k:0}]:[{pts:[[44,64],[52,56],[56,66]],fill:'#5B3D32',k:0},{pts:[[64,66],[68,56],[76,64]],fill:'#5B3D32',k:0},{pts:[[46,80],[74,80],[66,88],[54,88]],fill:'#5B3D32',k:0}]});
+  b.ln([[60,43],[62,34]],{w:2.4,col:'#7FB86A'});b.sh(leafP(62,38,16,8,-.4),'#9CCB86',{hatch:0,hl:0,lw:.6})}]
+};
+const ITEMS_V2171={
+ 'Squeaky Ghost'(b){b.shadow(32,58,18,3);b.sh([[16,54],[14,30],[20,16],[32,10],[44,16],[50,30],[48,54],[42,48],[37,55],[32,48],[27,55],[22,48]],'#FFFFFF',{k:.2,sh:'#C9C2BA',base:'#FFFDF8'});
+  b.sh(E(26,30,3,4,10),'#5B3D32',{hatch:0,hl:0,lw:.4});b.sh(E(38,30,3,4,10),'#5B3D32',{hatch:0,hl:0,lw:.4});b.sh(E(32,40,4,3,10),'#F7B2C4',{hatch:0,hl:0,lw:.5});b.ex('note',54,16,5)},
+ 'Pumpkin Lantern'(b){b.sh([[30,60],[30,40],[34,40],[34,60]],'#C9A07A',{k:0,hatch:0,hl:0,lw:.6});b.sh(E(32,28,18,15,18),'#F2A65A',{sh:'#E9883B',hl:0,marks:[{pts:[[24,26],[28,22],[30,27]],fill:'#5B3D32',k:0},{pts:[[34,27],[36,22],[40,26]],fill:'#5B3D32',k:0}]});b.ln([[32,13],[33,8]],{w:1.6,col:'#7FB86A'})}
+};
 return {
-  item(name){const f=ITEMS_E[name]||ITEMS_V215[name];if(!f)return null;return serve('t:'+name,()=>{const b=mk('item',name);f(b);return b.svg('0 0 64 64','',esc(name))})},
-  ITEMS215:Object.keys(ITEMS_V215),
+  item(name){const f=ITEMS_E[name]||ITEMS_V215[name]||ITEMS_V217[name]||ITEMS_V2171[name];if(!f)return null;return serve('t:'+name,()=>{const b=mk('item',name);f(b);return b.svg('0 0 64 64','',esc(name))})},
+  ITEMS215:Object.keys(ITEMS_V215),ITEMS217:Object.keys(ITEMS_V217),ITEMS2171:Object.keys(ITEMS_V2171),FM_NAMES:Object.keys(FM_ART),FM_THEMES:Object.keys(FM_TH),
+  fm(name,o){const A=FM_ART[name];if(!A)return null;o=o||{};const key=[o.theme||'',o.lit?1:0].join(',');
+    return serve('fm:'+name+':'+key,()=>{const b=mk(A[1],'fm-'+name+':'+key);A[2](b,o);return b.svg(A[0],' data-fm="'+name+'"','')})},
   ekistamp(o){const key=ST_KEYS.includes(o&&o.key)?o.key:'shibuya',got=!!(o&&o.got);
     return serve('p:ekistamp:'+key+':'+(got?1:0),()=>{const b=mk('prop','ekistamp:'+key);if(got)stampArt(b,key,60,60,54,hashS(key)%7*.03-.09);else stampEmpty(b,60,60,54);
       return b.svg('0 0 120 120',` data-key="${key}" data-got="${got?1:0}"`,ST_LBL[key]+' station stamp'+(got?'':', not collected yet'))})},
@@ -1522,6 +1599,11 @@ PA.STAMP_KEYS=WB.KEYS.slice();
 PA.WORLD_E_SCENES=Object.keys(MINE);PA.WORLD_E_PROPS=['ekistamp','luckycat','postcard'];PA.WORLD_E_ITEMS=Object.keys(ITEMS);
 // v2.15: the Doggy Life Vest and the six run-track treasures (ITEMS_V215 above); every other name goes on to the previous PawArt.item unchanged
 {const prevItem215=PA.item,V215I=WB.ITEMS215;PA.item=function(name,o){return V215I.includes(name)?WB.item(name):prevItem215.apply(this,arguments)};PA.V215_ITEMS=V215I.slice()}
+// v2.17: the Crayon Crown and the Golden Collar (ITEMS_V217); every other name goes on unchanged
+{const prevItem217=PA.item,V217I=WB.ITEMS217;PA.item=function(name,o){return V217I.includes(name)?WB.item(name):prevItem217.apply(this,arguments)};PA.V217_ITEMS=V217I.slice()}
+// v2.17.1 Festive Market (V2171.md 6): the Squeaky Ghost and Pumpkin Lantern icons, the market props: PawArt.prop('fmscene' | 'fmtent' | 'fmlantern', { theme, lit })
+{const prevItem2171=PA.item,prevProp2171=PA.prop,V2171I=WB.ITEMS2171,FMN=WB.FM_NAMES;PA.item=function(name,o){return V2171I.includes(name)?WB.item(name):prevItem2171.apply(this,arguments)};
+  PA.prop=function(name,o){return FMN.includes(name)?WB.fm(name,o):prevProp2171.apply(this,arguments)};PA.V2171_ITEMS=V2171I.slice();PA.FM_PROPS=FMN.slice();PA.FM_THEMES=WB.FM_THEMES.slice();PA.FM_SIGN=[500,192,280]}
 /* v2.14: the last layer on every world render. The game may pass { aria: 'label' } (the root svg's aria-label, translated) and/or
    { ariaMap: { 'English label': 'translated label' } } (any other aria-label inside the render: hotspots, parts) in the options object
    of any call (scene, walkStrip, prop, item, icon, bed, house, obstacle, collectible, postcard). Without them the result is returned

@@ -807,7 +807,7 @@ function drawFace(h,s,L,HT){
 }
 
 /* ---------- outfits ---------- */
-const OUT={head:['Party Hat','Flower Crown','Acorn Cap','Rain Hat','Pom-pom Beanie','Chef Hat','Wizard Hat','Sun Hat','Cowboy Hat','Astronaut Helmet','Leaf Beret','Witch Hat','Reindeer Antlers','Year of the Sheep Hood','Sailor Cap'],eyes:['Heart Sunglasses','Explorer Goggles'],neck:['Red Bandana','Bow Tie','Seashell Necklace','Clover Collar','Rainbow Collar','Sailor Collar','Knit Scarf','Autumn Scarf','Parade Rosette','Candy Corn Bandana','Snowflake Snood','Ugly Sweater Rosette','Shibuya Bandana','Asakusa Bandana','Tokyo Tower Bandana','Sunflower Collar'],body:['Yellow Raincoat','Knit Winter Sweater','Superhero Cape','Mossy Poncho','Frog Raincoat','Polka-dot Raincoat','Bubble Raincoat','Happi Coat','Bumblebee Suit','Cozy Hoodie','Tutu','Pyjamas','Ghost Sheet','Pumpkin Suit','Vampire Cape','Bat Wings','Very Ugly Sweater','Pumpkin Patch Suit','Trick-or-Treat Ghost','Little Bat Costume','Doggy Life Vest']};
+const OUT={head:['Party Hat','Flower Crown','Acorn Cap','Rain Hat','Pom-pom Beanie','Chef Hat','Wizard Hat','Sun Hat','Cowboy Hat','Astronaut Helmet','Leaf Beret','Witch Hat','Reindeer Antlers','Year of the Sheep Hood','Sailor Cap','Crayon Crown'],eyes:['Heart Sunglasses','Explorer Goggles'],neck:['Red Bandana','Bow Tie','Seashell Necklace','Clover Collar','Rainbow Collar','Sailor Collar','Knit Scarf','Autumn Scarf','Parade Rosette','Candy Corn Bandana','Snowflake Snood','Ugly Sweater Rosette','Shibuya Bandana','Asakusa Bandana','Tokyo Tower Bandana','Sunflower Collar','Golden Collar'],body:['Yellow Raincoat','Knit Winter Sweater','Superhero Cape','Mossy Poncho','Frog Raincoat','Polka-dot Raincoat','Bubble Raincoat','Happi Coat','Bumblebee Suit','Cozy Hoodie','Tutu','Pyjamas','Ghost Sheet','Pumpkin Suit','Vampire Cape','Bat Wings','Very Ugly Sweater','Pumpkin Patch Suit','Trick-or-Treat Ghost','Little Bat Costume','Doggy Life Vest']};
 function coatPts(s){const b=s.body,p=[],f=s.fluff?1.12:1.08;for(let a=-108;a<=108;a+=12){const t=a*D2R;p.push([Math.cos(t)*b.rx*f,Math.sin(t)*b.ry*(f+.04)])}return p}
 function drawCape(h,s,L,B){
   // billows up and back behind the body, so most of it shows above the back and past the rump
@@ -1286,6 +1286,24 @@ BODY2['Doggy Life Vest']=function(h,s,L,B,p){// a puffy bright orange float vest
    const k=B([b.rx*xx,yy(b.rx*xx)*.4]);h.shape([[k[0]-4.6,k[1]-3.4],[k[0]+4.6,k[1]-3.4],[k[0]+4.6,k[1]+3.4],[k[0]-4.6,k[1]+3.4]],V215_YE,{w:2.2,step:30,ox:0,oy:0,sc:1,closed:1,amp:.3});h.line([[k[0],k[1]-2.2],[k[0],k[1]+2.2]],1.3,INK,.1)});
   h.line([[b.rx*.9,-b.ry*.5],[b.rx*.5,-b.ry*.62],[b.rx*.05,-b.ry*.6]].map(B).map(cl),3.4,W,.5);
   h.line(vp.slice(0,5).map(B).map(cl),6,V215_YE,.7);h.line(vp.slice(-6).map(B).map(cl),6,V215_YE,.7)};
+/* ---------- v2.17 Dog Days (V217.md 2): the Bond 10 gifts, the Crayon Crown and the Golden Collar (new names only: old renders never reach them) ---------- */
+HAT2['Crayon Crown']=function(h,s,L,HT){// a wobbly paper crown coloured in with crayons: five uneven points, a red band, three crayon-dot jewels, a pink blob on each tip
+  const hx=s.head.rx,hy=s.head.ry,P=hatP(s,L,HT,-.02,-4),W2=hx*.54,H=hy*.8;
+  const pts=[[-W2,2],[-W2*1.05,-H*.4],[-W2*1.1,-H*1],[-W2*.62,-H*.5],[-W2*.32,-H*1.12],[0,-H*.54],[W2*.36,-H*1.06],[W2*.64,-H*.5],[W2*1.08,-H*.96],[W2*1.04,-H*.4],[W2,2]];
+  h.shape(pts.map(P),'#FFD23A',{w:3.8,step:8});
+  h.part(true);h.crayon(W2*.8,H*.34,q=>P([q[0],q[1]-H*.52]),'#F2A93B',5);h.part(false);
+  h.shape([[-W2*1.01,2],[W2*1.01,2],[W2*1.03,-H*.3],[-W2*1.03,-H*.3]].map(P),'#E8473D',{w:3,step:8});
+  [[-.56,'#4F8FD6'],[0,'#6DBE5A'],[.56,'#8E63C7']].forEach(([x,c])=>{const q=P([W2*x,-H*.14]);h.shape(circ(q[0],q[1],3.3,2.9,7),c,{w:1.8,ox:0,oy:0,sc:1,closed:1,amp:.3})});
+  [[-1.1,-1],[-.32,-1.12],[.36,-1.06],[1.08,-.96]].forEach(([x,y])=>{const q=P([W2*x,H*y]);h.shape(circ(q[0],q[1],2.8,2.6,7),'#F28FA5',{w:1.6,ox:0,oy:0,sc:1,closed:1,amp:.25})});
+  h.line([[-W2*.5,-H*.42],[-W2*.4,-H*.82]].map(P),1.4,'#FFF3B0',.3)};
+NECK2['Golden Collar']=function(h,s,L,HT){// a shiny gold collar (a gold line in its own ink), a white shine, and a round gold tag with a pink crayon heart under the chin
+  const a=neckAnchor(s,HT),sag=t=>{const x=a.l[0]+(a.r[0]-a.l[0])*t,y=a.l[1]+(a.r[1]-a.l[1])*t+Math.sin(Math.PI*t)*8;return[x,Math.min(y,GY-18)]};
+  const pts=[];for(let i=0;i<=8;i++)pts.push(sag(i/8));h.line(pts,7.4,INK);h.line(pts,5,'#F2B83A',.4);h.line(pts.slice(1,5).map(q=>[q[0],q[1]-1]),1.4,'#FFF3B0',.3);
+  const lie=/^(sleep|down|crouch|playdead|rollover)$/.test(L.pose),c0=sag(lie?.2:.56),R=Math.max(6.5,Math.min(9,s.head.rx*.28)),c=[c0[0]+(lie?-2:0),Math.min(c0[1]+(lie?2:R+3),GY-R-1)];
+  if(lie)return;// lying down, the tag is tucked under the chin
+  h.line([[c0[0],c0[1]+1],[c[0],c[1]-R+1]],1.8,INK,.1);
+  h.shape(circ(c[0],c[1],R,R*.96,10),'#F2B83A',{w:2.2,step:30,ox:0,oy:0,sc:1,closed:1,amp:.3});
+  h.heart(c[0],c[1]+.6,R*.62,'#F28FA5')};
 /* ---------- v2.11.1 Halloween 2026 costumes (V2111.md 3): body slot, each with its own head piece ----------
    TOP2 holds the costume's head piece, drawn after the neck item in place of the hat (frame drops the head-slot hat while one is worn).
    Neck items: the Pumpkin Patch Suit's leaf collar and the Little Bat Costume's ruffle sit over the neck item (it peeks out under them);

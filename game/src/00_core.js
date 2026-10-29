@@ -7,6 +7,7 @@
    ========================================================================= */
 const BOOST = { coins: 2, bond: 3, nap: 6 };
 const SAVE_KEY = 'pawhaven_proto_v1', PREF_KEY = 'pawhaven_prefs_v1';
+const SAVE_BACKUP_KEY = 'pawhaven_proto_v1_backup'; // same string as CL_CFG.backupKey (22b_cloud_config.js): the import/restore copy
 const BOND_TH = [0, 60, 180, 450, 700, 1000, 1400, 1900, 2500, 3200]; // v2.16 First Week: Bond 2 at 60 (was 100) and Bond 3 at 180 (was 250); the rest as before. Old saves level up quietly on load (fwBondFix)
 
 const FOOD = [
@@ -65,6 +66,8 @@ const TOYS = [
   { n: 'Plush Ghost', fest: 'halloween', ed: 2026, v26: true, price: 55, bond: 1, note: 'Shake: a floppy ghost to shake and carry about. +Happiness, a little Bond.' },
   { n: 'Bat-Wing Flyer', fest: 'halloween', ed: 2026, v26: true, price: 65, bond: 2, note: 'Leap: a soft flyer with felt bat wings to jump for. +Happiness, -Energy.' },
   { n: 'Trick-or-Treat Bucket', fest: 'halloween', ed: 2026, v26: true, price: 80, bond: 2, note: 'Sniff: nose out the treats hidden under the lids. +Happiness, a little Bond.' },
+  /* v2.17.1 Festive Market (V2171.md): sold only at the Festive Market (fm), a ball-play toy (BL_TOYS in 49_market.js) */
+  { n: 'Squeaky Ghost', fest: 'halloween', ed: 2026, fm: true, price: 50, bond: 1, note: 'Fetch: a soft little ghost that squeaks when it lands. Ball play, 2 coins a return.' },
   /* v2.11 Tokyo Trip: the Tokyo Tower souvenir stand only (tokyo + fest 'tokyo'), with its own play game in mods/toys.js */
   { n: 'Shinkansen Plush', fest: 'tokyo', tokyo: true, price: 80, bond: 1, v211: true, note: 'Zoom: a soft bullet train to roll along the ground and chase. +Happiness.' },
 ];
@@ -120,7 +123,10 @@ const CLOTHES = [
   { n: 'Tokyo Tower Bandana', slot: 'neck', fest: 'tokyo', tokyo: true, price: 60, bond: 1, v211: true, perk: 'Tall look: orange and white stripes, like the tower on a sunny day.' },
   { n: 'Astronaut Helmet', slot: 'head', price: 0, bond: 1, v24: true, reward: true, perk: 'Space-proof: no soggy shake after rain, no shivering in the snow.' },
   // v2.15 Around Town (V215.md 6.2): the Splash Pool gives it free on the first visit (S.pool.vest), never sold; worn automatically in the water (45_pool.js)
-  { n: 'Doggy Life Vest', slot: 'body', price: 0, bond: 1, v215: true, reward: true, perk: 'Safe swimmer: a bright vest with two buckles. Free from the Splash Pool.' }
+  { n: 'Doggy Life Vest', slot: 'body', price: 0, bond: 1, v215: true, reward: true, perk: 'Safe swimmer: a bright vest with two buckles. Free from the Splash Pool.' },
+  // v2.17 Dog Days (V217.md 2): the Bond 10 gifts on the Bond track (48_dogdays.js), never sold; bond 1 so no level-up card lists them as a shop unlock
+  { n: 'Crayon Crown', slot: 'head', price: 0, bond: 1, v217: true, reward: true, perk: 'Best friends: a wobbly paper crown, coloured in with every crayon in the box. A Bond 10 gift.' },
+  { n: 'Golden Collar', slot: 'neck', price: 0, bond: 1, v217: true, reward: true, perk: 'Best friends: a shiny gold collar with a little heart tag. A Bond 10 gift.' }
 ];
 const HOUSES = [
   { n: 'Cardboard Box', price: 0, bond: 1, comfort: 0, hd: 4, note: 'Free. Has a flap. Smells like delivery.' },
@@ -548,6 +554,7 @@ function mpPlainGround(name) {
     + `<g fill="none" stroke="#B9C79A" stroke-width="3" stroke-linecap="round">${[[90, 430], [260, 470], [450, 420], [640, 480], [820, 440], [160, 540], [560, 550], [900, 530]].map(([x, y]) => `<path d="M${x} ${y} l6 -14 M${x + 8} ${y} l2 -16 M${x + 16} ${y} l-4 -12"/>`).join('')}</g></g>` + mpPlainDoor(name) + placeSign(name); // v2.15: a storefront gets a doodle door (data-shop, 42_map215.js)
 }
 function sceneArt(name, e, extra) {
+  if (name === 'fmarket' && typeof fmSceneArt === 'function') return fmSceneArt(); // v2.17.1: the Festive Market (49_market.js)
   const o = Object.assign({}, e || {}, extra || {});
   const tk = tkSceneArt(name, o); if (tk) return tk; // v2.11: the six Tokyo places (world D / E art, else a stand-in, 39_tokyo.js)
   if (MP_KEYS.includes(name) && !mpSceneReady(name)) return mpPlainGround(name); // v2.15: a new place whose world G scene is not there (yet)
@@ -736,16 +743,41 @@ function freshState(key, name, sex) {
   v215Fields(st); st.mapNew.fresh = true; // v2.15 Around Town: agility, the pool, the run tracks, the map stickers (V215.md section 9); fresh: a save that started on v2.15 gets no "new" / "moved" stickers
   v214Fields(st); st.lang = i18nReal(prefs.langPick) ? prefs.langPick : null; // v2.14: a language picked on the title screen before the save existed (V214.md 5)
   v216Fields(st); Object.assign(st.fw, { fresh: true, wel: { days: [], got: [] }, dock: 1, dockNew: { wardrobe: 1, journal: 1 } }); if (typeof fwOn === 'function' && fwOn()) st.guide.fw = 1; // v2.16 First Week (V216.md 2): a new save gets Puppy's first day, the welcome week and the lighter phone dock
+  v217Fields(st); // v2.17 Dog Days (V217.md 6): wishes, the diary, stickers, letters, the Bond track gifts
+  v2171Fields(st); // v2.17.1 Festive Market (V2171.md 7)
   return linkDogs(st);
 }
 let S = null;
 let dirty = false;
 function markDirty() { dirty = true; }
 const ALIAS_KEYS = new Set(['dog', 'stats', 'bond', 'outfit', 'potty', 'sleeping', 'dishLog', 'buff', 'glowUntil', 'pupUntil', 'tricks']);
-function saveNow() { if (!S) return; S.lastReal = Date.now(); const root = S; lsSet(SAVE_KEY, JSON.stringify(S, function (k, v) { if (this === root && k === 'activeId' && typeof PKS === 'object' && PKS && PKS.sw && PKS.sw.who === v) return PKS.sw.orig; return this === root && ALIAS_KEYS.has(k) ? undefined : v; })); dirty = false;
-  if (typeof clOnSaved === 'function') clOnSaved(); }
-function loadSave() { try { const s = JSON.parse(lsGet(SAVE_KEY) || 'null'); return s && (s.dog || (s.dogs && s.dogs.length)) && s.v === 1 ? migrate(s) : null; } catch (e) { return null; }
-  finally { if (typeof clOnLoaded === 'function') clOnLoaded(); } }
+function saveNow() {
+  if (!S) return; S.lastReal = Date.now(); const root = S;
+  const json = JSON.stringify(S, function (k, v) { if (this === root && k === 'activeId' && typeof PKS === 'object' && PKS && PKS.sw && PKS.sw.who === v) return PKS.sw.orig; return this === root && ALIAS_KEYS.has(k) ? undefined : v; });
+  if (!lsSet(SAVE_KEY, json)) { dirty = true; return; } // quota or private mode: the in-memory game is still unsaved, and cloud save must not treat the older disk copy as current
+  dirty = false;
+  if (typeof clOnSaved === 'function') clOnSaved();
+}
+function saveUsable(s) { return !!(s && s.v === 1 && (s.dog || (s.dogs && s.dogs.length))); }
+// a missing key is a new game. Bad JSON (the key is there but will not parse) tries the import/restore backup before giving up.
+function loadSave() {
+  try {
+    const raw = lsGet(SAVE_KEY);
+    if (raw == null) return null;
+    let s;
+    try { s = JSON.parse(raw); }
+    catch (e) {
+      const b = lsGet(SAVE_BACKUP_KEY);
+      if (b == null) return null;
+      s = JSON.parse(b);
+      const out = saveUsable(s) ? migrate(s) : null;
+      if (out) lsSet(SAVE_KEY, b); // heal the corrupt key so the next boot does not depend on the backup still being there
+      return out;
+    }
+    return saveUsable(s) ? migrate(s) : null;
+  } catch (e) { return null; }
+  finally { if (typeof clOnLoaded === 'function') clOnLoaded(); }
+}
 // v1 -> v1.1: add treasure fields; old collect-10 items are sold to a squirrel for 5 coins each
 function migrate(s) {
   if (!s || !s.inv) return s;
@@ -773,6 +805,8 @@ function migrate(s) {
   v214Fields(s); // v2.14 Hello in Every Language (V214.md section 5): additive
   v215Fields(s); // v2.15 Around Town (V215.md section 9): additive
   fwBondFix(s); v216Fields(s); // v2.16 First Week (V216.md section 2): additive; the new Bond thresholds level old dogs up quietly
+  v217Fields(s); // v2.17 Dog Days (V217.md section 6): additive
+  v2171Fields(s); // v2.17.1 Festive Market (V2171.md section 7): additive
   return s;
 }
 /* v2.7 Home & Pack save fields (V27.md section 1). Additive only: S.v stays 1, nothing is dropped.
@@ -870,11 +904,38 @@ function v216Fields(s) {
   if (!v28Obj(f.b2)) { f.b2 = {}; (s.dogs || []).forEach((d) => { if (d && d.id && d.bond && d.bond.level >= 2) f.b2[d.id] = 1; }); }
   if (f.wel !== null && !v28Obj(f.wel)) f.wel = f.fresh ? { days: [], got: [] } : null;
   if (f.wel) { arr(f.wel, 'days'); arr(f.wel, 'got'); }
-  if (!v28Obj(f.cal)) f.cal = {}; if (typeof f.cal.ym !== 'string') f.cal.ym = ''; arr(f.cal, 'days'); arr(f.cal, 'got'); if (typeof f.cal.coins !== 'number' || !(f.cal.coins >= 0)) f.cal.coins = 0;
+  if (!v28Obj(f.cal)) f.cal = {}; if (typeof f.cal.ym !== 'string') f.cal.ym = ''; arr(f.cal, 'days'); arr(f.cal, 'got'); arr(f.cal, 'dg'); if (typeof f.cal.dgc !== 'number' || !(f.cal.dgc >= 0)) f.cal.dgc = 0; // v2.17: the daily gifts claimed this month (an old save starts with none: only today's can be claimed)
+  if (typeof f.cal.coins !== 'number' || !(f.cal.coins >= 0)) f.cal.coins = 0;
   if (!v28Obj(f.frames)) f.frames = {}; if (f.frames.name === undefined) f.frames.name = null; arr(f.frames, 'months');
   if (f.wish !== null && !v28Obj(f.wish)) f.wish = null;
   if (typeof f.dock !== 'number') f.dock = f.fresh ? 1 : 10; if (!v28Obj(f.dockNew)) f.dockNew = {};
   ['morning', 'shown', 'named'].forEach((k) => { if (typeof f[k] !== 'string') f[k] = ''; });
+  return s;
+}
+/* v2.17 Dog Days (V217.md section 6). Additive only: S.v stays 1, nothing is dropped. Summaries only (the diary text is written at display time).
+   S.dd { wish: { day: localISO, w: { dogId: { k: wish kind, a: its place / route / food / toy or null, done: 0|1, fw: 1 when it came from v2.16's "see you tomorrow" } }, coins: wish coins today (cap 20) },
+          wn: wishes come true (all time), wk: { kind: count },
+          today: the diary page being written ({ g: game day, d: localISO, id, n: name, k: breed key, w: [routes], p: [places], f: [foods], t: [tricks], x: flag letters, wi: wish kind, fr: [pack names] }) | null,
+          diary: [the last 60 finished pages, same shape], st: { stickerId: 1 }, pg: { page: gift given }, fr: [frame ids: b3 b5 b7 p0..p11],
+          bt: { 3|5|7|10: 1 } the Bond track gifts given, pv: { place or route key: 1 } places visited since v2.17, cnt: { counters for the stickers }, mo: ['YYYY-MM'] months with a paw,
+          lt: { day: localISO of the last Dog Days letter, wk: the Monday of Gerald's last weekly news, fam: localISO of the last family letter, gi, fi: template turns } } */
+function v217Fields(s) {
+  if (!s) return s;
+  if (!v28Obj(s.dd)) s.dd = {};
+  const d = s.dd, obj = (k) => { if (!v28Obj(d[k])) d[k] = {}; }, arr = (k) => { if (!Array.isArray(d[k])) d[k] = []; };
+  if (!v28Obj(d.wish) || !v28Obj(d.wish.w)) d.wish = { day: '', w: {}, coins: 0 };
+  if (typeof d.wish.day !== 'string') d.wish.day = ''; if (typeof d.wish.coins !== 'number' || !(d.wish.coins >= 0)) d.wish.coins = 0;
+  if (typeof d.wn !== 'number' || !(d.wn >= 0)) d.wn = 0;
+  ['wk', 'st', 'pg', 'bt', 'pv', 'cnt', 'lt'].forEach(obj); ['diary', 'fr', 'mo'].forEach(arr);
+  if (d.today !== null && !v28Obj(d.today)) d.today = null;
+  ['day', 'wk', 'fam'].forEach((k) => { if (typeof d.lt[k] !== 'string') d.lt[k] = ''; }); ['gi', 'fi'].forEach((k) => { if (typeof d.lt[k] !== 'number') d.lt[k] = 0; });
+  if (d.diary.length > 60) d.diary.splice(0, d.diary.length - 60);
+  return s;
+}
+/* v2.17.1 Festive Market save fields (V2171.md 7). Additive: S.fm = { seen: { marketId_year: ISO }, letters: { marketId_year: ISO }, bought } */
+function v2171Fields(s) {
+  if (!s) return s; if (!v28Obj(s.fm)) s.fm = {};
+  ['seen', 'letters'].forEach((k) => { if (!v28Obj(s.fm[k])) s.fm[k] = {}; }); if (typeof s.fm.bought !== 'number' || !(s.fm.bought >= 0)) s.fm.bought = 0;
   return s;
 }
 // v2.16: BOND_TH moved Bond 2 and 3 closer. A loaded dog whose points already pass a threshold levels up here, quietly (no fanfare, no level-up queue);
@@ -971,6 +1032,7 @@ function mpPlaceSync() {
 }
 mpPlaceSync();
 function mpPlaceName(k) {
+  if (k === 'fmarket' && PLACES[k] && typeof fmPlaceName === 'function') return fmPlaceName(); // v2.17.1: the Festive Market takes its market's name
   if (!mpOn() || !PLACES[k]) return null;
   switch (k) {
     case 'market': return tdata('shop_name.kibble', 'Kibble Corner'); // the storefronts share their shop's name (already in every language)
@@ -1053,7 +1115,7 @@ const favAct = (a) => (FAV[S.dog.key] || {}).act === a;
 
 /* ---------------- toasts, bubbles ---------------- */
 // v2.3 phone: toasts start just under the location chip (top-left of the scene), never on it
-function phChipClear() { if (!isPhone()) return 0; const st = $('#status'); return st && !st.hidden && st.offsetParent === view ? st.offsetTop + st.offsetHeight + 4 - 8 : 0; }
+function phChipClear() { if (!isPhone()) return 0; const st = $('#status'), w = $('#ddWish:not([hidden])'); const a = st && !st.hidden && st.offsetParent === view ? st.offsetTop + st.offsetHeight + 4 - 8 : 0, b = w && w.offsetParent === view ? w.offsetTop + w.offsetHeight + 14 - 8 : 0; return Math.max(a, b); } // v2.17: also under the wish chip (48_dogdays.js)
 // toast(text, kind, o): o.group + o.many(n) (phones): a toast of the same group still on screen is replaced by one note with a count ("3 new letters").
 // Phones also re-place live toasts when a sheet opens, closes or changes height (toastPlace): above the sheet when there is room, else under its tabs
 // or its title, never on them. Returns the toast element.
@@ -1206,7 +1268,7 @@ function addCoins(base, opts = {}) {
 let levelQueue = [];
 function bondMult() { return BOOST.bond * (S.dog.key === 'mutt' ? 1.1 : 1) * (glowing() ? 1.2 : 1) * (S.gameMin < S.pupUntil ? 2 : 1); }
 function addBond(base, opts = {}) {
-  const n = Math.max(1, Math.round(base * (opts.raw ? 1 : bondMult()))); S.bond.pts += n; markDirty();
+  const n = Math.max(1, Math.round(base * (opts.raw ? 1 : bondMult()))); S.bond.pts += n; markDirty(); if (typeof ddBondSeen === 'function') ddBondSeen(n); // v2.17: a wish doubles the Bond its action gave
   while (S.bond.level < 10 && S.bond.pts >= BOND_TH[S.bond.level]) { S.bond.level++; levelQueue.push({ l: S.bond.level, who: NAME(), id: S.dog.id }); SFX.fanfare(); if (S.bond.level === 2 && S.fw && S.fw.b2pending && !S.fw.b2[S.dog.id]) S.fw.b2pending[S.dog.id] = 1; } // v2.16: the Bond 2 party survives a reload (b2pending) // v2.7: who levelled up (pack care gives a pack dog its Bond)
   updateHUD(); setTimeout(maybeLevelUp, 400); return n;
 }
@@ -1255,6 +1317,7 @@ function barLabels() { if (isPhone() && typeof fwPhoneBar === 'function') { bar.
 function doAct(a) {
   if (a === 'caremenu' || a === 'more') { SFX.click(); fwBarPop(fwBarOpen() === a ? null : a); return; } // v2.16 phone bar (47_firstweek.js): Care and More open a small tray above the bar
   if (typeof fwBarPop === 'function') fwBarPop(null);
+  if (a === 'stickers') { SFX.click(); if (!modal.hidden) closeModal(); if (typeof ddBookOpen === 'function') ddBookOpen(); return; } // v2.17: the sticker book in the phone More tray (48_dogdays.js)
   SFX.click(); hideBubble(); closeTraining();
   const pop = !modal.hidden || popOpen();
   if (pop && popAct === a) { if (!modal.hidden) closeModal(); else closeTray(); return; }
@@ -1311,6 +1374,7 @@ function unlocksFor(L) {
   TOYS.concat(CLOTHES).forEach((t) => { if (t.bond === L && L > 1 && !t.ed) u.push(tt('core.unlock_shop', 'Shop: {item}', { item: tItem(t.n) })); });
   HOUSES.forEach((h) => { if (h.bond === L && L > 1) u.push(tt('core.unlock_house', 'House: {house}', { house: tItem(h.n) })); });
   if (L === 10) u.push(tt('core.unlock_badge', 'Best Friends badge (it is invisible, but it is there)'));
+  if (typeof ddUnlocks === 'function') u.push(...ddUnlocks(L)); // v2.17: the Bond track gifts (48_dogdays.js)
   return u;
 }
 function maybeLevelUp() {

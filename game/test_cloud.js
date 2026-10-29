@@ -239,6 +239,36 @@ run('cloud', async (t) => {
   ok((await ev(d4, () => window.__paw.S.dog.name)) === name1 && !!(await ev(d4, () => localStorage.getItem('pawhaven_proto_v1'))), 'the local save stays after log out');
   use(d4); await t.closeX();
 
+  sec('a failed conflict backup does not drop the older save');
+  await ev(d1, () => window.__paw.go('yard'));
+  srv.offline.add(d1);
+  await change(d1, { coins: 5151 }); await t.sleep(400);
+  await change(d2, { coins: 6161 }); ok(await waitSynced(d2), 'device 2 syncs 6161 while device 1 is offline');
+  srv.blockBackups = true; srv.offline.delete(d1);
+  const backs = srv.backups.length;
+  await ev(d1, () => window.__pawCloud.pull());
+  ok((await ev(d1, () => window.__paw.S.coins)) === 5151, 'device 1 keeps 5151 while the backup cannot be stored');
+  ok(srv.saves[g1].data.coins === 6161 && srv.backups.length === backs, 'the cloud is unchanged and nothing was backed up');
+  srv.blockBackups = false;
+  await ev(d1, () => window.__pawCloud.pull());
+  ok(await until(d1, () => window.__paw.S.coins === 6161, null, 8000), 'once the backup works, the newer cloud save applies');
+  ok(srv.backups.some((b) => b.data && b.data.coins === 5151 && b.reason === 'older than your other device'), 'device 1\'s older coins were backed up first');
+  await ev(d1, () => { clearTimeout(window.__pawCloud.CL.retryT); window.__pawCloud.CL.retryT = null; window.__pawCloud.CL.err = ''; });
+  await change(d2, { coins: 7171 }); ok(await waitSynced(d2), 'device 2 syncs 7171');
+  srv.blockBackups = true;
+  await change(d1, { coins: 8181 });
+  await ev(d1, () => { clearTimeout(window.__pawCloud.CL.timer); window.__pawCloud.CL.timer = null; return window.__pawCloud.push(true); });
+  ok(srv.saves[g1].data.coins === 7171 && (await ev(d1, () => window.__paw.S.coins)) === 8181, 'a newer local save is not uploaded over the cloud copy while its backup fails');
+  srv.blockBackups = false;
+  await ev(d1, () => { clearTimeout(window.__pawCloud.CL.retryT); window.__pawCloud.CL.retryT = null; return window.__pawCloud.push(true); });
+  ok(await until(d1, () => window.__pawCloud.status().state === 'synced', null, 8000) && srv.saves[g1].data.coins === 8181, 'the newer local save uploads after the older cloud copy is backed up');
+  ok(srv.backups.some((b) => b.data && b.data.coins === 7171), 'device 2\'s 7171 went to backups');
+
+  sec('clApply refuses a save migrate cannot use, and a corrupt local save uses the backup');
+  const disk = await ev(d1, () => localStorage.getItem('pawhaven_proto_v1')), coinsNow = await ev(d1, () => window.__paw.S.coins);
+  ok((await ev(d1, () => window.__pawCloud.apply({ v: 1, dogs: [null], dog: { name: 'Nope' }, inv: {} }, null, null))) === false, 'clApply rejects a blob migrate cannot load');
+  ok((await ev(d1, () => window.__paw.S.coins)) === coinsNow && (await ev(d1, () => localStorage.getItem('pawhaven_proto_v1'))) === disk, 'the running game and the disk save stay');
+
   sec('the artifact copy: cloud off, local save kept');
   const d5 = await device('d5', 'iPhone 15', { host: 'abc.claudeusercontent.com' }); await adopt(d5, { sex: 'boy' });
   const name5 = await ev(d5, () => window.__paw.S.dog.name);
@@ -253,6 +283,19 @@ run('cloud', async (t) => {
   await d5.reload(); await d5.waitForSelector('#tContinue');
   ok((await ev(d5, () => JSON.parse(localStorage.getItem('pawhaven_proto_v1')).coins)) === 4321 && (await ev(d5, () => window.__paw.S && window.__paw.S.dog.name)) === name5, 'the local save is kept across a reload');
   ok(srv.calls.filter((c) => c.page === d5).length === 0, 'still no cloud calls after the reload');
+  await d5.click('#tContinue'); await until(d5, () => window.__paw.mode === 'yard' && !!document.getElementById('dogArt'));
+  await ev(d5, () => window.__paw.idle.pin('idle'));
+  await t.sleep(600);
+  const artKeys = await ev(d5, () => window.__paw.dogArtKeys());
+  await t.sleep(1200);
+  const artKeys2 = await ev(d5, () => window.__paw.dogArtKeys());
+  ok(artKeys2 - artKeys < 3, `an idle pinned dog does not rebuild its art key on every tick (${artKeys} -> ${artKeys2} in 1.2 s)`);
+  await ev(d5, () => window.__paw.idle.pin(null));
+  const backed = JSON.parse(await ev(d5, () => localStorage.getItem('pawhaven_proto_v1'))); backed.coins = 4242;
+  const pBad = await t.mk({ device: 'iPhone 15', storage: { pawhaven_proto_v1: '{', pawhaven_proto_v1_backup: JSON.stringify(backed) } });
+  await pBad.goto(URL); await pBad.waitForSelector('#tContinue');
+  ok((await ev(pBad, () => window.__paw.S && window.__paw.S.coins)) === 4242 && (await ev(pBad, () => JSON.parse(localStorage.getItem('pawhaven_proto_v1')).coins)) === 4242, 'bad JSON loads pawhaven_proto_v1_backup and heals the save key');
+  await ev(pBad, () => localStorage.removeItem('pawhaven_proto_v1'));
 
   sec('the test harness (no mock): cloud off, no network');
   const d6 = await device('d6', 'Pixel 7', false);

@@ -250,21 +250,18 @@ const AUDIT = () => {
         await t.p.locator('.dchip').last().tap();
         ok(await t.until((id) => window.__paw.S.dog.id !== id, first.dog.id, 4000), 'tapping a dog chip switches to it');
       }
-      // UI/UX H1 (13 Oct 2026): with 2+ pack dogs the missions clipboard stays on top: no pack dog covers it, and a tap on it opens Daily missions
-      t.sec(dev + ': missions clipboard with a pack');
+      // UI/UX H1 (13 Oct 2026) was: with 2+ pack dogs the missions clipboard stays on top. v2.16.1: the clipboard left the yard; on a phone the missions
+      // are in the "..." menu, so no pack dog can cover them. Checked at both sizes with a pack: no clipboard in the scene, the menu button opens Daily missions
+      t.sec(dev + ': missions with a pack (the "..." menu)');
       await t.ev(() => { const P = window.__paw, S = P.S; while (S.dogs.length < 3) P.addDog({ key: 'golden', sex: 'male', months: 20 }, 'Pal'); S.place = 'yard'; P.go('yard'); });
       const H0 = await t.ev(() => innerHeight);
-      await t.calm(); await t.freezeMotion(true); await t.until(() => document.querySelectorAll('#pack .packdog').length >= 2 && !!document.getElementById('msCardG'));
+      await t.calm(); await t.freezeMotion(true); await t.until(() => document.querySelectorAll('#pack .packdog').length >= 2);
       for (const [vw, vh] of [[W, 664], [360, 740]]) {
-        await t.p.setViewportSize({ width: vw, height: vh }); await t.ev(() => window.__paw.go('yard')); await t.until(() => !!document.getElementById('msCardG')); await t.sleep(400);
-        const cb = await t.ev(() => { const svg = document.querySelector('#view > svg.world'), m = svg.getScreenCTM(), [wx, wy, ww, wh] = window.__paw.ms.yard; // the clipboard art (MS_YARD world box)
-          const p1 = new DOMPoint(wx, wy).matrixTransform(m), p2 = new DOMPoint(wx + ww, wy + wh).matrixTransform(m), art = { left: p1.x, top: p1.y, right: p2.x, bottom: p2.y };
-          const x = (art.left + art.right) / 2, y = (art.top + art.bottom) / 2, top = document.elementFromPoint(x, y), cov = [...document.querySelectorAll('#pack .packdog > .pd-wander > rect')].filter((r) => { const b = r.getBoundingClientRect(); return b.left < art.right - 4 && b.right > art.left + 4 && b.top < art.bottom - 4 && b.bottom > art.top + 4; }).length;
-          return { x, y, on: !!(top && top.closest('#msCardG')), cov, vis: x > 0 && x < innerWidth }; });
-        if (!cb.vis) { ok(true, `${dev} ${vw}x${vh}: the clipboard is outside the crop (camera)`); continue; }
-        ok(cb.on && cb.cov === 0, `${dev} ${vw}x${vh}: no pack dog's tap box sits on the missions clipboard (top element ok: ${cb.on}, pack boxes on it: ${cb.cov})`);
-        await t.p.touchscreen.tap(cb.x, cb.y);
-        ok(await t.until(() => !!document.querySelector('#modal:not([hidden]) .panel.ms-pop'), null, 4000), `${dev} ${vw}x${vh}: tapping the clipboard opens Daily missions, not a dog switch`);
+        await t.p.setViewportSize({ width: vw, height: vh }); await t.ev(() => window.__paw.go('yard')); await t.untilMode('yard'); await t.sleep(400);
+        ok(await t.ev(() => !document.getElementById('msCardG')), `${dev} ${vw}x${vh}: no clipboard in the yard`);
+        await t.p.locator('#moreBtn').tap(); ok(await t.until(() => !!document.querySelector('#modal:not([hidden]) #mmMs'), null, 4000), `${dev} ${vw}x${vh}: the "..." menu has Daily missions`);
+        await t.p.locator('#mmMs').tap();
+        ok(await t.until(() => !!document.querySelector('#modal:not([hidden]) .panel.ms-pop'), null, 4000), `${dev} ${vw}x${vh}: it opens Daily missions, not a dog switch`);
         await t.closeX(); await t.modalGone();
       }
       await t.freezeMotion(false); await t.p.setViewportSize({ width: W, height: H0 });

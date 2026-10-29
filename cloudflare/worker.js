@@ -12,7 +12,7 @@
 //   POST /migrate  -> 410 gone (v2.9.1: Supabase is switched off, nothing carries over any more)
 //   POST /logout   GET /me   POST /password {password}
 //   GET  /save[?meta=1] -> { save: {data,rev,changed_at,device,updated_at} | null }
-//   PUT  /save {data,rev,changed_at,device} -> { rev }   409 { error:'stale', rev, changed_at } if the cloud has a newer rev
+//   PUT  /save {data,rev,changed_at,device} -> { rev }   409 { error:'stale', rev, changed_at } if the cloud has a newer rev, or a higher rev whose changed_at is older
 //   GET  /backups -> { backups: [{id,data,reason,created_at}] }   POST /backups {data,reason}  (the newest 5 are kept)
 //   Dog Cards (v2.11, V211.md section 5.5). No free text anywhere: only integers and fixed tokens, checked by dcCardOf().
 //   GET    /card                     -> { id, name, dogs, paws, at } | null      my card (at: last update, ms)
@@ -217,7 +217,7 @@ function dcCardOf(body) {
 function dcPub(r, mine) {
   let dogs = []; try { dogs = JSON.parse(r.dogs); } catch (e) { dogs = []; }
   const o = { id: r.id, name: [r.name_a | 0, r.name_b | 0], dogs, paws: r.paws | 0 };
-  if (mine) o.at = r.updated_at | 0;
+  if (mine) o.at = Number(r.updated_at) || 0; // a millisecond time. `| 0` keeps only 32 bits, so `at` was never a real clock and the game republished the card on every sync.
   return o;
 }
 const DC_COLS = 'c.id, c.name_a, c.name_b, c.dogs, c.paws, c.updated_at';
@@ -354,7 +354,10 @@ const ROUTES = {
     if (pwBad(body.password)) return fail('weak_password', 400);
     if (await limited(env, 'pw:' + me.id, 10, 3600)) return fail('rate_limited', 429);
     const h = await newHash(body.password);
-    await run(env, 'update users set pw_hash = ?1, pw_salt = ?2 where id = ?3', h.hash, h.salt, me.id);
+    await env.DB.batch([
+      env.DB.prepare('update users set pw_hash = ?1, pw_salt = ?2 where id = ?3').bind(h.hash, h.salt, me.id),
+      env.DB.prepare('delete from sessions where user_id = ?1 and token_hash != ?2').bind(me.id, me.th) // same as a reset: other devices lose the old password's sessions. This device keeps its token.
+    ]);
     return json({ ok: true });
   } },
 
@@ -380,8 +383,8 @@ const ROUTES = {
     const dev = typeof body.device === 'string' ? body.device.slice(0, 60) : null, now = new Date().toISOString();
     const r = await one(env, `insert into saves (user_id, data, rev, changed_at, device, updated_at) values (?1, ?2, ?3, ?4, ?5, ?6)
       on conflict(user_id) do update set data = excluded.data, rev = excluded.rev, changed_at = excluded.changed_at, device = excluded.device, updated_at = excluded.updated_at
-      where saves.rev < excluded.rev returning rev`, me.id, data, rev, new Date(at).toISOString(), dev, now);
-    if (!r) { // another device saved a newer rev first: the game looks again and decides
+      where saves.rev < excluded.rev and saves.changed_at <= excluded.changed_at returning rev`, me.id, data, rev, new Date(at).toISOString(), dev, now);
+    if (!r) { // a newer rev already stored, or this rev is higher but its changed_at is older: the game looks again and decides
       const c = await one(env, 'select rev, changed_at from saves where user_id = ?1', me.id);
       return fail('stale', 409, c ? { rev: c.rev, changed_at: c.changed_at } : {});
     }

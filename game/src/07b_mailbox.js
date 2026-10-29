@@ -225,7 +225,11 @@ function mailboxDoodle(flag, count) {
     ${count ? `<circle cx="22" cy="20" r="13" fill="#FFE3A1" stroke="#5B3D32" stroke-width="2.4"/><text x="22" y="26" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="18" fill="#5B3D32">${count > 9 ? '9+' : count}</text>` : ''}</svg>`;
 }
 function mailboxArt() { const n = mailUnread(); return artReal('prop', 'mailbox', { flag: n > 0, count: n }) || mailboxDoodle(n > 0, n); }
-const MB_BOX = [286, 288, 90, 120]; // world x, y, w, h: over the scene's own mailbox by the fence, behind the dogs
+const MB_BOX = [286, 288, 90, 120]; // world x, y, w, h: over the scene's own mailbox by the fence, behind the dogs (the old flat yard: the harness without the v2.15 ground)
+// v2.16.1 (owner: the yard was cluttered): on the deep v2.15 yard the mailbox stands at the back, on the path by the house wall right of the front door,
+// under the right window. Same art, sized for the depth there (0.73 of the old box); its feet at y 346 (PawArt.FLOOR yard row 'mailbox': base 346)
+const MB_BOX_BACK = [179, 258, 66, 88];
+const mbBox = () => (typeof grOn === 'function' && grOn('yard') ? MB_BOX_BACK : MB_BOX);
 function mailboxRefresh() {
   if (!S || cur.mode !== 'yard' || S.place !== 'yard') return;
   const svg = $('svg.world', view); if (!svg) return;
@@ -237,7 +241,7 @@ function mailboxRefresh() {
     if (!sceneHot.dataset.mb) { sceneHot.dataset.mb = '1'; sceneHot.classList.add('hot'); sceneHot.setAttribute('tabindex', '0'); sceneHot.setAttribute('role', 'button'); sceneHot.addEventListener('click', () => openMailbox()); sceneHot.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openMailbox(); } }); }
     sceneHot.setAttribute('aria-label', lbl); sceneHot.classList.toggle('mb-new', n > 0); return;
   }
-  const html = `<g id="mailboxG" class="hot${n ? ' mb-new' : ''}" tabindex="0" role="button" aria-label="${esc(lbl)}" data-unread="${n}"><rect x="${MB_BOX[0]}" y="${MB_BOX[1]}" width="${MB_BOX[2]}" height="${MB_BOX[3]}" fill="transparent"/>${place(mailboxArt(), MB_BOX[0], MB_BOX[1], MB_BOX[2], MB_BOX[3])}</g>`;
+  const B = mbBox(), html = `<g id="mailboxG" class="hot${n ? ' mb-new' : ''}" tabindex="0" role="button" aria-label="${esc(lbl)}" data-unread="${n}"><rect x="${B[0]}" y="${B[1]}" width="${B[2]}" height="${B[3]}" fill="transparent"/>${place(mailboxArt(), B[0], B[1], B[2], B[3])}</g>`;
   if (old) { old.outerHTML = html; } else {
     const anchor = grAt('houseG', svg) || grAt('bowlG', svg) || svg.querySelector('#pack'); // v2.15: in a grOn yard the house and the bowl sort with the dogs: their old place (43_ground.js grAt)
     if (anchor) anchor.insertAdjacentHTML('beforebegin', html); else svg.insertAdjacentHTML('beforeend', html);

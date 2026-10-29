@@ -26,7 +26,7 @@
    Camera (wide places): the view window (1000 on desktop, the phone crop) follows the focus (the pack's centre with the leader counted twice, or a
      petted dog, grFocus) with a dead zone of 150 and a 0.8 s ease, the ends clamped. A drag looks around (6 px threshold, desktop and phones) and the
      camera then waits 2 s; a look chip tap waits 4 s. Ball play follows the ball, photo mode freezes the camera.
-   Test hook: window.__paw.gr = { on, floor, path, cam, scale, sim(place, secs, o), allow, wide, focus, zone, depthOk, area, free, inside, props, game }.
+   Test hook: window.__paw.gr = { on, floor, path, cam, scale, win (v2.16.1: the camera window, as the viewBox gave it before the pan moved to translate), sim(place, secs, o), allow, wide, focus, zone, depthOk, area, free, inside, props, game }.
    sim runs the roam with a fixed step and a seeded random (Math.random and performance.now are swapped for the run) and reports what it saw. */
 
 const GR_K = { out: [0.5, 1.05], in: [0.7, 1.05] }; // V215.md 8.2
@@ -35,7 +35,7 @@ const GR_CELL = 20, GR_FOOT = 8, GR_STEP = 12, GR_SEP = 90, GR_DEAD = 150, GR_EA
 const GR_FLAT = ['pug', 'frenchie', 'shihtzu']; // flat-faced: no water acts of their own (the pool's step only, ACTIVITIES)
 const GR_JOINTS = ['weave', 'jump', 'tyre']; // not for puppies under 6 months (the puppy course: tunnel, table, a bar on the ground)
 const GR_ACTS = {}; // other lanes add roaming acts by name: GR_ACTS[act] = { w(d, spot) -> weight, steps(d, spot) -> rmQueue steps }
-const GR = { fl: {}, grid: null, props: [], game: [], svg: null, hold: 0, focus: null, focusUntil: 0, raf: 0, last: 0, sim: null, vw: 0, vh: 0, drag: false };
+const GR = { fl: {}, grid: null, props: [], game: [], svg: null, hold: 0, focus: null, focusUntil: 0, raf: 0, last: 0, sim: null, vw: 0, vh: 0, drag: false, panX: 0, panW: 0, panS: 0, panT: null };
 
 /* ---------------- the floor ---------------- */
 function grArea(P) { let a = 0; for (let i = 0, j = P.length - 1; i < P.length; j = i++) a += (P[j][0] + P[i][0]) * (P[j][1] - P[i][1]); return Math.abs(a / 2); }
@@ -412,9 +412,15 @@ function grDepth() {
   const els = [...pk.children].filter((e) => e.classList.contains('rmdog') || e.classList.contains('gr-prop')); if (els.length < 2) return;
   const ys = new Map(els.map((e) => [e, grY(e)])), want = els.slice().sort((a, b) => ys.get(a) - ys.get(b) || (a.classList.contains('gr-prop') ? -1 : 0) + (b.classList.contains('gr-prop') ? 1 : 0));
   if (want.every((e, i) => e === els[i])) return;
-  const lead = els.find((e) => e.classList.contains('rmlead')), li = want.indexOf(lead), foc = document.activeElement;
+  const lead = els.find((e) => e.classList.contains('rmlead')), foc = document.activeElement;
   // a focused node (the dog house or the bowl, by keyboard) stays put: moving it would drop the focus
-  want.forEach((e, i) => { if (e === lead || (foc && foc !== document.body && e.contains(foc))) return; if (!lead) { pk.appendChild(e); return; } if (i < li) pk.insertBefore(e, lead); else pk.appendChild(e); });
+  // v2.16.1: only the nodes out of place move (moving a dog's node takes all its paths out of the layout and back in, so the old "move them all" cost a lot)
+  const fixed = (e) => e === lead || (foc && foc !== document.body && e.contains(foc));
+  want.forEach((e, i) => {
+    if (fixed(e)) return; const c = [...pk.children].filter((q) => q.classList.contains('rmdog') || q.classList.contains('gr-prop')), k = c.indexOf(e);
+    if (i === 0) { if (k !== 0) pk.insertBefore(e, c[0]); return; }
+    if (c[k - 1] !== want[i - 1]) want[i - 1].after(e);
+  });
 }
 function grDepthOk() { const pk = $('#pack'); if (!pk) return true; const ys = [...pk.children].filter((e) => e.classList.contains('rmdog') || e.classList.contains('gr-prop')).map(grY); return ys.every((y, i) => !i || y >= ys[i - 1] - 0.01); }
 
@@ -424,10 +430,29 @@ function grCam() {
   const f = grFloor(), W = f ? f.w : 1000, svg = $('#view > svg.world'), vb = svg && svg.viewBox && svg.viewBox.baseVal;
   if (!vb || !vb.width) return { x: 0, w: Math.min(1000, W), W };
   if (isPhone()) return { x: vb.x, w: vb.width, W };
-  const w = GR.vw && GR.vh ? Math.min(vb.width, (vb.height * GR.vw) / GR.vh) : vb.width; // desktop: xMidYMax slice shows the middle of the viewBox when the view is narrower
-  return { x: vb.x + (vb.width - w) / 2, w, W };
+  const pan = svg.classList.contains('gr-pan'), x0 = pan ? GR.panX : vb.x, vw = pan ? 1000 : vb.width, vh = pan ? 600 : vb.height;
+  const w = GR.vw && GR.vh ? Math.min(vw, (vh * GR.vw) / GR.vh) : vw; // desktop: xMidYMax slice shows the middle of the 1000-unit window when the view is narrower
+  return { x: x0 + (vw - w) / 2, w, W };
 }
-function grCamApply(cx) { const svg = $('#view > svg.world'); if (!svg) return; const x = clamp(cx - 500, 0, Math.max(0, grW() - 1000)); svg.setAttribute('viewBox', `${x.toFixed(1)} 0 1000 600`); }
+// v2.16.1: the desktop camera pans the whole world svg with the CSS translate property (the compositor moves the picture it already has). Changing the
+// viewBox every frame made Chromium lay out, paint and raster the whole scene again each frame (about 80 ms a frame at 1440x900 on the Training Ground,
+// so a running dog jumped from A to B). The svg is the full world wide (viewBox 0 0 W 600) at the size the old 1000-unit window had, so getScreenCTM,
+// toWorld and every hit box stay right. grCam() gives the window as before. Phones keep their viewBox crop (camApply).
+function grCamApply(cx) {
+  const svg = $('#view > svg.world'); if (!svg) return; const W = grW(), x = clamp(cx - 500, 0, Math.max(0, W - 1000));
+  if (isPhone() || !GR.vw || !GR.vh) { svg.classList.remove('gr-pan'); svg.setAttribute('viewBox', `${x.toFixed(1)} 0 1000 600`); return; }
+  const s = Math.max(GR.vw / 1000, GR.vh / 600), tx = (GR.vw - 1000 * s) / 2 - x * s, ty = GR.vh - 600 * s;
+  if (!svg.classList.contains('gr-pan') || GR.panW !== W || GR.panS !== s) {
+    GR.panW = W; GR.panS = s; svg.classList.add('gr-pan'); svg.setAttribute('viewBox', `0 0 ${W} 600`);
+    svg.style.width = (W * s).toFixed(2) + 'px'; svg.style.height = (600 * s).toFixed(2) + 'px';
+  }
+  GR.panX = x; GR.panT = [tx, ty]; svg.style.translate = `${tx.toFixed(2)}px ${ty.toFixed(2)}px`;
+  if (svg.classList.contains('trainzoom')) grPanVars(svg);
+}
+// the camera's window as the old viewBox gave it (x, y, w, h): the 1000 x 600 units the desktop camera frames (v2.16.1 tests)
+function grWin() { const svg = $('#view > svg.world'); if (!svg) return null; if (svg.classList.contains('gr-pan')) return { x: GR.panX, y: 0, w: 1000, h: 600 }; const v = svg.viewBox.baseVal; return { x: v.x, y: v.y, w: v.width, h: v.height }; }
+// the trick-training zoom's origin in the view (45_ground.css): custom properties restyle the whole svg, so they are set only while it zooms (15_trick_training.js)
+function grPanVars(svg) { if (!svg || !svg.classList.contains('gr-pan') || !GR.panT) return; svg.style.setProperty('--gr-tx', GR.panT[0].toFixed(2) + 'px'); svg.style.setProperty('--gr-ty', GR.panT[1].toFixed(2) + 'px'); svg.style.setProperty('--gr-vw', GR.vw + 'px'); svg.style.setProperty('--gr-vh', GR.vh + 'px'); }
 const grCamLive = () => !!S && rmScene() && grWide() && !!$('#view > svg.world');
 // what the camera keeps in view: a dog it was told to follow (petting), else the pack's centre with the leader counted twice
 function grFocusX() {
@@ -461,7 +486,7 @@ function grLookAt(x) { const h = grHalf(), W = grW(); camTo(clamp(x, h, W - h), 
 function grBallCam(dt, x) { const h = 500, W = grW(); camCx += (clamp(x, h, W - h) - camCx) * Math.min(1, dt * 5); grCamApply(camCx); }
 // photo mode: the picture is the 1000-wide window round the camera
 function grPhotoX() { return clamp(camCx - 500, 0, Math.max(0, grW() - 1000)); }
-function grViewSize() { const svg = $('#view > svg.world'); GR.vw = (svg && svg.clientWidth) || view.clientWidth; GR.vh = (svg && svg.clientHeight) || view.clientHeight; }
+function grViewSize() { const svg = $('#view > svg.world'), pan = svg && svg.classList.contains('gr-pan'); GR.vw = (!pan && svg && svg.clientWidth) || view.clientWidth; GR.vh = (!pan && svg && svg.clientHeight) || view.clientHeight; }
 function grSceneUp() {
   const wide = grCamLive(); document.documentElement.classList.toggle('gr-wide', wide); GR.focus = null; GR.hold = 0; GR.drag = false;
   if (!grOn() || !rmScene()) return; grViewSize(); grDepth();
@@ -518,7 +543,7 @@ function grShift(delta, T0) {
 function grExpose() {
   if (!window.__paw) return;
   window.__paw.gr = {
-    on: (p) => grOn(p), floor: (p) => grFloor(p), path: (id, x, y, o) => grPath(dogById(id) || D(), x, y, o || {}), cam: () => grCam(), scale: (p, y) => grScale(p, y),
+    on: (p) => grOn(p), floor: (p) => grFloor(p), path: (id, x, y, o) => grPath(dogById(id) || D(), x, y, o || {}), cam: () => grCam(), scale: (p, y) => grScale(p, y), win: () => grWin(),
     sim: (place, secs, o) => grSim(place, secs, o), allow: (v) => { prefs.grTest = !!v; return grOn(); }, wide: (p) => grWide(p), zone: (p) => (grOn(p) ? grZone(p) : null),
     focus: (id, ms) => grFocus(dogById(id), ms), focusX: () => grFocusX(), depthOk: () => grDepthOk(), depth: () => grDepth(), area: (p) => { const f = grFloor(p); return f ? f.area : 0; },
     free: (x, y) => grFree(x, y), inside: (x, y, p) => { const f = grFloor(p); return !!f && grIn(f.poly, x, y); }, no: (p) => grNo(p), snap: (x, y) => grSnap(x, y), tags: (x, y) => grTags(x, y),

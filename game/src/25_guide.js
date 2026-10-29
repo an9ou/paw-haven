@@ -13,7 +13,7 @@ const GD_STEPS = [
   { k: 'walk', pose: 'point', t: 'Walks earn the most coins and hide treasure. Try the Sunny Park.', ring: ['#bar [data-act=walk]'], on: ['walk'] },
   { k: 'shops', pose: 'sit', t: 'Market Street has three shops and Pip\'s Sprout Cart. Food at Kibble Corner, clothes at the Boutique, houses at Barkitecture.', tp: 'Kibble Corner: food. Boutique: clothes. Barkitecture: houses.' },
   { k: 'garden', pose: 'sit', t: 'At Bond 2 the veggie patch opens. Grow carrots, feed them to {dog}. Nothing toxic can be planted. Ever.', tp: 'Bond 2 opens the veggie patch. Nothing toxic can grow.' },
-  { k: 'missions', pose: 'point', t: 'Three little missions a day, about 15 coins each. Three done is a stamp. Seven stamps is a surprise.', tp: 'Three missions a day, 15 coins each. Seven stamps: a surprise.', ring: ['#msCardG', '#bar [data-act=journal]'] },
+  { k: 'missions', pose: 'point', t: 'Three little missions a day, about 15 coins each. Three done is a stamp. Seven stamps is a surprise.', tp: 'Three missions a day, 15 coins each. Seven stamps: a surprise.', ring: ['#msBtn', '#bar [data-act=journal]'] }, // v2.16.1: the top-bar clipboard (desktop); phones ring the Journal
   { k: 'done', pose: 'cheer', t: 'That is everything. It is in your Journal under How to play, if you forget. I will be by the river.' }
 ];
 // the Journal page: the 8 lessons (action icon, 2 to 3 sentences)
@@ -97,14 +97,14 @@ function gdTarget(i, tray) {
     const pop = e.closest && e.closest('#bar .barpop[hidden]'); if (pop) e = bar.querySelector(`.act[data-act="${pop.dataset.pop}"]`) || e; // v2.16 phone bar: a button in a closed tray rings its opener (Care or More) first
     const r = gdR(e), v = gdR(view);
     if (r.w < 2 || r.h < 2) continue;
-    if (!sel.startsWith('#bar') && !sel.startsWith('#dock') && !sel.startsWith('#gdLayer') && (r.r < v.l + 4 || r.l > v.r - 4 || r.b < v.t + 4 || r.t > v.b - 4)) continue; // a scene prop panned out of the crop
+    if (!sel.startsWith('#bar') && !sel.startsWith('#dock') && !sel.startsWith('#gdLayer') && !sel.startsWith('#msBtn') && (r.r < v.l + 4 || r.l > v.r - 4 || r.b < v.t + 4 || r.t > v.b - 4)) continue; // a scene prop panned out of the crop
     return { e, r, sel };
   }
   return null;
 }
 // spots for the card: above the dock (bottom of the scene) first, then under the HUD. Hard rules: never on #dogHit, the ringed target or the place buttons.
 // Soft: stay off the location chip, the bowl, the mailbox and the missions clipboard. Re-measured every tick, moved only when its spot stops being clear.
-const GD_HARD = ['#placeBtns .btn', '#devBtn', '#fwNext'], GD_SOFT = ['#status', '#bowlG', '#mailboxG', '#msCardG'];
+const GD_HARD = ['#placeBtns .btn', '#devBtn', '#fwNext'], GD_SOFT = ['#status', '#bowlG', '#mailboxG', '#msBtn', '#ddWish:not([hidden])']; // v2.17: the wish chip (48_dogdays.js)
 function gdPlace(force) {
   const c = $('.gd-card', gd.layer); const v = gdR(view), dh = $('#dogHit'), dog = dh ? gdR(dh) : null, tg = gdTarget(S.guide.step), tr = tg && tg.sel !== '#dogHit' && !tg.sel.startsWith('#gdLayer') ? tg.r : null; // v2.16: a ring on the card's own button is not a spot to avoid
   const cw = c.offsetWidth, ch = c.offsetHeight, ph = isPhone();
