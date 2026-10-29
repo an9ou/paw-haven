@@ -107,3 +107,35 @@ bluetooth died. the freestyle did not. 📱🐕 butter and noodle dance through 
 ```
 
 **Alt text:** `Two crayon dogs, a golden Labrador and a dachshund, dance side by side through five places from the game (Asakusa, Tokyo Tower, a town square, Yoyogi Park and a park), changing costumes at every cut, while a brick phone on the ground buzzes with music. It ends on the Doodle Doggo logo.`
+
+## RedNote / 小红书 (Simplified Chinese, owner 29 Oct 2026)
+
+Post `doodle-doggo-freestyle-dance-rednote.mp4` with `dance-cover-rednote.jpg`: the same dance, with the hook, ending page and cover in Simplified Chinese (the game's zh-Hans font) and no game link anywhere (`REDNOTE=1 ... build_dance.js <workdir>`). Hook: "蓝牙断了，/ freestyle没断。" (Bluetooth died, the freestyle didn't; "freestyle" is everyday slang on Chinese social media). Ending page: "一款免费的温馨狗狗游戏" (a free cozy dog game) · "搜索 Doodle Doggo 就能玩" (search Doodle Doggo to play) · "万圣节市集开到11月15日" (the Halloween Market is open until 15 Nov) · "关注我们，看更多蜡笔狗狗" (follow us for more crayon dogs). The dogs keep their English names, as in the Chinese version of the game.
+
+标题 (title, 18 characters; 20 max):
+```
+蓝牙断了，freestyle没断🐶🎶
+```
+
+> Bluetooth died, the freestyle didn't.
+
+正文 (text):
+```
+蓝牙断了，freestyle没断 📱🎶
+
+Butter和Noodle换了五个地方、十套衣服，一拍都没停。Butter负责领舞，Noodle永远慢半拍，还特别骄傲 🐶
+
+🎃 万圣节市集开到11月15日
+
+Doodle Doggo是一款画在铅笔素描本里的温馨狗狗游戏，免费，没有广告，浏览器直接玩，搜索 Doodle Doggo 就能找到
+
+你家狗狗也会跳舞吗？评论区晒一晒！
+
+#DoodleDoggo #狗狗跳舞 #治愈系游戏 #萌宠 #独立游戏 #免费游戏 #蜡笔画 #万圣节 #小游戏推荐 #丑萌
+```
+
+> Bluetooth died, the freestyle didn't.
+> Butter and Noodle went through five places and ten outfits without missing a beat. Butter leads; Noodle is always half a beat behind, and very proud of it.
+> The Halloween Market is open until 15 Nov.
+> Doodle Doggo is a cozy dog game drawn in a pencil sketchbook: free, no ads, plays in your browser; search Doodle Doggo to find it.
+> Can your dog dance too? Show us in the comments!

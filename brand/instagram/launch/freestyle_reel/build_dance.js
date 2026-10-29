@@ -10,10 +10,18 @@
 //
 //   NODE_PATH=$(npm root -g) node brand/instagram/launch/freestyle_reel/build_dance.js <workdir>
 //   SEED=n picks other places; ONLY=stills renders key frames and the cover only.
+//   REDNOTE=1: the RedNote cut (owner, 29 Oct 2026): the hook, ending page and cover in Simplified Chinese (LXGW WenKai, the game's zh-Hans
+//   font) and no game link anywhere ("search Doodle Doggo" instead); writes doodle-doggo-freestyle-dance-rednote.mp4 and dance-cover-rednote.jpg.
 const path = require('path'), fs = require('fs'), vm = require('vm'), cp = require('child_process');
 const { chromium } = require('playwright');
 const ROOT = path.join(__dirname, '..', '..', '..', '..');
 const WORK = path.resolve(process.argv[2] || 'dance_work'); fs.mkdirSync(path.join(WORK, 'f'), { recursive: true });
+const RN = !!process.env.REDNOTE, SUF = RN ? '-rednote' : '';
+const ZHF = "'LXGW WenKai', Caveat", fam = RN ? ZHF : 'Caveat';
+const TX = RN ? { hook: ['蓝牙断了，', 'freestyle没断。'], hookSize: 88, sub: '一款免费的温馨狗狗游戏', subSize: 56, pill: '搜索 Doodle Doggo 就能玩', pillSize: 58,
+  market: '万圣节市集开到11月15日', marketSize: 52, follow: '关注我们，看更多蜡笔狗狗', followSize: 52 }
+  : { hook: ['bluetooth died.', 'the freestyle did not.'], hookSize: 96, sub: 'a free cozy dog game', subSize: 64, pill: 'play free at doodledoggo.app', pillSize: 66,
+  market: 'the Halloween Market is open until 15 Nov', marketSize: 54, follow: 'follow @doodledoggo.app', followSize: 56 };
 // 120 bpm: the game's "play" music (86 bpm) is played 1.4x faster (same pitch), a dance tempo. Five places, 5 beats each, then the end card.
 const TEMPO = 120 / 86, B = 0.5, DANCE = 25 * B, T = DANCE + 3.0;
 const FPS = 30, N = Math.round(T * FPS), W = 1080, H = 1920, FEET = 1700, SEED = +process.env.SEED || 5;
@@ -22,7 +30,7 @@ const FPS = 30, N = Math.round(T * FPS), W = 1080, H = 1920, FEET = 1700, SEED =
 const win = {}, ctx = { window: win, console }; vm.createContext(ctx);
 for (const f of fs.readdirSync(path.join(ROOT, 'world')).filter((f) => /^pawart_world_[a-z]\.js$/.test(f)).sort()) vm.runInContext(fs.readFileSync(path.join(ROOT, 'world', f), 'utf8'), ctx);
 let src = fs.readFileSync(path.join(ROOT, 'dogs', 'pawart_dogs.js'), 'utf8');
-for (const [a, b] of [['if(L.danceFx){', 'if(false){'], ['const shadow=`', "const shadow=''&&`"],
+for (const [a, b] of [['if(L.danceFx){', 'if(false){'], ["const shadow=(s.wet&&pose!=='jump'?wetPuddle(shx,shw):'')+`", "const shadow=''&&`"],
   // in-between poses (owner, 29 Oct: no overlap, more frames): the frame number k may be fractional (o.kf), every [a,b,c][k] pose table
   // blends smoothly between its neighbours, and the pencil wobble keeps one seed so the lines do not boil between in-betweens
   ['const f=frame(key,s,pose,o.outfit,k,seed,ex)', 'const f=frame(key,s,pose,o.outfit,(o.kf!=null?o.kf:k),seed,ex)'], ['kit(rng(seed+k*7717))', 'kit(rng(seed))'],
@@ -69,7 +77,7 @@ const phone = `<path d="M14 8 Q50 1 86 8 Q93 10 94 22 L96 170 Q95 190 78 193 Q50
   <path d="M24 30 Q50 26 76 30 L76 74 Q50 78 24 74Z" fill="#9BCB6B" stroke="${PEN}" stroke-width="3.2" stroke-linejoin="round"/><path d="M30 40 L56 40 M30 50 L48 50" stroke="#5E8A3E" stroke-width="3" stroke-linecap="round"/>
   <path d="M38 88 Q50 84 62 88 Q66 98 62 106 Q50 110 38 106 Q34 98 38 88Z" fill="#D9DDE6" stroke="${PEN}" stroke-width="2.6"/>${keys.join('')}`;
 
-const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap" rel="stylesheet"><style>html,body{margin:0;background:#fff}svg{display:block}
+const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap" rel="stylesheet">${RN ? '<link href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/lxgwwenkai-bold.css" rel="stylesheet">' : ''}<style>html,body{margin:0;background:#fff}svg{display:block}
 [class$="-hl"]{display:none}
 .pa-dog *{animation:none!important}</style>
 <svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
@@ -82,18 +90,18 @@ const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.goo
 <use href="#jack" x="870" y="${FEET - 20}" width="190" height="190"/><use href="#jack" x="-30" y="${FEET + 40}" width="150" height="150"/>
 <g id="buzz"></g><g id="notes"></g>
 <g id="hook" opacity="0"><g transform="rotate(-2 540 300)"><rect x="110" y="170" width="860" height="270" rx="36" fill="#FFF8EC" stroke="#5B3D32" stroke-width="6"/>
-<text x="540" y="282" font-family="Caveat" font-weight="700" font-size="96" fill="#5B3D32" text-anchor="middle">bluetooth died.</text>
-<text x="540" y="392" font-family="Caveat" font-weight="700" font-size="96" fill="#5B3D32" text-anchor="middle">the freestyle did not.</text></g></g>
+<text x="540" y="282" font-family="${fam}" font-weight="700" font-size="${TX.hookSize}" fill="#5B3D32" text-anchor="middle">${TX.hook[0]}</text>
+<text x="540" y="392" font-family="${fam}" font-weight="700" font-size="${TX.hookSize}" fill="#5B3D32" text-anchor="middle">${TX.hook[1]}</text></g></g>
 <g id="end" opacity="0"><rect width="${W}" height="${H}" fill="#FFF8EC" opacity=".94"/>
 <path d="M200 560 Q540 530 880 560 L872 612 Q540 586 208 612Z" fill="#F28FA5" opacity=".45"/>
 <text x="355" y="575" font-family="Caveat" font-weight="700" font-size="160" fill="#5B3D32" text-anchor="middle" transform="rotate(-3 355 575)">Doodle</text>
 <text x="755" y="583" font-family="Caveat" font-weight="700" font-size="160" fill="#5B3D32" text-anchor="middle" transform="rotate(2 755 583)">Doggo</text>
-<text x="540" y="690" font-family="Caveat" font-weight="600" font-size="64" fill="#8A7468" text-anchor="middle">a free cozy dog game</text>
+<text x="540" y="690" font-family="${fam}" font-weight="600" font-size="${TX.subSize}" fill="#8A7468" text-anchor="middle">${TX.sub}</text>
 <g id="endDogs"></g>
 <rect x="175" y="1250" width="730" height="104" rx="52" fill="#FFE3A1" stroke="#5B3D32" stroke-width="5" transform="rotate(-2 540 1302)"/>
-<text x="540" y="1322" font-family="Caveat" font-weight="700" font-size="66" fill="#5B3D32" text-anchor="middle" transform="rotate(-2 540 1302)">play free at doodledoggo.app</text>
-<text x="540" y="1450" font-family="Caveat" font-weight="600" font-size="54" fill="#8A7468" text-anchor="middle">the Halloween Market is open until 15 Nov</text>
-<text x="540" y="1530" font-family="Caveat" font-weight="700" font-size="56" fill="#E8863A" text-anchor="middle">follow @doodledoggo.app</text></g>
+<text x="540" y="1322" font-family="${fam}" font-weight="700" font-size="${TX.pillSize}" fill="#5B3D32" text-anchor="middle" transform="rotate(-2 540 1302)">${TX.pill}</text>
+<text x="540" y="1450" font-family="${fam}" font-weight="600" font-size="${TX.marketSize}" fill="#8A7468" text-anchor="middle">${TX.market}</text>
+<text x="540" y="1530" font-family="${fam}" font-weight="700" font-size="${TX.followSize}" fill="#E8863A" text-anchor="middle">${TX.follow}</text></g>
 <g id="cover" opacity="0"></g>
 </svg>
 <script>
@@ -151,14 +159,14 @@ const drawFor = (t) => { const beat = t / B, P = Math.min(4, Math.floor(Math.flo
   // the designed cover: the first place, the dogs mid-dance, the hook on a cream sticker at the top, the logo at the bottom (inside the grid's 3:4)
   await p.addStyleTag({ url: 'https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap' }).catch(() => {});
   await p.evaluate(() => document.fonts.ready); await p.evaluate(([t, D]) => window.frame(t, D), [B * 0.5, drawFor(B * 0.5)]);
-  await p.evaluate(() => { ['hook', 'end'].forEach((i) => document.getElementById(i).setAttribute('opacity', 0)); const c = document.getElementById('cover'); c.setAttribute('opacity', 1);
+  await p.evaluate(([TX, fam]) => { ['hook', 'end'].forEach((i) => document.getElementById(i).setAttribute('opacity', 0)); const c = document.getElementById('cover'); c.setAttribute('opacity', 1);
     c.innerHTML = '<g transform="rotate(-2 540 470)"><rect x="140" y="330" width="800" height="290" rx="36" fill="#FFF8EC" stroke="#5B3D32" stroke-width="6"/>'
-      + '<text x="540" y="455" font-family="Caveat" font-weight="700" font-size="100" fill="#5B3D32" text-anchor="middle">bluetooth died.</text>'
-      + '<text x="540" y="568" font-family="Caveat" font-weight="700" font-size="100" fill="#5B3D32" text-anchor="middle">the freestyle did not.</text></g>'
+      + `<text x="540" y="455" font-family="${fam}" font-weight="700" font-size="${TX.hookSize + 4}" fill="#5B3D32" text-anchor="middle">${TX.hook[0]}</text>`
+      + `<text x="540" y="568" font-family="${fam}" font-weight="700" font-size="${TX.hookSize + 4}" fill="#5B3D32" text-anchor="middle">${TX.hook[1]}</text></g>`
       + '<rect x="330" y="1530" width="420" height="96" rx="48" fill="#FFE3A1" stroke="#5B3D32" stroke-width="5" transform="rotate(-2 540 1578)"/>'
-      + '<text x="540" y="1600" font-family="Caveat" font-weight="700" font-size="66" fill="#5B3D32" text-anchor="middle" transform="rotate(-2 540 1578)">Doodle Doggo</text>'; });
-  await p.screenshot({ path: path.join(WORK, 'dance-cover.png') }); await b.close();
-  cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-i', path.join(WORK, 'dance-cover.png'), '-q:v', '2', path.join(WORK, 'dance-cover.jpg')]);
+      + '<text x="540" y="1600" font-family="Caveat" font-weight="700" font-size="66" fill="#5B3D32" text-anchor="middle" transform="rotate(-2 540 1578)">Doodle Doggo</text>'; }, [TX, fam]);
+  await p.screenshot({ path: path.join(WORK, `dance-cover${SUF}.png`) }); await b.close();
+  cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-i', path.join(WORK, `dance-cover${SUF}.png`), '-q:v', '2', path.join(WORK, `dance-cover${SUF}.jpg`)]);
   if (still) return;
 
   // sound: the game's own "play" music rendered 1.4x longer, then played 1.4x faster at the same pitch (120 bpm, the dogs' beat), a sparkle on
@@ -179,6 +187,6 @@ const drawFor = (t) => { const beat = t / B, P = Math.min(4, Math.floor(Math.flo
   const mix = `[1:a]atempo=${TEMPO.toFixed(5)},atrim=0:${T},afade=t=out:st=${(T - 0.8).toFixed(2)}:d=0.8[m];` + chains.join(';') + ';' + `[m]${BARKS.map((_, i) => `[k${i}]`).join('')}amix=inputs=${BARKS.length + 1}:normalize=0,atrim=0:${T}[a]`;
   cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-framerate', String(FPS), '-i', path.join(WORK, 'f', 'f%04d.png'), '-i', path.join(WORK, 'music_slow.wav'), ...inputs,
     '-filter_complex', mix, '-map', '0:v', '-map', '[a]', '-c:v', 'libx264', '-preset', 'slow', '-crf', '17', '-pix_fmt', 'yuv420p', '-r', String(FPS), '-c:a', 'aac', '-b:a', '192k',
-    '-movflags', '+faststart', '-t', String(T), path.join(WORK, 'doodle-doggo-freestyle-dance.mp4')]);
-  console.log('wrote', path.join(WORK, 'doodle-doggo-freestyle-dance.mp4'));
+    '-movflags', '+faststart', '-t', String(T), path.join(WORK, `doodle-doggo-freestyle-dance${SUF}.mp4`)]);
+  console.log('wrote', path.join(WORK, `doodle-doggo-freestyle-dance${SUF}.mp4`));
 })().catch((e) => { console.error(e); process.exit(1); });
