@@ -662,15 +662,15 @@ function earAngle(s,mode,e){
 }
 function earPose(s,L,e){// the ear after its pose rotation; L.earFit (Astronaut Helmet only) shrinks it toward its root to stay inside that radius
   const a=earAngle(s,L.ears,e);let p=a?rotAbout(e.pts,a,e.pivot):e.pts;
-  if(L.ears==='fly'&&e.flop)p=earOn(s,p,e);
+  if(a&&e.flop)p=earOn(s,p,e);
   if(L.earFit){const R=L.earFit,c=e.pivot,at=k=>p.map(q=>[c[0]+(q[0]-c[0])*k,c[1]+(q[1]-c[1])*k]);let k=1;while(k>.3&&!at(k).every(q=>Math.hypot(q[0],q[1])<=R))k-=.05;if(k<1)p=at(k)}
   return p}
-// v2.18.3 "All in one piece": an ear flying back (jump, shake) keeps its root on the skull. Turned about its root, a drop ear could swing clear of the
-// head (the doberman's and the miniature pinscher's): an ear that reaches less than 1.5 px (a puppy's: 3 px, its lines are thicker) inside the skull outline slides in toward the middle of the
+// v2.18.3 "All in one piece": a hanging ear turned by its pose (flying back, lying flat, eating) keeps its root on the skull. Turned about its root, a drop ear could swing clear of the
+// head (the doberman's and the miniature pinscher's): an ear that reaches less than 2.5 px (a puppy's: 3.5 px, its lines are thicker) inside the skull outline slides in toward the middle of the
 // head until it sits 1 px deeper than that (the crayon wobble then still leaves its colour on the skull's). Ears that reach the skull do not move.
 function earDepth(P,Q){let dm=-99;P.forEach(q=>{let d=1e9;for(let i=0;i<Q.length;i++){const a=Q[i],b=Q[(i+1)%Q.length],ex=b[0]-a[0],ey=b[1]-a[1],t=Math.max(0,Math.min(1,((q[0]-a[0])*ex+(q[1]-a[1])*ey)/(ex*ex+ey*ey||1)));d=Math.min(d,Math.hypot(a[0]+ex*t-q[0],a[1]+ey*t-q[1]))}dm=Math.max(dm,inPoly(q,Q)?d:-d)});return dm}
 function earOn(s,p,e){const H=headPts(s),c=e.pivot,m=Math.hypot(c[0],c[1])||1,u=[-c[0]/m,-c[1]/m];let q=p;
-  const d0=s.pup?3:1.5;if(earDepth(dense(p,true,1),H)>=d0)return p;for(let t=0;t<=14&&earDepth(dense(q,true,1),H)<d0+1;t+=.5)q=p.map(v=>[v[0]+u[0]*t,v[1]+u[1]*t]);return q}
+  const d0=s.pup?3.5:2.5;if(earDepth(dense(p,true,1),H)>=d0)return p;for(let t=0;t<=14&&earDepth(dense(q,true,1),H)<d0+1;t+=.5)q=p.map(v=>[v[0]+u[0]*t,v[1]+u[1]*t]);return q}
 function curlyEar(h,s,p,HT,col){// Poodle: a long drop ear with a lumpy outline and two curls in it
   const P=dense(p,true,5.5);let cx=0,cy=0;P.forEach(q=>{cx+=q[0]/P.length;cy+=q[1]/P.length});
   const Q=P.map((q,i)=>{const dx=q[0]-cx,dy=q[1]-cy,m=Math.hypot(dx,dy)||1,k=i%2?2.6:-.4;return[q[0]+dx/m*k,q[1]+dy/m*k]});

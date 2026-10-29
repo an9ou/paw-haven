@@ -26,7 +26,7 @@ const off = (a, b) => { ok(SRC.split(a).length === 2, 'control anchor found once
 const finds = (C, key, o, re, lab) => { const r = [0, 1, 2].map((k) => C.one(key, Object.assign({ k }, o))).flat(); ok(r.some((x) => re.test(x)), `control: ${lab} (got: ${r.join('; ') || 'nothing'})`); };
 finds(off('if(top.some(p=>inPoly(p,Q)||inTh(p)))return;', 'return;'), 'dachs', { pose: 'beg' }, /legNH in 2 pieces|leg(FH|NH) off the body|^loose/, 'without the hock the begging dachshund\'s hind foot lies loose');
 finds(off('if(n>st){const q=st/n,', 'if(0){const q=st/n,'), 'dachs', { pose: 'jump' }, /^leaping leg/, 'without the short leap the dachshund jumps on noodle legs');
-finds(off("  if(L.ears==='fly'&&e.flop)p=earOn(s,p,e);\n", ''), 'dobie', { pose: 'shake', outfit: { body: 'Tutu' } }, /^ear\d off the head/, 'without earOn the doberman\'s flying ear leaves the head');
+finds(off("  if(a&&e.flop)p=earOn(s,p,e);\n", ''), 'dobie', { pose: 'shake', outfit: { body: 'Tutu' } }, /^ear\d off the head/, 'without earOn the doberman\'s flying ear leaves the head');
 finds(off("  chihuahua:{pet:[0,0],beg:[0,0],squat:[0,0],dance:[0,0],idle:[0,0],", '  chihuahua:{pet:[0,0],beg:[0,0],squat:[0,0],dance:[0,0],'), 'chihuahua', { pose: 'idle' }, /^head off the body/, 'without its neck the chihuahua\'s idle head floats');
 finds(off('return legFit(s,L);\n}', 'return L;\n}'), 'pug', { pose: 'rollover', age: 'puppy' }, /^noodle/, 'without legFit the rolling puppy has noodle legs');
 finds(off('if(aOv===undefined&&/^(sit|paw|scratch)$/.test(legMode)', 'if(0&&/^(sit|paw|scratch)$/.test(legMode)'), 'dachs', { pose: 'sit' }, /^noodle legN?F/, 'without the lower sit the dachshund sits on long front noodles');
