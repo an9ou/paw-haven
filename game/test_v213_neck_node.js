@@ -91,12 +91,12 @@ console.log('   ' + LIST.length + ' breed:pose: ' + LIST.map((e) => e.join(':'))
 }
 
 console.log('-- the mix neck rule (V213.md 5.1): without it the hardest pairs float; it changes no purebred render');
-{ const OFF = SRC.replace(MIXLINE, ''), c0 = neckChecker(OFF), P0 = load(OFF), G = c0.G;
+{ const OFF = SRC.replace(MIXLINE, ''), c0 = neckChecker(OFF.replace(FIXLINE, '')), P0 = load(OFF), G = c0.G; // v2.18.3: the float controls leave NECKFIX out too (it also necks a mix body in its poses)
   [['husky', 'yorkie', 'leglift', null], ['dachs', 'pug', 'speak', null], ['husky', 'greyhound', 'walk', null], ['dachs', 'greyhound', 'howl', 'puppy'], ['pug', 'yorkie', 'speak', null]].forEach(([b, hk, p, age]) =>
     ok(FR.some((f) => floats(c0(b, p, age, { k: f, mix: hk, parts: 1 }))), `control: ${b} body ${hk} head ${p} ${age || 'adult'} floats without the mix rule`));
   Object.keys(G.SP).forEach((k, i) => G.POSES.forEach((p, pi) => { if ((i + pi) % 5) return; const o = { pose: p, age: [undefined, 'puppy', 'newborn'][(i + pi) % 3], facing: pi % 2 ? 'left' : 'right', sparkle: i % 2 === 0 };
     ok(PA.dog(k, o) === P0.dog(k, o), `${k} ${p}: the mix rule leaves the purebred unchanged`); }));
-  ok(PA.dog('husky', { pose: 'walk', mix: { head: 'yorkie' } }) !== P0.dog('husky', { pose: 'walk', mix: { head: 'yorkie' } }), 'the mix rule draws the tube on a mix');// v2.15.2: the collie draws its (white) neck tube in every pose now
+  ok(PA.dog('husky', { pose: 'sniff', mix: { head: 'yorkie' } }) !== P0.dog('husky', { pose: 'sniff', mix: { head: 'yorkie' } }), 'the mix rule draws the tube on a mix');// v2.18.3: husky walk is in NECKFIX now// v2.15.2: the collie draws its (white) neck tube in every pose now
   ok(PA.dog('collie', { pose: 'sleep', mix: { head: 'yorkie' }, age: 'newborn' }) === P0.dog('collie', { pose: 'sleep', mix: { head: 'yorkie' }, age: 'newborn' }), 'newborn mixes keep no neck');
   ok(PA.dogHead('collie', { mix: { head: 'yorkie' } }) === P0.dogHead('collie', { mix: { head: 'yorkie' } }), 'the mix head chip is unchanged');
 }

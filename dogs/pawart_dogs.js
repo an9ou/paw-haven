@@ -486,12 +486,12 @@ const NEWK=/^(poodle|collie|samoyed|frenchie|akita|spitz|pom|afghan|dane|mastiff
    Adults only (spec field nfix; puppies and newborns keep their big heads on the body as they were). Every other pose of these breeds is unchanged.
    game/v212_neck_check.js finds the list: a frame floats when the skull does not touch the body and most of the neck's place is empty paper. */
 const NECKFIX={
-  shiba:{idle:[0,0],walk:[0,0],paw:[0,0],pet:[0,0],dirty:[0,0],scratch:[0,0],happy:[0,0],speak:[0,0],howl:[0,0],leglift:[0,0],shake:[0,0]},
+  shiba:{yawn:[0,0],idle:[0,0],walk:[0,0],pet:[0,0],dirty:[0,0],happy:[0,0],speak:[0,0],howl:[0,0],leglift:[0,0],shake:[0,0]},
   husky:{walk:[0,0],dirty:[0,0],idle:[0,0],speak:[0,0],happy:[0,0],leglift:[0,0],howl:[0,0]},
   mutt:{happy:[0,0],dirty:[0,0],idle:[0,0],speak:[0,0],leglift:[0,0],walk:[0,0]},
   chihuahua:{pet:[0,0],beg:[0,0],squat:[0,0],dance:[0,0],idle:[0,0],walk:[0,0],dirty:[0,0],scratch:[0,0],happy:[0,0],speak:[0,0],howl:[-3,7],leglift:[0,0],yawn:[0,0],shake:[0,0],paw:[0,0]},
   pug:{howl:[0,0],speak:[0,0],happy:[0,0],shake:[0,0]},
-  dachs:{shake:[0,0]},
+  dachs:{shake:[0,0],scratch:[0,0]},
   beagle:{shake:[0,0],happy:[0,0],speak:[0,0],howl:[0,0]},
   collie:{howl:[-2,3]},
   westie:{howl:[0,0]},
