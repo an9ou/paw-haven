@@ -1,5 +1,5 @@
 // "Bluetooth died. The freestyle did not." — the dancing version (owner, 29 Oct 2026): Butter and Noodle dance in random game places.
-// 15.5 s, 1080 x 1920, 30 fps: the hook on a sticker at the top, 12.5 s of dancing at 120 bpm with barks, then the game's end card. The places are the game's own scenes (PawArt.scene), five picked at random, a hard cut every 4 beats.
+// 15.5 s, 1080 x 1920, 30 fps: the hook on a sticker at the top, 12.5 s of dancing at 120 bpm with barks, then the game's ending page. The places are the game's own scenes (PawArt.scene), five picked at random, a hard cut every 4 beats.
 // The dogs are the game's real "dance" pose. The game draws three frames of each pose (head, paws and tail in different spots) and
 // flips them; here they flip on the beat, and the whole dog sways left and right and bounces on every beat. The beat follows the
 // game's own "play" music (86 bpm). At every place cut they wear a new costume and make new faces (the game's wardrobe and face
@@ -75,15 +75,16 @@ const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.goo
 <g id="hook" opacity="0"><g transform="rotate(-2 540 300)"><rect x="110" y="170" width="860" height="270" rx="36" fill="#FFF8EC" stroke="#5B3D32" stroke-width="6"/>
 <text x="540" y="282" font-family="Caveat" font-weight="700" font-size="96" fill="#5B3D32" text-anchor="middle">bluetooth died.</text>
 <text x="540" y="392" font-family="Caveat" font-weight="700" font-size="96" fill="#5B3D32" text-anchor="middle">the freestyle did not.</text></g></g>
-<g id="end" opacity="0"><rect width="${W}" height="${H}" fill="#FFF8EC" opacity=".55"/>
-<g transform="rotate(-2 540 560)"><rect x="90" y="250" width="900" height="620" rx="44" fill="#FFF8EC" stroke="#5B3D32" stroke-width="7"/>
-<path d="M210 455 Q540 425 870 455 L862 505 Q540 480 218 505Z" fill="#F28FA5" opacity=".45"/>
-<text x="385" y="470" font-family="Caveat" font-weight="700" font-size="150" fill="#5B3D32" text-anchor="middle" transform="rotate(-3 385 470)">Doodle</text>
-<text x="715" y="478" font-family="Caveat" font-weight="700" font-size="150" fill="#5B3D32" text-anchor="middle" transform="rotate(2 715 478)">Doggo</text>
-<text x="540" y="590" font-family="Caveat" font-weight="600" font-size="62" fill="#8A7468" text-anchor="middle">a free cozy dog game</text>
-<text x="540" y="670" font-family="Caveat" font-weight="600" font-size="52" fill="#8A7468" text-anchor="middle">35 crayon dogs · dress-up · walks · Tokyo trip</text>
-<rect x="190" y="720" width="700" height="100" rx="50" fill="#FFE3A1" stroke="#5B3D32" stroke-width="5"/>
-<text x="540" y="790" font-family="Caveat" font-weight="700" font-size="62" fill="#5B3D32" text-anchor="middle">play right on doodledoggo.app</text></g></g>
+<g id="end" opacity="0"><rect width="${W}" height="${H}" fill="#FFF8EC" opacity=".94"/>
+<path d="M200 560 Q540 530 880 560 L872 612 Q540 586 208 612Z" fill="#F28FA5" opacity=".45"/>
+<text x="355" y="575" font-family="Caveat" font-weight="700" font-size="160" fill="#5B3D32" text-anchor="middle" transform="rotate(-3 355 575)">Doodle</text>
+<text x="755" y="583" font-family="Caveat" font-weight="700" font-size="160" fill="#5B3D32" text-anchor="middle" transform="rotate(2 755 583)">Doggo</text>
+<text x="540" y="690" font-family="Caveat" font-weight="600" font-size="64" fill="#8A7468" text-anchor="middle">a free cozy dog game</text>
+<g id="endDogs"></g>
+<rect x="175" y="1250" width="730" height="104" rx="52" fill="#FFE3A1" stroke="#5B3D32" stroke-width="5" transform="rotate(-2 540 1302)"/>
+<text x="540" y="1322" font-family="Caveat" font-weight="700" font-size="66" fill="#5B3D32" text-anchor="middle" transform="rotate(-2 540 1302)">play free at doodledoggo.app</text>
+<text x="540" y="1450" font-family="Caveat" font-weight="600" font-size="54" fill="#8A7468" text-anchor="middle">the Halloween Market is open until 15 Nov</text>
+<text x="540" y="1530" font-family="Caveat" font-weight="700" font-size="56" fill="#E8863A" text-anchor="middle">follow @doodledoggo.app</text></g>
 <g id="cover" opacity="0"></g>
 </svg>
 <script>
@@ -111,10 +112,13 @@ window.frame=function(t){
     bt+='<g transform="translate('+(x+dx)+' '+(y+dy)+') scale('+(sc*2.4)+' '+(sc*2.4*fl)+')"><path d="M0 -4 Q-6 -14 -20 -10 Q-14 -4 -16 4 Q-8 -2 -4 6 Q0 2 4 6 Q8 -2 16 4 Q14 -4 20 -10 Q6 -14 0 -4Z" fill="#6B5A86" stroke="#5B3D32" stroke-width="1.6" stroke-linejoin="round"/><circle cx="-2" cy="-3" r="0.9" fill="#FFF8EC"/><circle cx="2" cy="-3" r="0.9" fill="#FFF8EC"/></g>'; });
   $('bats').innerHTML=bt;
   $('hook').setAttribute('opacity', t<${DANCE} ? Math.min(1,t/0.2) : 0);                 // the hook, popped in at the start
-  $('end').setAttribute('opacity', t<${DANCE} ? 0 : Math.min(1,(t-${DANCE})/0.25));      // the end card over the last place
+  const eo = t<${DANCE} ? 0 : Math.min(1,(t-${DANCE})/0.3);                            // the ending page fades in over the last place
+  $('end').setAttribute('opacity', eo);
   const sway=Math.sin(Math.PI*beat), hop=-Math.abs(Math.sin(Math.PI*beat))*16;
   $('B').innerHTML = dog('butter', L.bx, ${FEET}, L.bh, n%3, 7*sway, hop);
   $('Nd').innerHTML = dog('noodle', L.nx, ${FEET}, L.nh, (n+1)%3, 7*sway, hop*0.9);
+  // the ending page: Butter and Noodle keep dancing in the middle of it, in their party hats from the first place (Noodle's face shows)
+  const P1=P; P=0; $('endDogs').innerHTML = eo>0 ? dog('butter', 395, 1170, 380, n%3, 7*sway, hop*0.7) + dog('noodle', 690, 1170, 365, (n+1)%3, 7*sway, hop*0.6) : ''; P=P1;
 };
 </script>`;
 
