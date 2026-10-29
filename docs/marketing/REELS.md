@@ -22,7 +22,7 @@ Free to play in your browser, no ads: doodledoggo.app (link in bio)
 
 ## RedNote / 小红书 (Simplified Chinese)
 
-Owner, 29 Oct 2026: Instagram is English only; Simplified Chinese goes to RedNote (小红书). Item names follow the game's own zh-Hans text (`game/i18n/zh-Hans.json`). Post the vertical video. RedNote links aren't clickable, so the address is written as plain text and also goes in the profile. The English under each part says what the Chinese says.
+Owner, 29 Oct 2026: Instagram is English only; Simplified Chinese goes to RedNote (小红书). Item names follow the game's own zh-Hans text (`game/i18n/zh-Hans.json`). Post `reel_1080x1920_rednote.mp4`: the same video, but its end card has no address (owner, 29 Oct 2026: no game link on RedNote). The caption says "search Doodle Doggo" instead. The English under each part says what the Chinese says.
 
 标题 (title, 20 characters max):
 ```
@@ -39,7 +39,7 @@ Doodle Doggo的万圣节市集开到11月15日！25件新物品：小女巫帽�
 
 这是一款画在铅笔素描本里的温馨狗狗游戏，狗狗都是故意画得歪歪扭扭的蜡笔狗。这里从来不会发生坏事。
 
-免费，没有广告，浏览器直接玩：doodledoggo.app（主页也有）
+免费，没有广告，浏览器直接玩，搜索 Doodle Doggo 就能找到
 
 #DoodleDoggo #万圣节 #治愈系游戏 #狗狗 #独立游戏 #免费游戏 #蜡笔画 #萌宠 #小游戏推荐 #宠物游戏
 ```
@@ -47,7 +47,7 @@ Doodle Doggo的万圣节市集开到11月15日！25件新物品：小女巫帽�
 > Mochi tried on four Halloween costumes in a row and still looks unbothered.
 > The Halloween Market in Doodle Doggo is open until 15 Nov! 25 new items: Little Witch Hat & Cape, Dinosaur Hood, Friendly Haunted Kennel, Squeaky Bat... and rainy days.
 > A cozy dog game drawn in a pencil sketchbook, with deliberately wobbly crayon dogs. Nothing bad ever happens here.
-> Free, no ads, play right in your browser: doodledoggo.app (also on the profile).
+> Free, no ads, play right in your browser; search "Doodle Doggo" to find it.
 
 ## YouTube Shorts
 

@@ -34,7 +34,7 @@ module.exports = async function ({ render, helpers: h }) {
     + feat('flower', '种菜，再做成对狗狗安全的零食', 1166) + feat('heart', '这里从来不会发生坏事', 1228)
     // how to play
     + zh('免费 · 没有广告 · 浏览器直接玩', 540, 1326, 50)
-    + `<text x="540" y="1382" font-family="Caveat" font-weight="700" font-size="48" fill="${ORANGE}" text-anchor="middle">doodledoggo.app</text>`
+    + zh('搜索 Doodle Doggo 就能玩', 540, 1384, 44, { fill: ORANGE })      // no link on RedNote (owner, 29 Oct 2026)
     + doodle('paw', 96, 1350, 1.2, -15) + doodle('bone', 984, 1352, 1.2, 18) + doodle('spark', 1000, 560, 1) + doodle('heart', 96, 640, 1, -12);
   await render(svgPage(W, H, font + body), W, H, '../../rednote/rednote-01-hello.jpg');
 
