@@ -2,7 +2,8 @@
 // 13 s, 1080 x 1920, 30 fps. The places are the game's own scenes (PawArt.scene), five picked at random, a hard cut every 4 beats.
 // The dogs are the game's real "dance" pose. The game draws three frames of each pose (head, paws and tail in different spots) and
 // flips them; here they flip on the beat, and the whole dog sways left and right and bounces on every beat. The beat follows the
-// game's own "play" music (86 bpm). The brick phone stays on the ground. No game file is changed: the dance marks and ground shadows
+// game's own "play" music (86 bpm). At every place cut they wear a new costume and make new faces (the game's wardrobe and face
+// expressions). The brick phone stays on the ground. No game file is changed: the dance marks and ground shadows
 // are switched off in this script's copy of the art only, and the scenes' dashed tap-area outlines are hidden.
 //
 //   NODE_PATH=$(npm root -g) node brand/instagram/launch/freestyle_reel/build_dance.js <workdir>
@@ -27,12 +28,26 @@ const POOL = ['yard', 'park', 'beach', 'square', 'dogpark', 'hilltop', 'pier', '
 const PLACES = []; while (PLACES.length < 5) { const p = POOL[Math.floor(rnd() * POOL.length)]; if (!PLACES.includes(p)) PLACES.push(p); }
 const ENV = { time: 'day', weather: 'sunny', season: 'autumn', jp: true };
 const scenes = PLACES.map((p, i) => `<symbol id="sc${i}" viewBox="331 0 337.5 600" preserveAspectRatio="xMidYMid slice">${inner(PA.scene(p, ENV))}</symbol>`).join('');
+// a new costume and a new face for each place (the game's own wardrobe and its v2.13 face expressions; the dance pose takes
+// hearts, proud, wink and zoomies; null = the pose's own happy face). Places with their own bandana get it.
+const LOOKS = [
+  { b: { head: 'Party Hat', eyes: 'Heart Sunglasses' }, bx: null, n: { head: 'Party Hat', neck: 'Bow Tie' }, nx: 'wink' },
+  { b: { head: 'Witch Hat', body: 'Vampire Cape' }, bx: 'proud', n: { body: 'Pumpkin Suit' }, nx: 'hearts' },
+  { b: { head: 'Cowboy Hat', neck: 'Red Bandana' }, bx: 'wink', n: { head: 'Sun Hat', body: 'Tutu' }, nx: 'zoomies' },
+  { b: { body: 'Bumblebee Suit' }, bx: 'hearts', n: { head: 'Wizard Hat', body: 'Superhero Cape' }, nx: 'proud' },
+  { b: { head: 'Flower Crown', body: 'Happi Coat' }, bx: 'zoomies', n: { head: 'Sailor Cap', body: 'Ghost Sheet' }, nx: 'wink' },
+];
+const BANDANA = { asakusa: 'Asakusa Bandana', tokyotower: 'Tokyo Tower Bandana', shibuya: 'Shibuya Bandana' };
 // the three frames of each dance pose as their own symbols (CSS cannot reach inside a <use>, so the other two frames are cut out here)
 const frames = (svg) => [0, 1, 2].map((k) => [0, 1, 2].filter((j) => j !== k).reduce((s, j) => s.replace(`class="pa-d-f${j}"`, `class="pa-d-f${j}" display="none"`), svg));
-const BF = frames(inner(PA.dog('lab', { pose: 'dance', facing: 'right', anim: true })));
-const NF = frames(inner(PA.dog('dachs', { pose: 'dance', facing: 'left', anim: true })));
-const dogSyms = BF.map((s, k) => `<symbol id="butter${k}" overflow="visible">${s}</symbol>`).join('') + NF.map((s, k) => `<symbol id="noodle${k}" overflow="visible">${s}</symbol>`).join('');
-
+let dogSyms = '';
+PLACES.forEach((pl, i) => {
+  const L = LOOKS[i], band = BANDANA[pl], bo = Object.assign({}, L.b, band ? { neck: band } : {}), no = Object.assign({}, L.n, band ? { neck: band } : {});
+  for (const [id, key, facing, outfit, expr] of [['butter', 'lab', 'right', bo, L.bx], ['noodle', 'dachs', 'left', no, L.nx]]) {
+    const o = { pose: 'dance', facing, anim: true, outfit }; if (expr) o.expr = expr;
+    frames(inner(PA.dog(key, o))).forEach((sv, k) => { dogSyms += `<symbol id="${id}${i}_${k}" overflow="visible">${sv}</symbol>`; });
+  }
+});
 // a crayon brick phone (navy body, small green screen, light keys)
 const PEN = '#5B3D32';
 const keys = []; for (let r = 0; r < 4; r++) for (let c = 0; c < 3; c++) keys.push(`<rect x="${18 + c * 22}" y="${118 + r * 17}" width="16" height="11" rx="5" fill="#D9DDE6" stroke="${PEN}" stroke-width="2"/>`);
@@ -51,15 +66,16 @@ const html = `<!doctype html><meta charset="utf-8"><style>html,body{margin:0;bac
 </svg>
 <script>
 const NS='http://www.w3.org/2000/svg', $=(i)=>document.getElementById(i), BOX={}, B=${B};
-function box(id){ if(BOX[id]) return BOX[id]; const u=document.createElementNS(NS,'use'); u.setAttribute('href','#'+id+'0'); $('B').appendChild(u); const b=u.getBBox(); u.remove(); return BOX[id]=[b.x,b.y,b.width,b.height]; }   // frame 0 sets the size, so the dog does not jump between frames
+function box(id){ if(BOX[id]) return BOX[id]; const u=document.createElementNS(NS,'use'); u.setAttribute('href','#'+id+'0_0'); $('B').appendChild(u); const b=u.getBBox(); u.remove(); return BOX[id]=[b.x,b.y,b.width,b.height]; }   // frame 0 sets the size, so the dog does not jump between frames
 // a dog with its feet at (cx, feet), height hh, showing dance frame k, swayed by rot degrees about its feet and lifted by dy
+let P=0;
 function dog(id, cx, feet, hh, k, rot, dy){ const b=box(id), s=hh/b[3], w=b[2]*s;
   return '<ellipse cx="'+cx+'" cy="'+(feet-2)+'" rx="'+(w*0.3*(1-Math.min(1,-dy/60)*0.3))+'" ry="10" fill="#5B3D32" opacity=".12"/>'
-   +'<g transform="translate(0 '+dy+') rotate('+rot+' '+cx+' '+feet+')"><g transform="translate('+(cx-w/2)+' '+(feet-hh)+') scale('+s+') translate('+(-b[0])+' '+(-b[1])+')"><use href="#'+id+k+'"/></g></g>'; }
+   +'<g transform="translate(0 '+dy+') rotate('+rot+' '+cx+' '+feet+')"><g transform="translate('+(cx-w/2)+' '+(feet-hh)+') scale('+s+') translate('+(-b[0])+' '+(-b[1])+')"><use href="#'+id+P+'_'+k+'"/></g></g>'; }
 window.L={ bx:320, nx:775, bh:540, nh:520 };
 window.frame=function(t){
   const beat=t/B, n=Math.floor(beat), ph=beat-n;
-  $('bg').setAttribute('href','#sc'+Math.min(4,Math.floor(n/4)));          // a new place every 4 beats
+  P=Math.min(4,Math.floor(n/4)); $('bg').setAttribute('href','#sc'+P);          // a new place (and new costumes and faces) every 4 beats
   const sway=Math.sin(Math.PI*beat), hop=-Math.abs(Math.sin(Math.PI*beat))*16;
   $('B').innerHTML = dog('butter', L.bx, ${FEET}, L.bh, n%3, 7*sway, hop);
   $('Nd').innerHTML = dog('noodle', L.nx, ${FEET}, L.nh, (n+1)%3, 7*sway, hop*0.9);
