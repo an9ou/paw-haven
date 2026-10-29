@@ -41,3 +41,16 @@ quiet haven nonsense → doodledoggo.app
 Only the reference's preview frame could be read (Instagram blocks downloading the video), so the layout follows that frame: the pair stands in the middle of the screen (feet about 64% down), close and face to face with a small gap, each about a quarter of the frame tall, and the brick phone lies just below-left of Butter, tilted down to the right. The timing stays the brief's near-still one.
 
 **Sound:** the reference uses a licensed song ("crazy b!tch" by Yanka and King Doudou). We can't put it in the file, but Instagram can: post `doodle-doggo-freestyle-no-music.mp4`, then add that song from Instagram's own music library (or tap "Use audio" on the reference Reel). Otherwise post the main file with the game's own music.
+
+## The dancing version (owner, 29 Oct 2026)
+
+"Use our game background, random places, the dogs dancing: the body shaking left to right, the heads, hands and tails moving."
+
+| File | What |
+|---|---|
+| `doodle-doggo-freestyle-dance.mp4` | 1080 x 1920, 30 fps, 13 s, with the game's upbeat "play" music (86 bpm). |
+| `doodle-doggo-freestyle-dance-no-music.mp4` | The same with no sound, for adding a song inside Instagram. |
+| `dance-cover.jpg` | The designed cover: the first place, the pair mid-dance, "bluetooth died. / the freestyle did not." on a cream sticker, the logo. |
+| `build_dance.js` | Remake: `NODE_PATH=$(npm root -g) node brand/instagram/launch/freestyle_reel/build_dance.js <workdir>` (about 3 minutes; `SEED=n` picks other places; `ONLY=stills`). |
+
+**What is in it:** five game places picked at random, a hard cut every 4 beats (this render: Asakusa, Tokyo Tower, the Town Square, Yoyogi Park, the Park). Butter and Noodle both in their real "dance" pose, flipping through the game's own three dance frames on the beat (head, paws and tail move), swaying left and right and bouncing on every beat; the brick phone on the ground bottom-left. The game's dance marks, ground shadows and the scenes' dashed tap outlines are switched off in the build script only.
