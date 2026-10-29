@@ -22,7 +22,7 @@ From the owner's brief (`PROMPT-PACK-CLAUDE.md`, a remake of an Instagram Reel's
 
 **Hook (pick 1):** `bluetooth died. the freestyle did not.` · `phone's on the floor. the vibe is not.` · `he dropped the brick. she kept the beat.`
 
-## Captions (Noodle's voice, from the brief)
+## Captions for the white-background version (Noodle's voice, from the brief)
 
 **Instagram**
 ```
@@ -65,3 +65,45 @@ Only the reference's preview frame could be read (Instagram blocks downloading t
 - **Smoother dancing (owner, 29 Oct):** a soft rise and fall on every beat instead of a sharp hop, a little squash and stretch, Noodle a hair behind Butter, and the pose changing every two beats instead of every beat.
 - **No overlap, more dog frames (owner, 29 Oct):** the cross-fade between the game's three dance drawings showed two dogs at once for a moment. Now the script's copy of the art draws the in-between poses itself (every pose table in the dance rig blends smoothly between its neighbours, and the pencil wobble keeps one seed so the lines don't flicker), and each of the 30 frames a second gets its own drawing. The dog is always one solid drawing, and the head, paws and tail glide instead of jumping. No game file changed.
 - **Cuter barks (owner, 29 Oct):** the bark engine's puppy voice (5 to 7 semitones higher, squeakier, a little wobble, sometimes a tiny hiccup squeak): puppy "play" barks and "yips" for both dogs, the low rumble trimmed. To redo only the sound over rendered frames: `AUDIO_ONLY=1 ... build_dance.js <same workdir>`.
+
+## Captions for the dancing version (owner, 29 Oct 2026)
+
+Post `doodle-doggo-freestyle-dance.mp4` (it has the game's music and barks) with `dance-cover.jpg` as the cover. Square X cut: none needed, X plays 9:16.
+
+**Instagram**
+```
+bluetooth died. the freestyle did not. 📱✨
+
+five places, ten outfits, zero beats missed. butter leads. noodle is half a beat behind and very proud of it.
+
+🎃 the Halloween Market is open until 15 Nov.
+
+Doodle Doggo: a free cozy dog game in your browser, no ads. doodledoggo.app (link in bio)
+
+#DoodleDoggo #DancingDogs #CozyGames #DogGame #IndieGame #FreeGame #CuteGames #Halloween #Dogs #CrayonArt
+```
+
+**YouTube Shorts**
+
+Title: `Bluetooth died. The freestyle did not. 🐕📱 #Shorts`
+
+Description:
+```
+Butter and Noodle dance through five places in ten outfits, and the brick phone keeps the beat.
+
+Doodle Doggo is a cozy, free dog game in a pencil sketchbook. Adopt one of 35 deliberately crude crayon dogs, walk the town under Mt. Fuji and dress them up. Nothing bad ever happens. The Halloween Market is open until 15 Nov.
+
+🎮 Play free: https://doodledoggo.app
+🕹️ itch.io: https://an9ou.itch.io/doodle-doggo
+☕ Support us on Ko-fi: https://ko-fi.com/doodledoggoapp
+📷 Instagram: https://www.instagram.com/doodledoggo.app/
+
+#DoodleDoggo #Shorts #DancingDogs #CozyGames #DogGame
+```
+
+**X** (under 280 characters)
+```
+bluetooth died. the freestyle did not. 📱🐕 butter and noodle dance through five places in ten outfits. free cozy dog game in your browser: https://doodledoggo.app #DoodleDoggo #CozyGames #DancingDogs
+```
+
+**Alt text:** `Two crayon dogs, a golden Labrador and a dachshund, dance side by side through five places from the game (Asakusa, Tokyo Tower, a town square, Yoyogi Park and a park), changing costumes at every cut, while a brick phone on the ground buzzes with music. It ends on the Doodle Doggo logo.`
