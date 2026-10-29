@@ -162,10 +162,11 @@ const FF_DEF = {
     prog: (G) => (G.data.round - 1 + (G.data.ph === 'good' ? 1 : 0)) / G.data.L.length,
     init(G) {
       const D2 = G.data; D2.tricks = ffShowTricks(G.d); D2.L = [2, 3, 3, 4, 5]; D2.round = 0; D2.pts = 0;
-      D2.card = ffSpr(G, `<div class="ff-jc">${ffArt('judgecard')}<div class="ff-jseq"></div><div class="ff-jback" aria-hidden="true">?</div></div>`, Math.min(640, G.W - 16), 330, 'ff-jcard'); ffPut(D2.card, G.W / 2, Math.max(190, G.H * 0.24));
-      D2.dog = ffDog(G, G.d, 1.1); D2.feet = G.H - 230; ffFeet(D2.dog, G.W / 2, D2.feet); D2.rest = 'idle';
+      const wide = G.W / G.H > 1.3; // desktop: the card on the left, the dog beside it; phones: one above the other
+      D2.card = ffSpr(G, `<div class="ff-jc">${ffArt('judgecard')}<div class="ff-jseq"></div><div class="ff-jback" aria-hidden="true">?</div></div>`, wide ? 600 : Math.min(640, G.W - 16), wide ? 280 : 330, 'ff-jcard'); ffPut(D2.card, wide ? G.W * 0.38 : G.W / 2, wide ? 160 : Math.max(190, G.H * 0.24));
+      D2.dx = wide ? G.W * 0.84 : G.W / 2; D2.dog = ffDog(G, G.d, wide ? 0.95 : 1.1); D2.feet = wide ? G.H - 150 : G.H - 230; ffFeet(D2.dog, D2.dx, D2.feet); D2.rest = 'idle';
       const bw = Math.min(160, (G.W - 40) / D2.tricks.length - 10);
-      D2.btns = document.createElement('div'); D2.btns.className = 'ff-tricks'; D2.btns.style.top = (G.H - 190) + 'px';
+      D2.btns = document.createElement('div'); D2.btns.className = 'ff-tricks'; D2.btns.style.top = (G.H - (wide ? 128 : 190)) + 'px';
       D2.btns.innerHTML = D2.tricks.map((n, i) => `<button class="btn ff-trick" data-i="${i}" style="width:${bw.toFixed(0)}px"><span class="ff-tn">${i + 1}</span>${esc(ffTrickName(n))}</button>`).join('');
       G.field.appendChild(D2.btns); D2.btns.querySelectorAll('button').forEach((b) => { b.addEventListener('pointerdown', (e) => e.stopPropagation()); b.onclick = () => this.pick(G, +b.dataset.i); });
       this.next(G);
@@ -185,7 +186,7 @@ const FF_DEF = {
       if (D2.ph === 'look' && D2.pt > D2.look) { D2.ph = 'do'; D2.pt = 0; this.face(G, false); D2.btns.classList.remove('wait'); ffHint(G, tt('ff.h_show_do', 'Your turn: tap the tricks in order.')); }
       else if (D2.ph === 'peek' && D2.pt > 1.6) { D2.ph = 'do'; D2.pt = 0; this.face(G, false); D2.btns.classList.remove('wait'); }
       else if (D2.ph === 'good' && D2.pt > 1.3) { if (D2.round >= D2.L.length) { G.score = D2.pts; ffEnd(G); } else this.next(G); }
-      if (D2.hop) { D2.hop.t += dt; const u = Math.min(1, D2.hop.t / 0.35); ffFeet(D2.dog, G.W / 2, D2.feet - Math.sin(u * Math.PI) * 30); if (u >= 1) D2.hop = null; }
+      if (D2.hop) { D2.hop.t += dt; const u = Math.min(1, D2.hop.t / 0.35); ffFeet(D2.dog, D2.dx, D2.feet - Math.sin(u * Math.PI) * 30); if (u >= 1) D2.hop = null; }
     },
     pick(G, i) {
       const D2 = G.data; if (G.over || D2.ph !== 'do') return;
@@ -194,7 +195,7 @@ const FF_DEF = {
       if (i === want) {
         D2.at++; try { SFX.boop(800 + D2.at * 80); } catch (e) { /* none */ }
         if (D2.at >= D2.seq.length) { const p = D2.peeks ? 1 : 2; D2.pts += p; D2.ph = 'good'; D2.pt = 0; this.face(G, true); D2.btns.classList.add('wait');
-          ffPop(G, D2.peeks ? tt('ff.show_ok', 'Lovely!') : tt('ff.show_perfect', 'Perfect!'), G.W / 2, D2.feet - D2.dog.h - 30, '#E46F6B'); ffPose(D2.dog, 'happy', 'right'); }
+          ffPop(G, D2.peeks ? tt('ff.show_ok', 'Lovely!') : tt('ff.show_perfect', 'Perfect!'), D2.dx, D2.feet - D2.dog.h - 30, '#E46F6B'); ffPose(D2.dog, 'happy', 'right'); }
       } else { // a kind peek: the card turns up again and the round goes on from where it was
         D2.peeks++; D2.ph = 'peek'; D2.pt = 0; this.face(G, true); D2.btns.classList.add('wait'); try { SFX.boop(420); } catch (e) { /* none */ }
         ffHint(G, tt('ff.h_show_peek', 'Mrs. Plum smiles and shows the card again.'), 1600);

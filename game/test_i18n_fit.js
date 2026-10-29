@@ -284,6 +284,22 @@ async function worker(job) {
       if (phone) { await ev(() => document.querySelector('#bar .act[data-act="more"]').click()); await waitSel('#bar .barpop[data-pop="more"]', 3000); await measure('dd: phone More tray with Stickers'); await ev(() => document.querySelector('#bar .act[data-act="more"]').click()); }
       await ev(() => { const P = window.__paw; P.S.dogs[0].bond = { level: 10, pts: 3300 }; P.dd.test(false); P.saveNow(); });
     }, 60000);
+    // v2.18 Fun Fair (V218.md): the game cards, every game in play and a result card, the stall, the photo contest results (prefs.ffTest and the map through the test hooks)
+    await step('ff', async () => {
+      await ev(() => { const P = window.__paw, S = P.S; P.mp.allow(true); P.ff.test(true); S.dogs.forEach((d) => { d.bond = { level: 8, pts: 1600 }; }); S.bond.level = 8; });
+      await atPlace('square'); await ev(() => window.__paw.ff.cards()); await modalUp(); await measure('ff: game cards'); await closeAll();
+      for (const k of ['catch', 'bubble', 'seek', 'show', 'kite', 'paper', 'bakery', 'wash']) {
+        const pl = await ev((k) => window.__paw.ff.games[k].place, k); await atPlace(pl);
+        await ev(() => { const S = window.__paw.S; S.stats.energy = 100; S.sleeping = false; if (S.ff && S.ff.wash) S.ff.wash.day = ''; });
+        await ev((k) => window.__paw.ff.start(k), k); await t.until(() => window.__paw.mode === 'fair', null, 6000); await sleep(k === 'show' ? 900 : 1500);
+        await measure('ff: ' + k);
+        if (k === 'catch' || k === 'show') { await ev(() => { const g = window.__paw.ff.g; g.score = 20; if (g.data.pts !== undefined) g.data.pts = 9; window.__paw.ff.end(); }); await sleep(500); await measure('ff: ' + k + ' result'); }
+        await ev(() => window.__paw.ff.back()); await t.until(() => window.__paw.mode !== 'fair', null, 4000);
+      }
+      await atPlace('market'); await ev(() => { const P = window.__paw, S = P.S; P.ff.setSat(true); S.inv.crops = S.inv.crops || {}; S.inv.crops.carrot = [3, 1, 0]; P.ff.stall(); }); await modalUp(); await measure('ff: market stall'); await closeAll();
+      await ev(() => { const P = window.__paw; P.S.ff.pc = { wk: '', e: [], judged: '', won: 0, rib: 0 }; for (let i = 0; i < 3; i++) P.ff.enter({ who: [[P.S.dog.name, 400, 600]], vb: [0, 0, 1000, 600] }); P.ff.judge(); }); await modalUp(); await measure('ff: photo contest results'); await closeAll();
+      await ev(() => { const P = window.__paw; P.ff.setSat(null); P.ff.test(false); P.mp.allow(false); }); await t.home('yard');
+    }, 150000);
     if (phone) await step('yard HUD expanded', async () => { await jsClick('#meters'); await sleep(300); await measure('yard: HUD meters expanded'); await jsClick('#view').catch(() => {}); await ev(() => document.getElementById('hud').classList.remove('hexp')); });
     for (const a of ['feed', 'play', 'care']) await step(a + ' tray', async () => { await jsClick(`[data-act=${a}]`); if (!(await t.waitPop(true))) throw new Error('no tray'); await measure(a + ' tray'); await jsClick(`[data-act=${a}]`); await t.waitPop(false); });
     await step('toasts and bubble', async () => {

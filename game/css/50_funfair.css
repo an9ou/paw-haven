@@ -4,7 +4,8 @@
 .ff-game{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--paper)}
 .ff-top{flex:none;display:grid;grid-template-columns:minmax(0,1fr) minmax(90px,260px) auto;align-items:center;gap:6px 14px;padding:6px 12px 4px;z-index:3;background:var(--paper)}
 .ff-th{display:flex;align-items:baseline;gap:12px;min-width:0;flex-wrap:wrap}
-.ff-th h3{margin:0;font-family:var(--font-hand);font-weight:700;font-size:28px;line-height:1.05;overflow-wrap:break-word}
+.ff-th h3{margin:0;font-family:var(--font-hand);font-weight:700;font-size:28px;line-height:1.05;overflow-wrap:anywhere;min-width:0;max-width:100%}
+.ff-game.over .ff-tricks,.ff-game.over .ff-hint{visibility:hidden}
 .ff-sc{font-family:var(--font-hand);font-weight:700;font-size:22px;color:#7A6358;white-space:nowrap}
 .ff-time svg{display:block;width:100%;height:14px;overflow:visible}
 .ff-time path{fill:none;stroke-linecap:round}
@@ -48,7 +49,8 @@ html[data-motion="off"] .ff-run > svg,html[data-motion="off"] .ff-spin > svg{ani
 .ff-js{flex:1 1 0;max-width:110px;display:flex;flex-direction:column;align-items:center;text-align:center}
 .ff-js b{font-family:var(--font-hand);font-size:30px;line-height:1}
 .ff-jd{display:block;width:100%;max-width:100px;height:84px}
-.ff-jd svg{width:100%;height:100%}
+.ff-jd{position:relative;overflow:hidden}
+.ff-jd svg{position:static!important;inset:auto!important;width:100%!important;height:100%!important;transform:none!important}
 .ff-js i{font-style:normal;font-size:21px;line-height:1.1;overflow-wrap:anywhere}
 .ff-jback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-hand);font-weight:700;font-size:120px;color:#C99A72;opacity:0;transition:opacity .2s}
 .ff-jcard.down .ff-jseq{opacity:0}

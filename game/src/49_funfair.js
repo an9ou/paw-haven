@@ -232,7 +232,7 @@ const ffArt = (name, o) => (window.PawArt && typeof PawArt.ffArt === 'function' 
 
 /* ---------------- the end of a round: coins, Bond, the result card ---------------- */
 function ffEnd(G) {
-  if (G.over) return; G.over = true; ffTimeBar(G, 0);
+  if (G.over) return; G.over = true; ffTimeBar(G, 0); const gm = $('.ff-game'); if (gm) gm.classList.add('over'); // the field's buttons and hint rest under the result card
   const k = G.k, d = G.d, want = G.def.coins(G), paid = ffPay(k, want);
   const bp = withDog(d, () => addBond(FF_BOND)); withDog(d, () => { addStat('happy', FF_HAPPY); addStat('energy', -FF_CAPS[k].en); });
   const F = S.ff; F.n[k] = (F.n[k] || 0) + 1; if (G.score > (F.best[k] || 0)) F.best[k] = G.score;
