@@ -37,6 +37,7 @@ const BEDS = [
   { n: 'Cloud Bed', price: 900, bond: 6, bonus: 0.30, note: 'A puffy cloud with a little rainbow pillow.' },
   { n: 'Royal Canopy Bed', price: 2000, bond: 8, bonus: 0.45, note: 'Velvet, gold trim, curtains and a crown.' },
   { n: 'Knitted Nest', price: 150, bond: 1, bonus: 0.05, v27: true, note: 'A chunky knitted ring with a dip in the middle. Room for one dog, or two puppies.' } // v2.7: a cheap second bed for a growing pack (V27.md)
+  ,{ n: 'Witch-Hat Bed', price: 420, bond: 2, bonus: 0.10, fest: 'halloween', ed: 2026, fm: true, note: 'A soft purple cushion under a floppy witch hat roof. Sold only at the Halloween Market.' } // v2.17.1 Festive Market
 ];
 const BED_BOX = [610, 360, 260, 160]; // x, y, w, h in the house scene (floor contact y = 360 + 152)
 const bedInfo = (n) => BEDS.find((b) => b.n === (n || S.bed)) || BEDS[0];

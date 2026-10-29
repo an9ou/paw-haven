@@ -300,6 +300,15 @@ async function worker(job) {
       await ev(() => { const P = window.__paw; P.S.ff.pc = { wk: '', e: [], judged: '', won: 0, rib: 0 }; for (let i = 0; i < 3; i++) P.ff.enter({ who: [[P.S.dog.name, 400, 600]], vb: [0, 0, 1000, 600] }); P.ff.judge(); }); await modalUp(); await measure('ff: photo contest results'); await closeAll();
       await ev(() => { const P = window.__paw; P.ff.setSat(null); P.ff.test(false); P.mp.allow(false); }); await t.home('yard');
     }, 150000);
+    // v2.17.1 Festive Market (V2171.md): the market scene, its five stall sheets and the map tent (prefs.fmTest and the map through the test hooks)
+    await step('fm', async () => {
+      await ev(() => { const P = window.__paw; P.mp.allow(true); P.fm.date('2026-10-27'); P.fm.allow(true); P.S.bond.level = Math.max(P.S.bond.level, 6); });
+      await atPlace('fmarket'); await sleep(500); await measure('fm: market scene');
+      for (const c of ['decor', 'clothes', 'homes', 'toys', 'treats']) { await ev((c) => window.__paw.fm.sheet(c), c); await modalUp(); await measure('fm: stall ' + c); }
+      await closeAll();
+      await ev(() => window.__paw.go('map')); await t.until(() => !!document.querySelector('.mb[data-area="fmarket"]'), null, 8000); await sleep(600); await measure('fm: map with the market');
+      await ev(() => { const P = window.__paw; P.fm.allow(false); P.fm.date(null); P.mp.allow(false); }); await t.home('yard');
+    }, 70000);
     if (phone) await step('yard HUD expanded', async () => { await jsClick('#meters'); await sleep(300); await measure('yard: HUD meters expanded'); await jsClick('#view').catch(() => {}); await ev(() => document.getElementById('hud').classList.remove('hexp')); });
     for (const a of ['feed', 'play', 'care']) await step(a + ' tray', async () => { await jsClick(`[data-act=${a}]`); if (!(await t.waitPop(true))) throw new Error('no tray'); await measure(a + ' tray'); await jsClick(`[data-act=${a}]`); await t.waitPop(false); });
     await step('toasts and bubble', async () => {

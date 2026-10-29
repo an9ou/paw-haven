@@ -1,6 +1,6 @@
 /* ======================= YARD ======================= */
 const DX = 298, DY = 295, DW = 264, DH = 220; // dog box: feet at y=500, centre x=430
-let dogKey = '', tempPose = null, tempUntil = 0, busy = false, pet = { start: 0, gain: 0, bonded: false, capped: false, dist: 0 };
+let dogKey = '', dogPoseDrawn = '', dogFaceDrawn = '', dogArtKeys = 0, tempPose = null, tempUntil = 0, busy = false, pet = { start: 0, gain: 0, bonded: false, capped: false, dist: 0 };
 function yardWorldSVG(extra = '') {
   return `<svg class="world" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMax slice">
     ${sceneG(S.place || 'yard', S.place === 'yard' ? { patch: gkOn() ? patchState() : 'empty' } : S.place === 'house' && hasBedArt() ? { bed: false } : mpSceneOpts(S.place))}${S.place === 'yard' && !gkOn() ? '<g class="soon-tag" pointer-events="none" transform="translate(112 432) rotate(-6)"><rect x="-58" y="-17" width="116" height="30" rx="6" fill="#FFF3B8" stroke="#5B3D32" stroke-width="2"/><text y="6" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="22" fill="#5B3D32">' + tt('yard.coming_soon_tag', 'coming soon') + '</text></g>' : ''}${bedLayers().back}<g id="messG"></g><g id="snowmanG">${S.place === 'yard' ? snowmanSVG() : ''}</g>${S.place === 'yard' && cur.mode === 'yard' && typeof msYardSVG === 'function' ? msYardSVG() : ''}${S.place === 'yard' ? hmDecorSVG() : ''}
@@ -33,9 +33,14 @@ function dogArtSafe(key, o) {
   if (k && !/>\?<\/text>/.test(sv)) { DOG_ART_MEMO.set(k, sv); if (DOG_ART_MEMO.size > DOG_ART_MEMO_MAX) DOG_ART_MEMO.delete(DOG_ART_MEMO.keys().next().value); } // never keep the "?" placeholder (art not loaded yet)
   return sv;
 }
+// outfit identity without JSON.stringify: null and false do not change the drawing, and the keys stay in insertion order
+function outfitStamp(o) { if (!o) return ''; let s = ''; for (const n in o) { const v = o[n]; if (v) s += n + '=' + v + '\n'; } return s; }
 function renderDog(pose, facing = 'right', force, artOnly) {
   const g = $('#dogArt'); if (!g) return;
-  const o = shSleepOutfit(D(), pose), ex = exNow(D(), pose), k = pose + '|' + facing + '|' + JSON.stringify(o) + '|' + S.dog.key + (ex ? '|' + ex : ''); // v2.4: the Pyjamas at nap time. v2.13: the face (41_expressions.js)
+  const o = shSleepOutfit(D(), pose), ex = exNow(D(), pose); // v2.4: the Pyjamas at nap time. v2.13: the face (41_expressions.js)
+  dogArtKeys++;
+  const k = pose + '|' + facing + '|' + outfitStamp(o) + '|' + S.dog.key + (ex ? '|' + ex : '');
+  dogPoseDrawn = pose; dogFaceDrawn = facing;
   if (k === dogKey && !force) return; dogKey = k;
   g.innerHTML = place(dogSVG(D(), ex ? { pose, outfit: o, facing, expr: ex } : { pose, outfit: o, facing }), DX, DY, DW, DH);
   if (artOnly) return; // v2.13: a face that starts or ends redraws the art only (exRedraw)
@@ -729,7 +734,7 @@ function feed(name) {
 /* ---------------- PLAY ---------------- */
 function openPlayTray() {
   if (cur.mode !== 'yard') go('yard');
-  const fts = FETCH_TOYS.filter((t) => owns('toys', t)), sub = { 'Tennis Ball': tt('yard.free_throws_every_dog_races', 'Free throws, every dog races'), Frisbee: tt('yard.long_throws_3_coins', 'Long throws: 3 coins'), 'Driftwood Stick': tt('yard.tumbles_3_coins', 'Tumbles: 3 coins'), 'Glow Ball': tt('yard.glows_after_dark', 'Glows after dark'), 'Bamboo Ring': tt('tracks.ring_sub', 'Floats, 3 coins') };
+  const fts = FETCH_TOYS.filter((t) => owns('toys', t)), sub = { 'Tennis Ball': tt('yard.free_throws_every_dog_races', 'Free throws, every dog races'), Frisbee: tt('yard.long_throws_3_coins', 'Long throws: 3 coins'), 'Driftwood Stick': tt('yard.tumbles_3_coins', 'Tumbles: 3 coins'), 'Glow Ball': tt('yard.glows_after_dark', 'Glows after dark'), 'Bamboo Ring': tt('tracks.ring_sub', 'Floats, 3 coins'), 'Squeaky Ghost': tt('fm.ghost_sub', 'Squeaks, 2 coins') };
   const b = fts.map((t) => `<button class="card" data-play="ball:${esc(t)}"><span class="art">${art('item', t)}</span><b>${tt('yard.play_ball', 'Play ball')}</b><span class="small">${esc(tt('yard.toy_sub', '{toy}: {sub}', { toy: homeName(t), sub: sub[t] }))}</span></button>`); // v2.10: free ball play where you are (38_ball.js) replaces the timed Fetch challenge
   toysPlayable().forEach((t) => b.push(`<button class="card" data-play="toy:${esc(t)}"><span class="art">${art('item', t)}</span><b>${tt('yard.play', 'Play')}</b><span class="small">${esc(homeName(t))}${hwTag(t)}</span></button>`));
   b.push(`<button class="card" data-play="tricks"><span class="art">${ICON('star')}</span><b>${tt('yard.tricks', 'Tricks')}</b><span class="small">${esc(tt('yard.learned', '{n} learned', { n: learnedCount() }))}</span></button>`);
@@ -895,6 +900,7 @@ const HM_DECOR = {
   'Jack-o-Lantern Trio': { prop: 'hwlanterns', at: [440, 528, 112, 67], vb: [200, 120], price: 120, fest: 'halloween', ed: 2026, v26: true, story: 'Three pumpkins, three faces, all of them smiling. They glow a little after dark.' },
   'Paper Bat Bunting': { prop: 'hwbunting', at: [650, 298, 160, 43], vb: [300, 80], price: 90, fest: 'halloween', ed: 2026, v26: true, story: 'Paper bats on a string, cut a bit wonky. They flutter whenever a dog runs past.' },
   'Friendly Scarecrow': { prop: 'hwscarecrow', at: [762, 262, 92, 130], vb: [140, 200], price: 140, fest: 'halloween', ed: 2026, v26: true, story: 'A pumpkin head and a big grin. The crows sit on his arms to chat.' },
+  'Pumpkin Lantern': { prop: 'fmlantern', at: [566, 446, 60, 80], vb: [120, 160], price: 80, fest: 'halloween', ed: 2026, fm: true, lit: true, story: 'A round pumpkin lantern on a little post. It glows softly after dark.' }, // v2.17.1 Festive Market
   'Ghost Garland': { prop: 'hwgarland', at: [100, 220, 200, 60], vb: [300, 90], price: 100, fest: 'halloween', ed: 2026, v26: true, story: 'Little cloth ghosts holding hands. They say boo very quietly.' },
   // v2.7 Home & Pack (V27.md section 1): everyday decorations for the yard and the house, and five pieces of dog furniture, all sold at Barkitecture.
   // room: 'yard' | 'house' (missing = 'yard'). zone: 'floor' (bottom edge on the ground band) | 'wall' (hung up, the whole box on the wall band). flat: drawn under everything else on the floor.
