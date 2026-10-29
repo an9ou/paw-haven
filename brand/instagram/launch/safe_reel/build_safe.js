@@ -153,7 +153,7 @@ const drawFor = (t) => { const i = Math.max(0, Math.min(NR - 1, Math.floor((t - 
   const inputs = [], chains = [];
   EV.forEach(([n, at], i) => { inputs.push('-i', path.join(WORK, n + '.wav')); const d = Math.max(0, Math.round((at - (n === 'yay' ? 0.2 : 0)) * 1000));
     chains.push(`[${i + 2}:a]atrim=0:1.2,${n === 'yay' ? 'highpass=f=280,volume=1.6' : 'volume=1.3'},adelay=${d}|${d}[k${i}]`); });
-  const mix = `[1:a]atrim=0:${T},afade=t=out:st=${(T - 0.8).toFixed(2)}:d=0.8[m];` + chains.join(';') + ';' + `[m]${EV.map((_, i) => `[k${i}]`).join('')}amix=inputs=${EV.length + 1}:normalize=0,atrim=0:${T}[a]`;
+  const mix = `[1:a]atrim=0:${T},afade=t=out:st=${(T - 0.8).toFixed(2)}:d=0.8[m];` + chains.join(';') + ';' + `[m]${EV.map((_, i) => `[k${i}]`).join('')}amix=inputs=${EV.length + 1}:normalize=0,alimiter=limit=0.89:level=false,atrim=0:${T}[a]`;
   const out = path.join(WORK, `doodle-doggo-is-this-safe${SUF}.mp4`);
   cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-framerate', String(FPS), '-i', path.join(WORK, 'f', 'f%04d.png'), '-i', path.join(WORK, 'music.wav'), ...inputs,
     '-filter_complex', mix, '-map', '0:v', '-map', '[a]', '-c:v', 'libx264', '-preset', 'slow', '-crf', '17', '-pix_fmt', 'yuv420p', '-r', String(FPS), '-c:a', 'aac', '-b:a', '192k',
