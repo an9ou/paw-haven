@@ -135,7 +135,7 @@ else { const OLD0 = load(cp.execSync(`git show ${ref}:dogs/pawart_dogs.js`, { cw
     .replace(/<path d="[^"]*"( fill="none")? stroke="(?!#2E2320)#[0-9A-Fa-f]{6}" stroke-width="[\d.]+" stroke-linecap="round"( stroke-linejoin="round")?( transform="[^"]*")?\/>/g, '');
   const ren = (x) => ink(x.replace(/ the Poodle([,"])/g, ' the Miniature Poodle$1')), OLD = { dog: (k, o) => ren(OLD0.dog(k, o)), dogHead: (k, o) => ren(OLD0.dogHead(k, o)) };
   // v2.18.3 "All in one piece" redrew the dogs whose parts did not stick together (dogs/connect_check.js): a render it changed is compared as it was just
-  // before v2.18.3 (the v2183-base ref, main at v2.18.1), so this still proves nothing else moved since v2.12
+  // before v2.18.3 (the v2183-base ref, main at v2.18.2), so this still proves nothing else moved since v2.12
   let r83 = null; for (const r of ['v2183-base', 'origin/v2183-base']) { try { cp.execSync('git rev-parse --verify -q ' + r, { cwd: ROOT, stdio: 'ignore' }); r83 = r; break; } catch (e) { /* next */ } }
   const B83 = r83 ? load(cp.execSync(`git show ${r83}:dogs/pawart_dogs.js`, { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 << 20 })) : null;
   const PA0 = PA, PAI = { dog: (k, o) => { const n = ink(PA0.dog(k, o)); if (B83) { const b = ink(B83.dog(k, o)); if (b !== n) return b; } return n; }, dogHead: (k, o) => ink(PA0.dogHead(k, o)) };

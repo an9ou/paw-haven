@@ -763,7 +763,9 @@ function drawLegs(h,s,L){
 // foot lie over its ends. Feet that already meet the body draw nothing new, so those dogs stay exactly as they were.
 function ovalTop(cx,cy,rx,ry){const P=[];for(let i=0;i<=8;i++){const a=Math.PI*(1+i/8);P.push([cx+Math.cos(a)*(rx+2.2),cy+Math.sin(a)*(ry+2.2)])}return P}
 function hock(h,s,L,l,hip,foot,top,th){const Q=bodyPts(s).map(T(L.bT)),inTh=p=>th&&((p[0]-th[0])/th[2])**2+((p[1]-th[1])/th[3])**2<=1;
-  if(top.some(p=>inPoly(p,Q)||inTh(p)))return;h.tube([hip,[(hip[0]+foot[0])/2-2,(hip[1]+foot[1])/2],foot],l.w*1.05,l.col)}
+  if(top.some(p=>inPoly(p,Q)||inTh(p)))return;// on its own crayon stream, so the rest of the dog wobbles exactly as before
+  const g=kit(rng(hashS('hock'+l.id+R1(hip[0])+R1(hip[1]))));g.setJ(h.getJ());g.cy=h.cy;g.tube([hip,[(hip[0]+foot[0])/2-2,(hip[1]+foot[1])/2],foot],R1(l.w*1.05),l.col);
+  g.acc.forEach(a=>h.acc.push(a));for(let i=0;i<2;i++){h.bb[i]=Math.min(h.bb[i],g.bb[i]);h.bb[i+2]=Math.max(h.bb[i+2],g.bb[i+2])}}
 function legHair(h,l,wet){// v2.11 afghan: flared silky trousers from the knee down, covering the foot
   const m=l.mid||[(l.hip[0]+l.foot[0])/2,(l.hip[1]+l.foot[1])/2],a=[l.hip[0]+(m[0]-l.hip[0])*.7,l.hip[1]+(m[1]-l.hip[1])*.7],f=l.foot,dx=f[0]-a[0],dy=f[1]-a[1],d=Math.hypot(dx,dy)||1,u=[dx/d,dy/d],n=[-u[1],u[0]],w=l.w,cl=q=>[q[0],Math.min(q[1],GY+1)];
   const P=(t,k,e)=>cl([a[0]+dx*t+n[0]*w*k+u[0]*e,a[1]+dy*t+n[1]*w*k+u[1]*e]);
