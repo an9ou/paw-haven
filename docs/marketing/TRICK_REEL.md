@@ -15,7 +15,7 @@ Owner, 30 Oct 2026: idea 1 from the Reel ideas list. Files in `brand/instagram/l
 3. the Royal Castle Kennel in the yard at night: a pug in the Mummy Wraps;
 4. the Rocket Ship on the hilltop at dusk: Butter in the Dinosaur Hood says WOOF, Noodle runs off, "...he left the treats."
 
-A sticker names each costume. The ending page: Noodle and Butter (still a dinosaur) side by side, no bucket (owner, 30 Oct 2026), the game's own line "trick or treat? treat. always treat.", "play free at doodledoggo.app", "the Halloween Market is open until 15 Nov". Sound: the game's "play" music at 120 bpm, two knocks per door, each host's own puppy bark (the game's bark engine), a startled yip from Noodle, a sparkle on the ending page.
+A sticker names each costume. The ending page: Noodle and Butter (still a dinosaur) side by side, no bucket (owner, 30 Oct 2026), the game's own line "trick or treat? treat. always treat.", "play free at doodledoggo.app", "the Halloween Market is open until 15 Nov". Sound: a Halloween lo-fi beat (owner, 30 Oct 2026: the game's own music engine in its dark D minor mood with a lazy lo-fi beat, a music box and vinyl crackle, 80 bpm; `brand/instagram/launch/spooky_lofi.js`, preview `halloween-lofi-preview.mp3`), two knocks per door, each host's own puppy bark (the game's bark engine), a startled yip from Noodle, a sparkle on the ending page.
 
 ## Instagram
 ```

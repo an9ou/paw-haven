@@ -4,7 +4,7 @@ Owner, 30 Oct 2026: idea 10 from the Reel ideas list, made to be saved. Files in
 
 | File | What |
 |---|---|
-| `doodle-doggo-is-this-safe.mp4` | Instagram, Shorts and X. 1080 x 1920, 30 fps, 14.8 s, with the game's calm home music. |
+| `doodle-doggo-is-this-safe.mp4` | Instagram, Shorts and X. 1080 x 1920, 30 fps, 14.8 s, with a Halloween lo-fi beat (`spooky_lofi.js`, owner 30 Oct 2026). |
 | `safe-cover.jpg` | The cover: grapes on Noodle's plate with the stop sign and the lesson. |
 | `doodle-doggo-is-this-safe-rednote.mp4`, `safe-cover-rednote.jpg` | RedNote: every word in Simplified Chinese (the game's own zh-Hans text), no game link anywhere. |
 | `build_safe.js` | Remake: `NODE_PATH=$(npm root -g) node brand/instagram/launch/safe_reel/build_safe.js <workdir>` (`REDNOTE=1` for the RedNote cut, `ONLY=stills` for key frames). |

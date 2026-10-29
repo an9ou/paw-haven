@@ -3,12 +3,13 @@
 // paw-stop sign and the game's own two-line lesson (people_food.*.why), then the game's own safe swap (people_food.*.swap) arrives and Noodle
 // is delighted. It ends on a "save this" page listing what dogs must never eat and the safe swaps, "ate something? call your vet", and the logo.
 // Every word about food is the game's reviewed text (game/i18n/en.json and zh-Hans.json); the art is the game's (PawArt.scene/item/icon/dog).
-// 15 s, 1080 x 1920, 30 fps, the game's calm "home" music, a soft bonk on each stop sign, a sparkle and a happy bark on each swap.
+// 15 s, 1080 x 1920, 30 fps, a Halloween lo-fi beat (the game's own music engine in its dark minor mood, ../spooky_lofi.js), a soft bonk on each stop sign, a sparkle and a happy bark on each swap.
 //
 //   NODE_PATH=$(npm root -g) node brand/instagram/launch/safe_reel/build_safe.js <workdir>
 //   ONLY=stills renders key frames and the cover only. REDNOTE=1: everything in Simplified Chinese, no game link anywhere.
 const path = require('path'), fs = require('fs'), vm = require('vm'), cp = require('child_process');
 const { chromium } = require('playwright');
+const { spookySource } = require('../spooky_lofi.js');
 const ROOT = path.join(__dirname, '..', '..', '..', '..');
 const WORK = path.resolve(process.argv[2] || 'safe_work'); fs.mkdirSync(path.join(WORK, 'f'), { recursive: true });
 const RN = !!process.env.REDNOTE, SUF = RN ? '-rednote' : '';
@@ -138,12 +139,12 @@ const drawFor = (t) => { const i = Math.max(0, Math.min(NR - 1, Math.floor((t - 
   cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-i', path.join(WORK, `safe-cover${SUF}.png`), '-q:v', '2', path.join(WORK, `safe-cover${SUF}.jpg`)]);
   if (still) return;
 
-  // sound: the game's calm home music, a soft bonk on each stop sign, the game's "cooked" sting and a happy puppy bark on each swap, a sparkle on the save page
+  // sound: the Halloween lo-fi beat, a soft bonk on each stop sign, the game's "cooked" sting and a happy puppy bark on each swap, a sparkle on the save page
   const ab = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium', args: ['--autoplay-policy=no-user-gesture-required'] });
-  const ap = await ab.newPage(); await ap.goto('about:blank'); await ap.addScriptTag({ path: path.join(ROOT, 'mods', 'pawaudio.js') });
+  const ap = await ab.newPage(); await ap.goto('about:blank'); await ap.addScriptTag({ content: spookySource(ROOT) });   // the Halloween lo-fi mood (../spooky_lofi.js)
   const stingers = ROUNDS.map((_, i) => ({ at: R0 + i * ROUND + 2.2, name: 'cooked' })).concat([{ at: END + 0.1, name: 'sparkle' }]);
   const wav = await ap.evaluate(async ([s, st]) => (await window.PawAudio._render({ seconds: s, wav: true, vols: { master: 0.9, music: 0.75, ambience: 0 },
-    segments: [{ at: 0, ctx: { place: 'home', time: 'day', weather: 'sunny' } }], stingers: st })).wav, [T + 0.5, stingers]);
+    segments: [{ at: 0, ctx: { place: 'spooky', time: 'day', weather: 'sunny' } }], stingers: st })).wav, [T + 0.5, stingers]);
   fs.writeFileSync(path.join(WORK, 'music.wav'), Buffer.from(wav, 'base64'));
   fs.writeFileSync(path.join(WORK, 'yay.wav'), Buffer.from(await ap.evaluate(async () => (await window.PawAudio._renderBarks({ breeds: ['dachs'], kinds: ['play'], age: 'puppy', wav: true, sampleRate: 44100 })).wav), 'base64'));
   await ab.close();

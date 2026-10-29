@@ -1,7 +1,7 @@
 // "Trick or treat, but make it crayon" (owner, 30 Oct 2026): Noodle, in the Little Witch Hat & Cape, knocks on four of the game's kennels
 // around town. A dog in one of the Halloween Market's new costumes opens each door and drops a dog-safe treat in Noodle's pumpkin bucket;
 // the last door is the Rocket Ship, where Butter in the Dinosaur Hood says WOOF and Noodle runs off without the treats. Then the ending page.
-// 13 s, 1080 x 1920, 30 fps, 120 bpm (the game's "play" music 1.4x faster, same pitch), knocks, the game's puppy barks.
+// 13 s, 1080 x 1920, 30 fps, a Halloween lo-fi beat (the game's own music engine in its dark minor mood, ../spooky_lofi.js), knocks, the game's puppy barks.
 // Everything drawn is the game's real art (PawArt.scene / house / dog / prop); the poses glide between the game's drawings for every frame
 // (the same in-between patch as freestyle_reel/build_dance.js, in this script's copy of the art only; no game file changes).
 //
@@ -10,12 +10,13 @@
 //   REDNOTE=1: the RedNote cut: every word in Simplified Chinese (the game's own zh-Hans names, LXGW WenKai) and no game link anywhere.
 const path = require('path'), fs = require('fs'), vm = require('vm'), cp = require('child_process');
 const { chromium } = require('playwright');
+const { spookySource } = require('../spooky_lofi.js');
 const ROOT = path.join(__dirname, '..', '..', '..', '..');
 const WORK = path.resolve(process.argv[2] || 'trick_work'); fs.mkdirSync(path.join(WORK, 'f'), { recursive: true });
 const RN = !!process.env.REDNOTE, SUF = RN ? '-rednote' : '';
 const fam = RN ? "'LXGW WenKai', Caveat" : 'Caveat';
 const SHOT = 2.5, NS = 4, END = SHOT * NS, T = END + 3.0, FPS = 30, N = Math.round(T * FPS), W = 1080, H = 1920, FEET = 1640;
-const TEMPO = 120 / 86;
+const TEMPO = 1;   // the Halloween lo-fi plays at its own 80 bpm (owner, 30 Oct 2026)
 
 // ---- the real art, with the dance marks and ground shadows off and in-between poses on (as in build_dance.js) ----
 const win = {}, ctx = { window: win, console }; vm.createContext(ctx);
@@ -157,12 +158,12 @@ const drawFor = (t) => { const i = Math.min(NS - 1, Math.floor(t / SHOT)), lt = 
   cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-i', path.join(WORK, `trick-cover${SUF}.png`), '-q:v', '2', path.join(WORK, `trick-cover${SUF}.jpg`)]);
   if (still) return;
 
-  // sound: the game's "play" music at 120 bpm, a sparkle on the ending page, two knocks per door, each host's own puppy bark when the door
+  // sound: the Halloween lo-fi beat, a sparkle on the ending page, two knocks per door, each host's own puppy bark when the door
   // opens, a startled yip from Noodle at the dinosaur, and a happy pair of barks on the ending page
   const ab = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium', args: ['--autoplay-policy=no-user-gesture-required'] });
-  const ap = await ab.newPage(); await ap.goto('about:blank'); await ap.addScriptTag({ path: path.join(ROOT, 'mods', 'pawaudio.js') });
+  const ap = await ab.newPage(); await ap.goto('about:blank'); await ap.addScriptTag({ content: spookySource(ROOT) });   // the Halloween lo-fi mood (../spooky_lofi.js)
   const wav = await ap.evaluate(async ([s, end]) => (await window.PawAudio._render({ seconds: s, wav: true, vols: { master: 0.9, music: 0.8, ambience: 0 },
-    segments: [{ at: 0, ctx: { place: 'play', time: 'day', weather: 'sunny' } }], stingers: [{ at: end, name: 'sparkle' }] })).wav, [T * TEMPO + 1, END * TEMPO]);
+    segments: [{ at: 0, ctx: { place: 'spooky', time: 'day', weather: 'sunny' } }], stingers: [{ at: end, name: 'sparkle' }] })).wav, [T * TEMPO + 1, END * TEMPO]);
   fs.writeFileSync(path.join(WORK, 'music_slow.wav'), Buffer.from(wav, 'base64'));
   const barkWav = async (breed, kind) => (await ap.evaluate(async ([b, k]) => (await window.PawAudio._renderBarks({ breeds: [b], kinds: [k], age: 'puppy', wav: true, sampleRate: 44100 })).wav, [breed, kind]));
   const BK = [['b0', 'corgi', 'play'], ['b1', 'husky', 'play'], ['b2', 'pug', 'yip'], ['b3', 'lab', 'alert'], ['bn', 'dachs', 'yip'], ['bn2', 'dachs', 'play']];
