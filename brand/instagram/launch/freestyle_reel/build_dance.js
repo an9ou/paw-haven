@@ -137,7 +137,7 @@ window.frame=function(t){
   console.log('places:', PLACES.join(', '));
   const still = process.env.ONLY === 'stills';
   const list = still ? [0.3, 2.7, 5.2, 7.7, 10.2, 12.0, 14.5].map((s) => Math.round(s * FPS)) : [...Array(N).keys()];
-  for (const f of list) { await p.evaluate((t) => window.frame(t), f / FPS); await p.screenshot({ path: path.join(WORK, 'f', `f${String(f).padStart(4, '0')}.png`) }); }
+  if (!process.env.AUDIO_ONLY) for (const f of list) { await p.evaluate((t) => window.frame(t), f / FPS); await p.screenshot({ path: path.join(WORK, 'f', `f${String(f).padStart(4, '0')}.png`) }); }   // AUDIO_ONLY=1: keep the frames, redo the sound
   console.log(list.length, 'frames');
   // the designed cover: the first place, the dogs mid-dance, the hook on a cream sticker at the top, the logo at the bottom (inside the grid's 3:4)
   await p.addStyleTag({ url: 'https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap' }).catch(() => {});
@@ -159,13 +159,14 @@ window.frame=function(t){
   const wav = await ap.evaluate(async ([s, end]) => (await window.PawAudio._render({ seconds: s, wav: true, vols: { master: 0.9, music: 0.85, ambience: 0 },
     segments: [{ at: 0, ctx: { place: 'play', time: 'day', weather: 'sunny' } }], stingers: [{ at: end, name: 'sparkle' }] })).wav, [T * TEMPO + 1, DANCE * TEMPO]);
   fs.writeFileSync(path.join(WORK, 'music_slow.wav'), Buffer.from(wav, 'base64'));
-  const barkWav = async (breed, kind) => (await ap.evaluate(async ([b, k]) => (await window.PawAudio._renderBarks({ breeds: [b], kinds: [k], wav: true, sampleRate: 44100 })).wav, [breed, kind]));
-  for (const [n, b, k] of [['b_lab', 'lab', 'play'], ['b_dachs', 'dachs', 'play'], ['b_dachs2', 'dachs', 'alert']]) fs.writeFileSync(path.join(WORK, n + '.wav'), Buffer.from(await barkWav(b, k), 'base64'));
+  // cute barks (owner, 29 Oct): the bark engine's puppy voice (5 to 7 semitones higher, squeakier, a little wobble, sometimes a tiny hiccup squeak)
+  const barkWav = async (breed, kind) => (await ap.evaluate(async ([b, k]) => (await window.PawAudio._renderBarks({ breeds: [b], kinds: [k], age: 'puppy', wav: true, sampleRate: 44100 })).wav, [breed, kind]));
+  for (const [n, b, k] of [['b_lab', 'lab', 'play'], ['b_dachs', 'dachs', 'yip'], ['b_dachs2', 'dachs', 'play'], ['b_lab2', 'lab', 'yip']]) fs.writeFileSync(path.join(WORK, n + '.wav'), Buffer.from(await barkWav(b, k), 'base64'));
   await ab.close();
   // each bark file has its bark at 0.2 s; place them on the beats of the place cuts and the end card
-  const BARKS = [['b_dachs', 5 * B], ['b_lab', 10 * B], ['b_dachs2', 15 * B], ['b_lab', 20 * B], ['b_dachs', DANCE], ['b_lab', DANCE + 0.25]];
+  const BARKS = [['b_dachs', 5 * B], ['b_lab', 10 * B], ['b_dachs2', 15 * B], ['b_lab2', 20 * B], ['b_dachs', DANCE], ['b_lab', DANCE + 0.3]];
   const inputs = [], chains = [];
-  BARKS.forEach(([n, at], i) => { inputs.push('-i', path.join(WORK, n + '.wav')); const d = Math.max(0, Math.round((at - 0.2) * 1000)); chains.push(`[${i + 2}:a]atrim=0:1.2,volume=1.6,adelay=${d}|${d}[k${i}]`); });
+  BARKS.forEach(([n, at], i) => { inputs.push('-i', path.join(WORK, n + '.wav')); const d = Math.max(0, Math.round((at - 0.2) * 1000)); chains.push(`[${i + 2}:a]atrim=0:1.2,highpass=f=280,volume=1.8,adelay=${d}|${d}[k${i}]`); });
   const mix = `[1:a]atempo=${TEMPO.toFixed(5)},atrim=0:${T},afade=t=out:st=${(T - 0.8).toFixed(2)}:d=0.8[m];` + chains.join(';') + ';' + `[m]${BARKS.map((_, i) => `[k${i}]`).join('')}amix=inputs=${BARKS.length + 1}:normalize=0,atrim=0:${T}[a]`;
   cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-framerate', String(FPS), '-i', path.join(WORK, 'f', 'f%04d.png'), '-i', path.join(WORK, 'music_slow.wav'), ...inputs,
     '-filter_complex', mix, '-map', '0:v', '-map', '[a]', '-c:v', 'libx264', '-preset', 'slow', '-crf', '17', '-pix_fmt', 'yuv420p', '-r', String(FPS), '-c:a', 'aac', '-b:a', '192k',
