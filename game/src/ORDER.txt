@@ -61,4 +61,5 @@
 49_funfair.js
 49b_ff_games.js
 49_market.js
+49c_news.js
 23_boot.js

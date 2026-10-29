@@ -1,0 +1,28 @@
+/* v2.18.2 What's new in town (49c_news.js): the calendar's crayon sheet (.fw-page from 48_firstweek.css), one entry, a big OK! */
+html:not([data-layout="phone"]) .panel.nw-pop{width:min(900px,100%);max-width:min(900px,calc(100% - 20px))}
+html:not([data-layout="phone"]) .nw-page.big .nw-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px}
+html:not([data-layout="phone"]) .nw-page.big .fw-border{height:30px}
+.nw-sheet{display:flex;flex-direction:column;gap:12px}
+.nw-page{flex:0 0 auto;background:radial-gradient(rgba(91,61,50,.12) 1px,transparent 1.5px) 0 0/18px 18px,var(--fwc,var(--paper))}
+.nw-page.big{padding-top:4px}
+.nw-head{display:flex;align-items:center;gap:12px;min-width:0}
+.nw-head > div{min-width:0;flex:1 1 auto}
+.nw-head h3{overflow-wrap:anywhere}
+.nw-ver{margin:2px 0 0}
+.nw-pic{flex:0 0 auto;width:84px;height:84px;display:block}
+.nw-pic > svg{width:100%;height:100%;display:block}
+.nw-list{list-style:none;margin:10px 0 2px;padding:0;display:flex;flex-direction:column;gap:8px}
+.nw-list li{display:flex;align-items:center;gap:10px;min-width:0;padding:6px 8px;border:1.6px dashed rgba(91,61,50,.35);border-radius:9px 12px 8px 11px;background:rgba(255,251,243,.72)}
+.nw-ic{flex:0 0 44px;width:44px;height:44px;display:block}
+.nw-ic > svg{width:100%;height:100%;display:block}
+.nw-tx{flex:1 1 auto;min-width:0;font-family:var(--font-read);font-size:17px;line-height:1.3;overflow-wrap:anywhere}
+.nw-more{align-self:center;min-height:44px;background:none;border-style:dashed;font-size:17px}
+.nw-all .nw-page h3{font-size:24px}
+.nw-pop .foot .nw-ok{min-width:160px;min-height:52px;font-size:26px}
+.nw-setrow{margin:6px 0 0}
+.nw-setrow .btn{min-height:44px}
+html[data-layout="phone"] .nw-pic{width:64px;height:64px}
+html[data-layout="phone"] .nw-page.big h3{font-size:24px}
+html[data-layout="phone"] .nw-tx{font-size:16px}
+html[data-layout="phone"] .nw-ic{flex-basis:40px;width:40px;height:40px}
+html[data-layout="phone"] .nw-pop .foot .nw-ok{width:100%}

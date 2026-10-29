@@ -764,6 +764,7 @@ function freshState(key, name, sex) {
   v217Fields(st); // v2.17 Dog Days (V217.md 6): wishes, the diary, stickers, letters, the Bond track gifts
   v218Fields(st); // v2.18 Fun Fair (V218.md 8): the games' coins today, plays, ribbons, the stall, the photo contest
   v2171Fields(st); // v2.17.1 Festive Market (V2171.md 7)
+  v2182Fields(st); st.newsSeen = nwLatest(); // v2.18.2 What's new: a brand-new save skips the news (the first-day guide shows what is there)
   return linkDogs(st);
 }
 let S = null;
@@ -827,6 +828,7 @@ function migrate(s) {
   v217Fields(s); // v2.17 Dog Days (V217.md section 6): additive
   v218Fields(s); // v2.18 Fun Fair (V218.md section 8): additive
   v2171Fields(s); // v2.17.1 Festive Market (V2171.md section 7): additive
+  v2182Fields(s); // v2.18.2 What's new (49c_news.js): additive, S.newsSeen '' on an old save
   return s;
 }
 /* v2.7 Home & Pack save fields (V27.md section 1). Additive only: S.v stays 1, nothing is dropped.
