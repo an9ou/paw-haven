@@ -40,7 +40,7 @@ The game is live on itch.io: **https://an9ou.itch.io/doodle-doggo**. From now on
 | Brand dog | **Noodle the dachshund** |
 | Tagline | "Adopt a wobbly crayon pup to love" |
 | Live now (v2.8) | Winter & New Year, Mt. Fuji on every skyline, Mt. Fuji Lookout, New Year cards (nengajo), Snow Days, the Ugly Sweater Contest |
-| Halloween 2026 | Pumpkin Patch Pop-up, **until 2 Nov (Japan date)**. 16 items made for 2026 only, and players keep them forever. |
+| Halloween 2026 | Now the **Halloween Market, open until 15 Nov** (owner, 29 Oct; it was the Pumpkin Patch Pop-up until 2 Nov). 16 items made for 2026 only, and players keep them forever. |
 | Links today | https://an9ou.github.io/paw-haven/ |
 | Coming soon | doodledoggo.app (Cloudflare team), https://an9ou.itch.io/doodle-doggo (after the new login ships) |
 | Assets | `brand/` (logo, icons, link card), `brand/instagram/launch/` (posts, banner, covers, mockup), `brand/itch/` (description, screenshots) |

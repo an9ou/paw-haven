@@ -34,7 +34,7 @@ How to post: Instagram, "+", Reel, upload the `.mp4`, cover `costume-reel-cover.
 Stop the video to dress Noodle! 🎃🐶
 Pause (or screenshot) right when a costume falls onto him. It does not always fit! Comment what Noodle got (or your best near miss) 👇
 
-64 looks, all from the game's wardrobe: a witch, a vampire, a pumpkin, a ghost, a bumblebee, an astronaut, a superhero and many more. The 2026 Halloween pieces are at Mrs. Plum's Pumpkin Patch Pop-up in Doodle Doggo until 2 Nov (Japan time), and they are yours to keep.
+64 looks, all from the game's wardrobe: a witch, a vampire, a pumpkin, a ghost, a bumblebee, an astronaut, a superhero and many more. The Halloween pieces are at the Halloween Market in Doodle Doggo, open until 15 Nov, and they are yours to keep.
 
 Play free on itch.io (link in bio) 🎮
 

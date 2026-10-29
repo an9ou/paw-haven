@@ -18,8 +18,8 @@ From the Game Manager's briefing; no post made yet (a different random dog each 
 ## v2.17.1 "Festive Market" (26 Oct 2026)
 
 From the Game Manager's briefing; no post made. itch.io build #2212956. Screenshots: `docs/release/v2.17.1/` on main (`map_market_*`, `market_scene_*`, `stall_*_desktop/phone`).
-- The **Halloween Market** pops up on the town map ("Festival!" tag, next to the Town Square): striped tents, bunting, lanterns, a sign "Halloween Market · open until 2 Nov". Stalls sell decorations, costumes, dog houses and beds, toys and treats. New: the Pumpkin Lantern, the Witch-Hat Bed and the Squeaky Ghost.
+- The **Halloween Market** pops up on the town map ("Festival!" tag, next to the Town Square): striped tents, bunting, lanterns, a sign "Halloween Market". **Open until 15 Nov 2026** (owner, 29 Oct: extended from 2 Nov when v2.17.2 ships). Stalls sell decorations, costumes, dog houses and beds, toys and treats. New: the Pumpkin Lantern, the Witch-Hat Bed and the Squeaky Ghost.
 - Festive items are now sold only in the pop-up markets (anything already bought stays forever).
 - Markets each season: Harvest (Oct–Nov), Winter Market (1–26 Dec), New Year Market (27 Dec–7 Jan); Sakura later. Gerald sends a letter when one opens.
 
-**Coming in a few days: v2.17.2 "Spooky Stalls"**: 25 new Halloween items before the market closes on 2 Nov (5 decorations; 10 costumes: witch, vampire, mummy, skeleton, cat, pirate, dinosaur, bee, wizard, lion; 5 houses and beds; 5 toys), and the stalls dressed with real items. Post angle: **"last days of the Halloween Market"** (make it once v2.17.2 ships, before 2 Nov).
+**Coming in a few days: v2.17.2 "Spooky Stalls"**: 25 new Halloween items, with the market open until 15 Nov (5 decorations; 10 costumes: witch, vampire, mummy, skeleton, cat, pirate, dinosaur, bee, wizard, lion; 5 houses and beds; 5 toys), and the stalls dressed with real items. Post angle: **"last days of the Halloween Market"** (make it once v2.17.2 ships; the market is open until 15 Nov).

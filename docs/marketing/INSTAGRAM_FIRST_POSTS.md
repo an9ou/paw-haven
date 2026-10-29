@@ -216,6 +216,8 @@ Short, warm, in Noodle's voice sometimes. Change a word each time so it never fe
 Post these when the itch.io page (or the game link) is live and tested. Put the link in the bio first.
 
 **Single image: use `post3-play-free-halloween.jpg` (before 2 Nov) or any informative post**
+
+(29 Oct 2026: the Halloween Market is now open until 15 Nov, but this older image's sticker still says "Pumpkin Patch · till 2 Nov". Don't use it after 2 Nov; ask for a re-made sticker if needed.)
 ```
 Doodle Doggo is out now on itch.io! 🐶🎉
 A cozy dog game you play in your browser. Free, on phone or computer, nothing to download. Tap the link in our bio and meet Noodle.
