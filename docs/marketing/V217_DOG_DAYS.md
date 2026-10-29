@@ -23,3 +23,16 @@ From the Game Manager's briefing; no post made. itch.io build #2212956. Screensh
 - Markets each season: Harvest (Oct–Nov), Winter Market (1–26 Dec), New Year Market (27 Dec–7 Jan); Sakura later. Gerald sends a letter when one opens.
 
 **Coming in a few days: v2.17.2 "Spooky Stalls"**: 25 new Halloween items, with the market open until 15 Nov (5 decorations; 10 costumes: witch, vampire, mummy, skeleton, cat, pirate, dinosaur, bee, wizard, lion; 5 houses and beds; 5 toys), and the stalls dressed with real items. Post angle: **"last days of the Halloween Market"** (make it once v2.17.2 ships; the market is open until 15 Nov).
+
+## v2.17.2 "Spooky Stalls" (29 Oct 2026, live)
+
+From the Game Manager's briefing; no post made yet. itch.io build #2241361. **The Halloween Market is open until 15 Nov.**
+- 25 new Halloween items, all fitting all 35 breeds and puppies (nothing covers a dog's eyes or nose):
+  - 10 costumes: Little Witch Hat & Cape, Scarecrow Overalls, Mummy Wraps, Skeleton Suit, Black Cat Ears & Bow, Pirate Hat & Sash, Dinosaur Hood, Little Owl Wings, Wizard Robe & Star Hat, Lion Mane.
+  - 5 toys: Squeaky Bat, Pumpkin Ball, Rope Mummy, Glow-in-the-Dark Bone, Soft Spider Plush.
+  - 5 decorations: Ghost Lantern String, Pumpkin Fairy Lights, Friendly Fence Web, Cardboard Black Cat, Cauldron Planter.
+  - 5 houses and beds: Friendly Haunted Kennel, Cauldron Bed, Bat-Cave Cushion, Pumpkin Patch Bed, Moon and Stars Tent.
+- Five dressed stalls: decor, clothes, homes, toys, treats. Items stay the player's forever.
+- Materials: `docs/release/v2.17.2/halloween_items.png` (all 25, each costume on 3 breeds and a puppy; good for a carousel), `market_scene_desktop.png`, `market_scene_phone.png`.
+- **Post idea:** "10 costumes, 35 dogs, until 15 Nov". The Game Manager is also making a 10–15 s test reel of the market.
+- The freestyle dance Reel (`FREESTYLE_REEL.md`) could swap in these new costumes (they are in the game's wardrobe now).
