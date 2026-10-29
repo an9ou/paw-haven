@@ -20,7 +20,7 @@ require('./test_lib').run('v29_flows', async (t) => {
   ok(await atStep(0), 'Gerald says hello (step 0)');
   let s = await S();
   ok(s.missions.list.length === 3 && s.dogs.length === 1 && s.guide.step === 0, 'three missions rolled, one dog, guide at step 0');
-  ok(await ev(() => !!document.querySelector('#msCardG') && document.querySelector('#msCardG').dataset.done === '0'), 'the yard clipboard shows 0/3');
+  ok(await t.until(() => { const b = document.querySelector('#msBtn'); return !!b && !b.hidden && b.dataset.done === '0'; }, null, 3000), 'the top-bar clipboard shows 0/3');
   await ev(() => window.__paw.ms.force(['feed2', 'pet', 'walk']));
   ok(await mis() === 'feed2:0:2:false pet:0:1:false walk:0:1:false', 'missions set for the pass: ' + await mis());
 
@@ -84,7 +84,7 @@ require('./test_lib').run('v29_flows', async (t) => {
   ok(await t.until(() => window.__paw.S.missions.stamps === 1, null, 4000), 'all three done: a stamp');
   s = await S();
   ok(s.missions.list.every((m) => m.done) && s.dogs.length === 1, 'every mission ticked, still one dog');
-  await p.click('#msCardG > rect', { force: true });
+  await p.click('#msBtn');
   ok(await t.until(() => !!document.querySelector('#modal:not([hidden]) .panel.ms-pop'), null, 4000), 'the clipboard opens the Missions sheet'); await t.closeX(); ok(await t.modalGone(), 'the sheet closes');
   ok(await t.until(() => window.__paw.S.dog.bond.level >= 1 && window.__paw.S.coins > 0, null, 1000), 'the save is sound (Bond, coins)');
 });

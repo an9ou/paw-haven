@@ -1,0 +1,16 @@
+/* v2.17.1 Festive Market (tag fm, V2171.md): the stall sheet uses the shop sheet (.panel.shop): tabs that wrap, a grid that scrolls inside the sheet.
+   Phone rules under html[data-layout="phone"] (PHONE.md): taps 44 px, text 15 px, no sideways scroll. */
+.fm-pop .fm-lead{margin:0 0 6px}
+.fm-pop .fm-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.fm-pop .fm-tabs .btn{min-height:46px}
+.fm-pop .fm-grid{max-height:min(54vh,520px);overflow-y:auto;overscroll-behavior:contain;padding-right:4px}
+.fm-pop .fm-card.lockd{opacity:.7}
+.panel.fm-pop .fm-foot{margin:0 auto 4px 10px;padding:2px 0;font-size:17px;font-weight:700}
+html[data-layout="phone"] .panel.fm-pop .fm-foot{font-size:15px;margin-bottom:12px}
+.fm-pop .fm-card .art.house svg{max-height:96px}
+#view svg.world .fm-sign{pointer-events:none}
+#view svg.world [data-fmstall].hot:hover rect,#view svg.world [data-fmstall].hot:focus-visible rect{fill:rgba(255,229,154,.25)}
+.fm-mb .fm-tag rect{filter:drop-shadow(0 1px 0 rgba(91,61,50,.25))}
+html[data-layout="phone"] .fm-pop .fm-grid{max-height:none}
+html[data-layout="phone"] .fm-pop .fm-tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+html[data-layout="phone"] .fm-pop .fm-tabs .btn{flex:none;font-size:16px}

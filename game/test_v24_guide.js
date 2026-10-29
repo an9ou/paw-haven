@@ -68,7 +68,7 @@ run('v24_guide', async (t) => {
   await step(6, 'shops'); await next();
   await step(7, 'garden'); await next();
   await step(8, 'missions');
-  ok(await ev(() => { const f = document.querySelector('#gdLayer .gd-ring').dataset.for; return f === '#msCardG' || f === '#bar [data-act=journal]'; }), 'the clipboard or the Journal button is ringed');
+  ok(await ev(() => document.querySelector('#gdLayer .gd-ring').dataset.for === '#msBtn'), 'the top-bar missions clipboard is ringed (v2.16.1: it left the yard)');
   await next(); await step(9, 'done');
   ok(/Bye/.test(await p.textContent('#gdLayer .gd-next')), 'the last button says goodbye');
   await next(); ok(await gone(), 'the card closes');

@@ -148,7 +148,7 @@ function crPetAt(d, wx, wy) {
     setTimeout(() => { if (packPose[d.id] === 'pet') { packPose[d.id] = 'happy'; if (cur.mode === 'yard' && !d.sleeping) rmPaint(d); } }, 900);
   }
   rmPetted(d);
-  if (!s.bonded && s.gain >= 10) { s.bonded = true; crPetBond([d], true); dailyCare('pet'); markCareDay(); trackAct('pet', {}); }
+  if (!s.bonded && s.gain >= 10) { s.bonded = true; crPetBond([d], true); dailyCare('pet'); markCareDay(); trackAct('pet', { ids: [d.id] }); } // v2.17: ids, the dog that was petted (its daily wish)
   else updateHUD();
 }
 // the rub (mouse hover-rub or touch drag) and tap on a pack dog, like the active dog's #dogHit (03_yard.js). The rub state is shared (crRub), because a
@@ -178,7 +178,7 @@ function crPetBond(due, later) {
   const ns = got.map((x) => x.n), same = ns.every((n) => n === ns[0]), all = got.map((x) => x.d);
   const bond = same ? tt('care.bond_same', '{multi, select, yes {+{n} Bond each.} other {+{n} Bond.}}', { multi: got.length > 1 ? 'yes' : 'no', n: ns[0] }) : tt('care.bond_list', 'Bond: {list}.', { list: tlist(got.map((x) => tt('care.name_plus', '{name} +{n}', { name: x.d.name, n: x.n }))) });
   toast(`${bond}${got.some((x) => x.hat) ? ' ' + tt('care.magic_hands', 'Magic hands: +1 Bond.') : ''}${got.some((x) => x.st) ? ' ' + tt('care.sparkle_hums', 'The Sparkle Stone hums: +5 Happiness.') : ''} ${got.length > 1 ? tt('care.pretend_many', '{names} pretend they did not enjoy that.', { names: crNames(all) }) : tt('care.pretend_one', '{sex, select, female {{name} pretends she did not enjoy that.} other {{name} pretends he did not enjoy that.}}', { name: all[0].name, sex: all[0].sex })}`, 'good');
-  if (!later) { dailyCare('pet'); markCareDay(); trackAct('pet', { dogs: got.length }); }
+  if (!later) { dailyCare('pet'); markCareDay(); trackAct('pet', { dogs: got.length, ids: got.map((x) => x.d.id) }); }
   updateHUD();
 }
 
@@ -192,7 +192,7 @@ function crNapPack() {
   pack.forEach((d) => { crFree(d); d.sleeping = true; delete packPose[d.id]; redrawPackDog(d); });
   markDirty();
   if (me && S.stats.energy < 99) return { n: 1 + pack.length, pack };
-  trackAct('nap', { dogs: pack.length }); crNapToast({ n: pack.length, pack, solo: true }); popDown(); if (cur.mode === 'yard' && !S.sleeping) dockIdle();
+  trackAct('nap', { dogs: pack.length, ids: pack.map((d) => d.id) }); crNapToast({ n: pack.length, pack, solo: true }); popDown(); if (cur.mode === 'yard' && !S.sleeping) dockIdle();
   return { done: true };
 }
 function crNapToast(c) {
@@ -239,7 +239,7 @@ function crBathNext() {
 function crBathEnd() {
   const b = crBath; if (!b) return; crBath = null;
   crBathSwap(b.orig);
-  if (b.fin) trackAct('bath', { dogs: b.fin });
+  if (b.fin) trackAct('bath', { dogs: b.fin, ids: b.q.slice(0, b.fin) }); // v2.17: ids, the dogs bathed (in queue order)
 }
 const crBathTitle = () => (crBath ? ` <span class="cr-n">${esc(tt('care.bath_n', '({i} of {n})', { i: crBath.i + 1, n: crBath.q.length }))}</span>` : '');
 

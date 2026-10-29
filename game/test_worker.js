@@ -48,6 +48,13 @@ async function checks(label, call, sql, mail) {
   ok((await call('PUT', '/save', { data: { v: 2 }, rev: 2, changed_at: t1 }, g.token)).status === 400, 'a save that is not v 1 is refused');
   ok((await call('PUT', '/save', { data: save(1, { big: 'x'.repeat(530000) }), rev: 2, changed_at: t1 }, g.token)).status === 413, 'a save of 512 KB or more is refused');
   ok((await call('PUT', '/save', { data: s1, rev: 2, changed_at: t1 })).status === 401, 'PUT /save needs a session');
+  const gTime = (await call('POST', '/guest', {})).json, tOld = new Date(Date.now() - 10000).toISOString();
+  ok((await call('PUT', '/save', { data: save(10), rev: 1, changed_at: tOld }, gTime.token)).status === 200, 'a fresh guest can store rev 1');
+  r = await call('PUT', '/save', { data: save(11), rev: 2, changed_at: new Date(Date.parse(tOld) - 5000).toISOString() }, gTime.token);
+  ok(r.status === 409 && r.json.error === 'stale' && r.json.rev === 1, 'a higher rev with an older changed_at is refused');
+  ok((await call('GET', '/save', null, gTime.token)).json.save.data.coins === 10, 'the older put left the save that is already there');
+  r = await call('PUT', '/save', { data: save(12), rev: 2, changed_at: new Date(Date.parse(tOld) + 1000).toISOString() }, gTime.token);
+  ok(r.status === 200 && r.json.rev === 2 && (await call('GET', '/save', null, gTime.token)).json.save.data.coins === 12, 'a higher rev with a later changed_at is stored');
   r = await call('POST', '/register', 'not json', g.token); ok(r.status === 400, 'bad JSON: 400');
 
   // register: the guest becomes the account (same id, same save)
@@ -77,6 +84,7 @@ async function checks(label, call, sql, mail) {
   r = await call('PUT', '/save', { data: save(200), rev: 2, changed_at: new Date().toISOString(), device: 'Pixel Chrome' }, d2); ok(r.json.rev === 2, 'device 2 pushes rev 2');
   ok((await call('GET', '/save', null, a.token)).json.save.data.coins === 200, 'device 1 pulls rev 2');
   r = await call('POST', '/password', { password: 'pupper456' }, a.token); ok(r.status === 200, 'change password');
+  ok((await call('GET', '/me', null, d2)).status === 401 && (await call('GET', '/me', null, a.token)).status === 200, 'a password change logs out every other device; this one stays logged in');
   ok((await call('POST', '/login', { email: 'mochi@example.com', password: 'pupper123' })).status === 401 && (await call('POST', '/login', { email: 'mochi@example.com', password: 'pupper456' })).status === 200, 'the old password stops working, the new one works');
   ok((await call('POST', '/password', { password: 'pupper789' }, (await call('POST', '/guest', {})).json.token)).status === 403, 'a guest has no password to change');
   r = await call('POST', '/logout', {}, d2); ok(r.status === 200 && (await call('GET', '/me', null, d2)).status === 401, 'log out ends that session');

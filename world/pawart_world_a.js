@@ -1568,9 +1568,10 @@ function yardB(k,F,o){const e=k.env,fk=floorKitB(k),D=y=>depB(F,y);
     else{k.shape([[x-5,y+2],[x+5,y+2],[x,y+16]],C.orange,{w:1.5,one:1});k.line([[x,y+2],[x-6,y-10]],1.8,'#6FAE5C');k.line([[x,y+2],[x+1,y-12]],1.8,'#6FAE5C');k.line([[x,y+2],[x+7,y-9]],1.8,'#6FAE5C')}}});if(o.patch!=='empty')k.add(vv)}});
    k.add(vg);if(o.patch==='empty')k.side(()=>patchEmpty(k))}
   if(o.patch==='ready')k.side(()=>patchReady(k));
-  // the mailbox by the path (the game's mailbox is drawn over it, MB_BOX)
-  k.line([[330,410],[330,356]],4,C.ink);k.shape([[312,336],[348,336],[348,360],[312,360]],C.red,{w:2});k.line([[350,340],[350,324],[360,324]],2.4,C.ink);
-  snowOnB(k,[[310,336],[350,336]],6);frostOnB(k,[[313,337],[347,337]]);
+  // v2.16.1: the mailbox moved to the back, by the front door (the game draws it, 07b_mailbox.js MB_BOX_BACK). Its old sketch by the path is drawn into a
+  // discarded capture, so the crayon wobble of everything after it stays exactly as it was
+  k.cap(()=>{k.line([[330,410],[330,356]],4,C.ink);k.shape([[312,336],[348,336],[348,360],[312,360]],C.red,{w:2});k.line([[350,340],[350,324],[360,324]],2.4,C.ink);
+  snowOnB(k,[[310,336],[350,336]],6);frostOnB(k,[[313,337],[347,337]])});
   // flowers on the lawn (small at the back, bigger in front)
   [[880,520,C.red,5],[920,540,C.yellow,5],[960,508,C.lav,5],[612,566,C.yellow,5],[640,586,C.red,5],[262,592,C.lav,5],[300,575,C.red,5],[575,588,'#FFB3C7',5],[380,360,C.yellow,3.4],[520,352,'#FFB3C7',3.2],[700,350,C.lav,3.2],[60,372,C.red,3.6],[420,392,C.lav,3.8]].forEach(f=>O.flower(k,f[0],f[1],f[3],f[2]));
   k.line([[612,526],[870,526]],1,C.graph,{op:.45,dash:'2 7'});// faint construction marks under the dog house
@@ -1760,10 +1761,10 @@ function winterSnowB(k,list){if(k.so==='winter'&&!k.env.snow)k.ss(()=>list.forEa
 /* ---------- the v2.15 B floors (PawArt.FLOOR) and the render (its own cache; the key holds every option the scenes read) ---------- */
 const FLOOR_B={
  yard:{poly:[[26,334],[974,334],[994,594],[6,594]],
-  props:[{id:'planter',base:350,box:[898,342,76,10]},{id:'bush',base:356,box:[532,348,60,10]},{id:'mailbox',base:408,box:[304,398,54,12]},{id:'bushL',base:410,box:[228,402,44,10]},
+  props:[{id:'planter',base:350,box:[898,342,76,10]},{id:'bush',base:356,box:[532,348,60,10]},{id:'mailbox',base:346,box:[194,337,38,9]},{id:'bushL',base:410,box:[228,402,44,10]},
    {id:'house',base:526,box:[628,510,224,18]},{id:'bowl',base:540,box:[212,526,76,16]},{id:'bushF',base:598,box:[866,586,72,10]}],// mailbox, house, bowl: drawn by the game over the scene (MB_BOX, #houseG, #bowlG), their feet boxes
   spots:[{id:'bowl',x:250,y:570,tags:['bowl'],act:'drink'},{id:'dig',x:520,y:440,tags:['dig','sniff'],act:'sniff'},{id:'shade',x:930,y:378,tags:['shade','rest'],act:'rest'},
-   {id:'sun',x:420,y:470,tags:['sun','rest'],act:'rest'},{id:'gate',x:470,y:350,tags:['gate','patrol'],act:'look'},{id:'door',x:150,y:356,tags:['door'],act:'door'},{id:'mailbox',x:336,y:426,tags:['sniff'],act:'sniff'}]},
+   {id:'sun',x:420,y:470,tags:['sun','rest'],act:'rest'},{id:'gate',x:470,y:350,tags:['gate','patrol'],act:'look'},{id:'door',x:150,y:356,tags:['door'],act:'door'},{id:'mailbox',x:226,y:372,tags:['sniff'],act:'sniff'}]},// v2.16.1: the mailbox stands by the front door
  house:{poly:[[16,348],[984,348],[998,594],[2,594]],
   props:[{id:'sofa',base:364,box:[314,350,270,14]},{id:'lamp',base:368,box:[604,360,32,10]},{id:'plant',base:378,box:[252,370,36,10]}],
   spots:[{id:'bowl',x:250,y:570,tags:['bowl'],act:'drink'},{id:'rug',x:440,y:540,tags:['rest','rug'],act:'rest'},{id:'bed',x:742,y:500,tags:['rest','bed'],act:'rest'},

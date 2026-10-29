@@ -1,6 +1,6 @@
 /* ======================= YARD ======================= */
 const DX = 298, DY = 295, DW = 264, DH = 220; // dog box: feet at y=500, centre x=430
-let dogKey = '', tempPose = null, tempUntil = 0, busy = false, pet = { start: 0, gain: 0, bonded: false, capped: false, dist: 0 };
+let dogKey = '', dogPoseDrawn = '', dogFaceDrawn = '', dogArtKeys = 0, tempPose = null, tempUntil = 0, busy = false, pet = { start: 0, gain: 0, bonded: false, capped: false, dist: 0 };
 function yardWorldSVG(extra = '') {
   return `<svg class="world" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMax slice">
     ${sceneG(S.place || 'yard', S.place === 'yard' ? { patch: gkOn() ? patchState() : 'empty' } : S.place === 'house' && hasBedArt() ? { bed: false } : mpSceneOpts(S.place))}${S.place === 'yard' && !gkOn() ? '<g class="soon-tag" pointer-events="none" transform="translate(112 432) rotate(-6)"><rect x="-58" y="-17" width="116" height="30" rx="6" fill="#FFF3B8" stroke="#5B3D32" stroke-width="2"/><text y="6" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="22" fill="#5B3D32">' + tt('yard.coming_soon_tag', 'coming soon') + '</text></g>' : ''}${bedLayers().back}<g id="messG"></g><g id="snowmanG">${S.place === 'yard' ? snowmanSVG() : ''}</g>${S.place === 'yard' && cur.mode === 'yard' && typeof msYardSVG === 'function' ? msYardSVG() : ''}${S.place === 'yard' ? hmDecorSVG() : ''}
@@ -23,12 +23,26 @@ function dogPoseNow() {
   return 'idle';
 }
 const POSE_FB = { crouch: 'sit', shake: 'happy', cold: 'sad', hot: 'happy', dig: 'eat', squat: 'sit', leglift: 'sit' };
-function dogArtSafe(key, o) { let sv = art('dog', key, o); if (o.pose && POSE_FB[o.pose] && !sv.includes('pa-pose-' + o.pose)) sv = art('dog', key, Object.assign({}, o, { pose: POSE_FB[o.pose] })); return sv; }
+// v2.16.1: the finished dog drawings are kept (key + every option: breed, coat, pose, outfit, facing, face, age, sparkle...), so a pose a dog had before
+// is not drawn again. PawArt.dog is a pure function of its arguments (no random, no ids), so the string is the same one it would draw.
+const DOG_ART_MEMO = new Map(), DOG_ART_MEMO_MAX = 240;
+function dogArtSafe(key, o) {
+  let k = null; try { k = key + '|' + JSON.stringify(o); } catch (e) { k = null; }
+  if (k && DOG_ART_MEMO.has(k)) { const v = DOG_ART_MEMO.get(k); DOG_ART_MEMO.delete(k); DOG_ART_MEMO.set(k, v); return v; }
+  let sv = art('dog', key, o); if (o.pose && POSE_FB[o.pose] && !sv.includes('pa-pose-' + o.pose)) sv = art('dog', key, Object.assign({}, o, { pose: POSE_FB[o.pose] }));
+  if (k && !/>\?<\/text>/.test(sv)) { DOG_ART_MEMO.set(k, sv); if (DOG_ART_MEMO.size > DOG_ART_MEMO_MAX) DOG_ART_MEMO.delete(DOG_ART_MEMO.keys().next().value); } // never keep the "?" placeholder (art not loaded yet)
+  return sv;
+}
+// outfit identity without JSON.stringify: null and false do not change the drawing, and the keys stay in insertion order
+function outfitStamp(o) { if (!o) return ''; let s = ''; for (const n in o) { const v = o[n]; if (v) s += n + '=' + v + '\n'; } return s; }
 function renderDog(pose, facing = 'right', force, artOnly) {
   const g = $('#dogArt'); if (!g) return;
-  const o = shSleepOutfit(D(), pose), ex = exNow(D(), pose), k = pose + '|' + facing + '|' + JSON.stringify(o) + '|' + S.dog.key + (ex ? '|' + ex : ''); // v2.4: the Pyjamas at nap time. v2.13: the face (41_expressions.js)
+  const o = shSleepOutfit(D(), pose), ex = exNow(D(), pose), wet = wetDog(D()); // v2.4: the Pyjamas at nap time. v2.13: the face (41_expressions.js)
+  dogArtKeys++;
+  const k = pose + '|' + facing + '|' + outfitStamp(o) + '|' + S.dog.key + (ex ? '|' + ex : '') + (wet ? '|wet' : '');
+  dogPoseDrawn = pose; dogFaceDrawn = facing;
   if (k === dogKey && !force) return; dogKey = k;
-  g.innerHTML = place(dogSVG(D(), ex ? { pose, outfit: o, facing, expr: ex } : { pose, outfit: o, facing }), DX, DY, DW, DH);
+  g.innerHTML = place(dogSVG(D(), Object.assign(ex ? { pose, outfit: o, facing, expr: ex } : { pose, outfit: o, facing }, wet ? { wet } : {})), DX, DY, DW, DH); // rainy days: wet in the rain (13_more_dogs.js wetDog)
   if (artOnly) return; // v2.13: a face that starts or ends redraws the art only (exRedraw)
   const fx = $('#dogFx'); if (fx) { fx.classList.toggle('tk-shake', pose === 'shake'); fx.classList.toggle('tk-shiver', pose === 'cold'); }
   const bf = $('#bedFront'); if (bf) bf.style.display = pose === 'sleep' ? '' : 'none';
@@ -101,7 +115,8 @@ function bowlArt(food) {
 // v2.5: the bowl shows only while feeding: from the Feed tray opening until the eating ends (also while the dog drinks).
 // Hidden with visibility, so its box (kept clear by the props, piles and pack dogs) stays where it was.
 let fbBowlFood = null;
-function setBowl(food) { fbBowlFood = food || null; const b = $('#bowlG'); if (b) { b.innerHTML = (isPhone() ? '<rect x="195" y="452" width="110" height="110" fill="transparent"/>' : '') + place(bowlArt(food), 205, 462, 90, 90); b.setAttribute('aria-label', food ? tt('yard.label_food_bowl_with', 'Food bowl with {food}', { food: homeName(food) }) : tt('yard.label_empty_food_bowl', 'Empty food bowl')); } fbBowlSync(); }
+// v2.17: the phone tap area is 128 world px, at least 44 px on an iPhone 15 under the v2.16 four-button bar (it was 110: 43 px)
+function setBowl(food) { fbBowlFood = food || null; const b = $('#bowlG'); if (b) { b.innerHTML = (isPhone() ? '<rect x="186" y="443" width="128" height="128" fill="transparent"/>' : '') + place(bowlArt(food), 205, 462, 90, 90); b.setAttribute('aria-label', food ? tt('yard.label_food_bowl_with', 'Food bowl with {food}', { food: homeName(food) }) : tt('yard.label_empty_food_bowl', 'Empty food bowl')); } fbBowlSync(); }
 function fbFeedTrayOpen() { return cur.mode === 'yard' && !!dock.querySelector(':scope > .tray [data-food]'); }
 function fbBowlSync() { const b = $('#bowlG'); if (b) b.style.visibility = fbBowlFood || fbFeedTrayOpen() ? '' : 'hidden'; }
 function fxText(txt, x, y, color = '#F28FA5', size = 38) {
@@ -719,7 +734,7 @@ function feed(name) {
 /* ---------------- PLAY ---------------- */
 function openPlayTray() {
   if (cur.mode !== 'yard') go('yard');
-  const fts = FETCH_TOYS.filter((t) => owns('toys', t)), sub = { 'Tennis Ball': tt('yard.free_throws_every_dog_races', 'Free throws, every dog races'), Frisbee: tt('yard.long_throws_3_coins', 'Long throws: 3 coins'), 'Driftwood Stick': tt('yard.tumbles_3_coins', 'Tumbles: 3 coins'), 'Glow Ball': tt('yard.glows_after_dark', 'Glows after dark'), 'Bamboo Ring': tt('tracks.ring_sub', 'Floats, 3 coins') };
+  const fts = FETCH_TOYS.filter((t) => owns('toys', t)), sub = { 'Tennis Ball': tt('yard.free_throws_every_dog_races', 'Free throws, every dog races'), Frisbee: tt('yard.long_throws_3_coins', 'Long throws: 3 coins'), 'Driftwood Stick': tt('yard.tumbles_3_coins', 'Tumbles: 3 coins'), 'Glow Ball': tt('yard.glows_after_dark', 'Glows after dark'), 'Bamboo Ring': tt('tracks.ring_sub', 'Floats, 3 coins'), 'Squeaky Ghost': tt('fm.ghost_sub', 'Squeaks, 2 coins') };
   const b = fts.map((t) => `<button class="card" data-play="ball:${esc(t)}"><span class="art">${art('item', t)}</span><b>${tt('yard.play_ball', 'Play ball')}</b><span class="small">${esc(tt('yard.toy_sub', '{toy}: {sub}', { toy: homeName(t), sub: sub[t] }))}</span></button>`); // v2.10: free ball play where you are (38_ball.js) replaces the timed Fetch challenge
   toysPlayable().forEach((t) => b.push(`<button class="card" data-play="toy:${esc(t)}"><span class="art">${art('item', t)}</span><b>${tt('yard.play', 'Play')}</b><span class="small">${esc(homeName(t))}${hwTag(t)}</span></button>`));
   b.push(`<button class="card" data-play="tricks"><span class="art">${ICON('star')}</span><b>${tt('yard.tricks', 'Tricks')}</b><span class="small">${esc(tt('yard.learned', '{n} learned', { n: learnedCount() }))}</span></button>`);
@@ -819,7 +834,7 @@ function napRate(d) { const h = houseInfo(), pb = d && typeof hoBedFor === 'func
 function startSleep() {
   if (busy) return; const crN = crNapPack(); if (crN && crN.done) return; // v2.7 PACK CARE: the ticked pack dogs are tucked in too (null with pack care off)
   if (S.stats.energy >= 99) { nope(tt('yard.is_not_tired_is_vibrating', '{sex, select, female {{name} is not tired. She is vibrating.} other {{name} is not tired. He is vibrating.}}', { sex: homeSx(S.dog), name: NAME() })); return; }
-  clearCurl(); crFree(D()); busy = false; S.sleeping = true; markDirty(); trackAct('nap', crN ? { dogs: crN.n } : {}); hideBubble(); popDown(); dogTo(...napSpot(), 1); renderDog('walk');
+  clearCurl(); crFree(D()); busy = false; S.sleeping = true; markDirty(); trackAct('nap', crN ? { dogs: crN.n, ids: [S.dog.id].concat(crN.pack.map((d) => d.id)) } : {}); // v2.17: ids (daily wishes) hideBubble(); popDown(); dogTo(...napSpot(), 1); renderDog('walk');
   setTimeout(() => { if (S.sleeping) { renderDog('sleep'); showZzz(true); } }, 1000);
   sleepTray(); if (crN) crNapToast(crN); else toast(S.place === 'house' ? tt('yard.curls_up_on_the_indoor_naps', '{bonus, select, yes {{name} curls up on the {bed}. Indoor naps: +25%, bed +{pct}%.} other {{name} curls up on the {bed}. Indoor naps: +25%.}}', { bonus: bedInfo().bonus ? 'yes' : 'no', name: NAME(), bed: homeName(S.bed), pct: Math.round(bedInfo().bonus * 100) }) : weatherNow() === 'rain' ? tt('yard.curls_up_in_the_rain', '{name} curls up in the {house}. Rain on the roof: the best nap sound (+20% nap).', { name: NAME(), house: homeName(S.house) }) : isNight() ? tt('yard.climbs_into_the_night_naps', '{name} climbs into the {house}. Night naps restore more (+40%).', { name: NAME(), house: homeName(S.house) }) : tt('yard.climbs_into_the_goodnight', '{name} climbs into the {house}. Goodnight.', { name: NAME(), house: homeName(S.house) })); if (ROACH[D().key]) setTimeout(() => toast(tt('yard.flips_upside_down_legs_in', '{name} flips upside down, legs in the air. Greyhounds call that roaching.', { name: NAME() }), ''), 900); audioPlace();
 }
@@ -885,7 +900,14 @@ const HM_DECOR = {
   'Jack-o-Lantern Trio': { prop: 'hwlanterns', at: [440, 528, 112, 67], vb: [200, 120], price: 120, fest: 'halloween', ed: 2026, v26: true, story: 'Three pumpkins, three faces, all of them smiling. They glow a little after dark.' },
   'Paper Bat Bunting': { prop: 'hwbunting', at: [650, 298, 160, 43], vb: [300, 80], price: 90, fest: 'halloween', ed: 2026, v26: true, story: 'Paper bats on a string, cut a bit wonky. They flutter whenever a dog runs past.' },
   'Friendly Scarecrow': { prop: 'hwscarecrow', at: [762, 262, 92, 130], vb: [140, 200], price: 140, fest: 'halloween', ed: 2026, v26: true, story: 'A pumpkin head and a big grin. The crows sit on his arms to chat.' },
+  'Pumpkin Lantern': { prop: 'fmlantern', at: [566, 446, 60, 80], vb: [120, 160], price: 80, fest: 'halloween', ed: 2026, fm: true, lit: true, story: 'A round pumpkin lantern on a little post. It glows softly after dark.' }, // v2.17.1 Festive Market
   'Ghost Garland': { prop: 'hwgarland', at: [100, 220, 200, 60], vb: [300, 90], price: 100, fest: 'halloween', ed: 2026, v26: true, story: 'Little cloth ghosts holding hands. They say boo very quietly.' },
+  // v2.17.2 Spooky Stalls: Festive Market decorations (fm). Wall props hang on the fence band, floor props stand on the grass
+  'Ghost Lantern String': { prop: 'hmghostlights', at: [300, 196, 200, 54], vb: [300, 80], price: 110, room: 'yard', zone: 'wall', kind: 'decor', lit: true, fest: 'halloween', ed: 2026, fm: true, story: 'Little paper ghost lanterns on a string. After dark they glow softly, and each one smiles.' },
+  'Pumpkin Fairy Lights': { prop: 'hmpumpkinlights', at: [520, 200, 200, 54], vb: [300, 80], price: 100, room: 'yard', zone: 'wall', kind: 'decor', lit: true, fest: 'halloween', ed: 2026, fm: true, story: 'Tiny pumpkin bulbs on a green wire. They light up the fence when the sun goes down.' },
+  'Friendly Fence Web': { prop: 'hmfenceweb', at: [820, 230, 96, 84], vb: [160, 140], price: 80, room: 'yard', zone: 'wall', kind: 'decor', fest: 'halloween', ed: 2026, fm: true, story: 'A wobbly crayon web with a round little spider in a bow. She waves at every dog who passes.' },
+  'Cardboard Black Cat': { prop: 'hmcatcutout', at: [880, 380, 66, 88], vb: [120, 160], price: 90, room: 'yard', zone: 'floor', kind: 'decor', fest: 'halloween', ed: 2026, fm: true, story: 'A cardboard cat painted black, with a big smile. The dogs sniff it every morning, just in case.' },
+  'Cauldron Planter': { prop: 'hmcauldron', at: [180, 420, 98, 84], vb: [140, 120], price: 120, room: 'yard', zone: 'floor', kind: 'decor', fest: 'halloween', ed: 2026, fm: true, story: 'A black pot on stubby legs, full of sunflowers and pansies. Both are safe for dogs to sniff.' },
   // v2.7 Home & Pack (V27.md section 1): everyday decorations for the yard and the house, and five pieces of dog furniture, all sold at Barkitecture.
   // room: 'yard' | 'house' (missing = 'yard'). zone: 'floor' (bottom edge on the ground band) | 'wall' (hung up, the whole box on the wall band). flat: drawn under everything else on the floor.
   // lit: the prop takes { lit: isNight() }. `at` is the starting spot (the HOME lane tunes it in screenshots), S.decor[name].at overrides x, y once the player moves it.

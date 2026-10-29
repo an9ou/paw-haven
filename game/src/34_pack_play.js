@@ -184,7 +184,7 @@ function pkToyFx(crew, r, k, name) {
 // (x < 222) or on the dog house (a follower further back than its front would be drawn over it)
 const PK_FOL = { x0: 430, y0: 500, sc: 0.62, gap: 26, between: 14, xmax: 985, ymin: 430, ymax: 596, front: 88, back: 72 };
 const pkXf = (fx, fy) => `translate(${(fx - PK_FOL.x0 * PK_FOL.sc).toFixed(1)}px, ${(fy - PK_FOL.y0 * PK_FOL.sc).toFixed(1)}px) scale(${PK_FOL.sc})`;
-function pkFolArt(d, pose, face) { return place(dogSVG(d, { pose, outfit: typeof shSleepOutfit === 'function' ? shSleepOutfit(d, pose) : outfitOf(d), facing: face }), DX, DY, DW, DH); }
+function pkFolArt(d, pose, face) { return place(dogSVG(d, wetOpt(d, { pose, outfit: typeof shSleepOutfit === 'function' ? shSleepOutfit(d, pose) : outfitOf(d), facing: face })), DX, DY, DW, DH); }
 // the spots for the line when the leader stands at (lx, ly) facing dir (1 right, -1 left): [middle x, feet y] per follower, the row furthest back first
 function pkFolSpots(lx, ly, dir) {
   const P = PKS.fetch, n = P.dogs.length, F = PK_FOL, sw = P.len + F.between, out = [];

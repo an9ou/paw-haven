@@ -57,4 +57,8 @@
 45_pool.js
 46_tracks.js
 47_firstweek.js
+48_dogdays.js
+49_funfair.js
+49b_ff_games.js
+49_market.js
 23_boot.js

@@ -270,6 +270,45 @@ async function worker(job) {
       if (phone) for (const k of ['caremenu', 'more']) { await ev((k) => document.querySelector(`#bar .act[data-act="${k}"]`).click(), k); await waitSel(`#bar .barpop[data-pop="${k}"]`, 3000); await measure('fw: phone bar ' + k + ' tray'); await ev((k) => document.querySelector(`#bar .act[data-act="${k}"]`).click(), k); }
       await ev(() => { const P = window.__paw; P.S.dogs[0].bond = { level: 10, pts: 3300 }; P.S.fw.wish = null; P.fw.test(false); P.saveNow(); });
     }, 60000);
+    // v2.17 Dog Days (V217.md): the wish chip, the Bond track, the diary, the sticker book, a letter, the phone More tray (prefs.ddTest through the test hook)
+    await step('dd', async () => {
+      await ev(() => { const P = window.__paw, S = P.S; P.dd.test(true); S.dogs[0].bond = { level: 4, pts: 500 }; S.dd.wish = { day: '', w: {}, coins: 0 }; P.dd.wish(); S.dd.wish.w[S.dog.id] = { k: 'walk', a: 'cliffs', done: 0 }; P.dd.chip(); });
+      await sleep(700); await measure('dd: wish chip');
+      await ev(() => { const P = window.__paw, S = P.S; S.dd.wish.w[S.dog.id] = { k: 'garden', a: null, done: 1 }; P.dd.chip(); }); await sleep(300); await measure('dd: wish chip, done');
+      await ev(() => window.__paw.dd.track()); await modalUp(); await measure('dd: Bond track'); await closeAll();
+      await ev(() => { const P = window.__paw, S = P.S; S.dd.today = null; S.dd.diary = [{ g: 3, d: '2026-10-24', id: S.dog.id, n: S.dog.name, k: S.dog.key, w: ['park', 'cliffs'], p: ['training', 'pool'], f: ['Chicken & Rice Bowl', 'Blueberry Bites'], t: ['Roll Over'], x: 'Llasbz', wi: 'garden', fr: ['Pip', 'Bun'] }]; P.dd.journal('diary'); });
+      await modalUp(); await measure('dd: diary'); await closeAll();
+      await ev(() => { const S = window.__paw.S; S.dd.st = { w1: 1, k_walk: 1, k_ball: 1, v_park: 1 }; window.__paw.dd.book(); }); await modalUp(); await measure('dd: sticker book');
+      await ev(() => { const b = document.querySelector('[data-ddsp="1"]'); if (b) b.click(); }); await sleep(300); await measure('dd: sticker book page 2'); await closeAll();
+      await ev(() => { const S = window.__paw.S; S.dd.lt = { day: '', wk: '', fam: '', gi: 5, fi: 0 }; window.__paw.dd.letters(); window.__paw.dd.mail(); }); await modalUp(); await measure('dd: Gerald\'s letter'); await closeAll();
+      if (phone) { await ev(() => document.querySelector('#bar .act[data-act="more"]').click()); await waitSel('#bar .barpop[data-pop="more"]', 3000); await measure('dd: phone More tray with Stickers'); await ev(() => document.querySelector('#bar .act[data-act="more"]').click()); }
+      await ev(() => { const P = window.__paw; P.S.dogs[0].bond = { level: 10, pts: 3300 }; P.dd.test(false); P.saveNow(); });
+    }, 60000);
+    // v2.18 Fun Fair (V218.md): the game cards, every game in play and a result card, the stall, the photo contest results (prefs.ffTest and the map through the test hooks)
+    await step('ff', async () => {
+      await ev(() => { const P = window.__paw, S = P.S; P.mp.allow(true); P.ff.test(true); S.dogs.forEach((d) => { d.bond = { level: 8, pts: 1600 }; }); S.bond.level = 8; });
+      await atPlace('square'); await ev(() => window.__paw.ff.cards()); await modalUp(); await measure('ff: game cards'); await closeAll();
+      for (const k of ['catch', 'bubble', 'seek', 'show', 'kite', 'paper', 'bakery', 'wash']) {
+        const pl = await ev((k) => window.__paw.ff.games[k].place, k); await atPlace(pl);
+        await ev(() => { const S = window.__paw.S; S.stats.energy = 100; S.sleeping = false; if (S.ff && S.ff.wash) S.ff.wash.day = ''; });
+        await ev((k) => window.__paw.ff.start(k), k); await t.until(() => window.__paw.mode === 'fair', null, 6000); await sleep(k === 'show' ? 900 : 1500);
+        await measure('ff: ' + k);
+        if (k === 'catch' || k === 'show') { await ev(() => { const g = window.__paw.ff.g; g.score = 20; if (g.data.pts !== undefined) g.data.pts = 9; window.__paw.ff.end(); }); await sleep(500); await measure('ff: ' + k + ' result'); }
+        await ev(() => window.__paw.ff.back()); await t.until(() => window.__paw.mode !== 'fair', null, 4000);
+      }
+      await atPlace('market'); await ev(() => { const P = window.__paw, S = P.S; P.ff.setSat(true); S.inv.crops = S.inv.crops || {}; S.inv.crops.carrot = [3, 1, 0]; P.ff.stall(); }); await modalUp(); await measure('ff: market stall'); await closeAll();
+      await ev(() => { const P = window.__paw; P.S.ff.pc = { wk: '', e: [], judged: '', won: 0, rib: 0 }; for (let i = 0; i < 3; i++) P.ff.enter({ who: [[P.S.dog.name, 400, 600]], vb: [0, 0, 1000, 600] }); P.ff.judge(); }); await modalUp(); await measure('ff: photo contest results'); await closeAll();
+      await ev(() => { const P = window.__paw; P.ff.setSat(null); P.ff.test(false); P.mp.allow(false); }); await t.home('yard');
+    }, 150000);
+    // v2.17.1 Festive Market (V2171.md): the market scene, its five stall sheets and the map tent (prefs.fmTest and the map through the test hooks)
+    await step('fm', async () => {
+      await ev(() => { const P = window.__paw; P.mp.allow(true); P.fm.date('2026-10-27'); P.fm.allow(true); P.S.bond.level = Math.max(P.S.bond.level, 6); });
+      await atPlace('fmarket'); await sleep(500); await measure('fm: market scene');
+      for (const c of ['decor', 'clothes', 'homes', 'toys', 'treats']) { await ev((c) => window.__paw.fm.sheet(c), c); await modalUp(); await measure('fm: stall ' + c); }
+      await closeAll();
+      await ev(() => window.__paw.go('map')); await t.until(() => !!document.querySelector('.mb[data-area="fmarket"]'), null, 8000); await sleep(600); await measure('fm: map with the market');
+      await ev(() => { const P = window.__paw; P.fm.allow(false); P.fm.date(null); P.mp.allow(false); }); await t.home('yard');
+    }, 70000);
     if (phone) await step('yard HUD expanded', async () => { await jsClick('#meters'); await sleep(300); await measure('yard: HUD meters expanded'); await jsClick('#view').catch(() => {}); await ev(() => document.getElementById('hud').classList.remove('hexp')); });
     for (const a of ['feed', 'play', 'care']) await step(a + ' tray', async () => { await jsClick(`[data-act=${a}]`); if (!(await t.waitPop(true))) throw new Error('no tray'); await measure(a + ' tray'); await jsClick(`[data-act=${a}]`); await t.waitPop(false); });
     await step('toasts and bubble', async () => {

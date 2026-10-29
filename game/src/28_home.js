@@ -19,7 +19,7 @@ const HO_OLD_ZONE = { 'Family Photo Frame': 'wall', 'Paper Bat Bunting': 'wall',
 // boxes a free spot keeps clear of (x, y, w, h): the dog's tap box at rest, the bowl, and per room the mailbox, the missions clipboard, the dog house, the place buttons
 const HO_DOG_REST = [328, 335, 204, 180], HO_STATUS = [0, 147, 262, 42]; // the place and time chip (top left) covers the wall under it
 const HO_KEEP = {
-  yard: [[210, 470, 80, 80], [286, 288, 90, 120], [208, 318, 50, 64], [640, 340, 204, 186], [850, 525, 150, 50]],
+  yard: [[210, 470, 80, 80], [286, 288, 90, 120], [208, 318, 50, 64], [640, 340, 204, 186], [850, 525, 150, 50], [179, 258, 66, 88]], // v2.16.1: + the mailbox by the front door (07b_mailbox.js MB_BOX_BACK)
   house: [[210, 470, 80, 80], [850, 525, 150, 50]]
 };
 // a few short lines a dog says on a piece of furniture (by prop and spot)

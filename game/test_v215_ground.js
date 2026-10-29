@@ -23,7 +23,7 @@ require('./test_lib').run('v215_ground', async (t) => {
   const fallback = () => ev((FB) => { const F = window.PawArt.FLOOR; window.__grFb = []; for (const k in FB) if (!F[k]) { F[k] = FB[k]; window.__grFb.push(k); } return window.__grFb; }, FALLBACK);
   const pack = () => ev(() => { const P = window.__paw; P.addDog({ key: 'dachs', sex: 'male', months: 14 }, 'Bun'); P.addDog({ key: 'husky', sex: 'female', months: 30 }, 'Sky'); P.addDog({ key: 'golden', sex: 'female', months: 20 }, 'Goldie'); });
   const ids = async () => (await t.S()).dogs.map((d) => d.id);
-  const vb = () => ev(() => { const v = document.querySelector('#view svg.world').viewBox.baseVal; return { x: v.x, y: v.y, w: v.width, h: v.height }; });
+  const vb = () => ev(() => window.__paw.gr.win()); // v2.16.1: the desktop camera pans with translate; win() is the 1000-unit window the viewBox used to hold
   const tapAt = (id) => ev((id) => { const g = document.querySelector(`#pack [data-dog="${id}"]`), h = g && (g.querySelector('.pd-wander > rect') || document.getElementById('dogHit')); if (!h) return null; const r = h.getBoundingClientRect(); for (let fy = 0.5; fy < 0.95; fy += 0.1) for (const fx of [0.5, 0.6, 0.4, 0.7, 0.3]) { const x = r.left + r.width * fx, y = r.top + r.height * fy, e = document.elementFromPoint(x, y), q = e && e.closest('[data-dog]'); if (q && q.dataset.dog === id) return { x, y }; } return null; }, id);
 
   sec('0. a pack of four, the switches');
@@ -40,7 +40,7 @@ require('./test_lib').run('v215_ground', async (t) => {
     await t.home(pl); await t.sleep(250);
     const info = await ev((pl) => {
       const G = window.__paw.gr, f = G.floor(pl), sc = document.querySelector('#sceneG > svg'), svg = document.querySelector('#view svg.world'), fg = document.querySelector('#sceneG #floorG');
-      return { here: window.__paw.S.place, f: { w: f.w, back: f.back, front: f.front, kB: f.kB, kF: f.kF, area: f.area, props: f.props.map((p) => String(p.id)) }, scW: sc && +sc.getAttribute('width'), vbW: svg.viewBox.baseVal.width, left: fg ? fg.children.length : -1, props: G.props(), wide: G.wide(pl) };
+      return { here: window.__paw.S.place, f: { w: f.w, back: f.back, front: f.front, kB: f.kB, kF: f.kF, area: f.area, props: f.props.map((p) => String(p.id)) }, scW: sc && +sc.getAttribute('width'), vbW: G.win().w, left: fg ? fg.children.length : -1, props: G.props(), wide: G.wide(pl) };
     }, pl);
     ok(info.here === pl && info.scW === info.f.w, `${pl}: the scene is drawn at its own width (${info.scW} for a floor ${info.f.w} wide)`);
     const band = V210[pl] || V210.default, a0 = 880 * (band[1] - band[0]);
@@ -77,7 +77,7 @@ require('./test_lib').run('v215_ground', async (t) => {
   ok(await ev(() => document.documentElement.classList.contains('gr-wide')), 'html.gr-wide is on in a wide place');
   // drag to look: 6 px is a drag, the camera waits 2 s after it, then follows again
   await ev(() => { window.__paw.rm.pause('test'); window.__paw.gr.home(); });
-  v = await vb(); const box = await p().locator('#view svg.world').boundingBox(), cx = box.x + box.width * 0.5, cy = box.y + box.height * 0.18;
+  v = await vb(); const box = await p().locator('#view').boundingBox(), cx = box.x + box.width * 0.5, cy = box.y + box.height * 0.18;
   await p().mouse.move(cx, cy); await p().mouse.down(); await p().mouse.move(cx + 3, cy, { steps: 2 }); await t.sleep(80);
   const v1 = await vb(); ok(Math.abs(v1.x - v.x) < 0.5, 'a 3 px move is not a drag (the camera stays)');
   await p().mouse.move(cx + 260, cy, { steps: 8 }); const v2 = await vb(); await p().mouse.up();

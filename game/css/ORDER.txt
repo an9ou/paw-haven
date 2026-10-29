@@ -53,5 +53,8 @@
 46_agility.css
 47_pool.css
 48_firstweek.css
+49_dogdays.css
+50_funfair.css
+50_market.css
 50_i18n.css
 51_i18n_room.css

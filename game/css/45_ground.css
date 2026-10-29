@@ -23,3 +23,7 @@ html.gr-wide:not([data-layout="phone"]) .rm-look.left .rm-n{right:-6px}
 html.gr-wide[data-layout="phone"] #phPeek{display:none}
 /* the yard's dog house, mailbox and bowl sort with the dogs in a grOn yard (43_ground.js grGame): they stay tap targets */
 #view svg.world .gr-prop.gr-game{pointer-events:visiblePainted}
+/* v2.16.1: the desktop camera of a wide place pans the whole world svg with the translate property (43_ground.js grCamApply): the svg is the full world wide,
+   its own layer, so the compositor moves the picture and nothing is painted again. The trick-training zoom keeps its old origin in the view (43% 85%). */
+#view > svg.world.gr-pan{inset:auto;left:0;top:0;will-change:translate}
+#view > svg.world.gr-pan.trainzoom{transform:scale(1.12) translateX(calc(var(--gr-vw,1000px) * -.04));transform-origin:calc(var(--gr-vw,1000px) * .43 - var(--gr-tx,0px)) calc(var(--gr-vh,600px) * .85 - var(--gr-ty,0px))}

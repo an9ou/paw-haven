@@ -198,6 +198,24 @@ run('v215_tracks', async (t) => {
     const cal = await ev(() => { const F = window.__paw.fw, r = [3, 7, 12, 18, 24].map((n) => F.reward('cal', n, '2026-10')), w = [1, 3, 5, 7].map((n) => F.reward('wel', n)); return { coins: r.filter((x) => x.t === 'coins').reduce((a, x) => a + x.c, 0), welCoins: w.filter((x) => x.t === 'coins').length }; });
     ok(cal.coins === 80 && cal.welCoins === 0, `calendar coins: ${cal.coins} a month, none from the welcome week`);
     ok(avgWalk >= 100 && avgWalk / (cal.coins / 30) > 20, `walks stay the main income: about ${Math.round(avgWalk)} route coins a day from walks against about ${(cal.coins / 30).toFixed(1)} a day from the calendar`);
+    // v2.17 (V217.md 1, 7): a daily wish pays 10 coins, at most 20 a day; the letters, the stickers and the Bond track give items and frames, never coins
+    const ddc = await ev(() => ({ cap: window.__paw.dd.coinCap, one: window.__paw.dd.coin }));
+    ok(ddc.one === 10 && ddc.cap === 20 && avgWalk / ddc.cap > 4, `walks stay the main income: about ${Math.round(avgWalk)} route coins a day from walks against at most ${ddc.cap} wish coins a day`);
+    // v2.17 review: every capped source that costs no Energy, all at once, in real coins (each pays raw): Pip's cart 60 (PIP_CAP), the Town Square
+    // goal 30, 3 missions x 15 (MS_PAY), wishes 20, the calendar 80 a month. Walks (route coins, doubled by the prototype BOOST in addCoins) stay the largest.
+    const capped = { garden: 60, square: 30, missions: 3 * 15, wishes: ddc.cap, calendar: cal.coins / 30 + (await ev(() => { const F = window.__paw.fw; let c = 0, n = 0; for (let m = 1; m <= 12; m++) { const ym = '2026-' + String(m).padStart(2, '0'); for (let d = 1; d <= new Date(2026, m, 0).getDate(); d++) { const r = F.daily(ym, d); if (r.t === 'coins') c += r.c; n++; } } return c / n; })) /* v2.17: + the daily gifts, about 5 a day */ }, capSum = Object.values(capped).reduce((a, b) => a + b, 0);
+    ok(Object.values(capped).every((v) => avgWalk > v) && avgWalk * 2 > capSum, `walks stay the largest source: ${Math.round(avgWalk * 2)} real coins a day from walks against ${Math.round(capSum)} from every capped no-Energy source together (${Object.entries(capped).map(([k, v]) => k + ' ' + Math.round(v)).join(', ')})`);
+    // v2.18 Fun Fair (V218.md 7): the caps table FF_CAPS (49_funfair.js): eight games a day, the Saturday stall and the weekly photo contest (as a daily share).
+    // Every source on its own, at its cap, in real coins: walks (route coins doubled by the BOOST) stay the largest single source, and all of v2.18 together stays below walks.
+    await t.until(() => !!(window.__paw && window.__paw.ff), null, 5000);
+    const ffc = await ev(() => window.__paw.ff.caps), ffDaily = {};
+    Object.entries(ffc).forEach(([k, c]) => { ffDaily['ff_' + k] = c.day != null ? c.day : c.week / 7; });
+    const ffSum = Object.values(ffDaily).reduce((a, b) => a + b, 0), walkReal = avgWalk * 2;
+    const every = Object.assign({ ball: S0.ballCap, agility: S0.agCap }, capped, ffDaily);
+    console.log('  sources (real coins a day at the cap): walks ' + Math.round(walkReal) + ', ' + Object.entries(every).map(([k, v]) => k + ' ' + (Math.round(v * 10) / 10)).join(', ') + ' | all of v2.18 ' + Math.round(ffSum) + ' | everything but walks ' + Math.round(Object.values(every).reduce((a, b) => a + b, 0)));
+    ok(Object.keys(ffc).length === 10 && Object.values(every).every((v) => walkReal > v), `walks (${Math.round(walkReal)} a day) are the largest single source; the biggest other is ${Object.entries(every).sort((a, b) => b[1] - a[1])[0].join(' ')}`);
+    ok(ffSum < walkReal && ffSum < avgWalk * 1.3, `all v2.18 sources together (${Math.round(ffSum)} a day at every cap) stay below walks (${Math.round(walkReal)})`);
+    ok(Object.entries(ffc).every(([k, c]) => (c.day != null ? c.day <= 20 && c.round <= c.day && c.en > 0 : c.week <= 40)), 'every game costs Energy and pays at most 20 a day; the stall and the contest at most 40 and 30 a week');
     // the real game's own accounting for the two capped sources: agility coins left, ball coins left, the pool's paddle pays nothing
     const real = await ev(() => { const P = window.__paw, S = P.S; S.ag.day = P.pl.today(); S.ag.coins = 40; const l1 = P.ag.left(); S.ag.coins = 10; const l2 = P.ag.left(); S.ag.coins = 0; return { l1, l2 }; });
     ok(real.l1 === 0 && real.l2 === 30, 'agCoinsLeft follows S.ag.coins (cap 40): ' + JSON.stringify(real));

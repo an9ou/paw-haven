@@ -29,7 +29,7 @@ require('./test_lib').run('v24_missions', async (t) => {
 
   sec('feeding twice completes feed2 and pays 15 raw coins');
   await ev(() => window.__paw.ms.force(['feed2', 'pet', 'bath']));
-  ok(await ev(() => document.querySelector('#msCardG').dataset.done) === '0', 'yard clipboard: 0/3');
+  ok(await t.until(() => { const b = document.querySelector('#msBtn'); return !!b && !b.hidden && b.dataset.done === '0' && b.textContent.trim() === '0/3'; }, null, 3000), 'top-bar clipboard (v2.16.1): 0/3');
   const feedOnce = async () => { await t.retryUntil(async () => { await ev(() => { window.__paw.S.stats.hunger = 30; window.__paw.feed('Basic Kibble'); }); }, (n) => (window.__paw.S.inv.food['Basic Kibble'] || 0) < n, await ev(() => window.__paw.S.inv.food['Basic Kibble']), { tries: 4, each: 4000 }); await t.until(() => window.__paw.S.missions.list[0].p >= 1 || false, null, 4000); };
   await feedOnce(); await t.until(() => window.__paw.S.missions.list[0].p === 1, null, 5000);
   s = await S(); ok(s.missions.list[0].p === 1 && !s.missions.list[0].done, 'one feed: 1/2');
@@ -39,7 +39,7 @@ require('./test_lib').run('v24_missions', async (t) => {
   s = await S(); ok(!!s.missions.list[0].done && s.missions.list[0].p === 2, 'two feeds: feed2 done');
   ok(s.coins - c0 === 15, 'paid 15 raw coins (' + (s.coins - c0) + ')');
   ok(await t.waitToast(/^Mission done: Feed twice\. \+15 coins\.$/), 'toast "Mission done: Feed twice. +15 coins."');
-  ok(await t.until(() => document.querySelector('#msCardG') && document.querySelector('#msCardG').dataset.done === '1', null, 3000), 'yard clipboard: 1/3');
+  ok(await t.until(() => { const b = document.querySelector('#msBtn'); return !!b && b.dataset.done === '1' && b.textContent.trim() === '1/3' && /1 of 3 done/.test(b.getAttribute('aria-label')); }, null, 3000), 'top-bar clipboard: 1/3');
 
   sec('all three done: a stamp');
   await t.until(() => !window.__paw.shop.busy && !document.querySelector('#toasts .toast'), null, 8000);
@@ -49,9 +49,11 @@ require('./test_lib').run('v24_missions', async (t) => {
   ok(await t.waitToast(/^All three done! A crayon stamp for today\.$/), 'toast "All three done! A crayon stamp for today."');
   await ev(() => { window.__paw.ms.act('bath', {}); }); ok((await S()).missions.stamps === 1, 'more actions: still 1 stamp');
 
-  sec('the Missions popup and the yard clipboard');
-  await t.until(() => !!document.querySelector('#msCardG > rect') && document.getElementById('modal').hidden, null, 4000);
-  await p().click('#msCardG > rect', { force: true });
+  sec('the Missions popup and the top-bar clipboard (v2.16.1: it left the yard)');
+  await t.until(() => !!document.querySelector('#msBtn:not([hidden])') && document.getElementById('modal').hidden, null, 4000);
+  ok(await ev(() => !document.querySelector('#msCardG')), 'no clipboard in the yard scene');
+  { const b = await p().locator('#msBtn').boundingBox(), c = await p().locator('#coins').boundingBox(); ok(b.height >= 44 && b.width >= 44 && Math.abs(b.y + b.height / 2 - (c.y + c.height / 2)) < 12 && b.x > c.x, `the clipboard sits next to the coins, 44 px or more (${Math.round(b.width)} x ${Math.round(b.height)})`); }
+  await p().click('#msBtn');
   ok(await t.until(() => !!document.querySelector('#modal:not([hidden]) .panel.ms-pop'), null, 4000), 'tapping the clipboard opens the popup');
   const pop = await ev(() => ({ li: [...document.querySelectorAll('.ms-pop .ms-list li')].map((l) => [l.className, l.textContent]), coins: document.querySelector('.ms-pop .ms-coins').textContent, stamp: document.querySelector('.ms-pop .ms-sline').textContent, card: !!document.querySelector('.ms-pop .ms-card svg'), sc: !!document.querySelector('.ms-pop .ms-stampcard svg') }));
   ok(pop.li.length === 3 && pop.li.every(([c]) => c === 'done'), 'three lines, all ticked');
@@ -87,9 +89,9 @@ require('./test_lib').run('v24_missions', async (t) => {
   s = await S(); ok(s.missions.date === today && nl.length === 3 && nl.every((x) => x.p === 0 && !x.done), 'today: 3 fresh missions');
   await t.sleep(300); ok(!(await t.toasts()).some((x) => /mission/i.test(x)), 'no message about the old ones');
 
-  sec('the clipboard is drawn in the yard only, not in the bath scene');
-  await ev(() => window.__paw.go('bath')); ok(await t.untilMode('bath') && await ev(() => !document.querySelector('#msCardG')), 'bath: no clipboard');
-  await t.home('yard'); ok(await t.until(() => !!document.querySelector('#msCardG'), null, 5000), 'back in the yard: the clipboard');
+  sec('the top-bar clipboard stays put round the scenes; the yard never draws one');
+  await ev(() => window.__paw.go('bath')); ok(await t.untilMode('bath') && await ev(() => !document.querySelector('#msCardG') && !document.querySelector('#msBtn').hidden), 'bath: the top-bar clipboard, no scene clipboard');
+  await t.home('yard'); ok(await t.until(() => !document.querySelector('#msCardG') && !!document.querySelector('#msBtn:not([hidden])'), null, 5000), 'back in the yard: still in the top bar only');
 
   sec('Journal Missions tab');
   await p().click('[data-act=journal]'); await p().waitForSelector('[data-jtab=missions], [data-tab=missions], .tabs button');
@@ -102,7 +104,7 @@ require('./test_lib').run('v24_missions', async (t) => {
   sec('old saves without S.missions load clean');
   const old = await ev(() => { const S = JSON.parse(JSON.stringify(window.__paw.S)); delete S.missions; return JSON.stringify(S); });
   await t.ctx.close(); const p2 = await t.mk({ storage: { pawhaven_proto_v1: old } }); await p2.goto(require('./test_lib').URL); await p2.waitForSelector('#tContinue'); await p2.click('#tContinue');
-  await t.untilMode('yard'); await t.until(() => !!document.querySelector('#msCardG'), null, 6000);
+  await t.untilMode('yard'); await t.until(() => !!document.querySelector('#msBtn:not([hidden])'), null, 6000);
   const m2 = await t.ev(() => window.__paw.ms.today());
   ok(m2.length === 3, 'missions roll on the old save');
   ok(await t.ev(() => { const m = window.__paw.S.missions; return m.stamps === 0 && m.cards === 0 && Array.isArray(m.rewards); }), 'defaults: 0 stamps, 0 cards, no rewards');

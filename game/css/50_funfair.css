@@ -1,0 +1,124 @@
+/* v2.18 Fun Fair (tag ff, classes .ff-; V218.md). The game frame fills #view: a header strip (title, score, the crayon time line, Done) and the play area.
+   The field is 1000 units wide, scaled to fit (transform), sprites are absolutely placed divs moved with translate3d only.
+   Phone rules go under html[data-layout="phone"] (PHONE.md): taps 44 px, text 15 px, no sideways scroll. */
+.ff-game{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--paper)}
+.ff-top{flex:none;display:grid;grid-template-columns:minmax(0,1fr) minmax(90px,260px) auto;align-items:center;gap:6px 14px;padding:6px 12px 4px;z-index:3;background:var(--paper)}
+.ff-th{display:flex;align-items:baseline;gap:12px;min-width:0;flex-wrap:wrap}
+.ff-th h3{margin:0;font-family:var(--font-hand);font-weight:700;font-size:28px;line-height:1.05;overflow-wrap:anywhere;min-width:0;max-width:100%}
+.ff-game.over .ff-tricks,.ff-game.over .ff-hint{visibility:hidden}
+.ff-sc{font-family:var(--font-hand);font-weight:700;font-size:22px;color:#7A6358;white-space:nowrap}
+.ff-time svg{display:block;width:100%;height:14px;overflow:visible}
+.ff-time path{fill:none;stroke-linecap:round}
+.ff-tl0{stroke:#E3D2BA;stroke-width:9}
+.ff-tl{stroke:#F28FA5;stroke-width:9;stroke-dasharray:100 100;stroke-dashoffset:0}
+.ff-done{min-height:44px;min-width:88px;font-size:20px}
+.ff-play{position:relative;flex:1 1 auto;min-height:0;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;cursor:pointer}
+.ff-bg{position:absolute;inset:0;pointer-events:none}
+.ff-bg svg{display:block;width:100%;height:100%}
+.ff-bg::after{content:"";position:absolute;inset:0;background:rgba(255,251,243,.38)}
+/* review fix: the game's sprites take the hour and the weather like the place behind them, and the paper wash thins out at night so the dark is not milky */
+.ff-game[data-t="night"] .ff-bg::after{background:rgba(255,251,243,.07)}
+.ff-game:is([data-t="dusk"],[data-t="dawn"]) .ff-bg::after{background:rgba(255,251,243,.2)}
+.ff-game[data-t="night"] .ff-sp{filter:brightness(.7) saturate(.72) contrast(.94)}
+.ff-game[data-t="dusk"] .ff-sp{filter:brightness(.93) sepia(.14)}
+.ff-game[data-t="day"]:is([data-w="rain"],[data-w="cloudy"]) .ff-sp{filter:brightness(.9) saturate(.85)}
+.ff-field{position:absolute;left:0;top:0;transform-origin:0 0;contain:layout}
+.ff-sp{position:absolute;left:0;top:0;will-change:transform;pointer-events:none;transform:translate3d(-999px,-999px,0)}
+.ff-sp > svg{display:block;width:100%;height:100%;overflow:visible}
+.ff-static{will-change:auto}
+.ff-float{position:absolute;left:0;top:0;pointer-events:none;font-family:var(--font-hand);font-weight:700;font-size:44px;white-space:nowrap;z-index:5}
+.ff-float span.ff-say{background:rgba(255,251,243,.94);border-radius:16px 12px 18px 10px;padding:2px 16px 6px;box-shadow:0 0 0 2px rgba(91,61,50,.28)}
+.ff-float span{display:block;transform:translateX(-50%);animation:ffPop .9s ease-out both;text-shadow:0 0 6px #FFFBF3,0 0 3px #FFFBF3}
+@keyframes ffPop{0%{opacity:0;translate:0 10px}15%{opacity:1}100%{opacity:0;translate:0 -60px}}
+.ff-hint{position:absolute;left:50%;top:8px;transform:translateX(-50%);max-width:min(640px,92%);margin:0;padding:6px 14px;border-radius:12px;background:rgba(255,251,243,.94);font-size:17px;line-height:1.25;text-align:center;opacity:0;transition:opacity .3s;pointer-events:none;z-index:4;box-shadow:0 2px 8px rgba(91,61,50,.15)}
+.ff-hint.on{opacity:1}
+.ff-end{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(91,61,50,.22);z-index:6;cursor:default;padding:12px}
+.ff-end[hidden]{display:none}
+.ff-card-end{background:var(--paper);border-radius:16px;padding:16px 20px 14px;max-width:min(520px,100%);max-height:100%;overflow:auto;box-shadow:0 8px 20px rgba(60,40,25,.25);transform:rotate(-.5deg);animation:panelPop .15s ease-out}
+.ff-card-end h3{margin:0 0 6px;font-family:var(--font-hand);font-size:30px;line-height:1.1}
+.ff-card-end p{margin:0 0 10px;font-size:17px;line-height:1.35}
+.ff-ebtns{display:flex;gap:10px;flex-wrap:wrap}
+.ff-ebtns .btn{min-height:48px;font-size:20px;flex:1 1 auto}
+#stage.ffmode #fwNext{display:none!important}
+/* the dog: a gentle trot while the kite flies, a spin for Spin */
+.ff-run > svg{animation:ffBob .32s ease-in-out infinite alternate}
+@keyframes ffBob{to{transform:translateY(-6px)}}
+.ff-spin > svg{animation:ffSpin .5s ease-in-out}
+@keyframes ffSpin{to{transform:rotate(360deg)}}
+html[data-motion="off"] .ff-run > svg,html[data-motion="off"] .ff-spin > svg{animation:none}
+.ff-str{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+/* Sniff & Seek */
+.ff-scent{opacity:.85}
+/* Dog Show Pose: the judge card and the trick buttons */
+.ff-jc{position:relative;width:100%;height:100%}
+.ff-jc > svg{position:absolute;inset:0;width:100%;height:100%}
+.ff-jseq{position:absolute;inset:44px 40px 30px;display:flex;justify-content:center;align-items:flex-start;gap:6px;transition:opacity .2s}
+.ff-js{flex:1 1 0;max-width:110px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.ff-js b{font-family:var(--font-hand);font-size:30px;line-height:1}
+.ff-jd{display:block;width:100%;max-width:100px;height:84px}
+.ff-jd{position:relative;overflow:hidden}
+.ff-jd svg{position:static!important;inset:auto!important;width:100%!important;height:100%!important;transform:none!important}
+.ff-js i{font-style:normal;font-size:21px;line-height:1.1;overflow-wrap:anywhere}
+.ff-jback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-hand);font-weight:700;font-size:120px;color:#C99A72;opacity:0;transition:opacity .2s}
+.ff-jcard.down .ff-jseq{opacity:0}
+.ff-jcard.down .ff-jback{opacity:1}
+.ff-tricks{position:absolute;left:0;right:0;display:flex;justify-content:center;flex-wrap:wrap;gap:10px;padding:0 16px;z-index:4}
+.ff-trick{min-height:110px;font-size:30px;line-height:1.05;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px 8px;overflow-wrap:anywhere}
+.ff-tn{font-family:var(--font-hand);font-weight:700;font-size:26px;color:#7A6358}
+.ff-trick{--wash:#FFF8EC}
+.ff-tricks.wait .ff-trick{color:#9C8E80;--wash:#EFE6D8} /* opaque while waiting: the field never shows through */
+/* the newspaper round */
+.ff-door .ff-dn,.ff-tin .ff-tnum{position:absolute;left:50%;top:6px;transform:translateX(-50%);font-family:var(--font-hand);font-weight:700;font-size:34px;color:#5B3D32}
+.ff-tin .ff-tnum{top:-40px}
+.ff-door.near > svg{filter:drop-shadow(0 0 10px #FFD56B)}
+.ff-door.done > svg{opacity:.85}
+/* the wash */
+.ff-tool{border-radius:18px;transition:background .2s}
+.ff-tool.on{background:rgba(255,213,107,.55);outline:4px solid #FFD56B}
+/* the game cards (modal) */
+.ff-cards{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.ff-card{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:10px 14px;align-items:center;padding:8px 10px;border-radius:12px;background:rgba(255,242,218,.6)}
+.ff-card.locked{opacity:.75}
+.ff-cic{width:64px;height:64px;display:block}
+.ff-cic svg{width:100%;height:100%}
+.ff-ctx{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ff-ctx b{font-family:var(--font-hand);font-size:26px;line-height:1.05}
+.ff-ctx .small{font-size:15px;line-height:1.25}
+.ff-cl{color:#7A6358}
+.ff-card .btn{min-height:48px;font-size:20px;white-space:nowrap}
+/* the Saturday stall */
+.ff-stallart{width:min(320px,70%);margin:0 auto 6px}
+.ff-stallart svg{width:100%;height:auto;display:block}
+.ff-goods{list-style:none;margin:6px 0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:40vh;overflow:auto}
+.ff-goods li{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:10px;align-items:center}
+.ff-gart{width:44px;height:44px;display:block}
+.ff-gart svg{width:100%;height:100%}
+.ff-gn{display:flex;flex-direction:column;font-size:17px;min-width:0;overflow-wrap:break-word}
+.ff-q{display:flex;align-items:center;gap:8px}
+.ff-q .btn{min-width:44px;min-height:44px;font-size:22px;padding:0}
+.ff-q b{min-width:22px;text-align:center;font-size:20px}
+.ff-slines{list-style:none;padding:0;margin:6px 0}
+.ff-slines li{animation:ffIn .4s ease-out both;font-size:17px;margin:2px 0}
+@keyframes ffIn{from{opacity:0;transform:translateY(6px)}}
+html[data-motion="off"] .ff-slines li{animation:none}
+.ff-pcres{display:grid;grid-template-columns:80px minmax(0,1fr);gap:12px;align-items:start}
+.ff-rib{width:80px;height:80px;display:block}
+.ff-rib svg{width:100%;height:100%}
+.ff-pcres ul{margin:4px 0 8px;padding-left:18px}
+.ff-phbtn{min-height:44px}
+/* phones: the bar, the place chip and the side buttons rest while a game runs (like trick training); the header wraps under the title */
+html[data-layout="phone"] #stage.ffmode :is(#status,#phPeek,#rmLookL,#rmLookR,#bar,#gdLayer,#ddWish){display:none!important}
+html[data-layout="phone"] .ff-jseq{inset:44px 16px 26px;gap:2px}
+html[data-layout="phone"] .ff-top{grid-template-columns:minmax(0,1fr) auto;padding:4px 10px 2px}
+html[data-layout="phone"] .ff-time{grid-column:1/-1;grid-row:2}
+html[data-layout="phone"] .ff-th h3{font-size:24px}
+html[data-layout="phone"] .ff-sc{font-size:19px}
+html[data-layout="phone"] .ff-hint{font-size:15px;top:6px}
+html[data-layout="phone"] .ff-card{grid-template-columns:48px minmax(0,1fr)}
+html[data-layout="phone"] .ff-cic{width:48px;height:48px}
+html[data-layout="phone"] .ff-card .btn{grid-column:1/-1;white-space:normal}
+html[data-layout="phone"] .ff-pcres{grid-template-columns:56px minmax(0,1fr)}
+html[data-layout="phone"] .ff-rib{width:56px;height:56px}
+/* review fix: rinse drops fall from the jug onto the dog's back */
+.ff-drop > svg{animation:ffDrop .6s ease-in both}
+@keyframes ffDrop{from{transform:translateY(0)}to{transform:translateY(70px)}}

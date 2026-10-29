@@ -224,18 +224,18 @@ function dcTagFs(sz) { // sz: the visitor's size class (v2.11.1: a small dog's t
   return Math.max(19, 13.6 / (rmScale(rmZoneOf(S.place).y0) * (sz || 1) * px));
 }
 function dcVisSVG(v, i) {
-  const d = v.dog, pose = v.tw ? 'walk' : v.pose, ex = exNow(d, pose); v.drawn = pose + '|' + v.face + (ex ? '|' + ex : ''); // v2.13: the face (41_expressions.js)
+  const d = v.dog, pose = v.tw ? 'walk' : v.pose, ex = exNow(d, pose), wet = wetDog(d); v.drawn = pose + '|' + v.face + (ex ? '|' + ex : '') + (wet ? '|wet' : ''); // v2.13: the face (41_expressions.js)
   const fs = isPhone() ? dcTagFs(sizeK(d)) : DC.tagFs || 19, w = 88 * fs / 19, h = 25 * fs / 19;
   const tag = `<g class="dc-tag" pointer-events="none" transform="translate(430 512)"><rect x="${f1(-w / 2)}" y="-2" width="${f1(w)}" height="${f1(h)}" rx="8" fill="#FFF3DA" stroke="#5B3D32" stroke-width="2"/><text y="${f1(h * 0.68)}" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="${f1(fs)}" fill="#5B3D32">${esc(tt('cards.visitor_tag', 'visitor'))}</text></g>`;
-  return `<g class="dcvis${DC.inPack ? ' gr-prop' : ''}"${DC.inPack ? ` data-fy="${f1(v.y)}"` : ''} data-dcv="${i}" data-card="${esc(v.card.id)}" tabindex="0" role="button" aria-label="${esc(tt('cards.visitor_aria', '{dog}, visiting with {card}. Tap for the Dog Card.', { dog: d.name, card: dcCardName(v.card) }))}"${v.hidden ? ' style="display:none"' : ''}><g class="dc-at" transform="${dcXf(v)}"><rect class="dc-hit" x="${DX + 44}" y="${DY + 35}" width="${DW - 88}" height="180" fill="transparent"/><g class="dc-art">${place(dogSVG(d, ex ? { pose, outfit: d.outfit, facing: v.face, expr: ex } : { pose, outfit: d.outfit, facing: v.face }), DX, DY, DW, DH)}</g>${tag}</g></g>`;
+  return `<g class="dcvis${DC.inPack ? ' gr-prop' : ''}"${DC.inPack ? ` data-fy="${f1(v.y)}"` : ''} data-dcv="${i}" data-card="${esc(v.card.id)}" tabindex="0" role="button" aria-label="${esc(tt('cards.visitor_aria', '{dog}, visiting with {card}. Tap for the Dog Card.', { dog: d.name, card: dcCardName(v.card) }))}"${v.hidden ? ' style="display:none"' : ''}><g class="dc-at" transform="${dcXf(v)}"><rect class="dc-hit" x="${DX + 44}" y="${DY + 35}" width="${DW - 88}" height="180" fill="transparent"/><g class="dc-art">${place(dogSVG(d, wetOpt(d, ex ? { pose, outfit: d.outfit, facing: v.face, expr: ex } : { pose, outfit: d.outfit, facing: v.face })), DX, DY, DW, DH)}</g>${tag}</g></g>`;
 }
 const dcXf = (v) => `translate(${f1(v.x)} ${f1(v.y)}) scale(${v.k.toFixed(3)}) translate(-430 -500)`;
 function dcEl(v) { return DC.inPack ? v.el || null : $(`#dcVis [data-dcv="${DC.vis.indexOf(v)}"]`); }
 function dcPaint(v) {
   const el = dcEl(v); if (!el) return; el.style.display = v.hidden ? 'none' : '';
   const at = el.querySelector('.dc-at'); if (at) at.setAttribute('transform', dcXf(v)); if (DC.inPack) el.dataset.fy = f1(v.y);
-  const pose = v.tw ? 'walk' : v.pose, ex = exNow(v.dog, pose), key = pose + '|' + v.face + (ex ? '|' + ex : ''); if (key === v.drawn) return; v.drawn = key; // v2.13: a face change redraws this visitor
-  const a = el.querySelector('.dc-art'); if (a) a.innerHTML = place(dogSVG(v.dog, exOpt(v.dog, pose, { pose, outfit: v.dog.outfit, facing: v.face })), DX, DY, DW, DH);
+  const pose = v.tw ? 'walk' : v.pose, ex = exNow(v.dog, pose), wet = wetDog(v.dog), key = pose + '|' + v.face + (ex ? '|' + ex : '') + (wet ? '|wet' : ''); if (key === v.drawn) return; v.drawn = key; // v2.13: a face change redraws this visitor
+  const a = el.querySelector('.dc-art'); if (a) a.innerHTML = place(dogSVG(v.dog, wetOpt(v.dog, exOpt(v.dog, pose, { pose, outfit: v.dog.outfit, facing: v.face }))), DX, DY, DW, DH);
 }
 function dcOrder() { const g = $('#dcVis'); if (!g) return;
   if (DC.inPack) { const pk = $('#pack'); if (!pk) return; DC.vis.forEach((v) => { if (v.el && v.el.parentNode !== pk) pk.appendChild(v.el); }); if (typeof grDepth === 'function') grDepth(); return; } // a rebuilt #pack gets them back, grDepth sorts them by feet y

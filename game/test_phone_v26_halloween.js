@@ -110,9 +110,9 @@ async function suite(t, dev) {
   await ev(() => { const S = window.__paw.S; S.inv.food['Sweet Potato Bones'] = 2; S.inv.food['Frozen Yoghurt Ghosts'] = 2; ['Squeaky Pumpkin', 'Trick-or-Treat Bucket'].forEach((n) => { if (!S.inv.toys.includes(n)) S.inv.toys.push(n); }); S.sleeping = false; S.place = 'yard'; window.__paw.go('yard'); });
   await t.untilMode('yard'); await t.calm(); await t.lu();
   // w: nothing but the count chip (.cnt, right:-3px, on every counted card since v2.5) pokes out of the card
-  const chips = async (act) => { await p.locator(`#bar [data-act=${act}]`).first().tap(); await t.waitPop(true); await settled(t, '#dock .tray');
+  const chips = async (act) => { await t.dock(act); await p.locator(`#bar [data-act=${act}]`).first().tap(); await t.waitPop(true); await settled(t, '#dock .tray');
     const r = await ev(() => [...document.querySelectorAll('#dock .tray .card')].filter((c) => c.querySelector('.hw-tag')).map((c) => { c.scrollIntoView({ block: 'nearest', inline: 'nearest' }); const a = c.getBoundingClientRect(), g = c.querySelector('.hw-tag').getBoundingClientRect(), fs = parseFloat(getComputedStyle(c.querySelector('.hw-tag')).fontSize); return { n: c.textContent.trim().slice(0, 22), ins: g.left >= a.left - 6 && g.right <= a.right + 1 && g.top >= a.top - 8 && g.bottom <= a.bottom, w: ![...c.querySelectorAll('*')].some((e) => !e.closest('.cnt') && e.getBoundingClientRect().right > a.right + 0.5), fs, h: g.height > 4 }; }));
-    await p.locator(`#bar [data-act=${act}]`).first().tap(); await t.waitPop(false); return r; };
+    await t.dock(act); await p.locator(`#bar [data-act=${act}]`).first().tap(); await t.waitPop(false); return r; };
   for (const act of ['feed', 'play']) {
     const r = await chips(act);
     ok(r.length >= (act === 'feed' ? 3 : 0) && r.every((x) => x.ins && x.w && x.h && x.fs >= 15), `${act} tray: ${r.length} cards with the chip, each whole on the card corner, 15 px, nothing but the count chip wider than the card ${JSON.stringify(r.filter((x) => !(x.ins && x.w && x.h && x.fs >= 15)))}`);

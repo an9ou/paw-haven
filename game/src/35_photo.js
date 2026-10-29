@@ -12,7 +12,7 @@ const PH = { on: false, cap: null, names: null, vb: null, tok: 0, svg: '', size:
 
 const phCaps = () => PH_CAPS.map((t, i) => ({ id: 'c' + i, t: tdata('ph_caps.' + i, t) })).concat([{ id: 'season', t: (() => { const k = PH_SEASON_CAP[seasonNow()] ? seasonNow() : 'summer'; return tdata('ph_season_cap.' + k, PH_SEASON_CAP[k]); })() }]);
 function phCapNow() { const l = phCaps(); return l.find((c) => c.id === prefs.phCap) || l[0]; }
-const phFrames = () => ((window.PawArt && PawArt.POSTCARD_COLORS) || []).concat(typeof tkFrameList === 'function' ? tkFrameList() : [], typeof fwFrameList === 'function' ? fwFrameList() : []); // v2.16: the calendar frames (47_firstweek.js) // v2.11: the Tokyo stamp frame once all seven stamps are in (39_tokyo.js)
+const phFrames = () => ((window.PawArt && PawArt.POSTCARD_COLORS) || []).concat(typeof tkFrameList === 'function' ? tkFrameList() : [], typeof fwFrameList === 'function' ? fwFrameList() : [], typeof ddFrameList === 'function' ? ddFrameList() : []); // v2.17: the Bond track and sticker page frames (48_dogdays.js) // v2.16: the calendar frames (47_firstweek.js) // v2.11: the Tokyo stamp frame once all seven stamps are in (39_tokyo.js)
 function phColorNow() { const l = phFrames(); return l.find((c) => c.k === prefs.phFrame) || l[0] || { k: 'rose', n: 'Rose', c: '#F7B2C4' }; }
 // the frame colour names come from world B (PawArt.POSTCARD_COLORS) and the Tokyo frame: shown through static keys, the table keys stay as they are
 function phFrameName(c) {
@@ -159,7 +159,7 @@ function phNamesIn(c, vb) {
 function phCompose(c, o) {
   const PA = window.PawArt, L = phLayout(c, o.sq), win = PA.postcardWindow(L.size.w, L.size.h), vb = L.vb.map((n) => +n.toFixed(2)), names = phNamesIn(c, vb);
   const scene = `<svg x="${win.x.toFixed(2)}" y="${win.y.toFixed(2)}" width="${win.w.toFixed(2)}" height="${win.h.toFixed(2)}" viewBox="${vb.join(' ')}" preserveAspectRatio="xMidYMid slice" overflow="hidden"><rect x="${vb[0]}" y="${vb[1]}" width="${vb[2]}" height="${vb[3]}" fill="#FFFBF3"/>${vb[1] < c.vb[1] ? `<rect x="${vb[0]}" y="${vb[1]}" width="${vb[2]}" height="${f1(c.vb[1] - vb[1] + 2)}" fill="${c.sky}"/>` : ''}${c.inner}${phWash(c, vb)}</svg>`;
-  let svg = (o.color === 'tokyo' && typeof tkPostcard === 'function' ? tkPostcard : /^fw/.test(o.color || '') && typeof fwPostcard === 'function' ? fwPostcard : PA.postcard)(L.size.w, L.size.h, { color: o.color, stamp: c.year, scene, caption: o.caption, place: c.place, date: c.date, dogs: phNames(names) });
+  let svg = (o.color === 'tokyo' && typeof tkPostcard === 'function' ? tkPostcard : /^fw/.test(o.color || '') && typeof fwPostcard === 'function' ? fwPostcard : /^dd/.test(o.color || '') && typeof ddPostcard === 'function' ? ddPostcard : PA.postcard)(L.size.w, L.size.h, { color: o.color, stamp: c.year, scene, caption: o.caption, place: c.place, date: c.date, dogs: phNames(names) });
   svg = svg.replace(/^(<svg[^>]*>)/, `$1<style>${PH_FONT_CSS}${phLangFontCSS()}*{animation:none!important;transition:none!important}</style>`);
   return { svg, size: L.size, names, vb };
 }
@@ -225,7 +225,7 @@ function phPanel() {
     <div class="ph-sec"><span class="ph-lbl">${esc(tt('photo.frame', 'Frame'))}</span><div class="ph-row ph-frames" role="group" aria-label="${esc(tt('photo.frame_colour', 'Frame colour'))}">${cols.map((c) => `<button type="button" class="ph-swatch" data-frame="${c.k}" aria-label="${esc(tt('photo.frame_named', '{name} frame', { name: phFrameName(c) }))}" title="${esc(phFrameName(c))}" aria-pressed="${c.k === col.k}" style="--sw:${c.c}"></button>`).join('')}</div></div>
     <div class="ph-sec"><span class="ph-lbl">${esc(tt('photo.caption', 'Caption'))}</span><div class="ph-row ph-caps" role="group" aria-label="${esc(tt('photo.caption', 'Caption'))}">${caps.map((c) => `<button type="button" class="btn ph-cap" data-cap="${c.id}" aria-pressed="${c.id === cap.id}">${esc(c.t)}</button>`).join('')}</div></div>
     <div class="ph-sec"><span class="ph-lbl">${esc(tt('photo.shape', 'Shape'))}</span><div class="ph-row ph-shapes" role="group" aria-label="${esc(tt('photo.picture_shape', 'Picture shape'))}"><button type="button" class="btn ph-shape" data-sq="0" aria-pressed="${!prefs.phSq}">${esc(tt('photo.postcard', 'Postcard'))}</button><button type="button" class="btn ph-shape" data-sq="1" aria-pressed="${!!prefs.phSq}" aria-label="${esc(tt('photo.square_picture', 'Square picture'))}">${esc(tt('photo.square', 'Square'))}</button></div></div>
-    <div class="ph-acts"><button type="button" class="btn yes" id="phSave">${esc(tt('photo.save', 'Save photo'))}</button><button type="button" class="btn" id="phAgain">${esc(tt('photo.retake', 'Retake'))}</button><button type="button" class="btn" id="phClose">${esc(tt('photo.close', 'Close'))}</button></div>
+    <div class="ph-acts"><button type="button" class="btn yes" id="phSave">${esc(tt('photo.save', 'Save photo'))}</button><button type="button" class="btn" id="phAgain">${esc(tt('photo.retake', 'Retake'))}</button><button type="button" class="btn" id="phClose">${esc(tt('photo.close', 'Close'))}</button>${typeof ffPhotoBtn === 'function' ? ffPhotoBtn() : ''}</div>
   </div>`;
 }
 function phOpen() {
@@ -241,6 +241,7 @@ function phOpen() {
   $('#phSave', root).onclick = () => phSave();
   $('#phAgain', root).onclick = () => { SFX.click(); const c = phCapture(); if (c) { PH.cap = c; phDraw(); } };
   $('#phClose', root).onclick = () => { SFX.click(); phClose(); };
+  if (typeof ffPhotoBind === 'function') ffPhotoBind(root, () => (PH.cap ? { who: PH.cap.who, vb: phLayout(PH.cap, !!prefs.phSq).vb } : null)); // v2.18: the weekly photo contest (49_funfair.js)
   PH.keyFn = (e) => { if (e.key !== 'Escape' || !PH.on) return; e.preventDefault(); e.stopPropagation(); if (PH.hold) phHoldClose(); else phClose(); };
   window.addEventListener('keydown', PH.keyFn, true);
   PH.obs = [new MutationObserver(() => { if (!modal.hidden) phClose(); })]; PH.obs[0].observe(modal, { attributes: true, attributeFilter: ['hidden'] }); // a pop-up (a level-up, a letter) ends the photo

@@ -160,11 +160,12 @@ function fwPartyPending() {
    same .act[data-act] buttons as on desktop, inside #bar, so doAct, the guide rings and the shortcuts keep working. Desktop keeps the 7 buttons. */
 const FW_POPS = { caremenu: ['feed', 'play', 'care'], more: ['wardrobe', 'journal'] };
 function fwMoreIcon() { return `<svg viewBox="-20 -20 40 40" aria-hidden="true">${[-11, 0, 11].map((x, i) => `<path d="M${x - 3.6} ${i % 2 ? 0.6 : -0.4} q0 -4 3.8 -4 q4 0 3.8 4 q0 4 -3.9 3.9 q-3.7 0 -3.7 -3.9z" fill="${['#F28FA5', '#F2C744', '#8EC0EA'][i]}" stroke="${INKG}" stroke-width="2" stroke-linejoin="round"/>`).join('')}</svg>`; }
-function fwActLabel(a) { return a === 'caremenu' ? tdata('acts.care.1', 'Care') : a === 'more' ? tt('fw.more', 'More') : a === 'care' ? tt('fw.bath_nap', 'Bath & nap') : tdata('acts.' + a + '.1', (ACTS.find((x) => x[0] === a) || [a, a])[1]); }
-function fwActIcon(a) { const r = ACTS.find((x) => x[0] === a); return a === 'more' ? fwMoreIcon() : a === 'caremenu' ? ICON('bath') : a === 'journal' ? iconOr('journal', doodle('paw', 0, 2, 1.1)) : ICON(r ? r[2] : a); }
+const fwPopList = (k) => FW_POPS[k].concat(k === 'more' && typeof ddOn === 'function' && ddOn() ? ['stickers'] : []); // v2.17: the sticker book in the More tray (48_dogdays.js)
+function fwActLabel(a) { return a === 'stickers' ? tt('dd.st_title', 'Sticker book') : a === 'caremenu' ? tdata('acts.care.1', 'Care') : a === 'more' ? tt('fw.more', 'More') : a === 'care' ? tt('fw.bath_nap', 'Bath & nap') : tdata('acts.' + a + '.1', (ACTS.find((x) => x[0] === a) || [a, a])[1]); }
+function fwActIcon(a) { const r = ACTS.find((x) => x[0] === a); return a === 'stickers' && typeof ddBookIcon === 'function' ? ddBookIcon() : a === 'more' ? fwMoreIcon() : a === 'caremenu' ? ICON('bath') : a === 'journal' ? iconOr('journal', doodle('paw', 0, 2, 1.1)) : ICON(r ? r[2] : a); }
 function fwActBtn(a, extra) { return `<button class="act" type="button" data-act="${a}"${extra || ''}><span class="ic">${fwActIcon(a)}</span><span>${esc(fwActLabel(a))}</span></button>`; }
 function fwPhoneBar() {
-  const pop = (k) => `<div class="barpop" data-pop="${k}" role="group" aria-label="${esc(fwActLabel(k))}" hidden>${FW_POPS[k].map((a) => fwActBtn(a)).join('')}</div>`;
+  const pop = (k) => `<div class="barpop" data-pop="${k}" role="group" aria-label="${esc(fwActLabel(k))}" hidden>${fwPopList(k).map((a) => fwActBtn(a)).join('')}</div>`;
   return fwActBtn('caremenu', ' aria-haspopup="true" aria-expanded="false"') + fwActBtn('walk') + fwActBtn('map') + fwActBtn('more', ' aria-haspopup="true" aria-expanded="false"') + pop('caremenu') + pop('more');
 }
 const fwPopOf = (a) => Object.keys(FW_POPS).find((k) => FW_POPS[k].includes(a)) || null;
@@ -178,7 +179,7 @@ const fwBarOpen = () => { const p = bar.querySelector('.barpop:not([hidden])'); 
 function fwDockApply() {
   if (!bar) return; const nw = (a) => !!(S && S.fw && S.fw.dockNew && S.fw.dockNew[a] && isPhone());
   bar.querySelectorAll('.act').forEach((b) => {
-    const a = b.dataset.act, isNew = a === 'more' ? FW_POPS.more.some(nw) : FW_POPS.more.includes(a) && nw(a), t = b.querySelector('.fw-newtag');
+    const a = b.dataset.act, isNew = a === 'more' ? fwPopList('more').some(nw) : fwPopList('more').includes(a) && nw(a), t = b.querySelector('.fw-newtag');
     b.classList.toggle('fw-new', isNew);
     if (isNew && !t) b.insertAdjacentHTML('beforeend', `<span class="fw-newtag" aria-hidden="true">${esc(tt('fw.new_tag', 'new!'))}</span>`); else if (!isNew && t) t.remove();
   });
@@ -189,7 +190,42 @@ window.addEventListener('pointerdown', (e) => { if (fwBarOpen() && !(e.target.cl
 on('phone:layout', () => { if (S || bar.childElementCount) barLabels(); });
 /* ---------------- 4. the calendars ---------------- */
 const FW_BAG = [['Bone-shaped Biscuit', 3], ['Carrot Sticks', 2], ['Blueberry Bites', 2]]; // the treat bag: dog-safe snacks only
-const FW_WEL_DAYS = [1, 3, 5, 7], FW_CAL_DAYS = [3, 7, 12, 18, 24], FW_CAL_COIN_CAP = 80;
+const FW_WEL_DAYS = [1, 3, 5, 7], FW_CAL_DAYS = [3, 7, 12, 18, 24], FW_CAL_COIN_CAP = 80, FW_DG_COIN_CAP = 160; // v2.17: the daily gifts keep their own count (S.fw.cal.dgc, at most 16 coin days x 10): the month's cap grows only by what they add
+/* v2.17 the daily gift: a small gift for every day played this month, one tap, the same for everyone on the same date (seeded by the date).
+   An 8-day cycle (4 x 10 coins, 2 foods, a treat, a seed packet: about 5 coins a day), turned by the month; a few festival dates bring a festival treat
+   (all Bond 1-2 foods). Claimed days: S.fw.cal.dg (reset with the month). Only today's gift can be claimed: a missed day takes nothing away, and an
+   old save starts this month with no back-pay. */
+const FW_DG_CYCLE = ['coins', 'food', 'coins', 'treat', 'coins', 'seeds', 'coins', 'kibble'];
+const FW_DG_TREATS = ['Bone-shaped Biscuit', 'Carrot Sticks', 'Blueberry Bites', 'Apple Slices'];
+const FW_DG_FEST = { '10-31': ['Apple Monster Biscuits', 2], '12-24': ['Snowflake Oat Cookies', 2], '12-25': ['Snowflake Oat Cookies', 2], '01-01': ['Pupcake', 1] };
+function fwDaily(ym, d) {
+  const md = ym.slice(5, 7) + '-' + String(d).padStart(2, '0'), f = FW_DG_FEST[md];
+  if (f && FOOD.some((x) => x.n === f[0])) return { t: 'food', n: f[0], q: f[1], fest: true };
+  const k = FW_DG_CYCLE[(d - 1 + (hashId('dg' + ym) % 8)) % 8];
+  if (k === 'coins') return { t: 'coins', c: 10, daily: true };
+  if (k === 'food') return { t: 'food', n: 'Chicken & Rice Bowl', q: 1 };
+  if (k === 'kibble') return { t: 'food', n: 'Basic Kibble', q: 3 };
+  if (k === 'treat') return { t: 'food', n: FW_DG_TREATS[hashId(ym + '|' + d) % FW_DG_TREATS.length], q: 2 };
+  return { t: 'seeds', id: 'carrot', q: 2 };
+}
+const fwDgSeedName = () => { const c = typeof cropInfo === 'function' ? cropInfo('carrot') : null; return c ? tdata('crops.' + tid(c.id) + '.seeditem', c.seedItem || 'Carrot Seeds') : 'Carrot Seeds'; };
+function fwDgLabel(r) { return r.t === 'coins' ? tt('fw.rew_coins', '{n, plural, one {# coin} other {# coins}}', { n: r.c }) : r.t === 'seeds' ? tt('fw.rew_food', '{item} x{q}', { item: fwDgSeedName(), q: r.q }) : tt('fw.rew_food', '{item} x{q}', { item: tItem(r.n), q: r.q }); }
+function fwDgArt(r) { return r.t === 'coins' ? ICON('coin') : r.t === 'seeds' ? art('item', 'Carrot Seeds') : art('item', r.n); }
+const fwDgToday = () => { const t = localISO(); return { ym: fwYM(t), d: +t.slice(8, 10) }; };
+const fwDgCan = () => { if (!S || !S.fw || !S.fw.cal) return false; const { ym, d } = fwDgToday(), c = S.fw.cal; return c.ym === ym && c.days.includes(d) && !c.dg.includes(d); };
+function fwDgClaim() {
+  if (!fwDgCan()) return false; const { ym, d } = fwDgToday(), c = S.fw.cal, r = fwDaily(ym, d); c.dg.push(d);
+  if (r.t === 'coins') { const n = Math.max(0, Math.min(r.c, FW_DG_COIN_CAP - (c.dgc || 0))); if (n) { c.dgc = (c.dgc || 0) + n; addCoins(n, { raw: true }); } }
+  else if (r.t === 'seeds') { S.inv.seeds = S.inv.seeds || {}; S.inv.seeds[r.id] = (S.inv.seeds[r.id] || 0) + r.q; }
+  else S.inv.food[r.n] = (S.inv.food[r.n] || 0) + r.q;
+  markDirty(); updateHUD(); saveNow(); SFX.kaching();
+  toast(tt('fw.dg_got', "Today's gift: {what}.", { what: fwDgLabel(r) }) + (r.fest ? ' ' + tt('fw.dg_fest', 'A festival treat!') : ''), 'gold');
+  return true;
+}
+function fwDgHTML() {
+  const { ym, d } = fwDgToday(), r = fwDaily(ym, d), got = S.fw.cal.ym === ym && S.fw.cal.dg.includes(d);
+  return `<div class="fw-dg${got ? ' got' : ''}${r.fest ? ' fest' : ''}"><span class="fw-dgart">${fwDgArt(r)}</span><span class="fw-dgt"><b>${esc(tt('fw.dg_title', "Today's gift"))}</b><span>${esc(fwDgLabel(r))}${r.fest ? ' · ' + esc(tt('fw.dg_fest', 'A festival treat!')) : ''}</span></span>${got ? `<span class="fw-got">${esc(tt('fw.dg_claimed', 'Claimed. A new gift comes tomorrow.'))}</span>` : `<button class="btn yes fw-claim" type="button" id="fwDgClaim">${esc(tt('fw.claim', 'Claim'))}</button>`}</div>`;
+}
 const FW_WEL_TOYS = ['Squeaky Duck', 'Rope Tug', 'Plush Bone', 'Snuffle Mat'];
 const FW_WEL_WEAR = ['Chef Hat', 'Rain Hat', 'Tutu', 'Sailor Collar', 'Red Bandana']; // calendar gifts stay at Bond 2 or below, so the Bond unlocks keep their meaning
 const FW_SEASON_TOYS = { spring: ['Squeaky Duck', 'Snuffle Mat', 'Plush Bone'], summer: ['Rope Tug', 'Treat Cone', 'Squeaky Duck'], autumn: ['Snuffle Mat', 'Rope Tug', 'Treat Cone'], winter: ['Plush Bone', 'Treat Cone', 'Rope Tug'] }; // Bond 1-2 toys only
@@ -272,7 +308,7 @@ function fwStamp() {
     const old = f.cal, owed = old.ym ? FW_CAL_DAYS.filter((n) => old.days.length >= n && !old.got.includes(n)) : [];
     owed.forEach((n) => { old.got.push(n); fwGive(fwReward('cal', n, old.ym), old); });
     if (owed.length) setTimeout(() => toast(tt('fw.last_month', "Last month's calendar gifts are in your bag."), 'gold'), 2400);
-    f.cal = { ym, days: [], got: [], coins: 0 };
+    f.cal = { ym, days: [], got: [], coins: 0, dg: [], dgc: 0 };
   }
   if (!f.cal.days.includes(d)) { f.cal.days.push(d); fresh = true; }
   if (f.wel && f.wel.days.length < 7 && !f.wel.days.includes(today)) { f.wel.days.push(today); fresh = true; }
@@ -280,7 +316,7 @@ function fwStamp() {
   return fresh;
 }
 const fwWelOpen = () => !!(S && S.fw && S.fw.wel && S.fw.wel.got.length < FW_WEL_DAYS.length);
-const fwClaimable = () => !!(S && S.fw && ((S.fw.wel && FW_WEL_DAYS.some((n) => S.fw.wel.days.length >= n && !S.fw.wel.got.includes(n))) || FW_CAL_DAYS.some((n) => S.fw.cal.days.length >= n && !S.fw.cal.got.includes(n))));
+const fwClaimable = () => !!(S && S.fw && (fwDgCan() || (S.fw.wel && FW_WEL_DAYS.some((n) => S.fw.wel.days.length >= n && !S.fw.wel.got.includes(n))) || FW_CAL_DAYS.some((n) => S.fw.cal.days.length >= n && !S.fw.cal.got.includes(n))));
 
 /* small crayon icons (the doodle() hand: a flat fill drifting off a two-stroke pencil outline) */
 function fwTwo(d, fill, w = 2) { return `<path d="${d}" fill="${fill}" stroke="none" transform="translate(1.5 1.2)"/><path d="${d}" fill="none" stroke="${INKG}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="${INKG}" stroke-width=".8" opacity=".45" transform="translate(-.8 .6)"/>`; }
@@ -311,12 +347,13 @@ function fwCalHTML(morning) {
       <ol class="fw-wdays" aria-label="${esc(tt('fw.wel_count', '{n} of 7 days', { n: w.days.length }))}">${cells}</ol><ul class="fw-rews">${FW_WEL_DAYS.map((n) => row('wel', n, w.days.length, w.got)).join('')}</ul></section>`;
   }
   const dn = fwDaysIn(ym), tdy = fwYM(today) === ym ? +today.slice(8, 10) : 0, have = f.cal.days.length;
-  const grid = Array.from({ length: dn }, (_, i) => { const d = i + 1, on = f.cal.days.includes(d); return `<li class="fw-md${on ? ' on' : ''}${d === tdy ? ' today' : ''}">${on ? fwPawSVG(d === tdy ? '#F28FA5' : '#C8E9CF') : `<b>${d}</b>`}</li>`; }).join('');
+  const grid = Array.from({ length: dn }, (_, i) => { const d = i + 1, on = f.cal.days.includes(d), g = fwDaily(ym, d), cl = f.cal.dg.includes(d); return `<li class="fw-md${on ? ' on' : ''}${d === tdy ? ' today' : ''}${g.fest ? ' fest' : ''}${cl ? ' dgot' : ''}" aria-label="${esc(tt('fw.dg_cell', 'Day {n}: {gift}', { n: d, gift: fwDgLabel(g) }))}">${on ? fwPawSVG(d === tdy ? '#F28FA5' : '#C8E9CF') : `<b>${d}</b>`}<i class="fw-dgi" aria-hidden="true">${fwDgArt(g)}</i></li>`; }).join(''); // v2.17: each day's gift as a tiny icon
+  const special = `<ol class="fw-spec" aria-label="${esc(tt('fw.dg_special', 'Special days'))}">${FW_CAL_DAYS.map((n) => `<li class="${have >= n ? 'on' : ''}${f.cal.got.includes(n) ? ' got' : ''}"><b>${tnum(n)}</b></li>`).join('')}</ol>`; // v2.17: the 3/7/12/18/24-day gifts as bigger special circles
   const border = `<svg class="fw-border" viewBox="0 0 300 40" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${[24, 84, 150, 216, 276].map((x, i) => fwDoodle(i === 2 ? 'paw' : M.d, x, 20, i === 2 ? 0.8 : 1, i % 2 ? 12 : -10)).join('')}</svg>`;
   const mon = `<section class="fw-page fw-monp" style="--fwc:${M.c}" aria-label="${esc(fwMonthName(ym))}">${border}<h3>${esc(fwMonthName(ym))}</h3><p class="fw-theme">${esc(fwTheme(fwMonthOf(ym)))}</p>
     <ol class="fw-mgrid" aria-label="${esc(tt('fw.mon_count', '{n, plural, one {# day played this month} other {# days played this month}}', { n: have }))}">${grid}</ol>
-    <ul class="fw-rews">${FW_CAL_DAYS.map((n) => row('cal', n, have, f.cal.got, ym)).join('')}</ul>
-    <p class="small fw-cap">${esc(tt('fw.mon_sub', 'Any day you play stamps a paw. Coins from the calendar this month: {c} of {max}.', { c: f.cal.coins, max: FW_CAL_COIN_CAP }))}</p></section>`;
+    ${special}<ul class="fw-rews">${FW_CAL_DAYS.map((n) => row('cal', n, have, f.cal.got, ym)).join('')}</ul>
+    <p class="small fw-cap">${esc(tt('fw.mon_sub', 'Any day you play stamps a paw. Coins from the calendar this month: {c} of {max}.', { c: f.cal.coins + (f.cal.dgc || 0), max: FW_CAL_COIN_CAP + FW_DG_COIN_CAP }))}</p></section>`;
   let note = '';
   const wi = f.wish;
   if (wi && !wi.done && wi.for <= today) {
@@ -324,10 +361,11 @@ function fwCalHTML(morning) {
     note = `<div class="fw-wish"><span class="fw-whead">${headSVG(dog)}</span><div class="fw-wsay"><p><b>${esc(tt('fw.wish_remember', '{name} remembered yesterday:', { name: dog.name }))}</b> ${esc(fwWishLine(wi.k, true))}</p><p class="small">${esc(tt('fw.wish_hint', 'Make it come true today for a happy bonus.'))}</p></div></div>`;
   }
   const hello = morning ? `<p class="fw-hello">${esc(tt('fw.morning', 'A new paw for today! Thanks for coming back.'))}</p>` : '';
-  return `<div class="fw-cal">${hello}${note}<div class="fw-pages">${wel}${mon}</div></div>`;
+  return `<div class="fw-cal">${hello}${fwDgHTML()}${note}<div class="fw-pages">${wel}${mon}</div></div>`; // v2.17: the sheet leads with today's gift
 }
 function fwCalBind(root, redraw) {
   root.querySelectorAll('[data-fwclaim]').forEach((b) => { b.onclick = (e) => { e.stopPropagation(); const [pg, n] = b.dataset.fwclaim.split(':'); if (fwClaim(pg, +n)) redraw(); }; });
+  const dg = root.querySelector('#fwDgClaim'); if (dg) dg.onclick = (e) => { e.stopPropagation(); if (fwDgClaim()) redraw(); };
 }
 function fwCalOpen(morning) {
   if (!S || !fwOn()) return;
@@ -393,6 +431,7 @@ function fwWishName(loud) {
 on('act', (d) => {
   if (!S || !S.fw || !fwOn() || !d) return; const w = S.fw.wish;
   if (!w || w.done || w.for > localISO() || FW_WISH[w.k] !== d.kind) return;
+  if (typeof ddFwTook === 'function' && ddFwTook(w)) return; // v2.17: today it is the dog's daily wish (48_dogdays.js), which gives this Happiness too
   const dog = dogById(w.id) || D(); w.done = true; markDirty();
   const b = withDog(dog, () => { addStat('happy', 10); return addBond(2); });
   setTimeout(() => toast(tt('fw.wish_done', 'Wish come true! {name} is so happy: +10 Happiness, +{b} Bond.', { name: dog.name, b }), 'gold'), 900);
@@ -416,7 +455,7 @@ function fwExpose() {
   if (!window.__paw || window.__paw.fw) return;
   window.__paw.fw = {
     items: () => { const o = {}; TOYS.concat(CLOTHES).forEach((x) => { o[x.n] = x.bond; }); FOOD.forEach((x) => { o[x.n] = 1; }); return o; }, on: () => fwOn(), pawAt: () => FW.pawAt || 0, state: () => S && S.fw, steps: FW_STEPS.length, stepText: (i) => fwStepText(i), stamp: () => fwStamp(), claim: (pg, n) => fwClaim(pg, n),
-    reward: (pg, n, ym) => fwReward(pg, n, ym), open: (m) => fwCalOpen(!!m), html: (m) => fwCalHTML(!!m), next: (L) => fwNextText(L), dock: () => fwDockApply(),
+    reward: (pg, n, ym) => fwReward(pg, n, ym), daily: (ym, d) => fwDaily(ym, d), dgClaim: () => fwDgClaim(), dgCan: () => fwDgCan(), capCoins: FW_CAL_COIN_CAP, dgCap: FW_DG_COIN_CAP, open: (m) => fwCalOpen(!!m), html: (m) => fwCalHTML(!!m), next: (L) => fwNextText(L), dock: () => fwDockApply(),
     wish: (loud) => fwWishName(!!loud), tag: () => fwTagOpen(), confetti: () => fwConfetti(), frames: () => fwFrameList(), postcard: (w, h, o) => fwPostcard(w, h, o),
     test: (v) => { prefs.fwTest = !!v; fwDockApply(); fwNextSync(); }, bond: (n) => addBond(n, { raw: true }),
     bondFix: (s) => { fwBondFix(s); return s; }, migrate: (s) => migrate(s), BOND_TH: BOND_TH.slice(), play: (n) => { if (typeof n === 'number') FW.play = n; return FW.play; }

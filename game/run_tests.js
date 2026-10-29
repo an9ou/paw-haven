@@ -108,7 +108,10 @@ const SUITES = {
   // v2.2 phone suites: `node game/run_tests.js phone` (not part of `all`, which stays the desktop regression set)
   phone_legacy: { file: 'test_phone.js', group: 'phone', est: 90 },
   phone_shell: { file: 'test_phone_shell.js', group: 'phone', est: 40 },
-  v216_first_week: { file: 'test_v216_first_week.js', group: 'all', est: 150 }, // v2.16 First Week (V216.md): Bond thresholds and migration, the first-day guide, the calendars, the wish, the phone dock
+  v216_first_week: { file: 'test_v216_first_week.js', group: 'all', est: 150 },
+  v2171_market: { file: 'test_v2171_market.js', group: 'all', est: 160, timeout: 900 }, // v2.17.1 Festive Market (V2171.md): the windows, the place and tent, the stall sheets, buying, kept after closing, no festive items in normal shops, phone
+  v217_dog_days: { file: 'test_v217_dog_days.js', group: 'all', est: 200 }, // v2.17 Dog Days (V217.md): the daily wish, the Bond track, the diary, the sticker book, the letters // v2.16 First Week (V216.md): Bond thresholds and migration, the first-day guide, the calendars, the wish, the phone dock
+  v218_fun_fair: { file: 'test_v218_fun_fair.js', group: 'all', est: 300, timeout: 1200 }, // v2.18 Fun Fair (V218.md): the eight games, the caps, the stall, the photo contest, the stickers, the phone layout
   cloud: { file: 'test_cloud.js', group: 'phone', est: 60 },
   worker: { file: 'test_worker.js', group: 'phone', est: 5 }, // v2.8.1: the Cloudflare Worker (node + Miniflare, local D1)
   site: { file: 'test_site.js', group: 'phone', est: 300, timeout: 900 }, // v2.8.2: the doodledoggo.app introduction site and its reset page (Miniflare, desktop + iPhone 15)

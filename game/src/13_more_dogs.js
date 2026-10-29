@@ -65,6 +65,12 @@ function dogLook(d) {
 function lookOpts(d, c) { const L = dogLook(d), o = {}; if (c) { o.coat = L ? Object.assign({}, c.coat, { look: L }) : c.coat; o.seed = hashId(d.id); } if (L) { if (L.age) o.age = L.age; if (L.mixHead) o.mix = { head: L.mixHead }; if (L.sparkle) o.sparkle = true; if (L.expecting) o.expecting = true; } return o; }
 function dogOpts(d, o) { return Object.assign({}, o || {}, lookOpts(d, coatInfo(d))); }
 const outfitOf = (d) => ({ head: d.outfit.head, eyes: d.outfit.eyes, neck: d.outfit.neck, body: typeof plWearing === 'function' && plWearing(d) ? PL_VEST : d.outfit.body }); // v2.15: the pool's life vest is draw-only (45_pool.js)
+// Rainy days (wet dogs): a dog drawn in a rainy outdoor scene (where the rain overlay falls, or on a rainy walk) is drawn wet (PawArt.dog wet option,
+// dogs/pawart_dogs.js), unless it wears a raincoat. Only the scene renders take it (the leader, the pack, Dog Card and playdate visitors, the walk);
+// cards, menus and photos stay dry. Indoors (the house, the café, the vet, the salon) and every scene without the rain overlay stay dry.
+function wetScene() { return !!S && (cur.mode === 'walk' ? !!(W && W.wx === 'rain') : weatherNow() === 'rain' && outdoorView()); }
+function wetDog(d) { return wetScene() && !RAINCOATS.includes(d && d.outfit ? d.outfit.body : null); }
+function wetOpt(d, o) { if (wetDog(d)) o.wet = true; return o; }
 const ROACH = { greyhound: true }; // v1.7: greyhounds sleep upside down ("roaching")
 function dogSVG(d, o) { if (o && o.pose === 'sleep' && ROACH[d.key] && poseReal(d.key, 'rollover')) o = Object.assign({}, o, { pose: 'rollover', roach: true }); return dogArtSafe(d.key, dogOpts(d, o)); }
 function headSVG(d) { const o = lookOpts(d, coatInfo(d)); return Object.keys(o).length ? art('dogHead', d.key, o) : art('dogHead', d.key); }
