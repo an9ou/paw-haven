@@ -113,7 +113,7 @@ const SP={
   legs:{h:-27,f:22,w:9},ears:'flop2',tail:'wiggle',eyes:[5.4,7.6],face:{eyes:'open',mouth:'tongue',e0:[-.18,-.08],e1:[.36,-.16],nose:[.12,.22],look:[[-.35,.2],[.3,-.15]],tside:1},marks:null},
  dachs:{name:'Noodle',breed:'Dachshund',personality:'Curious, loves digging',joke:'still loading... (I am long)',
   col:'#A65A34',hcol:'#A65A34',light:'#F5B26B',ear:'#6E3315',body:{x:110,y:154,rx:78,ry:17,lop:.02,long:1},head:{x:191,y:128,rx:24,ry:22},
-  legs:{h:-56,f:50,w:8,sock:'#F5B26B'},ears:'dflop',tail:'thin',eyes:[6.3,4.6],face:{eyes:'open',mouth:'smile',e0:[-.15,-.2],e1:[.4,-.3],nose:[1.48,.14],snout:1,brow:'curious',tilt:-8},
+  legs:{h:-56,f:50,w:8,sock:'#F5B26B'},ears:'dflop',earSwing:62,tail:'thin',eyes:[6.3,4.6],face:{eyes:'open',mouth:'smile',e0:[-.15,-.2],e1:[.4,-.3],nose:[1.48,.14],snout:1,brow:'curious',tilt:-8},
   marks:(h,B,Hd,s)=>{const b=s.body;h.shape([[b.rx*.55,b.ry*.35],[b.rx*1.0,b.ry*.05],[b.rx*.9,b.ry*.95],[b.rx*.5,b.ry*.9]].map(B),s.light,{noline:1});
    const hx=s.head.rx,hy=s.head.ry;[[-.18,-.62],[.36,-.72]].forEach(e=>h.dot(...Hd([hx*e[0],hy*e[1]]),3.2,2.2,s.light))}},
  husky:{name:'Frost',breed:'Husky',personality:'Energetic, chatty (howls)',joke:'AWOOOOOO!!',
@@ -486,18 +486,20 @@ const NEWK=/^(poodle|collie|samoyed|frenchie|akita|spitz|pom|afghan|dane|mastiff
    Adults only (spec field nfix; puppies and newborns keep their big heads on the body as they were). Every other pose of these breeds is unchanged.
    game/v212_neck_check.js finds the list: a frame floats when the skull does not touch the body and most of the neck's place is empty paper. */
 const NECKFIX={
-  shiba:{happy:[0,0],speak:[0,0],howl:[0,0],leglift:[0,0],shake:[0,0]},
-  husky:{speak:[0,0]},
-  mutt:{speak:[0,0],leglift:[0,0]},
-  chihuahua:{happy:[0,0],speak:[0,0],howl:[-3,7],leglift:[0,0],yawn:[0,0],shake:[0,0],paw:[0,0]},
-  pug:{howl:[0,0]},
-  beagle:{happy:[0,0],speak:[0,0],howl:[0,0]},
+  shiba:{idle:[0,0],walk:[0,0],paw:[0,0],pet:[0,0],dirty:[0,0],scratch:[0,0],happy:[0,0],speak:[0,0],howl:[0,0],leglift:[0,0],shake:[0,0]},
+  husky:{walk:[0,0],dirty:[0,0],idle:[0,0],speak:[0,0],happy:[0,0],leglift:[0,0],howl:[0,0]},
+  mutt:{happy:[0,0],dirty:[0,0],idle:[0,0],speak:[0,0],leglift:[0,0],walk:[0,0]},
+  chihuahua:{pet:[0,0],beg:[0,0],squat:[0,0],dance:[0,0],idle:[0,0],walk:[0,0],dirty:[0,0],scratch:[0,0],happy:[0,0],speak:[0,0],howl:[-3,7],leglift:[0,0],yawn:[0,0],shake:[0,0],paw:[0,0]},
+  pug:{howl:[0,0],speak:[0,0],happy:[0,0],shake:[0,0]},
+  dachs:{shake:[0,0]},
+  beagle:{shake:[0,0],happy:[0,0],speak:[0,0],howl:[0,0]},
   collie:{howl:[-2,3]},
-  maltese:{happy:[0,0],speak:[0,0],shake:[0,0]}};
+  westie:{howl:[0,0]},
+  maltese:{scratch:[0,0],dance:[0,0],happy:[0,0],speak:[0,0],shake:[0,0]}};
 Object.keys(NECKFIX).forEach(k=>{SP[k].nfix=NECKFIX[k]});
 
 /* ---------- pose -> rig layout ---------- */
-function layout(s,pose,k){
+function layout(s,pose,k,aOv){
   const b=s.body,hd=s.head,L={pose,k,face:{...s.face},ears:'norm',tailA:0,tailS:1,blush:0,hearts:0,zz:0,stink:0,mud:0,tear:0};
   L.bT={x:b.x,y:b.y,a:0};L.hT={x:hd.x,y:hd.y,a:0};
   const rel=[hd.x-b.x,hd.y-b.y];
@@ -512,7 +514,7 @@ function layout(s,pose,k){
      L.bT.y=GY-b.ry*(s.fluff?1.02:.86);L.tailS=.75;L.bT.x=b.x-(b.long?4:8);L.hT.x=L.bT.x+b.rx*.92+hd.rx*.3;L.hT.y=GY-hd.ry*.8;L.hT.a=6;break;
    case 'walk':swing=[1,0,-1][k];L.lift=k===1;L.bT.y+=[0,-3,0][k];L.hT.y+=[0,-4,1][k];L.tailA=[14,26,-4][k];L.face.eyes=s.face.eyes==='smug'?'smug':'open';L.face.mouth=s.face.mouth==='o'?'smile':s.face.mouth;break;
    case 'jump':legMode='splay';{const lift=s.fluff?26:b.long?36:34;L.bT.y-=lift;L.hT.y-=lift+10;L.bT.x+=b.long?8:0;L.hT.x+=b.long?6:5}L.bT.a=b.long?-9:-12;L.hT.a=-14;L.speed=1;L.ears='fly';L.tailA=30;L.face.eyes='open';L.face.mouth='open';break;
-   case 'sit':{legMode='sit';const a=b.long?-30:b.deep?-52:-34;if(b.deep)L.gfold=1;L.bT.a=a;if(b.long){L.bT.sx=.58;L.scrunch=1}const rear=[-b.rx*.72,b.ry*.62],rq=rot(rear,a);const R=[b.x-b.rx*(b.long?.2:.45),GY-3];L.bT.x=R[0]-rq[0];L.bT.y=R[1]-rq[1];
+   case 'sit':{legMode='sit';const a=aOv??(b.long?-30:b.deep?-52:-34);if(b.deep)L.gfold=1;L.bT.a=a;if(b.long){L.bT.sx=.58;L.scrunch=1}const rear=[-b.rx*.72,b.ry*.62],rq=rot(rear,a);const R=[b.x-b.rx*(b.long?.2:.45),GY-3];L.bT.x=R[0]-rq[0];L.bT.y=R[1]-rq[1];
      {const BT=T(L.bT);let my=-1e9;bodyPts(s).forEach(p=>{const q=BT(p);if(q[1]>my)my=q[1]});if(my>GY-1)L.bT.y-=my-(GY-1)}
      const hq=rot([rel[0]*(L.bT.sx||1),rel[1]],a*.55);L.hT.x=L.bT.x+hq[0]+4-(b.long?14:0);L.hT.y=L.bT.y+hq[1]-2-(b.long?8:0);L.tailA=-70;L.face.mouth=s.face.mouth==='o'?'smile':s.face.mouth;if(L.gfold)gfoldHead(s,L,rel,a);break}
    case 'beg':{legMode='beg';L.face.eyes='hope';L.face.mouth=s.face.mouth==='o'||s.face.mouth==='smirk'?'smile':s.face.mouth==='grin'?'grin':'smile';L.ears='perk';L.hope=1;const a=b.long?-48:b.deep?-66:-58;if(b.deep)L.gfold=1;L.bT.a=a;if(b.long){L.bT.sx=.58;L.scrunch=1}const rear=[-b.rx*.72,b.ry*.62],rq=rot(rear,a);const R=[b.x-b.rx*(b.long?.2:.45),GY-3];L.bT.x=R[0]-rq[0];L.bT.y=R[1]-rq[1];
@@ -522,11 +524,11 @@ function layout(s,pose,k){
    case 'dirty':L.mud=1;L.stink=1;break;
    case 'sniff':{legMode='sniff';L.face.eyes='down';L.face.mouth='smile';L.ears='perk';L.tailA=-8;L.tailS=1.05;L.bT.a=6;
      const N=noseLocal(s),q=rot(N,26);L.hT.a=26;L.hT.x=hd.x+6;L.hT.y=Math.min(176-q[1]+2,GY-3-hd.ry);L.sniffFx=1;break}
-   case 'yawn':case 'howl':{legMode='sit';const a=b.long?-30:-34;L.bT.a=a;if(b.long){L.bT.sx=.58;L.scrunch=1}const rear=[-b.rx*.72,b.ry*.62],rq=rot(rear,a);const R=[b.x-b.rx*(b.long?.2:.45),GY-3];L.bT.x=R[0]-rq[0];L.bT.y=R[1]-rq[1];
+   case 'yawn':case 'howl':{legMode='sit';const a=aOv??(b.long?-30:-34);L.bT.a=a;if(b.long){L.bT.sx=.58;L.scrunch=1}const rear=[-b.rx*.72,b.ry*.62],rq=rot(rear,a);const R=[b.x-b.rx*(b.long?.2:.45),GY-3];L.bT.x=R[0]-rq[0];L.bT.y=R[1]-rq[1];
      {const BT=T(L.bT);let my=-1e9;bodyPts(s).forEach(p=>{const q=BT(p);if(q[1]>my)my=q[1]});if(my>GY-1)L.bT.y-=my-(GY-1)}
      const hq=rot([rel[0]*(L.bT.sx||1),rel[1]],a*.55);L.hT.x=L.bT.x+hq[0]+4-(b.long?14:0);L.hT.y=L.bT.y+hq[1]-2-(b.long?8:0);L.tailA=-70;L.face.eyes='closed';
      if(pose==='yawn'){L.face.mouth='yawn';L.hT.a=-8+[0,-3,0][k];L.ears='norm';L.yawnFx=1}else{L.face.mouth='howl';L.hT.a=-50+[0,-3,2][k];L.hT.y-=8;L.hT.x-=4;L.ears='perk';L.howlFx=1}break}
-   case 'paw':case 'scratch':{legMode=pose;const a=b.long?-30:-34;L.bT.a=a;if(b.long){L.bT.sx=.58;L.scrunch=1}const rear=[-b.rx*.72,b.ry*.62],rq=rot(rear,a);const R=[b.x-b.rx*(b.long?.2:.45),GY-3];L.bT.x=R[0]-rq[0];L.bT.y=R[1]-rq[1];
+   case 'paw':case 'scratch':{legMode=pose;const a=aOv??(b.long?-30:-34);L.bT.a=a;if(b.long){L.bT.sx=.58;L.scrunch=1}const rear=[-b.rx*.72,b.ry*.62],rq=rot(rear,a);const R=[b.x-b.rx*(b.long?.2:.45),GY-3];L.bT.x=R[0]-rq[0];L.bT.y=R[1]-rq[1];
      {const BT=T(L.bT);let my=-1e9;bodyPts(s).forEach(p=>{const q=BT(p);if(q[1]>my)my=q[1]});if(my>GY-1)L.bT.y-=my-(GY-1)}
      const hq=rot([rel[0]*(L.bT.sx||1),rel[1]],a*.55);L.hT.x=L.bT.x+hq[0]+4-(b.long?14:0);L.hT.y=L.bT.y+hq[1]-2-(b.long?8:0);L.tailA=-70;
      if(pose==='paw'){L.face.eyes='open';L.face.mouth=s.face.mouth==='o'||s.face.mouth==='smirk'?'smile':s.face.mouth;L.ears='perk';L.hT.a=-6}
@@ -539,16 +541,16 @@ function layout(s,pose,k){
      L.bT.y=GY-b.ry*(s.fluff?1.0:.86);L.bT.x=b.x-(b.long?10:14);L.hT.a=s.face.snoutL?14:60;L.hT.x=L.bT.x+b.rx*.9+hd.rx*.45;L.hT.y=s.face.snoutL?GY-hd.ry*1.1:GY-hd.rx*.95;L.dead=1;break;
    case 'speak':L.face.eyes='open';L.face.mouth='bark';L.ears='perk';L.hT.a=-12+[0,-4,2][k];L.hT.y-=4+[0,2,0][k];L.tailA=26;L.woof=1;break;
    case 'dance':{legMode='dance';L.face.eyes='happy';L.face.mouth=s.face.mouth==='grin'?'grin':'tongue';L.ears='perk';const a=(b.long?-52:-64)+[0,6,-6][k];L.bT.a=a;if(b.long){L.bT.sx=.62;L.scrunch=1}
-     const rear=[-b.rx*.72,b.ry*.3],rq=rot([rear[0]*(L.bT.sx||1),rear[1]],a);const R=[b.x-b.rx*(b.long?.15:.35)+[0,4,-4][k],GY-24];L.bT.x=R[0]-rq[0];L.bT.y=R[1]-rq[1];
+     const rear=[-b.rx*.72,b.ry*.3],rq=rot([rear[0]*(L.bT.sx||1),rear[1]],a);const R=[b.x-b.rx*(b.long?.15:.35)+[0,4,-4][k],GY-(aOv??24)];L.bT.x=R[0]-rq[0];L.bT.y=R[1]-rq[1];
      const hq=rot([rel[0]*(L.bT.sx||1),rel[1]],a*.6);L.hT.x=L.bT.x+hq[0]-(b.long?16:4);L.hT.y=L.bT.y+hq[1]-4;L.hT.a=[0,-10,10][k];L.tailA=-40;L.danceFx=1;break}
-   case 'bow':legMode='bow';L.face.eyes='open';L.face.mouth=s.face.mouth==='grin'?'grin':'tongue';L.ears='perk';L.bT.a=16;L.bT.y+=2;L.tailA=34+[0,18,-10][k];L.hT.y=GY-hd.ry*1.05-6;L.hT.x+=6;L.hT.a=-10;L.wiggle=0;L.wagFx=1;break;
+   case 'bow':legMode='bow';L.face.eyes='open';L.face.mouth=s.face.mouth==='grin'?'grin':'tongue';L.ears='perk';L.bT.a=b.long?9:16;L.bT.y+=2;L.tailA=34+[0,18,-10][k];L.hT.y=GY-hd.ry*1.05-6;L.hT.x+=6;L.hT.a=-10;L.wiggle=0;L.wagFx=1;break;
    case 'squat':legMode='squat';L.face.eyes='strain';L.face.mouth='tight';L.ears='norm';L.tailA=38;L.bT.a=-14;L.bT.y+=b.long?3:6;L.bT.x+=2;L.hT.y+=2;L.hT.a=-4;L.sweat=1;L.blush=0;L.shy=1;break;
    case 'leglift':legMode='lift';L.face.eyes='whistle';L.face.mouth='whistle';L.tailA=12;L.bT.a=3;L.hT.a=-10;L.hT.y-=2;L.notes=1;break;
    case 'crouch':{legMode='crouch';L.ears='flat';L.face.eyes='open';L.face.mouth=s.face.mouth==='o'?'o':'smile';L.tailA=-60;L.tailS=.8;{const sy=s.fluff?.52:b.long?.62:.8;L.bT.sy=sy;L.bT.y=GY-6-b.ry*sy;}L.hT.y=GY-3-hd.ry*(s.fluff?.85:.95);L.hT.x=hd.x+8;L.hT.a=6;L.speed=0;L.duck=1;break}
    case 'shake':L.face.eyes='closed';L.face.mouth='smile';L.ears='fly';L.hT.a=[-16,14,-6][k];L.bT.a=[5,-5,2][k];L.hT.x+=[-3,3,0][k];L.tailA=[30,-20,10][k];L.spray=1;break;
    case 'cold':L.face.eyes='sad';L.face.mouth='frown';L.ears='droop';L.tailA=-90;L.tailS=.7;{const j=[-2,2,-1][k];L.bT.x+=j;L.hT.x+=j*1.5;L.bT.y+=3;L.hT.y+=8;L.hT.a=6}L.snow=1;L.blueNose=1;L.shiver=1;break;
    case 'hot':L.face.eyes='sad';L.face.mouth='pant';L.ears='droop';L.tailA=-60;L.tailS=.85;L.hT.y+=8;L.hT.a=8;L.heat=1;L.bT.y+=2;break;
-   case 'dig':{legMode='dig';L.face.eyes='down';L.face.mouth='open';L.ears='perk';L.tailA=34;L.bT.a=12;
+   case 'dig':{legMode='dig';L.face.eyes='down';L.face.mouth='open';L.ears='perk';L.tailA=34;L.bT.a=b.long&&s.pup?7:12;
      const N=noseLocal(s),q=rot(N,28);L.hT.a=28;L.hT.x=hd.x+4;L.hT.y=Math.min(hd.y+30,GY-6-hd.ry);L.dirt=1;
      if(b.deep){L.gdig=1;L.bT.a=20;L.bT.y+=b.ry*1.1;L.bT.x-=4;L.hT.a=34;L.hT.x=hd.x-2;L.hT.y=GY-8-hd.ry*1.1}break}
   }
@@ -583,14 +585,36 @@ function layout(s,pose,k){
     else if(legMode==='dig'){if(front){const pw=[[18,-14],[6,-2],[22,-6]][L.k]||[18,-14];foot=near?[hip[0]+pw[0],GY+pw[1]]:[hip[0]+10-pw[0]*.3,GY-up];
       if(L.gdig){foot=near?[hip[0]+pw[0]+6,GY+pw[1]*.7]:[hip[0]+14,GY-up];L.legs.push({hip,mid:[hip[0]-7+(near?0:2),hip[1]+(foot[1]-hip[1])*.55],foot,col,sock,w,i,id,near});return}}
       else foot=L.gdig?[hip[0]-10,GY-up]:[hip[0]-4,GY-up];}
-    else if(legMode==='splay'){foot=front?[hip[0]+26+(near?0:4),hip[1]+12-(near?0:5)]:[hip[0]-28+(near?0:4),hip[1]+10-(near?0:5)];}
+    else if(legMode==='splay'){foot=front?[hip[0]+26+(near?0:4),hip[1]+12-(near?0:5)]:[hip[0]-28+(near?0:4),hip[1]+10-(near?0:5)];
+      // v2.18.3: a short-legged dog (the dachshund, corgi, pug, a puppy) leaps with its own short legs, bent at the knee, never a long straight noodle
+      {const st=GY-up-(b.y+b.ry*(near?.42:.22)),v=[foot[0]-hip[0],foot[1]-hip[1]],n=Math.hypot(v[0],v[1]);if(n>st){const q=st/n,f2=[hip[0]+v[0]*q,hip[1]+v[1]*q];L.legs.push({hip,mid:[hip[0]+v[0]*q*.55,hip[1]+v[1]*q*.55+w*.45],foot:f2,col,sock,w,i,id,near});return}}}
     else if(legMode==='beg'){if(!front){L.legs.push({haunch:near?1:0,sitfoot:near?0:1,hip,col,w,i,id,near});return}
       const wv=[0,-3,1][L.k||0],sh=B([b.rx*(near?.62:.5),-b.ry*.15]);L.legs.push({hip:sh,foot:[sh[0]+(near?20:15),sh[1]+(near?4:-1)+wv],mid:[sh[0]+(near?10:7),sh[1]+(near?16:11)],col,sock,w,i,id,near,raised:1});L.paw=1;return}
     else if(legMode==='sit'){if(!front){L.legs.push({haunch:near?1:0,sitfoot:near?0:1,hip,col,w,i,id,near});return}foot=[hip[0]+3,GY-up];}
     L.legs.push({hip,foot,col,sock,w,i,id,near});
   });
-  return L;
+  L.legMode=legMode;
+  // v2.18.3 "All in one piece" (owner, 29 Oct 2026: legs are proper legs, not noodles): sitting, a front leg that would reach down from a chest held
+  // too high (the long dachshund and corgi, the short-legged puppies) has the body sit lower, its angle eased toward level until the leg is the breed's own
+  // dancing, a short dog (a puppy) whose hind legs would stretch to hold its hips 24 px up holds them lower, at its own leg's height
+  if(aOv===undefined&&legMode==='dance'&&legLong(s,L,2))return layout(s,pose,k,Math.min(24,GY-(b.y+b.ry*.42)));
+  if(aOv===undefined&&/^(sit|paw|scratch)$/.test(legMode)&&!L.gfold&&legLong(s,L,1)){let a=L.bT.a,L2=L;while(a<-6&&legLong(s,L2,1)){a+=2;L2=layout(s,pose,k,a)}return L2}
+  return legFit(s,L);
 }
+// v2.18.3: a leg's centre line (hip, knee, foot) outside the body outline (its hull: a wet coat's locks leave notches), and the breed's own leg standing (hip to ground, as idle draws it)
+function legOut(l,Q){if(!l.foot)return 0;const C=[l.hip,l.mid||[(l.hip[0]+l.foot[0])/2,(l.hip[1]+l.foot[1])/2],l.foot];let n=0;
+  for(let i=0;i<2;i++){const a=C[i],b=C[i+1],d=Math.hypot(b[0]-a[0],b[1]-a[1]),st=Math.max(1,Math.ceil(d));for(let j=0;j<st;j++){const t=(j+.5)/st;if(!inPoly([a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t],Q))n+=d/st}}return n}
+function inPoly(p,Q){let c=false;for(let i=0,j=Q.length-1;i<Q.length;j=i++){const a=Q[i],b=Q[j];if((a[1]>p[1])!==(b[1]>p[1])&&p[0]<(b[0]-a[0])*(p[1]-a[1])/(b[1]-a[1])+a[0])c=!c}return c}
+function legStand(s,l){return GY-(l.near?0:3.5)-(s.body.y+s.body.ry*(l.near?.42:.22))}
+const sitGround=(L,l)=>/^(sit|paw|scratch)$/.test(L.legMode)&&!l.raised&&(l.id==='FF'||l.id==='NF');
+// ground 1: only the front legs a sitting dog stands on; 2: the legs on the ground; else every leg
+function legLong(s,L,ground){const Q=hull(bodyPts(s).map(T(L.bT)));return L.legs.some(l=>l.foot&&(!ground||(ground===2?!l.raised:sitGround(L,l)))&&legOut(l,Q)>1.35*legStand(s,l))}
+// a free leg (jumping, rolling, lying, a raised paw) that sticks out longer than the breed's own leg is drawn in toward its hip; a foot on the ground stays on it
+function legFit(s,L){const Q=hull(bodyPts(s).map(T(L.bT)));
+  L.legs.forEach(l=>{if(!l.foot||sitGround(L,l))return;const st=legStand(s,l);if(legOut(l,Q)<=1.35*st)return;
+    const h=l.hip,m0=l.mid,f0=l.foot,gd=f0[1]>=GY-7,sc=(p,k)=>[h[0]+(p[0]-h[0])*k,gd?p[1]:h[1]+(p[1]-h[1])*k];
+    for(let k=.95;k>.1;k-=.05){l.foot=sc(f0,k);if(m0)l.mid=sc(m0,k);if(legOut(l,Q)<=1.25*st)break}});
+  return L}
 function gfoldHead(s,L,rel,a){// greyhound sit/beg: head carried up on the long neck, above the chest
   const b=s.body,hd=s.head,sh=T(L.bT)([b.rx*.78,-b.ry*.55]);L.hT.x=sh[0]+hd.rx*.55;L.hT.y=sh[1]-hd.ry*1.5;L.hT.a=L.pose==='beg'?-8:-4;L.bT.x-=2}
 function noseLocal(s){const f=s.face,hx=s.head.rx,hy=s.head.ry;return f.nose?[hx*f.nose[0],hy*f.nose[1]]:[hx*.66,hy*.26]}
@@ -638,8 +662,15 @@ function earAngle(s,mode,e){
 }
 function earPose(s,L,e){// the ear after its pose rotation; L.earFit (Astronaut Helmet only) shrinks it toward its root to stay inside that radius
   const a=earAngle(s,L.ears,e);let p=a?rotAbout(e.pts,a,e.pivot):e.pts;
+  if(L.ears==='fly'&&e.flop)p=earOn(s,p,e);
   if(L.earFit){const R=L.earFit,c=e.pivot,at=k=>p.map(q=>[c[0]+(q[0]-c[0])*k,c[1]+(q[1]-c[1])*k]);let k=1;while(k>.3&&!at(k).every(q=>Math.hypot(q[0],q[1])<=R))k-=.05;if(k<1)p=at(k)}
   return p}
+// v2.18.3 "All in one piece": an ear flying back (jump, shake) keeps its root on the skull. Turned about its root, a drop ear could swing clear of the
+// head (the doberman's and the miniature pinscher's): an ear that reaches less than 1.5 px (a puppy's: 3 px, its lines are thicker) inside the skull outline slides in toward the middle of the
+// head until it sits 1 px deeper than that (the crayon wobble then still leaves its colour on the skull's). Ears that reach the skull do not move.
+function earDepth(P,Q){let dm=-99;P.forEach(q=>{let d=1e9;for(let i=0;i<Q.length;i++){const a=Q[i],b=Q[(i+1)%Q.length],ex=b[0]-a[0],ey=b[1]-a[1],t=Math.max(0,Math.min(1,((q[0]-a[0])*ex+(q[1]-a[1])*ey)/(ex*ex+ey*ey||1)));d=Math.min(d,Math.hypot(a[0]+ex*t-q[0],a[1]+ey*t-q[1]))}dm=Math.max(dm,inPoly(q,Q)?d:-d)});return dm}
+function earOn(s,p,e){const H=headPts(s),c=e.pivot,m=Math.hypot(c[0],c[1])||1,u=[-c[0]/m,-c[1]/m];let q=p;
+  const d0=s.pup?3:1.5;if(earDepth(dense(p,true,1),H)>=d0)return p;for(let t=0;t<=14&&earDepth(dense(q,true,1),H)<d0+1;t+=.5)q=p.map(v=>[v[0]+u[0]*t,v[1]+u[1]*t]);return q}
 function curlyEar(h,s,p,HT,col){// Poodle: a long drop ear with a lumpy outline and two curls in it
   const P=dense(p,true,5.5);let cx=0,cy=0;P.forEach(q=>{cx+=q[0]/P.length;cy+=q[1]/P.length});
   const Q=P.map((q,i)=>{const dx=q[0]-cx,dy=q[1]-cy,m=Math.hypot(dx,dy)||1,k=i%2?2.6:-.4;return[q[0]+dx/m*k,q[1]+dy/m*k]});
@@ -711,8 +742,8 @@ function drawRuff(h,s,L,HT){// a big scalloped mane round the neck, behind the h
 function drawLegs(h,s,L){
   const one=l=>{
     const a=h.acc.length;
-    if(l.sitfoot&&L.gfold){const hp=T(L.bT)([-s.body.rx*.45,s.body.ry*.25]),y=GY-3.5;h.tube([[hp[0]-s.body.ry*.2+8,y-7],[hp[0]+s.body.ry*1.9+8,y]],l.w*.95,l.col);h.shape(circ(hp[0]+s.body.ry*1.9+11,y,l.w*.8,l.w*.55,7),l.col,{w:2.6,ox:0,oy:0,sc:1,closed:1})}
-    else if(l.sitfoot){const hp=T(L.bT)([-s.body.rx*.45,s.body.ry*.25]);h.shape(circ(hp[0]+s.body.ry*.9+9,GY-6,s.body.ry*.5+3,4,8),l.col,{w:3.4})}
+    if(l.sitfoot&&L.gfold){const hp=T(L.bT)([-s.body.rx*.45,s.body.ry*.25]),y=GY-3.5;hock(h,s,L,l,hp,[hp[0]-s.body.ry*.2+8,y-7],[[hp[0]-s.body.ry*.2+8,y-7]]);h.tube([[hp[0]-s.body.ry*.2+8,y-7],[hp[0]+s.body.ry*1.9+8,y]],l.w*.95,l.col);h.shape(circ(hp[0]+s.body.ry*1.9+11,y,l.w*.8,l.w*.55,7),l.col,{w:2.6,ox:0,oy:0,sc:1,closed:1})}
+    else if(l.sitfoot){const hp=T(L.bT)([-s.body.rx*.45,s.body.ry*.25]);hock(h,s,L,l,hp,[hp[0]+s.body.ry*.9+7,GY-7],ovalTop(hp[0]+s.body.ry*.9+9,GY-6,s.body.ry*.5+3,4));h.shape(circ(hp[0]+s.body.ry*.9+9,GY-6,s.body.ry*.5+3,4,8),l.col,{w:3.4})}
     else{h.tube([l.hip,l.mid||[(l.hip[0]+l.foot[0])/2+1,(l.hip[1]+l.foot[1])/2],l.foot],l.w,l.col);
       if(L.paw&&l.foot&&(l.id==='NF'||l.id==='FF'))h.shape(circ(l.foot[0]+2,l.foot[1],l.w*.75,l.w*.6,7),l.sock||l.col,{w:2.8,ox:0,oy:0,sc:1,closed:1});
       if(l.sock&&!l.raised){// the sock: the last 38% of the leg, along the leg's own bend and down the middle of its ink (25 Oct 2026: it used to cut the knee corner and poke out)
@@ -727,6 +758,12 @@ function drawLegs(h,s,L){
   const only=h._legPass||'ground';const ok=l=>(only==='raised'?l.raised:!l.raised)&&(!h._legSkip||l.id!==h._legSkip)&&(!h._legOnly||l.id===h._legOnly);
   L.legs.filter(l=>!l.near&&!l.haunch&&ok(l)).forEach(one);L.legs.filter(l=>l.near&&!l.haunch&&ok(l)).forEach(one);
 }
+// v2.18.3 "All in one piece": a sitting dog's hind foot flat on the ground must meet the body (or its own thigh, th = [cx, cy, rx, ry]). When the body sits
+// high (a long dog begging, a puppy), a hock joins them: a short leg from the hip (inside the body) down to the foot, drawn first so the body, thigh and
+// foot lie over its ends. Feet that already meet the body draw nothing new, so those dogs stay exactly as they were.
+function ovalTop(cx,cy,rx,ry){const P=[];for(let i=0;i<=8;i++){const a=Math.PI*(1+i/8);P.push([cx+Math.cos(a)*(rx+2.2),cy+Math.sin(a)*(ry+2.2)])}return P}
+function hock(h,s,L,l,hip,foot,top,th){const Q=bodyPts(s).map(T(L.bT)),inTh=p=>th&&((p[0]-th[0])/th[2])**2+((p[1]-th[1])/th[3])**2<=1;
+  if(top.some(p=>inPoly(p,Q)||inTh(p)))return;h.tube([hip,[(hip[0]+foot[0])/2-2,(hip[1]+foot[1])/2],foot],l.w*1.05,l.col)}
 function legHair(h,l,wet){// v2.11 afghan: flared silky trousers from the knee down, covering the foot
   const m=l.mid||[(l.hip[0]+l.foot[0])/2,(l.hip[1]+l.foot[1])/2],a=[l.hip[0]+(m[0]-l.hip[0])*.7,l.hip[1]+(m[1]-l.hip[1])*.7],f=l.foot,dx=f[0]-a[0],dy=f[1]-a[1],d=Math.hypot(dx,dy)||1,u=[dx/d,dy/d],n=[-u[1],u[0]],w=l.w,cl=q=>[q[0],Math.min(q[1],GY+1)];
   const P=(t,k,e)=>cl([a[0]+dx*t+n[0]*w*k+u[0]*e,a[1]+dy*t+n[1]*w*k+u[1]*e]);
@@ -739,6 +776,7 @@ function drawHaunch(h,s,L,B){
       const th=rotAbout(circ(c[0]+3,c[1]-2,b.ry*1.45,b.ry*.95,11),-28,[c[0]+3,c[1]-2]);const y=GY-4,hl=[c[0]-b.ry*.9,Math.min(c[1]+b.ry*.7,y-4)];
       h.tube([hl,[hl[0]+4,y],[c[0]+b.ry*2.1,y]],l.w*1.05,l.col);h.shape(circ(c[0]+b.ry*2.1+3,y,l.w*.85,l.w*.6,7),l.col,{w:2.8,ox:0,oy:0,sc:1,closed:1});h.shape(th,s.col);
     }else{
+    {const th=s.fluff?null:[c[0],c[1]+2,b.ry*.95,b.ry*.85];hock(h,s,L,l,c,[c[0]+b.ry*.75,GY-5],ovalTop(c[0]+b.ry*.9,GY-4,b.ry*.6+3,4.5),th)}
     if(!s.fluff)h.shape(circ(c[0],c[1]+2,b.ry*.95,b.ry*.85,10),s.col);
     h.shape(circ(c[0]+b.ry*.9,GY-4,b.ry*.6+3,4.5,8),l.col,{w:3.6});}
     h.acc.splice(a,0,`<g class="pa-d-leg pa-d-leg-NH">`);h.acc.push('</g>');
