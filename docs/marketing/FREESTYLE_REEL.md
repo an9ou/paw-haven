@@ -15,6 +15,7 @@ From the owner's brief (`PROMPT-PACK-CLAUDE.md`, a remake of an Instagram Reel's
 - Each dog is about a third of the frame tall, not 55–60%: two upright dogs side by side at that height would not fit the 1080 px width. The open space above is for the hook overlay.
 - Noodle's "head tilt" is a small lean of his whole upper body (the game art has no separate head to turn).
 - The hearts, dance marks and ground shadows the poses normally carry are switched off (in the build script only).
+- Noodle's far back foot stands under his haunch, joined by a short leg (owner, 29 Oct: "fix Noodle's leg"). In the game's beg, sit and paw poses that foot is drawn flat on the floor at a fixed spot, so on a long dog it floats away from the body; fixed here in the build script only.
 
 ## Overlays (add in the edit, not baked in)
 

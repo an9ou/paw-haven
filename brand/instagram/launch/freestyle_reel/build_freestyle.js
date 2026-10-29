@@ -17,6 +17,11 @@ const win = {}, ctx = { window: win, console }; vm.createContext(ctx);
 let src = fs.readFileSync(path.join(ROOT, 'dogs', 'pawart_dogs.js'), 'utf8');
 for (const flag of ['if(L.danceFx){', 'if(L.hope){']) { if (!src.includes(flag)) throw new Error('art changed: ' + flag); src = src.replace(flag, 'if(false){'); }
 if (!src.includes('const shadow=`')) throw new Error('art changed: shadow'); src = src.replace('const shadow=`', "const shadow=''&&`"); // no ground shadow: a clean white void
+// Noodle's far back foot: the game draws it flat on the floor at a fixed spot, which floats away from a long dog's raised haunch in the
+// beg pose. Here it stands right under the haunch, joined to it by a short leg.
+const SITFOOT = "else if(l.sitfoot){const hp=T(L.bT)([-s.body.rx*.45,s.body.ry*.25]);h.shape(circ(hp[0]+s.body.ry*.9+9,GY-6,s.body.ry*.5+3,4,8),l.col,{w:3.4})}";
+if (!src.includes(SITFOOT)) throw new Error('art changed: sitfoot');
+src = src.replace(SITFOOT, "else if(l.sitfoot){const hp=T(L.bT)([-s.body.rx*.45,s.body.ry*.25]),fx=hp[0]+2;if(hp[1]<GY-10)h.tube([[hp[0],hp[1]],[fx+1,GY-7]],l.w*.95,l.col);h.shape(circ(fx+4,GY-6,s.body.ry*.5+3,4,8),l.col,{w:3.4})}");
 vm.runInContext(src, ctx);
 const PA = win.PawArt, inner = (s) => s.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
 const butter = inner(PA.dog('lab', { pose: 'dance', facing: 'right', anim: false }));
