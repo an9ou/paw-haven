@@ -270,6 +270,11 @@ async function worker(job) {
       if (phone) for (const k of ['caremenu', 'more']) { await ev((k) => document.querySelector(`#bar .act[data-act="${k}"]`).click(), k); await waitSel(`#bar .barpop[data-pop="${k}"]`, 3000); await measure('fw: phone bar ' + k + ' tray'); await ev((k) => document.querySelector(`#bar .act[data-act="${k}"]`).click(), k); }
       await ev(() => { const P = window.__paw; P.S.dogs[0].bond = { level: 10, pts: 3300 }; P.S.fw.wish = null; P.fw.test(false); P.saveNow(); });
     }, 60000);
+    // v2.18.2 What's new in town (49c_news.js): the news sheet and the list of every update
+    await step('nw', async () => {
+      await ev(() => { const el = document.getElementById('toasts'); if (el) el.innerHTML = ''; window.__paw.nw.open(); }); await modalUp(); await measure("nw: what's new");
+      await jsClick('#nwAll'); await waitSel('#modal .nw-all', 3000); await measure('nw: all updates'); await closeAll();
+    }, 30000);
     // v2.17 Dog Days (V217.md): the wish chip, the Bond track, the diary, the sticker book, a letter, the phone More tray (prefs.ddTest through the test hook)
     await step('dd', async () => {
       await ev(() => { const P = window.__paw, S = P.S; P.dd.test(true); S.dogs[0].bond = { level: 4, pts: 500 }; S.dd.wish = { day: '', w: {}, coins: 0 }; P.dd.wish(); S.dd.wish.w[S.dog.id] = { k: 'walk', a: 'cliffs', done: 0 }; P.dd.chip(); });

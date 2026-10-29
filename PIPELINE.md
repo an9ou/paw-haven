@@ -45,6 +45,9 @@ Module owners stay as before: dogs/ (dog artist), world/a (scenes), world/b (pro
 - Lanes keep conflicts rare. If two lanes must touch the same file, the coordinator merges them one after the other and re-tests.
 - Generated files (`game/paw_haven_proto.html`, `proto/paw_haven_prototype.html`) are not tracked: always run `node game/build.js` after checkout or merge.
 
+## Release checklist: What's new (v2.18.2 on)
+- **Add a NEWS entry** for every release with player news: the top of `NEWS` in `game/src/49c_news.js` (3 to 5 lines, every text through `tt()`), translated in the release's one translation batch. Steps: `V218.md` section 14.
+
 ## Testing (fast loop)
 One runner does everything: `node game/run_tests.js <smoke | all | suite names...> [--jobs N] [--retries N] [--strict] [--no-build] [--shots] [--list]`.
 It runs `node game/build.js`, then `node game/harness.js merged`, then the suites in PARALLEL (one Chromium process per suite, longest first). It prints one

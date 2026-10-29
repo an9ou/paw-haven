@@ -82,7 +82,7 @@ There is no separate QA session. `game/test_copy_node.js` (the `copy` suite) and
 5. Integration review.
 6. Fixes.
 7. `all` + `phone`.
-8. CHANGELOG, TODO, README, CLAUDE.md.
+8. CHANGELOG, TODO, README, CLAUDE.md, and add a NEWS entry (`game/src/49c_news.js`, `V218.md` 14).
 9. Publish the claude.ai artifact (read it first).
 10. Log the release in Studio.
 11. Push `main` and check that the Pages deploy succeeded.

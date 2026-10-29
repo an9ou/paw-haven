@@ -131,7 +131,7 @@ const FF_DEF = {
       } else if (D2.ph === 'sniff') { // the dog walks along the row and lingers, nose down, at the toy's box
         const tb = D2.boxes[D2.toyBox], order = D2.boxes.slice().sort((a, b) => a.slot - b.slot);
         if (D2.sx >= order.length) { D2.ph = 'pick'; ffHint(G, isPhone() ? tt('ff.h_seek_tap', 'Tap the box.') : tt('ff.h_seek_click', 'Click the box, or press its number.')); return; }
-        const b = order[D2.sx], tx = T.slotX(G, b.slot) - 70 * ffSide(D2.dog), dx = tx - D2.x;
+        const b = order[D2.sx], tx = Math.max(D2.dog.w * 0.4, T.slotX(G, b.slot) - 70), dx = tx - D2.x; // v2.18.2: the dog always stands left of the box, nose right (the sniff pose faces right); a stop that hung on its facing flipped every frame on a 560-wide phone field
         if (Math.abs(dx) > 6) { D2.x += clamp(dx, -420 * dt, 420 * dt); D2.face = dx > 0 ? 'right' : 'left'; ffPose(D2.dog, 'walk', D2.face); D2.pt = 0; }
         else { ffPose(D2.dog, 'sniff', 'right'); const linger = b === tb ? 1.5 : 0.45; if (b === tb) ffPut(D2.scent, T.slotX(G, b.slot), D2.by - 120); if (D2.pt > linger) { if (b === tb) { ffPop(G, tt('ff.sniff', 'sniff sniff!'), T.slotX(G, b.slot), D2.by - 170, '#7A6358'); ffPut(D2.scent, -300, -300); } D2.sx++; D2.pt = 0; } }
         ffFeet(D2.dog, D2.x, D2.feet);

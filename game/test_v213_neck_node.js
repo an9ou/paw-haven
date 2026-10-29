@@ -73,14 +73,16 @@ const vm = require('vm'), load = (src) => { const sb = { window: {} }; vm.create
 console.log('-- the NECKFIX list: the v2.12 overlap in every frame; without it each entry floats; it changes nothing else');
 const LIST = []; Object.keys(NF || {}).forEach((k) => Object.keys(NF[k]).forEach((p) => LIST.push([k, p])));
 console.log('   ' + LIST.length + ' breed:pose: ' + LIST.map((e) => e.join(':')).join(','));
-{ const c = neckChecker(SRC), G = c.G, OFF = SRC.replace(FIXLINE, ''), c0 = neckChecker(OFF), P0 = load(OFF);
+{ const c = neckChecker(SRC), G = c.G, OFF = SRC.replace(FIXLINE, ''), c0 = neckChecker(OFF), P0 = load(OFF), CC0 = require('../dogs/connect_check.js').checker(OFF);
   LIST.forEach(([k, p]) => { ok(G.SP[k] && G.POSES.includes(p), `${k}:${p} is a breed and a pose`); if (!G.SP[k]) return;
     const q = NF[k][p]; ok(Array.isArray(q) && q.length === 2 && q.every((v) => Math.abs(v) <= 8), `${k}:${p}: a small head move [dx, dy] (at most 8 px), not a stretched neck`);
     FR.forEach((f) => { const r = c(k, p, null, { k: f, parts: 1 }); ok(r.overlap >= NECK_MIN, `${k} ${p} frame ${f}: the head overlaps the body (${fmt(r)}, needs ${NECK_MIN})`);
       ok(r.hole === 0, `${k} ${p} frame ${f}: the neck tube fills the neck (hole ${r.hole.toFixed(1)})`); });
     // v2.15.2 (fills inside their outlines): the fills no longer drift, so a few heads leave a neck hole just under HOLE_MAX without the fix; the control
     // is now that the skull itself does not touch the body without it. A breed that draws its neck tube in every pose (spec neck: the collie) needs no control.
-    if (!G.SP[k].neck) ok(FR.some((f) => { const r = c0(k, p, null, { k: f, parts: 1 }); return floats(r) || r.skull < SKULL_MIN; }), `control: ${k} ${p}: without the fix the skull does not touch the body`);
+    // v2.18.3 (owner: every part stuck together): the entries added then are heads that only met the body by a corner, or by an ear, in some frame, dry or wet;
+    // their control is dogs/connect_check.js: without the fix it finds the head off the body in at least one frame
+    if (!G.SP[k].neck) ok(FR.some((f) => { const r = c0(k, p, null, { k: f, parts: 1 }); return floats(r) || r.skull < SKULL_MIN; }) || FR.some((f) => [false, true].some((wet) => CC0.one(k, { pose: p, k: f, wet }).some((x) => /^head off/.test(x)))), `control: ${k} ${p}: without the fix the skull does not touch the body`);
     ok(PA.dog(k, { pose: p, age: 'puppy' }) === P0.dog(k, { pose: p, age: 'puppy' }), `${k} ${p} puppy: unchanged by the fix`);
     ok(PA.dog(k, { pose: p }) !== P0.dog(k, { pose: p }), `${k} ${p}: the fix changes the adult render`);
   });
@@ -89,12 +91,12 @@ console.log('   ' + LIST.length + ' breed:pose: ' + LIST.map((e) => e.join(':'))
 }
 
 console.log('-- the mix neck rule (V213.md 5.1): without it the hardest pairs float; it changes no purebred render');
-{ const OFF = SRC.replace(MIXLINE, ''), c0 = neckChecker(OFF), P0 = load(OFF), G = c0.G;
+{ const OFF = SRC.replace(MIXLINE, ''), c0 = neckChecker(OFF.replace(FIXLINE, '')), P0 = load(OFF), G = c0.G; // v2.18.3: the float controls leave NECKFIX out too (it also necks a mix body in its poses)
   [['husky', 'yorkie', 'leglift', null], ['dachs', 'pug', 'speak', null], ['husky', 'greyhound', 'walk', null], ['dachs', 'greyhound', 'howl', 'puppy'], ['pug', 'yorkie', 'speak', null]].forEach(([b, hk, p, age]) =>
     ok(FR.some((f) => floats(c0(b, p, age, { k: f, mix: hk, parts: 1 }))), `control: ${b} body ${hk} head ${p} ${age || 'adult'} floats without the mix rule`));
   Object.keys(G.SP).forEach((k, i) => G.POSES.forEach((p, pi) => { if ((i + pi) % 5) return; const o = { pose: p, age: [undefined, 'puppy', 'newborn'][(i + pi) % 3], facing: pi % 2 ? 'left' : 'right', sparkle: i % 2 === 0 };
     ok(PA.dog(k, o) === P0.dog(k, o), `${k} ${p}: the mix rule leaves the purebred unchanged`); }));
-  ok(PA.dog('husky', { pose: 'walk', mix: { head: 'yorkie' } }) !== P0.dog('husky', { pose: 'walk', mix: { head: 'yorkie' } }), 'the mix rule draws the tube on a mix');// v2.15.2: the collie draws its (white) neck tube in every pose now
+  ok(PA.dog('husky', { pose: 'sniff', mix: { head: 'yorkie' } }) !== P0.dog('husky', { pose: 'sniff', mix: { head: 'yorkie' } }), 'the mix rule draws the tube on a mix');// v2.18.3: husky walk is in NECKFIX now// v2.15.2: the collie draws its (white) neck tube in every pose now
   ok(PA.dog('collie', { pose: 'sleep', mix: { head: 'yorkie' }, age: 'newborn' }) === P0.dog('collie', { pose: 'sleep', mix: { head: 'yorkie' }, age: 'newborn' }), 'newborn mixes keep no neck');
   ok(PA.dogHead('collie', { mix: { head: 'yorkie' } }) === P0.dogHead('collie', { mix: { head: 'yorkie' } }), 'the mix head chip is unchanged');
 }
