@@ -19,7 +19,7 @@ const FM_CATS = ['decor', 'clothes', 'homes', 'toys', 'treats'];
 /* the markets. win(year) -> [from, to] as 'MM-DD' (a window that crosses New Year has from > to). ed: edition items (`ed` in the tables)
    are sold only in their own year. todo: no items yet, the market stays shut (V2171.md 8) */
 const FM_MARKETS = [
-  { id: 'halloween', theme: 'halloween', name: 'Halloween Market', win: (y) => (y === 2026 ? ['10-08', '11-02'] : ['10-24', '11-02']),
+  { id: 'halloween', theme: 'halloween', name: 'Halloween Market', win: (y) => (y === 2026 ? ['10-08', '11-15'] : ['10-24', '11-02']), // v2.17.2 (owner): open until 15 Nov in 2026 (the Pumpkin Patch Pop-up still closes on 2 Nov)
     items: {
       decor: ['Pumpkin Lantern', 'Jack-o-Lantern Trio', 'Paper Bat Bunting', 'Friendly Scarecrow', 'Ghost Garland', 'Ghost Lantern String', 'Pumpkin Fairy Lights', 'Friendly Fence Web', 'Cardboard Black Cat', 'Cauldron Planter'],
       clothes: ['Pumpkin Patch Suit', 'Little Bat Costume', 'Trick-or-Treat Ghost', 'Witch Hat', 'Vampire Cape', 'Bat Wings', 'Candy Corn Bandana', 'Ghost Sheet', 'Pumpkin Suit',
