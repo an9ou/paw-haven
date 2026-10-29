@@ -3,7 +3,8 @@
 // The dogs are the game's real "dance" pose. The game draws three frames of each pose (head, paws and tail in different spots) and
 // flips them; here they flip on the beat, and the whole dog sways left and right and bounces on every beat. The beat follows the
 // game's own "play" music (86 bpm). At every place cut they wear a new costume and make new faces (the game's wardrobe and face
-// expressions). The brick phone stays on the ground. No game file is changed: the dance marks and ground shadows
+// expressions). Every place wears the game's own Halloween dressing. The brick phone on the ground buzzes on the beat and plays the music
+// (buzz lines, notes floating up). No game file is changed: the dance marks and ground shadows
 // are switched off in this script's copy of the art only, and the scenes' dashed tap-area outlines are hidden.
 //
 //   NODE_PATH=$(npm root -g) node brand/instagram/launch/freestyle_reel/build_dance.js <workdir>
@@ -28,7 +29,9 @@ const PA = win.PawArt, inner = (s) => s.replace(/^<svg[^>]*>/, '').replace(/<\/s
 let a = SEED >>> 0; const rnd = () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 const POOL = ['yard', 'park', 'beach', 'square', 'dogpark', 'hilltop', 'pier', 'fujihill', 'shibuya', 'yoyogi', 'asakusa', 'tokyotower', 'ueno', 'odaiba', 'training'];
 const PLACES = []; while (PLACES.length < 5) { const p = POOL[Math.floor(rnd() * POOL.length)]; if (!PLACES.includes(p)) PLACES.push(p); }
-const ENV = { time: 'day', weather: 'sunny', season: 'autumn', jp: true };
+const ENV = { time: 'day', weather: 'sunny', season: 'autumn', jp: true, halloween: true };   // the game's own Halloween dressing on every place
+// the game's own Halloween props, big and close: lit jack-o'-lanterns on the ground and the Costume Parade bunting across the sky
+const JACK = inner(PA.prop('jackolantern', { lit: true })), BANNER = inner(PA.prop('paradebanner', {}));
 const scenes = PLACES.map((p, i) => `<symbol id="sc${i}" viewBox="331 0 337.5 600" preserveAspectRatio="xMidYMid slice">${inner(PA.scene(p, ENV))}</symbol>`).join('');
 // a new costume and a new face for each place (the game's own wardrobe and its v2.13 face expressions; the dance pose takes
 // hearts, proud, wink and zoomies; null = the pose's own happy face). Places with their own bandana get it.
@@ -61,10 +64,14 @@ const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.goo
 [class$="-hl"]{display:none}
 .pa-dog *{animation:none!important}</style>
 <svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
-<defs>${scenes}${dogSyms}</defs>
+<defs>${scenes}${dogSyms}<symbol id="jack" viewBox="0 0 80 80">${JACK}</symbol><symbol id="banner" viewBox="0 0 400 90" preserveAspectRatio="none">${BANNER}</symbol></defs>
 <use id="bg" href="#sc0" x="0" y="0" width="${W}" height="${H}"/>
-<g transform="translate(150 ${FEET + 120}) rotate(-68) scale(0.74)">${phone}</g>
+<use href="#banner" x="-40" y="470" width="1160" height="230"/><g id="bats"></g>
+<use href="#jack" x="555" y="${FEET - 120}" width="110" height="110"/>
+<g id="ph"><g transform="translate(150 ${FEET + 120}) rotate(-68) scale(0.74)">${phone}</g></g>
 <g id="B"></g><g id="Nd"></g>
+<use href="#jack" x="870" y="${FEET - 20}" width="190" height="190"/><use href="#jack" x="-30" y="${FEET + 40}" width="150" height="150"/>
+<g id="buzz"></g><g id="notes"></g>
 <g id="hook" opacity="0"><g transform="rotate(-2 540 300)"><rect x="110" y="170" width="860" height="270" rx="36" fill="#FFF8EC" stroke="#5B3D32" stroke-width="6"/>
 <text x="540" y="282" font-family="Caveat" font-weight="700" font-size="96" fill="#5B3D32" text-anchor="middle">bluetooth died.</text>
 <text x="540" y="392" font-family="Caveat" font-weight="700" font-size="96" fill="#5B3D32" text-anchor="middle">the freestyle did not.</text></g></g>
@@ -91,6 +98,18 @@ window.L={ bx:320, nx:775, bh:540, nh:520 };
 window.frame=function(t){
   const beat=t/${B}, n=Math.floor(beat), ph=beat-n;
   P=Math.min(4,Math.floor(n/5)); $('bg').setAttribute('href','#sc'+P);          // a new place (and new costumes and faces) every 5 beats
+  // the phone plays the music: it buzzes on every beat (a quick shake that dies away), with crayon buzz lines, and notes float up from it
+  const amp=Math.exp(-ph*4), PX=232, PY=${FEET}+113;
+  $('ph').setAttribute('transform','translate('+(Math.sin(t*2*Math.PI*19)*5*amp)+' '+(Math.cos(t*2*Math.PI*23)*2.5*amp)+') rotate('+(Math.sin(t*2*Math.PI*17)*5*amp)+' '+PX+' '+PY+')');
+  let bz=''; if(amp>0.25){ for(const sd of [-1,1]) for(const r of [1,2]) { const x=PX+sd*(78+r*22), o=(amp-0.25)*1.6; bz+='<path d="M'+x+' '+(PY-24-r*6)+' Q'+(x+sd*12)+' '+PY+' '+x+' '+(PY+24+r*6)+'" fill="none" stroke="#5B3D32" stroke-width="5" stroke-linecap="round" opacity="'+Math.min(1,o)+'"/>'; } }
+  $('buzz').innerHTML=bz;
+  let nt=''; for(let j=Math.max(0,n-3); j<=n; j++){ const age=(beat-j)*${B}; if(age<0||age>1.6||j*${B}>=${DANCE}) continue; const x=PX-40-age*110+Math.sin(age*6)*14, y=PY-50-age*170, sc=0.8+0.25*((j*13)%3), op=age<1.1?1:1-(age-1.1)/0.5, dbl=j%2;
+    nt+='<g transform="translate('+x+' '+y+') rotate('+(-12+((j*29)%24))+') scale('+sc+')" opacity="'+op+'"><path d="M0 0 L0 -46'+(dbl?' L30 -54 L30 -8':' Q14 -40 22 -26')+'" fill="none" stroke="#5B3D32" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><ellipse cx="-8" cy="2" rx="11" ry="8" transform="rotate(-20 -8 2)" fill="#7A5C9E" stroke="#5B3D32" stroke-width="4"/>'+(dbl?'<ellipse cx="22" cy="-6" rx="11" ry="8" transform="rotate(-20 22 -6)" fill="#F28FA5" stroke="#5B3D32" stroke-width="4"/>':'')+'</g>'; }
+  $('notes').innerHTML=nt;
+  // three crayon bats flapping across the sky
+  let bt=''; [[160,330,1.3,0],[880,380,1.1,1.7],[640,250,0.9,3.1]].forEach(([x,y,sc,o])=>{ const fl=0.55+0.45*Math.abs(Math.sin(t*9+o)), dx=Math.sin(t*0.9+o)*40, dy=Math.cos(t*1.3+o)*14;
+    bt+='<g transform="translate('+(x+dx)+' '+(y+dy)+') scale('+(sc*2.4)+' '+(sc*2.4*fl)+')"><path d="M0 -4 Q-6 -14 -20 -10 Q-14 -4 -16 4 Q-8 -2 -4 6 Q0 2 4 6 Q8 -2 16 4 Q14 -4 20 -10 Q6 -14 0 -4Z" fill="#6B5A86" stroke="#5B3D32" stroke-width="1.6" stroke-linejoin="round"/><circle cx="-2" cy="-3" r="0.9" fill="#FFF8EC"/><circle cx="2" cy="-3" r="0.9" fill="#FFF8EC"/></g>'; });
+  $('bats').innerHTML=bt;
   $('hook').setAttribute('opacity', t<${DANCE} ? Math.min(1,t/0.2) : 0);                 // the hook, popped in at the start
   $('end').setAttribute('opacity', t<${DANCE} ? 0 : Math.min(1,(t-${DANCE})/0.25));      // the end card over the last place
   const sway=Math.sin(Math.PI*beat), hop=-Math.abs(Math.sin(Math.PI*beat))*16;
