@@ -5057,6 +5057,7 @@
  "ff.boing": "boing!",
  "ff.btn_fair": "Fun Fair",
  "ff.btn_yard": "Yard games",
+ "ff.busy": "{name} is busy right now. Try the Fun Fair in a moment.",
  "ff.done": "Done",
  "ff.found": "Found it!",
  "ff.h_bakery": "Click the tin with the same shape as the biscuit, or press 1 to 4.",

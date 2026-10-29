@@ -47,7 +47,7 @@ run('v218_fun_fair', async (t) => {
     const s = await t.S();
     ok(s.v === 1 && s.ff && typeof s.ff.c === 'object' && s.ff.pc && Array.isArray(s.ff.pc.e) && s.ff.mk.coins === 0 && s.ff.wash.day === '', 'migrate() adds S.ff, v stays 1: ' + Object.keys(s.ff).join(','));
     await t.until(() => !!(window.__paw && window.__paw.fw), null, 5000);
-    ok(await ev(() => { const x = window.__paw.fw.migrate({ v: 1, dogs: [{ id: 'a', name: 'A', key: 'shiba', bond: { level: 2, pts: 70 } }], inv: { food: {}, toys: [], clothes: [], houses: [] }, ff: { c: 'junk', n: { catch: -3, show: 2 }, pc: { e: [1, 2, 3, 4, 5] }, mk: { coins: 'x' } } }); return x.v === 1 && typeof x.ff.c === 'object' && !('catch' in x.ff.n) && x.ff.n.show === 2 && x.ff.pc.e.length === 3 && x.ff.mk.coins === 0; }), 'junk is repaired: bad counts dropped, three photo entries at most');
+    ok(await ev(() => { const x = window.__paw.fw.migrate({ v: 1, dogs: [{ id: 'a', name: 'A', key: 'shiba', bond: { level: 2, pts: 70 } }], inv: { food: {}, toys: [], clothes: [], houses: [] }, ff: { c: 'junk', n: { catch: -3, show: 2 }, pc: { e: [1, { p: 'a' }, null, { p: 'b' }, [], { p: 'c' }, { p: 'd' }] }, mk: { coins: 'x' }, wash: { day: '', n: -2 } } }); return x.v === 1 && typeof x.ff.c === 'object' && !('catch' in x.ff.n) && x.ff.n.show === 2 && x.ff.pc.e.length === 3 && x.ff.pc.e.every((q) => q && typeof q === 'object' && !Array.isArray(q)) && x.ff.mk.coins === 0 && x.ff.wash.n === 0; }), 'junk is repaired: bad counts dropped, photo entries are objects (three at most), wash count never below 0');
     await t.ctx.close();
   }
 
@@ -96,7 +96,7 @@ run('v218_fun_fair', async (t) => {
       const g = window.__paw.ff.g, dog = g.field.querySelector('.ff-dog'); let muts = 0; const mo = new MutationObserver((m) => { muts += m.length; }); if (dog) mo.observe(dog, { childList: true });
       const t0 = g.t, w0 = performance.now(); let frames = 0; const f = () => { frames++; if (performance.now() - w0 < 1500) requestAnimationFrame(f); else { mo.disconnect(); const sp = [...g.field.querySelectorAll('.ff-sp')]; res({ dt: g.t - t0, wall: (performance.now() - w0) / 1000, frames, muts, tf: sp.every((e) => /translate3d/.test(e.style.transform) && !e.style.left && !e.style.top), n: sp.length }); } }; requestAnimationFrame(f);
     }));
-    ok(r.frames > 20 && r.tf && r.muts <= 8 && (r.dt === 0 || (r.dt <= r.wall + 0.05 && r.dt >= r.wall * 0.5)), `${k}: ${r.frames} frames in 1.5 s, game time follows real time (${r.dt.toFixed(2)} of ${r.wall.toFixed(2)} s, a stalled frame counts at most 50 ms), ${r.n} sprites all by transform, the dog redrawn ${r.muts} times`);
+    ok(r.frames > 20 && r.tf && r.muts <= 8 && (r.dt === 0 || (r.dt <= r.wall + 0.1 && r.dt >= r.wall * 0.5)), `${k}: ${r.frames} frames in 1.5 s, game time follows real time (${r.dt.toFixed(2)} of ${r.wall.toFixed(2)} s, a stalled frame counts at most 50 ms, the window edges one frame each), ${r.n} sprites all by transform, the dog redrawn ${r.muts} times`);
   };
   const finish = async (k) => {
     const s0 = await t.S(); await endRound();
@@ -384,4 +384,34 @@ run('v218_fun_fair', async (t) => {
   ok(await ev(() => [...document.querySelectorAll('#modal .ff-card .btn')].every((b) => b.getBoundingClientRect().height >= 44) && document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1), 'phone: the game cards have 44 px buttons and no sideways scroll');
   await shot('cards_square_phone');
   await t.closeX(); await t.modalGone();
+  await t.ctx.close();
+
+  sec('18. review fixes: a 360 px phone in Japanese (the show row, the field inside the play area), the catch dog does not flip, Escape, starting only from a place');
+  await fresh({ device: 'Galaxy S5', lang: 'ja' });
+  await ev(() => { const d = window.__paw.S.dog; ['Sit', 'Paw', 'Lie Down', 'Roll Over', 'Spin', 'Play Dead', 'Speak', 'Dance'].forEach((n) => { d.tricks[n] = { p: 1, shows: 0 }; }); }); // six tricks: the show needs two rows on a phone
+  for (const k of ['show', 'kite', 'catch', 'bubble', 'paper']) {
+    ok(await start(k), `${k} starts at 360 px in Japanese`);
+    if (k === 'show') await t.until(() => window.__paw.ff.g.data.ph === 'do', null, 6000);
+    await t.sleep(900);
+    const L = await ev(() => {
+      const r = (e) => e.getBoundingClientRect(), play = r(document.getElementById('ffPlay')), field = r(document.getElementById('ffField')), top = r(document.querySelector('.ff-top'));
+      const bs = [...document.querySelectorAll('.ff-trick')].map((b) => ({ b: r(b), lh: parseFloat(getComputedStyle(b).lineHeight) || 30, op: getComputedStyle(b).opacity }));
+      const rows = new Set(bs.map((q) => Math.round(q.b.top))).size, per = Math.max(0, ...[...new Set(bs.map((q) => Math.round(q.b.top)))].map((y) => bs.filter((q) => Math.round(q.b.top) === y).length));
+      return { fit: field.bottom <= play.bottom + 1.5 && field.top >= play.top - 1.5 && play.top >= top.bottom - 1, fb: Math.round(field.bottom), pb: Math.round(play.bottom), n: bs.length, rows, per, wide: bs.every((q) => q.b.width >= 90), inside: bs.every((q) => q.b.bottom <= play.bottom + 1 && q.b.top >= play.top), opaque: bs.every((q) => q.op === '1') };
+    });
+    ok(L.fit, `${k}: the field stays inside the play area under the header (field bottom ${L.fb}, play bottom ${L.pb})`);
+    if (k === 'show') ok(L.n === 6 && L.per <= 3 && L.rows <= 2 && L.wide && L.inside && L.opaque, `show at 360 px: ${L.n} trick buttons, at most 3 a row (${L.per}) over ${L.rows} rows, each 90 px or wider, inside the field, opaque`);
+    await back();
+  }
+  await t.ctx.close();
+  await fresh();
+  ok(await start('catch'), 'catch starts');
+  const flips = await ev(() => new Promise((res) => { const g = window.__paw.ff.g, D2 = g.data; D2.spawn = 1e9; let n = 0, last = D2.face, i = 0; const x0 = D2.x;
+    const f = () => { D2.tx = x0 + (i % 2 ? 9 : -9); if (D2.face !== last) { n++; last = D2.face; } if (++i < 80) requestAnimationFrame(f); else res(n); }; f(); }));
+  ok(flips <= 1, `catch: a finger wobbling 9 units either side does not turn the dog round (${flips} flips in 80 frames)`);
+  await endRound(); await t.p.keyboard.press('Escape'); await t.until(() => window.__paw.mode !== 'fair', null, 4000);
+  ok(await ev(() => window.__paw.mode !== 'fair'), 'Escape on the result card goes back, like the Back button');
+  await t.p.click('[data-act=map]'); await t.p.waitForSelector('#mapInner .mb[data-area]');
+  ok(await ev(() => !['yard', 'market'].includes(window.__paw.mode) && window.__paw.ff.start('catch') === false && window.__paw.mode !== 'fair'), 'a game never starts from outside a place (the map)');
+  ok(!errs.length, 'no page errors ' + errs.slice(0, 3).join(' | '));
 }, { timeout: 900000 });

@@ -5057,6 +5057,7 @@
  "ff.boing": "boing !",
  "ff.btn_fair": "Fête foraine",
  "ff.btn_yard": "Jeux du jardin",
+ "ff.busy": "{name} est occupé pour le moment. Réessaie la Fête foraine dans un instant.",
  "ff.done": "Terminé",
  "ff.found": "Trouvé !",
  "ff.h_bakery": "Clique sur la boîte qui a la même forme que le biscuit, ou appuie sur 1 à 4.",

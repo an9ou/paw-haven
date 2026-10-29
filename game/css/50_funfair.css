@@ -16,11 +16,18 @@
 .ff-bg{position:absolute;inset:0;pointer-events:none}
 .ff-bg svg{display:block;width:100%;height:100%}
 .ff-bg::after{content:"";position:absolute;inset:0;background:rgba(255,251,243,.38)}
+/* review fix: the game's sprites take the hour and the weather like the place behind them, and the paper wash thins out at night so the dark is not milky */
+.ff-game[data-t="night"] .ff-bg::after{background:rgba(255,251,243,.07)}
+.ff-game:is([data-t="dusk"],[data-t="dawn"]) .ff-bg::after{background:rgba(255,251,243,.2)}
+.ff-game[data-t="night"] .ff-sp{filter:brightness(.7) saturate(.72) contrast(.94)}
+.ff-game[data-t="dusk"] .ff-sp{filter:brightness(.93) sepia(.14)}
+.ff-game[data-t="day"]:is([data-w="rain"],[data-w="cloudy"]) .ff-sp{filter:brightness(.9) saturate(.85)}
 .ff-field{position:absolute;left:0;top:0;transform-origin:0 0;contain:layout}
 .ff-sp{position:absolute;left:0;top:0;will-change:transform;pointer-events:none;transform:translate3d(-999px,-999px,0)}
 .ff-sp > svg{display:block;width:100%;height:100%;overflow:visible}
 .ff-static{will-change:auto}
 .ff-float{position:absolute;left:0;top:0;pointer-events:none;font-family:var(--font-hand);font-weight:700;font-size:44px;white-space:nowrap;z-index:5}
+.ff-float span.ff-say{background:rgba(255,251,243,.94);border-radius:16px 12px 18px 10px;padding:2px 16px 6px;box-shadow:0 0 0 2px rgba(91,61,50,.28)}
 .ff-float span{display:block;transform:translateX(-50%);animation:ffPop .9s ease-out both;text-shadow:0 0 6px #FFFBF3,0 0 3px #FFFBF3}
 @keyframes ffPop{0%{opacity:0;translate:0 10px}15%{opacity:1}100%{opacity:0;translate:0 -60px}}
 .ff-hint{position:absolute;left:50%;top:8px;transform:translateX(-50%);max-width:min(640px,92%);margin:0;padding:6px 14px;border-radius:12px;background:rgba(255,251,243,.94);font-size:17px;line-height:1.25;text-align:center;opacity:0;transition:opacity .3s;pointer-events:none;z-index:4;box-shadow:0 2px 8px rgba(91,61,50,.15)}
@@ -58,7 +65,8 @@ html[data-motion="off"] .ff-run > svg,html[data-motion="off"] .ff-spin > svg{ani
 .ff-tricks{position:absolute;left:0;right:0;display:flex;justify-content:center;flex-wrap:wrap;gap:10px;padding:0 16px;z-index:4}
 .ff-trick{min-height:110px;font-size:30px;line-height:1.05;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px 8px;overflow-wrap:anywhere}
 .ff-tn{font-family:var(--font-hand);font-weight:700;font-size:26px;color:#7A6358}
-.ff-tricks.wait .ff-trick{opacity:.55}
+.ff-trick{--wash:#FFF8EC}
+.ff-tricks.wait .ff-trick{color:#9C8E80;--wash:#EFE6D8} /* opaque while waiting: the field never shows through */
 /* the newspaper round */
 .ff-door .ff-dn,.ff-tin .ff-tnum{position:absolute;left:50%;top:6px;transform:translateX(-50%);font-family:var(--font-hand);font-weight:700;font-size:34px;color:#5B3D32}
 .ff-tin .ff-tnum{top:-40px}
@@ -111,3 +119,6 @@ html[data-layout="phone"] .ff-cic{width:48px;height:48px}
 html[data-layout="phone"] .ff-card .btn{grid-column:1/-1;white-space:normal}
 html[data-layout="phone"] .ff-pcres{grid-template-columns:56px minmax(0,1fr)}
 html[data-layout="phone"] .ff-rib{width:56px;height:56px}
+/* review fix: rinse drops fall from the jug onto the dog's back */
+.ff-drop > svg{animation:ffDrop .6s ease-in both}
+@keyframes ffDrop{from{transform:translateY(0)}to{transform:translateY(70px)}}

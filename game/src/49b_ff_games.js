@@ -34,8 +34,9 @@ const FF_DEF = {
     tick(G, dt) {
       const D2 = G.data, sp = 950; G.dt = dt;
       if (D2.l || D2.r) D2.tx = clamp(D2.x + (D2.r - D2.l) * 200, 90, G.W - 90);
-      const step = clamp(D2.tx - D2.x, -sp * dt, sp * dt); D2.x += step; if (Math.abs(step) > 0.4) D2.face = step > 0 ? 'right' : 'left';
-      ffWalkPose(G, D2.dog, Math.abs(step) > 0.4, D2.face); ffFeet(D2.dog, D2.x, D2.floor);
+      const gap = D2.tx - D2.x, go2 = Math.abs(gap) > (D2.mv ? 4 : 15); // a dead zone: a finger's small wobble neither moves the dog nor turns it round
+      const step = go2 ? clamp(gap, -sp * dt, sp * dt) : 0; D2.x += step; D2.mv = go2; if (go2 && Math.abs(gap) > 15) D2.face = gap > 0 ? 'right' : 'left';
+      ffWalkPose(G, D2.dog, go2, D2.face); ffFeet(D2.dog, D2.x, D2.floor);
       // spawn: faster as the round goes on; a fall takes 2.4 s at the start and 1.5 s at the end, on any screen
       D2.next -= dt; const f = clamp(G.t / G.dur, 0, 1);
       if (D2.next <= 0) { D2.next = 0.95 - 0.45 * f + Math.random() * 0.25; const pine = Math.random() < 0.25, s = pine ? 'pine' : PICK(FF_SHAPES);
@@ -165,8 +166,13 @@ const FF_DEF = {
       const wide = G.W / G.H > 1.3; // desktop: the card on the left, the dog beside it; phones: one above the other
       D2.card = ffSpr(G, `<div class="ff-jc">${ffArt('judgecard')}<div class="ff-jseq"></div><div class="ff-jback" aria-hidden="true">?</div></div>`, wide ? 600 : Math.min(640, G.W - 16), wide ? 280 : 330, 'ff-jcard'); ffPut(D2.card, wide ? G.W * 0.38 : G.W / 2, wide ? 160 : Math.max(190, G.H * 0.24));
       D2.dx = wide ? G.W * 0.84 : G.W / 2; D2.dog = ffDog(G, G.d, wide ? 0.95 : 1.1); D2.feet = wide ? G.H - 150 : G.H - 230; ffFeet(D2.dog, D2.dx, D2.feet); D2.rest = 'idle';
-      const bw = Math.min(160, (G.W - 40) / D2.tricks.length - 10);
-      D2.btns = document.createElement('div'); D2.btns.className = 'ff-tricks'; D2.btns.style.top = (G.H - (wide ? 128 : 190)) + 'px';
+      const per = wide ? D2.tricks.length : Math.min(3, D2.tricks.length), rows = Math.ceil(D2.tricks.length / per), rowH = 120; // phones: at most 3 a row, 2 rows
+      const bw = Math.min(160, (G.W - 40) / per - 10);
+      D2.btns = document.createElement('div'); D2.btns.className = 'ff-tricks'; D2.btns.style.top = (G.H - rows * rowH - 8) + 'px'; // from the field's bottom
+      if (!wide) { // phones: the dog stands just above the buttons and shrinks, if it must, to fit under the pose card
+        D2.feet = G.H - rows * rowH - 24; const room = D2.feet - (Math.max(190, G.H * 0.24) + 150);
+        if (D2.dog.h * 0.85 > room) { ffKill(G, D2.dog); D2.dog = ffDog(G, G.d, 1.1 * Math.max(0.55, room / (D2.dog.h * 0.85))); }
+        ffFeet(D2.dog, D2.dx, D2.feet); }
       D2.btns.innerHTML = D2.tricks.map((n, i) => `<button class="btn ff-trick" data-i="${i}" style="width:${bw.toFixed(0)}px"><span class="ff-tn">${i + 1}</span>${esc(ffTrickName(n))}</button>`).join('');
       G.field.appendChild(D2.btns); D2.btns.querySelectorAll('button').forEach((b) => { b.addEventListener('pointerdown', (e) => e.stopPropagation()); b.onclick = () => this.pick(G, +b.dataset.i); });
       this.next(G);
@@ -287,7 +293,7 @@ const FF_DEF = {
     pick(G, i) {
       const D2 = G.data, t = D2.tins[i]; if (!t || G.over || D2.wait > 0 || D2.fly) return;
       if (t.s === D2.s) { G.score++; ffScore(G); D2.fly = { sp: D2.bis, t: 0, x: t.x, y: t.y - 20 }; D2.bis = null; this.next(G); ffPose(D2.dog, 'happy', 'right'); D2.pz = 0.5; try { SFX.boop(860 + (G.score % 4) * 70); } catch (e) { /* none */ } }
-      else { D2.wait = 0.6; ffPop(G, tt('ff.bea_shape', 'Bea: "That one is a {shape}!"', { shape: ffShapeName(D2.s) }), G.W / 2, D2.by - 110, '#C24F2E'); try { SFX.boop(400); } catch (e) { /* none */ } }
+      else { D2.wait = 0.6; ffPop(G, tt('ff.bea_shape', 'Bea: "That one is a {shape}!"', { shape: ffShapeName(D2.s) }), G.W / 2, D2.by - 110, '#A8402A', true); try { SFX.boop(400); } catch (e) { /* none */ } }
     },
     down(G, x, y) { const t = G.data.tins.find((q) => Math.abs(q.x - x) < q.sp.w / 2 + 6 && Math.abs(q.y - y) < 95); if (t) this.pick(G, t.i); },
     key(G, e, dn) { if (!dn) return false; const n = +e.key; if (n >= 1 && n <= 4) { this.pick(G, n - 1); return true; } return false; },
@@ -307,6 +313,8 @@ const FF_DEF = {
       D2.dog = ffDog(G, D2.vis, tk); ffFeet(D2.dog, D2.cx, D2.base - 235 * tk);
       D2.tub = ffSpr(G, art('prop', 'tub'), 360 * tk, 360 * tk, 'ff-tub'); ffPut(D2.tub, D2.cx + 6 * tk, D2.base - 140 * tk);
       D2.tools = ['sponge', 'jug', 'towel'].map((n, i) => { const sp = ffSpr(G, ffArt(n), 96, 96, 'ff-tool'); ffPut(sp, G.W - 90, G.H * 0.3 + i * 120); return sp; });
+      if (G.W < 800) { G.field.appendChild(D2.me.el); ffPose(D2.me, 'sit', 'left'); ffFeet(D2.me, G.W - 90, G.H - 30); } // phones: your dog watches from the front corner, never behind the tub
+      D2.pour = ffSpr(G, ffArt('jug'), 110, 110, 'ff-pour'); ffPut(D2.pour, -999, -999); // the rinse jug tips over the dog's back, away from the face
       this.tool(G);
     },
     tool(G) { const D2 = G.data; D2.tools.forEach((t, i) => t.el.classList.toggle('on', i === D2.step)); ffHint(G, [tt('ff.h_w1', 'Step 1: scrub {dog} all over.', { dog: G.data.vis.name }), tt('ff.h_w2', 'Step 2: hold to rinse the suds away.'), tt('ff.h_w3', 'Step 3: towel {dog} dry.', { dog: G.data.vis.name })][D2.step], 3000); },
@@ -324,7 +332,9 @@ const FF_DEF = {
     over(G, x, y) { const D2 = G.data, k = D2.tk || 1; return Math.abs(x - D2.cx) < 190 * k && y > D2.base - 430 * k && y < D2.base - 50 * k; },
     tick(G, dt) {
       const D2 = G.data;
-      if (D2.step === 1 && (G.hold || D2.sp)) { this.bump(G, 38 * dt); if (Math.random() < dt * 14) { const w = ffSpr(G, '<svg viewBox="0 0 20 30"><path d="M10 2 Q18 16 10 28 Q2 16 10 2Z" fill="#BFE5F5" stroke="#5B3D32" stroke-width="2"/></svg>', 20, 30, 'ff-drop'); ffPut(w, D2.cx + RAND(-120, 120), D2.base - 330); setTimeout(() => ffKill(G, w), 600); } }
+      const k = D2.tk || 1, pouring = D2.step === 1 && (G.hold || D2.sp), jx = D2.cx - 120 * k, jy = D2.base - 440 * k;
+      if (pouring !== D2.pouring) { D2.pouring = pouring; if (pouring) { D2.pour.r = 35; ffPut(D2.pour, jx, jy); } else ffPut(D2.pour, -999, -999); }
+      if (pouring) { this.bump(G, 38 * dt); if (Math.random() < dt * 14) { const w = ffSpr(G, '<svg viewBox="0 0 20 30"><path d="M10 2 Q18 16 10 28 Q2 16 10 2Z" fill="#BFE5F5" stroke="#5B3D32" stroke-width="2"/></svg>', 20, 30, 'ff-drop'); ffPut(w, jx + 40 * k + RAND(-22, 22), jy + 70 * k + RAND(0, 50)); setTimeout(() => ffKill(G, w), 600); } } // drops fall from the jug's spout onto the back
     },
     down(G, x, y) { G.data.lx = x; G.data.ly = y; },
     move(G, x, y, e) { const D2 = G.data; if (D2.step === 1) return; if (e.pointerType !== 'mouse' && !G.hold) return; if (D2.lx == null) { D2.lx = x; D2.ly = y; return; } const d = Math.hypot(x - D2.lx, y - D2.ly); D2.lx = x; D2.ly = y; if (this.over(G, x, y)) this.bump(G, d / 26, x, y); },

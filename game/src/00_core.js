@@ -962,9 +962,9 @@ function v218Fields(s) {
   if (typeof f.day !== 'string') f.day = '';
   ['c', 'n', 'best', 'rib', 'mk', 'pc', 'wash'].forEach((k) => obj(f, k));
   if (typeof f.mk.day !== 'string') f.mk.day = ''; ['coins', 'n'].forEach((k) => { if (typeof f.mk[k] !== 'number' || !(f.mk[k] >= 0)) f.mk[k] = 0; });
-  if (typeof f.pc.wk !== 'string') f.pc.wk = ''; if (!Array.isArray(f.pc.e)) f.pc.e = []; if (f.pc.e.length > 3) f.pc.e.length = 3; if (typeof f.pc.judged !== 'string') f.pc.judged = '';
+  if (typeof f.pc.wk !== 'string') f.pc.wk = ''; if (!Array.isArray(f.pc.e)) f.pc.e = []; f.pc.e = f.pc.e.filter((x) => v28Obj(x)).slice(0, 3); if (typeof f.pc.judged !== 'string') f.pc.judged = '';
   ['won', 'rib'].forEach((k) => { if (typeof f.pc[k] !== 'number' || !(f.pc[k] >= 0)) f.pc[k] = 0; });
-  if (typeof f.wash.day !== 'string') f.wash.day = ''; if (typeof f.wash.n !== 'number') f.wash.n = 0;
+  if (typeof f.wash.day !== 'string') f.wash.day = ''; if (typeof f.wash.n !== 'number' || !(f.wash.n >= 0)) f.wash.n = 0;
   ['c', 'n', 'best', 'rib'].forEach((k) => Object.keys(f[k]).forEach((x) => { if (typeof f[k][x] !== 'number' || !(f[k][x] >= 0)) delete f[k][x]; }));
   return s;
 }

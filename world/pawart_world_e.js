@@ -1111,12 +1111,12 @@ function tokyoPostcard(w,h,o){o=o||{};const s=Math.max(w,h)/450,lw=w/s,lh=h/s,co
 const FF_COLS=[['#F08A86','#E46F6B'],['#B9D4F3','#8FB3E0'],['#FFE08A','#E9B44C'],['#BDE7D2','#86C9A8'],['#D3C6F1','#B9A6E8']];
 const FF_LEAF={spring:['#F7C6D4','#F28FA5'],summer:['#9CCB86','#7FB86A'],autumn:['#F7B267','#E9883B'],winter:['#E6EEF3','#B9C9D6']};
 function ffBiscuit(b,s,cx,cy,k,col){
-  col=col||'#E9C08A';const sh={hatch:0,hl:0,base:'#F8E3C0',lw:.8};
+  // review fix: the crumbs are clipped inside the biscuit and kept within 3 units of its centre, so none sits on the ink line
+  col=col||'#E9C08A';const sh={hatch:0,hl:0,base:'#F8E3C0',lw:.8,inner:[[-3,-1.5],[2.6,1.2],[-.6,2.6],[2.8,-2.4]].map(([dx,dy])=>`<circle cx="${R1(cx+dx*k)}" cy="${R1(cy+dy*k)}" r="${R1(1.1*k)}" fill="#C99A62"/>`).join('')};
   if(s==='bone')b.sh(boneFF(cx,cy,40*k,15*k),col,sh);
   else if(s==='heart')b.sh(heartFF(cx,cy+2*k,36*k),col,sh);
   else if(s==='star')b.sh(starFF(cx,cy+1*k,20*k,9.5*k),col,sh);
   else b.sh(E(cx,cy,17*k,17*k,18),col,sh);
-  [[-6,-3],[5,2],[-1,5],[7,-5]].forEach(([dx,dy])=>b.dot(cx+dx*k,cy+dy*k,1.1*k,'#C99A62'));
 }
 const boneFF=(cx,cy,len,th)=>boneP(cx,cy,len,th);
 function heartFF(cx,cy,s){const p=[];for(let i=0;i<24;i++){const t=i/24*Math.PI*2;p.push([cx+16*Math.pow(Math.sin(t),3)*s/32,cy-(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))*s/32])}return p}
@@ -1132,14 +1132,20 @@ const FF_ART={
  canopy:[ '0 0 1000 300','prop',(b,o)=>{const L=FF_LEAF[o.season]||FF_LEAF.summer;
   [[60,300,96,120],[940,300,904,120]].forEach(([x0,y0,x1,y1])=>b.sh([[x0-22,y0],[x0-14,y1+60],[x1-12,y1],[x1+14,y1+6],[x0+16,y1+70],[x0+22,y0]],'#C9A07A',{k:.15,sh:'#A97E5A',hl:0}));
   const blobs=[[90,120,120,80],[250,90,140,80],[420,70,150,72],[590,74,150,74],[760,92,140,80],[910,122,110,80],[170,180,110,52],[500,150,170,52],[830,178,120,52]];
-  blobs.forEach(([x,y,rx,ry],i)=>b.sh(cloudFF(x,y,rx,ry),i%2?L[0]:mix(L[0],L[1],.35),{sh:L[1],hlo:.3}));
-  if(o.season==='spring')[[200,150],[380,120],[640,130],[880,150]].forEach(([x,y])=>b.ex('heart',x,y,5,'#F7B2C4'));
-  if(o.season==='winter')[[240,52],[430,30],[600,36],[780,58]].forEach(([x,y])=>b.sh(E(x,y,46,12,14),'#FFFFFF',{hatch:0,hl:0,lw:.7}));
+  // review fix: leafy pencil clusters like the town's trees (a lumpy crown, little "c" leaf marks inside), winter snow sits on each crown's top
+  const snow=o.season==='winter';
+  blobs.forEach(([x,y,rx,ry],i)=>{const P=cloudP(x,y,rx,ry,11,.22,66);let d='';const n=Math.round(rx*ry/700);for(let j=0;j<n;j++){const a=b.r()*Math.PI*2,rr=Math.sqrt(b.r())*.7;d+=b.jl(x+Math.cos(a)*rx*rr,y+Math.sin(a)*ry*rr,x+Math.cos(a)*rx*rr+9,y+Math.sin(a)*ry*rr-3,.6)}
+   const marks=[];if(snow&&i<6){const cap=P.filter(q=>q[1]<y-ry*.42);if(cap.length>3){const xs=cap.map(q=>q[0]),x0=Math.min(...xs),x1=Math.max(...xs),lo=[];for(let t=0;t<=6;t++){const xx=x1-(x1-x0)*t/6;lo.push([xx,y-ry*(.42+(t%2?.1:-.02))])}marks.push({pts:P.filter(q=>q[1]<y-ry*.36).concat(lo),fill:'#FFFFFF',k:.2})}}
+   b.sh(P,i%2?L[0]:mix(L[0],L[1],.35),{sh:L[1],hlo:.3,marks,inner:b.st(d,L[1],2.4,.9)})});
+  if(o.season==='spring')[[150,120],[300,96],[470,80],[640,96],[800,120],[220,170],[560,150],[880,168]].forEach(([x,y])=>b.ex('heart',x,y,14,'#F28FA5'));
  }],
  trunk:['0 0 90 520','prop',(b)=>{b.sh([[18,0],[16,180],[12,400],[6,516],[84,516],[76,400],[72,180],[70,0]],'#C9A07A',{k:.1,sh:'#A97E5A',hl:0,inner:b.st(b.jl(34,60,30,160)+b.jl(52,240,56,330)+b.jl(36,400,32,480),'#A97E5A',1.4,.8)})}],
- pinecone:['0 0 64 64','item',(b)=>{b.sh(E(32,34,15,22,18),'#B9875A',{sh:'#8A5E3B',hl:0,inner:b.st(b.jl(20,24,44,24)+b.jl(18,32,46,32)+b.jl(19,40,45,40)+b.jl(22,48,42,48)+b.jl(26,16,38,16),'#7A5136',1.3,.8)});
-  b.sh([[30,13],[31,5],[35,6],[34,13]],'#7FB86A',{k:.1,hatch:0,hl:0,lw:.6})}],
- bubble:['0 0 80 80','item',(b,o)=>{const g=!!o.gold;b.sh(E(40,40,30,30,24),g?'#FFE08A':'#DDF1FB',{hatch:0,base:g?'#FFF3C4':'#F2FAFE',op:g?.95:.75,hl:0,lw:.8,
+ pinecone:['0 0 64 64','item',(b)=>{// review fix: a long cone with a pointed tip and rows of overlapping scales (an acorn would be toxic, so it must never read as one)
+  const P=[];for(let i=0;i<=20;i++){const t=i/20,y=9+t*50,w=t<.3?Math.sin(t/.3*Math.PI/2)*15:15*Math.pow(1-(t-.3)/.7,.8);P.push([32+w,y])}for(let i=19;i>=1;i--){const q=P[i];P.push([64-q[0],q[1]])}
+  let sc='';for(let r=0;r<9;r++){const y=15+r*5.4,hw=r<2?10:15*Math.pow(1-(r-1)/9,.8),n=Math.max(1,Math.round(hw/4.2));for(let j=0;j<n;j++){const x=32-hw+(j+.5+(r%2?.5:0))*(2*hw/(n+(r%2?1:0)));if(x<32-hw+1||x>32+hw-1)continue;sc+=`M${R1(x-3.6)} ${R1(y)}Q${R1(x)} ${R1(y+5.4)} ${R1(x+3.6)} ${R1(y)}`}}
+  b.sh(P,'#B9875A',{k:.2,sh:'#8A5E3B',hl:0,inner:b.st(sc,'#6E4A30',1.2,.9)});
+  b.sh([[30.5,10],[31,3],[33.5,3.4],[33.5,10]],'#8A5E3B',{k:.1,hatch:0,hl:0,lw:.6})}],
+ bubble:['0 0 80 80','item',(b,o)=>{const g=!!o.gold;b.sh(E(40,40,30,30,24),g?'#FFE08A':'#DDF1FB',{hatch:0,base:g?'#FFF3C4':'#F2FAFE',op:g?.48:.75,hl:0,lw:.8,
    marks:[{pts:E(34,34,19,19,16),fill:g?'#FFF6D6':'#FFFFFF',op:.45},{pts:E(52,54,8,5,10,.6),fill:g?'#F7C548':'#C5E6F5',op:.6}]});
   b.sh(E(28,26,7,4,10,-.7),'#FFFFFF',{hatch:0,hl:0,lw:.5});if(g){b.ex('spark',60,18,5);b.ex('spark',16,62,3.4)}}],
  kite:['0 0 120 170','prop',(b,o)=>{const c=FF_COLS[(o.c||0)%5];b.sh([[60,6],[100,52],[60,110],[20,52]],c[0],{k:0,sh:c[1],marks:[{pts:[[60,6],[100,52],[60,52]],fill:'#FFFFFF',op:.35,k:0},{pts:[[20,52],[60,52],[60,110]],fill:'#FFFFFF',op:.35,k:0}]});
@@ -1175,9 +1181,13 @@ const FF_ART={
  leaf:['0 0 48 48','item',(b,o)=>{const s=o.season||'summer';
   if(s==='spring')b.sh(heartFF(24,26,28),'#F7C6D4',{hatch:0,hl:0,sh:'#F28FA5'});
   else if(s==='winter'){[0,1,2].forEach(i=>{const a=i*Math.PI/3;b.ln([[24-Math.cos(a)*16,24-Math.sin(a)*16],[24+Math.cos(a)*16,24+Math.sin(a)*16]],{w:2,col:'#7FA6C6'})});b.sh(E(24,24,4,4,10),'#FFFFFF',{hatch:0,hl:0,lw:.6})}
-  else if(s==='autumn')b.sh(starFF(24,25,18,9),'#F2A65A',{hatch:0,hl:0,sh:'#E9883B'});
+  else if(s==='autumn'){// review fix: a maple leaf (five toothed lobes and a stem), not a star
+   const R=[[0,-20],[3.5,-11],[8.5,-14.5],[8.5,-6.5],[17,-10],[14,-2],[19.5,1.5],[10.5,5.5],[12.5,11.5],[3.5,8.5],[1,13]],M=R.concat(R.slice(1).reverse().map(([x,y])=>[-x,y]));
+   b.ln([[24,35],[23,45]],{w:1.6,col:'#B5652A'});b.sh(M.map(([x,y])=>[24+x,23+y]),'#F2A65A',{k:0,hatch:0,hl:0,sh:'#E9883B',inner:b.st(b.jl(24,35,24,6)+b.jl(24,30,38,16)+b.jl(24,30,10,16),'#C9692E',1,.8)})}
   else b.sh(rot([[8,24],[18,14],[32,12],[42,24],[32,36],[18,34]],-.4,24,24),'#9CCB86',{hatch:0,hl:0,sh:'#7FB86A',inner:b.st(b.jl(10,28,40,20),'#6FA05A',1,.8)})}],
- sponge:['0 0 64 64','item',(b)=>{b.sh(rot(RR(12,20,40,26,7),-.2,32,32),'#FFE08A',{sh:'#E9B44C',inner:'<circle cx="24" cy="30" r="2" fill="#E9B44C"/><circle cx="36" cy="27" r="1.6" fill="#E9B44C"/><circle cx="40" cy="38" r="2" fill="#E9B44C"/>'})}],
+ sponge:['0 0 64 64','item',(b)=>{// review fix: a kitchen sponge with its green scrub layer on top, so it never reads as cheese
+  b.sh(rot(RR(12,28,40,20,5),-.2,32,32),'#FFE08A',{sh:'#E9B44C',hl:0,inner:'<circle cx="24" cy="38" r="1.8" fill="#E9B44C"/><circle cx="35" cy="36" r="1.5" fill="#E9B44C"/><circle cx="41" cy="42" r="1.7" fill="#E9B44C"/>'});
+  b.sh(rot(RR(11,17,42,12,4),-.2,32,32),'#7FC46A',{sh:'#4E9A45',hatch:1,hl:0,inner:b.st(b.jl(16,22,26,20)+b.jl(28,23,40,19)+b.jl(36,25,48,21),'#3F7F38',1.1,.8)})}],
  jug:['0 0 64 64','item',(b)=>{b.sh([[16,22],[44,22],[46,54],[14,54]],'#B9D4F3',{k:.1,sh:'#8FB3E0'});b.sh([[44,28],[56,20],[58,24],[46,34]],'#B9D4F3',{k:.1,hatch:0,hl:0,lw:.7});
   b.sh(E(30,22,14,4,14),'#DDF1FB',{hatch:0,hl:0,lw:.6})}],
  towel:['0 0 64 64','item',(b)=>{b.sh([[10,14],[54,14],[52,52],[12,52]],'#F7B2C4',{k:.1,sh:'#F28FA5',marks:[{pts:[[10,40],[54,40],[54,45],[10,45]],fill:'#FFFFFF',op:.8,k:0}]})}]

@@ -124,7 +124,7 @@ function ffCardHTML(k) {
   return `<li class="ff-card${lock ? ' locked' : ''}" data-k="${k}"><span class="ff-cic" aria-hidden="true">${art('item', FF_ICON[k])}</span><div class="ff-ctx"><b>${esc(ffName(k))}</b>${who ? `<span class="small ff-who">${esc(tt('ff.with', 'with {who}', { who }))}</span>` : ''}<span class="small">${esc(ffAbout(k))}</span><span class="small ff-cl">${esc(line)}</span></div>${btn}</li>`;
 }
 function ffCards() {
-  if (!ffReady() || busy) return;
+  if (!ffReady()) return; if (busy) { nope(tt('ff.busy', '{name} is busy right now. Try the Fun Fair in a moment.', { name: NAME() })); return; }
   const list = ffHere(); if (!list.length) return;
   const p = openModal(esc(ffBtnLabel(list)), `<ul class="ff-cards">${list.map(ffCardHTML).join('')}</ul>`, { cls: 'ff-pop' });
   p.querySelectorAll('[data-ffgo]').forEach((b) => { b.onclick = () => {
@@ -150,7 +150,7 @@ function ffCan(k, loud) {
 /* ---------------- the game frame (mode 'fair') ---------------- */
 // the field: W = 1000 units wide, H from the view's shape (a phone gets a tall field); sprites are divs moved by translate3d
 function ffStart(k) {
-  if (!ffReady() || !FF_GAMES[k] || busy || !ffCan(k)) return false;
+  if (!ffReady() || !FF_GAMES[k] || busy || !['yard', 'market', 'fair'].includes(cur.mode) || !ffCan(k)) return false; // from a place (or Play again), never from a walk, the map or a shop
   go('fair', k); return cur.mode === 'fair';
 }
 function enterFair(k) {
@@ -159,25 +159,26 @@ function enterFair(k) {
   setChrome(true, false); stage.classList.add('ffmode'); busy = true;
   try { rmPause('fair'); } catch (e) { /* none */ }
   const sw = typeof grOn === 'function' && grOn(place) && grFloor(place) ? grFloor(place).w : 1000;
-  view.innerHTML = `<div class="ff-game" data-g="${k}"><div class="ff-top"><div class="ff-th"><h3>${esc(ffName(k))}</h3><span class="ff-sc" id="ffSc" aria-live="polite"></span></div>
+  let tph = 'day', twx = 'sunny'; try { tph = timePhase(); twx = weatherNow(); } catch (e) { /* day */ }
+  view.innerHTML = `<div class="ff-game" data-g="${k}" data-t="${tph}" data-w="${twx}"><div class="ff-top"><div class="ff-th"><h3>${esc(ffName(k))}</h3><span class="ff-sc" id="ffSc" aria-live="polite"></span></div>
     <div class="ff-time" aria-hidden="true"><svg viewBox="0 0 400 14" preserveAspectRatio="none"><path class="ff-tl0" d="M4 8 Q100 4 200 8 T396 7"/><path class="ff-tl" id="ffTl" d="M4 8 Q100 4 200 8 T396 7" pathLength="100"/></svg></div>
     <button class="btn ff-done" id="ffDone">${esc(tt('ff.done', 'Done'))}</button></div>
     <div class="ff-play" id="ffPlay"><div class="ff-bg" aria-hidden="true"><svg viewBox="0 0 ${sw} 600" preserveAspectRatio="xMidYMax slice">${sceneArt(place, envNow(), place === 'yard' ? { patch: gkOn() ? patchState() : 'empty' } : mpSceneOpts(place))}</svg></div>
     <div class="ff-field" id="ffField"></div><p class="ff-hint" id="ffHint"></p><div class="ff-end" id="ffEnd" hidden></div></div></div>`;
   const play = $('#ffPlay'), field = $('#ffField');
   const G = FF.g = { k, d, def, play, field, W: isPhone() ? 560 : 1000, H: 600, sc: 1, t: 0, dur: def.dur || 0, score: 0, over: false, dead: false, last: 0, raf: 0, spr: [], tok: Date.now(), hold: false, ptr: null, data: {} };
+  let pre = ''; try { pre = def.scoreText ? def.scoreText(G) : ''; } catch (e) { pre = ''; } ffScore(G, pre || tt('ff.score', 'Score: {n}', { n: 0 })); // the header gets its text before the field is measured
   ffFit(G); def.init(G); ffScore(G); ffHint(G, def.hint(G));
   const pt = (e) => { const r = field.getBoundingClientRect(); return { x: (e.clientX - r.left) / G.sc, y: (e.clientY - r.top) / G.sc }; };
   play.addEventListener('pointerdown', (e) => { if (G.over || e.target.closest('.ff-end, button')) return; SFX.init(); G.hold = true; G.ptr = pt(e); try { play.setPointerCapture(e.pointerId); } catch (er) { /* none */ } if (def.down) def.down(G, G.ptr.x, G.ptr.y, e); });
   play.addEventListener('pointermove', (e) => { if (G.over) return; const p = pt(e); if (e.pointerType === 'mouse' || G.hold) { G.ptr = p; if (def.move) def.move(G, p.x, p.y, e); } });
   const up = () => { if (!G.hold) return; G.hold = false; if (def.up && !G.over) def.up(G); };
   play.addEventListener('pointerup', up); play.addEventListener('pointercancel', up);
-  cur.key = (e) => { if (G.over) { if (e.key === 'Enter' && $('#ffAgain')) { e.preventDefault(); $('#ffAgain').click(); } return; } if (e.key === 'Escape') { e.preventDefault(); ffQuit(); return; } if (def.key && def.key(G, e, true)) e.preventDefault(); };
+  cur.key = (e) => { if (G.over) { if (e.key === 'Enter' && $('#ffAgain')) { e.preventDefault(); $('#ffAgain').click(); } else if (e.key === 'Escape' && $('#ffBack')) { e.preventDefault(); $('#ffBack').click(); } return; } if (e.key === 'Escape') { e.preventDefault(); ffQuit(); return; } if (def.key && def.key(G, e, true)) e.preventDefault(); };
   cur.keyup = (e) => { if (!G.over && def.key) def.key(G, e, false); };
   $('#ffDone').onclick = () => { SFX.boop(700); ffQuit(); };
-  const onResize = () => { if (FF.g === G) ffFit(G, true); };
-  window.addEventListener('resize', onResize);
-  onCleanup(() => { G.dead = true; cancelAnimationFrame(G.raf); window.removeEventListener('resize', onResize); cur.key = null; cur.keyup = null; stage.classList.remove('ffmode'); busy = false; if (FF.g === G) FF.g = null; try { rmResume('fair'); } catch (e) { /* none */ } if (G.def.stop) try { G.def.stop(G); } catch (e) { /* none */ } });
+  const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(() => { if (FF.g === G && !G.dead) ffFit(G, true); }) : null; if (ro) ro.observe(play); // the header can grow (a longer score, a wrapped title): the field refits
+  onCleanup(() => { G.dead = true; cancelAnimationFrame(G.raf); if (ro) ro.disconnect(); cur.key = null; cur.keyup = null; stage.classList.remove('ffmode'); busy = false; if (FF.g === G) FF.g = null; try { rmResume('fair'); } catch (e) { /* none */ } if (G.def.stop) try { G.def.stop(G); } catch (e) { /* none */ } });
   if (isPhone()) { view.style.flex = '1 1 auto'; onCleanup(() => { view.style.flex = ''; }); }
   G.raf = requestAnimationFrame(ffLoop);
 }
@@ -224,8 +225,8 @@ function ffPose(s, pose, face) {
 // put the dog's feet at (x, y)
 const ffFeet = (s, x, y) => ffPut(s, x, y - s.h / 2 + 6 * s.dk);
 // a short floating word
-function ffPop(G, txt, x, y, col) {
-  const el = document.createElement('div'), sp = document.createElement('span'); el.className = 'ff-float'; sp.textContent = txt; el.appendChild(sp); el.style.color = col || '#5B3D32'; el.style.transform = `translate3d(${x.toFixed(0)}px,${y.toFixed(0)}px,0)`;
+function ffPop(G, txt, x, y, col, say) {
+  const el = document.createElement('div'), sp = document.createElement('span'); el.className = 'ff-float'; sp.textContent = txt; if (say) sp.className = 'ff-say'; // a spoken line sits on a light card el.appendChild(sp); el.style.color = col || '#5B3D32'; el.style.transform = `translate3d(${x.toFixed(0)}px,${y.toFixed(0)}px,0)`;
   G.field.appendChild(el); setTimeout(() => el.remove(), 900);
 }
 const ffArt = (name, o) => (window.PawArt && typeof PawArt.ffArt === 'function' ? PawArt.ffArt(name, o || {}) : '') || doodle('paw', 0, 0, 1);
