@@ -13,7 +13,7 @@ const INK='#2E2320',PEN='#5B3D32',GY=186,W='#FFFFFF';
 const mix=(a,b,t)=>{const A=[1,3,5].map(i=>parseInt(a.slice(i,i+2),16)),B=[1,3,5].map(i=>parseInt(b.slice(i,i+2),16));return'#'+A.map((v,i)=>Math.round(v+(B[i]-v)*t).toString(16).padStart(2,'0')).join('')};
 let _n=0;const uid=()=>'pad'+(++_n);
 const R1=n=>Math.round(n*10)/10;
-function rng(seed){let a=seed>>>0;return()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function rng(seed){let a=seed>>>0;const f=()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};f.st=v=>v===undefined?a:(a=v);return f}// st: read or set the stream (v2.18.1: a costume hands the dog back its stream)
 const hashS=s=>{let h=7;for(const c of s)h=(h*31+c.charCodeAt(0))>>>0;return h};
 const D2R=Math.PI/180;
 const rot=(p,a)=>{const c=Math.cos(a*D2R),s=Math.sin(a*D2R);return[p[0]*c-p[1]*s,p[0]*s+p[1]*c]};
@@ -653,7 +653,9 @@ function drawTopknot(h,s,HT){// Poodle: a round pom of hair on top of the head, 
     const K=curlCol(s.hcol);[[-.1,-1.45,-.75,-.9],[.3,-1.35,-.35,-.75]].forEach(q=>h.line([[hx*q[0],hy*q[1]],[hx*(q[0]+q[2])/2+1.5,hy*(q[1]+q[3])/2],[hx*q[2],hy*q[3]]].map(HT),2,K,.3));return}
   h.shape(furR(s.wet,-hx*.1,-hy*.86,hx*.56,hy*.44,8,.2).map(HT),s.hcol,{step:30,amp:.8});
   [[-.3,-1.0],[.12,-1.06]].forEach((q,i)=>h.line(spiral(hx*q[0],hy*q[1],.5,3.6,1.25,8,i*2.4).map(HT),2,curlCol(s.hcol),.3))}
-function drawEars(h,s,L,HT,front){
+// v2.18.1: under a market hood (L.hmHood) the ears tuck in, and the stream moves on as the plain dog's ears would leave it
+function drawEars(h,s,L,HT,front){if(!L.hmHood)return drawEars0(h,s,L,HT,front);hmPlain(h,g=>drawEars0(g,s,L,HT,front),g=>{L.hood=0;drawEars0(g,s,L,HT,front);L.hood=1})}
+function drawEars0(h,s,L,HT,front){
   const mode=L.ears,col=s.ear||s.hcol;const HTg=q=>{const c=HT(q);return[c[0],Math.min(c[1],GY-1)]};// v2.11 curtain ears stop at the ground
   earList(s).forEach(e=>{
     const isFront=!!e.flop;if(isFront!==front||L.hood)return;
@@ -1568,6 +1570,16 @@ RUFF2['Lion Mane']=function(h,s,L,HT){const hx=s.head.rx,hy=s.head.ry,cx=-hx*.1,
 NECK2['Lion Mane']=function(h,s,L,HT){const hx=s.head.rx,hy=s.head.ry,c=[-hx*.05,hy*.98],z=Math.max(5,hx*.24);
   const pts=[[c[0]-z,c[1]-z*.3],[c[0]-z*.7,c[1]+z*.5],[c[0]-z*.3,c[1]+z*.2],[c[0],c[1]+z*.75],[c[0]+z*.35,c[1]+z*.2],[c[0]+z*.75,c[1]+z*.5],[c[0]+z,c[1]-z*.3]];
   h.shape(pts.map(HT).map(hmCl),'#E8A33A',{w:2.6,step:30,ox:0,oy:0,sc:1,closed:1,amp:.4,famp:.3})};
+// v2.18.1 "Tidy costumes": a market costume draws on the dog's random stream and then hands it back where it found it, so the dog's own lines
+// (head, face, muzzle, haunch, legs drawn after it) are exactly the plain dog's, byte for byte, and a costume can never push the dog's fills past its lines.
+// The costume keeps its own jitter (it starts from the same point of the stream as before).
+// Where a market costume changes the dog itself (the topknot stays under the hat, the ears tuck into the Dinosaur Hood), frame() and drawEars move the stream
+// on as the plain dog would (hmPlain), so the head drawn after is the plain dog's too.
+const HM_OWN=new Set(['Little Witch Hat & Cape','Scarecrow Overalls','Mummy Wraps','Skeleton Suit','Black Cat Ears & Bow','Pirate Hat & Sash','Dinosaur Hood','Little Owl Wings','Wizard Robe & Star Hat','Lion Mane']);
+HM_OWN.forEach(n=>[BACK2,BODY2,TOP2,RUFF2,NECK2].forEach(R=>{const fn=R[n];if(fn)R[n]=function(h,...a){const st=h.r.st();fn(h,...a);h.r.st(st)}}));
+
+// draw(h) on the dog, then leave its random stream where plain(g) would have left it (plain draws on a throwaway kit that shares the stream)
+function hmPlain(h,draw,plain){const st=h.r.st(),g=kit(h.r);g.setJ(h.getJ());g.cy=h.cy;if(h.wet)g.wet=1;plain(g);const e=h.r.st();h.r.st(st);draw(h);h.r.st(e)}
 
 function newbornL(s,L){// eyes shut, ears folded, everything soft and curled
   L.face.eyes='closed';L.ears='sleep';L.face.mouth=L.pose==='sleep'?'sleep':'smile';L.blush=0;L.hearts=0;L.tear=0;L.tailS*=.8;
@@ -1869,8 +1881,10 @@ function frame(key,s,pose,outfit,k,seed,ex){
   if(L.paw){h._legPass='raised';drawLegs(h,s,L);h._legPass='ground'}
   if(s.ruff&&!sheet)drawRuff(h,s,L,HT);
   if(neck&&RUFF2[neck]&&!sheet&&top!=='Trick-or-Treat Ghost')RUFF2[neck](h,s,L,HT);// v2.17.1: a mane worn round the face (Lion Mane)
+  const hmk=top&&HM_OWN.has(top);if(hmk&&L.hood)L.hmHood=1;// v2.18.1: drawEars hands the stream on as the plain dog's ears would
   if(!sheet)drawEars(h,s,L,HT,false);
   if(s.topknot&&!hat&&(!top||top==='Pumpkin Patch Suit')&&!(sheet&&s.topknot===3))drawTopknot(h,s,HT);// v2.12: the maltese and shihtzu tuft stays under the Ghost Sheet
+  else if(hmk&&s.topknot)hmPlain(h,()=>0,g=>drawTopknot(g,s,HT));// v2.18.1: the topknot stays under a market hat; the stream moves on as if it were drawn
   {const hf=s.hfluff===undefined?s.fluff:s.hfluff;h.shape(hp.map(HT),s.hcol,{step:hf?30:11,amp:hf?.8:1.2})};h.part(1);h.crayon(s.head.rx,s.head.ry*.6,p=>HT([p[0],p[1]-s.head.ry*.3]),s.hcol,6);
   if(s.headMarks)s.headMarks(h,HT,s);
   if(s.pat)s.pat.head(h,HT,L);
