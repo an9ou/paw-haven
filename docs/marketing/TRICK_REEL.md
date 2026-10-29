@@ -59,7 +59,7 @@ trick or treat, but make it crayon 🎃 four doors, three dog-safe treats, one d
 
 Post `doodle-doggo-trick-or-treat-rednote.mp4` with `trick-cover-rednote.jpg`. On the video: "不给糖就捣蛋，/ 蜡笔版" (trick or treat, crayon edition), "咚咚咚" (knock knock), "不给糖就捣蛋！", the costumes' game names (稻草人背带裤, 骷髅服, 木乃伊绷带, 恐龙帽兜) under "万圣节新服装" (new Halloween costume), "……零食不要了" (...forget the treats), and on the ending page the game's own line "不给糖就捣蛋？要糖。永远要糖。" (trick or treat? treat. always treat.), "搜索 Doodle Doggo 就能玩", "万圣节市集开到11月15日".
 
-标题 (title, 14 characters; 20 max):
+标题 (title, 12 characters; 20 max):
 ```
 不给糖就捣蛋，蜡笔版🎃🐶
 ```
