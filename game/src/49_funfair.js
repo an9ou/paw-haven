@@ -217,10 +217,17 @@ function ffDog(G, d, scale) {
   const k = (d.id !== 'ffwash' && typeof sizeK === 'function' ? sizeK(d) : 1) * (scale || 1), w = Math.round(264 * k), h = Math.round(220 * k);
   const s = ffSpr(G, '', w, h, 'ff-dog'); s.d = d; s.pose = ''; s.face = ''; s.dk = k; ffPose(s, 'idle', 'right'); return s;
 }
+// rainy days: a dog in an outdoor game on a rainy day is drawn wet (a raincoat keeps it dry, the Café is indoors); the bath dog is wet from the rinse on
+function ffWet(s) {
+  const G = FF.g, d = s.d; if (s.soak) return true; if (!G || !S) return false;
+  const pl = FF_GAMES[G.k] && FF_GAMES[G.k].place, out = pl === 'yard' || !!(PLACES[pl] && PLACES[pl].out);
+  let rain = false; try { rain = weatherNow() === 'rain'; } catch (e) { rain = false; }
+  return rain && out && !RAINCOATS.includes(d.id === 'ffwash' ? d.outfit && d.outfit.body : outfitOf(d) && outfitOf(d).body);
+}
 function ffPose(s, pose, face) {
-  face = face || s.face || 'right'; if (s.pose === pose && s.face === face) return;
-  const d = s.d, p = poseReal(d.key, pose) ? pose : POSE_FB[pose] || 'idle';
-  s.el.innerHTML = d.id === 'ffwash' ? dogArtSafe(d.key, { pose: p, outfit: d.outfit, facing: face }) : dogSVG(d, { pose: p, outfit: outfitOf(d), facing: face }); s.pose = pose; s.face = face; // the neighbour's dog: the breed's own look
+  face = face || s.face || 'right'; const wet = ffWet(s); if (s.pose === pose && s.face === face && s.wet === wet) return;
+  const d = s.d, p = poseReal(d.key, pose) ? pose : POSE_FB[pose] || 'idle', w = wet ? { wet: true } : {};
+  s.el.innerHTML = d.id === 'ffwash' ? dogArtSafe(d.key, Object.assign({ pose: p, outfit: d.outfit, facing: face }, w)) : dogSVG(d, Object.assign({ pose: p, outfit: outfitOf(d), facing: face }, w)); s.pose = pose; s.face = face; s.wet = wet; // the neighbour's dog: the breed's own look
 }
 // put the dog's feet at (x, y)
 const ffFeet = (s, x, y) => ffPut(s, x, y - s.h / 2 + 6 * s.dk);

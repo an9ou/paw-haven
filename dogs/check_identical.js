@@ -4,7 +4,7 @@
    x age x sparkle, plus mixes, expecting, coats and facing left.
    Then it sweeps the v2.8 outfits and the v2.11.1 costumes (NEW_OUTS) on the working tree: every breed x pose x age x facing x sparkle renders with no
    NaN/undefined, and each outfit's own strokes touch the dog and stay within a margin of its body and head.
-   Usage: node dogs/check_identical.js [ref]   (env SWEEP_ONLY=1: the sweep alone, SWEEP_EXT=1: print the closest calls, SKIP=gsd: leave a redrawn breed out, SKIP=collie:howl: one breed's adult renders in one pose, SKIP_MIX=1: no mix body renders, INK=1: the ink only, see below)
+   Usage: node dogs/check_identical.js [ref]   (env SWEEP_ONLY=1: the sweep alone, SWEEP_EXT=1: print the closest calls, SKIP=gsd: leave a redrawn breed out, SKIP=collie:howl: one breed's adult renders in one pose, SKIP_MIX=1: no mix body renders, SWEEP_WET=1: the sweep draws every dog wet (rainy days), INK=1: the ink only, see below)
      (prints ALL OK on success, exits 1 on any difference)
    The breeds are split over one child process per CPU core (env SHARD=i/n runs one share). */
 'use strict';
@@ -97,7 +97,7 @@ const wrap=(fn,slot,name,part)=>function(h,s,L,a4,a5){const n0=h.acc.length,r=fn
 // the tables are looked up at draw time, so wrapping their entries is enough
 NEW_OUTS.forEach(([sl,k])=>{if(sl==='head')SW.HAT2[k]=wrap(SW.HAT2[k],'head',k,'hat');else if(sl==='neck'){SW.NECK2[k]=wrap(SW.NECK2[k],'neck',k,'neck');if(SW.RUFF2[k])SW.RUFF2[k]=wrap(SW.RUFF2[k],'neck',k,'mane')}else{if(SW.BODY2[k])SW.BODY2[k]=wrap(SW.BODY2[k],'body',k,'front');if(SW.BACK2[k])SW.BACK2[k]=wrap(SW.BACK2[k],'body',k,'back');if(SW.TOP2[k])SW.TOP2[k]=wrap(SW.TOP2[k],'top',k,'top')}});
 let swN=0,hatX=[-1e9,''];const swBad=[],ext=[[-1e9,''],[-1e9,''],[-1e9,''],[-1e9,'']];
-const sweep=(lab,k,o)=>{swN++;let out;probe={lab,n:0,bad:swBad,ext};try{out=IP.dog(k,o)}catch(e){swBad.push(lab+': ERR '+e.message);probe=null;return}if(probe.hat!==undefined&&probe.hat>hatX[0])hatX=[probe.hat,lab];probe=null;if(/NaN|undefined/.test(out))swBad.push(lab+': NaN/undefined in the SVG')};
+const sweep=(lab,k,o)=>{swN++;if(process.env.SWEEP_WET)o=Object.assign({wet:true},o);/* rainy days: SWEEP_WET=1 sweeps the wet dogs */let out;probe={lab,n:0,bad:swBad,ext};try{out=IP.dog(k,o)}catch(e){swBad.push(lab+': ERR '+e.message);probe=null;return}if(probe.hat!==undefined&&probe.hat>hatX[0])hatX=[probe.hat,lab];probe=null;if(/NaN|undefined/.test(out))swBad.push(lab+': NaN/undefined in the SVG')};
 const NK=NEW.DOGS.map(d=>d.key);
 NK.filter((k,i)=>i%SN===SI).forEach((k,ki)=>{
   NEW_OUTS.forEach(([sl,nm])=>POSES.forEach((p,pi)=>AGES.forEach(age=>['right','left'].forEach(f=>[false,true].forEach(sp=>{

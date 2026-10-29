@@ -124,12 +124,12 @@ function objSVG(o, i) {
   if (o.t === 'puddle') s = place(art('collectible', 'puddle'), -50, 262, 100, 75);
   if (o.t === 'dig') s = place(art('collectible', 'dig'), -36, 266, 72, 72) + (o.treasure && S.outfit.eyes === 'Explorer Goggles' ? place(artReal('collectible', 'sparkle-spot') || SPARK_FB, -30, 216, 60, 60, 'class="gogglespark"') : '');
   if (o.t === 'surprise') s = place(artReal('collectible', 'sparkle-spot') || SPARK_FB, -40, o.y - 20, 80, 80) + place(art('item', o.item.n), -24, o.y, 48, 48);
-  if (o.t === 'npc') s = place(art('dog', o.kind, { pose: o.met ? 'happy' : 'idle', facing: 'left' }), -102, 172, 204, 170);
+  if (o.t === 'npc') s = place(art('dog', o.kind, { pose: o.met ? 'happy' : 'idle', facing: 'left', wet: W.wx === 'rain' || undefined }), -102, 172, 204, 170); // rainy days: wet in the rain
   return `<g id="wo${i}" data-i="${i}" class="wobj hot" transform="translate(${o.x} 0)">${s}</g>`;
 }
 function setWalkPose(p) {
   if (W.pose === p) return; W.pose = p;
-  const g = $('#dogWA'); if (g) g.innerHTML = place(dogSVG(D(), { pose: p, outfit: dogOutfit() }), 0, 0, 204, 170);
+  const g = $('#dogWA'); if (g) g.innerHTML = place(dogSVG(D(), wetOpt(D(), { pose: p, outfit: dogOutfit() })), 0, 0, 204, 170);
 }
 function hop() {
   if (!W || W.ended || performance.now() < W.hopUntil) return;
@@ -244,7 +244,7 @@ function dig(o) {
   }
 }
 function meetNpc(o, i) {
-  o.met = true; W.npcs++; const el = $('#wo' + i); if (el) el.innerHTML = place(art('dog', o.kind, { pose: 'happy', facing: 'left' }), -102, 172, 204, 170);
+  o.met = true; W.npcs++; const el = $('#wo' + i); if (el) el.innerHTML = place(art('dog', o.kind, { pose: 'happy', facing: 'left', wet: W.wx === 'rain' || undefined }), -102, 172, 204, 170);
   SFX.bark(BARK[o.kind]); W.happy += 5; W.bond += 2; W.pauseUntil = performance.now() + 1500;
   let line = tdPickLine('npc_jokes', NPC_JOKES);
   const dressed = SLOTS.some((s) => S.outfit[s]);

@@ -325,6 +325,7 @@ const FF_DEF = {
       if (D2.p[D2.step] >= 100) {
         if (D2.step === 1) { D2.suds.forEach((s) => ffKill(G, s)); D2.suds = []; }
         D2.step++; try { SFX.boop(900); } catch (e) { /* none */ }
+        D2.dog.soak = D2.step === 1 || D2.step === 2; if (D2.step <= 2) ffPose(D2.dog, D2.dog.pose || 'idle'); // wet from the rinse until the towel is done
         if (D2.step > 2) { ffPose(D2.dog, 'shake', 'right'); try { SFX.shake(); } catch (e) { /* none */ } ffPop(G, tt('ff.w_fluffy', 'So fluffy!'), D2.cx, D2.base - 330, '#E46F6B'); setTimeout(() => { if (FF.g === G && !G.over) ffEnd(G); }, 900); }
         else this.tool(G);
       }

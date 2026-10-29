@@ -413,5 +413,24 @@ run('v218_fun_fair', async (t) => {
   ok(await ev(() => window.__paw.mode !== 'fair'), 'Escape on the result card goes back, like the Back button');
   await t.p.click('[data-act=map]'); await t.p.waitForSelector('#mapInner .mb[data-area]');
   ok(await ev(() => !['yard', 'market'].includes(window.__paw.mode) && window.__paw.ff.start('catch') === false && window.__paw.mode !== 'fair'), 'a game never starts from outside a place (the map)');
+  await t.ctx.close();
+
+  sec('19. rainy days: dogs in the outdoor games are wet in the rain, dry in the Café and in a raincoat; the bath dog is wet from the rinse');
+  await fresh({ weather: 'rain' });
+  ok(await start('catch'), 'catch starts in the rain');
+  ok(await ev(() => window.__paw.ff.g.data.dog.wet === true && /wet|drip/i.test(window.__paw.ff.g.data.dog.el.innerHTML) || window.__paw.ff.g.data.dog.wet === true), 'catch in the rain at Sunny Park: the dog is wet');
+  await back();
+  ok(await start('bakery'), 'bakery starts in the rain');
+  ok(await ev(() => { const g = window.__paw.ff.g; return [...g.field.querySelectorAll('.ff-dog')].length > 0 && g.spr.filter((q) => q.d).every((q) => q.wet === false); }), 'the bakery is in the Café (indoors): the dog stays dry');
+  await back();
+  await ev(() => { window.__paw.S.dog.outfit.body = 'Yellow Raincoat'; });
+  ok(await start('catch'), 'catch starts in a raincoat');
+  ok(await ev(() => window.__paw.ff.g.data.dog.wet === false), 'a raincoat keeps the dog dry in the games');
+  await back();
+  await t.ctx.close();
+  await fresh({ weather: 'sunny' });
+  ok(await start('wash'), 'wash starts on a dry day');
+  const soak = await ev(() => { const g = window.__paw.ff.g, D2 = g.data, a = D2.dog.wet; g.def.bump(g, 100); const b = D2.dog.wet; g.def.bump(g, 100); const c = D2.dog.wet; g.def.bump(g, 100); return [a, b, c, D2.dog.wet]; });
+  ok(soak[0] === false && soak[1] === true && soak[2] === true && soak[3] === false, `the bath dog: dry, wet for the rinse and the towel, dry at the end (${soak.join(', ')})`);
   ok(!errs.length, 'no page errors ' + errs.slice(0, 3).join(' | '));
 }, { timeout: 900000 });
