@@ -48,11 +48,17 @@ Only the reference's preview frame could be read (Instagram blocks downloading t
 
 | File | What |
 |---|---|
-| `doodle-doggo-freestyle-dance.mp4` | 1080 x 1920, 30 fps, 13 s, with the game's upbeat "play" music (86 bpm). |
-| `doodle-doggo-freestyle-dance-no-music.mp4` | The same with no sound, for adding a song inside Instagram. |
+| `doodle-doggo-freestyle-dance.mp4` | **The one to post** (owner: only one video). 1080 x 1920, 30 fps, 15.5 s. |
 | `dance-cover.jpg` | The designed cover: the first place, the pair mid-dance, "bluetooth died. / the freestyle did not." on a cream sticker, the logo. |
 | `build_dance.js` | Remake: `NODE_PATH=$(npm root -g) node brand/instagram/launch/freestyle_reel/build_dance.js <workdir>` (about 3 minutes; `SEED=n` picks other places; `ONLY=stills`). |
 
 **What is in it:** five game places picked at random, a hard cut every 4 beats (this render: Asakusa, Tokyo Tower, the Town Square, Yoyogi Park, the Park). Butter and Noodle both in their real "dance" pose, flipping through the game's own three dance frames on the beat (head, paws and tail move), swaying left and right and bouncing on every beat; the brick phone on the ground bottom-left. The game's dance marks, ground shadows and the scenes' dashed tap outlines are switched off in the build script only.
 
 **Costumes and faces (owner, 29 Oct 2026):** at every place cut both dogs change into a new look from the game's wardrobe and make new faces (the game's face expressions that fit the dance pose: wink, proud "ta-da!", heart eyes, zoomies). This render: party hats and heart sunglasses (Asakusa, with the Asakusa Bandana); witch hat and vampire cape, pumpkin suit (Tokyo Tower); cowboy hat and red bandana, sun hat and tutu (Town Square); bumblebee suit, wizard hat and superhero cape (Yoyogi); flower crown and happi coat, sailor cap and ghost sheet (the Park). Places with their own bandana (Asakusa, Tokyo Tower, Shibuya) put it on both dogs. The looks are in `LOOKS` at the top of `build_dance.js`.
+
+**Final version (owner, 29 Oct 2026):**
+- **Hook on the video:** "bluetooth died. / the freestyle did not." on a cream sticker at the top, all through the dance.
+- **Music:** the game's own "play" music played 1.4x faster at the same pitch (120 bpm, a dance tempo); the dogs dance on that beat (5 beats per place). **Barks:** the game's own bark engine, each dog's own voice (Noodle's play and alert barks, Butter's play bark), on every place cut and on the end card; a sparkle on the end card.
+- **Halloween:** the game's own Halloween dressing on every place, lit jack-o'-lanterns on the ground, the Costume Parade bunting across the sky, three crayon bats flapping.
+- **The phone plays the music:** it buzzes on every beat (a quick shake, crayon buzz lines) and notes float up out of it.
+- **End card (12.5–15.5 s):** "Doodle Doggo · a free cozy dog game · 35 crayon dogs · dress-up · walks · Tokyo trip · play right on doodledoggo.app", over the last place with the dogs still dancing.
