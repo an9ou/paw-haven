@@ -1213,13 +1213,46 @@ function fmGoods(b,th,x,y,i,theme){
   else if(theme==='newyear'){b.sh(E(x,y-8,16,18,18),th.a,{hatch:0,hl:0,marks:[{pts:E(x,y-12,8,7,12),fill:'#FFF6DC'}]});b.sh(E(x+38,y-4,12,12,16),th.b,{hatch:0,hl:0,lw:.8});b.sh(RR(x+58,y-16,26,22,3),'#FFF6DC',{k:0,hatch:0,hl:0,lw:.8})}
   else{b.sh(RR(x-12,y-10,28,20,4),'#E2B07E',{k:0,hatch:0,hl:0,lw:.8});b.sh(cloudP(x+2,y-18,16,10,6,.2,40),th.a,{hatch:0,hl:0,lw:.8});b.sh(RR(x+30,y-10,28,20,4),'#E2B07E',{k:0,hatch:0,hl:0,lw:.8});b.sh(cloudP(x+44,y-18,16,10,6,.2,40),'#FFFFFF',{hatch:0,hl:0,lw:.8})}
 }
+/* v2.17.2 Spooky Stalls: the Halloween Market dressed with the real item drawings (PawArt.item / prop / house / bed, nested at their own scale):
+   costumes on little hangers under the clothes awning, toys in baskets, lanterns and garlands, a pumpkin pile, the bat bunting, a blank board per stall
+   (the game writes the stall names on them: PawArt.FM_STALL_SIGNS) and two little stands in front for the homes and the treats */
+function fmNest(b,svg,x,y,w,h,where){if(!svg)return;const m=/viewBox="([^"]+)"/.exec(svg);if(!m)return;const inner=svg.replace(/^<svg[^>]*>/,'').replace(/<\/svg>\s*$/,'');
+  b.raw(`<svg x="${R1(x)}" y="${R1(y)}" width="${R1(w)}" height="${R1(h)}" viewBox="${m[1]}" overflow="visible">${inner}</svg>`,where)}
+const fmIt=(n)=>{try{return PA.item(n)}catch(e){return ''}},fmPr=(n,o)=>{try{return PA.prop(n,o||{})}catch(e){return ''}};
+function fmBoard(b,x,y,w){b.ln([[x-w*.32,y-14],[x-w*.26,y]],{w:1.2});b.ln([[x+w*.32,y-14],[x+w*.26,y]],{w:1.2});b.sh([[x-w/2,y],[x+w/2,y],[x+w/2-3,y+28],[x-w/2+3,y+28]],'#FFF6DC',{k:0,hatch:0,hl:0,lw:.9})}
+function fmBasket(b,x,y,w,h){b.sh([[x,y],[x+w,y],[x+w-6,y+h],[x+6,y+h]],'#E2B07E',{k:.05,sh:'#C58F5E',hl:0,lw:.9,inner:b.st([0,1,2,3].map(k=>b.jl(x+4,y+6+k*h/4,x+w-4,y+6+k*h/4,.4)).join('')+[1,2,3,4,5].map(k=>b.jl(x+k*w/6,y+2,x+k*w/6+1,y+h-2,.3)).join(''),'#B07A48',1,.7)})}
+function fmHanger(b,x,y){b.ln([[x,y],[x,y+6],[x+3,y+8],[x+1,y+11]],{w:1.2});b.ln([[x-14,y+22],[x,y+11],[x+14,y+22]],{w:1.4})}
+function fmDressHw(b,th,x0,w,i){const y0=262,top=y0-70+(i===0?FM_LOW0:0),cy=y0+90;
+  if(i===0){// decorations: the ghost lanterns under the awning, the lantern trio and the cauldron planter on the counter, the black cat beside the stall
+    fmNest(b,fmPr('hmghostlights'),x0+10,top+44,w-20,(w-20)*80/300);
+    [[x0+44,16],[x0+78,12],[x0+124,18],[x0+168,13],[x0+204,15]].forEach(([x,r])=>fmPumpkin(b,x,cy-r*.8,r));
+    fmNest(b,fmPr('hmcatcutout'),x0-34,y0+100,60,80);fmNest(b,fmPr('fmlantern',{lit:true}),x0+w-70,y0+150,54,72,'top')}
+  else if(i===1){// clothes: a rail under the awning with costumes on little hangers, folded things on the counter
+    b.ln([[x0+18,top+74],[x0+w-18,top+74]],{w:2.4,col:'#A97E5A'});
+    ['Little Witch Hat & Cape','Dinosaur Hood','Skeleton Suit','Wizard Robe & Star Hat'].forEach((n,k)=>{const x=x0+46+k*52;fmHanger(b,x,top+68);fmNest(b,fmIt(n),x-25,top+84,50,50)});
+    ['Lion Mane','Black Cat Ears & Bow'].forEach((n,k)=>fmNest(b,fmIt(n),x0+18+k*170,cy-40,44,44))}
+  else{// toys: the bat bunting under the awning, two baskets of toys and the pumpkin lights
+    fmNest(b,fmPr('hwbunting'),x0+14,top+60,w-28,(w-28)*80/300);
+    fmBasket(b,x0+22,cy-26,92,26);fmBasket(b,x0+136,cy-26,92,26);
+    [['Pumpkin Ball',x0+20,-40],['Squeaky Bat',x0+58,-46],['Glow-in-the-Dark Bone',x0+134,-42],['Soft Spider Plush',x0+176,-46]].forEach(([n,x,dy])=>fmNest(b,fmIt(n),x,cy+dy,46,46));
+  }
+  fmBoard(b,x0+w/2,y0+124,96)}
+// the homes stand (between the decor and clothes stalls) and the treats cart (between the clothes and toys stalls), each with a blank board
+function fmFrontHw(b,th){
+  b.sh([[296,520],[374,520],[372,560],[298,560]],'#E2B07E',{k:0,sh:'#C58F5E',hl:0,lw:.9});fmNest(b,PA.bed?PA.bed('Moon and Stars Tent'):'',292,462,86,53);fmBoard(b,335,428,70);
+  b.sh([[632,512],[702,512],[700,556],[634,556]],'#E2B07E',{k:0,sh:'#C58F5E',hl:0,lw:.9});[[640,560],[694,560]].forEach(([x,y])=>b.sh(E(x,y,7,7,12),'#A97E5A',{hatch:0,hl:0,lw:.8}));
+  fmNest(b,fmIt('Frozen Yoghurt Ghosts'),640,468,50,50);fmBoard(b,667,428,70);
+  // a pumpkin pile by the decor stall
+  [[22,560,22],[60,566,17],[40,536,15],[92,572,12]].forEach(([x,y,r])=>fmPumpkin(b,x,y,r))}
+const FM_STALL_SIGNS={decor:[165,386,96],clothes:[500,386,96],toys:[835,386,96],homes:[335,428,70],treats:[667,428,70]};
+const FM_LOW0=34;// the decor stall's roof sits a little lower in the Halloween scene, clear of the place chip (top left)
 function fmStall(b,th,x0,w,theme,i){
-  const y0=262,top=y0-70;
+  const y0=262,top=y0-70+(theme==='halloween'&&i===0?FM_LOW0:0);
   [[x0+14],[x0+w-14]].forEach(([x])=>b.sh([[x-6,y0+150],[x-6,top+40],[x+6,top+40],[x+6,y0+150]],'#E2B07E',{k:0,sh:'#C58F5E',hl:0}));
   const n=6,sw2=w/n;for(let k=0;k<n;k++){const a=x0+k*sw2,c=k%2?th.c:th.a;b.sh([[a,top],[a+sw2,top],[a+sw2,top+44],[a+sw2/2,top+58],[a,top+44]],c,{k:.05,hatch:k%2?0:1,hl:0,sh:th.b,lw:.9})}
   b.sh([[x0-8,top-14],[x0+w+8,top-14],[x0+w+8,top+4],[x0-8,top+4]],th.b,{k:0,hatch:0,hl:0});
   b.sh([[x0,y0+90],[x0+w,y0+90],[x0+w-6,y0+160],[x0+6,y0+160]],'#E2B07E',{k:0,sh:'#C58F5E',marks:[{pts:[[x0,y0+90],[x0+w,y0+90],[x0+w,y0+108],[x0,y0+108]],fill:th.c,k:0}]});
-  fmGoods(b,th,x0+36,y0+84,i,theme);
+  if(theme==='halloween')fmDressHw(b,th,x0,w,i);else fmGoods(b,th,x0+36,y0+84,i,theme);
 }
 function fmLantern(b,x,y,col,lit){b.ln([[x,y-30],[x,y-14]],{w:1.4});b.sh(E(x,y,13,16,16),col,{hatch:0,hl:0,lw:.9,marks:lit?[{pts:E(x,y,7,9,12),fill:'#FFF6C8',op:.9}]:[],inner:b.st(b.jl(x-12,y,x+12,y),'#5B3D32',.8,.5)});b.sh(RR(x-6,y+14,12,5,1),'#5B3D32',{k:0,hatch:0,hl:0,lw:.5})}
 const FM_ART={
@@ -1235,7 +1268,7 @@ const FM_ART={
   [[250,190],[750,190]].forEach(([x,y])=>fmLantern(b,x,y,th.lamp,true));
   // the sign board over the middle stall (the game writes the market's name on it: FM_SIGN)
   b.ln([[392,170],[400,150]],{w:1.4});b.ln([[608,170],[600,150]],{w:1.4});b.sh([[352,170],[648,170],[642,214],[358,214]],'#FFF6DC',{k:0,hatch:0,hl:0,lw:1.1});
-  if(theme==='halloween'){[[150,420,1],[880,430,.9]].forEach(([x,y,s])=>fmPumpkin(b,x,y,20*s))}
+  if(theme==='halloween'){[[880,430,.9]].forEach(([x,y,s])=>fmPumpkin(b,x,y,20*s));fmFrontHw(b,th)}
   if(theme==='sakura'){[[90,200],[930,200]].forEach(([x,y])=>b.sh(cloudP(x,y,60,34,7,.18,48),'#F7C6D4',{hatch:0,hl:0,sh:'#F28FA5'}))}
   if(theme==='winter'){[[120,170],[880,172]].forEach(([x,y])=>b.sh(E(x,y,40,9,14),'#FFFFFF',{hatch:0,hl:0,lw:.6}))}
  }],
@@ -1257,7 +1290,7 @@ const ITEMS_V2171={
 };
 return {
   item(name){const f=ITEMS_E[name]||ITEMS_V215[name]||ITEMS_V217[name]||ITEMS_V2171[name]||ITEMS_V218[name];if(!f)return null;return serve('t:'+name,()=>{const b=mk('item',name);f(b);return b.svg('0 0 64 64','',esc(name))})},
-  ITEMS215:Object.keys(ITEMS_V215),ITEMS217:Object.keys(ITEMS_V217),ITEMS2171:Object.keys(ITEMS_V2171),FM_NAMES:Object.keys(FM_ART),FM_THEMES:Object.keys(FM_TH),ITEMS218:Object.keys(ITEMS_V218),FF_NAMES:Object.keys(FF_ART),
+  ITEMS215:Object.keys(ITEMS_V215),ITEMS217:Object.keys(ITEMS_V217),ITEMS2171:Object.keys(ITEMS_V2171),FM_NAMES:Object.keys(FM_ART),FM_STALL_SIGNS,FM_THEMES:Object.keys(FM_TH),ITEMS218:Object.keys(ITEMS_V218),FF_NAMES:Object.keys(FF_ART),
   ff(name,o){const A=FF_ART[name];if(!A)return null;o=o||{};const key=['c','s','season','gold'].map(k=>o[k]==null?'':String(o[k])).join(',');
     return serve('ff:'+name+':'+key,()=>{const b=mk(A[1],'ff-'+name+':'+key);A[2](b,o);return b.svg(A[0],' data-ff="'+name+'"','')})},
   fm(name,o){const A=FM_ART[name];if(!A)return null;o=o||{};const key=[o.theme||'',o.lit?1:0].join(',');
@@ -1697,7 +1730,7 @@ PA.WORLD_E_SCENES=Object.keys(MINE);PA.WORLD_E_PROPS=['ekistamp','luckycat','pos
 {const prevItem217=PA.item,V217I=WB.ITEMS217;PA.item=function(name,o){return V217I.includes(name)?WB.item(name):prevItem217.apply(this,arguments)};PA.V217_ITEMS=V217I.slice()}
 // v2.17.1 Festive Market (V2171.md 6): the Squeaky Ghost and Pumpkin Lantern icons, the market props: PawArt.prop('fmscene' | 'fmtent' | 'fmlantern', { theme, lit })
 {const prevItem2171=PA.item,prevProp2171=PA.prop,V2171I=WB.ITEMS2171,FMN=WB.FM_NAMES;PA.item=function(name,o){return V2171I.includes(name)?WB.item(name):prevItem2171.apply(this,arguments)};
-  PA.prop=function(name,o){return FMN.includes(name)?WB.fm(name,o):prevProp2171.apply(this,arguments)};PA.V2171_ITEMS=V2171I.slice();PA.FM_PROPS=FMN.slice();PA.FM_THEMES=WB.FM_THEMES.slice();PA.FM_SIGN=[500,192,280]}
+  PA.prop=function(name,o){return FMN.includes(name)?WB.fm(name,o):prevProp2171.apply(this,arguments)};PA.V2171_ITEMS=V2171I.slice();PA.FM_PROPS=FMN.slice();PA.FM_THEMES=WB.FM_THEMES.slice();PA.FM_SIGN=[500,192,280];PA.FM_STALL_SIGNS=JSON.parse(JSON.stringify(WB.FM_STALL_SIGNS))}
 // v2.18 Fun Fair (V218.md 9): the sticker items (ITEMS_V218) and the minigame props, PawArt.ffArt(name, o) (names in PawArt.FF_NAMES; o.c colour index, o.s shape, o.season, o.gold)
 {const prevItem218=PA.item,V218I=WB.ITEMS218;PA.item=function(name,o){return V218I.includes(name)?WB.item(name):prevItem218.apply(this,arguments)};PA.V218_ITEMS=V218I.slice();PA.FF_NAMES=WB.FF_NAMES.slice();PA.ffArt=function(name,o){return WB.ff(name,o)||''}}
 /* v2.14: the last layer on every world render. The game may pass { aria: 'label' } (the root svg's aria-label, translated) and/or

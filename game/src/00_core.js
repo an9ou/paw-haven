@@ -66,6 +66,12 @@ const TOYS = [
   { n: 'Plush Ghost', fest: 'halloween', ed: 2026, v26: true, price: 55, bond: 1, note: 'Shake: a floppy ghost to shake and carry about. +Happiness, a little Bond.' },
   { n: 'Bat-Wing Flyer', fest: 'halloween', ed: 2026, v26: true, price: 65, bond: 2, note: 'Leap: a soft flyer with felt bat wings to jump for. +Happiness, -Energy.' },
   { n: 'Trick-or-Treat Bucket', fest: 'halloween', ed: 2026, v26: true, price: 80, bond: 2, note: 'Sniff: nose out the treats hidden under the lids. +Happiness, a little Bond.' },
+  /* v2.17.2 Spooky Stalls: Festive Market toys (fm), each plays an older toy game with its own look (mods/toys.js HM_TOY_GAME) */
+  { n: 'Squeaky Bat', fest: 'halloween', ed: 2026, fm: true, price: 50, bond: 1, note: 'Squeeze: a soft purple bat that squeaks. +Happiness.' },
+  { n: 'Pumpkin Ball', fest: 'halloween', ed: 2026, fm: true, price: 45, bond: 1, note: 'Fetch: a squishy pumpkin ball that bounces a bit wonky. 2 coins per return.' },
+  { n: 'Rope Mummy', fest: 'halloween', ed: 2026, fm: true, price: 60, bond: 1, note: 'Shake: a rope toy wrapped in soft cream cloth. +Happiness, a little Bond.' },
+  { n: 'Glow-in-the-Dark Bone', fest: 'halloween', ed: 2026, fm: true, price: 70, bond: 2, note: 'Night fetch: a rubber bone that glows after dark. +Happiness, -Energy.' },
+  { n: 'Soft Spider Plush', fest: 'halloween', ed: 2026, fm: true, price: 65, bond: 2, note: 'Nap buddy: a round fuzzy spider with a bow. +10% nap Energy.' },
   /* v2.17.1 Festive Market (V2171.md): sold only at the Festive Market (fm), a ball-play toy (BL_TOYS in 49_market.js) */
   { n: 'Squeaky Ghost', fest: 'halloween', ed: 2026, fm: true, price: 50, bond: 1, note: 'Fetch: a soft little ghost that squeaks when it lands. Ball play, 2 coins a return.' },
   /* v2.11 Tokyo Trip: the Tokyo Tower souvenir stand only (tokyo + fest 'tokyo'), with its own play game in mods/toys.js */
@@ -111,6 +117,17 @@ const CLOTHES = [
   { n: 'Pumpkin Patch Suit', slot: 'body', fest: 'halloween', ed: 2026, v26: true, price: 70, bond: 1, perk: 'Round and proud: crayon pumpkin ribs, a leafy collar and a curly stem on top.' },
   { n: 'Trick-or-Treat Ghost', slot: 'body', fest: 'halloween', ed: 2026, v26: true, price: 70, bond: 1, perk: 'Boo: a soft sheet with two eye holes and a little pumpkin bucket to carry.' },
   { n: 'Little Bat Costume', slot: 'body', fest: 'halloween', ed: 2026, v26: true, price: 75, bond: 1, perk: 'Flutter: a purple hood with pointy ears, small wings and an orange frill.' },
+  /* v2.17.2 Spooky Stalls: ten Halloween Market costumes (fm: sold only at the Festive Market, 49_market.js) */
+  { n: 'Little Witch Hat & Cape', slot: 'body', fest: 'halloween', ed: 2026, fm: true, price: 75, bond: 1, perk: 'Spellbound: a short purple cape with yellow stars and a small crooked hat. No spells, only cuddles.' },
+  { n: 'Scarecrow Overalls', slot: 'body', fest: 'halloween', ed: 2026, fm: true, price: 70, bond: 1, perk: 'Harvest look: patched denim dungarees and a floppy straw hat. The crows want to be friends.' },
+  { n: 'Mummy Wraps', slot: 'body', fest: 'halloween', ed: 2026, fm: true, price: 70, bond: 1, perk: 'Wrapped up: soft cream bandages and a band above the eyes. One loose end, on purpose.' },
+  { n: 'Skeleton Suit', slot: 'body', fest: 'halloween', ed: 2026, fm: true, price: 75, bond: 2, perk: 'Glow bones: a soft black suit with friendly white crayon bones and a little bone hair clip.' },
+  { n: 'Black Cat Ears & Bow', slot: 'body', fest: 'halloween', ed: 2026, fm: true, price: 60, bond: 1, perk: 'Meow?: black felt cat ears and a big orange bow on the tail. Nobody is fooled. Everybody approves.' },
+  { n: 'Pirate Hat & Sash', slot: 'body', fest: 'halloween', ed: 2026, fm: true, price: 75, bond: 2, perk: 'Ahoy: a black tricorn with a paw print and a red sash. No eyepatch, both eyes on the snacks.' },
+  { n: 'Dinosaur Hood', slot: 'body', fest: 'halloween', ed: 2026, fm: true, price: 85, bond: 2, perk: 'Rawr: a green suit with soft spikes and a hood with felt teeth. The face stays open for kisses.' },
+  { n: 'Little Owl Wings', slot: 'body', fest: 'halloween', ed: 2026, fm: true, price: 70, bond: 2, perk: 'Hoo: soft brown feathered wings and a band with two ear tufts. Wise-looking, at least.' },
+  { n: 'Wizard Robe & Star Hat', slot: 'body', fest: 'halloween', ed: 2026, fm: true, price: 85, bond: 3, perk: 'Starlight: a navy robe with stars and a moon, and a tall star-tipped hat.' },
+  { n: 'Lion Mane', slot: 'neck', fest: 'halloween', ed: 2026, fm: true, price: 60, bond: 1, perk: 'Roar (quietly): a big golden mane round the face. Every dog is the king of the yard.' },
   // v2.8 Winter & New Year (V28.md section 1): the Winter Stall sells the first three (fest), the Rosette is the contest reward, the Hood comes in Gerald's New Year card (ed: 2027, never sold)
   { n: 'Very Ugly Sweater', slot: 'body', fest: 'snow', price: 65, bond: 1, v28: true, perk: 'Warm: no shivering in the snow. Knitted by someone who has never seen a dog, or a snowflake.' },
   { n: 'Reindeer Antlers', slot: 'head', fest: 'snow', price: 55, bond: 1, v28: true, perk: 'Jingle: a little bell on each antler. Not warm. Very festive.' },
@@ -141,6 +158,7 @@ const HOUSES = [
   { n: 'Camper Van', price: 1200, bond: 5, comfort: 0.35, hd: 2.5, v24: true, note: 'The wheels are painted on. It has never moved. It has been everywhere.' },
   { n: 'Pumpkin Cottage', price: 1800, bond: 6, comfort: 0.45, hd: 2.5, v24: true, note: 'Round orange walls and a leaf for a roof. Smells faintly of pie.' },
   { n: 'Lighthouse Kennel', price: 3000, bond: 8, comfort: 0.60, hd: 2, v24: true, note: 'The lamp turns at night. Ships are confused.' },
+  { n: 'Friendly Haunted Kennel', price: 900, bond: 3, comfort: 0.25, hd: 3, fest: 'halloween', ed: 2026, fm: true, note: 'A crooked purple house with smiling ghost curtains. The only thing it haunts is the food bowl.' }, // v2.17.2 Spooky Stalls (Festive Market)
   { n: 'Rocket Ship', price: 0, bond: 1, comfort: 0.55, hd: 2, v24: true, reward: true, note: 'Countdown painted on the side. Launch is cancelled, forever, for naps.' }
 ];
 const SLOTS = ['head', 'eyes', 'neck', 'body'];
