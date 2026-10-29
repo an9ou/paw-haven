@@ -1,7 +1,8 @@
 // "Bluetooth died. The freestyle did not." — the dancing version (owner, 29 Oct 2026): Butter and Noodle dance in random game places.
 // 15.5 s, 1080 x 1920, 30 fps: the hook on a sticker at the top, 12.5 s of dancing at 120 bpm with barks, then the game's ending page. The places are the game's own scenes (PawArt.scene), five picked at random, a hard cut every 4 beats.
 // The dogs are the game's real "dance" pose. The game draws three frames of each pose (head, paws and tail in different spots) and
-// flips them; here they dissolve softly into one another every two beats (smooth, owner 29 Oct), and the whole dog sways left and right and bounces on every beat. The beat follows the
+// flips them; here the pose glides from one drawing to the next over two beats, drawn fresh at its in-between for every one of the 30 frames a
+// second (no cross-fade, so no double image; owner 29 Oct), and the whole dog sways left and right and bounces on every beat. The beat follows the
 // game's own "play" music (86 bpm). At every place cut they wear a new costume and make new faces (the game's wardrobe and face
 // expressions). Every place wears the game's own Halloween dressing. The brick phone on the ground buzzes on the beat and plays the music
 // (buzz lines, notes floating up). No game file is changed: the dance marks and ground shadows
@@ -21,7 +22,16 @@ const FPS = 30, N = Math.round(T * FPS), W = 1080, H = 1920, FEET = 1700, SEED =
 const win = {}, ctx = { window: win, console }; vm.createContext(ctx);
 for (const f of fs.readdirSync(path.join(ROOT, 'world')).filter((f) => /^pawart_world_[a-z]\.js$/.test(f)).sort()) vm.runInContext(fs.readFileSync(path.join(ROOT, 'world', f), 'utf8'), ctx);
 let src = fs.readFileSync(path.join(ROOT, 'dogs', 'pawart_dogs.js'), 'utf8');
-for (const [a, b] of [['if(L.danceFx){', 'if(false){'], ['const shadow=`', "const shadow=''&&`"]]) { if (!src.includes(a)) throw new Error('art changed: ' + a); src = src.replace(a, b); }
+for (const [a, b] of [['if(L.danceFx){', 'if(false){'], ['const shadow=`', "const shadow=''&&`"],
+  // in-between poses (owner, 29 Oct: no overlap, more frames): the frame number k may be fractional (o.kf), every [a,b,c][k] pose table
+  // blends smoothly between its neighbours, and the pencil wobble keeps one seed so the lines do not boil between in-betweens
+  ['const f=frame(key,s,pose,o.outfit,k,seed,ex)', 'const f=frame(key,s,pose,o.outfit,(o.kf!=null?o.kf:k),seed,ex)'], ['kit(rng(seed+k*7717))', 'kit(rng(seed))'],
+  ['+k*31)', ')'], ['seed*5+k*977+11', 'seed*5+11'], ['seed*3+k*131+7', 'seed*3+7']]) { if (!src.includes(a)) throw new Error('art changed: ' + a); src = src.replace(a, b); }
+src = src.replace(/\]\[k\]/g, '].LK(k)').replace(/\]\[L\.k\|\|0\]/g, '].LK(L.k||0)').replace(/\]\[L\.k\]/g, '].LK(L.k)');
+vm.runInContext(`Array.prototype.LK=function(k){ if(Number.isInteger(k)) return this[k];
+  const n=this.length, i=((Math.floor(k)%n)+n)%n, j=(i+1)%n, x=k-Math.floor(k), f=x*x*(3-2*x);   // eased, so each drawing is held a moment
+  const mix=(a,b)=>typeof a==='number'&&typeof b==='number' ? a+(b-a)*f : Array.isArray(a)&&Array.isArray(b) ? a.map((v,q)=>mix(v,b[q])) : (f<.5?a:b);
+  return mix(this[i],this[j]); };`, ctx);
 vm.runInContext(src, ctx);
 const PA = win.PawArt, inner = (s) => s.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
 
@@ -43,16 +53,15 @@ const LOOKS = [
   { b: { head: 'Flower Crown', body: 'Happi Coat' }, bx: 'zoomies', n: { head: 'Sailor Cap', body: 'Ghost Sheet' }, nx: 'wink' },
 ];
 const BANDANA = { asakusa: 'Asakusa Bandana', tokyotower: 'Tokyo Tower Bandana', shibuya: 'Shibuya Bandana' };
-// the three frames of each dance pose as their own symbols (CSS cannot reach inside a <use>, so the other two frames are cut out here)
-const frames = (svg) => [0, 1, 2].map((k) => [0, 1, 2].filter((j) => j !== k).reduce((s, j) => s.replace(`class="pa-d-f${j}"`, `class="pa-d-f${j}" display="none"`), svg));
-let dogSyms = '';
-PLACES.forEach((pl, i) => {
+// each dog's look per place; the drawing itself is made fresh for every video frame at its own in-between pose (dogSvg)
+const DOGS = PLACES.map((pl, i) => {
   const L = LOOKS[i], band = BANDANA[pl], bo = Object.assign({}, L.b, band ? { neck: band } : {}), no = Object.assign({}, L.n, band ? { neck: band } : {});
-  for (const [id, key, facing, outfit, expr] of [['butter', 'lab', 'right', bo, L.bx], ['noodle', 'dachs', 'left', no, L.nx]]) {
-    const o = { pose: 'dance', facing, anim: true, outfit }; if (expr) o.expr = expr;
-    frames(inner(PA.dog(key, o))).forEach((sv, k) => { dogSyms += `<symbol id="${id}${i}_${k}" overflow="visible">${sv}</symbol>`; });
-  }
+  const look = (key, facing, outfit, expr) => { const o = { pose: 'dance', facing, anim: false, outfit }; if (expr) o.expr = expr; return [key, o]; };
+  return { butter: look('lab', 'right', bo, L.bx), noodle: look('dachs', 'left', no, L.nx) };
 });
+const dogSvg = (id, place, kf) => { const [key, o] = DOGS[place][id]; return inner(PA.dog(key, Object.assign({}, o, { kf: ((kf % 3) + 3) % 3 }))); };
+// the size box comes from pose 0 in the first place, so the dog never jumps between poses
+const dogSyms = ['butter', 'noodle'].map((id) => `<symbol id="${id}0_0" overflow="visible">${dogSvg(id, 0, 0)}</symbol>`).join('');
 // a crayon brick phone (navy body, small green screen, light keys)
 const PEN = '#5B3D32';
 const keys = []; for (let r = 0; r < 4; r++) for (let c = 0; c < 3; c++) keys.push(`<rect x="${18 + c * 22}" y="${118 + r * 17}" width="16" height="11" rx="5" fill="#D9DDE6" stroke="${PEN}" stroke-width="2"/>`);
@@ -92,17 +101,13 @@ const NS='http://www.w3.org/2000/svg', $=(i)=>document.getElementById(i), BOX={}
 function box(id){ if(BOX[id]) return BOX[id]; const u=document.createElementNS(NS,'use'); u.setAttribute('href','#'+id+'0_0'); $('B').appendChild(u); const b=u.getBBox(); u.remove(); return BOX[id]=[b.x,b.y,b.width,b.height]; }   // frame 0 sets the size, so the dog does not jump between frames
 // a dog with its feet at (cx, feet), height hh, showing dance frame k, swayed by rot degrees about its feet and lifted by dy
 let P=0;
-// smooth dancing: dance frame k blends into frame k2 by mx (a soft cross-dissolve instead of a jump), sq squashes and stretches about the feet
-function dog(id, cx, feet, hh, k, rot, dy, k2, mx, sq){ const b=box(id), s=hh/b[3], w=b[2]*s; mx=mx||0; sq=sq||1;
-  const use=(kk,op)=>'<g opacity="'+op.toFixed(3)+'"><use href="#'+id+P+'_'+kk+'"/></g>';
+// sv is this frame's drawing (an in-between pose made for this exact moment), sq squashes and stretches about the feet
+function dog(id, cx, feet, hh, sv, rot, dy, sq){ const b=box(id), s=hh/b[3], w=b[2]*s; sq=sq||1;
   return '<ellipse cx="'+cx+'" cy="'+(feet-2)+'" rx="'+(w*0.3*(1-Math.min(1,-dy/60)*0.3))+'" ry="10" fill="#5B3D32" opacity=".12"/>'
    +'<g transform="translate(0 '+dy+') rotate('+rot+' '+cx+' '+feet+') translate('+cx+' '+feet+') scale('+(1/Math.sqrt(sq))+' '+sq+') translate('+(-cx)+' '+(-feet)+')"><g transform="translate('+(cx-w/2)+' '+(feet-hh)+') scale('+s+') translate('+(-b[0])+' '+(-b[1])+')">'
-   +use(k,1)+(mx>0?use(k2,mx):'')+'</g></g>'; }   // the current frame stays solid underneath, so the dog never looks see-through
-const sstep=(x)=>{ x=Math.max(0,Math.min(1,x)); return x*x*(3-2*x); };
-// the pose for a dog at beat b (offset o): frames change every 2 beats, dissolving over the last fifth of the 2 beats
-function pose(b,o){ const per=(b+o)/2, i=Math.floor(per), fr=per-i; return { k:((i%3)+3)%3, k2:(((i+1)%3)+3)%3, mx:sstep((fr-0.8)/0.2) }; }
+   +sv+'</g></g>'; }
 window.L={ bx:320, nx:775, bh:540, nh:520 };
-window.frame=function(t){
+window.frame=function(t, D){
   const beat=t/${B}, n=Math.floor(beat), ph=beat-n;
   P=Math.min(4,Math.floor(n/5)); $('bg').setAttribute('href','#sc'+P);          // a new place (and new costumes and faces) every 5 beats
   // the phone plays the music: it buzzes on every beat (a quick shake that dies away), with crayon buzz lines, and notes float up from it
@@ -122,14 +127,18 @@ window.frame=function(t){
   $('end').setAttribute('opacity', eo);
   // a smooth sway (side to side over two beats), a soft rise and fall on every beat, and a little squash at the bottom of each bounce
   const sway=Math.sin(Math.PI*beat), sway2=Math.sin(Math.PI*(beat-0.15)), up=0.5-0.5*Math.cos(2*Math.PI*beat), up2=0.5-0.5*Math.cos(2*Math.PI*(beat-0.15));
-  const hop=-up*15, hop2=-up2*14, sq=1+0.035*(up-0.5)*2, sq2=1+0.035*(up2-0.5)*2, pb=pose(beat,0), pn=pose(beat,1);
-  $('B').innerHTML = dog('butter', L.bx, ${FEET}, L.bh, pb.k, 6.5*sway, hop, pb.k2, pb.mx, sq);
-  $('Nd').innerHTML = dog('noodle', L.nx, ${FEET}, L.nh, pn.k, 6.5*sway2, hop2, pn.k2, pn.mx, sq2);
+  const hop=-up*15, hop2=-up2*14, sq=1+0.035*(up-0.5)*2, sq2=1+0.035*(up2-0.5)*2;
+  $('B').innerHTML = dog('butter', L.bx, ${FEET}, L.bh, D.b, 6.5*sway, hop, sq);
+  $('Nd').innerHTML = dog('noodle', L.nx, ${FEET}, L.nh, D.n, 6.5*sway2, hop2, sq2);
   // the ending page: Butter and Noodle keep dancing in the middle of it, in their party hats from the first place (Noodle's face shows)
-  const P1=P; P=0; $('endDogs').innerHTML = eo>0 ? dog('butter', 395, 1170, 380, pb.k, 6.5*sway, hop*0.7, pb.k2, pb.mx, sq) + dog('noodle', 690, 1170, 365, pn.k, 6.5*sway2, hop2*0.6, pn.k2, pn.mx, sq2) : ''; P=P1;
+  $('endDogs').innerHTML = eo>0 ? dog('butter', 395, 1170, 380, D.eb, 6.5*sway, hop*0.7, sq) + dog('noodle', 690, 1170, 365, D.en, 6.5*sway2, hop2*0.6, sq2) : '';
 };
 </script>`;
 
+// the drawings for one video frame: each dog's pose moves on continuously (one game drawing every 2 beats, Noodle a beat behind),
+// so every one of the 30 frames a second is its own in-between and nothing is ever cross-faded
+const drawFor = (t) => { const beat = t / B, P = Math.min(4, Math.floor(Math.floor(beat) / 5)), kb = beat / 2, kn = (beat + 1) / 2;
+  return { b: dogSvg('butter', P, kb), n: dogSvg('noodle', P, kn), eb: t >= DANCE ? dogSvg('butter', 0, kb) : '', en: t >= DANCE ? dogSvg('noodle', 0, kn) : '' }; };
 (async () => {
   const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
   const p = await b.newPage({ viewport: { width: W, height: H } });
@@ -137,11 +146,11 @@ window.frame=function(t){
   console.log('places:', PLACES.join(', '));
   const still = process.env.ONLY === 'stills';
   const list = still ? [0.3, 2.7, 5.2, 7.7, 10.2, 12.0, 14.5].map((s) => Math.round(s * FPS)) : [...Array(N).keys()];
-  if (!process.env.AUDIO_ONLY) for (const f of list) { await p.evaluate((t) => window.frame(t), f / FPS); await p.screenshot({ path: path.join(WORK, 'f', `f${String(f).padStart(4, '0')}.png`) }); }   // AUDIO_ONLY=1: keep the frames, redo the sound
+  if (!process.env.AUDIO_ONLY) for (const f of list) { await p.evaluate(([t, D]) => window.frame(t, D), [f / FPS, drawFor(f / FPS)]); await p.screenshot({ path: path.join(WORK, 'f', `f${String(f).padStart(4, '0')}.png`) }); }   // AUDIO_ONLY=1: keep the frames, redo the sound
   console.log(list.length, 'frames');
   // the designed cover: the first place, the dogs mid-dance, the hook on a cream sticker at the top, the logo at the bottom (inside the grid's 3:4)
   await p.addStyleTag({ url: 'https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap' }).catch(() => {});
-  await p.evaluate(() => document.fonts.ready); await p.evaluate((t) => window.frame(t), B * 0.5);
+  await p.evaluate(() => document.fonts.ready); await p.evaluate(([t, D]) => window.frame(t, D), [B * 0.5, drawFor(B * 0.5)]);
   await p.evaluate(() => { ['hook', 'end'].forEach((i) => document.getElementById(i).setAttribute('opacity', 0)); const c = document.getElementById('cover'); c.setAttribute('opacity', 1);
     c.innerHTML = '<g transform="rotate(-2 540 470)"><rect x="140" y="330" width="800" height="290" rx="36" fill="#FFF8EC" stroke="#5B3D32" stroke-width="6"/>'
       + '<text x="540" y="455" font-family="Caveat" font-weight="700" font-size="100" fill="#5B3D32" text-anchor="middle">bluetooth died.</text>'
