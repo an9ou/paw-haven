@@ -6411,6 +6411,152 @@ Object.assign(ITEMS,{
 PA.HALLOWEEN_MARKET={costumes:['Little Witch Hat & Cape','Scarecrow Overalls','Mummy Wraps','Skeleton Suit','Black Cat Ears & Bow','Pirate Hat & Sash','Dinosaur Hood','Little Owl Wings','Wizard Robe & Star Hat','Lion Mane'],
   toys:['Squeaky Bat','Pumpkin Ball','Rope Mummy','Glow-in-the-Dark Bone','Soft Spider Plush'],decor:Object.assign({},HM_LBL),house:'Friendly Haunted Kennel',beds:['Cauldron Bed','Bat-Cave Cushion','Pumpkin Patch Bed','Moon and Stars Tent']};
 
+/* ===================================== Winter Market 2026 (art/winter-market) =====================================
+   Part 1, five yard decorations (props; the wall one carries its own nails), sold at the Winter Market every December:
+     wmfirtree 140x200            'Paper-Star Fir Tree': a little potted fir with paper stars (paper only: no tinsel, no lights). Ground y=194
+     wmsnowman 140x180            'Yard Snowman': crude, stick arms, a carrot nose, a knitted scarf, on its own patch of snow (so it reads on summer grass). Ground y=174
+     wmcanelights {lit} 300x80    'Candy-Cane Fairy Lights': red-and-white striped bulbs on a green wire, a candy cane hooked on each nail. Lit: the bulbs glow
+     wmpresents 160x120           'Present Pile': three wrapped boxes with ribbons and bows, a paw-print tag. Ground y=114
+     wmstarlantern {lit} 120x200  'Star Lantern': a paper star lantern with cut-out holes on a wooden post. Lit: it glows. Ground y=194
+   Lit parts sit in <g class="pa-wb-glow"> so the night tint keeps their colours. Every fill sits inside its own line (marks are clipped).
+   PA.WINTER_MARKET groups the set; later parts (costumes, toys, homes, treats, the scene) add their lists to it. */
+const WM_FIR='#5E9446',WM_FIRD='#3F6E3A',WM_FIRL='#B5D8A2',WM_POT='#D9825B',WM_POTD='#B0603E',WM_POTL='#F3C2A6',WM_STK='#8E6446';
+// a fir tier: bottom scallops between two tips, a little shelf on each side, a point at the top
+function wmTier(x,yb,w,h){const p=[];for(let j=0;j<=8;j++)p.push([x-w+j*w/4,yb+(j%2?4.4:0)]);
+  return p.concat([[x+w*.42,yb-h*.46],[x+w*.6,yb-h*.44],[x+w*.08,yb-h*.96],[x,yb-h],[x-w*.08,yb-h*.96],[x-w*.6,yb-h*.44],[x-w*.42,yb-h*.46]])}
+// a folded paper star (fold lines from the middle to every point), on a thread
+function wmPaperStar(b,x,y,R,col,a,o={}){const pts=starP(x,y,R,R*.5,5,-Math.PI/2+a);let d='';pts.forEach(p=>{d+=`M${R1(x)} ${R1(y)}L${R1(p[0])} ${R1(p[1])}`});
+  if(o.thread)b.ln([[pts[0][0],pts[0][1]],[pts[0][0]+.6,pts[0][1]-o.thread]],{w:.7,col:GRAPH,top:1});
+  b.sh(pts,col,{k:.04,hatch:0,hl:0,lw:o.lw||.6,dr:.15,base:'#FFFDF6',top:1,inner:b.st(d,mix(col,INK,.22),.6,.55)})}
+PROPS.wmfirtree=function(b){const G=194;b.shadow(70,G,42,4.4);
+  // the trunk, then the three tiers bottom to top, crayon needles on each
+  b.sh(RR(63,136,14,22,2),C.woodD,{k:0,hatch:0,hl:0,lw:.8,base:C.wood});
+  [[70,154,56,52],[69,120,45,48],[71,88,33,46]].forEach(([x,yb,w,h],i)=>{let d='';for(let j=0;j<7;j++){const nx=x-w*.6+j*w*.2,ny=yb-h*(.22+(j%3)*.16);d+=b.jl(nx,ny,nx+(j%2?4:-4),ny+5,.4)}
+    b.sh(wmTier(x,yb,w,h),WM_FIR,{k:.08,sh:WM_FIRD,ho:.4,hl:0,base:WM_FIRL,inner:b.st(d,WM_FIRD,1.1,.6)})});
+  // the pot, its rim, a painted paw
+  b.sh([[44,G-1],[96,G-1],[103,160],[37,160]],WM_POT,{k:.04,hl:0,sh:WM_POTD,ho:.35,base:WM_POTL});
+  b.sh(RR(32,150,76,13,4),WM_POT,{k:.04,hatch:0,hl:0,lw:1,base:WM_POTL,marks:[{pts:RR(30,149,80,4.4,2),fill:'#EDA888',op:.85}]});
+  paw(b,70,178,3.6,'#FFF2DA',{noline:1,a:.08});
+  // paper stars, a little crooked, on threads; the big one on top
+  const PAP=['#FFE9A0','#F7F3E8','#FBD3DC','#D6E7F7','#FFE9A0','#FBD3DC','#F7F3E8'];
+  [[40,139,8,.2],[100,135,7.6,-.15],[68,128,6.6,.05],[50,104,7.2,-.2],[91,101,6.6,.25],[62,76,6,.1],[82,68,5.6,-.25]].forEach(([x,y,R,a],i)=>wmPaperStar(b,x,y,R,PAP[i],a,{thread:3}));
+  wmPaperStar(b,71,40,13,'#FFD56B',.08,{lw:.9});
+  b.ex('spark',118,46,4,'#FFE07A');b.ex('heart',20,84,3.2,'#F7B2C4');
+};
+PROPS.wmsnowman=function(b){const G=174,r=b.r;
+  // its own patch of snow, so it still reads on the summer grass
+  b.sh(cloudP(70,G-3,56,6,9,.12,40),SNW,{k:.2,hatch:0,hl:0,lw:.7,base:SNWB});
+  // stick arms (the right one longer, waving), roots hidden behind the middle
+  b.ln([[52,100],[34,90],[16,72]],{w:2.6,col:WM_STK});b.ln([[30,87],[20,92]],{w:1.7,col:WM_STK});b.ln([[22,78],[18,68]],{w:1.5,col:WM_STK});
+  b.ln([[88,98],[108,84],[118,66],[126,58]],{w:2.6,col:WM_STK});b.ln([[110,80],[122,82]],{w:1.7,col:WM_STK});b.ln([[119,64],[115,56]],{w:1.5,col:WM_STK});
+  // three lumpy balls, none of them round
+  const scrib=(x0,y0,x1,y1,n)=>{let d='';for(let i=0;i<=n;i++){const x=x0+(x1-x0)*i/n;d+=b.jl(x-(y1-y0)*.35,y1,x+(y1-y0)*.35,y0,1.2)}return b.st(d,SNWL,1.5,.5)};
+  const lump=(cx,cy,rx,ry,a)=>rot(cloudP(cx,cy,rx,ry,6,.09,36),a,cx,cy).map(([x,y])=>[x+(r()-.5)*2.2,y+(r()-.5)*2.2]);
+  b.sh(lump(70,144,38,27,-.05),SNW,snowO({k:.2,lw:1.2,inner:scrib(32,118,108,171,12)+b.st('M42 158q28 9 56 0',SNWS,1.4,.55)}));
+  b.sh(lump(68,102,27,21,.08),SNW,snowO({k:.2,lw:1.2,inner:scrib(42,82,96,122,8)}));
+  b.sh(lump(73,64,20,18,-.12),SNW,snowO({k:.2,lw:1.2,hs:.7,inner:scrib(54,48,92,82,6)}));
+  // pebble buttons, not in a line
+  [[67,96,2.6],[70,108,2.2],[66,119,2.4],[72,134,2.8]].forEach(([x,y,s])=>b.sh(E(x,y,s,s*.9,10),'#6E6A72',{hatch:0,hl:0,lw:.55,base:'#8A8690'}));
+  // the knitted scarf: a red band with cream stripes and stitches, one long tail with a fringe
+  const SC=WN_RED,SCD=WN_REDD,ST=[{pts:[[54,72],[59,72],[59,96],[54,96]],fill:'#FFF2DA',k:0,op:.9},{pts:[[70,74],[75,74],[75,98],[70,98]],fill:'#FFF2DA',k:0,op:.9},{pts:[[86,72],[91,72],[91,96],[86,96]],fill:'#FFF2DA',k:0,op:.9}];
+  b.sh(ribbon([[50,78],[72,85],[94,78]],[9,10.4,9]),SC,{k:1/6,hatch:0,hl:0,lw:1,marks:ST,inner:b.st('M52 80l2 2l2 -2M62 83l2 2l2 -2M78 84l2 2l2 -2M88 81l2 2l2 -2',SCD,.8,.7)});
+  b.sh(ribbon([[84,84],[88,98],[84,114]],[8.4,8.8,7.6]),SC,{k:1/6,hl:0,sh:SCD,ho:.45,lw:.95,marks:[{pts:[[76,96],[96,96],[96,100.4],[76,100.4]],fill:'#FFF2DA',k:0,op:.9},{pts:[[76,106],[96,106],[96,110],[76,110]],fill:'#FFF2DA',k:0,op:.9}]});
+  b.raw(b.st('M81 115l-1 4.4M84 115.4l0 4.6M87 115l1.2 4.2',SCD,1.4),'top');
+  // coal eyes (one big, one small, not level), a carrot nose, a pebble smile, a pink cheek
+  b.sh(E(65,58,3.4,4,10),'#4E4A52',{hatch:0,hl:0,lw:.6,base:'#6E6A72'});b.sh(E(78,61,2.2,2.6,10),'#4E4A52',{hatch:0,hl:0,lw:.5,base:'#6E6A72'});
+  b.dot(64,56.6,1,'#C9C6CF','top');b.dot(77.6,60,.6,'#C9C6CF','top');
+  [[62,72],[67,74.6],[72,75],[77,73.4]].forEach(([x,y])=>b.dot(x,y,1.2,'#6E6A72'));
+  b.raw(`<ellipse cx="85" cy="70" rx="3.6" ry="2" fill="${PINK}" opacity=".55"/>`,'top');
+  b.sh([[72,64],[98,68.6],[73,71]],ORNG,{k:.08,hatch:0,hl:0,lw:.8,base:'#F9BE86',top:1,det:[[[80,65.6],[80.4,68.4]],[[87,66.8],[87.2,68.8]]],dw:.55,dcol:'#C96E2A'});
+  flake(b,124,22,4.4,SNWS,1.3);b.ex('spark',20,40,3.6,'#E3F2FC');b.ex('heart',112,128,3.2,'#F7B2C4');
+};
+// a small candy cane (a hook), red stripes inside its own white line
+function wmCane(b,x,y,s,a){const P=rot([[x,y+18*s],[x,y+3*s],[x+1.6*s,y-1.6*s],[x+5.4*s,y-2.6*s],[x+8.4*s,y],[x+8.6*s,y+3.4*s]],a||0,x,y),R=ribbon(P,[3.2*s,3.2*s,3.2*s,3.2*s,3.2*s,3*s]);
+  const m=[];for(let i=0;i<6;i++){const yy=y+16*s-i*3.6*s;m.push({pts:rot([[x-4*s,yy],[x+4*s,yy-3*s],[x+4*s,yy-1.4*s],[x-4*s,yy+1.6*s]],a||0,x,y),fill:WN_RED,k:0})}
+  m.push({pts:rot([[x+2*s,y-5*s],[x+4.4*s,y-5*s],[x+4.4*s,y+1*s],[x+2*s,y+1*s]],a||0,x,y),fill:WN_RED,k:0},{pts:rot([[x+6.6*s,y-3*s],[x+11*s,y-1*s],[x+11*s,y+1.2*s],[x+6.6*s,y+.2*s]],a||0,x,y),fill:WN_RED,k:0});
+  b.sh(R,'#FFFFFF',{k:1/6,hatch:0,hl:0,lw:.75,base:'#FFFDF8',marks:m})}
+// one striped bulb hanging from the wire at (x, wy), its middle at y; the lit bulb sits in a glow group so the night tint keeps it bright
+function wmBulb(b,x,wy,y,a,lit,s){if(lit)ydGlow(b,x,y+1,20*s);
+  b.ln([[x,wy],[x,y-8*s]],{w:1,col:WN_GRND});
+  const bulb=rot(E(x,y+s,6.4*s,8.4*s,16),a,x,y),m=[];
+  [-7,0,7].forEach(c=>m.push({pts:rot([[x-10*s,y+(c+3)*s],[x+10*s,y+(c-7)*s],[x+10*s,y+(c-2.8)*s],[x-10*s,y+(c+7.2)*s]],a,x,y),fill:lit?'#FF7A6E':WN_RED,k:0}));
+  if(lit)b.raw('<g class="pa-wb-glow">','top');
+  b.sh(bulb,lit?'#FFF7D6':'#FFFFFF',{k:.1,hatch:0,hl:0,lw:.75,dr:.3,base:lit?'#FFFBEA':'#FFFDF8',top:1,marks:m});
+  b.ex('glint',x-2.6*s,y-s,4*s);
+  if(lit)b.raw('</g>','top');
+  b.sh(rot(RR(x-2.8*s,y-11*s,5.6*s,5*s,1.2*s),a,x,y),'#7C8A70',{k:.05,hatch:0,hl:0,lw:.6,base:'#A3B096',top:1})}
+PROPS.wmcanelights=function(b,o){const lit=!!(o&&o.lit),sy=x=>10+14*(1-Math.pow((x-150)/146,2));
+  const str=[];for(let x=4;x<=296;x+=10)str.push([x,sy(x)+Math.sin(x/9)*1.4]);str.push([296,sy(296)]);b.ln(str,{w:1.5,col:WN_GRND});
+  [4,296].forEach(x=>b.sh(E(x,10,3,3,8),C.woodD,{hatch:0,hl:0,lw:.7}));
+  wmCane(b,9,14,1,.08);wmCane(b,285,14,1,-.08);
+  for(let i=0;i<9;i++){const x=26+i*31;wmBulb(b,x,sy(x),sy(x)+13+(i%2)*4,[.12,-.08,.06,-.12,.1,-.06,.08,-.1,.12][i],lit,1)}
+  if(lit){b.ex('spark',90,68,3.6,'#FFF3C2');b.ex('spark',212,70,3.2,'#FFE59A')}else{b.ex('spark',90,68,3.4);b.ex('heart',212,70,3,'#F7B2C4')}
+};
+// one wrapped box in 3/4 view: the front face from (x, y) w by h, the top and side going d back and up; a ribbon both ways and a bow on top
+function wmBox(b,x,y,w,h,d,col,colD,base,rib,ribD,o={}){const dy=d*.55,cx=x+w/2,rw=Math.max(4,w*.13),my=y+h*.5;
+  b.sh([[x+w,y],[x+w+d,y-dy],[x+w+d,y+h-dy],[x+w,y+h]],colD,{k:.03,hatch:0,hl:0,lw:.9,marks:[{pts:[[x+w-1,my-rw/2],[x+w+d+1,my-rw/2-dy],[x+w+d+1,my+rw/2-dy],[x+w-1,my+rw/2]],fill:ribD,k:0}]});
+  b.sh([[x,y],[x+w,y],[x+w,y+h],[x,y+h]],col,{k:.03,hl:0,sh:colD,ho:.3,base,marks:(o.marks||[]).concat([{pts:[[cx-rw/2,y-2],[cx+rw/2,y-2],[cx+rw/2,y+h+2],[cx-rw/2,y+h+2]],fill:rib,k:0},{pts:[[x-2,my-rw/2],[x+w+2,my-rw/2],[x+w+2,my+rw/2],[x-2,my+rw/2]],fill:rib,k:0}])});
+  b.sh([[x,y],[x+d,y-dy],[x+w+d,y-dy],[x+w,y]],mix(col,'#FFFFFF',.18),{k:.03,hatch:0,hl:0,lw:.9,base,marks:[
+    {pts:[[cx-rw/2,y+1],[cx-rw/2+d,y-dy-1],[cx+rw/2+d,y-dy-1],[cx+rw/2,y+1]],fill:rib,k:0},
+    {pts:[[x+d/2-1,y-dy/2-rw*.3],[x+w+d/2+1,y-dy/2-rw*.3],[x+w+d/2+1,y-dy/2+rw*.3],[x+d/2-1,y-dy/2+rw*.3]],fill:rib,k:0}]});
+  // the bow: two loops, two tails, a knot
+  const bx=cx+d/2,by=y-dy/2,s=o.bow||1;
+  b.sh([[bx,by],[bx-5*s,by+9*s],[bx-2*s,by+10*s]],ribD,{k:.1,hatch:0,hl:0,lw:.7});b.sh([[bx,by],[bx+6*s,by+8*s],[bx+3*s,by+10*s]],ribD,{k:.1,hatch:0,hl:0,lw:.7});
+  b.sh([[bx,by],[bx-12*s,by-8*s],[bx-13*s,by-1*s],[bx-8*s,by+3*s]],rib,{k:.25,hatch:0,hl:0,lw:.85,det:[[[bx-3*s,by-1*s],[bx-10*s,by-3*s]]],dw:.5,dcol:ribD});
+  b.sh([[bx,by],[bx+12*s,by-9*s],[bx+14*s,by-2*s],[bx+8*s,by+3*s]],rib,{k:.25,hatch:0,hl:0,lw:.85,det:[[[bx+3*s,by-1*s],[bx+10*s,by-4*s]]],dw:.5,dcol:ribD});
+  b.sh(E(bx,by,3.4*s,3*s,10),ribD,{hatch:0,hl:0,lw:.8})}
+PROPS.wmpresents=function(b){const G=114;b.shadow(82,G,74,4.4);
+  // the big one at the back: green with cream dots, a red ribbon
+  const dots=[];[[52,58],[66,70],[54,84],[90,60],[96,88],[80,92]].forEach(([x,y])=>dots.push({pts:E(x,y,3,3,8),fill:'#FFF2DA',k:0,op:.95}));
+  wmBox(b,44,48,58,54,22,'#7FB86A','#5E9446','#D3EDC2',WN_RED,WN_REDD,{marks:dots,bow:1.15});
+  // front left: red with a cream ribbon and a paw-print tag
+  wmBox(b,10,74,58,40,16,WN_RED,WN_REDD,'#F4A6A0','#FFF2DA','#E2C9A2');
+  // front right: small and tall, yellow with pale stripes, a blue ribbon
+  const str=[];for(let i=0;i<5;i++){const yy=72+i*11;str.push({pts:[[96,yy],[132,yy-10],[132,yy-6],[96,yy+4]],fill:'#FFF4CC',k:0,op:.9})}
+  wmBox(b,98,66,32,48,14,'#FFD56B','#E9B44C','#FFF0C2','#8FA6E0','#5F78B8',{marks:str,bow:.85});
+  // the tag on the red box, tied with a string
+  b.ln([[30,93],[27,99],[24,101]],{w:.8,col:INK,top:1});
+  const tag=rot([[12,98],[26,98],[30,104],[26,110],[12,110]],.22,20,104);b.sh(tag,'#FFF8EC',{k:.05,hatch:0,hl:0,lw:.75,top:1});
+  paw(b,19,105,2.2,WN_RED,{noline:1,a:.22});b.dot(26.4,103.6,1,INK,'top');
+  b.ex('spark',148,26,4,'#FFE07A');b.ex('heart',12,52,3.2,'#F7B2C4');
+};
+PROPS.wmstarlantern=function(b,o){const lit=!!(o&&o.lit),G=194,x=60,y=60;
+  if(lit){b.raw('<g class="pa-wb-glow"><ellipse cx="60" cy="62" rx="56" ry="50" fill="#FFE59A" opacity=".32"/></g>','under');ydGlow(b,x,y,46)}
+  b.shadow(60,G,28,4);
+  // the post on a little foot, up into the star's lower notch
+  b.sh(RR(38,G-11,44,11,3),C.woodD,{k:0,hatch:0,hl:0,lw:.85,base:C.wood});
+  b.sh([[56,G-9],[55.4,78],[64.6,78],[64,G-9]],C.wood,{k:0,hatch:0,hl:0,lw:.95,base:'#F3DDB4',det:[[[58.6,104],[58.8,170]]],dw:.6,dcol:C.woodD});
+  // a red ribbon tied round the post
+  b.sh(RR(53,96,14,6,2),WN_RED,{k:.05,hatch:0,hl:0,lw:.7,base:'#F4A6A0'});b.sh([[60,101],[54,112],[58,111]],WN_RED,{k:.1,hatch:0,hl:0,lw:.6,base:'#F4A6A0'});b.sh([[61,101],[67,111],[63,112]],WN_RED,{k:.1,hatch:0,hl:0,lw:.6,base:'#F4A6A0'});
+  // the paper star: fold lines, cut-out holes (dark by day, bright when lit), a paw cut out in the middle
+  const S0=starP(x,y,38,19,5,-Math.PI/2+.05);let fd='';S0.forEach(p=>{fd+=b.jl(x,y,p[0],p[1],.4)});
+  const holes=[];S0.forEach((p,i)=>{if(i%2)return;const hx=x+(p[0]-x)*.6,hy=y+(p[1]-y)*.6;holes.push({pts:E(hx,hy,2.6,2.6,8),fill:lit?'#FFF7D6':'#C9A14E',k:0})});
+  S0.forEach((p,i)=>{if(!(i%2))return;const hx=x+(p[0]-x)*1.04,hy=y+(p[1]-y)*1.04;holes.push({pts:E(x+(hx-x)*.55,y+(hy-y)*.55,1.6,1.6,8),fill:lit?'#FFF7D6':'#C9A14E',k:0})});
+  if(lit)b.raw('<g class="pa-wb-glow">','top');
+  b.sh(S0,lit?'#FFE59A':'#F9DC8A',{k:.06,hl:0,sh:lit?'#FFD36E':'#E2B85A',ho:.35,lw:1,base:lit?'#FFF7D6':'#FFF4D2',top:1,marks:holes,inner:b.st(fd,lit?'#FFC48A':'#D9A84A',.9,.7)});
+  paw(b,x,y+1.6,4.2,lit?'#FFF7D6':'#C9A14E',{noline:1});
+  if(lit)b.raw('</g>','top');
+  // a little red tassel from the lower left point
+  const tp=S0[6];b.ln([[tp[0],tp[1]],[tp[0]-1,tp[1]+10]],{w:.9,col:WN_REDD,top:1});
+  b.sh([[tp[0]-1,tp[1]+9],[tp[0]-4.4,tp[1]+20],[tp[0]+2.4,tp[1]+20]],WN_RED,{k:.05,hatch:0,hl:0,lw:.6,base:'#F4A6A0',top:1});
+  if(lit){b.ex('spark',104,22,4,'#FFF3C2');b.ex('spark',14,108,3.2,'#FFE59A')}else{b.ex('spark',104,22,4);b.ex('heart',16,110,3,'#F7B2C4')}
+};
+Object.assign(PROP_VB,{wmfirtree:'0 0 140 200',wmsnowman:'0 0 140 180',wmcanelights:'0 0 300 80',wmpresents:'0 0 160 120',wmstarlantern:'0 0 120 200'});
+const WM_LBL={wmfirtree:'Paper-Star Fir Tree',wmsnowman:'Yard Snowman',wmcanelights:'Candy-Cane Fairy Lights',wmpresents:'Present Pile',wmstarlantern:'Star Lantern'},WM_LIT=['wmcanelights','wmstarlantern'];
+{const _propWM=PA.prop;
+ PA.prop=function(name,o){if(!WM_LBL[name])return _propWM.apply(this,arguments);
+  const lt=WM_LIT.includes(name),opt=lt?{lit:!!(o&&o.lit)}:{};
+  return serve('p:'+name+':'+JSON.stringify(opt),()=>{const b=mk('prop',name);PROPS[name](b,opt);return b.svg(PROP_VB[name],lt?` data-lit="${opt.lit?1:0}"`:'',(lt&&opt.lit?'Lit ':'')+WM_LBL[name])})}}
+// the item cards: each decoration's own prop, fitted into the 64 box (the long string shows its middle)
+Object.assign(ITEMS,{
+ 'Paper-Star Fir Tree'(b){hmPropCard(b,'wmfirtree',false,[12,22,116,176])},'Yard Snowman'(b){hmPropCard(b,'wmsnowman',false,[8,14,124,166])},
+ 'Candy-Cane Fairy Lights'(b){const sy=x=>12+9*(1-Math.pow((x-32)/28,2));
+  const w=[];for(let x=4;x<=60;x+=4)w.push([x,sy(x)]);b.ln(w,{w:1.3,col:WN_GRND});[4,60].forEach(x=>b.sh(E(x,sy(x)-1,2.4,2.4,8),C.woodD,{hatch:0,hl:0,lw:.6}));
+  wmCane(b,7,15,1.05,.08);[[20,.1],[34,-.08],[48,.12]].forEach(([x,a],i)=>wmBulb(b,x,sy(x),sy(x)+15+(i%2)*4,a,false,1.08));b.ex('spark',58,52,3.2,'#FFE07A')},'Present Pile'(b){hmPropCard(b,'wmpresents',false,[2,16,156,102])},
+ 'Star Lantern'(b){hmPropCard(b,'wmstarlantern',false,[6,12,108,136])}
+});
+PA.WINTER_MARKET={decor:Object.assign({},WM_LBL)};
+
 PA._wbFlush=()=>{for(const k in CACHE)delete CACHE[k]};
 PA.WORLD_B={beds:Object.keys(BEDS),obstacles:Object.keys(OBS),bowlFoods:BOWL_FOODS.slice(),icons:Object.keys(ICONS),items:Object.keys(ITEMS),houses:Object.keys(HOUSES),collectibles:Object.keys(COLS),props:Object.keys(PROPS),furniture:V27_FURN.slice(),
   winter:{props:Object.keys(WN_LBL),stallKinds:['winter','newyear'],items:['Warm Carob Cup','Snowflake Oat Cookies','Snow Day Stew','Pup Kinton','Very Ugly Sweater','Reindeer Antlers','Snowflake Snood','Ugly Sweater Rosette','Year of the Sheep Hood','Paper Snowflake Garland','Felt Holly Wreath','Red Wooden Sled','Kadomatsu Pair'],icons:['snowdrift','snowdog','sweater','fortune','wstall','fuji'],bowlFoods:BOWL28.slice()}};

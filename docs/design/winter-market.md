@@ -35,7 +35,7 @@ The New Year Market (27 Dec to 7 Jan) is a separate small set later.
 
 ## Progress
 
-- [ ] 1. Decorations
+- [x] 1. Decorations (30 Oct 2026): rows in `HM_DECOR` (`game/src/03_yard.js`), props `wmfirtree`, `wmsnowman`, `wmcanelights` (lit), `wmpresents`, `wmstarlantern` (lit) and the 5 item cards in `world/pawart_world_b.js` (`PA.WINTER_MARKET.decor`); prices 90 to 140, Bond 1 (Fir Tree and Star Lantern Bond 2); English stories only; shots `docs/shots/winter-market/part1/`
 - [ ] 2. Costumes
 - [ ] 3. Toys
 - [ ] 4. Homes
