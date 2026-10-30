@@ -51,3 +51,4 @@ The New Year Market (27 Dec to 7 Jan) is a separate small set later.
 - The Halloween market toys still show their base toys' hints ("Click the duck", "Drag the Plush Bone"); give them their own like the winter toys.
 - The Soft Spider Plush promises +10% nap Energy, but only the Plush Bone gives it: make the text or the bonus agree.
 - Festive-market houses (the Friendly Haunted Kennel, now the Gingerbread Kennel, both Bond 3) still show as "House: ..." in the Bond-up unlock lists (`unlocksFor` in `00_core.js`, the Bond track in `48_dogdays.js`), though only the market sells them; beds are already skipped there (`!b.fm`).
+- The `wstall` mission ("Buy a warm treat from Baker Bea") also counts the Frozen Yoghurt Snowballs from the market: maybe count only warm treats, or reword.
