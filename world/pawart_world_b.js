@@ -6563,7 +6563,7 @@ const WM_LBL={wmfirtree:'Felt Fir Tree',wmsnowman:'Yard Snowman',wmcanelights:'C
 // the item cards: each decoration's own prop, fitted into the 64 box (the long string shows its middle)
 Object.assign(ITEMS,{
  'Felt Fir Tree'(b){hmPropCard(b,'wmfirtree',false,[12,22,116,176])},'Yard Snowman'(b){hmPropCard(b,'wmsnowman',false,[8,14,124,166])},
- 'Candy-Cane Fairy Lights'(b){hmPropCard(b,'wmcanelights',false,[70,6,160,56])},// the middle of the string, framed like the Halloween string cards'Present Pile'(b){hmPropCard(b,'wmpresents',false,[2,16,156,102])},
+ 'Candy-Cane Fairy Lights'(b){hmPropCard(b,'wmcanelights',false,[70,6,160,56])},'Present Pile'(b){hmPropCard(b,'wmpresents',false,[2,16,156,102])},// the lights card shows the middle of the string, framed like the Halloween string cards
  'Star Lantern'(b){hmPropCard(b,'wmstarlantern',false,[6,12,108,136])}
 });
 /* Part 2, the ten costume item cards (64): a garment on its own like the Halloween Market cards, the head piece above it */

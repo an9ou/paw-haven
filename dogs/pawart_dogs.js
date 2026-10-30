@@ -1574,6 +1574,10 @@ TOP2['Dinosaur Hood']=function(h,s,L,HT){const hx=s.head.rx,hy=s.head.ry,{o,n,ox
    h.shape([[q[0]+u[0]*1.5-v[0]*tz*.6,q[1]+u[1]*1.5-v[1]*tz*.6],[q[0]-u[0]*tz*.9,q[1]-u[1]*tz*.9],[q[0]+u[0]*1.5+v[0]*tz*.6,q[1]+u[1]*1.5+v[1]*tz*.6]].map(HT).map(hmCl),W,{w:1.6,step:30,ox:0,oy:0,sc:1,closed:1,amp:.2,famp:.15})}
   [[-.62,-.35],[-.3,-.7]].forEach(q=>{const c=HT([hx*q[0],hy*q[1]]);h.dot(c[0],c[1],2.2,2,HM_GRD)})};
 
+// a back costume's near wing; on a dog with a mane (chow, pom, spitz, malamute) frame() lays the same strokes again after the mane, so the mane never hides it
+const WING_OVER={'Little Owl Wings':1,'Snowflake Wings':1};
+function wmNearWing(h,s,draw){const a=h.acc.length;draw();if(s.ruff)h._wing=h.acc.slice(a)}
+function wingOver(h){if(h._wing){h._wing.forEach(x=>h.acc.push(x));h._wing=null}}
 /* 8. Little Owl Wings (in place of bumblebee wings: the Bumblebee Suit has them): soft brown feathered wings, a feather-tuft headband */
 function hmOwlWing(h,B,root,ang,z,far){const pts=[[0,0],[-.18,-.32],[-.5,-.58],[-.92,-.66],[-1.02,-.48],[-.86,-.36],[-.98,-.2],[-.8,-.1],[-.88,.06],[-.6,.06],[-.3,.12]].map(q=>{const r2=rot([q[0]*z,q[1]*z],ang);return B([root[0]+r2[0],root[1]+r2[1]])}).map(q=>[q[0],Math.min(q[1],GY)]);
   h.shape(pts,far?HM_BRD:HM_BR,{w:3,step:30,ox:0,oy:0,sc:1,closed:1,amp:.5,famp:.4});
@@ -1581,10 +1585,8 @@ function hmOwlWing(h,B,root,ang,z,far){const pts=[[0,0],[-.18,-.32],[-.5,-.58],[
   [[.3,-.12],[.48,-.2]].forEach(q=>{const c=pts[0].map((v,i)=>v+(pts[3][i]-v)*q[0]);h.dot(c[0],c[1]+q[1]*z*.3,1.6,1.4,far?HM_BR:HM_BRL)})}
 BACK2['Little Owl Wings']=function(h,s,L,B){const b=s.body,lie=/^(sleep|down|crouch|playdead)$/.test(L.pose),z=Math.max(30,Math.min(48,b.ry*1.8))*(lie?.8:1);
   hmOwlWing(h,B,[b.rx*.3,-b.ry*(s.fluff?(s.wet?.84:.9):.8)],lie?-6:12,z*.92,1)};
-BODY2['Little Owl Wings']=function(h,s,L,B){if(!s.ruff)WING_OVER['Little Owl Wings'](h,s,L,B)};
-// the near wing; on a dog with a mane (chow, pom...) it is drawn after the mane (frame below), so the mane never hides it
-const WING_OVER={};WING_OVER['Little Owl Wings']=function(h,s,L,B){const b=s.body,lie=/^(sleep|down|crouch|playdead)$/.test(L.pose),z=Math.max(30,Math.min(48,b.ry*1.8))*(lie?.8:1);
-  hmOwlWing(h,B,[b.rx*.12,-b.ry*(s.fluff?.72:.6)],lie?-14:-4,z,0)};
+BODY2['Little Owl Wings']=function(h,s,L,B){wmNearWing(h,s,()=>{const b=s.body,lie=/^(sleep|down|crouch|playdead)$/.test(L.pose),z=Math.max(30,Math.min(48,b.ry*1.8))*(lie?.8:1);
+  hmOwlWing(h,B,[b.rx*.12,-b.ry*(s.fluff?.72:.6)],lie?-14:-4,z,0)})};
 TOP2['Little Owl Wings']=function(h,s,L,HT){const hx=s.head.rx,hy=s.head.ry,P=hatP(s,L,HT,.06,-4),z=Math.max(hx,hy)*.36,band=[[-hx*.72,6],[-hx*.3,-1],[hx*.3,-1],[hx*.72,6]].map(P);
   h.line(band,4.6,INK,.4);h.line(band,2.6,HM_BRL,.3);
   [[-hx*.45,-18],[hx*.4,18]].forEach(([x,an])=>{const M=q=>{const r2=rot(q,an);return P([x+r2[0],r2[1]-1])};
@@ -1714,8 +1716,9 @@ BODY2['Penguin Suit']=function(h,s,L,B,p){const b=s.body,lie=/^(sleep|down|crouc
   h.part(true);h.shape([[-b.rx*.62,b.ry*1.5],[-b.rx*.56,b.ry*.72],[-b.rx*.1,b.ry*.46],[b.rx*.38,b.ry*.3],[b.rx*.66,b.ry*.02],[b.rx*.8,-b.ry*.4],[b.rx*.9,-b.ry*.9],[b.rx*1.6,-b.ry*.9],[b.rx*1.6,b.ry*1.5]].map(B).map(hmCl),W,{noline:1,ox:0,oy:0,step:9,famp:.6});h.part(false);
   h.line([[-b.rx*.5,b.ry*.76],[-b.rx*.1,b.ry*.5],[b.rx*.38,b.ry*.34],[b.rx*.66,b.ry*.06],[b.rx*.8,-b.ry*.36]].map(B).map(hmCl),1.6,WM_SND,.3);
   h.line([[b.rx*-.25,-b.ry*.55],[b.rx*.3,-b.ry*.72]].map(B).map(hmCl),2,WM_BKL,.3);
-  // orange webbed feet over the two front paws, toes forward
-  (L.legs||[]).filter(l=>(l.id==='NF'||l.id==='FF')&&l.foot&&!l.raised&&!l.sitfoot).sort((a,c)=>(a.id==='FF'?0:1)-(c.id==='FF'?0:1)).forEach(l=>wmPFoot(h,[l.foot[0]+2,Math.min(l.foot[1]+1,GY-3)],Math.max(7,Math.min(13,l.w*1.5)),l.id==='FF'));
+  // orange webbed feet over the two front paws, toes forward (on a very long-legged dog they sit a touch up the leg, never far below the suit)
+  let by=-1e9;for(let an=0;an<360;an+=15){const q=B([b.rx*Math.cos(an*D2R),b.ry*Math.sin(an*D2R)]);by=Math.max(by,q[1])}const fz=l=>Math.max(7,Math.min(13,l.w*1.5)),lim=l=>by+b.ry*1.6+14-fz(l)*.3-6;
+  (L.legs||[]).filter(l=>(l.id==='NF'||l.id==='FF')&&l.foot&&!l.raised&&!l.sitfoot).sort((a,c)=>(a.id==='FF'?0:1)-(c.id==='FF'?0:1)).forEach(l=>wmPFoot(h,[l.foot[0]+2,Math.min(l.foot[1]+1,GY-3,lim(l))],fz(l),l.id==='FF'));
   wmFlipper(h,B,[b.rx*.36,-b.ry*.34],wmFlipAng(L),Math.max(16,Math.min(28,b.ry*1.2)),0)};
 TOP2['Penguin Suit']=function(h,s,L,HT){const hx=s.head.rx,hy=s.head.ry,{o,n,ox,oy}=hmHood(s,L);
   h.shape(o.concat(n).map(HT).map(hmCl),WM_BK,{w:3.8,step:7,amp:.9});h.crayon(hx*.5,hy*.3,q=>HT([q[0]-hx*.45,q[1]-hy*.5]),WM_BK,4);
@@ -1757,8 +1760,7 @@ BACK2['Snowflake Wings']=function(h,s,L,B){const w=hwWingSet(s,L);wmFlakeWing(h,
 BODY2['Snowflake Wings']=function(h,s,L,B){const b=s.body,w=hwWingSet(s,L);
   const st=[[b.rx*.4,-b.ry*.98],[b.rx*.47,0],[b.rx*.42,b.ry*.95]];h.line(st.map(B).map(hmCl),6,INK,.4);h.line(st.map(B).map(hmCl),3.6,WM_ICD,.4);
   h.line([[b.rx*.4,-b.ry*.9],[w.root[0],w.root[1]+2]].map(B).map(hmCl),5,INK,.4);h.line([[b.rx*.4,-b.ry*.9],[w.root[0],w.root[1]+2]].map(B).map(hmCl),2.8,WM_ICD,.4);
-  if(!s.ruff)WING_OVER['Snowflake Wings'](h,s,L,B)};
-WING_OVER['Snowflake Wings']=function(h,s,L,B){const w=hwWingSet(s,L);wmFlakeWing(h,B,w.root,w.ang,w.z,0)};
+  wmNearWing(h,s,()=>wmFlakeWing(h,B,w.root,w.ang,w.z,0))};
 
 /* 10. Jingle Bell Collar (neck slot): a soft red felt collar with three little gold bells (lying down, the bells rest on the collar) */
 NECK2['Jingle Bell Collar']=function(h,s,L,HT){const a=neckAnchor(s,HT),sag=t=>{const x=a.l[0]+(a.r[0]-a.l[0])*t,y=a.l[1]+(a.r[1]-a.l[1])*t+Math.sin(Math.PI*t)*8;return[x,Math.min(y,GY-18)]};
@@ -1773,7 +1775,7 @@ NECK2['Jingle Bell Collar']=function(h,s,L,HT){const a=neckAnchor(s,HT),sag=t=>{
 // on as the plain dog would (hmPlain), so the head drawn after is the plain dog's too.
 const HM_OWN=new Set(['Little Witch Hat & Cape','Scarecrow Overalls','Mummy Wraps','Skeleton Suit','Black Cat Ears & Bow','Pirate Hat & Sash','Dinosaur Hood','Little Owl Wings','Wizard Robe & Star Hat','Lion Mane',
   'Father Christmas Suit','Little Elf Outfit','Gingerbread Pup Suit','Snowman Suit','Polar Bear Hood','Penguin Suit','Puffer Jacket','Nutcracker Jacket & Hat','Snowflake Wings','Jingle Bell Collar']);// and the Winter Market 2026 costumes
-HM_OWN.forEach(n=>[BACK2,BODY2,TOP2,RUFF2,NECK2,WING_OVER].forEach(R=>{const fn=R[n];if(fn)R[n]=function(h,...a){const st=h.r.st();fn(h,...a);h.r.st(st)}}));
+HM_OWN.forEach(n=>[BACK2,BODY2,TOP2,RUFF2,NECK2].forEach(R=>{const fn=R[n];if(fn)R[n]=function(h,...a){const st=h.r.st();fn(h,...a);h.r.st(st)}}));
 
 // draw(h) on the dog, then leave its random stream where plain(g) would have left it (plain draws on a throwaway kit that shares the stream)
 function hmPlain(h,draw,plain){const st=h.r.st(),g=kit(h.r);g.setJ(h.getJ());g.cy=h.cy;if(h.wet)g.wet=1;plain(g);const e=h.r.st();h.r.st(st);draw(h);h.r.st(e)}
@@ -2078,7 +2080,7 @@ function frame(key,s,pose,outfit,k,seed,ex){
   if(L.paw){h._legPass='raised';drawLegs(h,s,L);h._legPass='ground'}
   if(s.ruff&&!sheet)drawRuff(h,s,L,HT);
   if(neck&&RUFF2[neck]&&!sheet&&top!=='Trick-or-Treat Ghost')RUFF2[neck](h,s,L,HT);// v2.17.1: a mane worn round the face (Lion Mane)
-  if(s.ruff&&body&&WING_OVER[body])WING_OVER[body](h,s,L,B);// a back costume's near wing sits over the mane
+  if(s.ruff&&body&&WING_OVER[body])wingOver(h);// a back costume's near wing sits over the mane
   const hmk=top&&HM_OWN.has(top);if(hmk&&L.hood)L.hmHood=1;// v2.18.1: drawEars hands the stream on as the plain dog's ears would
   if(!sheet)drawEars(h,s,L,HT,false);
   if(s.topknot&&!hat&&(!top||top==='Pumpkin Patch Suit')&&!(sheet&&s.topknot===3))drawTopknot(h,s,HT);// v2.12: the maltese and shihtzu tuft stays under the Ghost Sheet
