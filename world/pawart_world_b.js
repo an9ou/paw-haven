@@ -6828,8 +6828,76 @@ Object.assign(BED_ICON_H,{'Present-Box Bed':44,'Little Sleigh Bed':40,'Snowball 
   const t=bedTpl(name,true).split(IDT).join(IDT+'n'+(BEDN++).toString(36)).replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'');
   b.raw(`<g transform="translate(${R1(32-W/2)} ${R1(35-H/2)}) scale(${R1(W/w*1000)/1000} ${R1(H/h*1000)/1000}) translate(${-x} ${-y})">${t}</g>`);b.ex('spark',56,12,3.4,'#FFE07A')}});
 ITEMS['Gingerbread Kennel']=function(b){const t=PA.house('Gingerbread Kennel').replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'');b.raw(`<g transform="translate(4 4) scale(.233)">${t}</g>`)};
+/* Part 5, three treats (FOOD, fest 'winter', fm): their 64 item cards (PA.WINTER_MARKET.treats) and the dog bowl (120). Food-safe by the look too:
+   Reindeer Crunch is carrot sticks and cored apple pieces (no pips) in a paper bag with a crude reindeer on it; the Turkey & Cranberry Bites are
+   plain pale turkey cubes (no skin, no gravy), one fresh cranberry each; the Frozen Yoghurt Snowballs are plain white balls in a red bowl, no
+   faces and no sauce (the Halloween Frozen Yoghurt Ghosts are ghost shapes with faces on a blue plate) */
+const WMT_CRAN='#C8323C',WMT_CRANL='#F07C80',WMT_TK='#EDCB9E',WMT_TKL='#F9E6C8',WMT_TKD='#D9AD7C',WMT_YG='#FFFFFF',WMT_YGS='#DDEBF7';
+function wmtCran(b,x,y,r){b.sh(E(x,y,r,r*.92,10),WMT_CRAN,{hatch:0,hl:0,lw:Math.max(.5,Math.min(.8,r/4)),dr:.1,marks:[{pts:E(x+r*.25,y+r*.3,r*.55,r*.4,8),fill:'#9E2430',op:.7}]});
+  b.dot(x-r*.35,y-r*.35,Math.max(.5,r*.24),WMT_CRANL);b.dot(x+r*.1,y-r*.82,Math.max(.35,r*.14),'#6E4F43')}
+function wmtBall(b,x,y,r){b.sh(E(x,y,r,r*.96,Math.max(12,Math.round(r*1.5))),WMT_YG,{k:.14,hatch:0,hl:0,lw:Math.max(.55,Math.min(.85,r/9)),base:'#fff',dr:.15,
+  marks:[{pts:E(x+r*.28,y+r*.34,r*.7,r*.5,10),fill:WMT_YGS,op:.95}]});b.dot(x-r*.38,y-r*.36,Math.max(.6,r*.16),'#EEF6FC')}
+function wmtTurkey(b,x,y,s){cubeV(b,x,y,s,WMT_TKL,WMT_TK,WMT_TKD)}
+// an apple wedge like the Apple Slices card: red skin on the curved back, pale flesh, the cored edge flat (no pips)
+function wmtWedge(b,cx,cy,R,a){const out=[],inn=[],skin=[];for(let i=0;i<=10;i++){const t=-Math.PI*.5+Math.PI*i/10;out.push([cx+Math.cos(t)*R,cy+Math.sin(t)*R])}
+  for(let i=10;i>=0;i--){const t=-Math.PI*.5+Math.PI*i/10;inn.push([cx-R*.35+Math.cos(t)*R*.25,cy+Math.sin(t)*R*.96]);skin.push([cx+Math.cos(t)*R*.78,cy+Math.sin(t)*R*.84])}
+  b.sh(rot(out.concat(inn),a,cx,cy),'#FFE9B0',{k:.15,hatch:0,hl:0,lw:.8,base:'#FFF4D6',marks:[{pts:rot(out.concat(skin),a,cx,cy),fill:C.redD}]})}
+Object.assign(ITEMS,{
+ 'Reindeer Crunch'(b){
+  // carrot sticks poking out of a kraft bag with a crude reindeer face, two cored apple pieces in front
+  [[19,-.32,8],[25,-.12,4],[31,.06,6],[37,.2,3],[43,.36,9]].forEach(([x,a,yt])=>
+   b.sh(rot(RR(x-3,yt,6,30,2.6),a,x,36),ORNG,{hatch:0,hl:0,lw:.75,base:'#F9BE86',det:[rot([[x-1.6,yt+7],[x+.8,yt+7.6]],a,x,36),rot([[x-1.6,yt+14],[x+1,yt+14.6]],a,x,36)],dw:.6,dcol:'#C96E2A'}));
+  b.sh([[11,26],[47,25],[49,59],[9,59]],'#D9B27C',{k:.03,sh:'#B08550',ho:.4,base:'#EBCB9C',inner:b.st(b.jl(14,29,13,56,.3),'#B08550',.8,.5)});
+  b.sh([[10,25],[48,24],[48,30],[10,31]],'#E2BE8A',{k:.03,hatch:0,hl:0,lw:.85,base:'#F0D4A8'});
+  // the reindeer: two twiggy antlers, a round brown head, dot eyes, a big red nose
+  b.raw(b.st('M23 41l-5 -8l-4 -1M18 33l-1 -4M20 37l-4 1M35 41l5 -8l4 -1M40 33l1 -4M38 37l4 1','#6E4F43',2,1),'top');
+  b.sh(E(29,45,8.6,7.4,16),WMC_GB,{k:.1,hatch:0,hl:0,lw:.8,base:'#E3B48A',top:1});
+  b.dot(25.6,43.2,1.2,INK,'top');b.dot(32.4,43.2,1.2,INK,'top');
+  b.sh(E(29,48.4,3.2,2.6,10),WMC_RD,{hatch:0,hl:0,lw:.6,base:'#F6A8A0',top:1});b.dot(28,47.6,.7,'#FFD0C8','top');
+  wmtWedge(b,52,45,7.8,.45);wmtWedge(b,46,53,6.6,1.15);
+  b.ex('spark',56,12,3.6);b.ex('dots',5,16,4);
+ },
+ 'Turkey & Cranberry Bites'(b){
+  plateV(b,32,49,29,10,C.mint,'#FFFFFF');
+  // a little pile of plain turkey cubes, a fresh cranberry on each, two spare berries on the plate
+  const S=8.4;[[16,30],[33,30],[8,39],[25,40],[42,39],[16,48],[33,48]].forEach(([x,y])=>{wmtTurkey(b,x,y,S);wmtCran(b,x+S*.95,y-.4,2.8)});
+  wmtCran(b,54,54,2.4);wmtCran(b,50,57.6,2.2);
+  b.ex('spark',56,12,3.6);b.ex('heart',8,20,2.8);
+ },
+ 'Frozen Yoghurt Snowballs'(b){
+  // round plain yoghurt snowballs heaped in a red bowl, frost dots, no faces
+  bowl(b,32,40,25,7,16,WMC_RD,'#F6A8A0',()=>{
+   [[18,37,6],[30,38,6.4],[43,37,6],[24,29,6.2],[37,29,6.2],[30,20,6.4]].forEach(([x,y,r])=>wmtBall(b,x,y,r))});
+  wmtBall(b,53,58,4.2);
+  [[12,14],[50,10]].forEach(([x,y],i)=>flake(b,x,y,i?3:3.6,WMC_ICD,1.2));
+  b.ex('spark',58,24,3,'#E3F2FC');
+ }
+});
+const BOWL_WM=['Reindeer Crunch','Turkey & Cranberry Bites','Frozen Yoghurt Snowballs'];
+BOWL_WM.forEach(n=>BOWL_FOODS.push(n));
+const _bowlFoodWM=bowlFood;
+bowlFood=function(b,food){
+  if(!BOWL_WM.includes(food))return _bowlFoodWM(b,food);
+  const r=b.r;
+  b.shadow(60,99,48,6);
+  if(food==='Frozen Yoghurt Snowballs'){flake(b,14,34,5,WMC_ICD,1.6);flake(b,106,28,4.4,WMC_ICD,1.6)}
+  bowl(b,60,62,45,12,32,C.pink,'#E58FA5',()=>{
+   if(food==='Reindeer Crunch'){heapBase(b,'#F9BE86');
+     [[36,-.55],[48,-.25],[62,.05],[76,.3],[86,.6],[56,-.1]].forEach(([x,a],i)=>{const yt=i>4?32:26+Math.abs(x-60)*.3;
+      b.sh(rot(RR(x-4,yt,8,36,3.6),a,x,yt+32),ORNG,{hatch:0,hl:0,lw:.8,base:'#F9BE86',det:[rot([[x-2,yt+9],[x+1.2,yt+9.6]],a,x,yt+32),rot([[x-2,yt+19],[x+1.4,yt+19.6]],a,x,yt+32)],dw:.8,dcol:'#C96E2A'})});
+     [[38,57],[62,59],[84,56],[50,47],[74,46]].forEach(([x,y],i)=>{const a=(i%3-1)*.3+(r()-.5)*.25,out=[],inn=[];for(let j=0;j<=10;j++){const t=Math.PI*(1+j/10);out.push([x+Math.cos(t)*11,y+4+Math.sin(t)*9])}
+      for(let j=10;j>=0;j--){const t=Math.PI*(1+j/10);inn.push([x+Math.cos(t)*8.6,y+4+Math.sin(t)*6.8])}
+      b.sh(rot(out,a,x,y),'#FFE9B0',{k:.15,hatch:0,hl:0,lw:.8,base:'#FFF4D6',marks:[{pts:rot(out.concat(inn),a,x,y),fill:C.redD}]})})}
+   else if(food==='Turkey & Cranberry Bites'){heapBase(b,WMT_TK);
+     const S=10;[[42,37],[61,37],[32,46],[51,46],[70,46],[23,55],[42,55],[61,55],[80,55]].forEach(([x,y])=>{wmtTurkey(b,x,y,S);wmtCran(b,x+S*.95,y-.5,3.4)})}
+   else if(food==='Frozen Yoghurt Snowballs'){heapBase(b,'#E3F2FC');
+     [[34,58,9],[52,60,9.4],[70,60,9.4],[88,58,9],[42,46,9.2],[60,46,9.6],[78,46,9.2],[51,34,9.2],[69,34,9.2],[60,23,9]].forEach(([x,y,rr])=>wmtBall(b,x,y,rr))}
+  });
+  b.tx(60,90,'DOG',17,{mid:1});
+};
 PA.WINTER_MARKET={decor:Object.assign({},WM_LBL),costumes:['Father Christmas Suit','Little Elf Outfit','Gingerbread Pup Suit','Snowman Suit','Polar Bear Hood','Penguin Suit','Puffer Jacket','Nutcracker Jacket & Hat','Snowflake Wings','Jingle Bell Collar'],
-  toys:['Squeaky Snowman','Candy-Cane Rope','Plush Penguin','Snowball Ball','Present Puzzle Box'],house:'Gingerbread Kennel',beds:['Present-Box Bed','Little Sleigh Bed','Snowball Nest','Giant Mitten Bed']};
+  toys:['Squeaky Snowman','Candy-Cane Rope','Plush Penguin','Snowball Ball','Present Puzzle Box'],house:'Gingerbread Kennel',beds:['Present-Box Bed','Little Sleigh Bed','Snowball Nest','Giant Mitten Bed'],
+  treats:BOWL_WM.slice()};
 
 PA._wbFlush=()=>{for(const k in CACHE)delete CACHE[k]};
 PA.WORLD_B={beds:Object.keys(BEDS),obstacles:Object.keys(OBS),bowlFoods:BOWL_FOODS.slice(),icons:Object.keys(ICONS),items:Object.keys(ITEMS),houses:Object.keys(HOUSES),collectibles:Object.keys(COLS),props:Object.keys(PROPS),furniture:V27_FURN.slice(),
