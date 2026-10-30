@@ -25,13 +25,13 @@ what dog costume is yours wearing this year? comment below. we know the Dinosaur
 
 Noodle knocked on 4 doors. 3 dogs in new Halloween costumes handed out dog-safe treats. door 4 had other plans.
 
-the Halloween Market in Doodle Doggo is open until 15 Nov: 10 new dog costumes like the Scarecrow Overalls, Skeleton Suit, Mummy Wraps and Dinosaur Hood, plus the Pumpkin Cottage and the Friendly Haunted Kennel.
+the Halloween Market's open in Doodle Doggo until 15 Nov, and you'll find 10 new dog costumes there, like the Scarecrow Overalls, Skeleton Suit, Mummy Wraps and Dinosaur Hood, plus the Pumpkin Cottage and the Friendly Haunted Kennel.
 
 it's our free cozy dog game, and you play it right in your browser. no ads, and nothing bad ever happens.
 
 #DoodleDoggo #DogCostume #Halloween #CozyGames #IndieGame
 ```
-Job A (the Reel carries the hook) · one ask: comment · 5 hashtags · search: "dog costume" in line 1, "Halloween", "cozy dog game" in the body · no link (it is in the bio) · linter READY · human score 75.
+Job A (the Reel carries the hook) · one ask: comment · 5 hashtags · search: "dog costume" in line 1, "Halloween", "cozy dog game" in the body · no link (it is in the bio) · linter READY · human score 89 PASS.
 
 ## YouTube Shorts
 

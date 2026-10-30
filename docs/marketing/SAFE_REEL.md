@@ -35,7 +35,7 @@ Title: `Stop sharing these 3 snacks with your dog 🍇🍫 #Shorts`
 
 Description:
 ```
-3 snacks Noodle begs for, and 3 he gets instead. Grapes, chocolate and sugar-free gum (it's the xylitol) are never for dogs. Blueberries, Carrot Crunchies and a Pumpkin Pupcake are the swaps. Save it. If your dog ate something it shouldn't, call your vet right away. Don't wait for signs.
+3 snacks Noodle begs for, and 3 he gets instead: grapes, chocolate and sugar-free gum (it's the xylitol) are never for dogs, while blueberries, Carrot Crunchies and a Pumpkin Pupcake are the swaps he loves. Save it. If your dog ate something it shouldn't, call your vet right away. Don't wait for signs.
 
 Doodle Doggo is our free cozy dog game, drawn in a pencil sketchbook. You can't cook or feed anything toxic in it, and every recipe comes with a two-sentence safety lesson. Nothing bad ever happens.
 
@@ -46,13 +46,13 @@ Doodle Doggo is our free cozy dog game, drawn in a pencil sketchbook. You can't 
 
 #DoodleDoggo #Shorts #DogSafety #DogTips #CozyGames
 ```
-Title off the strongest hook (81 STRONG). Human score 70 (plain food names kept lower-case on purpose).
+Title off the strongest hook (81 STRONG). Human score 91 PASS.
 
 ## X (under 280 characters)
 ```
-stop sharing these 3 snacks with your dog 🍇🍫 grapes, chocolate and sugar-free gum (it's the xylitol). blueberries, carrots and plain pumpkin? all fine. ate something? call your vet. save it: https://doodledoggo.app #DoodleDoggo #DogSafety
+stop sharing these 3 snacks with your dog 🍇🍫 grapes, chocolate and sugar-free gum (it's the xylitol). the 3 swaps Noodle gets instead? blueberries, carrots and plain pumpkin. ate something? call your vet. his game is free: https://doodledoggo.app #DoodleDoggo #DogSafety
 ```
-238 of 280 · human score 69.
+270 of 280 (the link counts as 23) · human score 89 PASS.
 
 **Alt text:** `A crayon dachshund begs in a kitchen. Grapes, a chocolate bar and sugar-free gum each appear on his plate with a red paw stop sign and a short reason they are unsafe for dogs; then blueberries, carrot crunchies and a pumpkin cupcake appear with a green tick. It ends on a list: never for dogs, grapes and raisins, chocolate, sugar-free gum (xylitol), onion and garlic, macadamia nuts; safe swaps, blueberries, carrot, pumpkin; ate something? call your vet.`
 
