@@ -1297,13 +1297,16 @@ function fmFrontWm(b,th,lit){
   if(lit)[[250,190],[750,190]].forEach(([x,y])=>fmGlowW(b,x,y,30,30,.32))}
 const FM_STALL_SIGNS={decor:[165,386,96],clothes:[500,386,96],toys:[835,386,96],homes:[335,428,70],treats:[667,428,70]};
 const FM_LOW0=34;// the decor stall's roof sits a little lower in the Halloween scene, clear of the place chip (top left)
-function fmStall(b,th,x0,w,theme,i,lit){
+// Winter Market review: o.plain (a market drawn in another market's colours, e.g. the Harvest Market in the Halloween ones) has the plain goods,
+// no dressing, boards or front stands; o.open[i] false = a stall with nothing on sale today, drawn as a bare counter (no goods)
+function fmStall(b,th,x0,w,theme,i,lit,plain,open){
   const y0=262,top=y0-70+(i===0?FM_LOW0:0);// Winter Market part 6: every theme's decor roof sits low, clear of the place chip
   [[x0+14],[x0+w-14]].forEach(([x])=>b.sh([[x-6,y0+150],[x-6,top+40],[x+6,top+40],[x+6,y0+150]],'#E2B07E',{k:0,sh:'#C58F5E',hl:0}));
   const n=6,sw2=w/n;for(let k=0;k<n;k++){const a=x0+k*sw2,c=k%2?th.c:th.a;b.sh([[a,top],[a+sw2,top],[a+sw2,top+44],[a+sw2/2,top+58],[a,top+44]],c,{k:.05,hatch:k%2?0:1,hl:0,sh:th.b,lw:.9})}
   b.sh([[x0-8,top-14],[x0+w+8,top-14],[x0+w+8,top+4],[x0-8,top+4]],th.b,{k:0,hatch:0,hl:0});
   b.sh([[x0,y0+90],[x0+w,y0+90],[x0+w-6,y0+160],[x0+6,y0+160]],'#E2B07E',{k:0,sh:'#C58F5E',marks:[{pts:[[x0,y0+90],[x0+w,y0+90],[x0+w,y0+108],[x0,y0+108]],fill:th.c,k:0}]});
-  if(theme==='halloween')fmDressHw(b,th,x0,w,i);else if(theme==='winter')fmDressWm(b,th,x0,w,i,!!lit);else fmGoods(b,th,x0+36,y0+84,i,theme);
+  if(open===false)return;
+  if(theme==='halloween'&&!plain)fmDressHw(b,th,x0,w,i);else if(theme==='winter'&&!plain)fmDressWm(b,th,x0,w,i,!!lit);else fmGoods(b,th,x0+36,y0+84,i,theme);
 }
 function fmLantern(b,x,y,col,lit){b.ln([[x,y-30],[x,y-14]],{w:1.4});b.sh(E(x,y,13,16,16),col,{hatch:0,hl:0,lw:.9,marks:lit?[{pts:E(x,y,7,9,12),fill:'#FFF6C8',op:.9}]:[],inner:b.st(b.jl(x-12,y,x+12,y),'#5B3D32',.8,.5)});b.sh(RR(x-6,y+14,12,5,1),'#5B3D32',{k:0,hatch:0,hl:0,lw:.5})}
 const FM_ART={
@@ -1312,16 +1315,17 @@ const FM_ART={
   b.sh([[0,330],[180,300],[400,320],[620,296],[820,316],[1000,300],[1000,392],[0,392]],theme==='winter'?'#EEF2F6':'#CBE5A6',{k:.2,hatch:0,hl:0,sh:'#B4D98E'});
   b.sh([[0,384],[1000,384],[1000,600],[0,600]],theme==='winter'?'#F4F7FA':'#EFDDBA',{k:0,hatch:0,hl:0,lw:.6});
   [[40,470],[260,520],[520,560],[760,500],[930,560],[150,580],[640,470]].forEach(([x,y])=>b.ln([[x,y],[x+26,y-3]],{w:1.2,col:'#C9B08A',op:.7}));
-  fmStall(b,th,40,250,theme,0,o.lit);fmStall(b,th,375,250,theme,1,o.lit);fmStall(b,th,710,250,theme,2,o.lit);
+  const plain=!!o.plain,op=Array.isArray(o.open)?o.open:[];
+  fmStall(b,th,40,250,theme,0,o.lit,plain,op[0]);fmStall(b,th,375,250,theme,1,o.lit,plain,op[1]);fmStall(b,th,710,250,theme,2,o.lit,plain,op[2]);
   // the bunting: two swags of flags over the market, round paper lanterns between them
   [[0,150,500,128],[500,128,1000,150]].forEach(([x0,y0,x1,y1],s)=>{const P=[];for(let i=0;i<=12;i++){const t=i/12;P.push([x0+(x1-x0)*t,y0+(y1-y0)*t+Math.sin(t*Math.PI)*30])}b.ln(P,{w:1.6});
     for(let i=1;i<12;i+=1){const [x,y]=P[i];b.sh([[x-11,y],[x+11,y],[x,y+22]],th.flag[(i+s)%4],{k:0,hatch:0,hl:0,lw:.7})}});
   [[250,190],[750,190]].forEach(([x,y])=>fmLantern(b,x,y,th.lamp,true));
   // the sign board over the middle stall (the game writes the market's name on it: FM_SIGN)
   b.ln([[392,170],[400,150]],{w:1.4});b.ln([[608,170],[600,150]],{w:1.4});b.sh([[352,170],[648,170],[642,214],[358,214]],'#FFF6DC',{k:0,hatch:0,hl:0,lw:1.1});
-  if(theme==='halloween'){[[880,430,.9]].forEach(([x,y,s])=>fmPumpkin(b,x,y,20*s));fmFrontHw(b,th)}
+  if(theme==='halloween'){[[880,430,.9]].forEach(([x,y,s])=>fmPumpkin(b,x,y,20*s));if(!plain)fmFrontHw(b,th)}
   if(theme==='sakura'){[[90,200],[930,200]].forEach(([x,y])=>b.sh(cloudP(x,y,60,34,7,.18,48),'#F7C6D4',{hatch:0,hl:0,sh:'#F28FA5'}))}
-  if(theme==='winter')fmFrontWm(b,th,!!o.lit);
+  if(theme==='winter'&&!plain)fmFrontWm(b,th,!!o.lit);
  }],
  fmtent:['-130 -130 260 230','prop',(b,o)=>{const th=fmTh(o);
   b.sh([[-96,40],[-96,-30],[96,-30],[96,40]],th.c,{k:0,hatch:0,hl:0,sh:'#E8C597'});

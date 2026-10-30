@@ -39,7 +39,7 @@ const FM_MARKETS = [
     items: { decor: ['Kadomatsu Pair'], treats: ['Pup Kinton'] } },
   { id: 'sakura', theme: 'sakura', name: 'Sakura Market', win: () => ['03-25', '04-10'], todo: true, items: {} }
 ];
-const FM_THEME_ART = { halloween: 'halloween', harvest: 'halloween', winter: 'winter', newyear: 'newyear', sakura: 'sakura' }; // TODO (V2171.md 8): a harvest stall re-colour
+const FM_THEME_ART = { halloween: 'halloween', harvest: 'halloween', winter: 'winter', newyear: 'newyear', sakura: 'sakura' }; // the Harvest Market alone: the Halloween colours, plain (fmSceneArt). TODO (V2171.md 8): a harvest stall re-colour
 const FM_SPOT = [1010, 720]; // the tent on the v2.15 town map (2400 x 1500), beside the Town Square
 const FM_STALLS = [['decor', 40, 250], ['clothes', 375, 250], ['toys', 710, 250]]; // the three stalls in the scene: [stall, x, width] (the sign is over the middle one)
 const FM = { open: null, letters: 0 };
@@ -123,9 +123,9 @@ function fmSync() {
 // Winter Market review (perf): the drawn scene (1 MB in winter, re-tinted for the time of day) is memoised per theme + time phase + lit,
 // so a redraw (a weather or time check, a toast, a pack move) reuses the string. At most four kept (a day's phases, lit or not)
 const FM_SVG = new Map();
-function fmSceneSvg(th, phase, lit) {
-  const key = th + '|' + phase + '|' + (lit ? 1 : 0); if (FM_SVG.has(key)) return FM_SVG.get(key);
-  let sv = artReal('prop', 'fmscene', th === 'winter' ? { theme: th, lit } : { theme: th });
+function fmSceneSvg(th, phase, lit, plain, open) {
+  const key = th + '|' + phase + '|' + (lit ? 1 : 0) + (plain ? '|plain|' + open.map((x) => (x ? 1 : 0)).join('') : ''); if (FM_SVG.has(key)) return FM_SVG.get(key);
+  let sv = artReal('prop', 'fmscene', Object.assign({ theme: th }, th === 'winter' ? { lit } : {}, plain ? { plain: true, open } : {}));
   if (th === 'winter' && sv && window.PawArt && typeof PawArt.tint === 'function') sv = PawArt.tint(sv, { time: phase, lit });
   sv = sv ? place(sv, 0, 0, 1000, 600) : '';
   if (sv) { if (FM_SVG.size >= 4) FM_SVG.delete(FM_SVG.keys().next().value); FM_SVG.set(key, sv); }
@@ -133,15 +133,20 @@ function fmSceneSvg(th, phase, lit) {
 }
 // the scene: the themed stalls, the sign with the market's name and closing date, the three stalls as buttons
 function fmSceneArt() {
-  const o = fmMain(), th = FM_THEME_ART[o ? o.m.theme : 'halloween'] || 'halloween', W = th === 'winter', lit = W && isNight();
+  const o = fmMain(), mt = o ? o.m.theme : 'halloween', th = FM_THEME_ART[mt] || 'halloween', W = th === 'winter', lit = W && isNight(), cats = fmCats();
+  // Winter Market review: a market drawn in another market's art (the Harvest Market on its own, 16 to 30 Nov: the Halloween colours) is plain:
+  // plain goods, no dressing, boards or front stands. Its three stalls sell what the market has: a stall's own kind first, the other kinds fill the
+  // empty stalls from the right (New Year: decor, then treats on the third), and a stall with nothing to sell is a bare counter and no button
+  const plain = th !== mt || !(th === 'halloween' || W), pick = FM_STALLS.map(([c]) => (cats.includes(c) ? c : null));
+  if (plain) { const rest = cats.filter((c) => !pick.includes(c)); for (let i = pick.length - 1; i >= 0 && rest.length; i--) if (!pick[i]) pick[i] = rest.shift(); }
   // Winter Market part 6: the winter scene takes the time of day (the night tint, its lights and lanterns lit and kept bright after dark)
-  const sv = fmSceneSvg(th, W ? timePhase() : '', lit);
+  const sv = fmSceneSvg(th, W ? timePhase() : '', lit, plain, pick.map(Boolean));
   const sign = esc(fmSign(o)), [sx, sy, sw] = (window.PawArt && PawArt.FM_SIGN) || [500, 128, 240], fs = Math.min(26, Math.max(15, sw * 2.1 / Math.max(10, [...fmSign(o)].length)));
   // v2.17.2 Spooky Stalls: the Halloween scene has a little board per stall (PawArt.FM_STALL_SIGNS) with the stall's short name, and the homes stand
   // and the treats cart in front are buttons too (when that stall has items). Winter Market part 6: the winter scene too (all five stalls)
-  const SB = (th === 'halloween' || W) && sv && window.PawArt && PawArt.FM_STALL_SIGNS, cats = fmCats();
-  // a stall with nothing in it is no button; in the plain scenes (New Year) the third stall sells the last stall's things when there are no toys
-  const stalls = FM_STALLS.map(([c, x, w], i) => { const cc = !SB && i === 2 && !cats.includes('toys') ? cats[cats.length - 1] : c; return cats.includes(cc) ? `<g data-fmstall="${cc}"><rect x="${x}" y="216" width="${w}" height="244" fill="transparent"/></g>` : ''; }).join('');
+  const SB = !plain && sv && window.PawArt && PawArt.FM_STALL_SIGNS;
+  // a stall with nothing in it is no button (pick, above)
+  const stalls = FM_STALLS.map(([, x, w], i) => (pick[i] ? `<g data-fmstall="${pick[i]}"><rect x="${x}" y="216" width="${w}" height="244" fill="transparent"/></g>` : '')).join('');
   const boards = SB ? Object.keys(SB).filter((c) => cats.includes(c)).map((c) => { const [x, y, w] = SB[c], t = fmCatShort(c), f = Math.min(19, Math.max(11, w * 1.7 / Math.max(4, [...t].length))); return `<text class="fm-stall-sign" x="${x}" y="${(y + 20).toFixed(1)}" text-anchor="middle" font-family="'Caveat',cursive" font-weight="700" font-size="${f.toFixed(1)}" fill="#5B3D32">${esc(t)}</text>`; }).join('') : '';
   const front = SB ? [['homes', 292, 418, 90, 152], ['treats', 626, 418, 84, 152]].filter(([c]) => cats.includes(c)).map(([c, x, y, w, h]) => `<g data-fmstall="${c}"><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="transparent"/></g>`).join('') : '';
   return (sv || '<rect width="1000" height="600" fill="#FFFBF3"/>')

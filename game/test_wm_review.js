@@ -116,4 +116,23 @@ run('wm_review', async (t) => {
     ok(await t.waitToast(/packed up/) && !(await t.S()).decor['Star Lantern'] && (await t.S()).coins === c0, 'confirmed after the hand-over: the toast, nothing bought');
   }
   await t.ctx.close();
+
+  sec('6. the Harvest Market alone (20 Nov): plain stalls, every stall drawn with goods is a button that opens its own goods');
+  await t.newGame({ prefs: Object.assign({}, PREFS, { fmDate: '2026-11-20' }), ground: true }, { bond: { level: 8, pts: 1600 }, coins: 4000 });
+  await t.until(() => !!(window.__paw && window.__paw.fm), null, 8000);
+  {
+    await ev(() => { const P = window.__paw; P.fm.sync(); P.S.place = 'fmarket'; P.go('yard'); }); await t.calm();
+    const H = await ev(() => ({ main: window.__paw.fm.main(), cats: window.__paw.fm.cats().join(), stalls: [...document.querySelectorAll('#sceneG [data-fmstall].hot')].map((g) => g.dataset.fmstall), boards: document.querySelectorAll('#sceneG .fm-stall-sign').length, keys: window.__paw.fm.svgCache() }));
+    ok(H.main === 'harvest' && H.cats === 'clothes,treats', 'only the Harvest Market: clothes and treats');
+    ok(H.stalls.slice().sort().join() === 'clothes,treats' && H.boards === 0, 'two stall buttons (clothes, treats), no blank stall boards: ' + H.stalls.join());
+    ok(H.keys.some((k) => /^halloween\|\|0\|plain\|011$/.test(k)), 'drawn plain in the Halloween colours, the empty first stall a bare counter: ' + H.keys.join());
+    for (const c of H.stalls) {
+      await ev((c) => document.querySelector(`#sceneG [data-fmstall="${c}"]`).dispatchEvent(new MouseEvent('click', { bubbles: true })), c);
+      ok(await t.until((c) => { const b = document.querySelector(`#modal .fm-pop [data-fmtab="${c}"]`); return !!b && b.getAttribute('aria-selected') === 'true' && document.querySelectorAll('#modal .fm-grid .fm-card').length >= 2; }, c, 4000), `the ${c} stall opens the ${c} tab`);
+      await t.closeX(); await t.modalGone();
+    }
+    await ev(() => { window.__paw.fm.date('2026-12-28'); window.__paw.go('yard'); }); await t.calm();
+    ok(await ev(() => [...document.querySelectorAll('#sceneG [data-fmstall].hot')].map((g) => g.dataset.fmstall).join() === 'decor,treats' && window.__paw.fm.svgCache().some((k) => /^newyear\|\|0\|plain\|101$/.test(k))), 'New Year: decor on the first stall, treats on the third, the middle a bare counter');
+  }
+  await t.ctx.close();
 }, { prefs: {} });
