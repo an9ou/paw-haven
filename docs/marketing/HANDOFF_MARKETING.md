@@ -13,5 +13,9 @@ Branch `marketing/launch` (main merged at v2.18.3). The owner installed Instagra
    - Background text must not compete with on-screen notes.
    - Halloween Reels use the approved Halloween lo-fi beat (`brand/instagram/launch/spooky_lofi.js`).
    - Ignore Instagram's safe zone in Reel reviews: our Reels have no problem with it (owner, 30 Oct 2026).
+   - Captions: draft every caption the way TRICK_REEL.md and SAFE_REEL.md are done (owner, 30 Oct 2026: "next time draft in same way"):
+     Instagram: line 1 is the one ask (comment or save), not the on-screen hook again; the search phrases people type in the text; 5 hashtags at most; no link (it's in the bio); plenty of emoji inside the sentences and at line ends (about 2–3 per 100 characters), never as bullets at the start of lines.
+     Shorts title and X post use the strongest scored hook (`ig-reel` hookscore). X stays under 280 with the link counted as 23.
+     Check with `.claude/skills/ig-caption/caption.py` (READY) and `.claude/skills/ig-human/detect.py` (PASS) for every English text, and write the receipt under each caption. RedNote is checked by hand (the game's zh-Hans names, no link, title 20 characters at most).
 5. Reel scripts load the game art with an in-between-pose patch (see `build_dance.js`). If the art changes, the anchors throw "art changed: …": update the anchor string.
 6. Ideas not made yet (owner liked the list): pause-to-pick costume, star-sign dogs, pick a door 1/2/3, rainy-day wet dog, Fun Fair speedrun, "other pet games vs Doodle Doggo", dog diary.
