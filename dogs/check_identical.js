@@ -1,5 +1,5 @@
 /* Byte-identical check for the dog art module.
-   Loads dogs/pawart_dogs.js (working tree) and the same file from a git ref (default v28-base, else origin/v28-base)
+   Loads dogs/pawart_dogs.js (working tree) and the same file from a git ref (default v2184-base = main at v2.18.3, else origin/v2184-base)
    in node vm sandboxes and compares PawArt.dog / PawArt.dogHead for every breed x pose x existing outfit
    x age x sparkle, plus mixes, expecting, coats and facing left.
    Then it sweeps the v2.8 outfits and the v2.11.1 costumes (NEW_OUTS) on the working tree: every breed x pose x age x facing x sparkle renders with no
@@ -16,7 +16,7 @@ if(!process.env.SHARD){// parent: fan out, then sum up
       if(++done===n){console.log(`check_identical vs ${refName}: ${tot} renders compared over ${n} shards, ${dif} differ`);console.log(`outfit sweep (v2.8, v2.11.1): ${sw} renders, ${swBad} bad`);if(bad.length||dif||swBad){console.log(bad.slice(0,30).join('\n'));process.exit(1)}console.log('ALL OK')}})}
   return;
 }
-const ref=process.argv[2]||(()=>{try{cp.execSync('git rev-parse --verify -q v28-base',{cwd:path.join(__dirname,'..'),stdio:'ignore'});return'v28-base'}catch(e){return'origin/v28-base'}})();
+const ref=process.argv[2]||(()=>{try{cp.execSync('git rev-parse --verify -q v2184-base',{cwd:path.join(__dirname,'..'),stdio:'ignore'});return'v2184-base'}catch(e){return'origin/v2184-base'}})();
 const load=src=>{const sb={window:{}};vm.createContext(sb);vm.runInContext(src,sb);return sb.window.PawArt};
 const SRC=fs.readFileSync(path.join(__dirname,'pawart_dogs.js'),'utf8'),NEW=load(SRC);
 const OLD=load(cp.execSync(`git show ${ref}:dogs/pawart_dogs.js`,{cwd:path.join(__dirname,'..'),encoding:'utf8',maxBuffer:64<<20}));

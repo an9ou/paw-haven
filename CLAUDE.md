@@ -34,7 +34,7 @@ A cozy browser game: adopt crayon-drawn dogs, care for them, walk a sketchbook t
 ## Where things are
 
 - `game/shell.html` + `game/css/*` + `game/src/*`: the game. Everything in `src/` is **one shared scope** (IIFE opens in `00_core.js`, closes in `23_boot.js`); files load in `ORDER.txt` order. Art in `dogs/` and `world/` (`window.PawArt`), gameplay modules in `mods/` (they never touch localStorage or game state). Contracts: `V*.md` per version.
-- The full map of every system (phone layout, seasons, festivals, Halloween, home and pack, winter and Japan, pack play and photo, roaming and ball play, Tokyo and Dog Cards, the 35 breeds and `check_identical` against `v215-base`, faces, languages, missions and guide, cloud save, load speed) is in **`docs/FILES.md`**: read the part you need before changing that system.
+- The full map of every system (phone layout, seasons, festivals, Halloween, home and pack, winter and Japan, pack play and photo, roaming and ball play, Tokyo and Dog Cards, the 35 breeds and `check_identical` against `v2184-base`, faces, languages, missions and guide, cloud save, load speed) is in **`docs/FILES.md`**: read the part you need before changing that system.
 
 ## Save data
 
