@@ -37,7 +37,7 @@ The New Year Market (27 Dec to 7 Jan) is a separate small set later.
 
 - [x] 1. Decorations (30 Oct 2026): rows in `HM_DECOR` (`game/src/03_yard.js`), props `wmfirtree`, `wmsnowman`, `wmcanelights` (lit), `wmpresents`, `wmstarlantern` (lit) and the 5 item cards in `world/pawart_world_b.js` (`PA.WINTER_MARKET.decor`); prices 90 to 140, Bond 1 (Fir Tree and Star Lantern Bond 2); English stories only; shots `docs/shots/winter-market/part1/`
 - [x] 2. Costumes (30 Oct 2026): `CLOTHES` rows in `game/src/00_core.js` (fest 'winter', fm, no ed; prices 55 to 85, Bond 1 to 3), drawn in `dogs/pawart_dogs.js` (body slot with head pieces in `TOP2`, the Jingle Bell Collar in `NECK2`, all in `HM_OWN` so the dog under them stays the plain dog), 10 item cards in `world/pawart_world_b.js` (`PA.WINTER_MARKET.costumes`), listed in `FM_MARKETS` winter; English perks only; shots `docs/shots/winter-market/part2/`
-- [ ] 3. Toys
+- [x] 3. Toys (30 Oct 2026): `TOYS` rows in `game/src/00_core.js` (fest 'winter', fm, no ed; 45 to 75 coins, Bond 1 to 2), each plays an older game through `HM_TOY_GAME` in `mods/toys.js` (Squeaky Snowman = Squeaky Duck, Candy-Cane Rope = Rope Tug with its own rope colours, Plush Penguin = Plush Bone, Snowball Ball = Tennis Ball, Present Puzzle Box = Puzzle Feeder with its own board and lids, props `wmpuzzle-board`/`wmpuzzle-lid`), cards in `PA.WINTER_MARKET.toys`, listed in `FM_MARKETS` winter (the third stall is now Toys; treats are reached from the sheet tabs until part 6 adds a treats cart); English only; shots `docs/shots/winter-market/part3/`
 - [ ] 4. Homes
 - [ ] 5. Treats
 - [ ] 6. Market scene

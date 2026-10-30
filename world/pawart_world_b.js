@@ -6628,7 +6628,84 @@ Object.assign(ITEMS,{
   [[19,43,4.4],[32,48,5],[45,43,4.4]].forEach(([x,y,s])=>{b.ln([[x,y-s-3],[x,y-s+.6]],{w:.9,top:1});wmcBell(b,x,y,s)});
   b.ex('spark',56,54,3.2)}
 });
-PA.WINTER_MARKET={decor:Object.assign({},WM_LBL),costumes:['Father Christmas Suit','Little Elf Outfit','Gingerbread Pup Suit','Snowman Suit','Polar Bear Hood','Penguin Suit','Puffer Jacket','Nutcracker Jacket & Hat','Snowflake Wings','Jingle Bell Collar']};
+/* Part 3, five toys: their 64 item cards, listed in PA.WINTER_MARKET.toys. Each plays an older toy game with its own look (mods/toys.js HM_TOY_GAME):
+   the card is the toy in the game (Squeaky Snowman, Plush Penguin, Snowball Ball); the Candy-Cane Rope's rope is coloured in the tug game itself,
+   and the Present Puzzle Box brings its own board and lids to the puzzle game (props wmpuzzle-board 240x160 and wmpuzzle-lid 60x60, the old ones' shapes) */
+// diagonal stripes across a rope that follows the path P (marks, clipped to the rope)
+function wmRopeMarks(P,w,step,col){const m=[];let acc=0;
+  for(let i=0;i<P.length-1;i++){const[x0,y0]=P[i],[x1,y1]=P[i+1],L=Math.hypot(x1-x0,y1-y0),ux=(x1-x0)/L,uy=(y1-y0)/L,nx=-uy,ny=ux,h=w,s=step*.24,sl=w*.45;
+    for(let d=acc;d<L;d+=step){const cx=x0+ux*d,cy=y0+uy*d;m.push({pts:[[cx+nx*h+ux*(s+sl),cy+ny*h+uy*(s+sl)],[cx+nx*h+ux*(sl-s),cy+ny*h+uy*(sl-s)],[cx-nx*h-ux*(s+sl),cy-ny*h-uy*(s+sl)],[cx-nx*h+ux*(s-sl),cy-ny*h+uy*(s-sl)]],fill:col,k:0})}
+    acc=((acc-L)%step+step)%step}
+  return m}
+// a little wrapped-present lid (a round lid with a ribbon cross and a bow), centre x,y
+function wmGiftLid(b,x,y,r,col,rib){b.sh(E(x,y+r*.16,r,r*.92,20),mix(col,INK,.18),{hl:0,hatch:0});
+  b.sh(E(x,y,r,r*.92,20),col,{base:mix(col,'#FFFFFF',.55),marks:[{pts:[[x-r*.17,y-r],[x+r*.17,y-r],[x+r*.17,y+r],[x-r*.17,y+r]],fill:rib,k:0},{pts:[[x-r,y-r*.15],[x+r,y-r*.15],[x+r,y+r*.17],[x-r,y+r*.17]],fill:rib,k:0}]});
+  [-1,1].forEach(d=>b.sh([[x,y],[x+d*r*.5,y-r*.42],[x+d*r*.58,y+r*.08]],rib,{k:.05,hatch:0,hl:0,lw:.8,base:mix(rib,'#FFFFFF',.5),top:1}));b.sh(E(x,y-r*.06,r*.16,r*.15,10),rib,{k:0,hatch:0,hl:0,lw:.7,top:1})}
+PROPS['wmpuzzle-board']=function(b){
+  b.shadow(120,152,108,6);
+  b.sh(RR(10,22,220,128,14,5),WMC_RDD,{hl:0,hatch:0,k:.1});
+  b.sh(RR(10,13,220,128,14,5),WMC_RD,{k:.1,base:'#F6A8A0',marks:[{pts:[[0,30],[240,30],[240,42],[0,42]],fill:WMC_GR,k:0},{pts:[[0,116],[240,116],[240,128],[0,128]],fill:WMC_GR,k:0}],
+   inner:b.st('M14 33.5H226M14 120H226',WMC_GRD,1,.6)});
+  [[28,72],[212,92],[90,56],[150,104]].forEach(([x,y])=>flake(b,x,y,4.4,'#FFFFFF',1.6));
+  [60,120,180].forEach((x,i)=>{b.sh(E(x,80,19,19,22),C.door,{base:'#6E544A',hatch:0,hl:0,marks:[{pts:E(x+3,84,12,10,16),fill:'#7A5E52'}]});
+    b.sh(boneP(x-2,84,16,6.4,.3+i*.4),'#E6B47C',{hatch:0,hl:0,lw:.7});nugget(b,x+7,78,4.4,i+1.5)});
+  [-1,1].forEach(d=>b.sh([[120,16],[120+d*22,4],[120+d*26,20]],WMC_GR,{k:.05,hatch:0,hl:0,lw:.9,base:'#B9E2A8'}));b.sh(E(120,14,6,5.4,12),WMC_GRD,{k:0,hatch:0,hl:0,lw:.8});
+  paw(b,206,126,5,'#F6A8A0',{noline:1,a:.4});
+};
+PROPS['wmpuzzle-lid']=function(b){wmGiftLid(b,30,29,25,WMC_RD,WMC_GR)};
+Object.assign(PROP_VB,{'wmpuzzle-board':'0 0 240 160','wmpuzzle-lid':'0 0 60 60'});
+{const _propWMT=PA.prop,WMT_LBL={'wmpuzzle-board':'Present Puzzle Box board','wmpuzzle-lid':'Present Puzzle Box lid'};
+ PA.prop=function(name,o){if(!WMT_LBL[name])return _propWMT.apply(this,arguments);
+  return serve('p:'+name,()=>{const b=mk('prop',name);PROPS[name](b,{});return b.svg(PROP_VB[name],'',WMT_LBL[name])})}}
+Object.assign(ITEMS,{
+ 'Squeaky Snowman'(b){
+  b.ln([[18,42],[9,34],[5,35]],{w:1.6,col:WM_STK});b.ln([[46,42],[55,33],[59,34]],{w:1.6,col:WM_STK});b.ln([[9,34],[8,29]],{w:1.4,col:WM_STK});
+  b.sh(cloudP(32,45,17,14.5,9,.08,40),WMC_SN,{sh:WMC_SND,base:'#FFFFFF'});
+  b.sh(E(32,24,12,11,18),WMC_SN,{sh:WMC_SND,base:'#FFFFFF',hatch:0});
+  [[32,42],[32,50]].forEach(([x,y])=>b.dot(x,y,1.8,'#3A3236','top'));
+  b.dot(27.6,23,1.7,'#3A3236','top');b.dot(36.4,23,1.7,'#3A3236','top');b.raw(`<ellipse cx="25" cy="28" rx="2.4" ry="1.4" fill="${PINK}" opacity=".7"/><ellipse cx="39" cy="28" rx="2.4" ry="1.4" fill="${PINK}" opacity=".7"/>`,'top');
+  b.sh([[32,25.4],[43,27.6],[32,29]],'#F28A2E',{k:.05,hatch:0,hl:0,lw:.7,base:'#FBC59A',top:1});
+  b.sh(ribbon([[20,33],[32,35.6],[44,33]],[5,5.2,5]),WMC_RD,{k:1/6,hatch:0,hl:0,lw:.8,base:'#F6A8A0',top:1});
+  b.sh([[37,34],[42,34.6],[44,44],[39,44.6]],WMC_RD,{k:.05,hatch:0,hl:0,lw:.7,base:'#F6A8A0',top:1});
+  b.sh([[21,17],[23,10],[32,6.6],[41,10],[43,17]],WMC_GR,{k:.08,hatch:0,hl:0,lw:.85,base:'#B9E2A8',marks:[{pts:[[0,14],[64,14],[64,17.6],[0,17.6]],fill:'#FFFFFF',k:0}]});
+  b.sh(cloudP(32,5,3.6,3.4,6,.3,24),WMC_SN,{k:.1,hatch:0,hl:0,lw:.7,base:'#FFFFFF',top:1});
+  b.ln([[50,12],[54,7]],{w:1.2});b.ln([[54,17],[60,14]],{w:1.2});b.ln([[46,9],[47,3]],{w:1.2})},
+ 'Candy-Cane Rope'(b){
+  const P=[[13,53],[22,44],[31,34],[39,23],[44.6,15],[50.4,11],[55.6,14],[56,22]];
+  b.sh(ribbon(P,[10,10,10,10,10,10,10,10]),'#FFFDF8',{k:1/6,hatch:0,lw:1.1,base:'#FFFFFF',marks:wmRopeMarks(P,8,7,WMC_RD)});
+  b.sh(E(11,55,8.6,8.6,16),'#FFFDF8',{lw:1.1,hatch:0,hl:0,marks:[{pts:[[3,49],[8,47],[19,58],[15,62]],fill:WMC_RD,k:0}],det:[[[7,49],[10,55],[7.4,61]]],dw:.9});
+  [[3,60,0,63],[7,63,6,64],[12,63.4,13,64]].forEach(q=>b.ln([[q[0],q[1]],[q[2],q[3]]],{w:1.4}));
+  [-1,1].forEach(d=>b.sh([[30,35],[30+d*8,29+d*-1],[30+d*7,39+d*2]],WMC_GR,{k:.05,hatch:0,hl:0,lw:.8,base:'#B9E2A8',top:1}));
+  b.sh(E(30,35,2.8,2.6,10),WMC_GRD,{k:0,hatch:0,hl:0,lw:.7,top:1});b.ln([[30,37],[27,45]],{w:1.4,col:WMC_GR,top:1});b.ln([[31,37],[35,44]],{w:1.4,col:WMC_GR,top:1});
+  b.ex('spark',10,12,3.4)},
+ 'Plush Penguin'(b){
+  [[-1,15],[1,49]].forEach(([d,x])=>b.sh([[x-d*1,26],[x+d*6,34],[x+d*7,43],[x+d*3,44],[x-d*3,36]],WMC_BK,{k:.15,hatch:0,hl:0,lw:.8,base:WMC_BKL}));
+  const bd=cloudP(32,35,17,23,7,.05,40);
+  b.sh(bd,WMC_BK,{sh:'#251F2A',base:WMC_BKL,hatch:0,marks:[{pts:E(32,42,11,13.4,16),fill:'#FFFFFF',k:.1},{pts:E(32,24,10.6,8.6,14),fill:'#FFFFFF',k:.1}],
+   post:`<path d="${cr(E(32,42,9,11.4,14),true,1/6).d}" fill="none" stroke="${INK}" stroke-width=".8" stroke-dasharray="2 2" stroke-opacity=".6"/>`});
+  b.dot(28,22.6,1.8,INK,'top');b.dot(36,22.6,1.8,INK,'top');b.dot(28.5,22,.6,'#fff','top');b.dot(36.5,22,.6,'#fff','top');
+  b.raw(`<ellipse cx="24.6" cy="27" rx="2.2" ry="1.3" fill="${PINK}" opacity=".7"/><ellipse cx="39.4" cy="27" rx="2.2" ry="1.3" fill="${PINK}" opacity=".7"/>`,'top');
+  b.sh([[29,25.6],[35,25.6],[32,30]],'#F28A2E',{k:0,hatch:0,hl:0,lw:.6,top:1});
+  [[25,58.6],[39,58.6]].forEach(([x,y])=>b.sh([[x-5,y],[x-3,y-3.4],[x+3,y-3.4],[x+5,y]],'#F28A2E',{k:.05,hatch:0,hl:0,lw:.6,base:'#FBC59A'}));
+  b.sh(ribbon([[20,32.4],[32,34.4],[44,32.4]],[3.6,3.8,3.6]),'#5BB8E8',{k:1/6,hatch:0,hl:0,lw:.7,top:1});
+  b.ex('heart',56,12,3.2)},
+ 'Snowball Ball'(b){
+  b.sh(cloudP(32,33,24,23,14,.12,64),WMC_SN,{sh:WMC_SND,ho:.4,base:'#FFFFFF',hatch:0,
+   inner:b.st('M18 26q3 -3 6 0M30 18q3 -3 6 0M40 30q3 -3 6 0M22 40q3 -3 6 0M34 46q3 -3 6 0M14 34q2 -2 4 0',WMC_ICD,1.1,.75)});
+  flake(b,26,32,3.2,WMC_ICD,1);flake(b,42,40,2.6,WMC_ICD,1);
+  b.raw(b.st('M17 44q14 7 30 0','#FFFFFF',1.4,.85),'top');b.ex('spark',57,10,3.4,'#E3F2FC');b.ex('spark',8,54,2.8,'#E3F2FC')},
+ 'Present Puzzle Box'(b){
+  b.sh([[10,30],[54,30],[52,58],[12,58]],WMC_RD,{k:.06,sh:WMC_RDD,base:'#F6A8A0',marks:[{pts:[[28,0],[36,0],[36,64],[28,64]],fill:WMC_GR,k:0}]});
+  [[19,44],[45,44]].forEach(([x,y])=>{b.sh(E(x,y,5,4.4,12),C.door,{base:'#7A5E52',hatch:0,hl:0,lw:.7,dr:.3});b.dot(x-1.2,y-.2,1.3,C.kib);b.dot(x+1.4,y+.6,1.2,'#C8874E')});
+  b.sh(boneP(24,27,15,6,-.3),'#E6B47C',{hatch:0,hl:0,lw:.7});b.sh(boneP(40,26,12,5,.4),'#F2C48A',{hatch:0,hl:0,lw:.7});
+  b.sh(rot([[8,16],[52,16],[52,24],[8,24]],-.16,30,20),WMC_RD,{k:.05,hl:0,hatch:0,lw:.9,base:'#F6A8A0',marks:[{pts:rot([[26,10],[34,10],[34,30],[26,30]],-.16,30,20),fill:WMC_GR,k:0}]});
+  const bw=rot([[30,13]],-.16,30,20)[0];[-1,1].forEach(d=>b.sh([[bw[0],bw[1]],[bw[0]+d*9,bw[1]-7],[bw[0]+d*10,bw[1]+2]],WMC_GR,{k:.05,hatch:0,hl:0,lw:.8,base:'#B9E2A8',top:1}));
+  b.sh(E(bw[0],bw[1]-.4,2.6,2.4,10),WMC_GRD,{k:0,hatch:0,hl:0,lw:.7,top:1});
+  b.ln([[50,50],[54,54]],{w:.8,col:GRAPH});b.sh([[52,53],[59,53],[59,60],[52,60]],'#FFF6DC',{k:0,hatch:0,hl:0,lw:.6});paw(b,55.5,56.6,1.3,WMC_RD,{noline:1});
+  b.ex('spark',57,10,3.2)}
+});
+PA.WINTER_MARKET={decor:Object.assign({},WM_LBL),costumes:['Father Christmas Suit','Little Elf Outfit','Gingerbread Pup Suit','Snowman Suit','Polar Bear Hood','Penguin Suit','Puffer Jacket','Nutcracker Jacket & Hat','Snowflake Wings','Jingle Bell Collar'],
+  toys:['Squeaky Snowman','Candy-Cane Rope','Plush Penguin','Snowball Ball','Present Puzzle Box']};
 
 PA._wbFlush=()=>{for(const k in CACHE)delete CACHE[k]};
 PA.WORLD_B={beds:Object.keys(BEDS),obstacles:Object.keys(OBS),bowlFoods:BOWL_FOODS.slice(),icons:Object.keys(ICONS),items:Object.keys(ITEMS),houses:Object.keys(HOUSES),collectibles:Object.keys(COLS),props:Object.keys(PROPS),furniture:V27_FURN.slice(),

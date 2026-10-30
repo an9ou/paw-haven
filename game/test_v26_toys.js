@@ -68,7 +68,7 @@ require('./test_lib').run('v26_toys', async (t) => {
     await t.home(); await t.calm(); await ev(() => { window.__toasts.length = 0; });
     const errs0 = t.errors.length, p = t.p;
     if (o.tray !== false) {
-      await p.click('[data-act=play]'); await t.waitPop(true);
+      await t.dock('play'); await p.click('[data-act=play]'); await t.waitPop(true);
       const btn = p.locator(`[data-play="toy:${name}"]`);
       ok(await btn.count() === 1, `${tag} ${name}: in the Play tray`);
       await btn.click();
@@ -111,7 +111,8 @@ require('./test_lib').run('v26_toys', async (t) => {
   await t.newGame({}, { bond: { level: 7, pts: 1450 }, inv: { toys: ['Tennis Ball', 'Squeaky Hedgehog'].concat(NEW) } });
   const api = await ev((all) => ({ sup: all.filter((n) => window.PawToys.supports(n)), list: window.PawToys.list.slice() }), OLD.concat(NEW));
   ok(api.sup.length === 19, `PawToys.supports is true for all 19 toys (${api.sup.length})`);
-  ok(api.list.length === 20 && OLD.every((n, i) => api.list[i] === n) && NEW.every((n) => api.list.includes(n)) && api.list[19] === 'Shinkansen Plush', `PawToys.list: the old 15 unchanged and in order, then the four new ones, then v2.11's Shinkansen Plush (${api.list.length})`);
+  const FM_T = ['Squeaky Bat', 'Pumpkin Ball', 'Rope Mummy', 'Glow-in-the-Dark Bone', 'Soft Spider Plush', 'Squeaky Snowman', 'Candy-Cane Rope', 'Plush Penguin', 'Snowball Ball', 'Present Puzzle Box']; // the Festive Market toys (mods/toys.js HM_TOY_GAME): Halloween, then Winter
+  ok(api.list.length === 20 + FM_T.length && OLD.every((n, i) => api.list[i] === n) && NEW.every((n) => api.list.includes(n)) && api.list[19] === 'Shinkansen Plush' && FM_T.every((n, i) => api.list[20 + i] === n), `PawToys.list: the old 15 unchanged and in order, then the four new ones, then v2.11's Shinkansen Plush, then the Festive Market toys (${api.list.length})`);
   await hook();
 
   if (process.env.PAW_SHOTS) { // an existing toy for the side-by-side shots

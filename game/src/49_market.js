@@ -32,7 +32,8 @@ const FM_MARKETS = [
     items: { clothes: ['Leaf Beret', 'Autumn Scarf'], treats: ['Baked Pumpkin Wedges', 'Sweet Potato Coins', 'Warm Bone Broth'] } },
   { id: 'winter', theme: 'winter', name: 'Winter Market', win: () => ['12-01', '12-26'],
     items: { decor: ['Paper Snowflake Garland', 'Felt Holly Wreath', 'Red Wooden Sled', 'Paper-Star Fir Tree', 'Yard Snowman', 'Candy-Cane Fairy Lights', 'Present Pile', 'Star Lantern'], clothes: ['Very Ugly Sweater', 'Reindeer Antlers', 'Snowflake Snood', 'Father Christmas Suit', 'Little Elf Outfit', 'Gingerbread Pup Suit', 'Snowman Suit',
-        'Polar Bear Hood', 'Penguin Suit', 'Puffer Jacket', 'Nutcracker Jacket & Hat', 'Snowflake Wings', 'Jingle Bell Collar'], treats: ['Warm Carob Cup', 'Snowflake Oat Cookies', 'Snow Day Stew'] } },
+        'Polar Bear Hood', 'Penguin Suit', 'Puffer Jacket', 'Nutcracker Jacket & Hat', 'Snowflake Wings', 'Jingle Bell Collar'],
+      toys: ['Squeaky Snowman', 'Candy-Cane Rope', 'Plush Penguin', 'Snowball Ball', 'Present Puzzle Box'], treats: ['Warm Carob Cup', 'Snowflake Oat Cookies', 'Snow Day Stew'] } },
   { id: 'newyear', theme: 'newyear', name: 'New Year Market', win: () => ['12-27', '01-07'],
     items: { decor: ['Kadomatsu Pair'], treats: ['Pup Kinton'] } },
   { id: 'sakura', theme: 'sakura', name: 'Sakura Market', win: () => ['03-25', '04-10'], todo: true, items: {} }

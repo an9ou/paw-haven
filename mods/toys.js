@@ -996,7 +996,7 @@
 
   /* ---------- Rope Tug ---------- */
   IMPL['Rope Tug'] = function (A) {
-    var dog = A.dog, DN = A.DN;
+    var dog = A.dog, DN = A.DN, LK = A.tugLook || { rope: '#F6E7CF', stripe: '#E8504A', dash: [9, 11], knot: PINK, end: '#E8504A' };
     var p = 0, grab = false, T0 = 0, tension = 0, phase = 0, burst = false, round = 1, state = 'tug', stT = 0, letWin = false, slipCD = 0, wins = 0, losses = 0;
     var meter = A.meter(LT('mod.toys.pull_meter_stay_in_the_green', 'pull meter: stay in the green!'), 450, 92, 340, [0.45, 0.78, 0.9]);
     var letBtn = A.button(LT('mod.toys.let_win', 'Let {dn} win', { dn: DN }), 40, 560, 'pt-pinkb', function () { if (state === 'tug') { letWin = true; A.say(LT('mod.toys.wait_really_yes', 'wait... really?! YES!'), 1600); } });
@@ -1058,11 +1058,11 @@
         var cx = (hx + mx) / 2, cy = (hy + my) / 2 + sag + (burst ? Math.sin(T * 50) * 3 : 0);
         g.lineCap = 'round';
         g.strokeStyle = INK; g.lineWidth = 17; g.beginPath(); g.moveTo(hx, hy); g.quadraticCurveTo(cx, cy, mx, my); g.stroke();
-        g.strokeStyle = '#F6E7CF'; g.lineWidth = 12; g.stroke();
-        g.setLineDash([9, 11]); g.lineDashOffset = -p * 120; g.strokeStyle = '#E8504A'; g.lineWidth = 12; g.stroke(); g.setLineDash([]);
+        g.strokeStyle = LK.rope; g.lineWidth = 12; g.stroke();
+        g.setLineDash(LK.dash); g.lineDashOffset = -p * 120; g.strokeStyle = LK.stripe; g.lineWidth = 12; if (LK.cap) g.lineCap = LK.cap; g.stroke(); g.setLineDash([]); g.lineCap = 'round';
         var kx = 0.25 * hx + 0.5 * cx + 0.25 * mx, ky = 0.25 * hy + 0.5 * cy + 0.25 * my;
-        g.fillStyle = PINK; g.strokeStyle = INK; g.lineWidth = 2; g.beginPath(); g.moveTo(kx, ky); g.lineTo(kx - 12, ky + 26); g.lineTo(kx + 12, ky + 26); g.closePath(); g.fill(); g.stroke();
-        g.fillStyle = '#E8504A'; g.beginPath(); g.arc(hx, hy, 20, 0, Math.PI * 2); g.fill(); g.lineWidth = 2.6; g.stroke();
+        g.fillStyle = LK.knot; g.strokeStyle = INK; g.lineWidth = 2; g.beginPath(); g.moveTo(kx, ky); g.lineTo(kx - 12, ky + 26); g.lineTo(kx + 12, ky + 26); g.closePath(); g.fill(); g.stroke();
+        g.fillStyle = LK.end; g.beginPath(); g.arc(hx, hy, 20, 0, Math.PI * 2); g.fill(); g.lineWidth = 2.6; g.stroke();
         g.strokeStyle = INK; g.lineWidth = 2; g.setLineDash([6, 8]); g.beginPath(); g.moveTo(630, GY - 30); g.lineTo(630, GY + 40); g.stroke(); g.setLineDash([]);
         g.fillStyle = INK; g.font = '700 22px Caveat, cursive'; g.fillText(LT('mod.toys.the_line', 'the line'), 600, GY + 64);
         if (state === 'tug' && burst) { g.font = '700 34px Caveat, cursive'; g.fillStyle = '#E8504A'; g.fillText(LT('mod.toys.pull', 'PULL!'), dog.x - 30, dog.y - 220 - Math.sin(T * 20) * 4); }
@@ -2888,9 +2888,23 @@
   IMPL['Rubber Chicken'].phone = { vw: 700, vwMin: 660, fx: 625 };
 
   /* v2.17.1 Halloween Market toys: each plays an older toy's game with its own look (the game asks A.itemSVG for the old toy's picture and gets the new one) */
-  var HM_TOY_GAME = { 'Squeaky Bat': 'Squeaky Duck', 'Pumpkin Ball': 'Tennis Ball', 'Rope Mummy': 'Rubber Chicken', 'Glow-in-the-Dark Bone': 'Glow Ball', 'Soft Spider Plush': 'Plush Bone' };
+  var HM_TOY_GAME = { 'Squeaky Bat': 'Squeaky Duck', 'Pumpkin Ball': 'Tennis Ball', 'Rope Mummy': 'Rubber Chicken', 'Glow-in-the-Dark Bone': 'Glow Ball', 'Soft Spider Plush': 'Plush Bone',
+    /* Winter Market 2026 (docs/design/winter-market.md part 3): sold every December */
+    'Squeaky Snowman': 'Squeaky Duck', 'Candy-Cane Rope': 'Rope Tug', 'Plush Penguin': 'Plush Bone', 'Snowball Ball': 'Tennis Ball', 'Present Puzzle Box': 'Puzzle Feeder' };
+  // the games that draw their toy themselves get their look here: the tug rope's colours (Rope Tug drawFx), the puzzle's board and lids (props in world_b)
+  var HM_TOY_LOOK = {
+    'Candy-Cane Rope': { tug: { rope: '#FFFDF8', stripe: '#E2403A', dash: [11, 11], cap: 'butt', knot: '#4FA548', end: '#E2403A' } },
+    'Present Puzzle Box': { props: { 'puzzle-board': 'wmpuzzle-board', 'puzzle-lid': 'wmpuzzle-lid' } },
+    // the hint names the toy you hold, not the older one
+    'Squeaky Snowman': { hint: function (A) { return LT('mod.toys.wm_snowman_hint', '{touch, select, yes {Tap the snowman to squeak it. {dn} might have opinions.} other {Click the snowman to squeak it. {dn} might have opinions.}}', { touch: TOUCH(), dn: A.DN }); } },
+    'Plush Penguin': { hint: function (A) { return LT('mod.toys.wm_penguin_hint', 'Drag the Plush Penguin over to {dn}.', { dn: A.DN }); } }
+  };
   Object.keys(HM_TOY_GAME).forEach(function (n) {
-    var base = HM_TOY_GAME[n], f = function (A) { var A2 = Object.create(A); A2.itemSVG = function (x) { return A.itemSVG(x === base ? n : x); }; return IMPL[base](A2); };
+    var base = HM_TOY_GAME[n], lk = HM_TOY_LOOK[n] || {}, f = function (A) {
+      var A2 = Object.create(A); A2.itemSVG = function (x) { return A.itemSVG(x === base ? n : x); };
+      if (lk.tug) A2.tugLook = lk.tug;
+      if (lk.props) A2.prop = function (x, o) { return (lk.props[x] && A.prop(lk.props[x], o)) || A.prop(x, o); };
+      var g = IMPL[base](A2); if (lk.hint && g) g.hint = lk.hint(A); return g; };
     if (IMPL[base].cfg) f.cfg = IMPL[base].cfg; if (IMPL[base].phone) f.phone = IMPL[base].phone; IMPL[n] = f; TOYS.push(n);
   });
 

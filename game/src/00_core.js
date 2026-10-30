@@ -72,6 +72,12 @@ const TOYS = [
   { n: 'Rope Mummy', fest: 'halloween', ed: 2026, fm: true, price: 60, bond: 1, note: 'Shake: a rope toy wrapped in soft cream cloth. +Happiness, a little Bond.' },
   { n: 'Glow-in-the-Dark Bone', fest: 'halloween', ed: 2026, fm: true, price: 70, bond: 2, note: 'Night fetch: a rubber bone that glows after dark. +Happiness, -Energy.' },
   { n: 'Soft Spider Plush', fest: 'halloween', ed: 2026, fm: true, price: 65, bond: 2, note: 'Nap buddy: a round fuzzy spider with a bow. +10% nap Energy.' },
+  /* Winter Market 2026 (docs/design/winter-market.md part 3): sold at the Winter Market every December (fm, no ed), each plays an older toy game with its own look (mods/toys.js HM_TOY_GAME) */
+  { n: 'Squeaky Snowman', fest: 'winter', fm: true, price: 50, bond: 1, note: 'Squeeze: a soft little snowman in a bobble hat that squeaks. +Happiness.' },
+  { n: 'Candy-Cane Rope', fest: 'winter', fm: true, price: 60, bond: 1, note: 'Tug-of-war: a red-and-white striped rope with a green bow. +Happiness, -Energy, a little Bond.' },
+  { n: 'Plush Penguin', fest: 'winter', fm: true, price: 65, bond: 2, note: 'Nap buddy: a round soft penguin to tuck in with. +Happiness.' },
+  { n: 'Snowball Ball', fest: 'winter', fm: true, price: 45, bond: 1, note: 'Fetch: a fluffy white ball, a snowball that never melts. 2 coins per return.' },
+  { n: 'Present Puzzle Box', fest: 'winter', fm: true, price: 75, bond: 2, note: 'Puzzle: lift the lids of a wrapped present to find the treats inside. +Happiness.' },
   /* v2.17.1 Festive Market (V2171.md): sold only at the Festive Market (fm), a ball-play toy (BL_TOYS in 49_market.js) */
   { n: 'Squeaky Ghost', fest: 'halloween', ed: 2026, fm: true, price: 50, bond: 1, note: 'Fetch: a soft little ghost that squeaks when it lands. Ball play, 2 coins a return.' },
   /* v2.11 Tokyo Trip: the Tokyo Tower souvenir stand only (tokyo + fest 'tokyo'), with its own play game in mods/toys.js */
