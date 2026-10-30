@@ -67,7 +67,7 @@ run('wm_review', async (t) => {
   }
   await t.ctx.close();
 
-  sec('4. a market decoration lands at a free spot; the winter rows sit clear of the dog house and the other wall lights');
+  sec('4. a market decoration lands at a free spot; the winter rows sit clear of the dog house and the other wall lights, inside what a phone shows (x 140-912)');
   {
     const WM = ['Felt Fir Tree', 'Yard Snowman', 'Candy-Cane Fairy Lights', 'Present Pile', 'Star Lantern'];
     const LIGHTS = ['String Lights', 'Ghost Lantern String', 'Pumpkin Fairy Lights', 'Paper Snowflake Garland', 'Felt Holly Wreath', 'Wind Chime'];
@@ -78,9 +78,6 @@ run('wm_review', async (t) => {
     const HOUSE = [640, 340, 204, 186];
     ok(WM.every((n) => !ov(H[n], HOUSE)), 'no winter row overlaps the dog house keep box: ' + WM.filter((n) => ov(H[n], HOUSE)).join());
     ok(LIGHTS.every((n) => !ov(H['Candy-Cane Fairy Lights'], H[n])), 'the Candy-Cane Fairy Lights clear of the other wall lights: ' + LIGHTS.filter((n) => ov(H['Candy-Cane Fairy Lights'], H[n])).join());
-    // the String Lights out where the Candy-Cane Lights' catalogue spot is, then buy the five at the market
-    await ev(() => { const S = window.__paw.S; S.decor = S.decor || {}; S.decor['String Lights'] = { got: '2026-10-01', out: true, at: [620, 258] }; });
-    await ev(() => { const P = window.__paw; P.fm.sync(); P.S.place = 'fmarket'; P.go('yard'); }); await t.calm();
     const buy = async (cat, n) => {
       await ev((c) => window.__paw.fm.sheet(c), cat); await t.sleep(200);
       await ev((n) => document.querySelector(`#modal .fm-card[data-n="${n}"] [data-fmbuy]`).click(), n);
@@ -88,6 +85,30 @@ run('wm_review', async (t) => {
       await ev(() => { const b = document.querySelector('.buybox .bb-yes'); if (b) b.click(); });
       await t.until((n) => !!(window.__paw.S.decor || {})[n], n, 4000);
     };
+    // a phone shows the yard at x 140-534 and 518-912 (look right): every winter row lands inside, in an empty yard and in a full one
+    const seen = async (label) => {
+      const X = await ev((l) => l.map((n) => ({ n, box: window.__paw.ho.box(n) })), WM);
+      ok(X.every((x) => x.box[0] >= 140 && x.box[0] + x.box[2] <= 912), label + ': every winter decoration lands inside x 140-912: ' + X.map((x) => x.n + ' ' + x.box[0] + '-' + (x.box[0] + x.box[2])).join(', '));
+      const bad = []; X.forEach((a, i) => X.forEach((b, j) => { if (j > i && ov(a.box, b.box)) bad.push(a.n + '/' + b.n); }));
+      return { X, bad };
+    };
+    await ev(() => { const P = window.__paw; P.fm.sync(); P.S.place = 'fmarket'; P.go('yard'); }); await t.calm();
+    for (const n of WM) await buy('decor', n);
+    {
+      const { X, bad } = await seen('an empty yard');
+      ok(X.filter((x) => ['Yard Snowman', 'Present Pile', 'Star Lantern'].includes(x.n)).every((x) => { const a = H[x.n]; return x.box[0] === a[0] && x.box[1] === a[1]; }) && !bad.length, 'an empty yard: the Snowman, the Present Pile and the Star Lantern at their own catalogue spots, none on another: ' + bad.join());
+      await ev(() => { const P = window.__paw; P.S.place = 'yard'; P.go('yard'); }); await t.calm();
+      const keep = await ev((l) => Object.fromEntries(l.map((n) => [n, window.__paw.ho.keep('yard', n)])), WM);
+      const hit = []; X.forEach((x) => keep[x.n].forEach((k) => { if (ov(x.box, k)) hit.push(x.n + '/' + k.join(' ')); }));
+      ok(!hit.length, 'clear of the yard furniture, the scene hotspots and the dog at rest: ' + hit.join(', '));
+    }
+    // a full yard: every other yard decoration out at its own spot, then the five again
+    await ev((l) => { const P = window.__paw, S = P.S, D = P.home.specs; l.forEach((n) => { delete S.decor[n]; }); Object.keys(D).filter((n) => (D[n].room || 'yard') === 'yard' && D[n].kind !== 'furniture' && !l.includes(n)).forEach((n) => { S.decor[n] = { got: '2026-10-01', out: true }; }); }, WM);
+    await ev(() => { const P = window.__paw; P.S.place = 'fmarket'; P.go('yard'); }); await t.calm();
+    for (const n of WM) await buy('decor', n);
+    await seen('a full yard (' + (await ev(() => Object.keys(window.__paw.S.decor).length)) + ' things out)');
+    // the String Lights out where the Candy-Cane Lights' catalogue spot is, then buy the five at the market
+    await ev((l) => { const S = window.__paw.S; S.decor = { 'String Lights': { got: '2026-10-01', out: true, at: [620, 258] } }; }, WM);
     for (const n of WM) await buy('decor', n);
     const B = await ev((l) => l.map((n) => ({ n, box: window.__paw.ho.box(n), r: window.__paw.S.decor[n] })), WM.concat(['String Lights']));
     ok(B.every((x) => x.r && x.r.out && Array.isArray(x.r.at)), 'each bought one is out with its own spot');

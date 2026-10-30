@@ -12,7 +12,7 @@ const RM_DEPTH = 0.0012; // a dog further back is a little smaller: y 400 = 0.88
 // feet y band per place [back line, front line] (V210.md section 5.2, tuned on screenshots); x is always 60 to 940
 const RM_ZONES = { yard: [404, 590], house: [414, 590], square: [414, 590], cafe: [414, 590], vet: [414, 590], salon: [410, 590], hilltop: [410, 590], park: [410, 590], woods: [410, 590], market: [452, 585], dogpark: [410, 590], pier: [410, 588], river: [452, 588], beach: [452, 588], fujihill: [424, 588],
   shibuya: [426, 588], yoyogi: [422, 590], asakusa: [432, 588], ueno: [426, 588], tokyotower: [430, 588], odaiba: [434, 588], default: [424, 588] }; // v2.11 Tokyo (TRAVEL, tuned on the world D / E art)
-const RM_ZONES_PH = { yard: [424, 594] };
+const RM_ZONES_PH = { yard: [424, 594], fmarket: [478, 590] };
 const RM_TAP = [-88, -170, 176, 180]; // every dog's tap rect around its feet at scale 1 (DX + 44, DY + 35, DW - 88, 180): the drawn body, so four dogs fit
 const RM_WALK = 150, RM_RUN = 360; // world units a second
 const RM_CROP = 700, RM_WIDEN = 1.3; // the phone crop in world units (section 5.2): at most 700, and at most 1.3 x the v2.9 crop, so the props' 48 px tap rects keep clear of the dog
@@ -46,10 +46,16 @@ const rmOver = (a, b) => Math.max(0, Math.min(a[0] + a[2], b[0] + b[2]) - Math.m
 // before the scene exists: the bowl and the dog house. Once it is up, rmScan reads every tappable thing from the live DOM.
 // scenery a dog must not stand in (feet only; its tap rect may cover it): the Town Square fountain basin
 // Winter Market fixes: the Festive Market's stall boards (PawArt.FM_STALL_SIGNS: [x, y, w], board y to y + 28) keep every dog's feet off (rmHard);
-// a tap rect over a board is no reject (rmSoft skips 'board': the boards sit over the only open floor, so a hard rule left no free spot), only a cost when nothing is free (rmLeastAt)
+// phone review: on a phone its drawn body mostly off too (rmSoft, RM_BOARD; the dogs stand in the front, RM_ZONES_PH.fmarket), a cost when nothing is free (rmLeastAt)
 const RM_SCENERY = { square: [[20, 400, 222, 92, 'scene']], fmarket: [[117, 386, 96, 28, 'board'], [452, 386, 96, 28, 'board'], [787, 386, 96, 28, 'board'], [300, 428, 70, 28, 'board'], [632, 428, 70, 28, 'board']] };
 // the leader's spot on entering a place (default the v2.9 spot, feet at 430, 500); the Festive Market: the open snow in front, between the homes stand and the treats cart
 const RM_LEAD = { fmarket: [500, 586] };
+// a stall board and a dog's drawn body (rmSoft, phones): the tap rect's width (RM_TAP x rmKd) and the drawing's height over the feet (the tallest pose, sit,
+// measures 148 at scale 1; RM_TAP's top, 170, is the art box), and how much of the board it may cover (30%, the phone review's "covered"). On a phone the dogs
+// stand in the market front (RM_ZONES_PH.fmarket, a grid row at y 590, where even a big dog's head stays under a back board). Not on desktop: there the bowl and
+// the place buttons stand in that front and a big dog would find no spot at all
+const RM_BOARD = [148, 0.3];
+const rmBoardBox = (x, y, k) => [x + RM_TAP[0] * k, y - RM_BOARD[0] * k, RM_TAP[2] * k, (RM_BOARD[0] + 10) * k];
 const GR_SCENERY = { square: [[20, 428, 184, 64, 'scene']] }; // v2.15: a grOn square's fountain rim (the deep floor's fountain stands further back)
 const rmScenery = (place) => (grOn(place) && GR_SCENERY[place]) || RM_SCENERY[place] || [];
 function rmStaticNo(place) { const l = (grOn(place) ? [] : [[205, 462, 90, 90, 'bowl']]).concat(rmScenery(place)); if (place === 'yard' && !grOn(place)) l.push([620, 330, 240, 200, 'house']); if (grOn(place)) grNo(place).forEach((b) => l.push(b)); return l; }
@@ -88,7 +94,8 @@ function rmSoft(x, y, k, flat) { // flat: no depth rule (the last fallback when 
     if (b[4] === 'floor') continue; // v2.15: a floor prop is sorted with the dogs (43_ground.js grDepth): its box keeps only the feet out (rmHard)
     const A = b[2] * b[3], base = b[1] + b[3];
     if (!flat && b[4] !== 'btn' && A < RM_HUGE && base > y0 && y < base && T[1] < base && Math.min(T[0] + T[2], b[0] + b[2] - 6) - Math.max(T[0], b[0] + 6) > T[2] * 0.2 && T[1] + T[3] > b[1]) return true; // a fifth of its width over the prop
-    if (b[4] === 'scene' || b[4] === 'board' || A >= RM_HUGE) continue;
+    if (b[4] === 'board') { if (isPhone() && rmOver(rmBoardBox(x, y, k), b) > A * RM_BOARD[1]) return true; continue; } // phone review: on a phone a stall board keeps the dog's drawn body off (a tap there would pet the dog)
+    if (b[4] === 'scene' || A >= RM_HUGE) continue;
     if (b[4] === 'stall' && A >= 15000) { if (rmOver(Th, b) && Th[1] < b[1] + b[3] / 4) return true; continue; } // a Festive Market stall (a shop front): a dog in front keeps off its awning and sign (the top quarter), so big dogs fit in front too // a Festive Market stall board keeps only the feet out (rmHard); covering it is a cost in rmLeastAt
     const pr = b[4] === 'prop' || b[4] === 'decor' || b[4] === 'fest', U = pr ? T : Th, o = rmOver(U, pr ? [b[0] - 3, b[1] - 3, b[2] + 6, b[3] + 6] : b); if (!o) continue;
     if (pr ? o > (b[4] === 'decor' ? A * 0.1 : 0) : A < 15000 ? o > A * 0.08 : o > A * 0.4 || (b[0] + b[2] / 2 > U[0] && b[0] + b[2] / 2 < U[0] + U[2] && b[1] + b[3] / 2 > U[1] && b[1] + b[3] / 2 < U[1] + U[3])) return true;
@@ -123,7 +130,7 @@ function rmLeastAt(d, x0, y0, clear) {
   const z = rmZoneOf(S.place), L = D(), W = rmCropWin(); let best = null, bv = 1e9; // W: phones (v2.12), a spot the crop cuts costs a little (a whole tap rect off screen as much as covering 60% of a pack dog: stacking is worse)
   for (let y = z.y0; y <= z.y1; y += 14) for (let x = z.x0; x <= z.x1; x += 20) {
     if (rmHard(x, y) || (z.poly && !grIn(z.poly, x, y))) continue; const k = rmKd(d, y), T = rmTapBox(x, y, k), A = T[2] * T[3]; if (T[0] < 4 || T[0] + T[2] > (z.W || 1000) - 4 || (clear && rmSoft(x, y, k, true))) continue; let v = 0;
-    rmBoxes().forEach((b) => { const Ab = b[2] * b[3]; if (b[4] === 'scene' || Ab >= RM_HUGE) return; const o = rmOver(T, b); if (o) v += (o / Ab) * (b[4] === 'prop' || b[4] === 'decor' || b[4] === 'fest' || b[4] === 'board' || Ab < 15000 ? 3 : 1) + (b[4] === 'fest' || b[4] === 'board' ? 3 : 0); }); // a seasonal decoration or a stall board costs more than standing on a pack dog
+    rmBoxes().forEach((b) => { const Ab = b[2] * b[3]; if (b[4] === 'scene' || Ab >= RM_HUGE) return; if (b[4] === 'board') { v += 6 * rmOver(rmBoardBox(x, y, k), b) / Ab; return; } const o = rmOver(T, b); if (o) v += (o / Ab) * (b[4] === 'prop' || b[4] === 'decor' || b[4] === 'fest' || Ab < 15000 ? 3 : 1) + (b[4] === 'fest' ? 3 : 0); }); // a seasonal decoration costs more than standing on a pack dog; a stall board by how much of it the dog's body covers (all of it: 6)
     rmDogs().forEach((o) => { if (o === d || !rmSt(o).seeded) return; const [ox, oy, ok] = rmDest(o), w = rmOver(T, rmTapBox(ox, oy, ok)) / A; if (w) v += w * (o === L ? 3 : 1); });
     if (W) v += 0.6 * (Math.max(0, W[0] - T[0]) + Math.max(0, T[0] + T[2] - W[1])) / T[2];
     if (x0 != null) v += Math.hypot(x - x0, y - y0) / 5000; if (v < bv) { bv = v; best = [x, y]; }

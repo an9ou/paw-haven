@@ -141,7 +141,9 @@ function fmSceneArt() {
   if (plain) { const rest = cats.filter((c) => !pick.includes(c)); for (let i = pick.length - 1; i >= 0 && rest.length; i--) if (!pick[i]) pick[i] = rest.shift(); }
   // Winter Market part 6: the winter scene takes the time of day (the night tint, its lights and lanterns lit and kept bright after dark)
   const sv = fmSceneSvg(th, W ? timePhase() : '', lit, plain, pick.map(Boolean));
-  const sign = esc(fmSign(o)), [sx, sy, sw] = (window.PawArt && PawArt.FM_SIGN) || [500, 128, 240], fs = Math.min(26, Math.max(15, sw * 2.1 / Math.max(10, [...fmSign(o)].length)));
+  const [sx, sy, sw] = (window.PawArt && PawArt.FM_SIGN) || [500, 128, 240], sl = isPhone() ? fmSign(o).split(' · ') : [fmSign(o)]; // phone review: on a phone the sign takes two lines (name, closing date), centred on the part of the board a phone shows
+  const two = sl.length === 2, fs = two ? Math.min(19, Math.max(13, sw * 2.1 / Math.max(10, ...sl.map((l) => [...l].length)))) : Math.min(26, Math.max(15, sw * 2.1 / Math.max(10, [...fmSign(o)].length)));
+  const sign = two ? sl.map((l, i) => `<tspan x="${sx - 50}" y="${sy + (i ? 17 : -3)}">${esc(l)}</tspan>`).join('') : esc(fmSign(o));
   // v2.17.2 Spooky Stalls: the Halloween scene has a little board per stall (PawArt.FM_STALL_SIGNS) with the stall's short name, and the homes stand
   // and the treats cart in front are buttons too (when that stall has items). Winter Market part 6: the winter scene too (all five stalls)
   const SB = !plain && sv && window.PawArt && PawArt.FM_STALL_SIGNS;
@@ -183,7 +185,7 @@ function fmStallBind() {
 function fmArrive() {
   if (!fmOn() || !S || S.place !== 'fmarket') return; fmPlaceBtn();
   const o = fmMain(); if (!o) return; const key = o.m.id + '_' + o.y;
-  if (!S.fm.seen[key]) { S.fm.seen[key] = localISO(); markDirty(); setTimeout(() => { if (S.place === 'fmarket') toast(tt('fm.hello', 'Welcome to the {market}! Things you get here stay yours forever, even after the market packs up.', { market: fmMarketName(o.m) }), 'gold'); }, 800); }
+  if (!S.fm.seen[key]) { S.fm.seen[key] = localISO(); markDirty(); setTimeout(() => { if (S.place === 'fmarket' && modal.hidden) FM.hello = toast(tt('fm.hello', 'Welcome to the {market}! Things you get here stay yours forever, even after the market packs up.', { market: fmMarketName(o.m) }), 'gold'); }, 800); }
 }
 on('yard:enter', () => { fmSync(); fmArrive(); });
 on('scene:redraw', () => { if (!(fmOn() && S && S.place === 'fmarket')) return; if (!$('#placeBtns [data-fmb]')) fmPlaceBtn(); else fmStallBind(); });
@@ -207,6 +209,10 @@ function fmSheet(cat) {
   const p = openModal(esc(fmPlaceName()), `<p class="small fm-lead">${esc(tt('fm.lead', 'A pop-up market for the festival. Coins only. Everything you get here stays yours forever.'))}</p>${tabs}<div class="shopgrid fm-grid">${items.map(card).join('')}</div>`,
     { cls: 'shop fm-pop', foot: `<p class="small fm-foot">${esc(fmSign(o))}</p>` });
   const bd = $('.panel-body', p); if (bd && keep) bd.scrollTop = keep;
+  // phone review: the chosen tab in view in its own swipe row (only that row scrolls, not the sheet or the page), and the first-visit welcome toast off the cards
+  const tr = p.querySelector('.fm-tabs'), sel = tr && tr.querySelector('[aria-selected="true"]');
+  if (sel && tr.scrollWidth > tr.clientWidth) { const a = sel.getBoundingClientRect().left - tr.getBoundingClientRect().left + tr.scrollLeft, b = a + sel.offsetWidth; if (a < tr.scrollLeft) tr.scrollLeft = a; else if (b > tr.scrollLeft + tr.clientWidth) tr.scrollLeft = b - tr.clientWidth; }
+  if (FM.hello) { FM.hello.remove(); FM.hello = null; }
   p.querySelectorAll('[data-fmtab]').forEach((b) => { b.onclick = () => { fmTab = b.dataset.fmtab; SFX.click(); fmSheet(); }; });
   p.querySelectorAll('[data-fmbuy]').forEach((b) => { b.onclick = () => { const it = items.find((x) => x.n === b.dataset.fmbuy); if (!it) return; if (b.getAttribute('aria-disabled') === 'true') { nope(tt('fm.locked', '{item} opens at Bond {bond}.', { item: it.name, bond: it.bond })); return; } fmBuy(p, it); }; });
   return p;
