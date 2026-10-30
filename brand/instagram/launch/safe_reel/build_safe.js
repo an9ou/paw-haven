@@ -79,7 +79,9 @@ ${T_('Doodle', 400, 1660, 110, { f: 'Caveat', rot: -3 })}${T_('Doggo', 680, 1666
 ${T_(TX.sub, 540, 1730, RN ? 38 : 44, { w: 600, fill: '#8A7468' })}
 <rect x="215" y="1762" width="650" height="78" rx="39" fill="#FFE3A1" stroke="${PEN}" stroke-width="4"/>${T_(TX.pill, 540, 1816, RN ? 46 : 54)}`;
 
-const scene = `<symbol id="sc" viewBox="662 0 337.5 600" preserveAspectRatio="xMidYMid slice">${inner(PA.scene('house', { time: 'day', weather: 'sunny', season: 'autumn', jp: true }))}</symbol>`;
+// the kitchen with no words in it (owner, 30 Oct 2026: the "home sweet home" sign and the labels made the cards hard to read),
+// so the only words on screen are the Reel's own
+const scene = `<symbol id="sc" viewBox="662 0 337.5 600" preserveAspectRatio="xMidYMid slice">${inner(PA.scene('house', { time: 'day', weather: 'sunny', season: 'autumn', jp: true })).replace(/<text\b[\s\S]*?<\/text>/g, '')}</symbol>`;
 const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap" rel="stylesheet">${RN ? '<link href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/lxgwwenkai-bold.css" rel="stylesheet">' : ''}<style>html,body{margin:0;background:#fff}svg{display:block}
 [class$="-hl"]{display:none}
 .pa-dog *{animation:none!important}</style>
