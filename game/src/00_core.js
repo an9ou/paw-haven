@@ -985,7 +985,8 @@ function v218Fields(s) {
   if (!v28Obj(s.ff)) s.ff = {};
   const f = s.ff, obj = (o, k) => { if (!v28Obj(o[k])) o[k] = {}; };
   if (typeof f.day !== 'string') f.day = '';
-  ['c', 'n', 'best', 'rib', 'mk', 'pc', 'wash'].forEach((k) => obj(f, k));
+  ['c', 'n', 'best', 'rib', 'mk', 'pc', 'wash', 'toy'].forEach((k) => obj(f, k));
+  if (typeof f.toy.day !== 'string') f.toy.day = ''; if (typeof f.toy.coins !== 'number' || !(f.toy.coins >= 0)) f.toy.coins = 0; // Winter Market review: the toy games' shared daily coin cap (FF_CAPS.toys, a Japan day)
   if (typeof f.mk.day !== 'string') f.mk.day = ''; ['coins', 'n'].forEach((k) => { if (typeof f.mk[k] !== 'number' || !(f.mk[k] >= 0)) f.mk[k] = 0; });
   if (typeof f.pc.wk !== 'string') f.pc.wk = ''; if (!Array.isArray(f.pc.e)) f.pc.e = []; f.pc.e = f.pc.e.filter((x) => v28Obj(x)).slice(0, 3); if (typeof f.pc.judged !== 'string') f.pc.judged = '';
   ['won', 'rib'].forEach((k) => { if (typeof f.pc[k] !== 'number' || !(f.pc[k] >= 0)) f.pc[k] = 0; });

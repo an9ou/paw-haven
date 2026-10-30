@@ -149,4 +149,26 @@ run('wm_review', async (t) => {
 
   }
   await t.ctx.close();
+
+  sec('9. toy-game coins: one shared cap of 30 a Japan day in FF_CAPS; past it play still counts');
+  await t.newGame({ ground: true }, { bond: { level: 8, pts: 1600 }, coins: 100, inv: { toys: ['Squeaky Hedgehog', 'Squeaky Duck'] } });
+  await t.until(() => !!(window.__paw && window.__paw.ff), null, 8000);
+  {
+    const A = await ev(() => { const P = window.__paw, S = P.S, c0 = S.coins; S.ff.toy = { day: '', coins: 0 }; const a = P.ff.toyPay(25), b = P.ff.toyPay(25), c = P.ff.toyPay(25), left = P.ff.left('toys'), got = S.coins - c0; S.ff.toy.day = '2001-01-01'; return { cap: P.ff.caps.toys.day, a, b, c, left, got, fresh: P.ff.left('toys') }; });
+    ok(A.cap === 30 && A.a === 25 && A.b === 5 && A.c === 0 && A.left === 0 && A.got === 30 && A.fresh === 30, 'FF_CAPS.toys: 30 a day across toys, then nothing, a new Japan day starts again: ' + JSON.stringify(A));
+    await ev(() => { const P = window.PawToys, o = P.open; P.open = function (h, n, ctx) { window.__toyCtx = ctx; return o.apply(this, arguments); }; });
+    await ev(() => { const S = window.__paw.S, j = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); S.ff.toy = { day: j, coins: 26 }; });
+    await t.home('yard'); await ev(() => window.__paw.go('toy', 'Squeaky Hedgehog')); await t.untilMode('toy', 5000);
+    await ev(() => { window.__toyCtx.reward({ happiness: 1 }); }); await t.sleep(300); // the first reward of the day may finish a daily care goal (its own coins)
+    const c0 = (await t.S()).coins;
+    await ev(() => { document.getElementById('toasts').innerHTML = ''; window.__toyCtx.reward({ coins: 3, happiness: 4 }); });
+    const s1 = await t.S(), c1 = s1.coins;
+    ok(c1 === c0 + 4 && s1.ff.toy.coins === 30, 'a toy game pays only what is left of the 30 (6 wanted, 4 paid): +' + (c1 - c0));
+    await ev(() => { window.__paw.S.dogs[0].stats.happy = 50; window.__toyCtx.reward({ coins: 3, happiness: 4 }); });
+    ok((await t.S()).coins === c1 && await t.waitToast(/All 30 coins earned today\. Playing is still fun/), 'at the cap: no coins, the minigames\' "All 30 coins earned today" line');
+    ok((await t.S()).dogs[0].stats.happy > 50, 'play still gives Happiness');
+    await t.p.keyboard.press('Escape'); await t.untilMode('yard', 5000);
+    ok(await ev(() => { const s = window.__paw.fw ? window.__paw.fw.migrate({ v: 1, dogs: [{ id: 'a', name: 'A', key: 'shiba', bond: { level: 2, pts: 70 } }], inv: { food: {}, toys: [], clothes: [], houses: [] }, ff: { toy: 'junk' } }) : null; return !s || (s.v === 1 && s.ff.toy.day === '' && s.ff.toy.coins === 0); }), 'an old or broken save gets S.ff.toy, additively');
+  }
+  await t.ctx.close();
 }, { prefs: {} });

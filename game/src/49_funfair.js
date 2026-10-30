@@ -19,7 +19,8 @@ function ffOn() { return !navigator.webdriver || !!prefs.ffTest; }
 const FF_CAPS = {
   catch: { day: 20, round: 10, en: 5 }, bubble: { day: 15, round: 8, en: 5 }, seek: { day: 15, round: 10, en: 4 }, show: { day: 20, round: 10, en: 4 }, kite: { day: 15, round: 8, en: 5 },
   paper: { day: 15, round: 15, en: 6 }, bakery: { day: 15, round: 15, en: 3 }, wash: { day: 10, round: 10, en: 4 },
-  stall: { week: 40 }, photo: { week: 30 }
+  stall: { week: 40 }, photo: { week: 30 },
+  toys: { day: 30 } // Winter Market review (owner): every toy game (18_mod_walk_toys.js enterToy) shares one cap, 30 coins paid a Japan day (S.ff.toy); play still counts
 };
 // where each game lives, its Bond (topBond, like the places), the person in town who runs it
 const FF_GAMES = {
@@ -78,12 +79,22 @@ function ffLeft(k) {
   if (!S || !S.ff) return 0;
   if (k === 'stall') { const m = S.ff.mk; return m.day === localISO() ? Math.max(0, FF_CAPS.stall.week - m.coins) : FF_CAPS.stall.week; }
   if (k === 'photo') { const p = S.ff.pc; return p.wk === ffWeekOf(localISO()) && p.judged ? 0 : FF_CAPS.photo.week; }
+  if (k === 'toys') { const T = S.ff.toy; return T && T.day === jstISO() ? Math.max(0, FF_CAPS.toys.day - T.coins) : FF_CAPS.toys.day; }
   const F = ffToday(), C = FF_CAPS[k]; return C ? Math.max(0, C.day - (F.c[k] || 0)) : 0;
 }
 // pays at most what the round and the day allow; raw coins (the caps are real coins). Returns what it paid
 function ffPay(k, want) {
   const C = FF_CAPS[k], n = Math.max(0, Math.min(Math.round(want), C.round, ffLeft(k)));
   if (n > 0) { addCoins(n, { raw: true }); const F = ffToday(); F.c[k] = (F.c[k] || 0) + n; markDirty(); }
+  return n;
+}
+// the toy games' coins (whatever the toy, BOOST included as before): at most what is left of today's shared cap; returns what it paid.
+// Not behind ffOn: the cap is economy, not a Fun Fair game
+function ffToyPay(want) {
+  if (!S) return 0; if (!S.ff || !S.ff.toy) v218Fields(S);
+  const n = Math.max(0, Math.min(Math.round(want), ffLeft('toys'))), T = S.ff.toy, d = jstISO();
+  if (T.day !== d) { T.day = d; T.coins = 0; }
+  if (n > 0) { addCoins(n, { raw: true }); T.coins += n; markDirty(); }
   return n;
 }
 // the Saturday stall: the dev Day select pins it in tests (prefs.ffSat)
@@ -385,7 +396,7 @@ on('game:ready', () => { ffPagesSync(); ffExpose(); });
 function ffExpose() {
   if (!window.__paw || window.__paw.ff) return;
   window.__paw.ff = {
-    on: () => ffOn(), caps: FF_CAPS, games: FF_GAMES, keys: FF_KEYS.slice(), here: (p) => ffHere(p), left: (k) => ffLeft(k), pay: (k, n) => ffPay(k, n), start: (k) => ffStart(k), cards: () => ffCards(), can: (k) => ffCan(k),
+    on: () => ffOn(), caps: FF_CAPS, games: FF_GAMES, keys: FF_KEYS.slice(), here: (p) => ffHere(p), left: (k) => ffLeft(k), pay: (k, n) => ffPay(k, n), toyPay: (n) => ffToyPay(n), start: (k) => ffStart(k), cards: () => ffCards(), can: (k) => ffCan(k),
     get g() { return FF.g; }, end: () => { if (FF.g) ffEnd(FF.g); }, quit: () => ffQuit(), back: () => ffBackHome(), stall: () => ffStall(), goods: () => ffStallGoods(), stallRun: (sel) => ffStallRun(ffStallGoods(), sel), sat: () => ffSaturday(), setSat: (v) => { prefs.ffSat = v; },
     contest: () => ffContest(), enter: (cap) => ffPhotoEnter(cap), judge: () => ffContestCheck(), washDog: () => ffWashDog(), name: (k) => ffName(k), unlocks: (L) => ffUnlocks(L), sync: () => ffPagesSync(), lesson: () => ffLesson(),
     test: (v) => { prefs.ffTest = !!v; ffPagesSync(); if (cur.mode === 'yard') ffPlaceBtn(); }, bond: FF_BOND, week: (iso) => ffWeekOf(iso || localISO())

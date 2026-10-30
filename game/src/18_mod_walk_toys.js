@@ -70,13 +70,16 @@ function enterToy(name) {
   let td = S.toyDay[name]; if (!td || td.day !== day()) td = S.toyDay[name] = { day: day(), n: 0 };
   const k = td.n === 0 ? 1 : td.n === 1 ? 0.5 : 0.25; td.n++; markDirty();
   const fav = (S.dog.favToy === name ? 1.5 : 1) * (S.place === 'park' ? 1.2 : 1), e = envNow();
-  let closed = false, acted = false; // v2.4: one 'toy' act per play session
+  let closed = false, acted = false, capSaid = false; // v2.4: one 'toy' act per play session; the toy-coin cap line once
   const crew = pkDogs('play').slice(1); if (PKS.skip.length) pkSkipSay(PKS.skip, 900, 'toy'); // v2.9 PACK: every ticked dog gets the effects
   const ctx = {
     label: tdata('toys.' + tid(name) + '.n', name), dog: dogForMod(), time: e.time, weather: e.weather, season: e.season, halloween: e.halloween, lights: e.lights, newyear: e.newyear, jp: e.jp, sfx, say: (t) => toast(t),
     reward: (r) => {
       if (!r) return; const hp = (+r.happiness || 0) * k * fav * (S.place === 'dogpark' ? 1.3 : 1); if (hp) addStat('happy', hp);
-      const b = (+r.bond || 0) > 0 ? addBond(r.bond * k) : 0; const c = (+r.coins || 0) > 0 ? addCoins(r.coins * k) : 0;
+      const b = (+r.bond || 0) > 0 ? addBond(r.bond * k) : 0;
+      // coins (x the BOOST as before) under one shared daily cap for every toy game (FF_CAPS.toys, 49_funfair.js): past it play still gives Happiness and Bond
+      const want = (+r.coins || 0) > 0 ? Math.round(r.coins * k * BOOST.coins) : 0, c = want ? ffToyPay(want) : 0;
+      if (want && !c && !capSaid) { capSaid = true; toast(tt('ff.left_none', 'All {cap} coins earned today. Playing is still fun, and still gives Bond.', { cap: FF_CAPS.toys.day })); }
       if (r.energy) addStat('energy', +r.energy);
       if (crew.length) pkToyFx(crew, r, k, name);
       if (r.clean) addStat('clean', +r.clean); if (r.cool) S.coolUntil = S.gameMin + 60; // v2.4 Paddling Pool: +Cleanliness and a cool hour
