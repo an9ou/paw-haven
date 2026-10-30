@@ -1694,7 +1694,7 @@ TOP2['Polar Bear Hood']=function(h,s,L,HT){const hx=s.head.rx,hy=s.head.ry,{o,n,
   h.shape(o.concat(n).map(HT).map(hmCl),'#FBFAF4',{w:3.8,step:7,amp:.9});h.crayon(hx*.5,hy*.3,q=>HT([q[0]-hx*.45,q[1]-hy*.5]),'#FBFAF4',4);
   h.line(n.slice(1,-1).map(q=>[ox+(q[0]-ox)*1.08,oy+(q[1]-oy)*1.08]).map(HT).map(hmCl),2,WM_SND,.5);
   const z=Math.max(hx,hy)*.27;[-138,-76].forEach(an=>{const t=an*D2R,c=HT([Math.cos(t)*hx*1.08,Math.sin(t)*hy*1.1]);
-   h.shape(circ(c[0],c[1],z,z,10).map(hmCl),'#FBFAF4',{w:3,step:30,ox:0,oy:0,sc:1,closed:1,amp:.4,famp:.25});h.dot(c[0],Math.min(c[1]+z*.08,GY-2),z*.5,z*.46,'#E9D2CC')});
+   h.shape(circ(c[0],c[1],z,z,10).map(hmCl),'#FBFAF4',{w:3,step:30,ox:0,oy:0,sc:1,closed:1,amp:.4,famp:.25});const dr=Math.min(1,Math.max(.4,(GY-1-c[1]+z)/(z*2)));h.dot(c[0],Math.min(c[1]+z*.08,GY-3-z*.46*dr),z*.5*dr,z*.46*dr,'#E9D2CC')});// the inner ear stays inside an ear the ground flattens (akita roll-over)
   [[-.7,-.45],[-.35,-.85]].forEach(q=>{const c=HT([hx*q[0],hy*q[1]]);h.line([[c[0]-3,c[1]],[c[0]-1,c[1]+2],[c[0]+1,c[1]],[c[0]+3,c[1]+2]].map(hmCl),1.4,WM_SND,.2)})};
 
 /* 6. Penguin Suit: a black suit with a white tummy, two little black flippers, a black hood with a white rim round the open face */
