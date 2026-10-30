@@ -251,7 +251,7 @@ require('./test_lib').run('v28_winter', async (t) => {
   ok(!el.slice(4).some(Boolean), 'the leaf stall, the parade, the fortune and the year-end clean cannot ' + el.join());
   await ev(() => { const s = window.__paw.S.wn.snowdog; Object.assign(s, { date: '2026-12-10', stage: 3 }); });
   ok(!(await eligible(['snowdog']))[0], 'a finished snowdog today: the snowdog mission is not offered');
-  ok(await ev(() => { const m = window.__paw.S.missions; window.__paw.ms.force(['wstall']); window.__paw.ms.act('buy', { name: 'Very Ugly Sweater', cat: 'clothes', qty: 1, shop: 'stall' }); const a = m.list[0].done; window.__paw.ms.act('buy', { name: 'Snow Day Stew', cat: 'food', qty: 1, shop: 'market' }); const b = m.list[0].done; window.__paw.ms.act('buy', { name: 'Snow Day Stew', cat: 'food', qty: 1, shop: 'stall' }); return !a && !b && !!m.list[0].done; }), 'wstall matches a stall food buy only');
+  ok(await ev(() => { const m = window.__paw.S.missions; window.__paw.ms.force(['wstall']); window.__paw.ms.act('buy', { name: 'Very Ugly Sweater', cat: 'clothes', qty: 1, shop: 'stall' }); const a = m.list[0].done; window.__paw.ms.act('buy', { name: 'Frozen Yoghurt Ghosts', cat: 'food', qty: 1, shop: 'market' }); const b = m.list[0].done; window.__paw.ms.act('buy', { name: 'Snow Day Stew', cat: 'food', qty: 1, shop: 'market' }); return !a && !b && !!m.list[0].done; }), 'wstall matches a winter food buy only, at the stall or the Festive Market (v2.17.1), not a sweater or a Halloween treat');
   const savedDec = await ev(() => { window.__paw.saveNow(); return JSON.stringify(window.__paw.S); });
 
   sec('no winter item in Kibble Corner, the Boutique or Barkitecture');
