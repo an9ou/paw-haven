@@ -66,4 +66,33 @@ run('wm_review', async (t) => {
     ok((await ev(() => window.__paw.fm.svgCache())).length <= 4, 'at most four kept');
   }
   await t.ctx.close();
+
+  sec('4. a market decoration lands at a free spot; the winter rows sit clear of the dog house and the other wall lights');
+  {
+    const WM = ['Paper-Star Fir Tree', 'Yard Snowman', 'Candy-Cane Fairy Lights', 'Present Pile', 'Star Lantern'];
+    const LIGHTS = ['String Lights', 'Ghost Lantern String', 'Pumpkin Fairy Lights', 'Paper Snowflake Garland', 'Felt Holly Wreath', 'Wind Chime'];
+    const ov = (a, b) => Math.max(0, Math.min(a[0] + a[2], b[0] + b[2]) - Math.max(a[0], b[0])) * Math.max(0, Math.min(a[1] + a[3], b[1] + b[3]) - Math.max(a[1], b[1]));
+    await t.newGame({ prefs: PREFS, ground: true }, { bond: { level: 8, pts: 1600 }, coins: 4000 });
+    await t.until(() => !!(window.__paw && window.__paw.fm && window.__paw.ho), null, 8000);
+    const H = await ev((l) => { const D = window.__paw.home.specs; return Object.fromEntries(l.map((n) => [n, D[n].at.slice(0, 4)])); }, WM.concat(LIGHTS));
+    const HOUSE = [640, 340, 204, 186];
+    ok(WM.every((n) => !ov(H[n], HOUSE)), 'no winter row overlaps the dog house keep box: ' + WM.filter((n) => ov(H[n], HOUSE)).join());
+    ok(LIGHTS.every((n) => !ov(H['Candy-Cane Fairy Lights'], H[n])), 'the Candy-Cane Fairy Lights clear of the other wall lights: ' + LIGHTS.filter((n) => ov(H['Candy-Cane Fairy Lights'], H[n])).join());
+    // the String Lights out where the Candy-Cane Lights' catalogue spot is, then buy the five at the market
+    await ev(() => { const S = window.__paw.S; S.decor = S.decor || {}; S.decor['String Lights'] = { got: '2026-10-01', out: true, at: [620, 258] }; });
+    await ev(() => { const P = window.__paw; P.fm.sync(); P.S.place = 'fmarket'; P.go('yard'); }); await t.calm();
+    const buy = async (cat, n) => {
+      await ev((c) => window.__paw.fm.sheet(c), cat); await t.sleep(200);
+      await ev((n) => document.querySelector(`#modal .fm-card[data-n="${n}"] [data-fmbuy]`).click(), n);
+      await t.p.waitForSelector('.buybox .bb-yes', { timeout: 4000 }).catch(() => {});
+      await ev(() => { const b = document.querySelector('.buybox .bb-yes'); if (b) b.click(); });
+      await t.until((n) => !!(window.__paw.S.decor || {})[n], n, 4000);
+    };
+    for (const n of WM) await buy('decor', n);
+    const B = await ev((l) => l.map((n) => ({ n, box: window.__paw.ho.box(n), r: window.__paw.S.decor[n] })), WM.concat(['String Lights']));
+    ok(B.every((x) => x.r && x.r.out && Array.isArray(x.r.at)), 'each bought one is out with its own spot');
+    const bad = []; B.forEach((a, i) => { if (ov(a.box, HOUSE)) bad.push(a.n + '/house'); B.forEach((b, j) => { if (j > i && ov(a.box, b.box)) bad.push(a.n + '/' + b.n); }); });
+    ok(!bad.length, 'none lands on the dog house or on another thing already out (the Candy-Cane Lights move off the String Lights): ' + bad.join(', '));
+  }
+  await t.ctx.close();
 }, { prefs: {} });

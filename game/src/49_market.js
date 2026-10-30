@@ -214,7 +214,7 @@ async function fmBuy(p, it) {
   const cost = it.price * q; if (S.coins < cost) { nope(tt('fm.poor', 'Not enough coins. Walks pay well, and the market is open until the sign says.')); return; }
   S.coins -= cost; SFX.kaching(); trackAct('buy', { name: it.n, cat: it.kind === 'food' ? 'food' : it.kind, qty: q, shop: 'market' });
   if (stack) S.inv.food[it.n] = (S.inv.food[it.n] || 0) + q;
-  else if (it.kind === 'decor') { hmDecorFields(); S.decor[it.n] = { got: localISO(), out: true }; }
+  else if (it.kind === 'decor') { hmDecorFields(); const at = typeof hoFreeSpot === 'function' ? hoFreeSpot(it.n) : null; S.decor[it.n] = Object.assign({ got: localISO(), out: true }, at ? { at } : {}); } // a free spot (28_home.js), as Barkitecture places a new thing: never on the dog house, the pack or another thing already out
   else if (it.kind === 'beds') S.beds.push(it.n);
   else S.inv[it.kind].push(it.n);
   S.fm.bought = (S.fm.bought || 0) + 1; markDirty(); updateHUD(); saveNow();
