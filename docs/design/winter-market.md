@@ -1,0 +1,44 @@
+# Winter Market 2026: design (draft, 30 Oct 2026)
+
+The Winter Market (1 to 26 Dec, Japan date, `FM_MARKETS` id `winter` in `game/src/49_market.js`) opens with only 9 old items (3 decorations,
+3 clothes, 3 treats) and no toys or homes (`V2171.md` 8). This set fills it the way v2.17.2 "Spooky Stalls" filled the Halloween Market:
+crude crayon and cute, every colour inside its line, nothing over the eyes or nose, costumes that fit all 35 breeds (adults and puppies,
+every pose, dry and wet), Bond gates 1 to 3, prices in line with the Halloween 2026 items. Owner's ask (30 Oct): decorations, new clothes,
+new toys and more, done one part at a time, no rush.
+
+## Rules for the set
+
+- Sold only at the Winter Market (`fm: true`, `fest: 'winter'`), **every year** (no `ed`, so a player who misses December 2026 can buy it
+  next winter). Bought things stay forever.
+- Winter, not religious: snow, knits, lights, presents, Father Christmas, elves, reindeer, gingerbread (as a look, never as food).
+- Welfare and food safety: no tinsel, no real candles, no holly, mistletoe, poinsettia or lilies as plants, no chocolate, nutmeg, raisins,
+  xylitol or macadamia in treats. A fir tree in the yard is fine (paper decorations only). Treats come with a short, kind two-sentence lesson.
+- No name of a film, brand or game character.
+
+## The items (25, plus 3 treats)
+
+| Part | Items |
+|---|---|
+| 1. Decorations (5, yard) | Paper-Star Fir Tree (a little potted fir with paper stars), Yard Snowman (crude, stick arms, carrot nose, scarf), Candy-Cane Fairy Lights (wall, `lit`), Present Pile (three wrapped boxes), Star Lantern (a paper star on a post, `lit`) |
+| 2. Costumes (10) | Father Christmas Suit (coat and hat), Little Elf Outfit (tunic and pointy hat with a bell), Gingerbread Pup Suit (brown with icing squiggles), Snowman Suit (white, coal buttons, the carrot on top of the hat, never on the nose), Polar Bear Hood, Penguin Suit (little flippers), Puffer Jacket, Nutcracker Jacket & Hat, Snowflake Wings (back), Jingle Bell Collar (neck) |
+| 3. Toys (5, each plays an older toy game with its own look) | Squeaky Snowman, Candy-Cane Rope (rope only, no sweets), Plush Penguin, Snowball Ball (a fluffy white ball), Present Puzzle Box (treats inside, like the Puzzle Feeder) |
+| 4. Homes (a house and 4 beds) | Gingerbread Kennel (a look, not edible), Present-Box Bed, Little Sleigh Bed, Snowball Nest, Giant Mitten Bed |
+| 5. Treats (3) | Reindeer Crunch (carrot and apple, no seeds or core), Turkey & Cranberry Bites (plain cooked turkey, no skin, bones or gravy, a few fresh cranberries), Frozen Yoghurt Snowballs (plain yoghurt, nothing sweetened) |
+| 6. Market scene | the winter stalls dressed with the real drawings (as v2.17.2 did for Halloween): fir tree and lights at the decor stall, costumes on hangers, toys in baskets, homes stand, treats cart, stall boards |
+
+## Order of work
+
+One part at a time, one art agent at a time, on branch `art/winter-market`: 1 decorations, 2 costumes, 3 toys, 4 homes, 5 treats,
+6 the market scene, then names and descriptions in all 11 languages in one batch, the checks (outfit sweep, `dogs/fill_sweep.js`,
+`dogs/connect_check.js`, `v2171_market`), three reviews (code, phone, art) and a release before 1 Dec (a `NEWS` entry, Marketing briefing).
+The New Year Market (27 Dec to 7 Jan) is a separate small set later.
+
+## Progress
+
+- [ ] 1. Decorations
+- [ ] 2. Costumes
+- [ ] 3. Toys
+- [ ] 4. Homes
+- [ ] 5. Treats
+- [ ] 6. Market scene
+- [ ] Translations, checks, reviews, release
