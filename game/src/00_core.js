@@ -1433,7 +1433,7 @@ function unlocksFor(L) {
   for (const k in ROUTES) if (ROUTES[k].bond === L && L > 1) u.push(tt('core.unlock_route', '{dig, select, yes {Walk route: {route} (with digging)} other {Walk route: {route}}}', { dig: ROUTES[k].dig ? 'yes' : 'no', route: tRoute(k) }));
   TRICKS.forEach((t) => { if (t.bond === L) u.push(t.n === 'Signature' ? tt('core.unlock_signature', 'Signature trick: {trick}', { trick: tSig(S.dog.key) }) : tt('core.unlock_trick', 'Trick: {trick}', { trick: tTrick(t.n) })); });
   TOYS.concat(CLOTHES).forEach((t) => { if (t.bond === L && L > 1 && !t.ed && !t.fm) u.push(tt('core.unlock_shop', 'Shop: {item}', { item: tItem(t.n) })); });
-  HOUSES.forEach((h) => { if (h.bond === L && L > 1) u.push(tt('core.unlock_house', 'House: {house}', { house: tItem(h.n) })); });
+  HOUSES.forEach((h) => { if (h.bond === L && L > 1 && !h.fm) u.push(tt('core.unlock_house', 'House: {house}', { house: tItem(h.n) })); });
   if (L === 10) u.push(tt('core.unlock_badge', 'Best Friends badge (it is invisible, but it is there)'));
   if (typeof ddUnlocks === 'function') u.push(...ddUnlocks(L)); // v2.17: the Bond track gifts (48_dogdays.js)
   if (typeof ffUnlocks === 'function') u.push(...ffUnlocks(L)); // v2.18: the Fun Fair games (49_funfair.js)

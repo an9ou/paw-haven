@@ -101,6 +101,7 @@ run('v217_dog_days', async (t) => {
   const rows = await ev(() => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((L) => window.__paw.dd.rows(L)));
   ok(rows[1].includes('Trick: Paw') && rows[1].some((r) => /Walk route: Riverside Trail/.test(r)) && rows[1].some((r) => /Places: .*Dog Park/.test(r)) && rows[1].includes('The veggie patch'), 'Bond 2: Paw, the Riverside Trail, the Dog Park, the veggie patch: ' + rows[1].join(' | '));
   ok(rows[2].some((r) => /Room for dog number 2/.test(r)) && rows[2].some((r) => /Places: .*Training Ground/.test(r)) && rows[2].some((r) => /^Gift: a photo frame/.test(r)), 'Bond 3: the second dog spot, the Training Ground, a frame gift');
+  ok(!rows.flat().some((r) => /Haunted Kennel|Gingerbread Kennel/.test(r)), 'no festive-market house on the Bond track (sold only at the market, like the beds)');
   ok(rows[5].includes('Playdates and puppy families') && rows[5].some((r) => /House: Snow Igloo/.test(r)), 'Bond 6: playdates (welfare.minBond), the Snow Igloo');
   ok(rows[9].some((r) => /^Trick: |^Signature trick/.test(r)) && rows[9].some((r) => /Gift: Crayon Crown and Golden Collar/.test(r)) && rows[9].some((r) => /Best Friends badge/.test(r)), 'Bond 10: the signature trick, the badge, the crown and the collar');
   ok(rows.every((r) => r.length > 0), 'every level has something');
