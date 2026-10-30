@@ -16,7 +16,7 @@ A cozy browser game: adopt crayon-drawn dogs, care for them, walk a sketchbook t
 - **5-minute rule for every session and subagent (owner, 16 Oct 2026):** any question or approval the owner leaves unanswered for 5 minutes goes with the recommended choice. This includes release go-aheads and site deploys (owner, 23 Oct 2026: "if i am away, choose the recommended option"). A permission prompt can't be approved on the owner's behalf, so when one waits 5 minutes, take the recommended path that doesn't need it and keep going. Prefer paths that need no approval prompt at all.
 
 - **Saving tokens (owner, 23 Oct 2026), without lowering the game or the dog art:**
-  - Hand over to a fresh session at about **150k** context (not 300k).
+  - Hand over to a fresh session at about **150k** context (not 300k). Do it **automatically** (owner, 30 Oct 2026): no need to ask, unless the owner is in the middle of working with you; then hand over at the next quiet moment.
   - Small patches: no coordinator session; the Game Manager runs them with its own helpers, with **one** combined review. Big releases keep the three reviews (code, phone, art).
   - Big releases (v2.15 on): finish the parts **one at a time**, at most **2 subagents** at once, one test suite at a time.
   - **Sonnet** (`paw-fixer`) for routine fixes, docs, test runs and screenshots; art, design and reviews stay on the top model.
