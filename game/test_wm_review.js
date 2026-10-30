@@ -50,4 +50,20 @@ run('wm_review', async (t) => {
     }
   }
   await t.ctx.close();
+
+  sec('3. the winter scene is drawn and tinted once per theme + time phase + lit, then reused');
+  await t.newGame({ prefs: PREFS, ground: true }, { bond: { level: 8, pts: 1600 } });
+  await t.until(() => !!(window.__paw && window.__paw.fm), null, 8000);
+  {
+    await ev(() => { const P = window.__paw; P.fm.sync(); P.S.place = 'fmarket'; P.go('yard'); }); await t.calm();
+    const k1 = await ev(() => window.__paw.fm.svgCache());
+    ok(k1.includes('winter|day|0'), 'the day scene is kept: ' + k1.join());
+    const ms = await ev(() => { const t0 = performance.now(); for (let i = 0; i < 5; i++) window.__paw.go('yard'); return (performance.now() - t0) / 5; });
+    const k2 = await ev(() => window.__paw.fm.svgCache());
+    ok(k2.length === k1.length && /data-fm="fmscene"/.test(await ev(() => document.querySelector('#sceneG').innerHTML.slice(0, 4000))), `redraws reuse it (${ms.toFixed(0)} ms a redraw), the scene is still there`);
+    await t.dev(async () => { await t.p.selectOption('#dvTime', 'night'); });
+    ok(await t.until(() => window.__paw.fm.svgCache().includes('winter|night|1'), null, 4000), 'after dark: the lit night scene is its own entry');
+    ok((await ev(() => window.__paw.fm.svgCache())).length <= 4, 'at most four kept');
+  }
+  await t.ctx.close();
 }, { prefs: {} });
