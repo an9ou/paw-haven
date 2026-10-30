@@ -1254,15 +1254,56 @@ function fmFrontHw(b,th){
   fmNest(b,fmIt('Frozen Yoghurt Ghosts'),640,468,50,50);fmBoard(b,667,428,70);
   // a pumpkin pile by the decor stall
   [[22,560,22],[60,566,17],[40,536,15],[92,572,12]].forEach(([x,y,r])=>fmPumpkin(b,x,y,r))}
+/* Winter Market 2026 part 6 (docs/design/winter-market.md): the winter stalls dressed with the real winter drawings (world B, PawArt.WINTER_MARKET):
+   the Candy-Cane Fairy Lights under the decor awning, the Yard Snowman and the Present Pile on its counter, the Paper-Star Fir Tree beside it and the
+   Star Lantern in front; winter costumes on little hangers; toys in baskets under the paper snowflakes; a homes stand and a treats cart in front;
+   light snow on the roofs and the ground, a few flakes in the air. o.lit (after dark): the lights and the lanterns glow (pa-wb-glow groups, so the
+   game's night tint leaves them bright). The same blank boards as Halloween (FM_STALL_SIGNS): the game writes the stall names */
+function fmSnowCap(b,x0,x1,y){const P=[],n=Math.max(4,Math.round((x1-x0)/28));
+  for(let i=0;i<=n;i++){const x=x0+(x1-x0)*i/n;P.push([x,y-5-(i%2?3.2:0)-(i%3===1?1.6:0)])}
+  P.push([x1+3,y+1.5],[x1-24,y+2.5],[x1-28,y+9],[x1-33,y+2.5],[x0+64,y+2.5],[x0+59,y+7],[x0+54,y+2.5],[x0-3,y+1.5]);
+  b.sh(P,'#FFFFFF',{k:.14,hatch:0,hl:0,lw:.8,base:'#FFFFFF'})}
+function fmDrift(b,x,y,rx,ry){const P=[];for(let i=0;i<=14;i++){const t=i/14;P.push([x-rx+2*rx*t,y-ry*Math.pow(Math.sin(Math.PI*t),.7)*(1+.18*Math.sin(Math.PI*3*t))])}P.push([x+rx*.6,y+2],[x-rx*.6,y+2]);
+  b.sh(P,'#FFFFFF',{k:.15,hatch:0,hl:0,lw:.75,base:'#FFFFFF',inner:b.st(b.jl(x-rx*.45,y-ry*.3,x+rx*.35,y-ry*.25,.6),'#B4C3D3',1.4,.8)})}
+function fmFlake(b,x,y,s){let d='';for(let k=0;k<3;k++){const a=k*Math.PI/3+.2,c=Math.cos(a)*s,n=Math.sin(a)*s;d+=b.jl(x-c,y-n,x+c,y+n,.3)}b.raw(b.st(d,'#9FB3CC',1.1,.9),'top')}
+// a soft glow kept bright by the night tint (pa-wb-glow), on top of a lit lantern
+function fmGlowW(b,x,y,rx,ry,op){b.raw(`<g class="pa-wb-glow"><ellipse cx="${R1(x)}" cy="${R1(y)}" rx="${R1(rx)}" ry="${R1(ry)}" fill="#FFE59A" opacity="${op||.3}"/><ellipse cx="${R1(x)}" cy="${R1(y)}" rx="${R1(rx*.45)}" ry="${R1(ry*.45)}" fill="#FFF3C2" opacity="${(op||.3)*1.2}"/></g>`,'top')}
+function fmDressWm(b,th,x0,w,i,lit){const y0=262,top=y0-70+(i===0?FM_LOW0:0),cy=y0+90;
+  fmSnowCap(b,x0-8,x0+w+8,top-14);
+  if(i===0){// decorations: the fairy lights under the awning, the snowman and the presents on the counter, the fir tree beside, the star lantern in front
+    fmNest(b,fmPr('wmcanelights',{lit}),x0+10,top+40,w-20,(w-20)*80/300);
+    fmNest(b,fmPr('wmsnowman'),x0+22,cy-174*.36,140*.36,180*.36);
+    fmNest(b,fmPr('wmpresents'),x0+w-104,cy-114*.46,160*.46,120*.46);
+    fmNest(b,fmPr('wmfirtree'),x0-50,y0+180-194*.56,140*.56,200*.56,'top');
+    fmNest(b,fmPr('wmstarlantern',{lit}),x0+w-72,y0+222-194*.5,120*.5,200*.5,'top')}
+  else if(i===1){// clothes: a rail under the awning with winter costumes on little hangers, the hood and the bell collar folded on the counter
+    b.ln([[x0+18,top+74],[x0+w-18,top+74]],{w:2.4,col:'#A97E5A'});
+    ['Father Christmas Suit','Little Elf Outfit','Penguin Suit','Snowman Suit'].forEach((n,k)=>{const x=x0+46+k*52;fmHanger(b,x,top+68);fmNest(b,fmIt(n),x-25,top+84,50,50)});
+    ['Polar Bear Hood','Jingle Bell Collar'].forEach((n,k)=>fmNest(b,fmIt(n),x0+18+k*170,cy-40,44,44))}
+  else{// toys: the paper snowflakes under the awning, two baskets of toys, the puzzle box on the snow beside the stall
+    fmNest(b,fmPr('wnsnowflakes'),x0+14,top+56,w-28,(w-28)*80/300);
+    fmBasket(b,x0+22,cy-26,92,26);fmBasket(b,x0+136,cy-26,92,26);
+    [['Snowball Ball',x0+20,-40],['Squeaky Snowman',x0+58,-46],['Plush Penguin',x0+134,-46],['Candy-Cane Rope',x0+176,-42]].forEach(([n,x,dy])=>fmNest(b,fmIt(n),x,cy+dy,46,46))}
+  fmBoard(b,x0+w/2,y0+124,96)}
+// the homes stand and the treats cart (where the Halloween ones stand), the sled in a drift by the decor stall, snow on the ground
+function fmFrontWm(b,th,lit){
+  [[150,478,58,18],[905,480,50,16]].forEach(([x,y,rx,ry])=>fmDrift(b,x,y,rx,ry));
+  b.sh([[296,520],[374,520],[372,560],[298,560]],'#E2B07E',{k:0,sh:'#C58F5E',hl:0,lw:.9});fmNest(b,PA.bed?PA.bed('Little Sleigh Bed'):'',290,466,90,55);fmBoard(b,335,428,70);
+  b.sh([[632,512],[702,512],[700,556],[634,556]],'#E2B07E',{k:0,sh:'#C58F5E',hl:0,lw:.9});[[640,560],[694,560]].forEach(([x,y])=>b.sh(E(x,y,7,7,12),'#A97E5A',{hatch:0,hl:0,lw:.8}));
+  fmNest(b,fmIt('Frozen Yoghurt Snowballs'),642,466,48,48);fmBoard(b,667,428,70);
+  fmDrift(b,62,576,64,16);fmNest(b,fmPr('wnsled'),6,520,200*.5,120*.5);
+  fmDrift(b,966,452,36,13);fmNest(b,fmIt('Present Puzzle Box'),940,404,50,50);
+  [[316,250],[338,312],[648,246],[676,318],[972,246],[988,330],[24,214],[470,236],[530,252],[860,170]].forEach(([x,y],k)=>fmFlake(b,x,y,3+(k%3)));
+  if(lit)[[250,190],[750,190]].forEach(([x,y])=>fmGlowW(b,x,y,30,30,.32))}
 const FM_STALL_SIGNS={decor:[165,386,96],clothes:[500,386,96],toys:[835,386,96],homes:[335,428,70],treats:[667,428,70]};
 const FM_LOW0=34;// the decor stall's roof sits a little lower in the Halloween scene, clear of the place chip (top left)
-function fmStall(b,th,x0,w,theme,i){
-  const y0=262,top=y0-70+(theme==='halloween'&&i===0?FM_LOW0:0);
+function fmStall(b,th,x0,w,theme,i,lit){
+  const y0=262,top=y0-70+(i===0?FM_LOW0:0);// Winter Market part 6: every theme's decor roof sits low, clear of the place chip
   [[x0+14],[x0+w-14]].forEach(([x])=>b.sh([[x-6,y0+150],[x-6,top+40],[x+6,top+40],[x+6,y0+150]],'#E2B07E',{k:0,sh:'#C58F5E',hl:0}));
   const n=6,sw2=w/n;for(let k=0;k<n;k++){const a=x0+k*sw2,c=k%2?th.c:th.a;b.sh([[a,top],[a+sw2,top],[a+sw2,top+44],[a+sw2/2,top+58],[a,top+44]],c,{k:.05,hatch:k%2?0:1,hl:0,sh:th.b,lw:.9})}
   b.sh([[x0-8,top-14],[x0+w+8,top-14],[x0+w+8,top+4],[x0-8,top+4]],th.b,{k:0,hatch:0,hl:0});
   b.sh([[x0,y0+90],[x0+w,y0+90],[x0+w-6,y0+160],[x0+6,y0+160]],'#E2B07E',{k:0,sh:'#C58F5E',marks:[{pts:[[x0,y0+90],[x0+w,y0+90],[x0+w,y0+108],[x0,y0+108]],fill:th.c,k:0}]});
-  if(theme==='halloween')fmDressHw(b,th,x0,w,i);else fmGoods(b,th,x0+36,y0+84,i,theme);
+  if(theme==='halloween')fmDressHw(b,th,x0,w,i);else if(theme==='winter')fmDressWm(b,th,x0,w,i,!!lit);else fmGoods(b,th,x0+36,y0+84,i,theme);
 }
 function fmLantern(b,x,y,col,lit){b.ln([[x,y-30],[x,y-14]],{w:1.4});b.sh(E(x,y,13,16,16),col,{hatch:0,hl:0,lw:.9,marks:lit?[{pts:E(x,y,7,9,12),fill:'#FFF6C8',op:.9}]:[],inner:b.st(b.jl(x-12,y,x+12,y),'#5B3D32',.8,.5)});b.sh(RR(x-6,y+14,12,5,1),'#5B3D32',{k:0,hatch:0,hl:0,lw:.5})}
 const FM_ART={
@@ -1271,7 +1312,7 @@ const FM_ART={
   b.sh([[0,330],[180,300],[400,320],[620,296],[820,316],[1000,300],[1000,392],[0,392]],theme==='winter'?'#EEF2F6':'#CBE5A6',{k:.2,hatch:0,hl:0,sh:'#B4D98E'});
   b.sh([[0,384],[1000,384],[1000,600],[0,600]],theme==='winter'?'#F4F7FA':'#EFDDBA',{k:0,hatch:0,hl:0,lw:.6});
   [[40,470],[260,520],[520,560],[760,500],[930,560],[150,580],[640,470]].forEach(([x,y])=>b.ln([[x,y],[x+26,y-3]],{w:1.2,col:'#C9B08A',op:.7}));
-  fmStall(b,th,40,250,theme,0);fmStall(b,th,375,250,theme,1);fmStall(b,th,710,250,theme,2);
+  fmStall(b,th,40,250,theme,0,o.lit);fmStall(b,th,375,250,theme,1,o.lit);fmStall(b,th,710,250,theme,2,o.lit);
   // the bunting: two swags of flags over the market, round paper lanterns between them
   [[0,150,500,128],[500,128,1000,150]].forEach(([x0,y0,x1,y1],s)=>{const P=[];for(let i=0;i<=12;i++){const t=i/12;P.push([x0+(x1-x0)*t,y0+(y1-y0)*t+Math.sin(t*Math.PI)*30])}b.ln(P,{w:1.6});
     for(let i=1;i<12;i+=1){const [x,y]=P[i];b.sh([[x-11,y],[x+11,y],[x,y+22]],th.flag[(i+s)%4],{k:0,hatch:0,hl:0,lw:.7})}});
@@ -1280,7 +1321,7 @@ const FM_ART={
   b.ln([[392,170],[400,150]],{w:1.4});b.ln([[608,170],[600,150]],{w:1.4});b.sh([[352,170],[648,170],[642,214],[358,214]],'#FFF6DC',{k:0,hatch:0,hl:0,lw:1.1});
   if(theme==='halloween'){[[880,430,.9]].forEach(([x,y,s])=>fmPumpkin(b,x,y,20*s));fmFrontHw(b,th)}
   if(theme==='sakura'){[[90,200],[930,200]].forEach(([x,y])=>b.sh(cloudP(x,y,60,34,7,.18,48),'#F7C6D4',{hatch:0,hl:0,sh:'#F28FA5'}))}
-  if(theme==='winter'){[[120,170],[880,172]].forEach(([x,y])=>b.sh(E(x,y,40,9,14),'#FFFFFF',{hatch:0,hl:0,lw:.6}))}
+  if(theme==='winter')fmFrontWm(b,th,!!o.lit);
  }],
  fmtent:['-130 -130 260 230','prop',(b,o)=>{const th=fmTh(o);
   b.sh([[-96,40],[-96,-30],[96,-30],[96,40]],th.c,{k:0,hatch:0,hl:0,sh:'#E8C597'});

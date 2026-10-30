@@ -122,12 +122,15 @@ function fmSync() {
 }
 // the scene: the themed stalls, the sign with the market's name and closing date, the three stalls as buttons
 function fmSceneArt() {
-  const o = fmMain(), th = FM_THEME_ART[o ? o.m.theme : 'halloween'] || 'halloween', sv = artReal('prop', 'fmscene', { theme: th });
+  const o = fmMain(), th = FM_THEME_ART[o ? o.m.theme : 'halloween'] || 'halloween', W = th === 'winter', lit = W && isNight();
+  // Winter Market part 6: the winter scene takes the time of day (the night tint, its lights and lanterns lit and kept bright after dark)
+  let sv = artReal('prop', 'fmscene', W ? { theme: th, lit } : { theme: th }); if (W && sv && window.PawArt && typeof PawArt.tint === 'function') sv = PawArt.tint(sv, { time: timePhase(), lit });
   const sign = esc(fmSign(o)), [sx, sy, sw] = (window.PawArt && PawArt.FM_SIGN) || [500, 128, 240], fs = Math.min(26, Math.max(15, sw * 2.1 / Math.max(10, [...fmSign(o)].length)));
-  const stalls = FM_STALLS.map(([c, x, w], i) => { const cats = fmCats(), cc = i === 2 && !cats.includes('toys') ? cats[cats.length - 1] : c; return `<g data-fmstall="${cc}"><rect x="${x}" y="216" width="${w}" height="244" fill="transparent"/></g>`; }).join('');
   // v2.17.2 Spooky Stalls: the Halloween scene has a little board per stall (PawArt.FM_STALL_SIGNS) with the stall's short name, and the homes stand
-  // and the treats cart in front are buttons too (when that stall has items)
-  const SB = th === 'halloween' && sv && window.PawArt && PawArt.FM_STALL_SIGNS, cats = fmCats();
+  // and the treats cart in front are buttons too (when that stall has items). Winter Market part 6: the winter scene too (all five stalls)
+  const SB = (th === 'halloween' || W) && sv && window.PawArt && PawArt.FM_STALL_SIGNS, cats = fmCats();
+  // a stall with nothing in it is no button; in the plain scenes (New Year) the third stall sells the last stall's things when there are no toys
+  const stalls = FM_STALLS.map(([c, x, w], i) => { const cc = !SB && i === 2 && !cats.includes('toys') ? cats[cats.length - 1] : c; return cats.includes(cc) ? `<g data-fmstall="${cc}"><rect x="${x}" y="216" width="${w}" height="244" fill="transparent"/></g>` : ''; }).join('');
   const boards = SB ? Object.keys(SB).filter((c) => cats.includes(c)).map((c) => { const [x, y, w] = SB[c], t = fmCatShort(c), f = Math.min(19, Math.max(11, w * 1.7 / Math.max(4, [...t].length))); return `<text class="fm-stall-sign" x="${x}" y="${(y + 20).toFixed(1)}" text-anchor="middle" font-family="'Caveat',cursive" font-weight="700" font-size="${f.toFixed(1)}" fill="#5B3D32">${esc(t)}</text>`; }).join('') : '';
   const front = SB ? [['homes', 292, 418, 90, 152], ['treats', 626, 418, 84, 152]].filter(([c]) => cats.includes(c)).map(([c, x, y, w, h]) => `<g data-fmstall="${c}"><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="transparent"/></g>`).join('') : '';
   return (sv ? place(sv, 0, 0, 1000, 600) : '<rect width="1000" height="600" fill="#FFFBF3"/>')

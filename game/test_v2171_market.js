@@ -183,6 +183,28 @@ run('v2171_market', async (t) => {
     await t.ctx.close();
   }
 
+  sec('8b. Winter Market 2026 part 6: the winter scene dressed, five stall buttons with boards, each opens its own tab; lit after dark; New Year: no empty stalls');
+  {
+    await t.newGame({ prefs: Object.assign({}, PREFS, { fmDate: '2026-12-05' }), ground: true }, { bond: { level: 8, pts: 1600 }, coins: 4000 });
+    t.p.on('pageerror', (e) => errs.push(e.message));
+    await t.until(() => !!(window.__paw && window.__paw.fm), null, 8000); await ev(() => window.__paw.fm.sync());
+    await ev(() => { const P = window.__paw; P.S.place = 'fmarket'; P.go('yard'); }); await t.calm();
+    const W = await ev(() => ({ stalls: [...document.querySelectorAll('#sceneG [data-fmstall].hot')].map((g) => g.dataset.fmstall).sort().join(), boards: [...document.querySelectorAll('#sceneG .fm-stall-sign')].map((x) => x.textContent).sort().join(), sign: (document.querySelector('#sceneG .fm-sign') || {}).textContent || '', svg: (document.querySelector('#sceneG svg[data-fm="fmscene"]') || {}).outerHTML || '' }));
+    ok(W.stalls === 'clothes,decor,homes,toys,treats', 'five winter stall buttons (the three stalls, the homes stand, the treats cart): ' + W.stalls);
+    ok(W.boards === 'Clothes,Decor,Homes,Toys,Treats' && /Winter Market · open until 26 Dec/.test(W.sign), 'each has its board with its name, and the sign: ' + W.boards);
+    ok(W.svg.length > 20000 && !W.svg.includes('pa-wb-glow'), 'the real winter drawings in the scene, nothing glows by day');
+    for (const c of ['decor', 'clothes', 'homes', 'toys', 'treats']) {
+      await ev((c) => document.querySelector(`#sceneG [data-fmstall="${c}"]`).dispatchEvent(new MouseEvent('click', { bubbles: true })), c);
+      ok(await t.until((c) => { const b = document.querySelector(`#modal .fm-pop [data-fmtab="${c}"]`); return !!b && b.getAttribute('aria-selected') === 'true' && document.querySelectorAll('#modal .fm-grid .fm-card').length >= 3; }, c, 4000), `the ${c} stall opens the ${c} tab`);
+      await t.closeX(); await t.modalGone();
+    }
+    await t.dev(async () => { await t.p.selectOption('#dvTime', 'night'); });
+    ok(await t.until(() => document.querySelectorAll('#sceneG [data-fmstall].hot').length === 5 && (document.querySelector('#sceneG svg[data-fm="fmscene"]') || {}).outerHTML.includes('pa-wb-glow'), null, 4000), 'after dark: the fairy lights and the lanterns glow, the five stalls still tappable');
+    await ev(() => window.__paw.fm.date('2026-12-28')); await ev(() => { const P = window.__paw; P.go('yard'); }); await t.calm();
+    ok(await ev(() => window.__paw.fm.main() === 'newyear' && [...document.querySelectorAll('#sceneG [data-fmstall].hot')].map((g) => g.dataset.fmstall).sort().join() === 'decor,treats'), 'the New Year Market: only its two stalls (decor, treats) are buttons');
+    await t.ctx.close();
+  }
+
   sec('9. phone (iPhone 15): the map tent, the scene, a stall sheet with 44 px taps and no sideways scroll');
   {
     await t.newGame({ prefs: PREFS, ground: true, device: 'iPhone 15' }, { bond: { level: 8, pts: 1600 }, coins: 4000 });
