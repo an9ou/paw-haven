@@ -17,17 +17,17 @@ Captions rewritten 30 Oct 2026 with the Instagram skills (`ig-caption` linter, `
 ```
 save this one: 7 foods dogs can't eat, and 3 safe swaps 📌
 
-never for dogs: grapes and raisins, chocolate, xylitol (it's in a lot of sugar-free gum), onion, garlic and macadamia nuts.
+never for dogs 🚫 grapes and raisins 🍇, chocolate 🍫, xylitol (it's in a lot of sugar-free gum), onion 🧅, garlic 🧄 and macadamia nuts.
 
-dog safe treats to give instead? blueberries, carrots and plain pumpkin.
+dog safe treats to give instead? blueberries 🫐, carrots 🥕 and plain pumpkin 🎃 ✅
 
-ate something it shouldn't? call your vet right away. don't wait for signs.
+ate something it shouldn't? call your vet right away 🩺 don't wait for signs.
 
-in Doodle Doggo, our free cozy dog game, you can't cook or feed anything toxic. every recipe comes with a two-sentence safety lesson.
+in Doodle Doggo, our free cozy dog game, you can't cook or feed anything toxic 🍳 every recipe comes with a two-sentence safety lesson 🐶
 
 #DoodleDoggo #DogSafety #DogTips #DogHealth #CozyGames
 ```
-Job A · one ask: save · 5 hashtags · search: "foods dogs can't eat" in line 1, "dog safe treats", "cozy dog game" in the body · no link · linter READY · human score 80 PASS. Every food fact matches the game's `people_food` text.
+Job A · one ask: save · 5 hashtags · search: "foods dogs can't eat" in line 1, "dog safe treats", "cozy dog game" in the body · no link · linter READY · 13 emoji (2.4 per 100 characters) · human score 81 PASS. Every food fact matches the game's `people_food` text.
 
 ## YouTube Shorts
 

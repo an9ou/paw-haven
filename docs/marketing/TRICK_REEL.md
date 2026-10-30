@@ -21,17 +21,17 @@ A sticker names each costume. The ending page: Noodle and Butter (still a dinosa
 Captions rewritten 30 Oct 2026 with the Instagram skills (`ig-caption` linter, `ig-human` detector); the reasons are in `REEL_REVIEW_TRICK_SAFE.md`.
 
 ```
-what dog costume is yours wearing this year? comment below. we know the Dinosaur Hood is taken 🦖
+what dog costume is yours wearing this year? 🎃 comment below. we know the Dinosaur Hood is taken 🦖
 
-Noodle knocked on 4 doors. 3 dogs in new Halloween costumes handed out dog-safe treats. door 4 had other plans.
+Noodle knocked on 4 doors 🧙 3 dogs in new Halloween costumes handed out dog-safe treats 🦴🥕🍪 door 4 had other plans 👀
 
-the Halloween Market's open in Doodle Doggo until 15 Nov, and you'll find 10 new dog costumes there, like the Scarecrow Overalls, Skeleton Suit, Mummy Wraps and Dinosaur Hood, plus the Pumpkin Cottage and the Friendly Haunted Kennel.
+the Halloween Market's open in Doodle Doggo until 15 Nov 👻 and you'll find 10 new dog costumes there, like the Scarecrow Overalls 🌾, Skeleton Suit 💀, Mummy Wraps and Dinosaur Hood, plus the Pumpkin Cottage and the Friendly Haunted Kennel 🏚️
 
-it's our free cozy dog game, and you play it right in your browser. no ads, and nothing bad ever happens.
+it's our free cozy dog game 🖍️ and you play it right in your browser. no ads, and nothing bad ever happens 🐶
 
 #DoodleDoggo #DogCostume #Halloween #CozyGames #IndieGame
 ```
-Job A (the Reel carries the hook) · one ask: comment · 5 hashtags · search: "dog costume" in line 1, "Halloween", "cozy dog game" in the body · no link (it is in the bio) · linter READY · human score 89 PASS.
+Job A (the Reel carries the hook) · one ask: comment · 5 hashtags · search: "dog costume" in line 1, "Halloween", "cozy dog game" in the body · no link (it is in the bio) · linter READY · 15 emoji (2.4 per 100 characters) · human score 89 PASS.
 
 ## YouTube Shorts
 
