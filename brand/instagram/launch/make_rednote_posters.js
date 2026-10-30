@@ -23,7 +23,8 @@ module.exports = async function ({ render, helpers: h }) {
   const art = (s, x, y, w, hh) => { const vb = /viewBox="([^"]+)"/.exec(s)[1]; return `<svg x="${x}" y="${y}" width="${w}" height="${hh || w}" viewBox="${vb}" overflow="visible">${inner(s)}</svg>`; };
   const item = (name, x, y, w) => art(PA.item(name), x, y, w);
   // a round sticker with a few short lines, centred
-  const sticker = (cx, cy, r, col, lines, size, rot) => `<g transform="rotate(${rot} ${cx} ${cy})"><circle cx="${cx}" cy="${cy}" r="${r}" fill="${col}" stroke="${INK}" stroke-width="5"/>${lines.map((s, i) => zh(s, cx, f1(cy + size * 0.36 + (i - (lines.length - 1) / 2) * size * 1.18), size, { fill: '#FFF8EC' })).join('')}</g>`;
+  // pale fill, a coloured ring and dark ink words (owner, 30 Oct 2026: white words on colour were too big and hard to read)
+  const sticker = (cx, cy, r, fill, ring, lines, size, rot) => `<g transform="rotate(${rot} ${cx} ${cy})"><circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" stroke="${INK}" stroke-width="5"/><circle cx="${cx}" cy="${cy}" r="${r - 12}" fill="none" stroke="${ring}" stroke-width="6" stroke-dasharray="14 10"/>${lines.map((s, i) => zh(s, cx, f1(cy + size * 0.36 + (i - (lines.length - 1) / 2) * size * 1.25), size)).join('')}</g>`;
   const footer = (line) => zh(line, 540, 1326, 46) + zh('搜索 Doodle Doggo 就能玩', 540, 1384, 44, { fill: ORANGE })
     + doodle('paw', 96, 1350, 1.2, -15) + doodle('bone', 984, 1352, 1.2, 18);
 
@@ -37,7 +38,7 @@ module.exports = async function ({ render, helpers: h }) {
   const COSTUMES = [['corgi', 'Scarecrow Overalls', 'scarecrow_overalls'], ['husky', 'Skeleton Suit', 'skeleton_suit'], ['pug', 'Mummy Wraps', 'mummy_wraps'], ['lab', 'Dinosaur Hood', 'dinosaur_hood']];
   const trick = paper(W, H) + frame(W, H, 52)
     + wordmark(450, 150, 90) + doodle('bat', 140, 100, 1.4, -10) + doodle('spark', 760, 90, 1)
-    + sticker(905, 175, 112, ORANGE, [t('fm.m_halloween'), '开到', '11月15日'], 36, 8)
+    + sticker(905, 172, 104, '#FFE3A1', ORANGE, [t('fm.m_halloween'), '开到11月15日'], 25, 8)
     + zh('第4扇门，', 540, 380, 112, { rot: -1.5 }) + zh('零食全没了', 540, 505, 124, { rot: -1.5 })
     + zh('不给糖就捣蛋，蜡笔版', 540, 582, 46, { fill: MUTED, w: 400 })
     // the punchline: Butter says WOOF, Noodle runs, the treats stay in the bucket
@@ -64,7 +65,7 @@ module.exports = async function ({ render, helpers: h }) {
   const row = (name, label, x, y, size) => item(name, x, y - 46, 84) + zh(label, x + 100, y + 14, size, { anchor: 'start', w: 600 });
   const safe = paper(W, H) + frame(W, H, 71)
     + wordmark(450, 150, 90) + doodle('heart', 140, 96, 1.1, -12) + doodle('spark', 760, 90, 1)
-    + sticker(905, 175, 112, PINK, ['先收藏！', '给狗狗', '备用'], 40, -8)
+    + sticker(905, 172, 104, '#FCE1E7', PINK, ['先收藏！', '给狗狗备用'], 28, -8)
     + zh('狗狗不能吃的', 540, 360, 104, { rot: -1.5 }) + zh(`<tspan fill="${RED}">7</tspan>种食物`, 540, 488, 130, { rot: -1.5 })
     + zh('每一条都是游戏里的狗狗安全小知识', 540, 556, 42, { fill: MUTED, w: 400 })
     // never for dogs: two columns

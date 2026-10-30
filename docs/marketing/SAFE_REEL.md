@@ -58,7 +58,7 @@ stop sharing these 3 snacks with your dog 🍇🍫 grapes, chocolate and sugar-f
 
 ## RedNote / 小红书 (Simplified Chinese, no link)
 
-Post `doodle-doggo-is-this-safe-rednote.mp4` with `safe-cover-rednote.jpg`. Poster (3:4, 1080 x 1440): `brand/rednote/rednote-03-safe.jpg`, the video note's cover in RedNote's 3:4 feed, or an image note with the same text (`make_rednote_posters.js`). On the video: "这个，/ 狗狗能吃吗？" (is this OK for dogs to eat?), the game's own names, lessons and swaps, "狗狗不能吃" (not for dogs), "换成这个" (swap for this), and the page "收藏起来，给狗狗备用" (save this for your dog) with "不小心吃了？马上联系兽医。" (ate something by accident? call a vet right away).
+Post `doodle-doggo-is-this-safe-rednote.mp4` with `safe-cover-rednote.jpg`. Reel cover for RedNote (owner, 30 Oct 2026; 3:4, 1080 x 1440): `brand/rednote/rednote-03-safe.jpg`. Upload it as the video's custom cover, so the 3:4 feed shows the whole thing (`make_rednote_posters.js`). On the video: "这个，/ 狗狗能吃吗？" (is this OK for dogs to eat?), the game's own names, lessons and swaps, "狗狗不能吃" (not for dogs), "换成这个" (swap for this), and the page "收藏起来，给狗狗备用" (save this for your dog) with "不小心吃了？马上联系兽医。" (ate something by accident? call a vet right away).
 
 标题 (title, 16 characters; 20 max):
 ```
