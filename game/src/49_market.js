@@ -206,11 +206,15 @@ function fmSheet(cat) {
   p.querySelectorAll('[data-fmbuy]').forEach((b) => { b.onclick = () => { const it = items.find((x) => x.n === b.dataset.fmbuy); if (!it) return; if (b.getAttribute('aria-disabled') === 'true') { nope(tt('fm.locked', '{item} opens at Bond {bond}.', { item: it.name, bond: it.bond })); return; } fmBuy(p, it); }; });
   return p;
 }
+// still on sale now? A sheet left open over a market hand-over (15 to 16 Nov, 26 to 27 Dec Japan date) holds items no longer sold
+const fmOnSale = (it) => fmItems(it.cat).some((x) => x.n === it.n);
+function fmGone() { toast(tt('fm.packed', 'The market has packed up and left. Everything you got there is still yours.')); if (!modal.hidden && $('#modal .panel.fm-pop')) fmSheet(); }
 async function fmBuy(p, it) {
-  if (!it || !fmSync()) return; SFX.click();
+  if (!it || !fmSync()) return; if (!fmOnSale(it)) { fmGone(); return; } SFX.click();
   const stack = it.kind === 'food', owned = fmOwned(it), art0 = it.kind === 'houses' ? art('house', it.n) : it.kind === 'decor' ? hmDecorArt(it.n) : (typeof hwItemArt === 'function' ? hwItemArt(it.n) : art('item', it.n));
   const q = await buyWindow(p, { art: art0, name: it.name, desc: it.desc, price: it.price, stack, owned, have: stack ? (S.inv.food[it.n] || 0) : owned ? 1 : 0, haveLabel: stack ? tt('fm.in_bag_l', 'In bag') : tt('fm.owned', 'Owned') });
   if (!q || !fmSync() || (!stack && fmOwned(it))) return;
+  if (!fmOnSale(it)) { fmGone(); return; }
   const cost = it.price * q; if (S.coins < cost) { nope(tt('fm.poor', 'Not enough coins. Walks pay well, and the market is open until the sign says.')); return; }
   S.coins -= cost; SFX.kaching(); trackAct('buy', { name: it.n, cat: it.kind === 'food' ? 'food' : it.kind, qty: q, shop: 'market' });
   if (stack) S.inv.food[it.n] = (S.inv.food[it.n] || 0) + q;

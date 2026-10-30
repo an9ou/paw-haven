@@ -95,4 +95,25 @@ run('wm_review', async (t) => {
     ok(!bad.length, 'none lands on the dog house or on another thing already out (the Candy-Cane Lights move off the String Lights): ' + bad.join(', '));
   }
   await t.ctx.close();
+
+  sec('5. a market hand-over (26 to 27 Dec): an open sheet cannot buy an item no longer on sale');
+  await t.newGame({ prefs: Object.assign({}, PREFS, { fmDate: '2026-12-26' }), ground: true }, { bond: { level: 8, pts: 1600 }, coins: 4000 });
+  await t.until(() => !!(window.__paw && window.__paw.fm), null, 8000);
+  {
+    await ev(() => { const P = window.__paw; P.fm.sync(); P.S.place = 'fmarket'; P.go('yard'); }); await t.calm();
+    await ev(() => window.__paw.fm.sheet('decor')); await t.p.waitForSelector('#modal .fm-card[data-n="Yard Snowman"]');
+    const c0 = (await t.S()).coins;
+    await ev(() => { window.__paw.fm.date('2026-12-27'); document.getElementById('toasts').innerHTML = ''; }); // the New Year Market takes over; the sheet is still open
+    await ev(() => document.querySelector('#modal .fm-card[data-n="Yard Snowman"] [data-fmbuy]').click());
+    ok(await t.waitToast(/packed up/), 'the stale button: the "packed up" toast');
+    ok(!(await t.S()).decor['Yard Snowman'] && (await t.S()).coins === c0, 'nothing bought, no coins taken');
+    ok(await t.until(() => !document.querySelector('#modal .fm-card[data-n="Yard Snowman"]') && !!document.querySelector('#modal .fm-card[data-n="Kadomatsu Pair"]'), null, 3000), 'the sheet shows the New Year Market now');
+    // the buy window open across the hand-over
+    await t.closeX(); await t.modalGone(); await ev(() => window.__paw.fm.date('2026-12-26'));
+    await ev(() => window.__paw.fm.sheet('decor')); await t.p.waitForSelector('#modal .fm-card[data-n="Star Lantern"]');
+    await ev(() => document.querySelector('#modal .fm-card[data-n="Star Lantern"] [data-fmbuy]').click()); await t.p.waitForSelector('.buybox .bb-yes');
+    await ev(() => window.__paw.fm.date('2026-12-27')); await ev(() => document.querySelector('.buybox .bb-yes').click());
+    ok(await t.waitToast(/packed up/) && !(await t.S()).decor['Star Lantern'] && (await t.S()).coins === c0, 'confirmed after the hand-over: the toast, nothing bought');
+  }
+  await t.ctx.close();
 }, { prefs: {} });
