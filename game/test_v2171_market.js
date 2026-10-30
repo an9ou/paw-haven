@@ -193,6 +193,8 @@ run('v2171_market', async (t) => {
     ok(W.stalls === 'clothes,decor,homes,toys,treats', 'five winter stall buttons (the three stalls, the homes stand, the treats cart): ' + W.stalls);
     ok(W.boards === 'Clothes,Decor,Homes,Toys,Treats' && /Winter Market · open until 26 Dec/.test(W.sign), 'each has its board with its name, and the sign: ' + W.boards);
     ok(W.svg.length > 20000 && !W.svg.includes('pa-wb-glow'), 'the real winter drawings in the scene, nothing glows by day');
+    const cov = await ev(() => { const d = document.querySelector('#dogPos').getBoundingClientRect(), hit = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom; return [...document.querySelectorAll('#sceneG .fm-stall-sign')].filter((x) => hit(d, x.getBoundingClientRect())).map((x) => x.textContent); });
+    ok(cov.length === 0, 'the dog stands in the open snow in front, clear of every stall board (37_roam.js RM_LEAD): ' + cov.join());
     for (const c of ['decor', 'clothes', 'homes', 'toys', 'treats']) {
       await ev((c) => document.querySelector(`#sceneG [data-fmstall="${c}"]`).dispatchEvent(new MouseEvent('click', { bubbles: true })), c);
       ok(await t.until((c) => { const b = document.querySelector(`#modal .fm-pop [data-fmtab="${c}"]`); return !!b && b.getAttribute('aria-selected') === 'true' && document.querySelectorAll('#modal .fm-grid .fm-card').length >= 3; }, c, 4000), `the ${c} stall opens the ${c} tab`);

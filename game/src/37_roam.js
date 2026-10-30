@@ -45,7 +45,10 @@ const rmOver = (a, b) => Math.max(0, Math.min(a[0] + a[2], b[0] + b[2]) - Math.m
 /* ---------------- no-go boxes (section 5.2) ---------------- */
 // before the scene exists: the bowl and the dog house. Once it is up, rmScan reads every tappable thing from the live DOM.
 // scenery a dog must not stand in (feet only; its tap rect may cover it): the Town Square fountain basin
-const RM_SCENERY = { square: [[20, 400, 222, 92, 'scene']] };
+// Winter Market fixes: the Festive Market's stall boards (PawArt.FM_STALL_SIGNS: [x, y, w], board y to y + 28) are no-go, so no dog's body hides a stall's name
+const RM_SCENERY = { square: [[20, 400, 222, 92, 'scene']], fmarket: [[117, 386, 96, 28, 'board'], [452, 386, 96, 28, 'board'], [787, 386, 96, 28, 'board'], [300, 428, 70, 28, 'board'], [632, 428, 70, 28, 'board']] };
+// the leader's spot on entering a place (default the v2.9 spot, feet at 430, 500); the Festive Market: the open snow in front, between the homes stand and the treats cart
+const RM_LEAD = { fmarket: [500, 586] };
 const GR_SCENERY = { square: [[20, 428, 184, 64, 'scene']] }; // v2.15: a grOn square's fountain rim (the deep floor's fountain stands further back)
 const rmScenery = (place) => (grOn(place) && GR_SCENERY[place]) || RM_SCENERY[place] || [];
 function rmStaticNo(place) { const l = (grOn(place) ? [] : [[205, 462, 90, 90, 'bowl']]).concat(rmScenery(place)); if (place === 'yard' && !grOn(place)) l.push([620, 330, 240, 200, 'house']); if (grOn(place)) grNo(place).forEach((b) => l.push(b)); return l; }
@@ -177,7 +180,7 @@ function rmSeed() {
   ds.forEach((d) => {
     const r = rmSt(d); if (r.seeded) return; r.seeded = true; r.tw = null; r.q = null;
     if (d === D() && grOn()) { const h = grHome(); r.x = h[0]; r.y = h[1]; r.face = 'right'; } // v2.15: its v2.9 spot when that is on the floor and free, else the nearest free point
-    else if (d === D() && (!rmWander() || rmOk(d, 430, 500, rmKd(d, 500), false))) { r.x = 430; r.y = 500; r.face = 'right'; } // under the harness the leader keeps its v2.9 spot
+    else if (d === D() && (!rmWander() || rmOk(d, ...(RM_LEAD[S.place] || [430, 500]), rmKd(d, (RM_LEAD[S.place] || [430, 500])[1]), false))) { [r.x, r.y] = RM_LEAD[S.place] || [430, 500]; r.face = 'right'; } // under the harness the leader keeps its v2.9 spot
     else {
       let c = rmCandsAny(d); if (!c.length) c = [[[150, 560], [800, 560], [560, 440]][placed.length % 3]];
       if (grWide() && !isPhone()) { const lx = rmSt(D()).x, nc = c.filter((p) => Math.abs(p[0] - lx) < 400); if (nc.length) c = nc; } // v2.15: a wide place starts the pack round the leader, inside the camera's window
