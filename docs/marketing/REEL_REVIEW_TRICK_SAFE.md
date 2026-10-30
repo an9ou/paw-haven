@@ -4,6 +4,8 @@ Both English Reels checked with the new Instagram skills (`ig-reel` hookscore an
 
 Safe-zone frames (the red areas are covered by Instagram's interface): `review_img/trick_safezone.png` and `review_img/safe_safezone.png`.
 
+**Owner, 30 Oct 2026: ignore the safe zone; our Reels have no problem with it.** The safe-zone findings (Trick 1–3 and 5, Safe 2–4, Covers) are dropped and kept below only for the record.
+
 ## Scorecard
 
 | | Trick or treat | Is this safe? |
@@ -89,7 +91,8 @@ Receipt: Job A · ask: one, save · hashtags 5 · search: "foods dogs can't eat"
 
 ## Recommended order (Halloween is 31 Oct)
 
-1. Trick or treat: apply fixes 1–3 and 5 (positions only), and the hook card if the owner likes it. Re-render and post on the 31st. It's a quick render.
-2. Is this safe?: apply fixes 1–5, re-render (~21 s). It isn't tied to a date, so it can go out after Halloween.
+The safe-zone fixes are off (owner, 30 Oct 2026). What's left:
+1. Trick or treat: post as it is on the 31st, or first apply the hook card ("door 4 cost him every treat") and the shorter doors 1–3 (fix 4) and re-render.
+2. Is this safe?: longer rounds so the lessons can be read (fix 1, ~21 s), and the hook card "stop sharing these 3 snacks" (fix 5). Not tied to a date.
 3. Done: the new captions for every platform are in `TRICK_REEL.md` and `SAFE_REEL.md`.
-4. After approval: the RedNote cuts with the same layout fixes (`REDNOTE=1`).
+4. After approval: the RedNote cuts (`REDNOTE=1`).

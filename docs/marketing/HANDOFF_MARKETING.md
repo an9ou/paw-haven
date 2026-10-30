@@ -12,5 +12,6 @@ Branch `marketing/launch` (main merged at v2.18.3). The owner installed Instagra
    - Instagram captions are English only; RedNote is Simplified Chinese with the game's own zh-Hans names.
    - Background text must not compete with on-screen notes.
    - Halloween Reels use the approved Halloween lo-fi beat (`brand/instagram/launch/spooky_lofi.js`).
+   - Ignore Instagram's safe zone in Reel reviews: our Reels have no problem with it (owner, 30 Oct 2026).
 5. Reel scripts load the game art with an in-between-pose patch (see `build_dance.js`). If the art changes, the anchors throw "art changed: …": update the anchor string.
 6. Ideas not made yet (owner liked the list): pause-to-pick costume, star-sign dogs, pick a door 1/2/3, rainy-day wet dog, Fun Fair speedrun, "other pet games vs Doodle Doggo", dog diary.
