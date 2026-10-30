@@ -91,8 +91,8 @@ Receipt: Job A · ask: one, save · hashtags 5 · search: "foods dogs can't eat"
 
 ## Recommended order (Halloween is 31 Oct)
 
-The safe-zone fixes are off (owner, 30 Oct 2026). What's left:
-1. Trick or treat: post as it is on the 31st, or first apply the hook card ("door 4 cost him every treat") and the shorter doors 1–3 (fix 4) and re-render.
-2. Is this safe?: longer rounds so the lessons can be read (fix 1, ~21 s), and the hook card "stop sharing these 3 snacks" (fix 5). Not tied to a date.
+The safe-zone fixes are off (owner, 30 Oct 2026). The owner chose (30 Oct 2026):
+1. Trick or treat: the new hook card ("door 4 cost him every treat", the crayon line small underneath) and doors 1–3 1.5x faster. Re-rendered: 10.5 s, the dinosaur at ~6.1 s.
+2. Is this safe?: the hook card "stop sharing these 3 snacks" and 4.4 s on each lesson. Re-rendered: 21.7 s.
 3. Done: the new captions for every platform are in `TRICK_REEL.md` and `SAFE_REEL.md`.
-4. After approval: the RedNote cuts (`REDNOTE=1`).
+4. After the owner approves the English cuts: the RedNote cuts (`REDNOTE=1`).

@@ -3,7 +3,7 @@
 // paw-stop sign and the game's own two-line lesson (people_food.*.why), then the game's own safe swap (people_food.*.swap) arrives and Noodle
 // is delighted. It ends on a "save this" page listing what dogs must never eat and the safe swaps, "ate something? call your vet", and the logo.
 // Every word about food is the game's reviewed text (game/i18n/en.json and zh-Hans.json); the art is the game's (PawArt.scene/item/icon/dog).
-// 15 s, 1080 x 1920, 30 fps, a Halloween lo-fi beat (the game's own music engine in its dark minor mood, ../spooky_lofi.js), a soft bonk on each stop sign, a sparkle and a happy bark on each swap.
+// 21.7 s, 1080 x 1920, 30 fps, a Halloween lo-fi beat (the game's own music engine in its dark minor mood, ../spooky_lofi.js), a soft bonk on each stop sign, a sparkle and a happy bark on each swap.
 //
 //   NODE_PATH=$(npm root -g) node brand/instagram/launch/safe_reel/build_safe.js <workdir>
 //   ONLY=stills renders key frames and the cover only. REDNOTE=1: everything in Simplified Chinese, no game link anywhere.
@@ -14,7 +14,8 @@ const ROOT = path.join(__dirname, '..', '..', '..', '..');
 const WORK = path.resolve(process.argv[2] || 'safe_work'); fs.mkdirSync(path.join(WORK, 'f'), { recursive: true });
 const RN = !!process.env.REDNOTE, SUF = RN ? '-rednote' : '';
 const fam = RN ? "'LXGW WenKai', Caveat" : 'Caveat';
-const R0 = 0.3, ROUND = 3.6, NR = 3, END = R0 + ROUND * NR, T = END + 4.0, FPS = 30, N = Math.round(T * FPS), W = 1080, H = 1920, FEET = 1600;
+// each round: the food and its lesson for 4.4 s, so the game's lesson can be read, then the swap (owner, 30 Oct 2026)
+const R0 = 0.3, BAD = 4.4, ROUND = 5.8, NR = 3, END = R0 + ROUND * NR, T = END + 4.0, FPS = 30, N = Math.round(T * FPS), W = 1080, H = 1920, FEET = 1600;
 
 // ---- the real art, poses gliding between the game's drawings (the same patch as freestyle_reel/build_dance.js, this copy only) ----
 const win = {}, ctx = { window: win, console }; vm.createContext(ctx);
@@ -41,7 +42,7 @@ const ROUNDS = [
 ].map((r) => Object.assign(r, { name: t(`data.people_food.${r.id}.name`), why: t(`data.people_food.${r.id}.why`), swap: t(`data.people_food.${r.id}.swap`) }));
 const TX = RN ? { hook: ['这个，', '狗狗能吃吗？'], hookSize: 96, no: '狗狗不能吃', yes: '换成这个', save: '收藏起来，给狗狗备用', never: '狗狗不能吃', ok: '可以吃',
   vet: '不小心吃了？马上联系兽医。', sub: '在这个游戏里，有毒的食物做不出来，也喂不了', pill: '搜索 Doodle Doggo 就能玩', pillSize: 58, why: 46, perLine: 17 }
-  : { hook: ['is this safe', 'for my dog?'], hookSize: 100, no: 'not for dogs', yes: 'safe swap', save: 'save this for later', never: 'never for dogs', ok: 'safe swaps',
+  : { hook: ['stop sharing', 'these 3 snacks'], hookSize: 100, no: 'not for dogs', yes: 'safe swap', save: 'save this for later', never: 'never for dogs', ok: 'safe swaps',
   vet: 'ate something? call your vet.', sub: 'a free cozy dog game where nothing toxic can be cooked or fed', pill: 'play free at doodledoggo.app', pillSize: 66, why: 54, perLine: 36 };
 // the "save this" page: the game's people-pantry names, two per row where the game pairs them (grapes and raisins, onion and garlic)
 const pf = (id) => t(`data.people_food.${id}.name`), AND = RN ? '和' : ' & ';
@@ -102,7 +103,7 @@ function dog(id, cx, feet, hh, sv, rot, dy){ const b=box(id), s=hh/b[3], w=b[2]*
 const back=(x)=>{ x=Math.max(0,Math.min(1,x)); const c=1.9; return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2); };
 const R=${JSON.stringify(ROUNDS.map((r) => ({ name: r.name, lines: r.lines, swapName: r.swapName, swapLines: r.swapLines })))}, TX=${JSON.stringify(TX)}, FAM=${JSON.stringify(fam)};
 const txt=(s,x,y,size,o)=>{ o=o||{}; return '<text x="'+x+'" y="'+y+'" font-family="'+FAM+'" font-weight="700" font-size="'+size+'" fill="'+(o.fill||'${PEN}')+'" text-anchor="'+(o.a||'middle')+'">'+s+'</text>'; };
-window.mode=function(t){ const i=Math.max(0,Math.min(${NR - 1},Math.floor((t-${R0})/${ROUND}))), lt=t-${R0}-i*${ROUND}; return {i, lt, pose: t<${R0}||lt<0.62?'beg':lt<2.15?'sit':'yay'}; };
+window.mode=function(t){ const i=Math.max(0,Math.min(${NR - 1},Math.floor((t-${R0})/${ROUND}))), lt=t-${R0}-i*${ROUND}; return {i, lt, pose: t<${R0}||lt<0.62?'beg':lt<${BAD}?'sit':'yay'}; };
 window.frame=function(t, D){
   const m=mode(t), i=m.i, lt=m.lt, ending=t>=${END};
   $('end').setAttribute('opacity', ending?Math.min(1,(t-${END})/0.3):0);
@@ -110,14 +111,14 @@ window.frame=function(t, D){
   // Noodle: begs while the food arrives, sits politely at the stop sign, is delighted by the swap
   $('nood').innerHTML = dog(m.pose, m.pose==='yay'?320:300, ${FEET + 30}, m.pose==='yay'?310:450, D.n, m.pose==='beg'?Math.sin(t*7)*2.5:0, m.pose==='yay'?-Math.abs(Math.sin(t*9))*16:0);
   let f=''; if(t>=${R0}){
-    const bad=lt<2.15, pop=bad?back(lt/0.3):back((lt-2.15)/0.3), out=bad&&lt>1.95?Math.min(1,(lt-1.95)/0.2):0, sz=300*pop;
+    const bad=lt<${BAD}, pop=bad?back(lt/0.3):back((lt-${BAD})/0.3), out=bad&&lt>${BAD - 0.2}?Math.min(1,(lt-${BAD - 0.2})/0.2):0, sz=300*pop;
     f+='<g opacity="'+(1-out)+'"><use href="#'+(bad?'bad':'good')+i+'" x="'+(770-sz/2)+'" y="'+(${FEET - 30}-sz)+'" width="'+sz+'" height="'+sz+'"/></g>';
     if(bad && lt>=0.6){ const st=back((lt-0.6)/0.25), s2=230*(2.2-1.2*st); f+='<g opacity="'+(1-out)+'" transform="rotate('+(-12*st)+' 860 ${FEET - 260})"><use href="#stop" x="'+(860-s2/2)+'" y="'+(${FEET - 260}-s2/2)+'" width="'+s2+'" height="'+s2+'"/></g>'; }
-    if(!bad){ const c=back((lt-2.3)/0.25); if(c>0) f+='<g transform="translate(905 ${FEET - 300}) scale('+c+')"><circle r="62" fill="${GREEN}" stroke="${PEN}" stroke-width="6"/><path d="M-28 2 L-8 24 L30 -22" fill="none" stroke="#fff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/></g>'; }
+    if(!bad){ const c=back((lt-${BAD + 0.15})/0.25); if(c>0) f+='<g transform="translate(905 ${FEET - 300}) scale('+c+')"><circle r="62" fill="${GREEN}" stroke="${PEN}" stroke-width="6"/><path d="M-28 2 L-8 24 L30 -22" fill="none" stroke="#fff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/></g>'; }
   }
   $('food').innerHTML=f;
   // the card: the food's name, the game's lesson, then the game's swap
-  let c=''; if(t>=${R0}+0.15 && !ending){ const bad=lt<2.15, r=R[i], ls=bad?r.lines:r.swapLines, h=150+ls.length*(TX.why+16), o=Math.min(1,((bad?lt:lt-2.15)-0.1)/0.2);
+  let c=''; if(t>=${R0}+0.15 && !ending){ const bad=lt<${BAD}, r=R[i], ls=bad?r.lines:r.swapLines, h=150+ls.length*(TX.why+16), o=Math.min(1,((bad?lt:lt-${BAD})-0.1)/0.2);
     c='<g opacity="'+Math.max(0,o)+'" transform="rotate(-1 540 700)"><rect x="70" y="500" width="940" height="'+h+'" rx="34" fill="#FFFDF7" stroke="'+(bad?'${RED}':'${GREEN}')+'" stroke-width="7"/>'
       +txt(bad?r.name:r.swapName, 110, 584, ${RN ? 62 : 72}, {a:'start'})+txt(bad?TX.no:TX.yes, 970, 580, ${RN ? 42 : 48}, {a:'end', fill: bad?'${RED}':'${GREEN}'})
       +ls.map((l,j)=>txt(l, 110, 664+j*(TX.why+16), TX.why, {a:'start'})).join('')+'</g>'; }
@@ -127,13 +128,13 @@ window.frame=function(t, D){
 </script>`;
 
 const drawFor = (t) => { const i = Math.max(0, Math.min(NR - 1, Math.floor((t - R0) / ROUND))), lt = t - R0 - i * ROUND;
-  const id = t >= END ? 'yay' : t < R0 || lt < 0.62 ? 'beg' : lt < 2.15 ? 'sit' : 'yay'; return { n: dogSvg(id, t * 1.8) }; };
+  const id = t >= END ? 'yay' : t < R0 || lt < 0.62 ? 'beg' : lt < BAD ? 'sit' : 'yay'; return { n: dogSvg(id, t * 1.8) }; };
 (async () => {
   const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
   const p = await b.newPage({ viewport: { width: W, height: H } });
   fs.writeFileSync(path.join(WORK, 'page.html'), html); await p.goto('file://' + path.join(WORK, 'page.html')); await p.waitForLoadState('networkidle'); await p.evaluate(() => document.fonts.ready);
   const still = process.env.ONLY === 'stills';
-  const list = still ? [0.2, 0.5, 1.2, 2.0, 2.8, 4.8, 6.0, 9.6, 12.5, 14.5].map((s) => Math.round(s * FPS)) : [...Array(N).keys()];
+  const list = still ? [0.2, 0.5, 1.2, 3.0, 4.9, 6.5, 10.9, 15.0, 16.8, 19.5].map((s) => Math.round(s * FPS)) : [...Array(N).keys()];
   for (const f of list) { await p.evaluate(([t, D]) => window.frame(t, D), [f / FPS, drawFor(f / FPS)]); await p.screenshot({ path: path.join(WORK, 'f', `f${String(f).padStart(4, '0')}.png`) }); }
   console.log(list.length, 'frames');
   // the cover: grapes on the plate with the stop sign and the lesson
@@ -144,14 +145,14 @@ const drawFor = (t) => { const i = Math.max(0, Math.min(NR - 1, Math.floor((t - 
   // sound: the Halloween lo-fi beat, a soft bonk on each stop sign, the game's "cooked" sting and a happy puppy bark on each swap, a sparkle on the save page
   const ab = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium', args: ['--autoplay-policy=no-user-gesture-required'] });
   const ap = await ab.newPage(); await ap.goto('about:blank'); await ap.addScriptTag({ content: spookySource(ROOT) });   // the Halloween lo-fi mood (../spooky_lofi.js)
-  const stingers = ROUNDS.map((_, i) => ({ at: R0 + i * ROUND + 2.2, name: 'cooked' })).concat([{ at: END + 0.1, name: 'sparkle' }]);
+  const stingers = ROUNDS.map((_, i) => ({ at: R0 + i * ROUND + BAD + 0.05, name: 'cooked' })).concat([{ at: END + 0.1, name: 'sparkle' }]);
   const wav = await ap.evaluate(async ([s, st]) => (await window.PawAudio._render({ seconds: s, wav: true, vols: { master: 0.9, music: 0.75, ambience: 0 },
     segments: [{ at: 0, ctx: { place: 'spooky', time: 'day', weather: 'sunny' } }], stingers: st })).wav, [T + 0.5, stingers]);
   fs.writeFileSync(path.join(WORK, 'music.wav'), Buffer.from(wav, 'base64'));
   fs.writeFileSync(path.join(WORK, 'yay.wav'), Buffer.from(await ap.evaluate(async () => (await window.PawAudio._renderBarks({ breeds: ['dachs'], kinds: ['play'], age: 'puppy', wav: true, sampleRate: 44100 })).wav), 'base64'));
   await ab.close();
   cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-f', 'lavfi', '-i', "aevalsrc='0.8*sin(2*PI*(220-120*t)*t)*exp(-t*16)':s=44100:d=0.4", path.join(WORK, 'bonk.wav')]);
-  const EV = []; ROUNDS.forEach((_, i) => { EV.push(['bonk', R0 + i * ROUND + 0.62], ['yay', R0 + i * ROUND + 2.3]); });
+  const EV = []; ROUNDS.forEach((_, i) => { EV.push(['bonk', R0 + i * ROUND + 0.62], ['yay', R0 + i * ROUND + BAD + 0.15]); });
   const inputs = [], chains = [];
   EV.forEach(([n, at], i) => { inputs.push('-i', path.join(WORK, n + '.wav')); const d = Math.max(0, Math.round((at - (n === 'yay' ? 0.2 : 0)) * 1000));
     chains.push(`[${i + 2}:a]atrim=0:1.2,${n === 'yay' ? 'highpass=f=280,volume=1.6' : 'volume=1.3'},adelay=${d}|${d}[k${i}]`); });

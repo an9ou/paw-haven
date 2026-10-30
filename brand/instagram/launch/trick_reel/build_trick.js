@@ -1,7 +1,7 @@
 // "Trick or treat, but make it crayon" (owner, 30 Oct 2026): Noodle, in the Little Witch Hat & Cape, knocks on four of the game's kennels
 // around town. A dog in one of the Halloween Market's new costumes opens each door and drops a dog-safe treat in Noodle's pumpkin bucket;
 // the last door is the Rocket Ship, where Butter in the Dinosaur Hood says WOOF and Noodle runs off without the treats. Then the ending page.
-// 13 s, 1080 x 1920, 30 fps, a Halloween lo-fi beat (the game's own music engine in its dark minor mood, ../spooky_lofi.js), knocks, the game's puppy barks.
+// 10.5 s (doors 1-3 1.67 s each, door 4 2.5 s, the ending 3 s), 1080 x 1920, 30 fps, a Halloween lo-fi beat (the game's own music engine in its dark minor mood, ../spooky_lofi.js), knocks, the game's puppy barks.
 // Everything drawn is the game's real art (PawArt.scene / house / dog / prop); the poses glide between the game's drawings for every frame
 // (the same in-between patch as freestyle_reel/build_dance.js, in this script's copy of the art only; no game file changes).
 //
@@ -15,7 +15,8 @@ const ROOT = path.join(__dirname, '..', '..', '..', '..');
 const WORK = path.resolve(process.argv[2] || 'trick_work'); fs.mkdirSync(path.join(WORK, 'f'), { recursive: true });
 const RN = !!process.env.REDNOTE, SUF = RN ? '-rednote' : '';
 const fam = RN ? "'LXGW WenKai', Caveat" : 'Caveat';
-const SHOT = 2.5, NS = 4, END = SHOT * NS, T = END + 3.0, FPS = 30, N = Math.round(T * FPS), W = 1080, H = 1920, FEET = 1640;
+// doors 1-3 play their story 1.5x faster so the dinosaur arrives at about 6 s (owner, 30 Oct 2026); door 4 plays at full speed
+const SHOT = 2.5, NS = 4, K = [1.5, 1.5, 1.5, 1], STARTS = K.reduce((a, k, i) => (a.push(i ? a[i - 1] + SHOT / K[i - 1] : 0), a), []), END = STARTS[NS - 1] + SHOT, T = END + 3.0, FPS = 30, N = Math.round(T * FPS), W = 1080, H = 1920, FEET = 1640;
 const TEMPO = 1;   // the Halloween lo-fi plays at its own 80 bpm (owner, 30 Oct 2026)
 
 // ---- the real art, with the dance marks and ground shadows off and in-between poses on (as in build_dance.js) ----
@@ -34,9 +35,9 @@ vm.runInContext(src, ctx);
 const PA = win.PawArt, inner = (s) => s.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
 
 // ---- the words (RedNote: the game's own zh-Hans names) ----
-const TX = RN ? { hook: ['不给糖就捣蛋，', '蜡笔版'], hookSize: 92, knock: '咚咚咚', ask: '不给糖就捣蛋！', askSize: 54, newc: '万圣节新服装', run: '……零食不要了',
+const TX = RN ? { hook: ['第4扇门，', '零食全没了'], hookSize: 92, hookSub: '不给糖就捣蛋，蜡笔版', knock: '咚咚咚', ask: '不给糖就捣蛋！', askSize: 54, newc: '万圣节新服装', run: '……零食不要了',
   sub: '一款免费的温馨狗狗游戏', pill: '搜索 Doodle Doggo 就能玩', pillSize: 58, market: '万圣节市集开到11月15日', line: '不给糖就捣蛋？要糖。永远要糖。', lineSize: 50, labelSize: 52 }
-  : { hook: ['trick or treat,', 'but make it crayon'], hookSize: 96, knock: 'knock knock', ask: 'trick or treat!', askSize: 62, newc: 'new Halloween costume', run: '...he left the treats.',
+  : { hook: ['door 4 cost him', 'every treat'], hookSize: 96, hookSub: 'trick or treat, but make it crayon', knock: 'knock knock', ask: 'trick or treat!', askSize: 62, newc: 'new Halloween costume', run: '...he left the treats.',
   sub: 'a free cozy dog game', pill: 'play free at doodledoggo.app', pillSize: 66, market: 'the Halloween Market is open until 15 Nov', line: 'trick or treat? treat. always treat.', lineSize: 58, labelSize: 60 };
 // the four doors: a place, a kennel, the dog who answers in a new Halloween Market costume, and a dog-safe treat (the last door has none)
 const ZH = { 'Scarecrow Overalls': '稻草人背带裤', 'Skeleton Suit': '骷髅服', 'Mummy Wraps': '木乃伊绷带', 'Dinosaur Hood': '恐龙帽兜' };
@@ -79,8 +80,8 @@ const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.goo
 <g id="host"></g><g id="nood"></g><g id="bucket"></g><g id="treat"></g>
 <use href="#jack" x="960" y="${FEET + 60}" width="140" height="140"/><use href="#jack" x="-40" y="${FEET + 120}" width="130" height="130"/>
 <g id="knock"></g><g id="say"></g><g id="label"></g>
-<g id="hook" opacity="0"><g transform="rotate(-2 540 300)"><rect x="110" y="170" width="860" height="270" rx="36" fill="#FFF8EC" stroke="${PEN}" stroke-width="6"/>
-${T_(TX.hook[0], 540, 282, TX.hookSize)}${T_(TX.hook[1], 540, 392, TX.hookSize)}</g><use href="#jack" x="880" y="130" width="130" height="130"/></g>
+<g id="hook" opacity="0"><g transform="rotate(-2 540 300)"><rect x="110" y="170" width="860" height="330" rx="36" fill="#FFF8EC" stroke="${PEN}" stroke-width="6"/>
+${T_(TX.hook[0], 540, 282, TX.hookSize)}${T_(TX.hook[1], 540, 392, TX.hookSize)}${T_(TX.hookSub, 540, 465, RN ? 46 : 52, { w: 600, fill: '#8A7468' })}</g><use href="#jack" x="880" y="130" width="130" height="130"/></g>
 <g id="end" opacity="0"><rect width="${W}" height="${H}" fill="#FFF8EC" opacity=".95"/>
 <path d="M200 560 Q540 530 880 560 L872 612 Q540 586 208 612Z" fill="#F28FA5" opacity=".45"/>
 ${T_('Doodle', 355, 575, 160, { f: 'Caveat', rot: -3 })}${T_('Doggo', 755, 583, 160, { f: 'Caveat', rot: 2 })}
@@ -102,7 +103,7 @@ const ease=(x)=>x<0?0:x>1?1:1-Math.pow(1-x,3), back=(x)=>{ x=Math.max(0,Math.min
 const TX=${JSON.stringify(TX)}, DOORS=${JSON.stringify(DOORS.map((d) => ({ treat: d.treat, label: RN ? ZH[d.costume] : d.costume })))}, FAM=${JSON.stringify(fam)};
 const txt=(s,x,y,size,o)=>{ o=o||{}; return '<text x="'+x+'" y="'+y+'" font-family="'+(o.f||FAM)+'" font-weight="700" font-size="'+size+'" fill="'+(o.fill||'${PEN}')+'" text-anchor="'+(o.a||'middle')+'"'+(o.rot?' transform="rotate('+o.rot+' '+x+' '+y+')"':'')+'>'+s+'</text>'; };
 window.frame=function(t, D){
-  const i=Math.min(${NS - 1},Math.floor(t/${SHOT})), lt=t-i*${SHOT}, last=i===${NS - 1}, ending=t>=${END};
+  const ST=${JSON.stringify(STARTS)}, KK=${JSON.stringify(K)}; let i=0; while(i<${NS - 1}&&t>=ST[i+1]) i++; const lt=(t-ST[i])*KK[i], last=i===${NS - 1}, ending=t>=${END};
   $('bg').setAttribute('href','#sc'+i); $('hs').setAttribute('href','#hs'+i);
   // the knocks: two raps at 0.8 s and 0.98 s, the kennel jolts a little each time
   const rap=Math.max(lt>=0.8?Math.exp(-(lt-0.8)*14):0, lt>=0.98?Math.exp(-(lt-0.98)*14):0);
@@ -142,7 +143,7 @@ window.frame=function(t, D){
 </script>`;
 
 // the drawings for one video frame: every pose moves on continuously, so each of the 30 frames a second is its own in-between
-const drawFor = (t) => { const i = Math.min(NS - 1, Math.floor(t / SHOT)), lt = t - i * SHOT, last = i === NS - 1;
+const drawFor = (t) => { let i = 0; while (i < NS - 1 && t >= STARTS[i + 1]) i++; const lt = (t - STARTS[i]) * K[i], last = i === NS - 1;
   const n = lt < 0.7 ? dogSvg('nwalk', lt * 7) : last && lt >= 1.35 ? dogSvg('nrun', (lt - 1.35) * 4) : dogSvg('nbeg', lt * 1.6);
   return { n, h: lt >= 1.1 ? dogSvg('h' + i, lt * 2) : '', en: t >= END ? dogSvg('en', t * 2) : '', eb: t >= END ? dogSvg('eb', t * 2 + 1) : '' }; };
 (async () => {
@@ -150,11 +151,11 @@ const drawFor = (t) => { const i = Math.min(NS - 1, Math.floor(t / SHOT)), lt = 
   const p = await b.newPage({ viewport: { width: W, height: H } });
   fs.writeFileSync(path.join(WORK, 'page.html'), html); await p.goto('file://' + path.join(WORK, 'page.html')); await p.waitForLoadState('networkidle'); await p.evaluate(() => document.fonts.ready);
   const still = process.env.ONLY === 'stills';
-  const list = still ? [0.4, 0.9, 1.3, 1.7, 2.2, 4.3, 6.8, 8.6, 9.0, 9.5, 9.9, 11.5].map((s) => Math.round(s * FPS)) : [...Array(N).keys()];
+  const list = still ? [0.3, 0.6, 0.9, 1.2, 2.5, 4.2, 5.2, 6.1, 6.4, 6.9, 7.3, 8.8].map((s) => Math.round(s * FPS)) : [...Array(N).keys()];
   for (const f of list) { await p.evaluate(([t, D]) => window.frame(t, D), [f / FPS, drawFor(f / FPS)]); await p.screenshot({ path: path.join(WORK, 'f', `f${String(f).padStart(4, '0')}.png`) }); }
   console.log(list.length, 'frames');
   // the cover: the first door just after it opens (hook on top, the costume sticker at the bottom)
-  await p.evaluate(([t, D]) => window.frame(t, D), [1.75, drawFor(1.75)]); await p.screenshot({ path: path.join(WORK, `trick-cover${SUF}.png`) }); await b.close();
+  await p.evaluate(([t, D]) => window.frame(t, D), [1.75 / K[0], drawFor(1.75 / K[0])]); await p.screenshot({ path: path.join(WORK, `trick-cover${SUF}.png`) }); await b.close();
   cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-i', path.join(WORK, `trick-cover${SUF}.png`), '-q:v', '2', path.join(WORK, `trick-cover${SUF}.jpg`)]);
   if (still) return;
 
@@ -171,8 +172,8 @@ const drawFor = (t) => { const i = Math.min(NS - 1, Math.floor(t / SHOT)), lt = 
   await ab.close();
   // a knock: a soft wooden thump
   cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-f', 'lavfi', '-i', "aevalsrc='0.9*sin(2*PI*150*t)*exp(-t*38)+0.35*sin(2*PI*330*t)*exp(-t*70)':s=44100:d=0.3", path.join(WORK, 'knock.wav')]);
-  const EV = []; for (let i = 0; i < NS; i++) { EV.push(['knock', i * SHOT + 0.8], ['knock', i * SHOT + 0.98], ['b' + i, i * SHOT + 1.15]); }
-  EV.push(['bn', 3 * SHOT + 1.4], ['bn2', END + 0.1], ['b3', END + 0.45]);
+  const EV = []; for (let i = 0; i < NS; i++) { EV.push(['knock', STARTS[i] + 0.8 / K[i]], ['knock', STARTS[i] + 0.98 / K[i]], ['b' + i, STARTS[i] + 1.15 / K[i]]); }
+  EV.push(['bn', STARTS[3] + 1.4], ['bn2', END + 0.1], ['b3', END + 0.45]);
   const inputs = [], chains = [];
   EV.forEach(([n, at], i) => { inputs.push('-i', path.join(WORK, n + '.wav')); const lead = n === 'knock' ? 0 : 0.2, d = Math.max(0, Math.round((at - lead) * 1000));
     chains.push(`[${i + 2}:a]atrim=0:1.2,${n === 'knock' ? 'volume=1.6' : 'highpass=f=280,volume=1.8'},adelay=${d}|${d}[k${i}]`); });

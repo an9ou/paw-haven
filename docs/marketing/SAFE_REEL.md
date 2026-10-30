@@ -4,12 +4,12 @@ Owner, 30 Oct 2026: idea 10 from the Reel ideas list, made to be saved. Files in
 
 | File | What |
 |---|---|
-| `doodle-doggo-is-this-safe.mp4` | Instagram, Shorts and X. 1080 x 1920, 30 fps, 14.8 s, with a Halloween lo-fi beat (`spooky_lofi.js`, owner 30 Oct 2026). |
+| `doodle-doggo-is-this-safe.mp4` | Instagram, Shorts and X. 1080 x 1920, 30 fps, 21.7 s, with a Halloween lo-fi beat (`spooky_lofi.js`, owner 30 Oct 2026). |
 | `safe-cover.jpg` | The cover: grapes on Noodle's plate with the stop sign and the lesson. |
 | `doodle-doggo-is-this-safe-rednote.mp4`, `safe-cover-rednote.jpg` | RedNote: every word in Simplified Chinese (the game's own zh-Hans text), no game link anywhere. |
 | `build_safe.js` | Remake: `NODE_PATH=$(npm root -g) node brand/instagram/launch/safe_reel/build_safe.js <workdir>` (`REDNOTE=1` for the RedNote cut, `ONLY=stills` for key frames). |
 
-**What is in it:** Noodle begs in the game's kitchen. Grapes, chocolate and sugar-free gum land on his plate one after another; each gets the game's own paw-stop sign and the game's own lesson, then the game's own safe swap arrives (blueberries, Carrot Crunchies, a Pumpkin Pupcake) with a green tick, and Noodle is delighted. It ends on a "save this for later" page: never for dogs (grapes and raisins, chocolate, sugar-free gum with xylitol, onion and garlic, macadamia nuts), safe swaps (blueberries, carrot, pumpkin), "ate something? call your vet.", and the logo with "a free cozy dog game where nothing toxic can be cooked or fed". **Every food fact on screen is the game's own reviewed text** (`people_food.*` in `game/i18n/en.json` and `zh-Hans.json`), so the Reel says exactly what the game teaches.
+**What is in it:** The hook card: "stop sharing these 3 snacks" (owner, 30 Oct 2026, after the skill review: "is this safe for my dog?" scored 34; the RedNote cut keeps its question hook). Each round now holds the food and its lesson for 4.4 s so the lesson can be read. Noodle begs in the game's kitchen. Grapes, chocolate and sugar-free gum land on his plate one after another; each gets the game's own paw-stop sign and the game's own lesson, then the game's own safe swap arrives (blueberries, Carrot Crunchies, a Pumpkin Pupcake) with a green tick, and Noodle is delighted. It ends on a "save this for later" page: never for dogs (grapes and raisins, chocolate, sugar-free gum with xylitol, onion and garlic, macadamia nuts), safe swaps (blueberries, carrot, pumpkin), "ate something? call your vet.", and the logo with "a free cozy dog game where nothing toxic can be cooked or fed". **Every food fact on screen is the game's own reviewed text** (`people_food.*` in `game/i18n/en.json` and `zh-Hans.json`), so the Reel says exactly what the game teaches.
 
 ## Instagram
 Captions rewritten 30 Oct 2026 with the Instagram skills (`ig-caption` linter, `ig-human` detector); the reasons are in `REEL_REVIEW_TRICK_SAFE.md`.
