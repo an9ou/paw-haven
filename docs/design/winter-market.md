@@ -42,3 +42,11 @@ The New Year Market (27 Dec to 7 Jan) is a separate small set later.
 - [ ] 5. Treats
 - [ ] 6. Market scene
 - [ ] Translations, checks, reviews, release
+
+## To fix before the release (found on the way)
+
+- `check_identical` against `origin/v215-base` now differs on every render (older dog outline redraws since v215-base, before this set);
+  the base or the check needs updating (compare against the last release instead).
+- `v28_winter` fails "wstall matches a stall food buy only" on `main` too (a missions check, older than this set).
+- The Halloween market toys still show their base toys' hints ("Click the duck", "Drag the Plush Bone"); give them their own like the winter toys.
+- The Soft Spider Plush promises +10% nap Energy, but only the Plush Bone gives it: make the text or the bonus agree.
