@@ -57,7 +57,7 @@ The Reel carries the hook, so the caption shouldn't repeat it (ig-caption "Job A
 
 Shorts and X are fine as they are: links work there. On the Shorts titles, the stronger hooks above would help ("My dog knocked on 4 doors. Door 4 cost him every treat 🎃 #Shorts", "Stop sharing these 3 snacks with your dog 🍇🍫 #Shorts"). The RedNote texts are unaffected (the 5-tag cap is Instagram only; no link, as required).
 
-### Proposed Instagram caption: Trick or treat
+### Instagram caption: Trick or treat (now in `TRICK_REEL.md`)
 ```
 what dog costume is yours wearing this year? comment below. we know the Dinosaur Hood is taken 🦖
 
@@ -71,25 +71,25 @@ it's our free cozy dog game, and you play it right in your browser. no ads, and 
 ```
 Receipt: Job A · ask: one, comment · hashtags 5 · search: "dog costume" in line 1, "Halloween" and "cozy dog game" in the body · linter READY · human score 75.
 
-### Proposed Instagram caption: Is this safe?
+### Instagram caption: Is this safe? (now in `SAFE_REEL.md`)
 ```
-save this before Halloween: 7 foods dogs can't eat, and 3 safe swaps 📌
+save this one: 7 foods dogs can't eat, and 3 safe swaps 📌
 
 never for dogs: grapes and raisins, chocolate, xylitol (it's in a lot of sugar-free gum), onion, garlic and macadamia nuts.
 
-dog safe treats to give instead? Blueberries, carrots and plain pumpkin.
+dog safe treats to give instead? blueberries, carrots and plain pumpkin.
 
-ate something it shouldn't? Call your vet right away. Don't wait for signs.
+ate something it shouldn't? call your vet right away. don't wait for signs.
 
 in Doodle Doggo, our free cozy dog game, you can't cook or feed anything toxic. every recipe comes with a two-sentence safety lesson.
 
 #DoodleDoggo #DogSafety #DogTips #DogHealth #CozyGames
 ```
-Receipt: Job A · ask: one, save · hashtags 5 · search: "foods dogs can't eat" in line 1, "dog safe treats", "cozy dog game" in the body · linter READY · human score 83 PASS. Every food fact matches the game's `people_food` text (7 foods: grapes, raisins, chocolate, xylitol, onion, garlic, macadamia).
+Receipt: Job A · ask: one, save · hashtags 5 · search: "foods dogs can't eat" in line 1, "dog safe treats", "cozy dog game" in the body · linter READY · human score 80 PASS. Every food fact matches the game's `people_food` text (7 foods: grapes, raisins, chocolate, xylitol, onion, garlic, macadamia).
 
 ## Recommended order (Halloween is 31 Oct)
 
 1. Trick or treat: apply fixes 1–3 and 5 (positions only), and the hook card if the owner likes it. Re-render and post on the 31st. It's a quick render.
 2. Is this safe?: apply fixes 1–5, re-render (~21 s). It isn't tied to a date, so it can go out after Halloween.
-3. Swap in the new Instagram captions and the Shorts titles.
+3. Done: the new captions for every platform are in `TRICK_REEL.md` and `SAFE_REEL.md`.
 4. After approval: the RedNote cuts with the same layout fixes (`REDNOTE=1`).

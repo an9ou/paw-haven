@@ -12,27 +12,32 @@ Owner, 30 Oct 2026: idea 10 from the Reel ideas list, made to be saved. Files in
 **What is in it:** Noodle begs in the game's kitchen. Grapes, chocolate and sugar-free gum land on his plate one after another; each gets the game's own paw-stop sign and the game's own lesson, then the game's own safe swap arrives (blueberries, Carrot Crunchies, a Pumpkin Pupcake) with a green tick, and Noodle is delighted. It ends on a "save this for later" page: never for dogs (grapes and raisins, chocolate, sugar-free gum with xylitol, onion and garlic, macadamia nuts), safe swaps (blueberries, carrot, pumpkin), "ate something? call your vet.", and the logo with "a free cozy dog game where nothing toxic can be cooked or fed". **Every food fact on screen is the game's own reviewed text** (`people_food.*` in `game/i18n/en.json` and `zh-Hans.json`), so the Reel says exactly what the game teaches.
 
 ## Instagram
+Captions rewritten 30 Oct 2026 with the Instagram skills (`ig-caption` linter, `ig-human` detector); the reasons are in `REEL_REVIEW_TRICK_SAFE.md`.
+
 ```
-is this safe for my dog? 🍇🍫
+save this one: 7 foods dogs can't eat, and 3 safe swaps 📌
 
-save this one 📌 grapes, raisins, chocolate, xylitol (in sugar-free gum), onion, garlic and macadamia nuts are never for dogs. blueberries, carrots and plain pumpkin are lovely swaps.
+never for dogs: grapes and raisins, chocolate, xylitol (it's in a lot of sugar-free gum), onion, garlic and macadamia nuts.
 
-if your dog ate something it shouldn't, call your vet right away.
+dog safe treats to give instead? blueberries, carrots and plain pumpkin.
 
-in Doodle Doggo you can't cook or feed anything toxic, and every recipe comes with a little dog-safety lesson. free cozy dog game in your browser, no ads: doodledoggo.app (link in bio)
+ate something it shouldn't? call your vet right away. don't wait for signs.
 
-#DoodleDoggo #DogSafety #DogTips #DogHealth #DogLovers #CozyGames #DogGame #IndieGame #FreeGame #CrayonArt
+in Doodle Doggo, our free cozy dog game, you can't cook or feed anything toxic. every recipe comes with a two-sentence safety lesson.
+
+#DoodleDoggo #DogSafety #DogTips #DogHealth #CozyGames
 ```
+Job A · one ask: save · 5 hashtags · search: "foods dogs can't eat" in line 1, "dog safe treats", "cozy dog game" in the body · no link · linter READY · human score 80 PASS. Every food fact matches the game's `people_food` text.
 
 ## YouTube Shorts
 
-Title: `Is this safe for my dog? 🍇🍫 #Shorts`
+Title: `Stop sharing these 3 snacks with your dog 🍇🍫 #Shorts`
 
 Description:
 ```
-Grapes, chocolate and sugar-free gum: never for dogs. Here's why, and what to give instead. Save it for later. If your dog ate something it shouldn't, call your vet right away.
+3 snacks Noodle begs for, and 3 he gets instead. Grapes, chocolate and sugar-free gum (it's the xylitol) are never for dogs. Blueberries, Carrot Crunchies and a Pumpkin Pupcake are the swaps. Save it. If your dog ate something it shouldn't, call your vet right away. Don't wait for signs.
 
-Doodle Doggo is a cozy, free dog game in a pencil sketchbook. You can't cook or feed anything toxic, and every recipe comes with a short dog-safety lesson. Nothing bad ever happens.
+Doodle Doggo is our free cozy dog game, drawn in a pencil sketchbook. You can't cook or feed anything toxic in it, and every recipe comes with a two-sentence safety lesson. Nothing bad ever happens.
 
 🎮 Play free: https://doodledoggo.app
 🕹️ itch.io: https://an9ou.itch.io/doodle-doggo
@@ -41,11 +46,13 @@ Doodle Doggo is a cozy, free dog game in a pencil sketchbook. You can't cook or 
 
 #DoodleDoggo #Shorts #DogSafety #DogTips #CozyGames
 ```
+Title off the strongest hook (81 STRONG). Human score 70 (plain food names kept lower-case on purpose).
 
 ## X (under 280 characters)
 ```
-is this safe for my dog? 🍇🍫 grapes, chocolate and sugar-free gum (xylitol) never are. blueberries, carrots and plain pumpkin are. save it, share it. ate something? call your vet. https://doodledoggo.app #DoodleDoggo #DogSafety
+stop sharing these 3 snacks with your dog 🍇🍫 grapes, chocolate and sugar-free gum (it's the xylitol). blueberries, carrots and plain pumpkin? all fine. ate something? call your vet. save it: https://doodledoggo.app #DoodleDoggo #DogSafety
 ```
+238 of 280 · human score 69.
 
 **Alt text:** `A crayon dachshund begs in a kitchen. Grapes, a chocolate bar and sugar-free gum each appear on his plate with a red paw stop sign and a short reason they are unsafe for dogs; then blueberries, carrot crunchies and a pumpkin cupcake appear with a green tick. It ends on a list: never for dogs, grapes and raisins, chocolate, sugar-free gum (xylitol), onion and garlic, macadamia nuts; safe swaps, blueberries, carrot, pumpkin; ate something? call your vet.`
 
@@ -53,23 +60,23 @@ is this safe for my dog? 🍇🍫 grapes, chocolate and sugar-free gum (xylitol)
 
 Post `doodle-doggo-is-this-safe-rednote.mp4` with `safe-cover-rednote.jpg`. On the video: "这个，/ 狗狗能吃吗？" (is this OK for dogs to eat?), the game's own names, lessons and swaps, "狗狗不能吃" (not for dogs), "换成这个" (swap for this), and the page "收藏起来，给狗狗备用" (save this for your dog) with "不小心吃了？马上联系兽医。" (ate something by accident? call a vet right away).
 
-标题 (title, 14 characters; 20 max):
+标题 (title, 16 characters; 20 max):
 ```
-这些狗狗千万不能吃🍇🍫收藏！
+狗狗不能吃的7种食物，先收藏🍇🍫
 ```
 
-> Dogs must never eat these. Save it!
+> 7 foods dogs can't eat. Save it first.
 
 正文 (text):
 ```
 这个，狗狗能吃吗？🐶
 
-📌 先收藏：葡萄和葡萄干、巧克力、木糖醇（无糖口香糖里常有）、洋葱和大蒜、夏威夷果，狗狗都不能吃
+📌 先收藏，狗狗不能吃的7种食物：葡萄、葡萄干、巧克力、木糖醇（无糖口香糖里常有）、洋葱、大蒜、夏威夷果
 ✅ 可以换成：蓝莓、胡萝卜、原味南瓜
 
-不小心吃了？马上联系兽医。
+不小心吃了？马上联系兽医，别等出现症状。
 
-在Doodle Doggo里，有毒的食物做不出来，也喂不了，每道菜都附带一句狗狗安全小知识。免费，没有广告，浏览器直接玩，搜索 Doodle Doggo 就能找到
+在Doodle Doggo里，有毒的食物做不出来，也喂不了，每道菜都附带两句狗狗安全小知识。Noodle最爱胡萝卜脆脆和南瓜汪汪蛋糕。免费，没有广告，浏览器直接玩，搜索 Doodle Doggo 就能找到
 
 你家狗狗最爱吃什么？评论区说说～
 
@@ -77,7 +84,7 @@ Post `doodle-doggo-is-this-safe-rednote.mp4` with `safe-cover-rednote.jpg`. On t
 ```
 
 > Is this OK for dogs to eat?
-> Save first: grapes and raisins, chocolate, xylitol (often in sugar-free gum), onion and garlic, macadamia nuts: dogs can't eat any of them. Swap for: blueberries, carrots, plain pumpkin.
-> Ate something by accident? Call a vet right away.
-> In Doodle Doggo, toxic food can't be cooked or fed, and every dish comes with a dog-safety tip. Free, no ads, plays in your browser; search Doodle Doggo to find it.
+> Save it first, 7 foods dogs can't eat: grapes, raisins, chocolate, xylitol (often in sugar-free gum), onion, garlic, macadamia nuts. Swap for: blueberries, carrots, plain pumpkin.
+> Ate something by accident? Call a vet right away; don't wait for symptoms.
+> In Doodle Doggo, toxic food can't be cooked or fed, and every dish comes with a two-sentence dog-safety tip. Noodle's favourites are the Carrot Crunchies and the Pumpkin Pupcake. Free, no ads, plays in your browser; search Doodle Doggo to find it.
 > What does your dog love to eat? Tell us in the comments!

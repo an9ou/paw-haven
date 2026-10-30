@@ -18,27 +18,30 @@ Owner, 30 Oct 2026: idea 1 from the Reel ideas list. Files in `brand/instagram/l
 A sticker names each costume. The ending page: Noodle and Butter (still a dinosaur) side by side, no bucket (owner, 30 Oct 2026), the game's own line "trick or treat? treat. always treat.", "play free at doodledoggo.app", "the Halloween Market is open until 15 Nov". Sound: a Halloween lo-fi beat (owner, 30 Oct 2026: the game's own music engine in its dark D minor mood with a lazy lo-fi beat, a music box and vinyl crackle, 80 bpm; `brand/instagram/launch/spooky_lofi.js`, preview `halloween-lofi-preview.mp3`), two knocks per door, each host's own puppy bark (the game's bark engine), a startled yip from Noodle, a sparkle on the ending page.
 
 ## Instagram
+Captions rewritten 30 Oct 2026 with the Instagram skills (`ig-caption` linter, `ig-human` detector); the reasons are in `REEL_REVIEW_TRICK_SAFE.md`.
+
 ```
-trick or treat, but make it crayon 🎃
+what dog costume is yours wearing this year? comment below. we know the Dinosaur Hood is taken 🦖
 
-four doors, three treats, one dinosaur. noodle has questions.
+Noodle knocked on 4 doors. 3 dogs in new Halloween costumes handed out dog-safe treats. door 4 had other plans.
 
-the Halloween Market is open until 15 Nov: 10 new costumes like the Scarecrow Overalls, Skeleton Suit, Mummy Wraps and Dinosaur Hood, plus the Pumpkin Cottage and the Friendly Haunted Kennel. only dog-safe treats in this town.
+the Halloween Market in Doodle Doggo is open until 15 Nov: 10 new dog costumes like the Scarecrow Overalls, Skeleton Suit, Mummy Wraps and Dinosaur Hood, plus the Pumpkin Cottage and the Friendly Haunted Kennel.
 
-Doodle Doggo: a free cozy dog game in your browser, no ads. doodledoggo.app (link in bio)
+it's our free cozy dog game, and you play it right in your browser. no ads, and nothing bad ever happens.
 
-#DoodleDoggo #Halloween #TrickOrTreat #DogCostume #CozyGames #DogGame #IndieGame #FreeGame #CuteGames #CrayonArt
+#DoodleDoggo #DogCostume #Halloween #CozyGames #IndieGame
 ```
+Job A (the Reel carries the hook) · one ask: comment · 5 hashtags · search: "dog costume" in line 1, "Halloween", "cozy dog game" in the body · no link (it is in the bio) · linter READY · human score 75.
 
 ## YouTube Shorts
 
-Title: `Trick or treat, but make it crayon 🎃 #Shorts`
+Title: `Noodle knocked on 4 doors. Door 4 cost him every treat 🎃 #Shorts`
 
 Description:
 ```
-Noodle goes trick-or-treating at four dog houses. Three dogs in new Halloween costumes hand out dog-safe treats. The fourth is a dinosaur.
+Noodle knocked on 4 doors. A corgi, a husky and a pug in new Halloween costumes each tossed him a dog-safe treat. Then door 4 opened. It's a dinosaur. He didn't stay for his treats.
 
-Doodle Doggo is a cozy, free dog game in a pencil sketchbook. Adopt one of 35 deliberately crude crayon dogs, walk the town under Mt. Fuji and dress them up. Nothing bad ever happens. The Halloween Market is open until 15 Nov.
+Doodle Doggo is our free cozy dog game, drawn in a pencil sketchbook. You adopt one of 35 deliberately crude crayon dogs, walk the town under Mt. Fuji and dress them up. Nothing bad ever happens, and the Halloween Market's open until 15 Nov.
 
 🎮 Play free: https://doodledoggo.app
 🕹️ itch.io: https://an9ou.itch.io/doodle-doggo
@@ -47,11 +50,13 @@ Doodle Doggo is a cozy, free dog game in a pencil sketchbook. Adopt one of 35 de
 
 #DoodleDoggo #Shorts #Halloween #TrickOrTreat #CozyGames
 ```
+Title off the strongest hook (77 STRONG). Human score 81 PASS.
 
 ## X (under 280 characters)
 ```
-trick or treat, but make it crayon 🎃 four doors, three dog-safe treats, one dinosaur. the Halloween Market is open until 15 Nov. free in your browser: https://doodledoggo.app #DoodleDoggo #Halloween #CozyGames
+Noodle knocked on 4 doors. door 4 cost him every treat 🎃 we've got 10 new dog costumes in the Halloween Market, open in Doodle Doggo until 15 Nov. it's free in your browser: https://doodledoggo.app #DoodleDoggo #Halloween
 ```
+221 of 280 (the link counts as 23) · human score 95 PASS.
 
 **Alt text:** `A crayon dachshund in a little witch hat and cape knocks on four dog houses: a pumpkin cottage, a purple haunted kennel, a castle and a rocket ship. A corgi scarecrow, a husky skeleton and a pug mummy each toss a treat into his pumpkin bucket; a Labrador in a dinosaur hood barks and the dachshund runs off. It ends on the Doodle Doggo logo with both dogs.`
 
@@ -59,20 +64,20 @@ trick or treat, but make it crayon 🎃 four doors, three dog-safe treats, one d
 
 Post `doodle-doggo-trick-or-treat-rednote.mp4` with `trick-cover-rednote.jpg`. On the video: "不给糖就捣蛋，/ 蜡笔版" (trick or treat, crayon edition), "咚咚咚" (knock knock), "不给糖就捣蛋！", the costumes' game names (稻草人背带裤, 骷髅服, 木乃伊绷带, 恐龙帽兜) under "万圣节新服装" (new Halloween costume), "……零食不要了" (...forget the treats), and on the ending page the game's own line "不给糖就捣蛋？要糖。永远要糖。" (trick or treat? treat. always treat.), "搜索 Doodle Doggo 就能玩", "万圣节市集开到11月15日".
 
-标题 (title, 12 characters; 20 max):
+标题 (title, 17 characters; 20 max):
 ```
-不给糖就捣蛋，蜡笔版🎃🐶
+敲了4扇门，第4扇让它零食全没了🎃
 ```
 
-> Trick or treat, crayon edition.
+> Knocked on 4 doors; door 4 cost him every treat.
 
 正文 (text):
 ```
 不给糖就捣蛋，蜡笔版 🎃
 
-Noodle穿上小女巫帽和斗篷去敲门：稻草人柯基、骷髅哈士奇、木乃伊巴哥都给了零食……第四扇门里是一只恐龙 🦖
+Noodle穿上小女巫帽和斗篷，一口气敲了4扇门：穿稻草人背带裤的柯基、穿骷髅服的哈士奇、裹着木乃伊绷带的巴哥，都给了对狗狗安全的零食……第4扇门一开，是戴恐龙帽兜的拉布拉多 🦖 Noodle扭头就跑，零食全不要了
 
-🎃 万圣节市集开到11月15日：10套万圣节新服装，还有南瓜小屋和友善的鬼屋小窝。这个小镇只发对狗狗安全的零食
+🎃 万圣节市集开到11月15日：10套万圣节新服装，还有南瓜小屋和友善的鬼屋小窝
 
 Doodle Doggo是一款画在铅笔素描本里的温馨狗狗游戏，免费，没有广告，浏览器直接玩，搜索 Doodle Doggo 就能找到
 
@@ -82,7 +87,7 @@ Doodle Doggo是一款画在铅笔素描本里的温馨狗狗游戏，免费，�
 ```
 
 > Trick or treat, crayon edition.
-> Noodle puts on the Little Witch Hat & Cape and knocks on doors: the scarecrow corgi, the skeleton husky and the mummy pug all give treats... behind the fourth door is a dinosaur.
-> The Halloween Market is open until 15 Nov: 10 new Halloween costumes, plus the Pumpkin Cottage and the Friendly Haunted Kennel. This town only hands out dog-safe treats.
+> Noodle puts on the Little Witch Hat & Cape and knocks on 4 doors in a row: the corgi in the Scarecrow Overalls, the husky in the Skeleton Suit and the pug in the Mummy Wraps all give dog-safe treats... door 4 opens on a Labrador in the Dinosaur Hood. Noodle turns and runs, and leaves every treat behind.
+> The Halloween Market is open until 15 Nov: 10 new Halloween costumes, plus the Pumpkin Cottage and the Friendly Haunted Kennel.
 > Doodle Doggo is a cozy dog game drawn in a pencil sketchbook: free, no ads, plays in your browser; search Doodle Doggo to find it.
 > What is your dog dressing up as this year? Show us in the comments!
