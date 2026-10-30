@@ -136,8 +136,8 @@ window.frame=function(t, D){
   $('bats').innerHTML=bt;
   $('hook').setAttribute('opacity', ending ? 0 : Math.min(1,t/0.2));
   const eo = ending ? Math.min(1,(t-${END})/0.3) : 0; $('end').setAttribute('opacity', eo);
-  // the ending page: Noodle and Butter (still a dinosaur) side by side, friends again (no bucket: owner, 30 Oct 2026)
-  $('endDogs').innerHTML = eo>0 ? dog('en', 330, 1130, 280, D.en, Math.sin(t*5)*3, -Math.abs(Math.sin(t*5))*10) + dog('eb', 770, 1130, 330, D.eb, Math.sin(t*5+1)*3, -Math.abs(Math.sin(t*5+1))*8) : '';
+  // the ending page: Noodle and Butter (still a dinosaur) side by side with room between them, friends again (no bucket, not too close: owner, 30 Oct 2026)
+  $('endDogs').innerHTML = eo>0 ? dog('en', 270, 1130, 230, D.en, Math.sin(t*5)*3, -Math.abs(Math.sin(t*5))*10) + dog('eb', 840, 1130, 290, D.eb, Math.sin(t*5+1)*3, -Math.abs(Math.sin(t*5+1))*8) : '';
 };
 </script>`;
 
