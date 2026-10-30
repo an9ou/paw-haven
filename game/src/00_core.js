@@ -176,6 +176,7 @@ const HOUSES = [
   { n: 'Pumpkin Cottage', price: 1800, bond: 6, comfort: 0.45, hd: 2.5, v24: true, note: 'Round orange walls and a leaf for a roof. Smells faintly of pie.' },
   { n: 'Lighthouse Kennel', price: 3000, bond: 8, comfort: 0.60, hd: 2, v24: true, note: 'The lamp turns at night. Ships are confused.' },
   { n: 'Friendly Haunted Kennel', price: 900, bond: 3, comfort: 0.25, hd: 3, fest: 'halloween', ed: 2026, fm: true, note: 'A crooked purple house with smiling ghost curtains. The only thing it haunts is the food bowl.' }, // v2.17.2 Spooky Stalls (Festive Market)
+  { n: 'Gingerbread Kennel', price: 900, bond: 3, comfort: 0.25, hd: 3, fest: 'winter', fm: true, note: 'A little brown house with white icing on the roof and gumdrops by the door. A look, not a snack: it is wood all the way through.' }, // Winter Market 2026 (docs/design/winter-market.md part 4), sold every December
   { n: 'Rocket Ship', price: 0, bond: 1, comfort: 0.55, hd: 2, v24: true, reward: true, note: 'Countdown painted on the side. Launch is cancelled, forever, for naps.' }
 ];
 const SLOTS = ['head', 'eyes', 'neck', 'body'];

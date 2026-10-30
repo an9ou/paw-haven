@@ -33,6 +33,7 @@ const FM_MARKETS = [
   { id: 'winter', theme: 'winter', name: 'Winter Market', win: () => ['12-01', '12-26'],
     items: { decor: ['Paper Snowflake Garland', 'Felt Holly Wreath', 'Red Wooden Sled', 'Paper-Star Fir Tree', 'Yard Snowman', 'Candy-Cane Fairy Lights', 'Present Pile', 'Star Lantern'], clothes: ['Very Ugly Sweater', 'Reindeer Antlers', 'Snowflake Snood', 'Father Christmas Suit', 'Little Elf Outfit', 'Gingerbread Pup Suit', 'Snowman Suit',
         'Polar Bear Hood', 'Penguin Suit', 'Puffer Jacket', 'Nutcracker Jacket & Hat', 'Snowflake Wings', 'Jingle Bell Collar'],
+      homes: ['Gingerbread Kennel', 'Present-Box Bed', 'Little Sleigh Bed', 'Snowball Nest', 'Giant Mitten Bed'],
       toys: ['Squeaky Snowman', 'Candy-Cane Rope', 'Plush Penguin', 'Snowball Ball', 'Present Puzzle Box'], treats: ['Warm Carob Cup', 'Snowflake Oat Cookies', 'Snow Day Stew'] } },
   { id: 'newyear', theme: 'newyear', name: 'New Year Market', win: () => ['12-27', '01-07'],
     items: { decor: ['Kadomatsu Pair'], treats: ['Pup Kinton'] } },
