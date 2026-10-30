@@ -135,4 +135,14 @@ run('wm_review', async (t) => {
     ok(await ev(() => [...document.querySelectorAll('#sceneG [data-fmstall].hot')].map((g) => g.dataset.fmstall).join() === 'decor,treats' && window.__paw.fm.svgCache().some((k) => /^newyear\|\|0\|plain\|101$/.test(k))), 'New Year: decor on the first stall, treats on the third, the middle a bare counter');
   }
   await t.ctx.close();
+
+  sec('7-8. texts: the Plush Penguin promises the nap Energy it gives; the Puffer Jacket and Polar Bear Hood keep a dog warm and say so');
+  await t.newGame({ prefs: PREFS, ground: true }, { bond: { level: 8, pts: 1600 } });
+  await t.until(() => !!(window.__paw && window.__paw.fm), null, 8000);
+  {
+    const R = await ev(() => { const F = window.__paw.fm; return { pen: F.row('Plush Penguin').desc, spi: F.row('Soft Spider Plush').desc }; });
+    ok(/\+10% nap Energy\.$/.test(R.pen) && !/Happiness/.test(R.pen) && /\+10% nap Energy\.$/.test(R.spi), 'Plush Penguin: "' + R.pen + '"');
+
+  }
+  await t.ctx.close();
 }, { prefs: {} });
