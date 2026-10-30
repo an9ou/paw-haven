@@ -1581,7 +1581,9 @@ function hmOwlWing(h,B,root,ang,z,far){const pts=[[0,0],[-.18,-.32],[-.5,-.58],[
   [[.3,-.12],[.48,-.2]].forEach(q=>{const c=pts[0].map((v,i)=>v+(pts[3][i]-v)*q[0]);h.dot(c[0],c[1]+q[1]*z*.3,1.6,1.4,far?HM_BR:HM_BRL)})}
 BACK2['Little Owl Wings']=function(h,s,L,B){const b=s.body,lie=/^(sleep|down|crouch|playdead)$/.test(L.pose),z=Math.max(30,Math.min(48,b.ry*1.8))*(lie?.8:1);
   hmOwlWing(h,B,[b.rx*.3,-b.ry*(s.fluff?(s.wet?.84:.9):.8)],lie?-6:12,z*.92,1)};
-BODY2['Little Owl Wings']=function(h,s,L,B){const b=s.body,lie=/^(sleep|down|crouch|playdead)$/.test(L.pose),z=Math.max(30,Math.min(48,b.ry*1.8))*(lie?.8:1);
+BODY2['Little Owl Wings']=function(h,s,L,B){if(!s.ruff)WING_OVER['Little Owl Wings'](h,s,L,B)};
+// the near wing; on a dog with a mane (chow, pom...) it is drawn after the mane (frame below), so the mane never hides it
+const WING_OVER={};WING_OVER['Little Owl Wings']=function(h,s,L,B){const b=s.body,lie=/^(sleep|down|crouch|playdead)$/.test(L.pose),z=Math.max(30,Math.min(48,b.ry*1.8))*(lie?.8:1);
   hmOwlWing(h,B,[b.rx*.12,-b.ry*(s.fluff?.72:.6)],lie?-14:-4,z,0)};
 TOP2['Little Owl Wings']=function(h,s,L,HT){const hx=s.head.rx,hy=s.head.ry,P=hatP(s,L,HT,.06,-4),z=Math.max(hx,hy)*.36,band=[[-hx*.72,6],[-hx*.3,-1],[hx*.3,-1],[hx*.72,6]].map(P);
   h.line(band,4.6,INK,.4);h.line(band,2.6,HM_BRL,.3);
@@ -1697,22 +1699,32 @@ TOP2['Polar Bear Hood']=function(h,s,L,HT){const hx=s.head.rx,hy=s.head.ry,{o,n,
    h.shape(circ(c[0],c[1],z,z,10).map(hmCl),'#FBFAF4',{w:3,step:30,ox:0,oy:0,sc:1,closed:1,amp:.4,famp:.25});const dr=Math.min(1,Math.max(.4,(GY-1-c[1]+z)/(z*2)));h.dot(c[0],Math.min(c[1]+z*.08,GY-3-z*.46*dr),z*.5*dr,z*.46*dr,'#E9D2CC')});// the inner ear stays inside an ear the ground flattens (akita roll-over)
   [[-.7,-.45],[-.35,-.85]].forEach(q=>{const c=HT([hx*q[0],hy*q[1]]);h.line([[c[0]-3,c[1]],[c[0]-1,c[1]+2],[c[0]+1,c[1]],[c[0]+3,c[1]+2]].map(hmCl),1.4,WM_SND,.2)})};
 
-/* 6. Penguin Suit: a black suit with a white tummy, two little black flippers, a black hood with a white rim round the open face */
-function wmFlipper(h,B,root,ang,z,far){const pts=[[0,-z*.16],[z*.5,-z*.2],[z*.96,-z*.08],[z*1.04,z*.04],[z*.5,z*.18],[0,z*.16]].map(q=>{const r2=rot(q,ang);return hmCl(B([root[0]+r2[0],root[1]+r2[1]]))});
-  h.shape(pts,far?'#24202A':WM_BK,{w:2.8,step:30,ox:0,oy:0,sc:1,closed:1,amp:.4,famp:.25});if(!far)h.line([pts[1],pts[2]].map(q=>[q[0]+(pts[4][0]-q[0])*.35,q[1]+(pts[4][1]-q[1])*.35]),1.4,WM_BKL,.2)}
-const wmFlipAng=L=>/^(sleep|down|crouch|playdead)$/.test(L.pose)?168:L.pose==='rollover'?-60:L.pose==='jump'?140:112;
+/* 6. Penguin Suit: a black suit with a white chest and tummy along the underside, two black flippers with white edges, two orange webbed feet at the hem;
+   a black hood whose own penguin face sits on the crown: two big googly eyes and an orange beak sticking out over the brow like a cap's peak
+   (all of it above the dog's eyes, so the dog's face stays open) */
+function wmFlipper(h,B,root,ang,z,far){const pts=[[0,-z*.18],[z*.5,-z*.24],[z*.96,-z*.1],[z*1.08,z*.04],[z*.5,z*.22],[0,z*.18]].map(q=>{const r2=rot(q,ang);return hmCl(B([root[0]+r2[0],root[1]+r2[1]]))});
+  h.shape(pts,far?'#24202A':'#4A4258',{w:2.8,step:30,ox:0,oy:0,sc:1,closed:1,amp:.4,famp:.25});if(!far)h.line([pts[0],pts[1],pts[2]].map(q=>[q[0]+(pts[4][0]-q[0])*.18,q[1]+(pts[4][1]-q[1])*.18]),2,W,.2)}
+// an orange webbed foot (three toes) at the body-local point c, toes pointing forward
+function wmPFoot(h,c,z,far){const pts=[[-z*.45,-z*.3],[z*.3,-z*.34],[z*.95,-z*.5],[z*.78,-z*.16],[z*1.2,-z*.06],[z*.86,z*.1],[z*1.1,z*.3],[z*.3,z*.3],[-z*.45,z*.24]].map(q=>hmCl([c[0]+q[0],c[1]+q[1]]));
+  h.shape(pts,far?'#C96A1E':WM_OR,{w:2.4,step:30,ox:0,oy:0,sc:1,closed:1,amp:.3,famp:.2});if(!far)h.line([pts[1],pts[3]].map(q=>[q[0]-1,q[1]]),1.2,'#B5561C',.1)}
+const wmFlipAng=L=>/^(sleep|down|crouch|playdead)$/.test(L.pose)?168:L.pose==='rollover'?-60:L.pose==='jump'?140:118;
 BACK2['Penguin Suit']=function(h,s,L,B){const b=s.body;wmFlipper(h,B,[b.rx*.62,b.ry*.1],wmFlipAng(L)-18,Math.max(14,Math.min(24,b.ry*1.05))*.85,1)};
-BODY2['Penguin Suit']=function(h,s,L,B,p){const b=s.body;hmSuit(h,s,B,p,WM_BK);
-  h.part(true);const c=hmIn(s,.3,.42);h.shape(circ(c[0],c[1]+b.ry*.12,b.rx*.62,b.ry*.6,14).map(B).map(hmCl),W,{noline:1,ox:0,oy:0});h.part(false);
+BODY2['Penguin Suit']=function(h,s,L,B,p){const b=s.body,lie=/^(sleep|down|crouch|playdead)$/.test(L.pose);hmSuit(h,s,B,p,WM_BK);
+  // the white chest and tummy: a band round the front and the underside of the suit, kept inside the suit's line
+  h.part(true);h.shape([[-b.rx*.62,b.ry*1.5],[-b.rx*.56,b.ry*.72],[-b.rx*.1,b.ry*.46],[b.rx*.38,b.ry*.3],[b.rx*.66,b.ry*.02],[b.rx*.8,-b.ry*.4],[b.rx*.9,-b.ry*.9],[b.rx*1.6,-b.ry*.9],[b.rx*1.6,b.ry*1.5]].map(B).map(hmCl),W,{noline:1,ox:0,oy:0,step:9,famp:.6});h.part(false);
+  h.line([[-b.rx*.5,b.ry*.76],[-b.rx*.1,b.ry*.5],[b.rx*.38,b.ry*.34],[b.rx*.66,b.ry*.06],[b.rx*.8,-b.ry*.36]].map(B).map(hmCl),1.6,WM_SND,.3);
   h.line([[b.rx*-.25,-b.ry*.55],[b.rx*.3,-b.ry*.72]].map(B).map(hmCl),2,WM_BKL,.3);
-  wmFlipper(h,B,[b.rx*.4,-b.ry*.3],wmFlipAng(L),Math.max(14,Math.min(24,b.ry*1.05)),0)};
+  // orange webbed feet over the two front paws, toes forward
+  (L.legs||[]).filter(l=>(l.id==='NF'||l.id==='FF')&&l.foot&&!l.raised&&!l.sitfoot).sort((a,c)=>(a.id==='FF'?0:1)-(c.id==='FF'?0:1)).forEach(l=>wmPFoot(h,[l.foot[0]+2,Math.min(l.foot[1]+1,GY-3)],Math.max(7,Math.min(13,l.w*1.5)),l.id==='FF'));
+  wmFlipper(h,B,[b.rx*.36,-b.ry*.34],wmFlipAng(L),Math.max(16,Math.min(28,b.ry*1.2)),0)};
 TOP2['Penguin Suit']=function(h,s,L,HT){const hx=s.head.rx,hy=s.head.ry,{o,n,ox,oy}=hmHood(s,L);
   h.shape(o.concat(n).map(HT).map(hmCl),WM_BK,{w:3.8,step:7,amp:.9});h.crayon(hx*.5,hy*.3,q=>HT([q[0]-hx*.45,q[1]-hy*.5]),WM_BK,4);
   h.line([[-hx*.8,-hy*.45],[-hx*.62,-hy*.8]].map(HT).map(hmCl),1.8,WM_BKL,.3);
-  // the hood's own penguin face, high on the crown: its beak stops above the dog's eyes
-  const f=L.face,er=s.eyes,e0=f.e0||[-.1,-.04],e1=f.e1||[.42,-.1],top=Math.min(hy*e0[1]-er[0],hy*e1[1]-er[1])-3,z=Math.max(2.6,Math.min(4.2,hx*.13)),fy=Math.min(-hy*.96,top-z*2.4),fx=-hx*.12,P=q=>HT([fx+q[0],fy+q[1]]);
-  [-1,1].forEach(sd=>{const c=P([sd*z*1.5,0]);h.shape(circ(c[0],c[1],z,z*1.05,8).map(hmCl),W,{w:1.6,step:30,ox:0,oy:0,sc:1,closed:1,amp:.2,famp:.15});h.dot(c[0]+z*.25,c[1]+z*.15,z*.42,z*.46,INK)});
-  h.shape([[-z*1.1,z*.8],[z*1.1,z*.8],[0,z*2.2]].map(P).map(hmCl),WM_OR,{w:1.8,step:30,ox:0,oy:0,sc:1,closed:1,amp:.2,famp:.15})};
+  // the hood's own penguin face on the crown: two big googly eyes, the beak sticking out forward over the brow; all of it stays above the dog's eyes
+  const f=L.face,er=s.eyes,e0=f.e0||[-.1,-.04],e1=f.e1||[.42,-.1],top=Math.min(hy*e0[1]-er[0],hy*e1[1]-er[1])-3,z=Math.max(5,Math.min(9,hx*.27)),fy=Math.min(-hy*.98,top-z*1.25),fx=-hx*.16,P=q=>HT([fx+q[0],fy+q[1]]);
+  [-1,1].forEach(sd=>{const c=P([sd*z*1.02,0]);h.shape(circ(c[0],c[1],z,z*1.06,10).map(hmCl),W,{w:2.2,step:30,ox:0,oy:0,sc:1,closed:1,amp:.25,famp:.15});h.dot(c[0]+z*.3,c[1]+z*.12,z*.46,z*.5,INK);h.dot(c[0]+z*.12,c[1]-z*.12,z*.14,z*.14,W)});
+  h.shape([[z*1.6,-z*.5],[z*2.6,-z*.56],[z*4.3,z*.06],[z*2.6,z*.72],[z*1.6,z*.62]].map(P).map(hmCl),WM_OR,{w:2.4,step:30,ox:0,oy:0,sc:1,closed:1,amp:.25,famp:.15});
+  h.line([[z*1.8,z*.1],[z*3.8,z*.1]].map(P).map(hmCl),1.4,'#B5561C',.1)};
 
 /* 7. Puffer Jacket: a bright quilted puffer (lumpy edge, stitched channels, a shine on each puff), a zip pull and a pink trim; body only, so a hat goes on top */
 BODY2['Puffer Jacket']=function(h,s,L,B,p){const b=s.body,f=s.fluff?1.12:1.08,lp=p.map((q,i)=>{const k=i%3===1?1.07:1.02;return[q[0]*k,q[1]*k]});
@@ -1745,7 +1757,8 @@ BACK2['Snowflake Wings']=function(h,s,L,B){const w=hwWingSet(s,L);wmFlakeWing(h,
 BODY2['Snowflake Wings']=function(h,s,L,B){const b=s.body,w=hwWingSet(s,L);
   const st=[[b.rx*.4,-b.ry*.98],[b.rx*.47,0],[b.rx*.42,b.ry*.95]];h.line(st.map(B).map(hmCl),6,INK,.4);h.line(st.map(B).map(hmCl),3.6,WM_ICD,.4);
   h.line([[b.rx*.4,-b.ry*.9],[w.root[0],w.root[1]+2]].map(B).map(hmCl),5,INK,.4);h.line([[b.rx*.4,-b.ry*.9],[w.root[0],w.root[1]+2]].map(B).map(hmCl),2.8,WM_ICD,.4);
-  wmFlakeWing(h,B,w.root,w.ang,w.z,0)};
+  if(!s.ruff)WING_OVER['Snowflake Wings'](h,s,L,B)};
+WING_OVER['Snowflake Wings']=function(h,s,L,B){const w=hwWingSet(s,L);wmFlakeWing(h,B,w.root,w.ang,w.z,0)};
 
 /* 10. Jingle Bell Collar (neck slot): a soft red felt collar with three little gold bells (lying down, the bells rest on the collar) */
 NECK2['Jingle Bell Collar']=function(h,s,L,HT){const a=neckAnchor(s,HT),sag=t=>{const x=a.l[0]+(a.r[0]-a.l[0])*t,y=a.l[1]+(a.r[1]-a.l[1])*t+Math.sin(Math.PI*t)*8;return[x,Math.min(y,GY-18)]};
@@ -1760,7 +1773,7 @@ NECK2['Jingle Bell Collar']=function(h,s,L,HT){const a=neckAnchor(s,HT),sag=t=>{
 // on as the plain dog would (hmPlain), so the head drawn after is the plain dog's too.
 const HM_OWN=new Set(['Little Witch Hat & Cape','Scarecrow Overalls','Mummy Wraps','Skeleton Suit','Black Cat Ears & Bow','Pirate Hat & Sash','Dinosaur Hood','Little Owl Wings','Wizard Robe & Star Hat','Lion Mane',
   'Father Christmas Suit','Little Elf Outfit','Gingerbread Pup Suit','Snowman Suit','Polar Bear Hood','Penguin Suit','Puffer Jacket','Nutcracker Jacket & Hat','Snowflake Wings','Jingle Bell Collar']);// and the Winter Market 2026 costumes
-HM_OWN.forEach(n=>[BACK2,BODY2,TOP2,RUFF2,NECK2].forEach(R=>{const fn=R[n];if(fn)R[n]=function(h,...a){const st=h.r.st();fn(h,...a);h.r.st(st)}}));
+HM_OWN.forEach(n=>[BACK2,BODY2,TOP2,RUFF2,NECK2,WING_OVER].forEach(R=>{const fn=R[n];if(fn)R[n]=function(h,...a){const st=h.r.st();fn(h,...a);h.r.st(st)}}));
 
 // draw(h) on the dog, then leave its random stream where plain(g) would have left it (plain draws on a throwaway kit that shares the stream)
 function hmPlain(h,draw,plain){const st=h.r.st(),g=kit(h.r);g.setJ(h.getJ());g.cy=h.cy;if(h.wet)g.wet=1;plain(g);const e=h.r.st();h.r.st(st);draw(h);h.r.st(e)}
@@ -2065,6 +2078,7 @@ function frame(key,s,pose,outfit,k,seed,ex){
   if(L.paw){h._legPass='raised';drawLegs(h,s,L);h._legPass='ground'}
   if(s.ruff&&!sheet)drawRuff(h,s,L,HT);
   if(neck&&RUFF2[neck]&&!sheet&&top!=='Trick-or-Treat Ghost')RUFF2[neck](h,s,L,HT);// v2.17.1: a mane worn round the face (Lion Mane)
+  if(s.ruff&&body&&WING_OVER[body])WING_OVER[body](h,s,L,B);// a back costume's near wing sits over the mane
   const hmk=top&&HM_OWN.has(top);if(hmk&&L.hood)L.hmHood=1;// v2.18.1: drawEars hands the stream on as the plain dog's ears would
   if(!sheet)drawEars(h,s,L,HT,false);
   if(s.topknot&&!hat&&(!top||top==='Pumpkin Patch Suit')&&!(sheet&&s.topknot===3))drawTopknot(h,s,HT);// v2.12: the maltese and shihtzu tuft stays under the Ghost Sheet

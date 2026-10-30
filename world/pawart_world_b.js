@@ -6413,7 +6413,7 @@ PA.HALLOWEEN_MARKET={costumes:['Little Witch Hat & Cape','Scarecrow Overalls','M
 
 /* ===================================== Winter Market 2026 (art/winter-market) =====================================
    Part 1, five yard decorations (props; the wall one carries its own nails), sold at the Winter Market every December:
-     wmfirtree 140x200            'Felt Fir Tree': a little potted fir with paper stars, a soft felt tree (real fir needles are mildly toxic to dogs; to be redrawn as felt). Ground y=194
+     wmfirtree 140x200            'Felt Fir Tree': a soft felt fir (stitched tiers, felt buttons) in a felt-wrapped pot, paper stars (real fir needles are mildly toxic to dogs). Ground y=194
      wmsnowman 140x180            'Yard Snowman': crude, stick arms, a carrot nose, a knitted scarf, on its own patch of snow (so it reads on summer grass). Ground y=174
      wmcanelights {lit} 300x80    'Candy-Cane Fairy Lights': red-and-white striped bulbs on a green wire, a candy cane hooked on each nail. Lit: the bulbs glow
      wmpresents 160x120           'Present Pile': three wrapped boxes with ribbons and bows, a paw-print tag. Ground y=114
@@ -6429,19 +6429,30 @@ function wmTier(x,yb,w,h){const p=[];for(let j=0;j<=8;j++)p.push([x-w+j*w/4,yb+(
 function wmPaperStar(b,x,y,R,col,a,o={}){const pts=starP(x,y,R,R*.5,5,-Math.PI/2+a);let d='';pts.forEach(p=>{d+=`M${R1(x)} ${R1(y)}L${R1(p[0])} ${R1(p[1])}`});
   if(o.thread)b.ln([[pts[0][0],pts[0][1]],[pts[0][0]+.6,pts[0][1]-o.thread]],{w:.7,col:GRAPH,top:1});
   b.sh(pts,col,{k:.04,hatch:0,hl:0,lw:o.lw||.6,dr:.15,base:'#FFFDF6',top:1,inner:b.st(d,mix(col,INK,.22),.6,.55)})}
+// a soft felt tier: a rounded cone, a wavy hem with three soft lobes, no needles
+function wmFeltTier(x,yb,w,h){return[[x-w,yb-2],[x-w*.66,yb+3.4],[x-w*.33,yb-.6],[x,yb+4],[x+w*.33,yb-.6],[x+w*.66,yb+3.4],[x+w,yb-2],[x+w*.56,yb-h*.48],[x+w*.14,yb-h*.92],[x,yb-h],[x-w*.14,yb-h*.92],[x-w*.56,yb-h*.48]]}
+// running stitches (a dashed thread) along the closed outline P pulled in toward (cx, cy) by k
+function wmStitch(P,cx,cy,k,col,w,dash){const Q=P.map(([px,py])=>[cx+(px-cx)*k,cy+(py-cy)*k]),c=cr(Q,true,1/6);return`<path d="${c.d}" fill="none" stroke="${col}" stroke-width="${w}" stroke-dasharray="${dash||'3.2 2.6'}" stroke-linecap="round"/>`}
 PROPS.wmfirtree=function(b){const G=194;b.shadow(70,G,42,4.4);
-  // the trunk, then the three tiers bottom to top, crayon needles on each
-  b.sh(RR(63,136,14,22,2),C.woodD,{k:0,hatch:0,hl:0,lw:.8,base:C.wood});
-  [[70,154,56,52],[69,120,45,48],[71,88,33,46]].forEach(([x,yb,w,h],i)=>{let d='';for(let j=0;j<7;j++){const nx=x-w*.6+j*w*.2,ny=yb-h*(.22+(j%3)*.16);d+=b.jl(nx,ny,nx+(j%2?4:-4),ny+5,.4)}
-    b.sh(wmTier(x,yb,w,h),WM_FIR,{k:.08,sh:WM_FIRD,ho:.4,hl:0,base:WM_FIRL,inner:b.st(d,WM_FIRD,1.1,.6)})});
-  // the pot, its rim, a painted paw
-  b.sh([[44,G-1],[96,G-1],[103,160],[37,160]],WM_POT,{k:.04,hl:0,sh:WM_POTD,ho:.35,base:WM_POTL});
-  b.sh(RR(32,150,76,13,4),WM_POT,{k:.04,hatch:0,hl:0,lw:1,base:WM_POTL,marks:[{pts:RR(30,149,80,4.4,2),fill:'#EDA888',op:.85}]});
-  paw(b,70,178,3.6,'#FFF2DA',{noline:1,a:.08});
+  // the Felt Fir Tree: three soft felt tiers sewn with cream running stitches, felt flecks, two felt buttons; a felt trunk; a felt-wrapped pot with blanket stitches;
+  // paper stars on threads (no real fir: its needles are mildly toxic to dogs)
+  b.sh(RR(62,140,16,20,3),'#9A6A48',{k:.1,hatch:0,hl:0,lw:.8,base:'#D2A27C',inner:wmStitch([[62,140],[78,140],[78,160],[62,160]],70,150,.7,'#F4E3C8',1,'2.4 2.2')});
+  const FG=['#5FA35E','#69AE66','#74B86E'];
+  [[70,158,56,52],[69,124,45,48],[71,92,33,46]].forEach(([x,yb,w,h],i)=>{const P=wmFeltTier(x,yb,w,h);let fl='';
+    for(let j=0;j<9;j++){const fx=x+(((j*37+i*11)%17)/17-.5)*w*1.2,fy=yb-h*(.18+((j*23+i*7)%13)/13*.6);fl+=`M${R1(fx)} ${R1(fy)}l1.6 .7M${R1(fx+4)} ${R1(fy+3)}l-.6 1.5`}
+    b.sh(P,FG[i],{k:1/6,sh:'#3F7A45',ho:.22,hl:0,lw:1,base:'#C6E4B6',inner:b.st(fl,'#3F7A45',.9,.45)+wmStitch(P,x,yb-h*.42,.84,'#FFF4DC',1.3)})});
+  // two felt buttons, two holes each
+  [[52,134,4.2,'#F2C14E'],[86,101,3.8,'#E2403A']].forEach(([x,y,r,c])=>{b.sh(E(x,y,r,r*.94,12),c,{k:0,hatch:0,hl:0,lw:.7,top:1});b.dot(x-r*.32,y,r*.18,INK,'top');b.dot(x+r*.32,y,r*.18,INK,'top')});
+  // the pot wrapped in red felt, a rim band with cream blanket stitches, a felt paw patch sewn on
+  b.sh([[44,G-1],[96,G-1],[102,162],[38,162]],'#D9584E',{k:.12,hl:0,sh:'#A63A34',ho:.3,base:'#F2B0A6',inner:wmStitch([[44,G-1],[96,G-1],[102,162],[38,162]],70,177,.86,'#FFF4DC',1.1,'2.6 2.4')});
+  let bs='';for(let x=38;x<=100;x+=6)bs+=`M${x} 151.6V157.6`;bs+='M34 151.6H106';
+  b.sh(RR(32,148,76,14,5),'#C64A42',{k:.12,hatch:0,hl:0,lw:1,base:'#EFA49A',inner:b.st(bs,'#FFF4DC',1.2,.95)});
+  b.sh([[62,172],[78,172],[80,186],[60,186]],'#FFF2DA',{k:.4,hatch:0,hl:0,lw:.65,base:'#FFFBF0',inner:wmStitch([[62,172],[78,172],[80,186],[60,186]],70,179,.74,'#D9584E',.8,'1.6 1.6')});
+  paw(b,70,180,2.6,'#D9584E',{noline:1,a:.08});
   // paper stars, a little crooked, on threads; the big one on top
   const PAP=['#FFE9A0','#F7F3E8','#FBD3DC','#D6E7F7','#FFE9A0','#FBD3DC','#F7F3E8'];
-  [[40,139,8,.2],[100,135,7.6,-.15],[68,128,6.6,.05],[50,104,7.2,-.2],[91,101,6.6,.25],[62,76,6,.1],[82,68,5.6,-.25]].forEach(([x,y,R,a],i)=>wmPaperStar(b,x,y,R,PAP[i],a,{thread:3}));
-  wmPaperStar(b,71,40,13,'#FFD56B',.08,{lw:.9});
+  [[38,143,8,.2],[102,139,7.6,-.15],[70,132,6.6,.05],[50,107,7.2,-.2],[92,104,6.6,.25],[62,78,6,.1],[82,72,5.6,-.25]].forEach(([x,y,R,a],i)=>wmPaperStar(b,x,y,R,PAP[i],a,{thread:3}));
+  wmPaperStar(b,71,42,13,'#FFD56B',.08,{lw:.9});
   b.ex('spark',118,46,4,'#FFE07A');b.ex('heart',20,84,3.2,'#F7B2C4');
 };
 PROPS.wmsnowman=function(b){const G=174,r=b.r;
@@ -6537,9 +6548,10 @@ PROPS.wmstarlantern=function(b,o){const lit=!!(o&&o.lit),G=194,x=60,y=60;
   b.sh(S0,lit?'#FFE59A':'#F9DC8A',{k:.06,hl:0,sh:lit?'#FFD36E':'#E2B85A',ho:.35,lw:1,base:lit?'#FFF7D6':'#FFF4D2',top:1,marks:holes,inner:b.st(fd,lit?'#FFC48A':'#D9A84A',.9,.7)});
   paw(b,x,y+1.6,4.2,lit?'#FFF7D6':'#C9A14E',{noline:1});
   if(lit)b.raw('</g>','top');
-  // a little red tassel from the lower left point
-  const tp=S0[6];b.ln([[tp[0],tp[1]],[tp[0]-1,tp[1]+10]],{w:.9,col:WN_REDD,top:1});
-  b.sh([[tp[0]-1,tp[1]+9],[tp[0]-4.4,tp[1]+20],[tp[0]+2.4,tp[1]+20]],WN_RED,{k:.05,hatch:0,hl:0,lw:.6,base:'#F4A6A0',top:1});
+  // a little red thread tassel from the lower left point: a cord, a round knot, a fringe of loose threads
+  const tp=S0[6],kx=tp[0]-1,ky=tp[1]+9;b.ln([[tp[0],tp[1]],[kx,ky-2]],{w:.9,col:WN_REDD,top:1});
+  [-3.2,-1.6,0,1.6,3.2].forEach((d,i)=>b.ln([[kx+d*.35,ky+1],[kx+d,ky+10+(i%2)*1.6]],{w:.95,col:WN_RED,top:1}));
+  b.sh(E(kx,ky,2.6,2.4,10),WN_RED,{k:0,hatch:0,hl:0,lw:.6,base:'#F4A6A0',top:1});b.ln([[kx-3.4,ky+3.4],[kx+3.4,ky+3.4]],{w:1.1,col:WN_REDD,top:1});
   if(lit){b.ex('spark',104,22,4,'#FFF3C2');b.ex('spark',14,108,3.2,'#FFE59A')}else{b.ex('spark',104,22,4);b.ex('heart',16,110,3,'#F7B2C4')}
 };
 Object.assign(PROP_VB,{wmfirtree:'0 0 140 200',wmsnowman:'0 0 140 180',wmcanelights:'0 0 300 80',wmpresents:'0 0 160 120',wmstarlantern:'0 0 120 200'});
@@ -6551,9 +6563,7 @@ const WM_LBL={wmfirtree:'Felt Fir Tree',wmsnowman:'Yard Snowman',wmcanelights:'C
 // the item cards: each decoration's own prop, fitted into the 64 box (the long string shows its middle)
 Object.assign(ITEMS,{
  'Felt Fir Tree'(b){hmPropCard(b,'wmfirtree',false,[12,22,116,176])},'Yard Snowman'(b){hmPropCard(b,'wmsnowman',false,[8,14,124,166])},
- 'Candy-Cane Fairy Lights'(b){const sy=x=>12+9*(1-Math.pow((x-32)/28,2));
-  const w=[];for(let x=4;x<=60;x+=4)w.push([x,sy(x)]);b.ln(w,{w:1.3,col:WN_GRND});[4,60].forEach(x=>b.sh(E(x,sy(x)-1,2.4,2.4,8),C.woodD,{hatch:0,hl:0,lw:.6}));
-  wmCane(b,7,15,1.05,.08);[[20,.1],[34,-.08],[48,.12]].forEach(([x,a],i)=>wmBulb(b,x,sy(x),sy(x)+15+(i%2)*4,a,false,1.08));b.ex('spark',58,52,3.2,'#FFE07A')},'Present Pile'(b){hmPropCard(b,'wmpresents',false,[2,16,156,102])},
+ 'Candy-Cane Fairy Lights'(b){hmPropCard(b,'wmcanelights',false,[70,6,160,56])},// the middle of the string, framed like the Halloween string cards'Present Pile'(b){hmPropCard(b,'wmpresents',false,[2,16,156,102])},
  'Star Lantern'(b){hmPropCard(b,'wmstarlantern',false,[6,12,108,136])}
 });
 /* Part 2, the ten costume item cards (64): a garment on its own like the Halloween Market cards, the head piece above it */
@@ -6671,12 +6681,12 @@ Object.assign(ITEMS,{
   b.sh(cloudP(32,5,3.6,3.4,6,.3,24),WMC_SN,{k:.1,hatch:0,hl:0,lw:.7,base:'#FFFFFF',top:1});
   b.ln([[50,12],[54,7]],{w:1.2});b.ln([[54,17],[60,14]],{w:1.2});b.ln([[46,9],[47,3]],{w:1.2})},
  'Candy-Cane Rope'(b){
-  const P=[[13,53],[22,44],[31,34],[39,23],[44.6,15],[50.4,11],[55.6,14],[56,22]];
-  b.sh(ribbon(P,[10,10,10,10,10,10,10,10]),'#FFFDF8',{k:1/6,hatch:0,lw:1.1,base:'#FFFFFF',marks:wmRopeMarks(P,8,7,WMC_RD)});
-  b.sh(E(11,55,8.6,8.6,16),'#FFFDF8',{lw:1.1,hatch:0,hl:0,marks:[{pts:[[3,49],[8,47],[19,58],[15,62]],fill:WMC_RD,k:0}],det:[[[7,49],[10,55],[7.4,61]]],dw:.9});
-  [[3,60,0,63],[7,63,6,64],[12,63.4,13,64]].forEach(q=>b.ln([[q[0],q[1]],[q[2],q[3]]],{w:1.4}));
-  [-1,1].forEach(d=>b.sh([[30,35],[30+d*8,29+d*-1],[30+d*7,39+d*2]],WMC_GR,{k:.05,hatch:0,hl:0,lw:.8,base:'#B9E2A8',top:1}));
-  b.sh(E(30,35,2.8,2.6,10),WMC_GRD,{k:0,hatch:0,hl:0,lw:.7,top:1});b.ln([[30,37],[27,45]],{w:1.4,col:WMC_GR,top:1});b.ln([[31,37],[35,44]],{w:1.4,col:WMC_GR,top:1});
+  // a twisted cotton rope toy bent into a cane: red and white strands twisting round it, a knot with a frayed tassel at each end (like the Rope Tug)
+  const P=[[17,50],[24,42],[31,33],[38,24],[43,16.4],[48.6,11.6],[54.4,12.6],[57,18.6]],m=wmRopeMarks(P,8.4,7.4,WMC_RD);
+  b.sh(ribbon(P,[11.6,11.6,11.6,11.6,11.6,11.6,11.6,11.6]),'#FFF6E6',{k:1/6,hatch:0,lw:1.15,base:'#FFFFFF',marks:m,inner:b.st(m.map(q=>b.jl(q.pts[0][0],q.pts[0][1],q.pts[2][0],q.pts[2][1],.3)+b.jl(q.pts[1][0],q.pts[1][1],q.pts[3][0],q.pts[3][1],.3)).join(''),INK,.7,.55)});
+  [[12,54,8.6,1],[57.4,23.4,6.8,0]].forEach(([x,y,r,low])=>{b.sh(E(x,y,r,r*.96,16),WMC_RD,{lw:1.15,hatch:0,hl:0,base:'#F6A8A0',marks:[{pts:[[x-r,y-r*.25],[x+r,y-r*.65],[x+r,y-r*.15],[x-r,y+r*.25]],fill:'#FFF6E6',k:0}],
+    det:[[[x-r*.45,y-r*.8],[x-r*.12,y],[x-r*.42,y+r*.82]],[[x+r*.2,y-r*.85],[x+r*.5,y],[x+r*.24,y+r*.84]]],dw:.9});
+   (low?[[x-r*.7,y+r*.6,x-r*1.1,y+r*1.12],[x-r*.15,y+r*.9,x-r*.25,y+r*1.18],[x+r*.45,y+r*.75,x+r*.6,y+r*1.12]]:[[x-r*.5,y+r*.8,x-r*.7,y+r*1.5],[x,y+r*.95,x+r*.05,y+r*1.62],[x+r*.5,y+r*.8,x+r*.8,y+r*1.45]]).forEach(q=>b.ln([[q[0],q[1]],[q[2],q[3]]],{w:1.4}))});
   b.ex('spark',10,12,3.4)},
  'Plush Penguin'(b){
   [[-1,15],[1,49]].forEach(([d,x])=>b.sh([[x-d*1,26],[x+d*6,34],[x+d*7,43],[x+d*3,44],[x-d*3,36]],WMC_BK,{k:.15,hatch:0,hl:0,lw:.8,base:WMC_BKL}));
@@ -6696,7 +6706,8 @@ Object.assign(ITEMS,{
   b.raw(b.st('M17 44q14 7 30 0','#FFFFFF',1.4,.85),'top');b.ex('spark',57,10,3.4,'#E3F2FC');b.ex('spark',8,54,2.8,'#E3F2FC')},
  'Present Puzzle Box'(b){
   b.sh([[10,30],[54,30],[52,58],[12,58]],WMC_RD,{k:.06,sh:WMC_RDD,base:'#F6A8A0',marks:[{pts:[[28,0],[36,0],[36,64],[28,64]],fill:WMC_GR,k:0}]});
-  [[19,44],[45,44]].forEach(([x,y])=>{b.sh(E(x,y,5,4.4,12),C.door,{base:'#7A5E52',hatch:0,hl:0,lw:.7,dr:.3});b.dot(x-1.2,y-.2,1.3,C.kib);b.dot(x+1.4,y+.6,1.2,'#C8874E')});
+  // two peek holes cut in the box (the pale card inside, a shadow along the top edge), a little bone biscuit in each
+  [[19,45,-.3],[45,45,.35]].forEach(([x,y,a])=>{b.sh(E(x,y,5.6,4.6,14),'#F3DCC0',{base:'#FBEBD6',hatch:0,hl:0,lw:.7,dr:.3,marks:[{pts:[[x-6,y-5],[x+6,y-5],[x+6,y-2.6],[x-6,y-1.6]],fill:'#D9B48E',k:0}]});b.sh(boneP(x,y+.8,7.2,2.8,a),'#D9934E',{hatch:0,hl:0,lw:.55,base:'#F2C48A',top:1})});
   b.sh(boneP(24,27,15,6,-.3),'#E6B47C',{hatch:0,hl:0,lw:.7});b.sh(boneP(40,26,12,5,.4),'#F2C48A',{hatch:0,hl:0,lw:.7});
   b.sh(rot([[8,16],[52,16],[52,24],[8,24]],-.16,30,20),WMC_RD,{k:.05,hl:0,hatch:0,lw:.9,base:'#F6A8A0',marks:[{pts:rot([[26,10],[34,10],[34,30],[26,30]],-.16,30,20),fill:WMC_GR,k:0}]});
   const bw=rot([[30,13]],-.16,30,20)[0];[-1,1].forEach(d=>b.sh([[bw[0],bw[1]],[bw[0]+d*9,bw[1]-7],[bw[0]+d*10,bw[1]+2]],WMC_GR,{k:.05,hatch:0,hl:0,lw:.8,base:'#B9E2A8',top:1}));
@@ -6743,6 +6754,8 @@ HOUSES['Gingerbread Kennel']=function(b){
   // two round windows with icing frames and a cross, the door in an iced arch with candy dots
   [[74,136],[166,136]].forEach(([x,y])=>{b.sh(E(x,y,17,17,22),WMH_IC,{hatch:0,hl:0,lw:.9,base:'#FFFFFF'});
    b.sh(E(x,y,11.5,11.5,18),'#FFE9A8',{hatch:0,hl:0,lw:.8,base:'#FFF4CC',inner:b.st(`M${x-12} ${y}H${x+12}M${x} ${y-12}V${y+12}`,WMH_GBD,1.6,.9)})});
+  // at night the panes glow warm yellow (the yard shows .pa-wb-glow on #houseG.night only)
+  b.raw('<g class="pa-wb-glow">');[[74,136],[166,136]].forEach(([x,y])=>b.sh(E(x,y,11.5,11.5,18),'#FFC94A',{k:.02,hatch:0,hl:0,lw:.8,base:'#FFE27A',marks:[{pts:E(x-3,y-3,5,4,10),fill:'#FFF3C2',op:.9}],inner:b.st(`M${x-12} ${y}H${x+12}M${x} ${y-12}V${y+12}`,WMH_GBD,1.6,.9)}));b.raw('</g>');
   b.sh(arch(92,148,190,114),WMH_IC,{hatch:0,hl:0,lw:.9,base:'#FFFFFF'});b.sh(arch(100,140,190,124),C.door,DOOR_O);
   [[95,150,WMC_RD],[96,134,WMC_GR],[103,120,'#F2C14E'],[120,116.5,WMC_RD],[137,120,WMC_GR],[144,134,'#F2C14E'],[145,150,WMC_RD]].forEach(([x,y,c])=>b.dot(x,y,2.3,c));
   // an iced heart over the door, gumdrops along the bottom of the walls on a squiggle of icing
@@ -6763,14 +6776,15 @@ BEDS['Present-Box Bed']=function(b){b.shadow(130,151,106,3.5);
   // tissue paper peeking over the back rim, then the inside of the box and the cushion
   const ts=[];for(let i=0;i<=12;i++)ts.push([56+i*12.4,i%2?62:74]);ts.push([205,84],[55,84]);
   b.sh(ts,'#E9F6E2',{k:0,hatch:0,hl:0,lw:.75,base:'#FFFFFF',marks:[{pts:[[100,50],[150,50],[150,90],[100,90]],fill:'#FBE3EA',k:0}]});
-  b.sh([[42,100],[56,76],[204,76],[218,100]],WMC_RDD,{k:.02,hatch:0,hl:0,lw:.9,base:'#C85A58',marks:[{pts:[[60,72],[200,72],[204,84],[56,84]],fill:'#8E2424',op:.6,k:0}]});
-  b.sh(cloudP(130,98,84,15,12,.06,60),'#FFF2DA',{hl:0,sh:'#D9B98C',ho:.3,base:'#FFF8EC',marks:[{pts:E(112,94,40,6,16),fill:'#FFFFFF',op:.85}]});
+  // (the front is low and the cushion high, so a long low dog asleep on it, a dachshund, still shows over the front)
+  b.sh([[40,114],[56,76],[204,76],[220,114]],WMC_RDD,{k:.02,hatch:0,hl:0,lw:.9,base:'#C85A58',marks:[{pts:[[60,72],[200,72],[204,84],[56,84]],fill:'#8E2424',op:.6,k:0}]});
+  b.sh(cloudP(130,103,86,16,12,.06,60),'#FFF2DA',{hl:0,sh:'#D9B98C',ho:.3,base:'#FFF8EC',marks:[{pts:E(112,98,40,6,16),fill:'#FFFFFF',op:.85}]});
   FRONT0(b);
   // the front of the box: red wrapping paper with little white dots, the green ribbon down the middle, a paw-print tag
-  const dots=[];for(let y=110,j=0;y<150;y+=11,j++)for(let x=50+(j%2)*11;x<214;x+=22)if(Math.abs(x-130)>16)dots.push({pts:E(x,y,2.2,2.2,8),fill:'#FFFFFF',op:.9});
-  b.sh([[38,100],[222,100],[218,150],[42,150]],WMC_RD,{k:.03,hl:0,sh:WMC_RDD,ho:.3,base:'#F6A8A0',marks:dots.concat([{pts:[[121,92],[139,92],[139,156],[121,156]],fill:WMC_GR,k:0}])});
-  b.sh([[36,96],[224,96],[224,104],[36,104]],WMC_RD,{k:0,hatch:0,hl:0,lw:.9,base:'#F6A8A0',marks:[{pts:[[121,90],[139,90],[139,108],[121,108]],fill:WMC_GR,k:0}]});
-  b.raw(b.st('M139 112l14 6',INK,1.1,.8));b.sh(rot([[150,114],[170,114],[170,128],[150,128]],.2,160,121),'#FFF6DC',{k:.02,hatch:0,hl:0,lw:.8});paw(b,160,121,2.8,WMC_RD,{noline:1,a:.2});
+  const dots=[];for(let y=124,j=0;y<150;y+=10,j++)for(let x=50+(j%2)*11;x<214;x+=22)if(Math.abs(x-130)>16)dots.push({pts:E(x,y,2.2,2.2,8),fill:'#FFFFFF',op:.9});
+  b.sh([[38,114],[222,114],[218,150],[42,150]],WMC_RD,{k:.03,hl:0,sh:WMC_RDD,ho:.3,base:'#F6A8A0',marks:dots.concat([{pts:[[121,114],[139,114],[139,152],[121,152]],fill:WMC_GR,k:0}])});
+  b.sh([[36,109],[224,109],[224,117],[36,117]],WMC_RD,{k:0,hatch:0,hl:0,lw:.9,base:'#F6A8A0',marks:[{pts:[[121,109],[139,109],[139,117],[121,117]],fill:WMC_GR,k:0}]});
+  b.raw(b.st('M139 122l14 5',INK,1.1,.8));b.sh(rot([[150,122],[170,122],[170,136],[150,136]],.2,160,129),'#FFF6DC',{k:.02,hatch:0,hl:0,lw:.8});paw(b,160,129,2.8,WMC_RD,{noline:1,a:.2});
   FRONT1(b);b.ex('spark',24,64,3.6,'#FFE07A')};
 BEDS['Little Sleigh Bed']=function(b){b.shadow(130,151,108,3.5);const GD=WMC_GD,GDD='#B8862A';
   // the sleigh's body: a high back on the left, a tall prow curling over on the right (behind the dog), gold scrolls painted on both ends
@@ -6829,8 +6843,8 @@ Object.assign(BED_ICON_H,{'Present-Box Bed':44,'Little Sleigh Bed':40,'Snowball 
   b.raw(`<g transform="translate(${R1(32-W/2)} ${R1(35-H/2)}) scale(${R1(W/w*1000)/1000} ${R1(H/h*1000)/1000}) translate(${-x} ${-y})">${t}</g>`);b.ex('spark',56,12,3.4,'#FFE07A')}});
 ITEMS['Gingerbread Kennel']=function(b){const t=PA.house('Gingerbread Kennel').replace(/^<svg[^>]*>/,'').replace(/<\/svg>$/,'');b.raw(`<g transform="translate(4 4) scale(.233)">${t}</g>`)};
 /* Part 5, three treats (FOOD, fest 'winter', fm): their 64 item cards (PA.WINTER_MARKET.treats) and the dog bowl (120). Food-safe by the look too:
-   Reindeer Crunch is carrot sticks and cored apple pieces (no pips) in a paper bag with a crude reindeer on it; the Turkey & Cranberry Bites are
-   plain pale turkey cubes (no skin, no gravy), one fresh cranberry each; the Frozen Yoghurt Snowballs are plain white balls in a red bowl, no
+   Reindeer Crunch is little whole carrots (green tops) and cored apple pieces (no pips) in a paper bag with a crude reindeer on it; the Turkey & Cranberry Bites are
+   torn shreds of plain cooked turkey (no skin, no gravy) with a few fresh cranberries; the Frozen Yoghurt Snowballs are plain white balls in a red bowl, no
    faces and no sauce (the Halloween Frozen Yoghurt Ghosts are ghost shapes with faces on a blue plate) */
 const WMT_CRAN='#C8323C',WMT_CRANL='#F07C80',WMT_TK='#EDCB9E',WMT_TKL='#F9E6C8',WMT_TKD='#D9AD7C',WMT_YG='#FFFFFF',WMT_YGS='#DDEBF7';
 function wmtCran(b,x,y,r){b.sh(E(x,y,r,r*.92,10),WMT_CRAN,{hatch:0,hl:0,lw:Math.max(.5,Math.min(.8,r/4)),dr:.1,marks:[{pts:E(x+r*.25,y+r*.3,r*.55,r*.4,8),fill:'#9E2430',op:.7}]});
@@ -6838,15 +6852,29 @@ function wmtCran(b,x,y,r){b.sh(E(x,y,r,r*.92,10),WMT_CRAN,{hatch:0,hl:0,lw:Math.
 function wmtBall(b,x,y,r){b.sh(E(x,y,r,r*.96,Math.max(12,Math.round(r*1.5))),WMT_YG,{k:.14,hatch:0,hl:0,lw:Math.max(.55,Math.min(.85,r/9)),base:'#fff',dr:.15,
   marks:[{pts:E(x+r*.28,y+r*.34,r*.7,r*.5,10),fill:WMT_YGS,op:.95}]});b.dot(x-r*.38,y-r*.36,Math.max(.6,r*.16),'#EEF6FC')}
 function wmtTurkey(b,x,y,s){cubeV(b,x,y,s,WMT_TKL,WMT_TK,WMT_TKD)}
+// a torn shred of plain cooked turkey (no skin): a long uneven strip with ragged ends and the meat's fibre lines along it, at (x, y), len long, w wide, turned a
+function wmtShred(b,x,y,len,w,a,v){const n=7,top=[],bot=[],q=v||0;for(let i=0;i<=n;i++){const t=i/n,u=(t-.5)*len,k=Math.sin(Math.PI*Math.min(1,Math.max(0,t*1.15-.04)))*.55+.45,
+   j1=[.0,.22,-.16,.14,-.2,.18,-.08,.04][(i+q)%8],j2=[.14,-.12,.2,-.18,.1,-.22,.12,-.1][(i+q*3)%8];top.push([u,-w*.5*k+w*j1]);bot.unshift([u+len*.04*((i+q)%2?1:-1),w*.5*k+w*j2])}
+  // ragged torn ends: a little zigzag at each end
+  const L0=[[-len*.5-w*.18,-w*.1],[-len*.5+w*.12,w*.08],[-len*.5-w*.14,w*.22]],L1=[[len*.5+w*.2,w*.12],[len*.5-w*.1,-w*.04],[len*.5+w*.16,-w*.24]];
+  const P=rot(top.concat(L1,bot,L0).map(([px,py])=>[x+px,y+py]),a,x,y);let d='';
+  [-.22,.04,.26].forEach((f,i)=>{const p0=rot([[x-len*.42+i*len*.06,y+w*f]],a,x,y)[0],p1=rot([[x+len*.38-i*len*.05,y+w*(f+.06)]],a,x,y)[0];d+=b.jl(p0[0],p0[1],p1[0],p1[1],.5)});
+  b.sh(P,WMT_TK,{k:.14,hatch:0,hl:0,lw:Math.max(.55,Math.min(.85,w/12)),base:WMT_TKL,marks:[{pts:rot([[x-len*.4,y+w*.16],[x+len*.4,y+w*.22],[x+len*.36,y+w*.6],[x-len*.38,y+w*.56]],a,x,y),fill:WMT_TKD,op:.4}],inner:b.st(d,'#CFA170',Math.max(.45,w/16),.6)})}
+// a little whole carrot, its wide top at (x, y), going len down along angle a (radians from straight down), w wide at the top, green leafy tops above
+function wmtCarrot(b,x,y,len,w,a,o={}){const M=P=>rot(P.map(([px,py])=>[x+px,y+py]),a,x,y);
+  const fz=o.leaf||w*.9;[[-.5,-.9,-.5],[0,-1.25,0],[.5,-.95,.45]].forEach(([dx,dy,t])=>{const c=M([[dx*w*.5,0]])[0],tip=M([[dx*w*.5+Math.sin(t)*fz*.9,dy*fz]])[0],m=[(c[0]+tip[0])/2,(c[1]+tip[1])/2],
+    v=[-(tip[1]-c[1]),tip[0]-c[0]],vm=Math.hypot(v[0],v[1])||1,k=fz*.26;
+   b.sh([c,[m[0]+v[0]/vm*k,m[1]+v[1]/vm*k],tip,[m[0]-v[0]/vm*k,m[1]-v[1]/vm*k]],'#6CB24A',{k:.2,hatch:0,hl:0,lw:Math.max(.5,Math.min(.75,w/10)),base:'#B5DC8E',top:o.top})});
+  const body=M([[-w*.5,0],[w*.5,0],[w*.4,len*.35],[w*.2,len*.75],[w*.04,len],[-w*.1,len*.94],[-w*.3,len*.6],[-w*.46,len*.28]]);
+  b.sh(body,ORNG,{k:.12,hatch:0,hl:0,lw:Math.max(.6,Math.min(.85,w/9)),base:'#F9BE86',top:o.top,det:[M([[-w*.36,len*.22],[w*.04,len*.24]]),M([[w*.36,len*.46],[0,len*.48]]),M([[-w*.22,len*.68],[w*.06,len*.7]])],dw:Math.max(.45,w/14),dcol:'#C96E2A'})}
 // an apple wedge like the Apple Slices card: red skin on the curved back, pale flesh, the cored edge flat (no pips)
 function wmtWedge(b,cx,cy,R,a){const out=[],inn=[],skin=[];for(let i=0;i<=10;i++){const t=-Math.PI*.5+Math.PI*i/10;out.push([cx+Math.cos(t)*R,cy+Math.sin(t)*R])}
   for(let i=10;i>=0;i--){const t=-Math.PI*.5+Math.PI*i/10;inn.push([cx-R*.35+Math.cos(t)*R*.25,cy+Math.sin(t)*R*.96]);skin.push([cx+Math.cos(t)*R*.78,cy+Math.sin(t)*R*.84])}
   b.sh(rot(out.concat(inn),a,cx,cy),'#FFE9B0',{k:.15,hatch:0,hl:0,lw:.8,base:'#FFF4D6',marks:[{pts:rot(out.concat(skin),a,cx,cy),fill:C.redD}]})}
 Object.assign(ITEMS,{
  'Reindeer Crunch'(b){
-  // carrot sticks poking out of a kraft bag with a crude reindeer face, two cored apple pieces in front
-  [[19,-.32,8],[25,-.12,4],[31,.06,6],[37,.2,3],[43,.36,9]].forEach(([x,a,yt])=>
-   b.sh(rot(RR(x-3,yt,6,30,2.6),a,x,36),ORNG,{hatch:0,hl:0,lw:.75,base:'#F9BE86',det:[rot([[x-1.6,yt+7],[x+.8,yt+7.6]],a,x,36),rot([[x-1.6,yt+14],[x+1,yt+14.6]],a,x,36)],dw:.6,dcol:'#C96E2A'}));
+  // little whole carrots with their green tops poking out of a kraft bag with a crude reindeer face, two cored apple pieces in front
+  [[17,14,.32],[29,10,.04],[41,14,-.3],[23,17,.16],[35,17,-.12]].forEach(([x,yt,a])=>wmtCarrot(b,x,yt,26,7.4,a,{leaf:7.6}));
   b.sh([[11,26],[47,25],[49,59],[9,59]],'#D9B27C',{k:.03,sh:'#B08550',ho:.4,base:'#EBCB9C',inner:b.st(b.jl(14,29,13,56,.3),'#B08550',.8,.5)});
   b.sh([[10,25],[48,24],[48,30],[10,31]],'#E2BE8A',{k:.03,hatch:0,hl:0,lw:.85,base:'#F0D4A8'});
   // the reindeer: two twiggy antlers, a round brown head, dot eyes, a big red nose
@@ -6854,14 +6882,14 @@ Object.assign(ITEMS,{
   b.sh(E(29,45,8.6,7.4,16),WMC_GB,{k:.1,hatch:0,hl:0,lw:.8,base:'#E3B48A',top:1});
   b.dot(25.6,43.2,1.2,INK,'top');b.dot(32.4,43.2,1.2,INK,'top');
   b.sh(E(29,48.4,3.2,2.6,10),WMC_RD,{hatch:0,hl:0,lw:.6,base:'#F6A8A0',top:1});b.dot(28,47.6,.7,'#FFD0C8','top');
-  wmtWedge(b,52,45,7.8,.45);wmtWedge(b,46,53,6.6,1.15);
+  wmtCarrot(b,12,58,20,6,-1.62,{leaf:5.6,top:1});wmtWedge(b,51,50,9,.5);wmtWedge(b,42,56,7.4,1.2);
   b.ex('spark',56,12,3.6);b.ex('dots',5,16,4);
  },
  'Turkey & Cranberry Bites'(b){
   plateV(b,32,49,29,10,C.mint,'#FFFFFF');
-  // a little pile of plain turkey cubes, a fresh cranberry on each, two spare berries on the plate
-  const S=8.4;[[16,30],[33,30],[8,39],[25,40],[42,39],[16,48],[33,48]].forEach(([x,y])=>{wmtTurkey(b,x,y,S);wmtCran(b,x+S*.95,y-.4,2.8)});
-  wmtCran(b,54,54,2.4);wmtCran(b,50,57.6,2.2);
+  // a little heap of torn plain turkey (no skin), a few fresh cranberries in between
+  [[24,34,17,8.6,-.5,0],[40,33,16,8.2,.45,1],[15,43,16,8.4,.2,2],[31,42,19,9.2,-.1,3],[47,43,15,8,-.6,4],[23,50,16,8,.35,5],[39,50,17,8.2,-.25,6]].forEach(([x,y,l,w,a,v])=>wmtShred(b,x,y,l,w,a,v));
+  [[32,32],[47,36],[21,44],[38,46],[53,54],[49,57.6]].forEach(([x,y],i)=>wmtCran(b,x,y,i>3?2.3:2.7));
   b.ex('spark',56,12,3.6);b.ex('heart',8,20,2.8);
  },
  'Frozen Yoghurt Snowballs'(b){
@@ -6883,13 +6911,13 @@ bowlFood=function(b,food){
   if(food==='Frozen Yoghurt Snowballs'){flake(b,14,34,5,WMC_ICD,1.6);flake(b,106,28,4.4,WMC_ICD,1.6)}
   bowl(b,60,62,45,12,32,C.pink,'#E58FA5',()=>{
    if(food==='Reindeer Crunch'){heapBase(b,'#F9BE86');
-     [[36,-.55],[48,-.25],[62,.05],[76,.3],[86,.6],[56,-.1]].forEach(([x,a],i)=>{const yt=i>4?32:26+Math.abs(x-60)*.3;
-      b.sh(rot(RR(x-4,yt,8,36,3.6),a,x,yt+32),ORNG,{hatch:0,hl:0,lw:.8,base:'#F9BE86',det:[rot([[x-2,yt+9],[x+1.2,yt+9.6]],a,x,yt+32),rot([[x-2,yt+19],[x+1.4,yt+19.6]],a,x,yt+32)],dw:.8,dcol:'#C96E2A'})});
+     [[34,44,-1.8],[86,42,1.8],[48,34,-1.42],[72,34,1.42],[60,44,-1.66]].forEach(([x,y,a])=>wmtCarrot(b,x,y,28,9,a,{leaf:8}));
      [[38,57],[62,59],[84,56],[50,47],[74,46]].forEach(([x,y],i)=>{const a=(i%3-1)*.3+(r()-.5)*.25,out=[],inn=[];for(let j=0;j<=10;j++){const t=Math.PI*(1+j/10);out.push([x+Math.cos(t)*11,y+4+Math.sin(t)*9])}
       for(let j=10;j>=0;j--){const t=Math.PI*(1+j/10);inn.push([x+Math.cos(t)*8.6,y+4+Math.sin(t)*6.8])}
       b.sh(rot(out,a,x,y),'#FFE9B0',{k:.15,hatch:0,hl:0,lw:.8,base:'#FFF4D6',marks:[{pts:rot(out.concat(inn),a,x,y),fill:C.redD}]})})}
    else if(food==='Turkey & Cranberry Bites'){heapBase(b,WMT_TK);
-     const S=10;[[42,37],[61,37],[32,46],[51,46],[70,46],[23,55],[42,55],[61,55],[80,55]].forEach(([x,y])=>{wmtTurkey(b,x,y,S);wmtCran(b,x+S*.95,y-.5,3.4)})}
+     [[46,36,22,11,-.4,0],[70,35,21,10.4,.38,1],[32,47,22,10.6,.2,2],[57,46,25,11.4,-.08,3],[84,48,21,10.4,-.5,4],[42,57,22,10,.3,5],[70,57,23,10.4,-.22,6]].forEach(([x,y,l,w,a,v])=>wmtShred(b,x,y,l,w,a,v));
+     [[57,35],[30,40],[86,42],[45,49],[71,50],[56,58],[90,57]].forEach(([x,y])=>wmtCran(b,x,y,3.4))}
    else if(food==='Frozen Yoghurt Snowballs'){heapBase(b,'#E3F2FC');
      [[34,58,9],[52,60,9.4],[70,60,9.4],[88,58,9],[42,46,9.2],[60,46,9.6],[78,46,9.2],[51,34,9.2],[69,34,9.2],[60,23,9]].forEach(([x,y,rr])=>wmtBall(b,x,y,rr))}
   });

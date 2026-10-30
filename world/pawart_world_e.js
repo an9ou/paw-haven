@@ -1226,7 +1226,26 @@ function fmGoods(b,th,x,y,i,theme){
 /* v2.17.2 Spooky Stalls: the Halloween Market dressed with the real item drawings (PawArt.item / prop / house / bed, nested at their own scale):
    costumes on little hangers under the clothes awning, toys in baskets, lanterns and garlands, a pumpkin pile, the bat bunting, a blank board per stall
    (the game writes the stall names on them: PawArt.FM_STALL_SIGNS) and two little stands in front for the homes and the treats */
-function fmNest(b,svg,x,y,w,h,where){if(!svg)return;const m=/viewBox="([^"]+)"/.exec(svg);if(!m)return;const inner=svg.replace(/^<svg[^>]*>/,'').replace(/<\/svg>\s*$/,'');
+// Winter Market art fixes: a nested drawing made lighter for the scene, the same at game size: its coordinates rounded to the grid q, repeated points
+// dropped, on a wobbly outline (10 curve steps or more) each two curve steps joined into one through their shared point (the hand wobble stays,
+// under half a pixel apart), and the path written in short relative steps. Paths with other commands (arcs, H/V) are left as they are.
+function fmLite(svg,q){const rd=v=>Math.round(v/q)*q,f=v=>{const r=Math.round(v/q)*q;return String(Math.abs(r)<1e-9?0:+r.toFixed(2))};
+  const nums=a=>a.map(f).reduce((o,v,i)=>o+(i&&v[0]!=='-'?' ':'')+v,'');
+  return svg.replace(/ d="([^"]+)"/g,(m,d)=>{if(/[^MLZQC\d\s.-]/.test(d))return m;
+    const t=d.match(/[MLZQC]|-?\d*\.?\d+/g),merge=t.filter(c=>c==='Q').length>=10;let out='',cmd='',oc='',x=0,y=0,sx=0,sy=0,pend=null;
+    const put=(c,v)=>{const n=nums(v);out+=(c!==oc||out.endsWith('z')?c:(n[0]==='-'?'':' '))+n;oc=c};
+    const Q=(c1,c2,p1,p2)=>{const X=rd(p1),Y=rd(p2),cx=rd(c1),cy=rd(c2);put('q',[cx-x,cy-y,X-x,Y-y]);x=X;y=Y};
+    const flush=()=>{if(pend){Q(...pend);pend=null}};
+    for(let i=0;i<t.length;){const c=t[i];if(/[MLZQC]/.test(c)){cmd=c;i++;if(c==='Z'){flush();out+='z';oc='z';x=sx;y=sy}continue}
+      if(cmd==='Q'){const n=t.slice(i,i+4).map(Number);i+=4;if(!merge){Q(...n);continue}
+        if(pend){Q(pend[2],pend[3],n[2],n[3]);pend=null}else pend=n;continue}
+      if(cmd==='C'){flush();const n=t.slice(i,i+6).map(Number);i+=6;const X=rd(n[4]),Y=rd(n[5]);put('c',[rd(n[0])-x,rd(n[1])-y,rd(n[2])-x,rd(n[3])-y,X-x,Y-y]);x=X;y=Y;continue}
+      flush();const n=t.slice(i,i+2).map(Number);i+=2;const X=rd(n[0]),Y=rd(n[1]);
+      if(cmd==='M'){out+='M'+nums([X,Y]);oc='M';x=sx=X;y=sy=Y;cmd='L';continue}
+      if(X===x&&Y===y)continue;put('l',[X-x,Y-y]);x=X;y=Y}
+    flush();return ' d="'+out+'"'}).replace(/ (x|y|cx|cy|r|rx|ry|width|height)="(-?\d+\.\d+)"/g,(m,a,v)=>' '+a+'="'+f(+v)+'"')}
+function fmNest(b,svg,x,y,w,h,where,lite){if(!svg)return;const m=/viewBox="([^"]+)"/.exec(svg);if(!m)return;let inner=svg.replace(/^<svg[^>]*>/,'').replace(/<\/svg>\s*$/,'');
+  if(lite){const vw=+m[1].split(/[\s,]+/)[2]||w;inner=fmLite(inner,1)}
   b.raw(`<svg x="${R1(x)}" y="${R1(y)}" width="${R1(w)}" height="${R1(h)}" viewBox="${m[1]}" overflow="visible">${inner}</svg>`,where)}
 const fmIt=(n)=>{try{return PA.item(n)}catch(e){return ''}},fmPr=(n,o)=>{try{return PA.prop(n,o||{})}catch(e){return ''}};
 function fmBoard(b,x,y,w){b.ln([[x-w*.32,y-14],[x-w*.26,y]],{w:1.2});b.ln([[x+w*.32,y-14],[x+w*.26,y]],{w:1.2});b.sh([[x-w/2,y],[x+w/2,y],[x+w/2-3,y+28],[x-w/2+3,y+28]],'#FFF6DC',{k:0,hatch:0,hl:0,lw:.9})}
@@ -1271,41 +1290,52 @@ function fmGlowW(b,x,y,rx,ry,op){b.raw(`<g class="pa-wb-glow"><ellipse cx="${R1(
 function fmDressWm(b,th,x0,w,i,lit){const y0=262,top=y0-70+(i===0?FM_LOW0:0),cy=y0+90;
   fmSnowCap(b,x0-8,x0+w+8,top-14);
   if(i===0){// decorations: the fairy lights under the awning, the snowman and the presents on the counter, the fir tree beside, the star lantern in front
-    fmNest(b,fmPr('wmcanelights',{lit}),x0+10,top+40,w-20,(w-20)*80/300);
-    fmNest(b,fmPr('wmsnowman'),x0+22,cy-174*.36,140*.36,180*.36);
-    fmNest(b,fmPr('wmpresents'),x0+w-104,cy-114*.46,160*.46,120*.46);
-    fmNest(b,fmPr('wmfirtree'),x0-50,y0+180-194*.56,140*.56,200*.56,'top');
-    fmNest(b,fmPr('wmstarlantern',{lit}),x0+w-72,y0+222-194*.5,120*.5,200*.5,'top')}
-  else if(i===1){// clothes: a rail under the awning with winter costumes on little hangers, the hood and the bell collar folded on the counter
-    b.ln([[x0+18,top+74],[x0+w-18,top+74]],{w:2.4,col:'#A97E5A'});
-    ['Father Christmas Suit','Little Elf Outfit','Penguin Suit','Snowman Suit'].forEach((n,k)=>{const x=x0+46+k*52;fmHanger(b,x,top+68);fmNest(b,fmIt(n),x-25,top+84,50,50)});
-    ['Polar Bear Hood','Jingle Bell Collar'].forEach((n,k)=>fmNest(b,fmIt(n),x0+18+k*170,cy-40,44,44))}
+    fmNest(b,fmPr('wmcanelights',{lit}),x0+10,top+40,w-20,(w-20)*80/300,undefined,1);
+    fmNest(b,fmPr('wmsnowman'),x0+22,cy-174*.36,140*.36,180*.36,undefined,1);
+    fmNest(b,fmPr('wmpresents'),x0+w-104,cy-114*.46,160*.46,120*.46,undefined,1);
+    fmNest(b,fmPr('wmfirtree'),x0-50,y0+180-194*.56,140*.56,200*.56,'top',1);
+    fmNest(b,fmPr('wmstarlantern',{lit}),x0+w-72,y0+222-194*.5,120*.5,200*.5,'top',1)}
+  else if(i===1){// clothes: a rail under the awning with five winter costumes on little hangers (the Polar Bear Hood on its own, ears up), the bell collar on the counter clear of them
+    b.ln([[x0+12,top+74],[x0+w-12,top+74]],{w:2.4,col:'#A97E5A'},1);
+    ['Father Christmas Suit','Little Elf Outfit','Penguin Suit','Snowman Suit','Polar Bear Hood'].forEach((n,k)=>{const x=x0+33+k*46;fmHanger(b,x,top+68);fmNest(b,fmIt(n),x-22,top+82,44,44,undefined,1)});
+    fmNest(b,fmIt('Jingle Bell Collar'),x0+w/2-19,cy-27,38,38,undefined,1)}
   else{// toys: the paper snowflakes under the awning, two baskets of toys, the puzzle box on the snow beside the stall
-    fmNest(b,fmPr('wnsnowflakes'),x0+14,top+56,w-28,(w-28)*80/300);
+    fmNest(b,fmPr('wnsnowflakes'),x0+14,top+56,w-28,(w-28)*80/300,undefined,1);
     fmBasket(b,x0+22,cy-26,92,26);fmBasket(b,x0+136,cy-26,92,26);
-    [['Snowball Ball',x0+20,-40],['Squeaky Snowman',x0+58,-46],['Plush Penguin',x0+134,-46],['Candy-Cane Rope',x0+176,-42]].forEach(([n,x,dy])=>fmNest(b,fmIt(n),x,cy+dy,46,46))}
+    [['Snowball Ball',x0+20,-40],['Squeaky Snowman',x0+58,-46],['Plush Penguin',x0+134,-46],['Candy-Cane Rope',x0+176,-42]].forEach(([n,x,dy])=>fmNest(b,fmIt(n),x,cy+dy,46,46,undefined,1))}
   fmBoard(b,x0+w/2,y0+124,96)}
 // the homes stand and the treats cart (where the Halloween ones stand), the sled in a drift by the decor stall, snow on the ground
 function fmFrontWm(b,th,lit){
   [[150,478,58,18],[905,480,50,16]].forEach(([x,y,rx,ry])=>fmDrift(b,x,y,rx,ry));
-  b.sh([[296,520],[374,520],[372,560],[298,560]],'#E2B07E',{k:0,sh:'#C58F5E',hl:0,lw:.9});fmNest(b,PA.bed?PA.bed('Little Sleigh Bed'):'',290,466,90,55);fmBoard(b,335,428,70);
+  b.sh([[296,520],[374,520],[372,560],[298,560]],'#E2B07E',{k:0,sh:'#C58F5E',hl:0,lw:.9});fmNest(b,PA.bed?PA.bed('Little Sleigh Bed'):'',290,466,90,55,undefined,1);fmBoard(b,335,428,70);
   b.sh([[632,512],[702,512],[700,556],[634,556]],'#E2B07E',{k:0,sh:'#C58F5E',hl:0,lw:.9});[[640,560],[694,560]].forEach(([x,y])=>b.sh(E(x,y,7,7,12),'#A97E5A',{hatch:0,hl:0,lw:.8}));
-  fmNest(b,fmIt('Frozen Yoghurt Snowballs'),642,466,48,48);fmBoard(b,667,428,70);
-  fmDrift(b,62,576,64,16);fmNest(b,fmPr('wnsled'),6,520,200*.5,120*.5);
-  fmDrift(b,966,452,36,13);fmNest(b,fmIt('Present Puzzle Box'),940,404,50,50);
+  fmNest(b,fmIt('Frozen Yoghurt Snowballs'),642,466,48,48,undefined,1);fmBoard(b,667,428,70);
+  fmDrift(b,62,576,64,16);fmNest(b,fmPr('wnsled'),6,520,200*.5,120*.5,undefined,1);
+  fmDrift(b,966,452,36,13);fmNest(b,fmIt('Present Puzzle Box'),940,404,50,50,undefined,1);
   [[316,250],[338,312],[648,246],[676,318],[972,246],[988,330],[24,214],[470,236],[530,252],[860,170]].forEach(([x,y],k)=>fmFlake(b,x,y,3+(k%3)));
   if(lit)[[250,190],[750,190]].forEach(([x,y])=>fmGlowW(b,x,y,30,30,.32))}
 const FM_STALL_SIGNS={decor:[165,386,96],clothes:[500,386,96],toys:[835,386,96],homes:[335,428,70],treats:[667,428,70]};
 const FM_LOW0=34;// the decor stall's roof sits a little lower in the Halloween scene, clear of the place chip (top left)
 // Winter Market review: o.plain (a market drawn in another market's colours, e.g. the Harvest Market in the Halloween ones) has the plain goods,
 // no dressing, boards or front stands; o.open[i] false = a stall with nothing on sale today, drawn as a bare counter (no goods)
+// Winter Market art fixes: a stall with nothing on sale today is laid out on purpose, not left bare: a cloth with a scalloped hem in the market's
+// colours over its counter and a little jug of flowers on top (no goods, so nothing looks for sale)
+function fmBare(b,th,x0,w,y0){const top=y0+88,hem=y0+124,n=7,P=[[x0-5,top-2],[x0+w+5,top-2],[x0+w+3,hem-6]];
+  for(let k=n;k>=0;k--){const x=x0+3+(w-6)*k/n;P.push([x,hem-(k%2?0:6)])}P.push([x0-3,hem-6]);
+  const dots=[];for(let k=0;k<9;k++)dots.push({pts:E(x0+18+k*(w-36)/8,top+14+(k%2)*6,2.6,2.4,8),fill:th.b,op:.75,k:0});
+  b.sh(P,'#FFFBF0',{k:.12,hatch:0,hl:0,lw:.9,base:'#FFFFFF',marks:dots.concat([{pts:[[x0-6,hem-14],[x0+w+6,hem-14],[x0+w+6,hem+2],[x0-6,hem+2]],fill:th.a,op:.85,k:0}])});
+  const cx=x0+w/2,G=top;
+  [[-9,-36,-.5],[0,-44,0],[9,-34,.5]].forEach(([dx,dy,a])=>b.ln([[cx,G-18],[cx+dx*.5,G-18+dy*.4],[cx+dx,G-18+dy*.62]],{w:1.6,col:'#5E9446'}));
+  [[-6,-30,-.6],[6,-28,.6]].forEach(([dx,dy,a])=>b.sh(rot(E(cx+dx,G+dy,5,2.4,10),a,cx+dx,G+dy),'#7FB86A',{k:.1,hatch:0,hl:0,lw:.6}));
+  [[-9,-41],[0,-50],[9,-39]].forEach(([dx,dy],k)=>{b.sh(cloudP(cx+dx,G+dy,6.4,6.2,5,.32,25),k===1?th.b:th.a,{k:.2,hatch:0,hl:0,lw:.7,base:'#FFFFFF'});b.dot(cx+dx,G+dy,1.9,'#FFD56B')});
+  b.sh([[cx-9,G],[cx-11,G-12],[cx-7,G-20],[cx+7,G-20],[cx+11,G-12],[cx+9,G]],th.b,{k:.15,hatch:0,hl:0,lw:.85,base:'#FFFFFF',marks:[{pts:[[cx-12,G-12],[cx+12,G-12],[cx+12,G-9],[cx-12,G-9]],fill:'#FFFFFF',op:.8,k:0}]})}
 function fmStall(b,th,x0,w,theme,i,lit,plain,open){
   const y0=262,top=y0-70+(i===0?FM_LOW0:0);// Winter Market part 6: every theme's decor roof sits low, clear of the place chip
   [[x0+14],[x0+w-14]].forEach(([x])=>b.sh([[x-6,y0+150],[x-6,top+40],[x+6,top+40],[x+6,y0+150]],'#E2B07E',{k:0,sh:'#C58F5E',hl:0}));
   const n=6,sw2=w/n;for(let k=0;k<n;k++){const a=x0+k*sw2,c=k%2?th.c:th.a;b.sh([[a,top],[a+sw2,top],[a+sw2,top+44],[a+sw2/2,top+58],[a,top+44]],c,{k:.05,hatch:k%2?0:1,hl:0,sh:th.b,lw:.9})}
   b.sh([[x0-8,top-14],[x0+w+8,top-14],[x0+w+8,top+4],[x0-8,top+4]],th.b,{k:0,hatch:0,hl:0});
   b.sh([[x0,y0+90],[x0+w,y0+90],[x0+w-6,y0+160],[x0+6,y0+160]],'#E2B07E',{k:0,sh:'#C58F5E',marks:[{pts:[[x0,y0+90],[x0+w,y0+90],[x0+w,y0+108],[x0,y0+108]],fill:th.c,k:0}]});
-  if(open===false)return;
+  if(open===false){fmBare(b,th,x0,w,y0);return}
   if(theme==='halloween'&&!plain)fmDressHw(b,th,x0,w,i);else if(theme==='winter'&&!plain)fmDressWm(b,th,x0,w,i,!!lit);else fmGoods(b,th,x0+36,y0+84,i,theme);
 }
 function fmLantern(b,x,y,col,lit){b.ln([[x,y-30],[x,y-14]],{w:1.4});b.sh(E(x,y,13,16,16),col,{hatch:0,hl:0,lw:.9,marks:lit?[{pts:E(x,y,7,9,12),fill:'#FFF6C8',op:.9}]:[],inner:b.st(b.jl(x-12,y,x+12,y),'#5B3D32',.8,.5)});b.sh(RR(x-6,y+14,12,5,1),'#5B3D32',{k:0,hatch:0,hl:0,lw:.5})}
