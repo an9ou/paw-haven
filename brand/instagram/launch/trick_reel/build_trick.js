@@ -36,7 +36,7 @@ const PA = win.PawArt, inner = (s) => s.replace(/^<svg[^>]*>/, '').replace(/<\/s
 
 // ---- the words (RedNote: the game's own zh-Hans names) ----
 const TX = RN ? { hook: ['第4扇门，', '零食全没了'], hookSize: 92, hookSub: '不给糖就捣蛋，蜡笔版', knock: '咚咚咚', ask: '不给糖就捣蛋！', askSize: 54, newc: '万圣节新服装', run: '……零食不要了',
-  sub: '一款免费的温馨狗狗游戏', pill: '搜索 Doodle Doggo 就能玩', pillSize: 58, market: '万圣节市集开到11月15日', line: '不给糖就捣蛋？要糖。永远要糖。', lineSize: 50, labelSize: 52 }
+  sub: '一款免费的温馨狗狗游戏', pill: '搜索 Doodle Doggo 就能玩', pillSize: 50, market: '万圣节市集开到11月15日', line: '不给糖就捣蛋？要糖。永远要糖。', lineSize: 50, labelSize: 52 }
   : { hook: ['door 4 cost him', 'every treat'], hookSize: 96, hookSub: 'trick or treat, but make it crayon', knock: 'knock knock', ask: 'trick or treat!', askSize: 62, newc: 'new Halloween costume', run: '...he left the treats.',
   sub: 'a free cozy dog game', pill: 'play free at doodledoggo.app', pillSize: 66, market: 'the Halloween Market is open until 15 Nov', line: 'trick or treat? treat. always treat.', lineSize: 58, labelSize: 60 };
 // the four doors: a place, a kennel, the dog who answers in a new Halloween Market costume, and a dog-safe treat (the last door has none)

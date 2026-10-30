@@ -1,10 +1,10 @@
 # Marketing handoff (30 Oct 2026)
 
 Branch `marketing/launch` (main merged at v2.18.3). The owner installed Instagram skills: check which help with Reels and captions.
-1. Waiting for the owner's approval of the English versions:
-   - `brand/instagram/launch/trick_reel/doodle-doggo-trick-or-treat.mp4`: dogs spaced on the ending page, no bucket.
-   - `brand/instagram/launch/safe_reel/doodle-doggo-is-this-safe.mp4`: kitchen background with no words.
-2. After approval, make the RedNote cuts: `REDNOTE=1 NODE_PATH=$(npm root -g) node brand/instagram/launch/<trick_reel/build_trick.js|safe_reel/build_safe.js> <workdir>`, then copy the `-rednote` mp4 and cover jpg next to the English ones. The RedNote files in the repo are old (old legs and music).
+1. Done 30 Oct 2026: the owner approved both English Reels (new hooks, faster first doors on Trick, longer lessons on Safe), and the RedNote cuts are rendered:
+   - `trick_reel/doodle-doggo-trick-or-treat.mp4` (10.5 s) and `-rednote.mp4`, with `trick-cover(-rednote).jpg`.
+   - `safe_reel/doodle-doggo-is-this-safe.mp4` (21.7 s) and `-rednote.mp4`, with `safe-cover(-rednote).jpg`.
+2. Remake: `[REDNOTE=1] NODE_PATH=$(npm root -g) node brand/instagram/launch/<trick_reel/build_trick.js|safe_reel/build_safe.js> <workdir>`, then copy the mp4 and the cover jpg next to the others. The review is in `docs/marketing/REEL_REVIEW_TRICK_SAFE.md`.
 3. Captions (IG, Shorts, X, RedNote) are in `docs/marketing/TRICK_REEL.md` and `SAFE_REEL.md`. The dancing Reel is in `FREESTYLE_REEL.md`; the RedNote profile and the hello post are in `REDNOTE.md`.
 4. Owner rules from 29–30 Oct:
    - Render the English version first; make the RedNote version only after approval.
