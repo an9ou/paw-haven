@@ -6419,7 +6419,8 @@ PA.HALLOWEEN_MARKET={costumes:['Little Witch Hat & Cape','Scarecrow Overalls','M
      wmpresents 160x120           'Present Pile': three wrapped boxes with ribbons and bows, a paw-print tag. Ground y=114
      wmstarlantern {lit} 120x200  'Star Lantern': a paper star lantern with cut-out holes on a wooden post. Lit: it glows. Ground y=194
    Lit parts sit in <g class="pa-wb-glow"> so the night tint keeps their colours. Every fill sits inside its own line (marks are clipped).
-   PA.WINTER_MARKET groups the set; later parts (costumes, toys, homes, treats, the scene) add their lists to it. */
+   Part 2, ten costumes (the drawing on the dog is in dogs/pawart_dogs.js): their 64 item cards, listed in PA.WINTER_MARKET.costumes.
+   PA.WINTER_MARKET groups the set; later parts (toys, homes, treats, the scene) add their lists to it. */
 const WM_FIR='#5E9446',WM_FIRD='#3F6E3A',WM_FIRL='#B5D8A2',WM_POT='#D9825B',WM_POTD='#B0603E',WM_POTL='#F3C2A6',WM_STK='#8E6446';
 // a fir tier: bottom scallops between two tips, a little shelf on each side, a point at the top
 function wmTier(x,yb,w,h){const p=[];for(let j=0;j<=8;j++)p.push([x-w+j*w/4,yb+(j%2?4.4:0)]);
@@ -6555,7 +6556,79 @@ Object.assign(ITEMS,{
   wmCane(b,7,15,1.05,.08);[[20,.1],[34,-.08],[48,.12]].forEach(([x,a],i)=>wmBulb(b,x,sy(x),sy(x)+15+(i%2)*4,a,false,1.08));b.ex('spark',58,52,3.2,'#FFE07A')},'Present Pile'(b){hmPropCard(b,'wmpresents',false,[2,16,156,102])},
  'Star Lantern'(b){hmPropCard(b,'wmstarlantern',false,[6,12,108,136])}
 });
-PA.WINTER_MARKET={decor:Object.assign({},WM_LBL)};
+/* Part 2, the ten costume item cards (64): a garment on its own like the Halloween Market cards, the head piece above it */
+const WMC_RD='#E2403A',WMC_RDD='#A82A2A',WMC_SN='#FFFDF8',WMC_SND='#C9D2DE',WMC_GR='#4FA548',WMC_GRD='#2F7A35',WMC_GD='#F2C14E',WMC_BK='#3B3346',WMC_BKL='#6A5E7E',
+  WMC_GB='#B8733C',WMC_GBD='#86502A',WMC_PU='#3DB5C6',WMC_PUD='#1F8494',WMC_IC='#CFE8F7',WMC_ICD='#7FB3E0',WMC_NC='#D23A48',WMC_NV='#2F3F86';
+// a little gold bell (round, a slot, a clapper) on top
+function wmcBell(b,x,y,s){b.sh(E(x,y,s,s*.94,12),WMC_GD,{k:.05,hatch:0,hl:0,lw:.6,base:'#FFE9A8',top:1});b.raw(b.st(`M${R1(x-s*.6)} ${R1(y+s*.2)}H${R1(x+s*.6)}`,INK,.7),'top');b.dot(x,y+s*.55,Math.max(.6,s*.24),INK,'top')}
+// a paper snowflake: six arms with shoulders, a white crayon snowflake drawn on it
+function wmcFlake(b,x,y,R,a){const K=[1,.8,.64,.8],p=[];for(let i=0;i<24;i++){const t=a+i*Math.PI/12,r=R*K[i%4];p.push([x+Math.cos(t)*r,y+Math.sin(t)*r])}
+  b.sh(p,WMC_IC,{k:.04,hatch:0,hl:0,lw:.7,base:'#F2F9FE',dr:.15});flake(b,x,y,R*.55,'#FFFFFF',1.3);b.dot(x,y,Math.max(.8,R*.1),WMC_ICD,'top')}
+Object.assign(ITEMS,{
+ 'Father Christmas Suit'(b){
+  b.sh([[14,32],[50,32],[56,58],[8,58]],WMC_RD,{sh:WMC_RDD,base:'#F6A8A0',marks:[{pts:[[0,42],[64,42],[64,47],[0,47]],fill:WMC_BK,k:0}]});
+  b.sh(RR(28.4,40.6,7.2,7.6,1.2),WMC_GD,{k:.05,hatch:0,hl:0,lw:.7,top:1});b.raw(b.st('M30.6 42.6v3.6',INK,.7),'top');
+  b.sh(cloudP(32,58,25,4.4,14,.3,48),WMC_SN,{k:.1,hatch:0,hl:0,lw:.8,base:'#FFFFFF'});
+  b.sh([[19,30],[24,16],[32,8],[42,8],[50,14],[54,20],[48,20],[42,16],[40,22],[45,30]],WMC_RD,{k:.12,hatch:0,hl:0,lw:.9,base:'#F6A8A0'});
+  b.sh(cloudP(32,30,16,4,12,.3,40),WMC_SN,{k:.1,hatch:0,hl:0,lw:.8,base:'#FFFFFF'});b.sh(cloudP(53,21,4.4,4.4,7,.3,28),WMC_SN,{k:.1,hatch:0,hl:0,lw:.7,base:'#FFFFFF',top:1});
+  b.ex('spark',8,12,3.4)},
+ 'Little Elf Outfit'(b){
+  b.sh([[16,28],[48,28],[54,50],[49,57],[45,51],[40,59],[35,51],[29,59],[24,51],[19,57],[10,50]],WMC_GR,{k:.06,sh:WMC_GRD,base:'#B9E2A8',marks:[{pts:[[0,40],[64,40],[64,45],[0,45]],fill:'#7A4E2C',k:0}]});
+  b.sh(RR(28.6,39,6.8,7,1),WMC_GD,{k:.05,hatch:0,hl:0,lw:.6,top:1});
+  b.sh([[15,27],[49,27],[46,34],[41,30],[37,35],[32,30],[27,35],[23,30],[18,34]],WMC_RD,{k:.05,hatch:0,hl:0,lw:.8,base:'#F6A8A0'});
+  b.sh([[22,24],[28,12],[34,5],[42,3],[47,7],[40,7],[36,12],[42,24]],WMC_GR,{k:.1,hatch:0,hl:0,lw:.9,base:'#B9E2A8'});
+  b.ln([[22,22],[42,22]],{w:2.6,col:WMC_RD});wmcBell(b,49,8,3.4);b.ex('spark',10,12,3.2)},
+ 'Gingerbread Pup Suit'(b){
+  b.sh([[12,18],[52,18],[56,46],[46,58],[18,58],[8,46]],WMC_GB,{sh:WMC_GBD,base:'#E3B48A',
+   inner:b.st('M14 23l3 -2l3 2l3 -2l3 2l3 -2l3 2l3 -2l3 2l3 -2l3 2l3 -2l3 2l3 -2M13 50l3 2l3 -2l3 2l3 -2l3 2l3 -2l3 2l3 -2l3 2l3 -2l3 2l3 -2l3 2','#FFFFFF',1.5)});
+  b.sh(E(32,33,3.8,3.6,12),'#E8505B',{k:.05,hatch:0,hl:0,lw:.6,top:1});b.sh(E(32,43,3.8,3.6,12),'#6CC25A',{k:.05,hatch:0,hl:0,lw:.6,top:1});
+  b.dot(31,32,1,'#FFFFFF','top');b.dot(31,42,1,'#FFFFFF','top');
+  b.raw(b.st('M19 34l1.6 -2.2l1.6 1.4l1.6 -1.4l1.6 2.2l-3.2 3.4z','#FFFFFF',1.2),'top');b.ex('spark',56,8,3.4)},
+ 'Snowman Suit'(b){
+  b.sh([[10,28],[54,28],[56,50],[46,60],[18,60],[8,50]],WMC_SN,{sh:WMC_SND,base:'#FFFFFF'});
+  [[33,35],[33,44],[33,53]].forEach(([x,y])=>b.sh(E(x,y,2.4,2.3,8),'#3A3236',{k:.05,hatch:0,hl:0,lw:.5,top:1}));
+  flake(b,17,40,3.6,WMC_ICD,1.1);flake(b,47,48,3,WMC_ICD,1);
+  b.sh(RR(23,6,18,18,2),WMC_BK,{k:.05,hatch:0,hl:0,lw:.9,base:WMC_BKL,marks:[{pts:[[0,17],[64,17],[64,21],[0,21]],fill:WMC_RD,k:0}]});
+  b.sh(RR(15,22.6,34,4.6,2.2),WMC_BK,{k:.05,hatch:0,hl:0,lw:.8,base:WMC_BKL});
+  b.sh([[38,17],[52,9],[53,11],[39,21]],'#F28A2E',{k:.05,hatch:0,hl:0,lw:.7,base:'#FBC59A',top:1});b.ln([[37,18],[34,14]],{w:1.2,col:WMC_GRD,top:1});b.ln([[37,19],[33,18]],{w:1.2,col:WMC_GRD,top:1});
+  b.ex('spark',8,12,3.2)},
+ 'Polar Bear Hood'(b){
+  [[15,12],[49,12]].forEach(([x,y])=>b.sh(E(x,y,7.6,7.4,14),'#FBFAF4',{k:.1,hatch:0,hl:0,lw:.9,base:'#FFFFFF',marks:[{pts:E(x,y-.6,3.8,3.6,10),fill:'#E9D2CC',k:.1}]}));
+  b.sh([[8,58],[6,34],[14,18],[32,12],[50,18],[58,34],[56,58],[46,58],[46,40],[40,30],[24,30],[18,40],[18,58]],'#FBFAF4',{k:.12,sh:WMC_SND,base:'#FFFFFF',
+   inner:b.st('M12 44l1.6 1.6l1.6 -1.6l1.6 1.6M47 48l1.6 1.6l1.6 -1.6l1.6 1.6M28 20l1.6 1.6l1.6 -1.6l1.6 1.6',WMC_SND,1)});
+  b.ex('spark',58,8,3.4)},
+ 'Penguin Suit'(b){
+  b.sh(E(32,16,13,10,18),WMC_BK,{k:.1,hatch:0,hl:0,lw:.9,base:WMC_BKL});
+  [27,37].forEach(x=>{b.sh(E(x,14,2.6,2.8,10),'#FFFFFF',{k:0,hatch:0,hl:0,lw:.5,top:1});b.dot(x+.5,14.4,1.1,INK,'top')});b.sh([[29,18.6],[35,18.6],[32,23]],'#F28A2E',{k:0,hatch:0,hl:0,lw:.5,top:1});
+  b.sh([[16,26],[48,26],[52,48],[44,60],[20,60],[12,48]],WMC_BK,{sh:'#251F2A',base:WMC_BKL,marks:[{pts:E(32,46,12,13,16),fill:'#FFFFFF',k:.1}]});
+  [[-1,15],[1,49]].forEach(([d,x])=>b.sh([[x+d*2,28],[x+d*9,38],[x+d*11,47],[x+d*7,49],[x-d*2,38]],WMC_BK,{k:.15,hatch:0,hl:0,lw:.8,base:WMC_BKL}));
+  [[24,61],[40,61]].forEach(([x,y])=>b.sh([[x-5,y],[x-3,y-3],[x+3,y-3],[x+5,y]],'#F28A2E',{k:.05,hatch:0,hl:0,lw:.6,base:'#FBC59A'}));
+  b.sh([[28,25],[36,25],[37,30],[27,30]],WMC_BK,{k:.1,hatch:0,hl:0,lw:.6,top:1});b.ex('spark',58,54,3.2)},
+ 'Puffer Jacket'(b){
+  b.sh([[12,18],[52,18],[57,26],[54,34],[57,42],[54,50],[56,58],[8,58],[10,50],[7,42],[10,34],[7,26]],WMC_PU,{k:.2,sh:WMC_PUD,base:'#BDEBF1',hl:0,
+   inner:b.st(b.jl(8,30,56,30,.4)+b.jl(8,38,56,38,.4)+b.jl(8,46,56,46,.4)+b.jl(8,54,56,54,.4),WMC_PUD,1.2)+b.st('M14 25q4 -2 8 0M40 33q4 -2 8 0M16 41q4 -2 8 0M38 49q4 -2 8 0','#FFFFFF',1.4,.85)});
+  b.sh(ribbon([[12,18],[32,15],[52,18]],[6,6.4,6]),'#2CA0B0',{k:1/6,hatch:0,hl:0,lw:.9});
+  b.sh(ribbon([[8,58],[32,59.5],[56,58]],[4.6,4.6,4.6]),'#F0679A',{k:1/6,hatch:0,hl:0,lw:.8});
+  b.ln([[32,20],[32,56]],{w:1.1,col:'#1F8494',top:1});b.sh(RR(30,22,4,7,1.2),'#FFD84A',{k:.05,hatch:0,hl:0,lw:.6,top:1});b.ex('spark',58,8,3.4)},
+ 'Nutcracker Jacket & Hat'(b){
+  b.sh([[14,32],[50,32],[54,60],[10,60]],WMC_NC,{sh:'#9E1E2E',base:'#F2A4AC',marks:[{pts:[[0,55],[64,55],[64,60],[0,60]],fill:WMC_NV,k:0},{pts:[[16,32],[22,32],[48,58],[42,58]],fill:'#FFFFFF',k:0}]});
+  [[38,38],[38,45],[38,52]].forEach(([x,y])=>b.sh(E(x+3,y,2,2,8),WMC_GD,{k:0,hatch:0,hl:0,lw:.5,top:1}));
+  [[10,33],[46,33]].forEach(([x,y])=>{b.sh(RR(x,y-2,8,4,1.6),WMC_GD,{k:.05,hatch:0,hl:0,lw:.6,top:1});b.raw(b.st(`M${x+1.6} ${y+2}v3M${x+4} ${y+2}v3.4M${x+6.4} ${y+2}v3`,'#B8862A',.9),'top')});
+  b.sh(cloudP(32,6,4.4,5,6,.3,28),WMC_RD,{k:.1,hatch:0,hl:0,lw:.7});
+  b.sh([[22,30],[21,9],[43,9],[42,30]],WMC_BK,{k:.04,hatch:0,hl:0,lw:.9,base:WMC_BKL,marks:[{pts:[[0,25],[64,25],[64,29],[0,29]],fill:WMC_GD,k:0},{pts:[[0,9],[64,9],[64,12],[0,12]],fill:WMC_GD,k:0}]});
+  b.sh(starP(32,18,3.8,1.7),WMC_GD,{k:0,hatch:0,hl:0,lw:.5,top:1});b.ex('spark',56,10,3.2)},
+ 'Snowflake Wings'(b){
+  b.loop(E(32,38,7,5,12),{w:1.8,col:WMC_ICD});
+  wmcFlake(b,15,47,8,.3);wmcFlake(b,49,47,8,-.2);wmcFlake(b,16,26,13,.1);wmcFlake(b,48,26,13,.25);
+  b.ex('spark',32,12,3.4)},
+ 'Jingle Bell Collar'(b){
+  b.sh(ribbon([[7,24],[18,16],[32,14],[46,16],[57,24]],[4.5,4.5,4.5,4.5,4.5]),'#B8343A',{hatch:0,hl:0,lw:.8});
+  b.sh(ribbon([[6,23],[13,33],[32,39],[51,33],[58,23]],[8.5,8.5,8.5,8.5,8.5]),WMC_RD,{sh:WMC_RDD,base:'#F6A8A0'});
+  b.raw(b.st('M12 31q10 6 20 6q10 0 20 -6','#FF9A90',1,.8),'top');
+  [[19,43,4.4],[32,48,5],[45,43,4.4]].forEach(([x,y,s])=>{b.ln([[x,y-s-3],[x,y-s+.6]],{w:.9,top:1});wmcBell(b,x,y,s)});
+  b.ex('spark',56,54,3.2)}
+});
+PA.WINTER_MARKET={decor:Object.assign({},WM_LBL),costumes:['Father Christmas Suit','Little Elf Outfit','Gingerbread Pup Suit','Snowman Suit','Polar Bear Hood','Penguin Suit','Puffer Jacket','Nutcracker Jacket & Hat','Snowflake Wings','Jingle Bell Collar']};
 
 PA._wbFlush=()=>{for(const k in CACHE)delete CACHE[k]};
 PA.WORLD_B={beds:Object.keys(BEDS),obstacles:Object.keys(OBS),bowlFoods:BOWL_FOODS.slice(),icons:Object.keys(ICONS),items:Object.keys(ITEMS),houses:Object.keys(HOUSES),collectibles:Object.keys(COLS),props:Object.keys(PROPS),furniture:V27_FURN.slice(),

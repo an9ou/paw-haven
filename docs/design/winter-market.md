@@ -36,7 +36,7 @@ The New Year Market (27 Dec to 7 Jan) is a separate small set later.
 ## Progress
 
 - [x] 1. Decorations (30 Oct 2026): rows in `HM_DECOR` (`game/src/03_yard.js`), props `wmfirtree`, `wmsnowman`, `wmcanelights` (lit), `wmpresents`, `wmstarlantern` (lit) and the 5 item cards in `world/pawart_world_b.js` (`PA.WINTER_MARKET.decor`); prices 90 to 140, Bond 1 (Fir Tree and Star Lantern Bond 2); English stories only; shots `docs/shots/winter-market/part1/`
-- [ ] 2. Costumes
+- [x] 2. Costumes (30 Oct 2026): `CLOTHES` rows in `game/src/00_core.js` (fest 'winter', fm, no ed; prices 55 to 85, Bond 1 to 3), drawn in `dogs/pawart_dogs.js` (body slot with head pieces in `TOP2`, the Jingle Bell Collar in `NECK2`, all in `HM_OWN` so the dog under them stays the plain dog), 10 item cards in `world/pawart_world_b.js` (`PA.WINTER_MARKET.costumes`), listed in `FM_MARKETS` winter; English perks only; shots `docs/shots/winter-market/part2/`
 - [ ] 3. Toys
 - [ ] 4. Homes
 - [ ] 5. Treats

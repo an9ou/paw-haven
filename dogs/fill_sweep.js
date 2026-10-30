@@ -1,6 +1,6 @@
 /* The "fill inside its outline" pixel sweep for the dogs (owner's rule: every colour fill stays inside its own outline).
    Two modes: wet (rainy days: each render wet against the same render dry) and, with env OUTFITS=1, the outfits (v2.17.1 Halloween Market:
-   each render in a costume against the same render without it; OUT='body:Name|neck:Name' picks the outfits, default the market costumes).
+   each render in a costume against the same render without it; OUT='body:Name|neck:Name' picks the outfits, default the market costumes, Halloween and Winter).
    For every render (frame 0) it draws, in Chromium at 2x:
      A: every colour fill (paths and ellipses with a fill) in pure green, nothing else;
      B: every ink outline (stroke #2E2320) filled and stroked black: the inside of the outlines plus their line, grown by 1 px for antialiasing.
@@ -10,7 +10,7 @@
 'use strict';
 const fs = require('fs'), path = require('path'); const { chromium } = require('playwright');
 const SRC = fs.readFileSync(path.join(__dirname, 'pawart_dogs.js'), 'utf8'), TOL = +(process.env.TOL || 30), OF = !!process.env.OUTFITS;
-const HMO = (process.env.OUT || 'body:Little Witch Hat & Cape|body:Scarecrow Overalls|body:Mummy Wraps|body:Skeleton Suit|body:Black Cat Ears & Bow|body:Pirate Hat & Sash|body:Dinosaur Hood|body:Little Owl Wings|body:Wizard Robe & Star Hat|neck:Lion Mane').split('|').map((x) => x.split(':'));
+const HMO = (process.env.OUT || 'body:Little Witch Hat & Cape|body:Scarecrow Overalls|body:Mummy Wraps|body:Skeleton Suit|body:Black Cat Ears & Bow|body:Pirate Hat & Sash|body:Dinosaur Hood|body:Little Owl Wings|body:Wizard Robe & Star Hat|neck:Lion Mane|body:Father Christmas Suit|body:Little Elf Outfit|body:Gingerbread Pup Suit|body:Snowman Suit|body:Polar Bear Hood|body:Penguin Suit|body:Puffer Jacket|body:Nutcracker Jacket & Hat|body:Snowflake Wings|neck:Jingle Bell Collar').split('|').map((x) => x.split(':'));
 const POSES = ['idle','happy','pet','eat','sleep','walk','jump','sit','sad','dirty','crouch','shake','cold','hot','dig','beg','squat','leglift','paw','down','rollover','playdead','speak','dance','bow','scratch','sniff','yawn','howl'];
 (async () => {
   const CH = ['/opt/pw-browsers/chromium', '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'].find((f) => fs.existsSync(f));

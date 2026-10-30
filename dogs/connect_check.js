@@ -15,7 +15,8 @@ const fs = require('fs'), path = require('path'), vm = require('vm'), cp = requi
 const POSES = ['idle','happy','pet','eat','sleep','walk','jump','sit','sad','dirty','crouch','shake','cold','hot','dig','beg','squat','leglift','paw','down','rollover','playdead','speak','dance','bow','scratch','sniff','yawn','howl'];
 const OUTFITS = [{ head: 'Party Hat', neck: 'Red Bandana' }, { body: 'Superhero Cape' }, { body: 'Yellow Raincoat' }, { body: 'Knit Winter Sweater' }, { body: 'Tutu' }, { body: 'Ghost Sheet' },
   { body: 'Little Witch Hat & Cape' }, { body: 'Scarecrow Overalls' }, { body: 'Mummy Wraps' }, { body: 'Dinosaur Hood' }, { body: 'Little Owl Wings' }, { body: 'Bat Wings' }, { body: 'Cozy Hoodie' },
-  { head: 'Astronaut Helmet' }, { neck: 'Lion Mane' }, { body: 'Pumpkin Patch Suit' }, { body: 'Little Bat Costume' }];
+  { head: 'Astronaut Helmet' }, { neck: 'Lion Mane' }, { body: 'Pumpkin Patch Suit' }, { body: 'Little Bat Costume' },
+  { body: 'Father Christmas Suit' }, { body: 'Little Elf Outfit' }, { body: 'Gingerbread Pup Suit' }, { body: 'Snowman Suit' }, { body: 'Polar Bear Hood' }, { body: 'Penguin Suit' }, { body: 'Puffer Jacket' }, { body: 'Nutcracker Jacket & Hat' }, { body: 'Snowflake Wings' }, { neck: 'Jingle Bell Collar' }]; // the Winter Market 2026 costumes
 const LOOSE = 3, DROP = 40, BIT = 15, TOUCH = 2, NOODLE = 1.35, NOODLE_MIN = 8; // canvas px^2, px^2 (a tear, a drop of drool), px^2 (a costume's own bit: a straw, a star), px^2, ratio, px (a stub this short is never a noodle)
 const MK = [// [anchor in frame(), part that starts there]
   ["  if(body==='Superhero Cape')drawCape(h,s,L,B);", 'outfit'], ['  drawTail(h,s,L,B);\n', 'tail'], ["  if(body==='Tutu'){h._legSkip", 'legs'],

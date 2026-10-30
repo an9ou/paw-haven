@@ -849,8 +849,9 @@ function drawFace(h,s,L,HT){
 }
 
 /* ---------- outfits ---------- */
-const OUT={head:['Party Hat','Flower Crown','Acorn Cap','Rain Hat','Pom-pom Beanie','Chef Hat','Wizard Hat','Sun Hat','Cowboy Hat','Astronaut Helmet','Leaf Beret','Witch Hat','Reindeer Antlers','Year of the Sheep Hood','Sailor Cap','Crayon Crown'],eyes:['Heart Sunglasses','Explorer Goggles'],neck:['Red Bandana','Bow Tie','Seashell Necklace','Clover Collar','Rainbow Collar','Sailor Collar','Knit Scarf','Autumn Scarf','Parade Rosette','Candy Corn Bandana','Snowflake Snood','Ugly Sweater Rosette','Shibuya Bandana','Asakusa Bandana','Tokyo Tower Bandana','Sunflower Collar','Golden Collar','Lion Mane'],body:['Yellow Raincoat','Knit Winter Sweater','Superhero Cape','Mossy Poncho','Frog Raincoat','Polka-dot Raincoat','Bubble Raincoat','Happi Coat','Bumblebee Suit','Cozy Hoodie','Tutu','Pyjamas','Ghost Sheet','Pumpkin Suit','Vampire Cape','Bat Wings','Very Ugly Sweater','Pumpkin Patch Suit','Trick-or-Treat Ghost','Little Bat Costume','Doggy Life Vest',
-  'Little Witch Hat & Cape','Scarecrow Overalls','Mummy Wraps','Skeleton Suit','Black Cat Ears & Bow','Pirate Hat & Sash','Dinosaur Hood','Little Owl Wings','Wizard Robe & Star Hat']};// v2.17.1 Halloween Market costumes
+const OUT={head:['Party Hat','Flower Crown','Acorn Cap','Rain Hat','Pom-pom Beanie','Chef Hat','Wizard Hat','Sun Hat','Cowboy Hat','Astronaut Helmet','Leaf Beret','Witch Hat','Reindeer Antlers','Year of the Sheep Hood','Sailor Cap','Crayon Crown'],eyes:['Heart Sunglasses','Explorer Goggles'],neck:['Red Bandana','Bow Tie','Seashell Necklace','Clover Collar','Rainbow Collar','Sailor Collar','Knit Scarf','Autumn Scarf','Parade Rosette','Candy Corn Bandana','Snowflake Snood','Ugly Sweater Rosette','Shibuya Bandana','Asakusa Bandana','Tokyo Tower Bandana','Sunflower Collar','Golden Collar','Lion Mane','Jingle Bell Collar'],body:['Yellow Raincoat','Knit Winter Sweater','Superhero Cape','Mossy Poncho','Frog Raincoat','Polka-dot Raincoat','Bubble Raincoat','Happi Coat','Bumblebee Suit','Cozy Hoodie','Tutu','Pyjamas','Ghost Sheet','Pumpkin Suit','Vampire Cape','Bat Wings','Very Ugly Sweater','Pumpkin Patch Suit','Trick-or-Treat Ghost','Little Bat Costume','Doggy Life Vest',
+  'Little Witch Hat & Cape','Scarecrow Overalls','Mummy Wraps','Skeleton Suit','Black Cat Ears & Bow','Pirate Hat & Sash','Dinosaur Hood','Little Owl Wings','Wizard Robe & Star Hat',
+  'Father Christmas Suit','Little Elf Outfit','Gingerbread Pup Suit','Snowman Suit','Polar Bear Hood','Penguin Suit','Puffer Jacket','Nutcracker Jacket & Hat','Snowflake Wings']};// v2.17.1 Halloween Market costumes; Winter Market 2026 costumes
 function coatPts(s){const b=s.body,p=[],f=s.fluff?1.12:1.08;for(let a=-108;a<=108;a+=12){const t=a*D2R;p.push([Math.cos(t)*b.rx*f,Math.sin(t)*b.ry*(f+.04)])}return p}
 function drawCape(h,s,L,B){
   // billows up and back behind the body, so most of it shows above the back and past the rump
@@ -1610,12 +1611,155 @@ RUFF2['Lion Mane']=function(h,s,L,HT){const hx=s.head.rx,hy=s.head.ry,cx=-hx*.1,
 NECK2['Lion Mane']=function(h,s,L,HT){const hx=s.head.rx,hy=s.head.ry,c=[-hx*.05,hy*.98],z=Math.max(5,hx*.24);
   const pts=[[c[0]-z,c[1]-z*.3],[c[0]-z*.7,c[1]+z*.5],[c[0]-z*.3,c[1]+z*.2],[c[0],c[1]+z*.75],[c[0]+z*.35,c[1]+z*.2],[c[0]+z*.75,c[1]+z*.5],[c[0]+z,c[1]-z*.3]];
   h.shape(pts.map(HT).map(hmCl),'#E8A33A',{w:2.6,step:30,ox:0,oy:0,sc:1,closed:1,amp:.4,famp:.3})};
+/* ---------- Winter Market 2026 costumes (art/winter-market part 2, docs/design/winter-market.md): sold at the Winter Market every December ----------
+   The Halloween Market pattern: body slot costumes with their own head piece in TOP2 (the hat comes off while one is worn), the Jingle Bell Collar in the
+   neck slot (NECK2). Each one hands the dog back its random stream (HM_OWN below), so the dog under it is the plain dog line for line. Nothing covers the
+   eyes or the nose (the hoods use hmHood's open face; the snowman's carrot sits on its hat); every fill has its own ink line or sits inside one.
+   Body only, so a hat can go on top: the Gingerbread Pup Suit, the Puffer Jacket and the Snowflake Wings. */
+const WM_RD='#E2403A',WM_RDD='#A82A2A',WM_SN='#FFFDF8',WM_SND='#C9D2DE',WM_GR='#4FA548',WM_GRD='#2F7A35',WM_GRL='#A8DC8E',WM_GD='#F2C14E',WM_GDD='#B8862A',
+  WM_GB='#B8733C',WM_GBD='#86502A',WM_BK='#2E2832',WM_BKL='#5A5262',WM_PU='#3DB5C6',WM_PUD='#1F8494',WM_PUL='#A6E3EA',WM_IC='#CFE8F7',WM_ICD='#7FB3E0',WM_OR='#F28A2E',WM_NC='#D23A48',WM_NV='#2F3F86';
+// a fluffy band (Father Christmas trim) along the canvas polyline Q, w wide: lumpy edges, rounded ends, its own ink line
+function wmFluff(h,Q,w,col){const D=dense(Q,false,Math.max(3,w*.55)),n=D.length,lf=[],rt=[];if(n<2)return;
+  for(let i=0;i<n;i++){const a=D[Math.max(0,i-1)],c=D[Math.min(n-1,i+1)],dx=c[0]-a[0],dy=c[1]-a[1],m=Math.hypot(dx,dy)||1,v=[-dy/m,dx/m],k=w*.5*(i%2?1.2:.92),k2=w*.5*(i%2?.92:1.16);
+   lf.push([D[i][0]+v[0]*k,D[i][1]+v[1]*k]);rt.unshift([D[i][0]-v[0]*k2,D[i][1]-v[1]*k2])}
+  const u=(i,j)=>{const dx=D[j][0]-D[i][0],dy=D[j][1]-D[i][1],m=Math.hypot(dx,dy)||1;return[dx/m,dy/m]},u0=u(1,0),u1=u(n-2,n-1);
+  h.shape([[D[0][0]+u0[0]*w*.55,D[0][1]+u0[1]*w*.55]].concat(lf,[[D[n-1][0]+u1[0]*w*.55,D[n-1][1]+u1[1]*w*.55]],rt).map(hmCl),col||WM_SN,{w:2.8,step:30,ox:0,oy:0,sc:1,closed:1,amp:.5,famp:.3})}
+// a belt round the middle of the suit just drawn (kept inside its line), with a square buckle
+function wmBelt(h,s,B,x,col,buck){const b=s.body,f=s.fluff?1.12:1.08,bw=b.rx*.065,yy=xx=>b.ry*(f+.06)*Math.sqrt(Math.max(0,1-Math.pow(xx/(b.rx*f),2)));
+  h.part(true);h.shape([[x-bw,-yy(x-bw)],[x+bw,-yy(x+bw)],[x+bw,yy(x+bw)],[x-bw,yy(x-bw)]].map(B).map(hmCl),col,{noline:1,ox:0,oy:0,step:7,famp:.6});h.part(false);
+  const k=hmCl(B([x,b.ry*.2])),z=Math.max(3.6,Math.min(6,b.ry*.22));h.shape([[k[0]-z,k[1]-z*1.1],[k[0]+z,k[1]-z*1.1],[k[0]+z,k[1]+z*1.1],[k[0]-z,k[1]+z*1.1]].map(hmCl),buck,{w:2.2,step:30,ox:0,oy:0,sc:1,closed:1,amp:.3,famp:.2});
+  h.line([[k[0]-z*.35,k[1]-z*.5],[k[0]-z*.35,k[1]+z*.5]].map(hmCl),1.3,INK,.1)}
+// a little gold bell at c (canvas px), radius z: round, a slot, a clapper
+function wmBell(h,c,z,far){h.shape(circ(c[0],c[1],z,z*.94,9).map(hmCl),far?mix(WM_GD,PEN,.25):WM_GD,{w:2,ox:0,oy:0,sc:1,closed:1,amp:.25,famp:.2});
+  h.line([[c[0]-z*.62,c[1]+z*.2],[c[0]+z*.62,c[1]+z*.2]],1.2,INK,.1);h.dot(c[0],c[1]+z*.56,z*.26,z*.26,INK);h.line([[c[0]-z*.4,c[1]-z*.45],[c[0]-z*.1,c[1]-z*.65]],1.1,'#FFF3B0',.1)}
+// a wavy icing line along the body-local polyline Q (the Gingerbread Pup Suit)
+function wmIcing(h,B,Q,k){const D=dense(Q,false,4),o=[];D.forEach((q,i)=>{const a=D[Math.max(0,i-1)],c=D[Math.min(D.length-1,i+1)],dx=c[0]-a[0],dy=c[1]-a[1],m=Math.hypot(dx,dy)||1,sg=i%2?k:-k;o.push([q[0]-dy/m*sg,q[1]+dx/m*sg])});h.line(o.map(B).map(hmCl),2.4,W,.3)}
+// a paper snowflake (6 arms, cut with blunt scissors) at c, radius z, a white crayon snowflake drawn on it
+function wmPaperFlake(h,c,z,an,col,far){const R=[1,.8,.64,.8],p=[];for(let i=0;i<24;i++){const a=(an+i*15)*D2R,r=z*R[i%4]*(1+.05*Math.sin(i*2.1));p.push(hmCl([c[0]+Math.cos(a)*r,c[1]+Math.sin(a)*r]))}
+  h.shape(p,far?mix(col,WM_ICD,.45):col,{w:far?2.4:2.6,step:30,ox:0,oy:0,sc:1,closed:1,amp:.4,famp:.3});
+  if(!far){wnFlake(h,hmCl(c),z*.56,W,1.8,0);h.dot(c[0],Math.min(c[1],GY-2),Math.max(1.6,z*.1),Math.max(1.6,z*.1),WM_ICD)}}
+
+/* 1. Father Christmas Suit: a red coat, a black belt with a gold buckle, fluffy white trim at the hem; a floppy red hat with a white brim and a pompom */
+BODY2['Father Christmas Suit']=function(h,s,L,B,p){const b=s.body;hmSuit(h,s,B,p,WM_RD);wmBelt(h,s,B,b.rx*.1,WM_BK,WM_GD);
+  const a=p[p.length-1],c=p[0];wmFluff(h,[[a[0]+2,a[1]*.88],[(a[0]+c[0])/2+3,0],[c[0]+2,c[1]*.88]].map(B),Math.max(7,Math.min(12,b.ry*.42)))};
+TOP2['Father Christmas Suit']=function(h,s,L,HT){const hx=s.head.rx,hy=s.head.ry,P=hatP(s,L,HT,-.04,-6),W2=hx*.54,H=hy*.95;
+  const cone=[[-W2,0],[-W2*.72,-H*.48],[-W2*1.02,-H*.5],[-W2*1.38,-H*.46],[-W2*1.46,-H*.64],[-W2*.92,-H*.94],[-W2*.1,-H*1.08],[W2*.5,-H*.78],[W2*.9,-H*.32],[W2,0]];
+  h.shape(cone.map(P),WM_RD,{w:3.6,step:8});h.part(true);h.crayon(W2*.6,H*.3,q=>P([q[0],q[1]-H*.45]),WM_RD,4);h.part(false);
+  h.line([[-W2*.4,-H*.86],[W2*.3,-H*.82]].map(P),1.6,WM_RDD,.3);
+  const t=P([-W2*1.5,-H*.56]),z=Math.max(4.4,Math.min(7.5,hx*.21));h.shape(scallop(t[0],t[1],z,z,7,.2).map(hmCl),WM_SN,{w:2.6,step:30,ox:0,oy:0,sc:1});
+  wmFluff(h,[[-W2*1.06,-1],[0,-2.5],[W2*1.06,-1]].map(P),Math.max(7,Math.min(11,hy*.32)))};
+
+/* 2. Little Elf Outfit: a green tunic with a pointy hem, a brown belt, a red pointy collar; a pointy green hat that bends back, a red band and a bell on the tip */
+BODY2['Little Elf Outfit']=function(h,s,L,B,p){const b=s.body,a=p[p.length-1],c=p[0],zz=[];
+  for(let i=1;i<6;i++){const t=i/6;zz.push([a[0]+(c[0]-a[0])*t-(i%2?b.rx*.14:0),a[1]+(c[1]-a[1])*t])}
+  hmSuit(h,s,B,p.concat(zz),WM_GR);h.line([a].concat(zz,[c]).map(q=>[q[0]+4,q[1]*.94]).map(B).map(hmCl),2,WM_GRL,.3);wmBelt(h,s,B,b.rx*.12,'#7A4E2C',WM_GD)};
+TOP2['Little Elf Outfit']=function(h,s,L,HT){const hx=s.head.rx,hy=s.head.ry,P=hatP(s,L,HT,-.02,-4),W2=hx*.46,H=hy*1.2;
+  // the pointy collar first, over whatever neck item is on (it peeks out under the points)
+  const a=neckAnchor(s,HT),d=[a.r[0]-a.l[0],a.r[1]-a.l[1]],m=Math.hypot(d[0],d[1])||1,u=[d[0]/m,d[1]/m],v=[-u[1],u[0]],th=Math.max(8,Math.min(13,hy*.42)),cl=q=>[q[0],Math.min(q[1],GY+3)];
+  const top=[],bot=[];for(let i=0;i<=8;i++){const t=-.1+i/8*1.18,c=hw2Sag(a,t,6);top.push([c[0]-v[0]*th*.2,c[1]-v[1]*th*.2]);const k=th*(i%2?.35:1.15);bot.unshift([c[0]+v[0]*k,c[1]+v[1]*k])}
+  h.shape(top.concat(bot).map(cl),WM_RD,{w:2.8,step:30,amp:.5,ox:0,oy:0,sc:1,closed:1,famp:.3});h.line(top.slice(1,-1).map(cl),1.8,'#FF9A90',.3);
+  const hat=[[-W2,0],[-W2*.55,-H*.5],[-W2*.5,-H*.84],[-W2*.8,-H*1.06],[-W2*1.3,-H*1.04],[-W2*.92,-H*1.16],[-W2*.12,-H*.9],[W2*.45,-H*.44],[W2,0]];
+  h.shape(hat.map(P),WM_GR,{w:3.6,step:8});h.part(true);h.crayon(W2*.6,H*.25,q=>P([q[0],q[1]-H*.35]),WM_GR,4);h.part(false);
+  h.line([[-W2*.9,-4],[W2*.9,-4]].map(P),4.6,WM_RD,.4);h.line([[-W2*.5,-H*.5],[-W2*.62,-H*.8]].map(P),1.4,WM_GRL,.3);
+  const bz=Math.max(4,Math.min(6.4,hx*.19)),t=P([-W2*1.3-bz*.5,-H*1.04+bz*.7]);wmBell(h,t,bz)};
+
+/* 3. Gingerbread Pup Suit (a look, not food): a brown suit, white icing squiggles at the hems and on the back, two gumdrop buttons, a little icing heart */
+BODY2['Gingerbread Pup Suit']=function(h,s,L,B,p){const b=s.body,a=p[p.length-1],c=p[0];hmSuit(h,s,B,p,WM_GB);
+  wmIcing(h,B,[[a[0]+5,a[1]*.8],[(a[0]+c[0])/2+6,0],[c[0]+5,c[1]*.8]],1.8);
+  wmIcing(h,B,p.slice(-7,-1).map(q=>[q[0]*.86,q[1]*.8]),1.6);wmIcing(h,B,p.slice(1,6).map(q=>[q[0]*.92,q[1]*.8]),1.6);
+  [[.42,-.12,'#E8505B'],[.46,.34,'#6CC25A']].forEach(([x,y,col])=>{const q=hmCl(B(hmIn(s,x,y))),z=Math.max(3.4,Math.min(5.6,b.ry*.2));h.shape(circ(q[0],q[1],z,z*.9,8).map(hmCl),col,{w:2.2,step:30,ox:0,oy:0,sc:1,closed:1,amp:.3,famp:.2});h.dot(q[0]-z*.3,q[1]-z*.3,z*.22,z*.2,W)});
+  const hc=hmCl(B(hmIn(s,-.02,-.2)));h.line([[hc[0]-4,hc[1]-1],[hc[0]-2,hc[1]-4],[hc[0],hc[1]-1.5],[hc[0]+2,hc[1]-4],[hc[0]+4,hc[1]-1],[hc[0],hc[1]+4],[hc[0]-4,hc[1]-1]].map(hmCl),1.8,W,.2)};
+
+/* 4. Snowman Suit: a white suit with three coal buttons and a few snowflakes; a little black top hat with a red band and the carrot tucked in the band
+   (the carrot sits on the hat, never on the dog's nose) */
+BODY2['Snowman Suit']=function(h,s,L,B,p){const b=s.body;hmSuit(h,s,B,p,WM_SN);
+  h.line(p.slice(-7,-1).map(q=>[q[0]*.86,q[1]*.82]).map(B).map(hmCl),2.4,WM_SND,.4);
+  [[.62,-.42],[.7,0],[.62,.42]].forEach(([x,y],i)=>{const q=hmCl(B(hmIn(s,x,y))),z=Math.max(2.6,Math.min(4.4,b.ry*.16));h.shape(circ(q[0],q[1],z,z*.92,7,.12).map(hmCl),'#3A3236',{w:1.8,step:30,ox:0,oy:0,sc:1,closed:1,amp:.3,famp:.2})});
+  [[-.45,-.35],[.1,.3],[-.2,.45]].forEach(([x,y])=>wnFlake(h,hmCl(B(hmIn(s,x,y))),Math.max(3,Math.min(5,b.ry*.2)),WM_ICD,1.4,0))};
+TOP2['Snowman Suit']=function(h,s,L,HT){const hx=s.head.rx,hy=s.head.ry,P=hatP(s,L,HT,-.04,-6),W2=hx*.4,H=hy*.88;
+  h.shape([[-W2,0],[-W2*.94,-H],[W2*.94,-H],[W2,0]].map(P),WM_BK,{w:3.4,step:8});h.line([[-W2*.6,-H*.85],[-W2*.62,-H*.4]].map(P),1.6,WM_BKL,.3);
+  h.line([[-W2*.98,-H*.2],[W2*.98,-H*.2]].map(P),4,WM_RD,.3);
+  h.shape(circ(0,1,W2*1.75,4.2,14).map(P),WM_BK,{w:3.2,step:8});
+  // the carrot, tucked in the band and pointing up and back (away from the face), a green sprig at its root
+  const r=[-W2*.45,-H*.24],z=Math.max(12,Math.min(20,hy*.72)),M=q=>{const r2=rot(q,-152);return P([r[0]+r2[0],r[1]+r2[1]])};
+  h.shape([[0,-z*.2],[z*.55,-z*.1],[z,0],[z*.55,z*.1],[0,z*.2]].map(M),WM_OR,{w:2.2,step:30,ox:0,oy:0,sc:1,closed:1,amp:.25,famp:.2});
+  [.35,.6].forEach(t=>h.line([[z*t,-z*.12*(1-t)],[z*t+1.6,z*.08*(1-t)]].map(M),1.2,'#B5561C',.1));
+  [[-z*.22,-z*.2],[-z*.26,z*.06]].forEach(q=>h.line([[0,0],q].map(M),1.8,WM_GRD,.2))};
+
+/* 5. Polar Bear Hood: a fluffy white suit and a white hood with two round ears (the face open, the dog's own ears tucked in) */
+BODY2['Polar Bear Hood']=function(h,s,L,B,p){const b=s.body,a=p[p.length-1],c=p[0],zz=[];for(let i=1;i<5;i++){const t=i/5;zz.push([a[0]+(c[0]-a[0])*t-(i%2?b.rx*.06:b.rx*.02),a[1]+(c[1]-a[1])*t])}
+  hmSuit(h,s,B,p.concat(zz),'#FBFAF4');
+  [[-.35,-.5],[.15,-.62],[.5,-.3],[-.1,.1],[.3,.42],[-.4,.45]].forEach(([x,y])=>{const q=B(hmIn(s,x,y));h.line([[q[0]-3,q[1]-1],[q[0]-1,q[1]+1.5],[q[0]+1,q[1]-1],[q[0]+3,q[1]+1.5]].map(hmCl),1.5,WM_SND,.2)})};
+TOP2['Polar Bear Hood']=function(h,s,L,HT){const hx=s.head.rx,hy=s.head.ry,{o,n,ox,oy}=hmHood(s,L);
+  h.shape(o.concat(n).map(HT).map(hmCl),'#FBFAF4',{w:3.8,step:7,amp:.9});h.crayon(hx*.5,hy*.3,q=>HT([q[0]-hx*.45,q[1]-hy*.5]),'#FBFAF4',4);
+  h.line(n.slice(1,-1).map(q=>[ox+(q[0]-ox)*1.08,oy+(q[1]-oy)*1.08]).map(HT).map(hmCl),2,WM_SND,.5);
+  const z=Math.max(hx,hy)*.27;[-138,-76].forEach(an=>{const t=an*D2R,c=HT([Math.cos(t)*hx*1.08,Math.sin(t)*hy*1.1]);
+   h.shape(circ(c[0],c[1],z,z,10).map(hmCl),'#FBFAF4',{w:3,step:30,ox:0,oy:0,sc:1,closed:1,amp:.4,famp:.25});h.dot(c[0],Math.min(c[1]+z*.08,GY-2),z*.5,z*.46,'#E9D2CC')});
+  [[-.7,-.45],[-.35,-.85]].forEach(q=>{const c=HT([hx*q[0],hy*q[1]]);h.line([[c[0]-3,c[1]],[c[0]-1,c[1]+2],[c[0]+1,c[1]],[c[0]+3,c[1]+2]].map(hmCl),1.4,WM_SND,.2)})};
+
+/* 6. Penguin Suit: a black suit with a white tummy, two little black flippers, a black hood with a white rim round the open face */
+function wmFlipper(h,B,root,ang,z,far){const pts=[[0,-z*.16],[z*.5,-z*.2],[z*.96,-z*.08],[z*1.04,z*.04],[z*.5,z*.18],[0,z*.16]].map(q=>{const r2=rot(q,ang);return hmCl(B([root[0]+r2[0],root[1]+r2[1]]))});
+  h.shape(pts,far?'#24202A':WM_BK,{w:2.8,step:30,ox:0,oy:0,sc:1,closed:1,amp:.4,famp:.25});if(!far)h.line([pts[1],pts[2]].map(q=>[q[0]+(pts[4][0]-q[0])*.35,q[1]+(pts[4][1]-q[1])*.35]),1.4,WM_BKL,.2)}
+const wmFlipAng=L=>/^(sleep|down|crouch|playdead)$/.test(L.pose)?168:L.pose==='rollover'?-60:L.pose==='jump'?140:112;
+BACK2['Penguin Suit']=function(h,s,L,B){const b=s.body;wmFlipper(h,B,[b.rx*.62,b.ry*.1],wmFlipAng(L)-18,Math.max(14,Math.min(24,b.ry*1.05))*.85,1)};
+BODY2['Penguin Suit']=function(h,s,L,B,p){const b=s.body;hmSuit(h,s,B,p,WM_BK);
+  h.part(true);const c=hmIn(s,.3,.42);h.shape(circ(c[0],c[1]+b.ry*.12,b.rx*.62,b.ry*.6,14).map(B).map(hmCl),W,{noline:1,ox:0,oy:0});h.part(false);
+  h.line([[b.rx*-.25,-b.ry*.55],[b.rx*.3,-b.ry*.72]].map(B).map(hmCl),2,WM_BKL,.3);
+  wmFlipper(h,B,[b.rx*.4,-b.ry*.3],wmFlipAng(L),Math.max(14,Math.min(24,b.ry*1.05)),0)};
+TOP2['Penguin Suit']=function(h,s,L,HT){const hx=s.head.rx,hy=s.head.ry,{o,n,ox,oy}=hmHood(s,L);
+  h.shape(o.concat(n).map(HT).map(hmCl),WM_BK,{w:3.8,step:7,amp:.9});h.crayon(hx*.5,hy*.3,q=>HT([q[0]-hx*.45,q[1]-hy*.5]),WM_BK,4);
+  h.line([[-hx*.8,-hy*.45],[-hx*.62,-hy*.8]].map(HT).map(hmCl),1.8,WM_BKL,.3);
+  // the hood's own penguin face, high on the crown: its beak stops above the dog's eyes
+  const f=L.face,er=s.eyes,e0=f.e0||[-.1,-.04],e1=f.e1||[.42,-.1],top=Math.min(hy*e0[1]-er[0],hy*e1[1]-er[1])-3,z=Math.max(2.6,Math.min(4.2,hx*.13)),fy=Math.min(-hy*.96,top-z*2.4),fx=-hx*.12,P=q=>HT([fx+q[0],fy+q[1]]);
+  [-1,1].forEach(sd=>{const c=P([sd*z*1.5,0]);h.shape(circ(c[0],c[1],z,z*1.05,8).map(hmCl),W,{w:1.6,step:30,ox:0,oy:0,sc:1,closed:1,amp:.2,famp:.15});h.dot(c[0]+z*.25,c[1]+z*.15,z*.42,z*.46,INK)});
+  h.shape([[-z*1.1,z*.8],[z*1.1,z*.8],[0,z*2.2]].map(P).map(hmCl),WM_OR,{w:1.8,step:30,ox:0,oy:0,sc:1,closed:1,amp:.2,famp:.15})};
+
+/* 7. Puffer Jacket: a bright quilted puffer (lumpy edge, stitched channels, a shine on each puff), a zip pull and a pink trim; body only, so a hat goes on top */
+BODY2['Puffer Jacket']=function(h,s,L,B,p){const b=s.body,f=s.fluff?1.12:1.08,lp=p.map((q,i)=>{const k=i%3===1?1.07:1.02;return[q[0]*k,q[1]*k]});
+  h.shape(lp.map(B).map(hmCl),WM_PU,{w:4.6,step:9});h.crayon(b.rx*.7,b.ry*.7,q=>B([q[0]+b.rx*.25,q[1]]),WM_PU,6);
+  const yy=x=>b.ry*(f+.04)*.9*Math.sqrt(Math.max(0,1-Math.pow(x/(b.rx*f),2)));
+  [.74,.44,.14,-.14].forEach(xx=>{const x=b.rx*xx;h.line([[x,-yy(x)],[x+b.rx*.04,0],[x,yy(x)]].map(B).map(hmCl),2,WM_PUD,.4)});
+  [.6,.29,0].forEach(xx=>{const x=b.rx*xx;h.line([[x-b.rx*.06,-yy(x)*.62],[x+b.rx*.04,-yy(x)*.7]].map(B).map(hmCl),2.4,WM_PUL,.3)});
+  h.line(lp.slice(-6).map(B).map(hmCl),5.4,'#F0679A',.6);h.line(lp.slice(0,4).map(B).map(hmCl),5.4,'#F0679A',.6);
+  const z=hmCl(B([b.rx*.78,-b.ry*.42]));h.shape([[z[0]-2.2,z[1]],[z[0]+2.2,z[1]],[z[0]+2.6,z[1]+7],[z[0]-2.6,z[1]+7]].map(hmCl),'#FFD84A',{w:1.8,step:30,ox:0,oy:0,sc:1,closed:1,amp:.2,famp:.15})};
+
+/* 8. Nutcracker Jacket & Hat: a red soldier jacket, a white cross strap, gold buttons, a gold shoulder fringe, a navy hem; a tall black hat with gold trim and a red plume */
+BODY2['Nutcracker Jacket & Hat']=function(h,s,L,B,p){const b=s.body;hmSuit(h,s,B,p,WM_NC);
+  h.line(p.slice(-7).map(B).map(hmCl),4.4,WM_NV,.4);
+  const a0=hmIn(s,.48,-.85),a1=hmIn(s,-.12,.84);h.tube([a0,[(a0[0]+a1[0])/2+2,(a0[1]+a1[1])/2],a1].map(B).map(hmCl),Math.max(3.4,b.ry*.17),W,{ow:3});
+  [[.66,-.42],[.72,-.06],[.68,.32]].forEach(([x,y])=>{const q=hmCl(B(hmIn(s,x,y))),z=Math.max(2.6,Math.min(4,b.ry*.15));h.shape(circ(q[0],q[1],z,z,7).map(hmCl),WM_GD,{w:1.8,step:30,ox:0,oy:0,sc:1,closed:1,amp:.25,famp:.2})});
+  const e=hmCl(B(hmIn(s,.42,-.78))),z=Math.max(6,Math.min(10,b.ry*.36));
+  h.shape([[e[0]-z,e[1]+z*.2],[e[0]-z*.7,e[1]-z*.4],[e[0]+z*.7,e[1]-z*.4],[e[0]+z,e[1]+z*.2]].map(hmCl),WM_GD,{w:2.2,step:30,ox:0,oy:0,sc:1,closed:1,amp:.3,famp:.2});
+  [-.6,-.2,.2,.6].forEach(t=>h.line([[e[0]+z*t,e[1]+z*.25],[e[0]+z*t,e[1]+z*.62]].map(hmCl),1.6,WM_GDD,.15))};
+TOP2['Nutcracker Jacket & Hat']=function(h,s,L,HT){const hx=s.head.rx,hy=s.head.ry,P=hatP(s,L,HT,-.04,4),W2=hx*.4,H=hy*1.12;
+  const pl=P([0,-H-2]),z=Math.max(4.2,Math.min(7,hx*.2));h.shape(scallop(pl[0],pl[1]-z*.4,z*.8,z*1.1,6,.18).map(hmCl),WM_RD,{w:2.4,step:30,ox:0,oy:0,sc:1});
+  h.shape([[-W2,0],[-W2*1.1,-H],[W2*1.1,-H],[W2,0]].map(P),WM_BK,{w:3.6,step:8});h.line([[-W2*.6,-H*.9],[-W2*.55,-H*.3]].map(P),1.6,WM_BKL,.3);
+  h.line([[-W2*1.02,-3],[W2*1.02,-3]].map(P),4.2,WM_GD,.3);h.line([[-W2*1.06,-H+2.5],[W2*1.06,-H+2.5]].map(P),3,WM_GD,.3);
+  star5(h,P([W2*.05,-H*.52]),Math.max(3.4,hx*.15),WM_GD,1.6)};
+
+/* 9. Snowflake Wings: two pale blue paper snowflakes on each side, on a soft strap round the chest; body only, so a hat goes on top */
+function wmFlakeWing(h,B,root,ang,z,far){const M=q=>{const r2=rot(q,ang);return B([root[0]+r2[0],root[1]+r2[1]])},c1=M([-z*.14,-z*.62]),c2=M([-z*.72,-z*.28]);
+  const tc=far?mix(WM_IC,WM_ICD,.45):WM_IC;h.tube([B(root),c1].map(hmCl),3,tc,{ow:2.6});h.tube([B(root),c2].map(hmCl),3,tc,{ow:2.6});
+  wmPaperFlake(h,c2,z*.36,ang+8,WM_IC,far);wmPaperFlake(h,c1,z*.5,ang,WM_IC,far)}
+BACK2['Snowflake Wings']=function(h,s,L,B){const w=hwWingSet(s,L);wmFlakeWing(h,B,w.far,w.fang,w.z*.9,1)};
+BODY2['Snowflake Wings']=function(h,s,L,B){const b=s.body,w=hwWingSet(s,L);
+  const st=[[b.rx*.4,-b.ry*.98],[b.rx*.47,0],[b.rx*.42,b.ry*.95]];h.line(st.map(B).map(hmCl),6,INK,.4);h.line(st.map(B).map(hmCl),3.6,WM_ICD,.4);
+  h.line([[b.rx*.4,-b.ry*.9],[w.root[0],w.root[1]+2]].map(B).map(hmCl),5,INK,.4);h.line([[b.rx*.4,-b.ry*.9],[w.root[0],w.root[1]+2]].map(B).map(hmCl),2.8,WM_ICD,.4);
+  wmFlakeWing(h,B,w.root,w.ang,w.z,0)};
+
+/* 10. Jingle Bell Collar (neck slot): a soft red felt collar with three little gold bells (lying down, the bells rest on the collar) */
+NECK2['Jingle Bell Collar']=function(h,s,L,HT){const a=neckAnchor(s,HT),sag=t=>{const x=a.l[0]+(a.r[0]-a.l[0])*t,y=a.l[1]+(a.r[1]-a.l[1])*t+Math.sin(Math.PI*t)*8;return[x,Math.min(y,GY-18)]};
+  const pts=[];for(let i=0;i<=8;i++)pts.push(sag(i/8));h.line(pts,8,INK);h.line(pts,5.6,WM_RD,.4);h.line(pts.slice(1,6).map(q=>[q[0],q[1]-1.2]),1.4,'#FF9A90',.3);
+  const lie=/^(sleep|down|crouch|playdead|rollover)$/.test(L.pose),R=Math.max(3.4,Math.min(5,s.head.rx*.15));
+  [.18,.52,.86].forEach((t,i)=>{const c0=sag(t);if(lie){wmBell(h,[c0[0],Math.min(c0[1]+R*.5,GY-R-1)],R*.85);return}
+   const c=[c0[0],Math.min(c0[1]+R+(i===1?4.5:2),GY-R-1)];h.line([[c0[0],c0[1]+1],[c[0],c[1]-R+1]],1.6,INK,.1);wmBell(h,c,R)})};
 // v2.18.1 "Tidy costumes": a market costume draws on the dog's random stream and then hands it back where it found it, so the dog's own lines
 // (head, face, muzzle, haunch, legs drawn after it) are exactly the plain dog's, byte for byte, and a costume can never push the dog's fills past its lines.
 // The costume keeps its own jitter (it starts from the same point of the stream as before).
 // Where a market costume changes the dog itself (the topknot stays under the hat, the ears tuck into the Dinosaur Hood), frame() and drawEars move the stream
 // on as the plain dog would (hmPlain), so the head drawn after is the plain dog's too.
-const HM_OWN=new Set(['Little Witch Hat & Cape','Scarecrow Overalls','Mummy Wraps','Skeleton Suit','Black Cat Ears & Bow','Pirate Hat & Sash','Dinosaur Hood','Little Owl Wings','Wizard Robe & Star Hat','Lion Mane']);
+const HM_OWN=new Set(['Little Witch Hat & Cape','Scarecrow Overalls','Mummy Wraps','Skeleton Suit','Black Cat Ears & Bow','Pirate Hat & Sash','Dinosaur Hood','Little Owl Wings','Wizard Robe & Star Hat','Lion Mane',
+  'Father Christmas Suit','Little Elf Outfit','Gingerbread Pup Suit','Snowman Suit','Polar Bear Hood','Penguin Suit','Puffer Jacket','Nutcracker Jacket & Hat','Snowflake Wings','Jingle Bell Collar']);// and the Winter Market 2026 costumes
 HM_OWN.forEach(n=>[BACK2,BODY2,TOP2,RUFF2,NECK2].forEach(R=>{const fn=R[n];if(fn)R[n]=function(h,...a){const st=h.r.st();fn(h,...a);h.r.st(st)}}));
 
 // draw(h) on the dog, then leave its random stream where plain(g) would have left it (plain draws on a throwaway kit that shares the stream)
@@ -1896,7 +2040,7 @@ function frame(key,s,pose,outfit,k,seed,ex){
   const h=kit(rng(seed+k*7717)),L=layout(s,pose,k);if(s.wet)h.wet=1;if(s.pup){h.setJ(s.pup===2?1.5:1.3);if(s.pup===2)newbornL(s,L)}const X=ex?EXPR[ex]:null;if(X&&X.pose)X.pose(s,L,k);if(pose==='rollover'||pose==='playdead')h.cy=GY+3;const _u=0,B=T(L.bT),HT=T(L.hT),hp=headPts(s),bp=bodyPts(s);
   const has=(slot)=>outfit&&outfit[slot]&&OUT[slot].includes(outfit[slot])?outfit[slot]:null;
   const body=has('body'),top=body&&TOP2[body]?body:null,neck=has('neck'),hat=top?null:has('head'),eyes=has('eyes'),sheet=body==='Ghost Sheet'||body==='Trick-or-Treat Ghost';// v2.11.1: a costume with its own head piece (TOP2) drops the hat
-  if(top==='Little Bat Costume'||top==='Dinosaur Hood')L.hood=1;// the dog's own ears stay inside the bat hood
+  if(top==='Little Bat Costume'||top==='Dinosaur Hood'||top==='Polar Bear Hood'||top==='Penguin Suit')L.hood=1;// the dog's own ears stay inside the bat hood
   if(hat==='Astronaut Helmet'){if(L.ears!=='flat')L.ears=/^(giant|bat|tall)$/.test(s.ears)?'sleep':'norm';L.earFit=Math.max(s.head.rx,s.head.ry)*1.38}
   if(hat==='Year of the Sheep Hood'){L.hood=1;if(body==='Ghost Sheet')L.ghost=1}// v2.8: flop ears stay inside the hood, the hood draws the prick ears itself
   if(body==='Superhero Cape')drawCape(h,s,L,B);

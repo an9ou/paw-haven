@@ -128,6 +128,17 @@ const CLOTHES = [
   { n: 'Little Owl Wings', slot: 'body', fest: 'halloween', ed: 2026, fm: true, price: 70, bond: 2, perk: 'Hoo: soft brown feathered wings and a band with two ear tufts. Wise-looking, at least.' },
   { n: 'Wizard Robe & Star Hat', slot: 'body', fest: 'halloween', ed: 2026, fm: true, price: 85, bond: 3, perk: 'Starlight: a navy robe with stars and a moon, and a tall star-tipped hat.' },
   { n: 'Lion Mane', slot: 'neck', fest: 'halloween', ed: 2026, fm: true, price: 60, bond: 1, perk: 'Roar (quietly): a big golden mane round the face. Every dog is the king of the yard.' },
+  /* Winter Market 2026 (docs/design/winter-market.md part 2): ten costumes sold at the Winter Market every December (fm, no ed); perks are flavour only */
+  { n: 'Father Christmas Suit', slot: 'body', fest: 'winter', fm: true, price: 85, bond: 2, perk: 'Ho ho ho: a red coat with fluffy white trim, a big belt and a floppy hat with a pompom. The beard is optional, and missing.' },
+  { n: 'Little Elf Outfit', slot: 'body', fest: 'winter', fm: true, price: 70, bond: 1, perk: 'Busy helper: a green tunic with a pointy hem, a red collar and a pointy hat with a bell on the tip.' },
+  { n: 'Gingerbread Pup Suit', slot: 'body', fest: 'winter', fm: true, price: 70, bond: 1, perk: 'Iced: a soft brown suit with white icing squiggles and two gumdrop buttons. A look, not a snack.' },
+  { n: 'Snowman Suit', slot: 'body', fest: 'winter', fm: true, price: 75, bond: 1, perk: 'Frosty: a white suit with coal buttons and a little top hat. The carrot sits on the hat, well away from the nose.' },
+  { n: 'Polar Bear Hood', slot: 'body', fest: 'winter', fm: true, price: 80, bond: 2, perk: 'Arctic cuddles: a fluffy white suit and a hood with two round bear ears. The face stays open for kisses.' },
+  { n: 'Penguin Suit', slot: 'body', fest: 'winter', fm: true, price: 80, bond: 2, perk: 'Waddle: black and white with two little flippers, and a tiny penguin face on top of the hood.' },
+  { n: 'Puffer Jacket', slot: 'body', fest: 'winter', fm: true, price: 75, bond: 1, perk: 'Puffy: a bright quilted puffer with a pink trim and a zip pull. A hat still fits on top.' },
+  { n: 'Nutcracker Jacket & Hat', slot: 'body', fest: 'winter', fm: true, price: 85, bond: 3, perk: 'Attention: a red soldier jacket with gold buttons and a tall black hat with a red plume. Stands to attention for snacks.' },
+  { n: 'Snowflake Wings', slot: 'body', fest: 'winter', fm: true, price: 70, bond: 2, perk: 'Flutter: pale blue paper snowflakes on a soft strap. No two are the same.' },
+  { n: 'Jingle Bell Collar', slot: 'neck', fest: 'winter', fm: true, price: 55, bond: 1, perk: 'Jingle: a soft red felt collar with three little gold bells. Everyone hears you coming.' },
   // v2.8 Winter & New Year (V28.md section 1): the Winter Stall sells the first three (fest), the Rosette is the contest reward, the Hood comes in Gerald's New Year card (ed: 2027, never sold)
   { n: 'Very Ugly Sweater', slot: 'body', fest: 'snow', price: 65, bond: 1, v28: true, perk: 'Warm: no shivering in the snow. Knitted by someone who has never seen a dog, or a snowflake.' },
   { n: 'Reindeer Antlers', slot: 'head', fest: 'snow', price: 55, bond: 1, v28: true, perk: 'Jingle: a little bell on each antler. Not warm. Very festive.' },
@@ -1409,7 +1420,7 @@ function unlocksFor(L) {
   const u = [];
   for (const k in ROUTES) if (ROUTES[k].bond === L && L > 1) u.push(tt('core.unlock_route', '{dig, select, yes {Walk route: {route} (with digging)} other {Walk route: {route}}}', { dig: ROUTES[k].dig ? 'yes' : 'no', route: tRoute(k) }));
   TRICKS.forEach((t) => { if (t.bond === L) u.push(t.n === 'Signature' ? tt('core.unlock_signature', 'Signature trick: {trick}', { trick: tSig(S.dog.key) }) : tt('core.unlock_trick', 'Trick: {trick}', { trick: tTrick(t.n) })); });
-  TOYS.concat(CLOTHES).forEach((t) => { if (t.bond === L && L > 1 && !t.ed) u.push(tt('core.unlock_shop', 'Shop: {item}', { item: tItem(t.n) })); });
+  TOYS.concat(CLOTHES).forEach((t) => { if (t.bond === L && L > 1 && !t.ed && !t.fm) u.push(tt('core.unlock_shop', 'Shop: {item}', { item: tItem(t.n) })); });
   HOUSES.forEach((h) => { if (h.bond === L && L > 1) u.push(tt('core.unlock_house', 'House: {house}', { house: tItem(h.n) })); });
   if (L === 10) u.push(tt('core.unlock_badge', 'Best Friends badge (it is invisible, but it is there)'));
   if (typeof ddUnlocks === 'function') u.push(...ddUnlocks(L)); // v2.17: the Bond track gifts (48_dogdays.js)
