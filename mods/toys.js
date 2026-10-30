@@ -2911,6 +2911,8 @@
   /* ==================== public ==================== */
   window.PawToys = {
     supports: function (name) { return TOYS.indexOf(name) >= 0; },
+    // the older toy game a market toy plays (HM_TOY_GAME), or the toy itself: the game reads it for the Plush Bone nap bonus
+    gameOf: function (name) { return HM_TOY_GAME[name] || name; },
     open: function (el, name, ctx) {
       try { return openToy(el, name, ctx); }
       catch (err) {

@@ -113,6 +113,10 @@ require('./test_lib').run('v26_toys', async (t) => {
   ok(api.sup.length === 19, `PawToys.supports is true for all 19 toys (${api.sup.length})`);
   const FM_T = ['Squeaky Bat', 'Pumpkin Ball', 'Rope Mummy', 'Glow-in-the-Dark Bone', 'Soft Spider Plush', 'Squeaky Snowman', 'Candy-Cane Rope', 'Plush Penguin', 'Snowball Ball', 'Present Puzzle Box']; // the Festive Market toys (mods/toys.js HM_TOY_GAME): Halloween, then Winter
   ok(api.list.length === 20 + FM_T.length && OLD.every((n, i) => api.list[i] === n) && NEW.every((n) => api.list.includes(n)) && api.list[19] === 'Shinkansen Plush' && FM_T.every((n, i) => api.list[20 + i] === n), `PawToys.list: the old 15 unchanged and in order, then the four new ones, then v2.11's Shinkansen Plush, then the Festive Market toys (${api.list.length})`);
+  // the nap buddy: every toy that plays the Plush Bone game gives the Plush Bone's +10% nap Energy, once (03_yard.js napBuddy)
+  const nap = await ev(() => { const S = window.__paw.S, keep = S.inv.toys.slice(), r = (t) => { S.inv.toys = t; return window.__paw.shop.napRate(); }; const o = { none: r(['Tennis Ball']), bone: r(['Plush Bone']), spider: r(['Soft Spider Plush']), penguin: r(['Plush Penguin']), both: r(['Plush Bone', 'Soft Spider Plush', 'Plush Penguin']), ball: r(['Snowball Ball']) }; S.inv.toys = keep; return o; });
+  const near = (a, b) => Math.abs(a - b) < 1e-9;
+  ok(near(nap.bone, nap.none * 1.1) && near(nap.spider, nap.bone) && near(nap.penguin, nap.bone) && near(nap.both, nap.bone) && near(nap.ball, nap.none), `nap buddy: Soft Spider Plush and Plush Penguin give the Plush Bone's +10%, not stacked, a ball gives none ${JSON.stringify(nap)}`);
   await hook();
 
   if (process.env.PAW_SHOTS) { // an existing toy for the side-by-side shots
