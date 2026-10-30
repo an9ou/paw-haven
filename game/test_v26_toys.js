@@ -117,6 +117,16 @@ require('./test_lib').run('v26_toys', async (t) => {
   const nap = await ev(() => { const S = window.__paw.S, keep = S.inv.toys.slice(), r = (t) => { S.inv.toys = t; return window.__paw.shop.napRate(); }; const o = { none: r(['Tennis Ball']), bone: r(['Plush Bone']), spider: r(['Soft Spider Plush']), penguin: r(['Plush Penguin']), both: r(['Plush Bone', 'Soft Spider Plush', 'Plush Penguin']), ball: r(['Snowball Ball']) }; S.inv.toys = keep; return o; });
   const near = (a, b) => Math.abs(a - b) < 1e-9;
   ok(near(nap.bone, nap.none * 1.1) && near(nap.spider, nap.bone) && near(nap.penguin, nap.bone) && near(nap.both, nap.bone) && near(nap.ball, nap.none), `nap buddy: Soft Spider Plush and Plush Penguin give the Plush Bone's +10%, not stacked, a ball gives none ${JSON.stringify(nap)}`);
+  // each Festive Market toy's hint names that toy, not the older toy whose game it plays (mods/toys.js HM_TOY_LOOK hints)
+  const HINT = { 'Squeaky Bat': /the bat/, 'Pumpkin Ball': /Pumpkin Ball/, 'Rope Mummy': /Rope Mummy/, 'Glow-in-the-Dark Bone': /Glow-in-the-Dark Bone/, 'Soft Spider Plush': /Soft Spider Plush/, 'Squeaky Snowman': /the snowman/, 'Plush Penguin': /Plush Penguin/ };
+  await ev((n) => { const S = window.__paw.S; n.forEach((x) => { if (!S.inv.toys.includes(x)) S.inv.toys.push(x); }); }, Object.keys(HINT));
+  for (const [n, re] of Object.entries(HINT)) {
+    await ev((x) => window.__paw.go('toy', x), n); await t.untilMode('toy', 5000);
+    await t.until(() => (document.querySelector('.pt-hint') || {}).textContent, null, 4000);
+    const h = await ev(() => document.querySelector('.pt-hint').textContent);
+    ok(re.test(h) && !/duck|chicken|Plush Bone|Glow Ball/.test(h), `${n}: its own hint "${h}"`);
+    await t.p.keyboard.press('Escape'); await t.untilMode('yard', 5000);
+  }
   await hook();
 
   if (process.env.PAW_SHOTS) { // an existing toy for the side-by-side shots

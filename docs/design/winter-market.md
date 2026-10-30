@@ -48,7 +48,7 @@ The New Year Market (27 Dec to 7 Jan) is a separate small set later.
 - `check_identical` against `origin/v215-base` now differs on every render (older dog outline redraws since v215-base, before this set);
   the base or the check needs updating (compare against the last release instead).
 - ~~`v28_winter` fails "wstall matches a stall food buy only" on `main` too (a missions check, older than this set).~~ Fixed: the test was out of date (v2.17.1 made Festive Market treats count on purpose).
-- The Halloween market toys still show their base toys' hints ("Click the duck", "Drag the Plush Bone"); give them their own like the winter toys.
+- ~~The Halloween market toys still show their base toys' hints ("Click the duck", "Drag the Plush Bone"); give them their own like the winter toys.~~ Fixed: `mod.toys.wm_bat_hint`, `wm_pumpkin_ball_hint`, `wm_mummy_hint`, `wm_glow_bone_hint`, `wm_spider_hint` (English, to translate).
 - ~~The Soft Spider Plush promises +10% nap Energy, but only the Plush Bone gives it: make the text or the bonus agree.~~ Fixed: every toy playing the Plush Bone game gives its +10% once (`napBuddy` in `03_yard.js`, `PawToys.gameOf`); new key `yard.nap_buddy`.
 - Festive-market houses (the Friendly Haunted Kennel, now the Gingerbread Kennel, both Bond 3) still show as "House: ..." in the Bond-up unlock lists (`unlocksFor` in `00_core.js`, the Bond track in `48_dogdays.js`), though only the market sells them; beds are already skipped there (`!b.fm`).
 - ~~The `wstall` mission ("Buy a warm treat from Baker Bea") also counts the Frozen Yoghurt Snowballs from the market: maybe count only warm treats, or reword.~~ Fixed: warm treats only (`cold: true` on Reindeer Crunch and Frozen Yoghurt Snowballs).

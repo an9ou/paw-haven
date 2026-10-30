@@ -2896,6 +2896,13 @@
     'Candy-Cane Rope': { tug: { rope: '#FFFDF8', stripe: '#E2403A', dash: [11, 11], cap: 'butt', knot: '#4FA548', end: '#E2403A' } },
     'Present Puzzle Box': { props: { 'puzzle-board': 'wmpuzzle-board', 'puzzle-lid': 'wmpuzzle-lid' } },
     // the hint names the toy you hold, not the older one
+    // Halloween Market (v2.17.1 / v2.17.2)
+    'Squeaky Bat': { hint: function (A) { return LT('mod.toys.wm_bat_hint', '{touch, select, yes {Tap the bat to squeak it. {dn} might have opinions.} other {Click the bat to squeak it. {dn} might have opinions.}}', { touch: TOUCH(), dn: A.DN }); } },
+    'Pumpkin Ball': { hint: function (A) { return LT('mod.toys.wm_pumpkin_ball_hint', 'Drag the Pumpkin Ball and release to throw it! Bounce it off {dn}’s head for a laugh.', { dn: A.DN }); } },
+    'Rope Mummy': { hint: function (A) { return LT('mod.toys.wm_mummy_hint', '{touch, select, yes {Tap to squeeze the Rope Mummy. Hold for a LONGER honk. {dn} will join in!} other {Click to squeeze the Rope Mummy. Hold for a LONGER honk. {dn} will join in!}}', { touch: TOUCH(), dn: A.DN }); } },
+    'Glow-in-the-Dark Bone': { hint: function () { return LT('mod.toys.wm_glow_bone_hint', 'Night mode! Drag and release to throw the Glow-in-the-Dark Bone. Watch the trail.'); } },
+    'Soft Spider Plush': { hint: function (A) { return LT('mod.toys.wm_spider_hint', 'Drag the Soft Spider Plush over to {dn}.', { dn: A.DN }); } },
+    // Winter Market
     'Squeaky Snowman': { hint: function (A) { return LT('mod.toys.wm_snowman_hint', '{touch, select, yes {Tap the snowman to squeak it. {dn} might have opinions.} other {Click the snowman to squeak it. {dn} might have opinions.}}', { touch: TOUCH(), dn: A.DN }); } },
     'Plush Penguin': { hint: function (A) { return LT('mod.toys.wm_penguin_hint', 'Drag the Plush Penguin over to {dn}.', { dn: A.DN }); } }
   };
