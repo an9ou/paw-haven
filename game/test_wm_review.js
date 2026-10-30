@@ -69,7 +69,7 @@ run('wm_review', async (t) => {
 
   sec('4. a market decoration lands at a free spot; the winter rows sit clear of the dog house and the other wall lights');
   {
-    const WM = ['Paper-Star Fir Tree', 'Yard Snowman', 'Candy-Cane Fairy Lights', 'Present Pile', 'Star Lantern'];
+    const WM = ['Felt Fir Tree', 'Yard Snowman', 'Candy-Cane Fairy Lights', 'Present Pile', 'Star Lantern'];
     const LIGHTS = ['String Lights', 'Ghost Lantern String', 'Pumpkin Fairy Lights', 'Paper Snowflake Garland', 'Felt Holly Wreath', 'Wind Chime'];
     const ov = (a, b) => Math.max(0, Math.min(a[0] + a[2], b[0] + b[2]) - Math.max(a[0], b[0])) * Math.max(0, Math.min(a[1] + a[3], b[1] + b[3]) - Math.max(a[1], b[1]));
     await t.newGame({ prefs: PREFS, ground: true }, { bond: { level: 8, pts: 1600 }, coins: 4000 });
@@ -169,6 +169,17 @@ run('wm_review', async (t) => {
     ok((await t.S()).dogs[0].stats.happy > 50, 'play still gives Happiness');
     await t.p.keyboard.press('Escape'); await t.untilMode('yard', 5000);
     ok(await ev(() => { const s = window.__paw.fw ? window.__paw.fw.migrate({ v: 1, dogs: [{ id: 'a', name: 'A', key: 'shiba', bond: { level: 2, pts: 70 } }], inv: { food: {}, toys: [], clothes: [], houses: [] }, ff: { toy: 'junk' } }) : null; return !s || (s.v === 1 && s.ff.toy.day === '' && s.ff.toy.coins === 0); }), 'an old or broken save gets S.ff.toy, additively');
+  }
+  await t.ctx.close();
+
+  sec('10. the Felt Fir Tree (was the Paper-Star Fir Tree): sold under its new name, its card drawn, an old save keeps it');
+  await t.newGame({ prefs: PREFS, ground: true }, { bond: { level: 8, pts: 1600 } });
+  await t.until(() => !!(window.__paw && window.__paw.fm && window.__paw.fw), null, 8000);
+  {
+    const R = await ev(() => { const F = window.__paw.fm, P = window.PawArt, d = F.items('decor').map((x) => x.n); return { on: d.includes('Felt Fir Tree') && !d.includes('Paper-Star Fir Tree'), card: /<svg/.test(P.item('Felt Fir Tree')), lbl: P.WINTER_MARKET.decor.wmfirtree, story: F.row('Felt Fir Tree').desc }; });
+    ok(R.on && R.card && R.lbl === 'Felt Fir Tree' && /^A soft felt fir/.test(R.story) && /fir needles/.test(R.story), 'the Winter Market sells the Felt Fir Tree with its card and new story: ' + R.story);
+    const M = await ev(() => window.__paw.fw.migrate({ v: 1, dogs: [{ id: 'a', name: 'A', key: 'shiba', bond: { level: 2, pts: 70 } }], inv: { food: {}, toys: [], clothes: [], houses: [] }, decor: { 'Paper-Star Fir Tree': { got: '2026-12-02', out: true, at: [540, 282] } } }));
+    ok(M.v === 1 && M.decor['Felt Fir Tree'] && M.decor['Felt Fir Tree'].out && M.decor['Felt Fir Tree'].at[0] === 540 && !M.decor['Paper-Star Fir Tree'], 'an old save owning the Paper-Star Fir Tree now owns the Felt Fir Tree, same spot');
   }
   await t.ctx.close();
 }, { prefs: {} });

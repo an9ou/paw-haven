@@ -12,14 +12,14 @@ new toys and more, done one part at a time, no rush.
   next winter). Bought things stay forever.
 - Winter, not religious: snow, knits, lights, presents, Father Christmas, elves, reindeer, gingerbread (as a look, never as food).
 - Welfare and food safety: no tinsel, no real candles, no holly, mistletoe, poinsettia or lilies as plants, no chocolate, nutmeg, raisins,
-  xylitol or macadamia in treats. A fir tree in the yard is fine (paper decorations only). Treats come with a short, kind two-sentence lesson.
+  xylitol or macadamia in treats. The fir tree is felt (real fir needles are mildly toxic to dogs), with paper decorations only. Treats come with a short, kind two-sentence lesson.
 - No name of a film, brand or game character.
 
 ## The items (25, plus 3 treats)
 
 | Part | Items |
 |---|---|
-| 1. Decorations (5, yard) | Paper-Star Fir Tree (a little potted fir with paper stars), Yard Snowman (crude, stick arms, carrot nose, scarf), Candy-Cane Fairy Lights (wall, `lit`), Present Pile (three wrapped boxes), Star Lantern (a paper star on a post, `lit`) |
+| 1. Decorations (5, yard) | Felt Fir Tree (a little potted soft felt fir with paper stars; real fir needles are mildly toxic to dogs), Yard Snowman (crude, stick arms, carrot nose, scarf), Candy-Cane Fairy Lights (wall, `lit`), Present Pile (three wrapped boxes), Star Lantern (a paper star on a post, `lit`) |
 | 2. Costumes (10) | Father Christmas Suit (coat and hat), Little Elf Outfit (tunic and pointy hat with a bell), Gingerbread Pup Suit (brown with icing squiggles), Snowman Suit (white, coal buttons, the carrot on top of the hat, never on the nose), Polar Bear Hood, Penguin Suit (little flippers), Puffer Jacket, Nutcracker Jacket & Hat, Snowflake Wings (back), Jingle Bell Collar (neck) |
 | 3. Toys (5, each plays an older toy game with its own look) | Squeaky Snowman, Candy-Cane Rope (rope only, no sweets), Plush Penguin, Snowball Ball (a fluffy white ball), Present Puzzle Box (treats inside, like the Puzzle Feeder) |
 | 4. Homes (a house and 4 beds) | Gingerbread Kennel (a look, not edible), Present-Box Bed, Little Sleigh Bed, Snowball Nest, Giant Mitten Bed |

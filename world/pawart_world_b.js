@@ -6413,7 +6413,7 @@ PA.HALLOWEEN_MARKET={costumes:['Little Witch Hat & Cape','Scarecrow Overalls','M
 
 /* ===================================== Winter Market 2026 (art/winter-market) =====================================
    Part 1, five yard decorations (props; the wall one carries its own nails), sold at the Winter Market every December:
-     wmfirtree 140x200            'Paper-Star Fir Tree': a little potted fir with paper stars (paper only: no tinsel, no lights). Ground y=194
+     wmfirtree 140x200            'Felt Fir Tree': a little potted fir with paper stars, a soft felt tree (real fir needles are mildly toxic to dogs; to be redrawn as felt). Ground y=194
      wmsnowman 140x180            'Yard Snowman': crude, stick arms, a carrot nose, a knitted scarf, on its own patch of snow (so it reads on summer grass). Ground y=174
      wmcanelights {lit} 300x80    'Candy-Cane Fairy Lights': red-and-white striped bulbs on a green wire, a candy cane hooked on each nail. Lit: the bulbs glow
      wmpresents 160x120           'Present Pile': three wrapped boxes with ribbons and bows, a paw-print tag. Ground y=114
@@ -6543,14 +6543,14 @@ PROPS.wmstarlantern=function(b,o){const lit=!!(o&&o.lit),G=194,x=60,y=60;
   if(lit){b.ex('spark',104,22,4,'#FFF3C2');b.ex('spark',14,108,3.2,'#FFE59A')}else{b.ex('spark',104,22,4);b.ex('heart',16,110,3,'#F7B2C4')}
 };
 Object.assign(PROP_VB,{wmfirtree:'0 0 140 200',wmsnowman:'0 0 140 180',wmcanelights:'0 0 300 80',wmpresents:'0 0 160 120',wmstarlantern:'0 0 120 200'});
-const WM_LBL={wmfirtree:'Paper-Star Fir Tree',wmsnowman:'Yard Snowman',wmcanelights:'Candy-Cane Fairy Lights',wmpresents:'Present Pile',wmstarlantern:'Star Lantern'},WM_LIT=['wmcanelights','wmstarlantern'];
+const WM_LBL={wmfirtree:'Felt Fir Tree',wmsnowman:'Yard Snowman',wmcanelights:'Candy-Cane Fairy Lights',wmpresents:'Present Pile',wmstarlantern:'Star Lantern'},WM_LIT=['wmcanelights','wmstarlantern'];
 {const _propWM=PA.prop;
  PA.prop=function(name,o){if(!WM_LBL[name])return _propWM.apply(this,arguments);
   const lt=WM_LIT.includes(name),opt=lt?{lit:!!(o&&o.lit)}:{};
   return serve('p:'+name+':'+JSON.stringify(opt),()=>{const b=mk('prop',name);PROPS[name](b,opt);return b.svg(PROP_VB[name],lt?` data-lit="${opt.lit?1:0}"`:'',(lt&&opt.lit?'Lit ':'')+WM_LBL[name])})}}
 // the item cards: each decoration's own prop, fitted into the 64 box (the long string shows its middle)
 Object.assign(ITEMS,{
- 'Paper-Star Fir Tree'(b){hmPropCard(b,'wmfirtree',false,[12,22,116,176])},'Yard Snowman'(b){hmPropCard(b,'wmsnowman',false,[8,14,124,166])},
+ 'Felt Fir Tree'(b){hmPropCard(b,'wmfirtree',false,[12,22,116,176])},'Yard Snowman'(b){hmPropCard(b,'wmsnowman',false,[8,14,124,166])},
  'Candy-Cane Fairy Lights'(b){const sy=x=>12+9*(1-Math.pow((x-32)/28,2));
   const w=[];for(let x=4;x<=60;x+=4)w.push([x,sy(x)]);b.ln(w,{w:1.3,col:WN_GRND});[4,60].forEach(x=>b.sh(E(x,sy(x)-1,2.4,2.4,8),C.woodD,{hatch:0,hl:0,lw:.6}));
   wmCane(b,7,15,1.05,.08);[[20,.1],[34,-.08],[48,.12]].forEach(([x,a],i)=>wmBulb(b,x,sy(x),sy(x)+15+(i%2)*4,a,false,1.08));b.ex('spark',58,52,3.2,'#FFE07A')},'Present Pile'(b){hmPropCard(b,'wmpresents',false,[2,16,156,102])},

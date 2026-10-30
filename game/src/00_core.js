@@ -850,6 +850,7 @@ function migrate(s) {
   fwBondFix(s); v216Fields(s); // v2.16 First Week (V216.md section 2): additive; the new Bond thresholds level old dogs up quietly
   v217Fields(s); // v2.17 Dog Days (V217.md section 6): additive
   v218Fields(s); // v2.18 Fun Fair (V218.md section 8): additive
+  wmRenames(s); // Winter Market review: renamed market items
   v2171Fields(s); // v2.17.1 Festive Market (V2171.md section 7): additive
   v2182Fields(s); // v2.18.2 What's new (49c_news.js): additive, S.newsSeen '' on an old save
   return s;
@@ -980,6 +981,14 @@ function v217Fields(s) {
 /* v2.18 Fun Fair save fields (V218.md 8). Additive only: S.v stays 1.
    S.ff = { day, c: { game: coins today }, n: { game: rounds played }, best: { game: best score }, rib: { b, r, g } (show ribbons),
             mk: { day, coins, n } (the Saturday stall), pc: { wk, e: [{ p, c, o, n, d, dog }], judged, won, rib } (the photo contest), wash: { day, n } } */
+// Winter Market review (welfare): the Paper-Star Fir Tree became the Felt Fir Tree (real fir needles are mildly toxic to dogs). The market never
+// opened with the old name, but a dev or test save may own it: it moves to the new name with its spot and out flag (nothing else changes)
+const WM_RENAMES = { 'Paper-Star Fir Tree': 'Felt Fir Tree' };
+function wmRenames(s) {
+  if (!s || !s.decor || typeof s.decor !== 'object') return s;
+  Object.keys(WM_RENAMES).forEach((o) => { if (!(o in s.decor)) return; const n = WM_RENAMES[o]; if (!s.decor[n]) s.decor[n] = s.decor[o]; delete s.decor[o]; });
+  return s;
+}
 function v218Fields(s) {
   if (!s) return s;
   if (!v28Obj(s.ff)) s.ff = {};

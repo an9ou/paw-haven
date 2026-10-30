@@ -31,7 +31,7 @@ const FM_MARKETS = [
   { id: 'harvest', theme: 'harvest', name: 'Harvest Market', win: () => ['10-01', '11-30'],
     items: { clothes: ['Leaf Beret', 'Autumn Scarf'], treats: ['Baked Pumpkin Wedges', 'Sweet Potato Coins', 'Warm Bone Broth'] } },
   { id: 'winter', theme: 'winter', name: 'Winter Market', win: () => ['12-01', '12-26'],
-    items: { decor: ['Paper Snowflake Garland', 'Felt Holly Wreath', 'Red Wooden Sled', 'Paper-Star Fir Tree', 'Yard Snowman', 'Candy-Cane Fairy Lights', 'Present Pile', 'Star Lantern'], clothes: ['Very Ugly Sweater', 'Reindeer Antlers', 'Snowflake Snood', 'Father Christmas Suit', 'Little Elf Outfit', 'Gingerbread Pup Suit', 'Snowman Suit',
+    items: { decor: ['Paper Snowflake Garland', 'Felt Holly Wreath', 'Red Wooden Sled', 'Felt Fir Tree', 'Yard Snowman', 'Candy-Cane Fairy Lights', 'Present Pile', 'Star Lantern'], clothes: ['Very Ugly Sweater', 'Reindeer Antlers', 'Snowflake Snood', 'Father Christmas Suit', 'Little Elf Outfit', 'Gingerbread Pup Suit', 'Snowman Suit',
         'Polar Bear Hood', 'Penguin Suit', 'Puffer Jacket', 'Nutcracker Jacket & Hat', 'Snowflake Wings', 'Jingle Bell Collar'],
       homes: ['Gingerbread Kennel', 'Present-Box Bed', 'Little Sleigh Bed', 'Snowball Nest', 'Giant Mitten Bed'],
       toys: ['Squeaky Snowman', 'Candy-Cane Rope', 'Plush Penguin', 'Snowball Ball', 'Present Puzzle Box'], treats: ['Warm Carob Cup', 'Snowflake Oat Cookies', 'Snow Day Stew', 'Reindeer Crunch', 'Turkey & Cranberry Bites', 'Frozen Yoghurt Snowballs'] } },

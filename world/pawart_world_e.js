@@ -1255,7 +1255,7 @@ function fmFrontHw(b,th){
   // a pumpkin pile by the decor stall
   [[22,560,22],[60,566,17],[40,536,15],[92,572,12]].forEach(([x,y,r])=>fmPumpkin(b,x,y,r))}
 /* Winter Market 2026 part 6 (docs/design/winter-market.md): the winter stalls dressed with the real winter drawings (world B, PawArt.WINTER_MARKET):
-   the Candy-Cane Fairy Lights under the decor awning, the Yard Snowman and the Present Pile on its counter, the Paper-Star Fir Tree beside it and the
+   the Candy-Cane Fairy Lights under the decor awning, the Yard Snowman and the Present Pile on its counter, the Felt Fir Tree beside it and the
    Star Lantern in front; winter costumes on little hangers; toys in baskets under the paper snowflakes; a homes stand and a treats cart in front;
    light snow on the roofs and the ground, a few flakes in the air. o.lit (after dark): the lights and the lanterns glow (pa-wb-glow groups, so the
    game's night tint leaves them bright). The same blank boards as Halloween (FM_STALL_SIGNS): the game writes the stall names */
