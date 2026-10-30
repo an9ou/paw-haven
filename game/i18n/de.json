@@ -5266,6 +5266,7 @@
  "ff.who_tanaka_from": "Die Tanakas",
  "ff.with": "mit {who}",
  "ff.young": "Dafür ist {name} noch ein bisschen klein. Zuschauen macht auch Spaß.",
+ "fm.ball_sub": "Hüpft, 2 Taler",
  "fm.bond": "Bindung {bond}",
  "fm.bought": "{multi, select, yes {{n} × {item} gekauft. Es gehört dir für immer.} other {{item} gekauft. Es gehört dir für immer.}}",
  "fm.browse": "Stände ansehen",

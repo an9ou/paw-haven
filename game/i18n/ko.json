@@ -5266,6 +5266,7 @@
  "ff.who_tanaka_from": "다나카 가족",
  "ff.with": "함께하는 사람: {who}",
  "ff.young": "{name}에게는 아직 조금 일러요. 구경하는 것도 즐거워요.",
+ "fm.ball_sub": "통통 튀어요, 2코인",
  "fm.bond": "친밀도 {bond}",
  "fm.bought": "{multi, select, yes {{item} {n}개를 샀어요. 영원히 당신 거예요.} other {{item, josa, 을/를} 샀어요. 영원히 당신 거예요.}}",
  "fm.browse": "가판대 둘러보기",

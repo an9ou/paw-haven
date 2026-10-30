@@ -5266,6 +5266,7 @@
  "ff.who_tanaka_from": "Les Tanaka",
  "ff.with": "avec {who}",
  "ff.young": "C'est encore un peu tôt pour {name}. Regarder, c'est amusant aussi.",
+ "fm.ball_sub": "Rebondit, 2 pièces",
  "fm.bond": "Amitié {bond}",
  "fm.bought": "{multi, select, yes {{n} × {item} acheté(s). C'est à toi pour toujours.} other {{item} acheté. C'est à toi pour toujours.}}",
  "fm.browse": "Voir les étals",

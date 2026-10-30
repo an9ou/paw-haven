@@ -5266,6 +5266,7 @@
  "ff.who_tanaka_from": "田中一家",
  "ff.with": "和{who}一起",
  "ff.young": "{name}還有點小，玩這個早了點。在旁邊看也很有趣。",
+ "fm.ball_sub": "會彈跳，2 金幣",
  "fm.bond": "親密度 {bond}",
  "fm.bought": "{multi, select, yes {買了 {n} 個{item}。永遠歸你。} other {買了{item}。永遠歸你。}}",
  "fm.browse": "逛逛小攤",

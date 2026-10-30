@@ -5266,6 +5266,7 @@
  "ff.who_tanaka_from": "The Tanakas",
  "ff.with": "with {who}",
  "ff.young": "{name} is a bit little for this. Watching is fun too.",
+ "fm.ball_sub": "Bounces, 2 coins",
  "fm.bond": "Bond {bond}",
  "fm.bought": "{multi, select, yes {Bought {n} × {item}. It is yours to keep.} other {Bought {item}. It is yours to keep.}}",
  "fm.browse": "Browse the stalls",

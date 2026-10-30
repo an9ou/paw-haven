@@ -5266,6 +5266,7 @@
  "ff.who_tanaka_from": "Keluarga Tanaka",
  "ff.with": "bersama {who}",
  "ff.young": "{name} masih terlalu kecil untuk ini. Menonton juga seru.",
+ "fm.ball_sub": "Memantul, 2 koin",
  "fm.bond": "Kedekatan {bond}",
  "fm.bought": "{multi, select, yes {Membeli {n} × {item}. Milikmu selamanya.} other {Membeli {item}. Milikmu selamanya.}}",
  "fm.browse": "Lihat lapak",

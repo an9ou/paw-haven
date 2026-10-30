@@ -213,9 +213,19 @@ async function fmBuy(p, it) {
   if (it.kind === 'clothes') { const pp = $('.panel', modal); const w = await confirmIn(pp, esc(tt('fest.wear_q', 'Put the {item} on {name} now?', { item: it.name, name: NAME() })), tt('fm.wear', 'Wear it'), tt('fm.later', 'Later')); if (w) equip(it.n, true); if (!modal.hidden && fmSync()) fmSheet(); }
 }
 
-/* ---------------- the Squeaky Ghost: a ball-play toy (38_ball.js BL_TOYS, FETCH_TOYS) ---------------- */
-if (!BL_TOYS['Squeaky Ghost']) BL_TOYS['Squeaky Ghost'] = { prop: ['item', 'Squeaky Ghost'], g: 1700, bounce: 0.45, fric: 3, spin: 0.6, vzK: 0.95, coin: 2, hap: 15, en: 1 };
-if (!FETCH_TOYS.includes('Squeaky Ghost')) FETCH_TOYS.push('Squeaky Ghost');
+/* ---------------- the market balls: ball-play toys (38_ball.js BL_TOYS, FETCH_TOYS; real coins under the ball-play caps BL_COIN_SES / BL_COIN_DAY) ----------------
+   The Squeaky Ghost, and (Winter Market review) the Pumpkin Ball and the Snowball Ball, whose "2 coins per return" is ball play's: they leave the
+   toy-game list like the Tennis Ball (BL_BALLS, 18_mod_walk_toys.js) and show in the Play tray with their own line */
+const FM_BALLS = {
+  'Squeaky Ghost': { g: 1700, bounce: 0.45, fric: 3, spin: 0.6, vzK: 0.95 },
+  'Pumpkin Ball': { g: 1850, bounce: 0.5, fric: 2.6, spin: 0.9, vzK: 1 }, // a squishy pumpkin: bounces a bit wonky
+  'Snowball Ball': { g: 1800, bounce: 0.38, fric: 3.2, spin: 0.4, vzK: 0.95 } // fluffy: a softer bounce
+};
+Object.keys(FM_BALLS).forEach((n) => {
+  if (!BL_TOYS[n]) BL_TOYS[n] = Object.assign({ prop: ['item', n], coin: 2, hap: 15, en: 1 }, FM_BALLS[n]);
+  if (!FETCH_TOYS.includes(n)) FETCH_TOYS.push(n);
+  if (n !== 'Squeaky Ghost' && !BL_BALLS.includes(n)) BL_BALLS.push(n);
+});
 
 /* ---------------- the map: the tent beside the Square with a "Festival!" tag, the travel walk through the Square ---------------- */
 function fmMapTent() {

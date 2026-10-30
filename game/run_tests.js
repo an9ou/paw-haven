@@ -113,6 +113,7 @@ const SUITES = {
   v217_dog_days: { file: 'test_v217_dog_days.js', group: 'all', est: 200 }, // v2.17 Dog Days (V217.md): the daily wish, the Bond track, the diary, the sticker book, the letters // v2.16 First Week (V216.md): Bond thresholds and migration, the first-day guide, the calendars, the wish, the phone dock
   v218_fun_fair: { file: 'test_v218_fun_fair.js', group: 'all', est: 300, timeout: 1200 }, // v2.18 Fun Fair (V218.md): the eight games, the caps, the stall, the photo contest, the stickers, the phone layout
   v2182_news: { file: 'test_v2182_news.js', group: 'all', est: 120, timeout: 600 }, // v2.18.2 What's new in town (49c_news.js): once per id, not after a reload, new saves skip, never on the guide, fits everywhere
+  wm_review: { file: 'test_wm_review.js', group: 'all', est: 90, timeout: 600 }, // Winter Market 2026 code review fixes (docs/design/winter-market.md): market roam, market balls, caps, buys, stalls, warm wear
   v2183_connect: { file: 'test_v2183_connect_node.js', group: 'all', est: 900, timeout: 1800 }, // v2.18.3 All in one piece: every dog one piece, every leg, ear, tail and head attached, no noodle legs (dogs/connect_check.js), 35 breeds, every pose, age, frame, dry, wet and outfits
   cloud: { file: 'test_cloud.js', group: 'phone', est: 60 },
   worker: { file: 'test_worker.js', group: 'phone', est: 5 }, // v2.8.1: the Cloudflare Worker (node + Miniflare, local D1)

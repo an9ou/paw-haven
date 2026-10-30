@@ -5266,6 +5266,7 @@
  "ff.who_tanaka_from": "Los Tanaka",
  "ff.with": "con {who}",
  "ff.young": "Aún es pronto para que {name} haga esto. Mirar también es divertido.",
+ "fm.ball_sub": "Rebota, 2 monedas",
  "fm.bond": "Cariño {bond}",
  "fm.bought": "{multi, select, yes {Compraste {n} × {item}. Es tuyo para siempre.} other {Compraste {item}. Es tuyo para siempre.}}",
  "fm.browse": "Ver los puestos",

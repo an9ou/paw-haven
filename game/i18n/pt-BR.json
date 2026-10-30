@@ -5266,6 +5266,7 @@
  "ff.who_tanaka_from": "Os Tanaka",
  "ff.with": "com {who}",
  "ff.young": "Ainda é cedo para {name} fazer isso. Assistir também é divertido.",
+ "fm.ball_sub": "Quica, 2 moedas",
  "fm.bond": "Carinho {bond}",
  "fm.bought": "{multi, select, yes {Você comprou {n} × {item}. É seu para sempre.} other {Você comprou {item}. É seu para sempre.}}",
  "fm.browse": "Ver as barracas",

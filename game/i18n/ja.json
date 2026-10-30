@@ -5266,6 +5266,7 @@
  "ff.who_tanaka_from": "田中さん一家",
  "ff.with": "{who}といっしょに",
  "ff.young": "{name}にはまだちょっと早いかな。見ているのも楽しいよ。",
+ "fm.ball_sub": "はずむ、2コイン",
  "fm.bond": "絆レベル{bond}",
  "fm.bought": "{multi, select, yes {{item}を{n}個買いました。ずっとあなたのものです。} other {{item}を買いました。ずっとあなたのものです。}}",
  "fm.browse": "屋台を見る",
