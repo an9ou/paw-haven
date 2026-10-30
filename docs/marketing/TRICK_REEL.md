@@ -62,7 +62,7 @@ Noodle knocked on 4 doors. door 4 cost him every treat 🎃 we've got 10 new dog
 
 ## RedNote / 小红书 (Simplified Chinese, no link)
 
-Post `doodle-doggo-trick-or-treat-rednote.mp4` with `trick-cover-rednote.jpg`. On the video: "第4扇门，/ 零食全没了" (door 4, every treat gone) with "不给糖就捣蛋，蜡笔版" (trick or treat, crayon edition) small underneath, "咚咚咚" (knock knock), "不给糖就捣蛋！", the costumes' game names (稻草人背带裤, 骷髅服, 木乃伊绷带, 恐龙帽兜) under "万圣节新服装" (new Halloween costume), "……零食不要了" (...forget the treats), and on the ending page the game's own line "不给糖就捣蛋？要糖。永远要糖。" (trick or treat? treat. always treat.), "搜索 Doodle Doggo 就能玩", "万圣节市集开到11月15日".
+Post `doodle-doggo-trick-or-treat-rednote.mp4` with `trick-cover-rednote.jpg`. Poster (3:4, 1080 x 1440): `brand/rednote/rednote-02-trick.jpg`, the video note's cover in RedNote's 3:4 feed, or an image note with the same text (`make_rednote_posters.js`). On the video: "第4扇门，/ 零食全没了" (door 4, every treat gone) with "不给糖就捣蛋，蜡笔版" (trick or treat, crayon edition) small underneath, "咚咚咚" (knock knock), "不给糖就捣蛋！", the costumes' game names (稻草人背带裤, 骷髅服, 木乃伊绷带, 恐龙帽兜) under "万圣节新服装" (new Halloween costume), "……零食不要了" (...forget the treats), and on the ending page the game's own line "不给糖就捣蛋？要糖。永远要糖。" (trick or treat? treat. always treat.), "搜索 Doodle Doggo 就能玩", "万圣节市集开到11月15日".
 
 标题 (title, 17 characters; 20 max):
 ```
