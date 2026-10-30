@@ -182,4 +182,12 @@ run('wm_review', async (t) => {
     ok(M.v === 1 && M.decor['Felt Fir Tree'] && M.decor['Felt Fir Tree'].out && M.decor['Felt Fir Tree'].at[0] === 540 && !M.decor['Paper-Star Fir Tree'], 'an old save owning the Paper-Star Fir Tree now owns the Felt Fir Tree, same spot');
   }
   await t.ctx.close();
+
+  sec('11. never "too hot" on a sunny winter midday; summer sun still is');
+  for (const [season, hot] of [['winter', false], ['summer', true]]) {
+    await t.newGame({ weather: 'sunny', time: 'day', season }, { bond: { level: 8, pts: 1600 } });
+    await t.home('yard');
+    ok(await ev(() => window.__paw.shop.hot()) === hot, `${season}, sunny, day: hot is ${hot}`);
+    await t.ctx.close();
+  }
 }, { prefs: {} });
