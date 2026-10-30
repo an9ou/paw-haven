@@ -144,9 +144,9 @@ const CLOTHES = [
   { n: 'Little Elf Outfit', slot: 'body', fest: 'winter', fm: true, price: 70, bond: 1, perk: 'Busy helper: a green tunic with a pointy hem, a red collar and a pointy hat with a bell on the tip.' },
   { n: 'Gingerbread Pup Suit', slot: 'body', fest: 'winter', fm: true, price: 70, bond: 1, perk: 'Iced: a soft brown suit with white icing squiggles and two gumdrop buttons. A look, not a snack.' },
   { n: 'Snowman Suit', slot: 'body', fest: 'winter', fm: true, price: 75, bond: 1, perk: 'Frosty: a white suit with coal buttons and a little top hat. The carrot sits on the hat, well away from the nose.' },
-  { n: 'Polar Bear Hood', slot: 'body', fest: 'winter', fm: true, price: 80, bond: 2, perk: 'Arctic cuddles: a fluffy white suit and a hood with two round bear ears. The face stays open for kisses.' },
+  { n: 'Polar Bear Hood', slot: 'body', fest: 'winter', fm: true, price: 80, bond: 2, perk: 'Warm: no shivering in the snow. A fluffy white suit and a hood with two round bear ears, the face open for kisses.' },
   { n: 'Penguin Suit', slot: 'body', fest: 'winter', fm: true, price: 80, bond: 2, perk: 'Waddle: black and white with two little flippers, and a tiny penguin face on top of the hood.' },
-  { n: 'Puffer Jacket', slot: 'body', fest: 'winter', fm: true, price: 75, bond: 1, perk: 'Puffy: a bright quilted puffer with a pink trim and a zip pull. A hat still fits on top.' },
+  { n: 'Puffer Jacket', slot: 'body', fest: 'winter', fm: true, price: 75, bond: 1, perk: 'Warm: no shivering in the snow. A bright quilted puffer with a pink trim and a zip pull, and a hat still fits on top.' },
   { n: 'Nutcracker Jacket & Hat', slot: 'body', fest: 'winter', fm: true, price: 85, bond: 3, perk: 'Attention: a red soldier jacket with gold buttons and a tall black hat with a red plume. Stands to attention for snacks.' },
   { n: 'Snowflake Wings', slot: 'body', fest: 'winter', fm: true, price: 70, bond: 2, perk: 'Flutter: pale blue paper snowflakes on a soft strap. No two are the same.' },
   { n: 'Jingle Bell Collar', slot: 'neck', fest: 'winter', fm: true, price: 55, bond: 1, perk: 'Jingle: a soft red felt collar with three little gold bells. Everyone hears you coming.' },
@@ -1131,7 +1131,7 @@ function wxIconName() { const w = weatherNow(), t = timePhase(); if (w === 'rain
 const RAINCOATS = ['Yellow Raincoat', 'Polka-dot Raincoat', 'Frog Raincoat', 'Bubble Raincoat'];
 const hasRaincoat = () => RAINCOATS.includes(S.outfit.body);
 const hasRainHat = () => S.outfit.head === 'Rain Hat' || S.outfit.head === 'Astronaut Helmet';
-const WARM_WEAR = ['Pom-pom Beanie', 'Knit Winter Sweater', 'Cozy Hoodie', 'Knit Scarf', 'Astronaut Helmet', 'Leaf Beret', 'Autumn Scarf', 'Very Ugly Sweater', 'Snowflake Snood', 'Year of the Sheep Hood']; // v2.4: three new warm things; v2.5: the leaf festival pair; v2.8: the winter three
+const WARM_WEAR = ['Pom-pom Beanie', 'Knit Winter Sweater', 'Cozy Hoodie', 'Knit Scarf', 'Astronaut Helmet', 'Leaf Beret', 'Autumn Scarf', 'Very Ugly Sweater', 'Snowflake Snood', 'Year of the Sheep Hood', 'Puffer Jacket', 'Polar Bear Hood']; // v2.4: three new warm things; v2.5: the leaf festival pair; v2.8: the winter three; Winter Market 2026 (owner): the Puffer Jacket and the Polar Bear Hood
 const isWarm = () => SLOTS.some((k) => WARM_WEAR.includes(S.outfit[k])) || (typeof buffOn === 'function' && buffOn('warm')) || (S.warmUntil || -1) > S.gameMin; // v2.5: Warm Bone Broth
 const houseInfo = (n) => HOUSES.find((h) => h.n === (n || S.house)) || HOUSES[0];
 const owns = (cat, n) => S.inv[cat].includes(n);

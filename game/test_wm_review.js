@@ -142,6 +142,10 @@ run('wm_review', async (t) => {
   {
     const R = await ev(() => { const F = window.__paw.fm; return { pen: F.row('Plush Penguin').desc, spi: F.row('Soft Spider Plush').desc }; });
     ok(/\+10% nap Energy\.$/.test(R.pen) && !/Happiness/.test(R.pen) && /\+10% nap Energy\.$/.test(R.spi), 'Plush Penguin: "' + R.pen + '"');
+    for (const n of ['Puffer Jacket', 'Polar Bear Hood']) {
+      const W = await ev((n) => { const P = window.__paw, S = P.S, keep = Object.assign({}, S.outfit); S.outfit.head = null; S.outfit.neck = null; S.outfit.body = null; const off = P.fest.warm(); S.outfit.body = n; const on = P.fest.warm(); Object.assign(S.outfit, keep); return { off, on, perk: P.fm.row(n).desc }; }, n);
+      ok(!W.off && W.on && /^Body\. Warm: no shivering in the snow\./.test(W.perk), `${n}: keeps a dog warm in the snow (WARM_WEAR) and says so: "${W.perk}"`);
+    }
 
   }
   await t.ctx.close();
