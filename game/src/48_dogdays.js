@@ -168,7 +168,7 @@ function ddTrackRows(L, d) {
     if (typeof TK_PLACES !== 'undefined' && typeof tkOn === 'function' && tkOn()) { const tk = Object.keys(TK_PLACES).filter((k) => TK_PLACES[k].bond === L).map(ddPlaceName); if (L === TK_STATION_BOND) tk.unshift(ddPlaceName('station')); if (tk.length) add('map', tt('dd.tr_tokyo', 'Tokyo: {list}', { list: tlist(tk) })); }
     const shop = TOYS.concat(CLOTHES).filter((x) => x.bond === L && notShop(x)).map((x) => shNameAny(x.n)).concat(typeof twTools === 'function' ? twTools().filter((x) => x.bond === L).map((x) => tt('shop.gene_sniffer', 'Gene Sniffer')) : []);
     if (shop.length) add('shop', tt('dd.tr_shop', 'Shop: {list}', { list: tlist(shop) }));
-    HOUSES.forEach((h) => { if (h.bond === L && !h.reward) add('house', tt('core.unlock_house', 'House: {house}', { house: tItem(h.n) })); });
+    HOUSES.forEach((h) => { if (h.bond === L && !h.reward && !h.fm) add('house', tt('core.unlock_house', 'House: {house}', { house: tItem(h.n) })); });
     const home = BEDS.filter((b) => b.bond === L && !b.fm).map((b) => tdata('beds.' + tid(b.n) + '.n', b.n)).concat(Object.keys(HM_DECOR).filter((n) => HM_DECOR[n].bond === L && !HM_DECOR[n].fest && !HM_DECOR[n].ed).map((n) => tdata('hm_decor.' + tid(n) + '.n', n)));
     if (home.length) add('decor', tt('dd.tr_home', 'For the home: {list}', { list: tlist(home) }));
     SPOT_RULES.forEach((r, i) => { if (r && r.bond === L) add('spots', tt('dd.tr_spot', 'Room for dog number {n} (with its other rules)', { n: i })); });

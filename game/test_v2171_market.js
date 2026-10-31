@@ -54,6 +54,31 @@ run('v2171_market', async (t) => {
     ok(await ev(() => window.__paw.fm.sign() === 'Halloween Market · open until 15 Nov'), 'the sign: "Halloween Market · open until 15 Nov"');
     ok(await ev(() => { const F = window.__paw.fm; F.date('2026-11-16'); const s = F.sign(); F.date('2026-10-27'); return s === 'Harvest Market · open until 30 Nov'; }), 'after 15 Nov the sign says "Harvest Market · open until 30 Nov"');
     ok(await ev(() => { const F = window.__paw.fm; F.date('2027-10-27'); const c = F.items('clothes').map((x) => x.n), t = F.items('treats').map((x) => x.n); F.date('2026-10-27'); return !c.includes('Pumpkin Patch Suit') && c.includes('Ghost Sheet') && !t.includes('Pumpkin Patch Pupcake'); }), 'the 2026 edition items are sold in 2026 only');
+    // Winter Market 2026 part 1 (docs/design/winter-market.md): five yard decorations, fest 'winter', fm, no edition, so sold every December
+    const WM = ['Felt Fir Tree', 'Yard Snowman', 'Candy-Cane Fairy Lights', 'Present Pile', 'Star Lantern'];
+    ok(await ev((WM) => { const F = window.__paw.fm, at = (d) => { F.date(d); return F.items('decor').map((x) => x.n); }; const a = at('2026-12-05'), b = at('2027-12-20'), c = at('2026-11-20'); F.date('2026-10-27'); return WM.every((n) => a.includes(n) && b.includes(n) && !c.includes(n)); }, WM), 'the five winter decorations are sold at the Winter Market every December (2026 and 2027), not before it opens');
+    ok(await ev((WM) => WM.every((n) => { const D = window.__paw.home.specs[n], P = window.PawArt, lit = ['Candy-Cane Fairy Lights', 'Star Lantern'].includes(n); return D && D.fest === 'winter' && D.fm && !D.ed && D.price >= 80 && D.price <= 150 && (D.bond || 1) <= 3 && !!D.lit === lit
+      && P.WINTER_MARKET.decor[D.prop] === n && P.WORLD_B.items.includes(n) && /<svg/.test(P.prop(D.prop, {})) && /<svg/.test(P.item(n)) && P.prop(D.prop, { lit: true }).includes('pa-wb-glow') === lit && !P.prop(D.prop, {}).includes('pa-wb-glow'); }), WM), 'each has its prop and item card (PawArt.WINTER_MARKET), a Halloween-like price and Bond gate, and only the lights and the lantern glow, only when lit');
+    // Winter Market 2026 part 2: ten costumes (CLOTHES, fest 'winter', fm, no edition), each with its item card and its own drawing on the dog
+    const WC = ['Father Christmas Suit', 'Little Elf Outfit', 'Gingerbread Pup Suit', 'Snowman Suit', 'Polar Bear Hood', 'Penguin Suit', 'Puffer Jacket', 'Nutcracker Jacket & Hat', 'Snowflake Wings', 'Jingle Bell Collar'];
+    ok(await ev((WC) => { const F = window.__paw.fm, at = (d) => { F.date(d); return F.items('clothes').map((x) => x.n); }; const a = at('2026-12-05'), b = at('2027-12-20'), c = at('2026-11-20'); F.date('2026-10-27'); return WC.every((n) => a.includes(n) && b.includes(n) && !c.includes(n)); }, WC), 'the ten winter costumes are sold at the Winter Market every December (2026 and 2027), not before');
+    ok(await ev((WC) => { const P = window.PawArt, F = window.__paw.fm; return WC.every((n) => { const r = F.row(n), sl = n === 'Jingle Bell Collar' ? 'neck' : 'body'; return r && r.kind === 'clothes' && !r.ed && r.price >= 50 && r.price <= 90 && r.bond >= 1 && r.bond <= 3
+      && P.WINTER_MARKET.costumes.includes(n) && /<svg/.test(P.item(n)) && P.dog('golden', { pose: 'idle', outfit: { [sl]: n } }) !== P.dog('golden', { pose: 'idle' }); }); }, WC), 'each has a Halloween-like price and Bond gate, its item card (PawArt.WINTER_MARKET.costumes) and its drawing on the dog');
+    // Winter Market 2026 part 3: five toys (TOYS, fest 'winter', fm, no edition), each plays an older toy game (mods/toys.js HM_TOY_GAME) with its own look
+    const WT = ['Squeaky Snowman', 'Candy-Cane Rope', 'Plush Penguin', 'Snowball Ball', 'Present Puzzle Box'];
+    ok(await ev((WT) => { const F = window.__paw.fm, at = (d) => { F.date(d); return F.items('toys').map((x) => x.n); }; const a = at('2026-12-05'), b = at('2027-12-20'), c = at('2026-11-20'); F.date('2027-12-20'); const cats = F.cats(); F.date('2026-10-27'); return WT.every((n) => a.includes(n) && b.includes(n) && !c.includes(n)) && cats.includes('toys'); }, WT), 'the five winter toys are sold at the Winter Market every December (2026 and 2027), not before, at its own toys stall');
+    ok(await ev((WT) => { const P = window.PawArt, F = window.__paw.fm; return WT.every((n) => { const r = F.row(n); return r && r.kind === 'toys' && !r.ed && r.price >= 40 && r.price <= 80 && r.bond >= 1 && r.bond <= 3
+      && P.WINTER_MARKET.toys.includes(n) && /<svg/.test(P.item(n)) && window.PawToys.supports(n); }) && /<svg/.test(P.prop('wmpuzzle-board', {})) && /<svg/.test(P.prop('wmpuzzle-lid', {})); }, WT), 'each has a Halloween-like price and Bond gate, its item card (PawArt.WINTER_MARKET.toys) and a toy game (the puzzle box with its own board and lids)');
+    // Winter Market 2026 part 4: a house and four beds (HOUSES / BEDS, fest 'winter', fm, no edition), each with its art and item card, never in Barkitecture
+    const WH = ['Gingerbread Kennel', 'Present-Box Bed', 'Little Sleigh Bed', 'Snowball Nest', 'Giant Mitten Bed'];
+    ok(await ev((WH) => { const F = window.__paw.fm, at = (d) => { F.date(d); return F.items('homes').map((x) => x.n); }; const a = at('2026-12-05'), b = at('2027-12-20'), c = at('2026-11-20'); F.date('2027-12-20'); const cats = F.cats(); F.date('2026-10-27'); return WH.every((n) => a.includes(n) && b.includes(n) && !c.includes(n)) && cats.includes('homes'); }, WH), 'the winter house and beds are sold at the Winter Market every December (2026 and 2027), not before, on its homes tab');
+    ok(await ev((WH) => { const P = window.PawArt, F = window.__paw.fm; return WH.every((n) => { const r = F.row(n), house = n === 'Gingerbread Kennel', svg = house ? P.house(n) : P.bed(n); return r && r.kind === (house ? 'houses' : 'beds') && !r.ed && r.bond >= 1 && r.bond <= 3 && (house ? r.price === 900 : r.price >= 250 && r.price <= 450)
+      && (house ? P.WINTER_MARKET.house === n && P.WORLD_B.houses.includes(n) : P.WINTER_MARKET.beds.includes(n) && P.WORLD_B.beds.includes(n) && /pa-bed-front/.test(svg) && svg.includes('data-bed="' + n + '"')) && /<svg/.test(svg) && /<svg/.test(P.item(n)); }) && P.house('Gingerbread Kennel').includes('pa-wb-glow'); }, WH), 'each has a Halloween-like price and Bond gate, its art (the beds with a front lip, the kennel windows glow at night) and its item card (PawArt.WINTER_MARKET.house, .beds)');
+    // Winter Market 2026 part 5: three treats (FOOD, fest 'winter', fm, no edition) after the three old ones, each with its two-sentence lesson, card and bowl; never at Baker Bea's stall
+    const WF = ['Reindeer Crunch', 'Turkey & Cranberry Bites', 'Frozen Yoghurt Snowballs'];
+    ok(await ev((WF) => { const F = window.__paw.fm, at = (d) => { F.date(d); return F.items('treats').map((x) => x.n); }; const a = at('2026-12-05'), b = at('2027-12-20'), c = at('2026-11-20'); F.date('2026-10-27'); return a.slice(3, 6).join() === WF.join() && WF.every((n) => b.includes(n) && !c.includes(n)); }, WF), 'the three winter treats are sold at the Winter Market every December (2026 and 2027), after the three old ones, not before');
+    ok(await ev((WF) => { const P = window.PawArt, F = window.__paw.fm; return WF.every((n) => { const r = F.row(n); return r && r.kind === 'food' && !r.ed && r.price >= 6 && r.price <= 14 && (r.tip.match(/\. /g) || []).length === 1 && /\.$/.test(r.tip)
+      && P.WINTER_MARKET.treats.includes(n) && P.WORLD_B.bowlFoods.includes(n) && /<svg/.test(P.item(n)) && /<svg/.test(P.prop('bowl', { food: n })); }) && !window.__paw.fest.items().some((n) => WF.includes(n)); }, WF), 'each has a Halloween-like price, a two-sentence lesson, its item card (PawArt.WINTER_MARKET.treats) and its bowl, and Baker Bea never sells it');
   }
 
   sec('3. the map: the tent with a "Festival!" tag beside the Square, the walk there');
@@ -155,6 +180,30 @@ run('v2171_market', async (t) => {
     ok(s2.v === 1 && s2.fm && s2.fm.bought === 4 && s2.decor['Pumpkin Lantern'] && s2.beds.includes('Witch-Hat Bed') && s2.inv.toys.includes('Squeaky Ghost'), 'after a reload: v 1, S.fm kept, everything owned');
     await t.until(() => !!(window.__paw && window.__paw.fw), null, 6000);
     ok(await ev(() => { const x = window.__paw.fw.migrate({ v: 1, dogs: [{ id: 'a', name: 'A', key: 'shiba', bond: { level: 2, pts: 70 } }], inv: { food: {}, toys: [], clothes: [], houses: [] }, fm: 'junk' }); return x.v === 1 && typeof x.fm.seen === 'object' && x.fm.bought === 0; }), 'an old or broken save gets S.fm, additively');
+    await t.ctx.close();
+  }
+
+  sec('8b. Winter Market 2026 part 6: the winter scene dressed, five stall buttons with boards, each opens its own tab; lit after dark; New Year: no empty stalls');
+  {
+    await t.newGame({ prefs: Object.assign({}, PREFS, { fmDate: '2026-12-05' }), ground: true }, { bond: { level: 8, pts: 1600 }, coins: 4000 });
+    t.p.on('pageerror', (e) => errs.push(e.message));
+    await t.until(() => !!(window.__paw && window.__paw.fm), null, 8000); await ev(() => window.__paw.fm.sync());
+    await ev(() => { const P = window.__paw; P.S.place = 'fmarket'; P.go('yard'); }); await t.calm();
+    const W = await ev(() => ({ stalls: [...document.querySelectorAll('#sceneG [data-fmstall].hot')].map((g) => g.dataset.fmstall).sort().join(), boards: [...document.querySelectorAll('#sceneG .fm-stall-sign')].map((x) => x.textContent).sort().join(), sign: (document.querySelector('#sceneG .fm-sign') || {}).textContent || '', svg: (document.querySelector('#sceneG svg[data-fm="fmscene"]') || {}).outerHTML || '' }));
+    ok(W.stalls === 'clothes,decor,homes,toys,treats', 'five winter stall buttons (the three stalls, the homes stand, the treats cart): ' + W.stalls);
+    ok(W.boards === 'Clothes,Decor,Homes,Toys,Treats' && /Winter Market · open until 26 Dec/.test(W.sign), 'each has its board with its name, and the sign: ' + W.boards);
+    ok(W.svg.length > 20000 && !W.svg.includes('pa-wb-glow'), 'the real winter drawings in the scene, nothing glows by day');
+    const cov = await ev(() => { const d = document.querySelector('#dogPos').getBoundingClientRect(), hit = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom; return [...document.querySelectorAll('#sceneG .fm-stall-sign')].filter((x) => hit(d, x.getBoundingClientRect())).map((x) => x.textContent); });
+    ok(cov.length === 0, 'the dog stands in the open snow in front, clear of every stall board (37_roam.js RM_LEAD): ' + cov.join());
+    for (const c of ['decor', 'clothes', 'homes', 'toys', 'treats']) {
+      await ev((c) => document.querySelector(`#sceneG [data-fmstall="${c}"]`).dispatchEvent(new MouseEvent('click', { bubbles: true })), c);
+      ok(await t.until((c) => { const b = document.querySelector(`#modal .fm-pop [data-fmtab="${c}"]`); return !!b && b.getAttribute('aria-selected') === 'true' && document.querySelectorAll('#modal .fm-grid .fm-card').length >= 3; }, c, 4000), `the ${c} stall opens the ${c} tab`);
+      await t.closeX(); await t.modalGone();
+    }
+    await t.dev(async () => { await t.p.selectOption('#dvTime', 'night'); });
+    ok(await t.until(() => document.querySelectorAll('#sceneG [data-fmstall].hot').length === 5 && (document.querySelector('#sceneG svg[data-fm="fmscene"]') || {}).outerHTML.includes('pa-wb-glow'), null, 4000), 'after dark: the fairy lights and the lanterns glow, the five stalls still tappable');
+    await ev(() => window.__paw.fm.date('2026-12-28')); await ev(() => { const P = window.__paw; P.go('yard'); }); await t.calm();
+    ok(await ev(() => window.__paw.fm.main() === 'newyear' && [...document.querySelectorAll('#sceneG [data-fmstall].hot')].map((g) => g.dataset.fmstall).sort().join() === 'decor,treats'), 'the New Year Market: only its two stalls (decor, treats) are buttons');
     await t.ctx.close();
   }
 

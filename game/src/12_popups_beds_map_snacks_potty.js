@@ -43,6 +43,11 @@ const BEDS = [
   ,{ n: 'Bat-Cave Cushion', price: 250, bond: 1, bonus: 0.05, fest: 'halloween', ed: 2026, fm: true, note: 'A cosy dark cave with a purple cushion and one sleepy felt bat on the roof.' }
   ,{ n: 'Pumpkin Patch Bed', price: 350, bond: 2, bonus: 0.10, fest: 'halloween', ed: 2026, fm: true, note: 'A hollow orange pumpkin with a cream cushion and a curly stem. Smells of nothing at all.' }
   ,{ n: 'Moon and Stars Tent', price: 450, bond: 3, bonus: 0.15, fest: 'halloween', ed: 2026, fm: true, note: 'A navy tent with crayon stars and a crescent moon. Dark inside, perfect for long naps.' }
+  // Winter Market 2026 (docs/design/winter-market.md part 4): Festive Market beds sold every December (fm, no ed)
+  ,{ n: 'Present-Box Bed', price: 300, bond: 2, bonus: 0.10, fest: 'winter', fm: true, note: 'An open present box with a soft cushion inside and its lid stood up behind, bow and all. The best present is a nap.' }
+  ,{ n: 'Little Sleigh Bed', price: 350, bond: 2, bonus: 0.10, fest: 'winter', fm: true, note: 'A small red wooden sleigh with curly ends, gold runners and a tartan cushion. It never goes anywhere, except to sleep.' }
+  ,{ n: 'Snowball Nest', price: 250, bond: 1, bonus: 0.05, fest: 'winter', fm: true, note: 'A round, fluffy white nest, soft as fresh snow and never cold.' }
+  ,{ n: 'Giant Mitten Bed', price: 450, bond: 3, bonus: 0.15, fest: 'winter', fm: true, note: 'A huge knitted mitten with a fleecy lining to curl up inside. Somebody lost the other one.' }
 ];
 const BED_BOX = [610, 360, 260, 160]; // x, y, w, h in the house scene (floor contact y = 360 + 152)
 const bedInfo = (n) => BEDS.find((b) => b.n === (n || S.bed)) || BEDS[0];

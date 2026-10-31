@@ -297,9 +297,9 @@ function fsScatter(i) {
 /* ---- Harvest Stall (Square) ---- */
 function fsStallItems() {
   const on = (x) => festOn(x.fest);
-  return FOOD.filter((f) => f.fest && !f.ed && on(f)).map((f) => ({ cat: 'food', n: f.n, name: fsIName('food', f.n), price: f.price, desc: tdata('food.' + tid(f.n) + '.note', f.note), tip: f.tip ? tdata('food.' + tid(f.n) + '.tip', f.tip) : f.tip }))
-    .concat(CLOTHES.filter((c) => c.fest && !c.ed && !c.reward && on(c)).map((c) => ({ cat: 'clothes', n: c.n, name: fsIName('clothes', c.n), price: c.price, desc: tt('fest.slot_perk', '{slot}. {perk}', { slot: tdata('slot_name.' + c.slot, SLOT_NAME[c.slot]), perk: tdata('clothes.' + tid(c.n) + '.perk', c.perk) }) })))
-    .concat(Object.keys(HM_DECOR).filter((n) => HM_DECOR[n].fest && !HM_DECOR[n].ed && on(HM_DECOR[n])).map((n) => ({ cat: 'decor', n, name: fsIName('decor', n), price: HM_DECOR[n].price, desc: tdata('hm_decor.' + tid(n) + '.story', HM_DECOR[n].story) }))); // v2.8: the winter yard decorations
+  return FOOD.filter((f) => f.fest && !f.ed && !f.fm && on(f)).map((f) => ({ cat: 'food', n: f.n, name: fsIName('food', f.n), price: f.price, desc: tdata('food.' + tid(f.n) + '.note', f.note), tip: f.tip ? tdata('food.' + tid(f.n) + '.tip', f.tip) : f.tip }))
+    .concat(CLOTHES.filter((c) => c.fest && !c.ed && !c.fm && !c.reward && on(c)).map((c) => ({ cat: 'clothes', n: c.n, name: fsIName('clothes', c.n), price: c.price, desc: tt('fest.slot_perk', '{slot}. {perk}', { slot: tdata('slot_name.' + c.slot, SLOT_NAME[c.slot]), perk: tdata('clothes.' + tid(c.n) + '.perk', c.perk) }) })))
+    .concat(Object.keys(HM_DECOR).filter((n) => HM_DECOR[n].fest && !HM_DECOR[n].ed && !HM_DECOR[n].fm && on(HM_DECOR[n])).map((n) => ({ cat: 'decor', n, name: fsIName('decor', n), price: HM_DECOR[n].price, desc: tdata('hm_decor.' + tid(n) + '.story', HM_DECOR[n].story) }))); // v2.8: the winter yard decorations
 }
 function fsStallOpen() { return fsTry(fsStallOpen0); }
 function fsStallClosed() {

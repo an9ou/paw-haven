@@ -31,12 +31,15 @@ const FM_MARKETS = [
   { id: 'harvest', theme: 'harvest', name: 'Harvest Market', win: () => ['10-01', '11-30'],
     items: { clothes: ['Leaf Beret', 'Autumn Scarf'], treats: ['Baked Pumpkin Wedges', 'Sweet Potato Coins', 'Warm Bone Broth'] } },
   { id: 'winter', theme: 'winter', name: 'Winter Market', win: () => ['12-01', '12-26'],
-    items: { decor: ['Paper Snowflake Garland', 'Felt Holly Wreath', 'Red Wooden Sled'], clothes: ['Very Ugly Sweater', 'Reindeer Antlers', 'Snowflake Snood'], treats: ['Warm Carob Cup', 'Snowflake Oat Cookies', 'Snow Day Stew'] } },
+    items: { decor: ['Paper Snowflake Garland', 'Felt Holly Wreath', 'Red Wooden Sled', 'Felt Fir Tree', 'Yard Snowman', 'Candy-Cane Fairy Lights', 'Present Pile', 'Star Lantern'], clothes: ['Very Ugly Sweater', 'Reindeer Antlers', 'Snowflake Snood', 'Father Christmas Suit', 'Little Elf Outfit', 'Gingerbread Pup Suit', 'Snowman Suit',
+        'Polar Bear Hood', 'Penguin Suit', 'Puffer Jacket', 'Nutcracker Jacket & Hat', 'Snowflake Wings', 'Jingle Bell Collar'],
+      homes: ['Gingerbread Kennel', 'Present-Box Bed', 'Little Sleigh Bed', 'Snowball Nest', 'Giant Mitten Bed'],
+      toys: ['Squeaky Snowman', 'Candy-Cane Rope', 'Plush Penguin', 'Snowball Ball', 'Present Puzzle Box'], treats: ['Warm Carob Cup', 'Snowflake Oat Cookies', 'Snow Day Stew', 'Reindeer Crunch', 'Turkey & Cranberry Bites', 'Frozen Yoghurt Snowballs'] } },
   { id: 'newyear', theme: 'newyear', name: 'New Year Market', win: () => ['12-27', '01-07'],
     items: { decor: ['Kadomatsu Pair'], treats: ['Pup Kinton'] } },
   { id: 'sakura', theme: 'sakura', name: 'Sakura Market', win: () => ['03-25', '04-10'], todo: true, items: {} }
 ];
-const FM_THEME_ART = { halloween: 'halloween', harvest: 'halloween', winter: 'winter', newyear: 'newyear', sakura: 'sakura' }; // TODO (V2171.md 8): a harvest stall re-colour
+const FM_THEME_ART = { halloween: 'halloween', harvest: 'halloween', winter: 'winter', newyear: 'newyear', sakura: 'sakura' }; // the Harvest Market alone: the Halloween colours, plain (fmSceneArt). TODO (V2171.md 8): a harvest stall re-colour
 const FM_SPOT = [1010, 720]; // the tent on the v2.15 town map (2400 x 1500), beside the Town Square
 const FM_STALLS = [['decor', 40, 250], ['clothes', 375, 250], ['toys', 710, 250]]; // the three stalls in the scene: [stall, x, width] (the sign is over the middle one)
 const FM = { open: null, letters: 0 };
@@ -117,17 +120,38 @@ function fmSync() {
   if (FM.open !== null && FM.open !== on && !on && !modal.hidden && $('#modal .panel.fm-pop')) { closeModal(); toast(tt('fm.packed', 'The market has packed up and left. Everything you got there is still yours.')); }
   FM.open = on; return on;
 }
+// Winter Market review (perf): the drawn scene (1 MB in winter, re-tinted for the time of day) is memoised per theme + time phase + lit,
+// so a redraw (a weather or time check, a toast, a pack move) reuses the string. At most four kept (a day's phases, lit or not)
+const FM_SVG = new Map();
+function fmSceneSvg(th, phase, lit, plain, open) {
+  const key = th + '|' + phase + '|' + (lit ? 1 : 0) + (plain ? '|plain|' + open.map((x) => (x ? 1 : 0)).join('') : ''); if (FM_SVG.has(key)) return FM_SVG.get(key);
+  let sv = artReal('prop', 'fmscene', Object.assign({ theme: th }, th === 'winter' ? { lit } : {}, plain ? { plain: true, open } : {}));
+  if (th === 'winter' && sv && window.PawArt && typeof PawArt.tint === 'function') sv = PawArt.tint(sv, { time: phase, lit });
+  sv = sv ? place(sv, 0, 0, 1000, 600) : '';
+  if (sv) { if (FM_SVG.size >= 4) FM_SVG.delete(FM_SVG.keys().next().value); FM_SVG.set(key, sv); }
+  return sv;
+}
 // the scene: the themed stalls, the sign with the market's name and closing date, the three stalls as buttons
 function fmSceneArt() {
-  const o = fmMain(), th = FM_THEME_ART[o ? o.m.theme : 'halloween'] || 'halloween', sv = artReal('prop', 'fmscene', { theme: th });
-  const sign = esc(fmSign(o)), [sx, sy, sw] = (window.PawArt && PawArt.FM_SIGN) || [500, 128, 240], fs = Math.min(26, Math.max(15, sw * 2.1 / Math.max(10, [...fmSign(o)].length)));
-  const stalls = FM_STALLS.map(([c, x, w], i) => { const cats = fmCats(), cc = i === 2 && !cats.includes('toys') ? cats[cats.length - 1] : c; return `<g data-fmstall="${cc}"><rect x="${x}" y="216" width="${w}" height="244" fill="transparent"/></g>`; }).join('');
+  const o = fmMain(), mt = o ? o.m.theme : 'halloween', th = FM_THEME_ART[mt] || 'halloween', W = th === 'winter', lit = W && isNight(), cats = fmCats();
+  // Winter Market review: a market drawn in another market's art (the Harvest Market on its own, 16 to 30 Nov: the Halloween colours) is plain:
+  // plain goods, no dressing, boards or front stands. Its three stalls sell what the market has: a stall's own kind first, the other kinds fill the
+  // empty stalls from the right (New Year: decor, then treats on the third), and a stall with nothing to sell is a bare counter and no button
+  const plain = th !== mt || !(th === 'halloween' || W), pick = FM_STALLS.map(([c]) => (cats.includes(c) ? c : null));
+  if (plain) { const rest = cats.filter((c) => !pick.includes(c)); for (let i = pick.length - 1; i >= 0 && rest.length; i--) if (!pick[i]) pick[i] = rest.shift(); }
+  // Winter Market part 6: the winter scene takes the time of day (the night tint, its lights and lanterns lit and kept bright after dark)
+  const sv = fmSceneSvg(th, W ? timePhase() : '', lit, plain, pick.map(Boolean));
+  const [sx, sy, sw] = (window.PawArt && PawArt.FM_SIGN) || [500, 128, 240], sl = isPhone() ? fmSign(o).split(' · ') : [fmSign(o)]; // phone review: on a phone the sign takes two lines (name, closing date), centred on the part of the board a phone shows
+  const two = sl.length === 2, fs = two ? Math.min(19, Math.max(13, sw * 2.1 / Math.max(10, ...sl.map((l) => [...l].length)))) : Math.min(26, Math.max(15, sw * 2.1 / Math.max(10, [...fmSign(o)].length)));
+  const sign = two ? sl.map((l, i) => `<tspan x="${sx - 50}" y="${sy + (i ? 17 : -3)}">${esc(l)}</tspan>`).join('') : esc(fmSign(o));
   // v2.17.2 Spooky Stalls: the Halloween scene has a little board per stall (PawArt.FM_STALL_SIGNS) with the stall's short name, and the homes stand
-  // and the treats cart in front are buttons too (when that stall has items)
-  const SB = th === 'halloween' && sv && window.PawArt && PawArt.FM_STALL_SIGNS, cats = fmCats();
+  // and the treats cart in front are buttons too (when that stall has items). Winter Market part 6: the winter scene too (all five stalls)
+  const SB = !plain && sv && window.PawArt && PawArt.FM_STALL_SIGNS;
+  // a stall with nothing in it is no button (pick, above)
+  const stalls = FM_STALLS.map(([, x, w], i) => (pick[i] ? `<g data-fmstall="${pick[i]}"><rect x="${x}" y="216" width="${w}" height="244" fill="transparent"/></g>` : '')).join('');
   const boards = SB ? Object.keys(SB).filter((c) => cats.includes(c)).map((c) => { const [x, y, w] = SB[c], t = fmCatShort(c), f = Math.min(19, Math.max(11, w * 1.7 / Math.max(4, [...t].length))); return `<text class="fm-stall-sign" x="${x}" y="${(y + 20).toFixed(1)}" text-anchor="middle" font-family="'Caveat',cursive" font-weight="700" font-size="${f.toFixed(1)}" fill="#5B3D32">${esc(t)}</text>`; }).join('') : '';
   const front = SB ? [['homes', 292, 418, 90, 152], ['treats', 626, 418, 84, 152]].filter(([c]) => cats.includes(c)).map(([c, x, y, w, h]) => `<g data-fmstall="${c}"><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="transparent"/></g>`).join('') : '';
-  return (sv ? place(sv, 0, 0, 1000, 600) : '<rect width="1000" height="600" fill="#FFFBF3"/>')
+  return (sv || '<rect width="1000" height="600" fill="#FFFBF3"/>')
     + `<text class="fm-sign" x="${sx}" y="${sy + 8}" text-anchor="middle" font-family="'Caveat',cursive" font-weight="700" font-size="${fs.toFixed(1)}" fill="#5B3D32">${sign}</text>${boards}${stalls}${front}`;
 }
 function fmPlaceBtn() {
@@ -161,7 +185,7 @@ function fmStallBind() {
 function fmArrive() {
   if (!fmOn() || !S || S.place !== 'fmarket') return; fmPlaceBtn();
   const o = fmMain(); if (!o) return; const key = o.m.id + '_' + o.y;
-  if (!S.fm.seen[key]) { S.fm.seen[key] = localISO(); markDirty(); setTimeout(() => { if (S.place === 'fmarket') toast(tt('fm.hello', 'Welcome to the {market}! Things you get here stay yours forever, even after the market packs up.', { market: fmMarketName(o.m) }), 'gold'); }, 800); }
+  if (!S.fm.seen[key]) { S.fm.seen[key] = localISO(); markDirty(); setTimeout(() => { if (S.place === 'fmarket' && modal.hidden) FM.hello = toast(tt('fm.hello', 'Welcome to the {market}! Things you get here stay yours forever, even after the market packs up.', { market: fmMarketName(o.m) }), 'gold'); }, 800); }
 }
 on('yard:enter', () => { fmSync(); fmArrive(); });
 on('scene:redraw', () => { if (!(fmOn() && S && S.place === 'fmarket')) return; if (!$('#placeBtns [data-fmb]')) fmPlaceBtn(); else fmStallBind(); });
@@ -185,19 +209,27 @@ function fmSheet(cat) {
   const p = openModal(esc(fmPlaceName()), `<p class="small fm-lead">${esc(tt('fm.lead', 'A pop-up market for the festival. Coins only. Everything you get here stays yours forever.'))}</p>${tabs}<div class="shopgrid fm-grid">${items.map(card).join('')}</div>`,
     { cls: 'shop fm-pop', foot: `<p class="small fm-foot">${esc(fmSign(o))}</p>` });
   const bd = $('.panel-body', p); if (bd && keep) bd.scrollTop = keep;
+  // phone review: the chosen tab in view in its own swipe row (only that row scrolls, not the sheet or the page), and the first-visit welcome toast off the cards
+  const tr = p.querySelector('.fm-tabs'), sel = tr && tr.querySelector('[aria-selected="true"]');
+  if (sel && tr.scrollWidth > tr.clientWidth) { const a = sel.getBoundingClientRect().left - tr.getBoundingClientRect().left + tr.scrollLeft, b = a + sel.offsetWidth; if (a < tr.scrollLeft) tr.scrollLeft = a; else if (b > tr.scrollLeft + tr.clientWidth) tr.scrollLeft = b - tr.clientWidth; }
+  if (FM.hello) { FM.hello.remove(); FM.hello = null; }
   p.querySelectorAll('[data-fmtab]').forEach((b) => { b.onclick = () => { fmTab = b.dataset.fmtab; SFX.click(); fmSheet(); }; });
   p.querySelectorAll('[data-fmbuy]').forEach((b) => { b.onclick = () => { const it = items.find((x) => x.n === b.dataset.fmbuy); if (!it) return; if (b.getAttribute('aria-disabled') === 'true') { nope(tt('fm.locked', '{item} opens at Bond {bond}.', { item: it.name, bond: it.bond })); return; } fmBuy(p, it); }; });
   return p;
 }
+// still on sale now? A sheet left open over a market hand-over (15 to 16 Nov, 26 to 27 Dec Japan date) holds items no longer sold
+const fmOnSale = (it) => fmItems(it.cat).some((x) => x.n === it.n);
+function fmGone() { toast(tt('fm.packed', 'The market has packed up and left. Everything you got there is still yours.')); if (!modal.hidden && $('#modal .panel.fm-pop')) fmSheet(); }
 async function fmBuy(p, it) {
-  if (!it || !fmSync()) return; SFX.click();
+  if (!it || !fmSync()) return; if (!fmOnSale(it)) { fmGone(); return; } SFX.click();
   const stack = it.kind === 'food', owned = fmOwned(it), art0 = it.kind === 'houses' ? art('house', it.n) : it.kind === 'decor' ? hmDecorArt(it.n) : (typeof hwItemArt === 'function' ? hwItemArt(it.n) : art('item', it.n));
   const q = await buyWindow(p, { art: art0, name: it.name, desc: it.desc, price: it.price, stack, owned, have: stack ? (S.inv.food[it.n] || 0) : owned ? 1 : 0, haveLabel: stack ? tt('fm.in_bag_l', 'In bag') : tt('fm.owned', 'Owned') });
   if (!q || !fmSync() || (!stack && fmOwned(it))) return;
+  if (!fmOnSale(it)) { fmGone(); return; }
   const cost = it.price * q; if (S.coins < cost) { nope(tt('fm.poor', 'Not enough coins. Walks pay well, and the market is open until the sign says.')); return; }
   S.coins -= cost; SFX.kaching(); trackAct('buy', { name: it.n, cat: it.kind === 'food' ? 'food' : it.kind, qty: q, shop: 'market' });
   if (stack) S.inv.food[it.n] = (S.inv.food[it.n] || 0) + q;
-  else if (it.kind === 'decor') { hmDecorFields(); S.decor[it.n] = { got: localISO(), out: true }; }
+  else if (it.kind === 'decor') { hmDecorFields(); const at = typeof hoFreeSpot === 'function' ? hoFreeSpot(it.n) : null; S.decor[it.n] = Object.assign({ got: localISO(), out: true }, at ? { at } : {}); } // a free spot (28_home.js), as Barkitecture places a new thing: never on the dog house, the pack or another thing already out
   else if (it.kind === 'beds') S.beds.push(it.n);
   else S.inv[it.kind].push(it.n);
   S.fm.bought = (S.fm.bought || 0) + 1; markDirty(); updateHUD(); saveNow();
@@ -207,9 +239,19 @@ async function fmBuy(p, it) {
   if (it.kind === 'clothes') { const pp = $('.panel', modal); const w = await confirmIn(pp, esc(tt('fest.wear_q', 'Put the {item} on {name} now?', { item: it.name, name: NAME() })), tt('fm.wear', 'Wear it'), tt('fm.later', 'Later')); if (w) equip(it.n, true); if (!modal.hidden && fmSync()) fmSheet(); }
 }
 
-/* ---------------- the Squeaky Ghost: a ball-play toy (38_ball.js BL_TOYS, FETCH_TOYS) ---------------- */
-if (!BL_TOYS['Squeaky Ghost']) BL_TOYS['Squeaky Ghost'] = { prop: ['item', 'Squeaky Ghost'], g: 1700, bounce: 0.45, fric: 3, spin: 0.6, vzK: 0.95, coin: 2, hap: 15, en: 1 };
-if (!FETCH_TOYS.includes('Squeaky Ghost')) FETCH_TOYS.push('Squeaky Ghost');
+/* ---------------- the market balls: ball-play toys (38_ball.js BL_TOYS, FETCH_TOYS; real coins under the ball-play caps BL_COIN_SES / BL_COIN_DAY) ----------------
+   The Squeaky Ghost, and (Winter Market review) the Pumpkin Ball and the Snowball Ball, whose "2 coins per return" is ball play's: they leave the
+   toy-game list like the Tennis Ball (BL_BALLS, 18_mod_walk_toys.js) and show in the Play tray with their own line */
+const FM_BALLS = {
+  'Squeaky Ghost': { g: 1700, bounce: 0.45, fric: 3, spin: 0.6, vzK: 0.95 },
+  'Pumpkin Ball': { g: 1850, bounce: 0.5, fric: 2.6, spin: 0.9, vzK: 1 }, // a squishy pumpkin: bounces a bit wonky
+  'Snowball Ball': { g: 1800, bounce: 0.38, fric: 3.2, spin: 0.4, vzK: 0.95 } // fluffy: a softer bounce
+};
+Object.keys(FM_BALLS).forEach((n) => {
+  if (!BL_TOYS[n]) BL_TOYS[n] = Object.assign({ prop: ['item', n], coin: 2, hap: 15, en: 1 }, FM_BALLS[n]);
+  if (!FETCH_TOYS.includes(n)) FETCH_TOYS.push(n);
+  if (n !== 'Squeaky Ghost' && !BL_BALLS.includes(n)) BL_BALLS.push(n);
+});
 
 /* ---------------- the map: the tent beside the Square with a "Festival!" tag, the travel walk through the Square ---------------- */
 function fmMapTent() {
@@ -247,7 +289,7 @@ function fmExpose() {
   if (!window.__paw || window.__paw.fm) return;
   window.__paw.fm = {
     on: () => fmOn(), markets: FM_MARKETS, open: (d) => fmOpen(d).map((o) => ({ id: o.m.id, from: o.from, to: o.to, y: o.y })), main: () => { const o = fmMain(); return o ? o.m.id : null; }, sign: () => fmSign(), name: () => fmPlaceName(),
-    items: (c) => fmItems(c).map((x) => ({ n: x.n, kind: x.kind, price: x.price, bond: x.bond })), cats: () => fmCats(), sheet: (c) => fmSheet(c), sync: () => fmSync(), owned: (n) => { const r = fmRow(n); return r ? fmOwned(r) : false; }, row: (n) => fmRow(n),
+    items: (c) => fmItems(c).map((x) => ({ n: x.n, kind: x.kind, price: x.price, bond: x.bond })), cats: () => fmCats(), sheet: (c) => fmSheet(c), svgCache: () => [...FM_SVG.keys()], sync: () => fmSync(), owned: (n) => { const r = fmRow(n); return r ? fmOwned(r) : false; }, row: (n) => fmRow(n),
     date: (d) => { prefs.fmDate = d || null; fmSync(); }, allow: (v) => { prefs.fmTest = !!v; fmSync(); }, letter: () => fmLetter(), get letters() { return FM.letters; }, tent: () => fmMapTent(), spot: FM_SPOT.slice(), cats0: FM_CATS.slice()
   };
 }

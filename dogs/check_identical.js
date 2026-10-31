@@ -1,5 +1,5 @@
 /* Byte-identical check for the dog art module.
-   Loads dogs/pawart_dogs.js (working tree) and the same file from a git ref (default v28-base, else origin/v28-base)
+   Loads dogs/pawart_dogs.js (working tree) and the same file from a git ref (default v2184-base = main at v2.18.3, else origin/v2184-base)
    in node vm sandboxes and compares PawArt.dog / PawArt.dogHead for every breed x pose x existing outfit
    x age x sparkle, plus mixes, expecting, coats and facing left.
    Then it sweeps the v2.8 outfits and the v2.11.1 costumes (NEW_OUTS) on the working tree: every breed x pose x age x facing x sparkle renders with no
@@ -16,7 +16,7 @@ if(!process.env.SHARD){// parent: fan out, then sum up
       if(++done===n){console.log(`check_identical vs ${refName}: ${tot} renders compared over ${n} shards, ${dif} differ`);console.log(`outfit sweep (v2.8, v2.11.1): ${sw} renders, ${swBad} bad`);if(bad.length||dif||swBad){console.log(bad.slice(0,30).join('\n'));process.exit(1)}console.log('ALL OK')}})}
   return;
 }
-const ref=process.argv[2]||(()=>{try{cp.execSync('git rev-parse --verify -q v28-base',{cwd:path.join(__dirname,'..'),stdio:'ignore'});return'v28-base'}catch(e){return'origin/v28-base'}})();
+const ref=process.argv[2]||(()=>{try{cp.execSync('git rev-parse --verify -q v2184-base',{cwd:path.join(__dirname,'..'),stdio:'ignore'});return'v2184-base'}catch(e){return'origin/v2184-base'}})();
 const load=src=>{const sb={window:{}};vm.createContext(sb);vm.runInContext(src,sb);return sb.window.PawArt};
 const SRC=fs.readFileSync(path.join(__dirname,'pawart_dogs.js'),'utf8'),NEW=load(SRC);
 const OLD=load(cp.execSync(`git show ${ref}:dogs/pawart_dogs.js`,{cwd:path.join(__dirname,'..'),encoding:'utf8',maxBuffer:64<<20}));
@@ -76,7 +76,9 @@ if(bad.length)console.log(bad.slice(0,30).join('\n'));
 const NEW_OUTS=[['body','Very Ugly Sweater'],['head','Reindeer Antlers'],['neck','Snowflake Snood'],['neck','Ugly Sweater Rosette'],['head','Year of the Sheep Hood'],
   ['body','Pumpkin Patch Suit'],['body','Trick-or-Treat Ghost'],['body','Little Bat Costume'],['neck','Sunflower Collar'],['head','Sailor Cap'],['body','Doggy Life Vest'],['head','Crayon Crown'],['neck','Golden Collar'],
   // v2.17.1 Halloween Market costumes (the Lion Mane's mane is RUFF2, measured as a neck piece)
-  ['body','Little Witch Hat & Cape'],['body','Scarecrow Overalls'],['body','Mummy Wraps'],['body','Skeleton Suit'],['body','Black Cat Ears & Bow'],['body','Pirate Hat & Sash'],['body','Dinosaur Hood'],['body','Little Owl Wings'],['body','Wizard Robe & Star Hat'],['neck','Lion Mane']];// v2.11.1 Halloween 2026 costumes: their head pieces (TOP2) are measured against the whole dog
+  ['body','Little Witch Hat & Cape'],['body','Scarecrow Overalls'],['body','Mummy Wraps'],['body','Skeleton Suit'],['body','Black Cat Ears & Bow'],['body','Pirate Hat & Sash'],['body','Dinosaur Hood'],['body','Little Owl Wings'],['body','Wizard Robe & Star Hat'],['neck','Lion Mane'],
+  // Winter Market 2026 costumes (docs/design/winter-market.md part 2)
+  ['body','Father Christmas Suit'],['body','Little Elf Outfit'],['body','Gingerbread Pup Suit'],['body','Snowman Suit'],['body','Polar Bear Hood'],['body','Penguin Suit'],['body','Puffer Jacket'],['body','Nutcracker Jacket & Hat'],['body','Snowflake Wings'],['neck','Jingle Bell Collar']];// v2.11.1 Halloween 2026 costumes: their head pieces (TOP2) are measured against the whole dog
 const ISRC=SRC.replace('PA.dog=dog;','PA.dog=dog;PA._sw={HAT2,BODY2,BACK2,NECK2,TOP2,RUFF2:typeof RUFF2==="object"?RUFF2:{},bodyPts,headPts,T,earList,earPose};');
 if(ISRC.split('PA._sw').length!==2)throw new Error('sweep: the hook point moved, update ISRC');
 const IP=load(ISRC),SW=IP._sw;let probe=null;

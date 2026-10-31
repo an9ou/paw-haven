@@ -54,7 +54,10 @@ run('v217_dog_days', async (t) => {
   await setWish({ k: 'pet', a: null }); await t.patch({ daily: { pet: true } }); await t.calm(); // no daily care bonus in the coin count
   const c0 = (await t.S()).coins, p0 = (await t.S()).bond.pts;
   await t.pet((p0) => window.__paw.S.bond.pts > p0, p0); const p1 = (await t.S()).bond.pts;
-  ok(await t.waitToast(/Wish come true! Mochi is so happy: \+\d+ Bond \(double\)\. \+10 coins\. A new sticker: 1 wish come true!/, 6000), 'a wish come true: Bond, coins and a sticker in one toast');
+  // the wish's toast comes 1.2 s after the pet; when the Dog Days tick (ddTick, every 5th tick) runs ddStickers(false) inside that window it
+  // claims the "1 wish come true" sticker first and shows it as its own toast (an old race, v2.17 on): wait for the wish toast, then for the sticker in either toast
+  const wishT = await t.waitToast(/Wish come true! Mochi is so happy: \+\d+ Bond \(double\)\. \+10 coins\./, 6000);
+  ok(wishT && await t.waitToast(/(A new sticker|New sticker): 1 wish come true!/, 3000), 'a wish come true: Bond, coins and the sticker (in the wish toast, or its own when the tick got there first)');
   s = await t.S(); const wb = +(await ev(() => ((window.__toasts.find((x) => /Wish come true!/.test(x)) || '').match(/\+(\d+) Bond \(double\)/) || [0, 0])[1])), total = s.bond.pts - p0;
   ok(wb > 0 && total === 2 * wb && p1 > p0, `double Bond: the pet and the wish gave ${total} in all, ${wb} from the wish`); // timing-proof: the wish's half lands 1.2 s after the pet
   ok(s.coins - c0 === 10 && s.dd.wish.coins === 10 && s.dd.wn === 1 && s.dd.wk.pet === 1, '+10 coins, counted');
@@ -101,6 +104,7 @@ run('v217_dog_days', async (t) => {
   const rows = await ev(() => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((L) => window.__paw.dd.rows(L)));
   ok(rows[1].includes('Trick: Paw') && rows[1].some((r) => /Walk route: Riverside Trail/.test(r)) && rows[1].some((r) => /Places: .*Dog Park/.test(r)) && rows[1].includes('The veggie patch'), 'Bond 2: Paw, the Riverside Trail, the Dog Park, the veggie patch: ' + rows[1].join(' | '));
   ok(rows[2].some((r) => /Room for dog number 2/.test(r)) && rows[2].some((r) => /Places: .*Training Ground/.test(r)) && rows[2].some((r) => /^Gift: a photo frame/.test(r)), 'Bond 3: the second dog spot, the Training Ground, a frame gift');
+  ok(!rows.flat().some((r) => /Haunted Kennel|Gingerbread Kennel/.test(r)), 'no festive-market house on the Bond track (sold only at the market, like the beds)');
   ok(rows[5].includes('Playdates and puppy families') && rows[5].some((r) => /House: Snow Igloo/.test(r)), 'Bond 6: playdates (welfare.minBond), the Snow Igloo');
   ok(rows[9].some((r) => /^Trick: |^Signature trick/.test(r)) && rows[9].some((r) => /Gift: Crayon Crown and Golden Collar/.test(r)) && rows[9].some((r) => /Best Friends badge/.test(r)), 'Bond 10: the signature trick, the badge, the crown and the collar');
   ok(rows.every((r) => r.length > 0), 'every level has something');

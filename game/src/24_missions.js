@@ -35,7 +35,7 @@ const MS_POOL = [
   // v2.8 Winter & New Year (V28.md section 1): WINTER fires snowdrift / snowdog / sweater and buy shop:'stall', NEW YEAR fires fortune. Lane gates are guarded
   { id: 'snowdrift', n: 1, t: 'Dive into a snowdrift', s: 'Snowdrift', g: () => typeof wnCanJump === 'function' && !!wnCanJump(), m: (a) => a.kind === 'snowdrift' },
   { id: 'snowdog', n: 1, t: 'Build a snowdog', s: 'Snowdog', g: () => typeof wnSnowdogFree === 'function' && !!wnSnowdogFree(), m: (a) => a.kind === 'snowdog' && !!a.done },
-  { id: 'wstall', n: 1, t: 'Buy a warm treat from Baker Bea', s: 'Winter Stall', shop: true, g: () => festOn('snow'), m: (a) => a.kind === 'buy' && (a.shop === 'stall' || a.shop === 'market') && a.cat === 'food' && ['snow', 'newyear'].includes((FOOD.find((f) => f.n === a.name) || {}).fest) },
+  { id: 'wstall', n: 1, t: 'Buy a warm treat from Baker Bea', s: 'Winter Stall', shop: true, g: () => festOn('snow'), m: (a) => a.kind === 'buy' && (a.shop === 'stall' || a.shop === 'market') && a.cat === 'food' && ((f) => ['snow', 'newyear', 'winter'].includes(f.fest) && !f.cold)(FOOD.find((f) => f.n === a.name) || {}) }, // warm treats only: FOOD rows with cold: true (Reindeer Crunch, Frozen Yoghurt Snowballs) do not count
   { id: 'sweater', n: 1, t: 'Enter the Ugly Sweater Contest', s: 'Sweater Contest', g: () => festOn('lights'), m: (a) => a.kind === 'sweater' },
   { id: 'yearclean', n: 1, t: 'Year-end clean: give {dog} a bath', s: 'Year-end clean', g: () => nyEve(), m: (a) => a.kind === 'bath' },
   { id: 'fortune', n: 1, t: 'Draw a New Year fortune', s: 'New Year fortune', g: () => nyDays() && !(S.ny && S.ny.fortune && S.ny.fortune.date === localISO()), m: (a) => a.kind === 'fortune' },

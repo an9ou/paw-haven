@@ -17,6 +17,8 @@ const HO_RUG_NAPS = [[310, 582, 'right', 0.6], [560, 586, 'left', 0.6], [440, 59
 // the v2.1 and v2.6 yard decorations have no zone in HM_DECOR: these hang on the fence or a wire, the rest stand on the grass
 const HO_OLD_ZONE = { 'Family Photo Frame': 'wall', 'Paper Bat Bunting': 'wall', 'Ghost Garland': 'wall' };
 // boxes a free spot keeps clear of (x, y, w, h): the dog's tap box at rest, the bowl, and per room the mailbox, the missions clipboard, the dog house, the place buttons
+// a phone shows the yard at world x 140-534, and 518-912 after the look-right arrow (Winter Market phone review): a new thing never lands outside
+const HO_PH_SEEN = [140, 912];
 const HO_DOG_REST = [328, 335, 204, 180], HO_STATUS = [0, 147, 262, 42]; // the place and time chip (top left) covers the wall under it
 const HO_KEEP = {
   yard: [[210, 470, 80, 80], [286, 288, 90, 120], [208, 318, 50, 64], [640, 340, 204, 186], [850, 525, 150, 50], [179, 258, 66, 88]], // v2.16.1: + the mailbox by the front door (07b_mailbox.js MB_BOX_BACK)
@@ -93,7 +95,8 @@ function hoFreeSpot(n, start) {
   const keep = hoKeepBoxes(room, n).concat(wall ? HO_WALL_KEEP[room] || [] : []), cost = (x, y) => keep.reduce((a, b, i) => a + hoOverlap([x, y, w, h], b) * (i === 0 ? 12 : 1), 0); // [0] is the dog at rest: overlap it last of all
   const at = hoClamp(n, ...(start || hoHome(n))); if (!cost(at[0], at[1])) return at;
   let best = at, bc = cost(at[0], at[1]);
-  for (let v = z.y0; v <= z.y1 - (wall ? h : 0); v += 24) for (let x = z.x0; x <= z.x1 - w; x += 24) { const p = hoClamp(n, x, wall ? v : v - h), c = cost(p[0], p[1]); if (!c) return p; if (c < bc) { bc = c; best = p; } }
+  const x0 = room === 'yard' ? Math.max(z.x0, HO_PH_SEEN[0]) : z.x0, x1 = room === 'yard' ? Math.min(z.x1, HO_PH_SEEN[1]) : z.x1; // the yard scan stays where a phone can see it (both halves)
+  for (let v = z.y0; v <= z.y1 - (wall ? h : 0); v += 24) for (let x = x0; x <= x1 - w; x += 24) { const p = hoClamp(n, x, wall ? v : v - h), c = cost(p[0], p[1]); if (!c) return p; if (c < bc) { bc = c; best = p; } }
   return best;
 }
 
@@ -521,7 +524,7 @@ function hoExpose() {
     move: (n, x, y) => { if (HO.pl) return hoMoveTo(n, x, y); const p = hoClamp(n, x, y); if (hoIsBed(n)) { if (S.bedAt[n]) S.bedAt[n] = p; } else if (S.decor[n]) S.decor[n].at = p; markDirty(); hoRoomRedraw(); return p; },
     done: () => hoDone(), select: (n) => hoSelect(n), pos: (n) => hoPos(n).slice(), box: (n) => hoBox(n), free: (id) => hoFree(dogById(id) || id),
     use: (id, name, spot) => { const d = dogById(id); if (!d) return false; if (!spot) spot = Object.keys(hoSpots(name))[0]; if (d.id !== S.activeId) return hoPackUse(d, name, spot); if (IDLE.act) { IDLE.steps = []; idleEnd(); } HO.want = { name, spot }; idleStart('furn'); return true; },
-    uses: () => JSON.parse(JSON.stringify(HO.uses)), acts: () => HO.acts.slice(), hold: (on) => { HO.noPack = !!on; }, spot: (n, k) => hoSpot(n, k), spots: (n) => Object.keys(hoSpots(n)), freeSpot: (n) => hoFreeSpot(n), rug: HO_RUG_NAPS
+    uses: () => JSON.parse(JSON.stringify(HO.uses)), acts: () => HO.acts.slice(), hold: (on) => { HO.noPack = !!on; }, spot: (n, k) => hoSpot(n, k), spots: (n) => Object.keys(hoSpots(n)), freeSpot: (n) => hoFreeSpot(n), keep: (room, skip) => hoKeepBoxes(room || 'yard', skip).map((b) => b.map(Math.round)), rug: HO_RUG_NAPS
   };
 }
 on('game:ready', () => setTimeout(hoExpose, 0));

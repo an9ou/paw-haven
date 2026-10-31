@@ -43,6 +43,11 @@ const FOOD = [
   { n: 'Snowflake Oat Cookies', fest: 'snow', price: 9, hunger: 10, happy: 10, bond: 1, snack: true, v28: true, tip: 'Rolled oats, egg and pumpkin, baked plain. Festive cookies often hide macadamia nuts, which make dogs wobbly and ill, so these have none.', note: '+10 Hunger, +10 Happiness, a little Bond. Oat cookies cut like snowflakes.' },
   { n: 'Snow Day Stew', fest: 'snow', price: 14, hunger: 30, happy: 10, v28: true, tip: 'Lean chicken with no skin and no bones. Gravy and fatty leftovers upset a dog\'s tummy, so they stay on the people plates.', note: '+30 Hunger, +10 Happiness. Chicken, carrot and green beans, cooked soft.' },
   { n: 'Pup Kinton', fest: 'newyear', price: 10, hunger: 15, happy: 15, snack: true, v28: true, tip: 'Plain mashed sweet potato, no sugar and no chestnut syrup. Mochi never goes in a dog\'s bowl, it is far too sticky to swallow safely.', note: '+15 Hunger, +15 Happiness. Golden sweet potato mash, for a lucky year.' },
+  // Winter Market 2026 part 5 (docs/design/winter-market.md): sold only at the Winter Market, every December (fest 'winter', fm, no ed; festOn('winter') is never set, so never at Baker Bea's stall)
+  // cold: not a warm treat (raw crunch, frozen yoghurt), so the wstall mission "Buy a warm treat" does not count it
+  { n: 'Reindeer Crunch', fest: 'winter', fm: true, cold: true, price: 8, hunger: 10, happy: 10, clean: 5, snack: true, tip: 'Carrot and apple, cut small, with the core and every seed taken out. Apple seeds are not safe for dogs, so not one goes in the bag.', note: '+10 Hunger, +10 Happiness, clean teeth. Carrot sticks and apple pieces, a crunchy reindeer supper.' },
+  { n: 'Turkey & Cranberry Bites', fest: 'winter', fm: true, price: 12, hunger: 20, happy: 15, snack: true, tip: 'Plain cooked turkey with no skin, bones, gravy or seasoning, and just a few fresh cranberries. Cranberry sauce is full of sugar, so only the fresh berries go in.', note: '+20 Hunger, +15 Happiness. Little turkey bites, each with a fresh cranberry on top.' },
+  { n: 'Frozen Yoghurt Snowballs', fest: 'winter', fm: true, cold: true, price: 9, hunger: 5, happy: 15, bond: 1, snack: true, tip: 'Plain unsweetened yoghurt only, never a sweetened or light pot, which can hide xylitol. Dairy is a treat for dogs, so two or three little snowballs are plenty.', note: '+5 Hunger, +15 Happiness, a little Bond. Round frozen snowballs that crunch, then melt.' },
   // v2.11 Tokyo Trip (V211.md section 5.3): the Nakamise treats in Asakusa, served there like the café (tokyo + fest 'tokyo': never in a town shop or stall)
   { n: 'Sweet Potato Strip', fest: 'tokyo', tokyo: true, price: 15, hunger: 10, happy: 10, snack: true, v211: true, tip: 'Steamed and dried plain sweet potato, nothing added. Cut it into small strips so it is not a choking piece.', note: '+10 Hunger, +10 Happiness. A chewy Asakusa favourite, made for dogs.' },
   { n: 'Dog Senbei', fest: 'tokyo', tokyo: true, price: 12, hunger: 5, happy: 10, snack: true, v211: true, tip: 'A plain rice cracker made for dogs, with no salt and no soy sauce. The ones people eat are far too salty.', note: '+5 Hunger, +10 Happiness. A crunchy round rice cracker.' },
@@ -72,6 +77,12 @@ const TOYS = [
   { n: 'Rope Mummy', fest: 'halloween', ed: 2026, fm: true, price: 60, bond: 1, note: 'Shake: a rope toy wrapped in soft cream cloth. +Happiness, a little Bond.' },
   { n: 'Glow-in-the-Dark Bone', fest: 'halloween', ed: 2026, fm: true, price: 70, bond: 2, note: 'Night fetch: a rubber bone that glows after dark. +Happiness, -Energy.' },
   { n: 'Soft Spider Plush', fest: 'halloween', ed: 2026, fm: true, price: 65, bond: 2, note: 'Nap buddy: a round fuzzy spider with a bow. +10% nap Energy.' },
+  /* Winter Market 2026 (docs/design/winter-market.md part 3): sold at the Winter Market every December (fm, no ed), each plays an older toy game with its own look (mods/toys.js HM_TOY_GAME) */
+  { n: 'Squeaky Snowman', fest: 'winter', fm: true, price: 50, bond: 1, note: 'Squeeze: a soft little snowman in a bobble hat that squeaks. +Happiness.' },
+  { n: 'Candy-Cane Rope', fest: 'winter', fm: true, price: 60, bond: 1, note: 'Tug-of-war: a red-and-white striped rope with a green bow. +Happiness, -Energy, a little Bond.' },
+  { n: 'Plush Penguin', fest: 'winter', fm: true, price: 65, bond: 2, note: 'Nap buddy: a round soft penguin to tuck in with. +10% nap Energy.' },
+  { n: 'Snowball Ball', fest: 'winter', fm: true, price: 45, bond: 1, note: 'Fetch: a fluffy white ball, a snowball that never melts. 2 coins per return.' },
+  { n: 'Present Puzzle Box', fest: 'winter', fm: true, price: 75, bond: 2, note: 'Puzzle: lift the lids of a wrapped present to find the treats inside. +Happiness.' },
   /* v2.17.1 Festive Market (V2171.md): sold only at the Festive Market (fm), a ball-play toy (BL_TOYS in 49_market.js) */
   { n: 'Squeaky Ghost', fest: 'halloween', ed: 2026, fm: true, price: 50, bond: 1, note: 'Fetch: a soft little ghost that squeaks when it lands. Ball play, 2 coins a return.' },
   /* v2.11 Tokyo Trip: the Tokyo Tower souvenir stand only (tokyo + fest 'tokyo'), with its own play game in mods/toys.js */
@@ -128,6 +139,17 @@ const CLOTHES = [
   { n: 'Little Owl Wings', slot: 'body', fest: 'halloween', ed: 2026, fm: true, price: 70, bond: 2, perk: 'Hoo: soft brown feathered wings and a band with two ear tufts. Wise-looking, at least.' },
   { n: 'Wizard Robe & Star Hat', slot: 'body', fest: 'halloween', ed: 2026, fm: true, price: 85, bond: 3, perk: 'Starlight: a navy robe with stars and a moon, and a tall star-tipped hat.' },
   { n: 'Lion Mane', slot: 'neck', fest: 'halloween', ed: 2026, fm: true, price: 60, bond: 1, perk: 'Roar (quietly): a big golden mane round the face. Every dog is the king of the yard.' },
+  /* Winter Market 2026 (docs/design/winter-market.md part 2): ten costumes sold at the Winter Market every December (fm, no ed); perks are flavour only */
+  { n: 'Father Christmas Suit', slot: 'body', fest: 'winter', fm: true, price: 85, bond: 2, perk: 'Ho ho ho: a red coat with fluffy white trim, a big belt and a floppy hat with a pompom. The beard is optional, and missing.' },
+  { n: 'Little Elf Outfit', slot: 'body', fest: 'winter', fm: true, price: 70, bond: 1, perk: 'Busy helper: a green tunic with a pointy hem, a red collar and a pointy hat with a bell on the tip.' },
+  { n: 'Gingerbread Pup Suit', slot: 'body', fest: 'winter', fm: true, price: 70, bond: 1, perk: 'Iced: a soft brown suit with white icing squiggles and two gumdrop buttons. A look, not a snack.' },
+  { n: 'Snowman Suit', slot: 'body', fest: 'winter', fm: true, price: 75, bond: 1, perk: 'Frosty: a white suit with coal buttons and a little top hat. The carrot sits on the hat, well away from the nose.' },
+  { n: 'Polar Bear Hood', slot: 'body', fest: 'winter', fm: true, price: 80, bond: 2, perk: 'Warm: no shivering in the snow. A fluffy white suit and a hood with two round bear ears, the face open for kisses.' },
+  { n: 'Penguin Suit', slot: 'body', fest: 'winter', fm: true, price: 80, bond: 2, perk: 'Waddle: black and white with two little flippers, and a tiny penguin face on top of the hood.' },
+  { n: 'Puffer Jacket', slot: 'body', fest: 'winter', fm: true, price: 75, bond: 1, perk: 'Warm: no shivering in the snow. A bright quilted puffer with a pink trim and a zip pull, and a hat still fits on top.' },
+  { n: 'Nutcracker Jacket & Hat', slot: 'body', fest: 'winter', fm: true, price: 85, bond: 3, perk: 'Attention: a red soldier jacket with gold buttons and a tall black hat with a red plume. Stands to attention for snacks.' },
+  { n: 'Snowflake Wings', slot: 'body', fest: 'winter', fm: true, price: 70, bond: 2, perk: 'Flutter: pale blue paper snowflakes on a soft strap. No two are the same.' },
+  { n: 'Jingle Bell Collar', slot: 'neck', fest: 'winter', fm: true, price: 55, bond: 1, perk: 'Jingle: a soft red felt collar with three little gold bells. Everyone hears you coming.' },
   // v2.8 Winter & New Year (V28.md section 1): the Winter Stall sells the first three (fest), the Rosette is the contest reward, the Hood comes in Gerald's New Year card (ed: 2027, never sold)
   { n: 'Very Ugly Sweater', slot: 'body', fest: 'snow', price: 65, bond: 1, v28: true, perk: 'Warm: no shivering in the snow. Knitted by someone who has never seen a dog, or a snowflake.' },
   { n: 'Reindeer Antlers', slot: 'head', fest: 'snow', price: 55, bond: 1, v28: true, perk: 'Jingle: a little bell on each antler. Not warm. Very festive.' },
@@ -159,6 +181,7 @@ const HOUSES = [
   { n: 'Pumpkin Cottage', price: 1800, bond: 6, comfort: 0.45, hd: 2.5, v24: true, note: 'Round orange walls and a leaf for a roof. Smells faintly of pie.' },
   { n: 'Lighthouse Kennel', price: 3000, bond: 8, comfort: 0.60, hd: 2, v24: true, note: 'The lamp turns at night. Ships are confused.' },
   { n: 'Friendly Haunted Kennel', price: 900, bond: 3, comfort: 0.25, hd: 3, fest: 'halloween', ed: 2026, fm: true, note: 'A crooked purple house with smiling ghost curtains. The only thing it haunts is the food bowl.' }, // v2.17.2 Spooky Stalls (Festive Market)
+  { n: 'Gingerbread Kennel', price: 900, bond: 3, comfort: 0.25, hd: 3, fest: 'winter', fm: true, note: 'A little brown house with white icing on the roof and gumdrops by the door. A look, not a snack: it is wood all the way through.' }, // Winter Market 2026 (docs/design/winter-market.md part 4), sold every December
   { n: 'Rocket Ship', price: 0, bond: 1, comfort: 0.55, hd: 2, v24: true, reward: true, note: 'Countdown painted on the side. Launch is cancelled, forever, for naps.' }
 ];
 const SLOTS = ['head', 'eyes', 'neck', 'body'];
@@ -827,6 +850,7 @@ function migrate(s) {
   fwBondFix(s); v216Fields(s); // v2.16 First Week (V216.md section 2): additive; the new Bond thresholds level old dogs up quietly
   v217Fields(s); // v2.17 Dog Days (V217.md section 6): additive
   v218Fields(s); // v2.18 Fun Fair (V218.md section 8): additive
+  wmRenames(s); // Winter Market review: renamed market items
   v2171Fields(s); // v2.17.1 Festive Market (V2171.md section 7): additive
   v2182Fields(s); // v2.18.2 What's new (49c_news.js): additive, S.newsSeen '' on an old save
   return s;
@@ -957,12 +981,21 @@ function v217Fields(s) {
 /* v2.18 Fun Fair save fields (V218.md 8). Additive only: S.v stays 1.
    S.ff = { day, c: { game: coins today }, n: { game: rounds played }, best: { game: best score }, rib: { b, r, g } (show ribbons),
             mk: { day, coins, n } (the Saturday stall), pc: { wk, e: [{ p, c, o, n, d, dog }], judged, won, rib } (the photo contest), wash: { day, n } } */
+// Winter Market review (welfare): the Paper-Star Fir Tree became the Felt Fir Tree (real fir needles are mildly toxic to dogs). The market never
+// opened with the old name, but a dev or test save may own it: it moves to the new name with its spot and out flag (nothing else changes)
+const WM_RENAMES = { 'Paper-Star Fir Tree': 'Felt Fir Tree' };
+function wmRenames(s) {
+  if (!s || !s.decor || typeof s.decor !== 'object') return s;
+  Object.keys(WM_RENAMES).forEach((o) => { if (!(o in s.decor)) return; const n = WM_RENAMES[o]; if (!s.decor[n]) s.decor[n] = s.decor[o]; delete s.decor[o]; });
+  return s;
+}
 function v218Fields(s) {
   if (!s) return s;
   if (!v28Obj(s.ff)) s.ff = {};
   const f = s.ff, obj = (o, k) => { if (!v28Obj(o[k])) o[k] = {}; };
   if (typeof f.day !== 'string') f.day = '';
-  ['c', 'n', 'best', 'rib', 'mk', 'pc', 'wash'].forEach((k) => obj(f, k));
+  ['c', 'n', 'best', 'rib', 'mk', 'pc', 'wash', 'toy'].forEach((k) => obj(f, k));
+  if (typeof f.toy.day !== 'string') f.toy.day = ''; if (typeof f.toy.coins !== 'number' || !(f.toy.coins >= 0)) f.toy.coins = 0; // Winter Market review: the toy games' shared daily coin cap (FF_CAPS.toys, a Japan day)
   if (typeof f.mk.day !== 'string') f.mk.day = ''; ['coins', 'n'].forEach((k) => { if (typeof f.mk[k] !== 'number' || !(f.mk[k] >= 0)) f.mk[k] = 0; });
   if (typeof f.pc.wk !== 'string') f.pc.wk = ''; if (!Array.isArray(f.pc.e)) f.pc.e = []; f.pc.e = f.pc.e.filter((x) => v28Obj(x)).slice(0, 3); if (typeof f.pc.judged !== 'string') f.pc.judged = '';
   ['won', 'rib'].forEach((k) => { if (typeof f.pc[k] !== 'number' || !(f.pc[k] >= 0)) f.pc[k] = 0; });
@@ -1098,7 +1131,7 @@ function weatherNow() {
 const weather = weatherNow;
 const envNow = () => { const f = festNow(); return { time: timePhase(), weather: weatherNow(), season: seasonNow(), halloween: f.halloween, lights: f.lights, newyear: f.newyear, jp: jpOn() }; }; // v2.8: lights, newyear, jp
 const isNight = () => timePhase() === 'night';
-function isHot() { if (S && S.buff && typeof buffOn === 'function' && buffOn('cool')) return false; if (S && (S.outfit.head === 'Sun Hat' || S.outfit.head === 'Sailor Cap' || (S.coolUntil || -1) > S.gameMin)) return false; if (weatherNow() !== 'sunny' || timePhase() !== 'day') return false; if (ENV.time !== 'auto') return true; const h = new Date().getHours(); return h >= 11 && h < 15; }
+function isHot() { if (S && S.buff && typeof buffOn === 'function' && buffOn('cool')) return false; if (S && (S.outfit.head === 'Sun Hat' || S.outfit.head === 'Sailor Cap' || (S.coolUntil || -1) > S.gameMin)) return false; if (weatherNow() !== 'sunny' || timePhase() !== 'day') return false; if (seasonNow() === 'winter') return false; /* Winter Market review: never too hot on a sunny winter midday (snow on the ground) */ if (ENV.time !== 'auto') return true; const h = new Date().getHours(); return h >= 11 && h < 15; }
 function clockText() {
   if (tlang() !== 'en') { const d = new Date(); if (ENV.time !== 'auto') d.setHours({ dawn: 6, day: 13, dusk: 18, night: 23 }[ENV.time], 0, 0, 0); return tdate(d, { hour: 'numeric', minute: '2-digit' }) + (ENV.time !== 'auto' ? '*' : ''); } // v2.14: 12 or 24 h per language (V214.md 8)
   if (ENV.time !== 'auto') return { dawn: '06:00', day: '13:00', dusk: '18:00', night: '23:00' }[ENV.time] + '*'; const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
@@ -1108,7 +1141,7 @@ function wxIconName() { const w = weatherNow(), t = timePhase(); if (w === 'rain
 const RAINCOATS = ['Yellow Raincoat', 'Polka-dot Raincoat', 'Frog Raincoat', 'Bubble Raincoat'];
 const hasRaincoat = () => RAINCOATS.includes(S.outfit.body);
 const hasRainHat = () => S.outfit.head === 'Rain Hat' || S.outfit.head === 'Astronaut Helmet';
-const WARM_WEAR = ['Pom-pom Beanie', 'Knit Winter Sweater', 'Cozy Hoodie', 'Knit Scarf', 'Astronaut Helmet', 'Leaf Beret', 'Autumn Scarf', 'Very Ugly Sweater', 'Snowflake Snood', 'Year of the Sheep Hood']; // v2.4: three new warm things; v2.5: the leaf festival pair; v2.8: the winter three
+const WARM_WEAR = ['Pom-pom Beanie', 'Knit Winter Sweater', 'Cozy Hoodie', 'Knit Scarf', 'Astronaut Helmet', 'Leaf Beret', 'Autumn Scarf', 'Very Ugly Sweater', 'Snowflake Snood', 'Year of the Sheep Hood', 'Puffer Jacket', 'Polar Bear Hood']; // v2.4: three new warm things; v2.5: the leaf festival pair; v2.8: the winter three; Winter Market 2026 (owner): the Puffer Jacket and the Polar Bear Hood
 const isWarm = () => SLOTS.some((k) => WARM_WEAR.includes(S.outfit[k])) || (typeof buffOn === 'function' && buffOn('warm')) || (S.warmUntil || -1) > S.gameMin; // v2.5: Warm Bone Broth
 const houseInfo = (n) => HOUSES.find((h) => h.n === (n || S.house)) || HOUSES[0];
 const owns = (cat, n) => S.inv[cat].includes(n);
@@ -1409,8 +1442,8 @@ function unlocksFor(L) {
   const u = [];
   for (const k in ROUTES) if (ROUTES[k].bond === L && L > 1) u.push(tt('core.unlock_route', '{dig, select, yes {Walk route: {route} (with digging)} other {Walk route: {route}}}', { dig: ROUTES[k].dig ? 'yes' : 'no', route: tRoute(k) }));
   TRICKS.forEach((t) => { if (t.bond === L) u.push(t.n === 'Signature' ? tt('core.unlock_signature', 'Signature trick: {trick}', { trick: tSig(S.dog.key) }) : tt('core.unlock_trick', 'Trick: {trick}', { trick: tTrick(t.n) })); });
-  TOYS.concat(CLOTHES).forEach((t) => { if (t.bond === L && L > 1 && !t.ed) u.push(tt('core.unlock_shop', 'Shop: {item}', { item: tItem(t.n) })); });
-  HOUSES.forEach((h) => { if (h.bond === L && L > 1) u.push(tt('core.unlock_house', 'House: {house}', { house: tItem(h.n) })); });
+  TOYS.concat(CLOTHES).forEach((t) => { if (t.bond === L && L > 1 && !t.ed && !t.fm) u.push(tt('core.unlock_shop', 'Shop: {item}', { item: tItem(t.n) })); });
+  HOUSES.forEach((h) => { if (h.bond === L && L > 1 && !h.fm) u.push(tt('core.unlock_house', 'House: {house}', { house: tItem(h.n) })); });
   if (L === 10) u.push(tt('core.unlock_badge', 'Best Friends badge (it is invisible, but it is there)'));
   if (typeof ddUnlocks === 'function') u.push(...ddUnlocks(L)); // v2.17: the Bond track gifts (48_dogdays.js)
   if (typeof ffUnlocks === 'function') u.push(...ffUnlocks(L)); // v2.18: the Fun Fair games (49_funfair.js)
