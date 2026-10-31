@@ -1,6 +1,6 @@
 # v2.18.4 "Winter Market": marketing plan (31 Oct 2026)
 
-**HOLD (Game Manager, 31 Oct 2026): post and schedule nothing about v2.18.4 yet.** It was released early by mistake; the owner wants this update to go out on 1 Nov. Drafts may stay in `docs/marketing/`. Wait for the Game Manager's go-ahead and final date.
+**Official launch: 1 Nov 2026, 00:00 Japan time (31 Oct 15:00 UTC)** (owner's go-ahead via the Game Manager, 31 Oct 2026). Nothing is posted or scheduled before then. The update stays live as it is. From the launch on: items buyable 1–26 Dec, hook "coming 1 Dec".
 
 Briefing from the Game Manager, 31 Oct 2026. v2.18.4 is live on itch.io, doodledoggo.app/play and GitHub Pages. The Winter Market is on the town map from 1 to 26 December, every year. The items are in the game now, but players can only buy them from 1 Dec. No new breeds, so no new Instagram dog profiles. The design and item list are in `docs/design/winter-market.md`; the release notes are in the v2.18.4 row of `CHANGELOG.md`.
 
@@ -34,6 +34,7 @@ Hook from the Game Manager: **"coming 1 Dec"**, with the reveal on the day. Hall
 
 | When | Instagram, Shorts, X (English first) | RedNote (zh-Hans, after approval, no link) |
 |---|---|---|
+| From 1 Nov 00:00 JST | Optional announcement post: "the Winter Market is coming 1 Dec" with the costumes. | Optional: the same as a 3:4 poster. |
 | ~24–28 Nov | Teaser: a costume try-on of the 10 winter looks on one dog, ending on "coming 1 Dec". A pick-your-favourite format fits (from the ideas list: pause-to-pick costume). | Teaser poster (3:4): "冬季市集 12月1日开张" with the costumes. |
 | 1 Dec | Reveal Reel: walk into the Winter Market, the five stalls, the glowing lights after dark. | Reveal video plus the Reel cover. |
 | Early Dec | The 3 treats as a recipe-style Reel (carrot and apple, plain turkey, plain yoghurt). | **狗狗能吃吗 series, winter episode:** "圣诞节，这些能给狗狗吃吗？" Apple: core and seeds out. Turkey: plain, no skin, bones or gravy. Cranberry sauce: too much sugar, fresh berries only. Yoghurt: plain only, never sweetened or light, which can hide 木糖醇. Real fir needles can upset a dog's tummy (that's why the game's tree is felt). |
