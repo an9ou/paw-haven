@@ -18,7 +18,7 @@ run('v2182_news', async (t) => {
   await t.newGame({ prefs: { nwTest: true } });
   ok(await t.until(() => !!(window.__paw && window.__paw.nw), null, 5000), 'the hook is there');
   const latest = await ev(() => window.__paw.nw.latest());
-  ok(latest === '2.18.2' && (await ev(() => window.__paw.S.newsSeen)) === latest, 'adoption sets S.newsSeen to the newest id: ' + latest);
+  ok(latest === '2.18.4' && (await ev(() => window.__paw.S.newsSeen)) === latest, 'adoption sets S.newsSeen to the newest id: ' + latest);
   await t.home('yard'); ok(await noNews(5000), 'no news sheet on a new save');
 
   sec('2. an old save: S.newsSeen added by migrate(), the sheet shows once, not again after a reload');
@@ -26,7 +26,7 @@ run('v2182_news', async (t) => {
   await ev(() => { const P = window.__paw; P.S.newsSeen = ''; P.saveNow(); });
   await reload(); await watch();
   ok(await waitNews(9000), 'the news sheet opens once the yard is calm');
-  ok(await ev(() => document.querySelectorAll('#modal .nw-list li').length === 5 && !!document.querySelector('#modal .nw-pic svg') && document.querySelectorAll('#modal .nw-ic svg').length === 5), 'five lines with crayon icons, and the dog picture');
+  ok(await ev(() => document.querySelectorAll('#modal .nw-list li').length === 5 && !!document.querySelector('#modal .nw-pic svg') && [...document.querySelectorAll('#modal .nw-ic')].filter((e) => e.querySelector('svg')).length === 5), 'five lines with crayon icons (an item card may nest an svg), and the picture');
   ok(await ev(() => window.__paw.S.newsSeen === window.__paw.nw.latest() && JSON.parse(localStorage.getItem('pawhaven_proto_v1')).newsSeen === window.__paw.nw.latest()), 'S.newsSeen is saved when it opens');
   await t.p.click('#nwAll'); ok(await t.until(() => !!document.querySelector('#modal .nw-all .nw-page'), null, 3000), '"See all updates" lists the entries');
   await closeNews(); ok(await noNews(5000), 'it does not open again');

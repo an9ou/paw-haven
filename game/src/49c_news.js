@@ -11,7 +11,19 @@ function nwOn() { return !navigator.webdriver || !!prefs.nwTest; }
 const NW = { calm: 0, exposed: false };
 const nwDate = (iso) => tdate(new Date(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)), { day: 'numeric', month: 'long' });
 const nwItemArt = (n) => art('item', n);
+const nwFmDate = (id, i) => { const m = FM_MARKETS.find((x) => x.id === id); return m ? nwDate('2026-' + m.win()[i]) : ''; }; // a market's first (0) or last (1) day, 2026
 const NEWS = [
+  {
+    id: '2.18.4', date: '2026-10-30', c: '#D3E4F4', d: 'snow', pic: { item: 'Snowman Suit' },
+    title: () => tt('nw.v2184.title', 'The Winter Market is coming!'),
+    items: [
+      { ic: () => nwItemArt('Present Pile'), tx: () => tt('nw.v2184.market', 'The {market} comes to town from {from} to {to}', { market: tt('fm.m_winter', 'Winter Market'), from: nwFmDate('winter', 0), to: nwFmDate('winter', 1) }) },
+      { ic: () => nwItemArt('Puffer Jacket'), tx: () => tt('nw.v2184.costumes', '10 winter costumes from the {first} to the {last}, and two of them keep a dog warm in the snow', { first: tItem('Father Christmas Suit'), last: tItem('Penguin Suit') }) },
+      { ic: () => nwItemArt('Star Lantern'), tx: () => tt('nw.v2184.decor', '5 yard decorations, and the lights glow after dark') },
+      { ic: () => nwItemArt('Gingerbread Kennel'), tx: () => tt('nw.v2184.homes', 'A {kennel}, 4 cosy beds and 5 winter toys', { kennel: tItem('Gingerbread Kennel') }) },
+      { ic: () => nwItemArt('Reindeer Crunch'), tx: () => tt('nw.v2184.treats', '3 dog-safe winter treats') }
+    ]
+  },
   {
     id: '2.18.2', date: '2026-10-30', c: '#FFE3A1', d: 'leaf', pic: 'dog',
     title: () => tt('nw.v2182.title', 'The Fun Fair is in town!'),
