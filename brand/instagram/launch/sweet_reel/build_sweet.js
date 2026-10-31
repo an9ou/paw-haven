@@ -52,7 +52,13 @@ const TX = RN ? { hook: ['狗狗吃红薯前，', '先记住这3条'], hookSize:
 const WAY = RN ? [['Sweet Potato Coins', '一定要煮熟，不吃生的'], ['Sweet Potato Bones', '原味，不抹黄油，不放香料'], ['Sweet Potato Strip', '切成小条，等凉了再吃'], ['Baked Pumpkin Wedges', '南瓜：原味，不用南瓜派馅料']]
   : [['Sweet Potato Coins', 'always cooked, never raw'], ['Sweet Potato Bones', 'plain: no butter, no spice'], ['Sweet Potato Strip', 'cut small, let it cool'], ['Baked Pumpkin Wedges', 'pumpkin: plain, never pie filling']];
 function wrap(s, n) {
-  if (RN) { const out = []; let cur = ''; for (const ch of s) { cur += ch; if (cur.length >= n || (cur.length >= n - 4 && /[，。、]/.test(ch))) { out.push(cur); cur = ''; } } if (cur) out.push(cur); return out; }
+  // Chinese: by characters, breaking after punctuation where it can; a line never starts with punctuation, and a short leftover joins the line before
+  if (RN) { const P = /[，。、：；！？）]/, out = []; let cur = '', chs = [...s];
+    chs.forEach((ch, i) => { cur += ch; const nx = chs[i + 1]; if (nx && P.test(nx)) return; if (cur.length >= n || (cur.length >= n - 4 && P.test(ch))) { out.push(cur); cur = ''; } });
+    if (cur) { const prev = out[out.length - 1];
+      if (prev && cur.length <= 3 && prev.length + cur.length <= n + 2) out[out.length - 1] += cur;
+      else if (prev && cur.length <= 3) { const cut = Math.max(...[...'，。、；'].map((p) => prev.lastIndexOf(p, prev.length - 2))) + 1; if (cut > 0) { out[out.length - 1] = prev.slice(0, cut); out.push(prev.slice(cut) + cur); } else out.push(cur); }
+      else out.push(cur); } return out; }
   const out = []; let cur = ''; for (const w of s.split(' ')) { if ((cur + ' ' + w).trim().length > n) { out.push(cur.trim()); cur = w; } else cur += ' ' + w; } if (cur.trim()) out.push(cur.trim()); return out;
 }
 ROUNDS.forEach((r) => { r.whyLines = r.why ? wrap(r.why, TX.perLine) : []; r.yesLines = wrap(r.yes, TX.perLine); });
