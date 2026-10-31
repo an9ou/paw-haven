@@ -1,5 +1,7 @@
 # v2.18.4 "Winter Market": marketing plan (31 Oct 2026)
 
+**HOLD (Game Manager, 31 Oct 2026): post and schedule nothing about v2.18.4 yet.** It was released early by mistake; the owner wants this update to go out on 1 Nov. Drafts may stay in `docs/marketing/`. Wait for the Game Manager's go-ahead and final date.
+
 Briefing from the Game Manager, 31 Oct 2026. v2.18.4 is live on itch.io, doodledoggo.app/play and GitHub Pages. The Winter Market is on the town map from 1 to 26 December, every year. The items are in the game now, but players can only buy them from 1 Dec. No new breeds, so no new Instagram dog profiles. The design and item list are in `docs/design/winter-market.md`; the release notes are in the v2.18.4 row of `CHANGELOG.md`.
 
 ## What's new for players
