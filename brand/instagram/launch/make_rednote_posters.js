@@ -2,6 +2,7 @@
 // (make_rednote.js): paper, pencil frame, the wordmark, LXGW WenKai (the game's zh-Hans font), the game's real art. Each one works as the
 // 3:4 cover of its video note and as an image note on its own. No link anywhere (owner, 29 Oct 2026): "搜索 Doodle Doggo".
 //   rednote-02-trick.jpg  the trick-or-treat Reel: "第4扇门，零食全没了", Noodle running from Butter in the Dinosaur Hood, the four new costumes.
+//   rednote-04-sweet.jpg  the sweet potato Reel: "狗狗吃红薯前，先记住这3条", the game's recipe icons, the pumpkin line.
 //   rednote-03-safe.jpg   the food-safety Reel: "狗狗不能吃的7种食物", the game's own food names and icons, the safe swaps, "call your vet".
 // Every food and costume name is the game's own zh-Hans text (game/i18n/zh-Hans.json). Output: brand/rednote/
 //   NODE_PATH=$(npm root -g) node brand/instagram/launch/make.js shots rednoteposters
@@ -82,4 +83,22 @@ module.exports = async function ({ render, helpers: h }) {
     + zh('搜索 Doodle Doggo 就能玩', 540, 1388, 42, { fill: ORANGE })
     + doodle('paw', 96, 1360, 1.2, -15) + doodle('bone', 984, 1362, 1.2, 18) + doodle('spark', 1000, 560, 1);
   await render(svgPage(W, H, font + safe), W, H, '../../rednote/rednote-03-safe.jpg');
+
+  // ---------- the sweet potato poster (owner, 31 Oct 2026): the 3 rules, each worded from the game's own zh-Hans tips ----------
+  ['sweet_potato_coins', 'sweet_potato_bones', 'sweet_potato_strip', 'baked_pumpkin_wedges'].forEach((id) => t(`data.food.${id}.tip`));   // the game's tips behind each line
+  const RULES = [['Sweet Potato Coins', '第1条：不吃生的', '一定要煮熟，生红薯很难消化'], ['Sweet Potato Bones', '第2条：原味，什么都不加', '不抹黄油，不放糖，不放肉豆蔻'],
+    ['Sweet Potato Strip', '第3条：切成小条', '等凉了再吃，免得噎着']];
+  const sweet = paper(W, H) + frame(W, H, 83)
+    + wordmark(450, 150, 90) + doodle('leaf', 140, 96, 1.2, -12) + doodle('spark', 760, 90, 1)
+    + sticker(905, 172, 104, '#FFE3A1', ORANGE, ['红薯季', '先收藏！'], 30, 8)
+    + zh('狗狗吃红薯前，', 540, 362, 100, { rot: -1.5 }) + zh(`先记住这<tspan fill="${ORANGE}">3</tspan>条`, 540, 490, 124, { rot: -1.5 })
+    + zh('每一条都是游戏里的狗狗安全小知识', 540, 562, 42, { fill: MUTED, w: 400 })
+    + box(70, 590, 940, 470, 36, 95, 2.4, 4.2)
+    + RULES.map(([n, title, line], i) => { const y = 690 + i * 136; return item(n, 110, y - 70, 112) + zh(title, 250, y - 6, 52, { anchor: 'start' }) + zh(line, 250, y + 46, 38, { anchor: 'start', fill: MUTED, w: 600 }); }).join('')
+    + item('Baked Pumpkin Wedges', 100, 1098, 110) + zh('南瓜也一样：', 240, 1150, 46, { anchor: 'start', fill: ORANGE }) + zh('原味煮熟，不用南瓜派馅料', 240, 1206, 40, { anchor: 'start' })
+    + at('dachs', { pose: 'happy', facing: 'left', expr: 'hearts' }, 880, 1248, 190)
+    + zh('在这个游戏里，有毒的食物做不出来，也喂不了', 540, 1322, 36, { fill: MUTED, w: 400 })
+    + zh('搜索 Doodle Doggo 就能玩', 540, 1384, 44, { fill: ORANGE })
+    + doodle('paw', 96, 1356, 1.2, -15) + doodle('bone', 984, 1358, 1.2, 18) + doodle('heart', 1000, 560, 1, 12);
+  await render(svgPage(W, H, font + sweet), W, H, '../../rednote/rednote-04-sweet.jpg');
 };
