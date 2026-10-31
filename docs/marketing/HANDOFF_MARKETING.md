@@ -1,7 +1,7 @@
 # Marketing handoff (30 Oct 2026)
 
 Branch `marketing/launch` (main merged at v2.18.3). The owner installed Instagram skills: check which help with Reels and captions.
-1. Done 30 Oct 2026: the owner approved both English Reels (new hooks, faster first doors on Trick, longer lessons on Safe), and the RedNote cuts are rendered:
+1. **Posted by the owner (31 Oct 2026): Trick-or-treat and food-safety Reels.** Done 30 Oct 2026: the owner approved both English Reels (new hooks, faster first doors on Trick, longer lessons on Safe), and the RedNote cuts are rendered:
    - `trick_reel/doodle-doggo-trick-or-treat.mp4` (10.5 s) and `-rednote.mp4`, with `trick-cover(-rednote).jpg`.
    - `safe_reel/doodle-doggo-is-this-safe.mp4` (21.7 s) and `-rednote.mp4`, with `safe-cover(-rednote).jpg`.
 2. Remake: `[REDNOTE=1] NODE_PATH=$(npm root -g) node brand/instagram/launch/<trick_reel/build_trick.js|safe_reel/build_safe.js> <workdir>`, then copy the mp4 and the cover jpg next to the others. The review is in `docs/marketing/REEL_REVIEW_TRICK_SAFE.md`.
@@ -21,5 +21,5 @@ Branch `marketing/launch` (main merged at v2.18.3). The owner installed Instagra
 5. Reel scripts load the game art with an in-between-pose patch (see `build_dance.js`). If the art changes, the anchors throw "art changed: …": update the anchor string.
 6. RedNote plan (30 Oct 2026): `docs/marketing/REDNOTE_TRENDS.md`. The food-safety Reel did very well on RedNote, the others were fair, so RedNote gets a 狗狗能吃吗 series plus personal posts; the owner adds numbers to its results log.
 7. v2.18.4 Winter Market (briefing 31 Oct 2026): plan in `docs/marketing/V2184_WINTER_MARKET.md` (teaser ~24–28 Nov, reveal 1 Dec, a winter episode of the RedNote 狗狗能吃吗 series). Nothing made yet. Official launch 1 Nov 2026 00:00 Japan time (31 Oct 15:00 UTC): nothing before then (owner's go-ahead via the Game Manager, 31 Oct 2026).
-8. Sweet potato Reel (31 Oct 2026, owner approved): all done and ready to post. English `sweet_reel/doodle-doggo-sweet-potato.mp4` + `sweet-cover.jpg`; RedNote `-rednote.mp4` with the 3:4 cover `brand/rednote/rednote-04-sweet.jpg`; captions for every platform in `docs/marketing/SWEET_REEL.md`. It is episode 1 of the RedNote 狗狗能吃吗 series (`REDNOTE_TRENDS.md`).
+8. Sweet potato Reel (31 Oct 2026, owner approved): all done; files and captions sent to the owner to post (31 Oct 2026). English `sweet_reel/doodle-doggo-sweet-potato.mp4` + `sweet-cover.jpg`; RedNote `-rednote.mp4` with the 3:4 cover `brand/rednote/rednote-04-sweet.jpg`; captions for every platform in `docs/marketing/SWEET_REEL.md`. It is episode 1 of the RedNote 狗狗能吃吗 series (`REDNOTE_TRENDS.md`).
 9. Ideas not made yet (owner liked the list): pause-to-pick costume, star-sign dogs, pick a door 1/2/3, rainy-day wet dog, Fun Fair speedrun, "other pet games vs Doodle Doggo", dog diary.
