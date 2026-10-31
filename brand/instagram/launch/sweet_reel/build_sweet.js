@@ -101,6 +101,7 @@ function dog(id, cx, feet, hh, sv, rot, dy){ const b=box(id), s=hh/b[3], w=b[2]*
   return '<ellipse cx="'+cx+'" cy="'+(feet-2)+'" rx="'+(w*0.32)+'" ry="12" fill="${PEN}" opacity=".16"/><g transform="translate(0 '+dy+') rotate('+rot+' '+cx+' '+feet+')"><g transform="translate('+(cx-w/2)+' '+(feet-hh)+') scale('+s+') translate('+(-b[0])+' '+(-b[1])+')">'+sv+'</g></g>'; }
 const back=(x)=>{ x=Math.max(0,Math.min(1,x)); const c=1.9; return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2); };
 const R=${JSON.stringify(ROUNDS.map((r) => ({ rule: r.rule, bad: !!r.bad, whyLines: r.whyLines, yesLines: r.yesLines, BAD: r.BAD, start: r.start, LEN: r.LEN })))}, TX=${JSON.stringify(TX)}, FAM=${JSON.stringify(fam)};
+const TW={}; function tw(s,size){ const k=s+'|'+size; if(TW[k]!=null) return TW[k]; const e=document.createElementNS(NSV,'text'); e.setAttribute('font-family',FAM); e.setAttribute('font-weight','700'); e.setAttribute('font-size',size); e.textContent=s; document.querySelector('svg').appendChild(e); const w=e.getComputedTextLength(); e.remove(); return TW[k]=w; }
 const txt=(s,x,y,size,o)=>{ o=o||{}; return '<text x="'+x+'" y="'+y+'" font-family="'+FAM+'" font-weight="700" font-size="'+size+'" fill="'+(o.fill||'${PEN}')+'" text-anchor="'+(o.a||'middle')+'">'+s+'</text>'; };
 // which rule, its own time, and Noodle's pose: begs as the food arrives, sits at the stop sign, is delighted by the right way
 window.mode=function(t){ let i=0; while(i<R.length-1&&t>=R[i+1].start) i++; const r=R[i], lt=t-r.start;
@@ -108,7 +109,7 @@ window.mode=function(t){ let i=0; while(i<R.length-1&&t>=R[i+1].start) i++; cons
 window.frame=function(t, D){
   const m=mode(t), i=m.i, lt=m.lt, r=R[i], ending=t>=${END};
   $('end').setAttribute('opacity', ending?Math.min(1,(t-${END})/0.3):0);
-  $('nood').innerHTML = dog(m.pose, m.pose==='yay'?320:300, ${FEET + 30}, m.pose==='yay'?310:450, D.n, m.pose==='beg'?Math.sin(t*7)*2.5:0, m.pose==='yay'?-Math.abs(Math.sin(t*9))*16:0);
+  $('nood').innerHTML = dog(m.pose, m.pose==='yay'?345:360, ${FEET + 30}, m.pose==='yay'?265:400, D.n, m.pose==='beg'?Math.sin(t*7)*2.5:0, m.pose==='yay'?-Math.abs(Math.sin(t*9))*16:0);
   let f=''; if(t>=${R0}){
     const pt=m.bad?lt:m.g, pop=back(pt/0.3), out=m.bad&&lt>r.BAD-0.2?Math.min(1,(lt-r.BAD+0.2)/0.2):0, sz=300*pop;
     f+='<g opacity="'+(1-out)+'"><use href="#'+(m.bad?'bad':'good')+i+'" x="'+(770-sz/2)+'" y="'+(${FEET - 30}-sz)+'" width="'+sz+'" height="'+sz+'"/></g>';
@@ -119,8 +120,7 @@ window.frame=function(t, D){
   // the card: the rule, the game's tip, and a tag (not like this / like this)
   let c=''; if(t>=${R0}+0.15 && !ending){ const ls=m.bad?r.whyLines:r.yesLines, h=150+ls.length*(TX.why+16), o=Math.min(1,((m.bad?lt:m.g)-0.1)/0.2), col=m.bad?'${RED}':'${GREEN}';
     c='<g opacity="'+Math.max(0,o)+'" transform="rotate(-1 540 700)"><rect x="70" y="500" width="940" height="'+h+'" rx="34" fill="#FFFDF7" stroke="'+col+'" stroke-width="7"/>'
-      +'<rect x="'+(1010-24-(m.bad?TX.no:TX.yes).length*(${RN ? 40 : 21}))+'" y="462" width="'+(24+(m.bad?TX.no:TX.yes).length*(${RN ? 40 : 21}))+'" height="58" rx="29" fill="'+col+'"/>'
-      +txt(m.bad?TX.no:TX.yes, 998, 503, ${RN ? 38 : 42}, {a:'end', fill:'#FFF8EC'})
+      +(()=>{ const s=m.bad?TX.no:TX.yes, w=tw(s, ${RN ? 38 : 42})+56, x=1010-w; return '<rect x="'+x+'" y="462" width="'+w+'" height="58" rx="29" fill="'+col+'"/>'+txt(s, x+w/2, 503, ${RN ? 38 : 42}, {fill:'#FFF8EC'}); })()
       +txt(r.rule, 110, 588, TX.rule, {a:'start'})
       +ls.map((l,j)=>txt(l, 110, 668+j*(TX.why+16), TX.why, {a:'start'})).join('')+'</g>'; }
   $('card').innerHTML=c;
@@ -135,7 +135,7 @@ const drawFor = (t) => { let i = 0; while (i < ROUNDS.length - 1 && t >= ROUNDS[
   const p = await b.newPage({ viewport: { width: W, height: H } });
   fs.writeFileSync(path.join(WORK, 'page.html'), html); await p.goto('file://' + path.join(WORK, 'page.html')); await p.waitForLoadState('networkidle'); await p.evaluate(() => document.fonts.ready);
   const still = process.env.ONLY === 'stills';
-  const list = still ? [0.2, 1.5, 3.0, 5.0, 7.5, 10.0, 13.0, 15.0, 17.5].map((s) => Math.round(s * FPS)) : [...Array(N).keys()];
+  const list = still ? [0.2, 1.5, 3.0, 4.6, 5.0, 5.3, 7.5, 7.8, 10.0, 13.0, 15.0, 17.5].map((s) => Math.round(s * FPS)) : [...Array(N).keys()];
   for (const f of list) { await p.evaluate(([t, D]) => window.frame(t, D), [f / FPS, drawFor(f / FPS)]); await p.screenshot({ path: path.join(WORK, 'f', `f${String(f).padStart(4, '0')}.png`) }); }
   console.log(list.length, 'frames');
   // the cover: the raw sweet potato with the stop sign and rule 1
