@@ -19,4 +19,5 @@ Branch `marketing/launch` (main merged at v2.18.3). The owner installed Instagra
      Check with `.claude/skills/ig-caption/caption.py` (READY) and `.claude/skills/ig-human/detect.py` (PASS) for every English text, and write the receipt under each caption. RedNote is checked by hand (the game's zh-Hans names, no link, title 20 characters at most).
 5. Reel scripts load the game art with an in-between-pose patch (see `build_dance.js`). If the art changes, the anchors throw "art changed: …": update the anchor string.
 6. RedNote plan (30 Oct 2026): `docs/marketing/REDNOTE_TRENDS.md`. The food-safety Reel did very well on RedNote, the others were fair, so RedNote gets a 狗狗能吃吗 series plus personal posts; the owner adds numbers to its results log.
-7. Ideas not made yet (owner liked the list): pause-to-pick costume, star-sign dogs, pick a door 1/2/3, rainy-day wet dog, Fun Fair speedrun, "other pet games vs Doodle Doggo", dog diary.
+7. v2.18.4 Winter Market (briefing 31 Oct 2026): plan in `docs/marketing/V2184_WINTER_MARKET.md` (teaser ~24–28 Nov, reveal 1 Dec, a winter episode of the RedNote 狗狗能吃吗 series). Nothing made yet.
+8. Ideas not made yet (owner liked the list): pause-to-pick costume, star-sign dogs, pick a door 1/2/3, rainy-day wet dog, Fun Fair speedrun, "other pet games vs Doodle Doggo", dog diary.
