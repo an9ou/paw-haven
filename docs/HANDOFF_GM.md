@@ -1,13 +1,26 @@
-# Game Manager handoff (30 Oct 2026)
+# Game Manager handoff (1 Nov 2026)
 
-Previous Game Manager: session_01YWqF1YmkskA96YAshTRHg3 (archive it once you are running). Marketing: session_01D6KLY3kmkonSJgdVfRqFo7 (new, tag team:marketing, branch marketing/launch); brief it on every release.
+Previous Game Manager: session_01D6KLY6MoiRhP5ZXAV2ww5M (archive it once you are running). Marketing: session_01D6KLY45Jihk1dVrpVPDeSv (new 31 Oct, tag team:marketing, branch marketing/launch); brief it on every release.
 
-1. Live: v2.18.3 "All in one piece" on main (site, itch #2247434, GitHub). Cloud API worker deployed 30 Oct with the Cursor fixes (live smoke OK).
-2. Release recipe: merge to the dev branch claude/webgame-cloudflare-updates-1jo46d and push HEAD:main; export NODE_PATH=<minify node_modules>:$(npm root -g); node tools/itch.js; SITE_GAME=$PWD/dist/itch node game/run_tests.js site; bash tools/cf_pages_deploy.sh; bash tools/itch_push.sh <ver>; add a NEWS entry (49c_news.js) for player-facing releases; brief Marketing.
-3. Tests: one suite at a time (4-core box; parallel suites time out). Owner rules in CLAUDE.md (5-minute rule, token savers, auto handoff at ~150k).
-4. Open, waiting on owner: growth plan decisions (doc https://claude.ai/artifact/6CfP7zLRodZ5Y44rJ6REeL: paid looks with Sparkle free, rewarded ads app-only, Friends v2.19 first, hero cast names, accounts). Google Drive uploads: dropped for now.
-5. Markets: Halloween until 15 Nov (FM_MARKETS in 49_market.js); Winter Market 1-26 Dec has no new items yet (TODO in V2171.md). New Year 27 Dec-7 Jan.
-6. Retention (29 Oct): Bond 1 share 69% -> 37% after v2.16; Bond 3+ 13% -> 27%; past 10 min 17% -> 25%; next-day return too early, recheck ~5 Nov. Dashboard https://claude.ai/artifact/7isHciXJMvmfFX1BUTzCQV has an active/came-back chart.
-7. Reels: brand/reels/; rules: EN for IG/Shorts/X, zh-Hans for RedNote, no link on RedNote ("搜索 Doodle Doggo"), English first, RedNote after approval. Instagram skill pack in .claude/skills (ig-*).
-8. The hourly usage-limit watchdog trigger trig_01MLghGE3g9UHDn7pBtjdJkJ is bound to the OLD session and disabled: make your own when work runs overnight, disable when idle.
-9. Owner's Cursor/Grok edits may land on main directly; merge main before every release.
+1. Live: v2.18.4 "Winter Market" on main (site, itch #2256996, GitHub). The owner's official launch was 1 Nov 00:00 JST, and Marketing has the go-ahead. The Winter Market opens in game 1-26 Dec. Its design and the decisions are in docs/design/winter-market.md.
+2. **New owner rule (31 Oct, in CLAUDE.md):** special and festival updates never go live without the owner's explicit go-ahead and launch date, and the 5-minute rule does not apply to them. I released v2.18.4 early without asking, and the owner was unhappy about it. Ask first.
+3. **Now: v2.19 "Friends first".** Claude designs and Cursor codes:
+   - Design contract: V219.md. Rules for coding agents: AGENTS.md.
+   - GitHub issues: #3 is the overview. The parts are #4 Worker/D1, #5 Friends sheet, #6 visits, #7 gifts, #8 walk together and #9 invite page and privacy.
+   - Owner's choices: async walk, a read-only yard snapshot, preset words only, issues one per part.
+   - Part 0 art (PA.FRIENDS in world/pawart_world_b.js) is on main; the art coordinates are in a comment on #5.
+   - Your job: when the owner gives a PR number, review it against V219.md, AGENTS.md and CLAUDE.md, and run its suites one at a time. Post the review on the PR (with the attribution footer) as approve or a list of fixes. The owner merges.
+   - After all parts are merged: translate fr.* and the site strings in one batch, write the NEWS entry, run the reviews (code, phone, art), deploy the Worker (bash tools/cf_api_deploy.sh) and the site, then release on the owner's date.
+4. Release recipe:
+   - Merge to the dev branch claude/webgame-cloudflare-updates-1jo46d and push HEAD:main.
+   - Set `export NODE_PATH=<minify node_modules>:$(npm root -g)`. esbuild 0.24.0 is not installed globally: `npm install esbuild@0.24.0` into a scratch folder and use its node_modules.
+   - Run `node tools/itch.js`, then `SITE_GAME=$PWD/dist/itch node game/run_tests.js site`, then `bash tools/cf_pages_deploy.sh`, then `bash tools/itch_push.sh <ver>` (needs the same NODE_PATH).
+   - Add a NEWS entry (49c_news.js) and brief Marketing.
+5. Tests: one suite at a time (4-core box). Owner rules are in CLAUDE.md: the 5-minute rule except for special updates, token savers, auto handoff at ~150k.
+6. Still open, waiting on the owner:
+   - The rest of the growth plan (doc https://claude.ai/artifact/6CfP7zLRodZ5Y44rJ6REeL): paid looks with Sparkle free, app-only rewarded ads, hero cast names.
+   - The New Year Market set (27 Dec-7 Jan): later, and it needs the owner's date.
+   - Retention recheck around 5 Nov (dashboard https://claude.ai/artifact/7isHciXJMvmfFX1BUTzCQV).
+7. Winter Market leftovers (not blocking): with two big dogs at the market the second may cover a board; on desktop, dogs can still cover the back boards (the roaming fix is phone-only); a "new letters" toast can sit over a stall sheet.
+8. The usage-limit watchdog: make your own scheduled task when work runs overnight, and disable it when idle.
+9. The owner's Cursor/Grok edits land on main, either as PRs or directly. Merge main before every release.
