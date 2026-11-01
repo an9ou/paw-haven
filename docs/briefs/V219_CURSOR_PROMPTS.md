@@ -5,7 +5,7 @@ Paste one prompt per Cursor task. The work order is in issue #3:
 - Part 6 (#9) can run beside parts 2 to 5 once #4 is merged.
 - Every other part starts only after the part before it is merged.
 
-Send the PR number to the Game Manager. The Game Manager reviews it, and the owner merges.
+Send the PR number to the Game Manager. The Game Manager reviews it and, once approved and green, merges it (owner, 1 Nov 2026).
 
 ## Progress (1 Nov 2026)
 
