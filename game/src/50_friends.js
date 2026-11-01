@@ -1,5 +1,5 @@
 /* ======================= v2.19 "Friends first": 50_friends.js (tag fr) =======================
-   Friend codes and the Friends sheet (V219.md sections 0, 2, 3 and 8). Visits, gifts and the walk come later.
+   Friend codes, the Friends sheet, yard visits, pets and paw-print notes (V219.md sections 0, 2, 3, 4 and 8). Gifts and the walk come later.
    Save field S.fr (v219Fields in 00_core.js). Test hook: window.__paw.fr.
    No typed text leaves the device: names are word indices, notes are FR_NOTES indices, dogs are Dog Card indices.
    Off until the v2.19 release (FR_LIVE). A test turns it on with prefs.frTest or window.__pawCloudMock. Never on the claude.ai artifact. */
@@ -9,7 +9,7 @@ function frOn() {
   if (FR_LIVE && !navigator.webdriver) return true; // live, but still off under the test harness unless a test asks (V219 section 0)
   return !!(prefs.frTest || (typeof window !== 'undefined' && window.__pawCloudMock));
 }
-const FR = { pick: [0, 0], invite: null, inviteShown: false, wantAdd: false, offline: false, pending: 0, inAt: 0, yardAt: 0, menu: '', gen: 0 };
+const FR = { pick: [0, 0], invite: null, inviteShown: false, wantAdd: false, offline: false, pending: 0, inAt: 0, yardAt: 0, menu: '', gen: 0, visit: null, roam: [], raf: 0, petBusy: false };
 
 /* append only, never reorder: the Worker validates indices */
 const FR_NOTES = [
@@ -217,7 +217,37 @@ async function frLoad() {
   } catch (e) { FR.offline = true; return null; }
 }
 
-/* ---------- inbox: notes become postcard letters and are claimed. pet, gift and walk stay, and count on the badge. ---------- */
+/* ---------- inbox: notes become postcard letters, and a day's pets become one visit letter. gift and walk stay, and count on the badge. ---------- */
+function frPetText(names, dog, bonded) {
+  const name = names[0] || tt('fr.a_friend', 'A friend'), n = names.length - 1;
+  const line = n > 0
+    ? tt('fr.pet_many', '{name} and {n, plural, one {# friend} other {# friends}} visited and petted {dog}.', { name, n, dog })
+    : tt('fr.pet_one', '{name} visited and petted {dog}.', { name, dog });
+  if (!bonded) return line;
+  return line + ' ' + (bonded === 1 ? tt('fr.plus_bond', '+1 Bond') : tt('fr.plus_bond_n', '+{n} Bond', { n: bonded }));
+}
+function frClaimPets(events) {
+  const groups = new Map();
+  events.forEach((ev) => {
+    if (!ev || ev.kind !== 'pet') return;
+    const day = typeof ev.day === 'string' && ev.day ? ev.day : localISO();
+    if (!groups.has(day)) groups.set(day, []);
+    groups.get(day).push(ev);
+  });
+  const claim = [];
+  v219Fields(S);
+  groups.forEach((list, day) => {
+    const names = []; let bonded = 0;
+    list.forEach((ev) => {
+      const name = frPairName(ev.from && ev.from.name) || tt('fr.a_friend', 'A friend');
+      if (!names.includes(name)) names.push(name);
+      if (S.fr.gotPets < 5) { addBond(1, { raw: true }); S.fr.gotPets++; bonded++; markDirty(); }
+      claim.push(ev.id);
+    });
+    if (typeof mailPush === 'function') mailPush({ kind: 'news', id: 'fr_pet_' + day + '_' + list[0].id, from: names[0], title: names.length > 1 ? tt('fr.pet_title_many', 'A visit from {name} and friends', { name: names[0] }) : tt('fr.pet_title', 'A visit from {name}', { name: names[0] }), text: frPetText(names, NAME(), bonded) });
+  });
+  return claim;
+}
 async function frInbox() {
   if (!frOn() || !S) return;
   v219Fields(S);
@@ -234,6 +264,7 @@ async function frInbox() {
     if (typeof mailPush === 'function') mailPush({ kind: 'postcard', id: 'fr_note_' + ev.id, from: name, title: tt('fr.note_title', 'A paw print from {name}', { name }), text: tt('fr.note_' + i, FR_NOTES[i]), frPaw: true });
     claim.push(ev.id);
   });
+  frClaimPets(r.data.events).forEach((id) => { if (!claim.includes(id)) claim.push(id); });
   FR.pending = r.data.events.filter((ev) => ev && !claim.includes(ev.id)).length;
   frBadgeSync();
   if (claim.length) { try { await frApi('POST', '/friends/inbox/claim', { ids: claim.slice(0, 30) }); } catch (e) { /* the letter is already here. the next look claims it */ } }
@@ -476,7 +507,8 @@ function frSheetBind(p) {
       SFX.click();
       const row = b.closest('[data-fid]'), fid = row && row.dataset.fid;
       const act = b.dataset.fr;
-      if (act === 'visit' || act === 'gift') { toast(tt('fr.soon', 'Coming soon'), 'good'); return; }
+      if (act === 'visit') { frVisit(fid); return; }
+      if (act === 'gift') { toast(tt('fr.soon', 'Coming soon'), 'good'); return; }
       if (act === 'more') { FR.menu = FR.menu === fid ? '' : fid; frSheet(); return; }
       if (act === 'remove') frRemove(fid);
       if (act === 'block') frBlock(fid, p);
@@ -509,6 +541,210 @@ function frInviteTry() {
   FR.inviteShown = true; FR.wantAdd = true; frOpen();
 }
 
+/* ---------- a friend's yard (V219.md section 4). Read-only: the save moves only in Bond and S.fr. ---------- */
+function frFriend(fid) { return ((S && S.fr && S.fr.cache && S.fr.cache.friends) || []).find((f) => f && f.fid === fid) || null; }
+function frSent(fid, kind) { const f = frFriend(fid); return !!(f && f.sent && f.sent[kind]); }
+function frMarkSent(fid, kind) {
+  const f = frFriend(fid); if (!f) return;
+  if (!f.sent || typeof f.sent !== 'object') f.sent = { pet: false, note: false, gift: false, walk: false };
+  if (f.sent[kind]) return;
+  f.sent[kind] = true; markDirty();
+}
+function frDid(kind) { const v = FR.visit; return !!(v && ((v.did && v.did[kind]) || frSent(v.fid, kind))); }
+function frDidSet(kind) { if (!FR.visit) return; FR.visit.did = FR.visit.did || {}; FR.visit.did[kind] = true; frMarkSent(FR.visit.fid, kind); }
+function frYardOk(y) {
+  return !!(y && y.v === 1 && ['spring', 'summer', 'autumn', 'winter'].includes(y.season) && Number.isInteger(y.house) && y.house >= 0 && y.house < FR_HOUSES.length && Array.isArray(y.dogs) && Array.isArray(y.decor));
+}
+function frCacheYard(fid, yard) {
+  v219Fields(S);
+  const prev = S.fr.yards[fid], next = { day: localISO(), yard };
+  S.fr.yards[fid] = next;
+  if (!prev || prev.day !== next.day || JSON.stringify(prev.yard) !== JSON.stringify(yard)) markDirty();
+}
+function frTidying(name) { toast(tt('fr.tidying', "{name}'s yard is still being tidied. Try again later.", { name: name || tt('fr.a_friend', 'A friend') }), ''); }
+async function frVisit(fid) {
+  if (!frOn() || !S || !fid || cur.mode === 'walk') return false;
+  v219Fields(S); frDay();
+  const name = frPairName((frFriend(fid) || {}).name) || tt('fr.a_friend', 'A friend');
+  let r = null;
+  try { r = await frApi('GET', '/friends/yard?fid=' + encodeURIComponent(fid)); } catch (e) { r = null; }
+  if (!r || !r.ok) { toast(tt('fr.offline', 'Friends need an internet connection. Your dog is happy at home.'), 'bad'); return false; }
+  const yard = r.data && r.data.yard;
+  if (!frYardOk(yard)) { frTidying(name); return false; }
+  frCacheYard(fid, yard);
+  FR.visit = { fid, name, yard, did: { pet: frSent(fid, 'pet'), note: frSent(fid, 'note') } };
+  go('fryard');
+  return true;
+}
+function frChipHTML() {
+  const name = (FR.visit && FR.visit.name) || tt('fr.a_friend', 'A friend');
+  return `<span class="pin"><svg viewBox="-10 -12 20 24"><path d="M0 11 C-3 4 -8 0 -8 -4 a8 8 0 0 1 16 0 c0 4 -5 8 -8 15z" fill="#F28FA5" stroke="#5B3D32" stroke-width="1.8"/><circle cy="-4" r="3" fill="#FFFBF3" stroke="#5B3D32" stroke-width="1.4"/></svg></span><b class="pname">${esc(tt('fr.yard_chip', "{name}'s yard", { name }))}</b>`;
+}
+function frDecorSVG(decor) {
+  const items = [];
+  (decor || []).slice(0, 40).forEach((d) => {
+    if (!d || !Number.isInteger(d.i) || !FR_DECOR[d.i] || typeof HM_DECOR === 'undefined' || !HM_DECOR[FR_DECOR[d.i]]) return;
+    const n = FR_DECOR[d.i], wh = hoSize(n), x = Math.max(0, Math.min(1200, Math.round(Number(d.x)) || 0)), y = Math.max(0, Math.min(800, Math.round(Number(d.y)) || 0));
+    items.push({ n, x, y, w: wh[0], h: wh[1], layer: hoLayer(n), b: y + wh[1] });
+  });
+  items.sort((a, b) => a.layer - b.layer || a.b - b.b);
+  return `<g id="decorG" data-frdecor="1">${items.map((it) => `<g class="hm-decor" data-decor="${esc(it.n)}" data-x="${it.x}" data-y="${it.y}" pointer-events="none">${place(hmDecorArt(it.n), it.x, it.y, it.w, it.h)}</g>`).join('')}</g>`;
+}
+function frYardSVG(y) {
+  const house = FR_HOUSES[y.house] || FR_HOUSES[0];
+  return `<svg class="world" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMax slice">
+    ${sceneG('yard', { patch: 'empty', season: y.season })}${frDecorSVG(y.decor)}
+    <g id="houseG" data-house="${esc(house)}" aria-hidden="true">${place(art('house', house), 620, 330, 240, 200)}</g>
+    <g id="frDogs"></g><g id="frPawStamp" pointer-events="none"></g><g id="fx"></g></svg><div id="status"></div><div id="placeBtns"></div>`;
+}
+function frQuietHots() {
+  const svg = $('svg.world', view); if (!svg) return;
+  svg.querySelectorAll('[data-hot], [data-shop], #mailboxG, #bowlG, #secretX').forEach((el) => { el.style.pointerEvents = 'none'; el.removeAttribute('tabindex'); el.removeAttribute('role'); });
+}
+function frPawArt() {
+  try { const P = window.PawArt; if (P && P.FRIENDS && typeof P.FRIENDS.paw === 'function') return P.FRIENDS.paw(); } catch (e) { /* art missing */ }
+  return `<svg viewBox="-16 -16 32 32" aria-hidden="true">${doodle('paw', 0, 0, 1)}</svg>`; // TODO art
+}
+function frShowPaw() {
+  const g = $('#frPawStamp'); if (!g || g.dataset.on) return;
+  g.dataset.on = '1'; g.innerHTML = place(frPawArt(), 400, 470, 72, 72);
+}
+function frPlaceBtns() {
+  const pb = $('#placeBtns'); if (!pb) return;
+  const noted = frDid('note');
+  pb.innerHTML = `<button class="btn fr-act" type="button" id="frNoteBtn">${esc(noted ? tt('fr.noted_today', 'Paw print left today') : tt('fr.leave_paw', 'Leave a paw print'))}</button><button class="btn yes fr-act" type="button" id="frHomeBtn">${esc(tt('fr.go_home', 'Go home'))}</button>`;
+  const note = $('#frNoteBtn', pb); if (note) note.onclick = () => { SFX.click(); if (frDid('note')) return; frNoteSheet(); };
+  const home = $('#frHomeBtn', pb); if (home) home.onclick = () => { SFX.click(); frGoHome(); };
+}
+function frNoteSheet() {
+  if (!FR.visit || frDid('note') || cur.mode !== 'fryard') return null;
+  const rows = FR_NOTES.map((line, i) => `<button class="btn fr-note" type="button" data-fri="${i}">${esc(tt('fr.note_' + i, line))}</button>`).join('');
+  const p = openModal(esc(tt('fr.note_pick', 'Leave a paw print')), `<div class="fr-notes">${rows}</div>`, { cls: 'frsheet' });
+  if (isPhone()) { p.style.position = 'fixed'; p.style.left = '0'; p.style.right = '0'; p.style.bottom = '96px'; p.style.maxHeight = 'calc(100dvh - 120px)'; p.style.margin = '0'; }
+  p.querySelectorAll('[data-fri]').forEach((b) => { b.onclick = () => { SFX.click(); frSendNote(+b.dataset.fri, p); }; });
+  return p;
+}
+async function frSendNote(i, p) {
+  const v = FR.visit; if (!v || frDid('note') || cur.mode !== 'fryard' || !Number.isInteger(i) || i < 0 || i >= FR_NOTES.length) return false;
+  const btns = p ? [...p.querySelectorAll('[data-fri]')] : [];
+  btns.forEach((b) => { b.disabled = true; });
+  let r = null;
+  try { r = await frApi('POST', '/friends/send', { fid: v.fid, kind: 'note', data: { i } }); } catch (e) { r = null; }
+  if (!r || !r.ok) {
+    btns.forEach((b) => { b.disabled = false; });
+    if (r && frErr(r) === 'limit') { frDidSet('note'); frShowPaw(); frPlaceBtns(); if (!modal.hidden) closeModal(); toast(tt('fr.noted_today', 'Paw print left today'), ''); return false; }
+    toast(tt('fr.offline', 'Friends need an internet connection. Your dog is happy at home.'), 'bad');
+    return false;
+  }
+  v219Fields(S); S.fr.notes++; markDirty(); frDidSet('note');
+  frShowPaw(); if (!modal.hidden) closeModal(); frPlaceBtns();
+  toast(tt('fr.paw_left', 'Paw print left!'), 'good');
+  return true;
+}
+function frSpots(n) {
+  const z = typeof rmZone === 'function' ? rmZone('yard') : { x0: 80, x1: 920, y0: 430, y1: 560 };
+  const x0 = isPhone() ? 340 : z.x0 + 30, x1 = isPhone() ? 680 : z.x1 - 30, out = [];
+  for (let i = 0; i < n; i++) out.push([x0 + (i + 1) * (x1 - x0) / (n + 1), Math.min(z.y1 - 6, z.y0 + (z.y1 - z.y0) * (0.62 + (i % 2) * 0.22))]);
+  return out;
+}
+function frXf(v) { return `translate(${f1(v.x)} ${f1(v.y)}) scale(${v.k.toFixed(3)}) translate(-430 -500)`; }
+function frDogSVG(v) {
+  const label = v.mine ? tt('fr.my_dog', '{name}, come along', { name: v.dog.name }) : tt('fr.pet_dog', '{name}. Tap to pet.', { name: v.dog.name });
+  const tag = v.mine ? '' : `<g class="fr-tag" pointer-events="none" transform="translate(430 512)"><rect x="-44" y="-2" width="88" height="25" rx="8" fill="#FFF3DA" stroke="#5B3D32" stroke-width="2"/><text y="17" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="19" fill="#5B3D32">${esc(tt('cards.visitor_tag', 'visitor'))}</text></g>`;
+  let art = '';
+  try { art = place(dogSVG(v.dog, { pose: v.pose, outfit: v.dog.outfit, facing: v.face }), DX, DY, DW, DH); } catch (e) { art = ''; }
+  return `<g class="frdog" data-fri="${v.i}" data-mine="${v.mine ? 1 : 0}" data-key="${esc(v.dog.key || '')}" tabindex="0" role="button" aria-label="${esc(label)}"><g class="fr-at" transform="${frXf(v)}"><rect class="fr-hit" x="${DX + 44}" y="${DY + 35}" width="${DW - 88}" height="180" fill="transparent"/><g class="fr-art">${art}</g>${tag}</g></g>`;
+}
+function frDogPaint(v) {
+  const el = document.querySelector(`#frDogs [data-fri="${v.i}"]`); if (!el) return;
+  const at = el.querySelector('.fr-at'); if (at) at.setAttribute('transform', frXf(v));
+  const key = v.pose + '|' + v.face; if (key === v.drawn) return; v.drawn = key;
+  const a = el.querySelector('.fr-art'); if (!a) return;
+  try { a.innerHTML = place(dogSVG(v.dog, { pose: v.pose, outfit: v.dog.outfit, facing: v.face }), DX, DY, DW, DH); } catch (e) { /* the last pose stays */ }
+}
+function frDogsDraw() {
+  const v = FR.visit, g = $('#frDogs'); if (!v || !g || !S || !S.dog) return;
+  const dogs = [{ mine: true, dog: S.dog }];
+  const card = { id: 'fry:' + v.fid, name: Array.isArray(v.yard.name) ? v.yard.name : [0, 0], dogs: (v.yard.dogs || []).slice(0, 5) };
+  card.dogs.forEach((x, i) => { if (dogs.length >= 6 || typeof dcDog !== 'function') return; let d = null; try { d = dcDog(card, i); } catch (e) { d = null; } if (d) dogs.push({ mine: false, dog: d }); });
+  const spots = frSpots(dogs.length);
+  FR.roam = dogs.map((o, i) => { const d = { i, mine: o.mine, dog: o.dog, x: spots[i][0], y: spots[i][1], face: i % 2 ? 'left' : 'right', pose: 'idle', tw: null, wait: performance.now() + RINT(1200, 2800), drawn: 'idle|' + (i % 2 ? 'left' : 'right') }; d.k = (typeof rmScale === 'function' ? rmScale(d.y) : 0.9) * sizeK(d.dog); return d; });
+  g.innerHTML = FR.roam.map(frDogSVG).join('');
+  g.querySelectorAll('.frdog').forEach((el) => {
+    const open = (e) => { if (e) e.stopPropagation(); const d = FR.roam[+el.dataset.fri]; if (d && !d.mine) frPet(d); };
+    el.addEventListener('click', open);
+    el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(e); } });
+  });
+  frDogsLoop();
+}
+function frStep(v, now) {
+  const z = typeof rmZone === 'function' ? rmZone('yard') : { x0: 80, x1: 920, y0: 430, y1: 560 };
+  for (let n = 0; n < 8; n++) {
+    const x = z.x0 + Math.random() * (z.x1 - z.x0), y = z.y0 + Math.random() * (z.y1 - z.y0);
+    if (Math.hypot(x - v.x, y - v.y) < 36) continue;
+    if (x > 610 && x < 870 && y > 330 && y < 540) continue; // the friend's house
+    v.tw = { x0: v.x, y0: v.y, x1: x, y1: y, t0: now, dur: Math.max(400, (Math.hypot(x - v.x, y - v.y) / (typeof RM_WALK === 'number' ? RM_WALK : 150)) * 1000) };
+    v.face = x < v.x ? 'left' : 'right'; v.pose = 'walk'; frDogPaint(v); return;
+  }
+  v.wait = now + 2000;
+}
+function frFrame(t) {
+  FR.raf = 0; if (cur.mode !== 'fryard' || !$('#frDogs')) return;
+  const wander = typeof rmWander === 'function' && rmWander();
+  if (wander && modal.hidden) FR.roam.forEach((v) => {
+    if (v.tw) {
+      const w = v.tw, k = w.dur > 0 ? Math.min(1, (t - w.t0) / w.dur) : 1;
+      v.x = w.x0 + (w.x1 - w.x0) * k; v.y = w.y0 + (w.y1 - w.y0) * k; v.k = (typeof rmScale === 'function' ? rmScale(v.y) : 0.9) * sizeK(v.dog);
+      if (k >= 1) { v.tw = null; if (v.pose === 'walk') v.pose = 'idle'; v.wait = t + RINT(2200, 5200); }
+      frDogPaint(v);
+    } else if (t > (v.wait || 0) && v.pose !== 'happy') frStep(v, t);
+  });
+  FR.raf = requestAnimationFrame(frFrame);
+}
+function frDogsLoop() { if (!FR.raf) FR.raf = requestAnimationFrame(frFrame); }
+function frDogsStop() { cancelAnimationFrame(FR.raf); FR.raf = 0; FR.roam = []; FR.petBusy = false; }
+async function frPet(v) {
+  if (!v || v.mine || cur.mode !== 'fryard' || !FR.visit) return;
+  v.pose = 'happy'; v.drawn = ''; frDogPaint(v);
+  const k = v.k || 1;
+  try { fxText('♥', v.x, v.y - 170 * k); setTimeout(() => { if (cur.mode === 'fryard') fxText('♥', v.x + 18, v.y - 196 * k); }, 180); } catch (e) { /* the line still shows */ }
+  try { say(persLine(v.dog), v.x, v.y - 20, 3200); } catch (e) { /* hearts are enough */ }
+  try { SFX.bark((typeof BARK === 'object' && BARK[v.dog.key]) || 1); } catch (e) { /* quiet */ }
+  setTimeout(() => { if (cur.mode === 'fryard' && v.pose === 'happy') { v.pose = 'idle'; v.drawn = ''; frDogPaint(v); } }, 4200);
+  if (frDid('pet') || FR.petBusy) return;
+  FR.petBusy = true;
+  let r = null;
+  try { r = await frApi('POST', '/friends/send', { fid: FR.visit.fid, kind: 'pet', data: {} }); } catch (e) { r = null; }
+  FR.petBusy = false;
+  if (!FR.visit || cur.mode !== 'fryard') return;
+  if (!r || !r.ok) { if (r && frErr(r) === 'limit') frDidSet('pet'); return; }
+  frDidSet('pet');
+  v219Fields(S);
+  if (S.fr.pets < 5) { addBond(1, { raw: true }); S.fr.pets++; markDirty(); }
+}
+function enterFrYard() {
+  const v = FR.visit;
+  if (!v || !frYardOk(v.yard)) return;
+  setChrome(true, true);
+  view.innerHTML = frYardSVG(v.yard);
+  phHomeCx = 480; phCamHome = isPhone() ? 480 : 500; view.style.background = '';
+  clearTimeout(phPanT); cancelAnimationFrame(camRaf); phPeekOn = false;
+  view.style.removeProperty('--vfit'); view.style.removeProperty('--trayH'); phZoom = 1;
+  camCx = phCamHome; camApply(camCx);
+  const svg = $('svg.world', view);
+  frQuietHots(); frDogsDraw(); frPlaceBtns(); if (frDid('note')) frShowPaw();
+  const ms = $('#msBtn'); if (ms) ms.hidden = true;
+  if (svg && typeof phCamPan === 'function') phCamPan(svg);
+  if (isPhone()) { if (typeof phTrayFit === 'function') phTrayFit(); if (typeof phPeek === 'function') phPeek(); if (typeof phGnd === 'function') phGnd(); }
+  onCleanup(() => { frDogsStop(); FR.visit = null; });
+}
+function frGoHome() {
+  if (cur.mode !== 'fryard') return;
+  go('yard');
+  if (typeof msHudSync === 'function') msHudSync();
+}
+function frBackground() { if (cur.mode === 'fryard') frGoHome(); }
+
 /* ---------- boot ---------- */
 function frExpose() {
   if (!window.__paw || window.__paw.fr) return;
@@ -525,12 +761,15 @@ function frExpose() {
     lim: () => ({ notes: FR_NOTES.length, gifts: FR_GIFTS.length, decor: FR_DECOR.length, houses: FR_HOUSES.length }),
     yard: () => frYard(), pushYard: (force) => { if (force) FR.yardAt = 0; return frAfterPush(); },
     inbox: () => frInbox(), badge: () => frBadgeN(), migrate: (s) => v219Fields(s),
-    note: (i) => FR_NOTES[i] || '', invite: () => FR.invite
+    note: (i) => FR_NOTES[i] || '', invite: () => FR.invite,
+    visit: (fid) => frVisit(fid), home: () => frGoHome(), background: () => frBackground(),
+    dogs: () => FR.roam.map((v) => ({ i: v.i, mine: !!v.mine, key: v.dog && v.dog.key, name: v.dog && v.dog.name, x: v.x, y: v.y, pose: v.pose }))
   };
 }
 frReadInvite();
 on('game:ready', () => { frExpose(); frDay(); setTimeout(() => { frHudSync(); frInboxSoon(true); frInviteTry(); }, 300); });
 on('yard:enter', () => setTimeout(frInviteTry, 400));
 window.addEventListener('focus', () => frInboxSoon(false));
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') frInboxSoon(false); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') frInboxSoon(false); else frBackground(); });
+on('scene:redraw', () => { if (cur.mode !== 'fryard') return; frQuietHots(); if (frDid('note')) frShowPaw(); });
 setInterval(() => { try { frExpose(); frDay(); frHudSync(); frInviteTry(); } catch (e) { /* a tick never breaks the game */ } }, 4000);

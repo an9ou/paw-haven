@@ -388,10 +388,10 @@ function applyLayout(rerender) { psApplyLayout(rerender); }
 /* camera: crop the 1000x600 hub scene around the dog (x ~ 430) so the full height stays visible */
 let camCx = 430, camRaf = 0;
 function camApply(cx) {
-  if (!isPhone() || !['yard', 'bath', 'market'].includes(cur.mode)) { if (rmScene() && grWide()) grCamApply(cx); return; } // v2.15: a wide place has a camera on desktop too (43_ground.js)
+  if (!isPhone() || !['yard', 'bath', 'market', 'fryard'].includes(cur.mode)) { if (rmScene() && grWide()) grCamApply(cx); return; } // v2.15: a wide place has a camera on desktop too (43_ground.js)
   const svg = $('#view > svg.world'); if (!svg) return;
   const vw = svg.clientWidth || view.clientWidth, vh = svg.clientHeight || view.clientHeight; if (!vw || !vh) return; // the svg can be shorter than the view (a tray is open, or Market Street zooms out)
-  const vbW = 600 * vw / vh, W = cur.mode === 'yard' ? grW() : 1000; // v2.15: a wide place is 1600 units
+  const vbW = 600 * vw / vh, W = cur.mode === 'yard' || cur.mode === 'fryard' ? grW() : 1000; // v2.15: a wide place is 1600 units. v2.19: a friend's yard uses the same crop
   if (vbW >= W) { svg.setAttribute('viewBox', `0 0 ${W} 600`); phGnd(); return; }
   const zf = typeof phZoom === 'number' && phZoom > 0 && phZoom < 1 ? phZoom : 1, w = vbW / zf, h = 600 / zf; // phZoom (03_yard.js): Market Street zooms out, the extra sky sits above the scene
   const x = w >= W ? (W - w) / 2 : clamp(cx - w / 2, 0, W - w);

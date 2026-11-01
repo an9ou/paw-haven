@@ -197,7 +197,7 @@ function phGnd() {
   const svg = $('#view > svg.world'); let g = $('#phGnd');
   const hide = () => { if (g) g.style.display = 'none'; };
   const sg = svg && $('#sceneG', svg);
-  if (!isPhone() || !sg || !['yard', 'bath', 'market'].includes(cur.mode)) return hide();
+  if (!isPhone() || !sg || !['yard', 'bath', 'market', 'fryard'].includes(cur.mode)) return hide();
   if (phGndSvg !== svg) {
     phGndSvg = svg; phGndArt = null;
     if (typeof ResizeObserver === 'function') { if (!phGndRO) phGndRO = new ResizeObserver(() => phGnd()); phGndRO.disconnect(); phGndRO.observe(svg); phGndRO.observe(view); }
@@ -221,9 +221,9 @@ function phGnd() {
   g.style.top = top.toFixed(2) + 'px'; g.style.height = gap.toFixed(2) + 'px'; g.style.display = '';
 }
 function phHomeRefit() {
-  if (!isPhone() || (cur.mode !== 'yard' && cur.mode !== 'market') || !$('#view > svg.world')) return;
+  if (!isPhone() || (cur.mode !== 'yard' && cur.mode !== 'market' && cur.mode !== 'fryard') || !$('#view > svg.world')) return;
   let L = 186, R = 530, fitMin = 0.62;
-  const vz = $('#visitorG', view), wide = cur.mode === 'yard' && S.place !== 'market'; // v2.10 ROAM: every other place shows the whole pack (the Mt. Fuji Lookout too: at the old crop the dogs stood as tall as the torii)
+  const vz = $('#visitorG', view), wide = (cur.mode === 'yard' || cur.mode === 'fryard') && S.place !== 'market'; // v2.10 ROAM: every other place shows the whole pack (the Mt. Fuji Lookout too: at the old crop the dogs stood as tall as the torii)
   if (S.place === 'market') { L = 186; R = 592; fitMin = 0.78; } // the bowl, the dog and the "Market Street" sign together: the street zooms out a little when the screen is narrow
   else if (S.place === 'fujihill') { L = 250; R = 596; } // v2.8 FUJI HILL: the dog on the path, the bench (x 488-572) and Fuji's summit in the crop at 390 and 360 px
   else if (wide && S.place === 'yard' && !vz) { L = 140; } // v2.10: the missions clipboard's 48 px tap rect (it grows left of the clipboard when the scene is zoomed out)
@@ -233,6 +233,7 @@ function phHomeRefit() {
     const svg = $('#view > svg.world'), de = svg && svg.querySelector('#sceneG [data-shop]'), M = svg && svg.getScreenCTM(), b = de && M ? rmWorldBox(svg, M.inverse(), de) : null;
     if (b && b[2] < 420) { L = Math.min(L, b[0] - 8); R = Math.max(R, b[0] + b[2] + 8); }
   }
+  if (cur.mode === 'fryard') { L = 250; R = 880; } // the friend's house stands at x 620. This crop keeps it with the dogs on the path
   const vw = view.clientWidth, vh = view.clientHeight - (parseFloat(view.style.getPropertyValue('--trayH')) || 0); if (!vw || vh <= 0) return;
   const native = 600 * vw / vh;
   if (wide) { // v2.10 ROAM: about 700 world units wide (V210.md section 5.2): zoomed out through the viewBox like Market Street, the extra sky above the scene
@@ -257,7 +258,7 @@ function phHomeRefit() {
 function phTrayFit() {
   if (!isPhone()) return;
   let h = 0;
-  if (cur.mode === 'yard') {
+  if (cur.mode === 'yard' || cur.mode === 'fryard') {
     const pb = $('#placeBtns'); if (pb && pb.children.length) h = pb.offsetHeight + 14; // v2.10: 14 (was 8), so a prop drawn on the scene's bottom edge ends above the buttons (they sit 10 px up) // the place buttons (Garden, Go inside, Café menu...) get their own strip under the scene, so they never cover a prop
     const tr = dock.querySelector(':scope > .tray'); if (tr && !tr.classList.contains('dock-idle')) { phTrayCap(tr); h = tr.offsetHeight; const d = tr.querySelector('.napdet:not([hidden])'); if (d) h += d.offsetHeight + 8; }
   }
@@ -285,7 +286,7 @@ function phCamPan(svg) {
   let x0 = null, y0 = 0, c0 = 0, id = null, on = false, swallow = false, swT = 0;
   svg.addEventListener('click', (ev) => { if (swallow) { swallow = false; ev.stopPropagation(); ev.preventDefault(); } }, true);
   svg.addEventListener('pointerdown', (e) => {
-    swallow = false; if (x0 != null || (e.pointerType === 'mouse' && e.button !== 0) || e.target.closest('#dogHit, .cr-pet')) return; // v2.8.4: a rub on a pack dog (crPetBind) is petting, not a pan
+    swallow = false; if (x0 != null || (e.pointerType === 'mouse' && e.button !== 0) || e.target.closest('#dogHit, .cr-pet, .frdog')) return; // v2.8.4: a rub on a pack dog (crPetBind) is petting, not a pan. v2.19: a friend's dog is a pet, not a pan
     x0 = e.clientX; y0 = e.clientY; c0 = camCx; id = e.pointerId; on = false;
   });
   svg.addEventListener('pointermove', (e) => {
@@ -302,7 +303,7 @@ function phCamPan(svg) {
     if (x0 == null || e.pointerId !== id) return; x0 = null; if (!on) return;
     on = false; swallow = true; clearTimeout(swT); swT = setTimeout(() => { swallow = false; }, 400); // the click that follows a drag is not a tap
     clearTimeout(phPanT); if (cur.mode === 'yard' && grWide()) { GR.drag = false; grDragged(); return; } // v2.15: the follow camera waits 2 s, then goes on
-    if (isPhone()) phPanT = setTimeout(() => { if ((cur.mode === 'yard' || cur.mode === 'market') && !phPeekOn) camTo(phCamHome, 0.8); }, 4000);
+    if (isPhone()) phPanT = setTimeout(() => { if ((cur.mode === 'yard' || cur.mode === 'market' || cur.mode === 'fryard') && !phPeekOn) camTo(phCamHome, 0.8); }, 4000);
   };
   svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end);
   // the scene is touch-action:none, but Safari can still take a finger drag on an SVG for its own page gesture (and cancel the pointer)

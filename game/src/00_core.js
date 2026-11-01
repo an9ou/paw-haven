@@ -1403,7 +1403,7 @@ function updateHUD() {
   if (S.dogs) setHudDog();
   const bc = $('#buffChip'); if (bc) { const k2 = S.buff ? S.buff.id + buffLabel() : ''; if (bc.dataset.k !== k2) { bc.dataset.k = k2; bc.hidden = !S.buff; if (S.buff) bc.innerHTML = `<span class="ic">${art('item', S.buff.dish || 'Carrot Crunchies')}</span>${esc(buffLabel())}`; bc.title = S.buff ? (BUFF_TXT[S.buff.id] || '') : ''; } }
   const hc = $('#hudClock'); if (hc) hc.textContent = `${clockText()} · ${wxLabel()}`;
-  const st = $('#status'); if (st) { const k = S.place + wxIconName() + clockText() + wxLabel() + (S.gameMin < S.pupUntil); if (st.dataset.k !== k) { st.dataset.k = k; st.innerHTML = `<span class="pin"><svg viewBox="-10 -12 20 24"><path d="M0 11 C-3 4 -8 0 -8 -4 a8 8 0 0 1 16 0 c0 4 -5 8 -8 15z" fill="#F28FA5" stroke="#5B3D32" stroke-width="1.8"/><circle cy="-4" r="3" fill="#FFFBF3" stroke="#5B3D32" stroke-width="1.4"/></svg></span><b class="pname">${esc(tPlace(PLACES[S.place] ? S.place : 'yard'))}</b> · <span class="wxic">${iconOr(wxIconName(), WX_DOODLE[wxIconName()] || '')}</span>${esc(clockText())} · ${esc(wxLabel())} · ${esc(tt('core.status_day', 'Day {day}', { day: day() }))}${S.gameMin < S.pupUntil ? ' · ' + esc(tt('core.pupcake_power', 'Pupcake power')) : ''}`; } }
+  const st = $('#status'); if (st) { if (cur.mode === 'fryard' && typeof frChipHTML === 'function') { const h = frChipHTML(); if (st.dataset.k !== 'fryard' || st.dataset.fr !== h) { st.dataset.k = 'fryard'; st.dataset.fr = h; st.innerHTML = h; } } else { const k = S.place + wxIconName() + clockText() + wxLabel() + (S.gameMin < S.pupUntil); if (st.dataset.k !== k) { st.dataset.k = k; st.innerHTML = `<span class="pin"><svg viewBox="-10 -12 20 24"><path d="M0 11 C-3 4 -8 0 -8 -4 a8 8 0 0 1 16 0 c0 4 -5 8 -8 15z" fill="#F28FA5" stroke="#5B3D32" stroke-width="1.8"/><circle cy="-4" r="3" fill="#FFFBF3" stroke="#5B3D32" stroke-width="1.4"/></svg></span><b class="pname">${esc(tPlace(PLACES[S.place] ? S.place : 'yard'))}</b> · <span class="wxic">${iconOr(wxIconName(), WX_DOODLE[wxIconName()] || '')}</span>${esc(clockText())} · ${esc(wxLabel())} · ${esc(tt('core.status_day', 'Day {day}', { day: day() }))}${S.gameMin < S.pupUntil ? ' · ' + esc(tt('core.pupcake_power', 'Pupcake power')) : ''}`; } } }
 }
 function updateMute() { const m = !!prefs.mute; const b = $('#muteBtn'); b.innerHTML = ICON(m ? 'sound-off' : 'sound-on'); b.setAttribute('aria-label', m ? tt('shell.mute_off', 'Sound off. Tap to unmute.') : tt('shell.mute_on', 'Sound on. Tap to mute.')); }
 
@@ -1416,14 +1416,15 @@ function buildBar() {
 // the buttons themselves (v2.14: drawn again in the new language when the title screen switches it; the click listener stays the one above)
 function barLabels() { if (isPhone() && typeof fwPhoneBar === 'function') { bar.innerHTML = fwPhoneBar(); bar.classList.add('optc'); fwDockApply(); return; } bar.classList.remove('optc'); bar.innerHTML = ACTS.map(([a, label, ic], i) => `<button class="act" data-act="${a}" aria-keyshortcuts="${i + 1}"><span class="ic">${a === 'journal' ? iconOr('journal', doodle('paw', 0, 2, 1.1)) : ICON(ic)}</span><span>${esc(tdata('acts.' + a + '.1', label))}</span></button>`).join(''); if (typeof fwDockApply === 'function') fwDockApply(); } // v2.16: the lighter phone dock
 function doAct(a) {
-  if (a === 'caremenu' || a === 'more') { SFX.click(); fwBarPop(fwBarOpen() === a ? null : a); return; } // v2.16 phone bar (47_firstweek.js): Care and More open a small tray above the bar
+  if (a === 'caremenu' || a === 'more') { if (cur.mode === 'fryard' && a === 'caremenu') { SFX.click(); return; } SFX.click(); fwBarPop(fwBarOpen() === a ? null : a); return; } // v2.16 phone bar (47_firstweek.js): Care and More open a small tray above the bar. v2.19: Care stays shut in a friend's yard
   if (typeof fwBarPop === 'function') fwBarPop(null);
-  if (a === 'stickers') { SFX.click(); if (!modal.hidden) closeModal(); if (typeof ddBookOpen === 'function') ddBookOpen(); return; } // v2.17: the sticker book in the phone More tray (48_dogdays.js)
+  if (a === 'stickers') { SFX.click(); if (cur.mode === 'fryard') return; if (!modal.hidden) closeModal(); if (typeof ddBookOpen === 'function') ddBookOpen(); return; } // v2.17: the sticker book in the phone More tray (48_dogdays.js)
   if (a === 'friends') { SFX.click(); if (!modal.hidden) closeModal(); if (typeof frOpen === 'function') frOpen(); return; } // v2.19: Friends in the phone More tray (50_friends.js)
   SFX.click(); hideBubble(); closeTraining();
   const pop = !modal.hidden || popOpen();
   if (pop && popAct === a) { if (!modal.hidden) closeModal(); else closeTray(); return; }
   if (!modal.hidden) closeModal();
+  if (cur.mode === 'fryard') { if (a === 'map' && typeof frGoHome === 'function') frGoHome(); return; } // a friend's yard is read-only: Map goes home, and Care, Walk and the rest do nothing
   if (['feed', 'play', 'care', 'wardrobe', 'journal'].includes(a)) popAct = a;
   if (a === 'map') return tkMapAct(); // v2.11: in a Tokyo place the Map button opens the Japan map (39_tokyo.js)
   if (a === 'walk') return go('routes');
@@ -1509,7 +1510,7 @@ function go(mode, arg) {
   stage.classList.toggle('flowdock', ['walk', 'fetch', 'bath', 'adopt'].includes(mode)); stage.classList.toggle('adoptmode', mode === 'adopt');
   stage.classList.toggle('slimhud', mode === 'walk' || mode === 'routes' || mode === 'garden' || mode === 'kitchen' || mode === 'map');
   stage.classList.toggle('modhud', mode === 'garden' || mode === 'kitchen');
-  ({ garden: enterGarden, kitchen: enterKitchen, title: enterTitle, adopt: enterAdopt, yard: enterYard, market: enterMarketPlace, routes: enterRoutes, map: enterMap, japan: enterJapan, shelter: enterShelter, walk: enterWalk, fetch: enterFetch, bath: enterBath, toy: enterToy, fair: enterFair })[mode](arg); // v2.18: the Fun Fair games (49_funfair.js)
+  ({ garden: enterGarden, kitchen: enterKitchen, title: enterTitle, adopt: enterAdopt, yard: enterYard, market: enterMarketPlace, routes: enterRoutes, map: enterMap, japan: enterJapan, shelter: enterShelter, walk: enterWalk, fetch: enterFetch, bath: enterBath, toy: enterToy, fair: enterFair, fryard: enterFrYard })[mode](arg); // v2.18: the Fun Fair games (49_funfair.js). v2.19: a friend's yard (50_friends.js)
   refreshActs();
   updateHUD(); updateWxOverlay(); audioPlace(); setTimeout(maybeLevelUp, 300); markDirty();
 }

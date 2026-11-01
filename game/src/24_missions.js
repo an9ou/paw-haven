@@ -228,7 +228,7 @@ function msBodyHTML(stampNew) {
     <div class="ms-stampwrap${stampNew ? ' new' : ''}" data-stamps="${m.stamps}"><span class="ms-stampcard" aria-hidden="true">${msStampArt()}</span></div><p class="ms-sline">${tt('missions.stamps_html', '<b>{n} of {total}</b> stamps. All three missions in a day earn a stamp. Seven stamps is a surprise.{cards, select, yes { Full cards so far: {c}.} other {}}', { n: m.stamps, total: MS_CARD, cards: m.cards ? 'yes' : 'no', c: m.cards })}</p></div></div>`;
 }
 function msOpen() {
-  if (!S) return null; msRoll(); SFX.boop(700);
+  if (!S || cur.mode === 'fryard') return null; msRoll(); SFX.boop(700); // a friend's yard does not open missions (V219.md 4)
   const p = openModal(tt('missions.title', 'Daily missions'), msBodyHTML(false), { cls: 'ms-pop' });
   return p;
 }
@@ -309,7 +309,7 @@ function msHudSync(ping) {
     coins.insertAdjacentHTML('afterend', `<button id="msBtn" class="ms-btn" type="button" hidden><span class="ms-ic" aria-hidden="true">${msHudIcon()}</span><b class="ms-n"></b></button>`);
     b = $('#msBtn'); b.onclick = (e) => { e.stopPropagation(); SFX.click(); msOpen(); };
   }
-  const on = !!S && !!S.missions && cur.mode !== 'title';
+  const on = !!S && !!S.missions && cur.mode !== 'title' && cur.mode !== 'fryard'; // hidden in a friend's yard (V219.md 4)
   if (on) { msFields(); if (S.missions.date !== localISO()) msRoll(); }
   const nd = on ? msDoneN() : 0, txt = nd + '/3';
   if (b.hidden === on) b.hidden = !on; if (!on) return;

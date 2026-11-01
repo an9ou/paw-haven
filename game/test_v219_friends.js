@@ -18,7 +18,11 @@ function mockInit() {
   }
   const srv = {
     me: null, friends: [], yards: [], forceFull: false, offline: false, unknown: [],
-    book: { 'DOG-4K7PM': { fid: fid('sunnybiscuit'), name: [0, 0], dogs: [{ b: 0, c: null, o: -1, a: 'adult', s: 'f', sp: 0, n: 0 }] } },
+    book: {
+      'DOG-4K7PM': { fid: fid('sunnybiscuit'), name: [0, 0], dogs: [{ b: 0, c: null, o: -1, a: 'adult', s: 'f', sp: 0, n: 0 }] },
+      'DOG-9K7PM': { fid: fid('happyacorn'), name: [1, 3], dogs: [{ b: 2, c: null, o: -1, a: 'adult', s: 'm', sp: 0, n: 4 }] }
+    },
+    yardOf: {}, sends: [], sentKeys: {},
     events: [
       { id: 1, from: { fid: fid('sunnybiscuit'), name: [0, 0] }, kind: 'note', data: { i: 0 }, day: '2026-11-01', claimed: false },
       { id: 2, from: { fid: fid('sunnybiscuit'), name: [0, 0] }, kind: 'pet', data: {}, day: '2026-11-01', claimed: false },
@@ -64,6 +68,26 @@ function mockInit() {
       if (method === 'POST' && path === '/friends/remove') { srv.friends = srv.friends.filter((f) => f.fid !== body.fid); return send(200, { ok: true }); }
       if (method === 'POST' && path === '/friends/block') { srv.friends = srv.friends.filter((f) => f.fid !== body.fid); return send(200, { ok: true }); }
       if (method === 'PUT' && path === '/friends/yard') { srv.yards.push(body.yard); return send(200, { ok: true }); }
+      if (method === 'GET' && path === '/friends/yard') {
+        const qfid = u.searchParams.get('fid');
+        if (!srv.friends.some((f) => f.fid === qfid)) return send(404, { error: 'not_found' });
+        const yard = Object.prototype.hasOwnProperty.call(srv.yardOf, qfid) ? srv.yardOf[qfid] : null;
+        return send(200, { yard: yard || null });
+      }
+      if (method === 'POST' && path === '/friends/send') {
+        const kind = body.kind, qfid = body.fid;
+        if (!srv.friends.some((f) => f.fid === qfid)) return send(404, { error: 'not_found' });
+        if (['pet', 'note', 'gift', 'walk'].indexOf(kind) < 0) return send(400, { error: 'bad' });
+        const key = qfid + ':' + kind;
+        if (srv.sentKeys[key]) return send(400, { error: 'limit' });
+        if (kind === 'pet' && body.data && Object.keys(body.data).length) return send(400, { error: 'bad' });
+        if (kind === 'note' && !(body.data && Number.isInteger(body.data.i) && body.data.i >= 0 && body.data.i < 12)) return send(400, { error: 'bad' });
+        srv.sentKeys[key] = true;
+        srv.sends.push({ fid: qfid, kind, data: body.data || {} });
+        const who = srv.friends.find((f) => f.fid === qfid);
+        if (who) { who.sent = who.sent || {}; who.sent[kind] = true; }
+        return send(200, { ok: true });
+      }
       if (method === 'GET' && path === '/friends/inbox') return send(200, { events: srv.events.filter((e) => !e.claimed).map((e) => ({ id: e.id, from: e.from, kind: e.kind, data: e.data, day: e.day })) });
       if (method === 'POST' && path === '/friends/inbox/claim') { (body.ids || []).forEach((id) => { const e = srv.events.find((x) => x.id === id); if (e) e.claimed = true; }); return send(200, { ok: true }); }
       if (method === 'POST' && path === '/friends/leave') { srv.me = null; srv.friends = []; srv.yards = []; return send(200, { ok: true }); }
@@ -112,6 +136,65 @@ async function layout(t) {
     return { sw, iw, side: sw > iw + 1 || !!(body && body.scrollWidth > body.clientWidth + 1), bad };
   });
 }
+function diffPaths(a, b, path, out) {
+  path = path || '$'; out = out || [];
+  if (a === b) return out;
+  const ao = a && typeof a === 'object', bo = b && typeof b === 'object';
+  if (!ao || !bo || Array.isArray(a) !== Array.isArray(b)) { out.push(path); return out; }
+  const keys = Object.keys(a).concat(Object.keys(b));
+  keys.filter((k, i) => keys.indexOf(k) === i).forEach((k) => diffPaths(a[k], b[k], path + '.' + k, out));
+  return out;
+}
+const onlyBondFr = (p) => /\.bond(\.|$)/.test(p) || /\.fr(\.|$)/.test(p);
+async function openFriends(t) {
+  if (await t.ev(() => document.documentElement.dataset.layout === 'phone')) {
+    await t.p.click('#bar [data-act="more"]');
+    await t.until(() => !!document.querySelector('#bar [data-act="friends"]'), null, 3000);
+    await t.p.click('#bar [data-act="friends"]');
+  } else await t.p.click('#frBtn');
+}
+async function yardNotes(t) {
+  return t.ev(() => {
+    const iw = window.innerWidth, ih = window.innerHeight;
+    const sw = Math.max(document.documentElement.scrollWidth, document.body.scrollWidth);
+    const bar = document.getElementById('bar');
+    const barTop = bar && !bar.hidden ? bar.getBoundingClientRect().top : ih;
+    const bad = [];
+    const body = document.querySelector('#modal .panel-body');
+    const br = body ? body.getBoundingClientRect() : { top: 0, bottom: ih };
+    const visTop = Math.max(2, br.top), visBot = Math.min(barTop - 2, br.bottom, ih - 2);
+    document.querySelectorAll('#modal .fr-note').forEach((el) => {
+      const r = el.getBoundingClientRect();
+      if (r.width < 1 || r.height < 1) return;
+      const id = (el.textContent || '').trim().slice(0, 24);
+      const mid = r.top + r.height / 2;
+      if (mid < visTop || mid > visBot) return;
+      if (r.width < 43.5 || r.height < 43.5) bad.push('small ' + id + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+      if (r.left < -1 || r.right > iw + 1) bad.push('side ' + id);
+      if (mid >= barTop - 1) bad.push('bar ' + id);
+    });
+    return { sw, iw, side: sw > iw + 1, bad };
+  });
+}
+async function yardShotLay(t) {
+  return t.ev(() => {
+    const iw = window.innerWidth, ih = window.innerHeight;
+    const sw = Math.max(document.documentElement.scrollWidth, document.body.scrollWidth);
+    const bar = document.getElementById('bar');
+    const barTop = bar && !bar.hidden ? bar.getBoundingClientRect().top : ih;
+    const bad = [];
+    document.querySelectorAll('#placeBtns .btn, #status').forEach((el) => {
+      const r = el.getBoundingClientRect();
+      if (r.width < 1 || r.height < 1) return;
+      const id = el.id || el.className;
+      if (el.matches('button') && (r.width < 43.5 || r.height < 43.5)) bad.push('small ' + id + ' ' + Math.round(r.width) + 'x' + Math.round(r.height));
+      if (r.left < -1 || r.right > iw + 1) bad.push('side ' + id);
+      if (r.top < -1) bad.push('top ' + id);
+      if (r.bottom > barTop + 1) bad.push('bar ' + id);
+    });
+    return { sw, iw, side: sw > iw + 1, bad, chip: (document.querySelector('#status .pname') || {}).textContent || '' };
+  });
+}
 
 run('v219_friends', async (t) => {
   const { ok, sec, ev } = t;
@@ -148,7 +231,9 @@ run('v219_friends', async (t) => {
   ok(await t.until(() => (window.__paw.S.mail || []).some((m) => m && m.id === 'fr_note_1'), null, 6000), 'the note letter arrived');
   const mail = await ev(() => (window.__paw.S.mail || []).filter((m) => m && m.id === 'fr_note_1').map((m) => ({ from: m.from, text: m.text, paw: !!m.frPaw })));
   ok(mail.length === 1 && mail[0].from === 'Sunny Biscuit' && /fluffy/.test(mail[0].text) && mail[0].paw, 'the note became a postcard from Sunny Biscuit, with the paw: ' + JSON.stringify(mail));
-  ok(await ev(() => window.__frSrv.events.filter((e) => e.claimed).map((e) => e.kind).join(',') === 'note' && window.__paw.fr.badge() === 3), 'only the note is claimed. pet, gift and walk stay on the badge');
+  ok(await ev(() => { const kinds = window.__frSrv.events.filter((e) => e.claimed).map((e) => e.kind).sort().join(','); return kinds === 'note,pet' && window.__paw.fr.badge() === 2; }), 'the note and the pet are claimed. gift and walk stay on the badge');
+  const petLetter = await ev(() => { const S = window.__paw.S, m = (S.mail || []).find((x) => x && String(x.id).indexOf('fr_pet_') === 0); return m && { text: m.text, from: m.from, dog: S.dog.name, got: S.fr.gotPets }; });
+  ok(petLetter && petLetter.from === 'Sunny Biscuit' && petLetter.got === 1 && petLetter.text === 'Sunny Biscuit visited and petted ' + petLetter.dog + '. +1 Bond', 'one pet becomes one letter: ' + (petLetter && petLetter.text));
   await shot(t, 'my_card_1280');
 
   sec('3. add, the four toasts, remove, block, new code, share');
@@ -175,8 +260,10 @@ run('v219_friends', async (t) => {
   ok(await t.waitToast(/50 friends/, 4000), 'add: 50 friends is the most');
   await ev(() => { window.__frSrv.forceFull = false; });
 
+  await ev(() => { document.getElementById('toasts').innerHTML = ''; window.__toasts.length = 0; });
   await t.p.click('[data-fr="visit"]');
-  ok(await t.waitToast(/Coming soon/, 3000), 'Visit says Coming soon');
+  ok(await t.waitToast(/still being tidied/, 4000), 'no snapshot yet: the yard is still being tidied');
+  ok(await ev(() => window.__paw.mode === 'yard'), 'a missing snapshot stays on the home yard');
   await t.p.click('[data-fr="more"]');
   ok(await t.until(() => !!document.querySelector('[data-fr="remove"]'), null, 3000), 'the ... menu has Remove and Block');
   await t.p.click('[data-fr="remove"]');
@@ -297,6 +384,171 @@ run('v219_friends', async (t) => {
     const listLay = await layout(t);
     ok(!listLay.side && !listLay.bad.length, tag + ' list fits: ' + JSON.stringify(listLay));
     if (tag === '390') await shot(t, 'friends_390');
+    await t.ctx.close();
+  }
+
+  sec('9. visit, pet, note, and the save');
+  await start(t);
+  await openFriends(t);
+  await t.until(() => !!document.getElementById('frOk'), null, 4000);
+  await t.p.click('#frOk');
+  await t.until(() => !!document.getElementById('frCard'), null, 8000);
+  await ev(() => { '4K7PM'.split('').forEach((c, i) => { document.getElementById('frCh' + i).value = c; }); });
+  await t.p.click('#frAdd');
+  ok(await t.until(() => !!document.querySelector('[data-fr="visit"]'), null, 5000), 'Sunny Biscuit is on the list');
+  await t.closeX(); await t.modalGone();
+  await ev(() => {
+    const fid = window.__frSrv.friends[0].fid, lists = window.__paw.fr.lists();
+    window.__frSrv.yardOf[fid] = {
+      v: 1, name: [0, 0], house: lists.houses.indexOf('Cozy Cottage'), season: 'autumn',
+      dogs: [{ b: 0, c: null, o: -1, a: 'adult', s: 'f', sp: 0, n: 0 }, { b: 1, c: null, o: 0, a: 'pup', s: 'm', sp: 0, n: 2 }],
+      decor: [{ i: lists.decor.indexOf('Bird Bath'), x: 120, y: 420 }, { i: lists.decor.indexOf('Garden Bench'), x: 700, y: 500 }]
+    };
+  });
+  await openFriends(t);
+  await t.until(() => !!document.querySelector('[data-fr="visit"]'), null, 4000);
+  await t.p.click('[data-fr="visit"]');
+  ok(await t.until(() => window.__paw.mode === 'fryard', null, 5000), 'Visit enters fryard');
+  const snap0 = await ev(() => JSON.parse(JSON.stringify(window.__paw.S)));
+  const scene = await ev(() => {
+    const extra = JSON.parse((document.getElementById('sceneG') || {}).dataset.extra || '{}');
+    const decor = [...document.querySelectorAll('#decorG [data-decor]')].map((el) => el.dataset.decor + '@' + el.dataset.x + ',' + el.dataset.y);
+    return {
+      house: (document.getElementById('houseG') || {}).dataset.house, season: extra.season, decor,
+      dogs: window.__paw.fr.dogs(), chip: (document.querySelector('#status .pname') || {}).textContent,
+      note: (document.getElementById('frNoteBtn') || {}).textContent, home: (document.getElementById('frHomeBtn') || {}).textContent,
+      mail: !!document.getElementById('mailboxG'), garden: !!document.querySelector('[data-pb="garden"]'),
+      shop: !!document.querySelector('[data-sh]'), ms: !!(document.getElementById('msBtn') && !document.getElementById('msBtn').hidden),
+      cached: window.__paw.S.fr.yards[window.__frSrv.friends[0].fid]
+    };
+  });
+  ok(scene.house === 'Cozy Cottage' && scene.season === 'autumn', 'their house and season: ' + scene.house + ' / ' + scene.season);
+  ok(scene.decor.indexOf('Bird Bath@120,420') >= 0 && scene.decor.indexOf('Garden Bench@700,500') >= 0, 'decor at the saved spots: ' + scene.decor.join(' | '));
+  ok(scene.dogs.filter((d) => d.mine).length === 1 && scene.dogs.filter((d) => !d.mine).length === 2 && scene.dogs.some((d) => !d.mine && d.name === 'Mochi'), 'my leader comes along, and their dogs roam like visitors: ' + JSON.stringify(scene.dogs));
+  ok(scene.chip === "Sunny Biscuit's yard" && scene.note === 'Leave a paw print' && scene.home === 'Go home', 'chip and the two buttons: ' + [scene.chip, scene.note, scene.home].join(' / '));
+  ok(scene.cached && scene.cached.day === snap0.fr.day && scene.cached.yard && scene.cached.yard.season === 'autumn', 'cached in S.fr.yards with the day');
+  ok(!scene.mail && !scene.garden && !scene.shop && !scene.ms, 'mailbox, garden, shop doors and missions are absent');
+  await ev(() => { ['#sceneG [data-hot]', '[data-decor]'].forEach((s) => { const el = document.querySelector(s); if (el) el.dispatchEvent(new MouseEvent('click', { bubbles: true })); }); });
+  ok(await ev(() => window.__paw.mode === 'fryard' && document.getElementById('modal').hidden), 'garden, shop and decor taps do nothing');
+  const stats = await ev(() => JSON.stringify(window.__paw.S.stats));
+  await t.p.click('#bar [data-act="feed"]');
+  await t.p.click('#bar [data-act="walk"]');
+  await t.p.click('#bar [data-act="care"]');
+  ok(await ev((s) => window.__paw.mode === 'fryard' && !document.querySelector('#dock .tray') && JSON.stringify(window.__paw.S.stats) === s && document.getElementById('modal').hidden, stats), 'Feed, Walk and Care are inert');
+  const bond0 = await ev(() => window.__paw.S.bond.pts);
+  await t.p.locator('#frDogs .frdog[data-mine="0"]').first().click();
+  ok(await t.until((b) => window.__paw.S.fr.pets === 1 && window.__paw.S.bond.pts === b + 1, bond0, 4000), 'the first pet of the day gives +1 Bond');
+  ok(await t.until(() => window.__paw.fr.dogs().some((d) => !d.mine && d.pose === 'happy'), null, 2000), 'the friend dog takes a happy pose');
+  ok(await ev(() => { const b = document.getElementById('bubble'); return !!(b && !b.hidden && (b.textContent || '').length > 2); }), 'the dog says a personality line');
+  ok(await ev(() => window.__frSrv.sends.length === 1 && window.__frSrv.sends[0].kind === 'pet' && window.__frSrv.sends[0].data && Object.keys(window.__frSrv.sends[0].data).length === 0), 'the pet send is { kind: pet } with empty data');
+  await t.p.locator('#frDogs .frdog[data-mine="0"]').first().click();
+  ok(await ev((b) => window.__frSrv.sends.length === 1 && window.__paw.S.fr.pets === 1 && window.__paw.S.bond.pts === b + 1, bond0), 'a later pet the same day is just hearts');
+  await t.p.click('#frNoteBtn');
+  ok(await t.until(() => document.querySelectorAll('#modal .fr-note').length === 12, null, 3000), 'Leave a paw print lists the 12 notes');
+  const noteLay = await yardNotes(t);
+  ok(!noteLay.side && !noteLay.bad.length, 'the note list fits: ' + JSON.stringify(noteLay));
+  await t.p.click('#modal .fr-note[data-fri="4"]');
+  ok(await t.waitToast(/Paw print left!/, 4000), 'the toast says Paw print left!');
+  ok(await ev(() => {
+    const s = window.__frSrv.sends.filter((x) => x.kind === 'note')[0];
+    const stamp = document.getElementById('frPawStamp');
+    return !!(s && s.data && s.data.i === 4 && stamp && stamp.querySelector('svg') && document.getElementById('frNoteBtn').textContent === 'Paw print left today');
+  }), 'note { i: 4 }, the paw stamp is on the path, and the button reads Paw print left today');
+  const sentN = await ev(() => window.__frSrv.sends.length);
+  await t.p.click('#frNoteBtn');
+  ok(await ev((n) => window.__frSrv.sends.length === n && document.getElementById('modal').hidden, sentN), 'a second paw print the same day is not sent');
+  const after = await ev(() => JSON.parse(JSON.stringify(window.__paw.S)));
+  const changed = diffPaths(snap0, after).filter((p) => !onlyBondFr(p));
+  ok(!changed.length, 'the save differs only in Bond and S.fr: ' + (changed.join(', ') || 'nothing else'));
+  await shot(t, 'fryard_1280');
+  const left = await ev(() => { const a = JSON.parse(JSON.stringify(window.__paw.S)); window.__paw.fr.home(); const b = JSON.parse(JSON.stringify(window.__paw.S)); return { mode: window.__paw.mode, a, b }; });
+  const leftDiff = diffPaths(left.a, left.b);
+  ok(left.mode === 'yard' && !leftDiff.length, 'Go home returns to the yard and changes nothing: ' + leftDiff.join(', '));
+  await openFriends(t);
+  await t.until(() => !!document.querySelector('[data-fr="visit"]'), null, 4000);
+  await t.p.click('[data-fr="visit"]');
+  ok(await t.until(() => window.__paw.mode === 'fryard' && document.getElementById('frNoteBtn').textContent === 'Paw print left today', null, 5000), 'coming back still shows the paw print left today');
+  await t.p.click('#bar [data-act="map"]');
+  ok(await t.until(() => window.__paw.mode === 'yard', null, 4000), 'Map goes home');
+  await openFriends(t);
+  await t.until(() => !!document.querySelector('[data-fr="visit"]'), null, 4000);
+  await t.p.click('[data-fr="visit"]');
+  ok(await t.until(() => window.__paw.mode === 'fryard', null, 5000), 'back in the yard for the background check');
+  ok(await ev(() => { try { Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' }); } catch (e) { window.__paw.fr.background(); return window.__paw.mode === 'yard'; } document.dispatchEvent(new Event('visibilitychange')); return window.__paw.mode === 'yard'; }), 'the app going to the background returns home');
+
+  sec('9b. pet caps, both sides, and merged letters');
+  await ev(() => { window.__toasts.length = 0; });
+  await openFriends(t);
+  if (await t.p.locator('#frOk').count()) await t.p.click('#frOk');
+  await t.until(() => !!document.getElementById('frAdd') || !!document.querySelector('[data-fr="visit"]'), null, 5000);
+  await ev(() => { '9K7PM'.split('').forEach((c, i) => { document.getElementById('frCh' + i).value = c; }); });
+  await t.p.click('#frAdd');
+  ok(await t.until(() => document.querySelectorAll('.fr-row').length >= 2, null, 5000), 'Happy Acorn is a second friend');
+  await ev(() => {
+    const f = window.__frSrv.friends.find((x) => x.name && x.name[0] === 1);
+    const lists = window.__paw.fr.lists();
+    window.__frSrv.yardOf[f.fid] = { v: 1, name: [1, 3], house: 0, season: 'spring', dogs: [{ b: 2, c: null, o: -1, a: 'adult', s: 'm', sp: 0, n: 4 }], decor: [] };
+    window.__paw.S.fr.pets = 5;
+  });
+  const capBond = await ev(() => window.__paw.S.bond.pts);
+  const capSends = await ev(() => window.__frSrv.sends.length);
+  await t.p.locator('.fr-row').filter({ hasText: 'Happy Acorn' }).locator('[data-fr="visit"]').click();
+  ok(await t.until(() => window.__paw.mode === 'fryard', null, 5000), 'the second yard opens');
+  await t.p.locator('#frDogs .frdog[data-mine="0"]').first().click();
+  ok(await t.until((n) => window.__frSrv.sends.length === n + 1, capSends, 4000), 'the first pet of a sixth friend still sends');
+  ok(await ev((b) => window.__paw.S.fr.pets === 5 && window.__paw.S.bond.pts === b, capBond), 'no Bond past 5 friends a day');
+  await ev(() => window.__paw.fr.home());
+  const many = await ev(() => {
+    const dog = window.__paw.S.dog.name, pts = window.__paw.S.bond.pts;
+    window.__paw.S.fr.gotPets = 0;
+    window.__frSrv.events = [
+      { id: 31, from: { fid: 'aaaaaaaaaaaaaaaaaaaaaa', name: [0, 0] }, kind: 'pet', data: {}, day: '2026-11-01', claimed: false },
+      { id: 32, from: { fid: 'bbbbbbbbbbbbbbbbbbbbbb', name: [1, 3] }, kind: 'pet', data: {}, day: '2026-11-01', claimed: false },
+      { id: 33, from: { fid: 'cccccccccccccccccccccc', name: [2, 4] }, kind: 'pet', data: {}, day: '2026-11-01', claimed: false }
+    ];
+    return { dog, pts };
+  });
+  await ev(() => window.__paw.fr.inbox());
+  const merged = await ev((dog) => { const m = (window.__paw.S.mail || []).find((x) => x && x.id === 'fr_pet_2026-11-01_31'); return m && { text: m.text, got: window.__paw.S.fr.gotPets, pts: window.__paw.S.bond.pts, want: 'Sunny Biscuit and 2 friends visited and petted ' + dog + '. +3 Bond' }; }, many.dog);
+  ok(merged && merged.text === merged.want && merged.got === 3 && merged.pts === many.pts + 3, 'three pets, one letter, +1 Bond each: ' + (merged && merged.text));
+  const extra = await ev(() => {
+    const pts = window.__paw.S.bond.pts;
+    window.__paw.S.fr.gotPets = 5;
+    window.__frSrv.events = [{ id: 41, from: { fid: 'dddddddddddddddddddddd', name: [3, 5] }, kind: 'pet', data: {}, day: '2026-11-01', claimed: false }];
+    return pts;
+  });
+  await ev(() => window.__paw.fr.inbox());
+  const extraLetter = await ev((pts) => { const m = (window.__paw.S.mail || []).find((x) => x && x.id === 'fr_pet_2026-11-01_41'); return { text: m && m.text, pts: window.__paw.S.bond.pts, got: window.__paw.S.fr.gotPets, same: window.__paw.S.bond.pts === pts }; }, extra);
+  ok(extraLetter.same && extraLetter.got === 5 && extraLetter.text && extraLetter.text.indexOf('+') < 0 && /visited and petted/.test(extraLetter.text), 'past 5 claimed pets, the letter comes without Bond: ' + extraLetter.text);
+  await t.ctx.close();
+
+  sec('10. a friend\'s yard at 390, 360 and 1280');
+  for (const [w, h, tag] of [[390, 844, '390'], [360, 740, '360'], [1280, 720, '1280']]) {
+    await start(t, { vw: w, vh: h });
+    await openFriends(t);
+    if (await t.p.locator('#frOk').count()) await t.p.click('#frOk');
+    await t.until(() => !!document.getElementById('frAdd'), null, 8000);
+    await ev(() => { '4K7PM'.split('').forEach((c, i) => { document.getElementById('frCh' + i).value = c; }); });
+    await t.p.click('#frAdd');
+    await t.until(() => !!document.querySelector('[data-fr="visit"]') && !!(window.__paw && window.__paw.fr), null, 8000);
+    await ev(() => {
+      const fid = window.__frSrv.friends[0].fid, lists = window.__paw.fr.lists();
+      window.__frSrv.yardOf[fid] = {
+        v: 1, name: [0, 0], house: lists.houses.indexOf('Gingerbread Kennel'), season: 'winter',
+        dogs: [{ b: 2, c: null, o: -1, a: 'adult', s: 'f', sp: 0, n: 7 }, { b: 7, c: null, o: -1, a: 'adult', s: 'm', sp: 0, n: 16 }],
+        decor: [{ i: lists.decor.indexOf('Felt Fir Tree'), x: 280, y: 340 }, { i: lists.decor.indexOf('Yard Snowman'), x: 560, y: 450 }]
+      };
+    });
+    await t.p.click('[data-fr="visit"]');
+    ok(await t.until(() => window.__paw.mode === 'fryard' && !!document.getElementById('houseG'), null, 5000), tag + ': the friend yard is up');
+    const lay = await yardShotLay(t);
+    ok(!lay.side && !lay.bad.length && lay.chip === "Sunny Biscuit's yard", tag + ' yard fits: ' + JSON.stringify(lay));
+    await t.p.click('#frNoteBtn');
+    ok(await t.until(() => document.querySelectorAll('#modal .fr-note').length === 12, null, 3000), tag + ': the note list opens');
+    const notes = await yardNotes(t);
+    ok(!notes.side && !notes.bad.length, tag + ' notes fit: ' + JSON.stringify(notes));
+    await t.closeX(); await t.modalGone();
+    await shot(t, 'fryard_' + tag);
     await t.ctx.close();
   }
 });
