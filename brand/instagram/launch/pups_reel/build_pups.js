@@ -9,6 +9,7 @@
 //   ONLY=stills renders key frames and the cover only. REDNOTE=1: everything in Simplified Chinese, no game link anywhere.
 const path = require('path'), fs = require('fs'), vm = require('vm'), cp = require('child_process');
 const { chromium } = require('playwright');
+const { CENTRE_JS } = require('../centre_text.js'); // owner's rule: text in every box sits in its exact centre
 const ROOT = path.join(__dirname, '..', '..', '..', '..');
 const WORK = path.resolve(process.argv[2] || 'pups_work'); fs.mkdirSync(path.join(WORK, 'f'), { recursive: true });
 const RN = !!process.env.REDNOTE, SUF = RN ? '-rednote' : '';
@@ -85,10 +86,9 @@ const scene = `<symbol id="sc" viewBox="380 0 337.5 600" preserveAspectRatio="xM
 const PX = [235, 540, 845], PFEET = 1715, MFEET = 1385;
 const endPage = `<rect width="${W}" height="${H}" fill="#FFF8EC"/>
 ${T_(TX.ask, 540, 300, RN ? 104 : 120, { rot: -2 })}<path d="M200 340 Q540 318 880 340" fill="none" stroke="${PINK}" stroke-width="14" stroke-linecap="round" opacity=".6"/>
-${PUPS.map((p, i) => `<rect x="${PX[i] - 140}" y="1250" width="280" height="84" rx="42" fill="#FFFDF7" stroke="${PEN}" stroke-width="4"/>${T_(coatWord(p.name), PX[i], 1308, RN ? 48 : 56)}`).join('')}
+<g id="endBoxes"></g>
 ${T_('Doodle', 400, 1540, 120, { f: 'Caveat', rot: -3 })}${T_('Doggo', 690, 1546, 120, { f: 'Caveat', rot: 2 })}
-${T_(TX.sub, 540, 1640, RN ? 42 : 48, { w: 600, fill: '#8A7468' })}
-<rect x="205" y="1690" width="670" height="84" rx="42" fill="#FFE3A1" stroke="${PEN}" stroke-width="4"/>${T_(TX.pill, 540, 1748, RN ? 48 : 56)}`;
+${T_(TX.sub, 540, 1640, RN ? 42 : 48, { w: 600, fill: '#8A7468' })}`;
 
 const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap" rel="stylesheet">${RN ? '<link href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/lxgwwenkai-bold.css" rel="stylesheet">' : ''}<style>html,body{margin:0;background:#fff}svg{display:block}
 [class$="-hl"]{display:none}
@@ -97,11 +97,11 @@ const html = `<!doctype html><meta charset="utf-8"><link href="https://fonts.goo
 <defs>${scene}${measure}</defs>
 <use href="#sc" x="0" y="0" width="${W}" height="${H}"/>
 <g id="par"></g><g id="tags"></g><g id="qs"></g><g id="pups"></g><g id="card"></g>
-<g id="hook"><g transform="rotate(-2 540 330)"><rect x="80" y="200" width="920" height="270" rx="36" fill="#FFF8EC" stroke="${PEN}" stroke-width="6"/>
-${T_(TX.hook[0], 540, 310, TX.hookSize)}${T_(TX.hook[1], 540, 420, TX.hookSize)}</g></g>
+<g id="hook"></g>
 <g id="end" opacity="0">${endPage}<g id="endPups"></g></g>
 </svg>
 <script>
+${CENTRE_JS}
 const NSV='http://www.w3.org/2000/svg', $=(i)=>document.getElementById(i), BOX={};
 function box(id){ if(BOX[id]) return BOX[id]; const u=document.createElementNS(NSV,'use'); u.setAttribute('href','#'+id+'_m'); $('par').appendChild(u); const b=u.getBBox(); u.remove(); return BOX[id]=[b.x,b.y,b.width,b.height]; }
 // a dog by its measured standing box: centre x, feet y, height of that box on screen; the pose's own drawing keeps the same scale
@@ -110,14 +110,15 @@ function dog(id, cx, feet, hh, sv, dy, sc){ const b=box(id), s=hh/b[3]*(sc==null
 const back=(x)=>{ x=Math.max(0,Math.min(1,x)); const c=1.9; return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2); };
 const ease=(x)=>{ x=Math.max(0,Math.min(1,x)); return x*x*(3-2*x); };
 const P=${JSON.stringify(PUPS.map((p) => ({ name: p.name, word: coatWord(p.name), odds: RN ? oddsWord(p.odds) : p.oddsEn })))}, TX=${JSON.stringify(TX)}, FAM=${JSON.stringify(fam)}, PX=${JSON.stringify(PX)}, AT=${JSON.stringify(PUPAT)};
-const TW={}; function tw(s,size){ const k=s+'|'+size; if(TW[k]!=null) return TW[k]; const e=document.createElementNS(NSV,'text'); e.setAttribute('font-family',FAM); e.setAttribute('font-weight','700'); e.setAttribute('font-size',size); e.textContent=s; document.querySelector('svg').appendChild(e); const w=e.getComputedTextLength(); e.remove(); return TW[k]=w; }
-// a glyph centred on (0,0) by its ink, not its font box (Caveat's ? and digits sit off-centre otherwise)
-const CTR={}; function ctr(s,size,fill){ const k=s+'|'+size; if(!CTR[k]){ const c=document.createElement('canvas').getContext('2d'); c.font='700 '+size+'px '+FAM; const m=c.measureText(s);
-  CTR[k]=[(m.actualBoundingBoxLeft-m.actualBoundingBoxRight)/2, (m.actualBoundingBoxAscent-m.actualBoundingBoxDescent)/2]; }
-  return '<text x="'+CTR[k][0]+'" y="'+CTR[k][1]+'" font-family="'+FAM+'" font-weight="700" font-size="'+size+'" fill="'+(fill||'${PEN}')+'" text-anchor="start">'+s+'</text>'; }
-const txt=(s,x,y,size,o)=>{ o=o||{}; return '<text x="'+x+'" y="'+y+'" font-family="'+FAM+'" font-weight="700" font-size="'+size+'" fill="'+(o.fill||'${PEN}')+'" text-anchor="'+(o.a||'middle')+'"'+(o.op!=null?' opacity="'+o.op+'"':'')+'>'+s+'</text>'; };
-const pillTag=(s,x,y,size,fill,stroke,op)=>{ const w=tw(s,size)+60; return '<g opacity="'+op+'"><rect x="'+(x-w/2)+'" y="'+(y-size*0.95)+'" width="'+w+'" height="'+(size*1.35)+'" rx="'+(size*0.67)+'" fill="'+fill+'" stroke="'+stroke+'" stroke-width="4"/>'+txt(s,x,y,size)+'</g>'; };
+const C=(lines,cx,cy)=>centred(lines,cx,cy,FAM);
+const card=(x,y,w,h,stroke,sw,lines,extra)=>{ const r=C(lines,x+w/2,y+h/2); return {svg:'<g data-box><rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="36" fill="#FFF8EC" stroke="'+stroke+'" stroke-width="'+sw+'"/>'+r.svg+(extra?extra(r.ys):'')+'</g>', ys:r.ys}; };
+const bubble=(r,fill,sw,s,size)=>'<g data-box><circle r="'+r+'" fill="'+fill+'" stroke="${PEN}" stroke-width="'+sw+'"/>'+C([{s,size}],0,0).svg+'</g>';
+let STATIC=null; function statics(){ if(STATIC) return; STATIC=1;
+  $('hook').innerHTML='<g transform="rotate(-2 540 335)">'+card(80,200,920,270,'${PEN}',6,[{s:TX.hook[0],size:TX.hookSize,pitch:TX.hookSize*1.4},{s:TX.hook[1],size:TX.hookSize}]).svg+'</g>';
+  $('endBoxes').innerHTML=P.map((pp,i)=>'<g data-box><rect x="'+(PX[i]-140)+'" y="1250" width="280" height="84" rx="42" fill="#FFFDF7" stroke="${PEN}" stroke-width="4"/>'+C([{s:pp.word,size:${RN ? 48 : 56}}],PX[i],1292).svg+'</g>').join('')
+    +'<g data-box><rect x="205" y="1690" width="670" height="84" rx="42" fill="#FFE3A1" stroke="${PEN}" stroke-width="4"/>'+C([{s:TX.pill,size:${RN ? 48 : 56}}],540,1732).svg+'</g>'; }
 window.frame=function(t, D){
+  statics();
   const ending=t>=${END};
   $('end').setAttribute('opacity', ending?Math.min(1,(t-${END})/0.3):0);
   $('hook').setAttribute('opacity', t<${HOOK}?1:Math.max(0,1-(t-${HOOK})/0.2));
@@ -126,27 +127,27 @@ window.frame=function(t, D){
   $('par').innerHTML = dog('mum', 255, ${MFEET}, 255, D.mum, hop(0)) + dog('dad', 825, ${MFEET}, 255, D.dad, hop(1.3));
   // name tags under the parents: both Chocolate, both carry yellow and dilute
   const tg=ease((t-0.6)/0.3); let g='';
-  if(!ending && tg>0){ g+=pillTag(TX.mum+': '+TX.parentCoat, 255, ${MFEET + 66}, ${RN ? 44 : 50}, '#FFFDF7', '${PEN}', tg)+pillTag(TX.dad+': '+TX.parentCoat, 825, ${MFEET + 66}, ${RN ? 44 : 50}, '#FFFDF7', '${PEN}', tg);
-    const cg=ease((t-1.3)/0.3); if(cg>0) g+=pillTag(TX.carries, 540, ${MFEET + 140}, ${RN ? 42 : 48}, '#FFE3A1', '${PEN}', cg); }
+  if(!ending && tg>0){ g+=pill(TX.mum+': '+TX.parentCoat, 255, ${MFEET + 52}, ${RN ? 44 : 50}, FAM, {op:tg})+pill(TX.dad+': '+TX.parentCoat, 825, ${MFEET + 52}, ${RN ? 44 : 50}, FAM, {op:tg});
+    const cg=ease((t-1.3)/0.3); if(cg>0) g+=pill(TX.carries, 540, ${MFEET + 127}, ${RN ? 42 : 48}, FAM, {fill:'#FFE3A1', op:cg}); }
   if(t>=${REVEAL}) g=g.replace(/opacity="[0-9.]+"/g, (m)=>'opacity="'+Math.max(0,1-(t-${REVEAL})/0.3)*parseFloat(m.slice(9,-1))+'"');
   $('tags').innerHTML=g;
   // the pause: three question marks where the puppies will sit, and a 3-2-1 count
   let q=''; if(t>=${PAUSE} && !ending){ PX.forEach((x,i)=>{ if(t>=AT[i]) return; const pq=back((t-${PAUSE}-i*0.12)/0.3), wob=Math.sin(t*6+i)*4;
-      q+='<g transform="translate('+x+' '+(${PFEET}-80+wob)+') scale('+pq+')"><circle r="78" fill="#FFFDF7" stroke="${PEN}" stroke-width="6"/>'+ctr('?',120)+'</g>'; }); }
+      q+='<g transform="translate('+x+' '+(${PFEET}-80+wob)+') scale('+pq+')">'+bubble(78,'#FFFDF7',6,'?',120)+'</g>'; }); }
   $('qs').innerHTML=q;
   // the puppies pop in one by one with their coat name and the game's odds
   let p=''; P.forEach((pp,i)=>{ if(t<AT[i]) return; const lt=t-AT[i], s=back(lt/0.35), dy=-Math.abs(Math.sin(t*6+i*1.7))*(lt>0.4?14:0);
     p+= ending ? '' : dog('p'+i, PX[i], ${PFEET}, 185, D['p'+i], dy, Math.max(0.01,s));
-    const tl=ease((lt-0.25)/0.25); if(!ending && tl>0){ const w=Math.max(tw(pp.word, ${RN ? 46 : 54}), tw(pp.odds, ${RN ? 32 : 38}))+56; p+='<g opacity="'+tl+'"><rect x="'+(PX[i]-w/2)+'" y="${PFEET + 22}" width="'+w+'" height="122" rx="30" fill="#FFFDF7" stroke="${PEN}" stroke-width="4"/>'+txt(pp.word, PX[i], ${PFEET + 76}, ${RN ? 46 : 54})+txt(pp.odds, PX[i], ${PFEET + 124}, ${RN ? 32 : 38}, {fill:'#8A7468'})+'</g>'; } });
+    const tl=ease((lt-0.25)/0.25); if(!ending && tl>0){ const w=Math.max(inkOf(pp.word, ${RN ? 46 : 54}, FAM).L+inkOf(pp.word, ${RN ? 46 : 54}, FAM).R, inkOf(pp.odds, ${RN ? 32 : 38}, FAM).L+inkOf(pp.odds, ${RN ? 32 : 38}, FAM).R)+56; p+='<g opacity="'+tl+'"><g data-box><rect x="'+(PX[i]-w/2)+'" y="${PFEET + 22}" width="'+w+'" height="122" rx="30" fill="#FFFDF7" stroke="${PEN}" stroke-width="4"/>'+C([{s:pp.word,size:${RN ? 46 : 54},pitch:${RN ? 48 : 50}},{s:pp.odds,size:${RN ? 32 : 38},fill:'#8A7468'}], PX[i], ${PFEET + 83}).svg+'</g></g>'; } });
   $('pups').innerHTML=p;
   // the card in the sky: pause, then the reveal line, then why
   let c=''; if(!ending && t>=${PAUSE}+0.1){ let l1, l2, col='${PEN}', o;
     if(t<${REVEAL}){ l1=TX.pause; l2=TX.pauseSub; o=ease((t-${PAUSE}-0.1)/0.2); const n=3-Math.floor((t-${PAUSE}-0.3)/1);
-      c+='<g opacity="'+o+'" transform="rotate(-2 540 360)"><rect x="140" y="210" width="800" height="300" rx="36" fill="#FFF8EC" stroke="${PEN}" stroke-width="6"/>'+txt(l1,540,320,${RN ? 84 : 96})+txt(l2,540,420,${RN ? 58 : 66})+'</g>';
-      if(t>=${PAUSE}+0.3 && n>=1 && n<=3){ const lt=(t-${PAUSE}-0.3)%1, ns=back(lt/0.25); c+='<g transform="translate(540 760) scale('+ns+')" opacity="'+(1-ease((lt-0.7)/0.3))+'"><circle r="110" fill="#FFE3A1" stroke="${PEN}" stroke-width="7"/>'+ctr(String(n),170)+'</g>'; } }
-    else if(t<${WHY}){ o=ease((t-AT[2]-0.4)/0.25); if(o>0) c+='<g opacity="'+o+'" transform="rotate(-2 540 360)"><rect x="140" y="250" width="800" height="200" rx="36" fill="#FFF8EC" stroke="${GREEN}" stroke-width="7"/>'+txt(TX.reveal,540,380,${RN ? 80 : 96})+'</g>'; }
-    else { o=ease((t-${WHY})/0.25); c+='<g opacity="'+o+'" transform="rotate(-1 540 380)"><rect x="70" y="200" width="940" height="390" rx="36" fill="#FFF8EC" stroke="${PEN}" stroke-width="6"/>'+txt(TX.why[0],540,310,${RN ? 64 : 76})+txt(TX.why[1],540,400,${RN ? 56 : 64})
-      +'<path d="M220 448 Q540 432 860 448" fill="none" stroke="${PINK}" stroke-width="10" stroke-linecap="round" opacity=".6"/>'+txt(TX.whySub,540,530,${RN ? 44 : 52},{fill:'#8A7468'})+'</g>'; } }
+      c+='<g opacity="'+o+'" transform="rotate(-2 540 360)">'+card(140,210,800,300,'${PEN}',6,[{s:l1,size:${RN ? 84 : 96},pitch:${RN ? 100 : 104}},{s:l2,size:${RN ? 58 : 66}}]).svg+'</g>';
+      if(t>=${PAUSE}+0.3 && n>=1 && n<=3){ const lt=(t-${PAUSE}-0.3)%1, ns=back(lt/0.25); c+='<g transform="translate(540 760) scale('+ns+')" opacity="'+(1-ease((lt-0.7)/0.3))+'">'+bubble(110,'#FFE3A1',7,String(n),170)+'</g>'; } }
+    else if(t<${WHY}){ o=ease((t-AT[2]-0.4)/0.25); if(o>0) c+='<g opacity="'+o+'" transform="rotate(-2 540 350)">'+card(140,250,800,200,'${GREEN}',7,[{s:TX.reveal,size:${RN ? 80 : 96}}]).svg+'</g>'; }
+    else { o=ease((t-${WHY})/0.25); c+='<g opacity="'+o+'" transform="rotate(-1 540 395)">'+card(70,200,940,390,'${PEN}',6,[{s:TX.why[0],size:${RN ? 64 : 76},pitch:90},{s:TX.why[1],size:${RN ? 56 : 64},pitch:128},{s:TX.whySub,size:${RN ? 44 : 52},fill:'#8A7468'}],
+      (ys)=>{ const u=ys[1]+(ys[2]-ys[1])*0.42; return '<path d="M220 '+(u+8)+' Q540 '+(u-8)+' 860 '+(u+8)+'" fill="none" stroke="${PINK}" stroke-width="10" stroke-linecap="round" opacity=".6"/>'; }).svg+'</g>'; } }
   $('card').innerHTML=c;
   $('endPups').innerHTML = ending ? P.map((pp,i)=>dog('p'+i, PX[i], 1200, 250, D['p'+i], -Math.abs(Math.sin(t*6+i*1.7))*16)).join('') : '';
 };
@@ -161,7 +162,8 @@ const drawFor = (t) => { const k = kfOf(t * 1.8), pupPose = (i) => (t >= PUPAT[i
   fs.writeFileSync(path.join(WORK, 'page.html'), html); await p.goto('file://' + path.join(WORK, 'page.html')); await p.waitForLoadState('networkidle'); await p.evaluate(() => document.fonts.ready);
   const still = process.env.ONLY === 'stills';
   const list = still ? [0.3, 1.0, 2.0, 3.5, 4.6, 6.4, 7.6, 9.0, 10.6, 11.5, 13.0, 14.5, 16.5].map((s) => Math.round(s * FPS)) : [...Array(N).keys()];
-  for (const f of list) { await p.evaluate(([t, D]) => window.frame(t, D), [f / FPS, drawFor(f / FPS)]); await p.screenshot({ path: path.join(WORK, 'f', `f${String(f).padStart(4, '0')}.png`) }); }
+  for (const f of list) { await p.evaluate(([t, D]) => window.frame(t, D), [f / FPS, drawFor(f / FPS)]);
+    const off = await p.evaluate(() => centreCheck(document.querySelector('svg'))); if (off.length) throw new Error('text not centred at frame ' + f + ': ' + off.join('; ')); await p.screenshot({ path: path.join(WORK, 'f', `f${String(f).padStart(4, '0')}.png`) }); }
   console.log(list.length, 'frames, T =', T.toFixed(2));
   // the cover: the hook over the two chocolate parents, their tags up
   const CT = 1.15; await p.evaluate(([t, D]) => window.frame(t, D), [CT, drawFor(CT)]); await p.screenshot({ path: path.join(WORK, `pups-cover${SUF}.png`) }); await b.close();

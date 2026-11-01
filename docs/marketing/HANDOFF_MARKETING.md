@@ -13,6 +13,8 @@ Branch `marketing/launch` (main merged at v2.18.3). The owner installed Instagra
    - Background text must not compete with on-screen notes.
    - Halloween Reels use the approved Halloween lo-fi beat (`brand/instagram/launch/spooky_lofi.js`).
    - Special and festival updates are announced only once the owner has set the date (owner via the Game Manager, 31 Oct 2026).
+   - **Text in every window, card, bubble or pill sits in its exact centre, across and up and down, in every Reel and post (owner, 1 Nov 2026).** Use `brand/instagram/launch/centre_text.js` (`centred()`, `pill()`, `<g data-box>`) and its `centreCheck()` on every frame, as `pups_reel/build_pups.js` does; the build stops if anything is more than 1.5 px off.
+   - No black (or white) dogs as the subject of a post: the community may be sensitive (owner, 1 Nov 2026).
    - Ignore Instagram's safe zone in Reel reviews: our Reels have no problem with it (owner, 30 Oct 2026).
    - Captions: draft every caption the way TRICK_REEL.md and SAFE_REEL.md are done (owner, 30 Oct 2026: "next time draft in same way"):
      Instagram: line 1 is the one ask (comment or save), not the on-screen hook again; the search phrases people type in the text; 5 hashtags at most; no link (it's in the bio); plenty of emoji inside the sentences and at line ends (about 2–3 per 100 characters), never as bullets at the start of lines.

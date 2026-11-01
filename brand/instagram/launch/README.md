@@ -2,6 +2,8 @@
 
 Made 16 Oct 2026. Plan, captions and checklist: `docs/marketing/`.
 
+**Owner's rule (1 Nov 2026): every text inside a window, card, bubble or pill sits in its exact centre, across and up and down, in every Reel and post from now on.** Build boxed text with `centre_text.js` (`centred()`, `pill()`, each box in `<g data-box>`) and run its `centreCheck()` on every rendered frame, so the build stops if any text is more than 1.5 px off centre. `pups_reel/build_pups.js` is the example.
+
 | File | What |
 |---|---|
 | `banner-1-left-newest.jpg`, `banner-2-middle.jpg`, `banner-3-right-post-first.jpg` | **A. The 3-tile banner** (1080 x 1350). One word box (middle tile), 9 big dogs, the cottage and decorations. Post right, middle, left, then pin all three. |
@@ -14,6 +16,7 @@ Made 16 Oct 2026. Plan, captions and checklist: `docs/marketing/`.
 | `faces/face-01-which-face.jpg` ... `face-09-photo-mode.jpg` | v2.13 carousel (9 slides, 1080 x 1350): "Which face is your dog making today?", all 14 new faces and the photo-mode face picker. Guide and caption: `docs/marketing/FACES_CAROUSEL.md` |
 | `reel/doodle-doggo-reel-30s-soon.mp4`, `reel/doodle-doggo-reel-30s-play.mp4`, `reel/reel-cover.jpg` | The 30 s Reel (1080 x 1920) with the game's own music. `-soon` ends on "coming soon", `-play` on "play free, link in bio". Guide: `docs/marketing/REEL_AND_ADS.md` |
 | `video45/doodle-doggo-promo-45s-soon.mp4`, `video45/doodle-doggo-promo-45s-play.mp4`, `video45/promo-45s-cover.jpg` | The 45 s English promo video: real gameplay, Noodle narrates (Kokoro voice), burned-in subtitles, the game's music. Guide: `docs/marketing/PROMO_VIDEO_45S.md` |
+| `pups_reel/doodle-doggo-puppy-colours.mp4`, `pups_reel/pups-cover.jpg` | Puppy coat guess Reel (1080 x 1920, 17 s): two chocolate Labs, Yellow, Silver and Champagne puppies from the game's own genetics. Captions: `docs/marketing/PUPS_REEL.md` |
 | `grid-preview.jpg` | Mockup of the profile grid, banner and informative posts, with bio and highlights |
 | `highlight-1-meet.png` ... `highlight-4-events.png` | Story highlight covers (1080 x 1920) |
 
