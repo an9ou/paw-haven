@@ -208,7 +208,7 @@ run('v219_friends', async (t) => {
   await ev(() => { const S = window.__paw.S; S.dog.name = 'Zztypedname'; S.decor = S.decor || {}; S.decor['Bird Bath'] = { out: true, at: [100.4, 200.6] }; S.decor['Braided Rag Rug'] = { out: true, at: [10, 10] }; });
   ok(await ev(() => window.__paw.fr.pushYard(true)), 'the yard PUT goes out');
   const yard = await ev(() => { const ys = window.__frSrv.yards; return ys[ys.length - 1]; });
-  ok(yard && yard.v === 1 && Array.isArray(yard.name) && yard.name.length === 2 && typeof yard.house === 'number' && ['spring', 'summer', 'autumn', 'winter'].includes(yard.season), 'snapshot shape: ' + JSON.stringify({ name: yard && yard.name, house: yard && yard.house, season: yard && yard.season, dogs: yard && yard.dogs && yard.dogs.length, decor: yard && yard.decor && yard.decor.length }));
+  ok(yard && yard.v === 1 && Array.isArray(yard.name) && yard.name.length === 2 && yard.house === (await ev(() => window.__paw.fr.lists().houses.indexOf(window.__paw.S.house))) && ['spring', 'summer', 'autumn', 'winter'].includes(yard.season), 'snapshot shape, house index from FR_HOUSES: ' + JSON.stringify({ name: yard && yard.name, house: yard && yard.house, season: yard && yard.season, dogs: yard && yard.dogs && yard.dogs.length, decor: yard && yard.decor && yard.decor.length }));
   ok(yard && !JSON.stringify(yard).includes('Zztypedname') && yard.dogs.length >= 1 && !('name' in yard.dogs[0]) && yard.dogs[0].b >= 0 && yard.dogs[0].n >= 0, 'no typed dog name. the leader is a card dog');
   const decor = await ev(() => { const ys = window.__frSrv.yards, y = ys[ys.length - 1], list = window.__paw.fr.lists().decor, bath = y.decor.find((d) => d.i === list.indexOf('Bird Bath')); return { n: y.decor.length, puts: ys.length, bath, rug: y.decor.some((d) => d.i === list.indexOf('Braided Rag Rug')) }; });
   ok(decor.n === 1 && decor.bath && decor.bath.x === 100 && decor.bath.y === 201 && !decor.rug, 'yard decor is rounded and indexed. a house item stays out: ' + JSON.stringify(decor));
@@ -258,13 +258,15 @@ run('v219_friends', async (t) => {
   ok(await t.until(() => (document.getElementById('frCh0') || {}).value === '4', null, 8000), '#friend= pre-fills the code');
   await t.ctx.close();
 
-  sec('7. hidden on the artifact and under the harness');
+  sec('7. off by default, and hidden on the artifact');
+  await start(t, { mock: false, fr: false, query: '?friend=DOG-4K7PM' });
+  ok(await t.until(() => !!(window.__paw && window.__paw.fr && window.__paw.mode === 'yard'), null, 8000), 'a normal boot reaches the yard');
+  ok(await ev(() => window.__paw.fr.live() === false && window.__paw.fr.on() === false), 'off by default: FR_LIVE is false, so Friends is off without a test flag');
+  ok(await ev(() => { const b = document.getElementById('frBtn'); return (!b || b.hidden || getComputedStyle(b).display === 'none') && !document.getElementById('mmFr') && !document.getElementById('frLeave') && !document.getElementById('frPrev') && !document.getElementById('frCh0'); }), 'off by default: no Friends button, no Leave Friends row, and the invite card stays hidden');
+  await t.ctx.close();
   await start(t, { mock: false, fr: false, host: 'claude.ai' });
   ok(await t.until(() => !!(window.__paw && window.__paw.fr), null, 8000) && !(await ev(() => window.__paw.fr.on())), 'claude.ai: frOn is false');
   ok(await ev(() => { const b = document.getElementById('frBtn'); return !b || b.hidden || getComputedStyle(b).display === 'none'; }), 'claude.ai: no Friends button');
-  await t.ctx.close();
-  await start(t, { mock: false, fr: false });
-  ok(await t.until(() => !!(window.__paw && window.__paw.fr), null, 8000) && !(await ev(() => window.__paw.fr.on())), 'the test harness keeps Friends off unless a test asks');
   await t.ctx.close();
 
   sec('8. phone 390x844 and 360x740');

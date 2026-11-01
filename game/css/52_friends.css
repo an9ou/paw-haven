@@ -15,9 +15,9 @@ html[data-layout="phone"] #frBtn,#stage.slimhud #frBtn{display:none !important}
 .fr-card svg{width:100%;height:auto;display:block}
 .fr-acts{display:flex;flex-wrap:wrap;gap:8px}
 .fr-acts .btn,.fr-namepick .btn,.fr-add .btn,.fr-pop .btn,.fr-rowacts .btn,.fr-wbtn{min-height:44px;min-width:44px}
-.fr-add{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.fr-add{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:flex-start}
 .fr-pre{font-family:var(--font-hand);font-weight:700;font-size:28px;line-height:1}
-.fr-boxes{display:flex;gap:6px;flex:1 1 auto;min-width:0}
+.fr-boxes{display:flex;gap:6px;flex:0 0 auto;min-width:0}
 .fr-ch{box-sizing:border-box;width:44px;min-width:44px;height:44px;padding:0;text-align:center;font-family:var(--font-hand);font-weight:700;font-size:26px;text-transform:uppercase;border:2px solid var(--ink);border-radius:10px;background:#fffdf7;color:var(--ink)}
 .fr-namepick{display:flex;flex-direction:column;gap:8px;min-width:0}
 .fr-wheels{display:flex;gap:10px;justify-content:center;align-items:flex-start;min-width:0}
@@ -33,7 +33,7 @@ html[data-layout="phone"] #frBtn,#stage.slimhud #frBtn{display:none !important}
 .fr-head svg{width:100%;height:100%;display:block}
 .fr-nm{flex:1 1 120px;min-width:0;font-family:var(--font-hand);font-weight:700;font-size:24px;line-height:1.1;overflow-wrap:anywhere}
 .fr-doos{display:flex;gap:4px;flex:none}
-.fr-doo{width:28px;height:28px;display:block;opacity:.28}
+.fr-doo{width:28px;height:28px;display:block;opacity:.45}
 .fr-doo.on{opacity:1}
 .fr-doo svg{width:100%;height:100%;display:block}
 .fr-rowacts{display:flex;flex-wrap:wrap;gap:8px;flex:1 1 180px;min-width:0}

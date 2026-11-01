@@ -2,12 +2,12 @@
    Friend codes and the Friends sheet (V219.md sections 0, 2, 3 and 8). Visits, gifts and the walk come later.
    Save field S.fr (v219Fields in 00_core.js). Test hook: window.__paw.fr.
    No typed text leaves the device: names are word indices, notes are FR_NOTES indices, dogs are Dog Card indices.
-   Friends are off on the claude.ai artifact and under the test harness, unless prefs.frTest or window.__pawCloudMock. */
+   Off until the v2.19 release (FR_LIVE). A test turns it on with prefs.frTest or window.__pawCloudMock. Never on the claude.ai artifact. */
+const FR_LIVE = false; // the Game Manager turns this on at the v2.19 release
 function frOn() {
-  const forced = !!(prefs.frTest || (typeof window !== 'undefined' && window.__pawCloudMock));
-  if (!forced && typeof clArtifact === 'function' && clArtifact()) return false;
-  if (!forced && navigator.webdriver) return false;
-  return true;
+  if (typeof clArtifact === 'function' && clArtifact()) return false;
+  if (FR_LIVE) return true;
+  return !!(prefs.frTest || (typeof window !== 'undefined' && window.__pawCloudMock));
 }
 const FR = { pick: [0, 0], invite: null, inviteShown: false, wantAdd: false, offline: false, pending: 0, inAt: 0, yardAt: 0, menu: '', gen: 0 };
 
@@ -120,17 +120,19 @@ function frYard() {
     x = Math.max(0, Math.min(1200, x)); y = Math.max(0, Math.min(800, y));
     decor.push({ i, x, y });
   });
-  const hi = typeof HOUSES !== 'undefined' ? HOUSES.findIndex((h) => h.n === S.house) : 0;
+  const hi = FR_HOUSES.indexOf(S.house);
   const season = typeof seasonNow === 'function' ? seasonNow() : 'spring';
   const name = Array.isArray(S.fr.name) ? S.fr.name.slice(0, 2) : [0, 0];
   return { v: 1, name, house: hi >= 0 ? hi : 0, season, dogs, decor };
 }
 function frAfterPush() {
-  if (!frOn() || !S || !S.fr || !S.fr.fid) return Promise.resolve(false);
-  if (Date.now() - FR.yardAt < 600000) return Promise.resolve(false);
-  const yard = frYard(); if (!yard) return Promise.resolve(false);
-  FR.yardAt = Date.now();
-  return frApi('PUT', '/friends/yard', { yard }).then((r) => { if (!r || !r.ok) FR.yardAt = 0; return !!(r && r.ok); }).catch(() => { FR.yardAt = 0; return false; });
+  try {
+    if (!frOn() || !S || !S.fr || !S.fr.fid) return Promise.resolve(false);
+    if (Date.now() - FR.yardAt < 600000) return Promise.resolve(false);
+    const yard = frYard(); if (!yard) return Promise.resolve(false);
+    FR.yardAt = Date.now();
+    return frApi('PUT', '/friends/yard', { yard }).then((r) => { if (!r || !r.ok) FR.yardAt = 0; return !!(r && r.ok); }).catch(() => { FR.yardAt = 0; return false; });
+  } catch (e) { FR.yardAt = 0; return Promise.resolve(false); }
 }
 
 /* ---------- QR, drawn as pencil squares on the card's white tile. The card itself is never night-tinted. ---------- */
@@ -321,7 +323,7 @@ async function frMake(a, b, p) {
     return false;
   }
   frApplyMe(r.data); try { saveNow(); } catch (e) { /* storage */ }
-  frSheet(); return true;
+  frSheet(); frInboxSoon(true); return true;
 }
 
 /* ---------- the sheet ---------- */
@@ -459,9 +461,9 @@ async function frLeave(p) {
 }
 function frGuestNudge() {
   if (!CL.on || !CL.uid || !CL.anon || typeof clMeta !== 'function') return;
-  const m = clMeta(); if (m.nudged) return;
-  clMetaSet({ nudged: true });
-  setTimeout(() => { if (S) toast(tt('cloud.nudge', "Make an account to keep {name} safe on every device. It's in Settings.", { name: NAME() }), 'gold'); }, 500);
+  const m = clMeta(); if (m.frNudged) return;
+  clMetaSet({ frNudged: true }); // its own flag: the 3-care-day cloud nudge (clMeta.nudged) is a different moment
+  setTimeout(() => { if (S && document.querySelector('.panel.frsheet')) toast(tt('cloud.nudge', "Make an account to keep {name} safe on every device. It's in Settings.", { name: NAME() }), 'gold'); }, 2000);
 }
 function frSheetBind(p) {
   const share = $('#frShare', p); if (share) share.onclick = () => { SFX.click(); frShare(); };
@@ -487,7 +489,6 @@ function frSheet() {
   const p = openModal(esc(tt('fr.title', 'Friends')), frSheetHTML(), { cls: 'frsheet' });
   frSheetBind(p);
   frGuestNudge();
-  frInboxSoon(true);
   if (FR.invite) { const el = document.getElementById('frCh0'); if (el) el.focus({ preventScroll: true }); }
   return p;
 }
@@ -497,11 +498,12 @@ async function frOpen() {
   if (!S.fr.fid) { frNameSheet(); return true; }
   await frLoad();
   frSheet();
+  frInboxSoon(true); // once per open. a redraw of the same sheet does not ask again
   return true;
 }
 function frInviteTry() {
   if (!frOn() || !S || !FR.invite || FR.inviteShown) return;
-  if (cur.mode === 'title' || cur.mode === 'adopt' || (titleEl && !titleEl.hidden)) return;
+  if (cur.mode !== 'yard' || (titleEl && !titleEl.hidden)) return; // never over a walk, a minigame or the title
   if (frGuideHold()) return;
   if (!modal.hidden) return;
   FR.inviteShown = true; FR.wantAdd = true; frOpen();
@@ -511,7 +513,7 @@ function frInviteTry() {
 function frExpose() {
   if (!window.__paw || window.__paw.fr) return;
   window.__paw.fr = {
-    on: () => frOn(), open: () => frOpen(),
+    on: () => frOn(), live: () => FR_LIVE, open: () => frOpen(),
     lists: () => ({ notes: FR_NOTES.slice(), gifts: FR_GIFTS.slice(), decor: FR_DECOR.slice(), houses: FR_HOUSES.slice() }),
     orderOk: () => {
       const food = FOOD.filter((f) => f.n !== 'Fresh Water').map((f) => f.n);
@@ -530,4 +532,5 @@ frReadInvite();
 on('game:ready', () => { frExpose(); frDay(); setTimeout(() => { frHudSync(); frInboxSoon(true); frInviteTry(); }, 300); });
 on('yard:enter', () => setTimeout(frInviteTry, 400));
 window.addEventListener('focus', () => frInboxSoon(false));
-setInterval(() => { try { frExpose(); frDay(); frHudSync(); frInviteTry(); if (S && S.fr && S.fr.fid && document.visibilityState !== 'hidden' && Date.now() - FR.inAt >= 60000) frInboxSoon(true); } catch (e) { /* a tick never breaks the game */ } }, 4000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') frInboxSoon(false); });
+setInterval(() => { try { frExpose(); frDay(); frHudSync(); frInviteTry(); } catch (e) { /* a tick never breaks the game */ } }, 4000);
