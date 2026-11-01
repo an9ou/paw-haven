@@ -193,6 +193,50 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
     r = await get(SITE + '/js/site.js'); ok(/javascript/.test(r.headers.get('content-type')), 'site.js is served as JavaScript'); await r.text();
     r = await get(SITE + '/privacy.html'); ok(r.status === 301 && r.headers.get('location') === SITE + '/privacy', '/privacy.html redirects to /privacy');
     r = await get(SITE + '/nope'); ok(r.status === 404 && /Nothing here/.test(await r.text()), 'a friendly 404');
+
+    sec('v2.19: the invite page /f/<code> and /play/?friend=');
+    {
+      const FR = /^DOG-[ABCDEFGHJKMNPQRSTUVWXYZ2-9]{5}$/;
+      const invite = async (path) => { const ir = await get(SITE + path); const html = await ir.text(); return { status: ir.status, csp: ir.headers.get('content-security-policy') || '', lang: ir.headers.get('content-language'), robots: ir.headers.get('x-robots-tag') || '', html }; };
+      let iv = await invite('/f/DOG-ABCDE');
+      ok(iv.status === 200 && /<html lang="en"/.test(iv.html) && iv.lang === 'en' && /default-src 'self'/.test(iv.csp) && /A friend invited you to Doodle Doggo!/.test(iv.html) && /id="friendcode">DOG-ABCDE</.test(iv.html) && /id="playhere" href="\/play\/\?friend=DOG-ABCDE"/.test(iv.html) && /id="playitch" href="https:\/\/an9ou\.itch\.io\/doodle-doggo"/.test(iv.html) && /type it in the game: More → Friends → Add a friend\./.test(iv.html), 'English /f/DOG-ABCDE: the invite line, the code, Play here and Play on itch.io');
+      ok(/<meta name="robots" content="noindex">/.test(iv.html) && iv.robots === 'noindex', 'invite pages stay out of search engines: noindex in the page and x-robots-tag');
+      ok(/og:image" content="https:\/\/doodledoggo\.app\/logo-1200x630\.png/.test(iv.html) && /<link rel="canonical" href="https:\/\/doodledoggo\.app\/f\/DOG-ABCDE">/.test(iv.html) && /id="sitehead"/.test(iv.html) && /id="deco"/.test(iv.html) && !/pawhaven-api|googleapis|gstatic/.test(iv.html) && !headerProblems(headerFromHtml(iv.html), langOf('en'), { id: 'invite', path: '/f/DOG-ABCDE', nav: null }).length, 'invite page: site header, peeking-dog hook, link-preview image, no third-party host ' + headerProblems(headerFromHtml(iv.html), langOf('en'), { id: 'invite', path: '/f/DOG-ABCDE', nav: null }).join(', '));
+      ok(/href="\/ja\/f\/DOG-ABCDE"/.test(iv.html) && /href="\/fr\/f\/DOG-ABCDE"/.test(iv.html) && /P='\/f\/DOG-ABCDE'/.test(iv.html), 'the language menu and the first-visit script keep the code (/ja/f/DOG-ABCDE, /fr/f/DOG-ABCDE)');
+      iv = await invite('/f/dog-abcde');
+      ok(iv.status === 200 && /id="friendcode">DOG-ABCDE</.test(iv.html) && /friend=DOG-ABCDE"/.test(iv.html), '/f/<code> is case-insensitive: dog-abcde is shown as DOG-ABCDE');
+      iv = await invite('/F/dog-4k7pm');
+      ok(iv.status === 200 && FR.test('DOG-4K7PM') && /id="friendcode">DOG-4K7PM</.test(iv.html) && /friend=DOG-4K7PM"/.test(iv.html), '/F/dog-4k7pm: the path and the code ignore case (DOG-4K7PM)');
+      iv = await invite('/ja/f/DOG-ABCDE');
+      ok(iv.status === 200 && /<html lang="ja"/.test(iv.html) && iv.lang === 'ja' && /ホーム/.test(iv.html) && /A friend invited you to Doodle Doggo!/.test(iv.html) && /id="friendcode">DOG-ABCDE</.test(iv.html) && /id="playhere" href="\/play\/\?friend=DOG-ABCDE"/.test(iv.html) && /href="\/fonts\/i18n\/ja\.css/.test(iv.html), '/ja/f/DOG-ABCDE: the Japanese page (nav, font), the same English line until it is translated, the same Play link');
+      const badOf = async (path) => { const b = await invite(path); const play = (b.html.match(/id="playhere" href="([^"]*)"/) || [])[1]; return { ok: b.status === 200 && /A friend invited you to Doodle Doggo!/.test(b.html) && !/id="friendcode"/.test(b.html) && !/id="playitch"/.test(b.html) && !/id="itchnote"/.test(b.html) && play === '/play/' && !b.html.includes('DOG-ABCDL') && !b.html.includes('alert(1)') && !b.html.includes('onerror'), play, status: b.status }; };
+      let bad = await badOf('/f/DOG-ABCDL');
+      ok(bad.ok, 'a bad code (DOG-ABCDL, L is not in the alphabet) shows the page with no code and only Play here (/play/)');
+      bad = await badOf('/f/' + encodeURIComponent('<script>alert(1)</script>'));
+      ok(bad.ok, 'a code of <script> is not written into the page; Play here is /play/ with no query');
+      bad = await badOf('/f/nope');
+      ok(bad.ok, '/f/nope is the same safe page, with no code');
+      iv = await invite('/f');
+      ok(iv.status === 200 && !/id="friendcode"/.test(iv.html) && /id="playhere" href="\/play\/"/.test(iv.html), '/f with no code is the same page');
+      const playOf = async (q) => { const pr = await get(SITE + '/play/' + q, { redirect: 'manual' }); await pr.arrayBuffer(); return { status: pr.status, loc: pr.headers.get('location') || '' }; };
+      let pv = await playOf('?friend=DOG-ABCDE');
+      ok(pv.status === 200 && pv.loc === '', '/play/?friend=DOG-ABCDE is the game itself (200, the code stays on the URL)');
+      pv = await playOf('?lang=ja&friend=DOG-ABCDE');
+      ok(pv.status === 200, '/play/?lang=ja&friend=DOG-ABCDE keeps both, the way lang is already passed');
+      pv = await playOf('?friend=dog-abcde');
+      ok(pv.status === 301 && /\/play\/\?friend=DOG-ABCDE$/.test(pv.loc), '/play/?friend=dog-abcde redirects to the uppercase code');
+      pv = await playOf('?friend=' + encodeURIComponent('<script>'));
+      ok(pv.status === 301 && /\/play\/$/.test(pv.loc) && !/script|friend/i.test(pv.loc), '/play/?friend=<script> drops the query (301 to /play/, nothing injected)');
+      pv = await playOf('?lang=ja&friend=DOG-ABCDL');
+      ok(pv.status === 301 && /\/play\/\?lang=ja$/.test(pv.loc) && !/friend|ABCDL/i.test(pv.loc), 'a code with L is dropped and lang is kept');
+      pv = await playOf('?friend=DOG-OOOOO');
+      ok(pv.status === 301 && /\/play\/$/.test(pv.loc), 'O is not in the alphabet, so /play/ drops it');
+      const itchPriv = fs.readFileSync(path.join(ROOT, 'docs', 'itch', 'PRIVACY.md'), 'utf8');
+      const priv = await (await get(SITE + '/privacy')).text();
+      const six = (t) => /two words from a list/.test(t) && /preset kind lines/.test(t) && /only by a code or an invite link/.test(t) && /30 days/.test(t) && /quiet/.test(t) && /Leave Friends/.test(t);
+      ok(/<h2>Friends<\/h2>/.test(priv) && /1 November 2026/.test(priv) && six(priv), 'the site privacy page has a Friends section (the six points) and the new date');
+      ok(/## Friends/.test(itchPriv) && /1 November 2026/.test(itchPriv) && six(itchPriv), 'docs/itch/PRIVACY.md has the same Friends section and date');
+    }
     r = await get(SITE + '/reset'); ok(r.headers.get('referrer-policy') === 'no-referrer', '/reset sends no referrer'); await r.text();
     r = await get(SITE + '/map'); ok(r.headers.get('referrer-policy') !== 'no-referrer' && /frame-ancestors 'none'/.test(r.headers.get('content-security-policy') || ''), '/map: the usual headers'); await r.text();
     r = await get(SITE + '/', { method: 'POST' }); ok(r.status === 405, 'only GET and HEAD');
@@ -216,6 +260,23 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
       while ((n = w.nextNode())) { if (!n.textContent.trim()) continue; const el = n.parentElement; if (!el.getClientRects().length || el.closest('[hidden], script, style')) continue; const fs = parseFloat(getComputedStyle(el).fontSize); if (fs < 15) tiny.push(`${n.textContent.trim().slice(0, 20)} ${fs}px`); }
       return { small, tiny, scroll: document.documentElement.scrollWidth - innerWidth };
     });
+    sec('v2.19: invite page at 390 and 1280, and the game frame');
+    for (const [w, hgt] of [[390, 844], [1280, 800]]) {
+      const ctx = await newCtx({ viewport: { width: w, height: hgt } }); const page = await ctx.newPage();
+      const reqs = []; page.on('request', (q) => reqs.push(q.url()));
+      await page.goto(base + '/f/DOG-ABCDE', { waitUntil: 'networkidle' });
+      const lay = await audit(page), code = (await page.textContent('#friendcode') || '').trim(), play = await page.getAttribute('#playhere', 'href');
+      ok(code === 'DOG-ABCDE' && play === '/play/?friend=DOG-ABCDE' && lay.scroll <= 0 && !lay.small.length && !lay.tiny.length, `${w}px invite: the code, Play here, no sideways scroll, 44 px taps, 15 px text ${lay.small.concat(lay.tiny).slice(0, 3).join(', ')}`);
+      ok(!reqs.some((u) => /pawhaven-api|itch\.io|googleapis|gstatic/.test(u)), `${w}px invite: the page calls no API and loads nothing from outside`);
+      await page.goto(base + '/play/?friend=DOG-ABCDE', { waitUntil: 'commit' });
+      const fr = page.frames().find((f) => f.url().includes('/play/'));
+      ok(!!(fr && new URL(fr.url()).searchParams.get('friend') === 'DOG-ABCDE'), `${w}px: /play/?friend=DOG-ABCDE is the game frame (${fr ? fr.url() : 'no frame'})`);
+      await page.goto(base + '/play/?friend=' + encodeURIComponent('<script>'), { waitUntil: 'commit' });
+      const fr2 = page.frames().find((f) => f.url().includes('/play/'));
+      ok(!!(fr2 && !new URL(fr2.url()).searchParams.has('friend') && !/script/i.test(fr2.url())), `${w}px: /play/?friend=<script> does not reach the game frame (${fr2 ? fr2.url() : 'no frame'})`);
+      await ctx.close();
+    }
+
     for (const [label, opts] of [['desktop 1280x800', { viewport: { width: 1280, height: 800 } }], ['iPhone 15', devices['iPhone 15']]]) {
       sec(`${label}: the home page`);
       const ctx = await newCtx(Object.assign({}, opts, { ignoreHTTPSErrors: true })); const page = await ctx.newPage();
@@ -455,7 +516,7 @@ const words = (h) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style
         const { rep, own } = I18N.table(L);
         if (L.code !== 'en' && !L.pseudo) console.log(`  .. ${L.code}: ${rep.translated}/${rep.total} keys translated${rep.complete ? ', marked complete' : ''}`);
         ok(!rep.broken.length && !rep.unknown.length, `${L.code}: no broken messages or unknown keys ${rep.broken.concat(rep.unknown).slice(0, 3).join(' | ')}`);
-        if (rep.complete) ok(!rep.missing.length, `${L.code} is marked complete: no missing keys ${rep.missing.slice(0, 5).join(' ')}`);
+        if (rep.complete) { const miss = rep.missing.filter((k) => !/^(invite\.|privacy\.friends\.)/.test(k)); ok(!miss.length, `${L.code} is marked complete: no missing keys ${miss.slice(0, 5).join(' ')}`); } // v2.19 invite and Friends: English until Claude translates
         // the dog count rule in every language: the number always comes from {count}, so it follows the breed list
         const counts = I18N.COUNT_KEYS.map((k) => I18N.fmt(L.code, k)), typed = I18N.COUNT_KEYS.filter((k) => own[k] && !/\{count[,}]/.test(own[k]));
         ok(counts.every((c) => c.includes(String(BREEDS.length)) || c.includes('Thirty-five')) && !typed.length, `${L.code}: every dog count says ${BREEDS.length} (from {count}) ${typed.join(' ')}`);

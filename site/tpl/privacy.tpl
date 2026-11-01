@@ -43,6 +43,17 @@
       <li>{{t privacy.cards.off}}</li>
     </ul>
 
+    <h2>{{t privacy.friends.title}}</h2>
+    <p>{{t privacy.friends.lead}}</p>
+    <ul>
+      <li>{{t privacy.friends.see}}</li>
+      <li>{{t privacy.friends.notext}}</li>
+      <li>{{t privacy.friends.add}}</li>
+      <li>{{t privacy.friends.store}}</li>
+      <li>{{t privacy.friends.quiet}}</li>
+      <li>{{t privacy.friends.leave}}</li>
+    </ul>
+
     <h2>{{t privacy.where.title}}</h2>
     <p>{{t privacy.where.text}}</p>
 
