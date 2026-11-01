@@ -111,6 +111,10 @@ const back=(x)=>{ x=Math.max(0,Math.min(1,x)); const c=1.9; return 1+(c+1)*Math.
 const ease=(x)=>{ x=Math.max(0,Math.min(1,x)); return x*x*(3-2*x); };
 const P=${JSON.stringify(PUPS.map((p) => ({ name: p.name, word: coatWord(p.name), odds: RN ? oddsWord(p.odds) : p.oddsEn })))}, TX=${JSON.stringify(TX)}, FAM=${JSON.stringify(fam)}, PX=${JSON.stringify(PX)}, AT=${JSON.stringify(PUPAT)};
 const TW={}; function tw(s,size){ const k=s+'|'+size; if(TW[k]!=null) return TW[k]; const e=document.createElementNS(NSV,'text'); e.setAttribute('font-family',FAM); e.setAttribute('font-weight','700'); e.setAttribute('font-size',size); e.textContent=s; document.querySelector('svg').appendChild(e); const w=e.getComputedTextLength(); e.remove(); return TW[k]=w; }
+// a glyph centred on (0,0) by its ink, not its font box (Caveat's ? and digits sit off-centre otherwise)
+const CTR={}; function ctr(s,size,fill){ const k=s+'|'+size; if(!CTR[k]){ const c=document.createElement('canvas').getContext('2d'); c.font='700 '+size+'px '+FAM; const m=c.measureText(s);
+  CTR[k]=[(m.actualBoundingBoxLeft-m.actualBoundingBoxRight)/2, (m.actualBoundingBoxAscent-m.actualBoundingBoxDescent)/2]; }
+  return '<text x="'+CTR[k][0]+'" y="'+CTR[k][1]+'" font-family="'+FAM+'" font-weight="700" font-size="'+size+'" fill="'+(fill||'${PEN}')+'" text-anchor="start">'+s+'</text>'; }
 const txt=(s,x,y,size,o)=>{ o=o||{}; return '<text x="'+x+'" y="'+y+'" font-family="'+FAM+'" font-weight="700" font-size="'+size+'" fill="'+(o.fill||'${PEN}')+'" text-anchor="'+(o.a||'middle')+'"'+(o.op!=null?' opacity="'+o.op+'"':'')+'>'+s+'</text>'; };
 const pillTag=(s,x,y,size,fill,stroke,op)=>{ const w=tw(s,size)+60; return '<g opacity="'+op+'"><rect x="'+(x-w/2)+'" y="'+(y-size*0.95)+'" width="'+w+'" height="'+(size*1.35)+'" rx="'+(size*0.67)+'" fill="'+fill+'" stroke="'+stroke+'" stroke-width="4"/>'+txt(s,x,y,size)+'</g>'; };
 window.frame=function(t, D){
@@ -128,7 +132,7 @@ window.frame=function(t, D){
   $('tags').innerHTML=g;
   // the pause: three question marks where the puppies will sit, and a 3-2-1 count
   let q=''; if(t>=${PAUSE} && !ending){ PX.forEach((x,i)=>{ if(t>=AT[i]) return; const pq=back((t-${PAUSE}-i*0.12)/0.3), wob=Math.sin(t*6+i)*4;
-      q+='<g transform="translate('+x+' '+(${PFEET}-80+wob)+') scale('+pq+')"><circle r="78" fill="#FFFDF7" stroke="${PEN}" stroke-width="6"/>'+txt('?',0,38,120)+'</g>'; }); }
+      q+='<g transform="translate('+x+' '+(${PFEET}-80+wob)+') scale('+pq+')"><circle r="78" fill="#FFFDF7" stroke="${PEN}" stroke-width="6"/>'+ctr('?',120)+'</g>'; }); }
   $('qs').innerHTML=q;
   // the puppies pop in one by one with their coat name and the game's odds
   let p=''; P.forEach((pp,i)=>{ if(t<AT[i]) return; const lt=t-AT[i], s=back(lt/0.35), dy=-Math.abs(Math.sin(t*6+i*1.7))*(lt>0.4?14:0);
@@ -139,7 +143,7 @@ window.frame=function(t, D){
   let c=''; if(!ending && t>=${PAUSE}+0.1){ let l1, l2, col='${PEN}', o;
     if(t<${REVEAL}){ l1=TX.pause; l2=TX.pauseSub; o=ease((t-${PAUSE}-0.1)/0.2); const n=3-Math.floor((t-${PAUSE}-0.3)/1);
       c+='<g opacity="'+o+'" transform="rotate(-2 540 360)"><rect x="140" y="210" width="800" height="300" rx="36" fill="#FFF8EC" stroke="${PEN}" stroke-width="6"/>'+txt(l1,540,320,${RN ? 84 : 96})+txt(l2,540,420,${RN ? 58 : 66})+'</g>';
-      if(t>=${PAUSE}+0.3 && n>=1 && n<=3){ const lt=(t-${PAUSE}-0.3)%1, ns=back(lt/0.25); c+='<g transform="translate(540 760) scale('+ns+')" opacity="'+(1-ease((lt-0.7)/0.3))+'"><circle r="110" fill="#FFE3A1" stroke="${PEN}" stroke-width="7"/>'+txt(String(n),0,58,170)+'</g>'; } }
+      if(t>=${PAUSE}+0.3 && n>=1 && n<=3){ const lt=(t-${PAUSE}-0.3)%1, ns=back(lt/0.25); c+='<g transform="translate(540 760) scale('+ns+')" opacity="'+(1-ease((lt-0.7)/0.3))+'"><circle r="110" fill="#FFE3A1" stroke="${PEN}" stroke-width="7"/>'+ctr(String(n),170)+'</g>'; } }
     else if(t<${WHY}){ o=ease((t-AT[2]-0.4)/0.25); if(o>0) c+='<g opacity="'+o+'" transform="rotate(-2 540 360)"><rect x="140" y="250" width="800" height="200" rx="36" fill="#FFF8EC" stroke="${GREEN}" stroke-width="7"/>'+txt(TX.reveal,540,380,${RN ? 80 : 96})+'</g>'; }
     else { o=ease((t-${WHY})/0.25); c+='<g opacity="'+o+'" transform="rotate(-1 540 380)"><rect x="70" y="200" width="940" height="390" rx="36" fill="#FFF8EC" stroke="${PEN}" stroke-width="6"/>'+txt(TX.why[0],540,310,${RN ? 64 : 76})+txt(TX.why[1],540,400,${RN ? 56 : 64})
       +'<path d="M220 448 Q540 432 860 448" fill="none" stroke="${PINK}" stroke-width="10" stroke-linecap="round" opacity=".6"/>'+txt(TX.whySub,540,530,${RN ? 44 : 52},{fill:'#8A7468'})+'</g>'; } }
