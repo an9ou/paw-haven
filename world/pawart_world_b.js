@@ -6927,6 +6927,116 @@ PA.WINTER_MARKET={decor:Object.assign({},WM_LBL),costumes:['Father Christmas Sui
   toys:['Squeaky Snowman','Candy-Cane Rope','Plush Penguin','Snowball Ball','Present Puzzle Box'],house:'Gingerbread Kennel',beds:['Present-Box Bed','Little Sleigh Bed','Snowball Nest','Giant Mitten Bed'],
   treats:BOWL_WM.slice()};
 
+/* ---------- v2.19 "Friends first": the friends art (V219.md 9; used in sections 3 to 6). PA.FRIENDS groups it; each call is an SVG string.
+   Every colour fill sits inside its own outline (b.sh and the crude kit lay the fill on the line's own points); nothing sharp, no words baked in.
+   badge()       icon 64x64   two crude crayon dog heads (the dogs' ink, like Gerald) touching noses under a tiny pink heart; the Friends menu
+                              button, reads at 24 to 32 px.
+   card(code)    prop 300x200 the friend-code card: a paper card with pink washi tape, a perforated paw stamp in the top-right corner and a doodled
+                              pink border. QR area (clear white, nothing drawn on it): x 34, y 42, w 116, h 116 (PA.FRIENDS.cardQR), on a white
+                              tile at 30,38 124x124. The code line runs x 166..278 at y 136 (PA.FRIENDS.cardLine: the text sits on it, centred at
+                              x 222, about 21 units high); the space above it (x 166..278, y 86..126) is free for the friend name. With code
+                              (a string, escaped here) it writes the code on the line in the crayon font; without it the line is blank. Cached per code.
+   wrap(n)       item 64x64   a wrapped gift with a ribbon bow; n 0 dots (pink paper), 1 stripes (yellow paper), 2 little paws (blue paper); others wrap.
+   paw()         item 64x64   a pink crayon paw-print stamp, slightly uneven, with paper specks showing through; the yard path and the note letters.
+   ribbon()      icon 64x64   the guest dog's friend ribbon: a mint rosette with a pink heart and two tails; drawn at about 18 to 24 px.
+   wheel()       prop 160x220 the name-wheel frame: a paper drum with shaded rounded ends between two notched wooden rails, soft pink pointers at
+                              the middle row. Text area (left clear): x 24..136, y 30..190; the picked word's row is centred at y 110 (a pale
+                              band y 92..128, PA.FRIENDS.wheelText). */
+const FR_PINK='#F28FA5',FR_MINT='#9ED8D2';
+// a crude crayon dog head in profile (the dogs' kit: DINK line, fill on the line's own points, waxy streaks), facing right (f 1) or left (f -1),
+// its nose tip at (nx, ny); ear 'flop' or 'prick'
+function frHead(k,nx,ny,f,col,ear,earCol){const sx=1.04,sy=1.22,X=x=>nx-f*(32-x)*sx,Y=y=>ny+(y-33)*sy,P=pts=>pts.map(([x,y])=>[X(x),Y(y)]);
+  k.shape(P([[8,40],[21,42],[24,48],[25,53],[6.5,53],[6,46]]),col,{w:2.6,step:3,amp:.45});
+  if(ear==='prick')k.shape(P([[12,23],[10,14],[11.5,9.5],[15,10],[22,19]]),earCol,{w:2.5,step:3,amp:.4});
+  k.shape(P([[6,37],[6.5,28],[10.5,22],[18,19.5],[25,21.5],[28,26.5],[32,29.5],[34.5,33.5],[33,38],[28,40],[23,43.5],[15,46],[9,44.5]]),col,{w:2.7,step:3.2,amp:.5,streak:[8,8,4]});
+  if(ear==='flop')k.shape(P([[8,24],[15,20],[17.5,25],[15,33.5],[10.5,37.5],[6.5,33]]),earCol,{w:2.4,step:3,amp:.4});
+  k.dot(X(32),ny,2.8,2.3,DINK);k.dot(X(31.2),ny-.9,.8,.7,'#FFFFFF');
+  k.dot(X(22.5),Y(28.5),2.1,2.2,DINK);k.dot(X(23.1),Y(27.7),.7,.7,'#FFFFFF');
+  k.line(P([[32,38.6],[29,39.8],[26.5,38.4]]),1.7,DINK,.2);
+  k.dot(X(19.5),Y(36),2.8,1.7,'#F7A1B5');
+}
+function frBadge(){const b=mk('icon','fr:badge'),k=crude(b.r);
+  frHead(k,30.8,35,1,'#F2B66D','flop','#B9784A');
+  frHead(k,33.2,35,-1,'#FFF2DA','prick','#E58A4E');
+  b.raw(k.acc.join(''));
+  b.sh(heartP(32,11.5,14),FR_PINK,{hatch:0,hl:0,lw:.75,dr:.1});
+  b.ln([[22.5,9],[20,5]],{w:1.6});b.ln([[41.5,9],[44,5]],{w:1.6});
+  return b.svg('0 0 64 64','','Friends')}
+// the card: QR area and code line (also exported for the game)
+const FR_QR={x:34,y:42,w:116,h:116},FR_LINE={x1:166,x2:278,y:136,cx:222,size:21};
+function frCard(code){const b=mk('prop','fr:card');
+  b.raw(`<path d="M16 22L294 18L295 196L13 197Z" fill="${SHADOW}" opacity=".8"/>`,'under');
+  b.sh([[10,14],[290,11],[292,188],[8,191]],'#FFF2DA',{k:0,hatch:0,hl:0,lw:1.1,base:'#FFFBF3',dr:.5});
+  // the doodled border: a wavy pink crayon loop inside the paper, with a dot in every dip
+  const W=[],wv=(x0,y0,x1,y1,n)=>{for(let i=0;i<n;i++){const t=i/n,nx=-(y1-y0),ny=x1-x0,l=Math.hypot(nx,ny),s=(i%2?1:-1)*1.6;W.push([x0+(x1-x0)*t+nx/l*s,y0+(y1-y0)*t+ny/l*s])}};
+  wv(22,24,278,22,34);wv(278,22,280,178,20);wv(280,178,20,180,34);wv(20,180,22,24,20);
+  b.loop(W,{w:1.6,col:FR_PINK,op:.85,k:.2});
+  // the QR tile: plain white, a soft pencil frame, nothing on it
+  b.sh(RR(30,38,124,124,4),'#FFFFFF',{k:0,hatch:0,hl:0,lw:.7,base:'#FFFFFF',dr:0,ink:'#8A6A5C'});
+  b.raw(`<rect data-qr x="${FR_QR.x}" y="${FR_QR.y}" width="${FR_QR.w}" height="${FR_QR.h}" fill="none" stroke="none" pointer-events="none"/>`,'top');
+  // stamp corner: a perforated mint stamp with a paw and a heart
+  let d='M234 22';const px=(x0,y0,x1,y1)=>{const n=Math.round(Math.hypot(x1-x0,y1-y0)/6);for(let i=0;i<n;i++){const t0=i/n,t1=(i+1)/n,xm=x0+(x1-x0)*(t0+t1)/2,ym=y0+(y1-y0)*(t0+t1)/2,nx=-(y1-y0),ny=(x1-x0),l=Math.hypot(nx,ny);d+=`L${R1(x0+(x1-x0)*t0)} ${R1(y0+(y1-y0)*t0)}Q${R1(xm+nx/l*2.2)} ${R1(ym+ny/l*2.2)} ${R1(x0+(x1-x0)*t1)} ${R1(y0+(y1-y0)*t1)}`}};
+  px(234,22,276,22);px(276,22,276,66);px(276,66,234,66);px(234,66,234,22);
+  b.raw(`<g transform="rotate(4 255 44)"><path d="${d}Z" fill="#CDEBD9" stroke="${INK}" stroke-width="1.4" stroke-linejoin="round"/></g>`);
+  b.sh(rot(RR(239,27,32,34,2),.07,255,44),'#FFF2DA',{k:0,hatch:0,hl:0,lw:.8,base:'#FFF9EC'});
+  paw(b,254,48,5,FR_PINK,{lw:.6,a:.07});b.ex('heart',265,32,2.8);
+  // the code line and two small doodles under it
+  b.ln([[FR_LINE.x1,FR_LINE.y],[FR_LINE.cx,FR_LINE.y+.8],[FR_LINE.x2,FR_LINE.y-.4]],{w:1.8,col:GRAPH});
+  b.ex('heart',184,160,4,'#F7B2C4');paw(b,262,162,3.6,'#E3D2BA',{lw:.5,a:-.3});
+  tapeB(b,30,22,58,-30,'#F7B9C6');tapeB(b,276,182,46,-28,FR_MINT);
+  b.ex('spark',176,30,4,'#FFE59A');
+  if(code)b.tx(FR_LINE.cx,FR_LINE.y-5,esc(String(code).slice(0,12)),FR_LINE.size,{col:INK});
+  return b.svg('0 0 300 200','','Friend code card')}
+// gift wrap: paper colour, pattern ink, ribbon colour, ribbon shade
+const FR_WRAP=[['#F7B2C4','#FFFBF3',FR_MINT,'#6FBDB5'],['#FFE08A','#F9B97A','#F28FA5','#D96A84'],['#B9D4F3','#FFFBF3','#FFD56B','#E9B44C']];
+function frPattern(n,x0,y0,x1,y1){const M=[],p=FR_WRAP[n][1];
+  if(n===0){for(let y=y0+3,j=0;y<y1;y+=6.5,j++)for(let x=x0+2+(j%2)*3.5;x<x1;x+=7)M.push({pts:E(x,y,1.5,1.5,8),fill:p,k:1/6})}
+  else if(n===1){for(let x=x0-20;x<x1+4;x+=7)M.push({pts:[[x,y1+1],[x+3.2,y1+1],[x+3.2+(y1-y0+2)*.6,y0-1],[x+(y1-y0+2)*.6,y0-1]],fill:p,k:0,op:.9})}
+  else for(let y=y0+5,j=0;y<y1+2;y+=11,j++)for(let x=x0+4+(j%2)*7;x<x1+2;x+=14){M.push({pts:E(x,y+1,2,1.6,8),fill:p});[[-2.2,-1.8],[0,-2.8],[2.2,-1.8]].forEach(([dx,dy])=>M.push({pts:E(x+dx,y+dy,.85,1,6),fill:p}))}
+  return M}
+function frWrap(n){n=((n|0)%3+3)%3;const b=mk('item','fr:wrap'+n),[pap,,rib,ribD]=FR_WRAP[n];
+  b.shadow(32,59,24,3);
+  // the box and its lid, the ribbon band inside each outline
+  b.sh(RR(12,31,40,26,3),pap,{k:.05,hl:0,marks:frPattern(n,12,31,52,57).concat([{pts:[[28,28],[36,28],[36,60],[28,60]],fill:rib,k:0}]),sh:mix(pap,INK,.3)});
+  b.sh(RR(9,24,46,10,3),mix(pap,'#FFFFFF',.15),{k:.05,hatch:0,hl:0,lw:.95,marks:frPattern(n,9,24,55,34).concat([{pts:[[27.5,22],[36.5,22],[36.5,36],[27.5,36]],fill:rib,k:0}])});
+  // the bow: two soft loops, two tails, a round knot
+  b.sh([[31,22],[26,25.5],[21,25],[19.5,20],[22,15],[27,15.5],[31,19]],rib,{k:.2,hatch:0,hl:0,lw:.85,marks:[{pts:E(24.5,20,2.4,1.8,8),fill:ribD,op:.6}]});
+  b.sh([[33,22],[38,25.5],[43,25],[44.5,20],[42,15],[37,15.5],[33,19]],rib,{k:.2,hatch:0,hl:0,lw:.85,marks:[{pts:E(39.5,20,2.4,1.8,8),fill:ribD,op:.6}]});
+  b.sh(E(32,20.5,3.4,3,10),ribD,{hatch:0,hl:0,lw:.75,base:rib});
+  b.ex('spark',55,11,3.4);b.ex('dots',6,16,3.6);
+  return b.svg('0 0 64 64','','Wrapped gift')}
+function frPaw(){const b=mk('item','fr:paw'),r=b.r,ink='#C9566E',fill='#F28FA5',spk=(x,y,rx,ry)=>{const M=[];for(let i=0;i<5;i++){const a=r()*Math.PI*2,q=Math.sqrt(r())*.6;M.push({pts:E(x+Math.cos(a)*rx*q,y+Math.sin(a)*ry*q,.7+r()*.9,.6+r()*.7,6,r()*3),fill:'#FFFBF3',op:.55+r()*.3})}return M};
+  const a=-.12+(r()-.5)*.1,c=[33,40],R=pts=>rot(pts,a,c[0],c[1]);
+  b.sh(R([[19,46],[21,38],[27,32],[34,30.5],[41,32.5],[46,38],[47.5,46],[44,51],[38,52.5],[33,53],[27,52.5],[21.5,51]]),fill,{k:.2,hatch:0,hl:0,lw:1,ink,base:'#F8BFCB',dr:.15,marks:spk(33,42,11,8)});
+  [[16.5,27,4.6,5.8,-.35],[25.5,18.5,4.9,6.4,-.12],[37.5,17.5,5,6.6,.1],[48,24.5,4.5,5.6,.4]].forEach(([x,y,rx,ry,t],i)=>{const p=rot([[x+(r()-.5)*1.2,y+(r()-.5)*1.2]],a,c[0],c[1])[0];
+    b.sh(E(p[0],p[1],rx*(.94+r()*.12),ry*(.94+r()*.12),11,t+a),fill,{k:.2,hatch:0,hl:0,lw:.9,ink,base:'#F8BFCB',dr:.15,marks:i%2?spk(p[0],p[1],rx,ry).slice(0,2):[]})});
+  return b.svg('0 0 64 64','','Paw print')}
+function frRibbon(){const b=mk('icon','fr:ribbon');
+  // two tails with a soft V cut, under the rosette
+  b.sh([[25,40],[31,44],[27,61],[23.5,57],[18.5,59]],FR_MINT,{k:.05,hatch:0,hl:0,lw:.8,marks:[{pts:[[19,52],[30,52],[30,56],[19,56]],fill:'#7FC7BF',op:.7,k:0}]});
+  b.sh([[39,40],[33,44],[37,61],[40.5,57],[45.5,59]],FR_MINT,{k:.05,hatch:0,hl:0,lw:.8,marks:[{pts:[[34,52],[45,52],[45,56],[34,56]],fill:'#7FC7BF',op:.7,k:0}]});
+  b.sh(flowerP(32,27,23,7,.2),FR_MINT,{k:.1,hatch:0,hl:0,lw:.9,marks:[{pts:E(32,27,16,16,14),fill:'#BDE7D2'}]});
+  b.sh(E(32,27,14,14,16),'#FFFBF3',{hatch:0,hl:0,lw:.75,base:'#FFFFFF'});
+  b.sh(heartP(32,28.5,21),FR_PINK,{hatch:0,hl:0,lw:.8,dr:.1});
+  return b.svg('0 0 64 64','','Friend ribbon')}
+function frWheel(){const b=mk('prop','fr:wheel');
+  b.shadow(80,214,62,4);
+  // two wooden rails with notches, the drum between them
+  [[4,28],[140,28]].forEach(([x,y])=>{let nd='';for(let yy=y+10;yy<y+160;yy+=11)nd+=b.jl(x+3,yy,x+13,yy+.5,.4);
+    b.sh(RR(x,y,16,164,7),C.wood,{k:.05,hatch:0,hl:0,lw:.95,base:'#F3DDB4',inner:b.st(nd,C.woodD,1.6,.9)})});
+  b.sh(RR(16,10,128,200,20),'#FFFBF3',{k:.05,hatch:0,hl:0,lw:1.15,base:'#FFFFFF',
+   marks:[{pts:[[10,4],[150,4],[150,28],[10,28]],fill:'#EADDCB',op:.75,k:0},{pts:[[10,22],[150,22],[150,30],[10,30]],fill:'#F3EADC',op:.8,k:0},
+     {pts:[[10,192],[150,192],[150,216],[10,216]],fill:'#EADDCB',op:.75,k:0},{pts:[[10,188],[150,188],[150,194],[10,194]],fill:'#F3EADC',op:.8,k:0},
+     {pts:[[10,92],[150,92],[150,128],[10,128]],fill:'#FFF3C8',op:.9,k:0}]});
+  b.ln([[20,28.5],[80,29.3],[140,28.5]],{w:1.2,col:GRAPH});b.ln([[20,191.5],[80,190.7],[140,191.5]],{w:1.2,col:GRAPH});
+  // soft pointers at the middle row (rounded, nothing sharp)
+  b.sh([[1,101],[11,104],[15,110],[11,116],[1,119],[2,110]],FR_PINK,{k:.35,hatch:0,hl:0,lw:.85,top:1});
+  b.sh([[159,101],[149,104],[145,110],[149,116],[159,119],[158,110]],FR_PINK,{k:.35,hatch:0,hl:0,lw:.85,top:1});
+  return b.svg('0 0 160 220','','Name wheel')}
+PA.FRIENDS={badge:()=>serve('fr:badge',frBadge),card:code=>serve('fr:card:'+(code==null?'':String(code)),()=>frCard(code)),wrap:n=>serve('fr:wrap:'+(((n|0)%3+3)%3),()=>frWrap(n)),
+  paw:()=>serve('fr:paw',frPaw),ribbon:()=>serve('fr:ribbon',frRibbon),wheel:()=>serve('fr:wheel',frWheel),
+  cardQR:Object.assign({},FR_QR),cardLine:Object.assign({},FR_LINE),wheelText:{x1:24,x2:136,y1:30,y2:190,cy:110,band:[92,128]}};
+
 PA._wbFlush=()=>{for(const k in CACHE)delete CACHE[k]};
 PA.WORLD_B={beds:Object.keys(BEDS),obstacles:Object.keys(OBS),bowlFoods:BOWL_FOODS.slice(),icons:Object.keys(ICONS),items:Object.keys(ITEMS),houses:Object.keys(HOUSES),collectibles:Object.keys(COLS),props:Object.keys(PROPS),furniture:V27_FURN.slice(),
   winter:{props:Object.keys(WN_LBL),stallKinds:['winter','newyear'],items:['Warm Carob Cup','Snowflake Oat Cookies','Snow Day Stew','Pup Kinton','Very Ugly Sweater','Reindeer Antlers','Snowflake Snood','Ugly Sweater Rosette','Year of the Sheep Hood','Paper Snowflake Garland','Felt Holly Wreath','Red Wooden Sled','Kadomatsu Pair'],icons:['snowdrift','snowdog','sweater','fortune','wstall','fuji'],bowlFoods:BOWL28.slice()}};

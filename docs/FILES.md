@@ -4,6 +4,7 @@ Read the section you need before changing a system.
 
 - `game/shell.html` + `game/css/*` + `game/src/*`: the game. Everything in `src/` is **one shared scope** (IIFE opens in `00_core.js`, closes in `23_boot.js`). Files load in `ORDER.txt` order. A new feature means a new `NN_feature.js` (and `.css`) added to `ORDER.txt`.
 - `dogs/pawart_dogs.js`, `world/pawart_world_{a,b,c,d,e}.js` (d and e: v2.11 Tokyo scenes and props): art modules (`window.PawArt`).
+  - World B (`world/pawart_world_b.js`): PA.FRIENDS (v2.19): badge, card, wrap, paw, ribbon, wheel (card QR area `PA.FRIENDS.cardQR`, code line `cardLine`, wheel text area `wheelText`).
 - `mods/{genes,pawaudio,walkrun,toys,garden,kitchen}.js`: gameplay modules (`window.PawGenes`, `PawAudio`, `PawWalk`, `PawToys`, `PawGarden`, `PawKitchen`). Modules never touch localStorage or game state; the game passes callbacks.
 - The `*_v1…v9.js`, `world/a|b|c/`, galleries and `*_reference.*` files are earlier art versions and review pages. They are not part of the build.
 - `V12.md` … `V2.md`, `V2_GENES.md`, `API*.md`, `TREASURE.md`: the build contract for each version. Check the relevant one before changing a system.
