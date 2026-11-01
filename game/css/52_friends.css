@@ -50,3 +50,17 @@ html[data-layout="phone"] .fr-prev{font-size:28px}
 html[data-layout="phone"] .fr-nm{font-size:22px}
 html[data-layout="phone"] #bar .barpop.fr-four{flex-wrap:wrap;width:max-content;max-width:calc(100vw - 12px)}
 html[data-layout="phone"] #bar .barpop.fr-four .act{min-width:0;flex:1 1 calc(50% - 8px);max-width:calc(50% - 8px)}
+/* part 3: a friend's yard (cur.mode 'fryard'). Read-only: the missions, the dog switcher, the photo button and the scene's own hot spots rest; the care buttons look resting */
+#stage.frvisit :is(#msBtn,#hudPack,#mmMs,#mmPhoto,#phBtn){display:none !important}
+#stage.frvisit #view svg.world #sceneG :is([data-hot],[data-shop]){pointer-events:none;cursor:default}
+#stage.frvisit #bar .act:is([data-act="feed"],[data-act="play"],[data-act="care"],[data-act="walk"],[data-act="wardrobe"],[data-act="journal"]){opacity:.5}
+#view .frdog:not(.fr-mine){cursor:pointer}
+#view .frdog:focus-visible{outline:none}
+#view .frdog:focus-visible .fr-hit{stroke:#F28FA5;stroke-width:4;stroke-dasharray:8 6}
+#placeBtns.fr-pbtns .btn{min-height:44px;min-width:44px}
+#placeBtns.fr-pbtns .btn.soon{opacity:.75;cursor:default}
+.fr-notes{display:flex;flex-direction:column;gap:8px;min-width:0}
+.fr-notes p{margin:0}
+.fr-notelist{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;min-width:0}
+.fr-notelist .btn.fr-note{min-height:44px;text-align:left;white-space:normal;overflow-wrap:anywhere}
+html[data-layout="phone"] .fr-notelist{grid-template-columns:1fr}
