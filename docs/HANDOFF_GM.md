@@ -31,7 +31,7 @@ Previous Game Manager: session_01D6KLY6MoiRhP5ZXAV2ww5M (archive it once you are
   1. `subscribe_pr_activity`.
   2. Check out the branch in a worktree.
   3. Diff it against `main` and check it against V219.md, AGENTS.md and the CLAUDE.md rules.
-  4. Run the issue's suites one at a time (`NODE_PATH=$(npm root -g)`; Miniflare and Playwright are global).
+  4. Run the issue's suites one at a time (`NODE_PATH=$(npm root -g)`; Miniflare and Playwright are global). To wait for another suite, match only node: `until ! pgrep -f "^node .*run_tests.js" >/dev/null; do sleep 20; done` (a bare `pgrep -f run_tests.js` matches the waiting shell itself and never ends). The `site` suite needs `dist/itch`: `node game/build.js publish && node tools/itch.js` with esbuild 0.24.0 on NODE_PATH.
   5. Look at its screenshots.
 - **Review:** `pull_request_review_write`, always as COMMENT (the PRs come from the owner's own account, so APPROVE and REQUEST_CHANGES fail). It opens with "**Verdict: approve**" or "**Verdict: fixes needed**", then a numbered list. With fixes, the last line is "@cursor please fix items 1–N above on this branch, re-run the issue's suites one at a time, and reply with the summaries." Then the attribution footer.
 - **New commits** on a subscribed PR: re-review.
