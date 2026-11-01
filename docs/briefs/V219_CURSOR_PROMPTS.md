@@ -17,9 +17,9 @@ Paste one prompt per Cursor task. The work order is in issue #3:
 | 2 Friend codes and the Friends sheet | #5 | `cursor/v219-friends-sheet` | Cursor | PR #12 merged 1 Nov |
 | 3 Yard visits, pets and notes | #6 | `claude/v219-visits` | Claude | PR #14 merged 1 Nov |
 | 4 Gifts | #7 | `claude/v219-gifts` | Claude | PR #15 merged 1 Nov |
-| 5 Walk together | #8 | `claude/v219-walk` | Claude | coding (started 1 Nov) |
+| 5 Walk together | #8 | `claude/v219-walk` | Claude | PR #16 merged 1 Nov |
 | 6 Invite page and privacy | #9 | `cursor/v219-invite` | Cursor | PR #11 merged 1 Nov |
-| 7 Translations, NEWS, reviews, deploy, release | — | — | Claude | after all are merged, on the owner's date |
+| 7 Translations, NEWS, reviews, deploy, release | — | — | Claude | started 1 Nov; deploy and release on the owner's date |
 
 ## Shared header (the same for every prompt)
 
