@@ -19,3 +19,16 @@ Reviewer read the code; no suites, no Miniflare proof. Fix in the one fix batch,
 
 ## Checked, fine
 Auth on every /friends route; no user_id/email/time in responses; block = not_found both ways, survives code rotation and Leave; all SQL bound; frCode rejection sampling right; unique indexes match the per-day rules; yard 16 KB cap checked on read; 30-day delete only on inbox read. FR_NOTES 12 / FR_GIFTS 47 / FR_DECOR 31 / FR_HOUSES 14 match FR_LIM and orderOk ties them to FOOD, CROPS_FB, HM_DECOR, HOUSES; no Golden Bone, Fresh Water or people food. Migration additive; gifts leave the bag only after ok; coins 10×2 before BOOST; walk guest one slot, no stats; no double claim; FR_LIVE=false hides button, tray, walk row, Settings row, news and every call; FR_LIVE=true safe at load (no TDZ); every string esc()'d; the visit can't change either save beyond Bond and S.fr; qr.js stateless. Invite page validates the code ^DOG-[A-HJKMNP-Z2-9]{5}$, noindex meta + header, CSP fine, friend= redirect can't loop. Words rule clean.
+
+## Fix batch (8aea677, 1 Nov 2026)
+1. Fixed in 8aea677 (frApi makes no guest while clOwner() is set with no login; frLoad forgets fid/code/name when me is null; Worker add/send are 'bad' without my own friend id; tests in v219_friends 4/4b and worker).
+2. Fixed in 8aea677 (inbox `order by (kind in ('gift','walk')), id`; worker test with 31 gifts/walks then a pet and a note).
+3. Fixed in 8aea677 (frToday = jstISO; v219Fields resets on the JST day).
+4. Fixed in 8aea677 (runner: no friend pay or letter for an early end with distance < 2 and no treasure).
+5. Fixed in 8aea677 (Leave keeps today's counters).
+6. Fixed in 8aea677 (S.fr.snap = my dogs' ids in the last snapshot sent; fallback NAME()).
+7. Fixed in 8aea677 (send's rate limit right after the shape check).
+8. Fixed in 8aea677 (history.replaceState strips friend= once read).
+9. Fixed in 8aea677 (PRIVACY.md guest line matches the site; the delete step names Friends data, site key privacy.delete in 11 languages).
+10. Skipped: at release (NEWS_V219.date, POLICY_DATE = the launch date).
+11. Skipped: not trivial; qr.js lazy-load can wait.

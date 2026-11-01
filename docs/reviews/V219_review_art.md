@@ -14,3 +14,9 @@ Passed: every PA.FRIENDS piece keeps its fills inside its outlines at 8-15x (bad
 6. At night the paw stamp stays day-bright pink beside the night-tinted decor. 50_friends.js:651 frStampSVG; SA/d_visit_night.png, SA/d_stamp_night_zoom.png. Fix: pass the stamp through propTint(svg, false, false) like frDecorArt.
 7. News line "No typing and no search..." uses the calendar icon (fwCalIcon), which means nothing there. 49c_news.js:49. Fix: ICON('lock'), or a tiny PA.FRIENDS.card('').
 8. QR quiet zone is 1 module plus the 4-unit tile margin (about 2 modules; the spec asks for 4). 50_friends.js:155 `q = 1`. Fix: q = 2 if a phone camera struggles to read it from the card at 390 px; check on a real phone before changing.
+
+## Fix batch (8aea677, 1 Nov 2026)
+1. Fixed in 8aea677 (wheel and card text use 'Caveat','DD Local Title','DD Local',cursive).
+2. Fixed in 8aea677 (name baseline y 104). 3. Fixed in 8aea677 (ICON('heart') for pet; not sent = grayscale + .4).
+4. Fixed in 8aea677 (frRibbon lines lw 1.8-2.2). 5. Skipped (not trivial; accepted overlap).
+6. Fixed in 8aea677 (propTint on the stamp). 7. Fixed in 8aea677 (ICON('lock')). 8. Fixed in 8aea677 (q = 2; check on a real phone).

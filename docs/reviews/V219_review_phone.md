@@ -17,3 +17,14 @@ Passed: every Friends sheet fits 390x844 and 360x740 in en, ja, de, th; taps >= 
 10. Paw stamp hidden behind the place buttons at 390/360; faded "...today" buttons over the dogs. Put the stamp spot higher on phones.
 11. th: the taller Friends sheets' bottom padding slips ~10 px under the phone bar (360). NEWS_V219 date (see code review 10).
 Already accepted: dog overlap at 360 (also heavy at 390 with dogs standing still under the harness), 10 px ribbon, sideways friend row.
+
+## Fix batch (8aea677, 1 Nov 2026)
+1. Fixed in 8aea677 ("..." patches its row; every other redraw patches the open sheet in place, scrollTop kept, .fr-pop scrolled into view; back from a gift reopens without the pop-in at the old scroll).
+2. Fixed in 8aea677 (no textLength; frFit measures and steps the size down to 70%, squeezes only past 100/108; refit after fonts load).
+3. Fixed in 8aea677 (fryard on phones: #phPeek look-around button on the left and a drag pan; the Bird Bath at x 24 shows).
+4. Fixed in 8aea677.
+5. Fixed in 8aea677 (walk letters set m.dog; note and pet letters draw the paw in .pc-photo).
+6. Fixed in 8aea677. 7. Fixed in 8aea677 (keep-all for ja). 8. Fixed in 8aea677 (badge doodle head).
+9. Fixed in 8aea677 (Remove waits for its Undo toast; "Block {name}? They won't be able to add you again.").
+10. Fixed in 8aea677 (stamp 70 units higher on phones; "...today" buttons opaque, desaturated).
+11. Fixed in 8aea677 (14 px foot padding on the Friends sheets); not re-shot in th at 360.
