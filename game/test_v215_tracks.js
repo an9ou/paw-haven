@@ -201,21 +201,29 @@ run('v215_tracks', async (t) => {
     // v2.17 (V217.md 1, 7): a daily wish pays 10 coins, at most 20 a day; the letters, the stickers and the Bond track give items and frames, never coins
     const ddc = await ev(() => ({ cap: window.__paw.dd.coinCap, one: window.__paw.dd.coin }));
     ok(ddc.one === 10 && ddc.cap === 20 && avgWalk / ddc.cap > 4, `walks stay the main income: about ${Math.round(avgWalk)} route coins a day from walks against at most ${ddc.cap} wish coins a day`);
+    // v2.19 Friends (V219.md 6): a walk with a friend's dog pays 10 coins before the BOOST, for at most 2 friend walks a day: 20 a day before the BOOST,
+    // the only coins friends ever give (pets give Bond, gifts and walk treasures are items). Walks stay the main income with the friend bonus at its cap
+    await t.until(() => !!(window.__paw && window.__paw.fr), null, 5000);
+    const frc = await ev(() => window.__paw.fr.econ());
+    ok(frc.one === 10 && frc.max === 2 && frc.cap === 20 && avgWalk / frc.cap > 4 && avgWalk > frc.cap * 4, `walks stay the main income: about ${Math.round(avgWalk)} route coins a day from walks against at most ${frc.cap} friend walk coins a day (both before the BOOST)`);
+    ok((avgWalk + frc.cap) / avgWalk < 1.25, `the friend bonus at its cap adds under a quarter to a walking day: ${Math.round(avgWalk)} + ${frc.cap}`);
     // v2.17 review: every capped source that costs no Energy, all at once, in real coins (each pays raw): Pip's cart 60 (PIP_CAP), the Town Square
     // goal 30, 3 missions x 15 (MS_PAY), wishes 20, the calendar 80 a month. Walks (route coins, doubled by the prototype BOOST in addCoins) stay the largest.
-    const capped = { garden: 60, square: 30, missions: 3 * 15, wishes: ddc.cap, calendar: cal.coins / 30 + (await ev(() => { const F = window.__paw.fw; let c = 0, n = 0; for (let m = 1; m <= 12; m++) { const ym = '2026-' + String(m).padStart(2, '0'); for (let d = 1; d <= new Date(2026, m, 0).getDate(); d++) { const r = F.daily(ym, d); if (r.t === 'coins') c += r.c; n++; } } return c / n; })) /* v2.17: + the daily gifts, about 5 a day */ }, capSum = Object.values(capped).reduce((a, b) => a + b, 0);
+    // v2.19: plus the friend walks at their cap, in real coins (20 before the BOOST, which addCoins doubles: 40)
+    const capped = { garden: 60, square: 30, missions: 3 * 15, wishes: ddc.cap, friends: frc.cap * 2, calendar: cal.coins / 30 + (await ev(() => { const F = window.__paw.fw; let c = 0, n = 0; for (let m = 1; m <= 12; m++) { const ym = '2026-' + String(m).padStart(2, '0'); for (let d = 1; d <= new Date(2026, m, 0).getDate(); d++) { const r = F.daily(ym, d); if (r.t === 'coins') c += r.c; n++; } } return c / n; })) /* v2.17: + the daily gifts, about 5 a day */ }, capSum = Object.values(capped).reduce((a, b) => a + b, 0);
     ok(Object.values(capped).every((v) => avgWalk > v) && avgWalk * 2 > capSum, `walks stay the largest source: ${Math.round(avgWalk * 2)} real coins a day from walks against ${Math.round(capSum)} from every capped no-Energy source together (${Object.entries(capped).map(([k, v]) => k + ' ' + Math.round(v)).join(', ')})`);
     // v2.18 Fun Fair (V218.md 7): the caps table FF_CAPS (49_funfair.js): eight games a day, the Saturday stall and the weekly photo contest (as a daily share).
     // Every source on its own, at its cap, in real coins: walks (route coins doubled by the BOOST) stay the largest single source, and all of v2.18 together stays below walks.
     await t.until(() => !!(window.__paw && window.__paw.ff), null, 5000);
     const ffc = await ev(() => window.__paw.ff.caps), ffDaily = {};
     Object.entries(ffc).forEach(([k, c]) => { ffDaily['ff_' + k] = c.day != null ? c.day : c.week / 7; });
-    const ffSum = Object.values(ffDaily).reduce((a, b) => a + b, 0), walkReal = avgWalk * 2;
+    // (FF_CAPS.toys, the Winter Market review's one shared cap for the toy games, 30 a day, is a single source here but not one of the v2.18 games)
+    const ffSum = Object.entries(ffDaily).filter(([k]) => k !== 'ff_toys').reduce((a, [, b]) => a + b, 0), walkReal = avgWalk * 2;
     const every = Object.assign({ ball: S0.ballCap, agility: S0.agCap }, capped, ffDaily);
     console.log('  sources (real coins a day at the cap): walks ' + Math.round(walkReal) + ', ' + Object.entries(every).map(([k, v]) => k + ' ' + (Math.round(v * 10) / 10)).join(', ') + ' | all of v2.18 ' + Math.round(ffSum) + ' | everything but walks ' + Math.round(Object.values(every).reduce((a, b) => a + b, 0)));
-    ok(Object.keys(ffc).length === 10 && Object.values(every).every((v) => walkReal > v), `walks (${Math.round(walkReal)} a day) are the largest single source; the biggest other is ${Object.entries(every).sort((a, b) => b[1] - a[1])[0].join(' ')}`);
+    ok(Object.keys(ffc).length === 11 && Object.values(every).every((v) => walkReal > v), `walks (${Math.round(walkReal)} a day) are the largest single source; the biggest other is ${Object.entries(every).sort((a, b) => b[1] - a[1])[0].join(' ')}`);
     ok(ffSum < walkReal && ffSum < avgWalk * 1.3, `all v2.18 sources together (${Math.round(ffSum)} a day at every cap) stay below walks (${Math.round(walkReal)})`);
-    ok(Object.entries(ffc).every(([k, c]) => (c.day != null ? c.day <= 20 && c.round <= c.day && c.en > 0 : c.week <= 40)), 'every game costs Energy and pays at most 20 a day; the stall and the contest at most 40 and 30 a week');
+    ok(Object.entries(ffc).every(([k, c]) => k === 'toys' ? c.day === 30 : (c.day != null ? c.day <= 20 && c.round <= c.day && c.en > 0 : c.week <= 40)), 'every game costs Energy and pays at most 20 a day; the stall and the contest at most 40 and 30 a week; the toy games share one cap of 30 a day (Winter Market)');
     // the real game's own accounting for the two capped sources: agility coins left, ball coins left, the pool's paddle pays nothing
     const real = await ev(() => { const P = window.__paw, S = P.S; S.ag.day = P.pl.today(); S.ag.coins = 40; const l1 = P.ag.left(); S.ag.coins = 10; const l2 = P.ag.left(); S.ag.coins = 0; return { l1, l2 }; });
     ok(real.l1 === 0 && real.l2 === 30, 'agCoinsLeft follows S.ag.coins (cap 40): ' + JSON.stringify(real));

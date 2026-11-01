@@ -1,6 +1,7 @@
 /* ======================= v2.19 "Friends first": 50_friends.js (tag fr) =======================
    Friend codes and the Friends sheet (V219.md sections 0, 2, 3 and 8). Part 3 (section 4): yard visits (cur.mode 'fryard'), pets and paw-print
-   notes, and the pet letters. Part 4 (section 5): gifts, one a day in all, from the bag (FR_GIFTS), and gift letters. The walk comes later.
+   notes, and the pet letters. Part 4 (section 5): gifts, one a day in all, from the bag (FR_GIFTS), and gift letters. Part 5 (section 6): walk together,
+   a friend's dog from their snapshot joins the next walk (the route picker row, S.fr.guest), +10 coins for 2 friend walks a day, walk letters.
    Save field S.fr (v219Fields in 00_core.js). Test hook: window.__paw.fr.
    No typed text leaves the device: names are word indices, notes are FR_NOTES indices, dogs are Dog Card indices.
    Off until the v2.19 release (FR_LIVE). A test turns it on with prefs.frTest or window.__pawCloudMock. Never on the claude.ai artifact. */
@@ -95,18 +96,27 @@ async function frApi(method, path, body) {
 function frErr(r) { return (r && r.data && r.data.error) || (r && r.error && r.error.message) || ''; }
 
 /* ---------- the yard snapshot (V219.md section 2). Indices only. Never a typed dog name. ---------- */
+// a dog as a Dog Card dog { b, c, o, a, s, sp, n }, or null (a breed the cards do not know, or double merle)
+function frCardOf(d) {
+  if (!d || typeof dcDogOf !== 'function') return null;
+  const x = dcDogOf(d);
+  if (!x || !Number.isInteger(x.b) || x.b < 0) return null;
+  if (x.c && x.c.M && x.c.M[0] === 'M' && x.c.M[1] === 'M') return null;
+  return { b: x.b, c: x.c, o: x.o, a: x.a, s: x.s, sp: x.sp ? 1 : 0, n: x.n };
+}
+// the snapshot's dogs in order (the leader first, at most 5): { d: my dog, x: its card dog }. A walk letter's `dog` index points into this list
+function frYardDogs() {
+  const out = [], lead = S && S.dog;
+  [lead].concat(((S && S.dogs) || []).filter((d) => d && lead && d.id !== lead.id)).forEach((d) => {
+    if (out.length >= 5) return;
+    const x = frCardOf(d); if (x) out.push({ d, x });
+  });
+  return out;
+}
 function frYard() {
   if (!S || !S.fr) return null;
   v219Fields(S);
-  const dogs = [];
-  const lead = S.dog;
-  [lead].concat((S.dogs || []).filter((d) => d && lead && d.id !== lead.id)).forEach((d) => {
-    if (!d || dogs.length >= 5 || typeof dcDogOf !== 'function') return;
-    const x = dcDogOf(d);
-    if (!x || !Number.isInteger(x.b) || x.b < 0) return;
-    if (x.c && x.c.M && x.c.M[0] === 'M' && x.c.M[1] === 'M') return;
-    dogs.push({ b: x.b, c: x.c, o: x.o, a: x.a, s: x.s, sp: x.sp ? 1 : 0, n: x.n });
-  });
+  const dogs = frYardDogs().map((o) => o.x);
   const decor = [];
   if (typeof hmDecorFields === 'function') hmDecorFields();
   Object.keys((S && S.decor) || {}).forEach((n) => {
@@ -214,11 +224,12 @@ async function frLoad() {
     FR.offline = false; FR.loadDay = localISO(); // the list's sent flags are for today
     if (r.data.me) frApplyMe(r.data.me);
     frCache(Array.isArray(r.data.friends) ? r.data.friends : []);
+    if (S.fr.cache.day !== FR.loadDay) { S.fr.cache.day = FR.loadDay; markDirty(); } // part 5: the day the friends' snapshot dogs were fetched (the walk row asks once a day)
     return r.data;
   } catch (e) { FR.offline = true; return null; }
 }
 
-/* ---------- inbox: notes become postcard letters, a day's pets one letter, gifts mailbox gift letters (at most 5 a day), and those are claimed. walk stays, and counts on the badge. ---------- */
+/* ---------- inbox: notes become postcard letters, a day's pets one letter, gifts mailbox gift letters (at most 5 a day), walks walk letters (at most 3 a day), and those are claimed. The rest count on the badge. ---------- */
 const FR_PET_MAX = 5; // Bond from pets: at most 5 friends petted (S.fr.pets) and 5 claimed pets (S.fr.gotPets) a day
 function frPetText(m) {
   const who = m.frPets.who, name = frPairName(who[0]) || tt('fr.a_friend', 'A friend'), more = who.length - 1;
@@ -275,10 +286,10 @@ async function frInbox() {
     if (typeof mailPush === 'function') mailPush({ kind: 'postcard', id: 'fr_note_' + ev.id, from: name, title: tt('fr.note_title', 'A paw print from {name}', { name }), text: tt('fr.note_' + i, FR_NOTES[i]), frPaw: true });
     claim.push(ev.id);
   });
-  const gave = frGiftLetters(r.data.events, claim);
+  const gave = frGiftLetters(r.data.events, claim) + frWalkLetters(r.data.events, claim);
   FR.pending = r.data.events.filter((ev) => ev && !claim.includes(ev.id)).length;
   frBadgeSync();
-  if (gave) { try { saveNow(); } catch (e) { /* storage */ } } // the gift letter is saved on this device before the Worker hears the claim
+  if (gave) { try { saveNow(); } catch (e) { /* storage */ } } // the gift and walk letters are saved on this device before the Worker hears the claim
   if (claim.length) { try { await frApi('POST', '/friends/inbox/claim', { ids: claim.slice(0, 30) }); } catch (e) { /* the letter is already here. the next look claims it */ } }
 }
 function frInboxSoon(force) {
@@ -881,6 +892,7 @@ function frWrapSVG(n) {
 // the letter's doodle (07b_mailbox.js letterBody): a paw for a note, the wrapped gift for a gift
 function frLetterArt(m) {
   if (m && m.frPaw) return frPawHTML();
+  if (m && m.frDog && typeof m.frDog === 'object') return `<span class="fr-letterpaw fr-letterdog" aria-hidden="true">${frHeadHTML(m.frDog)}</span>`; // a walk letter: the friend's dog that walked
   if (m && Number.isInteger(m.frWrap)) return `<span class="fr-letterpaw fr-letterwrap" aria-hidden="true">${frWrapSVG(m.frWrap)}</span>`;
   return '';
 }
@@ -957,6 +969,154 @@ function frGiftLetters(events, claim) {
   });
   return made;
 }
+/* ---------- part 5: walk together (V219.md section 6). A friend's dog from their snapshot joins the next walk as one more o.pack follower ----------
+   The route picker row (17_walk_route_carousel.js) lists the friends' snapshot dogs from the cached list (GET /friends, fetched at most once a day for the row:
+   S.fr.cache.day). The pick is S.fr.guest { fid, dog } ("Just us" = null, the default). It lasts until the walk ends: it is cleared when the walk ends or is
+   left, on every yard:enter and on a reload, so a walk started from a run gate never takes an old pick. In the runner the guest is cosmetic: drawn from its card
+   look with the friend ribbon, no stats, no Bond, no food, not a walker of mine (PKS.walk never holds it, so no pack bonus). It takes one follower slot: with
+   the leader and the walkers it never goes over MAX_DOGS. At the end: +10 coins (before BOOST) for at most 2 friend walks a day, and one walk event per friend
+   per day ({ dog, mine, t? }). A later walk with the same friend that day pays nothing and sends nothing (S.fr.walked). */
+const FR_WALK_COINS = 10, FR_WALK_MAX = 2; // friends add at most 20 coins a day before BOOST (the only coins from friends)
+const FR_GOT_WALKS = 3; // walk letters a day (S.fr.gotWalks). The rest stay unclaimed until tomorrow
+const FR_WALK_SHOW = 30; // dogs in the picker row at most (50 friends x 5 dogs would be a very long row)
+const FRW = { g: null, ask: '' }; // g: the guest of the walk that is running { fid, dog, pair, d }. ask: the day the row fetched the list
+function frRibbonSVG() {
+  try { const P = window.PawArt; if (P && P.FRIENDS && typeof P.FRIENDS.ribbon === 'function') { const s = P.FRIENDS.ribbon(); if (s) return s; } } catch (e) { /* art missing */ }
+  return ICON('bond'); // TODO art
+}
+// the friends' snapshot dogs: { fid, dog (the index in their snapshot), pair (their friend name), d (the card dog as dcDog draws it) }
+function frWalkDogs() {
+  if (!S || !S.fr || !S.fr.cache || typeof dcDog !== 'function') return [];
+  const out = [];
+  frSorted(S.fr.cache.friends || []).forEach((f) => {
+    if (!f || typeof f.fid !== 'string' || !Array.isArray(f.dogs)) return;
+    const card = { id: 'fr:' + f.fid, name: Array.isArray(f.name) ? f.name : [0, 0], dogs: f.dogs.slice(0, 5) };
+    card.dogs.forEach((x, i) => {
+      if (!x || typeof x !== 'object' || out.length >= FR_WALK_SHOW) return;
+      let d = null; try { d = dcDog(card, i); } catch (e) { d = null; } // a breed this copy does not know yet
+      if (d) out.push({ fid: f.fid, dog: i, pair: card.name, d });
+    });
+  });
+  return out;
+}
+const frWalkWho = (o) => tt('fr.walk_who', "{name}'s {dog}", { name: frPairName(o.pair) || tt('fr.a_friend', 'A friend'), dog: o.d.name });
+// the pack has no room for a guest on route k: the leader and the walkers already make MAX_DOGS
+const frWalkFull = (k) => typeof pkDogs === 'function' && pkDogs('walk', k).length >= MAX_DOGS;
+function frGuestClear() { if (S && S.fr && S.fr.guest) { S.fr.guest = null; markDirty(); } }
+function frWalkRowInner(list) {
+  const k = ROUTE_KEYS[routeIdx], full = frWalkFull(k), g = S.fr.guest;
+  const on = (o) => !full && !!g && g.fid === o.fid && g.dog === o.dog, picked = list.some(on);
+  const dis = full ? ' disabled aria-disabled="true"' : '';
+  const just = `<button class="chip cr-chip on pk-pickb fr-wchip fr-wjust" type="button" data-frg=""${dis} aria-pressed="${!picked}"><span class="cr-name">${esc(tt('fr.walk_just', 'Just us'))}</span></button>`;
+  const chips = list.map((o) => {
+    const fn = frPairName(o.pair) || tt('fr.a_friend', 'A friend');
+    return `<button class="chip cr-chip on pk-pickb fr-wchip" type="button" data-frg="${esc(o.fid)}:${o.dog}"${dis} aria-pressed="${on(o)}" aria-label="${esc(tt('fr.walk_aria', '{dog}, {name}\'s dog', { dog: o.d.name, name: fn }))}"><span class="cr-head" aria-hidden="true">${headSVG(o.d)}</span><span class="fr-wnm"><b class="cr-name">${esc(o.d.name)}</b><small>${esc(fn)}</small></span></button>`;
+  }).join('');
+  const cap = full ? `<p class="small fr-walkcap fr-walkfull">${esc(tt('fr.walk_full', 'Your pack is full today'))}</p>` : `<p class="small fr-walkcap">${esc(tt('fr.walk_row', "Walk with a friend's dog"))}</p>`; // a full pack: the row says so instead
+  return `${cap}<div class="cr-chips fr-wchips" role="group" aria-label="${esc(tt('fr.walk_row', "Walk with a friend's dog"))}">${just}${chips}</div>`;
+}
+// the route picker row: hidden when Friends is off or there is no friend dog to walk with
+function frWalkRowHTML() {
+  if (!frOn() || !S || !S.fr || !S.fr.fid) return '';
+  const list = frWalkDogs(); if (!list.length) return '';
+  return `<div class="fr-walkrow" id="frWalkRow">${frWalkRowInner(list)}</div>`;
+}
+function frWalkBind() {
+  const row = $('#frWalkRow', view); if (!row || row.dataset.bound) return;
+  row.dataset.bound = '1';
+  row.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-frg]'); if (!b || b.disabled || !row.contains(b)) return;
+    SFX.click();
+    const v = b.dataset.frg, cut = v.lastIndexOf(':');
+    S.fr.guest = v && cut > 0 ? { fid: v.slice(0, cut), dog: +v.slice(cut + 1) } : null; markDirty();
+    frWalkSync();
+  });
+}
+// redraw the row for the route that is showing (the pack can be full on one route and not on another). Called by layoutRoutes and the pack chips
+function frWalkSync() {
+  if (cur.mode !== 'routes') return;
+  const row = $('#frWalkRow', view), html = frWalkRowHTML();
+  if (!html) { if (row) row.remove(); return; }
+  if (!row) { const foot = $('.rt-foot', view); if (!foot) return; foot.insertAdjacentHTML('beforebegin', html); frWalkBind(); return; }
+  const sc = $('.fr-wchips', row), x = sc ? sc.scrollLeft : 0;
+  row.innerHTML = frWalkRowInner(frWalkDogs());
+  const sc2 = $('.fr-wchips', row); if (sc2) sc2.scrollLeft = x;
+}
+// the route picker opened: bind the row and, once a day, fetch the friends' list (their snapshot dogs)
+function frWalkInit() {
+  frWalkBind();
+  if (!frOn() || !S || !S.fr || !S.fr.fid) return;
+  const today = frToday();
+  if (S.fr.cache.day === today || FRW.ask === today) return;
+  FRW.ask = today;
+  frLoad().then(() => frWalkSync()).catch(() => { /* the cached dogs stay */ });
+}
+// the walk starts (enterWalk): the picked guest, if the pack has room and the friend's dog is still in the list. Else none, and the pick is cleared
+function frWalkStart() {
+  FRW.g = null;
+  const g = S && S.fr && S.fr.guest;
+  if (!g || !frOn()) { frGuestClear(); return null; }
+  const o = pkWalkers().length + 2 <= MAX_DOGS ? frWalkDogs().find((x) => x.fid === g.fid && x.dog === g.dog) : null;
+  if (!o) { frGuestClear(); return null; }
+  FRW.g = o; return o;
+}
+// the runner's look for the guest, as pkWalkLooks makes one for a walker (dogForMod's fields), plus friend: true and the ribbon. [] without a guest
+function frGuestLooks() {
+  const o = FRW.g; if (!o) return [];
+  const d = o.d, c = coatInfo(d);
+  return [Object.assign({ key: artKey(d.key), name: d.name, outfit: Object.assign({}, d.outfit), sex: d.sex, size: sizeK(d), friend: true, ribbon: frRibbonSVG() }, lookOpts(d, c))];
+}
+function frWalkDrop() { FRW.g = null; frGuestClear(); }
+// the walk ended (finishWalkMod, endWalk). tName: the walk's treasure (its English name), if one was found. Returns the summary line, or ''
+function frWalkEnd(tName) {
+  const o = FRW.g; FRW.g = null; frGuestClear();
+  if (!o || !S || !S.fr) return '';
+  frDay();
+  const who = frWalkWho(o);
+  let n = 0;
+  if (!S.fr.walked.includes(o.fid) && !frSentToday(o.fid, 'walk')) { // the first walk with this friend today: the coins (2 friends a day) and the walk event
+    S.fr.walked = S.fr.walked.concat(o.fid).slice(-50); markDirty();
+    if (S.fr.walks < FR_WALK_MAX) { S.fr.walks++; n = addCoins(FR_WALK_COINS); }
+    frWalkSend(o, tName);
+  }
+  return `<p class="small fr-walked">${esc(n ? tt('fr.walk_paid', 'Walked with {who}: +{n}', { who, n: tnum(n) }) : tt('fr.walk_with', 'Walked with {who}.', { who }))}</p>`;
+}
+async function frWalkSend(o, tName) {
+  const mine = frCardOf(S.dog) || ((frYardDogs()[0] || {}).x) || null; if (!mine) return false; // no dog the cards can show: nothing to send
+  const data = { dog: o.dog, mine };
+  const t = tName ? FR_GIFTS.indexOf(tName) : -1; if (t >= 0 && !FR_GIFT_OFF.includes(t)) data.t = t;
+  let r = null;
+  try { r = await frApi('POST', '/friends/send', { fid: o.fid, kind: 'walk', data }); } catch (e) { r = null; }
+  if ((r && r.ok) || frErr(r) === 'limit') { frMarkSent(o.fid, 'walk'); return !!(r && r.ok); }
+  return false;
+}
+// receiving: each walk event becomes a letter, at most FR_GOT_WALKS a day (the rest wait for tomorrow). With a treasure (t, an FR_GIFTS index) it is a gift to
+// Collect; without one, just the letter. Saved before the claim, and S.fr.gotIds keeps an event that comes back (a failed claim) from giving twice. Returns the letters made
+function frWalkLetters(events, claim) {
+  if (typeof mailPush !== 'function') return 0;
+  if (typeof mailFields === 'function') mailFields();
+  let made = 0;
+  events.forEach((ev) => {
+    if (!ev || ev.kind !== 'walk' || !ev.from) return;
+    const d = ev.data && typeof ev.data === 'object' ? ev.data : {}, id = 'fr_walk_' + ev.id;
+    if (S.fr.gotIds.includes(ev.id) || (S.mail || []).some((m) => m && m.id === id)) { claim.push(ev.id); return; }
+    const hasT = d.t != null;
+    if (hasT && !(Number.isInteger(d.t) && d.t >= 0 && d.t < FR_GIFTS.length)) return; // an item from a newer copy waits for the update
+    if (S.fr.gotWalks >= FR_GOT_WALKS) return; // waits for tomorrow
+    S.fr.gotWalks++; S.fr.gotIds = S.fr.gotIds.concat(ev.id).slice(-60); markDirty();
+    const g = hasT ? frGiftRef(d.t) : null; // a slot that may no longer be given: just the letter
+    const name = frPairName(ev.from.name) || tt('fr.a_friend', 'A friend');
+    let theirs = null; try { theirs = d.mine && typeof d.mine === 'object' ? dcDog({ id: 'fr:' + ev.from.fid, name: ev.from.name || [0, 0], dogs: [d.mine] }, 0) : null; } catch (e) { theirs = null; }
+    const who = theirs ? tt('fr.walk_who', "{name}'s {dog}", { name, dog: theirs.name }) : name;
+    const me = Number.isInteger(d.dog) ? frYardDogs()[d.dog] : null, dog = me ? me.d.name : NAME();
+    const m = { id, from: name, title: tt('fr.walk_title', 'A walk with {who}', { who }), frDog: theirs ? d.mine : null };
+    if (g) Object.assign(m, { kind: 'gift', text: tt('fr.walk_found', '{dog} went for a walk with {who} and found {item} for you!', { dog, who, item: g.name }), gift: { item: g.n, cat: g.cat, id: g.id, n: 1 } });
+    else Object.assign(m, { kind: 'postcard', text: tt('fr.walk_text', '{dog} went for a walk with {who}!', { dog, who }) });
+    mailPush(m);
+    claim.push(ev.id); made++;
+  });
+  return made;
+}
 function enterFrYard() {
   if (!FRV.yard || !FRV.card) { setTimeout(() => { if (cur.mode === 'fryard') go('yard'); }, 0); return; }
   setChrome(true, true);
@@ -995,12 +1155,15 @@ function frExpose() {
     gifts: () => frGiftsOwned().map((g) => ({ i: g.i, n: g.n, cat: g.cat, have: frGiftHave(g) })), giftUsed: () => frGiftUsed(),
     giftRefs: () => FR_GIFTS.map((n, i) => { const g = frGiftRef(i); return g ? { i, n, cat: g.cat, id: g.id } : { i, n, cat: null }; }), people: () => PEOPLE_FB.map((x) => x.name),
     giftSheet: (fid) => frGiftSheet(fid, 'list'), sendGift: (fid, i) => frGiftSend(fid, i, null, ''),
+    walkDogs: () => frWalkDogs().map((o) => ({ fid: o.fid, dog: o.dog, name: o.d.name, key: o.d.key })), guest: () => (S && S.fr ? S.fr.guest : null), walkGuest: () => (FRW.g ? { fid: FRW.g.fid, dog: FRW.g.dog } : null),
+    walkFull: (k) => frWalkFull(k || ROUTE_KEYS[routeIdx]), econ: () => ({ one: FR_WALK_COINS, max: FR_WALK_MAX, cap: FR_WALK_COINS * FR_WALK_MAX, got: FR_GOT_WALKS }),
     scene: () => ({ mode: cur.mode, fid: FRV.fid, house: FRV.yard && FRV.yard.house, season: FRV.yard && FRV.yard.season, decor: FRV.yard ? FRV.yard.decor.map((d) => d.n) : [], dogs: FRV.dogs.map((v) => ({ mine: v.mine, name: v.dog.name, key: v.dog.key, pose: frPose(v), x: Math.round(v.x), y: Math.round(v.y) })) })
   };
 }
 frReadInvite();
 on('game:ready', () => { frExpose(); frDay(); setTimeout(() => { frHudSync(); frInboxSoon(true); frInviteTry(); }, 300); });
-on('yard:enter', () => setTimeout(frInviteTry, 400));
+on('yard:enter', () => { frWalkDrop(); setTimeout(frInviteTry, 400); }); // part 5: a walk pick lasts until the walk; home again is "Just us"
+on('game:ready', () => frGuestClear()); // part 5: a reload (also one in the middle of a walk) forgets the pick
 window.addEventListener('focus', () => frInboxSoon(false));
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') frInboxSoon(false); });
 setInterval(() => { try { frExpose(); frDay(); frHudSync(); frInviteTry(); } catch (e) { /* a tick never breaks the game */ } }, 4000);

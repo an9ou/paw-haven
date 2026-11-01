@@ -1034,10 +1034,12 @@ function v219Fields(s) {
   ['pets', 'gotPets', 'notes', 'gotGifts', 'walks', 'gotWalks'].forEach(num);
   if (typeof f.day !== 'string') f.day = '';
   if (typeof f.walkDay !== 'string') f.walkDay = '';
-  if (!Array.isArray(f.gotIds)) f.gotIds = []; // v2.19 part 4: the last gift event ids turned into letters (at most 60), so a claim that failed never gives twice
+  if (!Array.isArray(f.gotIds)) f.gotIds = []; // v2.19 part 4: the last gift event ids turned into letters (at most 60), so a claim that failed never gives twice (part 5: walk letters too)
+  if (!Array.isArray(f.walked)) f.walked = []; // v2.19 part 5: the friends walked with today (a repeat walk pays and sends nothing). Reset with walkDay
+  if (typeof f.cache.day !== 'string') f.cache.day = ''; // v2.19 part 5: the day the friends' list (their snapshot dogs) was last fetched
   const today = localISO();
   if (f.day !== today) { f.day = today; f.pets = 0; f.gotPets = 0; f.notes = 0; f.gift = false; f.gotGifts = 0; f.gotWalks = 0; }
-  if (f.walkDay !== today) { f.walkDay = today; f.walks = 0; }
+  if (f.walkDay !== today) { f.walkDay = today; f.walks = 0; f.walked = []; }
   return s;
 }
 // v2.16: BOND_TH moved Bond 2 and 3 closer. A loaded dog whose points already pass a threshold levels up here, quietly (no fanfare, no level-up queue);
