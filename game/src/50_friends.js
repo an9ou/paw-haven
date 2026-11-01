@@ -673,7 +673,7 @@ function frCam() {
   svg.setAttribute('viewBox', `${x.toFixed(1)} 0 ${w.toFixed(1)} 600`);
 }
 /* the dogs: the friend's (up to 5, Dog Card visitors' art and scale) and my leader. Under the harness they stand still unless prefs.rmTest (rmWander) */
-const frK = (v, y) => RM_BASE * clamp(1 + (y - 500) * RM_DEPTH, 0.86, 1.12) * sizeK(v.dog);
+const frK = (v, y) => RM_BASE * clamp(1 + (y - 500) * RM_DEPTH, 0.86, 1.12) * sizeK(v.dog) * (isPhone() ? 0.84 : 1); // a phone shows ~360 world units beside the house: a little smaller there, so a full pack fits without piling up
 const frTap = (x, y, k) => [x - 88 * k, y - 170 * k, 176 * k, 180 * k]; // the dog's tap rect (dc-hit) at feet x, y
 const frOver = (a, b) => Math.max(0, Math.min(a[0] + a[2], b[0] + b[2]) - Math.max(a[0], b[0])) * Math.max(0, Math.min(a[1] + a[3], b[1] + b[3]) - Math.max(a[1], b[1]));
 // what a dog must keep clear of, in world units: the chip, the buttons, the bar (phones) and the edges of what the camera shows
