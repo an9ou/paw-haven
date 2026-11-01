@@ -1,6 +1,13 @@
-# Game Manager handoff (1 Nov 2026)
+# Game Manager handoff (1 Nov 2026, 17:05 UTC)
 
-Previous Game Manager: session_01D6KLY6MoiRhP5ZXAV2ww5M (archive it once you are running). Marketing: session_01D6KLY45Jihk1dVrpVPDeSv (new 31 Oct, tag team:marketing, branch marketing/launch); brief it on every release.
+Previous Game Manager: session_01D6KLY2drW9wj7ssCq6Zesi (handed over at ~300k context; archive it once you are running). Marketing: session_01D6KLY45Jihk1dVrpVPDeSv (tag team:marketing). Brief it on every release; for v2.19 only once the owner has set the date.
+
+**v2.19 now (Cursor codes, Claude reviews; the progress table is in `docs/briefs/V219_CURSOR_PROMPTS.md`):**
+- Merged into main: part 1 Worker (#10), part 2 Friends sheet (#12, `FR_LIVE = false`), part 6 invite page and privacy (#11).
+- **Part 3 (#6, visits):** started 1 Nov 17:00 UTC by my `@cursor` comment on #6. Cursor will open `cursor/v219-visits`. Subscribe to it, review it and run its suites.
+- Next: part 4 (#7) after #6's PR is merged, then part 5 (#8) after #7's. Then part 7 (mine): translations, NEWS, three reviews, `FR_LIVE = true`, deploy the Worker, then the site and game, then release on the owner's date.
+- Make your own 3-hourly scheduled task. Copy the prompt of `trig_015HgYaCKCK77kFPVbC11evy` (I deleted it; it fired into my session).
+
 
 1. Live: v2.18.4 "Winter Market" on main (site, itch #2256996, GitHub). The owner's official launch was 1 Nov 00:00 JST, and Marketing has the go-ahead. The Winter Market opens in game 1-26 Dec. Its design and the decisions are in docs/design/winter-market.md.
 2. **New owner rule (31 Oct, in CLAUDE.md):** special and festival updates never go live without the owner's explicit go-ahead and launch date, and the 5-minute rule does not apply to them. I released v2.18.4 early without asking, and the owner was unhappy about it. Ask first.
