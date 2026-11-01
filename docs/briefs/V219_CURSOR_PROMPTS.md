@@ -15,8 +15,8 @@ Paste one prompt per Cursor task. The work order is in issue #3:
 | Design contract `V219.md`, `AGENTS.md`, issues | #3 | — | Claude | done |
 | 1 Worker and D1 | #4 | `cursor/v219-worker` | Cursor | PR #10 merged 1 Nov |
 | 2 Friend codes and the Friends sheet | #5 | `cursor/v219-friends-sheet` | Cursor | PR #12 merged 1 Nov |
-| 3 Yard visits, pets and notes | #6 | `claude/v219-visits` | Claude | coding (started 1 Nov 17:30) |
-| 4 Gifts | #7 | `claude/v219-gifts` | Claude | waits for #6 |
+| 3 Yard visits, pets and notes | #6 | `claude/v219-visits` | Claude | PR #14 merged 1 Nov |
+| 4 Gifts | #7 | `claude/v219-gifts` | Claude | coding (started 1 Nov) |
 | 5 Walk together | #8 | `claude/v219-walk` | Claude | waits for #7 |
 | 6 Invite page and privacy | #9 | `cursor/v219-invite` | Cursor | PR #11 merged 1 Nov |
 | 7 Translations, NEWS, reviews, deploy, release | — | — | Claude | after all are merged, on the owner's date |
