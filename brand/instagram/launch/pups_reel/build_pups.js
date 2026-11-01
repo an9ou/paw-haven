@@ -1,7 +1,8 @@
-// "2 black dogs had puppies. you won't guess the colours" (owner go-ahead 1 Nov 2026; idea 2 of the new Reel list).
-// Two black Labradors in the yard, both carrying chocolate and yellow (B/b, E/e). The viewer pauses and guesses; three puppies pop in:
-// Black, Yellow, Chocolate. The coat names, the odds and the puppy colours are the game's own (mods/genes.js: phenotype and predict), the
-// "carries" words are the game's gene lines (mod.genes.line_b_carry / line_e_carry), the art is the game's (PawArt.scene / PawArt.dog).
+// "2 chocolate dogs had puppies. you won't guess the colours" (owner go-ahead 1 Nov 2026; idea 2 of the new Reel list).
+// Owner, 1 Nov 2026: no black (or white) dogs as the subject, the community may be sensitive. So: two Chocolate Labradors in the yard, both
+// carrying dilute and red (b/b, D/d, E/e). The viewer pauses and guesses; three puppies pop in: Yellow, Silver, Champagne, and not one is chocolate.
+// The coat names, the odds and the puppy colours are the game's own (mods/genes.js: phenotype and predict; zh-Hans names data.words.lab.*), the
+// "carries" words are the game's gene lines (mod.genes.line_d_carry / line_e_carry), the art is the game's (PawArt.scene / PawArt.dog).
 // 1080 x 1920, 30 fps, the game's own cozy music (mods/pawaudio.js, the yard by day), the "adopt" sting at the reveal and a puppy bark per puppy.
 //
 //   NODE_PATH=$(npm root -g) node brand/instagram/launch/pups_reel/build_pups.js <workdir>
@@ -34,31 +35,32 @@ const PA = win.PawArt, G = win.PawGenes, inner = (s) => s.replace(/^<svg[^>]*>/,
 const I18N = JSON.parse(fs.readFileSync(path.join(ROOT, 'game', 'i18n', RN ? 'zh-Hans.json' : 'en.json'), 'utf8'));
 const t = (k) => { const v = I18N[k]; if (!v) throw new Error('missing text ' + k); return v; };
 
-// ---- the genes: both parents black, carrying liver (chocolate) and red (yellow); the puppies are three real outcomes of the pair ----
-const PARENT = { B: ['B', 'b'], D: ['D', 'D'], E: ['E', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'] };
+// ---- the genes: both parents chocolate, carrying dilute (silver) and red (yellow); the puppies are three real outcomes of the pair ----
+const PARENT = { B: ['b', 'b'], D: ['D', 'd'], E: ['E', 'e'], S: ['S', 'S'], M: ['m', 'm'], Bl: ['bl', 'bl'] };
 const PUPS = [
-  { g: Object.assign({}, PARENT, { B: ['B', 'B'], E: ['E', 'e'] }), seed: 11 },
-  { g: Object.assign({}, PARENT, { B: ['B', 'b'], E: ['e', 'e'] }), seed: 23 },
-  { g: Object.assign({}, PARENT, { B: ['b', 'b'], E: ['E', 'E'] }), seed: 37 },
+  { g: Object.assign({}, PARENT, { D: ['D', 'd'], E: ['e', 'e'] }), seed: 11 },
+  { g: Object.assign({}, PARENT, { D: ['d', 'd'], E: ['E', 'e'] }), seed: 23 },
+  { g: Object.assign({}, PARENT, { D: ['d', 'd'], E: ['e', 'e'] }), seed: 37 },
 ];
 const par = G.phenotype(PARENT, 'lab', 5);
-if (par.coatName !== 'Black') throw new Error('genes changed: parent is ' + par.coatName);
+if (par.coatName !== 'Chocolate') throw new Error('genes changed: parent is ' + par.coatName);
 const odds = {}; G.predict(PARENT, PARENT, 'lab', 'lab', { byCoat: true }).forEach((r) => { odds[r.coat] = r; });
-PUPS.forEach((p) => { const ph = G.phenotype(p.g, 'lab', p.seed); p.coat = ph.coat; p.name = ph.coatName; if (!odds[p.name]) throw new Error('not a real outcome: ' + p.name); p.odds = odds[p.name].pct; });
-if (PUPS.map((p) => p.name).join() !== 'Black,Yellow,Chocolate') throw new Error('genes changed: ' + PUPS.map((p) => p.name));
+PUPS.forEach((p) => { const ph = G.phenotype(p.g, 'lab', p.seed); p.coat = ph.coat; p.name = ph.coatName; if (!odds[p.name]) throw new Error('not a real outcome: ' + p.name); p.odds = odds[p.name].pct; p.oddsEn = odds[p.name].odds; });
+if (Object.keys(odds).some((c) => /black|white/i.test(c))) throw new Error('a black or white coat in this pair');
+if (PUPS.map((p) => p.name).join() !== 'Yellow,Silver,Champagne') throw new Error('genes changed: ' + PUPS.map((p) => p.name));
 // coat names and odds as the game shows them (the lab's coat names in data.coat_names_lab or its own table; the odds words mod.genes.odds_*)
-const COATZH = { Black: '黑色', Yellow: '黄色', Chocolate: '巧克力色' };
+const COATZH = { Chocolate: t('data.words.lab.liver'), Yellow: t('data.starter_genes.lab.coat'), Silver: t('data.words.lab.lilac'), Champagne: t('data.words.lab.cream') };
 const coatWord = (n) => (RN ? COATZH[n] : n);
 const oddsWord = (pct) => { const n = Math.round(100 / pct), exact = Math.abs(100 / n - pct) < 0.01;
   return RN ? (exact ? `${n}分之一` : `大约${n}分之一`) : (exact ? `1 in ${n}` : `about 1 in ${n}`); };
 
-const TX = RN ? { hook: ['两只黑狗生了小狗，', '你猜不到是什么颜色'], hookSize: 84, mum: '妈妈', dad: '爸爸', black: '黑色',
-  carries: '都藏着巧克力色和黄色', pause: '先暂停，猜一猜', pauseSub: '会有几种颜色？', reveal: '3只小狗，3种颜色！',
-  why: ['两只都是黑色，', '但都藏着巧克力色和黄色的基因'], whySub: '这个游戏里，小狗的毛色按真实的遗传规律',
+const TX = RN ? { hook: ['两只巧克力色狗狗生了小狗，', '你猜不到是什么颜色'], hookSize: 76, mum: '妈妈', dad: '爸爸', parentCoat: '巧克力色',
+  carries: '都携带黄色和淡化（更浅的毛色）', pause: '先暂停，猜一猜', pauseSub: '会有几种颜色？', reveal: '一只巧克力色都没有！',
+  why: ['两只都是巧克力色，', '但都藏着黄色和淡化的基因'], whySub: '这个游戏里，小狗的毛色按真实的遗传规律',
   ask: '你猜对几只？', sub: '免费的治愈系狗狗游戏，毛色遗传是真的', pill: '搜索 Doodle Doggo 就能玩', s: 0.92 }
-  : { hook: ['2 black dogs had puppies.', "you won't guess the colours"], hookSize: 80, mum: 'mum', dad: 'dad', black: 'Black',
-  carries: 'both carry chocolate & yellow', pause: 'pause and guess', pauseSub: 'how many colours?', reveal: '3 puppies, 3 colours!',
-  why: ['both parents are black,', 'but both carry chocolate and yellow'], whySub: 'in this game, puppies get real coat genes',
+  : { hook: ['2 chocolate dogs had puppies.', "you won't guess the colours"], hookSize: 76, mum: 'mum', dad: 'dad', parentCoat: 'Chocolate',
+  carries: 'both carry yellow & dilute (paler) genes', pause: 'pause and guess', pauseSub: 'how many colours?', reveal: 'not one chocolate!',
+  why: ['both parents are chocolate,', 'but both hide yellow and dilute genes'], whySub: 'in this game, puppies get real coat genes',
   ask: 'did you guess all 3?', sub: 'a free cozy dog game with real coat genetics', pill: 'play free at doodledoggo.app', s: 1 };
 
 // ---- timeline ----
@@ -107,7 +109,7 @@ function dog(id, cx, feet, hh, sv, dy, sc){ const b=box(id), s=hh/b[3]*(sc==null
   return '<ellipse cx="'+cx+'" cy="'+(feet-2)+'" rx="'+(w*0.34)+'" ry="'+(10*s/0.9+4)+'" fill="${PEN}" opacity=".16"/><g transform="translate(0 '+(dy||0)+')"><g transform="translate('+(cx-w/2)+' '+top+') scale('+s+') translate('+(-b[0])+' '+(-b[1])+')">'+sv+'</g></g>'; }
 const back=(x)=>{ x=Math.max(0,Math.min(1,x)); const c=1.9; return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2); };
 const ease=(x)=>{ x=Math.max(0,Math.min(1,x)); return x*x*(3-2*x); };
-const P=${JSON.stringify(PUPS.map((p) => ({ name: p.name, word: coatWord(p.name), odds: oddsWord(p.odds) })))}, TX=${JSON.stringify(TX)}, FAM=${JSON.stringify(fam)}, PX=${JSON.stringify(PX)}, AT=${JSON.stringify(PUPAT)};
+const P=${JSON.stringify(PUPS.map((p) => ({ name: p.name, word: coatWord(p.name), odds: RN ? oddsWord(p.odds) : p.oddsEn })))}, TX=${JSON.stringify(TX)}, FAM=${JSON.stringify(fam)}, PX=${JSON.stringify(PX)}, AT=${JSON.stringify(PUPAT)};
 const TW={}; function tw(s,size){ const k=s+'|'+size; if(TW[k]!=null) return TW[k]; const e=document.createElementNS(NSV,'text'); e.setAttribute('font-family',FAM); e.setAttribute('font-weight','700'); e.setAttribute('font-size',size); e.textContent=s; document.querySelector('svg').appendChild(e); const w=e.getComputedTextLength(); e.remove(); return TW[k]=w; }
 const txt=(s,x,y,size,o)=>{ o=o||{}; return '<text x="'+x+'" y="'+y+'" font-family="'+FAM+'" font-weight="700" font-size="'+size+'" fill="'+(o.fill||'${PEN}')+'" text-anchor="'+(o.a||'middle')+'"'+(o.op!=null?' opacity="'+o.op+'"':'')+'>'+s+'</text>'; };
 const pillTag=(s,x,y,size,fill,stroke,op)=>{ const w=tw(s,size)+60; return '<g opacity="'+op+'"><rect x="'+(x-w/2)+'" y="'+(y-size*0.95)+'" width="'+w+'" height="'+(size*1.35)+'" rx="'+(size*0.67)+'" fill="'+fill+'" stroke="'+stroke+'" stroke-width="4"/>'+txt(s,x,y,size)+'</g>'; };
@@ -118,9 +120,9 @@ window.frame=function(t, D){
   // the parents: side by side on the lawn, happy once the puppies arrive
   const hop=(k)=>t>=${REVEAL}?-Math.abs(Math.sin(t*5+k))*10:0;
   $('par').innerHTML = dog('mum', 255, ${MFEET}, 255, D.mum, hop(0)) + dog('dad', 825, ${MFEET}, 255, D.dad, hop(1.3));
-  // name tags under the parents: both Black, both carry chocolate and yellow
+  // name tags under the parents: both Chocolate, both carry yellow and dilute
   const tg=ease((t-0.6)/0.3); let g='';
-  if(!ending && tg>0){ g+=pillTag(TX.mum+': '+TX.black, 255, ${MFEET + 66}, ${RN ? 44 : 50}, '#FFFDF7', '${PEN}', tg)+pillTag(TX.dad+': '+TX.black, 825, ${MFEET + 66}, ${RN ? 44 : 50}, '#FFFDF7', '${PEN}', tg);
+  if(!ending && tg>0){ g+=pillTag(TX.mum+': '+TX.parentCoat, 255, ${MFEET + 66}, ${RN ? 44 : 50}, '#FFFDF7', '${PEN}', tg)+pillTag(TX.dad+': '+TX.parentCoat, 825, ${MFEET + 66}, ${RN ? 44 : 50}, '#FFFDF7', '${PEN}', tg);
     const cg=ease((t-1.3)/0.3); if(cg>0) g+=pillTag(TX.carries, 540, ${MFEET + 140}, ${RN ? 42 : 48}, '#FFE3A1', '${PEN}', cg); }
   if(t>=${REVEAL}) g=g.replace(/opacity="[0-9.]+"/g, (m)=>'opacity="'+Math.max(0,1-(t-${REVEAL})/0.3)*parseFloat(m.slice(9,-1))+'"');
   $('tags').innerHTML=g;
@@ -139,7 +141,7 @@ window.frame=function(t, D){
       c+='<g opacity="'+o+'" transform="rotate(-2 540 360)"><rect x="140" y="210" width="800" height="300" rx="36" fill="#FFF8EC" stroke="${PEN}" stroke-width="6"/>'+txt(l1,540,320,${RN ? 84 : 96})+txt(l2,540,420,${RN ? 58 : 66})+'</g>';
       if(t>=${PAUSE}+0.3 && n>=1 && n<=3){ const lt=(t-${PAUSE}-0.3)%1, ns=back(lt/0.25); c+='<g transform="translate(540 760) scale('+ns+')" opacity="'+(1-ease((lt-0.7)/0.3))+'"><circle r="110" fill="#FFE3A1" stroke="${PEN}" stroke-width="7"/>'+txt(String(n),0,58,170)+'</g>'; } }
     else if(t<${WHY}){ o=ease((t-AT[2]-0.4)/0.25); if(o>0) c+='<g opacity="'+o+'" transform="rotate(-2 540 360)"><rect x="140" y="250" width="800" height="200" rx="36" fill="#FFF8EC" stroke="${GREEN}" stroke-width="7"/>'+txt(TX.reveal,540,380,${RN ? 80 : 96})+'</g>'; }
-    else { o=ease((t-${WHY})/0.25); c+='<g opacity="'+o+'" transform="rotate(-1 540 380)"><rect x="70" y="200" width="940" height="390" rx="36" fill="#FFF8EC" stroke="${PEN}" stroke-width="6"/>'+txt(TX.why[0],540,310,${RN ? 64 : 76})+txt(TX.why[1],540,400,${RN ? 56 : 68})
+    else { o=ease((t-${WHY})/0.25); c+='<g opacity="'+o+'" transform="rotate(-1 540 380)"><rect x="70" y="200" width="940" height="390" rx="36" fill="#FFF8EC" stroke="${PEN}" stroke-width="6"/>'+txt(TX.why[0],540,310,${RN ? 64 : 76})+txt(TX.why[1],540,400,${RN ? 56 : 64})
       +'<path d="M220 448 Q540 432 860 448" fill="none" stroke="${PINK}" stroke-width="10" stroke-linecap="round" opacity=".6"/>'+txt(TX.whySub,540,530,${RN ? 44 : 52},{fill:'#8A7468'})+'</g>'; } }
   $('card').innerHTML=c;
   $('endPups').innerHTML = ending ? P.map((pp,i)=>dog('p'+i, PX[i], 1200, 250, D['p'+i], -Math.abs(Math.sin(t*6+i*1.7))*16)).join('') : '';
@@ -157,7 +159,7 @@ const drawFor = (t) => { const k = kfOf(t * 1.8), pupPose = (i) => (t >= PUPAT[i
   const list = still ? [0.3, 1.0, 2.0, 3.5, 4.6, 6.4, 7.6, 9.0, 10.6, 11.5, 13.0, 14.5, 16.5].map((s) => Math.round(s * FPS)) : [...Array(N).keys()];
   for (const f of list) { await p.evaluate(([t, D]) => window.frame(t, D), [f / FPS, drawFor(f / FPS)]); await p.screenshot({ path: path.join(WORK, 'f', `f${String(f).padStart(4, '0')}.png`) }); }
   console.log(list.length, 'frames, T =', T.toFixed(2));
-  // the cover: the hook over the two black parents, their tags up
+  // the cover: the hook over the two chocolate parents, their tags up
   const CT = 1.15; await p.evaluate(([t, D]) => window.frame(t, D), [CT, drawFor(CT)]); await p.screenshot({ path: path.join(WORK, `pups-cover${SUF}.png`) }); await b.close();
   cp.execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-i', path.join(WORK, `pups-cover${SUF}.png`), '-q:v', '2', path.join(WORK, `pups-cover${SUF}.jpg`)]);
   if (still) return;
