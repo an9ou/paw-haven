@@ -7011,13 +7011,13 @@ function frPaw(){const b=mk('item','fr:paw'),r=b.r,ink='#C9566E',fill='#F28FA5',
   [[16.5,27,4.6,5.8,-.35],[25.5,18.5,4.9,6.4,-.12],[37.5,17.5,5,6.6,.1],[48,24.5,4.5,5.6,.4]].forEach(([x,y,rx,ry,t],i)=>{const p=rot([[x+(r()-.5)*1.2,y+(r()-.5)*1.2]],a,c[0],c[1])[0];
     b.sh(E(p[0],p[1],rx*(.94+r()*.12),ry*(.94+r()*.12),11,t+a),fill,{k:.2,hatch:0,hl:0,lw:.9,ink,base:'#F8BFCB',dr:.15,marks:i%2?spk(p[0],p[1],rx,ry).slice(0,2):[]})});
   return b.svg('0 0 64 64','','Paw print')}
-function frRibbon(){const b=mk('icon','fr:ribbon');
+function frRibbon(){const b=mk('icon','fr:ribbon'); // fix batch: bold lines (lw ~2), so the ink still reads at the walk's 10-24 px
   // two tails with a soft V cut, under the rosette
-  b.sh([[25,40],[31,44],[27,61],[23.5,57],[18.5,59]],FR_MINT,{k:.05,hatch:0,hl:0,lw:.8,marks:[{pts:[[19,52],[30,52],[30,56],[19,56]],fill:'#7FC7BF',op:.7,k:0}]});
-  b.sh([[39,40],[33,44],[37,61],[40.5,57],[45.5,59]],FR_MINT,{k:.05,hatch:0,hl:0,lw:.8,marks:[{pts:[[34,52],[45,52],[45,56],[34,56]],fill:'#7FC7BF',op:.7,k:0}]});
-  b.sh(flowerP(32,27,23,7,.2),FR_MINT,{k:.1,hatch:0,hl:0,lw:.9,marks:[{pts:E(32,27,16,16,14),fill:'#BDE7D2'}]});
-  b.sh(E(32,27,14,14,16),'#FFFBF3',{hatch:0,hl:0,lw:.75,base:'#FFFFFF'});
-  b.sh(heartP(32,28.5,21),FR_PINK,{hatch:0,hl:0,lw:.8,dr:.1});
+  b.sh([[25,40],[31,44],[27,61],[23.5,57],[18.5,59]],FR_MINT,{k:.05,hatch:0,hl:0,lw:2,marks:[{pts:[[19,52],[30,52],[30,56],[19,56]],fill:'#7FC7BF',op:.7,k:0}]});
+  b.sh([[39,40],[33,44],[37,61],[40.5,57],[45.5,59]],FR_MINT,{k:.05,hatch:0,hl:0,lw:2,marks:[{pts:[[34,52],[45,52],[45,56],[34,56]],fill:'#7FC7BF',op:.7,k:0}]});
+  b.sh(flowerP(32,27,23,7,.2),FR_MINT,{k:.1,hatch:0,hl:0,lw:2.2,marks:[{pts:E(32,27,16,16,14),fill:'#BDE7D2'}]});
+  b.sh(E(32,27,14,14,16),'#FFFBF3',{hatch:0,hl:0,lw:1.8,base:'#FFFFFF'});
+  b.sh(heartP(32,28.5,21),FR_PINK,{hatch:0,hl:0,lw:1.9,dr:.1});
   return b.svg('0 0 64 64','','Friend ribbon')}
 function frWheel(){const b=mk('prop','fr:wheel');
   b.shadow(80,214,62,4);

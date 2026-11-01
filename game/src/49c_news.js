@@ -46,7 +46,7 @@ const NEWS_V219 = {
     { ic: () => nwFrArt('paw'), tx: () => tt('nw.v219.visit', "Visit a friend's yard, pet their dogs and leave a paw-print note") },
     { ic: () => nwFrArt('wrap'), tx: () => tt('nw.v219.gift', 'Send one gift a day: a treat, seeds or something from your garden') },
     { ic: () => nwFrArt('ribbon'), tx: () => tt('nw.v219.walk', "Take a friend's dog on your walk, and your friend gets a letter about it") },
-    { ic: () => fwCalIcon(), tx: () => tt('nw.v219.safe', 'No typing and no search: a friend joins only with your code or invite link') }
+    { ic: () => nwSafe(() => ICON('lock')), tx: () => tt('nw.v219.safe', 'No typing and no search: a friend joins only with your code or invite link') }
   ]
 };
 const nwLatest = () => NEWS[0].id;

@@ -267,7 +267,7 @@ function jrAlbum() {
 /* ---------- the mailbox popup ---------- */
 let mailSel = null;
 function letterPhoto(m) {
-  if (!m.dog) return '';
+  if (!m.dog) return typeof frLetterPhoto === 'function' ? frLetterPhoto(m) : ''; // v2.19: a friend's note or pet letter shows the paw print
   try { return dogSVG(m.dog, { pose: m.pose || 'happy' }); } catch (e) { return art('dog', m.dog.key || 'mutt'); }
 }
 function postcardHTML(m) {

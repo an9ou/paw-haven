@@ -256,7 +256,7 @@
   "privacy.choices.title": "Your choices",
   "privacy.choices.guest": "<b>Play as a guest</b> at any time, with no account.",
   "privacy.choices.export": "<b>Export a save code</b> in Settings whenever you like, to keep your own copy.",
-  "privacy.delete": "<b>Delete your account and everything we hold:</b> write to {mail} from the email address you signed up with, and say you want your account deleted. We delete the account, the password hash, the saves and any Dog Card, and tell you when it is done. This doesn't remove a save code you exported or the guest save on your own device. You can clear those yourself.",
+  "privacy.delete": "<b>Delete your account and everything we hold:</b> write to {mail} from the email address you signed up with, and say you want your account deleted. We delete the account, the password hash, the saves, any Dog Card and your Friends data, and tell you when it is done. This doesn't remove a save code you exported or the guest save on your own device. You can clear those yourself.",
   "privacy.choices.ask": "<b>Ask what we hold</b> about you in the same way.",
   "privacy.changes.title": "Changes",
   "privacy.changes.text": "If this policy changes in a way that matters, we will put the new date at the top and a short note on the game's page.",

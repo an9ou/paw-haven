@@ -154,7 +154,7 @@
   "privacy.choices.title": "Deine Möglichkeiten",
   "privacy.choices.guest": "<b>Spiel jederzeit als Gast</b>, ganz ohne Konto.",
   "privacy.choices.export": "<b>Exportier einen Speichercode</b> in den Einstellungen, wann immer du willst, um eine eigene Kopie zu behalten.",
-  "privacy.delete": "<b>Dein Konto und alles, was wir speichern, löschen:</b> Schreib an {mail} von der E-Mail-Adresse, mit der du dich registriert hast, und sag, dass du dein Konto löschen möchtest. Wir löschen das Konto, den Passwort-Hash, die Spielstände und eine eventuelle Hundekarte und sagen dir Bescheid, wenn es erledigt ist. Ein Speichercode, den du exportiert hast, und der Gast-Spielstand auf deinem eigenen Gerät bleiben davon unberührt. Die kannst du selbst löschen.",
+  "privacy.delete": "<b>Dein Konto und alles, was wir speichern, löschen:</b> Schreib an {mail} von der E-Mail-Adresse, mit der du dich registriert hast, und sag, dass du dein Konto löschen möchtest. Wir löschen das Konto, den Passwort-Hash, die Spielstände, eine eventuelle Hundekarte und deine Freunde-Daten und sagen dir Bescheid, wenn es erledigt ist. Ein Speichercode, den du exportiert hast, und der Gast-Spielstand auf deinem eigenen Gerät bleiben davon unberührt. Die kannst du selbst löschen.",
   "privacy.choices.ask": "<b>Frag auf demselben Weg nach,</b> was wir über dich speichern.",
   "privacy.changes.title": "Änderungen",
   "privacy.changes.text": "Wenn sich diese Erklärung in einem wichtigen Punkt ändert, schreiben wir das neue Datum nach oben und einen kurzen Hinweis auf die Seite des Spiels.",

@@ -44,7 +44,8 @@ function mockInit() {
       const u = new URL(url, 'https://api.test'), method = o.method || 'GET', path = u.pathname;
       let body = null; try { body = o.body ? JSON.parse(o.body) : {}; } catch (e) { body = {}; }
       const send = (status, data) => new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json' } });
-      if (method === 'POST' && path === '/guest') return send(200, { token: 'tok-test', user });
+      if (method === 'POST' && path === '/guest') { srv.guests = (srv.guests || 0) + 1; return send(200, { token: 'tok-test', user }); }
+      if (srv.force401 && path.indexOf('/friends') === 0) { srv.force401 = false; return send(401, { error: 'auth' }); } // fix batch: the login is gone (a reset on another device)
       if (method === 'GET' && path === '/me') return send(200, { user });
       if (method === 'GET' && path === '/save') return send(200, { save: null });
       if (method === 'PUT' && path === '/save') return send(200, { ok: true });
@@ -138,6 +139,8 @@ async function layout(t) {
       const x = Math.min(iw - 2, Math.max(2, r.left + r.width / 2));
       const yOn = Math.min(r.bottom - 2, Math.max(r.top + 2, r.top + r.height / 2));
       if (yOn < 2 || yOn > ih - 2) return;
+      const br = body && body.contains(el) ? body.getBoundingClientRect() : null;
+      if (br && (yOn > br.bottom || yOn < br.top)) return; // scrolled out of the sheet's own scroll area (clipped there, not drawn over the bar)
       const top = document.elementFromPoint(x, yOn);
       if (top && top.closest && top.closest('#bar')) bad.push('bar ' + id);
     });
@@ -174,6 +177,15 @@ run('v219_friends', async (t) => {
   let spun = await t.until((b) => (document.getElementById('frPrev') || {}).textContent !== b, before, 1500);
   if (!spun) { await t.p.click('#frRand'); spun = await t.until((b) => (document.getElementById('frPrev') || {}).textContent !== b, before, 1500); }
   ok(spun, 'Random picks another pair');
+  const fit = await ev(() => {
+    const els = [...document.querySelectorAll('.fr-wheels text')], lens = els.map((el) => ({ w: el.textContent, len: el.getComputedTextLength(), tl: el.getAttribute('textLength'), font: el.getAttribute('font-family') }));
+    const big = els[1]; big.textContent = 'Supercalifragilisticexpialidocious'; window.__paw.fr.fit(document.querySelector('.fr-wheels'));
+    return { lens, long: big.getComputedTextLength(), longTl: big.getAttribute('textLength') };
+  });
+  ok(fit.lens.length === 6 && fit.lens.every((x) => /DD Local Title/.test(x.font) && /Caveat/.test(x.font)), 'the wheel words use the hand face, then the local faces (art review 1): ' + JSON.stringify(fit.lens.map((x) => x.font)));
+  ok(fit.lens.every((x) => x.len <= 100.5 && (x.len < 99 ? !x.tl : true)), 'no word is stretched to 100 wide; each fits its room (phone review 2): ' + JSON.stringify(fit.lens));
+  ok(fit.long <= 100.5 && fit.long > 60, 'a word wider than the wheel steps down and squeezes to 100: ' + JSON.stringify({ long: fit.long, tl: fit.longTl }));
+  await t.p.click('#frRand');
   await t.p.click('#frOk');
   ok(await t.until(() => !!document.getElementById('frCard') && /DOG-23456/.test(document.getElementById('frCard').textContent || ''), null, 8000), 'the card shows the code DOG-23456');
   ok(await ev(() => document.querySelectorAll('#frCard rect').length > 20), 'the QR is drawn as squares');
@@ -186,7 +198,17 @@ run('v219_friends', async (t) => {
   ok(giftMail.length === 1 && giftMail[0].kind === 'gift' && giftMail[0].title === 'A gift from Sunny Biscuit!' && JSON.stringify(giftMail[0].gift) === JSON.stringify({ item: 'Basic Kibble', cat: 'food', id: 'Basic Kibble', n: 1 }) && (await ev(() => window.__paw.S.fr.gotGifts)) === 1, 'the gift became a mailbox gift letter "A gift from Sunny Biscuit!" with { cat, id, n: 1 }: ' + JSON.stringify(giftMail));
   const petMail = await ev(() => (window.__paw.S.mail || []).filter((m) => m && /^fr_pet_/.test(m.id)).map((m) => ({ id: m.id, from: m.from, title: m.title, text: m.text })));
   ok(petMail.length === 1 && petMail[0].id === 'fr_pet_2026-11-01' && petMail[0].text === 'Sunny Biscuit visited and petted ' + (await ev(() => window.__paw.S.dog.name)) + '. +1 Bond' && (await ev(() => window.__paw.S.fr.gotPets)) === 1, 'the pet became a letter: "Sunny Biscuit visited and petted <dog>. +1 Bond": ' + JSON.stringify(petMail));
+  ok(await ev(() => { const el = document.querySelector('#frCard text.fr-fit'); return !!el && /DD Local/.test(el.getAttribute('font-family')) && el.getComputedTextLength() <= 108.5 && +el.getAttribute('y') === 104; }), 'the card name: local faces, fits 108, sits clear of the code (art review 1, 2)');
   await shot(t, 'my_card_1280');
+  // phone review 5: note, pet and walk letters show a picture in the postcard, never an empty frame
+  for (const id of ['fr_note_1', 'fr_pet_2026-11-01', 'fr_walk_4']) {
+    await ev((id) => window.__paw.openMailbox(id), id);
+    ok(await t.until(() => { const ph = document.querySelector('.panel.mailbox .letter .pc-photo'); return !!ph && !!ph.querySelector('svg') && ph.getBoundingClientRect().height > 20; }, null, 4000), id + ': the postcard photo has a picture');
+  }
+  ok(await ev(() => document.querySelectorAll('.panel.mailbox .letter .fr-letterpaw').length === 0), 'the walk letter\'s dog is the photo, not a second head under it');
+  await t.closeX(); await t.modalGone();
+  await t.p.click('#frBtn');
+  await t.until(() => !!document.getElementById('frCh0'), null, 5000);
 
   sec('3. add, the four toasts, remove, block, new code, share');
   await ev(() => { document.getElementById('frCh0').value = '0'; document.getElementById('frCh0').dispatchEvent(new Event('input', { bubbles: true })); });
@@ -217,15 +239,26 @@ run('v219_friends', async (t) => {
   await t.closeX(); await t.modalGone();
   await t.p.click('#frBtn');
   await t.until(() => !!document.querySelector('[data-fr="more"]'), null, 5000);
+  await ev(() => { window.__frPanel = document.querySelector('#modal .panel'); const b = window.__frPanel.querySelector('.panel-body'); b.scrollTop = 40; window.__frTop = b.scrollTop; });
   await t.p.click('[data-fr="more"]');
   ok(await t.until(() => !!document.querySelector('[data-fr="remove"]'), null, 3000), 'the ... menu has Remove and Block');
+  ok(await ev(() => document.querySelector('#modal .panel') === window.__frPanel && document.querySelector('#modal .panel-body').scrollTop >= window.__frTop), 'the ... menu opens in place: the same sheet, no pop-in, the scroll kept (phone review 1)');
   await t.p.click('[data-fr="remove"]');
   ok(await t.until(() => !document.querySelector('.fr-row'), null, 4000), 'Remove takes the friend off the list');
+  ok(await t.waitToast(/Sunny Biscuit is off your list\./, 3000), 'Remove: the toast names the friend');
+  await t.p.click('#toasts .fr-undo .btn');
+  ok(await t.until(() => !!document.querySelector('.fr-row'), null, 3000), 'Undo puts the row back (phone review 9)');
+  await t.p.waitForTimeout(3600);
+  ok(await ev(() => window.__frSrv.friends.some((f) => f.fid === 'sunnybiscuitxxxxxxxxxx') && document.querySelector('#modal .panel') === window.__frPanel), 'after Undo the Worker never hears the remove; the sheet was patched in place');
+  await t.p.click('[data-fr="more"]');
+  await t.p.click('[data-fr="remove"]');
+  ok(await t.until(() => !window.__frSrv.friends.length, null, 6000), 'without Undo the remove reaches the Worker once its toast is gone');
   await ev(() => { window.__toasts.length = 0; '4K7PM'.split('').forEach((c, i) => { document.getElementById('frCh' + i).value = c; }); });
   await t.p.click('#frAdd');
   await t.until(() => !!document.querySelector('[data-fr="more"]'), null, 4000);
   await t.p.click('[data-fr="more"]');
   await t.p.click('[data-fr="block"]');
+  ok(await t.until(() => /^Block Sunny Biscuit\? They won't be able to add you again\.$/.test(((document.querySelector('.confirm p') || {}).textContent || '')), null, 3000), 'Block\'s confirm names the friend');
   await t.p.click('.confirm .yes');
   ok(await t.until(() => !document.querySelector('.fr-row'), null, 4000), 'Block, after its confirm, takes the friend off the list');
 
@@ -262,12 +295,31 @@ run('v219_friends', async (t) => {
   ok(/internet connection/.test(await ev(() => document.getElementById('frOff').textContent)), 'offline line is the contract sentence');
   await ev(() => { window.__frSrv.offline = false; });
 
+  await ev(() => { window.__frSrv.meWas = window.__frSrv.me; window.__frSrv.me = null; }); // another login, with no friend id
+  await t.closeX(); await t.modalGone();
+  await t.p.click('#frBtn');
+  ok(await t.until(() => !!document.getElementById('frPrev') && window.__paw.S.fr.fid === null && window.__paw.S.fr.code === null, null, 5000), 'a login with no friend id: the old fid and code are forgotten, and the name pick opens (code review 1)');
+  await ev(() => { window.__frSrv.me = window.__frSrv.meWas; });
+  await t.p.click('#frOk');
+  ok(await t.until(() => !!document.getElementById('frCard') && !!window.__paw.S.fr.fid, null, 6000), 'a name for this login brings the card back');
   await t.closeX(); await t.modalGone();
   await t.p.click('#gearBtn');
   await t.p.waitForSelector('#frLeave');
   await t.p.click('#frLeave');
   await t.p.click('.confirm .yes');
   ok(await t.until(() => !window.__paw.S.fr.fid && window.__paw.S.fr.on === false, null, 5000), 'Leave Friends clears the code, the list and the id');
+  ok(await ev(() => window.__paw.S.fr.pets === 0 || typeof window.__paw.S.fr.pets === 'number'), 'Leave keeps the daily counters as numbers');
+
+  sec('4b. a logged-out account\'s save never makes a stray guest for Friends (code review 1)');
+  await t.closeX(); await t.modalGone();
+  await ev(() => { const m = JSON.parse(localStorage.getItem('pawhaven_cloud_v1') || '{}'), s = JSON.parse(localStorage.getItem('pawhaven_proto_v1')); m.owner = 'user000000000000000001'; m.ownerDog = s.dogs[0].id; localStorage.setItem('pawhaven_cloud_v1', JSON.stringify(m)); window.__frSrv.force401 = true; window.__frSrv.guestsWas = window.__frSrv.guests || 0; window.__toasts.length = 0; });
+  await t.p.click('#frBtn');
+  await t.until(() => !!document.getElementById('frOk'), null, 4000);
+  await t.p.click('#frOk'); // the 401: this device is logged out
+  ok(await t.waitToast(/internet connection/, 4000), 'the 401 reads as offline');
+  await ev(() => { window.__toasts.length = 0; });
+  await t.p.click('#frOk');
+  ok(await t.waitToast(/internet connection/, 4000) && (await ev(() => (window.__frSrv.guests || 0) === window.__frSrv.guestsWas && !window.__paw.S.fr.fid)), 'logged out with the account\'s save: no new guest is made, Friends waits offline');
 
   sec('5. an old save loads with S.fr defaults, and a new day resets the counters');
   const planted = await ev(() => {
@@ -291,6 +343,7 @@ run('v219_friends', async (t) => {
   ok(await t.until(() => !!document.getElementById('frPrev') || !!document.getElementById('frCh0'), null, 8000), 'the invite opens Friends after the title');
   if (await t.p.locator('#frOk').count()) await t.p.click('#frOk');
   ok(await t.until(() => (document.getElementById('frCh0') || {}).value === '4' && (document.getElementById('frCh4') || {}).value === 'M', null, 8000), '?friend= pre-fills DOG-4K7PM');
+  ok(await ev(() => !/friend=/.test(location.search + location.hash)), 'the friend= is taken out of the address once read, so a reload does not ask again (code review 8)');
   await t.ctx.close();
   await start(t, { query: '#friend=DOG-4K7PM' });
   ok(await t.until(() => !!document.getElementById('frOk') || !!document.getElementById('frCh0'), null, 8000), 'a hash invite opens Friends too');
@@ -507,6 +560,13 @@ run('v219_friends', async (t) => {
     const tapAt = await ev(() => { const el = [...document.querySelectorAll('#frDogs .frdog:not(.fr-mine) .fr-hit')].map((e) => e.getBoundingClientRect()).find((r) => r.width > 0); return el ? { x: el.left + el.width / 2, y: el.top + el.height / 2 } : null; });
     if (tapAt) await t.p.mouse.click(tapAt.x, tapAt.y);
     ok(!!tapAt && (await t.until((fid) => window.__frSrv.sent.some((s) => s.kind === 'pet' && s.fid === fid), SUNNY, 4000)), tag + ': a tap on their dog pets it');
+    ok(await ev(() => { const el = document.activeElement, d = el && el.closest && el.closest('.frdog'); return !d || getComputedStyle(d).outlineStyle === 'none'; }), tag + ': no focus rectangle round the dog after a tap (phone review 4)');
+    const cam0 = await ev(() => window.__paw.fr.cam());
+    ok(cam0.w < 1000 && Math.abs(cam0.x - cam0.home) < 1 && (await t.p.locator('#phPeek').count()) === 1, tag + ': the camera rests on the house, with a look-around button: ' + JSON.stringify(cam0));
+    await t.p.click('#phPeek');
+    ok(await t.until(() => { const g = document.querySelector('#frDecorG [data-frdecor="Bird Bath"]'); if (!g || window.__paw.fr.cam().x > 1) return false; const r = g.getBoundingClientRect(); return r.right > 4 && r.left < window.innerWidth; }, null, 3000), tag + ': the button shows the rest of their yard: the Bird Bath at x 24 is on screen (phone review 3)');
+    await t.p.click('#phPeek');
+    ok(await t.until((h) => Math.abs(window.__paw.fr.cam().x - h) < 1, cam0.home, 3000), tag + ': and back to the house');
     // part 4 on the phone: "Send a gift" in the yard opens the sheet, which fits; the send brings back the yard with "Sent today"
     await ev(() => { const inv = window.__paw.S.inv; inv.food = { 'Basic Kibble': 3, 'Bone-shaped Biscuit': 2, Pupcake: 1, 'Carrot Sticks': 4, 'Wild Berries': 1, "Duck's Picnic Sandwich": 1 }; inv.seeds = { carrot: 2, peas: 1 }; inv.crops = { pumpkin: [1, 0, 0], carrot: [0, 2, 0] }; });
     await t.p.click('#frGiftBtn');
@@ -680,7 +740,7 @@ run('v219_friends', async (t) => {
   await t.ctx.close();
 
   await walkPart(t);
-});
+}, { timeout: 420000 }); // fix batch: ~250 s now (Remove's undo window, the visit pan); the runner allows 600
 
 /* ---------------- part 5: walk together (V219.md section 6) ---------------- */
 async function walkPart(t) {

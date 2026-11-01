@@ -160,7 +160,7 @@
   "privacy.choices.title": "Pilihanmu",
   "privacy.choices.guest": "<b>Main sebagai tamu</b> kapan saja, tanpa akun.",
   "privacy.choices.export": "<b>Ekspor kode simpanan</b> di Pengaturan kapan pun kamu mau, untuk menyimpan salinanmu sendiri.",
-  "privacy.delete": "<b>Hapus akunmu dan semua yang kami simpan:</b> kirim email ke {mail} dari alamat email yang kamu pakai untuk mendaftar, dan bilang bahwa kamu ingin akunmu dihapus. Kami akan menghapus akun, hash kata sandi, simpanan, dan Kartu Anjing apa pun, lalu memberi tahu kamu kalau sudah selesai. Ini tidak menghapus kode simpanan yang sudah kamu ekspor atau simpanan tamu di perangkatmu sendiri. Kamu bisa menghapusnya sendiri.",
+  "privacy.delete": "<b>Hapus akunmu dan semua yang kami simpan:</b> kirim email ke {mail} dari alamat email yang kamu pakai untuk mendaftar, dan bilang bahwa kamu ingin akunmu dihapus. Kami akan menghapus akun, hash kata sandi, simpanan, Kartu Anjing apa pun, dan data Teman-mu, lalu memberi tahu kamu kalau sudah selesai. Ini tidak menghapus kode simpanan yang sudah kamu ekspor atau simpanan tamu di perangkatmu sendiri. Kamu bisa menghapusnya sendiri.",
   "privacy.choices.ask": "<b>Tanyakan data apa yang kami simpan</b> tentang kamu dengan cara yang sama.",
   "privacy.changes.title": "Perubahan",
   "privacy.changes.text": "Kalau kebijakan ini berubah dengan cara yang penting, kami akan menaruh tanggal baru di bagian atas dan catatan singkat di halaman game.",

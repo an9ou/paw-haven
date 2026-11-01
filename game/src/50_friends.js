@@ -80,6 +80,11 @@ function frReadInvite() {
     const hm = hash.match(/(?:^|[?&])friend=([^&]*)/);
     const code = frNormCode(q || (hm ? decodeURIComponent(hm[1]) : ''));
     if (code) FR.invite = code;
+    if (q || hm) { // used once: a reload does not open Add again (code review 8)
+      const u = new URL(location.href); u.searchParams.delete('friend');
+      if (hm) u.hash = hash.replace(/(^|[?&])friend=[^&]*&?/, '$1').replace(/[?&]$/, '');
+      history.replaceState(history.state, '', u.href);
+    }
   } catch (e) { /* a bad hash stays unset */ }
 }
 function frGuideHold() {
@@ -91,6 +96,8 @@ function frGuideHold() {
 function frDay() { if (!S) return; const before = S.fr && S.fr.day; v219Fields(S); if (S.fr && before && before !== S.fr.day) markDirty(); }
 
 async function frApi(method, path, body) {
+  // the save belongs to an account that is not logged in here (a log out, or a 401): never make a new guest for Friends (code review 1)
+  if (typeof CL !== 'undefined' && !CL.uid && typeof clOwner === 'function' && clOwner()) throw new Error('offline');
   if (typeof clEnsureUser !== 'function' || !(await clEnsureUser())) throw new Error('offline');
   return clApi(method, path, body);
 }
@@ -143,7 +150,8 @@ function frAfterPush() {
     if (Date.now() - FR.yardAt < 600000) return Promise.resolve(false);
     const yard = frYard(); if (!yard) return Promise.resolve(false);
     FR.yardAt = Date.now();
-    return frApi('PUT', '/friends/yard', { yard }).then((r) => { if (!r || !r.ok) FR.yardAt = 0; return !!(r && r.ok); }).catch(() => { FR.yardAt = 0; return false; });
+    const ids = frYardDogs().map((o) => o.d.id);
+    return frApi('PUT', '/friends/yard', { yard }).then((r) => { if (!r || !r.ok) { FR.yardAt = 0; return false; } if (JSON.stringify(S.fr.snap) !== JSON.stringify(ids)) { S.fr.snap = ids; markDirty(); } return true; }).catch(() => { FR.yardAt = 0; return false; });
   } catch (e) { FR.yardAt = 0; return Promise.resolve(false); }
 }
 
@@ -152,7 +160,7 @@ function frQRSVG(text, box) {
   let M = null;
   try { M = window.PawQR && typeof PawQR.matrix === 'function' ? PawQR.matrix(text) : null; } catch (e) { M = null; }
   if (!M || !M.length) return '';
-  const n = M.length, q = 1, cells = n + q * 2, s = box.w / cells;
+  const n = M.length, q = 2, cells = n + q * 2, s = box.w / cells;
   let out = '';
   for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (M[r][c]) {
     const x = box.x + (c + q) * s, y = box.y + (r + q) * s;
@@ -166,16 +174,30 @@ function frCardSVG(code, name) {
   const box = (window.PawArt && PawArt.FRIENDS && PawArt.FRIENDS.cardQR) || { x: 34, y: 42, w: 116, h: 116 };
   const qr = code ? frQRSVG(frLinkOf(code), box) : '';
   const size = !name ? 22 : name.length > 16 ? 15 : name.length > 12 ? 18 : 22;
-  const nm = name ? `<text x="222" y="114" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="${size}" fill="${INKG}" textLength="108" lengthAdjust="spacingAndGlyphs">${esc(name)}</text>` : '';
+  const nm = name ? `<text class="fr-fit" data-max="108" data-fs="${size}" x="222" y="104" text-anchor="middle" font-family="${FR_FONT}" font-weight="700" font-size="${size}" fill="${INKG}">${esc(name)}</text>` : '';
   if (!svg) return `<div class="fr-codebig">${esc(code || '')}${qr ? `<svg viewBox="0 0 300 200">${qr}</svg>` : ''}</div>`; // TODO art
   return svg.replace(/<\/svg>\s*$/, qr + nm + '</svg>');
 }
+const FR_FONT = "'Caveat','DD Local Title','DD Local',cursive"; // the hand face, then the language's local faces (as world_b's FONT_L), never a system gothic
+// a word wider than its room (data-max, in SVG units) steps its font size down, to 70% at most, and only then is squeezed. Short words keep their own width
+function frFit(root) {
+  (root || document).querySelectorAll('text.fr-fit').forEach((el) => {
+    const max = +el.dataset.max, fs = +el.dataset.fs; if (!max || !fs || typeof el.getComputedTextLength !== 'function') return;
+    el.removeAttribute('textLength'); el.removeAttribute('lengthAdjust'); el.setAttribute('font-size', fs);
+    let w = 0; try { w = el.getComputedTextLength(); } catch (e) { w = 0; }
+    if (!(w > max)) return;
+    const k = Math.max(0.7, max / w); el.setAttribute('font-size', (fs * k).toFixed(1));
+    try { w = el.getComputedTextLength(); } catch (e) { w = 0; }
+    if (w > max) { el.setAttribute('textLength', max); el.setAttribute('lengthAdjust', 'spacingAndGlyphs'); }
+  });
+}
+function frFitSoon(root) { frFit(root); try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => frFit(root)); } catch (e) { /* no font loading API */ } }
 function frWheelSVG(which, idx) {
   const words = which === 'a' ? DC_WORDS_A : DC_WORDS_B, show = which === 'a' ? dcWordA : dcWordB;
   const at = (k) => show((idx + k + words.length) % words.length);
   let frame = '';
   try { const P = window.PawArt; if (P && P.FRIENDS && typeof P.FRIENDS.wheel === 'function') frame = P.FRIENDS.wheel(); } catch (e) { frame = ''; }
-  const tx = (id, y, word, size, op) => `<text id="${id}" x="80" y="${y}" text-anchor="middle" font-family="Caveat,cursive" font-weight="700" font-size="${size}" fill="${INKG}" opacity="${op}" textLength="100" lengthAdjust="spacingAndGlyphs">${esc(word)}</text>`;
+  const tx = (id, y, word, size, op) => `<text id="${id}" class="fr-fit" data-max="100" data-fs="${size}" x="80" y="${y}" text-anchor="middle" font-family="${FR_FONT}" font-weight="700" font-size="${size}" fill="${INKG}" opacity="${op}">${esc(word)}</text>`;
   const texts = tx('frW-' + which + '-p', 68, at(-1), 16, '.45') + tx('frW-' + which, 116, at(0), 22, '1') + tx('frW-' + which + '-n', 164, at(1), 16, '.45');
   if (!frame) return `<b id="frW-${which}">${esc(at(0))}</b>`; // TODO art
   return frame.replace(/<\/svg>\s*$/, texts + '</svg>');
@@ -187,11 +209,12 @@ function frDoodle(kind, on) {
     if (kind === 'note' && P && P.paw) svg = P.paw();
     else if (kind === 'gift' && P && P.wrap) svg = P.wrap(0);
   } catch (e) { svg = ''; }
-  if (kind === 'pet' || !svg) svg = `<svg viewBox="-18 -18 36 36" aria-hidden="true">${doodle(kind === 'gift' ? 'bone' : kind === 'note' ? 'paw' : 'heart', 0, 2, 0.8)}</svg>`;
+  if (kind === 'pet') svg = ICON('heart');
+  if (!svg) svg = `<svg viewBox="-18 -18 36 36" aria-hidden="true">${doodle(kind === 'gift' ? 'bone' : kind === 'note' ? 'paw' : 'heart', 0, 2, 0.8)}</svg>`;
   return `<span class="fr-doo${on ? ' on' : ''}">${svg}</span>`;
 }
 function frHeadHTML(dog) {
-  if (!dog || typeof dcDog !== 'function') return `<span class="fr-head">${doodle('paw', 24, 24, 1)}</span>`;
+  if (!dog || typeof dcDog !== 'function') return `<span class="fr-head fr-nohead" aria-hidden="true">${frIcon()}</span>`;
   try {
     const d = dcDog({ id: 'fr', name: [0, 0], dogs: [dog] }, 0);
     if (d && typeof headSVG === 'function') return `<span class="fr-head" aria-hidden="true">${headSVG(d)}</span>`;
@@ -222,8 +245,9 @@ async function frLoad() {
   try {
     const r = await frApi('GET', '/friends');
     if (!r || !r.ok || !r.data) { FR.offline = true; return null; }
-    FR.offline = false; FR.loadDay = localISO(); // the list's sent flags are for today
+    FR.offline = false; FR.loadDay = frToday(); // the list's sent flags are for today
     if (r.data.me) frApplyMe(r.data.me);
+    else if (S.fr.fid || S.fr.code) { S.fr.fid = null; S.fr.code = null; S.fr.name = null; S.fr.on = false; markDirty(); } // this login has no friend id: forget the old one (code review 1)
     frCache(Array.isArray(r.data.friends) ? r.data.friends : []);
     if (S.fr.cache.day !== FR.loadDay) { S.fr.cache.day = FR.loadDay; markDirty(); } // part 5: the day the friends' snapshot dogs were fetched (the walk row asks once a day)
     return r.data;
@@ -352,6 +376,7 @@ function frWheelPaint() {
     put('frW-' + w + '-p', -1); put('frW-' + w, 0); put('frW-' + w + '-n', 1);
   });
   const p = document.getElementById('frPrev'); if (p) p.textContent = frPairName(FR.pick);
+  frFit(document.querySelector('.fr-wheels'));
 }
 function frNameHTML() {
   const wheel = (w, i, label) => `<div class="fr-wheel"><button class="btn fr-wbtn" type="button" data-frspin="${w}:-1" aria-label="${esc(tt('fr.wheel_up', 'Previous {word}', { word: label }))}">${esc(tt('fr.up', 'Up'))}</button><div class="fr-wframe">${frWheelSVG(w, i)}</div><button class="btn fr-wbtn" type="button" data-frspin="${w}:1" aria-label="${esc(tt('fr.wheel_down', 'Next {word}', { word: label }))}">${esc(tt('fr.down', 'Down'))}</button></div>`;
@@ -365,7 +390,7 @@ function frNameBind(p) {
 function frNameSheet() {
   FR.pick = frDefaultName();
   const p = openModal(esc(tt('fr.pick_title', 'Pick your friend name')), frNameHTML(), { cls: 'frsheet' });
-  frNameBind(p); return p;
+  frNameBind(p); frFitSoon(p); return p;
 }
 async function frMake(a, b, p) {
   const btn = p && $('#frOk', p); if (btn) btn.disabled = true;
@@ -485,16 +510,37 @@ async function frNewCode(p) {
   frApplyMe(r.data); try { saveNow(); } catch (e) { /* storage */ }
   toast(tt('fr.new_done', 'New code ready.'), 'good'); frSheet();
 }
-async function frRemove(fid) {
-  let r = null;
-  try { r = await frApi('POST', '/friends/remove', { fid }); } catch (e) { FR.offline = true; frSheet(); return; }
-  if (!r || !r.ok) { toast(tt('fr.offline', 'Friends need an internet connection. Your dog is happy at home.'), 'bad'); return; }
-  FR.menu = '';
-  if (S.fr.cache && Array.isArray(S.fr.cache.friends)) { S.fr.cache.friends = S.fr.cache.friends.filter((f) => f.fid !== fid); markDirty(); }
-  frSheet();
+// Remove waits FR_UNDO_MS with an Undo on the toast; only then does the Worker hear it (phone review 9). Quiet either way
+const FR_UNDO_MS = TOAST_MS + 300; // the Undo stays tappable while its toast shows
+const frSheetIfOpen = () => { if (!modal.hidden && modal.querySelector('.fr-sheet')) frSheet(); };
+function frRemove(fid) {
+  const list = (S.fr.cache && S.fr.cache.friends) || [], f = list.find((x) => x && x.fid === fid); if (!f) return;
+  const at = list.indexOf(f), name = frPairName(f.name) || tt('fr.a_friend', 'A friend');
+  FR.menu = ''; S.fr.cache.friends = list.filter((x) => x !== f); markDirty(); frSheet();
+  let undone = false;
+  const t = toast(tt('fr.removed', '{name} is off your list.', { name }), 'good');
+  if (t) {
+    t.classList.add('fr-undo'); t.insertAdjacentHTML('beforeend', ` <button class="btn" type="button">${esc(tt('fr.undo', 'Undo'))}</button>`);
+    const b = t.querySelector('button'); b.onclick = (e) => {
+      e.stopPropagation(); SFX.click(); undone = true; t.remove();
+      const now = (S.fr.cache && S.fr.cache.friends) || [];
+      if (!now.some((x) => x && x.fid === fid)) { now.splice(Math.min(at, now.length), 0, f); S.fr.cache.friends = now; markDirty(); }
+      frSheetIfOpen();
+    };
+  }
+  setTimeout(async () => {
+    if (undone) return;
+    let r = null;
+    try { r = await frApi('POST', '/friends/remove', { fid }); } catch (e) { r = null; }
+    if (r && r.ok) return;
+    const now = (S.fr.cache && S.fr.cache.friends) || []; // not removed after all (offline): the row comes back
+    if (!now.some((x) => x && x.fid === fid)) { now.splice(Math.min(at, now.length), 0, f); S.fr.cache.friends = now; markDirty(); }
+    toast(tt('fr.offline', 'Friends need an internet connection. Your dog is happy at home.'), 'bad'); frSheetIfOpen();
+  }, FR_UNDO_MS);
 }
 async function frBlock(fid, p) {
-  const ok = await confirmIn(p, esc(tt('fr.block_ask', "They won't be able to add you again.")), esc(tt('fr.block', 'Block')), esc(tt('fr.keep', 'Keep them')));
+  const f = frFriend(fid), name = frPairName(f && f.name) || tt('fr.a_friend', 'A friend');
+  const ok = await confirmIn(p, esc(tt('fr.block_ask_name', "Block {name}? They won't be able to add you again.", { name })), esc(tt('fr.block', 'Block')), esc(tt('fr.keep', 'Keep them')));
   if (!ok) return;
   let r = null;
   try { r = await frApi('POST', '/friends/block', { fid }); } catch (e) { FR.offline = true; frSheet(); return; }
@@ -509,7 +555,8 @@ async function frLeave(p) {
   let r = null;
   try { r = await frApi('POST', '/friends/leave', {}); } catch (e) { toast(tt('fr.offline', 'Friends need an internet connection. Your dog is happy at home.'), 'bad'); return; }
   if (!r || !r.ok) { toast(tt('fr.offline', 'Friends need an internet connection. Your dog is happy at home.'), 'bad'); return; }
-  S.fr = {}; v219Fields(S); FR.pending = 0; FR.menu = ''; FR.yardAt = 0; markDirty(); try { saveNow(); } catch (e) { /* storage */ }
+  const o = S.fr, keep = { day: o.day, pets: o.pets, gotPets: o.gotPets, notes: o.notes, gift: o.gift, gotGifts: o.gotGifts, walkDay: o.walkDay, walks: o.walks, gotWalks: o.gotWalks, walked: o.walked, gotIds: o.gotIds };
+  S.fr = keep; v219Fields(S); FR.pending = 0; // today's caps stay: leave and add again earns nothing twice (code review 5) FR.menu = ''; FR.yardAt = 0; markDirty(); try { saveNow(); } catch (e) { /* storage */ }
   frBadgeSync();
   const row = $('#frLeave', p); if (row && row.parentElement) row.parentElement.remove();
   toast(tt('fr.left', 'You left Friends. Your code is gone.'), 'good');
@@ -526,24 +573,45 @@ function frSheetBind(p) {
   const neu = $('#frNew', p); if (neu) neu.onclick = () => { SFX.click(); frNewCode(p); };
   const add = $('#frAdd', p); if (add) add.onclick = () => { SFX.click(); frAdd(); };
   frBindBoxes(p);
+  frRowsBind(p);
+}
+function frRowsBind(p) {
   p.querySelectorAll('[data-fr]').forEach((b) => {
     b.onclick = () => {
       SFX.click();
-      const row = b.closest('[data-fid]'), fid = row && row.dataset.fid;
+      const row = b.closest('[data-fid]'), fid = row && row.dataset.fid, P = b.closest('.panel') || p;
       const act = b.dataset.fr;
       if (act === 'visit') { frVisit(fid); return; }
-      if (act === 'gift') { frGiftSheet(fid, 'list'); return; }
-      if (act === 'more') { FR.menu = FR.menu === fid ? '' : fid; frSheet(); return; }
+      if (act === 'gift') { const b = P.querySelector('.panel-body'); FR.listTop = b ? b.scrollTop : 0; frGiftSheet(fid, 'list'); return; }
+      if (act === 'more') { const was = FR.menu; FR.menu = FR.menu === fid ? '' : fid; frRowPatch(P, was); frRowPatch(P, fid); frPopShow(P); return; }
       if (act === 'remove') frRemove(fid);
-      if (act === 'block') frBlock(fid, p);
+      if (act === 'block') frBlock(fid, P);
     };
   });
 }
+// one row redrawn where it is (the "..." menu): no pop-in, the scroll stays
+function frRowPatch(p, fid) {
+  if (!p || !fid) return;
+  const row = [...p.querySelectorAll('.fr-row')].find((r) => r.dataset.fid === fid), f = frFriend(fid);
+  if (!row || !f) return;
+  const box = document.createElement('div'); box.innerHTML = frRowHTML(f);
+  const nu = box.firstElementChild; row.replaceWith(nu); frRowsBind(nu);
+}
+function frPopShow(p) { const pop = p && p.querySelector('.fr-pop'); if (pop && pop.scrollIntoView) pop.scrollIntoView({ block: 'nearest' }); }
 function frSheet() {
   if (!S) return null;
   v219Fields(S);
-  const p = openModal(esc(tt('fr.title', 'Friends')), frSheetHTML(), { cls: 'frsheet' });
-  frSheetBind(p);
+  const open = !modal.hidden && modal.querySelector('.panel.frsheet .fr-sheet'), body = open && open.closest('.panel-body');
+  if (body) { // the sheet is up: patch it in place (no pop-in replay, the scroll stays where it was)
+    const p = body.closest('.panel'), top = body.scrollTop, c = p.querySelector('.confirm'); if (c) c.remove();
+    body.innerHTML = frSheetHTML(); body.scrollTop = top;
+    frSheetBind(p); frFitSoon(p); frPopShow(p);
+    return p;
+  }
+  const back = FR.back; FR.back = null;
+  const p = openModal(esc(tt('fr.title', 'Friends')), frSheetHTML(), { cls: 'frsheet' + (back ? ' fr-back' : '') });
+  if (back) { p.classList.remove('pop'); const b = p.querySelector('.panel-body'); if (b) b.scrollTop = back.top; } // back from the gift sheet: where the list was
+  frSheetBind(p); frFitSoon(p);
   frGuestNudge();
   if (FR.invite) { const el = document.getElementById('frCh0'); if (el) el.focus({ preventScroll: true }); }
   return p;
@@ -552,7 +620,8 @@ async function frOpen() {
   if (!S || !frOn()) return false;
   v219Fields(S); frDay();
   if (!S.fr.fid) { frNameSheet(); return true; }
-  await frLoad();
+  const got = await frLoad();
+  if (got && !S.fr.fid) { frNameSheet(); return true; } // a different login: pick a name for this one
   frSheet();
   frInboxSoon(true); // once per open. a redraw of the same sheet does not ask again
   return true;
@@ -572,7 +641,7 @@ const FRV = { fid: '', pair: null, yard: null, card: null, dogs: [], raf: 0, las
 const FR_VISIT_FROM = ['yard', 'fryard', 'map', 'market', 'shelter', 'japan']; // a walk, a game or the garden finishes first
 const FR_STAMP = [452, 540, 60, 60]; // the paw stamp on the yard path (x, y, w, h)
 const FR_HOUSE_AT = [620, 330, 240, 200]; // where the yard draws the house (03_yard.js)
-const frToday = () => localISO();
+const frToday = () => jstISO(); // Japan days, as the Worker counts them (code review 3)
 const frFriend = (fid) => ((S && S.fr && S.fr.cache && S.fr.cache.friends) || []).find((f) => f && f.fid === fid) || null;
 function frSentToday(fid, kind) {
   if (FR.sent[fid + ':' + kind] === frToday()) return true;
@@ -651,9 +720,9 @@ function frDecorSVG(list) {
 function frStampSVG() {
   let svg = '';
   try { const P = window.PawArt; if (P && P.FRIENDS && typeof P.FRIENDS.paw === 'function') svg = P.FRIENDS.paw(); } catch (e) { svg = ''; }
-  const [x, y, w, h] = FR_STAMP;
+  const [x, y0, w, h] = FR_STAMP, y = isPhone() ? y0 - 70 : y0;
   if (!svg) return `<g class="fr-stamp">${doodle('paw', x + w / 2, y + h / 2, 1.4)}</g>`; // TODO art
-  return `<g class="fr-stamp">${place(svg, x, y, w, h)}</g>`;
+  return `<g class="fr-stamp">${place(propTint(svg, false, false), x, y, w, h)}</g>`;
 }
 function frYardSVG(y) {
   const stamp = frSentToday(FRV.fid, 'note') ? frStampSVG() : '';
@@ -679,13 +748,44 @@ function frChip() {
   const fix = () => { const n = st.querySelector('.pname'); if (cur.mode === 'fryard' && n && n.textContent !== nm) n.textContent = nm; };
   fix(); const mo = new MutationObserver(fix); mo.observe(st, { childList: true }); onCleanup(() => mo.disconnect());
 }
-// phones: the camera rests on the house and the middle of the yard; desktop shows the whole yard
+// phones: the camera rests on the house and the middle of the yard; a drag pans the whole yard and the look-left button (#phPeek) shows
+// the rest of their decor and back (phone review 3). Desktop shows the whole yard
+const FRC = { x: 0, w: 1000, home: 0, raf: 0 };
+function frCamSet(x) {
+  const svg = $('#view > svg.world'); if (!svg) return;
+  FRC.x = clamp(x, 0, 1000 - FRC.w); svg.setAttribute('viewBox', `${FRC.x.toFixed(1)} 0 ${FRC.w.toFixed(1)} 600`);
+}
+function frCamTo(x, secs) {
+  cancelAnimationFrame(FRC.raf); const x0 = FRC.x, x1 = clamp(x, 0, 1000 - FRC.w), t0 = performance.now(), ms = (secs || 0) * 1000;
+  if (!ms || motionOff()) { frCamSet(x1); frScan(); return; }
+  const step = (t) => { const k = Math.min(1, (t - t0) / ms), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; frCamSet(x0 + (x1 - x0) * e); if (k < 1) FRC.raf = requestAnimationFrame(step); else frScan(); };
+  FRC.raf = requestAnimationFrame(step);
+}
 function frCam() {
   const svg = $('#view > svg.world'); if (!svg) return;
   const vw = svg.clientWidth || view.clientWidth, vh = svg.clientHeight || view.clientHeight;
-  if (!isPhone() || !vw || !vh) { svg.setAttribute('viewBox', '0 0 1000 600'); return; }
-  const w = Math.min(1000, 600 * vw / vh), x = clamp(590 - w / 2, 0, 1000 - w); // the house's door near the right edge, the open yard to its left
-  svg.setAttribute('viewBox', `${x.toFixed(1)} 0 ${w.toFixed(1)} 600`);
+  if (!isPhone() || !vw || !vh) { FRC.w = 1000; FRC.home = 0; frCamSet(0); return; }
+  FRC.w = Math.min(1000, 600 * vw / vh); FRC.home = clamp(590 - FRC.w / 2, 0, 1000 - FRC.w); // the house's door near the right edge, the open yard to its left
+  frCamSet(FRC.home);
+}
+const frCamAway = () => Math.abs(FRC.x - FRC.home) > 40;
+function frPan(svg) {
+  if (!isPhone() || FRC.w >= 1000) return;
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'iconbtn ph-peek fr-peek'; b.id = 'phPeek'; view.appendChild(b);
+  b.innerHTML = '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M19 12 Q29 22 31 24 Q28 28 19 36" fill="none" stroke="#5B3D32" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 11 Q31 21 33 24" fill="none" stroke="#F28FA5" stroke-width="2" stroke-linecap="round" opacity=".7"/></svg>';
+  const sync = () => { const a = frCamAway(); b.classList.toggle('back', a); const l = a ? tt('fr.look_back', 'Look back at the house') : tt('fr.look_left', 'Look around the yard'); if (b.getAttribute('aria-label') !== l) b.setAttribute('aria-label', l); };
+  b.onclick = () => { SFX.click(); frCamTo(frCamAway() ? FRC.home : 0, 0.7); setTimeout(sync, 750); };
+  let x0 = null, c0 = 0, id = null, on = false, swallow = false;
+  svg.addEventListener('click', (e) => { if (swallow) { swallow = false; e.stopPropagation(); e.preventDefault(); } }, true);
+  svg.addEventListener('pointerdown', (e) => { swallow = false; if (x0 != null) return; x0 = e.clientX; c0 = FRC.x; id = e.pointerId; on = false; });
+  svg.addEventListener('pointermove', (e) => {
+    if (x0 == null || e.pointerId !== id) return; const dx = e.clientX - x0;
+    if (!on) { if (Math.abs(dx) < 10) return; on = true; cancelAnimationFrame(FRC.raf); try { svg.setPointerCapture(id); } catch (er) { /* none */ } }
+    frCamSet(c0 - dx * FRC.w / (svg.clientWidth || view.clientWidth || 1));
+  });
+  const end = (e) => { if (x0 == null || e.pointerId !== id) return; x0 = null; if (!on) return; on = false; swallow = true; setTimeout(() => { swallow = false; }, 400); frScan(); sync(); };
+  svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end);
+  sync(); onCleanup(() => cancelAnimationFrame(FRC.raf));
 }
 /* the dogs: the friend's (up to 5, Dog Card visitors' art and scale) and my leader. Under the harness they stand still unless prefs.rmTest (rmWander) */
 const frK = (v, y) => RM_BASE * clamp(1 + (y - 500) * RM_DEPTH, 0.86, 1.12) * sizeK(v.dog) * (isPhone() ? 0.84 : 1); // a phone shows ~360 world units beside the house: a little smaller there, so a full pack fits without piling up
@@ -697,7 +797,7 @@ function frScan() {
   const inv = M.inverse(), toW = (x, y) => { const p = svg.createSVGPoint(); p.x = x; p.y = y; return p.matrixTransform(inv); };
   const vr = view.getBoundingClientRect(), a = toW(vr.left, vr.top), b = toW(vr.right, vr.bottom);
   const boxes = [];
-  ['#placeBtns .btn', '#status', '#bar:not([hidden])', '#ddWish:not([hidden])'].forEach((sel) => document.querySelectorAll(sel).forEach((el) => {
+  ['#placeBtns .btn', '#status', '#bar:not([hidden])', '#ddWish:not([hidden])', '#phPeek'].forEach((sel) => document.querySelectorAll(sel).forEach((el) => {
     const r = el.getBoundingClientRect(); if (!r.width || !r.height) return;
     const p = toW(r.left - 6, r.top - 6), q = toW(r.right + 6, r.bottom + 6); boxes.push([p.x, p.y, q.x - p.x, q.y - p.y]);
   }));
@@ -892,11 +992,14 @@ function frWrapSVG(n) {
 }
 // the letter's doodle (07b_mailbox.js letterBody): a paw for a note, the wrapped gift for a gift
 function frLetterArt(m) {
+  if (m && (m.frPaw || m.frPets) && m.kind === 'postcard') return ''; // drawn in the postcard's photo (frLetterPhoto)
   if (m && m.frPaw) return frPawHTML();
-  if (m && m.frDog && typeof m.frDog === 'object') return `<span class="fr-letterpaw fr-letterdog" aria-hidden="true">${frHeadHTML(m.frDog)}</span>`; // a walk letter: the friend's dog that walked
+  if (m && m.frDog && typeof m.frDog === 'object' && !(m.dog && m.kind !== 'gift')) return `<span class="fr-letterpaw fr-letterdog" aria-hidden="true">${frHeadHTML(m.frDog)}</span>`; // a walk letter: the friend's dog that walked
   if (m && Number.isInteger(m.frWrap)) return `<span class="fr-letterpaw fr-letterwrap" aria-hidden="true">${frWrapSVG(m.frWrap)}</span>`;
   return '';
 }
+// the postcard photo of a note or pet letter (07b_mailbox.js letterPhoto): the paw doodle, never an empty frame
+function frLetterPhoto(m) { return m && (m.frPaw || m.frPets) ? frPawHTML() : ''; }
 function frGiftSheet(fid, from) {
   if (!S || !frOn() || !fid) return null;
   if (frGiftUsed()) { frGiftLimit(); return null; }
@@ -917,7 +1020,7 @@ function frGiftSheet(fid, from) {
 }
 function frGiftAfter(from) { // after a send (or a limit): back to the list, or the yard's buttons, where Gift now reads "Sent today"
   const sheet = !modal.hidden && !!document.querySelector('#modal .fr-giftsheet');
-  if (sheet && from === 'list') frSheet();
+  if (sheet && from === 'list') { FR.back = { top: FR.listTop || 0 }; frSheet(); }
   else if (sheet) closeModal();
   if (cur.mode === 'fryard') frBtns();
 }
@@ -1109,8 +1212,10 @@ function frWalkLetters(events, claim) {
     const name = frPairName(ev.from.name) || tt('fr.a_friend', 'A friend');
     let theirs = null; try { theirs = d.mine && typeof d.mine === 'object' ? dcDog({ id: 'fr:' + ev.from.fid, name: ev.from.name || [0, 0], dogs: [d.mine] }, 0) : null; } catch (e) { theirs = null; }
     const who = theirs ? tt('fr.walk_who', "{name}'s {dog}", { name, dog: theirs.name }) : name;
-    const me = Number.isInteger(d.dog) ? frYardDogs()[d.dog] : null, dog = me ? me.d.name : NAME();
+    // my dog it walked with: by the last snapshot I sent (S.fr.snap holds its dogs' ids), else my leader (code review 6)
+    const sid = Number.isInteger(d.dog) && Array.isArray(S.fr.snap) ? S.fr.snap[d.dog] : null, me = sid != null ? (S.dogs || []).concat(S.dog || []).find((x) => x && x.id === sid) : null, dog = me ? me.name : NAME();
     const m = { id, from: name, title: tt('fr.walk_title', 'A walk with {who}', { who }), frDog: theirs ? d.mine : null };
+    if (theirs) m.dog = theirs; // the postcard's photo (phone review 5)
     if (g) Object.assign(m, { kind: 'gift', text: tt('fr.walk_found', '{dog} went for a walk with {who} and found {item} for you!', { dog, who, item: g.name }), gift: { item: g.n, cat: g.cat, id: g.id, n: 1 } });
     else Object.assign(m, { kind: 'postcard', text: tt('fr.walk_text', '{dog} went for a walk with {who}!', { dog, who }) });
     mailPush(m);
@@ -1126,11 +1231,11 @@ function enterFrYard() {
   clearTimeout(phPanT); cancelAnimationFrame(camRaf); phPeekOn = false; phZoom = 1;
   view.innerHTML = frYardSVG(FRV.yard);
   frCam(); frBtns(); updateHUD(); frChip();
-  frDrawDogs();
+  frPan($('#view > svg.world')); frDrawDogs(); // the look-around button first, so the dogs keep clear of it
   cur.key = (e) => { if (e.key === 'Escape') { e.preventDefault(); SFX.click(); frHome(); } };
   const onHide = () => { if (document.visibilityState === 'hidden') frHome(); }; // the app went to the background: home again
   document.addEventListener('visibilitychange', onHide);
-  const onSize = () => { frCam(); frScan(); };
+  const onSize = () => { const pk = $('#phPeek'); frCam(); frScan(); if (pk) pk.classList.remove('back'); };
   window.addEventListener('resize', onSize);
   onCleanup(() => { cur.key = null; cancelAnimationFrame(FRV.raf); FRV.raf = 0; FRV.dogs = []; document.removeEventListener('visibilitychange', onHide); window.removeEventListener('resize', onSize); });
 }
@@ -1158,6 +1263,7 @@ function frExpose() {
     giftSheet: (fid) => frGiftSheet(fid, 'list'), sendGift: (fid, i) => frGiftSend(fid, i, null, ''),
     walkDogs: () => frWalkDogs().map((o) => ({ fid: o.fid, dog: o.dog, name: o.d.name, key: o.d.key })), guest: () => (S && S.fr ? S.fr.guest : null), walkGuest: () => (FRW.g ? { fid: FRW.g.fid, dog: FRW.g.dog } : null),
     walkFull: (k) => frWalkFull(k || ROUTE_KEYS[routeIdx]), econ: () => ({ one: FR_WALK_COINS, max: FR_WALK_MAX, cap: FR_WALK_COINS * FR_WALK_MAX, got: FR_GOT_WALKS }),
+    cam: () => ({ x: FRC.x, w: FRC.w, home: FRC.home }), fit: (root) => frFit(root),
     scene: () => ({ mode: cur.mode, fid: FRV.fid, house: FRV.yard && FRV.yard.house, season: FRV.yard && FRV.yard.season, decor: FRV.yard ? FRV.yard.decor.map((d) => d.n) : [], dogs: FRV.dogs.map((v) => ({ mine: v.mine, name: v.dog.name, key: v.dog.key, pose: frPose(v), x: Math.round(v.x), y: Math.round(v.y) })) })
   };
 }

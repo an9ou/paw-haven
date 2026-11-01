@@ -436,7 +436,7 @@ async function checks(label, call, sql, mail) {
     }
     ok(new Set(rotated).size === 6, 'each new code is different');
     ok((await frCall('POST', '/friends/code/new', {}, owner.token)).status === 429, 'the 6th new code in a Japan day is rate limited (5 a day)');
-    const taker = await user('10.19.22.3');
+    const taker = await user('10.19.22.3'); await profile(taker, [7, 7]); // add needs my own friend id (fix batch)
     ok((await frCall('POST', '/friends/add', { code: rotated[0] }, taker.token, { 'CF-Connecting-IP': '10.19.22.4' })).json.error === 'not_found', 'the old code stops working');
     ok((await frCall('POST', '/friends/add', { code: rotated[5].toLowerCase() }, taker.token, { 'CF-Connecting-IP': '10.19.22.4' })).json.ok === true, 'the newest code works, in any case');
     ok(fresh.code && first.code, 'profiles for the code checks exist');
@@ -565,6 +565,18 @@ async function checks(label, call, sql, mail) {
     }
     res = await frCall('GET', '/friends/inbox', null, box.token);
     ok(res.json.events.length === 30 && res.json.events[0].day === '2010-01-01' && res.json.events[29].day === '2010-01-30' && !res.json.events.some((e) => e.day === '2010-01-31'), 'the inbox returns at most 30 events, oldest first');
+    const box2 = await user('10.19.24.3'), from2 = await user('10.19.24.4');
+    await profile(box2, [1, 2]); await profile(from2, [2, 1]);
+    for (let i = 0; i < 31; i++) await sql('insert into friend_events (to_id, from_id, kind, data, day, created_at) values (?, ?, ?, ?, ?, ?)', box2.user.id, from2.user.id, i % 2 ? 'walk' : 'gift', '{"i":0,"n":1}', '2011-01-' + String(i + 1).padStart(2, '0'), Date.now() - (40 - i) * 1000, true);
+    await sql('insert into friend_events (to_id, from_id, kind, data, day, created_at) values (?, ?, ?, ?, ?, ?)', box2.user.id, from2.user.id, 'pet', '{}', '2011-02-01', Date.now() - 5000, true);
+    await sql('insert into friend_events (to_id, from_id, kind, data, day, created_at) values (?, ?, ?, ?, ?, ?)', box2.user.id, from2.user.id, 'note', '{"i":3}', '2011-02-01', Date.now() - 4000, true);
+    res = await frCall('GET', '/friends/inbox', null, box2.token);
+    ok(res.json.events.length === 30 && res.json.events[0].kind === 'pet' && res.json.events[1].kind === 'note', 'unclaimed gifts and walks never crowd pets and notes out of the inbox (code review 1)');
+    // a caller with no friend id of its own (a stray guest after a logout) cannot add or send
+    const noId = await user('10.19.24.5');
+    ok((await frCall('POST', '/friends/add', { code: a.code }, noId.token, { 'CF-Connecting-IP': '10.19.24.6' })).json.error === 'bad', 'add without my own friend id is bad');
+    ok((await frCall('POST', '/friends/send', { fid: pyB.fid, kind: 'pet' }, noId.token)).json.error === 'bad', 'send without my own friend id is bad');
+    ok((await nOf('select count(*) as n from friends where user_id = ? or friend_id = ?', noId.user.id, noId.user.id)) === 0, 'no friends row for a caller without a friend id');
 
     // seen: today, the previous six Japan days, or older. An inbox read counts.
     await sql('update friend_ids set seen_at = ? where user_id = ?', Date.now() - 6 * 864e5, yB.user.id, true);
@@ -662,7 +674,7 @@ async function checks(label, call, sql, mail) {
     ok((await frCall('POST', '/friends/leave', {}, lA.token)).json.ok === true, 'leave again is ok');
 
     // misses share the add limits: 10/h per user, 30/h per IP
-    const adder = await user('10.19.29.1');
+    const adder = await user('10.19.29.1'); await profile(adder, [4, 0]);
     const f1 = await profile(await user('10.19.29.2'), [4, 1]);
     const f2 = await profile(await user('10.19.29.3'), [4, 2]);
     const addIp = { 'CF-Connecting-IP': '10.19.29.9' };
@@ -674,7 +686,7 @@ async function checks(label, call, sql, mail) {
     ok(userHits.join() === '404,404,404,404,404,404,404,404,404,200,429', 'add misses count toward 10/h per user, and the 11th waits (' + userHits.join(' ') + ')');
     const ipHits = [];
     for (let i = 0; i < 31; i++) {
-      const g = await user('10.19.31.' + (i + 1));
+      const g = await user('10.19.31.' + (i + 1)); await profile(g, [i % 40, 3]);
       ipHits.push((await call('POST', '/friends/add', { code: 'OOOOO' }, g.token, { 'CF-Connecting-IP': '10.19.32.1' })).status);
     }
     ok(ipHits[0] === 404 && ipHits[29] === 404 && ipHits[30] === 429, 'add misses count toward 30/h per IP (' + ipHits.filter((s) => s === 429).length + ' limited)');

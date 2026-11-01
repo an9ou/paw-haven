@@ -160,7 +160,7 @@
   "privacy.choices.title": "Tus opciones",
   "privacy.choices.guest": "<b>Juega sin cuenta</b> cuando quieras.",
   "privacy.choices.export": "<b>Exporta un código de guardado</b> en Ajustes cuando quieras, para tener tu propia copia.",
-  "privacy.delete": "<b>Borra tu cuenta y todo lo que guardamos:</b> escribe a {mail} desde el correo con el que te registraste y di que quieres borrar tu cuenta. Borramos la cuenta, el hash de la contraseña, las partidas y cualquier Tarjeta perruna, y te avisamos cuando esté hecho. Esto no elimina un código de guardado que hayas exportado ni la partida sin cuenta de tu propio dispositivo. Esos puedes borrarlos tú.",
+  "privacy.delete": "<b>Borra tu cuenta y todo lo que guardamos:</b> escribe a {mail} desde el correo con el que te registraste y di que quieres borrar tu cuenta. Borramos la cuenta, el hash de la contraseña, las partidas, cualquier Tarjeta perruna y tus datos de Amigos, y te avisamos cuando esté hecho. Esto no elimina un código de guardado que hayas exportado ni la partida sin cuenta de tu propio dispositivo. Esos puedes borrarlos tú.",
   "privacy.choices.ask": "<b>Pregunta qué datos tenemos</b> sobre ti de la misma manera.",
   "privacy.changes.title": "Cambios",
   "privacy.changes.text": "Si esta política cambia en algo importante, pondremos la nueva fecha arriba y una nota breve en la página del juego.",

@@ -1037,7 +1037,8 @@ function v219Fields(s) {
   if (!Array.isArray(f.gotIds)) f.gotIds = []; // v2.19 part 4: the last gift event ids turned into letters (at most 60), so a claim that failed never gives twice (part 5: walk letters too)
   if (!Array.isArray(f.walked)) f.walked = []; // v2.19 part 5: the friends walked with today (a repeat walk pays and sends nothing). Reset with walkDay
   if (typeof f.cache.day !== 'string') f.cache.day = ''; // v2.19 part 5: the day the friends' list (their snapshot dogs) was last fetched
-  const today = localISO();
+  if (!Array.isArray(f.snap)) f.snap = []; // v2.19 fix batch: my dogs' ids in the last yard snapshot sent, in order (a walk letter's dog index points into it)
+  const today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); // Japan days, as the Worker (jstISO is declared later in this file)
   if (f.day !== today) { f.day = today; f.pets = 0; f.gotPets = 0; f.notes = 0; f.gift = false; f.gotGifts = 0; f.gotWalks = 0; }
   if (f.walkDay !== today) { f.walkDay = today; f.walks = 0; f.walked = []; }
   return s;

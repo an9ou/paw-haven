@@ -31,7 +31,7 @@
 //   PUT  /friends/yard { yard }            -> { ok }              30/h
 //   GET  /friends/yard?fid=                -> { yard }            120/h   friends only, otherwise not_found
 //   POST /friends/send { fid, kind, data } -> { ok }              60/h    limit when today's send is used
-//   GET  /friends/inbox                    -> { events }          120/h   at most 30, oldest first
+//   GET  /friends/inbox                    -> { events }          120/h   at most 30: pets and notes first, then gifts and walks, oldest first in each
 //   POST /friends/inbox/claim { ids }      -> { ok }              120/h
 //   POST /friends/leave                    -> { ok }              30/h    V219.md gives leave no limit; same as remove and block
 //
@@ -716,6 +716,7 @@ const ROUTES = {
   'POST /friends/add': { auth: true, async fn({ env, ctx, ip, body, me }) {
     await frTidySoon(env, ctx);
     if (!frOnly(body, ['code'])) return fail('bad', 400);
+    if (!(await frMine(env, me.id))) return fail('bad', 400); // no friend id of my own: a row the other side could never see or remove
     // Every attempt counts, including a miss, so guessing codes costs the same as a hit.
     const overUser = await limited(env, frKey.add(me.id), 10, 3600);
     const overIp = await limited(env, frKey.addip(ip), 30, 3600);
@@ -798,12 +799,13 @@ const ROUTES = {
   'POST /friends/send': { auth: true, async fn({ env, ctx, body, me }) {
     await frTidySoon(env, ctx);
     if (!frOnly(body, ['fid', 'kind'], ['data']) || !frFidOk(body.fid) || typeof body.kind !== 'string' || !FR_KINDS.includes(body.kind)) return fail('bad', 400);
+    if (await limited(env, frKey.send(me.id), 60, 3600)) return fail('rate_limited', 429); // before any DB work
+    if (!(await frMine(env, me.id))) return fail('bad', 400);
     const them = await frByFid(env, body.fid);
     if (!them || them.user_id === me.id || !(await frFriends(env, me.id, them.user_id)) || (await frBlocked(env, me.id, them.user_id))) return fail('not_found', 404);
     const dogs = body.kind === 'walk' ? await frSnapDogs(env, them.user_id) : null;
     const data = body.kind === 'pet' ? frPet(body.data) : body.kind === 'note' ? frNote(body.data) : body.kind === 'gift' ? frGift(body.data) : frWalk(body.data, dogs);
     if (!data) return fail('bad', 400);
-    if (await limited(env, frKey.send(me.id), 60, 3600)) return fail('rate_limited', 429);
     const day = dcDay(Date.now());
     const dup = body.kind === 'gift'
       ? await one(env, 'select id from friend_events where from_id = ?1 and kind = ?2 and day = ?3', me.id, 'gift', day)
@@ -825,11 +827,12 @@ const ROUTES = {
     if (await limited(env, frKey.inbox(me.id), 120, 3600)) return fail('rate_limited', 429);
     const now = Date.now();
     // Any inbox read drops events older than 30 days, for every player. The read itself counts as being seen today.
+    // Pets and notes come first: gifts and walks over the daily letter caps stay unclaimed on purpose and must not crowd them out of the 30.
     await run(env, 'delete from friend_events where created_at < ?1', now - FR_KEEP);
     await run(env, 'update friend_ids set seen_at = ?1 where user_id = ?2', now, me.id);
     const rows = await all(env, `select e.id as id, e.kind as kind, e.data as data, e.day as day, f.fid as fid, f.name_a as name_a, f.name_b as name_b
       from friend_events e join friend_ids f on f.user_id = e.from_id
-      where e.to_id = ?1 and e.claimed_at is null order by e.id asc limit ${FR_INBOX}`, me.id);
+      where e.to_id = ?1 and e.claimed_at is null order by (e.kind in ('gift', 'walk')) asc, e.id asc limit ${FR_INBOX}`, me.id);
     const events = [];
     for (const r of rows) {
       let data = null; try { data = JSON.parse(r.data); } catch (e) { data = null; }

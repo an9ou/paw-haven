@@ -155,7 +155,7 @@
   "privacy.choices.title": "Suas escolhas",
   "privacy.choices.guest": "<b>Jogue sem conta</b> quando quiser.",
   "privacy.choices.export": "<b>Exporte um código de salvamento</b> em Configurações sempre que quiser, para ter sua própria cópia.",
-  "privacy.delete": "<b>Apague sua conta e tudo o que guardamos:</b> escreva para {mail} a partir do e-mail que você usou no cadastro e diga que quer apagar sua conta. Apagamos a conta, o hash da senha, os jogos salvos e qualquer Cartão do cachorro, e avisamos quando estiver feito. Isso não remove um código de salvamento que você exportou nem o jogo salvo sem conta no seu próprio aparelho. Esses, você pode apagar por conta própria.",
+  "privacy.delete": "<b>Apague sua conta e tudo o que guardamos:</b> escreva para {mail} a partir do e-mail que você usou no cadastro e diga que quer apagar sua conta. Apagamos a conta, o hash da senha, os jogos salvos, qualquer Cartão do cachorro e seus dados de Amigos, e avisamos quando estiver feito. Isso não remove um código de salvamento que você exportou nem o jogo salvo sem conta no seu próprio aparelho. Esses, você pode apagar por conta própria.",
   "privacy.choices.ask": "<b>Pergunte o que guardamos</b> sobre você do mesmo jeito.",
   "privacy.changes.title": "Mudanças",
   "privacy.changes.text": "Se esta política mudar de um jeito importante, vamos colocar a nova data no topo e um aviso curto na página do jogo.",

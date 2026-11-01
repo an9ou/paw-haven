@@ -6,7 +6,7 @@ Last updated: 1 November 2026. Written to go live together with the Cloudflare l
 
 ## What we collect
 
-- **If you play as a guest:** your game is saved in your browser, on your device. We do not see that save. Friends, if you turn them on, are kept as the Friends section says.
+- **If you play as a guest:** your game is saved in your browser, on your device. If you are online, a guest copy is also kept with the login service so it isn't lost, with no email or name attached. Friends, if you turn them on, are kept as the Friends section says.
 - **If you make an account:** we store
   - your **email address**, only so that you can log in. We never send emails, not even to say hello.
   - a **hashed password**. A hash is a scrambled version of your password that cannot be turned back into the password. We cannot read your password, and nobody else can either.
@@ -45,7 +45,7 @@ Doodle Doggo is a gentle game for everyone. If you are young, please ask a grown
 
 - **Play as a guest** at any time, with no account.
 - **Export a save code** in Settings whenever you like, to keep your own copy.
-- **Delete your account and everything we hold:** contact the owner at **[CONTACT EMAIL: to be filled in by the owner]** from the email address you used to sign up, and say you want your account deleted. We delete the account, the password hash and the saves, and tell you when it is done. Deleting your account does not remove a save code you exported or the guest save on your own device. You can clear those yourself.
+- **Delete your account and everything we hold:** contact the owner at **[CONTACT EMAIL: to be filled in by the owner]** from the email address you used to sign up, and say you want your account deleted. We delete the account, the password hash, the saves, any Dog Card and your Friends data (your code, friends list, blocks, yard snapshot, and pets, notes, gifts and walks), and tell you when it is done. Deleting your account does not remove a save code you exported or the guest save on your own device. You can clear those yourself.
 - **Ask what we hold** about you in the same way.
 
 ## Changes

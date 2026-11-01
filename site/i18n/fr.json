@@ -154,7 +154,7 @@
   "privacy.choices.title": "Tes choix",
   "privacy.choices.guest": "<b>Joue sans compte</b> quand tu veux.",
   "privacy.choices.export": "<b>Exporte un code de sauvegarde</b> dans les Réglages quand tu veux, pour garder ta propre copie.",
-  "privacy.delete": "<b>Supprimer ton compte et tout ce que nous gardons :</b> écris à {mail} depuis l’adresse e-mail de ton inscription, et dis que tu veux supprimer ton compte. Nous supprimons le compte, le hachage du mot de passe, les sauvegardes et toute Carte toutou, et nous te prévenons quand c’est fait. Cela n’efface pas un code de sauvegarde que tu as exporté, ni la sauvegarde sans compte sur ton appareil. Tu peux les effacer toi-même.",
+  "privacy.delete": "<b>Supprimer ton compte et tout ce que nous gardons :</b> écris à {mail} depuis l’adresse e-mail de ton inscription, et dis que tu veux supprimer ton compte. Nous supprimons le compte, le hachage du mot de passe, les sauvegardes, toute Carte toutou et tes données Amis, et nous te prévenons quand c’est fait. Cela n’efface pas un code de sauvegarde que tu as exporté, ni la sauvegarde sans compte sur ton appareil. Tu peux les effacer toi-même.",
   "privacy.choices.ask": "<b>Demande ce que nous gardons</b> sur toi, de la même façon.",
   "privacy.changes.title": "Changements",
   "privacy.changes.text": "Si cette politique change de façon importante, nous mettrons la nouvelle date en haut et une petite note sur la page du jeu.",
