@@ -5,7 +5,7 @@ Paste one prompt per Cursor task. The work order is in issue #3:
 - Part 6 (#9) can run beside parts 2 to 5 once #4 is merged.
 - Every other part starts only after the part before it is merged.
 
-Send the PR number to the Game Manager. The Game Manager reviews it and, once approved and green, merges it (owner, 1 Nov 2026).
+**Owner, 1 Nov 2026 (17:30 UTC): Claude codes the rest of v2.19, not Cursor.** The Game Manager runs one Claude coding subagent per part (`claude/v219-*` branches), reviews it, and merges it once green. The prompts below stay as the scope of each part. Any Cursor PR for #6–#8 is closed without merging.
 
 ## Progress (1 Nov 2026)
 
@@ -15,9 +15,9 @@ Send the PR number to the Game Manager. The Game Manager reviews it and, once ap
 | Design contract `V219.md`, `AGENTS.md`, issues | #3 | — | Claude | done |
 | 1 Worker and D1 | #4 | `cursor/v219-worker` | Cursor | PR #10 merged 1 Nov |
 | 2 Friend codes and the Friends sheet | #5 | `cursor/v219-friends-sheet` | Cursor | PR #12 merged 1 Nov |
-| 3 Yard visits, pets and notes | #6 | `cursor/v219-visits` | Cursor | started 1 Nov (@cursor on #6) |
-| 4 Gifts | #7 | `cursor/v219-gifts` | Cursor | waits for #6 |
-| 5 Walk together | #8 | `cursor/v219-walk` | Cursor | waits for #7 |
+| 3 Yard visits, pets and notes | #6 | `claude/v219-visits` | Claude | coding (started 1 Nov 17:30) |
+| 4 Gifts | #7 | `claude/v219-gifts` | Claude | waits for #6 |
+| 5 Walk together | #8 | `claude/v219-walk` | Claude | waits for #7 |
 | 6 Invite page and privacy | #9 | `cursor/v219-invite` | Cursor | PR #11 merged 1 Nov |
 | 7 Translations, NEWS, reviews, deploy, release | — | — | Claude | after all are merged, on the owner's date |
 

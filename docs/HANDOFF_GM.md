@@ -32,7 +32,10 @@ Previous Game Manager: session_01D6KLY2drW9wj7ssCq6Zesi (handed over at ~300k co
 8. The usage-limit watchdog: make your own scheduled task when work runs overnight, and disable it when idle.
 9. The owner's Cursor/Grok edits land on main, either as PRs or directly. Merge main before every release.
 
-## Cursor loop (owner approved 1 Nov 2026; replaces the owner passing PR numbers along)
+## Claude codes again (owner, 1 Nov 2026, 17:30 UTC)
+The owner moved the coding of parts 3–5 from Cursor back to Claude. The Game Manager runs one coding subagent per part (worktree, branch `claude/v219-<part>`, brief = that part's prompt in `docs/briefs/V219_CURSOR_PROMPTS.md` plus the issue), reviews its diff, runs the suites, opens a PR and squash-merges it into `main`, then starts the next part. Close any Cursor PR for #6–#8 unmerged. The Cursor loop below is kept for reference only.
+
+## Cursor loop (owner approved 1 Nov 2026; replaced by the section above)
 - **Scheduled task** `trig_015HgYaCKCK77kFPVbC11evy` "v2.19 Cursor PR check" runs every 3 hours into the Game Manager session. A new Game Manager re-points it (update_trigger can't move it, so make a new one and delete the old one) and re-subscribes to the open PRs.
 - **New `cursor/v219-*` PR:**
   1. `subscribe_pr_activity`.
