@@ -141,7 +141,7 @@ Must get right:
 1. /f/<code> is case-insensitive. It is a crayon page in the site's style (header nav, peeking dog) saying "A friend invited you to Doodle Doggo!", with the code big, "Play here" (/play/?friend=CODE) and "Play on itch.io" with the type-it-in note. A bad code shows the same page with no code, and only "Play here".
 2. No API calls and no third-party requests; CSP default-src 'self' stays. Link-preview meta tags use the existing logo-1200x630.png.
 3. The site's own language pick and URL prefixes, as on the other pages. Add English strings to the site string tables only; Claude translates.
-4. /play/ passes ?friend= on to the game exactly as it passes lang, and only when it matches ^DOG-[A-HJ-NP-Z2-9]{5}$ (case-insensitive). Anything else is dropped, so it can never be injected.
+4. /play/ passes ?friend= on to the game exactly as it passes lang, and only when it matches ^DOG-[ABCDEFGHJKMNPQRSTUVWXYZ2-9]{5}$ (case-insensitive; the Worker alphabet, which skips 0, O, 1, I and L). Anything else is dropped, so it can never be injected.
 5. A "Friends" section in site/privacy.html and docs/itch/PRIVACY.md, in short plain sentences, covering all six points in the issue. Update "last updated".
 Tests: extend the site suite (English and one other language, a bad code, the Play link, /play/ forwarding with a good code and with <script>). Run node game/run_tests.js site.
 PR: the summary, plus screenshots of /f/DOG-ABCDE at 390 and 1280.
