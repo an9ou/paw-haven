@@ -6,7 +6,7 @@
 const FR_LIVE = false; // the Game Manager turns this on at the v2.19 release
 function frOn() {
   if (typeof clArtifact === 'function' && clArtifact()) return false;
-  if (FR_LIVE) return true;
+  if (FR_LIVE && !navigator.webdriver) return true; // live, but still off under the test harness unless a test asks (V219 section 0)
   return !!(prefs.frTest || (typeof window !== 'undefined' && window.__pawCloudMock));
 }
 const FR = { pick: [0, 0], invite: null, inviteShown: false, wantAdd: false, offline: false, pending: 0, inAt: 0, yardAt: 0, menu: '', gen: 0 };
