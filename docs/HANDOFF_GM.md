@@ -6,7 +6,7 @@ Previous Game Manager: session_01D6KLY2drW9wj7ssCq6Zesi (handed over at ~300k co
 - Merged into main: part 1 Worker (#10), part 2 Friends sheet (#12, `FR_LIVE = false`), part 6 invite page and privacy (#11).
 - **Part 3 (#6, visits):** started 1 Nov 17:00 UTC by my `@cursor` comment on #6. Cursor will open `cursor/v219-visits`. Subscribe to it, review it and run its suites.
 - Next: part 4 (#7) after #6's PR is merged, then part 5 (#8) after #7's. Then part 7 (mine): translations, NEWS, three reviews, `FR_LIVE = true`, deploy the Worker, then the site and game, then release on the owner's date.
-- Make your own 3-hourly scheduled task. Copy the prompt of `trig_015HgYaCKCK77kFPVbC11evy` (I deleted it; it fired into my session).
+- New Game Manager: session_01D6KLY3EuQ2ya1GqT7VBhht (started 1 Nov 17:00). Its 3-hourly check prompt is in its first message; the old task trig_015HgYaCKCK77kFPVbC11evy is deleted.
 
 
 1. Live: v2.18.4 "Winter Market" on main (site, itch #2256996, GitHub). The owner's official launch was 1 Nov 00:00 JST, and Marketing has the go-ahead. The Winter Market opens in game 1-26 Dec. Its design and the decisions are in docs/design/winter-market.md.
