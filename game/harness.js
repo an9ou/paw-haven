@@ -8,7 +8,7 @@ const rd = (f) => fs.readFileSync(path.join(dir, '..', f), 'utf8');
 const stub = merged ? ['dogs/pawart_dogs.js', 'world/pawart_world_a.js', 'world/pawart_world_b.js', 'world/pawart_world_c.js', 'world/pawart_world_d.js', 'world/pawart_world_e.js', 'world/pawart_world_f.js', 'world/pawart_world_g.js'].filter((f) => fs.existsSync(path.join(dir, '..', f))).map(rd).join('\n') : rd('dogs/pawart_dogs.js') + '\n' + fs.readFileSync(path.join(dir, 'pawart_stub.js'), 'utf8');
 const n = html.split('/*@@PAWART@@*/').length - 1;
 if (n !== 1) throw new Error('placeholder count ' + n);
-const realMods = ['mods/genes.js', 'mods/pawaudio.js', 'mods/walkrun.js', 'mods/toys.js', 'mods/garden.js', 'mods/kitchen.js'].filter((f) => mode !== 'published' || !/garden|kitchen/.test(f)).filter((f) => fs.existsSync(path.join(dir, '..', f))).map(rd).join('\n');
+const realMods = ['mods/genes.js', 'mods/pawaudio.js', 'mods/walkrun.js', 'mods/toys.js', 'mods/garden.js', 'mods/kitchen.js', 'mods/qr.js'].filter((f) => mode !== 'published' || !/garden|kitchen/.test(f)).filter((f) => fs.existsSync(path.join(dir, '..', f))).map(rd).join('\n');
 const stubMods = fs.readFileSync(path.join(dir, 'stub_mods.js'), 'utf8');
 const mods = mode === 'plain' ? '' : merged ? realMods + '\n' + stubMods : stubMods; // stub_mods only fills modules that are missing
 // v2.14: game/build.js already filled the pawi18n slot (/*@@I18N@@*/ = game/i18n/msg.js + packed.js); make sure it did

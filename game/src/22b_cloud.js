@@ -227,7 +227,7 @@ async function clPush(force) {
       CL.again = true; CL.againForce = CL.againForce || !!force; return;
     }
     if (!up.ok) throw up.error;
-    if (uid === CL.uid) { clMetaSet({ rev, pushedAt: changedAt, dogId: clDogId(live) }); CL.lastSync = Date.now(); CL.err = ''; if (!CL.anon) clOwn(uid, changedAt); }
+    if (uid === CL.uid) { clMetaSet({ rev, pushedAt: changedAt, dogId: clDogId(live) }); CL.lastSync = Date.now(); CL.err = ''; if (!CL.anon) clOwn(uid, changedAt); if (typeof frAfterPush === 'function') frAfterPush(); } // v2.19: the yard snapshot follows a cloud push (50_friends.js)
   } catch (e) {
     CL.err = 'offline'; clearTimeout(CL.retryT); CL.retryT = setTimeout(() => { CL.retryT = null; CL.err = ''; clPush(); }, 15000);
   } finally {

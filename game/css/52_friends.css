@@ -1,0 +1,52 @@
+/* v2.19 Friends (50_friends.js): the name wheels, the code card, the list. Phones: 44 px taps, no sideways scroll, the sheet sits over the bar. */
+#frBtn{position:relative;flex:none;display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;padding:4px;--wash:var(--w-cream);cursor:pointer}
+#frBtn[hidden]{display:none !important}
+#frBtn .fr-ic{width:34px;height:34px;display:block}
+#frBtn .fr-ic svg{width:100%;height:100%;display:block}
+#frBtn .fr-badge{position:absolute;top:-2px;right:-2px;margin:0}
+html[data-layout="phone"] #frBtn,#stage.slimhud #frBtn{display:none !important}
+.fr-badge{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 5px;margin-left:6px;border-radius:11px;background:#F28FA5;color:#fffdf8;font-family:var(--font-read);font-size:14px;font-weight:700;line-height:1}
+.fr-badge[hidden]{display:none !important}
+#bar .act[data-act="friends"]{position:relative}
+#bar .act[data-act="friends"] .fr-badge{position:absolute;top:2px;right:2px;margin:0}
+.fr-sheet{display:flex;flex-direction:column;gap:12px;min-width:0}
+.fr-off{margin:0;padding:8px 10px;background:#FFF3D6;border:1.6px dashed var(--ink);border-radius:10px}
+.fr-card{width:min(420px,100%);margin:0 auto}
+.fr-card svg{width:100%;height:auto;display:block}
+.fr-acts{display:flex;flex-wrap:wrap;gap:8px}
+.fr-acts .btn,.fr-namepick .btn,.fr-add .btn,.fr-pop .btn,.fr-rowacts .btn,.fr-wbtn{min-height:44px;min-width:44px}
+.fr-add{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.fr-pre{font-family:var(--font-hand);font-weight:700;font-size:28px;line-height:1}
+.fr-boxes{display:flex;gap:6px;flex:1 1 auto;min-width:0}
+.fr-ch{box-sizing:border-box;width:44px;min-width:44px;height:44px;padding:0;text-align:center;font-family:var(--font-hand);font-weight:700;font-size:26px;text-transform:uppercase;border:2px solid var(--ink);border-radius:10px;background:#fffdf7;color:var(--ink)}
+.fr-namepick{display:flex;flex-direction:column;gap:8px;min-width:0}
+.fr-wheels{display:flex;gap:10px;justify-content:center;align-items:flex-start;min-width:0}
+.fr-wheel{flex:1 1 0;min-width:0;max-width:180px;display:flex;flex-direction:column;align-items:stretch;gap:6px}
+.fr-wframe{width:100%;min-width:0}
+.fr-wframe svg{width:100%;height:auto;display:block}
+.fr-wbtn{width:100%}
+.fr-prev{margin:4px 0;text-align:center;font-family:var(--font-hand);font-weight:700;font-size:32px;line-height:1.1;overflow-wrap:anywhere}
+.fr-namebtns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.fr-list{display:flex;flex-direction:column;gap:4px;min-width:0}
+.fr-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 0;border-bottom:1px dashed rgba(91,61,50,.35);min-width:0}
+.fr-head{width:48px;height:48px;flex:none;display:block}
+.fr-head svg{width:100%;height:100%;display:block}
+.fr-nm{flex:1 1 120px;min-width:0;font-family:var(--font-hand);font-weight:700;font-size:24px;line-height:1.1;overflow-wrap:anywhere}
+.fr-doos{display:flex;gap:4px;flex:none}
+.fr-doo{width:28px;height:28px;display:block;opacity:.28}
+.fr-doo.on{opacity:1}
+.fr-doo svg{width:100%;height:100%;display:block}
+.fr-rowacts{display:flex;flex-wrap:wrap;gap:8px;flex:1 1 180px;min-width:0}
+.fr-pop{display:flex;flex-wrap:wrap;gap:8px;flex:1 1 100%}
+.fr-h{margin:8px 0 0;font-family:var(--font-hand);font-weight:700;font-size:26px}
+.fr-setrow{margin:6px 0 0}
+.fr-setrow .btn{min-height:44px}
+.fr-letterpaw{display:block;width:64px;height:64px;margin:4px 0}
+.fr-letterpaw svg{width:100%;height:100%;display:block}
+html[data-layout="phone"] .fr-pop .panel{max-width:100%}
+html[data-layout="phone"] .panel.fr-pop{width:100%}
+html[data-layout="phone"] .fr-sheet,#modal .fr-sheet{overflow-x:hidden}
+html[data-layout="phone"] .fr-prev{font-size:28px}
+html[data-layout="phone"] .fr-nm{font-size:22px}
+html[data-layout="phone"] #bar .barpop.fr-four{flex-wrap:wrap;width:max-content;max-width:calc(100vw - 12px)}
+html[data-layout="phone"] #bar .barpop.fr-four .act{min-width:0;flex:1 1 calc(50% - 8px);max-width:calc(50% - 8px)}

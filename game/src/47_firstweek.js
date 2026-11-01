@@ -160,12 +160,12 @@ function fwPartyPending() {
    same .act[data-act] buttons as on desktop, inside #bar, so doAct, the guide rings and the shortcuts keep working. Desktop keeps the 7 buttons. */
 const FW_POPS = { caremenu: ['feed', 'play', 'care'], more: ['wardrobe', 'journal'] };
 function fwMoreIcon() { return `<svg viewBox="-20 -20 40 40" aria-hidden="true">${[-11, 0, 11].map((x, i) => `<path d="M${x - 3.6} ${i % 2 ? 0.6 : -0.4} q0 -4 3.8 -4 q4 0 3.8 4 q0 4 -3.9 3.9 q-3.7 0 -3.7 -3.9z" fill="${['#F28FA5', '#F2C744', '#8EC0EA'][i]}" stroke="${INKG}" stroke-width="2" stroke-linejoin="round"/>`).join('')}</svg>`; }
-const fwPopList = (k) => FW_POPS[k].concat(k === 'more' && typeof ddOn === 'function' && ddOn() ? ['stickers'] : []); // v2.17: the sticker book in the More tray (48_dogdays.js)
-function fwActLabel(a) { return a === 'stickers' ? tt('dd.st_title', 'Sticker book') : a === 'caremenu' ? tdata('acts.care.1', 'Care') : a === 'more' ? tt('fw.more', 'More') : a === 'care' ? tt('fw.bath_nap', 'Bath & nap') : tdata('acts.' + a + '.1', (ACTS.find((x) => x[0] === a) || [a, a])[1]); }
-function fwActIcon(a) { const r = ACTS.find((x) => x[0] === a); return a === 'stickers' && typeof ddBookIcon === 'function' ? ddBookIcon() : a === 'more' ? fwMoreIcon() : a === 'caremenu' ? ICON('bath') : a === 'journal' ? iconOr('journal', doodle('paw', 0, 2, 1.1)) : ICON(r ? r[2] : a); }
+const fwPopList = (k) => FW_POPS[k].concat(k === 'more' && typeof ddOn === 'function' && ddOn() ? ['stickers'] : []).concat(k === 'more' && typeof frOn === 'function' && frOn() ? ['friends'] : []); // v2.17: the sticker book in the More tray (48_dogdays.js). v2.19: Friends (50_friends.js)
+function fwActLabel(a) { return a === 'friends' ? tt('fr.menu', 'Friends') : a === 'stickers' ? tt('dd.st_title', 'Sticker book') : a === 'caremenu' ? tdata('acts.care.1', 'Care') : a === 'more' ? tt('fw.more', 'More') : a === 'care' ? tt('fw.bath_nap', 'Bath & nap') : tdata('acts.' + a + '.1', (ACTS.find((x) => x[0] === a) || [a, a])[1]); }
+function fwActIcon(a) { const r = ACTS.find((x) => x[0] === a); return a === 'friends' && typeof frIcon === 'function' ? frIcon() : a === 'stickers' && typeof ddBookIcon === 'function' ? ddBookIcon() : a === 'more' ? fwMoreIcon() : a === 'caremenu' ? ICON('bath') : a === 'journal' ? iconOr('journal', doodle('paw', 0, 2, 1.1)) : ICON(r ? r[2] : a); }
 function fwActBtn(a, extra) { return `<button class="act" type="button" data-act="${a}"${extra || ''}><span class="ic">${fwActIcon(a)}</span><span>${esc(fwActLabel(a))}</span></button>`; }
 function fwPhoneBar() {
-  const pop = (k) => `<div class="barpop" data-pop="${k}" role="group" aria-label="${esc(fwActLabel(k))}" hidden>${fwPopList(k).map((a) => fwActBtn(a)).join('')}</div>`;
+  const pop = (k) => `<div class="barpop${k === 'more' && fwPopList(k).length > 3 ? ' fr-four' : ''}" data-pop="${k}" role="group" aria-label="${esc(fwActLabel(k))}" hidden>${fwPopList(k).map((a) => fwActBtn(a)).join('')}</div>`;
   return fwActBtn('caremenu', ' aria-haspopup="true" aria-expanded="false"') + fwActBtn('walk') + fwActBtn('map') + fwActBtn('more', ' aria-haspopup="true" aria-expanded="false"') + pop('caremenu') + pop('more');
 }
 const fwPopOf = (a) => Object.keys(FW_POPS).find((k) => FW_POPS[k].includes(a)) || null;
