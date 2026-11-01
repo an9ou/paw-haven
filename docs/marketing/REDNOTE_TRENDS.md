@@ -59,6 +59,8 @@ A test worth running: post #1 as a picture post and #3 as a video, then compare 
 | | 自由舞 (freestyle dance) | video | | | | | |
 | | 第4扇门，零食全没了 (trick or treat) | video | | | | | |
 | | 狗狗不能吃的7种食物 (food safety) | video | | | | | |
+| 1 Nov | 狗狗吃红薯前，先记住这3条🍠 (sweet potato, 狗狗能吃吗 ep. 1) | video | | | | | |
+| | 两只巧克力色狗狗，生了3只小狗🐶 (puppy coat guess) | video | | | | | |
 
 The useful numbers: saves per like (high means useful content), and new followers per 1,000 views.
 

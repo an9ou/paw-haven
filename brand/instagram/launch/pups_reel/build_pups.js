@@ -55,9 +55,9 @@ const coatWord = (n) => (RN ? COATZH[n] : n);
 const oddsWord = (pct) => { const n = Math.round(100 / pct), exact = Math.abs(100 / n - pct) < 0.01;
   return RN ? (exact ? `${n}分之一` : `大约${n}分之一`) : (exact ? `1 in ${n}` : `about 1 in ${n}`); };
 
-const TX = RN ? { hook: ['两只巧克力色狗狗生了小狗，', '你猜不到是什么颜色'], hookSize: 76, mum: '妈妈', dad: '爸爸', parentCoat: '巧克力色',
+const TX = RN ? { hook: ['两只巧克力色狗狗生了小狗', '你猜不到是什么颜色'], hookSize: 64, mum: '妈妈', dad: '爸爸', parentCoat: '巧克力色',
   carries: '都携带黄色和淡化（更浅的毛色）', pause: '先暂停，猜一猜', pauseSub: '会有几种颜色？', reveal: '一只巧克力色都没有！',
-  why: ['两只都是巧克力色，', '但都藏着黄色和淡化的基因'], whySub: '这个游戏里，小狗的毛色按真实的遗传规律',
+  why: ['两只都是巧克力色', '但都藏着黄色和淡化的基因'], whySub: '这个游戏里，小狗的毛色按真实的遗传规律',
   ask: '你猜对几只？', sub: '免费的治愈系狗狗游戏，毛色遗传是真的', pill: '搜索 Doodle Doggo 就能玩', s: 0.92 }
   : { hook: ['2 chocolate dogs had puppies.', "you won't guess the colours"], hookSize: 76, mum: 'mum', dad: 'dad', parentCoat: 'Chocolate',
   carries: 'both carry yellow & dilute (paler) genes', pause: 'pause and guess', pauseSub: 'how many colours?', reveal: 'not one chocolate!',
@@ -145,8 +145,8 @@ window.frame=function(t, D){
     if(t<${REVEAL}){ l1=TX.pause; l2=TX.pauseSub; o=ease((t-${PAUSE}-0.1)/0.2); const n=3-Math.floor((t-${PAUSE}-0.3)/1);
       c+='<g opacity="'+o+'" transform="rotate(-2 540 360)">'+card(140,210,800,300,'${PEN}',6,[{s:l1,size:${RN ? 84 : 96},pitch:${RN ? 100 : 104}},{s:l2,size:${RN ? 58 : 66}}]).svg+'</g>';
       if(t>=${PAUSE}+0.3 && n>=1 && n<=3){ const lt=(t-${PAUSE}-0.3)%1, ns=back(lt/0.25); c+='<g transform="translate(540 760) scale('+ns+')" opacity="'+(1-ease((lt-0.7)/0.3))+'">'+bubble(110,'#FFE3A1',7,String(n),170)+'</g>'; } }
-    else if(t<${WHY}){ o=ease((t-AT[2]-0.4)/0.25); if(o>0) c+='<g opacity="'+o+'" transform="rotate(-2 540 350)">'+card(140,250,800,200,'${GREEN}',7,[{s:TX.reveal,size:${RN ? 80 : 96}}]).svg+'</g>'; }
-    else { o=ease((t-${WHY})/0.25); c+='<g opacity="'+o+'" transform="rotate(-1 540 395)">'+card(70,200,940,390,'${PEN}',6,[{s:TX.why[0],size:${RN ? 64 : 76},pitch:90},{s:TX.why[1],size:${RN ? 56 : 64},pitch:128},{s:TX.whySub,size:${RN ? 44 : 52},fill:'#8A7468'}],
+    else if(t<${WHY}){ o=ease((t-AT[2]-0.4)/0.25); if(o>0) c+='<g opacity="'+o+'" transform="rotate(-2 540 350)">'+card(140,250,800,200,'${GREEN}',7,[{s:TX.reveal,size:${RN ? 68 : 96}}]).svg+'</g>'; }
+    else { o=ease((t-${WHY})/0.25); c+='<g opacity="'+o+'" transform="rotate(-1 540 395)">'+card(70,200,940,390,'${PEN}',6,[{s:TX.why[0],size:${RN ? 64 : 76},pitch:90},{s:TX.why[1],size:${RN ? 56 : 64},pitch:128},{s:TX.whySub,size:${RN ? 42 : 52},fill:'#8A7468'}],
       (ys)=>{ const u=ys[1]+(ys[2]-ys[1])*0.42; return '<path d="M220 '+(u+8)+' Q540 '+(u-8)+' 860 '+(u+8)+'" fill="none" stroke="${PINK}" stroke-width="10" stroke-linecap="round" opacity=".6"/>'; }).svg+'</g>'; } }
   $('card').innerHTML=c;
   $('endPups').innerHTML = ending ? P.map((pp,i)=>dog('p'+i, PX[i], 1200, 250, D['p'+i], -Math.abs(Math.sin(t*6+i*1.7))*16)).join('') : '';
