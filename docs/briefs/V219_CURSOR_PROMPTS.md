@@ -68,7 +68,7 @@ Read the art coordinates in the comment on issue #5 before drawing anything with
 Must get right:
 1. frOn() is false on the claude.ai artifact (clArtifact()) and under the test harness, unless prefs.frTest or window.__pawCloudMock is set.
 2. v219Fields(s) gives S.fr exactly as in V219.md section 8. The daily counters reset on a new localISO() day, and an old save loads.
-3. FR_NOTES, FR_DECOR, FR_HOUSES and FR_GIFTS are explicit append-only arrays with the warning comment. FR_GIFTS holds dog-safe consumables only. FR_LIM in cloudflare/worker.js matches their lengths, with a test asserting that.
+3. FR_NOTES, FR_DECOR, FR_HOUSES and FR_GIFTS are explicit append-only arrays with the warning comment. FR_GIFTS is exactly the 47 items in the order V219.md section 1 gives (FOOD minus Fresh Water, then Wild Berries and Duck's Picnic Sandwich, then the 6 seed packets, then the 6 crops; no Golden Bone). FR_LIM in cloudflare/worker.js (notes 12, gifts 47, decor 31, houses 14) matches their lengths, with a test asserting that.
 4. A Friends button in the phone More tray and the desktop "..." menu next to Daily missions, with an inbox count badge.
 5. A first-open name pick from DC_WORDS_A x DC_WORDS_B (wheels, Random, preview; the Dog Card name is the default), then the sheet: my card with the QR, Share (falling back to the clipboard), Copy, New code with its confirm; Add a friend (DOG- fixed plus 5 boxes, no 0/O/1/I/L) with the four toasts; the friend list (sorted, with the leader head, Visit / Gift as "Coming soon", the three doodles, and "..." with Remove and Block); offline (the offline line and the cached list).
 6. mods/qr.js: a vendored MIT QR encoder with its licence header kept and no network calls, drawn as SVG rects in pencil colour.
