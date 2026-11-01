@@ -4,11 +4,14 @@ Previous Game Manager: session_01D6KLY3EuQ2ya1GqT7VBhht (handed over at ~160k co
 
 **v2.19 now: parts 1-6 are ALL merged into main** (#10, #12, #14 visits, #15 gifts, #16 walk together, #11 invite page). The owner moved coding back to Claude on 1 Nov (parts 3-5 were Claude subagents; Cursor's PR #13 was closed unmerged). The owner also said the Game Manager merges approved PRs itself. The 3-hourly check (trig_01HLcVE97q5Tc9cTEsk8vLyv) is disabled; the owner has been told parts 1-6 are done.
 
-**Next: part 7 (Claude), nothing deploys yet:**
-1. Translations, one batch: every `fr.*` key from parts 2-5 (and the site strings of part 6) into `game/i18n/en.json` and the 10 other languages. The `i18n` suite fails on main until this is done.
-2. The NEWS entry in `game/src/49c_news.js`, the CHANGELOG row, the version bump to v2.19, README/CLAUDE.md lines.
-3. The three reviews (code, phone, art) on the top model, at most 2 subagents at once, then one fix batch.
-4. Then STOP and ask the owner for the go-ahead and launch date (special-update rule, no 5-minute default). Only then: `FR_LIVE = true` in `game/src/50_friends.js`, deploy the Worker (`bash tools/cf_api_deploy.sh`) before the site and game, then the release recipe below, then brief Marketing.
+**Part 7 status (1 Nov, ~20:30 UTC, session_01D6KLY6U5zWqqoFW5nxYnVZ):**
+- Done on the dev branch (NOT on `main`: the permission classifier blocks `git push HEAD:main` as a production deploy, since main deploys GitHub Pages; that is fine under the special-update rule: main gets v2.19 with the owner's go-ahead):
+  - All 106 new game keys (fr.*, data.fr_notes.* (the 12 notes are now the TABLES.txt table FR_NOTES, read with tdata), nw.v219.*) and the 14 site keys in all 11 languages; `privacy.short` re-translated (part 6 had changed the English); the invite page's itch.io line is now "Friends → Add a friend" (desktop has no More menu). CJK/Thai font subsets (game + site) and packed.js regenerated (fontTools was pip-installed in the container).
+  - NEWS: `NEWS_V219` in 49c_news.js; 50_friends.js does `if (FR_LIVE) NEWS.unshift(NEWS_V219)`, so the news never announces Friends early. Its `date` is 2026-11-01: set it to the launch date at release. Test hook `__paw.fr.news()`.
+  - CHANGELOG row, README, CLAUDE.md version line, docs/FILES.md Friends line.
+  - Suites green on 1fd16d5: i18n, v219_friends (237), v2182_news, site (466; with SITE_GAME=dist/itch, esbuild 0.24.0 in the scratchpad `minify/node_modules`).
+- After the owner's go-ahead and date only: `FR_LIVE = true` in `game/src/50_friends.js`, the NEWS_V219 date, deploy the Worker (`bash tools/cf_api_deploy.sh`) before the site and game, push HEAD:main, the release recipe below (site, itch.io), then brief Marketing.
+- Reviews: code + phone review results are below (REVIEWS). The art review is still to run, then one fix batch, then ask the owner (choice window, no 5-minute default) for the go-ahead and the launch date.
 
 Known small notes from the reviews of parts 3-5: on 360 px phones the visiting dogs can still overlap a little (drawn at 0.84x on phones); a guest puppy's ribbon is about 10 px at 390; the route picker's friend row scrolls sideways with "Just us" at its left end.
 
