@@ -20,6 +20,20 @@
 //   DELETE /card                     -> { ok }    stop sharing: the card and its paws are deleted
 //   GET    /cards/visit?n=2&not=ids  -> [{ id, name, dogs, paws }]   no session needed (120 an hour per IP); never the caller's own
 //   POST   /paw {id}                 -> { paws, given }   one paw per card per Japan day per account (guests too), never your own, 100 an hour
+//   Friends (v2.19, V219.md sections 1, 2 and 7). A bearer token (guest or email). No free text, and no user id, email or
+//   exact time in any answer. seen is only today / week / older. Errors are { error: 'code' }.
+//   GET  /friends                          -> { me, friends }     120/h
+//   POST /friends/me { name:[a,b] }        -> me                  20/h
+//   POST /friends/code/new                 -> me                  5 per Japan day
+//   POST /friends/add { code }             -> { ok }              10/h per user and 30/h per IP; misses count
+//   POST /friends/remove { fid }           -> { ok }              30/h
+//   POST /friends/block { fid }            -> { ok }              30/h
+//   PUT  /friends/yard { yard }            -> { ok }              30/h
+//   GET  /friends/yard?fid=                -> { yard }            120/h   friends only, otherwise not_found
+//   POST /friends/send { fid, kind, data } -> { ok }              60/h    limit when today's send is used
+//   GET  /friends/inbox                    -> { events }          120/h   at most 30, oldest first
+//   POST /friends/inbox/claim { ids }      -> { ok }              120/h
+//   POST /friends/leave                    -> { ok }              30/h    V219.md gives leave no limit; same as remove and block
 //
 // Passwords: PBKDF2-SHA256, 100k iterations, 16-byte salt. Sessions: a random 32-byte bearer token, only its SHA-256 is stored.
 // Nothing here logs a password, a token or a save.
@@ -177,6 +191,13 @@ async function sendMail(env, to, m) {
 // The game keeps the lists (game/src/40_dogcards.js: DC_WORDS_A, DC_WORDS_B, DC_DOG_NAMES, DC_OUTFITS, and PawGenes BREEDS). They are
 // append-only, so a card is only indices into them. When a list grows, raise its count here in the same release (test_v211_cards checks).
 const DC_LIM = { a: 40, b: 40, n: 115, breed: 35, outfit: 50 }; // v2.12: 35 breeds (80 pet names + 35 breed words), 50 outfits
+// v2.19 Friends. Part 2 (game/src/50_friends.js) builds FR_GIFTS in this order and must keep FR_LIM in step (its test checks lengths):
+//   notes 12: the twelve FR_NOTES lines in V219.md section 4
+//   gifts 47: every FOOD row in table order except Fresh Water (33) + Wild Berries and Duck's Picnic Sandwich (walk t) +
+//             6 seed packets + 6 garden crops. Golden Bone stays out (rare +60 Bond; gifts give only a little Bond).
+//   decor 31: HM_DECOR yard entries (missing room counts as yard). House decor and furniture are not included.
+//   houses 14: every HOUSES row
+const FR_LIM = { notes: 12, gifts: 47, decor: 31, houses: 14 };
 const DC_COAT = { B: ['B', 'b'], D: ['D', 'd'], E: ['E', 'e'], S: ['S', 'sp'], M: ['M', 'm'], Bl: ['Bl', 'bl'] }; // allele tokens (mods/genes.js LOCI)
 const DC_DOGS = 4, DC_MAX = 2048, DC_DAYS = 30, DC_ID = /^[A-Za-z0-9_-]{22}$/;
 const dcInt = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
@@ -196,6 +217,15 @@ function dcCoat(c) {
   if (out.M && out.M[0] === 'M' && out.M[1] === 'M') return undefined; // never a double merle
   return Object.keys(out).length ? out : undefined;
 }
+// one Dog Card dog in the Worker's own shape, or null. Friends use the same checks (a yard may hold 5, a card 4).
+function dcDog(d) {
+  if (!dcKeys(d, ['b', 'c', 'o', 'a', 's', 'sp', 'n'])) return null;
+  const c = dcCoat(d.c);
+  if (c === undefined || !dcInt(d.b, 0, DC_LIM.breed - 1) || !dcInt(d.o, -1, DC_LIM.outfit - 1) || !dcInt(d.n, 0, DC_LIM.n - 1) || !dcInt(d.sp, 0, 1)) return null;
+  if (d.a !== 'pup' && d.a !== 'adult') return null;
+  if (d.s !== 'm' && d.s !== 'f') return null;
+  return { b: d.b, c, o: d.o, a: d.a, s: d.s, sp: d.sp, n: d.n };
+}
 // the body of PUT /card -> { a, b, dogs } in the Worker's own shape, or null (400 bad_card). Anything not on the lists is refused.
 function dcCardOf(body) {
   if (JSON.stringify(body).length > DC_MAX || !dcKeys(body, ['name', 'dogs'])) return null;
@@ -203,14 +233,7 @@ function dcCardOf(body) {
   if (!Array.isArray(nm) || nm.length !== 2 || !dcInt(nm[0], 0, DC_LIM.a - 1) || !dcInt(nm[1], 0, DC_LIM.b - 1)) return null;
   if (!Array.isArray(ds) || ds.length < 1 || ds.length > DC_DOGS) return null;
   const dogs = [];
-  for (const d of ds) {
-    if (!dcKeys(d, ['b', 'c', 'o', 'a', 's', 'sp', 'n'])) return null;
-    const c = dcCoat(d.c);
-    if (c === undefined || !dcInt(d.b, 0, DC_LIM.breed - 1) || !dcInt(d.o, -1, DC_LIM.outfit - 1) || !dcInt(d.n, 0, DC_LIM.n - 1) || !dcInt(d.sp, 0, 1)) return null;
-    if (d.a !== 'pup' && d.a !== 'adult') return null;
-    if (d.s !== 'm' && d.s !== 'f') return null;
-    dogs.push({ b: d.b, c, o: d.o, a: d.a, s: d.s, sp: d.sp, n: d.n });
-  }
+  for (const d of ds) { const dog = dcDog(d); if (!dog) return null; dogs.push(dog); }
   return { a: nm[0], b: nm[1], dogs };
 }
 // a stored row -> what another player sees: the card id, the two name words, the dogs, the paws. Never a user id or an email.
@@ -221,6 +244,201 @@ function dcPub(r, mine) {
   return o;
 }
 const DC_COLS = 'c.id, c.name_a, c.name_b, c.dogs, c.paws, c.updated_at';
+
+/* ---------------- Friends (v2.19) ---------------- */
+// Codes skip 0, O, 1, I and L, so a crayon card is readable. 31 letters, about 28.6 million codes.
+const FR_ALPH = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const FR_CODE = /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{5}$/;
+const FR_KINDS = ['pet', 'note', 'gift', 'walk'];
+const FR_SEASONS = ['spring', 'summer', 'autumn', 'winter'];
+const FR_MAX_FRIENDS = 50, FR_YARD_MAX = 16384, FR_DOGS = 5, FR_DECOR_N = 40, FR_KEEP = 30 * 864e5, FR_INBOX = 30;
+// Rate-limit keys. test_worker.js looks these up to check each limit.
+const frKey = {
+  list: (id) => 'fr:list:' + id, me: (id) => 'fr:me:' + id, code: (id, day) => 'fr:code:' + id + ':' + day,
+  add: (id) => 'fr:add:' + id, addip: (ip) => 'fr:addip:' + ip, rm: (id) => 'fr:rm:' + id, block: (id) => 'fr:block:' + id,
+  yard: (id) => 'fr:yard:' + id, yardGet: (id) => 'fr:yardget:' + id, send: (id) => 'fr:send:' + id,
+  inbox: (id) => 'fr:in:' + id, claim: (id) => 'fr:claim:' + id, leave: (id) => 'fr:leave:' + id
+};
+// DOG- plus 5 characters, from crypto.getRandomValues. 248 is 8*31, so the leftover byte values are thrown away
+// and every character is equally likely (the same idea as the 6-digit password code).
+function frCode() {
+  const b = new Uint8Array(1);
+  let s = 'DOG-';
+  for (let i = 0; i < 5; i++) {
+    let x;
+    do { crypto.getRandomValues(b); x = b[0]; } while (x >= 248);
+    s += FR_ALPH[x % 31];
+  }
+  return s;
+}
+// Case does not matter. Spaces and the DOG- prefix are optional, and so is the hyphen in that prefix.
+function frNormCode(s) {
+  if (typeof s !== 'string' || s.length > 40) return null;
+  let t = s.replace(/\s+/g, '').toUpperCase();
+  if (t.startsWith('DOG-')) t = t.slice(4);
+  else if (t.startsWith('DOG')) t = t.slice(3);
+  return FR_CODE.test(t) ? 'DOG-' + t : null;
+}
+const frFidOk = (s) => typeof s === 'string' && DC_ID.test(s);
+function frOnly(o, required, optional) {
+  if (!o || typeof o !== 'object' || Array.isArray(o)) return false;
+  const ks = Object.keys(o), allow = required.concat(optional || []);
+  return ks.every((k) => allow.includes(k)) && required.every((k) => ks.includes(k));
+}
+function frName(v) {
+  if (!Array.isArray(v) || v.length !== 2 || !dcInt(v[0], 0, DC_LIM.a - 1) || !dcInt(v[1], 0, DC_LIM.b - 1)) return null;
+  return [v[0], v[1]];
+}
+// What another player is allowed to see. Never the user id, the email, or a clock time.
+function frPub(r) { return { fid: r.fid, code: r.code, name: [r.name_a | 0, r.name_b | 0] }; }
+// today: that Japan day. week: the six Japan days before it. older: anything else, including never.
+function frSeen(ms, now) {
+  ms = Number(ms) || 0;
+  if (ms <= 0) return 'older';
+  const today = dcDay(now), day = dcDay(ms);
+  if (day >= today) return 'today';
+  const diff = Math.round((Date.parse(today + 'T00:00:00Z') - Date.parse(day + 'T00:00:00Z')) / 864e5);
+  return diff < 7 ? 'week' : 'older';
+}
+function frDogsOf(text) {
+  if (!text) return [];
+  let y; try { y = JSON.parse(text); } catch (e) { return []; }
+  if (!y || !Array.isArray(y.dogs)) return [];
+  const out = [];
+  for (const d of y.dogs) { const dog = dcDog(d); if (!dog) continue; out.push(dog); if (out.length === FR_DOGS) break; }
+  return out;
+}
+// The snapshot from section 2, in the Worker's own shape, or null (400 bad). Anything else is refused.
+function frYard(yard) {
+  let raw; try { raw = JSON.stringify(yard); } catch (e) { return null; }
+  if (!raw || raw.length > FR_YARD_MAX) return null;
+  if (!dcKeys(yard, ['v', 'name', 'house', 'season', 'dogs', 'decor'])) return null;
+  if (yard.v !== 1) return null;
+  const name = frName(yard.name);
+  if (!name || !dcInt(yard.house, 0, FR_LIM.houses - 1) || typeof yard.season !== 'string' || !FR_SEASONS.includes(yard.season)) return null;
+  if (!Array.isArray(yard.dogs) || yard.dogs.length > FR_DOGS || !Array.isArray(yard.decor) || yard.decor.length > FR_DECOR_N) return null;
+  const dogs = [];
+  for (const d of yard.dogs) { const dog = dcDog(d); if (!dog) return null; dogs.push(dog); }
+  const decor = [];
+  for (const p of yard.decor) {
+    if (!dcKeys(p, ['i', 'x', 'y']) || !dcInt(p.i, 0, FR_LIM.decor - 1) || !dcInt(p.x, 0, 1200) || !dcInt(p.y, 0, 800)) return null;
+    decor.push({ i: p.i, x: p.x, y: p.y });
+  }
+  const out = { v: 1, name, house: yard.house, season: yard.season, dogs, decor };
+  if (JSON.stringify(out).length > FR_YARD_MAX) return null;
+  return out;
+}
+function frPet(data) { if (data == null) return {}; return dcKeys(data, []) ? {} : null; }
+function frNote(data) {
+  if (!dcKeys(data, ['i']) || !dcInt(data.i, 0, FR_LIM.notes - 1)) return null;
+  return { i: data.i };
+}
+function frGift(data) {
+  if (!dcKeys(data, ['i', 'n']) || !dcInt(data.i, 0, FR_LIM.gifts - 1) || data.n !== 1) return null;
+  return { i: data.i, n: 1 };
+}
+// dog is an index into that friend's snapshot. mine is the sender's leader, checked like a Dog Card dog.
+// t, when present, is a gift-list index (the walk's treasure). No snapshot, or an index past its dogs: null.
+function frWalk(data, dogs) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return null;
+  const ks = Object.keys(data);
+  if (!ks.includes('dog') || !ks.includes('mine') || ks.some((k) => k !== 'dog' && k !== 'mine' && k !== 't')) return null;
+  if (!dcInt(data.dog, 0, 4) || !Array.isArray(dogs) || data.dog >= dogs.length) return null;
+  const mine = dcDog(data.mine);
+  if (!mine) return null;
+  const out = { dog: data.dog, mine };
+  if (ks.includes('t')) { if (!dcInt(data.t, 0, FR_LIM.gifts - 1)) return null; out.t = data.t; }
+  return out;
+}
+const frMine = (env, uid) => one(env, 'select fid, code, name_a, name_b, seen_at from friend_ids where user_id = ?1', uid);
+const frByFid = (env, fid) => one(env, 'select user_id, fid, code, name_a, name_b from friend_ids where fid = ?1', fid);
+const frByCode = (env, code) => one(env, 'select user_id, fid, name_a, name_b, seen_at from friend_ids where code = ?1', code);
+const frFriends = async (env, a, b) => !!(await one(env, 'select 1 as x from friends where user_id = ?1 and friend_id = ?2', a, b));
+const frBlocked = async (env, a, b) => !!(await one(env, 'select 1 as x from friend_blocks where (user_id = ?1 and blocked_id = ?2) or (user_id = ?2 and blocked_id = ?1)', a, b));
+async function frSnapDogs(env, uid) {
+  const y = await one(env, 'select data from yards where user_id = ?1', uid);
+  if (!y) return null;
+  try { const o = JSON.parse(y.data); return Array.isArray(o.dogs) ? o.dogs : []; } catch (e) { return []; }
+}
+// A new fid and code. A clash (two players rolling the same one) tries again. seen_at stays 0 until a yard save or an inbox read.
+async function frCreate(env, uid, a, b) {
+  for (let i = 0; i < 8; i++) {
+    const fid = b64url(rnd(16)), code = frCode(), now = Date.now();
+    const row = await one(env, `insert into friend_ids (user_id, fid, code, name_a, name_b, created_at, code_at, seen_at)
+      select ?1, ?2, ?3, ?4, ?5, ?6, ?6, 0
+      where not exists (select 1 from friend_ids where user_id = ?1 or fid = ?2 or code = ?3)
+      returning fid, code, name_a, name_b`, uid, fid, code, a, b, now);
+    if (row) return row;
+    const cur = await one(env, 'select fid, code, name_a, name_b from friend_ids where user_id = ?1', uid);
+    if (cur) return cur;
+  }
+  return null;
+}
+async function frRotate(env, uid) {
+  for (let i = 0; i < 8; i++) {
+    const code = frCode();
+    const row = await one(env, `update friend_ids set code = ?1, code_at = ?2
+      where user_id = ?3 and not exists (select 1 from friend_ids where code = ?1)
+      returning fid, code, name_a, name_b`, code, Date.now(), uid);
+    if (row) return row;
+  }
+  return null;
+}
+async function frList(env, uid) {
+  const mine = await frMine(env, uid), day = dcDay(Date.now()), now = Date.now();
+  const rows = await all(env, `select f.friend_id as uid, fi.fid as fid, fi.name_a as name_a, fi.name_b as name_b, fi.seen_at as seen_at, y.data as yard
+    from friends f join friend_ids fi on fi.user_id = f.friend_id left join yards y on y.user_id = f.friend_id
+    where f.user_id = ?1 order by f.created_at asc, fi.fid asc`, uid);
+  const ev = await all(env, 'select to_id, kind from friend_events where from_id = ?1 and day = ?2', uid, day);
+  const sent = new Map();
+  for (const e of ev) { if (!sent.has(e.to_id)) sent.set(e.to_id, new Set()); sent.get(e.to_id).add(e.kind); }
+  const friends = rows.map((r) => {
+    const kinds = sent.get(r.uid) || new Set();
+    return {
+      fid: r.fid, name: [r.name_a | 0, r.name_b | 0], dogs: frDogsOf(r.yard), seen: frSeen(r.seen_at, now),
+      sent: { pet: kinds.has('pet'), note: kinds.has('note'), gift: kinds.has('gift'), walk: kinds.has('walk') }
+    };
+  });
+  return { me: mine ? frPub(mine) : null, friends };
+}
+// Both rows, or neither. The WHERE is the race backstop for the 50 cap, a block and a double add.
+async function frLink(env, a, b) {
+  const now = Date.now();
+  await env.DB.batch([
+    env.DB.prepare(`insert into friends (user_id, friend_id, created_at)
+      select ?1, ?2, ?3
+      where (select count(*) from friends where user_id = ?1) < ${FR_MAX_FRIENDS}
+        and (select count(*) from friends where user_id = ?2) < ${FR_MAX_FRIENDS}
+        and not exists (select 1 from friends where user_id = ?1 and friend_id = ?2)
+        and not exists (select 1 from friends where user_id = ?2 and friend_id = ?1)
+        and not exists (select 1 from friend_blocks where (user_id = ?1 and blocked_id = ?2) or (user_id = ?2 and blocked_id = ?1))`).bind(a, b, now),
+    env.DB.prepare(`insert into friends (user_id, friend_id, created_at)
+      select ?2, ?1, ?3
+      where exists (select 1 from friends where user_id = ?1 and friend_id = ?2)
+        and not exists (select 1 from friends where user_id = ?2 and friend_id = ?1)`).bind(a, b, now)
+  ]);
+  return frFriends(env, a, b);
+}
+async function frUnlink(env, a, b) {
+  await env.DB.batch([
+    env.DB.prepare('delete from friends where (user_id = ?1 and friend_id = ?2) or (user_id = ?2 and friend_id = ?1)').bind(a, b),
+    env.DB.prepare('delete from friend_events where claimed_at is null and ((from_id = ?1 and to_id = ?2) or (from_id = ?2 and to_id = ?1))').bind(a, b)
+  ]);
+}
+// Like dcTidy: drop friend rows whose user id is gone. About 1 in 50 friend requests; every time under env.TIDY (tests).
+async function frTidy(env) {
+  await env.DB.batch([
+    env.DB.prepare('delete from friend_ids where user_id not in (select id from users)'),
+    env.DB.prepare('delete from friends where user_id not in (select id from users) or friend_id not in (select id from users)'),
+    env.DB.prepare('delete from friend_blocks where user_id not in (select id from users) or blocked_id not in (select id from users)'),
+    env.DB.prepare('delete from yards where user_id not in (select id from users)'),
+    env.DB.prepare('delete from friend_events where from_id not in (select id from users) or to_id not in (select id from users)')
+  ]);
+}
+function frTidySoon(env, ctx) {
+  if (env.TIDY) return frTidy(env);
+  if (Math.random() < 0.02 && ctx && ctx.waitUntil) ctx.waitUntil(frTidy(env).catch(() => {}));
+}
 
 /* ---------------- routes ---------------- */
 const ROUTES = {
@@ -459,6 +677,191 @@ const ROUTES = {
     const r = out[1] && out[1].results && out[1].results[0];
     if (!r) return json({ paws: c.paws | 0, given: false }); // already a paw from this account today
     return json({ paws: r.paws | 0, given: true });
+  } },
+
+  /* ---------- Friends (v2.19) ---------- */
+  'GET /friends': { auth: true, async fn({ env, ctx, me }) {
+    await frTidySoon(env, ctx);
+    if (await limited(env, frKey.list(me.id), 120, 3600)) return fail('rate_limited', 429);
+    return json(await frList(env, me.id));
+  } },
+
+  'POST /friends/me': { auth: true, async fn({ env, ctx, body, me }) {
+    await frTidySoon(env, ctx);
+    if (!frOnly(body, ['name'])) return fail('bad', 400);
+    const name = frName(body.name);
+    if (!name) return fail('bad', 400);
+    if (await limited(env, frKey.me(me.id), 20, 3600)) return fail('rate_limited', 429);
+    const cur = await frMine(env, me.id);
+    if (cur) {
+      const row = await one(env, 'update friend_ids set name_a = ?1, name_b = ?2 where user_id = ?3 returning fid, code, name_a, name_b', name[0], name[1], me.id);
+      return json(frPub(row));
+    }
+    const row = await frCreate(env, me.id, name[0], name[1]);
+    if (!row) return fail('busy', 503);
+    return json(frPub(row));
+  } },
+
+  'POST /friends/code/new': { auth: true, async fn({ env, ctx, body, me }) {
+    await frTidySoon(env, ctx);
+    if (!frOnly(body, [])) return fail('bad', 400);
+    if (!(await frMine(env, me.id))) return fail('bad', 400);
+    const day = dcDay(Date.now());
+    if (await limited(env, frKey.code(me.id, day), 5, 86400)) return fail('rate_limited', 429);
+    const row = await frRotate(env, me.id);
+    if (!row) return fail('busy', 503);
+    return json(frPub(row));
+  } },
+
+  'POST /friends/add': { auth: true, async fn({ env, ctx, ip, body, me }) {
+    await frTidySoon(env, ctx);
+    if (!frOnly(body, ['code'])) return fail('bad', 400);
+    // Every attempt counts, including a miss, so guessing codes costs the same as a hit.
+    const overUser = await limited(env, frKey.add(me.id), 10, 3600);
+    const overIp = await limited(env, frKey.addip(ip), 30, 3600);
+    if (overUser || overIp) return fail('rate_limited', 429);
+    const code = frNormCode(body.code);
+    if (!code) return fail('not_found', 404);
+    const them = await frByCode(env, code);
+    if (!them) return fail('not_found', 404);
+    if (them.user_id === me.id) return fail('self', 400);
+    if (await frBlocked(env, me.id, them.user_id)) return fail('not_found', 404); // either direction, and never the word blocked
+    if (await frFriends(env, me.id, them.user_id)) return fail('already', 409);
+    const ca = await one(env, 'select count(*) as n from friends where user_id = ?1', me.id);
+    const cb = await one(env, 'select count(*) as n from friends where user_id = ?1', them.user_id);
+    if ((ca && ca.n >= FR_MAX_FRIENDS) || (cb && cb.n >= FR_MAX_FRIENDS)) return fail('full', 400);
+    let linked = false;
+    try { linked = await frLink(env, me.id, them.user_id); } catch (e) {
+      if (/unique/i.test(String(e && e.message))) return fail('already', 409);
+      throw e;
+    }
+    if (!linked) {
+      if (await frBlocked(env, me.id, them.user_id)) return fail('not_found', 404);
+      if (await frFriends(env, me.id, them.user_id)) return fail('already', 409);
+      return fail('full', 400);
+    }
+    return json({ ok: true });
+  } },
+
+  'POST /friends/remove': { auth: true, async fn({ env, ctx, body, me }) {
+    await frTidySoon(env, ctx);
+    if (!frOnly(body, ['fid']) || !frFidOk(body.fid)) return fail('bad', 400);
+    if (await limited(env, frKey.rm(me.id), 30, 3600)) return fail('rate_limited', 429);
+    const them = await frByFid(env, body.fid);
+    if (!them) return json({ ok: true }); // quiet: an unknown fid looks the same as a removed friend
+    if (them.user_id === me.id) return fail('bad', 400);
+    await frUnlink(env, me.id, them.user_id);
+    return json({ ok: true });
+  } },
+
+  'POST /friends/block': { auth: true, async fn({ env, ctx, body, me }) {
+    await frTidySoon(env, ctx);
+    if (!frOnly(body, ['fid']) || !frFidOk(body.fid)) return fail('bad', 400);
+    if (await limited(env, frKey.block(me.id), 30, 3600)) return fail('rate_limited', 429);
+    const them = await frByFid(env, body.fid);
+    if (!them) return json({ ok: true });
+    if (them.user_id === me.id) return fail('bad', 400);
+    await frUnlink(env, me.id, them.user_id);
+    await run(env, 'insert or ignore into friend_blocks (user_id, blocked_id) values (?1, ?2)', me.id, them.user_id);
+    return json({ ok: true });
+  } },
+
+  'PUT /friends/yard': { auth: true, async fn({ env, ctx, body, me }) {
+    await frTidySoon(env, ctx);
+    if (!frOnly(body, ['yard'])) return fail('bad', 400);
+    const yard = frYard(body.yard);
+    if (!yard) return fail('bad', 400);
+    if (!(await frMine(env, me.id))) return fail('bad', 400);
+    if (await limited(env, frKey.yard(me.id), 30, 3600)) return fail('rate_limited', 429);
+    const now = Date.now();
+    await env.DB.batch([
+      env.DB.prepare(`insert into yards (user_id, data, updated_at) values (?1, ?2, ?3)
+        on conflict(user_id) do update set data = excluded.data, updated_at = excluded.updated_at`).bind(me.id, JSON.stringify(yard), now),
+      env.DB.prepare('update friend_ids set seen_at = ?1 where user_id = ?2').bind(now, me.id)
+    ]);
+    return json({ ok: true });
+  } },
+
+  'GET /friends/yard': { auth: true, async fn({ env, ctx, url, me }) {
+    await frTidySoon(env, ctx);
+    if (await limited(env, frKey.yardGet(me.id), 120, 3600)) return fail('rate_limited', 429);
+    const fid = url.searchParams.get('fid');
+    if (!frFidOk(fid)) return fail('not_found', 404);
+    const them = await frByFid(env, fid);
+    if (!them || them.user_id === me.id || !(await frFriends(env, me.id, them.user_id)) || (await frBlocked(env, me.id, them.user_id))) return fail('not_found', 404);
+    const row = await one(env, 'select data from yards where user_id = ?1', them.user_id);
+    if (!row) return json({ yard: null });
+    let yard = null; try { yard = frYard(JSON.parse(row.data)); } catch (e) { yard = null; }
+    return json({ yard });
+  } },
+
+  'POST /friends/send': { auth: true, async fn({ env, ctx, body, me }) {
+    await frTidySoon(env, ctx);
+    if (!frOnly(body, ['fid', 'kind'], ['data']) || !frFidOk(body.fid) || typeof body.kind !== 'string' || !FR_KINDS.includes(body.kind)) return fail('bad', 400);
+    const them = await frByFid(env, body.fid);
+    if (!them || them.user_id === me.id || !(await frFriends(env, me.id, them.user_id)) || (await frBlocked(env, me.id, them.user_id))) return fail('not_found', 404);
+    const dogs = body.kind === 'walk' ? await frSnapDogs(env, them.user_id) : null;
+    const data = body.kind === 'pet' ? frPet(body.data) : body.kind === 'note' ? frNote(body.data) : body.kind === 'gift' ? frGift(body.data) : frWalk(body.data, dogs);
+    if (!data) return fail('bad', 400);
+    if (await limited(env, frKey.send(me.id), 60, 3600)) return fail('rate_limited', 429);
+    const day = dcDay(Date.now());
+    const dup = body.kind === 'gift'
+      ? await one(env, 'select id from friend_events where from_id = ?1 and kind = ?2 and day = ?3', me.id, 'gift', day)
+      : await one(env, 'select id from friend_events where from_id = ?1 and to_id = ?2 and kind = ?3 and day = ?4', me.id, them.user_id, body.kind, day);
+    if (dup) return fail('limit', 400);
+    try {
+      const row = await one(env, `insert into friend_events (to_id, from_id, kind, data, day, created_at) values (?1, ?2, ?3, ?4, ?5, ?6) returning id`,
+        them.user_id, me.id, body.kind, JSON.stringify(data), day, Date.now());
+      if (!row) return fail('limit', 400);
+    } catch (e) {
+      if (/unique/i.test(String(e && e.message))) return fail('limit', 400);
+      throw e;
+    }
+    return json({ ok: true });
+  } },
+
+  'GET /friends/inbox': { auth: true, async fn({ env, ctx, me }) {
+    await frTidySoon(env, ctx);
+    if (await limited(env, frKey.inbox(me.id), 120, 3600)) return fail('rate_limited', 429);
+    const now = Date.now();
+    // Any inbox read drops events older than 30 days, for every player. The read itself counts as being seen today.
+    await run(env, 'delete from friend_events where created_at < ?1', now - FR_KEEP);
+    await run(env, 'update friend_ids set seen_at = ?1 where user_id = ?2', now, me.id);
+    const rows = await all(env, `select e.id as id, e.kind as kind, e.data as data, e.day as day, f.fid as fid, f.name_a as name_a, f.name_b as name_b
+      from friend_events e join friend_ids f on f.user_id = e.from_id
+      where e.to_id = ?1 and e.claimed_at is null order by e.id asc limit ${FR_INBOX}`, me.id);
+    const events = [];
+    for (const r of rows) {
+      let data = null; try { data = JSON.parse(r.data); } catch (e) { data = null; }
+      events.push({ id: r.id | 0, from: { fid: r.fid, name: [r.name_a | 0, r.name_b | 0] }, kind: r.kind, data, day: r.day });
+    }
+    return json({ events });
+  } },
+
+  'POST /friends/inbox/claim': { auth: true, async fn({ env, ctx, body, me }) {
+    await frTidySoon(env, ctx);
+    if (!frOnly(body, ['ids']) || !Array.isArray(body.ids) || body.ids.length > FR_INBOX) return fail('bad', 400);
+    if (body.ids.some((id) => !dcInt(id, 1, 1e15))) return fail('bad', 400);
+    if (await limited(env, frKey.claim(me.id), 120, 3600)) return fail('rate_limited', 429);
+    const now = Date.now();
+    if (body.ids.length) await env.DB.batch(body.ids.map((id) =>
+      env.DB.prepare('update friend_events set claimed_at = ?1 where id = ?2 and to_id = ?3 and claimed_at is null').bind(now, id, me.id)));
+    return json({ ok: true });
+  } },
+
+  'POST /friends/leave': { auth: true, async fn({ env, ctx, body, me }) {
+    await frTidySoon(env, ctx);
+    if (!frOnly(body, [])) return fail('bad', 400);
+    if (await limited(env, frKey.leave(me.id), 30, 3600)) return fail('rate_limited', 429);
+    // Blocks other players made stay, so a new code still cannot get past them. Claimed and unclaimed events both go.
+    await env.DB.batch([
+      env.DB.prepare('delete from friends where user_id = ?1 or friend_id = ?1').bind(me.id),
+      env.DB.prepare('delete from friend_blocks where user_id = ?1').bind(me.id),
+      env.DB.prepare('delete from yards where user_id = ?1').bind(me.id),
+      env.DB.prepare('delete from friend_events where from_id = ?1 or to_id = ?1').bind(me.id),
+      env.DB.prepare('delete from friend_ids where user_id = ?1').bind(me.id)
+    ]);
+    return json({ ok: true });
   } },
 
   'POST /backups': { auth: true, async fn({ env, body, me }) {
