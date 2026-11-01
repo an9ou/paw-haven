@@ -13,12 +13,12 @@ Send the PR number to the Game Manager. The Game Manager reviews it, and the own
 | --- | --- | --- | --- | --- |
 | 0 Art `PA.FRIENDS.*` | — | — | Claude | done, on `main` |
 | Design contract `V219.md`, `AGENTS.md`, issues | #3 | — | Claude | done |
-| 1 Worker and D1 | #4 | `cursor/v219-worker` | Cursor | PR #10: reviewed 1 Nov, 3 small fixes asked |
-| 2 Friend codes and the Friends sheet | #5 | `cursor/v219-friends-sheet` | Cursor | waits for #4 |
+| 1 Worker and D1 | #4 | `cursor/v219-worker` | Cursor | PR #10: approved 1 Nov (fixes in), owner merges |
+| 2 Friend codes and the Friends sheet | #5 | `cursor/v219-friends-sheet` | Cursor | ready once #10 is merged |
 | 3 Yard visits, pets and notes | #6 | `cursor/v219-visits` | Cursor | waits for #5 |
 | 4 Gifts | #7 | `cursor/v219-gifts` | Cursor | waits for #6 |
 | 5 Walk together | #8 | `cursor/v219-walk` | Cursor | waits for #7 |
-| 6 Invite page and privacy | #9 | `cursor/v219-invite` | Cursor | waits for #4 (then runs in parallel) |
+| 6 Invite page and privacy | #9 | `cursor/v219-invite` | Cursor | ready once #10 is merged (runs beside 2 to 5) |
 | 7 Translations, NEWS, reviews, deploy, release | — | — | Claude | after all are merged, on the owner's date |
 
 ## Shared header (the same for every prompt)
@@ -70,7 +70,7 @@ Must get right:
 2. v219Fields(s) gives S.fr exactly as in V219.md section 8. The daily counters reset on a new localISO() day, and an old save loads.
 3. FR_NOTES, FR_DECOR, FR_HOUSES and FR_GIFTS are explicit append-only arrays with the warning comment. FR_GIFTS holds dog-safe consumables only. FR_LIM in cloudflare/worker.js matches their lengths, with a test asserting that.
 4. A Friends button in the phone More tray and the desktop "..." menu next to Daily missions, with an inbox count badge.
-5. A first-open name pick from DC_WORDS_A x DC_WORDS_B (wheels, Random, preview; the Dog Card name is the default), then the sheet: my card with the QR, Share (falling back to the clipboard), Copy, New code with its confirm; Add a friend (DOG- fixed plus 5 boxes, no 0/O/1/I) with the four toasts; the friend list (sorted, with the leader head, Visit / Gift as "Coming soon", the three doodles, and "..." with Remove and Block); offline (the offline line and the cached list).
+5. A first-open name pick from DC_WORDS_A x DC_WORDS_B (wheels, Random, preview; the Dog Card name is the default), then the sheet: my card with the QR, Share (falling back to the clipboard), Copy, New code with its confirm; Add a friend (DOG- fixed plus 5 boxes, no 0/O/1/I/L) with the four toasts; the friend list (sorted, with the leader head, Visit / Gift as "Coming soon", the three doodles, and "..." with Remove and Block); offline (the offline line and the cached list).
 6. mods/qr.js: a vendored MIT QR encoder with its licence header kept and no network calls, drawn as SVG rects in pencil colour.
 7. ?friend= or #friend= pre-fills the add card. For a new player it shows only after adoption and the first-day guide.
 8. The yard snapshot is PUT at most every 10 minutes, after a cloud push, only with S.fr.fid. Its dogs come from the Dog Card helpers, the leader first. It never holds a typed dog name.
