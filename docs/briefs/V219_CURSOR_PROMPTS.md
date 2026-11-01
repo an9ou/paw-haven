@@ -13,7 +13,7 @@ Send the PR number to the Game Manager. The Game Manager reviews it, and the own
 | --- | --- | --- | --- | --- |
 | 0 Art `PA.FRIENDS.*` | — | — | Claude | done, on `main` |
 | Design contract `V219.md`, `AGENTS.md`, issues | #3 | — | Claude | done |
-| 1 Worker and D1 | #4 | `cursor/v219-worker` | Cursor | ready to start |
+| 1 Worker and D1 | #4 | `cursor/v219-worker` | Cursor | PR #10: reviewed 1 Nov, 3 small fixes asked |
 | 2 Friend codes and the Friends sheet | #5 | `cursor/v219-friends-sheet` | Cursor | waits for #4 |
 | 3 Yard visits, pets and notes | #6 | `cursor/v219-visits` | Cursor | waits for #5 |
 | 4 Gifts | #7 | `cursor/v219-gifts` | Cursor | waits for #6 |
