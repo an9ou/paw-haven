@@ -30,6 +30,7 @@ function rollTreasure(area, o = {}) {
 function enterWalk(area) {
   const wb = walkBlock(D(), area); if (wb) { nope(wb); go('yard'); return; } // v2: puppies, expecting and nursing mums (16b)
   walkPackNote(area); pkWalkPlan(area); // v2.9 PACK: the ticked dogs that are allowed out walk along
+  if (typeof frWalkStart === 'function') { frWalkStart(); onCleanup(frWalkDrop); } // v2.19: the friend's dog picked on the route screen, cosmetic (50_friends.js)
   if (isPhone()) toasts.innerHTML = ''; // a toast from the yard must not ride into the walk (it sat on the tutorial title)
   if (window.PawWalk && typeof window.PawWalk.start === 'function') { enterWalkMod(area); return; } enterWalkClassic(area); }
 function enterWalkClassic(area) {
@@ -272,6 +273,7 @@ function endWalk(complete) {
   if (frac > 0.05 || W.found) { dailyCare('play'); S.walks = (S.walks || 0) + 1; trackAct('walk', { area: W.area, early: !complete }); }
   markDirty(); hideBubble(); setWalkPose('happy');
   const L = W.found;
+  const frLine = typeof frWalkEnd !== 'function' ? '' : frac > 0.05 || L ? frWalkEnd(L && L.item && !L.dup ? L.item.n : null) : (frWalkDrop(), ''); // v2.19: a walk with a friend's dog (50_friends.js)
   let tre;
   if (L && L.item) {
     const t = L.item;
@@ -281,7 +283,7 @@ function endWalk(complete) {
   const extra = W.extra.length ? `<p class="small">${esc(tt('walk.res_extra', 'Also found on the path: {list}.', { list: tlist(W.extra.map((e) => e.dup ? tt('walk.res_extra_dup', '{item} (sold, duplicate)', { item: jrTN(e.item) }) : jrTN(e.item))) }))}</p>` : '';
   const junk = W.junk.length ? `<p class="small">${esc(tt('walk.res_junk', 'Junk dug up (turned into coins): {list}.', { list: tlist(W.junk.map((k) => k === 'junk-sock' ? tt('walk.junk_sock', 'a sock') : tt('walk.junk_rock', 'a rock'))) }))}</p>` : '';
   const rn = townRouteName(W.area), here = (PLACES[S.place] && S.place) || 'yard';
-  const p = openModal(L ? `<span class="hl">${esc(tt('walk.res_title_found', 'Treasure found: {route}', { route: rn }))}</span>` : esc(complete ? tt('walk.res_title_done', 'Walk complete: {route}', { route: rn }) : tt('walk.res_title_short', 'Walk cut short: {route}', { route: rn })), `${tre}${extra}${junk}${pkWalkLine(pkFol)}
+  const p = openModal(L ? `<span class="hl">${esc(tt('walk.res_title_found', 'Treasure found: {route}', { route: rn }))}</span>` : esc(complete ? tt('walk.res_title_done', 'Walk complete: {route}', { route: rn }) : tt('walk.res_title_short', 'Walk cut short: {route}', { route: rn })), `${tre}${extra}${junk}${pkWalkLine(pkFol)}${frLine}
     ${wfTiles([[`+${tnum(coins)}`, esc(penny > 1 ? tt('walk.res_coins_penny', 'Paw Coins (Penny +10%)') : tt('walk.res_coins', 'Paw Coins')), coins], [`+${happy}`, esc(tt('walk.res_happy', 'Happiness')), happy], [`+${bond}`, esc(tt('walk.res_bond', 'Bond points')), bond], [`-${energy}`, esc(tt('walk.res_energy', 'Energy')), energy], [cleanLoss + W.clean ? '-' + (cleanLoss + W.clean) : '0', esc(tt('walk.res_clean', 'Cleanliness')), cleanLoss + W.clean]], 'results compact')}`,
     { cls: 'celebrate', foot: `${L && L.item && !L.dup ? `<button class="btn" id="resJournal">${esc(tt('walk.res_journal', 'Open Journal'))}</button>` : ''}<button class="btn yes big" id="resOk">${esc(L && L.item && !L.dup ? tt('walk.res_add', 'Add to Journal') : tt('walk.back_to', 'Back to {place}', { place: townPlaceName(here) }))}</button>`, onClose: () => go('yard') });
   if (isPhone()) dock.innerHTML = ''; // no walk tray (its hint line) peeking out under the results sheet

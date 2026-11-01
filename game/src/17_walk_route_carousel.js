@@ -17,7 +17,7 @@ function enterRoutes(startKey) {
   };
   view.innerHTML = `<div class="routes"><h2 class="rt-title">${esc(tt('route.pick', 'Pick a walk'))}</h2><div class="rt-viewport" id="rtView"><div class="rt-track" id="rtTrack">${ROUTE_KEYS.map(card).join('')}</div></div>
     <div class="rt-nav"><button class="arrow" id="rtPrev" aria-label="${esc(tt('route.prev', 'Previous route'))}">&lt;</button><span class="small" id="rtCount"></span><button class="arrow" id="rtNext" aria-label="${esc(tt('route.next', 'Next route'))}">&gt;</button></div>
-    ${pkRoutesHTML()}<div class="rt-foot"><button class="btn" id="rtBack">${esc(tt('route.back_to', 'Back to {place}', { place: townPlaceName(PLACES[S.place] ? S.place : 'yard') }))}</button><button class="btn big yes" id="rtStart">${esc(tt('route.start', 'Start walk'))}</button></div></div>`;
+    ${pkRoutesHTML()}${typeof frWalkRowHTML === 'function' ? frWalkRowHTML() : ''}<div class="rt-foot"><button class="btn" id="rtBack">${esc(tt('route.back_to', 'Back to {place}', { place: townPlaceName(PLACES[S.place] ? S.place : 'yard') }))}</button><button class="btn big yes" id="rtStart">${esc(tt('route.start', 'Start walk'))}</button></div></div>`;
   const shift = (d) => { routeIdx = clamp(routeIdx + d, 0, ROUTE_KEYS.length - 1); layoutRoutes(); SFX.click(); };
   $('#rtPrev').onclick = () => shift(-1); $('#rtNext').onclick = () => shift(1);
   $('#rtBack').onclick = () => go('yard'); $('#rtStart').onclick = () => startRoute(ROUTE_KEYS[routeIdx]);
@@ -27,6 +27,7 @@ function enterRoutes(startKey) {
   cur.key = (ev) => { if (ev.key === 'ArrowLeft') { ev.preventDefault(); shift(-1); } if (ev.key === 'ArrowRight') { ev.preventDefault(); shift(1); } };
   onCleanup(() => { cur.key = null; });
   pkRoutesBind(); // v2.9 PACK: the chip row on the route screen
+  if (typeof frWalkInit === 'function') frWalkInit(); // v2.19: the "Walk with a friend's dog" row (50_friends.js)
   layoutRoutes();
 }
 function layoutRoutes() {
@@ -37,6 +38,7 @@ function layoutRoutes() {
   const k = ROUTE_KEYS[routeIdx], lock = topBond() < ROUTES[k].bond;
   $('#rtCount').textContent = tt('route.count', '{i} / {n} · {phone, select, yes {swipe, or tap the arrows} other {drag, or use the arrow keys}}', { i: routeIdx + 1, n: ROUTE_KEYS.length, phone: isPhone() ? 'yes' : 'no' });
   pkRoutesLine();
+  if (typeof frWalkSync === 'function') frWalkSync(); // v2.19: a full pack on this route disables the friend's dog row
   const blk = !lock && walkBlock(D(), k), st = $('#rtStart'); st.textContent = lock ? tt('route.locked_btn', 'Locked (Bond {n})', { n: ROUTES[k].bond }) : blk ? tt('route.not_yet', 'Not for {name} yet', { name: D().name }) : tt('route.start_route', 'Start walk: {route}', { route: townRouteName(k) }); st.setAttribute('aria-disabled', lock || blk ? 'true' : 'false');
 }
 function startRoute(k) {

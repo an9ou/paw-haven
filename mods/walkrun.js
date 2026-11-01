@@ -348,6 +348,8 @@ const CSS = `
 .pw-pose.on{visibility:visible}
 .pw-pose>svg{display:block;width:100%;height:100%;overflow:visible}
 .pw-dog.pw-blink{animation:pw-blink .18s steps(1,end) infinite}
+.pw-rib{position:absolute;width:clamp(10px,17%,24px);aspect-ratio:1;transform:translate(-50%,-50%) rotate(-8deg);pointer-events:none}
+.pw-rib>svg{display:block;width:100%;height:100%}
 @keyframes pw-blink{50%{opacity:.3}}
 .pw-tint{position:absolute;inset:0;pointer-events:none}
 .pw-pool{position:absolute;border-radius:50%;background:radial-gradient(closest-side,rgba(255,236,170,.55),rgba(255,226,150,.18) 60%,rgba(255,220,140,0));mix-blend-mode:screen}
@@ -629,7 +631,9 @@ function start(el, o) {
   let curPose = null;
   function setPose(p) { if (p === curPose) return; if (curPose) poseEls[curPose].classList.remove('on'); poseEls[p].classList.add('on'); curPose = p; }
   setPose('idle');
-  /* ---------- v2.9 PACK: followers. o.pack = up to 4 dogForMod()-style looks that trot in a line behind the leader. Without o.pack none of this runs ---------- */
+  /* ---------- v2.9 PACK: followers. o.pack = up to 4 dogForMod()-style looks that trot in a line behind the leader. Without o.pack none of this runs ----------
+     v2.19: a look with friend: true is a friend's dog on a walk together (cosmetic, like every follower). It wears the friend ribbon: look.ribbon (an SVG string
+     the game passes), else PawArt.FRIENDS.ribbon(), else a small crayon heart. It sits on the dog's shoulders in every pose. */
   // FOL_GAP: world units between the leader's tail and the first nose. FOL_OV: how much of a follower's length tucks behind the dog in front (a natural line).
   // FOL_AHEAD: the leader keeps at least this much path in view ahead of it (1.8 s at the top speed, as the portrait strip promises)
   const fol = [], folHist = [], FOL_GAP = 8, FOL_OV = 0.28, FOL_K = 0.8, FOL_AHEAD = 450, FOL_POSES = ['walk', 'jump', 'happy', 'idle'];
@@ -645,13 +649,19 @@ function start(el, o) {
     }
     return svgWrap([240, 200], '<ellipse cx="120" cy="140" rx="60" ry="30" fill="#F4A262"/><circle cx="175" cy="110" r="26" fill="#F4A262"/>');
   }
+  function friendRibbon(fd) {
+    if (typeof fd.ribbon === 'string' && /^\s*<svg[\s>]/.test(fd.ribbon)) return fd.ribbon;
+    try { const P = PA(); if (P && P.FRIENDS && typeof P.FRIENDS.ribbon === 'function') { const r = P.FRIENDS.ribbon(); if (typeof r === 'string' && r) return r; } } catch (e) { /* art missing */ }
+    return svgWrap([40, 40], '<path d="M20 33C9 25 6 18 9 13s9-5 11 1c2-6 8-6 11-1s0 12-11 20z" fill="#F28FA5"/>');
+  }
   if (Array.isArray(o.pack)) {
     o.pack.slice(0, 4).forEach((fd, i) => {
       if (!fd || !fd.key) return;
       const el = document.createElement('div'); el.className = 'pw-dog pw-fol'; el.setAttribute('aria-hidden', 'true'); const poses = {};
       FOL_POSES.forEach((p) => { const d = document.createElement('div'); d.className = 'pw-pose' + (p === 'idle' ? ' on' : ''); d.innerHTML = folSvg(fd, p); el.appendChild(d); poses[p] = d; });
+      if (fd.friend) { const rib = friendRibbon(fd); el.classList.add('pw-friend'); FOL_POSES.forEach((p) => { const r = document.createElement('span'); r.className = 'pw-rib'; r.innerHTML = rib; poses[p].appendChild(r); }); }
       E.dog.parentNode.insertBefore(el, fol.length ? fol[fol.length - 1].el : E.dog); // the one farthest back is drawn first
-      fol.push({ el, poses, cur: 'idle', rel: folRel(fd) });
+      fol.push({ el, poses, cur: 'idle', rel: folRel(fd), friend: !!fd.friend });
     });
   }
   // normalise the breed size so every dog reads at the same height (the hitbox is the same for all)
@@ -672,6 +682,26 @@ function start(el, o) {
       const b = g.getBBox(); pe.style.cssText = '';
       if (b && b.width > 20) f.art = [b.x, b.x + b.width];
     } catch (e) { /* keep default */ }
+    if (f.friend) FOL_POSES.forEach((p) => { // v2.19: the ribbon on the dog's back, just behind the neck (the dog faces right). The body is the biggest shape
+      const pe = f.poses[p], r = pe.querySelector('.pw-rib'); if (!r) return;
+      let x = 50, y = 50; // percent of the 240 x 200 box
+      try {
+        const sv = pe.querySelector('svg');
+        pe.style.width = '240px'; pe.style.height = '200px'; pe.style.position = 'absolute';
+        const B = sv.getBoundingClientRect(), U = [1e9, 1e9, -1e9, -1e9]; let best = null, ba = 0;
+        const shapes = B.width > 0 ? [...sv.querySelectorAll('path,ellipse,circle,polygon,rect')].map((q) => q.getBoundingClientRect())
+          .filter((c) => c.width > 0 && c.height >= B.height * 0.08 && c.bottom <= B.top + B.height * 0.97) : []; // no flat shapes, no shadow on the ground
+        shapes.forEach((c) => { U[0] = Math.min(U[0], c.left); U[1] = Math.min(U[1], c.top); U[2] = Math.max(U[2], c.right); U[3] = Math.max(U[3], c.bottom); });
+        shapes.forEach((c) => { // the body: the biggest wide shape left of the head (a puppy's head is big) and below the ears, hats and a raised tail
+          const cx = (c.left + c.right) / 2, cy = (c.top + c.bottom) / 2, a = c.width * c.height;
+          if (cx > U[0] + (U[2] - U[0]) * 0.6 || cy < U[1] + (U[3] - U[1]) * 0.4 || c.width < c.height * 0.9) return;
+          if (a > ba) { ba = a; best = c; }
+        });
+        pe.style.cssText = '';
+        if (best) { x = (best.left - B.left + best.width * 0.7) / B.width * 100; y = (best.top - B.top + best.height * 0.18) / B.height * 100; }
+      } catch (e) { pe.style.cssText = ''; /* keep default */ }
+      r.style.left = x.toFixed(2) + '%'; r.style.top = y.toFixed(2) + '%';
+    });
   });
   // the room the line needs: from the stage's left edge to the leader's centre (world units)
   function folNeed() {
