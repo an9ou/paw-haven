@@ -24,3 +24,16 @@ Previous Game Manager: session_01D6KLY6MoiRhP5ZXAV2ww5M (archive it once you are
 7. Winter Market leftovers (not blocking): with two big dogs at the market the second may cover a board; on desktop, dogs can still cover the back boards (the roaming fix is phone-only); a "new letters" toast can sit over a stall sheet.
 8. The usage-limit watchdog: make your own scheduled task when work runs overnight, and disable it when idle.
 9. The owner's Cursor/Grok edits land on main, either as PRs or directly. Merge main before every release.
+
+## Cursor loop (owner approved 1 Nov 2026; replaces the owner passing PR numbers along)
+- **Scheduled task** `trig_015HgYaCKCK77kFPVbC11evy` "v2.19 Cursor PR check" runs every 3 hours into the Game Manager session. A new Game Manager re-points it (update_trigger can't move it, so make a new one and delete the old one) and re-subscribes to the open PRs.
+- **New `cursor/v219-*` PR:**
+  1. `subscribe_pr_activity`.
+  2. Check out the branch in a worktree.
+  3. Diff it against `main` and check it against V219.md, AGENTS.md and the CLAUDE.md rules.
+  4. Run the issue's suites one at a time (`NODE_PATH=$(npm root -g)`; Miniflare and Playwright are global).
+  5. Look at its screenshots.
+- **Review:** `pull_request_review_write`, always as COMMENT (the PRs come from the owner's own account, so APPROVE and REQUEST_CHANGES fail). It opens with "**Verdict: approve**" or "**Verdict: fixes needed**", then a numbered list. With fixes, the last line is "@cursor please fix items 1–N above on this branch, re-run the issue's suites one at a time, and reply with the summaries." Then the attribution footer.
+- **New commits** on a subscribed PR: re-review.
+- **Merged:** unsubscribe, then update the progress table in `docs/briefs/V219_CURSOR_PROMPTS.md`. Start the next part by commenting on its issue: "@cursor" + the shared header + that part's prompt from that file. Order: #5 and #9 after #4; then #6, #7 and #8 one at a time, each after the one before is merged.
+- The owner still merges every PR and sets the release date (special update). When #4–#9 are all merged: tell the owner once, disable the scheduled task and start part 7.
