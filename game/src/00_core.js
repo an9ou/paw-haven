@@ -1034,6 +1034,7 @@ function v219Fields(s) {
   ['pets', 'gotPets', 'notes', 'gotGifts', 'walks', 'gotWalks'].forEach(num);
   if (typeof f.day !== 'string') f.day = '';
   if (typeof f.walkDay !== 'string') f.walkDay = '';
+  if (!Array.isArray(f.gotIds)) f.gotIds = []; // v2.19 part 4: the last gift event ids turned into letters (at most 60), so a claim that failed never gives twice
   const today = localISO();
   if (f.day !== today) { f.day = today; f.pets = 0; f.gotPets = 0; f.notes = 0; f.gift = false; f.gotGifts = 0; f.gotWalks = 0; }
   if (f.walkDay !== today) { f.walkDay = today; f.walks = 0; }

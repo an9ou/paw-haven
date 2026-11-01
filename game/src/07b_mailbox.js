@@ -50,8 +50,8 @@ const mbOwed = (m) => !!(m && m.gift && !m.gift.claimed && (m.gift.coins || m.gi
 function mbGiftLabel(g) {
   if (!g) return '';
   if (g.coins) return tt('mail.coins', '{n, plural, one {# coin} other {# coins}}', { n: g.coins });
-  const n = g.n || 1, it0 = g.item || '', it = !it0 ? tt('mail.surprise', 'surprise') : g.cat === 'seeds' ? tdata('crops.' + tid(g.id) + '.seeditem', it0) : g.cat === 'pantry' ? tdata('pantry.' + tid(g.id) + '.name', it0) : shNameAny(it0);
-  return n > 1 ? tt('mail.n_times', '{n} × {item}', { n, item: it }) : tt('mail.one_item', '{art, select, an {an {item}} other {a {item}}}', { art: /^[aeiou]/i.test(String(it)) ? 'an' : 'other', item: it });
+  const n = g.n || 1, it0 = g.item || '', it = !it0 ? tt('mail.surprise', 'surprise') : g.cat === 'seeds' ? tdata('crops.' + tid(g.id) + '.seeditem', it0) : g.cat === 'pantry' ? tdata('pantry.' + tid(g.id) + '.name', it0) : g.cat === 'crops' ? tdata('crops.' + tid(g.id) + '.item', it0) : shNameAny(it0);
+  return n > 1 || ['food', 'seeds', 'crops'].includes(g.cat) ? tt('mail.n_times', '{n} × {item}', { n, item: it }) : tt('mail.one_item', '{art, select, an {an {item}} other {a {item}}}', { art: /^[aeiou]/i.test(String(it)) ? 'an' : 'other', item: it });
 }
 const mbJoin = (a) => tlist(a);
 function mbGrant(m) { // pays one letter's gift once. Returns { coins, item } or null when there is nothing owed
@@ -59,6 +59,7 @@ function mbGrant(m) { // pays one letter's gift once. Returns { coins, item } or
   const g = m.gift; g.claimed = true; g.got = localISO();
   if (g.coins) { const n = addCoins(g.coins, { raw: true }); return { coins: n || g.coins }; }
   if (g.cat === 'clothes' && g.item) { if (!owns('clothes', g.item)) S.inv.clothes.push(g.item); return { item: mbGiftLabel(g), ward: g.item }; } // v2.4: the Knit Scarf letter
+  if (g.cat === 'crops' && g.id) { S.inv.crops = S.inv.crops || {}; const a = Array.isArray(S.inv.crops[g.id]) ? S.inv.crops[g.id] : (S.inv.crops[g.id] = [0, 0, 0]); a[0] += g.n || 1; return { item: mbGiftLabel(g) }; } // v2.19: a friend's crop (counts per star) arrives as 1★
   if (g.cat && g.id) { S.inv[g.cat] = S.inv[g.cat] || {}; S.inv[g.cat][g.id] = (S.inv[g.cat][g.id] || 0) + (g.n || 1); }
   return { item: mbGiftLabel(g) };
 }
@@ -289,7 +290,7 @@ function letterBody(m) {
   }
   const pups = Array.isArray(m.pups) && m.pups.length ? `<div class="mb-pups">${m.pups.slice(0, 8).map((p) => `<span class="mb-pup" title="${esc(p.name || '')}">${(() => { try { return headSVG(p); } catch (e) { return ''; } })()}</span>`).join('')}</div>` : '';
   const card = (m.card === 'nengajo' && typeof nyCardHTML === 'function' && nyCardHTML(m)) || (m.kind === 'postcard' || (m.dog && m.kind !== 'gift') ? postcardHTML(m) : ''); // v2.8: a New Year letter is drawn as a nengajo (32_newyear.js)
-  const paw = m.frPaw && typeof frPawHTML === 'function' ? frPawHTML() : ''; // v2.19: a paw-print note (50_friends.js)
+  const paw = typeof frLetterArt === 'function' ? frLetterArt(m) : ''; // v2.19: a paw-print note or a friend's wrapped gift (50_friends.js)
   return `<article class="letter k-${esc(m.kind)}"><header><b>${esc(m.title)}</b><span class="small">${esc(tt('mail.from_date', 'From {from} · {date}', { from: m.from, date }))}</span></header>${card}${paw}${pups}<p class="mb-text">${esc(m.text)}</p>${m.ps ? `<p class="small mb-ps">${esc(m.ps)}</p>` : ''}${act}</article>`;
 }
 function openMailbox(selId, tab) {

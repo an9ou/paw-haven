@@ -74,16 +74,20 @@ function mockInit() {
       if (method === 'POST' && path === '/friends/block') { srv.friends = srv.friends.filter((f) => f.fid !== body.fid); return send(200, { ok: true }); }
       if (method === 'PUT' && path === '/friends/yard') { srv.yards.push(body.yard); return send(200, { ok: true }); }
       if (method === 'GET' && path === '/friends/inbox') return send(200, { events: srv.events.filter((e) => !e.claimed).map((e) => ({ id: e.id, from: e.from, kind: e.kind, data: e.data, day: e.day })) });
-      if (method === 'POST' && path === '/friends/inbox/claim') { (body.ids || []).forEach((id) => { const e = srv.events.find((x) => x.id === id); if (e) e.claimed = true; }); return send(200, { ok: true }); }
+      if (method === 'POST' && path === '/friends/inbox/claim') { srv.claims = (srv.claims || 0) + 1; if (srv.failClaim) throw new TypeError('Failed to fetch'); (body.ids || []).forEach((id) => { const e = srv.events.find((x) => x.id === id); if (e) e.claimed = true; }); return send(200, { ok: true }); }
       if (method === 'GET' && path === '/friends/yard') {
         const who = u.searchParams.get('fid'); srv.visits.push(who);
         if (!srv.friends.some((f) => f.fid === who)) return send(404, { error: 'not_found' });
         return send(200, { yard: srv.yardOf[who] || null });
       }
       if (method === 'POST' && path === '/friends/send') {
+        srv.sends = (srv.sends || 0) + 1;
+        if (srv.failSend) throw new TypeError('Failed to fetch'); // part 4: a network error on the send only
         const f = srv.friends.find((x) => x.fid === body.fid);
         if (!f || !['pet', 'note', 'gift', 'walk'].includes(body.kind)) return send(400, { error: 'bad' });
         if (body.kind === 'note' && !(Number.isInteger(body.data && body.data.i) && body.data.i >= 0 && body.data.i < 12)) return send(400, { error: 'bad' });
+        if (body.kind === 'gift' && !(body.data && Number.isInteger(body.data.i) && body.data.i >= 0 && body.data.i < 47 && body.data.n === 1)) return send(400, { error: 'bad' });
+        if (body.kind === 'gift' && srv.sent.some((s) => s.kind === 'gift')) return send(400, { error: 'limit' }); // one gift a day in all (from_id, kind, day)
         if (srv.sent.some((s) => s.fid === body.fid && s.kind === body.kind)) return send(400, { error: 'limit' });
         srv.sent.push({ fid: body.fid, kind: body.kind, data: body.data }); f.sent[body.kind] = true;
         return send(200, { ok: true });
@@ -110,7 +114,7 @@ async function start(t, o) {
   await t.calm();
 }
 async function shot(t, name) {
-  try { fs.mkdirSync(SHOTS, { recursive: true }); await t.p.screenshot({ path: path.join(SHOTS, name + '.png') }); } catch (e) { /* a missing folder should not fail the suite */ }
+  try { fs.mkdirSync(SHOTS, { recursive: true }); await t.p.waitForTimeout(500); /* a sheet's pop-in has settled */ await t.p.screenshot({ path: path.join(SHOTS, name + '.png') }); } catch (e) { /* a missing folder should not fail the suite */ }
 }
 async function layout(t) {
   return t.ev(() => {
@@ -170,7 +174,9 @@ run('v219_friends', async (t) => {
   ok(await t.until(() => (window.__paw.S.mail || []).some((m) => m && m.id === 'fr_note_1'), null, 6000), 'the note letter arrived');
   const mail = await ev(() => (window.__paw.S.mail || []).filter((m) => m && m.id === 'fr_note_1').map((m) => ({ from: m.from, text: m.text, paw: !!m.frPaw })));
   ok(mail.length === 1 && mail[0].from === 'Sunny Biscuit' && /fluffy/.test(mail[0].text) && mail[0].paw, 'the note became a postcard from Sunny Biscuit, with the paw: ' + JSON.stringify(mail));
-  ok(await t.until(() => window.__frSrv.events.filter((e) => e.claimed).map((e) => e.kind).sort().join(',') === 'note,pet' && window.__paw.fr.badge() === 2, null, 4000), 'the note and the pet are claimed. gift and walk stay on the badge');
+  ok(await t.until(() => window.__frSrv.events.filter((e) => e.claimed).map((e) => e.kind).sort().join(',') === 'gift,note,pet' && window.__paw.fr.badge() === 1, null, 4000), 'the note, the pet and the gift are claimed. walk stays on the badge');
+  const giftMail = await ev(() => (window.__paw.S.mail || []).filter((m) => m && m.id === 'fr_gift_3').map((m) => ({ kind: m.kind, from: m.from, title: m.title, gift: m.gift, wrap: m.frWrap })));
+  ok(giftMail.length === 1 && giftMail[0].kind === 'gift' && giftMail[0].title === 'A gift from Sunny Biscuit!' && JSON.stringify(giftMail[0].gift) === JSON.stringify({ item: 'Basic Kibble', cat: 'food', id: 'Basic Kibble', n: 1 }) && (await ev(() => window.__paw.S.fr.gotGifts)) === 1, 'the gift became a mailbox gift letter "A gift from Sunny Biscuit!" with { cat, id, n: 1 }: ' + JSON.stringify(giftMail));
   const petMail = await ev(() => (window.__paw.S.mail || []).filter((m) => m && /^fr_pet_/.test(m.id)).map((m) => ({ id: m.id, from: m.from, title: m.title, text: m.text })));
   ok(petMail.length === 1 && petMail[0].id === 'fr_pet_2026-11-01' && petMail[0].text === 'Sunny Biscuit visited and petted ' + (await ev(() => window.__paw.S.dog.name)) + '. +1 Bond' && (await ev(() => window.__paw.S.fr.gotPets)) === 1, 'the pet became a letter: "Sunny Biscuit visited and petted <dog>. +1 Bond": ' + JSON.stringify(petMail));
   await shot(t, 'my_card_1280');
@@ -200,7 +206,10 @@ run('v219_friends', async (t) => {
   await ev(() => { window.__frSrv.forceFull = false; });
 
   await t.p.click('[data-fr="gift"]');
-  ok(await t.waitToast(/Coming soon/, 3000), 'Gift says Coming soon (part 4)');
+  ok(await t.until(() => !!document.querySelector('#modal .fr-giftsheet') && document.querySelectorAll('#modal [data-frgift]').length >= 1, null, 3000), 'Gift on a friend row opens the gift sheet');
+  await t.closeX(); await t.modalGone();
+  await t.p.click('#frBtn');
+  await t.until(() => !!document.querySelector('[data-fr="more"]'), null, 5000);
   await t.p.click('[data-fr="more"]');
   ok(await t.until(() => !!document.querySelector('[data-fr="remove"]'), null, 3000), 'the ... menu has Remove and Block');
   await t.p.click('[data-fr="remove"]');
@@ -348,7 +357,7 @@ run('v219_friends', async (t) => {
   ok(dogs.length === 3 && dogs.filter((d) => d.mine).length === 1 && dogs.filter((d) => !d.mine).map((d) => d.name).sort().join(',') === 'Mochi,Noodle', 'their two dogs (Dog Card visitors) and my leader: ' + JSON.stringify(dogs));
   ok(await ev(() => document.querySelectorAll('#frDogs .frdog').length === 3 && document.querySelectorAll('#frDogs .frdog:not(.fr-mine)[role="button"]').length === 2), 'all three are drawn. their dogs are tappable, my leader is not');
   ok(await ev(() => /^Sunny Biscuit's yard$/.test((document.querySelector('#status .pname') || {}).textContent || '')), 'the chip says "Sunny Biscuit\'s yard"');
-  ok(await ev(() => (document.getElementById('frNoteBtn') || {}).textContent === 'Leave a paw print' && (document.getElementById('frHomeBtn') || {}).textContent === 'Go home'), 'the buttons: "Leave a paw print" and "Go home"');
+  ok(await ev(() => [...document.querySelectorAll('#placeBtns .btn')].map((b) => b.id + ':' + b.textContent).join('|') === 'frNoteBtn:Leave a paw print|frGiftBtn:Send a gift|frHomeBtn:Go home'), 'the buttons: "Leave a paw print", "Send a gift" and "Go home": ' + JSON.stringify(await ev(() => [...document.querySelectorAll('#placeBtns .btn')].map((b) => b.textContent))));
   await shot(t, 'visit_1280');
 
   sec('10. read-only: nothing in the friend\'s yard changes my save');
@@ -491,10 +500,177 @@ run('v219_friends', async (t) => {
     const tapAt = await ev(() => { const el = [...document.querySelectorAll('#frDogs .frdog:not(.fr-mine) .fr-hit')].map((e) => e.getBoundingClientRect()).find((r) => r.width > 0); return el ? { x: el.left + el.width / 2, y: el.top + el.height / 2 } : null; });
     if (tapAt) await t.p.mouse.click(tapAt.x, tapAt.y);
     ok(!!tapAt && (await t.until((fid) => window.__frSrv.sent.some((s) => s.kind === 'pet' && s.fid === fid), SUNNY, 4000)), tag + ': a tap on their dog pets it');
+    // part 4 on the phone: "Send a gift" in the yard opens the sheet, which fits; the send brings back the yard with "Sent today"
+    await ev(() => { const inv = window.__paw.S.inv; inv.food = { 'Basic Kibble': 3, 'Bone-shaped Biscuit': 2, Pupcake: 1, 'Carrot Sticks': 4, 'Wild Berries': 1, "Duck's Picnic Sandwich": 1 }; inv.seeds = { carrot: 2, peas: 1 }; inv.crops = { pumpkin: [1, 0, 0], carrot: [0, 2, 0] }; });
+    await t.p.click('#frGiftBtn');
+    ok(await t.until(() => document.querySelectorAll('#modal [data-frgift]').length === 10, null, 3000), tag + ': "Send a gift" in the yard opens the sheet (10 items in the bag)');
+    const gLay = await layout(t);
+    ok(!gLay.side && !gLay.bad.length, tag + ' the gift sheet fits, 44 px taps, nothing under the bar: ' + JSON.stringify(gLay));
+    await shot(t, 'gift_sheet_' + tag);
+    await t.p.click('#modal [data-frgift="0"]');
+    await t.p.waitForSelector('#modal .confirm .yes');
+    const cLay = await layout(t);
+    ok(!cLay.side && !cLay.bad.length, tag + ' the confirm fits: ' + JSON.stringify(cLay));
+    await t.p.click('#modal .confirm .yes');
+    ok(await t.waitToast(/Your gift is on its way!/, 4000) && (await t.until(() => window.__paw.mode === 'fryard' && document.getElementById('modal').hidden && (document.getElementById('frGiftBtn') || {}).textContent === 'Sent today', null, 3000)), tag + ': sent from the yard; the yard\'s button reads "Sent today"');
+    await t.p.waitForTimeout(1800); // the wrap has floated off
+    const L2 = await sceneLayout(t);
+    ok(!L2.side && !L2.bad.length, tag + ' the three buttons still fit after the send: ' + JSON.stringify(L2));
+    await shot(t, 'visit_sent_' + tag);
     await t.p.click('#bar .act[data-act="map"]');
     ok(await t.until(() => window.__paw.mode === 'yard', null, 4000), tag + ': Map goes home');
+    // the gift letter (fr_gift_3, from the start) in the mailbox
+    await t.until(() => (window.__paw.S.mail || []).some((m) => m && m.id === 'fr_gift_3'), null, 4000);
+    await ev(() => window.__paw.openMailbox('fr_gift_3'));
+    await t.p.waitForSelector('.panel.mailbox .letter [data-mbget]');
+    const lt = await ev(() => ({ title: (document.querySelector('.letter header b') || {}).textContent, wrap: !!document.querySelector('.letter .fr-letterwrap svg'), gift: (document.querySelector('.letter .mb-gift') || {}).textContent }));
+    ok(lt.title === 'A gift from Sunny Biscuit!' && lt.wrap && lt.gift === '1 × Basic Kibble',tag + ': the gift letter: title, the wrap doodle and the item with Collect: ' + JSON.stringify(lt));
+    await ev(() => document.querySelector('.letter [data-mbget]').scrollIntoView({ block: 'nearest', behavior: 'instant' })); await t.p.waitForTimeout(600); // the sheet scrolls smoothly
+    const col = await ev(() => { const el = document.querySelector('.letter [data-mbget]'); const b = el.getBoundingClientRect(), top = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2); return { w: Math.round(b.width), h: Math.round(b.height), l: Math.round(b.left), r: Math.round(b.right), t: Math.round(b.top), b: Math.round(b.bottom), iw: window.innerWidth, ih: window.innerHeight, top: top ? (top.id || top.className || top.tagName) + '' : null, on: !!top && el.contains(top) }; });
+    ok(col.w >= 43.5 && col.h >= 43.5 && col.l >= -1 && col.r <= col.iw + 1 && col.b <= col.ih && col.on, tag + ': Collect is 44 px, on screen and on top: ' + JSON.stringify(col));
+    await shot(t, 'gift_letter_' + tag);
     await t.ctx.close();
   }
+
+  /* ---------------- part 4: gifts (V219.md section 5) ---------------- */
+  sec('18. FR_GIFTS is dog-safe by the game\'s own tables; the sheet lists only what is in the bag');
+  await start(t);
+  await t.until(() => !!(window.__paw && window.__paw.fr), null, 8000);
+  const refs = await ev(() => window.__paw.fr.giftRefs()), people = await ev(() => window.__paw.fr.people());
+  const BAD = /chocolate|cocoa|grape|raisin|onion|garlic|leek|chive|xylitol|gum|macadamia|avocado|coffee|caffeine|alcohol|wine|beer|nutmeg|cherry|mushroom|rhubarb|tomato leaf|yew|holly|mistletoe|bone$/i;
+  ok(refs.length === 47 && refs.every((g) => ['food', 'seeds', 'crops'].includes(g.cat)), 'every FR_GIFTS entry is a FOOD row, a walk treasure food, a seed packet or a crop: ' + JSON.stringify(refs.filter((g) => !g.cat)));
+  ok(refs.every((g) => !people.includes(g.n) && !BAD.test(g.n)), 'none is a people food the kitchen bounces (' + people.join(', ') + ') or anything toxic to dogs: ' + JSON.stringify(refs.filter((g) => people.includes(g.n) || BAD.test(g.n)).map((g) => g.n)));
+  await befriend(t, ['DOG-4K7PM', 'DOG-9QRST']);
+  await t.until(() => (window.__paw.S.mail || []).some((m) => m && m.id === 'fr_gift_3'), null, 5000);
+  const kib = await ev(() => { const S = window.__paw.S; S.inv.food = { 'Basic Kibble': 2, 'Golden Bone': 1, 'Fresh Water': 3, 'Pumpkin Purée': 0 }; S.inv.seeds = { carrot: 1, peas: 0 }; S.inv.crops = { pumpkin: [0, 2, 0], peas: [0, 0, 0] }; S.inv.pantry = { oats: 4 }; return window.__paw.fr.lists().gifts; });
+  await ev(() => { window.__paw.fr.open(); });
+  await t.until(() => !!document.querySelector(`.fr-row[data-fid="${'sunnybiscuitxxxxxxxxxx'}"] [data-fr="gift"]`), null, 5000);
+  ok(await ev(() => [...document.querySelectorAll('[data-fr="gift"]')].every((b) => b.textContent === 'Gift' && !b.hasAttribute('aria-disabled'))), 'before a send, each row\'s button reads "Gift"');
+  await t.p.click(`.fr-row[data-fid="${SUNNY}"] [data-fr="gift"]`);
+  await t.until(() => !!document.querySelector('#modal .fr-giftsheet'), null, 3000);
+  const cells = await ev(() => [...document.querySelectorAll('#modal [data-frgift]')].map((b) => ({ i: +b.dataset.frgift, name: b.querySelector('.fr-gnm').textContent, n: b.querySelector('.fr-gn').textContent, icon: !!b.querySelector('.fr-gic svg') })));
+  const want = [[kib.indexOf('Basic Kibble'), 'Basic Kibble', '×2'], [kib.indexOf('Carrot Seeds'), 'Carrot Seeds', '×1'], [kib.indexOf('Pumpkin'), 'Pumpkin', '×2']];
+  ok(JSON.stringify(cells.map((c) => [c.i, c.name, c.n])) === JSON.stringify(want) && cells.every((c) => c.icon), 'only the FR_GIFTS items I own, with icons and counts (no Golden Bone, Fresh Water, empty rows or pantry): ' + JSON.stringify(cells));
+  const sheetLay = await layout(t);
+  ok(!sheetLay.side && !sheetLay.bad.filter((b) => !/^small /.test(b)).length, 'the gift sheet fits at 1280 (the desktop stage is scaled, so only the edges count): ' + JSON.stringify(sheetLay));
+  await shot(t, 'gift_sheet_1280');
+  await t.closeX(); await t.modalGone();
+  await ev(() => { const S = window.__paw.S; S.inv.food = { 'Golden Bone': 1 }; S.inv.seeds = {}; S.inv.crops = {}; });
+  await ev((fid) => window.__paw.fr.giftSheet(fid), SUNNY);
+  ok(await t.until(() => (document.querySelector('#modal .fr-gempty') || {}).textContent === 'Your bag has nothing to give yet. Treats, seeds and flowers can be gifts.' && !document.querySelector('#modal [data-frgift]'), null, 3000), 'an empty bag: "Your bag has nothing to give yet. Treats, seeds and flowers can be gifts."');
+  await t.closeX(); await t.modalGone();
+  await ev(() => { const S = window.__paw.S; S.inv.food = { 'Basic Kibble': 2, 'Carrot Sticks': 1 }; S.inv.seeds = { carrot: 1 }; S.inv.crops = { pumpkin: [0, 2, 0] }; });
+
+  sec('19. a failed send (network error, then limit) leaves the bag and the save as they were');
+  const snapFn = () => { const P = window.__paw, root = P.S, ALIAS = ['dog', 'stats', 'bond', 'outfit', 'potty', 'sleeping', 'dishLog', 'buff', 'glowUntil', 'pupUntil', 'tricks']; return JSON.parse(JSON.stringify(root, function (k, v) { return this === root && ALIAS.includes(k) ? undefined : v; })); };
+  const diffFn = function diffFn(a, b, at, out) { if (JSON.stringify(a) === JSON.stringify(b)) return out; if (!a || !b || typeof a !== 'object' || typeof b !== 'object') { out.push(at); return out; } new Set(Object.keys(a).concat(Object.keys(b))).forEach((k) => diffFn(a[k], b[k], at ? at + '.' + k : k, out)); return out; };
+  await ev((s) => { window.__frSnap = new Function('return (' + s + ')')(); }, snapFn.toString());
+  await ev((s) => { window.__frDiff = new Function('return (' + s + ')')(); }, diffFn.toString());
+  // through the sheet: the confirm, then a network error
+  await ev(() => { window.__frSrv.failSend = true; window.__toasts.length = 0; });
+  await ev((fid) => window.__paw.fr.giftSheet(fid), SUNNY);
+  await t.until(() => !!document.querySelector('#modal [data-frgift="0"]'), null, 3000);
+  const s0 = await ev(() => window.__frSrv.sends || 0);
+  await t.p.click('#modal [data-frgift="0"]');
+  ok(await t.until(() => (document.querySelector('#modal .confirm p') || {}).textContent === 'Send 1 Basic Kibble to Sunny Biscuit?', null, 3000), 'the confirm: "Send 1 Basic Kibble to Sunny Biscuit?"');
+  await t.p.click('#modal .confirm .yes');
+  ok(await t.waitToast(/internet connection/, 4000), 'a network error: the offline line');
+  const net = await ev((n) => ({ sends: (window.__frSrv.sends || 0) - n, kib: window.__paw.S.inv.food['Basic Kibble'], gift: window.__paw.S.fr.gift, sheet: !!document.querySelector('#modal .fr-giftsheet') }), s0);
+  ok(net.sends === 1 && net.kib === 2 && net.gift === false && net.sheet, 'the send went out once; the bag keeps 2 Basic Kibble, today\'s gift is not used, the sheet stays: ' + JSON.stringify(net));
+  await t.closeX(); await t.modalGone();
+  // the deep compare, in one page call (a game minute is one real second): retried when the clock ticks between the two snapshots
+  const netD = await ev(async (fid) => {
+    for (let k = 0; k < 8; k++) {
+      const before = window.__frSnap(), r = await window.__paw.fr.sendGift(fid, 0), after = window.__frSnap();
+      if (before.gameMin !== after.gameMin) continue;
+      return { r, d: window.__frDiff(before, after, '', []) };
+    }
+    return { err: 'the clock ticked in every try' };
+  }, SUNNY);
+  ok(!netD.err && netD.r === false && netD.d.length === 0, 'deep compare: a send that fails on the network changes nothing in the save: ' + JSON.stringify(netD));
+  await ev(() => { window.__frSrv.failSend = false; });
+
+  sec('20. the send: only on ok does 1 leave the bag; the wrap, the toast, then "Sent today" everywhere (one gift a day in all)');
+  await ev(() => { window.__paw.fr.open(); window.__toasts.length = 0; });
+  await t.until((fid) => !!document.querySelector(`.fr-row[data-fid="${fid}"] [data-fr="gift"]`), SUNNY, 5000);
+  await t.p.click(`.fr-row[data-fid="${SUNNY}"] [data-fr="gift"]`);
+  await t.until(() => !!document.querySelector('#modal [data-frgift]'), null, 3000);
+  const pumpkinI = kib.indexOf('Pumpkin');
+  await t.p.click(`#modal [data-frgift="${pumpkinI}"]`);
+  await t.p.click('#modal .confirm .yes');
+  ok(await t.until(() => !!document.querySelector('#stage .fr-wrapfx svg'), null, 3000), 'the crayon wrap pops up (PawArt.FRIENDS.wrap)');
+  ok(await t.waitToast(/Your gift is on its way!/, 4000), 'the toast "Your gift is on its way!"');
+  const sentG = await ev(() => window.__frSrv.sent.filter((s) => s.kind === 'gift'));
+  ok(sentG.length === 1 && sentG[0].fid === SUNNY && JSON.stringify(sentG[0].data) === JSON.stringify({ i: pumpkinI, n: 1 }), 'POST /friends/send { kind: gift, data: { i, n: 1 } }: ' + JSON.stringify(sentG));
+  const after = await ev(() => ({ crop: window.__paw.S.inv.crops.pumpkin, kib: window.__paw.S.inv.food['Basic Kibble'], gift: window.__paw.S.fr.gift }));
+  ok(JSON.stringify(after.crop) === '[0,1,0]' && after.kib === 2 && after.gift === true, 'on ok one Pumpkin left the bag (2 -> 1), nothing else, and S.fr.gift is true: ' + JSON.stringify(after));
+  ok(await t.until(() => !!document.querySelector('#modal .fr-sheet') && [...document.querySelectorAll('[data-fr="gift"]')].length === 2 && [...document.querySelectorAll('[data-fr="gift"]')].every((b) => b.textContent === 'Sent today' && b.getAttribute('aria-disabled') === 'true'), null, 3000), 'back on the list: every friend\'s Gift button reads "Sent today"');
+  ok(await ev((fid) => !!document.querySelector(`.fr-row[data-fid="${fid}"] .fr-doo.on svg`) && window.__paw.fr.sent(fid, 'gift'), SUNNY), 'Sunny Biscuit\'s gift doodle fills in');
+  await shot(t, 'gift_sent_list_1280');
+  await ev(() => { window.__toasts.length = 0; });
+  await t.p.click(`.fr-row[data-fid="${FERN}"] [data-fr="gift"]`, { force: true });
+  ok(await t.waitToast(/You've sent today's gift\. You can send another tomorrow\./, 3000) && (await ev(() => !document.querySelector('#modal .fr-giftsheet'))), 'a second friend: no sheet, "You\'ve sent today\'s gift. You can send another tomorrow."');
+  const n0 = await ev(() => window.__frSrv.sends);
+  ok(await ev((fid) => window.__paw.fr.sendGift(fid, 0).then((r) => r === false && window.__paw.S.inv.food['Basic Kibble'] === 2), FERN) && (await ev((n) => window.__frSrv.sends === n, n0)), 'one gift a day in all: a second send asks nothing and keeps the bag');
+  await t.closeX(); await t.modalGone();
+  await ev((fid) => window.__paw.fr.visit(fid), FERN);
+  ok(await t.until(() => window.__paw.mode === 'fryard' && (document.getElementById('frGiftBtn') || {}).textContent === 'Sent today', null, 4000), 'in a friend\'s yard the button reads "Sent today" too');
+  await t.p.click('#frHomeBtn');
+  await t.until(() => window.__paw.mode === 'yard', null, 4000);
+
+  sec('21. limit (today\'s gift went out from another device): the bag stays, the buttons read "Sent today"');
+  await ev(() => { window.__toasts.length = 0; });
+  const limR = await ev(async (fid) => {
+    const S = window.__paw.S;
+    for (let k = 0; k < 8; k++) {
+      S.fr.gift = false; S.fr.cache.friends.forEach((f) => { f.sent.gift = false; }); // as if today's gift went out from another device
+      const n = window.__frSrv.sends, before = window.__frSnap(), r = await window.__paw.fr.sendGift(fid, 0), after = window.__frSnap();
+      if (before.gameMin !== after.gameMin) continue;
+      return { r, d: window.__frDiff(before, after, '', []), kib: S.inv.food['Basic Kibble'], gift: S.fr.gift, sends: window.__frSrv.sends - n, sent: window.__frSrv.sent.filter((s) => s.kind === 'gift').length };
+    }
+    return { err: 'the clock ticked in every try' };
+  }, FERN);
+  ok(!limR.err && limR.r === false && limR.sends === 1 && limR.sent === 1, 'the Worker answers limit: ' + JSON.stringify(limR));
+  ok(await t.waitToast(/You've sent today's gift\. You can send another tomorrow\./, 3000), 'the limit line');
+  ok(limR.kib === 2 && limR.gift === true, 'on limit the bag keeps its 2 Basic Kibble, and today\'s gift counts as used');
+  ok(!limR.err && limR.d.length === 1 && limR.d[0] === 'fr.gift', 'deep compare: limit changes only S.fr.gift, nothing in the bag: ' + JSON.stringify(limR.d));
+
+  sec('22. receiving: at most 5 gift letters a day, the rest wait; a claim that fails never gives twice; Collect adds the item');
+  const g0 = await ev(() => window.__paw.S.fr.gotGifts);
+  await ev(() => { const srv = window.__frSrv, F = (s) => (s + 'xxxxxxxxxxxxxxxxxxxxxx').slice(0, 22), L = window.__paw.fr.lists().gifts; [['Carrot Sticks', 3, 4], ['Pea Seeds', 5, 6], ['Pumpkin', 7, 8], ['Frozen Pupsicle', 9, 10], ['Pup Kinton', 11, 12], ['Blueberries', 13, 14], ['Snow Day Stew', 15, 16]].forEach(([n, a, b], k) => srv.events.push({ id: 60 + k, from: { fid: F('gifter' + k), name: [a, b] }, kind: 'gift', data: { i: L.indexOf(n), n: 1 }, day: '2026-11-02', claimed: false })); srv.events.push({ id: 70, from: { fid: F('newer'), name: [1, 1] }, kind: 'gift', data: { i: 999, n: 1 }, day: '2026-11-02', claimed: false }); });
+  await ev(() => window.__paw.fr.inbox());
+  const R1 = await ev(() => ({ letters: window.__paw.S.mail.filter((m) => m && /^fr_gift_(6\d|70)$/.test(m.id)).map((m) => m.id).sort(), claimed: window.__frSrv.events.filter((e) => e.id >= 60).filter((e) => e.claimed).map((e) => e.id), got: window.__paw.S.fr.gotGifts, badge: window.__paw.fr.badge() }));
+  const room = 5 - g0, wantIds = [60, 61, 62, 63, 64, 65, 66].slice(0, room);
+  ok(JSON.stringify(R1.letters) === JSON.stringify(wantIds.map((i) => 'fr_gift_' + i).sort()) && JSON.stringify(R1.claimed) === JSON.stringify(wantIds) && R1.got === 5, 'only ' + room + ' more letters today (5 in all), only those are claimed: ' + JSON.stringify(R1));
+  ok(R1.badge === 1 + (7 - room) + 1, 'the rest stay unclaimed (and the walk, and the newer item), on the badge: ' + R1.badge);
+  // tomorrow: the waiting gifts become letters
+  await ev(() => { window.__paw.S.fr.day = '1999-01-01'; });
+  await ev(() => window.__paw.fr.inbox());
+  const R2 = await ev(() => ({ letters: window.__paw.S.mail.filter((m) => m && /^fr_gift_(6\d|70)$/.test(m.id)).map((m) => m.id).sort(), got: window.__paw.S.fr.gotGifts, claimed: window.__frSrv.events.filter((e) => e.id >= 60 && e.claimed).map((e) => e.id), newer: window.__frSrv.events.find((e) => e.id === 70).claimed }));
+  ok(R2.got === 7 - room && R2.letters.length === 7 && R2.claimed.length === 7 && !R2.newer, 'the next day the waiting gifts become letters; an item this copy does not know yet stays unclaimed: ' + JSON.stringify(R2));
+  // a claim that did not reach the Worker: the event comes back. Even with its letter gone (an old read letter can be tidied away), it gives nothing twice
+  const twice0 = await ev(() => { const srv = window.__frSrv, S = window.__paw.S; srv.events.find((e) => e.id === 60).claimed = false; S.mail = S.mail.filter((m) => m.id !== 'fr_gift_60'); srv.failClaim = true; return { food: JSON.stringify(S.inv.food), got: S.fr.gotGifts, n: S.mail.filter((m) => /^fr_gift_/.test(m.id)).length }; });
+  await ev(() => window.__paw.fr.inbox());
+  const twice = await ev(() => { const S = window.__paw.S; return { food: JSON.stringify(S.inv.food), got: S.fr.gotGifts, n: S.mail.filter((m) => /^fr_gift_/.test(m.id)).length, again: S.mail.some((m) => m.id === 'fr_gift_60') }; });
+  ok(!twice.again && twice.n === twice0.n && twice.got === twice0.got && twice.food === twice0.food, 'a gift event that comes back after a failed claim makes no second letter (S.fr.gotIds): ' + JSON.stringify({ twice0, twice }));
+  await ev(() => { window.__frSrv.failClaim = false; });
+  await ev(() => window.__paw.fr.inbox());
+  ok(await ev(() => window.__frSrv.events.find((e) => e.id === 60).claimed && !window.__paw.S.mail.some((m) => m.id === 'fr_gift_60')), 'the next look claims it again, still without a letter');
+  // Collect, unchanged: a seed packet (by the button), a crop and a food
+  const c0 = await ev(() => { const S = window.__paw.S; return { pup: S.inv.food['Frozen Pupsicle'] || 0, peas: S.inv.seeds.peas || 0, pumpkin: (S.inv.crops.pumpkin || [0, 0, 0]).slice() }; });
+  await ev(() => window.__paw.openMailbox('fr_gift_61'));
+  await t.p.waitForSelector('.panel.mailbox .letter [data-mbget]');
+  const lt1 = await ev(() => ({ title: document.querySelector('.letter header b').textContent, gift: document.querySelector('.letter .mb-gift').textContent, wrap: !!document.querySelector('.letter .fr-letterwrap svg') }));
+  ok(/^A gift from .+!$/.test(lt1.title) && lt1.gift === '1 × Pea Seeds' && lt1.wrap,'the seed letter: the friend name, the wrap doodle and "1 × Pea Seeds": ' + JSON.stringify(lt1));
+  await shot(t, 'gift_letter_1280');
+  await t.p.click('.letter [data-mbget]');
+  await t.p.waitForSelector('.letter .mb-got');
+  await t.closeX(); await t.modalGone();
+  await ev(() => { window.__paw.mbCollect(['fr_gift_62', 'fr_gift_63']); });
+  const c1 = await ev(() => { const S = window.__paw.S; return { pup: S.inv.food['Frozen Pupsicle'] || 0, peas: S.inv.seeds.peas || 0, pumpkin: (S.inv.crops.pumpkin || [0, 0, 0]).slice() }; });
+  ok(c1.peas === c0.peas + 1 && c1.pumpkin[0] === c0.pumpkin[0] + 1 && c1.pumpkin[1] === c0.pumpkin[1] && c1.pup === c0.pup + 1, 'Collect adds the item: a seed packet (+1), a crop (+1 Pumpkin at 1 star), a food (+1 Frozen Pupsicle): ' + JSON.stringify({ c0, c1 }));
+  ok(await ev(() => window.__paw.mbCollect(['fr_gift_61', 'fr_gift_62', 'fr_gift_63']) === '' && window.__paw.S.mail.filter((m) => /^fr_gift_6[123]$/.test(m.id)).every((m) => m.gift.claimed)), 'collecting again gives nothing');
+  await t.ctx.close();
 });
 
 // Friends: the name pick (if needed) and the codes, through the sheet
@@ -526,7 +702,7 @@ async function sceneLayout(t) {
       const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); if (!top || !el.contains(top)) bad.push('covered ' + id);
       if (chip && over(r, chip.getBoundingClientRect())) bad.push('chip ' + id);
     });
-    if (btns.length !== 2) bad.push('buttons ' + btns.length);
+    if (btns.length !== 3) bad.push('buttons ' + btns.length);
     const cr = chip && chip.getBoundingClientRect();
     if (!cr || !cr.width || cr.left < -1 || cr.right > iw + 1 || cr.top < 0) bad.push('chip');
     const hits = [...document.querySelectorAll('#frDogs .frdog:not(.fr-mine) .fr-hit')].map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0);

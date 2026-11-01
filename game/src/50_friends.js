@@ -1,6 +1,6 @@
 /* ======================= v2.19 "Friends first": 50_friends.js (tag fr) =======================
    Friend codes and the Friends sheet (V219.md sections 0, 2, 3 and 8). Part 3 (section 4): yard visits (cur.mode 'fryard'), pets and paw-print
-   notes, and the pet letters. Gifts and the walk come later.
+   notes, and the pet letters. Part 4 (section 5): gifts, one a day in all, from the bag (FR_GIFTS), and gift letters. The walk comes later.
    Save field S.fr (v219Fields in 00_core.js). Test hook: window.__paw.fr.
    No typed text leaves the device: names are word indices, notes are FR_NOTES indices, dogs are Dog Card indices.
    Off until the v2.19 release (FR_LIVE). A test turns it on with prefs.frTest or window.__pawCloudMock. Never on the claude.ai artifact. */
@@ -218,7 +218,7 @@ async function frLoad() {
   } catch (e) { FR.offline = true; return null; }
 }
 
-/* ---------- inbox: notes become postcard letters, a day's pets one letter, and both are claimed. gift and walk stay, and count on the badge. ---------- */
+/* ---------- inbox: notes become postcard letters, a day's pets one letter, gifts mailbox gift letters (at most 5 a day), and those are claimed. walk stays, and counts on the badge. ---------- */
 const FR_PET_MAX = 5; // Bond from pets: at most 5 friends petted (S.fr.pets) and 5 claimed pets (S.fr.gotPets) a day
 function frPetText(m) {
   const who = m.frPets.who, name = frPairName(who[0]) || tt('fr.a_friend', 'A friend'), more = who.length - 1;
@@ -275,8 +275,10 @@ async function frInbox() {
     if (typeof mailPush === 'function') mailPush({ kind: 'postcard', id: 'fr_note_' + ev.id, from: name, title: tt('fr.note_title', 'A paw print from {name}', { name }), text: tt('fr.note_' + i, FR_NOTES[i]), frPaw: true });
     claim.push(ev.id);
   });
+  const gave = frGiftLetters(r.data.events, claim);
   FR.pending = r.data.events.filter((ev) => ev && !claim.includes(ev.id)).length;
   frBadgeSync();
+  if (gave) { try { saveNow(); } catch (e) { /* storage */ } } // the gift letter is saved on this device before the Worker hears the claim
   if (claim.length) { try { await frApi('POST', '/friends/inbox/claim', { ids: claim.slice(0, 30) }); } catch (e) { /* the letter is already here. the next look claims it */ } }
 }
 function frInboxSoon(force) {
@@ -376,7 +378,7 @@ function frBoxesHTML() {
 function frRowHTML(f) {
   const name = frPairName(f.name) || tt('fr.a_friend', 'A friend');
   const s = f.sent || {};
-  return `<div class="fr-row" data-fid="${esc(f.fid)}">${frHeadHTML(f.dogs && f.dogs[0])}<span class="fr-nm">${esc(name)}</span><span class="fr-doos" aria-hidden="true">${frDoodle('pet', !!s.pet)}${frDoodle('note', !!s.note)}${frDoodle('gift', !!s.gift)}</span><span class="fr-rowacts"><button class="btn" type="button" data-fr="visit">${esc(tt('fr.visit', 'Visit'))}</button><button class="btn" type="button" data-fr="gift">${esc(tt('fr.gift', 'Gift'))}</button><button class="btn" type="button" data-fr="more" aria-label="${esc(tt('fr.more_aria', 'More for {name}', { name }))}">...</button></span>${FR.menu === f.fid ? `<span class="fr-pop"><button class="btn" type="button" data-fr="remove">${esc(tt('fr.remove', 'Remove friend'))}</button><button class="btn" type="button" data-fr="block">${esc(tt('fr.block', 'Block'))}</button></span>` : ''}</div>`;
+  return `<div class="fr-row" data-fid="${esc(f.fid)}">${frHeadHTML(f.dogs && f.dogs[0])}<span class="fr-nm">${esc(name)}</span><span class="fr-doos" aria-hidden="true">${frDoodle('pet', !!s.pet)}${frDoodle('note', !!s.note)}${frDoodle('gift', !!s.gift)}</span><span class="fr-rowacts"><button class="btn" type="button" data-fr="visit">${esc(tt('fr.visit', 'Visit'))}</button>${frGiftBtnHTML('', 'data-fr="gift"', tt('fr.gift', 'Gift'))}<button class="btn" type="button" data-fr="more" aria-label="${esc(tt('fr.more_aria', 'More for {name}', { name }))}">...</button></span>${FR.menu === f.fid ? `<span class="fr-pop"><button class="btn" type="button" data-fr="remove">${esc(tt('fr.remove', 'Remove friend'))}</button><button class="btn" type="button" data-fr="block">${esc(tt('fr.block', 'Block'))}</button></span>` : ''}</div>`;
 }
 function frSheetHTML() {
   v219Fields(S);
@@ -518,7 +520,7 @@ function frSheetBind(p) {
       const row = b.closest('[data-fid]'), fid = row && row.dataset.fid;
       const act = b.dataset.fr;
       if (act === 'visit') { frVisit(fid); return; }
-      if (act === 'gift') { toast(tt('fr.soon', 'Coming soon'), 'good'); return; }
+      if (act === 'gift') { frGiftSheet(fid, 'list'); return; }
       if (act === 'more') { FR.menu = FR.menu === fid ? '' : fid; frSheet(); return; }
       if (act === 'remove') frRemove(fid);
       if (act === 'block') frBlock(fid, p);
@@ -653,8 +655,9 @@ function frNoteBtnHTML() {
 }
 function frBtns() {
   const pb = $('#placeBtns'); if (!pb) return;
-  pb.innerHTML = frNoteBtnHTML() + `<button class="btn" type="button" id="frHomeBtn">${esc(tt('yard.go_home', 'Go home'))}</button>`;
+  pb.innerHTML = frNoteBtnHTML() + frGiftBtnHTML('frGiftBtn', '', tt('fr.gift_send', 'Send a gift')) + `<button class="btn" type="button" id="frHomeBtn">${esc(tt('yard.go_home', 'Go home'))}</button>`;
   $('#frNoteBtn', pb).onclick = () => { SFX.click(); if (!frSentToday(FRV.fid, 'note')) frNoteSheet(); };
+  $('#frGiftBtn', pb).onclick = () => { SFX.click(); frGiftSheet(FRV.fid, 'yard'); };
   $('#frHomeBtn', pb).onclick = () => { SFX.click(); frHome(); };
 }
 // the place chip says "<name>'s yard" (the core writes the chip: the name is put back after every rewrite, as the Tokyo map does)
@@ -832,6 +835,128 @@ async function frNote(i, p) {
   toast(tt('fr.offline', 'Friends need an internet connection. Your dog is happy at home.'), 'bad');
   return false;
 }
+/* ---------- part 4: gifts (V219.md section 5). One a day in all (S.fr.gift), from the bag, FR_GIFTS only. The bag changes only after the Worker says ok ----------
+   Food safety: every FR_GIFTS entry is a FOOD row (each with its safety tip), a walk treasure food, a garden seed packet or a garden crop. The garden grows
+   nothing toxic and no shop sells anything toxic, so every entry is dog-safe by the game's own rules. No PEOPLE_FB food is in the list (v219_friends checks it). */
+const FR_GIFT_OFF = []; // FR_GIFTS indices that may no longer be given (the slot stays: the Worker stores the index). None today
+const FR_GOT_MAX = 5; // gifts turned into letters a day (S.fr.gotGifts). The rest stay unclaimed until tomorrow
+// where FR_GIFTS[i] lives in the bag: a food (S.inv.food[name]), a seed packet (S.inv.seeds[crop id]) or a crop (S.inv.crops[crop id] = [1★, 2★, 3★])
+function frGiftRef(i) {
+  const n = Number.isInteger(i) ? FR_GIFTS[i] : null;
+  if (!n || FR_GIFT_OFF.includes(i)) return null;
+  const seed = CROPS_FB.find((c) => c.seedItem === n), crop = CROPS_FB.find((c) => c.item === n);
+  if (seed) return { i, n, cat: 'seeds', id: seed.id, name: gkCropSeed(seed) };
+  if (crop) return { i, n, cat: 'crops', id: crop.id, name: gkCropItem(crop) };
+  if (n !== 'Golden Bone' && FOOD_ALL.some((f) => f.n === n)) return { i, n, cat: 'food', id: n, name: shNameAny(n) };
+  return null;
+}
+function frGiftHave(g) {
+  const inv = (S && S.inv) || {};
+  if (g.cat === 'crops') { const a = (inv.crops || {})[g.id]; return Array.isArray(a) ? a.reduce((s, k) => s + (k > 0 ? Math.floor(k) : 0), 0) : 0; }
+  const v = (inv[g.cat] || {})[g.id]; return v > 0 ? Math.floor(v) : 0;
+}
+function frGiftTake(g) { // one from the bag. A crop goes from its lowest star first
+  if (frGiftHave(g) < 1) return false;
+  if (g.cat === 'crops') { const a = S.inv.crops[g.id]; a[a.findIndex((k) => k >= 1)]--; }
+  else { const b = S.inv[g.cat]; b[g.id]--; if (g.cat === 'food' && b[g.id] <= 0) delete b[g.id]; }
+  markDirty(); return true;
+}
+const frGiftsOwned = () => FR_GIFTS.map((n, i) => frGiftRef(i)).filter((g) => g && frGiftHave(g) >= 1);
+// today's one gift is used: sent from here (S.fr.gift), or today's list says one went out (from another device)
+function frGiftUsed() {
+  if (!S || !S.fr) return false;
+  frDay();
+  return !!S.fr.gift || (FR.loadDay === frToday() && ((S.fr.cache && S.fr.cache.friends) || []).some((f) => f && f.sent && f.sent.gift));
+}
+function frGiftBtnHTML(id, attrs, label) {
+  const done = frGiftUsed();
+  return `<button class="btn${done ? ' soon' : ''}" type="button"${id ? ` id="${id}"` : ''}${attrs ? ' ' + attrs : ''}${done ? ' aria-disabled="true"' : ''}>${esc(done ? tt('fr.gift_done', 'Sent today') : label)}</button>`;
+}
+const frGiftLimit = () => toast(tt('fr.gift_limit', "You've sent today's gift. You can send another tomorrow."), 'good');
+function frWrapSVG(n) {
+  let svg = '';
+  try { const P = window.PawArt; if (P && P.FRIENDS && typeof P.FRIENDS.wrap === 'function') svg = P.FRIENDS.wrap(n); } catch (e) { svg = ''; }
+  return svg || `<svg viewBox="-18 -18 36 36" aria-hidden="true">${doodle('bone', 0, 2, 0.8)}</svg>`; // TODO art
+}
+// the letter's doodle (07b_mailbox.js letterBody): a paw for a note, the wrapped gift for a gift
+function frLetterArt(m) {
+  if (m && m.frPaw) return frPawHTML();
+  if (m && Number.isInteger(m.frWrap)) return `<span class="fr-letterpaw fr-letterwrap" aria-hidden="true">${frWrapSVG(m.frWrap)}</span>`;
+  return '';
+}
+function frGiftSheet(fid, from) {
+  if (!S || !frOn() || !fid) return null;
+  if (frGiftUsed()) { frGiftLimit(); return null; }
+  const f = frFriend(fid), name = frPairName((f && f.name) || (FRV.fid === fid ? FRV.pair : null)) || tt('fr.a_friend', 'A friend');
+  const own = frGiftsOwned();
+  const cell = (g) => { const k = frGiftHave(g); return `<button class="btn fr-gift" type="button" data-frgift="${g.i}" aria-label="${esc(tt('fr.gift_aria', '{item}, you have {n}', { item: g.name, n: k }))}"><span class="fr-gic" aria-hidden="true">${art('item', g.n)}</span><span class="fr-gnm">${esc(g.name)}</span><b class="fr-gn" aria-hidden="true">${esc(tt('fr.gift_n', '×{n}', { n: k }))}</b></button>`; };
+  const body = own.length ? `<p>${esc(tt('fr.gift_lead', 'Pick a gift for {name}.', { name }))}</p><div class="fr-giftgrid">${own.map(cell).join('')}</div>` : `<p class="fr-gempty">${esc(tt('fr.gift_empty', 'Your bag has nothing to give yet. Treats, seeds and flowers can be gifts.'))}</p>`;
+  const p = openModal(esc(tt('fr.gift_send', 'Send a gift')), `<div class="fr-gifts">${body}</div>`, { cls: 'frsheet fr-giftsheet' });
+  p.querySelectorAll('[data-frgift]').forEach((b) => {
+    b.onclick = async () => {
+      SFX.click();
+      const g = frGiftRef(+b.dataset.frgift); if (!g || FRV.busy === 'gift') return;
+      const ok = await confirmIn(p, esc(tt('fr.gift_ask', 'Send 1 {item} to {friend}?', { item: g.name, friend: name })), esc(tt('fr.gift_yes', 'Send')), esc(tt('fr.gift_no', 'Not now')));
+      if (ok) frGiftSend(fid, g.i, p, from);
+    };
+  });
+  return p;
+}
+function frGiftAfter(from) { // after a send (or a limit): back to the list, or the yard's buttons, where Gift now reads "Sent today"
+  const sheet = !modal.hidden && !!document.querySelector('#modal .fr-giftsheet');
+  if (sheet && from === 'list') frSheet();
+  else if (sheet) closeModal();
+  if (cur.mode === 'fryard') frBtns();
+}
+function frWrapFx(n) { // a short crayon wrap: the parcel pops up, wobbles and floats off (an overlay over the stage)
+  try {
+    const el = document.createElement('div'); el.className = 'fr-wrapfx'; el.setAttribute('aria-hidden', 'true'); el.innerHTML = frWrapSVG(n);
+    (document.getElementById('stage') || document.body).appendChild(el); setTimeout(() => el.remove(), 1700);
+  } catch (e) { /* the toast still says it */ }
+}
+async function frGiftSend(fid, i, p, from) {
+  const g = frGiftRef(i);
+  if (!S || !fid || !g || FRV.busy === 'gift') return false;
+  if (frGiftUsed()) { frGiftLimit(); frGiftAfter(from); return false; }
+  if (frGiftHave(g) < 1) return false;
+  FRV.busy = 'gift';
+  const btns = p ? [...p.querySelectorAll('[data-frgift]')] : []; btns.forEach((b) => { b.disabled = true; });
+  let r = null;
+  try { r = await frApi('POST', '/friends/send', { fid, kind: 'gift', data: { i, n: 1 } }); } catch (e) { r = null; }
+  FRV.busy = ''; btns.forEach((b) => { b.disabled = false; });
+  if (r && r.ok) { // only now does the item leave the bag
+    frDay(); frGiftTake(g); S.fr.gift = true; frMarkSent(fid, 'gift'); markDirty();
+    frGiftAfter(from); try { SFX.pop(); } catch (e) { /* audio off */ } frWrapFx(i % 3);
+    toast(tt('fr.gift_sent', 'Your gift is on its way!'), 'good');
+    return true;
+  }
+  if (frErr(r) === 'limit') { frDay(); S.fr.gift = true; markDirty(); frGiftLimit(); frGiftAfter(from); return false; } // today's gift went out (another device). The bag stays
+  if (r && r.status === 404) toast(tt('fr.not_friend', 'That friend is not on your list any more.'), '');
+  else toast(tt('fr.offline', 'Friends need an internet connection. Your dog is happy at home.'), 'bad');
+  return false;
+}
+// receiving: each gift event becomes a mailbox gift letter (Collect as ever, mbCollect), at most FR_GOT_MAX a day; the rest stay unclaimed until tomorrow.
+// An event that comes back (its claim did not reach the Worker) is only claimed again: S.fr.gotIds and the letter id keep it from giving twice. Returns the letters made
+function frGiftLetters(events, claim) {
+  if (typeof mailPush !== 'function') return 0;
+  if (typeof mailFields === 'function') mailFields();
+  let made = 0;
+  events.forEach((ev) => {
+    if (!ev || ev.kind !== 'gift' || !ev.from) return;
+    const i = ev.data && ev.data.i;
+    if (!Number.isInteger(i) || i < 0 || i >= FR_GIFTS.length) return; // an item from a newer copy waits for the update
+    const id = 'fr_gift_' + ev.id;
+    if (S.fr.gotIds.includes(ev.id) || (S.mail || []).some((m) => m && m.id === id)) { claim.push(ev.id); return; }
+    const g = frGiftRef(i);
+    if (!g) { claim.push(ev.id); return; } // a slot that may no longer be given: nothing arrives
+    if (S.fr.gotGifts >= FR_GOT_MAX) return; // waits for tomorrow
+    S.fr.gotGifts++; S.fr.gotIds = S.fr.gotIds.concat(ev.id).slice(-60); markDirty();
+    const name = frPairName(ev.from.name) || tt('fr.a_friend', 'A friend');
+    mailPush({ kind: 'gift', id, from: name, title: tt('fr.gift_title', 'A gift from {name}!', { name }), text: tt('fr.gift_text', '{name} wrapped up something for {dog}.', { name, dog: NAME() }), gift: { item: g.n, cat: g.cat, id: g.id, n: 1 }, frWrap: (Number(ev.id) || 0) % 3 });
+    claim.push(ev.id); made++;
+  });
+  return made;
+}
 function enterFrYard() {
   if (!FRV.yard || !FRV.card) { setTimeout(() => { if (cur.mode === 'fryard') go('yard'); }, 0); return; }
   setChrome(true, true);
@@ -867,6 +992,9 @@ function frExpose() {
     inbox: () => frInbox(), badge: () => frBadgeN(), migrate: (s) => v219Fields(s),
     note: (i) => FR_NOTES[i] || '', invite: () => FR.invite,
     visit: (fid) => frVisit(fid), home: () => frHome(), sent: (fid, kind) => frSentToday(fid, kind),
+    gifts: () => frGiftsOwned().map((g) => ({ i: g.i, n: g.n, cat: g.cat, have: frGiftHave(g) })), giftUsed: () => frGiftUsed(),
+    giftRefs: () => FR_GIFTS.map((n, i) => { const g = frGiftRef(i); return g ? { i, n, cat: g.cat, id: g.id } : { i, n, cat: null }; }), people: () => PEOPLE_FB.map((x) => x.name),
+    giftSheet: (fid) => frGiftSheet(fid, 'list'), sendGift: (fid, i) => frGiftSend(fid, i, null, ''),
     scene: () => ({ mode: cur.mode, fid: FRV.fid, house: FRV.yard && FRV.yard.house, season: FRV.yard && FRV.yard.season, decor: FRV.yard ? FRV.yard.decor.map((d) => d.n) : [], dogs: FRV.dogs.map((v) => ({ mine: v.mine, name: v.dog.name, key: v.dog.key, pose: frPose(v), x: Math.round(v.x), y: Math.round(v.y) })) })
   };
 }
