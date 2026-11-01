@@ -57,7 +57,7 @@ const MAP = [
     places: ['park', 'river', 'woods', 'beach', 'market', 'square', 'cafe', 'dogpark', 'vet', 'salon', 'hilltop', 'pier', 'shelter', 'fujihill', 'station'] },
   { id: 'tokyo', key: 'japan', map: { id: 'japanmap', src: '/img/map/japan-map.webp', alt: 'map.japan.alt' }, places: ['shibuya', 'yoyogi', 'asakusa', 'ueno', 'tokyotower', 'odaiba'] }
 ];
-const POLICY_DATE = Date.UTC(2026, 9, 17); // the privacy policy's "Last updated" date
+const POLICY_DATE = Date.UTC(2026, 10, 1); // the privacy policy's "Last updated" date (1 November 2026, Friends)
 
 // ---- the message formatter: game/i18n/msg.js (the v2.14 contract) parses; the site renders its AST as HTML (escaped text, <b>/<i>, HTML parameters)
 const MSG = require('../game/i18n/msg.js');
@@ -137,7 +137,7 @@ const JPW = {
 // the keys drawn in the hand face (var(--hand) in site/style.css: headings, .tag, .nav, .chip, .play, .feats b, .bark, .dname, .pics .cap,
 // .prof h2 .dtype, .bubble, .traits b, .loves>b): the corpus of the 'DD Local Title' subset.
 //   node tools/i18n_fonts.js --all --title-keys "$(node tools/site_i18n.js --title-keys)"
-const HAND_KEYS = /^(?:.*\.title|dogs\.h1|privacy\.h1|reset\.h1|map\.h1|about\.h1|about\.p8|about\.itch|map\.place\.[a-z]+\.name|nav\.(?:home|dogs|map|guide|about)|home\.(?:map|about)\.link|home\.fullscreen|guide\.(?:h1|step[1-9]\.t|faq\.q[1-9]|cta_btn)|home\.tagline|home\.nav\..*|home\.toss|home\.dogs\.all|common\.(?:play|quoted)|footer\.play_itch|notfound\..*|play\..*|soon\.(?:title|line)|profile\.(?:pup_cap|title_type|loves)|dog\.[a-z]+\.(?:name|quote|trait[1-4]))$/;
+const HAND_KEYS = /^(?:.*\.title|dogs\.h1|privacy\.h1|invite\.h1|reset\.h1|map\.h1|about\.h1|about\.p8|about\.itch|map\.place\.[a-z]+\.name|nav\.(?:home|dogs|map|guide|about)|home\.(?:map|about)\.link|home\.fullscreen|guide\.(?:h1|step[1-9]\.t|faq\.q[1-9]|cta_btn)|home\.tagline|home\.nav\..*|home\.toss|home\.dogs\.all|common\.(?:play|quoted)|footer\.play_itch|invite\.(?:play|itch)|notfound\..*|play\..*|soon\.(?:title|line)|profile\.(?:pup_cap|title_type|loves)|dog\.[a-z]+\.(?:name|quote|trait[1-4]))$/;
 // the placeholders every message may use (the dog count, the policy date, the Japanese words), besides its own English ones
 const GLOBAL = ['count', 'date'].concat(Object.keys(JPW));
 // the keys whose text carries the dog count (the count rule: it must come from {count}, never typed in). On the English page the sentences
@@ -330,6 +330,56 @@ ${sec.places.map((id) => `        <article class="place" id="place-${id}"><img s
   }
   return { pages: out, reports };
 }
+// v2.19: the friend invite page (/f/DOG-XXXXX, and /<lang>/f/...). One shell per language. The Worker fills @@SEG@@ (the path),
+// @@PLAY@@ (the Play here link) and @@CODE@@, and drops every @@IFCODE@@ ... @@ENDIF@@ block when the code is not a real one.
+// Not a PAGES entry: the code is in the URL, so the page cannot be a static file.
+function inviteShells(o) {
+  o = Object.assign({ pseudo: false, legacy: false }, o || {});
+  const en = EN(), out = {};
+  const list = (o.legacy ? LANGS.filter((x) => x.code === 'en') : LANGS.concat(o.pseudo ? PSEUDO : []));
+  const page = { id: 'invite', path: '/f/@@SEG@@' };
+  for (const L of list) {
+    const { T } = table(L, en), rules = L.rules || L.code;
+    const base = Object.fromEntries(Object.entries(JPW).map(([k, v]) => [k, H(v)]));
+    const t = (k, p) => { if (!T[k]) throw new Error('no key ' + k); return render(T[k], Object.assign({}, base, p), rules, false); };
+    const a = (k, p) => render(T[k], Object.assign({}, base, p), rules, true);
+    const fontCss = path.join(SITE, 'fonts', 'i18n', (L.pseudo === 'cjk' ? 'ja' : L.code) + '.css');
+    const fontcss = L.code !== 'en' && fs.existsSync(fontCss) && /@font-face/.test(fs.readFileSync(fontCss, 'utf8')) ? `<link rel="stylesheet" href="/fonts/i18n/${path.basename(fontCss)}?v=${crypto.createHash('sha1').update(fs.readFileSync(fontCss)).digest('hex').slice(0, 8)}">` : '';
+    const htmlattrs = L.code === 'en' ? '' : ` class="i18n s-${L.script}${L.pseudo ? ' pseudo' : ''}"`;
+    const alternates = o.legacy || L.pseudo ? '' : '\n' + LANGS.map((x) => `<link rel="alternate" hreflang="${x.code}" href="${ORIGIN + urlFor(x, page.path)}">`).join('') + `<link rel="alternate" hreflang="x-default" href="${ORIGIN + page.path}">`;
+    const oglocale = L.code === 'en' ? '' : `<meta property="og:locale" content="${L.og}">`;
+    const menu = o.legacy ? '' : langMenu(L, page, t('lang.label'), a('lang.menu'));
+    const canon = ORIGIN + urlFor(L, page.path);
+    const foot = `<footer class="foot"><a href="${urlFor(L, '/')}">${t('footer.home')}</a> · <a href="${urlFor(L, '/map')}">${t('footer.map')}</a> · <a href="${urlFor(L, '/about')}">${t('footer.about')}</a> · <a href="https://www.instagram.com/doodledoggo.app/" rel="noopener">${t('footer.instagram')}</a> · <a href="mailto:contact@doodledoggo.app" id="contact" class="contact">${t('footer.contact')}</a> · <a href="https://an9ou.itch.io/doodle-doggo">${t('footer.play_itch')}</a></footer>`;
+    out[L.dir ? '/' + L.dir : ''] = `<!doctype html>
+<html lang="${L.code}"${htmlattrs}><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#FFF8EC"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/icon-32.png" sizes="32x32"><link rel="apple-touch-icon" href="/icon-180.png"><link rel="stylesheet" href="/style.css">${fontcss}
+<title>${t('invite.title')}</title>
+<meta name="description" content="${a('invite.description')}">
+<link rel="canonical" href="${canon}">${alternates}
+<meta property="og:type" content="website"><meta property="og:site_name" content="Doodle Doggo"><meta property="og:url" content="${canon}">${oglocale}
+<meta property="og:title" content="${a('invite.title')}"><meta property="og:description" content="${a('invite.description')}">
+<meta property="og:image" content="https://doodledoggo.app/logo-1200x630.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">${o.legacy ? '' : langScript(L, page)}
+</head><body>
+<div class="deco" id="deco" aria-hidden="true"></div>
+<main class="page">
+  <article class="sheet prose invite">${header(L, page, t, a, menu)}
+    <h1 class="center" id="inviteh">${t('invite.h1')}</h1>
+    @@IFCODE@@<p class="invitecode" id="friendcode">@@CODE@@</p>@@ENDIF@@
+    <div class="cta">
+      <a class="play" id="playhere" href="@@PLAY@@">${t('invite.play')}</a>
+      @@IFCODE@@<a class="play" id="playitch" href="https://an9ou.itch.io/doodle-doggo" rel="noopener">${t('invite.itch')}</a>
+      <p class="invitenote" id="itchnote">${t('invite.itch_note')}</p>@@ENDIF@@
+    </div>
+  </article>
+  ${foot}
+</main>
+<div class="petals" id="petals" aria-hidden="true"></div>
+<script src="/js/site.js" defer></script>
+</body></html>`;
+  }
+  return out;
+}
 // fmt: one message of one language, for tests (e.g. the dog count rule)
 function fmt(code, key, params) {
   const L = LANGS.concat(PSEUDO).find((x) => x.code === code); const { T } = table(L);
@@ -350,7 +400,7 @@ function write(pages, root) {
   root = root || SITE;
   for (const [rel, html] of Object.entries(pages)) { const p = path.join(root, rel); fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, html); }
 }
-module.exports = { LANGS, PSEUDO, PAGES, NAV, FEATURED, MAP, COUNT_KEYS, HAND_KEYS, build, fmt, write, parse, render, urlFor, printReport, table };
+module.exports = { LANGS, PSEUDO, PAGES, NAV, FEATURED, MAP, COUNT_KEYS, HAND_KEYS, build, fmt, write, parse, render, urlFor, printReport, table, inviteShells };
 
 if (require.main === module) {
   const argv = process.argv.slice(2), has = (f) => argv.includes(f);

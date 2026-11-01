@@ -3,7 +3,7 @@
 //   node tools/cf_site.js --pseudo   also serves the test-only pseudo-locales /xx/ and /xx-cjk/ (game/test_site.js; never deployed)
 //   bash tools/cf_pages_deploy.sh    builds this and deploys it to doodledoggo.app (needs the owner's go-ahead)
 // Pages: / (index.html: the live playroom, the itch.io widget, eight dog cards, Dogs in Japan), /dogs (the profiles), /map (every place, site v3),
-// /about (the story, site v3), /privacy, /reset (a notice: resets happen in the game), and since v2.14 the same pages in 10 more languages at /<lang>/ (ja, zh-hans, zh-hant, ko, es, pt-br, fr, de, th, id). Every page is made here by
+// /about (the story, site v3), /privacy, /reset (a notice: resets happen in the game), /f/<code> (v2.19: a friend invite, one shell per language), and since v2.14 the same pages in 10 more languages at /<lang>/ (ja, zh-hans, zh-hant, ko, es, pt-br, fr, de, th, id). Every page is made here by
 // tools/site_i18n.js from site/tpl/ and site/i18n/ (English is also committed as site/*.html; a warning shows when that copy is out of date).
 // No content negotiation: each URL is one language, so no Vary header; the language menu and a first-visit script (English pages only) pick the language.
 // Fonts for the other scripts (site/fonts/i18n/<lang>.woff2 + .css, the FONTS lane) and the place pictures of /map (site/img/map/, the SHOTS lane).
@@ -98,6 +98,54 @@ for (const [rel, html] of Object.entries(built.pages)) {
 const VER = (f) => crypto.createHash('sha1').update(fs.readFileSync(path.join(site, f))).digest('hex').slice(0, 8);
 const CSSV = VER('style.css'), JSV = VER(path.join('js', 'site.js'));
 for (const u of Object.keys(gen)) gen[u] = gen[u].replace(/href="\/style\.css"/g, `href="/style.css?v=${CSSV}"`).replace(/src="\/js\/site\.js"/g, `src="/js/site.js?v=${JSV}"`);
+// v2.19: invite shells (one per language). The Worker fills the code. Same cache-busting query as the other pages.
+const INVITE = I18N.inviteShells({ pseudo: PSEUDO && !EN_ONLY, legacy: EN_ONLY });
+for (const k of Object.keys(INVITE)) INVITE[k] = INVITE[k].replace(/href="\/style\.css"/g, `href="/style.css?v=${CSSV}"`).replace(/src="\/js\/site\.js"/g, `src="/js/site.js?v=${JSV}"`);
+// v2.19: ?friend= stays on the game's URL the way ?lang= does, and only when it is a real friend code
+// (the Worker alphabet: no 0, O, 1, I or L). Anything else is removed, so a query can never be written into the page.
+const FRIEND_FN = `
+const FR_CODE = new RegExp('^DOG-[ABCDEFGHJKMNPQRSTUVWXYZ2-9]{5}$');
+function friendSearch(search) {
+  const q = new URLSearchParams(search.charAt(0) === '?' ? search.slice(1) : search);
+  if (!q.has('friend')) return null;
+  const raws = q.getAll('friend');
+  const code = String(raws[0] == null ? '' : raws[0]).trim().toUpperCase();
+  const good = FR_CODE.test(code);
+  if (good && raws.length === 1 && raws[0] === code) return null;
+  const out = new URLSearchParams();
+  q.forEach(function (v, k) { if (k !== 'friend') out.append(k, v); });
+  if (good) out.append('friend', code);
+  const s = out.toString();
+  return s ? '?' + s : '';
+}
+function friendRedirect(url) {
+  if (url.pathname !== '/play' && url.pathname !== '/play/' && url.pathname !== '/play/index.html') return null;
+  const next = friendSearch(url.search);
+  if (next == null) return null;
+  return url.protocol + '//' + url.host + '/play/' + next; // keep http in the local test Worker; production is already https
+}
+`;
+const INVITE_FN = `
+function inviteHit(p) {
+  let lpre = '', rest = p;
+  const m = new RegExp('^(/[a-z-]+)(/.*)?$').exec(p);
+  if (m && Object.prototype.hasOwnProperty.call(LANG_OF, m[1])) { lpre = m[1]; rest = m[2] || '/'; }
+  const f = new RegExp('^/f(?:/([^/]+))?$', 'i').exec(rest);
+  if (!f) return null;
+  let raw = '';
+  if (f[1] != null) { try { raw = decodeURIComponent(f[1]); } catch (e) { raw = ''; } }
+  let code = String(raw).trim().toUpperCase();
+  if (!FR_CODE.test(code)) code = '';
+  return { lpre: lpre, code: code };
+}
+function renderInvite(shell, code) {
+  let html = shell.split('/f/@@SEG@@').join(code ? '/f/' + code : '/f');
+  html = html.split('@@PLAY@@').join(code ? '/play/?friend=' + code : '/play/');
+  if (code) html = html.split('@@IFCODE@@').join('').split('@@ENDIF@@').join('').split('@@CODE@@').join(code);
+  else html = html.replace(new RegExp('@@IFCODE@@[\\\\s\\\\S]*?@@ENDIF@@', 'g'), '');
+  return html;
+}
+`;
 const PRETTY = {}, LANG_OF = { '': 'en' };
 for (const L of LIVE_LANGS.concat(PSEUDO && !EN_ONLY ? I18N.PSEUDO : [])) {
   const pre = L.dir ? '/' + L.dir : '';
@@ -145,6 +193,9 @@ ${table}
 const PRETTY = ${JSON.stringify(PRETTY)};
 const LANG_OF = ${JSON.stringify(LANG_OF)};
 const NOTFOUND = ${JSON.stringify(NOTFOUND)};
+const INVITE = ${JSON.stringify(INVITE)};
+${FRIEND_FN}
+${INVITE_FN}
 const APEX = 'doodledoggo.app';
 const CSP = ${JSON.stringify(CSP)}, GAME_CSP = ${JSON.stringify(GAME_CSP)};
 const HASHED = ${HASHED};
@@ -153,6 +204,8 @@ export default {
     const url = new URL(req.url);
     if (url.hostname === 'www.' + APEX) return Response.redirect('https://' + APEX + url.pathname + url.search, 301);
     if (req.method !== 'GET' && req.method !== 'HEAD') return new Response('Method not allowed', { status: 405, headers: { allow: 'GET, HEAD' } });
+    const frTo = friendRedirect(url); // v2.19: ?friend= stays on the game URL, like ?lang=, only when it is a real code
+    if (frTo) return Response.redirect(frTo, 301);
     if (url.pathname === '/play') return Response.redirect('https://' + url.host + '/play/' + url.search, 301); // the game's relative files need the slash
     let p = url.pathname.length > 1 ? url.pathname.replace(/\\/+$/, '') : '/';
     if (url.pathname === '/play/') p = '/play/';
@@ -164,6 +217,11 @@ export default {
     const pre = (p.match(/^\\/[a-z-]+(?=\\/|$)/) || [''])[0], lpre = pre in LANG_OF ? pre : '';
     if (lpre && p === lpre && url.pathname === p) return Response.redirect('https://' + url.host + p + '/' + url.search, 301); // /ja -> /ja/
     if (p.endsWith('.html') && FILES[p]) return Response.redirect('https://' + url.host + (p.endsWith('/index.html') ? p.slice(0, -10) : p.slice(0, -5)) + url.search, 301);
+    const inv = inviteHit(p); // v2.19: /f/<code> and /<lang>/f/<code>, drawn from the language shells (no API)
+    if (inv && INVITE[inv.lpre]) {
+      const headers = { 'x-content-type-options': 'nosniff', 'referrer-policy': 'strict-origin-when-cross-origin', 'content-security-policy': CSP, 'content-type': 'text/html; charset=utf-8', 'content-language': LANG_OF[inv.lpre] || 'en', 'cache-control': 'public, max-age=300' };
+      return new Response(req.method === 'HEAD' ? null : renderInvite(INVITE[inv.lpre], inv.code), { headers });
+    }
     const hit = FILES[PRETTY[p] || p];
     const headers = { 'x-content-type-options': 'nosniff', 'referrer-policy': 'strict-origin-when-cross-origin', 'content-security-policy': p === '/play' || p.startsWith('/play/') ? GAME_CSP : CSP };
     if (!hit) return new Response(FILES['/index.html'] ? NOTFOUND[lpre] : 'Not found',
@@ -189,11 +247,14 @@ const FILES = {
 ${table}
 };
 const HASHED = ${HASHED};${x.play ? `
-const GAME_CSP = ${JSON.stringify(GAME_CSP)};` : ''}
+const GAME_CSP = ${JSON.stringify(GAME_CSP)};
+${FRIEND_FN}` : ''}
 export default {
   async fetch(req) {
     const url = new URL(req.url);
     if (req.method !== 'GET' && req.method !== 'HEAD') return new Response('Method not allowed', { status: 405, headers: { allow: 'GET, HEAD' } });${x.play ? `
+    const frTo = friendRedirect(url);
+    if (frTo) return Response.redirect(frTo, 301);` : ''}${x.play ? `
     if (url.pathname === '/play' || url.pathname === '/play/index.html') return Response.redirect('https://' + url.host + '/play/' + url.search, 301);` : ''}
     const p = ${x.play ? "url.pathname === '/play/' ? '/play/index.html' : url.pathname" : 'url.pathname'}, hit = FILES[p];
     if (!hit) return new Response('Not found', { status: 404, headers: { 'content-type': 'text/plain; charset=utf-8', 'x-content-type-options': 'nosniff' } });
