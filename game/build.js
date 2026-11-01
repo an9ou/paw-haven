@@ -17,7 +17,7 @@ const cat = (dir) => fs.readFileSync(path.join(D, dir, 'ORDER.txt'), 'utf8').spl
 const ART = ['dogs/pawart_dogs.js', 'world/pawart_world_a.js', 'world/pawart_world_b.js', 'world/pawart_world_c.js', 'world/pawart_world_d.js', 'world/pawart_world_e.js', 'world/pawart_world_f.js', 'world/pawart_world_g.js'].filter((f) => f.startsWith('dogs/') || /_[a-e]\.js$/.test(f) || fs.existsSync(path.join(P, f)));
 // v2.14: the i18n slot = game/i18n/msg.js (+ the generated game/i18n/packed.js once it exists), raw text, before the art and modules
 const I18N = () => ['game/i18n/msg.js', 'game/i18n/packed.js'].filter((f) => fs.existsSync(path.join(P, f))).map((f) => fs.readFileSync(path.join(P, f), 'utf8')).join('\n');
-const MODS = ['mods/genes.js', 'mods/pawaudio.js', 'mods/walkrun.js', 'mods/toys.js', 'mods/garden.js', 'mods/kitchen.js'];
+const MODS = ['mods/genes.js', 'mods/pawaudio.js', 'mods/walkrun.js', 'mods/toys.js', 'mods/garden.js', 'mods/kitchen.js', 'mods/qr.js'];
 const fill = (i18n, css, js) => fs.readFileSync(path.join(D, 'shell.html'), 'utf8').replace('/*@@I18N@@*/', () => i18n).replace('/*@@CSS@@*/', () => css).replace('/*@@GAME@@*/', () => js);
 function buildGame() {
   const css = cat('css'), js = cat('src');

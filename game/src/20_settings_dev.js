@@ -13,6 +13,7 @@ function openSettings() {
     <p class="small">${esc(tt('settings.economy', 'Time: 1 game hour = 1 real minute. Prototype economy: coins x{coins}, Bond x{bond}, naps x{nap}.', { coins: BOOST.coins, bond: BOOST.bond, nap: BOOST.nap }))}</p>
     <p class="small">${esc(touchOnly ? tt('settings.clock', 'Clock and weather follow your real local time (3 weather periods a day).') : tt('settings.clock_keys', 'Clock and weather follow your real local time (3 weather periods a day). Keys: 1-9 bottom buttons, Space pets / throws / walks, Esc closes things.'))}</p>
     ${S && typeof nwMenuBtn === 'function' ? `<p class="nw-setrow"><button class="btn" type="button" id="setNews">${esc(tt('nw.menu', "What's new"))}</button></p>` : ''}
+    ${typeof frLeaveRow === 'function' ? frLeaveRow() : ''}
     ${typeof clSection === 'function' ? clSection() : ''}`, { foot: `<div style="display:flex;justify-content:space-between;gap:12px;width:100%;flex-wrap:wrap"><button class="btn red" id="setReset">${esc(tt('settings.reset', 'Reset save'))}</button><button class="btn" id="setTitle">${esc(tt('settings.to_title', 'Title screen'))}</button></div>` });
   { const bd = p.querySelector('.panel-body'); if (bd) { const fade = 'linear-gradient(to bottom, #000 calc(100% - 26px), transparent)'; bd.style.webkitMaskImage = fade; bd.style.maskImage = fade; } } // a heading never sits half-cut at the foot of the scroll area
   ['master', 'music', 'sfx', 'ambience'].forEach((k) => { const r = $('#vol-' + k, p); r.oninput = () => { prefs.vol[k] = +r.value; if (k === 'ambience') prefs.ambTouched = true; $('#out-' + k, p).textContent = r.value; applyAudioPrefs(); }; r.onchange = () => { savePrefs(); if (k === 'sfx' || k === 'master') SFX.boop(660); }; });
@@ -22,6 +23,7 @@ function openSettings() {
   if (typeof clBind === 'function') clBind(p);
   langBind(p);
   { const nb = $('#setNews', p); if (nb) nb.onclick = () => { SFX.click(); closeModal(); setTimeout(() => nwOpen(false), 60); }; } // v2.18.2: What's new
+  { const lb = $('#frLeave', p); if (lb) lb.onclick = () => { SFX.click(); if (typeof frLeave === 'function') frLeave(p); }; } // v2.19: Leave Friends (50_friends.js)
   p.querySelectorAll('[data-barkm]').forEach((b) => { b.onclick = () => { prefs.bark = b.dataset.barkm; savePrefs(); SFX.click(); p.querySelectorAll('[data-barkm]').forEach((x) => { x.classList.toggle('yes', x === b); x.setAttribute('aria-pressed', String(x === b)); }); }; });
   $('#setTitle', p).onclick = () => { saveNow(); closeModal(); go('title'); };
   $('#setReset', p).onclick = async () => {

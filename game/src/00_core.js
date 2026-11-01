@@ -788,6 +788,7 @@ function freshState(key, name, sex) {
   v218Fields(st); // v2.18 Fun Fair (V218.md 8): the games' coins today, plays, ribbons, the stall, the photo contest
   v2171Fields(st); // v2.17.1 Festive Market (V2171.md 7)
   v2182Fields(st); st.newsSeen = nwLatest(); // v2.18.2 What's new: a brand-new save skips the news (the first-day guide shows what is there)
+  v219Fields(st); // v2.19 Friends (V219.md 8)
   return linkDogs(st);
 }
 let S = null;
@@ -853,6 +854,7 @@ function migrate(s) {
   wmRenames(s); // Winter Market review: renamed market items
   v2171Fields(s); // v2.17.1 Festive Market (V2171.md section 7): additive
   v2182Fields(s); // v2.18.2 What's new (49c_news.js): additive, S.newsSeen '' on an old save
+  v219Fields(s); // v2.19 Friends (V219.md section 8): additive
   return s;
 }
 /* v2.7 Home & Pack save fields (V27.md section 1). Additive only: S.v stays 1, nothing is dropped.
@@ -1007,6 +1009,34 @@ function v218Fields(s) {
 function v2171Fields(s) {
   if (!s) return s; if (!v28Obj(s.fm)) s.fm = {};
   ['seen', 'letters'].forEach((k) => { if (!v28Obj(s.fm[k])) s.fm[k] = {}; }); if (typeof s.fm.bought !== 'number' || !(s.fm.bought >= 0)) s.fm.bought = 0;
+  return s;
+}
+/* v2.19 Friends (V219.md section 8). Additive only: S.v stays 1, nothing is dropped.
+   S.fr { on, name: [a,b] | null, code, fid, cache: { at, friends }, yards, day: localISO of the counters,
+          pets, gotPets, notes, gift, gotGifts, walkDay, walks, gotWalks, guest }.
+   Daily counters reset on a new localISO() day (the contract's "localISO() Japan day"). None of these fields go into the yard snapshot. */
+function v219Fields(s) {
+  if (!s) return s;
+  if (!v28Obj(s.fr)) s.fr = {};
+  const f = s.fr, num = (k) => { if (typeof f[k] !== 'number' || !(f[k] >= 0)) f[k] = 0; };
+  if (typeof f.on !== 'boolean') f.on = false;
+  const aN = typeof DC_WORDS_A !== 'undefined' ? DC_WORDS_A.length : 40, bN = typeof DC_WORDS_B !== 'undefined' ? DC_WORDS_B.length : 40;
+  const pair = Array.isArray(f.name) && f.name.length === 2 && Number.isInteger(f.name[0]) && Number.isInteger(f.name[1]) && f.name[0] >= 0 && f.name[1] >= 0 && f.name[0] < aN && f.name[1] < bN;
+  if (!pair) f.name = null;
+  if (typeof f.code !== 'string') f.code = null;
+  if (typeof f.fid !== 'string') f.fid = null;
+  if (!v28Obj(f.cache)) f.cache = { at: 0, friends: [] };
+  if (typeof f.cache.at !== 'number' || !(f.cache.at >= 0)) f.cache.at = 0;
+  if (!Array.isArray(f.cache.friends)) f.cache.friends = [];
+  if (!v28Obj(f.yards)) f.yards = {};
+  if (f.guest !== null && !v28Obj(f.guest)) f.guest = null;
+  if (typeof f.gift !== 'boolean') f.gift = false;
+  ['pets', 'gotPets', 'notes', 'gotGifts', 'walks', 'gotWalks'].forEach(num);
+  if (typeof f.day !== 'string') f.day = '';
+  if (typeof f.walkDay !== 'string') f.walkDay = '';
+  const today = localISO();
+  if (f.day !== today) { f.day = today; f.pets = 0; f.gotPets = 0; f.notes = 0; f.gift = false; f.gotGifts = 0; f.gotWalks = 0; }
+  if (f.walkDay !== today) { f.walkDay = today; f.walks = 0; }
   return s;
 }
 // v2.16: BOND_TH moved Bond 2 and 3 closer. A loaded dog whose points already pass a threshold levels up here, quietly (no fanfare, no level-up queue);
@@ -1389,6 +1419,7 @@ function doAct(a) {
   if (a === 'caremenu' || a === 'more') { SFX.click(); fwBarPop(fwBarOpen() === a ? null : a); return; } // v2.16 phone bar (47_firstweek.js): Care and More open a small tray above the bar
   if (typeof fwBarPop === 'function') fwBarPop(null);
   if (a === 'stickers') { SFX.click(); if (!modal.hidden) closeModal(); if (typeof ddBookOpen === 'function') ddBookOpen(); return; } // v2.17: the sticker book in the phone More tray (48_dogdays.js)
+  if (a === 'friends') { SFX.click(); if (!modal.hidden) closeModal(); if (typeof frOpen === 'function') frOpen(); return; } // v2.19: Friends in the phone More tray (50_friends.js)
   SFX.click(); hideBubble(); closeTraining();
   const pop = !modal.hidden || popOpen();
   if (pop && popAct === a) { if (!modal.hidden) closeModal(); else closeTray(); return; }
